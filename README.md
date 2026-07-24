@@ -124,7 +124,7 @@ qucuo/
 
 - **Kenshi** —— "世界不把玩家当特殊人物"的沙盒哲学，落在随机遭遇系统（`encounter.js`）：NPC 各忙各的营生、对主角可以爱答不理。
 - **矮人要塞（Dwarf Fortress）** —— 知识/情报的确定性传播（`knowledge.js`）：每人一张"知道什么"的表、经目击/传闻/告知传播、传闻会随时间淡忘、亲历的不忘。
-- **AI Roguelite** —— NPC 涌现系统（`npcEmergence.js`）的设计思路。
+- **AI Roguelite**（[Max Loh](https://store.steampowered.com/app/1889620/AI_Roguelite/) 开发的商业游戏）—— 两处启发：其一是 **NPC 涌现系统**（`npcEmergence.js`），解决"AI 在叙事里提到某人某物、但系统还没把它登记成正式实体"的经典问题，需要把它涌现成可交互的 NPC；其二是**文字 RPG 的多面板界面范式**——场景叙事、物品/状态、任务日志分区并置的信息组织方式。
 - **Bethesda 系 RPG** —— 任务日志面板（`QuestLogScreen.jsx`）的信息组织方式。
 - **契诃夫之枪** —— 全项目头号铁律：没有装饰性元素，每件物品、每个 NPC、每个房间都要服务于后续机制或叙事。
 
