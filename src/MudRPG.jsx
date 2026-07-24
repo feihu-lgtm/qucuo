@@ -1043,6 +1043,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const saved = localStorage.getItem("wuxia_mud_ui_scale");
     return saved ? parseFloat(saved) : 1;
   });
+  // 日间模式（本轮新增）：米色底+棕框+深字的浅色主题，六个地理分区各自的
+  // 色相基因保留，只是换算成浅色版本（见 theme.js 的 ZONE_THEMES_DAY）。
+  // 一键切换，存 localStorage 持久化，跟 uiScale 同样的模式。
+  const [isDayMode, setIsDayMode] = useState(() => {
+    return localStorage.getItem("wuxia_mud_day_mode") === "1";
+  });
   const pendDirRef = useRef(null);
   const outerDepartRef = useRef(null); // 外层移动出发时的内层位置信息（回锚点过渡描述用）
   const pickupJudgmentRef = useRef(null); // 本轮如果触发了拾取判定，保存 { quality, category }，供响应解析时强制校验
@@ -1057,6 +1063,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // API 配置变更时持久化到 localStorage
   useEffect(() => { saveConfig(apiCfg); }, [apiCfg]);
   useEffect(() => { localStorage.setItem("wuxia_mud_ui_scale", String(uiScale)); }, [uiScale]);
+  useEffect(() => { localStorage.setItem("wuxia_mud_day_mode", isDayMode ? "1" : "0"); }, [isDayMode]);
 
   // ── 自动存档（回合间隔制）──
   // 旧实现是"任何状态变化立刻覆盖写"，有个致命问题：组件一挂载 useEffect 就执行，
@@ -4147,7 +4154,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   };
 
   const clr = { sys: "#5a8a5a", cmd: "#d4a853", desc: "#c8bfa0", room: "#6ec6c6", item: "#c4a040", stat: "#8ab4d4", skill: "#b48adf", err: "#c45044", choice: "#6aaa8a", narrator: "#e0a0d0", crash: "#c45044", confess: "#f0c060", affection: "#f0a0c0", quest: "#f0c060" };
-  const zoneTheme = getZoneTheme(room.name);
+  const zoneTheme = getZoneTheme(room.name, isDayMode);
   const inkDivider = `linear-gradient(90deg, transparent, ${zoneTheme.border}, transparent)`;
   const S = {
     panel: { display: "flex", flexDirection: "column", borderRight: `1px solid ${zoneTheme.border}`, minWidth: 0, overflow: "hidden" },
@@ -4207,15 +4214,15 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         <span style={{ flex: 1 }} />
         <span
           onClick={() => setShowCharacterPage(true)}
-          style={{ cursor: "pointer", color: "#e0a0d0", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}
+          style={{ cursor: "pointer", color: "#e0a0d0", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
         >👥 人物关系</span>
         <span
           onClick={() => setShowQuestLog(true)}
-          style={{ cursor: "pointer", color: "#a0c0e0", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}
+          style={{ cursor: "pointer", color: "#a0c0e0", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
         >📜 任务</span>
         <span
           onClick={() => setShowLore(true)}
-          style={{ cursor: "pointer", color: "#c4a86a", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}
+          style={{ cursor: "pointer", color: "#c4a86a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
         >📖 见闻录</span>
         <span
           onClick={() => {
@@ -4227,14 +4234,19 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               window.location.reload();
             }
           }}
-          style={{ cursor: "pointer", color: "#8a8a8a", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}
+          style={{ cursor: "pointer", color: "#8a8a8a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
         >⏻ 主菜单</span>
         <span
           onClick={() => { setSettingsInitialTab("saves"); setShowSettings(true); }}
-          style={{ cursor: "pointer", color: "#d4a853", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}
+          style={{ cursor: "pointer", color: "#d4a853", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
         >💾 存档</span>
-        <span onClick={() => { setSettingsInitialTab(null); setShowSettings(true); }} style={{ cursor: "pointer", color: "#6ec6c6", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}>⚙ 设置</span>
-        <span onClick={() => setShowTrace(p => !p)} style={{ cursor: "pointer", color: showTrace ? "#8ac8b8" : "#5a5a4a", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3, fontSize: "10px" }}>🧭 全流程日志</span>
+        <span onClick={() => { setSettingsInitialTab(null); setShowSettings(true); }} style={{ cursor: "pointer", color: "#6ec6c6", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}>⚙ 设置</span>
+        <span onClick={() => setShowTrace(p => !p)} style={{ cursor: "pointer", color: showTrace ? "#8ac8b8" : "#5a5a4a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3, fontSize: "10px" }}>🧭 全流程日志</span>
+        <span
+          onClick={() => setIsDayMode(d => !d)}
+          title={isDayMode ? "切回暗夜模式" : "切换到日间模式（米色底+棕框）"}
+          style={{ cursor: "pointer", color: isDayMode ? "#8a5a1e" : "#5a5a4a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3, fontSize: "10px" }}
+        >{isDayMode ? "☀ 日间" : "☾ 夜间"}</span>
         {autoSaveError && (
           <span
             title={`自动存档失败：${autoSaveError}。当前进度可能无法保存，建议尽快手动导出或清理浏览器存储空间。`}
@@ -4247,9 +4259,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         <span
           onClick={() => setShowVersionHistory(true)}
           title="点击查看版本历史"
-          style={{ cursor: "pointer", color: "#5a5a4a", fontSize: "10px", padding: "2px 6px", border: "1px solid #1a1d2e", borderRadius: 3 }}
+          style={{ cursor: "pointer", color: "#5a5a4a", fontSize: "10px", padding: "2px 6px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
         >「{CURRENT_VERSION.codename}」{CURRENT_VERSION.time}</span>
       </div>
+
 
       {showAvatarPicker && (
         <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(4,4,10,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowAvatarPicker(false)}>

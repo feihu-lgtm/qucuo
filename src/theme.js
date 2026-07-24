@@ -3,6 +3,21 @@
 // 简洁的线条营造意境感。核心手段是"每个地理分区一个基调色"，
 // 而不是全局死板的单一配色——玩家走到雪山会感受到冷冽，走到鱼定村
 // 会感受到暖黄的烟火气，视觉本身参与叙事，不需要任何图片。
+//
+// ── 日间模式（本轮新增）──
+// 原有六套 ZONE_THEMES 全部是暗夜基调（暗背景+亮字）。日间模式不是简单
+// 套一份统一浅色，而是给每个分区各自做一次"深→浅"的忠实转换，保留
+// "不同地方氛围不同"这个设计初衷：
+//   bg/bgPanel  暗背景 → 米色系背景（借鉴 Claude.ai 官方那种暖米白，
+//               bgPanel 比 bg 略白，制造同样的"面板浮在底色上"层次感）
+//   border      统一收拢到棕色调（各分区仍有细微色相差异，但大类是棕）
+//   text        亮色文字 → 深棕黑正文（不用纯黑，暖黑更耐读）
+//   textDim     → 中棕灰
+//   accent/accentDim  色相基因保留，但大幅拉低明度、适度提高饱和度——
+//               暗背景上的"亮丽高亮色"直接搬到浅背景上会糊得看不清，
+//               必须换算成"深沉浓郁"的同色系版本才行。
+// 两套主题字段完全一一对应（同一个 key 集合），下游 117 处 zoneTheme.xxx
+// 引用不需要感知日间/夜间的存在，只要 getZoneTheme 传对 isDayMode 即可。
 
 // 五个地理分区，对应 qucuoMap.js 里的据点分组：
 // - village（鱼定村/鱼定土司/天都镇/玉泉寨）：暖褐黄，烟火人间气
@@ -83,10 +98,76 @@ export const ZONE_THEMES = {
   },
 };
 
-// 根据房间名推断当前分区，返回对应主题；找不到时回退到 village
-export function getZoneTheme(roomName) {
+// 日间模式：六套的浅色版本，字段一一对应上面的暗夜版。
+export const ZONE_THEMES_DAY = {
+  village: {
+    name: "人间烟火·昼",
+    accent: "#8a5a12",       // 暖黄深化：浓郁焦糖棕黄，浅底上依然醒目（比初版再压深，确保小字也够清晰）
+    accentDim: "#c49a5a",    // 次强调走浅一档，供禁用态/弱高亮用
+    bg: "#f5f0e4",           // 米色主背景
+    bgPanel: "#faf7ee",      // 面板略白，制造"浮在底色上"的层次
+    border: "#b3987a",       // 棕色边框
+    text: "#3d3626",         // 暖黑正文
+    textDim: "#8a7c62",      // 中棕灰次要文字
+  },
+  temple: {
+    name: "梵音低回·昼",
+    accent: "#8a5a1e",       // 赭石暗金深化
+    accentDim: "#c08a4a",
+    bg: "#f3ede1",
+    bgPanel: "#f8f3e8",
+    border: "#ad9270",
+    text: "#3a3324",
+    textDim: "#877a5f",
+  },
+  snow: {
+    name: "孤峰积雪·昼",
+    accent: "#2a5a7a",       // 冷蓝深化，浅底上仍有雪山冷冽感
+    accentDim: "#6a94b0",
+    bg: "#eef1f0",           // 微冷调米白，呼应雪山
+    bgPanel: "#f6f8f7",
+    border: "#9aaba8",
+    text: "#2e3a3d",
+    textDim: "#728085",
+  },
+  wild: {
+    name: "莽野无涯·昼",
+    accent: "#3a6a3a",       // 青灰绿深化
+    accentDim: "#7aa07a",
+    bg: "#eef1e8",
+    bgPanel: "#f6f8f0",
+    border: "#9aab8a",
+    text: "#2e3626",
+    textDim: "#748266",
+  },
+  water: {
+    name: "静水深流·昼",
+    accent: "#1e4a6a",       // 墨蓝深化
+    accentDim: "#5a86a8",
+    bg: "#ecf0f2",
+    bgPanel: "#f5f8f9",
+    border: "#93a8b3",
+    text: "#28343d",
+    textDim: "#6c7c85",
+  },
+  outland: {
+    name: "他乡异客·昼",
+    accent: "#6a5a3e",       // 灰褐深化
+    accentDim: "#a0947a",
+    bg: "#f0ece2",
+    bgPanel: "#f7f4ec",
+    border: "#ab9e88",
+    text: "#38332a",
+    textDim: "#847a68",
+  },
+};
+
+// 根据房间名推断当前分区，返回对应主题；找不到时回退到 village。
+// isDayMode=true 时从 ZONE_THEMES_DAY 取（六套浅色版本），默认 false 走原暗夜版，
+// 两套主题字段一一对应，调用方不需要额外分支处理。
+export function getZoneTheme(roomName, isDayMode = false) {
   const zone = ZONE_MAP[roomName] || "village";
-  return ZONE_THEMES[zone];
+  return (isDayMode ? ZONE_THEMES_DAY : ZONE_THEMES)[zone];
 }
 
 export function getZoneName(roomName) {

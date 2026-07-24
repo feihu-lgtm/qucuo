@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "日间模式(米色底+棕框+深字)一键切换",
+    time: "2026-07-24 07:38",
+    notes: "新增日间模式，参考 Claude.ai 官方界面的暖米白配色。原有六套 ZONE_THEMES 全是暗夜基调(暗背景+亮字)，本轮不是简单套一份统一浅色，而是给每个地理分区各自做一次\"深→浅\"的忠实转换，保留\"不同地方氛围不同\"的设计初衷：theme.js 新增 ZONE_THEMES_DAY(六套浅色版本，字段与暗夜版一一对应)——bg/bgPanel 换算成米色系(bgPanel 比 bg 略白制造层次)、border 统一收拢到棕色调、text 换成暖黑正文(非纯黑)、accent/accentDim 保留各分区色相基因但大幅拉低明度提高饱和度(暗背景上的亮丽高亮色直接搬到浅背景会糊得看不清，必须换算成深沉浓郁的同色系版本)。getZoneTheme(roomName, isDayMode=false) 加第二参数，两套主题字段完全一致，下游117处 zoneTheme.xxx 引用不需要感知日夜切换、自动生效。MudRPG.jsx 新增 isDayMode 状态(localStorage持久化，同 uiScale 模式)，zoneTheme取值处传入；顶部工具栏加「☀日间/☾夜间」一键切换按钮，同排原本写死 border:#1a1d2e 的9处按钮改为 `1px solid ${zoneTheme.border}`，让这排按钮本身也正确跟随日夜切换(赌石界面等自成一套配色、不消费zoneTheme的模块本就不受影响，不在本次改动范围)。用 WCAG 相对亮度公式核算全部六组 bg×text/bg×accent 对比度，五组直接达AA标准(4.5+)，village分区accent经一轮加深调整后也达标(5.2)。esbuild 验证 theme.js 与 MudRPG.jsx 均通过。",
+  },
+  {
     codename: "私聊旁白接入行动分层日志(trace)",
     time: "2026-07-24 07:32",
     notes: "talkToNarrator(右栏「◆私聊旁白」)此前完全不进「🧭行动全流程日志」——底层 callModel/callModelStream 其实早就把每次调用的完整 prompt/回复记进了 pipelineLog，但没有一条 trace 把它挂出来，面板里私聊旁白全程留白，出问题(答非所问/召回没生效)时无从排查。按 act() 的既有用法补齐：①函数开局 startTrace，含 CRASHED 早退分支也归档(不再是\"开了不收\")；②逐阶段 traceStep——意图(私聊·不消耗回合)、旁白崩溃状态拦截、全知事实账本注入(有/无区分pass/skip)、向量召回(开关关闭/召回为空/命中N条三态)、AI调用(流式/非流式分别标注)；③attachPipeline(_wt, getPipelineLog()[0])在流式与非流式分支各自紧跟调用点挂上，失败分支同样挂(带错误信息)；④endTrace收尾摘要带回复前30字预览+好感度增量，一眼看出这次私聊聊了什么、好感怎么变；catch块补上fail态traceStep+attachPipeline+endTrace，不再是私聊报错却在trace系统里查无此事。不消耗回合这件事本身不变——trace只是留痕，不代表计入时间。TraceViewer渲染逻辑本就通用(纯遍历steps+可选pipeline展开)，UI侧零改动即可正确展示。esbuild验证通过。",
