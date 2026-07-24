@@ -5323,10 +5323,16 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       </div>
 
       {mapBig && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setMapBig(false)}>
-        <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 24, minWidth: 300, maxWidth: "70vw", maxHeight: "80vh" }} onClick={e => e.stopPropagation()}>
+        <div style={{
+          background: `url("${MAP_UI.scroll}") center/100% 100% no-repeat`,
+          borderRadius: 6, minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh",
+          // 卷轴四周是木轴+锦缎装帧，中央才是可用纸面（约占 78%）。用大内边距把
+          // 标题栏与节点图推进纸面留白区，避免压到装帧木轴上。
+          padding: "8% 11% 9% 11%", boxSizing: "border-box",
+        }} onClick={e => e.stopPropagation()}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span style={{ color: "#6ec6c6", fontSize: "13px" }}>{mapView === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"} <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>{mapView === "inner" ? "金框为当前所在 · 点相邻房间前往" : "金框为当前所在 · 问号为未探明 · 点已探明据点自动前往 · 🔒需前置"}</span></span>
-            <span style={{ color: "#5a5a4a", fontSize: "11px", cursor: "pointer" }} onClick={() => setMapBig(false)}>× 关闭</span>
+            <span style={{ color: "#4a3520", fontSize: "13px", fontWeight: "bold" }}>{mapView === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"} <span style={{ color: "#7a6448", fontSize: "10px", fontWeight: "normal" }}>{mapView === "inner" ? "金框为当前所在 · 点相邻房间前往" : "金框为当前所在 · 问号为未探明 · 点已探明据点自动前往 · 🔒需前置"}</span></span>
+            <span style={{ color: "#6a4a2a", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }} onClick={() => setMapBig(false)}>× 关闭</span>
           </div>
           {/* ── 放大 = 完整拓扑全图（ClickableMap），不再是把九宫格放大一遍 ──
               小地图（右栏）看的是"我周围八格怎么走"，放大看的是"整片江湖长什么样、
