@@ -3,8 +3,10 @@ import { QUCUO_PRESET } from "./presets/qucuo.js";
 import {
   NNPC_STAGE, initialNarratorState,
   narratorVoicePrompt, affectionLabel, buildNarratorWhisperContext,
-  narratorWhisperLengthNote, gateWhisperTopics,
+  narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
 } from "./narrator.js";
+import { gateBodyProfile, emptyBodyProfile, buildOutfitRequest, bodyProfileFilled } from "./bodyProfile.js";
+import BodyProfilePanel from "./BodyProfilePanel.jsx";
 import { loadConfig, saveConfig, callModel, callModelStream, cleanJsonString, getPipelineLog, clearPipelineLog, classifyError } from "./apiConfig.js";
 import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, fmtMs } from "./actionTrace.js";
 import { buildSnapshot, autoSave, loadAutoSave, loadSlot, flushLocalBackup } from "./saves.js";
@@ -13,7 +15,7 @@ import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, listCharacters, npcAffectionLabel, reputationLabel, MVU_SYSTEM_INSTRUCTIONS } from "./mvu.js";
 import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats } from "./equipment.js";
-import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX } from "./items/catalog.js";
+import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem } from "./items/catalog.js";
 // 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
@@ -1011,6 +1013,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [talkTarget, setTalkTarget] = useState(null); // 对话模式下具体在跟谁说话，供立绘自动推断使用
   const [activeTarget, setActiveTarget] = useState(null); // null=全部NPC在场 | string=锁定某个NPC名
   const [nsfwOn, setNsfwOn] = useState(false); // ■ NSFW 开关：true=注入NSFW规则+primer消息
+  const [showBody, setShowBody] = useState(false); // ◈体貌面板
+  const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" }); // 按体貌荐装的结果
   const [pigeonTarget, setPigeonTarget] = useState(null); // 飞鸽传书当前收信人（进入 pigeon 模式时设置）
   const pigeonProcessing = useRef(new Set()); // 防止同一封回信被 [time]/varTree effect 重复生成
   const autoTravelRef = useRef(false); // 自动寻路进行中标记：途中遇随机遭遇时据此硬中断剩余队列
@@ -1702,11 +1706,30 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 与上面 scenario 的"默认全给、按条目灭灯"相反，是加法而非减法——这些条目
       // 绝大多数轮次用不上，常驻只会白烧上下文；但玩家一旦问起，必须有统一口径，
       // 否则模型只能现编，这局说是将门遗孤、下局说是灭门孤儿。
-      const _topicGate = gateWhisperTopics(`${content}\n${_lastReply}`);
+      const _scan = `${content}\n${_lastReply}`;
+      const _topicGate = gateWhisperTopics(_scan);
       if (_topicGate.lit.length) {
         traceStep(_wt, "私聊话题·红绿灯", "pass", `🟢${_topicGate.lit.join("、")}`);
       } else {
         traceStep(_wt, "私聊话题·红绿灯", "skip", "本轮无话题命中");
+      }
+
+      // 任务线红绿灯：报出任务全名才查那一条，泛泛问只让她反问；好感度 <30 不给。
+      // 全任务表二十几条线、每条四五个 stage，全量注入等于每次闲聊背一本攻略书。
+      const _questGate = gateQuestTopic(_scan, narrator.affection, QUCUO_QUESTS, questProgress);
+      if (_questGate.lit.length) {
+        traceStep(_wt, "任务线·红绿灯", "pass", `🟢${_questGate.lit.join("、")}`);
+      } else {
+        traceStep(_wt, "任务线·红绿灯", "skip", "本轮没聊到任务");
+      }
+
+      // 体貌：私聊时公开层常亮（她一直看着你），私密层仍只认 ■ 模式。
+      const _bodyWhisper = gateBodyProfile(char.bodyProfile, {
+        whisper: true, nsfw: nsfwOn, scanText: _scan,
+      });
+      if (_bodyWhisper.lit.length || _bodyWhisper.dark.length) {
+        traceStep(_wt, "体貌", "info",
+          `🟢${_bodyWhisper.lit.join("、") || "无"}　⚫灭:${_bodyWhisper.dark.join("、") || "无"}`);
       }
 
       // 旁白专属世界书（设置→旁白 tab 可编辑）：只进私聊，不进主叙事。留空则一个字不发。
@@ -1718,7 +1741,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
       // 篇幅指令拼在最末尾（贴生成处 = 酒馆 Depth 0，是插入深度最强的位置，
       // 与「成文铁律放 userContent 末尾」同一条经验），别埋进开头被当耳旁风。
-      const sys = `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${narratorLoreBlock}${_topicGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
+      const sys = `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
 
       // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
       // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
@@ -1836,7 +1859,71 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
     }
     setPendingTalks(n => Math.max(0, n - 1));
-  }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote]);
+  }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress]);
+
+  // ── 按体貌荐装 ──
+  // 分工照 catalog.js 顶部那条老规矩：AI 只负责"从这张货架上挑哪三件"，
+  // 数值一概不由它给——挑完拿名字回 CATALOG_INDEX 查真值。这样既不会凭空冒出
+  // 货架上没有的神兵，也不会出现同一件东西这次加 20 下次加 200。
+  // 只报字段/描述/加成，不报获取途径：怎么弄到手得自己走一趟。
+  const recommendOutfit = useCallback(async () => {
+    const profile = char.bodyProfile;
+    if (bodyProfileFilled(profile).total === 0) {
+      setOutfitState({ loading: false, picks: [], error: "先写点体貌，掌柜才有的可挑。" });
+      return;
+    }
+    setOutfitState({ loading: true, picks: [], error: "" });
+    try {
+      // 货架 = 装备三类的全部具名+制式条目。杂货(misc)不是穿戴的，不进池子。
+      const pool = CATALOG.filter(e =>
+        e.category === ITEM_CATEGORY.WEAPON ||
+        e.category === ITEM_CATEGORY.ARMOR ||
+        e.category === ITEM_CATEGORY.ACCESSORY
+      );
+      const req = buildOutfitRequest(profile, pool);
+      const { text } = await callModel(apiCfg, req.system, [{ role: "user", content: req.user }], {
+        maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000,
+        callLabel: "按体貌荐装",
+      });
+      let parsed = {};
+      try { parsed = JSON.parse(cleanJsonString(text.replace(/```json\s*|```\s*/g, "").trim())); }
+      catch { parsed = {}; }
+
+      const picks = (Array.isArray(parsed.picks) ? parsed.picks : [])
+        .map(pick => {
+          // 只认货架上真实存在的名字。AI 编出来的一律丢掉，不做模糊匹配——
+          // "看起来像"的匹配一旦错了，玩家拿到的就是另一件东西的数值。
+          const entry = CATALOG_INDEX[String(pick?.name || "").trim()];
+          if (!entry) return null;
+          const it = makeCatalogItem(entry);
+          const bits = [];
+          if (it.atk != null) bits.push(`攻 +${it.atk}`);
+          if (it.def != null) bits.push(`防 +${it.def}`);
+          if (it.bonus != null) bits.push(`饰品加成 +${it.bonus}`);
+          if (it.sixDim) bits.push(Object.entries(it.sixDim).map(([k, v]) => `${k} +${v}`).join(" "));
+          if (it.effect) bits.push(`特效：${Object.keys(it.effect).join("、")}`);
+          return {
+            name: it.name,
+            quality: it.quality,
+            qualityColor: QUALITY_COLOR[it.quality] || "#c8bfa0",
+            categoryLabel: CATEGORY_LABEL[it.category] || it.category,
+            desc: it.desc,
+            statLine: bits.join("　") || "无直接加成",
+            reason: String(pick?.reason || "").trim(),
+          };
+        })
+        .filter(Boolean)
+        .slice(0, 3);
+
+      if (!picks.length) {
+        setOutfitState({ loading: false, picks: [], error: "掌柜报的名字货架上都没有，再点一次试试。" });
+        return;
+      }
+      setOutfitState({ loading: false, picks, error: "" });
+    } catch (e) {
+      setOutfitState({ loading: false, picks: [], error: `掌柜没应声：${e.message || e}` });
+    }
+  }, [char.bodyProfile, apiCfg]);
 
   const confessToNarrator = useCallback(() => {
     if (narrator.affection < 100 || narrator.confessed) return;
@@ -2747,6 +2834,20 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
             onGateReport: (g) => { _gateReport = g; },
           }
         ) + (nsfwOn ? "\n" + NSFW_RULES : "");
+        // ── 体貌·蓝绿灯 ──
+        // 公开层跟着"这一轮有没有人近距离看着你"走（full/talk 亮，赶路结算灭），
+        // 私密层只认 ■ 模式。灭灯不只是省 token——赶路轮塞一段私处描写，模型真的会
+        // 顺着那个方向写。详见 bodyProfile.js 顶部。
+        const _bodyGate = gateBodyProfile(char.bodyProfile, {
+          scope: promptScope,
+          nsfw: nsfwOn,
+          scanText: `${cmd}\n${[...convo].reverse().find(m => m.role === "assistant")?.content || ""}`,
+        });
+        if (_bodyGate.text) sys += _bodyGate.text;
+        if (_bodyGate.lit.length || _bodyGate.dark.length) {
+          traceStep(_trace, "体貌", "info",
+            `🟢${_bodyGate.lit.join("、") || "无"}　⚫灭:${_bodyGate.dark.join("、") || "无"}`);
+        }
         // ── 赌石谈价·轻量挂载（借世界书"蓝灯/绿灯"思路：谈价这轮，重量条目全灭灯）──
         // 谈价是一对一、目标单一的对手戏，之前却挂着全量 talk 档（预设全文+在场全员lore+任务+
         // 认知隔离+远景/召回/重逢/信息域+20条历史+MVU），一轮砍价烧掉整套世界书。现在仿
@@ -5499,7 +5600,21 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "#e8dcc0", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>换像</span>
               </div>
               <div style={{ flex: 1, paddingTop: 4 }}>
-                <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                  <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>
+                  {/* 体貌入口：挨着姓名，点开是可编辑的身体档案（详见 bodyProfile.js） */}
+                  <span
+                    onClick={() => setShowBody(true)}
+                    title="体貌 · 身量体型与身体细节，动作描写和私聊都会照着写"
+                    style={{
+                      marginLeft: "auto", cursor: "pointer", fontSize: "10px", padding: "1px 6px",
+                      borderRadius: 3, border: `1px solid ${zoneTheme.border}`,
+                      color: bodyProfileFilled(char.bodyProfile).total ? zoneTheme.accent : zoneTheme.textDim,
+                    }}
+                  >
+                    ◈ 体貌{bodyProfileFilled(char.bodyProfile).total ? ` ${bodyProfileFilled(char.bodyProfile).total}` : ""}
+                  </span>
+                </div>
                 <div style={{ fontSize: "11px", color: zoneTheme.textDim, marginBottom: 8 }}>{char.gender || "男"}　少侠</div>
                 <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#c8bfa0" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
                 <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
@@ -5778,6 +5893,18 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           setUiScale={setUiScale}
           narrator={narrator}
           setNarrator={setNarrator}
+        />
+      )}
+
+      {showBody && (
+        <BodyProfilePanel
+          profile={char.bodyProfile || emptyBodyProfile()}
+          onChange={(next) => setChar(c => ({ ...c, bodyProfile: next }))}
+          onClose={() => setShowBody(false)}
+          zoneTheme={zoneTheme}
+          nsfwOn={nsfwOn}
+          onRecommend={recommendOutfit}
+          recommendState={outfitState}
         />
       )}
 
