@@ -25,6 +25,7 @@ import PortraitManager from "./PortraitManager.jsx";
 import CharacterPage from "./CharacterPage.jsx";
 import QuestLogScreen from "./QuestLogScreen.jsx";
 import OpeningSequence from "./OpeningSequence.jsx";
+import CharacterCreate from "./CharacterCreate.jsx";
 import { getActivePreset } from "./PresetManager.jsx";
 import { assemblePrompt, applyPresetOverrides } from "./presetSystem.js";
 import { getCachedInspect, setCachedInspect } from "./inspectCache.js";
@@ -992,6 +993,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 开场图文序列（策马入村 -> 信封特写）只在"全新开局且没有任何存档被恢复"时展示一次；
   // 读档进入、或本局已经看过一次之后刷新页面触发自动存档恢复，都不应该再放这段序列。
   const [showOpening, setShowOpening] = useState(
+    initialLoadSlotId === "new" && !restored
+  );
+  // 角色创建页：全新开局时，在开场信之前先让玩家填名讳+性别。存档恢复则跳过。
+  const [showCharCreate, setShowCharCreate] = useState(
     initialLoadSlotId === "new" && !restored
   );
   const [settingsInitialTab, setSettingsInitialTab] = useState(null);
@@ -4138,8 +4143,15 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     );
   }
 
+  if (showCharCreate) {
+    return <CharacterCreate onConfirm={({ name, gender }) => {
+      setChar(c => ({ ...c, name, gender }));
+      setShowCharCreate(false);
+    }} />;
+  }
+
   if (showOpening) {
-    return <OpeningSequence onFinish={() => setShowOpening(false)} />;
+    return <OpeningSequence onFinish={() => setShowOpening(false)} playerName={char.name} />;
   }
 
   return (

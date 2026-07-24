@@ -8,19 +8,19 @@ import { ZONE_THEMES } from "./theme.js";
 
 const theme = ZONE_THEMES.village;
 
-const SLIDES = [
-  {
-    image: "/intro-1.jpg",
-    caption: "你揣着一封无落款的旧信，一路翻山越岭走到这曲措乡地界。",
-  },
-  {
-    image: "/intro-2.jpg",
-    caption: "信上只有四字：陈狐飞 启。墨迹未干，却不知是谁人所书。",
-  },
-];
-
-export default function OpeningSequence({ onFinish }) {
+export default function OpeningSequence({ onFinish, playerName }) {
   const [index, setIndex] = useState(0);
+  const name = playerName || "无名少侠";
+  const SLIDES = [
+    {
+      image: "/intro-1.jpg",
+      caption: "你揣着一封无落款的旧信，一路翻山越岭走到这曲措乡地界。",
+    },
+    {
+      image: "/intro-2.jpg",
+      caption: `信上只有三字：${name} 启。墨迹未干，却不知是谁人所书。`,
+    },
+  ];
   const slide = SLIDES[index];
 
   const advance = () => {

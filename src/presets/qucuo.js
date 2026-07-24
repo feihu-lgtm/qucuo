@@ -129,6 +129,8 @@ export const QUCUO_PRESET = {
   },
 
   char: {
+    name: "无名少侠",  // 默认名，全新开局会被角色创建页覆盖；老存档无此字段时兜底
+    gender: "男",       // 默认性别，同上
     hp: [80, 100],
     neigong: 5,   // 内功 0-100
     waigong: 8,   // 外功 0-100
