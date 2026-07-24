@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "《天都·曲措》发布版(GitHub Pages上线+藏地UI整套)",
+    time: "2026-07-24 13:00",
+    notes: "项目正式起名《天都·曲措》并上线 GitHub Pages 在线试玩(feihu-lgtm.github.io/qucuo)。本轮以工程化上线+藏地视觉整套为主，逐项：①部署——vite.config 加 base(DEPLOY_BASE 控制，Pages 用 /qucuo/)，新增 vite.config.pages.js(只打包主入口)与 .github/workflows/deploy.yml(push main 自动构建部署)，.gitignore 忽略 dist(Actions 重建)。②CORS——apiConfig 给 Anthropic 两处 fetch(非流式+流式)加 anthropic-dangerous-direct-browser-access 头，使浏览器可直连；核实 Gemini generateContent 与 OpenAI 兼容本就放行；withProxy 非 localhost 且无自定义代理时直连；设置面板保留 corsProxy 兜底。③地图 UI——九宫格 NineGridMap 接入藏地三态贴图(idle 石板/current 翡翠/fog 黑雾，stones/mapui/)，去掉方向字与 boxShadow 光晕(消竖线)、三态统一 cellStyle;放大 topo 图 ClickableMap 重写：节点 rect 换 image 三态贴图、加 pan(拖动平移,防误触3px阈值)+zoom(滚轮0.4~3x+按钮±/复位)，连线改金棕配卷轴;卷轴底 scroll_bg 从原图重抠假透明、清 77 毛边像素;删内层九宫格下方冗余的出据点按钮(出村统一走外层视图,已核实外层 forceLayer:outer 路径独立完整)。④开始界面——StartScreen 用隶书白字标题 title_tianducuo_v3(去假透明+抹印章+黑字染白)压雪山背景 start-bg，左对齐布局，菜单开始/加载/设置/退出;曾试藏式木牌皮后按需回退纯 CSS。⑤设置面板——SettingsPanel 从长条 tab 改主页卡片式(API/预设/存档/其他四卡，点进次级面板带返回);API 类型只留 OpenAI 兼容(删 Anthropic/Gemini/千问按钮+快速填入,挂载时强制纠正旧配置 apiType=openai);删金手指/玩法说明 tab,字号移入其他。⑥favicon——藏式雪山+祥云+经幡圆徽多尺寸(32/180/512/ico),index.html 标题改天都·曲措。⑦README 顶部加封面(黑字 v2,配 GitHub 白底)+在线试玩/源码互链。藏文 མགར་ཆུ་གནམ་མཚོ 中 chu(河)gnam(天)mtsho(湖)三词根经真实地名(那曲/纳木措)核实,开头 gar(白)无查证依据、四词连写语法待母语者校对——已在 notes 与美术存档标注,上线前需人工核。多次 vite build 通过。",
+  },
+  {
     codename: "文档同步(记忆系统闭环+存档IDB全线更新)",
     time: "2026-07-22 19:40",
     notes: "把本轮记忆系统闭环+存档迁IDB的改动同步进各 md（无代码逻辑改动）。①交接_借鉴总结系统.md：标题/一分钟现状从\"实现待开工\"改为\"主体已实现\"；第4节 8条TODO逐条标状态(1/2/3/5/6/7/8 done、4缓做)+2.5六条现状+本轮额外落地(私有门/AI小总结/对账/回滚确认)+剩余待做；索引加流程总表、下一步改为已闭环。②项目状态.md：已完成段新增\"记忆系统(主体闭环)\"与\"存档(迁IDB)\"两块，知识系统补0.35/40回合参数、主循环补两阶段回滚。③README.md：自动存档 localStorage→IndexedDB直写缓存、查看介绍改为worldLook走主叙事+1时间+写小纸条(商店预览不变)、文档地图加记忆与正文流程总表.md。④记忆系统说明.md：顶部加2026-07-22大更新横幅(统一writeNote/owner三态/四来源/私有门/日总结/AI小总结/对账/存档IDB)，标注下方原文哪几处以横幅为准。⑤文件树.md：memory段补 note.js/daySummary.js、更新 memoryWrite(垫片)/recallWithVisibility(私有门)/saves.js(IDB)注释。⑥记忆与总结设计.md：顶部加\"主体已落地\"指引。vite build 通过。",
