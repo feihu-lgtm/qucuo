@@ -1641,7 +1641,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     try {
       const voice = narratorVoicePrompt(narrator);
-      const worldState = `[当前世界状态，仅供你了解背景，不必主动复述] 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""}（${room.desc}） 房间里的人:${room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name).join(",") || "无"} 玩家背包:${inv.join(",")}`;
+      // 背包物品是对象（{name,quality,...}），直接 inv.join(",") 会得到一串
+      // [object Object]，旁白根本读不出玩家身上有什么——这正是"玩家捡了界石、
+      // 旁白却坚称背包里只有青稞粗布"那个 bug 的根源。跟主叙事 invText 对齐，
+      // 取名字+品阶+是否装备，字符串物品也兼容。
+      const narratorInvText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
+      const worldState = `[当前世界状态，仅供你了解背景，不必主动复述] 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""}（${room.desc}） 房间里的人:${room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name).join(",") || "无"} 玩家背包:${narratorInvText}`;
 
       // ── 旁白·全知事实（本轮新增）──
       // 旁白设定上是跳出信息隔离的第四面墙外角色，普通 NPC 之间发生的事（哪怕玩家没
@@ -5753,15 +5758,19 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               {inv.map((it, i) => {
                 const isObj = typeof it === "object";
                 const name = isObj ? it.name : it;
-                const color = isObj ? QUALITY_COLOR[it.quality] : "#c4a040";
+                // 品质兜底：像村口界石这类"本是场景地标、被当道具捡进背包"的半成品
+                // 对象只有 name/id、没有 quality，直接读会显示成"(undefined)"。
+                // 缺品质时按"白"处理，颜色和括号都不再露 undefined。
+                const quality = isObj ? (it.quality || "白") : null;
+                const color = isObj ? (QUALITY_COLOR[quality] || "#c4a040") : "#c4a040";
                 const canConsume = !!((isObj && it.consumable) || CATALOG_INDEX[name]?.consumable);
                 return (
                   <div
-                    key={isObj ? it.id : i}
+                    key={isObj ? (it.id || i) : i}
                     onClick={() => setActiveItemMenu({ item: it, mode: "inventory", canConsume })}
                     style={{ fontSize: "11.5px", color, cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: color, display: "flex", alignItems: "center", gap: 4 }}
                   >
-                    <span style={{ flex: 1 }}>· {name}{isObj ? ` (${it.quality})` : ""}{isObj && it.equipped ? " [已装备]" : ""}</span>
+                    <span style={{ flex: 1 }}>· {name}{isObj ? ` (${quality})` : ""}{isObj && it.equipped ? " [已装备]" : ""}</span>
                     {canConsume && <span style={{ fontSize: "10px", color: zoneTheme.accentDim, flexShrink: 0 }}>⊙用</span>}
                     {/* 可装备之物给个显式提示：点开就能穿戴，不必再去上面的装备区找 */}
                     {isObj && !canConsume && ["weapon", "armor", "accessory"].includes(it.category) &&
