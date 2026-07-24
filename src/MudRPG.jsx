@@ -418,6 +418,7 @@ function TutorialOverlay({ onClose }) {
             你此刻在<b>哪里</b>、周围的<b>出口</b>、<b>此地之人</b>（谁在场）、你的<b>状态</b>（气血/银两/背包）和<b>小地图</b>都在这里。
             <div style={{ marginTop: 8, color: "#c0a86a" }}>🕐 一天 24 小时：每行动一次约走一个时辰，昼夜会变，时间显示在地点下方。</div>
             <div style={{ marginTop: 8, color: "#9ac0a0" }}>🚶 移动：在底部输入框打 <b>n/s/e/w</b>（北南东西），或点小地图上已探明的据点自动前往。</div>
+            <div style={{ marginTop: 8, color: "#a0b8c0" }}>🗺️ <b>外层与内层</b>：外层是<b>大地图</b>（据点与据点之间，如鱼定村↔天都镇）；进了一个据点，内部又是一片<b>箱庭</b>——一个个可走动的内层房间（如村口、药铺、饭馆）。小地图右上角可切换<b>「外 / 内」</b>两层视图。</div>
           </div>
         </div>
         {/* 中栏 flex 55 */}
@@ -432,7 +433,7 @@ function TutorialOverlay({ onClose }) {
         <div style={{ flex: 30, display: "flex", justifyContent: "center", paddingTop: 20 }}>
           <div style={note}>
             <span style={title}>▶ 右栏 · 行动</span>
-            这里是<b>能做的事</b>：可推进的任务节点、当前地点的行动抉择、人物互动入口。顶栏还有 <b>📜任务 / 👥人物关系 / 📖见闻录 / ⚙设置</b>。
+            这里是<b>此刻能做的事</b>：可推进的<b>任务节点</b>（金色感叹号）、当前地点的<b>行动抉择</b>、<b>人物互动</b>入口。想推进剧情、跟人打交道，都从这一栏点。
           </div>
         </div>
       </div>
@@ -448,7 +449,10 @@ function TutorialOverlay({ onClose }) {
             <div><b style={{ color: "#c85a6a" }}>NSFW</b>：开关。开启后注入成人向写作规则；关闭则为常规叙事。默认关闭，按需点亮。</div>
           </div>
           <div style={{ marginTop: 8, color: "#9a9080", fontSize: "11.5px" }}>
-            ⚙ <b>其他功能</b>：右上角 <b>⚙设置</b> 里配置 API 密钥、预设、存档、字号；<b>💾存档</b>随时读写；<b>⏻主菜单</b>返回开始界面；<b>🧭全流程日志</b>看系统每一步怎么跑的。
+            ⬆️ <b>顶栏</b>（界面最上方一排）：<b>📜任务</b> 看接了什么任务、进度如何；<b>👥人物关系</b> 看各角色好感；<b>📖见闻录</b> 看已知世界情报。
+          </div>
+          <div style={{ marginTop: 6, color: "#9a9080", fontSize: "11.5px" }}>
+            ⚙ <b>其他功能</b>：<b>⚙设置</b> 里配置 API 密钥、存档、字号；<b>💾存档</b>随时读写；<b>⏻主菜单</b>返回开始界面；<b>🧭全流程日志</b>看系统每一步怎么跑的（喂给 AI 的完整 prompt 和回复）。
           </div>
         </div>
       </div>
@@ -974,7 +978,16 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [dbgItemQuality, setDbgItemQuality] = useState("白"); // 调试·增加物品·品阶
   const [dbgPickedSkill, setDbgPickedSkill] = useState("");  // 调试·增加武学·选中的武学id
   const [showPresets, setShowPresets] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false); // 新手教程覆盖层：半透明遮罩+各区域贴说明便签
+  // 新手教程覆盖层：首次进游戏默认弹出，看过一次记进 localStorage，之后不再自动弹
+  // （左上角按钮随时可再点开）。localStorage 不可用时降级为默认不弹，避免报错。
+  const [showTutorial, setShowTutorial] = useState(() => {
+    try { return localStorage.getItem("qucuo_tutorial_seen") !== "1"; }
+    catch { return false; }
+  });
+  const closeTutorial = useCallback(() => {
+    setShowTutorial(false);
+    try { localStorage.setItem("qucuo_tutorial_seen", "1"); } catch { /* ignore */ }
+  }, []);
   const [showSettings, setShowSettings] = useState(initialOpenSettings);
   // 开场图文序列（策马入村 -> 信封特写）只在"全新开局且没有任何存档被恢复"时展示一次；
   // 读档进入、或本局已经看过一次之后刷新页面触发自动存档恢复，都不应该再放这段序列。
@@ -4184,7 +4197,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         >「{CURRENT_VERSION.codename}」{CURRENT_VERSION.time}</span>
       </div>
 
-      {showTutorial && <TutorialOverlay onClose={() => setShowTutorial(false)} />}
+      {showTutorial && <TutorialOverlay onClose={closeTutorial} />}
 
       {showVersionHistory && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowVersionHistory(false)}>
