@@ -1596,9 +1596,22 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     addLog([{ t: "cmd", text: `> 对旁白：${content}` }]);
     setInput("");
 
+    // 行动分层日志（本轮补齐）：私聊旁白此前完全不进 trace 系统——虽然底层
+    // callModel/callModelStream 早就把每次调用的完整 prompt/回复记进了
+    // pipelineLog，但没有一条 trace 把它"挂"出来，顶部「🧭行动日志」面板
+    // 里看不到任何私聊痕迹，出问题（旁白答非所问/召回没生效）时无从排查。
+    // 补法与 act() 一致：startTrace 开局、traceStep 记各阶段、attachPipeline
+    // 挂真实 prompt/回复、endTrace 收尾。不消耗回合这件事不变——trace 只是
+    // 记录，不代表计入时间。
+    const _wt = startTrace(content, content);
+    traceStep(_wt, "意图分类", "pass", "模式=私聊旁白（不消耗回合）");
+
     if (narrator.stage === NNPC_STAGE.CRASHED) {
+      traceStep(_wt, "旁白状态", "block", "旁白已崩溃(CRASHED)，本地兜底话术，未调用AI");
       const flat = ["信号已断开。", "无法连接。", "……无应答。", "她不在这里。"];
-      addLog([{ t: "narrator", text: `  「旁白」${flat[Math.floor(Math.random() * flat.length)]}` }]);
+      const flatText = flat[Math.floor(Math.random() * flat.length)];
+      addLog([{ t: "narrator", text: `  「旁白」${flatText}` }]);
+      endTrace(_wt, `旁白已崩溃，本地兜底："${flatText}"`);
       setPendingTalks(n => Math.max(0, n - 1));
       return;
     }
@@ -1621,6 +1634,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         if (facts.length) {
           factsBlock = "\n\n[你冷眼旁观知晓的事，未必是玩家亲口告诉过你的，回应时可以自然提起，但不要生硬列举或表现得像在念清单]\n"
             + facts.map(f => `· ${f.摘要}`).join("\n");
+          traceStep(_wt, "全知事实", "pass", `注入最近${facts.length}条事实账本摘要`);
+        } else {
+          traceStep(_wt, "全知事实", "skip", "事实账本为空，未注入");
         }
       }
 
@@ -1639,7 +1655,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         if (recallInfo && recallInfo.visible.length) {
           recallBlock = "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n"
             + recallInfo.visible.map(m => `· （第${m.meta.turn}回合）${m.tier === "weak" && m.text.length > 40 ? m.text.slice(0, 40) + "…" : m.text}`).join("\n");
+          traceStep(_wt, "向量召回", "pass", `召回${recallInfo.visible.length}条相关往事`);
+        } else {
+          traceStep(_wt, "向量召回", "skip", "已开启但本轮无相关召回结果");
         }
+      } else {
+        traceStep(_wt, "向量召回", "skip", "embedding未开启，跳过召回");
       }
       const sys = `${NARRATOR_WHISPER_CONTEXT}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}\n\n剧本背景设定：${preset.scenario}`;
 
@@ -1681,11 +1702,15 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           copy[logIdx.current] = { t: "narrator", text: `  「旁白」${text}` };
           return copy;
         });
+        traceStep(_wt, "AI调用", "pass", "流式一次成功");
+        attachPipeline(_wt, getPipelineLog()[0]);
       } else {
         const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo });
         text = result.text.trim() || "……";
         { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; }
         addLog([{ t: "narrator", text: `  「旁白」${text}` }]);
+        traceStep(_wt, "AI调用", "pass", "非流式一次成功");
+        attachPipeline(_wt, getPipelineLog()[0]);
       }
 
       // 把这轮私聊也计入主引擎共享的对话历史，让旁白（以及之后的叙事）都能"记得"这次私聊
@@ -1694,6 +1719,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 私聊旁白也浓缩一张私有小纸条，owner=旁白（你俩私有，只在旁白语境下浮现，
       // 不进任何 NPC 的信息域）——与「对话模式=owner对话对象」同属"私语只你俩知道"这一类。
       jotNote({ text: `与旁白私语：${content.slice(0, 24)}${content.length > 24 ? "…" : ""}`, owner: [{ name: "旁白", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.WHISPER });
+
+      // trace 收尾：摘要带上回复内容前段（trace 面板本身有完整 pipeline 可看全文，
+      // 这里摘要只做一句话定位用，避免摘要行本身过长）和好感度增量，
+      // 让「行动分层日志」列表一眼能看出这次私聊聊到了什么、好感怎么变的。
+      const textPreview = text.length > 30 ? text.slice(0, 30) + "…" : text;
+      endTrace(_wt, `旁白回应："${textPreview}"（好感${affDelta >= 0 ? "+" : ""}${affDelta}）`);
 
       setNarrator(n => {
         if (n.confessed) {
@@ -1719,6 +1750,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         return n;
       });
     } catch (e) {
+      traceStep(_wt, "AI调用", "fail", `私聊失败：${e.message || e}`);
+      attachPipeline(_wt, getPipelineLog()[0]);
+      endTrace(_wt, `私聊中断（${e.message || e}）`);
       addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
     }
     setPendingTalks(n => Math.max(0, n - 1));

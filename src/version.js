@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "私聊旁白接入行动分层日志(trace)",
+    time: "2026-07-24 07:32",
+    notes: "talkToNarrator(右栏「◆私聊旁白」)此前完全不进「🧭行动全流程日志」——底层 callModel/callModelStream 其实早就把每次调用的完整 prompt/回复记进了 pipelineLog，但没有一条 trace 把它挂出来，面板里私聊旁白全程留白，出问题(答非所问/召回没生效)时无从排查。按 act() 的既有用法补齐：①函数开局 startTrace，含 CRASHED 早退分支也归档(不再是\"开了不收\")；②逐阶段 traceStep——意图(私聊·不消耗回合)、旁白崩溃状态拦截、全知事实账本注入(有/无区分pass/skip)、向量召回(开关关闭/召回为空/命中N条三态)、AI调用(流式/非流式分别标注)；③attachPipeline(_wt, getPipelineLog()[0])在流式与非流式分支各自紧跟调用点挂上，失败分支同样挂(带错误信息)；④endTrace收尾摘要带回复前30字预览+好感度增量，一眼看出这次私聊聊了什么、好感怎么变；catch块补上fail态traceStep+attachPipeline+endTrace，不再是私聊报错却在trace系统里查无此事。不消耗回合这件事本身不变——trace只是留痕，不代表计入时间。TraceViewer渲染逻辑本就通用(纯遍历steps+可选pipeline展开)，UI侧零改动即可正确展示。esbuild验证通过。",
+  },
+  {
     codename: "玩家预制头像换新(唐卡厚涂8连图)",
     time: "2026-07-24 07:23",
     notes: "右栏「侠客」面板的玩家预制头像整批换新。素材来源：用户给的一张2行4列8宫格唐卡高饱和厚涂风格插画(藏地高原背景+金色描边分割)，按等分硬切成8张干净的2:3竖版单人头像(边缘各收4px去毛刺，统一放大到720×1080)。分配：male=藏剑大叔、female=花商、other=朔风独行刀客(默认兜底款)、preset1~5=飞贼/猎手/猫人/假小子/穿越者。代码改动两处：①头像选择器候选数组从原来硬编码的 preset1~4(4档)扩到 preset1~5(5档)，把7张非默认款全部纳入可选；②头像展示框与选择器候选格的 aspectRatio 从旧的 9:16 改成 2:3，匹配新素材实际比例(NPC对话立绘走另一套9:16系统，未动)。同步更新 public/portraits/player/README.md 与相关代码注释，反映当前8张头像的实际内容和来源。esbuild 验证 MudRPG.jsx 语法与依赖解析通过；vite build 本身因仓库缺 debug.html/debug-gamble.html/debug-item.html 三个调试入口文件而失败，与本次改动无关(属仓库既存缺口，入口对应的 debug-*.jsx 源文件都在，只是页面壳文件没推上来)。",
