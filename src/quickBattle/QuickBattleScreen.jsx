@@ -35,7 +35,6 @@ const QB_CSS = `
   .qb-card{ perspective:900px; }
   .qb-flip{ position:relative; width:100%; height:100%; transform-style:preserve-3d;
     transition:transform .5s cubic-bezier(.4,0,.2,1); }
-  .qb-card:hover .qb-flip{ transform:rotateY(180deg); }
   .qb-face{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
     display:flex; flex-direction:column; border-radius:5px; overflow:hidden; }
   .qb-face.qb-back{ transform:rotateY(180deg); }
@@ -54,8 +53,9 @@ const QB_CSS = `
     .qb-arena .qb-vs{ padding-top:8px !important; }
     .qb-arena .qb-vs img{ width:36px !important; }
     .qb-cardrow{ gap:6px !important; }
-    .qb-card{ width:104px !important; height:88px !important; }
+    .qb-card{ width:calc(50% - 3px) !important; height:132px !important; }
     .qb-candgrid{ grid-template-columns:repeat(auto-fill,minmax(84px,1fr)) !important; gap:8px !important; }
+    .qb-face.qb-back{ font-size:11px !important; }
   }
 `;
 
@@ -126,7 +126,7 @@ function ModePick({ onPick, onExit }) {
     <div style={sx.centerCol}>
       <h1 style={sx.title}>斗蛐蛐</h1>
       <div style={sx.subtitle}>从曲措乡众生里挑人下场，切磋见真章</div>
-      <div style={{ display: "flex", gap: 24, marginTop: 40 }}>
+      <div style={{ display: "flex", gap: 16, marginTop: 40, flexWrap: "wrap", justifyContent: "center", width: "100%", padding: "0 12px", boxSizing: "border-box" }}>
         <WoodCard onClick={() => onPick("1v1")} title="单挑" sub="一对一，速战速决" />
         <WoodCard onClick={() => onPick("team")} title="团战" sub="各排一队，可临阵换人" />
       </div>
@@ -142,15 +142,15 @@ function WoodCard({ title, sub, onClick }) {
       onClick={onClick}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
-        position: "relative", width: 220, height: 150, border: "none", cursor: "pointer",
+        position: "relative", width: "clamp(140px, 42vw, 220px)", height: 150, border: "none", cursor: "pointer",
         background: "transparent", transform: hover ? "translateY(-4px)" : "none",
         transition: "transform .2s ease",
       }}
     >
       <img src={UI("panel_big.png")} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8 }}>
-        <div style={{ fontSize: 26, letterSpacing: 6, color: "#f0d090", fontWeight: "bold" }}>{title}</div>
-        <div style={{ fontSize: 12, color: "#c0a060", letterSpacing: 1 }}>{sub}</div>
+      <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8, padding: "0 8px" }}>
+        <div style={{ fontSize: "clamp(20px, 6vw, 26px)", letterSpacing: 4, color: "#f0d090", fontWeight: "bold" }}>{title}</div>
+        <div style={{ fontSize: "clamp(10px, 3vw, 12px)", color: "#c0a060", letterSpacing: 1, textAlign: "center" }}>{sub}</div>
       </div>
     </button>
   );
@@ -179,13 +179,13 @@ function PickScreen({ mode, candidates, allyIds, foeIds, setAllyIds, setFoeIds, 
     <div style={sx.pickWrap}>
       <div style={sx.pickHeader}>
         <TextBtn onClick={onBack}>← 换模式</TextBtn>
-        <div style={{ fontSize: 20, letterSpacing: 4, color: "#f0d090" }}>
+        <div style={{ fontSize: "clamp(15px, 4vw, 20px)", letterSpacing: 2, color: "#f0d090", whiteSpace: "nowrap" }}>
           布阵 · {mode === "1v1" ? "单挑" : "团战"}
         </div>
         <button
           onClick={canStart ? onStart : undefined}
           disabled={!canStart}
-          style={{ ...sx.startBtn, opacity: canStart ? 1 : 0.35, cursor: canStart ? "pointer" : "default" }}
+          style={{ ...sx.startBtn, opacity: canStart ? 1 : 0.35, cursor: canStart ? "pointer" : "default", whiteSpace: "nowrap" }}
         >
           开打 →
         </button>
@@ -262,9 +262,9 @@ function CandidateCard({ c, picked, disabled, accent, onClick }) {
       onClick={onClick} disabled={disabled}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
-        position: "relative", width: 108, height: 148, padding: 0, cursor: disabled ? "not-allowed" : "pointer",
+        position: "relative", width: "100%", aspectRatio: "108/148", padding: 0, cursor: disabled ? "not-allowed" : "pointer",
         border: `2px solid ${picked ? accent : tierColor(c.levelCap)}`,
-        borderRadius: 6, overflow: "hidden", background: "#14100b",
+        borderRadius: 6, overflow: "hidden", background: "#14100b", boxSizing: "border-box",
         opacity: disabled ? 0.3 : 1,
         boxShadow: picked ? `0 0 14px ${accent}` : (hover && !disabled ? "0 4px 14px rgba(0,0,0,.6)" : "none"),
         transform: hover && !disabled ? "translateY(-3px)" : "none", transition: "all .18s ease",
@@ -275,10 +275,13 @@ function CandidateCard({ c, picked, disabled, accent, onClick }) {
         <img src={PORTRAIT(c.portrait)} alt={c.name}
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
       ) : (
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "6px",
           background: `radial-gradient(120% 90% at 50% 20%, ${tierColor(c.levelCap)}22 0%, #14100b 70%)` }}>
-          <span style={{ fontSize: 30, color: tierColor(c.levelCap), fontWeight: "bold",
-            writingMode: c.name.length > 3 ? "vertical-rl" : "horizontal-tb" }}>{c.name}</span>
+          <span style={{
+            fontSize: c.name.length >= 4 ? 20 : c.name.length === 3 ? 24 : 30,
+            lineHeight: 1.1, color: tierColor(c.levelCap), fontWeight: "bold", textAlign: "center",
+            writingMode: c.name.length > 4 ? "vertical-rl" : "horizontal-tb",
+            wordBreak: "break-word", maxHeight: "100%", overflow: "hidden" }}>{c.name}</span>
         </div>
       )}
       {/* 底部名条 */}
@@ -586,38 +589,35 @@ function MoveButton({ move, usable, reason, onClick }) {
   const qc = QUALITY_COLOR[move.quality] || "#c8bfa0";
   const lines = explainMove(move);
   const gist = moveTypeGist(move);
+  const [flipped, setFlipped] = useState(false);
+  const mainLine = lines.length ? lines[0].text : "";
 
   return (
     <div className="qb-card" style={{ width: 128, height: 96, perspective: 900 }}>
-      <div className="qb-flip">
-        {/* 正面：招名 + 类型/品阶/耗气 + 可用性 */}
+      <div className="qb-flip" style={{ transform: flipped ? "rotateY(180deg)" : undefined }}>
+        {/* 正面：招名 + 类型/品阶/耗气 + 主效果一行 + 可用性；点击翻到详情 */}
         <button
           className="qb-face"
-          onClick={() => usable && onClick()}
-          disabled={!usable}
+          onClick={() => setFlipped(true)}
           style={{
-            cursor: usable ? "pointer" : "not-allowed", textAlign: "left", padding: "8px 10px",
+            cursor: "pointer", textAlign: "left", padding: "8px 10px",
             background: usable ? "rgba(20,16,10,.85)" : "rgba(10,8,5,.7)",
             border: `2px solid ${usable ? qc : "rgba(255,255,255,.1)"}`,
-            opacity: usable ? 1 : 0.5,
+            opacity: usable ? 1 : 0.6,
           }}
         >
           <div style={{ fontSize: 14, color: "#e8dfc0", fontWeight: "bold" }}>{move.name}</div>
-          <div style={{ fontSize: 10, color: qc, marginTop: 2 }}>{move.type} · {move.quality}品</div>
-          <div style={{ fontSize: 10, color: "#c0a060", marginTop: "auto" }}>耗气 {move.energyCost}</div>
+          <div style={{ fontSize: 10, color: qc, marginTop: 2 }}>{move.type} · {move.quality}品 · 耗气{move.energyCost}</div>
+          <div style={{ fontSize: 9.5, color: "#b0a480", marginTop: 3, lineHeight: 1.35, overflow: "hidden",
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{mainLine}</div>
           {reason
-            ? <div style={{ fontSize: 9.5, color: "#c8483a" }}>{reason}</div>
-            : <div style={{ fontSize: 9, color: "#6a5f4a" }}>悬停看详情 · 点击出招</div>}
+            ? <div style={{ fontSize: 9.5, color: "#c8483a", marginTop: "auto" }}>{reason}</div>
+            : <div style={{ fontSize: 9, color: "#6a5f4a", marginTop: "auto" }}>点击看详情 →</div>}
         </button>
-        {/* 背面：字段理解器翻译出的完整效果 */}
+        {/* 背面：完整字段说明 + 明确的出招/返回按钮 */}
         <div
           className="qb-face qb-back"
-          onClick={() => usable && onClick()}
-          style={{
-            cursor: usable ? "pointer" : "default", padding: "7px 9px",
-            background: "rgba(24,20,13,.97)", border: `2px solid ${qc}`,
-            overflowY: "auto",
-          }}
+          style={{ padding: "7px 9px", background: "rgba(24,20,13,.98)", border: `2px solid ${qc}`, overflowY: "auto" }}
         >
           <div style={{ fontSize: 11, color: qc, fontWeight: "bold", marginBottom: 3 }}>
             {move.name} <span style={{ color: "#8a7d5a", fontWeight: "normal" }}>耗气{move.energyCost}</span>
@@ -628,6 +628,17 @@ function MoveButton({ move, usable, reason, onClick }) {
               · {l.text}
             </div>
           ))}
+          <div style={{ display: "flex", gap: 6, marginTop: 6, position: "sticky", bottom: 0 }}>
+            <button onClick={() => usable && onClick()} disabled={!usable}
+              style={{ flex: 1, padding: "5px 0", fontSize: 11, fontWeight: "bold", borderRadius: 4,
+                border: "none", cursor: usable ? "pointer" : "not-allowed",
+                background: usable ? qc : "#333", color: usable ? "#1a140c" : "#777" }}>
+              {usable ? "⚔ 出招" : (reason || "不可用")}
+            </button>
+            <button onClick={() => setFlipped(false)}
+              style={{ padding: "5px 10px", fontSize: 11, borderRadius: 4, border: `1px solid ${qc}`,
+                background: "transparent", color: qc, cursor: "pointer" }}>返回</button>
+          </div>
         </div>
       </div>
     </div>
@@ -700,8 +711,8 @@ const sx = {
   pickWrap: { position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column",
     padding: "16px clamp(16px,4vw,60px)", boxSizing: "border-box" },
   pickHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  startBtn: { padding: "10px 24px", background: "linear-gradient(180deg,#8a6a2a,#5a4418)", border: "1px solid #c0a060",
-    borderRadius: 6, color: "#f5e8c0", fontSize: 15, letterSpacing: 3, cursor: "pointer", fontWeight: "bold" },
+  startBtn: { padding: "9px 18px", background: "linear-gradient(180deg,#8a6a2a,#5a4418)", border: "1px solid #c0a060",
+    borderRadius: 6, color: "#f5e8c0", fontSize: 14, letterSpacing: 1, cursor: "pointer", fontWeight: "bold" },
   teamsRow: { display: "flex", alignItems: "stretch", gap: 12, marginBottom: 10 },
   vs: { display: "flex", alignItems: "center", fontSize: 18, color: "#e0526a", fontWeight: "bold" },
   pickHint: { fontSize: 12, color: "#a89878", marginBottom: 12, lineHeight: 1.6 },
@@ -711,7 +722,7 @@ const sx = {
 
   battleWrap: { position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column",
     padding: "14px clamp(16px,4vw,50px)", boxSizing: "border-box" },
-  battleTop: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  battleTop: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 6 },
   arena: { display: "flex", alignItems: "flex-start", gap: 16, padding: "14px 16px", marginBottom: 12,
     background: "rgba(15,12,8,.5)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 8 },
   arenaVs: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0, paddingTop: 20 },

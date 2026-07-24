@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修真机截图暴露的手机bug：调试台关不掉/渲染崩 + 斗蛐蛐多处溢出",
+    time: "2026-07-25 20:30",
+    notes: [
+      "按真机截图逐条修。",
+      "①【调试台关不掉+渲染崩】根因：调试面板是中栏内嵌块，手机上把中栏撑爆(叠加叙事+输入框超出屏幕)导致布局重叠错乱，且关闭入口被顶出视野。改为手机时 position:fixed 从底部升起的浮层(maxHeight:70vh独立滚动，不再挤占中栏)，顶部加 sticky '✕关闭'条(滚到哪都能关)。",
+      "②【斗蛐蛐选模式卡溢出】单挑/团战两张 WoodCard 固定220宽并排在手机溢出到屏幕外。改 width:clamp(140px,42vw,220px)、容器 flex-wrap+留边、标题/副标题字号 clamp 自适应。",
+      "③【选人候选卡溢出撑破】CandidateCard 固定 width:108 在窄屏 grid 列(84px)下溢出撑破(桑杰朵杰卡明显爆框)。改 width:100%+aspectRatio 跟随列宽；无立绘占位大名按字数动态缩字号(4字20/3字24/2字30)、加padding防爆。",
+      "④【布阵头部挤】'布阵·单挑'标题被挤到竖排、'开打→'按钮字换两行。标题+按钮加 whiteSpace:nowrap、字号 clamp；startBtn 缩 padding/letterSpacing。",
+      "⑤【战斗顶栏挤+技能卡详情截断】battleTop 加 flex-wrap 防三段挤一行；技能卡从 hover 翻牌(触屏无hover)改为受控点击翻转——点卡片翻到详情面(完整字段说明)，详情面带明确'⚔出招'和'返回'按钮，正面也直接显示主效果一行；手机技能卡改两列(50%宽)、高度加到132容纳详情。",
+      "MudRPG/QuickBattleScreen esbuild 通过，vite build 通过。",
+    ],
+  },
+  {
     codename: "手机模式三期：赌石竖屏改造(竞价者卡改手指滑动轮播) + 调试台适配",
     time: "2026-07-25 19:00",
     notes: [

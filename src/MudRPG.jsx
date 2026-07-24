@@ -5167,7 +5167,18 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           </div>
 
           {showDebug && (
-            <div style={{ flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: 11, color: "#9a9482", display: "flex", flexDirection: "column", gap: 8, maxHeight: isMobile ? "42vh" : "none", overflowY: isMobile ? "auto" : "visible", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <div style={isMobile
+              ? { position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 260, padding: "10px 14px",
+                  borderTop: `1px solid ${zoneTheme.border}`, background: "rgba(12,14,20,.98)", fontSize: 11, color: "#9a9482",
+                  display: "flex", flexDirection: "column", gap: 8, maxHeight: "70vh", overflowY: "auto", overflowX: "auto",
+                  WebkitOverflowScrolling: "touch", boxShadow: "0 -8px 30px rgba(0,0,0,.7)" }
+              : { flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: 11, color: "#9a9482", display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
+              {/* 粘性关闭条：滚到哪都能关掉调试面板（修手机上被内容顶开、找不到关闭入口） */}
+              <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between",
+                margin: "-10px -14px 4px", padding: "6px 14px", background: "rgba(16,18,26,.96)", borderBottom: "1px solid #2a2d3a" }}>
+                <span style={{ color: "#6ec6c6", fontSize: 12, fontWeight: "bold" }}>🛠 调试面板</span>
+                <span onClick={() => setShowDebug(false)} style={{ cursor: "pointer", color: "#e0806a", fontSize: 13, padding: "2px 12px", border: "1px solid #5a3a2a", borderRadius: 4 }}>✕ 关闭</span>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>金钱</span>
                 <input type="number" value={char.money ?? 0}
