@@ -74,6 +74,7 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
   // （当铺/武馆/钱庄/医馆/悬赏/镖局/寺庙/赌坊/藏书阁/铁匠铺/茶馆/运镖+任务日志）
   // 都复用它——这一处改好，等于一次性修好全部13处同款"选字拖拽误关闭"的问题。
   const closeGuard = useOverlayCloseGuard(onClose);
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   if (inline) {
     return (
       <div style={{ borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", flexShrink: 0, maxHeight: "50vh", overflowY: "auto" }}>
@@ -83,12 +84,18 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
   }
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.88)", zIndex: 120, display: "flex", alignItems: "center", justifyContent: "center" }}
+      style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.88)", zIndex: 120, display: "flex",
+        alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}
       onMouseDown={closeGuard.onMouseDown}
       onClick={closeGuard.onClick}
     >
       <div
-        style={{ background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`, borderRadius: 8, width: 440, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto" }}
+        style={isMobile
+          ? { background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`,
+              borderRadius: "12px 12px 0 0", width: "100%", maxWidth: "100vw", maxHeight: "92vh",
+              overflowY: "auto", WebkitOverflowScrolling: "touch" }
+          : { background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`,
+              borderRadius: 8, width: 440, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto" }}
         onClick={e => e.stopPropagation()}
       >
         {children}

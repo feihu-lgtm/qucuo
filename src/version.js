@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "手机模式二期：13建筑弹窗改底部滑出 + 赌石竖屏提示横屏 + 斗蛐蛐窄屏紧凑化",
+    time: "2026-07-25 17:30",
+    notes: [
+      "接手机模式一期(主界面三栏抽屉化)，这期把响应式推广到建筑交互和斗蛐蛐。",
+      "①【13建筑一次性搞定】所有建筑面板(当铺/武馆/钱庄/医馆/悬赏/镖局/寺庙/赌坊/藏书阁/铁匠铺/茶馆/运镖+任务日志)共用 InnScreen.jsx 的 Overlay 外壳，改这一处即全覆盖：手机时弹窗从居中小框改为'底部滑出式(bottom sheet)'——贴底、圆角朝上、宽度占满、高度放宽到92vh，符合移动端拇指操作习惯；桌面维持440宽居中不变。",
+      "②【赌石竖屏提示】玉石料场是1672:941的横向沉浸舞台(横图大厅)，竖屏手机塞进去又扁又小、上下全黑边。加竖屏检测(innerWidth<768且高>宽)：竖持时盖一层温和的'请横屏体验赌石'提示(带离场按钮)，转横屏自动消失(监听resize+orientationchange)。横向场景不硬塞竖屏是业界惯例。",
+      "③【斗蛐蛐(宝可梦模式)窄屏紧凑化】给 QB_CSS 追加 @media(max-width:640px) 规则：对峙区(qb-arena)缩小间距/padding、立绘(qb-portrait)从76x100收到52x68、VS火花缩小；技能翻牌卡(qb-card)从128x96收到104x88；选人候选网格(qb-candgrid)列宽从108px降到84px(手机一行能多塞一两个)。对峙'左右面对面'的核心视觉语义保留不改成上下堆叠。相关元素加 qb-arena/qb-portrait/qb-vs/qb-cardrow/qb-card/qb-candgrid 类名配合CSS，!important 覆盖内联尺寸。",
+      "三文件(InnScreen/GambleStoneScreen/QuickBattleScreen) esbuild 均通过，vite build 通过。",
+    ],
+  },
+  {
     codename: "手机模式：叙事占满 + 左右栏收成贴边把手抽屉 + 顶栏收成☰菜单",
     time: "2026-07-25 16:00",
     notes: [

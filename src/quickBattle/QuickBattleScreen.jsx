@@ -47,6 +47,16 @@ const QB_CSS = `
     40%{ transform:translateY(-8px) scale(1); }
     100%{ opacity:0; transform:translateY(-26px) scale(.95); }
   }
+  /* ── 窄屏(手机)紧凑化：对峙区/选人/技能卡收窄，避免挤爆 ── */
+  @media (max-width: 640px){
+    .qb-arena{ gap:6px !important; padding:8px 8px !important; }
+    .qb-arena .qb-portrait{ width:52px !important; height:68px !important; }
+    .qb-arena .qb-vs{ padding-top:8px !important; }
+    .qb-arena .qb-vs img{ width:36px !important; }
+    .qb-cardrow{ gap:6px !important; }
+    .qb-card{ width:104px !important; height:88px !important; }
+    .qb-candgrid{ grid-template-columns:repeat(auto-fill,minmax(84px,1fr)) !important; gap:8px !important; }
+  }
 `;
 
 export default function QuickBattleScreen({ onExit }) {
@@ -193,7 +203,7 @@ function PickScreen({ mode, candidates, allyIds, foeIds, setAllyIds, setFoeIds, 
       </div>
 
       {/* 候选名单 */}
-      <div style={sx.candidateGrid}>
+      <div className="qb-candgrid" style={sx.candidateGrid}>
         {candidates.map(c => {
           const inCur = curIds.includes(c.id);
           const inOther = otherIds.includes(c.id);
@@ -407,10 +417,10 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
       </div>
 
       {/* 对峙区（签名元素）：双方立绘 + 血槽 + 飘伤害 */}
-      <div style={sx.arena}>
+      <div className="qb-arena" style={sx.arena}>
         <FighterPanel fighter={ally} side="ally" team={battle.allyTeam} curIdx={battle.allyIdx}
           hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toMe } : null} />
-        <div style={sx.arenaVs}>
+        <div className="qb-vs" style={sx.arenaVs}>
           <img src={UI("burst.png")} alt="" style={{ width: 64, opacity: 0.7 }} />
           <div style={{ fontSize: 22, color: "#e0526a", fontWeight: "bold", letterSpacing: 2 }}>斗</div>
         </div>
@@ -453,7 +463,7 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
             </div>
           ) : (
             <>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
+              <div className="qb-cardrow" style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
                 {ally.moveset.map((m, i) => {
                   const afford = m.energyCost <= ally.combatState.energy[0];
                   const forbidDef = ally.combatState.forbidDefense && m.type === "防御";
@@ -506,7 +516,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: align, gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexDirection: side === "ally" ? "row" : "row-reverse" }}>
-        <div style={{ position: "relative", width: 76, height: 100, borderRadius: 6, overflow: "visible", flexShrink: 0 }}>
+        <div className="qb-portrait" style={{ position: "relative", width: 76, height: 100, borderRadius: 6, overflow: "visible", flexShrink: 0 }}>
           <div style={{ width: "100%", height: "100%", borderRadius: 6, overflow: "hidden", border: `2px solid ${tierColor(fighter.levelCap)}`, background: "#14100b" }}>
             {fighter.portrait ? (
               <img src={PORTRAIT(fighter.portrait)} alt={fighter.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />

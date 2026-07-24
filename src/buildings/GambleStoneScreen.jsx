@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   CHANG_KOU, SKINS, JADE_TIERS, GRADE,
   birthStone, cutSlot, appraiseStone,
@@ -141,6 +141,17 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   const [selCard, setSelCard] = useState(null); // 点选放大的竞价者
   const [cutFx, setCutFx] = useState(null);     // 开刀动画进行中：{pos, result}
   const [skinRead, setSkinRead] = useState({}); // 相石评语缓存 {stoneId: text}
+
+  // 赌石是横向沉浸舞台(1672:941的横图大厅)，竖屏手机塞不下会又扁又小。
+  // 检测到窄屏且竖持时盖一层温和的"建议横屏"提示，转横屏自动消失。
+  const [portraitPhone, setPortraitPhone] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth < 768 && window.innerHeight > window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setPortraitPhone(window.innerWidth < 768 && window.innerHeight > window.innerWidth);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => { window.removeEventListener("resize", onResize); window.removeEventListener("orientationchange", onResize); };
+  }, []);
   const [skinOpen, setSkinOpen] = useState(false);
   const [skinLoading, setSkinLoading] = useState(false);
 
@@ -255,6 +266,20 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "#0a0806", overflow: "hidden" }}>
       <style>{GS_CSS}</style>
+
+      {/* 竖屏手机提示：赌石为横向舞台，建议横屏体验；仍可离场 */}
+      {portraitPhone && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 400, background: "rgba(6,5,4,.96)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: 32, textAlign: "center" }}>
+          <div style={{ fontSize: 46, animation: "none" }}>📱↻</div>
+          <div style={{ color: "#f0d090", fontSize: 18, letterSpacing: 2 }}>请横屏体验赌石</div>
+          <div style={{ color: "#a89878", fontSize: 13, lineHeight: 1.8, maxWidth: 300 }}>
+            玉石料场是一方横铺的赌桌，把手机横过来，相石、开刀、与竞价者砍价的排场才摆得开。
+          </div>
+          <button onClick={onClose} style={{ marginTop: 10, padding: "8px 22px", background: "linear-gradient(180deg,#8a6a2a,#5a4418)",
+            border: "1px solid #c0a060", borderRadius: 6, color: "#f5e8c0", fontSize: 14, cursor: "pointer" }}>先离场 ✕</button>
+        </div>
+      )}
 
       {/* 顶栏 */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 44, zIndex: 260,
