@@ -122,6 +122,10 @@ export function defaultConfig() {
     // 私聊此前一个字的篇幅指令都没有，模型没有长度目标就按聊天默认长度走、
     // 每次只回几十字。这里给一条独立的短篇幅线（私聊本就不该像叙事那么长）。
     narratorWhisperWordCount: 300,
+    // 旁白专属世界书：只注入私聊通道的自定义设定，玩家在「旁白」tab 里自由编辑。
+    // 只进私聊、不进主叙事——主叙事的世界观走预设/scenario 那一套，这里写的是
+    // "只有她自己知道的事"（她的来历、她对玩家的私下看法、想让她记住的梗）。
+    narratorLorebook: "",
     contextWindow: 16, // 保留最近多少轮历史
     corsProxy: "", // 可选：形如 https://your-proxy.com/?url=
     // OpenAI 兼容地址是否自动补全 /v1/chat/completions 那半句。默认关：

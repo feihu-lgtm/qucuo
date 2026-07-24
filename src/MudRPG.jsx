@@ -1680,9 +1680,32 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       } else {
         traceStep(_wt, "向量召回", "skip", "embedding未开启，跳过召回");
       }
+      // scenario 蓝绿灯（与 act 同一套 gateScenario）：私聊此前直接拼 preset.scenario 全文，
+      // 于是每次闲聊都要背一遍地图拓扑、契诃夫之枪、路途遭遇、装备品质六档表——
+      // 聊天一句用不上，纯烧上下文，还把她往说书人腔调上拽。scope 走独立的 "whisper"
+      // （不在任何条目的 scopes 里），因此专项段全靠关键词点亮：玩家问路才亮拓扑，
+      // 提到人名才亮具名人物，聊到掉落才亮装备规则。认不出标题的段落照旧常驻（蓝灯），
+      // 用户改过 scenario 或换自定义预设都不会因这层分流丢内容。
+      const _whisperGate = gateScenario(preset.scenario, {
+        scope: "whisper",
+        userInput: content,
+        lastReply: [...convo].reverse().find(m => m.role === "assistant")?.content || "",
+      });
+      if (_whisperGate.lit.length || _whisperGate.dark.length) {
+        traceStep(_wt, "世界书·总纲", "info",
+          `🟢${_whisperGate.lit.join("、") || "无"}　⚫灭:${_whisperGate.dark.join("、") || "无"}`);
+      }
+
+      // 旁白专属世界书（设置→旁白 tab 可编辑）：只进私聊，不进主叙事。留空则一个字不发。
+      const loreText = (apiCfg.narratorLorebook || "").trim();
+      const narratorLoreBlock = loreText
+        ? `\n\n[旁白专属设定，只有你自己知道，玩家看不到这段文字，不要复述它的存在]\n${loreText}`
+        : "";
+      if (loreText) traceStep(_wt, "旁白专属世界书", "pass", `注入${loreText.length}字`);
+
       // 篇幅指令拼在最末尾（贴生成处 = 酒馆 Depth 0，是插入深度最强的位置，
       // 与「成文铁律放 userContent 末尾」同一条经验），别埋进开头被当耳旁风。
-      const sys = `${NARRATOR_WHISPER_CONTEXT}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}\n\n剧本背景设定：${preset.scenario}\n${narratorWhisperLengthNote(apiCfg.narratorWhisperWordCount)}`;
+      const sys = `${NARRATOR_WHISPER_CONTEXT}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${narratorLoreBlock}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(apiCfg.narratorWhisperWordCount)}`;
 
       // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
       // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
@@ -1695,16 +1718,22 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
       let text;
       let affDelta = 1; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖
+      let hadAffTag = false; // 标记是否真出现过 ⟦好感X⟧——没出现时的 +1 是兜底，不是她给的分
+      let finishReason;      // 停止原因：私聊此前完全没接这个字段，撞 length 上限也毫无提示
+      // 模型会照着历史里的「（旁白私聊回应）」前缀自己也写一遍，而下面存 convo 时又会
+      // 再加一次，于是前缀逐轮累积成「（旁白私聊回应）（旁白私聊回应）…」。存之前先剥干净：
+      // 前缀由系统负责加，模型自己写的一律不算数。
+      const stripEchoPrefix = (s) => s.replace(/^(?:\s*[（(]\s*旁白私聊回应\s*[）)])+\s*/, "");
       const parseAffTag = (s) => {
         const m = s.match(/⟦好感\s*([+-]?\d+)\s*⟧\s*$/);
         const d = m ? Math.max(-3, Math.min(6, parseInt(m[1], 10) || 0)) : 1;
-        return { text: s.replace(/⟦好感\s*[+-]?\d+\s*⟧\s*$/, "").trim() || "……", delta: d };
+        return { text: s.replace(/⟦好感\s*[+-]?\d+\s*⟧\s*$/, "").trim() || "……", delta: d, tagged: !!m };
       };
       if (apiCfg.streamEnabled && apiCfg.apiType !== "gemini") {
         const logIdx = { current: null };
         addLog([{ t: "narrator", text: "  「旁白」▌", streaming: true }]);
         setLog(l => { logIdx.current = l.length - 1; return l; });
-        const { text: streamedText } = await callModelStream(
+        const { text: streamedText, finishReason: fr } = await callModelStream(
           apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }],
           (_delta, fullSoFar) => {
             setLog(l => {
@@ -1716,8 +1745,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           },
           { maxTokens: narratorMaxTokens, recallInfo },
         );
-        text = streamedText.trim() || "……";
-        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; }
+        finishReason = fr;
+        text = stripEchoPrefix(streamedText.trim()) || "……";
+        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
         setLog(l => {
           if (logIdx.current == null) return l;
           const copy = [...l];
@@ -1728,11 +1758,26 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         attachPipeline(_wt, getPipelineLog()[0]);
       } else {
         const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo });
-        text = result.text.trim() || "……";
-        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; }
+        finishReason = result.finishReason;
+        text = stripEchoPrefix(result.text.trim()) || "……";
+        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
         addLog([{ t: "narrator", text: `  「旁白」${text}` }]);
         traceStep(_wt, "AI调用", "pass", "非流式一次成功");
         attachPipeline(_wt, getPipelineLog()[0]);
+      }
+
+      // ── 截断检查（本轮补齐）──
+      // 主叙事那条路一直有 finishReason 判定 + 自动重说，私聊却把这个字段整个丢掉了，
+      // 撞上限时界面上毫无提示，只表现成"她话说一半"，排查时无从下手。
+      // 附带一个更隐蔽的危害：⟦好感X⟧ 要求写在整段最末尾，被截断就一定读不到，
+      // parseAffTag 于是兜底 +1——她明明在敷衍，系统却在给玩家加好感。
+      // 这里不自动重试（私聊不消耗回合、玩家再问一句即可，重试反而多烧一次钱），
+      // 只把真相摆到台面上：日志提示 + trace 留痕 + 好感度按"未表态"处理成 0。
+      const whisperHitCap = /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
+      if (whisperHitCap) {
+        traceStep(_wt, "截断检查", "block", `撞 token 上限（finishReason=${finishReason}），本轮回复不完整`);
+        addLog([{ t: "sys", text: `  ⚠ 旁白这句话没说完就撞上了 token 上限（当前 ${narratorMaxTokens}）。可在 设置 → 旁白 里调大「私聊 token 输出上限」。` }]);
+        if (!hadAffTag) affDelta = 0; // 没读到她的表态就别替她表态
       }
 
       // 把这轮私聊也计入主引擎共享的对话历史，让旁白（以及之后的叙事）都能"记得"这次私聊
@@ -4232,6 +4277,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
             initialTab={settingsInitialTab}
             uiScale={uiScale}
             setUiScale={setUiScale}
+            narrator={narrator}
+            setNarrator={setNarrator}
           />
         )}
       </div>
@@ -5693,6 +5740,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           initialTab={settingsInitialTab}
           uiScale={uiScale}
           setUiScale={setUiScale}
+          narrator={narrator}
+          setNarrator={setNarrator}
         />
       )}
 

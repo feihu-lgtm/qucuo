@@ -11,6 +11,7 @@ const EXTRACTION_INTENT_LABELS = [
 ];
 import { listSlots, saveToSlot, loadSlot, deleteSlot, renameSlot, clearAutoSave, autoSave, exportSave, importSave } from "./saves.js";
 import { listCharacters, npcAffectionLabel } from "./mvu.js";
+import { affectionLabel } from "./narrator.js";
 import PresetManager, { PresetToolbar } from "./PresetManager.jsx";
 import PresetEditor from "./PresetEditor.jsx";
 import { loadAllPresets, saveAllPresets } from "./presetSystem.js";
@@ -24,14 +25,14 @@ const inputStyle = {
 };
 const labelStyle = { fontSize: "11px", color: "#5a8a5a", marginBottom: 4, marginTop: 10 };
 // 次级面板返回栏用的标题
-const TAB_LABELS = { api: "API 配置", preset: "预设", saves: "存档管理", other: "其他" };
+const TAB_LABELS = { api: "API 配置", preset: "预设", narrator: "旁白", saves: "存档管理", other: "其他" };
 const sectionStyle = { borderTop: "1px solid #1a1d2e", paddingTop: 12, marginTop: 12 };
 const btnStyle = {
   cursor: "pointer", color: "#6ec6c6", padding: "5px 12px", background: "#10121a",
   border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11.5px", display: "inline-block",
 };
 
-export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale }) {
+export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator }) {
   // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
   // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
   // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
@@ -213,12 +214,13 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
           />
         )}
 
-        {/* ── 主页：四个大卡片入口 ── */}
+        {/* ── 主页：五个大卡片入口 ── */}
         {tab === null && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
             {[
               ["api", "🔑 API 配置", "接口地址 · 密钥 · 模型"],
               ["preset", "📜 预设", "对话补全预设 · 编辑器"],
+              ["narrator", "🎭 旁白", "好感度 · 阶段 · 私聊篇幅 · 专属世界书"],
               ["saves", "💾 存档管理", "读取 · 导出 · 删除"],
               ["other", "🎚 其他", "字号 · 显示"],
             ].map(([id, title, sub]) => (
@@ -725,6 +727,165 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
         )}
 
         {tab === "preset" && <PresetManager state={presetState} onStateChange={updatePresetState} />}
+
+        {/* ── 旁白 tab（docs/旁白系统_黑客帝国支线设计.md §八.1）──
+            把此前散落各处的旁白可调项收拢到一处：好感度与阶段原本只有调试面板里
+            一个裸数字框，私聊篇幅/token 上限原本写死在代码里，专属世界书是新增的。 */}
+        {tab === "narrator" && (
+          <div>
+            <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>
+              旁白是唯一被设计成打破信息隔离的角色——好感度只决定她"怎么讲"，不决定她"知道什么"。
+              这里的改动即时生效，并随存档一起保存。
+            </div>
+
+            {/* ① 好感度 */}
+            <div style={labelStyle}>好感度 · 当前 {narrator?.affection ?? 0}/100（{affectionLabel(narrator?.affection ?? 0)}）</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="range" min="0" max="100" step="1" value={narrator?.affection ?? 0}
+                onChange={e => setNarrator?.(n => ({ ...n, affection: parseInt(e.target.value) || 0 }))}
+                style={{ flex: 1 }}
+              />
+              <input
+                type="number" min="0" max="100" value={narrator?.affection ?? 0}
+                onChange={e => {
+                  let v = parseInt(e.target.value) || 0;
+                  v = Math.max(0, Math.min(100, v));
+                  setNarrator?.(n => ({ ...n, affection: v }));
+                }}
+                style={{ ...inputStyle, width: 70 }}
+              />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, marginTop: 6 }}>
+              {[[0, "冷漠疏离"], [20, "略有波动"], [45, "愿意闲聊"], [70, "明显暧昧"], [90, "濒临觉醒"]].map(([v, label], i, arr) => {
+                const aff = narrator?.affection ?? 0;
+                // 当前落在哪一档：下界 <= 好感度 < 下一档下界（最后一档无上界）
+                const active = aff >= v && (i === arr.length - 1 || aff < arr[i + 1][0]);
+                return (
+                  <span key={v}
+                    onClick={() => setNarrator?.(n => ({ ...n, affection: v }))}
+                    style={{
+                      cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 3, fontSize: "10px",
+                      color: active ? "#0a0c14" : "#6a7a72",
+                      background: active ? "#6ec6c6" : "#10121a",
+                      border: "1px solid #1a2d2a",
+                    }}>
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 6 }}>
+              这五档同时作用于叙事文风与私聊语气（narrator.js 的 narratorVoicePrompt）。
+              &lt;45 档的原文就写着"简短回应几句""语气冷淡、公事公办"——私聊回复短不一定是 bug，
+              也可能只是她还没被养熟。
+            </div>
+
+            {/* ② 阶段 / 告白 */}
+            <div style={sectionStyle}>
+              <div style={labelStyle}>剧情阶段</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[
+                  ["flirting", "第一幕 · 暧昧", "好感度渐变，正常私聊"],
+                  ["cheat", "第二幕 · 告白后", "承认意识，可给渐进提示"],
+                  ["crashed", "第三幕 · 宕机", "私聊被本地拦截，不再调 AI"],
+                ].map(([stage, label, hint]) => {
+                  const cur = narrator?.stage;
+                  const on = cur === stage || (stage === "flirting" && cur === "normal");
+                  return (
+                    <span key={stage} title={hint}
+                      onClick={() => setNarrator?.(n => ({
+                        ...n, stage,
+                        confessed: stage === "cheat" ? true : stage === "flirting" ? false : n.confessed,
+                      }))}
+                      style={{
+                        ...btnStyle, fontSize: "11px",
+                        color: on ? "#0a0c14" : "#6ec6c6",
+                        background: on ? "#6ec6c6" : "#10121a",
+                      }}>
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 6 }}>
+                正常玩法里阶段由剧情推进（好感满 100 → 点粉色感叹号告白 → 私聊累积 8 次宕机），
+                这里是调试用的强制切换。宕机在游戏内不可逆，从这里能掰回来。
+              </div>
+              {(narrator?.stage === "cheat" || narrator?.confessed) && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                  <span style={{ fontSize: "11px", color: "#7a7a6a", flex: 1 }}>记忆碎片（累积到 8 触发宕机）</span>
+                  <input
+                    type="number" min="0" max="8" value={narrator?.memoryFragments ?? 0}
+                    onChange={e => {
+                      let v = parseInt(e.target.value) || 0;
+                      v = Math.max(0, Math.min(8, v));
+                      setNarrator?.(n => ({ ...n, memoryFragments: v }));
+                    }}
+                    style={{ ...inputStyle, width: 70 }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* ③ 私聊篇幅与 token */}
+            <div style={sectionStyle}>
+              <div style={labelStyle}>私聊篇幅 · 目标字数</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="range" min="50" max="1500" step="50" value={cfg.narratorWhisperWordCount ?? 300}
+                  onChange={e => patch({ narratorWhisperWordCount: parseInt(e.target.value) || 300 })}
+                  style={{ flex: 1 }}
+                />
+                <input
+                  type="number" min="20" step="50" value={cfg.narratorWhisperWordCount ?? 300}
+                  onChange={e => patch({ narratorWhisperWordCount: parseInt(e.target.value) || 300 })}
+                  style={{ ...inputStyle, width: 70 }}
+                />
+                <span style={{ fontSize: "11px", color: "#5a5a4a" }}>字</span>
+              </div>
+              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 4 }}>
+                主叙事有自己的篇幅要求（API 配置里的目标字数，默认 900），私聊此前完全没有篇幅指令、
+                模型没有长度目标就只回几十字。这条独立于主叙事，允许±30% 浮动。
+                冷漠期的打断式回绝与宕机后的空壳应答不受此值影响，仍是一句话。
+              </div>
+
+              <div style={{ ...labelStyle, marginTop: 10 }}>私聊 token 输出上限</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="number" min="1" max={CALL_TOKEN_LIMIT_MAX} step="100"
+                  value={(cfg.callTokenLimits && cfg.callTokenLimits.narratorWhisper != null) ? cfg.callTokenLimits.narratorWhisper : DEFAULT_CALL_TOKEN_LIMITS.narratorWhisper}
+                  onChange={e => {
+                    let v = parseInt(e.target.value) || DEFAULT_CALL_TOKEN_LIMITS.narratorWhisper;
+                    v = Math.max(1, Math.min(CALL_TOKEN_LIMIT_MAX, v));
+                    patch({ callTokenLimits: { ...(cfg.callTokenLimits || DEFAULT_CALL_TOKEN_LIMITS), narratorWhisper: v } });
+                  }}
+                  style={{ ...inputStyle, width: 100 }}
+                />
+                <span style={{ fontSize: "11px", color: "#5a5a4a" }}>tok（与 API 配置里那一项是同一个值）</span>
+              </div>
+              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 4 }}>
+                这是 token 不是字数。带思考的模型思考 token 与正文共用这个额度，
+                给小了会出现"话说一半停在逗号上"。
+              </div>
+            </div>
+
+            {/* ④ 旁白专属世界书 */}
+            <div style={sectionStyle}>
+              <div style={labelStyle}>旁白专属世界书（只进私聊，不进主叙事）</div>
+              <textarea
+                value={cfg.narratorLorebook ?? ""}
+                onChange={e => patch({ narratorLorebook: e.target.value })}
+                placeholder={"写在这里的内容只会注入私聊通道，主叙事看不到。\n适合放：她的来历、她对玩家的私下看法、想让她一直记住的梗、\n以及任何你希望她在私聊里知道、但不该影响正常剧情叙事的设定。\n留空则完全不注入这一段。"}
+                style={{ ...inputStyle, minHeight: 110, resize: "vertical", lineHeight: 1.6 }}
+              />
+              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 4 }}>
+                当前 {(cfg.narratorLorebook || "").length} 字。这段拼在私聊 system prompt 里，
+                会占用上下文，别写太长。
+              </div>
+            </div>
+          </div>
+        )}
 
         {tab === "saves" && (
           <div>
