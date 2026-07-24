@@ -5318,19 +5318,19 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "#e8dcc0", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>换像</span>
               </div>
               <div style={{ flex: 1, paddingTop: 4 }}>
-                <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 4 }}>{char.name || "无名少侠"}</div>
+                <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>
                 <div style={{ fontSize: "11px", color: zoneTheme.textDim, marginBottom: 8 }}>{char.gender || "男"}　少侠</div>
+                <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#c8bfa0" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
+                <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
+                <div style={{ fontSize: "11.5px", marginBottom: 3 }}>经验 <span style={{ color: "#d4a853" }}>{exp}</span>　潜能 <span style={{ color: "#b48adf" }}>{pot}</span></div>
                 <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "#e8c468" }}>{char.money || 0}</span> 两</div>
               </div>
             </div>
 
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>状态</div>
-              <div style={{ fontSize: "11.5px" }}>气血 <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#c8bfa0" }}>{bar(char.hp[0], char.hp[1], 8)}</span> <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
-              <div style={{ fontSize: "11.5px" }}>经验 <span style={{ color: "#d4a853" }}>{exp}</span>  潜能 <span style={{ color: "#b48adf" }}>{pot}</span></div>
               {(() => {
                 const es = computeEquippedStats(inv);
-                return <div style={{ fontSize: "11px", color: "#8a8a7a", marginTop: 3 }}>装备总加成：攻{es.totalAtk} 防{es.totalDef} 饰品+{es.accessoryBonus.toFixed(1)}</div>;
+                return <div style={{ fontSize: "11px", color: "#8a8a7a" }}>装备总加成：攻{es.totalAtk} 防{es.totalDef} 饰品+{es.accessoryBonus.toFixed(1)}</div>;
               })()}
             </div>
 
