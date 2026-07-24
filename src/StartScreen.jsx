@@ -6,11 +6,13 @@
 import React, { useState, useEffect } from "react";
 import { ZONE_THEMES } from "./theme.js";
 import { listSlots, loadAutoSave } from "./saves.js";
+import BugReportModal from "./BugReportModal.jsx";
 
 const theme = ZONE_THEMES.village; // 开场定调：鱼定村的暖黄烟火气
 
 export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExit }) {
   const [hasAutoSave, setHasAutoSave] = useState(false);
+  const [showBugReport, setShowBugReport] = useState(false); // 意见信箱/上报bug
   const [slots, setSlots] = useState([]);
   const [hovered, setHovered] = useState(null);
   const [showLoadPanel, setShowLoadPanel] = useState(false);
@@ -147,6 +149,10 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
         <a href="https://github.com/feihu-lgtm/qucuo" target="_blank" rel="noopener noreferrer" style={styles.footerLink(theme)}>
           开源代码 GitHub ↗
         </a>
+        <span style={styles.footerSep}>·</span>
+        <span onClick={() => setShowBugReport(true)} style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
+          🐞 意见信箱 / 上报bug
+        </span>
         {visitCount != null && (
           <>
             <span style={styles.footerSep}>·</span>
@@ -154,6 +160,15 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
           </>
         )}
       </div>
+
+      {showBugReport && (
+        <BugReportModal
+          turns={[]}
+          pipelineData={null}
+          getGameState={() => null}
+          onClose={() => setShowBugReport(false)}
+        />
+      )}
     </div>
   );
 }

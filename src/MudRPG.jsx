@@ -39,6 +39,7 @@ function extractPickupName(text) {
 import { getZoneTheme } from "./theme.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import CodexScreen from "./CodexScreen.jsx";
+import BugReportModal from "./BugReportModal.jsx";
 import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
 import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
@@ -271,7 +272,7 @@ function isCompatibleRoomShape(room) {
 }
 
 // 行动分层日志查看器：列出最近的行动 trace，每条展开看它经过的各层（通过/拦截/失败）。
-function TraceViewer({ onClose }) {
+function TraceViewer({ onClose, onReport }) {
   const [, forceTick] = React.useState(0);
   // 实时刷新：行动进行中每步会陆续写入 traceLog，定时重渲染让面板"边跑边长"
   React.useEffect(() => {
@@ -293,6 +294,7 @@ function TraceViewer({ onClose }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid #1a2020" }}>
           <span style={{ color: "#8ac8b8", fontSize: "13px" }}>🧭 行动全流程日志（最近 {traces.length} 条 · 含各层耗时与 AI 请求）</span>
           <span style={{ marginLeft: "auto", cursor: "pointer", color: "#6a8a8a", fontSize: "11px" }} onClick={copyAll}>{copied ? "✓已复制" : "复制全部"}</span>
+          {onReport && <span style={{ cursor: "pointer", color: "#e08a6a", fontSize: "11px" }} onClick={() => { onClose(); onReport(); }}>🐞 上报bug</span>}
           <span style={{ cursor: "pointer", color: "#8a6a4a", fontSize: "11px" }} onClick={() => { clearTraceLog(); onClose(); }}>清空</span>
           <span style={{ cursor: "pointer", color: "#8a8a7a", fontSize: "13px" }} onClick={onClose}>✕</span>
         </div>
@@ -1020,6 +1022,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     try { localStorage.setItem("qucuo_tutorial_seen", "1"); } catch { /* ignore */ }
   }, []);
   const [showCodex, setShowCodex] = useState(false); // 图鉴：百物·武学总览
+  const [showBugReport, setShowBugReport] = useState(false); // 上报bug/意见反馈弹窗
   const [showSettings, setShowSettings] = useState(initialOpenSettings);
   // 开场图文序列（策马入村 -> 信封特写）只在"全新开局且没有任何存档被恢复"时展示一次；
   // 读档进入、或本局已经看过一次之后刷新页面触发自动存档恢复，都不应该再放这段序列。
@@ -1262,6 +1265,36 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [depositedAt, setDepositedAt] = useState(restored?.snap.depositedAt ?? null);
   const [pledgedItems, setPledgedItems] = useState(restored?.snap.pledgedItems || []);
   const addLog = useCallback((lines) => setLog(p => [...p, ...lines]), []);
+
+  // 把主日志按回合分组，供 bug 上报弹窗"按编号勾选要附带的记录"用。
+  // 分组规则与主日志渲染一致：每个玩家指令(cmd)带它后面的回应(replies)算一组，
+  // room/standalone 单独成组。每组给出 label(编号+指令摘要)、preview(纯文本预览)、
+  // entries(原始条目，提交时发这个)。
+  const buildBugReportTurns = useCallback(() => {
+    const groups = [];
+    let current = null;
+    for (const entry of log) {
+      const isStandalone = entry.t === "room" || entry.standalone;
+      if (isStandalone) {
+        if (current) { groups.push(current); current = null; }
+        groups.push({ entries: [entry] });
+      } else if (entry.t === "cmd") {
+        if (current) groups.push(current);
+        current = { entries: [entry] };
+      } else {
+        if (!current) current = { entries: [] };
+        current.entries.push(entry);
+      }
+    }
+    if (current) groups.push(current);
+    return groups.map((g, i) => {
+      const cmdEntry = g.entries.find(e => e.t === "cmd");
+      const firstText = (cmdEntry?.text || g.entries[0]?.text || "").replace(/^[>\s]+/, "").trim();
+      const label = `#${i + 1} ${firstText.slice(0, 20) || "（场景/系统）"}`;
+      const preview = g.entries.map(e => (e.text || "").trim()).filter(Boolean).join("\n");
+      return { label, preview, entries: g.entries };
+    });
+  }, [log]);
 
   // 开局新人物检测（本轮补）：新开局时，初始房间(如鱼定村·村口)本就有在场 NPC，
   // 但开局不是一次"移动"、走不到 act() 里那段新人物检测，于是这些人既不报
@@ -4538,6 +4571,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     <div style={{ display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "'Songti SC','STSong','SimSun',serif", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "11px", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 6 }}>
+        {/* 左组：教程 · 图鉴 · 版本号（点开版本目录） */}
         <span
           onClick={() => setShowTutorial(true)}
           style={{ cursor: "pointer", color: "#e8d0a0", padding: "2px 10px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold" }}
@@ -4547,7 +4581,19 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           title="百物·武学总览：看全所有物品与武学的介绍、品阶、效果"
           style={{ cursor: "pointer", color: "#e8d0a0", padding: "2px 10px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold" }}
         >📖 图鉴</span>
+        <span
+          onClick={() => setShowVersionHistory(true)}
+          title="点击查看版本历史目录"
+          style={{ cursor: "pointer", color: "#8a7a5a", fontSize: "10px", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
+        >📅 {CURRENT_VERSION.time}</span>
+
+        {/* 中组：日志 · 上报bug */}
+        <span onClick={() => setShowTrace(p => !p)} style={{ cursor: "pointer", color: showTrace ? "#8ac8b8" : "#5a5a4a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3, fontSize: "10px", marginLeft: 12 }}>🧭 全流程日志</span>
+        <span onClick={() => setShowBugReport(true)} title="遇到问题或有建议，点这里上报" style={{ cursor: "pointer", color: "#e08a6a", padding: "2px 8px", border: "1px solid #5a3a2a", borderRadius: 3, fontSize: "10px" }}>🐞 上报bug</span>
+
         <span style={{ flex: 1 }} />
+
+        {/* 右组：其余全部右对齐 */}
         <span
           onClick={() => setShowCharacterPage(true)}
           style={{ cursor: "pointer", color: "#e0a0d0", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
@@ -4563,9 +4609,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         <span
           onClick={() => {
             if (window.confirm("返回开始菜单？当前进度已自动保存，可以随时继续。")) {
-              // 用 sessionStorage 标记"这次刷新是玩家主动要求回到开始菜单"，
-              // main.jsx 检测到这个标记时跳过自动续档逻辑，强制显示 StartScreen——
-              // 否则玩家永远无法从"有自动存档就直接进游戏"这条新流程里跳出来。
               sessionStorage.setItem("wuxia_mud_force_start_screen", "1");
               window.location.reload();
             }
@@ -4577,7 +4620,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           style={{ cursor: "pointer", color: "#d4a853", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
         >💾 存档</span>
         <span onClick={() => { setSettingsInitialTab(null); setShowSettings(true); }} style={{ cursor: "pointer", color: "#6ec6c6", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}>⚙ 设置</span>
-        <span onClick={() => setShowTrace(p => !p)} style={{ cursor: "pointer", color: showTrace ? "#8ac8b8" : "#5a5a4a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3, fontSize: "10px" }}>🧭 全流程日志</span>
         <span
           onClick={() => setIsDayMode(d => !d)}
           title={isDayMode ? "切回暗夜模式" : "切换到日间模式（米色底+棕框）"}
@@ -4592,11 +4634,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         {!autoSaveError && lastAutoSave && (
           <span style={{ color: "#3a4a3a", fontSize: "9.5px", transition: "opacity 0.3s" }}>● 已保存</span>
         )}
-        <span
-          onClick={() => setShowVersionHistory(true)}
-          title="点击查看版本历史"
-          style={{ cursor: "pointer", color: "#5a5a4a", fontSize: "10px", padding: "2px 6px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
-        >「{CURRENT_VERSION.codename}」{CURRENT_VERSION.time}</span>
       </div>
 
 
@@ -6051,8 +6088,23 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       )}
 
       {showPipeline && <PipelineViewer onClose={() => setShowPipeline(false)} loading={loading || pendingTalks > 0} waitSecs={waitSecs} />}
-      {showTrace && <TraceViewer onClose={() => setShowTrace(false)} />}
+      {showTrace && <TraceViewer onClose={() => setShowTrace(false)} onReport={() => setShowBugReport(true)} />}
       {showCodex && <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => setShowCodex(false)} />}
+      {showBugReport && (
+        <BugReportModal
+          isDayMode={isDayMode}
+          turns={buildBugReportTurns()}
+          pipelineData={getPipelineLog()}
+          getGameState={() => ({
+            room: room.name, inner: innerRoomName, time,
+            hp: char.hp, money: char.money,
+            flags, questProgress,
+            invNames: inv.map(i => typeof i === "string" ? i : i.name),
+            skillNames: skills.map(s => s.name),
+          })}
+          onClose={() => setShowBugReport(false)}
+        />
+      )}
       {activeNpcMenu && (
         <NpcActionMenu
           npc={activeNpcMenu}
