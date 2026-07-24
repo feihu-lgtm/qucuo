@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "预设面板加'注入全文预览'(主叙事/对话/私聊三tab只读看全文)",
+    time: "2026-07-24 14:45",
+    notes: "把三条 AI 调用路径的注入统一收进'预设'一处查看的第一步(本轮只读，编辑/排序/恢复默认后续)。设置→预设 tab 下新增可折叠的'📄注入全文预览'区，内含三个子tab：主叙事(act,scope=full)/对话(talk,scope=talk)/旁白私聊(whisper)，各自展示以当前游戏状态为例拼好的完整 system prompt(只读 textarea，等宽字体)。实现：MudRPG 新增 buildInjectionPreview(which) 函数——act/talk 直接调 buildSysBase(对应 scope)，whisper 复刻 talkToNarrator 的 sys 拼装；很多块是运行时按状态/关键词/好感度动态生成的(全知事实账本、向量召回、体貌门、话题门、任务门)，没法当死模板，预览里以当前状态为例展示并标注其动态性质。通过 getInjectionPreview prop 从 MudRPG 传入 SettingsPanel。旁白专属世界书目前仍在设置→旁白 tab(下一轮随可编辑化一起并入预设)。文末提示想看某一轮真实全文用顶栏'🧭全流程日志/📋Pipeline'。esbuild + vite.config.pages.js 完整 build 通过。",
+  },
+  {
     codename: "私聊旁白串行化：一条没跑完不能发第二条(修并发导致的日志出两条/历史重复)",
     time: "2026-07-24 14:15",
     notes: "玩家反馈：私聊旁白日志一下出两条、且连发时两条聊天记录一样。查明两个成因：①并发——talkToNarrator 设计成不 await、允许并行，玩家一条没返回就发第二条，两条都读到发送前同一份 convo(历史一样)，且流式占位用的 logIdx.current 是共享 ref，两条流式回调互相踩踏，表现为日志出两条/重复。②act 的 whisper 分支自己 startTrace+endTrace 了一条空壳\"私聊已发送\"，talkToNarrator 内部又开一条完整 trace，全流程日志里每次私聊出现两条 trace。修法：①私聊串行——新增 talkBusyRef(同步 ref，不等 re-render，能挡住极快连点)，一条在途时挡住第二条实际发送，输入框仍可预打字(只拦发送不拦输入)；ref 在 talkToNarrator 的 CRASHED分支/正常结尾/catch 所有出口重置，确保不永久锁死；act 依赖数组补 pendingTalks。②删掉 whisper 分支的空壳 trace。③输入框 placeholder 私聊态改为\"旁白回话中…可先打字，待她说完再发\"(此前误写\"可继续发\")，对话模式不受影响仍可并发。esbuild + vite.config.pages.js 完整 build 通过。",

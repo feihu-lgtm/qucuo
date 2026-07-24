@@ -32,7 +32,7 @@ const btnStyle = {
   border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11.5px", display: "inline-block",
 };
 
-export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator }) {
+export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator, getInjectionPreview }) {
   // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
   // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
   // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
@@ -42,6 +42,8 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
   const [testStatus, setTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
   const [testMsg, setTestMsg] = useState("");
   const [slots, setSlots] = useState(listSlots());
+  const [injectionTab, setInjectionTab] = useState("act"); // 注入全文预览：act | talk | whisper
+  const [showInjection, setShowInjection] = useState(false); // 展开注入全文预览区
   const [slotLabel, setSlotLabel] = useState("");
   const [modelList, setModelList] = useState(null); // null=未探测过, [] = 探测到但为空, [...] = 有结果
   const [modelStatus, setModelStatus] = useState(null); // null | 'loading' | 'error'
@@ -251,6 +253,43 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
                 🗂 进入预设编辑器（库存 / 激活链 / 收藏三栏）
               </span>
             </div>
+
+            {/* 注入全文预览：三条 AI 调用路径各自最终喂出去的 system prompt（只读）。
+                很多块是运行时按状态/关键词动态生成，这里以当前状态为例展示代表性全文。 */}
+            {getInjectionPreview && (
+              <div style={{ marginBottom: 14, border: "1px solid #2a2d3a", borderRadius: 6, overflow: "hidden" }}>
+                <div
+                  onClick={() => setShowInjection(s => !s)}
+                  style={{ cursor: "pointer", padding: "8px 12px", background: "#14161e", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}
+                >
+                  <span style={{ color: "#6ec6c6" }}>{showInjection ? "▼" : "▶"}</span>
+                  <span style={{ color: "#c8bfa0", fontSize: 12.5 }}>📄 注入全文预览（三条 AI 调用路径 · 只读）</span>
+                </div>
+                {showInjection && (
+                  <div style={{ padding: 12 }}>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                      {[["act", "主叙事"], ["talk", "对话"], ["whisper", "旁白私聊"]].map(([k, label]) => (
+                        <span key={k} onClick={() => setInjectionTab(k)}
+                          style={{ cursor: "pointer", padding: "3px 14px", borderRadius: 3, fontSize: 12,
+                            background: injectionTab === k ? "#1a2530" : "transparent",
+                            color: injectionTab === k ? "#c8bfa0" : "#5a5a4a",
+                            border: `1px solid ${injectionTab === k ? "#2a4a4a" : "#242833"}` }}>
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: "#5a5a4a", marginBottom: 6 }}>
+                      以当前游戏状态为例。动态块（事实账本/召回/门控等）标注了其性质。想看某一轮真实全文，用顶栏「🧭全流程日志」或「📋Pipeline」。
+                    </div>
+                    <textarea
+                      readOnly
+                      value={getInjectionPreview(injectionTab)}
+                      style={{ width: "100%", boxSizing: "border-box", height: 320, background: "#0d0f18", border: "1px solid #242833", borderRadius: 4, color: "#a8a290", fontSize: 11, fontFamily: "monospace", padding: 8, resize: "vertical", whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 

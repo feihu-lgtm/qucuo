@@ -1948,7 +1948,37 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
   }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress]);
 
-  // ── 按体貌荐装 ──
+  // 注入全文预览：把 act(主叙事)/talk(对话)/whisper(私聊) 三条路各自的 system prompt
+  // 用"当前游戏状态 + 空输入"拼一份完整全文出来，供预设面板只读查看。这是"预设本该
+  // 能看全所有注入"的第一步（本轮只读，编辑/排序后续）。因为很多块是运行时按状态/关键词
+  // 动态生成的，这里给出的是"以当前状态为例"的代表性全文，不是死模板。
+  const buildInjectionPreview = useCallback((which) => {
+    try {
+      if (which === "whisper") {
+        // 复刻 talkToNarrator 的 sys 拼装（空输入、当前状态）
+        const voice = narratorVoicePrompt(narrator);
+        const narratorInvText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
+        const worldState = `[当前世界状态，仅供你了解背景，不必主动复述] 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""}（${room.desc}） 房间里的人:${room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name).join(",") || "无"} 玩家背包:${narratorInvText}`;
+        const facts = allFactSummaries(varTree, 8);
+        const factsBlock = facts.length ? "\n\n[你冷眼旁观知晓的事…（动态：最近8条事实账本）]\n" + facts.map(f => `· ${f.摘要}`).join("\n") : "\n\n[全知事实账本：动态注入，当前为空]";
+        const _whisperGate = gateScenario(preset.scenario, { scope: "whisper", userInput: "", lastReply: "" });
+        const loreText = (apiCfg.narratorLorebook || "").trim();
+        const narratorLoreBlock = loreText ? `\n\n[旁白专属世界书，玩家不可见]\n${loreText}` : "\n\n[旁白专属世界书：当前为空（设置→旁白 可编辑）]";
+        return `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}\n\n[向量召回往事：动态，按当前输入相似度召回]${narratorLoreBlock}\n\n[体貌/话题/任务门：动态，按关键词与好感度点亮]\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
+      }
+      // act / talk：走 buildSysBase
+      const scope = which === "talk" ? "talk" : "full";
+      const npcLore = "";
+      return buildSysBase(
+        apiCfg.targetWordCount, narrator, preset.scenario, null,
+        embeddingReady(apiCfg), npcLore, false, scope,
+        { hasNpc: true, mayGrantItem: which === "act", gateCtx: null }
+      );
+    } catch (e) {
+      return `（预览生成失败：${e.message || e}）`;
+    }
+  }, [narrator, inv, char, time, room, innerRoomName, varTree, preset, apiCfg]);
+
   // 分工照 catalog.js 顶部那条老规矩：AI 只负责"从这张货架上挑哪三件"，
   // 数值一概不由它给——挑完拿名字回 CATALOG_INDEX 查真值。这样既不会凭空冒出
   // 货架上没有的神兵，也不会出现同一件东西这次加 20 下次加 200。
@@ -6079,6 +6109,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           setUiScale={setUiScale}
           narrator={narrator}
           setNarrator={setNarrator}
+          getInjectionPreview={buildInjectionPreview}
         />
       )}
 
