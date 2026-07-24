@@ -1015,6 +1015,23 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     try { localStorage.setItem("qucuo_tutorial_seen", "1"); } catch { /* ignore */ }
   }, []);
   const [showCodex, setShowCodex] = useState(false); // 图鉴：百物·武学总览
+
+  // ── 手机端响应式：窄屏时三栏改成"叙事占满 + 左右抽屉 + 顶栏收成菜单" ──
+  // 桌面(≥768px)维持原三栏并排；手机点小按钮才滑出左栏(天地)/右栏(行动)，
+  // 顶栏一排按钮收进一个☰菜单。纯前端布局，不改任何游戏逻辑。
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth < 768);
+  const [mobileDrawer, setMobileDrawer] = useState(null); // null | "left" | "right"
+  const [mobileTopMenu, setMobileTopMenu] = useState(false);
+  useEffect(() => {
+    const onResize = () => {
+      const m = window.innerWidth < 768;
+      setIsMobile(m);
+      if (!m) { setMobileDrawer(null); setMobileTopMenu(false); } // 转横屏/放大回桌面就收起抽屉
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [showBugReport, setShowBugReport] = useState(false); // 上报bug/意见反馈弹窗
   const [showSettings, setShowSettings] = useState(initialOpenSettings);
   // 开场图文序列（策马入村 -> 信封特写）只在"全新开局且没有任何存档被恢复"时展示一次；
@@ -4621,7 +4638,22 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     <div style={{ display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "'Songti SC','STSong','SimSun',serif", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "11px", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 6 }}>
-        {/* 左组：教程 · 图鉴 · 版本号（点开版本目录） */}
+        {/* 手机端：顶栏收成一个☰按钮，点开才展开全部功能入口 */}
+        {isMobile && (
+          <>
+            <span onClick={() => setMobileTopMenu(v => !v)}
+              style={{ cursor: "pointer", color: "#e8d0a0", padding: "3px 12px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold", fontSize: "13px" }}>☰ 菜单</span>
+            <span style={{ color: "#8a7a5a", fontSize: "10px" }}>{CURRENT_VERSION.time}</span>
+            <span style={{ flex: 1 }} />
+            {mobileTopMenu && <span onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>收起 ✕</span>}
+          </>
+        )}
+        {/* 顶栏功能入口：桌面常显；手机仅在展开菜单时显示（换行铺开） */}
+        <div style={{
+          display: (!isMobile || mobileTopMenu) ? "flex" : "none",
+          alignItems: "center", gap: 8, flexWrap: "wrap", rowGap: 6,
+          width: isMobile ? "100%" : "auto", flex: isMobile ? "none" : 1,
+        }}>
         <span
           onClick={() => setShowTutorial(true)}
           style={{ cursor: "pointer", color: "#e8d0a0", padding: "2px 10px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold" }}
@@ -4684,6 +4716,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         {!autoSaveError && lastAutoSave && (
           <span style={{ color: "#3a4a3a", fontSize: "9.5px", transition: "opacity 0.3s" }}>● 已保存</span>
         )}
+        </div>
       </div>
 
 
@@ -4818,9 +4851,23 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         />
       )}
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
 
-        <div style={{ flex: 25, ...S.panel }}>
+        {/* 手机抽屉遮罩：点击关闭 */}
+        {isMobile && mobileDrawer && (
+          <div onClick={() => setMobileDrawer(null)}
+            style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(0,0,0,.55)" }} />
+        )}
+
+        <div style={isMobile
+          ? { position: "fixed", top: 0, bottom: 0, left: 0, width: "82vw", maxWidth: 340, zIndex: 41,
+              transform: mobileDrawer === "left" ? "translateX(0)" : "translateX(-100%)",
+              transition: "transform .28s ease", boxShadow: mobileDrawer === "left" ? "4px 0 24px rgba(0,0,0,.6)" : "none",
+              background: zoneTheme.bg, display: "flex", flexDirection: "column", overflow: "hidden" }
+          : { flex: 25, ...S.panel }}>
+          {isMobile && (
+            <div onClick={() => setMobileDrawer(null)} style={{ textAlign: "right", padding: "8px 12px", color: zoneTheme.textDim, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}>关闭 ✕</div>
+          )}
           <div style={S.label}>天地 <span style={{ fontSize: "9.5px", color: zoneTheme.textDim, letterSpacing: "1px" }}>· {zoneTheme.name}</span></div>
           <div style={S.scroll}>
             <div style={{ color: zoneTheme.accent, fontWeight: "bold", fontSize: "14px", marginBottom: 4, letterSpacing: "1px" }}>
@@ -5083,7 +5130,22 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           </div>
         </div>
 
-        <div style={{ flex: 55, ...S.panel }}>
+        <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", position: "relative" } : { flex: 55, ...S.panel }}>
+          {/* 手机：叙事区左右边缘贴边小把手，点击滑出左栏(天地)/右栏(行动) */}
+          {isMobile && !mobileDrawer && (
+            <>
+              <div onClick={() => setMobileDrawer("left")} title="天地"
+                style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
+                  padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderLeft: "none",
+                  borderRadius: "0 6px 6px 0", color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
+                  boxShadow: "2px 0 8px rgba(0,0,0,.4)", userSelect: "none" }}>◀ 天地</div>
+              <div onClick={() => setMobileDrawer("right")} title="行动"
+                style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
+                  padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRight: "none",
+                  borderRadius: "6px 0 0 6px", color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
+                  boxShadow: "-2px 0 8px rgba(0,0,0,.4)", userSelect: "none" }}>行动 ▶</div>
+            </>
+          )}
           <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>江湖</span>
             <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -5819,7 +5881,15 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           </div>
         </div>
 
-        <div style={{ flex: 30, ...S.panel, borderRight: "none" }}>
+        <div style={isMobile
+          ? { position: "fixed", top: 0, bottom: 0, right: 0, width: "82vw", maxWidth: 340, zIndex: 41,
+              transform: mobileDrawer === "right" ? "translateX(0)" : "translateX(100%)",
+              transition: "transform .28s ease", boxShadow: mobileDrawer === "right" ? "-4px 0 24px rgba(0,0,0,.6)" : "none",
+              background: zoneTheme.bg, display: "flex", flexDirection: "column", overflow: "hidden" }
+          : { flex: 30, ...S.panel, borderRight: "none" }}>
+          {isMobile && (
+            <div onClick={() => setMobileDrawer(null)} style={{ padding: "8px 12px", color: zoneTheme.textDim, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}>✕ 关闭</div>
+          )}
           <div style={S.label}>侠客</div>
           <div style={S.scroll}>
             {/* 头像区：2:3 竖版头像（本轮换成唐卡高饱和厚涂风格8连图，藏地高原背景+金色
