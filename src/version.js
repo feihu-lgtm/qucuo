@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "预设tab精简为纯注入结构：按act动作分类逐块看真原文 + 拉取目前",
+    time: "2026-07-24 18:52",
+    notes: [
+      "把预设 tab 收敛成一件事：看清楚这一轮到底喂了 AI 什么。",
+      "①【两头拿掉】按作者要求删掉预设切换/导入酒馆JSON/导出那一排，以及下面可编辑的 Prompt 条目列表。PresetManager / PresetEditor / PresetToolbar 三个模块代码原样保留未删，想接回来还原那段 JSX 即可，不必重写。",
+      "②【单一真源·防漂移】buildSysBase 里那 5 段引擎硬文案(引擎身份/创造模式/认知隔离/地图铁律/格式铁律)+物件志尾巴+4 种输出 schema，全部抽到新文件 enginePrompts.js，buildSysBase 与面板 import 同一份常量。此前面板只有一句 summary 概述，要展示真原文就得自己抄一份——抄本迟早跟真正喂出去的漂移，而且漂移了肉眼几乎看不出来。抽取用脚本从源码按锚点抠出，不手抄；抠完写了个校验脚本：把新版源码里的 ${ENGINE_IDENTITY} 这类占位符按常量值回填，再跟 git HEAD 的旧版逐字节比对，确认 buildSysBase 拼出的 prompt 一个字没变。",
+      "③【按动作分类】injectionBlocks.js 新增 ACTION_VIEWS(查看/移动/对话/战斗/调查/元问题/结算/创造模式/旁白私聊 九类) + blocksForAction()。此前只按三条路(act/talk/whisper)分，但玩家真正关心的是「我打『查看』和打『拔剑』差在哪」——同一条 act 路在不同动作下亮灭差很多(查看轮不挂物件志、移动轮连认知隔离都砍)。scope 映射抄自 act() 的 promptScope 三元链，改那边记得同步。灭灯的块也列出来并给出灭灯原因——这个面板的价值一半在「为什么没注入」。",
+      "④【逐块看，不拼全文】新建 InjectionStructurePanel.jsx。点条目展开看该块真原文，静态块直接给字(标注字数与'与 buildSysBase 共用同一份常量')。上一版那个「拼装全文」textarea 去掉了——三千字糊成一坨等于没给。",
+      "⑤【拉取目前】动态块(篇幅/文风/状态串/召回/事实账本/各种门)没有固定原文，默认显示模板说明；点「⟳ 拉取目前」才去主引擎抓当前这一局的真值。做成按钮而不是常驻：面板在开局前也能打开看结构，也不必为了看结构就把一堆实时状态常驻绑进来。MudRPG 侧 buildInjectionPreview(返回一整篇) 改为 getLiveBlockText(view)(返回 blockId→真值 的表)。",
+      "vite build 通过；dev server 实机验证：九个分类切换正常，查看档正确显示 15/16 亮灯且物件志标⚫灭，展开引擎身份声明显示 74 字真原文，点拉取目前拉到 7 块真值、篇幅要求那块正确显示 LOOK 判定下的真实字数指令，旁白私聊档 12/12 块，控制台无报错。",
+    ],
+  },
+  {
     codename: "预设栏加'Prompt注入结构'：三条路逐块结构化可视化(学VS Code预设编辑器·只读)",
     time: "2026-07-24 15:30",
     notes: [

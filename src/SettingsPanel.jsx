@@ -12,13 +12,12 @@ const EXTRACTION_INTENT_LABELS = [
 import { listSlots, saveToSlot, loadSlot, deleteSlot, renameSlot, clearAutoSave, autoSave, exportSave, importSave } from "./saves.js";
 import { listCharacters, npcAffectionLabel } from "./mvu.js";
 import { affectionLabel, AFFECTION_TIERS, affectionTier } from "./narrator.js";
-import PresetManager, { PresetToolbar } from "./PresetManager.jsx";
-import PresetEditor from "./PresetEditor.jsx";
-import { loadAllPresets, saveAllPresets } from "./presetSystem.js";
+// 预设切换/编辑器已从 UI 移除（预设 tab 现在只放注入结构），
+// PresetManager / PresetEditor 模块本身保留未删，想接回来直接再 import 即可。
 import { clearInspectCache, inspectCacheSize } from "./inspectCache.js";
 import { clearMemories, countMemories } from "./memory/memoryStore.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
-import { INJECTION_PATHS, CONSTRAINT_FIELDS, KIND_META } from "./injectionBlocks.js";
+import InjectionStructurePanel from "./InjectionStructurePanel.jsx";
 
 const inputStyle = {
   width: "100%", background: "#10121a", border: "1px solid #1a2d2a", borderRadius: 3,
@@ -33,7 +32,7 @@ const btnStyle = {
   border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11.5px", display: "inline-block",
 };
 
-export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator, getInjectionPreview }) {
+export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText }) {
   // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
   // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
   // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
@@ -43,8 +42,6 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
   const [testStatus, setTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
   const [testMsg, setTestMsg] = useState("");
   const [slots, setSlots] = useState(listSlots());
-  const [injectionTab, setInjectionTab] = useState("act"); // 注入全文预览：act | talk | whisper
-  const [showInjection, setShowInjection] = useState(false); // 展开注入全文预览区
   const [slotLabel, setSlotLabel] = useState("");
   const [modelList, setModelList] = useState(null); // null=未探测过, [] = 探测到但为空, [...] = 有结果
   const [modelStatus, setModelStatus] = useState(null); // null | 'loading' | 'error'
@@ -56,8 +53,6 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
   // 位置且点击后写入对应字段并清空该状态收起列表。
   const [modelPickerTarget, setModelPickerTarget] = useState(null);
   const [modelErr, setModelErr] = useState("");
-  const [presetState, setPresetState] = useState(loadAllPresets());
-  const [showFullEditor, setShowFullEditor] = useState(false);
   const [memCount, setMemCount] = useState(null); // 记忆库条数（懒加载）
 
   React.useEffect(() => {
@@ -77,10 +72,6 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
     try { await clearMemories(); setMemCount(0); } catch (e) { alert("清空失败：" + e.message); }
   };
 
-  const updatePresetState = (next) => {
-    setPresetState(next);
-    saveAllPresets(next);
-  };
 
   const patch = (fields) => setCfg(c => ({ ...c, ...fields }));
 
@@ -206,17 +197,6 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
           <span style={{ color: "#5a5a4a", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
-        {showFullEditor && (
-          <PresetEditor
-            preset={presetState.presets[presetState.activeIndex]}
-            onChange={(nextPreset) => updatePresetState({
-              ...presetState,
-              presets: presetState.presets.map((p, i) => i === presetState.activeIndex ? nextPreset : p),
-            })}
-            onClose={() => setShowFullEditor(false)}
-          />
-        )}
-
         {/* ── 主页：五个大卡片入口 ── */}
         {tab === null && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
@@ -242,108 +222,13 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
           </div>
         )}
 
-        {/* 预设次级面板顶部的工具条 + 编辑器入口（原来常驻，现收进预设） */}
+        {/* 预设 tab = 只有 Prompt 注入结构（本轮按作者要求精简）
+            原来这里上下各有一块：上面是预设切换/导入酒馆JSON/导出，下面是可编辑的
+            Prompt 条目列表。作者要的是"只看清楚喂了什么"，两头都拿掉了——
+            PresetToolbar / PresetManager / PresetEditor 三个模块代码原样留着没删，
+            想接回来把这段还原即可，不必重写。 */}
         {tab === "preset" && (
-          <>
-            <PresetToolbar state={presetState} onStateChange={updatePresetState} />
-            <div style={{ marginTop: -6, marginBottom: 12 }}>
-              <span
-                style={{ ...btnStyle, borderColor: "#3a3020", color: "#f0c060" }}
-                onClick={() => setShowFullEditor(true)}
-              >
-                🗂 进入预设编辑器（库存 / 激活链 / 收藏三栏）
-              </span>
-            </div>
-
-            {/* Prompt 注入结构（只读）：把 act/talk/私聊 三条路的全部注入内容，按结构化
-                字段逐块可视化——学 VS Code 预设编辑器那种分区+条目列法，一个块不省。
-                每块标注类型(引擎硬规范/静态可编辑/结构化约束/运行时动态/世界书蓝绿灯)、
-                注入段序(depth)、性质说明。文体铁律这类展开成字段级(CONSTRAINT_FIELDS)。 */}
-            <div style={{ marginBottom: 14, border: "1px solid #2a2d3a", borderRadius: 6, overflow: "hidden" }}>
-              <div
-                onClick={() => setShowInjection(s => !s)}
-                style={{ cursor: "pointer", padding: "8px 12px", background: "#14161e", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}
-              >
-                <span style={{ color: "#6ec6c6" }}>{showInjection ? "▼" : "▶"}</span>
-                <span style={{ color: "#c8bfa0", fontSize: 12.5 }}>🧩 Prompt 注入结构（三条路 · 逐块拆解 · 只读）</span>
-              </div>
-              {showInjection && (
-                <div style={{ padding: 12 }}>
-                  {/* 三 tab 切换 */}
-                  <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                    {["act", "talk", "whisper"].map(k => (
-                      <span key={k} onClick={() => setInjectionTab(k)}
-                        style={{ cursor: "pointer", padding: "3px 14px", borderRadius: 3, fontSize: 12,
-                          background: injectionTab === k ? "#1a2530" : "transparent",
-                          color: injectionTab === k ? "#c8bfa0" : "#5a5a4a",
-                          border: `1px solid ${injectionTab === k ? "#2a4a4a" : "#242833"}` }}>
-                        {INJECTION_PATHS[k].label}
-                      </span>
-                    ))}
-                  </div>
-                  {/* 当前路径说明 */}
-                  <div style={{ fontSize: 11, color: "#7a7460", marginBottom: 4, lineHeight: 1.6 }}>
-                    {INJECTION_PATHS[injectionTab].desc}
-                  </div>
-                  {/* kind 图例 */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, fontSize: 10 }}>
-                    {Object.entries(KIND_META).map(([k, m]) => (
-                      <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "#6a6555" }}>
-                        <span style={{ width: 8, height: 8, borderRadius: 2, background: m.color, display: "inline-block" }} />
-                        {m.label}
-                      </span>
-                    ))}
-                  </div>
-                  {/* 逐块卡片 */}
-                  {INJECTION_PATHS[injectionTab].blocks.map((b, i) => {
-                    const meta = KIND_META[b.kind] || { label: b.kind, color: "#666" };
-                    const isWenfeng = b.id === "preset_wenfeng";
-                    return (
-                      <div key={b.id} style={{ marginBottom: 6, background: "#0f1119", border: "1px solid #23262f", borderRadius: 5, borderLeft: `3px solid ${meta.color}`, padding: "8px 10px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          <span style={{ color: "#4a4638", fontSize: 10, fontFamily: "monospace", minWidth: 30 }}>#{b.depth}</span>
-                          <span style={{ color: "#c8bfa0", fontSize: 12.5, fontWeight: 500 }}>{b.name}</span>
-                          <span style={{ fontSize: 9.5, color: meta.color, border: `1px solid ${meta.color}55`, borderRadius: 3, padding: "1px 6px" }}>{meta.label}</span>
-                          {!meta.editable && <span style={{ fontSize: 9.5, color: "#55503f" }}>🔒 不可改</span>}
-                        </div>
-                        <div style={{ color: "#8a8470", fontSize: 11, marginTop: 4, lineHeight: 1.65, paddingLeft: 38 }}>
-                          {b.summary}
-                        </div>
-                        {/* 文体铁律展开成结构化约束字段清单 */}
-                        {isWenfeng && (
-                          <div style={{ marginTop: 8, marginLeft: 38, borderTop: "1px dashed #23262f", paddingTop: 6 }}>
-                            <div style={{ fontSize: 10, color: "#5a8ac0", marginBottom: 4 }}>
-                              ⤷ 结构化叙事约束字段（narrativeConstraint · 自研，酒馆无此结构）：
-                            </div>
-                            {CONSTRAINT_FIELDS.map(f => (
-                              <div key={f.key} style={{ display: "flex", gap: 8, fontSize: 10.5, color: "#7a7460", padding: "2px 0", lineHeight: 1.5 }}>
-                                <span style={{ color: "#9aa0b0", minWidth: 120 }}>{f.label}</span>
-                                <span style={{ color: "#4a4638", minWidth: 44 }}>[{f.type}]</span>
-                                <span style={{ flex: 1 }}>{f.desc}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {/* 真实全文入口（可选展开，保留上一版能力） */}
-                  {getInjectionPreview && (
-                    <details style={{ marginTop: 8 }}>
-                      <summary style={{ cursor: "pointer", fontSize: 11, color: "#6a6555" }}>
-                        📄 展开：以当前状态为例的拼装全文（想看某一轮真实全文用顶栏🧭全流程日志/📋Pipeline）
-                      </summary>
-                      <textarea
-                        readOnly
-                        value={getInjectionPreview(injectionTab)}
-                        style={{ width: "100%", boxSizing: "border-box", height: 300, marginTop: 6, background: "#0d0f18", border: "1px solid #242833", borderRadius: 4, color: "#a8a290", fontSize: 11, fontFamily: "monospace", padding: 8, resize: "vertical", whiteSpace: "pre-wrap", lineHeight: 1.6 }}
-                      />
-                    </details>
-                  )}
-                </div>
-              )}
-            </div>
-          </>
+          <InjectionStructurePanel getLiveBlockText={getLiveBlockText} />
         )}
 
         {tab === "api" && (
@@ -817,8 +702,6 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
             </div>
           </div>
         )}
-
-        {tab === "preset" && <PresetManager state={presetState} onStateChange={updatePresetState} />}
 
         {/* ── 旁白 tab（docs/旁白系统_黑客帝国支线设计.md §八.1）──
             把此前散落各处的旁白可调项收拢到一处：好感度与阶段原本只有调试面板里

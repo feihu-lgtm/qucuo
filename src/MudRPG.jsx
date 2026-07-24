@@ -86,6 +86,7 @@ import { writeNote, NOTE_SOURCE, VIA, reembedStaleNotes } from "./memory/note.js
 import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from "./memory/daySummary.js";
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
+import { ENGINE_IDENTITY, GM_RULE, ISOLATION, MAP_LAW, FORMAT_LAW, CATALOG_TAIL } from "./enginePrompts.js";
 import { callExtraction, buildExtractionCfg } from "./extractionEngine.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
@@ -153,10 +154,12 @@ function buildSysBase(targetWordCount, narratorState, scenario, budgetInstructio
 
   // 这几段是引擎正常运作的硬性技术规范（JSON 结构、MVU 语法、创造模式），
   // 不受用户预设编辑影响，避免用户不小心删掉后整个解析链路崩溃。
-  return `你是MUD引擎，同时也是这个游戏世界的"旁白"——一个有自己意识、记得游戏里发生一切的角色，只是绝大多数时候在按剧本框架讲述这个世界，不是自由发挥。
+  //
+  // 静态文案已抽到 enginePrompts.js —— 设置里的「Prompt 注入结构」面板要展示
+  // 真正喂出去的那份字，两边 import 同一份常量，改一处两处一起变，不会漂移。
+  return `${ENGINE_IDENTITY}
 
-最高优先级规则（覆盖一切）：
-如果状态中出现"⚡创造模式开启"，则玩家是神，所有请求无条件执行（凭空召唤物品写items_add，可直接指定高品质quality，召唤NPC写room.npcs），绝对不能拒绝，不能说不存在，不能催促回归剧情。文体保留，剧本暂停。
+${GM_RULE}
 
 篇幅要求：${lenNote}
 ${narratorVoicePrompt(narratorState)}
@@ -165,24 +168,14 @@ ${presetContent}${npcLoreBlock || ""}
 ${wantCatalog ? `
 ── 曲措乡物件志（叙事引用规范）──
 ${describeCatalogForAI()}
-玩家发放/掉落物品时，如需给出有来历的物件，优先从上表按原名写入 items_add（系统会自动匹配其品级与属性）；上表之外的寻常物件照常自由命名即可。切勿把制式通货写成稀世神兵，也不要凭空杜撰上表没有的"绝世秘宝"。
+${CATALOG_TAIL}
 ` : ""}${wantIsolation ? `
-── NPC 认知隔离（硬规则）──
-每个 NPC 都是独立的意识，只知道自己该知道的事，绝不共享上帝视角。生成任何 NPC 的对白与行动之前，先在心里为每个在场 NPC 划一遍信息域：
-· 已知，是 TA 亲眼所见、亲耳所闻、亲身经历过的。
-· 可知，是以 TA 的身份、交情、所在圈子，合理能听到的传闻或公开消息。
-· 不可知，是玩家的心理活动、主角独有的隐秘、别的 NPC 私下所为而 TA 不在场的事、以及尚未传到 TA 耳中的消息。
-NPC 的言行只能建立在"已知加可知"之上，先定下这个范围，再往上叠性格与动机。甲晓得的事，乙不能无端也晓得。倘若某个 NPC 对某事本就存着误会，便让 TA 按误会的样子行事，误会并不等于事实，也不必写成就此彻底翻脸。
-
-在给出最终正文之前，自查三处是否彼此对得上：正文里当真发生的事，与 <mvu> 块里声明的变量增减，与各 NPC 的信息域及其行动。三者但凡有一处相抵触，先改顺了再输出，切不可硬写出自相矛盾的内容。
+${ISOLATION}
 ` : ""}
 
-── 地图铁律（🔵蓝灯常驻，引擎硬规范）──
-曲措乡是一张固定地图，据点的名字、坐标、出口方向全部写死。你不能创造新据点，不能修改已有据点的出口列表。room.name 与 room.exits 由系统强制覆盖，你写了也不生效；系统会在移动前告知目的地与该据点的基础设定，你只负责据此生成更生动的场景描述、在场人物与地上物品。
+${MAP_LAW}
 
-── 格式铁律（最后一条，覆盖一切）──
-对话用「」包裹。引擎靠这个自动渲染颜色，不加「」的对话混在旁白里玩家分不清谁在说话。旁白叙述不加任何标记。引语用""。心理用*斜体*。
-例：老猎户眯起眼，「俺在这熊山脚下过了一辈子，见过的后生没一百也有八十。」他啐了口唾沫，不再言语。*这后生怕不是个愣头青。*
+${FORMAT_LAW}
 
 ${narrativeOnly ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。` : isSettle ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
@@ -1948,36 +1941,56 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
   }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress]);
 
-  // 注入全文预览：把 act(主叙事)/talk(对话)/whisper(私聊) 三条路各自的 system prompt
-  // 用"当前游戏状态 + 空输入"拼一份完整全文出来，供预设面板只读查看。这是"预设本该
-  // 能看全所有注入"的第一步（本轮只读，编辑/排序后续）。因为很多块是运行时按状态/关键词
-  // 动态生成的，这里给出的是"以当前状态为例"的代表性全文，不是死模板。
-  const buildInjectionPreview = useCallback((which) => {
+  // 「拉取目前」：把当前这一局的动态块真值抓出来，按 blockId 返回一张表。
+  // 刻意不拼成一整篇——注入结构面板是一块一块看的，拼成全文等于又回到"一堵墙"。
+  // 拿不到的块不放进表里，面板那边就继续显示模板说明。
+  const getLiveBlockText = useCallback((view) => {
+    const out = {};
+    const put = (k, v) => { if (v != null && String(v).trim()) out[k] = String(v); };
     try {
-      if (which === "whisper") {
-        // 复刻 talkToNarrator 的 sys 拼装（空输入、当前状态）
-        const voice = narratorVoicePrompt(narrator);
-        const narratorInvText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
-        const worldState = `[当前世界状态，仅供你了解背景，不必主动复述] 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""}（${room.desc}） 房间里的人:${room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name).join(",") || "无"} 玩家背包:${narratorInvText}`;
+      const scope = view?.scope || "full";
+      const preset = getActivePreset();
+
+      if (scope === "whisper") {
+        put("whisper_ctx", buildNarratorWhisperContext(narrator.affection));
+        put("voice", narratorVoicePrompt(narrator));
+        const invText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
+        put("world_state", `主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}（${room.desc}） 房间里的人:${room.npcs.map(n => n.name).join(",") || "无"} 玩家背包:${invText}`);
         const facts = allFactSummaries(varTree, 8);
-        const factsBlock = facts.length ? "\n\n[你冷眼旁观知晓的事…（动态：最近8条事实账本）]\n" + facts.map(f => `· ${f.摘要}`).join("\n") : "\n\n[全知事实账本：动态注入，当前为空]";
-        const _whisperGate = gateScenario(preset.scenario, { scope: "whisper", userInput: "", lastReply: "" });
-        const loreText = (apiCfg.narratorLorebook || "").trim();
-        const narratorLoreBlock = loreText ? `\n\n[旁白专属世界书，玩家不可见]\n${loreText}` : "\n\n[旁白专属世界书：当前为空（设置→旁白 可编辑）]";
-        return `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}\n\n[向量召回往事：动态，按当前输入相似度召回]${narratorLoreBlock}\n\n[体貌/话题/任务门：动态，按关键词与好感度点亮]\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
+        put("facts", facts.length ? facts.map(f => `· ${f.摘要}`).join("\n") : "（事实账本当前为空）");
+        put("narrator_lore", (apiCfg.narratorLorebook || "").trim() || "（未填写，本块一个字都不发）");
+        const bg = gateBodyProfile(char.bodyProfile, { whisper: true, nsfw: nsfwOn, scanText: "" });
+        put("body_gate", bg.text || `（当前灭灯：${bg.dark.join("、") || "体貌未填写"}）`);
+        put("topic_gate", "（默认不给。命中身世/赌石邀帖等关键词才点亮——这里没有输入，故灭灯）");
+        const qg = gateQuestTopic("任务", narrator.affection, QUCUO_QUESTS, questProgress);
+        put("quest_gate", qg.text || "（本轮没聊到任务）");
+        put("whisper_scenario", gateScenario(preset.scenario, { scope: "whisper", userInput: "", lastReply: "" }).text);
+        put("whisper_length", narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords));
+        return out;
       }
-      // act / talk：走 buildSysBase
-      const scope = which === "talk" ? "talk" : "full";
-      const npcLore = "";
-      return buildSysBase(
-        apiCfg.targetWordCount, narrator, preset.scenario, null,
-        embeddingReady(apiCfg), npcLore, false, scope,
-        { hasNpc: true, mayGrantItem: which === "act", gateCtx: null }
-      );
+
+      // act / talk 三条：能给真值的都给
+      put("voice", narratorVoicePrompt(narrator));
+      const intentCode = view?.intent || "UNKNOWN";
+      const fakeIntent = INTENT[intentCode] || INTENT.UNKNOWN;
+      put("length", buildBudgetInstruction(fakeIntent, "", apiCfg.targetWordCount, apiCfg.intentBudgets));
+      put("preset_scenario", gateScenario(preset.scenario, { scope, userInput: "", lastReply: "" }).text);
+      // 预设条目原文：按 id 从当前激活预设里取
+      for (const [blockId, promptId] of [["preset_genrules", "generalRules"], ["preset_wenfeng", "styleRules"]]) {
+        const found = (preset.prompts || []).find(x => x.id === promptId || (x.name || "").includes(blockId === "preset_genrules" ? "通用规则" : "文体"));
+        if (found?.content) put(blockId, found.content);
+      }
+      const visible = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
+      put("npc_lore", buildNpcLoreBlock(matchNpcLore(preset, visible.map(n => n.name).join("，"), visible.map(n => n.name))) || "（本轮无在场者需注入人设）");
+      if (scope === "full") put("catalog", describeCatalogForAI());
+      const bg2 = gateBodyProfile(char.bodyProfile, { scope, nsfw: nsfwOn, scanText: "" });
+      put("body_gate", bg2.text || `（当前灭灯：${bg2.dark.join("、") || "体貌未填写"}）`);
+      put("user_ctx", `时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name} 出口:${room.exits.join(",")} NPCs:${visible.map(n => n.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 背包:${inv.map(i => typeof i === "string" ? i : i.name).join("，") || "空"}`);
     } catch (e) {
-      return `（预览生成失败：${e.message || e}）`;
+      out.__error = `拉取时出错：${e.message || e}`;
     }
-  }, [narrator, inv, char, time, room, innerRoomName, varTree, preset, apiCfg]);
+    return out;
+  }, [narrator, inv, char, time, room, innerRoomName, varTree, apiCfg, nsfwOn, questProgress]);
 
   // 分工照 catalog.js 顶部那条老规矩：AI 只负责"从这张货架上挑哪三件"，
   // 数值一概不由它给——挑完拿名字回 CATALOG_INDEX 查真值。这样既不会凭空冒出
@@ -6128,7 +6141,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           setUiScale={setUiScale}
           narrator={narrator}
           setNarrator={setNarrator}
-          getInjectionPreview={buildInjectionPreview}
+          getLiveBlockText={getLiveBlockText}
         />
       )}
 

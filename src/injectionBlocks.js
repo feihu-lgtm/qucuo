@@ -136,3 +136,78 @@ export const KIND_META = {
   gated:      { label: "世界书·蓝绿灯", color: "#9a7ac0", editable: false },
   worldbook:  { label: "旁白专属世界书", color: "#c07a9a", editable: true },
 };
+
+// ============================================================================
+// 按「act 的动作分类」看注入 —— 本轮新增
+// ============================================================================
+// 上面的 INJECTION_PATHS 是按三条路（act/talk/whisper）分的，但玩家真正关心的是
+// "我打一句『查看』和打一句『拔剑』，喂给 AI 的东西差在哪"。act 内部其实按 intent
+// 落到不同 scope，同一条 act 路在不同动作下亮灭的块差很多——查看轮不挂物件志、
+// 移动轮连认知隔离都砍掉。所以这里再切一层：按动作分类列，每块标明亮还是灭、
+// 为什么灭。
+//
+// scope 映射抄自 MudRPG.jsx act() 里那段 promptScope 三元链，改那边记得同步这里。
+export const ACTION_VIEWS = [
+  { id: "look", label: "查看 / 环顾", intent: "LOOK", scope: "talk",
+    note: "只描述当前场景与在场人物，不发物品，走 talk 档砍掉物件志。" },
+  { id: "move", label: "移动", intent: "MOVE", scope: "move",
+    note: "只写到达叙事，不发物品、无 NPC 对白博弈，schema 精简成只含 room。" },
+  { id: "talk", label: "对话模式", intent: "TALK_CASUAL", scope: "talk", isTalk: true,
+    note: "跟在场 NPC 说话。保留认知隔离（对白要守信息域），额外加 modeNote 锁死状态变更。" },
+  { id: "combat", label: "战斗 / 切磋", intent: "COMBAT", scope: "full",
+    note: "全量注入。物件志亮（要掉落），装备掉落规则那条世界书按 combat 状态点亮。" },
+  { id: "explore", label: "调查 / 搜索", intent: "EXPLORE_ACTION", scope: "full",
+    note: "全量注入。物件志只在本轮拾取判定命中时才亮，寻常探索轮灭灯防诱导发物。" },
+  { id: "meta", label: "系统元问题", intent: "META_QUERY", scope: "full",
+    note: "「什么情况」这类。篇幅指令会压到一两句，其余同全量档。" },
+  { id: "settle", label: "结算叙事", intent: null, scope: "settle",
+    note: "送礼/住店/成交这类：系统已把数值结算完，AI 只把既定事实演成叙事，无裁量权。" },
+  { id: "gm", label: "创造模式 ⚡", intent: null, scope: "full", gm: true,
+    note: "玩家是神。强制走全量档，物件志与 MVU 强制挂（要能凭空发物、设变量）。" },
+  { id: "whisper", label: "旁白私聊", intent: null, scope: "whisper",
+    note: "独立一套 sys，完全不走 buildSysBase。不发 JSON、不守信息域、靠好感度调语气。" },
+];
+
+// 某一块在某个动作下亮不亮。灭了要给出原因——这个面板的价值一半在"为什么没注入"。
+// 判据抄自 buildSysBase 的 wantCatalog / wantIsolation / wantMvu 与 schema 三元链。
+export function blocksForAction(actionId) {
+  const view = ACTION_VIEWS.find(v => v.id === actionId) || ACTION_VIEWS[0];
+  if (view.scope === "whisper") {
+    return INJECTION_PATHS.whisper.blocks.map(b => ({ ...b, lit: true, off: "" }));
+  }
+  const base = view.isTalk ? INJECTION_PATHS.talk.blocks : INJECTION_PATHS.act.blocks;
+  const { scope, gm } = view;
+
+  return base.map(b => {
+    let lit = true, off = "";
+    if (b.id === "catalog") {
+      if (gm) { lit = true; }
+      else if (scope !== "full") { lit = false; off = `scope=${scope}，非全量档不挂物件志`; }
+      else if (view.id === "explore" || view.id === "meta") { lit = false; off = "本轮无拾取判定命中，灭灯防诱导发物（战斗/创造模式才常亮）"; }
+    }
+    if (b.id === "isolation" && (scope === "move" || scope === "settle")) {
+      lit = false; off = scope === "move" ? "移动轮无 NPC 对白博弈，砍掉" : "结算轮 AI 无状态裁量权，砍掉";
+    }
+    if (b.id === "npc_lore" && (scope === "move" || scope === "settle")) {
+      lit = false; off = "绿灯：本轮无在场者需注入人设";
+    }
+    return { ...b, lit, off };
+  });
+}
+
+// 块 → 真实原文。静态块直接给字（与 buildSysBase 共用 enginePrompts.js 那份），
+// 动态块给不出固定文本，返回 null，由面板显示模板说明 + 「拉取目前」按钮。
+export const STATIC_TEXT_KEYS = {
+  engine_identity: "ENGINE_IDENTITY",
+  gm_rule: "GM_RULE",
+  isolation: "ISOLATION",
+  map_law: "MAP_LAW",
+  format_law: "FORMAT_LAW",
+};
+
+// schema 块按动作走哪一份
+export function schemaKeyFor(view) {
+  if (view.scope === "settle") return "SCHEMA_SETTLE";
+  if (view.scope === "move") return "SCHEMA_MOVE";
+  return "SCHEMA_FULL";
+}
