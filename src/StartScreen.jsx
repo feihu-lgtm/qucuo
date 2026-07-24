@@ -24,10 +24,10 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
   const hasAnySave = hasAutoSave || slotCount > 0;
 
   const menuItems = [
-    { key: "start", label: "开始", sub: "踏入曲措乡", action: onStart, always: true },
+    { key: "start", label: "开始游戏", sub: "踏入曲措乡", action: onStart, always: true },
     {
       key: "load",
-      label: "加载存档",
+      label: "加载游戏",
       sub: hasAnySave ? `${slotCount + (hasAutoSave ? 1 : 0)} 份存档` : "暂无存档",
       action: () => setShowLoadPanel(true),
       always: hasAnySave,
@@ -82,11 +82,8 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
       <div style={styles.vignette} />
 
       <div style={styles.titleBlock}>
-        <div style={styles.sealRow}>
-          <span style={styles.seal(theme)}>曲</span>
-          <span style={styles.seal(theme)}>措</span>
-          <span style={styles.seal(theme)}>乡</span>
-        </div>
+        <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo.png`}
+          alt="天都曲措" style={styles.titleImg} />
         <div style={styles.subtitle(theme)}>—— 三曲交汇处的江湖 ——</div>
       </div>
 
@@ -122,10 +119,12 @@ const styles = {
     inset: 0,
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
+    padding: "0 clamp(32px, 8vw, 120px)",
+    boxSizing: "border-box",
     backgroundColor: t.bg,
-    backgroundImage: "url('/start-bg.jpg')",
+    backgroundImage: `url('${((typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/")}start-bg.jpg')`,
     backgroundSize: "cover",
     backgroundPosition: "center",
     fontFamily: "'Noto Serif SC', 'Songti SC', serif",
@@ -141,8 +140,16 @@ const styles = {
   titleBlock: {
     position: "relative",
     zIndex: 1,
-    marginBottom: "64px",
-    textAlign: "center",
+    marginBottom: "48px",
+    textAlign: "left",
+  },
+  titleImg: {
+    display: "block",
+    width: "min(460px, 70vw)",
+    height: "auto",
+    marginBottom: "12px",
+    // 深墨标题压在亮背景上，加一层柔和白光衬底保证在雪山/天空上都看得清
+    filter: "drop-shadow(0 2px 12px rgba(255,255,255,0.35)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))",
   },
   sealRow: {
     display: "flex",
@@ -168,8 +175,10 @@ const styles = {
   subtitle: (t) => ({
     fontSize: "13px",
     letterSpacing: "4px",
-    color: t.text,
-    opacity: 0.75,
+    color: "#fff",
+    opacity: 0.85,
+    textShadow: "0 1px 4px rgba(0,0,0,0.7)",
+    textAlign: "left",
   }),
   menu: {
     position: "relative",
@@ -182,20 +191,22 @@ const styles = {
   menuItem: (t, isHover, disabled) => ({
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: "4px",
-    padding: "16px 12px",
-    background: isHover && !disabled ? "rgba(20,16,10,0.55)" : "transparent",
+    padding: "14px 16px",
+    background: isHover && !disabled ? "rgba(20,16,10,0.55)" : "rgba(10,8,5,0.25)",
     border: "none",
-    borderTop: `1px solid ${isHover && !disabled ? t.accentDim : "rgba(255,255,255,0.08)"}`,
+    borderLeft: `2px solid ${isHover && !disabled ? t.accent : "rgba(255,255,255,0.12)"}`,
     cursor: disabled ? "default" : "pointer",
     opacity: disabled ? 0.35 : 1,
     transition: "all 0.25s ease",
+    textAlign: "left",
   }),
   menuLabel: {
     fontSize: "17px",
     letterSpacing: "6px",
     color: "#ece3d0",
+    textShadow: "0 1px 3px rgba(0,0,0,0.6)",
   },
   menuSub: (t) => ({
     fontSize: "11px",
@@ -205,10 +216,12 @@ const styles = {
   footer: (t) => ({
     position: "absolute",
     bottom: "20px",
+    left: "clamp(32px, 8vw, 120px)",
     fontSize: "10px",
     letterSpacing: "2px",
-    color: t.textDim,
-    opacity: 0.6,
+    color: "#fff",
+    opacity: 0.5,
+    textShadow: "0 1px 3px rgba(0,0,0,0.7)",
     zIndex: 1,
   }),
   // ---- 存档加载子面板 ----

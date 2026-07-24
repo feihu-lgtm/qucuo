@@ -1,6 +1,16 @@
-# 曲措乡 · Qucuo
+<div align="center">
+
+<img src="public/title_tianducuo.png" alt="天都·曲措" width="520" />
+
+# 天都·曲措 · Qucuo
+
+**[▶ 在线试玩 Play Online](https://feihu-lgtm.github.io/qucuo/)** &nbsp;·&nbsp; [源码 Source](https://github.com/feihu-lgtm/qucuo)
+
+</div>
 
 一款浏览器端的中文武侠文字 MUD RPG。设定在藏地风格的高原山乡，融合 AI 驱动叙事、回合制战斗、NPC 交互与固定拓扑地图，纯前端运行（React + Vite），无需后端。
+
+> **在线体验**：打开 [feihu-lgtm.github.io/qucuo](https://feihu-lgtm.github.io/qucuo/)，在设置里填入自己的 AI API 密钥（Anthropic / Gemini / OpenAI 兼容任选其一）即可游玩。密钥仅存于你本地浏览器，不上传任何服务器。
 
 ## 设计核心
 
