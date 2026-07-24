@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "预设栏加'Prompt注入结构'：三条路逐块结构化可视化(学VS Code预设编辑器·只读)",
+    time: "2026-07-24 15:30",
+    notes: [
+      "把上一版'整段全文塞进textarea'的粗预览，升级成学 VS Code 预设编辑器那种逐块拆解的结构化可视化——每个注入块单独成卡片，一个不省。这是自研'预设+世界书'体系的可视化，不是照搬酒馆字段结构。",
+      "①新建 injectionBlocks.js：定义 act(主叙事16块)/talk(对话15块)/whisper(旁白私聊12块)三条路的注入块清单，每块含 名称/kind类型/depth段序/summary说明。kind 六类：engine引擎硬规范(不可改)/static静态可编辑/constraint结构化约束/dynamic运行时动态/gated世界书蓝绿灯/worldbook旁白专属世界书。",
+      "②设置→预设 tab 下'🧩Prompt注入结构'区，三tab切换，逐块渲染卡片：左边框按 kind 上色、显示 #段序+块名+类型标签+🔒不可改标记+性质说明。顶部有当前路径说明和 kind 颜色图例。",
+      "③文体铁律块展开成结构化叙事约束字段清单(CONSTRAINT_FIELDS：字数上下限/禁用词/禁用句式/禁冒号破折号/对话「」/禁抽象总结/成语上限)——自研的字段化文体控制，酒馆无此结构，逐字段列出。",
+      "④保留'展开看拼装全文'作为可选 details(接上一版 getInjectionPreview)。借鉴 VS Code 编辑器的是可视化呈现方式，不改自研 prompt 结构本身。本轮只读，编辑/排序/恢复默认/世界书并入后续。esbuild + vite.config.pages.js 完整 build 通过。",
+    ],
+  },
+  {
     codename: "预设面板加'注入全文预览'(主叙事/对话/私聊三tab只读看全文)",
     time: "2026-07-24 14:45",
     notes: [

@@ -18,6 +18,7 @@ import { loadAllPresets, saveAllPresets } from "./presetSystem.js";
 import { clearInspectCache, inspectCacheSize } from "./inspectCache.js";
 import { clearMemories, countMemories } from "./memory/memoryStore.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
+import { INJECTION_PATHS, CONSTRAINT_FIELDS, KIND_META } from "./injectionBlocks.js";
 
 const inputStyle = {
   width: "100%", background: "#10121a", border: "1px solid #1a2d2a", borderRadius: 3,
@@ -254,42 +255,94 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
               </span>
             </div>
 
-            {/* 注入全文预览：三条 AI 调用路径各自最终喂出去的 system prompt（只读）。
-                很多块是运行时按状态/关键词动态生成，这里以当前状态为例展示代表性全文。 */}
-            {getInjectionPreview && (
-              <div style={{ marginBottom: 14, border: "1px solid #2a2d3a", borderRadius: 6, overflow: "hidden" }}>
-                <div
-                  onClick={() => setShowInjection(s => !s)}
-                  style={{ cursor: "pointer", padding: "8px 12px", background: "#14161e", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}
-                >
-                  <span style={{ color: "#6ec6c6" }}>{showInjection ? "▼" : "▶"}</span>
-                  <span style={{ color: "#c8bfa0", fontSize: 12.5 }}>📄 注入全文预览（三条 AI 调用路径 · 只读）</span>
-                </div>
-                {showInjection && (
-                  <div style={{ padding: 12 }}>
-                    <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                      {[["act", "主叙事"], ["talk", "对话"], ["whisper", "旁白私聊"]].map(([k, label]) => (
-                        <span key={k} onClick={() => setInjectionTab(k)}
-                          style={{ cursor: "pointer", padding: "3px 14px", borderRadius: 3, fontSize: 12,
-                            background: injectionTab === k ? "#1a2530" : "transparent",
-                            color: injectionTab === k ? "#c8bfa0" : "#5a5a4a",
-                            border: `1px solid ${injectionTab === k ? "#2a4a4a" : "#242833"}` }}>
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                    <div style={{ fontSize: 10.5, color: "#5a5a4a", marginBottom: 6 }}>
-                      以当前游戏状态为例。动态块（事实账本/召回/门控等）标注了其性质。想看某一轮真实全文，用顶栏「🧭全流程日志」或「📋Pipeline」。
-                    </div>
-                    <textarea
-                      readOnly
-                      value={getInjectionPreview(injectionTab)}
-                      style={{ width: "100%", boxSizing: "border-box", height: 320, background: "#0d0f18", border: "1px solid #242833", borderRadius: 4, color: "#a8a290", fontSize: 11, fontFamily: "monospace", padding: 8, resize: "vertical", whiteSpace: "pre-wrap", lineHeight: 1.6 }}
-                    />
-                  </div>
-                )}
+            {/* Prompt 注入结构（只读）：把 act/talk/私聊 三条路的全部注入内容，按结构化
+                字段逐块可视化——学 VS Code 预设编辑器那种分区+条目列法，一个块不省。
+                每块标注类型(引擎硬规范/静态可编辑/结构化约束/运行时动态/世界书蓝绿灯)、
+                注入段序(depth)、性质说明。文体铁律这类展开成字段级(CONSTRAINT_FIELDS)。 */}
+            <div style={{ marginBottom: 14, border: "1px solid #2a2d3a", borderRadius: 6, overflow: "hidden" }}>
+              <div
+                onClick={() => setShowInjection(s => !s)}
+                style={{ cursor: "pointer", padding: "8px 12px", background: "#14161e", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}
+              >
+                <span style={{ color: "#6ec6c6" }}>{showInjection ? "▼" : "▶"}</span>
+                <span style={{ color: "#c8bfa0", fontSize: 12.5 }}>🧩 Prompt 注入结构（三条路 · 逐块拆解 · 只读）</span>
               </div>
-            )}
+              {showInjection && (
+                <div style={{ padding: 12 }}>
+                  {/* 三 tab 切换 */}
+                  <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                    {["act", "talk", "whisper"].map(k => (
+                      <span key={k} onClick={() => setInjectionTab(k)}
+                        style={{ cursor: "pointer", padding: "3px 14px", borderRadius: 3, fontSize: 12,
+                          background: injectionTab === k ? "#1a2530" : "transparent",
+                          color: injectionTab === k ? "#c8bfa0" : "#5a5a4a",
+                          border: `1px solid ${injectionTab === k ? "#2a4a4a" : "#242833"}` }}>
+                        {INJECTION_PATHS[k].label}
+                      </span>
+                    ))}
+                  </div>
+                  {/* 当前路径说明 */}
+                  <div style={{ fontSize: 11, color: "#7a7460", marginBottom: 4, lineHeight: 1.6 }}>
+                    {INJECTION_PATHS[injectionTab].desc}
+                  </div>
+                  {/* kind 图例 */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, fontSize: 10 }}>
+                    {Object.entries(KIND_META).map(([k, m]) => (
+                      <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "#6a6555" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: 2, background: m.color, display: "inline-block" }} />
+                        {m.label}
+                      </span>
+                    ))}
+                  </div>
+                  {/* 逐块卡片 */}
+                  {INJECTION_PATHS[injectionTab].blocks.map((b, i) => {
+                    const meta = KIND_META[b.kind] || { label: b.kind, color: "#666" };
+                    const isWenfeng = b.id === "preset_wenfeng";
+                    return (
+                      <div key={b.id} style={{ marginBottom: 6, background: "#0f1119", border: "1px solid #23262f", borderRadius: 5, borderLeft: `3px solid ${meta.color}`, padding: "8px 10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ color: "#4a4638", fontSize: 10, fontFamily: "monospace", minWidth: 30 }}>#{b.depth}</span>
+                          <span style={{ color: "#c8bfa0", fontSize: 12.5, fontWeight: 500 }}>{b.name}</span>
+                          <span style={{ fontSize: 9.5, color: meta.color, border: `1px solid ${meta.color}55`, borderRadius: 3, padding: "1px 6px" }}>{meta.label}</span>
+                          {!meta.editable && <span style={{ fontSize: 9.5, color: "#55503f" }}>🔒 不可改</span>}
+                        </div>
+                        <div style={{ color: "#8a8470", fontSize: 11, marginTop: 4, lineHeight: 1.65, paddingLeft: 38 }}>
+                          {b.summary}
+                        </div>
+                        {/* 文体铁律展开成结构化约束字段清单 */}
+                        {isWenfeng && (
+                          <div style={{ marginTop: 8, marginLeft: 38, borderTop: "1px dashed #23262f", paddingTop: 6 }}>
+                            <div style={{ fontSize: 10, color: "#5a8ac0", marginBottom: 4 }}>
+                              ⤷ 结构化叙事约束字段（narrativeConstraint · 自研，酒馆无此结构）：
+                            </div>
+                            {CONSTRAINT_FIELDS.map(f => (
+                              <div key={f.key} style={{ display: "flex", gap: 8, fontSize: 10.5, color: "#7a7460", padding: "2px 0", lineHeight: 1.5 }}>
+                                <span style={{ color: "#9aa0b0", minWidth: 120 }}>{f.label}</span>
+                                <span style={{ color: "#4a4638", minWidth: 44 }}>[{f.type}]</span>
+                                <span style={{ flex: 1 }}>{f.desc}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* 真实全文入口（可选展开，保留上一版能力） */}
+                  {getInjectionPreview && (
+                    <details style={{ marginTop: 8 }}>
+                      <summary style={{ cursor: "pointer", fontSize: 11, color: "#6a6555" }}>
+                        📄 展开：以当前状态为例的拼装全文（想看某一轮真实全文用顶栏🧭全流程日志/📋Pipeline）
+                      </summary>
+                      <textarea
+                        readOnly
+                        value={getInjectionPreview(injectionTab)}
+                        style={{ width: "100%", boxSizing: "border-box", height: 300, marginTop: 6, background: "#0d0f18", border: "1px solid #242833", borderRadius: 4, color: "#a8a290", fontSize: 11, fontFamily: "monospace", padding: 8, resize: "vertical", whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+                      />
+                    </details>
+                  )}
+                </div>
+              )}
+            </div>
           </>
         )}
 
