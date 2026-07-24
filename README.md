@@ -6,7 +6,7 @@
 
 **[▶ 在线试玩 Play Online](https://feihu-lgtm.github.io/qucuo/)** &nbsp;·&nbsp; [源码 Source](https://github.com/feihu-lgtm/qucuo)
 
-📖 世界导览：**[据点 · 房间 · 功能](docs/世界导览_据点与房间.md)** &nbsp;·&nbsp; **[任务线剧情](docs/世界导览_任务线.md)**
+📖 世界导览：**[据点 · 房间 · 功能](docs/世界导览_据点与房间.md)** &nbsp;·&nbsp; **[任务线剧情](docs/世界导览_任务线.md)** &nbsp;·&nbsp; **[任务攻略手册](docs/任务攻略手册.md)**
 
 </div>
 
