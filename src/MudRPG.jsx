@@ -2775,11 +2775,28 @@ ${dealFmt}`;
 
       if (apiCfg.extractionEnabled) {
         // ── 双调用模式：主调用只生成叙事，提取调用处理状态 ──
-        try {
-          const r = await callMainOnce(null, true);
-          rawFull = r.rawFull;
-        } catch (netErr) {
-          throw netErr;
+        // 主叙事调用与单调用模式一样享有自动重试——此前这里只试一次，
+        // 接口一超时（默认60s）整轮行动直接整体回滚，表现为"双调用模式没法用"。
+        for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
+          try {
+            const r = await callMainOnce(null, true);
+            rawFull = r.rawFull;
+            if (attempt > 1) {
+              addLog([{ t: "sys", text: `  ✓ 重连成功，继续。` }]);
+              traceStep(_trace, "AI调用", "pass", `主叙事第${attempt}次尝试成功（双调用模式）`);
+            } else {
+              traceStep(_trace, "AI调用", "pass", "主叙事一次成功（双调用模式）");
+            }
+            break;
+          } catch (netErr) {
+            if (attempt <= MAX_AUTO_RETRY) {
+              addLog([{ t: "sys", text: `  ⚠ 接口中断（${netErr.message || netErr}），正在自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…` }]);
+              traceStep(_trace, "AI调用", "fail", `主叙事第${attempt}次失败：${netErr.message || netErr}，重试`);
+              continue;
+            }
+            traceStep(_trace, "AI调用", "fail", `主叙事重试用尽仍失败：${netErr.message || netErr}`);
+            throw netErr;
+          }
         }
         // 赌石谈价：从主叙事原文抠出 <deal> 结算标签，并从显示文本里剥掉（别让标签露给玩家）
         {
@@ -2804,8 +2821,15 @@ ${dealFmt}`;
         };
         const extracted = await callExtraction(intent.code, rawFull, exState, apiCfg).catch(e => {
           addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${e.message || e}），本轮状态未更新` }]);
+          traceStep(_trace, "提取调用", "fail", `${e.message || e}，本轮状态未更新`);
           return null;
         });
+        if (extracted?.parseFailed) {
+          addLog([{ t: "sys", text: `  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新` }]);
+          traceStep(_trace, "提取调用", "fail", "返回内容无法解析，本轮状态未更新");
+        } else if (extracted) {
+          traceStep(_trace, "提取调用", "pass", "状态提取完成");
+        }
         p = extracted?.p || {};
         mvuCommands = extracted?.mvuCommands || [];
       } else {

@@ -106,10 +106,14 @@ export function buildExtractionCfg(intentCode, apiCfg) {
   };
 }
 
-// 调用提取层，返回 { p, mvuCommands } 格式（与 parseMainResponse 返回结构相同，可直接复用状态应用代码）。
+// 调用提取层，返回 { p, mvuCommands, parseFailed }（p/mvuCommands 与 parseMainResponse 返回结构相同，可直接复用状态应用代码）。
 // 如果这个意图不需要状态提取（META_QUERY），返回 null。
 export async function callExtraction(intentCode, narrative, state, apiCfg) {
-  const spec = EXTRACTION_SPECS[intentCode] || EXTRACTION_SPECS.UNKNOWN;
+  // 不能用 || 回退：META_QUERY 显式为 null（本意图不提取状态），
+  // null || UNKNOWN 会让它错误地落到 UNKNOWN，使下面的 !spec 判断成为死代码。
+  const spec = Object.prototype.hasOwnProperty.call(EXTRACTION_SPECS, intentCode)
+    ? EXTRACTION_SPECS[intentCode]
+    : EXTRACTION_SPECS.UNKNOWN;
   if (!spec) return null;
 
   const cfg = buildExtractionCfg(intentCode, apiCfg);
@@ -125,7 +129,8 @@ export async function callExtraction(intentCode, narrative, state, apiCfg) {
   js = cleanJsonString(js);
 
   let parsed = {};
-  try { parsed = JSON.parse(js); } catch { parsed = {}; }
+  let parseFailed = false;
+  try { parsed = JSON.parse(js); } catch { parsed = {}; parseFailed = true; }
 
   // 从 JSON 的 "mvu" 字符串字段提取 MVU 指令（复用 extractMvuBlock 的正则解析）
   let mvuCommands = [];
@@ -135,5 +140,7 @@ export async function callExtraction(intentCode, narrative, state, apiCfg) {
     delete parsed.mvu;
   }
 
-  return { p: parsed, mvuCommands };
+  // parseFailed：提取模型返回了无法解析的内容（被截断/没按格式输出），调用方
+  // 据此提示"本轮状态未更新"——此前解析失败被静默吞掉，玩家毫无感知。
+  return { p: parsed, mvuCommands, parseFailed };
 }

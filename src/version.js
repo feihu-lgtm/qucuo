@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "双调用主叙事补自动重试+提取失败不再静默(修60秒超时整轮回滚)",
+    time: "2026-07-24 17:01",
+    notes: "修复双调用模式\"用不了\"的故障：行动日志显示[状态写回]异常回滚·接口超时60.0s，每轮行动都整体回滚。根因两条。①【核心】双调用分支(extractionEnabled)的主叙事调用此前只试一次——单调用模式有MAX_AUTO_RETRY=2共3次尝试兜底，双调用一次超时就直接抛错、两阶段pipeline整体回滚；而接口超时卡的是首字节(TTFB，fetchWithTimeout默认60s)，非流式请求要等服务器把整段叙事生成完才回第一个字节，主叙事目标字数高+中转站排队，不思考的模型也照样超时。修复：双调用分支主叙事调用接入与单调用一致的3次重试循环（断线提示\"正在自动重试\"、成功提示\"✓重连成功\"，重试用尽才回滚）。②【可观测性】双调用分支此前完全没有traceStep，行动日志里AI调用/提取调用全程留白，出故障无从排查（这次的超时就是靠\"没有AI调用步骤\"反推出走的是双调用分支）。补齐：主叙事成败、提取调用成败均写trace。③提取层JSON解析失败此前被静默吞掉(parsed={})，玩家能看到叙事但状态悄悄没更新、毫无感知：extractionEngine返回值新增parseFailed字段，MudRPG收到后明确提示\"返回的不是合法JSON，本轮状态未更新\"。④顺带修一处死代码：EXTRACTION_SPECS[intentCode]||UNKNOWN的回退写法会让META_QUERY(显式null=本意图不提取)错误落到UNKNOWN，使if(!spec)return null永不触发，改用hasOwnProperty判断（现状下META_QUERY本地秒回走不到提取层，无实际影响，属语义修正）。另排查确认\"关闭思考\"的真实语义：off只是发关闭参数(reasoning_effort:none/enable_thinking:false/thinkingBudget:0)，deepseek-reasoner/o系列/gemini-2.5-pro等服务端强制思考的模型不认照样思考，60s超时与思考开关无必然关系，根因建议是设置→接口超时调大到120~180s(上限300s)或开流式(Gemini类型不支持流式)。esbuild验证MudRPG.jsx/extractionEngine.js两文件通过。",
+  },
+  {
     codename: "提取模型加自动检测+日间模式文字配色全面修正",
     time: "2026-07-24 07:59",
     notes: "两件事。①双调用模式\"默认提取模型\"和6个意图专属模型此前只能手打模型名，没有自动检测入口。补齐：新增modelPickerTarget状态记录\"当前检测结果该填到哪个字段\"(null=主模型/\"extractionModel\"=默认提取模型/意图key=对应意图专属模型)，handleDetectModels加target参数；提取调用渠道(endpoint/key)本就沿用主配置，跟主模型是同一供应商同一份模型列表，不需要重复发请求，复用同一份modelList状态即可。默认提取模型和6个意图专属模型各自加🔍检测按钮+复用列表的选择UI，点选后写入对应字段。②日间模式的文字配色此前只做了zoneTheme(背景/边框/正文基调)，但主叙事日志用的整套颜色映射clr(desc叙事正文/room地名/cmd命令/item物品/stat状态/skill技能/err错误/choice选项/narrator旁白/crash崩溃/confess告白/affection好感/quest任务共14类)完全写死，WCAG对比度实测在日间米色背景下几乎全部低于2.5(需要4.5+)，desc仅1.62、room仅1.75，这也是用户反馈\"叙事文字该变黑\"\"地名该变深蓝\"的根源。新增clrDay配色表，保留每个类型的色相基因(错误依旧红系/对话依旧粉系)但大幅拉深明度，14项全部核算达标(5.2~10.5不等)，clr = isDayMode ? clrDay : clrNight。同时补上LogEntry.jsx里两处同样写死的高亮色——对话「」原本亮粉e8a0d8(日间对比度仅1.77)、引语\"\"原本琥珀d4a853(仅1.94)，这两处是叙事里最想让人一眼看清的内容，问题比正文更严重，加DIALOGUE_COLOR/QUOTE_COLOR日夜两套(日间对比度分别到7.46/5.48)，LogEntry加isDayMode prop，3处调用点同步传入。esbuild验证SettingsPanel.jsx/MudRPG.jsx/LogEntry.jsx三个改动文件全部通过。",
