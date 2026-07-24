@@ -13,10 +13,35 @@ import React, { useState, useMemo } from "react";
 import { CATALOG } from "./items/catalog.js";
 import { CATEGORY_LABEL, QUALITY, QUALITY_COLOR } from "./equipment.js";
 import { SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
+import { ITEM_DISTRIBUTION, isPoolable } from "./items/distribution.js";
+import { DISTRICT_REGION } from "./items/regionMap.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const S = (f) => `${BASE}stones/${f}`;
+
+// 地域 → 该地域下的具体据点名（DISTRICT_REGION 的反向索引），供分布说明落到据点
+const REGION_DISTRICTS = (() => {
+  const m = {};
+  for (const [district, region] of Object.entries(DISTRICT_REGION)) {
+    (m[region] = m[region] || []).push(district);
+  }
+  return m;
+})();
+
+// 把一件物品的分布信息翻成人话：
+//   在 ITEM_DISTRIBUTION 里（可上架货）→「在<地域>(据点)的<店类>有售」
+//   不在表里（神兵/传说/剧情信物/任务物）→「奇遇·剧情或支线获得，不上货架」
+function itemDistText(name) {
+  const d = ITEM_DISTRIBUTION[name];
+  if (!d) return { kind: "special", text: "奇遇 · 剧情或支线获得，寻常货架无售" };
+  const regions = (d.regions || []).map(r => {
+    const districts = (REGION_DISTRICTS[r] || []).slice(0, 3);
+    return districts.length ? `${r}（${districts.join("、")}）` : r;
+  }).join("、");
+  const shops = (d.shopTypes || []).join("、");
+  return { kind: "shop", text: `${regions || "各地"} 的 ${shops || "店铺"} 有售` };
+}
 
 // 品阶 → 玉石图代号（对应 public/stones/jade_N_色_chun.png）
 const JADE_CODE = { 白: ["1", "bai"], 绿: ["2", "lv"], 蓝: ["3", "lan"], 紫: ["4", "zi"], 橙: ["5", "cheng"], 红: ["6", "hong"] };
@@ -35,26 +60,46 @@ const Q_FILTERS = ["全部", ...QUALITY];
 // 武学分组的展示名（SKILL_CATALOG 的 key 是武馆位置代号）
 const SKILL_GROUP_LABEL = { 玉泉: "玉泉练武场", 雪山: "雪山派", 锦官: "锦官城武馆" };
 
-export default function CodexScreen({ zoneTheme, isDayMode = false, onClose }) {
+export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], skills = [], onClose }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const [tab, setTab] = useState("item"); // item | skill
   const [catFilter, setCatFilter] = useState("all");
   const [qFilter, setQFilter] = useState("全部");
+  const [search, setSearch] = useState("");
+  const [ownedOnly, setOwnedOnly] = useState(false); // 只看已获得
 
-  // 物品筛选（读全量 CATALOG）
+  // 三期·收集进度：玩家已拥有的物品名 / 已学武功名，做成 Set 供比对
+  const ownedItems = useMemo(() => new Set(inv.map(i => (typeof i === "string" ? i : i.name))), [inv]);
+  const ownedSkills = useMemo(() => new Set(skills.map(s => s.name)), [skills]);
+
+  const kw = search.trim();
+
+  // 物品筛选（读全量 CATALOG）+ 搜索 + 只看已获得
   const items = useMemo(() => {
     return CATALOG.filter(it =>
       (catFilter === "all" || it.category === catFilter) &&
-      (qFilter === "全部" || it.quality === qFilter)
+      (qFilter === "全部" || it.quality === qFilter) &&
+      (!kw || it.name.includes(kw) || (it.desc || "").includes(kw)) &&
+      (!ownedOnly || ownedItems.has(it.name))
     );
-  }, [catFilter, qFilter]);
+  }, [catFilter, qFilter, kw, ownedOnly, ownedItems]);
 
   // 武学：SKILL_CATALOG 只取"武馆分组"（玉泉/雪山/锦官），过滤掉突破价目表那些非数组/非武馆 key
   const skillGroups = useMemo(() => {
     return Object.entries(SKILL_CATALOG)
       .filter(([k, v]) => Array.isArray(v) && SKILL_GROUP_LABEL[k])
-      .map(([k, v]) => [SKILL_GROUP_LABEL[k], v]);
-  }, []);
+      .map(([k, v]) => {
+        const list = v.filter(sk =>
+          (!kw || sk.name.includes(kw) || (sk.desc || "").includes(kw)) &&
+          (!ownedOnly || ownedSkills.has(sk.name))
+        );
+        return [SKILL_GROUP_LABEL[k], list];
+      })
+      .filter(([, list]) => list.length > 0);
+  }, [kw, ownedOnly, ownedSkills]);
+
+  // 收集进度统计
+  const itemOwnedCount = useMemo(() => CATALOG.filter(it => ownedItems.has(it.name)).length, [ownedItems]);
 
   const T = zoneTheme;
   const paperText = isDayMode ? "#3a2a14" : "#3a2a14"; // 卷轴纸永远是深色底纹，字用深棕
@@ -96,9 +141,26 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, onClose }) {
         </div>
 
         {/* 两大页签 */}
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 14, flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 12, flexShrink: 0 }}>
           <button style={tabStyle(tab === "item")} onClick={() => setTab("item")}>物 品</button>
           <button style={tabStyle(tab === "skill")} onClick={() => setTab("skill")}>武 学</button>
+        </div>
+
+        {/* 搜索 + 只看已获得（两页签共用） */}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, flexShrink: 0, flexWrap: "wrap" }}>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="搜名字或介绍…"
+            style={{
+              flex: 1, minWidth: 140, padding: "5px 10px", fontSize: 12, fontFamily: "inherit",
+              background: "rgba(255,250,235,0.6)", border: "1px solid #b3987a", borderRadius: 4, color: "#3a2a14",
+            }}
+          />
+          {search && <span onClick={() => setSearch("")} style={{ cursor: "pointer", color: paperDim, fontSize: 12 }}>✕清空</span>}
+          <span onClick={() => setOwnedOnly(o => !o)} style={chipStyle(ownedOnly)} title="只显示已获得的">
+            {ownedOnly ? "✓ 只看已得" : "只看已得"}
+          </span>
         </div>
 
         {/* 物品筛选 */}
@@ -119,17 +181,22 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, onClose }) {
         <div style={{ flex: 1, overflowY: "auto", paddingRight: 6 }}>
           {tab === "item" ? (
             <>
-              <div style={{ fontSize: 11, color: paperDim, marginBottom: 6, paddingLeft: 4 }}>共 {items.length} 件</div>
-              {items.map((it, i) => <ItemRow key={it.name + i} it={it} paperText={paperText} paperDim={paperDim} paperAccent={paperAccent} />)}
-              {items.length === 0 && <div style={{ color: paperDim, textAlign: "center", padding: 30 }}>此类暂无记载</div>}
+              <div style={{ fontSize: 11, color: paperDim, marginBottom: 6, paddingLeft: 4 }}>
+                共 {items.length} 件 · 已收录 <span style={{ color: paperAccent }}>{itemOwnedCount}/{CATALOG.length}</span>
+              </div>
+              {items.map((it, i) => <ItemRow key={it.name + i} it={it} owned={ownedItems.has(it.name)} paperText={paperText} paperDim={paperDim} paperAccent={paperAccent} />)}
+              {items.length === 0 && <div style={{ color: paperDim, textAlign: "center", padding: 30 }}>{ownedOnly ? "尚无已获得的物件" : "此类暂无记载"}</div>}
             </>
           ) : (
-            skillGroups.map(([grp, list]) => (
-              <div key={grp}>
-                <div style={{ fontSize: 15, color: paperAccent, margin: "16px 0 6px", letterSpacing: 1, fontWeight: "bold", borderLeft: "4px solid #a0651a", paddingLeft: 10 }}>{grp}</div>
-                {list.map((sk, i) => <SkillRow key={sk.id || i} sk={sk} paperText={paperText} paperDim={paperDim} paperAccent={paperAccent} />)}
-              </div>
-            ))
+            <>
+              {skillGroups.map(([grp, list]) => (
+                <div key={grp}>
+                  <div style={{ fontSize: 15, color: paperAccent, margin: "16px 0 6px", letterSpacing: 1, fontWeight: "bold", borderLeft: "4px solid #a0651a", paddingLeft: 10 }}>{grp}</div>
+                  {list.map((sk, i) => <SkillRow key={sk.id || i} sk={sk} owned={ownedSkills.has(sk.name)} paperText={paperText} paperDim={paperDim} paperAccent={paperAccent} />)}
+                </div>
+              ))}
+              {skillGroups.length === 0 && <div style={{ color: paperDim, textAlign: "center", padding: 30 }}>{ownedOnly ? "尚未习得任何武学" : "无匹配武学"}</div>}
+            </>
           )}
         </div>
       </div>
@@ -138,7 +205,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, onClose }) {
 }
 
 // 物品条目行
-function ItemRow({ it, paperText, paperDim, paperAccent }) {
+function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
   const qc = QUALITY_COLOR[it.quality] || "#8a8578";
   const jade = jadeSrc(it.quality);
   // 数值：武器给攻倍率、护甲给防倍率、有六维给六维
@@ -149,9 +216,13 @@ function ItemRow({ it, paperText, paperDim, paperAccent }) {
   const effectName = it.effect && typeof it.effect === "object"
     ? (Object.values(it.effect).find(v => v && v.name)?.name || "特效")
     : null;
+  const dist = itemDistText(it.name);
   return (
-    <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)" }}>
-      {jade && <img src={jade} alt={it.quality} style={{ width: 42, height: 42, flexShrink: 0, objectFit: "contain", filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" }} />}
+    <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)", opacity: owned ? 1 : 0.92 }}>
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        {jade && <img src={jade} alt={it.quality} style={{ width: 42, height: 42, objectFit: "contain", filter: owned ? "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" : "grayscale(0.55) opacity(0.7)" }} />}
+        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "#3a9a3a", textShadow: "0 0 2px #fff" }}>✓</span>}
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, fontWeight: "bold", color: qc }}>{it.name}</span>
@@ -159,15 +230,19 @@ function ItemRow({ it, paperText, paperDim, paperAccent }) {
           <span style={{ fontSize: 10, color: paperDim }}>{CATEGORY_LABEL[it.category] || it.category}</span>
           {statBits.length > 0 && <span style={{ fontSize: 11, color: "#a05a10" }}>{statBits.join(" · ")}</span>}
           {effectName && <span style={{ fontSize: 11, color: "#a05a10" }}>· {effectName}</span>}
+          {owned && <span style={{ fontSize: 10, color: "#3a9a3a" }}>· 已获得</span>}
         </div>
         {it.desc && <div style={{ color: "#6a5230", fontSize: 12, marginTop: 3, lineHeight: 1.7 }}>{it.desc}</div>}
+        <div style={{ fontSize: 11, marginTop: 4, color: dist.kind === "special" ? "#9a6a2a" : "#5a3a12" }}>
+          📍 <span style={{ color: dist.kind === "special" ? "#9a6a2a" : "#9a5a10" }}>{dist.text}</span>
+        </div>
       </div>
     </div>
   );
 }
 
 // 武学条目行
-function SkillRow({ sk, paperText, paperDim, paperAccent }) {
+function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
   const qc = QUALITY_COLOR[sk.quality] || "#8a8578";
   const jade = jadeSrc(sk.quality);
   const bonusBits = [];
@@ -177,8 +252,11 @@ function SkillRow({ sk, paperText, paperDim, paperAccent }) {
     if (sk.passiveBonus.speedBonus) bonusBits.push(`身法+${sk.passiveBonus.speedBonus}`);
   }
   return (
-    <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)" }}>
-      {jade && <img src={jade} alt={sk.quality} style={{ width: 42, height: 42, flexShrink: 0, objectFit: "contain", filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" }} />}
+    <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)", opacity: owned ? 1 : 0.92 }}>
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        {jade && <img src={jade} alt={sk.quality} style={{ width: 42, height: 42, objectFit: "contain", filter: owned ? "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" : "grayscale(0.55) opacity(0.7)" }} />}
+        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "#3a9a3a", textShadow: "0 0 2px #fff" }}>✓</span>}
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, fontWeight: "bold", color: qc }}>{sk.name}</span>
@@ -189,6 +267,7 @@ function SkillRow({ sk, paperText, paperDim, paperAccent }) {
               <img src={S("ui/ingot.png")} alt="" style={{ width: 13, verticalAlign: -2, marginRight: 2 }} />{sk.price} 两
             </span>
           )}
+          {owned && <span style={{ fontSize: 10, color: "#3a9a3a" }}>· 已习得</span>}
         </div>
         {bonusBits.length > 0 && (
           <div style={{ fontSize: 11, marginTop: 3, color: "#5a3a12" }}>✦ 效果：<span style={{ color: "#9a5a10" }}>{bonusBits.join(" · ")}</span></div>

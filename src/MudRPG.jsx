@@ -5978,7 +5978,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
       {showPipeline && <PipelineViewer onClose={() => setShowPipeline(false)} loading={loading || pendingTalks > 0} waitSecs={waitSecs} />}
       {showTrace && <TraceViewer onClose={() => setShowTrace(false)} />}
-      {showCodex && <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} onClose={() => setShowCodex(false)} />}
+      {showCodex && <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => setShowCodex(false)} />}
       {activeNpcMenu && (
         <NpcActionMenu
           npc={activeNpcMenu}
