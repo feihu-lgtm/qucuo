@@ -4439,22 +4439,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               return <NineGridMap centerLabel={curRoom} cells={cells} onGo={go} accent="#8ac48a" loading={loading} big={mapBig} />;
             })()}
             {/* 出据点：内层地图里若当前房间有通向外层的方向，给一个精简入口（ClickableMap 只画内层房间） */}
-            {mapView === "inner" && (() => {
-              const outerExits = QUCUO_MAP[room.name]?.exits || {};
-              if (!Object.keys(outerExits).length) return null;
-              return (
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, marginTop: 6 }}>
-                  <span style={{ fontSize: "9px", color: zoneTheme.accent, flexShrink: 0 }}>出据点</span>
-                  {Object.entries(outerExits).map(([dir, dest]) => (
-                    <span key={dir} onClick={() => { if (!loading) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "outer" }); } }}
-                      title={`往${DIRS[dir] || dir} → ${dest}`}
-                      style={{ cursor: loading ? "not-allowed" : "pointer", fontSize: "10px", padding: "1px 7px", borderRadius: 3,
-                        border: `1px solid ${zoneTheme.border}`, color: zoneTheme.accent, background: zoneTheme.bgPanel, opacity: loading ? 0.5 : 1, whiteSpace: "nowrap" }}>
-                      {DIRS[dir] || dir}·{dest.includes("·") ? dest.split("·").pop() : dest}</span>
-                  ))}
-                </div>
-              );
-            })()}
+            {/* 出村走外层：内层视图不再单列"出据点"按钮，玩家切到"外"视图往对应方向走即可出村。 */}
           </div>
         </div>
 
