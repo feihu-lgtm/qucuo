@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "新增图鉴系统：百物·武学总览(顶栏入口·复用赌石素材·全量真实数据)",
+    time: "2026-07-24 12:40",
+    notes: "顶栏\"📖新手教程\"旁新增\"📖图鉴\"入口，打开全屏覆盖层，一站看全所有物品与武学的介绍/品阶/效果。新建 CodexScreen.jsx：物品页读 catalog.js 的 CATALOG 全量(140+件，武器/护甲/饰品/杂物)，支持类别×品阶双筛选(filterCatalog 同款逻辑，用 useMemo)；武学页读 qucuoKungfu.js 的 SKILL_CATALOG，只取武馆分组(玉泉/雪山/锦官，过滤掉突破价目表那些非武馆key)按馆分组展示。UI 走精致版：复用赌石那套 public/stones/ 素材——panel_big 卷轴纸做面板底、bar_wood 做页签、bar_paper 做筛选chip、ingot 元宝做武学价格图标、jade_1~6 品阶玉石(白bai/绿lv/蓝lan/紫zi/橙cheng/红hong)做每条左侧的稀有度标记。关于\"图鉴没有物品图标素材\"的解法：不做图标墙，而是用品阶玉石当稀有度锚点(一颗玉的颜色替代图标，语义上\"这东西什么档次\"比\"这东西长啥样\"更通顺)+ QUALITY_COLOR 品阶色给名字着色 + 排版留白撑质感，契合项目一贯\"不堆图片靠排版\"的美学，风格与赌石完全一致。遮罩复用 overlayClose.js 防误触，跟随 isDayMode。MudRPG 接线仅 4 处(import/状态/顶栏span/底部渲染)，不改任何数据与核心逻辑，纯增量。配套 docs/图鉴系统_规划方案.md(分三期：一期介绍品阶/二期补分布/三期搜索与收集进度)与 docs/图鉴预览.html。esbuild + vite.config.pages.js 完整 build 均通过。",
+  },
+  {
     codename: "对话即认识：统一所有对话入口 + 不选人时靠AI回报respondedNpcs精准标记",
     time: "2026-07-24 11:17",
     notes: "修\"从底部/侧栏选人对话，聊了半天对方头上还挂'尚未认识'\"的入口不一致。此前只有\"点NPC名字→互动菜单→对话\"(handleNpcTalk)会 markNpcAsKnown，而底部\"💬已在身边·对话\"(4760)和侧栏\"此地之人\"点选(5564)两个入口只 setTalkTarget、没标记认识——同一个\"跟人说话\"行为因入口不同结果不一致。改法不在各UI入口分别补，而在 act() 对话成功结算处统一判定(捕捉\"真的说了话\"这个动作本身，所有入口自动一致，也不会\"一点聚焦就认识\")：①选定了对话对象(talkTarget)→直接标记该人；②按用户要求扩展到\"不选人直接聊\"的情况——走路A，对话模式 prompt(modeNote)新增要求 AI 返回顶层字段 respondedNpcs:[名字]，列出本轮正文里真正开口回应玩家的NPC(只是被提及/路过/没搭理的不列，无人回应返回[])，act() 读该字段、且只认在场名单(room.npcs)里的名字(AI报幻觉名字一律丢弃)后标记认识。为何不解析正文猜\"谁说话了\"：散文极易把被提及/路过者误判成对话者，让AI结构化回报是准确且安全的解法(漏报最多是没标记，不会错标记)。parseMainResponse 是整体 JSON.parse、原样保留未知字段，respondedNpcs 能正常读到，无需改 schema；代码 Array.isArray 防御，AI 不返回也不报错。handleNpcTalk 原有\"点菜单对话即刻认识\"保留不动(markNpcAsKnown 内部去重，不冲突)。esbuild 验证通过。",

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>曲措乡 · 图鉴系统 UI 预览</title>
+<style>
+  :root {
+    --bg: #0e0c08; --panel: #120f0a; --border: #2a2419;
+    --text: #c8bfa0; --dim: #6a6250; --accent: #d4a853;
+    --q-bai: #b8b0a0; --q-lv: #6aaa6a; --q-lan: #6a9ad4;
+    --q-zi: #b48adf; --q-cheng: #e0913a; --q-hong: #d85050;
+  }
+  body.day {
+    --bg: #f5f0e4; --panel: #faf7ee; --border: #b3987a;
+    --text: #3d3626; --dim: #8a7c62; --accent: #8a5a12;
+    --q-bai: #6a6255; --q-lv: #3a6a3a; --q-lan: #1e4a6a;
+    --q-zi: #5a3a7a; --q-cheng: #9a5410; --q-hong: #a02020;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Songti SC","STSong","SimSun",serif;
+    font-size: 13px; line-height: 1.7; padding: 20px;
+    transition: background .4s, color .4s;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .titlebar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  h1 { font-size: 22px; color: var(--accent); font-weight: normal; letter-spacing: 2px; }
+  .daybtn { cursor: pointer; font-size: 11px; color: var(--dim); border: 1px solid var(--border); border-radius: 3px; padding: 4px 10px; background: transparent; }
+  .sub { color: var(--dim); font-size: 11px; margin-bottom: 16px; }
+
+  /* 两大页签 */
+  .tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .tab { cursor: pointer; padding: 8px 20px; font-size: 15px; color: var(--dim); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* 筛选器 */
+  .filters { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; align-items: center; }
+  .fgroup { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .flabel { color: var(--dim); font-size: 11px; margin-right: 2px; }
+  .chip { cursor: pointer; padding: 3px 11px; border-radius: 3px; font-size: 12px; border: 1px solid var(--border); color: var(--dim); user-select: none; }
+  .chip.on { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+
+  /* 条目列表 */
+  .count { font-size: 11px; color: var(--dim); margin-bottom: 8px; }
+  .row { display: flex; gap: 12px; padding: 10px 8px; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .qbar { width: 3px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }
+  .rmain { flex: 1; min-width: 0; }
+  .rhead { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .rname { font-size: 15px; font-weight: bold; }
+  .qtag { font-size: 10px; padding: 0 6px; border-radius: 2px; border: 1px solid currentColor; }
+  .rtype { font-size: 10px; color: var(--dim); }
+  .rstat { font-size: 11px; color: var(--accent); }
+  .rdesc { color: var(--dim); font-size: 12px; margin-top: 3px; }
+  .rdist { font-size: 11px; margin-top: 4px; color: var(--text); opacity: .75; }
+  .rdist b { color: var(--accent); font-weight: normal; }
+
+  .grpname { font-size: 13px; color: var(--accent); margin: 16px 0 6px; letter-spacing: 1px; border-left: 3px solid var(--accent); padding-left: 8px; }
+  .note { margin-top: 24px; padding: 12px; border: 1px dashed var(--border); border-radius: 4px; color: var(--dim); font-size: 11.5px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="titlebar">
+    <h1>📖 百物 · 武学总览</h1>
+    <button class="daybtn" onclick="document.body.classList.toggle('day')">☀ 日/夜 切换预览</button>
+  </div>
+  <div class="sub">UI 方向预览 · 示例数据与真实结构同构 · 无图标素材，靠品阶色与排版区分</div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="item" onclick="switchTab('item')">物品图鉴</div>
+    <div class="tab" data-tab="skill" onclick="switchTab('skill')">武学图鉴</div>
+  </div>
+
+  <div id="itemView">
+    <div class="filters">
+      <div class="fgroup"><span class="flabel">类别</span><span id="catFilter"></span></div>
+      <div class="fgroup"><span class="flabel">品阶</span><span id="qFilter"></span></div>
+    </div>
+    <div class="count" id="itemCount"></div>
+    <div id="itemList"></div>
+  </div>
+
+  <div id="skillView" style="display:none;">
+    <div id="skillList"></div>
+  </div>
+
+  <div class="note">
+    <b>说明</b>：这是独立预览，数据是示例（真实实现会读 catalog.js 的 CATALOG 全 140+ 件、
+    qucuoKungfu.js 的 SKILL_CATALOG）。品阶色、日/夜切换、筛选交互都是最终会有的。
+    「分布」一栏（在哪获得）是第二期补全的重点——真实数据来自 distribution.js / regionMap.js。
+  </div>
+</div>
+
+<script>
+const QCOLOR = { 白:'var(--q-bai)', 绿:'var(--q-lv)', 蓝:'var(--q-lan)', 紫:'var(--q-zi)', 橙:'var(--q-cheng)', 红:'var(--q-hong)' };
+const QUALITIES = ['全部','白','绿','蓝','紫','橙','红'];
+const CATS = ['全部','武器','护甲','饰品','杂物','传说','神兵'];
+
+// 示例物品（结构同真实 catalog.js）
+const ITEMS = [
+  { name:'霜牙', cat:'武器', q:'绿', stat:'攻·倍率1.25', effect:'25%概率施加内伤印', desc:'刀身泛青，刃口一道白线如冻痕。在熊山温泉边淬过，出鞘时总凝着薄霜。', dist:'熊山猎户携带 · 玉泉铁匠铺（绿档）' },
+  { name:'狼骨匕', cat:'武器', q:'绿', stat:'攻·倍率1.15', desc:'狼腿骨磨成的短匕，牧民防身之物，轻便称手。', dist:'大草甸游猎者 · 山野掉落' },
+  { name:'折柳', cat:'武器', q:'蓝', stat:'攻·倍率1.3', desc:'剑格上刻一枝垂柳，是天都镇老铁匠的得意之作。', dist:'天都镇兵器铺（蓝档）' },
+  { name:'雪魄', cat:'武器', q:'紫', stat:'攻·倍率1.42', effect:'残血时增伤', desc:'雪山千年寒冰所铸，握之刺骨，愈危愈利。', dist:'雪山派内门赏赐 · 支线获得' },
+  { name:'霜角', cat:'武器', q:'红', stat:'攻·倍率1.6', effect:'必先手+无视防御', desc:'传说以雪域神兽之角为芯，天下利器，见之者寒。', dist:'神兵支线·唯一' },
+  { name:'粗布短褐', cat:'护甲', q:'白', stat:'防·倍率1.0', desc:'寻常农户的粗麻衣裳，聊胜于无。', dist:'各村镇杂货铺（白档）· 初始' },
+  { name:'牦牛皮甲', cat:'护甲', q:'绿', stat:'防·倍率1.2', desc:'藏地牦牛皮硝制，厚实耐磨，挡得住寻常刀砍。', dist:'玉泉皮货铺 · 大草甸' },
+  { name:'松纹软甲', cat:'护甲', q:'蓝', stat:'防·倍率1.3 · 身法+1', desc:'甲片如松鳞层叠，轻而韧。', dist:'天都镇 · 门派' },
+  { name:'铜铃', cat:'杂物', q:'白', desc:'蒙着泥垢的半旧铜制马铃，过路人遗落的物件。', dist:'村口拾取 · 路遇' },
+  { name:'界石下的土', cat:'饰品', q:'白', stat:'——', desc:'才旦从村口界石底座下捧的一小撮土，布袋口系着她的头发。', dist:'才旦支线·信物' },
+  { name:'雪莲', cat:'杂物', q:'紫', desc:'雪山绝顶所生，可疗内伤、续真气。', dist:'雪山顶峰采集（需轻功）' },
+  { name:'三水归乡宴', cat:'杂物', q:'红', stat:'回血60%·七维+3', desc:'才旦在界石重立后张罗的宴席，三条支流的馈赠做成一桌菜。', dist:'终局·才旦支线圆满' },
+  { name:'青鸢', cat:'武器', q:'橙', stat:'攻·倍率1.52', effect:'趁中招追击', desc:'轻剑如鸢，剑走轻灵，专挑破绽。', dist:'锦官城拍卖 · 传说' },
+];
+
+// 示例武学（结构同真实 qucuoKungfu.js）
+const SKILLS = {
+  '玉泉练武场': [
+    { name:'流云步法', type:'轻功', q:'绿', price:45, bonus:'身法+1，同类招式对撞更易先手', desc:'藏地牧民代代相传的步伐心诀，身随意转，如云散无形。' },
+    { name:'摔跌术', type:'招式', q:'绿', price:35, bonus:'招式类型·状态', desc:'藏式摔跤化入武技，近身缠斗、借力制敌。' },
+  ],
+  '天都镇武馆': [
+    { name:'雪山剑法', type:'招式', q:'蓝', price:120, bonus:'招式类型·攻击', desc:'雪山派入门剑术，招式凌厉如风雪扑面。' },
+    { name:'铁布衫', type:'内功', q:'蓝', price:150, bonus:'气血上限+30', desc:'外家硬功，运气护体，可硬抗拳脚。' },
+  ],
+  '雪山派秘传': [
+    { name:'寒冰真气', type:'内功', q:'紫', price:350, bonus:'气血上限+60，出招带寒', desc:'雪山派镇派内功，真气森寒，伤敌于无形。' },
+  ],
+};
+
+let curCat = '全部', curQ = '全部';
+
+function renderChips(id, arr, cur, cb) {
+  document.getElementById(id).innerHTML = arr.map(v =>
+    `<span class="chip ${v===cur?'on':''}" onclick="${cb}('${v}')">${v}</span>`).join('');
+}
+function setCat(c){ curCat=c; renderItems(); }
+function setQ(q){ curQ=q; renderItems(); }
+
+function renderItems() {
+  renderChips('catFilter', CATS, curCat, 'setCat');
+  renderChips('qFilter', QUALITIES, curQ, 'setQ');
+  const list = ITEMS.filter(it => (curCat==='全部'||it.cat===curCat) && (curQ==='全部'||it.q===curQ));
+  document.getElementById('itemCount').textContent = `共 ${list.length} 件（真实版为全部 140+ 件）`;
+  document.getElementById('itemList').innerHTML = list.map(it => `
+    <div class="row">
+      <div class="qbar" style="background:${QCOLOR[it.q]}"></div>
+      <div class="rmain">
+        <div class="rhead">
+          <span class="rname" style="color:${QCOLOR[it.q]}">${it.name}</span>
+          <span class="qtag" style="color:${QCOLOR[it.q]}">${it.q}</span>
+          <span class="rtype">${it.cat}</span>
+          ${it.stat?`<span class="rstat">${it.stat}</span>`:''}
+          ${it.effect?`<span class="rstat">· ${it.effect}</span>`:''}
+        </div>
+        <div class="rdesc">${it.desc}</div>
+        <div class="rdist">📍 分布：<b>${it.dist}</b></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderSkills() {
+  document.getElementById('skillList').innerHTML = Object.entries(SKILLS).map(([grp, arr]) => `
+    <div class="grpname">${grp}</div>
+    ${arr.map(sk => `
+      <div class="row">
+        <div class="qbar" style="background:${QCOLOR[sk.q]}"></div>
+        <div class="rmain">
+          <div class="rhead">
+            <span class="rname" style="color:${QCOLOR[sk.q]}">${sk.name}</span>
+            <span class="qtag" style="color:${QCOLOR[sk.q]}">${sk.q}</span>
+            <span class="rtype">${sk.type}</span>
+            <span class="rstat">${sk.price} 两</span>
+          </div>
+          <div class="rdesc">${sk.desc}</div>
+          <div class="rdist">✦ 效果：<b>${sk.bonus}</b> · 在此处研习</div>
+        </div>
+      </div>`).join('')}
+  `).join('');
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab===t));
+  document.getElementById('itemView').style.display = t==='item'?'block':'none';
+  document.getElementById('skillView').style.display = t==='skill'?'block':'none';
+}
+
+renderItems();
+renderSkills();
+</script>
+</body>
+</html>

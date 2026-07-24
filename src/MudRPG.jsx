@@ -38,6 +38,7 @@ function extractPickupName(text) {
 
 import { getZoneTheme } from "./theme.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
+import CodexScreen from "./CodexScreen.jsx";
 import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
 import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
@@ -1015,6 +1016,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setShowTutorial(false);
     try { localStorage.setItem("qucuo_tutorial_seen", "1"); } catch { /* ignore */ }
   }, []);
+  const [showCodex, setShowCodex] = useState(false); // 图鉴：百物·武学总览
   const [showSettings, setShowSettings] = useState(initialOpenSettings);
   // 开场图文序列（策马入村 -> 信封特写）只在"全新开局且没有任何存档被恢复"时展示一次；
   // 读档进入、或本局已经看过一次之后刷新页面触发自动存档恢复，都不应该再放这段序列。
@@ -4498,6 +4500,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           onClick={() => setShowTutorial(true)}
           style={{ cursor: "pointer", color: "#e8d0a0", padding: "2px 10px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold" }}
         >📖 新手教程</span>
+        <span
+          onClick={() => setShowCodex(true)}
+          title="百物·武学总览：看全所有物品与武学的介绍、品阶、效果"
+          style={{ cursor: "pointer", color: "#e8d0a0", padding: "2px 10px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold" }}
+        >📖 图鉴</span>
         <span style={{ flex: 1 }} />
         <span
           onClick={() => setShowCharacterPage(true)}
@@ -5971,6 +5978,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
       {showPipeline && <PipelineViewer onClose={() => setShowPipeline(false)} loading={loading || pendingTalks > 0} waitSecs={waitSecs} />}
       {showTrace && <TraceViewer onClose={() => setShowTrace(false)} />}
+      {showCodex && <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} onClose={() => setShowCodex(false)} />}
       {activeNpcMenu && (
         <NpcActionMenu
           npc={activeNpcMenu}
