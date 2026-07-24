@@ -107,11 +107,11 @@ qucuo/
 - **回合流水线的请求-提交分离**（`MudRPG.jsx` 的 `act()`）—— 请求阶段无副作用可丢弃、提交阶段用快照回滚。参照其 `pipeline.js` 的思路。
 - **世界书的名字触发式注入**（`worldbook.js`）—— NPC 人设按"是否登场/被提及"动态点亮注入。
 
-### 墨染江湖 MoRanJiangHu（作者 [MikuLXK](https://github.com/MikuLXK/MoRanJiangHu)，另见 [ypq123456789 的转发](https://github.com/ypq123456789/MoRanJiangHu)）
+### 墨色江湖 · 无尽武林
 
-同类 LLM 武侠游戏，本项目的两处界面设计受它启发：
+同类 AI 武侠叙事项目（React + TypeScript，本地优先、IndexedDB 存档、酒馆预设 / 世界书 / 提示词池运行时拼装的完整工作台）。本项目的两处界面设计受它启发：
 
-- **系统 prompt 实时显示**（`MudRPG.jsx` 的 `PipelineViewer`）—— 把"系统各层走到哪、最终喂给 AI 的完整 prompt 长什么样、AI 回复了什么"实时摊开给玩家看。这种把管线透明化、边跑边长的做法学自它。
+- **系统 prompt 实时显示**（`MudRPG.jsx` 的 `PipelineViewer`）—— 把"系统各层走到哪、最终喂给 AI 的完整 prompt 长什么样、AI 回复了什么"实时摊开给玩家看。这种把运行时管线透明化、边跑边长的做法学自它。
 - **左 / 中 / 右三栏布局** —— 左栏此地之人与状态、中栏叙事正文、右栏行动面板的三分式界面组织。
 
 ### SillyTavern
