@@ -19,6 +19,23 @@ import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATA
 // 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
+
+// 从"路上拾取"的叙事原文里抠出捡到的物品名，供 AI 漏填 items_add 时系统兜底补发。
+// 匹配常见句式："拾起一看，竟是一枚铜制马铃"/"捡起…是把短刀"/"收入怀中"前面那个物件名。
+// 抠不到返回 null，由调用方用通用名兜底。宁可少抠（返回 null 走通用名），
+// 也不要抠错把半句话当成物品名，所以只认"是(一)+量词+名字"这种明确指认句式。
+function extractPickupName(text) {
+  if (!text || typeof text !== "string") return null;
+  // 优先："竟是一枚铜制马铃"/"原来是把锈剑"/"是一卷旧帛书" —— 是+可选(一)+可选量词+名字
+  const m = text.match(/(?:竟|原来|却|居然)?是\s*一?\s*[枚把柄卷张块面串根条尊坛壶盏][\u4e00-\u9fa5]{1,8}/);
+  if (m) {
+    // 去掉引导词和"是一+量词"，留下物品名主体
+    const name = m[0].replace(/^(?:竟|原来|却|居然)?是\s*一?\s*[枚把柄卷张块面串根条尊坛壶盏]/, "").trim();
+    if (name.length >= 1 && name.length <= 8) return name;
+  }
+  return null;
+}
+
 import { getZoneTheme } from "./theme.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
@@ -3315,9 +3332,9 @@ ${dealFmt}`;
       if (p.char && !isTalk) { setChar(c => { const nc = { ...c, ...p.char }; if (gm) { nc.hp = [nc.hp[1], nc.hp[1]]; } return nc; }); }
       if (p.dao) { setDao(d => ({ ...d, ...p.dao })); }
       if (p.delta && !isTalk) {
+        const judgment = pickupJudgmentRef.current;
+        let usedJudgment = false;
         if (p.delta.items_add?.length) {
-          const judgment = pickupJudgmentRef.current;
-          let usedJudgment = false;
           // 系统本轮已代发的采集物：即便 AI 又在 items_add 里塞了一份，也剔除，防重复入袋。
           const granted = collectGrantedRef.current || [];
           const rawAdds = granted.length
@@ -3342,6 +3359,20 @@ ${dealFmt}`;
           setInv(v => [...v, ...newItems]);
           setRoom(r => ({ ...r, items: r.items.filter(i => !addedNames.includes(i.name) && !addedNames.includes(i)) }));
         }
+        // 拾取判定兜底：本轮系统掷骰触发了拾取（judgment 有值），但 AI 叙事里
+        // 明明写了"捡到某物"、却忘了在 delta.items_add 里放这件物品（judgment
+        // 没被上面消费掉）——这正是"叙事说收入怀中、背包里却没有"那个 bug。
+        // 系统在这里补发一件：物品名尽量从叙事原文里抠（"拾起/捡起/收入…是一枚X"
+        // 之类），抠不到就用品质对应的通用名，绝不让掷到的拾取凭空蒸发。
+        if (judgment && !usedJudgment) {
+          const narrativeText = typeof rawFull === "string" ? rawFull : "";
+          const guessName = extractPickupName(narrativeText)
+            || `${judgment.quality === "白" ? "" : judgment.quality}路遇之物`;
+          const gained = makeGameItem({ name: guessName, category: judgment.category, quality: judgment.quality, desc: "路上拾得的物件。" });
+          setInv(v => [...v, gained]);
+          addLog([{ t: "item", text: `  ✓ 你拾得「${guessName}」，收入行囊。` }]);
+        }
+        pickupJudgmentRef.current = null;
         if (p.delta.items_rm?.length) {
           const names = p.delta.items_rm.map(i => typeof i === 'string' ? i : i.name || String(i));
           setInv(v => v.filter(i => { const s = typeof i === 'string' ? i : i.name; return !names.includes(s); }));

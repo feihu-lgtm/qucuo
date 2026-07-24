@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修移动拾取叙事说捡到却没进包(AI漏填items_add系统兜底补发)+村口放补偿物",
+    time: "2026-07-24 10:40",
+    notes: "两件。①【风铃 bug】移动途中系统按气运掷骰触发\"路上拾取\"，设计上让 AI 在 output 里叙述捡到什么、并在 delta.items_add 里加这件物品——但 AI 常常叙事写了\"拾起竟是一枚铜制马铃…收入怀中\"却忘了填 items_add，导致叙事说捡到、背包里却没有(玩家反馈的风铃就是这样)。这跟上一版界石是相反方向的同类脱节。修法：把\"拾取判定兜底\"从 `if (items_add?.length)` 里提出来，无论 AI 填没填都检查一次——若本轮有拾取判定(pickupJudgmentRef)但没被任何结构化物品消费掉(usedJudgment 仍 false)，系统按判定的品质/分类自动补发一件，物品名用新函数 extractPickupName 从叙事原文抠(匹配\"是+一+量词+名字\"句式，如\"竟是一枚铜制马铃\"→\"半旧的铜制马铃\")，抠不到则用\"路遇之物\"通用名兜底，绝不让掷到的拾取凭空蒸发。节点测试四句真实叙事+一句无拾取，命中/兜底均正确。②【村口补偿】应玩家要求在鱼定村 room.items 补放两件可拾物：\"无主的青锋剑\"(weapon/绿/atkMul1.2，比开局白枪强一档)、\"铜铃\"(misc/白，呼应风铃 bug 的物件)，都带全 quality/category 不会再 undefined。100 两银子因是 char.money 独立货币字段、没法作为地上 room.items 物品被交易系统识别，改为初始银两 50→150(+100补偿)。esbuild 验证 MudRPG.jsx / qucuo.js 通过。",
+  },
+  {
     codename: "修旁白读不到背包(inv.join变[object Object])+背包物品品质undefined显示兜底",
     time: "2026-07-24 10:23",
     notes: "两个连着的 bug，现象是玩家在村长家捡了「界石」进背包，旁白却坚称背包里只有青稞粗布看不见界石。根因：①旁白私聊的 system prompt 里 worldState 用 `玩家背包:${inv.join(\",\")}` 直接拼——但背包物品是对象{name,quality,...}，join 会得到一串 [object Object]，旁白根本读不出玩家身上有什么(而主叙事 act() 用的 invText 是 inv.map 取名字+品阶，一直是对的，只有旁白这条漏了)。改成和主叙事一致的 narratorInvText = inv.map(取名字+品阶+是否装备)。全项目扫描确认没有其他裸 inv.join。②「界石」本是 presets/qucuo.js 里鱼定村 room.items 的场景地标对象，只有 name/id、没有 quality 字段(catalog.js 里也没登记「界石」本体)，被当道具捡进背包后，右栏包袱列表读 it.quality 得到 undefined，显示成「界石 (undefined)」。显示层兜底：对象物品 quality 缺失时按「白」处理，颜色 QUALITY_COLOR 也兜底到默认金色，key 用 it.id||i 防裸对象无 id。注：界石能否被捡属设计问题(可能想留作剧情道具)，未擅动拾取判定，只做显示兜底止血。基于最新版 190a0b1 重新 clone 后修改，esbuild 验证通过。",
