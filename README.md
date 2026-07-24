@@ -6,6 +6,8 @@
 
 **[▶ 在线试玩 Play Online](https://feihu-lgtm.github.io/qucuo/)** &nbsp;·&nbsp; [源码 Source](https://github.com/feihu-lgtm/qucuo)
 
+📖 世界导览：**[据点 · 房间 · 功能](docs/世界导览_据点与房间.md)** &nbsp;·&nbsp; **[任务线剧情](docs/世界导览_任务线.md)**
+
 </div>
 
 一款浏览器端的中文武侠文字 MUD RPG。设定在藏地风格的高原山乡，融合 AI 驱动叙事、回合制战斗、NPC 交互与固定拓扑地图，纯前端运行（React + Vite），无需后端。
