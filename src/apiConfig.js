@@ -524,6 +524,9 @@ export async function callModel(cfg, systemPrompt, messages, opts = {}) {
           "Content-Type": "application/json",
           "x-api-key": cfg.apiKey,
           "anthropic-version": "2023-06-01",
+          // 允许从浏览器直连 Anthropic API（GitHub Pages 等纯静态托管没有服务端代理时必需）。
+          // 这是 Anthropic 官方支持的 header，"bring your own key" 模式的标准做法。
+          "anthropic-dangerous-direct-browser-access": "true",
         },
         body: JSON.stringify(abody),
       });
@@ -640,7 +643,7 @@ export async function callModelStream(cfg, systemPrompt, messages, onChunk, opts
       applyThinkingAnthropic(abody, cfg, maxTokens);
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": cfg.apiKey, "anthropic-version": "2023-06-01" },
+        headers: { "Content-Type": "application/json", "x-api-key": cfg.apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
         body: JSON.stringify(abody),
       });
       if (!res.ok) {
