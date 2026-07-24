@@ -4741,7 +4741,26 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < VERSION_HISTORY.length - 1 ? "1px solid #14161e" : "none" }}>
                 <div style={{ color: i === 0 ? "#e0a0d0" : "#c8bfa0", fontSize: "12.5px" }}>「{v.codename}」{i === 0 && <span style={{ color: zoneTheme.accentDim, fontSize: "10px" }}> · 当前版本</span>}</div>
                 <div style={{ color: "#5a5a4a", fontSize: "10.5px", marginBottom: 4 }}>{v.time}</div>
-                <div style={{ color: "#8a8a7a", fontSize: "11px", lineHeight: 1.6 }}>{v.notes}</div>
+                {/* notes 两种写法都认：数组=一行一条逐行列出（长条目请写数组）；
+                    字符串=老写法，整段显示。数组里以 ①②③ 或 一、二、开头的行
+                    悬挂缩进一下，看起来才像个更新日志而不是一堵墙。 */}
+                {Array.isArray(v.notes) ? (
+                  <div style={{ display: "grid", gap: 3 }}>
+                    {v.notes.map((line, j) => {
+                      const isItem = /^[①-⑳【]|^[一二三四五六七八九十]、/.test(String(line).trim());
+                      return (
+                        <div key={j} style={{
+                          color: isItem ? "#8a8a7a" : "#a09a86",
+                          fontSize: "11px", lineHeight: 1.65,
+                          paddingLeft: isItem ? 12 : 0,
+                          textIndent: isItem ? -12 : 0,
+                        }}>{line}</div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ color: "#8a8a7a", fontSize: "11px", lineHeight: 1.6 }}>{v.notes}</div>
+                )}
               </div>
             ))}
           </div>
