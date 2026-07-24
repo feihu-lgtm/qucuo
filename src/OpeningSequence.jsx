@@ -1,8 +1,12 @@
 // 开场图文序列
 // 仅在"全新开局"（没有存档、第一次点开始）时展示一次：
 // 第一张——少年策马入村，远眺三曲交汇的鱼定村
-// 第二张——信封特写，隶书"陈狐飞 启"，未干墨迹
+// 第二张——邀帖特写，隶书"<玩家名> 启"，落款一个"温"字
 // 点击画面或按任意键推进到下一张，第二张点击后关闭序列，正式进入游戏
+//
+// 身世设定：主角就是无名之人，没有失落的血脉也没有隐藏的仇家（见 narrator.js
+// 的 WHISPER_TOPICS.origin）。手上那张帖子不是身世信物，只是温掌柜的赌石邀帖，
+// 纯粹作为"你为什么会来曲措乡"的触发器。改这里的文案时别把两件事又缠回一起。
 import React, { useState } from "react";
 import { ZONE_THEMES } from "./theme.js";
 
@@ -14,11 +18,11 @@ export default function OpeningSequence({ onFinish, playerName }) {
   const SLIDES = [
     {
       image: "/intro-1.jpg",
-      caption: "你揣着一封无落款的旧信，一路翻山越岭走到这曲措乡地界。",
+      caption: "你揣着一张赌石邀帖，一路翻山越岭走到这曲措乡地界。没有姓氏可报，没有师门可攀。",
     },
     {
       image: "/intro-2.jpg",
-      caption: `信上只有三字：${name} 启。墨迹未干，却不知是谁人所书。`,
+      caption: `帖上写着：${name} 启。落款一个「温」字——天都镇玉器轩，三日一开石，路远，来不来随意。`,
     },
   ];
   const slide = SLIDES[index];

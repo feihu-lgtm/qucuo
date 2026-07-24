@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { QUCUO_PRESET } from "./presets/qucuo.js";
 import {
   NNPC_STAGE, initialNarratorState,
-  narratorVoicePrompt, affectionLabel, NARRATOR_WHISPER_CONTEXT, narratorWhisperLengthNote,
+  narratorVoicePrompt, affectionLabel, buildNarratorWhisperContext,
+  narratorWhisperLengthNote, gateWhisperTopics,
 } from "./narrator.js";
 import { loadConfig, saveConfig, callModel, callModelStream, cleanJsonString, getPipelineLog, clearPipelineLog, classifyError } from "./apiConfig.js";
 import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, fmtMs } from "./actionTrace.js";
@@ -1686,14 +1687,26 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // （不在任何条目的 scopes 里），因此专项段全靠关键词点亮：玩家问路才亮拓扑，
       // 提到人名才亮具名人物，聊到掉落才亮装备规则。认不出标题的段落照旧常驻（蓝灯），
       // 用户改过 scenario 或换自定义预设都不会因这层分流丢内容。
+      const _lastReply = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
       const _whisperGate = gateScenario(preset.scenario, {
         scope: "whisper",
         userInput: content,
-        lastReply: [...convo].reverse().find(m => m.role === "assistant")?.content || "",
+        lastReply: _lastReply,
       });
       if (_whisperGate.lit.length || _whisperGate.dark.length) {
         traceStep(_wt, "世界书·总纲", "info",
           `🟢${_whisperGate.lit.join("、") || "无"}　⚫灭:${_whisperGate.dark.join("、") || "无"}`);
+      }
+
+      // 私聊话题红绿灯（身世/赌石邀帖等冷门追问）：默认不给，命中关键词才点亮。
+      // 与上面 scenario 的"默认全给、按条目灭灯"相反，是加法而非减法——这些条目
+      // 绝大多数轮次用不上，常驻只会白烧上下文；但玩家一旦问起，必须有统一口径，
+      // 否则模型只能现编，这局说是将门遗孤、下局说是灭门孤儿。
+      const _topicGate = gateWhisperTopics(`${content}\n${_lastReply}`);
+      if (_topicGate.lit.length) {
+        traceStep(_wt, "私聊话题·红绿灯", "pass", `🟢${_topicGate.lit.join("、")}`);
+      } else {
+        traceStep(_wt, "私聊话题·红绿灯", "skip", "本轮无话题命中");
       }
 
       // 旁白专属世界书（设置→旁白 tab 可编辑）：只进私聊，不进主叙事。留空则一个字不发。
@@ -1705,7 +1718,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
       // 篇幅指令拼在最末尾（贴生成处 = 酒馆 Depth 0，是插入深度最强的位置，
       // 与「成文铁律放 userContent 末尾」同一条经验），别埋进开头被当耳旁风。
-      const sys = `${NARRATOR_WHISPER_CONTEXT}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${narratorLoreBlock}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(apiCfg.narratorWhisperWordCount)}`;
+      const sys = `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${narratorLoreBlock}${_topicGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
 
       // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
       // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。

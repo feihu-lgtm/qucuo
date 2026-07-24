@@ -2,6 +2,8 @@
 // 支持 Anthropic 原生格式 / OpenAI 兼容格式 / Gemini API 三种后端，
 // 上层调用者只需要传 (systemPrompt, messages)，不需要关心具体是哪家供应商。
 
+import { DEFAULT_WHISPER_WORDS } from "./narrator.js";
+
 const CONFIG_KEY = "wuxia_mud_api_config";
 
 // Pipeline 日志：记录每次 API 调用的完整请求/响应，保留最近 20 条。
@@ -118,10 +120,12 @@ export function defaultConfig() {
     temperature: 1.0,
     targetWordCount: 900, // 用户真正关心的：这一轮想要大约多少个汉字，不是 token 数
     maxTokens: wordCountToMaxTokens(900), // 由 targetWordCount 换算出的 API token 上限，是安全余量，不是字数控制的主变量
-    // 私聊旁白的目标字数。主叙事有「篇幅要求」硬指令（buildSysBase 的 lenNote），
-    // 私聊此前一个字的篇幅指令都没有，模型没有长度目标就按聊天默认长度走、
-    // 每次只回几十字。这里给一条独立的短篇幅线（私聊本就不该像叙事那么长）。
-    narratorWhisperWordCount: 300,
+    // 私聊旁白的目标字数，按好感度五档分别配置（出厂 100/200/300/400/500）。
+    // 主叙事有「篇幅要求」硬指令（buildSysBase 的 lenNote），私聊此前一个字的
+    // 篇幅指令都没有，模型没有长度目标就按聊天默认长度走、每次只回几十字。
+    // 分档而不是给一个固定值：冷淡期的她本就没什么话，篇幅跟着好感度一起解锁，
+    // 与文风、攻略档位同一条曲线。分界线见 narrator.js 的 AFFECTION_TIERS。
+    narratorWhisperWords: { ...DEFAULT_WHISPER_WORDS },
     // 旁白专属世界书：只注入私聊通道的自定义设定，玩家在「旁白」tab 里自由编辑。
     // 只进私聊、不进主叙事——主叙事的世界观走预设/scenario 那一套，这里写的是
     // "只有她自己知道的事"（她的来历、她对玩家的私下看法、想让她记住的梗）。
@@ -179,6 +183,7 @@ export function loadConfig() {
     // 丢掉新增项，故按 默认 <- 存档 的顺序逐键补全，确保九项/五项始终齐全。
     merged.callTokenLimits = { ...DEFAULT_CALL_TOKEN_LIMITS, ...(saved.callTokenLimits || {}) };
     merged.intentBudgets = { ...DEFAULT_INTENT_BUDGETS, ...(saved.intentBudgets || {}) };
+    merged.narratorWhisperWords = { ...DEFAULT_WHISPER_WORDS, ...(saved.narratorWhisperWords || {}) };
     // 迁移：剧情类两档（战斗/事件行动）由旧出厂值 700/500 上调到 900 线。
     // 只把\"恰好等于旧默认\"的值顶上来（几乎必是没手动改过的），用户特意调过的别值不动。
     if (merged.intentBudgets.COMBAT === 700) merged.intentBudgets.COMBAT = 900;

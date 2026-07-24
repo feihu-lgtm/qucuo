@@ -11,7 +11,7 @@ const EXTRACTION_INTENT_LABELS = [
 ];
 import { listSlots, saveToSlot, loadSlot, deleteSlot, renameSlot, clearAutoSave, autoSave, exportSave, importSave } from "./saves.js";
 import { listCharacters, npcAffectionLabel } from "./mvu.js";
-import { affectionLabel } from "./narrator.js";
+import { affectionLabel, AFFECTION_TIERS, affectionTier } from "./narrator.js";
 import PresetManager, { PresetToolbar } from "./PresetManager.jsx";
 import PresetEditor from "./PresetEditor.jsx";
 import { loadAllPresets, saveAllPresets } from "./presetSystem.js";
@@ -757,12 +757,10 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
               />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, marginTop: 6 }}>
-              {[[0, "冷漠疏离"], [20, "略有波动"], [45, "愿意闲聊"], [70, "明显暧昧"], [90, "濒临觉醒"]].map(([v, label], i, arr) => {
-                const aff = narrator?.affection ?? 0;
-                // 当前落在哪一档：下界 <= 好感度 < 下一档下界（最后一档无上界）
-                const active = aff >= v && (i === arr.length - 1 || aff < arr[i + 1][0]);
+              {AFFECTION_TIERS.map(({ min: v, label, key }) => {
+                const active = affectionTier(narrator?.affection ?? 0).key === key;
                 return (
-                  <span key={v}
+                  <span key={key}
                     onClick={() => setNarrator?.(n => ({ ...n, affection: v }))}
                     style={{
                       cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 3, fontSize: "10px",
@@ -830,24 +828,42 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
 
             {/* ③ 私聊篇幅与 token */}
             <div style={sectionStyle}>
-              <div style={labelStyle}>私聊篇幅 · 目标字数</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  type="range" min="50" max="1500" step="50" value={cfg.narratorWhisperWordCount ?? 300}
-                  onChange={e => patch({ narratorWhisperWordCount: parseInt(e.target.value) || 300 })}
-                  style={{ flex: 1 }}
-                />
-                <input
-                  type="number" min="20" step="50" value={cfg.narratorWhisperWordCount ?? 300}
-                  onChange={e => patch({ narratorWhisperWordCount: parseInt(e.target.value) || 300 })}
-                  style={{ ...inputStyle, width: 70 }}
-                />
-                <span style={{ fontSize: "11px", color: "#5a5a4a" }}>字</span>
+              <div style={labelStyle}>私聊篇幅 · 按好感度五档解锁</div>
+              <div style={{ display: "grid", gap: 4 }}>
+                {AFFECTION_TIERS.map(t => {
+                  const cur = affectionTier(narrator?.affection ?? 0).key === t.key;
+                  const val = (cfg.narratorWhisperWords && cfg.narratorWhisperWords[t.key] != null)
+                    ? cfg.narratorWhisperWords[t.key] : t.words;
+                  return (
+                    <div key={t.key} style={{
+                      display: "flex", alignItems: "center", gap: 8, padding: "3px 6px", borderRadius: 3,
+                      background: cur ? "#12211f" : "transparent",
+                      border: `1px solid ${cur ? "#6ec6c6" : "transparent"}`,
+                    }}>
+                      <span style={{ width: 16, color: cur ? "#6ec6c6" : "#3a3a2a", fontSize: "10px" }}>{cur ? "▶" : ""}</span>
+                      <span style={{ flex: 1, fontSize: "11px", color: cur ? "#c8e0d8" : "#7a7a6a" }}>
+                        {t.label}
+                        <span style={{ color: "#5a5a4a", marginLeft: 6 }}>
+                          {t.key === "awake" ? "≥90" : `${t.min}–${AFFECTION_TIERS[AFFECTION_TIERS.indexOf(t) + 1].min}`}
+                        </span>
+                      </span>
+                      <input
+                        type="number" min="20" step="50" value={val}
+                        onChange={e => {
+                          const v = Math.max(20, parseInt(e.target.value) || t.words);
+                          patch({ narratorWhisperWords: { ...(cfg.narratorWhisperWords || {}), [t.key]: v } });
+                        }}
+                        style={{ ...inputStyle, width: 70 }}
+                      />
+                      <span style={{ fontSize: "11px", color: "#5a5a4a" }}>字</span>
+                    </div>
+                  );
+                })}
               </div>
-              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 4 }}>
-                主叙事有自己的篇幅要求（API 配置里的目标字数，默认 900），私聊此前完全没有篇幅指令、
-                模型没有长度目标就只回几十字。这条独立于主叙事，允许±30% 浮动。
-                冷漠期的打断式回绝与宕机后的空壳应答不受此值影响，仍是一句话。
+              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 6 }}>
+                ▶ 是当前好感度所在档。冷淡期她本就没什么话，篇幅跟着好感度一起解锁，
+                与文风、攻略档位同一条曲线。允许±30% 浮动；冷漠期的打断式回绝与宕机后的
+                空壳应答不受此值影响，仍是一句话。
               </div>
 
               <div style={{ ...labelStyle, marginTop: 10 }}>私聊 token 输出上限</div>
