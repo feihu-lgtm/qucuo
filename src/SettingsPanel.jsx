@@ -22,6 +22,8 @@ const inputStyle = {
   color: "#c8bfa0", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px", boxSizing: "border-box",
 };
 const labelStyle = { fontSize: "11px", color: "#5a8a5a", marginBottom: 4, marginTop: 10 };
+// 次级面板返回栏用的标题
+const TAB_LABELS = { api: "API 配置", preset: "预设", saves: "存档管理", other: "其他" };
 const sectionStyle = { borderTop: "1px solid #1a1d2e", paddingTop: 12, marginTop: 12 };
 const btnStyle = {
   cursor: "pointer", color: "#6ec6c6", padding: "5px 12px", background: "#10121a",
@@ -29,7 +31,7 @@ const btnStyle = {
 };
 
 export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale }) {
-  const [tab, setTab] = useState(initialTab || "api"); // api | preset | saves | cheat | help
+  const [tab, setTab] = useState(initialTab || null); // null=主页卡片 | api | preset | saves | other
   const [testStatus, setTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
   const [testMsg, setTestMsg] = useState("");
   const [slots, setSlots] = useState(listSlots());
@@ -44,6 +46,14 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
   React.useEffect(() => {
     if (tab === "api") countMemories().then(setMemCount).catch(() => setMemCount(null));
   }, [tab]);
+
+  // 本项目只对外提供 OpenAI 兼容一种接入方式（DeepSeek/硅基/中转站等）。
+  // 旧存档或旧配置里若残留 anthropic/gemini/qwen 类型，挂载时统一纠正为 openai，
+  // 避免界面里出现已删除的类型分支、或请求走错协议。
+  React.useEffect(() => {
+    if (cfg.apiType !== API_TYPES.OPENAI) patch({ apiType: API_TYPES.OPENAI });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleClearMemory = async () => {
     if (!window.confirm("确定清空全部长期向量记忆？此操作不可撤销（存档本身不受影响）。")) return;
@@ -170,19 +180,14 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
       <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "#c8bfa0" }} onClick={e => e.stopPropagation()}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ color: "#6ec6c6", fontSize: "14px" }}>⚙ 游戏设置</span>
+          <span style={{ color: "#6ec6c6", fontSize: "14px" }}>
+            {tab === null ? "⚙ 游戏设置" : (
+              <span style={{ cursor: "pointer" }} onClick={() => setTab(null)}>← 返回 · <span style={{ color: "#c8bfa0" }}>{TAB_LABELS[tab] || ""}</span></span>
+            )}
+          </span>
           <span style={{ color: "#5a5a4a", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
-        <PresetToolbar state={presetState} onStateChange={updatePresetState} />
-        <div style={{ marginTop: -6, marginBottom: 12 }}>
-          <span
-            style={{ ...btnStyle, borderColor: "#3a3020", color: "#f0c060" }}
-            onClick={() => setShowFullEditor(true)}
-          >
-            🗂 进入预设编辑器（库存 / 激活链 / 收藏三栏）
-          </span>
-        </div>
         {showFullEditor && (
           <PresetEditor
             preset={presetState.presets[presetState.activeIndex]}
@@ -194,35 +199,51 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
           />
         )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "6px 10px", background: "#0e0c14", border: "1px solid #2a2438", borderRadius: 4 }}>
-          <span style={{ fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>字号</span>
-          <input
-            type="range" min="0.7" max="1.6" step="0.05"
-            value={uiScale}
-            onChange={e => setUiScale(parseFloat(e.target.value))}
-            style={{ flex: 1 }}
-          />
-          <span style={{ fontSize: "11px", color: "#c8bfa0", flexShrink: 0, width: 42, textAlign: "right" }}>{Math.round(uiScale * 100)}%</span>
-          <span
-            onClick={() => setUiScale(1)}
-            style={{ fontSize: "10px", color: "#6ec6c6", cursor: "pointer", flexShrink: 0, border: "1px solid #1a2d2a", borderRadius: 3, padding: "2px 6px" }}
-          >重置</span>
-        </div>
+        {/* ── 主页：四个大卡片入口 ── */}
+        {tab === null && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
+            {[
+              ["api", "🔑 API 配置", "接口地址 · 密钥 · 模型"],
+              ["preset", "📜 预设", "对话补全预设 · 编辑器"],
+              ["saves", "💾 存档管理", "读取 · 导出 · 删除"],
+              ["other", "🎚 其他", "字号 · 显示"],
+            ].map(([id, title, sub]) => (
+              <div key={id} onClick={() => setTab(id)}
+                style={{
+                  cursor: "pointer", padding: "20px 16px", borderRadius: 6,
+                  background: "#0e1018", border: "1px solid #2a3a3a",
+                  transition: "all 0.2s ease", textAlign: "center",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#141a24"; e.currentTarget.style.borderColor = "#6ec6c6"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#0e1018"; e.currentTarget.style.borderColor = "#2a3a3a"; }}>
+                <div style={{ fontSize: "15px", color: "#c8e0d8", marginBottom: 6 }}>{title}</div>
+                <div style={{ fontSize: "10.5px", color: "#6a7a72" }}>{sub}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        <div style={{ display: "flex", gap: 6, marginBottom: 12, borderBottom: "1px solid #1a1d2e", paddingBottom: 8 }}>
-          {[["api", "API 配置"], ["preset", "预设"], ["saves", "存档管理"], ["cheat", "金手指"], ["help", "玩法说明"]].map(([id, label]) => (
-            <span key={id} onClick={() => setTab(id)} style={{
-              cursor: "pointer", padding: "4px 10px", borderRadius: 3, fontSize: "11.5px",
-              color: tab === id ? "#6ec6c6" : "#7a7a6a",
-              background: tab === id ? "#1a2a2a" : "transparent",
-            }}>{label}</span>
-          ))}
-        </div>
+        {/* 预设次级面板顶部的工具条 + 编辑器入口（原来常驻，现收进预设） */}
+        {tab === "preset" && (
+          <>
+            <PresetToolbar state={presetState} onStateChange={updatePresetState} />
+            <div style={{ marginTop: -6, marginBottom: 12 }}>
+              <span
+                style={{ ...btnStyle, borderColor: "#3a3020", color: "#f0c060" }}
+                onClick={() => setShowFullEditor(true)}
+              >
+                🗂 进入预设编辑器（库存 / 激活链 / 收藏三栏）
+              </span>
+            </div>
+          </>
+        )}
 
         {tab === "api" && (
           <div>
+            {/* 【暂留·等会用】原多渠道说明文案，后续可能放到别处：
+              支持 OpenAI 兼容格式、Gemini API、Anthropic 原生格式与千问。密钥仅保存在浏览器本地（localStorage），不会上传到任何服务器。 */}
             <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 8 }}>
-              支持 OpenAI 兼容格式、Gemini API、Anthropic 原生格式与千问。密钥仅保存在浏览器本地（localStorage），不会上传到任何服务器。
+              填入任一 OpenAI 兼容接口（DeepSeek / 硅基流动 / 各类中转站等）。密钥仅保存在浏览器本地（localStorage），不会上传到任何服务器。
             </div>
 
             {/* 配置管理：多套配置存本地、随时切换、导出/导入落盘 */}
@@ -233,7 +254,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
                   style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
                   value={cfgProfileName}
                   onChange={e => setCfgProfileName(e.target.value)}
-                  placeholder="给当前配置起个名（如 千问-主号 / DS备用）"
+                  placeholder="给当前配置起个名（如 DS主号 / 备用）"
                 />
                 <span onClick={handleSaveCfgProfile} style={{ ...btnStyle, whiteSpace: "nowrap" }}>保存这套</span>
               </div>
@@ -242,7 +263,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
                   {cfgProfiles.map(p => (
                     <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px" }}>
                       <span style={{ flex: 1, color: "#c8bfa0" }}>{p.name}
-                        <span style={{ color: "#5a5a4a", marginLeft: 6 }}>{p.cfg?.apiType || ""} · {p.cfg?.model || ""}</span>
+                        <span style={{ color: "#5a5a4a", marginLeft: 6 }}>{p.cfg?.model || ""}</span>
                       </span>
                       <span onClick={() => handleLoadCfgProfile(p.name)} style={{ cursor: "pointer", color: "#6ec6c6" }}>切换</span>
                       <span onClick={() => handleDeleteCfgProfile(p.name)} style={{ cursor: "pointer", color: "#c47070" }}>删除</span>
@@ -256,51 +277,9 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
               </div>
             </div>
 
-            <div style={labelStyle}>API 类型</div>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[[API_TYPES.ANTHROPIC, "Anthropic"], [API_TYPES.OPENAI, "OpenAI 兼容"], [API_TYPES.GEMINI, "Gemini"], [API_TYPES.QWEN, "千问"]].map(([id, label]) => (
-                <span key={id} onClick={() => {
-                  // 切换类型时，若当前地址是某个渠道的默认/预设地址（用户没手动改过），
-                  // 自动换成新类型的默认地址——免得切到千问还留着 OpenAI 的 URL 连不上。
-                  // 用户手填过的自定义地址则保留不动。
-                  const patchObj = { apiType: id };
-                  if (isDefaultEndpoint(cfg.endpoint)) patchObj.endpoint = DEFAULT_ENDPOINTS[id] || "";
-                  patch(patchObj);
-                }} style={{
-                  ...btnStyle, color: cfg.apiType === id ? "#0a0c14" : "#6ec6c6",
-                  background: cfg.apiType === id ? "#6ec6c6" : "#10121a",
-                }}>{label}</span>
-              ))}
-            </div>
-
-            <div style={labelStyle}>快速填入（常用渠道，仍需自己填 API Key）</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <span
-                onClick={() => patch({ apiType: API_TYPES.OPENAI, endpoint: "https://api.deepseek.com/v1/chat/completions", model: "deepseek-chat" })}
-                style={btnStyle}
-              >DeepSeek · deepseek-chat（V3，速度快）</span>
-              <span
-                onClick={() => patch({ apiType: API_TYPES.OPENAI, endpoint: "https://api.deepseek.com/v1/chat/completions", model: "deepseek-reasoner" })}
-                style={btnStyle}
-              >DeepSeek · deepseek-reasoner（R1，会推理）</span>
-              <span
-                onClick={() => patch({ apiType: API_TYPES.QWEN, endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", model: "qwen3.5-plus-2026-04-20" })}
-                style={btnStyle}
-              >千问 · qwen3.5-plus（阿里百炼）</span>
-              <span
-                onClick={() => patch({ apiType: API_TYPES.QWEN, endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", model: "qwen-plus" })}
-                style={btnStyle}
-              >千问 · qwen-plus（通用）</span>
-            </div>
-            <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 3, marginBottom: 6 }}>
-              DeepSeek 走 OpenAI 兼容协议，官方地址是 https://api.deepseek.com。deepseek-reasoner 的推理强度不是这里的
-              「思考/推理模式」控制的（那个参数是给 Gemini/Qwen 这类可调思考预算的模型用的）——推理模型是否深入思考由模型本身决定，
-              下面的档位对它不生效，但对走同一 OpenAI 兼容协议的其他可调节模型（Gemini 等）仍然有效。
-            </div>
-
             <div style={labelStyle}>API 地址（Endpoint）</div>
             <input style={inputStyle} value={cfg.endpoint} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
-            {(cfg.apiType === API_TYPES.OPENAI || cfg.apiType === API_TYPES.QWEN) && (
+            {cfg.apiType === API_TYPES.OPENAI && (
               <>
                 <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, cursor: "pointer" }}>
                   <input
@@ -325,7 +304,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
 
             <div style={labelStyle}>模型名称</div>
             <div style={{ display: "flex", gap: 6 }}>
-              <input style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="例如 claude-sonnet-4-6 / gpt-4o / gemini-1.5-pro" />
+              <input style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="例如 deepseek-chat / deepseek-reasoner" />
               <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : handleDetectModels}>
                 {modelStatus === "loading" ? "检测中…" : "🔍 自动检测"}
               </span>
@@ -768,60 +747,23 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
           </div>
         )}
 
-        {tab === "cheat" && (
+        {tab === "other" && (
           <div>
-            <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>
-              直接修改已经在剧情中登场的角色的好感度数值。这里的角色列表随剧情自动生成，
-              不是预先写死的名单——只有 AI 在游戏里通过 &lt;mvu&gt; 指令声明过的角色才会出现在这里。
+            <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>显示与其他设置。</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "8px 10px", background: "#0e0c14", border: "1px solid #2a2438", borderRadius: 4 }}>
+              <span style={{ fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>字号</span>
+              <input
+                type="range" min="0.7" max="1.6" step="0.05"
+                value={uiScale}
+                onChange={e => setUiScale(parseFloat(e.target.value))}
+                style={{ flex: 1 }}
+              />
+              <span style={{ fontSize: "11px", color: "#c8bfa0", flexShrink: 0, width: 42, textAlign: "right" }}>{Math.round(uiScale * 100)}%</span>
+              <span
+                onClick={() => setUiScale(1)}
+                style={{ fontSize: "10px", color: "#6ec6c6", cursor: "pointer", flexShrink: 0, border: "1px solid #1a2d2a", borderRadius: 3, padding: "2px 6px" }}
+              >重置</span>
             </div>
-            {listCharacters(varTree).length === 0 && (
-              <div style={{ color: "#3a3830" }}>尚未有角色登场，先去游戏里认识几个人吧</div>
-            )}
-            {listCharacters(varTree).map(({ name, attrs }) => (
-              <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #14161e" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: "#c8bfa0" }}>{name}</div>
-                  {typeof attrs.好感度 === "number" && (
-                    <div style={{ fontSize: "10.5px", color: "#e0a0d0" }}>{npcAffectionLabel(attrs.好感度)}</div>
-                  )}
-                </div>
-                <input
-                  type="number" min="0" max="100"
-                  value={attrs.好感度 ?? 0}
-                  onChange={e => handleAffectionChange(name, e.target.value)}
-                  style={{ ...inputStyle, width: 70 }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {tab === "help" && (
-          <div style={{ lineHeight: 1.8 }}>
-            <div style={labelStyle}>基本操作</div>
-            <div>方向指令：n/s/e/w（北南东西）或"往北"</div>
-            <div>look / l 查看房间，look 目标 查看细节</div>
-            <div>ask 目标 about 话题 —— 对话</div>
-            <div>get / drop / wear / wield / eat / drink</div>
-            <div>practice 武功名 —— 运功修炼</div>
-
-            <div style={labelStyle}>三种交互模式</div>
-            <div>输入框上方有「◈ 行动 / ◎ 对话 / ◆ 私聊旁白」三个切换按钮。</div>
-            <div>行动模式：正常的移动、战斗、开箱子等指令，每次都会消耗1个回合。</div>
-            <div>对话模式：只会和当前房间里的 NPC 交谈，不会移动、不会战斗，不消耗回合。</div>
-            <div>私聊旁白：打破第四面墙，跟旁白说话，同样不消耗回合。</div>
-            <div>⊙ 打坐（右上角）：消耗1回合，恢复部分气血，不是单纯跳过时间。</div>
-
-            <div style={labelStyle}>金手指玩法：旁白攻略</div>
-            <div>旁白只有一个，她全程知晓游戏里发生的一切——不管是叙事描述还是私聊内容，都是同一个她。</div>
-            <div>好感度不影响她"知道什么"，只影响她讲述时的文风：好感度低时严格公式化，好感度高时连日常叙事里都会渗透她的情绪。</div>
-            <div>好感度从 0 到 100，私聊时她的态度会逐渐从生硬转为亲近。</div>
-            <div>好感度满 100 后，右侧面板会出现"向旁白告白"的选项。</div>
-            <div>告白成功后进入金手指期，可以向旁白打听剧情走向——但提示是渐进式的，不会一次性剧透。</div>
-            <div>金手指期持续互动会累积"记忆碎片"，攒够后旁白会经历一次剧烈的宕机，真实身份浮出水面。</div>
-
-            <div style={labelStyle}>创造模式</div>
-            <div>点击主控台右上角的 /gamemode 按钮切换。开启后所有请求无条件执行，适合调试或纯玩乐。</div>
           </div>
         )}
 

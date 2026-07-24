@@ -881,7 +881,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [showOpening, setShowOpening] = useState(
     initialLoadSlotId === "new" && !restored
   );
-  const [settingsInitialTab, setSettingsInitialTab] = useState("api");
+  const [settingsInitialTab, setSettingsInitialTab] = useState(null);
   const [interactMode, setInteractMode] = useState("action"); // 'talk' | 'action' | 'whisper'
   const [talkTarget, setTalkTarget] = useState(null); // 对话模式下具体在跟谁说话，供立绘自动推断使用
   const [activeTarget, setActiveTarget] = useState(null); // null=全部NPC在场 | string=锁定某个NPC名
@@ -4067,7 +4067,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           onClick={() => { setSettingsInitialTab("saves"); setShowSettings(true); }}
           style={{ cursor: "pointer", color: "#d4a853", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}
         >💾 存档</span>
-        <span onClick={() => { setSettingsInitialTab("api"); setShowSettings(true); }} style={{ cursor: "pointer", color: "#6ec6c6", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}>⚙ 设置</span>
+        <span onClick={() => { setSettingsInitialTab(null); setShowSettings(true); }} style={{ cursor: "pointer", color: "#6ec6c6", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}>⚙ 设置</span>
         <span onClick={() => setShowTrace(p => !p)} style={{ cursor: "pointer", color: showTrace ? "#8ac8b8" : "#5a5a4a", padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3, fontSize: "10px" }}>🧭 全流程日志</span>
         {autoSaveError && (
           <span
