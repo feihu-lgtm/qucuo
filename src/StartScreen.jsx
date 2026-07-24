@@ -82,7 +82,7 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
       <div style={styles.vignette} />
 
       <div style={styles.titleBlock}>
-        <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo.png`}
+        <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo_v2.png`}
           alt="天都曲措" style={styles.titleImg} />
         <div style={styles.subtitle(theme)}>—— 三曲交汇处的江湖 ——</div>
       </div>
@@ -107,7 +107,11 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
       </nav>
 
       <div style={styles.footer(theme)}>
-        <span>MUD引擎 · 曲措乡</span>
+        <span>天都·曲措 · MUD引擎</span>
+        <span style={styles.footerSep}>·</span>
+        <a href="https://github.com/feihu-lgtm/qucuo" target="_blank" rel="noopener noreferrer" style={styles.footerLink(theme)}>
+          开源代码 GitHub ↗
+        </a>
       </div>
     </div>
   );
@@ -217,12 +221,26 @@ const styles = {
     position: "absolute",
     bottom: "20px",
     left: "clamp(32px, 8vw, 120px)",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
     fontSize: "10px",
     letterSpacing: "2px",
     color: "#fff",
-    opacity: 0.5,
+    opacity: 0.6,
     textShadow: "0 1px 3px rgba(0,0,0,0.7)",
     zIndex: 1,
+  }),
+  footerSep: {
+    opacity: 0.5,
+  },
+  footerLink: (t) => ({
+    color: "#fff",
+    textDecoration: "none",
+    borderBottom: `1px solid ${t.accent}`,
+    paddingBottom: "1px",
+    cursor: "pointer",
+    transition: "opacity 0.2s ease",
   }),
   // ---- 存档加载子面板 ----
   loadPanel: (t) => ({

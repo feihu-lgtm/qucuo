@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/title_tianducuo.png" alt="天都·曲措" width="520" />
+<img src="public/title_tianducuo_v2.png" alt="天都·曲措" width="520" />
 
 # 天都·曲措 · Qucuo
 
