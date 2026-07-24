@@ -456,9 +456,13 @@ function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = "62vh", accent 
   const [dragging, setDragging] = React.useState(false);
   if (!nodes.length) return null;
 
-  // 节点用固定尺寸的贴图格子（不再按字数变宽——贴图长宽比固定）。
-  const NW = 92, NH = 74; // 节点贴图显示宽高
+  // 节点用固定尺寸的正方贴图格子（贴图是正方，显示也正方，统一比例）。
+  const NW = 84, NH = 84; // 节点贴图显示宽高（正方）
   const CELL = cell || 132; // 格间距（含节点+留白），略大于节点保证连线看得清
+  // 统一字号：取全图最长地名的字数当基准，所有节点用同一字号，大小一致不参差。
+  const labelLen = (n) => [...(n.name ? (n.name.includes("·") ? n.name.split("·").pop() : n.name) : "")].length;
+  const maxLabelLen = Math.max(2, ...nodes.map(labelLen));
+  const uniformFs = maxLabelLen >= 5 ? 12 : maxLabelLen >= 4 ? 13 : 15;
   // 坐标防撞：数据里偶有两个节点坐标相同，展示层螺旋偏移到最近空格。
   const occupied = new Set();
   const SPIRAL = [[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1],[2,0],[0,2],[-2,0],[0,-2]];
@@ -535,8 +539,7 @@ function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = "62vh", accent 
             const clickable = !loading && (n.reachable || n.locked);
             const hov = hover === (n.name || n.dir);
             const tile = !n.explored ? MAP_UI.fog : n.current ? MAP_UI.current : MAP_UI.idle;
-            const len = [...label].length;
-            const fs = len >= 5 ? 12 : len >= 4 ? 13 : 15;
+            const fs = uniformFs;
             const onClickNode = (e) => {
               // 拖动过就不触发点击（避免拖完误跳转）
               if (dragRef.current?.moved) return;
