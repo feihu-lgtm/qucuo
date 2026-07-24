@@ -95,6 +95,9 @@ export function clampMaxTokensForType(maxTokens, cfg) {
   return maxTokens;
 }
 export const DEFAULT_CALL_TOKEN_LIMITS = {
+  narratorWhisper: 6000, // 私聊旁白（MudRPG talkToNarrator）。原写死 600，是上一轮
+                         // 「9处写死抽成配置」漏网的第 10 处；带思考的模型下思考 token
+                         // 与正文共用额度，600 被吃穿后正文半句就撞 length 截断。
   questHarness:   3000,  // 情节推进的专属叙事（questHarness.js）
   pigeonReply:    3000,  // 飞鸽回信书信体（MudRPG 飞鸽回信）
   inspect:        4000,  // 查看物品/武学介绍（MudRPG inspect 缓存）
@@ -115,6 +118,10 @@ export function defaultConfig() {
     temperature: 1.0,
     targetWordCount: 900, // 用户真正关心的：这一轮想要大约多少个汉字，不是 token 数
     maxTokens: wordCountToMaxTokens(900), // 由 targetWordCount 换算出的 API token 上限，是安全余量，不是字数控制的主变量
+    // 私聊旁白的目标字数。主叙事有「篇幅要求」硬指令（buildSysBase 的 lenNote），
+    // 私聊此前一个字的篇幅指令都没有，模型没有长度目标就按聊天默认长度走、
+    // 每次只回几十字。这里给一条独立的短篇幅线（私聊本就不该像叙事那么长）。
+    narratorWhisperWordCount: 300,
     contextWindow: 16, // 保留最近多少轮历史
     corsProxy: "", // 可选：形如 https://your-proxy.com/?url=
     // OpenAI 兼容地址是否自动补全 /v1/chat/completions 那半句。默认关：

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { QUCUO_PRESET } from "./presets/qucuo.js";
 import {
   NNPC_STAGE, initialNarratorState,
-  narratorVoicePrompt, affectionLabel, NARRATOR_WHISPER_CONTEXT,
+  narratorVoicePrompt, affectionLabel, NARRATOR_WHISPER_CONTEXT, narratorWhisperLengthNote,
 } from "./narrator.js";
 import { loadConfig, saveConfig, callModel, callModelStream, cleanJsonString, getPipelineLog, clearPipelineLog, classifyError } from "./apiConfig.js";
 import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, fmtMs } from "./actionTrace.js";
@@ -1646,7 +1646,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // （私聊走的是下面 convo 共享那条独立渠道，两者不混）。
       let factsBlock = "";
       {
-        // 条数（绿灯·批五）：20→8。私聊本就是短回合（maxTokens 锁 600），旁白也只会顺口提一两件；
+        // 条数（绿灯·批五）：20→8。私聊本就是短回合（maxTokens 见 callTokenLimits.narratorWhisper），旁白也只会顺口提一两件；
         // 喂 20 条里绝大多数是陪跑，还把真正相关的那几条冲淡。取最近 8 条，更近更准也更省。
         const facts = allFactSummaries(varTree, 8);
         if (facts.length) {
@@ -1680,14 +1680,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       } else {
         traceStep(_wt, "向量召回", "skip", "embedding未开启，跳过召回");
       }
-      const sys = `${NARRATOR_WHISPER_CONTEXT}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}\n\n剧本背景设定：${preset.scenario}`;
+      // 篇幅指令拼在最末尾（贴生成处 = 酒馆 Depth 0，是插入深度最强的位置，
+      // 与「成文铁律放 userContent 末尾」同一条经验），别埋进开头被当耳旁风。
+      const sys = `${NARRATOR_WHISPER_CONTEXT}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}\n\n剧本背景设定：${preset.scenario}\n${narratorWhisperLengthNote(apiCfg.narratorWhisperWordCount)}`;
 
       // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
       // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
       // 对话类同样取至少 20 层全部互动。
       const talkWindow = Math.max(apiCfg.contextWindow, 20);
       const hist = convo.length > talkWindow ? convo.slice(-talkWindow) : convo;
-      const narratorMaxTokens = Math.min(apiCfg.maxTokens, 600); // 私聊不需要像叙事那么长，但也不再硬锁60字
+      // 私聊不需要像叙事那么长，但 600 这个旧硬编码在带思考的模型下会被思考 token 吃穿、
+      // 正文半句就撞 length 截断，故改读可调的 callTokenLimits.narratorWhisper（默认 6000）。
+      const narratorMaxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
 
       let text;
       let affDelta = 1; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖

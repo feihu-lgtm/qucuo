@@ -458,6 +458,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
             <div style={{ ...labelStyle, marginTop: 10 }}>各类调用 · token 输出上限</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", marginBottom: 6 }}>
               {[
+                ["narratorWhisper", "私聊旁白"],
                 ["pigeonReply",    "飞鸽回信"],
                 ["inspect",        "查看物品 / 武学介绍"],
                 ["persuasion",     "说服台词"],
