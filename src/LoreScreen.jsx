@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getAllMemories } from "./memory/memoryStore.js";
+import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
 // 见闻录：把两套记忆系统可视化——玩家可打开查看。
 // ① 事实账本（knowledge.js，varTree.世界.知识域）：什么时候·什么事·谁知道·怎么知道的·能记多少·传闻怎么演变
@@ -11,6 +12,7 @@ const 途径色 = { 亲历: "#8ac48a", 目击: "#6ec6c6", 告知: "#c4a86a", 传
 const 途径说明 = { 亲历: "亲身经历", 目击: "当场看见", 告知: "有人明说", 传闻: "道听途说", 剧本: "夙来知晓" };
 
 export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, onClose }) {
+  const closeGuard = useOverlayCloseGuard(onClose);
   const [tab, setTab] = useState("account"); // account=事实账本 | notes=记忆碎片
   const [notes, setNotes] = useState(null);
   const T = zoneTheme || {};
@@ -34,7 +36,7 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, on
   const card = { width: "100%", maxWidth: 720, maxHeight: "86vh", background: "#0b0d13", border: `1px solid ${border}`, borderRadius: 10, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Songti SC','STSong','SimSun',serif", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
 
   return (
-    <div style={wrap} onClick={onClose}>
+    <div style={wrap} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div style={card} onClick={e => e.stopPropagation()}>
         {/* 顶栏 */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, ${bgPanel}, transparent)` }}>

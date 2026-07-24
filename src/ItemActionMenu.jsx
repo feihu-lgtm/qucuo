@@ -6,12 +6,14 @@
 // 一切结算仍走父组件传进来的确定性 handler，本组件只负责选择与转交，不自行改状态。
 import React, { useState } from "react";
 import { QUCUO_SHOPS } from "./shops/qucuoShops.js";
+import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
 export default function ItemActionMenu({
   item, mode = "inventory", roomNpcs = [], zoneTheme,
   canConsume = false,
   onClose, onInspect, onConsume, onGive, onSell, onCollect, onEquip,
 }) {
+  const closeGuard = useOverlayCloseGuard(onClose);
   const [picker, setPicker] = useState(null); // null | "give" | "sell"
   const name = typeof item === "object" ? item.name : item;
   const quality = typeof item === "object" ? item.quality : null;
@@ -38,7 +40,7 @@ export default function ItemActionMenu({
     const title = picker === "sell" ? "卖给谁（此地商家）" : "送给谁（此地之人）";
     const act = picker === "sell" ? onSell : onGive;
     return (
-      <div style={overlay} onClick={onClose}>
+      <div style={overlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
         <div style={panel} onClick={(e) => e.stopPropagation()}>
           <div style={{ color: zoneTheme.accent, fontSize: "13px", marginBottom: 12 }}>{title}</div>
           {list.length === 0 ? (
@@ -82,7 +84,7 @@ export default function ItemActionMenu({
       ];
 
   return (
-    <div style={overlay} onClick={onClose}>
+    <div style={overlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div style={panel} onClick={(e) => e.stopPropagation()}>
         <div style={{ color: quality ? undefined : zoneTheme.accent, fontSize: "14px", marginBottom: 4 }}>
           {name}{quality ? <span style={{ fontSize: "11px", color: zoneTheme.textDim, marginLeft: 6 }}>（{quality}）</span> : null}

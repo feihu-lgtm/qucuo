@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { listCharacters, npcAffectionLabel } from "./mvu.js";
 import { getAvailableMilestone, getAllMilestonesForChar } from "./characterMilestones.js";
+import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
 const cardStyle = {
   background: "#10121a", border: "1px solid #1a2d2a", borderRadius: 8,
@@ -8,13 +9,17 @@ const cardStyle = {
 };
 
 export default function CharacterPage({ varTree, claimedMilestones, onClaimMilestone, onClose, onGift, initialSelected }) {
+  // 遮罩误触修复：见 utils/overlayClose.js。原写法(遮罩onClick={onClose}+内层stopPropagation)
+  // 在面板内选字/拖拽鼠标移出面板范围松手时，click会被浏览器合成落在遮罩上，
+  // 导致选字选着选着弹窗自己关了。
+  const closeGuard = useOverlayCloseGuard(onClose);
   const [selected, setSelected] = useState(initialSelected || null); // 当前打开详情的角色名；左侧"面板"按钮可以指定直接打开谁
   const characters = listCharacters(varTree).filter(c => typeof c.attrs.好感度 === "number");
 
   const selectedChar = selected ? characters.find(c => c.name === selected) : null;
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div
         style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 640, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "#c8bfa0" }}
         onClick={e => e.stopPropagation()}
@@ -68,6 +73,7 @@ export default function CharacterPage({ varTree, claimedMilestones, onClaimMiles
 }
 
 function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onGift, onClose }) {
+  const closeGuard = useOverlayCloseGuard(onClose);
   const affection = attrs.好感度 ?? 0;
   const allMilestones = getAllMilestonesForChar(name);
   const [viewingMilestone, setViewingMilestone] = useState(null);
@@ -78,7 +84,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
   };
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.85)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.85)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div
         style={{ background: "#0c0e16", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 460, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", color: "#c8bfa0", fontSize: "12.5px" }}
         onClick={e => e.stopPropagation()}

@@ -17,6 +17,7 @@ import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX } fro
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 import { getZoneTheme } from "./theme.js";
+import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
 import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
@@ -647,6 +648,10 @@ const cmZoomBtn = {
 };
 
 function PipelineViewer({ onClose, loading, waitSecs }) {
+  // 遮罩误触修复：这个面板专门用来给玩家复制长段 prompt/回复文本排查问题，
+  // 选字拖拽是最高频操作，正是最容易踩中"选字划出边界导致弹窗自己关了"
+  // 这个bug的地方，必须修。见 utils/overlayClose.js。
+  const closeGuard = useOverlayCloseGuard(onClose);
   const [expanded, setExpanded] = React.useState({});
   const [subTab, setSubTab] = React.useState({}); // 每条日志内部的子标签页：'sys' | 'user' | 'response' | 'recall'
   const toggle = (i) => setExpanded(e => ({ ...e, [i]: !e[i] }));
@@ -696,7 +701,7 @@ function PipelineViewer({ onClose, loading, waitSecs }) {
   }
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.85)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.85)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 16, width: 820, maxWidth: "95vw", maxHeight: "88vh", overflowY: "auto", fontFamily: "monospace", fontSize: "11px", color: "#8a8a7a" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <span style={{ color: "#f0c060", fontSize: "13px" }}>Pipeline 日志（最近 {entries.length} 条）</span>
@@ -955,6 +960,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [persuasionProgress, setPersuasionProgress] = useState(restored?.snap.persuasionProgress || {});
   const [mapData, setMapData] = useState(restored?.snap.mapData || { [DEFAULT_PRESETS[0].room.name]: { x: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.x ?? 0, y: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.y ?? 0 } });
   const [mapBig, setMapBig] = useState(false);
+  const mapBigCloseGuard = useOverlayCloseGuard(() => setMapBig(false));
   const [mapView, setMapView] = useState("outer"); // ⑦ 地图框显示：outer=外层大地图 / inner=内层箱庭图
   const [peoplePanel, setPeoplePanel] = useState({ present: true, absent: true }); // 左侧人物两段各自收放
   const [time, setTime] = useState(restored?.snap.time ?? 6); // 24回合/天，6=第1日·卯时（晨）
@@ -1013,9 +1019,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [activeNpcMenu, setActiveNpcMenu] = useState(null); // 当前弹出互动菜单的NPC对象，null表示未打开
   const [activeItemMenu, setActiveItemMenu] = useState(null); // ⑤⑧ 物品次级面板：{ item, mode:"inventory"|"ground", canConsume } | null
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  // 遮罩误触修复见 utils/overlayClose.js。这两个弹窗用内联 () => setShowXxx(false)
+  // 而非 onClose prop，closeGuard 接受任意回调，用法一致；必须在组件顶层建实例
+  // （不能放进下面的条件渲染 JSX 里，否则违反 hooks 规则）。
+  const versionHistoryCloseGuard = useOverlayCloseGuard(() => setShowVersionHistory(false));
   const [showCharacterPage, setShowCharacterPage] = useState(false);
   // 玩家头像：优先用玩家自设的（存 localStorage），否则按性别用预制头像。showAvatarPicker 控制选择弹层。
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const avatarPickerCloseGuard = useOverlayCloseGuard(() => setShowAvatarPicker(false));
   const [playerAvatarCustom, setPlayerAvatarCustom] = useState(() => {
     try { return localStorage.getItem("qucuo_player_avatar") || ""; } catch { return ""; }
   });
@@ -4265,7 +4276,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
 
       {showAvatarPicker && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(4,4,10,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowAvatarPicker(false)}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(4,4,10,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={avatarPickerCloseGuard.onMouseDown} onClick={avatarPickerCloseGuard.onClick}>
           <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 8, padding: 24, width: 460, maxWidth: "90vw", color: "#c8bfa0" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <span style={{ color: "#6ec6c6", fontSize: "15px" }}>选择头像</span>
@@ -4321,7 +4332,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       {showTutorial && <TutorialOverlay onClose={closeTutorial} />}
 
       {showVersionHistory && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowVersionHistory(false)}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={versionHistoryCloseGuard.onMouseDown} onClick={versionHistoryCloseGuard.onClick}>
           <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 420, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", fontSize: "12px", color: "#c8bfa0" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ color: "#6ec6c6", fontSize: "14px" }}>版本历史</span>
@@ -5561,7 +5572,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
       </div>
 
-      {mapBig && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setMapBig(false)}>
+      {mapBig && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={mapBigCloseGuard.onMouseDown} onClick={mapBigCloseGuard.onClick}>
         <div style={{
           background: `url("${MAP_UI.scroll}") center/100% 100% no-repeat`,
           borderRadius: 6, minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh",

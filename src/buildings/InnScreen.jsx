@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useOverlayCloseGuard } from "../utils/overlayClose.js";
 
 // 客栈：花银两住宿，气血回满，时间推进24单位（一天）
 // healOnly=true 时作为医馆使用：不推时间，按 healPerLiang 换算回血
@@ -69,6 +70,10 @@ export default function InnScreen({ building, char, time, zoneTheme, onClose, on
 
 // ── 共用子组件 ──
 export function Overlay({ children, onClose, zoneTheme, inline }) {
+  // 遮罩误触修复见 ../utils/overlayClose.js。这是全项目共享组件，13个建筑面板
+  // （当铺/武馆/钱庄/医馆/悬赏/镖局/寺庙/赌坊/藏书阁/铁匠铺/茶馆/运镖+任务日志）
+  // 都复用它——这一处改好，等于一次性修好全部13处同款"选字拖拽误关闭"的问题。
+  const closeGuard = useOverlayCloseGuard(onClose);
   if (inline) {
     return (
       <div style={{ borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", flexShrink: 0, maxHeight: "50vh", overflowY: "auto" }}>
@@ -79,7 +84,8 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
   return (
     <div
       style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.88)", zIndex: 120, display: "flex", alignItems: "center", justifyContent: "center" }}
-      onClick={onClose}
+      onMouseDown={closeGuard.onMouseDown}
+      onClick={closeGuard.onClick}
     >
       <div
         style={{ background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`, borderRadius: 8, width: 440, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto" }}

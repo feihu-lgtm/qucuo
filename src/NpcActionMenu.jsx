@@ -12,8 +12,10 @@
 
 import React, { useState } from "react";
 import { QUCUO_SHOPS } from "./shops/qucuoShops.js";
+import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
 export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade }) {
+  const closeGuard = useOverlayCloseGuard(onClose);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const isMerchant = !!QUCUO_SHOPS[npc.name];
 
@@ -40,7 +42,7 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div
         style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 6, padding: 20, width: 320, maxWidth: "90vw" }}
         onClick={(e) => e.stopPropagation()}

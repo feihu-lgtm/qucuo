@@ -16,6 +16,7 @@ import PresetEditor from "./PresetEditor.jsx";
 import { loadAllPresets, saveAllPresets } from "./presetSystem.js";
 import { clearInspectCache, inspectCacheSize } from "./inspectCache.js";
 import { clearMemories, countMemories } from "./memory/memoryStore.js";
+import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
 const inputStyle = {
   width: "100%", background: "#10121a", border: "1px solid #1a2d2a", borderRadius: 3,
@@ -31,6 +32,11 @@ const btnStyle = {
 };
 
 export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale }) {
+  // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
+  // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
+  // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
+  // 都精确落在遮罩本身才真正关闭，见 utils/overlayClose.js。
+  const closeGuard = useOverlayCloseGuard(onClose);
   const [tab, setTab] = useState(initialTab || null); // null=主页卡片 | api | preset | saves | other
   const [testStatus, setTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
   const [testMsg, setTestMsg] = useState("");
@@ -176,7 +182,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
   };
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "#c8bfa0" }} onClick={e => e.stopPropagation()}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -314,15 +320,16 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
             )}
             {modelList && modelList.length > 0 && (
               <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #1a2d2a", borderRadius: 3 }}>
-                {cfg.apiType === API_TYPES.ANTHROPIC && (
-                  <div style={{ padding: "4px 8px", fontSize: "10px", color: "#5a5a4a", borderBottom: "1px solid #14161e" }}>
-                    Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单
-                  </div>
-                )}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#5a5a4a", borderBottom: "1px solid #14161e" }}>
+                  <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
+                  {/* 之前这个列表没有任何关闭方式：选了模型也不会自动收起，
+                      也没有×按钮，列表会一直挂着退不掉。补齐两条退出路径。 */}
+                  <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "#8a8a7a", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
+                </div>
                 {modelList.map(m => (
                   <div
                     key={m}
-                    onClick={() => patch({ model: m })}
+                    onClick={() => { patch({ model: m }); setModelList(null); }}
                     style={{
                       padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
                       color: m === cfg.model ? "#6ec6c6" : "#8a8a7a",
@@ -505,6 +512,9 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
                   />
 
                   <div style={{ ...labelStyle, marginTop: 10 }}>各意图单独指定模型（空则使用默认提取模型）</div>
+                  <div style={{ fontSize: "10px", color: "#5a5a4a", marginBottom: 4 }}>
+                    下面每行都是可以点击填写的输入框——灰字是"当前会继承的模型"提示，不是禁用状态；要为某个意图单独指定模型，直接点进框里打字即可。
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6 }}>
                     {EXTRACTION_INTENT_LABELS.map(([key, label]) => {
                       const cur = cfg.extractionModels?.[key] ?? "";
@@ -513,7 +523,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
                         <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ width: 120, fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>{label}</span>
                           <input
-                            style={{ ...inputStyle, flex: 1 }}
+                            style={{ ...inputStyle, flex: 1, borderColor: cur ? "#3a6a5a" : "#1a2d2a" }}
                             value={cur}
                             onChange={e => patch({
                               extractionModels: { ...(cfg.extractionModels || {}), [key]: e.target.value },

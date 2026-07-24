@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { setPortrait, removePortrait, fileToDataUrl } from "./portraits.js";
 import { loadComfyConfig, saveComfyConfig, generateComfyUIPortrait } from "./comfyui.js";
+import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
 const btnStyle = {
   cursor: "pointer", color: "#6ec6c6", padding: "4px 10px", background: "#10121a",
@@ -12,6 +13,7 @@ const inputStyle = {
 };
 
 export default function PortraitManager({ portraits, onChange, knownNames, onClose }) {
+  const closeGuard = useOverlayCloseGuard(onClose);
   const [customName, setCustomName] = useState("");
   const [uploadTarget, setUploadTarget] = useState(null);
   const fileInputRef = useRef(null);
@@ -81,7 +83,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
   };
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div
         style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", fontSize: "12.5px", color: "#c8bfa0" }}
         onClick={e => e.stopPropagation()}

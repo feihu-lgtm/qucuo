@@ -8,6 +8,7 @@ import { QUALITY_COLOR, computeEquippedStats, effectiveSpecial, mergeItemEffects
 import { MOVE_TYPE } from "./combat/moveTypes.js";
 import { resolveTurn, applyEndOfTurnStatus } from "./combat/resolveTurn.js";
 import { decideNpcMove } from "./combat/aiDecision.js";
+import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import { getDefaultProfile } from "./combat/personalityProfile.js";
 import { createEmptyStatusSlots, applyStatus, applyMark, dispelControlDrain } from "./combat/statusEffects.js";
 import { rollBattleLoot, atkFromWaigong } from "./npcGeneration.js";
@@ -591,10 +592,11 @@ function describeMoveEffects(m) {
 }
 
 function MoveInspect({ move, zoneTheme, onClose }) {
+  const closeGuard = useOverlayCloseGuard(onClose);
   const color = QUALITY_COLOR[move.quality] || zoneTheme.text;
   const effects = describeMoveEffects(move);
   return (
-    <div style={styles.inspectOverlay} onClick={onClose}>
+    <div style={styles.inspectOverlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div style={{ ...styles.inspectCard, background: zoneTheme.bgPanel, border: `1px solid ${color}` }} onClick={e => e.stopPropagation()}>
         <div style={{ fontSize: "10px", color }}>{TYPE_ICON[move.type]} {move.quality}袍 · {move.side}的招式</div>
         <div style={{ fontSize: "16px", color: zoneTheme.text, margin: "4px 0 2px" }}>{move.name}</div>

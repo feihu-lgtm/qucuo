@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "弹窗遮罩误触修复(全项目)+模型下拉退不掉+双调用框视觉修正",
+    time: "2026-07-24 07:49",
+    notes: "三个反馈一次性处理。①【核心】弹窗遮罩误触：原写法(外层遮罩onClick={onClose}+内层stopPropagation)有个经典陷阱——click事件只看mouseup落点，不管mousedown起点。玩家在弹窗内输入框/文本区域选字拖拽复制时，若手一抖把鼠标拖出弹窗范围、松手时已在遮罩区域，浏览器依然会合成一次落在遮罩上的click，stopPropagation完全挡不住，表现为\"选字选着选着弹窗自己关了\"。新建 utils/overlayClose.js 导出 useOverlayCloseGuard(onClose)，用ref记录mousedown起点，要求mousedown和click都精确落在遮罩本身(target===currentTarget)才真正关闭。全项目排查后接入：SettingsPanel/CharacterPage(两处)/DuelScreen/ItemActionMenu(两处)/LoreScreen/NpcActionMenu/PortraitManager 共8个独立文件；MudRPG.jsx内的PipelineViewer(prompt排查面板，选字最高频、受影响最重)/换头像弹窗/版本历史弹窗/大地图放大弹窗共4处；以及最大的一处杠杆——buildings/InnScreen.jsx导出的共享Overlay组件，被13个建筑面板(当铺/武馆/钱庄/医馆/悬赏/镖局/寺庙/赌坊/藏书阁/铁匠铺/茶馆/运镖+任务日志)复用，这一处改好等于一次性修好13处同款问题。TutorialOverlay设计上就是\"点哪都关\"(无stopPropagation分层)，不受此bug影响，未改动。②模型选择下拉框退不掉：SettingsPanel里`自动检测`出的模型列表此前没有任何关闭方式——选了模型也不清空modelList状态、没有×按钮，真正的功能缺失不是误触。修复：点选模型后自动setModelList(null)收起，另加\"✕ 收起\"按钮可随时手动收起，并把Anthropic静态清单提示行改造成可容纳收起按钮的头部行。③双调用模式\"各意图单独指定模型\"输入框看不清能否填：非bug，是视觉误导——这些input本身没有disabled、逻辑完全正常，只是值为空时显示的灰色placeholder(继承值提示)太像禁用态占位符。加一行说明文字\"灰字是继承提示不是禁用\"，并且填了值后border变绿色强调，帮助区分\"手动指定\"与\"继承默认值\"两种状态。esbuild验证全部9个改动文件(含MudRPG.jsx整体)通过。",
+  },
+  {
     codename: "日间模式(米色底+棕框+深字)一键切换",
     time: "2026-07-24 07:38",
     notes: "新增日间模式，参考 Claude.ai 官方界面的暖米白配色。原有六套 ZONE_THEMES 全是暗夜基调(暗背景+亮字)，本轮不是简单套一份统一浅色，而是给每个地理分区各自做一次\"深→浅\"的忠实转换，保留\"不同地方氛围不同\"的设计初衷：theme.js 新增 ZONE_THEMES_DAY(六套浅色版本，字段与暗夜版一一对应)——bg/bgPanel 换算成米色系(bgPanel 比 bg 略白制造层次)、border 统一收拢到棕色调、text 换成暖黑正文(非纯黑)、accent/accentDim 保留各分区色相基因但大幅拉低明度提高饱和度(暗背景上的亮丽高亮色直接搬到浅背景会糊得看不清，必须换算成深沉浓郁的同色系版本)。getZoneTheme(roomName, isDayMode=false) 加第二参数，两套主题字段完全一致，下游117处 zoneTheme.xxx 引用不需要感知日夜切换、自动生效。MudRPG.jsx 新增 isDayMode 状态(localStorage持久化，同 uiScale 模式)，zoneTheme取值处传入；顶部工具栏加「☀日间/☾夜间」一键切换按钮，同排原本写死 border:#1a1d2e 的9处按钮改为 `1px solid ${zoneTheme.border}`，让这排按钮本身也正确跟随日夜切换(赌石界面等自成一套配色、不消费zoneTheme的模块本就不受影响，不在本次改动范围)。用 WCAG 相对亮度公式核算全部六组 bg×text/bg×accent 对比度，五组直接达AA标准(4.5+)，village分区accent经一轮加深调整后也达标(5.2)。esbuild 验证 theme.js 与 MudRPG.jsx 均通过。",
