@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "私聊旁白串行化：一条没跑完不能发第二条(修并发导致的日志出两条/历史重复)",
+    time: "2026-07-24 14:15",
+    notes: "玩家反馈：私聊旁白日志一下出两条、且连发时两条聊天记录一样。查明两个成因：①并发——talkToNarrator 设计成不 await、允许并行，玩家一条没返回就发第二条，两条都读到发送前同一份 convo(历史一样)，且流式占位用的 logIdx.current 是共享 ref，两条流式回调互相踩踏，表现为日志出两条/重复。②act 的 whisper 分支自己 startTrace+endTrace 了一条空壳\"私聊已发送\"，talkToNarrator 内部又开一条完整 trace，全流程日志里每次私聊出现两条 trace。修法：①私聊串行——新增 talkBusyRef(同步 ref，不等 re-render，能挡住极快连点)，一条在途时挡住第二条实际发送，输入框仍可预打字(只拦发送不拦输入)；ref 在 talkToNarrator 的 CRASHED分支/正常结尾/catch 所有出口重置，确保不永久锁死；act 依赖数组补 pendingTalks。②删掉 whisper 分支的空壳 trace。③输入框 placeholder 私聊态改为\"旁白回话中…可先打字，待她说完再发\"(此前误写\"可继续发\")，对话模式不受影响仍可并发。esbuild + vite.config.pages.js 完整 build 通过。",
+  },
+  {
     codename: "上报bug/意见信箱系统(Supabase后台)+顶栏分组重排",
     time: "2026-07-24 13:55",
     notes: "玩家反馈收集功能落地。纯前端无后端，借 Supabase(免费云数据库 quocuo_debug 项目)当'账本'。①【上报组件】新建 BugReportModal.jsx：三个可选文字框(描述bug/想加的功能/意见建议)+知情声明勾选(必须勾同意才能提交，声明写明'聊天记录仅用于debug、不记录其他数据')。②【按回合选记录】玩家可勾选要附带哪些聊天记录：主日志按回合分组(每个'玩家指令+系统回应'一组，与日志栏分组一致)编号勾选，默认全选，每组可'查看'展开看纯文本内容；pipeline后台AI日志(含prompt/回复)做一个总开关(带/不带全部，默认不带因量大)。buildBugReportTurns 复用主日志分组逻辑。③【上传】新建 bugReport.js：fetch 直连 Supabase REST API(不引 supabase-js 库省体积)，anon key(role=anon前端安全，配合表RLS策略'anyone insert不能读')，15s超时+人话错误。表 bug_reports(player_note/game_state/conversation/pipeline_log/version/user_agent)。④【三处入口】顶栏🐞上报bug、🧭全流程日志弹窗内塞一个🐞上报bug(点了跳转)、开始页页脚🐞意见信箱(纯文字反馈无游戏记录)。⑤【顶栏分组重排】按用户要求：左组=教程·图鉴·版本号(📅日期，点开版本目录)，中组=全流程日志·上报bug，其余(人物关系/任务/见闻录/主菜单/存档/设置/日夜/存档状态)全部右对齐。修了个隐患：anon key 复制时曾混入西里尔字母Ф，已用原始key修正并解码验证 role=anon/ref匹配。esbuild + vite.config.pages.js 完整 build 均通过。",

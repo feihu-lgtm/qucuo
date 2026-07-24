@@ -1044,6 +1044,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const pigeonProcessing = useRef(new Set()); // 防止同一封回信被 [time]/varTree effect 重复生成
   const autoTravelRef = useRef(false); // 自动寻路进行中标记：途中遇随机遭遇时据此硬中断剩余队列
   const lastMoveRef = useRef(0); // 移动防连点：内层移动是瞬时的(不设loading)，手抖双击会连走两步甚至穿到外层走AI，用时间戳挡住
+  const talkBusyRef = useRef(false); // 私聊串行闸门：一条私聊在途时为 true，挡住第二条。用 ref 而非 state，因为 ref 同步更新、不等 re-render，能挡住极快连点
   const undoSnapshotRef = useRef(null); // 回滚：存"上一次行动前"的整局快照，玩家点回滚可还原一步
   const teleportLookRef = useRef(null); // 调试传送落地待触发标记：{dist,inner}，位置更新到位后由 effect 触发一次环顾式 act
   const [activeNpcMenu, setActiveNpcMenu] = useState(null); // 当前弹出互动菜单的NPC对象，null表示未打开
@@ -1715,6 +1716,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       addLog([{ t: "narrator", text: `  「旁白」${flatText}` }]);
       endTrace(_wt, `旁白已崩溃，本地兜底："${flatText}"`);
       setPendingTalks(n => Math.max(0, n - 1));
+      talkBusyRef.current = false; // 释放私聊闸门
       return;
     }
 
@@ -1943,6 +1945,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
     }
     setPendingTalks(n => Math.max(0, n - 1));
+    talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
   }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress]);
 
   // ── 按体貌荐装 ──
@@ -2229,15 +2232,19 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     try { undoSnapshotRef.current = buildCurrentSnapshot(); } catch (e) { /* 存快照失败不阻断行动 */ }
 
     if (interactMode === "whisper") {
-      // 告白不再走打字字串——好感度满后由右栏「粉色感叹号」点击直接触发 confessToNarrator()。
-      // 私聊里打字的任何内容都当作与旁白的对话处理。
-      const _wt = startTrace(cmd, rawCmd);
-      traceStep(_wt, "意图分类", "pass", "模式=私聊旁白（不消耗回合）");
-      traceStep(_wt, "私聊", "pass", `发给旁白：「${cmd}」`);
-      endTrace(_wt, "私聊已发送（走 talkToNarrator）");
+      // 私聊串行：一条还在跑时不允许真的发出第二条——否则两条并发会读到同一份
+      // 发送前的 convo（历史一样），且流式占位用的 logIdx.current 是共享 ref，两条
+      // 回调互相踩踏，表现为"日志一下出两条/重复"。用 talkBusyRef（同步 ref，不等
+      // re-render）挡住极快连点；输入框允许预打字，只拦实际发送。不 startTrace
+      // （避免与 talkToNarrator 内部完整 trace 重复的空壳记录）。
+      if (talkBusyRef.current || pendingTalks > 0) {
+        addLog([{ t: "sys", text: "  旁白还在回话，稍候再说下一句。" }]);
+        return;
+      }
+      talkBusyRef.current = true;
       setCmdHistory(p => [cmd, ...p].slice(0, 50));
       setHistIdx(-1);
-      talkToNarrator(cmd); // 不 await，允许并行发送下一条
+      talkToNarrator(cmd); // 不 await；串行由 talkBusyRef 闸门保证
       return;
     }
 
@@ -3583,7 +3590,7 @@ ${dealFmt}`;
     // 停计时
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, localCmd, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, localCmd, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, pendingTalks]);
 
   // 系统强制推进任务stage（本轮新增，"档2"harness的核心）：不等AI在
   // delta.flags_add 里吐出 completionFlag，直接把这个flag塞进 flags
@@ -5741,7 +5748,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               placeholder={
                 interactMode === "action" && loading ? "..." :
                 interactMode === "pigeon" ? `提笔给「${pigeonTarget || "…"}」写信，写罢按回车放飞信鸽…` :
-                interactMode === "whisper" ? (pendingTalks > 0 ? `对旁白说些什么…（${pendingTalks}条处理中，可继续发）` : "对旁白说些什么…（不消耗回合）") :
+                interactMode === "whisper" ? (pendingTalks > 0 ? "旁白回话中…可先打字，待她说完再发" : "对旁白说些什么…（不消耗回合）") :
                 interactMode === "talk" ? (pendingTalks > 0 ? `跟房间里的人说句话…（${pendingTalks}条处理中，可继续发）` : "跟房间里的人说句话…（不消耗回合）") :
                 "输入行动指令…（消耗1回合）"
               }
