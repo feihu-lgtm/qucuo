@@ -44,6 +44,13 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
   const [slotLabel, setSlotLabel] = useState("");
   const [modelList, setModelList] = useState(null); // null=未探测过, [] = 探测到但为空, [...] = 有结果
   const [modelStatus, setModelStatus] = useState(null); // null | 'loading' | 'error'
+  // 提取模型也要能自动检测（本轮补齐）：复用同一份 modelList（提取调用渠道
+  // 始终沿用主配置的 endpoint/key，跟主模型是同一个供应商同一份模型列表，
+  // 不需要重新发请求检测）。这个状态记录"点击列表里的某一项，应该填到哪个
+  // 字段"：null=主模型输入框，"extractionModel"=默认提取模型，其他字符串=
+  // 某个意图key(如"MOVE")。modelPickerTarget非null时，模型列表渲染在对应
+  // 位置且点击后写入对应字段并清空该状态收起列表。
+  const [modelPickerTarget, setModelPickerTarget] = useState(null);
   const [modelErr, setModelErr] = useState("");
   const [presetState, setPresetState] = useState(loadAllPresets());
   const [showFullEditor, setShowFullEditor] = useState(false);
@@ -140,7 +147,8 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
     }
   };
 
-  const handleDetectModels = async () => {
+  const handleDetectModels = async (target = null) => {
+    setModelPickerTarget(target);
     setModelStatus("loading"); setModelErr(""); setModelList(null);
     try {
       const models = await listModels(cfg);
@@ -311,14 +319,14 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
             <div style={labelStyle}>模型名称</div>
             <div style={{ display: "flex", gap: 6 }}>
               <input style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="例如 deepseek-chat / deepseek-reasoner" />
-              <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : handleDetectModels}>
-                {modelStatus === "loading" ? "检测中…" : "🔍 自动检测"}
+              <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(null)}>
+                {modelStatus === "loading" && modelPickerTarget === null ? "检测中…" : "🔍 自动检测"}
               </span>
             </div>
-            {modelStatus === "error" && (
+            {modelStatus === "error" && modelPickerTarget === null && (
               <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
             )}
-            {modelList && modelList.length > 0 && (
+            {modelList && modelList.length > 0 && modelPickerTarget === null && (
               <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #1a2d2a", borderRadius: 3 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#5a5a4a", borderBottom: "1px solid #14161e" }}>
                   <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
@@ -504,32 +512,94 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
               {cfg.extractionEnabled && (
                 <>
                   <div style={labelStyle}>默认提取模型（所有意图共用，空则沿用主模型）</div>
-                  <input
-                    style={inputStyle}
-                    value={cfg.extractionModel || ""}
-                    onChange={e => patch({ extractionModel: e.target.value })}
-                    placeholder={`留空则使用主模型 ${cfg.model}`}
-                  />
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      style={{ ...inputStyle, flex: 1 }}
+                      value={cfg.extractionModel || ""}
+                      onChange={e => patch({ extractionModel: e.target.value })}
+                      placeholder={`留空则使用主模型 ${cfg.model}`}
+                    />
+                    <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels("extractionModel")}>
+                      {modelStatus === "loading" && modelPickerTarget === "extractionModel" ? "检测中…" : "🔍 检测"}
+                    </span>
+                  </div>
+                  {modelStatus === "error" && modelPickerTarget === "extractionModel" && (
+                    <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
+                  )}
+                  {modelList && modelList.length > 0 && modelPickerTarget === "extractionModel" && (
+                    <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #1a2d2a", borderRadius: 3 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#5a5a4a", borderBottom: "1px solid #14161e" }}>
+                        <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
+                        <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "#8a8a7a", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
+                      </div>
+                      {modelList.map(m => (
+                        <div
+                          key={m}
+                          onClick={() => { patch({ extractionModel: m }); setModelList(null); }}
+                          style={{
+                            padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
+                            color: m === cfg.extractionModel ? "#6ec6c6" : "#8a8a7a",
+                            background: m === cfg.extractionModel ? "#1a2a2a" : "transparent",
+                            borderBottom: "1px solid #14161e",
+                          }}
+                        >{m}{m === cfg.extractionModel && " ◂"}</div>
+                      ))}
+                    </div>
+                  )}
 
                   <div style={{ ...labelStyle, marginTop: 10 }}>各意图单独指定模型（空则使用默认提取模型）</div>
                   <div style={{ fontSize: "10px", color: "#5a5a4a", marginBottom: 4 }}>
-                    下面每行都是可以点击填写的输入框——灰字是"当前会继承的模型"提示，不是禁用状态；要为某个意图单独指定模型，直接点进框里打字即可。
+                    下面每行都是可以点击填写的输入框——灰字是"当前会继承的模型"提示，不是禁用状态；要为某个意图单独指定模型，直接点进框里打字，或点🔍从检测到的列表里选。
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6 }}>
                     {EXTRACTION_INTENT_LABELS.map(([key, label]) => {
                       const cur = cfg.extractionModels?.[key] ?? "";
                       const placeholder = cfg.extractionModel || cfg.model || "主模型";
                       return (
-                        <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ width: 120, fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>{label}</span>
-                          <input
-                            style={{ ...inputStyle, flex: 1, borderColor: cur ? "#3a6a5a" : "#1a2d2a" }}
-                            value={cur}
-                            onChange={e => patch({
-                              extractionModels: { ...(cfg.extractionModels || {}), [key]: e.target.value },
-                            })}
-                            placeholder={placeholder}
-                          />
+                        <div key={key}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ width: 120, fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>{label}</span>
+                            <input
+                              style={{ ...inputStyle, flex: 1, borderColor: cur ? "#3a6a5a" : "#1a2d2a" }}
+                              value={cur}
+                              onChange={e => patch({
+                                extractionModels: { ...(cfg.extractionModels || {}), [key]: e.target.value },
+                              })}
+                              placeholder={placeholder}
+                            />
+                            <span
+                              style={{ ...btnStyle, whiteSpace: "nowrap", fontSize: "10px", padding: "4px 8px", flexShrink: 0, opacity: modelStatus === "loading" ? 0.5 : 1 }}
+                              onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(key)}
+                            >
+                              {modelStatus === "loading" && modelPickerTarget === key ? "…" : "🔍"}
+                            </span>
+                          </div>
+                          {modelStatus === "error" && modelPickerTarget === key && (
+                            <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3, marginLeft: 128 }}>✗ 检测失败：{modelErr}</div>
+                          )}
+                          {modelList && modelList.length > 0 && modelPickerTarget === key && (
+                            <div style={{ marginTop: 4, marginLeft: 128, maxHeight: 140, overflowY: "auto", border: "1px solid #1a2d2a", borderRadius: 3 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#5a5a4a", borderBottom: "1px solid #14161e" }}>
+                                <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "静态清单" : `共 ${modelList.length} 个，点击选用`}</span>
+                                <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "#8a8a7a", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
+                              </div>
+                              {modelList.map(m => (
+                                <div
+                                  key={m}
+                                  onClick={() => {
+                                    patch({ extractionModels: { ...(cfg.extractionModels || {}), [key]: m } });
+                                    setModelList(null);
+                                  }}
+                                  style={{
+                                    padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
+                                    color: m === cur ? "#6ec6c6" : "#8a8a7a",
+                                    background: m === cur ? "#1a2a2a" : "transparent",
+                                    borderBottom: "1px solid #14161e",
+                                  }}
+                                >{m}{m === cur && " ◂"}</div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}

@@ -4164,7 +4164,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     if (e.key === "ArrowDown") { e.preventDefault(); if (histIdx > 0) { setHistIdx(histIdx - 1); setInput(cmdHistory[histIdx - 1]); } else { setHistIdx(-1); setInput(""); } return; }
   };
 
-  const clr = { sys: "#5a8a5a", cmd: "#d4a853", desc: "#c8bfa0", room: "#6ec6c6", item: "#c4a040", stat: "#8ab4d4", skill: "#b48adf", err: "#c45044", choice: "#6aaa8a", narrator: "#e0a0d0", crash: "#c45044", confess: "#f0c060", affection: "#f0a0c0", quest: "#f0c060" };
+  // 日志文字配色（本轮补齐日间模式）：原来这套 clr 全部写死死死是暗夜配色，
+  // 日间模式切换后完全不跟随——WCAG对比度实测在米色背景下几乎全部低于2.5
+  // （正常阅读需要4.5+），叙事正文(desc)、地名(room)首当其冲。clrDay 保留
+  // 每种类型的色相基因（错误依然是红系、对话依然是粉系……）但大幅拉深明度，
+  // 全部核算达到4.5+对比度。
+  const clrNight = { sys: "#5a8a5a", cmd: "#d4a853", desc: "#c8bfa0", room: "#6ec6c6", item: "#c4a040", stat: "#8ab4d4", skill: "#b48adf", err: "#c45044", choice: "#6aaa8a", narrator: "#e0a0d0", crash: "#c45044", confess: "#f0c060", affection: "#f0a0c0", quest: "#f0c060" };
+  const clrDay = { sys: "#2e5a2e", cmd: "#7a5c14", desc: "#3d3626", room: "#1e5a6a", item: "#7a5410", stat: "#1e4a6a", skill: "#5a3a7a", err: "#a02020", choice: "#2e6a4a", narrator: "#8a2a6a", crash: "#a02020", confess: "#8a5a0a", affection: "#a0305a", quest: "#8a5a0a" };
+  const clr = isDayMode ? clrDay : clrNight;
   const zoneTheme = getZoneTheme(room.name, isDayMode);
   const inkDivider = `linear-gradient(90deg, transparent, ${zoneTheme.border}, transparent)`;
   const S = {
@@ -5033,7 +5040,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
               return groups.map((g, gi) => {
                 if (g.standalone) {
-                  return <LogEntry key={gi} entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={act} />;
+                  return <LogEntry key={gi} entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={act} isDayMode={isDayMode} />;
                 }
                 // 折叠逻辑：用 cmd 在 log 数组里的位置作为稳定 key
                 const cmdIdx = g.cmd ? log.indexOf(g.cmd) : -1;
@@ -5070,7 +5077,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                           {canCollapse ? (collapsed ? "▶" : "▼") : ""}
                         </span>
                         <div style={{ flex: 1 }}>
-                          <LogEntry entry={g.cmd} color={clr[g.cmd.t] || clr.desc} onAction={act} />
+                          <LogEntry entry={g.cmd} color={clr[g.cmd.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
                         </div>
                         {collapsed && (
                           <span style={{ color: zoneTheme.accentDim, fontSize: "10px", flexShrink: 0 }}>
@@ -5082,7 +5089,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                     {!collapsed && g.replies.length > 0 && (
                       <div style={{ padding: g.cmd ? "0 12px 8px 26px" : "8px 12px" }}>
                         {g.replies.map((entry, ri) => (
-                          <LogEntry key={ri} entry={entry} color={clr[entry.t] || clr.desc} onAction={act} />
+                          <LogEntry key={ri} entry={entry} color={clr[entry.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
                         ))}
                       </div>
                     )}

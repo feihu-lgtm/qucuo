@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "提取模型加自动检测+日间模式文字配色全面修正",
+    time: "2026-07-24 07:59",
+    notes: "两件事。①双调用模式\"默认提取模型\"和6个意图专属模型此前只能手打模型名，没有自动检测入口。补齐：新增modelPickerTarget状态记录\"当前检测结果该填到哪个字段\"(null=主模型/\"extractionModel\"=默认提取模型/意图key=对应意图专属模型)，handleDetectModels加target参数；提取调用渠道(endpoint/key)本就沿用主配置，跟主模型是同一供应商同一份模型列表，不需要重复发请求，复用同一份modelList状态即可。默认提取模型和6个意图专属模型各自加🔍检测按钮+复用列表的选择UI，点选后写入对应字段。②日间模式的文字配色此前只做了zoneTheme(背景/边框/正文基调)，但主叙事日志用的整套颜色映射clr(desc叙事正文/room地名/cmd命令/item物品/stat状态/skill技能/err错误/choice选项/narrator旁白/crash崩溃/confess告白/affection好感/quest任务共14类)完全写死，WCAG对比度实测在日间米色背景下几乎全部低于2.5(需要4.5+)，desc仅1.62、room仅1.75，这也是用户反馈\"叙事文字该变黑\"\"地名该变深蓝\"的根源。新增clrDay配色表，保留每个类型的色相基因(错误依旧红系/对话依旧粉系)但大幅拉深明度，14项全部核算达标(5.2~10.5不等)，clr = isDayMode ? clrDay : clrNight。同时补上LogEntry.jsx里两处同样写死的高亮色——对话「」原本亮粉e8a0d8(日间对比度仅1.77)、引语\"\"原本琥珀d4a853(仅1.94)，这两处是叙事里最想让人一眼看清的内容，问题比正文更严重，加DIALOGUE_COLOR/QUOTE_COLOR日夜两套(日间对比度分别到7.46/5.48)，LogEntry加isDayMode prop，3处调用点同步传入。esbuild验证SettingsPanel.jsx/MudRPG.jsx/LogEntry.jsx三个改动文件全部通过。",
+  },
+  {
     codename: "弹窗遮罩误触修复(全项目)+模型下拉退不掉+双调用框视觉修正",
     time: "2026-07-24 07:49",
     notes: "三个反馈一次性处理。①【核心】弹窗遮罩误触：原写法(外层遮罩onClick={onClose}+内层stopPropagation)有个经典陷阱——click事件只看mouseup落点，不管mousedown起点。玩家在弹窗内输入框/文本区域选字拖拽复制时，若手一抖把鼠标拖出弹窗范围、松手时已在遮罩区域，浏览器依然会合成一次落在遮罩上的click，stopPropagation完全挡不住，表现为\"选字选着选着弹窗自己关了\"。新建 utils/overlayClose.js 导出 useOverlayCloseGuard(onClose)，用ref记录mousedown起点，要求mousedown和click都精确落在遮罩本身(target===currentTarget)才真正关闭。全项目排查后接入：SettingsPanel/CharacterPage(两处)/DuelScreen/ItemActionMenu(两处)/LoreScreen/NpcActionMenu/PortraitManager 共8个独立文件；MudRPG.jsx内的PipelineViewer(prompt排查面板，选字最高频、受影响最重)/换头像弹窗/版本历史弹窗/大地图放大弹窗共4处；以及最大的一处杠杆——buildings/InnScreen.jsx导出的共享Overlay组件，被13个建筑面板(当铺/武馆/钱庄/医馆/悬赏/镖局/寺庙/赌坊/藏书阁/铁匠铺/茶馆/运镖+任务日志)复用，这一处改好等于一次性修好13处同款问题。TutorialOverlay设计上就是\"点哪都关\"(无stopPropagation分层)，不受此bug影响，未改动。②模型选择下拉框退不掉：SettingsPanel里`自动检测`出的模型列表此前没有任何关闭方式——选了模型也不清空modelList状态、没有×按钮，真正的功能缺失不是误触。修复：点选模型后自动setModelList(null)收起，另加\"✕ 收起\"按钮可随时手动收起，并把Anthropic静态清单提示行改造成可容纳收起按钮的头部行。③双调用模式\"各意图单独指定模型\"输入框看不清能否填：非bug，是视觉误导——这些input本身没有disabled、逻辑完全正常，只是值为空时显示的灰色placeholder(继承值提示)太像禁用态占位符。加一行说明文字\"灰字是继承提示不是禁用\"，并且填了值后border变绿色强调，帮助区分\"手动指定\"与\"继承默认值\"两种状态。esbuild验证全部9个改动文件(含MudRPG.jsx整体)通过。",
