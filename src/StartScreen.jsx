@@ -82,7 +82,7 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
       <div style={styles.vignette} />
 
       <div style={styles.titleBlock}>
-        <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo_v2.png`}
+        <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo_v3.png`}
           alt="天都曲措" style={styles.titleImg} />
         <div style={styles.subtitle(theme)}>—— 三曲交汇处的江湖 ——</div>
       </div>
@@ -152,8 +152,8 @@ const styles = {
     width: "min(460px, 70vw)",
     height: "auto",
     marginBottom: "12px",
-    // 深墨标题压在亮背景上，加一层柔和白光衬底保证在雪山/天空上都看得清
-    filter: "drop-shadow(0 2px 12px rgba(255,255,255,0.35)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))",
+    // 白色标题压在亮天空/雪峰上，用深色投影勾边，保证在任何亮处都清晰
+    filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.55)) drop-shadow(0 1px 2px rgba(0,0,0,0.7))",
   },
   sealRow: {
     display: "flex",
