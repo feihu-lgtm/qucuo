@@ -401,15 +401,15 @@ function NineGridMap({ centerLabel, cells, onGo, accent = "#6ec6c6", loading, bi
   const cellH = big ? 62 : 42;
   const fontMain = big ? 14 : 11;
   const short = (nm) => nm ? (nm.includes("·") ? nm.split("·").pop() : nm) : "";
-  // tile: 三态贴图之一（MAP_UI.idle/fog/current），有则铺为格底、盖住纯色 bg。
-  const cellStyle = (bg, bd, extra = {}, tile = null) => ({
+  // tile: 三态贴图之一（MAP_UI.idle/fog/current），铺满格底。三张贴图原始尺寸略有差异，
+  // 统一用 backgroundSize:100% 100% 拉伸到等大格子里，不叠加任何外发光（避免光晕溢出到
+  // 格缝，看起来像竖线）。hover 高亮改用贴图自身 brightness，不再用 boxShadow。
+  const cellStyle = (extra = {}, tile = null) => ({
     height: cellH, display: "flex", alignItems: "center", justifyContent: "center",
-    borderRadius: 6, background: bg, border: `1px solid ${bd}`, textAlign: "center",
-    lineHeight: 1.2, padding: "2px 4px", overflow: "hidden", transition: "background .15s, border .15s",
-    ...(tile ? {
-      backgroundImage: `url("${tile}")`, backgroundSize: "100% 100%",
-      backgroundRepeat: "no-repeat", border: "none",
-    } : {}),
+    textAlign: "center", lineHeight: 1.2, padding: "2px 4px", overflow: "hidden",
+    transition: "filter .15s", border: "none", background: "transparent",
+    backgroundImage: tile ? `url("${tile}")` : "none",
+    backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
     ...extra,
   });
   return (
@@ -417,32 +417,30 @@ function NineGridMap({ centerLabel, cells, onGo, accent = "#6ec6c6", loading, bi
       {layout.flat().map((key) => {
         if (key === "center") {
           return (
-            <div key="center" style={cellStyle("#162a20", accent, { boxShadow: `0 0 8px ${accent}66` }, MAP_UI.current)}>
-              <span style={{ color: "#fff", fontWeight: "bold", fontSize: fontMain, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{short(centerLabel) || "我"}</span>
+            <div key="center" style={cellStyle({}, MAP_UI.current)}>
+              <span style={{ color: "#fff", fontWeight: "bold", fontSize: fontMain, textShadow: "0 1px 3px rgba(0,0,0,0.85)" }}>{short(centerLabel) || "我"}</span>
             </div>
           );
         }
         const c = cells[key] || { explored: false };
         const clickable = !loading;
         const hov = hover === key;
-        // 未探索：战争迷雾问号
+        // 未探索：战争迷雾（fog 贴图），只留一个问号，不显方向字
         if (!c.explored) {
           return (
             <div key={key} onClick={() => clickable && onGo(key)}
               onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
-              style={cellStyle("#0c0e14", "#26262010", { cursor: clickable ? "pointer" : "default", flexDirection: "column", gap: 1, opacity: hov ? 1 : 0.82, filter: hov ? "brightness(1.25)" : "none" }, MAP_UI.fog)}>
+              style={cellStyle({ cursor: clickable ? "pointer" : "default", opacity: hov ? 1 : 0.82, filter: hov ? "brightness(1.25)" : "none" }, MAP_UI.fog)}>
               <span style={{ color: hov ? "#c0a060" : "#6a6a58", fontSize: big ? 18 : 14, fontWeight: "bold", textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>?</span>
-              <span style={{ color: hov ? "#a89878" : "#5a5a48", fontSize: big ? 9 : 8, textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>{DIR_CN[key]}</span>
             </div>
           );
         }
-        // 已探索：显地名，可点直达
+        // 已探索：idle 贴图 + 地名（不显方向字）
         return (
           <div key={key} onClick={() => clickable && onGo(key)}
             onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
-            style={cellStyle("#0e1018", "#2a3a3a", { cursor: clickable ? "pointer" : "default", flexDirection: "column", gap: 1, filter: hov ? "brightness(1.3)" : "none", boxShadow: hov ? `inset 0 0 12px ${accent}55` : "none" }, MAP_UI.idle)}>
+            style={cellStyle({ cursor: clickable ? "pointer" : "default", filter: hov ? "brightness(1.3)" : "none" }, MAP_UI.idle)}>
             <span style={{ color: hov ? "#eaf4ee" : "#cddcd4", fontSize: fontMain, fontWeight: hov ? "bold" : "normal", textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{short(c.name)}</span>
-            <span style={{ color: "#8a9a92", fontSize: big ? 9 : 8, textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>{DIR_CN[key]}</span>
           </div>
         );
       })}
@@ -450,19 +448,18 @@ function NineGridMap({ centerLabel, cells, onGo, accent = "#6ec6c6", loading, bi
   );
 }
 
-function ClickableMap({ nodes, onGo, cell, pad = 34, maxHeight = "62vh", accent = "#6ec6c6", loading }) {
+function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = "62vh", accent = "#6ec6c6", loading }) {
   const [hover, setHover] = React.useState(null);
+  // 拖动+缩放状态：view = {tx, ty, scale}。tx/ty 是平移量，scale 是缩放倍数。
+  const [view, setView] = React.useState({ tx: 0, ty: 0, scale: 1 });
+  const dragRef = React.useRef(null); // 拖动中：{ startX, startY, baseTx, baseTy }
+  const [dragging, setDragging] = React.useState(false);
   if (!nodes.length) return null;
-  // 格宽自适应（修重叠）：节点框宽随地名字数变化（下方 rw 公式），格宽若固定成 64，
-  // 遇上「杂货铺摊位」这种五字名，框宽 86 > 格宽 64，相邻两格必然叠在一起。
-  // 这里先按全图最长的那个名字反推出需要多宽，再取格宽，保证任何名字都塞得下。
-  const labelOf = (n) => (n.name ? (n.name.includes("·") ? n.name.split("·").pop() : n.name) : "");
-  const maxLen = Math.max(2, ...nodes.map(n => [...labelOf(n)].length));
-  const fsFor = (len) => (len >= 5 ? 10 : len >= 4 ? 11.5 : 13);
-  const halfW = Math.max(24, maxLen * (fsFor(maxLen) * 0.62) + 12);
-  const CELL = cell || Math.max(64, Math.ceil(halfW * 2 + 16)); // 框宽 + 间隙
-  // 坐标防撞：数据里偶有两个节点坐标相同（如内层房间坐标撞车），展示层自动把后来者
-  // 螺旋偏移到最近空格，避免节点框叠在一起。不改数据，仅渲染时去重。
+
+  // 节点用固定尺寸的贴图格子（不再按字数变宽——贴图长宽比固定）。
+  const NW = 92, NH = 74; // 节点贴图显示宽高
+  const CELL = cell || 132; // 格间距（含节点+留白），略大于节点保证连线看得清
+  // 坐标防撞：数据里偶有两个节点坐标相同，展示层螺旋偏移到最近空格。
   const occupied = new Set();
   const SPIRAL = [[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1],[2,0],[0,2],[-2,0],[0,-2]];
   nodes = nodes.map(n => {
@@ -479,68 +476,99 @@ function ClickableMap({ nodes, onGo, cell, pad = 34, maxHeight = "62vh", accent 
   const py = (y) => (y - mnY) * CELL + pad + CELL / 2;
   const byName = {}; nodes.forEach(n => { if (n.name) byName[n.name] = n; });
   const cur = nodes.find(n => n.current);
+
+  // ── 拖动 ──
+  const onPointerDown = (e) => {
+    // 只在点空白处开始拖动（点节点交给节点自己的 onClick）
+    dragRef.current = { startX: e.clientX, startY: e.clientY, baseTx: view.tx, baseTy: view.ty, moved: false };
+    setDragging(true);
+  };
+  const onPointerMove = (e) => {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX, dy = e.clientY - dragRef.current.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragRef.current.moved = true;
+    setView(v => ({ ...v, tx: dragRef.current.baseTx + dx, ty: dragRef.current.baseTy + dy }));
+  };
+  const onPointerUp = () => { dragRef.current = null; setDragging(false); };
+  // ── 缩放（滚轮）──
+  const onWheel = (e) => {
+    e.preventDefault();
+    setView(v => {
+      const next = Math.min(3, Math.max(0.4, v.scale * (e.deltaY < 0 ? 1.12 : 0.89)));
+      return { ...v, scale: next };
+    });
+  };
+  const zoomBtn = (factor) => setView(v => ({ ...v, scale: Math.min(3, Math.max(0.4, v.scale * factor)) }));
+  const resetView = () => setView({ tx: 0, ty: 0, scale: 1 });
+
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", maxHeight, display: "block" }}>
-      <defs>
-        <filter id="cmGlow" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="2.4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-        <style>{`@keyframes cmPulse{0%,100%{opacity:.35}50%{opacity:.9}}`}</style>
-      </defs>
-      {/* 连线：先画已探索节点间的实连线，再画当前→相邻(含未探索/锁)的引导线 */}
-      {nodes.flatMap(n => (n.links || []).map(dest => {
-        const d = byName[dest]; if (!d || !n.explored || !d.explored) return null;
-        const diag = n.x !== d.x && n.y !== d.y;
-        return <line key={`${n.name}-${dest}`.split("").sort().join("")} x1={px(n.x)} y1={py(n.y)} x2={px(d.x)} y2={py(d.y)}
-          stroke="#2a4a3a" strokeWidth={2} strokeDasharray={diag ? "5,3" : "none"} />;
-      }).filter(Boolean))}
-      {cur && nodes.filter(n => n.reachable || n.locked).map(n => (
-        <line key={`go-${n.dir}-${n.name || n.dest}`} x1={px(cur.x)} y1={py(cur.y)} x2={px(n.x)} y2={py(n.y)}
-          stroke={n.locked ? "#5a4a2a" : "#3a5a4a"} strokeWidth={1.5} strokeDasharray={n.explored ? "none" : "5,4"} opacity={0.7} />
-      ))}
-      {/* 节点 */}
-      {nodes.map(n => {
-        const cx = px(n.x), cy = py(n.y);
-        const label = n.name ? (n.name.includes("·") ? n.name.split("·").pop() : n.name) : "";
-        const clickable = !loading && (n.reachable || n.locked);
-        const hov = hover === (n.name || n.dir);
-        // 框宽随字数自适应（"字可以变"）：每字约 13px + 左右留白，字号也随字数微缩，保证长名不撑出、短名不空旷
-        const len = [...label].length;
-        const fs = len >= 5 ? 10 : len >= 4 ? 11.5 : 13;
-        const rw = Math.max(24, len * (fs * 0.62) + 12); // 半宽
-        const rh = 15;
-        if (!n.explored) {
-          // 战争迷雾：问号格
-          const qrw = 22;
-          return <g key={n.dir || n.name} style={{ cursor: clickable ? "pointer" : "default" }}
-            onClick={() => clickable && onGo(n.dir, n.dest, n.locked)}
-            onMouseEnter={() => setHover(n.name || n.dir)} onMouseLeave={() => setHover(null)}>
-            <rect x={cx - qrw} y={cy - rh} width={qrw * 2} height={rh * 2} rx={5}
-              fill={hov ? "#171410" : "#0c0e14"} stroke={hov ? "#6a5a3a" : "#2a2a24"} strokeWidth={hov ? 1.5 : 1} strokeDasharray="3,3" />
-            <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={hov ? "#c0a060" : "#4a4a3a"} fontSize="15" fontWeight="bold">?</text>
-            {hov && n.dir && <text x={cx} y={cy + rh + 12} textAnchor="middle" fill="#8a7a5a" fontSize="9">往{DIRS[n.dir] || n.dir}探路</text>}
-          </g>;
-        }
-        return <g key={n.name} style={{ cursor: clickable ? "pointer" : "default" }}
-          onClick={() => clickable && onGo(n.dir, n.name, n.locked)}
-          onMouseEnter={() => setHover(n.name)} onMouseLeave={() => setHover(null)}>
-          {n.current && <rect x={cx - rw - 4} y={cy - rh - 4} width={(rw + 4) * 2} height={(rh + 4) * 2} rx={7}
-            fill="none" stroke={accent} strokeWidth={1.5} style={{ animation: "cmPulse 2s ease-in-out infinite" }} />}
-          <rect x={cx - rw} y={cy - rh} width={rw * 2} height={rh * 2} rx={5}
-            fill={n.current ? "#162a20" : hov ? "#141824" : "#0e1018"}
-            stroke={n.current ? accent : n.locked ? "#6a5a2a" : hov ? accent : "#2a3a3a"}
-            strokeWidth={n.current ? 2 : hov ? 1.5 : 1}
-            filter={n.current ? "url(#cmGlow)" : undefined} />
-          <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
-            fill={n.current ? accent : n.locked ? "#8a7a4a" : hov ? "#c8e0d8" : "#7a7a6a"}
-            fontSize={fs} fontFamily="inherit" fontWeight={n.current ? "bold" : "normal"}>{label}</text>
-          {n.locked && <text x={cx + rw - 6} y={cy - rh + 7} textAnchor="middle" fill="#8a7a4a" fontSize="9">🔒</text>}
-          {n.current && <circle cx={cx + rw - 6} cy={cy - rh + 6} r={3} fill="#d4a853" />}
-        </g>;
-      })}
-    </svg>
+    <div style={{ position: "relative", width: "100%", maxHeight, overflow: "hidden" }}>
+      {/* 缩放控制按钮 */}
+      <div style={{ position: "absolute", top: 6, right: 6, zIndex: 3, display: "flex", flexDirection: "column", gap: 4 }}>
+        <span onClick={() => zoomBtn(1.25)} style={cmZoomBtn}>＋</span>
+        <span onClick={() => zoomBtn(0.8)} style={cmZoomBtn}>－</span>
+        <span onClick={resetView} style={{ ...cmZoomBtn, fontSize: "10px" }}>⤢</span>
+      </div>
+      <svg viewBox={`0 0 ${w} ${h}`}
+        style={{ width: "100%", maxHeight, display: "block", cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}
+        onMouseDown={onPointerDown} onMouseMove={onPointerMove} onMouseUp={onPointerUp} onMouseLeave={onPointerUp}
+        onWheel={onWheel}>
+        <defs>
+          <style>{`@keyframes cmPulse{0%,100%{opacity:.4}50%{opacity:1}}`}</style>
+        </defs>
+        <g transform={`translate(${view.tx} ${view.ty}) scale(${view.scale})`} style={{ transformOrigin: "center" }}>
+          {/* 连线 */}
+          {nodes.flatMap(n => (n.links || []).map(dest => {
+            const d = byName[dest]; if (!d || !n.explored || !d.explored) return null;
+            const diag = n.x !== d.x && n.y !== d.y;
+            return <line key={`${n.name}-${dest}`.split("").sort().join("")} x1={px(n.x)} y1={py(n.y)} x2={px(d.x)} y2={py(d.y)}
+              stroke="#7a6448" strokeWidth={2.5} strokeDasharray={diag ? "6,4" : "none"} opacity={0.75} />;
+          }).filter(Boolean))}
+          {cur && nodes.filter(n => n.reachable || n.locked).map(n => (
+            <line key={`go-${n.dir}-${n.name || n.dest}`} x1={px(cur.x)} y1={py(cur.y)} x2={px(n.x)} y2={py(n.y)}
+              stroke={n.locked ? "#8a6a3a" : "#5a8a6a"} strokeWidth={2} strokeDasharray={n.explored ? "none" : "6,5"} opacity={0.6} />
+          ))}
+          {/* 节点：用九宫格三态贴图 */}
+          {nodes.map(n => {
+            const cx = px(n.x), cy = py(n.y);
+            const label = n.name ? (n.name.includes("·") ? n.name.split("·").pop() : n.name) : "";
+            const clickable = !loading && (n.reachable || n.locked);
+            const hov = hover === (n.name || n.dir);
+            const tile = !n.explored ? MAP_UI.fog : n.current ? MAP_UI.current : MAP_UI.idle;
+            const len = [...label].length;
+            const fs = len >= 5 ? 12 : len >= 4 ? 13 : 15;
+            const onClickNode = (e) => {
+              // 拖动过就不触发点击（避免拖完误跳转）
+              if (dragRef.current?.moved) return;
+              if (clickable) onGo(n.dir, n.explored ? n.name : n.dest, n.locked);
+            };
+            return <g key={n.name || n.dir} style={{ cursor: clickable ? "pointer" : "default" }}
+              onClick={onClickNode}
+              onMouseEnter={() => setHover(n.name || n.dir)} onMouseLeave={() => setHover(null)}>
+              <image href={tile} x={cx - NW/2} y={cy - NH/2} width={NW} height={NH} preserveAspectRatio="none"
+                style={{ filter: hov && clickable ? "brightness(1.25)" : "none",
+                  animation: n.current ? "cmPulse 2.4s ease-in-out infinite" : "none" }} />
+              {!n.explored ? (
+                <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={hov ? "#c0a060" : "#7a7a68"} fontSize="18" fontWeight="bold" style={{ pointerEvents: "none", textShadow: "0 1px 2px #000" }}>?</text>
+              ) : (
+                <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
+                  fill={n.current ? "#fff" : "#eae0cc"} fontSize={fs} fontFamily="inherit" fontWeight={n.current ? "bold" : "normal"}
+                  style={{ pointerEvents: "none", paintOrder: "stroke", stroke: "#000", strokeWidth: 2.5, strokeLinejoin: "round" }}>{label}</text>
+              )}
+              {n.locked && <text x={cx + NW/2 - 10} y={cy - NH/2 + 14} textAnchor="middle" fontSize="12" style={{ pointerEvents: "none" }}>🔒</text>}
+            </g>;
+          })}
+        </g>
+      </svg>
+    </div>
   );
 }
+
+const cmZoomBtn = {
+  cursor: "pointer", width: 22, height: 22, lineHeight: "20px", textAlign: "center",
+  fontSize: "15px", color: "#4a3520", background: "rgba(240,232,210,0.85)",
+  border: "1px solid #8a6a3a", borderRadius: 3, userSelect: "none", display: "block", fontWeight: "bold",
+};
 
 function PipelineViewer({ onClose, loading, waitSecs }) {
   const [expanded, setExpanded] = React.useState({});
