@@ -7,6 +7,20 @@
 import { callModel, cleanJsonString } from "./apiConfig.js";
 import { extractMvuBlock } from "./mvu.js";
 
+// ── 全意图公共字段（本轮补齐）──
+// 单调用模式下这两个字段由主叙事的 JSON schema 一并产出，双调用模式下主调用只写
+// 散文、不产 JSON，而下面各意图的提取 schema 里谁都没要过它们，于是 p.memory 与
+// p.mentionedNewNpcs 在双调用下恒为 undefined，连带把三条链整个跳过：
+//   · memory → 向量小纸条不写、当日原料不进（日总结没素材）、事实账本不登记
+//     （事实账本正是旁白"全知事实"的来源，账本空了她私聊时就真的什么都不知道）
+//   · mentionedNewNpcs → NPC 涌现第一阶段（传闻中的人物）永不触发
+// 与其在 6 份 schema 里各抄一遍，不如统一拼在每个意图的 user prompt 末尾。
+const COMMON_EXTRACT_TAIL = `
+
+除上面那个 JSON 里的字段之外，无论本轮有无状态变化，都请在**同一个顶层 JSON 对象**里额外补上这两个字段：
+"memory": 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），供日后回想与旁人提起；确实无足记的琐事（纯环顾、纯赶路且路上无事）可省略此字段。
+"mentionedNewNpcs": 数组，填叙事里被提到姓名、但此刻并不在场的**新**具名人物（例如别人口中提起的某个人）。当前在场的人不算，已经出现过的人不算，没有就省略此字段。`;
+
 // 各意图对应的提取 prompt 工厂。
 // narrative: 主调用输出的叙事正文
 // s: 游戏快照 { room, char, inv, invText, dao, varTree, lockedDestName, lockedExits }
@@ -92,6 +106,31 @@ ${narrative}
   },
 };
 
+// 公共字段规整（就地修改并返回同一个对象）。
+// 提取模型通常是小/快模型，格式服从度不如主模型：memory 可能吐成对象或数字、
+// mentionedNewNpcs 可能吐成单个字符串或"甲、乙"这样的逗号串。下游
+// （writeNote / registerFact / recordRumoredNpcs）都假定 string 与 string[]，
+// 这里一次性收拾干净——脏数据一旦写进事实账本，日后再查是谁写的就很麻烦。
+// 空值直接删掉而不是留空串：下游一律用 if (p.memory) 判断，留空串等于多绕一圈。
+export function normalizeExtractedFields(parsed) {
+  if (!parsed || typeof parsed !== "object") return parsed;
+  if (parsed.memory != null && typeof parsed.memory !== "string") {
+    parsed.memory = String(parsed.memory);
+  }
+  if (parsed.memory != null && !parsed.memory.trim()) delete parsed.memory;
+
+  if (parsed.mentionedNewNpcs != null) {
+    const raw = parsed.mentionedNewNpcs;
+    const list = Array.isArray(raw) ? raw
+      : typeof raw === "string" ? raw.split(/[，,、\s]+/)
+      : [];
+    const cleaned = Array.from(new Set(list.map(x => String(x ?? "").trim()).filter(Boolean)));
+    if (cleaned.length) parsed.mentionedNewNpcs = cleaned;
+    else delete parsed.mentionedNewNpcs;
+  }
+  return parsed;
+}
+
 // 从 apiCfg 解析出这个意图应该用哪个模型（intent-specific > 默认提取模型 > 主模型）。
 export function buildExtractionCfg(intentCode, apiCfg) {
   const model =
@@ -118,7 +157,9 @@ export async function callExtraction(intentCode, narrative, state, apiCfg) {
 
   const cfg = buildExtractionCfg(intentCode, apiCfg);
   const systemPrompt = spec.system;
-  const userContent = spec.user(narrative, state);
+  // 公共字段（memory / mentionedNewNpcs）统一拼在每个意图的 user prompt 末尾，
+  // 免得在 6 份 schema 里各抄一遍、加一个字段要改六处。
+  const userContent = spec.user(narrative, state) + COMMON_EXTRACT_TAIL;
 
   const { text } = await callModel(cfg, systemPrompt, [{ role: "user", content: userContent }], { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000 });
 
@@ -131,6 +172,8 @@ export async function callExtraction(intentCode, narrative, state, apiCfg) {
   let parsed = {};
   let parseFailed = false;
   try { parsed = JSON.parse(js); } catch { parsed = {}; parseFailed = true; }
+
+  normalizeExtractedFields(parsed);
 
   // 从 JSON 的 "mvu" 字符串字段提取 MVU 指令（复用 extractMvuBlock 的正则解析）
   let mvuCommands = [];

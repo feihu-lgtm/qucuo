@@ -2834,21 +2834,31 @@ ${dealFmt}`;
       };
 
       let rawFull = "", p = null, mvuCommands = [], dealResult = null;
+      // 本轮"人眼看见的叙事正文"。两种模式来源不同：单调用在 p.output 数组里，
+      // 双调用在 rawFull 散文里。下游的新面孔人设换算（mapDescriptionToGenParams）
+      // 与传闻人物记录都要用它——此前那两处写死读 p.output，双调用下恒为空串，
+      // 于是"按描述定筋骨"在双调用模式里静默退化成吃 luck 兜底。
+      let narrativeText = "";
 
       if (apiCfg.extractionEnabled) {
         // ── 双调用模式：主调用只生成叙事，提取调用处理状态 ──
         // 主叙事调用与单调用模式一样享有自动重试——此前这里只试一次，
         // 接口一超时（默认60s）整轮行动直接整体回滚，表现为"双调用模式没法用"。
+        let mainFinishReason;
         for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
           try {
             const r = await callMainOnce(null, true);
             rawFull = r.rawFull;
+            mainFinishReason = r.finishReason;
             if (attempt > 1) {
               addLog([{ t: "sys", text: `  ✓ 重连成功，继续。` }]);
               traceStep(_trace, "AI调用", "pass", `主叙事第${attempt}次尝试成功（双调用模式）`);
             } else {
               traceStep(_trace, "AI调用", "pass", "主叙事一次成功（双调用模式）");
             }
+            // 必须在提取调用之前挂——getPipelineLog()[0] 取的是最近一条，
+            // 等提取调用发完再挂就变成提取那条了，主叙事的 prompt 反而看不到。
+            attachPipeline(_trace, getPipelineLog()[0]);
             break;
           } catch (netErr) {
             if (attempt <= MAX_AUTO_RETRY) {
@@ -2868,10 +2878,20 @@ ${dealFmt}`;
             rawFull = rawFull.replace(/<deal>[\s\S]*?<\/deal>/gi, "").trim();
           }
         }
+        // 双调用的叙事正文就是主调用的散文本身（<deal> 标签已剥掉）
+        narrativeText = rawFull;
         // 非流式时手动把叙事加进日志（流式模式已在 callMainOnce 里转为永久条目）
         if (!apiCfg.streamEnabled || apiCfg.apiType === "gemini") {
           const lines = rawFull.split("\n").map(l => l.trim()).filter(Boolean);
           addLog(lines.map(t => ({ t: "desc", text: "  " + t })));
+        }
+        // 截断检查：单调用那条一直有 finishReason 判定，双调用此前把这个字段整个丢了，
+        // 撞上限时既不提示也不重说。这里只提示不自动重说——叙事已经打到屏幕上了
+        // （流式模式更是已转成永久日志条目），再重说一遍会变成同一段剧情印两次。
+        // 位置必须在叙事落日志之后，否则"以上是已收到的部分"这句会排在正文上面。
+        if (/length|max[_ ]?tokens|max[_ ]?output/i.test(mainFinishReason || "")) {
+          traceStep(_trace, "截断检查", "block", `主叙事撞 token 上限（finishReason=${mainFinishReason}）`);
+          addLog([{ t: "sys", text: "  ⚠ 本轮叙事被接口中途截断（撞到输出 token 上限），以上是已收到的部分。提取层只能按这段残文结算状态，本轮状态可能不全。" }]);
         }
         // 发起提取调用
         const exState = {
@@ -2927,6 +2947,7 @@ ${dealFmt}`;
             throw netErr;
           }
           ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));
+          narrativeText = (p.output || []).join("");
           const hitLengthCap = /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
           const looksTruncated = p._truncated || hitLengthCap;
           if (!looksTruncated) break;
@@ -3064,8 +3085,9 @@ ${dealFmt}`;
       // 不立即生成技能/属性——不用正则猜人名，中文人名边界靠字符规则
       // 猜测误判率太高，改为让AI自己判断这是语义理解的强项。
       if (p.mentionedNewNpcs && p.mentionedNewNpcs.length) {
-        const context = (p.output || []).join("");
-        setVarTree(prev => recordRumoredNpcs(prev, p.mentionedNewNpcs, context));
+        // 用统一的 narrativeText 而不是 p.output——双调用模式下叙事在 rawFull 里，
+        // 读 p.output 会拿到空串，传闻人物就成了没有上下文的光杆名字。
+        setVarTree(prev => recordRumoredNpcs(prev, p.mentionedNewNpcs, narrativeText));
       }
 
       // 系统裁决：AI每次返回的NPC列表里，凡是还没有 moveset/carriedItems 的
@@ -3082,7 +3104,8 @@ ${dealFmt}`;
       // 完全绕开了这一步，直接吃 luck 兜底——猎户和商贩长出同一副筋骨。
       // 现在统一用 brief + 本轮叙事文本作为"看见的描述"，新面孔都走同一套映射。
       const luck = char.special?.气运 ?? 5;
-      const narrativeText = (p.output || []).join("");
+      // narrativeText 已在上面按模式各自赋好（单调用=p.output 拼接，双调用=rawFull 散文），
+      // 不要在这里重新从 p.output 取——那样双调用会拿到空串，新面孔全部退化成吃 luck 兜底。
       if (p.room && Array.isArray(p.room.npcs)) {
         p.room.npcs = p.room.npcs.map(n => {
           const existing = room.npcs.find(o => o.name === n.name);
