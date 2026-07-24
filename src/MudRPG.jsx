@@ -4225,15 +4225,18 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               <span style={{ color: "#5a5a4a", fontSize: "12px", cursor: "pointer" }} onClick={() => setShowAvatarPicker(false)}>× 关闭</span>
             </div>
             <div style={{ fontSize: "11.5px", color: "#8a8a7a", marginBottom: 14 }}>
-              选一张预制头像，或上传自己的图片（建议 9:16 竖版）。选择只影响你自己的显示，存在本地浏览器。
+              选一张预制头像，或上传自己的图片（建议 2:3 竖版）。选择只影响你自己的显示，存在本地浏览器。
             </div>
-            {/* 预制头像：从 public/portraits/player/ 读，文件名 male/female/other + preset1..N */}
+            {/* 预制头像：从 public/portraits/player/ 读，共8张同一批唐卡风格厚涂立绘
+                （male=藏剑大叔/female=花商/other=朔风刀客·默认兜底/preset1~5=飞贼·猎手·
+                猫人·假小子·穿越者）。文件名约定 male/female/other + preset1..N，2:3竖版。 */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
               {[genderAvatar["男"], genderAvatar["女"], AV_BASE + "other.png",
-                AV_BASE + "preset1.png", AV_BASE + "preset2.png", AV_BASE + "preset3.png", AV_BASE + "preset4.png"].map((src, i) => (
+                AV_BASE + "preset1.png", AV_BASE + "preset2.png", AV_BASE + "preset3.png",
+                AV_BASE + "preset4.png", AV_BASE + "preset5.png"].map((src, i) => (
                 <div key={i}
                   onClick={() => { setPlayerAvatarCustom(src); try { localStorage.setItem("qucuo_player_avatar", src); } catch { /* ignore */ } setShowAvatarPicker(false); }}
-                  style={{ aspectRatio: "9/16", borderRadius: 5, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid #6ec6c6" : "1px solid #2a3a3a", background: "#0c0e14" }}
+                  style={{ aspectRatio: "2/3", borderRadius: 5, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid #6ec6c6" : "1px solid #2a3a3a", background: "#0c0e14" }}
                 >
                   <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     onError={(e) => { e.currentTarget.style.display = "none"; }} />
@@ -5298,14 +5301,16 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         <div style={{ flex: 30, ...S.panel, borderRight: "none" }}>
           <div style={S.label}>侠客</div>
           <div style={S.scroll}>
-            {/* 头像区：9:16 竖版立绘 + 姓名/性别 + 换头像入口。头像图放 public/portraits/player/，
-                文件名用性别兜底（male.png/female.png/other.png），玩家自设的存 localStorage。 */}
+            {/* 头像区：2:3 竖版头像（本轮换成唐卡高饱和厚涂风格8连图，藏地高原背景+金色
+                描边）+ 姓名/性别 + 换头像入口。头像图放 public/portraits/player/，
+                文件名用性别兜底（male.png/female.png/other.png，other=朔风独行刀客默认款），
+                玩家自设的存 localStorage。 */}
             <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "flex-start" }}>
               <div
                 onClick={() => setShowAvatarPicker(true)}
                 title="点击更换头像"
                 style={{
-                  width: 90, aspectRatio: "9/16", flexShrink: 0, borderRadius: 6, overflow: "hidden",
+                  width: 90, aspectRatio: "2/3", flexShrink: 0, borderRadius: 6, overflow: "hidden",
                   border: `1px solid ${zoneTheme.border}`, background: "#0c0e14", cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
                 }}
