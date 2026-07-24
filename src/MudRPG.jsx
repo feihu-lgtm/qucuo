@@ -1001,10 +1001,13 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [dbgInner, setDbgInner] = useState(""); // 调试·传送目标小地点
   const [dbgSkillType, setDbgSkillType] = useState("全部"); // 调试·增加武学·类型筛选
   const [dbgSkillQuality, setDbgSkillQuality] = useState("全部"); // 调试·增加武学·品阶筛选
-  const [dbgItemName, setDbgItemName] = useState("");   // 调试·增加物品·名称
+  const [dbgItemName, setDbgItemName] = useState("");   // 调试·增加物品·名称（手打自定义用）
   const [dbgItemCat, setDbgItemCat] = useState("weapon"); // 调试·增加物品·类别
   const [dbgItemQuality, setDbgItemQuality] = useState("白"); // 调试·增加物品·品阶
   const [dbgPickedSkill, setDbgPickedSkill] = useState("");  // 调试·增加武学·选中的武学id
+  const [dbgItemCatF, setDbgItemCatF] = useState("全部");   // 调试·从目录选物品·类别筛选
+  const [dbgItemQualF, setDbgItemQualF] = useState("全部");  // 调试·从目录选物品·品阶筛选
+  const [dbgPickedItem, setDbgPickedItem] = useState("");   // 调试·从目录选中的物品名
   const [showPresets, setShowPresets] = useState(false);
   // 新手教程覆盖层：首次进游戏默认弹出，看过一次记进 localStorage，之后不再自动弹
   // （左上角按钮随时可再点开）。localStorage 不可用时降级为默认不弹，避免报错。
@@ -5130,7 +5133,39 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 >增加并装备</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>增加物品</span>
+                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>目录物</span>
+                <select value={dbgItemCatF} onChange={e => { setDbgItemCatF(e.target.value); setDbgPickedItem(""); }}
+                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
+                  <option value="全部">全部类别</option>
+                  {["weapon","armor","accessory","misc"].map(c => <option key={c} value={c}>{CATEGORY_LABEL[c] || c}</option>)}
+                </select>
+                <select value={dbgItemQualF} onChange={e => { setDbgItemQualF(e.target.value); setDbgPickedItem(""); }}
+                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
+                  <option value="全部">全部品阶</option>
+                  {["白","绿","蓝","紫","橙","红"].map(q => <option key={q} value={q}>{q}</option>)}
+                </select>
+                <select value={dbgPickedItem} onChange={e => setDbgPickedItem(e.target.value)}
+                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11, minWidth: 120 }}>
+                  <option value="">选物品…</option>
+                  {CATALOG.filter(it =>
+                    (dbgItemCatF === "全部" || it.category === dbgItemCatF) &&
+                    (dbgItemQualF === "全部" || it.quality === dbgItemQualF)
+                  ).map(it => <option key={it.name} value={it.name}>{it.name}（{it.quality}·{CATEGORY_LABEL[it.category] || it.category}）</option>)}
+                </select>
+                <span onClick={() => {
+                  if (!dbgPickedItem) return;
+                  const entry = CATALOG_INDEX[dbgPickedItem];
+                  if (!entry) return;
+                  const item = makeCatalogItem(entry); // 用具名物的真实数值/特效/描述
+                  setInv(v => [...v, item]);
+                  addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[item.category] || item.category}）` }]);
+                  setDbgPickedItem("");
+                }}
+                  style={{ cursor: "pointer", fontSize: 10, color: dbgPickedItem ? "#8ac48a" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgPickedItem ? "#2a4a2a" : "#1a1d2e"}`, borderRadius: 3, userSelect: "none" }}
+                >增加</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>自定义</span>
                 <input type="text" value={dbgItemName} onChange={e => setDbgItemName(e.target.value)} placeholder="物品名"
                   style={{ width: 100, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
                 <select value={dbgItemCat} onChange={e => setDbgItemCat(e.target.value)}
