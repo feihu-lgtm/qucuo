@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "开始界面加访客计数(免注册公共计数器+失败降级)",
+    time: "2026-07-24 10:35",
+    notes: "应要求在开始界面页脚显示\"已有 N 位侠客踏足曲措乡\"。前提认知：项目纯前端无后端，统计\"总共多少人来过\"必须借外部\"账本\"——玩家各自浏览器的 localStorage 只知道自己、汇总不出总数。选了免注册的公共计数器 abacus.jasoncameron.dev：打一次 /hit/qucuo-mud/visits 就 +1 并返回累计值。三重稳妥：①失败降级——6s 超时 + catch，服务挂了/被墙/超时则 visitCount 保持 null，页脚那行静默不显示，绝不拖累游戏加载；②防刷——用 sessionStorage 标记本会话已计数，同一标签页反复刷新只 /get 读数不再 /hit 自增；③可迁移——URL 集中一处、注释写明以后想要稳定统计换成自己的 GoatCounter 账号只改这一行。软肋已在注释标明：公共命名空间可被别人刷、数据可能被服务方清掉，仅供人气参考非严肃统计。改动仅 StartScreen.jsx。esbuild 验证通过。",
+  },
+  {
     codename: "修移动拾取叙事说捡到却没进包(AI漏填items_add系统兜底补发)+村口放补偿物",
     time: "2026-07-24 10:40",
     notes: "两件。①【风铃 bug】移动途中系统按气运掷骰触发\"路上拾取\"，设计上让 AI 在 output 里叙述捡到什么、并在 delta.items_add 里加这件物品——但 AI 常常叙事写了\"拾起竟是一枚铜制马铃…收入怀中\"却忘了填 items_add，导致叙事说捡到、背包里却没有(玩家反馈的风铃就是这样)。这跟上一版界石是相反方向的同类脱节。修法：把\"拾取判定兜底\"从 `if (items_add?.length)` 里提出来，无论 AI 填没填都检查一次——若本轮有拾取判定(pickupJudgmentRef)但没被任何结构化物品消费掉(usedJudgment 仍 false)，系统按判定的品质/分类自动补发一件，物品名用新函数 extractPickupName 从叙事原文抠(匹配\"是+一+量词+名字\"句式，如\"竟是一枚铜制马铃\"→\"半旧的铜制马铃\")，抠不到则用\"路遇之物\"通用名兜底，绝不让掷到的拾取凭空蒸发。节点测试四句真实叙事+一句无拾取，命中/兜底均正确。②【村口补偿】应玩家要求在鱼定村 room.items 补放两件可拾物：\"无主的青锋剑\"(weapon/绿/atkMul1.2，比开局白枪强一档)、\"铜铃\"(misc/白，呼应风铃 bug 的物件)，都带全 quality/category 不会再 undefined。100 两银子因是 char.money 独立货币字段、没法作为地上 room.items 物品被交易系统识别，改为初始银两 50→150(+100补偿)。esbuild 验证 MudRPG.jsx / qucuo.js 通过。",
