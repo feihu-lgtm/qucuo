@@ -15,6 +15,7 @@ import {
   nextAliveIndex, isTeamWiped,
 } from "./battleEngine.js";
 import { narrateTurn, hasApiKey } from "./battleNarration.js";
+import { explainMove, moveTypeGist } from "./moveExplainer.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const S = (f) => `${BASE}stones/${f}`;
@@ -26,6 +27,27 @@ const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, le
 const tierName = (levelCap) => QUALITY[Math.max(0, Math.min(5, levelCap))] || "白";
 
 const MAX_TEAM = 6; // 每队最多 6 人（宝可梦味）
+
+// 技能卡翻牌动画：复用赌石坊 GambleStoneScreen 那套 preserve-3d + backface-hidden
+// 的翻面机制，尺寸适配技能卡。悬停/点选时卡片绕 Y 轴翻到背面，露出字段理解器
+// 翻译出的完整招式说明。.qb-flip 是 3D 容器，两个 .qb-face 是正反面。
+const QB_CSS = `
+  .qb-card{ perspective:900px; }
+  .qb-flip{ position:relative; width:100%; height:100%; transform-style:preserve-3d;
+    transition:transform .5s cubic-bezier(.4,0,.2,1); }
+  .qb-card:hover .qb-flip{ transform:rotateY(180deg); }
+  .qb-face{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    display:flex; flex-direction:column; border-radius:5px; overflow:hidden; }
+  .qb-face.qb-back{ transform:rotateY(180deg); }
+  /* 伤害数字弹跳：结算后在对峙区飘一下 */
+  .qb-dmg{ animation:qbDmg .9s ease-out forwards; }
+  @keyframes qbDmg{
+    0%{ opacity:0; transform:translateY(6px) scale(.7); }
+    18%{ opacity:1; transform:translateY(-4px) scale(1.15); }
+    40%{ transform:translateY(-8px) scale(1); }
+    100%{ opacity:0; transform:translateY(-26px) scale(.95); }
+  }
+`;
 
 export default function QuickBattleScreen({ onExit }) {
   const [phase, setPhase] = useState("mode"); // mode | pick | battle | result
@@ -57,6 +79,7 @@ export default function QuickBattleScreen({ onExit }) {
 
   return (
     <div style={sx.root}>
+      <style>{QB_CSS}</style>
       <img src={S("bg_hall_night.png")} alt="" style={sx.bg} />
       <div style={sx.scrim} />
       {phase === "mode" && <ModePick onPick={(m) => { setMode(m); setPhase("pick"); }} onExit={onExit} />}
@@ -293,7 +316,10 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
         narration: null,
         dmgToFoe: out.result.damageToB, dmgToMe: out.result.damageToA,
       };
-      return { ...b, allyTeam, foeTeam, logs: [...b.logs, roundLog], round: b.round + 1 };
+      return {
+        ...b, allyTeam, foeTeam, logs: [...b.logs, roundLog], round: b.round + 1,
+        lastHit: { key: b.round + 1, toFoe: out.result.damageToB, toMe: out.result.damageToA },
+      };
     });
 
     // 判定倒下/胜负/换人
@@ -380,14 +406,16 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
         </div>
       </div>
 
-      {/* 对峙区（签名元素）：双方立绘 + 血槽 */}
+      {/* 对峙区（签名元素）：双方立绘 + 血槽 + 飘伤害 */}
       <div style={sx.arena}>
-        <FighterPanel fighter={ally} side="ally" team={battle.allyTeam} curIdx={battle.allyIdx} />
+        <FighterPanel fighter={ally} side="ally" team={battle.allyTeam} curIdx={battle.allyIdx}
+          hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toMe } : null} />
         <div style={sx.arenaVs}>
           <img src={UI("burst.png")} alt="" style={{ width: 64, opacity: 0.7 }} />
           <div style={{ fontSize: 22, color: "#e0526a", fontWeight: "bold", letterSpacing: 2 }}>斗</div>
         </div>
-        <FighterPanel fighter={foe} side="foe" team={battle.foeTeam} curIdx={battle.foeIdx} />
+        <FighterPanel fighter={foe} side="foe" team={battle.foeTeam} curIdx={battle.foeIdx}
+          hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toFoe } : null} />
       </div>
 
       {/* 战报流 */}
@@ -395,8 +423,12 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
         {battle.logs.length === 0 && <div style={{ color: "#8a7d5a", fontSize: 13, textAlign: "center", padding: 20 }}>选一招，切磋开始。</div>}
         {battle.logs.map((l, i) => (
           <div key={i} style={{ marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-            <div style={{ fontSize: 11, color: "#c0a060", marginBottom: 3 }}>
-              第{l.round}回合{l.myMove ? ` · ${l.myName}「${l.myMove}」 对 ${l.foeName}「${l.foeMove}」` : ""}
+            <div style={{ fontSize: 11, color: "#c0a060", marginBottom: 3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span>第{l.round}回合{l.myMove ? ` · ${l.myName}「${l.myMove}」 对 ${l.foeName}「${l.foeMove}」` : ""}</span>
+              {/* 伤害数字：醒目独立标记，一眼看清这一击打了多少 */}
+              {l.dmgToFoe > 0 && <span style={sx.dmgTag("#d47a6a")}>敌 −{l.dmgToFoe}</span>}
+              {l.dmgToMe > 0 && <span style={sx.dmgTag("#6aa0d4")}>我 −{l.dmgToMe}</span>}
+              {(l.dmgToFoe === 0 || l.dmgToFoe == null) && (l.dmgToMe === 0 || l.dmgToMe == null) && l.myMove && <span style={{ color: "#6a5f4a" }}>无伤</span>}
             </div>
             <div style={{ fontSize: 13.5, color: "#cdc2a2", lineHeight: 1.8 }}>
               {l.narration || l.text}
@@ -409,7 +441,7 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
       {!battle.over && (
         <div style={sx.controlBar}>
           {battle.awaitingSwitch ? (
-            <div style={{ width: "100%", textAlign: "center" }}>
+            <div style={{ width: "100%", textAlign: "center", margin: "auto" }}>
               <div style={{ color: "#d47a6a", fontSize: 14, marginBottom: 10 }}>{ally?.name || "上场者"}已倒下，选谁接替上场</div>
               <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
                 {battle.allyTeam.map((f, i) => f.combatState.hp[0] > 0 && (
@@ -450,7 +482,7 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
 
       {battle.over && (
         <div style={sx.controlBar}>
-          <div style={{ width: "100%", textAlign: "center" }}>
+          <div style={{ width: "100%", textAlign: "center", margin: "auto" }}>
             <div style={{ fontSize: 22, color: battle.winner === "ally" ? "#6aa0d4" : "#d47a6a", fontWeight: "bold", letterSpacing: 4, marginBottom: 12 }}>
               {battle.winner === "ally" ? "我方胜" : "我方败"}
             </div>
@@ -462,24 +494,35 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
   );
 }
 
-// 单个上场者面板：立绘/名字 + 血槽 + 气力 + 后备队伍点
-function FighterPanel({ fighter, side, team, curIdx }) {
+// 单个上场者面板：立绘/名字 + 血槽 + 气力 + 后备队伍点 + 飘伤害
+function FighterPanel({ fighter, side, team, curIdx, hit }) {
   const cs = fighter.combatState;
   const hpRatio = cs.hp[0] / cs.hp[1];
   const enRatio = cs.energy[0] / 10;
   const accent = side === "ally" ? "#6aa0d4" : "#d47a6a";
   const align = side === "ally" ? "flex-start" : "flex-end";
+  const showDmg = hit && hit.dmg > 0;
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: align, gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexDirection: side === "ally" ? "row" : "row-reverse" }}>
-        <div style={{ width: 76, height: 100, borderRadius: 6, overflow: "hidden", border: `2px solid ${tierColor(fighter.levelCap)}`, background: "#14100b", flexShrink: 0 }}>
-          {fighter.portrait ? (
-            <img src={PORTRAIT(fighter.portrait)} alt={fighter.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
-          ) : (
-            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: tierColor(fighter.levelCap), fontWeight: "bold" }}>
-              {fighter.name.slice(0, 2)}
-            </div>
+        <div style={{ position: "relative", width: 76, height: 100, borderRadius: 6, overflow: "visible", flexShrink: 0 }}>
+          <div style={{ width: "100%", height: "100%", borderRadius: 6, overflow: "hidden", border: `2px solid ${tierColor(fighter.levelCap)}`, background: "#14100b" }}>
+            {fighter.portrait ? (
+              <img src={PORTRAIT(fighter.portrait)} alt={fighter.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
+            ) : (
+              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: tierColor(fighter.levelCap), fontWeight: "bold" }}>
+                {fighter.name.slice(0, 2)}
+              </div>
+            )}
+          </div>
+          {/* 飘伤害数字：每次 hit.key 变化重新触发动画 */}
+          {showDmg && (
+            <div key={hit.key} className="qb-dmg" style={{
+              position: "absolute", top: 4, left: "50%", transform: "translateX(-50%)",
+              fontSize: 24, fontWeight: "bold", color: "#ff6a5a",
+              textShadow: "0 2px 6px #000, 0 0 12px rgba(255,60,50,.7)", pointerEvents: "none", zIndex: 5,
+            }}>−{hit.dmg}</div>
           )}
         </div>
         <div style={{ minWidth: 150, textAlign: side === "ally" ? "left" : "right" }}>
@@ -530,22 +573,54 @@ function StatusChip({ name }) {
 }
 
 function MoveButton({ move, usable, reason, onClick }) {
-  const [hover, setHover] = useState(false);
   const qc = QUALITY_COLOR[move.quality] || "#c8bfa0";
+  const lines = explainMove(move);
+  const gist = moveTypeGist(move);
+
   return (
-    <button onClick={onClick} disabled={!usable}
-      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      title={reason || move.desc || ""}
-      style={{
-        minWidth: 92, padding: "8px 12px", cursor: usable ? "pointer" : "not-allowed",
-        background: usable ? (hover ? "rgba(40,32,20,.9)" : "rgba(20,16,10,.7)") : "rgba(10,8,5,.5)",
-        border: `2px solid ${usable ? qc : "rgba(255,255,255,.1)"}`, borderRadius: 5,
-        opacity: usable ? 1 : 0.45, transition: "all .15s", textAlign: "left",
-      }}>
-      <div style={{ fontSize: 13, color: "#e8dfc0", fontWeight: "bold" }}>{move.name}</div>
-      <div style={{ fontSize: 9.5, color: qc }}>{move.type} · {move.quality}品 · 耗气{move.energyCost}</div>
-      {reason && <div style={{ fontSize: 9, color: "#c8483a" }}>{reason}</div>}
-    </button>
+    <div className="qb-card" style={{ width: 128, height: 96, perspective: 900 }}>
+      <div className="qb-flip">
+        {/* 正面：招名 + 类型/品阶/耗气 + 可用性 */}
+        <button
+          className="qb-face"
+          onClick={() => usable && onClick()}
+          disabled={!usable}
+          style={{
+            cursor: usable ? "pointer" : "not-allowed", textAlign: "left", padding: "8px 10px",
+            background: usable ? "rgba(20,16,10,.85)" : "rgba(10,8,5,.7)",
+            border: `2px solid ${usable ? qc : "rgba(255,255,255,.1)"}`,
+            opacity: usable ? 1 : 0.5,
+          }}
+        >
+          <div style={{ fontSize: 14, color: "#e8dfc0", fontWeight: "bold" }}>{move.name}</div>
+          <div style={{ fontSize: 10, color: qc, marginTop: 2 }}>{move.type} · {move.quality}品</div>
+          <div style={{ fontSize: 10, color: "#c0a060", marginTop: "auto" }}>耗气 {move.energyCost}</div>
+          {reason
+            ? <div style={{ fontSize: 9.5, color: "#c8483a" }}>{reason}</div>
+            : <div style={{ fontSize: 9, color: "#6a5f4a" }}>悬停看详情 · 点击出招</div>}
+        </button>
+        {/* 背面：字段理解器翻译出的完整效果 */}
+        <div
+          className="qb-face qb-back"
+          onClick={() => usable && onClick()}
+          style={{
+            cursor: usable ? "pointer" : "default", padding: "7px 9px",
+            background: "rgba(24,20,13,.97)", border: `2px solid ${qc}`,
+            overflowY: "auto",
+          }}
+        >
+          <div style={{ fontSize: 11, color: qc, fontWeight: "bold", marginBottom: 3 }}>
+            {move.name} <span style={{ color: "#8a7d5a", fontWeight: "normal" }}>耗气{move.energyCost}</span>
+          </div>
+          <div style={{ fontSize: 8.5, color: "#8a7d5a", marginBottom: 4, lineHeight: 1.4 }}>{gist}</div>
+          {lines.map((l, i) => (
+            <div key={i} style={{ fontSize: 9.5, color: l.warn ? "#d88" : "#cdc2a2", lineHeight: 1.5, marginBottom: 2 }}>
+              · {l.text}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -633,9 +708,11 @@ const sx = {
   logStream: { flex: 1, overflowY: "auto", padding: "12px 16px", background: "rgba(10,8,5,.6)",
     border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, marginBottom: 12, minHeight: 80 },
   controlBar: { display: "flex", gap: 10, padding: "12px 14px", background: "rgba(20,16,10,.7)",
-    border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, minHeight: 60, alignItems: "center" },
+    border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, minHeight: 116, alignItems: "flex-start" },
   switchBtn: { padding: "8px 16px", background: "rgba(40,60,80,.6)", border: "1px solid #6aa0d4",
     borderRadius: 5, color: "#cfe0ee", fontSize: 13, cursor: "pointer" },
   switchBtnSmall: { padding: "4px 10px", background: "rgba(40,60,80,.5)", border: "1px solid #4a6a84",
     borderRadius: 4, color: "#cfe0ee", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" },
+  dmgTag: (c) => ({ padding: "1px 7px", borderRadius: 3, background: `${c}22`, border: `1px solid ${c}`,
+    color: c, fontWeight: "bold", fontSize: 11 }),
 };

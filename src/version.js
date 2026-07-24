@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "斗蛐蛐升级：战报写伤害数字 + 技能卡翻牌看字段理解器 + 复用赌石3D flip动画",
+    time: "2026-07-25 14:30",
+    notes: [
+      "按作者三条反馈升级斗蛐蛐：写伤害、悬停看描述(字段理解器)、动画用赌石那套flip；顺带更新README突出特色玩法。",
+      "①【写伤害】战报流每回合明确标出双方受创数字(敌−X/我−X 醒目色块，不再只藏在notes文字里，无伤显示'无伤')；对峙区受击时在立绘上飘一记暴击式伤害数字(qbDmg弹跳动画·每次hit.key变化重新触发)。",
+      "②【字段理解器】新建 quickBattle/moveExplainer.js：把 resolveTurn 认识的全部招式字段(baseDamageMultiplier/onCounterSuccessDamageRatio/applyMark/selfSacrifice/onCounterFail* 等30+字段)翻译成含具体倍率/消耗/比例的人话，代价类(应对失败倒扣气力/防御失效)标warn红字。所见即所得：玩家看到的说明与结算真正用的字段是同一份数据翻译，不会漂移。验证白/蓝/红各类型翻译准确，红品听桥双重赌输代价正确标⚠。",
+      "③【翻牌看招】技能按钮从平板改为可翻面卡片(MoveButton→翻牌卡)：正面招名/类型/品阶/耗气，鼠标悬停绕Y轴翻到背面显示字段理解器的完整效果说明。翻牌机制复用赌石坊 GambleStoneScreen 那套 perspective+preserve-3d+backface-hidden(QB_CSS .qb-flip/.qb-face)，尺寸适配技能卡。controlBar 高度放宽到116px容纳翻牌卡，换人/结束分支内容改 margin:auto 垂直居中。",
+      "④【README】特色玩法新增「斗蛐蛐(快速切磋沙盒)」整节，与旁白攻略并列：全池选人/两模式/玩家控一方/翻牌字段理解器/写伤害/无需key(装key补说书战报)六个卖点，附 src/quickBattle 文件说明；目录结构加 quickBattle 目录、combat 标注为'战斗内核'。",
+      "vite build 通过；moveExplainer 冒烟验证各品阶各类型翻译合理；QuickBattleScreen esbuild 通过。",
+    ],
+  },
+  {
     codename: "开始界面第五入口·斗蛐蛐：全池选人的宝可梦式切磋沙盒(复用战斗内核·无需key)",
     time: "2026-07-25 12:00",
     notes: [
