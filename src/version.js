@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "玩家预制头像换新(唐卡厚涂8连图)",
+    time: "2026-07-24 07:23",
+    notes: "右栏「侠客」面板的玩家预制头像整批换新。素材来源：用户给的一张2行4列8宫格唐卡高饱和厚涂风格插画(藏地高原背景+金色描边分割)，按等分硬切成8张干净的2:3竖版单人头像(边缘各收4px去毛刺，统一放大到720×1080)。分配：male=藏剑大叔、female=花商、other=朔风独行刀客(默认兜底款)、preset1~5=飞贼/猎手/猫人/假小子/穿越者。代码改动两处：①头像选择器候选数组从原来硬编码的 preset1~4(4档)扩到 preset1~5(5档)，把7张非默认款全部纳入可选；②头像展示框与选择器候选格的 aspectRatio 从旧的 9:16 改成 2:3，匹配新素材实际比例(NPC对话立绘走另一套9:16系统，未动)。同步更新 public/portraits/player/README.md 与相关代码注释，反映当前8张头像的实际内容和来源。esbuild 验证 MudRPG.jsx 语法与依赖解析通过；vite build 本身因仓库缺 debug.html/debug-gamble.html/debug-item.html 三个调试入口文件而失败，与本次改动无关(属仓库既存缺口，入口对应的 debug-*.jsx 源文件都在，只是页面壳文件没推上来)。",
+  },
+  {
     codename: "《天都·曲措》发布版(GitHub Pages上线+藏地UI整套)",
     time: "2026-07-24 13:00",
     notes: "项目正式起名《天都·曲措》并上线 GitHub Pages 在线试玩(feihu-lgtm.github.io/qucuo)。本轮以工程化上线+藏地视觉整套为主，逐项：①部署——vite.config 加 base(DEPLOY_BASE 控制，Pages 用 /qucuo/)，新增 vite.config.pages.js(只打包主入口)与 .github/workflows/deploy.yml(push main 自动构建部署)，.gitignore 忽略 dist(Actions 重建)。②CORS——apiConfig 给 Anthropic 两处 fetch(非流式+流式)加 anthropic-dangerous-direct-browser-access 头，使浏览器可直连；核实 Gemini generateContent 与 OpenAI 兼容本就放行；withProxy 非 localhost 且无自定义代理时直连；设置面板保留 corsProxy 兜底。③地图 UI——九宫格 NineGridMap 接入藏地三态贴图(idle 石板/current 翡翠/fog 黑雾，stones/mapui/)，去掉方向字与 boxShadow 光晕(消竖线)、三态统一 cellStyle;放大 topo 图 ClickableMap 重写：节点 rect 换 image 三态贴图、加 pan(拖动平移,防误触3px阈值)+zoom(滚轮0.4~3x+按钮±/复位)，连线改金棕配卷轴;卷轴底 scroll_bg 从原图重抠假透明、清 77 毛边像素;删内层九宫格下方冗余的出据点按钮(出村统一走外层视图,已核实外层 forceLayer:outer 路径独立完整)。④开始界面——StartScreen 用隶书白字标题 title_tianducuo_v3(去假透明+抹印章+黑字染白)压雪山背景 start-bg，左对齐布局，菜单开始/加载/设置/退出;曾试藏式木牌皮后按需回退纯 CSS。⑤设置面板——SettingsPanel 从长条 tab 改主页卡片式(API/预设/存档/其他四卡，点进次级面板带返回);API 类型只留 OpenAI 兼容(删 Anthropic/Gemini/千问按钮+快速填入,挂载时强制纠正旧配置 apiType=openai);删金手指/玩法说明 tab,字号移入其他。⑥favicon——藏式雪山+祥云+经幡圆徽多尺寸(32/180/512/ico),index.html 标题改天都·曲措。⑦README 顶部加封面(黑字 v2,配 GitHub 白底)+在线试玩/源码互链。藏文 མགར་ཆུ་གནམ་མཚོ 中 chu(河)gnam(天)mtsho(湖)三词根经真实地名(那曲/纳木措)核实,开头 gar(白)无查证依据、四词连写语法待母语者校对——已在 notes 与美术存档标注,上线前需人工核。多次 vite build 通过。",
