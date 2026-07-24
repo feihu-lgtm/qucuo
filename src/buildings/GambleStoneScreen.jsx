@@ -275,7 +275,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
       <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
         aspectRatio: "1672/941", width: "100vw", maxHeight: "100vh", maxWidth: "calc(100vh*1672/941)" }}
         onClick={() => setSelCard(null)}>
-        <img src={S(isNight ? "bg_hall_night.png" : "bg_hall.png")} alt=""
+        <img src={S(isNight ? "bg_hall_night.png" : "bg_hall_day.png")} alt=""
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
 
         {/* 藏式独脚台（目视定位，桌面盘在台图上部） */}
