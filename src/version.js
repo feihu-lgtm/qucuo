@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "补开局初始房间的新人物检测(开局在场NPC照常报'※新人物出现'并标记已见)",
+    time: "2026-07-24 13:35",
+    notes: "承接上一版'内层移动补新人物检测'，这一版补另一个漏检入口——开局。新开局落在初始房间(鱼定村·村口)时本就有在场NPC，但开局不是一次move、走不到 act() 里的新人物检测，于是这些人既不报'※新人物出现'也没被 markAsSeen——玩家开局就见着的人，之后走开再回来或首次互动时反被当新人误报。修法：加一个开局 effect，在开场图文序列(showOpening)和创角(showCharCreate)都结束、真正进游戏主界面后跑一次(不在开场动画期间跑，否则日志顺序错乱)，按初始内层房间可见性过滤 room.npcs，detectNewFaces 查未见过的，照用户要求照常报'※新人物出现'(与走路遇新人一致)并 markAsSeen + updateLastSeen。openingFacesRef 保证只补一次；仅新开局(!restored)补，读档局 varTree 已记过见过谁不重跑。esbuild + vite.config.pages.js 完整 build 通过。至此新人物检测的三个入口(外层移动/内层箱庭移动/开局)全部覆盖。",
+  },
+  {
     codename: "修内层箱庭移动不触发新人物检测(走到有新NPC的房间不报'※新人物出现')",
     time: "2026-07-24 13:20",
     notes: "玩家反馈：从B箱庭走到A箱庭没刷新'新人物'。查明根因——内层箱庭移动(同据点内房间切换)是纯前端瞬时操作，切完 innerRoomName、本地生成方位描述、setTime+1 后直接 early return，完全不往下走到主流程那段'新人物检测'(在 return 之后很远处)。于是走进绑着只属于该房间NPC的箱庭(如'猎户小屋'的老猎户)，明明有没见过的人也不报。好感度提示正常是因为它走AI回包的MVU指令、跟内层移动无关。修法：在内层移动 early return 前补一段新人物检测，复用与主流程完全相同的判据——按目标内层房间(innerDest)的 isNpcVisibleInInnerRoom 过滤 room.npcs，再 detectNewFaces 查 varTree 里没见过的，有则打'※新人物出现'并 markAsSeen；同时 updateLastSeen 更新久别重逢的'上次见面回合'。纯本地不调AI，契合内层移动瞬时性质。三个函数(detectNewFaces/markAsSeen/updateLastSeen)与 isNpcVisibleInInnerRoom 均已 import。esbuild + vite.config.pages.js 完整 build 通过。",

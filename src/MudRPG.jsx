@@ -1263,6 +1263,30 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [pledgedItems, setPledgedItems] = useState(restored?.snap.pledgedItems || []);
   const addLog = useCallback((lines) => setLog(p => [...p, ...lines]), []);
 
+  // 开局新人物检测（本轮补）：新开局时，初始房间(如鱼定村·村口)本就有在场 NPC，
+  // 但开局不是一次"移动"、走不到 act() 里那段新人物检测，于是这些人既不报
+  // "※新人物出现"、也没被 markAsSeen——导致玩家开局就见着的人，之后走开再回来
+  // 或首次互动时，反被当成新人误报。这里在新开局挂载时补跑一次：按初始内层房间
+  // 可见性过滤 room.npcs，detectNewFaces 查未见过的，照常报"※新人物出现"(与走路
+  // 遇到新人一致)并 markAsSeen。只在新开局(!restored)跑一次；读档恢复的局
+  // varTree 里已记过见过谁，不重跑。
+  const openingFacesRef = useRef(false);
+  useEffect(() => {
+    if (openingFacesRef.current) return;
+    if (restored) { openingFacesRef.current = true; return; } // 读档局不补
+    // 等开场图文序列和创角都结束、真正进入游戏主界面后再补——否则会在开场动画
+    // 期间就往日志里塞"新人物出现"，顺序错乱、被开场白淹没。
+    if (showOpening || showCharCreate) return;
+    openingFacesRef.current = true;
+    const visible = (room.npcs || []).filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
+    const newFaces = detectNewFaces(varTree, visible);
+    if (newFaces.length) {
+      addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
+      setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
+      setVarTree(prev => updateLastSeen(prev, visible.map(n => n.name), time));
+    }
+  }, [showOpening, showCharCreate]); // 开场/创角结束后跑一次（内部 ref 保证只补一次）
+
   // ── 写小纸条·统一便捷入口（latest-ref 模式）──────────────────────────────
   // 系统侧各来源（哑动作/交易/私聊/飞鸽/查看）都用这一个函数写小纸条，只管传
   // text/owner/source，其余（cfg/回合/地点/已知名单）由这里从最新状态里取。
