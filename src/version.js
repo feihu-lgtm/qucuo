@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "对话即认识：统一所有对话入口 + 不选人时靠AI回报respondedNpcs精准标记",
+    time: "2026-07-24 11:17",
+    notes: "修\"从底部/侧栏选人对话，聊了半天对方头上还挂'尚未认识'\"的入口不一致。此前只有\"点NPC名字→互动菜单→对话\"(handleNpcTalk)会 markNpcAsKnown，而底部\"💬已在身边·对话\"(4760)和侧栏\"此地之人\"点选(5564)两个入口只 setTalkTarget、没标记认识——同一个\"跟人说话\"行为因入口不同结果不一致。改法不在各UI入口分别补，而在 act() 对话成功结算处统一判定(捕捉\"真的说了话\"这个动作本身，所有入口自动一致，也不会\"一点聚焦就认识\")：①选定了对话对象(talkTarget)→直接标记该人；②按用户要求扩展到\"不选人直接聊\"的情况——走路A，对话模式 prompt(modeNote)新增要求 AI 返回顶层字段 respondedNpcs:[名字]，列出本轮正文里真正开口回应玩家的NPC(只是被提及/路过/没搭理的不列，无人回应返回[])，act() 读该字段、且只认在场名单(room.npcs)里的名字(AI报幻觉名字一律丢弃)后标记认识。为何不解析正文猜\"谁说话了\"：散文极易把被提及/路过者误判成对话者，让AI结构化回报是准确且安全的解法(漏报最多是没标记，不会错标记)。parseMainResponse 是整体 JSON.parse、原样保留未知字段，respondedNpcs 能正常读到，无需改 schema；代码 Array.isArray 防御，AI 不返回也不报错。handleNpcTalk 原有\"点菜单对话即刻认识\"保留不动(markNpcAsKnown 内部去重，不冲突)。esbuild 验证通过。",
+  },
+  {
     codename: "开始界面加访客计数(免注册公共计数器+失败降级)",
     time: "2026-07-24 10:35",
     notes: "应要求在开始界面页脚显示\"已有 N 位侠客踏足曲措乡\"。前提认知：项目纯前端无后端，统计\"总共多少人来过\"必须借外部\"账本\"——玩家各自浏览器的 localStorage 只知道自己、汇总不出总数。选了免注册的公共计数器 abacus.jasoncameron.dev：打一次 /hit/qucuo-mud/visits 就 +1 并返回累计值。三重稳妥：①失败降级——6s 超时 + catch，服务挂了/被墙/超时则 visitCount 保持 null，页脚那行静默不显示，绝不拖累游戏加载；②防刷——用 sessionStorage 标记本会话已计数，同一标签页反复刷新只 /get 读数不再 /hit 自增；③可迁移——URL 集中一处、注释写明以后想要稳定统计换成自己的 GoatCounter 账号只改这一行。软肋已在注释标明：公共命名空间可被别人刷、数据可能被服务方清掉，仅供人气参考非严肃统计。改动仅 StartScreen.jsx。esbuild 验证通过。",

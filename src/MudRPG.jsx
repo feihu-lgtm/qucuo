@@ -2444,7 +2444,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       ? `[交互目标] 玩家选定了「${activeTarget}」作为本轮唯一的互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文的核心——其他在场 NPC 若与该互动无关、或不宜抢戏，本轮不必出场、不必插话。除非玩家输入本身需要多人在场（比如当众宣布什么事），否则 room.npcs 只保留「${activeTarget}」和直接相关者即可。` + "\n"
       : ""; // 不选人时不加约束——全 NPC 发给 AI，AI 自己判断谁出场
     const modeNote = isTalk
-      ? `[交互模式] 对话模式：玩家此刻只是在和当前房间里的 NPC 说话，不是在下达行动指令。无论玩家输入什么，都只应该触发对话回应，绝不能移动房间、不能战斗、不能改变 room/char/装备/背包等任何状态，room 字段留空或原样返回，delta 各项留空。 `
+      ? `[交互模式] 对话模式：玩家此刻只是在和当前房间里的 NPC 说话，不是在下达行动指令。无论玩家输入什么，都只应该触发对话回应，绝不能移动房间、不能战斗、不能改变 room/char/装备/背包等任何状态，room 字段留空或原样返回，delta 各项留空。此外，请在顶层 JSON 里加一个字段 "respondedNpcs":["名字"]，列出本轮正文里【真正开口跟玩家对话/直接回应了玩家】的 NPC 名字（只列真的说了话或有来有往互动的人；只是被提到、路过、在场却没搭理玩家的，不要列入）。没有人开口回应就返回空数组 []。 `
       : "";
 
     // NPC涌现·触发检测：玩家这句输入如果明确提到某个"传闻中的人物"（之前剧情
@@ -3450,6 +3450,27 @@ ${dealFmt}`;
         if (witnesses.length) {
           const factId = `turn_${time}_${witnesses[0].name}`;
           setVarTree(prev => registerFact(prev, { id: factId, 摘要: p.memory, 标签: isTalk ? "私语" : "见闻", 知晓者: witnesses }, time));
+        }
+      }
+
+      // 对话即认识（本轮统一）：只要这次是对话模式(isTalk)、且明确选定了对话对象
+      // (talkTarget)、并真正走完了对话结算(到这里说明没被拦截/回滚)，就把对方标记为
+      // 已认识。此前只有"点NPC名字→互动菜单→对话"(handleNpcTalk)会标记，而"底部💬对话"
+      // "侧栏选人对话"这两个入口漏了，导致跟人从底部聊了半天头上还挂"尚未认识"。
+      // 判定放在这里(而非各UI入口)的好处：捕捉的是"真的选人+真的说了话"这个动作本身，
+      // 所有对话入口自动一致，不用每个入口分别补，也不会"一点聚焦就算认识"。
+      if (isTalk) {
+        const toKnow = new Set();
+        if (talkTarget) toKnow.add(talkTarget); // 选定了对象：直接算认识
+        // 没选人(或即便选了人)时，AI 回包的 respondedNpcs 报出本轮真正开口回应玩家的
+        // NPC——用它精准标记，不靠解析正文猜"谁说话了"(那样极易误判被提及/路过的人)。
+        // 只认在场名单里的名字，AI 若报了不在场的名字(幻觉)一律丢弃。
+        if (Array.isArray(p.respondedNpcs)) {
+          const presentNames = new Set((room.npcs || []).map(n => n.name));
+          p.respondedNpcs.forEach(name => { if (typeof name === "string" && presentNames.has(name)) toKnow.add(name); });
+        }
+        if (toKnow.size) {
+          setVarTree(prev => Array.from(toKnow).reduce((tree, name) => markNpcAsKnown(tree, name), prev));
         }
       }
 
