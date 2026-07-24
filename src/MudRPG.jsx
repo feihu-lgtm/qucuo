@@ -388,6 +388,74 @@ const MAP_UI = {
 //           explored=false 显问号（战争迷雾，点了才知有没有路）；有 name 且 explored 显地名
 //   onGo(dir) — 点某方向格
 //   accent, loading, big
+// 新手教程覆盖层：半透明遮罩铺满全屏，按三栏（左/中/右）+ 顶部 + 底部按钮区的
+// 实际位置贴说明便签，指向它介绍的界面区域。点任意处或右上角最小化收起。
+function TutorialOverlay({ onClose }) {
+  const note = {
+    background: "rgba(14,18,26,0.96)", border: "1px solid #6a5d40", borderRadius: 8,
+    padding: "12px 16px", color: "#e8dcc0", fontSize: "12.5px", lineHeight: 1.7,
+    boxShadow: "0 6px 24px rgba(0,0,0,0.6)", maxWidth: 260,
+  };
+  const title = { color: "#f0c060", fontWeight: "bold", fontSize: "13px", marginBottom: 6, display: "block" };
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(6,6,12,0.72)", cursor: "pointer",
+        display: "flex", flexDirection: "column", fontFamily: "'Songti SC','STSong','SimSun',serif" }}
+    >
+      {/* 顶部提示条 */}
+      <div style={{ textAlign: "center", padding: "14px 0 8px", color: "#f0e0c0", fontSize: "15px", fontWeight: "bold", letterSpacing: "1px" }}>
+        📖 新手教程 · 界面导览
+        <span style={{ display: "block", fontSize: "11px", color: "#b0a080", fontWeight: "normal", marginTop: 4 }}>点任意处收起（最小化）</span>
+      </div>
+
+      {/* 三栏说明便签，按 flex 25/55/30 的实际位置横向铺开 */}
+      <div style={{ display: "flex", flex: 1, alignItems: "flex-start", padding: "0 14px", gap: 12, overflow: "hidden" }}>
+        {/* 左栏 flex 25 */}
+        <div style={{ flex: 25, display: "flex", justifyContent: "center", paddingTop: 20 }}>
+          <div style={note}>
+            <span style={title}>◀ 左栏 · 天地</span>
+            你此刻在<b>哪里</b>、周围的<b>出口</b>、<b>此地之人</b>（谁在场）、你的<b>状态</b>（气血/银两/背包）和<b>小地图</b>都在这里。
+            <div style={{ marginTop: 8, color: "#c0a86a" }}>🕐 一天 24 小时：每行动一次约走一个时辰，昼夜会变，时间显示在地点下方。</div>
+            <div style={{ marginTop: 8, color: "#9ac0a0" }}>🚶 移动：在底部输入框打 <b>n/s/e/w</b>（北南东西），或点小地图上已探明的据点自动前往。</div>
+          </div>
+        </div>
+        {/* 中栏 flex 55 */}
+        <div style={{ flex: 55, display: "flex", justifyContent: "center", paddingTop: 60 }}>
+          <div style={{ ...note, maxWidth: 340 }}>
+            <span style={title}>▼ 中栏 · 江湖（叙事）</span>
+            故事在这里展开——旁白的叙述、NPC 的<b>「对话」</b>、你的行动结果，都会一行行写在这块。这是游戏的<b>正文</b>，读它了解发生了什么。
+            <div style={{ marginTop: 8, color: "#b0a080" }}>「」里是对话，*斜体*是心理活动，其余是旁白叙述。</div>
+          </div>
+        </div>
+        {/* 右栏 flex 30 */}
+        <div style={{ flex: 30, display: "flex", justifyContent: "center", paddingTop: 20 }}>
+          <div style={note}>
+            <span style={title}>▶ 右栏 · 行动</span>
+            这里是<b>能做的事</b>：可推进的任务节点、当前地点的行动抉择、人物互动入口。顶栏还有 <b>📜任务 / 👥人物关系 / 📖见闻录 / ⚙设置</b>。
+          </div>
+        </div>
+      </div>
+
+      {/* 底部按钮区说明，贴着底部（对应输入框上方那排模式按钮） */}
+      <div style={{ padding: "0 14px 16px", display: "flex", justifyContent: "center" }}>
+        <div style={{ ...note, maxWidth: 620 }}>
+          <span style={title}>▼ 底部 · 交互模式（输入框上方那排按钮）</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px" }}>
+            <div><b style={{ color: "#6ec6c6" }}>◈ 行动</b>：正常移动、战斗、开箱、买卖等，<b>每次消耗一个回合</b>（时间前进）。</div>
+            <div><b style={{ color: "#8ac48a" }}>◎ 对话</b>：只和当前在场 NPC 交谈，<b>不移动、不消耗回合</b>。</div>
+            <div><b style={{ color: "#e0a0d0" }}>◆ 私聊旁白</b>：打破第四面墙，直接和「旁白」说话，<b>不消耗回合</b>。</div>
+            <div><b style={{ color: "#c85a6a" }}>NSFW</b>：开关。开启后注入成人向写作规则；关闭则为常规叙事。默认关闭，按需点亮。</div>
+          </div>
+          <div style={{ marginTop: 8, color: "#9a9080", fontSize: "11.5px" }}>
+            ⚙ <b>其他功能</b>：右上角 <b>⚙设置</b> 里配置 API 密钥、预设、存档、字号；<b>💾存档</b>随时读写；<b>⏻主菜单</b>返回开始界面；<b>🧭全流程日志</b>看系统每一步怎么跑的。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NineGridMap({ centerLabel, cells, onGo, accent = "#6ec6c6", loading, big = false }) {
   const [hover, setHover] = React.useState(null);
   // 3×3 布局：行=北/中/南，列=西/中/东
@@ -906,6 +974,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [dbgItemQuality, setDbgItemQuality] = useState("白"); // 调试·增加物品·品阶
   const [dbgPickedSkill, setDbgPickedSkill] = useState("");  // 调试·增加武学·选中的武学id
   const [showPresets, setShowPresets] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false); // 新手教程覆盖层：半透明遮罩+各区域贴说明便签
   const [showSettings, setShowSettings] = useState(initialOpenSettings);
   // 开场图文序列（策马入村 -> 信封特写）只在"全新开局且没有任何存档被恢复"时展示一次；
   // 读档进入、或本局已经看过一次之后刷新页面触发自动存档恢复，都不应该再放这段序列。
@@ -4064,11 +4133,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     <div style={{ display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "'Songti SC','STSong','SimSun',serif", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "11px", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 6 }}>
-        <span style={{ color: zoneTheme.accentDim }}>预设</span>
-        <span onClick={() => setShowPresets(s => !s)} style={{ cursor: "pointer", color: "#6ec6c6", padding: "2px 8px", background: "#10121a", border: "1px solid #1a2d2a", borderRadius: 3, position: "relative" }}>
-          ▾ {preset.name}
-        </span>
-        <span onClick={importPreset} style={{ cursor: "pointer", color: zoneTheme.accentDim, padding: "2px 8px", border: "1px solid #1a1d2e", borderRadius: 3 }}>导入 .json</span>
+        <span
+          onClick={() => setShowTutorial(true)}
+          style={{ cursor: "pointer", color: "#e8d0a0", padding: "2px 10px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold" }}
+        >📖 新手教程</span>
         <span style={{ flex: 1 }} />
         <span
           onClick={() => setShowCharacterPage(true)}
@@ -4109,21 +4177,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         {!autoSaveError && lastAutoSave && (
           <span style={{ color: "#3a4a3a", fontSize: "9.5px", transition: "opacity 0.3s" }}>● 已保存</span>
         )}
-        <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>剧本数 {presets.length}</span>
         <span
           onClick={() => setShowVersionHistory(true)}
           title="点击查看版本历史"
           style={{ cursor: "pointer", color: "#5a5a4a", fontSize: "10px", padding: "2px 6px", border: "1px solid #1a1d2e", borderRadius: 3 }}
         >「{CURRENT_VERSION.codename}」{CURRENT_VERSION.time}</span>
       </div>
-      {showPresets && <div style={{ position: "absolute", top: 28, left: 50, background: "#0c0e16", border: "1px solid #2a3a3a", borderRadius: 4, zIndex: 50, minWidth: 200, padding: 4, fontSize: "11px" }}>
-        {presets.map(p => (<div key={p.id} onClick={() => loadPreset(p)} style={{ padding: "6px 10px", cursor: "pointer", color: p.id === preset.id ? "#6ec6c6" : "#8a8a7a", background: p.id === preset.id ? "#1a2a2a" : "transparent", borderRadius: 3, marginBottom: 2 }}>
-          {p.name} {p.id === preset.id && "◂"}
-        </div>))}
-        <div style={{ borderTop: `1px solid ${zoneTheme.border}`, marginTop: 4, paddingTop: 4 }}>
-          <div onClick={importPreset} style={{ padding: "6px 10px", cursor: "pointer", color: zoneTheme.accentDim, borderRadius: 3 }}>+ 导入新预设</div>
-        </div>
-      </div>}
+
+      {showTutorial && <TutorialOverlay onClose={() => setShowTutorial(false)} />}
 
       {showVersionHistory && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowVersionHistory(false)}>
@@ -5039,15 +5100,15 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
             ))}
             <span
               onClick={() => setNsfwOn(x => !x)}
-              title={nsfwOn ? "■ 已开启：NSFW写作规则已注入" : "□ 已关闭：NSFW写作规则未注入"}
+              title={nsfwOn ? "已开启：NSFW 写作规则已注入" : "已关闭：点击开启 NSFW 写作规则"}
               style={{
-                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 3, userSelect: "none",
-                color: nsfwOn ? zoneTheme.accent : zoneTheme.textDim,
-                background: nsfwOn ? zoneTheme.accent + "20" : "transparent",
-                border: `1px solid ${nsfwOn ? zoneTheme.accent : zoneTheme.border}`,
+                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 3, userSelect: "none", fontWeight: "bold", letterSpacing: "0.5px",
+                color: nsfwOn ? zoneTheme.bg : zoneTheme.textDim,
+                background: nsfwOn ? "#c85a6a" : "transparent",
+                border: `1px solid ${nsfwOn ? "#c85a6a" : zoneTheme.border}`,
                 marginRight: 8,
               }}
-            >{nsfwOn ? "■" : "□"}</span>
+            >NSFW</span>
             <span style={{ flex: 1 }} />
             <span
               onClick={trainNeigong}
