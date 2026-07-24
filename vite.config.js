@@ -5,6 +5,10 @@ import { fileURLToPath } from "node:url";
 const r = (p) => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
+  // GitHub Pages 部署在 https://<user>.github.io/qucuo/ 子路径下，构建时需把资源引用
+  // 前缀改成 /qucuo/，否则页面白屏。本地开发（dev）保持根路径 "/"。
+  // 通过环境变量 DEPLOY_BASE 控制：构建 Pages 版时 DEPLOY_BASE=/qucuo/ npm run build。
+  base: process.env.DEPLOY_BASE || "/",
   plugins: [
     react(),
     {
