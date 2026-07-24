@@ -105,31 +105,51 @@ npm run build     # 构建生产版本
 ```
 qucuo/
 ├── src/                      # 源代码
-│   ├── MudRPG.jsx            # 主游戏组件
+│   ├── MudRPG.jsx            # 主游戏组件（三栏界面 + act() 回合主循环）
 │   ├── main.jsx              # 入口
-│   ├── narrator.js           # 说书人叙事引擎
+│   ├── StartScreen.jsx       # 开始界面（含访客计数）
+│   ├── CharacterCreate.jsx / OpeningSequence.jsx  # 创角与开场序列
+│   ├── narrator.js           # 旁白叙事引擎（好感度五档文风 + 告白/宕机状态机）
 │   ├── knowledge.js          # 知识/情报传播系统（确定性演化）
 │   ├── mvu.js                # 动态变量树（好感度追踪）
-│   ├── qucuoMap.js           # 固定地图拓扑
-│   ├── worldbook.js          # 世界观设定书
+│   ├── bodyProfile.js        # 体貌档案（两层蓝绿灯注入 + 按体貌荐装）
+│   ├── worldbook.js          # 世界观设定书（蓝绿灯注入）
+│   ├── qucuoMap.js / innerMap.js   # 固定地图拓扑（外层 + 据点箱庭）
+│   ├── inputIntent.js        # 输入意图分类
+│   ├── extractionEngine.js   # 双调用模式的提取层（主叙事 + 状态提取分离）
+│   ├── actionTrace.js        # 行动全流程日志（trace）
+│   ├── encounter.js          # 随机遭遇（Kenshi 式）
+│   ├── npcEmergence.js / npcAwareness.js / npcGeneration.js  # NPC 涌现 / 认知隔离 / 生成
+│   ├── residentNpcs.js / npcPool.js / npcSignatureMoves.js   # 驻场 NPC / 池 / 招式
+│   ├── equipment.js / gambleStone.js / encounter.js         # 装备 / 赌石 / 遭遇
+│   ├── saves.js              # 存档（Write-Through Cache）
+│   ├── apiConfig.js          # API 配置与调用（含 pipelineLog）
+│   ├── theme.js              # 分区主题色 + 日间/夜间模式
+│   ├── version.js            # 版本历史
+│   ├── LogEntry.jsx / SettingsPanel.jsx / PresetEditor.jsx / ...  # 各界面组件
 │   ├── combat/               # 回合制战斗（AI决策、招式、状态、偷窃）
 │   ├── memory/               # 向量记忆（嵌入、召回、日结）
 │   ├── quests/               # 任务系统（引擎、脚本、结局判定）
-│   ├── buildings/            # 建筑交互界面（武馆、当铺、茶楼、赌石等）
+│   ├── buildings/            # 建筑交互界面（武馆、当铺、茶楼、赌石等，共享 Overlay）
 │   ├── shops/                # 商店系统
 │   ├── items/                # 物品目录与分布
 │   ├── kungfu/               # 武学系统
-│   ├── presets/              # SillyTavern 兼容预设
-│   ├── utils/                # 工具（buff、种子随机）
-│   └── assets/portraits/     # NPC 立绘
-├── public/                   # 静态资源（赌石卡牌、立绘、UI素材）
+│   ├── presets/              # SillyTavern 兼容预设（qucuo.js 为主预设）
+│   ├── utils/                # 工具（buff、种子随机、弹窗遮罩关闭 overlayClose）
+│   └── assets/portraits/     # NPC 立绘（打包进构建产物）
+├── public/                   # 静态资源
+│   ├── portraits/player/     # 玩家预制头像（唐卡厚涂 8 连图切分）
+│   ├── bidders/              # 赌石竞标者卡牌立绘
+│   └── stones/               # 赌石石料素材
 ├── docs/                     # 设计文档
-│   ├── 曲措乡_总纲_v3.md      # 项目总纲
-│   ├── _交接总纲_从这里开始.md # 交接入口
-│   └── ...                   # 各系统设计文档
+│   ├── _交接总纲_从这里开始.md  # 交接入口
+│   ├── 曲措乡_总纲_v3.md      # 项目总纲（唯一权威源）
+│   ├── 旁白系统_黑客帝国支线设计.md  # 旁白攻略四幕弧光设计
+│   └── ...                   # 各系统专题设计文档（见 docs/README.md 文档地图）
+├── .github/workflows/deploy.yml  # 推 main 自动构建并发布到 GitHub Pages
 ├── dist/                     # 构建产物
 ├── index.html
-├── vite.config.js
+├── vite.config.js / vite.config.pages.js  # 本地 / GitHub Pages 构建配置
 ├── package.json
 ├── 启动游戏.command          # macOS 一键启动
 └── 启动游戏.bat              # Windows 一键启动
