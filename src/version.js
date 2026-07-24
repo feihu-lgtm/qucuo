@@ -3,6 +3,11 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修内层箱庭移动不触发新人物检测(走到有新NPC的房间不报'※新人物出现')",
+    time: "2026-07-24 13:20",
+    notes: "玩家反馈：从B箱庭走到A箱庭没刷新'新人物'。查明根因——内层箱庭移动(同据点内房间切换)是纯前端瞬时操作，切完 innerRoomName、本地生成方位描述、setTime+1 后直接 early return，完全不往下走到主流程那段'新人物检测'(在 return 之后很远处)。于是走进绑着只属于该房间NPC的箱庭(如'猎户小屋'的老猎户)，明明有没见过的人也不报。好感度提示正常是因为它走AI回包的MVU指令、跟内层移动无关。修法：在内层移动 early return 前补一段新人物检测，复用与主流程完全相同的判据——按目标内层房间(innerDest)的 isNpcVisibleInInnerRoom 过滤 room.npcs，再 detectNewFaces 查 varTree 里没见过的，有则打'※新人物出现'并 markAsSeen；同时 updateLastSeen 更新久别重逢的'上次见面回合'。纯本地不调AI，契合内层移动瞬时性质。三个函数(detectNewFaces/markAsSeen/updateLastSeen)与 isNpcVisibleInInnerRoom 均已 import。esbuild + vite.config.pages.js 完整 build 通过。",
+  },
+  {
     codename: "调试面板·增加物品补'从目录选'(类别品阶筛选+具体物品)，与增加武学对齐",
     time: "2026-07-24 13:05",
     notes: "查了现有调试功能：'增加武学'本就已有类型(招式/内功/轻功)+品阶(白绿蓝紫橙红)两级筛选再选具体武学，完整；'增加物品'却只有手打物品名+选类别+选品阶，缺目录选择——手打名若不在 CATALOG 里，makeItem 只按公式生成匿名物，拿不到具名物(如霜牙)的专属数值/特效/描述。补齐：'增加物品'改成两行——①'目录物'：类别筛选×品阶筛选后从 CATALOG 全量(346件)下拉选具体物品，用 makeCatalogItem 取具名真实数值一键入袋(跟增加武学同款交互)；②'自定义'：保留原手打名+类别+品阶(用 makeItem 公式生成)，供加目录外的临时物。新增 dbgItemCatF/dbgItemQualF/dbgPickedItem 三个状态。esbuild + vite.config.pages.js 完整 build 均通过。",

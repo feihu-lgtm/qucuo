@@ -2365,6 +2365,21 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           ...describeInnerArrival(room.name, fromRoom, innerDest, movingDir, { flags }),
         ]);
         setTime(t => t + 1);
+        // 新人物检测（本轮修）：内层箱庭移动此前直接 return，完全跳过了下方主流程的
+        // 新人物检测——于是从 B 箱庭走到绑着新 NPC 的 A 箱庭（如走进"猎户小屋"遇到
+        // 只属于该房间的老猎户），明明有没见过的人却不报"※新人物出现"。这里用与主流程
+        // 同一套判据补上：按目标内层房间(innerDest)的可见性过滤 room.npcs，再 detectNewFaces
+        // 查没见过的。纯本地、不调 AI，跟内层移动"瞬时"的性质一致。
+        {
+          const arrivedNpcs = (room.npcs || []).filter(n => isNpcVisibleInInnerRoom(room.name, innerDest, n));
+          const newFaces = detectNewFaces(varTree, arrivedNpcs);
+          if (newFaces.length) {
+            addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
+            setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
+          }
+          // 久别重逢的"上次见面回合"也一并更新，跟主流程保持一致
+          setVarTree(prev => updateLastSeen(prev, arrivedNpcs.map(n => n.name), time));
+        }
         // 内层移动是瞬时纯前端操作，early return 前必须把上面 setLoading(true)+计时器清掉，
         // 否则 loading 永远停在 true：输入框锁死、spinner 空转、秒数狂涨，且 pendingQueue 因
         // loading 不归零永不出队——彻底卡死（此前"点一下卡住像在等AI"的真凶）。
