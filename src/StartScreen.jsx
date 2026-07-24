@@ -14,6 +14,9 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
   const [slots, setSlots] = useState([]);
   const [hovered, setHovered] = useState(null);
   const [showLoadPanel, setShowLoadPanel] = useState(false);
+  // 菜单皮肤调试开关："plain" 纯CSS半透明条 / "wood" 藏式木牌UI。首页右上角可切换对比。
+  const [menuSkin, setMenuSkin] = useState("wood");
+  const UI_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "stones/ui/";
 
   useEffect(() => {
     setHasAutoSave(!!loadAutoSave());
@@ -81,6 +84,15 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
     <div style={styles.container(theme)}>
       <div style={styles.vignette} />
 
+      {/* 菜单皮肤调试切换（右上角） */}
+      <button
+        onClick={() => setMenuSkin(s => s === "wood" ? "plain" : "wood")}
+        style={styles.skinToggle(theme)}
+        title="切换菜单皮肤（调试）"
+      >
+        {menuSkin === "wood" ? "皮肤：藏式木牌 ⇄ 素" : "皮肤：素 ⇄ 藏式木牌"}
+      </button>
+
       <div style={styles.titleBlock}>
         <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo_v3.png`}
           alt="天都曲措" style={styles.titleImg} />
@@ -90,6 +102,16 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
       <nav style={styles.menu}>
         {menuItems.map((item) => {
           const disabled = !item.always;
+          const isHover = hovered === item.key;
+          const woodStyle = menuSkin === "wood" ? {
+            backgroundImage: `url("${UI_BASE}bar_wood.png")`,
+            backgroundSize: "100% 100%",
+            backgroundRepeat: "no-repeat",
+            border: "none",
+            padding: "18px 30px",
+            marginBottom: "6px",
+            filter: isHover && !disabled ? "brightness(1.18)" : "none",
+          } : {};
           return (
             <button
               key={item.key}
@@ -97,7 +119,7 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
               onClick={() => !disabled && item.action && item.action()}
               onMouseEnter={() => setHovered(item.key)}
               onMouseLeave={() => setHovered(null)}
-              style={styles.menuItem(theme, hovered === item.key, disabled)}
+              style={{ ...styles.menuItem(theme, isHover, disabled), ...woodStyle }}
             >
               <span style={styles.menuLabel}>{item.label}</span>
               <span style={styles.menuSub(theme)}>{item.sub}</span>
@@ -183,6 +205,21 @@ const styles = {
     opacity: 0.85,
     textShadow: "0 1px 4px rgba(0,0,0,0.7)",
     textAlign: "left",
+  }),
+  skinToggle: (t) => ({
+    position: "absolute",
+    top: "16px",
+    right: "16px",
+    zIndex: 2,
+    fontSize: "11px",
+    letterSpacing: "1px",
+    color: "#e8dcc0",
+    background: "rgba(10,8,5,0.55)",
+    border: `1px solid ${t.border}`,
+    borderRadius: "3px",
+    padding: "6px 12px",
+    cursor: "pointer",
+    backdropFilter: "blur(2px)",
   }),
   menu: {
     position: "relative",
