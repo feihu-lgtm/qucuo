@@ -365,6 +365,17 @@ const zmBtn = {
   border: "1px solid #3a4a4a", borderRadius: 3, userSelect: "none", display: "block",
 };
 
+// 地图 UI 贴图（藏地卷轴风，见 docs/美术_地图UI素材提示词.md）。
+// BASE 前缀适配 GitHub Pages 子路径部署（/qucuo/），本地开发时为 "/"。
+const MAP_UI_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "stones/mapui/";
+const MAP_UI = {
+  scroll:  MAP_UI_BASE + "scroll_bg.png",
+  frame:   MAP_UI_BASE + "frame.png",
+  idle:    MAP_UI_BASE + "cell_idle.png",    // 已探索
+  fog:     MAP_UI_BASE + "cell_fog.png",     // 未探索·迷雾
+  current: MAP_UI_BASE + "cell_current.png", // 当前所在
+};
+
 // 可点击移动地图：节点即操作。点相邻据点/房间 = 往那个方向走（复用 act 移动链）。
 // nodes: [{name,x,y,explored,current,reachable,dir,dest,locked}]  onGo(dir,dest,locked)
 // explored=去过（亮·实心）; !explored=战争迷雾（问号·虚线）; reachable=当前有出口可点；
@@ -390,18 +401,24 @@ function NineGridMap({ centerLabel, cells, onGo, accent = "#6ec6c6", loading, bi
   const cellH = big ? 62 : 42;
   const fontMain = big ? 14 : 11;
   const short = (nm) => nm ? (nm.includes("·") ? nm.split("·").pop() : nm) : "";
-  const cellStyle = (bg, bd, extra = {}) => ({
+  // tile: 三态贴图之一（MAP_UI.idle/fog/current），有则铺为格底、盖住纯色 bg。
+  const cellStyle = (bg, bd, extra = {}, tile = null) => ({
     height: cellH, display: "flex", alignItems: "center", justifyContent: "center",
     borderRadius: 6, background: bg, border: `1px solid ${bd}`, textAlign: "center",
-    lineHeight: 1.2, padding: "2px 4px", overflow: "hidden", transition: "background .15s, border .15s", ...extra,
+    lineHeight: 1.2, padding: "2px 4px", overflow: "hidden", transition: "background .15s, border .15s",
+    ...(tile ? {
+      backgroundImage: `url("${tile}")`, backgroundSize: "100% 100%",
+      backgroundRepeat: "no-repeat", border: "none",
+    } : {}),
+    ...extra,
   });
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap, width: "100%" }}>
       {layout.flat().map((key) => {
         if (key === "center") {
           return (
-            <div key="center" style={cellStyle("#162a20", accent, { boxShadow: `0 0 8px ${accent}66` })}>
-              <span style={{ color: accent, fontWeight: "bold", fontSize: fontMain }}>{short(centerLabel) || "我"}</span>
+            <div key="center" style={cellStyle("#162a20", accent, { boxShadow: `0 0 8px ${accent}66` }, MAP_UI.current)}>
+              <span style={{ color: "#fff", fontWeight: "bold", fontSize: fontMain, textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{short(centerLabel) || "我"}</span>
             </div>
           );
         }
@@ -413,9 +430,9 @@ function NineGridMap({ centerLabel, cells, onGo, accent = "#6ec6c6", loading, bi
           return (
             <div key={key} onClick={() => clickable && onGo(key)}
               onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
-              style={cellStyle(hov ? "#171410" : "#0c0e14", hov ? "#6a5a3a" : "#26262010", { cursor: clickable ? "pointer" : "default", borderStyle: "dashed", flexDirection: "column", gap: 1 })}>
-              <span style={{ color: hov ? "#c0a060" : "#4a4a3a", fontSize: big ? 18 : 14, fontWeight: "bold" }}>?</span>
-              <span style={{ color: hov ? "#8a7a5a" : "#3a3a30", fontSize: big ? 9 : 8 }}>{DIR_CN[key]}</span>
+              style={cellStyle("#0c0e14", "#26262010", { cursor: clickable ? "pointer" : "default", flexDirection: "column", gap: 1, opacity: hov ? 1 : 0.82, filter: hov ? "brightness(1.25)" : "none" }, MAP_UI.fog)}>
+              <span style={{ color: hov ? "#c0a060" : "#6a6a58", fontSize: big ? 18 : 14, fontWeight: "bold", textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>?</span>
+              <span style={{ color: hov ? "#a89878" : "#5a5a48", fontSize: big ? 9 : 8, textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>{DIR_CN[key]}</span>
             </div>
           );
         }
@@ -423,9 +440,9 @@ function NineGridMap({ centerLabel, cells, onGo, accent = "#6ec6c6", loading, bi
         return (
           <div key={key} onClick={() => clickable && onGo(key)}
             onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
-            style={cellStyle(hov ? "#141824" : "#0e1018", hov ? accent : "#2a3a3a", { cursor: clickable ? "pointer" : "default", flexDirection: "column", gap: 1 })}>
-            <span style={{ color: hov ? "#c8e0d8" : "#8a9a8a", fontSize: fontMain, fontWeight: hov ? "bold" : "normal" }}>{short(c.name)}</span>
-            <span style={{ color: "#3a4a3a", fontSize: big ? 9 : 8 }}>{DIR_CN[key]}</span>
+            style={cellStyle("#0e1018", "#2a3a3a", { cursor: clickable ? "pointer" : "default", flexDirection: "column", gap: 1, filter: hov ? "brightness(1.3)" : "none", boxShadow: hov ? `inset 0 0 12px ${accent}55` : "none" }, MAP_UI.idle)}>
+            <span style={{ color: hov ? "#eaf4ee" : "#cddcd4", fontSize: fontMain, fontWeight: hov ? "bold" : "normal", textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{short(c.name)}</span>
+            <span style={{ color: "#8a9a92", fontSize: big ? 9 : 8, textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>{DIR_CN[key]}</span>
           </div>
         );
       })}
