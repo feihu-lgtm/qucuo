@@ -141,6 +141,8 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   const [selCard, setSelCard] = useState(null); // 点选放大的竞价者
   const [cutFx, setCutFx] = useState(null);     // 开刀动画进行中：{pos, result}
   const [skinRead, setSkinRead] = useState({}); // 相石评语缓存 {stoneId: text}
+  const [carouselIdx, setCarouselIdx] = useState(0); // 竖屏竞价者轮播：当前第几张
+  const touchRef = React.useRef({ x: 0, active: false });
 
   // 赌石是横向沉浸舞台(1672:941的横图大厅)，竖屏手机塞不下会又扁又小。
   // 检测到窄屏且竖持时盖一层温和的"建议横屏"提示，转横屏自动消失。
@@ -267,20 +269,6 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
     <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "#0a0806", overflow: "hidden" }}>
       <style>{GS_CSS}</style>
 
-      {/* 竖屏手机提示：赌石为横向舞台，建议横屏体验；仍可离场 */}
-      {portraitPhone && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 400, background: "rgba(6,5,4,.96)",
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: 32, textAlign: "center" }}>
-          <div style={{ fontSize: 46, animation: "none" }}>📱↻</div>
-          <div style={{ color: "#f0d090", fontSize: 18, letterSpacing: 2 }}>请横屏体验赌石</div>
-          <div style={{ color: "#a89878", fontSize: 13, lineHeight: 1.8, maxWidth: 300 }}>
-            玉石料场是一方横铺的赌桌，把手机横过来，相石、开刀、与竞价者砍价的排场才摆得开。
-          </div>
-          <button onClick={onClose} style={{ marginTop: 10, padding: "8px 22px", background: "linear-gradient(180deg,#8a6a2a,#5a4418)",
-            border: "1px solid #c0a060", borderRadius: 6, color: "#f5e8c0", fontSize: 14, cursor: "pointer" }}>先离场 ✕</button>
-        </div>
-      )}
-
       {/* 顶栏 */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 44, zIndex: 260,
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -296,9 +284,12 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
         </div>
       </div>
 
-      {/* ── 定比舞台（1672:941，居中） ── */}
-      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-        aspectRatio: "1672/941", width: "100vw", maxHeight: "100vh", maxWidth: "calc(100vh*1672/941)" }}
+      {/* ── 定比舞台（1672:941）：竖屏钉上半区给轮播腾地，桌面/横屏居中 ── */}
+      <div style={portraitPhone
+        ? { position: "absolute", top: "7%", left: "50%", transform: "translateX(-50%)",
+            aspectRatio: "1672/941", width: "100vw" }
+        : { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+            aspectRatio: "1672/941", width: "100vw", maxHeight: "100vh", maxWidth: "calc(100vh*1672/941)" }}
         onClick={() => setSelCard(null)}>
         <img src={S(isNight ? "bg_hall_night.png" : "bg_hall_day.png")} alt=""
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
@@ -377,7 +368,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
         )}
 
         {/* ── 卡牌凹半圆 ⌣ 围台：中间靠下、两侧向上抱，轻叠，中间在前 ── */}
-        {bidders.map((b, i) => {
+        {!portraitPhone && bidders.map((b, i) => {
           const n = bidders.length;
           const half = (n - 1) / 2;
           const t = half > 0 ? (i - half) / half : 0;      // -1 .. 1
@@ -425,6 +416,72 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
           );
         })}
       </div>
+
+      {/* ── 竖屏专用：竞价者轮播（一次一张·手指左右滑·箭头·圆点） ── */}
+      {portraitPhone && bidders.length > 0 && (() => {
+        const cur = bidders[Math.min(carouselIdx, bidders.length - 1)];
+        const go = (d) => setCarouselIdx((i) => (i + d + bidders.length) % bidders.length);
+        return (
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 82, top: "56%", zIndex: 255,
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 8px" }}
+            onTouchStart={(e) => { touchRef.current = { x: e.touches[0].clientX, active: true }; }}
+            onTouchEnd={(e) => {
+              if (!touchRef.current.active) return;
+              const dx = e.changedTouches[0].clientX - touchRef.current.x;
+              touchRef.current.active = false;
+              if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); // 左滑下一张、右滑上一张
+            }}>
+            <div style={{ color: "#c0a060", fontSize: 12, marginBottom: 6, letterSpacing: 1 }}>
+              买家 {carouselIdx + 1} / {bidders.length} · 左右滑动看下一位
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", justifyContent: "center" }}>
+              {bidders.length > 1 && (
+                <button onClick={() => go(-1)} style={carArrow}>‹</button>
+              )}
+              {/* 当前卡：立绘 + 报价 + 简介 + 操作 */}
+              <div style={{ flex: "0 1 220px", maxWidth: 220, background: "rgba(26,22,16,.95)",
+                border: "1px solid #6a5d40", borderRadius: 12, padding: 12, boxShadow: "0 8px 28px rgba(0,0,0,.6)" }}>
+                <div style={{ position: "relative", width: "100%", aspectRatio: "941/1672", maxHeight: "34vh",
+                  margin: "0 auto", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", left: WIN.x, top: WIN.y, width: WIN.w, height: WIN.h, overflow: "hidden", borderRadius: "6% / 4%" }}>
+                    <img src={P(cur.name)} alt={cur.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                  <img src={FRAME} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
+                </div>
+                <div style={{ textAlign: "center", marginTop: 8 }}>
+                  <div style={{ color: "#f0d090", fontSize: 16, letterSpacing: 2 }}>{cur.name}</div>
+                  <div style={{ color: "#a08a5a", fontSize: 11 }}>{ROLE_BY_NAME[cur.name] || ""}</div>
+                  <div style={{ color: "#ffd77a", fontSize: 15, margin: "6px 0" }}>出价 {offerLabel(cur)}</div>
+                  <div style={{ color: "#cdc2a2", fontSize: 11, lineHeight: 1.7, maxHeight: "8vh", overflowY: "auto" }}>{cur.bio}</div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+                  <button onClick={() => sellTo(cur)} style={{ ...carBtn, background: "linear-gradient(180deg,#c8a860,#8a6a2a)", color: "#3a2408" }}>
+                    ✓ 接受 {offerLabel(cur)}
+                  </button>
+                  {cur.kind !== "noise" && (
+                    <button onClick={() => startTalk(cur)} style={{ ...carBtn, background: "rgba(60,48,28,.9)", color: "#f0e0b0", border: "1px solid #6a5d40" }}>
+                      🗣 与{cur.name}谈价
+                    </button>
+                  )}
+                </div>
+              </div>
+              {bidders.length > 1 && (
+                <button onClick={() => go(1)} style={carArrow}>›</button>
+              )}
+            </div>
+            {/* 圆点指示 */}
+            {bidders.length > 1 && (
+              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                {bidders.map((_, i) => (
+                  <div key={i} onClick={() => setCarouselIdx(i)}
+                    style={{ width: 8, height: 8, borderRadius: "50%", cursor: "pointer",
+                      background: i === carouselIdx ? "#f0d090" : "rgba(255,255,255,.25)" }} />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── 相石评语弹层：系统裁决线索、AI 演口诀（轻量挂载，一石一次缓存） ── */}
       {skinOpen && (
@@ -529,6 +586,9 @@ function PanelBtn({ img, kind, big, disabled, done, grade, crack, onClick, child
 }
 
 const topBtn = { background: "none", border: "1px solid #4a443a", color: "#c9bfa8", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: 12 };
+const carArrow = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "1px solid #6a5d40",
+  background: "rgba(20,16,11,.9)", color: "#f0d090", fontSize: 22, lineHeight: 1, cursor: "pointer", userSelect: "none" };
+const carBtn = { width: "100%", padding: "10px 0", border: "none", borderRadius: 8, fontSize: 14, fontWeight: "bold", cursor: "pointer" };
 const actBtn = { position: "relative", height: "6.4vh", minWidth: "24vh", border: "none", cursor: "pointer",
   background: "transparent", display: "flex", alignItems: "center", justifyContent: "center",
   fontSize: "1.9vh", fontWeight: "bold", fontFamily: "inherit", letterSpacing: 2,

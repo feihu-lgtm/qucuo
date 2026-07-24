@@ -5167,7 +5167,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           </div>
 
           {showDebug && (
-            <div style={{ flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: 11, color: "#9a9482", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: 11, color: "#9a9482", display: "flex", flexDirection: "column", gap: 8, maxHeight: isMobile ? "42vh" : "none", overflowY: isMobile ? "auto" : "visible", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>金钱</span>
                 <input type="number" value={char.money ?? 0}

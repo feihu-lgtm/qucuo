@@ -107,7 +107,7 @@ export default function DebugConsole() {
   return (
     <div style={{
       minHeight: "100vh", background: "#14110c", color: "#d8c7a0",
-      fontFamily: '"Songti SC", "SimSun", serif', padding: "24px 20px", boxSizing: "border-box",
+      fontFamily: '"Songti SC", "SimSun", serif', padding: "clamp(12px,4vw,24px) clamp(10px,3vw,20px)", boxSizing: "border-box",
     }}>
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
         <h1 style={{ fontSize: 22, color: "#e8c874", margin: "0 0 4px", letterSpacing: 2 }}>曲措乡 · 调试台</h1>

@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "手机模式三期：赌石竖屏改造(竞价者卡改手指滑动轮播) + 调试台适配",
+    time: "2026-07-25 19:00",
+    notes: [
+      "把上期赌石的'请横屏'提示改成真·竖屏可玩，并适配调试台。",
+      "①【赌石竖屏轮播】竖屏(innerWidth<768且高>宽)时：横向舞台(1672:941)从居中改钉到上半区(top:7%按100vw铺)，原绕桌抛物线排布的竞价者卡不再渲染；下半区改成'竞价者轮播'——每次只显示一张竞价者大卡(立绘+身份+出价+简介)，手指左右滑动切上/下一张(onTouchStart/End测dx>40px判方向)，配左右‹›箭头、底部圆点指示(可点跳转)、'买家 x/N'计数。每张卡直接带'✓接受报价'和'🗣谈价'按钮，复用原 sellTo/startTalk 回调。横屏/桌面维持原绕桌hover翻牌布局不变。",
+      "②【调试台】游戏内嵌调试面板(showDebug，金钱/属性/七维等密集input横排)手机时加 maxHeight:42vh 竖向可滚 + overflowX:auto 横向可滚，防止固定宽input挤爆窄栏；独立调试页 debugConsole.jsx 的 padding 改 clamp 自适应收窄。",
+      "新增 carouselIdx state + touchRef(触摸起点) + carArrow/carBtn 样式常量。GambleStoneScreen/MudRPG/debugConsole esbuild 通过，vite build 通过。",
+    ],
+  },
+  {
     codename: "手机模式二期：13建筑弹窗改底部滑出 + 赌石竖屏提示横屏 + 斗蛐蛐窄屏紧凑化",
     time: "2026-07-25 17:30",
     notes: [
