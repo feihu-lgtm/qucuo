@@ -1014,6 +1014,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [activeItemMenu, setActiveItemMenu] = useState(null); // ⑤⑧ 物品次级面板：{ item, mode:"inventory"|"ground", canConsume } | null
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showCharacterPage, setShowCharacterPage] = useState(false);
+  // 玩家头像：优先用玩家自设的（存 localStorage），否则按性别用预制头像。showAvatarPicker 控制选择弹层。
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [playerAvatarCustom, setPlayerAvatarCustom] = useState(() => {
+    try { return localStorage.getItem("qucuo_player_avatar") || ""; } catch { return ""; }
+  });
+  const AV_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/player/";
+  const genderAvatar = { "男": AV_BASE + "male.png", "女": AV_BASE + "female.png" };
+  const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.png");
   const [showQuestLog, setShowQuestLog] = useState(false);
   const [showLore, setShowLore] = useState(false); // 见闻录：小纸条+小账本可视化
   const [characterPageTarget, setCharacterPageTarget] = useState(null); // "面板"按钮指定直接打开谁的详情
@@ -4209,6 +4217,57 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         >「{CURRENT_VERSION.codename}」{CURRENT_VERSION.time}</span>
       </div>
 
+      {showAvatarPicker && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(4,4,10,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowAvatarPicker(false)}>
+          <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 8, padding: 24, width: 460, maxWidth: "90vw", color: "#c8bfa0" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <span style={{ color: "#6ec6c6", fontSize: "15px" }}>选择头像</span>
+              <span style={{ color: "#5a5a4a", fontSize: "12px", cursor: "pointer" }} onClick={() => setShowAvatarPicker(false)}>× 关闭</span>
+            </div>
+            <div style={{ fontSize: "11.5px", color: "#8a8a7a", marginBottom: 14 }}>
+              选一张预制头像，或上传自己的图片（建议 9:16 竖版）。选择只影响你自己的显示，存在本地浏览器。
+            </div>
+            {/* 预制头像：从 public/portraits/player/ 读，文件名 male/female/other + preset1..N */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
+              {[genderAvatar["男"], genderAvatar["女"], AV_BASE + "other.png",
+                AV_BASE + "preset1.png", AV_BASE + "preset2.png", AV_BASE + "preset3.png", AV_BASE + "preset4.png"].map((src, i) => (
+                <div key={i}
+                  onClick={() => { setPlayerAvatarCustom(src); try { localStorage.setItem("qucuo_player_avatar", src); } catch { /* ignore */ } setShowAvatarPicker(false); }}
+                  style={{ aspectRatio: "9/16", borderRadius: 5, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid #6ec6c6" : "1px solid #2a3a3a", background: "#0c0e14" }}
+                >
+                  <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <label style={{ cursor: "pointer", fontSize: "11.5px", color: "#6ec6c6", padding: "6px 12px", border: "1px solid #1a2d2a", borderRadius: 4 }}>
+                ⬆ 上传图片
+                <input type="file" accept="image/*" style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const dataUrl = reader.result;
+                      setPlayerAvatarCustom(dataUrl);
+                      try { localStorage.setItem("qucuo_player_avatar", dataUrl); } catch { alert("图片太大，无法存入本地存储，请换小一点的图。"); }
+                      setShowAvatarPicker(false);
+                    };
+                    reader.readAsDataURL(file);
+                  }} />
+              </label>
+              {playerAvatarCustom && (
+                <span onClick={() => { setPlayerAvatarCustom(""); try { localStorage.removeItem("qucuo_player_avatar"); } catch { /* ignore */ } setShowAvatarPicker(false); }}
+                  style={{ cursor: "pointer", fontSize: "11.5px", color: "#c47070", padding: "6px 12px", border: "1px solid #3a1a1a", borderRadius: 4 }}>
+                  恢复默认（按性别）
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showTutorial && <TutorialOverlay onClose={closeTutorial} />}
 
       {showVersionHistory && (
@@ -5239,29 +5298,55 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         <div style={{ flex: 30, ...S.panel, borderRight: "none" }}>
           <div style={S.label}>侠客</div>
           <div style={S.scroll}>
+            {/* 头像区：9:16 竖版立绘 + 姓名/性别 + 换头像入口。头像图放 public/portraits/player/，
+                文件名用性别兜底（male.png/female.png/other.png），玩家自设的存 localStorage。 */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "flex-start" }}>
+              <div
+                onClick={() => setShowAvatarPicker(true)}
+                title="点击更换头像"
+                style={{
+                  width: 90, aspectRatio: "9/16", flexShrink: 0, borderRadius: 6, overflow: "hidden",
+                  border: `1px solid ${zoneTheme.border}`, background: "#0c0e14", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
+                }}
+              >
+                {playerAvatar ? (
+                  <img src={playerAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ color: zoneTheme.textDim, fontSize: "10px", textAlign: "center", lineHeight: 1.6 }}>点击<br/>设置头像</span>
+                )}
+                <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "#e8dcc0", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>换像</span>
+              </div>
+              <div style={{ flex: 1, paddingTop: 4 }}>
+                <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 4 }}>{char.name || "无名少侠"}</div>
+                <div style={{ fontSize: "11px", color: zoneTheme.textDim, marginBottom: 8 }}>{char.gender || "男"}　少侠</div>
+                <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "#e8c468" }}>{char.money || 0}</span> 两</div>
+              </div>
+            </div>
+
             <div style={{ marginBottom: 10 }}>
               <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>状态</div>
               <div style={{ fontSize: "11.5px" }}>气血 <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#c8bfa0" }}>{bar(char.hp[0], char.hp[1], 8)}</span> <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
               <div style={{ fontSize: "11.5px" }}>经验 <span style={{ color: "#d4a853" }}>{exp}</span>  潜能 <span style={{ color: "#b48adf" }}>{pot}</span></div>
-              <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "#e8c468" }}>{char.money || 0}</span> 两</div>
               {(() => {
                 const es = computeEquippedStats(inv);
                 return <div style={{ fontSize: "11px", color: "#8a8a7a", marginTop: 3 }}>装备总加成：攻{es.totalAtk} 防{es.totalDef} 饰品+{es.accessoryBonus.toFixed(1)}</div>;
               })()}
             </div>
 
-            <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
-              <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>内功外功</div>
-              <div style={{ fontSize: "11.5px" }}>内功 <span style={{ color: "#b48adf" }}>{bar(char.neigong ?? 0, 100, 8)}</span> <span style={{ color: "#888" }}>{char.neigong ?? 0}/100</span></div>
-              <div style={{ fontSize: "11.5px" }}>外功 <span style={{ color: "#d85a30" }}>{bar(char.waigong ?? 0, 100, 8)}</span> <span style={{ color: "#888" }}>{char.waigong ?? 0}/100</span></div>
-            </div>
-
-            <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
-              <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>七维</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px", fontSize: "11.5px" }}>
-                {Object.entries(char.special || {}).map(([k, v]) => (
-                  <div key={k}>{k} <span style={{ color: "#c8bfa0" }}>{v}</span></div>
-                ))}
+            <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10, display: "flex", gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>内功外功</div>
+                <div style={{ fontSize: "11.5px" }}>内功 <span style={{ color: "#b48adf" }}>{bar(char.neigong ?? 0, 100, 6)}</span> <span style={{ color: "#888" }}>{char.neigong ?? 0}</span></div>
+                <div style={{ fontSize: "11.5px" }}>外功 <span style={{ color: "#d85a30" }}>{bar(char.waigong ?? 0, 100, 6)}</span> <span style={{ color: "#888" }}>{char.waigong ?? 0}</span></div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>七维</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px", fontSize: "11px" }}>
+                  {Object.entries(char.special || {}).map(([k, v]) => (
+                    <div key={k}>{k}<span style={{ color: "#c8bfa0" }}>{v}</span></div>
+                  ))}
+                </div>
               </div>
             </div>
 
