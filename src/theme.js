@@ -1,0 +1,94 @@
+// 主题色系统
+// 参考《捉刀》的美学方向：没有精美图片素材，靠排版留白、克制的色彩、
+// 简洁的线条营造意境感。核心手段是"每个地理分区一个基调色"，
+// 而不是全局死板的单一配色——玩家走到雪山会感受到冷冽，走到鱼定村
+// 会感受到暖黄的烟火气，视觉本身参与叙事，不需要任何图片。
+
+// 五个地理分区，对应 qucuoMap.js 里的据点分组：
+// - village（鱼定村/鱼定土司/天都镇/玉泉寨）：暖褐黄，烟火人间气
+// - temple（喇嘛庙/白塔）：赭石与暗金，宗教肃穆感
+// - snow（后山平台/雪山派/山洞/顶峰）：冷蓝白，高寒孤峭
+// - wild（大草甸）：青灰绿，莽野荒率
+// - water（贡措海）：墨蓝，静水深流
+// - outland（锦官城）：中性灰褐，象征"离乡"的疏离感
+const ZONE_MAP = {
+  鱼定村: "village", 鱼定土司: "village", 天都镇: "village", 玉泉寨: "village",
+  喇嘛庙: "temple", 白塔: "temple",
+  后山平台: "snow", 雪山派: "snow", 山洞: "snow", 顶峰: "snow",
+  大草甸: "wild",
+  贡措海: "water",
+  锦官城: "outland",
+};
+
+export const ZONE_THEMES = {
+  village: {
+    name: "人间烟火",
+    accent: "#d4a853",      // 主强调色：暖黄
+    accentDim: "#8a6a3a",
+    bg: "#0e0c08",           // 面板背景基调（极暗，只是带一点点色相偏移）
+    bgPanel: "#120f0a",
+    border: "#2a2419",
+    text: "#c8bfa0",
+    textDim: "#6a6250",
+  },
+  temple: {
+    name: "梵音低回",
+    accent: "#c4924a",      // 赭石暗金
+    accentDim: "#7a5a30",
+    bg: "#0d0a08",
+    bgPanel: "#110d0a",
+    border: "#2a2015",
+    text: "#c8bea8",
+    textDim: "#6a5f4a",
+  },
+  snow: {
+    name: "孤峰积雪",
+    accent: "#8ab4d4",      // 冷蓝
+    accentDim: "#4a6a80",
+    bg: "#080a0d",
+    bgPanel: "#0a0d11",
+    border: "#1a2530",
+    text: "#c0cdd8",
+    textDim: "#5a6a75",
+  },
+  wild: {
+    name: "莽野无涯",
+    accent: "#8ab48a",      // 青灰绿
+    accentDim: "#4a6a4a",
+    bg: "#090b08",
+    bgPanel: "#0c0f0a",
+    border: "#1e2818",
+    text: "#c0c8b8",
+    textDim: "#5a6650",
+  },
+  water: {
+    name: "静水深流",
+    accent: "#5a8ab4",      // 墨蓝
+    accentDim: "#2a4a68",
+    bg: "#080a0e",
+    bgPanel: "#0a0d13",
+    border: "#1a2535",
+    text: "#b8c4d0",
+    textDim: "#505f6e",
+  },
+  outland: {
+    name: "他乡异客",
+    accent: "#a89a80",      // 中性灰褐
+    accentDim: "#6a5f4a",
+    bg: "#0b0a09",
+    bgPanel: "#0e0d0b",
+    border: "#252118",
+    text: "#c0b8a8",
+    textDim: "#6a6255",
+  },
+};
+
+// 根据房间名推断当前分区，返回对应主题；找不到时回退到 village
+export function getZoneTheme(roomName) {
+  const zone = ZONE_MAP[roomName] || "village";
+  return ZONE_THEMES[zone];
+}
+
+export function getZoneName(roomName) {
+  return ZONE_MAP[roomName] || "village";
+}
