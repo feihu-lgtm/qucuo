@@ -13,6 +13,7 @@ import { getDefaultProfile } from "./combat/personalityProfile.js";
 import { createEmptyStatusSlots, applyStatus, applyMark, dispelControlDrain } from "./combat/statusEffects.js";
 import { rollBattleLoot, atkFromWaigong } from "./npcGeneration.js";
 import { resolveCombatBuff } from "./utils/buffSystem.js";
+import { narrateTurn } from "./quickBattle/battleNarration.js";
 
 const TYPE_ICON = { [MOVE_TYPE.ATTACK]: "⚔", [MOVE_TYPE.DEFENSE]: "🛡", [MOVE_TYPE.STATUS]: "☯" };
 
@@ -332,7 +333,21 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
         npcEnergyLeft: newNpcEnergy,
         notes: result.notes,
         statusLog: [...(endTick.logA || []), ...(endTick.logB || [])],
+        narration: null, // AI 说书异步补，见下
       }]);
+
+      // AI 说书战报（可选·装 key 才有）：把这一回合已算死的结果润色成说书文字，
+      // 异步补到该回合 entry 的 narration 字段，另起一行显示，不覆盖系统 notes。
+      // 与斗蛐蛐同一套 narrateTurn，失败静默降级。"你"作我方名、npc.name 作敌方名。
+      {
+        const thisRound = round;
+        narrateTurn({ name: "你" }, { name: npc.name }, playerMove, npcMove, result)
+          .then(txt => {
+            if (!txt) return;
+            setBattleLog(log => log.map(e => e.round === thisRound ? { ...e, narration: txt } : e));
+          })
+          .catch(() => {});
+      }
 
       // 服药回合结算成功 → 登记这件消耗品，战斗结束时从背包扣除。假死保命类
       // （_armRebirth）不产生即时数值，只是把本场"续命一次"的开关备好，真正生效
@@ -634,6 +649,14 @@ function MudRoundLog({ entry, npcName, zoneTheme }) {
       {(entry.statusLog || []).map((l, i) => (
         <div key={"s" + i} style={{ fontSize: "11px", color: zoneTheme.textDim, marginTop: 1 }}>{l}</div>
       ))}
+      {/* AI 说书：另起一行润色，不覆盖上面的系统结算文字（斜体+左边框区分） */}
+      {entry.narration && (
+        <div style={{ fontSize: "12px", color: "#d8c090", lineHeight: 1.8, marginTop: 4, paddingLeft: 8,
+          borderLeft: `2px solid ${zoneTheme.accentDim}`, fontStyle: "italic" }}>
+          <span style={{ fontStyle: "normal", fontSize: "10px", color: zoneTheme.accentDim, marginRight: 5 }}>说书</span>
+          {entry.narration}
+        </div>
+      )}
       <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginTop: 2 }}>
         余·你 能量{entry.playerEnergyLeft}／{npcName} 能量{entry.npcEnergyLeft}
       </div>

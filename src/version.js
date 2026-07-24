@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "对峙区手机改上下堆叠(看得到敌方血) + AI说书另起一行不覆盖系统文字 + 说书接入主游戏切磋",
+    time: "2026-07-25 21:30",
+    notes: [
+      "①【看不到敌方血】斗蛐蛐对峙区手机上左右并排放不下(每个FighterPanel含minWidth150名字区+76立绘，两个超472px，敌方被挤出屏幕)。窄屏(<640px)改上下堆叠：我方在上、敌方在下，两人气血/气力条都完整可见。加 qb-fighter/qb-fighter-info 类名配合媒体查询(flex-direction:column、min-width归零、立绘缩到48x64)。",
+      "②【AI说书不再覆盖系统文字】此前战报是 narration||text 二选一(AI回来就把系统文字顶掉)。改成系统结算文字始终显示在上，AI说书文字另起一行接在下面(斜体+左边框+'说书'小标签区分)，两者并存——系统文字给权威数字、说书给代入感。",
+      "③【说书接入主游戏切磋】把斗蛐蛐的 narrateTurn 复用到 DuelScreen(玩家真实切磋)：每回合结算后异步请求AI把该回合结果润色成说书文字，补到该回合 entry.narration，在 MudRoundLog 里另起一行显示(同样斜体+左边框，不覆盖原系统notes)。装key才有、失败静默降级，与斗蛐蛐同一套逻辑同一个说书人口吻。'你'作我方名、npc.name作敌方名。",
+      "DuelScreen/QuickBattleScreen esbuild 通过，vite build 通过。",
+    ],
+  },
+  {
     codename: "修真机截图暴露的手机bug：调试台关不掉/渲染崩 + 斗蛐蛐多处溢出",
     time: "2026-07-25 20:30",
     notes: [

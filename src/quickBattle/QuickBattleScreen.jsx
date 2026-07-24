@@ -48,10 +48,13 @@ const QB_CSS = `
   }
   /* ── 窄屏(手机)紧凑化：对峙区/选人/技能卡收窄，避免挤爆 ── */
   @media (max-width: 640px){
-    .qb-arena{ gap:6px !important; padding:8px 8px !important; }
-    .qb-arena .qb-portrait{ width:52px !important; height:68px !important; }
-    .qb-arena .qb-vs{ padding-top:8px !important; }
-    .qb-arena .qb-vs img{ width:36px !important; }
+    /* 对峙区改上下堆叠：我方在上、敌方在下，两人血条都能完整显示 */
+    .qb-arena{ flex-direction:column !important; gap:8px !important; padding:8px 10px !important; }
+    .qb-arena .qb-fighter{ width:100% !important; align-items:stretch !important; }
+    .qb-arena .qb-fighter-info{ min-width:0 !important; flex:1 !important; text-align:left !important; }
+    .qb-arena .qb-vs{ padding-top:0 !important; flex-direction:row !important; }
+    .qb-arena .qb-vs img{ width:28px !important; }
+    .qb-arena .qb-portrait{ width:48px !important; height:64px !important; }
     .qb-cardrow{ gap:6px !important; }
     .qb-card{ width:calc(50% - 3px) !important; height:132px !important; }
     .qb-candgrid{ grid-template-columns:repeat(auto-fill,minmax(84px,1fr)) !important; gap:8px !important; }
@@ -443,9 +446,18 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
               {l.dmgToMe > 0 && <span style={sx.dmgTag("#6aa0d4")}>我 −{l.dmgToMe}</span>}
               {(l.dmgToFoe === 0 || l.dmgToFoe == null) && (l.dmgToMe === 0 || l.dmgToMe == null) && l.myMove && <span style={{ color: "#6a5f4a" }}>无伤</span>}
             </div>
+            {/* 系统战报（始终显示，权威结算文字） */}
             <div style={{ fontSize: 13.5, color: "#cdc2a2", lineHeight: 1.8 }}>
-              {l.narration || l.text}
+              {l.text}
             </div>
+            {/* AI 说书（有则另起一行，润色不覆盖系统文字；斜体+左边框区分） */}
+            {l.narration && (
+              <div style={{ fontSize: 13.5, color: "#e8d5a8", lineHeight: 1.9, marginTop: 6, paddingLeft: 10,
+                borderLeft: "2px solid #6a5d40", fontStyle: "italic" }}>
+                <span style={{ fontStyle: "normal", fontSize: 10, color: "#8a7d5a", marginRight: 6 }}>说书</span>
+                {l.narration}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -517,7 +529,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
   const showDmg = hit && hit.dmg > 0;
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: align, gap: 8 }}>
+    <div className="qb-fighter" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: align, gap: 8, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexDirection: side === "ally" ? "row" : "row-reverse" }}>
         <div className="qb-portrait" style={{ position: "relative", width: 76, height: 100, borderRadius: 6, overflow: "visible", flexShrink: 0 }}>
           <div style={{ width: "100%", height: "100%", borderRadius: 6, overflow: "hidden", border: `2px solid ${tierColor(fighter.levelCap)}`, background: "#14100b" }}>
@@ -538,7 +550,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
             }}>−{hit.dmg}</div>
           )}
         </div>
-        <div style={{ minWidth: 150, textAlign: side === "ally" ? "left" : "right" }}>
+        <div className="qb-fighter-info" style={{ minWidth: 150, textAlign: side === "ally" ? "left" : "right" }}>
           <div style={{ fontSize: 16, color: "#e8dfc0", fontWeight: "bold" }}>{fighter.name}</div>
           <div style={{ fontSize: 10, color: tierColor(fighter.levelCap) }}>{tierName(fighter.levelCap)}品</div>
           {/* 血槽 */}
