@@ -10,7 +10,7 @@ import BugReportModal from "./BugReportModal.jsx";
 
 const theme = ZONE_THEMES.village; // 开场定调：鱼定村的暖黄烟火气
 
-export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExit }) {
+export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQuickBattle, onExit }) {
   const [hasAutoSave, setHasAutoSave] = useState(false);
   const [showBugReport, setShowBugReport] = useState(false); // 意见信箱/上报bug
   const [slots, setSlots] = useState([]);
@@ -69,6 +69,7 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onExi
       action: () => setShowLoadPanel(true),
       always: hasAnySave,
     },
+    { key: "quickbattle", label: "斗蛐蛐", sub: "快速切磋 · 自选阵容", action: onQuickBattle, always: true },
     { key: "settings", label: "设置", sub: "API · 显示 · 存档管理", action: onOpenSettings, always: true },
     { key: "exit", label: "退出", sub: "合上此卷", action: onExit, always: true },
   ];

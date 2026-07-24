@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
 import MudRPG from "./MudRPG.jsx";
 import StartScreen from "./StartScreen.jsx";
+import QuickBattleScreen from "./quickBattle/QuickBattleScreen.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { loadAutoSave, init as initSaves } from "./saves.js";
 
@@ -49,6 +50,12 @@ function App() {
   const [booted, setBooted] = useState(false);            // 恒为 false：总是先显示开始界面
   const [pendingLoadSlotId, setPendingLoadSlotId] = useState("new");
   const [openSettingsOnBoot, setOpenSettingsOnBoot] = useState(false);
+  // 斗蛐蛐是脱离存档的独立沙盒：不经过 MudRPG，直接在开始界面之上挂一层。
+  const [inQuickBattle, setInQuickBattle] = useState(false);
+
+  if (inQuickBattle) {
+    return <QuickBattleScreen onExit={() => setInQuickBattle(false)} />;
+  }
 
   if (!booted) {
     return (
@@ -71,6 +78,7 @@ function App() {
           setOpenSettingsOnBoot(true);
           setBooted(true);
         }}
+        onQuickBattle={() => setInQuickBattle(true)}
         onExit={() => {
           // 浏览器环境无法真正"退出进程"，只能尝试关闭标签页；
           // 多数浏览器出于安全策略会拦截非用户直接触发的 window.close()，

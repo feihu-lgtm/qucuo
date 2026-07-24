@@ -9,6 +9,20 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "开始界面第五入口·斗蛐蛐：全池选人的宝可梦式切磋沙盒(复用战斗内核·无需key)",
+    time: "2026-07-25 12:00",
+    notes: [
+      "开始界面加第五个入口「斗蛐蛐」，脱离主线剧情/存档的纯数值沙盒——从全 NPC 池子(游走池+驻场表共56人去重)里挑人分我方/敌方两队开打，验收战斗系统本身，不碰任何存档。灵感是骑砍快速战役 + 宝可梦对战。",
+      "①【复用不重造】战斗内核直接复用 combat/resolveTurn.js 的 1v1 回合结算 + npcGeneration.ensureNpcCombatData 生成数值(hp由内功/攻防由外功·玩家NPC同一条战力曲线) + aiDecision.decideNpcMove 本地选招。新代码只是在其上包了团战调度层，没有另写一套伤害公式。",
+      "②【两模式】单挑=一对一速战；团战=各排最多6人的队伍、车轮战补位、我方可临阵换人(宝可梦式·换人让位一手让敌方抢攻)。敌方倒下被动补位，主动换人是我方特权(AI主动换人留待After)。",
+      "③【玩家控一方】我方全体上场者的招式全程由玩家点选(类宝可梦选技能)，敌方全AI本地决策。每回合玩家点招才推进一步，看得见开始与结束，不是一键甩全自动结果。",
+      "④【不需要key】性格权重走 npcDescriptionMapping 本地关键词映射(读personality字段·好战真莽/老成真守)，全程零网络即可完整开打。装了key的增值：battleNarration.js 每回合把纯数值结果异步包装成说书人战报(契合 duel-system-design 第四节·AI只润色不改判)，失败静默降级用系统notes。",
+      "⑤【UI复用stones素材】沿用赌石坊那套 public/stones 木质民俗UI(bg_hall_night大厅背景/panel_big木牌/burst火花/frame木框)，签名元素是双方立绘+血槽的宝可梦式对峙区。有写实立绘的8人(兰姐/苏宛/才旦/李若由等)用真图，其余人用品阶色占位卡。视觉语言跟主游戏统一。",
+      "⑥【架构】新增 src/quickBattle/ 四文件：battlePool(合池去重+快照生成) / battleEngine(单回合结算·换人·胜负判定·纯函数) / battleNarration(可选AI战报) / QuickBattleScreen(选模式→布阵→对战→战报四阶段)。main.jsx 加 inQuickBattle 独立视图(不经MudRPG·不读存档)，StartScreen 加 onQuickBattle 入口。",
+      "vite build 通过(146模块)；逻辑冒烟验证：柳青鸢2回合秒大公鸡(战力差正确)、张商人vs才旦6回合拉锯、3v3车轮战6回合全歼且补位/胜负判定正常、56人去重无重复。",
+    ],
+  },
+  {
     codename: "预设tab精简为纯注入结构：按act动作分类逐块看真原文 + 拉取目前",
     time: "2026-07-24 18:52",
     notes: [
