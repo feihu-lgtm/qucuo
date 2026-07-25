@@ -62,6 +62,7 @@ export async function narrateTurn(myFighter, foeFighter, myMove, foeMove, result
     const noThinkCfg = { ...cfg, thinkingMode: "off" };
     const { text } = await callModel(noThinkCfg, sys, [{ role: "user", content: user }], {
       maxTokens: 800, // 两三句正文足够，关思考后不会被占，给足余量防截断
+      callLabel: "斗蛐蛐说书",
     });
     const clean = (text || "").replace(/<thinking>[\s\S]*?<\/thinking>/g, "").trim();
     return clean || null;

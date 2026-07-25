@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "Bug上报系统v2：pipeline日志拆表按行存，每次AI调用可独立查阅",
+    time: "2026-07-26 08:00",
+    notes: [
+      "Bug上报后台从「一个jsonb字段塞一大坨调用记录」改成两张表：bug_reports存基本信息，pipeline_calls存每一次AI调用（一行一条，纯文本字段，不用解JSON）。前提：全项目15处callModel调用点都补上了callLabel（用途标签），每条pipeline记录带全局递增seq序号。",
+      "①【callLabel全覆盖】15处调用点（主叙事/状态提取/事实摘要/私聊/查看端详/飞鸽回信/赌石相石/日总结/说服/任务harness/斗蛐蛐说书/调试面板连通性测试等）全部显式标注用途，不再靠猜systemPrompt内容反推；状态提取额外带上intentCode（如\"状态提取(COMBAT)\"）。",
+      "②【apiConfig.js】addPipelineEntry加全局递增seq（ts精确到毫秒但同一毫秒可能撞车，seq保证严格递增、排序/引用无歧义）；callModel的baseLogFields记录callLabel，缺省兜底成\"未标注\"方便发现遗漏调用点。",
+      "③【新建pipeline_calls表】docs/supabase_schema_v2.sql：report_id外键关联回bug_reports，字段含seq/call_label/system_prompt/user_message/response/success/error_message/model/duration_ms，全部纯文本、按seq排序即可看清一次上报里发生的完整调用序列。mvu指令/好感度变化不额外拆解字段，本来就在response原文的<mvu>块里、人眼直接可读，没有过度设计成结构化字段。",
+      "④【bugReport.js重写】两步提交：先插bug_reports拿report_id（Prefer:return=representation），再把pipelineLog批量转成pipeline_calls的行批量插入。第二步失败不影响第一步已成功的事实，仍返回ok:true+pipelineWarning提示，避免\"报告主体明明存进去了却让玩家以为整个提交失败\"。",
+      "⑤【已知限制，需自行验证】容器网络白名单不含supabase.co，无法在这次会话里实际连接Supabase执行建表SQL或做端到端网络请求测试——docs/supabase_schema_v2.sql需要自己去Supabase后台SQL Editor手动执行；数据转换逻辑（pipelineEntriesToRows/flattenUserMessages）已用Node脚本做过纯函数单测，但真实的两步网络提交流程（尤其是Prefer:return=representation能否正确拿到id、RLS策略在两张表上是否都配置正确）需要在真实环境里验证一遍。",
+      "esbuild单文件语法检查+完整bundle验证通过；纯逻辑单测（模拟pipelineLog→pipeline_calls行转换）验证了失败记录不存垃圾response、call_label保留意图后缀、多条user消息正确拼接等关键点。",
+    ],
+  },
+  {
     codename: "左栏清冗余：删面板/立绘按钮，飞鸽数量挪到在场分组标题栏统一显示",
     time: "2026-07-26 07:00",
     notes: [

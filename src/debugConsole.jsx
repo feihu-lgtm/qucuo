@@ -70,7 +70,7 @@ export default function DebugConsole() {
     const t0 = Date.now();
     try {
       const { text } = await callModel(c, "你是连通性测试助手，只回极短的话，不要多余解释。",
-        [{ role: "user", content: "只回四个字：连通正常" }], { maxTokens: c.callTokenLimits?.connectionTest ?? 200 });
+        [{ role: "user", content: "只回四个字：连通正常" }], { maxTokens: c.callTokenLimits?.connectionTest ?? 200, callLabel: "调试面板·连通性测试" });
       log(`✓ 调用成功（${Date.now() - t0}ms）：「${text.trim().slice(0, 40)}」`, "");
     } catch (e) { log(`✗ 调用失败（${Date.now() - t0}ms）：${e.message || e}`, ""); }
     setBusy(false);

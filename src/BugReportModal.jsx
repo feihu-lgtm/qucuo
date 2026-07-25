@@ -91,7 +91,10 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
         {result?.ok ? (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
             <div style={{ fontSize: 15, color: "#4a9a4a", marginBottom: 8 }}>✓ 已收到，多谢！</div>
-            <div style={{ fontSize: 12, color: C.dim, marginBottom: 18 }}>你的反馈已送达开发者，会尽快看到。</div>
+            <div style={{ fontSize: 12, color: C.dim, marginBottom: result.pipelineWarning ? 6 : 18 }}>你的反馈已送达开发者，会尽快看到。</div>
+            {result.pipelineWarning && (
+              <div style={{ fontSize: 11, color: "#c08a5a", marginBottom: 18 }}>{result.pipelineWarning}</div>
+            )}
             <span onClick={onClose} style={{ cursor: "pointer", padding: "6px 20px", border: `1px solid ${C.border}`, borderRadius: 4, color: C.text }}>关闭</span>
           </div>
         ) : (

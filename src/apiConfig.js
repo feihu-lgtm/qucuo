@@ -11,10 +11,13 @@ const CONFIG_KEY = "wuxia_mud_api_config";
 // recall 字段预留给向量召回结果（memory/ 模块接入后填充），召回功能未启用时始终为 null。
 const MAX_PIPELINE = 20;
 const pipelineLog = [];
+let pipelineSeqCounter = 0; // 全局递增序号，跟 ts 一起用——ts 精确到毫秒但同一毫秒可能撞车，
+                            // seq 保证严格递增、排序/编号引用时不会有歧义。
 export function getPipelineLog() { return pipelineLog; }
-export function clearPipelineLog() { pipelineLog.length = 0; }
+export function clearPipelineLog() { pipelineLog.length = 0; pipelineSeqCounter = 0; }
 function addPipelineEntry(entry) {
-  pipelineLog.unshift({ ts: Date.now(), ...entry });
+  pipelineSeqCounter += 1;
+  pipelineLog.unshift({ seq: pipelineSeqCounter, ts: Date.now(), ...entry });
   if (pipelineLog.length > MAX_PIPELINE) pipelineLog.length = MAX_PIPELINE;
 }
 
@@ -503,10 +506,15 @@ export async function callModel(cfg, systemPrompt, messages, opts = {}) {
   // 结构对齐 memory/recallWithVisibility.js 的返回值：{ visible, filtered, stats }
   const recallInfo = opts.recallInfo ?? null;
   const intentInfo = opts.intent ?? null; // 本轮意图分类结果，来自 inputIntent.js，纯调试展示用
+  // 调用用途标签：每个调用点应该显式传 opts.callLabel 标明"这次调用是干什么的"
+  // （比如"主叙事""状态提取""飞鸽回信"），不是靠猜 systemPrompt 内容反推。
+  // 缺省兜底成"未标注"——出现这个值说明有调用点漏传了，方便发现遗漏。
+  const callLabel = opts.callLabel || "未标注";
 
   const baseLogFields = {
     apiType: cfg.apiType,
     model: cfg.model,
+    callLabel,
     systemPrompt,
     userMessages: messages,
     maxTokens,

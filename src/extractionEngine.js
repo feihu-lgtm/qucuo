@@ -161,7 +161,7 @@ export async function callExtraction(intentCode, narrative, state, apiCfg) {
   // 免得在 6 份 schema 里各抄一遍、加一个字段要改六处。
   const userContent = spec.user(narrative, state) + COMMON_EXTRACT_TAIL;
 
-  const { text } = await callModel(cfg, systemPrompt, [{ role: "user", content: userContent }], { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000 });
+  const { text } = await callModel(cfg, systemPrompt, [{ role: "user", content: userContent }], { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000, callLabel: `状态提取(${intentCode})` });
 
   // 解析 JSON
   let js = text.replace(/```json\s*|```\s*/g, "").trim();

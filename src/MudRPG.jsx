@@ -1368,7 +1368,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const label = `第${endedDay + 1}日`;
     try {
       const { system, messages } = buildDaySummaryRequest(label, lines);
-      const { text } = await callModel(apiCfg, system, messages, { maxTokens: apiCfg.callTokenLimits?.daySummary ?? 2000 });
+      const { text } = await callModel(apiCfg, system, messages, { maxTokens: apiCfg.callTokenLimits?.daySummary ?? 2000, callLabel: "日总结" });
       const summary = (text || "").trim();
       if (!summary) return;
       setVarTree(prev => appendDaySummary(prev, { day: endedDay, label, text: summary, turn: (endedDay + 1) * 24 }));
@@ -1381,8 +1381,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const aiSummarizeFact = useCallback(async (factId, cue) => {
     try {
       const req = factSummaryRequest(cue);
-      const { text } = await callModel(apiCfg, req.system, req.messages, { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens });
-      const line = (text || "").trim().split("\n")[0].slice(0, 40);
+      const { text } = await callModel(apiCfg, req.system, req.messages, { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens, callLabel: "事实摘要" });
       if (line) setVarTree(prev => setFactSummary(prev, factId, line));
     } catch (_) { /* 保留结构化兜底摘要 */ }
   }, [apiCfg]);
@@ -1892,7 +1891,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         traceStep(_wt, "AI调用", "pass", "流式一次成功");
         attachPipeline(_wt, getPipelineLog()[0]);
       } else {
-        const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo });
+        const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊" });
         finishReason = result.finishReason;
         text = stripEchoPrefix(result.text.trim()) || "……";
         { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
@@ -2134,8 +2133,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         if (itemObj.bonus != null) statBits.push(`加成${itemObj.bonus}`);
         prompt += `，品质：${itemObj.quality}${statBits.length ? `，${statBits.join("，")}` : ""}${itemObj.desc ? `，已知描述：${itemObj.desc}` : ""}`;
       }
-      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: prompt }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000 });
-      const finalText = text.trim() || "(旁白沉默不语)";
+      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: prompt }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000, callLabel: "查看端详" });
       addLog([{ t: "desc", text: "  " + finalText }]);
       if (worldLook) {
         // 走主叙事：端详也是世界里的一个动作，算 1 回合时间 + 写一张公共小纸条
@@ -2492,7 +2490,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         const node = QUCUO_MAP[room.name];
         const judgeReq = buildDirectionJudgeRequest(cmd, room.name, node.exits);
         const judgeCfg = buildExtractionCfg("DIRECTION_JUDGE", apiCfg);
-        const judgeResult = await callModel(judgeCfg, judgeReq.system, judgeReq.messages, { maxTokens: apiCfg.callTokenLimits?.direction ?? judgeReq.maxTokens });
+        const judgeResult = await callModel(judgeCfg, judgeReq.system, judgeReq.messages, { maxTokens: apiCfg.callTokenLimits?.direction ?? judgeReq.maxTokens, callLabel: "方向判定(已闲置)" });
         const aiDir = parseDirectionJudgeResponse(judgeResult.text);
         // 双重校验：AI 说的方向必须真的是当前房间已登记的出口之一，否则视为无效。
         // 这一步保证即便小模型偶尔"创造"了一个不存在的方向代码，也不会被采信。
@@ -2886,7 +2884,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           const req = recallTexts.length
             ? factSummaryRequestFromRecall(fid, recallTexts)
             : factSummaryRequest(fid);
-          const r = await callModel(apiCfg, req.system, req.messages, { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens });
+          const r = await callModel(apiCfg, req.system, req.messages, { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens, callLabel: "事实摘要" });
           const line = (r.text || "").trim().split("\n")[0].slice(0, 40);
           if (line) kTree = setFactSummary(kTree, fid, line);
         } catch (_) { /* 补词失败就留空，下回合再试 */ }
@@ -3146,7 +3144,7 @@ ${dealFmt}`;
           }
           return { rawFull: text, finishReason };
         }
-        const result = await callModel(effectiveCfg, sys, [{ role: "user", content: userContent }, ...(nsfwOn ? MODE_PRIMER_MESSAGES : [])], { intent: { code: intent.code, label: intent.label }, recallInfo });
+        const result = await callModel(effectiveCfg, sys, [{ role: "user", content: userContent }, ...(nsfwOn ? MODE_PRIMER_MESSAGES : [])], { intent: { code: intent.code, label: intent.label }, recallInfo, callLabel: "主叙事" });
         return { rawFull: result.text, finishReason: result.finishReason };
       };
 
@@ -4124,7 +4122,7 @@ ${facts ? "你也隐约知道的近来见闻（可自然带一两句，不要生
 写完信正文后，另起附两个隐藏标记（会被系统读走、玩家看不到，不要在正文提它们）：
 ① ⟦好感X⟧：X 为整数 -3~+8，表示这次通信${gaveGift ? "与收礼" : ""}让你对主角好感升降多少（寻常问候+1~2；说到心坎/贴心/有趣+3~+6；${gaveGift ? "礼物合心意可再高些至+8；" : ""}敷衍冒犯给负数）。
 ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼（类别取 weapon/armor/accessory/misc 之一），从你身份/处境合理拿得出手的东西里挑一件写在这里（例如僧人回赠念珠、猎户回赠兽皮、富贵者回赠玉器）；不想回或拿不出就整条省略。" : "（这次不涉及回礼，无需第二个标记。）"}`;
-      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: `主角的来信：${sentContent}` }], { maxTokens: apiCfg.callTokenLimits?.pigeonReply ?? 3000 });
+      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: `主角的来信：${sentContent}` }], { maxTokens: apiCfg.callTokenLimits?.pigeonReply ?? 3000, callLabel: "飞鸽回信" });
       let reply = (text || "").trim() || "（信纸空落落的，对方似乎无话可说。）";
       // 解析隐藏标记
       let affDelta = 1;
@@ -4578,7 +4576,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         clue.changKouHint ? `场口眼力：${clue.changKouHint}` : "（认不出场口来历，悟性眼力未及）",
         clue.mistHint ? `雾象：${clue.mistHint}` : "",
       ].filter(Boolean).join("\n");
-      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: lines }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000 });
+      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: lines }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000, callLabel: "赌石相石" });
       const t = (text || "").trim();
       if (t) {
         addLog([{ t: "cmd", text: "> 相石 · 看皮" }, { t: "desc", text: "  " + t }]);
