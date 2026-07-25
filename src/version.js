@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "端详预跑进度可见：每件预跑推一条trace到「🧭全流程日志」面板，开始/跑好/失败都留痕",
+    time: "2026-07-26 10:30",
+    notes: [
+      "上一版加的「端详描述后台预跑」是完全静默的，看不到后台在跑什么。这次给每件预跑单独开一条 trace，推到顶栏「🧭全流程日志」面板（不碰主叙事、不污染剧情流）：能看到正在预热哪件东西、跑好没、耗时多久，展开还能看喂给AI的完整prompt和回复。",
+      "①【推到哪】只推「🧭全流程日志」这个独立调试面板（getTraceLog那套），不是玩家读剧情的主消息流——用户明确要求不污染主叙事。总是推（不限调试模式，玩家也能在这个面板看到）。",
+      "②【记什么】每件预跑：startTrace开一条「后台预跑端详·武学/物品「名」」→ step记「开始预热」→ 调AI后attachPipeline挂上这次调用的完整prompt/回复 → 成功step「写入缓存·已备好点查看即秒显示」/空响应step「skip」/异常step「fail」→ endTrace收尾带总耗时。",
+      "esbuild语法检查+完整bundle验证通过；仅剩既有无关警告(qucuoQuests.js playerHint重复键)。",
+    ],
+  },
+  {
     codename: "端详描述后台预跑：物品/武学到手即后台生成好，点查看秒显示；顺带修inspectItem的finalText未定义bug",
     time: "2026-07-26 10:00",
     notes: [

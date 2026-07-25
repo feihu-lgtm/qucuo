@@ -2241,10 +2241,26 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         if (pending.length) {
           const job = pending[0];
           prewarmingRef.current = true;
+          // 每件预跑单独开一条 trace，推到顶栏「🧭全流程日志」面板（不碰主叙事）。
+          // 玩家/调试时能看到后台正在预热什么、跑好没、耗时多久、以及喂给AI的完整prompt。
+          const jobLabel = `${job.kind === "skill" ? "武学" : "物品"}「${job.name}」`;
+          const _pw = startTrace(`后台预跑端详·${jobLabel}`, `[后台预跑] ${jobLabel} 描述生成`);
+          traceStep(_pw, "后台预跑", "info", `开始预热 ${jobLabel} 的端详描述`);
           try {
             const text = await genInspectTextRef.current(job.kind, job.name, job.extra, job.itemObj);
-            if (text && !stopped) setCachedInspect(job.kind, job.name, job.extra, job.itemObj, text);
-          } catch { /* 预跑失败静默，下轮再试这件 */ }
+            attachPipeline(_pw, getPipelineLog()[0]); // 挂上刚才这次AI调用的完整prompt/回复
+            if (text && !stopped) {
+              setCachedInspect(job.kind, job.name, job.extra, job.itemObj, text);
+              traceStep(_pw, "写入缓存", "pass", `${jobLabel} 描述已备好，点查看即秒显示`);
+              endTrace(_pw, `预热完成：${jobLabel}`);
+            } else {
+              traceStep(_pw, "写入缓存", "skip", "AI 返回空，未写缓存，下轮再试");
+              endTrace(_pw, `预热未成（空响应）：${jobLabel}`);
+            }
+          } catch (e) {
+            traceStep(_pw, "AI调用", "fail", `预跑失败：${e?.message || e}`);
+            endTrace(_pw, `预热失败：${jobLabel}`);
+          }
           prewarmingRef.current = false;
         }
       }
