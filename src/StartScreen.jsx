@@ -8,12 +8,15 @@ import { ZONE_THEMES } from "./theme.js";
 import { listSlots, loadAutoSave } from "./saves.js";
 import { registerVisit } from "./visitorCount.js";
 import BugReportModal from "./BugReportModal.jsx";
+import VersionHistoryPanel from "./VersionHistoryPanel.jsx";
+import { CURRENT_VERSION } from "./version.js";
 
 const theme = ZONE_THEMES.village; // 开场定调：鱼定村的暖黄烟火气
 
 export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQuickBattle, onExit }) {
   const [hasAutoSave, setHasAutoSave] = useState(false);
   const [showBugReport, setShowBugReport] = useState(false); // 意见信箱/上报bug
+  const [showVersionHistory, setShowVersionHistory] = useState(false); // 版本日志（轻量按钮，跟内页共用同一份VersionHistoryPanel + 同一份version.js数据源）
   const [slots, setSlots] = useState([]);
   const [hovered, setHovered] = useState(null);
   const [showLoadPanel, setShowLoadPanel] = useState(false);
@@ -131,6 +134,10 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQui
         <span onClick={() => setShowBugReport(true)} style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
           🐞 意见信箱 / 上报bug
         </span>
+        <span style={styles.footerSep}>·</span>
+        <span onClick={() => setShowVersionHistory(true)} title="点击查看版本历史目录" style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
+          📅 {CURRENT_VERSION.time}
+        </span>
         {(visitStats.hits != null || visitStats.todayActive != null) && (
           <>
             <span style={styles.footerSep}>·</span>
@@ -150,6 +157,10 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQui
           getGameState={() => null}
           onClose={() => setShowBugReport(false)}
         />
+      )}
+
+      {showVersionHistory && (
+        <VersionHistoryPanel onClose={() => setShowVersionHistory(false)} accentDim={theme.accentDim} />
       )}
     </div>
   );

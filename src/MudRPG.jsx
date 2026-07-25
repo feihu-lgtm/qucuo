@@ -78,9 +78,10 @@ import { MOVE_TYPE } from "./combat/moveTypes.js";
 import DuelScreen from "./DuelScreen.jsx";
 import TeamDuelScreen from "./TeamDuelScreen.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
+import VersionHistoryPanel from "./VersionHistoryPanel.jsx";
 import PersuasionScreen from "./PersuasionScreen.jsx";
 import { tickAngryState } from "./combat/stealSystem.js";
-import { CURRENT_VERSION, VERSION_HISTORY } from "./version.js";
+import { CURRENT_VERSION } from "./version.js";
 import { recallWithVisibility } from "./memory/recallWithVisibility.js";
 import { writeNote, NOTE_SOURCE, VIA, reembedStaleNotes } from "./memory/note.js";
 import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from "./memory/daySummary.js";
@@ -1131,10 +1132,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [activeNpcMenu, setActiveNpcMenu] = useState(null); // 当前弹出互动菜单的NPC对象，null表示未打开
   const [activeItemMenu, setActiveItemMenu] = useState(null); // ⑤⑧ 物品次级面板：{ item, mode:"inventory"|"ground", canConsume } | null
   const [showVersionHistory, setShowVersionHistory] = useState(false);
-  // 遮罩误触修复见 utils/overlayClose.js。这两个弹窗用内联 () => setShowXxx(false)
-  // 而非 onClose prop，closeGuard 接受任意回调，用法一致；必须在组件顶层建实例
-  // （不能放进下面的条件渲染 JSX 里，否则违反 hooks 规则）。
-  const versionHistoryCloseGuard = useOverlayCloseGuard(() => setShowVersionHistory(false));
+  // 版本历史面板关闭逻辑已内聚进独立组件 VersionHistoryPanel.jsx（自带 useOverlayCloseGuard），
+  // 这里不再需要单独维护一份 closeGuard 实例。
   const [showCharacterPage, setShowCharacterPage] = useState(false);
   // 玩家头像：优先用玩家自设的（存 localStorage），否则按性别用预制头像。showAvatarPicker 控制选择弹层。
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -5141,40 +5140,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       {showTutorial && <TutorialOverlay onClose={closeTutorial} />}
 
       {showVersionHistory && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={versionHistoryCloseGuard.onMouseDown} onClick={versionHistoryCloseGuard.onClick}>
-          <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 420, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", fontSize: "12px", color: "#c8bfa0" }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ color: "#6ec6c6", fontSize: "14px" }}>版本历史</span>
-              <span style={{ color: "#5a5a4a", fontSize: "11px", cursor: "pointer" }} onClick={() => setShowVersionHistory(false)}>× 关闭</span>
-            </div>
-            {VERSION_HISTORY.map((v, i) => (
-              <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < VERSION_HISTORY.length - 1 ? "1px solid #14161e" : "none" }}>
-                <div style={{ color: i === 0 ? "#e0a0d0" : "#c8bfa0", fontSize: "12.5px" }}>「{v.codename}」{i === 0 && <span style={{ color: zoneTheme.accentDim, fontSize: "10px" }}> · 当前版本</span>}</div>
-                <div style={{ color: "#5a5a4a", fontSize: "10.5px", marginBottom: 4 }}>{v.time}</div>
-                {/* notes 两种写法都认：数组=一行一条逐行列出（长条目请写数组）；
-                    字符串=老写法，整段显示。数组里以 ①②③ 或 一、二、开头的行
-                    悬挂缩进一下，看起来才像个更新日志而不是一堵墙。 */}
-                {Array.isArray(v.notes) ? (
-                  <div style={{ display: "grid", gap: 3 }}>
-                    {v.notes.map((line, j) => {
-                      const isItem = /^[①-⑳【]|^[一二三四五六七八九十]、/.test(String(line).trim());
-                      return (
-                        <div key={j} style={{
-                          color: isItem ? "#8a8a7a" : "#a09a86",
-                          fontSize: "11px", lineHeight: 1.65,
-                          paddingLeft: isItem ? 12 : 0,
-                          textIndent: isItem ? -12 : 0,
-                        }}>{line}</div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={{ color: "#8a8a7a", fontSize: "11px", lineHeight: 1.6 }}>{v.notes}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <VersionHistoryPanel onClose={() => setShowVersionHistory(false)} accentDim={zoneTheme.accentDim} />
       )}
 
       {showCharacterPage && (

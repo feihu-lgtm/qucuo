@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "发布页封面新增轻量版本日志按钮，与内页共用同一份VersionHistoryPanel组件",
+    time: "2026-07-26 14:30",
+    notes: [
+      "作者要求：在发布页封面做一个轻量的version log按钮，用东八区时间，且要跟内页统一。",
+      "①【抽公共组件】把 MudRPG.jsx 里原本内联的\"📅版本历史\"弹窗渲染逻辑抽成独立组件 VersionHistoryPanel.jsx，StartScreen.jsx（发布页封面）和 MudRPG.jsx（游戏内页）都从这一份组件渲染、读同一份 version.js 的 VERSION_HISTORY 数据——\"统一\"的本质是同一份代码+同一份数据源，不是另写一份样式相近的实现，这样以后改版本历史面板的样式或结构，两处自动同步生效，不会出现封面和内页显示不一致的情况。",
+      "②【东八区时间】VERSION_HISTORY 里的 time 字段本来就是手写的东八区时间字符串（如\"2026-07-26 14:30\"），组件本身不做任何时区计算，原样显示这份数据——保证任何时区的玩家打开游戏看到的版本时间戳都是一致的东八区时间，不会因为访问者本地时区不同而显示出不一样的数字。",
+      "③【封面按钮】StartScreen.jsx footer 新增\"📅 {当前版本时间}\"轻量按钮，跟已有的\"🐞意见信箱/上报bug\"同一视觉语言（span+onClick，不占额外视觉重量），点击打开同一份 VersionHistoryPanel。",
+      "④ 顺带清理：MudRPG.jsx 里因为改用独立组件而不再需要的 versionHistoryCloseGuard 死变量、不再被引用的 VERSION_HISTORY 导入（CURRENT_VERSION 仍保留，那个还在多处使用）。",
+      "esbuild --bundle 验证 main.jsx(含StartScreen)/MudRPG.jsx(含全部依赖)/VersionHistoryPanel.jsx 语法通过。",
+    ],
+  },
+  {
     codename: "修入队按钮消失bug：toRoomNpcWithCombat字段白名单漏了companionCandidate",
     time: "2026-07-26 14:00",
     notes: [
