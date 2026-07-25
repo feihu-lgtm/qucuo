@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修送礼不加好感bug：漏传settle参数+走错档 → 补齐并注入礼物品阶/描述强制正向好感",
+    time: "2026-07-26 11:30",
+    notes: [
+      "群友反馈「送礼东西没了、好感也没加、甚至被NPC推拒」——查实是两条送礼路径没对齐：NpcActionMenu弹窗那条(handleNpcGift)调act()时漏传opts，giftToCharacter(window.prompt那条)是对的。",
+      "①【根因】漏传opts导致这次调用走了普通意图分类——inputIntent.js的GIFT_PATTERNS把\"赠予/赠送\"归到TALK_CASUAL，最终promptScope落到talk档而非settle结算档，拿不到settle档专属的\"这一轮必须判好感\"强提示，好感度全凭AI自己想不想得到，格式也没有强约束，输出不稳定。",
+      "②【补齐】handleNpcGift 补上 settle:true + settleNpc + settleKind，跟giftToCharacter对齐一致。生气赔罪送礼(isAngry)不标settleKind——那类是\"赔罪能不能被原谅\"，不算送啥都开心的正常送礼，好感能否回升仍留给AI按情境判断。",
+      "③【新增礼物信息组装】describeGiftForPrompt：优先查百物录CATALOG_INDEX拿具名物品的品阶/类别/描述，查不到退回背包对象自带字段兜底，品阶缺失一律按白档兜底。",
+      "④【prompt新增送礼世界观铁律】buildSysBase新增settleKind===\"gift\"分支：明确告诉AI这个世界收礼必因礼貌/信义/心情而高兴，本轮<mvu>必须给正向好感增量、不得为0或负数；同时把礼物的品阶/类别/描述摆给AI看，建议好感幅度跟六品阶指数曲线走(白2~4/绿4~6/蓝6~9/紫9~12/橙11~14/红13~15)，取代之前写死的示例数值，示例指令也换成贴合本次NPC名字和建议幅度中值的真实写法。",
+      "架构上仍守\"AI提议、系统裁决\"：好感度最终增量仍由mvu.js的applyMvuCommands做±15单次限幅、0-100区间裁剪，这次改动只是把\"该不该判、判正还是负\"在prompt层面钉死，不绕过裁决层直接改状态。",
+      "esbuild --bundle 语法验证通过；用真实具名礼物(青锋剑/绿档)和匿名白档杂物分别模拟渲染最终prompt，品阶/描述/建议幅度均正确带入。",
+    ],
+  },
+  {
     codename: "修开场绿剑装备无攻击bug：atkMul死字段没人读→装了等于0攻击，改atk:14 + 老存档通用迁移",
     time: "2026-07-26 11:00",
     notes: [
