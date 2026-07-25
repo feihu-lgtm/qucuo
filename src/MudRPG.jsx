@@ -113,6 +113,10 @@ import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs,
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
 function buildSysBase(targetWordCount, narratorState, scenario, budgetInstruction, embeddingEnabled, npcLoreBlock, narrativeOnly = false, scope = "full", opts = {}) {
+  // memory 摘要统一用玩家角色名字第三人称叙述，不用"你/我/玩家"这几种代词混着写——
+  // 事实账本(knowledge.js)的摘要要在多处被复用（旁白全知视角、其他NPC传闻转述、飞鸽书信
+  // 里提起），人称一旦不统一，转述出来的句子会主客体错乱、读起来别扭。
+  const playerName = opts.playerName || "主角";
   // scope 动态注入（借鉴 worldbook 蓝绿灯，解决"走一步路却喂一整套战斗/物品/schema"的臃肿）：
   //   "settle" 结算叙事——系统已把钱扣完/物入袋/flag置好，AI 只把这件既定事实演成叙事，
   //          对状态无任何裁量权。故砍掉「物件志」「认知隔离」「全量schema」，schema 缩成
@@ -181,13 +185,13 @@ ${FORMAT_LAW}
 ${narrativeOnly ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。` : isSettle ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
 不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。不要重复结算任何奖励、物品、银两或状态。
-"memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
+"memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
 
 在 JSON 输出完毕之后，如果这一轮牵涉的人物（${opts.settleNpc}）对玩家的观感确有变化，另起一行输出 <mvu> 块（不要放进 JSON 内部）：
 ${MVU_SYSTEM_INSTRUCTIONS}` : ""}` : scope === "move" ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
 npcs 的 carry 字段只在该 NPC 首次登场那一轮写（0-3件肉眼可见随身物，出场叙事需描述其外观）。
-可选字段 "memory"：用不超过50字纯客观事实概括本轮到达了何处、路上是否有值得记的事，寻常赶路可省略。
+可选字段 "memory"：用不超过50字纯客观事实概括本轮到达了何处、路上是否有值得记的事，一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，寻常赶路可省略。
 若这次移动让某个从未出现的具名人物被提及，加 "mentionedNewNpcs":["名"]。` : `回复纯JSON，字符串不换行：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}],"items":[{"name":"名","id":"id"}]},"char":{"hp":[60,100],"neigong":5,"waigong":8,"special":{"根骨":5,"悟性":6,"体魄":5,"魅力":5,"智谋":5,"身法":5,"气运":5}},"dao":{"karma":0,"jie":0,"sign":"天象","rumor":["事"]},"delta":{"items_add":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}],"items_rm":[],"skill_up":{},"exp":0,"pot":0,"flags_add":[]}}
 items_add 里的元素也可以是纯字符串（不需要装备系统参与的剧情道具/杂物），结构化写法仅用于武器/护甲/饰品类物品。
@@ -195,7 +199,7 @@ npcs 的 carry 字段只在该 NPC 首次登场那一轮写：列出出场描述
 npcs 里某个 NPC 如果是路途遭遇生成的生态猛兽/山贼游哨这类"泛用清剿目标"（不是具名剧情人物），可选加一个 "tag" 字段（比如 "熊山野兽""黑风寨山贼"，具体归属看当前地域的路途遭遇说明），系统会用它核对是否推进对应的清剿类任务进度；具名剧情人物不要加这个字段。
 如果这一轮的旁白/对话文本里，你让某个此前从未出现过的具名人物被提及（比如"我那侄子阿福在山下磨坊"），在顶层JSON里加 "mentionedNewNpcs":["阿福"] 字段列出这些名字，不需要每次都有，绝大多数时候留空或省略这个字段即可，只有真的提到全新的具名人物时才加。
 如果收到"人物涌现"指令且这一轮确实让对应人物登场，在顶层JSON里额外加 "emergedNpcName" 和 "emergedNpcDescription" 两个字段（一句话定性描述，不含任何数值），其余情况完全不要出现这两个字段。
-可选字段 "memory"：用不超过50字的纯客观事实，概括本轮真正发生、日后可能需要回想起来的关键事件（谁做了什么、得到或失去了什么、去了何处、结下或了断了什么关系、许下或应承了什么）。只记事实，不写情绪，不写心理，不加评述。若这一轮只是寻常闲谈、查看状态、无关紧要的往来，省略这个字段即可，不必硬凑。这条会被单独存档，供日后当作往事重新想起，因此务必写得具体（写清人名地名，不要用"那人""某处"这类含糊指代）。这条摘要除了供你自己日后回想，也会被登记为在场者共同"目击"的事实，供其他 NPC 之后自然提起（比如路人听说"你在鱼定村打伤了谁"），所以只在真有值得旁人知道的事发生时才写，纯私密心理活动或不宜外传的隐秘不要写进来。
+可选字段 "memory"：用不超过50字的纯客观事实，概括本轮真正发生、日后可能需要回想起来的关键事件（谁做了什么、得到或失去了什么、去了何处、结下或了断了什么关系、许下或应承了什么）。一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"这几种代词。只记事实，不写情绪，不写心理，不加评述。若这一轮只是寻常闲谈、查看状态、无关紧要的往来，省略这个字段即可，不必硬凑。这条会被单独存档，供日后当作往事重新想起，因此务必写得具体（写清人名地名，不要用"那人""某处"这类含糊指代）。这条摘要除了供你自己日后回想，也会被登记为在场者共同"目击"的事实，供其他 NPC 之后自然提起（比如路人听说"${playerName}在鱼定村打伤了谁"），所以只在真有值得旁人知道的事发生时才写，纯私密心理活动或不宜外传的隐秘不要写进来。
 
 ${wantMvu ? `
 在这个 JSON 对象输出完毕之后，如果需要维护角色/世界状态变量，另起一行输出 <mvu> 块（不要放在 JSON 字符串内部，作为 JSON 后面独立的一段纯文本）：
@@ -1754,7 +1758,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         const facts = allFactSummaries(varTree, 8);
         if (facts.length) {
           factsBlock = "\n\n[你冷眼旁观知晓的事，未必是玩家亲口告诉过你的，回应时可以自然提起，但不要生硬列举或表现得像在念清单]\n"
-            + facts.map(f => `· ${f.摘要}`).join("\n");
+            + facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
           traceStep(_wt, "全知事实", "pass", `注入最近${facts.length}条事实账本摘要`);
         } else {
           traceStep(_wt, "全知事实", "skip", "事实账本为空，未注入");
@@ -1976,7 +1980,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         const invText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
         put("world_state", `主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}（${room.desc}） 房间里的人:${room.npcs.map(n => n.name).join(",") || "无"} 玩家背包:${invText}`);
         const facts = allFactSummaries(varTree, 8);
-        put("facts", facts.length ? facts.map(f => `· ${f.摘要}`).join("\n") : "（事实账本当前为空）");
+        put("facts", facts.length ? facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n") : "（事实账本当前为空）");
         put("narrator_lore", (apiCfg.narratorLorebook || "").trim() || "（未填写，本块一个字都不发）");
         const bg = gateBodyProfile(char.bodyProfile, { whisper: true, nsfw: nsfwOn, scanText: "" });
         put("body_gate", bg.text || `（当前灭灯：${bg.dark.join("、") || "体貌未填写"}）`);
@@ -2183,20 +2187,26 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (pot < cost) { addLog([{ t: "err", text: `  潜能不足，运气尚需${cost}点潜能（现有${pot}）` }]); return; }
     addLog([{ t: "cmd", text: "> 运气打坐（练内功）" }]);
     setPot(p => p - cost);
+    const nv = Math.min(100, cur + 1); // 提前算好，供事实账本摘要引用（下面 setChar 里也算一次，两处保持一致）
     setChar(c => {
-      const nv = Math.min(100, (c.neigong ?? 0) + 1);
+      const nvInner = Math.min(100, (c.neigong ?? 0) + 1);
       // 内功上一分，气血上限跟着涨（跟NPC同一个 hpFromNeigong 公式，玩家也上"战力梯子"）
       const tiPo = c.special?.体魄 ?? 5;
       const oldMax = c.hp?.[1] ?? hpFromNeigong(c.neigong ?? 0, tiPo);
-      const newMax = hpFromNeigong(nv, tiPo);
+      const newMax = hpFromNeigong(nvInner, tiPo);
       const delta = Math.max(0, newMax - oldMax);
       const newCur = Math.min(newMax, (c.hp?.[0] ?? newMax) + delta); // 涨的那部分直接补进当前气血
-      addLog([{ t: "desc", text: `  你盘膝运气，内息缓缓精进了一分。` }, { t: "stat", text: `  内功 ${c.neigong ?? 0}→${nv}（花费${cost}潜能）· 气血上限 ${oldMax}→${newMax}` }]);
-      return { ...c, neigong: nv, hp: [newCur, newMax] };
+      addLog([{ t: "desc", text: `  你盘膝运气，内息缓缓精进了一分。` }, { t: "stat", text: `  内功 ${c.neigong ?? 0}→${nvInner}（花费${cost}潜能）· 气血上限 ${oldMax}→${newMax}` }]);
+      return { ...c, neigong: nvInner, hp: [newCur, newMax] };
     });
     setTime(t => t + 2);
     jotNote({ text: "运气打坐，内功精进一分。", source: NOTE_SOURCE.DUMB });
-  }, [loading, char.neigong, pot, addLog, trainCost, jotNote]);
+    // 补：练功此前只写了往事纸条(jotNote)，没进事实账本(registerFact)——旁白的"全知事实"
+    // 视角(allFactSummaries)读的是事实账本，账本里没有就等于旁白完全不知道玩家练过功。
+    // factId 带 time+nv 保证每次运气都是独立事实（同一天可能练很多次，不能被幂等挡掉）。
+    // 无知晓者：这是玩家自己的事，不需要任何NPC"亲历"，账本本身就是给旁白全知视角用的。
+    setVarTree(prev => registerFact(prev, { id: `train_neigong_${time}_${nv}`, 摘要: `${char.name || "主角"}运气打坐，内功精进一分（${cur}→${nv}）。`, 标签: "修炼", 知晓者: [] }, time));
+  }, [loading, char.neigong, char.name, pot, time, addLog, trainCost, jotNote]);
   const trainWaigong = useCallback(() => {
     if (loading) return;
     const cur = char.waigong ?? 0;
@@ -2205,14 +2215,17 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (pot < cost) { addLog([{ t: "err", text: `  潜能不足，拆招尚需${cost}点潜能（现有${pot}）` }]); return; }
     addLog([{ t: "cmd", text: "> 拆招练武（练外功）" }]);
     setPot(p => p - cost);
+    const nv = Math.min(100, cur + 1);
     setChar(c => {
-      const nv = Math.min(100, (c.waigong ?? 0) + 1);
-      addLog([{ t: "desc", text: `  你反复拆解招式，外家功夫扎实了一分。` }, { t: "stat", text: `  外功 ${c.waigong ?? 0}→${nv}（花费${cost}潜能）` }]);
-      return { ...c, waigong: nv };
+      const nvInner = Math.min(100, (c.waigong ?? 0) + 1);
+      addLog([{ t: "desc", text: `  你反复拆解招式，外家功夫扎实了一分。` }, { t: "stat", text: `  外功 ${c.waigong ?? 0}→${nvInner}（花费${cost}潜能）` }]);
+      return { ...c, waigong: nvInner };
     });
     setTime(t => t + 2);
     jotNote({ text: "拆招练武，外功扎实一分。", source: NOTE_SOURCE.DUMB });
-  }, [loading, char.waigong, pot, addLog, trainCost, jotNote]);
+    // 同 trainNeigong：补事实账本，理由见上面那处注释。
+    setVarTree(prev => registerFact(prev, { id: `train_waigong_${time}_${nv}`, 摘要: `${char.name || "主角"}拆招练武，外功扎实一分（${cur}→${nv}）。`, 标签: "修炼", 知晓者: [] }, time));
+  }, [loading, char.waigong, char.name, pot, time, addLog, trainCost, jotNote]);
 
   // 武学升阶：花潜能把某门【可修炼武学】(非 fixed/授业绝学)的 stage 往上推一级。
   // 复用潜能这条唯一数值上升通道（跟内外功同源），不再靠 exp 经验累积——经验那条
@@ -3036,6 +3049,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
             settleNpc: opts.settleNpc || null,
             hasNpc: visibleNpcs.length > 0,
             gm,
+            playerName: char.name || "主角", // memory摘要统一用这个称呼，不用你/我，避免人称混乱
             // 物件志（批四）：只有本轮真可能发出物品才挂——移动拾取命中/战斗/创造模式。
             mayGrantItem: gm || intent.code === "COMBAT" || !!pickupJudgmentRef.current,
             // scenario 绿灯扫描源（批三）：玩家本轮输入 + 上轮引擎回复，等同酒馆"扫描深度2"。
@@ -4065,7 +4079,7 @@ ${dealFmt}`;
       const 世界 = { ...(prev.世界 || {}) };
       世界.飞鸽待回 = [...(世界.飞鸽待回 || []), { id: factId, npcName, sentContent: text, arriveTime, npcLoc: loc, channel, giftName: giftName || null }];
       let vt = { ...prev, 角色: chars, 世界 };
-      vt = registerFact(vt, { id: factId, 摘要: `主角${chLabel}致信${npcName}${giftName ? `并附礼「${giftName}」` : ""}（往${loc}）。`, 标签: "飞鸽传书", 知晓者: [{ name: npcName, 途径: "亲历" }] }, time);
+      vt = registerFact(vt, { id: factId, 摘要: `${char.name || "主角"}${chLabel}致信${npcName}${giftName ? `并附礼「${giftName}」` : ""}（往${loc}）。`, 标签: "飞鸽传书", 知晓者: [{ name: npcName, 途径: "亲历" }] }, time);
       return vt;
     });
     // 结构化摘要先垫底，随即叫 AI 结合信文写一句白话古文小总结覆盖上去（不再是死模板）。
@@ -4109,7 +4123,7 @@ ${dealFmt}`;
       const attrs = varTree.角色?.[npcName] || {};
       const curAff = typeof attrs.好感度 === "number" ? attrs.好感度 : 0;
       const thread = (attrs.飞鸽 || []).map(m => `${m.dir === "send" ? "主角来信" : "你的回信"}：${m.content}${m.gift ? `（附礼：${m.gift}）` : ""}`).join("\n");
-      const facts = allFactSummaries(varTree, 12).map(f => `· ${f.摘要}`).join("\n");
+      const facts = allFactSummaries(varTree, 12).map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
       const gaveGift = channel === "postgift" && giftName;
       const canReturnGift = gaveGift; // 只有对方收到礼、且好感够(系统另判≥50)才可能回礼
       const sys = `你是武侠世界「曲措乡」中的【${npcName}】${npcObj.brief ? "，" + npcObj.brief : ""}。${npcObj.fullBio ? npcObj.fullBio + " " : ""}${npcObj.personality ? "性情：" + npcObj.personality + "。" : ""}
@@ -4152,11 +4166,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         const 世界 = { ...(prev.世界 || {}) };
         世界.飞鸽待回 = (世界.飞鸽待回 || []).filter(l => l.id !== id);
         let vt = { ...prev, 角色: chars, 世界 };
-        vt = registerFact(vt, { id: replyFactId, 摘要: `${npcName}回信主角${doReturnGift ? `并回赠「${giftBack.name}」` : ""}。`, 标签: "飞鸽传书", 知晓者: [{ name: npcName, 途径: "亲历" }] }, arriveTime);
+        vt = registerFact(vt, { id: replyFactId, 摘要: `${npcName}回信${char.name || "主角"}${doReturnGift ? `并回赠「${giftBack.name}」` : ""}。`, 标签: "飞鸽传书", 知晓者: [{ name: npcName, 途径: "亲历" }] }, arriveTime);
         return vt;
       });
       // 结构化摘要垫底，随即叫 AI 结合回信内容写一句小总结覆盖。
-      aiSummarizeFact(replyFactId, `${npcName}回信主角${doReturnGift ? `，并回赠「${giftBack.name}」` : ""}，信中大意：${reply.slice(0, 50)}`);
+      aiSummarizeFact(replyFactId, `${npcName}回信${char.name || "主角"}${doReturnGift ? `，并回赠「${giftBack.name}」` : ""}，信中大意：${reply.slice(0, 50)}`);
       if (giftItem) setInv(prev => [...prev, giftItem]);
       const logs = [
         { t: "item", text: `  🕊 一只信鸽落下——${npcName}的回信到了。` },
@@ -4173,7 +4187,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       setVarTree(prev => { const 世界 = { ...(prev.世界 || {}) }; 世界.飞鸽待回 = (世界.飞鸽待回 || []).filter(l => l.id !== id); return { ...prev, 世界 }; });
       addLog([{ t: "sys", text: `  （寄往${npcName}的信鸽半途迷了路，这封回信终未送达。）` }]);
     }
-  }, [room.npcs, varTree, apiCfg, preset, addLog, jotNote, aiSummarizeFact]);
+  }, [room.npcs, varTree, apiCfg, preset, char, addLog, jotNote, aiSummarizeFact]);
 
   // 到点收信：时间推进到 arriveTime 时，逐封生成回信（ref 去重，防重复触发）。
   useEffect(() => {

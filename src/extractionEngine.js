@@ -15,11 +15,18 @@ import { extractMvuBlock } from "./mvu.js";
 //     （事实账本正是旁白"全知事实"的来源，账本空了她私聊时就真的什么都不知道）
 //   · mentionedNewNpcs → NPC 涌现第一阶段（传闻中的人物）永不触发
 // 与其在 6 份 schema 里各抄一遍，不如统一拼在每个意图的 user prompt 末尾。
-const COMMON_EXTRACT_TAIL = `
+// memory 摘要统一用玩家角色名字第三人称叙述，不用"你/我/玩家"这几种代词混着写——
+// 事实账本(knowledge.js)的摘要要在多处被复用（旁白全知视角、其他NPC传闻转述、飞鸽书信
+// 里提起），人称一旦不统一，转述出来的句子会主客体错乱、读起来别扭。跟 MudRPG.jsx 里
+// buildSysBase（单调用/主叙事模式）的同一条约束保持一致，双调用的提取层这边不能漏掉。
+function commonExtractTail(playerName) {
+  const name = playerName || "主角";
+  return `
 
 除上面那个 JSON 里的字段之外，无论本轮有无状态变化，都请在**同一个顶层 JSON 对象**里额外补上这两个字段：
-"memory": 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），供日后回想与旁人提起；确实无足记的琐事（纯环顾、纯赶路且路上无事）可省略此字段。
+"memory": 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${name}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事（纯环顾、纯赶路且路上无事）可省略此字段。
 "mentionedNewNpcs": 数组，填叙事里被提到姓名、但此刻并不在场的**新**具名人物（例如别人口中提起的某个人）。当前在场的人不算，已经出现过的人不算，没有就省略此字段。`;
+}
 
 // 各意图对应的提取 prompt 工厂。
 // narrative: 主调用输出的叙事正文
@@ -159,7 +166,7 @@ export async function callExtraction(intentCode, narrative, state, apiCfg) {
   const systemPrompt = spec.system;
   // 公共字段（memory / mentionedNewNpcs）统一拼在每个意图的 user prompt 末尾，
   // 免得在 6 份 schema 里各抄一遍、加一个字段要改六处。
-  const userContent = spec.user(narrative, state) + COMMON_EXTRACT_TAIL;
+  const userContent = spec.user(narrative, state) + commonExtractTail(state.char?.name);
 
   const { text } = await callModel(cfg, systemPrompt, [{ role: "user", content: userContent }], { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000, callLabel: `状态提取(${intentCode})` });
 

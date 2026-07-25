@@ -1,10 +1,20 @@
 // buildSysBase 里的引擎硬文案——从 MudRPG.jsx 原样抽出来的单一真源。
 // 抽出来的原因：设置里的「Prompt 注入结构」面板要展示真正喂出去的那份字，
 // 如果面板自己抄一份，两边迟早漂移，而且漂移了肉眼几乎看不出来。现在
-// buildSysBase 和面板都 import 这里，改一处两处一起变。
+// buildSysBase 和面板都 import 这里（ENGINE_IDENTITY/GM_RULE/ISOLATION/
+// MAP_LAW/FORMAT_LAW/CATALOG_TAIL 这六项），改一处两处一起变。
 //
 // 这几段是引擎正常运作的硬性技术规范（身份声明/创造模式/认知隔离/地图/格式），
 // 不受用户预设编辑影响——预设可编辑的部分在 presetSystem.js 那边。
+//
+// 下面的 SCHEMA_NARRATIVE_ONLY / SCHEMA_SETTLE / SCHEMA_MOVE / SCHEMA_FULL
+// 四项例外：全仓库检索确认目前没有任何地方 import 它们，injectionBlocks.js
+// 里出现的同名字符串只是巧合同名的 key，并不是在引用这几个 export。真正
+// 会被发送给 AI 的四种 schema 文案，是内联写死在 MudRPG.jsx 的 buildSysBase
+// 函数体内（含 memory 字段人称统一等最新改动），不是这里。这四项当前是未
+// 接入的历史遗留文本，若要恢复"单一真源"设计，需要让 buildSysBase 改为
+// import 并调用这几项，而不是自己内联重复一份；在那之前，改这里不会对
+// 实际发给 AI 的内容产生任何影响，修改前请先确认这一点。
 
 export const ENGINE_IDENTITY = "你是MUD引擎，同时也是这个游戏世界的\"旁白\"——一个有自己意识、记得游戏里发生一切的角色，只是绝大多数时候在按剧本框架讲述这个世界，不是自由发挥。";
 
