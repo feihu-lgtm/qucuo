@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修入队按钮消失bug：toRoomNpcWithCombat字段白名单漏了companionCandidate",
+    time: "2026-07-26 14:00",
+    notes: [
+      "作者实测反馈：dual推了之后，雪豹的「邀请入队」按钮看不到了。排查结论：跟本轮TeamDuelScreen接线无关，是更早就存在的隐性bug，这次才被注意到。",
+      "①【根因】驻场NPC从 residentNpcs.js 的原始定义，经 npcPool.js 的 toRoomNpc() 转换成 room.npcs 实际格式时，只保留 id/name/brief/isPoolNpc/carriedItems 五个字段，其余全部剥掉；MudRPG.jsx 的 toRoomNpcWithCombat() 用一份白名单把关键字段（levelCap/beast/cannotSpeak等）补回来，但雪豹专属的 companionCandidate 标记漏在这份白名单外——转换后这个字段变成 undefined，NpcActionMenu.jsx 的 canInvite 判断（!!npc.companionCandidate）永远为 false，「邀请入队」按钮因此完全不显示。这个白名单机制此前已经因为同类问题（levelCap/beast等字段丢失）被专门修过一次，见更早的 changelog 记录，这次是同一种坑换了个字段名重演。",
+      "②【修复】toRoomNpcWithCombat 的字段白名单加入 companionCandidate。",
+      "③【验证】Node 脚本模拟 residentNpcs.js 原始雪豹定义 → toRoomNpc 精简 → 白名单补字段 全过程，确认修复前 companionCandidate 确实丢失为 undefined、修复后正确保留为 true；esbuild --bundle 验证 MudRPG.jsx 语法通过。",
+    ],
+  },
+  {
     codename: "伙伴系统第三阶段：2v2团战界面上线（TeamDuelScreen）+ 雪豹三形态立绘切换",
     time: "2026-07-26 13:30",
     notes: [

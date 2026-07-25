@@ -1549,7 +1549,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // levelCap 和 beast/unlearnable/cannotSpeak 等关键字段剥掉，导致品阶被
       // 关键词猜测覆盖、野兽标记丢失。这里把这些字段补回来，让 residentNpcs.js
       // 里设定的档位真正生效（此前是隐性失效的）。
-      for (const k of ["levelCap", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind"]) {
+      // 【本轮修复】companionCandidate 漏在这份白名单外——雪豹作为驻场NPC，
+      // 经这一步转换后 companionCandidate 字段丢失，导致 NpcActionMenu.jsx 的
+      // canInvite 判断永远拿到 undefined，"邀请入队"按钮完全不显示（实测反馈）。
+      for (const k of ["levelCap", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate"]) {
         if (poolNpc[k] !== undefined) base[k] = poolNpc[k];
       }
       const inferred = mapDescriptionToGenParams(`${poolNpc.name || ""} ${poolNpc.brief || ""} ${poolNpc.personality || ""}`);
