@@ -21,7 +21,7 @@
 import { makeLearnedMoveSkill } from "./qucuoKungfu.js";
 import { canLearnSkillFrom, describeLearnSkillGate, teachPrice, teachDiscountFactor } from "../quests/learnSkill.js";
 import { attemptSteal, pickStealOutcome, createAngryState, STEAL_CONFIG } from "../combat/stealSystem.js";
-import { deriveSignatureMoveset, MOVE_POOL } from "../npcGeneration.js";
+import { MOVE_POOL } from "../npcGeneration.js";
 import { MOVE_TYPE } from "../combat/moveTypes.js";
 
 // 通用招池的基础拜师价——平民没有专属招那么值钱，江湖通行招意思意思收点束脩。
@@ -40,11 +40,18 @@ function collectLearnableMoves(npc, mode, skills, char) {
   ]);
 
   if (mode === "signature") {
-    const cap = npc.levelCap;
-    if (cap == null || cap < 1) return [];
-    const teachMoves = (deriveSignatureMoveset(npc, { levelCap: cap }) || [])
+    // 以 NPC 身上实机固化的 moveset 为准（专属招 deriveSignatureMoveset 有登记的走专属，
+    // 没登记的则是 generateNpcMoveset 的随机品质 MOVE_POOL 招——比如才旦的「铁板功」，
+    // 都已在出生时固化进 npc.moveset）。此前只读 deriveSignatureMoveset，导致 levelCap≥1
+    // 但没在 npcSignatureMoves.js 登记专属招的具名 NPC（才旦这类）落进裂缝：拜师/偷师
+    // 都判它"无武学可授"。改读实机 moveset 后，NPC 实际会什么招就能学到/偷到，拜师与
+    // 偷师两条渠道来源一致。
+    // 仍排除回气招（人人都会，不必传授/偷）与博弈层负担招（burden：强绑角色处境性格，
+    // 不该外传），只保留攻/防/状态三类正常招。
+    const teachMoves = (npc.moveset || [])
       .filter(m => (m.type === MOVE_TYPE.ATTACK || m.type === MOVE_TYPE.DEFENSE || m.type === MOVE_TYPE.STATUS)
-        && m.archetype !== "回气" && m.id !== "move_hui_qi"); // 回气人人都会，不必传授/偷
+        && m.archetype !== "回气" && m.id !== "move_hui_qi"
+        && !m.burden && !m.allInDamage && !m.selfSacrifice && !m.permanentGrowthOnUse && !m.lowHpBonus);
     return teachMoves.filter(m => !have.has(m.id));
   }
 

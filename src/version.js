@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修拜师/偷师读不到具名NPC实机武学：招式来源改读npc.moveset",
+    time: "2026-07-26 17:30",
+    notes: [
+      "作者反馈：才旦身上明明带着「铁板功」，拜师却提示没有武学可授；诉求是所有人身上实际带的武学都应该能学。",
+      "①【根因·设计裂缝】NPC出生固化moveset的合并入口(npcGeneration.js ensureNpcCombatData)是 deriveSignatureMoveset(专属招) || generateNpcMoveset(随机MOVE_POOL招)——才旦这类levelCap≥1但没在npcSignatureMoves.js登记专属招的具名NPC，走的是随机招那条(铁板功/直拳/铁布衫等就是这么来的)，招已固化进npc.moveset。但拜师/偷师的collectLearnableMoves(signature分支)只调deriveSignatureMoveset一路，对没登记专属招的NPC直接返回null→空数组→判定\"无武学可授\"。levelCap≥1被默认\"一定有专属招\"，才旦落进裂缝：既不走平民通用招池(levelCap≥1挡住)，又没专属招可教。",
+      "②【修复】与作者确认：招式来源改成读npc.moveset实机固化招(NPC身上实际会什么，就能学到/偷到什么)。signature分支不再重跑deriveSignatureMoveset，直接读npc.moveset，保留原有过滤(排除回气招=人人都会不必传授)，另新增排除博弈层负担招(burden/allInDamage/selfSacrifice/permanentGrowthOnUse/lowHpBonus——这类招强绑角色处境性格、注释明说不该随机外传)。有专属招的高手其专属招本来就在moveset里、照学不误。",
+      "③【一致性】与作者确认：拜师和偷师都走同一个collectLearnableMoves的signature分支，所以两条渠道同步改成读实机moveset——拜师能学到、偷师能偷到的，都是NPC身上真实带的那套招，来源统一。清理learnSkill.js里因此不再使用的deriveSignatureMoveset死import。",
+      "Node脚本实测(ensureNpcCombatData真实生成才旦)：拜师能学到直拳/铁布衫/蓄力三招(回气正确排除)、好感30<40时正确拦截；偷师20次尝试偷到招9次。esbuild语法验证learnSkill.js通过。",
+    ],
+  },
+  {
     codename: "修交易界面拉不下去(Bug3) + 2v1敌人重复出招/不打雪豹(Bug4)",
     time: "2026-07-26 17:00",
     notes: [
