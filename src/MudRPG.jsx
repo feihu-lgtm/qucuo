@@ -2984,7 +2984,19 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       ? room.npcs
       : room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
     traceStep(_trace, "在场名单", "info", `喂给AI ${visibleNpcs.length} 人${visibleNpcs.length ? "：" + visibleNpcs.map(n => n.name).join("、") : "（无人）"}${room.npcs.length !== visibleNpcs.length ? `（据点共${room.npcs.length}人，按内层房间过滤掉${room.npcs.length - visibleNpcs.length}人）` : ""}`);
-    const ctx = `${targetNote}${modeNote}[状态] ${gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : ""}时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""} 出口:${room.exits.join(",")} NPCs:${visibleNpcs.map(n => { const ci = (n.carriedItems || []).filter(i => !i.stolen).map(i => i.name).join("、"); const tier = typeof n.levelCap === "number" ? `〔品阶:${QUALITY[Math.max(0, Math.min(5, n.levelCap))]}袍〕` : ""; return n.name + tier + (ci ? `〔身携:${ci}〕` : "〔身无长物〕"); }).join(",") || "无"} 物品:${room.items.map(i => i.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 七维:${Object.entries(char.special || {}).map(([k, v]) => k + v).join(",")} 背包:${invText} 装备:${describeEquipment(inv)} 武功:${skills.map(s => s.name + "Lv" + s.level).join(",")} 因果:${dao.karma} 劫数:${dao.jie}\n[已触发事件] ${flags.length ? flags.join(",") : "无"}${pickupNote}${destinationLock}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${collectNote}${arrivalNote}${forcedEventNote}`;
+    // 雪豹随行（本轮新增，与作者确认：跟随不设留守，形影不离，内层箱庭也跟进去，
+    // 不需要单独追踪位置——它的"坐标"恒等于玩家当前坐标）。雪豹不进 room.npcs、
+    // 不出现在"此地之人"UI列表（右栏有独立的队伍栏专门展示它），但必须让叙事能
+    // "看见"它在场——所以只在这里、喂给AI的 visibleNpcsForAI 里追加它，其余下游
+    // （matchNpcLore 在场判定、NPC 认知隔离等）复用同一份列表，天然把雪豹当成
+    // 一个真实在场的角色对待，不用另开一条"伙伴专属"的叙事通道。
+    const visibleNpcsForAI = isSnowLeopardAvailable(companionState)
+      ? [...visibleNpcs, companionState.snowLeopard.data]
+      : visibleNpcs;
+    if (isSnowLeopardAvailable(companionState)) {
+      traceStep(_trace, "伙伴随行", "info", "雪豹随行在场，已并入喂给AI的在场名单（不影响此地之人UI列表）");
+    }
+    const ctx = `${targetNote}${modeNote}[状态] ${gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : ""}时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""} 出口:${room.exits.join(",")} NPCs:${visibleNpcsForAI.map(n => { const ci = (n.carriedItems || []).filter(i => !i.stolen).map(i => i.name).join("、"); const tier = typeof n.levelCap === "number" ? `〔品阶:${QUALITY[Math.max(0, Math.min(5, n.levelCap))]}袍〕` : ""; return n.name + tier + (ci ? `〔身携:${ci}〕` : "〔身无长物〕"); }).join(",") || "无"} 物品:${room.items.map(i => i.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 七维:${Object.entries(char.special || {}).map(([k, v]) => k + v).join(",")} 背包:${invText} 装备:${describeEquipment(inv)} 武功:${skills.map(s => s.name + "Lv" + s.level).join(",")} 因果:${dao.karma} 劫数:${dao.jie}\n[已触发事件] ${flags.length ? flags.join(",") : "无"}${pickupNote}${destinationLock}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${collectNote}${arrivalNote}${forcedEventNote}`;
     // 对话模式取更长的历史窗口（至少 20 层全部互动）——聊天比行动更依赖前后文的来回照应；
     // 行动模式沿用用户配置的窗口。convo 里本就混装了行动/对话/私聊三类回合，但私聊是玩家
     // 与"旁白"这个第四面墙外角色的私密对话，普通场景 NPC 不该知道这些内容（反过来，旁白
@@ -6352,6 +6364,40 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               </div>
             </div>
 
+            {/* 队伍栏（本轮新增）：雪豹已入队时展示，独立于"此地之人"，因为雪豹不进
+                room.npcs——它随玩家形影不离（无留守概念），叙事层面已在 ctx 组装处
+                并入喂给AI的在场名单，这里只是给玩家一个能直接互动（送礼/切磋/查看）
+                的UI入口，跟"侠客"栏的其余信息放在一起，视觉上强调"这是跟你一起走的人"。 */}
+            {isSnowLeopardAvailable(companionState) && (() => {
+              const slData = companionState.snowLeopard.data;
+              const slAffection = varTree.角色?.雪豹?.好感度;
+              return (
+                <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
+                  <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>队伍</div>
+                  <div
+                    onClick={() => setActiveNpcMenu({ ...slData, brief: "格桑的雪豹，通体雪白的灵兽，随行在侧" })}
+                    title="打开互动菜单：细看/切磋/送礼等"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+                      padding: "6px 8px", borderRadius: 4, background: zoneTheme.bgPanel,
+                      border: `1px solid ${zoneTheme.border}`,
+                    }}
+                  >
+                    <span style={{ fontSize: "16px" }}>🐆</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "11.5px", color: zoneTheme.text }}>雪豹</div>
+                      {typeof slAffection === "number" ? (
+                        <div style={{ fontSize: "10px", color: "#e0a0d0" }}>{npcAffectionLabel(slAffection)} · {slAffection}/100</div>
+                      ) : (
+                        <div style={{ fontSize: "10px", color: zoneTheme.textDim }}>随行伙伴</div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: "9.5px", color: zoneTheme.textDim }}>◈</span>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
               <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>武学 <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>点名字看介绍 · 点圈运功上阵（每类只运一门，▶已上阵）</span></div>
               {skills.map((s, i) => {
@@ -6819,6 +6865,24 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 return { ...tree, 角色: roles };
               });
               addLog([{ t: "affection", text: `  💗 与${foeName}切磋一场，交情 +${affGain}` }]);
+            }
+            // 默契加成（本轮新增，与作者确认：只算2v2团战胜利这一种场景）：这场战斗
+            // 若走的是2v2团战（isSnowLeopardAvailable 为真时渲染分流到 TeamDuelScreen，
+            // 见下方渲染分支，不需要额外传参标记"这是不是团战"，用同一个判据即可复用），
+            // 且以胜利收场，系统直接确定性给雪豹加好感度——不靠AI判断"这场配合默契不
+            // 默契"，团战打赢本身就是最直接的默契证明。落败/罢手不加（默契要打出结果
+            // 才算数，不能"陪打就有分"）。跟对手好感度那条是两件独立的事，互不冲突：
+            // 一场胜利的团战里，玩家和对手交情+4、玩家和雪豹默契+3，各自成立。
+            if (outcome === "win" && isSnowLeopardAvailable(companionState)) {
+              const teamworkGain = 3;
+              setVarTree(prev => {
+                const tree = markNpcAsKnown(prev, "雪豹");
+                const roles = { ...(tree.角色 || {}) };
+                const cur = roles.雪豹?.好感度 ?? 0;
+                roles.雪豹 = { ...(roles.雪豹 || {}), 好感度: Math.max(0, Math.min(100, cur + teamworkGain)) };
+                return { ...tree, 角色: roles };
+              });
+              addLog([{ t: "affection", text: `  💗 与雪豹并肩破敌，默契渐深，好感 +${teamworkGain}` }]);
             }
             // 切磋概率获得战利品（本轮）：赢了之后，按气运（福缘）概率从对手随身物品
             // （carriedItems，即出场时"所见即所得"固化的那些）里随机掉一件给玩家。
