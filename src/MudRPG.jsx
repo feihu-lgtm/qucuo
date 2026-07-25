@@ -20,36 +20,6 @@ import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATA
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
-// 从"路上拾取"的叙事原文里抠出捡到的物品名，供 AI 漏填 items_add 时系统兜底补发。
-// 匹配常见句式："拾起一看，竟是一枚铜制马铃"/"捡起…是把短刀"/"收入怀中"前面那个物件名。
-// 抠不到返回 null，由调用方用通用名兜底。宁可少抠（返回 null 走通用名），
-// 也不要抠错把半句话当成物品名，所以只认"是(一)+量词+名字"这种明确指认句式。
-function extractPickupName(text) {
-  if (!text || typeof text !== "string") return null;
-  // 优先级①：书名号「物品名」——AI 写具名物品（尤其带品质感的稀罕物）几乎总用这个
-  // 格式，如"捡得一件…「紫貂雪纹软甲」"。这是本轮新增的识别模式：此前只认"是+量词"
-  // 这种老派句式（"竟是一枚铜制马铃"），碰到书名号写法完全抠不出名字，只能退化成
-  // "路遇之物"这种没有辨识度的通用名，白瞎了 AI 精心编的物件名字。
-  // 只在"捡/拾/收/获得"这类拾取动词附近才采信，避免把对话引语、地名之类的书名号
-  // 误判成物品名（比如"「小心行事」，他叮嘱道"这种场景）。
-  const bracketMatches = [...text.matchAll(/「([^」]{1,12})」/g)];
-  for (const bm of bracketMatches) {
-    const idx = bm.index ?? 0;
-    const before = text.slice(Math.max(0, idx - 12), idx);
-    const after = text.slice(idx + bm[0].length, idx + bm[0].length + 6);
-    if (/[捡拾收获][得到入起妥]?|收入|纳入|揣入|藏入/.test(before) || /[收拾揣纳][入进妥好]/.test(after)) {
-      return bm[1];
-    }
-  }
-  // 优先级②：老派"是+量词"句式兜底（"竟是一枚铜制马铃"/"原来是把锈剑"）
-  const m = text.match(/(?:竟|原来|却|居然)?是\s*一?\s*[枚把柄卷张块面串根条尊坛壶盏][\u4e00-\u9fa5]{1,8}/);
-  if (m) {
-    const name = m[0].replace(/^(?:竟|原来|却|居然)?是\s*一?\s*[枚把柄卷张块面串根条尊坛壶盏]/, "").trim();
-    if (name.length >= 1 && name.length <= 8) return name;
-  }
-  return null;
-}
-
 import { getZoneTheme, ink } from "./theme.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import CodexScreen from "./CodexScreen.jsx";
@@ -3485,6 +3455,12 @@ ${dealFmt}`;
           dao, varTree: varTreeRef.current,
           lockedDestName,
           lockedExits: lockedDestName ? getMapNode(lockedDestName)?.exits : null,
+          // 本轮若系统掷骰触发了移动拾取，把裁决(品质/分类)透传给提取层。提取模型据此
+          // 从叙事散文里读出"捡到的那件东西叫什么"，直接产出到 delta.items_add——
+          // 取代此前从文本正则抠名字(extractPickupName)的脆弱兜底(量词表永远补不全，
+          // AI 写"一件软甲"就抠不到，退化成"路遇之物"垃圾名)。品质/分类仍由系统强制
+          // 覆盖(信任裁决不信任模型)，名字交给读得懂语义的小模型，比正则健壮得多。
+          pickupJudgment: pickupJudgmentRef.current,
         };
         // 结算轮专属场景（送礼settleKind:"gift"、伙伴认主settleKind:"companion_invite"）
         // 传 settleOpts，让 callExtraction 切到对应的专属提取spec——不走"从叙事读心
@@ -3839,43 +3815,22 @@ ${dealFmt}`;
           setInv(v => [...v, ...newItems]);
           setRoom(r => ({ ...r, items: r.items.filter(i => !addedNames.includes(i.name) && !addedNames.includes(i)) }));
         }
-        // 拾取判定兜底①：本轮系统掷骰触发了拾取（judgment 有值），但 AI 叙事里
-        // 明明写了"捡到某物"、却忘了在 delta.items_add 里放这件物品（judgment
-        // 没被上面消费掉）——这正是"叙事说收入怀中、背包里却没有"那个 bug。
-        // 系统在这里补发一件：物品名尽量从叙事原文里抠（书名号「」优先，抠不到
-        // 就用品质对应的通用名），绝不让掷到的拾取凭空蒸发。
+        // 拾取判定后处理：本轮系统掷骰触发了拾取（judgment 有值），物品名现在由
+        // 提取层从叙事里读出、产在 delta.items_add（上面的循环已消费 judgment、把品质
+        // 分类强制对齐裁决值）。若提取层没产出任何拾取物（judgment 未被消费），说明
+        // 叙事判断了此刻不宜捡（被人盯着/身处险境等，prompt 允许这种情况）——尊重叙事，
+        // 本轮不发，绝不再硬塞"路遇之物"这类通用占位名（此前 extractPickupName 正则
+        // 抠名+通用兜底那套已废弃：量词表永远补不全，"一件软甲"就抠不到，退化成垃圾名，
+        // 还违背"场景不适合就别塞"的裁决）。
         if (judgment && !usedJudgment) {
-          const narrativeText = typeof rawFull === "string" ? rawFull : "";
-          const guessName = extractPickupName(narrativeText)
-            || `${judgment.quality === "白" ? "" : judgment.quality}路遇之物`;
-          const gained = makeGameItem({ name: guessName, category: judgment.category, quality: judgment.quality, desc: "路上拾得的物件。" });
-          setInv(v => [...v, gained]);
-          grantedThisTurnNames.push(guessName);
-          addLog([{ t: "item", text: `  ✓ 你拾得「${guessName}」，收入行囊。` }]);
+          traceStep(_trace, "拾取判定", "info", `系统本轮掷中拾取（品质「${judgment.quality}」），但叙事未描述捡到物、提取层亦未产出——依叙事判断此刻不宜取物，本轮不发。`);
         }
         pickupJudgmentRef.current = null;
-        // 拾取判定兜底②（本轮新增）：这次移动根本没有触发系统的 35% 拾取判定骰子
-        // （judgment 为 null），但 AI 自由发挥、在叙事里自己编了一段"路上捡到了
-        // XX"的情节（AI 是说书人，写故事时很容易顺手加这种细节，不受"只有触发
-        // 判定才描述拾取"这条 prompt 约束的强制力保证）——如果这一轮压根没有
-        // 任何物品真正进背包，却从叙事文本里能抠出"捡到「具名物品」"的痕迹，
-        // 系统这里按当前气运重新掷一次品质，把这件东西真正发下去。不能放任
-        // "叙事说捡到了、背包却没有"这种说一套做一套的情况发生——玩家的信任
-        // 感比"品质是不是精确来自那次没触发的骰子"更重要，且这里仍然是系统
-        // 掷的骰子（只是补掷一次），不是让 AI 自己决定品质。
-        if (!judgment && !grantedThisTurnNames.length) {
-          const narrativeText = typeof rawFull === "string" ? rawFull : "";
-          const freelanceName = extractPickupName(narrativeText);
-          if (freelanceName) {
-            const luck = char.special?.气运 ?? 5;
-            const quality = rollQuality(luck);
-            const cat = [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY, ITEM_CATEGORY.MISC][Math.floor(Math.random() * 4)];
-            const gained = makeGameItem({ name: freelanceName, category: cat, quality, desc: "路上拾得的物件。" });
-            setInv(v => [...v, gained]);
-            addLog([{ t: "item", text: `  ✓ 你拾得「${freelanceName}」，收入行囊。` }]);
-            traceStep(_trace, "拾取兜底", "info", `叙事自行提到拾取「${freelanceName}」但本轮delta为空，系统补掷品质「${quality}」发放`);
-          }
-        }
+        // AI 自由发挥的拾取（系统没掷中拾取骰、但 AI 说书时自己写了"捡到 XX"）现在
+        // 也由提取层读名、产在 delta.items_add，已随上面的正常 items_add 循环入袋，
+        // 品质取"白"（系统未授权的自编拾取不给品质加成，避免 AI 靠多写拾取情节薅稀有
+        // 物）。此前用 extractPickupName 正则从散文抠名那套已废弃（量词表补不全，"一件
+        // 软甲"抠不到）。至此拾取物名一律走"读得懂语义的提取模型"，不再有任何正则抠名。
       }
       if (p.delta && !isTalk) {
         if (p.delta.items_rm?.length) {

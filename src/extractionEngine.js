@@ -53,14 +53,28 @@ ${narrative}
     user: (narrative, s) => {
       const exits = s.lockedExits ? Object.keys(s.lockedExits) : s.room.exits;
       const dest = s.lockedDestName || s.room.name;
+      // 拾取提取分两种，都走提取模型读名、绝不再用正则抠：
+      // ① 系统本轮掷中拾取(pj 有值)：品质/分类照裁决值写，模型只负责读出叙事里那件
+      //    东西的名字。② 系统没掷中(pj 为空)：但 AI 说书时可能自己在散文里编了"捡到
+      //    XX"——也让模型把它读出来产到 items_add，品质留给系统事后补掷(rollQuality)
+      //    覆盖。两种情况都尊重叙事：叙事说没捡(被盯着/险境)就留空数组，不硬塞。
+      const pj = s.pickupJudgment;
+      const pickupBlock = pj ? `
+
+【本轮拾取提取·重要】系统已裁决本次移动途中可能捡到一件物品（品质「${pj.quality}」、分类「${pj.category}」）。请通读叙事，判断玩家究竟有没有捡到东西：
+· 若叙事写了捡到/拾得/收入怀中某物 → 在 delta.items_add 里加一件，name 精确取叙事里那件东西的名字（如叙事说"一件金线软甲"就写"金线软甲"，说"一串铜风铃"就写"铜风铃"，务必贴合原文、不要用"路遇之物"这种通用占位名），quality 写"${pj.quality}"，category 写"${pj.category}"。
+· 若叙事明确说明此刻没捡（被人盯着、身处险境、不便取物等）→ delta.items_add 留空数组 []，尊重叙事不硬塞。` : `
+
+【拾取提取】本轮系统未预设拾取，但你仍要通读叙事：若 AI 说书时自行写了玩家捡到/拾得/收入怀中某件具体物品，就在 delta.items_add 里加一件，name 精确取叙事里那件东西的名字（贴合原文，不要用"路遇之物"这类通用占位名），category 按物品性质填 weapon/armor/accessory/misc，quality 一律先写"白"（真实品质由系统事后裁决）。叙事没提到捡东西就留空数组 []。`;
       return `玩家到达新地点：${dest}（由系统固定，不能修改）
 固定出口：[${exits.join(",")}]（不能修改）
 
 叙事内容：
 ${narrative}
+${pickupBlock}
 
-输出新场景 JSON（name 必须是"${dest}"，exits 必须是 [${exits.map(e => `"${e}"`).join(",")}]）：
-{"room":{"name":"${dest}","desc":"≤80字场景描述","exits":[${exits.map(e => `"${e}"`).join(",")}],"npcs":[{"name":"","id":"id","brief":"≤15字"}],"items":[{"name":"","id":"id"}]}}`;
+输出新场景 JSON（name 必须是"${dest}"，exits 必须是 [${exits.map(e => `"${e}"`).join(",")}]；delta.items_add 按上面【拾取提取】规则填，无拾取则空数组）：
+{"room":{"name":"${dest}","desc":"≤80字场景描述","exits":[${exits.map(e => `"${e}"`).join(",")}],"npcs":[{"name":"","id":"id","brief":"≤15字"}],"items":[{"name":"","id":"id"}]},"delta":{"items_add":[]}}`;
     },
   },
 
