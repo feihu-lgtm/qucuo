@@ -9,6 +9,20 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "访客计数迁到Supabase：本地UUID去重侠客数 + 累计人次，文案'X位侠客·共Y人次'",
+    time: "2026-07-25 22:30",
+    notes: [
+      "封面访客计数从公共计数器 abacus.jasoncameron.dev 迁到自家 Supabase(复用 bugReport.js 那套 REST直连+anon key+表RLS)，口径升级为双数字。",
+      "①【去重原理】前端拿不到客户端真实公网IP(fetch读不到自己出口IP)，故用浏览器本地持久UUID(localStorage:qucuo_visitor_id)作访客指纹去重，插入 visitors 表(visitor_id主键即唯一约束)，插入成功=新侠客、409冲突=老访客——同设备算一人，比公共计数器'谁刷都+1'准得多。无痕模式退回一次性内存UUID只影响自己。",
+      "②【人次】每次访问插一行 hits 表，count(*)即总人次；sessionStorage 挡同会话重复插入防刷新灌爆。",
+      "③【读数】PostgREST 的 HEAD + Prefer:count=exact 从 Content-Range 头拿行数，不拉数据本身省流量；visitors/hits 两个 count 并发读。",
+      "④【文案】封面 footer 从'已有X位侠客踏足'改为'已有 X 位侠客 · 共 Y 人次踏足曲措乡'，两个数字各自缺省时静默不显示。全程失败降级不拖累游戏。",
+      "⑤【需在Supabase建表】visitorCount.js 顶部注释附了完整SQL：visitors/hits 两表 + 各自 anon insert/select 的 RLS 策略。建表前线上读数为null不显示，建好即生效。",
+      "⑥ README 技术栈补'轻后端Supabase'说明+目录结构加 visitorCount.js/bugReport.js。",
+      "新增 src/visitorCount.js；StartScreen 改用之(state 从 visitCount 改 visitStats{visitors,hits})。esbuild + vite build 通过。",
+    ],
+  },
+  {
     codename: "对峙区手机改上下堆叠(看得到敌方血) + AI说书另起一行不覆盖系统文字 + 说书接入主游戏切磋",
     time: "2026-07-25 21:30",
     notes: [

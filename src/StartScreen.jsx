@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from "react";
 import { ZONE_THEMES } from "./theme.js";
 import { listSlots, loadAutoSave } from "./saves.js";
+import { registerVisit } from "./visitorCount.js";
 import BugReportModal from "./BugReportModal.jsx";
 
 const theme = ZONE_THEMES.village; // 开场定调：鱼定村的暖黄烟火气
@@ -16,13 +17,11 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQui
   const [slots, setSlots] = useState([]);
   const [hovered, setHovered] = useState(null);
   const [showLoadPanel, setShowLoadPanel] = useState(false);
-  // 访客计数（图个乐呵，图个人气）：纯前端没有后端，统计"总共多少人来过"必须借一个
-  // 外部"账本"。这里用免注册的公共计数器 abacus.jasoncameron.dev——打一次 /hit 就 +1
-  // 并返回累计值。带失败降级：服务挂了/超时/被墙，visitCount 保持 null，footer 那行
-  // 静默不显示，绝不因为计数服务的故障拖累游戏本身。
-  // 注意公共计数器的软肋：命名空间是公开的，理论上可被别人刷、数据也可能被服务方清掉，
-  // 仅供参考、不是严肃统计。以后想要稳的，换成自己的 GoatCounter 账号即可（只改下面 URL）。
-  const [visitCount, setVisitCount] = useState(null);
+  // 访客计数（图个乐呵，图个人气）：借已接好的 Supabase 当账本（见 visitorCount.js）。
+  // 两个口径：侠客数（按浏览器本地 UUID 去重，同设备算一人）+ 总人次（每次访问 +1）。
+  // 带失败降级：服务挂了/超时/被墙，数字保持 null，footer 那行静默不显示，
+  // 绝不因为计数服务的故障拖累游戏本身。
+  const [visitStats, setVisitStats] = useState({ visitors: null, hits: null });
 
   useEffect(() => {
     setHasAutoSave(!!loadAutoSave());
@@ -30,31 +29,9 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQui
   }, []);
 
   useEffect(() => {
-    // 每个浏览器一天内只计一次，避免同一个人反复刷新把数字灌爆：用 sessionStorage 挡住
-    // 同一会话的重复计数（关掉标签页再来算新访问，够用了）。
     let cancelled = false;
-    const alreadyCounted = (() => {
-      try { return sessionStorage.getItem("qucuo_visit_counted") === "1"; } catch { return false; }
-    })();
-    // 命名空间用固定的项目名；counted 过就只读取(/get)不再自增(/hit)
-    const base = "https://abacus.jasoncameron.dev";
-    const ns = "qucuo-mud";
-    const key = "visits";
-    const url = alreadyCounted ? `${base}/get/${ns}/${key}` : `${base}/hit/${ns}/${key}`;
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 6000); // 6s 超时，不让慢请求拖着
-    fetch(url, { signal: ctrl.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        clearTimeout(timer);
-        if (cancelled || !data || typeof data.value !== "number") return;
-        setVisitCount(data.value);
-        if (!alreadyCounted) {
-          try { sessionStorage.setItem("qucuo_visit_counted", "1"); } catch { /* 无痕模式等，忽略 */ }
-        }
-      })
-      .catch(() => { clearTimeout(timer); /* 服务不可用，静默降级，footer 不显示这行 */ });
-    return () => { cancelled = true; ctrl.abort(); clearTimeout(timer); };
+    registerVisit().then(stats => { if (!cancelled) setVisitStats(stats); });
+    return () => { cancelled = true; };
   }, []);
 
   const slotCount = slots.length;
@@ -154,10 +131,15 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQui
         <span onClick={() => setShowBugReport(true)} style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
           🐞 意见信箱 / 上报bug
         </span>
-        {visitCount != null && (
+        {(visitStats.visitors != null || visitStats.hits != null) && (
           <>
             <span style={styles.footerSep}>·</span>
-            <span>已有 {visitCount.toLocaleString()} 位侠客踏足曲措乡</span>
+            <span>
+              {visitStats.visitors != null && `已有 ${visitStats.visitors.toLocaleString()} 位侠客`}
+              {visitStats.visitors != null && visitStats.hits != null && " · "}
+              {visitStats.hits != null && `共 ${visitStats.hits.toLocaleString()} 人次`}
+              踏足曲措乡
+            </span>
           </>
         )}
       </div>

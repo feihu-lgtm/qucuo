@@ -99,6 +99,7 @@
 - 前端：React / Vite，浏览器端运行
 - AI 接口：Anthropic (Claude)、Gemini、OpenAI 兼容端点
 - 记忆系统：bge-m3 向量嵌入 + IndexedDB，强/弱双档召回
+- 轻后端：Supabase（REST 直连，anon key + 表 RLS）承接意见上报与访客统计——封面「X 位侠客 · 共 Y 人次踏足曲措乡」，侠客数按浏览器本地 UUID 去重（同设备算一人），人次为累计访问；全程失败静默降级，不拖累游戏本体
 - 参考：SillyTavern 架构、北大侠客行 MUD 机制
 
 ## 快速开始
@@ -120,7 +121,9 @@ qucuo/
 ├── src/                      # 源代码
 │   ├── MudRPG.jsx            # 主游戏组件（三栏界面 + act() 回合主循环）
 │   ├── main.jsx              # 入口
-│   ├── StartScreen.jsx       # 开始界面（含访客计数）
+│   ├── StartScreen.jsx       # 开始界面（含访客计数：X 位侠客 · 共 Y 人次）
+│   ├── visitorCount.js       # 访客统计（Supabase：本地UUID去重侠客数 + 累计人次）
+│   ├── bugReport.js          # 意见/bug 上报（Supabase REST 直连）
 │   ├── CharacterCreate.jsx / OpeningSequence.jsx  # 创角与开场序列
 │   ├── narrator.js           # 旁白叙事引擎（好感度五档文风 + 告白/宕机状态机）
 │   ├── knowledge.js          # 知识/情报传播系统（确定性演化）
