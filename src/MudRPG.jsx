@@ -5004,18 +5004,31 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                   })}
                 </div>
               );
-              const header = (label, count, key, color) => (
-                <div onClick={() => setPeoplePanel(p => ({ ...p, [key]: !p[key] }))}
-                  style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "11px", marginBottom: 4, userSelect: "none" }}>
-                  <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>{peoplePanel[key] ? "▾" : "▸"}</span>
-                  <span style={{ color }}>{label}</span>
-                  <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>（{count}）</span>
+              const header = (label, count, key, color, rightContent) => (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px", marginBottom: 4 }}>
+                  <span onClick={() => setPeoplePanel(p => ({ ...p, [key]: !p[key] }))}
+                    style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none", flex: 1 }}>
+                    <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>{peoplePanel[key] ? "▾" : "▸"}</span>
+                    <span style={{ color }}>{label}</span>
+                    <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>（{count}）</span>
+                  </span>
+                  {rightContent}
                 </div>
+              );
+              // 全局信鸽数量展示：挂在"此地之人·在场"分组标题行右侧，跟具体哪个NPC无关，
+              // 纯粹是玩家当前信鸽库存的一处快捷可见位置（另一处在人物信息栏，这里方便
+              // 在查看在场人物时顺带看一眼够不够用）。原本这个数字挂在"曾遇·不在场"里每个
+              // 人自己那一行的飞鸽按钮上，现在挪到这里做全局展示，不在场那边的飞鸽功能本身
+              // 不受影响（点名字旁边的🕊按钮仍能单独给某人飞鸽，只是不再显示数字在那一行）。
+              const pigeonBadge = (
+                <span style={{ fontSize: "10px", color: (char.pigeons || 0) > 0 ? "#c4a040" : zoneTheme.textDim, flexShrink: 0 }} title={`现有信鸽 ${char.pigeons || 0} 只`}>
+                  🕊{char.pigeons || 0}
+                </span>
               );
               return (
                 <div style={{ marginBottom: 10 }}>
                   {dbgPeople}
-                  {header("此地之人 · 在场", present.length, "present", zoneTheme.accentDim)}
+                  {header("此地之人 · 在场", present.length, "present", zoneTheme.accentDim, pigeonBadge)}
                   {peoplePanel.present && (present.length === 0
                     ? <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 8, paddingLeft: 16 }}>空无一人</div>
                     : <div style={{ marginBottom: 8 }}>{present.map((n, i) => {
@@ -5038,15 +5051,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                                 <span style={{ fontSize: "10px", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
                               )}
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
-                              {/* 角色面板：唯一的互动入口，弹出六宫格菜单（细看/切磋/偷窃/对话/送礼/拜师，商人多一个交易） */}
-                              <span onClick={() => setActiveNpcMenu(n)} title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
-                                style={{ fontSize: "10px", color: zoneTheme.accent, cursor: "pointer", flexShrink: 0, flex: 1 }}>◈ 角色面板</span>
-                              <span onClick={() => { setCharacterPageTarget(n.name); setShowCharacterPage(true); }} title="打开这个人的详情面板"
-                                style={{ fontSize: "10px", color: zoneTheme.textDim, cursor: "pointer", flexShrink: 0 }}>面板</span>
-                              <span onClick={() => setPortraitTarget(prev => prev === n.name ? null : n.name)} title="切换立绘显示为这个人"
-                                style={{ fontSize: "10px", color: portraitTarget === n.name ? zoneTheme.accent : zoneTheme.textDim, cursor: "pointer", flexShrink: 0 }}>立绘</span>
-                            </div>
+                            {/* 角色面板：唯一的互动入口，弹出六宫格菜单（细看/切磋/偷窃/对话/送礼/拜师，商人多一个交易）。
+                                原本这里还有"面板"（详情面板）"立绘"两个按钮，跟角色面板功能重复，已删掉。 */}
+                            <span onClick={() => setActiveNpcMenu(n)} title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
+                              style={{ fontSize: "10px", color: zoneTheme.accent, cursor: "pointer", display: "block", marginTop: 2 }}>◈ 角色面板</span>
                           </div>
                         );
                       })}</div>)}
@@ -5067,7 +5075,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                                   setPigeonTarget(name); setInteractMode("pigeon"); setTimeout(() => inputRef.current?.focus(), 0);
                                 }}
                                 title={(char.pigeons || 0) > 0 ? `飞鸽传书（现有信鸽 ${char.pigeons} 只，寄一封耗一只·只送信）` : "需先去驿站买信鸽"}
-                                style={{ fontSize: "10px", color: (char.pigeons || 0) <= 0 ? zoneTheme.textDim : (pigeonTarget === name ? zoneTheme.accent : "#c4a040"), cursor: "pointer", flexShrink: 0 }}>🕊飞鸽{(char.pigeons || 0) > 0 ? `·${char.pigeons}` : ""}</span>
+                                style={{ fontSize: "10px", color: (char.pigeons || 0) <= 0 ? zoneTheme.textDim : (pigeonTarget === name ? zoneTheme.accent : "#c4a040"), cursor: "pointer", flexShrink: 0 }}>🕊飞鸽</span>
                               {hasAff ? (
                                 <span style={{ fontSize: "10px", flexShrink: 0, whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
                                   <span style={{ color: "#e0a0d0" }}>{npcAffectionLabel(attrs.好感度)}</span>
