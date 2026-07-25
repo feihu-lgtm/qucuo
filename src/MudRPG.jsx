@@ -14,7 +14,7 @@ import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, listCharacters, npcAffectionLabel, reputationLabel, MVU_SYSTEM_INSTRUCTIONS } from "./mvu.js";
-import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats } from "./equipment.js";
+import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats, statsForQuality } from "./equipment.js";
 import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem } from "./items/catalog.js";
 // 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
@@ -874,6 +874,25 @@ function tryRestoreSave(presets, loadSlotId) {
   if (!isCompatibleCharShape(snap.char) || !isCompatibleRoomShape(snap.room)) {
     console.warn("检测到旧版本存档结构，已自动丢弃并使用默认角色/房间数据");
     return null;
+  }
+  // 老存档装备迁移：早期有物品（如"无主的青锋剑"）误用了 atkMul/defMul 倍率字段，
+  // 但战斗/装备系统只读 atk/def 实际值——倍率字段从来没人读，导致装备了却加不到攻防。
+  // 读档时统一补算：凡是有倍率但缺实际值的武器/护甲，用「品质基准 × 倍率」折出 atk/def。
+  // 通用处理（不针对单个 id），这类死字段坑一次堵死，将来别的漏网物品也自动修好。
+  if (Array.isArray(snap.inv)) {
+    snap.inv = snap.inv.map(it => {
+      if (!it || typeof it !== "object") return it;
+      const fixed = { ...it };
+      if (fixed.atkMul != null && fixed.atk == null && fixed.category === "weapon") {
+        const base = statsForQuality("weapon", fixed.quality);
+        if (base.atk != null) fixed.atk = Math.round(base.atk * fixed.atkMul);
+      }
+      if (fixed.defMul != null && fixed.def == null && fixed.category === "armor") {
+        const base = statsForQuality("armor", fixed.quality);
+        if (base.def != null) fixed.def = Math.round(base.def * fixed.defMul);
+      }
+      return fixed;
+    });
   }
   return { snap, preset: matchedPreset };
 }

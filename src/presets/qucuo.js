@@ -128,7 +128,7 @@ export const QUCUO_PRESET = {
       // 群友补偿：村口地上散落的物件，玩家可拾。都带全 quality/category，
       // 不会再出现界石那种 (undefined)。宝剑给绿品质(比开局白枪强一档)，
       // 铜铃对应此前"叙事说捡到风铃却没进包"那个 bug 里的物件。
-      { name: "无主的青锋剑", id: "gift_sword", category: "weapon", quality: "绿", atkMul: 1.2, desc: "村口土里半掩着的一把青锋剑，剑身还算齐整，不知是哪位过路侠客遗落的。" },
+      { name: "无主的青锋剑", id: "gift_sword", category: "weapon", quality: "绿", atk: 14, desc: "村口土里半掩着的一把青锋剑，剑身还算齐整，不知是哪位过路侠客遗落的。" },
       { name: "铜铃", id: "gift_bell", category: "misc", quality: "白", desc: "一枚蒙着泥垢的半旧铜制马铃，入手沉甸甸的，想是过路人遗落的物件。" },
     ],
   },
