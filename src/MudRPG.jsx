@@ -187,8 +187,13 @@ ${narrativeOnly ? `直接输出叙事散文正文，写完即结束。不要输�
 不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。不要重复结算任何奖励、物品、银两或状态。
 "memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
 
-在 JSON 输出完毕之后，如果这一轮牵涉的人物（${opts.settleNpc}）对玩家的观感确有变化，另起一行输出 <mvu> 块（不要放进 JSON 内部）：
-${MVU_SYSTEM_INSTRUCTIONS}` : ""}` : scope === "move" ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
+${opts.settleKind === "gift" ? `
+【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。所以这一轮${opts.settleNpc}收下${opts.giftInfo?.itemName ? `「${opts.giftInfo.itemName}」` : "这件礼物"}时，对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。
+这件礼物的实际来历（好感幅度请依此掂量分量，越贵重、越用心，情谊越重）：品阶【${opts.giftInfo?.quality || "白"}】${opts.giftInfo?.categoryLabel ? `，类别「${opts.giftInfo.categoryLabel}」` : ""}${opts.giftInfo?.desc ? `。物件描述：${opts.giftInfo.desc}` : "（无特别来历，寻常物件）"}` : ""}
+在 JSON 输出完毕之后，${opts.settleKind === "gift" ? `这一轮必须` : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化，"}另起一行输出 <mvu> 块（不要放进 JSON 内部）：
+${MVU_SYSTEM_INSTRUCTIONS}${opts.settleKind === "gift" ? `
+依上面这件礼物的品阶与来历，本轮好感度增量建议落在 +${opts.giftInfo?.range?.[0] ?? 2}~+${opts.giftInfo?.range?.[1] ?? 4} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：
+_.add('角色.${opts.settleNpc}.好感度', ${opts.giftInfo?.suggestedDelta ?? 3});` : ""}` : ""}` : scope === "move" ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
 npcs 的 carry 字段只在该 NPC 首次登场那一轮写（0-3件肉眼可见随身物，出场叙事需描述其外观）。
 可选字段 "memory"：用不超过50字纯客观事实概括本轮到达了何处、路上是否有值得记的事，一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，寻常赶路可省略。
@@ -3190,6 +3195,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           embeddingReady(apiCfg), (isSettle && !opts.settleNpc) ? "" : npcLoreBlockWithQuest, narrativeOnly, promptScope,
           {
             settleNpc: opts.settleNpc || null,
+            settleKind: opts.settleKind || null,
+            giftInfo: opts.giftInfo || null,
             hasNpc: visibleNpcs.length > 0,
             gm,
             playerName: char.name || "主角", // memory摘要统一用这个称呼，不用你/我，避免人称混乱
@@ -4057,12 +4064,34 @@ ${dealFmt}`;
     addLog([{ t: "sys", text: `  你走向${npc.name}，看样子是想说些什么。` }]);
   }, [addLog, questProgress, room.name, flags]);
 
+  // 送礼信息组装：把"送的是什么"落到具体的品阶+描述+建议幅度，喂给 AI 的 <mvu>
+  // 提示才有依据可循，不是空对着一个物品名字瞎猜该加多少好感。
+  // 优先查百物录（具名物品，desc 最详实）；查不到就退回背包条目自带的字段
+  // （匿名装备通常有 quality，杂物道具可能只有 name）；品阶缺失一律按白档兜底。
+  // 建议幅度区间跟着六品阶指数曲线走（品阶越高、这件东西在世界观里越贵重，
+  // 一份心意的分量也越重），最终仍会被 mvu.js 的 ±15 硬裁剪兜底，这里只是
+  // 给 AI 一个贴合实际、别瞎给的参考锚点，不是精确写死的数值。
+  const GIFT_AFFECTION_RANGE = { 白: [2, 4], 绿: [4, 6], 蓝: [6, 9], 紫: [9, 12], 橙: [11, 14], 红: [13, 15] };
+  const describeGiftForPrompt = useCallback((item) => {
+    const itemName = typeof item === "string" ? item : item?.name;
+    const catalogEntry = CATALOG_INDEX[itemName];
+    const invEntry = typeof item === "object" ? item : null;
+    const quality = catalogEntry?.quality || invEntry?.quality || "白";
+    const desc = catalogEntry?.desc || invEntry?.desc || "";
+    const category = catalogEntry?.category || invEntry?.category || null;
+    const categoryLabel = category ? (CATEGORY_LABEL[category] || category) : null;
+    const [lo, hi] = GIFT_AFFECTION_RANGE[quality] || GIFT_AFFECTION_RANGE.白;
+    const suggestedDelta = Math.round((lo + hi) / 2);
+    return { itemName, quality, desc, categoryLabel, range: [lo, hi], suggestedDelta };
+  }, []);
+
   // 送礼：系统裁决层先本地从背包扣除这件物品（不能让 AI 自己决定"要不要真的扣"），
   // 再把"送出"这个既成事实和物品描述一起交给主引擎生成场景反应和好感度判断。
   const handleNpcGift = useCallback((npc, item) => {
     setVarTree(prev => markNpcAsKnown(prev, npc.name));
     setActiveTarget(npc.name); // 让 act() 知道这次送礼针对谁，主叙事才会聚焦这个人写出反应
     const itemName = typeof item === "string" ? item : item.name;
+    const giftInfo = describeGiftForPrompt(item);
     setInv(prev => {
       if (typeof item === "object" && item.id != null) {
         return prev.filter(i => !(typeof i === "object" && i.id === item.id));
@@ -4098,8 +4127,13 @@ ${dealFmt}`;
     const cmd = isAngry
       ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好`
       : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
-    act(cmd);
-  }, [act, varTree, questProgress, forceAdvanceQuest, addLog]);
+    // 之前这里漏传 opts，导致送礼走了普通 talk 档意图分类（inputIntent 把"赠予"归到
+    // TALK_CASUAL），拿不到 settle 档专属的"这一轮必须判好感"强提示，好感度全凭 AI
+    // 自己想不想得到。补上 settle:true + settleNpc 才能真正吃到下面 settleKind:"gift"
+    // 那条硬规则。生气赔罪场景不算"送啥都开心"，好感能不能回升交给 AI 按情境自行判断，
+    // 所以只在非生气的正常送礼时才标 settleKind。
+    act(cmd, [], { settle: true, settleNpc: npc.name, settleKind: isAngry ? null : "gift", giftInfo });
+  }, [act, varTree, questProgress, forceAdvanceQuest, addLog, describeGiftForPrompt]);
 
   // ⑤ 服食：把原打字正则分支的确定性结算抽成 handler，供物品面板「服食」调用。
   const handleConsumeItem = useCallback((item) => {
@@ -4504,9 +4538,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     const idx = parseInt(choice, 10) - 1;
     if (isNaN(idx) || idx < 0 || idx >= itemNames.length) return;
     const itemName = itemNames[idx];
+    const giftInfo = describeGiftForPrompt(inv[idx]);
     setInteractMode("action");
-    act(`把${itemName}送给${charName}`, [], { settle: true, settleNpc: charName });
-  }, [inv, addLog, act]);
+    act(`把${itemName}送给${charName}`, [], { settle: true, settleNpc: charName, settleKind: "gift", giftInfo });
+  }, [inv, addLog, act, describeGiftForPrompt]);
 
   // ── 建筑交互处理 ──
 
