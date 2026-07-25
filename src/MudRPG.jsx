@@ -2443,7 +2443,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       return;
     }
 
-    addLog([{ t: "cmd", text: `> ${cmd}` }, ...extraReplies]);
+    // 指令显示：默认显示 `> ${cmd}`；但某些内部指令（如战斗结算发给AI写战报的
+    // 长prompt）不该原样打印给玩家看——传 opts.silentCmd 则完全不显示，或
+    // opts.displayCmd 用一句干净的标题替代真实指令。
+    if (!opts.silentCmd) {
+      addLog([{ t: "cmd", text: `> ${opts.displayCmd || cmd}` }, ...extraReplies]);
+    } else if (extraReplies.length) {
+      addLog([...extraReplies]);
+    }
     setInput("");
     setCmdHistory(p => [cmd, ...p].slice(0, 50));
     setHistIdx(-1);
@@ -6589,7 +6596,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               // 主叙事里这条结算的标题：明确标出「XXX 切磋 XXX · 战斗结算」
               addLog([{ t: "affection", text: `　◈ ${char.name || "你"} 切磋 ${finishedNpc.name} · 战斗结算` }]);
               setTimeout(() => {
-                act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`);
+                act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true });
               }, 0);
               // 兜底小纸条：不管 AI 那轮是否吐了 memory，系统先按 battleLog 直接补记一条
               // 客观战斗事实进往事（DUMB 源），确保"战斗过程"一定有一张小纸条可供日后召回。

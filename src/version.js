@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修战斗结算穿帮：发给AI的整段战报指令不再原样打印给玩家",
+    time: "2026-07-26 02:30",
+    notes: [
+      "修截图暴露的穿帮：战斗结束发给主叙事AI的那条长指令(‘切磋结束。经过…请据此写总结…输出memory字段…’)被act()以‘> …’玩家指令样式整段打印出来，玩家看到了本该隐藏的内部prompt(‘请写总结’‘输出JSON memory’这种)。",
+      "①【act支持静默指令】act(cmd, extra, opts) 新增 opts.silentCmd(完全不显示这条`> cmd`)和 opts.displayCmd(用干净标题替代真实指令显示)。默认行为不变。",
+      "②【战斗结算传silentCmd】切磋结束那条写战报的长指令改传 {silentCmd:true}——不再打印给玩家。玩家现在只看到：逐回合系统数据 + ‘◈ XXX切磋XXX·战斗结算’标题 + AI写出来的整场战报正文，内部prompt隐藏。",
+      "esbuild + vite build 通过。",
+    ],
+  },
+  {
     codename: "逐回合说书打包成AI整场战报 + 主叙事结算标题'XXX切磋XXX战斗结算'",
     time: "2026-07-26 02:00",
     notes: [
