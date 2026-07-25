@@ -9,6 +9,15 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修食补buff不生效bug(实为侧栏未显示)：右栏七维接上effectiveSpecialNow+生效药力列表",
+    time: "2026-07-26 15:30",
+    notes: [
+      "作者反馈：辣子炒肉写着\"+体魄2·持续40时间单位\"，吃了之后饭店似乎没有生效。排查确认buff机制本身是通的（parseActiveBuffs/applyBuffsToSpecial/DuelScreen战斗时都正确接了effectiveSpecialNow），但游戏内常驻可见的右栏\"七维\"展示一直用的是char.special原始值，没有接上组件顶层早就算好的effectiveSpecialNow和activeBuffs这两个变量——玩家能感知buff效果的唯一途径只有hp指令的文字输出，日常侧栏完全看不出变化，才会误以为没生效。",
+      "修复：右栏七维数值改用effectiveSpecialNow（有buff时额外用小字标注基础值+差额，如\"7(5+2)\"，颜色变绿区分），并在下方新增\"生效中药力\"列表（属性+加成值+剩余回合数），跟hp指令展示的信息保持一致。",
+      "Node脚本模拟验证：makeBuffFlag生成的flag→applyBuffsToSpecial正确算出7(基础5+2)→activeBuffsWithRemaining正确列出\"体魄+2(余39回合)\"，修复前后对比符合预期。esbuild --bundle验证MudRPG.jsx语法通过。",
+    ],
+  },
+  {
     codename: "雪豹真正活起来：跟随移动+叙事感知+右栏队伍栏+2v2团战默契加成",
     time: "2026-07-26 15:00",
     notes: [

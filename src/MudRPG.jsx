@@ -6357,10 +6357,31 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>七维</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px", fontSize: "11px" }}>
-                  {Object.entries(char.special || {}).map(([k, v]) => (
-                    <div key={k}>{k}<span style={{ color: "#c8bfa0" }}>{v}</span></div>
-                  ))}
+                  {Object.entries(char.special || {}).map(([k, v]) => {
+                    const eff = effectiveSpecialNow?.[k];
+                    const buffed = typeof eff === "number" && eff !== v;
+                    return (
+                      <div key={k} title={buffed ? `基础${v}，药力/buff生效中` : undefined}>
+                        {k}
+                        <span style={{ color: buffed ? "#8ac48a" : "#c8bfa0" }}>{buffed ? eff : v}</span>
+                        {buffed && <span style={{ color: "#5a5a4a", fontSize: "9.5px" }}> ({v}+{eff - v})</span>}
+                      </div>
+                    );
+                  })}
                 </div>
+                {/* Bug修复（本轮）：此前这里只显示 char.special 原始值，玩家吃了辣子炒肉
+                    这类带体魄/身法buff的饭菜后，侧栏七维毫无变化——buff其实在combat/
+                    activeBuffs里早就生效了（hp指令文字输出能看到），只是这个常驻可见的
+                    侧栏没有接上effectiveSpecialNow和activeBuffs这两个组件顶层已经算好的
+                    变量，导致玩家"试了下，饭店似乎没有生效"。现在补上：数值本身用生效值
+                    （原始值+差额小字标注），并在下方列出所有生效中的药力及剩余回合数。 */}
+                {activeBuffs.length > 0 && (
+                  <div style={{ marginTop: 4, fontSize: "9.5px", color: "#8ac48a", lineHeight: 1.5 }}>
+                    {activeBuffs.map((b, i) => (
+                      <div key={i}>药力·{b.attr}+{b.val}（余{b.remaining}）</div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
