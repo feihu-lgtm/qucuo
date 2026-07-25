@@ -55,9 +55,8 @@ import { getCachedInspect, setCachedInspect } from "./inspectCache.js";
 import { classifyIntent, buildBudgetInstruction, INTENT } from "./inputIntent.js";
 import NpcActionMenu from "./NpcActionMenu.jsx";
 import ItemActionMenu from "./ItemActionMenu.jsx";
-import { ensureNpcCombatData, generateNpcMoveset, MOVE_POOL, deriveMovesetFromSkills, hpFromNeigong, deriveSignatureMoveset } from "./npcGeneration.js";
+import { ensureNpcCombatData, generateNpcMoveset, MOVE_POOL, deriveMovesetFromSkills, hpFromNeigong } from "./npcGeneration.js";
 import { detectNewFaces, markAsSeen, markNpcAsKnown, isNpcKnown, detectReunions, buildReunionBlock, updateLastSeen, REUNION_GAP_THRESHOLD } from "./npcAwareness.js";
-import { canLearnSkillFrom, describeLearnSkillGate } from "./quests/learnSkill.js";
 import { buildShopInventory, rollShopStock } from "./shops/qucuoShops.js";
 import TradingScreen from "./TradingScreen.jsx";
 import { recordRumoredNpcs, findTargetedRumor, clearRumor } from "./npcEmergence.js";
@@ -79,7 +78,7 @@ import { MOVE_TYPE } from "./combat/moveTypes.js";
 import DuelScreen from "./DuelScreen.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import PersuasionScreen from "./PersuasionScreen.jsx";
-import { attemptSteal, createAngryState, tickAngryState, STEAL_CONFIG } from "./combat/stealSystem.js";
+import { tickAngryState } from "./combat/stealSystem.js";
 import { CURRENT_VERSION, VERSION_HISTORY } from "./version.js";
 import { recallWithVisibility } from "./memory/recallWithVisibility.js";
 import { writeNote, NOTE_SOURCE, VIA, reembedStaleNotes } from "./memory/note.js";
@@ -91,6 +90,7 @@ import { callExtraction, buildExtractionCfg } from "./extractionEngine.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
+import PigeonCoopScreen from "./buildings/PigeonCoopScreen.jsx";
 import TransportScreen from "./buildings/TransportScreen.jsx";
 import ServiceScreen, { BasementScreen } from "./buildings/ServiceScreen.jsx";
 import TempleScreen from "./buildings/TempleScreen.jsx";
@@ -107,7 +107,8 @@ import { BUILDING_TYPE, getBuildingsForLocation, BUILDING_TYPE_LABEL } from "./b
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
 import { seededRand } from "./utils/seededRandom.js";
 import { getResidentNpcs, getAllResidentNpcLore } from "./residentNpcs.js";
-import { makeSkillEntry, makeLearnedMoveSkill, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
+import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
+import { tryLearnFromMaster, tryStealFrom } from "./kungfu/learnSkill.js";
 import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
@@ -2088,8 +2089,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   // 点击武学/包袱物品时，临场调用 AI 生成一段介绍文字，不修改任何游戏状态
   const [inspecting, setInspecting] = useState(null); // 记录正在查看哪个名字，用于按钮禁用/loading态展示
+  // kind 标签映射：目前 "skill"(武学) / "item"(随身物品) / "pigeon"(信鸽) 三种，
+  // 以后再加新 kind 只需在这两张表里添一行，不用到处写嵌套三元。
+  const INSPECT_KIND_LABEL = { skill: "武学", item: "物品", pigeon: "信鸽" };
+  const INSPECT_KIND_NOUN = { skill: "武学功法", item: "随身物品", pigeon: "信鸽（用于飞鸽传书的鸟）" };
   const inspectItem = useCallback(async (kind, name, extra, itemObj, opts = {}) => {
     if (loading || inspecting) return;
+    const kindLabel = INSPECT_KIND_LABEL[kind] || "物品";
+    const kindNoun = INSPECT_KIND_NOUN[kind] || "随身物品";
     // worldLook：玩家在游戏世界里端详自己的东西（背包/武学），按用户拍板走主叙事口吻的
     // 端详、算 1 回合时间、并写一张公共小纸条，且不吃缓存（每次都当作一次真的端详）。
     // 商店预览等（默认 opts 不传）仍走原来的"瞬时缓存、不耗回合、不记事"，免得逛店翻看也扣时间。
@@ -2102,7 +2109,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       const cached = getCachedInspect(kind, name, extra, itemObj);
       if (cached) {
         addLog([
-          { t: "cmd", text: `> 查看${kind === "skill" ? "武学" : "物品"}：${name}` },
+          { t: "cmd", text: `> 查看${kindLabel}：${name}` },
           { t: "desc", text: "  " + cached.text },
         ]);
         return;
@@ -2110,14 +2117,16 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     }
 
     setInspecting(name);
-    addLog([{ t: "cmd", text: `> 查看${kind === "skill" ? "武学" : "物品"}：${name}` }]);
+    addLog([{ t: "cmd", text: `> 查看${kindLabel}：${name}` }]);
     try {
-      const sys = `你是曲措乡这个武侠世界的说书人，现在玩家想仔细端详一件${kind === "skill" ? "武学功法" : "随身物品"}。
-用 3-5 句话、章回说书人口吻描述这个${kind === "skill" ? "功法" : "物品"}的来历、外观或效用，符合当前世界观（澜湄雪域、曲措乡）。不需要 JSON，不需要更新任何状态，纯文本即可。
+      const sys = `你是曲措乡这个武侠世界的说书人，现在玩家想仔细端详一件${kindNoun}。
+用 3-5 句话、章回说书人口吻描述这个${kindLabel}的来历、外观或效用，符合当前世界观（澜湄雪域、曲措乡）。不需要 JSON，不需要更新任何状态，纯文本即可。
 如果给出了品质和数值信息，请在描述里自然地体现这个品阶应有的分量感（品质越高描述越有气势），但不要机械地报数字。`;
       let prompt = kind === "skill"
         ? `功法名称：${name}${extra ? `，当前修炼进度：${extra}` : ""}`
-        : `物品名称：${name}`;
+        : kind === "pigeon"
+          ? `信鸽${extra ? `，${extra}` : ""}`
+          : `物品名称：${name}`;
       if (itemObj && typeof itemObj === "object") {
         const statBits = [];
         if (itemObj.atk != null) statBits.push(`攻击力${itemObj.atk}`);
@@ -2133,7 +2142,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         // （日后"我那把剑当初端详过什么来历"能被召回）。不写缓存、每次都当新的一次端详。
         if (text.trim()) {
           setTime(t => t + 1);
-          jotNote({ text: `端详了${kind === "skill" ? "武学" : "物品"}「${name}」，看清了它的来历门道。`, owner: [], source: NOTE_SOURCE.NARRATIVE });
+          jotNote({ text: `端详了${kindLabel}「${name}」，看清了它的来历门道。`, owner: [], source: NOTE_SOURCE.NARRATIVE });
         }
       } else {
         // 只缓存真正拿到内容的结果；"旁白沉默不语"这种退化情况不缓存，
@@ -4072,6 +4081,15 @@ ${dealFmt}`;
     addLog([{ t: "item", text: `  🕊 买下 ${qty} 只信鸽（-${cost} 两），现有 ${(char.pigeons || 0) + qty} 只。` }]);
   }, [char, addLog]);
 
+  // 鸽子笼：每日免费领信鸽，不花银两。跟赌坊同一套"当天领没领过"判断模式，
+  // 用 flags 记 pigeon_collected_day_${dayIdx}（dayIdx = time/24，真正的天数）。
+  const handleCollectPigeons = useCallback(({ qty, dayIdx }) => {
+    if (flags.includes(`pigeon_collected_day_${dayIdx}`)) return;
+    setFlags(f => [`pigeon_collected_day_${dayIdx}`, ...f.filter(x => !x.startsWith("pigeon_collected_day_"))]);
+    setChar(c => ({ ...c, pigeons: (c.pigeons || 0) + qty }));
+    addLog([{ t: "item", text: `  🕊 从鸽子笼领了 ${qty} 只信鸽，现有 ${(char.pigeons || 0) + qty} 只。` }]);
+  }, [char, flags, addLog]);
+
   // 驿站寄信/送礼总入口（供 TransportScreen 回调）
   const handlePostSend = useCallback(({ npcName, content, channel, gift }) => {
     setActiveBuilding(null);
@@ -4196,75 +4214,76 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     setTradingShop({ npcName: npc.name, ...shopData });
   }, [addLog]);
 
-  // 拜师学艺：任何有武艺的NPC（levelCap≥1），好感度≥40 即可把【自己的招式】传授给你。
-  // 学到的是这个NPC的专属招式本身（含其品阶档位的全套特效——跟红名对战时见识到的
-  // 那一套），威力仍按你自己的外功/内功结算。可以无限学、越学越多，不设数量上限；
-  // 已学过的自动跳过（按招式id去重）。civilians（levelCap 0 或未设）没有武艺可传。
+  // 拜师学艺：统一走 tryLearnFromMaster（src/kungfu/learnSkill.js）。
+  // 高手（levelCap≥1）教专属招，平民（levelCap<1）教通用招池的白档基本功——
+  // 这是这次改动新加的行为，此前平民直接拒绝拜师。价格按好感折价曲线走低
+  // （40-59原价/60-79七折/80-99五折/100免费），银两不够时提示但不强行学。
   const handleNpcLearnSkill = useCallback((npc) => {
-    const cap = npc.levelCap;
-    if (npc.beast || npc.unlearnable) {
-      addLog([{ t: "sys", text: `  ${npc.name}是头畜生，纵有一身凶悍本事，也无从传你半分。` }]);
+    const result = tryLearnFromMaster(npc, varTree, skills, char);
+    if (!result.ok) {
+      addLog([{ t: "sys", text: `  ${result.reason}` }]);
       return;
     }
-    if (cap == null || cap < 1) {
-      addLog([{ t: "sys", text: `  ${npc.name}摆摆手，「我一介平常人，没什么武艺好教你的。」` }]);
-      return;
-    }
-
-    const gate = canLearnSkillFrom(npc.name, varTree, flags);
-    if (!gate.eligible) {
-      addLog([{ t: "sys", text: `  ${describeLearnSkillGate(gate, npc.name)}` }]);
+    if ((char.money || 0) < result.totalPrice) {
+      addLog([{ t: "sys", text: `  ${npc.name}愿意传授，但束脩需银${result.totalPrice}两（现有${char.money || 0}两），你银两不够，一时难以成行。` }]);
       return;
     }
 
-    // 取这个NPC的招式：优先专属出招表，没有就用其品阶档位生成的招式。
-    // 只传授三类实战招（攻/防/状），回气人人都会、不必学。
-    const withCombat = ensureNpcCombatData({ ...npc }, {});
-    const teachMoves = (deriveSignatureMoveset(withCombat, { levelCap: cap }) || withCombat.moveset || [])
-      .filter(m => (m.type === MOVE_TYPE.ATTACK || m.type === MOVE_TYPE.DEFENSE || m.type === MOVE_TYPE.STATUS)
-        && m.archetype !== "回气" && m.id !== "move_hui_qi"); // 回气人人都会，不必传授
-    if (teachMoves.length === 0) {
-      addLog([{ t: "sys", text: `  ${npc.name}想了想，一时竟不知从何教起。` }]);
-      return;
-    }
-
-    // 去重：已在武学栏（skills）或招式池（moveset）里的招都算已会，不重复授。
-    const have = new Set([
-      ...skills.map(s => s.id),
-      ...(char.moveset || []).map(m => m.id),
-    ]);
-    const freshMoves = teachMoves.filter(m => !have.has(m.id));
-    if (freshMoves.length === 0) {
-      addLog([{ t: "sys", text: `  ${npc.name}这一身本事你都已学全，再无新招可授。` }]);
-      return;
-    }
+    setChar(c => ({ ...c, money: (c.money || 0) - result.totalPrice }));
     // 统一并入"武学"栏：拜师所授做成【固定完整招】——不修炼、不成长，学到即完整版。
     // 加进 skills 后，moveset 由 useEffect 自动重算带出（fixed 条目原样取用招式本体）。
-    const freshSkills = freshMoves.map(makeLearnedMoveSkill);
-    setSkills(sk => [...sk, ...freshSkills]);
-    addLog([{ t: "sys", text: `  （习得 ${freshSkills.length} 招，已录入武学栏 · 授业绝学，学即完整，无需修炼）` }]);
+    setSkills(sk => [...sk, ...result.freshSkills]);
+    const priceNote = result.totalPrice > 0 ? `，奉上束脩银${result.totalPrice}两` : "（好感深厚，分文不取）";
+    const label = result.isMaster ? "授业绝学" : "江湖通行招";
+    addLog([{ t: "sys", text: `  （习得 ${result.freshSkills.length} 招${priceNote}，已录入武学栏 · ${label}，学即完整）` }]);
     // 结算（加招/去重/并入武学栏）已由确定性代码完成，这里只把"发生了什么"交给主叙事AI
     // 写成一段像样的话，不是让AI决定学没学到——参照 handleBuySkill 的"结算+act陈述"范式。
-    const moveBrief = freshMoves.map(m => `${m.name}(${m.archetype || m.type})`).join("、");
-    act(`拜${npc.name}为师，${npc.name}将平生所学「${moveBrief}」倾囊相授，我凝神习得`, [], { settle: true, settleNpc: npc.name });
-  }, [char, skills, varTree, flags, addLog, act]);
+    const verb = result.isMaster ? "将平生所学" : "将几手江湖基本功";
+    act(`拜${npc.name}为师，${npc.name}${verb}「${result.moveBrief}」倾囊相授，我凝神习得`, [], { settle: true, settleNpc: npc.name });
+  }, [char, skills, varTree, addLog, act]);
 
+  // 偷窃：偷物+偷师（偷招）二合一，同一次判定，成功后再二选一决定这次偷到的
+  // 是物品还是招式（tryStealFrom 内部处理）。身法（char.special.身法）现在也
+  // 参与成功率计算，跟好感度独立相加——手越利索，越容易得手。
   const handleNpcSteal = useCallback((npc) => {
-    const npcAttrs = varTree.角色?.[npc.name] || {};
-    if (npcAttrs.生气状态?.active) {
-      addLog([{ t: "sys", text: `  ${npc.name}此刻正满心戒备，你若再敢造次，怕是当场就要翻脸。（生气期间无法偷窃）` }]);
+    const agility = char.special?.身法 ?? 0;
+    const result = tryStealFrom(npc, varTree, skills, char, agility);
+
+    if (!result.ok) {
+      addLog([{ t: "sys", text: `  ${result.reason}` }]);
       return;
     }
-    const favorability = npcAttrs.好感度 ?? 0;
-    const result = attemptSteal(favorability);
 
-    if (result.success) {
-      const available = (npc.carriedItems || []).filter(it => !it.stolen);
-      if (available.length === 0) {
-        addLog([{ t: "sys", text: `  你想对${npc.name}下手，摸了半天，却发现他身上竟无值钱物件，只得悻悻作罢。` }]);
-        return;
-      }
-      const target = available[Math.floor(Math.random() * available.length)];
+    if (!result.success) {
+      addLog([
+        { t: "cmd", text: `> 偷窃 ${npc.name}` },
+        { t: "desc", text: `  你手法生涩，被${npc.name}当场察觉！他脸色一沉，显然动了真怒。` },
+      ]);
+      // 偷窃被当场发现，跟偷窃成功（神不知鬼不觉）性质完全相反——
+      // 对方已经知道玩家是谁、双方有了正面冲突接触，这时候标记认识才合理；
+      // 偷窃成功恰恰不该标记，因为那意味着对方完全没察觉玩家的存在。
+      setVarTree(prev => {
+        const known = markNpcAsKnown(prev, npc.name);
+        const cur = known.角色?.[npc.name] || {};
+        const newFavorability = Math.max(0, (cur.好感度 || 0) - result.favorabilityLoss);
+        return {
+          ...known,
+          角色: {
+            ...known.角色,
+            [npc.name]: { ...cur, 好感度: newFavorability, 生气状态: result.angryState },
+          },
+        };
+      });
+      return;
+    }
+
+    if (result.outcome === null) {
+      addLog([{ t: "sys", text: `  你想对${npc.name}下手，摸了半天，却发现他身上早已一无所有，只得悻悻作罢。` }]);
+      return;
+    }
+
+    if (result.outcome === "item") {
+      const target = result.item;
       addLog([
         { t: "cmd", text: `> 偷窃 ${npc.name}` },
         { t: "desc", text: `  你运指如风，趁${npc.name}不备，将「${target.name}」（${target.quality}）神不知鬼不觉地顺入了自己怀中。` },
@@ -4277,32 +4296,16 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           ? { ...n, carriedItems: n.carriedItems.map(it => it.id === target.id ? { ...it, stolen: true } : it) }
           : n),
       }));
-    } else {
-      addLog([
-        { t: "cmd", text: `> 偷窃 ${npc.name}` },
-        { t: "desc", text: `  你手法生涩，被${npc.name}当场察觉！他脸色一沉，显然动了真怒。` },
-      ]);
-      // 偷窃被当场发现，跟偷窃成功（神不知鬼不觉）性质完全相反——
-      // 对方已经知道玩家是谁、双方有了正面冲突接触，这时候标记认识才合理；
-      // 偷窃成功恰恰不该标记，因为那意味着对方完全没察觉玩家的存在。
-      setVarTree(prev => {
-        const known = markNpcAsKnown(prev, npc.name);
-        const cur = known.角色?.[npc.name] || {};
-        const newFavorability = Math.max(0, (cur.好感度 || 0) - STEAL_CONFIG.angryFavorabilityLoss);
-        return {
-          ...known,
-          角色: {
-            ...known.角色,
-            [npc.name]: {
-              ...cur,
-              好感度: newFavorability,
-              生气状态: createAngryState("偷窃未遂"),
-            },
-          },
-        };
-      });
+      return;
     }
-  }, [varTree, addLog]);
+
+    // result.outcome === "move"：偷师成功，把偷来的招并入武学栏（fixed，学即完整）
+    addLog([
+      { t: "cmd", text: `> 偷窃 ${npc.name}` },
+      { t: "desc", text: `  你悄然窥破${npc.name}出手的门道，趁其不备，竟将「${result.move.name}」这一手偷学了去！` },
+    ]);
+    setSkills(sk => sk.some(s => s.id === result.skill.id) ? sk : [...sk, result.skill]);
+  }, [varTree, skills, char, addLog]);
 
   // loading 变为 false 时，处理队列中的下一条命令。
   // 关键修复：依赖数组必须包含 act 本身——act 是 useCallback，依赖里有 room 等
@@ -5526,6 +5529,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 <GamblingScreen building={activeBuilding} char={char} flags={flags} time={time} inline
                   zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onGamble={handleGamble} />
               )}
+              {activeBuilding && activeBuilding.type === BUILDING_TYPE.PIGEON_COOP && (
+                <PigeonCoopScreen building={activeBuilding} char={char} flags={flags} time={time} inline
+                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCollect={handleCollectPigeons} />
+              )}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.TRANSPORT && (
                 <TransportScreen building={activeBuilding} char={char} mapData={mapData} currentRoom={room.name} inline
                   inv={inv} metNpcs={varTree.世界?.曾经出现人物 || []} onBuyPigeon={buyPigeon} onSendLetter={handlePostSend}
@@ -5975,6 +5982,18 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
                 <div style={{ fontSize: "11.5px", marginBottom: 3 }}>经验 <span style={{ color: "#d4a853" }}>{exp}</span>　潜能 <span style={{ color: "#b48adf" }}>{pot}</span></div>
                 <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "#e8c468" }}>{char.money || 0}</span> 两</div>
+                <div style={{ fontSize: "11.5px", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>信鸽 <span style={{ color: "#c4a040" }}>{char.pigeons || 0}</span> 只</span>
+                  <span
+                    onClick={() => inspectItem("pigeon", "信鸽", `现有${char.pigeons || 0}只`, null, { worldLook: true })}
+                    title="查看：信鸽是什么、能做什么"
+                    style={{
+                      cursor: inspecting === "信鸽" ? "wait" : "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 3,
+                      color: zoneTheme.textDim, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`,
+                      opacity: inspecting === "信鸽" ? 0.6 : 1,
+                    }}
+                  >查看{inspecting === "信鸽" ? "…" : ""}</span>
+                </div>
               </div>
             </div>
 
@@ -6050,10 +6069,19 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                         style={{ cursor: inspecting === s.name ? "wait" : "pointer", color: qc, fontWeight: s.active ? "bold" : "normal", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === s.name ? 0.6 : 1 }}
                       >{s.name}{s.fixed ? "" : `·${s.stage}`}{inspecting === s.name ? "…" : ""}</span>
                       <span style={{ fontSize: "9.5px", color: qc, opacity: 0.9 }}>（{q}品）</span>
-                      {s.fixed && <span style={{ fontSize: "9px", color: zoneTheme.textDim, border: `1px solid ${zoneTheme.border}`, borderRadius: 2, padding: "0 3px" }}>授</span>}
+                      {s.fixed && (() => {
+                        // 按来源(source)显示不同小标签：授业绝学(拜高手)/通用招(拜平民)/偷师所得。
+                        // 老存档没存 source 字段的，兜底按"拜师"处理（此前唯一的固定招来源）。
+                        const src = s.source || "拜师";
+                        const label = src === "偷师" ? "偷" : src === "拜师·通用" ? "通" : "授";
+                        const title = src === "偷师" ? "偷师所得" : src === "拜师·通用" ? "拜师·通用招" : "拜师·授业绝学";
+                        return <span title={title} style={{ fontSize: "9px", color: zoneTheme.textDim, border: `1px solid ${zoneTheme.border}`, borderRadius: 2, padding: "0 3px" }}>{label}</span>;
+                      })()}
                     </div>
                     {s.fixed
-                      ? <div style={{ fontSize: "10.5px", color: "#5a5a4a", paddingLeft: 18 }}>授业绝学 · 学即完整，无需修炼</div>
+                      ? <div style={{ fontSize: "10.5px", color: "#5a5a4a", paddingLeft: 18 }}>
+                          {s.source === "偷师" ? "偷师所得 · 学即完整，无需修炼" : s.source === "拜师·通用" ? "拜师·通用招 · 学即完整，无需修炼" : "授业绝学 · 学即完整，无需修炼"}
+                        </div>
                       : (() => {
                           const curIdx = STAGES.indexOf(s.stage);
                           const maxed = curIdx >= STAGES.length - 1;

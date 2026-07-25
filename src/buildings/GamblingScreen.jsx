@@ -9,7 +9,7 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
   const money = char.money || 0;
   const luck = (char.special?.气运) ?? 5;
   const maxBet = building.maxBet || 200;
-  const dayIdx = Math.floor(time / 100);
+  const dayIdx = Math.floor(time / 24); // 真正的"天"，跟 getTimeStr 同源（原 time/100 是bug，~8天才翻篇一次）
 
   const alreadyGambled = flags.includes(`gambled_day_${dayIdx}`);
 

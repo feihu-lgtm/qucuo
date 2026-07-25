@@ -28,6 +28,7 @@ export const BUILDING_TYPE = {
   TEAHOUSE: "teahouse", // 茶馆（情报）
   SECTSHOP: "sectshop", // 门派商坊（karma货币）
   GAMBLESTONE: "gamblestone", // 赌石料场
+  PIGEON_COOP: "pigeon_coop", // 鸽子笼：每日免费领信鸽
 };
 
 export const BUILDING_TYPE_LABEL = {
@@ -37,6 +38,7 @@ export const BUILDING_TYPE_LABEL = {
   pawn: "当铺", cloth: "成衣铺", jewelry: "珠宝行", hospital: "医馆",
   forge: "铸剑坊", blackmarket: "黑市", bounty: "告示榜", grocery: "粮行",
   theater: "戏楼", teahouse: "茶馆", sectshop: "门派商坊", gamblestone: "玉石料场",
+  pigeon_coop: "鸽子笼",
 };
 
 // 各据点建筑清单
@@ -73,6 +75,10 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "gambling_yiding", name: "赌坊", type: BUILDING_TYPE.GAMBLING, maxBet: 200,
       desc: "每日只能赌一次，按气运值决定输赢，也可以直接抽物品，看命。",
+    },
+    {
+      id: "pigeon_coop_yiding", name: "鸽子笼", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 3,
+      desc: "村口老槐树下支着几间竹编鸽笼，看笼的老汉每日清晨放三只信鸽出来，任由往来客商领去，图的是曲措乡这条邮路越走越熟。",
     },
   ],
 

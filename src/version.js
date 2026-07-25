@@ -9,6 +9,34 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "鸽子笼每日领信鸽 + 开局送5只 + 人物栏鸽子展示 + 赌坊每日判断bug修正",
+    time: "2026-07-26 05:00",
+    notes: [
+      "新增鸽子笼建筑（鱼定村），每日免费领3只信鸽；开局改送5只（原0只，此前得先去驿站买）；人物信息栏（头像右侧）银两下面新增「信鸽 N只」展示+查看按钮；顺带修正赌坊「每日一次」判断的既有bug。",
+      "①【鸽子笼建筑】qucuoBuildings.js 新增 BUILDING_TYPE.PIGEON_COOP，鱼定村建筑列表加一条（dailyPigeons:3）；新建 PigeonCoopScreen.jsx，跟赌坊同款UI风格（今日是否已领+领取按钮），不花银两。",
+      "②【每日领取判定】新增 handleCollectPigeons，复用赌坊那套「flags记day标记」模式：pigeon_collected_day_${dayIdx}，dayIdx=time/24（真正的天数，跟getTimeStr同源）。",
+      "③【开局送5只】presets/qucuo.js 的 char 初始对象加 pigeons:5。",
+      "④【人物栏展示】人物信息栏银两下面新增一行「信鸽 N只」+「查看」按钮，点击走 inspectItem(\"pigeon\", ...)——inspectItem 原本只认 skill/item 两种kind，写死在一堆三元表达式里；这次改成 INSPECT_KIND_LABEL/INSPECT_KIND_NOUN 两张查表，加第三种kind只加一行，不再到处堆三元。AI会现场生成一段关于信鸽的说书描述（游戏里此前没有信鸽的世界观文案，只有功能性提示语，所以由AI现场写）。",
+      "⑤【赌坊bug修正】GamblingScreen.jsx 的「今日是否已赌」判断此前是 time/100（实际要约8天才翻篇，不是真的每天），改成 time/24（真正的天）。老存档里旧的 gambled_day_N flag 因为算法变了对不上新dayIdx，最坏情况是切换算法当天多一次赌博机会，之后行为完全正确，不会锁死或报错。",
+      "esbuild 单文件+完整bundle验证通过（含图片loader），无新增报错；仅剩一条与本次改动无关的既有警告(qucuoQuests.js playerHint重复键)。",
+    ],
+  },
+  {
+    codename: "统一武学习得系统：武馆/拜师/偷师三渠道收敛到 learnSkill()，平民也能拜师教通用招",
+    time: "2026-07-26 04:30",
+    notes: [
+      "按《武功字段审计表》+设计定稿重构武学习得：武馆(可修炼)/拜师(专属招或通用招)/偷师(偷招偷物二合一)三条渠道最终都产出统一的 skill 对象，收敛到新入口 src/kungfu/learnSkill.js 的 tryLearnFromMaster/tryStealFrom。",
+      "①【skill对象统一】makeLearnedMoveSkill 加 source 参数(\"拜师\"/\"拜师·通用\"/\"偷师\")和 upgradable:false；makeSkillEntry(武馆) 补齐 source:\"武馆\"、upgradable:true，三渠道字段对齐。",
+      "②【拜师折价曲线】quests/learnSkill.js 新增 teachDiscountFactor/teachPrice：好感40-59原价/60-79七折/80-99五折/100免费，专属招和通用招用同一条曲线、不同基础价(专属80两/通用15两)。",
+      "③【平民也能拜师，这是行为反转】此前平民NPC(levelCap<1)拜师直接拒绝(\"我一介平常人，没什么武艺好教你的\")；现在平民教通用招池(MOVE_POOL)的白档三招(直拳/硬架/回气)，跟高手拜师走同一套好感门槛+折价逻辑，只是基础价低得多。",
+      "④【偷师新实装】此前偷窃系统只能偷物品，偷招从未实装。新增 stealSystem.pickStealOutcome：判定成功后二选一决定偷到的是物品还是招式(某一侧没得偷则必定退化成偷另一侧)。",
+      "⑤【偷窃成功率公式加身法项】好感项+身法项独立相加(好感每10点+5%，身法每10点+4%)，封顶从0.85调到0.9，两项都没有则等同旧版纯好感公式(向后兼容)。",
+      "⑥【右栏来源标签】武学栏「授」标签按source分叉显示：拜师→授、拜师·通用→通、偷师→偷，老存档没存source字段的兜底按\"拜师\"处理。",
+      "⑦【清理死代码】MudRPG.jsx 里已被新入口取代的旧import(attemptSteal/createAngryState/canLearnSkillFrom/describeLearnSkillGate/STEAL_CONFIG/deriveSignatureMoveset/makeLearnedMoveSkill直接调用)全部清理，避免死引用。",
+      "esbuild 单文件语法检查+真实bundle验证通过(依赖链无死链接)；核心公式(成功率/折价曲线/偷招偷物分布)+端到端场景(平民拜师/高手拜师/生气状态锁定/偷窃分布)均跑过Node脚本数值验证。",
+    ],
+  },
+  {
     codename: "内功外功升级按钮从主栏底部挪到右栏内功外功数值后面",
     time: "2026-07-26 03:30",
     notes: [

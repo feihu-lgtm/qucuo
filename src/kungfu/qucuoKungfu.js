@@ -109,10 +109,13 @@ export function hasSkill(skills, skillId) {
   return skills.some(s => s.id === skillId);
 }
 
-// 拜师学到的招式：并入"武学"栏统一管理，但学到即【完整版】——不修炼、不成长，
-// 没有阶段/等级/经验。保存完整招式本体 move，deriveMovesetFromSkills 原样取用，
-// 不做阶段缩放（区别于武馆买的可修炼武学）。
-export function makeLearnedMoveSkill(move) {
+// 拜师/偷师学到的招式：并入"武学"栏统一管理，但学到即【完整版】——不修炼、不
+// 成长，没有阶段/等级/经验。保存完整招式本体 move，deriveMovesetFromSkills 原样
+// 取用，不做阶段缩放（区别于武馆买的可修炼武学）。
+// source 标注这一条是怎么来的，供右栏 UI 显示不同小标签：
+//   "拜师"（专属招，倾囊相授）/ "拜师·通用"（平民教通用招池的招）/ "偷师"（偷来的）
+// 不传 source 时兜底成 "拜师"，向后兼容旧调用点。
+export function makeLearnedMoveSkill(move, source = "拜师") {
   return {
     id: move.id,
     name: move.name,
@@ -120,13 +123,15 @@ export function makeLearnedMoveSkill(move) {
     moveType: move.type,                 // 攻击/防御/状态
     quality: move.quality || "白",       // 完整版的品阶，直接显示
     fixed: true,                         // 固定招：武学栏不显示成长条
-    learned: true,                       // 来源：拜师所授
+    upgradable: false,                   // 与 fixed 同义，供统一习得系统按这个字段判断能否升阶
+    learned: true,                       // 来源：拜师/偷师所授，区别于武馆买的
+    source,                              // ★来源维度："拜师" | "拜师·通用" | "偷师"
     active: false,
     move: { ...move, sourceSkill: move.name }, // 完整招式本体，带 sourceSkill 与派生招统一
   };
 }
 
-// 从目录定义生成一条 skills 数组里的初始记录
+// 从目录定义生成一条 skills 数组里的初始记录（武馆购买）
 export function makeSkillEntry(catalogItem) {
   return {
     id: catalogItem.id,
@@ -140,6 +145,8 @@ export function makeSkillEntry(catalogItem) {
     active: false,
     moveType: catalogItem.moveType,
     passiveBonus: catalogItem.passiveBonus || null,
+    source: "武馆",       // ★来源维度，武馆买的都能潜能升阶
+    upgradable: true,     // 与 fixed:false 同义
   };
 }
 

@@ -30,3 +30,30 @@ export function describeLearnSkillGate(gate, npcName) {
   // 现在唯一可能卡住的条件就是好感度
   return `${npcName}似乎还有所保留：交情尚浅（${gate.currentFavorability}/${gate.requiredFavorability}），还需再多些走动。`;
 }
+
+// ── 拜师好感折价曲线 ──────────────────────────────────────────
+// 好感够格（≥40）之后，价格随好感继续走低：越熟悉，师父越不吝啬。
+// 好感100（满好感）直接免费，算是"名副其实的自己人"。
+// 这条曲线同时适用于「拜高手为师学专属招」和「拜平民为师学通用招」，
+// 只是两者的"基础价"不同（专属招基础价高，通用招基础价低，见 learnSkill.js）。
+export const TEACH_DISCOUNT_TIERS = [
+  { min: 100, factor: 0 },     // 好感拉满：免费
+  { min: 80, factor: 0.5 },    // 80-99：五折
+  { min: 60, factor: 0.7 },    // 60-79：七折
+  { min: 40, factor: 1.0 },    // 40-59：原价
+];
+
+// 按好感度返回折扣系数（0~1，0=免费，1=原价）。好感<40 时理论上不会调用到
+// 这个函数（门槛没过），但仍兜底返回1.0（原价），不返回负数或异常值。
+export function teachDiscountFactor(favorability) {
+  const fav = favorability ?? 0;
+  for (const tier of TEACH_DISCOUNT_TIERS) {
+    if (fav >= tier.min) return tier.factor;
+  }
+  return 1.0;
+}
+
+// 计算某基础价在给定好感度下的实际拜师价格，向下取整到整数银两。
+export function teachPrice(basePrice, favorability) {
+  return Math.floor((basePrice ?? 0) * teachDiscountFactor(favorability));
+}

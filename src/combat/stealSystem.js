@@ -1,35 +1,56 @@
 // 偷窃系统
-// 成功率与好感度线性正相关：越信任你，越容易疏于防备，被你顺走东西。
+// 成功率与好感度、身法都正相关：越信任你，越容易疏于防备；身法越高，手越
+// 利索，得手概率也越高。两项独立算完相加，再统一封顶。
 // 失败后果不是简单扣个数字了事——NPC会真的生气，进入一个持续3回合的"愤怒窗口"：
 //   - 愤怒期间不缓解，好感度不会自然恢复
 //   - 玩家需要主动"嘴辩"（对话+措辞得体）才能提前化解愤怒
 //   - 3回合内既不嘴辩成功、也没有其他方式平息，愤怒升级为敌对，触发强制战斗
+//
+// 2026-07 扩展：偷窃现在不只偷物品，也能偷招（偷师）——判定用同一套成功率和
+// 惩罚，只是成功之后，从"偷到手的到底是物品还是招式"这一步开始分叉。
 
 export const STEAL_CONFIG = {
   baseRate: 0.2,        // 好感度为0时的基础成功率
   bonusPerTen: 0.05,    // 好感度每10点，成功率+5%
-  maxRate: 0.85,        // 成功率封顶，永远保留失败可能
+  agilityBonusPerTen: 0.04, // 身法每10点，成功率再+4%（身法项独立于好感项）
+  maxRate: 0.9,         // 成功率封顶（原0.85，给身法项留出空间后调高到0.9，永远保留失败可能）
   angryTurns: 3,        // 生气状态持续的回合数上限
   angryFavorabilityLoss: 15, // 偷窃失败扣除的好感度
 };
 
-// 成功率计算：线性正相关，好感度越高越好偷
-export function stealSuccessRate(favorability) {
-  const bonus = Math.floor((favorability || 0) / 10) * STEAL_CONFIG.bonusPerTen;
-  return Math.min(STEAL_CONFIG.maxRate, STEAL_CONFIG.baseRate + bonus);
+// 成功率计算：好感项 + 身法项独立相加，封顶。
+// agility 参数默认0，不传时行为等同旧版纯好感公式（向后兼容旧调用点）。
+export function stealSuccessRate(favorability, agility = 0) {
+  const favBonus = Math.floor((favorability || 0) / 10) * STEAL_CONFIG.bonusPerTen;
+  const agiBonus = Math.floor((agility || 0) / 10) * STEAL_CONFIG.agilityBonusPerTen;
+  return Math.min(STEAL_CONFIG.maxRate, STEAL_CONFIG.baseRate + favBonus + agiBonus);
 }
 
 // 执行一次偷窃判定，返回结果对象，不直接修改状态——
 // 调用方（MudRPG.jsx）拿到结果后自己决定怎么写入 varTree/log，
 // 这个函数保持纯函数，方便单独测试概率分布是否符合预期。
-export function attemptSteal(favorability) {
-  const rate = stealSuccessRate(favorability);
+// agility 参数默认0，向后兼容旧调用（只传 favorability 的地方行为不变）。
+export function attemptSteal(favorability, agility = 0) {
+  const rate = stealSuccessRate(favorability, agility);
   const roll = Math.random();
   return {
     success: roll < rate,
     rate,      // 附带这次判定用的实际成功率，方便调试面板展示
     roll,      // 附带掷出的随机数，同上
   };
+}
+
+// 偷窃成功后，决定这次偷到的是"物品"还是"招式"（偷师）。
+// 二选一随机，不是每次都优先偷物或优先偷招——除非某一侧根本没得偷，
+// 那就直接退化成必定偷另一侧（比如平民没有专属招可偷，就只能偷物）。
+// hasStealableMove: 该NPC是否还有玩家没学过的招式可偷（由调用方提前算好传入）。
+// hasStealableItem: 该NPC身上是否还有没偷完的随身物品。
+// 返回 "move" | "item" | null（null=两边都没得偷，白跑一趟）。
+export function pickStealOutcome(hasStealableMove, hasStealableItem) {
+  if (!hasStealableMove && !hasStealableItem) return null;
+  if (!hasStealableMove) return "item";
+  if (!hasStealableItem) return "move";
+  return Math.random() < 0.5 ? "move" : "item";
 }
 
 // 生气状态的数据结构，存进 varTree.角色[npcName].生气状态
