@@ -43,7 +43,7 @@ import BugReportModal from "./BugReportModal.jsx";
 import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
 import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
-import { loadPortraits, setPortrait, removePortrait, getPortrait, fileToDataUrl, inferActivePortraitTarget } from "./portraits.js";
+import { loadPortraits, setPortrait, removePortrait, getPortrait, fileToDataUrl, inferActivePortraitTarget, SNOW_LEOPARD_FORMS, getSnowLeopardForm, setSnowLeopardForm, snowLeopardPortraitUrl } from "./portraits.js";
 import PortraitManager from "./PortraitManager.jsx";
 import CharacterPage from "./CharacterPage.jsx";
 import QuestLogScreen from "./QuestLogScreen.jsx";
@@ -76,6 +76,7 @@ import { resolveStageRewards, applyStageRewards } from "./quests/questRewards.js
 import { pendingGroundItems, detectCollectPickup, allCollected, alreadySatisfiedCollectStages, collectPromptLines } from "./quests/collect.js";
 import { MOVE_TYPE } from "./combat/moveTypes.js";
 import DuelScreen from "./DuelScreen.jsx";
+import TeamDuelScreen from "./TeamDuelScreen.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import PersuasionScreen from "./PersuasionScreen.jsx";
 import { tickAngryState } from "./combat/stealSystem.js";
@@ -1148,6 +1149,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [showLore, setShowLore] = useState(false); // 见闻录：小纸条+小账本可视化
   const [characterPageTarget, setCharacterPageTarget] = useState(null); // "面板"按钮指定直接打开谁的详情
   const [portraits, setPortraits] = useState(loadPortraits());
+  // 雪豹立绘三形态切换（人形·立雪/人形·倚剑/雪豹真身，存 localStorage 持久化）；
+  // slImgErr：图片文件未投放到 public/portraits/snowleopard/ 时显示占位提示而不是破图
+  const [slForm, setSlFormState] = useState(getSnowLeopardForm());
+  const [slImgErr, setSlImgErr] = useState(false);
   const [portraitTarget, setPortraitTarget] = useState(null); // null = 自动推断；否则玩家手动锁定查看的对象
   const [showPortraitManager, setShowPortraitManager] = useState(false);
   const [showPipeline, setShowPipeline] = useState(false);
@@ -5402,7 +5407,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               {(() => {
                 const candidates = ["旁白", "你", ...room.npcs.map(n => n.name)];
                 const target = portraitTarget && candidates.includes(portraitTarget) ? portraitTarget : inferActivePortraitTarget(interactMode, room, activeTarget || talkTarget);
-                const img = portraits[target];
+                // 雪豹是三形态官方立绘（public/portraits/snowleopard/），不走 localStorage 上传通道
+                const isSnowLeopard = target === "雪豹";
+                const img = isSnowLeopard
+                  ? (slImgErr ? null : snowLeopardPortraitUrl(slForm))
+                  : portraits[target];
                 return (
                   <>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
@@ -5425,11 +5434,29 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                       overflow: "hidden",
                     }}>
                       {img ? (
-                        <img src={img} alt={target} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img src={img} alt={target} style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={isSnowLeopard ? () => setSlImgErr(true) : undefined} />
                       ) : (
-                        <span style={{ color: zoneTheme.textDim, fontSize: "11px" }}>{target} 暂无立绘</span>
+                        <span style={{ color: zoneTheme.textDim, fontSize: "11px", textAlign: "center", padding: "0 8px" }}>
+                          {isSnowLeopard && slImgErr ? "雪豹立绘待投放（portraits/snowleopard/）" : `${target} 暂无立绘`}
+                        </span>
                       )}
                     </div>
+                    {/* 雪豹三形态切换：人形·立雪 / 人形·倚剑 / 雪豹真身 */}
+                    {isSnowLeopard && (
+                      <div style={{ display: "flex", gap: 4, marginTop: 6, justifyContent: "center" }}>
+                        {SNOW_LEOPARD_FORMS.map(f => (
+                          <span key={f.key}
+                            onClick={() => { setSnowLeopardForm(f.key); setSlFormState(f.key); setSlImgErr(false); }}
+                            style={{
+                              fontSize: "9.5px", padding: "2px 7px", borderRadius: 3, cursor: "pointer", userSelect: "none",
+                              color: slForm === f.key ? zoneTheme.bg : zoneTheme.accent,
+                              background: slForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
+                              border: `1px solid ${zoneTheme.border}`,
+                            }}>{f.label}</span>
+                        ))}
+                      </div>
+                    )}
                   </>
                 );
               })()}
@@ -6743,16 +6770,12 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         />
         );
       })()}
-      {duelingNpc && (
-        <ErrorBoundary label="切磋界面" onReset={() => { setDuelingNpc(null); setPendingQuestBranch(null); }}>
-        <DuelScreen
-          npc={duelingNpc}
-          playerChar={{ ...char, special: effectiveSpecialNow }}
-          pendingCombatBuff={char.pendingCombatBuff}
-          playerInv={inv}
-          playerMoveset={char.moveset}
-          zoneTheme={zoneTheme}
-          onFinish={(outcome, loot, battleLog, grownMoveset, usedItems) => {
+      {duelingNpc && (() => {
+        // 切磋结算共享 handler：1v1(DuelScreen) 与 2v2(TeamDuelScreen) 两个界面
+        // 的收尾逻辑完全一致——交情/战利品/任务分支/事实账本/整场战报都跟战斗
+        // 形态无关，提取成同一个函数供两处复用（battleLog 条目形状略有差异：
+        // 1v1 是 {playerMove,npcMove,...}，2v2 是 TeamDuelScreen 拼好的 {teamText}）。
+        const duelFinishHandler = (outcome, loot, battleLog, grownMoveset, usedItems) => {
             // 把这场切磋的逐回合【系统数据】写进主日志备查（招式+伤害，客观事实）。
             // 逐回合的 AI 说书不在这里逐条刷屏——它们会被打包发给主叙事 AI 写成
             // 一篇连贯的整场战报（见下方 finishedNpc 那段的 act 调用），避免重复。
@@ -6760,7 +6783,9 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               const foe = duelingNpc?.name || "对手";
               const logs = [{ t: "sys", text: `　── 与${foe}切磋 · 逐回合 ──` }];
               for (const e of battleLog) {
-                if (e.round && e.playerMove) {
+                if (e.round && e.teamText) {
+                  logs.push({ t: "desc", text: `  第${e.round}回合 ${e.teamText}` }); // 2v2团战条目（TeamDuelScreen已拼好单行）
+                } else if (e.round && e.playerMove) {
                   logs.push({ t: "desc", text: `  第${e.round}回合 你「${e.playerMove}」 对 ${foe}「${e.npcMove}」${e.dmgToNpc > 0 ? `　${foe}−${e.dmgToNpc}` : ""}${e.dmgToPlayer > 0 ? `　你−${e.dmgToPlayer}` : ""}` });
                 }
               }
@@ -6933,6 +6958,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               // recap 把每回合的系统数据 + AI 说书文字都拼进去，让主叙事 AI 写整场
               // 总结时既有硬数据（招式/伤害）又有说书人的味道打底，比只给数字更生动。
               const recap = (battleLog || []).map(r => {
+                if (r.teamText) return `第${r.round}回合，${r.teamText}`; // 2v2团战条目（TeamDuelScreen已拼好单行战报）
                 const bits = [`第${r.round}回合你使「${r.playerMove}」`];
                 if (r.npcMove) bits.push(`对方使「${r.npcMove}」`);
                 if (r.dmgToNpc > 0) bits.push(`对方受创${r.dmgToNpc}`);
@@ -6961,10 +6987,35 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               const recapNote = `在${room.name}与${finishedNpc.name}切磋，${recap ? recap.replace(/；/g, "、") + "，" : ""}${outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负"}。`;
               jotNote({ text: recapNote.slice(0, 60), owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.DUMB });
             }
-          }}
-        />
+        };
+        return (
+        <ErrorBoundary label="切磋界面" onReset={() => { setDuelingNpc(null); setPendingQuestBranch(null); }}>
+        {isSnowLeopardAvailable(companionState) ? (
+          // 雪豹已解锁且出战：2v2团战（玩家+雪豹 vs 当前对手；引擎/UI都支持第二敌人，待后续内容接入）
+          <TeamDuelScreen
+            enemies={[duelingNpc]}
+            leopardData={companionState.snowLeopard.data}
+            playerChar={{ ...char, special: effectiveSpecialNow }}
+            pendingCombatBuff={char.pendingCombatBuff}
+            playerInv={inv}
+            playerMoveset={char.moveset}
+            zoneTheme={zoneTheme}
+            onFinish={duelFinishHandler}
+          />
+        ) : (
+          <DuelScreen
+            npc={duelingNpc}
+            playerChar={{ ...char, special: effectiveSpecialNow }}
+            pendingCombatBuff={char.pendingCombatBuff}
+            playerInv={inv}
+            playerMoveset={char.moveset}
+            zoneTheme={zoneTheme}
+            onFinish={duelFinishHandler}
+          />
+        )}
         </ErrorBoundary>
-      )}
+        );
+      })()}
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }

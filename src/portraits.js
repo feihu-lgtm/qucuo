@@ -96,6 +96,33 @@ export function fileToDataUrl(file) {
   });
 }
 
+// ── 雪豹立绘·三形态（本轮新增）──
+// 伙伴雪豹有三张官方立绘：两张人形（前世羁绊的人形相）+ 一张雪豹真身。
+// 资源放在 public/portraits/snowleopard/ 下——刻意不走 src/assets 硬加载：
+// 图片由作者自行投放，构建不该依赖文件是否存在；缺失时界面上给占位提示，
+// 不影响构建与游戏运行（跟 public/portraits/player/ 玩家头像同一套思路）。
+const SL_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/snowleopard/";
+export const SNOW_LEOPARD_FORMS = [
+  { key: "form1", label: "人形·立雪", file: "form1.jpg" },
+  { key: "form2", label: "人形·倚剑", file: "form2.jpg" },
+  { key: "beast", label: "雪豹真身", file: "beast.jpg" },
+];
+const SL_FORM_KEY = "qucuo_snowleopard_form";
+// 默认"雪豹真身"——村里见到的是野兽形态的她；人形两相留给玩家自行切换
+export function getSnowLeopardForm() {
+  try {
+    const v = localStorage.getItem(SL_FORM_KEY);
+    return SNOW_LEOPARD_FORMS.some(f => f.key === v) ? v : "beast";
+  } catch { return "beast"; }
+}
+export function setSnowLeopardForm(key) {
+  try { localStorage.setItem(SL_FORM_KEY, key); } catch { /* ignore */ }
+}
+export function snowLeopardPortraitUrl(formKey) {
+  const f = SNOW_LEOPARD_FORMS.find(x => x.key === formKey) || SNOW_LEOPARD_FORMS[2];
+  return SL_BASE + f.file;
+}
+
 // ── 默认立绘预置（本轮新增）──
 // 项目自带 public/default-portraits/ 下的8张固定立绘（梅朵/呼延雪/何雨谢/
 // 才旦/李若由/卓玛/兰姐/罗琦），首次启动时自动写进 localStorage，玩家不用

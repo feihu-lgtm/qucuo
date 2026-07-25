@@ -14,7 +14,9 @@ import { createEmptyStatusSlots, applyStatus, applyMark, dispelControlDrain } fr
 import { rollBattleLoot, atkFromWaigong } from "./npcGeneration.js";
 import { resolveCombatBuff } from "./utils/buffSystem.js";
 
-const TYPE_ICON = { [MOVE_TYPE.ATTACK]: "⚔", [MOVE_TYPE.DEFENSE]: "🛡", [MOVE_TYPE.STATUS]: "☯" };
+// TYPE_ICON / HpBar / EnergyDots / MoveButton / MoveInspect 同时导出给
+// TeamDuelScreen.jsx（2v2团战界面）复用——纯展示组件，不含任何1v1状态逻辑。
+export const TYPE_ICON = { [MOVE_TYPE.ATTACK]: "⚔", [MOVE_TYPE.DEFENSE]: "🛡", [MOVE_TYPE.STATUS]: "☯" };
 
 // 把装备特效叠进本回合招式。原则：招式自带的标志位优先（玩家主动选的招 >
 // 被动装备增益），装备只补招式尚未拥有的字段——不覆盖、不叠加数值，避免
@@ -594,7 +596,7 @@ function describeMoveEffects(m) {
   return out;
 }
 
-function MoveInspect({ move, zoneTheme, onClose }) {
+export function MoveInspect({ move, zoneTheme, onClose }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const color = QUALITY_COLOR[move.quality] || zoneTheme.text;
   const effects = describeMoveEffects(move);
@@ -652,7 +654,7 @@ function MudRoundLog({ entry, npcName, zoneTheme }) {
   );
 }
 
-function HpBar({ pct, color }) {
+export function HpBar({ pct, color }) {
   return (
     <div style={{ width: "100%", height: 8, background: "rgba(0,0,0,0.3)", borderRadius: 4, overflow: "hidden" }}>
       <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.4s ease" }} />
@@ -660,7 +662,7 @@ function HpBar({ pct, color }) {
   );
 }
 
-function EnergyDots({ value, color, right }) {
+export function EnergyDots({ value, color, right }) {
   return (
     <div style={{ display: "flex", gap: 3, marginTop: 4, justifyContent: right ? "flex-end" : "flex-start" }}>
       {Array.from({ length: 10 }, (_, i) => (
@@ -673,7 +675,7 @@ function EnergyDots({ value, color, right }) {
   );
 }
 
-function MoveButton({ move, disabled, zoneTheme, onClick, onInspect }) {
+export function MoveButton({ move, disabled, zoneTheme, onClick, onInspect }) {
   const color = QUALITY_COLOR[move.quality] || zoneTheme.text;
   return (
     <div

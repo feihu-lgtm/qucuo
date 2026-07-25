@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "伙伴系统第三阶段：2v2团战界面上线（TeamDuelScreen）+ 雪豹三形态立绘切换",
+    time: "2026-07-26 13:30",
+    notes: [
+      "雪豹+2v2全链路实装完成：雪豹已解锁且出战时，点「确认切磋」从1v1(DuelScreen)分流到2v2团战界面(TeamDuelScreen)——玩家+雪豹 vs 当前对手。数值裁决全部走已验证的 teamBattleEngine 调度层（含裸奔规则），本版只写UI与装配层，没动 resolveTurn 一个字段。",
+      "①【TeamDuelScreen.jsx 新界面】我方2单位（玩家+雪豹）vs 敌方1~2单位的血条/能量点布局（HpBar/EnergyDots/MoveButton/MoveInspect 从 DuelScreen 导出复用，未重写）；选招向导三段式：你出招→（雪豹手动时）雪豹出招→就绪出击；目标多于一个时必须显式选「打谁/防谁」（裸奔规则：防御也要指定防的是谁），单敌自动锁定；雪豹托管/手动可随时切换——托管走 SNOW_LEOPARD_PROFILE 纯野兽本能（高攻击/高风险/不配合战术），手动可替它选招选目标；敌招迷雾按敌方单位各自记录、用过才揭示；结算出错显式报错并可重选（跟 DuelScreen 同一兜底哲学）。",
+      "②【teamUnits.js 装配层】玩家（外功梯子baseAtk+装备聚合+战前餐气血抬高）、雪豹（companion固化data→引擎单位，moveset→movesetLocal重命名+补运行时字段+挂托管性格）、敌方NPC（carriedItems特效聚合）三种数据源统一翻译成引擎单位格式，纯函数可单测。",
+      "③【MudRPG接线】duelingNpc 渲染处分流：isSnowLeopardAvailable(companionState) 为真进 TeamDuelScreen，否则维持 DuelScreen；切磋收尾的 onFinish（交情/战利品/任务分支/事实账本/整场战报）提取成两个界面共享的同一个 handler——团战逐回合战报以 teamText 单行格式接入既有的系统日志与AI整场战报管线。",
+      "④【雪豹三形态立绘】游戏内左栏「立绘」框选中雪豹时，框下方出现三个切换按钮：人形·立雪/人形·倚剑/雪豹真身（默认真身），选择存 localStorage 持久化。图片走 public/portraits/snowleopard/（form1.jpg/form2.jpg/beast.jpg）静态目录——刻意不硬加载进构建：图片由作者自行投放，缺失时显示占位提示，不影响构建与运行。",
+      "⑤【已知边界】2v2 v1 暂无战斗内道具栏（1v1 的服药回合在团战里怎么指派目标需要单独设计，usedItems 恒空回传）；敌方当前只有单一对手入口（duelingNpc），第二敌人的内容接入留给后续；雪豹「随行/留守」切换 UI 未做（解锁后默认一直出战）。",
+      "⑥【验证】Node 脚本16条断言全过：雪豹装配（雪隐三绝4招/满血进场/装备恒0/托管性格挂载）、玩家外功梯子、2v2实打出胜负、裸奔规则（敌人忙于打雪豹时玩家单击必中且不展示应对招）；vite build（pages配置）通过；playwright 实机截图核对：2v1选招→就绪→出击整回合、2v2双敌选目标、雪豹手动模式选招，布局与交互均符合预期。",
+    ],
+  },
+  {
     codename: "新增伙伴系统第一阶段：雪豹入队——村口NPC+专属招式+邀请入队+前世羁绊铁律",
     time: "2026-07-26 12:30",
     notes: [
