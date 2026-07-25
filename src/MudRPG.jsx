@@ -1036,6 +1036,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 伙伴系统（本轮新增）：雪豹的解锁/出战状态。老存档没有这个字段，用
   // initCompanionState() 兜底成"未解锁"，不影响任何既有存档的兼容性。
   const [companionState, setCompanionState] = useState(restored?.snap.companionState || initCompanionState());
+  // companionState 的 latest-ref：房间注入 effect（依赖数组刻意不含 companionState，
+  // 避免入队/好感变动就整屋重刷）需要读到最新入队状态来决定是否还注入驻场雪豹，
+  // 靠这个 ref 拿最新值。用一个同步 effect 维护，不改动现有 setCompanionState 调用点。
+  const companionStateRef = useRef(companionState);
+  useEffect(() => { companionStateRef.current = companionState; }, [companionState]);
   // 装备信息现在完全并入 inv（每个物品对象自带 category/equipped 标记），不再单独维护 equip state
   const [inv, setInv] = useState(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]);
   const [log, setLog] = useState(
@@ -1579,7 +1584,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 就必须真实存在于 room.npcs 里，感叹号面板才能检测到他们的任务
     // （面板判定逻辑就是简单的 room.npcs.some(n => n.name === giver)，
     // 见 findQuestByGiver 附近逻辑）。见 residentNpcs.js 的完整说明。
-    const residentNpcs = getResidentNpcs(room.name).map(toRoomNpcWithCombat);
+    // 雪豹一旦入队，它作为"村口驻场兽"的身份就结束了——不再注入房间。此后它只以
+    // "队友"身份通过 visibleNpcsForAI 单独随玩家在场（形影不离），不再是某个据点的
+    // 固定驻场人物。用 companionState ref 读最新值（effect 依赖数组不含 companionState，
+    // 靠 ref 拿到入队后的最新状态，避免仅靠 deps 触发导致的时序问题）。
+    const leopardJoined = companionStateRef.current?.snowLeopard?.unlocked;
+    const residentNpcs = getResidentNpcs(room.name)
+      .filter(n => !(leopardJoined && n.name === "雪豹" && n.companionCandidate))
+      .map(toRoomNpcWithCombat);
     // 护镖任务的系统保证：接了镖之后，targetNpc 当天必须真的能在 targetLocation 找到，
     // 不能靠 getScheduledNpcs 的随机权重抽样"赌"到——那样任务会随机卡死无法交货。
     // 强制把还差在场的目标NPC塞进来，不受权重采样结果影响。
@@ -4283,6 +4295,10 @@ ${dealFmt}`;
     if (npc.name !== "雪豹") return; // 目前只有雪豹这一个伙伴候选，其余NPC不会显示这个按钮，这里只是双重保险
     setCompanionState(prev => unlockSnowLeopard(prev));
     setVarTree(prev => markNpcAsKnown(prev, npc.name));
+    // 入队即时生效：把作为"村口驻场兽"的雪豹从当前房间移除，此地之人/在场名单/互动
+    // 入口当场都不再有它（此后它只以队友身份随玩家在场）。重进村口不再注入，由房间
+    // 注入 effect 的 companionStateRef 过滤保证——两处配合，即时消失 + 永不重现。
+    setRoom(r => ({ ...r, npcs: (r.npcs || []).filter(n => !(n.name === "雪豹" && n.companionCandidate)) }));
     setActiveTarget(npc.name);
     act(`向雪豹伸出手，郑重邀它同行`, [], { settle: true, settleNpc: npc.name, settleKind: "companion_invite" });
   }, [act]);

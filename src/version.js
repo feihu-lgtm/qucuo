@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "beast武学放开可学 + 雪豹入队后村口驻场兽消失",
+    time: "2026-07-26 18:00",
+    notes: [
+      "两处按作者要求改：野兽的武学也能拜师学，以及雪豹入队后不再作为村口驻场兽出现在房间里。",
+      "①【beast武学放开】与作者确认彻底放开：learnSkill.js的tryLearnFromMaster删掉开头 if(npc.beast||npc.unlearnable) 那道拒绝门——任何角色(含原先显式标unlearnable的虎王/狼王/白猿三只顶级野兽)身上实机带的招都能拜师学到。招式来源已在上一版改成读npc.moveset，野兽的兽性专属招(猛虎跳涧/猿臂攫石/碎岩击等)也固化在里面。顺带更新companion.js里\"beast=不可学\"的过时注释；npcSignatureMoves.js的isUnlearnable导出因此不再被消费(留作死导出，不删以免波及未预见处)。Node实测虎王/白猿/雪豹三者拜师均返回可学及其兽性招。",
+      "②【雪豹入队即消失】与作者确认范围：彻底从房间移除——此地之人/喂AI在场名单/点击互动入口都不再把驻场雪豹当现场人物；但队友身份的雪豹(companionState，走visibleNpcsForAI单独维护)仍随玩家在场(\"队伍里的要在房间里\")。实现两处配合：handleInviteCompanion入队瞬间setRoom过滤掉当前房间里 name===雪豹 && companionCandidate 的条目(即时消失)；房间注入effect(1582附近)读新增的companionStateRef.current判断雪豹已unlock时不再注入驻场雪豹(重进村口不重现)。新增companionStateRef+同步effect，因为注入effect依赖数组刻意不含companionState(避免入队/好感变动整屋重刷)，靠ref拿最新入队状态。",
+      "注：雪豹入队消失涉及React effect依赖/ref时序，环境无法起浏览器实机验证，仅逻辑推演+esbuild语法通过，建议本地实机点一次入队确认即时消失与队友栏互动不受影响。esbuild验证MudRPG.jsx/learnSkill.js/companion.js通过。",
+    ],
+  },
+  {
     codename: "修拜师/偷师读不到具名NPC实机武学：招式来源改读npc.moveset",
     time: "2026-07-26 17:30",
     notes: [

@@ -49,7 +49,7 @@ export function createSnowLeopard() {
 
   return {
     ...npcShape,
-    beast: true,        // 复用 npcSignatureMoves.js 的 isUnlearnable 判据（beast/unlearnable任一为真即不可学）
+    beast: true,        // 兽类标记（走兽性招名/立绘/不可对话等）。注：自2026-07-26起 beast 不再等同"武学不可学"，拜师/偷师已对野兽放开。
     moveset,
     equipAtk: 0, equipDef: 0, // 雪豹不能穿装备，恒为0（不接入equipment.js的穿戴系统）
     combatStats: {

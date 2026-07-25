@@ -78,10 +78,9 @@ function collectLearnableMoves(npc, mode, skills, char) {
 //     totalPrice 是这次一次性教完所有新招要花的银两（按好感折价后的价格）。
 //     调用方自己决定要不要真的扣钱（比如银两不够时改成部分学，或者直接拒绝）。
 export function tryLearnFromMaster(npc, varTree, skills, char) {
-  if (npc.beast || npc.unlearnable) {
-    return { ok: false, reason: `${npc.name}是头畜生，纵有一身凶悍本事，也无从传你半分。` };
-  }
-
+  // 与作者确认：彻底放开——beast/unlearnable 都不再拦截，任何角色(含虎王/狼王/
+  // 白猿等原先标记 unlearnable 的顶级野兽)身上实机带的招都能拜师学到。招式来源
+  // 统一读 npc.moveset(见 collectLearnableMoves)，野兽的兽性专属招也固化在里面。
   const gate = canLearnSkillFrom(npc.name, varTree, []);
   if (!gate.eligible) {
     return { ok: false, reason: describeLearnSkillGate(gate, npc.name) };
