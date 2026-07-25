@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修交易界面拉不下去(Bug3) + 2v1敌人重复出招/不打雪豹(Bug4)",
+    time: "2026-07-26 17:00",
+    notes: [
+      "本轮修两个实机bug：交易面板内容多了拉不到底，以及2v1团战里敌人从不攻击雪豹、且每回合多出一条冗余的敌人视角战报。",
+      "①【Bug3 交易界面高度渲染】根因不是简单的\"两层maxHeight嵌套\"，而是TradingScreen的inline档outer容器用了maxHeight:50vh——flex column里子级要正确计算高度需要父级有确定高度(definite height)，maxHeight单独存在(没有height)时不构成确定高度，于是inner→买卖区→左右两栏整条flex:1链条全部退化成\"由内容撑开\"，两栏的overflowY:auto因为拿不到高度上限而永不触发，内容堆出来被上层overflow:hidden裁掉，表现为\"拉不下去\"。修复：outer从maxHeight:50vh改成确定的height:33vh(完整落在外层36vh共用wrapper内、不被裁，也不影响其他建筑面板)，并给header/footer加flexShrink:0保证中间flex:1买卖区拿到确定高度。效果=面板整体固定高度、左右两栏各自内部滚动的单机RPG经典交易窗。只动TradingScreen.jsx一个文件、3处改动、零副作用。",
+      "②【Bug4 敌人不打雪豹+冗余第三条】根因是runTeamTurn把actingOrder里每个存活单位(含敌人)都无条件当主动actor跑一次resolveOneOnOne，2v1里就固定产生3条turnLog。而resolveTurn本身是双向结算(一次调用A/B都掉血)，所以敌人作为被动target应对攻击者时已经还手过一次，再作为主动actor出招=一回合出了两招，且那第三招约50%又砸在玩家身上(叠加第一条)，导致观感是\"只咬玩家、不理雪豹\"、外加一条重复的敌人视角叙事。与作者确认设计取舍：敌人打了一招就不能打第二下，面对另一个攻击者站着挨打(以少打多的天然劣势)。修复：runTeamTurn新增consumed集合——当A打B、且B这回合选定要打的正是A(双向对打)时，B的招就此用尽，consumed标记后B轮到自己主动出手时跳过。敌人的招只在它intent指向的那个对手那场里生效，对另一个走裸奔空转，且不再单独出条。",
+      "Node脚本实测三种先手/目标组合：敌人intent指向玩家(玩家先手)、指向雪豹、敌人先手——均为2条turnLog、敌人主动出招0~1次(先手时它就是第一个actor、以它为主语合理)，敌人会按随机intent真正打到雪豹而非从不打。与作者确认叙事视角保持现状(先手方当主语合理)。esbuild语法验证TradingScreen.jsx/teamBattleEngine.js通过。",
+    ],
+  },
+  {
     codename: "修走路捡到东西没入背包bug：extractPickupName补书名号识别+新增AI自由发挥拾取兜底",
     time: "2026-07-26 16:00",
     notes: [
