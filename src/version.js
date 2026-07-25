@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "赌石加买石扣钱(真赌石)：第一刀=花钱买下毛料，切开亏赚自负",
+    time: "2026-07-26 19:00",
+    notes: [
+      "作者反馈：赌石一刀切开赚1w两却没收买石头的钱(无本暴富)；顺带核实谈价是否真谈、以及\"提示去玉器轩换成品却没东西\"。",
+      "①【买石扣钱·核心修复】此前赌石是\"开石免费+卖料加钱\"的无本暴利——handleGambleSettle只有sell(加钱)/forge(扣200)两分支，压根没有\"买毛料花钱\"这一步。而数据层其实早已备好：石头对象出生就带 price=场口entryFee(狼曲120/鹰曲200/熊曲300/雪山老坑800)，appraiseStone的涨垮判断本就拿\"开出总值 vs stone.price\"比——就差真扣钱。改法与作者确认\"加买石环节做真赌石\"：GambleStoneScreen新增bought state，第一刀=买下这块毛料(此前相石看皮免费勘察，第一刀落下才付钱、付了不退)，钱不够则拦住不开并提示；顶栏未买时显示\"此料买价X两，落第一刀即买下切开\"。handleGambleSettle新增 type:buy 分支真扣 char.money(不关面板，买下后继续开刀)。",
+      "②【谈价·核实为真，无需改】跟竞价者谈价链路完整且正确：startTalk→handleGambleTalk存ctx走act→AI回<deal>{priceMult,addItem}→gambleSettleNegotiation把倍率clamp[0.8,1.5](AI越权无效)→写gambleNegotiation[stoneId][bidderName]→赌桌读它更新报价按新价结算。系统裁决数值、AI只演，符合铁律。是真谈了，不是走过场。",
+      "③【玉器轩取不到成品·定位为设计未完成，本轮不改】对照《赌石_玉器与原石设计.md》§2.4/§3/§4：委托做玉器的正确闭环应是 rollCommission 30/10/60三分支→成功时 makeGameItem(20种玉器成品之一, rollQuality(有效luck'))→走ForgeScreen式\"延时取件flag\"→玉器轩取货。现状缺一整条：20种玉器成品(翠玉扳指/玉钺/帝王绿玉圭等)未进catalog.js；rollCommission成功只返回品质档、未选定具体成品也未makeGameItem；forge分支成功只发叙事、无成品入袋无取件flag；玉器轩building无取货入口。属设计文档明确规划但代码只做一半，与作者确认下轮照设计文档专门完整落地(加20件玉器+品质匹配+延时取件+玉器轩UI)。",
+      "esbuild验证GambleStoneScreen.jsx/MudRPG.jsx通过。买石扣钱涉及React state与父子回调，环境无法起浏览器实机验证，建议本地实机点一次确认第一刀扣钱、钱不够拦截、买后连续开刀不重复扣。",
+    ],
+  },
+  {
     codename: "切磋潜能改为按对手品阶给(白10→红160)，越级挑战长见识多",
     time: "2026-07-26 18:30",
     notes: [

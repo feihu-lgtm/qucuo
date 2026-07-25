@@ -4909,6 +4909,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 赌石成交/委托：系统裁决好数值后（gambleStone 已 clamp），照送礼/买卖那套——
   // 拼一句自然语言走 act()，让主叙事演一段，convo/小纸条/账本/召回全自动挂上。
   const handleGambleSettle = useCallback((res) => {
+    if (res.type === "buy") {
+      // 买石头（进场买毛料）：真扣钱。这是"真赌石"的本钱——切开亏赚自负。
+      // 不 setActiveBuilding(null)：买下后要留在料场继续开刀，不能把面板关掉。
+      setChar(c => ({ ...c, money: (c.money || 0) - res.price }));
+      addLog([{ t: "item", text: `  💰 你相中一块${res.changKouLabel || ""}毛料，付${res.price}两买下，就地开切。` }]);
+      jotNote({ text: `在玉石料场花${res.price}两买下一块赌石毛料。`, source: NOTE_SOURCE.DUMB });
+      return;
+    }
     setActiveBuilding(null);
     if (res.type === "sell") {
       setChar(c => ({ ...c, money: (c.money || 0) + res.price }));
@@ -4923,7 +4931,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                                    : "在天都镇玉石料场委托做玉器，料在砣机上崩废了");
       }
     }
-  }, [act]);
+  }, [act, addLog, jotNote]);
 
   // 赌石相石（看皮）：系统先用 readSkinClue 按悟性裁决"能看出哪些线索"（AI 全程读不到
   // 种水真相），这里仿 inspectItem 的轻量单发——不挂预设/世界书/历史，只把线索交给说书人

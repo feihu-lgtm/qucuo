@@ -156,10 +156,24 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   }, []);
   const [skinOpen, setSkinOpen] = useState(false);
   const [skinLoading, setSkinLoading] = useState(false);
+  const [bought, setBought] = useState(false);  // 是否已花钱买下当前这块料（第一刀=买下）
+  const [buyWarn, setBuyWarn] = useState("");    // 钱不够买石头时的提示
 
   // 开一刀（系统裁决，AI 不参与）——揭晓真相瞬间写死，动画只是把结果演出来
+  // 真赌石：第一刀 = 买下这块毛料并切开。此前相石看皮免费，第一刀落下才付钱，
+  // 付了就不退——切开亏赚自负。钱不够买不了这块料。
   function doCut(pos) {
     if (closed || !stone || cutFx) return;      // 动画期间锁刀
+    if (!bought) {
+      const cost = stone.price || 0;
+      if (money < cost) {
+        setBuyWarn(`银两不足：买下这块${CHANG_KOU[stone.changKou].label}毛料需 ${cost} 两，你只有 ${money} 两。`);
+        return;
+      }
+      onSettle?.({ type: "buy", price: cost, stone, changKouLabel: CHANG_KOU[stone.changKou].label });
+      setBought(true);
+      setBuyWarn("");
+    }
     const r = cutSlot(stone, pos);
     if (!r) return;
     setCutFx({ pos, result: r });
@@ -275,8 +289,9 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
         padding: "0 18px", background: "linear-gradient(180deg,#14120e 60%,transparent)" }}>
         <div style={{ color: "#f0d090", fontSize: 15 }}>玉石料场 · 赌桌
           <span style={{ color: "#6a5d40", fontSize: 12, marginLeft: 8 }}>
-            {changKouLabel} · {skinLabel} · 已开{opened}刀{opened >= 1 ? "（悬停卡牌看行情，点卡成交或谈价）" : "（点石头或下方按钮开刀）"}
+            {changKouLabel} · {skinLabel} · 已开{opened}刀{opened >= 1 ? "（悬停卡牌看行情，点卡成交或谈价）" : (bought ? "（点石头或下方按钮开刀）" : `（此料买价 ${stone?.price || 0} 两，落第一刀即买下切开）`)}
           </span>
+          {buyWarn && <span style={{ color: "#d4756a", fontSize: 12, marginLeft: 10 }}>{buyWarn}</span>}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setMinimized(true)} style={topBtn}>最小化 ▬</button>
