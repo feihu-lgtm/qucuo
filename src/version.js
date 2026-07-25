@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修说书战报截断bug + 切磋说书进主日志(可事后回看)",
+    time: "2026-07-26 01:30",
+    notes: [
+      "武学习得系统统一重构前，先清三个附带项里能立刻修的。",
+      "①【修说书截断】battleNarration 的 maxTokens=400 对带thinking的模型(Gemini2.5Flash等)不够——思考与maxOutputTokens共享预算，思考一占正文就被截断在半句(项目已知坑)。修法：说书调用传 {...cfg, thinkingMode:'off'} 强制关思考覆盖玩家全局配置，maxTokens提到800兜底。这样不管玩家开没开思考，说书这种短润色都关思考给足正文额度，根治截断。",
+      "②【说书进主日志】切磋战报(含AI说书)战斗结束写进主日志：DuelScreen 的 onFinish 第三参 battleLog 本就回传完整战报，在 MudRPG onFinish 开头遍历它，每回合一行系统结算(你「招」对X「招」+伤害数字)，有narration的另起一行〔说书〕附下面。事后能在主日志回看，不再战斗界面一关就没。narration异步补的最后一两回合可能来不及，能补上的都写。",
+      "③【偷窃偷师文案】暂缓：偷窃当前只偷物品(carriedItems)，偷师(偷招)功能本身还没做(属于武学习得统一重构的一部分)。现在硬加'可偷师'文案会误导玩家，故这条随重构一起做，不先塞半成品文案。",
+      "battleNarration/MudRPG esbuild + vite build 通过。",
+    ],
+  },
+  {
     codename: "武学升阶改用潜能：stage只10门可修炼武学保留，升阶按钮进右栏，复用潜能通道",
     time: "2026-07-26 00:30",
     notes: [

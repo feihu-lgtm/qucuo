@@ -6394,6 +6394,20 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           playerMoveset={char.moveset}
           zoneTheme={zoneTheme}
           onFinish={(outcome, loot, battleLog, grownMoveset, usedItems) => {
+            // 把这场切磋的战报写进主日志（事后可回看）：每回合一行系统结算，
+            // 有 AI 说书的另起一行附在下面（与战斗界面同一份 battleLog，narration
+            // 异步补的最后一两回合可能来不及，能补上的都写）。
+            if (Array.isArray(battleLog) && battleLog.length) {
+              const foe = duelingNpc?.name || "对手";
+              const logs = [{ t: "sys", text: `　── 与${foe}切磋 · 战报 ──` }];
+              for (const e of battleLog) {
+                if (e.round && e.playerMove) {
+                  logs.push({ t: "desc", text: `  第${e.round}回合 你「${e.playerMove}」 对 ${foe}「${e.npcMove}」${e.dmgToNpc > 0 ? `　${foe}−${e.dmgToNpc}` : ""}${e.dmgToPlayer > 0 ? `　你−${e.dmgToPlayer}` : ""}` });
+                }
+                if (e.narration) logs.push({ t: "affection", text: `  〔说书〕${e.narration}` });
+              }
+              if (logs.length > 1) addLog(logs);
+            }
             // 战前餐（pendingCombatBuff）是一次性的：这场战斗已经进场应用过，无论
             // 胜负都清掉，不会带到下一场。放在最前面清，跟其他结算互不干扰。
             if (char.pendingCombatBuff) setChar(c => { const { pendingCombatBuff, ...rest } = c; return rest; });

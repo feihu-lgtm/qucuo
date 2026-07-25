@@ -56,8 +56,12 @@ export async function narrateTurn(myFighter, foeFighter, myMove, foeMove, result
   const user = `本回合结果：${digest}`;
 
   try {
-    const { text } = await callModel(cfg, sys, [{ role: "user", content: user }], {
-      maxTokens: 400, // 两三句话足够，给点余量防 thinking 占额
+    // 说书是短润色请求：强制关思考（thinkingMode:off）覆盖玩家全局配置，
+    // 否则思考会吃掉 token 额度，把两三句说书截断在半句（项目已知坑：
+    // thinking 与 maxOutputTokens 共享预算）。同时给足 maxTokens 兜底。
+    const noThinkCfg = { ...cfg, thinkingMode: "off" };
+    const { text } = await callModel(noThinkCfg, sys, [{ role: "user", content: user }], {
+      maxTokens: 800, // 两三句正文足够，关思考后不会被占，给足余量防截断
     });
     const clean = (text || "").replace(/<thinking>[\s\S]*?<\/thinking>/g, "").trim();
     return clean || null;
