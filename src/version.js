@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "切磋去掉逐回合AI说书：反代限流1分钟5次，六七回合就打爆额度",
+    time: "2026-07-26 03:00",
+    notes: [
+      "反代接口限流是1分钟5次请求，DuelScreen(主游戏切磋)每回合都调一次narrateTurn写说书战报，一场切磋六七回合就把额度打爆。去掉这个每回合调用。",
+      "①【去掉逐回合说书】删除每回合结算后异步调narrateTurn、把结果补到entry.narration的那段逻辑；对应的narration:null占位字段和未使用的narrateTurn import一并清掉。",
+      "②【保留战斗结束整场战报】这次改动不影响战斗结束时打包发一次的整场战报(走act，一次AI调用)——整场战报本来就是AI根据每回合系统数据(招式/伤害/克制)自己写，不依赖逐回合narration也能写。",
+      "③【逐回合可读性不受影响】MudRoundLog里逐回合仍有系统结算文字(notes)保底可读，只是不再有AI润色的〔说书〕小字那一行。",
+      "④【范围确认】斗蛐蛐(QuickBattleScreen)的narrateTurn调用未改动，逐回合说书原样保留——这次只针对DuelScreen主游戏切磋。",
+      "esbuild 语法检查通过；vite build 因入口debug.html缺失而失败，与本次改动无关(改动前就存在)。",
+    ],
+  },
+  {
     codename: "修战斗结算穿帮：发给AI的整段战报指令不再原样打印给玩家",
     time: "2026-07-26 02:30",
     notes: [
