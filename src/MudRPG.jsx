@@ -36,7 +36,7 @@ function extractPickupName(text) {
   return null;
 }
 
-import { getZoneTheme } from "./theme.js";
+import { getZoneTheme, ink } from "./theme.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import CodexScreen from "./CodexScreen.jsx";
 import BugReportModal from "./BugReportModal.jsx";
@@ -4687,6 +4687,19 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   const clrDay = { sys: "#2e5a2e", cmd: "#7a5c14", desc: "#3d3626", room: "#1e5a6a", item: "#7a5410", stat: "#1e4a6a", skill: "#5a3a7a", err: "#a02020", choice: "#2e6a4a", narrator: "#8a2a6a", crash: "#a02020", confess: "#8a5a0a", affection: "#a0305a", quest: "#8a5a0a" };
   const clr = isDayMode ? clrDay : clrNight;
   const zoneTheme = getZoneTheme(room.name, isDayMode);
+  // 语义色日夜适配（藏地三色点缀体系，见 theme.js INK）——全文件统一从这组取，
+  // 不再到处散写 #e0a0d0/#8ac48a 这类"只有暗夜版"的硬编码（日间米色底下偏淡发灰）。
+  const uiPink = ink("pink", isDayMode);       // 好感/私聊粉
+  const uiGreen = ink("green", isDayMode);     // NPC名/对话绿
+  const uiTurquoise = ink("turquoise", isDayMode); // 松石绿：设置/交互
+  const uiGold = ink("gold", isDayMode);       // 鎏金：重要入口
+  const uiCrimson = ink("crimson", isDayMode); // 绛红：警示
+  // 顶栏按钮统一规格：此前每个按钮各自 padding/字号/色系，一字排开像彩虹糖纸。
+  // 收敛成"同一副骨架 + 三色语义"：金=重要入口，松石绿=设置/切换，绛红=上报，其余用正文/次要色。
+  const topBtn = (color) => ({
+    cursor: "pointer", color, padding: "2px 9px", fontSize: "10.5px",
+    border: `1px solid ${zoneTheme.border}`, borderRadius: 3, background: "transparent",
+  });
   const inkDivider = `linear-gradient(90deg, transparent, ${zoneTheme.border}, transparent)`;
   const S = {
     panel: { display: "flex", flexDirection: "column", borderRight: `1px solid ${zoneTheme.border}`, minWidth: 0, overflow: "hidden" },
@@ -4758,57 +4771,66 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           width: isMobile ? "100%" : "auto", flex: isMobile ? "none" : 1,
         }}>
         <span
+          className="qbtn"
           onClick={() => setShowTutorial(true)}
-          style={{ cursor: "pointer", color: "#e8d0a0", padding: "2px 10px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold" }}
+          style={{ ...topBtn(uiGold), fontWeight: "bold" }}
         >📖 新手教程</span>
         <span
+          className="qbtn"
           onClick={() => setShowCodex(true)}
           title="百物·武学总览：看全所有物品与武学的介绍、品阶、效果"
-          style={{ cursor: "pointer", color: "#e8d0a0", padding: "2px 10px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold" }}
+          style={{ ...topBtn(uiGold), fontWeight: "bold" }}
         >📖 图鉴</span>
         <span
+          className="qbtn"
           onClick={() => setShowVersionHistory(true)}
           title="点击查看版本历史目录"
-          style={{ cursor: "pointer", color: "#8a7a5a", fontSize: "10px", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
+          style={{ ...topBtn(zoneTheme.textDim), fontSize: "10px" }}
         >📅 {CURRENT_VERSION.time}</span>
 
         {/* 中组：日志 · 上报bug */}
-        <span onClick={() => setShowTrace(p => !p)} style={{ cursor: "pointer", color: showTrace ? "#8ac8b8" : "#5a5a4a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3, fontSize: "10px", marginLeft: 12 }}>🧭 全流程日志</span>
-        <span onClick={() => setShowBugReport(true)} title="遇到问题或有建议，点这里上报" style={{ cursor: "pointer", color: "#e08a6a", padding: "2px 8px", border: "1px solid #5a3a2a", borderRadius: 3, fontSize: "10px" }}>🐞 上报bug</span>
+        <span className="qbtn" onClick={() => setShowTrace(p => !p)} style={{ ...topBtn(showTrace ? uiTurquoise : zoneTheme.textDim), marginLeft: 12 }}>🧭 全流程日志</span>
+        <span className="qbtn" onClick={() => setShowBugReport(true)} title="遇到问题或有建议，点这里上报" style={topBtn(uiCrimson)}>🐞 上报bug</span>
 
         <span style={{ flex: 1 }} />
 
         {/* 右组：其余全部右对齐 */}
         <span
+          className="qbtn"
           onClick={() => setShowCharacterPage(true)}
-          style={{ cursor: "pointer", color: "#e0a0d0", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
+          style={topBtn(uiPink)}
         >👥 人物关系</span>
         <span
+          className="qbtn"
           onClick={() => setShowQuestLog(true)}
-          style={{ cursor: "pointer", color: "#a0c0e0", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
+          style={topBtn(zoneTheme.text)}
         >📜 任务</span>
         <span
+          className="qbtn"
           onClick={() => setShowLore(true)}
-          style={{ cursor: "pointer", color: "#c4a86a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
+          style={topBtn(zoneTheme.text)}
         >📖 见闻录</span>
         <span
+          className="qbtn"
           onClick={() => {
             if (window.confirm("返回开始菜单？当前进度已自动保存，可以随时继续。")) {
               sessionStorage.setItem("wuxia_mud_force_start_screen", "1");
               window.location.reload();
             }
           }}
-          style={{ cursor: "pointer", color: "#8a8a8a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
+          style={topBtn(zoneTheme.textDim)}
         >⏻ 主菜单</span>
         <span
+          className="qbtn"
           onClick={() => { setSettingsInitialTab("saves"); setShowSettings(true); }}
-          style={{ cursor: "pointer", color: "#d4a853", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}
+          style={topBtn(uiGold)}
         >💾 存档</span>
-        <span onClick={() => { setSettingsInitialTab(null); setShowSettings(true); }} style={{ cursor: "pointer", color: "#6ec6c6", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3 }}>⚙ 设置</span>
+        <span className="qbtn" onClick={() => { setSettingsInitialTab(null); setShowSettings(true); }} style={topBtn(uiTurquoise)}>⚙ 设置</span>
         <span
+          className="qbtn"
           onClick={() => setIsDayMode(d => !d)}
           title={isDayMode ? "切回暗夜模式" : "切换到日间模式（米色底+棕框）"}
-          style={{ cursor: "pointer", color: isDayMode ? "#8a5a1e" : "#5a5a4a", padding: "2px 8px", border: `1px solid ${zoneTheme.border}`, borderRadius: 3, fontSize: "10px" }}
+          style={topBtn(uiTurquoise)}
         >{isDayMode ? "☀ 日间" : "☾ 夜间"}</span>
         {autoSaveError && (
           <span
@@ -5082,13 +5104,13 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                           <div key={i} style={{ marginBottom: 6, paddingBottom: 6, borderBottom: i < present.length - 1 ? `1px solid ${zoneTheme.border}` : "none" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                               {/* 名字纯展示，不可点——互动统一走"角色面板"按钮，不再从名字弹菜单 */}
-                              <span style={{ color: "#8ac48a", flex: 1 }}>
-                                {n.name}<span style={{ color: "#5a5a4a", fontSize: "11px", marginLeft: 6 }}>{n.brief}</span>
+                              <span style={{ color: uiGreen, flex: 1 }}>
+                                {n.name}<span style={{ color: zoneTheme.textDim, fontSize: "11px", marginLeft: 6 }}>{n.brief}</span>
                               </span>
                               {hasAffection ? (
                                 <span style={{ fontSize: "10.5px", flexShrink: 0, textAlign: "right", whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
-                                  <span style={{ color: "#e0a0d0" }}>{npcAffectionLabel(attrs.好感度)}</span>
-                                  <span style={{ color: "#5a5a4a", marginLeft: 4 }}>{attrs.好感度}</span>
+                                  <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>
+                                  <span style={{ color: zoneTheme.textDim, marginLeft: 4 }}>{attrs.好感度}</span>
                                 </span>
                               ) : (
                                 <span style={{ fontSize: "10px", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
@@ -5121,8 +5143,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                                 style={{ fontSize: "10px", color: (char.pigeons || 0) <= 0 ? zoneTheme.textDim : (pigeonTarget === name ? zoneTheme.accent : "#c4a040"), cursor: "pointer", flexShrink: 0 }}>🕊飞鸽</span>
                               {hasAff ? (
                                 <span style={{ fontSize: "10px", flexShrink: 0, whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
-                                  <span style={{ color: "#e0a0d0" }}>{npcAffectionLabel(attrs.好感度)}</span>
-                                  <span style={{ color: "#5a5a4a", marginLeft: 4 }}>{attrs.好感度}</span>
+                                  <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>
+                                  <span style={{ color: zoneTheme.textDim, marginLeft: 4 }}>{attrs.好感度}</span>
                                 </span>
                               ) : (
                                 <span style={{ fontSize: "10px", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
@@ -5881,7 +5903,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           )}
 
           <div style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            {[["action", "◈ 行动", zoneTheme.accent], ["talk", "◎ 对话", "#8ac48a"], ["whisper", "◆ 私聊旁白", "#e0a0d0"]].map(([id, label, color]) => (
+            {[["action", "◈ 行动", zoneTheme.accent], ["talk", "◎ 对话", uiGreen], ["whisper", "◆ 私聊旁白", uiPink]].map(([id, label, color]) => (
               <span
                 key={id}
                 onClick={() => { setInteractMode(id); setTalkTarget(null); setActiveTarget(null); setPigeonTarget(null); }}
@@ -5899,8 +5921,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               style={{
                 cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 3, userSelect: "none", fontWeight: "bold", letterSpacing: "0.5px",
                 color: nsfwOn ? zoneTheme.bg : zoneTheme.textDim,
-                background: nsfwOn ? "#c85a6a" : "transparent",
-                border: `1px solid ${nsfwOn ? "#c85a6a" : zoneTheme.border}`,
+                background: nsfwOn ? uiCrimson : "transparent",
+                border: `1px solid ${nsfwOn ? uiCrimson : zoneTheme.border}`,
                 marginRight: 8,
               }}
             >NSFW</span>
@@ -6715,10 +6737,12 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
         ::-webkit-scrollbar{width:3px}
         ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:#1a1d2e;border-radius:2px}
-        ::selection{background:#2a3a2a}
-        input::placeholder{color:#3a3830}
+        ::-webkit-scrollbar-thumb{background:${zoneTheme.border};border-radius:2px}
+        ::selection{background:${zoneTheme.accentDim}}
+        input::placeholder{color:${zoneTheme.textDim}}
         .log-streaming{opacity:0.92}
+        .qbtn{transition:filter .15s ease,border-color .15s ease}
+        .qbtn:hover{filter:brightness(1.25)}
       `}</style>
     </div>
   );

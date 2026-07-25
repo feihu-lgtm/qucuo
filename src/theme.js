@@ -170,6 +170,22 @@ export function getZoneTheme(roomName, isDayMode = false) {
   return (isDayMode ? ZONE_THEMES_DAY : ZONE_THEMES)[zone];
 }
 
+// ── 设计基元（本轮新增）：藏地三色点缀 + 语义色日夜适配 ──────────────────
+// 总方针「简约为体、藏地为点」：界面骨架维持线条简约的 Claude 风，
+// 藏地三色（松石绿/鎏金/绛红）只作语义化点缀——绿=交互/确认，金=重要入口，
+// 红=警示/危险。每个色都给夜/日两版：暗夜版明度够亮才在暗底上显色，
+// 日间版压深拉饱和，保证米色底上对比度达标（与 LogEntry 对话粉同一换算思路）。
+export const INK = {
+  turquoise: { night: "#6ec6c6", day: "#1e7a72" }, // 松石绿：设置/切换/交互确认
+  gold:      { night: "#d4a853", day: "#8a5a12" }, // 鎏金：重要入口/任务金
+  crimson:   { night: "#c85a6a", day: "#a62b3a" }, // 绛红：上报bug/NSFW/警示
+  pink:      { night: "#e0a0d0", day: "#8a1e6a" }, // 好感/私聊粉（对齐 LogEntry 对话粉）
+  green:     { night: "#8ac48a", day: "#2e6b34" }, // NPC名/对话绿
+};
+export const ink = (name, isDayMode) => INK[name][isDayMode ? "day" : "night"];
+// 统一圆角阶：按钮 3 / 卡片与分组框 6 / 弹窗 8（此前散写 3/4/5/6/8 混用）
+export const RADIUS = { btn: 3, card: 6, modal: 8 };
+
 export function getZoneName(roomName) {
   return ZONE_MAP[roomName] || "village";
 }
