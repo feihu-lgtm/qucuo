@@ -226,10 +226,20 @@ export function runTeamTurn(allyUnits, enemyUnits, intents) {
   const actingOrder = orderBySpeed([...allyPool, ...enemyPool]);
   const turnLog = [];
 
+  // 【一招之限】每个单位这回合只能"出一招"。当 A 攻击 B、而 B 这回合选定要打的
+  // 正是 A 时（双向对打），这一次交锋就把 A 和 B 的招同时用掉了——B 不该稍后又
+  // 作为主动 actor 再出一次招（那就是一回合出了两招）。用 consumed 记下"这一招
+  // 已经用在了一次真实交锋里"的单位，轮到它自己主动出手时直接跳过。
+  // 这正是 2v1 里"敌人打了一招就不能打第二下、面对另一个攻击者只能站着挨打"的
+  // 实现：敌人的招只在它 intent 指向的那个对手那场里生效，对另一个走裸奔空转，
+  // 且它自己不再单独出招。
+  const consumed = new Set();
+
   for (const actorRef of actingOrder) {
     const idMap = byId();
     const actor = idMap[actorRef.id];
     if (!actor || !actor.alive) continue; // 这回合已经被前面的结算打死，跳过
+    if (consumed.has(actor.id)) continue; // 这一招已在之前的双向交锋里用掉，不再单独出招
 
     const intent = intents[actor.id];
     if (!intent || !intent.move) continue; // 没有登记行动意图（理论上不该发生，防御性跳过）
@@ -250,6 +260,11 @@ export function runTeamTurn(allyUnits, enemyUnits, intents) {
     // 不判定为裸奔——这类场景下 target 这回合本来就只有 actor 这一个可能的对手。
     const targetReallyFacesActor = targetIntent && (targetTrueTargetId == null || targetTrueTargetId === actor.id);
     const targetMove = targetReallyFacesActor ? targetIntent.move : IDLE_STATUS_MOVE;
+
+    // 双向对打：target 真的把这一招用在了 actor 身上，它这回合的招就此用尽，
+    // 后面轮到它主动出手时要跳过（consumed 门在循环开头拦截）。裸奔（空转）时
+    // target 并没有真把招用出去，不算消耗，它稍后仍可作为主动 actor 打自己选的目标。
+    if (targetReallyFacesActor) consumed.add(target.id);
 
     const { attacker, defender, result, statusLogA, statusLogB } = resolveOneOnOne(actor, intent.move, target, targetMove);
 

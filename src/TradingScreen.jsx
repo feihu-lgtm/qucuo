@@ -10,7 +10,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
   const sellableItems = playerInv.filter(i => typeof i === "object" && i.sellPrice > 0);
 
   const outer = inline
-    ? { borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", flexShrink: 0, maxHeight: "50vh", display: "flex", flexDirection: "column" }
+    ? { borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", flexShrink: 0, height: "33vh", display: "flex", flexDirection: "column" }
     : { position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" };
 
   const inner = inline
@@ -20,7 +20,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
   return (
     <div style={outer}>
       <div style={inner}>
-        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div style={{ fontSize: 14, color: zoneTheme.text || "#c8bfa0" }}>{shopName || "交易"}</div>
           <div style={{ fontSize: 12, color: "#e8c468" }}>银两：{playerMoney || 0} 两</div>
         </div>
@@ -96,7 +96,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
           </div>
         </div>
 
-        <div style={{ padding: "10px 16px", borderTop: `1px solid ${zoneTheme.border}`, textAlign: "center" }}>
+        <div style={{ padding: "10px 16px", borderTop: `1px solid ${zoneTheme.border}`, textAlign: "center", flexShrink: 0 }}>
           <span onClick={onClose} style={{ fontSize: 12, color: "#8a8a8a", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 4 }}>关闭</span>
         </div>
       </div>
