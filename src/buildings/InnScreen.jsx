@@ -106,7 +106,16 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
 
 export function Header({ name, zoneTheme, onClose }) {
   return (
-    <div style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{
+      padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex",
+      justifyContent: "space-between", alignItems: "center",
+      // 吸顶：Header 所在的父容器（Overlay 的 inline 分支）自己是可滚动区域，
+      // 面板内容一长（比如武馆秘籍列表）玩家往下滚，Header 之前只是普通文档流
+      // 里的第一个元素，会跟着内容一起被滚出视野——关闭按钮消失，只能回滚一格
+      // 或者刷新页面才能退出。position:sticky + top:0 让它始终钉在这层滚动区域
+      // 顶部，不管滚多远都看得见、点得到。zIndex 避免被下面滚上来的内容盖住。
+      position: "sticky", top: 0, zIndex: 1, background: zoneTheme.panelBg || "#14161f",
+    }}>
       <span style={{ fontSize: 14, color: zoneTheme.text || "#c8bfa0" }}>{name}</span>
       <span onClick={onClose} style={{ color: "#5a5a4a", fontSize: 12, cursor: "pointer", padding: "2px 8px" }}>× 关闭</span>
     </div>
