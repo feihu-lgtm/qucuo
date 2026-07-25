@@ -3845,6 +3845,10 @@ ${dealFmt}`;
   // 让主引擎描述这个人的外貌举止细节
   const handleNpcLook = useCallback((npc) => {
     setVarTree(prev => markNpcAsKnown(prev, npc.name));
+    // 锁定交互目标：让 act() 生成的 [交互目标] 约束知道这次细看的是谁，
+    // 主叙事才会真正聚焦这个人、把细看这件事的反应写进旁白，而不只是
+    // 系统本地悄悄记一笔"认识+好感度10"——玩家在叙事里完全看不到任何反应。
+    setActiveTarget(npc.name);
     // 细看不该只有文字描述——玩家想知道这个人的实力/状态，血条是最直观的信息，
     // 之前完全没有展示，细看跟"猜"没什么区别。这里用已生成的 combatStats
     // （NPC出生时就固定好的气血上限）画一条血条，作为 extraReplies 交给 act，
@@ -3888,11 +3892,13 @@ ${dealFmt}`;
     }
     if (npc.cannotSpeak) {
       setVarTree(prev => markNpcAsKnown(prev, npc.name));
+      setActiveTarget(npc.name);
       addLog([{ t: "sys", text: `  ${npc.name}歪着头看你，喉间发出低低的声响，却说不出半句人话——它听不懂你的言语，你也无从与它交谈。（它不能说话，但你可以投喂食物，日久或能与它亲近）` }]);
       return;
     }
     setInteractMode("talk");
     setTalkTarget(npc.name);
+    setActiveTarget(npc.name); // talkTarget 只管输入框对话聚焦；activeTarget 才是 act() 里 [交互目标] 的判据，两者要同步
     addLog([{ t: "sys", text: `  你走向${npc.name}，看样子是想说些什么。` }]);
   }, [addLog, questProgress, room.name, flags]);
 
@@ -3900,6 +3906,7 @@ ${dealFmt}`;
   // 再把"送出"这个既成事实和物品描述一起交给主引擎生成场景反应和好感度判断。
   const handleNpcGift = useCallback((npc, item) => {
     setVarTree(prev => markNpcAsKnown(prev, npc.name));
+    setActiveTarget(npc.name); // 让 act() 知道这次送礼针对谁，主叙事才会聚焦这个人写出反应
     const itemName = typeof item === "string" ? item : item.name;
     setInv(prev => {
       if (typeof item === "object" && item.id != null) {
@@ -4182,6 +4189,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     // 实质性互动（打过一场架）本来就是认识对方的充分条件，不能只靠"细看/对话"
     // 两个入口才算认识——玩家跟这个人交过手、见过好感度变化，说"尚未认识"是反直觉的。
     setVarTree(prev => markNpcAsKnown(prev, npc.name));
+    setActiveTarget(npc.name); // 让邀战这段过渡叙事聚焦这个人，而非把在场所有人都发给AI
     // 切磋不再是点了就直接弹战斗界面：先走一次正常的行动结算，让AI描述
     // "抱拳邀战、对方如何应允/摆开架势"这类过渡场景；叙事跑完之后，还要
     // 玩家自己点"确认切磋"才真正开打——中间留一步反悔的余地，不是敬个礼
@@ -4229,6 +4237,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       return;
     }
 
+    // 拜师本就需要好感≥40 才能走到这一步，早就该算"认识"——但不能在门槛检查
+    // 之前调用，否则 markNpcAsKnown 给的兜底好感度10会在毫无交情时被拜师流程
+    // 自己垫出资格，等于绕过门槛。放在门槛通过之后，纯粹是补齐显示状态。
+    setVarTree(prev => markNpcAsKnown(prev, npc.name));
+    setActiveTarget(npc.name);
     setChar(c => ({ ...c, money: (c.money || 0) - result.totalPrice }));
     // 统一并入"武学"栏：拜师所授做成【固定完整招】——不修炼、不成长，学到即完整版。
     // 加进 skills 后，moveset 由 useEffect 自动重算带出（fixed 条目原样取用招式本体）。
@@ -5009,11 +5022,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                         const known = isNpcKnown(varTree, n.name);
                         const attrs = varTree.角色?.[n.name] || {};
                         const hasAffection = known && typeof attrs.好感度 === "number";
-                        const isTalkingToThis = activeTarget === n.name;
                         return (
                           <div key={i} style={{ marginBottom: 6, paddingBottom: 6, borderBottom: i < present.length - 1 ? `1px solid ${zoneTheme.border}` : "none" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <span onClick={() => setActiveNpcMenu(n)} style={{ cursor: "pointer", color: isTalkingToThis ? zoneTheme.accent : "#8ac48a", flex: 1 }}>
+                              {/* 名字纯展示，不可点——互动统一走"角色面板"按钮，不再从名字弹菜单 */}
+                              <span style={{ color: "#8ac48a", flex: 1 }}>
                                 {n.name}<span style={{ color: "#5a5a4a", fontSize: "11px", marginLeft: 6 }}>{n.brief}</span>
                               </span>
                               {hasAffection ? (
@@ -5026,10 +5039,9 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                               )}
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
-                              {/* 就在眼前——不走飞鸽传书，点这里直接进对话 */}
-                              <span onClick={() => { setInteractMode("talk"); setActiveTarget(n.name); setTalkTarget(n.name); setPigeonTarget(null); setTimeout(() => inputRef.current?.focus(), 0); }}
-                                title="就在眼前，直接与之交谈"
-                                style={{ fontSize: "10px", color: isTalkingToThis ? zoneTheme.accent : "#8ac48a", cursor: "pointer", flexShrink: 0, flex: 1 }}>💬 已在身边 · 对话</span>
+                              {/* 角色面板：唯一的互动入口，弹出六宫格菜单（细看/切磋/偷窃/对话/送礼/拜师，商人多一个交易） */}
+                              <span onClick={() => setActiveNpcMenu(n)} title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
+                                style={{ fontSize: "10px", color: zoneTheme.accent, cursor: "pointer", flexShrink: 0, flex: 1 }}>◈ 角色面板</span>
                               <span onClick={() => { setCharacterPageTarget(n.name); setShowCharacterPage(true); }} title="打开这个人的详情面板"
                                 style={{ fontSize: "10px", color: zoneTheme.textDim, cursor: "pointer", flexShrink: 0 }}>面板</span>
                               <span onClick={() => setPortraitTarget(prev => prev === n.name ? null : n.name)} title="切换立绘显示为这个人"
@@ -6629,9 +6641,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                   : `这场切磋不了了之，收招罢手`;
               // 主叙事里这条结算的标题：明确标出「XXX 切磋 XXX · 战斗结算」
               addLog([{ t: "affection", text: `　◈ ${char.name || "你"} 切磋 ${finishedNpc.name} · 战斗结算` }]);
+              // 延迟400ms再发这条整场战报请求：上面几行刚 setVarTree 写入"认识+交情+N"，
+              // 但 React 的状态更新不是立刻生效的——如果紧接着零延迟调用 act()，act() 内部
+              // evolveKnowledge 那一步可能读到"还没来得及刷新"的旧 varTree，算出的结果会把
+              // 刚才的认识/好感更新整个覆盖掉（表现为：切磋完交情明明+4了，左栏却还显示
+              // "尚未认识"）。400ms 足够覆盖正常的渲染周期，让这次更新先真正落地。
               setTimeout(() => {
                 act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true });
-              }, 0);
+              }, 400);
               // 兜底小纸条：不管 AI 那轮是否吐了 memory，系统先按 battleLog 直接补记一条
               // 客观战斗事实进往事（DUMB 源），确保"战斗过程"一定有一张小纸条可供日后召回。
               const recapNote = `在${room.name}与${finishedNpc.name}切磋，${recap ? recap.replace(/；/g, "、") + "，" : ""}${outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负"}。`;
