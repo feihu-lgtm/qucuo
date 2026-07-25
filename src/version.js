@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "送礼好感bug补漏：双调用模式(extractionEngine)完全没吃到上一版的送礼铁律，这次两个模式都堵上",
+    time: "2026-07-26 11:45",
+    notes: [
+      "上一版只改了 buildSysBase 里 isSettle 分支（单调用模式），忽略了 narrativeOnly（双调用模式下主叙事恒为true）跟 isSettle 是互斥的并列分支——双调用模式下 narrativeOnly 优先级更高，送礼铁律永远进不去，而好感度判定实际上完全交给了 extractionEngine.js 的提取层。实测复现：主叙事把「无主的青锋剑」送才旦写成了她推辞不受，提取层基于这段拒收剧情自然给不出好感增量，好感度纹丝不动。",
+      "①【主叙事补漏】buildSysBase 的 narrativeOnly 分支也加送礼世界观铁律：明确要求这一轮必须写成对方欣然收下、不许写推辞质疑婉拒，从源头避免再出现拒收剧情。",
+      "②【提取层新增专属spec】extractionEngine.js 新增 EXTRACTION_SPECS.GIFT：不再是从叙事\"读心\"式倒推好感变不变，而是直接钉死\"这一轮好感度只能上升、不得为0或负数\"，同时把礼物的品阶/类别/描述喂给提取模型作幅度参考(沿用上一版的六品阶区间)。callExtraction 新增 settleOpts 参数，命中 settleKind:\"gift\" 时切到这份专属spec，未命中时仍走原有通用TALK_CASUAL——双重保险：就算主叙事那步万一没完全照做，提取层这道关卡也能把好感度纠正为正向。",
+      "③ MudRPG.jsx 调用处透传 settleOptsForExtraction，Trace面板补充标注\"送礼专属spec\"字样方便日后排查是否命中。",
+      "esbuild --bundle 分别验证 MudRPG.jsx / extractionEngine.js 语法通过；用真实复现场景（才旦拒收青锋剑那段实际叙事）模拟渲染GIFT提取spec的最终prompt，铁律条款正确覆盖含蓄/拒收类叙事。",
+    ],
+  },
+  {
     codename: "修送礼不加好感bug：漏传settle参数+走错档 → 补齐并注入礼物品阶/描述强制正向好感",
     time: "2026-07-26 11:30",
     notes: [

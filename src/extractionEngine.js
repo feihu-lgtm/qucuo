@@ -76,6 +76,27 @@ ${narrative}
 {"mvu":"_.add('角色.XXX.好感度', N);\n","delta":{"items_add":[],"items_rm":[],"flags_add":[]}}`,
   },
 
+  // 送礼专属提取——不是从叙事"读心"式倒推好感度变不变、变多少，而是直接钉死结论：
+  // 这个世界收礼必因礼貌/信义/心情而高兴，本轮好感度只能是正向增量，且按礼物的
+  // 品阶/描述给出有依据的幅度参考。settleOpts 由调用方在命中 settleKind:"gift" 时传入
+  // （见 MudRPG.jsx handleNpcGift/giftToCharacter），未命中时仍走上面通用 TALK_CASUAL。
+  GIFT: {
+    system: "你是游戏状态提取器，专门处理送礼场景的好感度结算——这个世界收礼必然让人欣喜，好感度只能往上走，不做\"读心\"式判断。",
+    user: (narrative, s, settleOpts) => {
+      const info = settleOpts?.giftInfo || {};
+      const [lo, hi] = info.range || [2, 4];
+      const suggested = info.suggestedDelta ?? Math.round((lo + hi) / 2);
+      return `${settleOpts?.settleNpc || "对方"}刚收到玩家赠送的礼物：${info.itemName ? `「${info.itemName}」` : "一件物品"}，品阶【${info.quality || "白"}】${info.categoryLabel ? `，类别「${info.categoryLabel}」` : ""}${info.desc ? `。物件描述：${info.desc}` : ""}
+
+叙事内容：
+${narrative}
+
+【铁律】不管叙事写得含蓄还是热络，送礼这一轮${settleOpts?.settleNpc || "对方"}对玩家的好感度只能上升、不得为 0 或负数——按这件礼物的品阶与来历，建议幅度落在 +${lo}~+${hi} 之间（品阶越高、描述越贵重取上沿，寻常物件取下沿）。物品交换写进 delta（礼物已由系统扣除，此处不需要重复处理 items_rm）。
+输出 JSON（mvu 字段必须是一条正向 _.add 好感度指令）：
+{"mvu":"_.add('角色.${settleOpts?.settleNpc || "XXX"}.好感度', ${suggested});\n","delta":{"items_add":[],"flags_add":[]}}`;
+    },
+  },
+
   EXPLORE_ACTION: {
     system: "你是游戏状态提取器，从叙事中提取探索/调查行动产生的状态变化。",
     user: (narrative, s) =>
@@ -154,19 +175,26 @@ export function buildExtractionCfg(intentCode, apiCfg) {
 
 // 调用提取层，返回 { p, mvuCommands, parseFailed }（p/mvuCommands 与 parseMainResponse 返回结构相同，可直接复用状态应用代码）。
 // 如果这个意图不需要状态提取（META_QUERY），返回 null。
-export async function callExtraction(intentCode, narrative, state, apiCfg) {
+// settleOpts：结算轮专属上下文（目前只用于送礼场景），由 MudRPG.jsx 在 opts.settleKind
+// 命中时传入 { settleKind, settleNpc, giftInfo }——双调用模式下好感度判定完全交给
+// 提取层，主叙事的散文不产 <mvu>，所以"送礼必须给正向好感"这条铁律必须在这里也落一份，
+// 不能只加在 buildSysBase（那边只管单调用/双调用主叙事文风，管不到提取层怎么判好感）。
+export async function callExtraction(intentCode, narrative, state, apiCfg, settleOpts = null) {
   // 不能用 || 回退：META_QUERY 显式为 null（本意图不提取状态），
   // null || UNKNOWN 会让它错误地落到 UNKNOWN，使下面的 !spec 判断成为死代码。
-  const spec = Object.prototype.hasOwnProperty.call(EXTRACTION_SPECS, intentCode)
-    ? EXTRACTION_SPECS[intentCode]
-    : EXTRACTION_SPECS.UNKNOWN;
+  const useGiftSpec = settleOpts?.settleKind === "gift" && !!settleOpts?.settleNpc;
+  const spec = useGiftSpec
+    ? EXTRACTION_SPECS.GIFT
+    : (Object.prototype.hasOwnProperty.call(EXTRACTION_SPECS, intentCode)
+      ? EXTRACTION_SPECS[intentCode]
+      : EXTRACTION_SPECS.UNKNOWN);
   if (!spec) return null;
 
-  const cfg = buildExtractionCfg(intentCode, apiCfg);
+  const cfg = buildExtractionCfg(useGiftSpec ? "GIFT" : intentCode, apiCfg);
   const systemPrompt = spec.system;
   // 公共字段（memory / mentionedNewNpcs）统一拼在每个意图的 user prompt 末尾，
   // 免得在 6 份 schema 里各抄一遍、加一个字段要改六处。
-  const userContent = spec.user(narrative, state) + commonExtractTail(state.char?.name);
+  const userContent = spec.user(narrative, state, settleOpts) + commonExtractTail(state.char?.name);
 
   const { text } = await callModel(cfg, systemPrompt, [{ role: "user", content: userContent }], { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000, callLabel: `状态提取(${intentCode})` });
 

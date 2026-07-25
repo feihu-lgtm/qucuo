@@ -182,7 +182,8 @@ ${MAP_LAW}
 
 ${FORMAT_LAW}
 
-${narrativeOnly ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。` : isSettle ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
+${narrativeOnly ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。${opts.settleKind === "gift" ? `
+【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。这一轮${opts.settleNpc}面对${opts.giftInfo?.itemName ? `「${opts.giftInfo.itemName}」` : "这件礼物"}${opts.giftInfo?.desc ? `（${opts.giftInfo.desc}）` : ""}，务必写成她欣然收下、态度转暖，不许写成推辞、质疑来意或婉拒不受——这是本轮叙事唯一的走向，不接受其他写法。` : ""}` : isSettle ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
 不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。不要重复结算任何奖励、物品、银两或状态。
 "memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
@@ -3380,7 +3381,14 @@ ${dealFmt}`;
           lockedDestName,
           lockedExits: lockedDestName ? getMapNode(lockedDestName)?.exits : null,
         };
-        const extracted = await callExtraction(intent.code, rawFull, exState, apiCfg).catch(e => {
+        // 送礼场景（settleKind:"gift"）传 settleOpts，让 callExtraction 切到专属的
+        // GIFT 提取 spec——不走"从叙事读心倒推好感变不变"那套通用逻辑，直接钉死
+        // "本轮必须给正向好感、按品阶给幅度参考"，避免双调用模式下好感度判定完全
+        // 脱离 buildSysBase 那份送礼铁律（主叙事只写散文，不产 mvu，好感全靠提取层）。
+        const settleOptsForExtraction = opts.settleKind === "gift"
+          ? { settleKind: opts.settleKind, settleNpc: opts.settleNpc, giftInfo: opts.giftInfo }
+          : null;
+        const extracted = await callExtraction(intent.code, rawFull, exState, apiCfg, settleOptsForExtraction).catch(e => {
           addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${e.message || e}），本轮状态未更新` }]);
           traceStep(_trace, "提取调用", "fail", `${e.message || e}，本轮状态未更新`);
           return null;
@@ -3389,7 +3397,7 @@ ${dealFmt}`;
           addLog([{ t: "sys", text: `  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新` }]);
           traceStep(_trace, "提取调用", "fail", "返回内容无法解析，本轮状态未更新");
         } else if (extracted) {
-          traceStep(_trace, "提取调用", "pass", "状态提取完成");
+          traceStep(_trace, "提取调用", "pass", settleOptsForExtraction ? "状态提取完成（送礼专属spec）" : "状态提取完成");
         }
         p = extracted?.p || {};
         mvuCommands = extracted?.mvuCommands || [];
