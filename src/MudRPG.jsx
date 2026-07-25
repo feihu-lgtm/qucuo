@@ -5835,22 +5835,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               }}
             >NSFW</span>
             <span style={{ flex: 1 }} />
-            <span
-              onClick={trainNeigong}
-              title={`运气打坐：消耗${trainCost(char.neigong ?? 0)}点潜能，内功+1（现有潜能${pot}）`}
-              style={{
-                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 3,
-                color: "#8ab4d4", background: zoneTheme.bgPanel, border: "1px solid #1d2d3a",
-              }}
-            >运气·内功+1（{trainCost(char.neigong ?? 0)}潜能）</span>
-            <span
-              onClick={trainWaigong}
-              title={`拆招练武：消耗${trainCost(char.waigong ?? 0)}点潜能，外功+1（现有潜能${pot}）`}
-              style={{
-                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 3,
-                color: "#d88a5a", background: zoneTheme.bgPanel, border: "1px solid #3a2a1d",
-              }}
-            >拆招·外功+1（{trainCost(char.waigong ?? 0)}潜能）</span>
+            {/* 注：运气·内功+1 / 拆招·外功+1 两个升级按钮已移至右栏「内功外功」区，
+                挂在对应数值行后面，就近操作。这里只留打坐（恢复气血，非升级）。 */}
             <span
               onClick={meditate}
               title="打坐运功：消耗1回合，恢复部分气血"
@@ -6002,8 +5988,28 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
             <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10, display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>内功外功</div>
-                <div style={{ fontSize: "11.5px" }}>内功 <span style={{ color: "#b48adf" }}>{bar(char.neigong ?? 0, 100, 6)}</span> <span style={{ color: "#888" }}>{char.neigong ?? 0}</span></div>
-                <div style={{ fontSize: "11.5px" }}>外功 <span style={{ color: "#d85a30" }}>{bar(char.waigong ?? 0, 100, 6)}</span> <span style={{ color: "#888" }}>{char.waigong ?? 0}</span></div>
+                <div style={{ fontSize: "11.5px", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>内功 <span style={{ color: "#b48adf" }}>{bar(char.neigong ?? 0, 100, 6)}</span> <span style={{ color: "#888" }}>{char.neigong ?? 0}</span></span>
+                  <span
+                    onClick={trainNeigong}
+                    title={`运气打坐：消耗${trainCost(char.neigong ?? 0)}点潜能，内功+1（现有潜能${pot}）`}
+                    style={{
+                      cursor: "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 3,
+                      color: "#8ab4d4", background: zoneTheme.bgPanel, border: "1px solid #1d2d3a", whiteSpace: "nowrap",
+                    }}
+                  >+1（{trainCost(char.neigong ?? 0)}潜能）</span>
+                </div>
+                <div style={{ fontSize: "11.5px", display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                  <span>外功 <span style={{ color: "#d85a30" }}>{bar(char.waigong ?? 0, 100, 6)}</span> <span style={{ color: "#888" }}>{char.waigong ?? 0}</span></span>
+                  <span
+                    onClick={trainWaigong}
+                    title={`拆招练武：消耗${trainCost(char.waigong ?? 0)}点潜能，外功+1（现有潜能${pot}）`}
+                    style={{
+                      cursor: "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 3,
+                      color: "#d88a5a", background: zoneTheme.bgPanel, border: "1px solid #3a2a1d", whiteSpace: "nowrap",
+                    }}
+                  >+1（{trainCost(char.waigong ?? 0)}潜能）</span>
+                </div>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>七维</div>
