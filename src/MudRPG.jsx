@@ -1091,12 +1091,32 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [showTrace, setShowTrace] = useState(false);
   const [claimedMilestones, setClaimedMilestones] = useState(new Set(restored?.snap.claimedMilestones || []));
   const [narrator, setNarrator] = useState(restored?.snap.narrator || initialNarratorState());
-  const [varTree, setVarTree] = useState(() => {
+  const [varTree, setVarTreeState] = useState(() => {
     if (restored?.snap.varTree) return restored.snap.varTree; // 读档：存档里已含知识领域，不重复灌
     const base = initialVarTree();
     const p = restored?.preset || DEFAULT_PRESETS[0];
     return seedKnowledge(base, p.知识基底, 0); // 新局：灌入剧本写死的知识基底
   });
+  // ── varTreeRef：独立于 React 渲染时机的「绝对最新」varTree ─────────────────
+  // 根治病史（切磋后"交情已加、左栏仍显示尚未认识"）：act()/handleNpcDuel 等
+  // useCallback 闭包捕获的是"函数被创建那一刻"的 varTree 快照。但凡某个 handler 先
+  // setVarTree 写入（认识/交情），紧接着在同一 tick（或 setTimeout 延迟后）调用 act()，
+  // act 里 evolveKnowledge 读到的仍是旧 varTree——推演结果再整体 setVarTree(kTree)
+  // 覆盖写回，把刚写入的更新全部冲掉。加延迟/双调用都治不了本：闭包引用是旧的，
+  // 等多久、调用多少次，读到的都还是旧的。
+  // 规约（三条，全文件统一）：
+  //   ① 渲染（JSX/左栏此地之人等）仍读 varTree state——它负责触发重渲染；
+  //   ② 一切逻辑读取（useCallback/effect/异步回调内部）一律走 varTreeRef.current；
+  //   ③ 一切写入走下方包装过的 setVarTree——写入同步刷新 ref；函数式更新拿到的
+  //     prev 也是 ref 里的最新值，而非 React 批处理队列里的滞后值。
+  // 由此：哪怕 act 是旧闭包，evolveKnowledge 拿到的也是此刻最新的 varTree，
+  // 旧快照整体覆盖冲掉新写入的路径从根上消失。
+  const varTreeRef = useRef(varTree);
+  const setVarTree = useCallback((next) => {
+    const v = typeof next === "function" ? next(varTreeRef.current) : next;
+    varTreeRef.current = v;
+    setVarTreeState(v);
+  }, []);
   const [apiCfg, setApiCfg] = useState(loadConfig());
   const [uiScale, setUiScale] = useState(() => {
     const saved = localStorage.getItem("wuxia_mud_ui_scale");
@@ -1330,7 +1350,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (showOpening || showCharCreate) return;
     openingFacesRef.current = true;
     const visible = (room.npcs || []).filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
-    const newFaces = detectNewFaces(varTree, visible);
+    const newFaces = detectNewFaces(varTreeRef.current, visible); // varTree 不在 deps 里，必须走 ref 读最新
     if (newFaces.length) {
       addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
       setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
@@ -1346,7 +1366,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // fire-and-forget：没开 embedding 或失败静默。
   const noteEnvRef = useRef({});
   useEffect(() => {
-    noteEnvRef.current = { apiCfg, time, roomName: room.name, roomNpcs: room.npcs, varTree };
+    noteEnvRef.current = { apiCfg, time, roomName: room.name, roomNpcs: room.npcs, varTree: varTreeRef.current };
   });
   // 当日原料缓冲：每张小纸条的文本都攒进来（不管开没开 embedding），跨天时喂给
   // 日总结 AI 归纳成「大纸条」。跨天清空（见下方 rollover useEffect）。
@@ -1629,9 +1649,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         }
         return nvt;
       });
-    } else if (flags.includes("quest_zhaxi_s3") && getKeyItemState(varTree, "虎胆")?.holder !== "扎西") {
+    } else if (flags.includes("quest_zhaxi_s3") && getKeyItemState(varTreeRef.current, "虎胆")?.holder !== "扎西") {
       setVarTree(vt => transferKeyItem(initKeyItemTracking(vt), "虎胆", "扎西", "已猎得，尚未献出", time, "扎西在熊山猎得虎胆"));
-    } else if (flags.includes("quest_allin_s2") && getKeyItemState(varTree, "虎胆")?.holder !== "玩家") {
+    } else if (flags.includes("quest_allin_s2") && getKeyItemState(varTreeRef.current, "虎胆")?.holder !== "玩家") {
       setVarTree(vt => transferKeyItem(initKeyItemTracking(vt), "虎胆", "玩家", "夜闯土司府偷回", time, "玩家夜闯土司府偷回虎胆"));
     }
 
@@ -1755,7 +1775,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       {
         // 条数（绿灯·批五）：20→8。私聊本就是短回合（maxTokens 见 callTokenLimits.narratorWhisper），旁白也只会顺口提一两件；
         // 喂 20 条里绝大多数是陪跑，还把真正相关的那几条冲淡。取最近 8 条，更近更准也更省。
-        const facts = allFactSummaries(varTree, 8);
+        const facts = allFactSummaries(varTreeRef.current, 8);
         if (facts.length) {
           factsBlock = "\n\n[你冷眼旁观知晓的事，未必是玩家亲口告诉过你的，回应时可以自然提起，但不要生硬列举或表现得像在念清单]\n"
             + facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
@@ -1771,7 +1791,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       let recallBlock = "";
       if (embeddingReady(apiCfg)) {
         const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
-        const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(varTree.角色 || {}), room.name]));
+        const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(varTreeRef.current.角色 || {}), room.name]));
         recallInfo = await recallWithVisibility({
           cfg: apiCfg, queryText: content,
           contextText: `${lastAiText}\n[当前]位置:${room.name}`,
@@ -1979,7 +1999,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         put("voice", narratorVoicePrompt(narrator));
         const invText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
         put("world_state", `主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}（${room.desc}） 房间里的人:${room.npcs.map(n => n.name).join(",") || "无"} 玩家背包:${invText}`);
-        const facts = allFactSummaries(varTree, 8);
+        const facts = allFactSummaries(varTreeRef.current, 8);
         put("facts", facts.length ? facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n") : "（事实账本当前为空）");
         put("narrator_lore", (apiCfg.narratorLorebook || "").trim() || "（未填写，本块一个字都不发）");
         const bg = gateBodyProfile(char.bodyProfile, { whisper: true, nsfw: nsfwOn, scanText: "" });
@@ -2557,7 +2577,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         // 查没见过的。纯本地、不调 AI，跟内层移动"瞬时"的性质一致。
         {
           const arrivedNpcs = (room.npcs || []).filter(n => isNpcVisibleInInnerRoom(room.name, innerDest, n));
-          const newFaces = detectNewFaces(varTree, arrivedNpcs);
+          const newFaces = detectNewFaces(varTreeRef.current, arrivedNpcs);
           if (newFaces.length) {
             addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
             setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
@@ -2640,7 +2660,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     const newConvo = [...convo, { role: "user", content: cmd }];
     const angryNpcsInRoom = room.npcs
-      .map(n => ({ name: n.name, angry: varTree.角色?.[n.name]?.生气状态 }))
+      .map(n => ({ name: n.name, angry: varTreeRef.current.角色?.[n.name]?.生气状态 }))
       .filter(n => n.angry?.active);
     const angryNote = angryNpcsInRoom.length
       ? `\n[社交状态] 以下在场角色正处于生气状态，原因是：${angryNpcsInRoom.map(n => `${n.name}(${n.angry.reason}，剩${n.angry.turnsLeft}回合平息期限)`).join("、")}。若玩家此刻尝试道歉/辩解/示好/赠礼，请你根据其言行是否得体、是否切中要害来判断这次"平息怒气"的努力是否奏效：奏效就在 <mvu> 里用 _.set('角色.<该角色>.生气解除', true) 标记这次成功，并可用 _.add('角色.<该角色>.好感度', 5) 适度回补好感度；敷衍或不得体就让角色在 output 里表现出依然不满，不要设置生气解除字段。`
@@ -2654,7 +2674,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     // NPC涌现·触发检测：玩家这句输入如果明确提到某个"传闻中的人物"（之前剧情
     // 文本里提过名字，但还没真正实体化成完整NPC），指示AI这一轮把他实体化。
-    const targetedRumor = findTargetedRumor(varTree, cmd);
+    const targetedRumor = findTargetedRumor(varTreeRef.current, cmd);
     const emergenceNote = targetedRumor
       ? `\n[人物涌现] 玩家这句话明确指向了此前提到过的人物"${targetedRumor.name}"（提及语境：${targetedRumor.context}）。如果当前场景逻辑上合理让这个人物真正登场（比如玩家确实去了他可能所在的地方，或者当前情境足以让他出现），请在 room.npcs 里加入他（{"name":"${targetedRumor.name}","id":"（自拟英文id）","brief":"≤15字简介"}），同时在返回的顶层JSON里额外加两个字段：{"emergedNpcName":"${targetedRumor.name}","emergedNpcDescription":"一句话描述这个人的身份和性格特征，比如'磨坊学徒，性格憨厚老实'"}——这段描述只需要定性，不要给出任何数值。如果场景逻辑上此刻不适合这个人登场，就不要强行加入，正常按原计划描述即可。`
       : "";
@@ -2859,7 +2879,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 本轮在场者里，凡已认识、且距上次同框超过阈值的，提示 AI 补写这段时间的合理变化，
     // 免得人物像时间静止。纯本地时间戳判定，无副作用。
     const reunionBlock = buildReunionBlock(
-      detectReunions(varTree, room.npcs, time, REUNION_GAP_THRESHOLD)
+      detectReunions(varTreeRef.current, room.npcs, time, REUNION_GAP_THRESHOLD)
     );
 
     // loading 态 + 计时器：在第一个 await（下方 recall/knowledge）之前启动——
@@ -2868,6 +2888,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setWaitSecs(0);
     if (waitTimerRef.current) clearInterval(waitTimerRef.current);
     waitTimerRef.current = setInterval(() => setWaitSecs(s => s + 1), 1000);
+
+    // 本回合动手前的 varTree 快照，供下方两阶段 pipeline 的回滚使用。
+    // 走 varTreeRef 而非闭包 varTree：保证含"进入本函数之前所有已发生的写入"
+    // （比如切磋结算刚 setVarTree 写入的认识+交情——旧闭包快照恰恰会丢掉它，
+    // 回滚时反而把玩家的交情抹掉）。主流程走到这里之前没有任何 varTree 写入
+    // （内层移动分支的 markAsSeen/updateLastSeen 在 early-return 里，到不了这），
+    // 所以这个快照 === 本回合开始时的状态。
+    const preActVarTree = varTreeRef.current;
 
     // ── 信息领域·知识系统（代码驱动，本轮新增）──
     // 每回合由代码确定性推演"谁知道什么"：同框传播 + 传闻淡忘（见 knowledge.js）。
@@ -2878,7 +2906,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     let infoDomainBlock = "";
     {
       const roomNpcNames = room.npcs.map(n => n.name);
-      const evo = evolveKnowledge(varTree, { roomNpcNames, currentTurn: time });
+      // 必须读 ref 里的最新 varTree：哪怕 act 是旧闭包（切磋结算后 setTimeout 调来的），
+      // evolveKnowledge 也基于最新状态推演——否则推演结果整体覆盖写回时会把刚进账的
+      // 认识/好感度更新冲掉（"交情已加但仍显示尚未认识"bug 的根源，见 varTreeRef 注释）。
+      const evo = evolveKnowledge(varTreeRef.current, { roomNpcNames, currentTurn: time });
       let kTree = evo.varTree;
       // 按需补摘要（最多 2 条/回合，失败静默——摘要非关键，不阻断游戏）
       // 内容层优先从向量库召回真旧事据以归纳；召不回才让 AI 现编兜底。
@@ -2919,7 +2950,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       reembedStaleNotes({ cfg: apiCfg }).catch(() => {});
       const focusEntities = Array.from(new Set([
         ...room.npcs.map(n => n.name),
-        ...Object.keys(varTree.角色 || {}),
+        ...Object.keys(varTreeRef.current.角色 || {}),
         room.name,
       ]));
       recallInfo = await recallWithVisibility({
@@ -2947,7 +2978,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 脏状态：varTree 变了但 inv 没变、房间移动了但 time 没推进。这里在发送前把所有可能被本轮
     // 修改的世界状态打包成一份快照，出错时（见下方 catch）整体还原，实现"请求段无副作用、
     // 提交段可回滚"。这些状态全程走不可变更新（spread，无原地修改），因此存引用即可，无需深拷贝。
-    const rollback = { room, char, dao, skills, inv, exp, pot, flags, mapData, time, varTree, convo };
+    const rollback = { room, char, dao, skills, inv, exp, pot, flags, mapData, time, varTree: preActVarTree, convo };
 
     try {
       // ── 自动重说（本轮新增）──
@@ -3023,7 +3054,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         const proseRule = "\n\n【成文铁律·逐段自查（本条最优先，落笔前先过一遍）】每写完一段，先在心里核两样再往下写：其一，这一段每个句子都要是完整句——主谓宾齐全、该带的定状补都补上，不许出现半截话、掐头去尾、省略到看不明白的残句；其二，这一段凡涉及到的，时间、地点、人物、起因、经过、结果都要交代到实处（这一段确实用不上的那几样可以不写，但只要沾边就得写全，不许用『那人』『某处』『后来』这类含糊词一笔带过）。宁可句子写得实、写得满，也绝不为省字丢主语宾语或掐断句子。";
         // 远景（日总结）作背景垫底，放在 ctx 之后、回忆之前——比"最近对话/回忆"更靠前=分量更轻，
         // 只保连贯不喧宾夺主。
-        const distantBlock = buildDistantViewBlock(varTree, 5);
+        const distantBlock = buildDistantViewBlock(varTreeRef.current, 5);
         let userContent = ctx + distantBlock + recallBlock + reunionBlock + infoDomainBlock + "\n\n" + hist + proseRule + "\n\n" + cmdSuffix + (extraNudge || "");
         // 动态注入 scope：结算轮只演既定事实（砍物件志/认知隔离/远景/极简schema），移动只喂场景相关，
         // 对话保留认知隔离，其余全量。创造模式必须全量（要能凭空发物品/召唤NPC），故 gm 时强制 full。
@@ -3226,7 +3257,7 @@ ${dealFmt}`;
         const exState = {
           room, char, inv,
           invText: inv.map(i => (typeof i === "string" ? i : i.name)).join("，") || "空",
-          dao, varTree,
+          dao, varTree: varTreeRef.current,
           lockedDestName,
           lockedExits: lockedDestName ? getMapNode(lockedDestName)?.exits : null,
         };
@@ -3297,7 +3328,7 @@ ${dealFmt}`;
       // 已在 varTree.角色 里有记录的人（历史交互过的、驻场登记的）也算数——他们是
       // 系统认可的真实角色，即便此刻 AI 没把他们列进本轮在场名单，对他们的好感度
       // 变化仍是合法的（比如飞鸽传书、隔空事件）。只拦"系统从来不认识"的纯幽灵。
-      const _knownChars = new Set(Object.keys(varTree.角色 || {}));
+      const _knownChars = new Set(Object.keys(varTreeRef.current.角色 || {}));
 
       if (mvuCommands.length) {
         // 好感度反幽灵过滤：AI 若对一个"既不在系统在场名单、也不在已知角色表"里的
@@ -3455,7 +3486,7 @@ ${dealFmt}`;
           .filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
 
         // "新人物出现"检测：只对系统真正采纳、且从未见过的面孔插入这条日志。
-        const newFaces = detectNewFaces(varTree, acceptedNpcs);
+        const newFaces = detectNewFaces(varTreeRef.current, acceptedNpcs);
         if (newFaces.length) {
           addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
           setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
@@ -3635,7 +3666,7 @@ ${dealFmt}`;
         const roomNpcs = (p.room && Array.isArray(p.room.npcs) ? p.room.npcs : room.npcs) || [];
         const knownNames = Array.from(new Set([
           ...roomNpcs.map(n => n.name),
-          ...Object.keys(varTree.角色 || {}),
+          ...Object.keys(varTreeRef.current.角色 || {}),
           ...Object.keys(QUCUO_MAP),
         ]));
         const noteOwner = (activeTarget || (isTalk && talkTarget)) ? [{ name: activeTarget || talkTarget, via: VIA.FIRSTHAND }] : [];
@@ -3951,7 +3982,7 @@ ${dealFmt}`;
       addLog([{ t: "affection", text: `  ✓ 你把「${itemName}」交到${npc.name}手上，「${deliveredQuest.quest.title}」推进。` }]);
     }
 
-    const isAngry = varTree.角色?.[npc.name]?.生气状态?.active;
+    const isAngry = varTreeRef.current.角色?.[npc.name]?.生气状态?.active;
     const cmd = isAngry
       ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好`
       : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
@@ -4044,7 +4075,7 @@ ${dealFmt}`;
   // 飞鸽回信时长：按玩家当前据点与收信人所在据点的直线距离折算，钳制在 1–12 时辰。
   const pigeonDelayShichen = useCallback((npcName) => {
     const here = QUCUO_MAP[room.name] || { x: 0, y: 0 };
-    const loc = varTree.角色?.[npcName]?.所在地 || room.name;
+    const loc = varTreeRef.current.角色?.[npcName]?.所在地 || room.name;
     const there = QUCUO_MAP[loc] || here;
     const dist = Math.hypot((there.x ?? 0) - (here.x ?? 0), (there.y ?? 0) - (here.y ?? 0));
     return { delay: Math.max(1, Math.min(12, Math.round(dist * 1.5) || 1)), loc };
@@ -4120,10 +4151,10 @@ ${dealFmt}`;
     const { npcName, sentContent, id, arriveTime, channel, giftName } = letter;
     try {
       const npcObj = room.npcs.find(n => n.name === npcName) || {};
-      const attrs = varTree.角色?.[npcName] || {};
+      const attrs = varTreeRef.current.角色?.[npcName] || {};
       const curAff = typeof attrs.好感度 === "number" ? attrs.好感度 : 0;
       const thread = (attrs.飞鸽 || []).map(m => `${m.dir === "send" ? "主角来信" : "你的回信"}：${m.content}${m.gift ? `（附礼：${m.gift}）` : ""}`).join("\n");
-      const facts = allFactSummaries(varTree, 12).map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
+      const facts = allFactSummaries(varTreeRef.current, 12).map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
       const gaveGift = channel === "postgift" && giftName;
       const canReturnGift = gaveGift; // 只有对方收到礼、且好感够(系统另判≥50)才可能回礼
       const sys = `你是武侠世界「曲措乡」中的【${npcName}】${npcObj.brief ? "，" + npcObj.brief : ""}。${npcObj.fullBio ? npcObj.fullBio + " " : ""}${npcObj.personality ? "性情：" + npcObj.personality + "。" : ""}
@@ -4239,7 +4270,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 这是这次改动新加的行为，此前平民直接拒绝拜师。价格按好感折价曲线走低
   // （40-59原价/60-79七折/80-99五折/100免费），银两不够时提示但不强行学。
   const handleNpcLearnSkill = useCallback((npc) => {
-    const result = tryLearnFromMaster(npc, varTree, skills, char);
+    const result = tryLearnFromMaster(npc, varTreeRef.current, skills, char);
     if (!result.ok) {
       addLog([{ t: "sys", text: `  ${result.reason}` }]);
       return;
@@ -4272,7 +4303,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 参与成功率计算，跟好感度独立相加——手越利索，越容易得手。
   const handleNpcSteal = useCallback((npc) => {
     const agility = char.special?.身法 ?? 0;
-    const result = tryStealFrom(npc, varTree, skills, char, agility);
+    const result = tryStealFrom(npc, varTreeRef.current, skills, char, agility);
 
     if (!result.ok) {
       addLog([{ t: "sys", text: `  ${result.reason}` }]);
@@ -6661,14 +6692,15 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                   : `这场切磋不了了之，收招罢手`;
               // 主叙事里这条结算的标题：明确标出「XXX 切磋 XXX · 战斗结算」
               addLog([{ t: "affection", text: `　◈ ${char.name || "你"} 切磋 ${finishedNpc.name} · 战斗结算` }]);
-              // 延迟400ms再发这条整场战报请求：上面几行刚 setVarTree 写入"认识+交情+N"，
-              // 但 React 的状态更新不是立刻生效的——如果紧接着零延迟调用 act()，act() 内部
-              // evolveKnowledge 那一步可能读到"还没来得及刷新"的旧 varTree，算出的结果会把
-              // 刚才的认识/好感更新整个覆盖掉（表现为：切磋完交情明明+4了，左栏却还显示
-              // "尚未认识"）。400ms 足够覆盖正常的渲染周期，让这次更新先真正落地。
+              // 这条整场战报请求曾需要 setTimeout 400ms 来躲"act 闭包读到旧 varTree"
+              // 的时序坑（上面刚 setVarTree 写入认识+交情，旧 act 里 evolveKnowledge
+              // 拿旧快照推演后整体覆盖写回，会把更新冲掉——交情已加、左栏却仍"尚未认识"）。
+              // 现已根治：setVarTree 包装后同步刷新 varTreeRef，act 内所有 varTree 读取
+              // 都走 ref——哪怕这里的 act 是旧闭包，evolveKnowledge 拿到的也是最新值，
+              // 延迟归零、不再依赖"等 React 渲染完"的概率性时序。
               setTimeout(() => {
                 act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true });
-              }, 400);
+              }, 0);
               // 兜底小纸条：不管 AI 那轮是否吐了 memory，系统先按 battleLog 直接补记一条
               // 客观战斗事实进往事（DUMB 源），确保"战斗过程"一定有一张小纸条可供日后召回。
               const recapNote = `在${room.name}与${finishedNpc.name}切磋，${recap ? recap.replace(/；/g, "、") + "，" : ""}${outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负"}。`;

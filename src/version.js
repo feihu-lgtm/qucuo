@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "切磋认识状态根治：varTreeRef统一读写入口，闭包旧快照覆盖新写入的时序坑从根上消除",
+    time: "2026-07-26 09:00",
+    notes: [
+      "根治「切磋后交情已加、左栏仍显示尚未认识」：上一版用 setTimeout 0→400ms 折中（留小概率复现），这次按当时评估过的根治方案落地——引入独立于 React 渲染时机的 varTreeRef，全文件逻辑读取统一走 ref，写入统一走包装过的 setVarTree（同步刷 ref）。覆盖写回冲掉新数据的链路从根上消失，不再依赖任何时序概率。",
+      "①【真因复盘】act() 等 useCallback 闭包捕获的是「函数被创建那一刻」的 varTree 快照。切磋结算先 setVarTree 写入（认识+交情+N），紧接着调 act 生成整场战报——act 里 evolveKnowledge 拿旧 varTree 推演，结果整体 setVarTree(kTree) 覆盖写回，刚写入的更新全被冲掉。且闭包引用在函数创建时就定死，延迟多久、调用多少次读到的都是旧值，400ms 只是赌渲染来得及。同样的雷还埋在 handleNpcDuel（先写认识、同一tick await act 邀战）、handleNpcLook/handleNpcGift/handleNpcLearnSkill（先 markNpcAsKnown 再同步调 act）里，创可贴根本盖不住，这次一并根治。",
+      "②【修法·三条规约】渲染（JSX/左栏此地之人等）仍读 varTree state 负责触发重渲染；一切逻辑读取（useCallback/effect/异步回调内部，共21处）一律走 varTreeRef.current；一切写入走包装过的 setVarTree——函数式更新拿到的 prev 也是 ref 里的最新值，而非 React 批处理队列里的滞后值。deps 数组保持原样（不引重建churn），自动存档等依赖完整的 effect 维持读 state 不动。",
+      "③【回滚快照语义微调】act 两阶段 pipeline 的回滚快照改存「本回合动手前」的 preActVarTree（进入知识推演前的 ref 值）：旧实现存闭包 varTree，回滚时会把进函数前刚发生的写入（比如切磋交情）一起抹掉；新实现既保住「失败回合整体还原」的原意，又不丢回合外的最新写入。",
+      "④【撤回创可贴】切磋结算后触发整场战报的 setTimeout 延迟从 400ms 改回 0ms：有了 varTreeRef，哪怕调到的 act 是旧闭包，evolveKnowledge 拿到的也是此刻最新值，不再需要赌渲染时序。",
+      "⑤【验证】esbuild 完整 bundle（vite.config.pages.js 生产配置）通过；另用 Node 脚本按真实代码路径做了对照实验：旧链路（闭包旧快照输入 evolveKnowledge 后整体覆盖）复现「已认识=false、好感度=undefined」的 bug 现象，新链路（同场景改走 ref）得到「已认识=true、好感度=14（初始10+切磋4）」，修复机制确认有效。",
+    ],
+  },
+  {
     codename: "Bug上报系统v2：pipeline日志拆表按行存，每次AI调用可独立查阅",
     time: "2026-07-26 08:00",
     notes: [
