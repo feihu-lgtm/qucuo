@@ -14,10 +14,14 @@ import React, { useState } from "react";
 import { QUCUO_SHOPS } from "./shops/qucuoShops.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
-export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade }) {
+export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const isMerchant = !!QUCUO_SHOPS[npc.name];
+  // 伙伴候选（目前只有雪豹）：官方六件套之外单独一个"邀请入队"按钮，只在
+  // 尚未解锁时出现——已经入队的伙伴角色不需要再邀请一次，六件套照常可用
+  // （细看/切磋/送礼/拜师/偷窃仍然对已入队的雪豹开放，不因为入队而消失）。
+  const canInvite = !!npc.companionCandidate && !companionUnlocked;
 
   const ACTIONS = [
     { key: "look", label: "细看", desc: "端详其人", available: true, onClick: () => { onLook(npc); onClose(); } },
@@ -27,6 +31,7 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
     { key: "gift", label: "送礼", desc: "赠人以物，结个善缘", available: true, onClick: () => setShowGiftPicker(true) },
     { key: "learn", label: "拜师", desc: "求教一身本事", available: true, onClick: () => { onLearnSkill(npc); onClose(); } },
     ...(isMerchant ? [{ key: "trade", label: "交易", desc: "买卖货品", available: true, onClick: () => { onTrade(npc); onClose(); } }] : []),
+    ...(canInvite ? [{ key: "invite", label: "邀请入队", desc: "结为同行的伙伴", available: true, onClick: () => { onInviteCompanion(npc); onClose(); } }] : []),
   ];
 
   if (showGiftPicker) {

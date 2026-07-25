@@ -105,7 +105,7 @@ export async function init() {
 }
 
 // state 快照结构
-export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName }) {
+export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState }) {
   return {
     version: 1,
     savedAt: Date.now(),
@@ -119,6 +119,9 @@ export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo
     questProgress: questProgress || {},
     deposit: deposit || 0, depositedAt: depositedAt || null, pledgedItems: pledgedItems || [],
     persuasionProgress: persuasionProgress || {},
+    // 伙伴系统（本轮新增）：雪豹的解锁/出战状态。老存档没有这个字段，读档时由
+    // MudRPG.jsx 用 companion.js 的 initCompanionState() 兜底，不影响兼容。
+    companionState: companionState || null,
   };
 }
 

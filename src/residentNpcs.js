@@ -57,6 +57,19 @@ export const RESIDENT_NPCS = {
       personality: "扑棱着翅膀满地乱窜，见人就啄，偏偏又打不过就跑、跑两步又回头挑衅",
       carry: [{ name: "金蛋", category: "misc", quality: "绿" }],
     },
+    {
+      // 伙伴系统（本轮新增）：雪线之上的灵兽，格桑的动物伙伴，通体雪白。跟大公鸡
+      // 一样是 beast:true 的兽类驻场，但不走"打赢即掉落"那套——它是可被邀请
+      // 入队的伙伴角色，互动菜单里单独多一个"邀请入队"按钮（见 NpcActionMenu.jsx），
+      // 不是"细看/切磋/送礼/拜师/偷窃/交易"这官方六件套里的任何一个。levelCap:2
+      // （蓝档），专属招式"雪隐三绝"见 npcSignatureMoves.js 的"雪豹"条目。
+      // cannotSpeak:true——它是兽，不通人言，talk 交互走系统提示而非AI对话生成；
+      // 但"邀请入队"是独立于对话之外的专属交互，不受 cannotSpeak 影响。
+      name: "雪豹", id: "resident_snow_leopard", levelCap: 2,
+      beast: true, cannotSpeak: true, companionCandidate: true,
+      brief: "通体雪白的灵兽，眼神沉静，只安安静静卧在村口一角",
+      personality: "不惧生人也不主动亲近，只是静静看着，仿佛在等一个自己认准的人",
+    },
   ],
   鱼定土司: [
     {

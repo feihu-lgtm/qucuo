@@ -97,6 +97,25 @@ ${narrative}
     },
   },
 
+  // 伙伴认主专属提取——雪豹是"前世羁绊、认主忠贞"的设定，不是从0慢慢培养的
+  // 陌生关系，所以不用 _.add 微调而是直接 _.set 一个较高的初始好感度。跟 GIFT
+  // 一样不做"读心"式判断，直接钉死结论。settleOpts 由调用方在命中
+  // settleKind:"companion_invite" 时传入（见 MudRPG.jsx handleInviteCompanion）。
+  COMPANION_INVITE: {
+    system: "你是游戏状态提取器，专门处理伙伴认主场景的好感度结算——雪豹认主是前世羁绊使然，好感度应直接给一个较高的初始值，不做\"读心\"式判断。",
+    user: (narrative, s, settleOpts) => {
+      const npcName = settleOpts?.settleNpc || "雪豹";
+      return `${npcName}刚刚接受了玩家的邀请，正式结为同行的伙伴——这是前世便结下的羁绊，它认准了玩家便是这片雪域高原真正的主人，忠贞无二。
+
+叙事内容：
+${narrative}
+
+【铁律】不管叙事写得含蓄还是热络，这一轮${npcName}对玩家的好感度都应直接设为一个较高的初始值（40~55之间，体现"前世羁绊、一见如故"而非从零培养），不得低于30。
+输出 JSON（mvu 字段必须是一条 _.set 好感度指令，用 set 不用 add——这是初次登场，不是在已有基础上增减）：
+{"mvu":"_.set('角色.${npcName}.好感度', 45);\n","delta":{"items_add":[],"flags_add":[]}}`;
+    },
+  },
+
   EXPLORE_ACTION: {
     system: "你是游戏状态提取器，从叙事中提取探索/调查行动产生的状态变化。",
     user: (narrative, s) =>
@@ -181,17 +200,21 @@ export function buildExtractionCfg(intentCode, apiCfg) {
 // 提取层，主叙事的散文不产 <mvu>，所以"送礼必须给正向好感"这条铁律必须在这里也落一份，
 // 不能只加在 buildSysBase（那边只管单调用/双调用主叙事文风，管不到提取层怎么判好感）。
 export async function callExtraction(intentCode, narrative, state, apiCfg, settleOpts = null) {
+  // settleKind → 专属提取spec 的映射表。不用 if-else 链一个个判断，是因为这类
+  // "结算轮专属spec"以后大概率还会继续加（新的伙伴/新的特殊结算场景），映射表
+  // 比继续堆叠 if-else 更容易扩展——加一个新 settleKind 只需要在这张表里加一行。
+  const SETTLE_KIND_SPECS = { gift: "GIFT", companion_invite: "COMPANION_INVITE" };
+  const settleSpecKey = settleOpts?.settleNpc ? SETTLE_KIND_SPECS[settleOpts?.settleKind] : null;
   // 不能用 || 回退：META_QUERY 显式为 null（本意图不提取状态），
   // null || UNKNOWN 会让它错误地落到 UNKNOWN，使下面的 !spec 判断成为死代码。
-  const useGiftSpec = settleOpts?.settleKind === "gift" && !!settleOpts?.settleNpc;
-  const spec = useGiftSpec
-    ? EXTRACTION_SPECS.GIFT
+  const spec = settleSpecKey
+    ? EXTRACTION_SPECS[settleSpecKey]
     : (Object.prototype.hasOwnProperty.call(EXTRACTION_SPECS, intentCode)
       ? EXTRACTION_SPECS[intentCode]
       : EXTRACTION_SPECS.UNKNOWN);
   if (!spec) return null;
 
-  const cfg = buildExtractionCfg(useGiftSpec ? "GIFT" : intentCode, apiCfg);
+  const cfg = buildExtractionCfg(settleSpecKey || intentCode, apiCfg);
   const systemPrompt = spec.system;
   // 公共字段（memory / mentionedNewNpcs）统一拼在每个意图的 user prompt 末尾，
   // 免得在 6 份 schema 里各抄一遍、加一个字段要改六处。

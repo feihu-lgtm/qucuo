@@ -87,6 +87,7 @@ import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { ENGINE_IDENTITY, GM_RULE, ISOLATION, MAP_LAW, FORMAT_LAW, CATALOG_TAIL } from "./enginePrompts.js";
 import { callExtraction, buildExtractionCfg } from "./extractionEngine.js";
+import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -145,6 +146,46 @@ function buildSysBase(targetWordCount, narratorState, scenario, budgetInstructio
   // 就退回原来的全局固定字数，保证向后兼容。
   const lenNote = budgetInstruction || `本轮 output 数组里所有行拼起来，总字数应控制在约 ${targetWordCount} 字左右（允许±15%浮动），不要明显少写，也不要为了凑数硬拖长。根据这个总字数目标，自行决定要写几行、每行写多长。`;
 
+  // ── settleKind 专属铁律（本轮抽成独立函数）──────────────────────────
+  // 之前"送礼铁律"是直接堆在下面那个巨型模板字符串里的三元表达式，每加一个新的
+  // settleKind 都要在同一行里再叠一层三元，容易出现作用域引用错误（cmd 变量不在
+  // buildSysBase 作用域内那次事故）、可读性也持续下降。现在把"narrativeOnly分支
+  // 该说什么"和"isSettle分支的MVU该怎么写"分别抽成独立函数，settleKind 的判断
+  // 逻辑集中在这里，后续新增伙伴/新增结算类型时只需要在这两个函数里各加一段
+  // if 分支，不用再动下面那坨模板字符串本身。
+  //
+  // narrativeOnly 分支：管"这一轮的散文该怎么写"（双调用模式下主叙事只产文本，
+  // 好感度等状态判定转交提取层，这里不涉及MVU）。
+  function buildSettleNarrativeNote(o) {
+    if (o.settleKind === "gift") {
+      return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。这一轮${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，务必写成她欣然收下、态度转暖，不许写成推辞、质疑来意或婉拒不受——这是本轮叙事唯一的走向，不接受其他写法。`;
+    }
+    if (o.settleKind === "companion_invite") {
+      return `\n【伙伴认主铁律】雪豹与主角之间，非比寻常的人与兽的相逢——这是前世便结下的羁绊，它认准了主角便是这片雪域高原真正的主人，忠贞无二，此心早定，不是这一刻才临时起意。这一轮务必写成雪豹欣然应邀、心意早决——它或以额头抵掌、或绕身一圈、或伏低身姿以示臣服归顺，用兽类特有的、不必言语的方式表明这份认主之心；不许写成犹豫、观望、抗拒或需要主角再三哄劝——雪豹的答应是必然的、毫无保留的，这是本轮叙事唯一的走向，不接受其他写法。它不能说话（cannotSpeak），全程不出人言，情感全靠动作、眼神、姿态传达。`;
+    }
+    return "";
+  }
+  // isSettle 分支：管"MVU 那部分该怎么写"（单调用模式下，主模型直接产 JSON+MVU，
+  // 好感度等状态判定就在这一次调用里完成）。
+  function buildSettleMvuNote(o) {
+    if (o.settleKind === "gift") {
+      return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。所以这一轮${o.settleNpc}收下${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}时，对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n这件礼物的实际来历（好感幅度请依此掂量分量，越贵重、越用心，情谊越重）：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}${o.giftInfo?.desc ? `。物件描述：${o.giftInfo.desc}` : "（无特别来历，寻常物件）"}`;
+    }
+    if (o.settleKind === "companion_invite") {
+      return `\n【伙伴认主铁律】雪豹与主角之间，非比寻常的人与兽的相逢——这是前世便结下的羁绊，它认准了主角便是这片雪域高原真正的主人，忠贞无二，此心早定。这一轮务必写成雪豹欣然应邀、心意早决，用动作/眼神/姿态（额头抵掌、绕身而行、伏低臣服等，它不能说话）表明认主之心，不许写成犹豫或抗拒——下面这条 <mvu> 块本轮必须给出，且必须是正向增量（这是雪豹认你为主的时刻，好感度理应给一个较高的起始值）。`;
+    }
+    return "";
+  }
+  function buildSettleMvuExample(o) {
+    if (o.settleKind === "gift") {
+      return `\n依上面这件礼物的品阶与来历，本轮好感度增量建议落在 +${o.giftInfo?.range?.[0] ?? 2}~+${o.giftInfo?.range?.[1] ?? 4} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? 3});`;
+    }
+    if (o.settleKind === "companion_invite") {
+      return `\n雪豹是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"前世羁绊、认主忠贞"的设定，不是从0慢慢培养的陌生关系），建议直接 _.set 到 40~55 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', 45);`;
+    }
+    return "";
+  }
+
   // 预设系统负责的部分：文体/通用规则/剧本设定的拼装顺序和内容，可由用户在设置面板里自由编辑，
   // 完整兼容酒馆格式导入。scenario 通过 marker 占位符注入，不需要在这里手动拼接。
   const preset = getActivePreset();
@@ -182,19 +223,13 @@ ${MAP_LAW}
 
 ${FORMAT_LAW}
 
-${narrativeOnly ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。${opts.settleKind === "gift" ? `
-【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。这一轮${opts.settleNpc}面对${opts.giftInfo?.itemName ? `「${opts.giftInfo.itemName}」` : "这件礼物"}${opts.giftInfo?.desc ? `（${opts.giftInfo.desc}）` : ""}，务必写成她欣然收下、态度转暖，不许写成推辞、质疑来意或婉拒不受——这是本轮叙事唯一的走向，不接受其他写法。` : ""}` : isSettle ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
+${narrativeOnly ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。${buildSettleNarrativeNote(opts)}` : isSettle ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
 不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。不要重复结算任何奖励、物品、银两或状态。
 "memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
-
-${opts.settleKind === "gift" ? `
-【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。所以这一轮${opts.settleNpc}收下${opts.giftInfo?.itemName ? `「${opts.giftInfo.itemName}」` : "这件礼物"}时，对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。
-这件礼物的实际来历（好感幅度请依此掂量分量，越贵重、越用心，情谊越重）：品阶【${opts.giftInfo?.quality || "白"}】${opts.giftInfo?.categoryLabel ? `，类别「${opts.giftInfo.categoryLabel}」` : ""}${opts.giftInfo?.desc ? `。物件描述：${opts.giftInfo.desc}` : "（无特别来历，寻常物件）"}` : ""}
-在 JSON 输出完毕之后，${opts.settleKind === "gift" ? `这一轮必须` : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化，"}另起一行输出 <mvu> 块（不要放进 JSON 内部）：
-${MVU_SYSTEM_INSTRUCTIONS}${opts.settleKind === "gift" ? `
-依上面这件礼物的品阶与来历，本轮好感度增量建议落在 +${opts.giftInfo?.range?.[0] ?? 2}~+${opts.giftInfo?.range?.[1] ?? 4} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：
-_.add('角色.${opts.settleNpc}.好感度', ${opts.giftInfo?.suggestedDelta ?? 3});` : ""}` : ""}` : scope === "move" ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
+${buildSettleMvuNote(opts)}
+在 JSON 输出完毕之后，${(opts.settleKind === "gift" || opts.settleKind === "companion_invite") ? `这一轮必须` : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化，"}另起一行输出 <mvu> 块（不要放进 JSON 内部）：
+${MVU_SYSTEM_INSTRUCTIONS}${buildSettleMvuExample(opts)}` : ""}` : scope === "move" ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
 npcs 的 carry 字段只在该 NPC 首次登场那一轮写（0-3件肉眼可见随身物，出场叙事需描述其外观）。
 可选字段 "memory"：用不超过50字纯客观事实概括本轮到达了何处、路上是否有值得记的事，一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，寻常赶路可省略。
@@ -982,6 +1017,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   });
   const [dao, setDao] = useState(restored?.snap.dao || DEFAULT_PRESETS[0].dao);
   const [skills, setSkills] = useState(restored?.snap.skills || DEFAULT_PRESETS[0].skills.map(s => ({ ...s })));
+  // 伙伴系统（本轮新增）：雪豹的解锁/出战状态。老存档没有这个字段，用
+  // initCompanionState() 兜底成"未解锁"，不影响任何既有存档的兼容性。
+  const [companionState, setCompanionState] = useState(restored?.snap.companionState || initCompanionState());
   // 装备信息现在完全并入 inv（每个物品对象自带 category/equipped 标记），不再单独维护 equip state
   const [inv, setInv] = useState(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]);
   const [log, setLog] = useState(
@@ -1187,7 +1225,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (!playedThisSessionRef.current) return; // 还没玩过：绝不覆盖旧档
     const every = Math.max(0, Number(apiCfg.autoSaveEvery ?? 5));
     if (every > 0 && roundsSinceLastSaveRef.current < every) return; // 间隔未到
-    const snapshot = buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName });
+    const snapshot = buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState });
     const result = autoSave(snapshot); // 同步返回（写内存必成；IDB 异步落盘、LS 尽力兜底）
     if (result.ok) {
       roundsSinceLastSaveRef.current = 0;
@@ -1196,7 +1234,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     } else {
       setAutoSaveError(result.error);
     }
-  }, [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, apiCfg.autoSaveEvery]);
+  }, [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, apiCfg.autoSaveEvery, companionState]);
 
   // 从存档槽位读取后，整体覆盖当前状态
   const applySnapshot = useCallback((snap) => {
@@ -1223,6 +1261,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setDeposit(snap.deposit || 0);
     setDepositedAt(snap.depositedAt ?? null);
     setPledgedItems(snap.pledgedItems || []);
+    setCompanionState(snap.companionState || initCompanionState());
     // 内层箱庭位置：老存档没这个字段、或存的房间已不在该据点内景里（改过地图数据），
     // 都退回锚点，绝不让玩家落在一个不存在的房间里。
     {
@@ -1235,8 +1274,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }, [presets, preset]);
 
   const buildCurrentSnapshot = useCallback(() => buildSnapshot({
-    preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName,
-  }), [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, persuasionProgress, innerRoomName]); // deposit/depositedAt/pledgedItems captured via closure
+    preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState,
+  }), [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, persuasionProgress, innerRoomName, companionState]); // deposit/depositedAt/pledgedItems captured via closure
 
   // 关页/刷新兜底：IDB 写是异步、关页来不及落盘，故这里改用同步的 flushLocalBackup
   // 把最新快照写一份到 localStorage（尽力而为）；下次开局 loadAutoSave 会取 IDB 与它的较新者。
@@ -1258,6 +1297,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setMapData({ [p.room.name]: { x: 0, y: 0 } });
     setNarrator(initialNarratorState());
     setVarTree(prev => seedKnowledge(prev, p.知识基底, 0)); // 换预设开新局也灌基底（registerFact 幂等）
+    setCompanionState(initCompanionState()); // 新开局重置雪豹解锁/出战状态，不带上一局的伙伴进度
     roomMapRef.current = { [p.room.name]: { items: [...p.room.items], npcs: [...p.room.npcs] } };
     setShowPresets(false);
   }, []);
@@ -3401,11 +3441,12 @@ ${dealFmt}`;
           lockedDestName,
           lockedExits: lockedDestName ? getMapNode(lockedDestName)?.exits : null,
         };
-        // 送礼场景（settleKind:"gift"）传 settleOpts，让 callExtraction 切到专属的
-        // GIFT 提取 spec——不走"从叙事读心倒推好感变不变"那套通用逻辑，直接钉死
-        // "本轮必须给正向好感、按品阶给幅度参考"，避免双调用模式下好感度判定完全
-        // 脱离 buildSysBase 那份送礼铁律（主叙事只写散文，不产 mvu，好感全靠提取层）。
-        const settleOptsForExtraction = opts.settleKind === "gift"
+        // 结算轮专属场景（送礼settleKind:"gift"、伙伴认主settleKind:"companion_invite"）
+        // 传 settleOpts，让 callExtraction 切到对应的专属提取spec——不走"从叙事读心
+        // 倒推状态变不变"那套通用逻辑，直接钉死结论（送礼必给正向好感、认主必给较高
+        // 初始好感）。避免双调用模式下状态判定完全脱离 buildSysBase 那份专属铁律
+        // （主叙事只写散文，不产 mvu，状态判定全靠提取层）。
+        const settleOptsForExtraction = (opts.settleKind && opts.settleNpc)
           ? { settleKind: opts.settleKind, settleNpc: opts.settleNpc, giftInfo: opts.giftInfo }
           : null;
         const extracted = await callExtraction(intent.code, rawFull, exState, apiCfg, settleOptsForExtraction).catch(e => {
@@ -3417,7 +3458,7 @@ ${dealFmt}`;
           addLog([{ t: "sys", text: `  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新` }]);
           traceStep(_trace, "提取调用", "fail", `返回内容无法解析（提取模型=${_exCfgForTrace.model || "未设置"}），本轮状态未更新`);
         } else if (extracted) {
-          traceStep(_trace, "提取调用", "pass", `状态提取完成（提取模型=${_exCfgForTrace.model || "未设置"}${settleOptsForExtraction ? "·送礼专属spec" : ""}）`);
+          traceStep(_trace, "提取调用", "pass", `状态提取完成（提取模型=${_exCfgForTrace.model || "未设置"}${settleOptsForExtraction ? `·${settleOptsForExtraction.settleKind}专属spec` : ""}）`);
         }
         p = extracted?.p || {};
         mvuCommands = extracted?.mvuCommands || [];
@@ -4162,6 +4203,21 @@ ${dealFmt}`;
     // 所以只在非生气的正常送礼时才标 settleKind。
     act(cmd, [], { settle: true, settleNpc: npc.name, settleKind: isAngry ? null : "gift", giftInfo });
   }, [act, varTree, questProgress, forceAdvanceQuest, addLog, describeGiftForPrompt]);
+
+  // 邀请入队（目前只有雪豹）：系统裁决层直接把伙伴状态设为"已解锁+出战"
+  // （不靠AI判断"愿不愿意跟你走"这种概率性的东西——邀请入队是玩家主动点的
+  // 确定性按钮，点了就成，不该有"AI这轮心情不好就拒绝了"的不确定性，这跟
+  // 送礼的教训一致：凡是玩家主动发起、系统本该兜底成功的动作，都不能把
+  // "成不成"这件事交给AI去演，只能交给AI去描述"已经发生的事"）。
+  // 走 settle 档 + settleKind:"companion_invite"，让 buildSysBase 注入专属的
+  // "前世羁绊/认主"调性铁律（见下方 buildSysBase 里新增的分支）。
+  const handleInviteCompanion = useCallback((npc) => {
+    if (npc.name !== "雪豹") return; // 目前只有雪豹这一个伙伴候选，其余NPC不会显示这个按钮，这里只是双重保险
+    setCompanionState(prev => unlockSnowLeopard(prev));
+    setVarTree(prev => markNpcAsKnown(prev, npc.name));
+    setActiveTarget(npc.name);
+    act(`向雪豹伸出手，郑重邀它同行`, [], { settle: true, settleNpc: npc.name, settleKind: "companion_invite" });
+  }, [act]);
 
   // ⑤ 服食：把原打字正则分支的确定性结算抽成 handler，供物品面板「服食」调用。
   const handleConsumeItem = useCallback((item) => {
@@ -6632,6 +6688,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           onSteal={handleNpcSteal}
           onLearnSkill={handleNpcLearnSkill}
           onTrade={handleNpcTrade}
+          onInviteCompanion={handleInviteCompanion}
+          companionUnlocked={activeNpcMenu.name === "雪豹" && companionState?.snowLeopard?.unlocked}
         />
       )}
       {activeItemMenu && (

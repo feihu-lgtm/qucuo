@@ -9,6 +9,20 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "新增伙伴系统第一阶段：雪豹入队——村口NPC+专属招式+邀请入队+前世羁绊铁律",
+    time: "2026-07-26 12:30",
+    notes: [
+      "雪豹是格桑的动物伙伴，通体雪白，生活在雪线之上，是曲措乡第一个可入队的动物伙伴角色，为后续2v2切磋(玩家+雪豹 vs 1~2个对手)打基础。这一版先把「雪豹作为NPC实体+邀请入队」这条链路做完整，2v2战斗UI留待下一版。",
+      "①【专属武学·雪隐三绝】npcSignatureMoves.js野兽分组新增雪豹条目：攻击「碎岩击」套硬攻原型、防御「融雪」套防守反击原型、状态「冰川步」套蓄势原型——现有战斗引擎只有攻击/防御/状态三角相克，没有闪避/隐身免命中这个维度，故文本保留\"隐身/闪避\"的设定描述，机制上是减伤/蓄力，跟白猿、桑杰朵杰等具名角色的\"原型套壳\"处理方式一致，不新增战斗引擎维度(已与作者确认此取舍)。",
+      "②【新建companion.js】雪豹固定数值生成：蓝档(levelCap=2)，走atkFromWaigong/hpFromNeigong统一战力曲线(与任何NPC同一把尺子)；纯野兽本能性格档案(高攻击权重0.55/高riskAppetite 0.75/低avoidRepeat 0.15，托管时不特意配合玩家战术，已与作者确认)；入队状态管理initCompanionState/unlockSnowLeopard/setSnowLeopardActive/isSnowLeopardAvailable，幂等设计(重复解锁不会重新生成数据，保证雪豹数值固化不漂移)。",
+      "③【入队交互】residentNpcs.js鱼定村驻场列表加入雪豹(beast:true/cannotSpeak:true/companionCandidate:true)；NpcActionMenu.jsx官方六件套(细看/切磋/偷窃/对话/送礼/拜师)之外单独加\"邀请入队\"按钮，仅companionCandidate且未解锁时出现；MudRPG.jsx新增handleInviteCompanion——系统直接确定性解锁(不靠AI判断成不成功，这是玩家主动点的按钮，不该有不确定性)，走settle档让AI只管把\"已发生的事\"写成正文。",
+      "④【前世羁绊铁律】buildSysBase重构：把之前\"送礼铁律\"堆在超长模板字符串里的三元表达式抽成buildSettleNarrativeNote/buildSettleMvuNote/buildSettleMvuExample三个独立函数(避免继续堆叠三元导致可读性下降和作用域引用错误)，新增settleKind:\"companion_invite\"分支——雪豹认主是前世羁绊、忠贞无二，AI必须写成欣然应邀、不许犹豫抗拒，且不能说话(全靠动作/眼神/姿态)。",
+      "⑤【双调用同步】extractionEngine.js新增EXTRACTION_SPECS.COMPANION_INVITE专属提取spec：好感度直接_.set到40~55(不是_.add微调，因为是初次登场的既定羁绊，不是从0培养)，不做\"读心\"式判断。callExtraction的settleKind判断从单一if改成映射表(SETTLE_KIND_SPECS)，方便未来继续扩展新的结算类型。这一步是吸取了上一版\"只改单调用模式漏了双调用\"的教训，这次两条路一次性都接上。",
+      "⑥【存档持久化】saves.js buildSnapshot新增companionState字段，MudRPG.jsx全部buildSnapshot调用点(自动存档/手动存档)、applySnapshot读档恢复、loadPreset新开局重置，全部接好；老存档没有这个字段时用initCompanionState()兜底，不影响兼容性。",
+      "esbuild --bundle 验证 MudRPG.jsx(含全部依赖)/companion.js/NpcActionMenu.jsx/residentNpcs.js/saves.js/npcSignatureMoves.js/extractionEngine.js 语法通过；Node脚本端到端模拟\"驻场配置→初始状态→解锁→数据生成→幂等性→雪隐三绝招式派生→不可学判定\"全链路，输出符合预期(蓝档41外功内功、baseAtk=61)。",
+    ],
+  },
+  {
     codename: "修NPC串场bug：上一轮战报提到的人，这一轮不相干动作也会插一脚",
     time: "2026-07-26 12:15",
     notes: [
