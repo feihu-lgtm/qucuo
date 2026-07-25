@@ -6394,17 +6394,16 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           playerMoveset={char.moveset}
           zoneTheme={zoneTheme}
           onFinish={(outcome, loot, battleLog, grownMoveset, usedItems) => {
-            // 把这场切磋的战报写进主日志（事后可回看）：每回合一行系统结算，
-            // 有 AI 说书的另起一行附在下面（与战斗界面同一份 battleLog，narration
-            // 异步补的最后一两回合可能来不及，能补上的都写）。
+            // 把这场切磋的逐回合【系统数据】写进主日志备查（招式+伤害，客观事实）。
+            // 逐回合的 AI 说书不在这里逐条刷屏——它们会被打包发给主叙事 AI 写成
+            // 一篇连贯的整场战报（见下方 finishedNpc 那段的 act 调用），避免重复。
             if (Array.isArray(battleLog) && battleLog.length) {
               const foe = duelingNpc?.name || "对手";
-              const logs = [{ t: "sys", text: `　── 与${foe}切磋 · 战报 ──` }];
+              const logs = [{ t: "sys", text: `　── 与${foe}切磋 · 逐回合 ──` }];
               for (const e of battleLog) {
                 if (e.round && e.playerMove) {
                   logs.push({ t: "desc", text: `  第${e.round}回合 你「${e.playerMove}」 对 ${foe}「${e.npcMove}」${e.dmgToNpc > 0 ? `　${foe}−${e.dmgToNpc}` : ""}${e.dmgToPlayer > 0 ? `　你−${e.dmgToPlayer}` : ""}` });
                 }
-                if (e.narration) logs.push({ t: "affection", text: `  〔说书〕${e.narration}` });
               }
               if (logs.length > 1) addLog(logs);
             }
@@ -6572,11 +6571,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
             // 伤害多少）拼进这句"指令"文本里，让主引擎AI照着真实经过写总结，
             // 而不是每次都写"技高一筹"这种没有细节的套话。
             if (finishedNpc) {
+              // recap 把每回合的系统数据 + AI 说书文字都拼进去，让主叙事 AI 写整场
+              // 总结时既有硬数据（招式/伤害）又有说书人的味道打底，比只给数字更生动。
               const recap = (battleLog || []).map(r => {
                 const bits = [`第${r.round}回合你使「${r.playerMove}」`];
                 if (r.npcMove) bits.push(`对方使「${r.npcMove}」`);
                 if (r.dmgToNpc > 0) bits.push(`对方受创${r.dmgToNpc}`);
                 if (r.dmgToPlayer > 0) bits.push(`你受创${r.dmgToPlayer}`);
+                if (r.narration) bits.push(`（说书：${r.narration}）`); // 逐回合说书打包进素材
                 return bits.join("，");
               }).join("；");
               const outcomeText = outcome === "win"
@@ -6584,8 +6586,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 : outcome === "lose"
                   ? `你技逊一筹，向${finishedNpc.name}抱拳致意`
                   : `这场切磋不了了之，收招罢手`;
+              // 主叙事里这条结算的标题：明确标出「XXX 切磋 XXX · 战斗结算」
+              addLog([{ t: "affection", text: `　◈ ${char.name || "你"} 切磋 ${finishedNpc.name} · 战斗结算` }]);
               setTimeout(() => {
-                act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请据此写一段简短的切磋总结，点出关键招式和胜负经过。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`);
+                act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`);
               }, 0);
               // 兜底小纸条：不管 AI 那轮是否吐了 memory，系统先按 battleLog 直接补记一条
               // 客观战斗事实进往事（DUMB 源），确保"战斗过程"一定有一张小纸条可供日后召回。
