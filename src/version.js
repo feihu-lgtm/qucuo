@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "武学升阶改用潜能：stage只10门可修炼武学保留，升阶按钮进右栏，复用潜能通道",
+    time: "2026-07-26 00:30",
+    notes: [
+      "按需求重构武学成长：升阶不再靠断链的exp经验，改用潜能主动突破，跟内外功同一条潜能通道。",
+      "①【stage只给10门保留】那10门可修炼武学(SKILL_CATALOG,makeSkillEntry)保留stage能升阶；拜师授业绝学(fixed)本就无stage；AI叙事赠予/自创的非目录武学兜底改为fixed固定招、stage:null不升阶(此前误给'入门'stage)。deriveMovesetFromSkills对fixed走move本体、非fixed才按stage派生，安全。",
+      "②【升阶用潜能】新增 breakthroughSkill(skillId)：花潜能把某门武学stage推进一级(入门→小成→大成→圆满→登峰造极)，成本按目标阶段递增(小成12/大成20/圆满32/登峰造极48潜能)。复用setPot消费，跟trainNeigong/trainWaigong同源(潜能是唯一数值上升通道)。stage升→STAGE_POWER(1.0→1.8)/品质/耗气随之精进，真实进伤害公式。",
+      "③【经验升阶退役】原skill_up满经验自动升level/stage的逻辑停用：skill_up仅累积exp数值兼容老存档，不再自动改stage，且跳过fixed固定招。避免经验/潜能两套升阶机制打架。",
+      "④【升阶按钮进右栏】右栏侠客·武学列表里，每门可修炼武学(非fixed)显示'阶段N/5·当前阶'+'↑修炼·下一阶（N潜能）'按钮，潜能够亮起可点、不够灰置；登峰造极显示'✦登峰造极'。去掉废弃的Lv+exp经验条。固定招仍显'授业绝学·学即完整'。",
+      "esbuild + vite build 通过。",
+    ],
+  },
+  {
     codename: "访客计数改双段文案：共有X人次(保留101起点) + 今日Y位侠客登录(活跃去重)",
     time: "2026-07-25 23:30",
     notes: [

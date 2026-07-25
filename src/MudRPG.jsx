@@ -204,6 +204,8 @@ ${MVU_SYSTEM_INSTRUCTIONS}` : ""}`}`;
 const DIRS = { n: "北", s: "南", e: "东", w: "西", u: "上", d: "下", ne: "东北", nw: "西北", se: "东南", sw: "西南" };
 const bar = (v, mx, len = 10) => { const f = Math.max(0, Math.round((v / mx) * len)); return "█".repeat(f) + "░".repeat(len - f); };
 const STAGES = ["入门", "小成", "大成", "圆满", "登峰造极"];
+// 武学升阶潜能成本（模块级，渲染和逻辑共用）：越高阶越贵，阶跃式突破单次成本较高
+const STAGE_UP_COST = { 小成: 12, 大成: 20, 圆满: 32, 登峰造极: 48 };
 const STAGE_TO_QUALITY = { 入门: "白", 小成: "绿", 大成: "蓝", 圆满: "紫", 登峰造极: "橙" };
 const DIR_DXY = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0], ne: [1, -1], nw: [-1, -1], se: [1, 1], sw: [-1, 1], u: [0, 0], d: [0, 0] };
 // 方向解析：之前要求方向词必须是字符串开头（如"北""往北"），但"向北走""朝北边走"
@@ -2205,6 +2207,38 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     jotNote({ text: "拆招练武，外功扎实一分。", source: NOTE_SOURCE.DUMB });
   }, [loading, char.waigong, pot, addLog, trainCost, jotNote]);
 
+  // 武学升阶：花潜能把某门【可修炼武学】(非 fixed/授业绝学)的 stage 往上推一级。
+  // 复用潜能这条唯一数值上升通道（跟内外功同源），不再靠 exp 经验累积——经验那条
+  // 断链了（战斗不发经验），改成玩家用潜能主动突破，明确可控。
+  // 成本按目标阶段递增：小成12 / 大成20 / 圆满32 / 登峰造极48（越高阶越贵，跟内外功
+  // "越练越贵"一个思路，但武学是阶跃式突破，单次成本更高）。
+  // 武学升阶潜能成本（模块级常量，渲染和逻辑共用）
+  const breakthroughSkill = useCallback((skillId) => {
+    if (loading) return;
+    setSkills(sk => {
+      const idx = sk.findIndex(s => s.id === skillId);
+      if (idx < 0) return sk;
+      const s = sk[idx];
+      if (s.fixed) { addLog([{ t: "sys", text: `  ${s.name}是授业绝学，学即完整，无需修炼。` }]); return sk; }
+      const curStageIdx = STAGES.indexOf(s.stage);
+      if (curStageIdx < 0 || curStageIdx >= STAGES.length - 1) {
+        addLog([{ t: "sys", text: `  ${s.name}已臻${s.stage}，登峰造极，再无寸进。` }]); return sk;
+      }
+      const nextStage = STAGES[curStageIdx + 1];
+      const cost = STAGE_UP_COST[nextStage] ?? 12;
+      if (pot < cost) { addLog([{ t: "err", text: `  潜能不足，${s.name}突破${nextStage}需${cost}点潜能（现有${pot}）` }]); return sk; }
+      setPot(p => p - cost);
+      addLog([
+        { t: "cmd", text: `> 潜心修炼「${s.name}」` },
+        { t: "desc", text: `  日夜揣摩，${s.name}的火候更进一层。` },
+        { t: "stat", text: `  ${s.name} ${s.stage}→${nextStage}（花费${cost}潜能）· 招式威力、品阶随之精进` },
+      ]);
+      setTime(t => t + 2);
+      jotNote({ text: `潜心修炼${s.name}，突破至${nextStage}。`, source: NOTE_SOURCE.DUMB });
+      return sk.map((ss, j) => j === idx ? { ...ss, stage: nextStage } : ss);
+    });
+  }, [loading, pot, addLog, jotNote]);
+
   // 送礼：从背包选一件物品送给指定角色，走正常的行动指令流程，
   // 让主引擎 AI 描述场景、判断礼物是否合心意，并通过 <mvu> 自行决定好感度增量
   // （沿用"AI 提议 + 系统裁决"：AI 只能建议合理幅度，最终写入仍由 applyMvuCommands 裁剪）
@@ -3525,12 +3559,14 @@ ${dealFmt}`;
         if (p.delta.exp) setExp(e => e + (p.delta.exp || 0));
         if (p.delta.pot) setPot(e => e + (p.delta.pot || 0));
         if (p.delta.skill_up) {
+          // 经验升阶已退役——stage 改由潜能主动突破（breakthroughSkill）。
+          // skill_up 仅保留累积 exp 数值以兼容老存档/AI 叙事，不再自动改 stage/level。
+          // 固定招（fixed，无 stage）直接跳过。
           setSkills(sk => sk.map(s => {
+            if (s.fixed || s.stage == null) return s;
             const up = p.delta.skill_up[s.name];
             if (!up) return s;
-            const ne = s.exp + (up || 0);
-            if (ne >= s.maxExp) { const nl = s.level + 1; const ns = nl <= 5 ? STAGES[Math.min(nl - 1, 4)] : s.stage; return { ...s, level: nl, exp: 0, maxExp: s.maxExp + 50, stage: ns }; }
-            return { ...s, exp: ne };
+            return { ...s, exp: (s.exp ?? 0) + up };
           }));
         }
         if (p.delta.skills_add?.length) {
@@ -3538,8 +3574,9 @@ ${dealFmt}`;
           setSkills(sk => [...sk, ...p.delta.skills_add.map(n => {
             const name = typeof n === "string" ? n : n.name || n;
             const hit = allCatalog.find(c => c.name === name);
-            if (hit) return makeSkillEntry(hit);
-            return { name, level: 1, exp: 0, maxExp: 100, stage: "入门", active: false };
+            if (hit) return makeSkillEntry(hit); // 那10门可修炼武学：保留 stage，能潜能升阶
+            // 非目录武学（AI 叙事里赠予/自创的招）：固定招，无 stage、不升阶，学即完整
+            return { id: `learned_${name}`, name, type: "招式", quality: "白", moveType: null, fixed: true, stage: null, active: false };
           })]);
         }
       }
@@ -6004,7 +6041,32 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                     </div>
                     {s.fixed
                       ? <div style={{ fontSize: "10.5px", color: "#5a5a4a", paddingLeft: 18 }}>授业绝学 · 学即完整，无需修炼</div>
-                      : <div style={{ fontSize: "10.5px", color: "#5a5a4a", paddingLeft: 18 }}>Lv.{s.level} {bar(s.exp, s.maxExp, 6)} {s.exp}/{s.maxExp}</div>}
+                      : (() => {
+                          const curIdx = STAGES.indexOf(s.stage);
+                          const maxed = curIdx >= STAGES.length - 1;
+                          const nextStage = maxed ? null : STAGES[curIdx + 1];
+                          const cost = nextStage ? (STAGE_UP_COST[nextStage] ?? 12) : 0;
+                          const afford = pot >= cost;
+                          return (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 18, marginTop: 1 }}>
+                              <span style={{ fontSize: "10px", color: "#7a7a6a" }}>
+                                阶段 {curIdx + 1}/5 · {s.stage}
+                              </span>
+                              {maxed
+                                ? <span style={{ fontSize: "10px", color: qc }}>✦ 登峰造极</span>
+                                : <span
+                                    onClick={() => afford && breakthroughSkill(s.id)}
+                                    title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`}
+                                    style={{
+                                      cursor: afford ? "pointer" : "not-allowed", fontSize: "10px", padding: "1px 7px", borderRadius: 3,
+                                      color: afford ? "#b48adf" : "#5a5a4a",
+                                      background: afford ? zoneTheme.bgPanel : "transparent",
+                                      border: `1px solid ${afford ? "#4a3a5a" : zoneTheme.border}`, userSelect: "none",
+                                    }}
+                                  >↑修炼·{nextStage}（{cost}潜能）</span>}
+                            </div>
+                          );
+                        })()}
                   </div>
                 );
               })}
