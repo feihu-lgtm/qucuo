@@ -6931,11 +6931,20 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               const tally = usedItems.reduce((m, n) => (m[n] = (m[n] || 0) + 1, m), {});
               addLog([{ t: "item", text: `  ⊙ 切磋中服用：${Object.entries(tally).map(([n, c]) => `${n}×${c}`).join("、")}` }]);
             }
-            // 切磋历练：不论胜负都给潜能（以武会友、长见识），赢多输少。保底不靠 AI 心情。
+            // 切磋历练潜能：按对手品阶给（打强敌长见识多，打杂鱼给得少，玩家自然会
+            // 越级挑战换潜能，符合武侠成长逻辑）。胜利全额，落败/罢手减半取整——
+            // 以武会友、输了也长见识，但打出结果给得多。保底不靠 AI 心情。
+            // 数值量级（与作者确认·翻倍档）：白10/绿20/蓝40/紫70/橙110/红160，
+            // 让中期主打紫橙袍时约十几场胜利即可把内外功推到红名水平（各95、双线约
+            // 1570潜能）。cap 兜底 0（白袍），越界 clamp 到 0~5。
             {
-              const potGain = outcome === "win" ? 5 : 3;
+              const POT_BY_TIER = [10, 20, 40, 70, 110, 160]; // index=levelCap(白绿蓝紫橙红)
+              const cap = Math.max(0, Math.min(5, duelingNpc?.levelCap ?? 0));
+              const base = POT_BY_TIER[cap];
+              const potGain = outcome === "win" ? base : Math.ceil(base / 2);
               setPot(p => p + potGain);
-              addLog([{ t: "item", text: `  ✦ 切磋${outcome === "win" ? "获胜" : outcome === "lose" ? "落败" : "罢手"}，长了见识，潜能 +${potGain}` }]);
+              const tierLabel = ["白","绿","蓝","紫","橙","红"][cap] + "袍";
+              addLog([{ t: "item", text: `  ✦ 与${tierLabel}高手切磋${outcome === "win" ? "获胜" : outcome === "lose" ? "落败" : "罢手"}，长了见识，潜能 +${potGain}` }]);
             }
             // 切磋后好感度：跟人认认真真过了招（点到为止），关系会拉近。但只对"具名 NPC 的
             // 切磋"生效——路遇的野兽/山贼这类泛用清剿目标（带 tag）是打杀、不是以武会友，
