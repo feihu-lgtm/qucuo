@@ -15,14 +15,17 @@
 //     visitor_id text primary key,           -- 本地 UUID，主键即唯一约束
 //     created_at timestamptz default now()
 //   );
-//   create table hits ( id bigint generated always as identity primary key,
-//     created_at timestamptz default now() );  -- 每次访问插一行，count 即人次
+//   create table hits (
+//     id bigint generated always as identity primary key,
+//     visitor_id text,                        -- 记是谁访问的，供"今日活跃侠客"去重
+//     created_at timestamptz default now()
+//   );
 //   alter table visitors enable row level security;
 //   alter table hits     enable row level security;
-//   create policy "anyone insert visitors" on visitors for insert to anon with check (true);
-//   create policy "anyone count visitors"  on visitors for select to anon using (true);
-//   create policy "anyone insert hits"     on hits     for insert to anon with check (true);
-//   create policy "anyone count hits"      on hits     for select to anon using (true);
+//   create policy "anon insert visitors" on visitors for insert to anon with check (true);
+//   create policy "anon count visitors"  on visitors for select to anon using (true);
+//   create policy "anon insert hits"     on hits     for insert to anon with check (true);
+//   create policy "anon count hits"      on hits     for select to anon using (true);
 // （select 只为了 count(*)，读不到别人的具体 id 也无所谓——这里本就只暴露总数）
 
 const SUPABASE_URL = "https://jgijklgbbaszijpfcvdf.supabase.co";
@@ -62,12 +65,30 @@ async function countRows(table, signal) {
   return Number.isFinite(total) ? total : null;
 }
 
-// 主入口：登记本次访问并取回 { visitors, hits }（任一失败则该项为 null）。
-// alreadyThisSession：同一会话已登记过就不再插 hits（防刷新灌爆人次），但仍读最新数。
+// 查"今日活跃侠客"：今天(本地日界)来过的不同人数(按 visitor_id 去重，含老侠客重来)。
+// PostgREST 不直接支持 count(distinct)，故拉今天所有 hits 的 visitor_id 列表在前端去重。
+// 数据量是"今天的访问次数"，通常几十到几百行，可接受；失败返回 null。
+async function countTodayActive(signal) {
+  // 今天 0 点（本地时区）的 ISO 时间，作为 created_at 下界
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const since = midnight.toISOString();
+  const resp = await fetch(
+    `${SUPABASE_URL}/rest/v1/hits?select=visitor_id&created_at=gte.${encodeURIComponent(since)}`,
+    { headers: H, signal });
+  if (!resp.ok) return null;
+  const rows = await resp.json();
+  if (!Array.isArray(rows)) return null;
+  const uniq = new Set(rows.map(r => r.visitor_id).filter(Boolean));
+  return uniq.size;
+}
+
+// 主入口：登记本次访问并取回 { visitors, hits, todayActive }（任一失败则该项为 null）。
 export async function registerVisit() {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 7000);
-  const result = { visitors: null, hits: null };
+  const result = { visitors: null, hits: null, todayActive: null };
+  const vid = getVisitorId();
 
   const sessionCounted = (() => {
     try { return sessionStorage.getItem("qucuo_hit_counted") === "1"; } catch { return false; }
@@ -79,31 +100,33 @@ export async function registerVisit() {
       await fetch(`${SUPABASE_URL}/rest/v1/visitors`, {
         method: "POST",
         headers: { ...H, "Prefer": "return=minimal,resolution=ignore-duplicates" },
-        body: JSON.stringify({ visitor_id: getVisitorId() }),
+        body: JSON.stringify({ visitor_id: vid }),
         signal: ctrl.signal,
       });
     } catch { /* 插入失败不影响计数读取 */ }
 
-    // 2) 人次：本会话没记过才插一行 hits
+    // 2) 人次：本会话没记过才插一行 hits（带上 visitor_id，供"今日活跃"去重统计）
     if (!sessionCounted) {
       try {
         await fetch(`${SUPABASE_URL}/rest/v1/hits`, {
           method: "POST",
           headers: { ...H, "Prefer": "return=minimal" },
-          body: JSON.stringify({}),
+          body: JSON.stringify({ visitor_id: vid }),
           signal: ctrl.signal,
         });
         try { sessionStorage.setItem("qucuo_hit_counted", "1"); } catch { /* ignore */ }
       } catch { /* ignore */ }
     }
 
-    // 3) 读两个总数（并发）
-    const [v, h] = await Promise.all([
-      countRows("visitors", ctrl.signal).catch(() => null),
+    // 3) 读三个数（并发）：累计人次、去重侠客总数、今日活跃侠客
+    const [h, v, t] = await Promise.all([
       countRows("hits", ctrl.signal).catch(() => null),
+      countRows("visitors", ctrl.signal).catch(() => null),
+      countTodayActive(ctrl.signal).catch(() => null),
     ]);
-    result.visitors = v;
     result.hits = h;
+    result.visitors = v;
+    result.todayActive = t;
   } catch { /* 整体失败：保持 null，调用方静默不显示 */ }
   finally { clearTimeout(timer); }
 

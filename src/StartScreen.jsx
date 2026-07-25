@@ -131,14 +131,13 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQui
         <span onClick={() => setShowBugReport(true)} style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
           🐞 意见信箱 / 上报bug
         </span>
-        {(visitStats.visitors != null || visitStats.hits != null) && (
+        {(visitStats.hits != null || visitStats.todayActive != null) && (
           <>
             <span style={styles.footerSep}>·</span>
             <span>
-              {visitStats.visitors != null && `已有 ${visitStats.visitors.toLocaleString()} 位侠客`}
-              {visitStats.visitors != null && visitStats.hits != null && " · "}
-              {visitStats.hits != null && `共 ${visitStats.hits.toLocaleString()} 人次`}
-              踏足曲措乡
+              {visitStats.hits != null && `共有 ${visitStats.hits.toLocaleString()} 人次踏足曲措乡`}
+              {visitStats.hits != null && visitStats.todayActive != null && "，"}
+              {visitStats.todayActive != null && `今日 ${visitStats.todayActive.toLocaleString()} 位侠客登录`}
             </span>
           </>
         )}

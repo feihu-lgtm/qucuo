@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "访客计数改双段文案：共有X人次(保留101起点) + 今日Y位侠客登录(活跃去重)",
+    time: "2026-07-25 23:30",
+    notes: [
+      "封面访客文案按需求改为'共有 X 人次踏足曲措乡，今日 Y 位侠客登录'两段。",
+      "①【今日活跃侠客】新增 countTodayActive：拉今天(本地0点起)所有 hits 的 visitor_id 前端去重 count，得'今天来过的不同人数(含老侠客重来)'。为此 hits 表加 visitor_id 列，每次访问带上本地UUID记录。",
+      "②【共有人次】保留 hits 全量 count 作累计人次，配合灌入的101历史行，从101起累加。",
+      "③【文案】footer 从'X位侠客·共Y人次'改为'共有 Y 人次踏足曲措乡，今日 T 位侠客登录'；去重侠客总数(visitors)不再在footer显示但表仍保留(insert去重+今日活跃基础)。各数字缺省时静默不显示。",
+      "④【需在Supabase执行】hits 表加列 visitor_id(alter table hits add column if not exists visitor_id text)；未建过表的用文件注释里的完整建表SQL(hits已含visitor_id)。101历史起点：insert into hits(created_at) select now() from generate_series(1,101)。",
+      "visitorCount.js/StartScreen esbuild + vite build 通过。",
+    ],
+  },
+  {
     codename: "访客计数迁到Supabase：本地UUID去重侠客数 + 累计人次，文案'X位侠客·共Y人次'",
     time: "2026-07-25 22:30",
     notes: [
