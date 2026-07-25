@@ -91,8 +91,23 @@ export function gateScenario(scenario, ctx = {}) {
 }
 
 // 把匹配到的人设拼成注入 prompt 的文本块。没命中则返回空串（一个字不发）。
+// matched 里每条都带 reason:"在场"|"被提及"——只有"在场"的人此刻真的站在这个
+// 房间里，"被提及"只是玩家或上轮回复的文本里提到了这个名字（比如聊起某人、
+// 某人托人捎话），系统据此认为"这个人的人设可能派得上用场"才注入，但这**不等于
+// 他此刻站在这里**。之前两种一视同仁地拼进同一段【在场／相关人物设定】，AI 分不清
+// "这人在我面前"和"这人只是被聊到"，容易把仅被提及的人物凭空写成真的登场
+// （行脚僧明明在喇嘛庙歇脚，只因上轮对话提过一句，下一轮就被写到村口来）。
+// 这里把两类分段展示、并在"被提及"段落上加一条硬性提示。
 export function buildNpcLoreBlock(matched) {
   if (!matched || !matched.length) return "";
-  const body = matched.map(m => m.entry.trim()).join("\n");
-  return `\n\n【在场／相关人物设定】（仅注入此刻在场或被提及的人物；其余已知人物依然存在于世界中，只是此刻不赘述其细节，需要时会再注入）\n${body}`;
+  const present = matched.filter(m => m.reason === "在场");
+  const mentioned = matched.filter(m => m.reason !== "在场");
+  let out = "";
+  if (present.length) {
+    out += `\n\n【此刻在场人物设定】（这些人真的站在这个场景里，此刻正对着玩家）\n${present.map(m => m.entry.trim()).join("\n")}`;
+  }
+  if (mentioned.length) {
+    out += `\n\n【仅被提及、并不在场的人物设定】（这些人只是被聊到、被提起，此刻并不在这个场景里——你可以在对话/心理活动里自然提到他们，但绝不能让他们凭空出现在这个场景、开口说话或有任何实际登场的动作，除非玩家真的移动到他们所在之处）\n${mentioned.map(m => m.entry.trim()).join("\n")}`;
+  }
+  return out;
 }

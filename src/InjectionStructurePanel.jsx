@@ -17,17 +17,22 @@ import React, { useState } from "react";
 import {
   ACTION_VIEWS, blocksForAction, KIND_META, CONSTRAINT_FIELDS,
   STATIC_TEXT_KEYS, schemaKeyFor,
+  giftSettleLawExample, giftNarrativeLawExample, giftExtractionSpecExample,
 } from "./injectionBlocks.js";
 import * as ENGINE from "./enginePrompts.js";
 
-export default function InjectionStructurePanel({ getLiveBlockText }) {
+export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled }) {
   const [actionId, setActionId] = useState("look");
   const [openBlock, setOpenBlock] = useState(null);
   const [live, setLive] = useState({});     // blockId -> 当前局真值
   const [liveErr, setLiveErr] = useState("");
+  // 单调用/双调用切换：默认跟随设置里实际生效的 extractionEnabled，玩家也可以在
+  // 面板里手动切换来对比"如果开/关双调用，这个动作分类的注入结构会有什么不同"，
+  // 不强制跟设置联动，方便对照学习两种架构的差异。
+  const [mode, setMode] = useState(extractionEnabled ? "dual" : "single");
 
   const view = ACTION_VIEWS.find(v => v.id === actionId) || ACTION_VIEWS[0];
-  const blocks = blocksForAction(actionId);
+  const blocks = blocksForAction(actionId, mode);
   const litCount = blocks.filter(b => b.lit).length;
 
   // 静态块的真原文：与 buildSysBase 共用 enginePrompts.js 的同一份常量
@@ -36,6 +41,10 @@ export default function InjectionStructurePanel({ getLiveBlockText }) {
     if (key) return ENGINE[key];
     if (b.id === "schema") return ENGINE[schemaKeyFor(view)];
     if (b.id === "catalog") return ENGINE.CATALOG_TAIL;
+    // 送礼铁律示例——用固定示例礼物演示实际渲染样例，不用等拉取当前局真值
+    if (b.id === "gift_settle_law") return giftSettleLawExample();
+    if (b.id === "gift_narrative_law") return giftNarrativeLawExample();
+    if (b.id === "extraction_call" && view.settleKind === "gift") return giftExtractionSpecExample();
     return null;
   };
 
@@ -79,6 +88,29 @@ export default function InjectionStructurePanel({ getLiveBlockText }) {
             {v.label}
           </span>
         ))}
+      </div>
+
+      {/* 单调用 / 双调用 切换：同一个动作分类，两种模式下喂给AI的东西结构完全不同
+          （单调用：主模型一次产JSON+MVU；双调用：主模型只写散文，状态判定转交
+          extractionEngine.js 的提取层，是另一次独立AI调用，可配不同模型）。
+          默认跟随设置里实际生效的档位，也可以手动切换来对比两种架构的差异。 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 10.5, color: "#5a5a4a" }}>查看模式：</span>
+        {[["single", "单调用"], ["dual", "双调用"]].map(([m, label]) => (
+          <span key={m}
+            onClick={() => { setMode(m); setOpenBlock(null); }}
+            style={{
+              cursor: "pointer", padding: "2px 10px", borderRadius: 3, fontSize: 11,
+              background: mode === m ? "#243020" : "transparent",
+              color: mode === m ? "#9ac07a" : "#5a5a4a",
+              border: `1px solid ${mode === m ? "#3a5a2a" : "#242833"}`,
+            }}>
+            {label}
+          </span>
+        ))}
+        <span style={{ fontSize: 10, color: "#4a4a3a" }}>
+          （设置里实际生效：{extractionEnabled ? "双调用" : "单调用"}{mode !== (extractionEnabled ? "dual" : "single") ? "　—　当前只是切换查看，不影响实际生效的模式" : ""}）
+        </span>
       </div>
 
       <div style={{ fontSize: 11, color: "#7a7460", marginBottom: 6, lineHeight: 1.65 }}>

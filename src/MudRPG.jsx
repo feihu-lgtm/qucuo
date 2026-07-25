@@ -2956,9 +2956,13 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 现在统一走同一条matchNpcLore判断逻辑，不用改matchNpcLore本身。
     const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
     const combinedNpcLore = [...(preset.npcLore || []), ...getAllResidentNpcLore()];
+    // 注意：这里必须用 visibleNpcs（已按内层房间过滤），不能用 room.npcs（未过滤的
+    // 据点级全量名单）——否则"在场"判定会把同据点但身处别的内层房间的人（老猎户在
+    // 猎户小屋、行脚僧在喇嘛庙歇脚处）也当成在场，把完整人设注入进去，AI 照着写出
+    // 一个"人明明不在这个房间却出现在正文里"的穿帮（行脚僧出现在村口这类）。
     const npcLoreBlock = buildNpcLoreBlock(
       matchNpcLore(combinedNpcLore, {
-        roomNpcNames: room.npcs.map(n => n.name),
+        roomNpcNames: visibleNpcs.map(n => n.name),
         userInput: cmd,
         lastReply: lastAiText,
       })
@@ -3265,6 +3269,18 @@ ${dealFmt}`;
           : promptScope === "move" ? "，已砍物件志/认知隔离/复杂schema/拓扑外的世界观"
           : promptScope === "talk" ? "，已砍物件志/拓扑与装备规则" : "";
         traceStep(_trace, "Prompt注入", "info", `级别=${_scopeLabel}（system ${sys.length}字${_scopeWhy}）`);
+        // 调用模式标注：单调用/双调用是两条完全不同的 prompt 结构（前者主模型直接
+        // 出JSON+MVU，后者主模型只写散文、好感度等状态判定全部转交提取层的另一
+        // 个模型），排查"好感度怎么没变/怎么变得莫名其妙"时第一步就该确认走的
+        // 是哪条路、双调用时具体是哪个模型在判——不写清楚，排查者会误以为
+        // 主模型和判定好感度的模型是同一个。
+        if (apiCfg.extractionEnabled) {
+          const exCfg = buildExtractionCfg(intent.code, apiCfg);
+          traceStep(_trace, "调用模式", "info",
+            `双调用（叙事/状态分离）　主叙事模型=${apiCfg.model || "未设置"}　提取模型(意图=${intent.code})=${exCfg.model || "未设置"}${exCfg.model === apiCfg.model ? "（未单独配置，沿用主模型）" : ""}`);
+        } else {
+          traceStep(_trace, "调用模式", "info", `单调用（叙事+状态一次性产出）　主模型=${apiCfg.model || "未设置"}`);
+        }
         // 世界书点灯明细：🟢亮了哪条（被什么词/哪个状态点亮）、⚫灭了哪条。排"AI 怎么不知道 X"用。
         if (_gateReport && (_gateReport.lit.length || _gateReport.dark.length)) {
           traceStep(_trace, "世界书·总纲", "info",
@@ -3324,6 +3340,7 @@ ${dealFmt}`;
         // ── 双调用模式：主调用只生成叙事，提取调用处理状态 ──
         // 主叙事调用与单调用模式一样享有自动重试——此前这里只试一次，
         // 接口一超时（默认60s）整轮行动直接整体回滚，表现为"双调用模式没法用"。
+        const _exCfgForTrace = buildExtractionCfg(intent.code, apiCfg); // 仅供trace显示模型名，实际提取调用在下面callExtraction内部会重新算一份等价的cfg
         let mainFinishReason;
         for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
           try {
@@ -3332,9 +3349,9 @@ ${dealFmt}`;
             mainFinishReason = r.finishReason;
             if (attempt > 1) {
               addLog([{ t: "sys", text: `  ✓ 重连成功，继续。` }]);
-              traceStep(_trace, "AI调用", "pass", `主叙事第${attempt}次尝试成功（双调用模式）`);
+              traceStep(_trace, "AI调用", "pass", `主叙事第${attempt}次尝试成功（双调用·主叙事模型=${apiCfg.model || "未设置"}）`);
             } else {
-              traceStep(_trace, "AI调用", "pass", "主叙事一次成功（双调用模式）");
+              traceStep(_trace, "AI调用", "pass", `主叙事一次成功（双调用·主叙事模型=${apiCfg.model || "未设置"}）`);
             }
             // 必须在提取调用之前挂——getPipelineLog()[0] 取的是最近一条，
             // 等提取调用发完再挂就变成提取那条了，主叙事的 prompt 反而看不到。
@@ -3390,14 +3407,14 @@ ${dealFmt}`;
           : null;
         const extracted = await callExtraction(intent.code, rawFull, exState, apiCfg, settleOptsForExtraction).catch(e => {
           addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${e.message || e}），本轮状态未更新` }]);
-          traceStep(_trace, "提取调用", "fail", `${e.message || e}，本轮状态未更新`);
+          traceStep(_trace, "提取调用", "fail", `提取模型=${_exCfgForTrace.model || "未设置"}调用异常：${e.message || e}，本轮状态未更新`);
           return null;
         });
         if (extracted?.parseFailed) {
           addLog([{ t: "sys", text: `  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新` }]);
-          traceStep(_trace, "提取调用", "fail", "返回内容无法解析，本轮状态未更新");
+          traceStep(_trace, "提取调用", "fail", `返回内容无法解析（提取模型=${_exCfgForTrace.model || "未设置"}），本轮状态未更新`);
         } else if (extracted) {
-          traceStep(_trace, "提取调用", "pass", settleOptsForExtraction ? "状态提取完成（送礼专属spec）" : "状态提取完成");
+          traceStep(_trace, "提取调用", "pass", `状态提取完成（提取模型=${_exCfgForTrace.model || "未设置"}${settleOptsForExtraction ? "·送礼专属spec" : ""}）`);
         }
         p = extracted?.p || {};
         mvuCommands = extracted?.mvuCommands || [];
@@ -3415,9 +3432,9 @@ ${dealFmt}`;
             // 明确告诉玩家"重连成功"，否则玩家只看到"正在重试…"、不知道到底恢复没有。
             if (attempt > 1) {
               addLog([{ t: "sys", text: `  ✓ 重连成功，继续。` }]);
-              traceStep(_trace, "AI调用", "pass", `第${attempt}次重试后成功`);
+              traceStep(_trace, "AI调用", "pass", `第${attempt}次重试后成功（单调用·主模型=${apiCfg.model || "未设置"}）`);
             } else {
-              traceStep(_trace, "AI调用", "pass", "一次成功");
+              traceStep(_trace, "AI调用", "pass", `一次成功（单调用·主模型=${apiCfg.model || "未设置"}）`);
             }
             // 把这一轮 AI 调用的完整 prompt/回复挂到行动日志上，让"一轮全过程"在一个
             // 面板里看全：系统各层走向 + 喂给 AI 的总 prompt + AI 回复。

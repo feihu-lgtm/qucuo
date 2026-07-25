@@ -160,8 +160,10 @@ export const ACTION_VIEWS = [
     note: "全量注入。物件志只在本轮拾取判定命中时才亮，寻常探索轮灭灯防诱导发物。" },
   { id: "meta", label: "系统元问题", intent: "META_QUERY", scope: "full",
     note: "「什么情况」这类。篇幅指令会压到一两句，其余同全量档。" },
-  { id: "settle", label: "结算叙事", intent: null, scope: "settle",
-    note: "送礼/住店/成交这类：系统已把数值结算完，AI 只把既定事实演成叙事，无裁量权。" },
+  { id: "settle", label: "结算叙事(其余)", intent: null, scope: "settle",
+    note: "住店/求医/买卖/拜师/成交这类：系统已把数值结算完，AI 只把既定事实演成叙事，无裁量权。" },
+  { id: "gift", label: "🎁 送礼", intent: "TALK_CASUAL", scope: "settle", settleKind: "gift",
+    note: "送礼走 settle 结算档 + settleKind:\"gift\" 专属铁律——系统已扣物品，AI/提取层必须把这一轮好感度判成正向，且按礼物品阶/描述给出有依据的幅度，不接受推辞/拒收类写法。" },
   { id: "gm", label: "创造模式 ⚡", intent: null, scope: "full", gm: true,
     note: "玩家是神。强制走全量档，物件志与 MVU 强制挂（要能凭空发物、设变量）。" },
   { id: "whisper", label: "旁白私聊", intent: null, scope: "whisper",
@@ -170,15 +172,57 @@ export const ACTION_VIEWS = [
 
 // 某一块在某个动作下亮不亮。灭了要给出原因——这个面板的价值一半在"为什么没注入"。
 // 判据抄自 buildSysBase 的 wantCatalog / wantIsolation / wantMvu 与 schema 三元链。
-export function blocksForAction(actionId) {
+// mode: "single"(单调用，主模型一次产出JSON+MVU) | "dual"(双调用，主模型只写散文，
+// 状态判定转交 extractionEngine.js 的提取层)——这两种模式下同一个动作分类喂给AI的
+// 东西结构完全不同（尤其送礼场景：单调用靠 buildSysBase 的 isSettle 分支产铁律+MVU，
+// 双调用靠 narrativeOnly 分支的铁律管住主叙事文风、再靠 extractionEngine.js 的
+// GIFT 专属 spec 管住好感度判定），面板必须分开展示，不能用一套块清单硬套两种模式。
+export function blocksForAction(actionId, mode = "single") {
   const view = ACTION_VIEWS.find(v => v.id === actionId) || ACTION_VIEWS[0];
   if (view.scope === "whisper") {
     return INJECTION_PATHS.whisper.blocks.map(b => ({ ...b, lit: true, off: "" }));
   }
+
+  // 双调用模式：主模型只出散文，不产JSON/MVU/schema，这几块在双调用下从结构上就
+  // 不存在（narrativeOnly分支直接跳过它们），此时不该沿用单调用那份 act.blocks
+  // 硬把 schema/isolation 标成"灭灯"——那会让人误以为"这局本可以有MVU只是被灭了"，
+  // 而事实是双调用架构下主叙事这一步压根没有MVU这个环节，好感度判定整体挪到了
+  // 提取层（另一次独立的AI调用，见 extractionEngine.js）。所以双调用模式返回一份
+  // 结构不同的清单：保留叙事相关的块，砍掉JSON/MVU相关块，额外加一块"提取层调用"
+  // 说明这一轮状态判定实际去了哪。
+  if (mode === "dual") {
+    const dualBase = (view.isTalk ? INJECTION_PATHS.talk.blocks : INJECTION_PATHS.act.blocks)
+      .filter(b => !["schema", "isolation"].includes(b.id)); // 双调用主叙事不产JSON/MVU，这两块结构上不存在
+    const blocks = dualBase.map(b => {
+      let lit = true, off = "";
+      if (b.id === "catalog") {
+        lit = false; off = "双调用主叙事只写散文，物件志(发物判定)在提取层处理，这一步不需要";
+      }
+      return { ...b, lit, off };
+    });
+    // 追加"送礼世界观铁律(双调用版)"块——对应 buildSysBase 的 narrativeOnly 分支里
+    // settleKind==="gift" 那段，只在送礼场景展示
+    if (view.settleKind === "gift") {
+      blocks.push({
+        id: "gift_narrative_law", name: "送礼世界观铁律(管住主叙事文风)", kind: "engine", depth: 90,
+        summary: "narrativeOnly分支专属：强制主叙事把这一轮写成对方欣然收下，不许写推辞/质疑/婉拒——防止AI把送礼写成拒收剧情。",
+        lit: true, off: "",
+      });
+    }
+    blocks.push({
+      id: "extraction_call", name: "→ 提取层调用(独立的第二次AI调用)", kind: "dynamic", depth: 91,
+      summary: view.settleKind === "gift"
+        ? "本轮好感度判定实际发生在这里，不在主叙事里。extractionEngine.js 命中 settleKind:\"gift\" 后切到 GIFT 专属spec：不做\"读心\"式判断，直接钉死\"好感度只能上升、不得为0或负数\"，并把礼物品阶/类别/描述喂给提取模型做幅度参考。"
+        : "主叙事写完散文后，另发一次独立AI调用（可指定更小/更快的模型），按当前意图对应的 EXTRACTION_SPECS 从散文里提取状态变化(好感度/物品/HP等)。",
+      lit: true, off: "",
+    });
+    return blocks;
+  }
+
   const base = view.isTalk ? INJECTION_PATHS.talk.blocks : INJECTION_PATHS.act.blocks;
   const { scope, gm } = view;
 
-  return base.map(b => {
+  const blocks = base.map(b => {
     let lit = true, off = "";
     if (b.id === "catalog") {
       if (gm) { lit = true; }
@@ -191,8 +235,28 @@ export function blocksForAction(actionId) {
     if (b.id === "npc_lore" && (scope === "move" || scope === "settle")) {
       lit = false; off = "绿灯：本轮无在场者需注入人设";
     }
+    // 送礼场景：schema块要特别说明这里内嵌了送礼铁律+MVU强制正向指令
+    if (b.id === "schema" && view.settleKind === "gift") {
+      off = ""; lit = true;
+    }
     return { ...b, lit, off };
   });
+
+  // 单调用模式下，送礼场景把"送礼世界观铁律"从schema块里单独拆一块展示，
+  // 对应 buildSysBase 的 isSettle 分支里 settleKind==="gift" 那段（品阶/描述/
+  // 建议幅度都在这里），不必展开整个schema字符串去找这段话。
+  if (view.settleKind === "gift") {
+    const schemaIdx = blocks.findIndex(b => b.id === "schema");
+    const giftBlock = {
+      id: "gift_settle_law", name: "送礼世界观铁律(单调用·管住MVU好感判定)", kind: "engine", depth: 13.5,
+      summary: "buildSysBase 的 isSettle+settleKind:\"gift\" 分支：强制本轮必须输出正向 <mvu> 好感度指令(不得为0或负数)，并把礼物的品阶/类别/描述摆给AI看，建议幅度按六品阶区间(白2~4/绿4~6/蓝6~9/紫9~12/橙11~14/红13~15)给出参考，取代泛泛的\"如果好感有变化\"式提示。",
+      lit: true, off: "",
+    };
+    if (schemaIdx >= 0) blocks.splice(schemaIdx, 0, giftBlock);
+    else blocks.push(giftBlock);
+  }
+
+  return blocks;
 }
 
 // 块 → 真实原文。静态块直接给字（与 buildSysBase 共用 enginePrompts.js 那份），
@@ -210,4 +274,47 @@ export function schemaKeyFor(view) {
   if (view.scope === "settle") return "SCHEMA_SETTLE";
   if (view.scope === "move") return "SCHEMA_MOVE";
   return "SCHEMA_FULL";
+}
+
+// ============================================================================
+// 送礼铁律示例文本 —— 用一件示例礼物(青锋剑·绿档)演示实际渲染出的prompt片段，
+// 供预设面板"送礼"分类在没有拉取当前局真值时也能看到具体样例，而不是只有一句
+// summary说明。跟 MudRPG.jsx buildSysBase 与 extractionEngine.js EXTRACTION_SPECS.GIFT
+// 里的真实拼装逻辑保持同构，仅供展示用途，不参与实际游戏逻辑。
+// ============================================================================
+const GIFT_EXAMPLE = { itemName: "无主的青锋剑", quality: "绿", categoryLabel: "武器",
+  desc: "村口土里半掩着的一把青锋剑，剑身还算齐整，不知是哪位过路侠客遗落的。",
+  range: [4, 6], suggestedDelta: 5 };
+const GIFT_EXAMPLE_NPC = "才旦";
+
+export function giftSettleLawExample() {
+  const g = GIFT_EXAMPLE, npc = GIFT_EXAMPLE_NPC;
+  return `【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。所以这一轮${npc}收下「${g.itemName}」时，对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。
+这件礼物的实际来历（好感幅度请依此掂量分量，越贵重、越用心，情谊越重）：品阶【${g.quality}】，类别「${g.categoryLabel}」。物件描述：${g.desc}
+
+依上面这件礼物的品阶与来历，本轮好感度增量建议落在 +${g.range[0]}~+${g.range[1]} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：
+_.add('角色.${npc}.好感度', ${g.suggestedDelta});
+
+（以上以「${g.itemName}」（绿档）赠${npc}为例演示，实际游戏中礼物名称/品阶/描述/NPC均按当次送礼真实替换。）`;
+}
+
+export function giftNarrativeLawExample() {
+  const g = GIFT_EXAMPLE, npc = GIFT_EXAMPLE_NPC;
+  return `【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。这一轮${npc}面对「${g.itemName}」（${g.desc}），务必写成她欣然收下、态度转暖，不许写成推辞、质疑来意或婉拒不受——这是本轮叙事唯一的走向，不接受其他写法。
+
+（以上以「${g.itemName}」赠${npc}为例演示。这段只管住"主叙事怎么写"，本身不产生MVU——双调用模式下好感度判定另在下面「提取层调用」那一块完成。）`;
+}
+
+export function giftExtractionSpecExample() {
+  const g = GIFT_EXAMPLE, npc = GIFT_EXAMPLE_NPC;
+  return `${npc}刚收到玩家赠送的礼物：「${g.itemName}」，品阶【${g.quality}】，类别「${g.categoryLabel}」。物件描述：${g.desc}
+
+叙事内容：
+（此处是主叙事这一步实际写出的散文正文，此处从略）
+
+【铁律】不管叙事写得含蓄还是热络，送礼这一轮${npc}对玩家的好感度只能上升、不得为 0 或负数——按这件礼物的品阶与来历，建议幅度落在 +${g.range[0]}~+${g.range[1]} 之间（品阶越高、描述越贵重取上沿，寻常物件取下沿）。物品交换写进 delta（礼物已由系统扣除，此处不需要重复处理 items_rm）。
+输出 JSON（mvu 字段必须是一条正向 _.add 好感度指令）：
+{"mvu":"_.add('角色.${npc}.好感度', ${g.suggestedDelta});\\n","delta":{"items_add":[],"flags_add":[]}}
+
+（这是 extractionEngine.js 里 EXTRACTION_SPECS.GIFT 的真实模板，只在 settleKind:"gift" 命中时替代通用的 TALK_CASUAL 提取逻辑——不做"从叙事读心"式判断，直接钉死好感度必须为正。）`;
 }

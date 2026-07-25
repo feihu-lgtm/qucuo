@@ -228,7 +228,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
             PresetToolbar / PresetManager / PresetEditor 三个模块代码原样留着没删，
             想接回来把这段还原即可，不必重写。 */}
         {tab === "preset" && (
-          <InjectionStructurePanel getLiveBlockText={getLiveBlockText} />
+          <InjectionStructurePanel getLiveBlockText={getLiveBlockText} extractionEnabled={!!cfg.extractionEnabled} />
         )}
 
         {tab === "api" && (

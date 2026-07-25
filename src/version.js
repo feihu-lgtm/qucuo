@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "三合一：修NPC全知/战斗掉好感两个bug + 预设面板拆单双调用/加送礼监督 + 顶部日志标模型",
+    time: "2026-07-26 12:00",
+    notes: [
+      "群友实测反馈复现三个问题：①切磋时不在场的村口NPC能插话/行脚僧明明在喇嘛庙却出现在村口 ②围观切磋的才旦莫名掉了5点好感度 ③预设面板看不清单调用/双调用分别喂了什么、顶部日志分不清这轮走的是哪种模式。",
+      "①【NPC在场判定bug】worldbook.js matchNpcLore的\"在场\"判定此前用的是 room.npcs（未按内层房间过滤的据点级全量名单），导致同据点但身处别的内层房间的人（猎户小屋的老猎户、喇嘛庙的行脚僧）也被当成\"在场\"，完整人设注入后AI照着写出\"人明明不在这个房间却出现在正文里\"的穿帮。改用已按内层过滤的 visibleNpcs。另外把\"在场\"和\"仅被提及\"两类人设分段展示，给后者加硬性提示：只是被聊到，绝不能凭空登场开口。",
+      "②【战斗好感度示例误导】extractionEngine.js 的 COMBAT 提取spec示例JSON里写死了 _.add('角色.XXX.好感度', -5)，提取模型很可能直接照抄这个示例数值，容易误伤纯围观、未实际参战的NPC。改成留空示例+新增约束：好感变化必须叙事里明确写出具体理由，围观/在场本身不构成理由，不要把\"这是一场战斗\"当成\"必须扣某人好感\"的默认规则。",
+      "③【预设面板拆单双调用】injectionBlocks.js新增独立\"🎁送礼\"分类(此前混在笼统的\"结算叙事\"里)，blocksForAction新增mode参数区分单调用/双调用——双调用下砍掉结构上不存在的schema/isolation块，改展示\"提取层调用(独立的第二次AI调用)\"这一块，并各自提供送礼铁律的示例文本(giftSettleLawExample/giftNarrativeLawExample/giftExtractionSpecExample)，不用等拉取当前局真值就能看到具体渲染样例。InjectionStructurePanel.jsx加单调用/双调用切换器，默认跟随设置里实际生效的档位。",
+      "④【顶部日志标注】act()新增\"调用模式\"trace步骤，明确写出单调用/双调用、双调用时主叙事模型与本次意图对应的提取模型分别是什么；\"AI调用\"\"提取调用\"两步措辞同步补上具体模型名，排查\"好感度怎么判的\"时不必再去猜是哪个模型在起作用。",
+      "esbuild --bundle 分别验证 MudRPG.jsx(含全部依赖)/worldbook.js/extractionEngine.js/injectionBlocks.js/InjectionStructurePanel.jsx/SettingsPanel.jsx 语法通过；Node脚本模拟渲染验证送礼分类在单双调用下的blocks结构与示例文本均正确。",
+    ],
+  },
+  {
     codename: "送礼好感bug补漏：双调用模式(extractionEngine)完全没吃到上一版的送礼铁律，这次两个模式都堵上",
     time: "2026-07-26 11:45",
     notes: [
