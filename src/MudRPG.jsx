@@ -2956,15 +2956,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 现在统一走同一条matchNpcLore判断逻辑，不用改matchNpcLore本身。
     const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
     const combinedNpcLore = [...(preset.npcLore || []), ...getAllResidentNpcLore()];
-    // 注意：这里必须用 visibleNpcs（已按内层房间过滤），不能用 room.npcs（未过滤的
-    // 据点级全量名单）——否则"在场"判定会把同据点但身处别的内层房间的人（老猎户在
-    // 猎户小屋、行脚僧在喇嘛庙歇脚处）也当成在场，把完整人设注入进去，AI 照着写出
-    // 一个"人明明不在这个房间却出现在正文里"的穿帮（行脚僧出现在村口这类）。
+    // 只有真正的对话场景才需要"上一轮回复提到谁"这个信号（NPC刚说"我那侄子
+    // 阿福在磨坊"，玩家紧接着追问阿福是谁）。查看/端详间隙的行动/移动/战斗/
+    // 结算/调查这些跟对话无关的动作，不该被上一轮叙事（尤其是篇幅长、人名多
+    // 的战斗战报）的用词殃及——否则会出现"上一轮切磋战报提过的人，这一轮
+    // 随便做点什么不相干的事都被拽出来插一脚"的串场穿帮。isTalk 已经区分了
+    // 对话/非对话两条路，这里直接复用。
     const npcLoreBlock = buildNpcLoreBlock(
       matchNpcLore(combinedNpcLore, {
         roomNpcNames: visibleNpcs.map(n => n.name),
         userInput: cmd,
         lastReply: lastAiText,
+        includeLastReply: isTalk,
       })
     );
 

@@ -13,11 +13,22 @@
 
 // 从 npcLore 里挑出当前场景该注入的条目。
 // npcLore: [{ name, aliases?: string[], entry: string }]
-// ctx: { roomNpcNames?: string[], userInput?: string, lastReply?: string }
+// ctx: { roomNpcNames?: string[], userInput?: string, lastReply?: string, includeLastReply?: boolean }
+//
+// includeLastReply（默认true）：是否让"上一轮AI回复文本"参与"被提及"判定。
+// 这个开关的存在是因为实测复现了一个串场bug——玩家上一轮打了场切磋，战报里
+// 提到了好几个人名（对手/围观者/路人），下一轮玩家哪怕只是纯粹"端详"一件
+// 物品，这些人名照样会命中"被提及"、把完整人设怼进去，于是行脚僧、乞丐老七
+// 这类跟"端详"毫不相干的人接连"插一脚"。真正需要"上一轮提到谁"这个信号的
+// 场景，只有玩家紧接着追问"他是谁/他在哪"这种对话场景（NPC刚说"我那侄子
+// 阿福在磨坊"，玩家追问阿福）——此时"上一轮提到"确实是唯一线索。而端详/
+// 移动/战斗/结算这类跟对话无关的动作，不该被上一轮叙事的用词殃及，调用方
+// 应传 includeLastReply:false，只留"在场"+"本轮输入自己提到"两条更可靠的信号。
 export function matchNpcLore(npcLore, ctx = {}) {
   if (!Array.isArray(npcLore) || !npcLore.length) return [];
   const present = (ctx.roomNpcNames || []).filter(Boolean);
-  const scanText = `${ctx.userInput || ""}\n${ctx.lastReply || ""}`;
+  const includeLastReply = ctx.includeLastReply !== false;
+  const scanText = `${ctx.userInput || ""}${includeLastReply ? `\n${ctx.lastReply || ""}` : ""}`;
 
   const matched = [];
   for (const npc of npcLore) {
@@ -27,7 +38,7 @@ export function matchNpcLore(npcLore, ctx = {}) {
     // 兼容 room 里写"鱼定村口的老猎户"而 key 是"老猎户"这类长短不一的情况）
     const inScene = present.some(rn => keys.some(k => rn === k || rn.includes(k) || k.includes(rn)));
 
-    // 被提及：本轮输入或上轮回复文本里出现名字/别名
+    // 被提及：本轮输入（一定扫描）+ 上轮回复（仅 includeLastReply 时扫描）里出现名字/别名
     const mentioned = keys.some(k => scanText.includes(k));
 
     if (inScene || mentioned) {
