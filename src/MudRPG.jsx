@@ -7,14 +7,14 @@ import {
 } from "./narrator.js";
 import { gateBodyProfile, emptyBodyProfile, buildOutfitRequest, bodyProfileFilled } from "./bodyProfile.js";
 import BodyProfilePanel from "./BodyProfilePanel.jsx";
-import { loadConfig, saveConfig, callModel, callModelStream, cleanJsonString, getPipelineLog, clearPipelineLog, classifyError } from "./apiConfig.js";
+import { loadConfig, saveConfig, callModel, callModelStream, cleanJsonString, getPipelineLog, classifyError } from "./apiConfig.js";
 import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, attachExtractionPipeline, attachInjectionSnapshot, fmtMs } from "./actionTrace.js";
-import { buildSnapshot, autoSave, loadAutoSave, loadSlot, flushLocalBackup } from "./saves.js";
+import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup } from "./saves.js";
 import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
-import { initialVarTree, extractMvuBlock, applyMvuCommands, listCharacters, npcAffectionLabel, reputationLabel, MVU_SYSTEM_INSTRUCTIONS } from "./mvu.js";
-import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats, statsForQuality } from "./equipment.js";
+import { initialVarTree, extractMvuBlock, applyMvuCommands, listCharacters, npcAffectionLabel, reputationLabel } from "./mvu.js";
+import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats } from "./equipment.js";
 import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem } from "./items/catalog.js";
 // 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
@@ -34,7 +34,7 @@ import QuestLogScreen from "./QuestLogScreen.jsx";
 import OpeningSequence from "./OpeningSequence.jsx";
 import CharacterCreate from "./CharacterCreate.jsx";
 import { getActivePreset } from "./PresetManager.jsx";
-import { assemblePrompt, applyPresetOverrides } from "./presetSystem.js";
+import { applyPresetOverrides } from "./presetSystem.js";
 import TraceViewer from "./TraceViewer.jsx";
 import { duelPotGain, duelAffGain, duelDropChance, TEAMWORK_GAIN } from "./combat/duelSettleMath.js";
 import { getCachedInspect, setCachedInspect } from "./inspectCache.js";
@@ -74,7 +74,6 @@ import { writeNote, NOTE_SOURCE, VIA, reembedStaleNotes } from "./memory/note.js
 import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from "./memory/daySummary.js";
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
-import { ENGINE_IDENTITY, GM_RULE, ISOLATION, MAP_LAW, FORMAT_LAW, CATALOG_TAIL } from "./enginePrompts.js";
 import { callExtraction, buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
 import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
@@ -101,755 +100,23 @@ import { getResidentNpcs, getAllResidentNpcLore } from "./residentNpcs.js";
 import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
 import { tryLearnFromMaster, tryStealFrom } from "./kungfu/learnSkill.js";
 import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
-
-// narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
-// 返回 SillyTavern 13 位置风格的 system 消息数组，每条带 tavernBlock/tavernLabel。
-function buildSysBase(targetWordCount, narratorState, scenario, budgetInstruction, embeddingEnabled, npcLoreBlock, narrativeOnly = false, scope = "full", opts = {}) {
-  // memory 摘要统一用玩家角色名字第三人称叙述，不用"你/我/玩家"这几种代词混着写——
-  // 事实账本(knowledge.js)的摘要要在多处被复用（旁白全知视角、其他NPC传闻转述、飞鸽书信
-  // 里提起），人称一旦不统一，转述出来的句子会主客体错乱、读起来别扭。
-  const playerName = opts.playerName || "主角";
-  // scope 动态注入（借鉴 worldbook 蓝绿灯，解决"走一步路却喂一整套战斗/物品/schema"的臃肿）：
-  //   "settle" 结算叙事——系统已把钱扣完/物入袋/flag置好，AI 只把这件既定事实演成叙事，
-  //          对状态无任何裁量权。故砍掉「物件志」「认知隔离」「全量schema」，schema 缩成
-  //          {output,memory}；MVU 仅在该轮确实牵涉某个 NPC（送礼/拜师等）时才挂。
-  //          详见 docs/开发_挂载分级与蓝绿灯设计.md §三。
-  //   "move" 移动到达——AI 只需读场景写到达叙事，不发物品、无 NPC 对白博弈，
-  //          故砍掉「物件志」「认知隔离」，并改用只含 room 字段的精简 schema。
-  //   "talk" 对话——保留认知隔离（对白要守信息域），砍掉物件志（对话一般不发物品）。
-  //   "full" 其余（战斗/行动/查看/创造模式）——全量注入。
-  const isSettle = scope === "settle";
-  // 物件志（绿灯·批四）：只有"这一轮真可能发出物品"才挂——移动拾取判定命中、战斗（掉落）、
-  // 创造模式（凭空发物）。寻常行动轮 AI 本就不该平白发物，挂了反而诱它发。
-  const wantCatalog = scope === "full" && opts.mayGrantItem !== false;
-  const wantIsolation = scope !== "move" && !isSettle;
-  // MVU（绿灯·批二）：只有"这一轮可能改好感/变量"才挂——即场上真有人。
-  // 独自赶路、荒野探索、无人结算这类轮次灭灯，每轮省 717 字；
-  // 创造模式(gm)强制挂（要能凭空设变量）。move 档本就无 MVU 段，不受影响。
-  const wantMvu = !narrativeOnly && (isSettle ? !!opts.settleNpc : (opts.hasNpc !== false || opts.gm === true));
-  // 直接用目标汉字数生成明确的字数指令，而不是通过 maxTokens 反推一个粗略的档位——
-  // 汉字和 token 不是 1:1 关系（一个汉字通常占 1.5-2 个 token），之前"用 maxTokens 分四档"
-  // 的做法既不精确，也只能控制"每条output"的上限，控制不了整轮回复的总字数。
-  //
-  // budgetInstruction 由 inputIntent.js 根据这轮玩家输入的性质动态生成——
-  // "什么情况"这种系统元问题应该只有一两句话，"拔剑迎战"这种战斗场面应该完整展开，
-  // 不该用同一个固定字数套所有输入。传了就用动态版本，不传（比如旧调用点或测试场景）
-  // 就退回原来的全局固定字数，保证向后兼容。
-  const lenNote = budgetInstruction || `本轮 output 数组里所有行拼起来，总字数应控制在约 ${targetWordCount} 字左右（允许±15%浮动），不要明显少写，也不要为了凑数硬拖长。根据这个总字数目标，自行决定要写几行、每行写多长。`;
-
-  // ── settleKind 专属铁律（本轮抽成独立函数）──────────────────────────
-  // 之前"送礼铁律"是直接堆在下面那个巨型模板字符串里的三元表达式，每加一个新的
-  // settleKind 都要在同一行里再叠一层三元，容易出现作用域引用错误（cmd 变量不在
-  // buildSysBase 作用域内那次事故）、可读性也持续下降。现在把"narrativeOnly分支
-  // 该说什么"和"isSettle分支的MVU该怎么写"分别抽成独立函数，settleKind 的判断
-  // 逻辑集中在这里，后续新增伙伴/新增结算类型时只需要在这两个函数里各加一段
-  // if 分支，不用再动下面那坨模板字符串本身。
-  //
-  // narrativeOnly 分支：管"这一轮的散文该怎么写"（双调用模式下主叙事只产文本，
-  // 好感度等状态判定转交提取层，这里不涉及MVU）。
-  function buildSettleNarrativeNote(o) {
-    if (o.settleKind === "gift") {
-      return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。这一轮${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，务必写成她欣然收下、态度转暖，不许写成推辞、质疑来意或婉拒不受——这是本轮叙事唯一的走向，不接受其他写法。`;
-    }
-    if (o.settleKind === "companion_invite") {
-      return `\n【伙伴认主铁律】雪豹与主角之间，非比寻常的人与兽的相逢——这是前世便结下的羁绊，它认准了主角便是这片雪域高原真正的主人，忠贞无二，此心早定，不是这一刻才临时起意。这一轮务必写成雪豹欣然应邀、心意早决——它或以额头抵掌、或绕身一圈、或伏低身姿以示臣服归顺，用兽类特有的、不必言语的方式表明这份认主之心；不许写成犹豫、观望、抗拒或需要主角再三哄劝——雪豹的答应是必然的、毫无保留的，这是本轮叙事唯一的走向，不接受其他写法。它不能说话（cannotSpeak），全程不出人言，情感全靠动作、眼神、姿态传达。`;
-    }
-    return "";
-  }
-  // isSettle 分支：管"MVU 那部分该怎么写"（单调用模式下，主模型直接产 JSON+MVU，
-  // 好感度等状态判定就在这一次调用里完成）。
-  function buildSettleMvuNote(o) {
-    if (o.settleKind === "gift") {
-      return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。所以这一轮${o.settleNpc}收下${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}时，对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n这件礼物的实际来历（好感幅度请依此掂量分量，越贵重、越用心，情谊越重）：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}${o.giftInfo?.desc ? `。物件描述：${o.giftInfo.desc}` : "（无特别来历，寻常物件）"}`;
-    }
-    if (o.settleKind === "companion_invite") {
-      return `\n【伙伴认主铁律】雪豹与主角之间，非比寻常的人与兽的相逢——这是前世便结下的羁绊，它认准了主角便是这片雪域高原真正的主人，忠贞无二，此心早定。这一轮务必写成雪豹欣然应邀、心意早决，用动作/眼神/姿态（额头抵掌、绕身而行、伏低臣服等，它不能说话）表明认主之心，不许写成犹豫或抗拒——下面这条 <mvu> 块本轮必须给出，且必须是正向增量（这是雪豹认你为主的时刻，好感度理应给一个较高的起始值）。`;
-    }
-    return "";
-  }
-  function buildSettleMvuExample(o) {
-    if (o.settleKind === "gift") {
-      return `\n依上面这件礼物的品阶与来历，本轮好感度增量建议落在 +${o.giftInfo?.range?.[0] ?? 2}~+${o.giftInfo?.range?.[1] ?? 4} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? 3});`;
-    }
-    if (o.settleKind === "companion_invite") {
-      return `\n雪豹是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"前世羁绊、认主忠贞"的设定，不是从0慢慢培养的陌生关系），建议直接 _.set 到 40~55 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', 45);`;
-    }
-    return "";
-  }
-
-  // 预设系统负责的部分：文体/通用规则/剧本设定的拼装顺序和内容，可由用户在设置面板里自由编辑，
-  // 完整兼容酒馆格式导入。scenario 通过 marker 占位符注入，不需要在这里手动拼接。
-  const preset = getActivePreset();
-  // scenario 绿灯（批三）：世界观总纲按"关键词 OR 状态"分条点灯，见 worldbook.js gateScenario。
-  // 蓝灯段（地理概要/地图铁律/好感度规则）常驻；专项段（拓扑路线/契诃夫之枪/路途遭遇/
-  // 装备掉落）只在玩家或上轮回复提到、或该 scope 确需时才亮。opts.gateCtx 不传则不裁剪。
-  const gated = opts.gateCtx
-    ? gateScenario(scenario, { ...opts.gateCtx, scope })
-    : { text: scenario, lit: [], dark: [] };
-  if (opts.onGateReport) opts.onGateReport(gated);
-  // 13 位置拆分：scenario / charDescription 由各自的独立块承载，这里不再填进预设占位符，避免重复。
-  const presetContent = assemblePrompt(preset, { scenario: "", charDescription: "" });
-
-  // 各分支的 JSON schema / 叙事指令，与旧模板字符串完全一致。
-  const schemaBlock = narrativeOnly
-    ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。${buildSettleNarrativeNote(opts)}`
-    : isSettle
-      ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
-{"output":["行1","行2"],"memory":"≤50字客观事实"}
-不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。不要重复结算任何奖励、物品、银两或状态。
-"memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
-${buildSettleMvuNote(opts)}
-在 JSON 输出完毕之后，${(opts.settleKind === "gift" || opts.settleKind === "companion_invite") ? `这一轮必须` : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化，"}另起一行输出 <mvu> 块（不要放进 JSON 内部）：
-${MVU_SYSTEM_INSTRUCTIONS}${buildSettleMvuExample(opts)}` : ""}`
-      : scope === "move"
-        ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
-{"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
-npcs 的 carry 字段只在该 NPC 首次登场那一轮写（0-3件肉眼可见随身物，出场叙事需描述其外观）。
-可选字段 "memory"：用不超过50字纯客观事实概括本轮到达了何处、路上是否有值得记的事，一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，寻常赶路可省略。
-若这次移动让某个从未出现的具名人物被提及，加 "mentionedNewNpcs":["名"]。`
-        : `回复纯JSON，字符串不换行：
-{"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}],"items":[{"name":"名","id":"id"}]},"char":{"hp":[60,100],"neigong":5,"waigong":8,"special":{"根骨":5,"悟性":6,"体魄":5,"魅力":5,"智谋":5,"身法":5,"气运":5}},"dao":{"karma":0,"jie":0,"sign":"天象","rumor":["事"]},"delta":{"items_add":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}],"items_rm":[],"skill_up":{},"exp":0,"pot":0,"flags_add":[]}}
-items_add 里的元素也可以是纯字符串（不需要装备系统参与的剧情道具/杂物），结构化写法仅用于武器/护甲/饰品类物品。
-npcs 的 carry 字段只在该 NPC 首次登场那一轮写：列出出场描述里玩家肉眼可见的随身物品（兵器、猎具、饰物、包裹等，0-3件，寻常人多为白/绿档），出场叙事必须描述其外观且提到这些东西——所见即所得，之后系统会固化这份清单作为他的全部随身家当（掉落/偷窃都只出自这里），后续轮次不必再写 carry。
-npcs 里某个 NPC 如果是路途遭遇生成的生态猛兽/山贼游哨这类"泛用清剿目标"（不是具名剧情人物），可选加一个 "tag" 字段（比如 "熊山野兽""黑风寨山贼"，具体归属看当前地域的路途遭遇说明），系统会用它核对是否推进对应的清剿类任务进度；具名剧情人物不要加这个字段。
-如果这一轮的旁白/对话文本里，你让某个此前从未出现过的具名人物被提及（比如"我那侄子阿福在山下磨坊"），在顶层JSON里加 "mentionedNewNpcs":["阿福"] 字段列出这些名字，不需要每次都有，绝大多数时候留空或省略这个字段即可，只有真的提到全新的具名人物时才加。
-如果收到"人物涌现"指令且这一轮确实让对应人物登场，在顶层JSON里额外加 "emergedNpcName" 和 "emergedNpcDescription" 两个字段（一句话定性描述，不含任何数值），其余情况完全不要出现这两个字段。
-可选字段 "memory"：用不超过50字的纯客观事实，概括本轮真正发生、日后可能需要回想起来的关键事件（谁做了什么、得到或失去了什么、去了何处、结下或了断了什么关系、许下或应承了什么）。一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"这几种代词。只记事实，不写情绪，不写心理，不加评述。若这一轮只是寻常闲谈、查看状态、无关紧要的往来，省略这个字段即可，不必硬凑。这条会被单独存档，供日后当作往事重新想起，因此务必写得具体（写清人名地名，不要用"那人""某处"这类含糊指代）。这条摘要除了供你自己日后回想，也会被登记为在场者共同"目击"的事实，供其他 NPC 之后自然提起（比如路人听说"${playerName}在鱼定村打伤了谁"），所以只在真有值得旁人知道的事发生时才写，纯私密心理活动或不宜外传的隐秘不要写进来。
-
-${wantMvu ? `
-在这个 JSON 对象输出完毕之后，如果需要维护角色/世界状态变量，另起一行输出 <mvu> 块（不要放在 JSON 字符串内部，作为 JSON 后面独立的一段纯文本）：
-${MVU_SYSTEM_INSTRUCTIONS}` : ""}`;
-
-  // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
-  // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
-  const messages = [
-    makeBlock("main", `${ENGINE_IDENTITY}\n\n${GM_RULE}\n\n篇幅要求：${lenNote}\n${narratorVoicePrompt(narratorState)}`),
-    makeBlock("worldInfoBefore", `${presetContent}${npcLoreBlock || ""}`),
-    makeBlock("charDescription", `玩家角色：${playerName}。系统会维护气血、内外功、物品等状态；你只需叙事，不要擅自修改状态。`),
-    makeBlock("charPersonality", `旁白/说书人的语气由「Main Prompt」中的声线控制，保持统一。`),
-    makeBlock("scenario", gated.text),
-    makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
-    makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是这个世界的说书人/Gamemaster。`),
-    makeBlock("authorsNote", ""),
-    makeBlock("exampleStart", "<START>"),
-  ];
-
-  // 空占位：由 callMainOnce 在调用前填充 chatHistory / inChat / latestUser。
-  messages.push(makeBlock("chatHistory", ""));
-  messages.push(makeBlock("inChat", ""));
-  messages.push(makeBlock("latestUser", ""));
-
-  // PHI（Post-History Instructions / Jailbreak）：FORMAT_LAW + 当前分支 schema + MVU。
-  messages.push(makeBlock("phi", `${FORMAT_LAW}\n\n${schemaBlock}`));
-
-  const totalLen = messages.reduce((sum, b) => sum + (b.content?.length || 0), 0);
-  if (opts.onSnapshot) opts.onSnapshot({ sys: messages, meta: { scope, narrativeOnly, isSettle, wantCatalog, wantIsolation, wantMvu, settleKind: opts.settleKind || null, len: totalLen } });
-  return messages;
-}
-
-const DIRS = { n: "北", s: "南", e: "东", w: "西", u: "上", d: "下", ne: "东北", nw: "西北", se: "东南", sw: "西南" };
-const bar = (v, mx, len = 10) => { const f = Math.max(0, Math.round((v / mx) * len)); return "█".repeat(f) + "░".repeat(len - f); };
-const STAGES = ["入门", "小成", "大成", "圆满", "登峰造极"];
-// 武学升阶潜能成本（模块级，渲染和逻辑共用）：越高阶越贵，阶跃式突破单次成本较高
-const STAGE_UP_COST = { 小成: 12, 大成: 20, 圆满: 32, 登峰造极: 48 };
-const STAGE_TO_QUALITY = { 入门: "白", 小成: "绿", 大成: "蓝", 圆满: "紫", 登峰造极: "橙" };
-const DIR_DXY = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0], ne: [1, -1], nw: [-1, -1], se: [1, 1], sw: [-1, 1], u: [0, 0], d: [0, 0] };
-// 方向解析：之前要求方向词必须是字符串开头（如"北""往北"），但"向北走""朝北边走"
-// "往北面走走"这类更符合口语习惯的说法反而识别不了——"向""朝"这类前置词没被覆盖，
-// 导致这么打字的玩家的移动请求被系统误判为"没有明确移动方向"，于是不走系统裁决的
-// 固定地图分支，AI 就有机可乘地自由发挥编出不存在的过渡地名（比如"熊曲山谷"）、
-// 还擅自把 room.name 改成这个编造的地方，绕开了"AI 不能决定去哪里"这条硬规则。
-// 修复只放宽"移动类前缀"（向/往/朝/去/到）+ 方向字的组合，不能简单放宽成"方向字
-// 出现在字符串前几位就算"——那样"看看北边有没有人""北面风景不错"这类根本不是
-// 移动指令的句子也会被误判成移动，反而制造新 bug。
-const DIR_PREFIX = "(?:向|往|朝|去|到)?"; // 移动类前缀，可选（兼容"北""往北""向北走"）
-const parseDir = (cmd) => {
-  const c = cmd.trim().toLowerCase();
-  // 特殊别名：保留精确开头匹配，避免"锦官城"这类地名词被过度泛化误判
-  if (/^(往西南|西南|去锦官城|去锦官|锦官城)/.test(c)) return "sw";
-  // 排除游戏地图不支持的复合方向（东南/东北/西北），否则会被"东/西"这类单字
-  // 前缀正则提前命中、误判成一个游戏根本没有的方向，导致"此路不通"该有的提示
-  // 变成了错误地移动到别处。
-  if (/^(?:向|往|朝|去|到)?(东南|东北|西北)/.test(c)) return null;
-  const DIR_PATTERNS = [
-    ["n", new RegExp(`^(?:${DIR_PREFIX}(?:north|n)|${DIR_PREFIX}北)`)],
-    ["s", new RegExp(`^(?:${DIR_PREFIX}(?:south|s)|${DIR_PREFIX}南)`)],
-    ["e", new RegExp(`^(?:${DIR_PREFIX}(?:east|e)|${DIR_PREFIX}东)`)],
-    ["w", new RegExp(`^(?:${DIR_PREFIX}(?:west|w)|${DIR_PREFIX}西)`)],
-    ["u", new RegExp(`^(?:${DIR_PREFIX}(?:up|u)|${DIR_PREFIX}上)`)],
-    ["d", new RegExp(`^(?:${DIR_PREFIX}(?:down|d)|${DIR_PREFIX}下)`)],
-  ];
-  for (const [d, re] of DIR_PATTERNS) if (re.test(c)) return d;
-  return null;
-};
-
-// 目标汉字数 → API 侧的 maxTokens 安全上限（真正的换算函数在 apiConfig.js，
-// 这里是历史注释保留：中文一个汉字约占 1.5-2 个 token，用 2.2 倍系数 + 300 固定余量兜底）
-const SHICHEN = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
-// 24 回合/天，每时辰 2 回合。一个时辰劈两半：上半（偶数回合）为「初」、下半（奇数回合）为「正」。
-// 如 t%24=2→丑初、=3→丑正、=6→卯初。子正即半夜正中，与古法一致。
-// 24小时制钟点：每半时辰=1小时，子初(idx0)=23:00、子正(idx1)=0:00(显示24:00)、丑初(idx2)=1:00…
-// 钟点 h=(idx+23)%24，h为0时按作者要求显示成24而非0。
-const getClockHour = (idx) => { const h = (idx + 23) % 24; return (h === 0 ? 24 : h); };
-const getTimeStr = (t) => { const idx = ((t % 24) + 24) % 24; const day = Math.floor(t / 24) + 1; const shi = SHICHEN[Math.min(11, Math.floor(idx / 2))]; const half = idx % 2 === 0 ? "初" : "正"; return `第${day}日·${shi}${half}·${String(getClockHour(idx)).padStart(2, "0")}:00`; };
+import { buildSysBase } from "./sysBase.js";
+import { DIRS, bar, STAGES, STAGE_UP_COST, STAGE_TO_QUALITY, DIR_DXY, parseDir, getTimeStr } from "./utils/mudHelpers.js";
+import { MAP_UI } from "./mapUi.js";
+import ZoomableMap from "./ZoomableMap.jsx";
+import TutorialOverlay from "./TutorialOverlay.jsx";
+import NineGridMap from "./NineGridMap.jsx";
+import ClickableMap from "./ClickableMap.jsx";
+import PipelineViewer from "./PipelineViewer.jsx";
+import { tryInnerMove } from "./act/innerMove.js";
+import { resolveOuterLock } from "./act/outerMove.js";
+import { judgeCollect, buildQuestStageNote, buildForcedEventNote, buildArrivalNote, buildPresence, buildNpcContext } from "./act/roundNotes.js";
+import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
+import { callMainOnce } from "./act/actCall.js";
+import { parseMainResponse } from "./act/parseResponse.js";
+import { commitRound } from "./act/commitRound.js";
 
 const DEFAULT_PRESETS = [QUCUO_PRESET];
-
-// 尝试从自动存档恢复；找不到时返回 null，调用方 fallback 到 preset 默认值。
-// 关键防御：如果存档是旧版本结构（比如缺少 neigong/waigong/special 字段），
-// 直接判定为不兼容，丢弃存档而不是硬塞进新代码导致渲染崩溃。
-function isCompatibleCharShape(char) {
-  return !!char
-    && Array.isArray(char.hp)
-    && typeof char.neigong === "number"
-    && typeof char.waigong === "number"
-    && char.special && typeof char.special === "object";
-}
-
-function isCompatibleRoomShape(room) {
-  return !!room
-    && typeof room.name === "string"
-    && typeof room.desc === "string"
-    && Array.isArray(room.exits)
-    && Array.isArray(room.npcs)
-    && Array.isArray(room.items);
-}
-
-
-// 小地图缩放：最稳的实现——只用 +/− 按钮改缩放（不用 wheel、不用手动拖拽，
-// 因为游戏整体套了 CSS zoom，wheel 常被外层截、pointer 的 clientX 坐标会错乱）。
-// 缩放靠"内层 div 变宽"，外层 overflow:auto 出滚动条，平移就拖滚动条/双指滑动
-// （原生滚动不受 zoom 影响）。按钮 z-index 拉满，保证任何时候可点。
-function ZoomableMap({ children, maxHeight = 100 }) {
-  const [scale, setScale] = React.useState(1);
-  const zoomBy = (f) => setScale(s => Math.max(1, Math.min(5, Math.round(s * f * 100) / 100)));
-  return (
-    <div style={{ position: "relative" }}>
-      <div style={{ overflow: scale > 1 ? "auto" : "hidden", maxHeight }}>
-        <div style={{ width: `${scale * 100}%`, transition: "width 0.12s" }}>
-          {children}
-        </div>
-      </div>
-      <div style={{ position: "absolute", right: 2, bottom: 2, display: "flex", flexDirection: "column", gap: 3, zIndex: 20 }}>
-        <button onClick={() => zoomBy(1.5)} style={zmBtn}>＋</button>
-        <button onClick={() => zoomBy(1 / 1.5)} style={zmBtn}>－</button>
-        {scale > 1 && <button onClick={() => setScale(1)} title="复位" style={{ ...zmBtn, fontSize: "10px" }}>⤢</button>}
-      </div>
-    </div>
-  );
-}
-const zmBtn = {
-  cursor: "pointer", width: 20, height: 20, padding: 0, lineHeight: "18px", textAlign: "center",
-  fontSize: "14px", color: "#8ac8b8", background: "rgba(10,12,18,0.92)",
-  border: "1px solid #3a4a4a", borderRadius: 3, userSelect: "none", display: "block",
-};
-
-// 地图 UI 贴图（藏地卷轴风，见 docs/美术_地图UI素材提示词.md）。
-// BASE 前缀适配 GitHub Pages 子路径部署（/qucuo/），本地开发时为 "/"。
-const MAP_UI_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "stones/mapui/";
-const MAP_UI = {
-  scroll:  MAP_UI_BASE + "scroll_bg.png",
-  frame:   MAP_UI_BASE + "frame.png",
-  idle:    MAP_UI_BASE + "cell_idle.png",    // 已探索
-  fog:     MAP_UI_BASE + "cell_fog.png",     // 未探索·迷雾
-  current: MAP_UI_BASE + "cell_current.png", // 当前所在
-};
-
-// 可点击移动地图：节点即操作。点相邻据点/房间 = 往那个方向走（复用 act 移动链）。
-// nodes: [{name,x,y,explored,current,reachable,dir,dest,locked}]  onGo(dir,dest,locked)
-// explored=去过（亮·实心）; !explored=战争迷雾（问号·虚线）; reachable=当前有出口可点；
-// locked=有路但未解锁（点了触发 AI 叙事拦截）。current=当前所在（金框脉冲）。
-// 固定九宫格视窗地图：玩家永远居中不动，走一步"世界卷一格"（周围八格内容刷新）。
-// 像老式 RPG 主角居中、地图卷动。内外层通用。
-// props:
-//   centerLabel — 中心格显示（我当前所在地名）
-//   cells — { n,ne,e,se,s,sw,w,nw: {name?,explored,dir} }：八方向格数据
-//           explored=false 显问号（战争迷雾，点了才知有没有路）；有 name 且 explored 显地名
-//   onGo(dir) — 点某方向格
-//   accent, loading, big
-// 新手教程覆盖层：半透明遮罩铺满全屏，按三栏（左/中/右）+ 顶部 + 底部按钮区的
-// 实际位置贴说明便签，指向它介绍的界面区域。点任意处或右上角最小化收起。
-function TutorialOverlay({ onClose }) {
-  const note = {
-    background: "rgba(14,18,26,0.96)", border: "1px solid #6a5d40", borderRadius: 8,
-    padding: "12px 16px", color: "#e8dcc0", fontSize: "12.5px", lineHeight: 1.7,
-    boxShadow: "0 6px 24px rgba(0,0,0,0.6)", maxWidth: 260,
-  };
-  const title = { color: "#f0c060", fontWeight: "bold", fontSize: "13px", marginBottom: 6, display: "block" };
-  return (
-    <div
-      onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(6,6,12,0.72)", cursor: "pointer",
-        display: "flex", flexDirection: "column", fontFamily: "'Songti SC','STSong','SimSun',serif" }}
-    >
-      {/* 顶部提示条 */}
-      <div style={{ textAlign: "center", padding: "14px 0 8px", color: "#f0e0c0", fontSize: "15px", fontWeight: "bold", letterSpacing: "1px" }}>
-        📖 新手教程 · 界面导览
-        <span style={{ display: "block", fontSize: "11px", color: "#b0a080", fontWeight: "normal", marginTop: 4 }}>点任意处收起（最小化）</span>
-      </div>
-
-      {/* 三栏说明便签，按 flex 25/55/30 的实际位置横向铺开 */}
-      <div style={{ display: "flex", flex: 1, alignItems: "flex-start", padding: "0 14px", gap: 12, overflow: "hidden" }}>
-        {/* 左栏 flex 25 */}
-        <div style={{ flex: 25, display: "flex", justifyContent: "center", paddingTop: 20 }}>
-          <div style={note}>
-            <span style={title}>◀ 左栏 · 天地</span>
-            你此刻在<b>哪里</b>、周围的<b>出口</b>、<b>此地之人</b>（谁在场）、你的<b>状态</b>（气血/银两/背包）和<b>小地图</b>都在这里。
-            <div style={{ marginTop: 8, color: "#c0a86a" }}>🕐 一天 24 小时：每行动一次约走一个时辰，昼夜会变，时间显示在地点下方。</div>
-            <div style={{ marginTop: 8, color: "#9ac0a0" }}>🚶 移动：在底部输入框打 <b>n/s/e/w</b>（北南东西），或点小地图上已探明的据点自动前往。</div>
-            <div style={{ marginTop: 8, color: "#a0b8c0" }}>🗺️ <b>外层与内层</b>：外层是<b>大地图</b>（据点与据点之间，如鱼定村↔天都镇）；进了一个据点，内部又是一片<b>箱庭</b>——一个个可走动的内层房间（如村口、药铺、饭馆）。小地图右上角可切换<b>「外 / 内」</b>两层视图。</div>
-          </div>
-        </div>
-        {/* 中栏 flex 55 */}
-        <div style={{ flex: 55, display: "flex", justifyContent: "center", paddingTop: 60 }}>
-          <div style={{ ...note, maxWidth: 340 }}>
-            <span style={title}>▼ 中栏 · 江湖（叙事）</span>
-            故事在这里展开——旁白的叙述、NPC 的<b>「对话」</b>、你的行动结果，都会一行行写在这块。这是游戏的<b>正文</b>，读它了解发生了什么。
-            <div style={{ marginTop: 8, color: "#b0a080" }}>「」里是对话，*斜体*是心理活动，其余是旁白叙述。</div>
-          </div>
-        </div>
-        {/* 右栏 flex 30 */}
-        <div style={{ flex: 30, display: "flex", justifyContent: "center", paddingTop: 20 }}>
-          <div style={note}>
-            <span style={title}>▶ 右栏 · 行动</span>
-            这里是<b>此刻能做的事</b>：可推进的<b>任务节点</b>（金色感叹号）、当前地点的<b>行动抉择</b>、<b>人物互动</b>入口。想推进剧情、跟人打交道，都从这一栏点。
-          </div>
-        </div>
-      </div>
-
-      {/* 底部按钮区说明，贴着底部（对应输入框上方那排模式按钮） */}
-      <div style={{ padding: "0 14px 16px", display: "flex", justifyContent: "center" }}>
-        <div style={{ ...note, maxWidth: 620 }}>
-          <span style={title}>▼ 底部 · 交互模式（输入框上方那排按钮）</span>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px" }}>
-            <div><b style={{ color: "#6ec6c6" }}>◈ 行动</b>：正常移动、战斗、开箱、买卖等，<b>每次消耗一个回合</b>（时间前进）。</div>
-            <div><b style={{ color: "#8ac48a" }}>◎ 对话</b>：只和当前在场 NPC 交谈，<b>不移动、不消耗回合</b>。</div>
-            <div><b style={{ color: "#e0a0d0" }}>◆ 私聊旁白</b>：打破第四面墙，直接和「旁白」说话，<b>不消耗回合</b>。</div>
-            <div><b style={{ color: "#c85a6a" }}>NSFW</b>：开关。开启后注入成人向写作规则；关闭则为常规叙事。默认关闭，按需点亮。</div>
-          </div>
-          <div style={{ marginTop: 8, color: "#9a9080", fontSize: "11.5px" }}>
-            ⬆️ <b>顶栏</b>（界面最上方一排）：<b>📜任务</b> 看接了什么任务、进度如何；<b>👥人物关系</b> 看各角色好感；<b>📖见闻录</b> 看已知世界情报。
-          </div>
-          <div style={{ marginTop: 6, color: "#9a9080", fontSize: "11.5px" }}>
-            ⚙ <b>其他功能</b>：<b>⚙设置</b> 里配置 API 密钥、存档、字号；<b>💾存档</b>随时读写；<b>⏻主菜单</b>返回开始界面；<b>🧭全流程日志</b>看系统每一步怎么跑的（喂给 AI 的完整 prompt 和回复）。
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NineGridMap({ centerLabel, cells, onGo, accent = "#6ec6c6", loading, big = false }) {
-  const [hover, setHover] = React.useState(null);
-  // 3×3 布局：行=北/中/南，列=西/中/东
-  const layout = [
-    ["nw", "n", "ne"],
-    ["w", "center", "e"],
-    ["sw", "s", "se"],
-  ];
-  const DIR_CN = { n: "北", s: "南", e: "东", w: "西", ne: "东北", nw: "西北", se: "东南", sw: "西南" };
-  const gap = big ? 8 : 5;
-  const cellH = big ? 62 : 42;
-  const fontMain = big ? 14 : 11;
-  const short = (nm) => nm ? (nm.includes("·") ? nm.split("·").pop() : nm) : "";
-  // tile: 三态贴图之一（MAP_UI.idle/fog/current），铺满格底。三张贴图原始尺寸略有差异，
-  // 统一用 backgroundSize:100% 100% 拉伸到等大格子里，不叠加任何外发光（避免光晕溢出到
-  // 格缝，看起来像竖线）。hover 高亮改用贴图自身 brightness，不再用 boxShadow。
-  const cellStyle = (extra = {}, tile = null) => ({
-    height: cellH, display: "flex", alignItems: "center", justifyContent: "center",
-    textAlign: "center", lineHeight: 1.2, padding: "2px 4px", overflow: "hidden",
-    transition: "filter .15s", border: "none", background: "transparent",
-    backgroundImage: tile ? `url("${tile}")` : "none",
-    backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-    ...extra,
-  });
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap, width: "100%" }}>
-      {layout.flat().map((key) => {
-        if (key === "center") {
-          return (
-            <div key="center" style={cellStyle({}, MAP_UI.current)}>
-              <span style={{ color: "#fff", fontWeight: "bold", fontSize: fontMain, textShadow: "0 1px 3px rgba(0,0,0,0.85)" }}>{short(centerLabel) || "我"}</span>
-            </div>
-          );
-        }
-        const c = cells[key] || { explored: false };
-        const clickable = !loading;
-        const hov = hover === key;
-        // 未探索：战争迷雾（fog 贴图），只留一个问号，不显方向字
-        if (!c.explored) {
-          return (
-            <div key={key} onClick={() => clickable && onGo(key)}
-              onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
-              style={cellStyle({ cursor: clickable ? "pointer" : "default", opacity: hov ? 1 : 0.82, filter: hov ? "brightness(1.25)" : "none" }, MAP_UI.fog)}>
-              <span style={{ color: hov ? "#c0a060" : "#6a6a58", fontSize: big ? 18 : 14, fontWeight: "bold", textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>?</span>
-            </div>
-          );
-        }
-        // 已探索：idle 贴图 + 地名（不显方向字）
-        return (
-          <div key={key} onClick={() => clickable && onGo(key)}
-            onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
-            style={cellStyle({ cursor: clickable ? "pointer" : "default", filter: hov ? "brightness(1.3)" : "none" }, MAP_UI.idle)}>
-            <span style={{ color: hov ? "#eaf4ee" : "#cddcd4", fontSize: fontMain, fontWeight: hov ? "bold" : "normal", textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{short(c.name)}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = "62vh", accent = "#6ec6c6", loading }) {
-  const [hover, setHover] = React.useState(null);
-  // 拖动+缩放状态：view = {tx, ty, scale}。tx/ty 是平移量，scale 是缩放倍数。
-  const [view, setView] = React.useState({ tx: 0, ty: 0, scale: 1 });
-  const dragRef = React.useRef(null); // 拖动中：{ startX, startY, baseTx, baseTy }
-  const [dragging, setDragging] = React.useState(false);
-  if (!nodes.length) return null;
-
-  // 节点用固定尺寸的正方贴图格子（贴图是正方，显示也正方，统一比例）。
-  const NW = 84, NH = 84; // 节点贴图显示宽高（正方）
-  const CELL = cell || 132; // 格间距（含节点+留白），略大于节点保证连线看得清
-  // 统一字号：取全图最长地名的字数当基准，所有节点用同一字号，大小一致不参差。
-  const labelLen = (n) => [...(n.name ? (n.name.includes("·") ? n.name.split("·").pop() : n.name) : "")].length;
-  const maxLabelLen = Math.max(2, ...nodes.map(labelLen));
-  const uniformFs = maxLabelLen >= 5 ? 12 : maxLabelLen >= 4 ? 13 : 15;
-  // 坐标防撞：数据里偶有两个节点坐标相同，展示层螺旋偏移到最近空格。
-  const occupied = new Set();
-  const SPIRAL = [[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1],[2,0],[0,2],[-2,0],[0,-2]];
-  nodes = nodes.map(n => {
-    for (const [dx, dy] of SPIRAL) {
-      const nx = n.x + dx, ny = n.y + dy, k = nx + "," + ny;
-      if (!occupied.has(k)) { occupied.add(k); return (dx || dy) ? { ...n, x: nx, y: ny } : n; }
-    }
-    return n;
-  });
-  const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
-  const mnX = Math.min(...xs), mxX = Math.max(...xs), mnY = Math.min(...ys), mxY = Math.max(...ys);
-  const w = (mxX - mnX + 1) * CELL + pad * 2, h = (mxY - mnY + 1) * CELL + pad * 2;
-  const px = (x) => (x - mnX) * CELL + pad + CELL / 2;
-  const py = (y) => (y - mnY) * CELL + pad + CELL / 2;
-  const byName = {}; nodes.forEach(n => { if (n.name) byName[n.name] = n; });
-  const cur = nodes.find(n => n.current);
-
-  // ── 拖动 ──
-  const onPointerDown = (e) => {
-    // 只在点空白处开始拖动（点节点交给节点自己的 onClick）
-    dragRef.current = { startX: e.clientX, startY: e.clientY, baseTx: view.tx, baseTy: view.ty, moved: false };
-    setDragging(true);
-  };
-  const onPointerMove = (e) => {
-    if (!dragRef.current) return;
-    const dx = e.clientX - dragRef.current.startX, dy = e.clientY - dragRef.current.startY;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragRef.current.moved = true;
-    setView(v => ({ ...v, tx: dragRef.current.baseTx + dx, ty: dragRef.current.baseTy + dy }));
-  };
-  const onPointerUp = () => { dragRef.current = null; setDragging(false); };
-  // ── 缩放（滚轮）──
-  const onWheel = (e) => {
-    e.preventDefault();
-    setView(v => {
-      const next = Math.min(3, Math.max(0.4, v.scale * (e.deltaY < 0 ? 1.12 : 0.89)));
-      return { ...v, scale: next };
-    });
-  };
-  const zoomBtn = (factor) => setView(v => ({ ...v, scale: Math.min(3, Math.max(0.4, v.scale * factor)) }));
-  const resetView = () => setView({ tx: 0, ty: 0, scale: 1 });
-
-  return (
-    <div style={{ position: "relative", width: "100%", maxHeight, overflow: "hidden" }}>
-      {/* 缩放控制按钮 */}
-      <div style={{ position: "absolute", top: 6, right: 6, zIndex: 3, display: "flex", flexDirection: "column", gap: 4 }}>
-        <span onClick={() => zoomBtn(1.25)} style={cmZoomBtn}>＋</span>
-        <span onClick={() => zoomBtn(0.8)} style={cmZoomBtn}>－</span>
-        <span onClick={resetView} style={{ ...cmZoomBtn, fontSize: "10px" }}>⤢</span>
-      </div>
-      <svg viewBox={`0 0 ${w} ${h}`}
-        style={{ width: "100%", maxHeight, display: "block", cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}
-        onMouseDown={onPointerDown} onMouseMove={onPointerMove} onMouseUp={onPointerUp} onMouseLeave={onPointerUp}
-        onWheel={onWheel}>
-        <defs>
-          <style>{`@keyframes cmPulse{0%,100%{opacity:.4}50%{opacity:1}}`}</style>
-        </defs>
-        <g transform={`translate(${view.tx} ${view.ty}) scale(${view.scale})`} style={{ transformOrigin: "center" }}>
-          {/* 连线 */}
-          {nodes.flatMap(n => (n.links || []).map(dest => {
-            const d = byName[dest]; if (!d || !n.explored || !d.explored) return null;
-            const diag = n.x !== d.x && n.y !== d.y;
-            return <line key={`${n.name}-${dest}`.split("").sort().join("")} x1={px(n.x)} y1={py(n.y)} x2={px(d.x)} y2={py(d.y)}
-              stroke="#7a6448" strokeWidth={2.5} strokeDasharray={diag ? "6,4" : "none"} opacity={0.75} />;
-          }).filter(Boolean))}
-          {cur && nodes.filter(n => n.reachable || n.locked).map(n => (
-            <line key={`go-${n.dir}-${n.name || n.dest}`} x1={px(cur.x)} y1={py(cur.y)} x2={px(n.x)} y2={py(n.y)}
-              stroke={n.locked ? "#8a6a3a" : "#5a8a6a"} strokeWidth={2} strokeDasharray={n.explored ? "none" : "6,5"} opacity={0.6} />
-          ))}
-          {/* 节点：用九宫格三态贴图 */}
-          {nodes.map(n => {
-            const cx = px(n.x), cy = py(n.y);
-            const label = n.name ? (n.name.includes("·") ? n.name.split("·").pop() : n.name) : "";
-            const clickable = !loading && (n.reachable || n.locked);
-            const hov = hover === (n.name || n.dir);
-            const tile = !n.explored ? MAP_UI.fog : n.current ? MAP_UI.current : MAP_UI.idle;
-            const fs = uniformFs;
-            const onClickNode = (e) => {
-              // 拖动过就不触发点击（避免拖完误跳转）
-              if (dragRef.current?.moved) return;
-              if (clickable) onGo(n.dir, n.explored ? n.name : n.dest, n.locked);
-            };
-            return <g key={n.name || n.dir} style={{ cursor: clickable ? "pointer" : "default" }}
-              onClick={onClickNode}
-              onMouseEnter={() => setHover(n.name || n.dir)} onMouseLeave={() => setHover(null)}>
-              <image href={tile} x={cx - NW/2} y={cy - NH/2} width={NW} height={NH} preserveAspectRatio="none"
-                style={{ filter: hov && clickable ? "brightness(1.25)" : "none",
-                  animation: n.current ? "cmPulse 2.4s ease-in-out infinite" : "none" }} />
-              {!n.explored ? (
-                <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={hov ? "#c0a060" : "#7a7a68"} fontSize="18" fontWeight="bold" style={{ pointerEvents: "none", textShadow: "0 1px 2px #000" }}>?</text>
-              ) : (
-                <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
-                  fill={n.current ? "#fff" : "#eae0cc"} fontSize={fs} fontFamily="inherit" fontWeight={n.current ? "bold" : "normal"}
-                  style={{ pointerEvents: "none", paintOrder: "stroke", stroke: "#000", strokeWidth: 2.5, strokeLinejoin: "round" }}>{label}</text>
-              )}
-              {n.locked && <text x={cx + NW/2 - 10} y={cy - NH/2 + 14} textAnchor="middle" fontSize="12" style={{ pointerEvents: "none" }}>🔒</text>}
-            </g>;
-          })}
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-const cmZoomBtn = {
-  cursor: "pointer", width: 22, height: 22, lineHeight: "20px", textAlign: "center",
-  fontSize: "15px", color: "#4a3520", background: "rgba(240,232,210,0.85)",
-  border: "1px solid #8a6a3a", borderRadius: 3, userSelect: "none", display: "block", fontWeight: "bold",
-};
-
-function PipelineViewer({ onClose, loading, waitSecs }) {
-  // 遮罩误触修复：这个面板专门用来给玩家复制长段 prompt/回复文本排查问题，
-  // 选字拖拽是最高频操作，正是最容易踩中"选字划出边界导致弹窗自己关了"
-  // 这个bug的地方，必须修。见 utils/overlayClose.js。
-  const closeGuard = useOverlayCloseGuard(onClose);
-  const [expanded, setExpanded] = React.useState({});
-  const [subTab, setSubTab] = React.useState({}); // 每条日志内部的子标签页：'sys' | 'user' | 'response' | 'recall'
-  const toggle = (i) => setExpanded(e => ({ ...e, [i]: !e[i] }));
-  const setTab = (i, tab) => setSubTab(s => ({ ...s, [i]: tab }));
-  const entries = getPipelineLog();
-
-  const TAB_LABELS = { sys: "System", user: "输入", response: "输出", recall: "召回" };
-
-  const [copied, setCopied] = React.useState(null); // 'all' | 索引，用于短暂显示"已复制"
-
-  // 把一条日志整理成一段纯文本：System prompt + 输入 + 输出（失败则给错误），
-  // 附上元信息头，方便直接粘给 AI 排查"这轮 prompt 长这样、结果长这样、哪里不对"。
-  function formatEntry(entry, n) {
-    const head = `=== Pipeline #${n} | ${new Date(entry.ts).toLocaleString()} | ${entry.apiType}/${entry.model}`
-      + `${entry.intent ? ` | ${entry.intent.label}` : ""}${entry.streamed ? " | 流式" : ""}`
-      + `${entry.durationMs != null ? ` | ${entry.durationMs}ms` : ""} | ${entry.success === false ? "✗失败" : (entry.finishReason || "✓")} ===`;
-    const userText = (entry.userMessages || [])
-      .map(m => `[${m.role}]\n${m.content}`).join("\n\n");
-    const outText = entry.success === false
-      ? `【错误】\n${entry.error || "(无错误信息)"}`
-      : `【输出 / Response】\n${entry.response || "(空)"}`;
-    let recallText = "";
-    if (entry.recall && entry.recall.visible?.length) {
-      recallText = "\n\n【召回 / RecalledMemories】\n" + entry.recall.visible
-        .map(m => `· sim=${m.similarity?.toFixed(3) ?? "-"} [${m.tier || "-"}] (第${m.meta?.turn ?? "?"}回合) ${m.text}`)
-        .join("\n");
-    }
-    return `${head}\n\n【System Prompt】\n${entry.systemPrompt || "(空)"}\n\n【输入 / User】\n${userText}\n\n${outText}${recallText}`;
-  }
-
-  // 剪贴板写入：优先 navigator.clipboard，非安全上下文（部分 http/局域网）降级到 textarea+execCommand。
-  async function copyText(text, tag) {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const ta = document.createElement("textarea");
-        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-        document.body.appendChild(ta); ta.select();
-        document.execCommand("copy"); document.body.removeChild(ta);
-      }
-      setCopied(tag);
-      setTimeout(() => setCopied(c => (c === tag ? null : c)), 1500);
-    } catch (e) {
-      alert("复制失败，请手动选中复制：" + (e.message || e));
-    }
-  }
-
-  return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.85)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 16, width: 820, maxWidth: "95vw", maxHeight: "88vh", overflowY: "auto", fontFamily: "monospace", fontSize: "11px", color: "#8a8a7a" }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ color: "#f0c060", fontSize: "13px" }}>Pipeline 日志（最近 {entries.length} 条）</span>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <span style={{ cursor: "pointer", color: copied === "all" ? "#8ac48a" : "#6a8a6a" }}
-              onClick={() => copyText(entries.map((e, k) => formatEntry(e, entries.length - k)).join("\n\n\n"), "all")}>
-              {copied === "all" ? "✓ 已复制全部" : "复制全部"}
-            </span>
-            <span style={{ cursor: "pointer", color: "#8a6a4a" }} onClick={() => { clearPipelineLog(); onClose(); }}>清空</span>
-            <span style={{ cursor: "pointer", color: "#5a5a4a", fontSize: "13px" }} onClick={onClose}>×</span>
-          </div>
-        </div>
-        {loading && (
-          <div style={{
-            marginBottom: 10, padding: "6px 10px", borderRadius: 4,
-            background: waitSecs >= 30 ? "#3a1a1a" : waitSecs >= 12 ? "#3a2a12" : "#12180a",
-            color: waitSecs >= 30 ? "#e08a6a" : waitSecs >= 12 ? "#e0b060" : "#8ab48a",
-            border: `1px solid ${waitSecs >= 30 ? "#5a2a2a" : "#2a3a1a"}`,
-          }}>
-            {waitSecs >= 30 ? "🐢" : "⏳"} 正在等待接口响应… 已 {waitSecs}s
-            {waitSecs >= 30 ? "（疑似卡住，>60s 自动超时）" : waitSecs >= 12 ? "（偏慢）" : ""}
-          </div>
-        )}
-        {entries.length === 0 && <div style={{ color: "#3a3830" }}>暂无 API 调用记录</div>}
-        {entries.map((entry, i) => {
-          const open = expanded[i];
-          const tab = subTab[i] || "response";
-          const recall = entry.recall; // { visible, filtered, stats } | null
-          return (
-            <div key={i} style={{ borderBottom: "1px solid #14161e", padding: "8px 0" }}>
-              <div onClick={() => toggle(i)} style={{ cursor: "pointer", marginBottom: 4, userSelect: "none", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ color: "#6ec6c6" }}>{open ? "▼" : "▶"} #{entries.length - i}</span>
-                <span style={{ color: "#5a5a4a" }}>{new Date(entry.ts).toLocaleTimeString()}</span>
-                <span style={{ color: "#5a5a4a" }}>{entry.apiType}/{entry.model}</span>
-                {entry.streamed && <span style={{ color: "#5a7a9a" }}>流式</span>}
-                {entry.intent && <span style={{ color: "#8ac48a" }}>{entry.intent.label}</span>}
-                {entry.usage && <span style={{ color: "#5a5a4a" }}>入{entry.usage.prompt_tokens ?? entry.usage.promptTokenCount ?? entry.usage.input_tokens ?? "?"}/出{entry.usage.completion_tokens ?? entry.usage.candidatesTokenCount ?? entry.usage.output_tokens ?? "?"}</span>}
-                {entry.durationMs != null && <span style={{ color: "#5a5a4a" }}>{entry.durationMs}ms</span>}
-                {recall && <span style={{ color: "#c48a4a" }}>召回{recall.visible?.length ?? 0}{recall.filtered ? `(隐${recall.filtered})` : ""}</span>}
-                <span
-                  onClick={(e) => { e.stopPropagation(); copyText(formatEntry(entry, entries.length - i), i); }}
-                  title="复制本条：System prompt + 输入 + 输出"
-                  style={{ color: copied === i ? "#8ac48a" : "#6a8a6a", cursor: "pointer", border: "1px solid #24302a", borderRadius: 3, padding: "0 6px", fontSize: "10.5px" }}
-                >
-                  {copied === i ? "✓已复制" : "📋复制"}
-                </span>
-                <span style={{ color: entry.success === false ? "#c46060" : "#5a8a5a", marginLeft: "auto" }}>
-                  {entry.success === false ? "✗ 失败" : (entry.finishReason || "✓")}
-                </span>
-              </div>
-              {open && (
-                <div style={{ paddingLeft: 12 }}>
-                  <div style={{ display: "flex", gap: 2, marginBottom: 6 }}>
-                    {["sys", "user", "response", ...(recall ? ["recall"] : [])].map(t => (
-                      <span
-                        key={t}
-                        onClick={() => setTab(i, t)}
-                        style={{
-                          cursor: "pointer", padding: "2px 10px", borderRadius: 3,
-                          background: tab === t ? "#1a2530" : "transparent",
-                          color: tab === t ? "#c8bfa0" : "#5a5a4a",
-                        }}
-                      >
-                        {TAB_LABELS[t]}
-                      </span>
-                    ))}
-                  </div>
-
-                  {tab === "sys" && (
-                    <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#0d0f18", padding: "8px", borderRadius: 3, maxHeight: 400, overflowY: "auto" }}>
-                      {entry.systemPrompt}
-                    </div>
-                  )}
-
-                  {tab === "user" && (
-                    <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#0d0f18", padding: "8px", borderRadius: 3, maxHeight: 400, overflowY: "auto" }}>
-                      {(entry.userMessages || []).map((m, mi) => (
-                        <div key={mi} style={{ marginBottom: 8 }}>
-                          <div style={{ color: "#5a8a5a" }}>[{m.role}]</div>
-                          <div>{m.content}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {tab === "response" && (
-                    <div>
-                      {entry.success === false ? (
-                        <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#1a0d0d", color: "#e08080", padding: "8px", borderRadius: 3 }}>
-                          错误：{entry.error}
-                        </div>
-                      ) : (
-                        <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#0d0f18", padding: "8px", borderRadius: 3, maxHeight: 400, overflowY: "auto" }}>
-                          {entry.response}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {tab === "recall" && recall && (
-                    <div>
-                      {recall.stats && (
-                        <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap", color: "#5a5a4a" }}>
-                          {Object.entries(recall.stats).map(([k, v]) => (
-                            <span key={k}>{k}: <span style={{ color: "#c8bfa0" }}>{String(v)}</span></span>
-                          ))}
-                        </div>
-                      )}
-                      <div style={{ color: "#5a8a5a", marginBottom: 4 }}>▸ 可见（已通过权限过滤，实际进入 prompt）</div>
-                      {(recall.visible || []).map((m, mi) => (
-                        <div key={mi} style={{ background: "#0d0f18", padding: "6px 8px", borderRadius: 3, marginBottom: 4 }}>
-                          <div style={{ color: "#5a5a4a" }}>sim={m.similarity?.toFixed(3) ?? "-"} · {m.meta?.id || m.id}</div>
-                          <div>{m.text}</div>
-                        </div>
-                      ))}
-                      {recall.filtered > 0 && (
-                        <div style={{ color: "#8a6a4a", marginTop: 6 }}>
-                          另有 {recall.filtered} 条召回结果因可见性权限被隐藏（flag 未解锁）
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// loadSlotId 含义：
-//   "auto"/null/undefined → 自动存档；其他字符串 → 手动槽位 id。
-// 存档已在启动时由 saves.init() 全量灌入内存缓存，故 loadAutoSave/loadSlot 是同步读缓存，
-// 这里保持同步、MudRPG 一整套 useState(restored?…) 初始化不受影响。
-function tryRestoreSave(presets, loadSlotId) {
-  let snap = null;
-  if (loadSlotId === "auto" || loadSlotId === undefined || loadSlotId === null) {
-    snap = loadAutoSave();
-  } else {
-    snap = loadSlot(loadSlotId);
-  }
-  if (!snap) return null;
-  const matchedPreset = presets.find(p => p.id === snap.preset?.id);
-  if (!matchedPreset) return null;
-  if (!isCompatibleCharShape(snap.char) || !isCompatibleRoomShape(snap.room)) {
-    console.warn("检测到旧版本存档结构，已自动丢弃并使用默认角色/房间数据");
-    return null;
-  }
-  // 老存档装备迁移：早期有物品（如"无主的青锋剑"）误用了 atkMul/defMul 倍率字段，
-  // 但战斗/装备系统只读 atk/def 实际值——倍率字段从来没人读，导致装备了却加不到攻防。
-  // 读档时统一补算：凡是有倍率但缺实际值的武器/护甲，用「品质基准 × 倍率」折出 atk/def。
-  // 通用处理（不针对单个 id），这类死字段坑一次堵死，将来别的漏网物品也自动修好。
-  if (Array.isArray(snap.inv)) {
-    snap.inv = snap.inv.map(it => {
-      if (!it || typeof it !== "object") return it;
-      const fixed = { ...it };
-      if (fixed.atkMul != null && fixed.atk == null && fixed.category === "weapon") {
-        const base = statsForQuality("weapon", fixed.quality);
-        if (base.atk != null) fixed.atk = Math.round(base.atk * fixed.atkMul);
-      }
-      if (fixed.defMul != null && fixed.def == null && fixed.category === "armor") {
-        const base = statsForQuality("armor", fixed.quality);
-        if (base.def != null) fixed.def = Math.round(base.def * fixed.defMul);
-      }
-      return fixed;
-    });
-  }
-  return { snap, preset: matchedPreset };
-}
 
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false } = {}) {
   const [presets, setPresets] = useState(DEFAULT_PRESETS);
@@ -2683,131 +1950,57 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     }
     pendDirRef.current = movingDir;
 
-    // ── 内层箱庭移动：优先于外层大地图判定 ──
-    // 如果当前据点有内层数据（hasInnerMap(room.name)为真）且这个方向是
-    // 内层当前房间的有效出口，这次移动完全在纯前端处理：只改 innerRoomName，
-    // 不触碰 room.name/room.exits，也不进入下面的AI调用流程。这跟总纲
-    // 第十章"内层移动不该消耗AI调用"的设计意图一致——在同一个据点内部
-    // 从村口走到老孙饭馆，属于UI层面的场景切换，不需要每步都请求AI
-    // 重新生成场景描述（房间的描述本身是innerMap.js里钉死的固定文字）。
-    // 只有内层房间没有这个方向的出口时，才继续走下面外层大地图/AI叙事
-    // 的原有逻辑——这样"从内层某个房间的锚点走出据点"依然能触发外层
-    // resolveExit，两套移动无缝衔接。
-    // 命令区分内外层（本轮）：内/外方向按钮点击时通过 opts.forceLayer 明确指定这次
-    // 是"内层移动"还是"外层移动"，不再靠"内层优先"猜——那会在锚点房间同方向既有内层
-    // 出口又有外层出口时撞车（村口按西：内层通杂货铺、外层通鱼定土司，内层优先就永远
-    // 到不了土司）。forceLayer="outer" 时直接跳过内层判定走外层；="inner" 时只在内层
-    // 找，内层没这方向就明确"此路不通"，不越权去走外层。打字移动（无 forceLayer）保持
-    // 旧行为：内层优先、内层没有再 fallback 外层。
+    // ── 内层箱庭移动：优先于外层大地图判定（判定在 act/innerMove.js，副作用在此执行）──
     const forceLayer = opts.forceLayer || null;
-    if (!isTalk && movingDir && hasInnerMap(room.name) && innerRoomName && forceLayer !== "outer") {
-      const innerDest = resolveInnerExit(room.name, innerRoomName, movingDir);
-      traceStep(_trace, "内层移动", "info", `判定：当前内层「${innerRoomName}」往${DIRS[movingDir] || movingDir}${innerDest ? `通向「${innerDest}」` : "无出口"}`);
-      if (innerDest) {
-        traceStep(_trace, "内层移动", "pass", `${innerRoomName} → ${innerDest}（纯前端，不调AI）`);
-        endTrace(_trace, `内层移动到 ${room.name}·${innerDest}`);
-        addLog([{ t: "cmd", text: `> ${cmd}` }]);
-        setInput("");
-        setCmdHistory(p => [cmd, ...p].slice(0, 50));
-        setHistIdx(-1);
-        const fromRoom = innerRoomName;
-        setInnerRoomName(innerDest);
-        // 内层移动不调 AI，方位描述本地生成（纯函数在 mapNarration.js，可在
-        // tools/debug.mjs 调试台直接验证）：从哪来、四周内层去处、远处外层据点。
-        addLog([
-          { t: "room", text: "" },
-          { t: "room", text: `    ${room.name}·${innerDest}` },
-          { t: "room", text: "" },
-          ...describeInnerArrival(room.name, fromRoom, innerDest, movingDir, { flags }),
-        ]);
-        setTime(t => t + 1);
-        // 新人物检测（本轮修）：内层箱庭移动此前直接 return，完全跳过了下方主流程的
-        // 新人物检测——于是从 B 箱庭走到绑着新 NPC 的 A 箱庭（如走进"猎户小屋"遇到
-        // 只属于该房间的老猎户），明明有没见过的人却不报"※新人物出现"。这里用与主流程
-        // 同一套判据补上：按目标内层房间(innerDest)的可见性过滤 room.npcs，再 detectNewFaces
-        // 查没见过的。纯本地、不调 AI，跟内层移动"瞬时"的性质一致。
-        {
-          const arrivedNpcs = (room.npcs || []).filter(n => isNpcVisibleInInnerRoom(room.name, innerDest, n));
-          const newFaces = detectNewFaces(varTreeRef.current, arrivedNpcs);
-          if (newFaces.length) {
-            addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
-            setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
-          }
-          // 久别重逢的"上次见面回合"也一并更新，跟主流程保持一致
-          setVarTree(prev => updateLastSeen(prev, arrivedNpcs.map(n => n.name), time));
-        }
-        // 内层移动是瞬时纯前端操作，early return 前必须把上面 setLoading(true)+计时器清掉，
-        // 否则 loading 永远停在 true：输入框锁死、spinner 空转、秒数狂涨，且 pendingQueue 因
-        // loading 不归零永不出队——彻底卡死（此前"点一下卡住像在等AI"的真凶）。
-        setLoading(false);
-        if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
-        setWaitSecs(0);
-        return;
+    const innerDecision = tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree: varTreeRef.current });
+    if (innerDecision?.kind === "move") {
+      endTrace(_trace, innerDecision.summary);
+      addLog([{ t: "cmd", text: `> ${cmd}` }]);
+      setInput("");
+      setCmdHistory(p => [cmd, ...p].slice(0, 50));
+      setHistIdx(-1);
+      setInnerRoomName(innerDecision.innerDest);
+      // 内层移动不调 AI，方位描述本地生成（纯函数在 mapNarration.js，可在
+      // tools/debug.mjs 调试台直接验证）：从哪来、四周内层去处、远处外层据点。
+      addLog([
+        { t: "room", text: "" },
+        { t: "room", text: `    ${room.name}·${innerDecision.innerDest}` },
+        { t: "room", text: "" },
+        ...innerDecision.arrivalLines,
+      ]);
+      setTime(t => t + 1);
+      if (innerDecision.newFaces.length) {
+        addLog(innerDecision.newFaces.map(name => ({ t: "sys", text: `  ※ 新人物出现：${name}（点击可细看其人）` })));
+        setVarTree(prev => markAsSeen(prev, innerDecision.newFaces));
       }
-      // 内层这个方向没出口。若玩家明确点的是「内」按钮（forceLayer==="inner"），
-      // 就到此为止、告诉他内层此路不通，不越权走外层。
-      if (forceLayer === "inner") {
-        traceStep(_trace, "内层移动", "block", `内层「${innerRoomName}」往${DIRS[movingDir] || movingDir}无出口`);
-        endTrace(_trace, "内层此路不通");
-        addLog([{ t: "cmd", text: `> ${cmd}` }, { t: "sys", text: `  内里这个方向没有去处。` }]);
-        setInput(""); setCmdHistory(p => [cmd, ...p].slice(0, 50)); setHistIdx(-1);
-        setLoading(false);
-        if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
-        setWaitSecs(0);
-        return;
-      }
-      // 打字移动（无 forceLayer）：内层没这方向，放行继续走下面外层判定（旧行为）。
-    } else if (!isTalk && movingDir) {
-      // 是移动指令，但没进内层判定分支——记录为什么，便于排查"内层移动为何走了AI/外层"。
-      const why = !hasInnerMap(room.name) ? "此据点无内层地图"
-        : !innerRoomName ? "内层房间未定位(innerRoomName为空)"
-        : forceLayer === "outer" ? "明确指定外层(forceLayer=outer)"
-        : "未知";
-      traceStep(_trace, "内层移动", "skip", `跳过内层判定（${why}）→ 转外层/AI`);
+      // 久别重逢的"上次见面回合"也一并更新，跟主流程保持一致
+      setVarTree(prev => updateLastSeen(prev, innerDecision.arrivedNames, time));
+      // 内层移动是瞬时纯前端操作，early return 前必须把 loading+计时器清掉，
+      // 否则 loading 永远停在 true：输入框锁死、spinner 空转、秒数狂涨，且 pendingQueue 因
+      // loading 不归零永不出队——彻底卡死（此前"点一下卡住像在等AI"的真凶）。
+      setLoading(false);
+      if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
+      setWaitSecs(0);
+      return;
+    }
+    if (innerDecision?.kind === "blocked") {
+      endTrace(_trace, innerDecision.summary);
+      addLog([{ t: "cmd", text: `> ${cmd}` }, { t: "sys", text: `  内里这个方向没有去处。` }]);
+      setInput(""); setCmdHistory(p => [cmd, ...p].slice(0, 50)); setHistIdx(-1);
+      setLoading(false);
+      if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
+      setWaitSecs(0);
+      return;
     }
 
     // 系统裁决层：固定拓扑地图决定移动的合法性和目的地，AI 不能自己决定去了哪里。
-    // 如果这个方向在 QUCUO_MAP 里有登记的出口，锁定目的地；如果没有，明确告诉 AI
-    // 这个方向走不通，不允许它凭空编一个新地方出来。
-    let destinationLock = "";
-    let lockedDestName = null;
-    if (!isTalk && movingDir) {
-      const dest = resolveExit(room.name, movingDir);
-      if (dest && !isNodeUnlocked(dest, { completedQuests: new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id)), flags })) {
-        // ⑥ 解锁门禁：目标据点尚未解锁（如黑风寨需先完成 heifengzhai_2）——此路未通，不移动。
-        destinationLock = `\n[系统裁决：此路未通] 玩家想往${DIRS[movingDir] || movingDir}去「${dest}」，但此地此刻尚未对玩家开启（前置条件未达成）。请在 output 里合理写出这条路走不通/被拦/时机未到，room.name 必须保持"${room.name}"不变，不要移动、不要凭空编新地点。`;
-        traceStep(_trace, "外层移动", "block", `往${DIRS[movingDir] || movingDir}→${dest} 未解锁（前置未达成），不移动`);
-        movingDir = null; pendDirRef.current = null;
-      } else if (dest) {
-        lockedDestName = dest;
-        // 内层→外层移动规则（用户拍板）：玩家在任意内层房间走外层出口时，逻辑上是
-        // "先自动寻路回本据点锚点房间，再从锚点走到目标据点的锚点房间"。玩家一步指令
-        // 完成、不拆回合，但这段"回锚点"要在到达描述里交代，否则会突兀（人在塔顶怎么
-        // 一下就到了喇嘛庙）。这里捕获出发时的内层房间和本区锚点，供 arrivalNote 用。
-        const _fromAnchor = hasInnerMap(room.name) ? getDistrictAnchor(room.name) : null;
-        const _leftFromInner = (hasInnerMap(room.name) && innerRoomName && innerRoomName !== _fromAnchor) ? innerRoomName : null;
-        outerDepartRef.current = { fromInner: _leftFromInner, fromAnchor: _fromAnchor, fromDistrict: room.name };
-        if (_leftFromInner) traceStep(_trace, "外层移动", "info", `先自本区内层「${_leftFromInner}」寻路回锚点「${_fromAnchor}」，再出据点`);
-        traceStep(_trace, "外层移动", "pass", `锁定目的地 ${room.name}→${dest}，待AI生成到达描述后写回`);
-        const destNode = getMapNode(dest);
-        destinationLock = `\n[系统裁决：固定地图] 玩家往${DIRS[movingDir] || movingDir}走，这个方向确定通向"${dest}"，地图上这个据点的基础设定：${destNode.desc}
-你必须把 room.name 设为"${dest}"，room.exits 必须严格等于该据点在固定地图上的实际出口方向列表：${Object.keys(destNode.exits).join(",")}（不能增删出口）。
-你只负责基于上述基础设定，结合当前时间/剧情进展，生成更具体生动的场景描述文本（room.desc）、当前在场的 NPC、地上的物品——这些细节由你发挥，但地点本身、出口列表是固定的，不能更改。`;
-      } else if (QUCUO_MAP[room.name]) {
-        // 当前房间在固定地图里，但这个方向没有登记出口——明确告知此路不通
-        destinationLock = `\n[系统裁决：固定地图] 玩家尝试往${DIRS[movingDir] || movingDir}走，但曲措乡的固定地图里，"${room.name}"这个方向没有已知出口。你应该在 output 里合理描述"此路不通"或"是荒野/断崖/无路可走"，room.name 保持不变（不要移动），不要凭空编造一个新地点。`;
-        traceStep(_trace, "外层移动", "block", `往${DIRS[movingDir] || movingDir} 无出口，不移动`);
-      }
-      // 如果当前房间不在 QUCUO_MAP 里（不应该发生，但作为兜底），不加任何锁定说明，走原有自由生成逻辑
-    } else if (!isTalk && !movingDir && QUCUO_MAP[room.name]) {
-      // 之前这里完全不给AI任何位置约束——玩家一句没有明确方向词的自由输入
-      // （"随便走走""四处逛逛"之类），AI 会不受约束地凭感觉叙述"走到了别处"，
-      // 而系统状态其实并未移动（下面应用响应时 name/exits 会被强制按原地锁回），
-      // 导致"文字说去了新地方，但地图/据点其实没变"的错位观感，也是玩家反馈
-      // "乱走会莫名跳到不该连通的地方"的真正来源——不是拓扑图连错了，是这里
-      // 叙事和状态在打架。明确告诉AI这回合不会真的挪地方，把两边说法对齐。
-      destinationLock = `\n[系统裁决：固定地图] 玩家这句输入没有明确的移动方向（不是"往东/南/西/北/上/下"这类清晰指令）。无论玩家写了什么（哪怕提到了别的地名），本回合都不会真的改变所在位置：room.name 必须保持"${room.name}"不变，room.exits 必须严格等于：${Object.keys(QUCUO_MAP[room.name].exits).join(",")}。output 里可以自由描述这个动作本身（比如打量四周、随便走走的心境、跟人搭话等），但不能暗示"已经到了别的地方"。`;
-    }
+    // 判定在 act/outerMove.js：方向在 QUCUO_MAP 有登记出口就锁定目的地；没有就明确
+    // 告诉 AI 这个方向走不通，不允许它凭空编一个新地方出来。
+    const outerLock = resolveOuterLock({ _trace, isTalk, movingDir, roomName: room.name, questProgress, flags, innerRoomName });
+    const destinationLock = outerLock.destinationLock;
+    const lockedDestName = outerLock.lockedDestName;
+    if (outerLock.blocked) { movingDir = null; pendDirRef.current = null; }
+    if (outerLock.outerDepart) outerDepartRef.current = outerLock.outerDepart;
 
     const newConvo = [...convo, { role: "user", content: cmd }];
     const angryNpcsInRoom = room.npcs
@@ -2868,120 +2061,27 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       }
     }
 
-    // ── 采集裁决（系统层）──
-    // 玩家表达采集意图、且所采之物此刻真在地上（系统先前已注入）时，由系统直接
-    // 把物搬入背包、从地上抹去——「采没采到」不交给 AI 决定。推进则由背包变化
-    // 触发的 alreadySatisfiedCollectStages effect 接管（采齐才推进）。
-    // AI 只负责把这次采集叙述得好看，不得重复发物、不得写"没采到"。
+    // ── 采集裁决（系统层）──（判定在 act/roundNotes.js，副作用在此执行）
+    // 玩家表达采集意图、且所采之物此刻真在地上时，由系统直接把物搬入背包、
+    // 从地上抹去——「采没采到」不交给 AI 决定。推进则由背包变化触发的
+    // alreadySatisfiedCollectStages effect 接管（采齐才推进）。
     let collectNote = "";
     collectGrantedRef.current = [];
-    if (!isTalk) {
-      const hit = detectCollectPickup(cmd, room.name, room.items, {
-        questProgress, quests: QUCUO_QUESTS, getCurrentStage, inv,
-      });
-      if (hit) {
-        const cEntry = (Array.isArray(hit.stage.collect) ? hit.stage.collect : [hit.stage.collect])
-          .find(c => c.item === hit.item) || {};
-        const gained = makeGameItem({ name: hit.item, category: "misc", quality: cEntry.quality || "白", desc: cEntry.hint || "" });
-        setInv(v => [...v, gained]);
-        setRoom(r => ({ ...r, items: (r.items || []).filter(i => (typeof i === "string" ? i : i.name) !== hit.item) }));
-        collectGrantedRef.current = [hit.item];
-        addLog([{ t: "item", text: `  ✓ 你采得「${hit.item}」，收入背包。` }]);
-        // 是否采齐（用投影后的背包判断，避免读到旧 state）
-        const projected = [...inv, gained];
-        const done = allCollected(hit.stage, projected);
-        collectNote = `\n[系统裁决：玩家已采得「${hit.item}」，系统已将其收入背包。请在 output 里自然叙述采集/挖取的过程与手感（贴合本地域），但**不要**在 delta.items_add 里再加这件物品（否则会重复），也不要写"没找到""采不到"。${done ? `此物一到手，《${hit.quest.title}》本阶段所需已齐。` : `本阶段还需其余材料，可点出还差什么。`}]`;
-      }
+    const collectHit = judgeCollect({ isTalk, cmd, room, questProgress, inv });
+    if (collectHit) {
+      setInv(v => [...v, collectHit.gained]);
+      setRoom(r => ({ ...r, items: (r.items || []).filter(i => (typeof i === "string" ? i : i.name) !== collectHit.item) }));
+      collectGrantedRef.current = [collectHit.item];
+      addLog([{ t: "item", text: `  ✓ 你采得「${collectHit.item}」，收入背包。` }]);
+      collectNote = collectHit.note;
     }
 
-    // 多阶段任务链（虎胆三重门等）：告诉AI当前哪些任务阶段可以推进/开启，
-    // 以及对应要在 delta.flags_add 里吐出的 flag 字符串——AI 只管在叙事到位
-    // 时触发这个 flag，阶段推进/互斥锁定/结局判定全部由系统状态机接管
-    // （见 quests/questEngine.js、quests/endingResolver.js），不需要 AI 自己
-    // 记住"现在第几阶段""这条线是否已经被另一条线锁死"。
-    let questStageNote = "";
-    {
-      const describeFlag = (f) => Array.isArray(f) ? f.map(x => `"${x}"`).join("/或") + "（按玩家实际选择的分支，只加其中一个）" : `"${f}"`;
-      const noteLines = [];
-      for (const quest of QUCUO_QUESTS) {
-        if (!quest.stages?.length) continue;
-        const prog = questProgress[quest.id];
-        if (prog?.status === "locked_by_exclusive" || prog?.status === "completed") continue;
-        if (!isQuestGateOpen(quest, questProgress, flags)) continue;
-        if (quest.id === "hidden_all_collect_line" && !canBypassExclusive({ char, flags })) continue;
-        if (prog?.status === "active") {
-          const stage = getCurrentStage(quest, prog);
-          if (stage) noteLines.push(`《${quest.title}》当前阶段：${stage.description}——叙事推进到此处后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
-        } else if (quest.giver && room.npcs.some(n => n.name === quest.giver)) {
-          noteLines.push(`${quest.giver}可引出《${quest.title}》——若玩家与其互动触及此事，在 flags_add 加入${describeFlag(quest.stages[0].completionFlag)}`);
-        }
-      }
-      if (noteLines.length) questStageNote = `\n[任务阶段] ${noteLines.join("；")}。`;
-      // 本据点地上有哪些采集物在等着采（系统已注入到 room.items），提示 AI 心里有数：
-      // 玩家若想采，直接顺势叙述（真正的入袋/推进由系统裁决，不劳 AI 动 items_add）。
-      const cLines = collectPromptLines(room.name, { questProgress, quests: QUCUO_QUESTS, getCurrentStage, inv });
-      if (cLines.length) questStageNote += `\n[可采集] ${cLines.join("；")}。玩家表达采集意图时顺势叙述采集过程即可，系统会自动结算入袋，你不要写"采不到"。`;
-    }
-
-    // ── 说服型任务分支的成功判定注入 ──
-    // 玩家选了"周旋/说服"进对话，AI 要把这当成一场真交锋来演：只有玩家
-    // 的话在理、把对方驳倒/说动时，才在 flags_add 吐出成功 flag 推进；
-    // 玩家词不达意、被反驳、气势输了，就让对方继续刁难，不给过。
-    if (pendingQuestBranch?.mode === "talk" && pendingQuestBranch.goal) {
-      const pq = QUCUO_QUESTS.find(x => x.id === pendingQuestBranch.questId);
-      questStageNote += `\n[说服判定] 玩家正试图通过言辞达成：${pendingQuestBranch.goal}。这是一场真正的言语交锋，不是走过场——评估玩家这句话是否切中要害、有理有据、气势压得住对方。若确实说动/驳倒了对方，在 flags_add 加入「${pendingQuestBranch.flag}」并让对方让步；若玩家只是空喊、被驳倒或理亏，让对方继续刁难，不要吐这个 flag，玩家可以再想说辞。`;
-    }
-
-    // ── 本步已定情节（原任务专属 harness 并入主叙事，取代单独一次 AI 调用）──
-    // 感叹号任务节点点击时，系统已用 forceAdvanceQuest 结算好这一步该产生的
-    // 效果（好感/道具/flag），这里只把"这件已确定发生的事"作为一段末尾强指令
-    // 追加进主叙事 prompt（酒馆 @Depth 0 位置，约束力最强），让主叙事把它自然
-    // 写进正文。把原 harness 的收窄约束一并搬来：只写这一件、别引入别的情节/
-    // 新角色、结果不可改写；且【奖励已由系统结算，AI 不要在 delta/items_add/
-    // flags_add 里重复结算任何奖励或状态】，避免双重发奖。
-    let forcedEventNote = "";
-    if (opts.forcedEvent) {
-      forcedEventNote = `\n[本步已定情节] 这一回合确定发生了下面这件事，请把它自然演绎进 output 正文（这是剧情/任务节点，篇幅给足，约 ${apiCfg.targetWordCount} 字，允许±15%浮动，有场景、有对话、有起伏，不要草草几句带过）：${opts.forcedEvent}${opts.forcedEventNpc ? `（关键人物：${opts.forcedEventNpc}）` : ""}。严格要求：只写这一件事，不要引入这件事之外的情节、不要让其他角色突然登场、不要铺垫别的伏笔；结果已定，不可改写、不可让它"没发生"或变成别的事。这件事的奖励与状态变化已由系统结算完毕，你【不要】在 delta / items_add / flags_add 里重复结算任何奖励或状态，只管把它写成生动的正文。`;
-    }
-
-    // ③ 入场叙事：跨据点抵达新地点时，让本轮叙事先给一段"立此存照"的场景开场——
-    // 交代此地的地貌气候、建筑、在场之人、地上显眼之物，再承接玩家这一步的后续。
-    let arrivalNote = "";
-    if (!isTalk && movingDir && lockedDestName) {
-      const bld = getBuildingsForLocation(lockedDestName).map(b => b.name).join("、");
-      const destAnchor = hasInnerMap(lockedDestName) ? getDistrictAnchor(lockedDestName) : null;
-      const dep = outerDepartRef.current;
-      // 若玩家是从本据点某个非锚点内层房间出发走的外层，描述要先交代"自内层某处
-      // 归至本区门户（锚点），再离开本据点"，最后落到目标据点的锚点房间——不要让
-      // 人物凭空从塔顶瞬移到别的据点。
-      const transitNote = (dep && dep.fromInner)
-        ? `玩家此前身处「${dep.fromDistrict}·${dep.fromInner}」，出发时先自内层一路行至本地门户「${dep.fromAnchor}」，方才离境。请在开头用一两句自然交代这段折返归位（不必冗长），再承接下面的抵达。`
-        : "";
-      arrivalNote = `\n[入场叙事] 玩家刚抵达「${lockedDestName}」${destAnchor ? `，落脚在此地门户「${destAnchor}」` : ""}。${transitNote}请在 output 开头先给一段落地的场景速写：此地的地貌气候、${bld ? `可见的建筑（如${bld}等）、` : ""}此刻在场的人物、地上有无显眼之物，让玩家一眼看清"到了什么地方、有谁、有什么"，再自然承接玩家这一步的动作。用说书人白话古文一段道来，不要罗列成清单。`;
-    }
+    const questStageNote = buildQuestStageNote({ questProgress, flags, char, room, inv, pendingQuestBranch });
+    const forcedEventNote = buildForcedEventNote(opts.forcedEvent, opts.forcedEventNpc, apiCfg.targetWordCount);
+    const arrivalNote = buildArrivalNote({ isTalk, movingDir, lockedDestName, outerDepart: outerDepartRef.current });
 
     const invText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join(",");
-    // 喂给 AI 的在场 NPC 名单必须按当前内层房间过滤——否则 AI 会拿到整个据点 room.npcs
-    // （含在别的内层房间的人，如老猎户在猎户小屋、行脚僧在别处），照着写进正文，造成
-    // "这个房间明明没人，描述里却冒出一堆人"。移动那一轮（lockedDestName）目的地内层
-    // 尚未确定、且 room.npcs 马上会被目的地数据覆盖，故移动轮不过滤、用原名单，入场
-    // 描述另由 arrivalNote 负责；只有非移动（原地互动/look）才按内层房间可见性过滤。
-    const visibleNpcs = (!isTalk && lockedDestName)
-      ? room.npcs
-      : room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
-    traceStep(_trace, "在场名单", "info", `喂给AI ${visibleNpcs.length} 人${visibleNpcs.length ? "：" + visibleNpcs.map(n => n.name).join("、") : "（无人）"}${room.npcs.length !== visibleNpcs.length ? `（据点共${room.npcs.length}人，按内层房间过滤掉${room.npcs.length - visibleNpcs.length}人）` : ""}`);
-    // 雪豹随行（本轮新增，与作者确认：跟随不设留守，形影不离，内层箱庭也跟进去，
-    // 不需要单独追踪位置——它的"坐标"恒等于玩家当前坐标）。雪豹不进 room.npcs、
-    // 不出现在"此地之人"UI列表（右栏有独立的队伍栏专门展示它），但必须让叙事能
-    // "看见"它在场——所以只在这里、喂给AI的 visibleNpcsForAI 里追加它，其余下游
-    // （matchNpcLore 在场判定、NPC 认知隔离等）复用同一份列表，天然把雪豹当成
-    // 一个真实在场的角色对待，不用另开一条"伙伴专属"的叙事通道。
-    const visibleNpcsForAI = isSnowLeopardAvailable(companionState)
-      ? [...visibleNpcs, companionState.snowLeopard.data]
-      : visibleNpcs;
-    if (isSnowLeopardAvailable(companionState)) {
-      traceStep(_trace, "伙伴随行", "info", "雪豹随行在场，已并入喂给AI的在场名单（不影响此地之人UI列表）");
-    }
+    const { visibleNpcs, visibleNpcsForAI } = buildPresence({ _trace, isTalk, lockedDestName, room, innerRoomName, companionState });
     const ctx = `${targetNote}${modeNote}[状态] ${gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : ""}时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""} 出口:${room.exits.join(",")} NPCs:${visibleNpcsForAI.map(n => { const ci = (n.carriedItems || []).filter(i => !i.stolen).map(i => i.name).join("、"); const tier = typeof n.levelCap === "number" ? `〔品阶:${QUALITY[Math.max(0, Math.min(5, n.levelCap))]}袍〕` : ""; return n.name + tier + (ci ? `〔身携:${ci}〕` : "〔身无长物〕"); }).join(",") || "无"} 物品:${room.items.map(i => i.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 七维:${Object.entries(char.special || {}).map(([k, v]) => k + v).join(",")} 背包:${invText} 装备:${describeEquipment(inv)} 武功:${skills.map(s => s.name + "Lv" + s.level).join(",")} 因果:${dao.karma} 劫数:${dao.jie}\n[已触发事件] ${flags.length ? flags.join(",") : "无"}${pickupNote}${destinationLock}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${collectNote}${arrivalNote}${forcedEventNote}`;
     // 对话模式取更长的历史窗口（至少 20 层全部互动）——聊天比行动更依赖前后文的来回照应；
     // 行动模式沿用用户配置的窗口。convo 里本就混装了行动/对话/私聊三类回合，但私聊是玩家
@@ -2993,64 +2093,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const mainConvo = newConvo.filter(m => !(typeof m.content === "string" && (m.content.startsWith("（私聊）") || m.content.startsWith("（旁白私聊回应）"))));
     const hist = (mainConvo.length > histWindow ? mainConvo.slice(-histWindow) : mainConvo).map(m => (m.role === "user" ? "[玩家] " : "[引擎] ") + m.content).join("\n");
 
-    // ── 场景 NPC 世界书（按"在场/被提及"动态注入人设，不再每轮全发）──
-    // 触发三源：当前 room.npcs（在场）+ 玩家本轮输入 + 上轮引擎回复。命中谁才注入谁的人设。
-    // 合并两处人设来源：preset.npcLore（旧的6个已建档角色+老猎户/行脚僧）
-    // + residentNpcs.js的24人固定驻场NPC（getAllResidentNpcLore转换成
-    // 兼容格式）——之前这24人写了fullBio却没接进这套注入机制，是死数据，
-    // 现在统一走同一条matchNpcLore判断逻辑，不用改matchNpcLore本身。
-    const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
-    const combinedNpcLore = [...(preset.npcLore || []), ...getAllResidentNpcLore()];
-    // 只有真正的对话场景才需要"上一轮回复提到谁"这个信号（NPC刚说"我那侄子
-    // 阿福在磨坊"，玩家紧接着追问阿福是谁）。查看/端详间隙的行动/移动/战斗/
-    // 结算/调查这些跟对话无关的动作，不该被上一轮叙事（尤其是篇幅长、人名多
-    // 的战斗战报）的用词殃及——否则会出现"上一轮切磋战报提过的人，这一轮
-    // 随便做点什么不相干的事都被拽出来插一脚"的串场穿帮。isTalk 已经区分了
-    // 对话/非对话两条路，这里直接复用。
-    const npcLoreBlock = buildNpcLoreBlock(
-      matchNpcLore(combinedNpcLore, {
-        roomNpcNames: visibleNpcs.map(n => n.name),
-        userInput: cmd,
-        lastReply: lastAiText,
-        includeLastReply: isTalk,
-      })
-    );
-
-    // ── 在场NPC任务状态注入 ──
-    // 之前questProgress只是个纯数值state，从未被拼进对话prompt——AI跟
-    // NPC对话时完全不知道玩家的任务进度，表现得好像"你刚接了他的任务，
-    // 回头跟他说话，他跟没事人一样"。这里反查当前在场每个NPC，看
-    // QUCUO_QUESTS里giver是他的任务，玩家目前是什么状态，拼成简短文字
-    // 注入prompt，AI才能据此调整台词（比如"任务进行中"该催问进度，
-    // "已完成"该表达感谢，而不是从头再问一遍）。
-    // 兼容两套历史遗留的状态字段命名：一部分任务用status:"active"/
-    // "completed"，另一部分（护镖/悬赏类）用active:true/false，两者
-    // 都要覆盖到，不能只认一种，否则会漏掉一半任务类型的进度信息。
-    const roomNpcNamesForQuest = room.npcs.map(n => n.name);
-    const questStatusLines = [];
-    for (const quest of QUCUO_QUESTS) {
-      if (!quest.giver || !roomNpcNamesForQuest.includes(quest.giver)) continue;
-      const prog = questProgress[quest.id];
-      if (!prog) continue; // 玩家还没接触过这个任务，没有状态可说
-      const isDone = prog.status === "completed";
-      const isActive = prog.status === "active" || prog.active === true;
-      if (isDone) {
-        questStatusLines.push(`${quest.giver}交代的「${quest.title}」玩家已经完成过`);
-      } else if (isActive) {
-        questStatusLines.push(`${quest.giver}交代的「${quest.title}」玩家正在进行中，尚未交付`);
-      }
-    }
-    const questStatusBlock = questStatusLines.length
-      ? `\n\n【在场人物与玩家的任务关系】（据此调整台词语气，已完成的该表达感谢/推进后续，进行中的该关心进度而非从头重复交代）\n${questStatusLines.join("\n")}`
-      : "";
-    const npcLoreBlockWithQuest = npcLoreBlock + questStatusBlock;
-
-    // ── 久别重逢·记忆断层（本轮新增）──
-    // 本轮在场者里，凡已认识、且距上次同框超过阈值的，提示 AI 补写这段时间的合理变化，
-    // 免得人物像时间静止。纯本地时间戳判定，无副作用。
-    const reunionBlock = buildReunionBlock(
-      detectReunions(varTreeRef.current, room.npcs, time, REUNION_GAP_THRESHOLD)
-    );
+    // ── 场景NPC世界书 + 在场任务状态 + 久别重逢（纯注入文本，汇总在 act/roundNotes.js）──
+    const { lastAiText, npcLoreBlockWithQuest, reunionBlock } = buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, questProgress, varTree: varTreeRef.current, time });
 
     // loading 态 + 计时器：在第一个 await（下方 recall/knowledge）之前启动——
     // 内层移动已在上方 early return（不进 loading），这里之后才真正要调 AI。
@@ -3067,80 +2111,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 所以这个快照 === 本回合开始时的状态。
     const preActVarTree = varTreeRef.current;
 
-    // ── 信息领域·知识系统（代码驱动，本轮新增）──
-    // 每回合由代码确定性推演"谁知道什么"：同框传播 + 传闻淡忘（见 knowledge.js）。
-    // 推演产物是"待补摘要"——在场者涉及、但账上还没有一句话描述的事实。此时才把 AI 当
-    // 工具点一下：发一个独立小 prompt 要一句话，收回来存进账里（agents 式：代码调度，AI 填词）。
-    // 最后据此账生成【信息域】硬约束块注入主剧情，让 NPC 言行严格符合各自知情状态。
+    // ── 信息领域·知识系统（代码驱动，本轮新增）──（推演与补摘要在 act/memoryLayer.js）
     // 推演结果写回 varTree（本回合状态的一部分，失败会随整体回滚）。
-    let infoDomainBlock = "";
-    {
-      const roomNpcNames = room.npcs.map(n => n.name);
-      // 必须读 ref 里的最新 varTree：哪怕 act 是旧闭包（切磋结算后 setTimeout 调来的），
-      // evolveKnowledge 也基于最新状态推演——否则推演结果整体覆盖写回时会把刚进账的
-      // 认识/好感度更新冲掉（"交情已加但仍显示尚未认识"bug 的根源，见 varTreeRef 注释）。
-      const evo = evolveKnowledge(varTreeRef.current, { roomNpcNames, currentTurn: time });
-      let kTree = evo.varTree;
-      // 按需补摘要（最多 2 条/回合，失败静默——摘要非关键，不阻断游戏）
-      // 内容层优先从向量库召回真旧事据以归纳；召不回才让 AI 现编兜底。
-      for (const fid of evo.待补摘要.slice(0, 2)) {
-        try {
-          // 1) 先拿事实名当查询词，去现成向量库召回相关的真旧事
-          let recallTexts = [];
-          if (embeddingReady(apiCfg)) {
-            const rc = await recallWithVisibility({
-              cfg: apiCfg, queryText: fid, contextText: "",
-              focusEntities: [], unlockedFlags: flags, topK: 3,
-            });
-            recallTexts = (rc?.visible || []).map(v => v.text).filter(Boolean);
-          }
-          // 2) 有命中→据素材归纳（有据不瞎编）；无命中→纯现编兜底
-          const req = recallTexts.length
-            ? factSummaryRequestFromRecall(fid, recallTexts)
-            : factSummaryRequest(fid);
-          const r = await callModel(apiCfg, req.system, req.messages, { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens, callLabel: "事实摘要" });
-          const line = (r.text || "").trim().split("\n")[0].slice(0, 40);
-          if (line) kTree = setFactSummary(kTree, fid, line);
-        } catch (_) { /* 补词失败就留空，下回合再试 */ }
-      }
-      infoDomainBlock = buildInfoDomainBlock(kTree, roomNpcNames);
-      setVarTree(kTree); // 持久化本回合推演（后续 setVarTree(prev=>...) 基于此叠加）
-    }
+    const knowledgeTurn = await runKnowledgeTurn({ varTreeLatest: varTreeRef.current, roomNpcNames: room.npcs.map(n => n.name), time, apiCfg, flags });
+    const infoDomainBlock = knowledgeTurn.infoDomainBlock;
+    setVarTree(knowledgeTurn.kTree); // 持久化本回合推演（后续 setVarTree(prev=>...) 基于此叠加）
 
-    // ── 三层记忆·向量召回层（请求段，无副作用）──
-    // 从长期记忆库里捞出与"当前这句输入 + 当前情境"语义相关、但可能早已滑出最近对话窗口的旧事，
-    // 拼成一段 RecalledMemories 注入 prompt，让 AI"想起"窗口外的伏笔/承诺/旧账。
-    // 双路查询：Q_intent=玩家这句话；Q_context=上轮引擎回复 + 当前位置/在场人物。
-    // 全程降级安全：没开向量开关或召回失败，recallInfo 为 null，这段完全不影响后续流程。
-    let recallInfo = null;
-    let recallBlock = "";
-    if (embeddingReady(apiCfg)) {
-      // 召回前对账（后台自愈，不阻塞本轮）：把换模型后指纹过期、召不回的老纸条重算向量写回。
-      // 有界(每回合最多几条)，逐回合把库里过期纸条慢慢补齐，不影响本轮召回时序。
-      reembedStaleNotes({ cfg: apiCfg }).catch(() => {});
-      const focusEntities = Array.from(new Set([
-        ...room.npcs.map(n => n.name),
-        ...Object.keys(varTreeRef.current.角色 || {}),
-        room.name,
-      ]));
-      recallInfo = await recallWithVisibility({
-        cfg: apiCfg,
-        queryText: cmd,
-        contextText: `${lastAiText}\n[当前]位置:${room.name} 在场:${room.npcs.map(n => n.name).join("、") || "无"}`,
-        focusEntities,
-        unlockedFlags: flags,
-        presentNames: Array.from(new Set([...room.npcs.map(n => n.name), ...(activeTarget ? [activeTarget] : []), ...(isTalk && talkTarget ? [talkTarget] : [])])),
-        topK: 5,
-      });
-      if (recallInfo && recallInfo.visible.length) {
-        recallBlock = "\n\n[往事·与此刻情形相关的旧记忆，可能不在最近对话里，供你行文时自然照应，不要生硬复述]\n"
-          + recallInfo.visible.map(m => {
-            // 强相关给全文，弱相关只给截断摘要（强/弱回忆分层）
-            const line = m.tier === "weak" && m.text.length > 40 ? m.text.slice(0, 40) + "…" : m.text;
-            return `· （第${m.meta.turn}回合）${line}`;
-          }).join("\n");
-      }
-    }
+    // ── 三层记忆·向量召回层（请求段，无副作用，在 act/memoryLayer.js）──
+    const { recallInfo, recallBlock } = await runRecall({ apiCfg, cmd, lastAiText, room, varTreeLatest: varTreeRef.current, flags, activeTarget, isTalk, talkTarget });
 
     // ── 两阶段 pipeline·发送前快照 ──
     // 本轮 try 块里从 setVarTree(mvu) 一路 setState 到 setConvo，中间任何一步（makeItem /
@@ -3158,256 +2136,19 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 全过程在状态应用之前（请求段），重试不产生任何副作用；次数用尽则沿用最后一次的救援结果。
       const MAX_AUTO_RETRY = 2;
 
-      // 解析一次原始返回 → { p, mvuCommands }；p._truncated 表示只救回了部分完整行。
-      const parseMainResponse = (rawText) => {
-        // 赌石谈价：先抠出末尾 <deal>{...}</deal> 结算标签（在 JSON 解析之前，因它是 JSON 外的尾巴），
-        // 抠完把标签从文本里剔除，剩下的照常走主叙事解析。
-        let dealResult = null;
-        let rawForParse = rawText;
-        const dealMatch = typeof rawText === "string" && rawText.match(/<deal>\s*([\s\S]*?)\s*<\/deal>/i);
-        if (dealMatch) {
-          try { dealResult = JSON.parse(dealMatch[1].replace(/[\x00-\x1f]/g, " ").trim()); } catch (_) { dealResult = null; }
-          rawForParse = rawText.replace(/<deal>[\s\S]*?<\/deal>/gi, "").trim();
-        }
-        const { cleanText: raw, commands } = extractMvuBlock(rawForParse);
-        let js = raw.replace(/```json\s*|```\s*/g, "").trim();
-        const i0 = js.indexOf("{"), i1 = js.lastIndexOf("}");
-        if (i0 >= 0 && i1 > i0) js = js.slice(i0, i1 + 1);
-        js = js.replace(/\r?\n/g, " ").replace(/[\x00-\x1f]/g, " ");
-        js = cleanJsonString(js);
-        let parsed;
-        try { parsed = JSON.parse(js); } catch (_) {
-          const nm = js.match(/"output"\s*:\s*\[(.*?)\]/s);
-          if (nm) { try { parsed = { output: JSON.parse("[" + nm[1] + "]") }; } catch (__) { parsed = null; } }
-          // 截断救援：从 "output":[ 之后只抓闭合完整的字符串，丢掉末尾半句
-          if (!parsed) {
-            const oi = js.search(/"output"\s*:\s*\[/);
-            if (oi >= 0) {
-              const after = js.slice(js.indexOf("[", oi) + 1);
-              const strs = after.match(/"(?:[^"\\]|\\.)*"/g);
-              if (strs && strs.length) { try { parsed = { output: strs.map(s => JSON.parse(s)), _truncated: true }; } catch (__) { parsed = null; } }
-            }
-          }
-          if (!parsed) {
-            const nm2 = js.match(/"narrative"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-            if (nm2) { parsed = { output: [nm2[1]] }; }
-          }
-          if (!parsed) {
-            const clean = (raw || "").trim();
-            // 区分两种"没解析出 JSON"：
-            //   ① AI 干脆没写 JSON，直接吐了一句纯文本——通常是"打断拒答"（玩家问系统元问题时，
-            //      narrator.js 要求只回一句、本轮到此为止）或纯口语应答。原始返回里根本没有 '{' 或
-            //      "output" 的痕迹，说明这不是坏掉的 JSON、是 AI 有意为之。截断的 JSON 一定以 '{' 开头
-            //      （截的是尾巴不是头），所以"完全没有 '{'"能可靠地把这两种情况分开。这种直接当作干净
-            //      的旁白正文展示，不加"格式异常"吓人（此前会把一句正常的打断硬套上错误前缀）。
-            //   ② 确实是残缺/畸形的 JSON（有 '{' 或 "output" 碎片但拼不出来）——保留"格式异常"提示 + 原文供排查。
-            const looksLikeBrokenJson = /[{}]|"output"\s*:/.test(clean);
-            if (clean && !looksLikeBrokenJson) {
-              parsed = { output: clean.split(/\r?\n/).map(s => s.trim()).filter(Boolean).slice(0, 6) };
-            } else if (clean) {
-              parsed = { output: [`（引擎回应格式异常，原始内容）${clean.slice(0, 300)}`] };
-            } else {
-              parsed = { output: ["（旁白一时语塞，似是被这荒僻之地的信号阻隔——可重新输入试试，或打开「📋 Pipeline」查看这次请求究竟发生了什么）"] };
-            }
-          }
-        }
-        return { p: parsed, mvuCommands: commands, dealResult };
-      };
-
-      // 调用一次主剧情（流式/非流式），返回 { rawFull, finishReason }。流式占位日志每次调用各自管理。
-      // narrativeOnly=true：提取层模式，主调用只输出散文；流式时将文本直接展示并保留在日志里。
-      const callMainOnce = async (extraNudge, narrativeOnly = false) => {
-        const cmdSuffix = narrativeOnly ? "处理最新命令，直接输出叙事正文。" : "处理最新命令。纯JSON，字符串不换行。";
-        // 成文铁律放在 user 块最末尾（酒馆语义里插入深度=0、贴着生成处的最强位，
-        // 见 ST prompt-manager：Depth 0 = 提示末尾 = 最强）。文体规则若埋在 system 里
-        // 位置太靠前、常被模型当耳旁风，这条挪到最低深度逼它逐段照做。
-        const proseRule = "\n\n【成文铁律·逐段自查（本条最优先，落笔前先过一遍）】每写完一段，先在心里核两样再往下写：其一，这一段每个句子都要是完整句——主谓宾齐全、该带的定状补都补上，不许出现半截话、掐头去尾、省略到看不明白的残句；其二，这一段凡涉及到的，时间、地点、人物、起因、经过、结果都要交代到实处（这一段确实用不上的那几样可以不写，但只要沾边就得写全，不许用『那人』『某处』『后来』这类含糊词一笔带过）。宁可句子写得实、写得满，也绝不为省字丢主语宾语或掐断句子。";
-        // 远景（日总结）作背景垫底，放在 ctx 之后、回忆之前——比"最近对话/回忆"更靠前=分量更轻，
-        // 只保连贯不喧宾夺主。
-        const distantBlock = buildDistantViewBlock(varTreeRef.current, 5);
-        // 动态注入 scope：结算轮只演既定事实（砍物件志/认知隔离/远景/极简schema），移动只喂场景相关，
-        // 对话保留认知隔离，其余全量。创造模式必须全量（要能凭空发物品/召唤NPC），故 gm 时强制 full。
-        const promptScope = gm ? "full"
-          : isSettle ? "settle"
-          : isTalk ? "talk"
-          : intent.code === "MOVE" ? "move"
-          : intent.code === "LOOK" ? "talk"  // 查看/环顾：只描述当前场景与在场人物，不发物品，砍物件志（同 talk 档）
-          : "full";
-        let _gateReport = null;
-        let sysBlocks = buildSysBase(
-          apiCfg.targetWordCount, narrator, preset.scenario, budgetInstruction,
-          // 结算轮灭 lore——但牵涉具体某人的结算（送礼/拜师/赌石成交）仍要人设，
-          // 否则那人只剩个名字，写出来的对白没脾气。此时保留 lore（本就是绿灯，只注入在场者）。
-          embeddingReady(apiCfg), (isSettle && !opts.settleNpc) ? "" : npcLoreBlockWithQuest, narrativeOnly, promptScope,
-          {
-            settleNpc: opts.settleNpc || null,
-            settleKind: opts.settleKind || null,
-            giftInfo: opts.giftInfo || null,
-            hasNpc: visibleNpcs.length > 0,
-            gm,
-            playerName: char.name || "主角", // memory摘要统一用这个称呼，不用你/我，避免人称混乱
-            // 物件志（批四）：只有本轮真可能发出物品才挂——移动拾取命中/战斗/创造模式。
-            mayGrantItem: gm || intent.code === "COMBAT" || !!pickupJudgmentRef.current,
-            // scenario 绿灯扫描源（批三）：玩家本轮输入 + 上轮引擎回复，等同酒馆"扫描深度2"。
-            // 战斗轮把 scope 记作 combat，好让装备掉落规则那条按状态点灯。
-            gateCtx: gm ? null : {
-              scope: intent.code === "COMBAT" ? "combat" : promptScope,
-              userInput: cmd,
-              lastReply: [...convo].reverse().find(m => m.role === "assistant")?.content || "",
-            },
-            onGateReport: (g) => { _gateReport = g; },
-            onSnapshot: (snap) => attachInjectionSnapshot(_trace, snap),
-          }
-        );
-
-        // 在 Author's Note 位置追加 NSFW 规则与体貌蓝绿灯文本。
-        const authorsNote = sysBlocks.find(b => b.tavernBlock === "authorsNote");
-        if (nsfwOn && authorsNote) {
-          authorsNote.content += (authorsNote.content ? "\n" : "") + NSFW_RULES;
-        }
-        // ── 体貌·蓝绿灯 ──
-        // 公开层跟着"这一轮有没有人近距离看着你"走（full/talk 亮，赶路结算灭），
-        // 私密层只认 ■ 模式。灭灯不只是省 token——赶路轮塞一段私处描写，模型真的会
-        // 顺着那个方向写。详见 bodyProfile.js 顶部。
-        const _bodyGate = gateBodyProfile(char.bodyProfile, {
-          scope: promptScope,
-          nsfw: nsfwOn,
-          scanText: `${cmd}\n${[...convo].reverse().find(m => m.role === "assistant")?.content || ""}`,
-        });
-        if (_bodyGate.text && authorsNote) {
-          authorsNote.content += (authorsNote.content ? "\n" : "") + _bodyGate.text;
-        }
-        if (_bodyGate.lit.length || _bodyGate.dark.length) {
-          traceStep(_trace, "体貌", "info",
-            `🟢${_bodyGate.lit.join("、") || "无"}　⚫灭:${_bodyGate.dark.join("、") || "无"}`);
-        }
-
-        // 计算 system 总长度（仅用于 trace 展示）。
-        const sysLength = sysBlocks.reduce((sum, b) => sum + (b.content?.length || 0), 0);
-
-        // 构造 Tavern 顺序的 user 侧消息数组。
-        let chatMessages = [];
-        // 结算轮：远景/召回/信息域灭灯——这一轮只是把一件已定的事写好看，不需要"记起往事"
-        // 或"守信息域"，那些块是给有博弈的轮次用的。但牵涉具体某人时保留「重逢」块
-        // （久别重逢那句招呼要认得人，是这类轮次唯一真正用得上的记忆信号）。
-        const inChatContent = isSettle
-          ? (opts.settleNpc ? reunionBlock : "") + "\n\n" + proseRule
-          : ctx + distantBlock + recallBlock + reunionBlock + infoDomainBlock + "\n\n" + proseRule;
-        const latestUserContent = cmdSuffix + (extraNudge || "");
-
-        // 9 号位 Example Messages（NSFW 对话示例）。
-        if (nsfwOn) {
-          for (const m of MODE_PRIMER_MESSAGES) {
-            chatMessages.push(labelMessage({ role: m.role, content: m.content }, "dialogueExamples"));
-          }
-        }
-        // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
-        chatMessages.push(makeBlock("chatHistory", hist));
-        chatMessages.push(makeBlock("inChat", inChatContent));
-        chatMessages.push(makeBlock("latestUser", latestUserContent));
-
-        // ── 赌石谈价·轻量挂载（借世界书"蓝灯/绿灯"思路：谈价这轮，重量条目全灭灯）──
-        // 谈价是一对一、目标单一的对手戏，之前却挂着全量 talk 档（预设全文+在场全员lore+任务+
-        // 认知隔离+远景/召回/重逢/信息域+20条历史+MVU），一轮砍价烧掉整套世界书。现在仿
-        // inspectItem 的轻：sys/userContent 整体换成"文风+这一位竞价者的人设+石头局面+<deal>
-        // 结算规则+近8条对话"。S2 convo/S3 小纸条/S4 账本照旧落（p.memory 仍写），记忆链不断。
-        if (isTalk && gambleTalkCtx.current) {
-          const g = gambleTalkCtx.current;
-          const pers = g.persona || {};
-          const dealWords = Math.min(apiCfg.targetWordCount || 220, 220);
-          const dealFmt = narrativeOnly
-            ? `直接输出对白叙事正文（散文），写完即止。若这一轮谈成了明确协议（对方加价/让价/搭赠物件），在正文最末尾另起一行附：<deal>{"priceMult":1.0,"addItem":null}</deal>；没谈成就不附。`
-            : `回复纯JSON，字符串不换行：{"output":["行1","行2"],"memory":"≤50字本轮谈价关键事实（无实质进展可省略此字段）"}
-若这一轮谈成了明确协议（对方加价/让价/搭赠物件），在 JSON 之后另起一行附：<deal>{"priceMult":1.0,"addItem":null}</deal>；没谈成就不附标签。`;
-          const gambleSys = `你是曲措乡这个武侠世界的说书人。此刻玩家在天都镇玉石料场的赌桌前，与竞价者「${g.bidderName}」就一块开出的玉料讨价还价——这是一场一对一的砍价对手戏，只演这一件事。
-
-[这位竞价者]
-${g.bidderName}${pers.brief ? `，${pers.brief}` : ""}。${pers.personality || ""}
-${pers.bio || ""}
-随身可搭赠之物：${(g.carry || []).map(i => i.name || i).join("、") || "无"}
-
-[局面] ${g.scene || "赌桌上一块开出的玉料"}。${g.bidderName}当前报价约 ${g.baseOffer || "?"} 两（兜里现银上限 ${g.cash || "?"} 两）。
-
-[砍价规则] 按其性格接招：玩家说得在理便松口，胡搅蛮缠便顶回去，也可主动搭赠随身物件促成交易；不要一轮就把价谈死，留出拉扯余地。本轮不改变房间/物品/任何游戏状态，只有对白、神态与心思。
-对话用「」包裹，旁白叙述不加标记，心理用*斜体*。总字数约 ${dealWords} 字。
-
-[结算标签说明] priceMult 是对原报价 ${g.baseOffer || "?"} 两的倍率（对方肯多出→>1，让利→<1，没谈拢→1.0；系统只认 0.8~1.5，超出无效）；addItem 只能填其随身确有且愿搭的物件名，否则填 null。标签只给系统看，玩家看不到。
-
-${dealFmt}`;
-          const dealHist = mainConvo.slice(-8).map(m => (m.role === "user" ? "[玩家] " : "[引擎] ") + m.content).join("\n");
-          sysBlocks = [makeBlock("main", gambleSys)];
-          chatMessages = [
-            makeBlock("chatHistory", `[最近对话]\n${dealHist}`),
-            makeBlock("latestUser", `处理最新命令${narrativeOnly ? "，直接输出叙事正文。" : "。纯JSON，字符串不换行。"}${extraNudge || ""}`),
-          ];
-        }
-
-        const _scopeLabel = (isTalk && gambleTalkCtx.current) ? "谈价·轻量"
-          : ({ settle: "结算·轻量", move: "移动·精简", talk: "对话·中", full: "全量" }[promptScope] || promptScope);
-        const _scopeWhy = _scopeLabel === "谈价·轻量" ? "，已砍预设/世界书/lore/召回/远景/MVU，仅留人设+局面+近8条对话"
-          : promptScope === "settle" ? `，已砍物件志/认知隔离/lore/远景/召回/全量schema${opts.settleNpc ? `（保留MVU：牵涉${opts.settleNpc}）` : "/MVU"}`
-          : promptScope === "move" ? "，已砍物件志/认知隔离/复杂schema/拓扑外的世界观"
-          : promptScope === "talk" ? "，已砍物件志/拓扑与装备规则" : "";
-        traceStep(_trace, "Prompt注入", "info", `级别=${_scopeLabel}（system ${sysLength}字${_scopeWhy}）`);
-        // 调用模式标注：单调用/双调用是两条完全不同的 prompt 结构（前者主模型直接
-        // 出JSON+MVU，后者主模型只写散文、好感度等状态判定全部转交提取层的另一
-        // 个模型），排查"好感度怎么没变/怎么变得莫名其妙"时第一步就该确认走的
-        // 是哪条路、双调用时具体是哪个模型在判——不写清楚，排查者会误以为
-        // 主模型和判定好感度的模型是同一个。
-        if (apiCfg.extractionEnabled) {
-          const exCfg = buildExtractionCfg(intent.code, apiCfg);
-          traceStep(_trace, "调用模式", "info",
-            `双调用（叙事/状态分离）　主叙事模型=${apiCfg.model || "未设置"}　提取模型(意图=${intent.code})=${exCfg.model || "未设置"}${exCfg.model === apiCfg.model ? "（未单独配置，沿用主模型）" : ""}`);
-        } else {
-          traceStep(_trace, "调用模式", "info", `单调用（叙事+状态一次性产出）　主模型=${apiCfg.model || "未设置"}`);
-        }
-        // 世界书点灯明细：🟢亮了哪条（被什么词/哪个状态点亮）、⚫灭了哪条。排"AI 怎么不知道 X"用。
-        if (_gateReport && (_gateReport.lit.length || _gateReport.dark.length)) {
-          traceStep(_trace, "世界书·总纲", "info",
-            `🟢${_gateReport.lit.join("、") || "无"}　⚫灭:${_gateReport.dark.join("、") || "无"}`);
-        }
-        // 把当前激活的 Chat Completion 预设里配置的采样参数（temperature/maxTokens/
-        // topP/topK/frequencyPenalty/presencePenalty）融合进这次调用的 cfg——只有预设
-        // 里显式配置过（非 null）的字段才覆盖，其余沿用 apiCfg 原有的全局设置。
-        // 主叙事这一路是唯一真正受"叙事风格采样参数"影响的调用点，私聊旁白/方向判定
-        // /提取层等辅助调用不套用这份覆盖，避免预设改动意外影响到不相关的小任务。
-        const effectiveCfg = applyPresetOverrides(apiCfg, getActivePreset());
-        if (effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini") {
-          const streamLogIndex = { current: null };
-          addLog([{ t: "desc", text: "  ▌", streaming: true }]);
-          setLog(l => { streamLogIndex.current = l.length - 1; return l; });
-          const { text, finishReason } = await callModelStream(
-            effectiveCfg, sysBlocks,
-            chatMessages,
-            (_delta, fullSoFar) => {
-              setLog(l => {
-                if (streamLogIndex.current == null) return l;
-                const copy = [...l];
-                // 叙事模式：直接展示散文文本；JSON模式：只看最后200字（避免长 JSON 刷屏）
-                copy[streamLogIndex.current] = { t: "desc", text: "  " + (narrativeOnly ? fullSoFar : fullSoFar.slice(-200)) + " ▌", streaming: true };
-                return copy;
-              });
-            },
-            { intent: { code: intent.code, label: intent.label }, recallInfo },
-          );
-          if (narrativeOnly) {
-            // 叙事模式：把流式条目转为永久日志项（而不是移除它）。谈价 <deal> 标签仅供系统，显示时剥掉。
-            const shown = text.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
-            setLog(l => {
-              if (streamLogIndex.current == null) return l;
-              const copy = [...l];
-              copy[streamLogIndex.current] = { t: "desc", text: "  " + shown, streaming: false };
-              return copy;
-            });
-          } else {
-            // JSON 模式：移除占位条目（正式 output 会在解析后追加）
-            setLog(l => (streamLogIndex.current == null ? l : l.filter((_, i) => i !== streamLogIndex.current)));
-          }
-          return { rawFull: text, finishReason };
-        }
-        const result = await callModel(effectiveCfg, sysBlocks, chatMessages, { intent: { code: intent.code, label: intent.label }, recallInfo, callLabel: "主叙事" });
-        return { rawFull: result.text, finishReason: result.finishReason };
-      };
+      // 主叙事调用（组装 Tavern 序消息 + 流式/非流式 + trace）在 act/actCall.js。
+      // callDeps() 在每个调用点现取本回合上下文——ref 值按调用时机读取，
+      // 与原嵌套闭包每次执行时读 ref 的时序一致。
+      const callDeps = () => ({
+        varTree: varTreeRef.current, gm, isSettle, isTalk, intent, apiCfg, narrator,
+        scenario: preset.scenario, budgetInstruction, npcLoreBlockWithQuest,
+        visibleNpcsCount: visibleNpcs.length, charName: char.name, charBodyProfile: char.bodyProfile,
+        pickupJudgment: pickupJudgmentRef.current, cmd, convo, nsfwOn,
+        ctx, recallBlock, reunionBlock, infoDomainBlock, hist, mainConvo,
+        gambleTalkCtx: gambleTalkCtx.current, recallInfo,
+        settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo,
+        _trace, addLog, setLog,
+      });
 
       let rawFull = "", p = null, mvuCommands = [], dealResult = null;
       // 本轮"人眼看见的叙事正文"。两种模式来源不同：单调用在 p.output 数组里，
@@ -3424,7 +2165,7 @@ ${dealFmt}`;
         let mainFinishReason;
         for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
           try {
-            const r = await callMainOnce(null, true);
+            const r = await callMainOnce(null, true, callDeps());
             rawFull = r.rawFull;
             mainFinishReason = r.finishReason;
             if (attempt > 1) {
@@ -3518,7 +2259,7 @@ ${dealFmt}`;
             : "";
           let finishReason;
           try {
-            const r = await callMainOnce(nudge);
+            const r = await callMainOnce(nudge, false, callDeps());
             rawFull = r.rawFull; finishReason = r.finishReason;
             // 如果这次成功前发生过重试（attempt>1 说明进过下面的 continue），
             // 明确告诉玩家"重连成功"，否则玩家只看到"正在重试…"、不知道到底恢复没有。
@@ -3553,442 +2294,19 @@ ${dealFmt}`;
         }
       }
 
-      // ── 系统采纳的在场名单（提前算，供好感度过滤 + 新面孔检测共用）──
-      // 判据同下方新面孔检测：移动到缓存目的地取 cached.npcs，否则取当前 room.npcs，
-      // 涌现登场的人(emergedNpcName)算合法新增。AI 凭空报的名字不在此列。
-      const _movingToCached = lockedDestName ? roomMapRef.current[lockedDestName]
-        : (p.room?.name && p.room.name !== room.name ? roomMapRef.current[p.room.name] : null);
-      const _systemBaseNpcs = _movingToCached?.npcs || room.npcs || [];
-      const systemAcceptedNames = new Set(_systemBaseNpcs.map(n => n.name));
-      if (p.emergedNpcName) systemAcceptedNames.add(p.emergedNpcName);
-      // 已在 varTree.角色 里有记录的人（历史交互过的、驻场登记的）也算数——他们是
-      // 系统认可的真实角色，即便此刻 AI 没把他们列进本轮在场名单，对他们的好感度
-      // 变化仍是合法的（比如飞鸽传书、隔空事件）。只拦"系统从来不认识"的纯幽灵。
-      const _knownChars = new Set(Object.keys(varTreeRef.current.角色 || {}));
-
-      if (mvuCommands.length) {
-        // 好感度反幽灵过滤：AI 若对一个"既不在系统在场名单、也不在已知角色表"里的
-        // 名字开好感度（开局旁白顺口报的假村民就是这样），把这条 MVU 指令丢掉——
-        // 不建角色节点、不刷好感度、不打 💗 字幕。真实在场者与历史已知角色不受影响。
-        mvuCommands = mvuCommands.filter(cmd => {
-          const m = /^角色\.([^.]+)\.好感度$/.exec(cmd.path || "");
-          if (!m) return true; // 非好感度指令，放行
-          const who = m[1];
-          if (systemAcceptedNames.has(who) || _knownChars.has(who)) return true;
-          console.warn(`[反幽灵] 忽略对非在场/未知角色「${who}」的好感度指令`);
-          return false;
-        });
-      }
-      if (mvuCommands.length) {
-        setVarTree(prev => {
-          const { tree, applied, rejected } = applyMvuCommands(prev, mvuCommands, { charm: effectiveSpecialNow?.魅力 ?? 5 });
-          if (rejected.length) console.warn("MVU 指令被系统裁决拒绝：", rejected);
-          const affectionChanges = applied.filter(c => c.path.endsWith(".好感度") && (c.op === "add" ? c.actualDelta : true));
-          if (affectionChanges.length) {
-            addLog(affectionChanges.map(c => {
-              const name = c.path.split(".")[1];
-              const delta = c.op === "add" ? c.actualDelta : null;
-              const text = delta != null
-                ? `  💗 ${name} 好感度 ${delta > 0 ? "+" : ""}${delta}（→ ${c.finalValue}）`
-                : `  💗 ${name} 好感度 → ${c.finalValue}`;
-              return { t: "affection", text };
-            }));
-          }
-
-          // "生气解除" 是一个信号字段，不是真正要存的数据——AI通过它告诉系统
-          // "这次嘴辩说服成功了"，系统裁决层据此清空该角色真正的生气状态对象，
-          // 并删掉这个临时信号字段本身，避免它留在 varTree 里污染数据。
-          const resolvedNames = applied
-            .filter(c => c.path.endsWith(".生气解除") && c.finalValue === true)
-            .map(c => c.path.split(".")[1]);
-          let finalTree = tree;
-          if (resolvedNames.length) {
-            const nextChars = { ...finalTree.角色 };
-            for (const name of resolvedNames) {
-              if (nextChars[name]) {
-                const { 生气解除, ...rest } = nextChars[name];
-                nextChars[name] = { ...rest, 生气状态: { active: false, resolvedBy: "persuasion" } };
-              }
-            }
-            finalTree = { ...finalTree, 角色: nextChars };
-            addLog(resolvedNames.map(name => ({ t: "affection", text: `  ✓ ${name}的怒气已经消解，这场风波算是揭过去了。` })));
-          }
-          return finalTree;
-        });
-      }
-
-      // ── 赌石谈价结算（轻量勾连）──
-      // 若这轮在谈价语境、且 AI 回了 <deal> 标签：系统 clamp 倍率 + 校验赠物，
-      // 把调整后报价写进 gambleNegotiation[stoneId][bidderName]，赌桌读它更新报价、按新价结算。
-      // 数值全由系统裁决（settleNegotiation clamp[0.8,1.5]），AI 越权无效。
-      if (dealResult && gambleTalkCtx.current) {
-        const ctx = gambleTalkCtx.current;
-        const baseOffer = ctx.baseOffer || 0;
-        const settled = gambleSettleNegotiation(
-          { offer: baseOffer, cash: ctx.cash || Infinity },
-          dealResult,
-          ctx.carry || []
-        );
-        if (ctx.stoneId && ctx.bidderName && settled.finalOffer !== baseOffer) {
-          setGambleNegotiation(prev => ({
-            ...prev,
-            [ctx.stoneId]: { ...(prev[ctx.stoneId] || {}), [ctx.bidderName]: settled.finalOffer },
-          }));
-          const diff = settled.finalOffer - baseOffer;
-          addLog([{ t: "affection", text: `  🤝 谈妥了：${ctx.bidderName} 的出价 ${diff > 0 ? "抬到" : "变为"} ${settled.finalOffer} 两${settled.addItem ? `，另搭「${settled.addItem.name || settled.addItem}」` : ""}。回赌桌可按此价结算。` }]);
-        }
-      }
-      // 谈价这轮处理完就清标记（下一句普通对话不再当谈价）
-      if (gambleTalkCtx.current) gambleTalkCtx.current = null;
-
-      // AI 依然承担"判断玩家这轮行为是否达成了某个任务节点"这件事（通过
-      // 一如既往地在 delta.flags_add 里吐出对应的 completionFlag），但一旦
-      // 判定命中的这个节点在 questScripts.js 里登记了固定台本，这一轮
-      // 展示给玩家的文字就不再用AI自己写的 p.output，而是原样展示设计
-      // 文档里的完整原文——AI 这一轮的"生成"实际上只被当作触发判定用，
-      // 生成的正文本身被完全丢弃不展示。只要命中，就整体替换（不跟AI的
-      // output 拼接），避免AI现场编的文字和固定台本的文风混在一起显得突兀。
-      // 一次AI返回可能同时命中好几个stage的flag（理论上少见，但为免遗漏，
-      // 按 QUCUO_QUESTS 顺序找到第一个命中的即可，不叠加展示多段台本）。
-      let scriptOverride = null;
-      const thisTurnFlags = p.delta?.flags_add || [];
-      if (thisTurnFlags.length) {
-        outer: for (const quest of QUCUO_QUESTS) {
-          if (!quest.stages?.length) continue;
-          const prog = questProgress[quest.id];
-          // 只在这个任务确实"活跃"（已经开始、还没完成/锁定）时才检查，
-          // 避免玩家复述过去已经完成的flag文字时被误判重新触发一次台本
-          if (prog && prog.status !== "active") continue;
-          const stageIndex = prog?.currentStageIndex ?? 0;
-          const stage = quest.stages[stageIndex];
-          if (!stage) continue;
-          const candidateFlags = Array.isArray(stage.completionFlag) ? stage.completionFlag : [stage.completionFlag];
-          const hitFlags = candidateFlags.filter(f => thisTurnFlags.includes(f));
-          if (!hitFlags.length) continue;
-          const script = getQuestScript(quest.id, stage.id, hitFlags);
-          if (script) { scriptOverride = script; break outer; }
-        }
-      }
-      if (scriptOverride) {
-        addLog(scriptOverride.split("\n").filter(line => line.length).map(t => ({ t: "desc", text: "  " + t })));
-      } else if (p.output) {
-        addLog(p.output.map(t => ({ t: "desc", text: "  " + t })));
-      }
-      if (p._truncated) addLog([{ t: "sys", text: "  ⚠ 本轮回复被接口中途截断，以上仅为已收到的完整部分（多为中转站/模型输出上限所致，可换接口或调低目标字数；详见 📋 Pipeline 的停止原因）" }]);
-
-      // NPC涌现·第一阶段：AI如果在这一轮显式声明"提到了新的具名人物"
-      // （通过顶层JSON的 mentionedNewNpcs 字段），记为"传闻中的人物"，
-      // 不立即生成技能/属性——不用正则猜人名，中文人名边界靠字符规则
-      // 猜测误判率太高，改为让AI自己判断这是语义理解的强项。
-      if (p.mentionedNewNpcs && p.mentionedNewNpcs.length) {
-        // 用统一的 narrativeText 而不是 p.output——双调用模式下叙事在 rawFull 里，
-        // 读 p.output 会拿到空串，传闻人物就成了没有上下文的光杆名字。
-        setVarTree(prev => recordRumoredNpcs(prev, p.mentionedNewNpcs, narrativeText));
-      }
-
-      // 系统裁决：AI每次返回的NPC列表里，凡是还没有 moveset/carriedItems 的
-      // （通常是新出现的NPC），本地补全一份固定的技能位和随身物品，供切磋/偷窃使用。
-      // 关键：AI 每轮返回的都是全新的 {name,id,brief} 裸对象，直接喂给
-      // ensureNpcCombatData 会导致同一个 NPC 每轮重新随机一套随身物品——
-      // "出生即固定"彻底失效，战利品变成四次元口袋。所以先按名字和场上已有
-      // NPC 合并，老面孔继承出生时固化的全部数据，只有真正的新面孔才走生成
-      // （新面孔如果带 carry 字段，随身物品就按 carry 所见即所得地固化）。
-      //
-      // 生成顺序（硬规则）：人眼看见的描述 -> 角色出现 -> 才据此设置人设/装备/行囊，
-      // 不能反过来。之前只有"传闻人物涌现"这条特殊分支会把描述喂给
-      // mapDescriptionToGenParams 换算人设强度，常规新面孔（刷新出的/新地点遇到的）
-      // 完全绕开了这一步，直接吃 luck 兜底——猎户和商贩长出同一副筋骨。
-      // 现在统一用 brief + 本轮叙事文本作为"看见的描述"，新面孔都走同一套映射。
-      const luck = char.special?.气运 ?? 5;
-      // narrativeText 已在上面按模式各自赋好（单调用=p.output 拼接，双调用=rawFull 散文），
-      // 不要在这里重新从 p.output 取——那样双调用会拿到空串，新面孔全部退化成吃 luck 兜底。
-      if (p.room && Array.isArray(p.room.npcs)) {
-        p.room.npcs = p.room.npcs.map(n => {
-          const existing = room.npcs.find(o => o.name === n.name);
-          if (existing?.carriedItems) {
-            return { ...existing, brief: n.brief || existing.brief };
-          }
-          const { levelCap, personalityProfile } = mapDescriptionToGenParams(`${n.brief || ""} ${narrativeText}`);
-          return ensureNpcCombatData({ ...n, personalityProfile }, { luck, levelCap });
-        });
-
-        // 复用 MVU 块之前算好的系统采纳名单（systemAcceptedNames），判据一致：
-        // 只认系统真正会放进场的人 + 涌现登场者，AI 凭空多报的幽灵一律不计入。
-        // 再叠一层内层房间过滤（isNpcVisibleInInnerRoom）：与左栏「此地之人」、任务栏
-        // giver 判定用同一套——否则会出现"老猎户明明绑在猎户小屋，却因为在整个 room.npcs
-        // 里就在村口被判成『新人物出现』"的割裂。三处必须同一份可见性判据。
-        const acceptedNpcs = p.room.npcs
-          .filter(n => systemAcceptedNames.has(n.name))
-          .filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
-
-        // "新人物出现"检测：只对系统真正采纳、且从未见过的面孔插入这条日志。
-        const newFaces = detectNewFaces(varTreeRef.current, acceptedNpcs);
-        if (newFaces.length) {
-          addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
-          setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
-        }
-        // 久别重逢·记忆断层：同样只记系统采纳的在场人物。
-        setVarTree(prev => updateLastSeen(prev, acceptedNpcs.map(n => n.name), time));
-      }
-
-      // NPC涌现·第二阶段：如果这次AI返回里，有一个"传闻中的人物"被真正实体化
-      // 进了 room.npcs（通过下面注入的涌现指令引导AI这么做），系统读取AI给出的
-      // emergedNpcDescription（身份/性格定性描述），本地映射成数值，清除传闻标记。
-      if (p.emergedNpcDescription && p.emergedNpcName) {
-        const { levelCap, personalityProfile } = mapDescriptionToGenParams(p.emergedNpcDescription);
-        setVarTree(prev => clearRumor(prev, p.emergedNpcName));
-        setRoom(r => ({
-          ...r,
-          npcs: r.npcs.map(n => n.name === p.emergedNpcName
-            ? ensureNpcCombatData({ ...n, personalityProfile }, { luck, levelCap })
-            : n),
-        }));
-      }
-
-      if (!isTalk) {
-        if (lockedDestName) {
-          // 系统裁决：目的地、出口列表强制来自固定地图，不信任 AI 返回的 room.name/exits，
-          // 只采用 AI 给出的 desc（场景描述文本）——这是本轮改造的核心："AI 只负责怎么形容，
-          // 不负责去哪里"。
-          const destNode = getMapNode(lockedDestName);
-          const cached = roomMapRef.current[lockedDestName];
-          const finalDesc = (p.room && p.room.desc) ? p.room.desc : destNode.desc;
-          setRoom({
-            name: lockedDestName,
-            desc: finalDesc,
-            exits: Object.keys(destNode.exits),
-            npcs: (cached && cached.npcs) || (p.room && p.room.npcs) || [],
-            items: (cached && cached.items) || (p.room && p.room.items) || [],
-          });
-          addLog([{ t: "room", text: "" }, { t: "room", text: `    ${lockedDestName}` }, { t: "room", text: "" }]);
-          traceStep(_trace, "状态写回", "pass", `room.name → ${lockedDestName}（移动完成）${outerDepartRef.current?.fromInner ? `，内层落点自动归为新据点锚点` : ""}`);
-          outerDepartRef.current = null;
-          if (!mapData[lockedDestName]) {
-            setMapData(m => ({ ...m, [lockedDestName]: { x: destNode.x, y: destNode.y } }));
-          }
-        } else if (p.room && QUCUO_MAP[room.name]) {
-          // 当前在固定地图范围内，且这次没有触发移动（比如原地互动/战斗），
-          // 只允许 AI 更新 desc/items，name/exits/npcs 依然锁定为系统已有状态。
-          // npcs 不能信任 AI 这次返回的名单——AI 每个回合都会重新交一份"它认为
-          // 在场的人"的完整列表，如果直接铺盖过去，等于每次非移动动作都让AI
-          // 重新发明一次在场人物，这正是"此地的人一会好几个一会都走光"的乱动
-          // 根因。在场人物只应通过明确渠道变化：每日游走人口刷新（见下方
-          // useEffect）、人物涌现（emergedNpcName，就发生在这行之前）、或玩家
-          // 自己的动作——不该被这句话顺手覆盖。
-          const node = QUCUO_MAP[room.name];
-          setRoom(r => ({ ...r, ...p.room, name: room.name, exits: Object.keys(node.exits), npcs: r.npcs }));
-        } else if (p.room) {
-          // 兜底：房间不在固定地图里（理论上不应该出现，只有 AI 未遵守系统裁决时才会
-          // 落入这条路径）。这次修复已经从源头堵住了主要诱因——之前"向北走"这类带
-          // 前缀词的移动指令会被 parseDir 误判为"非移动"，导致本该走上面 lockedDestName
-          // 强锁分支的请求错误地流落到这里，AI 因此有机会自由发挥编出不在地图里的
-          // 过渡地名（比如"熊曲山谷"）。parseDir 修好之后，只要玩家的移动意图能被正确
-          // 识别，就不会再落入这条分支；这里维持原有的兜底自由生成逻辑，不额外强行拉回
-          // 固定地图，避免打断正在进行的、AI已经开始编排的野生场景剧情。
-          const moved = p.room.name && p.room.name !== room.name;
-          if (moved) {
-            const cached = roomMapRef.current[p.room.name];
-            if (cached) setRoom(r => ({ ...r, ...p.room, items: cached.items, npcs: cached.npcs }));
-            else setRoom(r => ({ ...r, ...p.room }));
-            addLog([{ t: "room", text: "" }, { t: "room", text: `    ${p.room.name}` }, { t: "room", text: "" }]);
-            if (pendDirRef.current && !mapData[p.room.name]) {
-              const d = pendDirRef.current, [dx, dy] = DIR_DXY[d] || [0, 0];
-              const cur = mapData[room.name] || { x: 0, y: 0 };
-              setMapData(m => ({ ...m, [p.room.name]: { x: cur.x + dx, y: cur.y + dy } }));
-            }
-          } else {
-            setRoom(r => ({ ...r, ...p.room }));
-          }
-        }
-        pendDirRef.current = null;
-      }
-      if (p.char && !isTalk) { setChar(c => { const nc = { ...c, ...p.char }; if (gm) { nc.hp = [nc.hp[1], nc.hp[1]]; } return nc; }); }
-      if (p.dao) { setDao(d => ({ ...d, ...p.dao })); }
-      // 本轮实际新增的物品名（string或{name}），供后面两道拾取兜底判断"这次到底有没有
-      // 真的发过东西"——不能只看 p.delta 存不存在，AI 可能通过别的字段/根本没写 delta
-      // 却仍在叙事里讲了拾取的事。
-      let grantedThisTurnNames = [];
-      if (!isTalk) {
-        // judgment 的读取与清空必须在这里、且不依赖 p.delta 是否存在——此前这两行连同
-        // 下面的"拾取判定兜底"整段都包在 if(p.delta && !isTalk) 里，一旦 AI 的响应
-        // 解析失败或提取层异常导致 p 退化成 {}（p.delta 是 undefined），judgment 既不会
-        // 被消费也不会被清空，会残留到下一回合、错误地把下一次行动的拾取强制对齐成
-        // 这次没用上的品质/分类。
-        const judgment = pickupJudgmentRef.current;
-        let usedJudgment = false;
-        if (p.delta?.items_add?.length) {
-          // 系统本轮已代发的采集物：即便 AI 又在 items_add 里塞了一份，也剔除，防重复入袋。
-          const granted = collectGrantedRef.current || [];
-          const rawAdds = granted.length
-            ? p.delta.items_add.filter(i => !granted.includes(typeof i === "string" ? i : i.name))
-            : p.delta.items_add;
-          const newItems = rawAdds.map(i => {
-            if (typeof i === "string") return i; // 兼容纯文本物品（杂物/剧情道具，不参与装备系统）
-            // 系统裁决：如果本轮有拾取判定在先，第一件结构化物品的品质/分类强制对齐判定结果，
-            // 不信任 AI 自己回传的 quality（防止其绕过气运概率机制乱给稀有品）
-            let quality = i.quality || "白";
-            let category = i.category || "misc";
-            if (judgment && !usedJudgment) {
-              quality = judgment.quality;
-              category = judgment.category;
-              usedJudgment = true;
-            } else if (!QUALITY.includes(quality)) {
-              quality = "白"; // AI 给了非法品质字符串时兜底
-            }
-            return makeGameItem({ name: i.name, category, quality, desc: i.desc || "" });
-          });
-          const addedNames = newItems.map(i => typeof i === "string" ? i : i.name);
-          grantedThisTurnNames = addedNames;
-          setInv(v => [...v, ...newItems]);
-          setRoom(r => ({ ...r, items: r.items.filter(i => !addedNames.includes(i.name) && !addedNames.includes(i)) }));
-        }
-        // 拾取判定后处理，分两种情况：
-        // (A) 提取成功但没产出拾取物（judgment 未消费、且提取没失败）→ 叙事判断此刻不宜捡
-        //     （被盯着/险境），尊重叙事、本轮不发。这是正常且正确的行为。
-        // (B) 提取层这次解析失败/调用异常（pickupExtractionFailedRef）→ 这是技术故障，不是
-        //     叙事拒捡！主叙事很可能已写了捡到某物（如"雪域冰莲"），却因提取模型抽风丢了。
-        //     此时必须保底发放，绝不能让掷中的拾取因提取故障蒸发。名字尽量从主叙事正文里
-        //     救（抓「」书名号里的物名），救不到就用品质通用名兜底；品质/分类用 judgment。
-        if (judgment && !usedJudgment) {
-          if (pickupExtractionFailedRef.current) {
-            const txt = typeof rawFull === "string" ? rawFull : "";
-            // 从叙事救名字：优先「」书名号里、且附近有拾取动词的；否则退通用名
-            let salvaged = "";
-            const brs = [...txt.matchAll(/[「"“]([^」"”]{1,10})[」"”]/g)];
-            for (const m of brs) {
-              const around = txt.slice(Math.max(0, (m.index ?? 0) - 10), (m.index ?? 0) + m[0].length + 6);
-              if (/[捡拾收获得收纳揣藏]/.test(around)) { salvaged = m[1]; break; }
-            }
-            const name = salvaged || `${judgment.quality === "白" ? "" : judgment.quality}品路遇之物`;
-            const gained = makeGameItem({ name, category: judgment.category, quality: judgment.quality, desc: "路上拾得的物件。" });
-            setInv(v => [...v, gained]);
-            grantedThisTurnNames.push(name);
-            addLog([{ t: "item", text: `  ✓ 你拾得「${name}」，收入行囊。` }]);
-            traceStep(_trace, "拾取判定", "info", `系统掷中拾取（品质「${judgment.quality}」），但提取层解析失败——按裁决保底发放「${name}」，不因提取故障丢物。`);
-          } else {
-            traceStep(_trace, "拾取判定", "info", `系统本轮掷中拾取（品质「${judgment.quality}」），提取层正常但未产出拾取物——依叙事判断此刻不宜取物，本轮不发。`);
-          }
-        }
-        pickupJudgmentRef.current = null;
-        pickupExtractionFailedRef.current = false;
-        // AI 自由发挥的拾取（系统没掷中拾取骰、但 AI 说书时自己写了"捡到 XX"）现在
-        // 也由提取层读名、产在 delta.items_add，已随上面的正常 items_add 循环入袋，
-        // 品质取"白"（系统未授权的自编拾取不给品质加成，避免 AI 靠多写拾取情节薅稀有
-        // 物）。此前用 extractPickupName 正则从散文抠名那套已废弃（量词表补不全，"一件
-        // 软甲"抠不到）。至此拾取物名一律走"读得懂语义的提取模型"，不再有任何正则抠名。
-      }
-      if (p.delta && !isTalk) {
-        if (p.delta.items_rm?.length) {
-          const names = p.delta.items_rm.map(i => typeof i === 'string' ? i : i.name || String(i));
-          setInv(v => v.filter(i => { const s = typeof i === 'string' ? i : i.name; return !names.includes(s); }));
-          setRoom(r => ({ ...r, items: [...r.items, ...names.map(n => ({ name: n, id: n }))] }));
-        }
-        if (p.delta.exp) setExp(e => e + (p.delta.exp || 0));
-        if (p.delta.pot) setPot(e => e + (p.delta.pot || 0));
-        if (p.delta.skill_up) {
-          // 经验升阶已退役——stage 改由潜能主动突破（breakthroughSkill）。
-          // skill_up 仅保留累积 exp 数值以兼容老存档/AI 叙事，不再自动改 stage/level。
-          // 固定招（fixed，无 stage）直接跳过。
-          setSkills(sk => sk.map(s => {
-            if (s.fixed || s.stage == null) return s;
-            const up = p.delta.skill_up[s.name];
-            if (!up) return s;
-            return { ...s, exp: (s.exp ?? 0) + up };
-          }));
-        }
-        if (p.delta.skills_add?.length) {
-          const allCatalog = Object.values(SKILL_CATALOG).flat();
-          setSkills(sk => [...sk, ...p.delta.skills_add.map(n => {
-            const name = typeof n === "string" ? n : n.name || n;
-            const hit = allCatalog.find(c => c.name === name);
-            if (hit) return makeSkillEntry(hit); // 那10门可修炼武学：保留 stage，能潜能升阶
-            // 非目录武学（AI 叙事里赠予/自创的招）：固定招，无 stage、不升阶，学即完整
-            return { id: `learned_${name}`, name, type: "招式", quality: "白", moveType: null, fixed: true, stage: null, active: false };
-          })]);
-        }
-      }
-      if (p.delta?.flags_add?.length) {
-        setFlags(f => [...new Set([...f, ...p.delta.flags_add])]);
-        // 说服型任务分支：AI 吐出了成功 flag，说明玩家把对方说动了——
-        // 清挂起态（停止继续注入说服判定），forceAdvance 交给现有的 flag→stage 推进链。
-        if (pendingQuestBranch?.mode === "talk" && p.delta.flags_add.includes(pendingQuestBranch.flag)) {
-          const pq2 = QUCUO_QUESTS.find(x => x.id === pendingQuestBranch.questId);
-          if (pq2) addLog([{ t: "affection", text: `  ✓ 你把话说到了点子上，「${pq2.title}」推进。` }]);
-          setPendingQuestBranch(null);
-        }
-      }
-      // 选项在叙事之后、隔一拍再浮现——不要跟叙事同一帧糊在一起。让玩家先把这段
-      // 剧情读进去，行动选项再"卡一下"缓缓出来，读感上先有戏、后给抉择。
-      if (p.choices?.length) {
-        const choiceLog = [{ t: "sys", text: "" }, { t: "choice", text: "  你可以：" }, ...p.choices.map((c, i) => ({ t: "choice", text: `  [${String.fromCharCode(65 + i)}] ${c}`, action: c }))];
-        setTimeout(() => addLog(choiceLog), 650);
-      }
-      if (!isTalk) setTime(t => t + 1);
-
-      // ── 小纸条·向量写入（提交段·异步副作用）──
-      // AI 若吐了 memory 字段（≤50字纯事实），本轮成功结算后写进统一小纸条库供日后召回。
-      // fire-and-forget：不 await，不阻塞 UI，失败静默；只在成功路径执行，故回滚路径不会误写。
-      // owner 三态：行动模式=公共见闻（owner 空，谁都能语义捞）；对话模式=私有给对话对象
-      // （只在该 NPC 在场/对话时浮现，外人捞不到内容）——这正是「私聊你俩私有」的落点。
-      if (embeddingReady(apiCfg) && p.memory) {
-        const roomNpcs = (p.room && Array.isArray(p.room.npcs) ? p.room.npcs : room.npcs) || [];
-        const knownNames = Array.from(new Set([
-          ...roomNpcs.map(n => n.name),
-          ...Object.keys(varTreeRef.current.角色 || {}),
-          ...Object.keys(QUCUO_MAP),
-        ]));
-        const noteOwner = (activeTarget || (isTalk && talkTarget)) ? [{ name: activeTarget || talkTarget, via: VIA.FIRSTHAND }] : [];
-        const noteSource = isTalk ? NOTE_SOURCE.TALK : NOTE_SOURCE.NARRATIVE;
-        writeNote({ cfg: apiCfg, text: p.memory, turn: time, knownNames, owner: noteOwner, source: noteSource, place: room.name })
-          .catch(err => console.warn("小纸条写入失败（不影响本轮）：", err));
-      }
-
-      // ── 信息领域·把 memory 同时登记为可传播事实 ──
-      // 与上面的向量小纸条并行的第二条路：注册进 knowledge.js 事实账本，供 NPC 自然提起、
-      // 按同框传播扩散。不依赖 embeddingReady（纯文本记账）。
-      // 隔离：对话模式下这段是「你俩私下说的」，只让对话对象一人当场"亲历"入账，
-      // 不把内容摊给同屋其他 NPC（外人不该凭空知道你私下答应了谁什么）；
-      // 行动模式才是当众见闻，在场者共同"目击"。
-      if (p.memory) {
-        dayMaterialRef.current.push({ turn: time, text: p.memory }); // 主叙事/对话的事实也进当日原料（日总结用）
-        const roomNpcs = (p.room && Array.isArray(p.room.npcs) ? p.room.npcs : room.npcs) || [];
-        const witnesses = (activeTarget || (isTalk && talkTarget))
-          ? [{ name: activeTarget || talkTarget, 途径: "亲历" }]
-          : roomNpcs.map(n => ({ name: n.name, 途径: "目击" }));
-        if (witnesses.length) {
-          const factId = `turn_${time}_${witnesses[0].name}`;
-          setVarTree(prev => registerFact(prev, { id: factId, 摘要: p.memory, 标签: isTalk ? "私语" : "见闻", 知晓者: witnesses }, time));
-        }
-      }
-
-      // 对话即认识（本轮统一）：只要这次是对话模式(isTalk)、且明确选定了对话对象
-      // (talkTarget)、并真正走完了对话结算(到这里说明没被拦截/回滚)，就把对方标记为
-      // 已认识。此前只有"点NPC名字→互动菜单→对话"(handleNpcTalk)会标记，而"底部💬对话"
-      // "侧栏选人对话"这两个入口漏了，导致跟人从底部聊了半天头上还挂"尚未认识"。
-      // 判定放在这里(而非各UI入口)的好处：捕捉的是"真的选人+真的说了话"这个动作本身，
-      // 所有对话入口自动一致，不用每个入口分别补，也不会"一点聚焦就算认识"。
-      if (isTalk) {
-        const toKnow = new Set();
-        if (talkTarget) toKnow.add(talkTarget); // 选定了对象：直接算认识
-        // 没选人(或即便选了人)时，AI 回包的 respondedNpcs 报出本轮真正开口回应玩家的
-        // NPC——用它精准标记，不靠解析正文猜"谁说话了"(那样极易误判被提及/路过的人)。
-        // 只认在场名单里的名字，AI 若报了不在场的名字(幻觉)一律丢弃。
-        if (Array.isArray(p.respondedNpcs)) {
-          const presentNames = new Set((room.npcs || []).map(n => n.name));
-          p.respondedNpcs.forEach(name => { if (typeof name === "string" && presentNames.has(name)) toKnow.add(name); });
-        }
-        if (toKnow.size) {
-          setVarTree(prev => Array.from(toKnow).reduce((tree, name) => markNpcAsKnown(tree, name), prev));
-        }
-      }
-
-      setConvo([...newConvo, { role: "assistant", content: rawFull.slice(0, 500) }]);
-
-      // 回合完成登记：驱动"每 N 回合自动存档"。出错回滚的轮次不计数——
-      // 状态没变，存了也是重复盘。
-      roundsSinceLastSaveRef.current += 1;
-      playedThisSessionRef.current = true;
-      endTrace(_trace, "行动完成");
+      // ── 提交段（状态写回全在 act/commitRound.js，出错由下方 catch 整体回滚）──
+      commitRound({
+        p, mvuCommands, dealResult, rawFull, narrativeText,
+        isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,
+        pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo,
+        questProgress, char,
+        _trace, addLog,
+        setVarTree, setRoom, setGambleNegotiation, setInv, setChar, setDao, setExp, setPot,
+        setSkills, setFlags, setMapData, setTime, setPendingQuestBranch, setConvo,
+        varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
+        pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
+        roundsSinceLastSaveRef, playedThisSessionRef,
+      });
     } catch (e) {
       // ── 两阶段 pipeline·整体回滚 ──
       // 本轮任何一步抛错，把所有世界状态整体还原到发送前快照，杜绝"半提交"脏数据

@@ -10,6 +10,8 @@
 // 迁移：init 时 IDB 若空，从旧 localStorage 键迁入；旧 localStorage 存档保留不删作安全兜底。
 // 关页兜底：IDB 异步写关页来不及落盘，故 autoSave 顺带尽力同步写一份 LS；init 取 IDB 与 LS 较新者。
 
+import { statsForQuality } from "./equipment.js";
+
 const AUTOSAVE_KEY = "wuxia_mud_autosave";       // 旧 localStorage 键（迁移/降级用）
 const SLOTS_INDEX_KEY = "wuxia_mud_save_slots";
 const SLOT_PREFIX = "wuxia_mud_slot_";
@@ -200,4 +202,64 @@ export function importSave(jsonText) {
   if (!snap || !snap.preset || !snap.char) throw new Error("这个文件不是有效的曲措乡存档。");
   const label = (data && data.label) ? `${data.label}（导入）` : "导入的存档";
   return saveToSlot(snap, label);
+}
+
+// 尝试从自动存档恢复；找不到时返回 null，调用方 fallback 到 preset 默认值。
+// 关键防御：如果存档是旧版本结构（比如缺少 neigong/waigong/special 字段），
+// 直接判定为不兼容，丢弃存档而不是硬塞进新代码导致渲染崩溃。
+function isCompatibleCharShape(char) {
+  return !!char
+    && Array.isArray(char.hp)
+    && typeof char.neigong === "number"
+    && typeof char.waigong === "number"
+    && char.special && typeof char.special === "object";
+}
+
+function isCompatibleRoomShape(room) {
+  return !!room
+    && typeof room.name === "string"
+    && typeof room.desc === "string"
+    && Array.isArray(room.exits)
+    && Array.isArray(room.npcs)
+    && Array.isArray(room.items);
+}
+
+// loadSlotId 含义：
+//   "auto"/null/undefined → 自动存档；其他字符串 → 手动槽位 id。
+// 存档已在启动时由 saves.init() 全量灌入内存缓存，故 loadAutoSave/loadSlot 是同步读缓存，
+// 这里保持同步、MudRPG 一整套 useState(restored?…) 初始化不受影响。
+export function tryRestoreSave(presets, loadSlotId) {
+  let snap = null;
+  if (loadSlotId === "auto" || loadSlotId === undefined || loadSlotId === null) {
+    snap = loadAutoSave();
+  } else {
+    snap = loadSlot(loadSlotId);
+  }
+  if (!snap) return null;
+  const matchedPreset = presets.find(p => p.id === snap.preset?.id);
+  if (!matchedPreset) return null;
+  if (!isCompatibleCharShape(snap.char) || !isCompatibleRoomShape(snap.room)) {
+    console.warn("检测到旧版本存档结构，已自动丢弃并使用默认角色/房间数据");
+    return null;
+  }
+  // 老存档装备迁移：早期有物品（如"无主的青锋剑"）误用了 atkMul/defMul 倍率字段，
+  // 但战斗/装备系统只读 atk/def 实际值——倍率字段从来没人读，导致装备了却加不到攻防。
+  // 读档时统一补算：凡是有倍率但缺实际值的武器/护甲，用「品质基准 × 倍率」折出 atk/def。
+  // 通用处理（不针对单个 id），这类死字段坑一次堵死，将来别的漏网物品也自动修好。
+  if (Array.isArray(snap.inv)) {
+    snap.inv = snap.inv.map(it => {
+      if (!it || typeof it !== "object") return it;
+      const fixed = { ...it };
+      if (fixed.atkMul != null && fixed.atk == null && fixed.category === "weapon") {
+        const base = statsForQuality("weapon", fixed.quality);
+        if (base.atk != null) fixed.atk = Math.round(base.atk * fixed.atkMul);
+      }
+      if (fixed.defMul != null && fixed.def == null && fixed.category === "armor") {
+        const base = statsForQuality("armor", fixed.quality);
+        if (base.def != null) fixed.def = Math.round(base.def * fixed.defMul);
+      }
+      return fixed;
+    });
+  }
+  return { snap, preset: matchedPreset };
 }
