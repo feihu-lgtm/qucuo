@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "铁匠铺定制系统重做(三填空→小模型出3候选→三选一) + 鱼定村加铁匠铺building",
+    time: "2026-07-26 21:30",
+    notes: [
+      "作者要求把铸剑坊从\"死板打剑\"升级成真定制：①不默认剑，武器/护甲/饰品都能造；②需求描述放宽；③委托后走小模型据自由描述判定成品(名字+类别字段+词条)，一次出3条候选显示在面板供三选一；④鱼定村加铁匠铺building供测试。",
+      "①【三填空定制UI】ForgeScreen重写：三个填空——材料(陨铁…)/类别(武器·刀枪剑戟 或 护甲 或 饰品，自己写细分)/要求(锋利、幸运、护身…这栏是词条来源)。点\"请铁匠出方案\"(不花钱)→小模型出3候选→每条显示 名字+类别+词条+说书人描述→选一件才付120定金下单→都不满意可重说。",
+      "②【小模型出候选】extractionEngine 新增 forgeDesign：据三填空生成3个不同演绎的成品，只出 名字/类别(weapon|armor|accessory)/词条/描述，绝不碰品质与数值(守铁律)。词条从 FORGE_EFFECT_WHITELIST(combat/resolveTurn 真读取的字段全集：forceFirst/ignoreDefense/lowHpBonus/applyMark/sixDim…)里按玩家\"要求\"语义匹配——锋利→破甲无视防御、幸运→sixDim气运、护身→回血/应对反击等。系统侧再清洗兜底(category非法兜weapon、effect/sixDim保证对象)。",
+      "③【下单与交付】选定候选后完整规格(name/category/effect/sixDim+材料+要求)用 encodeURIComponent(JSON) 编码进 pending flag(effect/sixDim是对象、旧的下划线分段存不下，改存整段JSON)。24时辰自动交付时解出、按spec原样makeGameItem造成品，品质仍由系统按气运rollQuality定；白/绿档丢弃词条(与catalog潜规则一致，低品阶不挂特效)。接单叙事让铁匠据材料/要求识料说道两句(代入感)、点明定金已付杜绝AI脑补窘迫。兼容老格式flag(纯材料/3段)兜底为\"定制长剑\"不崩。删除废弃的handleForgePickup。",
+      "④【鱼定村铁匠铺】qucuoBuildings 鱼定村加 forge_yiding(type=FORGE，复用ForgeScreen)；innerMap 鱼定村新增\"铁匠铺\"内层房间(x2y1)、与\"马车行\"双向连通(马车行往北)、挂buildingId。供就近测试，不必跑锦官城。",
+      "Node验证：spec编解码/自动交付/白绿档丢词条/老flag兼容均正确；铁匠铺房间与building接线正确。esbuild验证ForgeScreen.jsx/MudRPG.jsx/extractionEngine.js通过。小模型出候选质量需真机验证：进鱼定村铁匠铺填三栏、看出的3候选是否贴合材料与要求、词条是否合理。",
+    ],
+  },
+  {
     codename: "铸剑坊委托个性化材料需求接入prompt+成品名(填陨铁→掌柜识料、送来陨铁剑)",
     time: "2026-07-26 21:00",
     notes: [

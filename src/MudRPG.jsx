@@ -72,7 +72,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { ENGINE_IDENTITY, GM_RULE, ISOLATION, MAP_LAW, FORMAT_LAW, CATALOG_TAIL } from "./enginePrompts.js";
-import { callExtraction, buildExtractionCfg } from "./extractionEngine.js";
+import { callExtraction, buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
 import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
@@ -1512,18 +1512,35 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       const deliveredNames = [];
       for (const f of matured) {
         const parts = f.split("_");
-        // flag 格式：forge_pending_<下单time>_<luck>_<material编码>。
-        // luck 现在固定在 parts[3]（不能再用 parts.length-1，那会取到 material 段）。
-        // material 在 parts[4]（老存档只有3段、无此段，兜底空）。用材料名拼成品名：
-        // 陨铁→「陨铁剑」，无材料→「定制长剑」。
+        // flag 格式（新）：forge_pending_<下单time>_<luck>_<encodeURIComponent(JSON spec)>。
+        // spec = {name,category,effect,sixDim,material,requirement}，由三候选选定时写入。
+        // 品质仍由系统按 luck 定(AI 不碰)，spec 只提供名字/类别/词条。
+        // 兼容：老格式 parts[4] 是纯材料编码(非JSON)或不存在——解析失败就退化成"定制长剑"。
         const luck = Number(parts[3]) || 5;
-        let material = "";
-        if (parts[4] && parts[4] !== "-") { try { material = decodeURIComponent(parts[4]); } catch { material = parts[4]; } }
         const qualities = ["白", "绿", "蓝", "紫", "橙"];
         const qIdx = Math.min(qualities.length - 1, Math.floor(luck / 2.5));
         const quality = qualities[qIdx];
-        const name = material ? `${material}剑` : "定制长剑";
-        const forgedItem = makeGameItem({ name, category: ITEM_CATEGORY.WEAPON, quality });
+        let spec = null;
+        if (parts[4] && parts[4] !== "-") {
+          try { spec = JSON.parse(decodeURIComponent(parts[4])); } catch { spec = null; }
+        }
+        let name, category, effect, sixDim;
+        if (spec && spec.name) {
+          name = spec.name;
+          category = ["weapon", "armor", "accessory"].includes(spec.category) ? spec.category : "weapon";
+          effect = (spec.effect && typeof spec.effect === "object" && Object.keys(spec.effect).length) ? spec.effect : undefined;
+          sixDim = (spec.sixDim && typeof spec.sixDim === "object" && Object.keys(spec.sixDim).length) ? spec.sixDim : undefined;
+        } else {
+          // 老格式兜底：parts[4] 当纯材料名，拼"XX剑"，无词条
+          let material = "";
+          if (parts[4] && parts[4] !== "-") { try { material = decodeURIComponent(parts[4]); } catch { material = parts[4]; } }
+          name = material ? `${material}剑` : "定制长剑";
+          category = "weapon";
+        }
+        // 白/绿档不挂词条(与 catalog 潜规则一致)：品质低于蓝时丢弃 effect/sixDim。
+        const qRank = qualities.indexOf(quality);
+        if (qRank < 2) { effect = undefined; sixDim = undefined; }
+        const forgedItem = makeGameItem({ name, category, quality, ...(effect ? { effect } : {}), ...(sixDim ? { sixDim } : {}) });
         setInv(iv => [...iv, { ...forgedItem, id: `forge_${parts[2]}_${Math.random().toString(36).slice(2, 6)}`, equipped: false }]);
         deliveredNames.push(`${name}（${quality}）`);
       }
@@ -4955,37 +4972,40 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     }
   }, [apiCfg, addLog, jotNote]);
 
-  const handleForgeCommission = useCallback((material, luck, currentTime, cost) => {
-    if ((char.money || 0) < cost) return;
-    setChar(c => ({ ...c, money: c.money - cost }));
-    const matReq = (material || "").trim();
-    // 材料编进 pending flag（第4段），供 24 时辰后自动交付时解出、拼成品名（陨铁→陨铁剑）。
-    // encodeURIComponent 避免材料里的下划线/空格破坏 flag 的 _ 分隔；空材料存 "-" 占位。
-    setFlags(f => [...f, `forge_pending_${currentTime}_${luck}_${matReq ? encodeURIComponent(matReq) : "-"}`]);
-    // 把玩家填的个性化材料/需求(如"陨铁""玄冰精铁")拼进叙事指令，让掌柜据此介绍、
-    // 演一段接单的场面——这是代入感的关键，此前 material 参数被丢弃，掌柜完全不知道
-    // 玩家要什么。同时点明"银两当场付清、订单已下"，因为这是 settle 轮(系统已扣钱)，
-    // 不加这句 AI 容易脑补"你掏不出钱/囊中羞涩"之类与既定事实相反的窘迫剧情。
-    const matClause = matReq
-      ? `玩家指定要用「${matReq}」这种材料打造，并已当场付清定金${cost}两。请让铸剑坊掌柜据此接单：对这材料的成色、脾性、打法说道一两句（内行人的见识，增添代入感），交代大约二十四个时辰后打成、届时遣伙计送货上门。`
-      : `玩家已当场付清定金${cost}两，未特别指定材料，任凭掌柜择料。请让掌柜爽快接单，交代大约二十四个时辰后打成、届时遣伙计送货上门。`;
-    act(`委托铸剑坊打造一柄兵器，付${cost}两定金。${matClause}`, [], { settle: true });
-  }, [char, addLog, act]);
+  // 铁匠铺定制：小模型据三填空出 3 候选，供 ForgeScreen 展示。只做设计，不扣钱不下单。
+  const handleForgeDesign = useCallback(async ({ material, category, requirement }) => {
+    try {
+      return await forgeDesign({ material, category, requirement }, apiCfg);
+    } catch (e) {
+      addLog([{ t: "err", text: `  [错误] 铁匠铺设计失败：${e.message || e}` }]);
+      return { ok: false, candidates: [] };
+    }
+  }, [apiCfg, addLog]);
 
-  const handleForgePickup = useCallback(() => {
-    const pendingFlag = flags.find(f => f.startsWith("forge_pending_"));
-    if (!pendingFlag) return;
-    const parts = pendingFlag.split("_");
-    const luck = Number(parts[parts.length - 1]) || 5;
-    const qualities = ["白","绿","蓝","紫","橙"];
-    const qIdx = Math.min(qualities.length - 1, Math.floor(luck / 2.5));
-    const quality = qualities[qIdx];
-    const name = "定制长剑";
-    setFlags(f => f.filter(x => x !== pendingFlag));
-    const forgedItem = makeGameItem({ name, category: ITEM_CATEGORY.WEAPON, quality });
-    setInv(prev => [...prev, { ...forgedItem, id: `forge_${Date.now()}`, equipped: false }]);
-    act(`到铸剑坊取回打造完成的「${name}」（${quality}）`, [], { settle: true });
-  }, [flags, addLog, act]);
+  // 玩家从 3 候选里选定一个下单。候选完整规格(name/category/effect/sixDim + 三填空原文)
+  // 编码进 pending flag——因为 effect/sixDim 是对象，塞不进下划线分隔的老格式，改成把整个
+  // spec JSON 用 encodeURIComponent 存进 flag 末段，24 时辰自动交付时解出、原样造出成品。
+  // flag 格式：forge_pending_<下单time>_<luck>_<encodeURIComponent(JSON.stringify(spec))>
+  const handleForgeCommission = useCallback((chosen, luck, currentTime, cost, threeFields) => {
+    if ((char.money || 0) < cost) return;
+    if (!chosen || !chosen.name) return;
+    setChar(c => ({ ...c, money: c.money - cost }));
+    const spec = {
+      name: chosen.name,
+      category: chosen.category || "weapon",
+      effect: chosen.effect || {},
+      sixDim: chosen.sixDim || {},
+      material: (threeFields?.material || "").trim(),
+      requirement: (threeFields?.requirement || "").trim(),
+    };
+    setFlags(f => [...f, `forge_pending_${currentTime}_${luck}_${encodeURIComponent(JSON.stringify(spec))}`]);
+    // 接单叙事：材料/要求进 prompt 让掌柜识料、说道两句(代入感)，点明定金已付、订单已下，
+    // 杜绝 AI 脑补"掏不出钱"。settle 轻档。
+    const matClause = spec.material
+      ? `玩家拿「${spec.material}」来定制一件「${chosen.name}」，${spec.requirement ? `要的是「${spec.requirement}」的路子，` : ""}已当场付清定金${cost}两。请让铁匠据此接单：对这材料成色脾性、这活计的打法说道一两句(内行见识、增代入感)，交代约二十四个时辰后打成、届时遣伙计送货上门。`
+      : `玩家定制一件「${chosen.name}」，已当场付清定金${cost}两。请让铁匠爽快接单，交代约二十四个时辰后打成、届时遣伙计送货上门。`;
+    act(`到铁匠铺定制「${chosen.name}」，付${cost}两定金。${matClause}`, [], { settle: true });
+  }, [char, addLog, act]);
 
   const handleListenRumor = useCallback((rumor, cost) => {
     if ((char.money || 0) < cost) return;
@@ -5973,7 +5993,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               )}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.FORGE && (
                 <ForgeScreen building={activeBuilding} char={char} time={time} flags={flags} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCommission={handleForgeCommission} onPickup={handleForgePickup} />
+                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCommission={handleForgeCommission} onDesign={handleForgeDesign} />
               )}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.GAMBLESTONE && (
                 <GambleStoneScreen building={activeBuilding} char={char} time={time}

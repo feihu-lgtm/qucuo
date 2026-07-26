@@ -91,7 +91,7 @@ export const INNER_MAP = {
       马车行: {
         x: 2, y: 0,
         desc: "备着脚力和驾车人，花银两可直接抵达已探索的其他据点。",
-        exits: { w: "歇马居" },
+        exits: { w: "歇马居", n: "铁匠铺" },
         buildingId: "transport_yiding",
       },
       赌坊: {
@@ -116,6 +116,12 @@ export const INNER_MAP = {
         desc: "鱼定大娘的家，屋前常年支着一口熬糌粑的大锅，是全村消息最灵通的地方之一。",
         exits: { n: "歇马居" },
         residentNpcName: "鱼定大娘",
+      },
+      铁匠铺: {
+        x: 2, y: 1,
+        desc: "村东头一间冒着黑烟的铁匠铺，炉火昼夜不熄，叮当的打铁声隔着半条街都听得见。老铁匠祖上三代打铁，也接客人拿料定制的活计。",
+        exits: { s: "马车行" },
+        buildingId: "forge_yiding",
       },
     },
   },

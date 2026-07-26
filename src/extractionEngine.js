@@ -260,3 +260,55 @@ export async function callExtraction(intentCode, narrative, state, apiCfg, settl
   // 据此提示"本轮状态未更新"——此前解析失败被静默吞掉，玩家毫无感知。
   return { p: parsed, mvuCommands, parseFailed };
 }
+
+// ── 铸剑坊/铁匠铺 定制设计：小模型据玩家三填空(材料/类别/要求)生成 3 个成品候选 ──
+// 守铁律：AI 只出「名字 / 类别字段 / 词条(从全集白名单里选) / 说书人描述」，绝不碰品质
+// (品质由系统 rollQuality 按气运定)和数值(倍率由品质公式算)。词条只能从下面 EFFECT 白名单
+// 里挑——这批是 combat/resolveTurn.js 真正读取的字段，选别的是死字段。玩家"要求"栏(锋利/
+// 幸运/护身…)是词条来源，模型据此语义匹配。返回 3 个不同演绎，供面板三选一。
+const FORGE_EFFECT_WHITELIST = `
+可选词条(effect，只能从这里选，按玩家"要求"语义匹配，白/绿档留空不给词条、蓝档起才给)：
+· 攻击向：forceFirst(必先手,对应"快/先发") | ignoreDefense(无视防御,对应"锋利/破甲") | doubleVsStatus(克中招之敌翻倍) | lowHpBonus:0.15(残血增伤,对应"绝境/搏命") | afterStatusBonus(趁敌中招追击) | detonateMark:{perStackRatio:0.35}(引爆内伤)
+· 控制向：enemyCostPenalty:{value:2,turns:2}(封穴抬高对方耗气) | freezeEnergyRecovery(封气,冻回气) | applyMark:{name:"内伤印",stacks:1}+applyMarkChance:0.3(附内伤印)
+· 应对向：onCounterSuccessDamageRatio:0.3(应对成功追伤,对应"以守反攻") | onCounterSuccessEnergyGain:2(应对成功回气)
+· 续航向：hpRestore:0.08(每回合回血,对应"养身/温养") | energyRestore:2(起手回气)
+· 六维：sixDim:{气运:2}(对应"幸运") | sixDim:{身法:2}(轻便) | sixDim:{根骨:2}(坚固) | sixDim:{魅力:2} | sixDim:{智谋:1} | sixDim:{体魄:1} | sixDim:{悟性:1}
+effect 与 sixDim 二选一为主(一件东西通常只挂其一，紫橙档可两者少量兼有)。`;
+
+export async function forgeDesign({ material, category, requirement }, apiCfg) {
+  const cfg = buildExtractionCfg("FORGE_DESIGN", apiCfg);
+  const system = `你是曲措乡这个澜湄雪域武侠世界里铁匠铺的"匠心"——玩家拿料来定制兵器/护具/饰物，你要据玩家给的【材料/类别/要求】设计出三个不同的成品方案供他挑选。守规矩：你只负责创意(名字、属于哪类装备、挂什么词条、说书人风味的介绍)，绝不决定品质高低(那由玩家气运和铺子手艺定)、绝不编数值。三个方案要有区别——同样的料和要求，可以往不同形制/侧重去做(比如都要"锋利的陨铁武器"，可出重砍的、轻捷的、透甲的三种取向)。`;
+  const user = `玩家定制需求：
+· 材料：${material || "(未指定，任你择料)"}
+· 类别：${category || "(未指定，你据材料与要求判断最合适的类别)"}
+· 要求：${requirement || "(未特别要求)"}
+${FORGE_EFFECT_WHITELIST}
+
+请设计 3 个不同的成品方案，只输出 JSON，不要任何解释或 markdown：
+{"candidates":[
+  {"name":"贴合材料与形制的成品名(如 陨铁裂石刀，不超过7字)","category":"weapon|armor|accessory 三选一","effect":{词条对象，按白名单选，可空对象{}},"sixDim":{六维对象，可空},"desc":"一两句说书人白话古文，讲这件东西的形制/来历/脾性，禁冒号破折号"}
+  , {第二个方案，与第一个形制或侧重不同} 
+  , {第三个方案，再不同}
+]}
+注意：category 必须是 weapon/armor/accessory 之一的英文；effect 和 sixDim 若不给就写空对象 {}；name 要贴合材料(玩家写了陨铁，名字里就该见陨铁质感)。`;
+
+  const { text } = await callModel(cfg, system, [{ role: "user", content: user }], { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000, callLabel: "铁匠铺定制设计" });
+  let js = (text || "").replace(/\`\`\`json\s*|\`\`\`\s*/g, "").trim();
+  const i0 = js.indexOf("{"), i1 = js.lastIndexOf("}");
+  if (i0 >= 0 && i1 > i0) js = js.slice(i0, i1 + 1);
+  js = cleanJsonString(js);
+  let parsed;
+  try { parsed = JSON.parse(js); } catch { return { ok: false, candidates: [] }; }
+  const cands = Array.isArray(parsed.candidates) ? parsed.candidates.slice(0, 3) : [];
+  // 清洗：category 兜底 weapon，effect/sixDim 保证是对象
+  const CATS = ["weapon", "armor", "accessory"];
+  const clean = cands.map(c => ({
+    name: String(c?.name || "定制之物").slice(0, 12),
+    category: CATS.includes(c?.category) ? c.category : "weapon",
+    effect: (c?.effect && typeof c.effect === "object") ? c.effect : {},
+    sixDim: (c?.sixDim && typeof c.sixDim === "object") ? c.sixDim : {},
+    desc: String(c?.desc || "").slice(0, 120),
+  })).filter(c => c.name);
+  return { ok: clean.length > 0, candidates: clean };
+}
+
