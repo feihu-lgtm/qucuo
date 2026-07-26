@@ -2083,6 +2083,247 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     return out;
   }, [narrator, inv, char, time, room, innerRoomName, varTree, apiCfg, nsfwOn, questProgress]);
 
+  // 切磋结算共享 handler：1v1(DuelScreen) 与 2v2(TeamDuelScreen) 两个界面
+  // 的收尾逻辑完全一致——交情/战利品/任务分支/事实账本/整场战报都跟战斗
+  // 形态无关，提取成同一个函数供两处复用（battleLog 条目形状略有差异：
+  // 1v1 是 {playerMove,npcMove,...}，2v2 是 TeamDuelScreen 拼好的 {teamText}）。
+  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems) => {
+      // 把这场切磋的逐回合【系统数据】写进主日志备查（招式+伤害，客观事实）。
+      // 逐回合的 AI 说书不在这里逐条刷屏——它们会被打包发给主叙事 AI 写成
+      // 一篇连贯的整场战报（见下方 finishedNpc 那段的 act 调用），避免重复。
+      if (Array.isArray(battleLog) && battleLog.length) {
+        const foe = duelingNpc?.name || "对手";
+        const logs = [{ t: "sys", text: `　── 与${foe}切磋 · 逐回合 ──` }];
+        for (const e of battleLog) {
+          if (e.round && e.teamText) {
+            logs.push({ t: "desc", text: `  第${e.round}回合 ${e.teamText}` }); // 2v2团战条目（TeamDuelScreen已拼好单行）
+          } else if (e.round && e.playerMove) {
+            logs.push({ t: "desc", text: `  第${e.round}回合 你「${e.playerMove}」 对 ${foe}「${e.npcMove}」${e.dmgToNpc > 0 ? `　${foe}−${e.dmgToNpc}` : ""}${e.dmgToPlayer > 0 ? `　你−${e.dmgToPlayer}` : ""}` });
+          }
+        }
+        if (logs.length > 1) addLog(logs);
+      }
+      // 战前餐（pendingCombatBuff）是一次性的：这场战斗已经进场应用过，无论
+      // 胜负都清掉，不会带到下一场。放在最前面清，跟其他结算互不干扰。
+      if (char.pendingCombatBuff) setChar(c => { const { pendingCombatBuff, ...rest } = c; return rest; });
+      // 永久成长型招式（permanentGrowthOnUse）这场打出来的威力增长要
+      // 持久化到char.moveset，不然下次战斗又是原始倍率，"永久"就名不
+      // 副实了。绝大多数角色没装备博弈层招式，grownMoveset跟改动前的
+      // char.moveset内容完全一致，这行不会产生任何可观察的变化。
+      if (grownMoveset) setChar(c => ({ ...c, moveset: grownMoveset }));
+
+      // ── 任务分支·战斗解决 ──
+      // 这场架若是任务分支（选了"打"）触发的：打赢才推进该分支 stage 并结算，
+      // 打输/逃跑不推进——"选了打就得真打赢"，避免按钮式白嫖结果。
+      if (pendingQuestBranch?.mode === "combat" && duelingNpc?.questBranchFlag === pendingQuestBranch.flag) {
+        if (outcome === "win") {
+          const q = QUCUO_QUESTS.find(x => x.id === pendingQuestBranch.questId);
+          if (q) {
+            forceAdvanceQuest(q, pendingQuestBranch.flag);
+            addLog([{ t: "affection", text: `  ✓ 你打退了他们，「${q.title}」推进。` }]);
+          }
+        } else {
+          addLog([{ t: "sys", text: `  你没能打赢——这条路没走通，可换个法子再试。` }]);
+        }
+        setPendingQuestBranch(null);
+      }
+
+      // 战斗内服用的消耗品：从背包按名逐件扣除（同名多件只扣服过的份数）。
+      // 药是"点到为止"的切磋里也真吃了，无论胜负都要扣。
+      if (usedItems && usedItems.length) {
+        setInv(prev => {
+          const next = [...prev];
+          for (const name of usedItems) {
+            const idx = next.findIndex(i => (typeof i === "object" ? i.name : i) === name);
+            if (idx !== -1) next.splice(idx, 1);
+          }
+          return next;
+        });
+        const tally = usedItems.reduce((m, n) => (m[n] = (m[n] || 0) + 1, m), {});
+        addLog([{ t: "item", text: `  ⊙ 切磋中服用：${Object.entries(tally).map(([n, c]) => `${n}×${c}`).join("、")}` }]);
+      }
+      // 切磋历练潜能：按对手品阶给（打强敌长见识多，打杂鱼给得少，玩家自然会
+      // 越级挑战换潜能，符合武侠成长逻辑）。胜利全额，落败/罢手减半取整——
+      // 以武会友、输了也长见识，但打出结果给得多。保底不靠 AI 心情。
+      // 数值量级（与作者确认·翻倍档）：白10/绿20/蓝40/紫70/橙110/红160，
+      // 让中期主打紫橙袍时约十几场胜利即可把内外功推到红名水平（各95、双线约
+      // 1570潜能）。cap 兜底 0（白袍），越界 clamp 到 0~5。
+      {
+        const { potGain, tierLabel } = duelPotGain(duelingNpc?.levelCap, outcome);
+        setPot(p => p + potGain);
+        addLog([{ t: "item", text: `  ✦ 与${tierLabel}高手切磋${outcome === "win" ? "获胜" : outcome === "lose" ? "落败" : "罢手"}，长了见识，潜能 +${potGain}` }]);
+      }
+      // 切磋后好感度：跟人认认真真过了招（点到为止），关系会拉近。但只对"具名 NPC 的
+      // 切磋"生效——路遇的野兽/山贼这类泛用清剿目标（带 tag）是打杀、不是以武会友，
+      // 不加好感度。赢了不失礼、输了也虚心，都算长交情，不论胜负都 +，赢略多。
+      if (duelingNpc?.name && !duelingNpc.tag) {
+        const affGain = duelAffGain(outcome);
+        const foeName = duelingNpc.name;
+        setVarTree(prev => {
+          const tree = markNpcAsKnown(prev, foeName);
+          const roles = { ...(tree.角色 || {}) };
+          const cur = roles[foeName]?.好感度 ?? 0;
+          roles[foeName] = { ...(roles[foeName] || {}), 好感度: Math.max(0, Math.min(100, cur + affGain)) };
+          return { ...tree, 角色: roles };
+        });
+        addLog([{ t: "affection", text: `  💗 与${foeName}切磋一场，交情 +${affGain}` }]);
+      }
+      // 默契加成（本轮新增，与作者确认：只算2v2团战胜利这一种场景）：这场战斗
+      // 若走的是2v2团战（isSnowLeopardAvailable 为真时渲染分流到 TeamDuelScreen，
+      // 见下方渲染分支，不需要额外传参标记"这是不是团战"，用同一个判据即可复用），
+      // 且以胜利收场，系统直接确定性给雪豹加好感度——不靠AI判断"这场配合默契不
+      // 默契"，团战打赢本身就是最直接的默契证明。落败/罢手不加（默契要打出结果
+      // 才算数，不能"陪打就有分"）。跟对手好感度那条是两件独立的事，互不冲突：
+      // 一场胜利的团战里，玩家和对手交情+4、玩家和雪豹默契+3，各自成立。
+      if (outcome === "win" && isSnowLeopardAvailable(companionState)) {
+        const teamworkGain = TEAMWORK_GAIN;
+        setVarTree(prev => {
+          const tree = markNpcAsKnown(prev, "雪豹");
+          const roles = { ...(tree.角色 || {}) };
+          const cur = roles.雪豹?.好感度 ?? 0;
+          roles.雪豹 = { ...(roles.雪豹 || {}), 好感度: Math.max(0, Math.min(100, cur + teamworkGain)) };
+          return { ...tree, 角色: roles };
+        });
+        addLog([{ t: "affection", text: `  💗 与雪豹并肩破敌，默契渐深，好感 +${teamworkGain}` }]);
+      }
+      // 切磋概率获得战利品（本轮）：赢了之后，按气运（福缘）概率从对手随身物品
+      // （carriedItems，即出场时"所见即所得"固化的那些）里随机掉一件给玩家。
+      // 概率非线性：p = 0.5 * (气运/10)^1.7 —— 气运10 约 50%，气运5 约 15%，
+      // 气运0 为 0，低福缘时明显偏低、高福缘才明显上来（凸曲线，不是线性）。
+      // 只在"具名NPC切磋获胜"时触发；清剿目标(带tag)的掉落仍走 DuelScreen 的 loot。
+      if (outcome === "win" && duelingNpc?.name && !duelingNpc.tag) {
+        const pool = (duelingNpc.carriedItems || []).filter(it => !it.stolen && !it.dropped);
+        if (pool.length) {
+          const luck = char.special?.气运 ?? 5;
+          const dropChance = duelDropChance(luck);
+          if (Math.random() < dropChance) {
+            const got = pool[Math.floor(Math.random() * pool.length)];
+            setInv(prev => [...prev, { name: got.name, category: got.category || "misc", quality: got.quality || "白", equipped: false }]);
+            // 标记这件已从对手身上失去，避免重复掉（carriedItems 是固化清单）
+            setRoom(r => ({
+              ...r,
+              npcs: r.npcs.map(n => n.name === duelingNpc.name
+                ? { ...n, carriedItems: (n.carriedItems || []).map(it => it === got || it.name === got.name ? { ...it, dropped: true } : it) }
+                : n),
+            }));
+            addLog([{ t: "item", text: `  ✦ 一番切磋，${duelingNpc.name}的「${got.name}」竟落入你手（福缘所致）` }]);
+          }
+        }
+      }
+      // 练级点·大公鸡无限刷（本轮）：带 respawn 标记的怪（村口大公鸡）打赢后，
+      // 立刻在原地重新注入一只满血、carry 又带一枚新金蛋的同名怪，供无限连打刷
+      // 金蛋。用 ensureNpcCombatData 按 levelCap 重新固化战斗数值与随身物品。
+      if (outcome === "win" && duelingNpc?.respawn) {
+        const fresh = ensureNpcCombatData(
+          { name: duelingNpc.name, id: duelingNpc.id, brief: duelingNpc.brief, beast: true, respawn: true, cannotSpeak: true,
+            personality: duelingNpc.personality, carry: [{ name: "金蛋", category: "misc", quality: "绿" }] },
+          { luck: char.special?.气运 ?? 5, levelCap: duelingNpc.levelCap ?? 0 }
+        );
+        setRoom(r => ({ ...r, npcs: [...r.npcs.filter(n => n.name !== duelingNpc.name), fresh] }));
+        addLog([{ t: "sys", text: `  那大公鸡扑棱着翅膀又蹦了回来，梗着脖子冲你叫，似乎还想再斗一场。` }]);
+      }
+      if (outcome === "win" && duelingNpc?.tag) {
+        const matchedQuest = QUCUO_QUESTS.find(q => q.type === QUEST_TYPE.KILL && q.targetTag === duelingNpc.tag);
+        if (matchedQuest) {
+          setQuestProgress(prev => {
+            const cur = prev[matchedQuest.id]?.count || 0;
+            const nextCount = cur + 1;
+            const done = nextCount >= matchedQuest.requiredCount;
+            if (done && cur < matchedQuest.requiredCount) {
+              addLog([{ t: "affection", text: `  ✓ 任务「${matchedQuest.title}」达成：${matchedQuest.rewardText}` }]);
+              setFlags(f => f.includes(`quest_done_${matchedQuest.id}`) ? f : [...f, `quest_done_${matchedQuest.id}`]);
+            } else {
+              addLog([{ t: "sys", text: `  任务「${matchedQuest.title}」进度：${nextCount}/${matchedQuest.requiredCount}` }]);
+            }
+            return { ...prev, [matchedQuest.id]: { count: nextCount } };
+          });
+        }
+      }
+
+      // 战斗掉落：装备进背包，银两加到char.money，都是本地系统裁决，
+      // 不经过AI——跟拾取/爆装备系统一贯的原则一致。物品名直接用它自己的
+      // 正式名字（比如"藏纹银扣"），不再需要额外拼接NPC名字前缀。
+      if (loot) {
+        if (loot.droppedItem) {
+          setInv(prev => [...prev, { ...loot.droppedItem, equipped: false }]);
+          addLog([{ t: "item", text: `  ⚔ 战利品：获得「${loot.droppedItem.name}」（${loot.droppedItem.quality}）` }]);
+          // 所见即所得的另一半：东西到了玩家手里，就得从NPC身上消失
+          // （标记 stolen 复用偷窃系统的语义），再打一场不会凭空再爆一件。
+          setRoom(r => ({
+            ...r,
+            npcs: r.npcs.map(n => n.name === duelingNpc?.name
+              ? { ...n, carriedItems: (n.carriedItems || []).map(ci => ci.id === loot.droppedItem.id ? { ...ci, stolen: true } : ci) }
+              : n),
+          }));
+        }
+        if (loot.droppedMoney > 0) {
+          setChar(c => ({ ...c, money: (c.money || 0) + loot.droppedMoney }));
+          addLog([{ t: "item", text: `  💰 战利品：获得银两 ${loot.droppedMoney} 两` }]);
+        }
+        // 固定必掉（boss/剧情级，如虎王的虎胆+虎牙+虎筋）：一次全给
+        if (loot.guaranteedLoot?.length) {
+          setInv(prev => [...prev, ...loot.guaranteedLoot]);
+          for (const g of loot.guaranteedLoot) {
+            addLog([{ t: "item", text: `  ⚔ 战利品：取得「${g.name}」（${g.quality}）` }]);
+          }
+        }
+      }
+
+      const finishedNpc = duelingNpc;
+      setDuelingNpc(null);
+
+      // 把这场切磋的结果登记成"事实"，交给信息域系统（knowledge.js）——
+      // 同框的其他人这一刻也"目击"了，之后按同框传播规则自然扩散给路人。
+      // 胜负和对手名字是已知结构化数据：先塞一句结构化兜底摘要保证不空，
+      // 随即叫 AI 把它写成白话古文小总结覆盖上去（AI 关了就留兜底）。
+      if (finishedNpc && outcome) {
+        const factId = `duel_${finishedNpc.name}_${time}`;
+        const cue = `主角与${finishedNpc.name}切磋比武，结果主角${outcome === "win" ? "技高一筹取胜" : "落于下风告负"}`;
+        const witnesses = [finishedNpc.name, ...room.npcs.filter(n => n.name !== finishedNpc.name).map(n => n.name)]
+          .map(name => ({ name, 途径: "目击" }));
+        setVarTree(prev => registerFact(prev, { id: factId, 摘要: cue, 标签: "切磋", 知晓者: witnesses }, time));
+        aiSummarizeFact(factId, cue);
+      }
+
+      // 战斗结束后自动触发一次对话过渡，跟战前"抱拳邀战"的铺垫首尾呼应——
+      // 不能打完直接冷冰冰切回房间画面。这里把完整回合经过（谁用了什么招、
+      // 伤害多少）拼进这句"指令"文本里，让主引擎AI照着真实经过写总结，
+      // 而不是每次都写"技高一筹"这种没有细节的套话。
+      if (finishedNpc) {
+        // recap 把每回合的系统数据 + AI 说书文字都拼进去，让主叙事 AI 写整场
+        // 总结时既有硬数据（招式/伤害）又有说书人的味道打底，比只给数字更生动。
+        const recap = (battleLog || []).map(r => {
+          if (r.teamText) return `第${r.round}回合，${r.teamText}`; // 2v2团战条目（TeamDuelScreen已拼好单行战报）
+          const bits = [`第${r.round}回合你使「${r.playerMove}」`];
+          if (r.npcMove) bits.push(`对方使「${r.npcMove}」`);
+          if (r.dmgToNpc > 0) bits.push(`对方受创${r.dmgToNpc}`);
+          if (r.dmgToPlayer > 0) bits.push(`你受创${r.dmgToPlayer}`);
+          if (r.narration) bits.push(`（说书：${r.narration}）`); // 逐回合说书打包进素材
+          return bits.join("，");
+        }).join("；");
+        const outcomeText = outcome === "win"
+          ? `你技高一筹，${finishedNpc.name}抱拳认输`
+          : outcome === "lose"
+            ? `你技逊一筹，向${finishedNpc.name}抱拳致意`
+            : `这场切磋不了了之，收招罢手`;
+        // 主叙事里这条结算的标题：明确标出「XXX 切磋 XXX · 战斗结算」
+        addLog([{ t: "affection", text: `　◈ ${char.name || "你"} 切磋 ${finishedNpc.name} · 战斗结算` }]);
+        // 这条整场战报请求曾需要 setTimeout 400ms 来躲"act 闭包读到旧 varTree"
+        // 的时序坑（上面刚 setVarTree 写入认识+交情，旧 act 里 evolveKnowledge
+        // 拿旧快照推演后整体覆盖写回，会把更新冲掉——交情已加、左栏却仍"尚未认识"）。
+        // 现已根治：setVarTree 包装后同步刷新 varTreeRef，act 内所有 varTree 读取
+        // 都走 ref——哪怕这里的 act 是旧闭包，evolveKnowledge 拿到的也是最新值，
+        // 延迟归零、不再依赖"等 React 渲染完"的概率性时序。
+        setTimeout(() => {
+          act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true });
+        }, 0);
+        // 兜底小纸条：不管 AI 那轮是否吐了 memory，系统先按 battleLog 直接补记一条
+        // 客观战斗事实进往事（DUMB 源），确保"战斗过程"一定有一张小纸条可供日后召回。
+        const recapNote = `在${room.name}与${finishedNpc.name}切磋，${recap ? recap.replace(/；/g, "、") + "，" : ""}${outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负"}。`;
+        jotNote({ text: recapNote.slice(0, 60), owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.DUMB });
+      }
+  }, [duelingNpc, pendingQuestBranch, char, room, time, companionState, addLog, forceAdvanceQuest, act, jotNote, aiSummarizeFact, setChar, setInv, setRoom, setVarTree, setPot, setQuestProgress, setFlags, setDuelingNpc, setPendingQuestBranch]);
+
   // 分工照 catalog.js 顶部那条老规矩：AI 只负责"从这张货架上挑哪三件"，
   // 数值一概不由它给——挑完拿名字回 CATALOG_INDEX 查真值。这样既不会凭空冒出
   // 货架上没有的神兵，也不会出现同一件东西这次加 20 下次加 200。
@@ -7014,246 +7255,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         );
       })()}
       {duelingNpc && (() => {
-        // 切磋结算共享 handler：1v1(DuelScreen) 与 2v2(TeamDuelScreen) 两个界面
-        // 的收尾逻辑完全一致——交情/战利品/任务分支/事实账本/整场战报都跟战斗
-        // 形态无关，提取成同一个函数供两处复用（battleLog 条目形状略有差异：
-        // 1v1 是 {playerMove,npcMove,...}，2v2 是 TeamDuelScreen 拼好的 {teamText}）。
-        const duelFinishHandler = (outcome, loot, battleLog, grownMoveset, usedItems) => {
-            // 把这场切磋的逐回合【系统数据】写进主日志备查（招式+伤害，客观事实）。
-            // 逐回合的 AI 说书不在这里逐条刷屏——它们会被打包发给主叙事 AI 写成
-            // 一篇连贯的整场战报（见下方 finishedNpc 那段的 act 调用），避免重复。
-            if (Array.isArray(battleLog) && battleLog.length) {
-              const foe = duelingNpc?.name || "对手";
-              const logs = [{ t: "sys", text: `　── 与${foe}切磋 · 逐回合 ──` }];
-              for (const e of battleLog) {
-                if (e.round && e.teamText) {
-                  logs.push({ t: "desc", text: `  第${e.round}回合 ${e.teamText}` }); // 2v2团战条目（TeamDuelScreen已拼好单行）
-                } else if (e.round && e.playerMove) {
-                  logs.push({ t: "desc", text: `  第${e.round}回合 你「${e.playerMove}」 对 ${foe}「${e.npcMove}」${e.dmgToNpc > 0 ? `　${foe}−${e.dmgToNpc}` : ""}${e.dmgToPlayer > 0 ? `　你−${e.dmgToPlayer}` : ""}` });
-                }
-              }
-              if (logs.length > 1) addLog(logs);
-            }
-            // 战前餐（pendingCombatBuff）是一次性的：这场战斗已经进场应用过，无论
-            // 胜负都清掉，不会带到下一场。放在最前面清，跟其他结算互不干扰。
-            if (char.pendingCombatBuff) setChar(c => { const { pendingCombatBuff, ...rest } = c; return rest; });
-            // 永久成长型招式（permanentGrowthOnUse）这场打出来的威力增长要
-            // 持久化到char.moveset，不然下次战斗又是原始倍率，"永久"就名不
-            // 副实了。绝大多数角色没装备博弈层招式，grownMoveset跟改动前的
-            // char.moveset内容完全一致，这行不会产生任何可观察的变化。
-            if (grownMoveset) setChar(c => ({ ...c, moveset: grownMoveset }));
-
-            // ── 任务分支·战斗解决 ──
-            // 这场架若是任务分支（选了"打"）触发的：打赢才推进该分支 stage 并结算，
-            // 打输/逃跑不推进——"选了打就得真打赢"，避免按钮式白嫖结果。
-            if (pendingQuestBranch?.mode === "combat" && duelingNpc?.questBranchFlag === pendingQuestBranch.flag) {
-              if (outcome === "win") {
-                const q = QUCUO_QUESTS.find(x => x.id === pendingQuestBranch.questId);
-                if (q) {
-                  forceAdvanceQuest(q, pendingQuestBranch.flag);
-                  addLog([{ t: "affection", text: `  ✓ 你打退了他们，「${q.title}」推进。` }]);
-                }
-              } else {
-                addLog([{ t: "sys", text: `  你没能打赢——这条路没走通，可换个法子再试。` }]);
-              }
-              setPendingQuestBranch(null);
-            }
-
-            // 战斗内服用的消耗品：从背包按名逐件扣除（同名多件只扣服过的份数）。
-            // 药是"点到为止"的切磋里也真吃了，无论胜负都要扣。
-            if (usedItems && usedItems.length) {
-              setInv(prev => {
-                const next = [...prev];
-                for (const name of usedItems) {
-                  const idx = next.findIndex(i => (typeof i === "object" ? i.name : i) === name);
-                  if (idx !== -1) next.splice(idx, 1);
-                }
-                return next;
-              });
-              const tally = usedItems.reduce((m, n) => (m[n] = (m[n] || 0) + 1, m), {});
-              addLog([{ t: "item", text: `  ⊙ 切磋中服用：${Object.entries(tally).map(([n, c]) => `${n}×${c}`).join("、")}` }]);
-            }
-            // 切磋历练潜能：按对手品阶给（打强敌长见识多，打杂鱼给得少，玩家自然会
-            // 越级挑战换潜能，符合武侠成长逻辑）。胜利全额，落败/罢手减半取整——
-            // 以武会友、输了也长见识，但打出结果给得多。保底不靠 AI 心情。
-            // 数值量级（与作者确认·翻倍档）：白10/绿20/蓝40/紫70/橙110/红160，
-            // 让中期主打紫橙袍时约十几场胜利即可把内外功推到红名水平（各95、双线约
-            // 1570潜能）。cap 兜底 0（白袍），越界 clamp 到 0~5。
-            {
-              const { potGain, tierLabel } = duelPotGain(duelingNpc?.levelCap, outcome);
-              setPot(p => p + potGain);
-              addLog([{ t: "item", text: `  ✦ 与${tierLabel}高手切磋${outcome === "win" ? "获胜" : outcome === "lose" ? "落败" : "罢手"}，长了见识，潜能 +${potGain}` }]);
-            }
-            // 切磋后好感度：跟人认认真真过了招（点到为止），关系会拉近。但只对"具名 NPC 的
-            // 切磋"生效——路遇的野兽/山贼这类泛用清剿目标（带 tag）是打杀、不是以武会友，
-            // 不加好感度。赢了不失礼、输了也虚心，都算长交情，不论胜负都 +，赢略多。
-            if (duelingNpc?.name && !duelingNpc.tag) {
-              const affGain = duelAffGain(outcome);
-              const foeName = duelingNpc.name;
-              setVarTree(prev => {
-                const tree = markNpcAsKnown(prev, foeName);
-                const roles = { ...(tree.角色 || {}) };
-                const cur = roles[foeName]?.好感度 ?? 0;
-                roles[foeName] = { ...(roles[foeName] || {}), 好感度: Math.max(0, Math.min(100, cur + affGain)) };
-                return { ...tree, 角色: roles };
-              });
-              addLog([{ t: "affection", text: `  💗 与${foeName}切磋一场，交情 +${affGain}` }]);
-            }
-            // 默契加成（本轮新增，与作者确认：只算2v2团战胜利这一种场景）：这场战斗
-            // 若走的是2v2团战（isSnowLeopardAvailable 为真时渲染分流到 TeamDuelScreen，
-            // 见下方渲染分支，不需要额外传参标记"这是不是团战"，用同一个判据即可复用），
-            // 且以胜利收场，系统直接确定性给雪豹加好感度——不靠AI判断"这场配合默契不
-            // 默契"，团战打赢本身就是最直接的默契证明。落败/罢手不加（默契要打出结果
-            // 才算数，不能"陪打就有分"）。跟对手好感度那条是两件独立的事，互不冲突：
-            // 一场胜利的团战里，玩家和对手交情+4、玩家和雪豹默契+3，各自成立。
-            if (outcome === "win" && isSnowLeopardAvailable(companionState)) {
-              const teamworkGain = TEAMWORK_GAIN;
-              setVarTree(prev => {
-                const tree = markNpcAsKnown(prev, "雪豹");
-                const roles = { ...(tree.角色 || {}) };
-                const cur = roles.雪豹?.好感度 ?? 0;
-                roles.雪豹 = { ...(roles.雪豹 || {}), 好感度: Math.max(0, Math.min(100, cur + teamworkGain)) };
-                return { ...tree, 角色: roles };
-              });
-              addLog([{ t: "affection", text: `  💗 与雪豹并肩破敌，默契渐深，好感 +${teamworkGain}` }]);
-            }
-            // 切磋概率获得战利品（本轮）：赢了之后，按气运（福缘）概率从对手随身物品
-            // （carriedItems，即出场时"所见即所得"固化的那些）里随机掉一件给玩家。
-            // 概率非线性：p = 0.5 * (气运/10)^1.7 —— 气运10 约 50%，气运5 约 15%，
-            // 气运0 为 0，低福缘时明显偏低、高福缘才明显上来（凸曲线，不是线性）。
-            // 只在"具名NPC切磋获胜"时触发；清剿目标(带tag)的掉落仍走 DuelScreen 的 loot。
-            if (outcome === "win" && duelingNpc?.name && !duelingNpc.tag) {
-              const pool = (duelingNpc.carriedItems || []).filter(it => !it.stolen && !it.dropped);
-              if (pool.length) {
-                const luck = char.special?.气运 ?? 5;
-                const dropChance = duelDropChance(luck);
-                if (Math.random() < dropChance) {
-                  const got = pool[Math.floor(Math.random() * pool.length)];
-                  setInv(prev => [...prev, { name: got.name, category: got.category || "misc", quality: got.quality || "白", equipped: false }]);
-                  // 标记这件已从对手身上失去，避免重复掉（carriedItems 是固化清单）
-                  setRoom(r => ({
-                    ...r,
-                    npcs: r.npcs.map(n => n.name === duelingNpc.name
-                      ? { ...n, carriedItems: (n.carriedItems || []).map(it => it === got || it.name === got.name ? { ...it, dropped: true } : it) }
-                      : n),
-                  }));
-                  addLog([{ t: "item", text: `  ✦ 一番切磋，${duelingNpc.name}的「${got.name}」竟落入你手（福缘所致）` }]);
-                }
-              }
-            }
-            // 练级点·大公鸡无限刷（本轮）：带 respawn 标记的怪（村口大公鸡）打赢后，
-            // 立刻在原地重新注入一只满血、carry 又带一枚新金蛋的同名怪，供无限连打刷
-            // 金蛋。用 ensureNpcCombatData 按 levelCap 重新固化战斗数值与随身物品。
-            if (outcome === "win" && duelingNpc?.respawn) {
-              const fresh = ensureNpcCombatData(
-                { name: duelingNpc.name, id: duelingNpc.id, brief: duelingNpc.brief, beast: true, respawn: true, cannotSpeak: true,
-                  personality: duelingNpc.personality, carry: [{ name: "金蛋", category: "misc", quality: "绿" }] },
-                { luck: char.special?.气运 ?? 5, levelCap: duelingNpc.levelCap ?? 0 }
-              );
-              setRoom(r => ({ ...r, npcs: [...r.npcs.filter(n => n.name !== duelingNpc.name), fresh] }));
-              addLog([{ t: "sys", text: `  那大公鸡扑棱着翅膀又蹦了回来，梗着脖子冲你叫，似乎还想再斗一场。` }]);
-            }
-            if (outcome === "win" && duelingNpc?.tag) {
-              const matchedQuest = QUCUO_QUESTS.find(q => q.type === QUEST_TYPE.KILL && q.targetTag === duelingNpc.tag);
-              if (matchedQuest) {
-                setQuestProgress(prev => {
-                  const cur = prev[matchedQuest.id]?.count || 0;
-                  const nextCount = cur + 1;
-                  const done = nextCount >= matchedQuest.requiredCount;
-                  if (done && cur < matchedQuest.requiredCount) {
-                    addLog([{ t: "affection", text: `  ✓ 任务「${matchedQuest.title}」达成：${matchedQuest.rewardText}` }]);
-                    setFlags(f => f.includes(`quest_done_${matchedQuest.id}`) ? f : [...f, `quest_done_${matchedQuest.id}`]);
-                  } else {
-                    addLog([{ t: "sys", text: `  任务「${matchedQuest.title}」进度：${nextCount}/${matchedQuest.requiredCount}` }]);
-                  }
-                  return { ...prev, [matchedQuest.id]: { count: nextCount } };
-                });
-              }
-            }
-
-            // 战斗掉落：装备进背包，银两加到char.money，都是本地系统裁决，
-            // 不经过AI——跟拾取/爆装备系统一贯的原则一致。物品名直接用它自己的
-            // 正式名字（比如"藏纹银扣"），不再需要额外拼接NPC名字前缀。
-            if (loot) {
-              if (loot.droppedItem) {
-                setInv(prev => [...prev, { ...loot.droppedItem, equipped: false }]);
-                addLog([{ t: "item", text: `  ⚔ 战利品：获得「${loot.droppedItem.name}」（${loot.droppedItem.quality}）` }]);
-                // 所见即所得的另一半：东西到了玩家手里，就得从NPC身上消失
-                // （标记 stolen 复用偷窃系统的语义），再打一场不会凭空再爆一件。
-                setRoom(r => ({
-                  ...r,
-                  npcs: r.npcs.map(n => n.name === duelingNpc?.name
-                    ? { ...n, carriedItems: (n.carriedItems || []).map(ci => ci.id === loot.droppedItem.id ? { ...ci, stolen: true } : ci) }
-                    : n),
-                }));
-              }
-              if (loot.droppedMoney > 0) {
-                setChar(c => ({ ...c, money: (c.money || 0) + loot.droppedMoney }));
-                addLog([{ t: "item", text: `  💰 战利品：获得银两 ${loot.droppedMoney} 两` }]);
-              }
-              // 固定必掉（boss/剧情级，如虎王的虎胆+虎牙+虎筋）：一次全给
-              if (loot.guaranteedLoot?.length) {
-                setInv(prev => [...prev, ...loot.guaranteedLoot]);
-                for (const g of loot.guaranteedLoot) {
-                  addLog([{ t: "item", text: `  ⚔ 战利品：取得「${g.name}」（${g.quality}）` }]);
-                }
-              }
-            }
-
-            const finishedNpc = duelingNpc;
-            setDuelingNpc(null);
-
-            // 把这场切磋的结果登记成"事实"，交给信息域系统（knowledge.js）——
-            // 同框的其他人这一刻也"目击"了，之后按同框传播规则自然扩散给路人。
-            // 胜负和对手名字是已知结构化数据：先塞一句结构化兜底摘要保证不空，
-            // 随即叫 AI 把它写成白话古文小总结覆盖上去（AI 关了就留兜底）。
-            if (finishedNpc && outcome) {
-              const factId = `duel_${finishedNpc.name}_${time}`;
-              const cue = `主角与${finishedNpc.name}切磋比武，结果主角${outcome === "win" ? "技高一筹取胜" : "落于下风告负"}`;
-              const witnesses = [finishedNpc.name, ...room.npcs.filter(n => n.name !== finishedNpc.name).map(n => n.name)]
-                .map(name => ({ name, 途径: "目击" }));
-              setVarTree(prev => registerFact(prev, { id: factId, 摘要: cue, 标签: "切磋", 知晓者: witnesses }, time));
-              aiSummarizeFact(factId, cue);
-            }
-
-            // 战斗结束后自动触发一次对话过渡，跟战前"抱拳邀战"的铺垫首尾呼应——
-            // 不能打完直接冷冰冰切回房间画面。这里把完整回合经过（谁用了什么招、
-            // 伤害多少）拼进这句"指令"文本里，让主引擎AI照着真实经过写总结，
-            // 而不是每次都写"技高一筹"这种没有细节的套话。
-            if (finishedNpc) {
-              // recap 把每回合的系统数据 + AI 说书文字都拼进去，让主叙事 AI 写整场
-              // 总结时既有硬数据（招式/伤害）又有说书人的味道打底，比只给数字更生动。
-              const recap = (battleLog || []).map(r => {
-                if (r.teamText) return `第${r.round}回合，${r.teamText}`; // 2v2团战条目（TeamDuelScreen已拼好单行战报）
-                const bits = [`第${r.round}回合你使「${r.playerMove}」`];
-                if (r.npcMove) bits.push(`对方使「${r.npcMove}」`);
-                if (r.dmgToNpc > 0) bits.push(`对方受创${r.dmgToNpc}`);
-                if (r.dmgToPlayer > 0) bits.push(`你受创${r.dmgToPlayer}`);
-                if (r.narration) bits.push(`（说书：${r.narration}）`); // 逐回合说书打包进素材
-                return bits.join("，");
-              }).join("；");
-              const outcomeText = outcome === "win"
-                ? `你技高一筹，${finishedNpc.name}抱拳认输`
-                : outcome === "lose"
-                  ? `你技逊一筹，向${finishedNpc.name}抱拳致意`
-                  : `这场切磋不了了之，收招罢手`;
-              // 主叙事里这条结算的标题：明确标出「XXX 切磋 XXX · 战斗结算」
-              addLog([{ t: "affection", text: `　◈ ${char.name || "你"} 切磋 ${finishedNpc.name} · 战斗结算` }]);
-              // 这条整场战报请求曾需要 setTimeout 400ms 来躲"act 闭包读到旧 varTree"
-              // 的时序坑（上面刚 setVarTree 写入认识+交情，旧 act 里 evolveKnowledge
-              // 拿旧快照推演后整体覆盖写回，会把更新冲掉——交情已加、左栏却仍"尚未认识"）。
-              // 现已根治：setVarTree 包装后同步刷新 varTreeRef，act 内所有 varTree 读取
-              // 都走 ref——哪怕这里的 act 是旧闭包，evolveKnowledge 拿到的也是最新值，
-              // 延迟归零、不再依赖"等 React 渲染完"的概率性时序。
-              setTimeout(() => {
-                act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true });
-              }, 0);
-              // 兜底小纸条：不管 AI 那轮是否吐了 memory，系统先按 battleLog 直接补记一条
-              // 客观战斗事实进往事（DUMB 源），确保"战斗过程"一定有一张小纸条可供日后召回。
-              const recapNote = `在${room.name}与${finishedNpc.name}切磋，${recap ? recap.replace(/；/g, "、") + "，" : ""}${outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负"}。`;
-              jotNote({ text: recapNote.slice(0, 60), owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.DUMB });
-            }
-        };
         return (
         <ErrorBoundary label="切磋界面" onReset={() => { setDuelingNpc(null); setPendingQuestBranch(null); }}>
         {isSnowLeopardAvailable(companionState) ? (
