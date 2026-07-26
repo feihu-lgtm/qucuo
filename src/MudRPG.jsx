@@ -1087,7 +1087,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       }), inv.length === 0 ? { t: "sys", text: "  （空空如也）" } : null].filter(Boolean);
     }
     if (c === "skills" || c === "武功") {
-      return [{ t: "sys", text: "── 武学 ──" }, ...skills.map(s => ({ t: "skill", text: `  ${s.active ? "▶" : "○"} ${s.name}·${s.stage}  Lv.${s.level}  [${bar(s.exp, s.maxExp, 8)}] ${s.exp}/${s.maxExp}` }))];
+      return [{ t: "sys", text: "── 武学 ──" }, ...skills.map(s => ({ t: "skill", text: `  ${s.active ? "▶" : "○"} ${s.name}·${s.stage || "完整"}（${s.quality || "白"}品）` }))];
     }
     if (c === "eq" || c === "装备") {
       const cats = [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY];
@@ -1577,7 +1577,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 可修炼武学：extra 跟点击调用逐字对齐（含品阶+阶段+等级，升级后键会变、自然重跑）
     for (const s of (skills || [])) {
       const q = s.quality || "白";
-      const extra = s.fixed ? `${q}品·授业绝学（完整）` : `${q}品·${s.stage} Lv.${s.level}`;
+      const extra = s.fixed ? `${q}品·授业绝学（完整）` : `${q}品·${s.stage}`;
       list.push({ kind: "skill", name: s.name, extra, itemObj: null });
     }
     // 临阵招式：extra 跟点击调用逐字对齐
@@ -2192,7 +2192,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     const invText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join(",");
     const { visibleNpcs, visibleNpcsForAI } = buildPresence({ _trace, isTalk, lockedDestName, room, innerRoomName, companionState });
-    const ctx = `${targetNote}${modeNote}[状态] ${gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : ""}时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""} 出口:${room.exits.join(",")} NPCs:${visibleNpcsForAI.map(n => { const ci = (n.carriedItems || []).filter(i => !i.stolen).map(i => i.name).join("、"); const tier = typeof n.levelCap === "number" ? `〔品阶:${QUALITY[Math.max(0, Math.min(5, n.levelCap))]}袍〕` : ""; return n.name + tier + (ci ? `〔身携:${ci}〕` : "〔身无长物〕"); }).join(",") || "无"} 物品:${room.items.map(i => i.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 七维:${Object.entries(char.special || {}).map(([k, v]) => k + v).join(",")} 背包:${invText} 装备:${describeEquipment(inv)} 武功:${skills.map(s => s.name + "Lv" + s.level).join(",")} 因果:${dao.karma} 劫数:${dao.jie}\n[已触发事件] ${flags.length ? flags.join(",") : "无"}${pickupNote}${destinationLock}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${collectNote}${arrivalNote}${forcedEventNote}`;
+    const ctx = `${targetNote}${modeNote}[状态] ${gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : ""}时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""} 出口:${room.exits.join(",")} NPCs:${visibleNpcsForAI.map(n => { const ci = (n.carriedItems || []).filter(i => !i.stolen).map(i => i.name).join("、"); const tier = typeof n.levelCap === "number" ? `〔品阶:${QUALITY[Math.max(0, Math.min(5, n.levelCap))]}档〕` : ""; return n.name + tier + (ci ? `〔身携:${ci}〕` : "〔身无长物〕"); }).join(",") || "无"} 物品:${room.items.map(i => i.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 七维:${Object.entries(char.special || {}).map(([k, v]) => k + v).join(",")} 背包:${invText} 装备:${describeEquipment(inv)} 武功:${skills.map(s => s.name + "Lv" + s.level).join(",")} 因果:${dao.karma} 劫数:${dao.jie}\n[已触发事件] ${flags.length ? flags.join(",") : "无"}${pickupNote}${destinationLock}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${collectNote}${arrivalNote}${forcedEventNote}`;
     // 对话模式取更长的历史窗口（至少 20 层全部互动）——聊天比行动更依赖前后文的来回照应；
     // 行动模式沿用用户配置的窗口。convo 里本就混装了行动/对话/私聊三类回合，但私聊是玩家
     // 与"旁白"这个第四面墙外角色的私密对话，普通场景 NPC 不该知道这些内容（反过来，旁白
@@ -3412,13 +3412,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       return [...prev, makeSkillEntry(catalogItem)];
     });
     act(`购得秘籍「${catalogItem.name}」，费银${catalogItem.price}两，习得此功`, [], { settle: true });
-  }, [char, addLog, act]);
-
-  const handleSkillBreakthrough = useCallback((skill, req) => {
-    if ((char.money || 0) < req.price || skill.level < req.minLevel) return;
-    setChar(c => ({ ...c, money: c.money - req.price }));
-    setSkills(prev => prev.map(s => s.id === skill.id ? { ...s, stage: req.nextStage } : s));
-    act(`在武馆高人指点下，「${skill.name}」突破至${req.nextStage}`, [], { settle: true });
   }, [char, addLog, act]);
 
   const handleGamble = useCallback(({ mode, bet, luck, dayIdx }) => {
@@ -4704,7 +4697,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               )}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.WUGUAN && (
                 <WuguanScreen building={activeBuilding} char={char} skills={skills} zoneTheme={zoneTheme} inline
-                  onClose={() => setActiveBuilding(null)} onBuySkill={handleBuySkill} onBreakthrough={handleSkillBreakthrough} />
+                  onClose={() => setActiveBuilding(null)} onBuySkill={handleBuySkill} />
               )}
               {activeBuilding && (activeBuilding.type === BUILDING_TYPE.SHOP || activeBuilding.type === BUILDING_TYPE.SMITHY || activeBuilding.type === BUILDING_TYPE.ANTIQUE || activeBuilding.type === BUILDING_TYPE.MEDICINE || activeBuilding.type === BUILDING_TYPE.CLOTH || activeBuilding.type === BUILDING_TYPE.GROCERY || activeBuilding.type === BUILDING_TYPE.BLACKMARKET || activeBuilding.type === BUILDING_TYPE.SECTSHOP) && (() => {
                 const shopData = rollShopStock(activeBuilding.shopKey, time) || buildShopInventory(activeBuilding.shopKey);
@@ -5361,7 +5354,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                         title={s.active ? "已上阵，点击卸下" : "运功上阵"}
                       >{s.active ? "▶" : "○"}</span>
                       <span
-                        onClick={() => inspectItem("skill", s.name, s.fixed ? `${q}品·授业绝学（完整）` : `${q}品·${s.stage} Lv.${s.level}`, null, { worldLook: true })}
+                        onClick={() => inspectItem("skill", s.name, s.fixed ? `${q}品·授业绝学（完整）` : `${q}品·${s.stage}`, null, { worldLook: true })}
                         style={{ cursor: inspecting === s.name ? "wait" : "pointer", color: qc, fontWeight: s.active ? "bold" : "normal", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === s.name ? 0.6 : 1 }}
                       >{s.name}{s.fixed ? "" : `·${s.stage}`}{inspecting === s.name ? "…" : ""}</span>
                       <span style={{ fontSize: "9.5px", color: qc, opacity: 0.9 }}>（{q}品）</span>

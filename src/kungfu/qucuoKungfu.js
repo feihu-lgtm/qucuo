@@ -11,16 +11,6 @@ export const SKILL_TYPE = {
   QINGGONG: "轻功",
 };
 
-// 阶段突破价格表：在武馆花钱强行突破瓶颈，前提是等级达标。
-// 花钱的逻辑：同一位置的武馆 NPC 帮你"点拨"，实际练习靠自己。
-export const STAGE_BREAKTHROUGH = {
-  小成: { price: 60, minLevel: 5 },
-  大成: { price: 150, minLevel: 15 },
-  圆满: { price: 350, minLevel: 30 },
-  登峰造极: { price: 900, minLevel: 50 },
-};
-export const STAGE_ORDER = ["入门", "小成", "大成", "圆满", "登峰造极"];
-
 // 各武馆的武学目录，key 对应 qucuoBuildings.js 里 skillSet 字段
 export const SKILL_CATALOG = {
   // ── 玉泉练武场：藏地摔跤+游走风格，状态/轻功为主 ──
@@ -148,12 +138,4 @@ export function makeSkillEntry(catalogItem) {
     source: "武馆",       // ★来源维度，武馆买的都能潜能升阶
     upgradable: true,     // 与 fixed:false 同义
   };
-}
-
-// 获取某技能下一阶段突破所需条件；如已到顶则返回 null
-export function nextBreakthroughReq(skill) {
-  const idx = STAGE_ORDER.indexOf(skill.stage);
-  if (idx < 0 || idx >= STAGE_ORDER.length - 1) return null;
-  const nextStage = STAGE_ORDER[idx + 1];
-  return { nextStage, ...STAGE_BREAKTHROUGH[nextStage] };
 }

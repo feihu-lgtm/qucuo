@@ -35,7 +35,7 @@ export const INJECTION_PATHS = {
       { id: "preset_scenario", name: "预设·剧本设定(scenario marker)", kind: "gated", depth: 5,
         summary: "世界观总纲，经 gateScenario 蓝绿灯裁剪：地理/地图铁律/好感规则常驻，拓扑路线/契诃夫之枪/装备掉落按关键词或 scope 点亮。" },
       { id: "preset_genrules", name: "预设·通用规则", kind: "static", depth: 6,
-        summary: "不搜索不给隐藏物品/NPC不主动倒信息/战斗诚实/装备由玩家手动/品阶袍档位要配得上气度…(预设可编辑)" },
+        summary: "不搜索不给隐藏物品/NPC不主动倒信息/战斗诚实/装备由玩家手动/品阶档位要配得上气度…(预设可编辑)" },
       { id: "preset_wenfeng", name: "预设·文体铁律", kind: "static", depth: 7,
         summary: "白话古文、章回说书人口吻、句句主谓宾齐全、禁冒号破折号、对话「」、引语\"\"、心理*斜体*、写作八条铁律(预设可编辑)" },
       { id: "npc_lore", name: "在场 NPC 人设注入", kind: "gated", depth: 8,
