@@ -8,7 +8,7 @@ import {
 import { gateBodyProfile, emptyBodyProfile, buildOutfitRequest, bodyProfileFilled } from "./bodyProfile.js";
 import BodyProfilePanel from "./BodyProfilePanel.jsx";
 import { loadConfig, saveConfig, callModel, callModelStream, cleanJsonString, getPipelineLog, clearPipelineLog, classifyError } from "./apiConfig.js";
-import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, fmtMs } from "./actionTrace.js";
+import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, attachExtractionPipeline, fmtMs } from "./actionTrace.js";
 import { buildSnapshot, autoSave, loadAutoSave, loadSlot, flushLocalBackup } from "./saves.js";
 import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
@@ -35,6 +35,7 @@ import OpeningSequence from "./OpeningSequence.jsx";
 import CharacterCreate from "./CharacterCreate.jsx";
 import { getActivePreset } from "./PresetManager.jsx";
 import { assemblePrompt, applyPresetOverrides } from "./presetSystem.js";
+import TraceViewer from "./TraceViewer.jsx";
 import { getCachedInspect, setCachedInspect } from "./inspectCache.js";
 import { classifyIntent, buildBudgetInstruction, INTENT } from "./inputIntent.js";
 import NpcActionMenu from "./NpcActionMenu.jsx";
@@ -302,96 +303,6 @@ function isCompatibleRoomShape(room) {
     && Array.isArray(room.items);
 }
 
-// 行动分层日志查看器：列出最近的行动 trace，每条展开看它经过的各层（通过/拦截/失败）。
-function TraceViewer({ onClose, onReport }) {
-  const [, forceTick] = React.useState(0);
-  // 实时刷新：行动进行中每步会陆续写入 traceLog，定时重渲染让面板"边跑边长"
-  React.useEffect(() => {
-    const id = setInterval(() => forceTick(t => t + 1), 400);
-    return () => clearInterval(id);
-  }, []);
-  const traces = getTraceLog();
-  const [copied, setCopied] = React.useState(false);
-  const [plOpen, setPlOpen] = React.useState(null); // 当前展开 AI 请求全文的那条 trace 的 ts
-  const ICON = { pass: "✓", block: "⛔", fail: "✗", skip: "·", info: "•" };
-  const COLOR = { pass: "#8ac48a", block: "#c8a860", fail: "#c46060", skip: "#5a5a4a", info: "#7a9ab8" };
-  const copyAll = () => {
-    const text = traces.map((t, i) => formatTrace(t, traces.length - i)).join("\n\n");
-    navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
-  };
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(8,10,14,0.9)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ width: "100%", maxWidth: 620, maxHeight: "84vh", background: "#0e1116", border: "1px solid #2a3a3a", borderRadius: 8, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid #1a2020" }}>
-          <span style={{ color: "#8ac8b8", fontSize: "13px" }}>🧭 行动全流程日志（最近 {traces.length} 条 · 含各层耗时与 AI 请求）</span>
-          <span style={{ marginLeft: "auto", cursor: "pointer", color: "#6a8a8a", fontSize: "11px" }} onClick={copyAll}>{copied ? "✓已复制" : "复制全部"}</span>
-          {onReport && <span style={{ cursor: "pointer", color: "#e08a6a", fontSize: "11px" }} onClick={() => { onClose(); onReport(); }}>🐞 上报bug</span>}
-          <span style={{ cursor: "pointer", color: "#8a6a4a", fontSize: "11px" }} onClick={() => { clearTraceLog(); onClose(); }}>清空</span>
-          <span style={{ cursor: "pointer", color: "#8a8a7a", fontSize: "13px" }} onClick={onClose}>✕</span>
-        </div>
-        <div style={{ overflowY: "auto", padding: "8px 12px" }}>
-          {traces.length === 0 && <div style={{ color: "#5a5a4a", fontSize: "12px", padding: 12 }}>还没有行动记录。做点什么（移动、对话、行动）就会出现在这里，每一步花了多久也会实时显示。</div>}
-          {traces.map((t, i) => (
-            <div key={t.ts} style={{ borderBottom: "1px solid #14181c", padding: "8px 4px" }}>
-              <div style={{ fontSize: "11px", color: "#c8bfa0", marginBottom: 4 }}>
-                <span style={{ color: "#5a5a4a" }}>#{traces.length - i}</span>
-                <span style={{ color: "#4a4a3a", marginLeft: 6, fontSize: "9.5px" }}>{new Date(t.ts).toLocaleTimeString()}</span>
-                {t.totalMs != null && <span style={{ color: "#c8a860", marginLeft: 6, fontSize: "9.5px" }}>共 {fmtMs(t.totalMs)}</span>}
-                {t._running && <span style={{ color: "#8ac8b8", marginLeft: 6, fontSize: "9.5px" }}>⏳ 进行中·当前「{t.steps.length ? t.steps[t.steps.length - 1].layer : "启动"}」</span>}
-              </div>
-              {/* raw 原始输入：terminal 风格，等宽字体、$ 前缀，完整不删减——看系统到底收到了什么 */}
-              <div style={{ fontFamily: "ui-monospace,Menlo,Consolas,monospace", fontSize: "11px", color: "#8ac8b8", background: "#0a0c10", border: "1px solid #1a2430", borderRadius: 3, padding: "4px 8px", marginBottom: 6, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                <span style={{ color: "#4a6a5a" }}>$ </span>{t.raw != null ? t.raw : t.cmd}
-              </div>
-              {t.steps.map((s, si) => {
-                const isAI = /AI|召回|模型|生成/.test(s.layer); // AI 步骤特殊标记
-                return (
-                  <div key={si} style={{ fontSize: "10.5px", lineHeight: 1.75, paddingLeft: 8, display: "flex", gap: 4 }}>
-                    <span style={{ color: COLOR[s.status] || "#7a9ab8", width: 14, flexShrink: 0 }}>{ICON[s.status] || "•"}</span>
-                    <span style={{ flexShrink: 0, fontSize: "9px", color: isAI ? "#c88ae0" : "#5a7a8a" }}>{isAI ? "🤖AI" : "⚙系统"}</span>
-                    <span style={{ color: isAI ? "#c8a8d8" : "#8a8a7a", flexShrink: 0 }}>[{s.layer}]</span>
-                    <span style={{ color: "#a8a898", flex: 1 }}>{s.detail}</span>
-                    {s.dt != null && <span style={{ color: s.dt > 3000 ? "#c8a860" : "#4a5a4a", flexShrink: 0, fontSize: "9.5px" }}>{fmtMs(s.dt)}</span>}
-                  </div>
-                );
-              })}
-              {t._running
-                ? <div style={{ fontSize: "10.5px", color: "#8ac8b8", paddingLeft: 22, marginTop: 2 }}>⏳ 正在进行……当前「{t.steps.length ? t.steps[t.steps.length - 1].layer : "启动"}」</div>
-                : <div style={{ fontSize: "10.5px", color: "#8ac48a", paddingLeft: 22, marginTop: 2 }}>✓ 已完成{t.summary ? `：${t.summary}` : ""}（全程 {fmtMs(t.totalMs)}）</div>}
-              {/* 这一轮若调了 AI，把喂给 AI 的完整 prompt 和 AI 回复一并展开——系统各层
-                  和 AI 请求合并在同一条里，一次看清"系统走到哪、AI 走到哪、总 prompt 是
-                  什么、有没有回复"。默认折叠，点标题展开，避免面板太长。 */}
-              {t.pipeline && (() => {
-                const pl = t.pipeline;
-                const open = plOpen === t.ts;
-                const sys = pl.systemPrompt || "";
-                const usr = (pl.userMessages || []).map(m => `[${m.role}] ${m.content}`).join("\n\n");
-                const resp = pl.response || pl.text || (pl.error ? `（无回复）报错：${pl.error}` : "（无回复）");
-                return (
-                  <div style={{ marginTop: 6, paddingLeft: 8 }}>
-                    <div onClick={() => setPlOpen(open ? null : t.ts)} style={{ cursor: "pointer", fontSize: "10.5px", color: "#c8a860", userSelect: "none" }}>
-                      {open ? "▾" : "▸"} AI 请求全文（总 prompt {Math.round((sys.length + usr.length))} 字 · 回复 {(pl.response || pl.text || "").length} 字{pl.error ? " · ✗有错误" : ""}）
-                    </div>
-                    {open && (
-                      <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
-                        {[["System Prompt（系统提示全文）", sys], ["输入（本轮 user 消息）", usr], ["AI 回复", resp]].map(([label, body]) => (
-                          <div key={label}>
-                            <div style={{ fontSize: "9.5px", color: "#6a8a8a", marginBottom: 2 }}>{label}</div>
-                            <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9.5px", lineHeight: 1.5, color: "#9a9a8a", background: "#0a0c10", border: "1px solid #1a2020", borderRadius: 3, padding: "6px 8px", maxHeight: 220, overflowY: "auto" }}>{body || "（空）"}</pre>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // 小地图缩放：最稳的实现——只用 +/− 按钮改缩放（不用 wheel、不用手动拖拽，
 // 因为游戏整体套了 CSS zoom，wheel 常被外层截、pointer 的 clientX 坐标会错乱）。
@@ -3543,6 +3454,7 @@ ${dealFmt}`;
           return null;
         });
         if (!extracted || extracted.parseFailed) extractionFailed = true;
+        if (extracted) attachExtractionPipeline(_trace, getPipelineLog()[0]);
         if (extracted?.parseFailed) {
           addLog([{ t: "sys", text: `  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新` }]);
           traceStep(_trace, "提取调用", "fail", `返回内容无法解析（提取模型=${_exCfgForTrace.model || "未设置"}），本轮状态未更新`);

@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "行动日志与注入结构结合：TraceViewer 独立成组件、双调用提取层全文入 trace、引擎铁律存在性核对",
+    time: "2026-07-26 10:43",
+    notes: [
+      "作者方向：把『观测(行动日志)』和『配置/结构(注入结构面板+预设)』这两套原本各开各窗的东西有机结合，顺手给七千余行的主组件做一次去寄生瘦身。本轮落地结合 A 档 + TraceViewer 搬家，零逻辑回归。",
+      "①【TraceViewer 搬出主文件】原本内联在 MudRPG.jsx 的行动日志查看器(约90行、零闭包依赖)抽成独立 src/TraceViewer.jsx，主文件 import 复用、渲染处不变。主组件净减约87行，朝『观测面板不寄生在 God 组件里』迈一步——后续 B 档共享注入快照单例可继续删 getLiveBlockText 那个闭包。",
+      "②【补洞一·双调用提取层全文入 trace】此前 attachPipeline 是单数槽位，双调用模式下主叙事调完就占住槽位，随后 callExtraction 那第二次 AI 调用没人挂，TraceViewer 展开『AI 请求全文』只看得见主叙事、提取层喂给小模型的 prompt 一字没有；而注入结构面板又画了『提取层调用』这块却拿不到真文，两处脱节。actionTrace 新增 attachExtractionPipeline 槽位，双调用分支在提取完成后把 getPipelineLog()[0] 挂上；TraceViewer 新增『→ 提取层调用全文』折叠块，formatTrace 复制文本也带上。从此双调用的两刀在同一面板并排可见，正好照『改一半就悄悄失效』那个血泪病根。",
+      "③【结合预设·引擎铁律存在性核对】TraceViewer 展开主叙事 sys 时，用 enginePrompts.js 那六段与 buildSysBase 共享的单一真源常量(引擎身份/格式/地图/认知隔离/物件志尾/创造模式)对 sys 全文做 indexOf 核对，逐段标『本轮是否见于 system』。诚实降级：只陈述含/不含、不做对错判定(移动/结算等 scope 本就会按规则灭掉隔离/物件志，不含不等于异常)，完整亮灭规则与灭因仍指路 设置→Prompt 注入结构面板。这把『配置词汇表』和『运行真值』第一次在同一视图交叉核对，注入文本若与单一真源漂移会立刻照出来。",
+      "验证：esbuild 带图片 loader 对 MudRPG.jsx 全依赖树 bundle 通过(2.1mb，仅 qucuoQuests.js 既有 duplicate-key warning 与本轮无关)、TraceViewer.jsx/actionTrace.js 通过。vite build 挂在 vite.config.js 把未跟踪的 debug.html 列为入口的既有缺口(0 modules 阶段即失败、未编译到本轮文件)，CI 走 vite.config.pages.js 只打包 index.html 不受影响，本轮未碰任何 config。TraceViewer 为纯 UI 渲染+只读模块单例，运行时交互(展开提取层全文/铁律核对显示)需本地实机确认。",
+    ],
+  },
+  {
     codename: "立绘框改2:3 + 玩家立绘回退头像 + 雪豹入队后常驻(右上队友头像+左下专属立绘框)",
     time: "2026-07-26 23:30",
     notes: [

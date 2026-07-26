@@ -49,6 +49,11 @@ export function attachPipeline(trace, entry) {
   trace.pipeline = entry;
 }
 
+export function attachExtractionPipeline(trace, entry) {
+  if (!trace || !entry) return;
+  trace.extractionPipeline = entry;
+}
+
 export function endTrace(trace, summary) {
   if (!trace || trace._archived) return; // 幂等：已归档不重复
   trace._archived = true;
@@ -80,6 +85,13 @@ export function formatTrace(trace, n) {
     const usr = (p.userMessages || []).map(m => `[${m.role}] ${m.content}`).join("\n\n");
     const resp = p.response || p.text || (p.error ? `（无回复）报错：${p.error}` : "（无回复）");
     pl = `\n\n  --- AI 请求全文 ---\n  [System Prompt]\n${sys}\n\n  [输入]\n${usr}\n\n  [AI 回复]\n${resp}`;
+  }
+  if (trace.extractionPipeline) {
+    const p = trace.extractionPipeline;
+    const sys = p.systemPrompt || "";
+    const usr = (p.userMessages || []).map(m => `[${m.role}] ${m.content}`).join("\n\n");
+    const resp = p.response || p.text || (p.error ? `（无回复）报错：${p.error}` : "（无回复）");
+    pl += `\n\n  --- 提取层调用全文（双调用·第二次AI调用） ---\n  [System Prompt]\n${sys}\n\n  [输入]\n${usr}\n\n  [提取层回复]\n${resp}`;
   }
   return `${head}\n${rawLine}\n${lines.join("\n")}${tail}${pl}`;
 }
