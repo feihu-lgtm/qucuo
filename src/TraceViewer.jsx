@@ -44,23 +44,42 @@ export default function TraceViewer({ onClose, onReport }) {
     );
   };
 
-  const renderLawCheck = (sys) => {
-    const rows = LAW_CHECKS.map(c => ({ ...c, present: typeof sys === "string" && sys.includes(ENGINE[c.key]) }));
+  const renderLawCheck = (sys, meta) => {
+    const hasMeta = meta && typeof meta === "object";
+    const expectLit = (key) => {
+      if (!hasMeta) return null;
+      if (key === "ISOLATION") return !!meta.wantIsolation;
+      if (key === "CATALOG_TAIL") return !!meta.wantCatalog;
+      return true;
+    };
+    const rows = LAW_CHECKS.map(c => {
+      const present = typeof sys === "string" && sys.includes(ENGINE[c.key]);
+      const exp = expectLit(c.key);
+      let mark, color;
+      if (present) { mark = "✓"; color = "#8ac48a"; }
+      else if (exp === false) { mark = "✓灭"; color = "#6a7a6a"; }
+      else if (exp === true) { mark = "✗漂移?"; color = "#c46060"; }
+      else { mark = "·"; color = "#6a6555"; }
+      return { ...c, present, mark, color };
+    });
     const presentN = rows.filter(r => r.present).length;
+    const metaLine = hasMeta
+      ? `scope=${meta.scope ?? "?"} · ${meta.narrativeOnly ? "双调用主叙事" : "单调用"}${meta.isSettle ? " · settle" : ""}${meta.settleKind ? ` · ${meta.settleKind}` : ""} · 判据 want[隔离=${meta.wantIsolation ? 1 : 0}/物件志=${meta.wantCatalog ? 1 : 0}/MVU=${meta.wantMvu ? 1 : 0}]`
+      : "（本条 trace 无注入快照判据，仅做存在性陈述——旧记录或快照未接通时如此）";
     return (
       <div style={{ marginTop: 6, border: "1px solid #20262e", borderRadius: 3, padding: "6px 8px", background: "#0a0d12" }}>
         <div style={{ fontSize: "9.5px", color: "#7a9ab8", marginBottom: 4 }}>
-          引擎铁律存在性核对（{presentN}/{rows.length} 段见于本轮 system · 事实陈述，非对错判定）
+          引擎铁律核对（{presentN}/{rows.length} 段见于本轮 system · ✓=在 / ✓灭=按规则本就不注入 / ✗漂移?=规则说该亮却未见，疑似与单一真源脱节）
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px", fontSize: "9.5px" }}>
           {rows.map(r => (
-            <span key={r.key} style={{ color: r.present ? "#8ac48a" : "#6a6555" }}>
-              {r.present ? "✓" : "·"} {r.label}
+            <span key={r.key} style={{ color: r.color }}>
+              {r.mark} {r.label}
             </span>
           ))}
         </div>
-        <div style={{ fontSize: "9px", color: "#4a5a5a", marginTop: 4, lineHeight: 1.6 }}>
-          未见的段不一定是异常——移动/结算等 scope 本就会按规则灭掉认知隔离/物件志等块。完整亮灭规则与灭因见 设置 → Prompt 注入结构面板。此处仅用与 buildSysBase 共享的同一份常量做交叉核对，确认注入文本未与单一真源漂移。
+        <div style={{ fontSize: "9px", color: hasMeta ? "#5a7a6a" : "#4a5a5a", marginTop: 4, lineHeight: 1.6 }}>
+          {metaLine}。判据来自 buildSysBase 本轮自记的 wantXxx 局部变量，与注入文本同源；完整亮灭规则与灭因见 设置 → Prompt 注入结构面板。
         </div>
       </div>
     );
@@ -116,7 +135,7 @@ export default function TraceViewer({ onClose, onReport }) {
                     {open && (
                       <>
                         {renderPromptBody(pl, "AI 回复")}
-                        {renderLawCheck(sys)}
+                        {renderLawCheck(sys, t.injectionSnapshot?.meta)}
                       </>
                     )}
                   </div>

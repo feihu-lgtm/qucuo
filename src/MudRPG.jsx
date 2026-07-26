@@ -8,7 +8,7 @@ import {
 import { gateBodyProfile, emptyBodyProfile, buildOutfitRequest, bodyProfileFilled } from "./bodyProfile.js";
 import BodyProfilePanel from "./BodyProfilePanel.jsx";
 import { loadConfig, saveConfig, callModel, callModelStream, cleanJsonString, getPipelineLog, clearPipelineLog, classifyError } from "./apiConfig.js";
-import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, attachExtractionPipeline, fmtMs } from "./actionTrace.js";
+import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, attachExtractionPipeline, attachInjectionSnapshot, fmtMs } from "./actionTrace.js";
 import { buildSnapshot, autoSave, loadAutoSave, loadSlot, flushLocalBackup } from "./saves.js";
 import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
@@ -191,7 +191,7 @@ function buildSysBase(targetWordCount, narratorState, scenario, budgetInstructio
   //
   // 静态文案已抽到 enginePrompts.js —— 设置里的「Prompt 注入结构」面板要展示
   // 真正喂出去的那份字，两边 import 同一份常量，改一处两处一起变，不会漂移。
-  return `${ENGINE_IDENTITY}
+  const _sys = `${ENGINE_IDENTITY}
 
 ${GM_RULE}
 
@@ -233,6 +233,8 @@ npcs 里某个 NPC 如果是路途遭遇生成的生态猛兽/山贼游哨这类
 ${wantMvu ? `
 在这个 JSON 对象输出完毕之后，如果需要维护角色/世界状态变量，另起一行输出 <mvu> 块（不要放在 JSON 字符串内部，作为 JSON 后面独立的一段纯文本）：
 ${MVU_SYSTEM_INSTRUCTIONS}` : ""}`}`;
+  if (opts.onSnapshot) opts.onSnapshot({ sys: _sys, meta: { scope, narrativeOnly, isSettle, wantCatalog, wantIsolation, wantMvu, settleKind: opts.settleKind || null, len: _sys.length } });
+  return _sys;
 }
 
 const DIRS = { n: "北", s: "南", e: "东", w: "西", u: "上", d: "下", ne: "东北", nw: "西北", se: "东南", sw: "西南" };
@@ -3250,6 +3252,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
               lastReply: [...convo].reverse().find(m => m.role === "assistant")?.content || "",
             },
             onGateReport: (g) => { _gateReport = g; },
+            onSnapshot: (snap) => attachInjectionSnapshot(_trace, snap),
           }
         ) + (nsfwOn ? "\n" + NSFW_RULES : "");
         // ── 体貌·蓝绿灯 ──

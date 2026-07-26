@@ -54,6 +54,11 @@ export function attachExtractionPipeline(trace, entry) {
   trace.extractionPipeline = entry;
 }
 
+export function attachInjectionSnapshot(trace, snap) {
+  if (!trace || !snap) return;
+  trace.injectionSnapshot = snap;
+}
+
 export function endTrace(trace, summary) {
   if (!trace || trace._archived) return; // 幂等：已归档不重复
   trace._archived = true;
@@ -92,6 +97,11 @@ export function formatTrace(trace, n) {
     const usr = (p.userMessages || []).map(m => `[${m.role}] ${m.content}`).join("\n\n");
     const resp = p.response || p.text || (p.error ? `（无回复）报错：${p.error}` : "（无回复）");
     pl += `\n\n  --- 提取层调用全文（双调用·第二次AI调用） ---\n  [System Prompt]\n${sys}\n\n  [输入]\n${usr}\n\n  [提取层回复]\n${resp}`;
+  }
+  if (trace.injectionSnapshot) {
+    const m = trace.injectionSnapshot.meta || {};
+    const flags = [`scope=${m.scope ?? "?"}`, `mode=${m.narrativeOnly ? "双调用主叙事" : "单调用"}`, m.isSettle ? "settle" : "", m.wantCatalog ? "+物件志" : "-物件志", m.wantIsolation ? "+认知隔离" : "-认知隔离", m.wantMvu ? "+MVU" : "-MVU", m.settleKind ? `settleKind=${m.settleKind}` : ""].filter(Boolean).join(" ");
+    pl += `\n\n  --- 注入快照判据（buildSysBase 本轮自记） ---\n  ${flags} · sys ${m.len ?? "?"} 字`;
   }
   return `${head}\n${rawLine}\n${lines.join("\n")}${tail}${pl}`;
 }
