@@ -1191,6 +1191,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const pendDirRef = useRef(null);
   const outerDepartRef = useRef(null); // 外层移动出发时的内层位置信息（回锚点过渡描述用）
   const pickupJudgmentRef = useRef(null); // 本轮如果触发了拾取判定，保存 { quality, category }，供响应解析时强制校验
+  const pickupExtractionFailedRef = useRef(false); // 双调用下本轮提取层是否解析失败——供拾取兜底区分"提取故障(该保底发)"vs"叙事拒捡(该尊重不发)"
   const collectGrantedRef = useRef([]); // 本轮系统已代发的采集物名单，供items_add处理时防止AI重复入袋
   const logEnd = useRef(null);
   const inputRef = useRef(null);
@@ -3535,11 +3536,13 @@ ${dealFmt}`;
         const settleOptsForExtraction = (opts.settleKind && opts.settleNpc)
           ? { settleKind: opts.settleKind, settleNpc: opts.settleNpc, giftInfo: opts.giftInfo }
           : null;
+        let extractionFailed = false;
         const extracted = await callExtraction(intent.code, rawFull, exState, apiCfg, settleOptsForExtraction).catch(e => {
           addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${e.message || e}），本轮状态未更新` }]);
           traceStep(_trace, "提取调用", "fail", `提取模型=${_exCfgForTrace.model || "未设置"}调用异常：${e.message || e}，本轮状态未更新`);
           return null;
         });
+        if (!extracted || extracted.parseFailed) extractionFailed = true;
         if (extracted?.parseFailed) {
           addLog([{ t: "sys", text: `  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新` }]);
           traceStep(_trace, "提取调用", "fail", `返回内容无法解析（提取模型=${_exCfgForTrace.model || "未设置"}），本轮状态未更新`);
@@ -3548,8 +3551,10 @@ ${dealFmt}`;
         }
         p = extracted?.p || {};
         mvuCommands = extracted?.mvuCommands || [];
+        pickupExtractionFailedRef.current = extractionFailed;  // 供拾取兜底区分"提取故障"vs"叙事拒捡"
       } else {
         // ── 原有单调用模式（默认）──
+        pickupExtractionFailedRef.current = false; // 单调用无独立提取层，解析失败走重试，不算"提取故障"
         for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
           const nudge = attempt > 1
             ? "\n\n（注意：上一次回复未能输出完整闭合的 JSON。请确保本次输出一个语法完整、正常闭合收尾的 JSON，不要中途断开。）"
@@ -3880,17 +3885,35 @@ ${dealFmt}`;
           setInv(v => [...v, ...newItems]);
           setRoom(r => ({ ...r, items: r.items.filter(i => !addedNames.includes(i.name) && !addedNames.includes(i)) }));
         }
-        // 拾取判定后处理：本轮系统掷骰触发了拾取（judgment 有值），物品名现在由
-        // 提取层从叙事里读出、产在 delta.items_add（上面的循环已消费 judgment、把品质
-        // 分类强制对齐裁决值）。若提取层没产出任何拾取物（judgment 未被消费），说明
-        // 叙事判断了此刻不宜捡（被人盯着/身处险境等，prompt 允许这种情况）——尊重叙事，
-        // 本轮不发，绝不再硬塞"路遇之物"这类通用占位名（此前 extractPickupName 正则
-        // 抠名+通用兜底那套已废弃：量词表永远补不全，"一件软甲"就抠不到，退化成垃圾名，
-        // 还违背"场景不适合就别塞"的裁决）。
+        // 拾取判定后处理，分两种情况：
+        // (A) 提取成功但没产出拾取物（judgment 未消费、且提取没失败）→ 叙事判断此刻不宜捡
+        //     （被盯着/险境），尊重叙事、本轮不发。这是正常且正确的行为。
+        // (B) 提取层这次解析失败/调用异常（pickupExtractionFailedRef）→ 这是技术故障，不是
+        //     叙事拒捡！主叙事很可能已写了捡到某物（如"雪域冰莲"），却因提取模型抽风丢了。
+        //     此时必须保底发放，绝不能让掷中的拾取因提取故障蒸发。名字尽量从主叙事正文里
+        //     救（抓「」书名号里的物名），救不到就用品质通用名兜底；品质/分类用 judgment。
         if (judgment && !usedJudgment) {
-          traceStep(_trace, "拾取判定", "info", `系统本轮掷中拾取（品质「${judgment.quality}」），但叙事未描述捡到物、提取层亦未产出——依叙事判断此刻不宜取物，本轮不发。`);
+          if (pickupExtractionFailedRef.current) {
+            const txt = typeof rawFull === "string" ? rawFull : "";
+            // 从叙事救名字：优先「」书名号里、且附近有拾取动词的；否则退通用名
+            let salvaged = "";
+            const brs = [...txt.matchAll(/[「"“]([^」"”]{1,10})[」"”]/g)];
+            for (const m of brs) {
+              const around = txt.slice(Math.max(0, (m.index ?? 0) - 10), (m.index ?? 0) + m[0].length + 6);
+              if (/[捡拾收获得收纳揣藏]/.test(around)) { salvaged = m[1]; break; }
+            }
+            const name = salvaged || `${judgment.quality === "白" ? "" : judgment.quality}品路遇之物`;
+            const gained = makeGameItem({ name, category: judgment.category, quality: judgment.quality, desc: "路上拾得的物件。" });
+            setInv(v => [...v, gained]);
+            grantedThisTurnNames.push(name);
+            addLog([{ t: "item", text: `  ✓ 你拾得「${name}」，收入行囊。` }]);
+            traceStep(_trace, "拾取判定", "info", `系统掷中拾取（品质「${judgment.quality}」），但提取层解析失败——按裁决保底发放「${name}」，不因提取故障丢物。`);
+          } else {
+            traceStep(_trace, "拾取判定", "info", `系统本轮掷中拾取（品质「${judgment.quality}」），提取层正常但未产出拾取物——依叙事判断此刻不宜取物，本轮不发。`);
+          }
         }
         pickupJudgmentRef.current = null;
+        pickupExtractionFailedRef.current = false;
         // AI 自由发挥的拾取（系统没掷中拾取骰、但 AI 说书时自己写了"捡到 XX"）现在
         // 也由提取层读名、产在 delta.items_add，已随上面的正常 items_add 循环入袋，
         // 品质取"白"（系统未授权的自编拾取不给品质加成，避免 AI 靠多写拾取情节薅稀有
