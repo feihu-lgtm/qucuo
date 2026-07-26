@@ -4307,10 +4307,14 @@ ${dealFmt}`;
     addLog([{ t: "sys", text: `  ⇢ 起身前往「${destName}」，需行 ${path.length} 程（每程一个时辰）……` }]);
     const words = path.map(d => DIRS[d] || d);
     const [first, ...rest] = words;
-    rest.forEach(w => pendingQueue.current.push({ cmd: w, extraReplies: [] }));
+    // 自动寻路是跨据点的外层移动，必须标记 forceLayer:"outer"——否则 autoTravelTo 发出的
+    // act("西") 不带 forceLayer，当玩家此刻正站在某个内层房间(innerRoomName 有值)时，会被
+    // 2713 行的内层判定(forceLayer!=="outer" 即触发)截胡，表现为"外层点方向去已探索据点，
+    // 却变成了内层房间移动判定"。首步和队列后续步都要带，队列消费处(4649)会透传 opts。
+    rest.forEach(w => pendingQueue.current.push({ cmd: w, extraReplies: [], opts: { forceLayer: "outer" } }));
     autoTravelRef.current = rest.length > 0; // 有后续排队步时才需要"遇遭遇硬停"
     setQueueCount(pendingQueue.current.length);
-    act(first);
+    act(first, [], { forceLayer: "outer" });
   }, [room.name, loading, mapData, flags, questProgress, act, addLog]);
 
   // 调试传送落地：位置(据点+内层房间)都更新到目标后，触发一次"环顾"式 act，
