@@ -23,6 +23,11 @@
 // residentNpcName 负责"在内层UI层面过滤展示到具体哪个房间"。
 //
 // brief/personality 字段跟 npcPool.js 保持同样的结构，供AI叙事时注入。
+//
+// 【carry 设计原则】每人≥7件：≥1武器+≥1护甲+≥1饰品+杂物若干。
+// 武器类型配合武学风格（剑客配剑、掌法配杖/短匕、骑射配弩、寨主多兵器）。
+// 具名物优先用 catalog 里有主的（掉出来有来历），缺口从制式通货池补。
+// 品质不超 levelCap 对应档（白0/绿1/蓝2/紫3/橙4/红5）。
 
 export const RESIDENT_NPCS = {
   鱼定村: [
@@ -30,41 +35,60 @@ export const RESIDENT_NPCS = {
       name: "才旦", id: "resident_caidan", levelCap: 1,
       brief: "村长之女，账算得滴水不漏",
       personality: "工于心计说话不留破绽，卸下防备才露出年纪相符的脆弱",
+      carry: [
+        { name: "鱼定猎刀", category: "weapon", quality: "白" },
+        { name: "鱼定粗布短打", category: "armor", quality: "白" },
+        { name: "村社护佑结", category: "accessory", quality: "白" },
+        { name: "才旦的薄荷脑", category: "misc", quality: "白" },
+        { name: "酥油炒面", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+        { name: "止血散", category: "misc", quality: "白" },
+      ],
     },
     {
       name: "老孙", id: "resident_laosun", levelCap: 1,
       brief: "老孙饭馆的掌柜",
       personality: "实在憨厚，藏着当年被岳父嫌弃的心结，嘴上不饶人心里认账",
+      carry: [
+        { name: "市集杀猪刀", category: "weapon", quality: "白" },
+        { name: "熊皮坎肩", category: "armor", quality: "绿" },
+        { name: "脚夫铜牌", category: "accessory", quality: "白" },
+        { name: "老孙饭馆的糌粑", category: "misc", quality: "白" },
+        { name: "熊曲鱼汤面", category: "misc", quality: "绿" },
+        { name: "青稞酒", category: "misc", quality: "白" },
+        { name: "牦牛粪饼", category: "misc", quality: "白" },
+      ],
     },
     {
-      // 转正说明：鱼定大娘此前只活在一堆物品描述里（艾草止血贴/酥油炒面/甜奶茶/
-      // 教老孙做糌粑…），从不是一个可加载的 NPC 实体，导致 AI 一提她、任务面板就
-      // 检测到"她在场"（村3 giver 就是她），却又进不了真实 room.npcs——形成幽灵
-      // giver。既然线索这么密、又是村3的委托人，按契诃夫之枪原则正式登记为鱼定村
-      // 固定驻场，走正规在场逻辑，村3 的选项只在她真正驻场时出现。
       name: "鱼定大娘", id: "resident_yudingdaniang", levelCap: 1,
       brief: "村里的厨娘，热心肠，谁上山都塞一包炒面",
       personality: "爽利豪快爱张罗，主张藏汉不分家（「水都不分家，人分什么家」），儿子小孙与张商人之女私定终身，正为两家老人不点头发愁",
+      carry: [
+        { name: "熊山柴斧", category: "weapon", quality: "白" },
+        { name: "乡勇布甲", category: "armor", quality: "白" },
+        { name: "村社护佑结", category: "accessory", quality: "白" },
+        { name: "艾草止血贴", category: "misc", quality: "白" },
+        { name: "酥油炒面", category: "misc", quality: "白" },
+        { name: "甜奶茶", category: "misc", quality: "白" },
+        { name: "牦牛骨髓粉", category: "misc", quality: "白" },
+      ],
     },
     {
-      // 新手练级点（本轮新增）：村口常驻一只毛色油亮的大公鸡，好斗、见人就啄，是
-      // 开局练手兼刷小钱的地方。levelCap:0（最弱白袍档），beast=不能对话只能打，
-      // carry 里带一枚金蛋——打赢后按气运非线性概率掉（复用切磋掉落逻辑，气运10约50%）。
-      // respawn:true 标记它是"打完立刻重刷"的无限刷怪点（见 MudRPG onFinish 里的重刷逻辑）。
       name: "大公鸡", id: "resident_dagongji", levelCap: 0,
       beast: true, respawn: true, cannotSpeak: true,
       brief: "村口一只油亮好斗的大公鸡",
       personality: "扑棱着翅膀满地乱窜，见人就啄，偏偏又打不过就跑、跑两步又回头挑衅",
-      carry: [{ name: "金蛋", category: "misc", quality: "绿" }],
+      carry: [
+        { name: "乡勇木棓", category: "weapon", quality: "白" },
+        { name: "乡勇布甲", category: "armor", quality: "白" },
+        { name: "村社护佑结", category: "accessory", quality: "白" },
+        { name: "金蛋", category: "misc", quality: "绿" },
+        { name: "牦牛粪饼", category: "misc", quality: "白" },
+        { name: "熊山松茸", category: "misc", quality: "白" },
+        { name: "狼曲冷水鱼", category: "misc", quality: "白" },
+      ],
     },
     {
-      // 伙伴系统（本轮新增）：雪线之上的灵兽，格桑的动物伙伴，通体雪白。跟大公鸡
-      // 一样是 beast:true 的兽类驻场，但不走"打赢即掉落"那套——它是可被邀请
-      // 入队的伙伴角色，互动菜单里单独多一个"邀请入队"按钮（见 NpcActionMenu.jsx），
-      // 不是"细看/切磋/送礼/拜师/偷窃/交易"这官方六件套里的任何一个。levelCap:2
-      // （蓝档），专属招式"雪隐三绝"见 npcSignatureMoves.js 的"雪豹"条目。
-      // cannotSpeak:true——它是兽，不通人言，talk 交互走系统提示而非AI对话生成；
-      // 但"邀请入队"是独立于对话之外的专属交互，不受 cannotSpeak 影响。
       name: "雪豹", id: "resident_snow_leopard", levelCap: 2,
       beast: true, cannotSpeak: true, companionCandidate: true,
       brief: "通体雪白的灵兽，眼神沉静，只安安静静卧在村口一角",
@@ -76,6 +100,15 @@ export const RESIDENT_NPCS = {
       name: "梅朵", id: "resident_meiduo", levelCap: 3,
       brief: "鱼定土司之女，外向直接",
       personality: "敢说敢做，讨厌拐弯抹角，对父亲的一些做法不满，仗义护友",
+      carry: [
+        { name: "马帮护商弩", category: "weapon", quality: "绿" },
+        { name: "马帮硬皮褂", category: "armor", quality: "绿" },
+        { name: "梅朵的马鞭", category: "accessory", quality: "蓝" },
+        { name: "马帮路引", category: "accessory", quality: "绿" },
+        { name: "手抓羊肉", category: "misc", quality: "绿" },
+        { name: "青稞酒", category: "misc", quality: "白" },
+        { name: "马帮干粮包", category: "misc", quality: "白" },
+      ],
       fullBio: `设计定位（总纲1.1节·父女道德对照组）：梅朵是土司桑杰朵杰的女儿，
 她与父亲构成一组刻意保留的"父女道德对照"——父亲是被三十年旧怨扭曲的
 制度性剥削者，女儿则外向、直接、见不得不义。她对父亲的一些做法明确
@@ -102,9 +135,6 @@ export const RESIDENT_NPCS = {
       name: "桑杰朵杰", id: "resident_sangjieduojie",
       brief: "鱼定土司本人，四十多岁，深藏不露",
       personality: "温和随和的表象下是习惯性的自我合理化，账要算清楚也要留人情；一身真本事传自其父桑杰大侠，对外始终维持'我战力不高、事事仰仗护卫头子'的姿态，是刻意维持的烟幕",
-      // fullBio：总纲v3里所有涉及桑杰朵杰的原文段落整合，不是概括改写，
-      // 是原文摘录拼接——供AI叙事时作为完整背景注入，比brief/personality
-      // 精简版承载更多细节（黑化根源、终局机制、跟各方关系等）。
       fullBio: `设计原则（总纲1.1节）：桑杰朵杰本人不需要、也不应该被写成脸谱化
 反派——"父女道德对照组"这条设定必须保留。他的不义应该始终以"合理化的
 制度性剥削"呈现（税赋、地权、官府渗透），而不是搞破坏式的纯粹恶。真正
@@ -144,21 +174,44 @@ export const RESIDENT_NPCS = {
 （或选择继续掩盖真相、狗急跳墙），矛盾正式激化为一场对抗现任土司的
 终局战，玩家需要团结曲措乡境内七方势力共同对抗他。`,
       carry: [
+        { name: "官铸镇仓槊", category: "weapon", quality: "红" },
+        { name: "官铸镇边重铠", category: "armor", quality: "红" },
         { name: "土司印信", category: "accessory", quality: "紫" },
-        { name: "戍边税册抄本", category: "misc", quality: "蓝" }, // 他自己留的一份底
+        { name: "戍边税册抄本", category: "misc", quality: "蓝" },
+        { name: "土司府宴客席", category: "misc", quality: "紫" },
+        { name: "锦官烧刀子", category: "misc", quality: "蓝" },
+        { name: "七十味珍珠丸", category: "misc", quality: "紫" },
       ],
-      levelCap: 5, // 深藏不露的真正高手，跟"温和随和/事事仰仗护卫头子"的表面人设形成刻意维持的反差
+      levelCap: 5,
     },
     {
       name: "管家·陆福生", id: "resident_luofusheng", levelCap: 2,
       brief: "土司府总管家，账房出身",
       personality: "文官做派，精于算账，丧子之后行事再不留余地",
+      carry: [
+        { name: "锦官巡街棍", category: "weapon", quality: "白" },
+        { name: "巡捕营皂隶衣", category: "armor", quality: "绿" },
+        { name: "巡捕营腰牌", category: "accessory", quality: "绿" },
+        { name: "参须茶包", category: "misc", quality: "白" },
+        { name: "忘忧散", category: "misc", quality: "绿" },
+        { name: "冰片", category: "misc", quality: "白" },
+        { name: "甘草解毒汤", category: "misc", quality: "白" },
+      ],
     },
     {
       name: "格桑顿珠", id: "resident_gesangdunzhu",
       brief: "土司府护卫头子，统领骑手与巡捕营",
       personality: "对桑杰朵杰是私人知遇之恩而非对土司身份效忠，讲究干净",
       levelCap: 4,
+      carry: [
+        { name: "土司府仪卫戟", category: "weapon", quality: "橙" },
+        { name: "土司府仪卫明光铠", category: "armor", quality: "橙" },
+        { name: "土司府门客玉扣", category: "accessory", quality: "紫" },
+        { name: "马帮干粮包", category: "misc", quality: "白" },
+        { name: "熊山续骨膏", category: "misc", quality: "绿" },
+        { name: "天都大力丸", category: "misc", quality: "蓝" },
+        { name: "手抓羊肉", category: "misc", quality: "绿" },
+      ],
     },
   ],
   雪山派: [
@@ -166,11 +219,29 @@ export const RESIDENT_NPCS = {
       name: "呼延雪", id: "resident_huyanxue", levelCap: 3,
       brief: "雪山派小师妹，好静不好动",
       personality: "话少，情绪波动很小，习惯用沉默代替回应，认定的人会异常依赖",
+      carry: [
+        { name: "雪山松纹剑", category: "weapon", quality: "蓝" },
+        { name: "雪山练功服", category: "armor", quality: "白" },
+        { name: "雪山问心珠", category: "accessory", quality: "蓝" },
+        { name: "呼延雪的剑穗", category: "accessory", quality: "白" },
+        { name: "松子糖", category: "misc", quality: "白" },
+        { name: "雪山接骨膏", category: "misc", quality: "蓝" },
+        { name: "薄荷醒神叶", category: "misc", quality: "白" },
+      ],
     },
     {
       name: "何雨谢", id: "resident_heyuxie", levelCap: 4,
       brief: "雪山派掌门师母",
       personality: "温和操持门派内外事务，对晚辈有天然关怀，偶尔流露疲惫",
+      carry: [
+        { name: "雪山派传习剑", category: "weapon", quality: "紫" },
+        { name: "雪豹裘", category: "armor", quality: "紫" },
+        { name: "雪山问心珠", category: "accessory", quality: "蓝" },
+        { name: "雪山冰蚕丝", category: "misc", quality: "橙" },
+        { name: "雪鸡炖松茸", category: "misc", quality: "紫" },
+        { name: "雪山接骨膏", category: "misc", quality: "蓝" },
+        { name: "七十味珍珠丸", category: "misc", quality: "紫" },
+      ],
     },
   ],
   喇嘛庙: [
@@ -179,12 +250,31 @@ export const RESIDENT_NPCS = {
       brief: "三十年前死斗的唯一目击者",
       personality: "表面超然物外，实际背负着三十年不敢面对的恐惧",
       levelCap: 4,
+      carry: [
+        { name: "降魔杵", category: "weapon", quality: "紫" },
+        { name: "喇嘛庙绛红袈裟", category: "armor", quality: "绿" },
+        { name: "藏银经轮", category: "accessory", quality: "紫" },
+        { name: "安魂香", category: "misc", quality: "蓝" },
+        { name: "藏经阁线香", category: "misc", quality: "蓝" },
+        { name: "七十味珍珠丸", category: "misc", quality: "紫" },
+        { name: "酥油茶", category: "misc", quality: "白" },
+      ],
     },
     {
       name: "达摩药堂师父", id: "resident_yaotang_shifu",
       brief: "达摩药堂坐堂问诊的师父",
       personality: "医者仁心，虎胆传闻的线索人，问诊时话不多但句句实在",
       levelCap: 4,
+      carry: [
+        { name: "古藤杖", category: "weapon", quality: "白" },
+        { name: "守塔僧袍", category: "armor", quality: "绿" },
+        { name: "达摩药堂念珠", category: "accessory", quality: "绿" },
+        { name: "七十味珍珠丸", category: "misc", quality: "紫" },
+        { name: "雪山当归丸", category: "misc", quality: "蓝" },
+        { name: "天麻提气散", category: "misc", quality: "绿" },
+        { name: "达摩清心丸", category: "misc", quality: "蓝" },
+        { name: "虫草炖雪鸡汤", category: "misc", quality: "蓝" },
+      ],
     },
   ],
   黑风寨: [
@@ -192,6 +282,16 @@ export const RESIDENT_NPCS = {
       name: "巴桑", id: "resident_basang", levelCap: 4,
       brief: "黑风寨首领，脸上有道旧疤",
       personality: "沉稳克制，寨规立得严，对手下心软，对土司府旧账耿耿于怀",
+      carry: [
+        { name: "黑风断刃", category: "weapon", quality: "绿" },
+        { name: "红缨枪", category: "weapon", quality: "绿" },
+        { name: "黑风寨分发刀", category: "weapon", quality: "蓝" },
+        { name: "马帮硬皮褂", category: "armor", quality: "绿" },
+        { name: "黑风令", category: "accessory", quality: "白" },
+        { name: "黑风寨土烧", category: "misc", quality: "绿" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+        { name: "熊山续骨膏", category: "misc", quality: "绿" },
+      ],
       fullBio: `出身与旧账（总纲第五章·黑风寨）：巴桑原本是玉泉寨一户普通牧民家的
 次子。那年家里的牦牛被土司府差役牵走抵税，父亲当场气病，不到半年过世。
 巴桑没有走告官、也没有忍气吞声，他上了山，纠集了七八个跟他一样被逼到
@@ -222,12 +322,31 @@ export const RESIDENT_NPCS = {
       name: "卓央", id: "resident_zhuoyang", levelCap: 1,
       brief: "巴桑之妹，嫁在寨子边缘",
       personality: "话不多，惦记着哥哥，怕给他惹麻烦，收东西时手会抖",
+      carry: [
+        { name: "鱼定猎刀", category: "weapon", quality: "白" },
+        { name: "百褶皮围", category: "armor", quality: "白" },
+        { name: "村社护佑结", category: "accessory", quality: "白" },
+        { name: "格桑花籽", category: "misc", quality: "白" },
+        { name: "牦牛骨髓粉", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+        { name: "老阿雅婶的止咳散", category: "misc", quality: "绿" },
+      ],
     },
     {
       name: "嘎则", id: "resident_gaze",
       brief: "养着一只白虎的少女",
       personality: "天真直接，跟雪团寸步不离，对外人先戒备后依赖",
       levelCap: 3,
+      carry: [
+        { name: "大草甸套索", category: "weapon", quality: "白" },
+        { name: "格桑花染布衣", category: "armor", quality: "绿" },
+        { name: "格桑铃", category: "accessory", quality: "蓝" },
+        { name: "虎乳牙", category: "accessory", quality: "蓝" },
+        { name: "桂花糖", category: "misc", quality: "白" },
+        { name: "格桑花籽", category: "misc", quality: "白" },
+        { name: "虎糖草", category: "misc", quality: "绿" },
+        { name: "狼曲冷水鱼", category: "misc", quality: "白" },
+      ],
     },
   ],
   玉泉寨: [
@@ -235,22 +354,58 @@ export const RESIDENT_NPCS = {
       name: "丹增", id: "resident_danzeng", levelCap: 2,
       brief: "玉泉寨村长，断了三根手指",
       personality: "不信佛信公道，话少但句句实在，对卓玛疼爱又无力庇护",
+      carry: [
+        { name: "狼曲短猎矛", category: "weapon", quality: "白" },
+        { name: "丹增旧骑装", category: "armor", quality: "绿" },
+        { name: "马帮路引", category: "accessory", quality: "绿" },
+        { name: "高原红景天", category: "misc", quality: "绿" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+        { name: "青稞酒", category: "misc", quality: "白" },
+        { name: "牦牛骨髓粉", category: "misc", quality: "白" },
+      ],
     },
     {
       name: "李若由", id: "resident_liruoyou", levelCap: 1,
       brief: "玉泉小栈的经营者，商人之女",
       personality: "初见只谈价格，语气精明现实，相处久了才露出重情重义的一面",
+      carry: [
+        { name: "藏银护手钩", category: "weapon", quality: "绿" },
+        { name: "氆氇藏袍", category: "armor", quality: "绿" },
+        { name: "锦官验讫牙牌", category: "accessory", quality: "蓝" },
+        { name: "参须茶包", category: "misc", quality: "白" },
+        { name: "核桃糕", category: "misc", quality: "蓝" },
+        { name: "酥油曲奇", category: "misc", quality: "绿" },
+        { name: "忘忧散", category: "misc", quality: "绿" },
+      ],
     },
     {
       name: "扎西", id: "resident_zhaxi",
       brief: "卓玛之父，玉泉寨老牧民",
       personality: "木讷少言，进过熊山猎虎，对女儿的婚事既盼又怕",
       levelCap: 2,
+      carry: [
+        { name: "狼曲旧猎叉", category: "weapon", quality: "白" },
+        { name: "氆氇藏袍", category: "armor", quality: "绿" },
+        { name: "马帮路引", category: "accessory", quality: "绿" },
+        { name: "老猎户陷阱绳", category: "misc", quality: "白" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+        { name: "牦牛骨髓粉", category: "misc", quality: "白" },
+        { name: "熊山松茸", category: "misc", quality: "白" },
+      ],
     },
     {
       name: "卓玛", id: "resident_zhuoma", levelCap: 1,
       brief: "扎西之女，梳单马尾",
       personality: "直爽大方却不轻易求人，对外来人先戒备后交心",
+      carry: [
+        { name: "狼曲短猎矛", category: "weapon", quality: "白" },
+        { name: "氆氇藏袍", category: "armor", quality: "绿" },
+        { name: "藏银耳坠", category: "accessory", quality: "白" },
+        { name: "牦牛奶酪", category: "misc", quality: "绿" },
+        { name: "卓玛的狼骨糖", category: "misc", quality: "蓝" },
+        { name: "青稞酒", category: "misc", quality: "白" },
+        { name: "酥油茶", category: "misc", quality: "白" },
+      ],
     },
   ],
   天都镇: [
@@ -268,12 +423,29 @@ export const RESIDENT_NPCS = {
 "看石头不能太清醒，太清醒了不敢赌"。是苏宛的干姑母，两人在赌石坊与玉器轩之间做局牵线。
 职责：赌石竞价的主持与回收兜底人（所有竞价都不满意时可直接卖她，回收价低于市价但从不拒收，
 "裂了的料有裂了的用处，天底下没有真废的东西，只有不认账的人"），也是托儿局的安插者。`,
-      carry: [{ name: "蜜蜡手串", category: "accessory", quality: "蓝" }],
+      carry: [
+        { name: "天都短匕", category: "weapon", quality: "白" },
+        { name: "马帮硬皮褂", category: "armor", quality: "绿" },
+        { name: "蜜蜡手串", category: "accessory", quality: "蓝" },
+        { name: "参须茶包", category: "misc", quality: "白" },
+        { name: "天都桂花酿", category: "misc", quality: "蓝" },
+        { name: "核桃糕", category: "misc", quality: "蓝" },
+        { name: "假死药", category: "misc", quality: "蓝" },
+      ],
     },
     {
       name: "梵衍那", id: "resident_fanyanna", levelCap: 3,
       brief: "欢喜教教主，天竺流亡王子",
       personality: "六十余岁，温和慈祥，会五种语言，念念不忘攒钱回乡",
+      carry: [
+        { name: "梵铃杵", category: "weapon", quality: "紫" },
+        { name: "欢喜堂内院锦襕", category: "armor", quality: "紫" },
+        { name: "鸡足山贝叶经残片", category: "accessory", quality: "紫" },
+        { name: "安息香", category: "misc", quality: "绿" },
+        { name: "迦南脂", category: "misc", quality: "蓝" },
+        { name: "天竺神油", category: "misc", quality: "绿" },
+        { name: "梵衍那的芒果酒", category: "misc", quality: "紫" },
+      ],
       fullBio: `其人（总纲第五章·欢喜教）：梵衍那不是本名，是天竺故地的地名，
 以故乡为号。六十余岁，皮肤黝黑，须发皆白，会说五种语言（含带大理
 口音的汉话）。年轻时是天竺某小邦的王子，被叔父篡位后流亡，在大理
@@ -299,6 +471,16 @@ export const RESIDENT_NPCS = {
       name: "罗琦", id: "resident_luoqi", levelCap: 4,
       brief: "欢喜教圣女，梵衍那义女",
       personality: "外表明艳，实际管事精明，对教众有真心的关照",
+      carry: [
+        { name: "锦官精铁剑", category: "weapon", quality: "蓝" },
+        { name: "百香纱衣", category: "armor", quality: "蓝" },
+        { name: "旧铜镜", category: "accessory", quality: "紫" },
+        { name: "云锦香囊", category: "accessory", quality: "蓝" },
+        { name: "鸡足山贝叶露", category: "misc", quality: "蓝" },
+        { name: "大理白药", category: "misc", quality: "绿" },
+        { name: "蜜渍青梅", category: "misc", quality: "绿" },
+        { name: "罗琦的陈皮红豆沙", category: "misc", quality: "蓝" },
+      ],
       fullBio: `其人（总纲第五章·欢喜教）：罗琦这名字是梵衍那给起的，意为"光明"。
 她是梵衍那的义女，二十出头，母亲是天竺人和大理白族的混血。梵衍那在
 大理收养了她，教她读书、经商、识人。十四岁能替梵衍那谈香料生意，
@@ -323,19 +505,43 @@ export const RESIDENT_NPCS = {
       name: "老何", id: "resident_laohe", levelCap: 2,
       brief: "欢喜教内院弟子，大理摆渡人出身",
       personality: "沉默寡言，把梵衍那当再生父母，说话实诚",
+      carry: [
+        { name: "天都短匕", category: "weapon", quality: "白" },
+        { name: "脚夫护肩", category: "armor", quality: "白" },
+        { name: "脚夫铜牌", category: "accessory", quality: "白" },
+        { name: "马帮干粮包", category: "misc", quality: "白" },
+        { name: "马帮醒神油", category: "misc", quality: "绿" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+        { name: "甘草解毒汤", category: "misc", quality: "白" },
+      ],
     },
     {
       name: "阿雅", id: "resident_ayabuddhist", levelCap: 1,
       brief: "欢喜教内院弟子，缅甸出身",
       personality: "机灵懂事，念着梵衍那的赎身之恩，对罗琦亲近",
+      carry: [
+        { name: "天都短匕", category: "weapon", quality: "白" },
+        { name: "乡勇布甲", category: "armor", quality: "白" },
+        { name: "村社护佑结", category: "accessory", quality: "白" },
+        { name: "薄荷醒神叶", category: "misc", quality: "白" },
+        { name: "冰片", category: "misc", quality: "白" },
+        { name: "蛇药", category: "misc", quality: "绿" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
     },
     {
-      // 注意：这个"桑杰"是欢喜教内院弟子（玉泉寨出身，被管家手下诬陷打伤），
-      // 跟"桑杰朵杰"（鱼定土司）是完全不同的两个人，命名容易混淆，务必
-      // 通过所属据点（天都镇 vs 鱼定土司）区分，不要在剧情/代码里误连。
       name: "桑杰", id: "resident_sangjie_neiyuan", levelCap: 1,
       brief: "欢喜教内院弟子，玉泉寨出身",
       personality: "曾被诬陷打成半死，念着梵衍那的救命之恩，沉默中带着感激",
+      carry: [
+        { name: "狼曲短猎矛", category: "weapon", quality: "白" },
+        { name: "氆氇藏袍", category: "armor", quality: "绿" },
+        { name: "村社护佑结", category: "accessory", quality: "白" },
+        { name: "牦牛骨髓粉", category: "misc", quality: "白" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+        { name: "止血散", category: "misc", quality: "白" },
+      ],
     },
   ],
   锦官城: [
@@ -343,6 +549,16 @@ export const RESIDENT_NPCS = {
       name: "柳青鸢", id: "resident_liuqingyuan", levelCap: 5,
       brief: "锦官城都事，官府代理人",
       personality: "手腕圆滑，对各方势力都留一手分寸，私下藏着一桩未破的执念",
+      carry: [
+        { name: "青鸢", category: "weapon", quality: "橙" },
+        { name: "青鸢尾", category: "weapon", quality: "橙" },
+        { name: "青布长衫", category: "armor", quality: "橙" },
+        { name: "青鸢私印", category: "accessory", quality: "蓝" },
+        { name: "官眷诰命簪", category: "accessory", quality: "橙" },
+        { name: "柳青鸢的菊花茶", category: "misc", quality: "绿" },
+        { name: "锦官续命丹", category: "misc", quality: "紫" },
+        { name: "锦官烧刀子", category: "misc", quality: "蓝" },
+      ],
       fullBio: `身份与站位（总纲第一章·锦官城）：柳青鸢是锦官城的都事，乡外官方
 秩序在曲措乡的代理人。她借土司府的把柄谋求渗透（在鱼定村一带设收税
 点），但对土司、喇嘛庙、雪山派、欢喜教各有一套不主动撕破脸的分寸——
@@ -369,9 +585,6 @@ export const RESIDENT_NPCS = {
     },
   ],
 
-  // ══════════ 野兽（招式不可学；白猿不能说话但可养好感度）══════════
-  // 这两组据点键对应外层节点名（顶峰/大草甸），getResidentNpcs(节点名) 按名取，
-  // 再靠 innerMap.js 里对应房间的 residentNpcName 绑定，把野兽固定在正确的角落。
   顶峰: [
     {
       name: "白猿", id: "beast_white_ape", levelCap: 4,
@@ -392,8 +605,6 @@ export const RESIDENT_NPCS = {
       beast: true, unlearnable: true,
       brief: "熊山温泉一带的吊睛白额巨虎",
       personality: "凶威慑人的山君，虎胆三重门的核心，寻常人近温泉便被逼退",
-      // 猎杀必掉：虎胆（虎胆三重门·何雨谢/扎西/兰姐三方所争）+ 虎牙虎筋（虎啸弓）。
-      // 一头虎王三样分取，两条支线共用同一头，不冲突。
       guaranteedLoot: [
         { name: "虎胆", category: "misc", quality: "橙" },
         { name: "虎王牙", category: "misc", quality: "蓝" },
@@ -405,7 +616,6 @@ export const RESIDENT_NPCS = {
       beast: true, unlearnable: true,
       brief: "大草甸深处的银灰独眼巨狼",
       personality: "独眼狡黠、凶戾难驯，正是当年在大草甸咬死管家独子的那头狼王",
-      // 猎杀必掉：狼王牙（线一/卓玛任务四取骨）
       guaranteedLoot: [
         { name: "狼王牙", category: "misc", quality: "蓝" },
       ],
@@ -413,19 +623,10 @@ export const RESIDENT_NPCS = {
   ],
 };
 
-// 返回某据点固定驻场的NPC列表（未登记的据点返回空数组）
 export function getResidentNpcs(districtName) {
   return RESIDENT_NPCS[districtName] || [];
 }
 
-// 把 RESIDENT_NPCS 里全部24人转换成 npcLore 兼容格式（{name, entry}），
-// 供 worldbook.js 的 matchNpcLore 消费——之前这些人只有 name/brief/
-// personality/fullBio 字段，但 matchNpcLore 只认 npcLore 数组格式，
-// 两套数据完全不通，导致这些人即使真实出现在 room.npcs 里，AI对话时
-// 也读不到他们的完整人设（fullBio写了等于白写，是死数据）。
-// entry优先用fullBio（更完整），没有fullBio的人退回personality这句话，
-// 保证每个人至少有点东西能被注入，不会因为还没来得及写fullBio就完全
-// 消失在AI叙事视野里。
 export function getAllResidentNpcLore() {
   const result = [];
   for (const npcs of Object.values(RESIDENT_NPCS)) {

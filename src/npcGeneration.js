@@ -517,7 +517,7 @@ export function deriveMovesetFromSkills(skills) {
 export function rollBattleLoot(npc) {
   const availableItems = (npc.carriedItems || []).filter(i => !i.stolen);
   const droppedItem = availableItems.length > 0
-    ? availableItems[Math.floor(Math.random() * availableItems.length)]
+    ? makeGameItem(availableItems[Math.floor(Math.random() * availableItems.length)])
     : null;
 
   // 固定必掉（guaranteedLoot）：boss 级/剧情级 NPC 身上按剧情必掉的素材，
