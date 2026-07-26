@@ -5615,9 +5615,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 const target = portraitTarget && candidates.includes(portraitTarget) ? portraitTarget : inferActivePortraitTarget(interactMode, room, activeTarget || talkTarget);
                 // 雪豹是三形态官方立绘（public/portraits/snowleopard/），不走 localStorage 上传通道
                 const isSnowLeopard = target === "雪豹";
+                // "你"没单独传立绘时，回退到右上角头像那张图（playerAvatar）——保留可单独传，
+                // 但不传就用头像，不留空框。
                 const img = isSnowLeopard
                   ? (slImgErr ? null : snowLeopardPortraitUrl(slForm))
-                  : portraits[target];
+                  : (target === "你" ? (portraits["你"] || playerAvatar) : portraits[target]);
                 return (
                   <>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
@@ -5635,7 +5637,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                       ))}
                     </div>
                     <div style={{
-                      width: "100%", aspectRatio: "9/16", background: zoneTheme.bgPanel, borderRadius: 4,
+                      width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 4,
                       border: `1px solid ${zoneTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center",
                       overflow: "hidden",
                     }}>
@@ -5667,6 +5669,38 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 );
               })()}
             </div>
+            {/* 雪豹专属立绘框：入队后常驻显示在主立绘框下方(2:3)，与右上头像共用 slForm，
+                三形态可切、两处同步。这是队友常驻位，不受主立绘框"当前对话对象"影响。 */}
+            {companionState?.snowLeopard?.unlocked && (
+              <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 14, marginTop: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px", letterSpacing: "1px" }}>雪豹 · 随行</span>
+                </div>
+                <div style={{
+                  width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 4,
+                  border: `1px solid ${zoneTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
+                }}>
+                  {!slImgErr ? (
+                    <img src={snowLeopardPortraitUrl(slForm)} alt="雪豹" style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={() => setSlImgErr(true)} />
+                  ) : (
+                    <span style={{ color: zoneTheme.textDim, fontSize: "11px", textAlign: "center", padding: "0 8px" }}>雪豹立绘待投放（portraits/snowleopard/）</span>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 4, marginTop: 6, justifyContent: "center" }}>
+                  {SNOW_LEOPARD_FORMS.map(f => (
+                    <span key={f.key}
+                      onClick={() => { setSnowLeopardForm(f.key); setSlFormState(f.key); setSlImgErr(false); }}
+                      style={{
+                        fontSize: "9.5px", padding: "2px 7px", borderRadius: 3, cursor: "pointer", userSelect: "none",
+                        color: slForm === f.key ? zoneTheme.bg : zoneTheme.accent,
+                        background: slForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
+                        border: `1px solid ${zoneTheme.border}`,
+                      }}>{f.label}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "6px 12px", flexShrink: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
@@ -6516,6 +6550,32 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 )}
                 <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "#e8dcc0", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>换像</span>
               </div>
+              {/* 雪豹队友头像：入队(unlocked)后常驻显示在玩家头像旁。点击循环切三形态，
+                  与左下立绘框共用同一份 slForm 状态(切一处两处同步)。图复用雪豹三形态官方立绘。 */}
+              {companionState?.snowLeopard?.unlocked && (
+                <div
+                  onClick={() => {
+                    const forms = SNOW_LEOPARD_FORMS;
+                    const idx = forms.findIndex(f => f.key === slForm);
+                    const next = forms[(idx + 1) % forms.length];
+                    setSnowLeopardForm(next.key); setSlFormState(next.key); setSlImgErr(false);
+                  }}
+                  title="雪豹 · 点击切换形态"
+                  style={{
+                    width: 90, aspectRatio: "2/3", flexShrink: 0, borderRadius: 6, overflow: "hidden",
+                    border: `1px solid ${zoneTheme.border}`, background: "#0c0e14", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
+                  }}
+                >
+                  {!slImgErr ? (
+                    <img src={snowLeopardPortraitUrl(slForm)} alt="雪豹" style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={() => setSlImgErr(true)} />
+                  ) : (
+                    <span style={{ color: zoneTheme.textDim, fontSize: "9.5px", textAlign: "center", lineHeight: 1.6, padding: "0 4px" }}>雪豹立绘<br/>待投放</span>
+                  )}
+                  <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "#e8dcc0", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>雪豹</span>
+                </div>
+              )}
               <div style={{ flex: 1, paddingTop: 4 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>

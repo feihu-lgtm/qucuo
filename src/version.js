@@ -9,6 +9,15 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "立绘框改2:3 + 玩家立绘回退头像 + 雪豹入队后常驻(右上队友头像+左下专属立绘框)",
+    time: "2026-07-26 23:30",
+    notes: [
+      "作者要求：①左下主立绘框改2:3(原9/16)；②\"你\"的立绘没单独传就用头像那张图；③雪豹入队后常驻显示——右上角队友头像框(2:3,点击切形态)+左下专属立绘框(三形态可切)，头像框与立绘框共用同一套雪豹三形态、切一处两处同步。",
+      "①主立绘框 aspectRatio 9/16→2/3。②\"你\"的 img 取值改为 portraits['你']||playerAvatar，保留可单独传、不传回退头像不留空框。③右上玩家头像框旁新增雪豹队友头像(companionState.snowLeopard.unlocked 才显示，90宽2:3，点击循环 SNOW_LEOPARD_FORMS 三形态)。④左下主立绘框下方新增雪豹专属立绘框(入队后常驻，2:3，三形态切换条)。三处雪豹展示共用 slForm 状态(setSnowLeopardForm+setSlFormState)，切任一处同步。图复用现有雪豹三形态官方立绘(portraits/snowleopard/)，不需另投。",
+      "纯UI改动，esbuild验证MudRPG.jsx通过。渲染效果(2:3比例、雪豹入队后两处框出现、切形态同步、图未投放时占位提示)需本地实机确认——尤其雪豹三形态图要放在 public/portraits/snowleopard/ 才不显占位。",
+    ],
+  },
+  {
     codename: "拾取物在提取层解析失败时保底发放(修\"叙事写了捡到雪域冰莲、背包却没有\")",
     time: "2026-07-26 23:00",
     notes: [
