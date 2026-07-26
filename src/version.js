@@ -9,6 +9,22 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "SillyTavern 13 位置注入重构 + NSFW 默认开启 + TraceViewer/注入结构面板按位展示",
+    time: "2026-07-27 00:05",
+    notes: [
+      "作者要求：按 SillyTavern 酒馆 13 条注入顺序重构 qucuo 的 prompt 注入体系；NSFW 默认开启；把映射表写成设计文档；同步重组 TraceViewer 与配置/预设的注入结构面板。",
+      "①【buildSysBase 返回 13 位置数组】src/MudRPG.jsx 的 buildSysBase 不再返回一大段 system 字符串，而是返回带 tavernBlock/tavernLabel 的 13 条消息数组：Main Prompt / World Info Before Char / Character Description / Character Personality / Scenario / World Info After Char / Persona / Author's Note / Example Messages / Chat History / In-Chat Injection / Latest User / PHI。原有规则、schema、MVU、送礼/伙伴认主铁律等文本全部保留，仅按位置拆分。scenario 与 charDescription 不再通过预设占位符重复注入，改由独立块承载。",
+      "②【NSFW 默认开启】MudRPG.jsx 中 nsfwOn 默认值改为 true；NSFW_RULES 注入 Author's Note 块，MODE_PRIMER_MESSAGES 作为 Example Messages 插入 9 号位。",
+      "③【callMainOnce 按 Tavern 顺序组装请求】system 块 + NSFW 示例对话 + chatHistory + inChat + latestUser；赌石谈价轻量分支仍保持自定义 system，但包装为 tavernBlock:main 的单块数组。",
+      "④【API 层兼容数组 system prompt】src/apiConfig.js 的 callModel / callModelStream 保持字符串兼容，同时支持数组：Anthropic 转 text blocks、OpenAI/Qwen 前置多条 system 消息、Gemini 合并到首条 user 消息。日志原样保留数组。",
+      "⑤【TraceViewer 按块展示】src/TraceViewer.jsx 把 system prompt 数组逐块（带编号、标签、字数）展开，user/assistant 消息也带 Tavern 标签；总 prompt 长度与引擎铁律核对都兼容数组。",
+      "⑥【注入结构面板新增酒馆 13 位置视角】src/InjectionStructurePanel.jsx 顶部加切换：「动作分类」与「酒馆 13 位置」。Tavern 视图读取最近一条 trace 的 pipeline，按注入顺序展示实际发出去的所有 block，便于排查哪一段亮/灭。",
+      "⑦【设计文档】新增 docs/design_13_position_injection.md，含完整映射表、实现点、API 适配说明与限制说明。",
+      "⑧【构建配套】vite.config.js 已引用 debug.html / debug-gamble.html / debug-item.html，仓库里缺失导致 vite build 失败，已补三个 HTML 壳文件。",
+      "验证：npm run build 通过；未改动游戏逻辑，仅重组 prompt 结构与可视化，运行时需在本地实机确认 TraceViewer 展开、注入结构面板切换、NSFW 默认开启后的行为。",
+    ],
+  },
+  {
     codename: "预设面板双调用：展示提取层第二次 AI 调用的真实 prompt 模板",
     time: "2026-07-26 23:55",
     notes: [

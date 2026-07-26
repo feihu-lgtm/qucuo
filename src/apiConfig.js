@@ -484,8 +484,14 @@ export function cleanJsonString(str) {
   return str;
 }
 
+// 把带 tavernBlock/tavernLabel 的 system 块格式化为纯文本，供不支持结构化的 API 使用。
+function formatBlock(b) {
+  return `[${b.tavernLabel || b.tavernBlock || "system"}]\n${b.content || ""}`;
+}
+
 // 统一调用入口。返回 { text, raw } ；text 是模型输出的纯文本。
-// systemPrompt: string；messages: [{role:'user'|'assistant', content:string}]
+// systemPrompt: string | [{role:'system', content:string, tavernBlock?, tavernLabel?}]
+// messages: [{role:'user'|'assistant', content:string}]
 export async function callModel(cfg, systemPrompt, messages, opts = {}) {
   if (cfg.timeoutMs) setRequestTimeout(cfg.timeoutMs);
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
@@ -528,7 +534,10 @@ export async function callModel(cfg, systemPrompt, messages, opts = {}) {
 
     if (cfg.apiType === API_TYPES.ANTHROPIC) {
       const url = withProxy(normalizeAnthropicEndpoint(cfg.endpoint || "https://api.anthropic.com/v1/messages"), cfg);
-      const abody = { model: cfg.model, max_tokens: maxTokens, system: systemPrompt, messages };
+      const system = Array.isArray(systemPrompt)
+        ? (systemPrompt.length === 1 ? formatBlock(systemPrompt[0]) : systemPrompt.map(b => ({ type: "text", text: formatBlock(b) })))
+        : systemPrompt;
+      const abody = { model: cfg.model, max_tokens: maxTokens, system, messages };
       // Opus 4.8（及未来同类"自适应采样"模型）直接拒绝任何采样参数——传了就 400。
       // 判断依据是模型名包含 opus-4-8/opus-4.8 这类标识；命中就完全不传任何采样参数，
       // 让模型用它自己的自适应采样，静默跳过而不是让整轮请求失败。
@@ -562,7 +571,10 @@ export async function callModel(cfg, systemPrompt, messages, opts = {}) {
 
     } else if ((cfg.apiType === API_TYPES.OPENAI || cfg.apiType === API_TYPES.QWEN)) {
       const url = withProxy(normalizeOpenAIEndpoint(cfg.endpoint || (cfg.apiType === API_TYPES.QWEN ? QWEN_DEFAULT_ENDPOINT : "https://api.openai.com/v1/chat/completions"), cfg.openaiAutoComplete), cfg);
-      const obody = { model: cfg.model, max_tokens: clampMaxTokensForType(maxTokens, cfg), temperature, messages: [{ role: "system", content: systemPrompt }, ...messages] };
+      const systemMessages = Array.isArray(systemPrompt)
+        ? systemPrompt.map(b => ({ role: "system", content: formatBlock(b) }))
+        : [{ role: "system", content: systemPrompt }];
+      const obody = { model: cfg.model, max_tokens: clampMaxTokensForType(maxTokens, cfg), temperature, messages: [...systemMessages, ...messages] };
       // OpenAI（及兼容中转站）支持 top_p/frequency_penalty/presence_penalty，
       // 但没有 top_k 这个概念，即便配置了也不传。
       if (topP != null) obody.top_p = topP;
@@ -585,7 +597,8 @@ export async function callModel(cfg, systemPrompt, messages, opts = {}) {
       const url = withProxy(`${base}/${cfg.model}:generateContent?key=${cfg.apiKey}`, cfg);
       const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
       if (contents.length && contents[0].role === "user") {
-        contents[0].parts[0].text = systemPrompt + "\n\n" + contents[0].parts[0].text;
+        const systemText = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : systemPrompt;
+        contents[0].parts[0].text = systemText + "\n\n" + contents[0].parts[0].text;
       }
       const genConfig = { temperature, maxOutputTokens: maxTokens };
       // Gemini 的 generationConfig 原生支持这四个字段，直接按官方字段名传。
@@ -663,7 +676,10 @@ export async function callModelStream(cfg, systemPrompt, messages, onChunk, opts
 
     if (cfg.apiType === API_TYPES.ANTHROPIC) {
       const url = withProxy(normalizeAnthropicEndpoint(cfg.endpoint || "https://api.anthropic.com/v1/messages"), cfg);
-      const abody = { model: cfg.model, max_tokens: maxTokens, temperature, system: systemPrompt, messages, stream: true };
+      const system = Array.isArray(systemPrompt)
+        ? (systemPrompt.length === 1 ? formatBlock(systemPrompt[0]) : systemPrompt.map(b => ({ type: "text", text: formatBlock(b) })))
+        : systemPrompt;
+      const abody = { model: cfg.model, max_tokens: maxTokens, temperature, system, messages, stream: true };
       applyThinkingAnthropic(abody, cfg, maxTokens);
       const res = await fetchWithTimeout(url, {
         method: "POST",
@@ -689,7 +705,10 @@ export async function callModelStream(cfg, systemPrompt, messages, onChunk, opts
 
     } else if ((cfg.apiType === API_TYPES.OPENAI || cfg.apiType === API_TYPES.QWEN)) {
       const url = withProxy(normalizeOpenAIEndpoint(cfg.endpoint || (cfg.apiType === API_TYPES.QWEN ? QWEN_DEFAULT_ENDPOINT : "https://api.openai.com/v1/chat/completions"), cfg.openaiAutoComplete), cfg);
-      const obody = { model: cfg.model, max_tokens: clampMaxTokensForType(maxTokens, cfg), temperature, messages: [{ role: "system", content: systemPrompt }, ...messages], stream: true, stream_options: { include_usage: true } };
+      const systemMessages = Array.isArray(systemPrompt)
+        ? systemPrompt.map(b => ({ role: "system", content: formatBlock(b) }))
+        : [{ role: "system", content: systemPrompt }];
+      const obody = { model: cfg.model, max_tokens: clampMaxTokensForType(maxTokens, cfg), temperature, messages: [...systemMessages, ...messages], stream: true, stream_options: { include_usage: true } };
       applyThinkingOpenAI(obody, cfg);
       const res = await fetchWithTimeout(url, {
         method: "POST",

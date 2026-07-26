@@ -21,8 +21,11 @@ import {
 } from "./injectionBlocks.js";
 import * as ENGINE from "./enginePrompts.js";
 import { buildExtractionSpecExample } from "./extractionEngine.js";
+import { getTraceLog } from "./actionTrace.js";
+import { getPositionMeta } from "./tavernMapping.js";
 
 export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled }) {
+  const [viewMode, setViewMode] = useState("tavern"); // "tavern" = 13 位置 / "action" = 动作分类
   const [actionId, setActionId] = useState("look");
   const [openBlock, setOpenBlock] = useState(null);
   const [live, setLive] = useState({});     // blockId -> 当前局真值
@@ -67,17 +70,83 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
     maxHeight: 260, overflowY: "auto", fontFamily: "inherit",
   };
 
+  const renderTavernView = () => {
+    const traces = getTraceLog();
+    const t = traces.find(x => x.pipeline?.systemPrompt);
+    if (!t) {
+      return (
+        <div style={{ fontSize: 11, color: "#5a5a4a", padding: "12px 0" }}>
+          当前还没有主叙事调用记录。触发一次行动（移动、对话、行动）后，这里会按酒馆 13 位置展示实际发出去的 prompt 结构。
+        </div>
+      );
+    }
+    const pl = t.pipeline;
+    const sys = Array.isArray(pl.systemPrompt) ? pl.systemPrompt : [{ role: "system", content: pl.systemPrompt || "", tavernBlock: "main", tavernLabel: "Main Prompt" }];
+    const msgs = [
+      ...sys.map((b, i) => ({ ...b, order: (getPositionMeta(b.tavernBlock)?.order || 0) + i * 0.01 })),
+      ...(pl.userMessages || []).map((m, i) => ({ ...m, order: (getPositionMeta(m.tavernBlock)?.order || 100 + i) + i * 0.01 })),
+    ].sort((a, b) => a.order - b.order);
+    const meta = t.injectionSnapshot?.meta;
+    return (
+      <div>
+        {meta && (
+          <div style={{ fontSize: 10, color: "#5a7a6a", marginBottom: 8, lineHeight: 1.6 }}>
+            scope={meta.scope ?? "?"} · {meta.narrativeOnly ? "双调用主叙事" : "单调用"}
+            {meta.isSettle ? " · settle" : ""}{meta.settleKind ? ` · ${meta.settleKind}` : ""}
+            {"　"}want[隔离={meta.wantIsolation ? 1 : 0}/物件志={meta.wantCatalog ? 1 : 0}/MVU={meta.wantMvu ? 1 : 0}]
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {msgs.map((m, i) => {
+            const isSys = m.role === "system";
+            const label = m.tavernLabel || m.tavernBlock || (isSys ? "system" : m.role);
+            const len = (m.content || "").length;
+            return (
+              <div key={i} style={{ border: "1px solid #1e2129", borderRadius: 4, padding: "6px 8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, color: isSys ? "#7a9ab8" : "#8a8a7a" }}>#{Math.floor(m.order)}</span>
+                  <span style={{ fontSize: 11, color: isSys ? "#c8bfa0" : "#a8a898", fontWeight: "bold" }}>{label}</span>
+                  <span style={{ fontSize: 9, color: "#5a5a4a" }}>{m.role} · {len} 字</span>
+                </div>
+                <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 9.5, lineHeight: 1.45, color: "#9a9484", background: "#0a0c10", border: "1px solid #1a2020", borderRadius: 3, padding: "5px 7px", maxHeight: 140, overflowY: "auto" }}>{m.content || "（空）"}</pre>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
-      <div style={{ fontSize: 11, color: "#7a7460", lineHeight: 1.7, marginBottom: 8 }}>
-        这一轮到底喂了 AI 什么，按动作分类逐块列在这里。点条目展开看
-        <b style={{ color: "#9a9484" }}>真正的原文</b>
-        ——静态块与 buildSysBase 共用同一份常量，不是另抄的一份。只读。
+      {/* 视图切换：动作分类 vs 酒馆 13 位置 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 10.5, color: "#5a5a4a" }}>查看视角：</span>
+        {[["tavern", "🍺 酒馆 13 位置"], ["action", "⚔ 动作分类"]].map(([m, label]) => (
+          <span key={m}
+            onClick={() => { setViewMode(m); setOpenBlock(null); }}
+            style={{
+              cursor: "pointer", padding: "2px 10px", borderRadius: 3, fontSize: 11,
+              background: viewMode === m ? "#1a2530" : "transparent",
+              color: viewMode === m ? "#c8bfa0" : "#5a5a4a",
+              border: `1px solid ${viewMode === m ? "#2a4a4a" : "#242833"}`,
+            }}>
+            {label}
+          </span>
+        ))}
       </div>
 
-      {/* 动作分类 */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
-        {ACTION_VIEWS.map(v => (
+      {viewMode === "action" && (
+        <>
+          <div style={{ fontSize: 11, color: "#7a7460", lineHeight: 1.7, marginBottom: 8 }}>
+            这一轮到底喂了 AI 什么，按动作分类逐块列在这里。点条目展开看
+            <b style={{ color: "#9a9484" }}>真正的原文</b>
+            ——静态块与 buildSysBase 共用同一份常量，不是另抄的一份。只读。
+          </div>
+
+          {/* 动作分类 */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+            {ACTION_VIEWS.map(v => (
           <span key={v.id}
             onClick={() => { setActionId(v.id); setOpenBlock(null); }}
             style={{
@@ -211,6 +280,10 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
           </div>
         );
       })}
+        </>
+      )}
+
+      {viewMode === "tavern" && renderTavernView()}
     </div>
   );
 }

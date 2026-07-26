@@ -28,24 +28,63 @@ export default function TraceViewer({ onClose, onReport }) {
     navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
   };
 
+  const systemPromptLen = (sys) => {
+    if (Array.isArray(sys)) return sys.reduce((sum, b) => sum + (b.content?.length || 0), 0);
+    return (sys || "").length;
+  };
+
+  const formatSystemPrompt = (sys) => {
+    if (Array.isArray(sys)) {
+      return sys.map((b, i) => (
+        <div key={i} style={{ marginBottom: 6 }}>
+          <div style={{ fontSize: "9px", color: "#6a8a8a", marginBottom: 2 }}>
+            #{i + 1} {b.tavernLabel || b.tavernBlock || "system"} · {b.content?.length || 0} 字
+          </div>
+          <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9px", lineHeight: 1.45, color: "#9a9a8a", background: "#0a0c10", border: "1px solid #1a2020", borderRadius: 3, padding: "5px 7px", maxHeight: 180, overflowY: "auto" }}>{b.content || "（空）"}</pre>
+        </div>
+      ));
+    }
+    return <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9.5px", lineHeight: 1.5, color: "#9a9a8a", background: "#0a0c10", border: "1px solid #1a2020", borderRadius: 3, padding: "6px 8px", maxHeight: 220, overflowY: "auto" }}>{sys || "（空）"}</pre>;
+  };
+
+  const formatUserMessages = (msgs) => {
+    return (msgs || []).map((m, i) => (
+      <div key={i} style={{ marginBottom: 6 }}>
+        <div style={{ fontSize: "9px", color: "#6a8a8a", marginBottom: 2 }}>
+          [{m.role}]{m.tavernLabel || m.tavernBlock ? ` ${m.tavernLabel || m.tavernBlock}` : ""} · {(m.content || "").length} 字
+        </div>
+        <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9px", lineHeight: 1.45, color: "#9a9a8a", background: "#0a0c10", border: "1px solid #1a2020", borderRadius: 3, padding: "5px 7px", maxHeight: 180, overflowY: "auto" }}>{m.content || "（空）"}</pre>
+      </div>
+    ));
+  };
+
   const renderPromptBody = (pl, respLabel) => {
     const sys = pl.systemPrompt || "";
-    const usr = (pl.userMessages || []).map(m => `[${m.role}] ${m.content}`).join("\n\n");
+    const usr = pl.userMessages || [];
     const resp = pl.response || pl.text || (pl.error ? `（无回复）报错：${pl.error}` : "（无回复）");
     return (
       <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
-        {[["System Prompt（系统提示全文）", sys], ["输入（本轮 user 消息）", usr], [respLabel, resp]].map(([label, body]) => (
-          <div key={label}>
-            <div style={{ fontSize: "9.5px", color: "#6a8a8a", marginBottom: 2 }}>{label}</div>
-            <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9.5px", lineHeight: 1.5, color: "#9a9a8a", background: "#0a0c10", border: "1px solid #1a2020", borderRadius: 3, padding: "6px 8px", maxHeight: 220, overflowY: "auto" }}>{body || "（空）"}</pre>
-          </div>
-        ))}
+        <div>
+          <div style={{ fontSize: "9.5px", color: "#6a8a8a", marginBottom: 2 }}>System Prompt（共 {systemPromptLen(sys)} 字 · 按酒馆 13 位置拆分）</div>
+          {formatSystemPrompt(sys)}
+        </div>
+        <div>
+          <div style={{ fontSize: "9.5px", color: "#6a8a8a", marginBottom: 2 }}>输入（本轮 user / assistant 消息）</div>
+          {usr.length ? formatUserMessages(usr) : <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9.5px", lineHeight: 1.5, color: "#9a9a8a", background: "#0a0c10", border: "1px solid #1a2020", borderRadius: 3, padding: "6px 8px" }}>（空）</pre>}
+        </div>
+        <div>
+          <div style={{ fontSize: "9.5px", color: "#6a8a8a", marginBottom: 2 }}>{respLabel}</div>
+          <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9.5px", lineHeight: 1.5, color: "#9a9a8a", background: "#0a0c10", border: "1px solid #1a2020", borderRadius: 3, padding: "6px 8px", maxHeight: 220, overflowY: "auto" }}>{resp}</pre>
+        </div>
       </div>
     );
   };
 
   const renderLawCheck = (sys, meta) => {
     const hasMeta = meta && typeof meta === "object";
+    const systemText = Array.isArray(sys)
+      ? sys.map(b => b.content || "").join("\n")
+      : (sys || "");
     const expectLit = (key) => {
       if (!hasMeta) return null;
       if (key === "ISOLATION") return !!meta.wantIsolation;
@@ -53,7 +92,7 @@ export default function TraceViewer({ onClose, onReport }) {
       return true;
     };
     const rows = LAW_CHECKS.map(c => {
-      const present = typeof sys === "string" && sys.includes(ENGINE[c.key]);
+      const present = typeof systemText === "string" && systemText.includes(ENGINE[c.key]);
       const exp = expectLit(c.key);
       let mark, color;
       if (present) { mark = "✓"; color = "#8ac48a"; }
@@ -127,10 +166,11 @@ export default function TraceViewer({ onClose, onReport }) {
                 const pl = t.pipeline;
                 const open = plOpen === t.ts;
                 const sys = pl.systemPrompt || "";
+                const usrLen = (pl.userMessages || []).reduce((a, m) => a + (m.content || "").length, 0);
                 return (
                   <div style={{ marginTop: 6, paddingLeft: 8 }}>
                     <div onClick={() => setPlOpen(open ? null : t.ts)} style={{ cursor: "pointer", fontSize: "10.5px", color: "#c8a860", userSelect: "none" }}>
-                      {open ? "▾" : "▸"} 主叙事 AI 请求全文（总 prompt {Math.round((sys.length + (pl.userMessages || []).reduce((a, m) => a + (m.content || "").length, 0)))} 字 · 回复 {(pl.response || pl.text || "").length} 字{pl.error ? " · ✗有错误" : ""}）
+                      {open ? "▾" : "▸"} 主叙事 AI 请求全文（总 prompt {Math.round(systemPromptLen(sys) + usrLen)} 字 · 回复 {(pl.response || pl.text || "").length} 字{pl.error ? " · ✗有错误" : ""}）
                     </div>
                     {open && (
                       <>
@@ -149,7 +189,7 @@ export default function TraceViewer({ onClose, onReport }) {
                 return (
                   <div style={{ marginTop: 6, paddingLeft: 8 }}>
                     <div onClick={() => setExOpen(open ? null : t.ts)} style={{ cursor: "pointer", fontSize: "10.5px", color: "#c88ae0", userSelect: "none" }}>
-                      {open ? "▾" : "▸"} → 提取层调用全文（双调用·第二次 AI 调用 · prompt {Math.round(sys.length + usrLen)} 字 · 回复 {(pl.response || pl.text || "").length} 字{pl.error ? " · ✗有错误" : ""}）
+                      {open ? "▾" : "▸"} → 提取层调用全文（双调用·第二次 AI 调用 · prompt {Math.round(systemPromptLen(sys) + usrLen)} 字 · 回复 {(pl.response || pl.text || "").length} 字{pl.error ? " · ✗有错误" : ""}）
                     </div>
                     {open && renderPromptBody(pl, "提取层回复")}
                   </div>

@@ -84,16 +84,22 @@ export function formatTrace(trace, n) {
   const tail = trace.summary ? `\n  → 结果：${trace.summary}` : "";
   // 附上这一轮 AI 请求全文（System Prompt / 输入 / 回复），让"复制全部"能把结构化文本一起带出来，方便贴给作者排查。
   let pl = "";
+  function formatSystemPrompt(sys) {
+    if (Array.isArray(sys)) {
+      return sys.map(m => `[${m.tavernLabel || m.tavernBlock || "system"}]\n${m.content || ""}`).join("\n\n");
+    }
+    return sys || "";
+  }
   if (trace.pipeline) {
     const p = trace.pipeline;
-    const sys = p.systemPrompt || "";
+    const sys = formatSystemPrompt(p.systemPrompt);
     const usr = (p.userMessages || []).map(m => `[${m.role}] ${m.content}`).join("\n\n");
     const resp = p.response || p.text || (p.error ? `（无回复）报错：${p.error}` : "（无回复）");
     pl = `\n\n  --- AI 请求全文 ---\n  [System Prompt]\n${sys}\n\n  [输入]\n${usr}\n\n  [AI 回复]\n${resp}`;
   }
   if (trace.extractionPipeline) {
     const p = trace.extractionPipeline;
-    const sys = p.systemPrompt || "";
+    const sys = formatSystemPrompt(p.systemPrompt);
     const usr = (p.userMessages || []).map(m => `[${m.role}] ${m.content}`).join("\n\n");
     const resp = p.response || p.text || (p.error ? `（无回复）报错：${p.error}` : "（无回复）");
     pl += `\n\n  --- 提取层调用全文（双调用·第二次AI调用） ---\n  [System Prompt]\n${sys}\n\n  [输入]\n${usr}\n\n  [提取层回复]\n${resp}`;

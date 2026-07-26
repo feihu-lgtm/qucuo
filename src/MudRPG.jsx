@@ -52,6 +52,7 @@ import { mapDescriptionToGenParams } from "./npcDescriptionMapping.js";
 import { findQuestByGiver, NPC_TEACHABLE_SKILLS, QUCUO_QUESTS } from "./quests/qucuoQuests.js";
 import { QUEST_TYPE } from "./quests/questTypes.js";
 import { MODE_PRIMER_MESSAGES, NSFW_RULES } from "./modePrimer.js";
+import { labelMessage, makeBlock } from "./tavernMapping.js";
 import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings, canBypassExclusive, isQuestGateOpen } from "./quests/questEngine.js";
 import { getQuestScript } from "./quests/questScripts.js";
 import { resolveEnding } from "./quests/endingResolver.js";
@@ -102,6 +103,7 @@ import { tryLearnFromMaster, tryStealFrom } from "./kungfu/learnSkill.js";
 import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
+// 返回 SillyTavern 13 位置风格的 system 消息数组，每条带 tavernBlock/tavernLabel。
 function buildSysBase(targetWordCount, narratorState, scenario, budgetInstruction, embeddingEnabled, npcLoreBlock, narrativeOnly = false, scope = "full", opts = {}) {
   // memory 摘要统一用玩家角色名字第三人称叙述，不用"你/我/玩家"这几种代词混着写——
   // 事实账本(knowledge.js)的摘要要在多处被复用（旁白全知视角、其他NPC传闻转述、飞鸽书信
@@ -185,44 +187,27 @@ function buildSysBase(targetWordCount, narratorState, scenario, budgetInstructio
     ? gateScenario(scenario, { ...opts.gateCtx, scope })
     : { text: scenario, lit: [], dark: [] };
   if (opts.onGateReport) opts.onGateReport(gated);
-  const presetContent = assemblePrompt(preset, { scenario: gated.text, charDescription: gated.text });
+  // 13 位置拆分：scenario / charDescription 由各自的独立块承载，这里不再填进预设占位符，避免重复。
+  const presetContent = assemblePrompt(preset, { scenario: "", charDescription: "" });
 
-  // 这几段是引擎正常运作的硬性技术规范（JSON 结构、MVU 语法、创造模式），
-  // 不受用户预设编辑影响，避免用户不小心删掉后整个解析链路崩溃。
-  //
-  // 静态文案已抽到 enginePrompts.js —— 设置里的「Prompt 注入结构」面板要展示
-  // 真正喂出去的那份字，两边 import 同一份常量，改一处两处一起变，不会漂移。
-  const _sys = `${ENGINE_IDENTITY}
-
-${GM_RULE}
-
-篇幅要求：${lenNote}
-${narratorVoicePrompt(narratorState)}
-
-${presetContent}${npcLoreBlock || ""}
-${wantCatalog ? `
-── 曲措乡物件志（叙事引用规范）──
-${describeCatalogForAI()}
-${CATALOG_TAIL}
-` : ""}${wantIsolation ? `
-${ISOLATION}
-` : ""}
-
-${MAP_LAW}
-
-${FORMAT_LAW}
-
-${narrativeOnly ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。${buildSettleNarrativeNote(opts)}` : isSettle ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
+  // 各分支的 JSON schema / 叙事指令，与旧模板字符串完全一致。
+  const schemaBlock = narrativeOnly
+    ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。${buildSettleNarrativeNote(opts)}`
+    : isSettle
+      ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
 不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。不要重复结算任何奖励、物品、银两或状态。
 "memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
 ${buildSettleMvuNote(opts)}
 在 JSON 输出完毕之后，${(opts.settleKind === "gift" || opts.settleKind === "companion_invite") ? `这一轮必须` : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化，"}另起一行输出 <mvu> 块（不要放进 JSON 内部）：
-${MVU_SYSTEM_INSTRUCTIONS}${buildSettleMvuExample(opts)}` : ""}` : scope === "move" ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
+${MVU_SYSTEM_INSTRUCTIONS}${buildSettleMvuExample(opts)}` : ""}`
+      : scope === "move"
+        ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
 npcs 的 carry 字段只在该 NPC 首次登场那一轮写（0-3件肉眼可见随身物，出场叙事需描述其外观）。
 可选字段 "memory"：用不超过50字纯客观事实概括本轮到达了何处、路上是否有值得记的事，一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，寻常赶路可省略。
-若这次移动让某个从未出现的具名人物被提及，加 "mentionedNewNpcs":["名"]。` : `回复纯JSON，字符串不换行：
+若这次移动让某个从未出现的具名人物被提及，加 "mentionedNewNpcs":["名"]。`
+        : `回复纯JSON，字符串不换行：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}],"items":[{"name":"名","id":"id"}]},"char":{"hp":[60,100],"neigong":5,"waigong":8,"special":{"根骨":5,"悟性":6,"体魄":5,"魅力":5,"智谋":5,"身法":5,"气运":5}},"dao":{"karma":0,"jie":0,"sign":"天象","rumor":["事"]},"delta":{"items_add":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}],"items_rm":[],"skill_up":{},"exp":0,"pot":0,"flags_add":[]}}
 items_add 里的元素也可以是纯字符串（不需要装备系统参与的剧情道具/杂物），结构化写法仅用于武器/护甲/饰品类物品。
 npcs 的 carry 字段只在该 NPC 首次登场那一轮写：列出出场描述里玩家肉眼可见的随身物品（兵器、猎具、饰物、包裹等，0-3件，寻常人多为白/绿档），出场叙事必须描述其外观且提到这些东西——所见即所得，之后系统会固化这份清单作为他的全部随身家当（掉落/偷窃都只出自这里），后续轮次不必再写 carry。
@@ -233,9 +218,33 @@ npcs 里某个 NPC 如果是路途遭遇生成的生态猛兽/山贼游哨这类
 
 ${wantMvu ? `
 在这个 JSON 对象输出完毕之后，如果需要维护角色/世界状态变量，另起一行输出 <mvu> 块（不要放在 JSON 字符串内部，作为 JSON 后面独立的一段纯文本）：
-${MVU_SYSTEM_INSTRUCTIONS}` : ""}`}`;
-  if (opts.onSnapshot) opts.onSnapshot({ sys: _sys, meta: { scope, narrativeOnly, isSettle, wantCatalog, wantIsolation, wantMvu, settleKind: opts.settleKind || null, len: _sys.length } });
-  return _sys;
+${MVU_SYSTEM_INSTRUCTIONS}` : ""}`;
+
+  // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
+  // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
+  const messages = [
+    makeBlock("main", `${ENGINE_IDENTITY}\n\n${GM_RULE}\n\n篇幅要求：${lenNote}\n${narratorVoicePrompt(narratorState)}`),
+    makeBlock("worldInfoBefore", `${presetContent}${npcLoreBlock || ""}`),
+    makeBlock("charDescription", `玩家角色：${playerName}。系统会维护气血、内外功、物品等状态；你只需叙事，不要擅自修改状态。`),
+    makeBlock("charPersonality", `旁白/说书人的语气由「Main Prompt」中的声线控制，保持统一。`),
+    makeBlock("scenario", gated.text),
+    makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
+    makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是这个世界的说书人/Gamemaster。`),
+    makeBlock("authorsNote", ""),
+    makeBlock("exampleStart", "<START>"),
+  ];
+
+  // 空占位：由 callMainOnce 在调用前填充 chatHistory / inChat / latestUser。
+  messages.push(makeBlock("chatHistory", ""));
+  messages.push(makeBlock("inChat", ""));
+  messages.push(makeBlock("latestUser", ""));
+
+  // PHI（Post-History Instructions / Jailbreak）：FORMAT_LAW + 当前分支 schema + MVU。
+  messages.push(makeBlock("phi", `${FORMAT_LAW}\n\n${schemaBlock}`));
+
+  const totalLen = messages.reduce((sum, b) => sum + (b.content?.length || 0), 0);
+  if (opts.onSnapshot) opts.onSnapshot({ sys: messages, meta: { scope, narrativeOnly, isSettle, wantCatalog, wantIsolation, wantMvu, settleKind: opts.settleKind || null, len: totalLen } });
+  return messages;
 }
 
 const DIRS = { n: "北", s: "南", e: "东", w: "西", u: "上", d: "下", ne: "东北", nw: "西北", se: "东南", sw: "西南" };
@@ -1026,7 +1035,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [interactMode, setInteractMode] = useState("action"); // 'talk' | 'action' | 'whisper'
   const [talkTarget, setTalkTarget] = useState(null); // 对话模式下具体在跟谁说话，供立绘自动推断使用
   const [activeTarget, setActiveTarget] = useState(null); // null=全部NPC在场 | string=锁定某个NPC名
-  const [nsfwOn, setNsfwOn] = useState(false); // ■ NSFW 开关：true=注入NSFW规则+primer消息
+  const [nsfwOn, setNsfwOn] = useState(true); // ■ NSFW 开关：true=注入NSFW规则+primer消息（默认开启）
   const [showBody, setShowBody] = useState(false); // ◈体貌面板
   const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" }); // 按体貌荐装的结果
   const [pigeonTarget, setPigeonTarget] = useState(null); // 飞鸽传书当前收信人（进入 pigeon 模式时设置）
@@ -3216,7 +3225,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         // 远景（日总结）作背景垫底，放在 ctx 之后、回忆之前——比"最近对话/回忆"更靠前=分量更轻，
         // 只保连贯不喧宾夺主。
         const distantBlock = buildDistantViewBlock(varTreeRef.current, 5);
-        let userContent = ctx + distantBlock + recallBlock + reunionBlock + infoDomainBlock + "\n\n" + hist + proseRule + "\n\n" + cmdSuffix + (extraNudge || "");
         // 动态注入 scope：结算轮只演既定事实（砍物件志/认知隔离/远景/极简schema），移动只喂场景相关，
         // 对话保留认知隔离，其余全量。创造模式必须全量（要能凭空发物品/召唤NPC），故 gm 时强制 full。
         const promptScope = gm ? "full"
@@ -3225,14 +3233,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           : intent.code === "MOVE" ? "move"
           : intent.code === "LOOK" ? "talk"  // 查看/环顾：只描述当前场景与在场人物，不发物品，砍物件志（同 talk 档）
           : "full";
-        // 结算轮：远景/召回/信息域灭灯——这一轮只是把一件已定的事写好看，不需要"记起往事"
-        // 或"守信息域"，那些块是给有博弈的轮次用的。但牵涉具体某人时保留「重逢」块
-        // （久别重逢那句招呼要认得人，是这类轮次唯一真正用得上的记忆信号）。
-        if (isSettle) {
-          userContent = ctx + (opts.settleNpc ? reunionBlock : "") + "\n\n" + hist + proseRule + "\n\n" + cmdSuffix + (extraNudge || "");
-        }
         let _gateReport = null;
-        let sys = buildSysBase(
+        let sysBlocks = buildSysBase(
           apiCfg.targetWordCount, narrator, preset.scenario, budgetInstruction,
           // 结算轮灭 lore——但牵涉具体某人的结算（送礼/拜师/赌石成交）仍要人设，
           // 否则那人只剩个名字，写出来的对白没脾气。此时保留 lore（本就是绿灯，只注入在场者）。
@@ -3256,7 +3258,13 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
             onGateReport: (g) => { _gateReport = g; },
             onSnapshot: (snap) => attachInjectionSnapshot(_trace, snap),
           }
-        ) + (nsfwOn ? "\n" + NSFW_RULES : "");
+        );
+
+        // 在 Author's Note 位置追加 NSFW 规则与体貌蓝绿灯文本。
+        const authorsNote = sysBlocks.find(b => b.tavernBlock === "authorsNote");
+        if (nsfwOn && authorsNote) {
+          authorsNote.content += (authorsNote.content ? "\n" : "") + NSFW_RULES;
+        }
         // ── 体貌·蓝绿灯 ──
         // 公开层跟着"这一轮有没有人近距离看着你"走（full/talk 亮，赶路结算灭），
         // 私密层只认 ■ 模式。灭灯不只是省 token——赶路轮塞一段私处描写，模型真的会
@@ -3266,11 +3274,38 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           nsfw: nsfwOn,
           scanText: `${cmd}\n${[...convo].reverse().find(m => m.role === "assistant")?.content || ""}`,
         });
-        if (_bodyGate.text) sys += _bodyGate.text;
+        if (_bodyGate.text && authorsNote) {
+          authorsNote.content += (authorsNote.content ? "\n" : "") + _bodyGate.text;
+        }
         if (_bodyGate.lit.length || _bodyGate.dark.length) {
           traceStep(_trace, "体貌", "info",
             `🟢${_bodyGate.lit.join("、") || "无"}　⚫灭:${_bodyGate.dark.join("、") || "无"}`);
         }
+
+        // 计算 system 总长度（仅用于 trace 展示）。
+        const sysLength = sysBlocks.reduce((sum, b) => sum + (b.content?.length || 0), 0);
+
+        // 构造 Tavern 顺序的 user 侧消息数组。
+        let chatMessages = [];
+        // 结算轮：远景/召回/信息域灭灯——这一轮只是把一件已定的事写好看，不需要"记起往事"
+        // 或"守信息域"，那些块是给有博弈的轮次用的。但牵涉具体某人时保留「重逢」块
+        // （久别重逢那句招呼要认得人，是这类轮次唯一真正用得上的记忆信号）。
+        const inChatContent = isSettle
+          ? (opts.settleNpc ? reunionBlock : "") + "\n\n" + proseRule
+          : ctx + distantBlock + recallBlock + reunionBlock + infoDomainBlock + "\n\n" + proseRule;
+        const latestUserContent = cmdSuffix + (extraNudge || "");
+
+        // 9 号位 Example Messages（NSFW 对话示例）。
+        if (nsfwOn) {
+          for (const m of MODE_PRIMER_MESSAGES) {
+            chatMessages.push(labelMessage({ role: m.role, content: m.content }, "dialogueExamples"));
+          }
+        }
+        // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
+        chatMessages.push(makeBlock("chatHistory", hist));
+        chatMessages.push(makeBlock("inChat", inChatContent));
+        chatMessages.push(makeBlock("latestUser", latestUserContent));
+
         // ── 赌石谈价·轻量挂载（借世界书"蓝灯/绿灯"思路：谈价这轮，重量条目全灭灯）──
         // 谈价是一对一、目标单一的对手戏，之前却挂着全量 talk 档（预设全文+在场全员lore+任务+
         // 认知隔离+远景/召回/重逢/信息域+20条历史+MVU），一轮砍价烧掉整套世界书。现在仿
@@ -3284,7 +3319,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
             ? `直接输出对白叙事正文（散文），写完即止。若这一轮谈成了明确协议（对方加价/让价/搭赠物件），在正文最末尾另起一行附：<deal>{"priceMult":1.0,"addItem":null}</deal>；没谈成就不附。`
             : `回复纯JSON，字符串不换行：{"output":["行1","行2"],"memory":"≤50字本轮谈价关键事实（无实质进展可省略此字段）"}
 若这一轮谈成了明确协议（对方加价/让价/搭赠物件），在 JSON 之后另起一行附：<deal>{"priceMult":1.0,"addItem":null}</deal>；没谈成就不附标签。`;
-          sys = `你是曲措乡这个武侠世界的说书人。此刻玩家在天都镇玉石料场的赌桌前，与竞价者「${g.bidderName}」就一块开出的玉料讨价还价——这是一场一对一的砍价对手戏，只演这一件事。
+          const gambleSys = `你是曲措乡这个武侠世界的说书人。此刻玩家在天都镇玉石料场的赌桌前，与竞价者「${g.bidderName}」就一块开出的玉料讨价还价——这是一场一对一的砍价对手戏，只演这一件事。
 
 [这位竞价者]
 ${g.bidderName}${pers.brief ? `，${pers.brief}` : ""}。${pers.personality || ""}
@@ -3300,15 +3335,20 @@ ${pers.bio || ""}
 
 ${dealFmt}`;
           const dealHist = mainConvo.slice(-8).map(m => (m.role === "user" ? "[玩家] " : "[引擎] ") + m.content).join("\n");
-          userContent = `[最近对话]\n${dealHist}\n\n处理最新命令${narrativeOnly ? "，直接输出叙事正文。" : "。纯JSON，字符串不换行。"}${extraNudge || ""}`;
+          sysBlocks = [makeBlock("main", gambleSys)];
+          chatMessages = [
+            makeBlock("chatHistory", `[最近对话]\n${dealHist}`),
+            makeBlock("latestUser", `处理最新命令${narrativeOnly ? "，直接输出叙事正文。" : "。纯JSON，字符串不换行。"}${extraNudge || ""}`),
+          ];
         }
+
         const _scopeLabel = (isTalk && gambleTalkCtx.current) ? "谈价·轻量"
           : ({ settle: "结算·轻量", move: "移动·精简", talk: "对话·中", full: "全量" }[promptScope] || promptScope);
         const _scopeWhy = _scopeLabel === "谈价·轻量" ? "，已砍预设/世界书/lore/召回/远景/MVU，仅留人设+局面+近8条对话"
           : promptScope === "settle" ? `，已砍物件志/认知隔离/lore/远景/召回/全量schema${opts.settleNpc ? `（保留MVU：牵涉${opts.settleNpc}）` : "/MVU"}`
           : promptScope === "move" ? "，已砍物件志/认知隔离/复杂schema/拓扑外的世界观"
           : promptScope === "talk" ? "，已砍物件志/拓扑与装备规则" : "";
-        traceStep(_trace, "Prompt注入", "info", `级别=${_scopeLabel}（system ${sys.length}字${_scopeWhy}）`);
+        traceStep(_trace, "Prompt注入", "info", `级别=${_scopeLabel}（system ${sysLength}字${_scopeWhy}）`);
         // 调用模式标注：单调用/双调用是两条完全不同的 prompt 结构（前者主模型直接
         // 出JSON+MVU，后者主模型只写散文、好感度等状态判定全部转交提取层的另一
         // 个模型），排查"好感度怎么没变/怎么变得莫名其妙"时第一步就该确认走的
@@ -3337,8 +3377,8 @@ ${dealFmt}`;
           addLog([{ t: "desc", text: "  ▌", streaming: true }]);
           setLog(l => { streamLogIndex.current = l.length - 1; return l; });
           const { text, finishReason } = await callModelStream(
-            effectiveCfg, sys,
-            [{ role: "user", content: userContent }, ...(nsfwOn ? MODE_PRIMER_MESSAGES : [])],
+            effectiveCfg, sysBlocks,
+            chatMessages,
             (_delta, fullSoFar) => {
               setLog(l => {
                 if (streamLogIndex.current == null) return l;
@@ -3365,7 +3405,7 @@ ${dealFmt}`;
           }
           return { rawFull: text, finishReason };
         }
-        const result = await callModel(effectiveCfg, sys, [{ role: "user", content: userContent }, ...(nsfwOn ? MODE_PRIMER_MESSAGES : [])], { intent: { code: intent.code, label: intent.label }, recallInfo, callLabel: "主叙事" });
+        const result = await callModel(effectiveCfg, sysBlocks, chatMessages, { intent: { code: intent.code, label: intent.label }, recallInfo, callLabel: "主叙事" });
         return { rawFull: result.text, finishReason: result.finishReason };
       };
 
