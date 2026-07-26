@@ -275,9 +275,14 @@ const FORGE_EFFECT_WHITELIST = `
 · 六维：sixDim:{气运:2}(对应"幸运") | sixDim:{身法:2}(轻便) | sixDim:{根骨:2}(坚固) | sixDim:{魅力:2} | sixDim:{智谋:1} | sixDim:{体魄:1} | sixDim:{悟性:1}
 effect 与 sixDim 二选一为主(一件东西通常只挂其一，紫橙档可两者少量兼有)。`;
 
-export async function forgeDesign({ material, category, requirement }, apiCfg) {
+export async function forgeDesign({ material, category, requirement, craft }, apiCfg) {
   const cfg = buildExtractionCfg("FORGE_DESIGN", apiCfg);
-  const system = `你是曲措乡这个澜湄雪域武侠世界里铁匠铺的"匠心"——玩家拿料来定制兵器/护具/饰物，你要据玩家给的【材料/类别/要求】设计出三个不同的成品方案供他挑选。守规矩：你只负责创意(名字、属于哪类装备、挂什么词条、说书人风味的介绍)，绝不决定品质高低(那由玩家气运和铺子手艺定)、绝不编数值。三个方案要有区别——同样的料和要求，可以往不同形制/侧重去做(比如都要"锋利的陨铁武器"，可出重砍的、轻捷的、透甲的三种取向)。`;
+  // craft 语境：默认铁匠铺(打兵器/护具/铁料)，金玉行传 { shop:"金玉行", maker:"玉匠", wares:"玉器" }
+  // 让 prompt 贴合——玉匠雕的是玉器饰物，说书人味也不同。不传则走铁匠默认。
+  const maker = craft?.maker || "铁匠";
+  const wares = craft?.wares || "兵器/护具/饰物";
+  const shop = craft?.shop || "铁匠铺";
+  const system = `你是曲措乡这个澜湄雪域武侠世界里${shop}的"匠心"——玩家拿料来定制${wares}，你这位${maker}要据玩家给的【材料/类别/要求】设计出三个不同的成品方案供他挑选。守规矩：你只负责创意(名字、属于哪类装备、挂什么词条、说书人风味的介绍)，绝不决定品质高低(那由玩家气运和料子成色定)、绝不编数值。三个方案要有区别——同样的料和要求，可以往不同形制/侧重去做。`;
   const user = `玩家定制需求：
 · 材料：${material || "(未指定，任你择料)"}
 · 类别：${category || "(未指定，你据材料与要求判断最合适的类别)"}
@@ -286,13 +291,13 @@ ${FORGE_EFFECT_WHITELIST}
 
 请设计 3 个不同的成品方案，只输出 JSON，不要任何解释或 markdown：
 {"candidates":[
-  {"name":"贴合材料与形制的成品名(如 陨铁裂石刀，不超过7字)","category":"weapon|armor|accessory 三选一","effect":{词条对象，按白名单选，可空对象{}},"sixDim":{六维对象，可空},"desc":"一两句说书人白话古文，讲这件东西的形制/来历/脾性，禁冒号破折号"}
+  {"name":"贴合材料与形制的成品名(不超过7字)","category":"weapon|armor|accessory 三选一","effect":{词条对象，按白名单选，可空对象{}},"sixDim":{六维对象，可空},"desc":"一两句说书人白话古文，讲这件东西的形制/来历/脾性，禁冒号破折号"}
   , {第二个方案，与第一个形制或侧重不同} 
   , {第三个方案，再不同}
 ]}
-注意：category 必须是 weapon/armor/accessory 之一的英文；effect 和 sixDim 若不给就写空对象 {}；name 要贴合材料(玩家写了陨铁，名字里就该见陨铁质感)。`;
+注意：category 必须是 weapon/armor/accessory 之一的英文；effect 和 sixDim 若不给就写空对象 {}；name 要贴合材料(玩家写了陨铁/某玉料，名字里就该见其质感)。`;
 
-  const { text } = await callModel(cfg, system, [{ role: "user", content: user }], { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000, callLabel: "铁匠铺定制设计" });
+  const { text } = await callModel(cfg, system, [{ role: "user", content: user }], { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000, callLabel: `${shop}定制设计` });
   let js = (text || "").replace(/\`\`\`json\s*|\`\`\`\s*/g, "").trim();
   const i0 = js.indexOf("{"), i1 = js.lastIndexOf("}");
   if (i0 >= 0 && i1 > i0) js = js.slice(i0, i1 + 1);

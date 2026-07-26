@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "金玉行双柜台(选购成品/拿料定制)+赌石开料入背包+20玉器进catalog，复用铁匠铺打造机制",
+    time: "2026-07-26 22:30",
+    notes: [
+      "作者要求：金玉行做成\"两套商店\"复用铁匠铺代码——都需要石头、都是打造，区别只在词条(一套预制20种玉器成品、一套小模型现生成)；且赌石开出的料本该进背包却没进(bug)；铁匠铺保留不动。分五块一鼓作气做完。",
+      "①【赌石开料入背包】GambleStoneScreen \"据为己有\"从\"就地花200做玉器\"改成\"收料入行囊\"(免费)。handleGambleSettle 新增 type:keep 分支：把开出的料作为「玉石原料」item 收进背包(category=misc)，带 jadeSpec{jadeTier,qualityCap品质天花板,changKou,tierLabel}——供金玉行读料。命名用种水档标签(如\"帝王绿玻璃种·玉料\")。此前赌石只有卖料(sell)/就地做玉器(forge)，料根本进不了背包，作者反馈的核心bug。",
+      "②【20玉器进catalog】JADE_WARES 数组(对照赌石设计档§1)：7武器/6护甲/7饰品，词条预制(帝王绿玉圭·三曲带forceFirst+doubleVsStatus等)，jadeWare:true标记，接入CATALOG/CATALOG_INDEX。这是金玉行\"选购成品柜\"的数据来源。",
+      "③【金玉行双柜台UI】新建JadeShopScreen：一个building两tab。选购成品柜=列20种玉器(词条预制)+选玉料→打造；定制柜=三填空(材料/类别/要求)→小模型出3候选(玉匠语境)→三选一→打造。共用玉料选择器(列背包里带jadeSpec的料、显示天花板)。JEWELRY类型从通用shop分支移出、专属挂JadeShopScreen。",
+      "④【打造handler】handleJadeDesign(复用forgeDesign小模型，传craft:{玉匠/玉器}语境)+handleJadeCraft(消耗选定玉料item、spec编码进forge_pending flag带jade:true+qualityCap)。forgeDesign加craft语境参数(默认铁匠、金玉行传玉匠)不破坏铁匠铺。",
+      "⑤【品质封顶】与作者确认：金玉行成品品质=min(玉料品质天花板, 气运rollQuality)——好料是上限、手气定发挥。自动交付时对spec.jade的订单用qualityCap卡顶；白绿档仍丢词条。交付文案区分玉匠(金玉行)/铁匠(铁匠铺)。铁匠铺(银两/铁匠/纯气运)零改动，金玉行独立handler。",
+      "Node端到端验证：料紫气运紫→紫、料绿气运9→绿(料压手气)、白绿丢词条、20玉器全进索引、spec编解码正确。esbuild验证6文件全通过。小模型出候选质量+两柜台实际交互需真机验证(去锦官城金玉行、先赌石开料收进背包、再来选购/定制)。",
+    ],
+  },
+  {
     codename: "建筑面板inline高度改flex:1占满到行动栏(含铁匠铺/交易/12个Overlay面板)",
     time: "2026-07-26 22:00",
     notes: [

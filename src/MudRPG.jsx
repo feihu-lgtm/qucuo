@@ -87,8 +87,9 @@ import PawnScreen from "./buildings/PawnScreen.jsx";
 import EscortScreen, { ESCORT_QUESTS } from "./buildings/EscortScreen.jsx";
 import BountyScreen from "./buildings/BountyScreen.jsx";
 import ForgeScreen from "./buildings/ForgeScreen.jsx";
+import JadeShopScreen from "./buildings/JadeShopScreen.jsx";
 import GambleStoneScreen from "./buildings/GambleStoneScreen.jsx";
-import { settleNegotiation as gambleSettleNegotiation } from "./gambleStone.js";
+import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } from "./gambleStone.js";
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import { BUILDING_TYPE, getBuildingsForLocation, BUILDING_TYPE_LABEL } from "./buildings/qucuoBuildings.js";
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
@@ -1517,21 +1518,26 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         // 品质仍由系统按 luck 定(AI 不碰)，spec 只提供名字/类别/词条。
         // 兼容：老格式 parts[4] 是纯材料编码(非JSON)或不存在——解析失败就退化成"定制长剑"。
         const luck = Number(parts[3]) || 5;
-        const qualities = ["白", "绿", "蓝", "紫", "橙"];
-        const qIdx = Math.min(qualities.length - 1, Math.floor(luck / 2.5));
-        const quality = qualities[qIdx];
+        const qualities = ["白", "绿", "蓝", "紫", "橙", "红"];
+        const qIdx = Math.min(4, Math.floor(luck / 2.5)); // 气运最高到橙(rollQuality上限)
+        let quality = qualities[qIdx];
         let spec = null;
         if (parts[4] && parts[4] !== "-") {
           try { spec = JSON.parse(decodeURIComponent(parts[4])); } catch { spec = null; }
         }
-        let name, category, effect, sixDim;
+        let name, category, effect, sixDim, isJade = false;
         if (spec && spec.name) {
           name = spec.name;
           category = ["weapon", "armor", "accessory"].includes(spec.category) ? spec.category : "weapon";
           effect = (spec.effect && typeof spec.effect === "object" && Object.keys(spec.effect).length) ? spec.effect : undefined;
           sixDim = (spec.sixDim && typeof spec.sixDim === "object" && Object.keys(spec.sixDim).length) ? spec.sixDim : undefined;
+          // 金玉行：成品品质 = min(气运档, 玉料品质天花板)。好料是上限、手气定发挥。
+          if (spec.jade && spec.qualityCap) {
+            isJade = true;
+            const capIdx = qualities.indexOf(spec.qualityCap);
+            if (capIdx >= 0 && capIdx < qualities.indexOf(quality)) quality = spec.qualityCap;
+          }
         } else {
-          // 老格式兜底：parts[4] 当纯材料名，拼"XX剑"，无词条
           let material = "";
           if (parts[4] && parts[4] !== "-") { try { material = decodeURIComponent(parts[4]); } catch { material = parts[4]; } }
           name = material ? `${material}剑` : "定制长剑";
@@ -1542,9 +1548,13 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         if (qRank < 2) { effect = undefined; sixDim = undefined; }
         const forgedItem = makeGameItem({ name, category, quality, ...(effect ? { effect } : {}), ...(sixDim ? { sixDim } : {}) });
         setInv(iv => [...iv, { ...forgedItem, id: `forge_${parts[2]}_${Math.random().toString(36).slice(2, 6)}`, equipped: false }]);
-        deliveredNames.push(`${name}（${quality}）`);
+        deliveredNames.push({ text: `${name}（${quality}）`, jade: isJade });
       }
-      addLog([{ t: "item", text: `  🔨 铸剑坊的伙计寻来，将打造好的「${deliveredNames.join("」「")}」送到你手上，已收入行囊。` }]);
+      const anyJade = deliveredNames.some(d => d.jade);
+      const namesStr = deliveredNames.map(d => d.text).join("」「");
+      addLog([{ t: "item", text: anyJade
+        ? `  💎 金玉行的伙计寻来，将雕琢好的「${namesStr}」奉到你手上，已收入行囊。`
+        : `  🔨 铁匠铺的伙计寻来，将打造好的「${namesStr}」送到你手上，已收入行囊。` }]);
       return prev.filter(f => !matured.includes(f));
     });
     setVarTree(prev => {
@@ -4932,6 +4942,28 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       return;
     }
     setActiveBuilding(null);
+    if (res.type === "keep") {
+      // 据为己有：把开出的料作为「玉石原料」收进背包。带上种水档/品质天花板/场口，
+      // 供金玉行打造时读取——料的品质天花板决定成品品质上限。命名用种水档标签(如
+      // "帝王绿玻璃种·玉料")，category 用 misc(原料，不是可装备的成品)，jadeSpec 存
+      // 结构化信息供金玉行 handler 读。
+      const st = res.stone || {};
+      const tier = (JADE_TIERS.find(t => t.key === st.jadeTier) || {});
+      const tierLabel = tier.label || "玉料";
+      const cap = st.quality || tier.quality || "白";
+      const ckLabel = CHANG_KOU[st.changKou]?.label || "";
+      const jadeItem = {
+        name: `${tierLabel}·玉料`,
+        category: ITEM_CATEGORY.MISC,
+        quality: cap,
+        desc: `${ckLabel ? ckLabel + "开出的" : ""}一块${tierLabel}玉料，品质天花板${cap}。可拿去金玉行雕琢成器。`,
+        jadeSpec: { jadeTier: st.jadeTier, qualityCap: cap, changKou: st.changKou, tierLabel },
+      };
+      setInv(prev => [...prev, { ...jadeItem, id: `jade_${Date.now()}_${Math.random().toString(36).slice(2, 5)}` }]);
+      addLog([{ t: "item", text: `  💎 你把这块「${tierLabel}」料收入行囊，日后可去金玉行请玉匠雕琢成器。` }]);
+      jotNote({ text: `在玉石料场开出一块${tierLabel}玉料，收进了行囊。`, source: NOTE_SOURCE.NARRATIVE });
+      return;
+    }
     if (res.type === "sell") {
       setChar(c => ({ ...c, money: (c.money || 0) + res.price }));
       act(`在天都镇玉石料场，把开出的料子卖给${res.bidderName || "买家"}，得银${res.price}两`, [], { settle: true, settleNpc: res.bidderName || null });
@@ -5022,6 +5054,60 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     const matClause = `${matPart}一件${catCN}「${chosen.name}」${reqPart}，已当场付清定金${cost}两。${traitClause}请让铁匠据此接单：对这材料成色脾性、这活计的打法、以及要打出上面这些讲究，说道一两句(内行见识、增代入感)，交代约二十四个时辰后打成、届时遣伙计送货上门。`;
     act(`到铁匠铺定制${catCN}「${chosen.name}」，付${cost}两定金。${matClause}`, [], { settle: true });
   }, [char, addLog, act]);
+
+  // ══ 金玉行（一个 building 两柜台，都消耗背包里的玉料）══
+  // 玉料 = 赌石开出后"据为己有"收进背包的物品(带 jadeSpec.qualityCap 品质天花板)。
+  // 成品品质 = min(玉料天花板, 气运rollQuality)——好料是上限，手气定实际发挥。
+  // 两柜台都走延时打造(复用 forge_pending flag + 自动交付)，spec 里带 jade:true + qualityCap，
+  // 交付时据此把品质封顶。下单即消耗那件玉料(从 inv 移除)。
+
+  // 定制柜：小模型据三填空出 3 候选(玉匠语境)。只设计不下单。
+  const handleJadeDesign = useCallback(async ({ material, category, requirement }) => {
+    try {
+      return await forgeDesign({ material, category, requirement, craft: { shop: "金玉行", maker: "玉匠", wares: "玉器饰物护身之物" } }, apiCfg);
+    } catch (e) {
+      addLog([{ t: "err", text: `  [错误] 金玉行设计失败：${e.message || e}` }]);
+      return { ok: false, candidates: [] };
+    }
+  }, [apiCfg, addLog]);
+
+  // 下单打造（两柜台共用）：chosen=选定成品规格，jadeItemId=要消耗的玉料物品id。
+  // preset=true 表示预制柜(选购成品，词条来自 JADE_WARES 该成品本身)；false 为定制柜。
+  const handleJadeCraft = useCallback((chosen, jadeItemId, currentTime, threeFields) => {
+    if (!chosen || !chosen.name) return;
+    // 找到那件玉料，读天花板，然后消耗它
+    const jade = inv.find(i => (typeof i === "object") && i.id === jadeItemId && i.jadeSpec);
+    if (!jade) { addLog([{ t: "err", text: "  找不到要用的玉料，先去赌石开一块料收进行囊。" }]); return; }
+    const qualityCap = jade.jadeSpec?.qualityCap || jade.quality || "白";
+    setInv(prev => prev.filter(i => !((typeof i === "object") && i.id === jadeItemId)));  // 消耗玉料
+    const spec = {
+      name: chosen.name,
+      category: chosen.category || "accessory",
+      effect: chosen.effect || {},
+      sixDim: chosen.sixDim || {},
+      material: (threeFields?.material || jade.jadeSpec?.tierLabel || "玉料"),
+      requirement: (threeFields?.requirement || "").trim(),
+      jade: true,
+      qualityCap,
+    };
+    // luck 存进 flag 供交付时 rollQuality，品质封顶在交付时用 qualityCap 卡。
+    const luck = char.special?.气运 ?? 5;
+    setFlags(f => [...f, `forge_pending_${currentTime}_${luck}_${encodeURIComponent(JSON.stringify(spec))}`]);
+    // 接单叙事：玉匠语境，把料/成品/词条讲清，点明料已交、活已接，杜绝 AI 脑补。
+    const catCN = { weapon: "玉兵", armor: "玉甲", accessory: "玉饰" }[spec.category] || "玉器";
+    const EFF_TRAIT = {
+      forceFirst: "出手极快、抢在人前", ignoreDefense: "锋锐透甲", doubleVsStatus: "专克身有滞碍之敌",
+      lowHpBonus: "绝境愈见威力", afterStatusBonus: "善趁敌中招追击", detonateMark: "引爆敌身内伤",
+      enemyCostPenalty: "缠身封穴令敌耗力", freezeEnergyRecovery: "寒气封息阻敌回气", applyMark: "着身留内伤暗印",
+      onCounterSuccessDamageRatio: "以守反攻反噬更狠", onCounterSuccessEnergyGain: "格挡回气",
+      hpRestore: "贴身温养回血", energyRestore: "起手先饱一口真元",
+    };
+    const traits = [];
+    for (const k of Object.keys(spec.effect || {})) { if (EFF_TRAIT[k]) traits.push(EFF_TRAIT[k]); }
+    for (const [k, v] of Object.entries(spec.sixDim || {})) traits.push(`养${k}(+${v})`);
+    const traitClause = traits.length ? `这件东西的讲究在于：${traits.join("；")}。` : "";
+    act(`到金玉行，把一块「${jade.jadeSpec?.tierLabel || "玉料"}」交给玉匠，请雕一件${catCN}「${chosen.name}」。${traitClause}玉料已当场交付、活计已接。请让玉匠据料的种水成色、这活的雕法、要出的讲究说道一两句(内行见识、增代入感)，交代约二十四个时辰后雕成、届时遣伙计送来。`, [], { settle: true });
+  }, [inv, char, addLog, act]);
 
   const handleListenRumor = useCallback((rumor, cost) => {
     if ((char.money || 0) < cost) return;
@@ -5937,7 +6023,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 <WuguanScreen building={activeBuilding} char={char} skills={skills} zoneTheme={zoneTheme} inline
                   onClose={() => setActiveBuilding(null)} onBuySkill={handleBuySkill} onBreakthrough={handleSkillBreakthrough} />
               )}
-              {activeBuilding && (activeBuilding.type === BUILDING_TYPE.SHOP || activeBuilding.type === BUILDING_TYPE.SMITHY || activeBuilding.type === BUILDING_TYPE.ANTIQUE || activeBuilding.type === BUILDING_TYPE.MEDICINE || activeBuilding.type === BUILDING_TYPE.CLOTH || activeBuilding.type === BUILDING_TYPE.JEWELRY || activeBuilding.type === BUILDING_TYPE.GROCERY || activeBuilding.type === BUILDING_TYPE.BLACKMARKET || activeBuilding.type === BUILDING_TYPE.SECTSHOP) && (() => {
+              {activeBuilding && (activeBuilding.type === BUILDING_TYPE.SHOP || activeBuilding.type === BUILDING_TYPE.SMITHY || activeBuilding.type === BUILDING_TYPE.ANTIQUE || activeBuilding.type === BUILDING_TYPE.MEDICINE || activeBuilding.type === BUILDING_TYPE.CLOTH || activeBuilding.type === BUILDING_TYPE.GROCERY || activeBuilding.type === BUILDING_TYPE.BLACKMARKET || activeBuilding.type === BUILDING_TYPE.SECTSHOP) && (() => {
                 const shopData = rollShopStock(activeBuilding.shopKey, time) || buildShopInventory(activeBuilding.shopKey);
                 if (!shopData) return null;
                 const isKarma = shopData.currency === "karma";
@@ -6012,6 +6098,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.FORGE && (
                 <ForgeScreen building={activeBuilding} char={char} time={time} flags={flags} inline
                   zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCommission={handleForgeCommission} onDesign={handleForgeDesign} />
+              )}
+              {activeBuilding && activeBuilding.type === BUILDING_TYPE.JEWELRY && (
+                <JadeShopScreen building={{ ...activeBuilding, flags }} char={char} inv={inv} time={time} inline
+                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onDesign={handleJadeDesign} onCraft={handleJadeCraft} />
               )}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.GAMBLESTONE && (
                 <GambleStoneScreen building={activeBuilding} char={char} time={time}

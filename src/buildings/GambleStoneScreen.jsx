@@ -245,10 +245,11 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
     onSettle?.({ type: "sell", price: b.offer, stone, bidderName: b.name });
     setClosed(true);
   }
-  function keepAndForge() {
-    if (closed || money < 200) return;
-    const r = rollCommission(stone, luck, 200);
-    onSettle?.({ type: "forge", result: r, stone });
+  function keepStone() {
+    // 据为己有：把这块开出的料收进背包（成为玉石原料），日后拿去金玉行打造成玉器。
+    // 不再就地花 200 委托做玉器——改成收料，料的种水/品质天花板随物品带走。
+    if (closed) return;
+    onSettle?.({ type: "keep", stone });
     setClosed(true);
   }
 
@@ -573,8 +574,8 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
           </PanelBtn>
         )}
         {!closed && (
-          <PanelBtn img={UI("bar_paper.png")} kind="paper" big disabled={money < 200} onClick={keepAndForge}>
-            {money < 200 ? "据为己有 · 银两不足200" : "据为己有 · 200两"}
+          <PanelBtn img={UI("bar_paper.png")} kind="paper" big onClick={keepStone}>
+            据为己有 · 收料入行囊
           </PanelBtn>
         )}
       </div>
