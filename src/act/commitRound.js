@@ -286,20 +286,13 @@ export function commitRound(d) {
     // (A) 提取成功但没产出拾取物（judgment 未消费、且提取没失败）→ 叙事判断此刻不宜捡
     //     （被盯着/险境），尊重叙事、本轮不发。这是正常且正确的行为。
     // (B) 提取层这次解析失败/调用异常（d.pickupExtractionFailedRef）→ 这是技术故障，不是
-    //     叙事拒捡！主叙事很可能已写了捡到某物（如"雪域冰莲"），却因提取模型抽风丢了。
-    //     此时必须保底发放，绝不能让掷中的拾取因提取故障蒸发。名字尽量从主叙事正文里
-    //     救（抓「」书名号里的物名），救不到就用品质通用名兜底；品质/分类用 judgment。
+    //     叙事拒捡！主叙事很可能已写了捡到某物，却因提取模型抽风丢了。此时必须保底发放，
+    //     绝不能让掷中的拾取因提取故障蒸发。名字用品质通用名（不再从散文正则抠名——
+    //     抠名永远补不全量词/书名号变体，真正的解法是把提取层解析修健壮，见 cleanJsonString）；
+    //     品质/分类用 judgment。
     if (judgment && !usedJudgment) {
       if (d.pickupExtractionFailedRef.current) {
-        const txt = typeof d.rawFull === "string" ? d.rawFull : "";
-        // 从叙事救名字：优先「」书名号里、且附近有拾取动词的；否则退通用名
-        let salvaged = "";
-        const brs = [...txt.matchAll(/[「"“]([^」"”]{1,10})[」"”]/g)];
-        for (const m of brs) {
-          const around = txt.slice(Math.max(0, (m.index ?? 0) - 10), (m.index ?? 0) + m[0].length + 6);
-          if (/[捡拾收获得收纳揣藏]/.test(around)) { salvaged = m[1]; break; }
-        }
-        const name = salvaged || `${judgment.quality === "白" ? "" : judgment.quality}品路遇之物`;
+        const name = `${judgment.quality === "白" ? "" : judgment.quality}品路遇之物`;
         const gained = makeGameItem({ name, category: judgment.category, quality: judgment.quality, desc: "路上拾得的物件。" });
         d.setInv(v => [...v, gained]);
         grantedThisTurnNames.push(name);
