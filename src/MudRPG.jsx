@@ -115,6 +115,11 @@ import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
 import { callMainOnce } from "./act/actCall.js";
 import { parseMainResponse } from "./act/parseResponse.js";
 import { commitRound } from "./act/commitRound.js";
+import {
+  rollSkeleton, buildSquarePrompt, parseSquareBatch, applySquareBatch,
+  consumeArrival, getLookText, burnSquare, resetForDay, pendingNodes,
+  serializeSquares, loadSquares,
+} from "./mapSquares.js";
 
 const DEFAULT_PRESETS = [QUCUO_PRESET];
 
@@ -122,6 +127,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [presets, setPresets] = useState(DEFAULT_PRESETS);
   // "new" 是显式新开局信号，此时无论有没有存档都不恢复。
   const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId);
+  // 格子数据随档恢复（埋物是游戏状态的一部分；刷新重掷会允许读档刨雷）
+  if (restored?.snap?.squares) loadSquares(restored.snap.squares);
 
   const [preset, setPreset] = useState(restored?.preset || DEFAULT_PRESETS[0]);
   const [room, setRoom] = useState(() => {
@@ -463,7 +470,46 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   const buildCurrentSnapshot = useCallback(() => buildSnapshot({
     preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState,
+    squares: serializeSquares(),
   }), [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, persuasionProgress, innerRoomName, companionState]); // deposit/depositedAt/pledgedItems captured via closure
+
+  // ── 地图格子·后台预跑（扫雷式预埋，见 mapSquares.js）──
+  // 全据点批量预跑（14 节点，3 个一 call）：系统先掷骰埋拾取/路遇，小模型一次写完全套
+  // 到达素材。fire-and-forget，单批失败静默，下个触发点自愈（开局/日更/每次格子移动后）。
+  const prerunBusyRef = useRef(false);
+  const prerunSquares = useCallback(() => {
+    if (prerunBusyRef.current) return;
+    const day = Math.floor(time / 24);
+    const pending = pendingNodes(day);
+    if (!pending.length) return;
+    prerunBusyRef.current = true;
+    (async () => {
+      try {
+        const luck = char.special?.气运 ?? 5;
+        for (let i = 0; i < pending.length; i += 3) {
+          const skeletons = {};
+          const batch = pending.slice(i, i + 3).map(name => {
+            const node = getMapNode(name);
+            const sk = rollSkeleton(name, luck);
+            skeletons[name] = sk;
+            return { name, base: node.desc, exits: Object.keys(node.exits).join(","), item: sk.item, encounter: sk.encounter };
+          });
+          const req = buildSquarePrompt(batch);
+          try {
+            const cfg = buildExtractionCfg("SQUARE_PRERUN", apiCfg);
+            const r = await callModel(cfg, req.system, [{ role: "user", content: req.user }], { maxTokens: 1500, callLabel: "地图预跑" });
+            applySquareBatch(day, parseSquareBatch(r.text), skeletons);
+          } catch (_) { /* 单批失败静默，余格下个触发点重试 */ }
+        }
+      } finally { prerunBusyRef.current = false; }
+    })();
+  }, [time, apiCfg, char]);
+  const prerunBootedRef = useRef(false);
+  useEffect(() => {
+    if (prerunBootedRef.current) return;
+    prerunBootedRef.current = true;
+    prerunSquares();
+  }, [prerunSquares]);
 
   // 关页/刷新兜底：IDB 写是异步、关页来不及落盘，故这里改用同步的 flushLocalBackup
   // 把最新快照写一份到 localStorage（尽力而为）；下次开局 loadAutoSave 会取 IDB 与它的较新者。
@@ -674,8 +720,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       dayMaterialRef.current = [];
       prevDayRef.current = curDay;
       if (material.length) summarizeDay(ended, material);
+      // 新的一天：全图格子重埋（昨日埋物作废，预跑重新掷骰写文——给出"每天值得巡一圈"的理由）
+      resetForDay();
+      prerunSquares();
     }
-  }, [time, summarizeDay]);
+  }, [time, summarizeDay, prerunSquares]);
   useEffect(() => {
     if (time === prevTimeRef.current) return;
     prevTimeRef.current = time;
@@ -1843,6 +1892,25 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       return;
     }
 
+    // ── 查看/环顾：当前据点有预跑好的格子文本时纯前端秒回 ──
+    // 预跑已写好环顾文本（lookText），不必再劳烦旁白 AI 复述一遍。
+    // 格子未就绪（预跑失败）则穿透回下方原有 AI 路径。
+    if (!isTalk && intent.code === "LOOK" && QUCUO_MAP[room.name]) {
+      const lookText = getLookText(room.name, Math.floor(time / 24));
+      if (lookText) {
+        addLog([{ t: "cmd", text: `> ${cmd}` }]);
+        setInput("");
+        setCmdHistory(p => [cmd, ...p].slice(0, 50));
+        setHistIdx(-1);
+        addLog([{ t: "desc", text: "  " + lookText }]);
+        traceStep(_trace, "查看", "pass", "格子预成文本，纯前端秒回");
+        endTrace(_trace, "查看（纯前端）");
+        setTime(t => t + 1);
+        setConvo([...convo, { role: "user", content: cmd }, { role: "assistant", content: lookText.slice(0, 500) }]);
+        return;
+      }
+    }
+
     // ── 调试指令：#testscript <任务id> <flag> ──（本轮新增，仅供本地测试）
     // 手动模拟"AI这一轮返回了这个flag"，直接跑一遍台本夺舍判断，
     // 不需要真的调AI、不需要精心构造存档去赌AI会不会吐出这个flag——
@@ -2001,6 +2069,48 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const lockedDestName = outerLock.lockedDestName;
     if (outerLock.blocked) { movingDir = null; pendDirRef.current = null; }
     if (outerLock.outerDepart) outerDepartRef.current = outerLock.outerDepart;
+
+    // ── 格子命中：回访已探索据点纯前端、零 API（mapSquares.js）──
+    // 到达文本/拾取/路遇都由后台预跑提前掷骰+写好，在此就地消费。首次到访（无缓存）
+    // 继续走下方 AI 叙事建场，同时烧掉该格（埋好的内容作废，避免与 AI 轮自己的拾取骰
+    // 双重发放）。格子未就绪（预跑失败）→ 用 destNode.desc 兜底，回访照样纯前端。
+    if (!isTalk && lockedDestName && roomMapRef.current[lockedDestName]) {
+      const sq = consumeArrival(lockedDestName, Math.floor(time / 24));
+      const destNode = getMapNode(lockedDestName);
+      const cached = roomMapRef.current[lockedDestName];
+      const arrivalDesc = sq.desc || destNode.desc;
+      traceStep(_trace, "格子移动", "pass", `${room.name}→${lockedDestName} 格子命中，纯前端${sq.desc ? "" : "（格子未就绪，兜底文本）"}`);
+      const arrivalLines = [{ t: "room", text: "" }, { t: "room", text: `    ${lockedDestName}` }, { t: "room", text: "" }, { t: "desc", text: "  " + arrivalDesc }];
+      let gridNpcs = [...(cached.npcs || [])];
+      if (sq.item) {
+        const gained = makeGameItem(sq.item);
+        setInv(v => [...v, gained]);
+        arrivalLines.push({ t: "item", text: `  ${sq.findLine ? sq.findLine + "  " : ""}✓ 你拾得「${sq.item.name}」，收入行囊。` });
+        traceStep(_trace, "拾取判定", "pass", `格子预埋：${sq.item.name}（品质「${sq.item.quality}」）前端发放`);
+      }
+      if (sq.encounter) {
+        const en = sq.encounter;
+        gridNpcs = [...gridNpcs, ensureNpcCombatData({ name: en.name, id: en.id, brief: en.brief, levelCap: Math.max(0, QUALITY.indexOf(en.tier || "白")) }, { luck: char.special?.气运 ?? 5 })];
+        if (en.line) arrivalLines.push({ t: "desc", text: "  " + en.line });
+        traceStep(_trace, "路遇", "pass", `格子预埋路遇：${en.name}（${en.label}）`);
+      }
+      addLog(arrivalLines);
+      setRoom({ name: lockedDestName, desc: arrivalDesc, exits: Object.keys(destNode.exits), npcs: gridNpcs, items: [...(cached.items || [])] });
+      if (!mapData[lockedDestName]) setMapData(m => ({ ...m, [lockedDestName]: { x: destNode.x, y: destNode.y } }));
+      outerDepartRef.current = null; pendDirRef.current = null; pickupJudgmentRef.current = null;
+      const gridFaces = detectNewFaces(varTreeRef.current, gridNpcs);
+      if (gridFaces.length) {
+        addLog(gridFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
+        setVarTree(prev => markAsSeen(prev, gridFaces.map(n => n.name)));
+      }
+      setVarTree(prev => updateLastSeen(prev, gridNpcs.map(n => n.name), time));
+      setTime(t => t + 1);
+      setConvo([...convo, { role: "user", content: cmd }, { role: "assistant", content: arrivalDesc.slice(0, 500) }]);
+      endTrace(_trace, `到达 ${lockedDestName}（格子·纯前端）`);
+      prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
+      return;
+    }
+    if (!isTalk && lockedDestName) burnSquare(lockedDestName); // AI 叙事接管这次到达，埋好的内容作废
 
     const newConvo = [...convo, { role: "user", content: cmd }];
     const angryNpcsInRoom = room.npcs
