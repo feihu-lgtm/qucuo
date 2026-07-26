@@ -4999,12 +4999,28 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       requirement: (threeFields?.requirement || "").trim(),
     };
     setFlags(f => [...f, `forge_pending_${currentTime}_${luck}_${encodeURIComponent(JSON.stringify(spec))}`]);
-    // 接单叙事：材料/要求进 prompt 让掌柜识料、说道两句(代入感)，点明定金已付、订单已下，
-    // 杜绝 AI 脑补"掏不出钱"。settle 轻档。
-    const matClause = spec.material
-      ? `玩家拿「${spec.material}」来定制一件「${chosen.name}」，${spec.requirement ? `要的是「${spec.requirement}」的路子，` : ""}已当场付清定金${cost}两。请让铁匠据此接单：对这材料成色脾性、这活计的打法说道一两句(内行见识、增代入感)，交代约二十四个时辰后打成、届时遣伙计送货上门。`
-      : `玩家定制一件「${chosen.name}」，已当场付清定金${cost}两。请让铁匠爽快接单，交代约二十四个时辰后打成、届时遣伙计送货上门。`;
-    act(`到铁匠铺定制「${chosen.name}」，付${cost}两定金。${matClause}`, [], { settle: true });
+    // 接单叙事：把选定这件成品的完整信息(名字/类别/词条特性)都发给主叙事，让铁匠的话
+    // 呼应实际要造的东西——比如选了带"无视防御"词条的刀，铁匠可自然说"给你开个透甲的
+    // 刃"；选了"气运"六维的饰物，可说"再给你錾道纳福的纹"。此前只发了名字/材料/要求，
+    // 词条没发过去，铁匠说的跟实际成品脱节。词条转成可读中文特性描述(不发 forceFirst 这类
+    // 原始字段名，AI 读了也是照字段念)。点明定金已付、订单已下，settle 轻档，杜绝 AI 脑补
+    // "掏不出钱"的窘迫剧情。
+    const catCN = { weapon: "兵器", armor: "护具", accessory: "饰物" }[spec.category] || "物件";
+    const EFF_TRAIT = {
+      forceFirst: "出手极快、抢在人前", ignoreDefense: "刃口锋锐、能透甲破防", doubleVsStatus: "专克身有滞碍之敌",
+      lowHpBonus: "越是绝境越见威力", afterStatusBonus: "善趁敌中招时追击", detonateMark: "能引爆积在敌身的内伤",
+      enemyCostPenalty: "缠身封穴、令敌耗力", freezeEnergyRecovery: "寒气封息、阻敌回气", applyMark: "着身留下内伤暗印",
+      onCounterSuccessDamageRatio: "以守反攻、格挡后反噬更狠", onCounterSuccessEnergyGain: "格挡得手便回一口真气",
+      hpRestore: "贴身温养、缓缓回血", energyRestore: "起手先饱一口真元",
+    };
+    const traits = [];
+    for (const k of Object.keys(spec.effect || {})) { if (EFF_TRAIT[k]) traits.push(EFF_TRAIT[k]); }
+    for (const [k, v] of Object.entries(spec.sixDim || {})) traits.push(`养${k}(+${v})`);
+    const traitClause = traits.length ? `这件东西的讲究在于：${traits.join("；")}。` : "";
+    const matPart = spec.material ? `玩家拿「${spec.material}」来打` : "玩家来定制";
+    const reqPart = spec.requirement ? `，要的是「${spec.requirement}」的路子` : "";
+    const matClause = `${matPart}一件${catCN}「${chosen.name}」${reqPart}，已当场付清定金${cost}两。${traitClause}请让铁匠据此接单：对这材料成色脾性、这活计的打法、以及要打出上面这些讲究，说道一两句(内行见识、增代入感)，交代约二十四个时辰后打成、届时遣伙计送货上门。`;
+    act(`到铁匠铺定制${catCN}「${chosen.name}」，付${cost}两定金。${matClause}`, [], { settle: true });
   }, [char, addLog, act]);
 
   const handleListenRumor = useCallback((rumor, cost) => {
