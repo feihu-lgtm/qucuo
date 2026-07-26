@@ -5913,9 +5913,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
             </div>
           )}
 
-          {/* ── 建筑/交易内联功能区（"上"：功能按钮，高度封顶约1/3列高，点开才占地方）── */}
+          {/* ── 建筑/交易内联功能区："上"。展开时 flex:1，与下方叙事区平分剩余高度，
+                 一直伸到底部行动栏（不再封顶 36vh 挤在上半部分）。内部 overflowY:auto 自滚，
+                 看全内容；不想占地方就点"▾ 最小化"，叙事区随即恢复全高。── */}
           {(activeBuilding || tradingShop) && !buildingPanelMinimized && (
-            <div style={{ flexShrink: 0, maxHeight: "36vh", overflowY: "auto", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)" }}>
               {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
               <div
                 onClick={() => setBuildingPanelMinimized(true)}

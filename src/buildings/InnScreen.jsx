@@ -77,7 +77,7 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   if (inline) {
     return (
-      <div style={{ borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", flexShrink: 0, maxHeight: "50vh", overflowY: "auto" }}>
+      <div style={{ borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", height: "100%", overflowY: "auto" }}>
         {children}
       </div>
     );

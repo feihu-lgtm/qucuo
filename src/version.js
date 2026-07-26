@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "建筑面板inline高度改flex:1占满到行动栏(含铁匠铺/交易/12个Overlay面板)",
+    time: "2026-07-26 22:00",
+    notes: [
+      "作者反馈：铁匠铺等建筑面板inline展开时内容挤在上半部分、高度太小(封顶36vh约1/3列高)看不全，要求往下拉到底、接触底部行动按钮栏(反正面板可最小化)。",
+      "根因：建筑面板wrapper(MudRPG 5918)是 flexShrink:0 + maxHeight:36vh，刻意封顶在上1/3；共用Overlay(InnScreen)inline档又套 maxHeight:50vh，两层里36vh生效，面板被压在上半部分。",
+      "修复(按作者选的\"真正占满剩余空间\")：wrapper改 flex:1 + minHeight:0 + overflowY:auto——与下方叙事区(也是flex:1)平分剩余高度、一直伸到底部行动栏，minHeight:0保证内部滚动生效。连带把共用Overlay inline档(12个建筑面板走它)从maxHeight:50vh改成height:100%填满父级；TradingScreen inline outer从固定33vh(Bug3时设的)也改height:100%+minHeight:0撑满、内部两栏各自滚。想收起点\"▾最小化\"，叙事区随即恢复全高(面板flexShrink:0消失)。",
+      "纯CSS flex布局改动，esbuild验证MudRPG.jsx/InnScreen.jsx/TradingScreen.jsx通过。渲染效果(是否真顶到行动栏、两栏滚动、各屏高表现)需本地实机确认。",
+    ],
+  },
+  {
     codename: "铁匠铺选定成品的类别+词条也发给主叙事，铁匠接单话术呼应实际成品",
     time: "2026-07-26 21:45",
     notes: [

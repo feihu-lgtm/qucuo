@@ -10,7 +10,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
   const sellableItems = playerInv.filter(i => typeof i === "object" && i.sellPrice > 0);
 
   const outer = inline
-    ? { borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", flexShrink: 0, height: "33vh", display: "flex", flexDirection: "column" }
+    ? { borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }
     : { position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" };
 
   const inner = inline
