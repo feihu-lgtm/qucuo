@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修复 duelFinishHandler 提顶层后 TDZ 崩溃(forceAdvanceQuest 前置引用)",
+    time: "2026-07-26 23:45",
+    notes: [
+      "去寄生瘦身(面Y)后续：把 duelFinishHandler 从 render IIFE 提为组件顶层 useCallback 后，浏览器刷新直接白屏报错 Cannot access forceAdvanceQuest before initialization，导致主界面无法挂载。",
+      "【根因】顶层 useCallback 的依赖数组里引用了 forceAdvanceQuest，但 handler 被放在 forceAdvanceQuest 定义之前两千行；JavaScript const TDZ 导致组件初始化时求依赖数组即崩溃。",
+      "【修复】将 duelFinishHandler 整段(含共享注释)从 2086 行附近剪下，插到 forceAdvanceQuest 定义闭合之后(约 4291 行后)。所有 20 项依赖(addLog/jotNote/aiSummarizeFact/act/forceAdvanceQuest 及全部 setters)此时均已初始化，无 TDZ。",
+      "验证：esbuild 带全图片 loader 对 MudRPG.jsx bundle 通过(2.1mb)；dev 服务器仍在跑(pid 44493)，刷新后待实机确认切磋/团战/送礼流程无异常。",
+    ],
+  },
+  {
     codename: "行动日志与注入结构结合：TraceViewer 独立成组件、双调用提取层全文入 trace、引擎铁律存在性核对",
     time: "2026-07-26 10:43",
     notes: [
