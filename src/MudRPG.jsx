@@ -36,6 +36,7 @@ import CharacterCreate from "./CharacterCreate.jsx";
 import { getActivePreset } from "./PresetManager.jsx";
 import { assemblePrompt, applyPresetOverrides } from "./presetSystem.js";
 import TraceViewer from "./TraceViewer.jsx";
+import { duelPotGain, duelAffGain, duelDropChance, TEAMWORK_GAIN } from "./combat/duelSettleMath.js";
 import { getCachedInspect, setCachedInspect } from "./inspectCache.js";
 import { classifyIntent, buildBudgetInstruction, INTENT } from "./inputIntent.js";
 import NpcActionMenu from "./NpcActionMenu.jsx";
@@ -7079,19 +7080,15 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
             // 让中期主打紫橙袍时约十几场胜利即可把内外功推到红名水平（各95、双线约
             // 1570潜能）。cap 兜底 0（白袍），越界 clamp 到 0~5。
             {
-              const POT_BY_TIER = [10, 20, 40, 70, 110, 160]; // index=levelCap(白绿蓝紫橙红)
-              const cap = Math.max(0, Math.min(5, duelingNpc?.levelCap ?? 0));
-              const base = POT_BY_TIER[cap];
-              const potGain = outcome === "win" ? base : Math.ceil(base / 2);
+              const { potGain, tierLabel } = duelPotGain(duelingNpc?.levelCap, outcome);
               setPot(p => p + potGain);
-              const tierLabel = ["白","绿","蓝","紫","橙","红"][cap] + "袍";
               addLog([{ t: "item", text: `  ✦ 与${tierLabel}高手切磋${outcome === "win" ? "获胜" : outcome === "lose" ? "落败" : "罢手"}，长了见识，潜能 +${potGain}` }]);
             }
             // 切磋后好感度：跟人认认真真过了招（点到为止），关系会拉近。但只对"具名 NPC 的
             // 切磋"生效——路遇的野兽/山贼这类泛用清剿目标（带 tag）是打杀、不是以武会友，
             // 不加好感度。赢了不失礼、输了也虚心，都算长交情，不论胜负都 +，赢略多。
             if (duelingNpc?.name && !duelingNpc.tag) {
-              const affGain = outcome === "win" ? 4 : 3;
+              const affGain = duelAffGain(outcome);
               const foeName = duelingNpc.name;
               setVarTree(prev => {
                 const tree = markNpcAsKnown(prev, foeName);
@@ -7110,7 +7107,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
             // 才算数，不能"陪打就有分"）。跟对手好感度那条是两件独立的事，互不冲突：
             // 一场胜利的团战里，玩家和对手交情+4、玩家和雪豹默契+3，各自成立。
             if (outcome === "win" && isSnowLeopardAvailable(companionState)) {
-              const teamworkGain = 3;
+              const teamworkGain = TEAMWORK_GAIN;
               setVarTree(prev => {
                 const tree = markNpcAsKnown(prev, "雪豹");
                 const roles = { ...(tree.角色 || {}) };
@@ -7128,8 +7125,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
             if (outcome === "win" && duelingNpc?.name && !duelingNpc.tag) {
               const pool = (duelingNpc.carriedItems || []).filter(it => !it.stolen && !it.dropped);
               if (pool.length) {
-                const luck = Math.max(0, Math.min(10, char.special?.气运 ?? 5));
-                const dropChance = 0.5 * Math.pow(luck / 10, 1.7);
+                const luck = char.special?.气运 ?? 5;
+                const dropChance = duelDropChance(luck);
                 if (Math.random() < dropChance) {
                   const got = pool[Math.floor(Math.random() * pool.length)];
                   setInv(prev => [...prev, { name: got.name, category: got.category || "misc", quality: got.quality || "白", equipped: false }]);
