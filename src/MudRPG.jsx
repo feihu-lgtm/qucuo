@@ -13,6 +13,7 @@ import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup } from "./sav
 import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
+import { GROUND_ITEMS } from "./groundItems.js";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, listCharacters, npcAffectionLabel, reputationLabel } from "./mvu.js";
 import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats } from "./equipment.js";
 import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem } from "./items/catalog.js";
@@ -929,6 +930,24 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       return { ...r, items: [...(r.items || []), ...toAdd] };
     });
   }, [room.name, questProgress, inv]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 地上陈设物·注入：每个据点地上摆几件无主的环境物（见 groundItems.js），让场景
+  // 不再空荡荡，玩家可拾/可端详。照搬上面采集物的"背包尚无 + 地上尚无才补货"模式——
+  // 捡进背包后此 effect 自然不再补，不会重复刷；读档后非当前据点缓存丢失，重进时按
+  // 背包过滤重铺（捡过且仍在背包的不重现），与采集物同待遇。地上物是据点级共享
+  // （room.items 不区分内层房间，项目一贯如此），故按 room.name 取表。
+  useEffect(() => {
+    if (!room.name) return;
+    const spec = GROUND_ITEMS[room.name];
+    if (!spec || !spec.length) return;
+    setRoom(r => {
+      const haveGround = new Set((r.items || []).map(i => (typeof i === "string" ? i : i.name)));
+      const haveInv = new Set((inv || []).map(i => (typeof i === "string" ? i : i.name)));
+      const toAdd = spec.filter(s => !haveGround.has(s.name) && !haveInv.has(s.name)).map(s => makeGameItem(s));
+      if (!toAdd.length) return r;
+      return { ...r, items: [...(r.items || []), ...toAdd] };
+    });
+  }, [room.name, inv]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 采集机制·跳过跑腿：某些采集节点是多条任务线共用的同一件东西（如燕羊胎既是
   // 兰姐线辅料，又是欢喜教线的交涉条件）。若所需物已在背包（在别处已采过），
