@@ -5,10 +5,15 @@ import { QUALITY_COLOR, CATEGORY_LABEL } from "./equipment.js";
 // 卡框与排版。底图 loot_duel.png（暖金·交叉双刀+金刚杵+莲花+余烬）/
 // loot_steal.png（冷翠·窃贼面具+探出之手+月+云纹）由作者投放于
 // public/stones/ui/，1122×1402（4:5）。偷窃与偷师共用冷翠底图（同属"顺手/窥得"
-// 的月黑风高调性）。底图当"完整卡框"：object-fit:fill 仅纵向随内容伸缩、水平不
-// 缩放，故左右装饰（含偷窃卡探入中心的那双手）水平像素位置恒定，与背板左右边永远
-// 对齐；内容浮在中心一块"顶底羽化"的暗背板上，描述再长也不裁切、不滚动，撑高时
-// 背板顶底以 18px 透明渐变柔和过渡，不硬切边框。
+// 的月黑风高调性）。
+//
+// 【居中浮卡】卡片限宽 420、水平 margin auto，浮在左对齐的叙事流正中，像一枚
+// 郑重托出的所得凭证，跟上下说书文本区分开——高光时刻该有这个仪式感。卡内
+// banner/名号/词条/价目一律居中排，唯描述走居中楷体如"此物有判词为证"。
+// 底图当"完整卡框"：object-fit:fill 仅纵向随内容伸缩、水平不缩放，故左右装饰
+// （含偷窃卡探入中心的那双手）水平像素位置恒定，与背板左右边永远对齐；内容浮
+// 在中心一块"顶底羽化"的暗背板上，描述再长也不裁切、不滚动，撑高时背板顶底以
+// 18px 透明渐变柔和过渡，不硬切边框。
 //
 // entry 结构（物品）：{ t:"loot", item, source:"duel"|"steal", fromNpc, text }
 //   item 须为 makeGameItem 产出的完整对象（atk/def/effect/sixDim/desc/价格齐全）。
@@ -39,7 +44,7 @@ function effectLines(effect) {
 const PLATE_CLIP = "polygon(0 6px,3px 6px,3px 3px,6px 3px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px))";
 
 const LOOT_CSS = `
-  .loot-card{ position:relative; margin:12px 0 16px; animation:lootIn .55s cubic-bezier(.2,1.35,.4,1) both; }
+  .loot-card{ position:relative; max-width:420px; margin:16px auto 20px; animation:lootIn .55s cubic-bezier(.2,1.35,.4,1) both; }
   @keyframes lootIn{
     0%{ opacity:0; transform:translateY(18px) scale(.93); }
     62%{ opacity:1; transform:translateY(-3px) scale(1.014); }
@@ -54,8 +59,8 @@ const LOOT_CSS = `
   .loot-body{ position:relative; z-index:2; clip-path:${PLATE_CLIP}; padding:15px 16px 14px;
     background:linear-gradient(to bottom, transparent 0, var(--plate) 18px, var(--plate) calc(100% - 18px), transparent 100%);
     box-shadow:0 5px 16px rgba(0,0,0,.4); text-shadow:0 1px 2px rgba(0,0,0,.85); }
-  .loot-banner{ display:flex; align-items:center; gap:8px; font-size:10.5px; letter-spacing:.18em;
-    padding:3px 12px 3px 9px; margin:0 0 12px; width:max-content; max-width:100%;
+  .loot-banner{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:10.5px; letter-spacing:.18em;
+    padding:3px 12px 3px 9px; margin:0 auto 12px; width:max-content; max-width:100%;
     clip-path:polygon(0 0,100% 0,calc(100% - 9px) 100%,0 100%); font-weight:700; text-shadow:0 1px 1px rgba(0,0,0,.4); }
   .loot-name{ font-family:"STKaiti","KaiTi","Noto Serif SC","Songti SC",serif; font-size:22px; font-weight:900;
     line-height:1.22; letter-spacing:.06em; text-shadow:0 2px 3px rgba(0,0,0,.7), 0 0 13px var(--qc-glow); }
@@ -65,19 +70,19 @@ const LOOT_CSS = `
   @keyframes lootShimmer{ 0%{ background-position:120% 0; } 100%{ background-position:-120% 0; } }
   .loot-chip{ font-size:9.5px; font-weight:700; padding:2px 8px; letter-spacing:.12em; color:#fff;
     clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%); text-shadow:0 1px 1px rgba(0,0,0,.6); }
-  .loot-rule{ height:2px; margin:10px 0; background:linear-gradient(90deg, var(--qc) 0%, transparent 88%); opacity:.6; }
-  .loot-stats{ display:flex; flex-wrap:wrap; gap:5px 16px; font-size:11.5px; }
+  .loot-rule{ height:2px; margin:10px auto; width:78%; background:linear-gradient(90deg, transparent 0, var(--qc) 50%, transparent 100%); opacity:.6; }
+  .loot-stats{ display:flex; flex-wrap:wrap; justify-content:center; gap:5px 16px; font-size:11.5px; }
   .loot-stat b{ font-size:14.5px; font-weight:800; color:var(--qc-hi); margin-left:3px;
     font-family:"Courier New",ui-monospace,monospace; text-shadow:0 0 9px var(--qc-glow), 0 1px 2px rgba(0,0,0,.8); }
-  .loot-eff{ display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
+  .loot-eff{ display:flex; flex-wrap:wrap; justify-content:center; gap:5px; margin-top:9px; }
   .loot-eff-tag{ font-size:10px; padding:2px 8px; letter-spacing:.08em; border:1px solid var(--qc);
     color:var(--qc-hi); background:rgba(0,0,0,.34); clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%); text-shadow:0 1px 1px rgba(0,0,0,.7); }
-  .loot-desc{ margin-top:11px; padding:8px 11px; font-size:12px; line-height:1.92; color:#e2d6b4;
+  .loot-desc{ margin-top:11px; padding:8px 11px; font-size:12px; line-height:1.92; color:#e2d6b4; text-align:center;
     font-family:"STKaiti","KaiTi","Noto Serif SC","Songti SC",serif; letter-spacing:.03em;
     background:rgba(0,0,0,.26); border-left:3px solid var(--qc); }
-  .loot-foot{ display:flex; align-items:center; gap:14px; margin-top:11px; font-size:11px; color:#c2b288; }
+  .loot-foot{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px 14px; margin-top:11px; font-size:11px; color:#c2b288; }
   .loot-foot img{ width:13px; height:13px; vertical-align:-2px; image-rendering:pixelated; }
-  .loot-named{ margin-left:auto; color:var(--qc-hi); letter-spacing:.14em; font-size:10px; font-weight:700; }
+  .loot-named{ color:var(--qc-hi); letter-spacing:.14em; font-size:10px; font-weight:700; }
   .loot-spark{ position:absolute; width:4px; height:4px; background:var(--qc-hi); z-index:3; pointer-events:none;
     box-shadow:0 0 7px var(--qc-hi); animation:lootSpark 1.7s ease-in-out infinite; }
   @keyframes lootSpark{ 0%,100%{ opacity:0; transform:scale(.35); } 50%{ opacity:1; transform:scale(1); } }
@@ -144,7 +149,7 @@ export default function LootCard({ entry }) {
               <span style={{ opacity: .78, letterSpacing: ".08em", fontWeight: 400 }}>· {T.sub}</span>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
               <span className={`loot-name ${hi ? "loot-shimmer" : ""}`} style={{ color: hi ? undefined : qc }}>{showName}</span>
               <span className="loot-chip" style={{ background: qc }}>{q}</span>
               <span className="loot-chip" style={{ background: "rgba(255,255,255,.15)", color: "#e2d6b4" }}>{typeChip}</span>

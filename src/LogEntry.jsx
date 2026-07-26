@@ -40,8 +40,10 @@ function renderMixed(text, baseColor, isDayMode) {
 }
 
 export default function LogEntry({ entry, color, onAction, isDayMode = false }) {
-  // 得物卡（切磋掉落/偷窃成功）：整条换成像素卡渲染，不走纯文本。
-  if (entry.t === "loot" && entry.item) {
+  // 得物卡（切磋掉落/偷窃成功/偷师得手）：整条换成像素卡渲染，不走纯文本。
+  // 偷招传的是 entry.skill（无 item），偷物传 entry.item——两者都要放行，
+  // 否则偷师得手会漏卡、退化成一行纯文本（此前正是这个 bug）。
+  if (entry.t === "loot" && (entry.item || entry.skill)) {
     return <LootCard entry={entry} />;
   }
   const text = entry.text || "";
