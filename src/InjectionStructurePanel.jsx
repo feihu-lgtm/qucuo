@@ -17,9 +17,10 @@ import React, { useState } from "react";
 import {
   ACTION_VIEWS, blocksForAction, KIND_META, CONSTRAINT_FIELDS,
   STATIC_TEXT_KEYS, schemaKeyFor,
-  giftSettleLawExample, giftNarrativeLawExample, giftExtractionSpecExample,
+  giftSettleLawExample, giftNarrativeLawExample,
 } from "./injectionBlocks.js";
 import * as ENGINE from "./enginePrompts.js";
+import { buildExtractionSpecExample } from "./extractionEngine.js";
 
 export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled }) {
   const [actionId, setActionId] = useState("look");
@@ -44,7 +45,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
     // 送礼铁律示例——用固定示例礼物演示实际渲染样例，不用等拉取当前局真值
     if (b.id === "gift_settle_law") return giftSettleLawExample();
     if (b.id === "gift_narrative_law") return giftNarrativeLawExample();
-    if (b.id === "extraction_call" && view.settleKind === "gift") return giftExtractionSpecExample();
+    if (b.id === "extraction_call") return buildExtractionSpecExample(view.intent || "UNKNOWN", view.settleKind || null);
     return null;
   };
 

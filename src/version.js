@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "预设面板双调用：展示提取层第二次 AI 调用的真实 prompt 模板",
+    time: "2026-07-26 23:55",
+    notes: [
+      "作者要求：在配置/预设的注入结构面板里，双调用模式下也要能看到第二次独立 AI 调用（提取层）实际喂给小模型的 system + user prompt。",
+      "【现状】此前 injectionBlocks.js 里只在「🎁 送礼」场景的 extraction_call 块写了一个手动的 giftExtractionSpecExample()；其他动作分类（查看/移动/对话/战斗/探索/伙伴认主/通用结算）打开「提取层调用」块只能看到一段说明，看不到真实模板。",
+      "【实现】extractionEngine.js 新增 buildExtractionSpecExample(intentCode, settleKind)：用一份代表性示例快照（room/char/inv/varTree/pickupJudgment 等）+ 占位叙事，直接调用 EXTRACTION_SPECS 的 system/user 工厂生成 prompt。这样面板看到的不是另写的示例，而是与真实提取层调用同一份模板，避免以后 EXTRACTION_SPECS 改了、面板示例还漂移。SETTLE_KIND_SPECS 提到模块级导出，供 buildExtractionSpecExample 与 callExtraction 共享同一套 settleKind→spec 映射。",
+      "InjectionStructurePanel.jsx 去掉 giftExtractionSpecExample 的单独导入，改为从 extractionEngine.js 引入 buildExtractionSpecExample；extraction_call 块现在对任何动作分类都能渲染出对应的提取层 system+user 模板（送礼/伙伴认主命中 settleKind 时展示专属 spec）。",
+      "验证：esbuild 对 InjectionStructurePanel.jsx / extractionEngine.js / MudRPG.jsx 全通过。面板渲染需本地实机确认（尤其各动作分类切换单/双调用时 extraction_call 块是否展开正确）。",
+    ],
+  },
+  {
     codename: "修复 duelFinishHandler 提顶层后 TDZ 崩溃(forceAdvanceQuest 前置引用)",
     time: "2026-07-26 23:45",
     notes: [

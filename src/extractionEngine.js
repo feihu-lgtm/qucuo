@@ -207,6 +207,11 @@ export function buildExtractionCfg(intentCode, apiCfg) {
   };
 }
 
+// settleKind → 专属提取spec 的映射表。不用 if-else 链一个个判断，是因为这类
+// "结算轮专属spec"以后大概率还会继续加（新的伙伴/新的特殊结算场景），映射表
+// 比继续堆叠 if-else 更容易扩展——加一个新 settleKind 只需要在这张表里加一行。
+export const SETTLE_KIND_SPECS = { gift: "GIFT", companion_invite: "COMPANION_INVITE" };
+
 // 调用提取层，返回 { p, mvuCommands, parseFailed }（p/mvuCommands 与 parseMainResponse 返回结构相同，可直接复用状态应用代码）。
 // 如果这个意图不需要状态提取（META_QUERY），返回 null。
 // settleOpts：结算轮专属上下文（目前只用于送礼场景），由 MudRPG.jsx 在 opts.settleKind
@@ -214,10 +219,6 @@ export function buildExtractionCfg(intentCode, apiCfg) {
 // 提取层，主叙事的散文不产 <mvu>，所以"送礼必须给正向好感"这条铁律必须在这里也落一份，
 // 不能只加在 buildSysBase（那边只管单调用/双调用主叙事文风，管不到提取层怎么判好感）。
 export async function callExtraction(intentCode, narrative, state, apiCfg, settleOpts = null) {
-  // settleKind → 专属提取spec 的映射表。不用 if-else 链一个个判断，是因为这类
-  // "结算轮专属spec"以后大概率还会继续加（新的伙伴/新的特殊结算场景），映射表
-  // 比继续堆叠 if-else 更容易扩展——加一个新 settleKind 只需要在这张表里加一行。
-  const SETTLE_KIND_SPECS = { gift: "GIFT", companion_invite: "COMPANION_INVITE" };
   const settleSpecKey = settleOpts?.settleNpc ? SETTLE_KIND_SPECS[settleOpts?.settleKind] : null;
   // 不能用 || 回退：META_QUERY 显式为 null（本意图不提取状态），
   // null || UNKNOWN 会让它错误地落到 UNKNOWN，使下面的 !spec 判断成为死代码。
@@ -259,6 +260,68 @@ export async function callExtraction(intentCode, narrative, state, apiCfg, settl
   // parseFailed：提取模型返回了无法解析的内容（被截断/没按格式输出），调用方
   // 据此提示"本轮状态未更新"——此前解析失败被静默吞掉，玩家毫无感知。
   return { p: parsed, mvuCommands, parseFailed };
+}
+
+// ============================================================================
+// 双调用模式下"提取层调用"的 prompt 样例生成器
+// 供 InjectionStructurePanel 在预设面板里直接展示第二次独立 AI 调用的 system/user。
+// 用一份代表性示例快照 + 占位叙事去调 EXTRACTION_SPECS 的真实工厂，
+// 保证面板看到的内容与 extractionEngine.js 实际调用同构，不另写一份示例防漂移。
+// ============================================================================
+const EXTRACTION_SAMPLE_SNAPSHOT = {
+  room: {
+    name: "鱼定村口",
+    exits: ["e", "s", "w"],
+    npcs: [{ name: "才旦", id: "caidan", brief: "背着猎弓的汉子" }],
+    items: [{ name: "碎石", id: "stone" }],
+  },
+  char: { hp: [85, 100], name: "主角" },
+  inv: [],
+  invText: "空",
+  dao: 0,
+  varTree: { 角色: { 才旦: { 好感度: 30 } } },
+  lockedDestName: null,
+  lockedExits: null,
+  pickupJudgment: { quality: "绿", category: "misc" },
+};
+
+const EXTRACTION_SAMPLE_NARRATIVE = "（此处为主叙事这一步实际输出的散文正文。预设面板用示例占位，展示提取层会收到什么样的输入。）";
+
+const EXTRACTION_SAMPLE_SETTLE = {
+  gift: {
+    settleNpc: "才旦",
+    giftInfo: {
+      itemName: "无主的青锋剑",
+      quality: "绿",
+      categoryLabel: "武器",
+      desc: "村口土里半掩着的一把青锋剑，剑身还算齐整，不知是哪位过路侠客遗落的。",
+      range: [4, 6],
+      suggestedDelta: 5,
+    },
+  },
+  companion_invite: { settleNpc: "雪豹" },
+};
+
+export function buildExtractionSpecExample(intentCode, settleKind = null) {
+  const settleOpts = settleKind ? EXTRACTION_SAMPLE_SETTLE[settleKind] : null;
+  const settleSpecKey = settleOpts?.settleNpc ? SETTLE_KIND_SPECS[settleOpts?.settleKind] : null;
+  const spec = settleSpecKey
+    ? EXTRACTION_SPECS[settleSpecKey]
+    : (Object.prototype.hasOwnProperty.call(EXTRACTION_SPECS, intentCode)
+      ? EXTRACTION_SPECS[intentCode]
+      : EXTRACTION_SPECS.UNKNOWN);
+  if (!spec) return null;
+  const system = typeof spec.system === "function"
+    ? spec.system(EXTRACTION_SAMPLE_NARRATIVE, EXTRACTION_SAMPLE_SNAPSHOT, settleOpts)
+    : spec.system;
+  const user = spec.user(EXTRACTION_SAMPLE_NARRATIVE, EXTRACTION_SAMPLE_SNAPSHOT, settleOpts);
+  return `【提取层 System Prompt】
+${system}
+
+【提取层 User Prompt】
+${user}
+
+（以上为 ${intentCode}${settleKind ? " + settleKind:" + settleKind : ""} 的真实提取模板，以示例快照/占位叙事渲染，实际调用会按当轮真值替换。）`;
 }
 
 // ── 铸剑坊/铁匠铺 定制设计：小模型据玩家三填空(材料/类别/要求)生成 3 个成品候选 ──
