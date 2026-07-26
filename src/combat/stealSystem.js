@@ -10,19 +10,21 @@
 // 惩罚，只是成功之后，从"偷到手的到底是物品还是招式"这一步开始分叉。
 
 export const STEAL_CONFIG = {
-  baseRate: 0.2,        // 好感度为0时的基础成功率
-  bonusPerTen: 0.05,    // 好感度每10点，成功率+5%
-  agilityBonusPerTen: 0.04, // 身法每10点，成功率再+4%（身法项独立于好感项）
-  maxRate: 0.9,         // 成功率封顶（原0.85，给身法项留出空间后调高到0.9，永远保留失败可能）
+  baseRate: 0.45,       // 好感度为0时的基础成功率（原0.2太低，叠加偷物分叉后体感像坏了）
+  bonusPerTen: 0.06,    // 好感度每10点，成功率+6%
+  agilityBonusPerTen: 0.05, // 身法每5点，成功率再+5%（原为每10点+4%，导致默认身法5完全吃不到加成、整条线作废，故改每5点一档）
+  maxRate: 0.92,        // 成功率封顶，永远保留失败可能（失败仍扣好感+生气，风险不能丢）
   angryTurns: 3,        // 生气状态持续的回合数上限
   angryFavorabilityLoss: 15, // 偷窃失败扣除的好感度
+  stealMoveChance: 0.25, // 偷窃成功后这次偷到的是招式（偷师）的概率；其余偷物。偷窃按钮的主诉求是顺手牵羊拿物件，偷招只是添头（原0.5让一半成功白白变成静默偷招，玩家体感"偷不到东西"）
 };
 
 // 成功率计算：好感项 + 身法项独立相加，封顶。
-// agility 参数默认0，不传时行为等同旧版纯好感公式（向后兼容旧调用点）。
+// 身法按每5点一档（修默认身法5零加成的坑）；好感仍按每10点一档。
+// agility 参数默认0，不传时行为等同纯好感公式（向后兼容旧调用点）。
 export function stealSuccessRate(favorability, agility = 0) {
   const favBonus = Math.floor((favorability || 0) / 10) * STEAL_CONFIG.bonusPerTen;
-  const agiBonus = Math.floor((agility || 0) / 10) * STEAL_CONFIG.agilityBonusPerTen;
+  const agiBonus = Math.floor((agility || 0) / 5) * STEAL_CONFIG.agilityBonusPerTen;
   return Math.min(STEAL_CONFIG.maxRate, STEAL_CONFIG.baseRate + favBonus + agiBonus);
 }
 
@@ -50,7 +52,8 @@ export function pickStealOutcome(hasStealableMove, hasStealableItem) {
   if (!hasStealableMove && !hasStealableItem) return null;
   if (!hasStealableMove) return "item";
   if (!hasStealableItem) return "move";
-  return Math.random() < 0.5 ? "move" : "item";
+  // 两边都有得偷时，偏向偷物（偷窃按钮的主诉求）；偷招只是小概率添头。
+  return Math.random() < STEAL_CONFIG.stealMoveChance ? "move" : "item";
 }
 
 // 生气状态的数据结构，存进 varTree.角色[npcName].生气状态

@@ -18,5 +18,8 @@ export function duelAffGain(outcome) {
 }
 
 export function duelDropChance(luck) {
-  return 0.5 * Math.pow(clamp(luck ?? 5, 0, 10) / 10, 1.7);
+  // 切磋获胜后从对手随身物掉一件的概率。原 0.5*(luck/10)^1.7 凸指数太狠，
+  // 默认气运5 仅约15%，体感"打赢也不掉东西"。改为 0.75*(luck/10)^1.2：
+  // 默认气运5≈33%、气运7≈49%、气运10=75%，福缘越高越稳但仍看脸。
+  return 0.75 * Math.pow(clamp(luck ?? 5, 0, 10) / 10, 1.2);
 }
