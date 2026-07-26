@@ -274,7 +274,10 @@ const parseDir = (cmd) => {
 const SHICHEN = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 // 24 回合/天，每时辰 2 回合。一个时辰劈两半：上半（偶数回合）为「初」、下半（奇数回合）为「正」。
 // 如 t%24=2→丑初、=3→丑正、=6→卯初。子正即半夜正中，与古法一致。
-const getTimeStr = (t) => { const idx = ((t % 24) + 24) % 24; const day = Math.floor(t / 24) + 1; const shi = SHICHEN[Math.min(11, Math.floor(idx / 2))]; const half = idx % 2 === 0 ? "初" : "正"; return `第${day}日·${shi}${half}`; };
+// 24小时制钟点：每半时辰=1小时，子初(idx0)=23:00、子正(idx1)=0:00(显示24:00)、丑初(idx2)=1:00…
+// 钟点 h=(idx+23)%24，h为0时按作者要求显示成24而非0。
+const getClockHour = (idx) => { const h = (idx + 23) % 24; return (h === 0 ? 24 : h); };
+const getTimeStr = (t) => { const idx = ((t % 24) + 24) % 24; const day = Math.floor(t / 24) + 1; const shi = SHICHEN[Math.min(11, Math.floor(idx / 2))]; const half = idx % 2 === 0 ? "初" : "正"; return `第${day}日·${shi}${half}·${String(getClockHour(idx)).padStart(2, "0")}:00`; };
 
 const DEFAULT_PRESETS = [QUCUO_PRESET];
 
@@ -1491,6 +1494,35 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setFlags(prev => {
       const cleaned = cleanExpiredBuffs(prev, time);
       return cleaned.length === prev.length ? prev : cleaned;
+    });
+    // 铸剑坊自动交付：委托时下的 forge_pending_<下单time>_<luck> flag，到 24 时辰后
+    // 系统自动打造入袋（不必玩家回铸剑坊手动点取件——面板承诺"打好有人送来"，这里真
+    // 落实）。每次回合推进检查一遍所有 pending 订单，成熟的（time-下单≥24）就地结算、
+    // 移除 flag、成品进背包，并在日志里提示"铸剑坊伙计送来"。同一 setFlags 里顺带处理，
+    // 避免多次 setState。
+    setFlags(prev => {
+      const matured = prev.filter(f => {
+        if (!f.startsWith("forge_pending_")) return false;
+        const parts = f.split("_");
+        const orderedAt = Number(parts[2]);
+        return Number.isFinite(orderedAt) && (time - orderedAt) >= 24;
+      });
+      if (!matured.length) return prev;
+      // 结算每张成熟订单
+      const deliveredNames = [];
+      for (const f of matured) {
+        const parts = f.split("_");
+        const luck = Number(parts[parts.length - 1]) || 5;
+        const qualities = ["白", "绿", "蓝", "紫", "橙"];
+        const qIdx = Math.min(qualities.length - 1, Math.floor(luck / 2.5));
+        const quality = qualities[qIdx];
+        const name = "定制长剑";
+        const forgedItem = makeGameItem({ name, category: ITEM_CATEGORY.WEAPON, quality });
+        setInv(iv => [...iv, { ...forgedItem, id: `forge_${parts[2]}_${Math.random().toString(36).slice(2, 6)}`, equipped: false }]);
+        deliveredNames.push(`${name}（${quality}）`);
+      }
+      addLog([{ t: "item", text: `  🔨 铸剑坊的伙计寻来，将打造好的「${deliveredNames.join("」「")}」送到你手上，已收入行囊。` }]);
+      return prev.filter(f => !matured.includes(f));
     });
     setVarTree(prev => {
       const chars = prev.角色 || {};
@@ -5250,7 +5282,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 <span style={{ color: zoneTheme.accentDim, fontWeight: "normal", fontSize: "11px", marginLeft: 6, letterSpacing: 0 }}>· {innerRoomName}</span>
               )}
             </div>
-            <div style={{ color: zoneTheme.textDim, fontSize: "10.5px", marginBottom: 10 }}>{getTimeStr(time)} <span style={{ opacity: 0.6 }}>({time})</span></div>
+            <div style={{ color: zoneTheme.textDim, fontSize: "10.5px", marginBottom: 10 }}>{getTimeStr(time)}</div>
             <div style={{ color: zoneTheme.text, fontSize: "12px", marginBottom: 14, lineHeight: 1.9 }}>{room.desc}</div>
 
             <div style={{ color: zoneTheme.accentDim, fontSize: "10.5px", marginBottom: 5, letterSpacing: "1px" }}>出口 <span style={{ color: zoneTheme.textDim, fontSize: "9.5px" }}>（在下方输入框打字移动）</span></div>

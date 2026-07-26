@@ -8,9 +8,9 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
   const luck = (char.special?.气运) ?? 5;
   const FORGE_COST = 120;
 
-  // 检查是否有待取件的订单
+  // 是否有在造订单（forge_pending_<下单time>_<luck>）。打好后由主循环自动送货入袋，
+  // 不再有"取件"态，所以只看 pending。
   const pendingFlag = flags.find(f => f.startsWith("forge_pending_"));
-  const pickupFlag = flags.find(f => f.startsWith("forge_ready_"));
 
   function qualityByLuck(l) {
     if (l >= 9) return "橙";
@@ -31,20 +31,22 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
           银两 {money} 两 · 气运 {luck}/10 · 定制费 {FORGE_COST} 两
         </div>
 
-        {pickupFlag && (
-          <div style={{ marginBottom: 14, padding: "10px 12px", background: "#0a140a", borderRadius: 6, border: "1px solid #2a4a2a" }}>
-            <div style={{ color: "#6aaa6a", fontSize: 12, marginBottom: 6 }}>您的武器已打造完成，可以取件了！</div>
-            <Btn label="取件" zoneTheme={zoneTheme} onClick={onPickup} />
-          </div>
-        )}
+        {pendingFlag && (() => {
+          // 实时倒计时：从 pending flag 里解出下单时间，算还剩几时辰。到点会由主循环
+          // 自动交付入袋（面板承诺"打好有人送来"），所以这里不再有"取件"按钮。
+          const orderedAt = Number(pendingFlag.split("_")[2]);
+          const elapsed = Number.isFinite(orderedAt) ? Math.max(0, time - orderedAt) : 0;
+          const remain = Math.max(0, 24 - elapsed);
+          return (
+            <div style={{ color: "#d4a853", fontSize: 12, marginBottom: 12, padding: "10px 12px", background: "#14100a", borderRadius: 6, border: "1px solid #4a3a1a" }}>
+              {remain > 0
+                ? `铁匠正挥汗赶工，还需 ${remain} 个时辰方能打成。打好后自有伙计寻来送到你手上，不必守在这里。`
+                : `武器已打成，铺子里的伙计正给你送来，稍候便到手上。`}
+            </div>
+          );
+        })()}
 
-        {pendingFlag && !pickupFlag && (
-          <div style={{ color: "#d4a853", fontSize: 12, marginBottom: 12 }}>
-            正在打造中，24时间单位后可来取件。
-          </div>
-        )}
-
-        {!pendingFlag && !pickupFlag && (
+        {!pendingFlag && (
           <>
             <div style={{ color: "#c8bfa0", fontSize: 12, marginBottom: 8 }}>
               预计品质：<span style={{ color: "#b48adf" }}>{qualityByLuck(luck)}</span>（基于气运，有随机浮动）
@@ -64,7 +66,7 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
               onClick={() => onCommission(material, luck, time, FORGE_COST)}
             />
             <div style={{ color: "#4a4a4a", fontSize: 10, marginTop: 10 }}>
-              24时间单位后来此取件
+              约 24 个时辰后打成，届时自有伙计送货上门，不必再跑一趟
             </div>
           </>
         )}
