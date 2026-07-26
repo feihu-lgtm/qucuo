@@ -4,7 +4,7 @@ import { describeCatalogForAI } from "./items/catalog.js";
 import { getActivePreset } from "./PresetManager.jsx";
 import { assemblePrompt } from "./presetSystem.js";
 import { gateScenario } from "./worldbook.js";
-import { ENGINE_IDENTITY, GM_RULE, ISOLATION, MAP_LAW, FORMAT_LAW, CATALOG_TAIL } from "./enginePrompts.js";
+import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL } from "./enginePrompts.js";
 import { makeBlock } from "./tavernMapping.js";
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
@@ -128,7 +128,7 @@ ${MVU_SYSTEM_INSTRUCTIONS}` : ""}`;
   // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
   // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
   const messages = [
-    makeBlock("main", `${ENGINE_IDENTITY}\n\n${GM_RULE}\n\n篇幅要求：${lenNote}\n${narratorVoicePrompt(narratorState)}`),
+    makeBlock("main", `${ENGINE_IDENTITY}\n\n篇幅要求：${lenNote}\n${narratorVoicePrompt(narratorState)}`),
     makeBlock("worldInfoBefore", `${presetContent}${npcLoreBlock || ""}`),
     makeBlock("charDescription", `玩家角色：${playerName}。系统会维护气血、内外功、物品等状态；你只需叙事，不要擅自修改状态。`),
     makeBlock("charPersonality", `旁白/说书人的语气由「Main Prompt」中的声线控制，保持统一。`),
@@ -139,15 +139,7 @@ ${MVU_SYSTEM_INSTRUCTIONS}` : ""}`;
     makeBlock("exampleStart", "<START>"),
   ];
 
-  // 空占位：由 callMainOnce 在调用前填充 chatHistory / inChat / latestUser。
-  messages.push(makeBlock("chatHistory", ""));
-  messages.push(makeBlock("inChat", ""));
-  messages.push(makeBlock("latestUser", ""));
-
-  // PHI（Post-History Instructions / Jailbreak）：FORMAT_LAW + 当前分支 schema + MVU。
-  messages.push(makeBlock("phi", `${FORMAT_LAW}\n\n${schemaBlock}`));
-
   const totalLen = messages.reduce((sum, b) => sum + (b.content?.length || 0), 0);
   if (opts.onSnapshot) opts.onSnapshot({ sys: messages, meta: { scope, narrativeOnly, isSettle, wantCatalog, wantIsolation, wantMvu, settleKind: opts.settleKind || null, len: totalLen } });
-  return messages;
+  return { sysBlocks: messages, phiBlock: makeBlock("phi", schemaBlock) };
 }

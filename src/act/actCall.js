@@ -1,6 +1,7 @@
 import { buildSysBase } from "../sysBase.js";
 import { step as traceStep, attachInjectionSnapshot } from "../actionTrace.js";
 import { NSFW_RULES, MODE_PRIMER_MESSAGES } from "../modePrimer.js";
+import { GM_RULE } from "../enginePrompts.js";
 import { gateBodyProfile } from "../bodyProfile.js";
 import { labelMessage, makeBlock } from "../tavernMapping.js";
 import { buildDistantViewBlock } from "../memory/daySummary.js";
@@ -31,7 +32,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     : d.intent.code === "LOOK" ? "talk"  // 查看/环顾：只描述当前场景与在场人物，不发物品，砍物件志（同 talk 档）
     : "full";
   let _gateReport = null;
-  let sysBlocks = buildSysBase(
+  let { sysBlocks, phiBlock } = buildSysBase(
     d.apiCfg.targetWordCount, d.narrator, d.scenario, d.budgetInstruction,
     // 结算轮灭 lore——但牵涉具体某人的结算（送礼/拜师/赌石成交）仍要人设，
     // 否则那人只剩个名字，写出来的对白没脾气。此时保留 lore（本就是绿灯，只注入在场者）。
@@ -57,11 +58,12 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     }
   );
 
-  // 在 Author's Note 位置追加 NSFW 规则与体貌蓝绿灯文本。
-  const authorsNote = sysBlocks.find(b => b.tavernBlock === "authorsNote");
-  if (d.nsfwOn && authorsNote) {
-    authorsNote.content += (authorsNote.content ? "\n" : "") + NSFW_RULES;
+  // PHI 追加 NSFW 规则（含示例对话）与创造模式规则——放在 chatMessages 最末尾=贴生成处=最强插入深度。
+  if (d.nsfwOn) {
+    phiBlock.content += (phiBlock.content ? "\n" : "") + NSFW_RULES;
+    phiBlock.content += "\n" + MODE_PRIMER_MESSAGES.map(m => m.content).join("\n");
   }
+  phiBlock.content += (phiBlock.content ? "\n" : "") + GM_RULE;
   // ── 体貌·蓝绿灯 ──
   // 公开层跟着"这一轮有没有人近距离看着你"走（full/talk 亮，赶路结算灭），
   // 私密层只认 ■ 模式。灭灯不只是省 token——赶路轮塞一段私处描写，模型真的会
@@ -71,8 +73,9 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     nsfw: d.nsfwOn,
     scanText: `${d.cmd}\n${[...d.convo].reverse().find(m => m.role === "assistant")?.content || ""}`,
   });
-  if (_bodyGate.text && authorsNote) {
-    authorsNote.content += (authorsNote.content ? "\n" : "") + _bodyGate.text;
+  if (_bodyGate.text) {
+    const authorsNote = sysBlocks.find(b => b.tavernBlock === "authorsNote");
+    if (authorsNote) authorsNote.content += (authorsNote.content ? "\n" : "") + _bodyGate.text;
   }
   if (_bodyGate.lit.length || _bodyGate.dark.length) {
     traceStep(d._trace, "体貌", "info",
@@ -92,16 +95,12 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     : d.ctx + distantBlock + d.recallBlock + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
-  // 9 号位 Example Messages（NSFW 对话示例）。
-  if (d.nsfwOn) {
-    for (const m of MODE_PRIMER_MESSAGES) {
-      chatMessages.push(labelMessage({ role: m.role, content: m.content }, "dialogueExamples"));
-    }
-  }
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
   chatMessages.push(makeBlock("chatHistory", d.hist));
   chatMessages.push(makeBlock("inChat", inChatContent));
   chatMessages.push(makeBlock("latestUser", latestUserContent));
+  // 13 号位 PHI：schema + NSFW(含示例对话) + 创造模式，贴生成处=最强插入深度。
+  chatMessages.push(phiBlock);
 
   // ── 赌石谈价·轻量挂载（借世界书"蓝灯/绿灯"思路：谈价这轮，重量条目全灭灯）──
   // 谈价是一对一、目标单一的对手戏，之前却挂着全量 talk 档（预设全文+在场全员lore+任务+

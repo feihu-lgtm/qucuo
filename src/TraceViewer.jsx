@@ -4,7 +4,6 @@ import * as ENGINE from "./enginePrompts.js";
 
 const LAW_CHECKS = [
   { key: "ENGINE_IDENTITY", label: "引擎身份" },
-  { key: "FORMAT_LAW", label: "格式铁律" },
   { key: "MAP_LAW", label: "地图铁律" },
   { key: "ISOLATION", label: "认知隔离" },
   { key: "CATALOG_TAIL", label: "物件志尾" },
