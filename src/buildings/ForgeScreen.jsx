@@ -34,14 +34,19 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
         {pendingFlag && (() => {
           // 实时倒计时：从 pending flag 里解出下单时间，算还剩几时辰。到点会由主循环
           // 自动交付入袋（面板承诺"打好有人送来"），所以这里不再有"取件"按钮。
-          const orderedAt = Number(pendingFlag.split("_")[2]);
+          // flag 第5段是材料编码，解出来在倒计时里报一句"你定的XX兵器"，增代入感。
+          const fp = pendingFlag.split("_");
+          const orderedAt = Number(fp[2]);
           const elapsed = Number.isFinite(orderedAt) ? Math.max(0, time - orderedAt) : 0;
           const remain = Math.max(0, 24 - elapsed);
+          let mat = "";
+          if (fp[4] && fp[4] !== "-") { try { mat = decodeURIComponent(fp[4]); } catch { mat = fp[4]; } }
+          const what = mat ? `你定制的「${mat}」兵器` : "你定制的兵器";
           return (
             <div style={{ color: "#d4a853", fontSize: 12, marginBottom: 12, padding: "10px 12px", background: "#14100a", borderRadius: 6, border: "1px solid #4a3a1a" }}>
               {remain > 0
-                ? `铁匠正挥汗赶工，还需 ${remain} 个时辰方能打成。打好后自有伙计寻来送到你手上，不必守在这里。`
-                : `武器已打成，铺子里的伙计正给你送来，稍候便到手上。`}
+                ? `${what}正在赶工，铁匠说还需 ${remain} 个时辰方能打成。打好后自有伙计寻来送到你手上，不必守在这里。`
+                : `${what}已打成，铺子里的伙计正给你送来，稍候便到手上。`}
             </div>
           );
         })()}

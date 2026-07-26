@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "铸剑坊委托个性化材料需求接入prompt+成品名(填陨铁→掌柜识料、送来陨铁剑)",
+    time: "2026-07-26 21:00",
+    notes: [
+      "作者反馈(看旧版trace)：委托铸剑坊时填了\"120两、要陨铁\"，但这个个性化需求没进prompt——掌柜完全不知道要陨铁，AI还脑补玩家\"身无分文、掏不出钱\"的窘迫剧情(与系统已扣120两的事实相反)。诉求：材料需求应成为prompt让掌柜介绍、提升代入感。",
+      "①【根因】handleForgeCommission 收到 material 参数后直接丢弃，act 只发固定串\"委托铸剑坊打造武器，花费X两\"，材料没进叙事。且没点明\"钱已付\"，settle轮的AI凭空编了掏不出钱的矛盾情节。",
+      "②【修复·材料进prompt】把玩家填的材料拼进act叙事指令：让掌柜据材料成色/脾性/打法说道一两句(内行见识、增代入感)、交代24时辰后送货；并明确\"已当场付清定金X两、订单已下\"，杜绝AI再编\"囊中羞涩\"。无材料时走\"任凭掌柜择料\"分支。",
+      "③【修复·材料进成品名】材料编码存进pending flag第4段(forge_pending_<time>_<luck>_<material>，encodeURIComponent防分隔符冲突、空材料存-占位)，24时辰自动交付时解出、拼成品名：陨铁→「陨铁剑」，无材料→「定制长剑」。ForgeScreen倒计时也报\"你定制的「陨铁」兵器还需X时辰\"。",
+      "④【兼容】flag加了material段后，自动交付里luck的取值从 parts[length-1] 改为固定 parts[3]（否则会误取到material段）；老存档3段旧flag(无material)兜底为空、仍出\"定制长剑\"，不崩。Node验证新flag/无材料/老flag/未成熟四种解析均正确。esbuild验证MudRPG.jsx/ForgeScreen.jsx通过。",
+    ],
+  },
+  {
     codename: "铸剑坊取货闭环重做(实时倒计时+到点自动送货入袋) + 左栏时间加24小时制钟点",
     time: "2026-07-26 20:30",
     notes: [

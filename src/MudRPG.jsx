@@ -1512,11 +1512,17 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       const deliveredNames = [];
       for (const f of matured) {
         const parts = f.split("_");
-        const luck = Number(parts[parts.length - 1]) || 5;
+        // flag 格式：forge_pending_<下单time>_<luck>_<material编码>。
+        // luck 现在固定在 parts[3]（不能再用 parts.length-1，那会取到 material 段）。
+        // material 在 parts[4]（老存档只有3段、无此段，兜底空）。用材料名拼成品名：
+        // 陨铁→「陨铁剑」，无材料→「定制长剑」。
+        const luck = Number(parts[3]) || 5;
+        let material = "";
+        if (parts[4] && parts[4] !== "-") { try { material = decodeURIComponent(parts[4]); } catch { material = parts[4]; } }
         const qualities = ["白", "绿", "蓝", "紫", "橙"];
         const qIdx = Math.min(qualities.length - 1, Math.floor(luck / 2.5));
         const quality = qualities[qIdx];
-        const name = "定制长剑";
+        const name = material ? `${material}剑` : "定制长剑";
         const forgedItem = makeGameItem({ name, category: ITEM_CATEGORY.WEAPON, quality });
         setInv(iv => [...iv, { ...forgedItem, id: `forge_${parts[2]}_${Math.random().toString(36).slice(2, 6)}`, equipped: false }]);
         deliveredNames.push(`${name}（${quality}）`);
@@ -4952,8 +4958,18 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   const handleForgeCommission = useCallback((material, luck, currentTime, cost) => {
     if ((char.money || 0) < cost) return;
     setChar(c => ({ ...c, money: c.money - cost }));
-    setFlags(f => [...f, `forge_pending_${currentTime}_${luck}`]);
-    act(`委托铸剑坊打造武器，花费${cost}两`, [], { settle: true });
+    const matReq = (material || "").trim();
+    // 材料编进 pending flag（第4段），供 24 时辰后自动交付时解出、拼成品名（陨铁→陨铁剑）。
+    // encodeURIComponent 避免材料里的下划线/空格破坏 flag 的 _ 分隔；空材料存 "-" 占位。
+    setFlags(f => [...f, `forge_pending_${currentTime}_${luck}_${matReq ? encodeURIComponent(matReq) : "-"}`]);
+    // 把玩家填的个性化材料/需求(如"陨铁""玄冰精铁")拼进叙事指令，让掌柜据此介绍、
+    // 演一段接单的场面——这是代入感的关键，此前 material 参数被丢弃，掌柜完全不知道
+    // 玩家要什么。同时点明"银两当场付清、订单已下"，因为这是 settle 轮(系统已扣钱)，
+    // 不加这句 AI 容易脑补"你掏不出钱/囊中羞涩"之类与既定事实相反的窘迫剧情。
+    const matClause = matReq
+      ? `玩家指定要用「${matReq}」这种材料打造，并已当场付清定金${cost}两。请让铸剑坊掌柜据此接单：对这材料的成色、脾性、打法说道一两句（内行人的见识，增添代入感），交代大约二十四个时辰后打成、届时遣伙计送货上门。`
+      : `玩家已当场付清定金${cost}两，未特别指定材料，任凭掌柜择料。请让掌柜爽快接单，交代大约二十四个时辰后打成、届时遣伙计送货上门。`;
+    act(`委托铸剑坊打造一柄兵器，付${cost}两定金。${matClause}`, [], { settle: true });
   }, [char, addLog, act]);
 
   const handleForgePickup = useCallback(() => {
