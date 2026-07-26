@@ -2204,7 +2204,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const hist = (mainConvo.length > histWindow ? mainConvo.slice(-histWindow) : mainConvo).map(m => (m.role === "user" ? "[玩家] " : "[引擎] ") + m.content).join("\n");
 
     // ── 场景NPC世界书 + 在场任务状态 + 久别重逢（纯注入文本，汇总在 act/roundNotes.js）──
-    const { lastAiText, npcLoreBlockWithQuest, reunionBlock } = buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, questProgress, varTree: varTreeRef.current, time });
+    const { lastAiText, npcLoreBlockWithQuest, reunionBlock } = buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, questProgress, varTree: varTreeRef.current, time, companionState, nsfwOn });
 
     // loading 态 + 计时器：在第一个 await（下方 recall/knowledge）之前启动——
     // 内层移动已在上方 early return（不进 loading），这里之后才真正要调 AI。
@@ -2633,7 +2633,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           const dropChance = duelDropChance(luck);
           if (Math.random() < dropChance) {
             const got = pool[Math.floor(Math.random() * pool.length)];
-            setInv(prev => [...prev, { name: got.name, category: got.category || "misc", quality: got.quality || "白", equipped: false }]);
+            const fullItem = makeGameItem({ name: got.name, category: got.category || "misc", quality: got.quality || "白" });
+            setInv(prev => [...prev, fullItem]);
             // 标记这件已从对手身上失去，避免重复掉（carriedItems 是固化清单）
             setRoom(r => ({
               ...r,
@@ -2641,7 +2642,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
                 ? { ...n, carriedItems: (n.carriedItems || []).map(it => it === got || it.name === got.name ? { ...it, dropped: true } : it) }
                 : n),
             }));
-            addLog([{ t: "item", text: `  ✦ 一番切磋，${duelingNpc.name}的「${got.name}」竟落入你手（福缘所致）` }]);
+            addLog([{ t: "loot", text: `✦ 一番切磋，${duelingNpc.name}的「${got.name}」竟落入你手（福缘所致）`, item: fullItem, source: "duel", fromNpc: duelingNpc.name }]);
           }
         }
       }
@@ -2681,7 +2682,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       if (loot) {
         if (loot.droppedItem) {
           setInv(prev => [...prev, { ...loot.droppedItem, equipped: false }]);
-          addLog([{ t: "item", text: `  ⚔ 战利品：获得「${loot.droppedItem.name}」（${loot.droppedItem.quality}）` }]);
+          addLog([{ t: "loot", text: `⚔ 战利品：获得「${loot.droppedItem.name}」`, item: loot.droppedItem, source: "duel", fromNpc: duelingNpc?.name }]);
           // 所见即所得的另一半：东西到了玩家手里，就得从NPC身上消失
           // （标记 stolen 复用偷窃系统的语义），再打一场不会凭空再爆一件。
           setRoom(r => ({
@@ -3327,11 +3328,13 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
     if (result.outcome === "item") {
       const target = result.item;
+      const fullItem = makeGameItem({ name: target.name, category: target.category || "misc", quality: target.quality || "白" });
       addLog([
         { t: "cmd", text: `> 偷窃 ${npc.name}` },
         { t: "desc", text: `  你运指如风，趁${npc.name}不备，将「${target.name}」（${target.quality}）神不知鬼不觉地顺入了自己怀中。` },
+        { t: "loot", text: `🤫 妙手空空：「${target.name}」`, item: fullItem, source: "steal", fromNpc: npc.name },
       ]);
-      setInv(prev => [...prev, { ...target, id: `stolen_${target.id}_${Date.now()}` }]);
+      setInv(prev => [...prev, { ...fullItem, id: `stolen_${target.id}_${Date.now()}` }]);
       // 标记这件物品已被偷走，避免同一件东西被偷第二次
       setRoom(r => ({
         ...r,
@@ -3342,12 +3345,13 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       return;
     }
 
-    // result.outcome === "move"：偷师成功，把偷来的招并入武学栏（fixed，学即完整）
-    addLog([
-      { t: "cmd", text: `> 偷窃 ${npc.name}` },
-      { t: "desc", text: `  你悄然窥破${npc.name}出手的门道，趁其不备，竟将「${result.move.name}」这一手偷学了去！` },
-    ]);
-    setSkills(sk => sk.some(s => s.id === result.skill.id) ? sk : [...sk, result.skill]);
+  // result.outcome === "move"：偷师成功，把偷来的招并入武学栏（fixed，学即完整）
+  addLog([
+    { t: "cmd", text: `> 偷窃 ${npc.name}` },
+    { t: "desc", text: `  你悄然窥破${npc.name}出手的门道，趁其不备，竟将「${result.move.name}」这一手偷学了去！` },
+    { t: "loot", text: `🤫 偷師得手：「${result.move.name}」`, skill: { name: result.move.name, quality: result.move.quality || result.skill?.quality || "白", moveType: result.move.type }, desc: result.move.desc, source: "steal", fromNpc: npc.name },
+  ]);
+  setSkills(sk => sk.some(s => s.id === result.skill.id) ? sk : [...sk, result.skill]);
   }, [varTree, skills, char, addLog]);
 
   // loading 变为 false 时，处理队列中的下一条命令。
@@ -5368,8 +5372,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                       })()}
                     </div>
                     {s.fixed
-                      ? <div style={{ fontSize: "10.5px", color: "#5a5a4a", paddingLeft: 18 }}>
-                          {s.source === "偷师" ? "偷师所得 · 学即完整，无需修炼" : s.source === "拜师·通用" ? "拜师·通用招 · 学即完整，无需修炼" : "授业绝学 · 学即完整，无需修炼"}
+                      ? <div style={{ paddingLeft: 18 }}>
+                          <div style={{ fontSize: "10.5px", color: "#5a5a4a" }}>
+                            {s.source === "偷师" ? "偷师所得 · 学即完整，无需修炼" : s.source === "拜师·通用" ? "拜师·通用招 · 学即完整，无需修炼" : "授业绝学 · 学即完整，无需修炼"}
+                          </div>
+                          {s.move?.desc && <div style={{ fontSize: "10px", color: zoneTheme.textDim, marginTop: 2, lineHeight: 1.65 }}>{s.move.desc}</div>}
                         </div>
                       : (() => {
                           const curIdx = STAGES.indexOf(s.stage);

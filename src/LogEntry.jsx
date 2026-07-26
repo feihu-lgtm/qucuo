@@ -1,4 +1,5 @@
 import React from "react";
+import LootCard from "./LootCard.jsx";
 
 // 参照酒馆预设的视觉层级：叙述是底色，对话高亮跳出，心理*斜体*
 //
@@ -39,6 +40,10 @@ function renderMixed(text, baseColor, isDayMode) {
 }
 
 export default function LogEntry({ entry, color, onAction, isDayMode = false }) {
+  // 得物卡（切磋掉落/偷窃成功）：整条换成像素卡渲染，不走纯文本。
+  if (entry.t === "loot" && entry.item) {
+    return <LootCard entry={entry} />;
+  }
   const text = entry.text || "";
   const isDesc = entry.t === "desc";
 
