@@ -11,6 +11,8 @@ import React, { useState } from "react";
 import { ZONE_THEMES } from "./theme.js";
 
 const theme = ZONE_THEMES.village;
+// 沿用 GambleStoneScreen 的资源路径写法（走 Vite BASE_URL，部署到子路径也不断）
+const SCROLL_H = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "stones/ui/scroll_h.webp";
 
 export default function OpeningSequence({ onFinish, playerName }) {
   const [index, setIndex] = useState(0);
@@ -49,10 +51,19 @@ export default function OpeningSequence({ onFinish, playerName }) {
         <div style={styles.imageFallback} />
       )}
       <div style={styles.vignette} />
-      <div style={styles.captionBox(theme)}>
-        <p style={styles.captionText}>{slide.caption}</p>
-        <div style={styles.hint(theme)}>
-          {index < SLIDES.length - 1 ? "点击继续 ▸" : "点击进入曲措乡"}
+      {/* 文案落在横卷轴上（public/stones/ui/scroll_h.webp，赌石那套精美UI里的资源）。
+          此前是裸文字压在 vignette 上——图一换成实拍质感的插画，白字直接飘在画面上
+          就显得很轻，像调试期的占位。卷轴既给了文字一个落脚的实体，也跟武侠开场
+          的调子对得上。
+          用法沿用 GambleStoneScreen 的既有约定：backgroundSize "100% 100%" 拉伸铺满
+          （不做九宫格切片——那批图本就是整幅设计好的，拉伸幅度不大时观感没问题）。
+          左右留出 12% 内边距把文字压在纸面上、不压到两端木轴。 */}
+      <div style={styles.scrollWrap}>
+        <div style={styles.scrollPanel}>
+          <p style={styles.captionText}>{slide.caption}</p>
+          <div style={styles.hint(theme)}>
+            {index < SLIDES.length - 1 ? "点击继续 ▸" : "点击进入曲措乡"}
+          </div>
         </div>
       </div>
       <div style={styles.dots}>
@@ -89,27 +100,52 @@ const styles = {
       "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, transparent 40%, rgba(0,0,0,0.75) 100%)",
     pointerEvents: "none",
   },
-  captionBox: (t) => ({
+  // 卷轴外层：定位与尺寸。宽度比原来的 560 放宽一点——卷轴两端木轴要占掉一部分，
+  // 纸面可用宽度才够放两行字。
+  scrollWrap: {
     position: "absolute",
-    bottom: "48px",
+    bottom: "40px",
     left: "50%",
     transform: "translateX(-50%)",
-    width: "min(560px, 86vw)",
+    // 三道约束取最小：桌面上限 680、窄屏让 92vw、**横屏再让 68vh**。
+    // 【为什么要第三道】aspectRatio 是宽度驱动高度的：横屏手机（如 800×400）
+    // 若只有前两道，宽取 680 → 高 261px ≈ 屏高 65%，卷轴会糊住整个下半屏。
+    // 68vh 的宽度上限按 2.6 比例折算过去，高度就被压在 26vh 左右。
+    width: "min(680px, 92vw, 68vh)",
+    // 比例贴着 scroll_h 原图（482×220 ≈ 2.19），略压扁一点让它别太占画面
+    aspectRatio: "2.6 / 1",
+    backgroundImage: `url(${SCROLL_H})`,
+    backgroundSize: "100% 100%",
+    backgroundRepeat: "no-repeat",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    filter: "drop-shadow(0 10px 26px rgba(0,0,0,.55))",
+  },
+  // 内层：把文字压在纸面上。左右 12% 避开两端木轴，上下留一点让字不贴纸边。
+  scrollPanel: {
+    width: "76%",
+    padding: "0 2%",
     textAlign: "center",
-  }),
+  },
   captionText: {
     fontFamily: "'Noto Serif SC', 'Songti SC', serif",
-    fontSize: "16px",
-    lineHeight: 1.9,
-    color: "#ece3d0",
-    textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+    fontSize: "clamp(13px, 1.9vh, 17px)",
+    lineHeight: 1.85,
+    // 纸面上要墨色，不能再用原来那个浅米白——那是给"压在画面上"设计的
+    color: "#3a2a16",
+    // 原来是给"白字压深色画面"设计的重阴影；落到纸面上就是一团脏。
+    // 换成极淡的暖影，只为让墨色离纸面一点点。
+    textShadow: "0 1px 0 rgba(255,248,230,.6)",
     marginBottom: "14px",
   },
   hint: (t) => ({
-    fontSize: "11px",
+    fontSize: "clamp(9px, 1.3vh, 11px)",
     letterSpacing: "3px",
-    color: t.accent,
-    opacity: 0.85,
+    marginTop: "0.6vh",
+    // 不再用主题 accent——那个色是为深色面板挑的，落在纸面上几乎看不见。
+    color: "#8a6a3a",
+    opacity: 0.95,
   }),
   dots: {
     position: "absolute",
