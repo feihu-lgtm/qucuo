@@ -25,7 +25,11 @@ export const TAVERN_POSITIONS = [
   { key: "chatHistory", order: 10, label: "Chat History", role: "user" },
   { key: "inChat", order: 11, label: "In-Chat Injection", role: "user" },
   { key: "latestUser", order: 12, label: "User's Latest Message", role: "user" },
-  { key: "phi", order: 13, label: "Post-History Instructions", role: "assistant" },
+  // 【注意与酒馆原义的差别】ST 的 Post-History Instructions 是 system 角色
+  // （API 不支持 system 时退化为 user），靠"位置最靠后"取得优先级，不是 prefill。
+  // 我们这一位实现的是 prefill：assistant 角色 + 作为最后一条消息，让模型顺着
+  // 它继续写。沿用 PHI 这个名字只是为了位次对得上酒馆的 13 位视图，技法并不相同。
+  { key: "phi", order: 13, label: "Post-History Instructions（本项目实为 assistant prefill）", role: "assistant" },
 ];
 
 const POSITION_BY_KEY = Object.fromEntries(TAVERN_POSITIONS.map(p => [p.key, p]));

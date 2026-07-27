@@ -105,8 +105,14 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   chatMessages.push(makeBlock("inChat", inChatContent));
   chatMessages.push(makeBlock("latestUser", latestUserContent));
   // 13 号位 PHI（assistant role）：schema + 起始暗示。
-  // 仿姬侠传 prefill 思路：assistant 位只放"我马上要开始写了"的暗示，
-  // 规则已在 11 号位（user）注入，AI 不会在 assistant 位补全规则文本。
+  // prefill：assistant 位放"我马上要开始写了"的起始暗示，AI 顺着冒号直接写。
+  // 【与姬侠传(char_card_1)的实际差别，别再照抄那句注释】它是 6 条消息，
+  // assistant 在第 5 位、后面还跟一条 user("reply:{Order **扩写only**}")，
+  // 所以那条 assistant 不是最后一条、不构成真 prefill，而是"假装 AI 上一轮
+  // 已经答应了这些规则"的自我一致性施压——它那条里塞了 246 字的规则
+  // （NSFW许可+格式复核+篇幅规格）。我们这里 phi 是真最后一条 = 真 prefill，
+  // 两种技法不同：真 prefill 里堆规则更容易让模型顺着把规则续写完而不产正文，
+  // 所以 NSFW/GM 规则挪去了 11 号位（user）。
   const prefillHint = narrativeOnly
     ? `\n回溯玩家输入「${d.cmd}」，直接续写正文：`
     : `\n回溯玩家输入「${d.cmd}」，直接输出JSON：`;

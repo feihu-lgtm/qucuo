@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "调研酒馆13位/姬侠传6消息后修 MVU 落位：双调用的提取层此前从没收到过禁写声明",
+    time: "2026-07-28 04:10",
+    notes: [
+      "起因是一个好问题：双调用模式下，MVU 该放调用1还是调用2？查完发现上一版的禁写声明只覆盖了单调用那条路。",
+      "①【两种模式下 MVU 走的是完全不同的路】单调用——主模型自己产 <mvu>，规矩由 MVU_SYSTEM_INSTRUCTIONS 随 schema 进 13 号位；双调用——主叙事只写散文、根本不注入那份说明书（13号位明说\"不要输出 <mvu> 块\"），MVU 的唯一落点是**提取层这第二次调用**。所以\"放调用1还是2\"的答案是：双调用下只能放调用2，而调用1不该有——这一半原本就是对的。",
+      "②【修 bug·提取层从没收到禁写声明】实测九份 spec（LOOK/MOVE/TALK_CASUAL/GIFT/COMPANION_INVITE/LEARN_SKILL/EXPLORE_ACTION/COMBAT/UNKNOWN）里有七份要 mvu 字段，但**没有一份**提过路径规矩或禁写。提取模型从来不知道 世界.旁白.* 是禁区，会反复去写、被裁决层反复丢弃，白烧 token 还在全流程日志里刷一串\"被拒\"。裁决层照样拦得住（没有安全漏洞），但这是典型的\"单调用那条路补了、双调用这条路漏了\"——跟当初 memory/mentionedNewNpcs 在双调用下恒为 undefined 是同一个坑。修法也一样：挂进 commonExtractTail，一处生效、全部 spec 覆盖。",
+      "③【修 bug·预览面板又漂了一次（第三次）】改完发现面板还是不显示。查出 buildExtractionSpecExample 只渲染 spec.user() 就返回，**没拼 commonExtractTail**——而实际调用 callExtraction 是拼了的。也就是说面板展示的 prompt 一直比实际发出去的少一整段，memory/mentionedNewNpcs 的要求玩家从没在面板上见过。而这块代码的注释恰恰写着\"保证面板看到的内容与实际调用同构、不另写一份示例防漂移\"。这已经是同一处防漂移机制第三次漂了（前两次：示例缺 settleKind、九张内置立绘无人读取）。",
+      "④【调研·酒馆 13 位】ST 官方文档：Post-History Instructions 通常是最后一条消息，归属 **system** 角色，API 不支持 system 时退化为 user——**不是 assistant**。它靠\"位置最靠后\"取得优先级，不是 prefill。我们 13 号位实现的是 assistant prefill，技法与 ST 原义不同，只是位次对得上。已在 tavernMapping 的 label 与注释里写明，免得后人误判。",
+      "⑤【调研·姬侠传(char_card_1)】实际是 **6 条消息**不是 13 位，且**整个仓库没有 MVU**（所以 MVU 不是从它来的，是独立的酒馆扩展）。结构：system / \"[Start a new chat]\" / 上条回复 / user正文 / assistant prefill / user\"reply:{Order **扩写only**}\"。注意它的 assistant 在第5位、**后面还跟一条 user**，所以那条不是最后一条、不构成真 prefill，而是\"假装 AI 上轮已答应这些规则\"的自我一致性施压——它那条里塞了 246 字规则（NSFW许可+格式复核+篇幅规格）。我们此前注释写的\"仿姬侠传：assistant 位只放我马上要开始写了的暗示\"与事实不符，已更正。我们的 phi 是真最后一条 = 真 prefill，真 prefill 里堆规则更容易让模型顺着把规则续写完而不产正文，这也正是当初把 NSFW/GM 挪去 11 号位的道理。",
+      "验证：vite build 通过、vitest 212/212（新增 23 条钉双调用覆盖：九份 spec × 禁写 + 九份 × 路径前缀 + 三种 settleKind + 面板同构）。两份黄金快照因 tavernLabel 更名而更新，diff 只有那一处。",
+    ],
+  },
+  {
     codename: "全部图片转 WebP（100MB→10.6MB，省89%）；审计 sys 组装与 MVU 接线，补上心灵之海的场景铁律",
     time: "2026-07-28 02:40",
     notes: [

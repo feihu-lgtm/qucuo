@@ -15,6 +15,15 @@ import { extractMvuBlock } from "./mvu.js";
 //     （事实账本正是旁白"全知事实"的来源，账本空了她私聊时就真的什么都不知道）
 //   · mentionedNewNpcs → NPC 涌现第一阶段（传闻中的人物）永不触发
 // 与其在 6 份 schema 里各抄一遍，不如统一拼在每个意图的 user prompt 末尾。
+//
+// 【本轮补充：mvu 路径规矩也挂这里】
+// 单调用模式下"哪些路径可写、哪些禁写"由 MVU_SYSTEM_INSTRUCTIONS 交代（它随 schema
+// 进 13 号位）；但双调用模式下主叙事只写散文、根本不注入那份说明书，MVU 的唯一
+// 落点是**提取层这一次调用**——而七份要 mvu 字段的 spec 里，没有一份提过路径规矩。
+// 结果就是：提取模型从来不知道 世界.旁白.* 是禁区，可能反复去写、被裁决层反复丢弃，
+// 白烧 token 还在全流程日志里刷一串"被拒"。这跟当初 memory/mentionedNewNpcs 在
+// 双调用下恒为 undefined 是同一个坑（都是"单调用那条路补了、双调用这条路漏了"），
+// 修法也一样：挂进这条共用尾巴，一处生效、七份 spec 全覆盖。
 // memory 摘要统一用玩家角色名字第三人称叙述，不用"你/我/玩家"这几种代词混着写——
 // 事实账本(knowledge.js)的摘要要在多处被复用（旁白全知视角、其他NPC传闻转述、飞鸽书信
 // 里提起），人称一旦不统一，转述出来的句子会主客体错乱、读起来别扭。跟 MudRPG.jsx 里
@@ -25,7 +34,9 @@ function commonExtractTail(playerName) {
 
 除上面那个 JSON 里的字段之外，无论本轮有无状态变化，都请在**同一个顶层 JSON 对象**里额外补上这两个字段：
 "memory": 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${name}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事（纯环顾、纯赶路且路上无事）可省略此字段。
-"mentionedNewNpcs": 数组，填叙事里被提到姓名、但此刻并不在场的**新**具名人物（例如别人口中提起的某个人）。当前在场的人不算，已经出现过的人不算，没有就省略此字段。`;
+"mentionedNewNpcs": 数组，填叙事里被提到姓名、但此刻并不在场的**新**具名人物（例如别人口中提起的某个人）。当前在场的人不算，已经出现过的人不算，没有就省略此字段。
+
+【mvu 字段的路径规矩】若本轮你要输出 mvu 指令：路径只能用 角色 / 世界 / 主角 三个前缀；好感度写 角色.<姓名>.好感度，全局声望写 世界.威望。**世界.旁白.\* 这一支是系统维护的剧情进度与门禁（是否解锁了某处、个人线走到第几步），绝对不要写它的任何子键——写了会被系统直接丢弃。**剧情该不该推进由系统按条件判定，不由叙事或提取决定。`;
 }
 
 // 各意图对应的提取 prompt 工厂。
@@ -373,7 +384,13 @@ export function buildExtractionSpecExample(intentCode, settleKind = null) {
   const system = typeof spec.system === "function"
     ? spec.system(EXTRACTION_SAMPLE_NARRATIVE, EXTRACTION_SAMPLE_SNAPSHOT, settleOpts)
     : spec.system;
-  const user = spec.user(EXTRACTION_SAMPLE_NARRATIVE, EXTRACTION_SAMPLE_SNAPSHOT, settleOpts);
+  // 必须跟 callExtraction 一样补上 commonExtractTail——那段公共尾巴（memory /
+  // mentionedNewNpcs / mvu 路径规矩）是每一次真实调用都会追加的，占了 user prompt
+  // 相当一部分篇幅。此前这里只渲染 spec.user() 就返回，面板展示的 prompt 比实际
+  // 发出去的少了一整段，而这块代码的注释恰恰写着"保证面板看到的内容与实际调用同构、
+  // 不另写一份示例防漂移"——又漂了一次（前一次是示例缺 settleKind，见上方注释）。
+  const user = spec.user(EXTRACTION_SAMPLE_NARRATIVE, EXTRACTION_SAMPLE_SNAPSHOT, settleOpts)
+    + commonExtractTail(EXTRACTION_SAMPLE_SNAPSHOT.char?.name);
   return `【提取层 System Prompt】
 ${system}
 

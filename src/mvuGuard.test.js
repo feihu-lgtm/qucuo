@@ -124,3 +124,45 @@ describe("原有裁剪行为不受影响（回归）", () => {
     expect(JSON.stringify(t)).toBe(snap);
   });
 });
+
+// ── 双调用：禁写声明必须也到得了提取层 ────────────────────────────────
+// 【为什么单独钉这一组】
+// MVU 在两种调用模式下走的是完全不同的路：
+//   单调用——主模型自己产 <mvu>，规矩由 MVU_SYSTEM_INSTRUCTIONS 随 schema 进 13 号位
+//   双调用——主叙事只写散文、根本不注入那份说明书，MVU 的唯一落点是**提取层这一次调用**
+// 所以禁写声明只加进 MVU_SYSTEM_INSTRUCTIONS 是不够的：七份要 mvu 字段的 spec 里
+// 一份都不会提到它，提取模型从来不知道 世界.旁白.* 是禁区，会反复去写、被裁决层
+// 反复丢弃，白烧 token 还在全流程日志里刷一串"被拒"。
+// 这跟当初 memory/mentionedNewNpcs 在双调用下恒为 undefined 是同一个坑，
+// 修法也一样：挂进 commonExtractTail，一处生效、全部 spec 覆盖。
+import { buildExtractionSpecExample } from "./extractionEngine.js";
+
+const ALL_SPECS = ["LOOK","MOVE","TALK_CASUAL","GIFT","COMPANION_INVITE","LEARN_SKILL","EXPLORE_ACTION","COMBAT","UNKNOWN"];
+
+describe("提取层（调用2）也必须收到 MVU 路径规矩", () => {
+  it.each(ALL_SPECS)("%s spec 含禁写声明", (k) => {
+    expect(buildExtractionSpecExample(k)).toContain("世界.旁白");
+  });
+
+  it.each(ALL_SPECS)("%s spec 含三前缀路径规则", (k) => {
+    expect(buildExtractionSpecExample(k)).toContain("角色 / 世界 / 主角");
+  });
+
+  it.each(["gift", "companion_invite", "learn_skill"])("settleKind:%s 专属 spec 同样覆盖", (sk) => {
+    expect(buildExtractionSpecExample("UNKNOWN", sk)).toContain("世界.旁白");
+  });
+
+  it("明说写了会被丢弃（省得提取模型白试）", () => {
+    expect(buildExtractionSpecExample("TALK_CASUAL")).toMatch(/丢弃/);
+  });
+
+  // 这条钉的是"面板与实际调用同构"——预览必须带上每次真实调用都会追加的公共尾巴。
+  // 此前 buildExtractionSpecExample 只渲染 spec.user() 就返回，面板展示的 prompt
+  // 比实际发出去的少了一整段（memory/mentionedNewNpcs 的要求玩家从没在面板上见过）。
+  it("预览包含公共尾巴的全部三项（防面板与实际漂移）", () => {
+    const t = buildExtractionSpecExample("LOOK");
+    expect(t).toContain("memory");
+    expect(t).toContain("mentionedNewNpcs");
+    expect(t).toContain("mvu 字段的路径规矩");
+  });
+});
