@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "补上 CI 与本地校验的互补盲区：CI 加跑 vitest，本地加 npm run verify 与之同构",
+    time: "2026-07-29 01:20",
+    notes: [
+      "起因是作者贴来一条 Actions 失败记录（run #172，对应第二刀那次提交的坏构建）。那个 bug 我已在下一个 commit 修掉，但这条信息暴露了两个我不知道的事实。",
+      "①【我一直不知道仓库有 CI】.github/workflows/deploy.yml 每次推 main 就自动构建发 Pages，而它跑的是 `vite build --config vite.config.pages.js`——**不是我一直在跑的默认 config**。两份配置差异不小：pages 版 base 固定 /qucuo/（子路径，否则 Pages 上白屏）、只打游戏主入口不含三个调试页、无 dev 代理插件。只跑默认 config 就可能漏掉 pages 专属的问题。已用 CI 的真实命令验过当前 HEAD：通过。",
+      "②【CI 只跑 build、不跑 vitest】所以测试挂了 CI 照样是绿的。而 build 与 vitest 恰好**互为盲区**：version.js 写坏（未转义引号）时本地 vitest 全绿、CI build 失败；反过来若逻辑改坏而语法没问题，CI 又完全发现不了。已让 CI 先跑 vitest 再 build，任一失败就不发布。",
+      "③【本地加 npm run verify】内容与 CI 完全一致（vitest run && vite build --config vite.config.pages.js）。此前我判断\"能不能推\"靠的是默认 config 的 build + vitest，与 CI 实际跑的不是一回事——这才是那次坏构建能推上去的真正原因，不只是我忘了跑 build。",
+      "④【加同构守卫】新增三条测试：CI 里必须同时有 vitest 与 pages 构建、npm run verify 必须与 CI 那两步一致、pages 配置的 base 必须是 /qucuo/ 子路径。防的是以后 CI 改了命令而本地脚本没跟上——那又会退回「两边各有盲区」的状态。",
+      "验证：npm run verify 通过（vitest 429/429 + pages 构建成功），即与 CI 完全同构地验过一遍。",
+    ],
+  },
+  {
     codename: "文件树全量对账：52 个文件此前未收录，补齐并加自动守卫；顺带修一个我推上去的坏构建",
     time: "2026-07-29 00:40",
     notes: [

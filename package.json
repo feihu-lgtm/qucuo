@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "debug": "node tools/debug.mjs"
+    "debug": "node tools/debug.mjs",
+    "verify": "vitest run && vite build --config vite.config.pages.js"
   },
   "dependencies": {
     "react": "^18.3.1",

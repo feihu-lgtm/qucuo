@@ -24,6 +24,11 @@ jobs:
         with:
           node-version: 20
       - run: npm install --no-audit --no-fund
+      # 先跑测试再构建。此前 CI 只跑 build，测试挂了照样绿——而 build 与 vitest
+      # 恰好互为盲区：0728 有一次 version.js 写坏（未转义引号）导致 build 失败但
+      # 本地 vitest 全绿；反过来若逻辑改坏而语法没问题，CI 又完全发现不了。
+      # 两样都跑，任一失败就不发布。
+      - run: npx vitest run
       - run: npx vite build --config vite.config.pages.js
       - uses: actions/upload-pages-artifact@v3
         with:

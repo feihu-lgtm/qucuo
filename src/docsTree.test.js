@@ -76,3 +76,31 @@ describe("version.js 语法与结构（防「测试全绿但构建坏了」）",
     expect(CURRENT_VERSION).toBe(VERSION_HISTORY[0]);
   });
 });
+
+// CI 与本地校验的同构守卫。
+// 【为什么需要】0728 才发现仓库有 GitHub Actions（deploy.yml），而它当时**只跑
+// vite build --config vite.config.pages.js、不跑 vitest**；我这边则一直只跑默认
+// config 的 build + vitest。两边各有盲区，而且正好互补：
+//   · version.js 写坏（未转义引号）→ 本地 vitest 全绿、CI build 失败
+//   · 逻辑改坏但语法没问题        → CI 全绿、本地 vitest 才抓得到
+// 现已让 CI 也跑 vitest，并加 `npm run verify` 与 CI 完全同构。
+// 这条测试钉住"两边不许再分叉"——CI 改了命令，本地脚本必须跟上。
+describe("CI 与 npm run verify 同构（防两边分叉各留盲区）", () => {
+  it("CI 既跑测试又跑构建", () => {
+    const yml = readFileSync(".github/workflows/deploy.yml", "utf-8");
+    expect(yml, "CI 必须跑 vitest").toMatch(/vitest run/);
+    expect(yml, "CI 必须跑 pages 配置的构建").toMatch(/vite build --config vite\.config\.pages\.js/);
+  });
+
+  it("npm run verify 跑的就是 CI 那两步", () => {
+    const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
+    const v = pkg.scripts?.verify || "";
+    expect(v).toMatch(/vitest run/);
+    expect(v).toMatch(/vite build --config vite\.config\.pages\.js/);
+  });
+
+  it("pages 配置的 base 是子路径（否则 Pages 上白屏）", () => {
+    const cfg = readFileSync("vite.config.pages.js", "utf-8");
+    expect(cfg).toMatch(/base:\s*["']\/qucuo\/["']/);
+  });
+});
