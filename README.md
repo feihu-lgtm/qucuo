@@ -114,10 +114,25 @@ npm run build     # 构建生产版本
 
 ```
 qucuo/
-├── src/                      # 源代码
-│   ├── MudRPG.jsx            # 主游戏组件（三栏界面 + act() 回合主循环）
+├── src/                      # 源代码（155 文件，约 3.5 万行）
+│   ├── MudRPG.jsx            # 主游戏组件（全局状态 + act() 回合主循环 + handler + 中栏 UI）
 │   ├── main.jsx              # 入口
 │   ├── StartScreen.jsx       # 开始界面（含访客计数：X 位侠客 · 共 Y 人次）
+│   ├── panels/               # 从 MudRPG 抽出的纯 UI 面板（state 不下沉，纯 props）
+│   │   ├── LeftPanel.jsx     #   左栏「天地」：据点/出口/建筑/人物/立绘/地图
+│   │   ├── RightPanel.jsx    #   右栏「侠客」：属性/武学/装备/包袱/旁白
+│   │   └── DebugPanel.jsx    #   调试面板（dbg* state 下沉到面板内部）
+│   ├── act/                  # act() 主循环拆分的子模块
+│   │   ├── actCall.js        #   主模型调用组装（SillyTavern 13 位置消息数组）
+│   │   ├── commitRound.js    #   提交段：MVU 裁决 + delta 应用 + 拾取兜底
+│   │   ├── roundNotes.js     #   [状态] ctx 组装 + 在场名单
+│   │   ├── innerMove.js      #   内层箱庭纯前端移动
+│   │   ├── outerMove.js      #   外层移动裁决
+│   │   ├── parseResponse.js  #   JSON 解析 + 截断救援
+│   │   ├── memoryLayer.js    #   记忆四链写入
+│   │   └── commitHelpers.js  #   反幽灵好感度过滤等
+│   ├── sysBase.js            # buildSysBase：13 位置 system 数组 + schema 四档
+│   ├── tavernMapping.js      # SillyTavern 13 位置映射表
 │   ├── visitorCount.js       # 访客统计（Supabase：本地UUID去重侠客数 + 累计人次）
 │   ├── bugReport.js          # 意见/bug 上报（Supabase REST 直连）
 │   ├── CharacterCreate.jsx / OpeningSequence.jsx  # 创角与开场序列
@@ -139,16 +154,16 @@ qucuo/
 │   ├── theme.js              # 分区主题色 + 日间/夜间模式
 │   ├── version.js            # 版本历史
 │   ├── LogEntry.jsx / SettingsPanel.jsx / PresetEditor.jsx / ...  # 各界面组件
-│   ├── combat/               # 回合制战斗内核（三角克制、AI决策、招式、状态、偷窃）
+│   ├── combat/               # 回合制战斗内核（三角克制、AI决策、招式、状态、偷窃、2v2团战）
 │   ├── quickBattle/          # 斗蛐蛐快速切磋沙盒（复用 combat 内核 + 字段理解器 + 可选AI战报）
 │   ├── memory/               # 向量记忆（嵌入、召回、日结）
 │   ├── quests/               # 任务系统（引擎、脚本、结局判定）
-│   ├── buildings/            # 建筑交互界面（武馆、当铺、茶楼、赌石等，共享 Overlay）
+│   ├── buildings/            # 建筑交互界面（武馆、当铺、茶楼、赌石、金玉行等）
 │   ├── shops/                # 商店系统
 │   ├── items/                # 物品目录与分布
 │   ├── kungfu/               # 武学系统
 │   ├── presets/              # SillyTavern 兼容预设（qucuo.js 为主预设）
-│   ├── utils/                # 工具（buff、种子随机、弹窗遮罩关闭 overlayClose）
+│   ├── utils/                # 工具（buff、种子随机、mudHelpers）
 │   └── assets/portraits/     # NPC 立绘（打包进构建产物）
 ├── public/                   # 静态资源
 │   ├── portraits/player/     # 玩家预制头像（唐卡厚涂 8 连图切分）
@@ -185,7 +200,7 @@ qucuo/
 ## 架构与深度报告
 
 - 代码级完整行动依赖关系：`docs/行动依赖图_代码核实.md`
-- 仓库深度探索报告（文件数 / 行数 / 各系统勾连，持续随 commit 校准）：`docs/终极0725文件数关系.md`
+- 仓库深度探索报告（文件数 / 行数 / 各系统勾连，持续随 commit 校准）：`docs/终极0727文件数关系.md`
 - 交接入口：`docs/_交接总纲_从这里开始.md`
 - 项目总纲（唯一权威源）：`docs/曲措乡_总纲_v3.md`
 
