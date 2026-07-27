@@ -9,6 +9,20 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "拜师终于加好感了；对话档改走专属提取spec，物件志换成随身清单",
+    time: "2026-07-27 17:20",
+    notes: [
+      "三件事：补上拜师的好感结算、把对话模式的二调用接到专属spec、修好注入结构面板的预览错版。",
+      "①【拜师不加好感·修复】送礼传 settleKind:\"gift\"、雪豹入队传 \"companion_invite\"，唯独拜师只传了 settleNpc 没传 settleKind。而提取层那道门是 (settleKind && settleNpc) 两个都要，少一个就整个 null，直接掉回通用spec去\"从散文里猜这轮好感变没变\"——猜不出来。单调用同样吃亏：schema里只有前两者会说\"这一轮必须\"给<mvu>，拜师走的是\"如果观感确有变化\"的软措辞。现新增 learn_skill 一路与前两者对齐：LEARN_SKILL 提取spec（铁律只能上升）+ 叙事/MVU/示例三个分支 + schema必须条件。幅度按所授分档：看家绝学 +4~+8（建议6），江湖通用功夫 +2~+4（建议3）。",
+      "②【兽类师父的传艺写法】拜师对野兽早已放开（虎王/狼王/雪豹身上的招都能学），但叙事没针对性。learnInfo 带 beast 标记（取 npc.beast || npc.cannotSpeak），命中时叙事铁律追加\"不出人言、靠动作示范、把招式拆给主角看、错了用鼻尖或前爪顶正\"。",
+      "③【对话模式改走 TALK_CASUAL】此前 talk 强制 intent=UNKNOWN，提取就掉进 UNKNOWN 那份全量spec（要 room+char+delta+mvu 全套），而专为对话写的轻spec反而只有\"行动模式自由输入命中对话正则\"时才用得上——注入侧早分了 talk 档，提取侧没分，一边减了一边没减。现加 extractionSpecKey = isTalk ? \"TALK_CASUAL\" : intent.code。注意没直接改 intent：intent 还管着篇幅预算（TALK_CASUAL 的 wordBudget 是[150,350]，而对话一贯是 UNKNOWN=自行裁量），改了会把对话字数管死。这个键同时决定 extractionModels[key] 的模型查找，故 MudRPG 与 actCall.js 两处 trace 显示同步改，否则面板报的模型和真正调用的对不上。",
+      "④【对话档的物品规范】对话轮确实可能有物品往来，但为此挂一整本物件志太重。改挂轻规矩 buildTalkItemRule()：只准从\"玩家背包\"和 ctx 里那位的〔身携:…〕两个来源取物，标〔身无长物〕的人掏不出东西。按调用模式分叉——双调用下这条更要紧：主模型只写散文、提取层照散文记账，散文里凭空掏出来的宝贝会被当真塞进背包，所以那一版措辞改成\"写虚了就会真的凭空多出一件东西\"。",
+      "⑤【respondedNpcs 两头修】modeNote 一直要求\"在顶层JSON里加 respondedNpcs\"，可双调用的13号位明说\"不要输出任何JSON\"——两条指令打架，该字段在双调用下恒为 undefined，于是 commitRound 那条\"对话即认识\"只剩 talkTarget 兜底：选了人还行，点「全部」聊天谁都不会被标记认识。现 modeNote 按 extractionEnabled 分叉（双调用不再提JSON），字段改由 TALK_CASUAL spec 去要。",
+      "⑥【修 bug·注入结构面板预览的是错的spec】写测试时发现：面板预览\"送礼/认主\"时显示的根本不是 GIFT/COMPANION_INVITE，而是 UNKNOWN 通用spec。根因是 EXTRACTION_SAMPLE_SETTLE 那几条示例只有 settleNpc/giftInfo、没有 settleKind 字段，SETTLE_KIND_SPECS[undefined] 查空后静默退回 UNKNOWN。讽刺的是这块代码上面的注释白纸黑字写着\"保证面板看到的内容与实际调用同构，不另写一份示例防漂移\"——防漂移机制自己先漂了。三条示例补齐 settleKind，并加 learn_skill 示例。",
+      "验证：vite build 通过、eslint no-undef 全清、vitest 47/47（新增 src/settleAndTalk.test.js 共14条）。新测试覆盖 scope 物品规范挂载矩阵(full/talk单/talk双/move/settle)、拜师铁律进schema、三种 settleKind 路由正确、TALK_CASUAL 的 carry 来源与 respondedNpcs。所有 prompt 都实际渲染出来逐字看过，不是只读 diff。",
+    ],
+  },
+  {
     codename: "UI 全抽出：顶栏/中栏/浮层三块搬走，MudRPG.jsx 再-740行；顺带修两个静默已久的 ReferenceError",
     time: "2026-07-27 15:30",
     notes: [

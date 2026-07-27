@@ -78,16 +78,40 @@ ${pickupBlock}
     },
   },
 
+  // 对话模式的提取。0727 起「◎ 对话」模式也走这份 spec（此前 talk 强制
+  // intent=UNKNOWN，提取就掉进 UNKNOWN 那份全量 spec 要 room+char+delta+mvu 全套，
+  // 而这份专为对话写的轻 spec 反而只有"行动模式自由输入命中对话正则"时才用得上——
+  // 注入侧早就分了 talk 档，提取侧却没分，一边减了一边没减）。
+  //
+  // 物品往来：对话轮不挂物件志，改把两个合法来源直接摆给提取模型看——玩家背包、
+  // 在场各人的〔身携〕。凭空冒出来的东西一律不收，避免"叙事随口一提就真进背包"。
+  // respondedNpcs：双调用下主叙事只产散文，这个字段此前没有任何 spec 要过，于是
+  // commitRound 那条"对话即认识"只剩 talkTarget 兜底——点「全部」聊天谁都不会被
+  // 标记认识。放在这里要，正好补上。
   TALK_CASUAL: {
-    system: "你是游戏状态提取器，从叙事中提取 NPC 互动产生的状态变化（好感度、物品交换）。",
-    user: (narrative, s) =>
-      `当前 NPC 关系：${JSON.stringify(s.varTree?.角色 || {})}
+    system: "你是游戏状态提取器，从叙事中提取 NPC 互动产生的状态变化（好感度、物品交换、谁开口回应了）。只提取叙事里确实写到的内容，不添加、不脑补。",
+    user: (narrative, s) => {
+      const npcs = (s.room?.npcs || []);
+      const carryLines = npcs.map(n => {
+        const ci = (n.carriedItems || []).filter(i => !i.stolen).map(i => i.name).join("、");
+        return `· ${n.name}${ci ? `〔身携:${ci}〕` : "〔身无长物〕"}`;
+      }).join("\n") || "· （无人在场）";
+      return `当前 NPC 关系：${JSON.stringify(s.varTree?.角色 || {})}
+在场人物与其随身之物：
+${carryLines}
+玩家背包：${s.invText}
 
 叙事内容：
 ${narrative}
 
-根据叙事，输出状态变化 JSON（mvu 字段放好感度增减命令；如有物品交换写 delta；无变化输出 {}）：
-{"mvu":"_.add('角色.XXX.好感度', N);\n","delta":{"items_add":[],"items_rm":[],"flags_add":[]}}`,
+根据叙事输出状态变化 JSON：
+{"mvu":"_.add('角色.XXX.好感度', N);\n","delta":{"items_add":[],"items_rm":[],"flags_add":[]},"respondedNpcs":["名字"]}
+
+· mvu：叙事里某人对玩家的观感确有变化才写，没变化就省略这个字段。
+· delta：只有叙事写明当场易手的东西才记——对方给玩家的写 items_add，玩家给出去的写 items_rm。物品只能出自上面列的"玩家背包"或那位 NPC 的〔身携〕；〔身无长物〕的人给不出东西，叙事若写了也不要记。只是嘴上提起、许诺日后再给、纯寒暄，一律不记。
+· respondedNpcs：本轮正文里【真正开口跟玩家说话或有来有往互动】的在场 NPC 名字。只是被提到、路过、在场却没搭理玩家的不算。没人开口就给空数组 []。
+· 全都没有变化时输出 {}。`;
+    },
   },
 
   // 送礼专属提取——不是从叙事"读心"式倒推好感度变不变、变多少，而是直接钉死结论：
@@ -127,6 +151,30 @@ ${narrative}
 【铁律】不管叙事写得含蓄还是热络，这一轮${npcName}对玩家的好感度都应直接设为一个较高的初始值（40~55之间，体现"前世羁绊、一见如故"而非从零培养），不得低于30。
 输出 JSON（mvu 字段必须是一条 _.set 好感度指令，用 set 不用 add——这是初次登场，不是在已有基础上增减）：
 {"mvu":"_.set('角色.${npcName}.好感度', 45);\n","delta":{"items_add":[],"flags_add":[]}}`;
+    },
+  },
+
+  // 拜师专属提取——跟 GIFT/COMPANION_INVITE 同一路数：不"读心"倒推，直接钉死结论。
+  // 拜师这件事在系统层面已经全部结算完（好感门槛过了、束脩扣了、招式进武学栏了），
+  // 走到这一步就意味着"对方认可你、愿意把压箱底的东西给你"——这在江湖里是极重的
+  // 情分，好感度只可能往上走。此前拜师压根没传 settleKind，于是落到通用 spec 去
+  // 让小模型从散文里猜"这轮好感变没变"，结果基本猜不出来，表现为"拜完师好感纹丝不动"。
+  LEARN_SKILL: {
+    system: "你是游戏状态提取器，专门处理拜师学艺场景的好感度结算——授业传艺是江湖里极重的情分，好感度只能往上走，不做\"读心\"式判断。",
+    user: (narrative, s, settleOpts) => {
+      const npcName = settleOpts?.settleNpc || "师父";
+      const info = settleOpts?.learnInfo || {};
+      // 授平生绝学(isMaster) 比随手指点几手通用功夫情分重，幅度分档。
+      const [lo, hi] = info.isMaster ? [4, 8] : [2, 4];
+      const suggested = info.isMaster ? 6 : 3;
+      return `${npcName}刚刚收玩家为徒，${info.isMaster ? "将自己的看家绝学" : "把几手江湖基本功"}「${info.moveBrief || "所学"}」倾囊相授${info.totalPrice ? `，玩家奉上束脩银${info.totalPrice}两` : "，分文未取"}。
+
+叙事内容：
+${narrative}
+
+【铁律】不管叙事写得含蓄还是热络，拜师这一轮${npcName}对玩家的好感度只能上升、不得为 0 或负数——肯把本事传给你，本身就意味着认可与托付。建议幅度落在 +${lo}~+${hi} 之间（${info.isMaster ? "所授是压箱底的绝学，取上沿" : "所授是通用功夫，取下沿"}）。招式与束脩均已由系统结算完毕，此处不要重复处理 delta。
+输出 JSON（mvu 字段必须是一条正向 _.add 好感度指令）：
+{"mvu":"_.add('角色.${npcName}.好感度', ${suggested});\n","delta":{"items_add":[],"flags_add":[]}}`;
     },
   },
 
@@ -210,7 +258,7 @@ export function buildExtractionCfg(intentCode, apiCfg) {
 // settleKind → 专属提取spec 的映射表。不用 if-else 链一个个判断，是因为这类
 // "结算轮专属spec"以后大概率还会继续加（新的伙伴/新的特殊结算场景），映射表
 // 比继续堆叠 if-else 更容易扩展——加一个新 settleKind 只需要在这张表里加一行。
-export const SETTLE_KIND_SPECS = { gift: "GIFT", companion_invite: "COMPANION_INVITE" };
+export const SETTLE_KIND_SPECS = { gift: "GIFT", companion_invite: "COMPANION_INVITE", learn_skill: "LEARN_SKILL" };
 
 // 调用提取层，返回 { p, mvuCommands, parseFailed }（p/mvuCommands 与 parseMainResponse 返回结构相同，可直接复用状态应用代码）。
 // 如果这个意图不需要状态提取（META_QUERY），返回 null。
@@ -287,8 +335,14 @@ const EXTRACTION_SAMPLE_SNAPSHOT = {
 
 const EXTRACTION_SAMPLE_NARRATIVE = "（此处为主叙事这一步实际输出的散文正文。预设面板用示例占位，展示提取层会收到什么样的输入。）";
 
+// 每条都必须带 settleKind——buildExtractionSpecExample 是拿 settleOpts.settleKind
+// 去查 SETTLE_KIND_SPECS 的。此前这几条只有 settleNpc/giftInfo 没有 settleKind，
+// 查表恒为 undefined，于是面板预览"送礼/认主"时显示的其实是 UNKNOWN 那份通用 spec，
+// 而不是真正会被调用的 GIFT/COMPANION_INVITE——这块本来就是为"防止面板与实际调用
+// 漂移"而写的，结果它自己先漂了。
 const EXTRACTION_SAMPLE_SETTLE = {
   gift: {
+    settleKind: "gift",
     settleNpc: "才旦",
     giftInfo: {
       itemName: "无主的青锋剑",
@@ -299,7 +353,12 @@ const EXTRACTION_SAMPLE_SETTLE = {
       suggestedDelta: 5,
     },
   },
-  companion_invite: { settleNpc: "雪豹" },
+  companion_invite: { settleKind: "companion_invite", settleNpc: "雪豹" },
+  learn_skill: {
+    settleKind: "learn_skill",
+    settleNpc: "雪豹",
+    learnInfo: { isMaster: true, moveBrief: "雪隐三绝(兽性)", totalPrice: 0, beast: true },
+  },
 };
 
 export function buildExtractionSpecExample(intentCode, settleKind = null) {

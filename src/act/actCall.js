@@ -161,9 +161,12 @@ ${dealFmt}`;
   // 是哪条路、双调用时具体是哪个模型在判——不写清楚，排查者会误以为
   // 主模型和判定好感度的模型是同一个。
   if (d.apiCfg.extractionEnabled) {
-    const exCfg = buildExtractionCfg(d.intent.code, d.apiCfg);
+    // 与 MudRPG.act 里的 extractionSpecKey 保持同一套判定：对话模式走 TALK_CASUAL。
+    // 两处若不一致，这行 trace 报的模型名就会和真正发起提取的那个对不上。
+    const exKey = d.isTalk ? "TALK_CASUAL" : d.intent.code;
+    const exCfg = buildExtractionCfg(exKey, d.apiCfg);
     traceStep(d._trace, "调用模式", "info",
-      `双调用（叙事/状态分离）　主叙事模型=${d.apiCfg.model || "未设置"}　提取模型(意图=${d.intent.code})=${exCfg.model || "未设置"}${exCfg.model === d.apiCfg.model ? "（未单独配置，沿用主模型）" : ""}`);
+      `双调用（叙事/状态分离）　主叙事模型=${d.apiCfg.model || "未设置"}　提取模型(spec=${exKey})=${exCfg.model || "未设置"}${exCfg.model === d.apiCfg.model ? "（未单独配置，沿用主模型）" : ""}`);
   } else {
     traceStep(d._trace, "调用模式", "info", `单调用（叙事+状态一次性产出）　主模型=${d.apiCfg.model || "未设置"}`);
   }

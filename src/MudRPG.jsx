@@ -2137,8 +2137,17 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const targetNote = activeTarget
       ? `[交互目标] 玩家选定了「${activeTarget}」作为本轮唯一的互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文的核心——其他在场 NPC 若与该互动无关、或不宜抢戏，本轮不必出场、不必插话。除非玩家输入本身需要多人在场（比如当众宣布什么事），否则 room.npcs 只保留「${activeTarget}」和直接相关者即可。` + "\n"
       : ""; // 不选人时不加约束——全 NPC 发给 AI，AI 自己判断谁出场
+    // 交互模式说明。双调用/单调用要分开写：单调用主模型自己产 JSON，可以让它顺手
+    // 报一个 respondedNpcs 字段；双调用主模型只写散文（13号位明说"不要输出任何
+    // JSON"），再要它"在顶层JSON里加字段"就是两条指令打架——此前就是这么写的，
+    // 于是 respondedNpcs 在双调用下恒为 undefined，commitRound 那条"对话即认识"
+    // 只剩 talkTarget 兜底（点「全部」聊天谁都不会被标记认识）。双调用下这个字段
+    // 改由提取层的 TALK_CASUAL spec 去要，这里就不提 JSON 了。
+    const talkNoStateRule = `[交互模式] 对话模式：玩家此刻只是在和当前房间里的 NPC 说话，不是在下达行动指令。无论玩家输入什么，都只应该触发对话回应，绝不能移动房间、不能战斗、不能改变 room/char/装备/背包等任何状态`;
     const modeNote = isTalk
-      ? `[交互模式] 对话模式：玩家此刻只是在和当前房间里的 NPC 说话，不是在下达行动指令。无论玩家输入什么，都只应该触发对话回应，绝不能移动房间、不能战斗、不能改变 room/char/装备/背包等任何状态，room 字段留空或原样返回，delta 各项留空。此外，请在顶层 JSON 里加一个字段 "respondedNpcs":["名字"]，列出本轮正文里【真正开口跟玩家对话/直接回应了玩家】的 NPC 名字（只列真的说了话或有来有往互动的人；只是被提到、路过、在场却没搭理玩家的，不要列入）。没有人开口回应就返回空数组 []。 `
+      ? (apiCfg.extractionEnabled
+        ? `${talkNoStateRule}。只写这一轮的对白、神态与心思。 `
+        : `${talkNoStateRule}，room 字段留空或原样返回，delta 各项留空。此外，请在顶层 JSON 里加一个字段 "respondedNpcs":["名字"]，列出本轮正文里【真正开口跟玩家对话/直接回应了玩家】的 NPC 名字（只列真的说了话或有来有往互动的人；只是被提到、路过、在场却没搭理玩家的，不要列入）。没有人开口回应就返回空数组 []。 `)
       : "";
 
     // NPC涌现·触发检测：玩家这句输入如果明确提到某个"传闻中的人物"（之前剧情
@@ -2271,7 +2280,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         pickupJudgment: pickupJudgmentRef.current, cmd, convo, nsfwOn,
         ctx, recallBlock, reunionBlock, infoDomainBlock, hist, mainConvo,
         gambleTalkCtx: gambleTalkCtx.current, recallInfo,
-        settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo,
+        settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo,
         _trace, addLog, setLog,
       });
 
@@ -2286,7 +2295,16 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         // ── 双调用模式：主调用只生成叙事，提取调用处理状态 ──
         // 主叙事调用与单调用模式一样享有自动重试——此前这里只试一次，
         // 接口一超时（默认60s）整轮行动直接整体回滚，表现为"双调用模式没法用"。
-        const _exCfgForTrace = buildExtractionCfg(intent.code, apiCfg); // 仅供trace显示模型名，实际提取调用在下面callExtraction内部会重新算一份等价的cfg
+        //
+        // 提取 spec 的选择键：对话模式固定走 TALK_CASUAL。
+        // 注意不能直接把 intent 改成 INTENT.TALK_CASUAL——intent 还管着篇幅预算
+        // （TALK_CASUAL 的 wordBudget 是 [150,350]，而对话模式一贯是 UNKNOWN=
+        // "篇幅交由本次调用自行裁量"），改 intent 会连带把对话的字数管死。
+        // 这里只替换"用哪份提取 spec"，注入侧的 intent/promptScope 一概不动。
+        // 必须在 _exCfgForTrace 之前算出来：提取模型是按这个键查
+        // extractionModels[key] 的，trace 显示的模型名要和真正调用的那个一致。
+        const extractionSpecKey = isTalk ? "TALK_CASUAL" : intent.code;
+        const _exCfgForTrace = buildExtractionCfg(extractionSpecKey, apiCfg); // 仅供trace显示模型名，实际提取调用在下面callExtraction内部会重新算一份等价的cfg
         let mainFinishReason;
         for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
           try {
@@ -2356,10 +2374,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         // 初始好感）。避免双调用模式下状态判定完全脱离 buildSysBase 那份专属铁律
         // （主叙事只写散文，不产 mvu，状态判定全靠提取层）。
         const settleOptsForExtraction = (opts.settleKind && opts.settleNpc)
-          ? { settleKind: opts.settleKind, settleNpc: opts.settleNpc, giftInfo: opts.giftInfo }
+          ? { settleKind: opts.settleKind, settleNpc: opts.settleNpc, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo }
           : null;
         let extractionFailed = false;
-        const extracted = await callExtraction(intent.code, rawFull, exState, apiCfg, settleOptsForExtraction).catch(e => {
+        const extracted = await callExtraction(extractionSpecKey, rawFull, exState, apiCfg, settleOptsForExtraction).catch(e => {
           addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${e.message || e}），本轮状态未更新` }]);
           traceStep(_trace, "提取调用", "fail", `提取模型=${_exCfgForTrace.model || "未设置"}调用异常：${e.message || e}，本轮状态未更新`);
           return null;
@@ -3297,8 +3315,22 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     addLog([{ t: "sys", text: `  （习得 ${result.freshSkills.length} 招${priceNote}，已录入武学栏 · ${label}，学即完整）` }]);
     // 结算（加招/去重/并入武学栏）已由确定性代码完成，这里只把"发生了什么"交给主叙事AI
     // 写成一段像样的话，不是让AI决定学没学到——参照 handleBuySkill 的"结算+act陈述"范式。
+    // settleKind:"learn_skill" 必须传——它决定了单调用走 buildSettleMvuNote 的"本轮必须给
+    // <mvu>"铁律、双调用走 LEARN_SKILL 专属提取spec。此前这里只传了 settleNpc 没传
+    // settleKind，两条路都退化成"让AI自己看着办要不要加好感"，实测基本不加，表现为
+    // "交了束脩、学了绝学，好感纹丝不动"。
     const verb = result.isMaster ? "将平生所学" : "将几手江湖基本功";
-    act(`拜${npc.name}为师，${npc.name}${verb}「${result.moveBrief}」倾囊相授，我凝神习得`, [], { settle: true, settleNpc: npc.name });
+    act(`拜${npc.name}为师，${npc.name}${verb}「${result.moveBrief}」倾囊相授，我凝神习得`, [], {
+      settle: true,
+      settleNpc: npc.name,
+      settleKind: "learn_skill",
+      learnInfo: {
+        isMaster: result.isMaster,
+        moveBrief: result.moveBrief,
+        totalPrice: result.totalPrice,
+        beast: !!npc.beast || !!npc.cannotSpeak, // 兽类师父不说人话，叙事得靠动作示范
+      },
+    });
   }, [char, skills, varTree, addLog, act]);
 
   // 偷窃：偷物+偷师（偷招）二合一，同一次判定，成功后再二选一决定这次偷到的

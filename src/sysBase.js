@@ -4,7 +4,7 @@ import { describeCatalogForAI } from "./items/catalog.js";
 import { getActivePreset } from "./PresetManager.jsx";
 import { assemblePrompt } from "./presetSystem.js";
 import { gateScenario } from "./worldbook.js";
-import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL } from "./enginePrompts.js";
+import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL, buildTalkItemRule } from "./enginePrompts.js";
 import { makeBlock } from "./tavernMapping.js";
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
@@ -27,6 +27,10 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   // 物件志（绿灯·批四）：只有"这一轮真可能发出物品"才挂——移动拾取判定命中、战斗（掉落）、
   // 创造模式（凭空发物）。寻常行动轮 AI 本就不该平白发物，挂了反而诱它发。
   const wantCatalog = scope === "full" && opts.mayGrantItem !== false;
+  // 对话档不挂物件志（那本表是给"凭空发物"的轮次用的，对话轮挂了纯烧上下文），
+  // 但对白里确实可能有物品往来——改挂一条轻规矩，让模型只从"玩家背包"和 ctx 里
+  // 那位 NPC 的〔身携:…〕两个来源取物，不许现编。见 enginePrompts.TALK_ITEM_RULE。
+  const wantTalkItemRule = scope === "talk";
   const wantIsolation = scope !== "move" && !isSettle;
   // MVU（绿灯·批二）：只有"这一轮可能改好感/变量"才挂——即场上真有人。
   // 独自赶路、荒野探索、无人结算这类轮次灭灯，每轮省 717 字；
@@ -59,6 +63,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     if (o.settleKind === "companion_invite") {
       return `\n【伙伴认主铁律】雪豹与主角之间，非比寻常的人与兽的相逢——这是前世便结下的羁绊，它认准了主角便是这片雪域高原真正的主人，忠贞无二，此心早定，不是这一刻才临时起意。这一轮务必写成雪豹欣然应邀、心意早决——它或以额头抵掌、或绕身一圈、或伏低身姿以示臣服归顺，用兽类特有的、不必言语的方式表明这份认主之心；不许写成犹豫、观望、抗拒或需要主角再三哄劝——雪豹的答应是必然的、毫无保留的，这是本轮叙事唯一的走向，不接受其他写法。它不能说话（cannotSpeak），全程不出人言，情感全靠动作、眼神、姿态传达。`;
     }
+    if (o.settleKind === "learn_skill") {
+      return `\n【授业传艺铁律】在曲措乡这方江湖里，肯把本事传给一个人，是极重的情分——那意味着认可、托付，也意味着从此多了一层师徒名分。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式都已由系统结算完毕，是既成事实），务必写成他/它郑重其事地把这身功夫交出来、态度较先前更亲近一分；不许写成勉强、敷衍、留一手或临时反悔——这是本轮叙事唯一的走向，不接受其他写法。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
+    }
     return "";
   }
   // isSettle 分支：管"MVU 那部分该怎么写"（单调用模式下，主模型直接产 JSON+MVU，
@@ -70,6 +77,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     if (o.settleKind === "companion_invite") {
       return `\n【伙伴认主铁律】雪豹与主角之间，非比寻常的人与兽的相逢——这是前世便结下的羁绊，它认准了主角便是这片雪域高原真正的主人，忠贞无二，此心早定。这一轮务必写成雪豹欣然应邀、心意早决，用动作/眼神/姿态（额头抵掌、绕身而行、伏低臣服等，它不能说话）表明认主之心，不许写成犹豫或抗拒——下面这条 <mvu> 块本轮必须给出，且必须是正向增量（这是雪豹认你为主的时刻，好感度理应给一个较高的起始值）。`;
     }
+    if (o.settleKind === "learn_skill") {
+      return `\n【授业传艺铁律】肯把本事传给一个人，在江湖里是极重的情分——那意味着认可与托付。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式均已由系统结算完毕，是既成事实），所以他/它对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。`;
+    }
     return "";
   }
   function buildSettleMvuExample(o) {
@@ -78,6 +88,10 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     }
     if (o.settleKind === "companion_invite") {
       return `\n雪豹是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"前世羁绊、认主忠贞"的设定，不是从0慢慢培养的陌生关系），建议直接 _.set 到 40~55 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', 45);`;
+    }
+    if (o.settleKind === "learn_skill") {
+      const master = !!o.learnInfo?.isMaster;
+      return `\n授业这一轮好感度增量建议落在 +${master ? "4~+8" : "2~+4"} 之间（${master ? "所授是压箱底的绝学，情分重，可取上沿" : "所授是通用功夫，取下沿即可"}），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${master ? 6 : 3});`;
     }
     return "";
   }
@@ -104,7 +118,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
 不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。不要重复结算任何奖励、物品、银两或状态。
 "memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
 ${buildSettleMvuNote(opts)}
-在 JSON 输出完毕之后，${(opts.settleKind === "gift" || opts.settleKind === "companion_invite") ? `这一轮必须` : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化，"}另起一行输出 <mvu> 块（不要放进 JSON 内部）：
+在 JSON 输出完毕之后，${(opts.settleKind === "gift" || opts.settleKind === "companion_invite" || opts.settleKind === "learn_skill") ? `这一轮必须` : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化，"}另起一行输出 <mvu> 块（不要放进 JSON 内部）：
 ${MVU_SYSTEM_INSTRUCTIONS}${buildSettleMvuExample(opts)}` : ""}`
       : scope === "move"
         ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
@@ -133,7 +147,7 @@ ${MVU_SYSTEM_INSTRUCTIONS}` : ""}`;
     makeBlock("charDescription", `玩家角色：${playerName}。系统会维护气血、内外功、物品等状态；你只需叙事，不要擅自修改状态。`),
     makeBlock("charPersonality", `旁白/说书人的语气由「Main Prompt」中的声线控制，保持统一。`),
     makeBlock("scenario", gated.text),
-    makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
+    makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantTalkItemRule ? `${buildTalkItemRule(narrativeOnly)}\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
     makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是这个世界的说书人/Gamemaster。`),
     makeBlock("authorsNote", ""),
     makeBlock("exampleStart", "<START>"),
