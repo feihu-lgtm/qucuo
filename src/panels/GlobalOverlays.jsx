@@ -14,7 +14,6 @@
 // 纯展示组件：不持有 state，全部经 props 下传。切磋界面额外包了一层
 // ErrorBoundary——战斗引擎报错时不该把整局游戏拖崩，能退回房间重来。
 import { listCharacters } from "../mvu.js";
-import { toggleEquip } from "../equipment.js";
 import { getTimeStr } from "../utils/mudHelpers.js";
 import { getPipelineLog } from "../apiConfig.js";
 import { QUCUO_QUESTS } from "../quests/qucuoQuests.js";
@@ -55,7 +54,7 @@ export default function GlobalOverlays({
   activeNpcMenu, setActiveNpcMenu,
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
   handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
-  activeItemMenu, setActiveItemMenu, inspectItem, handleConsumeItem, handleCollectGround,
+  activeItemMenu, setActiveItemMenu, inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip,
   activePersuasion, setActivePersuasion, apiCfg, persuasionProgress, setPersuasionProgress,
   forceAdvanceQuest,
   duelingNpc, setDuelingNpc, setPendingQuestBranch, duelFinishHandler,
@@ -154,7 +153,7 @@ export default function GlobalOverlays({
           onGive={(npc, it) => handleNpcGift(npc, it)}
           onSell={(npc) => handleNpcTrade(npc)}
           onCollect={handleCollectGround}
-          onEquip={(it) => setInv(v => toggleEquip(v, it.id))}
+          onEquip={handleToggleEquip}
         />
       )}
       {activePersuasion && (() => {

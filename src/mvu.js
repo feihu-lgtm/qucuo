@@ -11,6 +11,8 @@
 // 旁白个人线的变量。挂在 世界.旁白 下，随存档走。
 // 【为什么要 ensure 而不是只在 initialVarTree 里给初值】老存档的 varTree 里没有这一支，
 // 直接 varTree.世界.旁白.seaUnlocked 会炸；读的地方一律走 narratorVars() 兜底。
+import { emptyTally } from "./memory/tally.js";
+
 export function initialNarratorVars() {
   return {
     seaUnlocked: false,   // 心灵之海是否已解锁（玄女点破之后置真）
@@ -43,7 +45,7 @@ export function setNarratorVars(varTree, patch) {
 export function initialVarTree() {
   return {
     角色: {},   // 角色.NPC名.属性名 = 值，例如 角色.呼延雪.好感度
-    世界: { 威望: 0, 旁白: initialNarratorVars() },
+    世界: { 威望: 0, 旁白: initialNarratorVars(), 起居注: emptyTally() },
                           // 世界.威望是全局单一的总声望值（做好事+，做坏事-，见下方裁剪规则），
                           // 其余"世界.任意状态"仍然可以自由声明，只有"威望"这一个字段有专门的初始值和裁剪。
                           // 世界.旁白.* 是旁白个人线的进度（见 initialNarratorVars）——挂在变量树里
@@ -138,6 +140,9 @@ const ALLOWED_ROOTS = ["角色", "世界", "主角"];
 // 只是不能改。要改由系统在满足条件时自己写（见 seaOfMind.js / setNarratorVars）。
 const PROTECTED_PATHS = [
   "世界.旁白",   // 旁白个人线：seaUnlocked/metXuannu/seaVisited/questStage
+  "世界.起居注", // 行动计数（memory/tally.js）：由系统在各动作点自增。
+                 // AI 绝不能写——它一旦能改，"今日打坐3次"这类数就成了叙事编的，
+                 // 而这些数会回头喂进 ctx 和日总结，等于让它自己给自己造证据。
 ];
 
 // 这条路径是否落在系统裁决域内（前缀匹配，"世界.旁白" 挡住 "世界.旁白.任意子键"）。

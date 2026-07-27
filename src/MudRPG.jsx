@@ -15,7 +15,7 @@ import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
 import { GROUND_ITEMS } from "./groundItems.js";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, npcAffectionLabel, reputationLabel } from "./mvu.js";
-import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, describeEquipment, rollQuality, computeEquippedStats } from "./equipment.js";
+import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats } from "./equipment.js";
 import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem } from "./items/catalog.js";
 // 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
@@ -97,6 +97,7 @@ import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
 import { invHasItemNamed, SAFE_HOUSES } from "./safeHouse.js";
 import { buildHistBlock, histBlockSavings } from "./memory/histWindow.js";
+import { tallyAdd, describeTodayForAI, describeDayForSummary } from "./memory/tally.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
 import { SEA_OF_MIND, shouldTriggerXuannu, buildXuannuScene, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
 import {
@@ -260,6 +261,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [mapView, setMapView] = useState("outer"); // ⑦ 地图框显示：outer=外层大地图 / inner=内层箱庭图
   const [peoplePanel, setPeoplePanel] = useState({ present: true, absent: true }); // 左侧人物两段各自收放
   const [time, setTime] = useState(restored?.snap.time ?? 6); // 24回合/天，6=第1日·卯时（晨）
+  // time 的即时镜像：起居注在同一个事件循环里可能被连续调用（内层移动等），
+  // 闭包里的 time 还是上一帧的值，跨天判定会错一格。跟 varTreeRef 同一套办法。
+  const timeRef = useRef(time);
+  useEffect(() => { timeRef.current = time; }, [time]);
 
   // ── 临时七维 buff 的读取端（消耗品系统第3步）──
   // buff flag 写在 flags 里（buff_属性+M_untilturn_T，T 是到期的 time 值，makeBuffFlag
@@ -729,7 +734,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       const material = dayMaterialRef.current;
       dayMaterialRef.current = [];
       prevDayRef.current = curDay;
-      if (material.length) summarizeDay(ended, material);
+      // 把这一天的行动计数也交给日总结当原料。此前不走 AI 的动作（走动/打坐/安抚…）
+      // 一件都不留痕，日总结里会出现"今天什么都没干"却实际来回跑了十几趟的怪事。
+      // 注意用 prevDayRef 之前那一天的 time 去读（ended*24），否则读到的是新一天的空表。
+      const tallyLine = describeDayForSummary(varTreeRef.current.世界?.起居注, ended * 24);
+      const fullMaterial = tallyLine ? [...material, { text: tallyLine }] : material;
+      if (fullMaterial.length) summarizeDay(ended, fullMaterial);
       // 新的一天：全图格子重埋（昨日埋物作废，预跑重新掷骰写文——给出"每天值得巡一圈"的理由）
       resetForDay();
       prerunSquares();
@@ -1418,6 +1428,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       endTrace(_wt, `私聊中断（${e.message || e}）`);
       addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
     }
+    noteAction("whisper");
     setPendingTalks(n => Math.max(0, n - 1));
     talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
   }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress]);
@@ -1725,6 +1736,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     });
     setTime(t => t + 1);
     jotNote({ text: "打坐调息一回，气血回转了些。", source: NOTE_SOURCE.DUMB });
+    noteAction("meditate");
   }, [loading, addLog, jotNote]);
 
   // 修炼：花潜能升内功/外功，越练越贵（每10点门槛成本+1），系统本地裁决，
@@ -2087,6 +2099,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const forceLayer = opts.forceLayer || null;
     const innerDecision = tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree: varTreeRef.current, questProgress, inv });
     if (innerDecision?.kind === "move") {
+      noteAction("innerMove");
       endTrace(_trace, innerDecision.summary);
       addLog([{ t: "cmd", text: `> ${cmd}` }]);
       setInput("");
@@ -2268,7 +2281,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     const invText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join(",");
     const { visibleNpcs, visibleNpcsForAI } = buildPresence({ _trace, isTalk, lockedDestName, room, innerRoomName, companionState });
-    const ctx = `${targetNote}${modeNote}[状态] ${gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : ""}时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""} 出口:${room.exits.join(",")} NPCs:${visibleNpcsForAI.map(n => { const ci = (n.carriedItems || []).filter(i => !i.stolen).map(i => i.name).join("、"); const tier = typeof n.levelCap === "number" ? `〔品阶:${QUALITY[Math.max(0, Math.min(5, n.levelCap))]}档〕` : ""; return n.name + tier + (ci ? `〔身携:${ci}〕` : "〔身无长物〕"); }).join(",") || "无"} 物品:${room.items.map(i => i.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 七维:${Object.entries(char.special || {}).map(([k, v]) => k + v).join(",")} 背包:${invText} 装备:${describeEquipment(inv)} 武功:${skills.map(s => s.name + "Lv" + s.level).join(",")} 因果:${dao.karma} 劫数:${dao.jie}\n[已触发事件] ${flags.length ? flags.join(",") : "无"}${pickupNote}${destinationLock}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${collectNote}${arrivalNote}${forcedEventNote}`;
+    const ctx = `${targetNote}${modeNote}[状态] ${gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : ""}时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""} 出口:${room.exits.join(",")} NPCs:${visibleNpcsForAI.map(n => { const ci = (n.carriedItems || []).filter(i => !i.stolen).map(i => i.name).join("、"); const tier = typeof n.levelCap === "number" ? `〔品阶:${QUALITY[Math.max(0, Math.min(5, n.levelCap))]}档〕` : ""; return n.name + tier + (ci ? `〔身携:${ci}〕` : "〔身无长物〕"); }).join(",") || "无"} 物品:${room.items.map(i => i.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 七维:${Object.entries(char.special || {}).map(([k, v]) => k + v).join(",")} 背包:${invText} 装备:${describeEquipment(inv)} 武功:${skills.map(s => s.name + "Lv" + s.level).join(",")} 因果:${dao.karma} 劫数:${dao.jie}\n[已触发事件] ${flags.length ? flags.join(",") : "无"}${describeTodayForAI(varTreeRef.current.世界?.起居注, timeRef.current)}${pickupNote}${destinationLock}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${collectNote}${arrivalNote}${forcedEventNote}`;
     // 对话模式取更长的历史窗口（至少 20 层全部互动）——聊天比行动更依赖前后文的来回照应；
     // 行动模式沿用用户配置的窗口。convo 里本就混装了行动/对话/私聊三类回合，但私聊是玩家
     // 与"旁白"这个第四面墙外角色的私密对话，普通场景 NPC 不该知道这些内容（反过来，旁白
@@ -2534,6 +2547,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         { t: "sys", text: `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
       ]);
     }
+    noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
     if (isTalk) { setPendingTalks(n => Math.max(0, n - 1)); }
     else { setLoading(false); }
     // 停计时
@@ -2721,6 +2735,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 必掉物（关键钥匙等）：赢了就一定给，不看气运、不掷骰。
       // 跟下面那段"按气运概率掉一件随身物"是两回事——钥匙这种卡住一整栋安全屋
       // 的关键物件不能交给骰子，否则玩家得反复打同一个人刷钥匙。已在背包里就不再给。
+      noteAction("duel");
       if (outcome === "win" && duelingNpc?.guaranteedDrop) {
         const gd = duelingNpc.guaranteedDrop;
         if (!invHasItemNamed(inv, gd.name)) {
@@ -3102,6 +3117,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   // ⑧ 采摘：把地上物收入背包、从 room.items 抹去（确定性，不调AI）。
   const handleCollectGround = useCallback((item) => {
+    noteAction("pickGround");
     const itemName = typeof item === "object" ? item.name : item;
     setInv(prev => [...prev, item]);
     setRoom(r => {
@@ -3884,6 +3900,26 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     act(`在茶馆花${cost}两，听掌柜低声说了个传闻：「${rumor}」`, [], { settle: true });
   }, [char, addLog, act]);
 
+  // 起居注：记一次动作。走 AI 的和不走 AI 的都记（见 memory/tally.js 顶部注释）。
+  // 用 timeRef 而不是 time：这个函数会被 tryInnerMove 之类的路径在同一个事件循环里
+  // 连续调用，闭包里的 time 可能还是上一帧的值，跨天判定会错一格。
+  const noteAction = useCallback((kind, n = 1) => {
+    setVarTree(prev => {
+      const next = JSON.parse(JSON.stringify(prev || {}));
+      if (!next.世界) next.世界 = { 威望: 0 };
+      next.世界.起居注 = tallyAdd(next.世界.起居注, kind, timeRef.current, n);
+      return next;
+    });
+  }, []);
+
+  // 装备/卸下。此前直接在 GlobalOverlays 里 setInv(toggleEquip(...))，
+  // 为了记一笔计数不值当再穿一层 props，收拢到这儿——将来装备变更要加别的
+  // 副作用（耐久、套装判定）也有地方放。
+  const handleToggleEquip = useCallback((it) => {
+    setInv(v => toggleEquip(v, it.id));
+    noteAction("equipToggle");
+  }, []);
+
   // ── 心灵之海 · 玄女点破 ──
   // 触发条件见 seaOfMind.shouldTriggerXuannu：好感≥90 + 已跟玄女说过话。
   // "说过话"直接复用「对话即认识」的结果（commitRound 里 talkTarget/respondedNpcs
@@ -3948,6 +3984,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       { t: "cmd", text: `> ${spec.label}` },
       { t: "desc", text: `  ${comfortResponse(actionKey, levelBefore)}` },
     ]);
+    noteAction("comfort");
     // 心防降级是玩家该感知到的节点，但只给感受不给数字
     if (levelAfter < levelBefore) {
       const felt = ["她彻底放松下来了。", "她靠着你，很安静。", "她不再躲你的手了。",
@@ -3963,6 +4000,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 换出战队友（单槽互斥；传 null 表示谁都不带）
   const handleSwitchCompanion = useCallback((key) => {
     setCompanionState(cs => setActiveCompanion(cs, key));
+    noteAction("companionSwitch");
     const label = key ? (key === "asuka" ? "明日香" : "雪豹") : null;
     addLog([{ t: "sys", text: label ? `  （${label}跟上了。）` : "  （让他们都留守了。）" }]);
   }, [addLog]);
@@ -4044,6 +4082,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     setRoom({ name: SEA_OF_MIND.district, desc: node.desc, exits: [], npcs: [], items: [] });
     setTimeout(() => setInnerRoomName(SEA_OF_MIND.anchor), 0);
     setVarTree(prev => setNarratorVars(prev, { seaVisited: true }));
+    noteAction("seaEnter");
     // 进海即把她从旁白的位子上取下来 → 主叙事文风退回第一档（narratorVoicePrompt 的 stage 短路）。
     // 已经哄好过的（RESOLVED）不再回退，否则重进一次海她又变冷了。
     if (narrator.stage !== NNPC_STAGE.RESOLVED) {
@@ -4248,7 +4287,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         handleNpcLearnSkill={handleNpcLearnSkill} handleNpcTrade={handleNpcTrade}
         handleInviteCompanion={handleInviteCompanion}
         activeItemMenu={activeItemMenu} setActiveItemMenu={setActiveItemMenu}
-        inspectItem={inspectItem} handleConsumeItem={handleConsumeItem} handleCollectGround={handleCollectGround}
+        inspectItem={inspectItem} handleConsumeItem={handleConsumeItem} handleCollectGround={handleCollectGround} handleToggleEquip={handleToggleEquip}
         activePersuasion={activePersuasion} setActivePersuasion={setActivePersuasion}
         apiCfg={apiCfg} persuasionProgress={persuasionProgress} setPersuasionProgress={setPersuasionProgress}
         forceAdvanceQuest={forceAdvanceQuest}
