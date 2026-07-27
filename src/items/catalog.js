@@ -632,6 +632,13 @@ export const SUNDRIES = [
   { name: "天竺棉布缠头", category: ITEM_CATEGORY.ARMOR, quality: "白", tags: ["天竺", "衣物"], desc: "天竺流亡人惯裹的长条棉布缠头,一圈圈绕上七八尺,挡日头也挡风沙。缠得好的能垫一垫闷棍,缠不好的自己先绊倒。异乡人认这个,老远看缠头的绕法就知是不是同乡。" },
   { name: "贝叶抄经纸", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["天竺", "杂货"], desc: "欢喜堂裁下的空白贝叶,压平晾干可抄经也可记账。教里穷,好纸舍不得,便拿这个抵。识字的异乡人攒一沓,说等攒够了要把家乡的事从头写一遍——写给谁看,他们也不知道。" },
   { name: "天竺赤陶油灯", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["天竺", "器物"], desc: "欢喜堂供役自己捏的赤陶小油灯,粗手粗脚一个坯,灌上迦南脂的边角料就能点。夜里欢喜堂后院一排排点起来,昏黄一片,倒比正殿的鎏金大灯更像个有人住的地方。" },
+  // ── 雅江特产 ──
+  { name: "冷锅鱼", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["食品", "雅江特产"], consumable: { hpRestore: 0.2, energyRestore: 2 }, desc: "青衣楼招牌。冷锅底料铺上七分熟的江团鱼片，不开火，余温慢慢煨。第一口嫩滑，越吃越入味。鱼吃完加高汤涮菜，一锅两吃。雅江人待客必点——不吃冷锅鱼等于没来过雅江。" },
+  { name: "竹青宣", category: ITEM_CATEGORY.MISC, quality: "蓝", tags: ["文房", "雅江特产"], desc: "当年新竹嫩皮捣浆手工捞的纸，对着光能看到竹纤维纹理。青城派符箓必须用它——别的纸承不住符文。" },
+  { name: "熊山花椒", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["食材", "调料", "曲措乡产"], consumable: { sixDimTemp: { 身法: 1 } }, desc: "冷锅鱼底料的灵魂。产自曲措乡熊山，麻得舌头打颤但停不下来。最近断货了——青衣楼老板娘急得在江门街来回走。" },
+  { name: "青城老酒", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["酒", "雅江特产"], consumable: { hpRestore: 0.1, energyRestore: 1 }, desc: "青城山后山泉酿的米酒，甜润不烈。道士们晚课后喝一碗——一清道长不喝，松鹤道长喝三碗。" },
+  { name: "竹叶青蛇胆", category: ITEM_CATEGORY.MISC, quality: "蓝", tags: ["药材", "解毒"], consumable: { hpRestore: 0.12 }, desc: "竹海里竹叶青蛇的胆，玉真子用来配解毒散。取胆不杀蛇——他捏着蛇头挤出来，蛇吐着信子走了，他也走了。" },
+  { name: "熊猫笋", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["食材", "兽食"], consumable: { hpRestore: 0.06 }, desc: "熊猫啃剩的冷箭竹笋尖，嫩得能掐出水。护谷弟子说别捡——「那是它挑剩下的，你捡了它下次不来了。」但确实好吃。" },
 ];
 
 // ---------------------------------------------------------------------------

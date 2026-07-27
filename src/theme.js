@@ -32,6 +32,7 @@ const ZONE_MAP = {
   后山平台: "snow", 雪山派: "snow", 山洞: "snow", 顶峰: "snow",
   大草甸: "wild",
   贡措海: "water",
+  雅江: "bamboo",
   锦官城: "outland",
 };
 
@@ -96,6 +97,16 @@ export const ZONE_THEMES = {
     text: "#c0b8a8",
     textDim: "#6a6255",
   },
+  bamboo: {
+    name: "雨城竹海",
+    accent: "#7ab48a",      // 竹青绿
+    accentDim: "#3a6a4a",
+    bg: "#080b09",
+    bgPanel: "#0a0f0c",
+    border: "#1a2a1e",
+    text: "#bcc8b8",
+    textDim: "#556a58",
+  },
 };
 
 // 日间模式：六套的浅色版本，字段一一对应上面的暗夜版。
@@ -159,6 +170,16 @@ export const ZONE_THEMES_DAY = {
     border: "#ab9e88",
     text: "#38332a",
     textDim: "#847a68",
+  },
+  bamboo: {
+    name: "雨城竹海·昼",
+    accent: "#2a6a3e",       // 竹青深化
+    accentDim: "#6aa07a",
+    bg: "#eef2ec",
+    bgPanel: "#f5f8f3",
+    border: "#93ab96",
+    text: "#2a362c",
+    textDim: "#6c8070",
   },
 };
 

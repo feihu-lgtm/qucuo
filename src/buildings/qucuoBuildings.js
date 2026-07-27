@@ -257,6 +257,34 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "华山令狐冲之墓。墓壁刻有独孤九剑剑诀，外功≥80可参悟习得。",
     },
   ],
+
+  // ── 雅江（6 种，雨城竹海·青城派） ──
+  雅江: [
+    {
+      id: "restaurant_yajiang", name: "青衣楼", type: BUILDING_TYPE.RESTAURANT, menuKey: "冷锅鱼",
+      desc: "江门街最大的冷锅鱼老字号。冷锅底料铺上七分熟江团鱼片，不开火先吃鱼，一锅两吃。雅江人待客必点。",
+    },
+    {
+      id: "shop_yajiang", name: "雅纸铺", type: BUILDING_TYPE.SHOP, shopKey: "雅纸铺",
+      desc: "青衣江竹子做的纸，薄而韧，墨迹存百年不褪。兼营竹编器物、日用杂货。",
+    },
+    {
+      id: "transport_yajiang", name: "西城门驿站", type: BUILDING_TYPE.TRANSPORT,
+      desc: "驿道尽头界碑「曲措乡界」。骡马夫专做最后一段路的生意——再往里走官道没了。",
+    },
+    {
+      id: "temple_yajiang", name: "伏龙观", type: BUILDING_TYPE.TEMPLE, karmaPerPray: 10,
+      desc: "离堆顶上供奉李冰父子。最后一进悬在崖边，推窗即是奔腾岷江。老道士说这是李冰在下面翻身。",
+    },
+    {
+      id: "wuguan_yajiang", name: "青城派·三清殿", type: BUILDING_TYPE.WUGUAN, skillSet: "青城",
+      desc: "青城派正殿。入门先站桩——站在宝瓶口江边，水没脚踝，站半日。站住了才教剑。",
+    },
+    {
+      id: "sect_entry_yajiang", name: "青城山山门", type: BUILDING_TYPE.SECT_ENTRY, sect: "青城派",
+      desc: "石砌牌坊额书青城二字。不收富贵子弟捐纳——想入门，先去江边站桩，站住了再说。",
+    },
+  ],
 };
 
 // 返回某据点的建筑列表，处理"曲措乡·鱼定村"这类带前缀的地名
