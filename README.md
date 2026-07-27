@@ -114,13 +114,16 @@ npm run build     # 构建生产版本
 
 ```
 qucuo/
-├── src/                      # 源代码（155 文件，约 3.5 万行）
-│   ├── MudRPG.jsx            # 主游戏组件（全局状态 + act() 回合主循环 + handler + 中栏 UI）
+├── src/                      # 源代码（159 文件，约 3.5 万行）
+│   ├── MudRPG.jsx            # 主游戏组件（全局状态 + act() 回合主循环 + handler；UI 已全部抽出）
 │   ├── main.jsx              # 入口
 │   ├── StartScreen.jsx       # 开始界面（含访客计数：X 位侠客 · 共 Y 人次）
 │   ├── panels/               # 从 MudRPG 抽出的纯 UI 面板（state 不下沉，纯 props）
+│   │   ├── TopBar.jsx        #   顶栏：全部功能入口 + 头像选择弹层
 │   │   ├── LeftPanel.jsx     #   左栏「天地」：据点/出口/建筑/人物/立绘/地图
+│   │   ├── CenterPanel.jsx   #   中栏「江湖」：建筑switch/叙事日志/任务提示/交互模式/输入框
 │   │   ├── RightPanel.jsx    #   右栏「侠客」：属性/武学/装备/包袱/旁白
+│   │   ├── GlobalOverlays.jsx#   全部 fixed 浮层的集中挂载点（15 个）
 │   │   └── DebugPanel.jsx    #   调试面板（dbg* state 下沉到面板内部）
 │   ├── act/                  # act() 主循环拆分的子模块
 │   │   ├── actCall.js        #   主模型调用组装（SillyTavern 13 位置消息数组）

@@ -210,7 +210,10 @@ export function importSave(jsonText) {
 // 尝试从自动存档恢复；找不到时返回 null，调用方 fallback 到 preset 默认值。
 // 关键防御：如果存档是旧版本结构（比如缺少 neigong/waigong/special 字段），
 // 直接判定为不兼容，丢弃存档而不是硬塞进新代码导致渲染崩溃。
-function isCompatibleCharShape(char) {
+// 这两个判定必须 export：MudRPG.applySnapshot（手动读槽位 + ↩回滚）也要用同一套
+// 兼容标准，不能各写一份。此前它们是模块私有、MudRPG 却直接裸调用，
+// 结果读档/回滚一点就 ReferenceError（见 version.js 0727 修复记录）。
+export function isCompatibleCharShape(char) {
   return !!char
     && Array.isArray(char.hp)
     && typeof char.neigong === "number"
@@ -218,7 +221,7 @@ function isCompatibleCharShape(char) {
     && char.special && typeof char.special === "object";
 }
 
-function isCompatibleRoomShape(room) {
+export function isCompatibleRoomShape(room) {
   return !!room
     && typeof room.name === "string"
     && typeof room.desc === "string"

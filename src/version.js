@@ -9,6 +9,21 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "UI 全抽出：顶栏/中栏/浮层三块搬走，MudRPG.jsx 再-740行；顺带修两个静默已久的 ReferenceError",
+    time: "2026-07-27 15:30",
+    notes: [
+      "三栏拆分收官：中栏、顶栏、全局浮层三块一并抽出，MudRPG.jsx 4874→4134 行（累计 5788→4134，-1654）。至此主文件一行 UI 都没有了，只剩 state + effect + handler。",
+      "①【src/panels/CenterPanel.jsx】中栏「江湖」613行：标题栏四开关(停止/回滚/调试/gamemode)、DebugPanel挂载、切磋确认条、近20种建筑类型的条件渲染switch、叙事日志一问一答分组折叠、任务提示条/❢触发框/◈抉择框、交互模式栏(行动·对话·私聊)+NSFW+打坐、NPC人选选择器、飞鸽状态条、底部输入框。",
+      "②【src/panels/TopBar.jsx】顶栏185行：全部功能入口（手机端收成☰菜单）+ 头像选择弹层。顺手把只有它用的 topBtn() 规格函数和 avatarPickerCloseGuard 一并内聚进去，主文件少两处定义。",
+      "③【src/panels/GlobalOverlays.jsx】全局浮层226行：原先15个浮层的显示判断散在主渲染的头尾两段，现在合并一处。全都是 position:fixed + 高zIndex，DOM 挂哪层不影响呈现。同 z-index 的三组（500三个/300四个/400两个）相对先后严格保持原样，层叠顺序零变化。",
+      "④【清理】listCharacters / toggleEquip / BUILDING_TYPE 三个 import 随代码搬走从主文件删除；另外发现 getBuildingsForLocation / BUILDING_TYPE_LABEL 本来就是死 import，一并清掉。",
+      "⑤【修 bug·读档和回滚一点就崩】applySnapshot 裸调用 isCompatibleRoomShape / isCompatibleCharShape，但这俩是 saves.js 的模块私有函数，既没 export 主文件也没 import——运行到即 ReferenceError。影响「设置→读取存档槽位」和「↩ 回滚」两个入口，全废。开局自动恢复走的是 tryRestoreSave 内部判定，不受影响，所以这坑一直没被发现。改为 export + import，并补 src/saves.shape.test.js 共8条回归测试钉死\"必须可外部导入\"。是 e8f6f57（act 管线拆分）留下的。",
+      "⑥【修 bug·AI 事实摘要从来没生效过】aiSummarizeFact 里解构出来的是 { text }，下一行却写 if (line) ... setFactSummary(..., line)。line 这个变量根本不存在，每次调用都抛 ReferenceError，又正好被外层 catch 静默吞掉——于是知识域里的事实描述一直用的是注册时那句结构化兜底，AI 润色的版本一次都没写进去。改用 text，并按姊妹函数 summarizeDay 同一套 (text||\"\").trim() 模式处理。",
+      "验证：vite build 通过、vitest 33/33 通过（新增8条）。props 契约用脚本逐个对账「组件解构的名字集合」vs「调用处传的名字集合」：TopBar 29/29、CenterPanel 119/119、GlobalOverlays 72/72、LeftPanel 50/50、RightPanel 34/34 全等——这类名字写错导致组件静默收到 undefined 的 bug，lint 抓不到，只能对账。另外分别 build 改前/改后产物，提取全部中文文案做多重集比对：10568 个不同 token、15036 次出现，一个不差，确认没丢没重。",
+      "教训：这两个 bug 都是\"抛错被 catch 吃掉\"的哑失败，跑通游戏和人眼 review 都看不出来，是这次拆分时顺手用 eslint no-undef 扫全文件才扫出来的。项目目前没有任何 lint 配置，建议补一套 no-undef 最小规则集进 CI。",
+    ],
+  },
+  {
     codename: "调试面板抽出：DebugPanel.jsx 独立组件，12个dbg* state 下沉，主文件再-235行",
     time: "2026-07-27 12:10",
     notes: [
