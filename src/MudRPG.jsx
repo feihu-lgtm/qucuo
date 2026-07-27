@@ -4128,6 +4128,17 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     setTimeout(() => setInnerRoomName(back.inner), 0);
   }, [addLog]);
 
+  // 互动菜单读当前真值，而不是点开那一刻的快照。
+  // 【为什么】activeNpcMenu 存的是点击时的对象引用；菜单开着的这段时间里
+  // room.npcs 可能被驻场注入 effect 补上 carriedItems（那个 effect 按据点/换天触发）。
+  // 用旧快照去偷窃/切磋，读到的 carriedItems 还是 undefined，于是表现为
+  // "偷不到装备""切磋不掉东西"——而池子在 room.npcs 里明明已经有了。
+  // 按名字重新取一次；取不到才退回快照（队友走 RightPanel 那条入口，
+  // 它的对象本来就不在 room.npcs 里）。
+  const liveNpcMenu = activeNpcMenu
+    ? (room.npcs.find(n => n.name === activeNpcMenu.name) || activeNpcMenu)
+    : null;
+
   const inSeaOfMind = room.name === SEA_OF_MIND.district;
   const seaGate = canEnterSea({ flags, varTree, districtName: room.name, innerRoomName });
 
@@ -4309,7 +4320,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         showTrace={showTrace} setShowTrace={setShowTrace}
         showCodex={showCodex} setShowCodex={setShowCodex}
         showBugReport={showBugReport} setShowBugReport={setShowBugReport} buildBugReportTurns={buildBugReportTurns}
-        activeNpcMenu={activeNpcMenu} setActiveNpcMenu={setActiveNpcMenu}
+        activeNpcMenu={liveNpcMenu} setActiveNpcMenu={setActiveNpcMenu}
         handleNpcLook={handleNpcLook} handleNpcTalk={handleNpcTalk} handleNpcGift={handleNpcGift}
         handleNpcDuel={handleNpcDuel} handleNpcSteal={handleNpcSteal}
         handleNpcLearnSkill={handleNpcLearnSkill} handleNpcTrade={handleNpcTrade}

@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修两处：README/docs 里 21 处引用还指着已转成 webp 的旧 png；偷窃拿的是过期快照所以偷不到装备",
+    time: "2026-07-29 02:30",
+    notes: [
+      "①【文档引用漏改】那次全库转 webp 时，我的脚本只改了 src/ 与 index.html 的引用，**漏了 README.md 和 4 份 docs**——README 首屏那个标题图 <img src=\"public/title_tianducuo_v2.png\"> 指向的文件已经不存在，所以 GitHub 上是裂图。全查出来 21 处（README 1 处、交接_赌石卡牌UI重构 17 处、美术_地图UI素材提示词 2 处、赌石完整制作方案 1 处），已全部改成 .webp。判据是「webp 版存在且 png 版已不存在」，只改真漏的，不动那些本来就没转过的。",
+      "②【偷不到装备·根因在 UI 层不在逻辑层】先验了逻辑：才旦固化后随身物 7 件（鱼定猎刀 weapon / 鱼定粗布短打 armor / 村社护佑结 accessory / 4 件 misc），模拟偷 500 次的分布是 失败161 / 偷到杂物145 / **偷到装备112** / 偷招82——算法是好的，category 在固化时也保留了。问题出在 activeNpcMenu：它存的是**点开菜单那一刻的对象引用**，而菜单开着的这段时间里 room.npcs 可能被驻场注入 effect 补上 carriedItems（那个 effect 按据点/换天触发）。玩家点「偷窃」时，handleNpcSteal 拿到的是还没被补数据的旧快照，carriedItems 仍为 undefined → 池子空 → 偷不到东西。切磋走同一条入口，同病。",
+      "③【修法】菜单一律按名字从 room.npcs 重新取当前对象，取不到才退回快照（队友走 RightPanel 那条入口，其对象本就不在 room.npcs 里，必须留这条退路）。",
+      "④【这是同一类病的第三次】前两次是「固化数据被原地互动分支丢掉」和「驻场设定被名字已在就跳过挡在门外」，这次是「UI 持有的引用与真值脱钩」。三次都指向同一件事：room.npcs 这份状态的读写两侧都容易各自持有过期副本。写侧已在上一版收拢进 roomNpcs.js；这一版补的是读侧。已加测试钉住「UI 持有的引用必须能取到当前真值」。",
+      "验证：npm run verify 通过（vitest 435/435 + pages 构建）。",
+    ],
+  },
+  {
     codename: "修开场两张图在 Pages 上不显示：硬编码绝对路径在 /qucuo/ 子路径下 404",
     time: "2026-07-29 01:50",
     notes: [

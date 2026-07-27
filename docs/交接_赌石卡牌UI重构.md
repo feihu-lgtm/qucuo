@@ -25,7 +25,7 @@
 1. **布局 = 卡牌凹半圆围台**：
    - 赌台 + 石头在**画面中上部**当主角（石头坐独脚台桌面，可放大）
    - 八张塔罗牌卡沿**凹半圆（⌣，中间靠下、两侧向上抱）**围在下方，不遮挡赌台
-   - **报价气泡放每张卡的下方**（不是头顶），用 `ui/bub_gold1.png` 统一款
+   - **报价气泡放每张卡的下方**（不是头顶），用 `ui/bub_gold1.webp` 统一款
    - **点选放大**：点某张卡 → 放大居中提到最前 + 背景变暗，再点空白收回
 2. **石头坐台定位**：独脚台是透视图，**放弃"桌板中点"算法**，改**目视定位**——石头底坐在桌面圆盘上（桌面在台图 y≈0.20 处）。
 3. **卡牌 = 立绘 + 卡框合成**：写实唯美风竖构图立绘（才旦那种）填入 9:16/9:21 华丽卡框。
@@ -39,14 +39,14 @@
 
 | 位置 | 最终角色 | 卡文件 | 原 key（代码里待改） | kind | 备注 |
 |---|---|---|---|---|---|
-| 1 | 雪山弟子 | `card_xueshan.png` | xueshan | barter | 以物易物 |
-| 2 | **苏宛** | `card_suwan.png` | ~~muming~~→suwan | — | **替换跟风牧民** |
-| 3 | **才旦** | `card_caidan.png` | ~~xiaofan~~→caidan | — | **替换石料小商贩** |
-| 4 | 温掌柜 | `card_wen.png` | wen | boss | 庄家·保底回收（性转女掌柜版） |
-| 5 | **李若由** | `card_liruoyou.png` | ~~fushang~~→liruoyou | cash/top | **替换天都富商**·高价 |
-| 6 | 兰姐 | `card_lanjie.png` | lanjie | condition | 带条件 |
-| 7 | 锦官差役 | `card_chaiyi.png` | chaiyi | cash | onlyWeapon |
-| 8 | 黑风寨采买 | `card_heifeng.png` | heifeng | favor | 人情债·带黑风令 |
+| 1 | 雪山弟子 | `card_xueshan.webp` | xueshan | barter | 以物易物 |
+| 2 | **苏宛** | `card_suwan.webp` | ~~muming~~→suwan | — | **替换跟风牧民** |
+| 3 | **才旦** | `card_caidan.webp` | ~~xiaofan~~→caidan | — | **替换石料小商贩** |
+| 4 | 温掌柜 | `card_wen.webp` | wen | boss | 庄家·保底回收（性转女掌柜版） |
+| 5 | **李若由** | `card_liruoyou.webp` | ~~fushang~~→liruoyou | cash/top | **替换天都富商**·高价 |
+| 6 | 兰姐 | `card_lanjie.webp` | lanjie | condition | 带条件 |
+| 7 | 锦官差役 | `card_chaiyi.webp` | chaiyi | cash | onlyWeapon |
+| 8 | 黑风寨采买 | `card_heifeng.webp` | heifeng | favor | 人情债·带黑风令 |
 
 > ⚠️ **落地时须同步改 `gambleStone.js` 的 BIDDER_TYPES**：把 fushang→liruoyou、
 > muming→suwan、xiaofan→caidan（名字、mult、cash、kind、bio、carry 一并调整）。
@@ -57,22 +57,22 @@
 ## 四、素材清单（全部真透明，`public/stones/`）
 
 **背景**（1672×941）：
-- `bg_hall_day.png` 白天·天窗天光（明亮通透，无点灯）
-- `bg_hall_night.png` 夜·月光烛火（幽暗）
+- `bg_hall_day.webp` 白天·天窗天光（明亮通透，无点灯）
+- `bg_hall_night.webp` 夜·月光烛火（幽暗）
 - `bg_hall.png` = 默认（当前指向 day）。**落地建议按游戏昼夜切换 day/night**
 
-**赌台**：`table.png` —— **藏式独脚高台**（紫檀描金·镶绿松红珊瑚·莲台底座），已抠白底透明。桌面圆盘在图 y0.08~0.28。
+**赌台**：`table.webp` —— **藏式独脚高台**（紫檀描金·镶绿松红珊瑚·莲台底座），已抠白底透明。桌面圆盘在图 y0.08~0.28。
 
 **石头**（512²，真透明，婆婆提供的干净版）：
 `skin_wusha/huangsha/yansha/laoxiang/tiexiu/songhua.png`（黑乌砂/黄沙皮/盐沙/老象皮/铁锈/松花）
 
-**刀口蒙版**（6 个随机形状，白色实心，做开刀窗口 mask）：`cut_1.png`~`cut_6.png`
+**刀口蒙版**（6 个随机形状，白色实心，做开刀窗口 mask）：`cut_1.webp`~`cut_6.webp`
 - 出生固化：`gambleStone.js` 里每个 slot 已加 `cutShape`(1-6) 字段
 
 **裂纹**（按暗度抠，只留暗线）：`crack_top/mid/bot.png`
 
 **卡框**（`frames/`，均已抠透明、内框可填立绘）：
-- `frame_lux.png` —— **主力框**（大尺寸华丽·内框 567×1232≈9:21，立绘填入清晰不糊）
+- `frame_lux.webp` —— **主力框**（大尺寸华丽·内框 567×1232≈9:21，立绘填入清晰不糊）
 - `frame_gold/gold2/wood/wood2/copper/stone.png` —— 早期六品阶框（已九宫格截成内框 9:16，较小，备用）
 
 **竞价者卡**（`cards/`，立绘×frame_lux 合成，941×1672 高清不糊）：
@@ -80,7 +80,7 @@
 
 **UI 部件**（`ui/`）：
 - 气泡 `bub_gold1~4/wood1~2/paper/stone.png`（统一用 gold1）
-- 按钮底 `bar_wood.png`（开刀）/`bar_paper.png`（卖出·据为己有）
+- 按钮底 `bar_wood.webp`（开刀）/`bar_paper.webp`（卖出·据为己有）
 - 图标 `btn_arrow/close/plus`、`coin/ingot/hammer/star/burst/cloud/eye` 等
 
 ---

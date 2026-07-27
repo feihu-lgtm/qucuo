@@ -204,3 +204,43 @@ describe("不许绕过 roomNpcs 直接改名单", () => {
     expect(src).toMatch(/npcs:\s*\[\]/);
   });
 });
+
+// ── 快照过期：UI 持有的 NPC 对象引用会跟 room.npcs 脱钩 ─────────────────
+// 【实测反馈】"偷窃还是偷不到装备"。逻辑层其实是好的——才旦的池子里 3 件装备、
+// 4 件杂物，模拟偷 500 次能偷到装备 112 次。问题在 UI 那一层：
+// activeNpcMenu 存的是**点开菜单那一刻的对象引用**，而菜单开着的这段时间里
+// room.npcs 可能被驻场注入 effect 补上 carriedItems（那个 effect 按据点/换天触发）。
+// 于是玩家点"偷窃"时，handleNpcSteal 拿到的是那份还没被补数据的旧快照，
+// carriedItems 仍是 undefined → 池子空 → 偷不到东西。
+// 修法：菜单一律按名字从 room.npcs 重新取当前对象，取不到才退回快照
+// （队友走 RightPanel 那条入口，其对象本就不在 room.npcs 里）。
+describe("UI 持有的 NPC 引用必须能取到当前真值", () => {
+  const live = (roster, snapshot) =>
+    (snapshot ? roster.find(n => n.name === snapshot.name) || snapshot : null);
+
+  it("名单里那份已被补数据 → 取到的是补过的（而不是旧快照）", () => {
+    const stale = { name: "才旦", brief: "村口少年" };                    // 点菜单时的快照
+    const patched = { name: "才旦", brief: "村口少年", carriedItems: [{ name: "鱼定猎刀", category: "weapon" }] };
+    const got = live([patched], stale);
+    expect(got.carriedItems).toHaveLength(1);
+    expect(got).toBe(patched);
+  });
+
+  it("名单里没有这个人 → 退回快照（队友走的是另一条入口）", () => {
+    const companion = { name: "明日香", carriedItems: [{ name: "朗基努斯" }] };
+    expect(live([{ name: "才旦" }], companion)).toBe(companion);
+  });
+
+  it("没开菜单时为 null", () => {
+    expect(live([{ name: "才旦" }], null)).toBeNull();
+  });
+
+  it("装备类能进偷窃池（category 在固化时被保留）", async () => {
+    const { getResidentNpcs } = await import("./residentNpcs.js");
+    const { ensureNpcCombatData } = await import("./npcGeneration.js");
+    const caidan = getResidentNpcs("鱼定村").find(n => n.name === "才旦");
+    const fixed = ensureNpcCombatData({ ...caidan }, { luck: 5, levelCap: caidan.levelCap ?? 1 });
+    const equip = fixed.carriedItems.filter(i => ["weapon", "armor", "accessory"].includes(i.category));
+    expect(equip.length, "随身物里应有装备类，否则永远只偷得到杂物").toBeGreaterThan(0);
+  });
+});
