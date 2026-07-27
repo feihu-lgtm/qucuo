@@ -1,0 +1,78 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+
+// 文件树文档的自动守卫。
+// 【为什么值得写一条测试来管文档】
+// 0728 全量对账发现 docs/文件树.md 漏了 52 个文件——而且不只是新加的：
+// quickBattle/ 整个目录、combat/ 三个文件、TeamDuelScreen、CodexScreen、
+// 全部调试与可观测组件都漏着，另有一处幽灵条目（memory-recall.js 早改名了）。
+// 文档漂移是悄无声息的：没人会因为漏登记而报错，但下一个人（包括以后的我）
+// 就会照着不全的树去找代码，或者重复造一个已经存在的东西——
+// memory/activityLog.js 与 memory/tally.js 功能重叠，正是这么来的。
+// 所以钉一条：新增源文件必须登记进文件树；文件树也不许留已删除文件的幽灵条目。
+
+const SRC = "src";
+const DOC = "docs/文件树.md";
+
+function walk(dir, out = []) {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) walk(p, out);
+    else if (/\.jsx?$/.test(name)) out.push(relative(SRC, p));
+  }
+  return out;
+}
+
+describe("docs/文件树.md 与真实文件系统对得上", () => {
+  const doc = readFileSync(DOC, "utf-8");
+  const files = walk(SRC);
+
+  it("每个源文件都登记在册", () => {
+    const missing = files.filter(f => !doc.includes(f.split("/").pop()));
+    expect(missing, `以下文件未登记进 ${DOC}：\n  ${missing.join("\n  ")}`).toEqual([]);
+  });
+
+  it("没有幽灵条目（文档提到但已不存在的文件）", () => {
+    const names = new Set(files.map(f => f.split("/").pop()));
+    const ghosts = [...new Set(
+      (doc.match(/[A-Za-z][A-Za-z0-9_.\-]*\.jsx?\b/g) || [])
+        .filter(m => !names.has(m) && !m.startsWith("vite") && !m.startsWith("eslint")),
+    )];
+    expect(ghosts, `文档提到但已不存在：${ghosts.join(", ")}`).toEqual([]);
+  });
+
+  it("文档里声明的文件数与实际一致（防统计行过期）", () => {
+    const m = doc.match(/(\d+)\s*个\s*js\/jsx\s*文件/);
+    expect(m, "文档里应有一行声明文件总数").toBeTruthy();
+    expect(Number(m[1]), `声明 ${m[1]} 个，实际 ${files.length} 个`).toBe(files.length);
+  });
+});
+
+// version.js 的语法守卫。
+// 【为什么需要】上一次提交我在 version.js 的中文叙述里用了未转义的英文双引号
+// （写成 真在"改名单"），把字符串提前截断 → vite build 直接失败。
+// 而我提交前只跑了 vitest：**那批测试没有一条会 import version.js**，
+// 所以测试全绿、构建是坏的，推上去才发现。
+// 这条测试补上这个缺口：只要能 import 进来、且结构合法，语法就一定是对的。
+describe("version.js 语法与结构（防「测试全绿但构建坏了」）", () => {
+  it("能被解析并导入", async () => {
+    const m = await import("./version.js");
+    expect(Array.isArray(m.VERSION_HISTORY)).toBe(true);
+    expect(m.VERSION_HISTORY.length).toBeGreaterThan(0);
+  });
+
+  it("每条都有 codename / time / notes[]", async () => {
+    const { VERSION_HISTORY } = await import("./version.js");
+    for (const e of VERSION_HISTORY.slice(0, 20)) {
+      expect(typeof e.codename).toBe("string");
+      expect(typeof e.time).toBe("string");
+      expect(Array.isArray(e.notes)).toBe(true);
+    }
+  });
+
+  it("CURRENT_VERSION 指向最新一条", async () => {
+    const { VERSION_HISTORY, CURRENT_VERSION } = await import("./version.js");
+    expect(CURRENT_VERSION).toBe(VERSION_HISTORY[0]);
+  });
+});

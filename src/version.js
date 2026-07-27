@@ -9,18 +9,31 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "文件树全量对账：52 个文件此前未收录，补齐并加自动守卫；顺带修一个我推上去的坏构建",
+    time: "2026-07-29 00:40",
+    notes: [
+      "①【漏得比想象的多】对账发现 docs/文件树.md 漏收 52 个文件，而且不只是这几天新加的：quickBattle/ 整个目录（5个）、combat/ 三个文件、TeamDuelScreen、CodexScreen、CharacterCreate、以及全部调试与可观测组件（TraceViewer/PipelineViewer/InjectionStructurePanel/debugConsole/三个 debug 入口页）都漏着。另有一处幽灵条目：文档里写着一个早已改名的旧文件。现已 188/188 全收录、零幽灵。",
+      "②【文档漂移的实际代价】漏登记不会报错，但下一个人（包括以后的我）会照着不全的树去找代码，或者重复造一个已经存在的东西——src/memory/activityLog.js 与我写的 memory/tally.js 功能重叠、当前无人引用，正是这么来的。已在树里给它加了显式警示标注。",
+      "③【坦白一处流程疏漏】activityLog.js 不是本线所写，是我上次 `git add -A` 顺带扫进仓库的（它当时躺在工作区未被跟踪，来自之前某次会话或另一位开发者的未提交产物），而我没注意到。它多记「时辰+地点」，粒度比 tally 细、思路可吸收；但两份并存必然分叉，去留待作者定，本版不动它。",
+      "④【加自动守卫 src/docsTree.test.js】三条：每个源文件必须登记在册 / 不许留幽灵条目 / 文档声明的文件总数必须与实际一致。写完立刻抓到两处真问题（我只替换了一处幽灵条目名、以及新增测试后统计行过期）——它一上线就在干活。",
+      "⑤【修一个我自己推上去的坏构建】上一次提交（第二刀·收拢 room.npcs）里，我在 version.js 的中文叙述中用了未转义的英文双引号（写成 真在\"改名单\"），把字符串提前截断，vite build 直接失败。而我提交前**只跑了 vitest**——那批测试没有任何一条会 import version.js，所以测试全绿、构建是坏的，推上去了才发现。已改用中文引号并修复。",
+      "⑤-2【补上这个缺口】docsTree.test.js 里加了三条 version.js 的语法与结构守卫（能被 import / 每条都有 codename·time·notes / CURRENT_VERSION 指向最新一条）。以后 version.js 写坏，vitest 就会红，不必等到 build。",
+      "验证：vite build 通过、vitest 426/426、eslint 全清。文件树 188/188 收录、零幽灵条目、统计行与实际一致（三条均由测试保证）。",
+    ],
+  },
+  {
     codename: "第二刀·收拢 room.npcs 的写入口：8 处裸操作 → 0，并加架构守卫防再犯",
     time: "2026-07-28 23:50",
     notes: [
       "拆 MudRPG 的第二刀。选它先动，是因为它治病而不只是好看——近期连着两个 bug（切磋掉落池恒为空、偷才旦一无所有）根因都是同一个：**room.npcs 有 15 个写入方，谁都能改，改的时候只顾自己那件事、顺手把别人写进去的东西冲掉**，而且不报错、测不出来、要靠玩家打很多场才察觉。文件切多小都治不了这个。",
-      "①【先分清哪些该收】15 处里只有 8 处是真在"改名单"（增删人/补数据/标记随身物）；另外 7 处是**整体换房间**（传送、移动到达、进出心灵之海：npcs: [] 或 npcs: 缓存名单）——那是换了个 room 对象，不是改这份名单，收进来只会让职责变糊，故不动。",
-      "②【新增 src/roomNpcs.js】六个具名操作：injectNpcs（注入，含"名字已在也补设定"那条 bug② 修法）/ patchCombatData（固化回填，只补 COMBAT_FIELDS 白名单）/ markCarriedLost（标 stolen 或 dropped）/ materializeNpc（涌现登场）/ removeNpc / respawnNpc。",
-      "③【为什么写成纯函数而不是 hook】commitRound 也要用，它不是组件、拿不到 hook。写成 (npcs, args) => npcs 的纯 reducer，两边都能用，**而且能直接单测**——那两个 bug 恰恰是"没法单测"才漏掉的。先写 24 条契约测试再动迁移。",
+      "①【先分清哪些该收】15 处里只有 8 处是真在「改名单」（增删人/补数据/标记随身物）；另外 7 处是**整体换房间**（传送、移动到达、进出心灵之海：npcs: [] 或 npcs: 缓存名单）——那是换了个 room 对象，不是改这份名单，收进来只会让职责变糊，故不动。",
+      "②【新增 src/roomNpcs.js】六个具名操作：injectNpcs（注入，含「名字已在也补设定」那条 bug② 修法）/ patchCombatData（固化回填，只补 COMBAT_FIELDS 白名单）/ markCarriedLost（标 stolen 或 dropped）/ materializeNpc（涌现登场）/ removeNpc / respawnNpc。",
+      "③【为什么写成纯函数而不是 hook】commitRound 也要用，它不是组件、拿不到 hook。写成 (npcs, args) => npcs 的纯 reducer，两边都能用，**而且能直接单测**——那两个 bug 恰恰是「没法单测」才漏掉的。先写 24 条契约测试再动迁移。",
       "④【顺带统一一处匹配键】偷窃标记原来按 n.id === npc.id 找人，其余各处都按 name（varTree.角色[name]、各种 find(n => n.name === ...)、injectNpcs 的去重也按 name）。统一成按 name，与项目其余部分一致。",
       "⑤【删掉一处重复】commitRound 里那份本地 pickCombatData 是上一个修复时就地写的，已收进 roomNpcs.js，两边不再各留一份。",
       "⑥【加架构守卫】新增一条测试扫源码：MudRPG.jsx 与 commitRound.js 里不许再出现 `npcs: r.npcs.map/filter` 这类裸操作。收拢本身只把当下这 8 处改干净了，真正的风险是下一个人（包括以后的我）加功能时又图省事直接写一句，同一类 bug 再来一次、照样测不出来。加不了的形状就往 roomNpcs.js 里加个操作。",
       "效果：裸操作 8 → 0；MudRPG 4604 → 4561 行（这一刀本就不为减行数，是为定主人）。",
-      "验证：vite build 通过、eslint 全清、vitest 420/420（新增 roomNpcs.test.js 27 条：注入的六种情形含"目标自己有值的字段不被覆盖"与"无事可做返回原引用"、回填的名单红线、stolen/dropped 两个标记互不覆盖、涌现/移除/重生、脏输入全不炸，外加那条架构守卫）。",
+      "验证：vite build 通过、eslint 全清、vitest 420/420（新增 roomNpcs.test.js 27 条：注入的六种情形含「目标自己有值的字段不被覆盖」与「无事可做返回原引用」、回填的名单红线、stolen/dropped 两个标记互不覆盖、涌现/移除/重生、脏输入全不炸，外加那条架构守卫）。",
     ],
   },
   {
