@@ -96,6 +96,7 @@ import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } f
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
 import { invHasItemNamed, SAFE_HOUSES } from "./safeHouse.js";
+import { buildHistBlock, histBlockSavings } from "./memory/histWindow.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
 import { SEA_OF_MIND, shouldTriggerXuannu, buildXuannuScene, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
 import {
@@ -2276,7 +2277,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 结算轮只需最近几句维持语气连贯，不需要长程上下文（这一轮不做任何博弈判断）。
     const histWindow = isSettle ? 6 : isTalk ? Math.max(apiCfg.contextWindow, 20) : apiCfg.contextWindow;
     const mainConvo = newConvo.filter(m => !(typeof m.content === "string" && (m.content.startsWith("（私聊）") || m.content.startsWith("（旁白私聊回应）"))));
-    const hist = (mainConvo.length > histWindow ? mainConvo.slice(-histWindow) : mainConvo).map(m => (m.role === "user" ? "[玩家] " : "[引擎] ") + m.content).join("\n");
+    // 历史窗口分层压缩（见 memory/histWindow.js）：近 2 轮原始保文风与即时连贯，
+    // 更早的用各轮 memory 摘要顶上。此前是把 contextWindow 条原始 JSON 全铺开，
+    // 实测约占单轮上下文四成（contextWindow=16 时 ≈4176字≈6.7k tokens）。
+    // 结算轮窗口本来就小（6），也一并走这条路，措辞统一。
+    const _histWin = mainConvo.length > histWindow ? mainConvo.slice(-histWindow) : mainConvo;
+    const hist = buildHistBlock(_histWin, { recentPairs: isTalk ? 3 : 2 });
+    {
+      const sv = histBlockSavings(_histWin, { recentPairs: isTalk ? 3 : 2 });
+      if (sv.savedChars > 0) {
+        traceStep(_trace, "历史压缩", "info", `${sv.legacyChars}→${sv.nowChars}字（省 ${sv.savedChars}，约 ${Math.round(sv.savedChars * 1.6)} tokens）`);
+      }
+    }
 
     // ── 场景NPC世界书 + 在场任务状态 + 久别重逢（纯注入文本，汇总在 act/roundNotes.js）──
     const { lastAiText, npcLoreBlockWithQuest, reunionBlock } = buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, questProgress, varTree: varTreeRef.current, time, companionState, nsfwOn });

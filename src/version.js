@@ -9,6 +9,20 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "参考姬侠传三层记忆压上下文：历史窗口改分层，同规模省 58%（约1.7k tokens/轮）",
+    time: "2026-07-28 11:15",
+    notes: [
+      "先实测再动手：造一份玩到中期的真实规模上下文，量出单轮主叙事约 7720 字 ≈ 12.3k tokens，构成是 phi(schema) 21.7% / worldInfoBefore 21.6% / inChat 16.9% / **chatHistory 16.4%** / scenario 8.3% / worldInfoAfter 7.8%。按 convo 真实存储规模（每条 assistant 存 rawFull.slice(0,500)）折算，contextWindow=16 时 chatHistory 实际约 4176 字 ≈ 6.7k tokens、占单轮近四成。",
+      "①【问题·同一件事存了两份，用了贵的那份】10 号位此前是 convo.slice(-contextWindow) 直接铺开，而 convo 里每条 assistant 存的是**原始 JSON**，连 room/char/dao/delta 那些脚手架字段一起喂回给模型。而我们每轮本来就生成了 p.memory（≤50字纯客观事实），却只喂给向量小纸条和事实账本，历史窗口完全没用它。",
+      "②【参考姬侠传 char_card_1 的做法】它的 prompt 里**压根没有滚动的原始对话窗口**：<PreviousMemories>(周级大总结当背景) + <RecalledMemories>(向量召回) + <RecentMemories>(近期逐轮小总结带时间戳)，再加 <LatestReply> —— **只有最后一条**完整回复，并明说\"读它确定最新剧情+参考文风\"。更早的一切都由总结替代。它还做 token 预算：maxContext(128k)-reservedOutput(8k)，固定段先扣，PreviousMemories 拿剩下的额度、超了从最旧开始丢。",
+      "③【我们的改法】新增 memory/histWindow.js 分三层：近况=最近 2 轮原始（对话模式 3 轮，因为一来一回是成对的，只留一轮容易接不上谁在说话）；前情=更早那些轮的 memory 摘要，带字数预算（默认1200字）与条数上限（12条），超了从最旧开始丢；更早的由已有的远景(日总结)+向量召回负责，这里不重复。两段各带一句用法说明（前情\"不必复述\"、近况\"照应它的语气与未完的话头\"）——学它给每层写用途，不只给数据。",
+      "④【为什么不像它那样只留最后一条】它单轮输出 8-12 段、信息量极大，一条够用。我们单轮 220 字左右，只留一条容易接不上上一句的语气，对话模式尤其。留 2 轮 = 4 条消息，够接住又不至于铺开。",
+      "⑤【实测效果】contextWindow=16 的真实规模下 1847→770 字，**省 58%**（约 1.7k tokens/轮）。窗口越长省得越多（前情摘要不随轮数线性膨胀，有双重上限压着）。trace 新增「历史压缩」一步，直接报省了多少字与约多少 token。",
+      "⑥【老存档兼容】commitRound 从本版起把 memory 与 turn 一起存进 convo 条目；老档的条目没这两个字段，summarize 会先尝试从原始 JSON 里正则抠 memory，抠不到再退回截断正文——实测老档同样能抠出来、同样省 58%，不会因为读老档就崩或退化。",
+      "验证：vite build 通过、eslint no-undef 全清、vitest 288/288（新增 histWindow.test.js 15 条）。测试覆盖分层内容与用法说明、前情段绝不含 items_add/char 等脚手架与原文正文、对话模式多留一轮、字数预算与条数上限各自独立生效且丢最旧、老档两级回退、空/脏输入不炸、条目少于窗口时无前情段、recentPairs=0 全走摘要。写测试时自己错了三处断言（默认 maxSummaries 会丢最旧的本是设计；玩家侧摘要就是指令原文所以按文本判会误判；「水声渐大」在单条原文里重复6次导致计数出12），都改成对分段/行数做断言。",
+    ],
+  },
+  {
     codename: "终章：传送门→第三新东京市→おめでとう→明日香入队；第六档改成你俩合写的日记",
     time: "2026-07-28 09:40",
     notes: [

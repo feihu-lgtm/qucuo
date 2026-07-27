@@ -425,7 +425,16 @@ export function commitRound(d) {
     }
   }
 
-  d.setConvo([...d.newConvo, { role: "assistant", content: d.rawFull.slice(0, 500) }]);
+  // 顺手把这一轮的 memory 与回合数存进 convo 条目：历史窗口的「前情」层用它替代
+  // 原始 JSON（见 memory/histWindow.js）。我们每轮本来就生成了 p.memory，
+  // 此前只喂给向量小纸条和事实账本，历史窗口却仍在铺 500 字原始——同一件事
+  // 存了两份、用了贵的那份。老存档的条目没有这两个字段，histWindow 会回退截断。
+  d.setConvo([...d.newConvo, {
+    role: "assistant",
+    content: d.rawFull.slice(0, 500),
+    memory: (d.p?.memory && String(d.p.memory).trim()) || "",
+    turn: d.time,
+  }]);
 
   // 回合完成登记：驱动"每 N 回合自动存档"。出错回滚的轮次不计数——
   // 状态没变，存了也是重复盘。
