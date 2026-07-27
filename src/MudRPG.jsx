@@ -26,7 +26,7 @@ import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import CodexScreen from "./CodexScreen.jsx";
 import BugReportModal from "./BugReportModal.jsx";
 import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
-import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom } from "./innerMap.js";
+import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom, isInnerExitUnlocked } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
 import { loadPortraits, setPortrait, removePortrait, getPortrait, fileToDataUrl, inferActivePortraitTarget, SNOW_LEOPARD_FORMS, getSnowLeopardForm, setSnowLeopardForm, snowLeopardPortraitUrl } from "./portraits.js";
 import PortraitManager from "./PortraitManager.jsx";
@@ -95,6 +95,9 @@ import GambleStoneScreen from "./buildings/GambleStoneScreen.jsx";
 import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } from "./gambleStone.js";
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
+import { invHasItemNamed } from "./safeHouse.js";
+import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
+import { AUCTION_LOT } from "./auction.js";
 import { seededRand } from "./utils/seededRandom.js";
 import { getResidentNpcs, getAllResidentNpcLore } from "./residentNpcs.js";
 import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
@@ -842,7 +845,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 【本轮修复】companionCandidate 漏在这份白名单外——雪豹作为驻场NPC，
       // 经这一步转换后 companionCandidate 字段丢失，导致 NpcActionMenu.jsx 的
       // canInvite 判断永远拿到 undefined，"邀请入队"按钮完全不显示（实测反馈）。
-      for (const k of ["levelCap", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate"]) {
+      for (const k of ["levelCap", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop"]) {
         if (poolNpc[k] !== undefined) base[k] = poolNpc[k];
       }
       const inferred = mapDescriptionToGenParams(`${poolNpc.name || ""} ${poolNpc.brief || ""} ${poolNpc.personality || ""}`);
@@ -2035,7 +2038,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     // ── 内层箱庭移动：优先于外层大地图判定（判定在 act/innerMove.js，副作用在此执行）──
     const forceLayer = opts.forceLayer || null;
-    const innerDecision = tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree: varTreeRef.current });
+    const innerDecision = tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree: varTreeRef.current, questProgress, inv });
     if (innerDecision?.kind === "move") {
       endTrace(_trace, innerDecision.summary);
       addLog([{ t: "cmd", text: `> ${cmd}` }]);
@@ -2068,7 +2071,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     }
     if (innerDecision?.kind === "blocked") {
       endTrace(_trace, innerDecision.summary);
-      addLog([{ t: "cmd", text: `> ${cmd}` }, { t: "sys", text: `  内里这个方向没有去处。` }]);
+      // 上锁的门要说清是缺哪把钥匙（lockedMsg），别跟"这个方向没路"混为一谈——
+      // 玩家看见门却被告知"没有去处"会以为是 bug。
+      addLog([{ t: "cmd", text: `> ${cmd}` }, { t: "sys", text: `  ${innerDecision.lockedMsg || "内里这个方向没有去处。"}` }]);
       setInput(""); setCmdHistory(p => [cmd, ...p].slice(0, 50)); setHistIdx(-1);
       setLoading(false);
       if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
@@ -2653,6 +2658,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           return { ...tree, 角色: roles };
         });
         addLog([{ t: "affection", text: `  💗 与雪豹并肩破敌，默契渐深，好感 +${teamworkGain}` }]);
+      }
+      // 必掉物（关键钥匙等）：赢了就一定给，不看气运、不掷骰。
+      // 跟下面那段"按气运概率掉一件随身物"是两回事——钥匙这种卡住一整栋安全屋
+      // 的关键物件不能交给骰子，否则玩家得反复打同一个人刷钥匙。已在背包里就不再给。
+      if (outcome === "win" && duelingNpc?.guaranteedDrop) {
+        const gd = duelingNpc.guaranteedDrop;
+        if (!invHasItemNamed(inv, gd.name)) {
+          const keyItem = makeGameItem({ name: gd.name, category: gd.category || "misc", quality: gd.quality || "白", desc: gd.desc });
+          setInv(prev => [...prev, keyItem]);
+          addLog([{ t: "loot", text: `✦ ${duelingNpc.name}倒地时，那件${gd.name}从他身上滑落——你捡了起来。`, item: keyItem, source: "duel", fromNpc: duelingNpc.name }]);
+          jotNote({ text: `打赢${duelingNpc.name}，从他身上得了「${gd.name}」。`, owner: [{ name: duelingNpc.name, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE });
+        }
       }
       // 切磋概率获得战利品（本轮）：赢了之后，按气运（福缘）概率从对手随身物品
       // （carriedItems，即出场时"所见即所得"固化的那些）里随机掉一件给玩家。
@@ -3808,6 +3825,64 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     act(`在茶馆花${cost}两，听掌柜低声说了个传闻：「${rumor}」`, [], { settle: true });
   }, [char, addLog, act]);
 
+  // ── 拜入雪山派 ──
+  // 系统这边一次做完：扣束脩、发弟子令牌（同时是别院钥匙）、写身份 flag、
+  // 标记认识何雨谢。AI 只负责把这件既成事实写成一段像样的入门叙事。
+  // settleKind:"learn_skill" 复用授业那套铁律——拜入门派同样是"对方认可你、
+  // 把你收进门里"，好感只该往上走。
+  const handleJoinSect = useCallback(() => {
+    const status = checkSectEntry({
+      // 好感度直接读变量树（quests/learnSkill.js:14 的同款写法）——
+      // 项目里没有 npcAffection() 这个取数函数，只有 npcAffectionLabel()（转文字档位）。
+      affection: varTreeRef.current.角色?.[SECT_ENTRY.master]?.好感度 ?? 0,
+      neigong: char.neigong ?? 0,
+      money: char.money ?? 0,
+      flags,
+    });
+    if (!status.eligible) {
+      addLog([{ t: "sys", text: "  你还不够格拜入雪山派。" }]);
+      return;
+    }
+    setChar(c => ({ ...c, money: (c.money || 0) - SECT_ENTRY.tuition }));
+    const token = makeGameItem({
+      name: SECT_ENTRY.keyName, category: "misc", quality: "绿",
+      desc: "雪山派正式弟子的令牌，青铜铸就，正面一座雪峰，背面刻着一个小小的「贰」。兼作弟子别院的门锁钥匙。",
+    });
+    setInv(prev => [...prev, token]);
+    setFlags(f => (f.includes(SECT_ENTRY.flag) ? f : [...f, SECT_ENTRY.flag]));
+    setVarTree(prev => markNpcAsKnown(prev, SECT_ENTRY.master));
+    setActiveBuilding(null);
+    addLog([
+      { t: "sys", text: `  （奉上束脩银${SECT_ENTRY.tuition}两，得雪山派弟子令牌 · 内堂之后的弟子别院已开）` },
+      { t: "loot", text: `✦ 得「${SECT_ENTRY.keyName}」`, item: token, source: "sect" },
+    ]);
+    jotNote({ text: `拜入雪山派，${SECT_ENTRY.master}收下束脩，授弟子令牌。`, owner: [{ name: SECT_ENTRY.master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE });
+    act(`向${SECT_ENTRY.master}奉上束脩，正式拜入雪山派门下，接过那枚刻着「贰」字的弟子令牌`, [], {
+      settle: true, settleNpc: SECT_ENTRY.master, settleKind: "learn_skill",
+      learnInfo: { isMaster: true, moveBrief: "雪山派门规与弟子身份", totalPrice: SECT_ENTRY.tuition, beast: false },
+    });
+  }, [char, flags, addLog, act, jotNote]);
+
+  // ── 拍卖落槌 ──
+  // AuctionScreen 里的竞价过程是纯前端状态机（auction.js），不调 AI；
+  // 只有最终成交这一下才交给 AI 写一段叙事。
+  const handleAuctionWin = useCallback((finalPrice) => {
+    if ((char.money || 0) < finalPrice) {
+      addLog([{ t: "sys", text: "  你付不出这笔钱，掌槌的脸色很难看。" }]);
+      return;
+    }
+    if (invHasItemNamed(inv, AUCTION_LOT.name)) return; // 已有，不重复给
+    setChar(c => ({ ...c, money: (c.money || 0) - finalPrice }));
+    const lot = makeGameItem({ name: AUCTION_LOT.name, category: AUCTION_LOT.category, quality: AUCTION_LOT.quality, desc: AUCTION_LOT.desc });
+    setInv(prev => [...prev, lot]);
+    addLog([
+      { t: "sys", text: `  （以${finalPrice}两拍得「${AUCTION_LOT.name}」）` },
+      { t: "loot", text: `✦ 得「${AUCTION_LOT.name}」`, item: lot, source: "auction" },
+    ]);
+    jotNote({ text: `在锦官城宝丰拍卖行以${finalPrice}两拍得「${AUCTION_LOT.name}」。`, source: NOTE_SOURCE.NARRATIVE });
+    act(`在锦官城宝丰拍卖行，以${finalPrice}两拍得一件前朝蜀王旧邸的「${AUCTION_LOT.name}」，掌槌落下，伙计把东西用红布包好递到手上`, [], { settle: true });
+  }, [char, inv, addLog, act, jotNote]);
+
   const composingRef = useRef(false); // 输入法组合态：中文/日文等 IME 正在拼字时为 true
 
   const onKey = (e) => {
@@ -3969,7 +4044,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           companionState={companionState}
           setShowPortraitManager={setShowPortraitManager}
           mapView={mapView} setMapView={setMapView} mapBig={mapBig} setMapBig={setMapBig}
-          mapData={mapData} questProgress={questProgress} flags={flags}
+          mapData={mapData} questProgress={questProgress} flags={flags} inv={inv}
           loading={loading} act={act} autoTravelTo={autoTravelTo}
           uiGreen={uiGreen} uiPink={uiPink}
         />
@@ -4010,6 +4085,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           gambleNegotiation={gambleNegotiation} handleGambleTalk={handleGambleTalk}
           handleGambleSettle={handleGambleSettle} handleGambleInspect={handleGambleInspect}
           handleListenRumor={handleListenRumor}
+          handleJoinSect={handleJoinSect} handleAuctionWin={handleAuctionWin}
+          sectMasterAffection={varTree.角色?.[SECT_ENTRY.master]?.好感度 ?? 0}
           log={log} isDayMode={isDayMode} clr={clr}
           collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
           queueCount={queueCount} pendingTalks={pendingTalks} inspecting={inspecting}
@@ -4099,10 +4176,15 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           {mapView === "inner" && (() => {
             if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim }}>此地无内景可绘。</div>;
             const curRoom = innerRoomName || getDistrictAnchor(room.name);
-            const curExits = (curRoom && getInnerRoom(room.name, curRoom)?.exits) || {};
+            // 上锁房间（安全屋等）要连"名字"都不出现在放大地图上——内层虽不设战争
+            // 迷雾，但没钥匙的门后是什么不该被剧透。visibleInnerExits 已按 inv/flags
+            // 滤过出口，这里再把房间列表本身也滤一遍。
+            const curExits = visibleInnerExits(room.name, curRoom, { questProgress, flags, inv });
             const adjacent = new Set(Object.values(curExits));
-            // 本据点全部内景房间（内层是已知箱庭，不设战争迷雾——进了村自然看得见村里有哪些去处）
-            const nodes = getInnerRoomNames(room.name).map((rn) => {
+            const nodes = getInnerRoomNames(room.name).filter((rn) => {
+              const rr = getInnerRoom(room.name, rn);
+              return !rr?.unlockCondition || isInnerExitUnlocked(rr.unlockCondition, { questProgress, flags, inv });
+            }).map((rn) => {
               const r = getInnerRoom(room.name, rn) || {};
               const dirTo = Object.entries(curExits).find(([, d]) => d === rn)?.[0] || null;
               return {

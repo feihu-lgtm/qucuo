@@ -23,6 +23,8 @@
 // （不是"存在但打不开"，是"根本不呈现"），避免玩家瞎猜隐藏地名。判定逻辑见
 // isInnerExitUnlocked()，复用与外层 unlockCondition 相同的判定语义。
 
+import { invHasItemNamed } from "./safeHouse.js";
+
 export const INNER_MAP = {
   鱼定村: {
     anchor: "村口",
@@ -39,7 +41,18 @@ export const INNER_MAP = {
       "村口·广场": {
         x: -1, y: 1,
         desc: "鱼定商号旁一小片开阔地，村里闲人爱在此坐坐，也是通往村长府和猎户小屋的必经之地。",
-        exits: { s: "猎户小屋", w: "村长府", e: "鱼定商号" },
+        exits: { s: "猎户小屋", w: "村长府", e: "鱼定商号", n: "溪边小屋" },
+      },
+      溪边小屋: {
+        x: -1, y: 2,
+        desc: `【外观】熊曲溪畔一间单层石砌小屋，屋顶铺着青灰瓦，瓦缝里长着狗尾草。门前一块巴掌大的菜畦，篱笆上爬满野蔷薇。溪水从屋后绕过，日夜不停。
+【起居】推门是一间通铺式的起居室：靠墙一张木板床，铺着藏青粗布被褥；对面是灶台，铁锅铜壶齐整，灶膛里还有余烬。墙角一只水缸，缸沿搁着木瓢。
+【卧处】床铺干净，枕头下压着一只干花荷包。床头钉着一枚铁钉，可以挂东西。
+【灶间】灶台旁一只小碗柜，碗筷两人份。窗台上晒着一把干辣椒。
+【菜畦】屋前种着葱蒜和几株蜀葵，篱笆边的野蔷薇春夏会开满一面墙。
+【用处】可歇息、可生火做饭、可存放行囊。`,
+        exits: { s: "村口·广场" },
+        unlockCondition: { type: "item", itemName: "溪边小屋钥匙" },
       },
       歇马居: {
         x: 1, y: 0,
@@ -296,8 +309,21 @@ export const INNER_MAP = {
       内堂: {
         x: 0, y: -2,
         desc: "何雨谢病中场景、掌门相关叙事发生地，陈设温馨但透着一丝忧虑。",
-        exits: { s: "雪山练功堂", w: "呼延雪居所" },
+        exits: { s: "雪山练功堂", w: "呼延雪居所", n: "弟子别院" },
         residentNpcName: "何雨谢",
+        buildingId: "sectentry_xueshan",
+      },
+      弟子别院: {
+        x: 0, y: -3,
+        desc: `【外观】内堂后一处独立小院，青砖围墙，一道月洞门。院中一株老梅，冬日开满白花。墙根堆着几根练功用的木桩。门楣上挂着雪山派的令牌锁——正式弟子才开得。
+【院中】一进院是练功地：木桩、石锁、一柄挂在墙上的练习木枪。正房三间，中为堂屋，东厢卧房，西厢书房。
+【卧处】东厢一张硬板床，棉被叠得方方正正。床头一只小木箱可放私物。墙上挂着一件备用弟子服。
+【书房】西厢一张书案，笔墨纸砚齐备。书架上几本门派入门心法与杂书。窗下一张琴桌，琴弦断了没人修。
+【灶间】堂屋后一间小灶房，够一个人做饭。水缸、米缸、一只小铁锅。
+【花坛】老梅树下一圈花坛，种着耐寒的格桑花和几株雪莲幼苗。
+【用处】可歇息、可练功（另有潜能进益）、可做饭、可存放行囊。`,
+        exits: { s: "内堂" },
+        unlockCondition: { type: "item", itemName: "雪山派令牌钥匙" },
       },
       呼延雪居所: {
         x: -1, y: -2,
@@ -363,8 +389,9 @@ export const INNER_MAP = {
     rooms: {
       镇口: {
         x: 0, y: 0,
-        desc: "鹰曲下游的市镇入口，商贩往来，市声嘈杂。",
+        desc: "鹰曲下游的市镇入口，商贩往来，市声嘈杂。石牌坊底下常年蹲着个膀大腰圆的汉子，过往商队见了他都绕着走。",
         exits: { e: "天都行脚楼", n: "孟记铁铺", s: "百花楼", w: "天都镖局" },
+        residentNpcName: "赫连铸",
       },
       天都行脚楼: {
         x: 1, y: 0,
@@ -375,8 +402,24 @@ export const INNER_MAP = {
       孟记铁铺: {
         x: 0, y: 1,
         desc: "孟老汉开的铁匠铺，炉火熊熊，武器护甲一律现货，不接私打订单。",
-        exits: { s: "镇口" },
+        exits: { s: "镇口", n: "后山小径" },
         buildingId: "smithy_tiandu",
+      },
+      后山小径: {
+        x: 0, y: 2,
+        desc: "孟记铁铺后一条碎石小径，蜿蜒上山。松涛阵阵，空气里松脂味很重。走到尽头，能看见一栋不该出现在这里的建筑。",
+        exits: { s: "孟记铁铺", n: "山间别墅" },
+      },
+      山间别墅: {
+        x: 0, y: 3,
+        desc: `【外观】山腰一栋两层独栋别墅，白墙灰瓦，一整面落地大窗，外头围一圈木栅栏院子。和周遭所有藏式石楼都格格不入——像是从很远很远的地方整个搬来的。院门口一棵老松，树下一张石桌两个石凳。
+【厅堂】一楼开放式客厅：壁炉没生火，一组布艺沙发，一张矮几，靠窗一张书桌。木楼梯通二楼，踩上去会响。
+【卧处】二楼主卧一张双人床，白色床单，床头两盏油灯。衣柜空着。窗子正对山谷，早晨能看见云海。
+【灶间】客厅后头是厨房，灶台比寻常人家大三倍，调料架、案板、一口铜锅、一只烤炉俱全。角落里一只很奇怪的铁柜子，摸上去冰凉，不知作何用。
+【院子】木栅栏围出的小院，石桌石凳，一棵松树。院角一小块空地，可以种点什么。
+【用处】可歇息、可做饭、可存放行囊；石桌处打坐另有进益。`,
+        exits: { s: "后山小径" },
+        unlockCondition: { type: "item", itemName: "银灰色钥匙" },
       },
       天都镖局: {
         x: -1, y: 0,
@@ -579,8 +622,19 @@ export const INNER_MAP = {
       永盛钱庄: {
         x: 0, y: -3,
         desc: "存钱取钱的地方，附带利息。",
-        exits: { s: "天下商行" },
+        exits: { s: "天下商行", n: "蜀王庄" },
         buildingId: "bank_jingguan",
+      },
+      蜀王庄: {
+        x: 0, y: -4,
+        desc: `【外观】锦官城深处一座三进古庄，传为前朝蜀王旧邸。朱漆大门，门环是两条衔尾蛇。院墙极高，爬满常青藤。门前一对石狮，被岁月磨得圆润。
+【一进】照壁与天井，青石铺地，四角种着芭蕉。倒座房有一间大厨房，灶台、蒸笼、案板一应俱全，够摆一桌酒席——只是很久没人用，灶膛是冷的。
+【二进】正堂：红木太师椅、条案，中堂挂一幅褪色山水。阶下一盆兰花。
+【三进】内宅。东厢卧房一张拔步床，帐幔是旧锦缎，梳妆台上铜镜已经花了，床头一只紫檀小匣，空的。西厢书房一张大书案，文房四宝俱全，书架上多是诗词集与地方志，另有一把古琴，保存得比雪山派那把好。正中一间小佛堂，供着白瓷观音，香炉里的灰是冷的。
+【后院】墙角一丛翠竹，一棵很大的银杏，秋日满地金黄。
+【用处】可歇息、可做饭、可存放行囊；佛堂打坐另有气血进益，书房读书另有悟性进益。`,
+        exits: { s: "永盛钱庄" },
+        unlockCondition: { type: "item", itemName: "衔尾蛇门环" },
       },
       锦官武馆: {
         x: -1, y: 0,
@@ -615,8 +669,14 @@ export const INNER_MAP = {
       聚宝当铺: {
         x: 1, y: -1,
         desc: "任务9核心场景，可质押/赎回物品。",
-        exits: { s: "官道", w: "金玉行" },
+        exits: { s: "官道", w: "金玉行", e: "宝丰拍卖行" },
         buildingId: "pawn_jingguan",
+      },
+      宝丰拍卖行: {
+        x: 2, y: -1,
+        desc: "聚宝当铺隔壁一间高门阔厅，门口贴着朱红的拍品告示。厅里一排排条凳，正前方一座小台，台上一张覆着红布的方桌。散场时冷清，开槌时挤得站不下人——死当的、抄家的、来路不明的物件，都在这张桌上过一遍手。",
+        exits: { w: "聚宝当铺" },
+        buildingId: "auction_jingguan",
       },
       金玉行: {
         x: 1, y: -2,
@@ -772,13 +832,13 @@ export function resolveInnerExit(districtName, roomName, dir) {
 
 // 返回某房间当前实际"可见"的出口方向列表（过滤掉未解锁的隐藏房间方向）。
 // questProgress/flags 由调用方（MudRPG.jsx）传入当前游戏状态。
-export function visibleInnerExits(districtName, roomName, { questProgress, flags } = {}) {
+export function visibleInnerExits(districtName, roomName, { questProgress, flags, inv } = {}) {
   const room = getInnerRoom(districtName, roomName);
   if (!room) return {};
   const result = {};
   for (const [dir, destName] of Object.entries(room.exits)) {
     const destRoom = getInnerRoom(districtName, destName);
-    if (destRoom?.unlockCondition && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags })) {
+    if (destRoom?.unlockCondition && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv })) {
       continue; // 未解锁的隐藏房间：根本不出现在出口列表里
     }
     result[dir] = destName;
@@ -792,7 +852,7 @@ export function visibleInnerExits(districtName, roomName, { questProgress, flags
 // 判定语义保持完全一致，将来 resolveExit 补判定时可以共用同一个函数。
 // 本轮鱼定村切片没有隐藏房间用到这个函数，先按总纲10.3节的约定写好，
 // 供后续白塔地宫/贡措海密室等据点接入时直接复用。
-export function isInnerExitUnlocked(unlockCondition, { questProgress, flags } = {}) {
+export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv } = {}) {
   if (!unlockCondition) return true;
   if (unlockCondition.type === "questCompleted") {
     return questProgress?.[unlockCondition.questId]?.status === "completed";
@@ -800,5 +860,24 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags } = 
   if (unlockCondition.type === "flag") {
     return (flags || []).includes(unlockCondition.flag);
   }
+  // 钥匙锁（安全屋四栋用）：按物品**名字**匹配，不是 id。
+  // 背包里物品的 id 是入袋那一刻拼的（`${name}_${Date.now()}`），同一把钥匙
+  // 每次拿到 id 都不同，拿 id 比对永远为假。name 才是全项目物品的稳定标识
+  // （百物录 CATALOG_INDEX 也按 name 索引）。背包条目可能是字符串也可能是
+  // 对象，两种都要认。
+  if (unlockCondition.type === "item") {
+    return invHasItemNamed(inv, unlockCondition.itemName);
+  }
   return true;
+}
+
+// 把 unlockCondition 翻成给玩家看的一句话（走到锁着的门前时提示用）。
+// 只说"缺什么"，不泄露门后是什么——跟"隐藏房间根本不呈现"的原则一致：
+// 玩家已经站到门口了才会看到这句，此时告知缺物是必要反馈，但仍不剧透里面。
+export function describeInnerLock(unlockCondition) {
+  if (!unlockCondition) return "";
+  if (unlockCondition.type === "item") return `门锁着，你没有「${unlockCondition.itemName}」。`;
+  if (unlockCondition.type === "flag") return "门锁着，此刻还进不去。";
+  if (unlockCondition.type === "questCompleted") return "门锁着，似乎还有事没了结。";
+  return "门锁着。";
 }

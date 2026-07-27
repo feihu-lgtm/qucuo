@@ -29,6 +29,8 @@ export const BUILDING_TYPE = {
   SECTSHOP: "sectshop", // 门派商坊（karma货币）
   GAMBLESTONE: "gamblestone", // 赌石料场
   PIGEON_COOP: "pigeon_coop", // 鸽子笼：每日免费领信鸽
+  SECT_ENTRY: "sect_entry",   // 拜师堂：拜入门派，发弟子令牌
+  AUCTION: "auction",         // 拍卖行：竞价拍品（有托儿抬价）
 };
 
 export const BUILDING_TYPE_LABEL = {
@@ -39,6 +41,7 @@ export const BUILDING_TYPE_LABEL = {
   forge: "铸剑坊", blackmarket: "黑市", bounty: "告示榜", grocery: "粮行",
   theater: "戏楼", teahouse: "茶馆", sectshop: "门派商坊", gamblestone: "玉石料场",
   pigeon_coop: "鸽子笼",
+  sect_entry: "拜师堂", auction: "拍卖行",
 };
 
 // 各据点建筑清单
@@ -153,6 +156,10 @@ export const BUILDINGS_BY_LOCATION = {
       id: "sectshop_xueshan", name: "门派商坊", type: BUILDING_TYPE.SECTSHOP, shopKey: "门派商坊",
       desc: "雪山派弟子才能进的商坊，货物以门派专属为主，不收银两，只认功德。",
     },
+    {
+      id: "sectentry_xueshan", name: "拜师堂", type: BUILDING_TYPE.SECT_ENTRY,
+      desc: "内堂正中，何雨谢坐镇处。掌门不在山上这些年，收不收徒都是她一句话。入了门便是雪山派弟子，领一枚令牌——那令牌也是弟子别院的钥匙。",
+    },
   ],
 
   // ── 锦官城（20 种，乡外门户） ──
@@ -196,6 +203,10 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "pawn_jingguan", name: "聚宝当铺", type: BUILDING_TYPE.PAWN,
       desc: "质押物品换快钱，比卖价低一些，但还可以赎回，不是永久失去。",
+    },
+    {
+      id: "auction_jingguan", name: "宝丰拍卖行", type: BUILDING_TYPE.AUCTION,
+      desc: "聚宝当铺隔壁。死当的、抄家的、来路不明的物件都在这张红布桌上过一遍手。行里养着托儿，价抬得起来——但抬到一个数就收手，真把客人挤走了他们一分不赚。",
     },
     {
       id: "cloth_jingguan", name: "云锦成衣铺", type: BUILDING_TYPE.CLOTH, shopKey: "云锦成衣铺",

@@ -424,6 +424,33 @@ export const RESIDENT_NPCS = {
   ],
   天都镇: [
     {
+      name: "赫连铸", id: "resident_helianzhu", levelCap: 2,
+      brief: "堵在镇口收过路费的恶汉",
+      personality: "欺软怕硬，嘴臭，仗着一身蛮力横行；真被打服了立刻跪地求饶，转头又跟人吹自己是让着对方。",
+      fullBio: `赫连铸，天都镇镇口的一号泼皮。膀大腰圆，一柄开山锤从不离手，在镇口那道石牌坊底下一蹲就是三年，
+过往商队要交"过路费"，五十两起，给不起就留下包袱。镇上人敢怒不敢言——镖局懒得管这种小事，
+官府在锦官城，管不到这儿。
+他脖子上常年挂着一把银灰色的钥匙，用一根牛皮绳系着，洗澡都不摘。有人问过那是什么，
+他说是三年前一个雷雨夜从天上掉下来的，砸在他脚边，烫了好一会儿才凉。他不识字，看不懂上面的纹路，
+只觉得这东西邪门又值钱，便一直挂着当护身符——也当个念想，觉得自己迟早要靠它发一笔横财。
+其实他连那钥匙开的是什么门都不知道。`,
+      carry: [
+        { name: "开山锤", category: "weapon", quality: "蓝" },
+        { name: "牛皮护腕", category: "armor", quality: "绿" },
+        { name: "过路费钱袋", category: "misc", quality: "绿" },
+        { name: "劣质烧刀子", category: "misc", quality: "白" },
+        { name: "半张欠条", category: "misc", quality: "白" },
+        { name: "缺角骰子", category: "misc", quality: "白" },
+        { name: "油腻头巾", category: "misc", quality: "白" },
+      ],
+      // 必掉：打赢他一定拿到这把钥匙，不看气运。见 MudRPG duelFinishHandler 的
+      // guaranteedDrop 分支——寻常战利品是按气运掷骰的随机掉落，钥匙这种"卡住
+      // 一整栋安全屋"的关键物件不能交给骰子，否则玩家反复打同一个人刷钥匙，
+      // 既难受又莫名其妙。
+      guaranteedDrop: { name: "银灰色钥匙", category: "misc", quality: "蓝",
+        desc: "从赫连铸脖子上搜出来的。材质不是铜也不是铁，摸上去始终冰凉，表面有极细的纹路，凑近看像某种没见过的文字。他说这是从天上掉下来的。" },
+    },
+    {
       name: "温掌柜", id: "resident_wenzhanggui", levelCap: 2,
       brief: "玉器轩女掌柜、赌石坊庄家",
       personality: "短发金环、黑蕾丝旗袍，慵懒眯眼笑，笑里藏生意人的精。主持赌石竞价与回收兜底，也是托儿局的安插者。",

@@ -1,4 +1,4 @@
-import { hasInnerMap, getBuildingIdForInnerRoom, getResidentRoomForNpc, getDistrictAnchor, getInnerRoom, isNpcVisibleInInnerRoom } from "../innerMap.js";
+import { hasInnerMap, getBuildingIdForInnerRoom, getResidentRoomForNpc, getDistrictAnchor, getInnerRoom, isNpcVisibleInInnerRoom, visibleInnerExits } from "../innerMap.js";
 import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../buildings/qucuoBuildings.js";
 import { isNpcKnown } from "../npcAwareness.js";
 import { npcAffectionLabel } from "../mvu.js";
@@ -28,7 +28,7 @@ export default function LeftPanel({
   companionState,
   setShowPortraitManager,
   mapView, setMapView, mapBig, setMapBig,
-  mapData, questProgress, flags,
+  mapData, questProgress, flags, inv,
   loading, act, autoTravelTo,
   uiGreen, uiPink,
 }) {
@@ -327,7 +327,8 @@ export default function LeftPanel({
         {mapView === "inner" && (() => {
           if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>此地无内景可绘。</div>;
           const curRoom = innerRoomName || getDistrictAnchor(room.name);
-          const curExits = (curRoom && getInnerRoom(room.name, curRoom)?.exits) || {};
+          // 上锁的房间不出现在九宫格里（此前这里直接读裸 exits，锁着的安全屋照样是可点格子）
+          const curExits = (curRoom && visibleInnerExits(room.name, curRoom, { questProgress, flags, inv })) || {};
           const DIRS8 = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
           const cells = {};
           for (const dir of DIRS8) {

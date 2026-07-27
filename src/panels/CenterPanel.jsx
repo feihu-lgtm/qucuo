@@ -37,6 +37,8 @@ import ForgeScreen from "../buildings/ForgeScreen.jsx";
 import JadeShopScreen from "../buildings/JadeShopScreen.jsx";
 import GambleStoneScreen from "../buildings/GambleStoneScreen.jsx";
 import TeahouseScreen from "../buildings/TeahouseScreen.jsx";
+import SectEntryScreen from "../buildings/SectEntryScreen.jsx";
+import AuctionScreen from "../buildings/AuctionScreen.jsx";
 
 export default function CenterPanel({
   isMobile, mobileDrawer, setMobileDrawer,
@@ -65,6 +67,7 @@ export default function CenterPanel({
   handleJadeDesign, handleJadeCraft,
   gambleNegotiation, handleGambleTalk, handleGambleSettle, handleGambleInspect,
   handleListenRumor,
+  handleJoinSect, sectMasterAffection, handleAuctionWin,
   log, isDayMode, clr, collapsedGroups, setCollapsedGroups,
   queueCount, pendingTalks, inspecting, logEnd, waitSecs,
   availableQuestsHere, triggerQuestFromPanel, triggerQuestChoice,
@@ -262,6 +265,15 @@ export default function CenterPanel({
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.TEAHOUSE && (
                 <TeahouseScreen building={activeBuilding} char={char} flags={flags} time={time} inline
                   zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onListenRumor={handleListenRumor} />
+              )}
+              {activeBuilding && activeBuilding.type === BUILDING_TYPE.SECT_ENTRY && (
+                <SectEntryScreen building={activeBuilding} char={char} flags={flags} inline
+                  narratorAffection={sectMasterAffection}
+                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onJoinSect={handleJoinSect} />
+              )}
+              {activeBuilding && activeBuilding.type === BUILDING_TYPE.AUCTION && (
+                <AuctionScreen building={activeBuilding} char={char} inv={inv} inline
+                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onWin={handleAuctionWin} />
               )}
               {tradingShop && (
                 <TradingScreen inline shopName={tradingShop.shopName} shopItems={tradingShop.items}

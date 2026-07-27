@@ -159,6 +159,7 @@ export const QUCUO_PRESET = {
     { id: "starter_letter", name: "赌石邀帖", category: "accessory", quality: "白", equipped: true, desc: "天都镇玉器轩温掌柜托人捎出的邀帖。纸边磨得起了毛，落款是端端正正一个「温」字：「后院料场三日一开石，路远，来不来随意，来了有茶。」——你就是揣着这张帖子走进曲措乡的。可用于向不同据点的人说明来意。", durability: 25, bonus: 0.3 },
     "半袋青稞",
     { id: "starter_dagger", name: "鱼定枪", category: "weapon", quality: "白", equipped: true, desc: "鱼定村寻常猎户自制的木杆铁枪头，枪杆是熊山常见的松木，做工粗糙。", atk: 6, durability: 20 },
+    { id: "starter_key_cottage", name: "溪边小屋钥匙", category: "misc", quality: "白", equipped: false, desc: "一把普通的铜钥匙，齿纹却极精密。柄上系着褪色的红绳，绳结打得很仔细，像是有人日日摩挲过。你记不清它是哪来的了——翻包袱时它就在里头，跟着你走了一路。" },
   ],
 
   opening: [

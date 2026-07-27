@@ -1,5 +1,5 @@
 import { step as traceStep } from "../actionTrace.js";
-import { hasInnerMap, resolveInnerExit, isNpcVisibleInInnerRoom } from "../innerMap.js";
+import { hasInnerMap, resolveInnerExit, isNpcVisibleInInnerRoom, getInnerRoom, isInnerExitUnlocked, describeInnerLock } from "../innerMap.js";
 import { describeInnerArrival } from "../mapNarration.js";
 import { detectNewFaces } from "../npcAwareness.js";
 import { DIRS } from "../utils/mudHelpers.js";
@@ -25,10 +25,21 @@ import { DIRS } from "../utils/mudHelpers.js";
 //   { kind: "move", ... }    纯前端移动成立，act 负责写状态并 early return
 //   { kind: "blocked" }      forceLayer=inner 但内层无此出口，act 提示并 early return
 //   null                     不适用 / 跳过 / 内层无出口但打字移动放行外层（act 继续主流程）
-export function tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree }) {
+export function tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree, questProgress, inv }) {
   if (!isTalk && movingDir && hasInnerMap(room.name) && innerRoomName && forceLayer !== "outer") {
     const innerDest = resolveInnerExit(room.name, innerRoomName, movingDir);
     traceStep(_trace, "内层移动", "info", `判定：当前内层「${innerRoomName}」往${DIRS[movingDir] || movingDir}${innerDest ? `通向「${innerDest}」` : "无出口"}`);
+    // 上锁的房间（安全屋钥匙门/剧情暗门）：查表查得到，但没钥匙走不进去。
+    // 此前这里只做 resolveInnerExit 裸查表、完全不看 unlockCondition，
+    // 于是"锁"只体现在到达描述文字里滤掉方向，玩家照样能点九宫格或打字走进去
+    // ——四栋安全屋会门户大开。三处（本函数、左栏九宫格、放大地图）现已统一判定。
+    if (innerDest) {
+      const destRoom = getInnerRoom(room.name, innerDest);
+      if (destRoom?.unlockCondition && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv })) {
+        traceStep(_trace, "内层移动", "block", `「${innerDest}」上锁（${describeInnerLock(destRoom.unlockCondition)}）`);
+        return { kind: "blocked", summary: "门锁着", lockedMsg: describeInnerLock(destRoom.unlockCondition) };
+      }
+    }
     if (innerDest) {
       traceStep(_trace, "内层移动", "pass", `${innerRoomName} → ${innerDest}（纯前端，不调AI）`);
       // 新人物检测：按目标内层房间(innerDest)的可见性过滤 room.npcs，再 detectNewFaces
