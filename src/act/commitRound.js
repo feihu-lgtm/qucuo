@@ -40,7 +40,17 @@ export function commitRound(d) {
   if (d.mvuCommands.length) {
     d.setVarTree(prev => {
       const { tree, applied, rejected } = applyMvuCommands(prev, d.mvuCommands, { charm: d.effectiveSpecialNow?.魅力 ?? 5 });
-      if (rejected.length) console.warn("MVU 指令被系统裁决拒绝：", rejected);
+      // 被裁决拒绝的指令要能在「🧭全流程日志」里看见。此前只 console.warn，
+      // 排查"好感怎么没变/剧情怎么没推"时翻不到证据——那正是最需要它的时候。
+      if (rejected.length) {
+        console.warn("MVU 指令被系统裁决拒绝：", rejected);
+        traceStep(d._trace, "MVU裁决", "block",
+          rejected.map(c => `${c.op}(${c.path}) ← ${c.reason}`).join("；"));
+      }
+      if (applied.length) {
+        traceStep(d._trace, "MVU裁决", "pass",
+          applied.map(c => `${c.path}${c.actualDelta != null ? `${c.actualDelta > 0 ? "+" : ""}${c.actualDelta}` : ""}→${c.finalValue}`).join("；"));
+      }
       const affectionChanges = applied.filter(c => c.path.endsWith(".好感度") && (c.op === "add" ? c.actualDelta : true));
       if (affectionChanges.length) {
         d.addLog(affectionChanges.map(c => {

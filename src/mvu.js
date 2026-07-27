@@ -115,6 +115,29 @@ export function extractMvuBlock(rawText) {
 //    _.set 限制在 -100~100 范围内裁剪——跟好感度同一套限幅逻辑，只是区间不同
 // 4. 其他数值属性：不做特别限制，但会记录日志方便调试
 const ALLOWED_ROOTS = ["角色", "世界", "主角"];
+
+// ── 系统裁决域：AI 一律不得写入的路径（前缀匹配）──
+// 项目第一条法则是「AI 提议内容，系统裁决数值与拓扑」。变量树里绝大多数东西
+// （好感度、威望、各种自由声明的世界状态）确实该由 AI 在叙事里提议、系统裁剪后落盘；
+// 但有一类不行——**个人线的进度与门禁**。它们跟 flags/questProgress 同类，
+// 决定"玩家能不能进某个地方、剧情走到第几步"，属拓扑范畴。
+//
+// 这里堵的是一个真实的洞：ALLOWED_ROOTS 只校验根，"世界" 底下此前全部自由可写，
+// 而 MVU 说明书还写着"其余世界状态按需自由声明"——等于明说随便写。于是
+// AI 只要在 <mvu> 里写一句 _.set('世界.旁白.seaUnlocked', true)，就能把整条
+// 旁白个人线的门禁一句话开掉，且不报错、无人察觉。
+//
+// AI 仍然读得到旁白的状态（当前好感档位与文风由 narratorVoicePrompt 注入），
+// 只是不能改。要改由系统在满足条件时自己写（见 seaOfMind.js / setNarratorVars）。
+const PROTECTED_PATHS = [
+  "世界.旁白",   // 旁白个人线：seaUnlocked/metXuannu/seaVisited/questStage
+];
+
+// 这条路径是否落在系统裁决域内（前缀匹配，"世界.旁白" 挡住 "世界.旁白.任意子键"）。
+export function isProtectedMvuPath(path) {
+  const p = String(path || "");
+  return PROTECTED_PATHS.some(pre => p === pre || p.startsWith(pre + "."));
+}
 const AFFECTION_KEY = "好感度";
 const REPUTATION_PATH = "世界.威望";
 const MAX_SINGLE_ADD = 15;
@@ -132,6 +155,11 @@ export function applyMvuCommands(varTree, commands, opts = {}) {
     const root = cmd.path.split(".")[0];
     if (!ALLOWED_ROOTS.includes(root)) {
       rejected.push({ ...cmd, reason: `路径根 "${root}" 不在允许范围内` });
+      continue;
+    }
+    // 系统裁决域：个人线进度/门禁不接受 AI 写入，写了也不生效。
+    if (isProtectedMvuPath(cmd.path)) {
+      rejected.push({ ...cmd, reason: `"${cmd.path}" 属系统裁决域（个人线进度/门禁），AI 无权改写` });
       continue;
     }
 
@@ -211,5 +239,6 @@ export const MVU_SYSTEM_INSTRUCTIONS = `
 - 主角自身状态用 主角.<名称> 声明
 - 好感度、威望这两类数值都会被系统自动限制在各自的合理区间（好感度0-100，威望-100~100），单次增减都不会超过 ±15，不需要你自己计算裁剪
 - 不要虚构不存在的路径根，只能用 角色 / 世界 / 主角 三个前缀
+- 【禁写】世界.旁白.* 这一支是系统维护的剧情进度与门禁（是否解锁了某处、个人线走到第几步），你不得用 _.set/_.add 碰它的任何子键——写了会被系统直接丢弃。剧情该不该推进由系统按条件判定，不由叙事决定
 - 这个 <mvu> 块不会展示给玩家看，只有你的 output 正文会展示，所以块内不需要考虑文风
 `;
