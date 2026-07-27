@@ -937,8 +937,35 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setRoom(r => {
       const existingNames = new Set((r.npcs || []).map(n => n.name));
       const toAdd = toInject.filter((n, i) => !existingNames.has(n.name) && toInject.findIndex(x => x.name === n.name) === i);
-      if (toAdd.length === 0) return r;
-      return { ...r, npcs: [...(r.npcs || []), ...toAdd] };
+      // 【本轮修复·实测反馈「偷才旦摸了半天一无所有，可我给每个人都配了物品」】
+      // 光看名字在不在是不够的。真实时序是：开局第一轮 AI 就在 room.npcs 里报了
+      // 「才旦」（它只会给 name/brief，不知道 residentNpcs.js 里配的那 7 件 carry），
+      // 于是这个注入 effect 之后每次都判定"他已经在了"→ 整个跳过 →
+      // 带着完整 carry/levelCap/beast 等设定的驻场版本**永远进不来**。
+      // 后果：偷窃与切磋读 npc.carriedItems 得到 undefined，
+      // 玩家看到的是「身上早已一无所有」——像在说这人穷，其实是设定没接上。
+      //
+      // 上一个修复（commitRound 的固化回填）治不了这个：那边的回填源是本轮 AI 返回
+      // 的 npcs 经 rollNpcCarry 兜底随机出来的东西，既不是作者配的那 7 件，
+      // 也只在 AI 恰好返回了 room.npcs 的回合才有。
+      //
+      // 所以这里改成：名字已在的，也把驻场设定补上去（只补缺的，不动已有的）。
+      const byName = new Map(toInject.map(n => [n.name, n]));
+      const patched = (r.npcs || []).map(o => {
+        const full = byName.get(o?.name);
+        if (!full) return o;
+        // 已经有随身物就别再动——那份可能已带 stolen/dropped 标记，覆盖会让偷过的东西复活
+        if (o.carriedItems) return o;
+        return {
+          ...o,
+          // 只补 o 上缺的字段；o 自己有值的一律保留（内层落点、AI 给的 brief 等）
+          ...Object.fromEntries(Object.entries(full).filter(([k, v]) =>
+            o[k] === undefined && v !== undefined)),
+        };
+      });
+      const changed = patched.some((n, i) => n !== (r.npcs || [])[i]);
+      if (toAdd.length === 0 && !changed) return r;
+      return { ...r, npcs: [...patched, ...toAdd] };
     });
   }, [room.name, dayIdx, questProgress, flags]); // eslint-disable-line react-hooks/exhaustive-deps
 

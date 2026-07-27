@@ -104,7 +104,7 @@
 npm install       # 安装依赖
 npm run dev       # 本地开发服务器
 npm run build     # 构建生产版本
-npx vitest run    # 跑测试（纯函数/数据层回归，385 条）
+npx vitest run    # 跑测试（纯函数/数据层回归，393 条）
 ```
 
 也可直接双击 `启动游戏.command`（macOS）或 `启动游戏.bat`（Windows）一键运行。

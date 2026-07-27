@@ -168,3 +168,86 @@ describe("偷窃：确实掷骰，且吃的是同一个 carriedItems 池", () =>
     expect(STEAL_CONFIG.angryTurns).toBeGreaterThan(0);
   });
 });
+
+// ── 驻场NPC的设定被「名字已在就跳过」挡在门外 ──────────────────────────
+// 【实测反馈】「你想对才旦下手，摸了半天，却发现他身上早已一无所有」——
+// 而 residentNpcs.js 里才旦明明配了 7 件 carry。
+//
+// 【真实时序】开局第一轮 AI 就在 room.npcs 里报了「才旦」（它只会给 name/brief，
+// 不知道 residentNpcs.js 里那 7 件）。之后驻场注入 effect 每次都判定"他已经在了"
+// → 整个跳过 → 带着完整 carry/levelCap/beast 的驻场版本**永远进不来**。
+// 玩家看到的「一无所有」像是在说这人穷，其实是设定没接上。
+//
+// 【上一个修复为什么不够】commitRound 那边的回填源是本轮 AI 返回的 npcs 经
+// rollNpcCarry 兜底随机出来的，既不是作者配的那 7 件，也只在 AI 恰好返回了
+// room.npcs 的回合才有。真正该修的是注入这一处：名字在了也要补数据。
+
+// 复刻修好后的补丁逻辑（与 MudRPG 驻场注入里那段同构）
+const patchRoster = (roster, inject) => {
+  const byName = new Map(inject.map(n => [n.name, n]));
+  return roster.map(o => {
+    const full = byName.get(o?.name);
+    if (!full) return o;
+    if (o.carriedItems) return o;
+    return { ...o, ...Object.fromEntries(Object.entries(full).filter(([k, v]) => o[k] === undefined && v !== undefined)) };
+  });
+};
+
+describe("驻场设定要补给已在名单里的人", () => {
+  const aiVersion = { name: "才旦", id: "n1", brief: "村口少年", innerRoom: "村口·广场" };
+  const residentVersion = {
+    name: "才旦", id: "resident_caidan", brief: "鱼定村少年猎户", levelCap: 1,
+    carry: [{ name: "鱼定猎刀" }],
+    carriedItems: [{ name: "鱼定猎刀" }, { name: "止血散" }],
+    moveset: ["x"], combatStats: { hp: [100, 100] },
+  };
+
+  it("AI 版本被补上作者配的随身物（这就是修的那个洞）", () => {
+    const out = patchRoster([aiVersion], [residentVersion]);
+    expect(out[0].carriedItems.map(i => i.name)).toEqual(["鱼定猎刀", "止血散"]);
+    expect(out[0].levelCap).toBe(1);
+  });
+
+  it("AI 自己有值的字段保留，不被驻场版覆盖", () => {
+    const out = patchRoster([aiVersion], [residentVersion]);
+    expect(out[0].brief).toBe("村口少年");          // 不被换成驻场版的 brief
+    expect(out[0].innerRoom).toBe("村口·广场");     // 内层落点保留
+  });
+
+  it("已经有随身物的人一律不动（否则偷过的东西会复活）", () => {
+    const looted = { name: "才旦", carriedItems: [{ name: "鱼定猎刀", stolen: true }] };
+    const out = patchRoster([looted], [residentVersion]);
+    expect(out[0]).toBe(looted);
+    expect(out[0].carriedItems[0].stolen).toBe(true);
+  });
+
+  it("不在驻场表里的人原样返回", () => {
+    const stranger = { name: "无名路人" };
+    expect(patchRoster([stranger], [residentVersion])[0]).toBe(stranger);
+  });
+
+  it("名单不新增不删除（补数据不改人数）", () => {
+    const out = patchRoster([aiVersion, { name: "张三" }], [residentVersion, { name: "李四", carriedItems: [] }]);
+    expect(out.map(n => n.name)).toEqual(["才旦", "张三"]);
+  });
+
+  it("脏名单不炸", () => {
+    expect(() => patchRoster([null, {}, { name: "" }], [residentVersion])).not.toThrow();
+  });
+});
+
+describe("回到那句台词：池子补上之后就不该再出现了", () => {
+  it("才旦在 residentNpcs 里确实配了随身物（作者说的「每个人身上都放了物品」）", async () => {
+    const { getResidentNpcs } = await import("../residentNpcs.js");
+    const caidan = getResidentNpcs("鱼定村").find(n => n.name === "才旦");
+    expect(caidan).toBeTruthy();
+    expect(caidan.carry.length).toBeGreaterThan(0);
+  });
+
+  it("配了 carry 的驻场，固化后 carriedItems 就是那几件（不走随机兜底）", async () => {
+    const { getResidentNpcs } = await import("../residentNpcs.js");
+    const caidan = getResidentNpcs("鱼定村").find(n => n.name === "才旦");
+    const fixed = ensureNpcCombatData({ ...caidan }, { luck: 5, levelCap: caidan.levelCap ?? 1 });
+    expect(fixed.carriedItems.map(i => i.name)).toEqual(caidan.carry.map(i => i.name));
+  });
+});
