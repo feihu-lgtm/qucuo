@@ -115,15 +115,13 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
 
   // 各分支的 JSON schema / 叙事指令，与旧模板字符串完全一致。
   const schemaBlock = narrativeOnly
-    ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。${buildSettleNarrativeNote(opts)}`
+    ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。`
     : isSettle
       ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
 不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。不要重复结算任何奖励、物品、银两或状态。
 "memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
-${buildSettleMvuNote(opts)}
-在 JSON 输出完毕之后，${(opts.settleKind === "gift" || opts.settleKind === "companion_invite" || opts.settleKind === "learn_skill") ? `这一轮必须` : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化，"}另起一行输出 <mvu> 块（不要放进 JSON 内部）：
-${MVU_SYSTEM_INSTRUCTIONS}${buildSettleMvuExample(opts)}` : ""}`
+在 JSON 输出完毕之后，另起一行输出 <mvu> 块（不要放进 JSON 内部）。该写什么、能写什么，见上文规则。` : ""}`
       : scope === "move"
         ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
@@ -140,8 +138,7 @@ npcs 里某个 NPC 如果是路途遭遇生成的生态猛兽/山贼游哨这类
 可选字段 "memory"：用不超过50字的纯客观事实，概括本轮真正发生、日后可能需要回想起来的关键事件（谁做了什么、得到或失去了什么、去了何处、结下或了断了什么关系、许下或应承了什么）。一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"这几种代词。只记事实，不写情绪，不写心理，不加评述。若这一轮只是寻常闲谈、查看状态、无关紧要的往来，省略这个字段即可，不必硬凑。这条会被单独存档，供日后当作往事重新想起，因此务必写得具体（写清人名地名，不要用"那人""某处"这类含糊指代）。这条摘要除了供你自己日后回想，也会被登记为在场者共同"目击"的事实，供其他 NPC 之后自然提起（比如路人听说"${playerName}在鱼定村打伤了谁"），所以只在真有值得旁人知道的事发生时才写，纯私密心理活动或不宜外传的隐秘不要写进来。
 
 ${wantMvu ? `
-在这个 JSON 对象输出完毕之后，如果需要维护角色/世界状态变量，另起一行输出 <mvu> 块（不要放在 JSON 字符串内部，作为 JSON 后面独立的一段纯文本）：
-${MVU_SYSTEM_INSTRUCTIONS}` : ""}`;
+在这个 JSON 对象输出完毕之后，如果需要维护角色/世界状态变量，另起一行输出 <mvu> 块（不要放在 JSON 字符串内部，作为 JSON 后面独立的一段纯文本）。该写什么、能写什么，见上文规则。` : ""}`;
 
   // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
   // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
@@ -157,7 +154,28 @@ ${MVU_SYSTEM_INSTRUCTIONS}` : ""}`;
     makeBlock("exampleStart", "<START>"),
   ];
 
+  // ── 13 号位只留"形状"，约束一律交给 11 号位（user）──
+  // 划分依据是"是不是输出格式本身"，不是"是不是规则"：
+  //   13 位 = 我要开始写了 + 我要写成什么形状（JSON骨架 / 散文声明 + prefill 暗示）
+  //   11 位 = 我可以写什么、不可以写什么（MVU 路径规矩、送礼/认主/拜师铁律、篇幅）
+  // 【为什么这么分】13 位是 assistant 角色且是最后一条消息，构成真 prefill——模型会
+  // 顺着它往下写。往真 prefill 里堆规则，模型很容易把规则本身续写完就停了、不产正文
+  // （NSFW/GM 当初就是踩了这个坑才挪去 11 号位的，但 846 字的 MVU 说明书当时漏了）。
+  // 顺带说明：这跟姬侠传不同——它的 assistant 在第5位、后面还跟一条 user，那条不是
+  // 最后一条、不构成真 prefill，所以它往里塞 246 字规则没事。我们不能照抄。
+  // 也跟酒馆的 PHI 不同：ST 的 Post-History Instructions 是 system/user 角色，靠位置
+  // 靠后取优先级，本就不是 prefill。
+  const phiRules = [
+    narrativeOnly ? buildSettleNarrativeNote(opts) : "",
+    (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuNote(opts) : "",
+    (!narrativeOnly && isSettle && wantMvu)
+      ? `\n关于下面那条 <mvu>：${(opts.settleKind === "gift" || opts.settleKind === "companion_invite" || opts.settleKind === "learn_skill") ? "这一轮必须给出" : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化才给出"}。`
+      : "",
+    (!narrativeOnly && wantMvu) ? MVU_SYSTEM_INSTRUCTIONS : "",
+    (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuExample(opts) : "",
+  ].filter(Boolean).join("\n");
+
   const totalLen = messages.reduce((sum, b) => sum + (b.content?.length || 0), 0);
   if (opts.onSnapshot) opts.onSnapshot({ sys: messages, meta: { scope, narrativeOnly, isSettle, wantCatalog, wantIsolation, wantMvu, settleKind: opts.settleKind || null, len: totalLen } });
-  return { sysBlocks: messages, phiBlock: makeBlock("phi", schemaBlock) };
+  return { sysBlocks: messages, phiBlock: makeBlock("phi", schemaBlock), phiRules };
 }

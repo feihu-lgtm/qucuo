@@ -33,34 +33,39 @@ describe("scope 物品规范挂载", () => {
   });
 });
 
-describe("拜师 learn_skill 铁律进 schema", () => {
+describe("拜师 learn_skill 铁律（0728 起改由 11 号位承载，不再在 phi 里）", () => {
   const mk = (narrativeOnly) => buildSysBase(
     220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", narrativeOnly, "settle",
     {
       playerName: "少侠", settleNpc: "雪豹", settleKind: "learn_skill",
       learnInfo: { isMaster: true, moveBrief: "雪隐三绝", totalPrice: 0, beast: true },
     },
-  ).phiBlock.content;
+  );
 
-  it("单调用：必须给 mvu + 授业铁律 + 幅度区间", () => {
-    const c = mk(false);
-    expect(c).toContain("这一轮必须");
-    expect(c).toContain("授业传艺铁律");
-    expect(c).toContain("+4~+8");
-    expect(c).toContain("_.add('角色.雪豹.好感度', 6)");
+  it("单调用：铁律+幅度区间+必给措辞，全在 phiRules（11位）", () => {
+    const { phiRules, phiBlock } = mk(false);
+    expect(phiRules).toContain("授业传艺铁律");
+    expect(phiRules).toContain("+4~+8");
+    expect(phiRules).toContain("_.add('角色.雪豹.好感度', 6)");
+    expect(phiRules).toContain("这一轮必须给出");
+    // 13 位只剩形状：JSON 骨架在、铁律不在
+    expect(phiBlock.content).toContain('"output"');
+    expect(phiBlock.content).not.toContain("授业传艺铁律");
   });
-  it("双调用：走叙事铁律，兽类师父不说人话", () => {
-    const c = mk(true);
-    expect(c).toContain("授业传艺铁律");
-    expect(c).toContain("cannotSpeak");
-    expect(c).toContain("不要输出 <mvu> 块"); // 散文模式明确禁止产 mvu，状态交提取层
-    expect(c).not.toContain("这一轮必须");     // 必给好感的措辞属于单调用MVU分支
+
+  it("双调用：叙事铁律在 phiRules，兽类师父不说人话；phi 仍明确禁产 mvu", () => {
+    const { phiRules, phiBlock } = mk(true);
+    expect(phiRules).toContain("授业传艺铁律");
+    expect(phiRules).toContain("cannotSpeak");
+    expect(phiRules).not.toContain("<mvu>");            // 散文模式状态交提取层
+    expect(phiBlock.content).toContain("不要输出 <mvu> 块");
   });
-  it("通用 settle（无 settleKind）仍是『如果确有变化』的软措辞", () => {
-    const c = buildSysBase(220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "settle",
-      { playerName: "少侠", settleNpc: "温掌柜" }).phiBlock.content;
-    expect(c).toContain("如果这一轮牵涉的人物");
-    expect(c).not.toContain("这一轮必须");
+
+  it("通用 settle（无 settleKind）仍是软措辞", () => {
+    const { phiRules } = buildSysBase(220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "settle",
+      { playerName: "少侠", settleNpc: "温掌柜" });
+    expect(phiRules).toContain("确有变化才给出");
+    expect(phiRules).not.toContain("这一轮必须给出");
   });
 });
 

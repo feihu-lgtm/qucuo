@@ -32,7 +32,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     : d.intent.code === "LOOK" ? "talk"  // 查看/环顾：只描述当前场景与在场人物，不发物品，砍物件志（同 talk 档）
     : "full";
   let _gateReport = null;
-  let { sysBlocks, phiBlock } = buildSysBase(
+  let { sysBlocks, phiBlock, phiRules } = buildSysBase(
     d.apiCfg.targetWordCount, d.narrator, d.scenario, d.budgetInstruction,
     // 结算轮灭 lore——但牵涉具体某人的结算（送礼/拜师/赌石成交）仍要人设，
     // 否则那人只剩个名字，写出来的对白没脾气。此时保留 lore（本就是绿灯，只注入在场者）。
@@ -94,6 +94,10 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   // 结算轮：远景/召回/信息域灭灯——这一轮只是把一件已定的事写好看，不需要"记起往事"
   // 或"守信息域"，那些块是给有博弈的轮次用的。但牵涉具体某人时保留「重逢」块
   // （久别重逢那句招呼要认得人，是这类轮次唯一真正用得上的记忆信号）。
+  // phiRules 是从 13 号位摘出来的约束（MVU 路径规矩 + 送礼/认主/拜师铁律 + 叙事铁律）。
+  // 与 NSFW/GM 并列放 11 号位（user）：规则放 user 嘴里是指令，放 assistant 嘴里
+  // 模型会当成自己已说出的话去续写。顺序上先立规矩、再给 [状态]。
+  if (phiRules) rulesBlock += (rulesBlock ? "\n\n" : "") + phiRules;
   const rulesPrefix = rulesBlock ? rulesBlock + "\n\n" : "";
   const inChatContent = d.isSettle
     ? rulesPrefix + (d.settleNpc ? d.reunionBlock : "") + "\n\n" + proseRule

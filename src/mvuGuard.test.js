@@ -166,3 +166,87 @@ describe("提取层（调用2）也必须收到 MVU 路径规矩", () => {
     expect(t).toContain("mvu 字段的路径规矩");
   });
 });
+
+// ── 13/11 分工：形状归 prefill，约束归 user ────────────────────────────
+// 【划分依据】不是"是不是规则"，而是"是不是输出格式本身"：
+//   13 位(assistant，且是最后一条 = 真 prefill) = 我要开始写了 + 写成什么形状
+//   11 位(user) = 我可以写什么、不可以写什么
+// 【为什么】往真 prefill 里堆规则，模型容易把规则本身续写完就停了、不产正文。
+// NSFW/GM 当初就是踩了这个坑才挪去 11 号位，但 846 字的 MVU 说明书当时漏了。
+// 注：不能照抄姬侠传——它的 assistant 在第5位、后面还跟一条 user，那条不是最后
+// 一条、不构成真 prefill，所以它塞 246 字规则没事。也不同于酒馆 PHI（system/user）。
+import { buildSysBase } from "./sysBase.js";
+import { initialNarratorState } from "./narrator.js";
+
+const build = (narrativeOnly, scope, opts = {}) => buildSysBase(
+  220, initialNarratorState(), "总纲", null, false, "", narrativeOnly, scope,
+  { playerName: "少侠", hasNpc: true, ...opts },
+);
+
+describe("13 号位只留形状", () => {
+  it.each([
+    ["full", false, "full", {}],
+    ["settle送礼", false, "settle", { settleNpc: "才旦", settleKind: "gift", giftInfo: { itemName: "剑", quality: "绿" } }],
+    ["settle拜师", false, "settle", { settleNpc: "雪豹", settleKind: "learn_skill", learnInfo: { isMaster: true } }],
+    ["双调用散文", true, "full", {}],
+  ])("%s：phi 里不再有 MVU 说明书", (_l, nar, scope, opts) => {
+    const { phiBlock } = build(nar, scope, opts);
+    expect(phiBlock.content).not.toContain("<mvu>...</mvu>");
+    expect(phiBlock.content).not.toContain("【禁写】");
+  });
+
+  it("phi 里也不再有送礼/拜师的世界观铁律", () => {
+    const gift = build(false, "settle", { settleNpc: "才旦", settleKind: "gift", giftInfo: { itemName: "剑" } });
+    expect(gift.phiBlock.content).not.toContain("送礼世界观铁律");
+    const learn = build(false, "settle", { settleNpc: "雪豹", settleKind: "learn_skill", learnInfo: {} });
+    expect(learn.phiBlock.content).not.toContain("授业传艺铁律");
+  });
+
+  it("但 JSON 骨架/散文声明这些「形状」必须留着", () => {
+    expect(build(false, "full").phiBlock.content).toContain('"output"');
+    expect(build(true, "full").phiBlock.content).toContain("直接输出叙事散文正文");
+  });
+
+  it("仍告知 <mvu> 要另起一行写，只是规则挪去了别处", () => {
+    expect(build(false, "full").phiBlock.content).toMatch(/<mvu> 块/);
+    expect(build(false, "full").phiBlock.content).toContain("见上文规则");
+  });
+});
+
+describe("11 号位收下全部约束", () => {
+  it("full：phiRules 含 MVU 说明书与禁写", () => {
+    const { phiRules } = build(false, "full");
+    expect(phiRules).toContain("<mvu>...</mvu>");
+    expect(phiRules).toContain("【禁写】");
+  });
+
+  it("settle送礼：含铁律 + 幅度建议 + MVU说明书", () => {
+    const { phiRules } = build(false, "settle", {
+      settleNpc: "才旦", settleKind: "gift",
+      giftInfo: { itemName: "青锋剑", quality: "绿", range: [4, 6], suggestedDelta: 5 },
+    });
+    expect(phiRules).toContain("送礼世界观铁律");
+    expect(phiRules).toContain("+4~+6");
+    expect(phiRules).toContain("<mvu>...</mvu>");
+    expect(phiRules).toContain("这一轮必须给出");
+  });
+
+  it("settle无settleKind：措辞是软的「确有变化才给出」", () => {
+    const { phiRules } = build(false, "settle", { settleNpc: "温掌柜" });
+    expect(phiRules).toContain("确有变化才给出");
+    expect(phiRules).not.toContain("这一轮必须给出");
+  });
+
+  it("双调用散文：叙事铁律在，MVU 一个字都没有（状态交提取层）", () => {
+    const { phiRules } = build(true, "settle", {
+      settleNpc: "才旦", settleKind: "gift", giftInfo: { itemName: "剑" },
+    });
+    expect(phiRules).toContain("送礼世界观铁律");
+    expect(phiRules).not.toContain("<mvu>");
+  });
+
+  it("场上无人且非GM：不挂 MVU（wantMvu 为假）", () => {
+    const { phiRules } = build(false, "full", { hasNpc: false });
+    expect(phiRules).not.toContain("<mvu>...</mvu>");
+  });
+});
