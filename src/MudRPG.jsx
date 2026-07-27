@@ -4253,7 +4253,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                 <span onClick={() => setShowPortraitManager(true)} style={{ color: zoneTheme.textDim, fontSize: "10px", cursor: "pointer" }}>⚙ 管理</span>
               </div>
               {(() => {
-                const candidates = ["旁白", "你", ...room.npcs.map(n => n.name)];
+                const candidates = ["旁白", "你", ...room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name)];
                 const target = portraitTarget && candidates.includes(portraitTarget) ? portraitTarget : inferActivePortraitTarget(interactMode, room, activeTarget || talkTarget);
                 // 雪豹是三形态官方立绘（public/portraits/snowleopard/），不走 localStorage 上传通道
                 const isSnowLeopard = target === "雪豹";
@@ -5090,7 +5090,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           </div>
 
           {/* ── NPC 人选选择器：点选某人 → 对话/行动聚焦此人；不选=全人物发给AI ── */}
-          {interactMode !== "whisper" && interactMode !== "pigeon" && room.npcs.length > 0 && (
+          {interactMode !== "whisper" && interactMode !== "pigeon" && room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).length > 0 && (
             <div style={{
               padding: "4px 14px", display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
               borderTop: `1px solid ${zoneTheme.border}`, flexWrap: "wrap",
@@ -5105,7 +5105,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
                   border: `1px solid ${activeTarget ? zoneTheme.border : zoneTheme.accent}`,
                 }}
               >全部</span>
-              {room.npcs.map(n => {
+              {room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => {
                 const isSel = activeTarget === n.name;
                 return (
                   <span
