@@ -29,6 +29,11 @@ export const TALLY_KINDS = {
   pickGround:  { label: "拾取地上之物", aiBacked: false },
   comfort:     { label: "安抚旁白",     aiBacked: false },
   companionSwitch: { label: "更换同行", aiBacked: false },
+  // 偷窃分成败两类记。【为什么不合成一类】"今日偷窃得手2次、被人当场发现3次"
+  // 本身就是一段故事，而合成"偷窃5次"就只是个数字。而且这两类的后果完全不同
+  // （得手是神不知鬼不觉，被发现要扣好感15+生气3回合），账上分开才对得上。
+  steal:      { label: "顺手牵羊得手", aiBacked: false },
+  stealFail:  { label: "偷窃被人察觉", aiBacked: false },
   seaEnter:    { label: "进出心灵之海", aiBacked: false },
   // ── 走 AI（另有 memory，这里只补一个量）──
   action:      { label: "行动",     aiBacked: true },

@@ -3473,6 +3473,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       // 偷窃被当场发现，跟偷窃成功（神不知鬼不觉）性质完全相反——
       // 对方已经知道玩家是谁、双方有了正面冲突接触，这时候标记认识才合理；
       // 偷窃成功恰恰不该标记，因为那意味着对方完全没察觉玩家的存在。
+      noteAction("stealFail");
+      // 被当场发现：对方**确实知道**是你干的，所以这条记忆记在他名下（亲历），
+      // 日后他提起来、别人问起来都对得上。
+      jotNote({
+        text: `对${npc.name}下手偷窃，被他当场察觉，好感掉了${result.favorabilityLoss}，他动了真怒。`,
+        owner: [{ name: npc.name, via: VIA.FIRSTHAND }],
+        source: NOTE_SOURCE.DUMB,
+      });
       setVarTree(prev => {
         const known = markNpcAsKnown(prev, npc.name);
         const cur = known.角色?.[npc.name] || {};
@@ -3489,7 +3497,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     }
 
     if (result.outcome === null) {
+      noteAction("steal");
       addLog([{ t: "sys", text: `  你想对${npc.name}下手，摸了半天，却发现他身上早已一无所有，只得悻悻作罢。` }]);
+      // 手法得逞但一无所获。仍记一笔——"这个人身上已经没东西了"本身是有用的信息，
+      // 免得玩家过一阵子又去摸一遍。同样不挂 owner（他没察觉）。
+      jotNote({
+        text: `摸了${npc.name}的身，他身上已经一无所有。`,
+        source: NOTE_SOURCE.DUMB,
+      });
       return;
     }
 
@@ -3502,6 +3517,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         { t: "loot", text: `🤫 妙手空空：「${target.name}」`, item: fullItem, source: "steal", fromNpc: npc.name },
       ]);
       setInv(prev => [...prev, { ...fullItem, id: `stolen_${target.id}_${Date.now()}` }]);
+      noteAction("steal");
+      // 【owner 刻意留空】偷窃得手意味着对方**完全没察觉**。若把他挂成 owner，
+      // 这条就成了他"亲历/目击"的事实，之后他会在对话里提起自己被偷——
+      // 而他根本不知道。这跟上面"被发现"那条的处理正相反，是同一套 owner 语义的两面。
+      jotNote({
+        text: `从${npc.name}身上顺走了「${target.name}」，他毫无察觉。`,
+        source: NOTE_SOURCE.DUMB,
+      });
       // 标记这件物品已被偷走，避免同一件东西被偷第二次
       setRoom(r => ({ ...r, npcs: markCarriedLost(r.npcs, npc.name, target, "stolen") }));
       return;
@@ -3514,7 +3537,13 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     { t: "loot", text: `🤫 偷師得手：「${result.move.name}」`, skill: { name: result.move.name, quality: result.move.quality || result.skill?.quality || "白", moveType: result.move.type }, desc: result.move.desc, source: "steal", fromNpc: npc.name },
   ]);
   setSkills(sk => sk.some(s => s.id === result.skill.id) ? sk : [...sk, result.skill]);
-  }, [varTree, skills, char, addLog]);
+  noteAction("steal");
+  // 偷师同理不挂 owner——他不知道自己的招被人看会了。
+  jotNote({
+    text: `偷看${npc.name}出手的门道，把「${result.move.name}」这一手学了去，他没有察觉。`,
+    source: NOTE_SOURCE.DUMB,
+  });
+  }, [varTree, skills, char, addLog, noteAction, jotNote]);
 
   // loading 变为 false 时，处理队列中的下一条命令。
   // 关键修复：依赖数组必须包含 act 本身——act 是 useCallback，依赖里有 room 等

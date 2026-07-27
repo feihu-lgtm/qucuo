@@ -244,3 +244,40 @@ describe("UI 持有的 NPC 引用必须能取到当前真值", () => {
     expect(equip.length, "随身物里应有装备类，否则永远只偷得到杂物").toBeGreaterThan(0);
   });
 });
+
+// ── 偷窃的 owner 语义（最容易被后人"顺手补全"改坏的一处）─────────────
+// 得手 = 对方**完全没察觉**。若把他挂成 jotNote 的 owner，这条就成了他
+// "亲历/目击"的事实，之后他会在对话里提起自己被偷——而他根本不知道，等于
+// 系统替他泄露了玩家的秘密。被发现则相反：他确实知道，必须挂上，否则日后
+// 他提起这事、别人问起来都对不上。
+// 这两条是同一套 owner 语义的两面，也是很容易被"看到没写 owner 就顺手补上"
+// 改坏的地方，所以扫源码钉死。
+describe("偷窃的 owner 语义：得手不挂、被发现要挂", () => {
+  const src = readFileSyncSafe("src/MudRPG.jsx");
+
+  it("四个结局都写了起居注", () => {
+    const n = (src.match(/noteAction\("steal(Fail)?"\)/g) || []).length;
+    expect(n, "被发现/得手拿物/得手偷招/一无所有，应各有一笔").toBe(4);
+  });
+
+  it("被发现那条挂了对方为 owner（亲历）", () => {
+    const seg = src.slice(src.indexOf('noteAction("stealFail")'), src.indexOf('noteAction("stealFail")') + 600);
+    expect(seg).toMatch(/owner:\s*\[\{\s*name:\s*npc\.name/);
+    expect(seg).toMatch(/VIA\.FIRSTHAND/);
+  });
+
+  it("得手那几条都没挂 owner（他不知道）", () => {
+    for (const anchor of ["他毫无察觉", "他没有察觉", "他身上已经一无所有"]) {
+      const i = src.indexOf(anchor);
+      expect(i, `找不到 ${anchor} 那条 jotNote`).toBeGreaterThan(0);
+      // 往前找这条 jotNote 的开头，检查其中没有 owner
+      const start = src.lastIndexOf("jotNote({", i);
+      const seg = src.slice(start, src.indexOf("});", i) + 3);
+      expect(seg, `${anchor} 那条不该挂 owner——他没察觉`).not.toMatch(/owner:/);
+    }
+  });
+});
+
+function readFileSyncSafe(p) {
+  return readFileSync(p, "utf-8");
+}

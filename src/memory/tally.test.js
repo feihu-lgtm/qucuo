@@ -198,3 +198,37 @@ describe("起居注面板的取数", () => {
     expect(Math.floor(30 / DAY_TURNS) + 1).toBe(2);
   });
 });
+
+// ── 偷窃两边都要留痕 ──────────────────────────────────────────────────
+// 【此前的缺口】偷窃只 addLog（屏幕上那行字），既不进起居注也不 jotNote：
+// 起居注里查不到、日总结拿不到、事后向量召回也想不起来。
+// 现已在四个结局（被发现 / 得手拿物 / 得手偷招 / 得手但对方一无所有）各接一笔。
+describe("偷窃计入起居注", () => {
+  it("成败分两类记（合成一类就只是个数字，分开才是故事）", () => {
+    expect(TALLY_KINDS.steal).toBeTruthy();
+    expect(TALLY_KINDS.stealFail).toBeTruthy();
+    expect(TALLY_KINDS.steal.label).not.toBe(TALLY_KINDS.stealFail.label);
+  });
+
+  it("两类都是「只记数」（详细内容在见闻录的小纸条里）", () => {
+    expect(TALLY_KINDS.steal.aiBacked).toBe(false);
+    expect(TALLY_KINDS.stealFail.aiBacked).toBe(false);
+  });
+
+  it("成败各自累计，互不相干", () => {
+    let t = emptyTally();
+    for (let i = 0; i < 3; i++) t = tallyAdd(t, "steal", 5);
+    for (let i = 0; i < 2; i++) t = tallyAdd(t, "stealFail", 5);
+    expect(tallyToday(t, 5).steal).toBe(3);
+    expect(tallyToday(t, 5).stealFail).toBe(2);
+  });
+
+  it("给AI那一行读得出成败（得手3次、被察觉2次 是有画面的）", () => {
+    let t = emptyTally();
+    for (let i = 0; i < 3; i++) t = tallyAdd(t, "steal", 5);
+    for (let i = 0; i < 2; i++) t = tallyAdd(t, "stealFail", 5);
+    const line = describeTodayForAI(t, 5);
+    expect(line).toContain(TALLY_KINDS.steal.label);
+    expect(line).toContain(TALLY_KINDS.stealFail.label);
+  });
+});
