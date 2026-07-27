@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { isMusicEnabled, setMusicEnabled, getState as getMusicState, setVolume as setMusicVolume, subscribe as subscribeMusic, toggleMusic, TRACKS } from "./musicPlayer.js";
 import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, DEFAULT_ENDPOINTS, isDefaultEndpoint } from "./apiConfig.js";
 
 const EXTRACTION_INTENT_LABELS = [
@@ -31,6 +32,44 @@ const btnStyle = {
   cursor: "pointer", color: "#6ec6c6", padding: "5px 12px", background: "#10121a",
   border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11.5px", display: "inline-block",
 };
+
+function MusicSettings() {
+  const [enabled, setEnabled] = useState(isMusicEnabled);
+  const [state, setState] = useState(getMusicState);
+  React.useEffect(() => subscribeMusic(setState), []);
+  const currentTrack = TRACKS.find(t => t.id === state.trackId) || TRACKS[0];
+  return (
+    <div style={{ padding: "8px 10px", background: "#0e0c14", border: "1px solid #2a2438", borderRadius: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <input
+          type="checkbox" checked={enabled}
+          onChange={e => { setEnabled(e.target.checked); setMusicEnabled(e.target.checked); }}
+          style={{ cursor: "pointer" }}
+        />
+        <span style={{ fontSize: "12px", color: "#6ec6c6" }}>🎵 音乐模式</span>
+        <span style={{ fontSize: "10px", color: "#5a5a4a", marginLeft: "auto" }}>{currentTrack.title} — {currentTrack.artist}</span>
+      </div>
+      {enabled && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span
+            onClick={toggleMusic}
+            style={{ cursor: "pointer", color: "#6ec6c6", padding: "3px 10px", border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11px" }}
+          >{state.playing ? "⏸ 暂停" : "▶ 播放"}</span>
+          <span style={{ fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>音量</span>
+          <input
+            type="range" min="0" max="1" step="0.05" value={state.volume}
+            onChange={e => setMusicVolume(parseFloat(e.target.value))}
+            style={{ flex: 1 }}
+          />
+          <span style={{ fontSize: "11px", color: "#c8bfa0", width: 36, textAlign: "right" }}>{Math.round(state.volume * 100)}%</span>
+        </div>
+      )}
+      <div style={{ fontSize: "10px", color: "#3a3a2a", marginTop: 6 }}>
+        音源：archive.org · 无版权音乐 · 顶栏♪按钮可打开曲库面板切换曲目
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText }) {
   // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
@@ -997,6 +1036,8 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
                 style={{ fontSize: "10px", color: "#6ec6c6", cursor: "pointer", flexShrink: 0, border: "1px solid #1a2d2a", borderRadius: 3, padding: "2px 6px" }}
               >重置</span>
             </div>
+
+            <MusicSettings />
           </div>
         )}
 

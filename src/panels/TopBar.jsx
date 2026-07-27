@@ -9,8 +9,10 @@
 //
 // 顶栏按钮的统一规格 topBtn() 内聚在本文件（只依赖 zoneTheme.border，
 // 别处不再需要）；遮罩点击关闭的 useOverlayCloseGuard 同样内聚。
+import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../version.js";
+import { getState as getMusicState, subscribe as subscribeMusic, isMusicEnabled } from "../musicPlayer.js";
 
 export default function TopBar({
   isMobile, mobileTopMenu, setMobileTopMenu,
@@ -24,6 +26,7 @@ export default function TopBar({
   showAvatarPicker, setShowAvatarPicker,
   playerAvatarCustom, setPlayerAvatarCustom,
   AV_BASE, genderAvatar,
+  setShowMusicPanel,
 }) {
   // 顶栏按钮统一规格：此前每个按钮各自 padding/字号/色系，一字排开像彩虹糖纸。
   // 收敛成"同一副骨架 + 三色语义"：金=重要入口，松石绿=设置/切换，绛红=上报，其余用正文/次要色。
@@ -32,6 +35,8 @@ export default function TopBar({
     border: `1px solid ${zoneTheme.border}`, borderRadius: 3, background: "transparent",
   });
   const avatarPickerCloseGuard = useOverlayCloseGuard(() => setShowAvatarPicker(false));
+  const [musicPlaying, setMusicPlaying] = useState(() => getMusicState().playing);
+  useEffect(() => subscribeMusic(s => setMusicPlaying(s.playing)), []);
 
   return (
     <>
@@ -120,6 +125,14 @@ export default function TopBar({
           title={isDayMode ? "切回暗夜模式" : "切换到日间模式（米色底+棕框）"}
           style={topBtn(uiTurquoise)}
         >{isDayMode ? "☀ 日间" : "☾ 夜间"}</span>
+        {isMusicEnabled() && (
+          <span
+            className="qbtn"
+            onClick={() => setShowMusicPanel(true)}
+            title="音乐面板 — 曲库切换"
+            style={topBtn(musicPlaying ? uiGold : zoneTheme.textDim)}
+          >{musicPlaying ? "♫ 音乐" : "♪ 音乐"}</span>
+        )}
         {autoSaveError && (
           <span
             title={`自动存档失败：${autoSaveError}。当前进度可能无法保存，建议尽快手动导出或清理浏览器存储空间。`}

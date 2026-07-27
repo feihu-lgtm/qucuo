@@ -127,6 +127,7 @@ import LeftPanel from "./panels/LeftPanel.jsx";
 import RightPanel from "./panels/RightPanel.jsx";
 import CenterPanel from "./panels/CenterPanel.jsx";
 import TopBar from "./panels/TopBar.jsx";
+import MusicPanel from "./MusicPanel.jsx";
 import GlobalOverlays from "./panels/GlobalOverlays.jsx";
 import DebugPanel from "./panels/DebugPanel.jsx";
 import ClickableMap from "./ClickableMap.jsx";
@@ -344,6 +345,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [showCharacterPage, setShowCharacterPage] = useState(false);
   // 玩家头像：优先用玩家自设的（存 localStorage），否则按性别用预制头像。showAvatarPicker 控制选择弹层。
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [showMusicPanel, setShowMusicPanel] = useState(false);
   const [playerAvatarCustom, setPlayerAvatarCustom] = useState(() => {
     try { return localStorage.getItem("qucuo_player_avatar") || ""; } catch { return ""; }
   });
@@ -4378,7 +4380,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         showAvatarPicker={showAvatarPicker} setShowAvatarPicker={setShowAvatarPicker}
         playerAvatarCustom={playerAvatarCustom} setPlayerAvatarCustom={setPlayerAvatarCustom}
         AV_BASE={AV_BASE} genderAvatar={genderAvatar}
+        setShowMusicPanel={setShowMusicPanel}
       />
+
+      {showMusicPanel && <MusicPanel onClose={() => setShowMusicPanel(false)} />}
 
       <GlobalOverlays
         zoneTheme={zoneTheme} isDayMode={isDayMode}
