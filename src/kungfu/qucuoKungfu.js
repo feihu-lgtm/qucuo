@@ -79,6 +79,16 @@ export const SKILL_CATALOG = {
       passiveBonus: { speedBonus: 1 },
     },
   ],
+
+  // ── 令狐冲墓·独孤九剑：非售卖，仅通过贡措海令狐冲墓参悟获得 ──
+  独孤: [
+    {
+      id: "kf_dugujiujian", name: "独孤九剑", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+      moveType: "攻击",
+      desc: "剑魔独孤求败所创，无招胜有招。总诀式、破剑式、破刀式、破掌式、破索式、破鞭式、破枪式、破箭式、破气式，九式归一。令狐冲刻于墓壁，待有缘人。",
+      passiveBonus: { speedBonus: 2 },
+    },
+  ],
 };
 
 // 汇总某角色skills里所有内功/轻功的被动加成，供 MudRPG 叠加到 char 字段上

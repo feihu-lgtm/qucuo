@@ -249,6 +249,14 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "看戏花钱，魅力可以有所提升，邀NPC同赏还能加深关系。",
     },
   ],
+
+  // ── 贡措海（1 种，令狐冲墓） ──
+  贡措海: [
+    {
+      id: "dugu_tomb", name: "令狐冲墓", type: BUILDING_TYPE.TEMPLE, skillSet: "独孤",
+      desc: "华山令狐冲之墓。墓壁刻有独孤九剑剑诀，外功≥80可参悟习得。",
+    },
+  ],
 };
 
 // 返回某据点的建筑列表，处理"曲措乡·鱼定村"这类带前缀的地名
