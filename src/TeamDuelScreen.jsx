@@ -186,7 +186,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
     const battleLog = rounds.flatMap(r => r.lines.map(l => ({ round: r.round, teamText: l.text, narration: null })));
     // 永久成长型招式的威力累积在玩家单位的 movesetLocal 里，回传外层持久化
     // （跟 DuelScreen 第四参同一约定）；2v2 v1 暂无战斗内道具栏，usedItems 恒空。
-    onFinish?.(outcome === "draw" ? null : outcome, loot, battleLog, playerUnit.movesetLocal, []);
+    onFinish?.(outcome === "draw" ? null : outcome, loot, battleLog, playerUnit.movesetLocal, [], playerUnit.hp);
   };
 
   const selecting = phase === "select";

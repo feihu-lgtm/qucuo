@@ -271,7 +271,7 @@ export function commitRound(d) {
     }
     d.pendDirRef.current = null;
   }
-  if (d.p.char && !d.isTalk) { d.setChar(c => { const nc = { ...c, ...d.p.char }; if (d.gm) { nc.hp = [nc.hp[1], nc.hp[1]]; } return nc; }); }
+  if (d.p.char && !d.isTalk) { d.setChar(c => { const nc = { ...c, ...d.p.char }; if (d.gm) { nc.hp = [nc.hp[1], nc.hp[1]]; } if (d.preserveHp) { nc.hp = c.hp; } return nc; }); }
   if (d.p.dao) { d.setDao(prevD => ({ ...prevD, ...d.p.dao })); }
   // 本轮实际新增的物品名（string或{name}），供后面两道拾取兜底判断"这次到底有没有
   // 真的发过东西"——不能只看 d.p.delta 存不存在，AI 可能通过别的字段/根本没写 delta

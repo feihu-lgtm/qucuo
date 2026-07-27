@@ -2574,7 +2574,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         p, mvuCommands, dealResult, rawFull, narrativeText,
         isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,
         pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo,
-        questProgress, char,
+        questProgress, char, preserveHp: opts.preserveHp,
         _trace, addLog,
         setVarTree, setRoom, setGambleNegotiation, setInv, setChar, setDao, setExp, setPot,
         setSkills, setFlags, setMapData, setTime, setPendingQuestBranch, setConvo,
@@ -2688,7 +2688,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 的收尾逻辑完全一致——交情/战利品/任务分支/事实账本/整场战报都跟战斗
   // 形态无关，提取成同一个函数供两处复用（battleLog 条目形状略有差异：
   // 1v1 是 {playerMove,npcMove,...}，2v2 是 TeamDuelScreen 拼好的 {teamText}）。
-  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems) => {
+  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp) => {
       // 把这场切磋的逐回合【系统数据】写进主日志备查（招式+伤害，客观事实）。
       // 逐回合的 AI 说书不在这里逐条刷屏——它们会被打包发给主叙事 AI 写成
       // 一篇连贯的整场战报（见下方 finishedNpc 那段的 act 调用），避免重复。
@@ -2707,6 +2707,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 战前餐（pendingCombatBuff）是一次性的：这场战斗已经进场应用过，无论
       // 胜负都清掉，不会带到下一场。放在最前面清，跟其他结算互不干扰。
       if (char.pendingCombatBuff) setChar(c => { const { pendingCombatBuff, ...rest } = c; return rest; });
+      // 切磋后气血写回：打了多少血回主界面就是多少血。remainingHp 是战斗界面
+      // 结算时的 [当前, 上限]，上限可能因战前餐抬高过——写回时夹回原始上限。
+      if (remainingHp) setChar(c => ({ ...c, hp: [Math.max(0, Math.min(remainingHp[0], c.hp[1])), c.hp[1]] }));
       // 永久成长型招式（permanentGrowthOnUse）这场打出来的威力增长要
       // 持久化到char.moveset，不然下次战斗又是原始倍率，"永久"就名不
       // 副实了。绝大多数角色没装备博弈层招式，grownMoveset跟改动前的
@@ -2920,7 +2923,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         // 都走 ref——哪怕这里的 act 是旧闭包，evolveKnowledge 拿到的也是最新值，
         // 延迟归零、不再依赖"等 React 渲染完"的概率性时序。
         setTimeout(() => {
-          act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true });
+          act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true });
         }, 0);
         // 兜底小纸条：不管 AI 那轮是否吐了 memory，系统先按 battleLog 直接补记一条
         // 客观战斗事实进往事（DUMB 源），确保"战斗过程"一定有一张小纸条可供日后召回。

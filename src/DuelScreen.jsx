@@ -52,10 +52,10 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
   const combatBuff = resolveCombatBuff(pendingCombatBuff);
   const [playerHp, setPlayerHp] = useState(() => {
     const baseMax = playerChar.hp[1];
-    // 战前餐"开战即多一截血"：把这一场的气血上限整体抬高 hpBonusRatio 一截，起手即满。
-    // （不是临时护盾叠在满血之上被夹回——那样加成会立刻蒸发。）
+    // 战前餐"开战即多一截血"：把这一场的气血上限整体抬高 hpBonusRatio 一截。
+    // 起手用当前气血（不是满血）——打了多少血回主界面就是多少血。
     const boosted = Math.round(baseMax * (1 + (combatBuff.hpBonusRatio || 0)));
-    return [boosted, boosted];
+    return [Math.min(playerChar.hp[0], boosted), boosted];
   });
   const [playerEnergy, setPlayerEnergy] = useState(() => {
     const start = Math.min(10, 10 + (combatBuff.energyBonus || 0));
@@ -421,7 +421,7 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
     // NPC第二次，持久化的收益远小于额外维护一套NPC存档结构的成本。
     // 第五参 usedItems：战斗内嗑掉的消耗品名列表，交给父组件从背包扣除。
     // 无论胜负/中途撤退都要扣——药已经吃进肚子了，不会因为输了而吐出来。
-    onFinish?.(outcome, loot, battleLog, playerMovesetLocal, usedItems);
+    onFinish?.(outcome, loot, battleLog, playerMovesetLocal, usedItems, playerHp);
   };
 
   const playerHpPct = (playerHp[0] / playerHp[1]) * 100;

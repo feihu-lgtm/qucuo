@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "切磋气血写回：打了多少血回主界面就多少血",
+    time: "2026-07-27 22:20",
+    notes: [
+      "切磋一招秒了人，回主界面气血却莫名少了——根因是战后 AI 叙事那轮 act 会输出 char.hp 变动，commitRound 照单全收，把战斗系统已结算好的血量又覆盖了一遍。",
+      "①【起手不再满血】DuelScreen 与 buildPlayerUnit（2v2）原来无论当前多少血都从满血开打。改成用 char.hp[0]（当前气血）起手，战前餐只抬上限不补满。",
+      "②【剩余HP回传】DuelScreen/TeamDuelScreen 的 onFinish 新增第六参 remainingHp（[当前,上限]），duelFinishHandler 接收后写回 char.hp（夹回原始上限，战前餐抬的那截不带出战斗）。",
+      "③【AI叙事不碰血】战后那轮整场战报 act 加 preserveHp:true，经 opts→commitRound 传递，commitRound 合并 AI 的 char 时若 preserveHp 为真则保留当前 hp 不覆盖。",
+      "验证：vitest 507/507 通过。",
+    ],
+  },
+  {
     codename: "读档不再重开全图（roomMap+squares 入档）+ 崖底/密室改属性门（地图可见、点击判定）",
     time: "2026-07-27 22:15",
     notes: [

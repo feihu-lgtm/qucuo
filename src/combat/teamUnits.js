@@ -43,7 +43,7 @@ export function buildPlayerUnit({ playerChar, playerInv = [], playerMoveset = []
     waigong: playerChar.waigong ?? 0, neigong: playerChar.neigong ?? 0,
     baseAtk: atkFromWaigong(buffedWaigong),
     equipAtk: totalAtk, equipDef: totalDef, equipEffects,
-    hp: [boostedMax, boostedMax],
+    hp: [Math.min(playerChar.hp[0], boostedMax), boostedMax],
     energy: [10, 10],
     statusSlots: createEmptyStatusSlots(),
     movesetLocal: (playerMoveset || []).map(m => ({ ...m })),
