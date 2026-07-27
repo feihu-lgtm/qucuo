@@ -454,9 +454,9 @@ export const INNER_MAP = {
         desc: "呼延大侠殒命处，崖底一池深水（暗河潭），与贡措海无关，是雪山崖底自身的地理细节。一头通体雪白的老猿踞在崖石上，警惕地盯着来客。",
         residentNpcName: "白猿", // 通灵白猿常驻此处（不能说话，可投喂养好感）
         exits: { w: "绝顶" },
-        // 双通道解锁：主线通道（线二+线三真相修正篇章均完成）或探索通道
-        // （绝顶跳崖，外功/内功≥85二选一），两条完全独立、互不依赖。
-        unlockCondition: { type: "flag", flag: "hushanya_cliff_unlocked" },
+        // 属性门：外功≥100 才能从绝顶跳崖存活并进入。地图上可见按钮，
+        // 点击时判定属性，不够则提示"强行破门"失败。
+        unlockCondition: { type: "stat", stat: "waigong", threshold: 100 },
       },
     },
   },
@@ -603,7 +603,9 @@ export const INNER_MAP = {
         x: 0, y: -2,
         desc: "桑杰大侠殒命处，伪造地契藏匿处，与线二\"藏地契\"共用同一物理空间。",
         exits: { s: "前辈墓地" },
-        unlockCondition: { type: "flag", flag: "gongcuohai_secret_room_unlocked" },
+        // 属性门：内功≥100 才能强行破门进入。地图上可见按钮，
+        // 点击时判定属性，不够则提示失败。
+        unlockCondition: { type: "stat", stat: "neigong", threshold: 100 },
       },
     },
   },
@@ -909,13 +911,14 @@ export function resolveInnerExit(districtName, roomName, dir) {
 
 // 返回某房间当前实际"可见"的出口方向列表（过滤掉未解锁的隐藏房间方向）。
 // questProgress/flags 由调用方（MudRPG.jsx）传入当前游戏状态。
-export function visibleInnerExits(districtName, roomName, { questProgress, flags, inv } = {}) {
+// stat 类型的房间不过滤——它们在地图上始终可见（按钮可点），由移动判定拦截。
+export function visibleInnerExits(districtName, roomName, { questProgress, flags, inv, char } = {}) {
   const room = getInnerRoom(districtName, roomName);
   if (!room) return {};
   const result = {};
   for (const [dir, destName] of Object.entries(room.exits)) {
     const destRoom = getInnerRoom(districtName, destName);
-    if (destRoom?.unlockCondition && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv })) {
+    if (destRoom?.unlockCondition && destRoom.unlockCondition.type !== "stat" && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv, char })) {
       continue; // 未解锁的隐藏房间：根本不出现在出口列表里
     }
     result[dir] = destName;
@@ -929,7 +932,7 @@ export function visibleInnerExits(districtName, roomName, { questProgress, flags
 // 判定语义保持完全一致，将来 resolveExit 补判定时可以共用同一个函数。
 // 本轮鱼定村切片没有隐藏房间用到这个函数，先按总纲10.3节的约定写好，
 // 供后续白塔地宫/贡措海密室等据点接入时直接复用。
-export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv } = {}) {
+export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv, char } = {}) {
   if (!unlockCondition) return true;
   if (unlockCondition.type === "questCompleted") {
     return questProgress?.[unlockCondition.questId]?.status === "completed";
@@ -945,6 +948,10 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv
   if (unlockCondition.type === "item") {
     return invHasItemNamed(inv, unlockCondition.itemName);
   }
+  if (unlockCondition.type === "stat") {
+    const val = unlockCondition.stat === "waigong" ? char?.waigong : char?.neigong;
+    return (val || 0) >= unlockCondition.threshold;
+  }
   return true;
 }
 
@@ -956,5 +963,9 @@ export function describeInnerLock(unlockCondition) {
   if (unlockCondition.type === "item") return `门锁着，你没有「${unlockCondition.itemName}」。`;
   if (unlockCondition.type === "flag") return "门锁着，此刻还进不去。";
   if (unlockCondition.type === "questCompleted") return "门锁着，似乎还有事没了结。";
+  if (unlockCondition.type === "stat") {
+    const label = unlockCondition.stat === "waigong" ? "外功" : "内功";
+    return `${label}不足${unlockCondition.threshold}，强行闯入只会摔个半死。`;
+  }
   return "门锁着。";
 }

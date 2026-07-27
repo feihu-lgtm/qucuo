@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "读档不再重开全图（roomMap+squares 入档）+ 崖底/密室改属性门（地图可见、点击判定）",
+    time: "2026-07-27 22:15",
+    notes: [
+      "两件事：读档后每个据点都要重新走一遍 AI 建场；以及雪山崖底/贡措海密室从 flag 隐藏改成属性门可见。",
+      "①【读档重开·根因】roomMapRef（各据点的 npcs/items 缓存，回访走纯前端快速通道的凭据）是 useRef，从来没存进快照。读档后只剩当前房间一条记录，其余据点全部命中不了缓存，退回 AI 叙事建场——就是「每个地点都要重新开」。另外 autoSave 漏了 squares（预跑的到达文本/拾取/路遇），手动存档倒是存了。",
+      "②【修复】buildSnapshot 新增 roomMap 字段；autoSave 与 buildCurrentSnapshot 均补上 roomMap: roomMapRef.current 和 squares: serializeSquares()；初始化与 applySnapshot 恢复两者。老存档无此字段按原行为兜底，不影响兼容。",
+      "③【属性门·设计】雪山崖底（绝顶→东）和贡措海密室（前辈墓地→北）从 flag 隐藏改为 stat 属性门：地图上始终可见按钮，点击时判定属性——崖底外功≥100、密室内功≥100，不够则提示「强行闯入只会摔个半死」，够了直接进。",
+      "④【实现】unlockCondition 新增 type:\"stat\"（stat: waigong/neigong, threshold: 数值）。visibleInnerExits 对 stat 类型不过滤（房间可见），tryInnerMove 移动时拦截判定。isInnerExitUnlocked/describeInnerLock 补 stat 分支。全链路补传 char（innerMove→MudRPG→LeftPanel→放大地图）。",
+      "验证：vitest 507/507 通过。",
+    ],
+  },
+  {
     codename: "老档补丁：上一版给红档补的七维，对早就拿到手的旧实例不生效——读档时按物品名回填",
     time: "2026-07-29 08:20",
     notes: [

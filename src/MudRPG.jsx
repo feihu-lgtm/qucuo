@@ -413,7 +413,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const pendingQueue = useRef([]); // 处理中时暂存排队命令
   const [cmdHistory, setCmdHistory] = useState([]);
   const [histIdx, setHistIdx] = useState(-1);
-  const roomMapRef = useRef({ [(restored?.snap.room || DEFAULT_PRESETS[0].room).name]: { items: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).items], npcs: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).npcs] } });
+  const roomMapRef = useRef(restored?.snap.roomMap || { [(restored?.snap.room || DEFAULT_PRESETS[0].room).name]: { items: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).items], npcs: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).npcs] } });
 
   // API 配置变更时持久化到 localStorage
   useEffect(() => { saveConfig(apiCfg); }, [apiCfg]);
@@ -444,7 +444,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (roundsSinceLastSaveRef.current <= 0) return;
     const every = Math.max(0, Number(apiCfg.autoSaveEvery ?? 5));
     if (every > 0 && roundsSinceLastSaveRef.current < every) return; // 间隔未到
-    const snapshot = buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState });
+    const snapshot = buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares: serializeSquares(), roomMap: roomMapRef.current });
     const result = autoSave(snapshot); // 同步返回（写内存必成；IDB 异步落盘、LS 尽力兜底）
     if (result.ok) {
       roundsSinceLastSaveRef.current = 0;
@@ -483,6 +483,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setDepositedAt(snap.depositedAt ?? null);
     setPledgedItems(snap.pledgedItems || []);
     setCompanionState(snap.companionState || initCompanionState());
+    if (snap.roomMap) roomMapRef.current = snap.roomMap;
+    if (snap.squares) loadSquares(snap.squares);
     // 内层箱庭位置：老存档没这个字段、或存的房间已不在该据点内景里（改过地图数据），
     // 都退回锚点，绝不让玩家落在一个不存在的房间里。
     {
@@ -496,7 +498,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   const buildCurrentSnapshot = useCallback(() => buildSnapshot({
     preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState,
-    squares: serializeSquares(),
+    squares: serializeSquares(), roomMap: roomMapRef.current,
   }), [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, persuasionProgress, innerRoomName, companionState]); // deposit/depositedAt/pledgedItems captured via closure
 
   // ── 地图格子·后台预跑（扫雷式预埋，见 mapSquares.js）──
@@ -2150,7 +2152,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     // ── 内层箱庭移动：优先于外层大地图判定（判定在 act/innerMove.js，副作用在此执行）──
     const forceLayer = opts.forceLayer || null;
-    const innerDecision = tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree: varTreeRef.current, questProgress, inv });
+    const innerDecision = tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree: varTreeRef.current, questProgress, inv, char });
     if (innerDecision?.kind === "move") {
       noteAction("innerMove");
       endTrace(_trace, innerDecision.summary);
@@ -4563,11 +4565,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
             // 上锁房间（安全屋等）要连"名字"都不出现在放大地图上——内层虽不设战争
             // 迷雾，但没钥匙的门后是什么不该被剧透。visibleInnerExits 已按 inv/flags
             // 滤过出口，这里再把房间列表本身也滤一遍。
-            const curExits = visibleInnerExits(room.name, curRoom, { questProgress, flags, inv });
+            const curExits = visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char });
             const adjacent = new Set(Object.values(curExits));
             const nodes = getInnerRoomNames(room.name).filter((rn) => {
               const rr = getInnerRoom(room.name, rn);
-              return !rr?.unlockCondition || isInnerExitUnlocked(rr.unlockCondition, { questProgress, flags, inv });
+              return !rr?.unlockCondition || rr.unlockCondition.type === "stat" || isInnerExitUnlocked(rr.unlockCondition, { questProgress, flags, inv, char });
             }).map((rn) => {
               const r = getInnerRoom(room.name, rn) || {};
               const dirTo = Object.entries(curExits).find(([, d]) => d === rn)?.[0] || null;

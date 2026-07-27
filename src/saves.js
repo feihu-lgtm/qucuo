@@ -107,7 +107,7 @@ export async function init() {
 }
 
 // state 快照结构
-export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares }) {
+export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares, roomMap }) {
   return {
     version: 1,
     savedAt: Date.now(),
@@ -127,6 +127,9 @@ export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo
     // 地图格子（扫雷式预埋）：各据点当日预跑的到达文本/埋物/路遇。老存档无此字段，
     // 读档时按空表兜底，开局预跑会重新掷骰写文，不影响兼容。
     squares: squares || null,
+    // 据点房间缓存（roomMapRef）：每个已到访据点的 npcs/items 快照，回访时走纯前端
+    // 快速通道。老存档无此字段，读档时只含当前房间，其余据点首次回访走 AI 建场，不影响兼容。
+    roomMap: roomMap || null,
   };
 }
 

@@ -25,7 +25,7 @@ import { DIRS } from "../utils/mudHelpers.js";
 //   { kind: "move", ... }    纯前端移动成立，act 负责写状态并 early return
 //   { kind: "blocked" }      forceLayer=inner 但内层无此出口，act 提示并 early return
 //   null                     不适用 / 跳过 / 内层无出口但打字移动放行外层（act 继续主流程）
-export function tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree, questProgress, inv }) {
+export function tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree, questProgress, inv, char }) {
   if (!isTalk && movingDir && hasInnerMap(room.name) && innerRoomName && forceLayer !== "outer") {
     const innerDest = resolveInnerExit(room.name, innerRoomName, movingDir);
     traceStep(_trace, "内层移动", "info", `判定：当前内层「${innerRoomName}」往${DIRS[movingDir] || movingDir}${innerDest ? `通向「${innerDest}」` : "无出口"}`);
@@ -35,7 +35,7 @@ export function tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, inne
     // ——四栋安全屋会门户大开。三处（本函数、左栏九宫格、放大地图）现已统一判定。
     if (innerDest) {
       const destRoom = getInnerRoom(room.name, innerDest);
-      if (destRoom?.unlockCondition && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv })) {
+      if (destRoom?.unlockCondition && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv, char })) {
         traceStep(_trace, "内层移动", "block", `「${innerDest}」上锁（${describeInnerLock(destRoom.unlockCondition)}）`);
         return { kind: "blocked", summary: "门锁着", lockedMsg: describeInnerLock(destRoom.unlockCondition) };
       }

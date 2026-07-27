@@ -363,7 +363,7 @@ export default function LeftPanel({
           if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>此地无内景可绘。</div>;
           const curRoom = innerRoomName || getDistrictAnchor(room.name);
           // 上锁的房间不出现在九宫格里（此前这里直接读裸 exits，锁着的安全屋照样是可点格子）
-          const curExits = (curRoom && visibleInnerExits(room.name, curRoom, { questProgress, flags, inv })) || {};
+          const curExits = (curRoom && visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char })) || {};
           const DIRS8 = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
           const cells = {};
           for (const dir of DIRS8) {
