@@ -6,18 +6,9 @@ import { detectNewFaces, markAsSeen, updateLastSeen, markNpcAsKnown } from "../n
 import { recordRumoredNpcs, clearRumor } from "../npcEmergence.js";
 import { mapDescriptionToGenParams } from "../npcDescriptionMapping.js";
 import { ensureNpcCombatData } from "../npcGeneration.js";
+// 在场名单的唯一写入口（见 roomNpcs.js 顶部注释）
+import { patchCombatData, materializeNpc } from "../roomNpcs.js";
 
-// 回填时只取"战斗与随身"这几项。刻意不整个覆盖：名单里的对象可能带着系统字段
-// （驻场绑定、lockInnerRoom、companionCandidate、carriedItems 的 stolen/dropped 标记…），
-// 整份铺盖会把它们冲掉——那正是这次要修的同一类毛病，别在修的过程中再犯一次。
-function pickCombatData(fresh) {
-  const out = {};
-  for (const k of ["carriedItems", "moveset", "special", "combatStats", "levelCap",
-                   "waigong", "neigong", "baseAtk", "equipAtk", "equipDef", "personalityProfile"]) {
-    if (fresh[k] !== undefined) out[k] = fresh[k];
-  }
-  return out;
-}
 import { makeItemSmart } from "../items/catalog.js";
 import { makeItem, QUALITY } from "../equipment.js";
 import { makeSkillEntry, SKILL_CATALOG } from "../kungfu/qucuoKungfu.js";
@@ -212,9 +203,8 @@ export function commitRound(d) {
     d.setVarTree(prev => clearRumor(prev, d.p.emergedNpcName));
     d.setRoom(r => ({
       ...r,
-      npcs: r.npcs.map(n => n.name === d.p.emergedNpcName
-        ? ensureNpcCombatData({ ...n, personalityProfile }, { luck, levelCap })
-        : n),
+      npcs: materializeNpc(r.npcs, d.p.emergedNpcName,
+        ensureNpcCombatData({ ...(r.npcs.find(n => n.name === d.p.emergedNpcName) || {}), personalityProfile }, { luck, levelCap })),
     }));
   }
 
@@ -254,11 +244,7 @@ export function commitRound(d) {
       // 少了这一步，切磋掉落池恒为空（见上方 freshNpcData 处的注释）。
       d.setRoom(r => ({
         ...r, ...d.p.room, name: d.room.name, exits: Object.keys(node.exits),
-        npcs: r.npcs.map(o => {
-          if (o?.carriedItems) return o;                     // 已固化过的不动
-          const fresh = d.freshNpcData?.get(o?.name);
-          return fresh?.carriedItems ? { ...o, ...pickCombatData(fresh) } : o;
-        }),
+        npcs: patchCombatData(r.npcs, d.freshNpcData),
       }));
     } else if (d.p.room) {
       // 兜底：房间不在固定地图里（理论上不应该出现，只有 AI 未遵守系统裁决时才会

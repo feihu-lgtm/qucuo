@@ -96,6 +96,9 @@ import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } f
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
 import { invHasItemNamed, SAFE_HOUSES } from "./safeHouse.js";
+// 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
+// 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
+import { injectNpcs, markCarriedLost, materializeNpc, removeNpc, respawnNpc } from "./roomNpcs.js";
 import { buildHistBlock, histBlockSavings } from "./memory/histWindow.js";
 import { tallyAdd, describeTodayForAI, describeDayForSummary, describeTallyForWhisper } from "./memory/tally.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
@@ -934,39 +937,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         n.innerRoom = rooms[Math.floor(rng() * rooms.length)];
       }
     }
-    setRoom(r => {
-      const existingNames = new Set((r.npcs || []).map(n => n.name));
-      const toAdd = toInject.filter((n, i) => !existingNames.has(n.name) && toInject.findIndex(x => x.name === n.name) === i);
-      // 【本轮修复·实测反馈「偷才旦摸了半天一无所有，可我给每个人都配了物品」】
-      // 光看名字在不在是不够的。真实时序是：开局第一轮 AI 就在 room.npcs 里报了
-      // 「才旦」（它只会给 name/brief，不知道 residentNpcs.js 里配的那 7 件 carry），
-      // 于是这个注入 effect 之后每次都判定"他已经在了"→ 整个跳过 →
-      // 带着完整 carry/levelCap/beast 等设定的驻场版本**永远进不来**。
-      // 后果：偷窃与切磋读 npc.carriedItems 得到 undefined，
-      // 玩家看到的是「身上早已一无所有」——像在说这人穷，其实是设定没接上。
-      //
-      // 上一个修复（commitRound 的固化回填）治不了这个：那边的回填源是本轮 AI 返回
-      // 的 npcs 经 rollNpcCarry 兜底随机出来的东西，既不是作者配的那 7 件，
-      // 也只在 AI 恰好返回了 room.npcs 的回合才有。
-      //
-      // 所以这里改成：名字已在的，也把驻场设定补上去（只补缺的，不动已有的）。
-      const byName = new Map(toInject.map(n => [n.name, n]));
-      const patched = (r.npcs || []).map(o => {
-        const full = byName.get(o?.name);
-        if (!full) return o;
-        // 已经有随身物就别再动——那份可能已带 stolen/dropped 标记，覆盖会让偷过的东西复活
-        if (o.carriedItems) return o;
-        return {
-          ...o,
-          // 只补 o 上缺的字段；o 自己有值的一律保留（内层落点、AI 给的 brief 等）
-          ...Object.fromEntries(Object.entries(full).filter(([k, v]) =>
-            o[k] === undefined && v !== undefined)),
-        };
-      });
-      const changed = patched.some((n, i) => n !== (r.npcs || [])[i]);
-      if (toAdd.length === 0 && !changed) return r;
-      return { ...r, npcs: [...patched, ...toAdd] };
-    });
+    // 注入：该在场的人放进来，已在名单里的补齐设定（injectNpcs 内含 bug② 的修法）
+    setRoom(r => ({ ...r, npcs: injectNpcs(r.npcs, toInject) }));
   }, [room.name, dayIdx, questProgress, flags]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 采集机制·注入：玩家进入某据点时，若有 active 采集任务的目标物落在本据点、
@@ -2826,12 +2798,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
             const fullItem = makeGameItem({ name: got.name, category: got.category || "misc", quality: got.quality || "白" });
             setInv(prev => [...prev, fullItem]);
             // 标记这件已从对手身上失去，避免重复掉（carriedItems 是固化清单）
-            setRoom(r => ({
-              ...r,
-              npcs: r.npcs.map(n => n.name === duelingNpc.name
-                ? { ...n, carriedItems: (n.carriedItems || []).map(it => it === got || it.name === got.name ? { ...it, dropped: true } : it) }
-                : n),
-            }));
+            setRoom(r => ({ ...r, npcs: markCarriedLost(r.npcs, duelingNpc.name, got, "dropped") }));
             addLog([{ t: "loot", text: `✦ 一番切磋，${duelingNpc.name}的「${got.name}」竟落入你手（福缘所致）`, item: fullItem, source: "duel", fromNpc: duelingNpc.name }]);
           }
         }
@@ -2845,7 +2812,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
             personality: duelingNpc.personality, carry: [{ name: "金蛋", category: "misc", quality: "绿" }] },
           { luck: char.special?.气运 ?? 5, levelCap: duelingNpc.levelCap ?? 0 }
         );
-        setRoom(r => ({ ...r, npcs: [...r.npcs.filter(n => n.name !== duelingNpc.name), fresh] }));
+        setRoom(r => ({ ...r, npcs: respawnNpc(r.npcs, fresh) }));
         addLog([{ t: "sys", text: `  那大公鸡扑棱着翅膀又蹦了回来，梗着脖子冲你叫，似乎还想再斗一场。` }]);
       }
       if (outcome === "win" && duelingNpc?.tag) {
@@ -2875,12 +2842,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           addLog([{ t: "loot", text: `⚔ 战利品：获得「${loot.droppedItem.name}」`, item: loot.droppedItem, source: "duel", fromNpc: duelingNpc?.name }]);
           // 所见即所得的另一半：东西到了玩家手里，就得从NPC身上消失
           // （标记 stolen 复用偷窃系统的语义），再打一场不会凭空再爆一件。
-          setRoom(r => ({
-            ...r,
-            npcs: r.npcs.map(n => n.name === duelingNpc?.name
-              ? { ...n, carriedItems: (n.carriedItems || []).map(ci => ci.id === loot.droppedItem.id ? { ...ci, stolen: true } : ci) }
-              : n),
-          }));
+          setRoom(r => ({ ...r, npcs: markCarriedLost(r.npcs, duelingNpc?.name, loot.droppedItem, "stolen") }));
         }
         if (loot.droppedMoney > 0) {
           setChar(c => ({ ...c, money: (c.money || 0) + loot.droppedMoney }));
@@ -3158,7 +3120,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 入队即时生效：把作为"村口驻场兽"的雪豹从当前房间移除，此地之人/在场名单/互动
     // 入口当场都不再有它（此后它只以队友身份随玩家在场）。重进村口不再注入，由房间
     // 注入 effect 的 companionStateRef 过滤保证——两处配合，即时消失 + 永不重现。
-    setRoom(r => ({ ...r, npcs: (r.npcs || []).filter(n => !(n.name === "雪豹" && n.companionCandidate)) }));
+    setRoom(r => ({ ...r, npcs: removeNpc(r.npcs, n => n.name === "雪豹" && n.companionCandidate) }));
     setActiveTarget(npc.name);
     act(`向雪豹伸出手，郑重邀它同行`, [], { settle: true, settleNpc: npc.name, settleKind: "companion_invite" });
   }, [act]);
@@ -3541,12 +3503,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       ]);
       setInv(prev => [...prev, { ...fullItem, id: `stolen_${target.id}_${Date.now()}` }]);
       // 标记这件物品已被偷走，避免同一件东西被偷第二次
-      setRoom(r => ({
-        ...r,
-        npcs: r.npcs.map(n => n.id === npc.id
-          ? { ...n, carriedItems: n.carriedItems.map(it => it.id === target.id ? { ...it, stolen: true } : it) }
-          : n),
-      }));
+      setRoom(r => ({ ...r, npcs: markCarriedLost(r.npcs, npc.name, target, "stolen") }));
       return;
     }
 

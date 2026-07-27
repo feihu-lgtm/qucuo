@@ -9,6 +9,21 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "第二刀·收拢 room.npcs 的写入口：8 处裸操作 → 0，并加架构守卫防再犯",
+    time: "2026-07-28 23:50",
+    notes: [
+      "拆 MudRPG 的第二刀。选它先动，是因为它治病而不只是好看——近期连着两个 bug（切磋掉落池恒为空、偷才旦一无所有）根因都是同一个：**room.npcs 有 15 个写入方，谁都能改，改的时候只顾自己那件事、顺手把别人写进去的东西冲掉**，而且不报错、测不出来、要靠玩家打很多场才察觉。文件切多小都治不了这个。",
+      "①【先分清哪些该收】15 处里只有 8 处是真在"改名单"（增删人/补数据/标记随身物）；另外 7 处是**整体换房间**（传送、移动到达、进出心灵之海：npcs: [] 或 npcs: 缓存名单）——那是换了个 room 对象，不是改这份名单，收进来只会让职责变糊，故不动。",
+      "②【新增 src/roomNpcs.js】六个具名操作：injectNpcs（注入，含"名字已在也补设定"那条 bug② 修法）/ patchCombatData（固化回填，只补 COMBAT_FIELDS 白名单）/ markCarriedLost（标 stolen 或 dropped）/ materializeNpc（涌现登场）/ removeNpc / respawnNpc。",
+      "③【为什么写成纯函数而不是 hook】commitRound 也要用，它不是组件、拿不到 hook。写成 (npcs, args) => npcs 的纯 reducer，两边都能用，**而且能直接单测**——那两个 bug 恰恰是"没法单测"才漏掉的。先写 24 条契约测试再动迁移。",
+      "④【顺带统一一处匹配键】偷窃标记原来按 n.id === npc.id 找人，其余各处都按 name（varTree.角色[name]、各种 find(n => n.name === ...)、injectNpcs 的去重也按 name）。统一成按 name，与项目其余部分一致。",
+      "⑤【删掉一处重复】commitRound 里那份本地 pickCombatData 是上一个修复时就地写的，已收进 roomNpcs.js，两边不再各留一份。",
+      "⑥【加架构守卫】新增一条测试扫源码：MudRPG.jsx 与 commitRound.js 里不许再出现 `npcs: r.npcs.map/filter` 这类裸操作。收拢本身只把当下这 8 处改干净了，真正的风险是下一个人（包括以后的我）加功能时又图省事直接写一句，同一类 bug 再来一次、照样测不出来。加不了的形状就往 roomNpcs.js 里加个操作。",
+      "效果：裸操作 8 → 0；MudRPG 4604 → 4561 行（这一刀本就不为减行数，是为定主人）。",
+      "验证：vite build 通过、eslint 全清、vitest 420/420（新增 roomNpcs.test.js 27 条：注入的六种情形含"目标自己有值的字段不被覆盖"与"无事可做返回原引用"、回填的名单红线、stolen/dropped 两个标记互不覆盖、涌现/移除/重生、脏输入全不炸，外加那条架构守卫）。",
+    ],
+  },
+  {
     codename: "真正修好「偷才旦一无所有」：驻场设定被「名字已在就跳过」挡在门外，作者配的随身物永远没进过场",
     time: "2026-07-28 22:40",
     notes: [
