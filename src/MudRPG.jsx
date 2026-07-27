@@ -76,7 +76,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { callExtraction, buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable, unlockAsuka, activeCompanionKey, setActiveCompanion, unlockedCompanions } from "./companion.js";
+import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable, unlockPearl, unlockAsuka, activeCompanionKey, setActiveCompanion, unlockedCompanions, companionKeyByName } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -912,9 +912,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // "队友"身份通过 visibleNpcsForAI 单独随玩家在场（形影不离），不再是某个据点的
     // 固定驻场人物。用 companionState ref 读最新值（effect 依赖数组不含 companionState，
     // 靠 ref 拿到入队后的最新状态，避免仅靠 deps 触发导致的时序问题）。
-    const leopardJoined = companionStateRef.current?.snowLeopard?.unlocked;
+    // 伙伴候选（雪豹/珍珠…）一旦入队就不再当驻场注入——按名字查它对应的伙伴槽位
+    // 是否已解锁，通用处理，不写死单个名字。
+    const companionJoined = (name) => {
+      const key = companionKeyByName(name);
+      return !!(key && companionStateRef.current?.[key]?.unlocked);
+    };
     const residentNpcs = getResidentNpcs(room.name)
-      .filter(n => !(leopardJoined && n.name === "雪豹" && n.companionCandidate))
+      .filter(n => !(n.companionCandidate && companionJoined(n.name)))
       .map(toRoomNpcWithCombat);
     // 护镖任务的系统保证：接了镖之后，targetNpc 当天必须真的能在 targetLocation 找到，
     // 不能靠 getScheduledNpcs 的随机权重抽样"赌"到——那样任务会随机卡死无法交货。
@@ -3134,15 +3139,20 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 走 settle 档 + settleKind:"companion_invite"，让 buildSysBase 注入专属的
   // "前世羁绊/认主"调性铁律（见下方 buildSysBase 里新增的分支）。
   const handleInviteCompanion = useCallback((npc) => {
-    if (npc.name !== "雪豹") return; // 目前只有雪豹这一个伙伴候选，其余NPC不会显示这个按钮，这里只是双重保险
-    setCompanionState(prev => unlockSnowLeopard(prev));
+    // 伙伴候选（雪豹/珍珠…）按名字分发到各自的解锁函数。其余NPC不会显示这个按钮，
+    // 这里只是双重保险——不是伙伴候选直接返回。
+    const key = companionKeyByName(npc.name);
+    if (!key) return;
+    if (key === "snowLeopard") setCompanionState(prev => unlockSnowLeopard(prev));
+    else if (key === "pearl") setCompanionState(prev => unlockPearl(prev));
+    else return;
     setVarTree(prev => markNpcAsKnown(prev, npc.name));
-    // 入队即时生效：把作为"村口驻场兽"的雪豹从当前房间移除，此地之人/在场名单/互动
+    // 入队即时生效：把作为"村口驻场兽"的它从当前房间移除，此地之人/在场名单/互动
     // 入口当场都不再有它（此后它只以队友身份随玩家在场）。重进村口不再注入，由房间
     // 注入 effect 的 companionStateRef 过滤保证——两处配合，即时消失 + 永不重现。
-    setRoom(r => ({ ...r, npcs: removeNpc(r.npcs, n => n.name === "雪豹" && n.companionCandidate) }));
+    setRoom(r => ({ ...r, npcs: removeNpc(r.npcs, n => n.name === npc.name && n.companionCandidate) }));
     setActiveTarget(npc.name);
-    act(`向雪豹伸出手，郑重邀它同行`, [], { settle: true, settleNpc: npc.name, settleKind: "companion_invite" });
+    act(`向${npc.name}伸出手，郑重邀它同行`, [], { settle: true, settleNpc: npc.name, settleKind: "companion_invite" });
   }, [act]);
 
   // ⑤ 服食：把原打字正则分支的确定性结算抽成 handler，供物品面板「服食」调用。
@@ -3835,13 +3845,17 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       const st = res.stone || {};
       const tier = (JADE_TIERS.find(t => t.key === st.jadeTier) || {});
       const tierLabel = tier.label || "玉料";
-      const cap = st.quality || tier.quality || "白";
+      // 料的品质 = 这块石头的种水档品质（出生即定的真实档次）。石头是什么品质，
+      // 收下来的料就是什么品质——切涨切垮只影响这块料值多少钱（appraiseStone 的估值），
+      // 不改变它本身的品质档次。此前 fallback 链写法在某些路径会偏离石头本档，统一
+      // 以种水档为准，杜绝"开出来是帝王绿、收进背包却变绿品"这类错位。
+      const cap = tier.quality || st.quality || "白";
       const ckLabel = CHANG_KOU[st.changKou]?.label || "";
       const jadeItem = {
         name: `${tierLabel}·玉料`,
         category: ITEM_CATEGORY.MISC,
         quality: cap,
-        desc: `${ckLabel ? ckLabel + "开出的" : ""}一块${tierLabel}玉料，品质天花板${cap}。可拿去金玉行雕琢成器。`,
+        desc: `${ckLabel ? ckLabel + "开出的" : ""}一块${tierLabel}玉料，品质${cap}。可拿去金玉行雕琢成器。`,
         jadeSpec: { jadeTier: st.jadeTier, qualityCap: cap, changKou: st.changKou, tierLabel },
       };
       setInv(prev => [...prev, { ...jadeItem, id: `jade_${Date.now()}_${Math.random().toString(36).slice(2, 5)}` }]);

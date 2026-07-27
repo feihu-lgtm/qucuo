@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "赌石收料品质对齐石头本档 + 新伙伴小马珍珠（村口坐骑·蓝档·四招·可入队可留守）",
+    time: "2026-07-27 22:55",
+    notes: [
+      "①【赌石收料品质】据为己有收来的玉料品质统一以石头的种水档为准（tier.quality 优先）——石头是什么品质，收下来的料就是什么品质。切涨切垮只影响这块料值多少钱（appraiseStone 估值），不改变它本身的品质档次。此前 fallback 链写法在某些路径会偏离石头本档。",
+      "②【新伙伴·小马珍珠】村口新增驻场伙伴候选珍珠：通体雪白、睫毛长长、丰神俊朗的小白马，本名「哈瓦夏日」（藏语「灰色的梅花鹿」）。反差萌性子——志不在驰骋，平生最爱干饭躺平，认主后却忠心无二、脚力惊人。蓝档(levelCap=2)，坐骑定位：比雪豹更皮实（体魄+2）、更能护主（防御权重高、不冒进）。",
+      "③【珍珠四招】npcSignatureMoves 珍珠专属表：飞蹄踏阵（硬攻·冲撞踏击）、后蹄蹬山（防守反击·背身护主反蹬）、踏雪疾驰（蓄势·平日懒散一旦撒蹄快如白影）、低头干饭（回气·它最擅长的事）。beast/cannotSpeak/affectionable，可投喂养好感。",
+      "④【接入现有伙伴系统】companion.js 加 pearl 槽位（createPearl/unlockPearl/isPearlAvailable）+ COMPANION_SLOTS 登记；伙伴性格随数据固化（createPearl 带 PEARL_PROFILE、createSnowLeopard 带 SNOW_LEOPARD_PROFILE），buildLeopardUnit 改读 leopardData.profile 不再写死雪豹性格——珍珠上场用自己的护主AI。新增 companionKeyByName/isCompanionUnlockedByName 按名字查槽位。",
+      "⑤【邀请/注入通用化】handleInviteCompanion 从写死雪豹改成按名字分发（雪豹/珍珠各自解锁函数）；驻场注入过滤、GlobalOverlays 的 companionUnlocked 都改成按名字通用判定，不再写死单个名字。单槽互斥照旧：珍珠入队顶出战位，雪豹自动留守，右栏可随时换。",
+      "验证：vitest 507/507 通过（narratorQuest 那条「换来换去不丢数据」改为只断言当场解锁的雪豹+明日香两槽，珍珠未解锁不在此列），esbuild 构建通过。",
+    ],
+  },
+  {
     codename: "四修：锦官城东北出口·路遇之物·温泉flag对不上·孟记铁铺/玉器轩加定制",
     time: "2026-07-27 22:42",
     notes: [

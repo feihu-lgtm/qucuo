@@ -17,7 +17,7 @@ import { listCharacters } from "../mvu.js";
 import { getTimeStr } from "../utils/mudHelpers.js";
 import { getPipelineLog } from "../apiConfig.js";
 import { QUCUO_QUESTS } from "../quests/qucuoQuests.js";
-import { activeCompanion } from "../companion.js";
+import { activeCompanion, isCompanionUnlockedByName } from "../companion.js";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import TutorialOverlay from "../TutorialOverlay.jsx";
 import VersionHistoryPanel from "../VersionHistoryPanel.jsx";
@@ -149,7 +149,7 @@ export default function GlobalOverlays({
           onLearnSkill={handleNpcLearnSkill}
           onTrade={handleNpcTrade}
           onInviteCompanion={handleInviteCompanion}
-          companionUnlocked={activeNpcMenu.name === "雪豹" && companionState?.snowLeopard?.unlocked}
+          companionUnlocked={isCompanionUnlockedByName(companionState, activeNpcMenu.name)}
         />
       )}
       {activeItemMenu && (

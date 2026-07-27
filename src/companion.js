@@ -53,6 +53,7 @@ export function createSnowLeopard() {
   return {
     ...npcShape,
     beast: true,        // 兽类标记（走兽性招名/立绘/不可对话等）。注：自2026-07-26起 beast 不再等同"武学不可学"，拜师/偷师已对野兽放开。
+    profile: SNOW_LEOPARD_PROFILE, // 战斗性格随数据固化，buildLeopardUnit 读它（不再写死）
     moveset,
     equipAtk: 0, equipDef: 0, // 雪豹不能穿装备，恒为0（不接入equipment.js的穿戴系统）
     combatStats: {
@@ -70,7 +71,10 @@ export function createSnowLeopard() {
 // active：当前是否带在身边参战（玩家可以让雪豹"留守"某处，不强制每场战斗都带它）
 // data：雪豹固化后的数值+招式，解锁时生成一次，之后只读不重新生成
 export function initCompanionState() {
-  return { snowLeopard: { unlocked: false, active: false, data: null } };
+  return {
+    snowLeopard: { unlocked: false, active: false, data: null },
+    pearl: { unlocked: false, active: false, data: null },
+  };
 }
 
 // 解锁雪豹（剧情触发，比如玩家跟格桑的雪豹培养出感情后）：若已解锁则不重复生成
@@ -95,6 +99,68 @@ export function setSnowLeopardActive(companionState, active) {
 // 是同一套简化处理，避免"雪豹被打残后再也不能用"这种需要额外疗伤流程的复杂度）。
 export function isSnowLeopardAvailable(companionState) {
   return !!(companionState?.snowLeopard?.unlocked && companionState?.snowLeopard?.active && companionState?.snowLeopard?.data);
+}
+
+// ── 小马珍珠入队（开局村口·坐骑）──────────────────────────────────────
+// 珍珠是一匹通体雪白、长相颇具反差萌的小白马——本名"哈瓦夏日"（藏语"灰色的梅花鹿"），
+// 睫毛长长，丰神俊朗，却志不在驰骋，平生两大爱好：专心干饭、就地躺平。可一旦认主，
+// 忠心无二，脚力强健，关键时刻撒开四蹄快如白影。蓝档(levelCap=2)，坐骑定位：
+// 比雪豹更皮实（体魄高）、更能护主（防御权重高），不冒进。
+export const PEARL_LEVEL_CAP = 2; // 蓝档
+
+// 珍珠的战斗性格：坐骑护主，皮实稳健，不冒进——防御权重比雪豹高，风险偏好低。
+// 平时懒洋洋（干饭躺平），护主时才见真章，故 avoidRepeat 略高于雪豹（会换着法子护主）。
+export const PEARL_PROFILE = {
+  moveWeights: { 攻击: 0.4, 防御: 0.35, 状态: 0.25 },
+  riskAppetite: 0.5,
+  avoidRepeat: 0.25,
+};
+
+export function createPearl() {
+  const levelCap = PEARL_LEVEL_CAP;
+  const special = generateNpcAttributes({ levelCap });
+  // 体魄拉高（皮实耐驮）、身法略抬（脚力强健），悟性拉低——它满脑子只有干饭和躺平。
+  special.体魄 = Math.min(10, special.体魄 + 2);
+  special.身法 = Math.min(10, special.身法 + 1);
+  special.悟性 = Math.max(1, special.悟性 - 2);
+
+  const { baseAtk, neigong, waigong } = getTierPower(levelCap);
+  const maxHp = hpFromNeigong(neigong, special.体魄);
+
+  const npcShape = { name: "珍珠", id: "companion_pearl", levelCap, special, waigong, neigong, baseAtk };
+  const moveset = deriveSignatureMoveset(npcShape, { levelCap });
+
+  return {
+    ...npcShape,
+    beast: true,
+    profile: PEARL_PROFILE, // 坐骑护主：皮实稳健、不冒进，buildLeopardUnit 读它
+    moveset,
+    equipAtk: 0, equipDef: 0,
+    combatStats: {
+      hp: [maxHp, maxHp],
+      energy: [10, 10],
+      statusSlots: createEmptyStatusSlots(),
+    },
+  };
+}
+
+// 解锁珍珠（村口邀它同行时调用，幂等）。它一入队就顶了出战位——其余伙伴自动留守，
+// 玩家之后可以随时换（setActiveCompanion）。
+export function unlockPearl(companionState) {
+  const cur = companionState?.pearl;
+  if (cur?.unlocked && cur?.data) return companionState;
+  const next = {
+    ...companionState,
+    pearl: { unlocked: true, active: true, data: createPearl() },
+  };
+  for (const s of COMPANION_SLOTS) {
+    if (s.key !== "pearl" && next[s.key]) next[s.key] = { ...next[s.key], active: false };
+  }
+  return next;
+}
+
+export function isPearlAvailable(companionState) {
+  return !!(companionState?.pearl?.unlocked && companionState?.pearl?.active && companionState?.pearl?.data);
 }
 
 // ── 明日香入队（终章走完解锁）─────────────────────────────────────────
@@ -176,6 +242,7 @@ export function isAsukaAvailable(companionState) {
 // TeamDuelScreen 拿到两个 leopardData 级别的对象，行为未定义。
 export const COMPANION_SLOTS = [
   { key: "snowLeopard", label: "雪豹", beast: true },
+  { key: "pearl", label: "珍珠", beast: true },
   { key: "asuka", label: "明日香", beast: false },
 ];
 
@@ -196,6 +263,18 @@ export function activeCompanion(companionState) {
 // 已解锁的候选（供 UI 列出可切换的队友）
 export function unlockedCompanions(companionState) {
   return COMPANION_SLOTS.filter(s => companionState?.[s.key]?.unlocked && companionState?.[s.key]?.data);
+}
+
+// 按 NPC 名字查它对应的伙伴槽位（雪豹/珍珠/明日香），不是伙伴候选返回 null。
+export function companionKeyByName(name) {
+  const s = COMPANION_SLOTS.find(x => x.label === name);
+  return s ? s.key : null;
+}
+
+// 某个具名伙伴候选是否已解锁（供 NpcActionMenu 判断"邀请入队"按钮要不要收起）。
+export function isCompanionUnlockedByName(companionState, name) {
+  const key = companionKeyByName(name);
+  return key ? !!(companionState?.[key]?.unlocked && companionState?.[key]?.data) : false;
 }
 
 // 换出战队友：把目标置 active，其余一律置 false（互斥）。

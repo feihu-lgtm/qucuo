@@ -67,7 +67,7 @@ export function buildLeopardUnit(leopardData) {
     energy: [10, 10],
     statusSlots: createEmptyStatusSlots(),
     movesetLocal: (leopardData.moveset || []).map(m => ({ ...m })),
-    profile: SNOW_LEOPARD_PROFILE, // 纯野兽本能：高攻击/高风险，不配合玩家战术（已确认）
+    profile: leopardData.profile || SNOW_LEOPARD_PROFILE, // 性格随伙伴数据走（雪豹猛兽本能/珍珠坐骑护主），缺省兜底雪豹
     ...freshCombatMemory(),
   };
 }

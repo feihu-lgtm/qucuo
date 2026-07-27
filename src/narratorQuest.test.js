@@ -320,9 +320,10 @@ describe("明日香入队 · 单槽互斥", () => {
     let cs = unlockAsuka(unlockSnowLeopard(initCompanionState()));
     cs = setActiveCompanion(cs, "snowLeopard");
     cs = setActiveCompanion(cs, "asuka");
-    for (const s of COMPANION_SLOTS) {
-      expect(cs[s.key].unlocked).toBe(true);
-      expect(cs[s.key].data).toBeTruthy();
+    // 只断言这场解锁过的两个槽位（珍珠未解锁，不在此列）——切来切去 unlocked/data 不丢。
+    for (const key of ["snowLeopard", "asuka"]) {
+      expect(cs[key].unlocked).toBe(true);
+      expect(cs[key].data).toBeTruthy();
     }
     expect(unlockedCompanions(cs).map(s => s.label)).toEqual(["雪豹", "明日香"]);
   });
