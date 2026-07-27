@@ -24,6 +24,7 @@ import VersionHistoryPanel from "../VersionHistoryPanel.jsx";
 import CharacterPage from "../CharacterPage.jsx";
 import QuestLogScreen from "../QuestLogScreen.jsx";
 import LoreScreen from "../LoreScreen.jsx";
+import QijuzhuScreen from "../QijuzhuScreen.jsx";
 import PortraitManager from "../PortraitManager.jsx";
 import PipelineViewer from "../PipelineViewer.jsx";
 import TraceViewer from "../TraceViewer.jsx";
@@ -46,6 +47,7 @@ export default function GlobalOverlays({
   claimedMilestones, claimMilestone, giftToCharacter,
   showQuestLog, setShowQuestLog,
   showLore, setShowLore,
+  showQijuzhu, setShowQijuzhu, narratorStage,
   showPortraitManager, setShowPortraitManager, portraits, setPortraits,
   showPipeline, setShowPipeline,
   showTrace, setShowTrace,
@@ -93,6 +95,16 @@ export default function GlobalOverlays({
           turnToStr={getTimeStr}
           zoneTheme={zoneTheme}
           onClose={() => setShowLore(false)}
+        />
+      )}
+
+      {showQijuzhu && (
+        <QijuzhuScreen
+          varTree={varTree}
+          time={time}
+          narratorStage={narratorStage}
+          zoneTheme={zoneTheme}
+          onClose={() => setShowQijuzhu(false)}
         />
       )}
 

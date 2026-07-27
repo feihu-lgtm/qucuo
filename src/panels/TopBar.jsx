@@ -18,7 +18,7 @@ export default function TopBar({
   uiGold, uiTurquoise, uiCrimson, uiPink,
   setShowTutorial, setShowCodex, setShowVersionHistory,
   showTrace, setShowTrace, setShowBugReport,
-  setShowCharacterPage, setShowQuestLog, setShowLore,
+  setShowCharacterPage, setShowQuestLog, setShowLore, setShowQijuzhu,
   setSettingsInitialTab, setShowSettings,
   autoSaveError, lastAutoSave,
   showAvatarPicker, setShowAvatarPicker,
@@ -92,6 +92,12 @@ export default function TopBar({
           onClick={() => setShowLore(true)}
           style={topBtn(zoneTheme.text)}
         >📖 见闻录</span>
+        <span
+          className="qbtn"
+          onClick={() => setShowQijuzhu(true)}
+          title="起居注：逐日记录起居言动——今日行迹与开局以来的累计"
+          style={topBtn(zoneTheme.text)}
+        >🗒 起居注</span>
         <span
           className="qbtn"
           onClick={() => {

@@ -150,3 +150,51 @@ describe("计数是系统裁决域，AI 不得编", () => {
     expect(tree.世界.起居注.today.meditate).toBeUndefined();
   });
 });
+
+// ── 起居注面板会用到的取数（面板本身是纯展示，逻辑都在这几个函数里）──
+describe("起居注面板的取数", () => {
+  const build = (t0) => {
+    let t = emptyTally();
+    for (let i = 0; i < 7; i++) t = tallyAdd(t, "innerMove", t0);
+    for (let i = 0; i < 2; i++) t = tallyAdd(t, "talk", t0);
+    return t;
+  };
+
+  it("今日页与累计页取的是同一份真值的两个视野", () => {
+    const t = build(5);
+    expect(tallyTotals(t, 5)).toEqual({ today: 9, lifetime: 9 });
+    // 过一天：今日页空了，累计页不动
+    expect(tallyTotals(t, DAY_TURNS + 1)).toEqual({ today: 0, lifetime: 9 });
+  });
+
+  it("条形图要用的最大值：两页各自算，不会互相影响比例", () => {
+    const t = build(5);
+    const todayMax = Math.max(...Object.values(tallyToday(t, 5)));
+    const lifeMax = Math.max(...describeLifetime(t).map(r => r.count));
+    expect(todayMax).toBe(7);
+    expect(lifeMax).toBe(7);
+  });
+
+  it("累计页按次数降序，方便一眼看出玩了什么", () => {
+    const rows = describeLifetime(build(5));
+    expect(rows.map(r => r.count)).toEqual([...rows.map(r => r.count)].sort((a, b) => b - a));
+    expect(rows[0].key).toBe("innerMove");
+  });
+
+  it("aiBacked 用于区分「只记数」与「另在见闻录有往事」", () => {
+    const rows = describeLifetime(build(5));
+    expect(rows.find(r => r.key === "innerMove").aiBacked).toBe(false);
+    expect(rows.find(r => r.key === "talk").aiBacked).toBe(true);
+  });
+
+  it("空档：两页都给空表而不是报错", () => {
+    expect(describeLifetime(emptyTally())).toEqual([]);
+    expect(tallyToday(emptyTally(), 0)).toEqual({});
+    expect(describeLifetime(undefined)).toEqual([]);
+  });
+
+  it("第N日的算法与面板标题一致（time/24+1）", () => {
+    expect(Math.floor(0 / DAY_TURNS) + 1).toBe(1);
+    expect(Math.floor(30 / DAY_TURNS) + 1).toBe(2);
+  });
+});

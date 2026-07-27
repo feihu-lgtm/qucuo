@@ -345,7 +345,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const genderAvatar = { "男": AV_BASE + "male.webp", "女": AV_BASE + "female.webp" };
   const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.webp");
   const [showQuestLog, setShowQuestLog] = useState(false);
-  const [showLore, setShowLore] = useState(false); // 见闻录：小纸条+小账本可视化
+  const [showLore, setShowLore] = useState(false);
+  const [showQijuzhu, setShowQijuzhu] = useState(false); // 起居注：今日行迹 + 累计年鉴 // 见闻录：小纸条+小账本可视化
   const [characterPageTarget, setCharacterPageTarget] = useState(null); // "面板"按钮指定直接打开谁的详情
   const [portraits, setPortraits] = useState(loadPortraits());
   // 雪豹立绘三形态切换（人形·立雪/人形·倚剑/雪豹真身，存 localStorage 持久化）；
@@ -4253,7 +4254,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         uiGold={uiGold} uiTurquoise={uiTurquoise} uiCrimson={uiCrimson} uiPink={uiPink}
         setShowTutorial={setShowTutorial} setShowCodex={setShowCodex} setShowVersionHistory={setShowVersionHistory}
         showTrace={showTrace} setShowTrace={setShowTrace} setShowBugReport={setShowBugReport}
-        setShowCharacterPage={setShowCharacterPage} setShowQuestLog={setShowQuestLog} setShowLore={setShowLore}
+        setShowCharacterPage={setShowCharacterPage} setShowQuestLog={setShowQuestLog} setShowLore={setShowLore} setShowQijuzhu={setShowQijuzhu}
         setSettingsInitialTab={setSettingsInitialTab} setShowSettings={setShowSettings}
         autoSaveError={autoSaveError} lastAutoSave={lastAutoSave}
         showAvatarPicker={showAvatarPicker} setShowAvatarPicker={setShowAvatarPicker}
@@ -4275,6 +4276,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         claimedMilestones={claimedMilestones} claimMilestone={claimMilestone} giftToCharacter={giftToCharacter}
         showQuestLog={showQuestLog} setShowQuestLog={setShowQuestLog}
         showLore={showLore} setShowLore={setShowLore}
+        showQijuzhu={showQijuzhu} setShowQijuzhu={setShowQijuzhu} narratorStage={narrator.stage}
         showPortraitManager={showPortraitManager} setShowPortraitManager={setShowPortraitManager}
         portraits={portraits} setPortraits={setPortraits}
         showPipeline={showPipeline} setShowPipeline={setShowPipeline}
