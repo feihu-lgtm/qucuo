@@ -12,7 +12,9 @@ export const VERSION_HISTORY = [
     codename: "全部图片转 WebP（100MB→10.6MB，省89%）；审计 sys 组装与 MVU 接线，补上心灵之海的场景铁律",
     time: "2026-07-28 02:40",
     notes: [
-      "①【图片全转 WebP】126 张 png/jpg 转 webp，99.9MB→10.6MB（省 89%），dist 从 ~102MB 降到 13MB。favicon 保持原格式不动（浏览器兼容性，且体积本来就小）。风险不在转换而在漏改引用——图片路径散在静态 import、运行时拼接模板（如 bidders/full/${name}.png）、index.html 三处，共改 83 处，改完写脚本全量反查\"引用了但磁盘上没有\"，确认零残留。",
+      "①【图片全转 WebP】126 张 png/jpg 转 webp，99.9MB→11.2MB（省 89%），dist 从 ~102MB 降到 14MB。favicon 保持原格式不动（浏览器兼容性，且体积本来就小）。风险不在转换而在漏改引用——图片路径散在静态 import、运行时拼接模板（如 bidders/full/${name}.png）、index.html 三处，共改 83 处，改完写脚本全量反查\"引用了但磁盘上没有\"，确认零残留。",
+      "①-2【逐张验完整性，不靠肉眼】写脚本从 git 取回全部原图逐张对账：①透明通道——原图 88 张 RGBA，其中 66 张真有透明像素、全部保住；另 22 张 alpha 全为 255（完全不透明），被编码器省掉通道属正确优化，非丢失。②尺寸零变化。③画质用\"按 alpha 合成到同一底色再算 RMS\"衡量（直接 convert(RGB) 比会把全透明像素那段无意义的 RGB 也算进去，得出 RMS 100 的假警报）。④顺带：转换脚本里 A if B and C or D else E 的优先级会让 LA 模式（灰度+透明）被压成 RGB，实际原图分布 RGB:30/RGBA:88、无一张 LA，未触发；已在此记录以免后人重蹈。",
+      "①-3【UI 图标改无损】首轮全用 quality=85，事后测出差异最大的 18 张全是 stones/ui/ 下的小图标（coin/btn_close/burst 等，约 200x200），RMS 5~7——小尺寸硬边缘最吃有损压缩的亏。这批改成 lossless 后 RMS 全部归零（像素级一致），代价仅 +655KB。判据收紧为\"路径含 /ui/ 且面积 ≤256²\"：先前试过\"原图<150KB\"，圈进 79 张、暴涨 19.5MB，那就把转 webp 的意义抵消了。最终全库平均 RMS 2.52、最大 5.33、超过 8 的零张。",
       "②【顺带发现一处既有坏引用】反查抓到 OpeningSequence 的 /intro-1.jpg 与 /intro-2.jpg——这两个文件仓库里从来没有过，改之前就是坏引用（<img> 也没有 onError 兜底，缺图会显示破图图标）。已还原成 .jpg 不动它：给一个我无法验证的、本就不存在的文件悄悄改扩展名是不对的。要么补图、要么加兜底，等作者定。",
       "③【审计 sys 组装】用测试台真跑一遍各档组装，打出注入矩阵逐项核对。结论是接对了：MVU 说明书与禁写声明始终同进同出（禁写那条在 MVU_SYSTEM_INSTRUCTIONS 内部，不会走散），full有人✓/full无人✗（wantMvu 要求场上有人）/无人+GM✓（gm 强制）/move✗/settle无人✗/settle送礼与拜师✓/双调用散文✗（状态判定交提取层）——全部符合设计。文风也确认真的在随好感切（好感0→冷漠档、95→临界档）。13 位置落位正确：system 侧 main→worldInfoBefore→charDescription→charPersonality→scenario→worldInfoAfter→persona→authorsNote→exampleStart，user 侧 chatHistory→inChat→latestUser→phi(assistant)。",
       "④【测试台 fixture 的坑】actCall.test.js 里写的是 narrator: initialNarratorState——传的是函数本身而不是调用结果，所以 affection 一直是 undefined。这正是之前黄金快照里\"好感度 undefined/100\"的来源。审计脚本里已按 initialNarratorState() 传，旧 fixture 留待后续统一（它现在测的是\"好感度缺失\"这个兜底路径，本身也有价值，不急着改）。",
