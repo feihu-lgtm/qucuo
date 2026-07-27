@@ -28,7 +28,7 @@ import BugReportModal from "./BugReportModal.jsx";
 import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
 import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom, isInnerExitUnlocked } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
-import { loadPortraits, setPortrait, removePortrait, getPortrait, fileToDataUrl, inferActivePortraitTarget, SNOW_LEOPARD_FORMS, getSnowLeopardForm, setSnowLeopardForm, snowLeopardPortraitUrl } from "./portraits.js";
+import { loadPortraits, setPortrait, removePortrait, fileToDataUrl, inferActivePortraitTarget, SNOW_LEOPARD_FORMS, getSnowLeopardForm, setSnowLeopardForm, snowLeopardPortraitUrl } from "./portraits.js";
 import PortraitManager from "./PortraitManager.jsx";
 import CharacterPage from "./CharacterPage.jsx";
 import QuestLogScreen from "./QuestLogScreen.jsx";

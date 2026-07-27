@@ -115,3 +115,44 @@ describe("字数表与标签仍从同一张表派生", () => {
     expect(affectionLabel(90)).toBe("濒临觉醒");
   });
 });
+
+// ── 内置默认立绘的读取通路 ────────────────────────────────────────────
+// 这一组钉的是一个曾经半途而废的重构：默认立绘从"异步写进 localStorage"改成
+// "静态 import 打包"时，初始化的 useEffect 删掉了，但**读取侧一直没接上**——
+// LeftPanel 与 PortraitManager 读的都是 portraits[name]（只含玩家上传的 state），
+// DEFAULT_PORTRAITS 除注释外无人读取，getPortrait() 写好了却从未被调用。
+// 结果内置的九张立绘全都打进产物、却一张都没显示过。
+import { DEFAULT_PORTRAITS, resolvePortrait, hasBuiltinPortrait } from "./portraits.js";
+
+describe("内置立绘必须真的能被读到", () => {
+  it("玄女已进内置立绘表", () => {
+    expect(DEFAULT_PORTRAITS["玄女"]).toBeTruthy();
+    expect(hasBuiltinPortrait("玄女")).toBe(true);
+  });
+
+  it("原有几位仍在表里（别把人挤掉了）", () => {
+    for (const n of ["梅朵", "呼延雪", "何雨谢", "才旦", "李若由", "卓玛", "兰姐", "罗琦", "嘎则"]) {
+      expect(DEFAULT_PORTRAITS[n], `${n} 的内置立绘丢了`).toBeTruthy();
+    }
+  });
+
+  it("玩家没传过 → 落到内置图", () => {
+    expect(resolvePortrait({}, "玄女")).toBe(DEFAULT_PORTRAITS["玄女"]);
+  });
+
+  it("玩家传过 → 用玩家自己的，内置让位", () => {
+    const mine = "data:image/png;base64,AAAA";
+    expect(resolvePortrait({ 玄女: mine }, "玄女")).toBe(mine);
+  });
+
+  it("没有内置图又没传过 → null（UI 显示「点击上传」）", () => {
+    expect(resolvePortrait({}, "路人甲")).toBeNull();
+    expect(hasBuiltinPortrait("路人甲")).toBe(false);
+  });
+
+  it("脏输入不炸", () => {
+    expect(resolvePortrait(null, "玄女")).toBe(DEFAULT_PORTRAITS["玄女"]);
+    expect(resolvePortrait({}, "")).toBeNull();
+    expect(resolvePortrait({}, undefined)).toBeNull();
+  });
+});

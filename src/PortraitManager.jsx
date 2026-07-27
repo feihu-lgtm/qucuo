@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { setPortrait, removePortrait, fileToDataUrl } from "./portraits.js";
+import { setPortrait, removePortrait, fileToDataUrl, resolvePortrait, hasBuiltinPortrait } from "./portraits.js";
 import { loadComfyConfig, saveComfyConfig, generateComfyUIPortrait } from "./comfyui.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
@@ -157,13 +157,24 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                 }} onClick={() => triggerUpload(name)}>
                   {generating ? (
                     <span style={{ color: "#6ec6c6", fontSize: "10px" }}>⏳ 生成中…</span>
-                  ) : portraits[name] ? (
-                    <img src={portraits[name]} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : resolvePortrait(portraits, name) ? (
+                    <img src={resolvePortrait(portraits, name)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     <span style={{ color: "#3a3830", fontSize: "10px" }}>点击上传</span>
                   )}
                 </div>
-                <div style={{ fontSize: "11px", color: "#c8bfa0", marginBottom: 4 }}>{name}</div>
+                <div style={{ fontSize: "11px", color: "#c8bfa0", marginBottom: 4 }}>
+                  {name}
+                  {/* 标出这张是项目内置的还是玩家自己传的。内置图删不掉（删除按钮只在
+                      portraits[name] 有值、即确实上传过时才出现），标一下免得玩家
+                      对着一张删不掉的图找删除键。传了自己的图之后这个标记就让位。 */}
+                  {!portraits[name] && hasBuiltinPortrait(name) && (
+                    <span style={{ color: "#5a6a5a", fontSize: "9px", marginLeft: 4 }}>内置</span>
+                  )}
+                  {portraits[name] && (
+                    <span style={{ color: "#6ec6c6", fontSize: "9px", marginLeft: 4 }}>自定义</span>
+                  )}
+                </div>
                 {comfyCfg.enabled && (
                   <div style={{ display: "flex", gap: 3, marginBottom: 4 }}>
                     <input

@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "玄女立绘接入；顺带修好\"内置九张立绘打进产物却一张都没显示过\"的半截重构",
+    time: "2026-07-28 01:15",
+    notes: [
+      "①【玄女立绘】进 src/assets/portraits/xuannu.png + DEFAULT_PORTRAITS 表。走的是普通NPC那条通道（跟旁白五档的好感度自动切换、雪豹三形态的手动切换都不同），开箱即有图，玩家不用自己传；想换成自己的图仍可在「⚙管理」里覆盖。",
+      "②【修 bug·内置立绘从来没显示过】加完发现她也不会显示，查出来是一次半途而废的重构：默认立绘当年从\"异步写进 localStorage\"改成\"静态 import 打包\"，初始化的 useEffect 删掉了，但**读取侧一直没接上**——LeftPanel 与 PortraitManager 读的都是 portraits[name]（那个 state 只含玩家上传的），DEFAULT_PORTRAITS 除了注释里被提起之外无人读取，getPortrait() 虽然写好了却从未被任何地方调用（在 MudRPG 里是一个死 import）。结果内置的九张立绘（梅朵/呼延雪/何雨谢/才旦/李若由/卓玛/兰姐/罗琦/嘎则）全都打进了产物、占着体积，却一张都没显示过。MudRPG 里那句注释还理直气壮写着\"getPortrait() 里自动合并查询，不再需要任何异步初始化步骤\"。",
+      "③【收敛成一个函数】新增 resolvePortrait(portraits, name)：玩家自传优先、没传过落内置。LeftPanel 与 PortraitManager 两处读取共用它，以后再加内置立绘只改 DEFAULT_PORTRAITS 一处、不会再漏。与 getPortrait() 的分工写在注释里：后者自己读 localStorage（供非 React 场景），前者接收已有 state（供组件渲染，跟着 state 走可响应更新）。顺手清掉 MudRPG 里 getPortrait 那个死 import。",
+      "④【立绘管理面板标出来源】每张图下面标「内置」或「自定义」。内置图删不掉（删除按钮本来就只在确实上传过时才出现），标一下免得玩家对着一张删不掉的图找删除键。",
+      "验证：vite build 通过（确认 xuannu 已打进 dist/assets）、eslint no-undef 全清、vitest 184/184（新增 6 条：玄女在表里、原有九位没被挤掉、玩家没传落内置、传了则内置让位、都没有返回null、脏输入不炸）。",
+    ],
+  },
+  {
     codename: "MVU 补上系统裁决域：AI 再也不能一句 _.set 把个人线门禁开掉；被拒指令进全流程日志",
     time: "2026-07-28 00:20",
     notes: [

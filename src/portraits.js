@@ -30,6 +30,7 @@ import zhuomaImg from "./assets/portraits/zhuoma.jpg";
 import lanjieImg from "./assets/portraits/lanjie.jpg";
 import luoqiImg from "./assets/portraits/luoqi.jpg";
 import gazeImg from "./assets/portraits/gaze.jpg";
+import xuannuImg from "./assets/portraits/xuannu.png";
 
 // key 是角色名（跟 MVU 变量树/room.npcs 里的名字对应），value 是 Vite
 // 处理过的图片 URL（构建后指向打包产物里的静态资源路径，不是 base64，
@@ -44,6 +45,7 @@ export const DEFAULT_PORTRAITS = {
   兰姐: lanjieImg,
   罗琦: luoqiImg,
   嘎则: gazeImg,
+  玄女: xuannuImg,
 };
 
 const PORTRAIT_STORAGE_KEY = "wuxia_mud_portraits";
@@ -87,6 +89,30 @@ export function getPortrait(name) {
   const uploaded = loadPortraits();
   if (uploaded[name]) return uploaded[name];
   return DEFAULT_PORTRAITS[name] || null;
+}
+
+// 从「已在 state 里的玩家上传立绘」+「内置默认立绘」两处解析出该显示哪张。
+// 玩家自己传的优先，没传过才落到内置那批。
+//
+// 【为什么要有这个函数、而不是各处直接写 portraits[name]】
+// 曾经有过一次半途而废的重构：默认立绘从"异步写进 localStorage"改成"静态 import
+// 打包"，初始化那个 useEffect 被删掉了，但**读取侧一直没接上**——LeftPanel 与
+// PortraitManager 读的都是 portraits[name]（只含玩家上传的那份 state），
+// DEFAULT_PORTRAITS 除了注释里被提起之外无人读取，getPortrait() 虽然写好了却
+// 从未被调用。结果内置的九张立绘（梅朵/呼延雪/何雨谢/才旦/李若由/卓玛/兰姐/
+// 罗琦/嘎则）全都打进了产物、却一张都没显示过。
+// 收敛成这一个函数，两处读取共用，以后再加内置立绘只改一处、不会再漏。
+//
+// 注意与 getPortrait() 的分工：getPortrait() 自己去读 localStorage（供非 React
+// 场景用），这个函数接收已有的 state 对象（供组件渲染用，跟着 state 走、可响应更新）。
+export function resolvePortrait(uploadedPortraits, name) {
+  if (!name) return null;
+  return uploadedPortraits?.[name] || DEFAULT_PORTRAITS[name] || null;
+}
+
+// 这个角色有没有内置立绘（UI 上区分"内置"与"玩家自传"用）。
+export function hasBuiltinPortrait(name) {
+  return !!DEFAULT_PORTRAITS[name];
 }
 
 export function fileToDataUrl(file) {

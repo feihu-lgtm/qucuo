@@ -2,7 +2,7 @@ import { hasInnerMap, getBuildingIdForInnerRoom, getResidentRoomForNpc, getDistr
 import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../buildings/qucuoBuildings.js";
 import { isNpcKnown } from "../npcAwareness.js";
 import { npcAffectionLabel } from "../mvu.js";
-import { inferActivePortraitTarget, SNOW_LEOPARD_FORMS, snowLeopardPortraitUrl, narratorPortraitUrl, narratorPortraitLabel } from "../portraits.js";
+import { inferActivePortraitTarget, SNOW_LEOPARD_FORMS, snowLeopardPortraitUrl, narratorPortraitUrl, narratorPortraitLabel, resolvePortrait } from "../portraits.js";
 import { QUCUO_MAP, isNodeUnlocked } from "../qucuoMap.js";
 import { QUALITY_COLOR } from "../equipment.js";
 import { DIRS, getTimeStr } from "../utils/mudHelpers.js";
@@ -231,7 +231,9 @@ export default function LeftPanel({
               ? (slImgErr ? null : snowLeopardPortraitUrl(slForm))
               : isNarrator
                 ? (portraits["旁白"] || (narratorImgErr ? null : narratorPortraitUrl(narratorAffection)))
-                : (target === "你" ? (portraits["你"] || playerAvatar) : portraits[target]);
+                // 走 resolvePortrait 才能吃到内置默认立绘（玄女/梅朵/何雨谢那批）——
+                // 直接读 portraits[target] 只拿得到玩家自己上传的那份。
+                : (target === "你" ? (portraits["你"] || playerAvatar) : resolvePortrait(portraits, target));
             return (
               <>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
