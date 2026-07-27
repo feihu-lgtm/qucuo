@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修幽灵NPC：AI叙事提到背景狼王虎王/队友雪豹，提取层把它们刷成绿袍路人",
+    time: "2026-07-27 22:25",
+    notes: [
+      "群友反馈：玉泉寨莫名刷出狼王虎王（还变绿袍了），雪豹队友被刷成雪豹少女NPC。",
+      "①【根因·双调用提取层把叙事背景人物塞进 room.npcs】主叙事写「远处草甸传来狼嚎」「雪豹跟在你身后」，提取层照着散文记账，把狼王/虎王/雪豹少女全列进 room.npcs。移动到无缓存据点时 commitRound 直接采信这份名单（line 223 fallback），ensureNpcCombatData 拿 brief+叙事文本 mapDescriptionToGenParams 只够推个绿袍 levelCap——于是红5的狼王、橙4的虎王被刷成绿袍杂兵。",
+      "②【修复·commitRound 入口过滤幽灵】d.p.room.npcs 进固化之前先过一道筛：(a) 名字含「雪豹」或命中 COMPANION_SLOTS label 的一律踢掉——队友走 companionState 独立管理，不是 room.npcs 的路人；(b) 名字在 getAllResidentNpcNames()（全据点驻场表）里、但不在当前 d.room.npcs 里的踢掉——驻场有固定归属，不该在别处被 AI 凭空刷出来。已在当前房间的人不动（系统自己放的，合法）。",
+      "③【residentNpcs.js 新增 getAllResidentNpcNames()】懒初始化缓存一份全据点驻场名字 Set，供 commitRound 过滤用。",
+      "验证：vitest 507/507 通过。",
+    ],
+  },
+  {
     codename: "切磋气血写回：打了多少血回主界面就多少血",
     time: "2026-07-27 22:20",
     notes: [

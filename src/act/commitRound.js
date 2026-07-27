@@ -8,6 +8,8 @@ import { mapDescriptionToGenParams } from "../npcDescriptionMapping.js";
 import { ensureNpcCombatData } from "../npcGeneration.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部注释）
 import { patchCombatData, materializeNpc } from "../roomNpcs.js";
+import { getAllResidentNpcNames } from "../residentNpcs.js";
+import { COMPANION_SLOTS } from "../companion.js";
 
 import { makeItemSmart } from "../items/catalog.js";
 import { makeItem, QUALITY } from "../equipment.js";
@@ -156,6 +158,19 @@ export function commitRound(d) {
   // d.narrativeText 已在上面按模式各自赋好（单调用=d.p.output 拼接，双调用=d.rawFull 散文），
   // 不要在这里重新从 d.p.output 取——那样双调用会拿到空串，新面孔全部退化成吃 luck 兜底。
   if (d.p.room && Array.isArray(d.p.room.npcs)) {
+    // 幽灵NPC过滤：AI叙事里提到背景人物（"远处狼嚎"）或队友（雪豹跟在身边），
+    // 提取层会把这些名字塞进 room.npcs。驻场NPC有固定归属据点，不该在别处被
+    // AI凭空刷出来（刷出来还吃 mapDescriptionToGenParams 退化成绿袍）；队友
+    // 走 companionState 独立管理，更不该变成 room.npcs 里的一个路人。
+    const _residentNames = getAllResidentNpcNames();
+    const _companionNames = new Set(COMPANION_SLOTS.map(s => s.label));
+    const _currentNames = new Set((d.room.npcs || []).map(n => n.name));
+    d.p.room.npcs = d.p.room.npcs.filter(n => {
+      if (!n?.name) return false;
+      if (_companionNames.has(n.name) || n.name.includes("雪豹")) return false;
+      if (_residentNames.has(n.name) && !_currentNames.has(n.name)) return false;
+      return true;
+    });
     d.p.room.npcs = d.p.room.npcs.map(n => {
       const existing = d.room.npcs.find(o => o.name === n.name);
       if (existing?.carriedItems) {

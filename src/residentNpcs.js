@@ -706,3 +706,14 @@ export function getAllResidentNpcLore() {
   }
   return result;
 }
+
+let _allResidentNames = null;
+export function getAllResidentNpcNames() {
+  if (!_allResidentNames) {
+    _allResidentNames = new Set();
+    for (const npcs of Object.values(RESIDENT_NPCS)) {
+      for (const npc of npcs) _allResidentNames.add(npc.name);
+    }
+  }
+  return _allResidentNames;
+}
