@@ -30,6 +30,7 @@ export default function LeftPanel({
   setShowPortraitManager,
   mapView, setMapView, mapBig, setMapBig,
   mapData, questProgress, flags, inv,
+  inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind,
   loading, act, autoTravelTo,
   uiGreen, uiPink,
 }) {
@@ -59,6 +60,21 @@ export default function LeftPanel({
           {room.exits.map(e => (<span key={e} style={{ color: zoneTheme.accent }}>{DIRS[e] || e}</span>))}
           {room.exits.length === 0 && <span style={{ color: zoneTheme.textDim }}>无路可走</span>}
         </div>
+
+        {/* 心灵之海入口。只在"站在自己的安全屋里 + 已被玄女点破"时出现——
+            往人心里走不是往地图上走，得有个能关上门的地方。在海里时这里变成出口。 */}
+        {(inSeaOfMind || seaGate?.ok) && (
+          <div
+            onClick={inSeaOfMind ? leaveSeaOfMind : enterSeaOfMind}
+            style={{
+              marginBottom: 14, padding: "7px 10px", borderRadius: 4, cursor: "pointer", userSelect: "none",
+              border: "1px solid #b8942a", background: "rgba(184,148,42,0.10)",
+              color: "#e8c86a", fontSize: "11.5px", textAlign: "center",
+            }}
+          >
+            {inSeaOfMind ? "⟡ 睁开眼，回去" : "⟡ 闭上眼，进心灵之海"}
+          </div>
+        )}
 
         {(() => {
           const all = getBuildingsForLocation(room.name);

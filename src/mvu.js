@@ -8,11 +8,39 @@
 // ---- 变量树的初始状态 ----
 // 只给一个空壳，具体长出什么（哪些NPC、哪些属性）完全由游戏过程中
 // AI 的 _.set 指令动态填充。
+// 旁白个人线的变量。挂在 世界.旁白 下，随存档走。
+// 【为什么要 ensure 而不是只在 initialVarTree 里给初值】老存档的 varTree 里没有这一支，
+// 直接 varTree.世界.旁白.seaUnlocked 会炸；读的地方一律走 narratorVars() 兜底。
+export function initialNarratorVars() {
+  return {
+    seaUnlocked: false,   // 心灵之海是否已解锁（玄女点破之后置真）
+    metXuannu: false,     // 是否已被玄女点破过（防止引导重复播）
+    seaVisited: false,    // 是否已经进过一次心灵之海
+    questStage: 0,        // 个人线阶段，0=未开始
+  };
+}
+
+// 安全读取 世界.旁白.*，老存档缺这一支时返回默认值。
+export function narratorVars(varTree) {
+  return { ...initialNarratorVars(), ...(varTree?.世界?.旁白 || {}) };
+}
+
+// 写入 世界.旁白 的若干字段，返回新的 varTree（不就地改）。
+export function setNarratorVars(varTree, patch) {
+  const next = JSON.parse(JSON.stringify(varTree || {}));
+  if (!next.世界) next.世界 = { 威望: 0 };
+  next.世界.旁白 = { ...initialNarratorVars(), ...(next.世界.旁白 || {}), ...patch };
+  return next;
+}
+
 export function initialVarTree() {
   return {
     角色: {},   // 角色.NPC名.属性名 = 值，例如 角色.呼延雪.好感度
-    世界: { 威望: 0 },   // 世界.威望是全局单一的总声望值（做好事+，做坏事-，见下方裁剪规则），
-                          // 其余"世界.任意状态"仍然可以自由声明，只有"威望"这一个字段有专门的初始值和裁剪
+    世界: { 威望: 0, 旁白: initialNarratorVars() },
+                          // 世界.威望是全局单一的总声望值（做好事+，做坏事-，见下方裁剪规则），
+                          // 其余"世界.任意状态"仍然可以自由声明，只有"威望"这一个字段有专门的初始值和裁剪。
+                          // 世界.旁白.* 是旁白个人线的进度（见 initialNarratorVars）——挂在变量树里
+                          // 而不是另起一套 state，是为了跟着存档走、也能被 <mvu> 指令读写。
     主角: {},   // 主角.任意属性
   };
 }

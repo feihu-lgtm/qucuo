@@ -97,6 +97,8 @@ import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
 import { invHasItemNamed } from "./safeHouse.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
+import { SEA_OF_MIND, shouldTriggerXuannu, buildXuannuScene, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
+import { narratorVars, setNarratorVars } from "./mvu.js";
 import { AUCTION_LOT } from "./auction.js";
 import { seededRand } from "./utils/seededRandom.js";
 import { getResidentNpcs, getAllResidentNpcLore } from "./residentNpcs.js";
@@ -3826,6 +3828,62 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     act(`在茶馆花${cost}两，听掌柜低声说了个传闻：「${rumor}」`, [], { settle: true });
   }, [char, addLog, act]);
 
+  // ── 心灵之海 · 玄女点破 ──
+  // 触发条件见 seaOfMind.shouldTriggerXuannu：好感≥90 + 已跟玄女说过话。
+  // "说过话"直接复用「对话即认识」的结果（commitRound 里 talkTarget/respondedNpcs
+  // 会把人标记为已认识），不另造一套"聊过没"的记账。
+  // 用 effect 而不是塞进对话结算里，是因为两个条件可能任意顺序满足：先攒够好感再去
+  // 见她、或先见过她后来才攒够，两条路都要能触发。
+  const seaReturnRef = useRef(null); // 进海之前站在哪，出来要送回去
+  useEffect(() => {
+    if (!shouldTriggerXuannu({
+      affection: narrator.affection,
+      varTree: varTreeRef.current,
+      knownNames: varTreeRef.current.世界?.已认识人物 || [],
+    })) return;
+    setVarTree(prev => setNarratorVars(prev, { metXuannu: true, seaUnlocked: true, questStage: 1 }));
+    setFlags(f => (f.includes(SEA_OF_MIND.flag) ? f : [...f, SEA_OF_MIND.flag]));
+    addLog(buildXuannuScene(char.name || "你"));
+    jotNote({
+      text: `雪山派后山温泉，玄女说旁白"不是这里的人""她在等"，让我找个自己的地方去她心里看看。`,
+      owner: [{ name: "玄女", via: VIA.FIRSTHAND }, { name: "旁白", via: VIA.FIRSTHAND }],
+      source: NOTE_SOURCE.NARRATIVE,
+    });
+  }, [narrator.affection, varTree, char.name, addLog, jotNote]);
+
+  // 进心灵之海：必须站在自己的安全屋里。这是一次纯前端传送，不调 AI、不消耗回合。
+  const enterSeaOfMind = useCallback(() => {
+    const gate = canEnterSea({
+      flags, varTree: varTreeRef.current,
+      districtName: room.name, innerRoomName,
+    });
+    if (!gate.ok) { addLog([{ t: "sys", text: `  ${describeSeaGate(gate.reason)}` }]); return; }
+    seaReturnRef.current = { room: room.name, inner: innerRoomName };
+    const node = QUCUO_MAP[SEA_OF_MIND.district];
+    const v = narratorVars(varTreeRef.current);
+    if (!v.seaVisited) addLog([{ t: "narrator", text: seaEntryHint(gate.house.label) }]);
+    addLog([
+      { t: "room", text: "" },
+      { t: "desc", text: "  你闭上眼。再睁开时，脚下是白色的沙。太阳正在落山——永远在落山。" },
+    ]);
+    setRoom({ name: SEA_OF_MIND.district, desc: node.desc, exits: [], npcs: [], items: [] });
+    setTimeout(() => setInnerRoomName(SEA_OF_MIND.anchor), 0);
+    setVarTree(prev => setNarratorVars(prev, { seaVisited: true }));
+  }, [flags, room.name, innerRoomName, addLog]);
+
+  // 出心灵之海：回到进来之前站的地方。
+  const leaveSeaOfMind = useCallback(() => {
+    const back = seaReturnRef.current || { room: "鱼定村", inner: null };
+    const node = QUCUO_MAP[back.room];
+    if (!node) { addLog([{ t: "sys", text: "  回不去了……？" }]); return; }
+    addLog([{ t: "desc", text: "  海浪声退远了。你睁开眼，还在原来那间屋子里，门关着，天光未变。" }]);
+    setRoom({ name: back.room, desc: node.desc, exits: Object.keys(node.exits), npcs: [], items: [] });
+    setTimeout(() => setInnerRoomName(back.inner), 0);
+  }, [addLog]);
+
+  const inSeaOfMind = room.name === SEA_OF_MIND.district;
+  const seaGate = canEnterSea({ flags, varTree, districtName: room.name, innerRoomName });
+
   // ── 拜入雪山派 ──
   // 系统这边一次做完：扣束脩、发弟子令牌（同时是别院钥匙）、写身份 flag、
   // 标记认识何雨谢。AI 只负责把这件既成事实写成一段像样的入门叙事。
@@ -4047,6 +4105,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           setShowPortraitManager={setShowPortraitManager}
           mapView={mapView} setMapView={setMapView} mapBig={mapBig} setMapBig={setMapBig}
           mapData={mapData} questProgress={questProgress} flags={flags} inv={inv}
+          inSeaOfMind={inSeaOfMind} seaGate={seaGate} enterSeaOfMind={enterSeaOfMind} leaveSeaOfMind={leaveSeaOfMind}
           loading={loading} act={act} autoTravelTo={autoTravelTo}
           uiGreen={uiGreen} uiPink={uiPink}
         />
