@@ -6,7 +6,17 @@
 import React from "react";
 import { QUALITY_COLOR, discountedBuyPrice } from "./equipment.js";
 
-export default function TradingScreen({ shopName, shopItems, playerInv, playerMoney, playerWit = 5, onBuy, onSell, onClose, zoneTheme, inline, onInspect }) {
+export default function TradingScreen({ shopName, shopItems, playerInv, playerMoney, playerWit = 5, onBuy, onSell, onClose, zoneTheme, inline, onInspect,
+  // 货币名。雪山派门派商坊用功德（QUCUO_SHOPS 里 currency:"karma"），调用方
+  // 传进来的 playerMoney 与各件的 buyPrice 都是功德值——但此前本组件五处
+  // 都把单位写死成"银两/两"，于是界面显示「银两：37 两」，玩家一对自己的实际
+  // 银两就发现对不上（实测反馈）。数值一直是对的，错的只是这几个字。
+  currencyName = "银两", currencyUnit = "两",
+  // 能不能卖。功德商店只出不进（CenterPanel 的 onSell 里 isKarma 直接 return），
+  // 但界面此前照样渲染整个"我的物品/卖出"半边，还把售价标成功德单位——
+  // 玩家点了没反应，看着像坏了。整半边隐掉，并把可买区铺满。
+  canSell = true,
+}) {
   const sellableItems = playerInv.filter(i => typeof i === "object" && i.sellPrice > 0);
 
   const outer = inline
@@ -22,11 +32,12 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
       <div style={inner}>
         <div style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div style={{ fontSize: 14, color: zoneTheme.text || "#c8bfa0" }}>{shopName || "交易"}</div>
-          <div style={{ fontSize: 12, color: "#e8c468" }}>银两：{playerMoney || 0} 两</div>
+          <div style={{ fontSize: 12, color: "#e8c468" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
         </div>
 
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          {/* 左侧：玩家物品，可卖 */}
+          {/* 左侧：玩家物品，可卖。功德商店不收货，整半边不渲染 */}
+          {canSell && (
           <div style={{ flex: 1, padding: 12, overflowY: "auto", borderRight: `1px solid ${zoneTheme.border}` }}>
             <div style={{ fontSize: 11, color: zoneTheme.accentDim, marginBottom: 8 }}>我的物品</div>
             {sellableItems.length === 0 && (
@@ -43,7 +54,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                     style={{ color: QUALITY_COLOR[item.quality] || "#c8bfa0", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                   >{item.name}</span>
                   {item.equipped && <span style={{ color: "#5a8a5a", marginLeft: 4 }}>[已装备]</span>}
-                  <span style={{ color: "#8a8a7a", marginLeft: 6 }}>售 {item.sellPrice}两</span>
+                  <span style={{ color: "#8a8a7a", marginLeft: 6 }}>售 {item.sellPrice}{currencyUnit}</span>
                 </div>
                 <span
                   onClick={() => !item.equipped && onSell(item)}
@@ -58,6 +69,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
               </div>
             ))}
           </div>
+          )}
 
           {/* 右侧：商店物品，可买 */}
           <div style={{ flex: 1, padding: 12, overflowY: "auto" }}>
@@ -78,7 +90,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                       style={{ color: QUALITY_COLOR[item.quality] || "#c8bfa0", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                     >{item.name}</span>
                     {discounted && <span style={{ color: "#5a5a4a", marginLeft: 6, textDecoration: "line-through" }}>{item.buyPrice}</span>}
-                    <span style={{ color: discounted ? "#8ac48a" : "#8a8a7a", marginLeft: 6 }}>{payPrice}两</span>
+                    <span style={{ color: discounted ? "#8ac48a" : "#8a8a7a", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
                   </div>
                   <span
                     onClick={() => canAfford && onBuy({ ...item, buyPrice: payPrice })}
@@ -88,7 +100,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                       color: canAfford ? "#6ec6c6" : "#5a5a4a",
                       border: `1px solid ${canAfford ? "#1a3a3a" : "#2a2a2a"}`,
                     }}
-                    title={canAfford ? "购买" : "银两不足"}
+                    title={canAfford ? "购买" : `${currencyName}不足`}
                   >购买</span>
                 </div>
               );

@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修雪山派商坊「显示值和实际银两不一样」：功德结算却把单位写死成银两",
+    time: "2026-07-29 05:40",
+    notes: [
+      "①【数值一直是对的，错的是几个字】雪山派门派商坊用**功德**结算（QUCUO_SHOPS 里 currency:\"karma\"），CenterPanel 也确实把 dao.karma 当 playerMoney 传进去、买的时候扣的也是 karma。但 TradingScreen 里**五处把单位写死成「银两/两」**，于是界面顶上显示「银两：37 两」——玩家一对自己的实际银两就发现对不上。这类「数值对、字错了」的 bug 特别容易让人怀疑是结算坏了。已把货币名改成传参（currencyName/currencyUnit），门派商坊传「功德/点」。",
+      "②【顺带修一处点了没反应】功德商店只出不进（CenterPanel 的 onSell 里 isKarma 直接 return），但界面照样渲染整个「我的物品/卖出」半边，还把售价标成功德单位。玩家点卖出没任何反应，看着就像坏了。新增 canSell 开关，功德店整半边不渲染，可买区铺满。",
+      "③【为什么这个 bug 能活到玩家反馈】它不影响任何数值、不抛错、测试也测不到（没有一条测试会去读界面文案）。只有真的站到那个柜台前、并且注意到「我明明只有 12 两却显示 37 两」才会发现。已加测试从两侧钉住：TradingScreen 渲染处不许再出现写死的「两」字面量；CenterPanel 必须按 isKarma 传货币名与 canSell，且 playerMoney 与扣款必须用同一种货币（后者是数值侧，本来就对，钉住是防以后改坏）。",
+      "④【文件树守卫第三次拦住漂移】新增测试文件后它又立刻失败（未登记 + 统计行过期），补登记后恢复。",
+      "验证：npm run verify 通过（vitest 477/477 + pages 构建）。",
+    ],
+  },
+  {
     codename: "修「打造装备只有基础攻防、加根骨加气运都没加上」：makeItem 的解构参数漏了 effect/sixDim，传进来就被丢掉",
     time: "2026-07-29 05:10",
     notes: [
