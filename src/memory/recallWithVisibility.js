@@ -23,8 +23,7 @@ export async function recallWithVisibility({
   focusEntities = [],
   unlockedFlags = [],
   presentNames = [],   // 当前在场/在语境里的人名（room.npcs + 对话对象 + 旁白等）——owner 私有召回门用
-  topK = 5,
-}) {
+  topK = 5,}) {
   if (!embeddingReady(cfg)) return null; // 没开/没配 → 彻底跳过召回
 
   try {
@@ -48,7 +47,9 @@ export async function recallWithVisibility({
     }
 
     // 3. 召回
-    const hits = recall({ memories: usable, qIntentVec, qContextVec, focusEntities, topK });
+    // intentText/contextText 供词法路用（见 lexical.js）：向量最弱的地方是专有名词，
+    // 不传的话退化成纯向量双路，明写着"赫连铸"的纸条会因语义分不足被当噪声丢掉。
+    const hits = recall({ memories: usable, qIntentVec, qContextVec, focusEntities, topK, intentText: queryText || "", contextText: contextText || "" });
 
     // 4. 可见性切分（owner 三态私有门，逻辑抽在 note.js 的 noteVisibleTo 纯函数里）
     // · owner 空 = 公共见闻，恒可见。

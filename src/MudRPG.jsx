@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { QUCUO_PRESET } from "./presets/qucuo.js";
 import {
-  NNPC_STAGE, initialNarratorState, isInSea,
+  NNPC_STAGE, initialNarratorState, isInSea, migrateNarratorState,
   narratorVoicePrompt, affectionLabel, buildNarratorWhisperContext,
   narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
 } from "./narrator.js";
@@ -97,7 +97,7 @@ import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
 import { invHasItemNamed, SAFE_HOUSES } from "./safeHouse.js";
 import { buildHistBlock, histBlockSavings } from "./memory/histWindow.js";
-import { tallyAdd, describeTodayForAI, describeDayForSummary } from "./memory/tally.js";
+import { tallyAdd, describeTodayForAI, describeDayForSummary, describeTallyForWhisper } from "./memory/tally.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
 import { SEA_OF_MIND, shouldTriggerXuannu, buildXuannuScene, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
 import {
@@ -430,6 +430,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   useEffect(() => {
     if (!playedThisSessionRef.current) return; // 还没玩过：绝不覆盖旧档
+    // 必须确有回合完成过。roundsSinceLastSaveRef 只在 commitRound（真走完一轮）自增、
+    // 存档后归零；varTree 等状态被别的东西碰一下不算一轮。
+    // 【为什么补这条】起居注上线后，不走 AI 的动作（内层移动等）也会写 varTree，
+    // 而 varTree 在本 effect 的 deps 里。autoSaveEvery=0（每回合都存）时下面那道
+    // 区间守卫因 every>0 为假而整个跳过，于是每走一步内层都触发一次全量快照+落盘。
+    if (roundsSinceLastSaveRef.current <= 0) return;
     const every = Math.max(0, Number(apiCfg.autoSaveEvery ?? 5));
     if (every > 0 && roundsSinceLastSaveRef.current < every) return; // 间隔未到
     const snapshot = buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState });
@@ -461,7 +467,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setSkills(snap.skills); setInv(snap.inv);
     setLog(snap.log); setConvo(snap.convo); setExp(snap.exp); setPot(snap.pot);
     setFlags(snap.flags); setMapData(snap.mapData); setTime(snap.time);
-    setNarrator(snap.narrator || initialNarratorState());
+    // 老档迁移：旧 CRASHED 阶段（告白→宕机那条已废链路）会把文风永久锁在
+    // "干瘪空壳"上，好感度再高也不变、旁白线也走不出来。归一到当前阶段定义。
+    setNarrator(migrateNarratorState(snap.narrator));
     setVarTree(snap.varTree || initialVarTree());
     setQuestProgress(snap.questProgress || {});
     setClaimedMilestones(new Set(snap.claimedMilestones || []));
@@ -1282,9 +1290,16 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 只留：创伤线阶段 prompt + 向量召回（她记得你们一路的事）+ 篇幅。
       const inSeaNow = isInSea(narrator.stage) && room.name === SEA_OF_MIND.district;
       const seaVars = narratorVars(varTreeRef.current);
+      // 起居注进私聊：她本来就是"记得游戏里发生一切"的角色，聊天时却不知道你今天
+      // 干了什么很奇怪。累计只在第六档给——那时账本是她在记（见 tally 里的注释）。
+      // 海里那条路不给：她此刻蜷在沙发上，谁还管你今天走了几步路。
+      const tallyBlock = inSeaNow ? "" : describeTallyForWhisper(
+        varTreeRef.current.世界?.起居注, timeRef.current,
+        { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
+      );
       const sys = inSeaNow
         ? `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: NNPC_STAGE })}${recallBlock}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`
-        : `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
+        : `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
 
       // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
       // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
@@ -4017,7 +4032,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     setVarTree(prev => setNarratorVars(prev, { portalOpened: true, questStage: 5 }));
     setFlags(f => (f.includes("传送门已开") ? f : [...f, "传送门已开"]));
     addLog(SCENE_PORTAL_OPEN);
-  }, [room.name, addLog]);
+    // deps 必须带 narrator.stage：玩家通常是**在海里**哄好她的，那一刻 room.name
+    // 没有变化，只有 stage 从 SEA_CRASHED 变成 RESOLVED。此前 deps 只有 room.name，
+    // effect 不会重跑 → 门不开，玩家得先离开心灵之海再进来一次才触发，
+    // 而剧情上她刚说完"你居然真的没走"，这时候让玩家出去再进来非常出戏。
+  }, [room.name, narrator.stage, addLog]);
 
   // ── 终章 · 东京见证 → 自动回小屋 + 入队 ──
   // 这一段是见证不是探索：进去、看完、送回家。不给第二次机会。

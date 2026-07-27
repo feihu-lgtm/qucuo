@@ -37,9 +37,26 @@ export const initialNarratorState = () => ({
 export function stageFromAffection(current, affection, confessed) {
   // 创伤线的三个阶段由 narratorQuest 那边的事件推进，好感度不得把它们顶回去
   if (isInSea(current) || current === NNPC_STAGE.RESOLVED) return current;
-  if (current === NNPC_STAGE.CRASHED) return NNPC_STAGE.CRASHED;
+  // 旧 CRASHED（告白→宕机→她拔线走了）已废：设计稿明确说没有这条链路。
+  // 【为什么必须在这里归一】老存档里可能真的停在这个阶段，而它的文风分支是
+  // "只剩系统重启后的干瘪应答、绝不承认自己是谁"——玩家读老档进来会永远卡在
+  // 那个空壳里：好感度再高也不变文风、玄女那条线也走不到（她的触发不看 stage，
+  // 但走完之后 narratorVoicePrompt 仍会被 CRASHED 分支截住）。一律归回 FLIRTING，
+  // 让好感度重新驱动文风。confessed 的老档同理落到 CHEAT 而不是死在 CRASHED。
+  if (current === NNPC_STAGE.CRASHED) return confessed ? NNPC_STAGE.CHEAT : NNPC_STAGE.FLIRTING;
   if (confessed) return NNPC_STAGE.CHEAT;
   return NNPC_STAGE.FLIRTING;
+}
+
+// 老存档迁移：把 narrator 状态归一到当前这套阶段定义。
+// 读档时调用一次即可（stageFromAffection 只在好感度变动时被调，
+// 若玩家读档后一直不跟她说话，stage 就一直是旧值）。
+export function migrateNarratorState(old) {
+  const base = initialNarratorState();
+  if (!old || typeof old !== "object") return base;
+  const merged = { ...base, ...old };
+  merged.stage = stageFromAffection(merged.stage, merged.affection, merged.confessed);
+  return merged;
 }
 
 // 旁白的文风调制说明——同一段文字会拼进【主引擎叙事 prompt】和【私聊 prompt】，

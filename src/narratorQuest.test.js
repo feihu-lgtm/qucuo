@@ -93,7 +93,9 @@ describe("三个心结 + 一个内核", () => {
   });
 
   it("顺序不可跳：心防再低也得按序来", () => {
-    const deep = C({ verbal: 6, hug: 3, kiss: 3 }); // level 0
+    // 注意 comfort 要把三条心结各自的 needs 都满足（verbal/soothing/hug），
+    // 否则卡在方式不对上——那是另一条测试的事，这条只验顺序。
+    const deep = C({ verbal: 6, food: 2, hug: 3, kiss: 3 }); // level 0 且 needs 全满
     expect(availableKnot(deep, []).key).toBe("hebe");
     expect(availableKnot(deep, ["hebe"]).key).toBe("corner");
     expect(availableKnot(deep, ["hebe", "corner"]).key).toBe("doll");
@@ -334,5 +336,102 @@ describe("明日香入队 · 单槽互斥", () => {
   it("只解锁了雪豹时 unlockedCompanions 不含明日香", () => {
     const cs = unlockSnowLeopard(initCompanionState());
     expect(unlockedCompanions(cs).map(s => s.key)).toEqual(["snowLeopard"]);
+  });
+});
+
+// ── 0728 bug 修复的回归 ────────────────────────────────────────────────
+import { needsMet } from "./narratorQuest.js";
+import { migrateNarratorState } from "./narrator.js";
+import { describeTallyForWhisper } from "./memory/tally.js";
+import { emptyTally, tallyAdd } from "./memory/tally.js";
+
+describe("修：光靠说话不能走完全程（否则五个安抚动作形同虚设）", () => {
+  const C = (o) => ({ ...emptyComfort(), ...o });
+
+  it("说话刷到 level0 也只开得了第一条", () => {
+    const only = C({ verbal: 30 });
+    expect(defenseLevelOf(only)).toBe(0);              // 心防确实到底了
+    expect(availableKnot(only, []).key).toBe("hebe");  // 第一条开
+    expect(availableKnot(only, ["hebe"])).toBeNull();  // 第二条不开——方式不对
+  });
+
+  it("第二条要她吃过东西或吃过药（药/食通算 soothing）", () => {
+    const base = C({ verbal: 30 });
+    expect(availableKnot({ ...base, food: 1 }, ["hebe"]).key).toBe("corner");
+    expect(availableKnot({ ...base, medication: 1 }, ["hebe"]).key).toBe("corner");
+  });
+
+  it("第三条（母亲）必须抱过她——她凭什么跟你说这个", () => {
+    const fed = C({ verbal: 30, food: 1 });
+    expect(availableKnot(fed, ["hebe", "corner"])).toBeNull();
+    expect(availableKnot({ ...fed, hug: 1 }, ["hebe", "corner"]).key).toBe("doll");
+  });
+
+  it("needs 只要最低限，不逼玩家凑数", () => {
+    expect(needsMet({ verbal: 2 }, C({ verbal: 2 }))).toBe(true);
+    expect(needsMet({ verbal: 2 }, C({ verbal: 1 }))).toBe(false);
+    expect(needsMet(null, C({}))).toBe(true);
+  });
+
+  it("整条线仍然走得通（没把自己锁死）", () => {
+    let c = C({}), knots = [], guard = 0;
+    const inv = ["蛋糕", "抗焦虑药"];
+    while (!canResolve(c, knots) && guard++ < 80) {
+      const doable = Object.entries(COMFORT_ACTIONS)
+        .filter(([k]) => canComfort(k, c, inv).ok)
+        .sort((a, b) => b[1].weight - a[1].weight);
+      const [key] = doable[0];
+      c = { ...c, [key]: c[key] + 1 };
+      const k = availableKnot(c, knots);
+      if (k) knots.push(k.key);
+    }
+    expect(canResolve(c, knots)).toBe(true);
+    expect(knots).toEqual(["hebe", "corner", "doll"]);
+    expect(guard).toBeLessThan(80);
+  });
+});
+
+describe("修：老档的旧 CRASHED 阶段会把文风永久锁在空壳里", () => {
+  const S = NNPC_STAGE;
+  it("未告白的归 FLIRTING，让好感度重新驱动文风", () => {
+    expect(migrateNarratorState({ stage: S.CRASHED, affection: 95 }).stage).toBe(S.FLIRTING);
+  });
+  it("已告白的归 CHEAT 而不是死在 CRASHED", () => {
+    expect(migrateNarratorState({ stage: S.CRASHED, affection: 95, confessed: true }).stage).toBe(S.CHEAT);
+  });
+  it("创伤线中的档一律不动", () => {
+    for (const st of [S.SPIRIT, S.SEA_CRASHED, S.RESOLVED]) {
+      expect(migrateNarratorState({ stage: st, affection: 95 }).stage).toBe(st);
+    }
+  });
+  it("空/脏档给初始态不炸", () => {
+    expect(migrateNarratorState(null).stage).toBe(S.NORMAL);
+    expect(migrateNarratorState("abc").stage).toBe(S.NORMAL);
+  });
+  it("归一后第五档文风回来了（此前会被 CRASHED 分支截住）", () => {
+    const m = migrateNarratorState({ stage: S.CRASHED, affection: 95 });
+    expect(narratorVoicePrompt(m)).toContain("不要看我");
+  });
+});
+
+describe("起居注进私聊", () => {
+  const t = (() => {
+    let x = emptyTally();
+    for (let i = 0; i < 4; i++) x = tallyAdd(x, "innerMove", 5);
+    return x;
+  })();
+  it("默认只给今日，不给累计", () => {
+    const s = describeTallyForWhisper(t, 5);
+    expect(s).toContain("今日行迹");
+    expect(s).not.toContain("累计行迹");
+  });
+  it("第六档才给累计（那时账本是她在记）", () => {
+    expect(describeTallyForWhisper(t, 5, { includeLifetime: true })).toContain("累计行迹");
+  });
+  it("交代用法：可自然提起但不要生硬报数", () => {
+    expect(describeTallyForWhisper(t, 5)).toContain("不要生硬报数");
+  });
+  it("什么都没干时给空串，不注入噪音", () => {
+    expect(describeTallyForWhisper(emptyTally(), 5)).toBe("");
   });
 });

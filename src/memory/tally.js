@@ -116,3 +116,26 @@ export function describeLifetime(tally) {
 export function tallyTotals(tally, time) {
   return { today: sumOf(tallyToday(tally, time)), lifetime: sumOf(tallyLifetime(tally)) };
 }
+
+// 给旁白私聊看的一段：今日行迹 + （第六档才给的）累计。
+// 【为什么私聊也要给】她跟你聊天却不知道你今天干了什么，是很奇怪的——
+// 她本来就是那个"记得游戏里发生一切"的角色。此前只有主叙事的 ctx 里有这一行，
+// 私聊那条路完全没有，于是问她"我今天干了啥"她只能靠对话历史猜。
+//
+// 【为什么累计只在第六档给】走完旁白线之后叙事体裁变成"你俩合写的日记"
+// （TONE_BY_TIER.unmasked），账本就是她在记——那时候累计数字是她的素材：
+// "这笨蛋到今天走了四百段路，一次都没记住路。"
+// 之前的档位她还只是个说书人，报累计没有立场，且每轮读年鉴纯属浪费。
+export function describeTallyForWhisper(tally, time, { includeLifetime = false } = {}) {
+  const today = describeTodayForAI(tally, time, 6).trim();
+  const parts = [];
+  if (today) parts.push(today);
+  if (includeLifetime) {
+    const rows = describeLifetime(tally).slice(0, 6);
+    if (rows.length) {
+      parts.push(`[累计行迹] ${rows.map(r => `${r.label}${r.count}次`).join("、")}`);
+    }
+  }
+  if (!parts.length) return "";
+  return "\n\n" + parts.join("\n") + "\n（这些是你替他记的账，聊到相关处可自然提起，不要生硬报数）";
+}
