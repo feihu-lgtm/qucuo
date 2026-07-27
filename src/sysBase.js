@@ -5,6 +5,7 @@ import { getActivePreset } from "./PresetManager.jsx";
 import { assemblePrompt } from "./presetSystem.js";
 import { gateScenario } from "./worldbook.js";
 import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL, buildTalkItemRule } from "./enginePrompts.js";
+import { buildSeaOfMindRule } from "./seaOfMind.js";
 import { makeBlock } from "./tavernMapping.js";
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
@@ -31,6 +32,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   // 但对白里确实可能有物品往来——改挂一条轻规矩，让模型只从"玩家背包"和 ctx 里
   // 那位 NPC 的〔身携:…〕两个来源取物，不许现编。见 enginePrompts.TALK_ITEM_RULE。
   const wantTalkItemRule = scope === "talk";
+  // 心灵之海（绿灯）：玩家真的在海里时才注入那套场景铁律。不在时一个字不发——
+  // 这段挺长，寻常在江湖上走的轮次读它纯属浪费，且会诱导 AI 提起不该提的地方。
+  const inSeaOfMind = !!opts.inSeaOfMind;
   const wantIsolation = scope !== "move" && !isSettle;
   // MVU（绿灯·批二）：只有"这一轮可能改好感/变量"才挂——即场上真有人。
   // 独自赶路、荒野探索、无人结算这类轮次灭灯，每轮省 717 字；
@@ -147,7 +151,7 @@ ${MVU_SYSTEM_INSTRUCTIONS}` : ""}`;
     makeBlock("charDescription", `玩家角色：${playerName}。系统会维护气血、内外功、物品等状态；你只需叙事，不要擅自修改状态。`),
     makeBlock("charPersonality", `旁白/说书人的语气由「Main Prompt」中的声线控制，保持统一。`),
     makeBlock("scenario", gated.text),
-    makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantTalkItemRule ? `${buildTalkItemRule(narrativeOnly)}\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
+    makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantTalkItemRule ? `${buildTalkItemRule(narrativeOnly)}\n` : ""}${inSeaOfMind ? `${buildSeaOfMindRule()}\n\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
     makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是这个世界的说书人/Gamemaster。`),
     makeBlock("authorsNote", ""),
     makeBlock("exampleStart", "<START>"),

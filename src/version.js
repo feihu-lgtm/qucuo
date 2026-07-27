@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "全部图片转 WebP（100MB→10.6MB，省89%）；审计 sys 组装与 MVU 接线，补上心灵之海的场景铁律",
+    time: "2026-07-28 02:40",
+    notes: [
+      "①【图片全转 WebP】126 张 png/jpg 转 webp，99.9MB→10.6MB（省 89%），dist 从 ~102MB 降到 13MB。favicon 保持原格式不动（浏览器兼容性，且体积本来就小）。风险不在转换而在漏改引用——图片路径散在静态 import、运行时拼接模板（如 bidders/full/${name}.png）、index.html 三处，共改 83 处，改完写脚本全量反查\"引用了但磁盘上没有\"，确认零残留。",
+      "②【顺带发现一处既有坏引用】反查抓到 OpeningSequence 的 /intro-1.jpg 与 /intro-2.jpg——这两个文件仓库里从来没有过，改之前就是坏引用（<img> 也没有 onError 兜底，缺图会显示破图图标）。已还原成 .jpg 不动它：给一个我无法验证的、本就不存在的文件悄悄改扩展名是不对的。要么补图、要么加兜底，等作者定。",
+      "③【审计 sys 组装】用测试台真跑一遍各档组装，打出注入矩阵逐项核对。结论是接对了：MVU 说明书与禁写声明始终同进同出（禁写那条在 MVU_SYSTEM_INSTRUCTIONS 内部，不会走散），full有人✓/full无人✗（wantMvu 要求场上有人）/无人+GM✓（gm 强制）/move✗/settle无人✗/settle送礼与拜师✓/双调用散文✗（状态判定交提取层）——全部符合设计。文风也确认真的在随好感切（好感0→冷漠档、95→临界档）。13 位置落位正确：system 侧 main→worldInfoBefore→charDescription→charPersonality→scenario→worldInfoAfter→persona→authorsNote→exampleStart，user 侧 chatHistory→inChat→latestUser→phi(assistant)。",
+      "④【测试台 fixture 的坑】actCall.test.js 里写的是 narrator: initialNarratorState——传的是函数本身而不是调用结果，所以 affection 一直是 undefined。这正是之前黄金快照里\"好感度 undefined/100\"的来源。审计脚本里已按 initialNarratorState() 传，旧 fixture 留待后续统一（它现在测的是\"好感度缺失\"这个兜底路径，本身也有价值，不急着改）。",
+      "⑤【修缺口·AI 不知道心灵之海是什么】此前玩家进了海，AI 拿到的只有房间 desc，压根不知道这是旁白的内心而非曲措乡的某处：不知道这里只有她一个人、不知道江湖规矩不作数。结果它会照武侠说书人的惯性在海滩上安排路人、生出遭遇、发出物件，把一场一对一的内心戏写成又一段江湖见闻。新增 buildSeaOfMindRule()：说清这是内心不是地方、明令不许出现第三者、关掉发物件/遭遇/采集、房间出口写死不能新造，并交代\"这些现代物件她自己也叫不出名字\"（用说书人的眼睛看那台不亮的黑色方匣子，但不能直接说出电视/冰箱/药片）、调子要静、篇幅可以慢。",
+      "⑥【为什么不写进 scenario】scenario 是玩家可编辑的剧本总纲（设置面板能改、也能导入酒馆预设），引擎级场景约束混进用户内容里，用户换个预设就丢了。挂法同 TALK_ITEM_RULE：由 sysBase 在 worldInfoAfter(6号位) 按绿灯条件注入，只在玩家真的在海里时亮，别处一个字不发（这段挺长，寻常江湖轮次读它纯浪费，还会诱导 AI 提起不该提的地方）。",
+      "验证：vite build 通过（产物 126 张全 webp、非 favicon 的 png/jpg 零残留）、eslint no-undef 全清、vitest 189/189（新增 5 条钉心灵之海铁律的内容与注入门禁）。审计脚本跑完已删，其中的门禁断言转成了正式回归测试。",
+    ],
+  },
+  {
     codename: "玄女立绘接入；顺带修好\"内置九张立绘打进产物却一张都没显示过\"的半截重构",
     time: "2026-07-28 01:15",
     notes: [

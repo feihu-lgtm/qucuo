@@ -67,11 +67,11 @@ ${tone}
 // 她显形得越完整：声音→猫→猫穿上人的衣服→人影→真容。90 那一档同时也是
 // 「真容解锁」这个叙事节点，与心灵之海的开启门槛重合。
 export const AFFECTION_TIERS = [
-  { key: "cold",  min: 0,  label: "冷漠疏离", words: 100, portrait: "tier1.png", portraitLabel: "声之涟漪" },
-  { key: "faint", min: 20, label: "略有波动", words: 200, portrait: "tier2.png", portraitLabel: "水手服的猫" },
-  { key: "chat",  min: 45, label: "愿意闲聊", words: 300, portrait: "tier3.png", portraitLabel: "裹在黄裙里的猫" },
-  { key: "flirt", min: 70, label: "明显暧昧", words: 400, portrait: "tier4.png", portraitLabel: "人形剪影" },
-  { key: "awake", min: 90, label: "濒临觉醒", words: 500, portrait: "true.png",  portraitLabel: "真容" },
+  { key: "cold",  min: 0,  label: "冷漠疏离", words: 100, portrait: "tier1.webp", portraitLabel: "声之涟漪" },
+  { key: "faint", min: 20, label: "略有波动", words: 200, portrait: "tier2.webp", portraitLabel: "水手服的猫" },
+  { key: "chat",  min: 45, label: "愿意闲聊", words: 300, portrait: "tier3.webp", portraitLabel: "裹在黄裙里的猫" },
+  { key: "flirt", min: 70, label: "明显暧昧", words: 400, portrait: "tier4.webp", portraitLabel: "人形剪影" },
+  { key: "awake", min: 90, label: "濒临觉醒", words: 500, portrait: "true.webp",  portraitLabel: "真容" },
 ];
 
 export const DEFAULT_WHISPER_WORDS = AFFECTION_TIERS.reduce(

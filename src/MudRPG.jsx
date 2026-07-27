@@ -330,8 +330,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     try { return localStorage.getItem("qucuo_player_avatar") || ""; } catch { return ""; }
   });
   const AV_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/player/";
-  const genderAvatar = { "男": AV_BASE + "male.png", "女": AV_BASE + "female.png" };
-  const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.png");
+  const genderAvatar = { "男": AV_BASE + "male.webp", "女": AV_BASE + "female.webp" };
+  const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.webp");
   const [showQuestLog, setShowQuestLog] = useState(false);
   const [showLore, setShowLore] = useState(false); // 见闻录：小纸条+小账本可视化
   const [characterPageTarget, setCharacterPageTarget] = useState(null); // "面板"按钮指定直接打开谁的详情
@@ -2288,6 +2288,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         pickupJudgment: pickupJudgmentRef.current, cmd, convo, nsfwOn,
         ctx, recallBlock, reunionBlock, infoDomainBlock, hist, mainConvo,
         gambleTalkCtx: gambleTalkCtx.current, recallInfo,
+        inSeaOfMind: room.name === SEA_OF_MIND.district,
         settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo,
         _trace, addLog, setLog,
       });

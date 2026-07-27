@@ -54,18 +54,18 @@ describe("边界值：每个分界点上下各落对档", () => {
 
 describe("立绘跟着同一条梯子切", () => {
   it.each([
-    [0, "tier1.png"], [19, "tier1.png"],
-    [20, "tier2.png"], [44, "tier2.png"],
-    [45, "tier3.png"], [69, "tier3.png"],
-    [70, "tier4.png"], [89, "tier4.png"],
-    [90, "true.png"], [100, "true.png"],
+    [0, "tier1.webp"], [19, "tier1.webp"],
+    [20, "tier2.webp"], [44, "tier2.webp"],
+    [45, "tier3.webp"], [69, "tier3.webp"],
+    [70, "tier4.webp"], [89, "tier4.webp"],
+    [90, "true.webp"], [100, "true.webp"],
   ])("好感 %i → %s", (aff, file) => {
     expect(narratorPortraitUrl(aff)).toContain(`portraits/narrator/${file}`);
   });
 
   it("真容锁在 90，89 时还看不到", () => {
-    expect(narratorPortraitUrl(89)).not.toContain("true.png");
-    expect(narratorPortraitUrl(90)).toContain("true.png");
+    expect(narratorPortraitUrl(89)).not.toContain("true.webp");
+    expect(narratorPortraitUrl(90)).toContain("true.webp");
   });
 
   it("形态名跟着切", () => {

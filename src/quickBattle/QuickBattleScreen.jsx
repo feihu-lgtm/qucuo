@@ -20,7 +20,7 @@ import { explainMove, moveTypeGist } from "./moveExplainer.js";
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const S = (f) => `${BASE}stones/${f}`;
 const UI = (f) => `${BASE}stones/ui/${f}`;
-const PORTRAIT = (name) => `${BASE}bidders/full/${name}.png`;
+const PORTRAIT = (name) => `${BASE}bidders/full/${name}.webp`;
 
 // 品阶→档位色（复用装备那套 QUALITY_COLOR）；levelCap 0-5 直接映射 QUALITY 索引
 const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "#c8bfa0";
@@ -93,7 +93,7 @@ export default function QuickBattleScreen({ onExit }) {
   return (
     <div style={sx.root}>
       <style>{QB_CSS}</style>
-      <img src={S("bg_hall_night.png")} alt="" style={sx.bg} />
+      <img src={S("bg_hall_night.webp")} alt="" style={sx.bg} />
       <div style={sx.scrim} />
       {phase === "mode" && <ModePick onPick={(m) => { setMode(m); setPhase("pick"); }} onExit={onExit} />}
       {phase === "pick" && (
@@ -150,7 +150,7 @@ function WoodCard({ title, sub, onClick }) {
         transition: "transform .2s ease",
       }}
     >
-      <img src={UI("panel_big.png")} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
+      <img src={UI("panel_big.webp")} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
       <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8, padding: "0 8px" }}>
         <div style={{ fontSize: "clamp(20px, 6vw, 26px)", letterSpacing: 4, color: "#f0d090", fontWeight: "bold" }}>{title}</div>
         <div style={{ fontSize: "clamp(10px, 3vw, 12px)", color: "#c0a060", letterSpacing: 1, textAlign: "center" }}>{sub}</div>
@@ -427,7 +427,7 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
         <FighterPanel fighter={ally} side="ally" team={battle.allyTeam} curIdx={battle.allyIdx}
           hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toMe } : null} />
         <div className="qb-vs" style={sx.arenaVs}>
-          <img src={UI("burst.png")} alt="" style={{ width: 64, opacity: 0.7 }} />
+          <img src={UI("burst.webp")} alt="" style={{ width: 64, opacity: 0.7 }} />
           <div style={{ fontSize: 22, color: "#e0526a", fontWeight: "bold", letterSpacing: 2 }}>斗</div>
         </div>
         <FighterPanel fighter={foe} side="foe" team={battle.foeTeam} curIdx={battle.foeIdx}

@@ -43,9 +43,9 @@ function itemDistText(name) {
   return { kind: "shop", text: `${regions || "各地"} 的 ${shops || "店铺"} 有售` };
 }
 
-// 品阶 → 玉石图代号（对应 public/stones/jade_N_色_chun.png）
+// 品阶 → 玉石图代号（对应 public/stones/jade_N_色_chun.webp）
 const JADE_CODE = { 白: ["1", "bai"], 绿: ["2", "lv"], 蓝: ["3", "lan"], 紫: ["4", "zi"], 橙: ["5", "cheng"], 红: ["6", "hong"] };
-const jadeSrc = (q) => { const c = JADE_CODE[q]; return c ? S(`jade_${c[0]}_${c[1]}_chun.png`) : null; };
+const jadeSrc = (q) => { const c = JADE_CODE[q]; return c ? S(`jade_${c[0]}_${c[1]}_chun.webp`) : null; };
 
 // 物品类别筛选项：全部 + 四大类 + 两个特殊层（传说/神兵按 tags/标记区分）
 const CAT_FILTERS = [
@@ -108,12 +108,12 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
 
   const chipStyle = (on) => ({
     cursor: "pointer", padding: "3px 12px", fontSize: "12px", userSelect: "none",
-    backgroundImage: `url(${S("ui/bar_paper.png")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
+    backgroundImage: `url(${S("ui/bar_paper.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
     color: on ? "#5a2d08" : "#9a7a4a", fontWeight: on ? "bold" : "normal", opacity: on ? 1 : 0.6,
   });
   const tabStyle = (on) => ({
     cursor: "pointer", padding: "7px 26px", fontSize: "15px", border: "none",
-    backgroundImage: `url(${S("ui/bar_wood.png")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
+    backgroundImage: `url(${S("ui/bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
     color: on ? "#f0e0b0" : "#c8a86a", textShadow: on ? "0 1px 2px #000" : "none", opacity: on ? 1 : 0.55,
   });
 
@@ -126,7 +126,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
       <div
         style={{
           position: "relative", width: 760, maxWidth: "96vw", height: "88vh",
-          backgroundImage: `url(${S("ui/panel_big.png")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
+          backgroundImage: `url(${S("ui/panel_big.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
           padding: "42px 46px 40px", display: "flex", flexDirection: "column",
         }}
         onClick={e => e.stopPropagation()}
@@ -264,7 +264,7 @@ function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
           <span style={{ fontSize: 10, color: paperDim }}>{sk.type}</span>
           {typeof sk.price === "number" && (
             <span style={{ fontSize: 11, color: "#a05a10" }}>
-              <img src={S("ui/ingot.png")} alt="" style={{ width: 13, verticalAlign: -2, marginRight: 2 }} />{sk.price} 两
+              <img src={S("ui/ingot.webp")} alt="" style={{ width: 13, verticalAlign: -2, marginRight: 2 }} />{sk.price} 两
             </span>
           )}
           {owned && <span style={{ fontSize: 10, color: "#3a9a3a" }}>· 已习得</span>}

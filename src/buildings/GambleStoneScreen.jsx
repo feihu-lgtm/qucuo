@@ -8,14 +8,14 @@ import {
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const S = (f) => `${BASE}stones/${f}`;
 const UI = (f) => `${BASE}stones/ui/${f}`;
-const FRAME = `${BASE}stones/frames/frame_lux.png`;
+const FRAME = `${BASE}stones/frames/frame_lux.webp`;
 // 竞价者名 → 无框写实立绘（public/bidders/full/，941×1672，与 frame_lux 同尺寸分层合成）
 const PORTRAIT_BY_NAME = {
   "李若由": "李若由", "锦官差役": "锦官差役", "雪山弟子": "雪山门人",
   "黑风寨采买": "黑风寨采买", "才旦": "才旦", "苏宛": "苏宛",
   "兰姐": "兰姐", "温掌柜": "温掌柜",
 };
-const P = (name) => `${BASE}bidders/full/${PORTRAIT_BY_NAME[name] || "温掌柜"}.png`;
+const P = (name) => `${BASE}bidders/full/${PORTRAIT_BY_NAME[name] || "温掌柜"}.webp`;
 
 // frame_lux 内窗实测 bbox（x[187,752] y[290,1454] / 941×1672）——立绘 clip 进窗、框叠其上
 const WIN = { x: "19.9%", y: "17.3%", w: "60.2%", h: "69.7%" };
@@ -307,11 +307,11 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
         : { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
             aspectRatio: "1672/941", width: "100vw", maxHeight: "100vh", maxWidth: "calc(100vh*1672/941)" }}
         onClick={() => setSelCard(null)}>
-        <img src={S(isNight ? "bg_hall_night.png" : "bg_hall_day.png")} alt=""
+        <img src={S(isNight ? "bg_hall_night.webp" : "bg_hall_day.webp")} alt=""
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
 
         {/* 藏式独脚台（目视定位，桌面盘在台图上部） */}
-        <img src={S("table.png")} alt="" style={{ position: "absolute", left: "50%", top: "33%",
+        <img src={S("table.webp")} alt="" style={{ position: "absolute", left: "50%", top: "33%",
           transform: "translateX(-50%)", width: "31%", zIndex: 10, pointerEvents: "none",
           filter: "drop-shadow(0 14px 26px rgba(0,0,0,.55))" }} />
 
@@ -327,14 +327,14 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
               const ry = (e.clientY - r.top) / r.height;
               doCut(ry < 0.36 ? "top" : ry < 0.58 ? "mid" : "bot");
             }}>
-            <img src={S(`skin_${stone.skin}.png`)} alt="皮"
+            <img src={S(`skin_${stone.skin}.webp`)} alt="皮"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain",
                 imageRendering: "pixelated", filter: "drop-shadow(0 10px 20px rgba(0,0,0,.6))" }} />
             {/* 已开刀口：正在动画的那一刀由动画层接管（开口弹出/露肉渐显/裂纹蔓延），其余静态渲染 */}
             {stone.slots.filter((s) => s.opened).map((sl) => {
               const p = CUT_POS[sl.pos];
               const tier = JADE_TIERS[stone.jadeTier - 1];
-              const mask = `url(${S(`cut_${sl.cutShape || 1}.png`)})`;
+              const mask = `url(${S(`cut_${sl.cutShape || 1}.webp`)})`;
               const animating = cutFx && cutFx.pos === sl.pos;
               return (
                 <div key={sl.pos} className={animating ? "gs-open" : undefined}
@@ -342,10 +342,10 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
                   top: p.top, left: p.left, pointerEvents: "none",
                   WebkitMaskImage: mask, maskImage: mask, WebkitMaskSize: "contain", maskSize: "contain",
                   WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" }}>
-                  <img src={S(`jade_${tier.key}_${tier.code}_${sl.grade}.png`)} alt="肉"
+                  <img src={S(`jade_${tier.key}_${tier.code}_${sl.grade}.webp`)} alt="肉"
                     className={animating ? "gs-reveal" : undefined}
                     style={{ position: "absolute", width: "208%", height: "208%", top: p.jt, left: p.jl }} />
-                  {sl.crack && <img src={S(`crack_${sl.pos}.png`)} alt=""
+                  {sl.crack && <img src={S(`crack_${sl.pos}.webp`)} alt=""
                     className={animating ? "gs-crackfx" : undefined}
                     style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />}
                 </div>
@@ -358,10 +358,10 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
               const shardColor = SHARD_COLOR[cutFx.result.grade] || "#e8dfc0";
               return (
                 <>
-                  <img src={S("fx_cut_light.png")} alt="" className="gs-slash"
+                  <img src={S("fx_cut_light.webp")} alt="" className="gs-slash"
                     style={{ position: "absolute", width: "130%", left: "-15%", top: p.top,
                       "--slash-rot": SLASH_ROT[cutFx.pos] }} />
-                  <img src={S("fx_dust.png")} alt="" className="gs-dust"
+                  <img src={S("fx_dust.webp")} alt="" className="gs-dust"
                     style={{ position: "absolute", width: "44%", top: p.top, left: p.left,
                       transform: "translate(-25%,-25%)" }} />
                   {SHARDS.map((sh, i) => (
@@ -423,7 +423,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
                 <div style={{ position: "relative", width: "92%", margin: "-2% auto 0", aspectRatio: "337/200",
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                   textAlign: "center", zIndex: 5 }}>
-                  <img src={UI("bub_gold1.png")} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: -1 }} />
+                  <img src={UI("bub_gold1.webp")} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: -1 }} />
                   <div style={{ fontSize: ".72em", fontWeight: "bold", color: "#7a5320", lineHeight: 1.1, marginTop: "-9%" }}>{b.name}</div>
                   <div style={{ fontSize: ".80em", fontWeight: "bold", color: "#4a2d0a", lineHeight: 1.25 }}>{offerLabel(b)}</div>
                 </div>
@@ -535,11 +535,11 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
             <div style={{ color: "#a08a5a", fontSize: "1.7vh", marginTop: "-1.2vh" }}>{ROLE_BY_NAME[selCard.name] || ""}</div>
             <div style={{ color: "#ffd77a", fontSize: "2.3vh" }}>出价 {offerLabel(selCard)}</div>
             <div style={{ color: "#cdc2a2", fontSize: "1.6vh", lineHeight: 2 }}>{selCard.bio}</div>
-            <button onClick={() => sellTo(selCard)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_paper.png")})`, color: "#4a2d0a" }}>
+            <button onClick={() => sellTo(selCard)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_paper.webp")})`, color: "#4a2d0a" }}>
               ✓ 接受报价 · {offerLabel(selCard)}
             </button>
             {selCard.kind !== "noise" && (
-              <button onClick={() => startTalk(selCard)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_wood.png")})`, color: "#f0e0b0", textShadow: "0 1px 2px #000" }}>
+              <button onClick={() => startTalk(selCard)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_wood.webp")})`, color: "#f0e0b0", textShadow: "0 1px 2px #000" }}>
                 🗣 与{selCard.name}谈价
               </button>
             )}
@@ -552,7 +552,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 74, zIndex: 250,
         background: "linear-gradient(0deg,#1a1712 70%,transparent)",
         display: "flex", alignItems: "center", gap: 12, justifyContent: "center", padding: "0 16px" }}>
-        <PanelBtn img={UI("bar_wood.png")} kind="wood" disabled={!stone || closed} onClick={doSkinRead}>
+        <PanelBtn img={UI("bar_wood.webp")} kind="wood" disabled={!stone || closed} onClick={doSkinRead}>
           {skinLoading ? "相石中…" : "相石 · 看皮"}
         </PanelBtn>
         {["top", "mid", "bot"].map((pos) => {
@@ -560,7 +560,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
           const done = sl?.opened;
           const gl = done ? (sl.crack ? "裂" : GRADE[sl.grade]) : "";
           return (
-            <PanelBtn key={pos} img={UI("bar_wood.png")} kind="wood"
+            <PanelBtn key={pos} img={UI("bar_wood.webp")} kind="wood"
               disabled={done || closed || !!cutFx} done={done} grade={sl?.grade} crack={sl?.crack}
               onClick={() => doCut(pos)}>
               {SLOT_LABEL[pos]}{done ? `·${gl}` : ""}
@@ -569,12 +569,12 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
         })}
         <div style={{ width: 10 }} />
         {!closed && topBidder && (
-          <PanelBtn img={UI("bar_paper.png")} kind="paper" big onClick={() => sellTo(topBidder)}>
+          <PanelBtn img={UI("bar_paper.webp")} kind="paper" big onClick={() => sellTo(topBidder)}>
             卖给最高价（{topBidder.name} {topBidder.offer}两）
           </PanelBtn>
         )}
         {!closed && (
-          <PanelBtn img={UI("bar_paper.png")} kind="paper" big onClick={keepStone}>
+          <PanelBtn img={UI("bar_paper.webp")} kind="paper" big onClick={keepStone}>
             据为己有 · 收料入行囊
           </PanelBtn>
         )}

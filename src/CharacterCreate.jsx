@@ -80,7 +80,7 @@ export default function CharacterCreate({ onConfirm }) {
 const styles = {
   container: {
     position: "fixed", inset: 0, overflow: "hidden",
-    backgroundImage: `url('${BASE}start-bg.jpg')`,
+    backgroundImage: `url('${BASE}start-bg.webp')`,
     backgroundSize: "cover", backgroundPosition: "center",
     display: "flex", alignItems: "center", justifyContent: "center",
     fontFamily: "'Noto Serif SC','Songti SC','STSong',serif",

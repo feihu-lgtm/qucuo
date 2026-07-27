@@ -108,3 +108,44 @@ describe("对话提取 spec（talk 模式 0727 起改走这份）", () => {
     expect(t).toContain("只是嘴上提起、许诺日后再给、纯寒暄，一律不记");
   });
 });
+
+// ── 心灵之海场景铁律的注入门禁 ────────────────────────────────────────
+// 玩家进心灵之海之前，AI 拿到的只有房间 desc，压根不知道这是旁白的内心而非
+// 曲措乡的某处：不知道这里只有她一个人、也不知道江湖那套规矩不作数。结果它会
+// 照武侠说书人的惯性在这片海滩上安排路人、生出遭遇、发出物件，把一场一对一的
+// 内心戏写成又一段江湖见闻。这组测试钉死"在海里必亮、不在海里一个字不发"。
+import { buildSeaOfMindRule } from "./seaOfMind.js";
+
+describe("心灵之海铁律", () => {
+  const rule = buildSeaOfMindRule();
+
+  it("说清这是内心不是地方", () => {
+    expect(rule).toContain("这不是曲措乡的某处地方");
+    expect(rule).toContain("身体还在他自己那间屋子里");
+  });
+
+  it("明令不许出现第三者（这是最容易被写坏的一条）", () => {
+    expect(rule).toContain("绝不要安排任何第三者出现");
+    expect(rule).toMatch(/没有路人|没有过客/);
+  });
+
+  it("关掉发物件/遭遇/采集", () => {
+    expect(rule).toMatch(/不要在这里发放江湖物件/);
+    expect(rule).toMatch(/不要触发遭遇/);
+  });
+
+  it("交代她叫不出那些现代物件的名字（说书人视角）", () => {
+    expect(rule).toContain("她自己也叫不出名字");
+    expect(rule).toMatch(/不要直接说出.*电视/);
+  });
+
+  it("只在海里注入，寻常轮次一个字不发", () => {
+    const wia = (opts) => buildSysBase(
+      220, { stage: "NORMAL", affection: 50 }, "x", null, false, "", false, "full",
+      { playerName: "少侠", hasNpc: true, ...opts },
+    ).sysBlocks.find(b => b.tavernBlock === "worldInfoAfter").content;
+    expect(wia({ inSeaOfMind: true })).toContain("这不是曲措乡的某处地方");
+    expect(wia({})).not.toContain("这不是曲措乡的某处地方");
+    expect(wia({ inSeaOfMind: false })).not.toContain("这不是曲措乡的某处地方");
+  });
+});

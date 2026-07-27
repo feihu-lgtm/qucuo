@@ -141,9 +141,9 @@ export default function TopBar({
                 （male=藏剑大叔/female=花商/other=朔风刀客·默认兜底/preset1~5=飞贼·猎手·
                 猫人·假小子·穿越者）。文件名约定 male/female/other + preset1..N，2:3竖版。 */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
-              {[genderAvatar["男"], genderAvatar["女"], AV_BASE + "other.png",
-                AV_BASE + "preset1.png", AV_BASE + "preset2.png", AV_BASE + "preset3.png",
-                AV_BASE + "preset4.png", AV_BASE + "preset5.png"].map((src, i) => (
+              {[genderAvatar["男"], genderAvatar["女"], AV_BASE + "other.webp",
+                AV_BASE + "preset1.webp", AV_BASE + "preset2.webp", AV_BASE + "preset3.webp",
+                AV_BASE + "preset4.webp", AV_BASE + "preset5.webp"].map((src, i) => (
                 <div key={i}
                   onClick={() => { setPlayerAvatarCustom(src); try { localStorage.setItem("qucuo_player_avatar", src); } catch { /* ignore */ } setShowAvatarPicker(false); }}
                   style={{ aspectRatio: "2/3", borderRadius: 5, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid #6ec6c6" : "1px solid #2a3a3a", background: "#0c0e14" }}

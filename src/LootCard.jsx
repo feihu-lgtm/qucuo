@@ -2,8 +2,8 @@ import React from "react";
 import { QUALITY_COLOR, CATEGORY_LABEL } from "./equipment.js";
 
 // 切磋掉落 / 偷窃成功 / 偷师得手 三种"所得卡"——像素藏地武侠风，复用同一套
-// 卡框与排版。底图 loot_duel.png（暖金·交叉双刀+金刚杵+莲花+余烬）/
-// loot_steal.png（冷翠·窃贼面具+探出之手+月+云纹）由作者投放于
+// 卡框与排版。底图 loot_duel.webp（暖金·交叉双刀+金刚杵+莲花+余烬）/
+// loot_steal.webp（冷翠·窃贼面具+探出之手+月+云纹）由作者投放于
 // public/stones/ui/，1122×1402（4:5）。偷窃与偷师共用冷翠底图（同属"顺手/窥得"
 // 的月黑风高调性）。
 //
@@ -114,12 +114,12 @@ export default function LootCard({ entry }) {
     ? { bg: "linear-gradient(160deg,#3a1c12 0%,#2a1210 45%,#1e0e0a 100%)",
         banner: "linear-gradient(90deg,#8a5a1a,#c4a040)", bannerText: "#2a1608",
         label: "戰利品", sub: entry.fromNpc ? `擊敗 ${entry.fromNpc} 所獲` : "切磋所得",
-        img: "loot_duel.png", inset: "6% 12%", plate: "rgba(20,8,4,.66)" }
+        img: "loot_duel.webp", inset: "6% 12%", plate: "rgba(20,8,4,.66)" }
     : { bg: "linear-gradient(160deg,#10241f 0%,#0c1c18 45%,#081210 100%)",
         banner: "linear-gradient(90deg,#2a5a4a,#5dcaa5)", bannerText: "#06231c",
         label: isSkill ? "偷師得手" : "妙手空空",
         sub: entry.fromNpc ? (isSkill ? `窺得 ${entry.fromNpc} 的招式` : `自 ${entry.fromNpc} 處順來`) : (isSkill ? "窺得一式絕學" : "神不知鬼不覺"),
-        img: "loot_steal.png", inset: "6% 19%", plate: "rgba(6,18,15,.66)" };
+        img: "loot_steal.webp", inset: "6% 19%", plate: "rgba(6,18,15,.66)" };
 
   const eff = isSkill ? [] : effectLines(item.effect);
   const six = isSkill ? [] : Object.entries(item.sixDim || {}).map(([k, v]) => `${k}+${v}`);
@@ -181,8 +181,8 @@ export default function LootCard({ entry }) {
                 <span style={{ color: "#9ad8c8", letterSpacing: ".06em" }}>🤫 偷師所得 · 學即完整，無需修煉</span>
               ) : (
                 <>
-                  <span><img src={UI("ingot.png")} alt="" /> 買 {item.buyPrice ?? "—"} 兩</span>
-                  <span><img src={UI("coin.png")} alt="" /> 賣 {item.sellPrice ?? "—"} 兩</span>
+                  <span><img src={UI("ingot.webp")} alt="" /> 買 {item.buyPrice ?? "—"} 兩</span>
+                  <span><img src={UI("coin.webp")} alt="" /> 賣 {item.sellPrice ?? "—"} 兩</span>
                   {item.named && <span className="loot-named">✦ 具名之物</span>}
                 </>
               )}

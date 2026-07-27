@@ -100,7 +100,7 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQui
       <div style={styles.vignette} />
 
       <div style={styles.titleBlock}>
-        <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo_v3.png`}
+        <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo_v3.webp`}
           alt="天都曲措" style={styles.titleImg} />
         <div style={styles.subtitle(theme)}>—— 三曲交汇处的江湖 ——</div>
       </div>
@@ -177,7 +177,7 @@ const styles = {
     padding: "0 clamp(32px, 8vw, 120px)",
     boxSizing: "border-box",
     backgroundColor: t.bg,
-    backgroundImage: `url('${((typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/")}start-bg.jpg')`,
+    backgroundImage: `url('${((typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/")}start-bg.webp')`,
     backgroundSize: "cover",
     backgroundPosition: "center",
     fontFamily: "'Noto Serif SC', 'Songti SC', serif",
