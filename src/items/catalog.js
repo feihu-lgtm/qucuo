@@ -876,6 +876,40 @@ export function makeNamedItem(name) {
   return item;
 }
 
+// ── 老档补丁：把 catalog 后续更新的词条同步补回旧存档里已经生成好的实例 ──────
+// 物品实例是"生产时拍照"：makeCatalogItem 在物品诞生那一刻把 catalog 条目的
+// effect/sixDim 复制进实例，此后 catalog 再怎么改，已经存在背包里的那份实例都
+// 不会跟着变——这就是"红档武器护甲补七维"那次改动（catalog 数据从"12把只带1把"
+// 补到全带）之后，老存档里早就拿到手的红档神兵右栏仍旧空空、装备了也不吃加成的
+// 根源：它们诞生时 catalog 那一条压根没有 sixDim 可抄。
+// 战斗/属性那边一直是活的（computeEquippedStats 每次都现读 inv 里已装备物件的
+// sixDim/effect 求和），不存在"额外重算"这一步——只要把实例上缺失的字段用 catalog
+// 现在的数据补上，装备加成和右栏显示会立刻一起恢复正常。
+// 只按 name 精确命中 catalog 具名条目，且只补实例上**缺失/空**的字段，绝不覆盖
+// 已有值——打造/金玉行定制等系统万一撞名（玩家自己给定制剑起名"折柳"之类），
+// 已经写好的词条不该被这次补丁抹掉，这和 makeItemSmart 里"catalog 已有的同名键
+// 不覆盖"是同一条原则。
+function isEmptyDict(v) {
+  return !v || typeof v !== "object" || Object.keys(v).length === 0;
+}
+
+export function backfillItemFromCatalog(item) {
+  if (!item || typeof item !== "object" || !item.name) return item;
+  const entry = CATALOG_INDEX[item.name];
+  if (!entry) return item;
+  const patch = {};
+  if (entry.sixDim && isEmptyDict(item.sixDim)) patch.sixDim = { ...entry.sixDim };
+  if (entry.effect && isEmptyDict(item.effect)) patch.effect = { ...entry.effect };
+  return Object.keys(patch).length ? { ...item, ...patch } : item;
+}
+
+// 供读档时整袋子过一遍（老存档恢复 + 手动读档两处入口都要调，见 MudRPG.jsx）。
+// 非物件（纯字符串道具）原样放过。
+export function backfillInventoryFromCatalog(inv) {
+  if (!Array.isArray(inv)) return inv;
+  return inv.map(i => (typeof i === "object" ? backfillItemFromCatalog(i) : i));
+}
+
 // ── 智能生成：具名优先，公式兜底 ──────────────────────────────────────────
 // 这是"让140件真正进游戏"的总闸。玩家背包物品、NPC carry 都改调这个：
 // 传入 { name, category, quality }，若 name 命中 catalog → 吃具名的专属数值/特效/

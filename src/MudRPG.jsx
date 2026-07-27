@@ -16,7 +16,7 @@ import LoreScreen from "./LoreScreen.jsx";
 import { GROUND_ITEMS } from "./groundItems.js";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, npcAffectionLabel, reputationLabel } from "./mvu.js";
 import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats } from "./equipment.js";
-import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem } from "./items/catalog.js";
+import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem, backfillInventoryFromCatalog } from "./items/catalog.js";
 // 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
@@ -236,7 +236,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const companionStateRef = useRef(companionState);
   useEffect(() => { companionStateRef.current = companionState; }, [companionState]);
   // 装备信息现在完全并入 inv（每个物品对象自带 category/equipped 标记），不再单独维护 equip state
-  const [inv, setInv] = useState(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]);
+  // 老档补丁：catalog 后续给具名物品补的 sixDim/effect（如红档补七维）不会追溯到
+  // 早就生成好的旧实例，这里读档时顺手补一遍，见 backfillInventoryFromCatalog。
+  const [inv, setInv] = useState(() => backfillInventoryFromCatalog(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]));
   const [log, setLog] = useState(
     restored
       ? [{ t: "sys", text: `── 已从上次自动存档恢复进度（${new Date(restored.snap.savedAt || Date.now()).toLocaleString()}） ──` }, ...restored.snap.log]
@@ -468,7 +470,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       moveset: generateNpcMoveset({ id: "player" }, { luck: restoredChar.special?.气运 ?? 5, levelCap: 5 }),
     });
     setDao(snap.dao);
-    setSkills(snap.skills); setInv(snap.inv);
+    setSkills(snap.skills); setInv(backfillInventoryFromCatalog(snap.inv));
     setLog(snap.log); setConvo(snap.convo); setExp(snap.exp); setPot(snap.pot);
     setFlags(snap.flags); setMapData(snap.mapData); setTime(snap.time);
     // 老档迁移：旧 CRASHED 阶段（告白→宕机那条已废链路）会把文风永久锁在
