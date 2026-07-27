@@ -116,3 +116,55 @@ describe("掉落池非空之后，掷骰这一步本来就是好的", () => {
     expect(pool.map(i => i.name)).toEqual(["b"]);
   });
 });
+
+// ── 同一个池子还喂着偷窃，所以那条路一起被治了 ────────────────────────
+// 【为什么要单独钉这一组】偷窃读的是同一个 npc.carriedItems
+// （kungfu/learnSkill.js tryStealFrom 第152行）。池子被丢空时：
+//   · 第一掷（得不得手）照常过——基础45%起，看不出异常
+//   · 但 pickStealOutcome(有招, **无物**) 会直接返回 "move"
+//   → 每一次成功都静默变成偷招，物件一件也偷不到
+//   · 若那人连专属招也没有（平民多数如此），落到 outcome===null，
+//     玩家看到的是"摸了半天，却发现他身上早已一无所有"——
+//     读起来像"这人真穷"的设计，实际是 bug 的症状。
+// 历史证据：STEAL_CONFIG.stealMoveChance 的注释写着从 0.5 调到 0.25 是因为
+// "玩家体感偷不到东西"——当时把症状当概率问题调了参数，病根其实在固化回填这一环。
+// 这组测试就是防止以后又去动那个参数而想不到池子。
+import { attemptSteal, pickStealOutcome, stealSuccessRate, STEAL_CONFIG } from "../combat/stealSystem.js";
+
+describe("偷窃：确实掷骰，且吃的是同一个 carriedItems 池", () => {
+  it("池子空 → 每次成功都被迫转成偷招（这就是当时的症状）", () => {
+    const outcomes = new Set();
+    for (let i = 0; i < 50; i++) outcomes.add(pickStealOutcome(true, false));
+    expect([...outcomes]).toEqual(["move"]);
+  });
+
+  it("池子空且无招可偷 → 落到「身上一无所有」（看着像设计，其实是症状）", () => {
+    expect(pickStealOutcome(false, false)).toBeNull();
+  });
+
+  it("池子非空 → 偷物才成为主要结果（stealMoveChance=0.25）", () => {
+    let item = 0;
+    for (let i = 0; i < 400; i++) if (pickStealOutcome(true, true) === "item") item++;
+    expect(item / 400).toBeGreaterThan(0.6);   // 期望 0.75
+    expect(STEAL_CONFIG.stealMoveChance).toBeLessThan(0.5);
+  });
+
+  it("成功率是系统裁决的连续曲线，不是 AI 说了算", () => {
+    expect(stealSuccessRate(0, 5)).toBeGreaterThan(0.4);
+    expect(stealSuccessRate(100, 10)).toBeCloseTo(STEAL_CONFIG.maxRate);
+    // 封顶永远留失败可能——失败要扣好感+生气，风险不能丢
+    expect(STEAL_CONFIG.maxRate).toBeLessThan(1);
+  });
+
+  it("attemptSteal 附带 rate/roll 供调试面板展示（可复盘的掷骰）", () => {
+    const r = attemptSteal(30, 5);
+    expect(typeof r.rate).toBe("number");
+    expect(typeof r.roll).toBe("number");
+    expect(typeof r.success).toBe("boolean");
+  });
+
+  it("失败的代价也是写死的：扣好感 + 生气若干回合", () => {
+    expect(STEAL_CONFIG.angryFavorabilityLoss).toBeGreaterThan(0);
+    expect(STEAL_CONFIG.angryTurns).toBeGreaterThan(0);
+  });
+});

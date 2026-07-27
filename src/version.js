@@ -9,7 +9,7 @@
 
 export const VERSION_HISTORY = [
   {
-    codename: "修「切磋赢了不掉东西」：固化的随身物被原地互动分支整个丢掉，掉落池恒为空",
+    codename: "修「切磋赢了不掉东西」+「偷窃只偷得到招」：固化的随身物被原地互动分支整个丢掉，两条路共用的掉落池恒为空",
     time: "2026-07-28 21:30",
     notes: [
       "玩家反馈：切磋来来回回打了很多场，只有初始村子的老猎户爆出过东西。查下来是真 bug，而且只有驻场NPC能掉。",
@@ -19,7 +19,9 @@ export const VERSION_HISTORY = [
       "④【为什么难发现】掉落本来就是概率的，不掉看起来就像运气差。要打很多场、且注意到「只有某一个人掉过」才会起疑。",
       "⑤【修法·不能碰的红线】不能改成信 AI 返回的名单——那正是另一个已修 bug 的根因（AI 每轮重新交一份「它认为在场的人」，直接铺盖会导致「此地的人一会好几个一会都走光」）。所以只回填数据、不动名单：新增 d.freshNpcData 存本轮固化结果，原地互动分支按名字把战斗数据补给既有名单里对应的人。",
       "⑥【回填只取战斗字段】新增 pickCombatData 白名单（carriedItems/moveset/special/combatStats/levelCap/waigong/neigong/baseAtk/equipAtk/equipDef/personalityProfile）。刻意不整份铺盖：名单上的对象可能带着驻场绑定、lockInnerRoom、companionCandidate，以及 carriedItems 里的 stolen/dropped 标记——整份覆盖会把它们冲掉，那正是这次要修的同一类毛病，不能在修的过程中再犯一次。已固化过的人（o.carriedItems 有值）一律原样跳过，不重新随机随身物。",
-      "验证：vite build 通过、eslint 全清、vitest 379/379（新增 npcFixation.test.js 11 条）。测试覆盖固化兜底确实产出随身物、carry:[] 的「明确身无长物」不被兜底填满、回填补上缺失数据、**名单不新增不删除**、已固化的原样不动、系统字段（lockInnerRoom/companionCandidate/驻场绑定）不被冲掉、stolen/dropped 标记不被覆盖（否则偷过的东西会复活）、脏名单不炸。",
+      "⑦【顺带确认：偷窃也吃同一个池子，一起被治了】偷窃是掷骰的、且裁决全在系统侧（纯函数，AI 不参与）：第一掷 attemptSteal 定得不得手（基础45% + 好感每10点+6% + 身法每5点+5%，封顶92%——永远留失败可能，失败要扣好感15+生气3回合），第二掷 pickStealOutcome 定偷到物还是招（25%招/75%物），第三掷从池子里均匀抽一件。但 tryStealFrom 第152行读的是同一个 npc.carriedItems：池子被丢空时第一掷照常过（看不出异常），pickStealOutcome(有招,**无物**) 直接返回 move —— **每一次成功都静默变成偷招，物件一件也偷不到**；若那人连专属招也没有（平民多数如此）就落到「摸了半天，却发现他身上早已一无所有」，读起来像\"这人真穷\"的设计，实际是 bug 的症状。实测对一个 AI 路人偷 200 次：修复前偷到物件 **0** 件（141次全转成偷招），修复后 112 件。",
+      "⑦-2【一条历史证据】STEAL_CONFIG.stealMoveChance 的注释写着它从 0.5 调到 0.25 是因为\"玩家体感偷不到东西\"——当时把症状当成概率问题调了参数，真正的病根在固化回填这一环。已补测试把\"池子空→被迫偷招\"这个因果钉住，免得日后又去动那个参数而想不到池子。",
+      "验证：vite build 通过、eslint 全清、vitest 385/385（新增 npcFixation.test.js 17 条）。测试覆盖固化兜底确实产出随身物、carry:[] 的「明确身无长物」不被兜底填满、回填补上缺失数据、**名单不新增不删除**、已固化的原样不动、系统字段（lockInnerRoom/companionCandidate/驻场绑定）不被冲掉、stolen/dropped 标记不被覆盖（否则偷过的东西会复活）、脏名单不炸。",
     ],
   },
   {
