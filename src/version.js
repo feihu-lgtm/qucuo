@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修「打造装备只有基础攻防、加根骨加气运都没加上」：makeItem 的解构参数漏了 effect/sixDim，传进来就被丢掉",
+    time: "2026-07-29 05:10",
+    notes: [
+      "①【根因在生产侧，一行解构】equipment.makeItem 的参数只列了 { name, category, quality, desc }——调用方（铸剑坊交付、金玉行、任务发放…）传进来的 effect 与 sixDim **被静默丢掉**，于是打造出来的装备只剩 statsForQuality 给的基础攻防。这也精确解释了症状为什么恰好是「基础攻防有、其余全无」。已让 makeItem 收下 effect/sixDim/consumable/tags（各自深拷贝，不与调用方共享引用）。",
+      "②【消费侧一直是好的】computeEquippedStats 聚合 sixDimBonus、effectiveSpecial 把它叠到七维、mergeItemEffects 把词条叠到招式，而且单挑(DuelScreen)与 2v2(teamUnits) 两条战斗路径都接了。断的只有生产这一环——所以这个 bug 靠读消费侧代码是找不出来的，得从「打造出来那件东西身上到底有没有这些字段」入手。修后实测：紫档定制剑带 effect{applyMark,applyMarkChance:0.3} 与 sixDim{根骨2,气运1}，装上后 sixDimBonus 正确聚合、有效七维 根骨5→7 / 气运5→6、equipEffects 拿到 applyMarkChance。",
+      "③【makeItemSmart 也补了透传】具名物的数值仍以 catalog 为准（「绿档霜牙」不该被一句话说成红档），但调用方显式传入的 effect/sixDim 会补上缺失的键、不覆盖 catalog 已有的——万一玩家把定制剑起名撞上目录里的名字，这次打造的词条不该因此丢掉。",
+      "④【顺带修一处真会崩的脏数据】mergeItemEffects 原来直接 `it.effect`，而背包条目**并非都是对象**——纯剧情杂物是字符串（「半袋青稞」这类，见 presets/qucuo.js 的 inv），读档迁移也可能留空洞。遇到 null 就整个抛异常，而这函数在**战斗进场时**被调用，一炸就是「点了切磋直接崩」。已防。computeEquippedStats 里 sixDim 那个循环同样加了防护，并把值 Number() 一遍（防 AI 或旧档给出字符串数值把加成算成 「52」）。",
+      "⑤【文件树守卫按设计报警了】新增测试文件后它立刻失败（未登记 + 统计行过期），补登记后恢复。这是它上线以来第二次真的拦住漂移。",
+      "验证：npm run verify 通过（vitest 466/466 + pages 构建）。新增 equipmentEffects.test.js 18 条：生产侧六条（sixDim/effect 留存、基础攻防不受影响、没传不凭空长字段、consumable+tags、深拷贝）、makeItemSmart 三条（具名走目录、未命中保住词条、撞名时目录优先而缺的补上）、消费侧七条（聚合、有效七维、equipEffects、卸下即失效、多件叠加、未装备不计、脏输入不炸）。",
+    ],
+  },
+  {
     codename: "偷不到东西的真凶：空数组是 truthy，toRoomNpc 的占位 carriedItems:[] 吞掉了所有人的 carry",
     time: "2026-07-29 04:20",
     notes: [

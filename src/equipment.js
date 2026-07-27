@@ -70,12 +70,24 @@ export function discountedBuyPrice(buyPrice, wit = 5) {
   return Math.max(1, Math.ceil(buyPrice * coef));
 }
 
-export function makeItem({ name, category = ITEM_CATEGORY.MISC, quality = "白", desc = "" }) {
+export function makeItem({ name, category = ITEM_CATEGORY.MISC, quality = "白", desc = "",
+                           effect, sixDim, consumable, tags } = {}) {
   return {
     id: `${name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     name, category, quality, equipped: false, desc,
     ...statsForQuality(category, quality),
     ...priceForQuality(category, quality),
+    // 【必须收下 effect/sixDim】此前这个解构参数只列了 name/category/quality/desc，
+    // 调用方传进来的 effect 与 sixDim **被静默丢掉**——打造/定制出来的装备因此
+    // 只剩 statsForQuality 给的基础攻防，词条与六维加成一概没有。
+    // 玩家的体感就是"打造装备的特效全不生效，加根骨加气运也没加上"。
+    // 消费侧一直是好的（computeEquippedStats 聚合 sixDimBonus、effectiveSpecial
+    // 叠到七维、mergeItemEffects 叠到招式，单挑与2v2两条战斗路径都接了），
+    // 断的是这一处生产侧。
+    ...(effect ? { effect: { ...effect } } : {}),
+    ...(sixDim ? { sixDim: { ...sixDim } } : {}),
+    ...(consumable ? { consumable: { ...consumable } } : {}),
+    ...(tags ? { tags: [...tags] } : {}),
   };
 }
 
@@ -165,7 +177,9 @@ export function computeEquippedStats(inv) {
   const equipEffects = mergeItemEffects(allEquipped);
   const sixDimBonus = {};
   for (const it of allEquipped) {
-    if (it.sixDim) for (const [k, v] of Object.entries(it.sixDim)) sixDimBonus[k] = (sixDimBonus[k] || 0) + v;
+    if (it && typeof it === "object" && it.sixDim) {
+      for (const [k, v] of Object.entries(it.sixDim)) sixDimBonus[k] = (sixDimBonus[k] || 0) + (Number(v) || 0);
+    }
   }
 
   return {
@@ -180,9 +194,13 @@ export function computeEquippedStats(inv) {
 // 合并多件装备的 effect 标志位成一个。取"更强的一件"，防止堆装备无限叠。
 export function mergeItemEffects(items) {
   const out = {};
-  for (const it of items) {
-    const e = it.effect;
-    if (!e) continue;
+  // 【为什么要防 null/字符串】背包条目并非都是对象——纯剧情杂物是字符串
+  // （"半袋青稞" 这类，见 presets/qucuo.js 的 inv），读档/迁移也可能留下空洞。
+  // 原来直接 it.effect，遇到 null 就整个抛异常，而这函数在战斗进场时被调用，
+  // 一炸就是"点了切磋直接崩"。
+  for (const it of Array.isArray(items) ? items : []) {
+    const e = it && typeof it === "object" ? it.effect : null;
+    if (!e || typeof e !== "object") continue;
     for (const [k, v] of Object.entries(e)) {
       if (typeof v === "boolean") {
         out[k] = out[k] || v;

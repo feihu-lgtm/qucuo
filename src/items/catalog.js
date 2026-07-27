@@ -880,7 +880,15 @@ export function makeNamedItem(name) {
 // makeItemFallback 由调用方注入，避免 catalog↔equipment 循环 import。
 export function makeItemSmart(spec, makeItemFallback) {
   const named = spec?.name ? makeNamedItem(spec.name) : null;
-  if (named) return named;
+  if (named) {
+    // 具名物的数值/词条以 catalog 为准（"绿档霜牙"不该被一句话说成红档）。
+    // 但**调用方显式传入的 effect/sixDim 要能补上**：打造/定制出来的东西名字
+    // 多半不在 catalog 里，可万一撞名（比如玩家把定制剑起名"折柳"），
+    // 不该因此把这次打造出来的词条丢掉。catalog 已有的同名键不覆盖。
+    if (spec.effect) named.effect = { ...spec.effect, ...(named.effect || {}) };
+    if (spec.sixDim) named.sixDim = { ...spec.sixDim, ...(named.sixDim || {}) };
+    return named;
+  }
   return makeItemFallback(spec);
 }
 
