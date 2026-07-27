@@ -188,10 +188,14 @@ describe("主叙事文风随 stage 短路（这条线的支点）", () => {
     expect(inSea).not.toBe(normal);
     expect(normal).toContain("不要看我");
   });
-  it("哄好后解锁第六档「不装了」", () => {
+  it("哄好后解锁第六档「合写的日记」——体裁变了，不只是语气变了", () => {
     const v = narratorVoicePrompt({ affection: 95, stage: NNPC_STAGE.RESOLVED });
-    expect(v).toContain("她不再装了");
-    expect(v).toContain("撒娇，不是防御");
+    expect(v).toContain("你们两个人合写的一本日记");
+    expect(v).toContain("本女侠");
+    expect(v).toContain("这笨蛋");
+    expect(v).toContain("撒娇不是防御");
+    // 日记也得把事记清楚——不能因为体裁松了就漏掉该交代的
+    expect(v).toContain("一样不能少");
   });
   it("isInSea 只认那两个阶段", () => {
     expect(isInSea(NNPC_STAGE.SPIRIT)).toBe(true);
@@ -241,5 +245,94 @@ describe("MVU 变量", () => {
     expect(v.knots).toEqual([]);
     expect(v.traumaResolved).toBe(false);
     expect(v.villaEntered).toBe(false);
+  });
+});
+
+// ── 终章 ────────────────────────────────────────────────────────────────
+import { SCENE_PORTAL_OPEN, SCENE_TOKYO, SCENE_RETURN } from "./narratorQuest.js";
+import {
+  createAsuka, unlockAsuka, initCompanionState, unlockSnowLeopard,
+  activeCompanionKey, setActiveCompanion, unlockedCompanions,
+  isSnowLeopardAvailable, isAsukaAvailable, COMPANION_SLOTS,
+} from "./companion.js";
+
+describe("终章·三段剧情", () => {
+  it("传送门：她不想一个人看", () => {
+    const all = SCENE_PORTAL_OPEN.map(l => l.text).join("\n");
+    expect(all).toContain("裂缝");
+    expect(all).toContain("不太想一个人看");
+  });
+  it("东京：见证「有人在住」，收在おめでとう与気持ち悪い", () => {
+    const all = SCENE_TOKYO.map(l => l.text).join("\n");
+    expect(all).toContain("有人在住");
+    expect(all).toContain("おめでとう");
+    expect(all).toContain("気持ち悪い");
+    expect(all).toContain("没有雪");          // 与曲措乡的雪域对照
+    expect(all).toContain("笨蛋");            // 收尾那句为第六档的口吻埋线
+  });
+  it("回屋：带上真实屋名，且告知可换队友", () => {
+    const all = SCENE_RETURN("溪边小屋").map(l => l.text).join("\n");
+    expect(all).toContain("溪边小屋");
+    expect(all).toContain("换");
+    expect(all).toContain("合写");
+  });
+});
+
+describe("明日香入队 · 单槽互斥", () => {
+  it("红档、四招齐、带 carry", () => {
+    const a = createAsuka();
+    expect(a.levelCap).toBe(5);
+    expect(a.moveset).toHaveLength(4);
+    expect(a.moveset.map(m => m.name)).toContain("朗基努斯之枪·贯穿");
+    expect(a.moveset.map(m => m.name)).toContain("A.T.フィールド·心之壁");
+    expect(a.carry.length).toBeGreaterThan(0);
+    expect(a.carry.map(i => i.name)).toContain("朗基努斯");
+    expect(a.beast).toBe(false);
+  });
+
+  it("四槽各司其职（攻/防/两个状态），不是四个攻击", () => {
+    const types = createAsuka().moveset.map(m => m.type);
+    expect(types).toContain("攻击");
+    expect(types).toContain("防御");
+  });
+
+  it("入队即顶出战位，雪豹自动留守", () => {
+    let cs = unlockSnowLeopard(initCompanionState());
+    expect(activeCompanionKey(cs)).toBe("snowLeopard");
+    cs = unlockAsuka(cs);
+    expect(activeCompanionKey(cs)).toBe("asuka");
+    expect(cs.snowLeopard.active).toBe(false);
+  });
+
+  it("同时只能一个出战（这是 2v2 引擎的硬约束）", () => {
+    let cs = unlockAsuka(unlockSnowLeopard(initCompanionState()));
+    for (const key of ["snowLeopard", "asuka", null]) {
+      cs = setActiveCompanion(cs, key);
+      expect(activeCompanionKey(cs)).toBe(key);
+      const both = isSnowLeopardAvailable(cs) && isAsukaAvailable(cs);
+      expect(both, "两个队友同时可用会让战斗行为未定义").toBe(false);
+    }
+  });
+
+  it("换来换去不丢数据（unlocked 与 data 恒在）", () => {
+    let cs = unlockAsuka(unlockSnowLeopard(initCompanionState()));
+    cs = setActiveCompanion(cs, "snowLeopard");
+    cs = setActiveCompanion(cs, "asuka");
+    for (const s of COMPANION_SLOTS) {
+      expect(cs[s.key].unlocked).toBe(true);
+      expect(cs[s.key].data).toBeTruthy();
+    }
+    expect(unlockedCompanions(cs).map(s => s.label)).toEqual(["雪豹", "明日香"]);
+  });
+
+  it("解锁幂等：重复调用不重新随机数值", () => {
+    const cs1 = unlockAsuka(initCompanionState());
+    const cs2 = unlockAsuka(cs1);
+    expect(cs2.asuka.data).toBe(cs1.asuka.data);
+  });
+
+  it("只解锁了雪豹时 unlockedCompanions 不含明日香", () => {
+    const cs = unlockSnowLeopard(initCompanionState());
+    expect(unlockedCompanions(cs).map(s => s.key)).toEqual(["snowLeopard"]);
   });
 });

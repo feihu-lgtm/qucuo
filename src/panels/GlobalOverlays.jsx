@@ -18,7 +18,7 @@ import { toggleEquip } from "../equipment.js";
 import { getTimeStr } from "../utils/mudHelpers.js";
 import { getPipelineLog } from "../apiConfig.js";
 import { QUCUO_QUESTS } from "../quests/qucuoQuests.js";
-import { isSnowLeopardAvailable } from "../companion.js";
+import { activeCompanion } from "../companion.js";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import TutorialOverlay from "../TutorialOverlay.jsx";
 import VersionHistoryPanel from "../VersionHistoryPanel.jsx";
@@ -195,11 +195,14 @@ export default function GlobalOverlays({
       {duelingNpc && (() => {
         return (
         <ErrorBoundary label="切磋界面" onReset={() => { setDuelingNpc(null); setPendingQuestBranch(null); }}>
-        {isSnowLeopardAvailable(companionState) ? (
-          // 雪豹已解锁且出战：2v2团战（玩家+雪豹 vs 当前对手；引擎/UI都支持第二敌人，待后续内容接入）
+        {activeCompanion(companionState)?.data ? (
+          // 有队友出战：2v2团战（玩家+队友 vs 当前对手）。
+          // 【改成读通用出战位】此前写死 companionState.snowLeopard.data，
+          // 明日香入队后带的是她、这里却仍取雪豹（雪豹此时 active=false、data 可能还在），
+          // 结果会出现"带着明日香却是雪豹上场"。单槽互斥，activeCompanion 保证只有一个。
           <TeamDuelScreen
             enemies={[duelingNpc]}
-            leopardData={companionState.snowLeopard.data}
+            leopardData={activeCompanion(companionState).data}
             playerChar={{ ...char, special: effectiveSpecialNow }}
             pendingCombatBuff={char.pendingCombatBuff}
             playerInv={inv}

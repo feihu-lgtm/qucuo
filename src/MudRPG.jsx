@@ -76,7 +76,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { callExtraction, buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable } from "./companion.js";
+import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable, unlockAsuka, activeCompanionKey, setActiveCompanion, unlockedCompanions } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -95,11 +95,12 @@ import GambleStoneScreen from "./buildings/GambleStoneScreen.jsx";
 import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } from "./gambleStone.js";
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
-import { invHasItemNamed } from "./safeHouse.js";
+import { invHasItemNamed, SAFE_HOUSES } from "./safeHouse.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
 import { SEA_OF_MIND, shouldTriggerXuannu, buildXuannuScene, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
 import {
   COMFORT_ACTIONS, SCENE_ARRIVE, SCENE_VILLA, SCENE_RESOLVE,
+  SCENE_PORTAL_OPEN, SCENE_TOKYO, SCENE_RETURN,
   canComfort, describeComfortReject, comfortResponse, defenseLevelOf,
   availableKnot, canResolve, looksLikePromise, seaDialoguePrompt,
 } from "./narratorQuest.js";
@@ -2694,7 +2695,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 默契"，团战打赢本身就是最直接的默契证明。落败/罢手不加（默契要打出结果
       // 才算数，不能"陪打就有分"）。跟对手好感度那条是两件独立的事，互不冲突：
       // 一场胜利的团战里，玩家和对手交情+4、玩家和雪豹默契+3，各自成立。
-      if (outcome === "win" && isSnowLeopardAvailable(companionState)) {
+      if (outcome === "win" && activeCompanionKey(companionState)) {
         const teamworkGain = TEAMWORK_GAIN;
         setVarTree(prev => {
           const tree = markNpcAsKnown(prev, "雪豹");
@@ -3947,6 +3948,56 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     if (!before && after) addLog([{ t: "sys", text: "  ⟡ 她像是有话要说。问问她。" }]);
   }, [inv, addLog]);
 
+  // 换出战队友（单槽互斥；传 null 表示谁都不带）
+  const handleSwitchCompanion = useCallback((key) => {
+    setCompanionState(cs => setActiveCompanion(cs, key));
+    const label = key ? (key === "asuka" ? "明日香" : "雪豹") : null;
+    addLog([{ t: "sys", text: label ? `  （${label}跟上了。）` : "  （让他们都留守了。）" }]);
+  }, [addLog]);
+
+  // ── 终章 · 传送门开启 ──
+  // 心结尽解后再回心灵之海，地下室那道裂缝就开了。写 flag 让地下室房间解锁
+  // （innerMap 里它挂着 unlockCondition: {type:"flag", flag:"传送门已开"}）。
+  useEffect(() => {
+    if (room.name !== SEA_OF_MIND.district) return;
+    const v = narratorVars(varTreeRef.current);
+    if (!v.traumaResolved) return;
+    if (v.portalOpened) return;
+    setVarTree(prev => setNarratorVars(prev, { portalOpened: true, questStage: 5 }));
+    setFlags(f => (f.includes("传送门已开") ? f : [...f, "传送门已开"]));
+    addLog(SCENE_PORTAL_OPEN);
+  }, [room.name, addLog]);
+
+  // ── 终章 · 东京见证 → 自动回小屋 + 入队 ──
+  // 这一段是见证不是探索：进去、看完、送回家。不给第二次机会。
+  // 送回的目标用 seaReturnRef（玩家闭眼那间屋子）；万一丢了就退回鱼定村。
+  useEffect(() => {
+    if (room.name !== "第三新东京市") return;
+    const v = narratorVars(varTreeRef.current);
+    if (v.tokyoVisited) return;
+    setVarTree(prev => setNarratorVars(prev, { tokyoVisited: true, questStage: 6 }));
+    addLog(SCENE_TOKYO);
+    // 让玩家把那段读完再送走。3.5 秒不是"动画时长"，是给一个换气的停顿——
+    // 立刻切场景会把おめでとう那一下压掉。
+    const back = seaReturnRef.current || { room: "鱼定村", inner: "溪边小屋" };
+    const label = SAFE_HOUSES.find(h => h.room === back.inner)?.label || back.inner || back.room;
+    const timer = setTimeout(() => {
+      const node = QUCUO_MAP[back.room];
+      if (node) {
+        setRoom({ name: back.room, desc: node.desc, exits: Object.keys(node.exits), npcs: [], items: [] });
+        setTimeout(() => setInnerRoomName(back.inner), 0);
+      }
+      addLog(SCENE_RETURN(label));
+      setCompanionState(cs => unlockAsuka(cs));
+      setVarTree(prev => setNarratorVars(prev, { asukaFree: true, questStage: 7 }));
+      jotNote({
+        text: "跟明日香一起去看了第三新东京市，那儿有人在住。回来之后她就跟着我了。",
+        owner: [{ name: "明日香", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE,
+      });
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [room.name, addLog, jotNote]);
+
   // ── 创伤线 · 收束（点破内核 + 承诺）──
   const handleResolveTrauma = useCallback(() => {
     const v = narratorVars(varTreeRef.current);
@@ -4290,7 +4341,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           zoneTheme={zoneTheme} S={S}
           char={char} inv={inv} skills={skills} exp={exp} pot={pot}
           playerAvatar={playerAvatar} setShowAvatarPicker={setShowAvatarPicker}
-          companionState={companionState} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState} slImgErr={slImgErr} setSlImgErr={setSlImgErr}
+          companionState={companionState} onSwitchCompanion={handleSwitchCompanion} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState} slImgErr={slImgErr} setSlImgErr={setSlImgErr}
           setShowBody={setShowBody}
           trainNeigong={trainNeigong} trainWaigong={trainWaigong} trainCost={trainCost}
           effectiveSpecialNow={effectiveSpecialNow} activeBuffs={activeBuffs}

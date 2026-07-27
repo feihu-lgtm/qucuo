@@ -5,7 +5,7 @@ import { makeItemSmart } from "../items/catalog.js";
 import { makeItem } from "../equipment.js";
 import { getBuildingsForLocation } from "../buildings/qucuoBuildings.js";
 import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../innerMap.js";
-import { isSnowLeopardAvailable } from "../companion.js";
+import { isSnowLeopardAvailable, activeCompanion } from "../companion.js";
 import { step as traceStep } from "../actionTrace.js";
 import { getAllResidentNpcLore } from "../residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../worldbook.js";
@@ -113,12 +113,13 @@ export function buildPresence({ _trace, isTalk, lockedDestName, room, innerRoomN
     ? room.npcs
     : room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
   traceStep(_trace, "在场名单", "info", `喂给AI ${visibleNpcs.length} 人${visibleNpcs.length ? "：" + visibleNpcs.map(n => n.name).join("、") : "（无人）"}${room.npcs.length !== visibleNpcs.length ? `（据点共${room.npcs.length}人，按内层房间过滤掉${room.npcs.length - visibleNpcs.length}人）` : ""}`);
-  const snowLeopardPresent = isSnowLeopardAvailable(companionState);
-  const visibleNpcsForAI = snowLeopardPresent
-    ? [...visibleNpcs, companionState.snowLeopard.data]
-    : visibleNpcs;
-  if (snowLeopardPresent) {
-    traceStep(_trace, "伙伴随行", "info", "雪豹随行在场，已并入喂给AI的在场名单（不影响此地之人UI列表）");
+  // 随行队友并入喂给AI的在场名单（不影响「此地之人」的UI列表——那是本地人口）。
+  // 【改成读通用出战位】此前这里写死只认雪豹，明日香入队后 AI 压根不知道她跟着，
+  // 叙事里她就凭空消失了。现在读 activeCompanion（单槽互斥，同时只有一个）。
+  const comp = activeCompanion(companionState);
+  const visibleNpcsForAI = comp?.data ? [...visibleNpcs, comp.data] : visibleNpcs;
+  if (comp?.data) {
+    traceStep(_trace, "伙伴随行", "info", `${comp.data.name}随行在场，已并入喂给AI的在场名单（不影响此地之人UI列表）`);
   }
   return { visibleNpcs, visibleNpcsForAI };
 }

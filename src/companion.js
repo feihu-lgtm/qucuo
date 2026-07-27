@@ -96,3 +96,115 @@ export function setSnowLeopardActive(companionState, active) {
 export function isSnowLeopardAvailable(companionState) {
   return !!(companionState?.snowLeopard?.unlocked && companionState?.snowLeopard?.active && companionState?.snowLeopard?.data);
 }
+
+// ── 明日香入队（终章走完解锁）─────────────────────────────────────────
+// 【与雪豹的差别】雪豹是兽：不穿装备、招式走兽性、不能对话。
+// 明日香是人，红档，用枪，能说话——所以她的数值走人类档的常规生成，
+// 不套雪豹那份"纯野兽本能"的 profile。
+export const ASUKA_LEVEL_CAP = 5; // 红档
+
+// 她的战斗性格：高攻高风险、几乎不防御，且**极不愿重复同一招**——
+// "被人看穿套路"对她是不能忍的事，这条比雪豹高得多（雪豹 0.15，她 0.7）。
+export const ASUKA_PROFILE = {
+  moveWeights: { 攻击: 0.6, 防御: 0.1, 状态: 0.3 },
+  riskAppetite: 0.85,
+  avoidRepeat: 0.7,
+};
+
+export function createAsuka() {
+  const levelCap = ASUKA_LEVEL_CAP;
+  const special = generateNpcAttributes({ levelCap });
+  // 身法/气运拉高（她是那种赌一把也要赢的人），体魄略低——她不是靠硬扛的打法
+  special.身法 = Math.min(10, special.身法 + 2);
+  special.气运 = Math.min(10, special.气运 + 1);
+  special.体魄 = Math.max(1, special.体魄 - 1);
+
+  const { baseAtk, neigong, waigong } = getTierPower(levelCap);
+  const maxHp = hpFromNeigong(neigong, special.体魄);
+
+  const npcShape = { name: "明日香", id: "companion_asuka", levelCap, special, waigong, neigong, baseAtk };
+  const moveset = deriveSignatureMoveset(npcShape, { levelCap });
+
+  return {
+    ...npcShape,
+    beast: false,
+    moveset,
+    brief: "红衣长枪的女侠，自称本女侠",
+    // carry 会经 buildPresence → visibleNpcsForAI → ctx 的〔身携:…〕喂给 AI，
+    // 让她在叙事里是个"身上有东西的人"而不是一串数值。
+    // 这几件都有来处：枪与发带是真容立绘上就有的；经轮是藏地这一路留下的；
+    // 布偶猴子是从心灵之海那栋白房子的床头带出来的——她自己没解释过为什么要带。
+    carry: [
+      { name: "朗基努斯", category: "weapon", quality: "红" },
+      { name: "红缎发带", category: "accessory", quality: "蓝" },
+      { name: "藏银经轮", category: "accessory", quality: "紫" },
+      { name: "布偶猴子", category: "misc", quality: "白" },
+      { name: "没有标签的药瓶", category: "misc", quality: "蓝" },
+      { name: "半块酥油曲奇", category: "misc", quality: "绿" },
+    ],
+    // 她能穿装备，但入队时先给 0——装备系统目前只服务玩家本人，
+    // 队友穿戴要接一整套 UI，不在本轮范围。留字段是为了将来接得上。
+    equipAtk: 0, equipDef: 0,
+    combatStats: {
+      hp: [maxHp, maxHp],
+      energy: [10, 10],
+      statusSlots: createEmptyStatusSlots(),
+    },
+  };
+}
+
+// 解锁明日香（终章走完时调用，幂等）
+export function unlockAsuka(companionState) {
+  const cur = companionState?.asuka;
+  if (cur?.unlocked && cur?.data) return companionState;
+  return {
+    ...companionState,
+    asuka: { unlocked: true, active: true, data: createAsuka() },
+    // 她一入队就顶了出战位——雪豹自动留守。玩家之后可以随时换回去。
+    snowLeopard: { ...(companionState?.snowLeopard || { unlocked: false, active: false, data: null }), active: false },
+  };
+}
+
+export function isAsukaAvailable(companionState) {
+  return !!(companionState?.asuka?.unlocked && companionState?.asuka?.active && companionState?.asuka?.data);
+}
+
+// ── 出战位：同时只带一个 ─────────────────────────────────────────────
+// 【为什么改成单槽互斥】战斗引擎是 2v2（玩家+1 队友 vs 敌方），第二个队友没有位置。
+// 此前只有雪豹一个候选，"active" 就够用了；现在有两个候选，必须明确"同时只能一个"，
+// 否则 isSnowLeopardAvailable 与 isAsukaAvailable 会同时为真，
+// TeamDuelScreen 拿到两个 leopardData 级别的对象，行为未定义。
+export const COMPANION_SLOTS = [
+  { key: "snowLeopard", label: "雪豹", beast: true },
+  { key: "asuka", label: "明日香", beast: false },
+];
+
+// 当前出战的是谁（没有则 null）。单一真值来源，UI 与战斗都读它。
+export function activeCompanionKey(companionState) {
+  for (const s of COMPANION_SLOTS) {
+    const c = companionState?.[s.key];
+    if (c?.unlocked && c?.active && c?.data) return s.key;
+  }
+  return null;
+}
+
+export function activeCompanion(companionState) {
+  const k = activeCompanionKey(companionState);
+  return k ? { key: k, ...companionState[k] } : null;
+}
+
+// 已解锁的候选（供 UI 列出可切换的队友）
+export function unlockedCompanions(companionState) {
+  return COMPANION_SLOTS.filter(s => companionState?.[s.key]?.unlocked && companionState?.[s.key]?.data);
+}
+
+// 换出战队友：把目标置 active，其余一律置 false（互斥）。
+// key 传 null 表示谁都不带。
+export function setActiveCompanion(companionState, key) {
+  const next = { ...companionState };
+  for (const s of COMPANION_SLOTS) {
+    if (!next[s.key]) continue;
+    next[s.key] = { ...next[s.key], active: s.key === key };
+  }
+  return next;
+}
