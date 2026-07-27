@@ -6,6 +6,18 @@ import { detectNewFaces, markAsSeen, updateLastSeen, markNpcAsKnown } from "../n
 import { recordRumoredNpcs, clearRumor } from "../npcEmergence.js";
 import { mapDescriptionToGenParams } from "../npcDescriptionMapping.js";
 import { ensureNpcCombatData } from "../npcGeneration.js";
+
+// 回填时只取"战斗与随身"这几项。刻意不整个覆盖：名单里的对象可能带着系统字段
+// （驻场绑定、lockInnerRoom、companionCandidate、carriedItems 的 stolen/dropped 标记…），
+// 整份铺盖会把它们冲掉——那正是这次要修的同一类毛病，别在修的过程中再犯一次。
+function pickCombatData(fresh) {
+  const out = {};
+  for (const k of ["carriedItems", "moveset", "special", "combatStats", "levelCap",
+                   "waigong", "neigong", "baseAtk", "equipAtk", "equipDef", "personalityProfile"]) {
+    if (fresh[k] !== undefined) out[k] = fresh[k];
+  }
+  return out;
+}
 import { makeItemSmart } from "../items/catalog.js";
 import { makeItem, QUALITY } from "../equipment.js";
 import { makeSkillEntry, SKILL_CATALOG } from "../kungfu/qucuoKungfu.js";
@@ -161,6 +173,17 @@ export function commitRound(d) {
       const { levelCap, personalityProfile } = mapDescriptionToGenParams(`${n.brief || ""} ${d.narrativeText}`);
       return ensureNpcCombatData({ ...n, personalityProfile }, { luck, levelCap });
     });
+    // 把这一轮新固化出来的战斗数据按名字存一份，供下面"原地互动"分支回填。
+    // 【为什么需要这一步】上面这段固化写在 d.p.room.npcs 这个临时对象上；而原地互动
+    // （切磋/对话/查看，即没触发移动的绝大多数回合）走的分支是
+    // `setRoom(r => ({ ...r, ...d.p.room, npcs: r.npcs }))`——npcs 取旧的 r.npcs，
+    // 于是刚固化的 carriedItems/moveset/combatStats **整个被丢掉**。
+    // 后果：AI 生成的路人永远没有 carriedItems，切磋赢了掉落池恒为空、一件都不掉。
+    // 只有 residentNpcs 里带显式 carry 的驻场走另一条注入路径，所以玩家的体感是
+    // "只有村里那个老猎户爆过东西"。
+    // 不能改成信 AI 返回的名单——那是另一个已修 bug 的根因（AI 每轮重新发明在场
+    // 人物，"此地的人一会好几个一会都走光"）。所以只回填数据、不动名单。
+    d.freshNpcData = new Map(d.p.room.npcs.filter(n => n?.name).map(n => [n.name, n]));
 
     // 复用 MVU 块之前算好的系统采纳名单（systemAcceptedNames），判据一致：
     // 只认系统真正会放进场的人 + 涌现登场者，AI 凭空多报的幽灵一律不计入。
@@ -226,7 +249,17 @@ export function commitRound(d) {
       // useEffect）、人物涌现（emergedNpcName，就发生在这行之前）、或玩家
       // 自己的动作——不该被这句话顺手覆盖。
       const node = QUCUO_MAP[d.room.name];
-      d.setRoom(r => ({ ...r, ...d.p.room, name: d.room.name, exits: Object.keys(node.exits), npcs: r.npcs }));
+      // npcs 仍以系统既有名单 r.npcs 为准（不信 AI 这轮报的在场名单），但要把上面
+      // 刚固化出来的战斗数据回填给名单里对应的人——名单不动、数据补齐。
+      // 少了这一步，切磋掉落池恒为空（见上方 freshNpcData 处的注释）。
+      d.setRoom(r => ({
+        ...r, ...d.p.room, name: d.room.name, exits: Object.keys(node.exits),
+        npcs: r.npcs.map(o => {
+          if (o?.carriedItems) return o;                     // 已固化过的不动
+          const fresh = d.freshNpcData?.get(o?.name);
+          return fresh?.carriedItems ? { ...o, ...pickCombatData(fresh) } : o;
+        }),
+      }));
     } else if (d.p.room) {
       // 兜底：房间不在固定地图里（理论上不应该出现，只有 AI 未遵守系统裁决时才会
       // 落入这条路径）。这次修复已经从源头堵住了主要诱因——之前"向北走"这类带

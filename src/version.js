@@ -9,6 +9,20 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修「切磋赢了不掉东西」：固化的随身物被原地互动分支整个丢掉，掉落池恒为空",
+    time: "2026-07-28 21:30",
+    notes: [
+      "玩家反馈：切磋来来回回打了很多场，只有初始村子的老猎户爆出过东西。查下来是真 bug，而且只有驻场NPC能掉。",
+      "①【不是概率问题】duelDropChance 气运5 就有 32.6%、气运10 是 75%，不低。所以是**压根没走到掷骰那一步**——pool = (carriedItems||[]).filter(...) 恒为空，if (pool.length) 直接跳过。",
+      "②【根因】commitRound 开头确实给 AI 新报的 NPC 跑了 ensureNpcCombatData 固化 carriedItems/moveset/combatStats——但那是写在 d.p.room.npcs 这个**临时对象**上。而原地互动（切磋/对话/查看，即没触发移动的绝大多数回合）走的分支是 `setRoom(r => ({ ...r, ...d.p.room, npcs: r.npcs }))`：npcs 取旧的 r.npcs，刚固化的数据**整个被丢掉**。于是 AI 生成的路人永远没有 carriedItems。",
+      "③【为什么偏偏猎户能掉】老猎户是 residentNpcs 里的驻场、带显式 carry，走的是每日人口刷新那条注入路径，carry 会被带进 room.npcs 并固化。所以玩家的体感恰好是「只有村里那个老猎户爆过东西」——这条线索反而是定位根因的关键。",
+      "④【为什么难发现】掉落本来就是概率的，不掉看起来就像运气差。要打很多场、且注意到「只有某一个人掉过」才会起疑。",
+      "⑤【修法·不能碰的红线】不能改成信 AI 返回的名单——那正是另一个已修 bug 的根因（AI 每轮重新交一份「它认为在场的人」，直接铺盖会导致「此地的人一会好几个一会都走光」）。所以只回填数据、不动名单：新增 d.freshNpcData 存本轮固化结果，原地互动分支按名字把战斗数据补给既有名单里对应的人。",
+      "⑥【回填只取战斗字段】新增 pickCombatData 白名单（carriedItems/moveset/special/combatStats/levelCap/waigong/neigong/baseAtk/equipAtk/equipDef/personalityProfile）。刻意不整份铺盖：名单上的对象可能带着驻场绑定、lockInnerRoom、companionCandidate，以及 carriedItems 里的 stolen/dropped 标记——整份覆盖会把它们冲掉，那正是这次要修的同一类毛病，不能在修的过程中再犯一次。已固化过的人（o.carriedItems 有值）一律原样跳过，不重新随机随身物。",
+      "验证：vite build 通过、eslint 全清、vitest 379/379（新增 npcFixation.test.js 11 条）。测试覆盖固化兜底确实产出随身物、carry:[] 的「明确身无长物」不被兜底填满、回填补上缺失数据、**名单不新增不删除**、已固化的原样不动、系统字段（lockInnerRoom/companionCandidate/驻场绑定）不被冲掉、stolen/dropped 标记不被覆盖（否则偷过的东西会复活）、脏名单不炸。",
+    ],
+  },
+  {
     codename: "开场文案改用赌石那套精美UI的横卷轴承载：白字飘在画面上→墨字落在纸面上",
     time: "2026-07-28 20:00",
     notes: [
