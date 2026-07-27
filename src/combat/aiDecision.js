@@ -21,8 +21,21 @@ function weightedRandomPick(weights) {
 function pickAffordableMove(moveset, type, currentEnergy, riskAppetite) {
   const candidates = moveset.filter(m => m.type === type && m.energyCost <= currentEnergy);
   if (candidates.length === 0) {
-    // 这个类型下能量不够用任何技能，兜底走白色的回气位（保底技能，能量消耗为0）
-    return moveset.find(m => m.id === "move_hui_qi") || moveset[0];
+    // 【这个兜底以前是坏的·"敌人无限体力"的真相】
+    // 原来写的是 `moveset.find(m => m.id === "move_hui_qi") || moveset[0]`。
+    // 但 "move_hui_qi" 是**玩家**招式的 id 命名；NPC 的四槽由
+    // deriveSignatureMoveset 生成，id 形如 "sig_<npcId>_回气"，永远匹配不上。
+    // 于是每次都退回 moveset[0]——那通常是耗能最高的攻击招（红档可达 7）。
+    // 再加上 applyResultToUnit 会把扣成负数的能量夹回 0，结果就是：
+    // **敌人能量见底之后，每回合都在免费打出自己最强的攻击招**，
+    // 而它自己 cost=0 的回气招明明就在槽里、却永远选不到。
+    // 玩家的体感正是"敌人似乎无限体力点""只能应付一个人""激情互秒"。
+    //
+    // 改成：先找**当前负担得起的**最便宜的招（不限类型），一个都负担不起时
+    // 才退回全表最便宜的那一招——那必然是 cost=0 的回气位。
+    const affordable = moveset.filter(m => (m.energyCost ?? 0) <= currentEnergy);
+    const pool = affordable.length ? affordable : moveset;
+    return pool.reduce((min, m) => ((m.energyCost ?? 0) < (min.energyCost ?? 0) ? m : min), pool[0]);
   }
   // riskAppetite越高，越倾向选候选里能量消耗更高（通常也是品质更高）的技能
   candidates.sort((a, b) => a.energyCost - b.energyCost);

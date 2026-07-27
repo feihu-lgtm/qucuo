@@ -230,7 +230,16 @@ export function resolveTurn(sideA, sideB) {
       // 命中即可叠印记（招式或装备带的 applyMark），并引爆对方已有印记
       markApply(winnerMove, winnerIsA ? "B" : "A", winnerIsA ? "A" : "B");
       detonate(winnerMove, loserSide, winnerIsA ? "B" : "A", winnerSide);
-      // 状态克防御：防御方顾着挡正面，被状态迂回命中；防御"应对失败"
+    } else if (winnerMove.type === MOVE_TYPE.STATUS) {
+      // 【本轮修复·结构性错位】以下这一整段（"只顾防住正面"那句话起，直到状态招的
+      // 全套效果）本来写在**攻击分支内部**——注释自己写着"状态克防御"，却落在了
+      // "攻击克状态"里。两个后果：
+      //   ① 攻击克状态时会同时输出两句意思重复的话，玩家看到的就是
+      //      「踞原嗥月尚未运转完全，便被碎岩击正面打断。」
+      //      「踞原嗥月只顾防住正面，却漏了碎岩击这一手。」——同一件事说两遍。
+      //   ② 更要紧的是，攻击招赢的时候还会把**状态招的整套效果**跑一遍
+      //      （施加状态、封回气、加耗、二倍反弹…）。那些效果本该只属于状态招取胜。
+      // 补上这个 else if，各归各位。
       result.notes.push(`${loserMove.name}只顾防住正面，却漏了${winnerMove.name}这一手`);
       // 状态招的伤害/效果
       if (winnerMove.energyDiffDamage) {

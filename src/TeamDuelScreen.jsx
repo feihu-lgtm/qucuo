@@ -142,12 +142,19 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
       const lines = turnLog.map(e => {
         if (e.skipped) return { text: `${e.actorName}这一击落了空（${e.reason}）。`, notes: [], statusLog: [] };
         const clash = e.targetMove ? `，${e.targetName}以「${e.targetMove}」相抗` : `，${e.targetName}无暇他顾`;
-        const updown = e.matchup === "A" ? "占了上风" : e.matchup === "B" ? "被压了一头" : "两招同门相撞";
+        // 【点名是谁占上风】原来只写"占了上风/被压了一头"，不说主语——
+        // 2v2 里一行文字有两三个人名，读者根本分不清是谁赢了那一下（实测反馈）。
+        // matchup "A" 是出手方(actor)赢、"B" 是应战方(target)赢。
+        const updown = e.matchup === "A" ? `${e.actorName}占了上风`
+          : e.matchup === "B" ? `${e.targetName}占了上风`
+          : "两招同门相撞";
         const redirect = e.targetRedirected ? "（原目标已倒，转火）" : "";
         const dmg = [e.dmgToTarget > 0 ? `${e.targetName}受创${e.dmgToTarget}` : null, e.dmgToActor > 0 ? `${e.actorName}受创${e.dmgToActor}` : null].filter(Boolean).join("，");
         return {
           actorId: e.actorId,
-          text: `${e.actorName}以「${e.actorMove}」击向${e.targetName}${redirect}${clash}——${updown}${dmg ? "。" + dmg : ""}。`,
+          // 破折号去掉，改用句号断开：原来"…相抗——占了上风。"读起来像半句话被硬接上，
+          // 而且项目的成文铁律本来就写着"禁冒号破折号"。
+          text: `${e.actorName}以「${e.actorMove}」击向${e.targetName}${redirect}${clash}。${updown}${dmg ? "。" + dmg : ""}。`,
           notes: e.notes || [], statusLog: e.statusLog || [],
         };
       });
