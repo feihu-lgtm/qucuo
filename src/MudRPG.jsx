@@ -115,6 +115,7 @@ import { seededRand } from "./utils/seededRandom.js";
 import { getResidentNpcs, getAllResidentNpcLore } from "./residentNpcs.js";
 import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
 import { tryLearnFromMaster, tryStealFrom } from "./kungfu/learnSkill.js";
+import { stealSuccessRate } from "./combat/stealSystem.js";
 import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
 import { buildSysBase } from "./sysBase.js";
 import { DIRS, bar, STAGES, STAGE_UP_COST, STAGE_TO_QUALITY, DIR_DXY, parseDir, getTimeStr } from "./utils/mudHelpers.js";
@@ -3470,11 +3471,35 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 参与成功率计算，跟好感度独立相加——手越利索，越容易得手。
   const handleNpcSteal = useCallback((npc) => {
     const agility = char.special?.身法 ?? 0;
+    // 开 trace。偷窃此前完全不进「🧭全流程日志」——一旦偷不到东西，玩家和我都
+    // 只能猜（是没得手？池子空？还是转成偷招了？），只好靠反复试。
+    // 现在把判定链的每一步都记下来，尤其**池子的实际内容**：那是前几次反复修
+    // 掉落/偷窃 bug 时最想看却看不到的东西。
+    const _st = startTrace(`偷窃 ${npc?.name || "?"}`, `偷窃 ${npc?.name || "?"}`);
+    const poolAll = npc?.carriedItems || [];
+    const poolUsable = poolAll.filter(it => !it.stolen);
+    traceStep(_st, "随身物池", poolUsable.length ? "info" : "block",
+      poolAll.length
+        ? `共${poolAll.length}件，可偷${poolUsable.length}件：${poolUsable.map(i => `${i.name}(${i.category || "?"}/${i.quality || "?"})`).join("、") || "无"}`
+        : `carriedItems 为空或未固化 —— 这种情况偷不到任何物件，只可能偷到招式。若此人本该有随身物，说明固化/回填没生效。`);
+    traceStep(_st, "身法与好感", "info",
+      `身法${agility}，好感${varTreeRef.current.角色?.[npc?.name]?.好感度 ?? 0} → 成功率约 ${(stealSuccessRate(varTreeRef.current.角色?.[npc?.name]?.好感度 ?? 0, agility) * 100).toFixed(0)}%`);
+
     const result = tryStealFrom(npc, varTreeRef.current, skills, char, agility);
 
     if (!result.ok) {
+      traceStep(_st, "判定", "block", result.reason);
+      endTrace(_st, "偷窃未进行");
       addLog([{ t: "sys", text: `  ${result.reason}` }]);
       return;
+    }
+    traceStep(_st, "掷骰", result.success ? "pass" : "block",
+      `成功率${(result.rate * 100).toFixed(0)}% → ${result.success ? "得手" : "被察觉"}`);
+    if (result.success) {
+      traceStep(_st, "产出分流", "info",
+        `结局=${result.outcome === null ? "对方一无所有" : result.outcome === "move" ? "偷到招式" : "偷到物件"}`
+        + (result.outcome === "item" ? `：${result.item.name}(${result.item.category})` : "")
+        + (result.outcome === "move" ? `：${result.move.name}` : ""));
     }
 
     if (!result.success) {
@@ -3485,6 +3510,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       // 偷窃被当场发现，跟偷窃成功（神不知鬼不觉）性质完全相反——
       // 对方已经知道玩家是谁、双方有了正面冲突接触，这时候标记认识才合理；
       // 偷窃成功恰恰不该标记，因为那意味着对方完全没察觉玩家的存在。
+      endTrace(_st, `被${npc.name}察觉，好感-${result.favorabilityLoss}`);
       noteAction("stealFail");
       // 被当场发现：对方**确实知道**是你干的，所以这条记忆记在他名下（亲历），
       // 日后他提起来、别人问起来都对得上。
@@ -3509,6 +3535,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     }
 
     if (result.outcome === null) {
+      endTrace(_st, `得手但${npc.name}身无长物`);
       noteAction("steal");
       addLog([{ t: "sys", text: `  你想对${npc.name}下手，摸了半天，却发现他身上早已一无所有，只得悻悻作罢。` }]);
       // 手法得逞但一无所获。仍记一笔——"这个人身上已经没东西了"本身是有用的信息，
@@ -3529,6 +3556,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         { t: "loot", text: `🤫 妙手空空：「${target.name}」`, item: fullItem, source: "steal", fromNpc: npc.name },
       ]);
       setInv(prev => [...prev, { ...fullItem, id: `stolen_${target.id}_${Date.now()}` }]);
+      endTrace(_st, `顺走「${target.name}」`);
       noteAction("steal");
       // 【owner 刻意留空】偷窃得手意味着对方**完全没察觉**。若把他挂成 owner，
       // 这条就成了他"亲历/目击"的事实，之后他会在对话里提起自己被偷——
@@ -3549,6 +3577,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     { t: "loot", text: `🤫 偷師得手：「${result.move.name}」`, skill: { name: result.move.name, quality: result.move.quality || result.skill?.quality || "白", moveType: result.move.type }, desc: result.move.desc, source: "steal", fromNpc: npc.name },
   ]);
   setSkills(sk => sk.some(s => s.id === result.skill.id) ? sk : [...sk, result.skill]);
+  endTrace(_st, `偷师「${result.move.name}」`);
   noteAction("steal");
   // 偷师同理不挂 owner——他不知道自己的招被人看会了。
   jotNote({

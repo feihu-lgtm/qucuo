@@ -385,7 +385,17 @@ export function ensureNpcCombatData(npc, options = {}) {
   // carry 未声明（undefined）= 旧数据或未声明，回退到随机生成保持向后兼容。
   // carry = [] = AI 明确声明此人身无长物，carriedItems 为空，战斗只掉银两。
   let carriedItems;
-  if (npc.carriedItems) {
+  // 【判「非空」而不是判「存在」】空数组是 truthy——这一个字之差是
+  // "偷不到东西/切磋不掉东西" 折腾了好几轮的真正根因：
+  // npcPool.toRoomNpc() 会硬给每个人 `carriedItems: []`（占位），
+  // 于是所有经它转换的 NPC（游走人口、驻场、护镖目标、赌石竞价者——
+  // 也就是除 AI 现场生成之外的**全部** NPC）都会命中这个分支，
+  // 拿着那个空数组直接返回，**residentNpcs.js 里精心配的 carry 与
+  // rollNpcCarry 的兜底全被跳过**。玩家的体感就是"我给每个人都放了物品，
+  // 可谁身上都摸不出东西"。
+  // 真要表达"此人身无长物"，走下面 Array.isArray(npc.carry) 且 carry 为 []
+  // 那条路（有显式声明），不该靠一个占位空数组来表达。
+  if (Array.isArray(npc.carriedItems) ? npc.carriedItems.length > 0 : !!npc.carriedItems) {
     carriedItems = npc.carriedItems;
   } else if (Array.isArray(npc.carry)) {
     carriedItems = npc.carry.map((c, i) => ({

@@ -251,3 +251,71 @@ describe("回到那句台词：池子补上之后就不该再出现了", () => {
     expect(fixed.carriedItems.map(i => i.name)).toEqual(caidan.carry.map(i => i.name));
   });
 });
+
+// ── 真凶：空数组是 truthy ─────────────────────────────────────────────
+// 【折腾了好几轮才找到】"偷不到东西/切磋不掉东西"的真正根因只有一个字之差：
+//   if (npc.carriedItems)              ← 空数组也是 truthy
+// 而 npcPool.toRoomNpc() 会硬给每个人 `carriedItems: []` 作占位。于是所有经它
+// 转换的 NPC——游走人口、驻场、护镖目标、赌石竞价者，也就是除 AI 现场生成之外的
+// **全部** NPC——都命中这个分支，拿着空数组直接返回，
+// residentNpcs.js 里精心配的 carry 与 rollNpcCarry 的兜底全被跳过。
+// 玩家的体感正是"我给每个人都放了物品，可谁身上都摸不出东西"。
+//
+// 前几轮我修的三处（原地互动分支丢数据、驻场按名字跳过、UI 持旧快照）都是真问题，
+// 但都不是这一处；它们各自遮住了一部分症状，让根因更难被看见。
+import { toRoomNpc, NPC_POOL } from "../npcPool.js";
+import { mapDescriptionToGenParams } from "../npcDescriptionMapping.js";
+import { getResidentNpcs } from "../residentNpcs.js";
+
+// 复刻 MudRPG 的 toRoomNpcWithCombat（含白名单补回）
+const asRoomNpc = (poolNpc) => {
+  const base = toRoomNpc(poolNpc);
+  for (const k of ["levelCap", "carry", "beast", "fullBio", "personality", "companionCandidate", "guaranteedDrop"]) {
+    if (poolNpc[k] !== undefined) base[k] = poolNpc[k];
+  }
+  const inf = mapDescriptionToGenParams(`${poolNpc.name || ""} ${poolNpc.brief || ""}`);
+  return ensureNpcCombatData(base, { luck: 5, levelCap: poolNpc.levelCap ?? inf.levelCap });
+};
+
+describe("toRoomNpc 的占位空数组不许吞掉 carry", () => {
+  it("toRoomNpc 确实会给一个空 carriedItems（这就是陷阱的来源）", () => {
+    const base = toRoomNpc({ id: "x", name: "甲", brief: "乙" });
+    expect(base.carriedItems).toEqual([]);
+  });
+
+  it("经 toRoomNpc 之后，显式 carry 仍然生效", () => {
+    const caidan = getResidentNpcs("鱼定村").find(n => n.name === "才旦");
+    const fixed = asRoomNpc(caidan);
+    expect(fixed.carriedItems.map(i => i.name)).toEqual(caidan.carry.map(i => i.name));
+  });
+
+  it("鱼定村每个驻场都摸得出东西（作者说的「每个人身上都放了物品」）", () => {
+    for (const n of getResidentNpcs("鱼定村").map(asRoomNpc)) {
+      expect(n.carriedItems.length, `${n.name} 身上是空的`).toBeGreaterThan(0);
+    }
+  });
+
+  it("驻场里有装备类可偷（否则永远只偷得到杂物）", () => {
+    const caidan = asRoomNpc(getResidentNpcs("鱼定村").find(n => n.name === "才旦"));
+    const equip = caidan.carriedItems.filter(i => ["weapon", "armor", "accessory"].includes(i.category));
+    expect(equip.length).toBeGreaterThan(0);
+  });
+
+  it("没有显式 carry 的游走人口走 rollNpcCarry 兜底，也不空手", () => {
+    for (const n of NPC_POOL.slice(0, 5).map(asRoomNpc)) {
+      expect(n.carriedItems.length, `${n.name} 兜底没生成`).toBeGreaterThan(0);
+    }
+  });
+
+  it("carry: [] 才是「明确身无长物」——这条语义要保住", () => {
+    const fixed = ensureNpcCombatData({ ...toRoomNpc({ id: "p", name: "穷汉" }), carry: [] }, { luck: 5, levelCap: 0 });
+    expect(fixed.carriedItems).toEqual([]);
+  });
+
+  it("已有非空 carriedItems 的一律沿用（不重新随机、保住 stolen/dropped 标记）", () => {
+    const withMark = { id: "q", name: "乙", carriedItems: [{ name: "旧物", stolen: true }] };
+    const fixed = ensureNpcCombatData(withMark, { luck: 5, levelCap: 1 });
+    expect(fixed.carriedItems[0].stolen).toBe(true);
+    expect(fixed.carriedItems).toHaveLength(1);
+  });
+});
