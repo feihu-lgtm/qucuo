@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修开场两张图在 Pages 上不显示：硬编码绝对路径在 /qucuo/ 子路径下 404",
+    time: "2026-07-29 01:50",
+    notes: [
+      "①【根因】两张开场图当初写成硬编码的 image: \"/intro-1.webp\"。GitHub Pages 把站点部在 /qucuo/ 子路径下（vite.config.pages.js 的 base），绝对路径会被解析成 https://<user>.github.io/intro-1.webp → **404**。项目里其余 public 资源（stones/、portraits/、mapui/）一直都走 import.meta.env.BASE_URL，只有这两张漏了。已改成 BASE + \"intro-1.webp\"，与其余资源一致。",
+      "②【为什么之前没发现】两层遮蔽叠在一起：其一，本地默认 config 的 base 是 \"/\"，这个错在本地跑**完全看不出来**（正是上一版刚记下的那个 pages 盲区，隔一个 commit 就撞上了）；其二，我给这两张图加的 onError 兜底把 404 降级成了渐变底——表现是\"图没渲染\"而不是破图图标，更不容易联想到路径问题。兜底本身是对的，但它确实让这个 bug 更隐蔽。",
+      "③【验证方式】不只看源码，用 CI 的真实命令（--config vite.config.pages.js）构建后，从产物里把拼接结果抠出来核对：`kg=\"/qucuo/\"`、`_A=kg+\"intro-1.webp\"` → 实际请求 /qucuo/intro-1.webp，与卷轴 kg+\"stones/ui/scroll_h.webp\" 同一套。",
+      "④【加守卫】新增两条测试：源码里不许出现硬编码的 public 绝对路径（形如 \"/xxx.webp\"，注释里出现无妨），以及开场图与卷轴必须走 BASE_URL。防同类漏改再来一次——这类错在本地永远是绿的，只有部署后才现形，靠人记住不可靠。",
+      "验证：npm run verify 通过（vitest 431/431 + pages 构建），并从构建产物核对了实际请求路径。",
+    ],
+  },
+  {
     codename: "补上 CI 与本地校验的互补盲区：CI 加跑 vitest，本地加 npm run verify 与之同构",
     time: "2026-07-29 01:20",
     notes: [

@@ -104,3 +104,35 @@ describe("CI 与 npm run verify 同构（防两边分叉各留盲区）", () => 
     expect(cfg).toMatch(/base:\s*["']\/qucuo\/["']/);
   });
 });
+
+// public 资源路径守卫。
+// 【为什么需要】开场两张图当初写成硬编码的 "/intro-1.webp"，在本地（base "/"）
+// 完全正常，但 GitHub Pages 把站点部在 /qucuo/ 子路径下，绝对路径会解析成
+// https://<user>.github.io/intro-1.webp → 404。而我给它加的 onError 兜底又把 404
+// 降级成渐变底，于是表现为"图没渲染"而不是破图，更难察觉。
+// 项目里其余 public 资源（stones/ portraits/ mapui/）一直都走 import.meta.env.BASE_URL，
+// 只有那两张漏了。这条测试扫源码，防同类漏改再来一次。
+describe("public 资源必须走 BASE_URL（防 Pages 子路径下 404）", () => {
+  it("源码里没有硬编码的 public 绝对路径", () => {
+    const files = walk(SRC).filter(f => !f.includes(".test."));
+    const bad = [];
+    for (const f of files) {
+      const src = readFileSync(join(SRC, f), "utf-8");
+      src.split("\n").forEach((line, i) => {
+        if (line.trim().startsWith("//") || line.trim().startsWith("*")) return; // 注释里出现无妨
+        // 形如 "/xxx.webp" 的字符串字面量（相对 public 根的绝对路径）
+        if (/["'`]\/[A-Za-z0-9_-]+\.(webp|png|jpe?g|svg|mp3|ogg)["'`]/.test(line)) {
+          bad.push(`${f}:${i + 1}  ${line.trim().slice(0, 70)}`);
+        }
+      });
+    }
+    expect(bad, `以下位置硬编码了 public 绝对路径，Pages 子路径下会 404，请改走 import.meta.env.BASE_URL：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+
+  it("开场图与卷轴都走了 BASE_URL", () => {
+    const src = readFileSync("src/OpeningSequence.jsx", "utf-8");
+    expect(src).toMatch(/BASE\s*\+\s*"intro-1\.webp"/);
+    expect(src).toMatch(/BASE\s*\+\s*"intro-2\.webp"/);
+    expect(src).toMatch(/import\.meta\.env\s*&&\s*import\.meta\.env\.BASE_URL/);
+  });
+});

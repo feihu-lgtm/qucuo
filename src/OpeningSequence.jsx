@@ -12,7 +12,18 @@ import { ZONE_THEMES } from "./theme.js";
 
 const theme = ZONE_THEMES.village;
 // 沿用 GambleStoneScreen 的资源路径写法（走 Vite BASE_URL，部署到子路径也不断）
-const SCROLL_H = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "stones/ui/scroll_h.webp";
+const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
+const SCROLL_H = BASE + "stones/ui/scroll_h.webp";
+// 【必须走 BASE_URL，不能写死 "/intro-1.webp"】GitHub Pages 把站点部在
+// /qucuo/ 子路径下（见 vite.config.pages.js 的 base），绝对路径 /intro-1.webp
+// 会被解析成 https://<user>.github.io/intro-1.webp → 404。
+// 本地默认 config 的 base 是 "/"，所以这个错在本地完全看不出来——
+// 项目里其余 public 资源（stones/、portraits/、mapui/）一直都是走 BASE_URL 的，
+// 只有这两张开场图当初写成了硬编码，属漏改。
+// 而我加的 onError 兜底又把 404 降级成了渐变底，于是表现为"图没渲染"而非破图，
+// 更不容易被察觉。
+const INTRO_1 = BASE + "intro-1.webp";
+const INTRO_2 = BASE + "intro-2.webp";
 
 export default function OpeningSequence({ onFinish, playerName }) {
   const [index, setIndex] = useState(0);
@@ -20,11 +31,11 @@ export default function OpeningSequence({ onFinish, playerName }) {
   const name = playerName || "无名少侠";
   const SLIDES = [
     {
-      image: "/intro-1.webp",
+      image: INTRO_1,
       caption: "你揣着一张赌石邀帖，一路翻山越岭走到这曲措乡地界。没有姓氏可报，没有师门可攀。",
     },
     {
-      image: "/intro-2.webp",
+      image: INTRO_2,
       caption: `帖上写着：${name} 启。落款一个「温」字——天都镇玉器轩，三日一开石，路远，来不来随意。`,
     },
   ];
