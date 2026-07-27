@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, computeEquippedStats, toggleEquip } from "../equipment.js";
 import { bar, STAGES, STAGE_UP_COST } from "../utils/mudHelpers.js";
 import { npcAffectionLabel } from "../mvu.js";
 import { SNOW_LEOPARD_FORMS, snowLeopardPortraitUrl } from "../portraits.js";
 import { unlockedCompanions, activeCompanionKey, isSnowLeopardAvailable } from "../companion.js";
+import { effectBrief, statLabel, moveStatLabel, moveEffectBrief } from "../itemEffectText.js";
 import { bodyProfileFilled } from "../bodyProfile.js";
 import { NNPC_STAGE, affectionLabel } from "../narrator.js";
 import { CATALOG_INDEX } from "../items/catalog.js";
@@ -24,6 +26,8 @@ export default function RightPanel({
   narrator, confessToNarrator,
   setInv,
 }) {
+  // 未上阵武学默认收起（招会越攒越多，全铺开会把上阵那几门埋在中间）
+  const [showIdleSkills, setShowIdleSkills] = useState(false);
   return (
     <div style={isMobile
       ? { position: "fixed", top: 0, bottom: 0, right: 0, width: "82vw", maxWidth: 340, zIndex: 41,
@@ -236,8 +240,25 @@ export default function RightPanel({
         })()}
 
         <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
-          <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>武学 <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>点名字看介绍 · 点圈运功上阵（每类只运一门，▶已上阵）</span></div>
-          {skills.map((s, i) => {
+          {/* 武学：未上阵的默认收起。玩家学的招会越攒越多（拜师/偷师/自练），
+              全铺开之后上阵那几门反而被埋在中间——而真正每回合要看的只有上阵的。
+              收起来的仍可一键展开，不是隐藏功能。 */}
+          <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+            <span>武学</span>
+            <span style={{ color: zoneTheme.textDim, fontSize: "10px", flex: 1 }}>点名字看介绍 · 点圈运功上阵（每类只运一门，▶已上阵）</span>
+            {(() => {
+              const idle = skills.filter(s => !s.active).length;
+              if (!idle) return null;
+              return (
+                <span
+                  onClick={() => setShowIdleSkills(v => !v)}
+                  style={{ cursor: "pointer", fontSize: "9.5px", color: zoneTheme.accent, border: `1px solid ${zoneTheme.border}`, borderRadius: 2, padding: "0 4px", flexShrink: 0 }}
+                >{showIdleSkills ? `收起未上阵 ${idle}` : `未上阵 ${idle} ▾`}</span>
+              );
+            })()}
+          </div>
+          {skills.filter(s => s.active || showIdleSkills).map((s) => {
+            const i = skills.indexOf(s);
             const q = s.quality || "白";
             const qc = QUALITY_COLOR[q] || "#c8bfa0";
             return (
@@ -262,6 +283,12 @@ export default function RightPanel({
                     style={{ cursor: inspecting === s.name ? "wait" : "pointer", color: qc, fontWeight: s.active ? "bold" : "normal", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === s.name ? 0.6 : 1 }}
                   >{s.name}{s.fixed ? "" : `·${s.stage}`}{inspecting === s.name ? "…" : ""}</span>
                   <span style={{ fontSize: "9.5px", color: qc, opacity: 0.9 }}>（{q}品）</span>
+                  {/* 伤害倍率与耗气。显示倍率而非绝对伤害：绝对值要乘外功/装备/
+                      对手根骨才算得出，面板上给个"×1.3"比给一个随时会变的数字诚实。 */}
+                  {(() => {
+                    const lbl = moveStatLabel(s);
+                    return lbl ? <span style={{ fontSize: "9px", color: zoneTheme.textDim, flexShrink: 0 }}>{lbl}</span> : null;
+                  })()}
                   {s.fixed && (() => {
                     const src = s.source || "拜师";
                     const label = src === "偷师" ? "偷" : src === "拜师·通用" ? "通" : "授";
@@ -269,6 +296,10 @@ export default function RightPanel({
                     return <span title={title} style={{ fontSize: "9px", color: zoneTheme.textDim, border: `1px solid ${zoneTheme.border}`, borderRadius: 2, padding: "0 3px" }}>{label}</span>;
                   })()}
                 </div>
+                {(() => {
+                  const eff = moveEffectBrief(s);
+                  return eff ? <div style={{ paddingLeft: 18, fontSize: "9.5px", color: s.active ? "#8ac48a" : "#4a5a4a" }}>{eff}</div> : null;
+                })()}
                 {s.fixed
                   ? <div style={{ paddingLeft: 18 }}>
                       <div style={{ fontSize: "10.5px", color: "#5a5a4a" }}>
@@ -346,19 +377,27 @@ export default function RightPanel({
                 </div>
                 {itemsInCat.length === 0 && <div style={{ fontSize: "10.5px", color: zoneTheme.textDim, paddingLeft: 8 }}>无</div>}
                 {itemsInCat.map(item => {
-                  const statLabel = item.atk != null ? `攻${item.atk}` : item.def != null ? `防${item.def}` : item.bonus != null ? `+${item.bonus}` : "";
+                  // 特效与七维加成也要显示。此前这一行只有 (紫·攻35)，玩家拿到红档神兵
+                  // 看不出它跟普通武器差在哪，只好得出"只加了攻防"的结论（群友实测反馈）。
+                  const stat = statLabel(item);
+                  const eff = effectBrief(item.effect, item.sixDim);
                   return (
                     <div
                       key={item.id}
                       onClick={() => setInv(v => toggleEquip(v, item.id))}
                       style={{
-                        fontSize: "11px", cursor: "pointer", paddingLeft: 8, marginBottom: 2,
+                        fontSize: "11px", cursor: "pointer", paddingLeft: 8, marginBottom: 3,
                         color: item.equipped ? QUALITY_COLOR[item.quality] : "#5a5a4a",
                         fontWeight: item.equipped ? "bold" : "normal",
                         wordBreak: "break-word",
                       }}
                     >
-                      {item.equipped ? "▶" : "○"} {item.name} <span style={{ fontSize: "9.5px" }}>({item.quality}{statLabel ? `·${statLabel}` : ""})</span>
+                      <div>
+                        {item.equipped ? "▶" : "○"} {item.name} <span style={{ fontSize: "9.5px" }}>({item.quality}{stat ? `·${stat}` : ""})</span>
+                      </div>
+                      {eff && (
+                        <div style={{ fontSize: "9.5px", paddingLeft: 14, color: item.equipped ? "#8ac48a" : "#4a5a4a" }}>{eff}</div>
+                      )}
                     </div>
                   );
                 })}

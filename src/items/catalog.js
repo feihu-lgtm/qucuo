@@ -72,12 +72,12 @@ export const WEAPONS = [
   },
   {
     name: "雪鸮翎", category: ITEM_CATEGORY.WEAPON, quality: "紫", atkMul: 1.4,
-    effect: { forceFirst: true },
+    effect: { forceFirst: true }, sixDim: { 身法: 2 },
     desc: "六枚飞刀如鸟翎排列，用雪山雪鸮的翼骨磨成，轻得离谱，打出去没有风声——快到对手听见破空声时，刀已在身上。",
   },
   {
     name: "断念", category: ITEM_CATEGORY.WEAPON, quality: "紫", atkMul: 1.5,
-    effect: { ignoreDefense: true },
+    effect: { ignoreDefense: true }, sixDim: { 体魄: 1 },
     desc: "无锋，通体漆黑。巴桑从锦官城佣兵头子手里缴来，剑身刻着半句诗“断念如断骨”，后半句被磨平了——势大力沉，寻常护甲卸不去分毫。",
   },
   {
@@ -100,7 +100,7 @@ export const WEAPONS = [
   },
   {
     name: "青鸢", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.55,
-    effect: { enemyCostPenalty: { value: 2, turns: 2 } },
+    effect: { enemyCostPenalty: { value: 2, turns: 2 } }, sixDim: { 智谋: 2 },
     desc: "柳青鸢的随身软鞭，鞭梢系一枚青铜鸢鸟，甩出去时鸟喙会叼住目标——被缠上的人手脚发滞，出招愈发迟涩。她练鞭时抽断三棵柳树，从此院里只剩柏。",
   },
   {
@@ -119,7 +119,7 @@ export const WEAPONS = [
   },
   {
     name: "贡措冰晶", category: ITEM_CATEGORY.WEAPON, quality: "紫", atkMul: 1.4,
-    effect: { applyMark: { name: "内伤印", stacks: 2 }, applyMarkChance: 0.4 },
+    effect: { applyMark: { name: "内伤印", stacks: 2 }, applyMarkChance: 0.4 }, sixDim: { 悟性: 1, 气运: 1 },
     desc: "贡措海深处的矿石碎片，投水会沉底，握久了会化——不是冰，是盐。用它打人，伤口一辈子舔不咸，暗伤缠身难愈。",
   },
   {
@@ -144,7 +144,7 @@ export const WEAPONS = [
   },
   {
     name: "霜角", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.6,
-    effect: { forceFirst: true, detonateMark: { perStackRatio: 0.4 } },
+    effect: { forceFirst: true, detonateMark: { perStackRatio: 0.4 } }, sixDim: { 身法: 2 },
     desc: "吊睛虎王骨长错位增生的一块硬骨，形如角。虎王撞断过一棵松树，骨裂愈合后多长这块，从此别的虎再不敢进那片松林——势不可挡，专破暗伤。",
   },
 ];
@@ -193,7 +193,7 @@ export const ARMORS = [
   },
   {
     name: "欢喜法衣", category: ITEM_CATEGORY.ARMOR, quality: "紫", defMul: 1.4,
-    effect: { applyMark: { name: "内伤印", stacks: 1 }, applyMarkChance: 0.3, applyMarkOnHit: true },
+    effect: { applyMark: { name: "内伤印", stacks: 1 }, applyMarkChance: 0.3, applyMarkOnHit: true }, sixDim: { 魅力: 2 },
     desc: "欢喜堂内院礼袍，暗红底子，金线绣着梵衍那家乡的旧神像。罗琦那件压在箱底——神像的眼睛绣错了，不该睁着。谁打这袍子，谁沾一身说不清的暗伤。",
   },
   {
@@ -568,10 +568,10 @@ export const SUNDRIES = [
   { name:"紫铜护心镜", category:ITEM_CATEGORY.ARMOR, quality:"绿", tags:["护具","铜器"], desc:"天都镇铁铺打的护心铜镜，镜面凸起一道脊，不是装饰——是打铁的孟铁匠说护心镜凸脊能卸力，力道从脊上滑过去比硬扛强。" },
   { name:"牦牛皮护臂", category:ITEM_CATEGORY.ARMOR, quality:"白", tags:["护具","皮甲"], desc:"玉泉寨牧民自制的护臂，三层牦牛皮叠缝，系带是马尾编的。磨得起毛的那一面是外侧——老牧民说皮子起毛才合手，新皮太硬。" },
   { name:"铁网僧袍", category:ITEM_CATEGORY.ARMOR, quality:"蓝", tags:["护具","僧袍"], effect:{ doubleReflectDamage: true }, desc:"白塔守塔僧的制式僧袍，夹层衬细铁网。袍子重，夏天穿不住——但地宫阴冷，铁网常年冰凉，穿久了反而觉得那层凉意是护身符。" },
-  { name:"蜀锦软甲", category:ITEM_CATEGORY.ARMOR, quality:"橙", tags:["护具","锦缎"], effect:{ doubleReflectDamage: true, ignoreDefensePartialImmune: 0.3 }, desc:"锦官城成衣铺的镇店货，蜀锦织就，夹层衬百层棉纸叠压。轻得能叠进包袱，展开后刀砍上去先吃进锦缎的经纬，再被棉纸卸掉余力。" },
+  { name:"蜀锦软甲", category:ITEM_CATEGORY.ARMOR, quality:"橙", tags:["护具","锦缎"], effect:{ doubleReflectDamage: true, ignoreDefensePartialImmune: 0.3 }, sixDim: { 身法: 2 }, desc:"锦官城成衣铺的镇店货，蜀锦织就，夹层衬百层棉纸叠压。轻得能叠进包袱，展开后刀砍上去先吃进锦缎的经纬，再被棉纸卸掉余力。" },
   { name:"百炼锁子甲", category:ITEM_CATEGORY.ARMOR, quality:"橙", tags:["护具","锁子甲"], effect:{ immuneControl: true, ignoreDefensePartialImmune: 0.4 }, desc:"天都镇孟记铁铺的孟铁匠打了三个月的锁子甲，每个铁环接口都焊死。甲重十二斤，穿上后行动如常——铁环会随动作滑移，不卡关节。" },
-  { name:"犀牛皮重甲", category:ITEM_CATEGORY.ARMOR, quality:"红", tags:["护具","皮甲","重甲"], effect:{ immuneControl: true, rebirthOnce: true }, desc:"黑风寨老铁匠用熊山犀牛皮硝了一年才做成的重甲，皮板厚得像门板。甲身上有三道旧抓痕——不是伤，是犀牛生前和虎王打架留下的。" },
-  { name:"天竺金丝软甲", category:ITEM_CATEGORY.ARMOR, quality:"红", tags:["护具","金丝"], effect:{ immuneControl: true, doubleReflectDamage: true }, desc:"欢喜堂从天竺带来的金丝软甲，金丝细如发，编成细密的网眼。甲重不到两斤，穿在衣服里完全看不出，但刀尖捅上来时金丝会绞住刀刃。" },
+  { name:"犀牛皮重甲", category:ITEM_CATEGORY.ARMOR, quality:"红", tags:["护具","皮甲","重甲"], effect:{ immuneControl: true, rebirthOnce: true }, sixDim: { 根骨: 3, 体魄: 2 }, desc:"黑风寨老铁匠用熊山犀牛皮硝了一年才做成的重甲，皮板厚得像门板。甲身上有三道旧抓痕——不是伤，是犀牛生前和虎王打架留下的。" },
+  { name:"天竺金丝软甲", category:ITEM_CATEGORY.ARMOR, quality:"红", tags:["护具","金丝"], effect:{ immuneControl: true, doubleReflectDamage: true }, sixDim: { 身法: 3, 根骨: 1 }, desc:"欢喜堂从天竺带来的金丝软甲，金丝细如发，编成细密的网眼。甲重不到两斤，穿在衣服里完全看不出，但刀尖捅上来时金丝会绞住刀刃。" },
   { name:"熊山皮坎肩", category:ITEM_CATEGORY.ARMOR, quality:"绿", tags:["护具","皮甲","猎户"], desc:"鱼定村猎户人手一件的熊皮坎肩，硝得不透，皮板还硬着。肩头有一道抓痕——老猎户说是母熊抓的，母熊比公熊凶，因为它身后有崽。" },
   { name:"镖师护腕", category:ITEM_CATEGORY.ARMOR, quality:"白", tags:["护具","皮具"], desc:"锦官城镖局统一配发的牛皮护腕，内衬一层薄铁片。新护腕磨手腕，走第一趟镖就能磨出血，老镖师说磨破了结痂就好——痂比皮厚。" },
   { name:"贡措海蟒皮护腰", category:ITEM_CATEGORY.ARMOR, quality:"蓝", tags:["护具","蟒皮"], effect:{ applyMark: { name: "内伤印", stacks: 1 }, applyMarkChance: 0.3, applyMarkOnHit: true }, desc:"锦官城皮货铺从贡措海收来的水蟒皮，鞣制后仍保留鳞片纹路。护腰系紧后不松不滑——蟒鳞遇热会微微收缩，贴着皮肤的力道刚好。" },
@@ -579,11 +579,11 @@ export const SUNDRIES = [
   { name:"柏木护肩", category:ITEM_CATEGORY.ARMOR, quality:"绿", tags:["护具","木甲"], desc:"喇嘛庙后山老柏木削的护肩，木质轻而韧，柏香经年不散。僧人练武时戴，说是护肩不如说是闻香——柏香入鼻，心先静了。" },
   { name:"钢鳞护臂", category:ITEM_CATEGORY.ARMOR, quality:"蓝", tags:["护具","钢制"], effect:{ doubleReflectDamage: true }, desc:"天都镇铁铺用百炼钢片叠成的护臂，鳞片层层相扣，抬手时钢鳞会顺着肌肉滑动。孟铁匠说这是仿鱼鳞的——鱼鳞长在鱼身上不是为了好看。" },
   { name:"黑风寨牛皮重铠", category:ITEM_CATEGORY.ARMOR, quality:"紫", tags:["护具","皮甲","重甲"], effect:{ ignoreDefensePartialImmune: 0.3, immuneControl: true }, desc:"黑风寨老铁匠用三张成年牦牛皮叠在一起硝的重铠，甲片用铜钉铆死，穿上去像披了一堵墙。巴桑说不用怕刀砍，倒是怕从马上摔下来——甲太重。" },
-  { name:"明光铠改制", category:ITEM_CATEGORY.ARMOR, quality:"红", tags:["护具","重甲"], effect:{ immuneControl: true, ignoreDefensePartialImmune: 0.5, rebirthOnce: true }, desc:"锦官城官造坊按前朝明光铠图纸改制的制式重甲，胸前两块护心镜锃亮如镜。镜面上隐隐有锤纹——不是工艺粗糙，是打甲的老匠人故意留的锤痕。" },
+  { name:"明光铠改制", category:ITEM_CATEGORY.ARMOR, quality:"红", tags:["护具","重甲"], effect:{ immuneControl: true, ignoreDefensePartialImmune: 0.5, rebirthOnce: true }, sixDim: { 根骨: 3, 体魄: 1 }, desc:"锦官城官造坊按前朝明光铠图纸改制的制式重甲，胸前两块护心镜锃亮如镜。镜面上隐隐有锤纹——不是工艺粗糙，是打甲的老匠人故意留的锤痕。" },
   { name:"百炼苗刀", category:ITEM_CATEGORY.WEAPON, quality:"紫", tags:["武器","刀"], effect:{ applyStatus: { name: "淬毒", chance: 0.5 }, afterStatusBonus: 0.3 }, desc:"天都镇黑市从苗疆流出来的百炼长刀，刀身窄而微弧，刀背留着一道锻造时的锤印。黑市贩子说苗刀淬的是牛血，砍人时刀刃会发出一声极细的嗡鸣。" },
-  { name:"陨铁刀", category:ITEM_CATEGORY.WEAPON, quality:"橙", tags:["武器","陨铁"], effect:{ ignoreDefense: true, applyStatus: { name: "裂伤", chance: 0.5 } }, desc:"锦官城老铁铺用贡措海畔捡的陨铁打的长刀，刀身泛暗蓝纹，纹路如夜空流云。掌柜说陨铁打了三个月才成形——不是铁硬，是陨铁认生，不肯被锤子驯服。" },
+  { name:"陨铁刀", category:ITEM_CATEGORY.WEAPON, quality:"橙", tags:["武器","陨铁"], effect:{ ignoreDefense: true, applyStatus: { name: "裂伤", chance: 0.5 } }, sixDim: { 体魄: 2 }, desc:"锦官城老铁铺用贡措海畔捡的陨铁打的长刀，刀身泛暗蓝纹，纹路如夜空流云。掌柜说陨铁打了三个月才成形——不是铁硬，是陨铁认生，不肯被锤子驯服。" },
   { name:"虎骨猎叉", category:ITEM_CATEGORY.WEAPON, quality:"紫", tags:["武器","猎具"], effect:{ ignoreDefense: true, lowHpBonus: 0.12 }, desc:"熊山猎户用吊睛虎王的大腿骨打磨的猎叉，叉尖保留虎骨的天然弧度，刺出去时叉身会发出低沉的骨鸣。老猎户说这叉不沾血腥——骨鸣会惊走猎物，只适合猎虎。" },
-  { name:"点钢枪", category:ITEM_CATEGORY.WEAPON, quality:"紫", tags:["武器","长兵"], effect:{ afterCounterBonus: 0.35 }, desc:"锦官城武馆的教头用枪，枪尖是百炼钢反复折叠锻打的，枪杆是老白蜡木。枪尖点地时枪杆会颤，颤到第三下才停——教头说这颤劲是活的。" },
+  { name:"点钢枪", category:ITEM_CATEGORY.WEAPON, quality:"紫", tags:["武器","长兵"], effect:{ afterCounterBonus: 0.35 }, sixDim: { 身法: 1 }, desc:"锦官城武馆的教头用枪，枪尖是百炼钢反复折叠锻打的，枪杆是老白蜡木。枪尖点地时枪杆会颤，颤到第三下才停——教头说这颤劲是活的。" },
   { name:"松纹剑", category:ITEM_CATEGORY.WEAPON, quality:"蓝", tags:["武器","剑","门派"], effect:{ forceFirst: true }, desc:"雪山派弟子人手一柄的制式长剑，剑身有天然松木纹理，不是刻意锻造——是雪山寒铁淬雪水时自然凝结的纹路。剑穗分五色，呼延雪那柄系的是白色。" },
   { name:"厚背大砍刀", category:ITEM_CATEGORY.WEAPON, quality:"蓝", tags:["武器","重兵"], effect:{ highHpBonus: 0.2 }, desc:"黑风寨兄弟人手一把的砍刀，刀背厚如指节，刀刃开得糙。巴桑说这刀不用磨得太利——砍人靠的不是刃，是刀背的份量，砸下去比劈下去实在。" },
   { name:"牛角弓", category:ITEM_CATEGORY.WEAPON, quality:"绿", tags:["武器","弓","猎具"], desc:"熊山猎户用牦牛角和老牦牛皮筋做的猎弓，弓臂保留牛角的天然弧度，拉满时会发出牛角受力的嘎吱声。老猎户说这弓的声音像牛在叹气。" },
@@ -591,10 +591,10 @@ export const SUNDRIES = [
   { name:"峨眉刺", category:ITEM_CATEGORY.WEAPON, quality:"蓝", tags:["武器","短兵"], effect:{ applyStatus: { name: "裂伤", chance: 0.35 } }, desc:"百花楼的姑娘防身用的短刺，刺身细如蜂针，尾部套在指尖旋转如花。兰姐说峨眉刺不是用来杀人的——是用来划衣服的，划破比刺穿更让人怕。" },
   { name:"锻钢苗刀", category:ITEM_CATEGORY.WEAPON, quality:"蓝", tags:["武器","刀"], effect:{ applyStatus: { name: "淬毒", chance: 0.3 } }, desc:"天都镇铁铺用苗刀刀型改打的钢刀，刀身比苗刀略宽，刀尖保留苗刀的微弧。孟铁匠说苗刀不趁手他改——改了还是叫苗刀，是敬苗人。" },
   { name:"乌木鞭", category:ITEM_CATEGORY.WEAPON, quality:"绿", tags:["武器","软兵","鞭"], desc:"熊山老乌木削的软鞭，鞭身有天然的木节凸起，抽出去时木节划过空气发出呜呜声。老猎户说这鞭子打人比打兽疼——木节硌骨头。" },
-  { name:"玄铁重剑", category:ITEM_CATEGORY.WEAPON, quality:"紫", tags:["武器","重兵","剑"], effect:{ highHpBonus: 0.3, forceFirst: true }, desc:"锦官城武馆压馆的玄铁重剑，无锋无刃，剑身通体墨黑。教头说这剑不是用来刺的——是让人练腕力的，每天举三百次，一年后才能用正常剑。" },
+  { name:"玄铁重剑", category:ITEM_CATEGORY.WEAPON, quality:"紫", tags:["武器","重兵","剑"], effect:{ highHpBonus: 0.3, forceFirst: true }, sixDim: { 体魄: 2 }, desc:"锦官城武馆压馆的玄铁重剑，无锋无刃，剑身通体墨黑。教头说这剑不是用来刺的——是让人练腕力的，每天举三百次，一年后才能用正常剑。" },
   { name:"飞石索", category:ITEM_CATEGORY.WEAPON, quality:"白", tags:["武器","猎具","软兵"], desc:"大草甸牧民用的投石索，牦牛皮编的索兜，装一颗圆石甩三圈掷出去，能打到三十步外的兔子腿。小牧童阿索甩得最准——他专打兔子后腿。" },
   { name:"藏刀", category:ITEM_CATEGORY.WEAPON, quality:"绿", tags:["武器","短刀","藏刀"], desc:"玉泉寨铁匠打的藏式短刀，刀柄嵌一块绿松石，刀鞘包牦牛皮。牧民人手一柄，用来割肉、削木、防身——用得最久的刀柄上会凹进去一个拇指印。" },
-  { name:"天竺弯刀", category:ITEM_CATEGORY.WEAPON, quality:"橙", tags:["武器","天竺","刀"], effect:{ forceCrit: { multiplier: 1.6 }, afterCounterBonus: 0.3 }, desc:"欢喜堂从天竺带来的弯刀，刀身弧如新月，刀柄缠金丝。梵衍那说这刀型从天竺孔雀王朝传到今天，刀刃弧度刚好贴合手腕内旋的角度。" },
+  { name:"天竺弯刀", category:ITEM_CATEGORY.WEAPON, quality:"橙", tags:["武器","天竺","刀"], effect:{ forceCrit: { multiplier: 1.6 }, afterCounterBonus: 0.3 }, sixDim: { 气运: 2 }, desc:"欢喜堂从天竺带来的弯刀，刀身弧如新月，刀柄缠金丝。梵衍那说这刀型从天竺孔雀王朝传到今天，刀刃弧度刚好贴合手腕内旋的角度。" },
   { name:"雪山秘密药膏", category:ITEM_CATEGORY.MISC, quality:"橙", tags:["药膏","雪山"], consumable:{hpRestore:0.35,dispel:true}, desc:"喇嘛庙达摩药堂的秘制外敷药膏，瓷罐封存。膏体黑如沥青，涂在伤口上先是剧痛，再是麻痒——药堂师父说麻痒是筋在长，剧痛是毒在退。" },
   { name:"天竺醒神膏", category:ITEM_CATEGORY.MISC, quality:"橙", tags:["丹药","天竺"], consumable:{energyRestore:8,dispelAll:true}, desc:"欢喜堂用天竺古方配的醒神膏，内服后太阳穴一跳，神识骤然清明。罗琦说这膏药她配了三年才成功——失败了就是麻药，成功才是醒药。" },
   { name:"百花陈酿", category:ITEM_CATEGORY.MISC, quality:"橙", tags:["酒","花酿"], consumable:{hpRestoreOverTime:{ratio:0.15,turns:5},sixDimTemp:{魅力:3}}, desc:"百花楼地窖里埋了二十年的桂花陈酿，开坛时酒香能飘满整条街。兰姐自己从不喝——她说陈酿是等一个人来才开的，那个人一直没来。" },
@@ -608,11 +608,11 @@ export const SUNDRIES = [
   { name:"苗银暗器囊", category:ITEM_CATEGORY.ACCESSORY, quality:"蓝", tags:["暗器","苗银"], effect:{ applyStatus: { name: "淬毒", chance: 0.3 } }, desc:"百花楼姑娘随身带的暗器囊，囊口用苗银扣锁住，囊内分三格。一格装蛊香，一格装银针，一格空着——兰姐说空的那格是留给自己的。" },
 
   // —— 补货批次「收尾」24件(红档通货武器/白绿饰品/白族谱系/天竺白档)——
-  { name: "百炼玄铁大刀", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "重兵"], effect: { ignoreDefense: true }, desc: "锦官城铸剑坊接了大主顾才肯开炉的一批重刀，百炼折叠的刀身黑得发青，寻常皮甲铁甲一概当纸糊，价钱也贵得能买半座宅子。至于用得动用不动，铁匠只笑不答，说买得起的自然抡得起。" },
-  { name: "赤铜错金枪", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "长兵"], effect: { forceFirst: true }, desc: "官造军械里最扎眼的一杆长枪，枪杆赤铜错着金线，出手快得对方还没看清就已中招。原是给品级够高的武官配的仪仗，流到市面上的都是有门路的人转手，寻常铺子摆不出这么一杆。" },
-  { name: "寒锋七星剑", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "名匠"], effect: { forceCrit: true }, desc: "剑脊上嵌着七枚北斗样的星纹，据说是某位隐姓名匠晚年一年只出三口的活儿。剑虽利，却不认人,谁使都是一样的锋,故而算不得独一份的名器,只是贵得离谱的一件好货罢了。" },
-  { name: "镔铁破阵斧", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "重兵"], effect: { highHpBonus: 0.3 }, desc: "边军里淘汰下来的破阵重斧，斧头厚得能当砧板，人越是气力充沛这一斧劈得越狠，脱了力反倒抡不圆。军中说这斧子挑人，挑的不是身份，是那口还没泄的气。" },
-  { name: "点睛乌金鞭", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "软兵"], effect: { nullifyStatusOnHit: true }, desc: "十三节乌金软鞭，节节相扣如活蛇，鞭梢一点便能把对方刚运起的花招震散。会使的人不多，肯花大价钱买的更少，铺子里挂着更多是充门面，真买走的据说都不是善茬。" },
+  { name: "百炼玄铁大刀", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "重兵"], effect: { ignoreDefense: true }, sixDim: { 体魄: 3 }, desc: "锦官城铸剑坊接了大主顾才肯开炉的一批重刀，百炼折叠的刀身黑得发青，寻常皮甲铁甲一概当纸糊，价钱也贵得能买半座宅子。至于用得动用不动，铁匠只笑不答，说买得起的自然抡得起。" },
+  { name: "赤铜错金枪", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "长兵"], effect: { forceFirst: true }, sixDim: { 身法: 3 }, desc: "官造军械里最扎眼的一杆长枪，枪杆赤铜错着金线，出手快得对方还没看清就已中招。原是给品级够高的武官配的仪仗，流到市面上的都是有门路的人转手，寻常铺子摆不出这么一杆。" },
+  { name: "寒锋七星剑", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "名匠"], effect: { forceCrit: true }, sixDim: { 气运: 2, 身法: 1 }, desc: "剑脊上嵌着七枚北斗样的星纹，据说是某位隐姓名匠晚年一年只出三口的活儿。剑虽利，却不认人,谁使都是一样的锋,故而算不得独一份的名器,只是贵得离谱的一件好货罢了。" },
+  { name: "镔铁破阵斧", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "重兵"], effect: { highHpBonus: 0.3 }, sixDim: { 体魄: 2, 根骨: 1 }, desc: "边军里淘汰下来的破阵重斧，斧头厚得能当砧板，人越是气力充沛这一斧劈得越狠，脱了力反倒抡不圆。军中说这斧子挑人，挑的不是身份，是那口还没泄的气。" },
+  { name: "点睛乌金鞭", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "软兵"], effect: { nullifyStatusOnHit: true }, sixDim: { 身法: 2, 智谋: 1 }, desc: "十三节乌金软鞭，节节相扣如活蛇，鞭梢一点便能把对方刚运起的花招震散。会使的人不多，肯花大价钱买的更少，铺子里挂着更多是充门面，真买走的据说都不是善茬。" },
   { name: "牛骨素圈", category: ITEM_CATEGORY.ACCESSORY, quality: "白", tags: ["饰品", "藏地"], desc: "玉泉寨牧人拿吃剩的牦牛胫骨磨的素圈，不錾花不镶石，戴手上凉丝丝的。牧女说磨得越亮的准是戴了十几年的，新的那批白得刺眼，一看就没经过日子。" },
   { name: "红绳桃核串", category: ITEM_CATEGORY.ACCESSORY, quality: "白", tags: ["饰品", "平安"], desc: "鱼定村妇人给出远门的人串的桃核，一颗颗自己啃的核，红绳是染布剩的边角。挡不了刀枪，倒是攥在手里心里踏实，走夜路的人多半兜里揣着一串。" },
   { name: "铜钱压襟", category: ITEM_CATEGORY.ACCESSORY, quality: "白", tags: ["饰品", "市井"], desc: "天都镇小贩把穿旧了的制钱编成压襟坠子，走起路来叮当响。图个财气，也图个响动——夜里独行,响声比刀还壮胆。" },
@@ -655,7 +655,7 @@ export const STANDARD_WEAPONS = [
   { name: "雪山派传习剑", category: ITEM_CATEGORY.WEAPON, quality: "紫", atkMul: 1.4, standardIssue: S, effect: { onCounterSuccessDamageRatio: 0.25 }, desc: "雪山派内门弟子出师时统一授予的传习剑，剑脊一道浅浅的松纹（比松纹剑那道淡），是门派量产而非亲铸。剑随人走，人亡剑归——练功堂剑架上空着的位置，比挂着的更让人不敢多看。" },
   { name: "欢喜堂供役杖", category: ITEM_CATEGORY.WEAPON, quality: "紫", atkMul: 1.35, standardIssue: S, effect: { enemyCostPenalty: { value: 1, turns: 2 } }, desc: "欢喜堂外院供役统一持的铜头长杖，杖身缠暗红布条，走起来布条扫地无声。梵衍那说这不是兵器是法器——可挨过一杖的人都知道，法器也硌骨头，且沾了那股香，手脚发沉。" },
   { name: "土司府仪卫戟", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.5, standardIssue: S, effect: { forceFirst: true }, desc: "跑马大会开场，土司府三十骑手方阵统一擎的仪卫长戟，戟缨染成一色的赭红。中看，也中用——格桑顿珠治军严，这批戟的锋刃是真开过的，方阵一动，气势先压人半头。" },
-  { name: "官铸镇仓槊", category: ITEM_CATEGORY.WEAPON, quality: "红", atkMul: 1.6, standardIssue: S, effect: { forceFirst: true, ignoreDefense: true }, desc: "锦官城军械库封存的重槊，本是戍边镇仓的制式重兵，一整排列在架上落灰。柳青鸢上任清点军械时发现少了两杆——账上写的是“锈蚀报废”，她盯着那行字看了很久，没说话。" },
+  { name: "官铸镇仓槊", category: ITEM_CATEGORY.WEAPON, quality: "红", atkMul: 1.6, standardIssue: S, effect: { forceFirst: true, ignoreDefense: true }, sixDim: { 身法: 2, 体魄: 1 }, desc: "锦官城军械库封存的重槊，本是戍边镇仓的制式重兵，一整排列在架上落灰。柳青鸢上任清点军械时发现少了两杆——账上写的是“锈蚀报废”，她盯着那行字看了很久，没说话。" },
 ];
 
 // —— 制式装备10（白2 绿2 蓝2 紫2 橙1 红1）——
@@ -666,10 +666,10 @@ export const STANDARD_ARMORS = [
   { name: "马帮硬皮褂", category: ITEM_CATEGORY.ARMOR, quality: "绿", defMul: 1.15, standardIssue: S, desc: "鹰曲马帮走高原的耐磨皮褂，桐油反复浸过，硬挺得能挂在墙上立着。褂子越旧越值钱——旧，说明主人跑了很多趟还活着。" },
   { name: "锦官坊标兵甲", category: ITEM_CATEGORY.ARMOR, quality: "蓝", defMul: 1.3, standardIssue: S, desc: "铸剑坊配套打的制式扎甲，甲片一色的青灰，编绳一色的麻黄。一队差役穿出来齐整威风，但老兵嫌它腋下卡——柳青鸢改软甲版型，就是被这甲逼的。" },
   { name: "守塔僧团铁网衲", category: ITEM_CATEGORY.ARMOR, quality: "蓝", defMul: 1.35, standardIssue: S, desc: "白塔守塔僧统一的铁网夹层僧衲，比外袍那件轻些，是巡夜用的。地宫里潮，铁网锈得慢却锈得匀，一件衲子传三代守塔僧，锈色就是年轮。" },
-  { name: "雪山派御寒裘", category: ITEM_CATEGORY.ARMOR, quality: "紫", defMul: 1.4, standardIssue: S, effect: { hpRestore: 0.08 }, desc: "雪山派弟子上顶峰当值统一配的羊羔皮裘，内衬缝了艾草。比雪豹裘轻贱得多，却是弟子们真正天天穿的那件——真金白银的宝物锁在箱底，护命的是这些不起眼的制式货。" },
-  { name: "欢喜堂内院锦襕", category: ITEM_CATEGORY.ARMOR, quality: "紫", defMul: 1.35, standardIssue: S, effect: { enemyCostPenalty: { value: 1, turns: 1 } }, desc: "欢喜堂内院弟子统一的暗红锦襕，比礼服素，日常穿。锦线里掺了极细的香丝，穿久了自己闻不出，别人一近身先恍神半瞬——罗琦说这是梵衍那的主意，她不喜欢。" },
+  { name: "雪山派御寒裘", category: ITEM_CATEGORY.ARMOR, quality: "紫", defMul: 1.4, standardIssue: S, effect: { hpRestore: 0.08 }, sixDim: { 根骨: 2 }, desc: "雪山派弟子上顶峰当值统一配的羊羔皮裘，内衬缝了艾草。比雪豹裘轻贱得多，却是弟子们真正天天穿的那件——真金白银的宝物锁在箱底，护命的是这些不起眼的制式货。" },
+  { name: "欢喜堂内院锦襕", category: ITEM_CATEGORY.ARMOR, quality: "紫", defMul: 1.35, standardIssue: S, effect: { enemyCostPenalty: { value: 1, turns: 1 } }, sixDim: { 魅力: 1, 智谋: 1 }, desc: "欢喜堂内院弟子统一的暗红锦襕，比礼服素，日常穿。锦线里掺了极细的香丝，穿久了自己闻不出，别人一近身先恍神半瞬——罗琦说这是梵衍那的主意，她不喜欢。" },
   { name: "土司府仪卫明光铠", category: ITEM_CATEGORY.ARMOR, quality: "橙", defMul: 1.5, standardIssue: S, effect: { onCounterSuccessDamageRatio: 0.3 }, desc: "骑手方阵的制式明光铠，胸背两面圆护擦得能照见人。格桑顿珠不许手下把铠甲当摆设——每副都配实战绑带，挨了打能顺势卸力反撞。中看的皮相底下，是真练过的骨头。" },
-  { name: "官铸镇边重铠", category: ITEM_CATEGORY.ARMOR, quality: "红", defMul: 1.6, standardIssue: S, effect: { onCounterSuccessDamageRatio: 0.4, ignoreDefensePartialImmune: 0.3 }, desc: "锦官军械库封存的戍边重铠，全身鱼鳞甲片，一个人穿不动，得两个人抬着套。太平年月锁在库里生绿锈，柳青鸢摸着冰凉的甲片想：上一个穿它的人，六年前跟着上司一起，没回来。" },
+  { name: "官铸镇边重铠", category: ITEM_CATEGORY.ARMOR, quality: "红", defMul: 1.6, standardIssue: S, effect: { onCounterSuccessDamageRatio: 0.4, ignoreDefensePartialImmune: 0.3 }, sixDim: { 根骨: 2, 体魄: 2 }, desc: "锦官军械库封存的戍边重铠，全身鱼鳞甲片，一个人穿不动，得两个人抬着套。太平年月锁在库里生绿锈，柳青鸢摸着冰凉的甲片想：上一个穿它的人，六年前跟着上司一起，没回来。" },
 ];
 
 // —— 制式饰品10（白2 绿2 蓝2 紫2 橙1 红1）——
@@ -695,16 +695,16 @@ export const STANDARD_ACCESSORIES = [
 // 数值同样倍率跟公式走、特效复用武学标志位；情感信物类（马鞭/剑穗/旧锁/拓片）
 // 攻防低但六维/风味重，是"叙事分量 > 战力"的那一类。
 export const LEGENDARY = [
-  { name: "紫电", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.6, effect: { forceFirst: true }, desc: "出鞘时隐隐有紫芒流转，非淬毒，是陨铁锻打时渗入的天然矿纹。柳青鸢年轻时在锦官城暗巷见过一次——持剑者出剑太快，她只看到一道紫线从巷头拉到巷尾。" },
+  { name: "紫电", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.6, effect: { forceFirst: true }, sixDim: { 身法: 2 }, desc: "出鞘时隐隐有紫芒流转，非淬毒，是陨铁锻打时渗入的天然矿纹。柳青鸢年轻时在锦官城暗巷见过一次——持剑者出剑太快，她只看到一道紫线从巷头拉到巷尾。" },
   { name: "青霜", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.5, effect: { applyMark: { name: "内伤印", stacks: 2 }, applyMarkChance: 0.4, freezeEnergyRecovery: true }, desc: "剑身覆一层幽蓝薄锈，触手冰凉，仿佛刚从雪里刨出。雪山派故老相传，此剑曾插在白塔塔顶冻了一百年，拔剑时锈迹剥落，露出剑脊上天然凝结的霜花纹。中剑者寒气入体，真气凝滞。" },
   { name: "含阿", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.45, effect: { forceFirst: true, onCounterSuccessDamageRatio: 0.3 }, sixDim: { 身法: 2 }, desc: "剑名“含阿”，无姓无名，唯余一个“阿”字。玉器轩掌柜说是百年前一对剑客的定情信物，剑身极软，可绕腕三圈如银镯。女剑客死后，男剑客把剑当在当铺，当期写的是“永赎”——再没来过。" },
   { name: "西瓜刀", category: ITEM_CATEGORY.WEAPON, quality: "白", atkMul: 1.1, effect: { lowEnemyEnergyBonus: { threshold: 2, multiplier: 2 } }, desc: "锦官城夏日街头瓜贩人手一把，薄刃宽身，切瓜如切豆腐。切了十年西瓜，刀刃渗进瓜汁，舔起来是甜的。后来有个刺客用过一次——一刀封喉，伤口是甜的。" },
-  { name: "降魔杵", category: ITEM_CATEGORY.WEAPON, quality: "紫", atkMul: 1.4, effect: { ignoreDefense: true, detonateMark: { perStackRatio: 0.4 } }, desc: "白塔守塔僧团代代相传的镇塔法器，杵身刻满梵文降魔咒。老僧说这杵不是用来杀人的——是用来敲地宫机关石板。敲对了门开；敲错了杵头金刚铃会响，但没人知道响铃代表什么。" },
+  { name: "降魔杵", category: ITEM_CATEGORY.WEAPON, quality: "紫", atkMul: 1.4, effect: { ignoreDefense: true, detonateMark: { perStackRatio: 0.4 } }, sixDim: { 根骨: 2 }, desc: "白塔守塔僧团代代相传的镇塔法器，杵身刻满梵文降魔咒。老僧说这杵不是用来杀人的——是用来敲地宫机关石板。敲对了门开；敲错了杵头金刚铃会响，但没人知道响铃代表什么。" },
   { name: "红缨枪", category: ITEM_CATEGORY.WEAPON, quality: "绿", atkMul: 1.2, desc: "黑风寨马队人手一杆，枪尖磨得锃亮，红缨被风吹雨打褪成灰白。巴桑那杆的红缨是他阿妈出嫁时扎头的红布——他从未对人说过，但每次擦枪都先擦红缨。" },
   { name: "软鞭·柳", category: ITEM_CATEGORY.WEAPON, quality: "蓝", atkMul: 1.3, effect: { enemyCostPenalty: { value: 1, turns: 2 } }, sixDim: { 身法: 1 }, desc: "柳青鸢年轻时练鞭的旧物，鞭身是熊山老藤，鞭梢系一枚青铜柳叶。老兵说她抽断过三棵柳树，这鞭抽出来的声音不像鞭响，像风穿过柳条——嗖的一声，然后是叶子落地的声音。" },
   { name: "月照", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.55, effect: { forceFirst: true, ignoreDefense: true }, desc: "剑身宽厚如门板，通体灰白，只有月圆之夜浸在贡措海水中，剑脊才浮出极淡的蓝纹——形如月光照水面。巴桑说此剑非人力所铸，是贡措海底一块陨石被湖水冲刷千年自然成形。" },
   { name: "万工如意棍", category: ITEM_CATEGORY.WEAPON, quality: "紫", atkMul: 1.4, effect: { doubleVsStatus: true, afterStatusBonus: 0.5 }, sixDim: { 悟性: 1 }, desc: "两端各箍一匝暗金如意箍，中段暗藏三道活扣，旋之可缩为齐眉短棍、簪棍、判官笔三形。铸剑坊老匠人打了一万锤，锤到最后一面如意图案时锤头裂了——他说这棍自己不想打完，剩三锤留给后人。" },
-  { name: "百花杀", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.45, effect: { applyMark: { name: "内伤印", stacks: 2 }, applyMarkChance: 0.5, enemyCostPenalty: { value: 2, turns: 2 } }, desc: "兰姐压箱底的暗器囊，内藏三十六枚淬了百花引残料的银针。她说这针不是用来杀人的——是用来让不听话的人听话。但她自己一次没用过，因为“让人听话这种事，针做不到，蛊也做不到”。" },
+  { name: "百花杀", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.45, effect: { applyMark: { name: "内伤印", stacks: 2 }, applyMarkChance: 0.5, enemyCostPenalty: { value: 2, turns: 2 } }, sixDim: { 魅力: 2 }, desc: "兰姐压箱底的暗器囊，内藏三十六枚淬了百花引残料的银针。她说这针不是用来杀人的——是用来让不听话的人听话。但她自己一次没用过，因为“让人听话这种事，针做不到，蛊也做不到”。" },
   { name: "梵音铃", category: ITEM_CATEGORY.WEAPON, quality: "紫", atkMul: 1.35, effect: { freezeEnergyRecovery: true, enemyCostPenalty: { value: 1, turns: 2 } }, desc: "梵衍那从天竺带来的旧物，形如手铃而无声，只有被欢喜真气催动时才会发出人耳听不到的震颤。罗琦试过一次——铃响时心里忽然安静了一瞬，像有人在很远处念了一句她听不懂的经。" },
   { name: "青鸢尾", category: ITEM_CATEGORY.WEAPON, quality: "橙", atkMul: 1.5, effect: { forceFirst: true, enemyCostPenalty: { value: 2, turns: 1 } }, sixDim: { 智谋: 2 }, desc: "柳青鸢亲手磨的飞刀三柄，形如鸢尾花瓣，刀脊刻着她名字里的“鸢”字。三柄藏在官袍袖口、腰间、靴筒——老兵说她的上司失踪后她开始随身带刀，不是防人，是防自己某天会忘了查下去。" },
   { name: "血刀·不饮", category: ITEM_CATEGORY.WEAPON, quality: "蓝", atkMul: 1.35, effect: { lowHpBonus: 0.25 }, desc: "刀身暗红如干涸的血，刀柄缠着浸过牦牛血的麻绳。老巡捕说这刀砍过三十七个人，但刀主从不擦刀——“血干了就干了，擦掉等于忘了。忘了的人，下次砍人时会犹豫”。" },
@@ -769,26 +769,31 @@ export const DIVINE_ARMS = [
   {
     name: "霜天月", category: ITEM_CATEGORY.WEAPON, quality: "红", atkMul: 1.6,
     effect: { forceFirst: true, freezeEnergyRecovery: true },
+    sixDim: { 身法: 3 },
     desc: "呼延大侠的佩剑。三十年前他从雪山之巅坠崖时，这把剑先他一步脱手，插在崖底冰壁上冻了三十年。剑身裹着一层永不解冻的薄霜，剑格处刻着一个“雪”字。何雨谢只见过它一次——大婚那天，呼延大侠执此剑挑开她的红盖头。",
   },
   {
     name: "地藏", category: ITEM_CATEGORY.WEAPON, quality: "红", atkMul: 1.6,
     effect: { ignoreDefense: true, justiceStrike: true },
+    sixDim: { 悟性: 2, 根骨: 1 },
     desc: "桑杰大侠的佩刀。他带这把刀来贡措海，本是想当着呼延大侠的面把假地契和刀一起沉进湖底——“桑杰家从此不沾兵戈”。刀没来得及沉。他死前用最后的力气把刀插进密室石壁，刀尖没入石中三寸，三十年没锈。",
   },
   {
     name: "不动明王杵", category: ITEM_CATEGORY.WEAPON, quality: "红", atkMul: 1.5,
     effect: { onCounterSuccessDamageRatio: 1.5, immuneControl: true, onCounterSuccessEnergyGain: 3 },
+    sixDim: { 根骨: 3 },
     desc: "喇嘛庙前任经师从西域带回的法器，本是修“不动明王法”时杵地结界用的。经师去贡措海前把它留在白塔地宫，对守塔僧说：“等一个能听懂我为什么去贡措海的人。”杵身刻梵文“不动”，杵地时地面微微震动，像地下有东西在回应。",
   },
   {
     name: "虎啸", category: ITEM_CATEGORY.WEAPON, quality: "红", atkMul: 1.55,
     effect: { forceCrit: { multiplier: 1.8 }, lowHpBonus: 0.8, beastFear: 0.7 },
+    sixDim: { 体魄: 2, 气运: 1 },
     desc: "用吊睛虎王的牙和筋制成的弓。弓胎是三十年前一具无名猎户遗骸旁的半成品，用了三十年等一根配得上的弦——虎王的筋正好。弓身是熊山老铁木，拉开时有虎啸声，方圆十里的野兽听到会四散奔逃。",
   },
   {
     name: "涅槃引", category: ITEM_CATEGORY.WEAPON, quality: "红", atkMul: 1.4,
     effect: { selfSacrifice: { hpCost: 30, damageMultiplier: 3.5 }, rebirthOnce: true },
+    sixDim: { 悟性: 3 },
     desc: "一根用凤凰木芯做的长香，前任经师游历天竺边境时从一个苦行僧手中所得。苦行僧说：“这香燃三次。第一次见你想见的人，第二次听他想说的话，第三次——你自己决定要不要跟他走。”经师只敢燃过一次，藏在了荤食地下室。",
   },
 ];

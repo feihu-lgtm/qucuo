@@ -141,7 +141,7 @@ npm install       # 安装依赖
 npm run dev       # 本地开发服务器
 npm run build     # 构建生产版本
 npm run verify    # 与 CI 完全同构的一键校验（测试 + Pages 构建）——推之前跑这个
-npx vitest run    # 跑测试（纯函数/数据层回归，486 条）
+npx vitest run    # 跑测试（纯函数/数据层回归，498 条）
 ```
 
 也可直接双击 `启动游戏.command`（macOS）或 `启动游戏.bat`（Windows）一键运行。
@@ -152,7 +152,7 @@ npx vitest run    # 跑测试（纯函数/数据层回归，486 条）
 
 ```
 qucuo/
-├── src/                      # 源代码（191 文件，约 3.6 万行）
+├── src/                      # 源代码（193 文件，约 3.6 万行）
 │   ├── MudRPG.jsx            # 主游戏组件（全局状态 + act() 回合主循环 + handler；UI 已全部抽出）
 │   ├── main.jsx              # 入口
 │   ├── StartScreen.jsx       # 开始界面（含访客计数：X 位侠客 · 共 Y 人次）

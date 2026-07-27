@@ -1,3 +1,4 @@
+import { effectBrief } from "../itemEffectText.js";
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
 import { JADE_WARES } from "../items/catalog.js";
@@ -8,19 +9,6 @@ import { JADE_WARES } from "../items/catalog.js";
 // 成品品质 = min(玉料品质天花板, 气运)，在交付时算；这里只预告玉料天花板。
 const QUAL_COLOR = { 白: "#c8bfa0", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "#b48adf", 橙: "#e0913a", 红: "#d4756a" };
 const CAT_CN = { weapon: "玉兵", armor: "玉甲", accessory: "玉饰" };
-
-function effectBrief(effect = {}, sixDim = {}) {
-  const EFF_CN = {
-    forceFirst: "必先手", ignoreDefense: "透甲破防", doubleVsStatus: "克中招翻倍", lowHpBonus: "残血增伤",
-    afterStatusBonus: "趁中招追击", detonateMark: "引爆内伤", enemyCostPenalty: "封穴耗气", freezeEnergyRecovery: "封气",
-    applyMark: "附内伤印", onCounterSuccessDamageRatio: "应对反击", onCounterSuccessEnergyGain: "应对回气",
-    hpRestore: "回血", energyRestore: "起手回气",
-  };
-  const parts = [];
-  for (const k of Object.keys(effect || {})) { if (k === "applyMarkChance" || k === "applyMarkOnHit") continue; if (EFF_CN[k]) parts.push(EFF_CN[k]); }
-  for (const [k, v] of Object.entries(sixDim || {})) parts.push(`${k}+${v}`);
-  return parts.join("、");
-}
 
 export default function JadeShopScreen({ building, char, inv = [], time, zoneTheme, onClose, inline, onDesign, onCraft }) {
   const [tab, setTab] = useState("buy");          // buy=选购成品 / custom=定制

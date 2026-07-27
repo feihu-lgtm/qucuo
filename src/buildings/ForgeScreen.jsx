@@ -1,3 +1,4 @@
+import { effectBrief } from "../itemEffectText.js";
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
 
@@ -6,23 +7,6 @@ import { Overlay, Header, Btn } from "./InnScreen.jsx";
 // 品质由系统按气运定(此处只预告一个基于气运的大致品阶)，词条由小模型据"要求"从全集里选。
 const QUAL_COLOR = { 白: "#c8bfa0", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "#b48adf", 橙: "#e0913a", 红: "#d4756a" };
 const CAT_CN = { weapon: "武器", armor: "护甲", accessory: "饰品" };
-
-function effectBrief(effect = {}, sixDim = {}) {
-  const parts = [];
-  const EFF_CN = {
-    forceFirst: "必先手", ignoreDefense: "无视防御", doubleVsStatus: "克中招翻倍",
-    lowHpBonus: "残血增伤", afterStatusBonus: "趁中招追击", detonateMark: "引爆内伤",
-    enemyCostPenalty: "封穴耗气", freezeEnergyRecovery: "封气", applyMark: "附内伤印",
-    onCounterSuccessDamageRatio: "应对反击", onCounterSuccessEnergyGain: "应对回气",
-    hpRestore: "回血", energyRestore: "起手回气",
-  };
-  for (const k of Object.keys(effect || {})) {
-    if (k === "applyMarkChance" || k === "applyMarkOnHit") continue;
-    if (EFF_CN[k]) parts.push(EFF_CN[k]);
-  }
-  for (const [k, v] of Object.entries(sixDim || {})) parts.push(`${k}+${v}`);
-  return parts.join("、");
-}
 
 export default function ForgeScreen({ building, char, time, flags, zoneTheme, onClose, inline, onCommission, onDesign }) {
   const [material, setMaterial] = useState("");
