@@ -76,11 +76,11 @@ describe("callMainOnce 组装黄金快照", () => {
   it("full·COMBAT 档：物件志 + MVU 全量挂载", async () => {
     const d = makeDeps({ intent: { code: "COMBAT", label: "战斗" }, visibleNpcsCount: 1 });
     await callMainOnce(null, false, d);
-    const [, sysBlocks] = callModel.mock.calls[0];
+    const [, sysBlocks, chatMessages] = callModel.mock.calls[0];
     const worldAfter = sysBlocks.find(b => b.tavernBlock === "worldInfoAfter")?.content || "";
     expect(worldAfter).toContain("曲措乡物件志");
     expect(worldAfter).toContain("认知隔离");
-    const phi = sysBlocks.find(b => b.tavernBlock === "phi")?.content || "";
+    const phi = chatMessages.find(b => b.tavernBlock === "phi")?.content || "";
     expect(phi).toContain("items_add");
     expect(JSON.stringify(sysBlocks)).toMatchSnapshot();
   });

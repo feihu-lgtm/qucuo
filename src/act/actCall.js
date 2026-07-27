@@ -58,12 +58,15 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     }
   );
 
-  // PHI 追加 NSFW 规则（含示例对话）与创造模式规则——放在 chatMessages 最末尾=贴生成处=最强插入深度。
+  // NSFW + GM 规则提前到 11 号位（inChat，user role）——规则放 user 嘴里，
+  // 不让 AI 在 assistant 位"补全"规则文本（旧 bug：GM_RULE 贴生成处，AI 顺着规则思考不写正文）。
+  let rulesBlock = "";
   if (d.nsfwOn) {
-    phiBlock.content += (phiBlock.content ? "\n" : "") + NSFW_RULES;
-    phiBlock.content += "\n" + MODE_PRIMER_MESSAGES.map(m => m.content).join("\n");
+    rulesBlock += NSFW_RULES + "\n" + MODE_PRIMER_MESSAGES.map(m => m.content).join("\n");
   }
-  phiBlock.content += (phiBlock.content ? "\n" : "") + GM_RULE;
+  if (d.gm) {
+    rulesBlock += (rulesBlock ? "\n" : "") + GM_RULE;
+  }
   // ── 体貌·蓝绿灯 ──
   // 公开层跟着"这一轮有没有人近距离看着你"走（full/talk 亮，赶路结算灭），
   // 私密层只认 ■ 模式。灭灯不只是省 token——赶路轮塞一段私处描写，模型真的会
@@ -90,16 +93,23 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   // 结算轮：远景/召回/信息域灭灯——这一轮只是把一件已定的事写好看，不需要"记起往事"
   // 或"守信息域"，那些块是给有博弈的轮次用的。但牵涉具体某人时保留「重逢」块
   // （久别重逢那句招呼要认得人，是这类轮次唯一真正用得上的记忆信号）。
+  const rulesPrefix = rulesBlock ? rulesBlock + "\n\n" : "";
   const inChatContent = d.isSettle
-    ? (d.settleNpc ? d.reunionBlock : "") + "\n\n" + proseRule
-    : d.ctx + distantBlock + d.recallBlock + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
+    ? rulesPrefix + (d.settleNpc ? d.reunionBlock : "") + "\n\n" + proseRule
+    : rulesPrefix + d.ctx + distantBlock + d.recallBlock + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
   chatMessages.push(makeBlock("chatHistory", d.hist));
   chatMessages.push(makeBlock("inChat", inChatContent));
   chatMessages.push(makeBlock("latestUser", latestUserContent));
-  // 13 号位 PHI：schema + NSFW(含示例对话) + 创造模式，贴生成处=最强插入深度。
+  // 13 号位 PHI（assistant role）：schema + 起始暗示。
+  // 仿姬侠传 prefill 思路：assistant 位只放"我马上要开始写了"的暗示，
+  // 规则已在 11 号位（user）注入，AI 不会在 assistant 位补全规则文本。
+  const prefillHint = narrativeOnly
+    ? `\n回溯玩家输入「${d.cmd}」，直接续写正文：`
+    : `\n回溯玩家输入「${d.cmd}」，直接输出JSON：`;
+  phiBlock.content += prefillHint;
   chatMessages.push(phiBlock);
 
   // ── 赌石谈价·轻量挂载（借世界书"蓝灯/绿灯"思路：谈价这轮，重量条目全灭灯）──

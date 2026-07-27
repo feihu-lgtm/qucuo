@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "注入位次重排：NSFW/GM 规则提前到 user 位，assistant 位改 prefill 起始暗示",
+    time: "2026-07-27 11:35",
+    notes: [
+      "仿姬侠传(char_card_1)六条消息结构：规则放 user 嘴里、assistant 位只放\"我马上要开始写了\"的起始暗示，杜绝 AI 在 assistant 位补全规则文本不写正文的 bug。",
+      "①【GM_RULE 改条件注入】原先 GM_RULE 无条件追加到 PHI（13号位 assistant），改为仅 gm=true（点 /gamemode 1 按钮）时注入，默认关。与 NSFW 的 if(d.nsfwOn) 模式对齐。",
+      "②【NSFW+GM 从 13 号位移到 11 号位】两条规则从 phiBlock（assistant role）移到 inChatContent（user role）最前面。规则放 user 嘴里=指令，放 assistant 嘴里=AI 会顺着补全。旧 bug：GM_RULE 贴生成处，AI 把规则当自己已说出的话去续写，思考半天不产正文。",
+      "③【13 号位改 prefill 暗示】phiBlock 末尾追加一行起始暗示：\"回溯玩家输入「xxx」，直接输出JSON/续写正文：\"。assistant 位只剩 schema + 这句暗示，AI 顺着冒号直接写正文，不再有机会补全规则。",
+      "④【测试修正】actCall.test.js COMBAT 档 phi 断言从 sysBlocks 改到 chatMessages（phi 本就在 chatMessages 里）；快照全量更新。25/25 通过。",
+    ],
+  },
+  {
     codename: "SillyTavern 13 位置注入重构 + NSFW 默认开启 + TraceViewer/注入结构面板按位展示",
     time: "2026-07-27 00:05",
     notes: [
