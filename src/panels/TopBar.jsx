@@ -13,6 +13,7 @@ import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../version.js";
 import { getState as getMusicState, subscribe as subscribeMusic, isMusicEnabled } from "../musicPlayer.js";
+import { getHomestead } from "../homestead.js";
 
 export default function TopBar({
   isMobile, mobileTopMenu, setMobileTopMenu,
@@ -27,6 +28,7 @@ export default function TopBar({
   playerAvatarCustom, setPlayerAvatarCustom,
   AV_BASE, genderAvatar,
   setShowMusicPanel,
+  innerRoomName, setShowHomestead,
 }) {
   // 顶栏按钮统一规格：此前每个按钮各自 padding/字号/色系，一字排开像彩虹糖纸。
   // 收敛成"同一副骨架 + 三色语义"：金=重要入口，松石绿=设置/切换，绛红=上报，其余用正文/次要色。
@@ -132,6 +134,14 @@ export default function TopBar({
             title="音乐面板 — 曲库切换"
             style={topBtn(musicPlaying ? uiGold : zoneTheme.textDim)}
           >{musicPlaying ? "♫ 音乐" : "♪ 音乐"}</span>
+        )}
+        {innerRoomName && getHomestead(innerRoomName) && (
+          <span
+            className="qbtn"
+            onClick={() => setShowHomestead(true)}
+            title="家园 — 箱子/烹饪/酒窖/菜畦"
+            style={topBtn(uiGold)}
+          >🏠 家园</span>
         )}
         {autoSaveError && (
           <span

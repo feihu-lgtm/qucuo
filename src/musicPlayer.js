@@ -4,12 +4,21 @@ export const TRACKS = [
     title: "I Got Smoke",
     artist: "V在燃烧",
     url: "https://archive.org/download/i-got-smoke/I%20Got%20Smoke%20%28320K%E6%9E%81%E9%AB%98%E9%9F%B3%E8%B4%A8%29.mp3",
+    source: "https://audioaz.com/en/archive/archive-i-got-smoke",
   },
   {
     id: "zood",
     title: "Zood",
     artist: "丁真",
-    url: "https://archive.org/download/zood/Zood.mp3",
+    url: "/music/zood.mp3",
+    source: "https://audiomack.com/aviciiarmin-minecraft/song/zood",
+  },
+  {
+    id: "yan-distance",
+    title: "烟 Distance",
+    artist: "丁真 feat. 硫克克硫",
+    url: "/music/yan-distance.mp3",
+    source: "https://audiomack.com/aviciiarmin-minecraft/song/yan-distance",
   },
 ];
 
@@ -26,6 +35,7 @@ function getAudio() {
     audio.addEventListener("play", () => emit());
     audio.addEventListener("pause", () => emit());
     audio.addEventListener("ended", () => emit());
+    audio.addEventListener("error", () => emit());
   }
   return audio;
 }
@@ -37,7 +47,7 @@ function emit() {
 
 export function getState() {
   const a = getAudio();
-  return { playing: !a.paused && !a.ended, volume: a.volume, trackId: currentTrackId };
+  return { playing: !a.paused && !a.ended, volume: a.volume, trackId: currentTrackId, error: a.error ? true : false };
 }
 
 export function subscribe(fn) {
