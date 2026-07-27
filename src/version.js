@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "调试面板抽出：DebugPanel.jsx 独立组件，12个dbg* state 下沉，主文件再-235行",
+    time: "2026-07-27 12:10",
+    notes: [
+      "三栏拆分续：中栏最肥的调试面板（~240行JSX）抽成 src/panels/DebugPanel.jsx。",
+      "①【state下沉】12个只在调试面板里用的 dbg* useState（好感目标/传送地/武学筛选/物品筛选等）从 MudRPG.jsx 顶层移入 DebugPanel 内部——面板关闭即重置选区，调试工具合理。主文件 useState 净减12个。",
+      "②【props传入】面板需要的 char/setChar/pot/exp/dao/varTree/narrator/room/mapData/act 等照旧从主文件 props 传入，逻辑行为零变化。",
+      "验证：esbuild通过、vitest 25/25通过。MudRPG.jsx 5109→4874行（累计 5788→4874，-914）。",
+    ],
+  },
+  {
     codename: "MudRPG 三栏拆分：左栏(天地)+右栏(侠客)抽成独立面板组件，主文件-679行",
     time: "2026-07-27 12:00",
     notes: [

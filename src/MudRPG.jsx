@@ -109,6 +109,7 @@ import TutorialOverlay from "./TutorialOverlay.jsx";
 import NineGridMap from "./NineGridMap.jsx";
 import LeftPanel from "./panels/LeftPanel.jsx";
 import RightPanel from "./panels/RightPanel.jsx";
+import DebugPanel from "./panels/DebugPanel.jsx";
 import ClickableMap from "./ClickableMap.jsx";
 import PipelineViewer from "./PipelineViewer.jsx";
 import { tryInnerMove } from "./act/innerMove.js";
@@ -255,19 +256,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const effectiveSpecialNow = applyBuffsToSpecial(char.special, flags, time);
   const activeBuffs = activeBuffsWithRemaining(flags, time);
   const [gm, setGm] = useState(false);
-  const [showDebug, setShowDebug] = useState(false); // 调试面板显隐
-  const [dbgFav, setDbgFav] = useState("");   // 调试·好感度目标NPC名
-  const [dbgDist, setDbgDist] = useState(""); // 调试·传送目标大地点
-  const [dbgInner, setDbgInner] = useState(""); // 调试·传送目标小地点
-  const [dbgSkillType, setDbgSkillType] = useState("全部"); // 调试·增加武学·类型筛选
-  const [dbgSkillQuality, setDbgSkillQuality] = useState("全部"); // 调试·增加武学·品阶筛选
-  const [dbgItemName, setDbgItemName] = useState("");   // 调试·增加物品·名称（手打自定义用）
-  const [dbgItemCat, setDbgItemCat] = useState("weapon"); // 调试·增加物品·类别
-  const [dbgItemQuality, setDbgItemQuality] = useState("白"); // 调试·增加物品·品阶
-  const [dbgPickedSkill, setDbgPickedSkill] = useState("");  // 调试·增加武学·选中的武学id
-  const [dbgItemCatF, setDbgItemCatF] = useState("全部");   // 调试·从目录选物品·类别筛选
-  const [dbgItemQualF, setDbgItemQualF] = useState("全部");  // 调试·从目录选物品·品阶筛选
-  const [dbgPickedItem, setDbgPickedItem] = useState("");   // 调试·从目录选中的物品名
+  const [showDebug, setShowDebug] = useState(false); // 调试面板显隐（面板内部状态已下沉到 DebugPanel.jsx）
   const [showPresets, setShowPresets] = useState(false);
   // 新手教程覆盖层：首次进游戏默认弹出，看过一次记进 localStorage，之后不再自动弹
   // （左上角按钮随时可再点开）。localStorage 不可用时降级为默认不弹，避免报错。
@@ -4132,244 +4121,20 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           </div>
 
           {showDebug && (
-            <div style={isMobile
-              ? { position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 260, padding: "10px 14px",
-                  borderTop: `1px solid ${zoneTheme.border}`, background: "rgba(12,14,20,.98)", fontSize: 11, color: "#9a9482",
-                  display: "flex", flexDirection: "column", gap: 8, maxHeight: "70vh", overflowY: "auto", overflowX: "auto",
-                  WebkitOverflowScrolling: "touch", boxShadow: "0 -8px 30px rgba(0,0,0,.7)" }
-              : { flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: 11, color: "#9a9482", display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
-              {/* 粘性关闭条：滚到哪都能关掉调试面板（修手机上被内容顶开、找不到关闭入口） */}
-              <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between",
-                margin: "-10px -14px 4px", padding: "6px 14px", background: "rgba(16,18,26,.96)", borderBottom: "1px solid #2a2d3a" }}>
-                <span style={{ color: "#6ec6c6", fontSize: 12, fontWeight: "bold" }}>🛠 调试面板</span>
-                <span onClick={() => setShowDebug(false)} style={{ cursor: "pointer", color: "#e0806a", fontSize: 13, padding: "2px 12px", border: "1px solid #5a3a2a", borderRadius: 4 }}>✕ 关闭</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>金钱</span>
-                <input type="number" value={char.money ?? 0}
-                  onChange={e => setChar(c => ({ ...c, money: parseInt(e.target.value) || 0 }))}
-                  style={{ width: 90, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0, marginLeft: 8 }}>气血</span>
-                <input type="number" value={char.hp?.[0] ?? 0}
-                  onChange={e => setChar(c => ({ ...c, hp: [parseInt(e.target.value) || 0, c.hp?.[1] ?? 100] }))}
-                  style={{ width: 60, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
-                <span style={{ fontSize: 10 }}>/</span>
-                <input type="number" value={char.hp?.[1] ?? 100}
-                  onChange={e => setChar(c => ({ ...c, hp: [c.hp?.[0] ?? 0, parseInt(e.target.value) || 100] }))}
-                  style={{ width: 60, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>外功</span>
-                <input type="number" value={char.waigong ?? 0}
-                  onChange={e => setChar(c => ({ ...c, waigong: parseInt(e.target.value) || 0 }))}
-                  style={{ width: 90, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0, marginLeft: 8 }}>内功</span>
-                <input type="number" value={char.neigong ?? 0}
-                  onChange={e => setChar(c => ({ ...c, neigong: parseInt(e.target.value) || 0 }))}
-                  style={{ width: 90, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>七维</span>
-                {["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"].map(dim => (
-                  <span key={dim} style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <span style={{ fontSize: 10 }}>{dim}</span>
-                    <input type="number" value={char.special?.[dim] ?? 5}
-                      onChange={e => setChar(c => ({ ...c, special: { ...(c.special || {}), [dim]: parseInt(e.target.value) || 0 } }))}
-                      style={{ width: 42, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 4px", fontSize: 11 }} />
-                  </span>
-                ))}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 10 }}>潜能</span>
-                <input type="number" value={pot ?? 0}
-                  onChange={e => setPot(parseInt(e.target.value) || 0)}
-                  style={{ width: 55, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 4px", fontSize: 11 }} />
-                <span style={{ fontSize: 10, marginLeft: 6 }}>阅历</span>
-                <input type="number" value={exp ?? 0}
-                  onChange={e => setExp(parseInt(e.target.value) || 0)}
-                  style={{ width: 55, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 4px", fontSize: 11 }} />
-                <span style={{ fontSize: 10, marginLeft: 6 }}>因果</span>
-                <input type="number" value={dao.karma ?? 0}
-                  onChange={e => setDao(d => ({ ...d, karma: parseInt(e.target.value) || 0 }))}
-                  style={{ width: 55, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 4px", fontSize: 11 }} />
-                <span style={{ fontSize: 10, marginLeft: 6 }}>劫数</span>
-                <input type="number" value={dao.jie ?? 0}
-                  onChange={e => setDao(d => ({ ...d, jie: parseInt(e.target.value) || 0 }))}
-                  style={{ width: 55, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 4px", fontSize: 11 }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>威望</span>
-                <input type="number" value={varTree.世界?.威望 ?? 0}
-                  onChange={e => { const v = parseInt(e.target.value) || 0; setVarTree(prev => ({ ...prev, 世界: { ...(prev.世界 || {}), 威望: v } })); }}
-                  style={{ width: 70, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
-                <span style={{ fontSize: 10, color: "#7a7a6a" }}>{reputationLabel(varTree.世界?.威望 ?? 0)}（全局总值，不分势力）</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 70, color: "#6ec6c6", flexShrink: 0 }}>旁白好感</span>
-                <input type="number" value={narrator.affection ?? 0}
-                  onChange={e => setNarrator(n => ({ ...n, affection: parseInt(e.target.value) || 0 }))}
-                  style={{ width: 70, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>好感</span>
-                <select value={dbgFav} onChange={e => setDbgFav(e.target.value)}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11, maxWidth: 130 }}>
-                  <option value="">选认识的人…</option>
-                  {(varTree.世界?.已认识人物 || []).map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-                {dbgFav && (
-                  <input type="number" value={varTree.角色?.[dbgFav]?.好感度 ?? 0}
-                    onChange={e => { const v = parseInt(e.target.value) || 0; setVarTree(prev => ({ ...prev, 角色: { ...(prev.角色 || {}), [dbgFav]: { ...((prev.角色 || {})[dbgFav] || {}), 好感度: v } } })); }}
-                    style={{ width: 70, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
-                )}
-                {!(varTree.世界?.已认识人物 || []).length && <span style={{ fontSize: 10, color: "#5a5a4a" }}>（还没认识任何人）</span>}
-                <span
-                  onClick={() => {
-                    // 调试：把当前内层房间可见的在场者全部标记为已认识——方便测试好感度等
-                    // 需要"先认识"的功能，不必逐个去细看/对话。用与左栏同一份可见性判据。
-                    const visible = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
-                    if (!visible.length) { addLog([{ t: "sys", text: "  [调试] 当前房间没有可见的在场者" }]); return; }
-                    setVarTree(prev => visible.reduce((tree, n) => markNpcAsKnown(tree, n.name), prev));
-                    addLog([{ t: "sys", text: `  [调试] 已认识在场者：${visible.map(n => n.name).join("、")}` }]);
-                  }}
-                  style={{ cursor: "pointer", fontSize: 10, color: "#8ac48a", border: "1px solid #2a4a2a", borderRadius: 3, padding: "2px 8px", userSelect: "none" }}
-                >认识在场者</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>传送</span>
-                <select value={dbgDist} onChange={e => { setDbgDist(e.target.value); setDbgInner(""); }}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
-                  <option value="">大地点…</option>
-                  {Object.keys(QUCUO_MAP).map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-                {dbgDist && getInnerRoomNames(dbgDist).length > 0 && (
-                  <select value={dbgInner} onChange={e => setDbgInner(e.target.value)}
-                    style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
-                    <option value="">小地点（可选）…</option>
-                    {getInnerRoomNames(dbgDist).map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
-                )}
-                <span onClick={() => {
-                  if (!dbgDist) return;
-                  const node = getMapNode(dbgDist); if (!node) return;
-                  const same = dbgDist === room.name;
-                  if (!same) {
-                    setRoom({ name: dbgDist, desc: node.desc, exits: Object.keys(node.exits), npcs: [], items: [] });
-                    if (!mapData[dbgDist]) setMapData(m => ({ ...m, [dbgDist]: { x: node.x, y: node.y } }));
-                  }
-                  // 小地点：同据点内直接设；跨据点传送要等 room.name 变化触发的 useEffect 先把
-                  // innerRoomName 重置为 anchor 之后，再用宏任务覆盖成目标小地点，避免被重置盖掉。
-                  if (dbgInner) {
-                    if (same) setInnerRoomName(dbgInner);
-                    else setTimeout(() => setInnerRoomName(dbgInner), 0);
-                  }
-                  addLog([{ t: "sys", text: `  [调试] 传送 → ${dbgDist}${dbgInner ? "·" + dbgInner : ""}` }]);
-                  // 传送落地后走一遍正常加载（见下方 teleportLookRef 的 effect）。
-                  // 若目标与当前完全相同（据点+内层都没变），effect 依赖不会变、不触发，
-                  // 此时直接就地环顾即可，不设残留标记。
-                  const inner2 = dbgInner || null;
-                  if (same && (inner2 === innerRoomName || (!inner2))) {
-                    setInteractMode("action"); act("环顾四周");
-                  } else {
-                    teleportLookRef.current = { dist: dbgDist, inner: inner2 };
-                  }
-                }}
-                  style={{ cursor: "pointer", fontSize: 10, color: dbgDist ? "#6ec6c6" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgDist ? "#2a4a4a" : "#1a1d2e"}`, borderRadius: 3, userSelect: "none" }}>传送</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>增加武学</span>
-                <select value={dbgSkillType} onChange={e => { setDbgSkillType(e.target.value); setDbgPickedSkill(""); }}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
-                  <option value="全部">全部类型</option>
-                  <option value="招式">招式</option>
-                  <option value="内功">内功</option>
-                  <option value="轻功">轻功</option>
-                </select>
-                <select value={dbgSkillQuality} onChange={e => { setDbgSkillQuality(e.target.value); setDbgPickedSkill(""); }}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
-                  <option value="全部">全部品阶</option>
-                  {["白","绿","蓝","紫","橙","红"].map(q => <option key={q} value={q}>{q}</option>)}
-                </select>
-                <select value={dbgPickedSkill} onChange={e => setDbgPickedSkill(e.target.value)}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11, minWidth: 120 }}>
-                  <option value="">选武学…</option>
-                  {(() => {
-                    const all = Object.values(SKILL_CATALOG).flat();
-                    const filtered = all.filter(s =>
-                      (dbgSkillType === "全部" || s.type === dbgSkillType) &&
-                      (dbgSkillQuality === "全部" || s.quality === dbgSkillQuality)
-                    );
-                    return filtered.map(s => <option key={s.id} value={s.id}>{s.name}（{s.quality}·{s.type}）</option>);
-                  })()}
-                </select>
-                <span onClick={() => {
-                  if (!dbgPickedSkill) return;
-                  const all = Object.values(SKILL_CATALOG).flat();
-                  const found = all.find(s => s.id === dbgPickedSkill);
-                  if (!found) return;
-                  const entry = makeSkillEntry(found);
-                  entry.active = true; // 直接装备（运功中）
-                  setSkills(sk => [...sk, entry]);
-                  addLog([{ t: "sys", text: `  [调试] 习得并运功「${found.name}」（${found.quality}·${found.type}）` }]);
-                }}
-                  style={{ cursor: "pointer", fontSize: 10, color: dbgPickedSkill ? "#8ac48a" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgPickedSkill ? "#2a4a2a" : "#1a1d2e"}`, borderRadius: 3, userSelect: "none" }}
-                >增加并装备</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>目录物</span>
-                <select value={dbgItemCatF} onChange={e => { setDbgItemCatF(e.target.value); setDbgPickedItem(""); }}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
-                  <option value="全部">全部类别</option>
-                  {["weapon","armor","accessory","misc"].map(c => <option key={c} value={c}>{CATEGORY_LABEL[c] || c}</option>)}
-                </select>
-                <select value={dbgItemQualF} onChange={e => { setDbgItemQualF(e.target.value); setDbgPickedItem(""); }}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
-                  <option value="全部">全部品阶</option>
-                  {["白","绿","蓝","紫","橙","红"].map(q => <option key={q} value={q}>{q}</option>)}
-                </select>
-                <select value={dbgPickedItem} onChange={e => setDbgPickedItem(e.target.value)}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11, minWidth: 120 }}>
-                  <option value="">选物品…</option>
-                  {CATALOG.filter(it =>
-                    (dbgItemCatF === "全部" || it.category === dbgItemCatF) &&
-                    (dbgItemQualF === "全部" || it.quality === dbgItemQualF)
-                  ).map(it => <option key={it.name} value={it.name}>{it.name}（{it.quality}·{CATEGORY_LABEL[it.category] || it.category}）</option>)}
-                </select>
-                <span onClick={() => {
-                  if (!dbgPickedItem) return;
-                  const entry = CATALOG_INDEX[dbgPickedItem];
-                  if (!entry) return;
-                  const item = makeCatalogItem(entry); // 用具名物的真实数值/特效/描述
-                  setInv(v => [...v, item]);
-                  addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[item.category] || item.category}）` }]);
-                  setDbgPickedItem("");
-                }}
-                  style={{ cursor: "pointer", fontSize: 10, color: dbgPickedItem ? "#8ac48a" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgPickedItem ? "#2a4a2a" : "#1a1d2e"}`, borderRadius: 3, userSelect: "none" }}
-                >增加</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ width: 40, color: "#6ec6c6", flexShrink: 0 }}>自定义</span>
-                <input type="text" value={dbgItemName} onChange={e => setDbgItemName(e.target.value)} placeholder="物品名"
-                  style={{ width: 100, background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }} />
-                <select value={dbgItemCat} onChange={e => setDbgItemCat(e.target.value)}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
-                  {["weapon","armor","accessory","misc"].map(c => <option key={c} value={c}>{CATEGORY_LABEL[c] || c}</option>)}
-                </select>
-                <select value={dbgItemQuality} onChange={e => setDbgItemQuality(e.target.value)}
-                  style={{ background: "#10121a", border: "1px solid #2a2d3a", color: "#c8bfa0", borderRadius: 3, padding: "2px 5px", fontSize: 11 }}>
-                  {["白","绿","蓝","紫","橙","红"].map(q => <option key={q} value={q}>{q}</option>)}
-                </select>
-                <span onClick={() => {
-                  if (!dbgItemName.trim()) return;
-                  const item = makeItem({ name: dbgItemName.trim(), category: dbgItemCat, quality: dbgItemQuality });
-                  setInv(v => [...v, item]);
-                  addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[dbgItemCat] || dbgItemCat}）` }]);
-                  setDbgItemName("");
-                }}
-                  style={{ cursor: "pointer", fontSize: 10, color: dbgItemName.trim() ? "#8ac48a" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgItemName.trim() ? "#2a4a2a" : "#1a1d2e"}`, borderRadius: 3, userSelect: "none" }}
-                >增加</span>
-              </div>
-            </div>
+            <DebugPanel
+              isMobile={isMobile} zoneTheme={zoneTheme}
+              char={char} setChar={setChar}
+              pot={pot} setPot={setPot} exp={exp} setExp={setExp}
+              dao={dao} setDao={setDao}
+              varTree={varTree} setVarTree={setVarTree}
+              narrator={narrator} setNarrator={setNarrator}
+              room={room} innerRoomName={innerRoomName}
+              mapData={mapData} setMapData={setMapData} setRoom={setRoom} setInnerRoomName={setInnerRoomName}
+              addLog={addLog} setInteractMode={setInteractMode} act={act}
+              teleportLookRef={teleportLookRef}
+              setSkills={setSkills} setInv={setInv}
+              setShowDebug={setShowDebug}
+            />
           )}
 
           {/* ── 切磋确认：邀战叙事跑完后，点确认才真正开打，留一步反悔余地 ── */}
