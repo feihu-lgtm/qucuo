@@ -2,7 +2,7 @@ import { hasInnerMap, getBuildingIdForInnerRoom, getResidentRoomForNpc, getDistr
 import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../buildings/qucuoBuildings.js";
 import { isNpcKnown } from "../npcAwareness.js";
 import { npcAffectionLabel } from "../mvu.js";
-import { inferActivePortraitTarget, SNOW_LEOPARD_FORMS, snowLeopardPortraitUrl } from "../portraits.js";
+import { inferActivePortraitTarget, SNOW_LEOPARD_FORMS, snowLeopardPortraitUrl, narratorPortraitUrl, narratorPortraitLabel } from "../portraits.js";
 import { QUCUO_MAP, isNodeUnlocked } from "../qucuoMap.js";
 import { QUALITY_COLOR } from "../equipment.js";
 import { DIRS, getTimeStr } from "../utils/mudHelpers.js";
@@ -25,6 +25,7 @@ export default function LeftPanel({
   interactMode, activeTarget, talkTarget,
   playerAvatar,
   slImgErr, setSlImgErr, slForm, setSnowLeopardForm, setSlFormState,
+  narratorAffection, narratorImgErr, setNarratorImgErr,
   companionState,
   setShowPortraitManager,
   mapView, setMapView, mapBig, setMapBig,
@@ -206,9 +207,15 @@ export default function LeftPanel({
             const candidates = ["旁白", "你", ...room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name)];
             const target = portraitTarget && candidates.includes(portraitTarget) ? portraitTarget : inferActivePortraitTarget(interactMode, room, activeTarget || talkTarget);
             const isSnowLeopard = target === "雪豹";
+            // 旁白立绘按好感度自动切档（五档：声之涟漪→水手服的猫→猫裹黄裙→人形剪影→真容）。
+            // 与雪豹的差别：雪豹三形态是玩家手动选，旁白这五张是显形进度条，玩家不能选。
+            // 但若玩家在「⚙管理」里手动传过旁白立绘，仍以他自己传的为准——不夺用户的手。
+            const isNarrator = target === "旁白";
             const img = isSnowLeopard
               ? (slImgErr ? null : snowLeopardPortraitUrl(slForm))
-              : (target === "你" ? (portraits["你"] || playerAvatar) : portraits[target]);
+              : isNarrator
+                ? (portraits["旁白"] || (narratorImgErr ? null : narratorPortraitUrl(narratorAffection)))
+                : (target === "你" ? (portraits["你"] || playerAvatar) : portraits[target]);
             return (
               <>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
@@ -232,13 +239,23 @@ export default function LeftPanel({
                 }}>
                   {img ? (
                     <img src={img} alt={target} style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      onError={isSnowLeopard ? () => setSlImgErr(true) : undefined} />
+                      onError={isSnowLeopard ? () => setSlImgErr(true) : isNarrator ? () => setNarratorImgErr(true) : undefined} />
                   ) : (
                     <span style={{ color: zoneTheme.textDim, fontSize: "11px", textAlign: "center", padding: "0 8px" }}>
-                      {isSnowLeopard && slImgErr ? "雪豹立绘待投放（portraits/snowleopard/）" : `${target} 暂无立绘`}
+                      {isSnowLeopard && slImgErr ? "雪豹立绘待投放（portraits/snowleopard/）"
+                        : isNarrator && narratorImgErr ? "旁白立绘待投放（portraits/narrator/）"
+                        : `${target} 暂无立绘`}
                     </span>
                   )}
                 </div>
+                {/* 旁白：标出当前是第几形态。她的立绘是好感度进度条，不给切换按钮——
+                    这跟雪豹三形态（玩家想看哪个看哪个）是两回事，显形到哪一步由好感度说了算。 */}
+                {isNarrator && !portraits["旁白"] && (
+                  <div style={{ marginTop: 6, textAlign: "center", fontSize: "9.5px", color: zoneTheme.textDim }}>
+                    {narratorPortraitLabel(narratorAffection)}
+                    <span style={{ color: zoneTheme.accentDim }}>　好感 {narratorAffection}</span>
+                  </div>
+                )}
                 {isSnowLeopard && (
                   <div style={{ display: "flex", gap: 4, marginTop: 6, justifyContent: "center" }}>
                     {SNOW_LEOPARD_FORMS.map(f => (

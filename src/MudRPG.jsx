@@ -338,6 +338,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // slImgErr：图片文件未投放到 public/portraits/snowleopard/ 时显示占位提示而不是破图
   const [slForm, setSlFormState] = useState(getSnowLeopardForm());
   const [slImgErr, setSlImgErr] = useState(false);
+  const [narratorImgErr, setNarratorImgErr] = useState(false); // 旁白立绘文件缺失时给占位提示
   const [portraitTarget, setPortraitTarget] = useState(null); // null = 自动推断；否则玩家手动锁定查看的对象
   const [showPortraitManager, setShowPortraitManager] = useState(false);
   const [showPipeline, setShowPipeline] = useState(false);
@@ -4041,6 +4042,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           interactMode={interactMode} activeTarget={activeTarget} talkTarget={talkTarget}
           playerAvatar={playerAvatar}
           slImgErr={slImgErr} setSlImgErr={setSlImgErr} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState}
+          narratorAffection={narrator.affection} narratorImgErr={narratorImgErr} setNarratorImgErr={setNarratorImgErr}
           companionState={companionState}
           setShowPortraitManager={setShowPortraitManager}
           mapView={mapView} setMapView={setMapView} mapBig={mapBig} setMapBig={setMapBig}

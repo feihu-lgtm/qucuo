@@ -19,6 +19,8 @@
 // 异步初始化、不占用 localStorage 一个字节。玩家自定义上传的立绘依然
 // 走 localStorage（见 setPortrait/loadPortraits），两者在 getPortrait()
 // 里合并查询——玩家自己传的优先，没传过才落到这批硬加载的默认图。
+import { affectionTier } from "./narrator.js";
+
 import meiduoImg from "./assets/portraits/meiduo.jpg";
 import huyanxueImg from "./assets/portraits/huyanxue.jpg";
 import heyuxieImg from "./assets/portraits/heyuxie.jpg";
@@ -121,6 +123,31 @@ export function setSnowLeopardForm(key) {
 export function snowLeopardPortraitUrl(formKey) {
   const f = SNOW_LEOPARD_FORMS.find(x => x.key === formKey) || SNOW_LEOPARD_FORMS[2];
   return SL_BASE + f.file;
+}
+
+// ── 旁白立绘·好感度五档（本轮新增）──
+// 跟雪豹三形态同一套思路：资源放 public/portraits/narrator/ 下，不走 src/assets
+// 硬加载——图片由作者自行投放，构建不该依赖文件是否存在；缺失时界面给占位提示，
+// 不影响构建与运行。
+//
+// 与雪豹的差别：雪豹三形态是**玩家手动切**（她本来就会变，切哪个是玩家喜好），
+// 旁白这五张是**好感度自动切**，玩家不能选——这五张是她显形的进度条，
+// 一路从"一团声音"长到"人"：
+//   ≥0  声之涟漪   她只是个声音，光环里空着，位置留着人没来
+//   ≥20 水手服的猫  傲娇、有攻击性、脖子上拴着红项圈
+//   ≥45 猫裹黄裙   衣服是人的尺寸，里头却只有一只猫
+//   ≥70 人形剪影   形状终于对了，颜色还没回来
+//   ≥90 真容      她显形在那个一直空着的位置上
+// 分档表是 narrator.js 的 AFFECTION_TIERS（唯一真值源），这里不另写一份边界。
+const NARRATOR_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/narrator/";
+
+export function narratorPortraitUrl(affection) {
+  return NARRATOR_BASE + affectionTier(affection).portrait;
+}
+
+// 当前这一档立绘叫什么（UI 上标一行小字，让玩家知道自己看的是第几形态）。
+export function narratorPortraitLabel(affection) {
+  return affectionTier(affection).portraitLabel;
 }
 
 // ── 默认立绘预置（本轮新增）──
