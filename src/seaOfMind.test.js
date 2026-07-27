@@ -132,9 +132,14 @@ describe("心灵之海这个据点", () => {
 });
 
 describe("MVU 世界.旁白 读写", () => {
-  it("新档带全四个字段", () => {
-    expect(Object.keys(narratorVars(initialVarTree())).sort())
-      .toEqual(["metXuannu", "questStage", "seaUnlocked", "seaVisited"]);
+  // 断言"必须包含"而不是"恰好等于"——创伤线后续还会往这一支加字段
+  // （comfort/knots/traumaResolved/villaEntered 就是后加的），
+  // 用全等会让每次扩字段都误报一次失败。
+  it("新档带齐开海链路要用的字段", () => {
+    const keys = Object.keys(narratorVars(initialVarTree()));
+    for (const k of ["metXuannu", "questStage", "seaUnlocked", "seaVisited"]) {
+      expect(keys, `缺 ${k}`).toContain(k);
+    }
   });
   it("setNarratorVars 不就地改原对象", () => {
     const t = initialVarTree();

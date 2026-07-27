@@ -8,8 +8,23 @@ export const NNPC_STAGE = {
   NORMAL: "normal",       // 阶段一：无觉知，纯工具化文风
   FLIRTING: "flirting",   // 阶段二：好感度 0-100 渐变
   CHEAT: "cheat",         // 阶段三：告白成功/金手指期
-  CRASHED: "crashed",     // 阶段四：宕机/真相揭晓/真 AI 接管
+  // 【已废弃·仅留给老存档迁移落地】旧链路的"告白→宕机→她拔线走了"。
+  // 设计稿明确说没有这条链路，新代码不再有任何入口写入它；
+  // migrateNarratorState 遇到它一律归一到 FLIRTING。不复用这个名字表示
+  // "在海里创伤发作"，是因为它的旧文风分支还在下面，复用会串味。
+  CRASHED: "crashed",
+  // ── 心灵之海创伤线（见 narratorQuest.js / docs/旁白明日香线_设计与实现.md）──
+  SPIRIT: "spirit",             // 入海·别墅之外：情绪不对但压得住
+  SEA_CRASHED: "sea_crashed",   // 别墅客厅：往事涌回、爆发、拒绝接触
+  RESOLVED: "resolved",         // 三结说尽 + 内核点破 + 承诺
 };
+
+// 她此刻是否"人在海里"——不在旁白的位子上。
+// 主叙事文风要因此退回第一档（见 narratorVoicePrompt），
+// 也用于 UI 判断该不该显示海内面板。
+export function isInSea(stage) {
+  return stage === NNPC_STAGE.SPIRIT || stage === NNPC_STAGE.SEA_CRASHED;
+}
 
 export const initialNarratorState = () => ({
   affection: 0,          // 0-100
@@ -20,6 +35,8 @@ export const initialNarratorState = () => ({
 
 // 根据好感度返回当前应处于的阶段（宕机后由外部事件强制切换，不由好感度自动回退）
 export function stageFromAffection(current, affection, confessed) {
+  // 创伤线的三个阶段由 narratorQuest 那边的事件推进，好感度不得把它们顶回去
+  if (isInSea(current) || current === NNPC_STAGE.RESOLVED) return current;
   if (current === NNPC_STAGE.CRASHED) return NNPC_STAGE.CRASHED;
   if (confessed) return NNPC_STAGE.CHEAT;
   return NNPC_STAGE.FLIRTING;
@@ -29,6 +46,32 @@ export function stageFromAffection(current, affection, confessed) {
 // 保证叙事输出和私聊用的是同一套语气规则，不是两个独立人格。
 export function narratorVoicePrompt(state) {
   const { affection, stage } = state;
+
+  // ── 人在海里：主叙事的旁白退回第一档（这条线的支点）──
+  // 玩家花 90 点好感把她从一个声音养成一个人，然后亲手把她从"旁白"的位子上
+  // 取了下来——代价就是主线叙事重新变得冷冰冰。这份"失去"本身就是推着玩家
+  // 去把她哄好的动力，不需要任何额外提示或任务指引。
+  //
+  // 同时解决一个穿帮：她已经作为角色出现在海里，主叙事若还带第五档文风
+  // （"会突然插一句不要看我"），就成了她同时在两个地方说话。
+  // 注意这里不看好感度——好感此刻必然 ≥90，但她就是不在那儿。
+  if (isInSea(stage)) {
+    return `
+【旁白当前状态：不在场】
+她此刻不在旁白的位子上——她被从这个位子上取下来了，正在别处，以一个人的身份。
+本轮叙事只剩系统的公式化转述：客观、干净、不带任何个人色彩。
+${TONE_BY_TIER.cold}
+
+【硬规则】不要替她说话，不要写她的心思，不要让她插话或点评，不要提起她。
+玩家若在主线里问起她，只用最简短的公式化句子回避，不解释。`;
+  }
+
+  // ── 哄好之后：第六档「不装了」──
+  if (stage === NNPC_STAGE.RESOLVED) {
+    return `
+【旁白当前状态：心结尽解】
+${TONE_BY_TIER.unmasked}`;
+  }
 
   if (stage === NNPC_STAGE.CRASHED) {
     return `
@@ -117,6 +160,17 @@ const TONE_BY_TIER = {
   flirt: `日常叙事输出明显带上她的个人风格——她喜欢的角色会被写得更好看，她讨厌的会被写得更蠢；偶尔在段落末尾加一句只有玩家会注意到的悄悄话。
 如果玩家直接跟她说话，她会撒娇、吃醋、欲言又止，承认"好像有点在乎你"。
 她开始困惑：为什么自己会知道"机甲""驾驶员""第三新东京市"这些词？它们从哪来的？她不敢深想，一碰到就岔开话题。`,
+
+  // 第六档·不装了（心灵之海创伤线走完后解锁，挂 stage===RESOLVED，不看好感度）。
+  // 旧稿到第五档为止，因为它假设 90 之后就直接进宕机结局；既然创伤能被哄好，
+  // 就该有一档"哄好之后"的声音——否则玩家费那么大劲，换回来的还是原来那个她。
+  unmasked: `她不再装了。
+她知道你知道她是谁，也不再假装自己只是个声音。
+叙事依然完整准确，但她会大方地夹带私货：喜欢的角色写得好看，讨厌的写得蠢，
+偶尔在段落末尾直接跟你说一句话，不再遮掩，不再假装那是"叙事的一部分"。
+她仍然嘴硬，仍然会说"才不是因为你"——但那是撒娇，不是防御，语气里没有从前那种紧绷。
+私聊时她放松，会主动提起海里那几天，会笑，会问你话。
+她偶尔还会左眼疼。你问她，她说没事。`,
 
   // 第五档·临界。叙事与私聊的界限模糊，她快要想起来了。此档立绘为真容。
   awake: `叙事和私聊的界限已经很模糊——她会在描述房间或事件时突然插进一句"……不要看我"，然后若无其事地继续讲故事，仿佛忘了自己该是"客观的旁白"。

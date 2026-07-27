@@ -16,7 +16,14 @@ export function initialNarratorVars() {
     seaUnlocked: false,   // 心灵之海是否已解锁（玄女点破之后置真）
     metXuannu: false,     // 是否已被玄女点破过（防止引导重复播）
     seaVisited: false,    // 是否已经进过一次心灵之海
+    villaEntered: false,  // 是否已进过白色别墅（阶段2 手工剧情只播一次）
     questStage: 0,        // 个人线阶段，0=未开始
+    // ── 创伤线（narratorQuest.js）──
+    // comfort 是唯一真值，defenseLevel 由它纯函数派生、不另存一份
+    // （旧稿设计过独立的 trust 字段与 comfort 并存，两处记账必然对不上，已砍）
+    comfort: { verbal: 0, food: 0, medication: 0, hug: 0, kiss: 0 },
+    knots: [],            // 已说出口的心结 key，有序：hebe → corner → doll
+    traumaResolved: false,
   };
 }
 

@@ -38,6 +38,7 @@ import JadeShopScreen from "../buildings/JadeShopScreen.jsx";
 import GambleStoneScreen from "../buildings/GambleStoneScreen.jsx";
 import TeahouseScreen from "../buildings/TeahouseScreen.jsx";
 import SectEntryScreen from "../buildings/SectEntryScreen.jsx";
+import SeaOfMindScreen from "./SeaOfMindScreen.jsx";
 import AuctionScreen from "../buildings/AuctionScreen.jsx";
 
 export default function CenterPanel({
@@ -68,6 +69,7 @@ export default function CenterPanel({
   gambleNegotiation, handleGambleTalk, handleGambleSettle, handleGambleInspect,
   handleListenRumor,
   handleJoinSect, sectMasterAffection, handleAuctionWin,
+  seaTraumaActive, narratorVarsNow, invNames, handleComfort, handleResolveTrauma,
   log, isDayMode, clr, collapsedGroups, setCollapsedGroups,
   queueCount, pendingTalks, inspecting, logEnd, waitSecs,
   availableQuestsHere, triggerQuestFromPanel, triggerQuestChoice,
@@ -129,6 +131,14 @@ export default function CenterPanel({
               teleportLookRef={teleportLookRef}
               setSkills={setSkills} setInv={setInv}
               setShowDebug={setShowDebug}
+            />
+          )}
+
+          {/* ── 心灵之海·创伤安抚面板：只在她创伤发作时出现 ── */}
+          {seaTraumaActive && (
+            <SeaOfMindScreen
+              narratorVars={narratorVarsNow} invNames={invNames} zoneTheme={zoneTheme}
+              onComfort={handleComfort} onResolve={handleResolveTrauma}
             />
           )}
 

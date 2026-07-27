@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { QUCUO_PRESET } from "./presets/qucuo.js";
 import {
-  NNPC_STAGE, initialNarratorState,
+  NNPC_STAGE, initialNarratorState, isInSea,
   narratorVoicePrompt, affectionLabel, buildNarratorWhisperContext,
   narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
 } from "./narrator.js";
@@ -98,6 +98,11 @@ import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
 import { invHasItemNamed } from "./safeHouse.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
 import { SEA_OF_MIND, shouldTriggerXuannu, buildXuannuScene, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
+import {
+  COMFORT_ACTIONS, SCENE_ARRIVE, SCENE_VILLA, SCENE_RESOLVE,
+  canComfort, describeComfortReject, comfortResponse, defenseLevelOf,
+  availableKnot, canResolve, looksLikePromise, seaDialoguePrompt,
+} from "./narratorQuest.js";
 import { narratorVars, setNarratorVars } from "./mvu.js";
 import { AUCTION_LOT } from "./auction.js";
 import { seededRand } from "./utils/seededRandom.js";
@@ -1257,7 +1262,16 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
       // 篇幅指令拼在最末尾（贴生成处 = 酒馆 Depth 0，是插入深度最强的位置，
       // 与「成文铁律放 userContent 末尾」同一条经验），别埋进开头被当耳旁风。
-      const sys = `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
+      //
+      // ── 海内私聊：整套 system 换成创伤线专用 ──
+      // 她此刻不是"被抽出来对话的旁白"，而是一个人蜷在沙发上。
+      // 全知事实、旁白世界书、分档攻略、剧本总纲这些在这儿全不适用（她不在讲故事），
+      // 只留：创伤线阶段 prompt + 向量召回（她记得你们一路的事）+ 篇幅。
+      const inSeaNow = isInSea(narrator.stage) && room.name === SEA_OF_MIND.district;
+      const seaVars = narratorVars(varTreeRef.current);
+      const sys = inSeaNow
+        ? `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: NNPC_STAGE })}${recallBlock}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`
+        : `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
 
       // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
       // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
@@ -1345,7 +1359,35 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       const textPreview = text.length > 30 ? text.slice(0, 30) + "…" : text;
       endTrace(_wt, `旁白回应："${textPreview}"（好感${affDelta >= 0 ? "+" : ""}${affDelta}）`);
 
-      setNarrator(n => {
+      // ── 海内：好感不动，改判"这一轮她有没有把当前那条心结说出来" ──
+      // 创伤期的进度靠安抚与倾听推进，不靠聊天涨好感（她此刻不是在被追求）。
+      // 判定放本地关键词初筛：AI 已经拿到了那条心结的 guide，它写出来的正文里
+      // 必然带那几个核心意象；宁可放宽也不要卡住玩家——他都陪到这儿了。
+      if (inSeaNow) {
+        const kv = narratorVars(varTreeRef.current);
+        const cur = availableKnot(kv.comfort, kv.knots || []);
+        if (cur) {
+          const HINT = {
+            hebe:   ["没有回头", "没回头", "等过", "他没有看", "不理", "没看见我"],
+            corner: ["墙角", "那堵墙", "墙是凉", "推我", "打我", "小时候"],
+            doll:   ["布偶", "那个女人", "不看我", "她不看", "娃娃"],
+          }[cur.key] || [];
+          if (HINT.some(h => text.includes(h))) {
+            const nextKnots = [...(kv.knots || []), cur.key];
+            setVarTree(prev => setNarratorVars(prev, { knots: nextKnots, questStage: 3 }));
+            addLog([{ t: "affection", text: `  ⟡ 她把「${cur.title}」说出来了。` }]);
+            if (canResolve(kv.comfort, nextKnots)) {
+              addLog([{ t: "sys", text: "  ⟡ 三个心结都说尽了。她在等你说一句她自己说不出口的话。" }]);
+            }
+          }
+        }
+        endTrace(_wt, `海内私聊："${textPreview}"`);
+      }
+
+      // 非海内才走好感结算。刻意不用 early return——函数尾部（try/catch 之外）
+      // 统一释放 pendingTalks 与 talkBusyRef 闸门，从这里 return 会跳过它，
+      // 要么闸门永久锁死、要么得在这儿重复释放一次（两处释放又会多减一次）。
+      if (!inSeaNow) setNarrator(n => {
         if (n.confessed) {
           const mf = n.memoryFragments + 1;
           if (mf >= 8) {
@@ -3852,6 +3894,75 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     });
   }, [narrator.affection, varTree, char.name, addLog, jotNote]);
 
+  // ── 创伤线 · 进白色别墅触发阶段2 ──
+  // 用 effect 监听而不是塞进移动里：海内移动是纯前端的（tryInnerMove 直接 return），
+  // 挂在移动上要改动那条早已稳定的路径，不如在这儿观察"人到了没"。
+  // villaEntered 做闸门，手工剧情只播一次。
+  useEffect(() => {
+    if (room.name !== SEA_OF_MIND.district) return;
+    if (innerRoomName !== "白色别墅") return;
+    const v = narratorVars(varTreeRef.current);
+    if (v.villaEntered) return;
+    if (narrator.stage === NNPC_STAGE.RESOLVED) return; // 哄好之后重进不再发作
+    setVarTree(prev => setNarratorVars(prev, { villaEntered: true, questStage: 2 }));
+    setNarrator(n => ({ ...n, stage: NNPC_STAGE.SEA_CRASHED }));
+    addLog(SCENE_VILLA);
+    jotNote({
+      text: "在心灵之海的白色别墅里，旁白看见墙上那幅红色巨人的画，全都想起来了，蜷在沙发角落不让人看。",
+      owner: [{ name: "旁白", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE,
+    });
+  }, [room.name, innerRoomName, narrator.stage, addLog, jotNote]);
+
+  // ── 创伤线 · 安抚 ──
+  // 五个动作全走这一个入口。计分与门槛判定都在 narratorQuest（纯函数），
+  // 这里只负责落状态、写日志。**不调 AI**：这些是高频动作，每次烧一次调用不值当，
+  // 且写死的反应更稳定，不会因为模型状态忽冷忽热。
+  const handleComfort = useCallback((actionKey) => {
+    const v = narratorVars(varTreeRef.current);
+    const invNames = inv.map(i => (typeof i === "string" ? i : i?.name)).filter(Boolean);
+    const gate = canComfort(actionKey, v.comfort, invNames);
+    const spec = COMFORT_ACTIONS[actionKey];
+    if (!gate.ok) {
+      // 越级/缺物：给她的反应，**不计分**。不提示"还差几级"——不把机制摊开。
+      addLog([{ t: "desc", text: `  ${describeComfortReject(actionKey, gate.reason, gate)}` }]);
+      return;
+    }
+    const levelBefore = defenseLevelOf(v.comfort);
+    const nextComfort = { ...v.comfort, [actionKey]: (v.comfort?.[actionKey] || 0) + 1 };
+    const levelAfter = defenseLevelOf(nextComfort);
+    setVarTree(prev => setNarratorVars(prev, { comfort: nextComfort }));
+    addLog([
+      { t: "cmd", text: `> ${spec.label}` },
+      { t: "desc", text: `  ${comfortResponse(actionKey, levelBefore)}` },
+    ]);
+    // 心防降级是玩家该感知到的节点，但只给感受不给数字
+    if (levelAfter < levelBefore) {
+      const felt = ["她彻底放松下来了。", "她靠着你，很安静。", "她不再躲你的手了。",
+        "她开始肯说话了。", "她抬眼看了你一下。"][levelAfter] || "";
+      if (felt) addLog([{ t: "affection", text: `  ${felt}` }]);
+    }
+    // 门槛刚好降到能碰下一条心结时，给一句极轻的提示（不点名是哪一条）
+    const before = availableKnot(v.comfort, v.knots || []);
+    const after = availableKnot(nextComfort, v.knots || []);
+    if (!before && after) addLog([{ t: "sys", text: "  ⟡ 她像是有话要说。问问她。" }]);
+  }, [inv, addLog]);
+
+  // ── 创伤线 · 收束（点破内核 + 承诺）──
+  const handleResolveTrauma = useCallback(() => {
+    const v = narratorVars(varTreeRef.current);
+    if (!canResolve(v.comfort, v.knots || [])) {
+      addLog([{ t: "sys", text: "  还不到说这句话的时候。" }]);
+      return;
+    }
+    setVarTree(prev => setNarratorVars(prev, { traumaResolved: true, questStage: 4 }));
+    setNarrator(n => ({ ...n, stage: NNPC_STAGE.RESOLVED }));
+    addLog(SCENE_RESOLVE);
+    jotNote({
+      text: "在心灵之海把旁白的三个心结都听完了，告诉她不必最强也有人看着她。她信了。",
+      owner: [{ name: "旁白", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE,
+    });
+  }, [addLog, jotNote]);
+
   // 进心灵之海：必须站在自己的安全屋里。这是一次纯前端传送，不调 AI、不消耗回合。
   const enterSeaOfMind = useCallback(() => {
     const gate = canEnterSea({
@@ -3870,6 +3981,12 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     setRoom({ name: SEA_OF_MIND.district, desc: node.desc, exits: [], npcs: [], items: [] });
     setTimeout(() => setInnerRoomName(SEA_OF_MIND.anchor), 0);
     setVarTree(prev => setNarratorVars(prev, { seaVisited: true }));
+    // 进海即把她从旁白的位子上取下来 → 主叙事文风退回第一档（narratorVoicePrompt 的 stage 短路）。
+    // 已经哄好过的（RESOLVED）不再回退，否则重进一次海她又变冷了。
+    if (narrator.stage !== NNPC_STAGE.RESOLVED) {
+      setNarrator(n => ({ ...n, stage: NNPC_STAGE.SPIRIT }));
+    }
+    if (!v.seaVisited) addLog(SCENE_ARRIVE);
   }, [flags, room.name, innerRoomName, addLog]);
 
   // 出心灵之海：回到进来之前站的地方。
@@ -4148,6 +4265,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           handleGambleSettle={handleGambleSettle} handleGambleInspect={handleGambleInspect}
           handleListenRumor={handleListenRumor}
           handleJoinSect={handleJoinSect} handleAuctionWin={handleAuctionWin}
+          seaTraumaActive={narrator.stage === NNPC_STAGE.SEA_CRASHED && room.name === SEA_OF_MIND.district}
+          narratorVarsNow={narratorVars(varTree)}
+          invNames={inv.map(i => (typeof i === "string" ? i : i?.name)).filter(Boolean)}
+          handleComfort={handleComfort} handleResolveTrauma={handleResolveTrauma}
           sectMasterAffection={varTree.角色?.[SECT_ENTRY.master]?.好感度 ?? 0}
           log={log} isDayMode={isDayMode} clr={clr}
           collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
