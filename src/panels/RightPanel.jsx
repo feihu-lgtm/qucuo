@@ -5,6 +5,7 @@ import { npcAffectionLabel } from "../mvu.js";
 import { SNOW_LEOPARD_FORMS, snowLeopardPortraitUrl } from "../portraits.js";
 import { unlockedCompanions, activeCompanionKey, isSnowLeopardAvailable } from "../companion.js";
 import { effectBrief, statLabel, moveStatLabel, moveEffectBrief } from "../itemEffectText.js";
+import { deriveMoveFromSkill } from "../npcGeneration.js";
 import { bodyProfileFilled } from "../bodyProfile.js";
 import { NNPC_STAGE, affectionLabel } from "../narrator.js";
 import { CATALOG_INDEX } from "../items/catalog.js";
@@ -261,6 +262,13 @@ export default function RightPanel({
             const i = skills.indexOf(s);
             const q = s.quality || "白";
             const qc = QUALITY_COLOR[q] || "#c8bfa0";
+            // 真实招式本体：fixed（拜师/偷师完整招）直接取 s.move，可修炼武学按当前
+            // 阶段 deriveMoveFromSkill 派生。moveStatLabel/moveEffectBrief 认的是招式
+            // 字段（baseDamageMultiplier/forceFirst…），这些都在 move 上、不在技能外壳 s 上，
+            // 直接传 s 会全读空——这正是此前右栏看不到特效的原因。
+            const mv = (s.fixed && s.move) ? s.move : deriveMoveFromSkill(s);
+            const TYPE_SHORT = { 攻击: "攻", 防御: "防", 状态: "状" };
+            const mType = s.moveType || mv.type;
             return (
               <div key={i} style={{ marginBottom: 4, padding: "3px 0", borderLeft: s.active ? `2px solid ${qc}` : "2px solid transparent", paddingLeft: 6, opacity: s.active ? 1 : 0.62 }}>
                 <div style={{ fontSize: "11.5px", display: "flex", alignItems: "center", gap: 4 }}>
@@ -278,35 +286,27 @@ export default function RightPanel({
                     style={{ cursor: "pointer", color: s.active ? qc : "#6a6a5a" }}
                     title={s.active ? "已上阵，点击卸下" : "运功上阵"}
                   >{s.active ? "▶" : "○"}</span>
+                  {mType && <span title={`${mType}类武学`} style={{ fontSize: "9px", color: "#1a1206", background: qc, borderRadius: 2, padding: "0 3px", fontWeight: 700, flexShrink: 0 }}>{TYPE_SHORT[mType] || "?"}</span>}
                   <span
-                    onClick={() => inspectItem("skill", s.name, s.fixed ? `${q}品·授业绝学（完整）` : `${q}品·${s.stage}`, null, { worldLook: true })}
+                    onClick={() => inspectItem("skill", s.name, s.fixed ? `${q}品·完整招式` : `${q}品·${s.stage}`, null, { worldLook: true })}
                     style={{ cursor: inspecting === s.name ? "wait" : "pointer", color: qc, fontWeight: s.active ? "bold" : "normal", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === s.name ? 0.6 : 1 }}
                   >{s.name}{s.fixed ? "" : `·${s.stage}`}{inspecting === s.name ? "…" : ""}</span>
                   <span style={{ fontSize: "9.5px", color: qc, opacity: 0.9 }}>（{q}品）</span>
                   {/* 伤害倍率与耗气。显示倍率而非绝对伤害：绝对值要乘外功/装备/
                       对手根骨才算得出，面板上给个"×1.3"比给一个随时会变的数字诚实。 */}
                   {(() => {
-                    const lbl = moveStatLabel(s);
+                    const lbl = moveStatLabel(mv);
                     return lbl ? <span style={{ fontSize: "9px", color: zoneTheme.textDim, flexShrink: 0 }}>{lbl}</span> : null;
-                  })()}
-                  {s.fixed && (() => {
-                    const src = s.source || "拜师";
-                    const label = src === "偷师" ? "偷" : src === "拜师·通用" ? "通" : "授";
-                    const title = src === "偷师" ? "偷师所得" : src === "拜师·通用" ? "拜师·通用招" : "拜师·授业绝学";
-                    return <span title={title} style={{ fontSize: "9px", color: zoneTheme.textDim, border: `1px solid ${zoneTheme.border}`, borderRadius: 2, padding: "0 3px" }}>{label}</span>;
                   })()}
                 </div>
                 {(() => {
-                  const eff = moveEffectBrief(s);
+                  const eff = moveEffectBrief(mv);
                   return eff ? <div style={{ paddingLeft: 18, fontSize: "9.5px", color: s.active ? "#8ac48a" : "#4a5a4a" }}>{eff}</div> : null;
                 })()}
                 {s.fixed
-                  ? <div style={{ paddingLeft: 18 }}>
-                      <div style={{ fontSize: "10.5px", color: "#5a5a4a" }}>
-                        {s.source === "偷师" ? "偷师所得 · 学即完整，无需修炼" : s.source === "拜师·通用" ? "拜师·通用招 · 学即完整，无需修炼" : "授业绝学 · 学即完整，无需修炼"}
-                      </div>
-                      {s.move?.desc && <div style={{ fontSize: "10px", color: zoneTheme.textDim, marginTop: 2, lineHeight: 1.65 }}>{s.move.desc}</div>}
-                    </div>
+                  ? (s.move?.desc ? <div style={{ paddingLeft: 18 }}>
+                      <div style={{ fontSize: "10px", color: zoneTheme.textDim, marginTop: 2, lineHeight: 1.65 }}>{s.move.desc}</div>
+                    </div> : null)
                   : (() => {
                       const curIdx = STAGES.indexOf(s.stage);
                       const maxed = curIdx >= STAGES.length - 1;
