@@ -5,7 +5,7 @@ import { makeItemSmart } from "../items/catalog.js";
 import { makeItem } from "../equipment.js";
 import { getBuildingsForLocation } from "../buildings/qucuoBuildings.js";
 import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../innerMap.js";
-import { isSnowLeopardAvailable, activeCompanion } from "../companion.js";
+import { activeCompanion, COMPANION_LORE, getCompanionDescForm } from "../companion.js";
 import { step as traceStep } from "../actionTrace.js";
 import { getAllResidentNpcLore } from "../residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../worldbook.js";
@@ -161,21 +161,19 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
       includeLastReply: isTalk,
     })
   );
-  // 雪豹·命定灵兽的二形态人设（按好感 gating）：雪豹不在 visibleNpcs（它走
-  // visibleNpcsForAI 单独随行），故 worldbook 的 matchNpcLore 匹配不到它，它的
-  // 人设从不注入 prompt——这里单独补一段。兽形段始终注入（只要随行在场）；化形
-  // 女子的形貌须好感≥60 才写（情意不够时它仍是兽，prompt 里一字不提化形，免得
-  // AI 提前让它变人）；■模式开启且已化形，才追加私密性情癖好。
-  let snowLeopardLore = "";
-  if (isSnowLeopardAvailable(companionState)) {
-    const aff = varTree?.角色?.雪豹?.好感度 ?? 0;
-    snowLeopardLore = `\n\n【雪豹·命定灵兽在场设定】随行的这头通体雪白的雪豹并非嘎则或任何人的兽，它无主、命定只认玩家一人，是前世便结下羁绊的灵兽，对旁人戒备疏离，唯独在玩家身边安静温顺。它不通人言，情感全凭动作、眼神、姿态传达（以额抵掌、绕身而行、伏低臣服、尾梢轻缠手腕等），叙事时务必如此表现，不要让它开口说人话。`;
-    if (aff >= 60) {
-      snowLeopardLore += `它与玩家情深至此，已能化为人形女子相伴——及腰一头雪白银发，发间垂着松石蓝珠与金穗流苏，头顶生一对雪豹兽耳、白绒里缀墨斑，额心嵌一枚菱形松石额饰，一双眸子是雪线天光般的蓝灰、瞳仁竖如兽目，肤白胜雪，肩头腰腹隐约透出雪豹的墨色斑纹，如兽皮花纹长在肉里，身披半透的雪纹薄纱、内衬豹纹，腰系金链松石，身后拖着一条粗长的雪豹斑尾，手里常按一柄镶松石、垂金穗的长剑，神情清冷而骨子里压着一股未驯的野性。化形后它仍认玩家为主，黏人而忠贞，化形与否由它随心意切换，叙事中可视情境让它在兽形与人形间自然转换。`;
-      if (nsfwOn) {
-        snowLeopardLore += `\n【■模式·雪豹化形私密性情】化形后的雪豹保留着猫科兽性的本能与癖好：耳根与尾根最是敏感，被顺毛、被挠耳后会忍不住喉咙里发出呼噜般的低鸣、兽耳轻抖、长尾缠上玩家手腕；平日清冷寡言，床笫间反差极烈，认主后极黏人，喜欢被玩家从背后环抱、被咬颈侧，动情时瞳孔竖成一线、忍不住现出兽耳与长尾，情浓时会用牙轻啃玩家肩头留下月牙印痕，事后蜷在玩家怀里舔舐其指尖如猫科理毛。它偏好被掌控节奏、慢磨细品，嘴上不说一句、身体却诚实得很，会主动用尾勾人、用兽耳蹭人求欢。涉及亲密剧情时，按■模式写作规则直白铺陈其兽性反应与体位细节，不必替它遮掩。`;
-      }
-    }
+  // 随行伙伴（雪豹/珍珠…灵兽类）的二形态人设：伙伴不在 visibleNpcs（走 visibleNpcsForAI
+  // 单独随行），worldbook 的 matchNpcLore 匹配不到它，人设从不注入 prompt——这里单独补。
+  // 用哪套描述（兽形/人形）由玩家在外貌选择器里挑（getCompanionDescForm），选中的那套
+  // 连同身份底色一起注入；■模式且选了人形、且该伙伴有私密性情条目，才追加那段。
+  // 明日香这类本就是在场人物的伙伴不登记 COMPANION_LORE，走常规 NPC 人设，此处跳过。
+  let companionLore = "";
+  const activeComp = activeCompanion(companionState);
+  if (activeComp && COMPANION_LORE[activeComp.key]) {
+    const lore = COMPANION_LORE[activeComp.key];
+    const form = getCompanionDescForm(activeComp.key);
+    companionLore = `\n\n【${activeComp.label}·随行伙伴在场设定】${lore.base}`;
+    companionLore += form === "human" ? lore.human : lore.beast;
+    if (form === "human" && nsfwOn && lore.nsfw) companionLore += lore.nsfw;
   }
   const roomNpcNamesForQuest = room.npcs.map(n => n.name);
   const questStatusLines = [];
@@ -197,5 +195,5 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
   const reunionBlock = buildReunionBlock(
     detectReunions(varTree, room.npcs, time, REUNION_GAP_THRESHOLD)
   );
-  return { lastAiText, npcLoreBlockWithQuest: npcLoreBlock + snowLeopardLore + questStatusBlock, reunionBlock };
+  return { lastAiText, npcLoreBlockWithQuest: npcLoreBlock + companionLore + questStatusBlock, reunionBlock };
 }

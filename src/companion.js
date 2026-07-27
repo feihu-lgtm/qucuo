@@ -257,7 +257,9 @@ export function activeCompanionKey(companionState) {
 
 export function activeCompanion(companionState) {
   const k = activeCompanionKey(companionState);
-  return k ? { key: k, ...companionState[k] } : null;
+  if (!k) return null;
+  const slot = COMPANION_SLOTS.find(s => s.key === k) || {};
+  return { key: k, label: slot.label, beast: slot.beast, ...companionState[k] };
 }
 
 // 已解锁的候选（供 UI 列出可切换的队友）
@@ -275,6 +277,47 @@ export function companionKeyByName(name) {
 export function isCompanionUnlockedByName(companionState, name) {
   const key = companionKeyByName(name);
   return key ? !!(companionState?.[key]?.unlocked && companionState?.[key]?.data) : false;
+}
+
+// ── 伙伴外貌形态（兽形/人形）文字描述 + 选择器 ────────────────────────
+// 雪豹、珍珠这类灵兽伙伴都有"兽形"与"人形"两套文字描述，玩家用选择器挑一套，
+// 选中的那套会注入 prompt 发给 AI（见 roundNotes.buildCompanionLore）。明日香本就是
+// 人，没有兽形，不在 COMPANION_LORE 里登记，选择器对她不显示。
+export const COMPANION_DESC_FORMS = [
+  { key: "beast", label: "兽形" },
+  { key: "human", label: "人形" },
+];
+
+// base：无论兽形人形都要交代的身份底色（认主/不通人言等）；beast/human：两种形态的
+// 形貌与表现；nsfw：仅人形且■模式开启时追加的私密性情（目前只雪豹有）。
+export const COMPANION_LORE = {
+  snowLeopard: {
+    base: `随行的这头通体雪白的雪豹并非嘎则或任何人的兽，它无主、命定只认玩家一人，是前世便结下羁绊的灵兽，对旁人戒备疏离，唯独在玩家身边安静温顺，认主后黏人而忠贞。`,
+    beast: `它此刻是兽形——不通人言，情感全凭动作、眼神、姿态传达（以额抵掌、绕身而行、伏低臣服、尾梢轻缠手腕等），叙事时务必如此表现，不要让它开口说人话。`,
+    human: `它与玩家情深至此，已能化为人形女子相伴——及腰一头雪白银发，发间垂着松石蓝珠与金穗流苏，头顶生一对雪豹兽耳、白绒里缀墨斑，额心嵌一枚菱形松石额饰，一双眸子是雪线天光般的蓝灰、瞳仁竖如兽目，肤白胜雪，肩头腰腹隐约透出雪豹的墨色斑纹，如兽皮花纹长在肉里，身披半透的雪纹薄纱、内衬豹纹，腰系金链松石，身后拖着一条粗长的雪豹斑尾，手里常按一柄镶松石、垂金穗的长剑，神情清冷而骨子里压着一股未驯的野性。化形后它仍认玩家为主，黏人而忠贞，化形与否由它随心意切换，叙事中可视情境让它在兽形与人形间自然转换。`,
+    nsfw: `\n【■模式·雪豹化形私密性情】化形后的雪豹保留着猫科兽性的本能与癖好：耳根与尾根最是敏感，被顺毛、被挠耳后会忍不住喉咙里发出呼噜般的低鸣、兽耳轻抖、长尾缠上玩家手腕；平日清冷寡言，床笫间反差极烈，认主后极黏人，喜欢被玩家从背后环抱、被咬颈侧，动情时瞳孔竖成一线、忍不住现出兽耳与长尾，情浓时会用牙轻啃玩家肩头留下月牙印痕，事后蜷在玩家怀里舔舐其指尖如猫科理毛。它偏好被掌控节奏、慢磨细品，嘴上不说一句、身体却诚实得很，会主动用尾勾人、用兽耳蹭人求欢。涉及亲密剧情时，按■模式写作规则直白铺陈其兽性反应与体位细节，不必替它遮掩。`,
+  },
+  pearl: {
+    base: `随行的这匹通体雪白的小白马名叫珍珠（本名「哈瓦夏日」，藏语「灰色的梅花鹿」），是认主只随玩家一人的坐骑，忠心无二、脚力惊人，平日却志不在驰骋，最爱专心干饭、就地躺平。它不通人言，情感全凭嘶鸣、甩尾、低头蹭人传达，叙事时不要让它开口说人话。`,
+    beast: `它此刻是马形——一匹睫毛长长、丰神俊朗的白马，由玩家骑乘或牵行，走两步就要低头啃草，惫懒得很，真要护主赶路时却撒蹄如飞、快如白影。`,
+    human: `它与玩家情深至此，已能化为人形相伴——一位带着马儿身体元素的姑娘，上身穿一袭比基尼、外罩一件轻纱小衣，一头栗色长发扎成高马尾，发间立着一对毛茸茸的马耳朵，身后拖着一条蓬松的马尾，五官明艳、身形健美，肌肤与常人无异、是实打实的人类身体，唯独那对马耳和那条马尾露着她的来历。化形后她仍认玩家为主，黏人而忠贞，性子却依旧惫懒贪吃，化形与否由她随心意切换，叙事中可视情境让她在马形与人形间自然转换。`,
+  },
+};
+
+const COMPANION_FORM_KEY = "qucuo_companion_desc_form";
+// 某伙伴当前选用的描述形态（兽形/人形），存 localStorage 按伙伴 key 分别记。缺省兽形。
+export function getCompanionDescForm(key) {
+  try {
+    const all = JSON.parse(localStorage.getItem(COMPANION_FORM_KEY) || "{}");
+    return all[key] === "human" ? "human" : "beast";
+  } catch { return "beast"; }
+}
+export function setCompanionDescForm(key, form) {
+  try {
+    const all = JSON.parse(localStorage.getItem(COMPANION_FORM_KEY) || "{}");
+    all[key] = form;
+    localStorage.setItem(COMPANION_FORM_KEY, JSON.stringify(all));
+  } catch { /* ignore */ }
 }
 
 // 换出战队友：把目标置 active，其余一律置 false（互斥）。

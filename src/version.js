@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "右栏队友栏改通用出战头像 + 兽形/人形外貌选择器（描述随选择注入AI）·体貌挪到玩家头像下",
+    time: "2026-07-27 23:15",
+    notes: [
+      "①【队友头像通用化】右栏侠客栏原来写死显示雪豹头像，改成读 activeCompanion——就一个队友栏位，出战的是雪豹就显雪豹、是明日香就明日香、是小马就小马；未出战（都留守）则整列不显示。雪豹头像保留点按循环三形态立绘，其余伙伴立绘待投放先占位。",
+      "②【外貌选择器·兽形/人形】队友头像下方新增兽形/人形两档选择器（主要给雪豹、小马——两者都有兽形与人形两套文字描述；明日香本就是人不显示）。选中的那套描述会注入 prompt 发给 AI，点「外貌描述 ▾」可展开看这段会发给 AI 的设定全文。选择按伙伴 key 分别记 localStorage，切形态即时生效。",
+      "③【描述数据·COMPANION_LORE】companion.js 新增 COMPANION_LORE：雪豹（兽形=不通人言的灵兽表现／人形=雪白银发松石额饰的化形女子，■模式另有私密性情）、珍珠（兽形=睫毛长长的白马坐骑干饭躺平／人形=比基尼+轻纱小衣、马耳马尾栗发、人类肌肤的姑娘）。base 段（认主底色）两种形态都带。",
+      "④【注入通用化·roundNotes】原来写死的 snowLeopardLore（按好感≥60 gating 化形）改成 buildNpcContext 里按 activeCompanion + getCompanionDescForm 通用注入：身份底色 + 选中形态描述 +（人形且■模式且有 nsfw 条目才追加私密性情）。形态由选择器手动定，不再被好感卡死——玩家选了人形就注入人形。",
+      "⑤【activeCompanion 补 label/beast】此前只回 {key,unlocked,active,data}，UI 与 roundNotes 要用 comp.label 会拿到 undefined，现从 COMPANION_SLOTS 补上。",
+      "⑥【体貌按钮挪位】从角色名旁挪到玩家头像正下方，与队友列对齐成两列。",
+      "验证：vitest 507/507 通过，esbuild 构建通过。",
+    ],
+  },
+  {
     codename: "赌石收料品质对齐石头本档 + 新伙伴小马珍珠（村口坐骑·蓝档·四招·可入队可留守）",
     time: "2026-07-27 22:55",
     notes: [
