@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "MudRPG 三栏拆分：左栏(天地)+右栏(侠客)抽成独立面板组件，主文件-679行",
+    time: "2026-07-27 12:00",
+    notes: [
+      "5788行God组件瘦身第一步：按视觉区块把左栏和右栏整块搬成独立组件，主文件只留state+effect+业务逻辑。",
+      "①【src/panels/LeftPanel.jsx】左栏「天地」：据点信息/出口/建筑/此地之物/此地之人(在场+曾遇)/立绘框/雪豹随行/九宫格地图(内外)。343行。",
+      "②【src/panels/RightPanel.jsx】右栏「侠客」：头像/雪豹队友头像/气血经验潜能银两信鸽/装备总加成/内功外功/七维+药力/队伍栏/武学/临阵招式/装备/包袱/旁白好感。390行。",
+      "③【原则】state不下沉——所有useState/useRef/useEffect留在MudRPG.jsx，面板纯props接收。面板内部无游戏状态，只有纯UI渲染。",
+      "④【同步修复】底部NPC人选选择器+立绘候选列表未按内层房间过滤的bug（上一commit已推，本条合并记录）。",
+      "验证：esbuild通过(2.3mb)、vitest 25/25通过。MudRPG.jsx 5788→5109行。",
+    ],
+  },
+  {
     codename: "注入位次重排：NSFW/GM 规则提前到 user 位，assistant 位改 prefill 起始暗示",
     time: "2026-07-27 11:35",
     notes: [
