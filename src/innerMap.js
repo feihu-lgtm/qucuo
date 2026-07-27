@@ -634,7 +634,11 @@ export const INNER_MAP = {
         desc: "熊山温泉，吊睛虎王刷新点，虎胆三重门核心场景。",
         residentNpcName: "虎王", // 吊睛白额虎王镇守温泉
         exits: { s: "熊山口" },
-        unlockCondition: { type: "flag", flag: "hunter_hand_drawn_map" },
+        // 双 flag 任一即解锁：村5「老猎户给熊山手绘地图」设 unlock_xiongshan_wenquan，
+        // 后续弓胎任务设 hunter_hand_drawn_map。此前房间只认后者，导致拿了地图却没做
+        // 弓胎任务的玩家温泉永远锁着（弓胎任务文案自己都写"熊山手绘地图已解锁此隐藏房间"，
+        // 设计意图本就是地图解锁）。改认任意一个，兼容两种存档。
+        unlockCondition: { type: "anyFlag", flags: ["unlock_xiongshan_wenquan", "hunter_hand_drawn_map"] },
       },
     },
   },
@@ -939,6 +943,9 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv
   }
   if (unlockCondition.type === "flag") {
     return (flags || []).includes(unlockCondition.flag);
+  }
+  if (unlockCondition.type === "anyFlag") {
+    return (unlockCondition.flags || []).some(f => (flags || []).includes(f));
   }
   // 钥匙锁（安全屋四栋用）：按物品**名字**匹配，不是 id。
   // 背包里物品的 id 是入袋那一刻拼的（`${name}_${Date.now()}`），同一把钥匙

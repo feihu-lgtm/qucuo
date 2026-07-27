@@ -14,6 +14,7 @@
 // 纯展示组件：不持有任何 state，全部经 props 由 MudRPG.jsx 下传（与
 // LeftPanel/RightPanel/DebugPanel 同一套约定）。建筑面板各自的 Screen 组件
 // 已经是独立文件，本文件只负责「此刻该显示哪一个」这层调度。
+import { useState, useEffect } from "react";
 import { isNpcVisibleInInnerRoom } from "../innerMap.js";
 import { BUILDING_TYPE } from "../buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../memory/note.js";
@@ -80,6 +81,11 @@ export default function CenterPanel({
   pigeonTarget, setPigeonTarget, pigeonDelayShichen,
   input, setInput, inputRef, onKey, composingRef,
 }) {
+  // 现货/定制 分页：孟记铁铺(craft=forge)、玉器轩(craft=jade)这类"既卖现货又接定制"
+  // 的铺子，用本页签在 TradingScreen 与 ForgeScreen/JadeShopScreen 之间切换。换一家
+  // 铺子(activeBuilding.id 变)就复位回"现货"，避免上家的定制页串到下家。
+  const [craftTab, setCraftTab] = useState("shop");
+  useEffect(() => { setCraftTab("shop"); }, [activeBuilding?.id]);
   return (
         <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", position: "relative" } : { flex: 55, ...S.panel }}>
           {/* 手机：叙事区左右边缘贴边小把手，点击滑出左栏(天地)/右栏(行动) */}
@@ -189,7 +195,7 @@ export default function CenterPanel({
                 const shopData = rollShopStock(activeBuilding.shopKey, time) || buildShopInventory(activeBuilding.shopKey);
                 if (!shopData) return null;
                 const isKarma = shopData.currency === "karma";
-                return (
+                const trading = (
                   <TradingScreen inline shopName={shopData.shopName} shopItems={shopData.items}
                     playerInv={inv} playerMoney={isKarma ? (dao.karma || 0) : (char.money || 0)}
                     currencyName={isKarma ? "功德" : "银两"} currencyUnit={isKarma ? "点" : "两"} canSell={!isKarma}
@@ -198,6 +204,30 @@ export default function CenterPanel({
                     onBuy={(item) => { if (isKarma) { if ((dao.karma||0)<item.buyPrice) return; setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((char.money||0)<item.buyPrice) return; setChar(c=>({...c,money:c.money-item.buyPrice})); if (shopData.karmaLoss) setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); }}
                     onSell={(item) => { if (item.equipped||isKarma) return; setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id)); setChar(c=>({...c,money:(c.money||0)+item.sellPrice})); addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); }}
                   />
+                );
+                // 不带定制的铺子：只渲染现货商店（绝大多数）。
+                if (!activeBuilding.craft) return trading;
+                // 带定制的铺子（孟记铁铺=forge / 玉器轩=jade）：现货/定制 页签切换。
+                const isJade = activeBuilding.craft === "jade";
+                const tab = (key, label) => (
+                  <span key={key} onClick={() => setCraftTab(key)}
+                    style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 3,
+                      color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
+                      background: craftTab === key ? zoneTheme.accent : "transparent",
+                      border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}` }}>{label}</span>
+                );
+                return (
+                  <>
+                    <div style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
+                      {tab("shop", "现货")}
+                      {tab("craft", isJade ? "玉器定制" : "拿料定制")}
+                    </div>
+                    {craftTab === "shop" ? trading : (isJade
+                      ? <JadeShopScreen building={{ ...activeBuilding, flags }} char={char} inv={inv} time={time} inline
+                          zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onDesign={handleJadeDesign} onCraft={handleJadeCraft} />
+                      : <ForgeScreen building={activeBuilding} char={char} time={time} flags={flags} inline
+                          zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCommission={handleForgeCommission} onDesign={handleForgeDesign} />)}
+                  </>
                 );
               })()}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.ESCORT && !activeBuilding.shopKey && (

@@ -117,16 +117,16 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "天都镇最大的客栈，二层小楼，楼下卖酒，商贩走卒在此歇脚打听消息。",
     },
     {
-      id: "smithy_tiandu", name: "孟记铁铺", type: BUILDING_TYPE.SMITHY, shopKey: "孟记铁铺",
-      desc: "孟老汉开的铁匠铺，炉火熊熊，武器护甲一律现货，不接私打订单。",
+      id: "smithy_tiandu", name: "孟记铁铺", type: BUILDING_TYPE.SMITHY, shopKey: "孟记铁铺", craft: "forge",
+      desc: "孟老汉开的铁匠铺，炉火熊熊，武器护甲现货齐全，也接拿料定制的活计。",
     },
     {
       id: "escort_tiandu", name: "天都镖局", type: BUILDING_TYPE.ESCORT, shopKey: "天都镖局",
       desc: "走商护货的老字号，顺带卖些出行防身的实用器具给过路人。",
     },
     {
-      id: "antique_tiandu", name: "玉器轩", type: BUILDING_TYPE.ANTIQUE, shopKey: "玉器轩",
-      desc: "专做饰品古玩的买卖，货品良莠不齐，眼力好的人淘得到好东西。",
+      id: "antique_tiandu", name: "玉器轩", type: BUILDING_TYPE.ANTIQUE, shopKey: "玉器轩", craft: "jade",
+      desc: "专做饰品古玩的买卖，货品良莠不齐，眼力好的人淘得到好东西。也接玉器定制，拿料来便能雕。",
     },
     {
       id: "gamblestone_tiandu", name: "玉石料场", type: BUILDING_TYPE.GAMBLESTONE,

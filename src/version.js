@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "四修：锦官城东北出口·路遇之物·温泉flag对不上·孟记铁铺/玉器轩加定制",
+    time: "2026-07-27 22:42",
+    notes: [
+      "①【锦官城→鱼定村走不出去】parseDir 把「东北」并进「地图不支持的复合方向」一律返回 null，而锦官城回鱼定村的出口偏偏是 ne。点九宫格东北格/打「东北」因此走不出去（只有目的地已探索、走 autoTravel 查表时才侥幸能到）。单独放行 东北→ne，东南/西北仍拦（地图确实用不到）。",
+      "②【路遇之物又冒出来】之前「告别路遇之物」只改了主拾取流程（commitRound），地图格子预跑（mapSquares）是另一条路——小模型没给物件名时仍退化成「X品路遇之物」。改成从百物录 filterCatalog 按品质+类别挑一件真东西顶上（命中不了逐级放宽到只按类别/品质），消费侧 makeGameItem 走具名优先吃到专属数值与特效。",
+      "③【温泉整个消失·flag 名字对不上】村5任务（老猎户给熊山手绘地图）设的 flag 是 unlock_xiongshan_wenquan，而温泉房间的 unlockCondition 查的却是 hunter_hand_drawn_map（那是更晚的弓胎任务才设的）。连弓胎任务自己的文案都写「熊山手绘地图已解锁此隐藏房间」——设计意图本就是地图解锁温泉，房间却查错 flag。拿了地图、没做弓胎任务的玩家温泉永远锁着，「点传送才修好」正因传送绕过解锁判定。新增 anyFlag 条件类型，温泉认 unlock_xiongshan_wenquan / hunter_hand_drawn_map 任意一个，兼容两种存档。",
+      "④【定制只鱼定村有·同步到孟记铁铺+玉器轩】孟记铁铺(SMITHY)、玉器轩(ANTIQUE)此前只卖现货。给两家加 craft 标记（forge/jade），CenterPanel 商店分支加「现货/定制」页签：孟记铁铺定制走铁匠那套(handleForgeDesign/Commission)，玉器轩走玉器那套(handleJadeDesign/Craft)。换铺子自动复位回现货页。孟记铁铺 lore 文案同步改成「也接拿料定制」。",
+      "验证：vitest 507/507 通过，esbuild 构建通过。",
+    ],
+  },
+  {
     codename: "右栏武学：类型标签+真实特效/倍率直接显示，去掉授业/偷学小标签",
     time: "2026-07-27 22:30",
     notes: [

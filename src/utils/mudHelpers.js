@@ -18,10 +18,13 @@ export const parseDir = (cmd) => {
   const c = cmd.trim().toLowerCase();
   // 特殊别名：保留精确开头匹配，避免"锦官城"这类地名词被过度泛化误判
   if (/^(往西南|西南|去锦官城|去锦官|锦官城)/.test(c)) return "sw";
-  // 排除游戏地图不支持的复合方向（东南/东北/西北），否则会被"东/西"这类单字
+  // 东北→ne：锦官城回鱼定村走的就是 ne 出口，此前 ne 被并进"不支持的复合方向"
+  // 一律返回 null，导致点九宫格东北格/打"东北"走不出去。单独放行 ne。
+  if (/^(往东北|东北)/.test(c)) return "ne";
+  // 排除游戏地图不支持的复合方向（东南/西北），否则会被"东/西"这类单字
   // 前缀正则提前命中、误判成一个游戏根本没有的方向，导致"此路不通"该有的提示
   // 变成了错误地移动到别处。
-  if (/^(?:向|往|朝|去|到)?(东南|东北|西北)/.test(c)) return null;
+  if (/^(?:向|往|朝|去|到)?(东南|西北)/.test(c)) return null;
   const DIR_PATTERNS = [
     ["n", new RegExp(`^(?:${DIR_PREFIX}(?:north|n)|${DIR_PREFIX}北)`)],
     ["s", new RegExp(`^(?:${DIR_PREFIX}(?:south|s)|${DIR_PREFIX}南)`)],

@@ -2,6 +2,7 @@ import { QUCUO_MAP } from "./qucuoMap.js";
 import { rollEncounter } from "./encounter.js";
 import { rollQuality, ITEM_CATEGORY } from "./equipment.js";
 import { cleanJsonString } from "./apiConfig.js";
+import { filterCatalog } from "./items/catalog.js";
 
 // 地图格子系统（扫雷式预埋）
 // ---------------------------------------------------------------------------
@@ -64,6 +65,18 @@ export function parseSquareBatch(text) {
   } catch { return []; }
 }
 
+// 小模型没给出物件名时，从百物录按品质+类别挑一件真东西顶上，告别"X品路遇之物"
+// 这种垃圾占位名。品质+类别命中不了就逐级放宽（只按类别/只按品质），全空才退通用名。
+// 给到真名字后，消费侧 makeGameItem 走具名优先，能吃到 catalog 专属数值与特效。
+function pickCatalogName(quality, category) {
+  let pool = filterCatalog({ quality, category });
+  if (!pool.length) pool = filterCatalog({ category });
+  if (!pool.length) pool = filterCatalog({ quality });
+  if (!pool.length) return { name: `${quality === "白" ? "" : quality}品物件`, desc: "路上拾得的物件。" };
+  const e = pool[Math.floor(Math.random() * pool.length)];
+  return { name: e.name, desc: e.desc || "" };
+}
+
 // 把 AI 写好的素材与系统掷好的骨架按据点名合并入库。
 // AI 没给名字时拾取退品质通用名（预跑失败不致命，格子照用）。
 export function applySquareBatch(day, parsed, skeletons) {
@@ -72,11 +85,18 @@ export function applySquareBatch(day, parsed, skeletons) {
     if (!sk || typeof p.desc !== "string" || !p.desc.trim()) continue;
     let item = null;
     if (sk.item) {
+      let itemName = (p.itemName || "").trim();
+      let itemDesc = (p.itemDesc || "").trim();
+      if (!itemName) {
+        const pick = pickCatalogName(sk.item.quality, sk.item.category);
+        itemName = pick.name;
+        itemDesc = itemDesc || pick.desc;
+      }
       item = {
-        name: (p.itemName || "").trim() || `${sk.item.quality === "白" ? "" : sk.item.quality}品路遇之物`,
+        name: itemName,
         quality: sk.item.quality,
         category: sk.item.category,
-        desc: (p.itemDesc || "").trim() || "路上拾得的物件。",
+        desc: itemDesc || "路上拾得的物件。",
       };
     }
     let encounter = null;
