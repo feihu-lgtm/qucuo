@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修上线即崩的 TDZ：deps 引用了后面才定义的 noteAction；并加静态守卫（442个测试全没抓到这类错）",
+    time: "2026-07-29 03:40",
+    notes: [
+      "线上报 Cannot access X before initialization，整个组件挂掉（ErrorBoundary 拦住没黑屏）。",
+      "①【根因】上一版给 handleNpcSteal（约3470行）的依赖数组加了 noteAction，而 noteAction 定义在 3958 行。**函数体里的调用没问题**——那是运行时才执行、彼时早已初始化；出问题的是**deps 数组：它在 useCallback 那一行同步求值**，那一刻 noteAction 还在 TDZ 里，直接抛错。已把 noteAction 上移到 699 行（紧邻 jotNote——两者都是「记一笔」性质），早于全部 15 个使用者；同时确认它依赖的 timeRef 在 269 行、仍在其前。",
+      "②【为什么 442 个测试一条都没抓到】vitest 里**没有任何测试真的渲染 MudRPG**（项目没装 testing-library），vite build 也只做语法与打包、不执行组件。所以「测试全绿 + 构建成功」对这一类错误的覆盖是**零**——这跟前几天那次「version.js 语法坏了但测试全绿」是同一种性质的盲区，只是换了个地方。",
+      "③【好在 TDZ 是静态可查的】不需要渲染，扫一遍「deps 里的标识符 vs 它的定义行号」就够。已加常驻守卫测试，并用一个故意写坏的探针反向验证过它真能抓到（不是空跑）。全库当前扫描：零风险。",
+      "④【这个隐患我踩过两次】上一次是 handleToggleEquip 引用 noteAction，当时我手动调了顺序就过去了，没意识到这是一类会反复出现的错（只要在 noteAction 之前的任何 hook 里引用它就会中）。踩两次说明靠记性不行，得让它自动失败——这才是这次补守卫而不只是修 bug 的理由。",
+      "验证：npm run verify 通过（vitest 443/443 + pages 构建）。",
+    ],
+  },
+  {
     codename: "偷窃补记两边：起居注（成败分记）+ 记忆小纸条，并钉死「得手不挂owner、被发现要挂」的语义",
     time: "2026-07-29 03:10",
     notes: [

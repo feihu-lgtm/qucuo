@@ -693,6 +693,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 当日原料缓冲：每张小纸条的文本都攒进来（不管开没开 embedding），跨天时喂给
   // 日总结 AI 归纳成「大纸条」。跨天清空（见下方 rollover useEffect）。
   const dayMaterialRef = useRef([]);
+  // 起居注：记一次动作。走 AI 的和不走 AI 的都记（见 memory/tally.js 顶部注释）。
+  // 用 timeRef 而不是 time：这个函数会被 tryInnerMove 之类的路径在同一个事件循环里
+  // 连续调用，闭包里的 time 可能还是上一帧的值，跨天判定会错一格。
+  const noteAction = useCallback((kind, n = 1) => {
+    setVarTree(prev => {
+      const next = JSON.parse(JSON.stringify(prev || {}));
+      if (!next.世界) next.世界 = { 威望: 0 };
+      next.世界.起居注 = tallyAdd(next.世界.起居注, kind, timeRef.current, n);
+      return next;
+    });
+  }, []);
+
   const jotNote = useCallback(({ text, owner = [], source = NOTE_SOURCE.DUMB }) => {
     const env = noteEnvRef.current;
     if (!text || !env.apiCfg) return;
@@ -3951,18 +3963,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     setChar(c => ({ ...c, money: c.money - cost }));
     act(`在茶馆花${cost}两，听掌柜低声说了个传闻：「${rumor}」`, [], { settle: true });
   }, [char, addLog, act]);
-
-  // 起居注：记一次动作。走 AI 的和不走 AI 的都记（见 memory/tally.js 顶部注释）。
-  // 用 timeRef 而不是 time：这个函数会被 tryInnerMove 之类的路径在同一个事件循环里
-  // 连续调用，闭包里的 time 可能还是上一帧的值，跨天判定会错一格。
-  const noteAction = useCallback((kind, n = 1) => {
-    setVarTree(prev => {
-      const next = JSON.parse(JSON.stringify(prev || {}));
-      if (!next.世界) next.世界 = { 威望: 0 };
-      next.世界.起居注 = tallyAdd(next.世界.起居注, kind, timeRef.current, n);
-      return next;
-    });
-  }, []);
 
   // 装备/卸下。此前直接在 GlobalOverlays 里 setInv(toggleEquip(...))，
   // 为了记一笔计数不值当再穿一层 props，收拢到这儿——将来装备变更要加别的
