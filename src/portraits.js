@@ -151,6 +151,50 @@ export function snowLeopardPortraitUrl(formKey) {
   return SL_BASE + f.file;
 }
 
+// ── 珍珠立绘·双形态 ──
+// 伙伴珍珠有两张官方立绘：人形（比基尼+轻纱·马耳马尾姑娘）+ 马形（通体雪白小白马）。
+// 资源放在 public/portraits/pearl/ 下，同雪豹一套思路。
+const PEARL_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/pearl/";
+export const PEARL_FORMS = [
+  { key: "form1", label: "人形·珍珠", file: "form1.webp" },
+  { key: "beast", label: "马形·珍珠", file: "beast.webp" },
+];
+const PEARL_FORM_KEY = "qucuo_pearl_form";
+export function getPearlForm() {
+  try {
+    const v = localStorage.getItem(PEARL_FORM_KEY);
+    return PEARL_FORMS.some(f => f.key === v) ? v : "beast";
+  } catch { return "beast"; }
+}
+export function setPearlForm(key) {
+  try { localStorage.setItem(PEARL_FORM_KEY, key); } catch { /* ignore */ }
+}
+export function pearlPortraitUrl(formKey) {
+  const f = PEARL_FORMS.find(x => x.key === formKey) || PEARL_FORMS[1];
+  return PEARL_BASE + f.file;
+}
+
+// 通用：按伙伴 key 取形态列表 / 当前形态 / 立绘 URL / setter
+export function getCompanionForms(key) {
+  if (key === "snowLeopard") return SNOW_LEOPARD_FORMS;
+  if (key === "pearl") return PEARL_FORMS;
+  return null;
+}
+export function getCompanionForm(key) {
+  if (key === "snowLeopard") return getSnowLeopardForm();
+  if (key === "pearl") return getPearlForm();
+  return "beast";
+}
+export function setCompanionForm(key, formKey) {
+  if (key === "snowLeopard") setSnowLeopardForm(formKey);
+  else if (key === "pearl") setPearlForm(formKey);
+}
+export function companionPortraitUrl(key, formKey) {
+  if (key === "snowLeopard") return snowLeopardPortraitUrl(formKey);
+  if (key === "pearl") return pearlPortraitUrl(formKey);
+  return null;
+}
+
 // ── 旁白立绘·好感度五档（本轮新增）──
 // 跟雪豹三形态同一套思路：资源放 public/portraits/narrator/ 下，不走 src/assets
 // 硬加载——图片由作者自行投放，构建不该依赖文件是否存在；缺失时界面给占位提示，

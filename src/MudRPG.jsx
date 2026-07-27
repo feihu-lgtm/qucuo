@@ -28,7 +28,7 @@ import BugReportModal from "./BugReportModal.jsx";
 import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
 import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom, isInnerExitUnlocked } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
-import { loadPortraits, setPortrait, removePortrait, fileToDataUrl, inferActivePortraitTarget, SNOW_LEOPARD_FORMS, getSnowLeopardForm, setSnowLeopardForm, snowLeopardPortraitUrl } from "./portraits.js";
+import { loadPortraits, setPortrait, removePortrait, fileToDataUrl, inferActivePortraitTarget, SNOW_LEOPARD_FORMS, PEARL_FORMS, getSnowLeopardForm, setSnowLeopardForm, snowLeopardPortraitUrl, getPearlForm, setPearlForm, pearlPortraitUrl, getCompanionForms, getCompanionForm, setCompanionForm, companionPortraitUrl } from "./portraits.js";
 import PortraitManager from "./PortraitManager.jsx";
 import CharacterPage from "./CharacterPage.jsx";
 import QuestLogScreen from "./QuestLogScreen.jsx";
@@ -359,6 +359,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // slImgErr：图片文件未投放到 public/portraits/snowleopard/ 时显示占位提示而不是破图
   const [slForm, setSlFormState] = useState(getSnowLeopardForm());
   const [slImgErr, setSlImgErr] = useState(false);
+  const [pearlForm, setPearlFormState] = useState(getPearlForm());
+  const [pearlImgErr, setPearlImgErr] = useState(false);
   const [narratorImgErr, setNarratorImgErr] = useState(false); // 旁白立绘文件缺失时给占位提示
   const [portraitTarget, setPortraitTarget] = useState(null); // null = 自动推断；否则玩家手动锁定查看的对象
   const [showPortraitManager, setShowPortraitManager] = useState(false);
@@ -4438,6 +4440,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           interactMode={interactMode} activeTarget={activeTarget} talkTarget={talkTarget}
           playerAvatar={playerAvatar}
           slImgErr={slImgErr} setSlImgErr={setSlImgErr} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState}
+          pearlForm={pearlForm} setPearlForm={setPearlForm} setPearlFormState={setPearlFormState} pearlImgErr={pearlImgErr} setPearlImgErr={setPearlImgErr}
           narratorAffection={narrator.affection} narratorImgErr={narratorImgErr} setNarratorImgErr={setNarratorImgErr}
           companionState={companionState}
           setShowPortraitManager={setShowPortraitManager}
@@ -4511,6 +4514,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           char={char} inv={inv} skills={skills} exp={exp} pot={pot}
           playerAvatar={playerAvatar} setShowAvatarPicker={setShowAvatarPicker}
           companionState={companionState} onSwitchCompanion={handleSwitchCompanion} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState} slImgErr={slImgErr} setSlImgErr={setSlImgErr}
+          pearlForm={pearlForm} setPearlForm={setPearlForm} setPearlFormState={setPearlFormState} pearlImgErr={pearlImgErr} setPearlImgErr={setPearlImgErr}
           setShowBody={setShowBody}
           trainNeigong={trainNeigong} trainWaigong={trainWaigong} trainCost={trainCost}
           effectiveSpecialNow={effectiveSpecialNow} activeBuffs={activeBuffs}

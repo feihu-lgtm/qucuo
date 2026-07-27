@@ -2,7 +2,7 @@ import { useState } from "react";
 import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, computeEquippedStats, toggleEquip } from "../equipment.js";
 import { bar, STAGES, STAGE_UP_COST } from "../utils/mudHelpers.js";
 import { npcAffectionLabel } from "../mvu.js";
-import { SNOW_LEOPARD_FORMS, snowLeopardPortraitUrl } from "../portraits.js";
+import { SNOW_LEOPARD_FORMS, PEARL_FORMS, snowLeopardPortraitUrl, pearlPortraitUrl, getCompanionForms, companionPortraitUrl } from "../portraits.js";
 import { activeCompanion, COMPANION_LORE, COMPANION_DESC_FORMS, getCompanionDescForm, setCompanionDescForm } from "../companion.js";
 import { unlockedCompanions, activeCompanionKey, isSnowLeopardAvailable } from "../companion.js";
 import { effectBrief, statLabel, moveStatLabel, moveEffectBrief } from "../itemEffectText.js";
@@ -17,6 +17,7 @@ export default function RightPanel({
   char, inv, skills, exp, pot,
   playerAvatar, setShowAvatarPicker,
   companionState, onSwitchCompanion, slForm, setSnowLeopardForm, setSlFormState, slImgErr, setSlImgErr,
+  pearlForm, setPearlForm, setPearlFormState, pearlImgErr, setPearlImgErr,
   setShowBody,
   trainNeigong, trainWaigong, trainCost,
   effectiveSpecialNow, activeBuffs,
@@ -38,6 +39,18 @@ export default function RightPanel({
   const compLore = comp ? COMPANION_LORE[comp.key] : null;
   const compForm = comp ? getCompanionDescForm(comp.key) : "beast";
   const pickCompForm = (formKey) => { if (!comp) return; setCompanionDescForm(comp.key, formKey); setCompFormTick(n => n + 1); };
+  // 立绘形态：按伙伴 key 取对应的 forms/当前form/imgErr/setter
+  const compForms = comp ? getCompanionForms(comp.key) : null;
+  const compFormKey = comp ? (comp.key === "snowLeopard" ? slForm : comp.key === "pearl" ? pearlForm : null) : null;
+  const compImgErr = comp ? (comp.key === "snowLeopard" ? slImgErr : comp.key === "pearl" ? pearlImgErr : true) : true;
+  const compSetImgErr = comp ? (comp.key === "snowLeopard" ? setSlImgErr : comp.key === "pearl" ? setPearlImgErr : null) : null;
+  const cycleCompForm = () => {
+    if (!comp || !compForms) return;
+    const idx = compForms.findIndex(f => f.key === compFormKey);
+    const next = compForms[(idx + 1) % compForms.length];
+    if (comp.key === "snowLeopard") { setSnowLeopardForm(next.key); setSlFormState(next.key); setSlImgErr(false); }
+    else if (comp.key === "pearl") { setPearlForm(next.key); setPearlFormState(next.key); setPearlImgErr(false); }
+  };
   return (
     <div style={isMobile
       ? { position: "fixed", top: 0, bottom: 0, right: 0, width: "82vw", maxWidth: 340, zIndex: 41,
@@ -86,23 +99,18 @@ export default function RightPanel({
           {comp && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0, width: 90 }}>
               <div
-                onClick={comp.key === "snowLeopard" ? () => {
-                  const forms = SNOW_LEOPARD_FORMS;
-                  const idx = forms.findIndex(f => f.key === slForm);
-                  const next = forms[(idx + 1) % forms.length];
-                  setSnowLeopardForm(next.key); setSlFormState(next.key); setSlImgErr(false);
-                } : undefined}
-                title={comp.key === "snowLeopard" ? `${comp.label} · 点击切换立绘形态` : comp.label}
+                onClick={compForms ? cycleCompForm : undefined}
+                title={compForms ? `${comp.label} · 点击切换立绘形态` : comp.label}
                 style={{
                   width: 90, aspectRatio: "2/3", borderRadius: 6, overflow: "hidden",
                   border: `1px solid ${zoneTheme.border}`, background: "#0c0e14",
-                  cursor: comp.key === "snowLeopard" ? "pointer" : "default",
+                  cursor: compForms ? "pointer" : "default",
                   display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
                 }}
               >
-                {comp.key === "snowLeopard" && !slImgErr ? (
-                  <img src={snowLeopardPortraitUrl(slForm)} alt={comp.label} style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    onError={() => setSlImgErr(true)} />
+                {compForms && !compImgErr ? (
+                  <img src={companionPortraitUrl(comp.key, compFormKey)} alt={comp.label} style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={() => compSetImgErr?.(true)} />
                 ) : (
                   <span style={{ color: zoneTheme.textDim, fontSize: "9.5px", textAlign: "center", lineHeight: 1.6, padding: "0 4px" }}>{comp.label}立绘<br/>待投放</span>
                 )}

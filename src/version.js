@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "珍珠双形态立绘投放+左栏立绘区+右栏通用化+邀请叙事修雪豹硬编码",
+    time: "2026-07-27 23:40",
+    notes: [
+      "①【珍珠立绘投放】public/portraits/pearl/ 新增 form1.webp（人形·比基尼轻纱马耳姑娘 258KB）+ beast.webp（马形·通体雪白小白马 330KB），cwebp -q 80 压缩自原图。",
+      "②【portraits.js 通用化】新增 PEARL_FORMS/getPearlForm/setPearlForm/pearlPortraitUrl + 通用 getCompanionForms/getCompanionForm/setCompanionForm/companionPortraitUrl 按伙伴 key 分发，RightPanel 不再写死雪豹。",
+      "③【左栏立绘区】珍珠入队后左栏新增「珍珠·随行」立绘框+人形/马形切换按钮，与雪豹同结构。",
+      "④【右栏队友头像通用化】队友列立绘改用 companionPortraitUrl(comp.key, formKey)，点按循环形态通用处理（雪豹三形态/珍珠双形态），不再 if-else 写死。",
+      "⑤【邀请叙事修硬编码】sysBase.js 的 companion_invite 三处叙事铁律（narrative/mvu/example）原来写死「雪豹」，改成读 o.settleNpc 动态取伙伴名——珍珠入队时 AI 不再收到「雪豹欣然应邀」的错误指令。extractionEngine.js COMPANION_INVITE spec 的 system prompt 和 fallback 名也改成通用。",
+      "验证：vitest 507/507 通过，esbuild 构建通过。",
+    ],
+  },
+  {
     codename: "右栏队友栏改通用出战头像 + 兽形/人形外貌选择器（描述随选择注入AI）·体貌挪到玩家头像下",
     time: "2026-07-27 23:15",
     notes: [

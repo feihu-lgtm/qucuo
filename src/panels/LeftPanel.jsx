@@ -2,7 +2,7 @@ import { hasInnerMap, getBuildingIdForInnerRoom, getResidentRoomForNpc, getDistr
 import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../buildings/qucuoBuildings.js";
 import { isNpcKnown } from "../npcAwareness.js";
 import { npcAffectionLabel } from "../mvu.js";
-import { inferActivePortraitTarget, SNOW_LEOPARD_FORMS, snowLeopardPortraitUrl, narratorPortraitUrl, narratorPortraitLabel, resolvePortrait } from "../portraits.js";
+import { inferActivePortraitTarget, SNOW_LEOPARD_FORMS, PEARL_FORMS, snowLeopardPortraitUrl, pearlPortraitUrl, narratorPortraitUrl, narratorPortraitLabel, resolvePortrait } from "../portraits.js";
 import { QUCUO_MAP, isNodeUnlocked } from "../qucuoMap.js";
 import { QUALITY_COLOR } from "../equipment.js";
 import { DIRS, getTimeStr } from "../utils/mudHelpers.js";
@@ -25,6 +25,7 @@ export default function LeftPanel({
   interactMode, activeTarget, talkTarget,
   playerAvatar,
   slImgErr, setSlImgErr, slForm, setSnowLeopardForm, setSlFormState,
+  pearlForm, setPearlForm, setPearlFormState, pearlImgErr, setPearlImgErr,
   narratorAffection, narratorImgErr, setNarratorImgErr,
   companionState,
   setShowPortraitManager,
@@ -316,6 +317,36 @@ export default function LeftPanel({
                     fontSize: "9.5px", padding: "2px 7px", borderRadius: 3, cursor: "pointer", userSelect: "none",
                     color: slForm === f.key ? zoneTheme.bg : zoneTheme.accent,
                     background: slForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
+                    border: `1px solid ${zoneTheme.border}`,
+                  }}>{f.label}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {companionState?.pearl?.unlocked && (
+          <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 14, marginTop: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px", letterSpacing: "1px" }}>珍珠 · 随行</span>
+            </div>
+            <div style={{
+              width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 4,
+              border: `1px solid ${zoneTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
+            }}>
+              {!pearlImgErr ? (
+                <img src={pearlPortraitUrl(pearlForm)} alt="珍珠" style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  onError={() => setPearlImgErr(true)} />
+              ) : (
+                <span style={{ color: zoneTheme.textDim, fontSize: "11px", textAlign: "center", padding: "0 8px" }}>珍珠立绘待投放（portraits/pearl/）</span>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 4, marginTop: 6, justifyContent: "center" }}>
+              {PEARL_FORMS.map(f => (
+                <span key={f.key}
+                  onClick={() => { setPearlForm(f.key); setPearlFormState(f.key); setPearlImgErr(false); }}
+                  style={{
+                    fontSize: "9.5px", padding: "2px 7px", borderRadius: 3, cursor: "pointer", userSelect: "none",
+                    color: pearlForm === f.key ? zoneTheme.bg : zoneTheme.accent,
+                    background: pearlForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
                     border: `1px solid ${zoneTheme.border}`,
                   }}>{f.label}</span>
               ))}

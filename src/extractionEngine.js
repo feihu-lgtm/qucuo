@@ -151,9 +151,9 @@ ${narrative}
   // 一样不做"读心"式判断，直接钉死结论。settleOpts 由调用方在命中
   // settleKind:"companion_invite" 时传入（见 MudRPG.jsx handleInviteCompanion）。
   COMPANION_INVITE: {
-    system: "你是游戏状态提取器，专门处理伙伴认主场景的好感度结算——雪豹认主是前世羁绊使然，好感度应直接给一个较高的初始值，不做\"读心\"式判断。",
+    system: "你是游戏状态提取器，专门处理伙伴认主场景的好感度结算——伙伴认主是前世羁绊使然，好感度应直接给一个较高的初始值，不做\"读心\"式判断。",
     user: (narrative, s, settleOpts) => {
-      const npcName = settleOpts?.settleNpc || "雪豹";
+      const npcName = settleOpts?.settleNpc || "伙伴";
       return `${npcName}刚刚接受了玩家的邀请，正式结为同行的伙伴——这是前世便结下的羁绊，它认准了玩家便是这片雪域高原真正的主人，忠贞无二。
 
 叙事内容：
