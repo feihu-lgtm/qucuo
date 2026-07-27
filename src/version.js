@@ -9,6 +9,16 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "开场两张图投放（intro-1/intro-2）；顺带修正提示词文档里写错的文案框位置",
+    time: "2026-07-28 19:10",
+    notes: [
+      "两张开场图已生成并放入 public/（webp，各 125/145KB）。上一版给的提示词按预期出图：第一张背影极小、天空留白在上半、风马旗与三溪汇流都在；第二张毛笔字\"看得出是毛笔字但读不出字\"，红印小而精确，纸边磨毛、有折痕。",
+      "【修正一处我自己写错的】提示词里我写的是「upper right left open (caption box goes there)」——但文案框实际在 `bottom: 48px` **居中**（OpeningSequence 的 styles.captionBox：bottom 48 / left 50% / translateX(-50%) / width min(560px,86vw)）。我按\"右上留白\"给的指导是错的。这次生成的两张恰好底部居中都是暗的（第一张是土路、第二张是虚化岩壁），加上本来就有 vignette 压暗，可读性没问题；但提示词文档已改成 bottom-center kept dark and uncluttered，并单独记了一段，免得日后重新出图照着错的方向优化。",
+      "缺图兜底（渐变底降级）保留不动——现在走不到那条路了，但作者日后换图/改名时它仍是保险。",
+      "验证：vite build 通过（确认两张已进 dist）、vitest 368/368 全绿。",
+    ],
+  },
+  {
     codename: "清三件旧账：好感度日上限防刷、cross-encoder精排（可选）、开场图缺图兜底＋提示词",
     time: "2026-07-28 18:00",
     notes: [
