@@ -10,6 +10,8 @@ import { QUALITY_COLOR, CATEGORY_LABEL } from "./equipment.js";
 // 【居中浮卡】卡片限宽 420、水平 margin auto，浮在左对齐的叙事流正中，像一枚
 // 郑重托出的所得凭证，跟上下说书文本区分开——高光时刻该有这个仪式感。卡内
 // banner/名号/词条/价目一律居中排，唯描述走居中楷体如"此物有判词为证"。
+// 背板本身也在卡框里横竖双居中（panel 走 flex 居中，inset 收成对称值），
+// 不顶卡框上沿——内容短短时稳稳悬在框心，长长时上下对称撑开。
 // 底图当"完整卡框"：object-fit:fill 仅纵向随内容伸缩、水平不缩放，故左右装饰
 // （含偷窃卡探入中心的那双手）水平像素位置恒定，与背板左右边永远对齐；内容浮
 // 在中心一块"顶底羽化"的暗背板上，描述再长也不裁切、不滚动，撑高时背板顶底以
@@ -54,7 +56,7 @@ const LOOT_CSS = `
   .loot-card:hover .loot-frame{ transform:translateY(-4px) scale(1.012); filter:drop-shadow(0 14px 30px rgba(0,0,0,.7)) brightness(1.06); }
   .loot-hi{ filter:drop-shadow(0 9px 22px rgba(0,0,0,.6)) drop-shadow(0 0 15px var(--qc-glow)); }
   .loot-card:hover .loot-hi{ filter:drop-shadow(0 14px 30px rgba(0,0,0,.7)) drop-shadow(0 0 22px var(--qc-glow)) brightness(1.07); }
-  .loot-panel{ position:relative; overflow:visible; image-rendering:pixelated; }
+  .loot-panel{ position:relative; overflow:visible; image-rendering:pixelated; display:flex; align-items:center; justify-content:center; }
   .loot-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:fill; z-index:0; image-rendering:pixelated; pointer-events:none; }
   .loot-body{ position:relative; z-index:2; clip-path:${PLATE_CLIP}; padding:15px 16px 14px;
     background:linear-gradient(to bottom, transparent 0, var(--plate) 18px, var(--plate) calc(100% - 18px), transparent 100%);
@@ -112,12 +114,12 @@ export default function LootCard({ entry }) {
     ? { bg: "linear-gradient(160deg,#3a1c12 0%,#2a1210 45%,#1e0e0a 100%)",
         banner: "linear-gradient(90deg,#8a5a1a,#c4a040)", bannerText: "#2a1608",
         label: "戰利品", sub: entry.fromNpc ? `擊敗 ${entry.fromNpc} 所獲` : "切磋所得",
-        img: "loot_duel.png", inset: "30% 12% 20% 12%", plate: "rgba(20,8,4,.66)" }
+        img: "loot_duel.png", inset: "6% 12%", plate: "rgba(20,8,4,.66)" }
     : { bg: "linear-gradient(160deg,#10241f 0%,#0c1c18 45%,#081210 100%)",
         banner: "linear-gradient(90deg,#2a5a4a,#5dcaa5)", bannerText: "#06231c",
         label: isSkill ? "偷師得手" : "妙手空空",
         sub: entry.fromNpc ? (isSkill ? `窺得 ${entry.fromNpc} 的招式` : `自 ${entry.fromNpc} 處順來`) : (isSkill ? "窺得一式絕學" : "神不知鬼不覺"),
-        img: "loot_steal.png", inset: "27% 19% 14% 19%", plate: "rgba(6,18,15,.66)" };
+        img: "loot_steal.png", inset: "6% 19%", plate: "rgba(6,18,15,.66)" };
 
   const eff = isSkill ? [] : effectLines(item.effect);
   const six = isSkill ? [] : Object.entries(item.sixDim || {}).map(([k, v]) => `${k}+${v}`);
