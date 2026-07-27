@@ -13,6 +13,7 @@
 
 import { getEmbedding, embeddingReady, embeddingFingerprint } from "./embeddingService.js";
 import { getAllMemories } from "./memoryStore.js";
+import { rerank, applyRerank } from "./rerank.js";
 import { recall } from "./recallEngine.js";
 import { noteVisibleTo } from "./note.js";
 
@@ -49,7 +50,23 @@ export async function recallWithVisibility({
     // 3. 召回
     // intentText/contextText 供词法路用（见 lexical.js）：向量最弱的地方是专有名词，
     // 不传的话退化成纯向量双路，明写着"赫连铸"的纸条会因语义分不足被当噪声丢掉。
-    const hits = recall({ memories: usable, qIntentVec, qContextVec, focusEntities, topK, intentText: queryText || "", contextText: contextText || "" });
+    // 粗排：三路 RRF（intent/context/词法）。多取一些送精排，精排关着时按 topK 截。
+    const wantRerank = !!cfg?.rerankEnabled;
+    const coarseK = wantRerank ? Math.max(topK * 3, 12) : topK;
+    let hits = recall({ memories: usable, qIntentVec, qContextVec, focusEntities, topK: coarseK, intentText: queryText || "", contextText: contextText || "" });
+
+    // 精排（可选，每轮一次额外 API 调用）：cross-encoder 把 (查询,候选) 成对判相关度，
+    // 只作用在粗排这十几条上、不碰全库。失败一律回退粗排顺序，绝不阻断召回。
+    if (wantRerank && hits.length > 1) {
+      const rr = await rerank(queryText || "", hits.map(h => ({ id: h.record.id, text: h.record.text })), {
+        endpoint: cfg.rerankEndpoint || cfg.endpoint,
+        apiKey: cfg.rerankApiKey || cfg.apiKey,
+        model: cfg.rerankModel,
+        topN: topK,
+      });
+      if (rr) hits = applyRerank(hits, rr);
+    }
+    hits = hits.slice(0, topK);
 
     // 4. 可见性切分（owner 三态私有门，逻辑抽在 note.js 的 noteVisibleTo 纯函数里）
     // · owner 空 = 公共见闻，恒可见。

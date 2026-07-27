@@ -14,14 +14,15 @@ const theme = ZONE_THEMES.village;
 
 export default function OpeningSequence({ onFinish, playerName }) {
   const [index, setIndex] = useState(0);
+  const [imgErr, setImgErr] = useState({});
   const name = playerName || "无名少侠";
   const SLIDES = [
     {
-      image: "/intro-1.jpg",
+      image: "/intro-1.webp",
       caption: "你揣着一张赌石邀帖，一路翻山越岭走到这曲措乡地界。没有姓氏可报，没有师门可攀。",
     },
     {
-      image: "/intro-2.jpg",
+      image: "/intro-2.webp",
       caption: `帖上写着：${name} 启。落款一个「温」字——天都镇玉器轩，三日一开石，路远，来不来随意。`,
     },
   ];
@@ -37,7 +38,16 @@ export default function OpeningSequence({ onFinish, playerName }) {
 
   return (
     <div style={styles.container} onClick={advance}>
-      <img src={slide.image} alt="" style={styles.image} />
+      {/* 缺图兜底：public/intro-1.webp 与 intro-2.webp 由作者自行投放（提示词见
+          docs/开场图提示词.md）。没投放时不显示破图图标——降级成一层渐变底，
+          文案照样读得清，开场流程不受影响。此前是裸 <img> 无 onError，
+          而这两个文件仓库里从来没有过，等于开场必然显示两次破图。 */}
+      {!imgErr[index] ? (
+        <img src={slide.image} alt="" style={styles.image}
+          onError={() => setImgErr(e => ({ ...e, [index]: true }))} />
+      ) : (
+        <div style={styles.imageFallback} />
+      )}
       <div style={styles.vignette} />
       <div style={styles.captionBox(theme)}>
         <p style={styles.captionText}>{slide.caption}</p>
@@ -67,6 +77,10 @@ const styles = {
     height: "100%",
     objectFit: "cover",
     display: "block",
+  },
+  imageFallback: {
+    width: "100%", height: "100%", display: "block",
+    background: "radial-gradient(ellipse at 50% 35%, #2a3340 0%, #141820 55%, #0a0c10 100%)",
   },
   vignette: {
     position: "absolute",

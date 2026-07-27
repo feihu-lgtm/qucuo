@@ -39,7 +39,7 @@ export function commitRound(d) {
   d.mvuCommands = filterGhostCommands(d.mvuCommands, systemAcceptedNames, _knownChars);
   if (d.mvuCommands.length) {
     d.setVarTree(prev => {
-      const { tree, applied, rejected } = applyMvuCommands(prev, d.mvuCommands, { charm: d.effectiveSpecialNow?.魅力 ?? 5 });
+      const { tree, applied, rejected } = applyMvuCommands(prev, d.mvuCommands, { charm: d.effectiveSpecialNow?.魅力 ?? 5, time: d.time });
       // 被裁决拒绝的指令要能在「🧭全流程日志」里看见。此前只 console.warn，
       // 排查"好感怎么没变/剧情怎么没推"时翻不到证据——那正是最需要它的时候。
       if (rejected.length) {

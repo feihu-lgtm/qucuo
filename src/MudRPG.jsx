@@ -1430,7 +1430,30 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           }
           return { ...n, memoryFragments: mf };
         }
-        const inc = Math.max(-n.affection, Math.min(affDelta, 100 - n.affection));
+        // 旁白好感同样吃日上限。她走的是 ⟦好感N⟧ 这条路、不经 applyMvuCommands，
+        // 所以那边的节流管不到她——而 90 是整条个人线的门槛（真容立绘＋心灵之海），
+        // 能一天刷满就等于门禁形同虚设。只限正向，掉好感不限。
+        let capped = affDelta;
+        if (affDelta > 0) {
+          const led = varTreeRef.current.世界?.好感日增;
+          const day = Math.floor((timeRef.current || 0) / 24);
+          const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
+          const already = Number(gained["旁白"]) || 0;
+          const room = Math.max(0, 12 - already);
+          capped = Math.min(affDelta, room);
+          if (capped <= 0) {
+            addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
+          } else {
+            gained["旁白"] = already + capped;
+            setVarTree(prev => {
+              const next = JSON.parse(JSON.stringify(prev || {}));
+              if (!next.世界) next.世界 = { 威望: 0 };
+              next.世界.好感日增 = { dayStamp: day, gained };
+              return next;
+            });
+          }
+        }
+        const inc = Math.max(-n.affection, Math.min(capped, 100 - n.affection));
         if (inc !== 0) {
           const next = n.affection + inc;
           addLog([{ t: "affection", text: `  💗 好感度 ${inc > 0 ? "+" : ""}${inc}（${n.affection} → ${next}）` }]);

@@ -134,6 +134,13 @@ export function defaultConfig() {
     // "只有她自己知道的事"（她的来历、她对玩家的私下看法、想让她记住的梗）。
     narratorLorebook: "",
     contextWindow: 16, // 保留最近多少轮历史
+    // 召回精排（可选）：开了之后每轮多一次 /rerank 调用，用 cross-encoder
+    // 对粗排候选做精排。粗排（三路RRF含词法）基线已经不差，所以默认关——
+    // 想要精度的人自己开，跟 extractionEnabled 一个待遇。
+    rerankEnabled: false,
+    rerankEndpoint: "",   // 留空则复用 embedding 的 endpoint
+    rerankApiKey: "",     // 留空则复用 embedding 的 key
+    rerankModel: "BAAI/bge-reranker-v2-m3",
     corsProxy: "", // 可选：形如 https://your-proxy.com/?url=
     // OpenAI 兼容地址是否自动补全 /v1/chat/completions 那半句。默认关：
     // 有的中转站/供应商地址本就是完整或非标准路径，自动补反而变 404，

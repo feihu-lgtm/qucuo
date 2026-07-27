@@ -45,7 +45,7 @@ export function setNarratorVars(varTree, patch) {
 export function initialVarTree() {
   return {
     角色: {},   // 角色.NPC名.属性名 = 值，例如 角色.呼延雪.好感度
-    世界: { 威望: 0, 旁白: initialNarratorVars(), 起居注: emptyTally() },
+    世界: { 威望: 0, 旁白: initialNarratorVars(), 起居注: emptyTally(), 好感日增: { dayStamp: 0, gained: {} } },
                           // 世界.威望是全局单一的总声望值（做好事+，做坏事-，见下方裁剪规则），
                           // 其余"世界.任意状态"仍然可以自由声明，只有"威望"这一个字段有专门的初始值和裁剪。
                           // 世界.旁白.* 是旁白个人线的进度（见 initialNarratorVars）——挂在变量树里
@@ -140,6 +140,7 @@ const ALLOWED_ROOTS = ["角色", "世界", "主角"];
 // 只是不能改。要改由系统在满足条件时自己写（见 seaOfMind.js / setNarratorVars）。
 const PROTECTED_PATHS = [
   "世界.旁白",   // 旁白个人线：seaUnlocked/metXuannu/seaVisited/questStage
+  "世界.好感日增", // 好感度日上限的记账（见 AFFECTION_DAY_CAP）。AI 能改就等于能解除节流。
   "世界.起居注", // 行动计数（memory/tally.js）：由系统在各动作点自增。
                  // AI 绝不能写——它一旦能改，"今日打坐3次"这类数就成了叙事编的，
                  // 而这些数会回头喂进 ctx 和日总结，等于让它自己给自己造证据。
@@ -153,6 +154,17 @@ export function isProtectedMvuPath(path) {
 const AFFECTION_KEY = "好感度";
 const REPUTATION_PATH = "世界.威望";
 const MAX_SINGLE_ADD = 15;
+
+// ── 好感度日上限（防刷）──────────────────────────────────────────────
+// 【为什么要这个】此前只有"单次 ±15"和"总量 0-100"两道限，没有任何**频次**限制。
+// 于是玩家可以对同一个人反复送礼/搭话，一天之内把好感从 0 刷到 100——
+// 关系经营这件事的全部分量就此清零，后面所有以好感为门槛的内容（拜师、认主、
+// companionCandidate、旁白线的 90）也一起变成走个流程。
+// 参考姬侠传 char_card_1 的 clampFavorabilityGain：它按**周**给每个 NPC 设涨幅上限，
+// 且只限正向、不限下降。我们的时间单位是 24 回合一天，所以按天。
+// 只限正向是关键：得罪人该是立刻见效的，那不需要节流。
+const AFFECTION_DAY_CAP = 12;   // 单个 NPC 每天最多涨这么多
+const DAY_TURNS_MVU = 24;       // 与 memory/tally.js 的 DAY_TURNS 一致
 
 export function applyMvuCommands(varTree, commands, opts = {}) {
   const tree = JSON.parse(JSON.stringify(varTree)); // 深拷贝，避免直接改引用
@@ -196,6 +208,26 @@ export function applyMvuCommands(varTree, commands, opts = {}) {
       if (isAffection && delta > 0) delta = delta * charmCoef;
       if (isAffection || isReputation) {
         delta = Math.max(-MAX_SINGLE_ADD, Math.min(MAX_SINGLE_ADD, Math.round(delta)));
+      }
+      // 日上限：只掐正向涨幅，掉好感不限（得罪人该立刻见效）。
+      // 记账存在 tree 里跟着存档走，跨天在读取时就地滚——同 tally 的道理，
+      // 靠 effect 清零会漏，漏一次就等于当天没有上限。
+      if (isAffection && delta > 0) {
+        const npcName = cmd.path.split(".")[1] || "";
+        const day = Math.floor((Number(opts.time) || 0) / DAY_TURNS_MVU);
+        const ledger = tree.世界?.好感日增;
+        const sameDay = ledger && ledger.dayStamp === day;
+        const gained = sameDay ? { ...(ledger.gained || {}) } : {};
+        const already = Number(gained[npcName]) || 0;
+        const room = Math.max(0, AFFECTION_DAY_CAP - already);
+        if (room <= 0) {
+          rejected.push({ ...cmd, reason: `${npcName}今日好感已涨满 ${AFFECTION_DAY_CAP} 点，明日再来` });
+          continue;
+        }
+        if (delta > room) delta = room;
+        gained[npcName] = already + delta;
+        if (!tree.世界) tree.世界 = { 威望: 0 };
+        tree.世界.好感日增 = { dayStamp: day, gained };
       }
       const current = getPath(tree, cmd.path);
       const base = typeof current === "number" ? current : 0;
