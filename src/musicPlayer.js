@@ -74,11 +74,20 @@ function storeSet(k, v) {
 const K_TRACK = "wuxia_mud_music_track";
 const K_VOL = "wuxia_mud_music_vol";
 const K_MODE = "wuxia_mud_music_mode";
+// 没有存过偏好时的默认值。测试复位也用它，避免测试态与真实态分叉。
+const DEFAULT_ENABLED = true;
 
 let audio = null;
 const listeners = new Set();
 let currentTrackId = storeGet(K_TRACK) || TRACKS[0].id;
-let enabled = storeGet(K_MODE) === "1";
+// 【默认开启】此前默认是关的，而顶栏那个 ♪ 音乐 按钮又只在开启时才渲染，
+// 于是玩家进游戏根本看不到入口，得先自己翻到设置里勾一下才知道有音乐这回事。
+// 改成默认开——注意这只是"功能可见"，**不会自动放音**：整个模块没有任何地方
+// 在加载时调 play()，getAudio() 也是懒创建，声音只在玩家主动点播放/点曲目时才出。
+// 已经显式关过的老玩家不受影响：只有在存档里压根没有这个键时才取默认值，
+// 存了 "0" 的照旧保持关闭。
+const savedMode = storeGet(K_MODE);
+let enabled = savedMode == null ? DEFAULT_ENABLED : savedMode === "1";
 // 最近一次失败原因（人话）。null 表示没出错。play() 的 rejection 原来被
 // `.catch(() => {})` 整个吞掉，于是"点了没声音也没提示"，这是最难查的那种坏。
 let lastError = null;
@@ -216,5 +225,5 @@ export function setMusicEnabled(on) {
 // 测试用：把模块态复位。生产代码不该调。
 export function __resetForTests() {
   audio = null; listeners.clear(); memStore.clear();
-  currentTrackId = TRACKS[0].id; enabled = false; lastError = null; volume = 0.5;
+  currentTrackId = TRACKS[0].id; enabled = DEFAULT_ENABLED; lastError = null; volume = 0.5;
 }

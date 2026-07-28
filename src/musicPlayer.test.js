@@ -54,9 +54,13 @@ describe("resolveTrackUrl：本地曲拼 BASE，外链原样", () => {
 });
 
 describe("音乐模式开关真的管得住播放（原来它是装饰性的）", () => {
-  it("默认关闭", () => {
-    expect(isMusicEnabled()).toBe(false);
-    expect(getState().enabled).toBe(false);
+  it("默认开启——顶栏 ♪ 按钮只在开启时渲染，默认关会导致玩家找不到入口", () => {
+    expect(isMusicEnabled()).toBe(true);
+    expect(getState().enabled).toBe(true);
+  });
+
+  it("默认开启但不会自动放音（模块加载时没有任何 play() 调用）", () => {
+    expect(getState().playing).toBe(false);
   });
 
   it("enabled 进了 getState()，订阅者才能跟着变（顶栏按钮就是这么修的）", () => {
@@ -196,5 +200,31 @@ describe("曲库文件真的在 public 下（防「点了没声音」）", () =>
     const declared = new Set(TRACKS.filter(t => t.file).map(t => t.file));
     const orphan = [...KNOWN_MISSING].filter(f => !declared.has(f));
     expect(orphan, `KNOWN_MISSING 里这些路径 TRACKS 里已经没有了：\n  ${orphan.join("\n  ")}`).toEqual([]);
+  });
+});
+
+// ── 默认值的迁移语义 ────────────────────────────────────────────────────────
+// 「默认开启」不能把已经显式关掉音乐的老玩家又打开。只有存档里压根没有这个键时
+// 才取默认值；存了 "0" 的必须照旧保持关闭。这条靠 storeGet 的返回值区分
+// null（没存过）与 "0"（存过且关闭）来实现，容易在重构时被 `|| ""` 之类抹平。
+describe("音乐模式默认值的迁移语义", () => {
+  it("没存过偏好 → 取默认（开）", () => {
+    __resetForTests();
+    expect(isMusicEnabled()).toBe(true);
+  });
+
+  it("显式关过 → 保持关闭，不被默认值覆盖", () => {
+    __resetForTests();
+    setMusicEnabled(false);
+    expect(isMusicEnabled()).toBe(false);
+    // 再读一次（模拟同一会话内的重复读取），不应被默认值翻回来
+    expect(getState().enabled).toBe(false);
+  });
+
+  it("关掉再打开能回到开启", () => {
+    __resetForTests();
+    setMusicEnabled(false);
+    setMusicEnabled(true);
+    expect(isMusicEnabled()).toBe(true);
   });
 });
