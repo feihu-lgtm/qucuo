@@ -74,7 +74,7 @@ export const RESIDENT_NPCS = {
       ],
     },
     {
-      name: "大公鸡", id: "resident_dagongji", levelCap: 0,
+      name: "大公鸡", id: "resident_dagongji", levelCap: 1,
       beast: true, respawn: true, cannotSpeak: true,
       brief: "村口一只油亮好斗的大公鸡",
       personality: "扑棱着翅膀满地乱窜，见人就啄，偏偏又打不过就跑、跑两步又回头挑衅",
@@ -432,7 +432,7 @@ export const RESIDENT_NPCS = {
       ],
     },
     {
-      name: "李若由", id: "resident_liruoyou", levelCap: 1,
+      name: "李若由", id: "resident_liruoyou", levelCap: 2,
       brief: "玉泉小栈的经营者，商人之女",
       personality: "初见只谈价格，语气精明现实，相处久了才露出重情重义的一面",
       carry: [
@@ -461,7 +461,7 @@ export const RESIDENT_NPCS = {
       ],
     },
     {
-      name: "卓玛", id: "resident_zhuoma", levelCap: 1,
+      name: "卓玛", id: "resident_zhuoma", levelCap: 2,
       brief: "扎西之女，梳单马尾",
       personality: "直爽大方却不轻易求人，对外来人先戒备后交心",
       carry: [

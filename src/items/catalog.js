@@ -853,7 +853,7 @@ export const DIVINE_ARMS = [
   },
   {
     name: "虎啸", category: ITEM_CATEGORY.WEAPON, quality: "红", atkMul: 1.55,
-    effect: { forceCrit: { multiplier: 1.8 }, lowHpBonus: 0.8, beastFear: 0.7 },
+    effect: { forceCrit: { multiplier: 1.8 }, lowHpBonus: 0.8 },
     sixDim: { 体魄: 2, 气运: 1 },
     desc: "用吊睛虎王的牙和筋制成的弓。弓胎是三十年前一具无名猎户遗骸旁的半成品，用了三十年等一根配得上的弦——虎王的筋正好。弓身是熊山老铁木，拉开时有虎啸声，方圆十里的野兽听到会四散奔逃。",
   },

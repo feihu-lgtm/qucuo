@@ -91,7 +91,7 @@ describe("常驻NPC 的 carry 符合文件头写的设计原则", () => {
   });
 
   // 历史欠账：这几件在雅江之前就超档（多为剧情信物/食品，不影响战力平衡），先挂账。
-  const LEGACY_OVERCAP = new Set(["金蛋", "锦官验讫牙牌", "核桃糕", "卓玛的狼骨糖"]);
+  const LEGACY_OVERCAP = new Set(); // 四件已修：持有者提档，物品本就该在他们身上
 
   it("carry 品质不超过本人 levelCap 对应档（白0/绿1/蓝2/紫3/橙4/红5）", () => {
     const bad = [];
@@ -401,5 +401,44 @@ describe("饰品的战力字段", () => {
       }
     }
     expect(bad, `以下特效标志位不在 itemEffectText 的词典里，界面上会是空白：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+});
+
+// ── 豁免名单不许腐烂 ────────────────────────────────────────────────────────
+// 【第五个 bug 就是这个】LEGACY_MISSING_CATEGORY 里挂着「玄女缺武器、赫连铸缺饰品」，
+// 但这两人早就被补齐了（carry 全表体检那轮），名单却没跟着删。
+// 一份过期的豁免名单比没有更糟：它不再掩盖任何现存问题，却会**静默吞掉未来的回归**
+// ——哪天谁把玄女的剑删了，守卫照样绿灯放行。
+// 所以豁免名单本身也要被守：登记在册的欠账必须真的还欠着，还清了就得删条目。
+describe("历史欠账名单不得腐烂（还清了就要从名单里删掉）", () => {
+  const residents = Object.entries(RESIDENT_NPCS).flatMap(([d, a]) => (a || []).map(n => ({ ...n, district: d })));
+  const QR = { 白: 0, 绿: 1, 蓝: 2, 紫: 3, 橙: 4, 红: 5 };
+
+  it("LEGACY_MISSING_CATEGORY 空着——三类必备已全员达标", () => {
+    const stillBad = residents.filter(n => {
+      if (NPC_SIGNATURE_MOVES[n.name]?.unlearnable) return false;
+      const cats = new Set((n.carry || []).map(c => c.category));
+      return ["weapon", "armor", "accessory"].some(c => !cats.has(c));
+    }).map(n => n.name);
+    expect(stillBad, `这些人仍缺类别，名单不该是空的：${stillBad.join("、")}`).toEqual([]);
+  });
+
+  it("LEGACY_OVERCAP 空着——超档已全部消除", () => {
+    const over = [];
+    for (const n of residents) {
+      const cap = typeof n.levelCap === "number" ? n.levelCap : 5;
+      for (const c of n.carry || []) if (QR[c.quality] != null && QR[c.quality] > cap) over.push(`${n.name}「${c.name}」`);
+    }
+    expect(over, `仍有超档，名单不该是空的：${over.join("、")}`).toEqual([]);
+  });
+
+  it("同一人不重复携带同名物件（补 carry 时最容易手滑加重）", () => {
+    const dup = [];
+    for (const n of residents) {
+      const names = (n.carry || []).map(c => c.name);
+      const d = [...new Set(names.filter((v, i) => names.indexOf(v) !== i))];
+      if (d.length) dup.push(`${n.district}·${n.name}: ${d.join("、")}`);
+    }
+    expect(dup, `同一人重复携带：\n  ${dup.join("\n  ")}`).toEqual([]);
   });
 });

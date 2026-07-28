@@ -18,13 +18,20 @@ export const EFFECT_CN = {
   ignoreDefenseRatio: "破防",
   nullifyStatusOnHit: "打断状态招",
   doubleVsStatus: "克中招翻倍",
+  // 这两个 moveArchetypes 里早就在结算了（蓄势档的「下一击加成」、趁虚档的
+  // 「敌方能量低时暴增」），却一直不在词典里——连弩、西瓜刀、狼曲猎弩三件
+  // 带着它们，界面上那一行却是空的，玩家根本不知道自己手里的弩有特效。
+  nextAttackBonus: "蓄势·下击增伤",
+  lowEnemyEnergyBonus: "趁敌力竭暴击",
   // ── 情境增伤 ──
   lowHpBonus: "残血增伤",
   highHpBonus: "满血增伤",
   afterStatusBonus: "趁中招追击",
   afterCounterBonus: "接反击追打",
   justiceStrike: "惩恶增伤",
-  beastFear: "慑兽",
+  // beastFear（慑兽）已移除：战斗侧拿不到"对手是不是野兽"这个判据（野兽标记只在
+  // NPC_SIGNATURE_MOVES.unlearnable 上，resolveTurn 看不见），全项目零实现。
+  // 唯一带它的「虎啸」改挂 forceCrit——红档神兵该有的威慑，用跑得通的方式给。
   // ── 印记 ──
   applyMark: "附内伤印",
   detonateMark: "引爆内伤",

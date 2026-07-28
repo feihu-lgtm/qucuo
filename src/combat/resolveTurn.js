@@ -283,7 +283,22 @@ export function resolveTurn(sideA, sideB) {
       // 当攻击方用 ignoreDefense 时，本来防御白挡全额吃伤，但这层护甲能挡下
       // partialImmune 比例（0~1）的那部分伤害，让"无视防御"不再是100%生效。
       const partialImmune = winnerMove.ignoreDefensePartialImmune ?? winnerSide.ignoreDefensePartialImmune ?? 0;
-      if (loserMove.ignoreDefense) {
+      // 【ignoreDefenseRatio·此前是死 flag】ignoreDefense 是"全部无视防御"的布尔，
+      // 而 ignoreDefenseRatio 是"只无视其中一部分"的小数版（开山锤0.3、十三针囊0.3、
+      // 三棱透骨钉0.4，还有唐门那套暗器）。它进了 itemEffectText 的词典、界面上
+      // 老老实实显示着「破防」，战斗里却**一处都没读**——玩家看着破防生效，实际
+      // 挨的是满额防御减伤。这里补上：按比例把一部分伤害走"无视防御"通道结算。
+      const idRatio = Math.max(0, Math.min(1, loserMove.ignoreDefenseRatio ?? loserSide.ignoreDefenseRatio ?? 0));
+      if (!loserMove.ignoreDefense && idRatio > 0) {
+        const pierced = Math.round(rawDmg * idRatio);                 // 这部分绕过防御
+        const immuned = partialImmune > 0 ? Math.round(pierced * partialImmune) : 0;
+        const blockedPart = rawDmg - pierced;                          // 剩下的照常被防御削
+        const reducedBlocked = Math.round(blockedPart * (loserMove.defenseDiscount ?? 0.35));
+        const dmg = Math.max(1, pierced - immuned + reducedBlocked);
+        if (winnerIsA) result.damageToA = dmg; else result.damageToB = dmg;
+        result.notes.push(`${loserMove.name}专挑劲力薄处扎，${winnerMove.name}挡住了大半，仍被透进去几分`);
+        applyMarkOnHitCheck(winnerMove, winnerIsA ? "A" : "B", winnerIsA ? "B" : "A");
+      } else if (loserMove.ignoreDefense) {
         // 攻击方"无视防御"：防御大幅失效；但防御方若有部分免疫，仍能削掉一截
         const immuned = partialImmune > 0 ? Math.round(rawDmg * partialImmune) : 0;
         const dmg = Math.max(1, rawDmg - immuned);
