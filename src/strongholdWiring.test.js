@@ -324,9 +324,12 @@ describe("BUG3 地名别名过期：打「去锦官城」不能走到雅江去",
     expect(parseDir("锦官城")).toBe(null);
   });
 
-  it("鱼定村的西南其实是雅江，不是锦官城（别名当年就是这么过期的）", () => {
-    expect(QUCUO_MAP["鱼定村"].exits.sw).toBe("雅江");
-    expect(QUCUO_MAP["雅江"].exits.w).toBe("锦官城");
+  it("出乡是一路向东：曲措乡 → 雅江 → 锦官城（地名别名当年就是这么过期的）", () => {
+    expect(QUCUO_MAP["鱼定村"].exits.e).toBe("雅江");
+    expect(QUCUO_MAP["雅江"].exits.e).toBe("锦官城");
+    expect(QUCUO_MAP["雅江"].exits.w).toBe("鱼定村");
+    // 雅江的描述写着「出西门行三日便是曲措乡界」，西边必须真的是曲措乡
+    expect(QUCUO_MAP["雅江"].desc).toContain("出西门");
   });
 
   it("纯方向词照常解析，没被误伤", () => {

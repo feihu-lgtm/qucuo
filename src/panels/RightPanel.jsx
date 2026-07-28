@@ -169,7 +169,7 @@ export default function RightPanel({
         <div style={{ marginBottom: 10 }}>
           {(() => {
             const es = computeEquippedStats(inv);
-            return <div style={{ fontSize: "11px", color: "#8a8a7a" }}>装备总加成：攻{es.totalAtk} 防{es.totalDef} 饰品+{es.accessoryBonus.toFixed(1)}</div>;
+            return <div style={{ fontSize: "11px", color: "#8a8a7a" }}>装备总加成：攻{es.totalAtk} 防{es.totalDef}</div>;
           })()}
         </div>
 

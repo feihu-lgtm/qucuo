@@ -18,10 +18,12 @@ const UNREACHABLE_BY_DESIGN = new Set(["心灵之海", "第三新东京市"]);
 describe("地图上真正用到的每个方向都必须能被解析出来", () => {
   const usedDirs = [...new Set(ALL_NODES.flatMap(n => Object.keys(QUCUO_MAP[n].exits || {})))];
 
-  it("地图确实用到了复合方向（否则这组测试就失去意义了）", () => {
-    expect(usedDirs.some(d => d.length === 2 && d !== "ne" ? true : d === "ne")).toBe(true);
-    expect(usedDirs).toContain("ne"); // 锦官城 → 鱼定村
-    expect(usedDirs).toContain("sw"); // 鱼定村 → 锦官城
+  // 曾经这里硬性要求地图用到 ne/sw——那是「鱼定村-sw->锦官城」那版布局的遗留。
+  // 后来查出三城东西颠倒（雅江写着「出西门行三日便是曲措乡界」却把曲措乡放在东北），
+  // 订正成 曲措乡(0,0)→雅江(1,0)→锦官城(2,0) 的正东走向后，外层就不再用复合方向了。
+  // 所以这条改成「不写死用了哪些方向，只要求用到的都能解析」，下面几条本来就是这么做的。
+  it("地图至少有一个方向在用（否则这组测试失去意义）", () => {
+    expect(usedDirs.length).toBeGreaterThan(0);
   });
 
   it("每个方向的中文名（autoTravelTo/九宫格实际交给 act 的那个字符串）都能解析回同一个方向码", () => {
@@ -104,5 +106,63 @@ describe("AI 方向兜底（目前闲置）的输出白名单与 parseDir 同步
     expect(parseDirectionJudgeResponse("")).toBe(null);
     expect(parseDirectionJudgeResponse("往东北方向走")).toBe(null);
     expect(parseDirectionJudgeResponse("northeast")).toBe(null);
+  });
+});
+
+// ── 地图拓扑与坐标必须自洽（本轮五个 bug 里有三个是这类）────────────────────
+import { INNER_MAP } from "./innerMap.js";
+const DXY = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0], ne: [1, -1], nw: [-1, -1], se: [1, 1], sw: [-1, 1] };
+
+describe("坐标与方向必须自洽（画出来的图不能跟走出来的路相反）", () => {
+  it("外层：每条出口的实际位移方向与它声明的方向一致", () => {
+    const bad = [];
+    for (const [n, d] of Object.entries(QUCUO_MAP)) {
+      for (const [dir, dest] of Object.entries(d.exits || {})) {
+        const v = DXY[dir], t = QUCUO_MAP[dest];
+        if (!v || !t) continue;
+        const dx = t.x - d.x, dy = t.y - d.y;
+        if (Math.sign(dx) !== Math.sign(v[0]) || Math.sign(dy) !== Math.sign(v[1]))
+          bad.push(`${n} -${dir}-> ${dest} 实际位移(${dx},${dy})`);
+      }
+    }
+    expect(bad, `外层方向与坐标矛盾：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+
+  it("内层：每条出口的实际位移方向与它声明的方向一致", () => {
+    const bad = [];
+    for (const [dist, m] of Object.entries(INNER_MAP)) {
+      const R = m.rooms || {};
+      for (const [n, r] of Object.entries(R)) {
+        for (const [dir, dest] of Object.entries(r.exits || {})) {
+          const v = DXY[dir]; if (!v || !R[dest]) continue;
+          const dx = R[dest].x - r.x, dy = R[dest].y - r.y;
+          if (Math.sign(dx) !== Math.sign(v[0]) || Math.sign(dy) !== Math.sign(v[1]))
+            bad.push(`${dist}·${n} -${dir}-> ${dest} 实际位移(${dx},${dy})`);
+        }
+      }
+    }
+    expect(bad, `内层方向与坐标矛盾（此前 45 处，多为 n 到底是 y+1 还是 y-1 各据点各说各的）：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+
+  it("同一据点内不得有两间房挤在同一坐标", () => {
+    const bad = [];
+    for (const [dist, m] of Object.entries(INNER_MAP)) {
+      const seen = {};
+      for (const [n, r] of Object.entries(m.rooms || {})) {
+        const k = `${r.x},${r.y}`;
+        if (seen[k]) bad.push(`${dist} (${k}): ${seen[k]} ⟂ ${n}`); else seen[k] = n;
+      }
+    }
+    expect(bad, `内层坐标撞位：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+
+  it("外层也不得撞位", () => {
+    const seen = {}, bad = [];
+    for (const [n, d] of Object.entries(QUCUO_MAP)) {
+      if (!Number.isFinite(d.x)) continue;
+      const k = `${d.x},${d.y}`;
+      if (seen[k]) bad.push(`(${k}): ${seen[k]} ⟂ ${n}`); else seen[k] = n;
+    }
+    expect(bad, `外层坐标撞位：\n  ${bad.join("\n  ")}`).toEqual([]);
   });
 });

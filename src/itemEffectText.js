@@ -68,12 +68,20 @@ export function sixDimBrief(sixDim) {
   return Object.entries(sixDim || {}).map(([k, v]) => `${k}+${v}`).join("、");
 }
 
-// 装备的数值标签：武器给攻、护甲给防、饰品给加成。
+// 装备的数值标签：武器给攻、护甲给防。
+//
+// 【饰品那个裸小数不再显示】饰品的 bonus 字段（白0.3→红6，界面上显示成「+3.3」
+// 这种没头没尾的小数）**在战斗里不接任何东西**：computeEquippedStats 把它汇总成
+// accessoryBonus，而全项目只有右栏那行「装备总加成」把它打印出来，伤害公式、
+// 防御公式、七维，没有一处读它。equipment.js 自己的注释也承认「具体挂靠哪个属性
+// 由 desc/特殊状态文字体现」——也就是说它从设计上就只是风味，不是数值。
+// 于是玩家看到一个 +3.3 却查不出它加了什么，问了也没人答得上来。
+// 饰品真正生效的是 sixDim 与 effect，那两样 effectBrief 已经在显示了。
+// 这里不再打印这个数，省得它假装自己是个战力数值。
 export function statLabel(item) {
   if (!item || typeof item !== "object") return "";
   if (item.atk != null) return `攻${item.atk}`;
   if (item.def != null) return `防${item.def}`;
-  if (item.bonus != null) return `+${item.bonus}`;
   return "";
 }
 
