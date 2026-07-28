@@ -4127,10 +4127,15 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     setChar(c => {
       const next = { ...c };
       if (player.name) next.name = player.name;
+      if (player.gender) next.gender = player.gender;
       if (player.special) next.special = { ...(c.special || {}), ...player.special };
-      if (player.bodyProfile) {
-        next.bodyProfile = { ...(c.bodyProfile || {}), ...player.bodyProfile };
+      // bodyProfile 的十二项在数据结构上是平的（公开层七项＋私密层五项同一个对象），
+      // 界面上分两层只是为了标清"哪些能从卡里抽、哪些只能手填"。
+      if (player.bodyProfile || player.bodyProfilePrivate) {
+        next.bodyProfile = { ...(c.bodyProfile || {}), ...(player.bodyProfile || {}), ...(player.bodyProfilePrivate || {}) };
       }
+      if (Number.isFinite(player.neigong)) next.neigong = player.neigong;
+      if (Number.isFinite(player.waigong)) next.waigong = player.waigong;
       const maxHp = hpFromNeigong(next.neigong ?? 5, next.special?.体魄 ?? 5);
       const curRatio = (c.hp?.[1] ? c.hp[0] / c.hp[1] : 1);
       next.hp = [Math.max(1, Math.round(maxHp * curRatio)), maxHp];
@@ -4143,6 +4148,12 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       ...(opening?.rewritten ? [{ t: "narr", text: opening.rewritten }] : []),
     ]);
   }, [setChar, addLog]);
+
+  // 世界观条目走关键词点灯那条路（跟人物同一个机制，见 registerImportedWorld 注释）
+  const handleImportWorld = useCallback((items) => {
+    const n = importedRegistry.registerImportedWorld(items, {});
+    if (n) addLog([{ t: "sys", text: `  ${n} 条地理与规矩已入册，提到时自会浮现。` }]);
+  }, [addLog]);
 
   // 装备/卸下。此前直接在 GlobalOverlays 里 setInv(toggleEquip(...))，
   // 为了记一笔计数不值当再穿一层 props，收拢到这儿——将来装备变更要加别的
@@ -4488,7 +4499,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         if (fromCard) {
           // 顺序要紧：七维先落，气血才能按体魄算对。反了就会用旧体魄算出错的上限。
           if (fromCard.special) next.special = { ...(c.special || {}), ...fromCard.special };
-          if (fromCard.bodyProfile) next.bodyProfile = { ...(c.bodyProfile || {}), ...fromCard.bodyProfile };
+          if (fromCard.bodyProfile || fromCard.bodyProfilePrivate) {
+            next.bodyProfile = { ...(c.bodyProfile || {}), ...(fromCard.bodyProfile || {}), ...(fromCard.bodyProfilePrivate || {}) };
+          }
+          if (Number.isFinite(fromCard.neigong)) next.neigong = fromCard.neigong;
+          if (Number.isFinite(fromCard.waigong)) next.waigong = fromCard.waigong;
           const maxHp = hpFromNeigong(next.neigong ?? 5, next.special?.体魄 ?? 5);
           next.hp = [maxHp, maxHp];
         }
@@ -4551,6 +4566,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         showQijuzhu={showQijuzhu} setShowQijuzhu={setShowQijuzhu} narratorStage={narrator.stage}
         showCardImport={showCardImport} setShowCardImport={setShowCardImport}
         onImportNpcs={handleImportNpcs} onImportPlayer={handleImportPlayer}
+        onImportWorld={handleImportWorld}
         showPortraitManager={showPortraitManager} setShowPortraitManager={setShowPortraitManager}
         portraits={portraits} setPortraits={setPortraits}
         showPipeline={showPipeline} setShowPipeline={setShowPipeline}

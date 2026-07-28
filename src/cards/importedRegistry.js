@@ -18,7 +18,7 @@ const STORE = "scans";          // 与 scanStore 同一个仓库，靠 key 前�
 const KEY = "imported:registry";
 
 let _dbPromise = null;
-let _registry = { chars: [], savedAt: 0 };
+let _registry = { chars: [], world: [], savedAt: 0 };
 let _idbAvailable = false;
 let _initialized = false;
 
@@ -66,7 +66,7 @@ export async function init() {
   try {
     const v = await idbGet(KEY);
     _idbAvailable = true;
-    if (v && Array.isArray(v.chars)) _registry = v;
+    if (v && Array.isArray(v.chars)) _registry = { world: [], ...v };
   } catch (e) {
     _idbAvailable = false;
     console.warn("[imported] IndexedDB 不可用，入册角色本次不持久化:", e?.message || e);
@@ -93,6 +93,11 @@ export function registerImported(npcs, meta = {}) {
       attitude: n.attitude || "",
       levelCap: Number.isFinite(n.levelCap) ? n.levelCap : 1,
       special: n.special || {},
+      neigong: Number.isFinite(n.neigong) ? n.neigong : null,
+      waigong: Number.isFinite(n.waigong) ? n.waigong : null,
+      moves: (n.moves && typeof n.moves === "object") ? n.moves : null,
+      carry: Array.isArray(n.carry) ? n.carry : [],
+      portrait: n.portrait || "",
       affection: Number.isFinite(n.affection) ? n.affection : 0,
       milestones: Array.isArray(n.milestones) ? n.milestones : [],
       placement: normalizePlacement(n.placement),
@@ -183,6 +188,12 @@ function toPoolLike(c, lockInnerRoom) {
     affectionable: true,
     imported: true,
   };
+  // 内外功要带上：applyNpcDefaults 里气血走 hpFromNeigong(neigong, 体魄)、
+  // 攻击走 atkFromWaigong(waigong)，不传就只能按品阶取默认值，玩家调的白调。
+  if (Number.isFinite(c.neigong)) o.neigong = c.neigong;
+  if (Number.isFinite(c.waigong)) o.waigong = c.waigong;
+  if (Array.isArray(c.carry) && c.carry.length) o.carry = c.carry;
+  if (c.portrait) o.portrait = c.portrait;
   if (lockInnerRoom) o.lockInnerRoom = lockInnerRoom;
   return o;
 }
@@ -195,6 +206,34 @@ export function getImportedResidentNames() {
   return _registry.chars
     .filter(c => c.placement?.mode === "resident")
     .map(c => c.name);
+}
+
+/**
+ * 入册的世界观条目（地理／势力／规矩／物件）。
+ * 【为什么跟人物走同一条路】它们同样是"有关键词、被提到就注入"的条目，
+ * matchNpcLore 的三源触发对它们一样适用。虽然那个函数叫 npcLore，机制其实是
+ * 通用的关键词点灯，不必为地理另造一套。区别只在 entry 的写法上不带人名括号。
+ */
+export function registerImportedWorld(items, meta = {}) {
+  if (!Array.isArray(items) || !items.length) return 0;
+  const byLabel = new Map((_registry.world || []).map(w => [w.label, w]));
+  for (const w of items) {
+    if (!w?.label || !w?.content) continue;
+    byLabel.set(w.label, {
+      label: w.label,
+      kind: w.kind || "unknown",
+      keys: Array.isArray(w.keys) ? w.keys : [],
+      content: w.content,
+      from: { cardName: meta.cardName || "", at: Date.now() },
+    });
+  }
+  _registry.world = Array.from(byLabel.values());
+  persist();
+  return items.length;
+}
+
+export function listImportedWorld() {
+  return (_registry.world || []).slice();
 }
 
 export function listImported() {
@@ -217,7 +256,12 @@ export function clearImported() {
  * 那些手写条目的写法保持一致（预设里就是把外貌锚点写在人设正文里的）。
  */
 export function getImportedNpcLore() {
-  return _registry.chars.map(c => {
+  const world = (_registry.world || []).map(w => ({
+    name: w.label,
+    aliases: w.keys.filter(k => k !== w.label),
+    entry: `- ${w.label}：${w.content}`,
+  }));
+  return [...world, ..._registry.chars.map(c => {
     const tail = [
       c.appearance ? `\n  外貌锚点：${c.appearance}` : "",
       c.attitude ? `\n  初见态度：${c.attitude}` : "",
@@ -227,7 +271,7 @@ export function getImportedNpcLore() {
       aliases: c.aliases,
       entry: `- ${c.name}（${c.brief}）：${c.entry}${tail}`,
     };
-  });
+  })];
 }
 
 /**
@@ -245,6 +289,31 @@ export function getImportedMilestones() {
       m[x.threshold] = { title: x.title, brief: x.brief || "", text: Array.isArray(x.text) ? x.text : [] };
     }
     if (Object.keys(m).length) out[c.name] = m;
+  }
+  return out;
+}
+
+/**
+ * 入册角色的专属出招表，形状与 npcSignatureMoves.js 的 NPC_SIGNATURE_MOVES 一致：
+ *   { 角色名: { 攻击:{archetype,name,desc}, 防御:{...}, 状态:{...}, 回气:{...} } }
+ * deriveSignatureMoveset 会拿它跟内置表合并。没配招式的角色不出现在这张表里，
+ * 于是仍然回退到按品阶随机的老逻辑。
+ */
+export function getImportedSignatureMoves() {
+  const out = {};
+  for (const c of _registry.chars) {
+    if (!c.moves || typeof c.moves !== "object") continue;
+    const slots = {};
+    for (const [slot, m] of Object.entries(c.moves)) {
+      if (!m || (!m.name && !m.archetype)) continue;
+      slots[slot] = {
+        archetype: m.archetype,
+        name: m.name || undefined,
+        desc: m.desc || undefined,
+        ...(m.effects && typeof m.effects === "object" ? { effects: m.effects } : {}),
+      };
+    }
+    if (Object.keys(slots).length) out[c.name] = slots;
   }
   return out;
 }

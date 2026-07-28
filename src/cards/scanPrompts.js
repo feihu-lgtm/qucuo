@@ -120,6 +120,18 @@ ${TIER_ANCHORS}
 
 ${SPECIAL_ANCHORS}
 
+内功与外功都是 0-100 的整数，跟品阶挂钩：白档约 5、绿约 23、蓝约 41、紫约 59、橙约 77、红约 95。内功决定气血厚薄与真气储量，外功决定出手的杀伤。给的值应当贴着你判的品阶来，除非正文明确写了此人偏内家或偏外家（例如老僧内功深厚而不擅搏杀、莽汉外功强横而无内息），这时可以在同档基准上一高一低。
+
+招式按"原型"来配，共七种，每种在不同品阶下自动解出不同强度的效果，你只需要选原型并起名字：
+- 硬攻（攻击）：正面硬碰，倍率高，高档带无视防御与必先
+- 趁虚（攻击）：针对对手破绽下手，高档对已中状态的敌人加成很大
+- 防守反击（防御）：挡下再反打，高档近乎全免并能抢先结算
+- 封穴（防御）：以守为攻，高档封住对手的真气回复
+- 致乱（状态）：扰乱心神，高档令对手出招失准
+- 蓄势（状态）：积蓄气力，高档大幅提升下一击
+- 疗伤（状态）：运功回血，只有明确会疗伤的角色才配
+四个必备槽位：攻击、防御、状态、回气。回气槽固定用"回气"原型，只需起名。若正文明确写此人会疗伤，可以多给一个疗伤槽。名字要贴人物身份与武学路数，别用通用词。
+
 好感度是 0-100 的整数，玩家初见时的默认值是 0。只有正文明确写了这个人与玩家（${playerName}）已有交情、或身份上天然亲近（如亲人、同门师长）时才给正值，最多 20。正文写明敌对的可以给负值，最低 -20。
 
 里程碑是好感度达到阈值时解锁的一段固定剧情，本作只有两档：30 和 60。每档给：
@@ -142,6 +154,16 @@ ${JSON_LAW}
       "levelCap_why": "",
       "special": {"根骨":5,"悟性":5,"体魄":5,"魅力":5,"智谋":5,"身法":5,"气运":5},
       "special_why": "",
+      "neigong": 41,
+      "waigong": 41,
+      "neiwai_why": "",
+      "moves": {
+        "攻击": {"archetype": "硬攻", "name": "", "desc": "一句话写这招看起来什么样"},
+        "防御": {"archetype": "防守反击", "name": "", "desc": ""},
+        "状态": {"archetype": "致乱", "name": "", "desc": ""},
+        "回气": {"name": "", "desc": ""}
+      },
+      "moves_why": "",
       "外貌锚点": "80字以内，只写别人一眼能看见的：身形、面容、发式、穿着、随身物、习惯动作。不要写性格与内心",
       "初始态度": "40字以内，这个人初次面对玩家时的态度与说话方式",
       "好感初值": 0,
@@ -318,6 +340,46 @@ export const FALLBACK_MILESTONES = [
 export const FALLBACK_SPECIAL = { 根骨: 5, 悟性: 5, 体魄: 5, 魅力: 5, 智谋: 5, 身法: 5, 气运: 5 };
 
 export const FALLBACK_LEVEL_CAP = 1;
+
+// 七个招式原型。取值必须与 combat/moveArchetypes.js 的 MOVE_ARCHETYPES 键一致，
+// 否则 resolveArchetype 查不到会返回 null、招式退化成空对象。
+export const MOVE_ARCHETYPE_IDS = ["硬攻", "趁虚", "防守反击", "封穴", "致乱", "蓄势", "疗伤"];
+export const MOVE_SLOTS = ["攻击", "防御", "状态", "回气"];
+export const SLOT_DEFAULT_ARCHETYPE = { 攻击: "硬攻", 防御: "防守反击", 状态: "致乱", 回气: "回气", 疗伤: "疗伤" };
+
+// 品阶 → 内外功基准，跟 npcGeneration.js 的 getTierPower 口径一致
+export const TIER_NEIGONG = [5, 23, 41, 59, 77, 95];
+
+/** 内外功清洗：0-100 整数，缺值按品阶基准补 */
+export function sanitizeGongfu(raw, levelCap = 1) {
+  const v = Number(raw);
+  const base = TIER_NEIGONG[Math.max(0, Math.min(5, levelCap))] ?? 23;
+  if (!Number.isFinite(v)) return base;
+  return Math.max(0, Math.min(100, Math.round(v)));
+}
+
+/** 招式清洗：原型必须在册，槽位补齐四个，名字空则留空由 UI 兜底 */
+export function sanitizeMoves(raw, levelCap = 1) {
+  const out = {};
+  for (const slot of MOVE_SLOTS) {
+    const m = (raw && typeof raw === "object" && raw[slot]) || {};
+    const wanted = String(m.archetype || SLOT_DEFAULT_ARCHETYPE[slot] || "");
+    // 回气槽固定走「回气」原型，别的槽位若给了不在册的原型就退回该槽默认
+    const arch = slot === "回气" ? "回气"
+      : (MOVE_ARCHETYPE_IDS.includes(wanted) ? wanted : SLOT_DEFAULT_ARCHETYPE[slot]);
+    out[slot] = {
+      archetype: arch,
+      name: String(m.name || "").slice(0, 10),
+      desc: String(m.desc || "").slice(0, 60),
+    };
+  }
+  // 疗伤是可选第五槽，只有 AI 明确给了才留
+  const heal = raw && typeof raw === "object" && raw["疗伤"];
+  if (heal && (heal.name || heal.archetype)) {
+    out["疗伤"] = { archetype: "疗伤", name: String(heal.name || "").slice(0, 10), desc: String(heal.desc || "").slice(0, 60) };
+  }
+  return out;
+}
 
 /** 把 AI 的七维输出清洗成合法值：缺项补 5，越界钳到 0-10，非整数取整 */
 export function sanitizeSpecial(raw) {

@@ -15,8 +15,8 @@ import * as store from "./scanStore.js";
 import {
   buildStage1, buildStage2, buildStage3, buildStage4,
   parseJsonLoose, sanitizeSpecial, sanitizeLevelCap, sanitizeAffection,
-  sanitizeMilestones, sanitizeBrief,
-  FALLBACK_SPECIAL, FALLBACK_LEVEL_CAP, FALLBACK_MILESTONES,
+  sanitizeMilestones, sanitizeBrief, sanitizeGongfu, sanitizeMoves,
+  FALLBACK_SPECIAL, FALLBACK_LEVEL_CAP, FALLBACK_MILESTONES, SLOT_DEFAULT_ARCHETYPE, MOVE_SLOTS,
 } from "./scanPrompts.js";
 import { groupEntriesByKeys, groupToNpcLore } from "./cardParse.js";
 
@@ -409,16 +409,24 @@ function normalizeStage2(out, batch) {
     const raw = arr.find(x => Number(x?.i) === i) || arr[i] || null;
     if (!raw) return fallbackNpc(p);
     const brief = sanitizeBrief(raw.brief);
+    const levelCap = sanitizeLevelCap(raw.levelCap);
     return {
       name: p.name,
       aliases: p.aliases,
       entry: p.entry,
       brief: brief || sanitizeBrief(p._parts?.[0]) || p.name,
       briefWhy: String(raw.brief_why || "").slice(0, 20),
-      levelCap: sanitizeLevelCap(raw.levelCap),
+      levelCap,
       levelCapWhy: String(raw.levelCap_why || "").slice(0, 20),
       special: sanitizeSpecial(raw.special),
       specialWhy: String(raw.special_why || "").slice(0, 20),
+      neigong: sanitizeGongfu(raw.neigong, levelCap),
+      waigong: sanitizeGongfu(raw.waigong, levelCap),
+      gongfuWhy: String(raw.neiwai_why || "").slice(0, 20),
+      moves: sanitizeMoves(raw.moves, levelCap),
+      movesWhy: String(raw.moves_why || "").slice(0, 20),
+      carry: [],          // 卡里没有随身物，默认空 → 运行时走 rollNpcCarry 四池兜底
+      portrait: "",       // 立绘由玩家在审改界面挑
       appearance: String(raw.外貌锚点 || "").slice(0, 100),
       attitude: String(raw.初始态度 || "").slice(0, 50),
       affection: sanitizeAffection(raw.好感初值),
@@ -442,6 +450,13 @@ function fallbackNpc(p) {
     levelCapWhy: "",
     special: { ...FALLBACK_SPECIAL },
     specialWhy: "",
+    neigong: sanitizeGongfu(null, FALLBACK_LEVEL_CAP),
+    waigong: sanitizeGongfu(null, FALLBACK_LEVEL_CAP),
+    gongfuWhy: "",
+    moves: sanitizeMoves(null, FALLBACK_LEVEL_CAP),
+    movesWhy: "",
+    carry: [],
+    portrait: "",
     appearance: "",
     attitude: "",
     affection: 0,

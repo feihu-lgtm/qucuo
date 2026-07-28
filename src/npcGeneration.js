@@ -16,6 +16,7 @@ const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 import { MOVE_TYPE } from "./combat/moveTypes.js";
 import { createEmptyStatusSlots } from "./combat/statusEffects.js";
 import { NPC_SIGNATURE_MOVES } from "./npcSignatureMoves.js";
+import { getImportedSignatureMoves } from "./cards/importedRegistry.js";
 import { resolveArchetype } from "./combat/moveArchetypes.js";
 
 // 生成NPC的七维属性（跟玩家 char.special 同一套体系：根骨/悟性/体魄/魅力/智谋/身法/气运，0-10）。
@@ -171,7 +172,9 @@ function levelCapToQuality(levelCap) {
 // 所以红名和平民哪怕用同一个【防守反击】原型，红名解锁到抢先/失败重罚，平民只有
 // 基础减伤——这就是"红名听桥≠平民听桥"。
 export function deriveSignatureMoveset(npc, { levelCap } = {}) {
-  const sig = NPC_SIGNATURE_MOVES[npc?.name];
+  // 入册角色的专属招式跟内置表合并。入册的优先——那是玩家在导入界面亲手配的，
+  // 意图比内置表更明确（同名时也该听玩家的）。
+  const sig = getImportedSignatureMoves()[npc?.name] || NPC_SIGNATURE_MOVES[npc?.name];
   if (!sig) return null;
 
   const cap = npc.levelCap ?? levelCap ?? 0;

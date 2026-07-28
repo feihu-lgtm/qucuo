@@ -78,6 +78,7 @@ function App() {
         onClose={() => setInCardImport(false)}
         onImportNpcs={(npcs) => { importedRegistry.registerImported(npcs, {}); }}
         onImportPlayer={(player) => { importedRegistry.setPendingPlayerCard(player); }}
+        onImportWorld={(items) => { importedRegistry.registerImportedWorld(items, {}); }}
       />
     );
   }
