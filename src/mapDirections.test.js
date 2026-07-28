@@ -166,3 +166,29 @@ describe("坐标与方向必须自洽（画出来的图不能跟走出来的路�
     expect(bad, `外层坐标撞位：\n  ${bad.join("\n  ")}`).toEqual([]);
   });
 });
+
+// ── 乡外据点不得插进乡的版图里 ──────────────────────────────────────────────
+// 【这条是被「村子往东，那你不是把本来的弄没了吗」问出来的】
+// 把三城东西颠倒订正过来时，我只查了「(1,0) 这格空不空」就把雅江放了进去。
+// 格子确实是空的，但曲措乡自己的地界一直铺到 x=1（天都镇(1,1)、贡措海(1,2)），
+// 于是两座乡外大城插在乡的版图中间、雅江正卡在天都镇头顶上。
+// 出乡的门户该在版图边缘，不该在肚子里——空格子不等于合适的位置。
+describe("乡外据点必须在曲措乡版图之外", () => {
+  const OUTSIDE = ["雅江", "锦官城", "广汉"]; // 乡外：一座中转大城 + 成都 + 广汉
+  const FARAWAY = new Set(["第三新东京市", "心灵之海"]); // 非常规拓扑，不参与版图计算
+
+  it("曲措乡本身的据点都在乡外三城以西", () => {
+    const inside = Object.entries(QUCUO_MAP)
+      .filter(([n, d]) => !OUTSIDE.includes(n) && !FARAWAY.has(n) && Number.isFinite(d.x));
+    const maxInsideX = Math.max(...inside.map(([, d]) => d.x));
+    for (const n of OUTSIDE) {
+      expect(QUCUO_MAP[n].x, `「${n}」是乡外据点，却没越过乡界(x=${maxInsideX})`).toBeGreaterThan(maxInsideX);
+    }
+  });
+
+  it("雅江与鱼定村之间留着路程，不是门贴门", () => {
+    // 雅江描述写着「出西门行三日便是曲措乡界」，两者之间该有距离
+    expect(QUCUO_MAP["雅江"].x - QUCUO_MAP["鱼定村"].x).toBeGreaterThan(1);
+    expect(QUCUO_MAP["雅江"].desc).toContain("行三日");
+  });
+});
