@@ -3688,13 +3688,22 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   }, [char, activeBuilding, addLog, act]);
 
   const handleBuySkill = useCallback((catalogItem) => {
-    if ((char.money || 0) < catalogItem.price) return;
-    setChar(c => ({ ...c, money: c.money - catalogItem.price }));
+    // 参悟类（令狐冲墓的独孤剑诀）：不花钱，看门槛。服务端也要挡一道——
+    // 界面按不出来不等于调用不到，门槛只写在界面上等于没写。
+    if (catalogItem.insight) {
+      const cur = char?.[catalogItem.insight.stat] ?? 0;
+      if (cur < catalogItem.insight.threshold) return;
+    } else {
+      if ((char.money || 0) < catalogItem.price) return;
+      setChar(c => ({ ...c, money: c.money - catalogItem.price }));
+    }
     setSkills(prev => {
       if (prev.some(s => s.id === catalogItem.id)) return prev;
       return [...prev, makeSkillEntry(catalogItem)];
     });
-    act(`购得秘籍「${catalogItem.name}」，费银${catalogItem.price}两，习得此功`, [], { settle: true });
+    act(catalogItem.insight
+      ? `在墓壁前站了许久，那些剑痕忽然连成了路数——参悟「${catalogItem.name}」`
+      : `购得秘籍「${catalogItem.name}」，费银${catalogItem.price}两，习得此功`, [], { settle: true });
   }, [char, addLog, act]);
 
   const handleGamble = useCallback(({ mode, bet, luck, dayIdx }) => {

@@ -315,3 +315,46 @@ describe("全图武学总录", () => {
     expect([...new Set(keys)].length).toBe(keys.length);
   });
 });
+
+// ── 参悟类武学（令狐冲墓的独孤剑诀）──────────────────────────────────────
+// 令狐冲墓此前是 BUILDING_TYPE.TEMPLE（拜祭殿），它挂着 skillSet:"独孤" 但
+// TEMPLE 压根不读 skillSet —— 描述里承诺的「外功≥80可参悟习得」从未落地，
+// 两门独孤武学在全图无处可学。
+import { BUILDINGS_BY_LOCATION, BUILDING_TYPE } from "./buildings/qucuoBuildings.js";
+
+describe("参悟类武学", () => {
+  const all = () => Object.values(SKILL_CATALOG).flat();
+
+  it("令狐冲墓是授业类建筑，否则 skillSet 没人读", () => {
+    const tomb = (BUILDINGS_BY_LOCATION["贡措海"] || []).find(b => b.id === "dugu_tomb");
+    expect(tomb, "令狐冲墓不见了").toBeTruthy();
+    expect(tomb.type, "令狐冲墓不是授业类建筑，挂着的 skillSet 不会被读").toBe(BUILDING_TYPE.WUGUAN);
+    expect(tomb.skillSet).toBe("独孤");
+  });
+
+  it("独孤两门都走参悟：不标价、带门槛", () => {
+    for (const s of SKILL_CATALOG["独孤"]) {
+      expect(s.price, `${s.name} 参悟类不该标价`).toBe(0);
+      expect(s.insight, `${s.name} 缺参悟门槛`).toBeTruthy();
+      expect(typeof s.insight.threshold).toBe("number");
+      expect(s.insight.label, `${s.name} 门槛缺人话标签`).toBeTruthy();
+    }
+  });
+
+  it("独孤九剑的门槛比剑冢独坐高（先坐得住，才看得懂）", () => {
+    const g = SKILL_CATALOG["独孤"].find(s => s.name === "独孤九剑");
+    const z = SKILL_CATALOG["独孤"].find(s => s.name === "剑冢独坐");
+    expect(g.insight.threshold).toBeGreaterThan(z.insight.threshold);
+  });
+
+  it("凡带 insight 的武学，门槛属性必须是角色身上真有的字段", () => {
+    const OK = new Set(["waigong", "neigong"]);
+    const bad = all().filter(s => s.insight && !OK.has(s.insight.stat)).map(s => `${s.name}→${s.insight.stat}`);
+    expect(bad, `门槛属性不存在，判定永远取到 undefined：${bad.join("、")}`).toEqual([]);
+  });
+
+  it("标价的武学不该同时带 insight（两条路径互斥）", () => {
+    const bad = all().filter(s => s.insight && s.price > 0).map(s => s.name);
+    expect(bad, `既标价又要参悟，界面会自相矛盾：${bad.join("、")}`).toEqual([]);
+  });
+});
