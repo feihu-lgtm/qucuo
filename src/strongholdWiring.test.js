@@ -8,6 +8,7 @@ import { QUCUO_SHOPS } from "./shops/qucuoShops.js";
 import { SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
 import { NPC_SIGNATURE_MOVES } from "./npcSignatureMoves.js";
 import { CATALOG_INDEX } from "./items/catalog.js";
+import { EFFECT_CN } from "./itemEffectText.js";
 
 // 【这一整份测试是「雅江据点半接线」逼出来的】
 // 雅江落地时写了：外层节点、内层14房、6建筑、青城武学4门、NPC专属招式、特产食品、
@@ -363,5 +364,42 @@ describe("BUG5 家园设施不能有够不到的孤儿条目", () => {
       }
     }
     expect(orphan, `以下设施声明了但没有任何房间能用到：\n  ${orphan.join("\n  ")}`).toEqual([]);
+  });
+});
+
+// ── 饰品必须像武器护甲一样，有自己的真字段并且显示得出来 ──────────────────
+// 饰品原来靠 bonus（白0.3→红6）撑场面，界面打印成「+3.3」——但战斗里没有任何
+// 一处读它，是纯粹的装饰性数值。现已从全项目删除；饰品的战力改由 sixDim/effect
+// 承担，跟武器的 atk、护甲的 def 平级。
+describe("饰品的战力字段", () => {
+  const acc = () => Object.values(CATALOG_INDEX).filter(e => e.category === "accessory");
+
+  it("bonus 字段已从 catalog 里彻底消失（不许再冒充战力）", () => {
+    const left = Object.values(CATALOG_INDEX).filter(e => e.bonus != null).map(e => e.name);
+    expect(left, `这些物品还带着已废弃的 bonus：${left.join("、")}`).toEqual([]);
+  });
+
+  it("每件饰品至少有 sixDim 或 effect 之一——不能一无所有", () => {
+    const blank = acc().filter(e => !e.sixDim && !e.effect).map(e => `${e.name}(${e.quality})`);
+    expect(blank, `以下饰品没有任何战力字段，戴上等于没戴：\n  ${blank.join("、")}`).toEqual([]);
+  });
+
+  it("饰品的 sixDim 属性名都是合法七维（写错就是静默失效）", () => {
+    const SEVEN = new Set(["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"]);
+    const bad = [];
+    for (const e of acc()) for (const k of Object.keys(e.sixDim || {})) if (!SEVEN.has(k)) bad.push(`${e.name} → ${k}`);
+    expect(bad, `非法七维属性名：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+
+  it("饰品的 effect 标志位都能被词典翻成人话（翻不出来玩家就看不懂）", () => {
+    const PARAM = new Set(["applyMarkChance", "applyMarkOnHit", "statusChance", "confuseChance"]);
+    const bad = [];
+    for (const e of acc()) {
+      for (const k of Object.keys(e.effect || {})) {
+        if (PARAM.has(k)) continue;
+        if (!EFFECT_CN[k]) bad.push(`${e.name} → ${k}`);
+      }
+    }
+    expect(bad, `以下特效标志位不在 itemEffectText 的词典里，界面上会是空白：\n  ${bad.join("\n  ")}`).toEqual([]);
   });
 });

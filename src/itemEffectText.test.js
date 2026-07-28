@@ -78,7 +78,7 @@ describe("数值标签", () => {
   it("武器给攻、护甲给防；饰品不再显示那个不接任何机制的裸小数", () => {
     expect(statLabel({ atk: 35 })).toBe("攻35");
     expect(statLabel({ def: 20 })).toBe("防20");
-    expect(statLabel({ bonus: 1.5 })).toBe(""); // bonus 是死数据，不冒充战力
+    expect(statLabel({ bonus: 1.5 })).toBe(""); // bonus 字段已从全项目删除，残留数据也不显示
     expect(statLabel(null)).toBe("");
     expect(statLabel("字符串杂物")).toBe("");
   });

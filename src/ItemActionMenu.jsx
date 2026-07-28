@@ -23,7 +23,7 @@ export default function ItemActionMenu({
   const isObj = typeof item === "object";
   const canEquip = isObj && ["weapon", "armor", "accessory"].includes(item.category);
   const equipped = isObj && !!item.equipped;
-  const statLabel = isObj ? (item.atk != null ? `攻${item.atk}` : item.def != null ? `防${item.def}` : item.bonus != null ? `+${item.bonus}` : "") : "";
+  const statLabel = isObj ? (item.atk != null ? `攻${item.atk}` : item.def != null ? `防${item.def}` : "") : "";
 
   const merchantsHere = roomNpcs.filter(n => QUCUO_SHOPS[n.name]);
 

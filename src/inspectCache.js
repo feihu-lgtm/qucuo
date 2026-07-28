@@ -32,7 +32,7 @@ function saveCache(cache) {
 function buildKey(kind, name, extra, itemObj) {
   const parts = [kind, name, extra || ""];
   if (itemObj && typeof itemObj === "object") {
-    parts.push(itemObj.quality || "", itemObj.atk ?? "", itemObj.def ?? "", itemObj.bonus ?? "");
+    parts.push(itemObj.quality || "", itemObj.atk ?? "", itemObj.def ?? "");
   }
   return parts.join("::");
 }

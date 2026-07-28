@@ -548,10 +548,10 @@ export const SUNDRIES = [
   // ── 补货批次·59件带特效商品（2026-07-21，AI生成+人工设计特效/数值裁决）──
   // 饰品补全线+护甲高阶+紫橙红武器；白绿素数值，蓝1弱特效，紫1~2，橙红强特效/组合。
   { name:"藏银錾花镯", category:ITEM_CATEGORY.ACCESSORY, quality:"绿", tags:["饰品","藏银"], sixDim:{魅力:1}, desc:"玉泉寨银匠錾出的缠枝纹手镯，接口处故意留了一道缝，牧女说那是给风留的路——风从镯缝穿过时声音像狼曲的水。" },
-  { name:"牦牛骨扳指", category:ITEM_CATEGORY.ACCESSORY, quality:"白", tags:["饰品","骨器"], desc:"牦牛腿骨磨成的扳指，没镶没嵌，戴久了骨色从白转黄再转褐。老牧民说骨头会吃手汗，吃得越多越润。" },
-  { name:"菩提子手串", category:ITEM_CATEGORY.ACCESSORY, quality:"白", tags:["饰品","佛珠"], desc:"喇嘛庙香积厨外那棵老菩提树结的籽，僧人自己打眼穿串，每颗大小不一，挂在腕上磕磕碰碰，声音像木鱼。" },
+  { name:"牦牛骨扳指", category:ITEM_CATEGORY.ACCESSORY, quality:"白", sixDim:{体魄:1}, tags:["饰品","骨器"], desc:"牦牛腿骨磨成的扳指，没镶没嵌，戴久了骨色从白转黄再转褐。老牧民说骨头会吃手汗，吃得越多越润。" },
+  { name:"菩提子手串", category:ITEM_CATEGORY.ACCESSORY, quality:"白", sixDim:{悟性:1}, tags:["饰品","佛珠"], desc:"喇嘛庙香积厨外那棵老菩提树结的籽，僧人自己打眼穿串，每颗大小不一，挂在腕上磕磕碰碰，声音像木鱼。" },
   { name:"绿松石耳坠", category:ITEM_CATEGORY.ACCESSORY, quality:"绿", tags:["饰品","宝石"], sixDim:{气运:1}, desc:"天都镇玉器轩从藏地收来的老松石，色如雨后的草甸。掌柜说这对耳坠原来是一个牧女当的，当期过了三十年没赎，松石还在等人。" },
-  { name:"桃木平安牌", category:ITEM_CATEGORY.ACCESSORY, quality:"白", tags:["饰品","护符"], desc:"熊山桃木削成的小牌，正面刻平安，背面刻一道歪扭的剑痕。不是开过光——是削牌的猎户用猎刀随手划的，说刀比佛快。" },
+  { name:"桃木平安牌", category:ITEM_CATEGORY.ACCESSORY, quality:"白", sixDim:{气运:1}, tags:["饰品","护符"], desc:"熊山桃木削成的小牌，正面刻平安，背面刻一道歪扭的剑痕。不是开过光——是削牌的猎户用猎刀随手划的，说刀比佛快。" },
   { name:"苗银花丝耳坠", category:ITEM_CATEGORY.ACCESSORY, quality:"蓝", tags:["饰品","苗银"], sixDim:{魅力:2}, desc:"百花楼的姑娘从苗寨带出来的花丝耳坠，银丝拉得比头发还细，编成蜂巢纹。走路时耳坠晃动的幅度刚好扫到颈侧。" },
   { name:"蜜蜡手串", category:ITEM_CATEGORY.ACCESSORY, quality:"蓝", tags:["饰品","蜜蜡"], sixDim:{体魄:1}, desc:"喇嘛庙老僧人盘了十几年的蜜蜡串，颗颗色如陈蜜，对着日光能看到蜡纹如云。老僧说蜜蜡是松脂变的，松脂是树的血。" },
   { name:"白水晶耳坠", category:ITEM_CATEGORY.ACCESSORY, quality:"蓝", tags:["饰品","水晶"], sixDim:{悟性:1}, effect:{ nullifyStatusOnHit: true }, desc:"雪山派商坊从雪山顶上采的白水晶磨成，澄澈如冰。耳坠切面极简，不追求折射——雪山派的人说水晶不是拿来炫的，是拿来照自己的。" },
@@ -613,14 +613,14 @@ export const SUNDRIES = [
   { name: "寒锋七星剑", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "名匠"], effect: { forceCrit: true }, sixDim: { 气运: 2, 身法: 1 }, desc: "剑脊上嵌着七枚北斗样的星纹，据说是某位隐姓名匠晚年一年只出三口的活儿。剑虽利，却不认人,谁使都是一样的锋,故而算不得独一份的名器,只是贵得离谱的一件好货罢了。" },
   { name: "镔铁破阵斧", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "重兵"], effect: { highHpBonus: 0.3 }, sixDim: { 体魄: 2, 根骨: 1 }, desc: "边军里淘汰下来的破阵重斧，斧头厚得能当砧板，人越是气力充沛这一斧劈得越狠，脱了力反倒抡不圆。军中说这斧子挑人，挑的不是身份，是那口还没泄的气。" },
   { name: "点睛乌金鞭", category: ITEM_CATEGORY.WEAPON, quality: "红", tags: ["通货", "软兵"], effect: { nullifyStatusOnHit: true }, sixDim: { 身法: 2, 智谋: 1 }, desc: "十三节乌金软鞭，节节相扣如活蛇，鞭梢一点便能把对方刚运起的花招震散。会使的人不多，肯花大价钱买的更少，铺子里挂着更多是充门面，真买走的据说都不是善茬。" },
-  { name: "牛骨素圈", category: ITEM_CATEGORY.ACCESSORY, quality: "白", tags: ["饰品", "藏地"], desc: "玉泉寨牧人拿吃剩的牦牛胫骨磨的素圈，不錾花不镶石，戴手上凉丝丝的。牧女说磨得越亮的准是戴了十几年的，新的那批白得刺眼，一看就没经过日子。" },
-  { name: "红绳桃核串", category: ITEM_CATEGORY.ACCESSORY, quality: "白", tags: ["饰品", "平安"], desc: "鱼定村妇人给出远门的人串的桃核，一颗颗自己啃的核，红绳是染布剩的边角。挡不了刀枪，倒是攥在手里心里踏实，走夜路的人多半兜里揣着一串。" },
-  { name: "铜钱压襟", category: ITEM_CATEGORY.ACCESSORY, quality: "白", tags: ["饰品", "市井"], desc: "天都镇小贩把穿旧了的制钱编成压襟坠子，走起路来叮当响。图个财气，也图个响动——夜里独行,响声比刀还壮胆。" },
+  { name: "牛骨素圈", category: ITEM_CATEGORY.ACCESSORY, quality: "白", sixDim:{体魄:1}, tags: ["饰品", "藏地"], desc: "玉泉寨牧人拿吃剩的牦牛胫骨磨的素圈，不錾花不镶石，戴手上凉丝丝的。牧女说磨得越亮的准是戴了十几年的，新的那批白得刺眼，一看就没经过日子。" },
+  { name: "红绳桃核串", category: ITEM_CATEGORY.ACCESSORY, quality: "白", sixDim:{气运:1}, tags: ["饰品", "平安"], desc: "鱼定村妇人给出远门的人串的桃核，一颗颗自己啃的核，红绳是染布剩的边角。挡不了刀枪，倒是攥在手里心里踏实，走夜路的人多半兜里揣着一串。" },
+  { name: "铜钱压襟", category: ITEM_CATEGORY.ACCESSORY, quality: "白", sixDim:{智谋:1}, tags: ["饰品", "市井"], desc: "天都镇小贩把穿旧了的制钱编成压襟坠子，走起路来叮当响。图个财气，也图个响动——夜里独行,响声比刀还壮胆。" },
   { name: "松石小坠", category: ITEM_CATEGORY.ACCESSORY, quality: "绿", tags: ["饰品", "藏银"], sixDim: { 魅力: 1 }, desc: "喇嘛庙山下摊子上论堆卖的松石坠，成色参差，好的那几颗蓝得正,配上藏银托子颇能唬人。香客求个吉利,牧女图个好看,倒也各取所需。" },
   { name: "缠丝玛瑙牌", category: ITEM_CATEGORY.ACCESSORY, quality: "绿", tags: ["饰品", "当铺"], sixDim: { 气运: 1 }, desc: "天都镇当铺里压了几年没人赎的玛瑙牌，缠丝的纹路像水波,当铺老板嫌占地方,肯让价出。据说原主戴着它赢过几回钱,后来输光了连它一起当了——玛瑙无辜,运气这东西本就不长在一件物件上。" },
   { name: "银鎏花簪", category: ITEM_CATEGORY.ACCESSORY, quality: "绿", tags: ["饰品", "锦官"], sixDim: { 魅力: 2 }, desc: "锦官城金玉行给寻常人家姑娘备的鎏银花簪，样子仿的是官眷诰命簪，鎏的却是薄薄一层银，戴出去远看体面近看便知深浅。掌柜从不点破,买的人也心知肚明。" },
   { name: "结绳护腕串", category: ITEM_CATEGORY.ACCESSORY, quality: "绿", tags: ["饰品", "山寨"], sixDim: { 体魄: 1 }, desc: "黑风寨弟兄拿牛皮条编的护腕串，缠三圈打个死结，说是护腕其实更像个念想——上山的人一人一条,断了就知道少了个人。寨里妇人手快,一晚上能编七八条。" },
-  { name: "冷水鱼骨坠", category: ITEM_CATEGORY.ACCESSORY, quality: "白", tags: ["饰品", "山野"], desc: "狼曲冷水鱼的脊骨晒干磨圆穿成的坠子，泛着淡青的光。捞鱼的娃娃拿它当稀罕玩意换糖吃,大人戴着倒说压水汽,常年在河边讨生活的图这么个说法。" },
+  { name: "冷水鱼骨坠", category: ITEM_CATEGORY.ACCESSORY, quality: "白", sixDim:{身法:1}, tags: ["饰品", "山野"], desc: "狼曲冷水鱼的脊骨晒干磨圆穿成的坠子，泛着淡青的光。捞鱼的娃娃拿它当稀罕玩意换糖吃,大人戴着倒说压水汽,常年在河边讨生活的图这么个说法。" },
   { name: "羊脂玉平安扣", category: ITEM_CATEGORY.ACCESSORY, quality: "绿", tags: ["饰品", "锦官"], sixDim: { 根骨: 1 }, desc: "锦官城金玉行的中档货，一块囫囵的羊脂玉钻个孔,不雕花只求个圆满。买的多是给小辈压岁的长辈,说玉能养人,戴住了骨头都结实些——真假不论,这份心思是真的。" },
   { name: "大理苍山剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝", tags: ["白族", "长剑"], effect: { forceFirst: true }, desc: "大理苍山下铁铺出的窄身长剑，剑格上錾着白族的雪花纹,轻快灵巧,是随梵衍那这一路流亡人带过来的家乡样式。用惯了藏刀汉剑的人初上手嫌它飘,使顺了才知道这份巧劲另有门道。" },
   { name: "白族扎染披肩", category: ITEM_CATEGORY.ARMOR, quality: "绿", tags: ["白族", "衣物"], desc: "大理白族妇人板蓝根染的披肩，蓝底上洇开一朵朵素白的花，说不上挡什么,风寒夜露倒是能遮一遮。异乡人裹着它,像把大理的天也带来了半片。" },
@@ -903,7 +903,6 @@ export function makeCatalogItem(entry) {
   }
   // 饰品/杂物没有攻防基准，价格用基准价（饰品的价值在 effect/sixDim，不体现在攻防倍率）
   if (out.buyPrice == null) out.buyPrice = price.buyPrice;
-  if (base.bonus != null) out.bonus = base.bonus;
   out.sellPrice = Math.max(1, Math.round(out.buyPrice / 2));
 
   // 特效（复用武学标志位，装备时叠到招式上；接线见 combat 层）

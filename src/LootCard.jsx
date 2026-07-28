@@ -1,3 +1,4 @@
+import { effectBrief } from "./itemEffectText.js";
 import React from "react";
 import { QUALITY_COLOR, CATEGORY_LABEL } from "./equipment.js";
 
@@ -127,8 +128,12 @@ export default function LootCard({ entry }) {
   if (!isSkill) {
     if (item.atk != null) statBits.push(["攻擊", item.atk]);
     if (item.def != null) statBits.push(["防禦", item.def]);
-    if (item.bonus != null) statBits.push(["加成", item.bonus]);
+    // 饰品没有攻防，它的战力全在 sixDim 与 effect 上——此前掉落卡只列 atk/def/bonus，
+    // 于是掉一件带「免控」「悟性+2」的饰品，卡片上只有一个毫无意义的「加成 3.3」。
+    for (const [k, v] of Object.entries(item.sixDim || {})) statBits.push([k, `+${v}`]);
     if (item.durability != null) statBits.push(["耐久", item.durability]);
+    const effTxt = effectBrief(item.effect, null);
+    if (effTxt) statBits.push(["特效", effTxt]);
   }
 
   return (

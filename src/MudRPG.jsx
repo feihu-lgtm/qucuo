@@ -17,6 +17,7 @@ import { GROUND_ITEMS, GROUND_ITEMS_INNER } from "./groundItems.js";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, npcAffectionLabel, reputationLabel } from "./mvu.js";
 import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats, effectiveSpecial } from "./equipment.js";
 import { effectiveMaxHp } from "./kungfu/qucuoKungfu.js";
+import { effectBrief } from "./itemEffectText.js";
 import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem, backfillInventoryFromCatalog } from "./items/catalog.js";
 // 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
@@ -1606,9 +1607,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           const bits = [];
           if (it.atk != null) bits.push(`攻 +${it.atk}`);
           if (it.def != null) bits.push(`防 +${it.def}`);
-          if (it.bonus != null) bits.push(`饰品加成 +${it.bonus}`);
           if (it.sixDim) bits.push(Object.entries(it.sixDim).map(([k, v]) => `${k} +${v}`).join(" "));
-          if (it.effect) bits.push(`特效：${Object.keys(it.effect).join("、")}`);
+          // 走 itemEffectText 那份唯一词典，别把 ignoreDefenseRatio 这种英文字段名打给玩家看
+          if (it.effect) { const t = effectBrief(it.effect, null); if (t) bits.push(`特效：${t}`); }
           return {
             name: it.name,
             quality: it.quality,
@@ -1669,7 +1670,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       const statBits = [];
       if (itemObj.atk != null) statBits.push(`攻击力${itemObj.atk}`);
       if (itemObj.def != null) statBits.push(`防御力${itemObj.def}`);
-      if (itemObj.bonus != null) statBits.push(`加成${itemObj.bonus}`);
+      // 饰品的战力在 sixDim/effect 上，鉴定 prompt 此前只给 AI 看 atk/def/bonus，
+      // 于是问一件饰品，AI 只知道它是「白档、加成0.3」——真正的词条一个都没看见。
+      if (itemObj.sixDim) statBits.push(Object.entries(itemObj.sixDim).map(([k, v]) => `${k}+${v}`).join("，"));
+      if (itemObj.effect) { const t = effectBrief(itemObj.effect, null); if (t) statBits.push(`特效：${t}`); }
       prompt += `，品质：${itemObj.quality}${statBits.length ? `，${statBits.join("，")}` : ""}${itemObj.desc ? `，已知描述：${itemObj.desc}` : ""}`;
     }
     const { text } = await callModel(apiCfg, sys, [{ role: "user", content: prompt }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000, callLabel: "查看端详" });

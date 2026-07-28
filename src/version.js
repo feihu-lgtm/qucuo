@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "饰品：bonus 从全项目删净，sixDim/effect 跟武器护甲同级显示",
+    time: "2026-07-29 19:50",
+    notes: [
+      "①【bonus 删干净，不是藏起来】上一轮只是不再打印它，字段还在。这轮从 CATEGORY_BASE、statsForQuality、computeEquippedStats（accessoryBonus 整项移除）、makeCatalogItem、inspectCache、开局预设道具，以及四处显示点全部清掉。catalog 里现在 0 件物品带 bonus。",
+      "②【真数据一直都在，只是没显示全】82 件饰品里 69 件有 sixDim、34 件有 effect——战力从来不在 bonus 上。但两处关键显示点**根本没列它们**：LootCard 掉落卡只列 atk/def/bonus/耐久，于是掉一件带「免控」「悟性+2」的饰品，卡片上只有一个毫无意义的「加成 3.3」；送给 AI 的鉴定 prompt 同样只给 atk/def/bonus，AI 看不见任何真词条，只能瞎编。两处都补上。",
+      "③【特效不再打印英文字段名】查看物品那条原来是 Object.keys(it.effect).join(\"、\")，直接把 ignoreDefenseRatio 这种键名甩给玩家。改走 itemEffectText 那份「唯一一份词典」的 effectBrief，输出「破防」「免控」这样的人话。",
+      "④【7 件白档小饰品补上真字段】牦牛骨扳指/菩提子手串/桃木平安牌/牛骨素圈/红绳桃核串/铜钱压襟/冷水鱼骨坠 原本只靠 bonus 撑场面，删掉后就一无所有了。各补一点白档量级的 sixDim（体魄/悟性/气运/智谋/身法各+1），保证戴上去真有事发生——武器有 atk、护甲有 def，饰品也该有它自己的。",
+      "⑤【新增 4 条守卫】bonus 不得再出现在 catalog 里；每件饰品至少有 sixDim 或 effect 之一（不能一无所有）；饰品的 sixDim 属性名必须是合法七维；饰品的 effect 标志位必须能被词典翻成人话（翻不出来界面上就是空白）。",
+      "验证：npm run verify 通过（vitest 602/602 + pages 构建）。",
+    ],
+  },
+  {
     codename: "订正订正：乡外两城被我插进了乡的版图里，退到乡界之外",
     time: "2026-07-29 19:05",
     notes: [

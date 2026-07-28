@@ -133,7 +133,13 @@ export function scaledValue(base, quality) {
 export const CATEGORY_BASE = {
   weapon: { atk: 7, durability: 20 },   // 白7 → 红100（见 WEAPON_ATK_RATIO）
   armor: { def: 5, durability: 25 },    // 白5 → 红80（见 ARMOR_DEF_RATIO）
-  accessory: { bonus: 0.3, durability: 25 }, // bonus 是一个通用的小数值加成，具体挂靠哪个属性由 desc/特殊状态文字体现
+  // 饰品不给攻防也不再给那个 bonus 小数——它的战力全在 sixDim 与 effect 上，
+  // 跟武器的 atk、护甲的 def 是平级的真字段，界面照样显示。
+  // 【bonus 为什么删干净】它是白0.3→红6 的一串小数，界面上打印成「+3.3」，
+  // 但战斗里**没有任何一处读它**：伤害公式、防御公式、七维都不碰。
+  // 本文件原注释自己也承认「具体挂靠哪个属性由 desc/特殊状态文字体现」——
+  // 也就是说它从设计上就只是风味，却长了一副战力数值的样子骗了玩家很久。
+  accessory: { durability: 25 },
   misc: {},
 };
 
@@ -155,10 +161,6 @@ export function statsForQuality(category, quality) {
   if (base.atk != null) stats.atk = Math.round(base.atk * Math.pow(WEAPON_ATK_RATIO, i));
   if (base.def != null) stats.def = Math.round(base.def * Math.pow(ARMOR_DEF_RATIO, i));
   if (base.durability != null) stats.durability = scaledValue(base.durability, quality);
-  if (base.bonus != null) {
-    // bonus 保留一位小数，因为基准值本身很小（0.3 起步），取整会导致低品质归零
-    stats.bonus = Math.round(base.bonus * Math.pow(QUALITY_RATIO, i) * 100) / 100;
-  }
   return stats;
 }
 
@@ -186,7 +188,6 @@ export function computeEquippedStats(inv) {
   return {
     totalAtk: weapons.reduce((sum, i) => sum + (i.atk || 0), 0),
     totalDef: armors.reduce((sum, i) => sum + (i.def || 0), 0),
-    accessoryBonus: accessories.reduce((sum, i) => sum + (i.bonus || 0), 0),
     equipEffects,
     sixDimBonus,
   };
