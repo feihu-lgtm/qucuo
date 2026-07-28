@@ -223,3 +223,43 @@ describe("食品的 consumable 字段不能漏（漏了就是吃下去没反应�
     expect(bad, `sixDimTemp 里出现了非七维属性名（写错就是静默失效）：\n  ${bad.join("\n  ")}`).toEqual([]);
   });
 });
+
+// ── 游走NPC不得落进上锁房间 ────────────────────────────────────────────────
+// 「乞丐与老7滚勿入」——溪边小屋篱笆上钉着的木牌是契诃夫之枪，游戏答应过他进不来。
+// 但游走池NPC的落点是从 getInnerRoomNames（全集）里随机抽的，玩家自己那间上锁的
+// 小屋也在里头，于是老七天天在玩家家里。四栋安全屋全中招。
+import { getPublicInnerRoomNames, getInnerRoomNames } from "./innerMap.js";
+import { SAFE_HOUSES } from "./safeHouse.js";
+
+describe("游走NPC的落点只能是公共房间", () => {
+  it("公共房间列表剔掉了所有带 unlockCondition 的房间", () => {
+    for (const [d, m] of Object.entries(INNER_MAP)) {
+      const pub = new Set(getPublicInnerRoomNames(d));
+      for (const [name, room] of Object.entries(m.rooms || {})) {
+        if (room.unlockCondition) {
+          expect(pub.has(name), `「${d}·${name}」上着锁却还在公共落点池里`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("四栋安全屋一间都不在落点池里（玩家的私宅）", () => {
+    for (const house of SAFE_HOUSES) {
+      const d = house.district || house.location;
+      if (!d || !INNER_MAP[d]) continue;
+      const pub = getPublicInnerRoomNames(d);
+      expect(pub, `安全屋「${house.room || house.name}」仍可能被随机丢进游走NPC`).not.toContain(house.room || house.name);
+    }
+  });
+
+  it("溪边小屋（老七那块牌子）确实被排除", () => {
+    expect(getPublicInnerRoomNames("鱼定村")).not.toContain("溪边小屋");
+    expect(getInnerRoomNames("鱼定村")).toContain("溪边小屋"); // 全集里还在，只是不当落点
+  });
+
+  it("公共房间不为空——排除得太狠会让游走NPC无处可去", () => {
+    for (const d of Object.keys(INNER_MAP)) {
+      expect(getPublicInnerRoomNames(d).length, `「${d}」把房间全排除了，游走NPC无处落脚`).toBeGreaterThan(0);
+    }
+  });
+});

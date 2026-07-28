@@ -1020,6 +1020,21 @@ export function getInnerRoomNames(districtName) {
   return Object.keys(INNER_MAP[districtName]?.rooms || {});
 }
 
+// 只列**公共**房间：把带 unlockCondition 的房间剔掉。
+//
+// 【为什么需要它·「乞丐与老7滚勿入」那块牌子】游走池NPC（npcPool）每天按据点
+// 随机抽一个内层房间当落点，抽的是 getInnerRoomNames 的全集——包括玩家自己那间
+// 上了锁的溪边小屋。于是乞丐老七大摇大摆地出现在玩家家里，而篱笆上明明钉着
+// 「乞丐与老7滚勿入」的木牌：牌子是契诃夫之枪，游戏答应过他进不来。
+// 同理还有白塔地宫、荤食地下室、雪山崖底、贡措海密室、欢喜堂——上了锁的地方
+// 本来就不该有闲人随机溜达进去。四栋安全屋全在这 11 间里，一并解决。
+// 注意这不影响**常驻NPC**：驻场人有 residentNpcName 绑定房间，走的是另一条路，
+// 该在锁房里的（比如别院里的人）照旧在。
+export function getPublicInnerRoomNames(districtName) {
+  const rooms = INNER_MAP[districtName]?.rooms || {};
+  return Object.keys(rooms).filter(n => !rooms[n].unlockCondition);
+}
+
 // 检查某据点内某房间的某方向是否有效出口，返回目的房间名或 null。
 // 注意：这里只做纯查表，不做 unlockCondition 判定——跟外层 resolveExit 保持
 // 同样的职责划分（查表 vs 业务判断分离），解锁判定交给下面的

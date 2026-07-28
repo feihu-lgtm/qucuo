@@ -27,7 +27,7 @@ import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import CodexScreen from "./CodexScreen.jsx";
 import BugReportModal from "./BugReportModal.jsx";
 import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
-import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom, isInnerExitUnlocked } from "./innerMap.js";
+import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getPublicInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom, isInnerExitUnlocked } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
 import { loadPortraits, setPortrait, removePortrait, fileToDataUrl, inferActivePortraitTarget, SNOW_LEOPARD_FORMS, PEARL_FORMS, getSnowLeopardForm, setSnowLeopardForm, snowLeopardPortraitUrl, getPearlForm, setPearlForm, pearlPortraitUrl, getCompanionForms, getCompanionForm, setCompanionForm, companionPortraitUrl } from "./portraits.js";
 import PortraitManager from "./PortraitManager.jsx";
@@ -963,7 +963,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // seededRand(dayIdx, 据点+人名) 保证同一人当天落点稳定、跨天才变，避免进出
     // 房间时人物乱跳。驻场NPC（residentNpcs，走 residentNpcName 绑定）不分配。
     if (hasInnerMap(room.name)) {
-      const rooms = getInnerRoomNames(room.name);
+      // 用公共房间列表而不是全集：游走NPC不该被随机丢进上锁的房间。
+      // 玩家家门口那块「乞丐与老7滚勿入」的牌子此前是空头支票——老七照样天天在屋里。
+      const rooms = getPublicInnerRoomNames(room.name);
       const residentSet = new Set(residentNpcs.map(n => n.name));
       for (const n of toInject) {
         if (residentSet.has(n.name)) continue; // 驻场人不分配落点
