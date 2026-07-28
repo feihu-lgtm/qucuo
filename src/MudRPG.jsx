@@ -4482,8 +4482,21 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   }
 
   if (showCharCreate) {
-    return <CharacterCreate onConfirm={({ name, gender }) => {
-      setChar(c => ({ ...c, name, gender }));
+    return <CharacterCreate onConfirm={({ name, gender, fromCard }) => {
+      setChar(c => {
+        const next = { ...c, name, gender };
+        if (fromCard) {
+          // 顺序要紧：七维先落，气血才能按体魄算对。反了就会用旧体魄算出错的上限。
+          if (fromCard.special) next.special = { ...(c.special || {}), ...fromCard.special };
+          if (fromCard.bodyProfile) next.bodyProfile = { ...(c.bodyProfile || {}), ...fromCard.bodyProfile };
+          const maxHp = hpFromNeigong(next.neigong ?? 5, next.special?.体魄 ?? 5);
+          next.hp = [maxHp, maxHp];
+        }
+        return next;
+      });
+      if (fromCard?.persona) {
+        addLog([{ t: "sys", text: `  （已按入册的角色卡定下体貌与天赋）` }]);
+      }
       setShowCharCreate(false);
     }} />;
   }

@@ -13,7 +13,7 @@ import { CURRENT_VERSION } from "./version.js";
 
 const theme = ZONE_THEMES.village; // 开场定调：鱼定村的暖黄烟火气
 
-export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQuickBattle, onExit }) {
+export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onOpenCardImport, onQuickBattle, onExit }) {
   const [hasAutoSave, setHasAutoSave] = useState(false);
   const [showBugReport, setShowBugReport] = useState(false); // 意见信箱/上报bug
   const [showVersionHistory, setShowVersionHistory] = useState(false); // 版本日志（轻量按钮，跟内页共用同一份VersionHistoryPanel + 同一份version.js数据源）
@@ -50,6 +50,8 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onQui
       always: hasAnySave,
     },
     { key: "quickbattle", label: "斗蛐蛐", sub: "快速切磋 · 自选阵容", action: onQuickBattle, always: true },
+    // 入册放在开局之前：导入的卡要当主角，只能在角色还没创建的时候用。
+    { key: "cards", label: "角色入册", sub: "导入外部角色卡", action: onOpenCardImport, always: true },
     { key: "settings", label: "设置", sub: "API · 显示 · 存档管理", action: onOpenSettings, always: true },
     { key: "exit", label: "退出", sub: "合上此卷", action: onExit, always: true },
   ];

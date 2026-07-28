@@ -3,6 +3,7 @@
 // 性别写入 char.gender（后续注入每轮 user prompt）。
 import React, { useState } from "react";
 import { ZONE_THEMES } from "./theme.js";
+import { getPendingPlayerCard, clearPendingPlayerCard } from "./cards/importedRegistry.js";
 
 const theme = ZONE_THEMES.village;
 const BASE = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/";
@@ -14,7 +15,11 @@ const GENDERS = [
 ];
 
 export default function CharacterCreate({ onConfirm }) {
-  const [name, setName] = useState("");
+  // 待用主角卡：开始界面入册时若勾了「这张卡当我自己」，卡会存在这里等着。
+  // 开局前是唯一能用它的时机——角色一旦创建，再导入就是覆盖了。
+  const [pending, setPending] = useState(() => getPendingPlayerCard());
+  const [useCard, setUseCard] = useState(() => !!getPendingPlayerCard());
+  const [name, setName] = useState(() => getPendingPlayerCard()?.name || "");
   const [gender, setGender] = useState("男");
   const [customGender, setCustomGender] = useState("");
 
@@ -23,8 +28,17 @@ export default function CharacterCreate({ onConfirm }) {
 
   const submit = () => {
     if (!canConfirm) return;
-    onConfirm({ name: name.trim(), gender: finalGender });
+    // 用卡时把体貌与七维一并交出去，由 MudRPG 写进 char 并重算气血。
+    // 不管用不用，这张待用卡都要清掉——它是一次性的，留着会在下次新开局时
+    // 莫名其妙又冒出来。
+    const fromCard = useCard && pending ? pending : null;
+    clearPendingPlayerCard();
+    onConfirm({ name: name.trim(), gender: finalGender, fromCard });
   };
+
+  const filledCount = pending
+    ? Object.values(pending.bodyProfile || {}).filter(v => (v || "").trim()).length
+    : 0;
 
   return (
     <div style={styles.container}>
@@ -32,6 +46,39 @@ export default function CharacterCreate({ onConfirm }) {
       <div style={styles.card}>
         <div style={styles.title}>初入江湖</div>
         <div style={styles.sub}>—— 报上名号，方好行走曲措乡 ——</div>
+
+        {pending && (
+          <div style={styles.cardBox}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 15 }}>🧾</span>
+              <span style={{ color: "#f0e0c0", fontSize: 13, flex: 1 }}>
+                有一张入册待用的角色卡
+              </span>
+              <span
+                onClick={() => { clearPendingPlayerCard(); setPending(null); setUseCard(false); }}
+                title="弃用这张卡，从头自己填"
+                style={{ cursor: "pointer", fontSize: 11, color: "#8a8270" }}
+              >弃用</span>
+            </div>
+            <div style={{ fontSize: 11.5, color: "#c8bfa0", lineHeight: 1.8 }}>
+              {pending.name ? `名讳「${pending.name}」 · ` : ""}体貌 {filledCount}/7 项
+              {pending.special ? ` · 七维已录` : ""}
+            </div>
+            <div
+              onClick={() => {
+                const next = !useCard;
+                setUseCard(next);
+                if (next && pending.name) setName(pending.name);
+              }}
+              style={{
+                marginTop: 8, cursor: "pointer", fontSize: 12,
+                color: useCard ? theme.accent : "#8a8270",
+              }}
+            >
+              {useCard ? "◉" : "○"} 用这张卡的设定开局
+            </div>
+          </div>
+        )}
 
         <label style={styles.field}>
           <span style={styles.fieldLabel}>少侠名讳</span>
@@ -107,6 +154,11 @@ const styles = {
   sub: {
     color: theme.accent, fontSize: "12px", textAlign: "center",
     letterSpacing: "2px", opacity: 0.85, marginBottom: 30,
+  },
+  cardBox: {
+    marginBottom: 20, padding: "12px 14px", borderRadius: 6,
+    background: "rgba(212,168,83,.08)",
+    border: `1px solid ${theme.accent}55`,
   },
   field: { display: "block", marginBottom: 20 },
   fieldLabel: {

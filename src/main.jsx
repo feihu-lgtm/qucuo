@@ -5,6 +5,10 @@ import StartScreen from "./StartScreen.jsx";
 import QuickBattleScreen from "./quickBattle/QuickBattleScreen.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { loadAutoSave, init as initSaves } from "./saves.js";
+import CardImportScreen from "./CardImportScreen.jsx";
+import { loadConfig } from "./apiConfig.js";
+import * as importedRegistry from "./cards/importedRegistry.js";
+import { getZoneTheme } from "./theme.js";
 
 // 应用外壳：先展示开始界面，"开始"或"加载存档"之后才挂载真正的游戏主体 MudRPG。
 // MudRPG 内部已有自己的设置面板逻辑，这里的"设置"入口复用同一套面板，
@@ -52,9 +56,30 @@ function App() {
   const [openSettingsOnBoot, setOpenSettingsOnBoot] = useState(false);
   // 斗蛐蛐是脱离存档的独立沙盒：不经过 MudRPG，直接在开始界面之上挂一层。
   const [inQuickBattle, setInQuickBattle] = useState(false);
+  // 角色入册挂在开始界面这一层，而不是 MudRPG 里。
+  // 【为什么必须在这一层】导入的卡要当主角，只能在角色创建之前用；而 MudRPG 一挂载
+  // 就走 showCharCreate 的 early return（设置面板和 GlobalOverlays 都在那之后），
+  // 从开始界面点设置压根到不了浮层那一层。所以开局前的入册独立挂在 App 上。
+  const [inCardImport, setInCardImport] = useState(false);
 
   if (inQuickBattle) {
     return <QuickBattleScreen onExit={() => setInQuickBattle(false)} />;
+  }
+
+  if (inCardImport) {
+    // 开局前没有 char，所以 playerName 只能给个通称；导入的 NPC 直接进全局注册表
+    // （它独立于存档，开哪一局都在），导入的主角存成"待用卡"，由 CharacterCreate
+    // 在创建角色时问玩家要不要用。
+    return (
+      <CardImportScreen
+        apiCfg={loadConfig()}
+        playerName="少侠"
+        zoneTheme={getZoneTheme("鱼定村", false)}
+        onClose={() => setInCardImport(false)}
+        onImportNpcs={(npcs) => { importedRegistry.registerImported(npcs, {}); }}
+        onImportPlayer={(player) => { importedRegistry.setPendingPlayerCard(player); }}
+      />
+    );
   }
 
   if (!booted) {
@@ -77,6 +102,9 @@ function App() {
           setPendingLoadSlotId(null);
           setOpenSettingsOnBoot(true);
           setBooted(true);
+        }}
+        onOpenCardImport={() => {
+          importedRegistry.init().then(() => setInCardImport(true));
         }}
         onQuickBattle={() => setInQuickBattle(true)}
         onExit={() => {

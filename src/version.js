@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "入册入口挂错了层——开局前根本到不了，补进开始界面并接上待用主角卡",
+    time: "2026-07-30 06:10",
+    notes: [
+      "反馈：入册按钮既不在设置里，也不在开始界面。查下来是入口挂错了层，而且错得很基础。",
+      "①【根因·MudRPG 在 showCharCreate 处就 return 了】入册界面原本挂在 GlobalOverlays 里，而 GlobalOverlays 和游戏内那个设置面板都在主界面的 return 之后。MudRPG 的渲染顺序是：`if (showCharCreate) return <CharacterCreate/>` → `if (showOpening) return <OpeningSequence/>` → 才到主界面。新开局时 showCharCreate 为真，函数在那一行就返回了，后面的设置面板与全部浮层压根不参与渲染。所以从开始界面点「设置」（它做的是挂载 MudRPG + showSettings=true），玩家看到的是角色创建页，设置面板根本没出现——不是卡片没加，是那一整层都没渲染。",
+      "②【更根本的错·我把它放在了错误的时机】导入的卡要当主角，只能在角色创建之前用；开局后再导就是覆盖。而我把入口全放在游戏内（顶栏＋设置），等于把一个开局前的功能放在开局后。开始界面 StartScreen 在 main.jsx 里、在 MudRPG 之外，我一开始压根没看那一层。",
+      "③【改法·开局前的入册独立挂在 App 层】StartScreen 的菜单加「角色入册」（排在斗蛐蛐与设置之间），main.jsx 直接渲染 CardImportScreen，不经过 MudRPG。apiCfg 走 loadConfig() 从 localStorage 读，开局前没有 char 所以 playerName 给通称「少侠」。",
+      "④【待用主角卡】开始界面没有 setChar，所以导入的主角存成一张「待用卡」（localStorage，因为 CharacterCreate 是同步渲染读不了异步的 IDB，而这张卡只有名字＋12 项体貌＋七维，几 KB）。CharacterCreate 挂载时读到它就多出一块提示：「有一张入册待用的角色卡 · 名讳X · 体貌N/7」，可选「用这张卡的设定开局」，也可「弃用」。确认时把 fromCard 一并交给 onConfirm，由 MudRPG 写进 char 并按新体魄重算气血（顺序要紧：七维先落，气血才算得对）。不管用不用，提交时这张待用卡都会清掉——它是一次性的，留着下次新开局会莫名冒出来。",
+      "⑤【游戏内的两个入口保留】顶栏「🧾 入册」与设置主页第六张卡片照旧，用于开局后追加 NPC。导入的 NPC 进的是独立于存档的全局注册表，所以开局前后导都一样生效；只有「当我自己」这件事有时机之分。",
+      "验证：esbuild 过了 5 个改动文件；docsTree 三条文件系统守卫本地模拟全绿（登记 0 缺、幽灵 0 条、声明 210 = 实际 210）。这轮没新增文件，也没引入任何图片路径。",
+    ],
+  },
+  {
     codename: "更正上一条：我说「两条守卫已核过」，其实是三条，漏的那条把 CI 弄红了",
     time: "2026-07-30 05:40",
     notes: [
