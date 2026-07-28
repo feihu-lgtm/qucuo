@@ -3,6 +3,21 @@ import { makeItem, ITEM_CATEGORY } from "../equipment.js";
 // 所有固定商店货品清单。key 对应 qucuoBuildings.js 的 shopKey 字段。
 // 货品价格由 makeItem → priceForQuality 统一计算，卖出 = 买价 / 2。
 export const QUCUO_SHOPS = {
+  // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
+  // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
+  // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。
+  雅纸铺: {
+    shopName: "雅纸铺",
+    items: [
+      { name: "竹青宣", category: ITEM_CATEGORY.MISC, quality: "蓝" },
+      { name: "青城符箓袋", category: ITEM_CATEGORY.ACCESSORY, quality: "绿" },
+      { name: "离堆水则牌", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝" },
+      { name: "青城练气服", category: ITEM_CATEGORY.ARMOR, quality: "绿" },
+      { name: "青城道袍", category: ITEM_CATEGORY.ARMOR, quality: "蓝" },
+      { name: "十三针囊", category: ITEM_CATEGORY.WEAPON, quality: "蓝" },
+      { name: "熊山花椒", category: ITEM_CATEGORY.MISC, quality: "绿" },
+    ],
+  },
   // ── 原有：兼容杂货商人 NPC ──
   杂货商人: {
     shopName: "鱼定村杂货铺",

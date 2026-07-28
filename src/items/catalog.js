@@ -639,6 +639,17 @@ export const SUNDRIES = [
   { name: "青城老酒", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["酒", "雅江特产"], consumable: { hpRestore: 0.1, energyRestore: 1 }, desc: "青城山后山泉酿的米酒，甜润不烈。道士们晚课后喝一碗——一清道长不喝，松鹤道长喝三碗。" },
   { name: "竹叶青蛇胆", category: ITEM_CATEGORY.MISC, quality: "蓝", tags: ["药材", "解毒"], consumable: { hpRestore: 0.12 }, desc: "竹海里竹叶青蛇的胆，玉真子用来配解毒散。取胆不杀蛇——他捏着蛇头挤出来，蛇吐着信子走了，他也走了。" },
   { name: "熊猫笋", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["食材", "兽食"], consumable: { hpRestore: 0.06 }, desc: "熊猫啃剩的冷箭竹笋尖，嫩得能掐出水。护谷弟子说别捡——「那是它挑剩下的，你捡了它下次不来了。」但确实好吃。" },
+  // ── 青城装备（道门·雅江）──
+  // 设计稿只写了食品/武学/招式/伙伴，没有装备章节，而 catalog 里护甲一栏只有僧袍与
+  // 袈裟（佛门），道士无衣可穿。这几件按「具名物优先用 catalog 里有主的（掉出来有
+  // 来历）」补上，主人就是三清殿那几位，effect/sixDim 按同档具名物的既有惯例给。
+  { name:"青竹杖", category:ITEM_CATEGORY.WEAPON, quality:"紫", tags:["武器","杖","门派"], effect:{ onCounterSuccessDamageRatio: 0.5, onCounterSuccessEnergyGain: 2 }, sixDim:{悟性:2}, desc:"一清道长手里那根杖，通体青竹，握处已被磨成琥珀色。他很少拿它当兵器——点地、指路、敲不听话的弟子。真要动手时才发现杖比剑重。" },
+  { name:"鹤鸣剑", category:ITEM_CATEGORY.WEAPON, quality:"紫", tags:["武器","剑","门派"], effect:{ forceFirst: true }, sixDim:{身法:1}, desc:"松鹤道长的剑，剑脊起一道细棱，出鞘时空气被劈开的声音像鹤唳。青城剑法讲绵柔，这柄剑偏偏锋利得不讲道理——跟它主人一个脾气。" },
+  { name:"十三针囊", category:ITEM_CATEGORY.WEAPON, quality:"蓝", tags:["武器","暗器","医"], effect:{ ignoreDefenseRatio: 0.3 }, sixDim:{悟性:1}, desc:"玉真子的针囊，十三支长短不一的钢针插在羊皮卷里。他管这叫针不叫暗器——「针是治病的，只是有些病长在别人身上。」" },
+  { name:"青城道袍", category:ITEM_CATEGORY.ARMOR, quality:"蓝", tags:["护具","道袍","门派"], effect:{ immuneControl: true }, sixDim:{悟性:1}, desc:"三清殿道士的常服，靛青粗布，交领右衽，袖口收得极窄——青城派讲究袖不带风，免得剑意被袖子带偏。下摆有一圈竹叶暗纹。" },
+  { name:"青城练气服", category:ITEM_CATEGORY.ARMOR, quality:"绿", tags:["护具","门派"], sixDim:{根骨:1}, desc:"剑坪上练剑的弟子穿的短打，比道袍利索，洗得发白。松鹤道长说穿这个摔了不心疼——「道袍摔破了要自己缝，缝一晚上，比摔疼。」" },
+  { name:"离堆水则牌", category:ITEM_CATEGORY.ACCESSORY, quality:"蓝", tags:["饰品","治水","雅江"], effect:{ energyRestore: 1 }, sixDim:{智谋:1}, desc:"宝瓶口水则石的拓片刻成的小木牌，上面是「深淘滩、低作堰」六个字。雅江人下水前都摸一摸——不是求平安，是提醒自己水有水的道理。" },
+  { name:"青城符箓袋", category:ITEM_CATEGORY.ACCESSORY, quality:"绿", tags:["饰品","符箓","门派"], sixDim:{气运:1}, desc:"竹青宣写的符折成三角，装在靛蓝布袋里。玉真子说符本身不灵——「灵的是写符那半个时辰你什么都没想。」" },
 ];
 
 // ---------------------------------------------------------------------------

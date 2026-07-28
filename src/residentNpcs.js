@@ -637,6 +637,121 @@ export const RESIDENT_NPCS = {
       ],
     },
   ],
+  // ── 雅江（青城派·雨城竹海）──
+  // 【为什么这一整块是补上来的】雅江据点落地时，外层节点、内层14房、6建筑、青城武学
+  // 4门、NPC专属招式、特产食品、主题配色、地上陈设物全都写了，**只有这份常驻NPC表
+  // 被跳过**。后果是整座城一个人都没有：
+  //   · innerMap.js 里七个房间都写好了 residentNpcName（一清道长/松鹤道长/玉真子/
+  //     老道士/青衣楼老板娘/骡马夫/护谷弟子），但那个字段只管「这人该显示在哪间房」，
+  //     不负责把人加载出来（见本文件开头对两者分工的说明）——房间指名道姓地要人，
+  //     这边却没人可给。
+  //   · npcSignatureMoves.js 已经给一清道长/松鹤道长/玉真子写好了四招专属招式，
+  //     全是挂在空气上的死数据。
+  //   · 物品描述里点名了青衣楼老板娘（熊山花椒断货）、玉真子（竹叶青蛇胆）、
+  //     一清道长与松鹤道长（青城老酒）、护谷弟子（熊猫笋）——按契诃夫之枪的铁律，
+  //     被点名的人必须存在，否则玩家问起来只能靠AI现编。
+  // levelCap 取 npcSignatureMoves.js 分节注释里标的档位（一清5/松鹤4/玉真子3），
+  // 其余四位按身份给低档。carry 一律≥7件、含武器/护甲/饰品各≥1，品质不超本档。
+  雅江: [
+    {
+      name: "一清道长", id: "resident_yiqing", levelCap: 5,
+      brief: "青城派掌门，白眉，一根青竹杖",
+      personality: "话极少且慢，后发制人，从不先出手；弟子犯错他只看一眼，被看的人自己就认了",
+      carry: [
+        { name: "青竹杖", category: "weapon", quality: "紫" },
+        { name: "青城道袍", category: "armor", quality: "蓝" },
+        { name: "离堆水则牌", category: "accessory", quality: "蓝" },
+        { name: "青城符箓袋", category: "accessory", quality: "绿" },
+        { name: "青城老酒", category: "misc", quality: "绿" },
+        { name: "竹青宣", category: "misc", quality: "蓝" },
+        { name: "薄荷醒神叶", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "松鹤道长", id: "resident_songhe", levelCap: 4,
+      brief: "青城派剑坪教习，性烈如火",
+      personality: "嗓门大脾气急，一剑把弟子拍翻再拉起来，接着问「知道为什么摔吗」；骂得凶护得也凶",
+      carry: [
+        { name: "鹤鸣剑", category: "weapon", quality: "紫" },
+        { name: "青城练气服", category: "armor", quality: "绿" },
+        { name: "青城道袍", category: "armor", quality: "蓝" },
+        { name: "青城符箓袋", category: "accessory", quality: "绿" },
+        { name: "青城老酒", category: "misc", quality: "绿" },
+        { name: "熊山续骨膏", category: "misc", quality: "绿" },
+        { name: "止血散", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "玉真子", id: "resident_yuzhenzi", levelCap: 3,
+      brief: "青城派药圃主事，管剑叫针",
+      personality: "斯文慢条斯理，给药不给方子；出手比松鹤还快，但从不说自己快",
+      carry: [
+        { name: "十三针囊", category: "weapon", quality: "蓝" },
+        { name: "青城道袍", category: "armor", quality: "蓝" },
+        { name: "青城符箓袋", category: "accessory", quality: "绿" },
+        { name: "竹叶青蛇胆", category: "misc", quality: "蓝" },
+        { name: "熊山参片", category: "misc", quality: "绿" },
+        { name: "大理白药", category: "misc", quality: "绿" },
+        { name: "蛇药", category: "misc", quality: "绿" },
+      ],
+    },
+    {
+      name: "老道士", id: "resident_laodaoshi", levelCap: 1,
+      brief: "伏龙观看门的老道，扫了四十年台阶",
+      personality: "耳背，答话总慢半拍且经常答错，但李冰治水的碑文能一字不差背下来",
+      carry: [
+        { name: "青城练气服", category: "armor", quality: "绿" },
+        { name: "狼骨匕", category: "weapon", quality: "绿" },
+        { name: "桃木平安牌", category: "accessory", quality: "白" },
+        { name: "青城符箓袋", category: "accessory", quality: "绿" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+        { name: "酥油茶", category: "misc", quality: "白" },
+        { name: "薄荷醒神叶", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "青衣楼老板娘", id: "resident_qingyilou_laobanniang", levelCap: 1,
+      brief: "江门街冷锅鱼老字号的当家",
+      personality: "嘴快手更快，一边骂人一边给你添菜；最近为花椒断货急得在街上来回走",
+      carry: [
+        { name: "点苍茶刀", category: "weapon", quality: "绿" },
+        { name: "百褶皮围", category: "armor", quality: "白" },
+        { name: "铜钱压襟", category: "accessory", quality: "白" },
+        { name: "冷锅鱼", category: "misc", quality: "绿" },
+        { name: "熊山花椒", category: "misc", quality: "绿" },
+        { name: "青城老酒", category: "misc", quality: "绿" },
+        { name: "甜奶茶", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "骡马夫", id: "resident_luomafu", levelCap: 0,
+      brief: "西城门驿站赶骡子的",
+      personality: "话密，一开口就是路上见闻，真假掺着说；给钱就带路，不给钱也说三句",
+      carry: [
+        { name: "市集杀猪刀", category: "weapon", quality: "白" },
+        { name: "马帮油布斗篷", category: "armor", quality: "白" },
+        { name: "脚夫护肩", category: "armor", quality: "白" },
+        { name: "牦牛骨扳指", category: "accessory", quality: "白" },
+        { name: "青稞酒", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+        { name: "酥油炒面", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "护谷弟子", id: "resident_huguidizi", levelCap: 2,
+      brief: "熊猫谷值守的青城弟子",
+      personality: "见人先讲规矩：别喂、别追、别捡它挑剩的笋；讲完自己蹲下来看熊猫看半个时辰",
+      carry: [
+        { name: "青城练气服", category: "armor", quality: "绿" },
+        { name: "松纹剑", category: "weapon", quality: "蓝" },
+        { name: "青城符箓袋", category: "accessory", quality: "绿" },
+        { name: "熊猫笋", category: "misc", quality: "白" },
+        { name: "竹叶青蛇胆", category: "misc", quality: "蓝" },
+        { name: "金疮药", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+  ],
   锦官城: [
     {
       name: "柳青鸢", id: "resident_liuqingyuan", levelCap: 5,
