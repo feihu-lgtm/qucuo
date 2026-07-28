@@ -52,6 +52,10 @@ export const BUILDINGS_BY_LOCATION = {
   // ── 鱼定村（7 种，枢纽村） ──
   鱼定村: [
     {
+      id: "pigeon_coop_xibian", name: "鸽子笼", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 2,
+      desc: "溪边小屋屋檐下钉着的一只竹编鸽笼，两只灰鸽咕咕地叫，脚环上刻着编号。原先它只是家园面板里的一个图标，现在挂回屋檐底下——站在院子里才够得着。",
+    },
+    {
       id: "inn_yiding", name: "歇马居", type: BUILDING_TYPE.INN, innPrice: 5,
       desc: "三曲交汇的老客栈，门匾褪色，炉火常年不灭，商旅猎人惯于落脚。",
     },

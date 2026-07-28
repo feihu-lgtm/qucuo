@@ -72,36 +72,93 @@ export const PLANT_SLOTS = [
   { id: "桂花", growTime: 5, yield: "桂花", note: "秋天才开，但窖里恒温，五日可得。" },
 ];
 
+// ── 设施按房间分布 ────────────────────────────────────────────────────────
+// 【为什么加这一层】四栋家园原本各是**一间**大房间，五种设施全塞在顶栏🏠那个
+// 总面板里当按钮点——房间描述里写着「灶台后头一个半地下的石窖」，玩家却只能
+// 在面板上点一个「🍶 酒窖」图标，走不进去。现在四栋都拆成了真房间（起居室/
+// 灶房/菜园子/书房/主卧…），设施就该跟着房间走：你站在灶房才能开火与下窖，
+// 站在菜园子才能种地，而不是在院子里隔空点按钮。
+// 键是**内层房间名**，值是该房间能用的设施 id（对应上面 features 里的 id）。
+// 房间名全项目唯一，所以这张表可以直接按房间名查。
+const FEATURES_BY_ROOM = {
+  // 溪边小屋（鱼定村）：院子本身没有面板设施——鸽笼已独立成建筑走左栏建筑入口。
+  // 显式登记成空，免得落到下面 direct 的兜底分支、把整栋五样又全列出来。
+  溪边小屋: { house: "溪边小屋", ids: [] },
+  起居室: { house: "溪边小屋", ids: ["chest"] },
+  灶房: { house: "溪边小屋", ids: ["cooking", "wine"] },
+  菜园子: { house: "溪边小屋", ids: ["garden"] },
+  // 弟子别院（雪山派）：院里练功、东厢存物、西厢读书抚琴
+  弟子别院: { house: "弟子别院", ids: ["training", "garden"] },
+  东厢卧房: { house: "弟子别院", ids: ["chest"] },
+  西厢书房: { house: "弟子别院", ids: ["study", "guqin"] },
+  // 山间别墅（天都镇）：院里松院、一楼壁炉与厨房、二楼衣柜与望远镜
+  山间别墅: { house: "山间别墅", ids: ["garden"] },
+  一楼客厅: { house: "山间别墅", ids: ["fireplace", "cooking"] },
+  二楼主卧: { house: "山间别墅", ids: ["chest", "telescope"] },
+  // 蜀王庄（锦官城）：倒座房厨房在一进、佛堂在正堂、书房存物读书、后院种植
+  蜀王庄: { house: "蜀王庄", ids: ["cooking"] },
+  正堂佛堂: { house: "蜀王庄", ids: ["meditation"] },
+  后院书房: { house: "蜀王庄", ids: ["chest", "library"] },
+  银杏后院: { house: "蜀王庄", ids: ["garden"] },
+};
+
+// 传任意一间家园房间名，返回「这间屋子能干什么」。
+// 返回体沿用原来的形状（label/district/flavor/features），只是 features 收窄成
+// 本房间的那几样，所以 HomesteadPanel 与顶栏🏠的判断都不用改。
+// house 字段是新加的：告诉调用方这间属于哪栋（存物/酿酒/种植的存档键仍按栋走，
+// 不按房间走——一栋人家只有一只箱子，不该因为换了间屋就看见不同的东西）。
 export function getHomestead(roomName) {
-  return HOMESTEAD_FEATURES[roomName] || null;
+  const direct = HOMESTEAD_FEATURES[roomName];
+  const mapped = FEATURES_BY_ROOM[roomName];
+  if (!mapped) {
+    // 不在分布表里：要么不是家园房间，要么是老存档里那间没拆的大屋，原样返回
+    return direct || null;
+  }
+  const house = HOMESTEAD_FEATURES[mapped.house];
+  if (!house) return null;
+  const features = house.features.filter(f => mapped.ids.includes(f.id));
+  if (!features.length) return null;
+  return { ...house, house: mapped.house, features };
+}
+
+// 存档键一律按「栋」而不是按「房间」：一栋人家只有一只箱子、一个酒窖、一畦地，
+// 站在起居室和站在灶房看见的该是同一批东西。下面几个 load/save 都先归一到栋名。
+export function homesteadHouseOf(roomName) {
+  return FEATURES_BY_ROOM[roomName]?.house || (HOMESTEAD_FEATURES[roomName] ? roomName : null);
 }
 
 export function loadChest(roomName) {
+  roomName = homesteadHouseOf(roomName) || roomName;
   try {
     return JSON.parse(localStorage.getItem(`qucuo_chest_${roomName}`) || "[]");
   } catch { return []; }
 }
 
 export function saveChest(roomName, items) {
+  roomName = homesteadHouseOf(roomName) || roomName;
   localStorage.setItem(`qucuo_chest_${roomName}`, JSON.stringify(items));
 }
 
 export function loadWineCellar(roomName) {
+  roomName = homesteadHouseOf(roomName) || roomName;
   try {
     return JSON.parse(localStorage.getItem(`qucuo_wine_${roomName}`) || "[]");
   } catch { return []; }
 }
 
 export function saveWineCellar(roomName, items) {
+  roomName = homesteadHouseOf(roomName) || roomName;
   localStorage.setItem(`qucuo_wine_${roomName}`, JSON.stringify(items));
 }
 
 export function loadGarden(roomName) {
+  roomName = homesteadHouseOf(roomName) || roomName;
   try {
     return JSON.parse(localStorage.getItem(`qucuo_garden_${roomName}`) || "[]");
   } catch { return []; }
 }
 
 export function saveGarden(roomName, items) {
+  roomName = homesteadHouseOf(roomName) || roomName;
   localStorage.setItem(`qucuo_garden_${roomName}`, JSON.stringify(items));
 }
