@@ -636,6 +636,11 @@ export async function callModel(cfg, systemPrompt, messages, opts = {}) {
       if (topK != null) genConfig.topK = topK;
       if (frequencyPenalty != null) genConfig.frequencyPenalty = frequencyPenalty;
       if (presencePenalty != null) genConfig.presencePenalty = presencePenalty;
+      // 结构化抽取任务（角色卡扫描）要求纯 JSON 输出。官方接口支持这个字段，但
+      // 第三方反代常常把它过滤掉，所以调用方那边**不能只靠它**——提示词里同样
+      // 要写死"只输出 JSON"，并对返回值做剥围栏/截取的容错解析。这里加上是因为
+      // 原生支持时它确实能显著降低跑偏率，成本为零。
+      if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
       applyThinkingGemini(genConfig, cfg);
       const res = await fetchWithTimeout(url, {
         method: "POST",

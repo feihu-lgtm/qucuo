@@ -9,6 +9,7 @@ import { ensureNpcCombatData } from "../npcGeneration.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部注释）
 import { patchCombatData, materializeNpc } from "../roomNpcs.js";
 import { getAllResidentNpcNames } from "../residentNpcs.js";
+import { getImportedResidentNames } from "../cards/importedRegistry.js";
 import { COMPANION_SLOTS } from "../companion.js";
 
 import { makeItemSmart } from "../items/catalog.js";
@@ -162,7 +163,9 @@ export function commitRound(d) {
     // 提取层会把这些名字塞进 room.npcs。驻场NPC有固定归属据点，不该在别处被
     // AI凭空刷出来（刷出来还吃 mapDescriptionToGenParams 退化成绿袍）；队友
     // 走 companionState 独立管理，更不该变成 room.npcs 里的一个路人。
-    const _residentNames = getAllResidentNpcNames();
+    // 入册的驻场角色同样有固定归属，一并纳入幽灵过滤——否则玩家在鱼定村
+    // 入册的人，AI 可能在锦官城凭空刷出来一个同名的。
+    const _residentNames = [...getAllResidentNpcNames(), ...getImportedResidentNames()];
     const _companionNames = new Set(COMPANION_SLOTS.map(s => s.label));
     const _currentNames = new Set((d.room.npcs || []).map(n => n.name));
     d.p.room.npcs = d.p.room.npcs.filter(n => {

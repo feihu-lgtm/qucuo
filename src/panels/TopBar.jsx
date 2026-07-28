@@ -20,7 +20,7 @@ export default function TopBar({
   uiGold, uiTurquoise, uiCrimson, uiPink,
   setShowTutorial, setShowCodex, setShowVersionHistory,
   showTrace, setShowTrace, setShowBugReport,
-  setShowCharacterPage, setShowQuestLog, setShowLore, setShowQijuzhu,
+  setShowCharacterPage, setShowQuestLog, setShowLore, setShowQijuzhu, setShowCardImport,
   setSettingsInitialTab, setShowSettings,
   autoSaveError, lastAutoSave,
   showAvatarPicker, setShowAvatarPicker,
@@ -88,6 +88,12 @@ export default function TopBar({
         <span style={{ flex: 1 }} />
 
         {/* 右组：其余全部右对齐 */}
+        <span
+          className="qbtn"
+          onClick={() => setShowCardImport(true)}
+          title="角色入册：把外部角色卡导进曲措乡（快捷键 I）"
+          style={topBtn(zoneTheme.accent)}
+        >🧾 入册</span>
         <span
           className="qbtn"
           onClick={() => setShowCharacterPage(true)}

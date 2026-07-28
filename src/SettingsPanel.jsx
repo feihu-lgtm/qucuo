@@ -79,7 +79,7 @@ function MusicSettings() {
   );
 }
 
-export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText }) {
+export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText }) {
   // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
   // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
   // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
@@ -253,8 +253,14 @@ export default function SettingsPanel({ cfg, setCfg, onClose, currentSnapshot, o
               ["narrator", "🎭 旁白", "好感度 · 阶段 · 私聊篇幅 · 专属世界书"],
               ["saves", "💾 存档管理", "读取 · 导出 · 删除"],
               ["other", "🎚 其他", "字号 · 显示"],
+              ["__cards", "🧾 角色入册", "导入外部角色卡 · 快捷键 I"],
             ].map(([id, title, sub]) => (
-              <div key={id} onClick={() => setTab(id)}
+              <div key={id} onClick={() => {
+                // 入册界面本身是全屏浮层，塞在设置里会套两层弹窗。
+                // 这里改成关掉设置、把浮层交给 MudRPG 开。
+                if (id === "__cards") { onOpenCardImport?.(); return; }
+                setTab(id);
+              }}
                 style={{
                   cursor: "pointer", padding: "20px 16px", borderRadius: 6,
                   background: "#0e1018", border: "1px solid #2a3a3a",

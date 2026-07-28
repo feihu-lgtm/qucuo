@@ -9,6 +9,26 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "角色卡入册：酒馆卡导进曲措乡，落脚三选一（不落地/驻场/游走）",
+    time: "2026-07-30 05:20",
+    notes: [
+      "起因：想把外部酒馆角色卡导进来当 NPC 或当主角。做之前先拿 8 张真卡（断法大陆36条/万象枢机28条/魔门宗主18条/哀鸿城破15条/逐玉15条/AnonLondon13条/封神异闻录12条/春明子5条，共 142 条世界书）逐个解剖，容错点全部按实测来，不照规范推。",
+      "①【真位置不在规范字段里】CCv3 规范的 entries[].position 只有 before_char/after_char 两个值，表达不了 @Depth。真值在 extensions.position 的数字枚举（0前/1后/4深度）。142 条里有 22 条两者打架，断法大陆一张就错 13 条。解析一律以 extensions 为准，规范层只用来报冲突。",
+      "②【keys 里的逗号连写是个哑坑】逐玉那张卡 10 条的 keys 全是「齐旻，阿旻」这种把两个别名塞进一格的写法。酒馆会把整串当一个关键词，除非玩家原样打出这七个字否则永不命中——而作者发现不了，因为那些条目都是 constant 常驻，照样注入。入库前按中英文逗号再切一次。这条也影响本项目：worldbook 的在场判定靠双向 includes 侥幸兼容，但「被提及」判定 scanText.includes(整串) 恒假，会静默漏掉。",
+      "③【六字段不能判死】上一轮看三张卡时它们全空，差点得出「经典字段已弃用」的结论。第四第五张就翻了：魔门宗主那张 personality 929 字、scenario 383 字、mes_example 1181 字五项俱全。现在的判定是 character_book 为主入口、六字段为兜底，两种写法在中文卡池里并存。use_regex 同理，127/142 为真但哀鸿城破那张 15/15 全假，既不能无视也不能照办。",
+      "④【AI 扫描按 5 次/分钟设计】免费反代的额度是硬约束，所以先把不需要 AI 的活全砍掉（name/aliases/hp/carry/招式/里程碑模板/立绘都是纯代码），只剩七件事必须问模型。四阶段：总览只发条目摘要一次问清归类与分组，人物按批换算，玩家体貌，开场白归化。实测断法大陆全跑 7 次约 24 秒，只导一个 NPC 2 次。",
+      "⑤【降级链熔断，这条是跑 mock 才发现的】第一版写的是「4 人失败→拆 2 人→拆 1 人」每级带重试，用「模型永远回抱歉」的 mock 一跑，预算 4 次实际烧掉 21 次。根因是把两种失败混成一种：输出被截断（有 { 没闭合）拆小有用，模型压根不吐 JSON 拆一百次也一样。现在解析失败区分 TRUNCATED 与 NOT_JSON，后者连续两批直接全局熔断、剩余批次走兜底。同一个 mock 现在 5 次。",
+      "⑥【落脚三选一，默认不落地】导入一张卡不该擅自改变世界上有谁在哪，所以默认只进 npcLore（被提到时注入设定，不主动出现）。要他真出现就明选：驻场走 residentNpcs 的语义（据点必现，可锁内层房间），游走走 npcPool 的语义（权重+时辰）。游走的随机源用 seededRand(dayIdx, 人名) 而不是 Math.random——同一天进出据点会反复重算，用真随机的话人会在你走进走出之间闪现。驻场者一并进 commitRound 的幽灵过滤名单，免得 AI 在别的据点刷出同名的。",
+      "⑦【入册库独立于存档】跟 presetSystem 的收藏库同一个思路：导入的卡是玩家资产不是某一局的状态。进存档会有两个麻烦，读旧档时人凭空消失、每个槽位各存一份同样的人设。读取侧三处接好：roundNotes 的 combinedNpcLore 现在是「预设＋驻场表＋入册」三来源，characterMilestones 用 attach 惰性合并（避免循环 import），数值走 getImportedStats。",
+      "⑧【顺带修·注入结构面板里那一栏一直是空的】MudRPG 里调 matchNpcLore 传的是 (preset, 字符串, 数组)，而签名收 (npcLore数组, ctx)，Array.isArray 一判就 return []。所以「注入结构」面板的人设那一栏不管场上有谁都显示「本轮无在场者需注入人设」。真实注入链在 roundNotes 参数是对的，游戏运行不受影响，只是面板骗人。已修成正确签名，并跟真实链一样合并三个来源。",
+      "⑨【顺带修·七维在转换里被剥掉】toRoomNpcWithCombat 的字段白名单漏了 special，而 toRoomNpc 只留 id/name/brief/isPoolNpc/carriedItems。此前无影响（驻场表里 special 出现 0 次，全走 generateNpcAttributes 随机），但入册角色的七维是在导入界面一格一格调过的，丢了等于白调。白名单补上 special；同时 toPoolLike 里没配过就不带这个字段，空对象会让「npc.special || generate…」判真反而顶掉随机值。",
+      "⑩【对齐·里程碑是两档不是四档】写 prompt 时按 30/55/75/95 四档设计，实际 getAvailableMilestone 只查 [60, 30]——给别的阈值等于永远不解锁。更要紧的是每档还有 text 数组，CharacterPage 里直接 .text.map()，undefined 会当场抛错。已全部对齐成 30/60 两档且必带 text 数组（AI 出两句草稿，UI 里可润）。",
+      "入口：顶栏「🧾 入册」+ 设置主页第六张卡片 + 快捷键 I。快捷键是本项目第一个窗口级监听，避让写得较死：焦点在 input/textarea/select/contentEditable 里、或按了 Ctrl/Cmd/Alt 一律不拦，否则打字打到 i 就弹窗。",
+      "视觉：素材全部复用 public/stones（原本给赌石做的）。六档玉色 jade_1_bai 到 jade_6_hong 正好对上品阶白绿蓝紫橙红，品阶徽记直接用玉石图、点击循环换档，不用另画。",
+      "⚠ 验证情况：esbuild 逐个过了 14 个改动文件的语法；cards 层用 mock 测试台跑通了预算规划/断点续传/降级熔断/落脚三模式（tools/cardScanTest.mjs 与 tools/placementTest.mjs）。但 vitest 与 pages 构建这次没跑（容器里没装 node_modules），docsTree 的两条守卫已按规矩照做（7 个新文件登记进文件树、这条记录加在数组最前）。合并前请跑一次 npm run verify。",
+    ],
+  },
+  {
     codename: "文档按代码对账：改 5 份，其中 1 份标为历史快照并补增补节",
     time: "2026-07-30 04:00",
     notes: [

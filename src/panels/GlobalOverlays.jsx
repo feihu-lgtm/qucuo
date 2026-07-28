@@ -22,6 +22,7 @@ import ErrorBoundary from "../ErrorBoundary.jsx";
 import TutorialOverlay from "../TutorialOverlay.jsx";
 import VersionHistoryPanel from "../VersionHistoryPanel.jsx";
 import CharacterPage from "../CharacterPage.jsx";
+import CardImportScreen from "../CardImportScreen.jsx";
 import QuestLogScreen from "../QuestLogScreen.jsx";
 import LoreScreen from "../LoreScreen.jsx";
 import QijuzhuScreen from "../QijuzhuScreen.jsx";
@@ -44,6 +45,7 @@ export default function GlobalOverlays({
   showTutorial, closeTutorial,
   showVersionHistory, setShowVersionHistory,
   showCharacterPage, setShowCharacterPage, characterPageTarget, setCharacterPageTarget,
+  showCardImport, setShowCardImport, onImportNpcs, onImportPlayer,
   claimedMilestones, claimMilestone, giftToCharacter,
   showQuestLog, setShowQuestLog,
   showLore, setShowLore,
@@ -67,6 +69,17 @@ export default function GlobalOverlays({
 
       {showVersionHistory && (
         <VersionHistoryPanel onClose={() => setShowVersionHistory(false)} accentDim={zoneTheme.accentDim} />
+      )}
+
+      {showCardImport && (
+        <CardImportScreen
+          onClose={() => setShowCardImport(false)}
+          apiCfg={apiCfg}
+          playerName={char.name}
+          zoneTheme={zoneTheme}
+          onImportNpcs={onImportNpcs}
+          onImportPlayer={onImportPlayer}
+        />
       )}
 
       {showCharacterPage && (

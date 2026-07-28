@@ -162,8 +162,23 @@ export const CHARACTER_MILESTONES = {
 };
 
 // 供 UI 层调用：根据角色名和好感度，返回当前应该展示的里程碑（如果有可领取的）
+// 惰性读入册里程碑：registry 还没 init 完时返回空表，不阻塞也不报错。
+let _regMod = null;
+function getImportedMilestonesSafe() {
+  try {
+    if (!_regMod) return {};
+    return _regMod.getImportedMilestones() || {};
+  } catch { return {}; }
+}
+/** 由 MudRPG 在 registry init 之后调一次，把模块交进来（避免循环 import） */
+export function attachImportedRegistry(mod) { _regMod = mod; }
+
 export function getAvailableMilestone(charName, affection, claimedSet) {
-  const milestones = CHARACTER_MILESTONES[charName];
+  // 入册角色的里程碑与预设里手写的合并。同名时以入册的为准——那是玩家刚亲手
+  // 审过一遍的，意图比预设更明确。import 放在函数体外会形成循环依赖
+  // （importedRegistry 不依赖本文件，但读取时机必须晚于它 init），这里用惰性取值。
+  const imported = getImportedMilestonesSafe();
+  const milestones = imported[charName] || CHARACTER_MILESTONES[charName];
   if (!milestones) return null;
   // 优先检查更高阈值（60），确保好感度已经很高时不会漏掉 60 只提示 30
   const thresholds = [60, 30];

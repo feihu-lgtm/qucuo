@@ -8,6 +8,7 @@ import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../inne
 import { activeCompanion, COMPANION_LORE, getCompanionDescForm } from "../companion.js";
 import { step as traceStep } from "../actionTrace.js";
 import { getAllResidentNpcLore } from "../residentNpcs.js";
+import { getImportedNpcLore } from "../cards/importedRegistry.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../worldbook.js";
 import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../npcAwareness.js";
 
@@ -152,7 +153,14 @@ export function buildPresence({ _trace, isTalk, lockedDestName, room, innerRoomN
 // 提示 AI 补写这段时间的合理变化，免得人物像时间静止。纯本地时间戳判定。
 export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, questProgress, varTree, time, companionState, nsfwOn }) {
   const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
-  const combinedNpcLore = [...(preset.npcLore || []), ...getAllResidentNpcLore()];
+  // 三个来源合并：剧本预设手写的、据点驻场表的、玩家从角色卡入册的。
+  // 入册的排最后——matchNpcLore 按数组顺序收集命中项，同名时两段人设都会注入，
+  // 不会互相顶掉（一个是预设里的设定、一个是玩家自己导的，都算有效信息）。
+  const combinedNpcLore = [
+    ...(preset.npcLore || []),
+    ...getAllResidentNpcLore(),
+    ...getImportedNpcLore(),
+  ];
   const npcLoreBlock = buildNpcLoreBlock(
     matchNpcLore(combinedNpcLore, {
       roomNpcNames: visibleNpcs.map(n => n.name),

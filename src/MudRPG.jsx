@@ -133,6 +133,7 @@ import MusicPanel from "./MusicPanel.jsx";
 import HomesteadPanel from "./buildings/HomesteadPanel.jsx";
 import { getHomestead } from "./homestead.js";
 import GlobalOverlays from "./panels/GlobalOverlays.jsx";
+import * as importedRegistry from "./cards/importedRegistry.js";
 import DebugPanel from "./panels/DebugPanel.jsx";
 import ClickableMap from "./ClickableMap.jsx";
 import PipelineViewer from "./PipelineViewer.jsx";
@@ -367,6 +368,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [showQuestLog, setShowQuestLog] = useState(false);
   const [showLore, setShowLore] = useState(false);
   const [showQijuzhu, setShowQijuzhu] = useState(false); // 起居注：今日行迹 + 累计年鉴 // 见闻录：小纸条+小账本可视化
+  const [showCardImport, setShowCardImport] = useState(false); // 角色入册：导入外部角色卡
   const [characterPageTarget, setCharacterPageTarget] = useState(null); // "面板"按钮指定直接打开谁的详情
   const [portraits, setPortraits] = useState(loadPortraits());
   // 雪豹立绘三形态切换（人形·立雪/人形·倚剑/雪豹真身，存 localStorage 持久化）；
@@ -408,6 +410,32 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     varTreeRef.current = v;
     setVarTreeState(v);
   }, []);
+  // 入册角色注册表：独立于存档的全局库（同 presetSystem 的收藏库思路），启动灌一次
+  useEffect(() => {
+    importedRegistry.init().then(() => {
+      // 里程碑查表要能看到入册角色。用 attach 而不是 import，避免
+      // characterMilestones ←→ importedRegistry 的循环依赖。
+      attachImportedRegistry(importedRegistry);
+    });
+  }, []);
+
+
+  // ── 全局快捷键 ──
+  // 本作此前只有输入框内的 Enter/↑/↓，没有窗口级监听。这里只收一个 I（入册），
+  // 并且严格避让：焦点在输入框/文本域内、或按了修饰键时一律不拦——否则玩家
+  // 打字打到"i"就会弹窗，这类快捷键最容易变成事故。
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      const tag = (t?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select" || t?.isContentEditable) return;
+      if (e.key === "i" || e.key === "I") { e.preventDefault(); setShowCardImport(p => !p); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const [apiCfg, setApiCfg] = useState(loadConfig());
   const [uiScale, setUiScale] = useState(() => {
     const saved = localStorage.getItem("wuxia_mud_ui_scale");
@@ -910,7 +938,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 【本轮修复】companionCandidate 漏在这份白名单外——雪豹作为驻场NPC，
       // 经这一步转换后 companionCandidate 字段丢失，导致 NpcActionMenu.jsx 的
       // canInvite 判断永远拿到 undefined，"邀请入队"按钮完全不显示（实测反馈）。
-      for (const k of ["levelCap", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop"]) {
+      // 【本轮补 special】toRoomNpc 只留 id/name/brief/isPoolNpc/carriedItems，
+      // 七维会被剥掉。此前无影响（driven 表里没人配 special，一律走
+      // generateNpcAttributes 随机），但入册角色的七维是玩家在导入界面逐项调过
+      // 的，丢了等于白调——applyNpcDefaults 里 `npc.special || generateNpcAttributes()`
+      // 这一句只有在字段能传到才有意义。
+      for (const k of ["levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop"]) {
         if (poolNpc[k] !== undefined) base[k] = poolNpc[k];
       }
       const inferred = mapDescriptionToGenParams(`${poolNpc.name || ""} ${poolNpc.brief || ""} ${poolNpc.personality || ""}`);
@@ -957,7 +990,13 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
             .map(n => { const r = toRoomNpcWithCombat(n); r.lockInnerRoom = "玉石料场"; return r; }),
         ]
       : [];
-    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders];
+    // 入册角色（第五个来源）：驻场的按据点必现，游走的按权重＋时段抽。
+    // 随机源用 seededRand(dayIdx, 人名) 而不是 Math.random——同一天进出据点
+    // 反复重算时落点必须稳定，否则一个游走的人会在你走进走出之间闪现。
+    const importedNpcs = importedRegistry
+      .getImportedForDistrict(room.name, time, (name) => seededRand(Math.floor(time / 24), `imported_${room.name}_${name}`))
+      .map(toRoomNpcWithCombat);
+    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs];
     if (toInject.length === 0) return;
     // 游走/护镖NPC随机落内层房间（本轮改版）：若当前据点有内层箱庭，给每个
     // 非驻场NPC分配一个当天固化的内层房间（可落任意房间，含客栈/铺子）。用
@@ -967,7 +1006,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 用公共房间列表而不是全集：游走NPC不该被随机丢进上锁的房间。
       // 玩家家门口那块「乞丐与老7滚勿入」的牌子此前是空头支票——老七照样天天在屋里。
       const rooms = getPublicInnerRoomNames(room.name);
-      const residentSet = new Set(residentNpcs.map(n => n.name));
+      // 驻场者不分配随机落点。入册的驻场角色同理——它们要么锁了 lockInnerRoom，
+      // 要么就待在据点锚点，不该被丢进随便一个房间。
+      const residentSet = new Set([
+        ...residentNpcs.map(n => n.name),
+        ...importedRegistry.getImportedResidentNames(),
+      ]);
       for (const n of toInject) {
         if (residentSet.has(n.name)) continue; // 驻场人不分配落点
         if (n.innerRoom) continue;             // 已分配过（当天）就不重抽
@@ -1559,7 +1603,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         if (found?.content) put(blockId, found.content);
       }
       const visible = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
-      put("npc_lore", buildNpcLoreBlock(matchNpcLore(preset, visible.map(n => n.name).join("，"), visible.map(n => n.name))) || "（本轮无在场者需注入人设）");
+      put("npc_lore", buildNpcLoreBlock(matchNpcLore(
+        [...(preset.npcLore || []), ...importedRegistry.getImportedNpcLore()],
+        { roomNpcNames: visible.map(n => n.name), userInput: "", lastReply: "", includeLastReply: false }
+      )) || "（本轮无在场者需注入人设）");
       if (scope === "full") put("catalog", describeCatalogForAI());
       const bg2 = gateBodyProfile(char.bodyProfile, { scope, nsfw: nsfwOn, scanText: "" });
       put("body_gate", bg2.text || `（当前灭灯：${bg2.dark.join("、") || "体貌未填写"}）`);
@@ -4053,6 +4100,50 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     act(`在茶馆花${cost}两，听掌柜低声说了个传闻：「${rumor}」`, [], { settle: true });
   }, [char, addLog, act]);
 
+  // ── 角色入册的落册回调 ──
+  // 人物只进全局注册表，不进存档：导入的卡是玩家资产，跨存档通用。
+  // 好感度只在作者明确配了非 0 初值时才写 varTree——写了就会出现在「人物关系」页，
+  // 而一个还没见过面的人出现在关系页是不对的。初值 0 的等自然相遇再建交情。
+  const handleImportNpcs = useCallback((npcs) => {
+    const n = importedRegistry.registerImported(npcs, {});
+    const withAff = npcs.filter(x => (x.affection || 0) !== 0);
+    if (withAff.length) {
+      setVarTree(t => {
+        const chars = { ...(t.角色 || {}) };
+        for (const x of withAff) {
+          chars[x.name] = { ...(chars[x.name] || {}), 好感度: Math.max(0, Math.min(100, x.affection)) };
+        }
+        return { ...t, 角色: chars };
+      });
+    }
+    addLog([
+      { t: "sys", text: `  ${n} 人已入册：${npcs.map(x => x.name).join("、")}` },
+      { t: "sys", text: "  他们的人设已挂上世界书，行走江湖时遇到便会照此登场。" },
+    ]);
+  }, [setVarTree, addLog]);
+
+  // 玩家档案：名讳 / 体貌公开层 / 七维。气血必须在体魄定下之后重算，顺序不能反。
+  const handleImportPlayer = useCallback((player, opening) => {
+    setChar(c => {
+      const next = { ...c };
+      if (player.name) next.name = player.name;
+      if (player.special) next.special = { ...(c.special || {}), ...player.special };
+      if (player.bodyProfile) {
+        next.bodyProfile = { ...(c.bodyProfile || {}), ...player.bodyProfile };
+      }
+      const maxHp = hpFromNeigong(next.neigong ?? 5, next.special?.体魄 ?? 5);
+      const curRatio = (c.hp?.[1] ? c.hp[0] / c.hp[1] : 1);
+      next.hp = [Math.max(1, Math.round(maxHp * curRatio)), maxHp];
+      return next;
+    });
+    const filled = Object.values(player.bodyProfile || {}).filter(v => (v || "").trim()).length;
+    addLog([
+      { t: "sys", text: `  已按卡改写自身：体貌填了 ${filled}/7 项，七维已录。` },
+      ...(filled < 7 ? [{ t: "sys", text: "  余下几项去右栏「◈ 体貌」自己补，私密层那五项只能手填。" }] : []),
+      ...(opening?.rewritten ? [{ t: "narr", text: opening.rewritten }] : []),
+    ]);
+  }, [setChar, addLog]);
+
   // 装备/卸下。此前直接在 GlobalOverlays 里 setInv(toggleEquip(...))，
   // 为了记一笔计数不值当再穿一层 props，收拢到这儿——将来装备变更要加别的
   // 副作用（耐久、套装判定）也有地方放。
@@ -4371,6 +4462,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         </div>
         {showSettings && (
           <SettingsPanel
+            onOpenCardImport={() => { setShowSettings(false); setShowCardImport(true); }}
             cfg={apiCfg}
             setCfg={setApiCfg}
             onClose={() => setShowSettings(false)}
@@ -4410,6 +4502,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         setShowTutorial={setShowTutorial} setShowCodex={setShowCodex} setShowVersionHistory={setShowVersionHistory}
         showTrace={showTrace} setShowTrace={setShowTrace} setShowBugReport={setShowBugReport}
         setShowCharacterPage={setShowCharacterPage} setShowQuestLog={setShowQuestLog} setShowLore={setShowLore} setShowQijuzhu={setShowQijuzhu}
+        setShowCardImport={setShowCardImport}
         setSettingsInitialTab={setSettingsInitialTab} setShowSettings={setShowSettings}
         autoSaveError={autoSaveError} lastAutoSave={lastAutoSave}
         showAvatarPicker={showAvatarPicker} setShowAvatarPicker={setShowAvatarPicker}
@@ -4443,6 +4536,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         showQuestLog={showQuestLog} setShowQuestLog={setShowQuestLog}
         showLore={showLore} setShowLore={setShowLore}
         showQijuzhu={showQijuzhu} setShowQijuzhu={setShowQijuzhu} narratorStage={narrator.stage}
+        showCardImport={showCardImport} setShowCardImport={setShowCardImport}
+        onImportNpcs={handleImportNpcs} onImportPlayer={handleImportPlayer}
         showPortraitManager={showPortraitManager} setShowPortraitManager={setShowPortraitManager}
         portraits={portraits} setPortraits={setPortraits}
         showPipeline={showPipeline} setShowPipeline={setShowPipeline}
@@ -4658,6 +4753,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
       {showSettings && (
         <SettingsPanel
+          onOpenCardImport={() => { setShowSettings(false); setShowCardImport(true); }}
           cfg={apiCfg}
           setCfg={setApiCfg}
           onClose={() => setShowSettings(false)}
