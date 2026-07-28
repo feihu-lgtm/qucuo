@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修白屏：ReviewPane 的 props 少了 apiCfg，扫完切审改页就崩",
+    time: "2026-07-30 09:40",
+    notes: [
+      "现象：扫描完成后页面白屏，控制台只有一句 apiCfg is not defined。表现上像是「扫完了进不了下一步」，其实 setStage(review) 执行了，是审改面板一渲染就抛错。",
+      "①【位置】CardImportScreen 里 ReviewPane 这个子组件的 props 解构没有 apiCfg，而它的函数体内写了 <ReviewNpc apiCfg={apiCfg} />。渲染处也没往下传。修法是两头都补上。",
+      "②【这是第三类问题，前两类的检查抓不到】构建能抓 version.js 写坏引号、也能抓 import 了不存在的导出；但 props 没传就用这一类，两个文件各自语法都合法、模块图也解析得通，构建绿灯上线，只在运行时抛 ReferenceError。643 条测试同样测不到——没有一条会渲染这个组件。",
+      "③【补 scripts/propsCheck.mjs】扫全部 jsx，找形如 attr={someName} 的 JSX 属性，检查标识符能否在所属组件的作用域链里解析。不引 eslint 是因为项目没有 lint 配置，而加进 npm run verify 会撞上 docsTree 里「verify 跑的就是 CI 那两步」那条守卫。",
+      "④【这个脚本花了三轮才零误报，三处都是我自己的实现缺陷】第一轮报出 6 处假问题：模块作用域只收集到「第一个顶层 function 之前」，漏掉放在文件末尾的样式常量 topBtn/carArrow；提取标识符时用 ^ 锚定开头，箭头函数的嵌套括号让捕获结果形如「(sk, i」，首字符是括号于是整段被丢弃，.map((sk, i) => …) 的参数全收不到。第二轮降到 2 处：多行 import 的续行有缩进，被顶层过滤滤掉，selStyle 这类从共用零件文件引进来的名字丢失。第三轮归零。一个会误报的检查工具不会有人用，校准它本身值得花这三轮。",
+      "验证：存量 0 处（1458 个 JSX 属性 / 70 个 jsx 文件）；反例可抓（把 apiCfg 从 ReviewPane 的 props 去掉，精确报出第 641 行）；bundleCheck 同时通过。",
+    ],
+  },
+  {
     codename: "修构建断链：待用主角卡的三个函数从来没进过仓库，只有消费侧提交了",
     time: "2026-07-30 08:55",
     notes: [

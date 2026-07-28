@@ -304,7 +304,7 @@ export default function CardImportScreen({
               parsed={parsed} result={result} accent={accent}
               detail={detail} setDetail={setDetail}
               patchNpc={patchNpc} patchPlayer={patchPlayer} patchWorld={patchWorld}
-              setResult={setResult} asPlayer={asPlayer}
+              setResult={setResult} asPlayer={asPlayer} apiCfg={apiCfg}
               term={term} onExpandTerm={() => setTermBig(true)}
               onBack={() => setStage("parsed")} onFinish={finish}
             />
@@ -566,7 +566,7 @@ function ParsedPane({
 // 全字段的排布在那两个文件里，各自照映射表的顺序走。
 function ReviewPane({
   parsed, result, accent, detail, setDetail, patchNpc, patchPlayer, patchWorld,
-  setResult, asPlayer, onBack, onFinish, term, onExpandTerm,
+  setResult, asPlayer, onBack, onFinish, term, onExpandTerm, apiCfg,
 }) {
   const cur = detail >= 0 ? result.npcs[detail] : null;
   const placedCount = result.npcs.filter(x => (x.placement?.mode || "mention") !== "mention").length;
