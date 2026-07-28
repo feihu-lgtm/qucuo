@@ -120,8 +120,14 @@ describe("public 资源必须走 BASE_URL（防 Pages 子路径下 404）", () =
       const src = readFileSync(join(SRC, f), "utf-8");
       src.split("\n").forEach((line, i) => {
         if (line.trim().startsWith("//") || line.trim().startsWith("*")) return; // 注释里出现无妨
-        // 形如 "/xxx.webp" 的字符串字面量（相对 public 根的绝对路径）
-        if (/["'`]\/[A-Za-z0-9_-]+\.(webp|png|jpe?g|svg|mp3|ogg)["'`]/.test(line)) {
+        // 形如 "/xxx.webp" 或 "/music/xxx.mp3" 的字符串字面量（相对 public 根的
+        // 绝对路径）。
+        // 【为什么允许中间带斜杠】老正则是 `\/[A-Za-z0-9_-]+\.(...)`，字符类里没有
+        // 斜杠，所以只抓得住 "/intro-1.webp" 这种顶层文件，抓不住
+        // "/music/zood.mp3" 这种带子目录的——音乐曲库那两条本地路径就是这么从
+        // 守卫底下漏过去的（507/507 全绿、Pages 上必 404）。补上 (?:seg/)* 让它
+        // 覆盖任意深度的子目录。
+        if (/["'`]\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(webp|png|jpe?g|svg|mp3|ogg)["'`]/.test(line)) {
           bad.push(`${f}:${i + 1}  ${line.trim().slice(0, 70)}`);
         }
       });

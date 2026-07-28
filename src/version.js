@@ -9,6 +9,24 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "音乐系统体检：三首曲子两首必挂 —— 路径没走 BASE_URL、曲库文件缺失、失败被静默吞掉",
+    time: "2026-07-29 09:40",
+    notes: [
+      "①【本地曲目 Pages 上必 404】zood / 烟Distance 的 url 硬编码成 \"/music/xxx.mp3\"，而 vite.config.pages.js 的 base 是 \"/qucuo/\"，线上解析成 https://<user>.github.io/music/xxx.mp3，掉出仓库路径。项目里其余 public 资源（stones/ portraits/ 开场图）一直都走 import.meta.env.BASE_URL，只有音乐漏了。改法：曲库条目区分 file（本地，相对 public 根、不带前导斜杠）与 remote（外链），新增纯函数 resolveTrackUrl 统一拼 BASE。",
+      "②【守卫测试本来该拦住它，但正则漏网】docsTree.test.js 有一条「public 资源必须走 BASE_URL」，正则是 /[\"'`]\\/[A-Za-z0-9_-]+\\.(webp|png|...|mp3)[\"'`]/ —— 字符类里没有斜杠，只抓得住 \"/intro-1.webp\" 这种顶层文件，抓不住 \"/music/zood.mp3\" 这种带子目录的。这就是 507/507 全绿而线上必挂的原因。补成 (?:[A-Za-z0-9_-]+\\/)* 覆盖任意深度子目录，并验证过：把老路径塞回去，这条守卫立刻变红。",
+      "③【public/music/ 目录压根不存在】两首本地曲声明了文件但仓库里没有，vite build 也就不会往 dist 建这个目录 —— 两首里两首播不出声。mp3 我无法提供，已建目录 + README 说明该放什么，并加了落地守卫测试：TRACKS 里声明 file 的曲目必须在 public 下真有文件，暂缺的显式登记在 KNOWN_MISSING 挂账（账记在代码里，不留给玩家踩），补齐后删条目守卫即生效。",
+      "④【播放失败被静默吞掉·最难查的那种坏】toggleMusic/playTrack 都是 a.play().catch(() => {})，getState() 明明算了 error 却没有任何面板渲染它。表现是「点一下、没声音、没提示、♪也不变♫」，玩家完全不知道发生了什么。现在把 MEDIA_ERR_* 与 play() 的 rejection 分别翻成人话（自动播放被拦 / 找不到文件 / 解码失败 / 网络错误 —— 前两者成因完全不同，混在一起提示会让人一直去点播放键而问题在别处），曲库面板与设置面板都渲染错误条，顶栏按钮 title 也带上原因。",
+      "⑤【顶栏♪按钮不响应开关】TopBar 里 {isMusicEnabled() && ...} 是渲染期直读 localStorage 的非响应式调用，而它只订阅了 s.playing。在设置里勾上音乐模式，按钮不会冒出来，得等别的 state 变化捎带重渲染。改法：enabled 进 getState()，TopBar/SettingsPanel 都从订阅态读，SettingsPanel 里那份 enabled 影子 useState 一并删掉（两份态各走各的，正是不同步的根源）。",
+      "⑥【音乐模式开关是装饰性的】playTrack/toggleMusic 都不检查 isMusicEnabled()，关掉只是 pause() 一次，之后任何路径调 playTrack 照样出声。现在起播统一走 startPlayback()，enabled 关着就不放声并给出原因。",
+      "⑦【模块顶层裸读 localStorage → 可能全站白屏】原来第一行就是 localStorage.getItem(...)，无痕模式或 localStorage 被策略禁用时 import 阶段即抛，表现是白屏而非「音乐坏了」，排查方向会被彻底带偏。同时这也是音乐系统一条测试都没有的原因（node 下 import 即炸），②③④才能一路带着全绿上线。现在 localStorage 与 Audio 都走可选探测，拿不到就降级成内存态/空操作。副作用：这个模块终于可以被 vitest 直接 import。",
+      "⑧【文案与数据不符】两个面板都写「音源：archive.org · 无版权音乐」，但两首本地曲的 source 指向 audiomack 上的丁真曲目、url 是本地 mp3，既非 archive.org 也难称无版权。改为按曲目标注 origin，不再统一声称。版权归属请自行确认。",
+      "⑨【测不到的一处】IGS 那首走 archive.org 外链，沙箱网络白名单里没有该域名，能否播放我无法验证。另注：archive.org 对热链有速率限制，且未设 audio.crossOrigin（纯播放通常不需要，将来若做频谱可视化会撞 CORS）。",
+      "新增 musicPlayer.test.js 共 24 条：曲库数据自检（file 不带前导斜杠、id 唯一）、resolveTrackUrl 拼接、开关约束播放、音量夹取与脏输入、无 Audio/无 localStorage 降级、订阅者抛错不连坐、退订生效、mp3 落地与欠账清单不腐烂。",
+      "验证：npm run verify 通过（vitest 531/531 + pages 构建），dist/music/ 现在会被打进产物。",
+      "⚠ 仍需你做的一件事：把 zood.mp3 与 yan-distance.mp3 放进 public/music/，然后删掉 musicPlayer.test.js 里 KNOWN_MISSING 的两条。在那之前这两首点下去会明确提示「找不到音频文件」，不再是静默无声。",
+    ],
+  },
+  {
     codename: "珍珠双形态立绘投放+左栏立绘区+右栏通用化+邀请叙事修雪豹硬编码",
     time: "2026-07-27 23:40",
     notes: [

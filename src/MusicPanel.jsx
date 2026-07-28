@@ -42,7 +42,7 @@ export default function MusicPanel({ onClose }) {
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: active ? "#c8e0d8" : "#8a8a7a", fontSize: "12.5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</div>
-                  <div style={{ color: "#5a5a4a", fontSize: "10.5px" }}>{t.artist}</div>
+                  <div style={{ color: "#5a5a4a", fontSize: "10.5px" }}>{t.artist}{t.origin ? ` · ${t.origin}` : ""}</div>
                 </div>
                 {active && state.playing && (
                   <span style={{ color: "#6ec6c6", fontSize: "10px", flexShrink: 0 }}>播放中</span>
@@ -66,8 +66,17 @@ export default function MusicPanel({ onClose }) {
           <span style={{ fontSize: "11px", color: "#c8bfa0", width: 36, textAlign: "right", flexShrink: 0 }}>{Math.round(state.volume * 100)}%</span>
         </div>
 
+        {/* 播放失败必须看得见。原来 play() 的 rejection 被 .catch(() => {}) 整个
+            吞掉，getState() 算了 error 却没人渲染，于是"点一下、没声音、没提示、
+            ♪也不变♫"——最难查的那种坏。 */}
+        {state.error && (
+          <div style={{ marginTop: 10, padding: "7px 9px", background: "#1a0e0e", border: "1px solid #4a2020", borderRadius: 4, fontSize: "10.5px", color: "#d88a7a", lineHeight: 1.5 }}>
+            ⚠ {state.error}
+          </div>
+        )}
+
         <div style={{ fontSize: "10px", color: "#3a3a2a", marginTop: 10, lineHeight: 1.5 }}>
-          音源：archive.org · 无版权音乐 · 秉承着共产主义精神传递的免费文件，完全开源
+          音源见各曲目标注 · 外链曲目来自 archive.org，本地曲目需 public/music/ 下有对应 mp3
         </div>
       </div>
     </div>

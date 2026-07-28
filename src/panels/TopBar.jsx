@@ -12,7 +12,7 @@
 import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../version.js";
-import { getState as getMusicState, subscribe as subscribeMusic, isMusicEnabled } from "../musicPlayer.js";
+import { getState as getMusicState, subscribe as subscribeMusic } from "../musicPlayer.js";
 import { getHomestead } from "../homestead.js";
 
 export default function TopBar({
@@ -37,8 +37,13 @@ export default function TopBar({
     border: `1px solid ${zoneTheme.border}`, borderRadius: 3, background: "transparent",
   });
   const avatarPickerCloseGuard = useOverlayCloseGuard(() => setShowAvatarPicker(false));
-  const [musicPlaying, setMusicPlaying] = useState(() => getMusicState().playing);
-  useEffect(() => subscribeMusic(s => setMusicPlaying(s.playing)), []);
+  // 音乐按钮要同时跟 playing 和 enabled 走。原来只订阅了 playing，而
+  // `{isMusicEnabled() && ...}` 是渲染期直接读 localStorage 的非响应式调用——
+  // 在设置里勾上"音乐模式"，这个按钮不会冒出来，得等别的 state 变化捎带重渲染。
+  const [musicState, setMusicState] = useState(getMusicState);
+  useEffect(() => subscribeMusic(setMusicState), []);
+  const musicPlaying = musicState.playing;
+  const musicEnabled = musicState.enabled;
 
   return (
     <>
@@ -127,11 +132,11 @@ export default function TopBar({
           title={isDayMode ? "切回暗夜模式" : "切换到日间模式（米色底+棕框）"}
           style={topBtn(uiTurquoise)}
         >{isDayMode ? "☀ 日间" : "☾ 夜间"}</span>
-        {isMusicEnabled() && (
+        {musicEnabled && (
           <span
             className="qbtn"
             onClick={() => setShowMusicPanel(true)}
-            title="音乐面板 — 曲库切换"
+            title={musicState.error ? `音乐出错：${musicState.error}` : "音乐面板 — 曲库切换"}
             style={topBtn(musicPlaying ? uiGold : zoneTheme.textDim)}
           >{musicPlaying ? "♫ 音乐" : "♪ 音乐"}</span>
         )}
