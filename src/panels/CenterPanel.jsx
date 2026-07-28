@@ -167,11 +167,15 @@ export default function CenterPanel({
             </div>
           )}
 
-          {/* ── 建筑/交易内联功能区："上"。展开时 flex:1，与下方叙事区平分剩余高度，
-                 一直伸到底部行动栏（不再封顶 36vh 挤在上半部分）。内部 overflowY:auto 自滚，
-                 看全内容；不想占地方就点"▾ 最小化"，叙事区随即恢复全高。── */}
+          {/* ── 建筑/交易内联功能区：展开时**独占整条主叙事栏**，从顶一直拉到底部行动栏。
+                 【为什么不能只占一半】这里原先写 flex:1，而下方叙事区也是 flex:1，两个
+                 兄弟节点平分剩余高度——建筑面板只拿到一半，铁匠铺/商店/武馆那些内容长的
+                 面板下半截直接被截掉，玩家看不到底下的按钮，也没法滚到（外层不滚，
+                 面板自己那层 overflow 又被压在半屏里）。
+                 改成展开时建筑面板独占：叙事区在这种时候整个不渲染（见下方 log 区的条件），
+                 建筑面板拿满整栏。想看叙事就点"▾ 最小化"，叙事区随即恢复全高。 ── */}
           {(activeBuilding || tradingShop) && !buildingPanelMinimized && (
-            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ flex: 1, minHeight: 0, height: "100%", overflowY: "auto", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)" }}>
               {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
               <div
                 onClick={() => setBuildingPanelMinimized(true)}
@@ -327,7 +331,10 @@ export default function CenterPanel({
             </div>
           )}
 
-          <div style={{ flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: 2.0, letterSpacing: "0.3px" }}>
+          {/* 叙事正文区。建筑面板展开时整个让位——两个 flex:1 的兄弟会平分高度，
+              那样建筑面板只有半屏、内容长的下半截看不到（见上方注释）。
+              让位而不是压缩，是因为压缩解决不了「一半」这个根因。 */}
+          <div style={{ display: ((activeBuilding || tradingShop) && !buildingPanelMinimized) ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: 2.0, letterSpacing: "0.3px" }}>
             {(() => {
               // 按"一问一答"分组：玩家的一条 cmd 开启一个新轮次，后面紧跟的所有内容
               // （desc/stat/affection/sys/err 等）都归进这一组，直到下一条 cmd 出现为止。
