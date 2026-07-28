@@ -196,3 +196,63 @@ describe("武学特效：从条目 → 招式 → 界面，三段都要通", () 
     expect(bad, `白名单允许抄这些键，但词典里没有词条，抄过去也显示不出来：${bad.join("、")}`).toEqual([]);
   });
 });
+
+// ── 20 门回气/听桥专项 ──────────────────────────────────────────────────────
+// 回气原型的基线是 4→6 点、零耗；这批「特殊回气」一律要高过基线才有存在意义。
+// 听桥是防守反击原型的高档形态（见 moveArchetypes 顶部「红名的听桥和平民的听桥
+// 不一样」），落在 onCounterSuccess* 上。
+describe("特殊回气与听桥", () => {
+  const all = () => Object.values(SKILL_CATALOG).flat();
+  const REC_BASELINE = 4; // 回气原型白档的回复量
+
+  it("特殊回气至少 17 门，且每门都高过基线 4 点", () => {
+    const rec = all().filter(s => typeof s.energyRestore === "number");
+    expect(rec.length).toBeGreaterThanOrEqual(17);
+    const weak = rec.filter(s => s.energyRestore <= REC_BASELINE).map(s => `${s.name}(${s.energyRestore})`);
+    expect(weak, `这些回气没高过基线，不配叫「特殊」：${weak.join("、")}`).toEqual([]);
+  });
+
+  it("回气门类里既有兼回血的，也有带增益的", () => {
+    const rec = all().filter(s => typeof s.energyRestore === "number");
+    expect(rec.filter(s => s.hpRestore).length, "没有一门兼回血").toBeGreaterThan(0);
+    expect(rec.filter(s => s.nextAttackBonus || s.immuneControl || s.forceCrit).length, "没有一门带增益").toBeGreaterThan(0);
+  });
+
+  it("听桥类都是防御槽，且回气与反打两项俱全", () => {
+    // 听桥＝防御槽上的反击类（攻击槽挂 onCounterSuccess* 是不触发的，另有测试管）
+    const ting = all().filter(s => s.moveType === "防御" && s.onCounterSuccessEnergyGain);
+    expect(ting.length).toBeGreaterThanOrEqual(3);
+    for (const t of ting) {
+      expect(t.moveType, `${t.name} 是听桥类却不在防御槽`).toBe("防御");
+    }
+  });
+
+  it("分散在全图：至少 6 个武学集各有新回气/听桥", () => {
+    const sets = Object.entries(SKILL_CATALOG)
+      .filter(([, arr]) => arr.some(s => s.energyRestore > REC_BASELINE || s.onCounterSuccessEnergyGain))
+      .map(([k]) => k);
+    expect(sets.length, `只有 ${sets.join("/")} 有，没铺开`).toBeGreaterThanOrEqual(6);
+  });
+
+  it("这 20 门的特效全都能传到招式上、并且右栏显示得出人话", () => {
+    const blank = [];
+    for (const s of all()) {
+      if (!(s.energyRestore > REC_BASELINE || s.onCounterSuccessEnergyGain)) continue;
+      const mv = deriveMoveFromSkill({ ...s, stage: "大成" });
+      if (s.energyRestore) expect(mv.energyRestore, `${s.name} 的回气没传下去`).toBe(s.energyRestore);
+      if (s.onCounterSuccessEnergyGain) expect(mv.onCounterSuccessEnergyGain, `${s.name} 的听桥回气没传下去`).toBe(s.onCounterSuccessEnergyGain);
+      if (!moveEffectBrief(mv)) blank.push(s.name);
+    }
+    expect(blank, `以下右栏那行会是空白：${blank.join("、")}`).toEqual([]);
+  });
+
+  it("onCounterSuccess* 只能挂在防御槽——挂到攻击/状态槽上永远不触发", () => {
+    const bad = [];
+    for (const s of all()) {
+      if (s.type !== SKILL_TYPE.MOVE) continue;
+      const hasCounter = s.onCounterSuccessEnergyGain != null || s.onCounterSuccessDamageRatio != null;
+      if (hasCounter && s.moveType !== "防御") bad.push(`${s.name}(${s.moveType})`);
+    }
+    expect(bad, `这些招挂了「防御成功才结算」的标志位，却不在防御槽，永远触发不了：${bad.join("、")}`).toEqual([]);
+  });
+});

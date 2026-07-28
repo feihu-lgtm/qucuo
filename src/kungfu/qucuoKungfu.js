@@ -16,6 +16,18 @@ export const SKILL_CATALOG = {
   // ── 玉泉练武场：藏地摔跤+游走风格，状态/轻功为主 ──
   玉泉: [
     {
+      id: "kf_rec_muge", name: "牧歌调息", type: SKILL_TYPE.MOVE, quality: "绿", price: 55,
+      moveType: "状态",
+      energyRestore: 6,
+      desc: "放牦牛的人在坡上哼的调子，没词，只有起伏。哼到第三遍呼吸自己就跟上了拍子，胸口那口憋着的气顺下去。阿索说这不是功夫，是「人跟着牛走久了，走出来的」。",
+    },
+    {
+      id: "kf_rec_langqu", name: "狼曲饮雪", type: SKILL_TYPE.MOVE, quality: "蓝", price: 120,
+      moveType: "状态",
+      energyRestore: 7, hpRestore: 0.08,
+      desc: "掬一捧狼曲上游的雪含在嘴里，不嚼不咽，让它自己化。凉气顺喉管一路沉到丹田，化开的时候整个人激灵一下。牧民冬天赶远路全靠这一口。",
+    },
+    {
       id: "kf_liuyun", name: "流云步法", type: SKILL_TYPE.QINGGONG, quality: "绿", price: 45,
       moveType: "状态",
       desc: "藏地牧民代代相传的步伐心诀，身随意转，如云散无形。修习后身法加强，与对手同类招式对撞时更易占得先手。",
@@ -38,6 +50,24 @@ export const SKILL_CATALOG = {
   // ── 雪山练功堂：雪山派内外兼修，防御反击+内功为主 ──
   雪山: [
     {
+      id: "kf_rec_xuexian", name: "雪线吐纳", type: SKILL_TYPE.MOVE, quality: "蓝", price: 130,
+      moveType: "状态",
+      energyRestore: 8,
+      desc: "站在雪线上呼吸——那条线以上空气稀薄，逼得你把每一口都吸到底。练熟了下山再喘气，觉得平地的空气浓得发腻。呼延雪说这门功夫的诀窍是「先学会难受」。",
+    },
+    {
+      id: "kf_rec_wenquan", name: "温泉纳气", type: SKILL_TYPE.MOVE, quality: "紫", price: 200,
+      moveType: "状态",
+      energyRestore: 7, hpRestore: 0.14,
+      desc: "后山温泉水温烫手，泡到肩膀，任热气从毛孔往里钻。何雨谢定的规矩是一炷香就得起来——「再泡下去补的是懒，不是气。」",
+    },
+    {
+      id: "kf_ting_tingxue", name: "听雪", type: SKILL_TYPE.MOVE, quality: "紫", price: 230,
+      moveType: "防御",
+      onCounterSuccessEnergyGain: 4, onCounterSuccessDamageRatio: 0.4,
+      desc: "听桥一路的雪山变体。不看不挡，只听。雪落在肩上有声，剑破空也有声，两种声音在他耳朵里是一样的。听准了再动，一动就是还手。",
+    },
+    {
       id: "kf_xuexin", name: "雪山养气诀", type: SKILL_TYPE.NEIGONG, quality: "绿", price: 70,
       moveType: "防御",
       desc: "雪山派内功入门，以静养气、以气养血。修习后气血上限提升，且每次切磋后恢复更快。",
@@ -59,6 +89,18 @@ export const SKILL_CATALOG = {
 
   // ── 锦官武馆：通行江湖功夫，攻击为主，入门无门槛 ──
   锦官: [
+    {
+      id: "kf_rec_chabo", name: "茶博士收势", type: SKILL_TYPE.MOVE, quality: "绿", price: 50,
+      moveType: "状态",
+      energyRestore: 5, hpRestore: 0.05,
+      desc: "清风茶馆的跑堂一天走三十里地不歇脚，全靠这一手：长嘴壶收势那一下顺势沉肩塌腰，一口气就换过来了。李掌柜说学会了「端一天盘子腰不酸」。",
+    },
+    {
+      id: "kf_rec_xiaochang", name: "校场歇鼓", type: SKILL_TYPE.MOVE, quality: "蓝", price: 140,
+      moveType: "状态",
+      energyRestore: 7, nextAttackBonus: 0.3,
+      desc: "锦官武馆校场上，一通鼓歇下来的那三息。老兵教的：别急着喘，先把散掉的劲收回丹田，收利索了下一棍才有分量。鼓再响时，你比刚才更沉。",
+    },
     {
       id: "kf_gangfeng", name: "刚锋腿", type: SKILL_TYPE.MOVE, quality: "白", price: 18,
       moveType: "攻击",
@@ -88,6 +130,12 @@ export const SKILL_CATALOG = {
   // ── 令狐冲墓·独孤九剑：非售卖，仅通过贡措海令狐冲墓参悟获得 ──
   独孤: [
     {
+      id: "kf_rec_jianzhong", name: "剑冢独坐", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+      moveType: "状态",
+      energyRestore: 10, immuneControl: true,
+      desc: "在剑冢边上坐着，什么也不做。风穿过那些插了几十年的剑，声音很杂，坐久了就听不见了。听不见的时候，气自己回来了，心里也没什么能扰得动你。",
+    },
+    {
       id: "kf_dugujiujian", name: "独孤九剑", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
       moveType: "攻击",
       desc: "剑魔独孤求败所创，无招胜有招。总诀式、破剑式、破刀式、破掌式、破索式、破鞭式、破枪式、破箭式、破气式，九式归一。令狐冲刻于墓壁，待有缘人。",
@@ -98,9 +146,30 @@ export const SKILL_CATALOG = {
   // ── 青城派：以柔克刚、后发制人，道门正宗 ──
   青城: [
     {
+      id: "kf_rec_xiaozhoutian", name: "玄门小周天", type: SKILL_TYPE.MOVE, quality: "蓝", price: 125,
+      moveType: "状态",
+      energyRestore: 7,
+      desc: "道门正宗的行气路子，气自尾闾上夹脊、过玉枕、下重楼，绕一圈回丹田。一清道长说走这一圈要一炷香，急不得——「你催它，它就散。」",
+    },
+    {
+      id: "kf_rec_libui", name: "离堆分水息", type: SKILL_TYPE.MOVE, quality: "紫", price: 205,
+      moveType: "状态",
+      energyRestore: 9, hpRestore: 0.12,
+      desc: "仿离堆分水的理路：气到胸口一分为二，一股沉丹田，一股走四肢。不蓄在一处，就不会憋。宝瓶口边上练，水声大得听不见自己呼吸，反而练得成。",
+    },
+    {
+      id: "kf_ting_fenshui", name: "听桥·分水", type: SKILL_TYPE.MOVE, quality: "紫", price: 240,
+      moveType: "防御",
+      onCounterSuccessEnergyGain: 5, onCounterSuccessDamageRatio: 0.5,
+      desc: "听桥的青城正解。来力到身前如江水撞上离堆，自然分作两股从身侧滑过——分完那一瞬江水还在推，借的就是那一推。一清道长使这招是闭着眼的。",
+    },
+    {
       id: "kf_qingchengjian", name: "青城剑法", type: SKILL_TYPE.MOVE, quality: "白", price: 20,
       moveType: "攻击",
-      onCounterSuccessEnergyGain: 1,
+      // 【原来挂的是 onCounterSuccessEnergyGain】那个标志位只在「防御成功反击」时
+      // 结算，挂在攻击槽的招上永远不触发。改成接反击追打，既合青城后发制人的路子，
+      // 也跟松风剑法(0.3)形成入门→进阶的递进。
+      afterCounterBonus: 0.2,
       desc: "青城派开蒙剑法，只有十二式，弟子上山头三个月练的就是它。招式灵动飘逸，起手不求力也不求快，只求准——剑尖始终对着对手重心那一点。松鹤道长说这套剑法一辈子都练不完，「你嫌它简单，是因为你还没被它救过命」。",
     },
     {
@@ -161,6 +230,24 @@ export const SKILL_CATALOG = {
   // 通臂拳（后人尊白猿祖师）、南宋白云禅师融医入武创十二庄（正式创宗）、
   // 明代峨眉枪一度独步天下。
   峨眉: [
+    {
+      id: "kf_rec_jinding", name: "金顶观日", type: SKILL_TYPE.MOVE, quality: "蓝", price: 135,
+      moveType: "状态",
+      energyRestore: 6, hpRestore: 0.10,
+      desc: "天不亮上金顶，等云海底下那一线红。等的时候不许动，冻得发抖也不许动。日头出来那一刻吸一口气——师太说那口气跟别的时辰不一样，「你自己会知道」。",
+    },
+    {
+      id: "kf_rec_xiaozhuang", name: "十二庄·小庄息", type: SKILL_TYPE.MOVE, quality: "紫", price: 210,
+      moveType: "状态",
+      energyRestore: 8, nextAttackBonus: 0.25,
+      desc: "十二庄里最短的一庄，只换一个站姿。虚白道姑演示给你看，你没看出哪里变了，但她说气已经归了位。「下一下你自己使使看。」",
+    },
+    {
+      id: "kf_ting_foguang", name: "听桥·佛光", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+      moveType: "防御",
+      onCounterSuccessEnergyGain: 6, doubleReflectDamage: true,
+      desc: "峨眉不外传的听桥。双掌合什立于身前，来力撞上去像撞庙墙——墙不动，撞的人自己先受不住。玄尘师太说这一式的关键不在手上，「在你信不信那堵墙」。",
+    },
     {
       id: "kf_emei_tongbei", name: "峨眉通臂拳", type: SKILL_TYPE.MOVE, quality: "白", price: 18,
       moveType: "攻击",
@@ -235,6 +322,18 @@ export const SKILL_CATALOG = {
 
   // ── 唐门：暗器与毒药，家族制不收外姓，但暗器卖给所有人 ──
   唐门: [
+    {
+      id: "kf_rec_yaoxi", name: "药息", type: SKILL_TYPE.MOVE, quality: "蓝", price: 145,
+      moveType: "状态",
+      energyRestore: 7, immuneControl: true,
+      desc: "唐门以毒淬体的副产物：运起药息，体表渗出一层微苦的薄汗，人也跟着清醒。旁人的迷香定身之类，到了这层汗跟前就矮了三分。唐老太一边喝茶一边说「这不算功夫，是习惯」。",
+    },
+    {
+      id: "kf_rec_xiazhong", name: "匣中静", type: SKILL_TYPE.MOVE, quality: "紫", price: 215,
+      moveType: "状态",
+      energyRestore: 9, nextAttackBonus: 0.35,
+      desc: "开匣之前的那一息。十二格暗器都在手边，你不看它们，只调匀呼吸——手一稳，出去的东西才准。唐三少说店里最贵的不是暗器，是这一息。",
+    },
     { id: "kf_tangmen_anqi", name: "满天星雨", type: SKILL_TYPE.MOVE, quality: "蓝", price: 150,
       moveType: "攻击",
       ignoreDefenseRatio: 0.35, applyMark: { name: "内伤", stacks: 1, max: 5 },
@@ -247,6 +346,18 @@ export const SKILL_CATALOG = {
 
   // ── 血刀门：邪派，以杀养刀。不外传，只从厉天行身上掉 ──
   血刀: [
+    {
+      id: "kf_rec_chuoxue", name: "啜血还气", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+      moveType: "状态",
+      energyRestore: 12,
+      desc: "血刀门的路子：把干在指缝里的血痂抠下来吃了。气回得极快，快到不像人该有的速度。厉天行说这没什么讲究，「你饿了会吃饭，我这就是吃饭」。",
+    },
+    {
+      id: "kf_rec_daoxiu", name: "刀锈入喉", type: SKILL_TYPE.MOVE, quality: "紫", price: 0,
+      moveType: "状态",
+      energyRestore: 8, forceCrit: { multiplier: 1.35 },
+      desc: "舔一下刀背。铁锈味混着别人的血腥味压在舌根，恶心，但眼睛会红。红了之后下一刀的分量不一样——这门功夫从不解释为什么。",
+    },
     { id: "kf_xuedao", name: "血刀大法", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
       // hpRestore 是招式层已经跑通的字段（resolveTurn 里按最大气血比例结算），
       // 设计稿原写的 lifesteal（按实际伤害比例吸血）全项目没有接线，写了也不生效，
@@ -259,6 +370,18 @@ export const SKILL_CATALOG = {
 
   // ── 三星派：古蜀剑派，不设铺面不收束脩，武学只从面具试炼来 ──
   三星: [
+    {
+      id: "kf_rec_guixu", name: "归墟坐忘", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+      moveType: "状态",
+      energyRestore: 12,
+      desc: "纵目者那一式的皮毛。闭眼，把自己当成一件被放回坑里的青铜器——三千年没人动过，也就三千年没耗过。睁眼时气是满的。",
+    },
+    {
+      id: "kf_rec_neishi", name: "纵目内视", type: SKILL_TYPE.MOVE, quality: "紫", price: 0,
+      moveType: "状态",
+      energyRestore: 7, hpRestore: 0.12, immuneControl: true,
+      desc: "戴上面具之后视野窄了，反而看得见自己身体里的事——哪条经堵着，哪处旧伤没长好，一目了然。看见了，也就理顺了。青铜面人不说话，他们就这么互相教。",
+    },
     { id: "kf_sanxing_jian", name: "纵目剑法", type: SKILL_TYPE.MOVE, quality: "紫", price: 0,
       moveType: "攻击",
       ignoreDefense: true,
