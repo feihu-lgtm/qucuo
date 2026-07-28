@@ -464,10 +464,35 @@ const STAGE_TO_QUALITY = { 入门: "白", 小成: "绿", 大成: "蓝", 圆满: 
 
 // 根据一门武学的当前阶段和类型，生成对应的招式对象。
 // moveType 优先取 skill.moveType（预设手写指定），没有就用名字关键词兜底猜测。
+// 武学条目上允许带、并且会被抄到招式上的特效键。与 itemEffectText 的词典同源：
+// 词典里有词条 = 界面显示得出来；resolveTurn 认得 = 打起来真的生效。
+// 新增特效时三处一起加，别只加一处（本项目已经在这上头栽过好几次）。
+export const SKILL_EFFECT_KEYS = [
+  "forceFirst", "forceCrit", "ignoreDefense", "ignoreDefenseRatio", "nullifyStatusOnHit",
+  "doubleVsStatus", "lowHpBonus", "highHpBonus", "afterStatusBonus", "afterCounterBonus",
+  "justiceStrike", "applyMark", "applyMarkChance", "applyMarkOnHit", "detonateMark",
+  "applyStatus", "statusChance", "confuseChance", "enemyCostPenalty", "freezeEnergyRecovery",
+  "onCounterSuccessDamageRatio", "onCounterSuccessEnergyGain", "doubleReflectDamage",
+  "immuneControl", "ignoreDefensePartialImmune", "rebirthOnce",
+  "hpRestore", "energyRestore", "selfSacrifice", "allInDamage",
+  "nextAttackBonus", "lowEnemyEnergyBonus",
+];
+
 export function deriveMoveFromSkill(skill) {
   const moveType = skill.moveType || inferMoveType(skill.name);
   const power = STAGE_POWER[skill.stage] || 1.0;
   const quality = STAGE_TO_QUALITY[skill.stage] || "白";
+
+  // 【武学身上的特效标志位必须带过来·此前全被丢掉】
+  // 这个函数原来只造 id/name/type/quality/energyCost + 一个倍率，武学条目上写的
+  // forceFirst、破防、附异状那些标志位一个都不往招式上抄。后果是整个武学体系
+  // 派生出来的招**除了类型和倍率之外完全一样**：一字电剑写着「无视身法强行先手」，
+  // 打起来跟普通一剑没有任何区别；右栏的 moveEffectBrief 也因此永远是空的
+  // （显示线路本来是通的，只是数据从没送到）。
+  // 这里按白名单抄——白名单就是 itemEffectText 那份唯一词典的键 + 它的参数键，
+  // 保证「能抄过去的 = 能显示出来的 = 战斗认得的」三者同一套。
+  const carried = {};
+  for (const k of SKILL_EFFECT_KEYS) if (skill[k] !== undefined) carried[k] = skill[k];
 
   const base = {
     id: `skill_move_${skill.name}`,
@@ -476,6 +501,7 @@ export function deriveMoveFromSkill(skill) {
     quality,
     energyCost: STAGE_ENERGY_COST[skill.stage] || 2,
     sourceSkill: skill.name,
+    ...carried,
   };
 
   if (moveType === MOVE_TYPE.ATTACK) {
@@ -485,8 +511,15 @@ export function deriveMoveFromSkill(skill) {
     // 防御类倍率反过来：练得越深，受到的伤害越低（0.6基准往下降，不是往上乘）
     return { ...base, baseDamageMultiplier: Math.max(0.05, 0.65 - (power - 1) * 0.5) };
   }
-  // 状态类：练得越深，附加效果的触发几率/强度越高
-  return { ...base, confuseChance: Math.min(0.7, 0.3 * power), energyRestore: moveType === MOVE_TYPE.STATUS && skill.name.includes("回气") ? Math.round(4 * power) : undefined };
+  // 状态类：练得越深，附加效果的触发几率/强度越高。
+  // 注意这两项要让位给武学自己写的值——它们在 base 的 ...carried 里已经带过来了，
+  // 这里若无条件覆盖，就会把「回风拂柳剑 confuseChance:0.5」这种手写词条冲掉
+  // （曾经就是这么冲掉的，测试当场逮住）。手写优先，没写才按阶段推。
+  return {
+    ...base,
+    confuseChance: skill.confuseChance ?? Math.min(0.7, 0.3 * power),
+    energyRestore: skill.energyRestore ?? (moveType === MOVE_TYPE.STATUS && skill.name.includes("回气") ? Math.round(4 * power) : undefined),
+  };
 }
 
 // 玩家的切磋招式池：一门武学对应一个招式，一一映射，不再循环分配/查表。

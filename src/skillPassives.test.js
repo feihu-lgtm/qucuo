@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { computePassiveBonus, effectiveMaxHp, SKILL_CATALOG, SKILL_TYPE } from "./kungfu/qucuoKungfu.js";
 import { effectiveSpecial } from "./equipment.js";
+import { EFFECT_CN } from "./itemEffectText.js";
 
 // 【这份测试守的是刚刚接上的那条线】
 // computePassiveBonus 此前全项目没有任何调用点——文件头写着"MudRPG 里调用后叠加到
@@ -138,5 +139,60 @@ describe("青城武学目录扩充后的自洽", () => {
       }
     }
     expect(bad, `passiveBonus 里出现了没有接线的字段（写了也不生效）：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+});
+
+// ── 武学的特效词条必须一路走到招式上、并且显示得出来 ──────────────────────
+// 【被「所有武学破防什么什么的词条都实装了吗，右栏能显示吗」问出来的】
+// deriveMoveFromSkill 原来只造 id/name/type/quality/energyCost + 一个倍率，
+// 武学条目上写的 forceFirst / 破防 / 附异状那些标志位**一个都不往招式上抄**。
+// 后果：整个武学体系派生出来的招除了类型和倍率之外完全一样；一字电剑写着
+// 「无视身法强行先手」，打起来跟普通一剑毫无区别；右栏的 moveEffectBrief 也
+// 永远是空的——显示线路本来就是通的，只是数据从没送到。
+import { deriveMoveFromSkill, SKILL_EFFECT_KEYS } from "./npcGeneration.js";
+import { moveEffectBrief } from "./itemEffectText.js";
+import { MOVE_TYPE } from "./combat/moveTypes.js";
+
+const moveSkills = () => Object.entries(SKILL_CATALOG)
+  .flatMap(([set, arr]) => arr.filter(s => s.type === SKILL_TYPE.MOVE).map(s => ({ ...s, set })));
+
+describe("武学特效：从条目 → 招式 → 界面，三段都要通", () => {
+  it("武学身上的特效标志位会被抄到派生招式上", () => {
+    for (const sk of moveSkills()) {
+      const mv = deriveMoveFromSkill({ ...sk, stage: "大成" });
+      for (const k of SKILL_EFFECT_KEYS) {
+        if (sk[k] === undefined) continue;
+        expect(mv[k], `${sk.set}·${sk.name} 的 ${k} 没被带到招式上`).toEqual(sk[k]);
+      }
+    }
+  });
+
+  it("一字电剑的「快如闪电」落在 forceFirst 上，并且真的传下去了", () => {
+    const sk = moveSkills().find(s => s.name === "一字电剑");
+    expect(sk.forceFirst).toBe(true);
+    expect(deriveMoveFromSkill({ ...sk, stage: "大成" }).forceFirst).toBe(true);
+  });
+
+  it("每门带特效的武学，右栏那行都显示得出人话（翻不出来就是空白）", () => {
+    const blank = [];
+    for (const sk of moveSkills()) {
+      const hasFx = SKILL_EFFECT_KEYS.some(k => sk[k] !== undefined);
+      if (!hasFx) continue;
+      const mv = deriveMoveFromSkill({ ...sk, stage: "大成" });
+      if (!moveEffectBrief(mv)) blank.push(`${sk.set}·${sk.name}`);
+    }
+    expect(blank, `以下武学带了特效，但右栏那行会是空白：\n  ${blank.join("、")}`).toEqual([]);
+  });
+
+  it("招式类武学的 moveType 必须是三个上阵槽之一（否则买了也永远上不了阵）", () => {
+    const slots = new Set(Object.values(MOVE_TYPE));
+    const orphan = moveSkills().filter(s => !slots.has(s.moveType)).map(s => `${s.set}·${s.name}(${s.moveType})`);
+    expect(orphan, `这些武学的 moveType 不在攻击/防御/状态三槽里，deriveMovesetFromSkills 永远匹配不到：\n  ${orphan.join("、")}`).toEqual([]);
+  });
+
+  it("SKILL_EFFECT_KEYS 白名单里的键都能被词典翻成人话（三处同源）", () => {
+    const PARAM = new Set(["applyMarkChance", "applyMarkOnHit", "statusChance", "confuseChance"]);
+    const bad = SKILL_EFFECT_KEYS.filter(k => !PARAM.has(k) && !EFFECT_CN[k]);
+    expect(bad, `白名单允许抄这些键，但词典里没有词条，抄过去也显示不出来：${bad.join("、")}`).toEqual([]);
   });
 });

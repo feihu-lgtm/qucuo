@@ -24,11 +24,13 @@ export const SKILL_CATALOG = {
     {
       id: "kf_daishuai", name: "摔跌术", type: SKILL_TYPE.MOVE, quality: "绿", price: 35,
       moveType: "状态",
+      applyStatus: "麻穴", statusChance: 0.4,
       desc: "借力打力，将对手的气势引入虚处——看似平淡，实则以巧破力，是玉泉寨人相互切磋最常用的手段。",
     },
     {
       id: "kf_jiangong", name: "坚桩功", type: SKILL_TYPE.MOVE, quality: "白", price: 20,
       moveType: "防御",
+      ignoreDefensePartialImmune: 0.3,
       desc: "扎实的站桩功夫，招式简单但根基牢固，练到纯熟能以守代攻。初学者的不二之选。",
     },
   ],
@@ -44,6 +46,7 @@ export const SKILL_CATALOG = {
     {
       id: "kf_bingxin", name: "冰心掌", type: SKILL_TYPE.MOVE, quality: "绿", price: 55,
       moveType: "防御",
+      immuneControl: true,
       desc: "以静制动，掌法平稳如雪山不动，防住来势后余力犹在。雪山派弟子入门必学的防身功夫。",
     },
     {
@@ -59,11 +62,13 @@ export const SKILL_CATALOG = {
     {
       id: "kf_gangfeng", name: "刚锋腿", type: SKILL_TYPE.MOVE, quality: "白", price: 18,
       moveType: "攻击",
+      lowHpBonus: 0.2,
       desc: "朴实无华的腿法，踢出去带着一股硬劲，胜在简单直接，江湖初入者常练。",
     },
     {
       id: "kf_lieyan", name: "烈焰拳", type: SKILL_TYPE.MOVE, quality: "绿", price: 45,
       moveType: "攻击",
+      forceCrit: { multiplier: 1.4 },
       desc: "流传甚广的刚猛拳法，以力破巧，一拳连着一拳往上催，架不住就是硬吃。",
     },
     {
@@ -95,11 +100,13 @@ export const SKILL_CATALOG = {
     {
       id: "kf_qingchengjian", name: "青城剑法", type: SKILL_TYPE.MOVE, quality: "白", price: 20,
       moveType: "攻击",
+      onCounterSuccessEnergyGain: 1,
       desc: "青城派开蒙剑法，只有十二式，弟子上山头三个月练的就是它。招式灵动飘逸，起手不求力也不求快，只求准——剑尖始终对着对手重心那一点。松鹤道长说这套剑法一辈子都练不完，「你嫌它简单，是因为你还没被它救过命」。",
     },
     {
       id: "kf_songfeng", name: "松风剑法", type: SKILL_TYPE.MOVE, quality: "绿", price: 50,
       moveType: "攻击",
+      afterCounterBonus: 0.3,
       desc: "青城派入门剑法，三十六式舒展如松涛过涧。不以快取胜——剑尖划过空气看似缓慢，实则每一剑藏着连绵后劲。使到第三十六式时第一式剑劲还在对手体内残留，新旧叠加，一剑比一剑沉。宝瓶口练此剑，剑尖点水不起水花方为入门。",
     },
     {
@@ -111,6 +118,7 @@ export const SKILL_CATALOG = {
     {
       id: "kf_dujiangshi", name: "都江古堰势", type: SKILL_TYPE.MOVE, quality: "蓝", price: 120,
       moveType: "状态",
+      enemyCostPenalty: { value: 1, turns: 2 },
       desc: "不伤敌不护身——改变脚下的势。将内劲灌入地面布下无形力场，力场内敌方劲力被引导分流，快招自动变慢、准头偏移，如岷江激流撞上离堆被迫分为内外两江。维持时间短极耗内力，但一旦布下攻守之势立转。",
       passiveBonus: { speedBonus: 1 },
     },
@@ -156,41 +164,53 @@ export const SKILL_CATALOG = {
     {
       id: "kf_emei_tongbei", name: "峨眉通臂拳", type: SKILL_TYPE.MOVE, quality: "白", price: 18,
       moveType: "攻击",
+      lowHpBonus: 0.25,
       desc: "峨眉最老的一门，托名白猿祖师司徒玄空所创。相传他在山中看灵猴攀援腾挪看了十年，把猴子怎么甩臂、怎么借腰劲写成了拳。招式看着不雅相，肩臂甩得很开，但打人极疼——猴子打架从来不讲好看。",
     },
     {
       id: "kf_emei_jian", name: "峨眉剑法", type: SKILL_TYPE.MOVE, quality: "绿", price: 55,
       moveType: "攻击",
+      nullifyStatusOnHit: true,
       desc: "峨眉入门剑法，三十六式，式式带禅意。剑走轻灵不尚蛮力，剑尖画出的轨迹如梵文种子字——看似随意，实则每一笔都有定数。女子使来如飞天散花，男子使来如老僧扫地。",
     },
     {
       id: "kf_emei_jieshou", name: "截手九式", type: SKILL_TYPE.MOVE, quality: "绿", price: 48,
       moveType: "防御",
+      onCounterSuccessDamageRatio: 0.35,
       desc: "峨眉掌法里最不起眼的一门，专管「接」。对方拳来掌来兵刃来，九式各截一路，截住就完，不追不打。了因师太说这九式是给新弟子保命用的——「你先学会不挨打，再谈打人。」",
     },
     {
       id: "kf_emei_piaoxue", name: "飘雪穿云掌", type: SKILL_TYPE.MOVE, quality: "蓝", price: 105,
       moveType: "攻击",
+      ignoreDefenseRatio: 0.3,
       desc: "掌风轻柔得像拂脸上的雪，挨着不疼，退开三步才觉得胸口发闷。峨眉五峰发力里最见功夫的一门——力不出在掌上，出在肩肘之间那一寸转折里，看的人只看见袖子动了动。",
     },
     {
       id: "kf_emei_zhi", name: "兰花拂穴手", type: SKILL_TYPE.MOVE, quality: "蓝", price: 100,
       moveType: "状态",
+      applyStatus: "麻穴", statusChance: 0.55,
       desc: "六大专修功里指穴功一路。五指如兰花绽放，指尖点出带一股柔劲，不伤皮肉专封经脉。被点中的人不疼，但半边身子动不了。解法只有两个：等两个时辰自行散开，或者让峨眉的人再点一下。",
     },
     {
       id: "kf_emei_qingxin", name: "清心普善咒", type: SKILL_TYPE.MOVE, quality: "蓝", price: 130,
-      moveType: "疗伤",
+      // 原写 moveType:"疗伤"，但上阵槽只有攻击/防御/状态三格（deriveMovesetFromSkills
+      // 就按这三类找 active 武学），疗伤压根匹配不上——这门买了也永远上不了阵。
+      // 改挂状态槽，回血靠 hpRestore（resolveTurn 本就按最大气血比例结算），
+      // 「高效回血」是真的回，不是描述。
+      moveType: "状态",
+      hpRestore: 0.18,
       desc: "不是打人的功夫，是救人的。默诵咒文导气归经，血止得快，断骨接得齐。了因师太在佛堂教这个，来学的一半是弟子，一半是城里的郎中。她从不收郎中的钱——「你们治的人比我多。」",
     },
     {
       id: "kf_emei_foguang", name: "佛光普照", type: SKILL_TYPE.MOVE, quality: "紫", price: 185,
       moveType: "防御",
+      doubleReflectDamage: true,
       desc: "峨眉掌法巅峰一门。双掌合什再分开，掌心朝外一推，来力像撞在庙墙上——墙不动，撞的人手疼。金顶云海上日出时佛光现，看的人都说那是菩萨显圣；练成这门的人知道，那不过是光碰上了雾。",
     },
     {
       id: "kf_emei_huifeng", name: "回风拂柳剑", type: SKILL_TYPE.MOVE, quality: "紫", price: 210,
       moveType: "状态",
+      confuseChance: 0.5, afterCounterBonus: 0.35,
       desc: "峨眉代表剑法。剑不直去，走的是回旋的路子，一剑荡开对方兵刃，剑势不停顺势卷回来，像风过柳梢那一下回摆。对手往往是被自己格挡的余力带偏的——你使多大劲挡，就被带出多远。",
     },
     {
@@ -217,6 +237,7 @@ export const SKILL_CATALOG = {
   唐门: [
     { id: "kf_tangmen_anqi", name: "满天星雨", type: SKILL_TYPE.MOVE, quality: "蓝", price: 150,
       moveType: "攻击",
+      ignoreDefenseRatio: 0.35, applyMark: { name: "内伤", stacks: 1, max: 5 },
       desc: "唐门暗器总诀。袖中同时飞出七枚铁蒺藜，走七条不同弧线，封死对手三个闪避方向。不是快，是密。练到极处一袖出三十六枚，如星雨覆面，无处可躲。" },
     { id: "kf_tangmen_du", name: "百毒不侵体", type: SKILL_TYPE.NEIGONG, quality: "蓝", price: 130,
       moveType: "防御",
@@ -240,6 +261,7 @@ export const SKILL_CATALOG = {
   三星: [
     { id: "kf_sanxing_jian", name: "纵目剑法", type: SKILL_TYPE.MOVE, quality: "紫", price: 0,
       moveType: "攻击",
+      ignoreDefense: true,
       desc: "剑走直线，不拐弯。三星堆青铜面具的眼睛是凸出来的，看人不看表面，看穿。剑也一样：不刺你格挡的地方，刺你格挡之后的地方。一剑出去你挡了，但剑尖已经在你身后。三千年前的剑法本没有名字，后人叫它纵目——纵目所见，皆是要害。" },
     { id: "kf_sanxing_bu", name: "神树步", type: SKILL_TYPE.QINGGONG, quality: "紫", price: 0,
       moveType: "状态",
