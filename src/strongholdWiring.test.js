@@ -77,7 +77,8 @@ describe("常驻NPC 的 carry 符合文件头写的设计原则", () => {
 
   // 历史欠账：这两位在雅江之前就缺类别，属既有状态，先挂账不阻塞。
   // 补齐后请从这里删掉对应条目。
-  const LEGACY_MISSING_CATEGORY = new Set(["玄女", "赫连铸"]);
+  // （玄女缺武器、赫连铸缺饰品这两笔欠账已补齐，白名单清空。）
+  const LEGACY_MISSING_CATEGORY = new Set([]);
 
   it("每人至少各有 1 件武器 / 护甲 / 饰品", () => {
     const bad = [];
@@ -106,6 +107,44 @@ describe("常驻NPC 的 carry 符合文件头写的设计原则", () => {
       }
     }
     expect(bad, `carry 品质超过 levelCap：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+
+  // carry 写了名字、catalog 却没有这一条时，makeItemSmart 会退回公式生成——
+  // 那些明明是为某个角色专门写的随身物（玄女的青石子、赫连铸的半张欠条）掉出来
+  // 会变成没有词条、没有来历的白板货，也进不了物件志给 AI 引用。
+  it("carry 里每件具名物都能在 catalog 查到", () => {
+    const bad = [];
+    for (const n of residents) {
+      for (const c of n.carry || []) {
+        if (!CATALOG_INDEX[c.name]) bad.push(`${n.district}·${n.name}: ${c.name}`);
+      }
+    }
+    expect(bad, `以下 carry 物件 catalog 里没有，会退化成公式生成的白板货：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+
+  it("carry 声明的品类/品质与 catalog 一致（两边打架时以 catalog 为准，容易看走眼）", () => {
+    const bad = [];
+    for (const n of residents) {
+      for (const c of n.carry || []) {
+        const e = CATALOG_INDEX[c.name];
+        if (!e) continue;
+        if (e.category !== c.category) bad.push(`${n.name}·${c.name} carry写${c.category}，catalog是${e.category}`);
+        if (e.quality !== c.quality) bad.push(`${n.name}·${c.name} carry写${c.quality}，catalog是${e.quality}`);
+      }
+    }
+    expect(bad, `carry 与 catalog 声明不一致：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+
+  it("同一人不重复携带同名物件", () => {
+    const bad = [];
+    for (const n of residents) {
+      const seen = new Set();
+      for (const c of n.carry || []) {
+        if (seen.has(c.name)) bad.push(`${n.district}·${n.name}: ${c.name}`);
+        seen.add(c.name);
+      }
+    }
+    expect(bad, `同一人重复携带：\n  ${bad.join("\n  ")}`).toEqual([]);
   });
 
   it("NPC id 不重复（重复会让强制注入互相顶掉）", () => {

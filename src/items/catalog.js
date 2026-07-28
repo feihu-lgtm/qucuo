@@ -639,6 +639,33 @@ export const SUNDRIES = [
   { name: "青城老酒", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["酒", "雅江特产"], consumable: { hpRestore: 0.1, energyRestore: 1 }, desc: "青城山后山泉酿的米酒，甜润不烈。道士们晚课后喝一碗——一清道长不喝，松鹤道长喝三碗。" },
   { name: "竹叶青蛇胆", category: ITEM_CATEGORY.MISC, quality: "蓝", tags: ["药材", "解毒"], consumable: { hpRestore: 0.12 }, desc: "竹海里竹叶青蛇的胆，玉真子用来配解毒散。取胆不杀蛇——他捏着蛇头挤出来，蛇吐着信子走了，他也走了。" },
   { name: "熊猫笋", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["食材", "兽食"], consumable: { hpRestore: 0.06 }, desc: "熊猫啃剩的冷箭竹笋尖，嫩得能掐出水。护谷弟子说别捡——「那是它挑剩下的，你捡了它下次不来了。」但确实好吃。" },
+  // ── 常驻NPC身上那些"只写在 carry 里、catalog 却没有"的随身物 ──────────────
+  // 【为什么补】residentNpcs.js 开头的 carry 设计原则写着「具名物优先用 catalog 里
+  // 有主的（掉出来有来历）」。但全表体检下来有 20 件只存在于某个人的 carry 数组里，
+  // catalog 查无此名——makeItemSmart 找不到就退回公式生成，于是这些**明明有名有姓、
+  // 明显是为某个角色专门写的**东西掉出来是一件没有词条、没有来历的白板装备。
+  // 玄女那把"温泉边的青石子"、赫连铸那张"半张欠条"，本来是人物侧写，落地却成了通货。
+  // 补进 catalog 之后它们才真正带得上 effect/sixDim，也才进得了物件志给 AI 引用。
+  { name: "珍珠的缰绳", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", tags: ["饰品", "坐骑", "信物"], sixDim: { 气运: 1, 身法: 1 }, desc: "编了三股的皮缰，握处被手汗浸成深褐。珍珠不怎么需要牵——你走它就走，你停它拿脑袋顶你后背。缰绳更像是给人握着安心用的。" },
+  { name: "藏纹小马鞍", category: ITEM_CATEGORY.ARMOR, quality: "绿", tags: ["护具", "坐骑"], sixDim: { 体魄: 1 }, desc: "鞍桥压着藏式卷草纹，边缘的漆掉得七零八落。尺寸偏小，是照着矮脚马打的——换匹高头大马就绷不住了。" },
+  { name: "一袋青稞精料", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["草料", "坐骑"], consumable: { hpRestore: 0.1 }, desc: "掺了豆饼和盐的青稞料，比寻常草料金贵。珍珠闻见袋子响就凑过来，鼻息喷得人手背发烫。" },
+  { name: "晒干的苜蓿草", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["草料", "坐骑"], consumable: { hpRestore: 0.04 }, desc: "晒到发脆的苜蓿，一捏就碎。珍珠挑食，苜蓿要挑叶子多的那把——梗子多了它就拿舌头把整把顶开。" },
+  { name: "土司印信", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", tags: ["饰品", "印信", "权柄"], effect: { justiceStrike: true }, sixDim: { 魅力: 2, 智谋: 1 }, desc: "鎏金铜印，钮作卧狮，印面阴刻藏汉两种文字。桑杰朵杰很少用它——他说盖了印的事就不能反悔了，「所以能不盖就不盖」。" },
+  { name: "戍边税册抄本", category: ITEM_CATEGORY.MISC, quality: "蓝", tags: ["文书", "权柄"], desc: "历年戍边税的抄本，字迹换过四五个人。最后几页是桑杰朵杰亲笔，数目越记越少,他没有解释，只是把册子往抽屉更深处塞了塞。" },
+  { name: "白狐裘披风", category: ITEM_CATEGORY.ARMOR, quality: "紫", tags: ["护具", "裘皮"], effect: { immuneControl: true }, sixDim: { 魅力: 2 }, desc: "整张白狐皮缝的披风，领口那圈绒毛还带着活物似的光。玄女只在雪线以上穿它——山下太暖，「穿着像在演给谁看」。" },
+  { name: "素银项圈", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", tags: ["饰品", "银器"], sixDim: { 悟性: 1, 魅力: 1 }, desc: "没有一点纹样的素银圈，磨得极亮。她说有花纹的东西看久了会走神，「素的才照得见人」。" },
+  { name: "温泉边的青石子", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["信物", "念想"], desc: "后山温泉边随手捡的一颗青石子，被水冲得溜圆。她揣在袖里，想事情时就在指间转，转得那面已经发亮。" },
+  { name: "冻不化的霜花", category: ITEM_CATEGORY.MISC, quality: "蓝", tags: ["奇物", "雪山"], consumable: { sixDimTemp: { 悟性: 2 }, buffDuration: 20 }, desc: "雪线上采的一片霜花，装在小瓷盒里，离了雪山也不化。玉真子看过一眼就摇头——他说不出道理，「不化就是不化」。" },
+  { name: "无字木牌", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["信物", "念想"], desc: "一块巴掌大的桦木牌，两面都空白。她随身带了很多年。有人问牌子上该刻什么，她说等想好了再刻——刻上就定死了。" },
+  { name: "雪莲幼苗", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["药材", "雪山"], consumable: { hpRestore: 0.1, sixDimTemp: { 根骨: 1 } }, desc: "巴掌高的雪莲苗，根上还裹着雪线的碎石土。移下山种不活——她试过三次，每次都埋回原处。" },
+  { name: "开山锤", category: ITEM_CATEGORY.WEAPON, quality: "蓝", tags: ["武器", "锤"], effect: { ignoreDefenseRatio: 0.35 }, sixDim: { 体魄: 1 }, desc: "本是采石场的家伙什，锤头有一角被磕掉了。赫连铸拿它收过路费——不砸人，砸地。青石板裂开的声音比什么话都管用。" },
+  { name: "牛皮护腕", category: ITEM_CATEGORY.ARMOR, quality: "绿", tags: ["护具"], sixDim: { 体魄: 1 }, desc: "厚牛皮缝的护腕，左边那只磨穿了露出里衬。他不换——说穿了洞的才知道哪个角度会挨刀。" },
+  { name: "过路费钱袋", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["钱物"], desc: "收来的散碎银钱都塞在这个油腻布袋里，掂着不算沉。他从不数，数了就得想这些钱是从谁手里拿的。" },
+  { name: "劣质烧刀子", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["食品", "酒"], consumable: { hpRestore: 0.05 }, desc: "最便宜的那种烧酒，喝下去嗓子眼像被砂纸刮。他说好酒喝了会想事，这种不会。" },
+  { name: "半张欠条", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["文书", "念想"], desc: "从中间撕开的一张欠条，只剩署名那半边。另外半边在谁手里他不说，也没人敢问。" },
+  { name: "缺角骰子", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["赌具"], desc: "六点那角磕缺了一块，掷出来总往那边偏。他知道，赌坊的人也知道——但没人当面说破。" },
+  { name: "油腻头巾", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["杂物"], desc: "看不出本来颜色的一条头巾，汗渍叠着汗渍。天都镇的人隔着半条街就认得出这块布。" },
+  { name: "金蛋", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["奇物", "禽产"], desc: "大公鸡下的蛋，通体金黄——不是金子，是蛋壳真就这个色。鱼定大娘研究了半个月也没研究明白，最后决定不吃，供起来。" },
   // ── 青城装备（道门·雅江）──
   // 设计稿只写了食品/武学/招式/伙伴，没有装备章节，而 catalog 里护甲一栏只有僧袍与
   // 袈裟（佛门），道士无衣可穿。这几件按「具名物优先用 catalog 里有主的（掉出来有

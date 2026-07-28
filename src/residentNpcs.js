@@ -286,6 +286,7 @@ export const RESIDENT_NPCS = {
 身边一直跟着一个不属于此地的存在"的人。但她不解释、不点破、也不认为这有什么好惊讶的——在她看来
 那只是又一件寻常事。她对旁白没有敌意也没有兴趣，只是恰好看得见，且觉得那位一直在等什么。`,
       carry: [
+        { name: "雪山松纹剑", category: "weapon", quality: "蓝" },
         { name: "白狐裘披风", category: "armor", quality: "紫" },
         { name: "素银项圈", category: "accessory", quality: "蓝" },
         { name: "雪山冰蚕丝", category: "misc", quality: "橙" },
@@ -489,6 +490,7 @@ export const RESIDENT_NPCS = {
       carry: [
         { name: "开山锤", category: "weapon", quality: "蓝" },
         { name: "牛皮护腕", category: "armor", quality: "绿" },
+        { name: "牦牛骨扳指", category: "accessory", quality: "白" },
         { name: "过路费钱袋", category: "misc", quality: "绿" },
         { name: "劣质烧刀子", category: "misc", quality: "白" },
         { name: "半张欠条", category: "misc", quality: "白" },

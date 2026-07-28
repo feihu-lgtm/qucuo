@@ -163,6 +163,71 @@ export function isPearlAvailable(companionState) {
   return !!(companionState?.pearl?.unlocked && companionState?.pearl?.active && companionState?.pearl?.data);
 }
 
+// ── 熊猫「墨团」入队（雅江熊猫谷·山灵）─────────────────────────────────
+// 【为什么是橙档】雪豹蓝(2)、珍珠蓝(2)、明日香红(5)，中间空着一档。熊猫填橙(4)：
+// 比两只灵兽高两档，又不至于像明日香那样一入队就把玩家的存在感抹平。
+// 设定上它是熊猫谷里那只被护谷弟子念叨了半天的家伙——不是宠物，是山灵。
+// 它不认人，只认"谁在这片竹林里待得够久"。
+//
+// 【战斗性格】跟前两位都不同：熊猫不急、不闪、不取巧，风险偏好压到最低，
+// 但一掌下去谁都扛不住。所以攻击权重不低、防御权重高、状态权重最低——
+// 它没有"扰乱对手"这种心眼，它只是坐在那里，然后拍你。
+// avoidRepeat 也压低：熊猫不在乎被看穿，反正你躲不开。
+export const PANDA_LEVEL_CAP = 4; // 橙档
+
+export const PANDA_PROFILE = {
+  moveWeights: { 攻击: 0.45, 防御: 0.4, 状态: 0.15 },
+  riskAppetite: 0.2,   // 最低：它不冒险，它不需要冒险
+  avoidRepeat: 0.1,    // 最低：被看穿也无所谓
+};
+
+export function createPanda() {
+  const levelCap = PANDA_LEVEL_CAP;
+  const special = generateNpcAttributes({ levelCap });
+  // 体魄拉满（力大无穷）、根骨高（皮糙肉厚），身法压低（慢），悟性压低（憨）。
+  special.体魄 = Math.min(10, special.体魄 + 3);
+  special.根骨 = Math.min(10, special.根骨 + 2);
+  special.身法 = Math.max(1, special.身法 - 2);
+  special.悟性 = Math.max(1, special.悟性 - 2);
+
+  const { baseAtk, neigong, waigong } = getTierPower(levelCap);
+  const maxHp = hpFromNeigong(neigong, special.体魄);
+
+  const npcShape = { name: "墨团", id: "companion_panda", levelCap, special, waigong, neigong, baseAtk };
+  const moveset = deriveSignatureMoveset(npcShape, { levelCap });
+
+  return {
+    ...npcShape,
+    beast: true,
+    profile: PANDA_PROFILE,
+    moveset,
+    equipAtk: 0, equipDef: 0,
+    combatStats: {
+      hp: [maxHp, maxHp],
+      energy: [10, 10],
+      statusSlots: createEmptyStatusSlots(),
+    },
+  };
+}
+
+// 解锁墨团（熊猫谷任务线走完时调用，幂等）。跟其余伙伴一样：一入队顶掉出战位。
+export function unlockPanda(companionState) {
+  const cur = companionState?.panda;
+  if (cur?.unlocked && cur?.data) return companionState;
+  const next = {
+    ...companionState,
+    panda: { unlocked: true, active: true, data: createPanda() },
+  };
+  for (const s of COMPANION_SLOTS) {
+    if (s.key !== "panda" && next[s.key]) next[s.key] = { ...next[s.key], active: false };
+  }
+  return next;
+}
+
+export function isPandaAvailable(companionState) {
+  return !!(companionState?.panda?.unlocked && companionState?.panda?.active && companionState?.panda?.data);
+}
+
 // ── 明日香入队（终章走完解锁）─────────────────────────────────────────
 // 【与雪豹的差别】雪豹是兽：不穿装备、招式走兽性、不能对话。
 // 明日香是人，红档，用枪，能说话——所以她的数值走人类档的常规生成，
@@ -243,6 +308,7 @@ export function isAsukaAvailable(companionState) {
 export const COMPANION_SLOTS = [
   { key: "snowLeopard", label: "雪豹", beast: true },
   { key: "pearl", label: "珍珠", beast: true },
+  { key: "panda", label: "墨团", beast: true },
   { key: "asuka", label: "明日香", beast: false },
 ];
 
