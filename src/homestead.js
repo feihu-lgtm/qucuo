@@ -6,7 +6,8 @@ export const HOMESTEAD_FEATURES = {
     features: [
       { id: "chest", icon: "📦", name: "木箱", desc: "床底一只铁皮包角的旧木箱，可以存放暂时不用的物件。" },
       { id: "cooking", icon: "🍳", name: "烹饪台", desc: "灶台上铁锅铜壶齐整，灶膛余烬未冷。可以烹饪食材获得增益。" },
-      { id: "pigeon", icon: "🕊", name: "鸽子笼", desc: "屋檐下钉着一只竹编鸽笼，里头两只灰鸽咕咕叫。可以放飞信鸽。" },
+      // 鸽子笼已独立成建筑 pigeon_coop_xibian（挂在溪边小屋院子，走左栏建筑入口），
+      // 不再是面板设施。留在这里会成为一条任何房间都够不到的孤儿条目。
       { id: "wine", icon: "🍶", name: "酒窖", desc: "灶台后头一个半地下的石窖，阴凉潮湿，坛子沿上长着青苔。可以酿酒。" },
       { id: "garden", icon: "🌱", name: "菜畦", desc: "门前巴掌大的菜畦，篱笆边野蔷薇爬了一墙。可以种植。" },
     ],

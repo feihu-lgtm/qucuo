@@ -46,10 +46,11 @@ const DIR_PATTERNS = [
 ];
 export const parseDir = (cmd) => {
   const c = (cmd || "").trim().toLowerCase();
-  // 地名别名：打"去锦官城"当往西南走，老玩家习惯这么打字。
-  // 只在鱼定村成立——从别处打"锦官城"会解析成 sw、再被查表判"此路不通"，
-  // 这结果是对的（乡里确实只有鱼定村那一条官道通往城外）。
-  if (/^(?:去|往|到)?锦官(?:城)?/.test(c)) return "sw";
+  // 【删掉了"去锦官城→sw"这条地名别名】它是在鱼定村与锦官城直接接壤的年代写的。
+  // 后来雅江插进了两者之间（鱼定村 -sw-> 雅江 -w-> 锦官城），这条别名就开始骗人：
+  // 玩家打"去锦官城"，parseDir 返回 sw，查表走到的是**雅江**，人到了另一座城还
+  // 以为自己到了锦官城。地名寻路本来就该走 autoTravelTo/findPath（九宫格点击与
+  // 地图点击走的都是那条路，认的是目的地不是方向），parseDir 只该管方向。
   for (const [d, re] of DIR_PATTERNS) if (re.test(c)) return d;
   return null;
 };

@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "五个 bug：形态双状态、气血显示溢出、地名别名过期、都事府查无此人、孤儿设施",
+    time: "2026-07-29 15:40",
+    notes: [
+      "①【右栏切了人形，AI 还当它是兽·两套状态各走各的】同一个「现在是什么形态」，项目里存了两份，键都不一样：立绘走 portraits.js 的 qucuo_snowleopard_form（form1/form2/beast 三档），提示词走 companion.js 的 qucuo_companion_desc_form（human/beast 两档）。右栏那个选择器调 setCompanionForm，**只写前一个键**，后一个键全项目没有任何地方会写。于是玩家点「人形·立雪」，左栏立绘换了，roundNotes 注入时读 getCompanionDescForm 却永远拿到默认的 beast，AI 照旧把它写成不会说人话的野兽——选了 b 档，发出去的还是 a 档。修法：只留右栏那一个真值源，新增分类器 classifyDescForm 把三档收敛成两档（非 beast 一律人形），玩家选什么发给 AI 就是什么。以后再加形态，只要 key 不叫 beast 就自动归人形，不用回来改。",
+      "②【气血显示成 135/100，血条溢出格子】上一轮接通武学被动时算了 maxHpNow（含内功加成）却**没有任何地方用它**，而客栈住宿那行已经改成按 effectiveMaxHp 回满血。于是住一晚出来，当前血是 135、显示分母还是裸 hp[1] 的 100。典型的「组件顶层算了、显示端读原值」——我自己笔记里记着这个模式，还是又踩了一次。",
+      "③【打「去锦官城」走到雅江】parseDir 里有条地名别名 /^(?:去|往|到)?锦官(?:城)?/ → sw，是在鱼定村与锦官城直接接壤的年代写的。后来雅江插进了两者之间（鱼定村-sw->雅江-w->锦官城），这条别名就开始骗人：人到了另一座城还以为自己到了锦官城。删掉——地名寻路本来就该走 autoTravelTo/findPath（九宫格与地图点击走的都是那条），parseDir 只该管方向。",
+      "④【柳青鸢从不出现在都事府】锦官城·都事府的 residentNpcName 写的是「都事·柳青鸢」，常驻表里她叫「柳青鸢」。房间归属是精确字符串匹配，差一个官职前缀就查无此人，getResidentRoomForNpc 返回 null，她被兜底丢回据点锚点房（城门）。这条上一轮就查出来了，当时挂在历史欠账里没动，这次修掉并从白名单删除。",
+      "⑤【鸽笼成了够不到的孤儿】上一轮把鸽子笼挪成建筑 pigeon_coop_xibian 挂到院子，但 HOMESTEAD_FEATURES.溪边小屋.features 里那条 pigeon 忘了删——它不在任何房间的设施分布里，永远打不开。移除，并加了一条守卫：每栋声明的设施都必须至少有一间房够得到。",
+      "新增 9 条回归测试（形态分类器、三档立绘全覆盖归类、有人形立绘就必须有人形人设、方向词没被误伤、都事府名字对账、孤儿设施守卫）。其中形态那条自带 localStorage shim——node 下没有 localStorage，portraits 的读写会走 catch 吐默认值，不装 shim 根本测不出联动。",
+      "验证：npm run verify 通过（vitest 592/592 + pages 构建）。",
+    ],
+  },
+  {
     codename: "家园重做：四栋全部拆成真房间，设施跟着房间走，鸽笼独立成建筑",
     time: "2026-07-29 14:30",
     notes: [

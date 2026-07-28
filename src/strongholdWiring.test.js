@@ -46,10 +46,8 @@ describe("有内层箱庭的据点必须有常驻NPC（防「盖了城没放人�
   // 历史欠账：这四处在雅江之前就悬空，各有各的成因，都不在本次范围内：
   //   杂货商人 / 老猎户 —— 走 npcPool 游走池，不进常驻表；
   //   兰姐 —— 只有专属招式与任务 giver 身份，常驻表里一直没登记；
-  //   都事·柳青鸢 —— 房间写的是带官职前缀的「都事·柳青鸢」，常驻表里叫「柳青鸢」，
-  //     两边字符串对不上（房间过滤是精确匹配，所以她在都事府里其实显示不出来）。
   // 先挂账，别让它掩盖新的漏登记。修好一处就从这里删一条。
-  const LEGACY_DANGLING_ROOM_NPC = new Set(["杂货商人", "老猎户", "兰姐", "都事·柳青鸢"]);
+  const LEGACY_DANGLING_ROOM_NPC = new Set(["杂货商人", "老猎户", "兰姐"]); // 都事·柳青鸢 已修
 
   it("innerMap 里每个 residentNpcName 都能在常驻NPC表里找到本人", () => {
     const known = new Set(allResidents().map(n => n.name));
@@ -261,5 +259,106 @@ describe("游走NPC的落点只能是公共房间", () => {
     for (const d of Object.keys(INNER_MAP)) {
       expect(getPublicInnerRoomNames(d).length, `「${d}」把房间全排除了，游走NPC无处落脚`).toBeGreaterThan(0);
     }
+  });
+});
+
+// ── 本轮五个 bug 的回归钉子 ────────────────────────────────────────────────
+import { getCompanionDescForm, classifyDescForm, COMPANION_LORE } from "./companion.js";
+import { getCompanionForm, setCompanionForm, SNOW_LEOPARD_FORMS, PEARL_FORMS } from "./portraits.js";
+import { parseDir } from "./utils/mudHelpers.js";
+import { QUCUO_MAP } from "./qucuoMap.js";
+import { HOMESTEAD_FEATURES, getHomestead } from "./homestead.js";
+
+describe("BUG1 形态：右栏选什么，发给AI的就是什么（曾经是两套状态各走各的）", () => {
+  it("分类器把三档立绘收敛成两档描述：非 beast 一律算人形", () => {
+    expect(classifyDescForm("beast")).toBe("beast");
+    expect(classifyDescForm("form1")).toBe("human");
+    expect(classifyDescForm("form2")).toBe("human");
+    expect(classifyDescForm("以后新加的形态")).toBe("human");
+  });
+
+  it("切到人形立绘之后，注入用的描述形态跟着变（此前永远停在 beast）", () => {
+    // node 环境没有 localStorage，portraits.js 的读写会走 catch 分支永远吐默认值，
+    // 测不出联动。这里装一个最小 shim——它同时也证明了「只有一个真值源」：
+    // 下面全程只调 setCompanionForm（立绘那套），从没碰过描述形态的存储。
+    const mem = new Map();
+    const orig = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)) },
+    });
+    try {
+    for (const key of ["snowLeopard", "pearl"]) {
+      setCompanionForm(key, "beast");
+      expect(getCompanionDescForm(key)).toBe("beast");
+      setCompanionForm(key, "form1");
+      expect(getCompanionDescForm(key), `${key} 切人形后描述形态没跟上`).toBe("human");
+    }
+    } finally {
+      if (orig) Object.defineProperty(globalThis, "localStorage", orig);
+      else delete globalThis.localStorage;
+    }
+  });
+
+  it("立绘形态表里每个非 beast 的 key 都能被归成人形（防新增形态漏归类）", () => {
+    for (const forms of [SNOW_LEOPARD_FORMS, PEARL_FORMS]) {
+      for (const f of forms) {
+        expect(classifyDescForm(f.key)).toBe(f.key === "beast" ? "beast" : "human");
+      }
+    }
+  });
+
+  it("有立绘人形档的伙伴，人设里也必须有对应的人形文案", () => {
+    for (const key of ["snowLeopard", "pearl"]) {
+      const lore = COMPANION_LORE[key];
+      if (!lore) continue;
+      expect(lore.human, `${key} 有人形立绘却没有人形人设`).toBeTruthy();
+      expect(lore.beast, `${key} 缺兽形人设`).toBeTruthy();
+    }
+  });
+});
+
+describe("BUG3 地名别名过期：打「去锦官城」不能走到雅江去", () => {
+  it("parseDir 不再把锦官城当成一个方向", () => {
+    expect(parseDir("去锦官城")).toBe(null);
+    expect(parseDir("锦官城")).toBe(null);
+  });
+
+  it("鱼定村的西南其实是雅江，不是锦官城（别名当年就是这么过期的）", () => {
+    expect(QUCUO_MAP["鱼定村"].exits.sw).toBe("雅江");
+    expect(QUCUO_MAP["雅江"].exits.w).toBe("锦官城");
+  });
+
+  it("纯方向词照常解析，没被误伤", () => {
+    expect(parseDir("西南")).toBe("sw");
+    expect(parseDir("往西南")).toBe("sw");
+  });
+});
+
+describe("BUG4 都事府：柳青鸢的名字要与常驻表对得上", () => {
+  it("房间要的人名能在常驻表里查到（精确匹配，差一个前缀她就不出现）", () => {
+    const want = INNER_MAP["锦官城"].rooms["都事府"].residentNpcName;
+    const names = (RESIDENT_NPCS["锦官城"] || []).map(n => n.name);
+    expect(names, `都事府要「${want}」，常驻表里没有`).toContain(want);
+  });
+});
+
+describe("BUG5 家园设施不能有够不到的孤儿条目", () => {
+  const HOME_ROOMS = ["溪边小屋", "起居室", "灶房", "菜园子", "弟子别院", "东厢卧房", "西厢书房",
+    "山间别墅", "一楼客厅", "二楼主卧", "蜀王庄", "正堂佛堂", "后院书房", "银杏后院"];
+
+  it("每栋声明的设施都至少有一间房够得到", () => {
+    const orphan = [];
+    for (const [house, def] of Object.entries(HOMESTEAD_FEATURES)) {
+      const reachable = new Set();
+      for (const room of HOME_ROOMS) {
+        const h = getHomestead(room);
+        if (h && (h.house || room) === house) h.features.forEach(f => reachable.add(f.id));
+      }
+      for (const f of def.features) {
+        if (!reachable.has(f.id)) orphan.push(`${house}·${f.name}(${f.id})`);
+      }
+    }
+    expect(orphan, `以下设施声明了但没有任何房间能用到：\n  ${orphan.join("\n  ")}`).toEqual([]);
   });
 });

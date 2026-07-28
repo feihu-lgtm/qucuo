@@ -1160,7 +1160,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         : [];
       return [
         { t: "sys", text: "── 状态 ──" },
-        { t: "stat", text: `  气血 ${bar(char.hp[0], char.hp[1])} ${char.hp[0]}/${char.hp[1]}` },
+        // 上限走 maxHpNow（含内功被动）。此前这里读裸 hp[1]，而客栈住宿已经按
+        // effectiveMaxHp 把当前血回满，于是回满之后显示成「135/100」，血条还溢出格子。
+        { t: "stat", text: `  气血 ${bar(char.hp[0], maxHpNow)} ${char.hp[0]}/${maxHpNow}` },
         { t: "stat", text: `  内功 ${bar(char.neigong ?? 0, 100)} ${char.neigong ?? 0}/100` },
         { t: "stat", text: `  外功 ${bar(char.waigong ?? 0, 100)} ${char.waigong ?? 0}/100` },
         { t: "sys", text: "── 根骨悟性体魄魅力智谋身法气运 ──" },

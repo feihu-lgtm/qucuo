@@ -371,19 +371,41 @@ export const COMPANION_LORE = {
 };
 
 const COMPANION_FORM_KEY = "qucuo_companion_desc_form";
-// 某伙伴当前选用的描述形态（兽形/人形），存 localStorage 按伙伴 key 分别记。缺省兽形。
-export function getCompanionDescForm(key) {
-  try {
-    const all = JSON.parse(localStorage.getItem(COMPANION_FORM_KEY) || "{}");
-    return all[key] === "human" ? "human" : "beast";
-  } catch { return "beast"; }
+// 某伙伴当前选用的描述形态（兽形/人形）。
+//
+// 【这里曾经是两套各走各的状态·右栏切了人形但 AI 还当它是兽】
+// 同一个「现在是什么形态」的选择，项目里存了**两份**，键都不一样：
+//   立绘   portraits.js  → localStorage "qucuo_snowleopard_form"  取值 form1/form2/beast（三档）
+//   提示词 companion.js  → localStorage "qucuo_companion_desc_form" 取值 human/beast（两档）
+// 右栏那个形态选择器调的是 setCompanionForm（portraits 那套），只写前一个键；
+// 后一个键**没有任何地方会写**。于是玩家在右栏点「人形·立雪」，左栏立绘换了，
+// roundNotes 注入 prompt 时读 getCompanionDescForm 却永远拿到默认的 "beast"，
+// AI 照旧把它写成不会说人话的野兽。选了 b 档，发出去的还是 a 档。
+//
+// 现在只留一个真值源：右栏选的那个（portraits 的三档）。这里加一层**分类器**，
+// 把三档收敛成 prompt 需要的两档——form1/form2 都是人形，beast 是兽形。
+// 玩家选什么，发给 AI 的就是什么，中间不再有第二份状态可以走偏。
+// 新增形态时只要它的 key 不叫 beast，就自动归到人形，不用回来改这里。
+import { getCompanionForm, setCompanionForm } from "./portraits.js";
+
+// 分类器：立绘形态 key → prompt 形态。唯一的归类规则，别处不要再各写一份。
+export function classifyDescForm(portraitFormKey) {
+  return portraitFormKey === "beast" ? "beast" : "human";
 }
+
+export function getCompanionDescForm(key) {
+  return classifyDescForm(getCompanionForm(key));
+}
+
+// 保留这个入口是为了不动调用方；它现在写的是同一个真值源（立绘那套）。
+// 传 "human" 时挑该伙伴的第一个人形档，传 "beast" 直接给兽形。
 export function setCompanionDescForm(key, form) {
-  try {
-    const all = JSON.parse(localStorage.getItem(COMPANION_FORM_KEY) || "{}");
-    all[key] = form;
-    localStorage.setItem(COMPANION_FORM_KEY, JSON.stringify(all));
-  } catch { /* ignore */ }
+  setCompanionForm(key, form === "human" ? firstHumanFormKey(key) : "beast");
+}
+
+function firstHumanFormKey(key) {
+  // 避免 import 形态表造成的循环依赖顾虑，这里按约定取名：两个伙伴的人形档都叫 form1
+  return "form1";
 }
 
 // 换出战队友：把目标置 active，其余一律置 false（互斥）。

@@ -962,7 +962,7 @@ export const INNER_MAP = {
         x: 1, y: -1,
         desc: "都事柳青鸢的府邸，锦官城任务线核心场景，老兵退伍汉作为随从常驻此处伺候。",
         exits: { w: "天下商行", s: "醉仙楼" },
-        residentNpcName: "都事·柳青鸢",
+        residentNpcName: "柳青鸢",
       },
       暗巷入口: {
         x: 1, y: 1,
