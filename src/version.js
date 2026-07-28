@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修构建断链：待用主角卡的三个函数从来没进过仓库，只有消费侧提交了",
+    time: "2026-07-30 08:55",
+    notes: [
+      "现象：CI 的 vite build 报 getPendingPlayerCard is not exported by importedRegistry.js，构建失败。vitest 那一步是全绿的。",
+      "①【断链比看着更早】不是这次改动引入的。git log -S 查出来：消费侧（CharacterCreate 三处读 getPendingPlayerCard、两处调 clearPendingPlayerCard，main.jsx 一处调 setPendingPlayerCard）在 49e4128 就提交了，而 importedRegistry.js 里那三个函数从头到尾一次都没进过仓库。也就是说从 49e4128 开始构建就是坏的，只是那几轮我都没看 CI 的 build 步骤。",
+      "②【根因·第二次犯同一个错】用不带校验的字符串替换改文件，锚点对不上就静默空转，脚本照样打印「已完成」。第一次是 SettingsPanel 的入册卡片，这次是 registry 的三个函数——当时用的锚点是一行注释，而那个文件里压根没有那行注释。改法：所有替换前先 assert 锚点存在，替换后再 assert 结果里含新内容，两头都卡。",
+      "③【为什么测试全绿而构建是坏的】643 条测试里没有一条 import CharacterCreate.jsx。两个文件各自语法都合法，A 引了 B 没有的名字这种事，只有真正打包解析模块图时才会暴露。这跟本项目早先栽过的那次同源（那次是 version.js 写坏引号，测试没有一条 import 它，于是测试全绿、构建失败），现在换了个文件重演一遍。",
+      "④【补上检查手段·scripts/bundleCheck.sh】用 esbuild --bundle --packages=external 把 node_modules 外部化，不需要装依赖就能解析项目内所有相对 import，专抓「导出缺失/路径写错/循环引用」。配了 webp/css/mp3 等 loader，否则会先在资源文件上失败、掩盖真正的导出错误。这个脚本不是 npm run verify 的替代品——装了依赖就该跑 verify（含 vitest 全量与 pages 构建），它是给没装 node_modules 的环境用的应急检查。",
+      "⑤【这次的验证是用反例做的】不再只看「跑过了」：先把 getPendingPlayerCard 临时改名，确认 bundleCheck 确实报出 is not exported，再改回来确认 0 错误。检查手段自己也要被验一遍，否则「验过了」只是换个地方的自我安慰。",
+      "验证：bundleCheck 通过（214 模块全解析）；反例可抓；文件树与 version 守卫本地模拟全绿。",
+    ],
+  },
+  {
     codename: "认人提前到勾选之前，阶段一改发正文——AI 认出的人不再被勾选名单挡掉",
     time: "2026-07-30 08:20",
     notes: [
