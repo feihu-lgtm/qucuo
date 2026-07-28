@@ -9,7 +9,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { parseCharacterCard } from "./cards/cardParse.js";
-import { planScan, runScan } from "./cards/cardScan.js";
+import { planScan, runScan, runClassify, peopleAfterClassify } from "./cards/cardScan.js";
 import * as scanStore from "./cards/scanStore.js";
 import { bucketStatus } from "./cards/rateLimiter.js";
 import { callModel } from "./apiConfig.js";
@@ -45,6 +45,9 @@ export default function CardImportScreen({
   const [detail, setDetail] = useState(0);       // ≥0 看第几个 NPC；-1 看玩家档案
   const [term, setTerm] = useState([]);
   const [termBig, setTermBig] = useState(false);
+  // AI 认人的结果。有它时勾选界面用它，没有就退回机器初判。
+  const [classified, setClassified] = useState(null);
+  const [classifying, setClassifying] = useState(false);
 
   const abortRef = useRef({ aborted: false });
   const fileRef = useRef(null);
@@ -93,6 +96,38 @@ export default function CardImportScreen({
   // 世界观条目带上开关状态（默认全开），交给玩家逐条取舍
   const initWorld = useCallback((p) => (p.worldCandidates || []).map(w => ({ ...w, on: true })), []);
 
+  // ── 先认人：只跑阶段 1 ──
+  // 【为什么单独一步】原来的顺序是「机器初判 → 勾选 → 扫描时才 AI 分类」，
+  // 而人物分组最后有一道按勾选名单的过滤，等于 AI 认出的人进不去。提前跑，
+  // 玩家就是在已分好的名单上勾。结果写同一个缓存槽，之后扫描不重复调用。
+  const doClassify = async () => {
+    if (!parsed || classifying) return;
+    setClassifying(true);
+    abortRef.current = { aborted: false };
+    try {
+      const out = await runClassify(parsed, callModel, apiCfg, {
+        signal: abortRef.current,
+        onWait: (ms) => { setWaitMs(ms); if (ms > 900) pushTerm("wait", `额度用尽，${Math.ceil(ms / 1000)} 秒后继续`, "限流"); },
+        onProgress: (p) => pushTerm(p.kind === "start" ? "start" : p.kind, p.msg, "认人"),
+      });
+      const people = peopleAfterClassify(parsed, out.kindMap, out.groups);
+      setClassified({ people, genre: out.genre, multiPerson: out.multiPerson, whyMap: out.whyMap, kindMap: out.kindMap });
+      // 认出来的人默认全勾上；玩家仍可逐个取消，最终否决权不交给 AI
+      setPicked(new Set(people.map(p => p.name)));
+      pushTerm("done",
+        `认出 ${people.length} 人${out.genre ? ` · 题材：${out.genre}` : ""}`
+        + `${out.multiPerson.length ? ` · ${out.multiPerson.length} 条塞了多人` : ""}`
+        + `${out.calls === 0 ? "（用的是缓存，没花调用）" : ""}`,
+        "认人");
+    } catch (e) {
+      if (e.code === "SCAN_ABORTED") pushTerm("fail", "认人已中断", "认人");
+      else { pushTerm("fail", e.message.slice(0, 90), "认人"); setErr(`认人失败：${e.message}`); }
+    } finally {
+      setClassifying(false);
+      setWaitMs(0);
+    }
+  };
+
   // ── 扫描 ──
   const doScan = async () => {
     if (!parsed) return;
@@ -132,7 +167,14 @@ export default function CardImportScreen({
 
   // 跳过 AI：全部走默认值。免费站挂了也能入册
   const skipScan = () => {
-    const people = parsed.npcLoreCandidates.filter(c => picked.has(c.name));
+    // 认过人就用那份名单（peopleAfterClassify 已带 entry），没认过退回机器初判
+    const pool = classified
+      ? classified.people.map(p => ({
+          name: p.name, aliases: p.aliases, entry: p.entry,
+          _meta: { mergedFrom: p.mergedFrom || [] },
+        }))
+      : parsed.npcLoreCandidates;
+    const people = pool.filter(c => picked.has(c.name));
     setResult({
       genre: "", multiPerson: parsed.multiPerson || [],
       world: initWorld(parsed),
@@ -250,6 +292,7 @@ export default function CardImportScreen({
               parsed={parsed} accent={accent} plan={plan} stage={stage}
               asPlayer={asPlayer} setAsPlayer={setAsPlayer}
               picked={picked} setPicked={setPicked}
+              classified={classified} classifying={classifying} onClassify={doClassify}
               openingIdx={openingIdx} setOpeningIdx={setOpeningIdx}
               waitMs={waitMs} err={err} term={term} onExpandTerm={() => setTermBig(true)}
               onScan={doScan} onSkip={skipScan}
@@ -334,14 +377,25 @@ function EmptyPane({ dragOver, setDragOver, err, onPick, onFile, accent }) {
 function ParsedPane({
   parsed, accent, plan, stage, asPlayer, setAsPlayer, picked, setPicked,
   openingIdx, setOpeningIdx, waitMs, err, onScan, onSkip, onAbort, term, onExpandTerm,
+  classified, classifying, onClassify,
 }) {
   const { card, report, npcLoreCandidates, unclassified, worldCandidates, metaEntries } = parsed;
   const scanning = stage === "scanning";
 
-  const cands = useMemo(() => [
-    ...npcLoreCandidates.map(c => ({ name: c.name, aliases: c.aliases, len: c._meta.length, merged: c._meta.mergedFrom.length, sure: true })),
-    ...unclassified.map(u => ({ name: u.keys[0] || u.label, aliases: u.keys.slice(1), len: u.length, merged: 0, sure: false })),
-  ], [npcLoreCandidates, unclassified]);
+  // 认过人之后，名单整个换成 AI 那份——它已经把「三霄」「血角」这类
+  // 标签与关键词同名、机器判据够不着的条目认出来了，不再分「候选/待定」两栏。
+  const cands = useMemo(() => {
+    if (classified) {
+      return classified.people.map(p => ({
+        name: p.name, aliases: p.aliases, len: p.len,
+        merged: p.merged, sure: true, byAi: true, grouped: p.from === "ai",
+      }));
+    }
+    return [
+      ...npcLoreCandidates.map(c => ({ name: c.name, aliases: c.aliases, len: c._meta.length, merged: c._meta.mergedFrom.length, sure: true })),
+      ...unclassified.map(u => ({ name: u.keys[0] || u.label, aliases: u.keys.slice(1), len: u.length, merged: 0, sure: false })),
+    ];
+  }, [classified, npcLoreCandidates, unclassified]);
 
   const toggle = (n) => setPicked(p => {
     const s = new Set(p);
@@ -389,6 +443,34 @@ function ParsedPane({
         }>入册名单</Bar>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
+          {!classified && !scanning && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 9, marginBottom: 10,
+              padding: "8px 10px", borderRadius: 4,
+              background: "rgba(122,154,112,.08)", border: "1px solid #3a4a34",
+            }}>
+              <div style={{ flex: 1, fontSize: 10.5, color: "#9aa890", lineHeight: 1.7 }}>
+                下面这份名单是按标签与关键词猜的，标「待定」的机器分不出是人是概念。
+                让 AI 通读一遍正文能认得准得多。
+              </div>
+              <Btn onClick={onClassify} tone="main" disabled={classifying || !report.ok}>
+                {classifying ? "认人中…" : "先认人"}
+              </Btn>
+            </div>
+          )}
+          {classified && !scanning && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9, fontSize: 10.5, color: "#7a9a70" }}>
+              <span>AI 通读正文后认出 {classified.people.length} 人</span>
+              {!!classified.multiPerson.length && (
+                <span style={{ color: "#c0a870" }}>
+                  · {classified.multiPerson.length} 条塞了多人（{classified.multiPerson.map(m => (m.人名 || []).join("/")).join("；").slice(0, 40)}）
+                </span>
+              )}
+              <span style={{ flex: 1 }} />
+              <span onClick={onClassify} title="重新认一遍（走缓存，不额外花调用）"
+                style={{ cursor: "pointer", color: "#6a6250" }}>重认</span>
+            </div>
+          )}
           {!cands.length && (
             <div style={{ color: "#6a6250", fontSize: 11.5, padding: "20px 0", textAlign: "center" }}>
               这张卡里没找到可以单独成人的条目。<br />
@@ -413,6 +495,8 @@ function ParsedPane({
                     <span style={{ color: "#e8dcc0", fontSize: 12.5, flex: 1 }}>{c.name}</span>
                     {!c.sure && <span title="机器拿不准这是人还是概念，勾选前请自己看一眼"
                       style={{ fontSize: 9, color: "#8a8270", border: "1px solid #3a3428", borderRadius: 2, padding: "0 3px" }}>待定</span>}
+                    {c.grouped && <span title="AI 认出这几条写的是同一个人，已合并"
+                      style={{ fontSize: 9, color: "#7a9a70", border: "1px solid #3a4a34", borderRadius: 2, padding: "0 3px" }}>合</span>}
                   </div>
                   <div style={{ fontSize: 10, color: "#6a6250", marginTop: 3, paddingLeft: 18 }}>
                     {c.aliases.length ? `别名 ${c.aliases.slice(0, 3).join("/")}` : "无别名"} · {c.len}字

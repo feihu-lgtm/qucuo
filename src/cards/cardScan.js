@@ -26,7 +26,9 @@ export const DEFAULT_BATCH_SIZE = 4;
 // 实测约 900~1200 token，给 3000 留足余量；阶段 1 只出短字段但条目可能 36 条。
 // 阶段 2 每人多了两档里程碑各两句正文（约 16 句/批），比只出短字段时长一截，
 // 3000 会顶到截断，给 4500。
-const STAGE_MAX_TOKENS = { 1: 4000, 2: 4500, 3: 1500, 4: 4000 };
+// 阶段 1 改成发条目正文后，输入变长、模型也更容易多话，输出上限跟着提。
+// 36 条卡每条一行 kind+why 加上分组，实测约 1500~2500，给 6000 留足。
+const STAGE_MAX_TOKENS = { 1: 6000, 2: 4500, 3: 1500, 4: 4000 };
 
 // ── 预算规划（纯计算，不发任何请求）─────────────────────────────────────────────
 
@@ -75,6 +77,87 @@ export function planScan(parsed, opts = {}) {
     estimateMs: estimateMs(calls),
     bucket: bucketStatus(),
   };
+}
+
+/**
+ * 只跑阶段 1（归类＋同人分组＋多人条目＋题材）。
+ *
+ * 【为什么要能单独跑】原来的顺序是「机器初判 → 玩家勾选名单 → 扫描时才 AI 分类」，
+ * 而 buildPersonGroups 最后有一道 selected 过滤——玩家勾的名单在分类之前就定死了，
+ * 于是 AI 认出「血角」「三霄」是人也进不了阶段 2，白认一场。
+ * 把这一步提前单独跑，玩家就是在已经分好的名单上勾选。
+ *
+ * 结果写进同一个缓存槽（stage 1），所以之后点「扫一遍」不会重复调用，总预算不变。
+ *
+ * @returns {{stage1, kindMap:Map<number,string>, whyMap:Map<number,string>,
+ *            genre:string, groups:Array, multiPerson:Array, calls:number}}
+ */
+export async function runClassify(parsed, callModel, cfg, opts = {}) {
+  const { card } = parsed;
+  const md5 = store.fingerprintCard(card);
+  const ctx = {
+    onProgress: opts.onProgress,
+    onWait: opts.onWait,
+    signal: opts.signal || { aborted: false },
+  };
+
+  let stage1 = opts.skipCache ? null : store.loadStage(md5, 1);
+  let calls = 0;
+  if (!stage1) {
+    ctx.onProgress?.({ kind: "start", stage: 1, msg: `通读 ${card.entries.length} 条正文，认人与归类` });
+    const built = buildStage1(card, card.entries);
+    stage1 = await callWithRetry(callModel, cfg, built, opts, ctx);
+    calls = 1;
+    store.saveStage(md5, 1, stage1);
+  } else {
+    ctx.onProgress?.({ kind: "info", stage: 1, msg: "这张卡认过了，直接用上次的结果" });
+  }
+
+  const kindMap = new Map();
+  const whyMap = new Map();
+  for (const item of (stage1?.条目 || [])) {
+    if (!Number.isInteger(item.i) || !card.entries[item.i]) continue;
+    if (!item.kind) continue;
+    kindMap.set(item.i, item.kind);
+    whyMap.set(item.i, String(item.why || "").slice(0, 24));
+  }
+
+  // 把结果落到条目上，UI 与后续阶段都从这里读
+  for (const e of card.entries) {
+    if (kindMap.has(e.index)) {
+      e.kindByAi = kindMap.get(e.index);
+      e.kindWhy = whyMap.get(e.index) || "";
+    }
+  }
+
+  return {
+    stage1,
+    kindMap, whyMap, calls,
+    genre: String(stage1?.题材 || "").slice(0, 30),
+    groups: Array.isArray(stage1?.同人分组) ? stage1.同人分组 : [],
+    multiPerson: (Array.isArray(stage1?.多人条目) ? stage1.多人条目 : [])
+      .filter(m => Number.isInteger(m.i) && card.entries[m.i]),
+  };
+}
+
+/**
+ * 拿分类结果重算「谁是人」。返回的是可直接喂给勾选界面的人物候选。
+ * AI 认的优先于机器初判；AI 没表态的条目沿用机器初判。
+ */
+export function peopleAfterClassify(parsed, kindMap, groups) {
+  const kindOverride = kindMap instanceof Map ? kindMap : new Map();
+  const people = buildPersonGroups(parsed, { 同人分组: groups || [] }, kindOverride, null);
+  // entry 必须带上：调用方（跳过 AI 直接手填那条路）要拿它当人设正文。
+  // 只返回 name/len 的话，手填出来的 NPC 会是一个没有任何设定的空壳。
+  return people.map(p => ({
+    name: p.name,
+    aliases: p.aliases,
+    entry: p.entry || "",
+    len: (p.entry || "").length,
+    merged: (p._parts || []).length,
+    mergedFrom: p._parts || [],
+    from: p._from,          // "ai" = AI 认的同人组，"code" = 按 keys 归的
+  }));
 }
 
 // ── 单次调用封装 ──────────────────────────────────────────────────────────────

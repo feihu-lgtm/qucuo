@@ -45,17 +45,40 @@ const JSON_LAW = `只输出一个 JSON 对象。不要 markdown 代码围栏，�
 
 // ── 阶段 1：总览 ──────────────────────────────────────────────────────────────
 
+// 单条发多少字。原先是 120 字摘要，为省额度。但反代不计费，省的那点 token 换来的
+// 是判错——「三霄」「血角」这类标签与关键词一模一样的条目，看头 120 字根本分不出
+// 是人是概念，而这恰恰是最需要 AI 帮忙的一类。
+//
+// 【为什么不干脆发全文】不是为省钱，是两个硬限制：反代对单次请求体大小常有上限，
+// 以及实测有单条 27295 字、整卡 133095 字的世界书（3b1fb366 与万象枢机）。发全文会
+// 让一次分类等上几十秒、还可能直接被网关拒。
+// 3000 字是个够用的量：一条人物设定的前 3000 字必然已经写清了「这是谁」，
+// 分类要的信息全在开头。
+export const STAGE1_PER_ENTRY = 3000;
+export const STAGE1_TOTAL_CAP = 90000;
+
 /**
- * 输入只发摘要（label + keys + 正文前 120 字），36 条也只有约 6000 字。
- * 一次调用解决四件事：定分类、认出同一个人的多个维度条目、认出一条塞多人、
- * 概括题材。这四件事都只需要看开头就能判断，发全文纯属浪费额度。
+ * 一次调用解决四件事：定分类、认出同一个人的多个维度条目、认出一条塞多人、概括题材。
+ * @param {object} opts { perEntry, totalCap } 可覆盖发送量
  */
-export function buildStage1(card, entries) {
+export function buildStage1(card, entries, opts = {}) {
+  const perEntry = opts.perEntry ?? STAGE1_PER_ENTRY;
+  const totalCap = opts.totalCap ?? STAGE1_TOTAL_CAP;
+
+  // 总量兜底：整卡正文超上限时，按条目均摊，谁都别独占。
+  // 均摊而不是"先到先得"是有意的——先到先得会让排在前面的巨型条目吃掉全部配额，
+  // 后面的人物条目一个字都发不出去，那还不如都发少点。
+  const totalRaw = entries.reduce((a, e) => a + Math.min(e.length || 0, perEntry), 0);
+  const shrink = totalRaw > totalCap ? totalCap / totalRaw : 1;
+  const budget = Math.max(400, Math.floor(perEntry * shrink));
+
   const list = entries.map((e, i) => {
-    const head = (e.content || "").replace(/\s+/g, " ").slice(0, 120);
+    const body = (e.content || "").trim();
+    const sent = body.length > budget ? body.slice(0, budget) : body;
+    const tail = body.length > budget ? `\n    …（此条共 ${e.length} 字，只发了前 ${budget} 字）` : "";
     return `[${i}] 标签「${e.label}」 关键词[${(e.keys || []).join("/") || "无"}] `
-      + `${e.constant ? "常驻 " : ""}${e.length}字 机器初判=${e.kind}\n    摘要：${head}`;
-  }).join("\n");
+      + `${e.constant ? "常驻 " : ""}${e.length}字 机器初判=${e.kind}\n正文：\n${sent}${tail}`;
+  }).join("\n\n────\n\n");
 
   const system = `你在帮一个中文武侠文字游戏「曲措乡」导入外部角色卡。这一步只做归类判断，不做改写。
 
@@ -88,7 +111,7 @@ ${JSON_LAW}
 
   const user = `卡名：${card.name || "（无名）"}
 世界书名：${card.bookName || "（无）"}
-条目共 ${entries.length} 条（以下摘要是截断的，正文更长）：
+条目共 ${entries.length} 条（超长的只发了开头，已在该条末尾注明）：
 
 ${list}`;
 
