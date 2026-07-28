@@ -15,7 +15,7 @@ import {
   nextAliveIndex, isTeamWiped,
 } from "./battleEngine.js";
 import { narrateTurn, hasApiKey } from "./battleNarration.js";
-import { explainMove, moveTypeGist } from "./moveExplainer.js";
+import { explainMove, moveTypeGist } from "../itemEffectText.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const S = (f) => `${BASE}stones/${f}`;

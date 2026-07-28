@@ -247,10 +247,11 @@ function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
   const jade = jadeSrc(sk.quality);
   const bonusBits = [];
   if (sk.moveType) bonusBits.push(`招式·${sk.moveType}`);
-  if (sk.passiveBonus) {
-    if (sk.passiveBonus.maxHp) bonusBits.push(`气血上限+${sk.passiveBonus.maxHp}`);
-    if (sk.passiveBonus.speedBonus) bonusBits.push(`身法+${sk.passiveBonus.speedBonus}`);
-  }
+  // 被动加成与招式特效都走 itemEffectText 那份唯一词典，图鉴不再自己拼一遍
+  const pb = passiveBonusBrief(sk.passiveBonus);
+  if (pb) bonusBits.push(pb);
+  const fx = moveEffectBrief(sk);
+  if (fx) bonusBits.push(fx);
   return (
     <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)", opacity: owned ? 1 : 0.92 }}>
       <div style={{ position: "relative", flexShrink: 0 }}>

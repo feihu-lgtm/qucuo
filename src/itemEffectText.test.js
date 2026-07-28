@@ -105,3 +105,64 @@ describe("词典只留一份（此前三处各写一份、都不全）", () => {
     }
   });
 });
+
+// ── 合并之后：唯一一张表，三种粒度 ─────────────────────────────────────────
+// 合并前项目里有四份「标志位→人话」：ForgeScreen、JadeShopScreen 各一份（早已收编）、
+// itemEffectText 的短词字典、以及 quickBattle/moveExplainer 的详细规则。
+// 同一个 forceFirst，切磋里是整句、右栏只有俩字，两处分别维护，加特效漏一处就是空白。
+// 现在只剩 MOVE_RULES 一张表，label/text 两种粒度从同一条规则出。
+import { MOVE_RULES, explainMove, moveTypeGist, moveOneLiner, passiveBonusBrief } from "./itemEffectText.js";
+
+describe("唯一规则表", () => {
+  it("EFFECT_CN 完全由 MOVE_RULES 派生——不存在第二份手写词典", () => {
+    expect(Object.keys(EFFECT_CN).length).toBe(MOVE_RULES.length);
+    for (const r of MOVE_RULES) expect(EFFECT_CN[r.key], `规则 ${r.key} 没进反查表`).toBe(r.label);
+  });
+
+  it("每条规则都同时给得出短词与整句（两种粒度同源）", () => {
+    for (const r of MOVE_RULES) {
+      expect(r.label, `${r.key} 缺短词`).toBeTruthy();
+      expect(typeof r.when, `${r.key} 缺命中条件`).toBe("function");
+    }
+  });
+
+  it("规则 key 不重复（重复会让反查表悄悄少一条）", () => {
+    const keys = MOVE_RULES.map(r => r.key);
+    expect([...new Set(keys)].length).toBe(keys.length);
+  });
+
+  it("同一个招式，短词与详情说的是同一批效果", () => {
+    const mv = { type: "攻击", baseDamageMultiplier: 1.3, forceFirst: true, ignoreDefenseRatio: 0.3, lowHpBonus: 0.2 };
+    const brief = moveEffectBrief(mv);
+    for (const w of ["必先手", "破防", "残血增伤"]) expect(brief).toContain(w);
+    expect(explainMove(mv).length).toBeGreaterThanOrEqual(4); // 含倍率那条
+  });
+
+  it("代价类规则带 warn，UI 才好标红", () => {
+    const warns = MOVE_RULES.filter(r => r.warn).map(r => r.key);
+    expect(warns).toContain("onCounterFailEnergyPenalty");
+    expect(warns).toContain("onCounterFailDefenseNullified");
+  });
+
+  it("脏输入一律不抛错（规则读值出错要跳过，不能连坐整行）", () => {
+    for (const bad of [null, undefined, {}, { applyMark: null }, { selfSacrifice: {} }, { enemyCostPenalty: {} }]) {
+      expect(() => explainMove(bad)).not.toThrow();
+      expect(() => moveEffectBrief(bad)).not.toThrow();
+      expect(() => effectBrief(bad, null)).not.toThrow();
+    }
+  });
+
+  it("被动加成也收在这里（图鉴曾自己拼一遍）", () => {
+    expect(passiveBonusBrief({ maxHp: 20, speedBonus: 2 })).toBe("气血上限+20、身法+2");
+    expect(passiveBonusBrief(null)).toBe("");
+  });
+
+  it("三种武学来源派生的招式走同一张表", () => {
+    // 武馆(倍率+特效) / 制式(纯回气) / 特殊(原型带印记)——三种形状都吐得出人话
+    expect(moveEffectBrief({ type: "攻击", baseDamageMultiplier: 1.2, forceFirst: true })).toBe("必先手");
+    expect(moveEffectBrief({ type: "状态", energyRestore: 8 })).toContain("回气");
+    expect(moveEffectBrief({ type: "状态", applyMark: { name: "内伤", max: 5 } })).toContain("附内伤印");
+    expect(moveTypeGist({ type: "攻击" })).toBeTruthy();
+    expect(moveOneLiner({ type: "状态", energyRestore: 8 })).toContain("8");
+  });
+});

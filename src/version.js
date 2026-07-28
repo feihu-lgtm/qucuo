@@ -9,6 +9,20 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "四份「标志位→人话」合成一张表 MOVE_RULES，删掉 moveExplainer",
+    time: "2026-07-29 23:10",
+    notes: [
+      "【合并前有四份】① ForgeScreen 与 ② JadeShopScreen 各写过一遍（早年收编，红档那批最强特效当时全漏，玩家拿到红档神兵界面上那行是空的）；③ itemEffectText 的 EFFECT_CN 短词字典（破防/免控/必先手…），全项目在用；④ quickBattle/moveExplainer.js 的详细规则（30+ 条带具体数字，「造成130%基础伤害」这种），**只服务快速切磋一个界面**。",
+      "【症状】同一个 forceFirst，切磋里写着「必定抢先出手（无视双方身法速度比较）」，右栏却只有俩字「必先手」——而这俩字在另一个文件里单独维护。加一个新特效要记得改两处，漏一处就是界面空白。这几轮已经这么栽过好几次（nextAttackBonus/lowEnemyEnergyBonus 实现了却没词条，界面全空）。",
+      "【合并】按信息量最多的那份（moveExplainer）来写，合成唯一一张 MOVE_RULES，39 条。每条规则同时给两种粒度：label（短词，列表/标签位用）与 text（整句带数字，详情/切磋用）。EFFECT_CN 改为**由表派生**，不再手写第二份——加规则即自动有词条。",
+      "【三种武学同源】武馆(SKILL_CATALOG)、制式(MOVE_POOL)、特殊(NPC_SIGNATURE_MOVES + 原型) 派生出来的最终都是同一种 move 对象，所以走同一张表，不再分家。",
+      "【四个出口】explainMove（结构化详情，带 warn 标红）／moveEffectBrief（招式短词串）／effectBrief（装备短词串＋六维）／passiveBonusBrief（被动加成——图鉴 CodexScreen 原来自己内联拼了一遍，一并收编）。",
+      "【删除】src/quickBattle/moveExplainer.js 整个删掉，QuickBattleScreen 改指 itemEffectText。文件树同步（幽灵条目守卫当场抓到我忘了删登记）。",
+      "【新增 8 条守卫】EFFECT_CN 必须完全由 MOVE_RULES 派生（不许再出现第二份手写词典）；每条规则短词与命中条件齐备；规则 key 不重复；同一招式的短词与详情说的是同一批效果；代价类必须带 warn；脏输入一律不抛错（单条规则读值出错要跳过、不能连坐整行）；被动加成走同一处；三种武学来源的招式形状都吐得出人话。",
+      "验证：npm run verify 通过（vitest 624/624 + pages 构建）。",
+    ],
+  },
+  {
     codename: "20 门特殊回气 + 听桥，铺在全图九处",
     time: "2026-07-29 22:15",
     notes: [
