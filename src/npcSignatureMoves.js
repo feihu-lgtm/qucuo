@@ -9,6 +9,17 @@
 // 【每人技能组不同】体现在①四槽挑的原型组合（硬攻/趁虚/致乱/封穴/蓄势各人不同）；
 //   ②专属招名贴人物。野兽（虎王/狼王/白猿）用兽性招名，且 unlearnable=true 不可学。
 
+// 一条 NPC 记录里，哪些 key 是「招式槽」。此前没有这份清单，需要枚举槽位的地方
+// 各自裸用 Object.keys —— 一旦记录上多出 unlearnable 这类元数据键，就会被当成
+// 一招算进去。收成权威清单，谁要枚举都从这儿取。
+export const SIGNATURE_SLOT_KEYS = ["攻击", "防御", "状态", "回气", "疗伤"];
+
+// 取某人实际配了的槽位（按固定顺序，不受书写顺序影响）
+export function signatureSlots(sig) {
+  if (!sig || typeof sig !== "object") return [];
+  return SIGNATURE_SLOT_KEYS.filter(k => sig[k] && sig[k].name);
+}
+
 export const NPC_SIGNATURE_MOVES = {
   // ══════════ 红袍 levelCap5 ══════════
   桑杰朵杰: { // 土司·佛堂参悟·后发反打；防御是全套听桥

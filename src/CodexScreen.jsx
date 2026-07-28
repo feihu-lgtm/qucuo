@@ -9,10 +9,10 @@
 //
 // 无图标素材问题的解法就在这：不做图标墙，用品阶玉石 + 品阶色 + 排版撑质感。
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { CATALOG } from "./items/catalog.js";
 import { CATEGORY_LABEL, QUALITY, QUALITY_COLOR } from "./equipment.js";
-import { SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
+import { moveCodexBySource, groupMoves, moveCodexStats, MOVE_SOURCE } from "./kungfu/moveCodex.js";
 import { ITEM_DISTRIBUTION, isPoolable } from "./items/distribution.js";
 import { DISTRICT_REGION } from "./items/regionMap.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
@@ -57,12 +57,24 @@ const CAT_FILTERS = [
 ];
 const Q_FILTERS = ["全部", ...QUALITY];
 
-// 武学分组的展示名（SKILL_CATALOG 的 key 是武馆位置代号）
-const SKILL_GROUP_LABEL = { 玉泉: "玉泉练武场", 雪山: "雪山派", 锦官: "锦官城武馆" };
+// 武学来源分页。分组名与归一逻辑都在 moveCodex.js 里，图鉴不再自己维护白名单——
+// 此前这儿有张 SKILL_GROUP_LABEL 只列了玉泉/雪山/锦官，而筛选写的是
+// `.filter(([k]) => SKILL_GROUP_LABEL[k])`，把它当成了白名单：
+// 独孤/青城/峨眉/唐门/血刀/三星 六家共 39 门连同全部专属招/制式招/博弈招，
+// 一共两百多招在图鉴里一个都看不到，而且丢得毫无痕迹。
+const SRC_TABS = [MOVE_SOURCE.WUGUAN, MOVE_SOURCE.SIGNATURE, MOVE_SOURCE.STANDARD, MOVE_SOURCE.BURDEN];
 
 export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], skills = [], onClose }) {
   const closeGuard = useOverlayCloseGuard(onClose);
+  // ESC 关闭：玩家把字号调大之后，图鉴内容会顶出屏幕高度，右上角那个叉点不到，
+  // 除了刷新页面没有别的退路。键盘退路必须有。
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
   const [tab, setTab] = useState("item"); // item | skill
+  const [srcTab, setSrcTab] = useState(MOVE_SOURCE.WUGUAN);
   const [catFilter, setCatFilter] = useState("all");
   const [qFilter, setQFilter] = useState("全部");
   const [search, setSearch] = useState("");
@@ -84,19 +96,15 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
     );
   }, [catFilter, qFilter, kw, ownedOnly, ownedItems]);
 
-  // 武学：SKILL_CATALOG 只取"武馆分组"（玉泉/雪山/锦官），过滤掉突破价目表那些非数组/非武馆 key
+  // 武学：走 moveCodex 的归一总录（武馆+专属+制式+博弈四源合一），按来源分页
+  const codexStats = useMemo(() => moveCodexStats(), []);
   const skillGroups = useMemo(() => {
-    return Object.entries(SKILL_CATALOG)
-      .filter(([k, v]) => Array.isArray(v) && SKILL_GROUP_LABEL[k])
-      .map(([k, v]) => {
-        const list = v.filter(sk =>
-          (!kw || sk.name.includes(kw) || (sk.desc || "").includes(kw)) &&
-          (!ownedOnly || ownedSkills.has(sk.name))
-        );
-        return [SKILL_GROUP_LABEL[k], list];
-      })
-      .filter(([, list]) => list.length > 0);
-  }, [kw, ownedOnly, ownedSkills]);
+    const list = (moveCodexBySource()[srcTab] || []).filter(mv =>
+      (!kw || mv.name.includes(kw) || (mv.desc || "").includes(kw) || (mv.owner || "").includes(kw)) &&
+      (!ownedOnly || ownedSkills.has(mv.name))
+    );
+    return groupMoves(list).filter(([, l]) => l.length > 0);
+  }, [kw, ownedOnly, ownedSkills, srcTab]);
 
   // 收集进度统计
   const itemOwnedCount = useMemo(() => CATALOG.filter(it => ownedItems.has(it.name)).length, [ownedItems]);
@@ -132,7 +140,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
         onClick={e => e.stopPropagation()}
       >
         {/* 关闭 */}
-        <span onClick={onClose} title="合上"
+        <span onClick={onClose} title="合上（也可按 ESC）"
           style={{ position: "absolute", top: 30, right: 34, cursor: "pointer", fontSize: 18, color: paperAccent, zIndex: 2 }}>✕</span>
 
         <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -189,6 +197,23 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
             </>
           ) : (
             <>
+              {/* 来源分页：武馆 / 专属 / 制式 / 博弈 —— 四源合计两百多招 */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+                {SRC_TABS.map(src => (
+                  <button key={src} onClick={() => setSrcTab(src)}
+                    style={{
+                      fontSize: 12, padding: "3px 10px", borderRadius: 3, cursor: "pointer",
+                      border: `1px solid ${srcTab === src ? "#a0651a" : "rgba(120,90,50,0.35)"}`,
+                      background: srcTab === src ? "rgba(160,101,26,0.18)" : "transparent",
+                      color: srcTab === src ? paperAccent : paperDim, fontFamily: "inherit",
+                    }}>
+                    {src}·{codexStats.bySource[src] || 0}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: paperDim, marginBottom: 6, paddingLeft: 4 }}>
+                全图共 <span style={{ color: paperAccent }}>{codexStats.total}</span> 招 · 本页 {skillGroups.reduce((n, [, l]) => n + l.length, 0)} 招
+              </div>
               {skillGroups.map(([grp, list]) => (
                 <div key={grp}>
                   <div style={{ fontSize: 15, color: paperAccent, margin: "16px 0 6px", letterSpacing: 1, fontWeight: "bold", borderLeft: "4px solid #a0651a", paddingLeft: 10 }}>{grp}</div>
@@ -246,7 +271,10 @@ function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
   const qc = QUALITY_COLOR[sk.quality] || "#8a8578";
   const jade = jadeSrc(sk.quality);
   const bonusBits = [];
-  if (sk.moveType) bonusBits.push(`招式·${sk.moveType}`);
+  if (sk.owner) bonusBits.push(`${sk.owner}·${sk.slot || ""}`);
+  if (sk.skillType) bonusBits.push(sk.skillType + (sk.type ? `·${sk.type}` : ""));
+  else if (sk.type) bonusBits.push(`招式·${sk.type}`);
+  if (sk.unlearnable) bonusBits.push("不可学");
   // 被动加成与招式特效都走 itemEffectText 那份唯一词典，图鉴不再自己拼一遍
   const pb = passiveBonusBrief(sk.passiveBonus);
   if (pb) bonusBits.push(pb);

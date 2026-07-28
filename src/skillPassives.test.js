@@ -256,3 +256,62 @@ describe("特殊回气与听桥", () => {
     expect(bad, `这些招挂了「防御成功才结算」的标志位，却不在防御槽，永远触发不了：${bad.join("、")}`).toEqual([]);
   });
 });
+
+// ── 全图武学总录：四源归一 ──────────────────────────────────────────────────
+// 图鉴此前只读 SKILL_CATALOG，还被一张 SKILL_GROUP_LABEL 当白名单卡住
+// （`.filter(([k]) => SKILL_GROUP_LABEL[k])`），只显示玉泉/雪山/锦官三家 17 门。
+// 独孤/青城/峨眉/唐门/血刀/三星 六家 39 门，连同 168 个专属招、18 个制式招、
+// 4 个博弈招，一共两百多招在图鉴里一个都看不到，而且丢得毫无痕迹。
+import { buildMoveCodex, moveCodexStats, moveCodexBySource, MOVE_SOURCE, SKILL_GROUP_LABEL } from "./kungfu/moveCodex.js";
+import { NPC_SIGNATURE_MOVES, SIGNATURE_SLOT_KEYS } from "./npcSignatureMoves.js";
+
+describe("全图武学总录", () => {
+  it("四个源一个都不少", () => {
+    const st = moveCodexStats();
+    for (const src of Object.values(MOVE_SOURCE)) {
+      expect(st.bySource[src], `来源「${src}」一条都没收进来`).toBeGreaterThan(0);
+    }
+    expect(st.total).toBeGreaterThan(200);
+  });
+
+  it("SKILL_CATALOG 的每一门都在总录里——一门都不许被分组名白名单吃掉", () => {
+    const inCodex = new Set(buildMoveCodex().filter(m => m.source === MOVE_SOURCE.WUGUAN).map(m => m.name));
+    const missing = Object.values(SKILL_CATALOG).flat().filter(s => !inCodex.has(s.name)).map(s => s.name);
+    expect(missing, `以下武馆武学没进总录：${missing.join("、")}`).toEqual([]);
+  });
+
+  it("每个武学集都有分组名（查不到也要用 key 兜底，绝不丢条目）", () => {
+    const groups = new Set(buildMoveCodex().filter(m => m.source === MOVE_SOURCE.WUGUAN).map(m => m.group));
+    for (const k of Object.keys(SKILL_CATALOG)) {
+      if (!Array.isArray(SKILL_CATALOG[k]) || !SKILL_CATALOG[k].length) continue;
+      expect(groups.has(SKILL_GROUP_LABEL[k] || k), `武学集「${k}」在总录里没有对应分组`).toBe(true);
+    }
+  });
+
+  it("专属招全部收录，且每条都挂着主人", () => {
+    let expected = 0;
+    for (const d of Object.values(NPC_SIGNATURE_MOVES)) {
+      if (!d || typeof d !== "object") continue;
+      for (const k of SIGNATURE_SLOT_KEYS) if (d[k] && d[k].name) expected++;
+    }
+    const got = moveCodexBySource()[MOVE_SOURCE.SIGNATURE];
+    expect(got.length).toBe(expected);
+    expect(got.every(m => m.owner), "有专属招没挂主人").toBe(true);
+  });
+
+  it("专属招的档位取自 RESIDENT_NPCS 的 levelCap，不另存一份", () => {
+    const xz = moveCodexBySource()[MOVE_SOURCE.SIGNATURE].find(m => m.owner === "玄尘师太");
+    expect(xz, "玄尘师太的专属招没收进来").toBeTruthy();
+    expect(xz.quality).toBe("红"); // 她 levelCap 5
+  });
+
+  it("总录条目喂得进唯一词典——每条都吐得出人话或至少有类型定性", () => {
+    const mute = buildMoveCodex().filter(m => !moveEffectBrief(m) && !m.desc);
+    expect(mute, `以下条目在图鉴里会是一片空白：${mute.map(m => m.name).join("、")}`).toEqual([]);
+  });
+
+  it("key 唯一（重复会让图鉴列表 React key 撞车）", () => {
+    const keys = buildMoveCodex().map(m => m.key);
+    expect([...new Set(keys)].length).toBe(keys.length);
+  });
+});
