@@ -169,6 +169,10 @@ export const BUILDINGS_BY_LOCATION = {
   // ── 锦官城（20 种，乡外门户） ──
   锦官城: [
     {
+      id: "tangmen_shop", name: "唐门暗器铺", type: BUILDING_TYPE.BLACKMARKET, shopKey: "唐门暗器",
+      desc: "暗巷尽头一扇黑漆门，门上没招牌，只钉着一枚三棱带血槽的暗器当门钉。门后是唐门的外围铺面：暗器、毒药、解药都卖，不赊账，不问用途。",
+    },
+    {
       id: "wuguan_emei", name: "峨眉剑庐", type: BUILDING_TYPE.WUGUAN, skillSet: "峨眉",
       desc: "锦官城南三进小院，院中一株老银杏。正堂供普贤菩萨，剑架靠墙十几柄剑擦得锃亮。尼姑和道姑坐一张桌上喝茶——峨眉佛道双修，不拘形迹。男弟子入门先抄三个月经，「心不静，剑不稳」。",
     },

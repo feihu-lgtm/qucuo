@@ -3,6 +3,18 @@ import { makeItem, ITEM_CATEGORY } from "../equipment.js";
 // 所有固定商店货品清单。key 对应 qucuoBuildings.js 的 shopKey 字段。
 // 货品价格由 makeItem → priceForQuality 统一计算，卖出 = 买价 / 2。
 export const QUCUO_SHOPS = {
+  唐门暗器: {
+    shopName: "唐门暗器铺",
+    items: [
+      { name: "峨眉刺", category: ITEM_CATEGORY.WEAPON, quality: "蓝" },
+      { name: "苗银暗器囊", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝" },
+      { name: "毒蝎粉", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "蛇药", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "熊胆解毒丸", category: ITEM_CATEGORY.MISC, quality: "蓝" },
+      { name: "假死药", category: ITEM_CATEGORY.MISC, quality: "蓝" },
+      { name: "百花净毒露", category: ITEM_CATEGORY.MISC, quality: "紫" },
+    ],
+  },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。

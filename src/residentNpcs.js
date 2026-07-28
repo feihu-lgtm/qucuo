@@ -811,7 +811,95 @@ export const RESIDENT_NPCS = {
       ],
     },
   ],
+  广汉: [
+    // ── 三星派（青铜神树下·不收徒不设铺面）──
+    {
+      name: "纵目者", id: "resident_zongmuzhe", levelCap: 5,
+      brief: "青铜神树最顶端坐着的人，面具是金色的",
+      personality: "不动，也不说话；你靠近三步，他睁眼。睁眼之后仍然不说话",
+      carry: [
+        { name: "青铜纵目面具", category: "accessory", quality: "紫" },
+        { name: "玄铁重剑", category: "weapon", quality: "紫" },
+        { name: "青铜残片", category: "misc", quality: "绿" },
+        { name: "欢喜法衣", category: "armor", quality: "紫" },
+        { name: "古铜镜佩", category: "accessory", quality: "紫" },
+        { name: "河滩碎陶片", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "青铜面人·甲", id: "resident_qingtong_jia", levelCap: 3,
+      brief: "戴青铜面具的三星派弟子，不说话只以剑应答",
+      personality: "摘了面具谁也不认识谁；败了就走，面具留在地上，里头是空的",
+      carry: [
+        { name: "松纹剑", category: "weapon", quality: "蓝" },
+        { name: "青铜纵目面具", category: "accessory", quality: "紫" },
+        { name: "锦官坊标兵甲", category: "armor", quality: "蓝" },
+        { name: "青铜残片", category: "misc", quality: "绿" },
+        { name: "缠丝玛瑙牌", category: "accessory", quality: "绿" },
+        { name: "河滩碎陶片", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "青铜面人·乙", id: "resident_qingtong_yi", levelCap: 3,
+      brief: "戴青铜面具的三星派弟子，不说话只以剑应答",
+      personality: "摘了面具谁也不认识谁；败了就走，面具留在地上，里头是空的",
+      carry: [
+        { name: "松纹剑", category: "weapon", quality: "蓝" },
+        { name: "青铜纵目面具", category: "accessory", quality: "紫" },
+        { name: "锦官坊标兵甲", category: "armor", quality: "蓝" },
+        { name: "青铜残片", category: "misc", quality: "绿" },
+        { name: "缠丝玛瑙牌", category: "accessory", quality: "绿" },
+        { name: "河滩碎陶片", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "青铜面人·丙", id: "resident_qingtong_bing", levelCap: 3,
+      brief: "戴青铜面具的三星派弟子，不说话只以剑应答",
+      personality: "摘了面具谁也不认识谁；败了就走，面具留在地上，里头是空的",
+      carry: [
+        { name: "松纹剑", category: "weapon", quality: "蓝" },
+        { name: "青铜纵目面具", category: "accessory", quality: "紫" },
+        { name: "锦官坊标兵甲", category: "armor", quality: "蓝" },
+        { name: "青铜残片", category: "misc", quality: "绿" },
+        { name: "缠丝玛瑙牌", category: "accessory", quality: "绿" },
+        { name: "河滩碎陶片", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+  ],
   锦官城: [
+    // ── 唐门（驻锦官城·暗巷）──
+    {
+      name: "唐老太", id: "resident_tanglaotai", levelCap: 5,
+      brief: "唐门家主，七十岁，绣花针当暗器使",
+      personality: "笑眯眯说话带笑，笑完人就倒了；对晚辈极和气，对规矩极狠",
+      carry: [
+        { name: "三棱透骨钉", category: "weapon", quality: "紫" },
+        { name: "唐门乌木匣", category: "accessory", quality: "蓝" },
+        { name: "百香纱衣", category: "armor", quality: "蓝" },
+        { name: "苗银暗器囊", category: "accessory", quality: "蓝" },
+        { name: "孔雀胆酒", category: "misc", quality: "紫" },
+        { name: "百花净毒露", category: "misc", quality: "紫" },
+        { name: "参须茶包", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "唐三少", id: "resident_tangsanshao", levelCap: 2,
+      brief: "暗巷铺面的看店掌柜，年轻话少",
+      personality: "找钱从不多找一文，也从不少找；你问暗器怎么用，他只说「照说明」",
+      carry: [
+        { name: "峨眉刺", category: "weapon", quality: "蓝" },
+        { name: "锦官制式软甲", category: "armor", quality: "蓝" },
+        { name: "苗银暗器囊", category: "accessory", quality: "蓝" },
+        { name: "铜钱压襟", category: "accessory", quality: "白" },
+        { name: "毒蝎粉", category: "misc", quality: "绿" },
+        { name: "蛇药", category: "misc", quality: "绿" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
     // ── 峨眉派（驻锦官城·峨眉剑庐）──
     // 掌门与大弟子的名字按要求换过：设计稿原写「灭绝师太」「周芷若」，是《倚天》
     // 里现成的人，换成本作自己的人。性格底子保留（掌门冷硬多疑、大弟子笑着出剑），
@@ -997,6 +1085,63 @@ export const RESIDENT_NPCS = {
     },
   ],
   大草甸: [
+    // ── 血刀门（大草甸·血刀营地·全员敌对）──
+    {
+      name: "厉天行", id: "resident_litianxing", levelCap: 5,
+      brief: "血刀门主，四十岁，瘦，眼窝深陷",
+      personality: "笑起来露一嘴黄牙；刀从不擦——「擦了就没味了」",
+      carry: [
+        { name: "饮血狂刀", category: "weapon", quality: "橙" },
+        { name: "黑风寨牛皮重铠", category: "armor", quality: "紫" },
+        { name: "虎乳牙", category: "accessory", quality: "蓝" },
+        { name: "血刀大法", category: "misc", quality: "橙" },
+        { name: "黑风寨土烧", category: "misc", quality: "绿" },
+        { name: "金疮药", category: "misc", quality: "白" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "血刀门徒·初七", id: "resident_xuedao_chuqi", levelCap: 2,
+      brief: "血刀门徒，没有名字只有编号",
+      personality: "不说话，只看你带没带兵器；带了就笑，不带也笑",
+      carry: [
+        { name: "黑风断刃", category: "weapon", quality: "绿" },
+        { name: "熊皮坎肩", category: "armor", quality: "绿" },
+        { name: "黑风寨木牌", category: "accessory", quality: "白" },
+        { name: "牦牛骨扳指", category: "accessory", quality: "白" },
+        { name: "黑风寨土烧", category: "misc", quality: "绿" },
+        { name: "止血散", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "血刀门徒·十三", id: "resident_xuedao_shisan", levelCap: 2,
+      brief: "血刀门徒，没有名字只有编号",
+      personality: "不说话，只看你带没带兵器；带了就笑，不带也笑",
+      carry: [
+        { name: "黑风断刃", category: "weapon", quality: "绿" },
+        { name: "熊皮坎肩", category: "armor", quality: "绿" },
+        { name: "黑风寨木牌", category: "accessory", quality: "白" },
+        { name: "牦牛骨扳指", category: "accessory", quality: "白" },
+        { name: "黑风寨土烧", category: "misc", quality: "绿" },
+        { name: "止血散", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "血刀门徒·廿三", id: "resident_xuedao_niansan", levelCap: 2,
+      brief: "血刀门徒，没有名字只有编号",
+      personality: "不说话，只看你带没带兵器；带了就笑，不带也笑",
+      carry: [
+        { name: "黑风断刃", category: "weapon", quality: "绿" },
+        { name: "熊皮坎肩", category: "armor", quality: "绿" },
+        { name: "黑风寨木牌", category: "accessory", quality: "白" },
+        { name: "牦牛骨扳指", category: "accessory", quality: "白" },
+        { name: "黑风寨土烧", category: "misc", quality: "绿" },
+        { name: "止血散", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
     {
       name: "虎王", id: "beast_tiger_king", levelCap: 5,
       beast: true, unlearnable: true,

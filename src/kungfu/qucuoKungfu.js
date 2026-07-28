@@ -212,6 +212,40 @@ export const SKILL_CATALOG = {
       passiveBonus: { maxHp: 45 },
     },
   ],
+
+  // ── 唐门：暗器与毒药，家族制不收外姓，但暗器卖给所有人 ──
+  唐门: [
+    { id: "kf_tangmen_anqi", name: "满天星雨", type: SKILL_TYPE.MOVE, quality: "蓝", price: 150,
+      moveType: "攻击",
+      desc: "唐门暗器总诀。袖中同时飞出七枚铁蒺藜，走七条不同弧线，封死对手三个闪避方向。不是快，是密。练到极处一袖出三十六枚，如星雨覆面，无处可躲。" },
+    { id: "kf_tangmen_du", name: "百毒不侵体", type: SKILL_TYPE.NEIGONG, quality: "蓝", price: 130,
+      moveType: "防御",
+      desc: "唐门弟子自幼以毒淬体，小剂量百毒日日服，练出一副抗毒的筋骨。运功时体表渗出一层薄汗，带微苦药气——毒物近身先被这层汗化去三分。不是解毒，是毒到了跟前就矮了三分。",
+      passiveBonus: { maxHp: 15 } },
+  ],
+
+  // ── 血刀门：邪派，以杀养刀。不外传，只从厉天行身上掉 ──
+  血刀: [
+    { id: "kf_xuedao", name: "血刀大法", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+      // hpRestore 是招式层已经跑通的字段（resolveTurn 里按最大气血比例结算），
+      // 设计稿原写的 lifesteal（按实际伤害比例吸血）全项目没有接线，写了也不生效，
+      // 所以这里落在 hpRestore 上——"砍中就回一口"的观感一样，但它是真的会回血。
+      hpRestore: 0.06,
+      moveType: "攻击",
+      desc: "以血养刀，以杀证道。每一刀劈出都带着铁锈般的血腥气，砍中对手时刀身会吸——不是吸肉，是吸气。被砍中的人伤口愈合极慢，而持刀者面色红润。练到极处，一刀下去，对手瘦一圈，你胖一圈。",
+      passiveBonus: { maxHp: 10 } },
+  ],
+
+  // ── 三星派：古蜀剑派，不设铺面不收束脩，武学只从面具试炼来 ──
+  三星: [
+    { id: "kf_sanxing_jian", name: "纵目剑法", type: SKILL_TYPE.MOVE, quality: "紫", price: 0,
+      moveType: "攻击",
+      desc: "剑走直线，不拐弯。三星堆青铜面具的眼睛是凸出来的，看人不看表面，看穿。剑也一样：不刺你格挡的地方，刺你格挡之后的地方。一剑出去你挡了，但剑尖已经在你身后。三千年前的剑法本没有名字，后人叫它纵目——纵目所见，皆是要害。" },
+    { id: "kf_sanxing_bu", name: "神树步", type: SKILL_TYPE.QINGGONG, quality: "紫", price: 0,
+      moveType: "状态",
+      desc: "三星堆青铜神树九枝九鸟，枝杈交错毫无规律。步法脱胎于此，走位如攀树，每一步都踩在你判断不到的枝杈上。不是快，是无规律——你预判他往左，他往上了；你预判他落地，他还在半空拐了个弯。",
+      passiveBonus: { speedBonus: 2 } },
+  ],
 };
 
 // 汇总某角色skills里所有内功/轻功的被动加成。

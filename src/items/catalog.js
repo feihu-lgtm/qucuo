@@ -666,6 +666,28 @@ export const SUNDRIES = [
   { name: "缺角骰子", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["赌具"], desc: "六点那角磕缺了一块，掷出来总往那边偏。他知道，赌坊的人也知道——但没人当面说破。" },
   { name: "油腻头巾", category: ITEM_CATEGORY.MISC, quality: "白", tags: ["杂物"], desc: "看不出本来颜色的一条头巾，汗渍叠着汗渍。天都镇的人隔着半条街就认得出这块布。" },
   { name: "金蛋", category: ITEM_CATEGORY.MISC, quality: "绿", tags: ["奇物", "禽产"], desc: "大公鸡下的蛋，通体金黄——不是金子，是蛋壳真就这个色。鱼定大娘研究了半个月也没研究明白，最后决定不吃，供起来。" },
+  // ── 三门派新增（唐门·血刀·三星）──
+  { name:"饮血狂刀", category:ITEM_CATEGORY.WEAPON, quality:"橙", tags:["武器","刀","邪物"], atkMul:1.5,
+    // 设计稿原写 lifesteal:0.25（按实际伤害比例吸血），但 lifesteal 全项目没有接线。
+    // 改用招式层已跑通的 hpRestore（按最大气血比例回），装备特效会并进本回合招式，
+    // "砍中就回一口"的观感一样，区别是这个真的会回血。
+    effect:{ hpRestore: 0.08, forceCrit: true }, sixDim:{体魄:2},
+    desc:"厉天行的刀。刀身暗红，不是锈，是血渗进了铁里。握上去刀柄是温的，像握着一只刚死的手。砍中人的时候刀会嗡一声，像在喝。" },
+  { name:"血刀大法", category:ITEM_CATEGORY.MISC, quality:"橙", tags:["武学秘籍","邪功"],
+    desc:"一卷人皮封面的册子，翻开第一页写着「刀不见血，人不见道」。练法极简单——每次出刀前割自己一刀，让血顺着刀柄流到刃上。练到第七层，不用割自己了，别人的血就够。" },
+  { name:"青铜纵目面具", category:ITEM_CATEGORY.ACCESSORY, quality:"紫", tags:["饰品","古蜀","信物"],
+    effect:{ immuneControl: true }, sixDim:{悟性:2},
+    desc:"三星堆祭祀坑里翻出来的青铜面具，双目凸出三寸，嘴角平直既非笑也非怒。戴上的一瞬间视野窄了，能看见的东西却好像多了些。三星派弟子以此相认——摘了面具，谁也不认识谁。" },
+  { name:"河滩碎陶片", category:ITEM_CATEGORY.MISC, quality:"白", tags:["古蜀","杂货"],
+    desc:"鸭子河边捡的碎陶片，上头有个指纹印——三千年前某个人按上去的，烧进泥里，再没消掉。" },
+  { name:"青铜残片", category:ITEM_CATEGORY.MISC, quality:"绿", tags:["古蜀","杂货"],
+    desc:"祭祀坑边翻出来的一小片青铜，绿锈斑驳，断面还带着铜光。上面的纹饰像眼睛，又像不是。" },
+  { name:"三棱透骨钉", category:ITEM_CATEGORY.WEAPON, quality:"紫", tags:["武器","暗器","唐门"],
+    effect:{ ignoreDefenseRatio: 0.4 }, sixDim:{身法:1},
+    desc:"唐门制式暗器，三棱带血槽，入肉不易拔。唐三少说这东西的讲究不在射得准，在拔的时候比扎的时候疼。" },
+  { name:"唐门乌木匣", category:ITEM_CATEGORY.ACCESSORY, quality:"蓝", tags:["饰品","唐门","器物"],
+    effect:{ applyMark: { name: "内伤", stacks: 1, max: 5 } }, sixDim:{智谋:1},
+    desc:"巴掌大的乌木匣，分十二格，每格一味。唐门弟子出门必带，装的什么只有本人知道。匣盖内侧刻着一行小字：「误开者，自负。」" },
   // ── 青城装备（道门·雅江）──
   // 设计稿只写了食品/武学/招式/伙伴，没有装备章节，而 catalog 里护甲一栏只有僧袍与
   // 袈裟（佛门），道士无衣可穿。这几件按「具名物优先用 catalog 里有主的（掉出来有
