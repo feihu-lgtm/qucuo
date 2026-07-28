@@ -448,6 +448,9 @@ describe("历史欠账名单不得腐烂（还清了就要从名单里删掉）"
 // 鱼定村 2 件铺满 19 间，雅江 3 件铺满 15 间——同一块碎石你在城门看见一次、
 // 进当铺又看见一次、上钱庄还看见一次。此地之物本该属于某一间屋子。
 import { GROUND_ITEMS, GROUND_ITEMS_INNER } from "./groundItems.js";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 describe("地上物是房间级，不是据点级", () => {
   it("据点级表已清空——新增地上物写不出据点级", () => {
@@ -470,5 +473,16 @@ describe("地上物是房间级，不是据点级", () => {
     for (const [key, arr] of Object.entries(GROUND_ITEMS_INNER))
       for (const g of arr || []) if (!g?.name || !g?.desc) bad.push(`${key}: ${g?.name || "(无名)"}`);
     expect(bad, `以下地上物缺名字或描述：${bad.join("、")}`).toEqual([]);
+  });
+
+  it("GROUND_ITEMS_INNER 没有重复键（JS 对象字面量重复键会静默覆盖）", () => {
+    // 改键名时最容易踩：把 A 改成 B，而 B 已经存在——后写的那份把先写的整个盖掉，
+    // 不报错、不警告，只是有一批地上物凭空消失。本轮改「令狐冲墓→前辈墓地」时
+    // 就差点撞上已有的「贡措海·前辈墓地」。源码层面查，运行时对象已经看不出来了。
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "groundItems.js"), "utf-8");
+    const body = src.slice(src.indexOf("GROUND_ITEMS_INNER = {"));
+    const keys = [...body.matchAll(/^  "([^"]+)":\s*\[/gm)].map(m => m[1]);
+    const dup = [...new Set(keys.filter((k, i) => keys.indexOf(k) !== i))];
+    expect(dup, `重复键会被静默覆盖，先写的那份整个消失：${dup.join("、")}`).toEqual([]);
   });
 });
