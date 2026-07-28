@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "随身物可自造：修 carry 形状断链，加自造物件（含六维加成与 AI 写描述）",
+    time: "2026-07-30 08:30",
+    notes: [
+      "①【修·玩家挑的物品会变成无名杂物】applyNpcDefaults 那条分支是 npc.carry.map(c => makeGameItem({ name: c.name, category: c.category, quality: c.quality }))，读的是**对象的字段**；而入册界面挑物品时存的是名字字符串数组，传过去 c.name 就是 undefined。玩家精心挑的那把霜牙到手上会变成一件无名白档杂物。只在「挑了东西」时触发，挑空反而正常（空数组不传、走四池随机），所以不容易发现。现在 toPoolLike 过一道 normalizeCarry 归一。",
+      "②【carry 元素允许两种形态】字符串＝在册物品，只存名字，makeItemSmart 会按名字查 CATALOG 把数值词条描述全补上（绿档霜牙不会被说成红档）；对象＝自造物品，CATALOG 查不到就退到 makeItem(spec) 用传入字段建。实测：只传「霜牙」出来是绿档 weapon atk=15 带原描述，自造的「青楼旧账簿」保住了 sixDim{智谋:2}，自造的「无名钝刀」按 statsForQuality 给白档 atk=7。",
+      "③【新造一件】CarryPicker 加了自造表单：名称／类别（兵器护具饰物杂物）／品阶／六维加成／描述。六维点一下加一点、到 3 归零，百物录里 139 件带这个字段、多是 +1 到 +2，所以上限给到 3 够用。造出来的东西只挂在这一个人身上，不进百物录。",
+      "④【AI 只写描述，不碰数值】自造表单里那个「让 AI 写」只让它照名称／类别／品阶／六维写两三句白话古文。数值坚持由玩家定——AI 一插手就会出现「界面上写着加 2 身法、描述里说这是把重剑」这种自相矛盾。prompt 里也明确禁止复述属性数值和用游戏术语。",
+      "⑤【判重要过 nameOf】carry 混了字符串与对象两种元素后，原先的 carry.includes(name) 对自造那件永远判不出「已选」，会被重复加进去。所有增删判重统一走 nameOf。",
+      "顺带记一笔样本：又扫了 4 张卡（含一张英文卡 Your Dragon — Kaeryn）。那张是决定性的反例——无 spec 字段的 V1 格式、character_book 一条都没有，description 7296＋personality 3732＋scenario 8437 字全在六字段里。中文卡是「六字段空、世界书满」，欧美卡正好相反。现有的条目分类对这类卡完全没有输出（人物候选 0），需要另开一条「从散文切人物」的路线，判型可以纯代码做（看字数分布），不必先 AI 全扫。",
+      "验证：esbuild 过；scripts/carryTest.mjs 验了两种元素形态过 makeGameItem 之后的实际产物。vitest 与构建仍需 npm run verify。",
+    ],
+  },
+  {
     codename: "入册审改按映射表铺满全字段：招式走原型系统、随身物可挑、终端日志、七维可键入",
     time: "2026-07-30 07:10",
     notes: [

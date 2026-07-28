@@ -18,6 +18,7 @@ import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG } 
 import { MOVE_ARCHETYPES, resolveArchetype } from "../combat/moveArchetypes.js";
 import { hpFromNeigong, atkFromWaigong } from "../npcGeneration.js";
 import { CATALOG } from "../items/catalog.js";
+import { callModel } from "../apiConfig.js";
 import { QUCUO_MAP } from "../qucuoMap.js";
 import { hasInnerMap, getPublicInnerRoomNames } from "../innerMap.js";
 
@@ -168,9 +169,12 @@ function MoveEditor({ moves, levelCap, onChange, why, source }) {
  * 随机抽（按品阶给武器/护甲/饰品/杂物），不至于两手空空。只有你想精确指定
  * 「这人身上一定有那把刀」时才需要在这儿挑。
  */
-function CarryPicker({ carry, onChange, levelCap }) {
+function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
   const [cat, setCat] = useState("");
   const [kw, setKw] = useState("");
+  const [forging, setForging] = useState(false);   // 是否展开"新造一件"
+  const [draft, setDraft] = useState(null);
+  const [aiBusy, setAiBusy] = useState(false);
 
   const cats = useMemo(() => [...new Set(CATALOG.map(e => e.category).filter(Boolean))], []);
   const list = useMemo(() => {
@@ -180,8 +184,39 @@ function CarryPicker({ carry, onChange, levelCap }) {
       .slice(0, 60);
   }, [cat, kw]);
 
-  const add = (name) => { if (!carry.includes(name)) onChange([...carry, name]); };
-  const del = (name) => onChange(carry.filter(x => x !== name));
+  // carry 的元素有两种：在册物品只存名字字符串，自造物品存完整对象。
+  // 所有增删判重都必须过 nameOf，不能直接 includes——否则自造的那件永远判不出
+  // "已选"，会被重复加进去。
+  const nameOf = (c) => (typeof c === "string" ? c : (c?.name || ""));
+  const has = (name) => carry.some(c => nameOf(c) === name);
+  const add = (item) => { if (!has(nameOf(item))) onChange([...carry, item]); };
+  const del = (name) => onChange(carry.filter(c => nameOf(c) !== name));
+
+  const blankDraft = () => ({ name: "", category: cat || "weapon", quality: TIERS[levelCap]?.label || "白", desc: "", sixDim: {} });
+
+  // 让 AI 补描述。只写描述，不碰数值——数值是玩家自己定的，AI 一插手就会
+  // 出现"界面上写着加2身法、描述里说这是把重剑"这种自相矛盾。
+  const askAiDesc = async () => {
+    if (!draft?.name || aiBusy) return;
+    setAiBusy(true);
+    try {
+      const six = Object.entries(draft.sixDim || {}).filter(([, v]) => v).map(([k, v]) => `${k}+${v}`).join("、");
+      const sys = `你在为一个中文武侠文字游戏写物品描述。用白话古文，两到三句，六十字以内。
+只写这件东西看上去什么样、摸上去什么手感、来历或用处的一点线索。
+不要复述它的属性数值，不要用"这件装备"这类游戏术语，不要夸大成神兵。
+直接输出描述正文，不要引号、不要标题、不要任何说明。`;
+      const usr = `名称：${draft.name}
+类别：${{ weapon: "兵器", armor: "护具", accessory: "饰物", misc: "杂物" }[draft.category] || draft.category}
+品阶：${draft.quality}档${six ? `\n附带：${six}` : ""}`;
+      const res = await callModel(apiCfg, sys, [{ role: "user", content: usr }], { maxTokens: 400, temperature: 0.8 });
+      const text = (res.text || "").trim().replace(/^["「『]|["」』]$/g, "");
+      if (text) setDraft(d => ({ ...d, desc: text.slice(0, 200) }));
+    } catch (e) {
+      setDraft(d => ({ ...d, desc: (d.desc || "") + (d.desc ? "" : `（AI 没写出来：${e.message.slice(0, 30)}）`) }));
+    } finally {
+      setAiBusy(false);
+    }
+  };
 
   return (
     <div>
@@ -191,14 +226,20 @@ function CarryPicker({ carry, onChange, levelCap }) {
             未指定 · 运行时按 {TIERS[levelCap]?.label}档 从四池随机抽
           </span>
         )}
-        {carry.map(n => (
-          <span key={n} onClick={() => del(n)} title="点击移除"
-            style={{
-              cursor: "pointer", fontSize: 10.5, padding: "3px 8px", borderRadius: 3,
-              border: "1px solid #4a4028", background: "rgba(212,168,83,.10)", color: "#e8dcc0",
-            }}>{n} ✕</span>
-        ))}
+        {carry.map((c, i) => {
+          const nm = nameOf(c);
+          const custom = typeof c !== "string";
+          return (
+            <span key={nm + i} onClick={() => del(nm)} title={custom ? `自造：${c.desc || "无描述"}` : "点击移除"}
+              style={{
+                cursor: "pointer", fontSize: 10.5, padding: "3px 8px", borderRadius: 3,
+                border: `1px solid ${custom ? "#6a8a70" : "#4a4028"}`,
+                background: custom ? "rgba(120,180,130,.10)" : "rgba(212,168,83,.10)", color: "#e8dcc0",
+              }}>{custom ? "⚒ " : ""}{nm} ✕</span>
+          );
+        })}
       </div>
+
       <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
         <select value={cat} onChange={e => setCat(e.target.value)} style={{ ...selStyle, width: 96 }}>
           <option value="" style={{ background: "#1a1206" }}>全部类别</option>
@@ -206,11 +247,104 @@ function CarryPicker({ carry, onChange, levelCap }) {
         </select>
         <input value={kw} onChange={e => setKw(e.target.value)} placeholder="搜名字"
           style={{ ...selStyle, flex: 1 }} />
+        <span onClick={() => { setForging(f => !f); if (!draft) setDraft(blankDraft()); }}
+          title="造一件百物录里没有的东西"
+          style={{
+            cursor: "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 3, whiteSpace: "nowrap",
+            border: `1px solid ${forging ? "#8ab070" : "#3a3428"}`,
+            color: forging ? "#8ab070" : "#8a8270",
+          }}>⚒ 新造一件</span>
       </div>
+
+      {forging && draft && (
+        <div style={{ marginBottom: 7, padding: "8px 10px", borderRadius: 3, border: "1px solid #3a4a38", background: "rgba(120,180,130,.05)" }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            <input value={draft.name} placeholder="物件名"
+              onChange={e => setDraft(d => ({ ...d, name: e.target.value.slice(0, 20) }))}
+              style={{ ...selStyle, flex: 1, textAlign: "center" }} />
+            <select value={draft.category} onChange={e => setDraft(d => ({ ...d, category: e.target.value }))}
+              style={{ ...selStyle, width: 84 }}>
+              {["weapon", "armor", "accessory", "misc"].map(c => (
+                <option key={c} value={c} style={{ background: "#1a1206" }}>
+                  {{ weapon: "兵器", armor: "护具", accessory: "饰物", misc: "杂物" }[c]}
+                </option>
+              ))}
+            </select>
+            <select value={draft.quality} onChange={e => setDraft(d => ({ ...d, quality: e.target.value }))}
+              style={{ ...selStyle, width: 72 }}>
+              {TIERS.map(t => (
+                <option key={t.label} value={t.label} style={{ background: "#1a1206", color: t.color }}>{t.label}档</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ fontSize: 10, color: "#8a8270", marginBottom: 3 }}>
+            六维加成 · 点数字改，0 就是不加（百物录里 139 件带这个，多是 +1 到 +2）
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+            {SEVEN.map(k => {
+              const v = draft.sixDim?.[k] || 0;
+              return (
+                <span key={k} onClick={() => setDraft(d => {
+                  const next = { ...(d.sixDim || {}) };
+                  const nv = v >= 3 ? 0 : v + 1;
+                  if (nv) next[k] = nv; else delete next[k];
+                  return { ...d, sixDim: next };
+                })}
+                  style={{
+                    cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 3,
+                    border: `1px solid ${v ? "#8ab070" : "#2a2419"}`,
+                    color: v ? "#c8dfc0" : "#5a5448",
+                  }}>{k}{v ? ` +${v}` : ""}</span>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+            <span style={{ fontSize: 10, color: "#8a8270", flex: 1 }}>描述</span>
+            {apiCfg && (
+              <span onClick={askAiDesc}
+                title={draft.name ? "让 AI 照名字与品阶写两三句" : "先起个名"}
+                style={{
+                  cursor: draft.name && !aiBusy ? "pointer" : "default", fontSize: 10,
+                  color: draft.name && !aiBusy ? "#8ac8b8" : "#4a5450",
+                }}>{aiBusy ? "写着…" : "✎ 让 AI 写"}</span>
+            )}
+          </div>
+          <textarea rows={3} value={draft.desc}
+            placeholder="自己写，或让 AI 写完再改"
+            onChange={e => setDraft(d => ({ ...d, desc: e.target.value.slice(0, 200) }))}
+            style={{ ...selStyle, width: "100%", textAlign: "left", resize: "vertical", lineHeight: 1.7 }} />
+
+          <div style={{ display: "flex", gap: 6, marginTop: 7, alignItems: "center" }}>
+            <span style={{ fontSize: 10, color: "#6a6250", flex: 1 }}>
+              造出来的东西只属于这个人，不进百物录
+            </span>
+            <span onClick={() => { setDraft(blankDraft()); }}
+              style={{ cursor: "pointer", fontSize: 10.5, color: "#6a6250" }}>清空</span>
+            <span
+              onClick={() => {
+                const nm = (draft.name || "").trim();
+                if (!nm) return;
+                add({ ...draft, name: nm, custom: true });
+                setDraft(blankDraft());
+                setForging(false);
+              }}
+              style={{
+                cursor: draft.name.trim() ? "pointer" : "default", fontSize: 11,
+                padding: "4px 12px", borderRadius: 3, fontWeight: 700,
+                color: draft.name.trim() ? "#1a1206" : "#5a5448",
+                background: draft.name.trim() ? "linear-gradient(180deg,#a0c890,#5a8a5a)" : "rgba(0,0,0,.3)",
+                border: `1px solid ${draft.name.trim() ? "#a0c890" : "#3a3428"}`,
+              }}>⚒ 造好，收进他身上</span>
+          </div>
+        </div>
+      )}
+
       <div style={{ maxHeight: 128, overflowY: "auto", border: "1px solid #2a2419", borderRadius: 3, background: "rgba(0,0,0,.22)" }}>
         {!list.length && <div style={{ padding: 8, fontSize: 10.5, color: "#6a6250" }}>没有匹配的物件</div>}
         {list.map(e => {
-          const on = carry.includes(e.name);
+          const on = has(e.name);
           const tier = TIERS.find(t => t.label === e.quality);
           return (
             <div key={e.name} onClick={() => (on ? del(e.name) : add(e.name))}
@@ -338,7 +472,7 @@ function Placement({ value, onChange, accent }) {
 
 // ── 主体 ──────────────────────────────────────────────────────────────────────
 
-export default function ReviewNpc({ npc, onPatch, accent, dropped }) {
+export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg }) {
   const n = npc;
   const cap = n.levelCap ?? 1;
   const neigong = Number.isFinite(n.neigong) ? n.neigong : (TIER_NEIGONG[cap] ?? 23);
@@ -452,7 +586,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped }) {
 
       {/* 13 随身物 */}
       <Section title="随身物（偷窃与切磋掉落）">
-        <CarryPicker carry={n.carry || []} levelCap={cap} onChange={c => onPatch({ carry: c })} />
+        <CarryPicker apiCfg={apiCfg} carry={n.carry || []} levelCap={cap} onChange={c => onPatch({ carry: c })} />
       </Section>
 
       {/* 14 立绘 */}

@@ -173,6 +173,41 @@ export function getImportedForDistrict(district, time = 0, rand = null) {
   return out;
 }
 
+/**
+ * carry 归一。这一步不能省——applyNpcDefaults 里是
+ *   npc.carry.map(c => makeGameItem({ name: c.name, category: c.category, quality: c.quality }))
+ * 它读的是**对象的字段**，而入册界面挑物品时存的是名字字符串数组。直接传过去
+ * 的话 c.name 是 undefined，玩家精心挑的那把刀会变成一件无名杂物（只在"挑了
+ * 东西"时触发，挑空反而正常——空数组不传，走四池随机）。
+ *
+ * carry 的元素允许两种形态：
+ *   "霜牙"                        在册物品，只存名字。makeItemSmart 会按名字查
+ *                                 CATALOG 把数值词条全补上，绿档霜牙不会被说成红档。
+ *   { name, category, quality,    自造物品，CATALOG 里查不到，makeItemSmart 会退到
+ *     desc, sixDim, effect }      makeItem(spec) 用这里传的字段建。
+ */
+function normalizeCarry(list) {
+  const out = [];
+  for (const c of list) {
+    if (typeof c === "string") {
+      const n = c.trim();
+      if (n) out.push({ name: n });          // 只给名字，其余交给 catalog 补全
+      continue;
+    }
+    if (c && typeof c === "object" && c.name) {
+      out.push({
+        name: String(c.name).slice(0, 20),
+        category: c.category || "misc",
+        quality: c.quality || "白",
+        ...(c.desc ? { desc: String(c.desc).slice(0, 200) } : {}),
+        ...(c.sixDim && Object.keys(c.sixDim).length ? { sixDim: { ...c.sixDim } } : {}),
+        ...(c.effect ? { effect: { ...c.effect } } : {}),
+      });
+    }
+  }
+  return out;
+}
+
 // 转成 npcPool 条目的形状。字段名必须与 toRoomNpcWithCombat 的白名单对得上，
 // 否则 levelCap / personality / lockInnerRoom 会在转换中被剥掉。
 function toPoolLike(c, lockInnerRoom) {
@@ -192,7 +227,7 @@ function toPoolLike(c, lockInnerRoom) {
   // 攻击走 atkFromWaigong(waigong)，不传就只能按品阶取默认值，玩家调的白调。
   if (Number.isFinite(c.neigong)) o.neigong = c.neigong;
   if (Number.isFinite(c.waigong)) o.waigong = c.waigong;
-  if (Array.isArray(c.carry) && c.carry.length) o.carry = c.carry;
+  if (Array.isArray(c.carry) && c.carry.length) o.carry = normalizeCarry(c.carry);
   if (c.portrait) o.portrait = c.portrait;
   if (lockInnerRoom) o.lockInnerRoom = lockInnerRoom;
   return o;

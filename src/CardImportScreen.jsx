@@ -554,7 +554,7 @@ function ReviewPane({
 
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
           {cur ? (
-            <ReviewNpc npc={cur} accent={accent} dropped={dropped}
+            <ReviewNpc npc={cur} accent={accent} dropped={dropped} apiCfg={apiCfg}
               onPatch={patch => patchNpc(detail, patch)} />
           ) : result.player ? (
             <ReviewPlayer
