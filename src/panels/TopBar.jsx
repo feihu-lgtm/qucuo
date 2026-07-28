@@ -13,7 +13,6 @@ import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../version.js";
 import { getState as getMusicState, subscribe as subscribeMusic } from "../musicPlayer.js";
-import { getHomestead } from "../homestead.js";
 
 export default function TopBar({
   isMobile, mobileTopMenu, setMobileTopMenu,
@@ -140,14 +139,9 @@ export default function TopBar({
             style={topBtn(musicPlaying ? uiGold : zoneTheme.textDim)}
           >{musicPlaying ? "♫ 音乐" : "♪ 音乐"}</span>
         )}
-        {innerRoomName && getHomestead(innerRoomName) && (
-          <span
-            className="qbtn"
-            onClick={() => setShowHomestead(true)}
-            title="家园 — 箱子/烹饪/酒窖/菜畦"
-            style={topBtn(uiGold)}
-          >🏠 家园</span>
-        )}
+        {/* 🏠 家园入口已挪到左栏「此地建筑」区——它本来就是"这间屋子里有什么设施"，
+            跟顶栏那排全局按钮（设置/存档/图鉴/音乐）不是一回事，摆在顶栏既占地方
+            又容易被当成全局功能。见 LeftPanel 的建筑区。 */}
         {autoSaveError && (
           <span
             title={`自动存档失败：${autoSaveError}。当前进度可能无法保存，建议尽快手动导出或清理浏览器存储空间。`}

@@ -442,3 +442,33 @@ describe("历史欠账名单不得腐烂（还清了就要从名单里删掉）"
     expect(dup, `同一人重复携带：\n  ${dup.join("\n  ")}`).toEqual([]);
   });
 });
+
+// ── 地上物必须是房间级 ──────────────────────────────────────────────────────
+// 此前 GROUND_ITEMS 是据点级的：锦官城 3 件会在它 31 间房每一间都躺着，
+// 鱼定村 2 件铺满 19 间，雅江 3 件铺满 15 间——同一块碎石你在城门看见一次、
+// 进当铺又看见一次、上钱庄还看见一次。此地之物本该属于某一间屋子。
+import { GROUND_ITEMS, GROUND_ITEMS_INNER } from "./groundItems.js";
+
+describe("地上物是房间级，不是据点级", () => {
+  it("据点级表已清空——新增地上物写不出据点级", () => {
+    expect(Object.keys(GROUND_ITEMS), "GROUND_ITEMS 还有据点级条目").toEqual([]);
+  });
+
+  it("每个键都是「据点·房间」，且两截都真实存在", () => {
+    const bad = [];
+    for (const key of Object.keys(GROUND_ITEMS_INNER)) {
+      const [dist, room] = key.split("·");
+      if (!dist || !room) { bad.push(`${key} 不是「据点·房间」形状`); continue; }
+      if (!INNER_MAP[dist]) { bad.push(`${key} 的据点不存在`); continue; }
+      if (!INNER_MAP[dist].rooms?.[room]) bad.push(`${key} 的房间不存在`);
+    }
+    expect(bad, `地上物的键有问题：\n  ${bad.join("\n  ")}`).toEqual([]);
+  });
+
+  it("每条地上物都有名字与描述（左栏那行不能是空白）", () => {
+    const bad = [];
+    for (const [key, arr] of Object.entries(GROUND_ITEMS_INNER))
+      for (const g of arr || []) if (!g?.name || !g?.desc) bad.push(`${key}: ${g?.name || "(无名)"}`);
+    expect(bad, `以下地上物缺名字或描述：${bad.join("、")}`).toEqual([]);
+  });
+});

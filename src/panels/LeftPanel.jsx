@@ -1,3 +1,4 @@
+import { getHomestead } from "../homestead.js";
 import { hasInnerMap, getBuildingIdForInnerRoom, getResidentRoomForNpc, getDistrictAnchor, getInnerRoom, isNpcVisibleInInnerRoom, visibleInnerExits } from "../innerMap.js";
 import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../buildings/qucuoBuildings.js";
 import { isNpcKnown } from "../npcAwareness.js";
@@ -34,6 +35,7 @@ export default function LeftPanel({
   inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind,
   loading, act, autoTravelTo,
   uiGreen, uiPink,
+  setShowHomestead,
 }) {
   return (
     <div style={isMobile
@@ -84,9 +86,19 @@ export default function LeftPanel({
             const bid = getBuildingIdForInnerRoom(room.name, innerRoomName);
             list = bid ? all.filter(b => b.id === bid) : [];
           }
-          return list.length > 0 && (
+          // 家园设施跟建筑同属"这间屋子里有什么可用的"，从顶栏挪进来跟建筑并列。
+          const home = innerRoomName ? getHomestead(innerRoomName) : null;
+          return (list.length > 0 || home) && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ color: zoneTheme.accentDim, fontSize: "10.5px", marginBottom: 5, letterSpacing: "1px" }}>此地建筑</div>
+            {home && (
+              <div onClick={() => setShowHomestead(true)} style={{ cursor: "pointer", marginBottom: 3 }}>
+                <span style={{ color: "#c8a860", fontSize: "12px" }}>🏠 {home.label || "家园"}</span>
+                <span style={{ color: "#5a5a4a", fontSize: "10.5px", marginLeft: 6 }}>
+                  {home.features.map(f => f.name).join("·")}
+                </span>
+              </div>
+            )}
             {list.map(b => (
               <div key={b.id} onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : b)}
                 style={{ cursor: "pointer", marginBottom: 3 }}>

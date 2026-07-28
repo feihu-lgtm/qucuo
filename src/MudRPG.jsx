@@ -1008,7 +1008,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (!room.name) return;
     const innerKey = innerRoomName ? `${room.name}·${innerRoomName}` : null;
     const spec = [
-      ...(GROUND_ITEMS[room.name] || []),
+      // 地上物现在只有房间级一张表（据点级已于 0730 并入）。不再按 room.name 取，
+      // 否则同一件碎石会在这个据点每一间房都躺一份。
       ...(innerKey && GROUND_ITEMS_INNER[innerKey] ? GROUND_ITEMS_INNER[innerKey] : []),
     ];
     if (!spec.length) return;
@@ -4464,7 +4465,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         <LeftPanel
           isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
           zoneTheme={zoneTheme} S={S}
-          room={room} innerRoomName={innerRoomName} time={time}
+          room={room} innerRoomName={innerRoomName} time={time} setShowHomestead={setShowHomestead}
           varTree={varTree} char={char}
           showDebug={showDebug}
           peoplePanel={peoplePanel} setPeoplePanel={setPeoplePanel}
