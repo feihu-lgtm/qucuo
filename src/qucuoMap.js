@@ -177,13 +177,16 @@ export function isNodeUnlocked(nodeName, { completedQuests = new Set(), flags = 
 // 系统裁决"的核心原则完全一致——AI 只是从"写死的正则"升级成"更聪明的正则"，
 // 判断的输出空间还是那几个方向代码，权力边界没有变化。
 // 只有正则先判不出来（返回 null）时才会调用这个函数，减少不必要的额外请求。
-const VALID_DIR_CODES = ["n", "s", "e", "w", "u", "d", "sw"];
+// 八向全收 + 上下。此前漏了 ne，而 ne 是锦官城**唯一**的出口——即便哪天把这条
+// 兜底重新启用，从锦官城也照样出不来（跟 parseDir 那个 return null 是同一个 bug
+// 的两个副本）。与 mudHelpers.parseDir 的输出集合保持一致，两边同增同减。
+const VALID_DIR_CODES = ["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"];
 
 export function buildDirectionJudgeRequest(cmd, currentRoomName, availableExits) {
   const exitsDesc = Object.entries(availableExits || {})
     .map(([d, destName]) => `${d}→${destName}`)
     .join("，") || "（无已知出口）";
-  const system = "你是一个只负责判断移动方向的工具，不负责其他任何事。用户会给你一句游戏内输入，以及当前地点的已知出口方向。你只需判断这句话是不是在表达“往某个方向移动”的意图，如果是，指出是哪个方向；如果不是移动意图（比如查看、交谈、感叹、提问等），或者方向不在已知出口列表里，就说没有方向。只返回下面这些代码之一，不要任何解释、标点或多余文字：n（北）s（南）e（东）w（西）u（上）d（下）sw（西南）none（不是移动或方向未知）";
+  const system = "你是一个只负责判断移动方向的工具，不负责其他任何事。用户会给你一句游戏内输入，以及当前地点的已知出口方向。你只需判断这句话是不是在表达“往某个方向移动”的意图，如果是，指出是哪个方向；如果不是移动意图（比如查看、交谈、感叹、提问等），或者方向不在已知出口列表里，就说没有方向。只返回下面这些代码之一，不要任何解释、标点或多余文字：n（北）s（南）e（东）w（西）ne（东北）nw（西北）se（东南）sw（西南）u（上）d（下）none（不是移动或方向未知）";
   const messages = [{
     role: "user",
     content: `当前地点：${currentRoomName}\n已知出口：${exitsDesc}\n玩家输入："${cmd}"\n这句话对应哪个方向代码？只回答代码本身。`,

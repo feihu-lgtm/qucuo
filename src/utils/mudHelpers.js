@@ -14,25 +14,42 @@ export const DIR_DXY = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0], ne: [1, -
 // 出现在字符串前几位就算"——那样"看看北边有没有人""北面风景不错"这类根本不是
 // 移动指令的句子也会被误判成移动，反而制造新 bug。
 const DIR_PREFIX = "(?:向|往|朝|去|到)?"; // 移动类前缀，可选（兼容"北""往北""向北走"）
+// 方向表按【长的在前】排序，这是这个函数唯一要命的地方。
+//
+// 【锦官城那个单行陷阱的根子就在这个顺序上】
+// 锦官城的**唯一**出口是 ne（东北→鱼定村），而鱼定村去锦官城走的是 sw。
+// 最早这里干了两件事，正好把这条路封成单行道：给"西南/去锦官城"写了条精确
+// 别名（进得去），却又写 `if (/^…(东南|东北|西北)/) return null` 把东北整个
+// 毙掉（出不来）。那句 return null 的理由是"地图不支持这些复合方向，否则会被
+// 东/西的单字正则提前命中"——理由前半句在锦官城进地图那刻就过期了，后半句才是
+// 真问题，而真问题的正解是**把两个字的方向排在一个字的前面**，不是一律毙掉。
+// 后来打的补丁只单独放行了 `/^(往东北|东北)/`，仍然漏两种写法：
+//   parseDir("去东北") → 落到 e 的正则（"去东"命中）→ 返回 "e"，往东走；
+//   parseDir("ne")     → 落到 n 的正则 → 返回 "n"，往北走。
+// 现在八向全部照实解析，某个方向此地到底有没有路，交给 QUCUO_MAP 查表裁决
+// （resolveExit 返回 null 时 resolveOuterLock 会给"此路不通"）——这才是本该有的
+// 分工：parseDir 只管"这句话说的是哪个方向"，能不能走不是它的事。好处是以后
+// 地图再加东南/西北的路，这里一行都不用改。
+const DIR_PATTERNS = [
+  // ── 两个字/两个字母的复合方向，必须排在单字之前 ──
+  ["ne", new RegExp(`^(?:${DIR_PREFIX}(?:northeast|ne)|${DIR_PREFIX}东北)`)],
+  ["nw", new RegExp(`^(?:${DIR_PREFIX}(?:northwest|nw)|${DIR_PREFIX}西北)`)],
+  ["se", new RegExp(`^(?:${DIR_PREFIX}(?:southeast|se)|${DIR_PREFIX}东南)`)],
+  ["sw", new RegExp(`^(?:${DIR_PREFIX}(?:southwest|sw)|${DIR_PREFIX}西南)`)],
+  // ── 单字方向 ──
+  ["n", new RegExp(`^(?:${DIR_PREFIX}(?:north|n)|${DIR_PREFIX}北)`)],
+  ["s", new RegExp(`^(?:${DIR_PREFIX}(?:south|s)|${DIR_PREFIX}南)`)],
+  ["e", new RegExp(`^(?:${DIR_PREFIX}(?:east|e)|${DIR_PREFIX}东)`)],
+  ["w", new RegExp(`^(?:${DIR_PREFIX}(?:west|w)|${DIR_PREFIX}西)`)],
+  ["u", new RegExp(`^(?:${DIR_PREFIX}(?:up|u)|${DIR_PREFIX}上)`)],
+  ["d", new RegExp(`^(?:${DIR_PREFIX}(?:down|d)|${DIR_PREFIX}下)`)],
+];
 export const parseDir = (cmd) => {
-  const c = cmd.trim().toLowerCase();
-  // 特殊别名：保留精确开头匹配，避免"锦官城"这类地名词被过度泛化误判
-  if (/^(往西南|西南|去锦官城|去锦官|锦官城)/.test(c)) return "sw";
-  // 东北→ne：锦官城回鱼定村走的就是 ne 出口，此前 ne 被并进"不支持的复合方向"
-  // 一律返回 null，导致点九宫格东北格/打"东北"走不出去。单独放行 ne。
-  if (/^(往东北|东北)/.test(c)) return "ne";
-  // 排除游戏地图不支持的复合方向（东南/西北），否则会被"东/西"这类单字
-  // 前缀正则提前命中、误判成一个游戏根本没有的方向，导致"此路不通"该有的提示
-  // 变成了错误地移动到别处。
-  if (/^(?:向|往|朝|去|到)?(东南|西北)/.test(c)) return null;
-  const DIR_PATTERNS = [
-    ["n", new RegExp(`^(?:${DIR_PREFIX}(?:north|n)|${DIR_PREFIX}北)`)],
-    ["s", new RegExp(`^(?:${DIR_PREFIX}(?:south|s)|${DIR_PREFIX}南)`)],
-    ["e", new RegExp(`^(?:${DIR_PREFIX}(?:east|e)|${DIR_PREFIX}东)`)],
-    ["w", new RegExp(`^(?:${DIR_PREFIX}(?:west|w)|${DIR_PREFIX}西)`)],
-    ["u", new RegExp(`^(?:${DIR_PREFIX}(?:up|u)|${DIR_PREFIX}上)`)],
-    ["d", new RegExp(`^(?:${DIR_PREFIX}(?:down|d)|${DIR_PREFIX}下)`)],
-  ];
+  const c = (cmd || "").trim().toLowerCase();
+  // 地名别名：打"去锦官城"当往西南走，老玩家习惯这么打字。
+  // 只在鱼定村成立——从别处打"锦官城"会解析成 sw、再被查表判"此路不通"，
+  // 这结果是对的（乡里确实只有鱼定村那一条官道通往城外）。
+  if (/^(?:去|往|到)?锦官(?:城)?/.test(c)) return "sw";
   for (const [d, re] of DIR_PATTERNS) if (re.test(c)) return d;
   return null;
 };
