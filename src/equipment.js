@@ -1,3 +1,4 @@
+import { computePassiveBonus } from "./kungfu/qucuoKungfu.js";
 // 装备与物品系统
 // 三大分类（武器/护甲/饰品）各自不限数量存放在背包里，
 // 但同一时间只有被标记为"已装备"的那些才真正生效，其余是背包存货。
@@ -223,10 +224,17 @@ export function mergeItemEffects(items) {
 // 都应改读这个，而不是裸读 char.special——否则装备的六维加成就是死数据。
 // 基础值缺省 5（跟 DEFAULT 七维一致），加成后不设上限（装备加成可以突破10，
 // 跟修炼上限10是两回事：修炼是自身修为封顶，装备是外物临时增益）。
-export function effectiveSpecial(baseSpecial, inv) {
+// 第三个参数 skills 是后加的：内功/轻功的 passiveBonus.speedBonus 要叠进「身法」。
+// 那批被动此前完全没接线（computePassiveBonus 全项目没人调），梯云纵的身法+2、
+// 独孤九剑的身法+2 都是死数据；resolveTurn 里同类型对撞比 special.身法 定先手，
+// 所以叠在这里正是 qucuoKungfu.js 文件头承诺的那个用途。
+// skills 省略时行为与从前完全一致，老调用点不传也不会变。
+export function effectiveSpecial(baseSpecial, inv, skills) {
   const { sixDimBonus } = computeEquippedStats(inv || []);
   const out = { ...(baseSpecial || {}) };
   for (const [k, v] of Object.entries(sixDimBonus)) out[k] = (out[k] ?? 5) + v;
+  const speed = computePassiveBonus(skills).speedBonus;
+  if (speed) out.身法 = (out.身法 ?? 5) + speed;
   return out;
 }
 

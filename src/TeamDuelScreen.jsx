@@ -20,13 +20,13 @@ import { rollBattleLoot } from "./npcGeneration.js";
 import { resolveCombatBuff } from "./utils/buffSystem.js";
 import { HpBar, EnergyDots, MoveButton, MoveInspect, TYPE_ICON } from "./DuelScreen.jsx";
 
-export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendingCombatBuff, playerInv, playerMoveset, zoneTheme, onFinish }) {
+export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendingCombatBuff, playerInv, playerMoveset, zoneTheme, onFinish , playerSkills = []}) {
   // 战前餐 buff：跟 DuelScreen 同一套进场应用（waigong/气血上限进玩家单位装配，
   // moveMul 在出招时叠进攻击招倍率——见下方 pickMoveForUnit）。
   const combatBuff = resolveCombatBuff(pendingCombatBuff);
 
   const [allyUnits, setAllyUnits] = useState(() => [
-    buildPlayerUnit({ playerChar, playerInv, playerMoveset, combatBuff }),
+    buildPlayerUnit({ playerChar, playerInv, playerMoveset, combatBuff, playerSkills }),
     buildLeopardUnit(leopardData),
   ]);
   const [enemyUnits, setEnemyUnits] = useState(() => (enemies || []).map((n, i) => buildEnemyUnit(n, i)));

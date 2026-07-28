@@ -32,14 +32,15 @@ function freshCombatMemory() {
 // 玩家单位：跟 DuelScreen.jsx 的进场装配逐字段对齐——外功梯子 baseAtk、
 // 装备聚合攻防/特效、有效七维（基础+装备sixDim）、战前餐气血上限整体抬高。
 // combatBuff 是 resolveCombatBuff(pendingCombatBuff) 的产物（由调用方备好）。
-export function buildPlayerUnit({ playerChar, playerInv = [], playerMoveset = [], combatBuff = {} }) {
+export function buildPlayerUnit({ playerChar, playerInv = [], playerMoveset = [], combatBuff = {}, playerSkills = [] }) {
   const { totalAtk, totalDef, equipEffects } = computeEquippedStats(playerInv);
   const buffedWaigong = (playerChar.waigong ?? 0) + (combatBuff.waigong || 0);
-  const baseMax = playerChar.hp[1];
+  // 内功被动（紫阳神功/青城玄门气/雪山养气诀…）叠进入场血量上限。
+  const baseMax = effectiveMaxHp(playerChar.hp[1], playerSkills);
   const boostedMax = Math.round(baseMax * (1 + (combatBuff.hpBonusRatio || 0)));
   return {
     id: "player", name: playerChar.name || "你", side: "ally", alive: true,
-    special: effectiveSpecial(playerChar.special, playerInv),
+    special: effectiveSpecial(playerChar.special, playerInv, playerSkills),
     waigong: playerChar.waigong ?? 0, neigong: playerChar.neigong ?? 0,
     baseAtk: atkFromWaigong(buffedWaigong),
     equipAtk: totalAtk, equipDef: totalDef, equipEffects,

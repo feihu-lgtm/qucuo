@@ -13,6 +13,7 @@ import { getDefaultProfile } from "./combat/personalityProfile.js";
 import { createEmptyStatusSlots, applyStatus, applyMark, dispelControlDrain } from "./combat/statusEffects.js";
 import { rollBattleLoot, atkFromWaigong } from "./npcGeneration.js";
 import { resolveCombatBuff } from "./utils/buffSystem.js";
+import { effectiveMaxHp } from "./kungfu/qucuoKungfu.js";
 
 // TYPE_ICON / HpBar / EnergyDots / MoveButton / MoveInspect 同时导出给
 // TeamDuelScreen.jsx（2v2团战界面）复用——纯展示组件，不含任何1v1状态逻辑。
@@ -45,13 +46,14 @@ function tickCostPenalty(current, incoming) {
   return { value: Math.max(cur.value, incoming.value), turns: Math.max(cur.turns, incoming.turns) };
 }
 
-export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, zoneTheme, onFinish }) {
+export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills = [], zoneTheme, onFinish }) {
   // 战前餐 buff（消耗品系统第3步）：进场一次性应用。resolveCombatBuff 把 pendingCombatBuff
   // 规整成 { waigong, moveMul, energyBonus, hpBonusRatio }。起手血/气在这里落到初始 state 上，
   // waigong/moveMul 在每回合结算时叠进玩家攻击（见 handleSelectMove）。
   const combatBuff = resolveCombatBuff(pendingCombatBuff);
   const [playerHp, setPlayerHp] = useState(() => {
-    const baseMax = playerChar.hp[1];
+    // 内功被动叠进这一场的血量上限（此前 passiveBonus 完全没接线）。
+    const baseMax = effectiveMaxHp(playerChar.hp[1], playerSkills);
     // 战前餐"开战即多一截血"：把这一场的气血上限整体抬高 hpBonusRatio 一截。
     // 起手用当前气血（不是满血）——打了多少血回主界面就是多少血。
     const boosted = Math.round(baseMax * (1 + (combatBuff.hpBonusRatio || 0)));
@@ -179,8 +181,8 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
       // 战前餐 waigong：当作临时外功点数直接叠加（进 atkFromWaigong 抬高本场基础攻击）。
       const buffedWaigong = (playerChar.waigong ?? 0) + (combatBuff.waigong || 0);
       const playerBaseAtk = atkFromWaigong(buffedWaigong);
-      // 有效七维 = 基础(已含探索态临时buff) + 装备 sixDim
-      const playerEffSpecial = effectiveSpecial(playerChar.special, playerInv || []);
+      // 有效七维 = 基础(已含探索态临时buff) + 装备 sixDim + 武学被动 speedBonus
+      const playerEffSpecial = effectiveSpecial(playerChar.special, playerInv || [], playerSkills);
       // 装备特效叠进本回合招式：招式自带的标志位优先（主动招 > 被动装备增益），
       // 装备只补招式没有的那些字段——mergeMoveWithEquip 见下方 helper。
       const playerMoveEquipped = mergeMoveWithEquip(playerMove, playerEquipEffects);

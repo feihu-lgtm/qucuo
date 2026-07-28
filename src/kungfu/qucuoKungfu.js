@@ -93,6 +93,11 @@ export const SKILL_CATALOG = {
   // ── 青城派：以柔克刚、后发制人，道门正宗 ──
   青城: [
     {
+      id: "kf_qingchengjian", name: "青城剑法", type: SKILL_TYPE.MOVE, quality: "白", price: 20,
+      moveType: "攻击",
+      desc: "青城派开蒙剑法，只有十二式，弟子上山头三个月练的就是它。招式灵动飘逸，起手不求力也不求快，只求准——剑尖始终对着对手重心那一点。松鹤道长说这套剑法一辈子都练不完，「你嫌它简单，是因为你还没被它救过命」。",
+    },
+    {
       id: "kf_songfeng", name: "松风剑法", type: SKILL_TYPE.MOVE, quality: "绿", price: 50,
       moveType: "攻击",
       desc: "青城派入门剑法，三十六式舒展如松涛过涧。不以快取胜——剑尖划过空气看似缓慢，实则每一剑藏着连绵后劲。使到第三十六式时第一式剑劲还在对手体内残留，新旧叠加，一剑比一剑沉。宝瓶口练此剑，剑尖点水不起水花方为入门。",
@@ -115,20 +120,69 @@ export const SKILL_CATALOG = {
       desc: "青城派不传之秘，仅藏于伏龙观藏经阁。纵身时如踏云梯而上，一步高过一步，三步之后人在半空，落地无声。不是跳得高——是每一步都踩在前一步的余势上，如岷江后浪推前浪，绵绵不绝。",
       passiveBonus: { speedBonus: 2 },
     },
+    {
+      id: "kf_yizidianjian", name: "一字电剑", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+      moveType: "攻击",
+      // forceFirst：走"快如闪电"这条线最贴切的现成标志位——无视身法强行先手
+      //（见 resolveTurn.js 同类型对撞的判定）。不卖，练功堂秘传。
+      forceFirst: true,
+      desc: "青城剑法练到极处的一式。不走弧、不带转，剑自鞘中直出一线，快到看不见剑身只看见一道白。全套只此一招，因为再多一招就慢了。青霞子说这一剑他练了四十年，「前三十九年在练怎么不出这一剑」。",
+    },
+    {
+      id: "kf_ziyang", name: "紫阳神功", type: SKILL_TYPE.NEIGONG, quality: "紫", price: 200,
+      moveType: "防御",
+      desc: "青城派镇山内功，取紫阳真人丹道之意。气沉丹田后不外放，只在周身经脉里反复淬炼，久之皮肉筋骨皆如浸过药水。练成者不显山不露水，挨打时才看得出分别——同样一剑，别人见血，他只留一道白痕。练岔了会浑身发烫三日不退。",
+      passiveBonus: { maxHp: 35 },
+    },
+    {
+      id: "kf_qingling", name: "青灵功", type: SKILL_TYPE.NEIGONG, quality: "绿", price: 60,
+      moveType: "回气",
+      desc: "辅修内功，与紫阳神功一刚一柔。不增气血只理气机，呼吸间自行归拢散逸的内力，久战不虚。玉真子拿它比作药圃的水渠——「渠通了，水自己会流到该去的地方，不必你一瓢一瓢舀」。",
+      passiveBonus: { maxHp: 8 },
+    },
+    {
+      id: "kf_qingfengbu", name: "清风步", type: SKILL_TYPE.QINGGONG, quality: "绿", price: 40,
+      moveType: "状态",
+      desc: "青城入门轻功，梯云纵的根基。不比谁跳得高，只讲一个「轻」字——踩过青苔不留痕，穿过竹林不惊鸟。持堂道人考校弟子的法子是在练功堂地上铺一层香灰，走一趟，看脚印深浅。",
+      passiveBonus: { speedBonus: 1 },
+    },
   ],
 };
 
-// 汇总某角色skills里所有内功/轻功的被动加成，供 MudRPG 叠加到 char 字段上
+// 汇总某角色skills里所有内功/轻功的被动加成。
+//
+// 【这个函数曾经从来没有被调用过】文件头写着"被动加成在 MudRPG 里调用
+// computePassiveBonus(skills) 汇总后叠加到 char 的相关字段上"——MudRPG 里没有这一行。
+// 结果是 15 门武学里 9 门带 passiveBonus 的全是死数据：青城玄门气的气血+20、
+// 梯云纵的身法+2、独孤九剑的身法+2、雪山养气诀的+15，一个都没生效，只在图鉴里
+// 显示得挺好看。整个内功/轻功品类的存在意义都悬着。
+// 现在接上了，两条出口分别是：
+//   maxHp     → effectiveMaxHp()，叠进战斗入场血量、面板显示、以及各处回血封顶
+//   speedBonus→ equipment.js 的 effectiveSpecial()，叠进七维「身法」（resolveTurn
+//               里同类型对撞比身法定先手，正是文件头承诺的那个用途）
+// 两条都做成**派生**而不是写回存档：写回存档会在读档/重复习得时反复叠加，
+// 而派生值随 skills 变化自动跟上，也不需要给老存档写迁移。
 export function computePassiveBonus(skills) {
   const bonus = { maxHp: 0, speedBonus: 0 };
   if (!Array.isArray(skills)) return bonus;
   for (const s of skills) {
-    if (s.passiveBonus) {
-      bonus.maxHp += (s.passiveBonus.maxHp || 0);
-      bonus.speedBonus += (s.passiveBonus.speedBonus || 0);
+    if (s?.passiveBonus) {
+      bonus.maxHp += (Number(s.passiveBonus.maxHp) || 0);
+      bonus.speedBonus += (Number(s.passiveBonus.speedBonus) || 0);
     }
   }
   return bonus;
+}
+
+// 有效气血上限 = 存档里的 hp[1] + 内功被动。
+// 【为什么不直接改 hp[1]】hp[1] 是存档字段，且会被内功修炼（MudRPG 里 newMax 那段）
+// 真实写高。把被动也写进去，读档时分不清哪部分是修炼来的、哪部分是装备/武学给的，
+// 卸掉武学就减不回去。所以被动一律派生，hp[1] 只保留"自身修为"这一份。
+// 全项目凡是要用"这个人到底有多少血上限"的地方都该走这里：战斗入场、面板显示、
+// 打坐/客栈/丹药的回血封顶。
+export function effectiveMaxHp(baseMaxHp, skills) {
+  const base = Number(baseMaxHp) || 0;
+  return base + computePassiveBonus(skills).maxHp;
 }
 
 // 检查某个 skill id 是否已被玩家习得

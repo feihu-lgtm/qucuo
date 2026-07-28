@@ -15,7 +15,8 @@ import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
 import { GROUND_ITEMS, GROUND_ITEMS_INNER } from "./groundItems.js";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, npcAffectionLabel, reputationLabel } from "./mvu.js";
-import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats } from "./equipment.js";
+import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats, effectiveSpecial } from "./equipment.js";
+import { effectiveMaxHp } from "./kungfu/qucuoKungfu.js";
 import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem, backfillInventoryFromCatalog } from "./items/catalog.js";
 // 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
@@ -281,7 +282,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 挂了不生效（"死 buff"）。这里把当前生效的临时增益叠到基础七维上，得到"有效七维"，
   // 探索态状态面板、以及进入战斗时传给 DuelScreen 的都用这个。
   // 计时基准一律用 time（游戏时辰），不是 turnCount——项目没有 turnCount。
-  const effectiveSpecialNow = applyBuffsToSpecial(char.special, flags, time);
+  // 三层叠加，顺序有讲究：先 buff（applyBuffsToSpecial 内部按设计封顶 10），
+  // 再叠装备 sixDim 与武学 speedBonus（这两者按 equipment.js 的注释"装备加成可以
+  // 突破10"，不设上限）。反过来嵌套会让装备加成被 buff 的封顶吃掉。
+  // 此前这里只有 buff 一层：装备的 sixDim 与内功轻功的 speedBonus 在面板上完全
+  // 看不见（战斗里倒是通过 effectiveSpecial 生效了，两边显示对不上）。
+  const effectiveSpecialNow = effectiveSpecial(applyBuffsToSpecial(char.special, flags, time), inv, skills);
+  // 有效气血上限 = 存档 hp[1] + 内功被动。面板显示与各处回血封顶都走它。
+  const maxHpNow = effectiveMaxHp(char.hp[1], skills);
   const activeBuffs = activeBuffsWithRemaining(flags, time);
   const [gm, setGm] = useState(false);
   const [showDebug, setShowDebug] = useState(false); // 调试面板显隐（面板内部状态已下沉到 DebugPanel.jsx）
@@ -1801,8 +1809,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setTimeout(() => setJustMeditated(false), 350);
     addLog([{ t: "cmd", text: "> 打坐运功" }]);
     setChar(c => {
-      const hpGain = Math.max(1, Math.round(c.hp[1] * 0.15));
-      const nhp = Math.min(c.hp[1], c.hp[0] + hpGain);
+      const cap = effectiveMaxHp(c.hp[1], skills);
+      const hpGain = Math.max(1, Math.round(cap * 0.15));
+      const nhp = Math.min(cap, c.hp[0] + hpGain);
       addLog([{ t: "desc", text: `  你盘膝调息，气血回转了些。` }, { t: "stat", text: `  气血 ${c.hp[0]}→${nhp}` }]);
       return { ...c, hp: [nhp, c.hp[1]] };
     });
@@ -3174,7 +3183,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (!consumable) { addLog([{ t: "sys", text: `  ${itemName}并非可服用之物。` }]); return; }
     const res = useConsumable(consumable, char);
     if (!res.ok) { addLog([{ t: "sys", text: `  ${res.reason}` }]); return; }
-    if (res.hpDelta) setChar(c => ({ ...c, hp: [Math.min(c.hp[1], c.hp[0] + res.hpDelta), c.hp[1]] }));
+    if (res.hpDelta) setChar(c => ({ ...c, hp: [Math.min(effectiveMaxHp(c.hp[1], skills), c.hp[0] + res.hpDelta), c.hp[1]] }));
     if (res.sixDimBuffs && res.sixDimBuffs.length) {
       const nf = res.sixDimBuffs.map(b => makeBuffFlag(b.attr, b.val, time, b.duration));
       setFlags(f => [...f, ...nf]);
@@ -3653,7 +3662,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
   const handleBuildingInn = useCallback((cost, roomType) => {
     if ((char.money || 0) < cost) return;
-    setChar(c => ({ ...c, money: c.money - cost, hp: [c.hp[1], c.hp[1]] }));
+    setChar(c => ({ ...c, money: c.money - cost, hp: [effectiveMaxHp(c.hp[1], skills), c.hp[1]] }));
     setTime(t => t + 23); // 睡一整天=24回合；此处+23，下面叙事段 act() 会再+1，合计正好一天（修+25双重计时 bug）
     addLog([{ t: "stat", text: `  气血回满 · 安睡一日` }]);
     // 数值结算完全由系统裁决（扣银两、回满气血、推进时间），跟AI这次
@@ -3665,7 +3674,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
   const handleBuildingHeal = useCallback((cost, healAmt) => {
     if ((char.money || 0) < cost) return;
-    setChar(c => ({ ...c, money: c.money - cost, hp: [Math.min(c.hp[0] + healAmt, c.hp[1]), c.hp[1]] }));
+    setChar(c => ({ ...c, money: c.money - cost, hp: [Math.min(c.hp[0] + healAmt, effectiveMaxHp(c.hp[1], skills)), c.hp[1]] }));
     act(`在${activeBuilding?.name}求医问药，花费${cost}两，恢复了${healAmt}点气血`, [], { settle: true });
   }, [char, activeBuilding, addLog, act]);
 
