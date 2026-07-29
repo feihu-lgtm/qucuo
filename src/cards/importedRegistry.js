@@ -53,11 +53,39 @@ function idbPut(key, value) {
   }));
 }
 
+// ── 变更通知 ────────────────────────────────────────────────────────────────
+// 【为什么需要】这个库是模块级可变状态（_registry 是个 let），而 React 的依赖数组
+// 只认它自己管的 state 与 props——组装 room.npcs 的那个 effect 依赖
+// [room.name, dayIdx, questProgress, flags]，落册改了 _registry 之后没有一项会变，
+// effect 不重跑，玩家在原地落册人不出现，非得走出据点再回来才刷。
+//
+// 【为什么用订阅而不是让调用方自己数版本号】上一轮的做法是在 MudRPG 里加一个
+// importedVer state、在 handleImportNpcs 里 +1。它当场就漏了一个写入点：
+// handleImportWorld 走 registerImportedWorld，那里没有 +1。手动计数的毛病就在
+// 这儿——每加一个写操作都得记得同步，漏了不报错。
+// 挂在 persist 上则天然覆盖全部：registerImported / registerImportedWorld /
+// removeImported / clearImported 四个写操作都以它为唯一出口。
+let _rev = 0;
+const _subs = new Set();
+
+/** 供 useSyncExternalStore 订阅，返回取消订阅函数 */
+export function subscribeImported(cb) {
+  _subs.add(cb);
+  return () => _subs.delete(cb);
+}
+
+/** 供 useSyncExternalStore 取快照。必须是稳定值——同一状态下返回同一个数 */
+export function getImportedRevision() {
+  return _rev;
+}
+
 function persist() {
   const v = { ...(_registry), savedAt: Date.now() };
   _registry = v;
   if (_idbAvailable) idbPut(KEY, v).catch(e => console.warn("[imported] 写入失败", e?.message || e));
   // 生成即落盘，不等关页——这套东西是玩家亲手改过一遍的，丢了要重来一整轮
+  _rev++;
+  for (const cb of _subs) { try { cb(); } catch { /* 某个订阅者炸了不该拖累别人 */ } }
 }
 
 /** 启动时 await 一次 */

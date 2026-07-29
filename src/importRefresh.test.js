@@ -4,6 +4,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MUD = readFileSync(join(HERE, "MudRPG.jsx"), "utf-8");
+const REG = readFileSync(join(HERE, "cards", "importedRegistry.js"), "utf-8");
 const OVL = readFileSync(join(HERE, "panels", "GlobalOverlays.jsx"), "utf-8");
 const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
 
@@ -15,8 +16,13 @@ const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
 //     propsCheck 抓不到这类——它查的是"用了作用域里不存在的标识符"，而这里
 //     onImportWorld 压根没在 GlobalOverlays 里出现过。
 describe("落册之后 room 必须重算", () => {
-  it("有入册库版本号，且进了组装 effect 的依赖数组", () => {
-    expect(MUD).toContain("const [importedVer, setImportedVer] = useState(0)");
+  it("用 useSyncExternalStore 订阅入册库，且 revision 进了依赖数组", () => {
+    // 【为什么验订阅而不是验手动计数】第一版是在 MudRPG 加个 state、落册回调里 +1，
+    // 当场就漏了 handleImportWorld 那个写入点。订阅挂在 registry 的 persist 上，
+    // 那是四个写操作的唯一出口，不会漏。
+    expect(MUD).toContain("useSyncExternalStore");
+    expect(MUD).toContain("importedRegistry.subscribeImported");
+    expect(MUD).toContain("importedRegistry.getImportedRevision");
     // 用 "}, [" 开头做指纹——importedVer 的声明注释里复述了这个依赖数组，
     // 只按内容找会先撞上那条注释（第一版这条守卫就是这么误报的）
     const line = MUD.split("\n").find(l => l.trim().startsWith("}, [room.name, dayIdx"));
@@ -25,10 +31,24 @@ describe("落册之后 room 必须重算", () => {
       .toContain("importedVer");
   });
 
-  it("落册回调会推版本号", () => {
-    const i = MUD.indexOf("const handleImportNpcs");
+  it("通知挂在 persist 上——那是所有写操作的唯一出口", () => {
+    expect(REG).toContain("export function subscribeImported");
+    expect(REG).toContain("export function getImportedRevision");
+    // persist 里必须既推 revision 又通知订阅者
+    const i = REG.indexOf("function persist()");
     expect(i).toBeGreaterThan(0);
-    expect(MUD.slice(i, i + 1400)).toContain("setImportedVer");
+    const body = REG.slice(i, REG.indexOf("\n}", i));
+    expect(body, "persist 没推 revision——写了库但没人知道").toContain("_rev++");
+    expect(body, "persist 没通知订阅者").toMatch(/_subs/);
+  });
+
+  it("四个写操作都以 persist 为出口（新增写操作若绕过它，通知就漏了）", () => {
+    // registerImported / registerImportedWorld / removeImported / clearImported
+    const calls = (REG.match(/^\s*persist\(\);/gm) || []).length;
+    expect(calls, "persist 调用点少于四个，可能有写操作绕过了通知").toBeGreaterThanOrEqual(4);
+    // 反过来：改 _registry 的地方不该多于调 persist 的地方 + 初始化
+    const writes = (REG.match(/_registry\.(chars|world) = /g) || []).length;
+    expect(writes).toBeLessThanOrEqual(calls);
   });
 });
 

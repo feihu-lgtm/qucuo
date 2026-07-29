@@ -9,6 +9,23 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "系统性处理依赖断链：新增 propsFlow 反向检查器、字段流转对账、模块级状态改订阅；顺带查出内外功一直被剥掉",
+    time: "2026-07-30 17:30",
+    notes: [
+      "不再头痛医头。前几轮栽的四次——apiCfg 白屏、portrait 白名单、onImportWorld 静默短路、落册后 room 不刷新——全是同一类：数据在传递链的某一层被静默丢掉。这轮把三类各建一道自动防线，并用反例逐个验过。",
+      "①【A 类·props 传递链的反方向】原有 propsCheck 只查「子组件用了作用域里没有的名字」，后果是 ReferenceError、白屏，响亮地坏掉。缺的是另一头：父组件传了、子组件 props 解构里没有它，后果是**什么都不发生**——onImportWorld 就是这么断的，finish 里那句 if (world.length && onImportWorld) 直接短路，世界观条目从来没入过库，不报错不白屏测试全绿。新增 scripts/propsFlow.mjs 补这个方向。反例验证：把 onImportWorld 从 GlobalOverlays 的解构里去掉，精确报出 MudRPG.jsx:4574。",
+      "②【propsFlow 的重名难题】Bar / Btn / MoveButton / Bench 四个名字各有两处定义，只按名字查会撞重名而跳过——而 Bar 与 Btn 恰是最高频的两个共用零件，跳过它们等于这检查在半数界面上是瞎的。改成解析每个文件的 import、按相对路径定位到具体定义文件（具名导入与默认导出都认）。反例验证：把 ReviewParts 的 Bar 去掉 right 参数，抓出三处调用点。",
+      "③【B 类·字段流转对账，当场查出一个真 bug】入册角色进 room.npcs 要过两道转换：toPoolLike → toRoomNpc → 白名单补回。而 toRoomNpc 只保留 id/name/brief/isPoolNpc/carriedItems 五项，其余一律丢掉，任何想活到运行时的字段都必须出现在白名单里——这个约束没有任何语法或类型层面的强制，全靠人记得。已经栽过五次：special、companionCandidate、carry、portrait，加这次查出来的 neigong/waigong。",
+      "④【内外功一直是白调的】npcGeneration 第 426 行是 neigong: npc.neigong ?? tierPower.neigong，读的是转换之后的对象。白名单没有 neigong/waigong，于是入册角色的内外功一律走 ?? 兜底、按品阶取默认值——玩家在审改界面逐项调过的值全部失效。而 toPoolLike 里还专门写着注释「不传就只能按品阶取默认值，玩家调的白调」：写注释的时候知道要带上，白名单那一头没加。前四次都是等玩家反馈才发现，这次是对账查出来的。顺带补上 imported 标记（目前无消费者，但它是"这人是入册来的"这个事实的唯一载体，加进来成本为零）。",
+      "⑤【新增 cards/fieldFlow.test.js 做机器对账】从三处源码提取字段集合：toPoolLike 产出的、toRoomNpc 保留的、白名单里的，断言第一个是后两个的子集。以后 toPoolLike 加字段忘了同步白名单，测试立刻红。反例验证：去掉 neigong 后两条同时报。",
+      "⑥【对账工具自己先误报了一次】第一版用 indexOf(换行 function ) 找函数体结束，而 toPoolLike 后面紧跟的是 export function，于是 body 一路延伸到文件末尾，把 getImportedNpcLore 里 world 映射的 aliases/entry/isWorld 全抓进来，报出三个假问题。改成花括号平衡扫描。这跟 propsCheck 当年校准了三轮才零误报是同一件事——会误报的工具没人会用。",
+      "⑦【C 类·模块级状态改订阅】上一轮修 room 不刷新用的是手动办法：MudRPG 加个 importedVer state、handleImportNpcs 里 +1。它当场就漏了一个写入点——handleImportWorld 走 registerImportedWorld，那里没有 +1。手动计数的毛病就在这儿：每加一个写操作都得记得同步，漏了不报错。改成 React 18 的 useSyncExternalStore 订阅，通知挂在 registry 的 persist 上——那是 registerImported / registerImportedWorld / removeImported / clearImported 四个写操作的唯一出口，天然全覆盖，以后新增写操作也不必记得同步。",
+      "⑧【检查器不进 CI 等于不存在】propsCheck 写完之后一直是手动跑的状态，而这几轮真正栽的几次它本来有机会提前报出来。docsTree 里有条守卫钉着「verify 跑的就是 CI 那两步」，不能往那条命令里塞东西；改从 vitest 里 execFileSync 调用（新增 dependencyGuards.test.js）——verify 第一步就是 vitest，于是它们照样进了 CI。",
+      "⑨【这轮我自己犯的两个错，一个被工具挡住、一个没有】第一个：批量替换脚本少写了一个 tag 参数导致 assert 段抛异常——但因为这轮改成了「全部 assert 通过才统一落盘」，什么都没写、没留下半改状态，正好验证了上一轮那条教训的修法有效。第二个：反例验证时用 grep -c 数失败条数，grep 没匹配时退出码是 1，把 && 链断在了恢复命令之前，文件一度留在被破坏的状态（白名单少两项、GlobalOverlays 少一项）。改成按 vitest 的退出码判断，并用 分号 而不是 && 串联恢复步骤——清理动作不该挂在前一步的成败上。",
+      "验证：vitest 717/717（新增 fieldFlow 3 条、dependencyGuards 2 条，改写 importRefresh 的 2 条守卫为验订阅机制）；pages build 通过；propsCheck 1475 属性、propsFlow 133 个组件定义均零问题；三类断链的反例逐个验过都能抓；文件树 220→222、34→36 份测试。",
+    ],
+  },
+  {
     codename: "修落册后 room 不刷新（依赖数组看不见模块级状态）+ 世界观回调断在 GlobalOverlays + 勾选式加入 + 点驻场直接带出据点",
     time: "2026-07-30 16:20",
     notes: [

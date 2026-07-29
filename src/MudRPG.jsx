@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
 import { QUCUO_PRESET } from "./presets/qucuo.js";
 import {
   NNPC_STAGE, initialNarratorState, isInSea, migrateNarratorState,
@@ -261,15 +261,17 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [exp, setExp] = useState(restored?.snap.exp || 0);
   const [pot, setPot] = useState(restored?.snap.pot || 0);
   const [flags, setFlags] = useState(restored?.snap.flags || []);
-  // 入册库的版本号。
-  // 【为什么需要这个数】registerImported 改的是 importedRegistry.js 模块里那个
-  // _registry（模块级 let），React 的依赖系统完全看不见它。组装 room.npcs 的那个
-  // effect 依赖数组是 [room.name, dayIdx, questProgress, flags]，落册之后没有一项
-  // 会变，于是 effect 不重跑——玩家在原地落册，人不会出现，非得走出据点再回来
-  // （room.name 变化）才刷出来。这个数在每次落册后 +1，作为 effect 的显式触发信号。
-  // 不进存档：它只是本次会话里的重算触发器，读档时 effect 本来就会因 room.name
-  // 初始化而跑一遍。
-  const [importedVer, setImportedVer] = useState(0);
+  // 入册库的版本号，用 React 18 的 useSyncExternalStore 直接订阅那个模块级状态。
+  // 【为什么不自己数】registerImported 改的是 importedRegistry.js 里的模块级
+  // _registry，React 依赖系统看不见；组装 room.npcs 的 effect 依赖数组里没有一项
+  // 会因落册而变，effect 不重跑，人得等玩家走出据点再回来才出现。
+  // 上一轮是加个 state 在落册回调里 +1，当场就漏了 handleImportWorld 那个写入点
+  // （它走 registerImportedWorld）。改成订阅后由 registry 的 persist 统一通知，
+  // 四个写操作全覆盖，以后新增写操作也不必记得同步。
+  const importedVer = useSyncExternalStore(
+    importedRegistry.subscribeImported,
+    importedRegistry.getImportedRevision,
+  );
   const [questProgress, setQuestProgress] = useState(restored?.snap.questProgress || {}); // { questId: { count } }
   // 说服进度持久化：按 questId|flag 存 { guard, hitKeys, turns, done }，让"关掉再点同一场
   // 说服"能接着上次、且进快照存档。成功/离开时清掉该场。
@@ -956,7 +958,16 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // 审改界面挑的（内置十张之一、卡自带的图、或自己上传的），importedRegistry
       // 的 toPoolLike 里明明有 o.portrait = c.portrait，但这份白名单没有它，转换
       // 一过就被剥掉——入册立绘从来没能传到运行时。
-      for (const k of ["levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop", "portrait"]) {
+      // 【本轮补 neigong / waigong / imported，由字段对账查出来的】
+      // npcGeneration 第 426 行是 `neigong: npc.neigong ?? tierPower.neigong`，读的是
+      // 转换之后的对象。白名单没有这两项，于是入册角色的内外功一律走 ?? 兜底、按品阶
+      // 取默认值——玩家在审改界面逐项调过的值全白调。importedRegistry 的 toPoolLike
+      // 里还专门写了注释说「不传就只能按品阶取默认值，玩家调的白调」，写注释的时候
+      // 知道要带上，白名单这一头却没加。跟前面 special、companionCandidate、portrait
+      // 是同一个坑的第四五次，所以这轮补了 cards/fieldFlow.test.js 做自动对账。
+      // imported 目前没有消费者，剥掉无害，但它是"这人是入册来的"这个事实的唯一标记，
+      // 加进来成本为零、以后想用不必再踩一次。
+      for (const k of ["levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop", "portrait", "neigong", "waigong", "imported"]) {
         if (poolNpc[k] !== undefined) base[k] = poolNpc[k];
       }
       const inferred = mapDescriptionToGenParams(`${poolNpc.name || ""} ${poolNpc.brief || ""} ${poolNpc.personality || ""}`);
@@ -4129,9 +4140,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         return { ...t, 角色: chars };
       });
     }
-    // 推版本号，让组装 room.npcs 的那个 effect 立刻重跑——不然人得等玩家走出
-    // 据点再回来才会出现（见 importedVer 的声明处）
-    setImportedVer(v => v + 1);
+    // 不必手动推版本号：registerImported 内部的 persist 会通知订阅者，
+    // useSyncExternalStore 拿到新 revision 自然触发重算（见 importedVer 声明处）
     // 有几个人此刻就该站在这个据点里？如实说，别让玩家对着空屋子猜落册成没成。
     const here = importedRegistry.getImportedResidentNames()
       .filter(nm => npcs.some(x => x.name === nm));
