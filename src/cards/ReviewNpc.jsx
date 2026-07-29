@@ -178,18 +178,25 @@ function MoveEditor({ moves, levelCap, onChange, why, source }) {
  */
 function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
   const [cat, setCat] = useState("");
+  const [qual, setQual] = useState("");
   const [kw, setKw] = useState("");
   const [forging, setForging] = useState(false);   // 是否展开"新造一件"
   const [draft, setDraft] = useState(null);
   const [aiBusy, setAiBusy] = useState(false);
 
   const cats = useMemo(() => [...new Set(CATALOG.map(e => e.category).filter(Boolean))], []);
+  // 【为什么不再 slice(0,60)】百物录现在 406 件（兵器 101 / 护具 59 / 饰物 82 /
+  // 杂物 164），原来只渲染前 60 件且不做任何提示——玩家不搜名字就永远翻不到后面
+  // 那 346 件，看起来像是"库里只有这些"。406 个条目对 React 不算负担，容器给
+  // 滚动条即可，真正需要的是筛得动：类别、品阶、关键词三个维度。
+  // 关键词连 desc 一起搜，找"止血的"比记得住药名实用。
   const list = useMemo(() => {
     const k = kw.trim();
-    return CATALOG
-      .filter(e => (!cat || e.category === cat) && (!k || e.name.includes(k)))
-      .slice(0, 60);
-  }, [cat, kw]);
+    return CATALOG.filter(e =>
+      (!cat || e.category === cat)
+      && (!qual || e.quality === qual)
+      && (!k || e.name.includes(k) || (e.desc || "").includes(k)));
+  }, [cat, qual, kw]);
 
   // carry 的元素有两种：在册物品只存名字字符串，自造物品存完整对象。
   // 所有增删判重都必须过 nameOf，不能直接 includes——否则自造的那件永远判不出
@@ -252,7 +259,13 @@ function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
           <option value="" style={{ background: "#1a1206" }}>全部类别</option>
           {cats.map(c => <option key={c} value={c} style={{ background: "#1a1206" }}>{c}</option>)}
         </select>
-        <input value={kw} onChange={e => setKw(e.target.value)} placeholder="搜名字"
+        <select value={qual} onChange={e => setQual(e.target.value)} style={{ ...selStyle, width: 78 }}>
+          <option value="" style={{ background: "#1a1206" }}>全部品阶</option>
+          {TIERS.map(t => (
+            <option key={t.label} value={t.label} style={{ background: "#1a1206", color: t.color }}>{t.label}档</option>
+          ))}
+        </select>
+        <input value={kw} onChange={e => setKw(e.target.value)} placeholder="搜名字或描述"
           style={{ ...selStyle, flex: 1 }} />
         <span onClick={() => { setForging(f => !f); if (!draft) setDraft(blankDraft()); }}
           title="造一件百物录里没有的东西"
@@ -348,7 +361,23 @@ function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
         </div>
       )}
 
-      <div style={{ maxHeight: 128, overflowY: "auto", border: "1px solid #2a2419", borderRadius: 3, background: "rgba(0,0,0,.22)" }}>
+      {/* 计数条：让"库里到底有多少、我筛掉了多少"始终可见。原来静默截断到 60 件，
+          玩家没法知道自己看的是全部还是一角 */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 6, padding: "3px 8px",
+        fontSize: 9.5, color: "#6a6250", background: "rgba(0,0,0,.3)",
+        border: "1px solid #2a2419", borderBottom: "none", borderRadius: "3px 3px 0 0",
+      }}>
+        <span>百物录 {CATALOG.length} 件</span>
+        {list.length !== CATALOG.length && <span style={{ color: "#a89870" }}>· 当前 {list.length} 件</span>}
+        <span style={{ flex: 1 }} />
+        {carry.length ? <span style={{ color: "#d4a853" }}>已选 {carry.length}</span> : null}
+      </div>
+
+      <div style={{
+        maxHeight: "min(38vh, 380px)", overflowY: "auto",
+        border: "1px solid #2a2419", borderRadius: "0 0 3px 3px", background: "rgba(0,0,0,.22)",
+      }}>
         {!list.length && <div style={{ padding: 8, fontSize: 10.5, color: "#6a6250" }}>没有匹配的物件</div>}
         {list.map(e => {
           const on = has(e.name);

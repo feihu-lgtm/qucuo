@@ -657,7 +657,10 @@ function ReviewPane({
 
   return (
     <>
-      <div style={{ width: 230, borderRight: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
+      {/* 4:6 分栏。原来左栏定宽 230px，那是面板还锁在 1120 宽时定的比例；撑满
+          之后名单挤在一条窄带里，而运行日志横向被压得每行都折。minWidth 0 是必须
+          的——flex 子项默认 min-width:auto，里面的长人名会把栏撑破 4:6 的比例。 */}
+      <div style={{ flex: 4, minWidth: 0, borderRight: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
         <Bar>过目定稿</Bar>
 
         {/* 开头就选：这张卡是当众人写进江湖，还是当我自己 */}
@@ -690,8 +693,11 @@ function ReviewPane({
               {(() => {
                 const m = n.placement?.mode || "mention";
                 if (m === "mention") return null;
-                return <span title={m === "resident" ? `驻场于${n.placement.district}` : "游走各据点"}
-                  style={{ fontSize: 9, color: accent, flexShrink: 0 }}>{m === "resident" ? "驻" : "游"}</span>;
+                const label = m === "resident"
+                  ? `驻·${n.placement.district || "未选据点"}`
+                  : `游·${Object.keys(n.placement.weights || {}).length}处`;
+                return <span title={m === "resident" ? `驻场于${n.placement.district || "（未选据点，等同不落地）"}` : "按权重游走"}
+                  style={{ fontSize: 9, color: accent, flexShrink: 0 }}>{label}</span>;
               })()}
               {n.source === "fallback" && <span title="全是默认值" style={{ fontSize: 9, color: "#6a6250" }}>默</span>}
             </div>
@@ -701,10 +707,10 @@ function ReviewPane({
             </div>
           )}
         </div>
-        <Terminal lines={term} height={118} onExpand={onExpandTerm} />
+        <Terminal lines={term} height="min(30vh, 320px)" onExpand={onExpandTerm} />
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 6, minWidth: 0, display: "flex", flexDirection: "column" }}>
         <Bar right={result.genre ? <span style={{ fontSize: 10, color: "#8a8270" }}>{result.genre}</span> : null}>
           {cur ? cur.name : "我自己"}
         </Bar>
