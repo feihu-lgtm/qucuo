@@ -613,7 +613,8 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <Pills accent={accent} value={pl.mode} onChange={m => set({ mode: m })}
           options={["mention", "resident", "wander"].map(m => ({ value: m, label: PLACEMENT_LABEL[m] }))} />
-        <span style={{ flex: 1 }} />
+        {/* 紧跟三个模式钮，不用 spacer 顶到天边——4:6 分栏后右栏有上千像素宽，
+            顶到最右就成了一个跟谁都不相干的孤零零按钮（实测截图如此） */}
         <span onClick={askAiPlace} title="让 AI 按人设判断该驻场还是游走，据点只能从本作地图里选"
           style={{
             cursor: busy ? "wait" : "pointer", userSelect: "none",

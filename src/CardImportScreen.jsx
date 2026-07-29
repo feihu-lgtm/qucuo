@@ -15,9 +15,10 @@ import { bucketStatus, acquire } from "./cards/rateLimiter.js";
 import { callModel } from "./apiConfig.js";
 import {
   S, TIERS, KIND_META, BODY_PUBLIC, BODY_PRIVATE, TERM_MONO,
-  Bar, JadeTier, Src, Stat, Note, Btn, Pills, Terminal,
+  Bar, JadeTier, Src, Stat, Note, Btn, Pills, Terminal, barFrame,
 } from "./cards/ReviewParts.jsx";
 import { sanitizeMoves, TIER_NEIGONG, parseJsonLoose } from "./cards/scanPrompts.js";
+import { normalizePlacement } from "./cards/importedRegistry.js";
 import {
   buildPlacementPlan, sanitizePlacementPlan, PLAN_BATCH, PLANNABLE_DISTRICTS,
   PLAN_MAX_TOKENS,
@@ -269,7 +270,11 @@ export default function CardImportScreen({
     display: "flex", flexDirection: "column", overflow: "hidden",
     backgroundColor: "#14100a",
     backgroundImage: `url('${S("skin_wusha.webp")}')`,
-    backgroundSize: "cover", backgroundBlendMode: "multiply",
+    // 【为什么平铺而不是 cover】这张皮子是 512×512 的方图，cover 会把它放大到
+    // 铺满整个全屏面板，纹理里那条对角线就被放大成一道横贯半屏的三角边界（实测
+    // 截图里左栏中段那片诡异的斜向暗块就是它）。按原尺寸平铺，纹理密度正常。
+    backgroundSize: "512px 512px", backgroundRepeat: "repeat",
+    backgroundBlendMode: "multiply",
     borderRadius: 0,
     boxShadow: "inset 0 0 120px rgba(0,0,0,.6)",
   };
@@ -278,9 +283,9 @@ export default function CardImportScreen({
     <div style={shell} onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
       <div style={panel}>
         <div style={{
-          display: "flex", alignItems: "center", gap: 10, padding: "10px 16px",
-          borderBottom: `1px solid ${accent}44`,
-          backgroundImage: `url('${S("ui/bar_paper.webp")}')`, backgroundSize: "100% 100%",
+          display: "flex", alignItems: "center", gap: 10,
+          ...barFrame(S("ui/bar_paper.webp")),
+          padding: "0 12px", minHeight: 52,
         }}>
           <img src={S("ui/scroll_ic.webp")} alt="" style={{ width: 22, height: 22, opacity: .9 }} />
           <span style={{ color: "#f0e0c0", fontSize: 16, letterSpacing: 5, textShadow: "0 1px 4px #000" }}>角色入册</span>
@@ -684,7 +689,12 @@ function ReviewPane({
           </div>
         )}
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
+        {/* 名单垂直居中：一张卡常见三五个人，顶部对齐会在下面留一大片死黑。
+            margin auto 0 而不是 justifyContent center——后者在内容超出容器时会把
+            顶部裁掉滚不到（flex 的老陷阱）。外层再 alignSelf center 加限宽，免得
+            4:6 分栏后条目在一千像素宽的栏里拉得很散。 */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "8px", display: "flex", flexDirection: "column" }}>
+          <div style={{ margin: "auto 0", width: "100%", maxWidth: 380, alignSelf: "center" }}>
           {detail >= 0 || !asPlayer ? result.npcs.map((n, i) => (
             <div key={i} onClick={() => setDetail(i)}
               style={{
@@ -699,21 +709,28 @@ function ReviewPane({
                 <div style={{ color: "#6a6250", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
               </div>
               {(() => {
-                const m = n.placement?.mode || "mention";
+                // 【为什么要过 normalizePlacement】名单原先直接读 n.placement.mode，
+                // 而右侧那组 Pills 读的是 normalizePlacement 之后的值。游走但一个据点
+                // 权重都没给、或驻场但没选据点，都属于无效配置，normalizePlacement 会
+                // 退回 mention——于是名单显示「游·0处」而右侧高亮「不落地」，同一个人
+                // 两处说法相反。实测截图里就是这样。统一走归一化后的值。
+                const pl = normalizePlacement(n.placement);
+                const m = pl.mode;
                 if (m === "mention") return null;
                 const label = m === "resident"
-                  ? `驻·${n.placement.district || "未选据点"}`
-                  : `游·${Object.keys(n.placement.weights || {}).length}处`;
-                return <span title={m === "resident" ? `驻场于${n.placement.district || "（未选据点，等同不落地）"}` : "按权重游走"}
+                  ? `驻·${pl.district}`
+                  : `游·${Object.keys(pl.weights).length}处`;
+                return <span title={m === "resident" ? `驻场于${pl.district}` : "按权重游走"}
                   style={{ fontSize: 9, color: accent, flexShrink: 0 }}>{label}</span>;
               })()}
               {n.source === "fallback" && <span title="全是默认值" style={{ fontSize: 9, color: "#6a6250" }}>默</span>}
             </div>
           )) : (
-            <div style={{ fontSize: 10.5, color: "#6a6250", lineHeight: 1.9, padding: "4px 4px" }}>
+            <div style={{ fontSize: 10.5, color: "#6a6250", lineHeight: 1.9, padding: "4px 4px", textAlign: "center" }}>
               正在编辑主角档案。<br />切回「众人」可继续改其他人。
             </div>
           )}
+          </div>
         </div>
         <Terminal lines={term} height="min(30vh, 320px)" onExpand={onExpandTerm} />
       </div>
@@ -742,8 +759,8 @@ function ReviewPane({
         </div>
 
         <div style={{
-          borderTop: `1px solid ${accent}44`, padding: "10px 14px",
-          backgroundImage: `url('${S("ui/bar_paper2.webp")}')`, backgroundSize: "100% 100%",
+          ...barFrame(S("ui/bar_paper2.webp")),
+          padding: "8px 12px",
         }}>
           {/* 规划进度。只在跑过之后出现，跑完留着当结果条 */}
           {(planBusy || planMsg) && (

@@ -60,13 +60,45 @@ export const selStyle = {
 
 // ── 木牌标题条 ────────────────────────────────────────────────────────────────
 
+/**
+ * 横条素材的 9-slice。
+ *
+ * 【为什么必须切片】这三张横条素材（bar_wood 458×120、bar_paper 425×132、
+ * bar_paper2 441×134）的结构都是：两端各一块约 95px 宽的金色包角装饰，上下各
+ * 约 15px 金边，只有中段的木纹／纸面是可以拉伸的。原来一律 backgroundSize
+ * "100% 100%" 整幅强拉——面板还锁在 1120 宽的时候 Bar 实际宽 230~890px、拉伸
+ * 1.5 到 3 倍，观感还过得去（version.js 里那条注释的原话就是"拉伸幅度不大时
+ * 观感没问题"）。改成全屏之后左栏有 1000px 宽而高度仍是 34px，比例从原图的
+ * 3.8 变成 29，横向拉了近 8 倍：两端装饰件糊成一片、上下金边压成细线，底栏那
+ * 条还把"回名单"按钮整个盖住了。
+ *
+ * border-image 让四角保持原始像素、四边只沿一个方向拉伸、中段双向填充，正是
+ * 这类"两端有装饰、中间可延展"的素材该用的方式。
+ *
+ * 【连带好处】border 占掉左右各 95px 的盒模型空间，文字自然落在中段木纹上，
+ * 不必再靠 padding 去躲装饰件——原来 padding 只有 16px，标题就压在装饰件上。
+ */
+export function barFrame(img, slice = 15, side = 95) {
+  const w = `${slice}px ${side}px`;
+  return {
+    boxSizing: "border-box",
+    borderStyle: "solid",
+    borderColor: "transparent",
+    borderWidth: w,
+    borderImageSource: `url('${img}')`,
+    borderImageSlice: `${slice} ${side} fill`,
+    borderImageWidth: w,
+    borderImageRepeat: "stretch",
+  };
+}
+
 export function Bar({ children, right }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
-      backgroundImage: `url('${S("ui/bar_wood.webp")}')`,
-      backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-      padding: "9px 16px", minHeight: 34,
+      ...barFrame(S("ui/bar_wood.webp")),
+      // 上下 border 各 15px，留 16px 给文字，故 minHeight 46
+      padding: "0 10px", minHeight: 46,
     }}>
       <span style={{ color: "#f0e0c0", fontSize: 13, letterSpacing: 2, textShadow: "0 1px 3px rgba(0,0,0,.8)" }}>
         {children}

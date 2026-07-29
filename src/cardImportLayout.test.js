@@ -15,6 +15,7 @@ import { CATALOG } from "./items/catalog.js";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
 const NPC = readFileSync(join(HERE, "cards", "ReviewNpc.jsx"), "utf-8");
+const PARTS = readFileSync(join(HERE, "cards", "ReviewParts.jsx"), "utf-8");
 
 describe("随身物选择器必须能选到整本百物录", () => {
   it("百物录规模够大，值得筛而不是硬截", () => {
@@ -67,5 +68,63 @@ describe("审改页分栏与日志区", () => {
   it("运行日志用视口比例给高度，不用定值", () => {
     // 定值（原来是 118）在矮窗口下会把上方的人物名单挤没，拉长更要用 vh
     expect(SCREEN).toMatch(/<Terminal[^>]*height="min\(\d+vh,\s*\d+px\)"/);
+  });
+});
+
+// ── 横条素材的拉伸 ──────────────────────────────────────────────────────────
+// 【为什么要守这条】bar_wood 458×120、bar_paper 425×132、bar_paper2 441×134，
+// 三张的结构都是两端各一块约 95px 的金色包角装饰、上下约 15px 金边、只有中段可
+// 拉伸。原来一律 backgroundSize "100% 100%" 整幅强拉：面板锁 1120 宽时 Bar 实际
+// 宽 230~890px、拉 1.5 到 3 倍还过得去，全屏后左栏 1000px 宽而高仍 34px，比例从
+// 3.8 变成 29、横向拉近 8 倍——装饰件糊成一片，底栏那条还把「回名单」整个盖住。
+describe("横条素材必须走 9-slice，不能整幅强拉", () => {
+  it("barFrame 产出的是 border-image 而不是 backgroundSize", () => {
+    expect(PARTS).toContain("export function barFrame");
+    expect(PARTS).toContain("borderImageSlice");
+    expect(PARTS).toContain("borderImageRepeat");
+  });
+
+  it("Bar 组件用 barFrame，不再自己拼 backgroundSize 100% 100%", () => {
+    const i = PARTS.indexOf("export function Bar(");
+    expect(i).toBeGreaterThan(0);
+    const block = PARTS.slice(i, i + 500);
+    expect(block).toContain("barFrame");
+    expect(block, "又改回整幅强拉了——宽度一变两端装饰件就会糊掉")
+      .not.toContain('backgroundSize: "100% 100%"');
+  });
+
+  it("顶栏与底栏也走 barFrame", () => {
+    // 这两条原来各自写死 backgroundSize 100% 100%
+    const bars = SCREEN.match(/barFrame\(S\("ui\/bar_(paper|paper2)\.webp"\)\)/g) || [];
+    expect(bars.length, "顶栏与底栏应各有一处 barFrame").toBeGreaterThanOrEqual(2);
+  });
+
+  it("Bar 高度容得下上下各 15px 的 border", () => {
+    const i = PARTS.indexOf("export function Bar(");
+    const block = PARTS.slice(i, i + 500);
+    const m = block.match(/minHeight:\s*(\d+)/);
+    expect(m, "Bar 没有 minHeight").toBeTruthy();
+    // 上下 border 吃掉 30px，再给文字留十几px
+    expect(Number(m[1])).toBeGreaterThanOrEqual(44);
+  });
+
+  it("面板底纹按原尺寸平铺，不用 cover", () => {
+    expect(SCREEN, "cover 会把 512×512 的方形皮子放大到全屏，纹理对角线变成横贯半屏的三角边界")
+      .not.toMatch(/backgroundSize:\s*"cover"/);
+    expect(SCREEN).toContain('backgroundSize: "512px 512px"');
+  });
+});
+
+describe("左栏名单居中与落脚状态一致", () => {
+  it("用 margin auto 0 居中，不用 justifyContent center", () => {
+    // justifyContent center 在内容超出容器时会把顶部裁掉且滚不到
+    expect(SCREEN).toContain('margin: "auto 0"');
+  });
+
+  it("名单里的落脚标记走 normalizePlacement", () => {
+    // 不归一化的话：游走但零权重会显示「游·0处」，而右侧 Pills 显示「不落地」，
+    // 同一个人两处说法相反
+    expect(SCREEN).toContain("const pl = normalizePlacement(n.placement)");
+    expect(SCREEN).toMatch(/import \{ normalizePlacement \} from ".\/cards\/importedRegistry\.js"/);
   });
 });
