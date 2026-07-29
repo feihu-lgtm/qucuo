@@ -35,6 +35,10 @@ export default function CardImportScreen({
 
   const [stage, setStage] = useState("empty");   // empty | parsed | scanning | review
   const [fileName, setFileName] = useState("");
+  // 卡自带的立绘。酒馆卡的 PNG 本身就是立绘图，角色卡 JSON 藏在它的 tEXt chunk
+  // 里——所以原始字节留着就能当立绘用。裸 JSON 卡没有图，这里是 null。
+  // 只存这一份、不做拷贝：审改期与解析在同一次会话里，不需要持久化。
+  const [cardImage, setCardImage] = useState(null);
   const [parsed, setParsed] = useState(null);
   const [err, setErr] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -75,6 +79,10 @@ export default function CardImportScreen({
       const out = parseCharacterCard(buf, { playerName });
       setParsed(out);
       setFileName(file.name);
+      // PNG 才有图可用（前 8 字节是 PNG magic）。裸 JSON 卡留 null，
+      // PortraitPicker 会把"用卡自带的图"置灰并说明原因。
+      const isPng = buf.length > 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+      setCardImage(isPng ? buf : null);
       // 默认只勾机器判定为人物的。待定的不默认勾——为一个判错的条目烧掉四分之一批次不值得
       setPicked(new Set(out.npcLoreCandidates.map(c => c.name)));
       setStage("parsed");
@@ -314,7 +322,7 @@ export default function CardImportScreen({
               parsed={parsed} result={result} accent={accent}
               detail={detail} setDetail={setDetail}
               patchNpc={patchNpc} patchPlayer={patchPlayer} patchWorld={patchWorld}
-              setResult={setResult} asPlayer={asPlayer} apiCfg={apiCfg}
+              setResult={setResult} asPlayer={asPlayer} apiCfg={apiCfg} cardImage={cardImage}
               term={term} onExpandTerm={() => setTermBig(true)}
               onBack={() => setStage("parsed")} onFinish={finish}
             />
@@ -576,7 +584,7 @@ function ParsedPane({
 // 全字段的排布在那两个文件里，各自照映射表的顺序走。
 function ReviewPane({
   parsed, result, accent, detail, setDetail, patchNpc, patchPlayer, patchWorld,
-  setResult, asPlayer, onBack, onFinish, term, onExpandTerm, apiCfg,
+  setResult, asPlayer, onBack, onFinish, term, onExpandTerm, apiCfg, cardImage,
 }) {
   const cur = detail >= 0 ? result.npcs[detail] : null;
   const placedCount = result.npcs.filter(x => (x.placement?.mode || "mention") !== "mention").length;
@@ -717,7 +725,7 @@ function ReviewPane({
 
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
           {cur ? (
-            <ReviewNpc npc={cur} accent={accent} dropped={dropped} apiCfg={apiCfg}
+            <ReviewNpc npc={cur} accent={accent} dropped={dropped} apiCfg={apiCfg} cardImage={cardImage}
               onPatch={patch => patchNpc(detail, patch)} />
           ) : result.player ? (
             <ReviewPlayer

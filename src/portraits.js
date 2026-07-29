@@ -48,6 +48,53 @@ export const DEFAULT_PORTRAITS = {
   玄女: xuannuImg,
 };
 
+// 文件名 → 打包 URL。
+// 【为什么要这张表】入册审改界面此前把立绘存成英文文件名（"caidan.webp"），再由
+// ReviewParts 的 PORTRAIT() 拼成 `${BASE}portraits/caidan.webp`——而这十张图根本
+// 不在 public/portraits/ 下（那里只有 narrator/pearl/player/snowleopard 四个子目录），
+// 它们在 src/assets/portraits/ 走 Vite import。于是十张全 404，而 PortraitPicker
+// 的 onError 又把破图 display:none 掉，表现成"立绘那一节只有一个不设按钮"。
+// 跟开场图、本地音乐那两次是同一个模式：硬拼路径 + onError 兜底 = 静默失效。
+// 留着这张表是为了让存量数据（英文文件名）还能解析出来。
+export const PORTRAIT_BY_FILE = {
+  "meiduo.webp": meiduoImg,
+  "huyanxue.webp": huyanxueImg,
+  "heyuxie.webp": heyuxieImg,
+  "caidan.webp": caidanImg,
+  "liruoyou.webp": liruoyouImg,
+  "zhuoma.webp": zhuomaImg,
+  "lanjie.webp": lanjieImg,
+  "luoqi.webp": luoqiImg,
+  "gaze.webp": gazeImg,
+  "xuannu.webp": xuannuImg,
+};
+
+/**
+ * 把一个 portrait 字段值解析成能直接当 img src 用的东西。
+ *
+ * 认三种形态：
+ *   data: / blob:     玩家上传或从卡里取的图，自包含，直接用
+ *   中文角色名        内置那十张，查 DEFAULT_PORTRAITS
+ *   英文文件名        存量数据，查 PORTRAIT_BY_FILE
+ *
+ * 【为什么内置图存键名而不是存 URL】DEFAULT_PORTRAITS 的值是 Vite 打包产物的
+ * 路径，带 content hash（形如 caidan-a1b2c3.webp）。把它存进存档或入册库，下次
+ * 构建 hash 一变就 404。存键名、读时查表，才跨版本稳定。
+ *
+ * 【为什么认不出就返回空串】认不出的值以前会被拼成一个不存在的路径，配上 onError
+ * 静默隐藏——错误就此消失，只留下"图没显示"。返回空串让调用方明确知道没有图可显示。
+ *
+ * 【与 resolvePortrait 的分工】那个是 (uploadedPortraits, name) 两参数，按**角色名**
+ * 去玩家上传库与内置库里找，供 LeftPanel／PortraitManager 渲染对话立绘用。这个是
+ * 单参数，解析的是**入册库里 portrait 字段存的那个值本身**——它可能是键名也可能是
+ * 一整条 dataURL。两者不是一回事，别合并。
+ */
+export function resolveCardPortrait(v) {
+  if (!v || typeof v !== "string") return "";
+  if (/^(data:|blob:)/.test(v)) return v;
+  return DEFAULT_PORTRAITS[v] || PORTRAIT_BY_FILE[v] || "";
+}
+
 const PORTRAIT_STORAGE_KEY = "wuxia_mud_portraits";
 
 export function loadPortraits() {

@@ -9,6 +9,24 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "立绘可选卡自带的图或自己上传（走 webp 压缩）——顺带修好从未通过的整条立绘链",
+    time: "2026-07-30 13:15",
+    notes: [
+      "需求是给立绘加两个来源。做之前发现前提不成立：入册立绘这条链断了三处，每处都独立地让它失效，所以从来没有一张入册立绘显示过。",
+      "①【断裂一·选择器指错目录】PortraitPicker 的候选是十个英文文件名，配 ReviewParts 的 PORTRAIT() 拼成 BASE + portraits/caidan.webp。但这十张在 src/assets/portraits/ 走 Vite import，public/portraits/ 下只有 narrator / pearl / player / snowleopard 四个子目录，压根没有它们——十张全 404。而 PortraitPicker 的 onError 又把破图 display none 掉，于是表现成「立绘这一节只有一个不设按钮，后面空的」。",
+      "②【这是同一个模式的第四次】开场图硬编码 /intro-1.webp 加 onError 降级成渐变底；本地音乐硬编码 /music/xxx.mp3；portraits.js 自己的注释里还记着第三次——默认立绘从异步写 localStorage 改成静态 import 时读取侧没接上，九张打进了产物却一张都没显示过。硬拼路径加 onError 兜底，等于把 404 变成静默失效。这次是第四次。",
+      "③【断裂二·字段语义两头不一致】入册写进 portrait 的是英文文件名，而 QuickBattleScreen 的 PORTRAIT 拼的是 bidders/full 加中文名点 webp（那目录里是才旦点webp、兰姐点webp 这类）。两边对不上，入册角色进快速战斗也没立绘。",
+      "④【断裂三·白名单剥掉·这条最致命】MudRPG 的 toRoomNpcWithCombat 里那份字段白名单没有 portrait。importedRegistry 的 toPoolLike 明明写了 o.portrait = c.portrait，转换一过就被剥掉，压根传不到运行时。讽刺的是旁边注释专门解释过 special 为什么要补进白名单——入册角色的七维是玩家逐项调过的，丢了等于白调——portrait 是同一个问题，当时漏了。",
+      "⑤【内置图必须存键名，不能存打包 URL】DEFAULT_PORTRAITS 的值是 Vite 产物路径，带 content hash（形如 caidan-a1b2c3 点 webp）。存进入册库或存档，下次构建 hash 一变就 404。所以 portrait 字段存的是键名（角色名）或一整条 dataURL，读时过新增的 resolveCardPortrait 查表。这个函数认三种形态：data 或 blob 开头的自备图直接用、中文角色名查 DEFAULT_PORTRAITS、英文文件名查新增的 PORTRAIT_BY_FILE（给存量数据留的路）。认不出就返回空串，不再拼一个不存在的路径出来。",
+      "⑥【新功能·卡自带的图】酒馆卡的 PNG 本身就是立绘，角色卡 JSON 藏在它的 tEXt chunk 里。原来 loadFile 读完字节就丢了，现在留一份在 state（判 PNG magic，裸 JSON 卡留 null 并把按钮置灰说明原因），穿两层 props 传到 PortraitPicker。",
+      "⑦【新功能·上传与压缩】新增 cards/portraitCompress.js。canvas 等比缩到 360×540 上限、原图已在框内则不放大（放大不增加信息只让文件变大边缘发虚）、toWebp quality 0.82。检出 toDataURL 静默退回 png 的情况（浏览器不支持该 mime 时它不报错）则改走 jpeg。存 dataURL 而不是 Blob：它要跟着 importedRegistry 进 IndexedDB，Blob 取出来还得 createObjectURL 且 URL 随页面卸载失效，每次读档都要重造。UI 显示压缩前后的尺寸与体积，一张 1024×1536 的卡图通常压到三四十 KB。",
+      "⑧【我这轮犯了两个错，都被工具当场抓住】其一：改 portraits.js 时 old_str 把整个 DEFAULT_PORTRAITS 定义吃进去了，new_str 里没写回来，等于删掉了十张内置立绘的定义。其二：新加的解析函数取名 resolvePortrait，而那个文件里本来就有一个同名的两参数版本（(uploadedPortraits, name)，LeftPanel 与 PortraitManager 在用、有六条测试），构建直接报 Identifier already declared。教训跟④同源——都是没把既有取值查全就动手。第二个错改名成 resolveCardPortrait 解决，并在注释里写清两者分工：那个按角色名查两个库供渲染对话立绘用，这个解析入册库里 portrait 字段存的值本身。",
+      "⑨【删掉 ReviewParts 的 PORTRAIT 导出】确认无调用者后删除。留着它就是留一个专门拼错路径的工具，将来还会有人用。原地留注释说明立绘统一走 resolveCardPortrait。",
+      "⑩【新增 cards/portraitChain.test.js 十二条】三处断裂各一条守卫（选择器不再出现英文文件名数组、白名单含 portrait、快速战斗的解析必须发生在拼接之前），加两参数 resolvePortrait 必须还在（防我再手滑），加压缩的尺寸计算六条（等比缩、不放大、方图按较小边、坏尺寸不抛错、dataURL 体积含 padding、体积文案分档）。压缩本身要 canvas，测试环境没有，所以把尺寸计算抽成纯函数单独测——比例算错和放大小图是这类代码最容易出的错。",
+      "验证：vitest 685/685（新增 12 条）；pages build 通过（专抓导出缺失，删 PORTRAIT 导出后重点看这一步）；propsCheck 1470 属性全解析（cardImage 穿两层 props，正是它专抓的那类）；placementTest.mjs 通过；文件树 216→218、31→32 份测试。",
+    ],
+  },
+  {
     codename: "审改页 4:6 分栏、日志拉长、随身物放开整本百物录（406 件）",
     time: "2026-07-30 12:05",
     notes: [

@@ -18,9 +18,20 @@ import { narrateTurn, hasApiKey } from "./battleNarration.js";
 import { explainMove, moveTypeGist } from "../itemEffectText.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
+import { resolveCardPortrait } from "../portraits.js";
 const S = (f) => `${BASE}stones/${f}`;
 const UI = (f) => `${BASE}stones/ui/${f}`;
-const PORTRAIT = (name) => `${BASE}bidders/full/${name}.webp`;
+// 【为什么不能直接拼】这个函数原本只服务内置八人（public/bidders/full/ 下是
+// 才旦.webp、兰姐.webp 这类中文名文件），portrait 字段存的就是中文名。但入册角色
+// 的 portrait 可能是内置十张的键名、也可能是一整条 dataURL（玩家上传或从卡里取
+// 的图），直接拼会拼出 bidders/full/data:image...webp 这种东西。
+// 顺序：自备图直接用 → 内置立绘查表 → 都不是才当作 bidders/full 下的文件名。
+const PORTRAIT = (v) => {
+  if (!v) return "";
+  const resolved = resolveCardPortrait(v);
+  if (resolved) return resolved;
+  return `${BASE}bidders/full/${v}.webp`;
+};
 
 // 品阶→档位色（复用装备那套 QUALITY_COLOR）；levelCap 0-5 直接映射 QUALITY 索引
 const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "#c8bfa0";

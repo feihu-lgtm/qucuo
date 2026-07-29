@@ -11,7 +11,11 @@ import React, { useRef, useEffect } from "react";
 
 const BASE = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/";
 export const S = (p) => `${BASE}stones/${p}`;
-export const PORTRAIT = (f) => `${BASE}portraits/${f}`;
+// PORTRAIT 已删除。它拼的是 `${BASE}portraits/${f}`，而入册界面用它去取的那十张
+// 立绘在 src/assets/portraits/ 走 Vite import，public/portraits/ 下只有
+// narrator/pearl/player/snowleopard 四个子目录——十张全 404，配上 onError 隐藏破图，
+// 表现成"立绘那一节是空的"。立绘统一走 portraits.js 的 resolveCardPortrait，
+// 别再从这里拼路径。
 
 // levelCap 0-5 → 玉色文件名与档位标签
 export const TIERS = [

@@ -943,7 +943,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       // generateNpcAttributes 随机），但入册角色的七维是玩家在导入界面逐项调过
       // 的，丢了等于白调——applyNpcDefaults 里 `npc.special || generateNpcAttributes()`
       // 这一句只有在字段能传到才有意义。
-      for (const k of ["levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop"]) {
+      // 【本轮补 portrait】跟上面 special 那条同一个问题：入册角色的立绘是玩家在
+      // 审改界面挑的（内置十张之一、卡自带的图、或自己上传的），importedRegistry
+      // 的 toPoolLike 里明明有 o.portrait = c.portrait，但这份白名单没有它，转换
+      // 一过就被剥掉——入册立绘从来没能传到运行时。
+      for (const k of ["levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop", "portrait"]) {
         if (poolNpc[k] !== undefined) base[k] = poolNpc[k];
       }
       const inferred = mapDescriptionToGenParams(`${poolNpc.name || ""} ${poolNpc.brief || ""} ${poolNpc.personality || ""}`);
