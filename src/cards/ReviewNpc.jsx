@@ -15,7 +15,7 @@ import {
 } from "./ReviewParts.jsx";
 import { normalizePlacement } from "./importedRegistry.js";
 import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose } from "./scanPrompts.js";
-import { buildPlacementPlan, sanitizePlacementPlan } from "./placementPlan.js";
+import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "./placementPlan.js";
 import { acquire } from "./rateLimiter.js";
 import { MOVE_ARCHETYPES, resolveArchetype } from "../combat/moveArchetypes.js";
 import { hpFromNeigong, atkFromWaigong } from "../npcGeneration.js";
@@ -26,6 +26,11 @@ import { hasInnerMap, getPublicInnerRoomNames } from "../innerMap.js";
 
 // 心灵之海是好感解锁的意识空间、第三新东京市是终章一次性据点，都不该当日常落脚点
 const DISTRICTS = Object.keys(QUCUO_MAP).filter(d => d !== "心灵之海" && d !== "第三新东京市");
+
+// 物品描述的输出上限。跟 PLAN_MAX_TOKENS 同一个理由：原来写死 400，在带思考的
+// 模型上会被思考 token 吃穿。这一处的症状比落脚规划更隐蔽——它要的是纯文本，
+// 截断不会报错，只是玩家看到的描述莫名缺半截，还以为是模型没写好。
+const ITEM_DESC_MAX_TOKENS = 2000;
 
 const PLACEMENT_LABEL = { mention: "不落地", resident: "驻场", wander: "游走" };
 const PLACEMENT_HINT = {
@@ -210,7 +215,7 @@ function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
       const usr = `名称：${draft.name}
 类别：${{ weapon: "兵器", armor: "护具", accessory: "饰物", misc: "杂物" }[draft.category] || draft.category}
 品阶：${draft.quality}档${six ? `\n附带：${six}` : ""}`;
-      const res = await callModel(apiCfg, sys, [{ role: "user", content: usr }], { maxTokens: 400, temperature: 0.8 });
+      const res = await callModel(apiCfg, sys, [{ role: "user", content: usr }], { maxTokens: ITEM_DESC_MAX_TOKENS, temperature: 0.8 });
       const text = (res.text || "").trim().replace(/^["「『]|["」』]$/g, "");
       if (text) setDraft(d => ({ ...d, desc: text.slice(0, 200) }));
     } catch (e) {
@@ -423,12 +428,15 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
       setWait(0);
       const { system, user } = buildPlacementPlan([npc], DISTRICTS);
       const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
-        { maxTokens: 700, temperature: 0.6 });
+        { maxTokens: PLAN_MAX_TOKENS.single, temperature: 0.6 });
       const plans = sanitizePlacementPlan(parseJsonLoose(res.text || ""), [npc], DISTRICTS);
       if (!plans.length) { setErr("AI 没给出认得出的安排，再点一次试试"); return; }
       onPlan?.(plans[0].placement, plans[0].why, plans[0].rejected);
     } catch (e) {
-      setErr(String(e?.message || e).slice(0, 40));
+      // 把模型实际吐出来的开头一并显示。只报 message 的话，「不是合法 JSON」和
+      // 「被截断」看起来一样，而两者的补救办法相反（前者改提示词，后者调额度）。
+      const raw = e?.raw ? `　模型吐的是：${String(e.raw).replace(/\s+/g, " ").slice(0, 50)}` : "";
+      setErr(`${String(e?.message || e).slice(0, 70)}${raw}`);
     } finally {
       setBusy(false); setWait(0);
     }

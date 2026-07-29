@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   buildPlacementPlan, sanitizePlacementPlan, PLANNABLE_DISTRICTS, PLAN_BATCH,
+  PLAN_MAX_TOKENS,
 } from "./placementPlan.js";
+import { parseJsonLoose } from "./scanPrompts.js";
 
 const NPCS = [
   { name: "孟铁匠", brief: "天都镇打铁的", levelCap: 1, entry: "在镇上开了二十年铁铺" },
@@ -113,5 +115,57 @@ describe("sanitizePlacementPlan 净化", () => {
     const r = sanitizePlacementPlan(
       [{ name: "某未来人", district: "天都镇", why: "跨世界" }], NPCS);
     expect(r[0].placement.mode).toBe("mention");
+  });
+});
+
+// ── 截断救援 ────────────────────────────────────────────────────────────────
+// 这批用例来自一个实测 bug：落脚规划的 maxTokens 原本写死 700，在带思考的模型上
+// 被思考 token 吃穿，正文只吐出「```json」加一个左方括号就撞 length 上限。当时
+// 三层救援全落空，报出的却是「返回的不是合法 JSON」——补救方向完全指错。
+describe("parseJsonLoose 截断救援", () => {
+  it("正常 JSON 与带围栏的都照常解析", () => {
+    expect(parseJsonLoose('[{"a":1}]')).toEqual([{ a: 1 }]);
+    expect(parseJsonLoose('```json\n[{"a":1}]\n```')).toEqual([{ a: 1 }]);
+  });
+
+  it("只有开围栏、没有闭围栏也能解析", () => {
+    expect(parseJsonLoose('```json\n[{"a":1}]')).toEqual([{ a: 1 }]);
+  });
+
+  it("数组被截断时救回已完整的条目，残缺那半个丢掉", () => {
+    const v = parseJsonLoose('[{"name":"甲","mode":"mention"},{"name":"乙","mo');
+    expect(v).toEqual([{ name: "甲", mode: "mention" }]);
+  });
+
+  it("嵌套对象里被截断也能定位到顶层边界", () => {
+    // lastIndexOf("}") 会截到 weights 那层，必须靠括号计数才对
+    const v = parseJsonLoose(
+      '[{"name":"甲","weights":{"天都镇":75}},{"name":"乙","weights":{"锦官');
+    expect(v).toEqual([{ name: "甲", weights: { 天都镇: 75 } }]);
+  });
+
+  it("字符串里的括号不参与计数", () => {
+    const v = parseJsonLoose('[{"why":"他在{天都镇}开铺子"},{"why":"残');
+    expect(v).toEqual([{ why: "他在{天都镇}开铺子" }]);
+  });
+
+  it("一个完整条目都没有时抛 TRUNCATED，不是 NOT_JSON", () => {
+    // 原来只查 indexOf("{")，这种只吐出左方括号的输入会被误判成 NOT_JSON 熔断
+    expect(() => parseJsonLoose("```json\n[")).toThrowError(/截断/);
+    try { parseJsonLoose("```json\n["); } catch (e) { expect(e.code).toBe("TRUNCATED"); }
+  });
+
+  it("模型压根没在输出 JSON 时仍判 NOT_JSON（该熔断的还要熔断）", () => {
+    try { parseJsonLoose("抱歉，我无法完成这个请求。"); }
+    catch (e) { expect(e.code).toBe("NOT_JSON"); }
+  });
+
+  it("空输入抛 EMPTY", () => {
+    try { parseJsonLoose("   "); } catch (e) { expect(e.code).toBe("EMPTY"); }
+  });
+
+  it("token 上限对齐 cardScan 量级，不是按正文长度给的小值", () => {
+    expect(PLAN_MAX_TOKENS.single).toBeGreaterThanOrEqual(1500);
+    expect(PLAN_MAX_TOKENS.batch).toBeGreaterThanOrEqual(4000);
   });
 });

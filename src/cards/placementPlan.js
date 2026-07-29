@@ -21,6 +21,17 @@ import { DISTRICT_REGION } from "../items/regionMap.js";
 // 太少则浪费令牌桶额度——桶是 5 次/分钟，六人一批意味着三十人也就六次。
 export const PLAN_BATCH = 6;
 
+// 输出 token 上限。量级对齐 cardScan.js 的 STAGE_MAX_TOKENS（1:6000 2:4500
+// 3:1500 4:4000），不按正文实际长度给。
+//
+// 【为什么不能按正文算】一个人的规划正文只有六七十 token，六个人五百上下，看着
+// 给 700 就够。但带思考的模型里思考 token 与正文共用这一份额度，700 会在思考阶段
+// 就被吃穿，正文只吐出「```json」加一个左方括号就撞 length 上限，三层救援全落空，
+// 报出来的却是「返回的不是合法 JSON」——方向完全指错。
+// 这个坑 apiConfig.js 的 DEFAULT_CALL_TOKEN_LIMITS 里记过：narratorWhisper
+// 原本写死 600，是「9 处写死抽成配置」漏网的第 10 处，症状一模一样。
+export const PLAN_MAX_TOKENS = { single: 3000, batch: 6000 };
+
 // 心灵之海是好感解锁的意识空间、第三新东京市是终章一次性据点，都不该当日常落脚点。
 // 与 ReviewNpc.jsx 的 DISTRICTS 同一套过滤条件。
 export const PLANNABLE_DISTRICTS = Object.keys(QUCUO_MAP)

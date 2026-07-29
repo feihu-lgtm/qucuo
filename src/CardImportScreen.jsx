@@ -20,6 +20,7 @@ import {
 import { sanitizeMoves, TIER_NEIGONG, parseJsonLoose } from "./cards/scanPrompts.js";
 import {
   buildPlacementPlan, sanitizePlacementPlan, PLAN_BATCH, PLANNABLE_DISTRICTS,
+  PLAN_MAX_TOKENS,
 } from "./cards/placementPlan.js";
 import ReviewNpc from "./cards/ReviewNpc.jsx";
 import ReviewPlayer from "./cards/ReviewPlayer.jsx";
@@ -613,7 +614,7 @@ function ReviewPane({
         const list = grp.map(g => g.npc);
         const { system, user } = buildPlacementPlan(list, PLANNABLE_DISTRICTS);
         const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
-          { maxTokens: 1600, temperature: 0.6 });
+          { maxTokens: PLAN_MAX_TOKENS.batch, temperature: 0.6 });
         const plans = sanitizePlacementPlan(parseJsonLoose(res.text || ""), list, PLANNABLE_DISTRICTS);
         if (!plans.length) { failed++; } else {
           for (const p of plans) {
@@ -628,7 +629,8 @@ function ReviewPane({
         }
       } catch (e) {
         failed++;
-        setPlanMsg(`${tag} 没成：${String(e?.message || e).slice(0, 30)}`);
+        const raw = e?.raw ? `　模型吐的是：${String(e.raw).replace(/\s+/g, " ").slice(0, 50)}` : "";
+        setPlanMsg(`${tag} 没成：${String(e?.message || e).slice(0, 70)}${raw}`);
       }
       done += grp.length;
       setPlanProg(done / npcs.length);
