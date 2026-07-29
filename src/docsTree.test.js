@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 
 // 文件树文档的自动守卫。
@@ -40,6 +40,30 @@ describe("docs/文件树.md 与真实文件系统对得上", () => {
         .filter(m => !names.has(m) && !m.startsWith("vite") && !m.startsWith("eslint")),
     )];
     expect(ghosts, `文档提到但已不存在：${ghosts.join(", ")}`).toEqual([]);
+  });
+
+  it("scripts/ 下的开发工具也要登记（它们不进产物，但漏登记同样会被重复造）", () => {
+    // 【为什么补这条】propsCheck.mjs 写完之后一直没进文件树——上一轮想登记 propsFlow
+    // 时才发现整个 scripts 段落都不存在。工具不在树上，下一个人不知道它存在，
+    // 于是要么重复造一个，要么继续手工做它本该自动做的事。
+    const tools = readdirSync("scripts").filter(n => /\.(mjs|sh|py)$/.test(n));
+    const missing = tools.filter(n => !doc.includes(n));
+    expect(missing, `以下开发工具未登记进 ${DOC}：\n  ${missing.join("\n  ")}`).toEqual([]);
+  });
+
+  it("package.json 里 npm 脚本引用的本地文件必须存在", () => {
+    // 【为什么补这条】"debug": "node tools/debug.mjs" 指向的 tools/ 目录压根不存在，
+    // npm run debug 必然失败——而这事没有任何地方会报出来，直到有人去跑它。
+    // 跟「代码引用了不存在的素材」是同一个形状。
+    const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
+    const bad = [];
+    for (const [name, cmd] of Object.entries(pkg.scripts || {})) {
+      for (const m of String(cmd).matchAll(/(?:^|\s)((?:\.\/)?(?:scripts|tools|src)\/[\w./-]+\.(?:mjs|js|sh|cjs))/g)) {
+        const f = m[1].replace(/^\.\//, "");
+        if (!existsSync(f)) bad.push(`npm run ${name} → ${f}`);
+      }
+    }
+    expect(bad, `npm 脚本指向了不存在的文件：\n  ${bad.join("\n  ")}`).toEqual([]);
   });
 
   it("文档里声明的文件数与实际一致（防统计行过期）", () => {

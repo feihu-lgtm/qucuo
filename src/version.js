@@ -9,6 +9,22 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "跨文件契约集中对账（14 条）＋文件树补全 scripts 与 public＋守卫覆盖 npm 脚本路径",
+    time: "2026-07-30 18:40",
+    notes: [
+      "把「改这里必须同时改那里」这件事从注释里的口头约定，变成会自动报错的断言。",
+      "①【先盘点，不凭印象】扫全项目注释里的契约关键词（必须与／两处都／同步改／保持一致／白名单／改一处／对得上），得到 50 条声明，按文件汇总后逐条判断哪些可机器校验、哪些已有守卫。MudRPG 那份字段白名单 7 条、extractionEngine 4 条、scanPrompts 3 条、importedRegistry 3 条居前。",
+      "②【新增 contracts.test.js 十四条】招式原型清单全在 MOVE_ARCHETYPES 里／槽位默认原型存在／四个必备槽位都有默认；TIER_NEIGONG 与 getTierPower 逐档相等；里程碑阈值都在查询侧认的档位里；PLANNABLE_DISTRICTS 等于 QUCUO_MAP 去掉两个非常规节点且两处过滤条件一致；立绘两张索引表一一对应且两种键都解析得出；PLACEMENT_MODES 每项都有界面标签；代码引用的 stones 素材必须真的存在；素材库规模不缩水；bidders/full 存在非空；十张内置立绘在 src/assets 下且 public/portraits 没有同名副本。",
+      "③【素材存在性那条最值钱】立绘那次就是十个英文文件名指向 public/portraits/、而图在 src/assets/portraits/，十张全 404，配 onError 隐藏破图，表现成「这一节是空的」。开场图与本地音乐也各栽过一次同类。引用不存在的文件，构建不报错、测试不报错，只是那个位置永远空着。现在扫 S/UI/FRAME/MAPUI/CARD 五个 helper 的字面量引用与 stones 路径拼接，逐个到 public/stones 下核对。",
+      "④【一条注释与实现不符，我没擅自改实现】scanPrompts 那句「七个招式原型，取值必须与 MOVE_ARCHETYPES 的键一致」——实际是 7 对 9，MOVE_ARCHETYPES 另有施毒与回气。查过 sanitizeMoves：回气被特殊处理、是固定槽位不是可选原型，排除有意；施毒则是没给入册角色开放，AI 若给了会被退回该槽默认。真正会坏的方向只有一个——清单里出现 MOVE_ARCHETYPES 没有的名字，resolveArchetype 返回 null、招式退化成空对象。所以守卫按子集断言，反向缺失属设计选择不该被拦。施毒要不要给入册角色开放，是设计决策，留给项目主人定。",
+      "⑤【文件树补全】原来只有 src 一棵树，顶层缺 README／vite.config.pages.js／三个 debug 页／ui-shot.mjs，public 与 scripts 整个目录都不在树上——上一轮想登记 propsFlow.mjs 时才发现压根没有 scripts 段落。现在顶层补齐，public 按四类资源展开（并在 portraits 那行标明「内置十张不在这儿、在 src/assets/portraits」，那正是立绘事故的根源），scripts 九个工具逐个一句话说清。",
+      "⑥【docsTree 守卫扩展两条】scripts 下的 mjs/sh/py 都要登记（工具不在树上，下一个人不知道它存在，于是重复造，或继续手工做它本该自动做的事）；package.json 里 npm 脚本引用的本地文件必须存在。",
+      "⑦【第二条守卫当场抓出一个从项目诞生就坏的配置】package.json 里 debug 指向 node tools/debug.mjs，而 tools 目录不存在。git log 查过：从未提交过任何 tools 下的文件，这条是 2026-07-24 第一次上传时就带着的——也就是说 npm run debug 从来没成功过一次，而这事没有任何地方会报出来，直到有人去跑它。已删除该条。若本地有未提交的 tools/debug.mjs，说一声再改回来并把 tools 加进文件树。",
+      "⑧【每条守卫都用反例验过】招式清单混入不存在的名字、TIER_NEIGONG 与 getTierPower 脱钩、引用不存在的 stones 素材、据点过滤条件两处不一致、槽位默认原型指向不存在的原型、scripts 工具未登记、npm 脚本指向不存在的文件——七个反例逐个跑，确认都能抓住，且恢复后全绿。判断成败一律用退出码，清理步骤用分号串联而不是 &&（上一轮吃过教训：grep 无匹配退出码 1，把恢复命令挡在了链外）。",
+      "验证：vitest 733/733（新增 contracts 14 条、docsTree 扩展 2 条）；pages build 通过；propsCheck 1475 属性、propsFlow 133 个组件定义均零问题；文件树 222→223、36→37 份测试。",
+    ],
+  },
+  {
     codename: "系统性处理依赖断链：新增 propsFlow 反向检查器、字段流转对账、模块级状态改订阅；顺带查出内外功一直被剥掉",
     time: "2026-07-30 17:30",
     notes: [
