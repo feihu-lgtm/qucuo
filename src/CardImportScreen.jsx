@@ -11,13 +11,16 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { parseCharacterCard } from "./cards/cardParse.js";
 import { planScan, runScan, runClassify, peopleAfterClassify } from "./cards/cardScan.js";
 import * as scanStore from "./cards/scanStore.js";
-import { bucketStatus } from "./cards/rateLimiter.js";
+import { bucketStatus, acquire } from "./cards/rateLimiter.js";
 import { callModel } from "./apiConfig.js";
 import {
   S, TIERS, KIND_META, BODY_PUBLIC, BODY_PRIVATE, TERM_MONO,
   Bar, JadeTier, Src, Stat, Note, Btn, Pills, Terminal,
 } from "./cards/ReviewParts.jsx";
-import { sanitizeMoves, TIER_NEIGONG } from "./cards/scanPrompts.js";
+import { sanitizeMoves, TIER_NEIGONG, parseJsonLoose } from "./cards/scanPrompts.js";
+import {
+  buildPlacementPlan, sanitizePlacementPlan, PLAN_BATCH, PLANNABLE_DISTRICTS,
+} from "./cards/placementPlan.js";
 import ReviewNpc from "./cards/ReviewNpc.jsx";
 import ReviewPlayer from "./cards/ReviewPlayer.jsx";
 
@@ -246,14 +249,20 @@ export default function CardImportScreen({
     background: "rgba(6,4,2,.82)", backdropFilter: "blur(3px)",
     fontFamily: "'Noto Serif SC','Songti SC','STSong',serif",
   };
+  // 【为什么是 100% 而不是 min(1120px,95vw)】原先写死 1120×800，在 1600 宽以上
+  // 的屏幕上四边留一圈空遮罩，而这个界面右侧是长表单（审改页 16 个 Section，
+  // 落脚那一节的据点 chip 有二十几个），横向空间越窄 chip 越换行、越往下挤，
+  // 结果就是「落脚 · 他会出现在哪」被压到滚动区底部，玩家根本翻不到。
+  // 撑满之后左栏 230px 不动，多出来的宽度全给表单。
+  // 点遮罩关闭因此失效（没有遮罩了），头部 btn_close 仍在。
   const panel = {
-    position: "relative", width: "min(1120px, 95vw)", height: "min(800px, 93vh)",
+    position: "relative", width: "100%", height: "100%",
     display: "flex", flexDirection: "column", overflow: "hidden",
     backgroundColor: "#14100a",
     backgroundImage: `url('${S("skin_wusha.webp")}')`,
     backgroundSize: "cover", backgroundBlendMode: "multiply",
-    border: `2px solid ${accent}`, borderRadius: 6,
-    boxShadow: "0 16px 60px rgba(0,0,0,.75), inset 0 0 90px rgba(0,0,0,.6)",
+    borderRadius: 0,
+    boxShadow: "inset 0 0 120px rgba(0,0,0,.6)",
   };
 
   return (
@@ -571,6 +580,68 @@ function ReviewPane({
   const cur = detail >= 0 ? result.npcs[detail] : null;
   const placedCount = result.npcs.filter(x => (x.placement?.mode || "mention") !== "mention").length;
 
+  // ── AI 一键规划落脚 ──────────────────────────────────────────────────────
+  // 【为什么按批而不是一人一次】令牌桶是 5 次/分钟。一人一次的话十个人就要等两
+  // 分钟，而落脚判断只需要人物的身份与来历，六个人的摘要塞进一个 prompt 完全放
+  // 得下（据点清单本身才八百字）。六人一批意味着三十人也只烧六次额度。
+  // 【为什么一批失败不中断】每批是独立的一次调用，第二批 429 不该让第一批已经
+  // 规划好的人白丢。失败的批次记数，最后一并告诉玩家哪几批没成、可以再点一次。
+  const [planBusy, setPlanBusy] = useState(false);
+  const [planMsg, setPlanMsg] = useState("");
+  const [planProg, setPlanProg] = useState(0);
+
+  const planAll = async () => {
+    const npcs = result.npcs;
+    if (planBusy || !npcs.length) return;
+    setPlanBusy(true); setPlanProg(0);
+
+    // 分批时把全局下标一起带上——sanitizePlacementPlan 返回的 index 是相对这一
+    // 批的，直接拿去 patchNpc 会改错人
+    const batches = [];
+    for (let i = 0; i < npcs.length; i += PLAN_BATCH) {
+      batches.push(npcs.slice(i, i + PLAN_BATCH).map((n, j) => ({ npc: n, at: i + j })));
+    }
+
+    let done = 0, placed = 0, failed = 0, rejected = 0;
+    for (let b = 0; b < batches.length; b++) {
+      const grp = batches[b];
+      const tag = `第 ${b + 1}/${batches.length} 批`;
+      try {
+        setPlanMsg(`${tag} · 等额度`);
+        await acquire(ms => setPlanMsg(`${tag} · 排队 ${Math.ceil(ms / 1000)}s`));
+        setPlanMsg(`${tag} · 正在相地（${grp.length} 人）`);
+        const list = grp.map(g => g.npc);
+        const { system, user } = buildPlacementPlan(list, PLANNABLE_DISTRICTS);
+        const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
+          { maxTokens: 1600, temperature: 0.6 });
+        const plans = sanitizePlacementPlan(parseJsonLoose(res.text || ""), list, PLANNABLE_DISTRICTS);
+        if (!plans.length) { failed++; } else {
+          for (const p of plans) {
+            const target = grp[p.index];
+            if (!target) continue;
+            patchNpc(target.at, {
+              placement: p.placement, placementWhy: p.why, placementRejected: p.rejected,
+            });
+            if (p.placement.mode !== "mention") placed++;
+            if (p.rejected) rejected++;
+          }
+        }
+      } catch (e) {
+        failed++;
+        setPlanMsg(`${tag} 没成：${String(e?.message || e).slice(0, 30)}`);
+      }
+      done += grp.length;
+      setPlanProg(done / npcs.length);
+    }
+
+    setPlanMsg([
+      `规划完毕 · ${placed} 人会真的出现`,
+      rejected ? `${rejected} 人的据点不在地图里已退回` : "",
+      failed ? `${failed} 批没成，可以再点一次` : "",
+    ].filter(Boolean).join("，"));
+    setPlanBusy(false);
+  };
+
   // 卡里被本作丢弃的东西，列给玩家看一眼，别让它们悄悄消失
   const dropped = useMemo(() => {
     const out = [];
@@ -656,20 +727,55 @@ function ReviewPane({
 
         <div style={{
           borderTop: `1px solid ${accent}44`, padding: "10px 14px",
-          display: "flex", alignItems: "center", gap: 10,
           backgroundImage: `url('${S("ui/bar_paper2.webp")}')`, backgroundSize: "100% 100%",
         }}>
-          <Btn onClick={onBack} tone="dim">← 回名单</Btn>
-          <span style={{ flex: 1 }} />
-          <span style={{ fontSize: 11, color: "#8a8270" }}>
-            将入册 {result.npcs.length} 人
-            {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
-            {result.player ? " ＋ 我自己" : ""}
-          </span>
-          <Btn onClick={onFinish} tone="main">
-            <img src={S("ui/hammer.webp")} alt="" style={{ width: 14, verticalAlign: "-2px", marginRight: 5 }} />
-            落册
-          </Btn>
+          {/* 规划进度。只在跑过之后出现，跑完留着当结果条 */}
+          {(planBusy || planMsg) && (
+            <div style={{ marginBottom: 8 }}>
+              <div style={{
+                height: 3, borderRadius: 2, overflow: "hidden",
+                background: "rgba(0,0,0,.45)", marginBottom: 5,
+              }}>
+                <div style={{
+                  height: "100%", width: `${Math.round(planProg * 100)}%`,
+                  background: "linear-gradient(90deg,#4a6a48,#9ac088)",
+                  transition: "width .35s ease",
+                }} />
+              </div>
+              <div style={{ fontSize: 10.5, color: planBusy ? "#9ac088" : "#8a8270" }}>{planMsg}</div>
+            </div>
+          )}
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Btn onClick={onBack} tone="dim">← 回名单</Btn>
+
+            {/* AI 一键规划落脚。据点从本作地图里选，回来的东西过白名单，玩家再改 */}
+            <span onClick={planBusy ? undefined : planAll}
+              title={`让 AI 按人设判断每个人该驻场还是游走。${result.npcs.length} 人分 ${Math.ceil(result.npcs.length / PLAN_BATCH)} 批，据点只能从本作地图里选，规划完你还能自己改`}
+              style={{
+                cursor: planBusy ? "wait" : "pointer", userSelect: "none",
+                fontSize: 12, padding: "6px 14px", borderRadius: 4, whiteSpace: "nowrap",
+                display: "inline-flex", alignItems: "center", gap: 6,
+                color: planBusy ? "#6a7a68" : "#9ac088",
+                border: `1px solid ${planBusy ? "#3a4a38" : "#4a6a48"}`,
+                background: planBusy ? "rgba(0,0,0,.3)"
+                  : "linear-gradient(180deg,rgba(130,180,120,.16),rgba(0,0,0,.32))",
+              }}>
+              <img src={S("ui/star.webp")} alt="" style={{ width: 13, height: 13, opacity: planBusy ? .4 : .9 }} />
+              {planBusy ? "正在相地…" : "AI 一键规划落脚"}
+            </span>
+
+            <span style={{ flex: 1 }} />
+            <span style={{ fontSize: 11, color: "#8a8270" }}>
+              将入册 {result.npcs.length} 人
+              {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
+              {result.player ? " ＋ 我自己" : ""}
+            </span>
+            <Btn onClick={onFinish} tone="main">
+              <img src={S("ui/hammer.webp")} alt="" style={{ width: 14, verticalAlign: "-2px", marginRight: 5 }} />
+              落册
+            </Btn>
+          </div>
         </div>
       </div>
     </>

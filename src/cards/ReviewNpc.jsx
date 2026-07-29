@@ -14,7 +14,9 @@ import {
   Section, Note, Pills, Step, selStyle,
 } from "./ReviewParts.jsx";
 import { normalizePlacement } from "./importedRegistry.js";
-import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG } from "./scanPrompts.js";
+import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose } from "./scanPrompts.js";
+import { buildPlacementPlan, sanitizePlacementPlan } from "./placementPlan.js";
+import { acquire } from "./rateLimiter.js";
 import { MOVE_ARCHETYPES, resolveArchetype } from "../combat/moveArchetypes.js";
 import { hpFromNeigong, atkFromWaigong } from "../npcGeneration.js";
 import { CATALOG } from "../items/catalog.js";
@@ -401,14 +403,58 @@ function PortraitPicker({ value, onChange }) {
 
 // ── 落脚 ──────────────────────────────────────────────────────────────────────
 
-function Placement({ value, onChange, accent }) {
+function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan }) {
   const pl = normalizePlacement(value);
   const rooms = pl.district && hasInnerMap(pl.district) ? getPublicInnerRoomNames(pl.district) : [];
+  // 手动改过之后 AI 那句依据就过期了——留着会误导（它说「镇上开铁铺」而你已经
+  // 改成了不落地）。所以任何手动改动都把依据一并清掉。
   const set = (patch) => onChange({ ...pl, ...patch });
+  const [busy, setBusy] = useState(false);
+  const [wait, setWait] = useState(0);
+  const [err, setErr] = useState("");
+
+  // AI 只定「谁待在哪」，据点名从 DISTRICTS 里挑，回来的东西过一遍
+  // sanitizePlacementPlan 白名单过滤。内层房间它不管，玩家自己在下拉里点。
+  const askAiPlace = async () => {
+    if (busy || !npc?.name) return;
+    setBusy(true); setErr(""); setWait(0);
+    try {
+      await acquire(ms => setWait(Math.ceil(ms / 1000)));
+      setWait(0);
+      const { system, user } = buildPlacementPlan([npc], DISTRICTS);
+      const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
+        { maxTokens: 700, temperature: 0.6 });
+      const plans = sanitizePlacementPlan(parseJsonLoose(res.text || ""), [npc], DISTRICTS);
+      if (!plans.length) { setErr("AI 没给出认得出的安排，再点一次试试"); return; }
+      onPlan?.(plans[0].placement, plans[0].why, plans[0].rejected);
+    } catch (e) {
+      setErr(String(e?.message || e).slice(0, 40));
+    } finally {
+      setBusy(false); setWait(0);
+    }
+  };
+
   return (
     <div>
-      <Pills accent={accent} value={pl.mode} onChange={m => set({ mode: m })}
-        options={["mention", "resident", "wander"].map(m => ({ value: m, label: PLACEMENT_LABEL[m] }))} />
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <Pills accent={accent} value={pl.mode} onChange={m => set({ mode: m })}
+          options={["mention", "resident", "wander"].map(m => ({ value: m, label: PLACEMENT_LABEL[m] }))} />
+        <span style={{ flex: 1 }} />
+        <span onClick={askAiPlace} title="让 AI 按人设判断该驻场还是游走，据点只能从本作地图里选"
+          style={{
+            cursor: busy ? "wait" : "pointer", userSelect: "none",
+            fontSize: 11, padding: "4px 11px", borderRadius: 3, whiteSpace: "nowrap",
+            display: "inline-flex", alignItems: "center", gap: 5,
+            color: busy ? "#6a7a68" : "#9ac088",
+            border: `1px solid ${busy ? "#3a4a38" : "#4a6a48"}`,
+            background: busy ? "rgba(0,0,0,.3)"
+              : "linear-gradient(180deg,rgba(130,180,120,.16),rgba(0,0,0,.32))",
+          }}>
+          <img src={S("ui/star.webp")} alt="" style={{ width: 11, height: 11, opacity: busy ? .4 : .9 }} />
+          {busy ? (wait ? `排队 ${wait}s` : "正在相地…") : "AI 荐位"}
+        </span>
+      </div>
+
       {pl.mode === "resident" && (
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <label style={{ flex: 1 }}>
@@ -465,6 +511,29 @@ function Placement({ value, onChange, accent }) {
           </div>
         </div>
       )}
+
+      {/* AI 的判断依据。撕纸条底，跟随身物那边自造物品的提示同一套视觉 */}
+      {why ? (
+        <div style={{
+          marginTop: 9, padding: "9px 14px",
+          backgroundImage: `url('${S("ui/note_torn.webp")}')`,
+          backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
+          display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap",
+        }}>
+          <span style={{
+            fontSize: 9, color: "#9ac088", border: "1px solid #4a6a48",
+            borderRadius: 2, padding: "0 4px", flexShrink: 0,
+          }}>AI 荐位</span>
+          <span style={{ fontSize: 10.5, lineHeight: 1.6, color: "#d8c4a0" }}>{why}</span>
+          {rejected && (
+            <span style={{ fontSize: 10, color: "#d89080" }}>
+              · 它给的据点不在本作地图里，已退回不落地，请自己选
+            </span>
+          )}
+        </div>
+      ) : null}
+      {err ? <Note tone="bad">{err}</Note> : null}
+
       <Note tone="info">{PLACEMENT_HINT[pl.mode]}</Note>
     </div>
   );
@@ -596,7 +665,10 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg }) {
 
       {/* 15 落脚 */}
       <Section title="落脚 · 他会出现在哪">
-        <Placement value={n.placement} accent={accent} onChange={pl => onPatch({ placement: pl })} />
+        <Placement value={n.placement} accent={accent} npc={n} apiCfg={apiCfg}
+          why={n.placementWhy} rejected={n.placementRejected}
+          onChange={pl => onPatch({ placement: pl, placementWhy: "", placementRejected: false })}
+          onPlan={(pl, why, rejected) => onPatch({ placement: pl, placementWhy: why, placementRejected: rejected })} />
       </Section>
 
       {/* 16 已丢弃的 */}
