@@ -574,7 +574,7 @@ function PortraitPicker({ value, onChange, cardImage, npcName }) {
 
 // ── 落脚 ──────────────────────────────────────────────────────────────────────
 
-function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan }) {
+function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan, currentDistrict }) {
   const pl = normalizePlacement(value);
   const rooms = pl.district && hasInnerMap(pl.district) ? getPublicInnerRoomNames(pl.district) : [];
   // 手动改过之后 AI 那句依据就过期了——留着会误导（它说「镇上开铁铺」而你已经
@@ -611,7 +611,19 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <Pills accent={accent} value={pl.mode} onChange={m => set({ mode: m })}
+        <Pills accent={accent} value={pl.mode} onChange={m => {
+          // 点「驻场」直接把玩家此刻所在的据点填进去，不必再翻一次下拉。
+          // 【为什么这样合理】在审改界面按「驻场」时，绝大多数意图就是"让这人待在我
+          // 现在这地方"。空着的话据点是「未选，等同不落地」——按了驻场却什么都不会
+          // 发生，还得再点一次下拉才生效，等于白按一遍。
+          // 仍然只是默认值，下拉照旧能改。currentDistrict 不在可选清单里（比如玩家
+          // 正站在心灵之海）就不填。
+          const patch = { mode: m };
+          if (m === "resident" && !pl.district && DISTRICTS.includes(currentDistrict)) {
+            patch.district = currentDistrict;
+          }
+          set(patch);
+        }}
           options={["mention", "resident", "wander"].map(m => ({ value: m, label: PLACEMENT_LABEL[m] }))} />
         {/* 紧跟三个模式钮，不用 spacer 顶到天边——4:6 分栏后右栏有上千像素宽，
             顶到最右就成了一个跟谁都不相干的孤零零按钮（实测截图如此） */}
@@ -716,7 +728,7 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
 
 // ── 主体 ──────────────────────────────────────────────────────────────────────
 
-export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardImage }) {
+export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardImage, currentDistrict }) {
   const n = npc;
   const cap = n.levelCap ?? 1;
   const neigong = Number.isFinite(n.neigong) ? n.neigong : (TIER_NEIGONG[cap] ?? 23);
@@ -865,6 +877,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
       {/* 15 落脚 */}
       <Section title="落脚 · 他会出现在哪">
         <Placement value={n.placement} accent={accent} npc={n} apiCfg={apiCfg}
+          currentDistrict={currentDistrict}
           why={n.placementWhy} rejected={n.placementRejected}
           onChange={pl => onPatch({ placement: pl, placementWhy: "", placementRejected: false })}
           onPlan={(pl, why, rejected) => onPatch({ placement: pl, placementWhy: why, placementRejected: rejected })} />

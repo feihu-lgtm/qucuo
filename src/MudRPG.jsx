@@ -261,6 +261,15 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [exp, setExp] = useState(restored?.snap.exp || 0);
   const [pot, setPot] = useState(restored?.snap.pot || 0);
   const [flags, setFlags] = useState(restored?.snap.flags || []);
+  // 入册库的版本号。
+  // 【为什么需要这个数】registerImported 改的是 importedRegistry.js 模块里那个
+  // _registry（模块级 let），React 的依赖系统完全看不见它。组装 room.npcs 的那个
+  // effect 依赖数组是 [room.name, dayIdx, questProgress, flags]，落册之后没有一项
+  // 会变，于是 effect 不重跑——玩家在原地落册，人不会出现，非得走出据点再回来
+  // （room.name 变化）才刷出来。这个数在每次落册后 +1，作为 effect 的显式触发信号。
+  // 不进存档：它只是本次会话里的重算触发器，读档时 effect 本来就会因 room.name
+  // 初始化而跑一遍。
+  const [importedVer, setImportedVer] = useState(0);
   const [questProgress, setQuestProgress] = useState(restored?.snap.questProgress || {}); // { questId: { count } }
   // 说服进度持久化：按 questId|flag 存 { guard, hitKeys, turns, done }，让"关掉再点同一场
   // 说服"能接着上次、且进快照存档。成功/离开时清掉该场。
@@ -1027,7 +1036,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     }
     // 注入：该在场的人放进来，已在名单里的补齐设定（injectNpcs 内含 bug② 的修法）
     setRoom(r => ({ ...r, npcs: injectNpcs(r.npcs, toInject) }));
-  }, [room.name, dayIdx, questProgress, flags]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [room.name, dayIdx, questProgress, flags, importedVer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 采集机制·注入：玩家进入某据点时，若有 active 采集任务的目标物落在本据点、
   // 且背包尚无、地上尚无，就把它真的放进 room.items——落实「地上得真有那个东西
@@ -4120,9 +4129,18 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         return { ...t, 角色: chars };
       });
     }
+    // 推版本号，让组装 room.npcs 的那个 effect 立刻重跑——不然人得等玩家走出
+    // 据点再回来才会出现（见 importedVer 的声明处）
+    setImportedVer(v => v + 1);
+    // 有几个人此刻就该站在这个据点里？如实说，别让玩家对着空屋子猜落册成没成。
+    const here = importedRegistry.getImportedResidentNames()
+      .filter(nm => npcs.some(x => x.name === nm));
     addLog([
       { t: "sys", text: `  ${n} 人已入册：${npcs.map(x => x.name).join("、")}` },
       { t: "sys", text: "  他们的人设已挂上世界书，行走江湖时遇到便会照此登场。" },
+      ...(here.length
+        ? [{ t: "sys", text: `  其中 ${here.join("、")} 驻场于此，此刻已在场。` }]
+        : []),
     ]);
   }, [setVarTree, addLog]);
 

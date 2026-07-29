@@ -31,6 +31,7 @@ const EMPTY_SPECIAL = { 根骨: 5, 悟性: 5, 体魄: 5, 魅力: 5, 智谋: 5, �
 export default function CardImportScreen({
   onClose, apiCfg, playerName = "少侠",
   onImportNpcs, onImportPlayer, onImportWorld, zoneTheme,
+  currentDistrict = "",
 }) {
   const accent = zoneTheme?.accent || "#d4a853";
 
@@ -244,9 +245,12 @@ export default function CardImportScreen({
     ...r, world: r.world.map((w, j) => (j === i ? { ...w, ...patch } : w)),
   }));
 
-  const finish = () => {
-    pushTerm("done", `落册 ${result?.npcs?.length || 0} 人${result?.player ? " ＋ 主角档案" : ""}`, "落册");
-    if (result?.npcs?.length && onImportNpcs) onImportNpcs(result.npcs);
+  // 【为什么接一个参数】审改页现在可以只勾一部分人加入——一张卡里常有几个纯粹
+  // 的背景人物，玩家未必想把他们都塞进江湖。不传就按全部处理（老行为）。
+  const finish = (npcsToImport) => {
+    const list = Array.isArray(npcsToImport) ? npcsToImport : (result?.npcs || []);
+    pushTerm("done", `落册 ${list.length} 人${result?.player ? " ＋ 主角档案" : ""}`, "落册");
+    if (list.length && onImportNpcs) onImportNpcs(list);
     if (result?.player && onImportPlayer) onImportPlayer(result.player, result.opening);
     const world = (result?.world || []).filter(w => w.on !== false);
     if (world.length && onImportWorld) onImportWorld(world);
@@ -328,6 +332,7 @@ export default function CardImportScreen({
               detail={detail} setDetail={setDetail}
               patchNpc={patchNpc} patchPlayer={patchPlayer} patchWorld={patchWorld}
               setResult={setResult} asPlayer={asPlayer} apiCfg={apiCfg} cardImage={cardImage}
+              currentDistrict={currentDistrict}
               term={term} onExpandTerm={() => setTermBig(true)}
               onBack={() => setStage("parsed")} onFinish={finish}
             />
@@ -590,9 +595,23 @@ function ParsedPane({
 function ReviewPane({
   parsed, result, accent, detail, setDetail, patchNpc, patchPlayer, patchWorld,
   setResult, asPlayer, onBack, onFinish, term, onExpandTerm, apiCfg, cardImage,
+  currentDistrict,
 }) {
   const cur = detail >= 0 ? result.npcs[detail] : null;
-  const placedCount = result.npcs.filter(x => (x.placement?.mode || "mention") !== "mention").length;
+
+  // 哪几个人真的要加入。默认全勾——一张卡扫出来的人多半都是想要的，让玩家取消
+  // 个别几个，比让他从零勾起省事。
+  const [picked, setPicked] = useState(() => new Set(result.npcs.map((_, i) => i)));
+  const allOn = picked.size === result.npcs.length && result.npcs.length > 0;
+  const toggleOne = (i) => setPicked(p => {
+    const n = new Set(p);
+    if (n.has(i)) n.delete(i); else n.add(i);
+    return n;
+  });
+  const toggleAll = () => setPicked(allOn ? new Set() : new Set(result.npcs.map((_, i) => i)));
+  const pickedNpcs = result.npcs.filter((_, i) => picked.has(i));
+  // 「会真的出现」只统计勾选中的——没勾的人压根不进库，算进去是虚报
+  const placedCount = pickedNpcs.filter(x => normalizePlacement(x.placement).mode !== "mention").length;
 
   // ── AI 一键规划落脚 ──────────────────────────────────────────────────────
   // 【为什么按批而不是一人一次】令牌桶是 5 次/分钟。一人一次的话十个人就要等两
@@ -702,7 +721,16 @@ function ReviewPane({
                 padding: "6px 8px", borderRadius: 4, marginBottom: 3,
                 background: detail === i ? "rgba(212,168,83,.12)" : "transparent",
                 borderLeft: `2px solid ${detail === i ? accent : "transparent"}`,
+                opacity: picked.has(i) ? 1 : .45,
               }}>
+              {/* stopPropagation：点圈只管勾选，点条目其余部分仍是切换编辑焦点。
+                  两个动作叠在同一行上，必须分得干净 */}
+              <span onClick={e => { e.stopPropagation(); toggleOne(i); }}
+                title={picked.has(i) ? "点掉就不加入" : "点上加入"}
+                style={{
+                  cursor: "pointer", flexShrink: 0, width: 14, textAlign: "center",
+                  fontSize: 12, color: picked.has(i) ? accent : "#4a4436",
+                }}>{picked.has(i) ? "◉" : "○"}</span>
               <JadeTier value={n.levelCap} size={22} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: "#e8dcc0", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.name}</div>
@@ -743,6 +771,7 @@ function ReviewPane({
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
           {cur ? (
             <ReviewNpc npc={cur} accent={accent} dropped={dropped} apiCfg={apiCfg} cardImage={cardImage}
+              currentDistrict={currentDistrict}
               onPatch={patch => patchNpc(detail, patch)} />
           ) : result.player ? (
             <ReviewPlayer
@@ -781,6 +810,13 @@ function ReviewPane({
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Btn onClick={onBack} tone="dim">← 回名单</Btn>
+            <span onClick={toggleAll} title="一次勾上或取消全部"
+              style={{
+                cursor: "pointer", userSelect: "none", fontSize: 11.5,
+                padding: "6px 12px", borderRadius: 4, whiteSpace: "nowrap",
+                border: `1px solid ${allOn ? accent : "#3a3428"}`,
+                color: allOn ? accent : "#8a8270",
+              }}>{allOn ? "◉ 全不选" : "○ 全选"}</span>
 
             {/* AI 一键规划落脚。据点从本作地图里选，回来的东西过白名单，玩家再改 */}
             <span onClick={planBusy ? undefined : planAll}
@@ -800,13 +836,15 @@ function ReviewPane({
 
             <span style={{ flex: 1 }} />
             <span style={{ fontSize: 11, color: "#8a8270" }}>
-              将入册 {result.npcs.length} 人
+              勾了 {picked.size}／{result.npcs.length} 人
               {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
               {result.player ? " ＋ 我自己" : ""}
             </span>
-            <Btn onClick={onFinish} tone="main">
+            <Btn onClick={() => onFinish(pickedNpcs)} tone="main"
+              disabled={!picked.size && !result.player}
+              title={picked.size ? `把勾选的 ${picked.size} 人写进江湖` : "一个人都没勾"}>
               <img src={S("ui/hammer.webp")} alt="" style={{ width: 14, verticalAlign: "-2px", marginRight: 5 }} />
-              落册
+              加入 {picked.size} 人
             </Btn>
           </div>
         </div>

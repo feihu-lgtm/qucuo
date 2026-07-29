@@ -9,6 +9,22 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "修落册后 room 不刷新（依赖数组看不见模块级状态）+ 世界观回调断在 GlobalOverlays + 勾选式加入 + 点驻场直接带出据点",
+    time: "2026-07-30 16:20",
+    notes: [
+      "四件事，两个是断链、两个是交互。",
+      "①【落册后人不出现·根因是 React 依赖系统看不见模块级状态】组装 room.npcs 的那个 effect 依赖数组是 [room.name, dayIdx, questProgress, flags]。registerImported 改的是 importedRegistry.js 模块里那个 _registry（模块级 let），依赖数组里没有一项会因此变化，于是 effect 不重跑——玩家在原地落册，人不会出现，非得走出据点再回来（room.name 变了）才刷出来。链路本身是通的：getImportedForDistrict 在 MudRPG 第 1001 行确实被调用了，问题纯粹在触发时机。改法：加一个 importedVer 计数 state，handleImportNpcs 里 +1，进依赖数组。不进存档——它只是本次会话的重算触发器，读档时 effect 本来会因 room.name 初始化跑一遍。",
+      "②【落册后如实报告谁已在场】原来只说「N 人已入册，行走江湖时遇到便会照此登场」。现在多一行：其中哪几个驻场于此、此刻已在场。不然玩家对着屋子里没变化，没法判断是落册没成、还是这些人本来就不落在这儿。",
+      "③【世界观条目从来没入过库·断在 props 没解构那一层】MudRPG 第 4591 行把 onImportWorld={handleImportWorld} 传给了 GlobalOverlays，但 GlobalOverlays 的 props 解构里只有 onImportNpcs 与 onImportPlayer，于是 CardImportScreen 也没拿到。finish 里那句 if (world.length && onImportWorld) 直接短路，一条都不入库。整条消费链全通着——registerImportedWorld 完整、getImportedNpcLore 有 world 分支、上一轮还给它做了独立注入块——唯独生产侧断在这一层。跟前几轮那个 apiCfg 白屏同族，但这次不报错，是静默短路。propsCheck 抓不到这类：它查的是「用了作用域里不存在的标识符」，而 onImportWorld 压根没在 GlobalOverlays 里出现过。这是那个工具的一个已知缺口。",
+      "④【勾选式加入·1／多／全】审改页名单每条前面加勾选圈，默认全勾（一张卡扫出来的人多半都想要，让人取消个别几个比从零勾起省事）。底栏加全选／全不选钮，落册钮文案随勾选数变成「加入 N 人」。点圈只切勾选、点条目其余部分仍是切换编辑焦点，两个动作叠在同一行上用 stopPropagation 分开。没勾的条目整行降到 45% 不透明度。底栏「会真的出现」的计数也只统计勾选中的，不然是虚报。finish 改成接一个名单参数，不传则按全部处理，老行为不破。",
+      "⑤【点驻场直接带出当前据点】原来按了驻场，据点是「未选，等同不落地」——按了却什么都不会发生，还得再点一次下拉才生效。现在自动填玩家此刻所在的据点（room.name 经 GlobalOverlays 穿两层进来），仍然只是默认值，下拉照旧能改；currentDistrict 不在可选清单里（比如玩家正站在心灵之海）就不填。",
+      "⑥【我又栽了一次分段写盘】上一轮 version.js 刚记过「三处替换写在一个脚本、写盘放最后，第三个锚点对不上就抛异常退出，前两处只存在内存里」。这次是分段写盘的变体：GlobalOverlays 写完了，第二个文件的锚点 apiCfg={apiCfg} cardImage={cardImage} 在 ReviewPane 调用与 ReviewNpc 调用两处都出现、count 是 2，assert 抛出，后两个文件根本没进入处理。记了教训却没改做法。这次改了：所有编辑先在内存里对全部文件做完、assert 全过之后才统一落盘。",
+      "⑦【守卫自己也误报过一次】新写的守卫用 split 找含「[room.name, dayIdx, questProgress, flags」的行，结果先撞上了 importedVer 声明处那段注释——注释里复述了这个依赖数组。改成按 } , [ 开头做指纹。写源码级守卫时要留意：解释性注释本身也是源码，会被自己的正则命中。",
+      "⑧【新增 importRefresh.test.js 七条】版本号存在且进了依赖数组、落册回调推版本号、GlobalOverlays 解构并下传 onImportWorld、当前据点传到位、默认全勾与全选钮与按勾选数落册、finish 的参数向后兼容、勾掉的人不算进会出现的计数。",
+      "验证：vitest 711/711（新增 7 条）；pages build 通过；propsCheck 1475 属性全解析；文件树 219→220、33→34 份测试。",
+    ],
+  },
+  {
     codename: "横条素材改 9-slice、面板底纹改平铺、左栏名单居中——全屏化的连带视觉债",
     time: "2026-07-30 15:30",
     notes: [

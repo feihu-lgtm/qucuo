@@ -45,7 +45,7 @@ export default function GlobalOverlays({
   showTutorial, closeTutorial,
   showVersionHistory, setShowVersionHistory,
   showCharacterPage, setShowCharacterPage, characterPageTarget, setCharacterPageTarget,
-  showCardImport, setShowCardImport, onImportNpcs, onImportPlayer,
+  showCardImport, setShowCardImport, onImportNpcs, onImportPlayer, onImportWorld,
   claimedMilestones, claimMilestone, giftToCharacter,
   showQuestLog, setShowQuestLog,
   showLore, setShowLore,
@@ -79,6 +79,8 @@ export default function GlobalOverlays({
           zoneTheme={zoneTheme}
           onImportNpcs={onImportNpcs}
           onImportPlayer={onImportPlayer}
+          onImportWorld={onImportWorld}
+          currentDistrict={room.name}
         />
       )}
 
