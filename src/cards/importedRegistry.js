@@ -88,6 +88,11 @@ export function registerImported(npcs, meta = {}) {
       name: n.name,
       aliases: Array.isArray(n.aliases) ? n.aliases : [],
       entry: n.entry || "",
+      // 原卡正文一字不动地留着，只给审改界面对照用，不进任何 prompt。
+      // 【为什么要留】entry 是 AI 重写过的凝练版（120 字、第三人称、剥掉小标题与
+      // 占位符），玩家要判断它写得准不准，手边就得有原文。落册后再回看也一样。
+      rawEntry: n.rawEntry || "",
+      entryFromAi: !!n.entryFromAi,
       brief: n.brief || n.name,
       appearance: n.appearance || "",
       attitude: n.attitude || "",
@@ -291,10 +296,17 @@ export function clearImported() {
  * 那些手写条目的写法保持一致（预设里就是把外貌锚点写在人设正文里的）。
  */
 export function getImportedNpcLore() {
+  // isWorld 标记：这些条目走同一条关键词点灯的路（那个判断对地理一样适用），
+  // 但**不能跟人物混在同一个注入块里**。buildNpcLoreBlock 给人物写的外壳是
+  //「此刻在场人物设定（这些人真的站在这个场景里）」和「仅被提及、并不在场的
+  // 人物设定（…绝不能让他们凭空出现、开口说话…）」——地理条目落进后者，说书人
+  // 就会读到「锦官城 是一个被提及但不在场的人物，不能让他开口说话」。
+  // 实测确认过这个输出。机制可以共用，外壳文案不能。
   const world = (_registry.world || []).map(w => ({
     name: w.label,
     aliases: w.keys.filter(k => k !== w.label),
     entry: `- ${w.label}：${w.content}`,
+    isWorld: true,
   }));
   return [...world, ..._registry.chars.map(c => {
     const tail = [

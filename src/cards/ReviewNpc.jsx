@@ -14,7 +14,7 @@ import {
   Section, Note, Pills, Step, selStyle,
 } from "./ReviewParts.jsx";
 import { normalizePlacement } from "./importedRegistry.js";
-import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose } from "./scanPrompts.js";
+import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose, LORE_MAX } from "./scanPrompts.js";
 import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "./placementPlan.js";
 import { acquire } from "./rateLimiter.js";
 import { MOVE_ARCHETYPES, resolveArchetype } from "../combat/moveArchetypes.js";
@@ -405,6 +405,44 @@ function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
   );
 }
 
+// 原卡正文对照。
+// 【为什么默认摊开而不是折叠】它存在的唯一理由就是让玩家判断上面那段重写得准不准。
+// 折起来就得多点一下，多点一下就不会有人看，那这一份数据留着也没意义。
+// 限高滚动是必须的：中文卡池里正文上千字很常见，实测一张普通卡 397 字、动漫角色
+// 卡三千字的也有，摊开会把下面十几个 Section 全推走。
+function RawEntryCompare({ raw }) {
+  const [open, setOpen] = useState(true);
+  const n = String(raw || "").length;
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div onClick={() => setOpen(o => !o)}
+        style={{
+          cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+          fontSize: 10.5, color: "#8a8270", userSelect: "none",
+          padding: "3px 0", borderTop: "1px solid #2a2419",
+        }}>
+        <span style={{ color: "#6a6250", width: 10 }}>{open ? "▾" : "▸"}</span>
+        <span>对照原卡正文</span>
+        <span style={{ color: "#5a5448" }}>{n} 字</span>
+        <span style={{
+          fontSize: 9, color: "#7a6a60", border: "1px solid #3a3028",
+          borderRadius: 2, padding: "0 4px",
+        }}>不注入</span>
+      </div>
+      {open && (
+        <div style={{
+          maxHeight: "min(26vh, 280px)", overflowY: "auto",
+          padding: "7px 10px", marginTop: 4,
+          background: "rgba(0,0,0,.3)", border: "1px solid #2a2419", borderRadius: 3,
+          fontSize: 10.5, lineHeight: 1.75, color: "#9a8f7a",
+          whiteSpace: "pre-wrap", wordBreak: "break-word",
+          userSelect: "text",
+        }}>{raw}</div>
+      )}
+    </div>
+  );
+}
+
 // ── 立绘 ──────────────────────────────────────────────────────────────────────
 
 // 现成立绘只有这十张（assets/portraits/），都是既有 NPC 的。让入册角色借用一张
@@ -716,8 +754,31 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
       </div>
 
       {/* 4 人设正文 */}
-      <Section title="人设正文（注入 2／6 号位，不外显）">
-        <TextField label={null} rows={7} value={n.entry} onChange={v => onPatch({ entry: v })} />
+      <Section title={<>
+        人设正文（注入 2／6 号位，不外显）
+        {n.entryFromAi
+          ? <Src source="ai" why="按本作格式重写过" />
+          : <Src source="fallback" />}
+        <span style={{ fontSize: 10, color: (n.entry || "").length > LORE_MAX ? "#d89080" : "#8a8270", marginLeft: 6 }}>
+          {(n.entry || "").length}/{LORE_MAX} 字
+        </span>
+      </>}>
+        <TextField label={null} rows={5} max={LORE_MAX}
+          value={n.entry} onChange={v => onPatch({ entry: v })} />
+
+        {n.entryFromAi ? (
+          <Note tone="info">
+            这段是 AI 按本作格式重写过的：第三人称、只写性格与行为、剥掉了原卡的小标题与
+            占位符。外貌与初见态度各有专门字段承接，所以这里不该再出现。对照下面的原文改。
+          </Note>
+        ) : n.rawEntry ? (
+          <Note tone="warn">
+            AI 没出重写版，这段是原卡正文清洗后顶上的——占位符与行首小标题已剥掉、压成了单行，
+            但第二人称「你」、外貌重复、说话例句这些还在。建议照下面的原文自己改一遍。
+          </Note>
+        ) : null}
+
+        {n.rawEntry ? <RawEntryCompare raw={n.rawEntry} /> : null}
       </Section>
 
       {/* 5 外貌锚点 */}

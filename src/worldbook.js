@@ -42,7 +42,7 @@ export function matchNpcLore(npcLore, ctx = {}) {
     const mentioned = keys.some(k => scanText.includes(k));
 
     if (inScene || mentioned) {
-      matched.push({ name: npc.name, entry: npc.entry, reason: inScene ? "在场" : "被提及" });
+      matched.push({ name: npc.name, entry: npc.entry, reason: inScene ? "在场" : "被提及", isWorld: !!npc.isWorld });
     }
   }
   return matched;
@@ -111,14 +111,24 @@ export function gateScenario(scenario, ctx = {}) {
 // 这里把两类分段展示、并在"被提及"段落上加一条硬性提示。
 export function buildNpcLoreBlock(matched) {
   if (!matched || !matched.length) return "";
-  const present = matched.filter(m => m.reason === "在场");
-  const mentioned = matched.filter(m => m.reason !== "在场");
+  // 先把非人条目分出去。入册的世界观条目（地理／势力／规矩／物件）跟人物共用同一
+  // 套关键词点灯——那个判断对地理一样适用——但绝不能共用同一个注入外壳：下面两段
+  // 的文案是专门针对人写的，"绝不能让他们凭空出现、开口说话"这种指令套在「锦官城」
+  // 头上纯属噪音，甚至可能让说书人真把它当成一个人处理。
+  // 实测确认过这个输出：一条地理条目落进"仅被提及的人物设定"段里。
+  const world = matched.filter(m => m.isWorld);
+  const people = matched.filter(m => !m.isWorld);
+  const present = people.filter(m => m.reason === "在场");
+  const mentioned = people.filter(m => m.reason !== "在场");
   let out = "";
   if (present.length) {
     out += `\n\n【此刻在场人物设定】（这些人真的站在这个场景里，此刻正对着玩家）\n${present.map(m => m.entry.trim()).join("\n")}`;
   }
   if (mentioned.length) {
     out += `\n\n【仅被提及、并不在场的人物设定】（这些人只是被聊到、被提起，此刻并不在这个场景里——你可以在对话/心理活动里自然提到他们，但绝不能让他们凭空出现在这个场景、开口说话或有任何实际登场的动作，除非玩家真的移动到他们所在之处）\n${mentioned.map(m => m.entry.trim()).join("\n")}`;
+  }
+  if (world.length) {
+    out += `\n\n【相关地理与势力】（这些是本轮提到的地点、门派、规矩或物件，**不是人**，不会说话也不会登场。写到它们时按这份设定写，不要另编）\n${world.map(m => m.entry.trim()).join("\n")}`;
   }
   return out;
 }

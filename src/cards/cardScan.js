@@ -15,7 +15,7 @@ import * as store from "./scanStore.js";
 import {
   buildStage1, buildStage2, buildStage3, buildStage4,
   parseJsonLoose, sanitizeSpecial, sanitizeLevelCap, sanitizeAffection,
-  sanitizeMilestones, sanitizeBrief, sanitizeGongfu, sanitizeMoves,
+  sanitizeMilestones, sanitizeBrief, sanitizeGongfu, sanitizeMoves, sanitizeLore,
   FALLBACK_SPECIAL, FALLBACK_LEVEL_CAP, FALLBACK_MILESTONES, SLOT_DEFAULT_ARCHETYPE, MOVE_SLOTS,
 } from "./scanPrompts.js";
 import { groupEntriesByKeys, groupToNpcLore } from "./cardParse.js";
@@ -355,7 +355,7 @@ export async function runScan(parsed, callModel, cfg, opts = {}) {
       continue;
     }
     if (jsonBroken) {
-      const got = batch.map(p => fallbackNpc(p));
+      const got = batch.map(p => fallbackNpc(p, playerName));
       store.saveStage(md5, 2, got, bi);
       npcs.push(...got);
       continue;
@@ -373,7 +373,7 @@ export async function runScan(parsed, callModel, cfg, opts = {}) {
       const built = buildStage2(batch, { playerName, genre });
       const out = await callWithRetry(callModel, cfg, built, opts, ctx);
       report.calls++;
-      got = normalizeStage2(out, batch);
+      got = normalizeStage2(out, batch, playerName);
     } catch (err) {
       if (err.code === "SCAN_ABORTED") throw err;
       report.failures.push({ stage: 2, batch: bi, size: batch.length, code: err.code, msg: err.message });
@@ -401,7 +401,7 @@ export async function runScan(parsed, callModel, cfg, opts = {}) {
             const built = buildStage2(sub, { playerName, genre });
             const out = await callWithRetry(callModel, cfg, built, opts, ctx);
             report.calls++;
-            acc.push(...normalizeStage2(out, sub));
+            acc.push(...normalizeStage2(out, sub, playerName));
           }
           got = acc;
         } catch (err2) {
@@ -414,7 +414,7 @@ export async function runScan(parsed, callModel, cfg, opts = {}) {
       }
     }
 
-    if (!got) got = batch.map(p => fallbackNpc(p));
+    if (!got) got = batch.map(p => fallbackNpc(p, playerName));
     store.saveStage(md5, 2, got, bi);   // 拿到就存，不攒
     npcs.push(...got);
   }
@@ -486,17 +486,23 @@ export async function runScan(parsed, callModel, cfg, opts = {}) {
 
 // AI 输出一律过一遍清洗：数值钳到合法区间、字段截长度、缺项补兜底。
 // 每条带 source 标记，UI 据此显示"AI 抽的"还是"默认值"。
-function normalizeStage2(out, batch) {
+function normalizeStage2(out, batch, playerName) {
   const arr = Array.isArray(out?.人物) ? out.人物 : (Array.isArray(out) ? out : []);
   return batch.map((p, i) => {
     const raw = arr.find(x => Number(x?.i) === i) || arr[i] || null;
-    if (!raw) return fallbackNpc(p);
+    if (!raw) return fallbackNpc(p, playerName);
     const brief = sanitizeBrief(raw.brief);
     const levelCap = sanitizeLevelCap(raw.levelCap);
     return {
       name: p.name,
       aliases: p.aliases,
-      entry: p.entry,
+      // entry 是真正注入给说书人的那段，走 AI 重写的凝练版；AI 没出到就拿原卡
+      // 正文清洗后顶上（比整段三千字灌进去好，但会残留第二人称，UI 会标出来）。
+      // rawEntry 保留原卡正文一字不动，只在审改界面给玩家对照，不进任何 prompt。
+      entry: sanitizeLore(raw.人设, { playerName, charName: p.name })
+        || sanitizeLore(p.entry, { playerName, charName: p.name }),
+      entryFromAi: !!String(raw.人设 || "").trim(),
+      rawEntry: p.entry || "",
       brief: brief || sanitizeBrief(p._parts?.[0]) || p.name,
       briefWhy: String(raw.brief_why || "").slice(0, 20),
       levelCap,
@@ -522,11 +528,14 @@ function normalizeStage2(out, batch) {
   });
 }
 
-function fallbackNpc(p) {
+function fallbackNpc(p, playerName) {
   return {
     name: p.name,
     aliases: p.aliases,
-    entry: p.entry,
+    // AI 整批失败，没有凝练版可用，只能拿原卡正文清洗后顶上
+    entry: sanitizeLore(p.entry, { playerName, charName: p.name }),
+    entryFromAi: false,
+    rawEntry: p.entry || "",
     brief: sanitizeBrief(p._parts?.[0]) || p.name,
     briefWhy: "",
     levelCap: FALLBACK_LEVEL_CAP,
