@@ -9,6 +9,22 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "角色入册重构：入册只导 NPC（认人后选当众人／只当传闻）、导主角挪到开始界面、导入 NPC 可入队",
+    time: "2026-07-30 19:30",
+    notes: [
+      "把「角色入册」和「导入一张卡当自己」这两件本就不同的事拆开，并让导入的人也能当队友。",
+      "①【入册撤掉界面里的「当我自己」】那个勾选只在开局前有意义（角色一旦建好，再导就是覆盖），却一直摆在常规入册里。现在 asPlayer 不再是界面里的临时勾选，改由入口参数 playerMode 决定：常规「角色入册」playerMode=false，只把别人写进江湖；导主角另走开始界面的独立入口。底层扫描与导主角能力全保留，只是界面不再暴露这个开关。",
+      "②【认人后加一行「当江湖众人／只当背景传闻」】AI 通读认完人，名单上方先让玩家定这批人怎么插入：当江湖众人即正常落册成 NPC、会真出现在据点、可结交切磋；只当背景传闻即不进 NPC 名单，只把设定塞世界书、被提到时才浮现（走 registerImportedWorld 那条关键词点灯的路，认完人就够，不必再烧扫描调用）。",
+      "③【选「当江湖众人」扫完自动跑荐位】以前扫完还要玩家手点「AI 一键规划落脚」。现在一进过目页就自动按营生跑一遍荐位（用 ref 保证只自动跑一次，planBusy 之外再兜一层防 StrictMode 双触发），底部那个手动按钮保留作重跑入口。",
+      "④【开始界面「开始游戏」改成二选一】点开始先选：新建角色／导入卡当自己。后者以 playerMode 打开入册走导主角流程，导完直接进 CharacterCreate——复用现成的 setPendingPlayerCard 存待用卡、CharacterCreate 读取那条管道，没重造。中途关掉没导则退回菜单，不擅自开新局。",
+      "⑤【导入 NPC 可动态入队】此前伙伴写死四个具名槽（雪豹／珍珠／墨团／明日香），导入的人没资格。现在 companion.js 支持用 imported_名字 作 key 动态挂在 companionState 上：createImportedCompanion 按它入册时配的品阶／七维／内外功建战斗数据（缺的按品阶兜底，招式经 getImportedSignatureMoves 读，没配则按品阶随机），产出形状与 createSnowLeopard 一致，buildLeopardUnit 直接能用，战斗引擎 teamUnits.js 一行没改。出战仍是单槽互斥（同时只带一个），导入的人共抢这唯一出战位。",
+      "⑥【入队即消失·重进不重现】NpcActionMenu 的「邀请入队」对导入 NPC（npc.imported）放开；handleInviteCompanion 走 unlockImportedCompanion 动态登记；入队瞬间从当前房间移除（认 companionCandidate 或 imported）；重进据点不再作为路人注入——getImportedForDistrict 调用处按 isCompanionUnlockedByName 过滤，跟内置驻场兽入队即消失同理。activeCompanion／setActiveCompanion／unlockedCompanions 全改成遍历 allCompanionKeys（内置加动态）。",
+      "⑦【导入伙伴的人设走关键词注入】它没有雪豹那种兽形／人形专属 COMPANION_LORE，roundNotes 的 companionLore 有 COMPANION_LORE 键位守卫会安全跳过（跟明日香同待遇），人设改由 getImportedNpcLore 在名字被提到时点灯注入。够用但不是每轮铁定在场，日后要加可单独接。",
+      "⑧【栽了一次守卫误报·已改】给 CardImportScreen 的 playerMode 参数前面写了六行注释，propsFlow.mjs 按纯参数列表解析解构块、被注释挡住漏认了这个 prop，误报「传了没解构」，一度 732/733。解构块里不要插多行注释，说明一律移到函数定义上方。",
+      "验证：vitest 733/733 全过；pages build 通过。入册认人／自动荐位／队友入队实战依赖 AI 调用与角色卡，需在真实环境走一遍验收。",
+    ],
+  },
+  {
     codename: "跨文件契约集中对账（14 条）＋文件树补全 scripts 与 public＋守卫覆盖 npm 脚本路径",
     time: "2026-07-30 18:40",
     notes: [
