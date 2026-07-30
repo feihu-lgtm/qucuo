@@ -28,10 +28,19 @@ import ReviewPlayer from "./cards/ReviewPlayer.jsx";
 
 const EMPTY_SPECIAL = { 根骨: 5, 悟性: 5, 体魄: 5, 魅力: 5, 智谋: 5, 身法: 5, 气运: 5 };
 
+// 【为什么 asPlayer 改由入口(playerMode)决定，不再是界面里的勾选】
+// 「角色入册」这个入口只做一件事：把别人写进江湖（NPC／世界观）。
+// 「这张卡当我自己」只在开局前有意义（角色一旦建好，再导就是覆盖），已挪到开始
+// 界面的「开始游戏 → 导入卡当自己」独立入口——那个入口以 playerMode 打开本组件走
+// 导主角流程；常规入册 playerMode=false，界面上不再出现「当我自己」，代之以认人后
+// 名单上方的「当江湖众人／只当背景传闻」一行。
+// 注意：解构块里不要插多行注释——scripts/propsFlow.mjs 的守卫按纯参数列表解析，
+// 内嵌注释会让它漏认后面的 prop、误报「传了没解构」。
 export default function CardImportScreen({
   onClose, apiCfg, playerName = "少侠",
   onImportNpcs, onImportPlayer, onImportWorld, zoneTheme,
   currentDistrict = "",
+  playerMode = false,
 }) {
   const accent = zoneTheme?.accent || "#d4a853";
 
@@ -45,7 +54,12 @@ export default function CardImportScreen({
   const [err, setErr] = useState("");
   const [dragOver, setDragOver] = useState(false);
 
-  const [asPlayer, setAsPlayer] = useState(false);
+  // 是否把这张卡当主角：只由入口(playerMode)决定，界面里不再让玩家临时勾。
+  const asPlayer = playerMode;
+  // 常规入册的插入方式（认人后玩家在名单上方选）：
+  //   "npc"  当江湖众人——正常扫描、落册成 NPC，扫完自动跑一遍荐位
+  //   "lore" 只当背景传闻——不进 NPC 名单，只把设定塞世界书，被提及时才浮现
+  const [insertMode, setInsertMode] = useState("npc");
   const [picked, setPicked] = useState(() => new Set());
   const [openingIdx, setOpeningIdx] = useState(0);
 
@@ -245,6 +259,27 @@ export default function CardImportScreen({
     ...r, world: r.world.map((w, j) => (j === i ? { ...w, ...patch } : w)),
   }));
 
+  // 「只当背景传闻」：不扫描、不落册成 NPC，直接把选中人的设定作为世界书条目导入
+  // （走 registerImportedWorld 那条关键词点灯的路，跟地理／势力同源）。他们不进
+  // NPC 名单、不出现在任何据点，只在正文提到名字时把设定注入 prompt。
+  // 【为什么在这一步就分流】扫描/审改那一整套是为「成为江湖人物」准备的（补数值、
+  // 招式、里程碑、落脚），传闻只需要人设文本，认完人就够了，没必要再烧调用。
+  const importAsLore = () => {
+    const pool = classified ? classified.people : parsed.npcLoreCandidates;
+    const items = pool
+      .filter(c => picked.has(c.name))
+      .map(c => ({
+        label: c.name,
+        kind: "person",
+        keys: [c.name, ...(c.aliases || [])].filter(Boolean),
+        content: String(c.entry || "").trim(),
+      }))
+      .filter(w => w.content);
+    pushTerm("done", `收作背景传闻 ${items.length} 条（只在被提到时浮现）`, "传闻");
+    if (items.length && onImportWorld) onImportWorld(items);
+    onClose?.();
+  };
+
   // 【为什么接一个参数】审改页现在可以只勾一部分人加入——一张卡里常有几个纯粹
   // 的背景人物，玩家未必想把他们都塞进江湖。不传就按全部处理（老行为）。
   const finish = (npcsToImport) => {
@@ -317,12 +352,13 @@ export default function CardImportScreen({
           {(stage === "parsed" || stage === "scanning") && parsed && (
             <ParsedPane
               parsed={parsed} accent={accent} plan={plan} stage={stage}
-              asPlayer={asPlayer} setAsPlayer={setAsPlayer}
+              playerMode={playerMode} asPlayer={asPlayer}
+              insertMode={insertMode} setInsertMode={setInsertMode}
               picked={picked} setPicked={setPicked}
               classified={classified} classifying={classifying} onClassify={doClassify}
               openingIdx={openingIdx} setOpeningIdx={setOpeningIdx}
               waitMs={waitMs} err={err} term={term} onExpandTerm={() => setTermBig(true)}
-              onScan={doScan} onSkip={skipScan}
+              onScan={doScan} onSkip={skipScan} onImportLore={importAsLore}
               onAbort={() => { abortRef.current.aborted = true; }}
             />
           )}
@@ -333,6 +369,7 @@ export default function CardImportScreen({
               patchNpc={patchNpc} patchPlayer={patchPlayer} patchWorld={patchWorld}
               setResult={setResult} asPlayer={asPlayer} apiCfg={apiCfg} cardImage={cardImage}
               currentDistrict={currentDistrict}
+              autoPlace={insertMode === "npc" && !playerMode}
               term={term} onExpandTerm={() => setTermBig(true)}
               onBack={() => setStage("parsed")} onFinish={finish}
             />
@@ -403,8 +440,9 @@ function EmptyPane({ dragOver, setDragOver, err, onPick, onFile, accent }) {
 // ── 归类与勾选 ────────────────────────────────────────────────────────────────
 
 function ParsedPane({
-  parsed, accent, plan, stage, asPlayer, setAsPlayer, picked, setPicked,
-  openingIdx, setOpeningIdx, waitMs, err, onScan, onSkip, onAbort, term, onExpandTerm,
+  parsed, accent, plan, stage, playerMode, asPlayer, insertMode, setInsertMode,
+  picked, setPicked,
+  openingIdx, setOpeningIdx, waitMs, err, onScan, onSkip, onImportLore, onAbort, term, onExpandTerm,
   classified, classifying, onClassify,
 }) {
   const { card, report, npcLoreCandidates, unclassified, worldCandidates, metaEntries } = parsed;
@@ -462,13 +500,7 @@ function ParsedPane({
       </div>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Bar right={
-          <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, color: "#d8c8a0" }}>
-            <input type="checkbox" checked={asPlayer} disabled={scanning}
-              onChange={e => setAsPlayer(e.target.checked)} />
-            这张卡也当我自己
-          </label>
-        }>入册名单</Bar>
+        <Bar>{playerMode ? "导入为主角" : "入册名单"}</Bar>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "10px 14px" }}>
           {!classified && !scanning && (
@@ -497,6 +529,24 @@ function ParsedPane({
               <span style={{ flex: 1 }} />
               <span onClick={onClassify} title="重新认一遍（走缓存，不额外花调用）"
                 style={{ cursor: "pointer", color: "#6a6250" }}>重认</span>
+            </div>
+          )}
+          {classified && !scanning && !playerMode && (
+            <div style={{
+              marginBottom: 11, padding: "9px 11px", borderRadius: 4,
+              background: "rgba(0,0,0,.22)", border: "1px solid #2a2419",
+            }}>
+              <div style={{ fontSize: 10.5, color: "#8a8270", marginBottom: 6 }}>这批人想怎么插入曲措乡</div>
+              <Pills accent={accent} value={insertMode} onChange={setInsertMode}
+                options={[
+                  { value: "npc", label: "当江湖众人", title: "正常入册成 NPC，会真的出现在据点、可结交切磋；扫完自动按营生荐位" },
+                  { value: "lore", label: "只当背景传闻", title: "不进名单，只把设定塞进世界书，被提到时才浮现" },
+                ]} />
+              <div style={{ fontSize: 10, color: "#6a6250", marginTop: 6, lineHeight: 1.6 }}>
+                {insertMode === "npc"
+                  ? "选中的人会成为真正的江湖人物，需要 AI 补一版数值与落脚。"
+                  : "选中的人不出现在任何据点，只作为被提及时注入的传闻设定。"}
+              </div>
             </div>
           )}
           {!cands.length && (
@@ -572,6 +622,11 @@ function ParsedPane({
           <span style={{ flex: 1 }} />
           {scanning ? (
             <Btn onClick={onAbort} tone="warn">中断</Btn>
+          ) : (insertMode === "lore" && !playerMode) ? (
+            <Btn onClick={onImportLore} tone="main" disabled={!picked.size}
+              title={picked.size ? "把选中的人收作被提及时才浮现的传闻设定" : "先勾几个人"}>
+              收作背景传闻 {picked.size} 人
+            </Btn>
           ) : (
             <>
               <Btn onClick={onSkip} tone="dim" title="不调 AI，全部用默认值，之后自己改">跳过，手填</Btn>
@@ -595,7 +650,7 @@ function ParsedPane({
 function ReviewPane({
   parsed, result, accent, detail, setDetail, patchNpc, patchPlayer, patchWorld,
   setResult, asPlayer, onBack, onFinish, term, onExpandTerm, apiCfg, cardImage,
-  currentDistrict,
+  currentDistrict, autoPlace = false,
 }) {
   const cur = detail >= 0 ? result.npcs[detail] : null;
 
@@ -675,6 +730,18 @@ function ReviewPane({
     ].filter(Boolean).join("，"));
     setPlanBusy(false);
   };
+
+  // 「当江湖众人」流程：一进过目页就自动按营生跑一遍荐位，不必玩家手点。
+  // 【为什么用 ref 而不只靠 planBusy】planBusy 是异步置起的，StrictMode 双挂载
+  // 或 result 变化可能在它置起前重入；autoRanRef 保证这辈子只自动跑一次。玩家仍
+  // 可用底部「AI 一键规划落脚」手动重跑，那条路不看这个 ref。
+  const autoRanRef = useRef(false);
+  useEffect(() => {
+    if (!autoPlace || autoRanRef.current || !result.npcs.length) return;
+    autoRanRef.current = true;
+    planAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlace]);
 
   // 卡里被本作丢弃的东西，列给玩家看一眼，别让它们悄悄消失
   const dropped = useMemo(() => {
@@ -768,7 +835,7 @@ function ReviewPane({
           {cur ? cur.name : "我自己"}
         </Bar>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 28px" }}>
           {cur ? (
             <ReviewNpc npc={cur} accent={accent} dropped={dropped} apiCfg={apiCfg} cardImage={cardImage}
               currentDistrict={currentDistrict}

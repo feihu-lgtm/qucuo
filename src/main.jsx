@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import MudRPG from "./MudRPG.jsx";
 import StartScreen from "./StartScreen.jsx";
@@ -61,6 +61,10 @@ function App() {
   // 就走 showCharCreate 的 early return（设置面板和 GlobalOverlays 都在那之后），
   // 从开始界面点设置压根到不了浮层那一层。所以开局前的入册独立挂在 App 上。
   const [inCardImport, setInCardImport] = useState(false);
+  // 入册的两种用途：常规入册(false，只导 NPC/世界观) vs 导入卡当自己(true，做主角开局)。
+  const [cardImportPlayerMode, setCardImportPlayerMode] = useState(false);
+  // 「导入卡当自己」界面里是否真的落了一张主角卡——决定关闭后是进新开局还是回菜单。
+  const importedSelfRef = useRef(false);
 
   if (inQuickBattle) {
     return <QuickBattleScreen onExit={() => setInQuickBattle(false)} />;
@@ -74,10 +78,22 @@ function App() {
       <CardImportScreen
         apiCfg={loadConfig()}
         playerName="少侠"
+        playerMode={cardImportPlayerMode}
         zoneTheme={getZoneTheme("鱼定村", false)}
-        onClose={() => setInCardImport(false)}
+        onClose={() => {
+          setInCardImport(false);
+          // 「导入卡当自己」确实导入了主角卡 → 直接进新开局，CharacterCreate 会读到
+          // 待用卡问玩家用不用；中途关掉没导则退回开始界面（不擅自开新局）。
+          if (cardImportPlayerMode && importedSelfRef.current) {
+            setPendingLoadSlotId("new");
+            setOpenSettingsOnBoot(false);
+            setBooted(true);
+          }
+          setCardImportPlayerMode(false);
+          importedSelfRef.current = false;
+        }}
         onImportNpcs={(npcs) => { importedRegistry.registerImported(npcs, {}); }}
-        onImportPlayer={(player) => { importedRegistry.setPendingPlayerCard(player); }}
+        onImportPlayer={(player) => { importedRegistry.setPendingPlayerCard(player); importedSelfRef.current = true; }}
         onImportWorld={(items) => { importedRegistry.registerImportedWorld(items, {}); }}
       />
     );
@@ -104,7 +120,16 @@ function App() {
           setOpenSettingsOnBoot(true);
           setBooted(true);
         }}
+        onStartImportSelf={() => {
+          // 开始游戏 → 导入卡当自己：以 playerMode 打开入册，走导主角流程
+          importedRegistry.init().then(() => {
+            setCardImportPlayerMode(true);
+            setInCardImport(true);
+          });
+        }}
         onOpenCardImport={() => {
+          // 常规「角色入册」：只导 NPC / 世界观，playerMode 恒 false
+          setCardImportPlayerMode(false);
           importedRegistry.init().then(() => setInCardImport(true));
         }}
         onQuickBattle={() => setInQuickBattle(true)}

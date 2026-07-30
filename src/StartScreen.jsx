@@ -13,13 +13,14 @@ import { CURRENT_VERSION } from "./version.js";
 
 const theme = ZONE_THEMES.village; // 开场定调：鱼定村的暖黄烟火气
 
-export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onOpenCardImport, onQuickBattle, onExit }) {
+export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, onOpenSettings, onOpenCardImport, onQuickBattle, onExit }) {
   const [hasAutoSave, setHasAutoSave] = useState(false);
   const [showBugReport, setShowBugReport] = useState(false); // 意见信箱/上报bug
   const [showVersionHistory, setShowVersionHistory] = useState(false); // 版本日志（轻量按钮，跟内页共用同一份VersionHistoryPanel + 同一份version.js数据源）
   const [slots, setSlots] = useState([]);
   const [hovered, setHovered] = useState(null);
   const [showLoadPanel, setShowLoadPanel] = useState(false);
+  const [showStartChoice, setShowStartChoice] = useState(false); // 开始游戏→二选一：新建 / 导入卡当自己
   // 访客计数（图个乐呵，图个人气）：借已接好的 Supabase 当账本（见 visitorCount.js）。
   // 两个口径：侠客数（按浏览器本地 UUID 去重，同设备算一人）+ 总人次（每次访问 +1）。
   // 带失败降级：服务挂了/超时/被墙，数字保持 null，footer 那行静默不显示，
@@ -41,7 +42,7 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onOpe
   const hasAnySave = hasAutoSave || slotCount > 0;
 
   const menuItems = [
-    { key: "start", label: "开始游戏", sub: "踏入曲措乡", action: onStart, always: true },
+    { key: "start", label: "开始游戏", sub: "踏入曲措乡", action: () => setShowStartChoice(true), always: true },
     {
       key: "load",
       label: "加载游戏",
@@ -55,6 +56,40 @@ export default function StartScreen({ onStart, onLoadSlot, onOpenSettings, onOpe
     { key: "settings", label: "设置", sub: "API · 显示 · 存档管理", action: onOpenSettings, always: true },
     { key: "exit", label: "退出", sub: "合上此卷", action: onExit, always: true },
   ];
+
+  if (showStartChoice) {
+    return (
+      <div style={styles.container(theme)}>
+        <div style={styles.vignette} />
+        <div style={styles.loadPanel(theme)}>
+          <div style={styles.loadPanelTitle(theme)}>新的旅程</div>
+          <div style={styles.loadPanelList}>
+            <button
+              style={styles.loadPanelItem(theme, hovered === "new")}
+              onMouseEnter={() => setHovered("new")}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => { setShowStartChoice(false); onStart(); }}
+            >
+              <span style={styles.loadPanelLabel}>新建角色</span>
+              <span style={styles.loadPanelMeta(theme)}>从头创建你的少侠</span>
+            </button>
+            <button
+              style={styles.loadPanelItem(theme, hovered === "importself")}
+              onMouseEnter={() => setHovered("importself")}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => { setShowStartChoice(false); onStartImportSelf?.(); }}
+            >
+              <span style={styles.loadPanelLabel}>导入角色卡当自己</span>
+              <span style={styles.loadPanelMeta(theme)}>拿一张外部角色卡做主角开局</span>
+            </button>
+          </div>
+          <button style={styles.backButton(theme)} onClick={() => setShowStartChoice(false)}>
+            ← 返回
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (showLoadPanel) {
     return (

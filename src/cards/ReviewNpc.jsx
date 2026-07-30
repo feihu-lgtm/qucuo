@@ -702,18 +702,19 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
       {/* AI 的判断依据。撕纸条底，跟随身物那边自造物品的提示同一套视觉 */}
       {why ? (
         <div style={{
-          marginTop: 9, padding: "9px 14px",
+          marginTop: 9, marginBottom: 6, padding: "9px 14px",
           backgroundImage: `url('${S("ui/note_torn.webp")}')`,
           backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
+          boxShadow: "0 2px 6px rgba(0,0,0,.45)",
           display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap",
         }}>
           <span style={{
-            fontSize: 9, color: "#9ac088", border: "1px solid #4a6a48",
+            fontSize: 9, color: "#2f5e2c", border: "1px solid #3a6a38",
             borderRadius: 2, padding: "0 4px", flexShrink: 0,
           }}>AI 荐位</span>
-          <span style={{ fontSize: 10.5, lineHeight: 1.6, color: "#d8c4a0" }}>{why}</span>
+          <span style={{ fontSize: 10.5, lineHeight: 1.6, color: "#43331c" }}>{why}</span>
           {rejected && (
-            <span style={{ fontSize: 10, color: "#d89080" }}>
+            <span style={{ fontSize: 10, color: "#a8443a" }}>
               · 它给的据点不在本作地图里，已退回不落地，请自己选
             </span>
           )}

@@ -301,10 +301,11 @@ export function isAsukaAvailable(companionState) {
 }
 
 // ── 出战位：同时只带一个 ─────────────────────────────────────────────
-// 【为什么改成单槽互斥】战斗引擎是 2v2（玩家+1 队友 vs 敌方），第二个队友没有位置。
-// 此前只有雪豹一个候选，"active" 就够用了；现在有两个候选，必须明确"同时只能一个"，
-// 否则 isSnowLeopardAvailable 与 isAsukaAvailable 会同时为真，
-// TeamDuelScreen 拿到两个 leopardData 级别的对象，行为未定义。
+// 【为什么单槽互斥】战斗引擎是 2v2（玩家+1 队友 vs 敌方），第二个队友没有位置。
+// 具名伙伴（雪豹/珍珠/墨团/明日香）+ 玩家入册导入的 NPC 共用这唯一一个出战位——
+// 谁上场谁 active，其余一律留守。COMPANION_SLOTS 只登记内置的具名伙伴；导入的
+// 伙伴是运行时才产生的，用 imported_<名字> 作 key 动态挂在 companionState 上。
+// 下面所有遍历一律走 allCompanionKeys（内置 + 动态），不再只认 COMPANION_SLOTS。
 export const COMPANION_SLOTS = [
   { key: "snowLeopard", label: "雪豹", beast: true },
   { key: "pearl", label: "珍珠", beast: true },
@@ -312,11 +313,84 @@ export const COMPANION_SLOTS = [
   { key: "asuka", label: "明日香", beast: false },
 ];
 
+// ── 导入 NPC 入队 ────────────────────────────────────────────────────
+// 玩家入册的角色也能被邀请入队，跟具名伙伴抢同一个出战位。跟灵兽不同，导入的是
+// 「人」：beast:false、走人类均衡战斗性格（不套雪豹那份纯野兽本能）。数值用它入册
+// 时配的品阶/七维/内外功，缺的按品阶兜底；招式若入册配过，deriveSignatureMoveset
+// 会经 getImportedSignatureMoves 读到，没配则按品阶回退随机。产出形状与
+// createSnowLeopard 一致，buildLeopardUnit 直接能用，战斗引擎无须改动。
+export const IMPORTED_COMPANION_PROFILE = {
+  moveWeights: { 攻击: 0.45, 防御: 0.3, 状态: 0.25 },
+  riskAppetite: 0.5,
+  avoidRepeat: 0.4,
+};
+
+export function importedCompanionKey(name) {
+  return `imported_${name}`;
+}
+
+export function createImportedCompanion(npc) {
+  const levelCap = Number.isFinite(npc?.levelCap) ? npc.levelCap : 1;
+  const special = (npc?.special && Object.keys(npc.special).length)
+    ? { ...npc.special } : generateNpcAttributes({ levelCap });
+  const tier = getTierPower(levelCap);
+  const neigong = Number.isFinite(npc?.neigong) ? npc.neigong : tier.neigong;
+  const waigong = Number.isFinite(npc?.waigong) ? npc.waigong : tier.waigong;
+  const maxHp = hpFromNeigong(neigong, special.体魄 ?? 5);
+
+  const npcShape = {
+    name: npc.name, id: importedCompanionKey(npc.name),
+    levelCap, special, waigong, neigong, baseAtk: tier.baseAtk,
+  };
+  const moveset = deriveSignatureMoveset(npcShape, { levelCap });
+
+  return {
+    ...npcShape,
+    beast: false,
+    profile: IMPORTED_COMPANION_PROFILE,
+    moveset,
+    brief: npc.brief || npc.name,
+    equipAtk: 0, equipDef: 0,
+    combatStats: { hp: [maxHp, maxHp], energy: [10, 10], statusSlots: createEmptyStatusSlots() },
+  };
+}
+
+// 邀请导入 NPC 入队（幂等）。一入队顶上出战位，其余伙伴自动留守（单槽互斥）。
+export function unlockImportedCompanion(companionState, npc) {
+  if (!npc?.name) return companionState;
+  const key = importedCompanionKey(npc.name);
+  const cur = companionState?.[key];
+  if (cur?.unlocked && cur?.data) return companionState;
+  const next = {
+    ...companionState,
+    [key]: { unlocked: true, active: true, data: createImportedCompanion(npc), imported: true, label: npc.name, beast: false },
+  };
+  for (const k of allCompanionKeys(next)) {
+    if (k !== key && next[k]) next[k] = { ...next[k], active: false };
+  }
+  return next;
+}
+
+// companionState 里所有有意义的槽位 key：内置四个 + 运行时动态挂上的导入伙伴。
+function allCompanionKeys(companionState) {
+  const keys = COMPANION_SLOTS.map(s => s.key);
+  for (const k of Object.keys(companionState || {})) if (!keys.includes(k)) keys.push(k);
+  return keys;
+}
+
+// 槽位元信息（label/beast）：内置的从 COMPANION_SLOTS 取，导入的从 state 条目自身取。
+function companionMeta(companionState, key) {
+  const fixed = COMPANION_SLOTS.find(s => s.key === key);
+  if (fixed) return fixed;
+  const c = companionState?.[key];
+  return { key, label: c?.label || c?.data?.name || key, beast: !!c?.beast };
+}
+
 // 当前出战的是谁（没有则 null）。单一真值来源，UI 与战斗都读它。
 export function activeCompanionKey(companionState) {
-  for (const s of COMPANION_SLOTS) {
-    const c = companionState?.[s.key];
-    if (c?.unlocked && c?.active && c?.data) return s.key;
+  for (const key of allCompanionKeys(companionState)) {
+    const c = companionState?.[key];
+    if (c?.unlocked && c?.active && c?.data) return key;
   }
   return null;
 }
@@ -324,13 +398,15 @@ export function activeCompanionKey(companionState) {
 export function activeCompanion(companionState) {
   const k = activeCompanionKey(companionState);
   if (!k) return null;
-  const slot = COMPANION_SLOTS.find(s => s.key === k) || {};
-  return { key: k, label: slot.label, beast: slot.beast, ...companionState[k] };
+  const meta = companionMeta(companionState, k);
+  return { key: k, label: meta.label, beast: meta.beast, ...companionState[k] };
 }
 
-// 已解锁的候选（供 UI 列出可切换的队友）
+// 已解锁的候选（供 UI 列出可切换的队友）。返回 {key,label,beast}，形状同 COMPANION_SLOTS。
 export function unlockedCompanions(companionState) {
-  return COMPANION_SLOTS.filter(s => companionState?.[s.key]?.unlocked && companionState?.[s.key]?.data);
+  return allCompanionKeys(companionState)
+    .filter(k => companionState?.[k]?.unlocked && companionState?.[k]?.data)
+    .map(k => companionMeta(companionState, k));
 }
 
 // 按 NPC 名字查它对应的伙伴槽位（雪豹/珍珠/明日香），不是伙伴候选返回 null。
@@ -342,7 +418,10 @@ export function companionKeyByName(name) {
 // 某个具名伙伴候选是否已解锁（供 NpcActionMenu 判断"邀请入队"按钮要不要收起）。
 export function isCompanionUnlockedByName(companionState, name) {
   const key = companionKeyByName(name);
-  return key ? !!(companionState?.[key]?.unlocked && companionState?.[key]?.data) : false;
+  if (key && companionState?.[key]?.unlocked && companionState?.[key]?.data) return true;
+  // 导入伙伴：按 imported_<名字> 查
+  const ik = importedCompanionKey(name);
+  return !!(companionState?.[ik]?.unlocked && companionState?.[ik]?.data);
 }
 
 // ── 伙伴外貌形态（兽形/人形）文字描述 + 选择器 ────────────────────────
@@ -412,9 +491,9 @@ function firstHumanFormKey(key) {
 // key 传 null 表示谁都不带。
 export function setActiveCompanion(companionState, key) {
   const next = { ...companionState };
-  for (const s of COMPANION_SLOTS) {
-    if (!next[s.key]) continue;
-    next[s.key] = { ...next[s.key], active: s.key === key };
+  for (const k of allCompanionKeys(next)) {
+    if (!next[k]) continue;
+    next[k] = { ...next[k], active: k === key };
   }
   return next;
 }

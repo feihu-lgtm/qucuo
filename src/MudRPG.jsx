@@ -78,7 +78,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { callExtraction, buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable, unlockPearl, unlockAsuka, activeCompanionKey, setActiveCompanion, unlockedCompanions, companionKeyByName } from "./companion.js";
+import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable, unlockPearl, unlockAsuka, activeCompanionKey, setActiveCompanion, unlockedCompanions, companionKeyByName, unlockImportedCompanion, isCompanionUnlockedByName } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -1019,6 +1019,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 反复重算时落点必须稳定，否则一个游走的人会在你走进走出之间闪现。
     const importedNpcs = importedRegistry
       .getImportedForDistrict(room.name, time, (name) => seededRand(Math.floor(time / 24), `imported_${room.name}_${name}`))
+      // 已被邀请入队的导入伙伴不再作为路人注入据点——此后它只以队友身份随玩家在场，
+      // 跟内置驻场兽入队即消失同理（那条走 companionJoined，导入的走 isCompanionUnlockedByName）。
+      .filter(n => !isCompanionUnlockedByName(companionStateRef.current, n.name))
       .map(toRoomNpcWithCombat);
     const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs];
     if (toInject.length === 0) return;
@@ -3240,18 +3243,19 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 走 settle 档 + settleKind:"companion_invite"，让 buildSysBase 注入专属的
   // "前世羁绊/认主"调性铁律（见下方 buildSysBase 里新增的分支）。
   const handleInviteCompanion = useCallback((npc) => {
-    // 伙伴候选（雪豹/珍珠…）按名字分发到各自的解锁函数。其余NPC不会显示这个按钮，
-    // 这里只是双重保险——不是伙伴候选直接返回。
+    // 内置伙伴候选（雪豹/珍珠…）按名字分发到各自的解锁函数；玩家入册导入的 NPC
+    // （npc.imported）走动态登记。都不是的直接返回（双重保险，按钮本就不该出现）。
     const key = companionKeyByName(npc.name);
-    if (!key) return;
     if (key === "snowLeopard") setCompanionState(prev => unlockSnowLeopard(prev));
     else if (key === "pearl") setCompanionState(prev => unlockPearl(prev));
+    else if (npc.imported) setCompanionState(prev => unlockImportedCompanion(prev, npc));
     else return;
     setVarTree(prev => markNpcAsKnown(prev, npc.name));
-    // 入队即时生效：把作为"村口驻场兽"的它从当前房间移除，此地之人/在场名单/互动
-    // 入口当场都不再有它（此后它只以队友身份随玩家在场）。重进村口不再注入，由房间
-    // 注入 effect 的 companionStateRef 过滤保证——两处配合，即时消失 + 永不重现。
-    setRoom(r => ({ ...r, npcs: removeNpc(r.npcs, n => n.name === npc.name && n.companionCandidate) }));
+    // 入队即时生效：把它从当前房间移除，此地之人/在场名单/互动入口当场都不再有它
+    // （此后只以队友身份随玩家在场）。内置驻场兽认 companionCandidate，导入的认
+    // imported。重进据点不再重现：内置的由房间注入 effect 的 companionStateRef 过滤，
+    // 导入的由 getImportedForDistrict 调用处按 isCompanionUnlockedByName 过滤。
+    setRoom(r => ({ ...r, npcs: removeNpc(r.npcs, n => n.name === npc.name && (n.companionCandidate || n.imported)) }));
     setActiveTarget(npc.name);
     act(`向${npc.name}伸出手，郑重邀它同行`, [], { settle: true, settleNpc: npc.name, settleKind: "companion_invite" });
   }, [act]);

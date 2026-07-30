@@ -21,7 +21,7 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
   // 伙伴候选（目前只有雪豹）：官方六件套之外单独一个"邀请入队"按钮，只在
   // 尚未解锁时出现——已经入队的伙伴角色不需要再邀请一次，六件套照常可用
   // （细看/切磋/送礼/拜师/偷窃仍然对已入队的雪豹开放，不因为入队而消失）。
-  const canInvite = !!npc.companionCandidate && !companionUnlocked;
+  const canInvite = (!!npc.companionCandidate || !!npc.imported) && !companionUnlocked;
 
   const ACTIONS = [
     { key: "look", label: "细看", desc: "端详其人", available: true, onClick: () => { onLook(npc); onClose(); } },
