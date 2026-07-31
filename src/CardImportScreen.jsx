@@ -920,11 +920,14 @@ function ReviewPane({
   }, [parsed]);
 
   // ── 向导渲染：asPlayer 走三步，否则走原有的「名单 + 逐个设置」──
+  // 【为什么向导分支要包一层纵向容器】外层 review 容器是横向 flex（flex:1, display:flex），
+  // 只包一个 fragment 的话三个块（导航条/内容区/底部）会被排成一行、全挤在左边。
+  // 加这层 flex:1 + column，让向导自己占满整栏并纵向堆叠。
   return (
     <>
       {/* 开局向导：顶部步骤导航（仿墨色江湖 wizard 骨架）+ 主内容区 + 上一步/下一步 */}
       {asPlayer ? (
-        <>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* 步骤导航条 */}
           <div style={{
             flexShrink: 0, display: "flex", alignItems: "center", gap: 4,
@@ -1236,7 +1239,7 @@ function ReviewPane({
               )}
             </div>
           </div>
-        </>
+        </div>
       ) : (
         /* ── 游戏中常规入册：直接选 NPC 逐个设置（4:6 分栏） ── */
         <>
