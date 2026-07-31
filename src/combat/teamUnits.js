@@ -15,6 +15,7 @@
 
 import { computeEquippedStats, effectiveSpecial, mergeItemEffects } from "../equipment.js";
 import { atkFromWaigong } from "../npcGeneration.js";
+import { effectiveMaxHp } from "../kungfu/qucuoKungfu.js";
 import { createEmptyStatusSlots } from "./statusEffects.js";
 import { getDefaultProfile } from "./personalityProfile.js";
 import { SNOW_LEOPARD_PROFILE } from "../companion.js";
