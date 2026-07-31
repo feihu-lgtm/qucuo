@@ -41,6 +41,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
       giftInfo: d.giftInfo || null,
+      settleBeast: !!d.settleBeast,
       hasNpc: d.visibleNpcsCount > 0,
       inSeaOfMind: !!d.inSeaOfMind,
       gm: d.gm,

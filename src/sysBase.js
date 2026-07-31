@@ -65,8 +65,11 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。这一轮${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，务必写成她欣然收下、态度转暖，不许写成推辞、质疑来意或婉拒不受——这是本轮叙事唯一的走向，不接受其他写法。`;
     }
     if (o.settleKind === "companion_invite") {
-      const cn = o.settleNpc || "它";
-      return `\n【伙伴认主铁律】${cn}与主角之间，非比寻常的人与兽的相逢——这是前世便结下的羁绊，它认准了主角便是这片雪域高原真正的主人，忠贞无二，此心早定，不是这一刻才临时起意。这一轮务必写成${cn}欣然应邀、心意早决——它或以额头抵掌、或绕身一圈、或伏低身姿以示臣服归顺，用兽类特有的、不必言语的方式表明这份认主之心；不许写成犹豫、观望、抗拒或需要主角再三哄劝——${cn}的答应是必然的、毫无保留的，这是本轮叙事唯一的走向，不接受其他写法。它不能说话（cannotSpeak），全程不出人言，情感全靠动作、眼神、姿态传达。`;
+      const cn = o.settleNpc || "对方";
+      const speech = o.settleBeast
+        ? `它不通人言（cannotSpeak），全程不出人言，情感全靠动作、眼神、姿态传达（如以额抵掌、绕身而行、伏低臣服等，用符合它兽类身份的方式）。`
+        : `它（他/她）能正常开口说话，用言语与神情把这份结伴之意表达出来。`;
+      return `\n【伙伴入队铁律】${cn}与主角此刻正式结为同行的伙伴——是主角郑重相邀、${cn}欣然应下，此心已决，不是这一刻才临时起意。这一轮务必写成${cn}爽快应下、就此定下同行情谊；不许写成犹豫、观望、抗拒或需要主角再三哄劝——${cn}的答应是必然的、毫无保留的，这是本轮叙事唯一的走向，不接受其他写法。${speech}`;
     }
     if (o.settleKind === "learn_skill") {
       return `\n【授业传艺铁律】在曲措乡这方江湖里，肯把本事传给一个人，是极重的情分——那意味着认可、托付，也意味着从此多了一层师徒名分。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式都已由系统结算完毕，是既成事实），务必写成他/它郑重其事地把这身功夫交出来、态度较先前更亲近一分；不许写成勉强、敷衍、留一手或临时反悔——这是本轮叙事唯一的走向，不接受其他写法。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
@@ -80,8 +83,11 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。所以这一轮${o.settleNpc}收下${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}时，对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n这件礼物的实际来历（好感幅度请依此掂量分量，越贵重、越用心，情谊越重）：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}${o.giftInfo?.desc ? `。物件描述：${o.giftInfo.desc}` : "（无特别来历，寻常物件）"}`;
     }
     if (o.settleKind === "companion_invite") {
-      const cn = o.settleNpc || "它";
-      return `\n【伙伴认主铁律】${cn}与主角之间，非比寻常的人与兽的相逢——这是前世便结下的羁绊，它认准了主角便是这片雪域高原真正的主人，忠贞无二，此心早定。这一轮务必写成${cn}欣然应邀、心意早决，用动作/眼神/姿态（额头抵掌、绕身而行、伏低臣服等，它不能说话）表明认主之心，不许写成犹豫或抗拒——下面这条 <mvu> 块本轮必须给出，且必须是正向增量（这是${cn}认你为主的时刻，好感度理应给一个较高的起始值）。`;
+      const cn = o.settleNpc || "对方";
+      const speech = o.settleBeast
+        ? `用动作/眼神/姿态（如以额抵掌、绕身而行、伏低臣服等，它不能说话）表明结伴之意`
+        : `用言语与神情郑重应下`;
+      return `\n【伙伴入队铁律】${cn}与主角此刻正式结为同行的伙伴——是主角郑重相邀、${cn}欣然应下，此心已决。这一轮务必写成${cn}爽快应下、就此定下同行情谊，${speech}；不许写成犹豫或抗拒——下面这条 <mvu> 块本轮必须给出，且必须是正向增量（这是${cn}正式结为同行的时刻，好感度理应给一个较高的起始值）。`;
     }
     if (o.settleKind === "learn_skill") {
       return `\n【授业传艺铁律】肯把本事传给一个人，在江湖里是极重的情分——那意味着认可与托付。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式均已由系统结算完毕，是既成事实），所以他/它对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。`;
@@ -93,8 +99,8 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n依上面这件礼物的品阶与来历，本轮好感度增量建议落在 +${o.giftInfo?.range?.[0] ?? 2}~+${o.giftInfo?.range?.[1] ?? 4} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? 3});`;
     }
     if (o.settleKind === "companion_invite") {
-      const cn = o.settleNpc || "它";
-      return `\n${cn}是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"前世羁绊、认主忠贞"的设定，不是从0慢慢培养的陌生关系），建议直接 _.set 到 40~55 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', 45);`;
+      const cn = o.settleNpc || "对方";
+      return `\n${cn}是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"刚结为同行的伙伴"的情分，不是从0慢慢培养的陌生关系），建议直接 _.set 到 40~55 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', 45);`;
     }
     if (o.settleKind === "learn_skill") {
       const master = !!o.learnInfo?.isMaster;

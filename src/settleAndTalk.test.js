@@ -88,7 +88,7 @@ describe("结算专属提取 spec 的路由", () => {
     expect(t).not.toContain("从叙事中提取所有发生变化的游戏状态");
   });
   it("认主预览命中 COMPANION_INVITE", () => {
-    expect(buildExtractionSpecExample("UNKNOWN", "companion_invite")).toContain("专门处理伙伴认主场景");
+    expect(buildExtractionSpecExample("UNKNOWN", "companion_invite")).toContain("专门处理伙伴入队场景");
   });
   it("拜师预览命中 LEARN_SKILL，且铁律要求正向好感", () => {
     const t = buildExtractionSpecExample("UNKNOWN", "learn_skill");

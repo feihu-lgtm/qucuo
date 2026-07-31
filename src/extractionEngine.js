@@ -146,20 +146,24 @@ ${narrative}
     },
   },
 
-  // 伙伴认主专属提取——雪豹是"前世羁绊、认主忠贞"的设定，不是从0慢慢培养的
-  // 陌生关系，所以不用 _.add 微调而是直接 _.set 一个较高的初始好感度。跟 GIFT
+  // 伙伴入队专属提取——刚结为同行的伙伴，不是从0慢慢培养的陌生关系，所以
+  // 不用 _.add 微调而是直接 _.set 一个较高的初始好感度。跟 GIFT
   // 一样不做"读心"式判断，直接钉死结论。settleOpts 由调用方在命中
   // settleKind:"companion_invite" 时传入（见 MudRPG.jsx handleInviteCompanion）。
+  // settleBeast 区分兽类/人类伙伴：兽类不通人言（cannotSpeak），人类正常说话。
   COMPANION_INVITE: {
-    system: "你是游戏状态提取器，专门处理伙伴认主场景的好感度结算——伙伴认主是前世羁绊使然，好感度应直接给一个较高的初始值，不做\"读心\"式判断。",
+    system: "你是游戏状态提取器，专门处理伙伴入队场景的好感度结算——伙伴刚接受邀请结为同行，好感度应直接给一个较高的初始值，不做\"读心\"式判断。",
     user: (narrative, s, settleOpts) => {
       const npcName = settleOpts?.settleNpc || "伙伴";
-      return `${npcName}刚刚接受了玩家的邀请，正式结为同行的伙伴——这是前世便结下的羁绊，它认准了玩家便是这片雪域高原真正的主人，忠贞无二。
+      const speech = settleOpts?.settleBeast
+        ? "它不通人言（cannotSpeak），情感全靠动作、眼神、姿态传达。"
+        : "它能正常开口说话。";
+      return `${npcName}刚刚接受了玩家的邀请，正式结为同行的伙伴——这是玩家郑重相邀、对方欣然应下的一刻，${npcName}就此定下同行情谊。${speech}
 
 叙事内容：
 ${narrative}
 
-【铁律】不管叙事写得含蓄还是热络，这一轮${npcName}对玩家的好感度都应直接设为一个较高的初始值（40~55之间，体现"前世羁绊、一见如故"而非从零培养），不得低于30。
+【铁律】不管叙事写得含蓄还是热络，这一轮${npcName}对玩家的好感度都应直接设为一个较高的初始值（40~55之间，体现"刚结为同行的伙伴、一见如故"而非从零培养），不得低于30。
 输出 JSON（mvu 字段必须是一条 _.set 好感度指令，用 set 不用 add——这是初次登场，不是在已有基础上增减）：
 {"mvu":"_.set('角色.${npcName}.好感度', 45);\n","delta":{"items_add":[],"flags_add":[]}}`;
     },
@@ -364,7 +368,7 @@ const EXTRACTION_SAMPLE_SETTLE = {
       suggestedDelta: 5,
     },
   },
-  companion_invite: { settleKind: "companion_invite", settleNpc: "雪豹" },
+  companion_invite: { settleKind: "companion_invite", settleNpc: "雪豹", settleBeast: true },
   learn_skill: {
     settleKind: "learn_skill",
     settleNpc: "雪豹",

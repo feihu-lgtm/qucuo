@@ -2521,7 +2521,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         ctx, recallBlock, reunionBlock, infoDomainBlock, hist, mainConvo,
         gambleTalkCtx: gambleTalkCtx.current, recallInfo,
         inSeaOfMind: room.name === SEA_OF_MIND.district,
-        settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo,
+        settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
         _trace, addLog, setLog,
       });
 
@@ -2615,7 +2615,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         // 初始好感）。避免双调用模式下状态判定完全脱离 buildSysBase 那份专属铁律
         // （主叙事只写散文，不产 mvu，状态判定全靠提取层）。
         const settleOptsForExtraction = (opts.settleKind && opts.settleNpc)
-          ? { settleKind: opts.settleKind, settleNpc: opts.settleNpc, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo }
+          ? { settleKind: opts.settleKind, settleNpc: opts.settleNpc, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast }
           : null;
         let extractionFailed = false;
         const extracted = await callExtraction(extractionSpecKey, rawFull, exState, apiCfg, settleOptsForExtraction).catch(e => {
@@ -3257,7 +3257,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 导入的由 getImportedForDistrict 调用处按 isCompanionUnlockedByName 过滤。
     setRoom(r => ({ ...r, npcs: removeNpc(r.npcs, n => n.name === npc.name && (n.companionCandidate || n.imported)) }));
     setActiveTarget(npc.name);
-    act(`向${npc.name}伸出手，郑重邀它同行`, [], { settle: true, settleNpc: npc.name, settleKind: "companion_invite" });
+    act(`向${npc.name}伸出手，郑重邀它同行`, [], { settle: true, settleNpc: npc.name, settleKind: "companion_invite", settleBeast: !!npc.beast });
   }, [act]);
 
   // ⑤ 服食：把原打字正则分支的确定性结算抽成 handler，供物品面板「服食」调用。
