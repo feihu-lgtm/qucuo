@@ -72,9 +72,10 @@ describe("勾选式加入", () => {
     expect(SCREEN).toContain("onFinish(pickedNpcs)");
   });
 
-  it("finish 接收名单参数，不传则按全部（老行为不破）", () => {
-    expect(SCREEN).toMatch(/const finish = \(npcsToImport\)/);
+  it("finish 接收名单参数（+可选开局同行名），不传名单则按全部（老行为不破）", () => {
+    expect(SCREEN).toMatch(/const finish = \(npcsToImport, starterNpcName\)/);
     expect(SCREEN).toContain("Array.isArray(npcsToImport) ? npcsToImport : (result?.npcs || [])");
+    expect(SCREEN).toContain("onImportStarterCompanion");
   });
 
   it("勾掉的人不算进「会真的出现」", () => {

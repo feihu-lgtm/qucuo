@@ -4548,6 +4548,19 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       if (fromCard?.persona) {
         addLog([{ t: "sys", text: `  （已按入册的角色卡定下体貌与天赋）` }]);
       }
+      // 开局同行：开局向导指定了「1 人开局就随队」，在这里把它解锁进 companionState
+      // （唯一出战位）。importedRegistry 的 getImportedNpc 返回入册时的完整档案，
+      // unlockImportedCompanion 会 createImportedCompanion 建出可出战的队友。
+      // 用完即清，避免下次新开局又凭空冒出来。
+      const starterName = importedRegistry.getPendingStarterCompanion();
+      if (starterName) {
+        const npcData = importedRegistry.getImportedNpc(starterName);
+        importedRegistry.clearPendingStarterCompanion();
+        if (npcData) {
+          setCompanionState(prev => unlockImportedCompanion(prev, npcData));
+          addLog([{ t: "sys", text: `  （开局同行「${starterName}」已随队）` }]);
+        }
+      }
       setShowCharCreate(false);
     }} />;
   }

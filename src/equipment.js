@@ -72,11 +72,14 @@ export function discountedBuyPrice(buyPrice, wit = 5) {
 }
 
 export function makeItem({ name, category = ITEM_CATEGORY.MISC, quality = "白", desc = "",
-                           effect, sixDim, consumable, tags } = {}) {
-  return {
+                           effect, sixDim, consumable, tags, atkMul, defMul } = {}) {
+  // 攻防倍率：与 makeCatalogItem 同一把尺子——乘在品质基准上（白7→红100 那套），
+  // 最终仍折成 atk/def 加数进战斗公式。入册定制装备时玩家调的就是它。
+  const base = statsForQuality(category, quality);
+  const out = {
     id: `${name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     name, category, quality, equipped: false, desc,
-    ...statsForQuality(category, quality),
+    ...base,
     ...priceForQuality(category, quality),
     // 【必须收下 effect/sixDim】此前这个解构参数只列了 name/category/quality/desc，
     // 调用方传进来的 effect 与 sixDim **被静默丢掉**——打造/定制出来的装备因此
@@ -90,6 +93,10 @@ export function makeItem({ name, category = ITEM_CATEGORY.MISC, quality = "白",
     ...(consumable ? { consumable: { ...consumable } } : {}),
     ...(tags ? { tags: [...tags] } : {}),
   };
+  // 攻防倍率乘在品质基准上（覆盖 statsForQuality 的原始值）
+  if (base.atk != null && atkMul != null) out.atk = Math.round(base.atk * atkMul);
+  if (base.def != null && defMul != null) out.def = Math.round(base.def * defMul);
+  return out;
 }
 
 // 从背包里筛出某个分类当前"已装备"的物品列表

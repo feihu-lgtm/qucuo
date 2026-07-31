@@ -253,7 +253,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
               ["narrator", "🎭 旁白", "好感度 · 阶段 · 私聊篇幅 · 专属世界书"],
               ["saves", "💾 存档管理", "读取 · 导出 · 删除"],
               ["other", "🎚 其他", "字号 · 显示"],
-              ["__cards", "🧾 角色入册", "导入外部角色卡 · 快捷键 I"],
+              ["__cards", "🧾 角色入册", "游戏中 · 导入外部角色卡成江湖人物 · 快捷键 I"],
             ].map(([id, title, sub]) => (
               <div key={id} onClick={() => {
                 // 入册界面本身是全屏浮层，塞在设置里会套两层弹窗。

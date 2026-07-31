@@ -94,6 +94,7 @@ function App() {
         }}
         onImportNpcs={(npcs) => { importedRegistry.registerImported(npcs, {}); }}
         onImportPlayer={(player) => { importedRegistry.setPendingPlayerCard(player); importedSelfRef.current = true; }}
+        onImportStarterCompanion={(name) => { importedRegistry.setPendingStarterCompanion(name); }}
         onImportWorld={(items) => { importedRegistry.registerImportedWorld(items, {}); }}
       />
     );

@@ -52,7 +52,7 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
     },
     { key: "quickbattle", label: "斗蛐蛐", sub: "快速切磋 · 自选阵容", action: onQuickBattle, always: true },
     // 入册放在开局之前：导入的卡要当主角，只能在角色还没创建的时候用。
-    { key: "cards", label: "角色入册", sub: "导入外部角色卡", action: onOpenCardImport, always: true },
+    { key: "cards", label: "角色入册", sub: "游戏中用 · 导入外部角色卡成江湖人物", action: onOpenCardImport, always: true },
     { key: "settings", label: "设置", sub: "API · 显示 · 存档管理", action: onOpenSettings, always: true },
     { key: "exit", label: "退出", sub: "合上此卷", action: onExit, always: true },
   ];
@@ -80,7 +80,7 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
               onClick={() => { setShowStartChoice(false); onStartImportSelf?.(); }}
             >
               <span style={styles.loadPanelLabel}>导入角色卡当自己</span>
-              <span style={styles.loadPanelMeta(theme)}>拿一张外部角色卡做主角开局</span>
+              <span style={styles.loadPanelMeta(theme)}>分步向导：选主角 → 调主角 → 选开局同伴</span>
             </button>
           </div>
           <button style={styles.backButton(theme)} onClick={() => setShowStartChoice(false)}>

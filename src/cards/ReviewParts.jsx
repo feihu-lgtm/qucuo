@@ -7,7 +7,7 @@
 // 视觉素材全部取自 public/stones/（原本给赌石玩法做的）。其中六档玉色
 // jade_1_bai 到 jade_6_hong 正好对上品阶白绿蓝紫橙红，品阶徽记直接用玉石图。
 
-import React, { useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 const BASE = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/";
 export const S = (p) => `${BASE}stones/${p}`;
@@ -341,21 +341,35 @@ export function Btn({ children, onClick, tone = "dim", disabled, title }) {
 }
 
 // 小号切换按钮组（主角/NPC、性别这类二三选一）
+// 单个 pill 抽成带 hover 的子组件。
+// 【为什么改配色】未选中态原来是暗灰字(#8a8270)+暗边(#3a3428)+透明底，在深色面板
+// 上看着就像「禁用的灰按钮」——实测有玩家因此以为落脚的驻场/游走钮点不了、只能靠
+// AI 荐位。现在未选中也用亮米字+可见描边+微深底，明确「这是能点的」；hover 再镀
+// 一层金边并提亮，选中态才是实心金。
+function Pill({ label, on, onClick, title, accent }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <span onClick={onClick} title={title}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 14px", borderRadius: 3,
+        transition: "all .14s ease",
+        border: `1px solid ${on || hov ? accent : "#6a5f42"}`,
+        background: on ? "rgba(212,168,83,.16)" : hov ? "rgba(212,168,83,.07)" : "rgba(0,0,0,.18)",
+        color: on ? accent : hov ? "#f0e6cc" : "#cabfa0",
+      }}>{label}</span>
+  );
+}
+
 export function Pills({ options, value, onChange, accent = "#d4a853" }) {
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
       {options.map(o => {
         const v = typeof o === "string" ? o : o.value;
         const label = typeof o === "string" ? o : o.label;
-        const on = v === value;
         return (
-          <span key={v} onClick={() => onChange(v)} title={typeof o === "object" ? o.title : undefined}
-            style={{
-              cursor: "pointer", fontSize: 11.5, padding: "4px 14px", borderRadius: 3,
-              border: `1px solid ${on ? accent : "#3a3428"}`,
-              background: on ? "rgba(212,168,83,.14)" : "transparent",
-              color: on ? accent : "#8a8270",
-            }}>{label}</span>
+          <Pill key={v} label={label} on={v === value} onClick={() => onChange(v)}
+            title={typeof o === "object" ? o.title : undefined} accent={accent} />
         );
       })}
     </div>

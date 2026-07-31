@@ -3,7 +3,7 @@
 // 性别写入 char.gender（后续注入每轮 user prompt）。
 import React, { useState } from "react";
 import { ZONE_THEMES } from "./theme.js";
-import { getPendingPlayerCard, clearPendingPlayerCard } from "./cards/importedRegistry.js";
+import { getPendingPlayerCard, clearPendingPlayerCard, clearPendingStarterCompanion } from "./cards/importedRegistry.js";
 
 const theme = ZONE_THEMES.village;
 const BASE = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/";
@@ -55,7 +55,7 @@ export default function CharacterCreate({ onConfirm }) {
                 有一张入册待用的角色卡
               </span>
               <span
-                onClick={() => { clearPendingPlayerCard(); setPending(null); setUseCard(false); }}
+                onClick={() => { clearPendingPlayerCard(); clearPendingStarterCompanion(); setPending(null); setUseCard(false); }}
                 title="弃用这张卡，从头自己填"
                 style={{ cursor: "pointer", fontSize: 11, color: "#8a8270" }}
               >弃用</span>

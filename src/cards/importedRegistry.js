@@ -235,6 +235,8 @@ function normalizeCarry(list) {
         ...(c.desc ? { desc: String(c.desc).slice(0, 200) } : {}),
         ...(c.sixDim && Object.keys(c.sixDim).length ? { sixDim: { ...c.sixDim } } : {}),
         ...(c.effect ? { effect: { ...c.effect } } : {}),
+        ...(Number.isFinite(c.atkMul) ? { atkMul: c.atkMul } : {}),
+        ...(Number.isFinite(c.defMul) ? { defMul: c.defMul } : {}),
       });
     }
   }
@@ -401,6 +403,32 @@ export function getImportedStats(name) {
   return { name: c.name, levelCap: c.levelCap, special: c.special, brief: c.brief };
 }
 
+/**
+ * 返回某入册角色的完整档案（供开局同行建 companion 用）。查不到返回 null。
+ * 开局向导指定「开局同行」后，MudRPG 新开局时用它 createImportedCompanion 解锁。
+ */
+export function getImportedNpc(name) {
+  const c = _registry.chars.find(x => x.name === name
+    || (x.aliases || []).includes(name));
+  if (!c) return null;
+  return {
+    name: c.name,
+    aliases: c.aliases || [],
+    brief: c.brief || c.name,
+    levelCap: c.levelCap ?? 1,
+    special: c.special || {},
+    neigong: Number.isFinite(c.neigong) ? c.neigong : undefined,
+    waigong: Number.isFinite(c.waigong) ? c.waigong : undefined,
+    moves: c.moves || null,
+    carry: c.carry || [],
+    portrait: c.portrait || "",
+    appearance: c.appearance || "",
+    attitude: c.attitude || "",
+    affection: c.affection || 0,
+    entry: c.entry || "",
+  };
+}
+
 /** 好感度初值：写 varTree 时用。没配过的返回 0 */
 // ── 待用主角卡 ──────────────────────────────────────────────────────────────
 // 【为什么单独放 localStorage 而不进上面那个 IndexedDB 库】
@@ -436,6 +464,27 @@ export function getPendingPlayerCard() {
 
 export function clearPendingPlayerCard() {
   try { localStorage.removeItem(PENDING_KEY); } catch { /* */ }
+}
+
+// ── 开局同行 ──────────────────────────────────────────────────────────────────
+// 开局向导第 2 步从「落江湖的 NPC」里指定 1 人开局就随队（companion 出战位）。
+// 跟待用主角卡同一个思路：开局前才有效，存 localStorage，新开局时 MudRPG 读到后
+// 用 unlockImportedCompanion 把它设成已解锁+出战，随后即清除。
+const STARTER_KEY = "qucuo_pending_starter_companion";
+
+export function setPendingStarterCompanion(name) {
+  try {
+    if (!name) { localStorage.removeItem(STARTER_KEY); return; }
+    localStorage.setItem(STARTER_KEY, String(name).slice(0, 20));
+  } catch { /* 无痕模式写不进就算了 */ }
+}
+
+export function getPendingStarterCompanion() {
+  try { return localStorage.getItem(STARTER_KEY) || ""; } catch { return ""; }
+}
+
+export function clearPendingStarterCompanion() {
+  try { localStorage.removeItem(STARTER_KEY); } catch { /* */ }
 }
 
 export function getImportedAffection(name) {

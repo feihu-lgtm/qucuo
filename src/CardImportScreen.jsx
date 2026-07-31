@@ -17,7 +17,7 @@ import {
   S, TIERS, KIND_META, BODY_PUBLIC, BODY_PRIVATE, TERM_MONO,
   Bar, JadeTier, Src, Stat, Note, Btn, Pills, Terminal, barFrame,
 } from "./cards/ReviewParts.jsx";
-import { sanitizeMoves, TIER_NEIGONG, parseJsonLoose } from "./cards/scanPrompts.js";
+import { sanitizeMoves, TIER_NEIGONG, parseJsonLoose, buildStage3 } from "./cards/scanPrompts.js";
 import { normalizePlacement } from "./cards/importedRegistry.js";
 import {
   buildPlacementPlan, sanitizePlacementPlan, PLAN_BATCH, PLANNABLE_DISTRICTS,
@@ -59,6 +59,7 @@ export default function CardImportScreen({
   onImportNpcs, onImportPlayer, onImportWorld, zoneTheme,
   currentDistrict = "",
   playerMode = false,
+  onImportStarterCompanion,
 }) {
   const accent = zoneTheme?.accent || "#d4a853";
 
@@ -300,11 +301,12 @@ export default function CardImportScreen({
 
   // 【为什么接一个参数】审改页现在可以只勾一部分人加入——一张卡里常有几个纯粹
   // 的背景人物，玩家未必想把他们都塞进江湖。不传就按全部处理（老行为）。
-  const finish = (npcsToImport) => {
+  const finish = (npcsToImport, starterNpcName) => {
     const list = Array.isArray(npcsToImport) ? npcsToImport : (result?.npcs || []);
-    pushTerm("done", `落册 ${list.length} 人${result?.player ? " ＋ 主角档案" : ""}`, "落册");
+    pushTerm("done", `落册 ${list.length} 人${result?.player ? " ＋ 主角档案" : ""}${starterNpcName ? ` ＋ 开局同行「${starterNpcName}」` : ""}`, "落册");
     if (list.length && onImportNpcs) onImportNpcs(list);
     if (result?.player && onImportPlayer) onImportPlayer(result.player, result.opening);
+    if (starterNpcName && onImportStarterCompanion) onImportStarterCompanion(starterNpcName);
     const world = (result?.world || []).filter(w => w.on !== false);
     if (world.length && onImportWorld) onImportWorld(world);
     onClose?.();
@@ -683,12 +685,36 @@ function ReviewPane({
   });
   const toggleAll = () => setPicked(allOn ? new Set() : new Set(result.npcs.map((_, i) => i)));
 
+  // ── 开局向导 · 分步（仅 playerMode）────────────────────────────────────
+  // 借鉴「墨色江湖」开局向导骨架：左侧步骤导航 + 主内容区 + 上一步/下一步。
+  // 三步：① 选主角 → ② 调主角·选队友 → ③ 确认落册。步骤定义与跳转集中在这，
+  // 内容区按 wizardStep 条件渲染。
+  const WIZARD_STEPS = ["选主角", "调主角 · 选队友", "确认落册"];
+  const [wizardStep, setWizardStep] = useState(0);
+  // 开局同行：Step2 里从「落江湖的 NPC」指定 1 人开局就随队（companion 出战位）。
+  // 存名字即可，落册时在 CardImportScreen.finish 里把它单独交给 onImportStarterCompanion。
+  const [starterCompanion, setStarterCompanion] = useState(null);
+  const stepLabel = WIZARD_STEPS[wizardStep] || "确认落册";
+  const canNext = !asPlayer || wizardStep >= 2 || (wizardStep === 0 ? true : true);
+  const nextStep = () => setWizardStep(s => Math.min(s + 1, WIZARD_STEPS.length - 1));
+  const prevStep = () => setWizardStep(s => Math.max(s - 1, 0));
+
   // ── 从众人里指定一个当「我自己」（主角）─────────────────────────────────
   // 群像卡的主角常常自己也被当成世界书人物扫了出来（酒馆卡里主角、配角同在世界书
   // 里）。这里让玩家从扫出的人里挑一个填成主角档案；被选中的人自动不再作为 NPC 入库
   // （主角和 NPC 不该是同一人），名单里给他标个「主」。只在 playerMode(asPlayer) 下有意义。
   const [playerFromNpc, setPlayerFromNpc] = useState(null);
+  const [bodyBusy, setBodyBusy] = useState(false);   // AI 自动识别体貌中
+  const pickRef = useRef(null);                        // 防玩家快速切换时把上一个人的体貌写错人
   const initialPlayerRef = useRef(result.player);
+  // AI 返回的 bodyProfile 只取公开层 7 个 key 的非空字符串
+  const cleanBody = (bp) => {
+    const out = {};
+    for (const k of ["height", "build", "face", "skin", "hair", "voice", "clothing"]) {
+      if (typeof bp?.[k] === "string" && bp[k].trim()) out[k] = bp[k].trim().slice(0, 40);
+    }
+    return out;
+  };
   const npcToPlayer = (npc) => ({
     name: npc.name || "",
     nameWhy: "",
@@ -704,14 +730,32 @@ function ReviewPane({
     dialogueExamples: undefined,
     source: "fromNpc",
   });
-  const pickPlayerFrom = (name) => {
+  const pickPlayerFrom = async (name) => {
     setPlayerFromNpc(name);
+    pickRef.current = name;
     if (name == null) {
       setResult(r => ({ ...r, player: initialPlayerRef.current }));  // 回到空白档案
-    } else {
-      const npc = result.npcs.find(n => n.name === name);
-      if (npc) setResult(r => ({ ...r, player: npcToPlayer(npc) }));
+      return;
     }
+    const npc = result.npcs.find(n => n.name === name);
+    if (!npc) return;
+    setResult(r => ({ ...r, player: npcToPlayer(npc) }));
+    // 自动 AI 识别体貌：NPC 只有一段外貌锚点，让 stage3 prompt 把它拆成体貌公开层 7 项
+    // （身量/体型/面容/肤色/发式/声音/穿着）。私密层五项照规矩不碰。失败静默、留空手填。
+    const src = [npc.appearance, npc.entry].filter(Boolean).join("\n").trim();
+    if (!src || !apiCfg) return;
+    setBodyBusy(true);
+    try {
+      await acquire();
+      const { system, user } = buildStage3(src, { cardName: npc.name });
+      const res = await callModel(apiCfg, system, [{ role: "user", content: user }], { maxTokens: 4000, temperature: 0.6 });
+      const bp = cleanBody(parseJsonLoose(res.text || "")?.bodyProfile);
+      // 玩家可能已经切走了，只在还选着这个人时才落，别把上个人的体貌写到新选的人身上
+      if (pickRef.current === name && Object.keys(bp).length) {
+        setResult(r => ({ ...r, player: { ...r.player, bodyProfile: { ...(r.player?.bodyProfile || {}), ...bp } } }));
+      }
+    } catch { /* 静默，体貌留空玩家手填 */ }
+    finally { if (pickRef.current === name) setBodyBusy(false); }
   };
 
   // 入库名单排除被选为主角的那个人（主角走 player，不重复入 NPC 库）
@@ -875,238 +919,499 @@ function ReviewPane({
     return out;
   }, [parsed]);
 
+  // ── 向导渲染：asPlayer 走三步，否则走原有的「名单 + 逐个设置」──
   return (
     <>
-      {/* 4:6 分栏。原来左栏定宽 230px，那是面板还锁在 1120 宽时定的比例；撑满
-          之后名单挤在一条窄带里，而运行日志横向被压得每行都折。minWidth 0 是必须
-          的——flex 子项默认 min-width:auto，里面的长人名会把栏撑破 4:6 的比例。 */}
-      <div style={{ flex: 4, minWidth: 0, borderRight: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
-        <Bar>过目定稿</Bar>
-
-        {/* 开头就选：这张卡是当众人写进江湖，还是当我自己 */}
-        {asPlayer && (
-          <div style={{ padding: "8px 10px", borderBottom: "1px solid #2a2419" }}>
-            <Pills accent={accent}
-              value={detail >= 0 ? "npc" : "me"}
-              onChange={v => setDetail(v === "me" ? -1 : (result.npcs.length ? 0 : -1))}
-              options={[
-                { value: "npc", label: `众人 ${result.npcs.length}`, title: "写进江湖的人" },
-                { value: "me", label: "我自己", title: "这张卡当主角" },
-              ]} />
+      {/* 开局向导：顶部步骤导航（仿墨色江湖 wizard 骨架）+ 主内容区 + 上一步/下一步 */}
+      {asPlayer ? (
+        <>
+          {/* 步骤导航条 */}
+          <div style={{
+            flexShrink: 0, display: "flex", alignItems: "center", gap: 4,
+            padding: "8px 12px", borderBottom: "1px solid #2a2419",
+            background: "rgba(0,0,0,.25)",
+          }}>
+            {WIZARD_STEPS.map((s, idx) => (
+              <span key={s}
+                onClick={() => setWizardStep(idx)}
+                style={{
+                  cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 7,
+                  padding: "5px 12px", borderRadius: 4, transition: "all .15s ease",
+                  border: `1px solid ${wizardStep === idx ? accent : "transparent"}`,
+                  background: wizardStep === idx ? "rgba(212,168,83,.12)" : "transparent",
+                  color: wizardStep === idx ? accent : "#8a8270",
+                }}>
+                <span style={{
+                  width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center",
+                  justifyContent: "center", fontSize: 10.5, flexShrink: 0,
+                  background: wizardStep === idx ? "rgba(212,168,83,.2)" : "rgba(0,0,0,.3)",
+                  border: `1px solid ${wizardStep === idx ? accent : "#3a3428"}`,
+                }}>{idx + 1}</span>
+                <span style={{ fontSize: 12.5, letterSpacing: 1 }}>{s}</span>
+              </span>
+            ))}
+            <span style={{ flex: 1 }} />
+            <span style={{ fontSize: 10.5, color: "#6a6250" }}>
+              {playerFromNpc ? `主角：${playerFromNpc}` : "主角：待定"}
+            </span>
           </div>
-        )}
 
-        {/* 名单垂直居中：一张卡常见三五个人，顶部对齐会在下面留一大片死黑。
-            margin auto 0 而不是 justifyContent center——后者在内容超出容器时会把
-            顶部裁掉滚不到（flex 的老陷阱）。外层再 alignSelf center 加限宽，免得
-            4:6 分栏后条目在一千像素宽的栏里拉得很散。 */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "8px", display: "flex", flexDirection: "column" }}>
-          {(detail >= 0 || !asPlayer) && result.npcs.length > 0 && (
-            <div style={{ flexShrink: 0, marginBottom: 10, padding: "8px 9px", borderRadius: 4, background: "rgba(0,0,0,.2)", border: "1px solid #2a2419" }}>
-              <div style={{ fontSize: 10, color: "#8a8270", marginBottom: 6 }}>批量设置 · 作用于勾选中的人（不含主角）</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 7 }}>
-                <span style={{ fontSize: 10, color: "#6a6250", width: 26 }}>落脚</span>
-                <select value={batchDistrict} onChange={e => setBatchDistrict(e.target.value)}
-                  style={{ fontSize: 10.5, padding: "2px 4px", background: "#1a1206", color: "#d8c8a0", border: "1px solid #3a3428", borderRadius: 3, maxWidth: 100 }}>
-                  {PLANNABLE_DISTRICTS.map(d => <option key={d} value={d} style={{ background: "#1a1206" }}>{d}</option>)}
-                </select>
-                <TapSpan onClick={() => applyBatchPlacement("resident", batchDistrict)} title={`勾选的人全部驻场于${batchDistrict}`} baseStyle={batchBtn}>全驻此地</TapSpan>
-                <TapSpan onClick={() => applyBatchPlacement("wander", batchDistrict)} title="勾选的人全部改为游走" baseStyle={batchBtn}>全游走</TapSpan>
-                <TapSpan onClick={() => applyBatchPlacement("mention", null)} title="勾选的人全部改为不落地（只被提到时注入）" baseStyle={batchBtn}>全不落地</TapSpan>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 10, color: "#6a6250", width: 26 }}>品阶</span>
-                {["白", "绿", "蓝", "紫", "橙", "红"].map((label, lv) => (
-                  <TapSpan key={lv} onClick={() => applyBatchTier(lv)} title={`勾选的人全部调到${label}档`} baseStyle={batchBtn}>{label}</TapSpan>
-                ))}
-              </div>
-            </div>
-          )}
-          <div style={{ margin: "auto 0", width: "100%", maxWidth: 380, alignSelf: "center" }}>
-          {detail >= 0 || !asPlayer ? result.npcs.map((n, i) => {
-            const isPlayerSrc = asPlayer && playerFromNpc != null && n.name === playerFromNpc;
-            return (
-            <div key={i} onClick={() => setDetail(isPlayerSrc ? -1 : i)}
-              style={{
-                cursor: "pointer", display: "flex", alignItems: "center", gap: 7,
-                padding: "6px 8px", borderRadius: 4, marginBottom: 3,
-                background: detail === i ? "rgba(212,168,83,.12)" : "transparent",
-                borderLeft: `2px solid ${detail === i ? accent : "transparent"}`,
-                opacity: isPlayerSrc ? .8 : (picked.has(i) ? 1 : .45),
-              }}>
-              {/* 被选为主角的人：勾选圈换成「主」记，点开去「我自己」，不入 NPC 库。
-                  其余人：stopPropagation 让点圈只管勾选、点条目其余部分切换编辑焦点。 */}
-              {isPlayerSrc ? (
-                <span title="已作主角，点开去「我自己」编辑"
-                  style={{ flexShrink: 0, width: 14, textAlign: "center", fontSize: 11, color: accent }}>主</span>
-              ) : (
-                <span onClick={e => { e.stopPropagation(); toggleOne(i); }}
-                  title={picked.has(i) ? "点掉就不加入" : "点上加入"}
-                  style={{
-                    cursor: "pointer", flexShrink: 0, width: 14, textAlign: "center",
-                    fontSize: 12, color: picked.has(i) ? accent : "#4a4436",
-                  }}>{picked.has(i) ? "◉" : "○"}</span>
-              )}
-              <JadeTier value={n.levelCap} size={22} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: "#e8dcc0", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {n.name}{isPlayerSrc && <span style={{ color: accent, fontSize: 9.5, marginLeft: 5 }}>· 当主角</span>}
+          {/* 主内容区 */}
+          <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+            {wizardStep === 0 && (
+              /* ── ① 选主角：从认出的 NPC 里挑谁当主角 ── */
+              <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+                <div style={{ fontSize: 15, color: "#e8dcc0", letterSpacing: 3, marginBottom: 4 }}>
+                  这张卡里，谁当「我自己」（主角）？
                 </div>
-                <div style={{ color: "#6a6250", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
+                <div style={{ fontSize: 11, color: "#8a8270", marginBottom: 16, lineHeight: 1.8 }}>
+                  群像卡的主角常常混在世界书里。选一个人就把他套成主角档案（名字/七维/内外功/人设），
+                  他会自动从「入江湖」名单挪走，不会重复出现。不选就用空白档案，下一步自己填。
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10 }}>
+                  <div onClick={() => pickPlayerFrom(null)} title="从头手写主角"
+                    style={{
+                      cursor: "pointer", padding: "14px 12px", borderRadius: 6, textAlign: "center",
+                      border: `1px solid ${playerFromNpc == null ? accent : "#3a3428"}`,
+                      background: playerFromNpc == null ? "rgba(212,168,83,.12)" : "rgba(0,0,0,.25)",
+                      transition: "all .15s ease",
+                    }}>
+                    <div style={{ fontSize: 22, marginBottom: 6 }}>☯</div>
+                    <div style={{ color: playerFromNpc == null ? accent : "#a89870", fontSize: 13 }}>空白 · 自己填</div>
+                  </div>
+                  {result.npcs.map((n, i) => {
+                    const on = playerFromNpc === n.name;
+                    return (
+                      <div key={i} onClick={() => pickPlayerFrom(n.name)}
+                        style={{
+                          cursor: "pointer", padding: "12px", borderRadius: 6,
+                          border: `1px solid ${on ? accent : "#3a3428"}`,
+                          background: on ? "rgba(212,168,83,.12)" : "rgba(0,0,0,.25)",
+                          transition: "all .15s ease",
+                        }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                          <JadeTier value={n.levelCap} size={22} />
+                          <span style={{ color: on ? accent : "#e8dcc0", fontSize: 13, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {n.name}
+                          </span>
+                          {on && <span style={{ color: accent, fontSize: 11 }}>◉</span>}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#6a6250", lineHeight: 1.6, minHeight: 30 }}>
+                          {n.brief || "（无身份）"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {bodyBusy && (
+                  <div style={{ marginTop: 12, fontSize: 11, color: "#7a9a70" }}>⏳ 正在让 AI 从外貌拆出体貌 7 项…</div>
+                )}
               </div>
-              {!isPlayerSrc && (() => {
-                // 【为什么要过 normalizePlacement】名单原先直接读 n.placement.mode，
-                // 而右侧那组 Pills 读的是 normalizePlacement 之后的值。游走但一个据点
-                // 权重都没给、或驻场但没选据点，都属于无效配置，normalizePlacement 会
-                // 退回 mention——于是名单显示「游·0处」而右侧高亮「不落地」，同一个人
-                // 两处说法相反。实测截图里就是这样。统一走归一化后的值。
-                const pl = normalizePlacement(n.placement);
-                const m = pl.mode;
-                if (m === "mention") return null;
-                const label = m === "resident"
-                  ? `驻·${pl.district}`
-                  : `游·${Object.keys(pl.weights).length}处`;
-                return <span title={m === "resident" ? `驻场于${pl.district}` : "按权重游走"}
-                  style={{ fontSize: 9, color: accent, flexShrink: 0 }}>{label}</span>;
-              })()}
-              {!isPlayerSrc && n.source === "fallback" && <span title="全是默认值" style={{ fontSize: 9, color: "#6a6250" }}>默</span>}
-            </div>
-            );
-          }) : (
-            <div style={{ fontSize: 10.5, color: "#6a6250", lineHeight: 1.9, padding: "4px 4px", textAlign: "center" }}>
-              正在编辑主角档案。<br />切回「众人」可继续改其他人。
-            </div>
-          )}
-          </div>
-        </div>
-        <Terminal lines={term} height="min(30vh, 320px)" onExpand={onExpandTerm} />
-      </div>
+            )}
 
-      <div style={{ flex: 6, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <Bar right={result.genre ? <span style={{ fontSize: 10, color: "#8a8270" }}>{result.genre}</span> : null}>
-          {cur ? cur.name : "我自己"}
-        </Bar>
+            {wizardStep === 1 && (
+              /* ── ② 调主角 · 选队友：左主角全字段，右队友勾选 ── */
+              <>
+                <div style={{ flex: 3, minWidth: 0, overflowY: "auto", padding: "12px 16px 28px" }}>
+                  <ReviewPlayer
+                    player={result.player} accent={accent}
+                    onPatch={patchPlayer}
+                    opening={result.opening}
+                    onPatchOpening={o => setResult(r => ({ ...r, opening: o }))}
+                    worldCandidates={result.world}
+                    onPatchWorld={patchWorld}
+                    cardPersonality={parsed?.card?.fields?.personality || ""}
+                    cardMesExample={parsed?.card?.fields?.mesExample || ""}
+                  />
+                </div>
+                <div style={{ flex: 2, minWidth: 0, borderLeft: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
+                  <Bar right={<span style={{ fontSize: 10, color: "#8a8270" }}>{pickedNpcs.length} 人</span>}>
+                    谁一起入江湖
+                  </Bar>
+                  <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px" }}>
+                    <div style={{ fontSize: 10.5, color: "#8a8270", lineHeight: 1.8, marginBottom: 8 }}>
+                      勾选的人会真的落进曲措乡（可结交切磋）；再从勾选中指定 1 人开局就随队（开局同行）。
+                    </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 28px" }}>
-          {cur ? (
-            <ReviewNpc npc={cur} accent={accent} dropped={dropped} apiCfg={apiCfg} cardImage={cardImage}
-              currentDistrict={currentDistrict}
-              onPatch={patch => patchNpc(detail, patch)} />
-          ) : result.player ? (
-            <>
-              {/* 从扫出的人里挑一个当主角。群像卡主角混在众人里，这里指定。 */}
-              {result.npcs.length > 0 && (
-                <div style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 4, background: "rgba(212,168,83,.06)", border: `1px solid ${accent}44` }}>
-                  <div style={{ fontSize: 11.5, color: "#d8c8a0", marginBottom: 8 }}>这张卡里，谁是「我自己」（主角）</div>
+                    {/* 批量设置（落脚/品阶），复用原有逻辑 */}
+                    {result.npcs.length > 0 && (
+                      <div style={{ marginBottom: 10, padding: "8px 9px", borderRadius: 4, background: "rgba(0,0,0,.2)", border: "1px solid #2a2419" }}>
+                        <div style={{ fontSize: 10, color: "#8a8270", marginBottom: 6 }}>批量设置 · 作用于勾选中的人</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 7 }}>
+                          <span style={{ fontSize: 10, color: "#6a6250", width: 26 }}>落脚</span>
+                          <select value={batchDistrict} onChange={e => setBatchDistrict(e.target.value)}
+                            style={{ fontSize: 10.5, padding: "2px 4px", background: "#1a1206", color: "#d8c8a0", border: "1px solid #3a3428", borderRadius: 3, maxWidth: 100 }}>
+                            {PLANNABLE_DISTRICTS.map(d => <option key={d} value={d} style={{ background: "#1a1206" }}>{d}</option>)}
+                          </select>
+                          <TapSpan onClick={() => applyBatchPlacement("resident", batchDistrict)} title={`勾选的人全部驻场于${batchDistrict}`} baseStyle={batchBtn}>全驻此地</TapSpan>
+                          <TapSpan onClick={() => applyBatchPlacement("wander", batchDistrict)} title="勾选的人全部改为游走" baseStyle={batchBtn}>全游走</TapSpan>
+                          <TapSpan onClick={() => applyBatchPlacement("mention", null)} title="勾选的人全部改为不落地（只被提到时注入）" baseStyle={batchBtn}>全不落地</TapSpan>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 10, color: "#6a6250", width: 26 }}>品阶</span>
+                          {["白", "绿", "蓝", "紫", "橙", "红"].map((label, lv) => (
+                            <TapSpan key={lv} onClick={() => applyBatchTier(lv)} title={`勾选的人全部调到${label}档`} baseStyle={batchBtn}>{label}</TapSpan>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 队友名单：勾选落江湖 + 指定开局同行 */}
+                    {result.npcs.map((n, i) => {
+                      const isPlayerSrc = playerFromNpc != null && n.name === playerFromNpc;
+                      const on = picked.has(i);
+                      const isStarter = starterCompanion === n.name;
+                      return (
+                        <div key={i}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 7, padding: "6px 8px",
+                            borderRadius: 4, marginBottom: 3,
+                            background: isStarter ? "rgba(138,176,112,.10)" : "transparent",
+                            borderLeft: `2px solid ${isStarter ? "#8ab070" : "transparent"}`,
+                            opacity: isPlayerSrc ? .8 : (on ? 1 : .45),
+                          }}>
+                          {isPlayerSrc ? (
+                            <span title="已作主角"
+                              style={{ flexShrink: 0, width: 14, textAlign: "center", fontSize: 11, color: accent }}>主</span>
+                          ) : (
+                            <span onClick={e => { e.stopPropagation(); toggleOne(i); }}
+                              title={on ? "点掉就不加入" : "点上加入"}
+                              style={{
+                                cursor: "pointer", flexShrink: 0, width: 14, textAlign: "center",
+                                fontSize: 12, color: on ? accent : "#4a4436",
+                              }}>{on ? "◉" : "○"}</span>
+                          )}
+                          <JadeTier value={n.levelCap} size={22} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ color: "#e8dcc0", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {n.name}{isPlayerSrc && <span style={{ color: accent, fontSize: 9.5, marginLeft: 5 }}>· 主角</span>}
+                            </div>
+                            <div style={{ color: "#6a6250", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
+                          </div>
+                          {/* 开局同行单选：只能从勾选中挑 */}
+                          {!isPlayerSrc && on && (
+                            <span onClick={() => setStarterCompanion(isStarter ? null : n.name)}
+                              title={isStarter ? "点掉，他就不随队开局" : "让他开局就随队（唯一出战位）"}
+                              style={{
+                                cursor: "pointer", flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3,
+                                border: `1px solid ${isStarter ? "#8ab070" : "#3a4a34"}`,
+                                color: isStarter ? "#bce8ac" : "#7a9a70",
+                                background: isStarter ? "rgba(138,176,112,.15)" : "transparent",
+                              }}>{isStarter ? "同行 ◉" : "同行"}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {!result.npcs.length && (
+                      <div style={{ fontSize: 10.5, color: "#6a6250", padding: "12px 0", textAlign: "center" }}>
+                        这张卡里没有其他人了，就你自己开局。
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {wizardStep === 2 && (
+              /* ── ③ 确认落册：总览 + 加入 ── */
+              <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
+                <div style={{ fontSize: 15, color: "#e8dcc0", letterSpacing: 3, marginBottom: 16 }}>确认落册</div>
+
+                <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 4, background: "rgba(212,168,83,.06)", border: `1px solid ${accent}44` }}>
+                  <div style={{ fontSize: 11.5, color: "#d8c8a0", marginBottom: 6 }}>主角</div>
+                  <div style={{ fontSize: 13, color: "#e8dcc0" }}>
+                    {result.player?.name || playerFromNpc || "（未填名讳）"}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: "#8a8270", marginTop: 4, lineHeight: 1.8 }}>
+                    体貌 {Object.values(result.player?.bodyProfile || {}).filter(v => (v || "").trim()).length}/7 项
+                    · {result.player?.gender || "性别未定"}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 4, background: "rgba(0,0,0,.2)", border: "1px solid #2a2419" }}>
+                  <div style={{ fontSize: 11.5, color: "#d8c8a0", marginBottom: 6 }}>
+                    落江湖 {pickedNpcs.length} 人
+                    {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
+                  </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {[{ name: null, label: "空白·自己填" }, ...result.npcs.map(n => ({ name: n.name, label: n.name }))].map(opt => (
-                      <TapSpan key={opt.label ?? "__blank"} on={playerFromNpc === opt.name}
-                        onClick={() => pickPlayerFrom(opt.name)} hi={accent}
-                        baseStyle={{ fontSize: 11.5, padding: "4px 11px", borderRadius: 3, border: "1px solid #3a3428", color: "#a89870", background: "transparent" }}>
-                        {opt.label}
-                      </TapSpan>
+                    {pickedNpcs.map((n, i) => (
+                      <span key={i} style={{
+                        fontSize: 11, padding: "3px 9px", borderRadius: 3,
+                        border: `1px solid ${starterCompanion === n.name ? "#8ab070" : "#3a3428"}`,
+                        color: starterCompanion === n.name ? "#bce8ac" : "#c8bfa0",
+                        background: starterCompanion === n.name ? "rgba(138,176,112,.15)" : "rgba(0,0,0,.2)",
+                      }}>
+                        {n.name}
+                        {starterCompanion === n.name ? " · 开局同行" : ""}
+                      </span>
                     ))}
                   </div>
-                  <div style={{ fontSize: 10, color: "#6a6250", marginTop: 7, lineHeight: 1.6 }}>
-                    {playerFromNpc
-                      ? `已把「${playerFromNpc}」的名字/七维/内外功/人设填成主角档案，他会自动从「入游戏」名单挪走。体貌那几项卡里没有，下面自己补。`
-                      : "选一个人就把他填成你的主角；不选就用下面这份空白档案自己填。"}
+                </div>
+
+                <div style={{ fontSize: 10.5, color: "#6a6250", lineHeight: 1.9 }}>
+                  {result.opening ? "将带上一段改写好的开场白。" : "没有开场白。"}
+                  开局同行会以唯一出战位随队，其余同伴后续可在游戏里邀请。
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 底部：上一步 / 下一步 / 加入 */}
+          <div style={{
+            flexShrink: 0,
+            ...barFrame(S("ui/bar_paper2.webp")),
+            padding: "8px 12px",
+          }}>
+            {/* 规划/配装进度。只在跑过之后出现，跑完留着当结果条。 */}
+            {(planBusy || planMsg || equipBusy || equipMsg) && (() => {
+              const busy = equipBusy || planBusy;
+              const showEquip = equipBusy || (!planBusy && !!equipMsg);
+              const prog = showEquip ? equipProg : planProg;
+              const msg = showEquip ? equipMsg : planMsg;
+              return (
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ height: 3, borderRadius: 2, overflow: "hidden", background: "rgba(0,0,0,.45)", marginBottom: 5 }}>
+                    <div style={{ height: "100%", width: `${Math.round(prog * 100)}%`, background: "linear-gradient(90deg,#4a6a48,#9ac088)", transition: "width .35s ease" }} />
+                  </div>
+                  <div style={{ fontSize: 10.5, color: busy ? "#bce8ac" : "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>{msg}</div>
+                </div>
+              );
+            })()}
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", rowGap: 8 }}>
+              {wizardStep === 0 && (
+                <Btn onClick={onBack} tone="dim">← 回名单</Btn>
+              )}
+              {wizardStep > 0 && (
+                <Btn onClick={prevStep} tone="dim">← 上一步</Btn>
+              )}
+
+              {/* AI 一键规划落脚 / 配装备，只在选队友那步给（Step1） */}
+              {wizardStep === 1 && (
+                <>
+                  <span onClick={planBusy ? undefined : planAll}
+                    title={`让 AI 按人设判断每个人该驻场还是游走。${result.npcs.length} 人分 ${Math.ceil(result.npcs.length / PLAN_BATCH)} 批，规划完你还能自己改`}
+                    style={{
+                      cursor: planBusy ? "wait" : "pointer", userSelect: "none",
+                      fontSize: 12, padding: "6px 14px", borderRadius: 4, whiteSpace: "nowrap",
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      color: planBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                      border: `1px solid ${planBusy ? "#3a4a38" : "#5f8256"}`,
+                      background: planBusy ? "rgba(0,0,0,.3)"
+                        : "linear-gradient(180deg,rgba(74,120,64,.55),rgba(0,0,0,.5))",
+                    }}>
+                    <img src={S("ui/star.webp")} alt="" style={{ width: 13, height: 13, opacity: planBusy ? .4 : .9 }} />
+                    {planBusy ? "正在相地…" : "AI 一键规划落脚"}
+                  </span>
+                  <span onClick={equipBusy ? undefined : equipAll}
+                    title={`让 AI 按每个人的身份与品阶配 2-4 件随身物。${result.npcs.length} 人分 ${Math.ceil(result.npcs.length / PLAN_BATCH)} 批，配完你还能自己改`}
+                    style={{
+                      cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
+                      fontSize: 12, padding: "6px 14px", borderRadius: 4, whiteSpace: "nowrap",
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      color: equipBusy ? "#6a807c" : "#b4ecdc", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                      border: `1px solid ${equipBusy ? "#3a4a48" : "#4f807a"}`,
+                      background: equipBusy ? "rgba(0,0,0,.3)"
+                        : "linear-gradient(180deg,rgba(60,130,120,.55),rgba(0,0,0,.5))",
+                    }}>
+                    <img src={S("ui/star.webp")} alt="" style={{ width: 13, height: 13, opacity: equipBusy ? .4 : .9 }} />
+                    {equipBusy ? "正在配装…" : "AI 一键配装备"}
+                  </span>
+                </>
+              )}
+
+              <span style={{ flex: 1 }} />
+
+              {wizardStep < 2 ? (
+                <Btn onClick={nextStep} tone="main" disabled={wizardStep === 0 && result.npcs.length > 0 ? false : false}>
+                  下一步 →
+                </Btn>
+              ) : (
+                <Btn onClick={() => onFinish(pickedNpcs, starterCompanion)} tone="main"
+                  disabled={!pickedNpcs.length && !result.player}
+                  title={pickedNpcs.length ? `把 ${pickedNpcs.length} 人写进江湖，加入游戏` : "一个人都没选"}>
+                  <img src={S("ui/hammer.webp")} alt="" style={{ width: 14, verticalAlign: "-2px", marginRight: 5 }} />
+                  加入 · 开始游戏
+                </Btn>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        /* ── 游戏中常规入册：直接选 NPC 逐个设置（4:6 分栏） ── */
+        <>
+          {/* 4:6 分栏。原来左栏定宽 230px，那是面板还锁在 1120 宽时定的比例；撑满
+              之后名单挤在一条窄带里，而运行日志横向被压得每行都折。minWidth 0 是必须
+              的——flex 子项默认 min-width:auto，里面的长人名会把栏撑破 4:6 的比例。 */}
+          <div style={{ flex: 4, minWidth: 0, borderRight: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
+            <Bar>过目定稿 · 逐个设置</Bar>
+
+            {/* 名单垂直居中：一张卡常见三五个人，顶部对齐会在下面留一大片死黑。
+                margin auto 0 而不是 justifyContent center——后者在内容超出容器时会把
+                顶部裁掉滚不到（flex 的老陷阱）。外层再 alignSelf center 加限宽，免得
+                4:6 分栏后条目在一千像素宽的栏里拉得很散。 */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px", display: "flex", flexDirection: "column" }}>
+              {result.npcs.length > 0 && (
+                <div style={{ flexShrink: 0, marginBottom: 10, padding: "8px 9px", borderRadius: 4, background: "rgba(0,0,0,.2)", border: "1px solid #2a2419" }}>
+                  <div style={{ fontSize: 10, color: "#8a8270", marginBottom: 6 }}>批量设置 · 作用于勾选中的人</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 7 }}>
+                    <span style={{ fontSize: 10, color: "#6a6250", width: 26 }}>落脚</span>
+                    <select value={batchDistrict} onChange={e => setBatchDistrict(e.target.value)}
+                      style={{ fontSize: 10.5, padding: "2px 4px", background: "#1a1206", color: "#d8c8a0", border: "1px solid #3a3428", borderRadius: 3, maxWidth: 100 }}>
+                      {PLANNABLE_DISTRICTS.map(d => <option key={d} value={d} style={{ background: "#1a1206" }}>{d}</option>)}
+                    </select>
+                    <TapSpan onClick={() => applyBatchPlacement("resident", batchDistrict)} title={`勾选的人全部驻场于${batchDistrict}`} baseStyle={batchBtn}>全驻此地</TapSpan>
+                    <TapSpan onClick={() => applyBatchPlacement("wander", batchDistrict)} title="勾选的人全部改为游走" baseStyle={batchBtn}>全游走</TapSpan>
+                    <TapSpan onClick={() => applyBatchPlacement("mention", null)} title="勾选的人全部改为不落地（只被提到时注入）" baseStyle={batchBtn}>全不落地</TapSpan>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 10, color: "#6a6250", width: 26 }}>品阶</span>
+                    {["白", "绿", "蓝", "紫", "橙", "红"].map((label, lv) => (
+                      <TapSpan key={lv} onClick={() => applyBatchTier(lv)} title={`勾选的人全部调到${label}档`} baseStyle={batchBtn}>{label}</TapSpan>
+                    ))}
                   </div>
                 </div>
               )}
-              <ReviewPlayer
-                player={result.player} accent={accent}
-                onPatch={patchPlayer}
-                opening={result.opening}
-                onPatchOpening={o => setResult(r => ({ ...r, opening: o }))}
-                worldCandidates={result.world}
-                onPatchWorld={patchWorld}
-                cardPersonality={parsed?.card?.fields?.personality || ""}
-                cardMesExample={parsed?.card?.fields?.mesExample || ""}
-              />
-            </>
-          ) : null}
-        </div>
-
-        <div style={{
-          ...barFrame(S("ui/bar_paper2.webp")),
-          padding: "8px 12px",
-        }}>
-          {/* 规划/配装进度。只在跑过之后出现，跑完留着当结果条。两个 AI 操作不会同时
-              跑（都走令牌桶），共用这一条：谁在跑显示谁的进度与消息。 */}
-          {(planBusy || planMsg || equipBusy || equipMsg) && (() => {
-            const busy = equipBusy || planBusy;
-            const showEquip = equipBusy || (!planBusy && !!equipMsg);
-            const prog = showEquip ? equipProg : planProg;
-            const msg = showEquip ? equipMsg : planMsg;
-            return (
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ height: 3, borderRadius: 2, overflow: "hidden", background: "rgba(0,0,0,.45)", marginBottom: 5 }}>
-                  <div style={{ height: "100%", width: `${Math.round(prog * 100)}%`, background: "linear-gradient(90deg,#4a6a48,#9ac088)", transition: "width .35s ease" }} />
+              <div style={{ margin: "auto 0", width: "100%", maxWidth: 380, alignSelf: "center" }}>
+              {result.npcs.map((n, i) => {
+                return (
+                <div key={i} onClick={() => setDetail(i)}
+                  style={{
+                    cursor: "pointer", display: "flex", alignItems: "center", gap: 7,
+                    padding: "6px 8px", borderRadius: 4, marginBottom: 3,
+                    background: detail === i ? "rgba(212,168,83,.12)" : "transparent",
+                    borderLeft: `2px solid ${detail === i ? accent : "transparent"}`,
+                    opacity: picked.has(i) ? 1 : .45,
+                  }}>
+                  <span onClick={e => { e.stopPropagation(); toggleOne(i); }}
+                    title={picked.has(i) ? "点掉就不加入" : "点上加入"}
+                    style={{
+                      cursor: "pointer", flexShrink: 0, width: 14, textAlign: "center",
+                      fontSize: 12, color: picked.has(i) ? accent : "#4a4436",
+                    }}>{picked.has(i) ? "◉" : "○"}</span>
+                  <JadeTier value={n.levelCap} size={22} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: "#e8dcc0", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {n.name}
+                    </div>
+                    <div style={{ color: "#6a6250", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
+                  </div>
+                  {(() => {
+                    const pl = normalizePlacement(n.placement);
+                    const m = pl.mode;
+                    if (m === "mention") return null;
+                    const label = m === "resident"
+                      ? `驻·${pl.district}`
+                      : `游·${Object.keys(pl.weights).length}处`;
+                    return <span title={m === "resident" ? `驻场于${pl.district}` : "按权重游走"}
+                      style={{ fontSize: 9, color: accent, flexShrink: 0 }}>{label}</span>;
+                  })()}
+                  {n.source === "fallback" && <span title="全是默认值" style={{ fontSize: 9, color: "#6a6250" }}>默</span>}
                 </div>
-                <div style={{ fontSize: 10.5, color: busy ? "#bce8ac" : "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>{msg}</div>
+                );
+              })}
               </div>
-            );
-          })()}
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", rowGap: 8 }}>
-            <Btn onClick={onBack} tone="dim">← 回名单</Btn>
-            <span onClick={toggleAll} title="一次勾上或取消全部"
-              style={{
-                cursor: "pointer", userSelect: "none", fontSize: 11.5,
-                padding: "6px 12px", borderRadius: 4, whiteSpace: "nowrap",
-                border: `1px solid ${allOn ? accent : "#5a5038"}`,
-                background: "rgba(0,0,0,.3)",
-                color: allOn ? accent : "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)",
-              }}>{allOn ? "◉ 全不选" : "○ 全选"}</span>
-
-            {/* AI 一键规划落脚。据点从本作地图里选，回来的东西过白名单，玩家再改 */}
-            <span onClick={planBusy ? undefined : planAll}
-              title={`让 AI 按人设判断每个人该驻场还是游走。${result.npcs.length} 人分 ${Math.ceil(result.npcs.length / PLAN_BATCH)} 批，据点只能从本作地图里选，规划完你还能自己改`}
-              style={{
-                cursor: planBusy ? "wait" : "pointer", userSelect: "none",
-                fontSize: 12, padding: "6px 14px", borderRadius: 4, whiteSpace: "nowrap",
-                display: "inline-flex", alignItems: "center", gap: 6,
-                color: planBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
-                border: `1px solid ${planBusy ? "#3a4a38" : "#5f8256"}`,
-                background: planBusy ? "rgba(0,0,0,.3)"
-                  : "linear-gradient(180deg,rgba(74,120,64,.55),rgba(0,0,0,.5))",
-              }}>
-              <img src={S("ui/star.webp")} alt="" style={{ width: 13, height: 13, opacity: planBusy ? .4 : .9 }} />
-              {planBusy ? "正在相地…" : "AI 一键规划落脚"}
-            </span>
-
-            {/* AI 一键配装备。按人设/品阶配随身物，产出过 sanitizeCarryPlan，玩家可再改 */}
-            <span onClick={equipBusy ? undefined : equipAll}
-              title={`让 AI 按每个人的身份与品阶配 2-4 件随身物。${result.npcs.length} 人分 ${Math.ceil(result.npcs.length / PLAN_BATCH)} 批，配完你还能自己改`}
-              style={{
-                cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
-                fontSize: 12, padding: "6px 14px", borderRadius: 4, whiteSpace: "nowrap",
-                display: "inline-flex", alignItems: "center", gap: 6,
-                color: equipBusy ? "#6a807c" : "#b4ecdc", textShadow: "0 1px 2px rgba(0,0,0,.85)",
-                border: `1px solid ${equipBusy ? "#3a4a48" : "#4f807a"}`,
-                background: equipBusy ? "rgba(0,0,0,.3)"
-                  : "linear-gradient(180deg,rgba(60,130,120,.55),rgba(0,0,0,.5))",
-              }}>
-              <img src={S("ui/star.webp")} alt="" style={{ width: 13, height: 13, opacity: equipBusy ? .4 : .9 }} />
-              {equipBusy ? "正在配装…" : "AI 一键配装备"}
-            </span>
-
-            <span style={{ flex: 1 }} />
-            <span style={{ fontSize: 11, color: "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>
-              入 {pickedNpcs.length}／{result.npcs.length} 人
-              {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
-              {playerFromNpc ? ` ＋ 我自己（${playerFromNpc}）` : (result.player ? " ＋ 我自己" : "")}
-            </span>
-            <Btn onClick={() => onFinish(pickedNpcs)} tone="main"
-              disabled={!pickedNpcs.length && !result.player}
-              title={pickedNpcs.length ? `把 ${pickedNpcs.length} 人写进江湖` : "一个人都没选"}>
-              <img src={S("ui/hammer.webp")} alt="" style={{ width: 14, verticalAlign: "-2px", marginRight: 5 }} />
-              加入 {pickedNpcs.length} 人
-            </Btn>
+            </div>
+            <Terminal lines={term} height="min(30vh, 320px)" onExpand={onExpandTerm} />
           </div>
-        </div>
-      </div>
+
+          <div style={{ flex: 6, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <Bar right={result.genre ? <span style={{ fontSize: 10, color: "#8a8270" }}>{result.genre}</span> : null}>
+              {cur ? cur.name : "过目定稿"}
+            </Bar>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 28px" }}>
+              {cur ? (
+                <ReviewNpc npc={cur} accent={accent} dropped={dropped} apiCfg={apiCfg} cardImage={cardImage}
+                  currentDistrict={currentDistrict}
+                  onPatch={patch => patchNpc(detail, patch)} />
+              ) : (
+                <div style={{ fontSize: 10.5, color: "#6a6250", lineHeight: 1.9, padding: "4px 4px", textAlign: "center" }}>
+                  在左边点一个人，逐个设置他的品阶、招式、随身物、落脚。
+                </div>
+              )}
+            </div>
+
+            <div style={{
+              ...barFrame(S("ui/bar_paper2.webp")),
+              padding: "8px 12px",
+            }}>
+              {/* 规划/配装进度。只在跑过之后出现，跑完留着当结果条。两个 AI 操作不会同时
+                  跑（都走令牌桶），共用这一条：谁在跑显示谁的进度与消息。 */}
+              {(planBusy || planMsg || equipBusy || equipMsg) && (() => {
+                const busy = equipBusy || planBusy;
+                const showEquip = equipBusy || (!planBusy && !!equipMsg);
+                const prog = showEquip ? equipProg : planProg;
+                const msg = showEquip ? equipMsg : planMsg;
+                return (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ height: 3, borderRadius: 2, overflow: "hidden", background: "rgba(0,0,0,.45)", marginBottom: 5 }}>
+                      <div style={{ height: "100%", width: `${Math.round(prog * 100)}%`, background: "linear-gradient(90deg,#4a6a48,#9ac088)", transition: "width .35s ease" }} />
+                    </div>
+                    <div style={{ fontSize: 10.5, color: busy ? "#bce8ac" : "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>{msg}</div>
+                  </div>
+                );
+              })()}
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", rowGap: 8 }}>
+                <Btn onClick={onBack} tone="dim">← 回名单</Btn>
+                <span onClick={toggleAll} title="一次勾上或取消全部"
+                  style={{
+                    cursor: "pointer", userSelect: "none", fontSize: 11.5,
+                    padding: "6px 12px", borderRadius: 4, whiteSpace: "nowrap",
+                    border: `1px solid ${allOn ? accent : "#5a5038"}`,
+                    background: "rgba(0,0,0,.3)",
+                    color: allOn ? accent : "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                  }}>{allOn ? "◉ 全不选" : "○ 全选"}</span>
+
+                {/* AI 一键规划落脚。据点从本作地图里选，回来的东西过白名单，玩家再改 */}
+                <span onClick={planBusy ? undefined : planAll}
+                  title={`让 AI 按人设判断每个人该驻场还是游走。${result.npcs.length} 人分 ${Math.ceil(result.npcs.length / PLAN_BATCH)} 批，据点只能从本作地图里选，规划完你还能自己改`}
+                  style={{
+                    cursor: planBusy ? "wait" : "pointer", userSelect: "none",
+                    fontSize: 12, padding: "6px 14px", borderRadius: 4, whiteSpace: "nowrap",
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    color: planBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                    border: `1px solid ${planBusy ? "#3a4a38" : "#5f8256"}`,
+                    background: planBusy ? "rgba(0,0,0,.3)"
+                      : "linear-gradient(180deg,rgba(74,120,64,.55),rgba(0,0,0,.5))",
+                  }}>
+                  <img src={S("ui/star.webp")} alt="" style={{ width: 13, height: 13, opacity: planBusy ? .4 : .9 }} />
+                  {planBusy ? "正在相地…" : "AI 一键规划落脚"}
+                </span>
+
+                {/* AI 一键配装备。按人设/品阶配随身物，产出过 sanitizeCarryPlan，玩家可再改 */}
+                <span onClick={equipBusy ? undefined : equipAll}
+                  title={`让 AI 按每个人的身份与品阶配 2-4 件随身物。${result.npcs.length} 人分 ${Math.ceil(result.npcs.length / PLAN_BATCH)} 批，配完你还能自己改`}
+                  style={{
+                    cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
+                    fontSize: 12, padding: "6px 14px", borderRadius: 4, whiteSpace: "nowrap",
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    color: equipBusy ? "#6a807c" : "#b4ecdc", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                    border: `1px solid ${equipBusy ? "#3a4a48" : "#4f807a"}`,
+                    background: equipBusy ? "rgba(0,0,0,.3)"
+                      : "linear-gradient(180deg,rgba(60,130,120,.55),rgba(0,0,0,.5))",
+                  }}>
+                  <img src={S("ui/star.webp")} alt="" style={{ width: 13, height: 13, opacity: equipBusy ? .4 : .9 }} />
+                  {equipBusy ? "正在配装…" : "AI 一键配装备"}
+                </span>
+
+                <span style={{ flex: 1 }} />
+                <span style={{ fontSize: 11, color: "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>
+                  入 {pickedNpcs.length}／{result.npcs.length} 人
+                  {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
+                </span>
+                <Btn onClick={() => onFinish(pickedNpcs)} tone="main"
+                  disabled={!pickedNpcs.length}
+                  title={pickedNpcs.length ? `把 ${pickedNpcs.length} 人写进江湖` : "一个人都没选"}>
+                  <img src={S("ui/hammer.webp")} alt="" style={{ width: 14, verticalAlign: "-2px", marginRight: 5 }} />
+                  加入 {pickedNpcs.length} 人
+                </Btn>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

@@ -19,6 +19,8 @@ import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "./pl
 import { acquire } from "./rateLimiter.js";
 import { MOVE_ARCHETYPES, resolveArchetype } from "../combat/moveArchetypes.js";
 import { hpFromNeigong, atkFromWaigong } from "../npcGeneration.js";
+import { statsForQuality } from "../equipment.js";
+import { effectBrief, MOVE_RULES, PARAM_KEYS, EFFECT_CN } from "../itemEffectText.js";
 import { CATALOG } from "../items/catalog.js";
 import { callModel } from "../apiConfig.js";
 import { QUCUO_MAP } from "../qucuoMap.js";
@@ -185,6 +187,7 @@ function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
   const [forging, setForging] = useState(false);   // 是否展开"新造一件"
   const [draft, setDraft] = useState(null);
   const [aiBusy, setAiBusy] = useState(false);
+  const [detailItem, setDetailItem] = useState(null);   // 点随身物看详情（点名字展开，点 ✕ 才删）
 
   const cats = useMemo(() => [...new Set(CATALOG.map(e => e.category).filter(Boolean))], []);
   // 【为什么不再 slice(0,60)】百物录现在 406 件（兵器 101 / 护具 59 / 饰物 82 /
@@ -207,8 +210,77 @@ function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
   const has = (name) => carry.some(c => nameOf(c) === name);
   const add = (item) => { if (!has(nameOf(item))) onChange([...carry, item]); };
   const del = (name) => onChange(carry.filter(c => nameOf(c) !== name));
+  // 详情/新造都在编辑同一份「物品描述」。改一件已选的自造物：按名字替换回 carry。
+  const patchItem = (name, patch) => onChange(carry.map(c =>
+    nameOf(c) === name && typeof c === "object" ? { ...c, ...patch } : c));
 
-  const blankDraft = () => ({ name: "", category: cat || "weapon", quality: TIERS[levelCap]?.label || "白", desc: "", sixDim: {} });
+  const blankDraft = () => ({
+    name: "", category: cat || "weapon", quality: TIERS[levelCap]?.label || "白",
+    desc: "", sixDim: {}, effect: {}, atkMul: 1, defMul: 1,
+  });
+
+  // 攻击特效的可勾选清单（物品版的武学标志位）。按 combat/resolveTurn.js 认的
+  // 字段名，给出默认值——玩家只需勾"这件装备带不带某个效果"，数值交给默认。
+  // applyMark 需要 name/stacks 这种结构，单独给默认对象。
+  const ITEM_EFFECT_CHOICES = [
+    { key: "forceFirst", label: "必先手", def: true },
+    { key: "ignoreDefense", label: "无视防御", def: true },
+    { key: "doubleVsStatus", label: "克中招翻倍", def: true },
+    { key: "lowHpBonus", label: "残血增伤", def: 0.15 },
+    { key: "highHpBonus", label: "满血增伤", def: 0.15 },
+    { key: "afterStatusBonus", label: "趁中招追击", def: 0.2 },
+    { key: "detonateMark", label: "引爆内伤", def: true },
+    { key: "energyDiffDamage", label: "打能量差", def: true },
+    { key: "freezeEnergyRecovery", label: "封气", def: true },
+    { key: "onCounterSuccessDamageRatio", label: "应对反击", def: 0.5 },
+    { key: "nullifyStatusOnHit", label: "打断状态招", def: true },
+    { key: "immuneControl", label: "免控", def: true },
+    { key: "energyRestore", label: "起手回气", def: 2 },
+    { key: "hpRestore", label: "运功回血", def: 0.2 },
+    { key: "applyMark", label: "附内伤印", def: { name: "内伤印", stacks: 1 }, param: "applyMarkChance", paramDef: 0.25 },
+    { key: "enemyCostPenalty", label: "封穴耗气", def: { value: 2, turns: 2 } },
+  ];
+
+  // 某件（自造）物品当前挂着的 effect 里，某标志位是否为真（含 param 键辅助判断）
+  const effectHas = (item, key) => {
+    const e = item?.effect || {};
+    if (key === "applyMark") return !!e.applyMark;
+    if (key === "enemyCostPenalty") return !!e.enemyCostPenalty;
+    return !!e[key];
+  };
+
+  // 勾选/取消某特效标志位。取消时把 param 键（如 applyMarkChance）一并清掉。
+  const toggleEffect = (item, choice) => {
+    const e = { ...(item.effect || {}) };
+    if (effectHas(item, choice.key)) {
+      delete e[choice.key];
+      if (choice.param) delete e[choice.param];
+    } else {
+      e[choice.key] = choice.def;
+      if (choice.param && e[choice.param] == null) e[choice.param] = choice.paramDef;
+    }
+    patchItem(nameOf(item), { effect: e });
+  };
+
+  // 一件物品（在册字符串或自造对象）算出的最终攻击力：
+  //   在册 → catalog 条目自带 atkMul；自造 → 品质基准 × 玩家调的 atkMul。
+  const computeAtk = (item) => {
+    const isStr = typeof item === "string";
+    const catEntry = isStr ? CATALOG.find(e => e.name === item) : null;
+    const quality = catEntry ? catEntry.quality : (item?.quality || "白");
+    const mul = catEntry ? (catEntry.atkMul ?? 1) : (item?.atkMul ?? 1);
+    const base = statsForQuality(catEntry?.category || item?.category || "weapon", quality);
+    return base.atk != null ? Math.round(base.atk * mul) : null;
+  };
+  // 护甲同理
+  const computeDef = (item) => {
+    const isStr = typeof item === "string";
+    const catEntry = isStr ? CATALOG.find(e => e.name === item) : null;
+    const quality = catEntry ? catEntry.quality : (item?.quality || "白");
+    const mul = catEntry ? (catEntry.defMul ?? 1) : (item?.defMul ?? 1);
+    const base = statsForQuality(catEntry?.category || item?.category || "armor", quality);
+    return base.def != null ? Math.round(base.def * mul) : null;
+  };
 
   // 让 AI 补描述。只写描述，不碰数值——数值是玩家自己定的，AI 一插手就会
   // 出现"界面上写着加2身法、描述里说这是把重剑"这种自相矛盾。
@@ -245,16 +317,126 @@ function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
         {carry.map((c, i) => {
           const nm = nameOf(c);
           const custom = typeof c !== "string";
+          const open = detailItem && nameOf(detailItem) === nm;
           return (
-            <span key={nm + i} onClick={() => del(nm)} title={custom ? `自造：${c.desc || "无描述"}` : "点击移除"}
+            <span key={nm + i}
               style={{
-                cursor: "pointer", fontSize: 10.5, padding: "3px 8px", borderRadius: 3,
-                border: `1px solid ${custom ? "#6a8a70" : "#4a4028"}`,
+                display: "inline-flex", alignItems: "center", gap: 5,
+                fontSize: 10.5, padding: "3px 4px 3px 8px", borderRadius: 3,
+                border: `1px solid ${open ? "#d4a853" : custom ? "#6a8a70" : "#4a4028"}`,
                 background: custom ? "rgba(120,180,130,.10)" : "rgba(212,168,83,.10)", color: "#e8dcc0",
-              }}>{custom ? "⚒ " : ""}{nm} ✕</span>
+              }}>
+              <span onClick={() => setDetailItem(open ? null : c)} title="点看详情"
+                style={{ cursor: "pointer" }}>{custom ? "⚒ " : ""}{nm}</span>
+              <span onClick={() => { del(nm); if (open) setDetailItem(null); }} title="移除这件"
+                style={{ cursor: "pointer", color: "#c08878", fontSize: 11, padding: "0 2px" }}>✕</span>
+            </span>
           );
         })}
       </div>
+
+      {/* 随身物详情：点上面的名字展开。显示描述/伤害/攻击特效/六维；自造物可改，
+          在册物只读（数值由百物录裁决，改它等于改全世界的设定）。 */}
+      {detailItem && (() => {
+        const custom = typeof detailItem !== "string";
+        const catEntry = !custom ? CATALOG.find(e => e.name === detailItem) : null;
+        const quality = custom ? detailItem.quality : (catEntry?.quality || "白");
+        const category = custom ? detailItem.category : (catEntry?.category || "misc");
+        const atk = computeAtk(detailItem);
+        const def = computeDef(detailItem);
+        const sixDim = custom && detailItem.sixDim ? Object.entries(detailItem.sixDim).filter(([, v]) => v) : [];
+        const desc = custom ? detailItem.desc : (catEntry?.desc || "");
+        const effectText = custom
+          ? effectBrief(detailItem.effect, detailItem.sixDim)
+          : effectBrief(catEntry?.effect, catEntry?.sixDim);
+        return (
+          <div style={{ marginBottom: 7, padding: "8px 10px", borderRadius: 3, border: "1px solid #4a4028", background: "rgba(0,0,0,.3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <span style={{ color: "#e8dcc0", fontSize: 12 }}>{nameOf(detailItem)}</span>
+              <span style={{ fontSize: 10, color: "#a89870" }}>
+                {{ weapon: "兵器", armor: "护具", accessory: "饰物", misc: "杂物" }[category] || category} · {quality}档
+              </span>
+              <span style={{ flex: 1 }} />
+              <span onClick={() => setDetailItem(null)} style={{ cursor: "pointer", fontSize: 10, color: "#6a6250" }}>收起</span>
+            </div>
+
+            {/* 伤害 / 防御 */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+              {atk != null && (
+                <div style={{ fontSize: 10.5, color: "#d89050" }}>
+                  攻击力 <span style={{ color: "#e8b070", fontWeight: 700 }}>{atk}</span>
+                  {custom && category === "weapon" && (
+                    <span style={{ marginLeft: 6, color: "#6a6250", fontSize: 9.5 }}>
+                      倍率
+                      <input type="number" step={0.05} min={1} max={1.6}
+                        value={detailItem.atkMul ?? 1}
+                        onChange={e => patchItem(nameOf(detailItem), { atkMul: Math.max(1, Math.min(1.6, Number(e.target.value) || 1)) })}
+                        style={{ width: 46, marginLeft: 4, textAlign: "center", background: "rgba(0,0,0,.4)", border: "1px solid #3a3428", borderRadius: 2, color: "#e8b070", fontSize: 10 }} />
+                    </span>
+                  )}
+                </div>
+              )}
+              {def != null && (
+                <div style={{ fontSize: 10.5, color: "#6a9ac4" }}>
+                  防御力 <span style={{ color: "#8ab8e0", fontWeight: 700 }}>{def}</span>
+                  {custom && category === "armor" && (
+                    <span style={{ marginLeft: 6, color: "#6a6250", fontSize: 9.5 }}>
+                      倍率
+                      <input type="number" step={0.05} min={1} max={1.6}
+                        value={detailItem.defMul ?? 1}
+                        onChange={e => patchItem(nameOf(detailItem), { defMul: Math.max(1, Math.min(1.6, Number(e.target.value) || 1)) })}
+                        style={{ width: 46, marginLeft: 4, textAlign: "center", background: "rgba(0,0,0,.4)", border: "1px solid #3a3428", borderRadius: 2, color: "#8ab8e0", fontSize: 10 }} />
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* 描述：自造物可改，在册物只读 */}
+            {custom ? (
+              <textarea rows={2}
+                value={detailItem.desc || ""}
+                placeholder="写它什么样、什么手感或什么来历"
+                onChange={e => patchItem(nameOf(detailItem), { desc: e.target.value.slice(0, 200) })}
+                style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)", border: "1px solid #3a3428", borderRadius: 3, padding: "5px 8px", color: "#c8bfa0", fontSize: 10.5, lineHeight: 1.7, resize: "vertical", fontFamily: "inherit" }} />
+            ) : (
+              <div style={{ fontSize: 10.5, color: "#c8bfa0", lineHeight: 1.6 }}>
+                {desc || "在册物品，运行时按名字查百物录补全数值与词条。"}
+              </div>
+            )}
+
+            {/* 攻击特效：自造物可勾选，在册物只读列出 */}
+            {custom ? (
+              <div style={{ marginTop: 6 }}>
+                <div style={{ fontSize: 10, color: "#8a8270", marginBottom: 4 }}>攻击特效 · 点一下加上/去掉</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {ITEM_EFFECT_CHOICES.map(choice => {
+                    const on = effectHas(detailItem, choice.key);
+                    return (
+                      <span key={choice.key} onClick={() => toggleEffect(detailItem, choice)}
+                        title={`${choice.def === true ? "" : `默认 ${JSON.stringify(choice.def)} `}装备时叠到招式上`}
+                        style={{
+                          cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 3,
+                          border: `1px solid ${on ? "#8ab070" : "#2a2419"}`,
+                          color: on ? "#bce8ac" : "#5a5448",
+                          background: on ? "rgba(138,176,112,.12)" : "transparent",
+                        }}>{choice.label}</span>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              effectText && (
+                <div style={{ marginTop: 5, fontSize: 10, color: "#8ab070" }}>特效：{effectText}</div>
+              )
+            )}
+
+            {sixDim.length > 0 && (
+              <div style={{ marginTop: 4, fontSize: 10, color: "#8ab070" }}>加成：{sixDim.map(([k, v]) => `${k}+${v}`).join("、")}</div>
+            )}
+          </div>
+        );
+      })()}
 
       <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
         <select value={cat} onChange={e => setCat(e.target.value)} style={{ ...selStyle, width: 96 }}>
@@ -318,6 +500,68 @@ function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                     border: `1px solid ${v ? "#8ab070" : "#2a2419"}`,
                     color: v ? "#c8dfc0" : "#5a5448",
                   }}>{k}{v ? ` +${v}` : ""}</span>
+              );
+            })}
+          </div>
+
+          {/* 攻防倍率：兵器调 atkMul、护具调 defMul，显示成品攻击/防御力 */}
+          {(draft.category === "weapon" || draft.category === "armor") && (
+            <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
+              {draft.category === "weapon" && (() => {
+                const base = statsForQuality("weapon", draft.quality).atk ?? 0;
+                const mul = draft.atkMul ?? 1;
+                return (
+                  <label style={{ flex: 1 }}>
+                    <span style={{ display: "block", fontSize: 10, color: "#8a8270", marginBottom: 3 }}>
+                      攻击力 {Math.round(base * mul)} · 倍率 {mul.toFixed(2)}
+                    </span>
+                    <input type="range" min={1} max={1.6} step={0.05} value={mul}
+                      onChange={e => setDraft(d => ({ ...d, atkMul: Number(e.target.value) }))}
+                      style={{ width: "100%", accentColor: "#d89050" }} />
+                  </label>
+                );
+              })()}
+              {draft.category === "armor" && (() => {
+                const base = statsForQuality("armor", draft.quality).def ?? 0;
+                const mul = draft.defMul ?? 1;
+                return (
+                  <label style={{ flex: 1 }}>
+                    <span style={{ display: "block", fontSize: 10, color: "#8a8270", marginBottom: 3 }}>
+                      防御力 {Math.round(base * mul)} · 倍率 {mul.toFixed(2)}
+                    </span>
+                    <input type="range" min={1} max={1.6} step={0.05} value={mul}
+                      onChange={e => setDraft(d => ({ ...d, defMul: Number(e.target.value) }))}
+                      style={{ width: "100%", accentColor: "#6a9ac4" }} />
+                  </label>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* 攻击特效：跟详情面板同一份可勾选清单 */}
+          <div style={{ fontSize: 10, color: "#8a8270", marginBottom: 3 }}>攻击特效 · 点一下加上/去掉</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+            {ITEM_EFFECT_CHOICES.map(choice => {
+              const on = effectHas(draft, choice.key);
+              return (
+                <span key={choice.key} onClick={() => {
+                  const e = { ...(draft.effect || {}) };
+                  if (effectHas(draft, choice.key)) {
+                    delete e[choice.key];
+                    if (choice.param) delete e[choice.param];
+                  } else {
+                    e[choice.key] = choice.def;
+                    if (choice.param && e[choice.param] == null) e[choice.param] = choice.paramDef;
+                  }
+                  setDraft(d => ({ ...d, effect: e }));
+                }}
+                  title={`${choice.def === true ? "" : `默认 ${JSON.stringify(choice.def)} `}装备时叠到招式上`}
+                  style={{
+                    cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 3,
+                    border: `1px solid ${on ? "#8ab070" : "#2a2419"}`,
+                    color: on ? "#bce8ac" : "#5a5448",
+                    background: on ? "rgba(138,176,112,.12)" : "transparent",
+                  }}>{choice.label}</span>
               );
             })}
           </div>
@@ -612,16 +856,18 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <Pills accent={accent} value={pl.mode} onChange={m => {
-          // 点「驻场」直接把玩家此刻所在的据点填进去，不必再翻一次下拉。
-          // 【为什么这样合理】在审改界面按「驻场」时，绝大多数意图就是"让这人待在我
-          // 现在这地方"。空着的话据点是「未选，等同不落地」——按了驻场却什么都不会
-          // 发生，还得再点一次下拉才生效，等于白按一遍。
-          // 仍然只是默认值，下拉照旧能改。currentDistrict 不在可选清单里（比如玩家
-          // 正站在心灵之海）就不填。
+          // 【为什么切驻场/游走要立刻塞个默认据点·这是"点不动"的真因】
+          // 上面 pl = normalizePlacement(value)，而 normalizePlacement 有一条硬规则：
+          // resident 没 district、wander 没 weights，一律退回 mention。于是点「驻场」
+          // 时若据点还空着，切过去的 resident 会被当场 normalize 回 mention——Pills 的
+          // 高亮瞬间弹回「不落地」，玩家看到的就是"点了没反应、点不动"（光标是手型、
+          // 点击也触发了，只是被 normalize 吃掉）。所以切到 resident/wander 必须同时给
+          // 一个默认据点让它站得住；据点下拉/权重照旧能改。开局前 currentDistrict 为空，
+          // 退而取清单第一个。
           const patch = { mode: m };
-          if (m === "resident" && !pl.district && DISTRICTS.includes(currentDistrict)) {
-            patch.district = currentDistrict;
-          }
+          const fallback = DISTRICTS.includes(currentDistrict) ? currentDistrict : DISTRICTS[0];
+          if (m === "resident" && !pl.district) patch.district = fallback;
+          if (m === "wander" && !Object.keys(pl.weights || {}).length) patch.weights = { [fallback]: 50 };
           set(patch);
         }}
           options={["mention", "resident", "wander"].map(m => ({ value: m, label: PLACEMENT_LABEL[m] }))} />

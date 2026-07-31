@@ -25,7 +25,7 @@ import { MOVE_TYPE } from "./combat/moveTypes.js";
 const pct = (v) => `${Math.round(v * 100)}%`;
 
 // 这些键是别的键的参数、不单独成词（否则会出现"附内伤印、附内伤印几率"）
-const PARAM_KEYS = new Set(["applyMarkChance", "applyMarkOnHit", "statusChance", "confuseChance"]);
+export const PARAM_KEYS = new Set(["applyMarkChance", "applyMarkOnHit", "statusChance", "confuseChance"]);
 
 // ── 唯一的规则表 ──────────────────────────────────────────────────────────
 // key    对应的字段名（用于 EFFECT_CN 反查与"这个标志位有没有词条"的守卫）
