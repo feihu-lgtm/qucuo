@@ -23,6 +23,47 @@ import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATA
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
+// 入册主角卡的随身物(carry)→背包物品(inv)。carry 的元素两形态：在册物是名字字符串，
+// 自造物是完整对象（跟 CarryPicker 存的一致）。都过 makeGameItem 补全数值/词条，配
+// 唯一 id。兵器/护具/饰物各把品阶最高的一件标为 equipped（开局即战力，见玩家选择）。
+function cardCarryToInvItems(carry, seed = "") {
+  const items = (carry || [])
+    .map((c, i) => {
+      const spec = typeof c === "string" ? { name: c } : c;
+      const base = makeGameItem(spec);
+      if (!base || !base.name) return null;
+      return { ...base, id: `cardcarry_${seed}${i}`, equipped: false, stolen: false };
+    })
+    .filter(Boolean);
+  for (const cat of [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY]) {
+    const ofCat = items.filter(it => it.category === cat);
+    if (!ofCat.length) continue;
+    ofCat.sort((a, b) => QUALITY.indexOf(b.quality) - QUALITY.indexOf(a.quality));
+    ofCat[0].equipped = true;
+  }
+  return items;
+}
+
+// 把入册主角卡的技能/装备并进现有 skills / inv。用在开局(CharacterCreate)与游戏中入册
+// 两条路径，逻辑一致：武学有就整套替换（覆盖默认三脚猫拳），装备追加进背包并按类别
+// 自动穿上最好的一件（同类别的旧装备先卸下，免得两把兵器同时算进战力）。
+function applyCardSkills(fromCard, setSkills) {
+  if (Array.isArray(fromCard?.skills) && fromCard.skills.length) {
+    setSkills(fromCard.skills.map(s => ({ ...s })));
+  }
+}
+function applyCardCarry(fromCard, setInv, seed = "") {
+  const cardItems = cardCarryToInvItems(fromCard?.carry, seed);
+  if (!cardItems.length) return 0;
+  const takenCats = new Set(cardItems.filter(i => i.equipped).map(i => i.category));
+  setInv(prev => {
+    const base = (prev || []).map(it =>
+      (it && typeof it === "object" && it.equipped && takenCats.has(it.category)) ? { ...it, equipped: false } : it);
+    return [...base, ...cardItems];
+  });
+  return cardItems.length;
+}
+
 import { getZoneTheme, ink } from "./theme.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import CodexScreen from "./CodexScreen.jsx";
@@ -4177,13 +4218,18 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       next.hp = [Math.max(1, Math.round(maxHp * curRatio)), maxHp];
       return next;
     });
+    // 主角卡的初始武学/装备，跟开局路径同一套（武学整套替换、装备追加+自动上身）。
+    // seed 带时间戳：游戏中可能反复入册，避免 carry 物品 id 撞号（撞了会一起被装备/卸下）。
+    applyCardSkills(player, setSkills);
+    const carried = applyCardCarry(player, setInv, `ci${Date.now().toString(36)}_`);
     const filled = Object.values(player.bodyProfile || {}).filter(v => (v || "").trim()).length;
+    const sk = (player.skills || []).length;
     addLog([
-      { t: "sys", text: `  已按卡改写自身：体貌填了 ${filled}/7 项，七维已录。` },
+      { t: "sys", text: `  已按卡改写自身：体貌填了 ${filled}/7 项，七维已录${sk ? `，带 ${sk} 门武学` : ""}${carried ? `，${carried} 件随身物已入包` : ""}。` },
       ...(filled < 7 ? [{ t: "sys", text: "  余下几项去右栏「◈ 体貌」自己补，私密层那五项只能手填。" }] : []),
       ...(opening?.rewritten ? [{ t: "narr", text: opening.rewritten }] : []),
     ]);
-  }, [setChar, addLog]);
+  }, [setChar, setSkills, setInv, addLog]);
 
   // 世界观条目走关键词点灯那条路（跟人物同一个机制，见 registerImportedWorld 注释）
   const handleImportWorld = useCallback((items) => {
@@ -4545,8 +4591,16 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         }
         return next;
       });
-      if (fromCard?.persona) {
-        addLog([{ t: "sys", text: `  （已按入册的角色卡定下体貌与天赋）` }]);
+      // 主角卡的初始武学与装备（AI 现编/AI 配的那两项）。武学整套替换默认三脚猫拳，
+      // setSkills 会触发 moveset 重算（见 skills 依赖的那个 effect）；装备追加进背包并
+      // 自动穿上兵器/护具/饰物各一件。
+      if (fromCard) {
+        applyCardSkills(fromCard, setSkills);
+        const n = applyCardCarry(fromCard, setInv, "cc_");
+        const sk = (fromCard.skills || []).length;
+        if (fromCard.persona || sk || n) {
+          addLog([{ t: "sys", text: `  （已按入册的角色卡定下体貌与天赋${sk ? `，带 ${sk} 门武学` : ""}${n ? `，${n} 件随身物已入包、装备已上身` : ""}）` }]);
+        }
       }
       // 开局同行：开局向导指定了「1 人开局就随队」，在这里把它解锁进 companionState
       // （唯一出战位）。importedRegistry 的 getImportedNpc 返回入册时的完整档案，

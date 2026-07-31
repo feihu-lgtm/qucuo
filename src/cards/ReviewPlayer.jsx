@@ -11,16 +11,85 @@
 //   · 卡的 personality 一律丢弃。玩家的性格由每轮输入实时表达，写死会跟实际
 //     操作打架——你打「我冷笑一声」，卡里写着「温和有礼」，两句话互相拆台。
 
-import React from "react";
+import React, { useState } from "react";
 import {
   BODY_PUBLIC, BODY_PRIVATE, TIERS, StatRow, SevenDim, Src, TextField,
   Section, Note, Pills, selStyle,
 } from "./ReviewParts.jsx";
-import { TIER_NEIGONG } from "./scanPrompts.js";
+import { TIER_NEIGONG, parseJsonLoose } from "./scanPrompts.js";
 import { hpFromNeigong } from "../npcGeneration.js";
+import { CarryPicker } from "./ReviewNpc.jsx";
+import { callModel } from "../apiConfig.js";
+import { acquire } from "./rateLimiter.js";
+import { buildSkillPlan, sanitizeSkillPlan, tierFromNeigong, SKILL_PLAN_MAX_TOKENS } from "./skillPlan.js";
+import { buildCarryPlan, sanitizeCarryPlan, CARRY_PLAN_MAX_TOKENS } from "./carryPlan.js";
+
+// 主角武学编辑器：一门武学 = 名字 + 路数（攻击/防御/状态）+ 品阶 + active + 一句描述。
+// 【为什么主角用「武学」而不是 NPC 那套 5 槽招式】主角的战斗招式由武学(skills)派生
+// （见 npcGeneration.deriveMovesetFromSkills）：切磋按攻击/防御/状态各取一门 active 的
+// 武学出招，缺某路自动用白档制式招补上。武学能升级、能花潜能修炼，是主角专属的成长线。
+function SkillEditor({ skills, onChange, tierCap, accent, aiBusy, onAiScan }) {
+  const list = Array.isArray(skills) ? skills : [];
+  const setOne = (i, patch) => onChange(list.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  const del = (i) => onChange(list.filter((_, j) => j !== i));
+  const add = () => onChange([...list, {
+    name: "", quality: TIERS[tierCap]?.label || "白", level: 1, exp: 0, maxExp: 100,
+    stage: "入门", active: true, moveType: "攻击",
+  }]);
+  return (
+    <div>
+      {!list.length && (
+        <div style={{ fontSize: 10.5, color: "#6a6250", marginBottom: 8, lineHeight: 1.7 }}>
+          还没有武学。点「✨ AI 现编武学」让它照卡里的招式描写生成，或手动加一门。
+        </div>
+      )}
+      {list.map((s, i) => (
+        <div key={i} style={{ marginBottom: 7, padding: "7px 9px", borderRadius: 3, background: "rgba(0,0,0,.22)", border: "1px solid #2a2419" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+            <input value={s.name || ""} placeholder="武学名"
+              onChange={e => setOne(i, { name: e.target.value.slice(0, 10) })}
+              style={{ ...selStyle, flex: 1, textAlign: "center" }} />
+            <select value={s.moveType || "攻击"} onChange={e => setOne(i, { moveType: e.target.value })}
+              style={{ ...selStyle, width: 60 }}>
+              {["攻击", "防御", "状态"].map(t => <option key={t} value={t} style={{ background: "#1a1206" }}>{t}</option>)}
+            </select>
+            <select value={s.quality || "白"} onChange={e => setOne(i, { quality: e.target.value })}
+              style={{ ...selStyle, width: 62 }}>
+              {TIERS.map(t => <option key={t.label} value={t.label} style={{ background: "#1a1206", color: t.color }}>{t.label}档</option>)}
+            </select>
+            <span onClick={() => setOne(i, { active: !s.active })}
+              title={s.active ? "这门当前会出手（同路数只第一门生效）" : "点亮才会用它出招"}
+              style={{ cursor: "pointer", fontSize: 10, color: s.active ? accent : "#5a5448", flexShrink: 0, whiteSpace: "nowrap" }}>
+              {s.active ? "◉ 用" : "○ 备"}
+            </span>
+            <span onClick={() => del(i)} title="删掉这门"
+              style={{ cursor: "pointer", color: "#c08878", fontSize: 11, flexShrink: 0 }}>✕</span>
+          </div>
+          <input value={s.desc || ""} placeholder="一句话写这门功夫使出来什么样（注入给说书人）"
+            onChange={e => setOne(i, { desc: e.target.value.slice(0, 30) })}
+            style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "#c8bfa0" }} />
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
+        <span onClick={add} style={{ cursor: "pointer", fontSize: 10.5, color: "#8a8270" }}>＋ 加一门</span>
+        <span style={{ flex: 1 }} />
+        <span onClick={aiBusy ? undefined : onAiScan}
+          title="让 AI 照卡里主角的招式/战斗描写现编武学"
+          style={{
+            cursor: aiBusy ? "wait" : "pointer", userSelect: "none",
+            fontSize: 11.5, padding: "5px 12px", borderRadius: 4, whiteSpace: "nowrap",
+            display: "inline-flex", alignItems: "center", gap: 5,
+            color: aiBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+            border: `1px solid ${aiBusy ? "#3a4a38" : "#5f8256"}`,
+            background: aiBusy ? "rgba(0,0,0,.3)" : "linear-gradient(180deg,rgba(74,120,64,.5),rgba(0,0,0,.45))",
+          }}>✨ {aiBusy ? "现编中…" : "AI 现编武学"}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function ReviewPlayer({
-  player, onPatch, accent,
+  player, onPatch, accent, apiCfg,
   opening, onPatchOpening,
   worldCandidates, onPatchWorld,
   cardPersonality, cardMesExample,
@@ -36,6 +105,50 @@ export default function ReviewPlayer({
 
   const setBody = (k, v) => onPatch({ bodyProfile: { ...bp, [k]: v } });
   const setPriv = (k, v) => onPatch({ bodyProfilePrivate: { ...priv, [k]: v } });
+
+  // 武学/装备的品阶上限跟着内功走（白档基准内功 5）。AI 现编的武学、AI 配的装备
+  // 都不许超过这个档，免得白袍开局就红档神功。
+  const tier = tierFromNeigong(neigong);
+  const [skillBusy, setSkillBusy] = useState(false);
+  const [equipBusy, setEquipBusy] = useState(false);
+  const [aiMsg, setAiMsg] = useState("");
+
+  // AI 现编武学：读主角人设 + 卡的性格/招式线索，产 1-3 门武学（覆盖现有的）。
+  const aiScanSkills = async () => {
+    if (skillBusy || !apiCfg) return;
+    setSkillBusy(true); setAiMsg("正在现编武学…");
+    try {
+      await acquire(ms => setAiMsg(`排队 ${Math.ceil(ms / 1000)}s…`));
+      const { system, user } = buildSkillPlan(p, { tier, moveHints: cardMesExample || cardPersonality });
+      const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
+        { maxTokens: SKILL_PLAN_MAX_TOKENS, temperature: 0.7 });
+      const skills = sanitizeSkillPlan(parseJsonLoose(res.text || ""), { tierCap: tier });
+      if (skills.length) { onPatch({ skills }); setAiMsg(`现编了 ${skills.length} 门武学，可自己改`); }
+      else setAiMsg("AI 没给出认得出的武学，再点一次试试");
+    } catch (e) {
+      setAiMsg(`没成：${String(e?.message || e).slice(0, 60)}`);
+    } finally { setSkillBusy(false); }
+  };
+
+  // AI 配装备：借 carryPlan（跟入册里「AI 一键配装备」同一套），把主角当一个人送去
+  // 配 2-4 件随身物，覆盖现有 carry。品阶不超过 tier。
+  const aiScanEquip = async () => {
+    if (equipBusy || !apiCfg) return;
+    setEquipBusy(true); setAiMsg("正在配装备…");
+    try {
+      await acquire(ms => setAiMsg(`排队 ${Math.ceil(ms / 1000)}s…`));
+      const one = [{ name: p.name || "主角", levelCap: tier, brief: "游历江湖的主角", entry: p.persona || "" }];
+      const { system, user } = buildCarryPlan(one);
+      const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
+        { maxTokens: CARRY_PLAN_MAX_TOKENS.batch, temperature: 0.7 });
+      const plans = sanitizeCarryPlan(parseJsonLoose(res.text || ""), one);
+      const items = plans[0]?.items || [];
+      if (items.length) { onPatch({ carry: items }); setAiMsg(`配了 ${items.length} 件装备，点物件名看词条`); }
+      else setAiMsg("AI 没配出装备，再点一次试试");
+    } catch (e) {
+      setAiMsg(`没成：${String(e?.message || e).slice(0, 60)}`);
+    } finally { setEquipBusy(false); }
+  };
 
   return (
     <>
@@ -175,6 +288,40 @@ export default function ReviewPlayer({
         </div>
         <Note tone="info">调高这两项等于开局就带一身功夫。想从零开始就别动它。</Note>
       </Section>
+
+      {/* 13 初始武学（AI 现编）*/}
+      <Section title={<>初始武学<Src source="ai" why="AI 照卡里招式描写现编" /><span style={{ fontSize: 10, color: "#8a8270", marginLeft: 6 }}>{(p.skills || []).length} 门</span></>}>
+        <SkillEditor skills={p.skills} tierCap={tier} accent={accent}
+          aiBusy={skillBusy} onAiScan={aiScanSkills}
+          onChange={sk => onPatch({ skills: sk })} />
+        <Note tone="info">
+          切磋按「攻击/防御/状态」各取一门 active 的武学出招，缺某路自动用白档制式招补上。
+          品阶越高招式越强，往后可在游戏里花潜能修炼。
+        </Note>
+      </Section>
+
+      {/* 14 初始装备（AI 配，点物件名看词条）*/}
+      <Section title={<>初始装备<Src source="ai" why="AI 按身份与品阶配" /><span style={{ fontSize: 10, color: "#8a8270", marginLeft: 6 }}>{(p.carry || []).length} 件</span></>}>
+        <CarryPicker apiCfg={apiCfg} carry={p.carry || []} levelCap={tier}
+          onChange={c => onPatch({ carry: c })} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+          <span style={{ flex: 1, fontSize: 10, color: "#6a6250", lineHeight: 1.6 }}>
+            兵器/护具/饰物导入后各自动装备一件，其余进背包。点上面的物件名可展开看它的词条（攻击力/特效/加成）。
+          </span>
+          <span onClick={equipBusy ? undefined : aiScanEquip}
+            title="让 AI 按主角身份与品阶配 2-4 件随身物"
+            style={{
+              cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
+              fontSize: 11.5, padding: "5px 12px", borderRadius: 4, whiteSpace: "nowrap",
+              display: "inline-flex", alignItems: "center", gap: 5,
+              color: equipBusy ? "#6a807c" : "#b4ecdc", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+              border: `1px solid ${equipBusy ? "#3a4a48" : "#4f807a"}`,
+              background: equipBusy ? "rgba(0,0,0,.3)" : "linear-gradient(180deg,rgba(60,130,120,.5),rgba(0,0,0,.45))",
+            }}>✨ {equipBusy ? "配装中…" : "AI 配装备"}</span>
+        </div>
+      </Section>
+
+      {aiMsg && <Note tone="info">{aiMsg}</Note>}
     </>
   );
 }

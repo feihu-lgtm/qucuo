@@ -180,7 +180,7 @@ function MoveEditor({ moves, levelCap, onChange, why, source }) {
  * 随机抽（按品阶给武器/护甲/饰品/杂物），不至于两手空空。只有你想精确指定
  * 「这人身上一定有那把刀」时才需要在这儿挑。
  */
-function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
+export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
   const [cat, setCat] = useState("");
   const [qual, setQual] = useState("");
   const [kw, setKw] = useState("");

@@ -24,8 +24,10 @@ import {
   PLAN_MAX_TOKENS,
 } from "./cards/placementPlan.js";
 import { buildCarryPlan, sanitizeCarryPlan, CARRY_PLAN_MAX_TOKENS } from "./cards/carryPlan.js";
+import { movesToSkills } from "./cards/skillPlan.js";
 import ReviewNpc from "./cards/ReviewNpc.jsx";
 import ReviewPlayer from "./cards/ReviewPlayer.jsx";
+import ImportSelfTutorial, { IMPORT_SELF_TUTORIAL_KEY } from "./cards/ImportSelfTutorial.jsx";
 
 const EMPTY_SPECIAL = { 根骨: 5, 悟性: 5, 体魄: 5, 魅力: 5, 智谋: 5, 身法: 5, 气运: 5 };
 
@@ -72,6 +74,17 @@ export default function CardImportScreen({
   const [parsed, setParsed] = useState(null);
   const [err, setErr] = useState("");
   const [dragOver, setDragOver] = useState(false);
+
+  // 「导入卡当自己」入门教程：进来先弹一次，看过记进 localStorage 之后不再自动弹；
+  // 标题栏留「教程」随时可重看。常规入册(playerMode=false)不弹。
+  const [showTutorial, setShowTutorial] = useState(() => {
+    if (!playerMode) return false;
+    try { return !localStorage.getItem(IMPORT_SELF_TUTORIAL_KEY); } catch { return true; }
+  });
+  const dismissTutorial = useCallback(() => {
+    try { localStorage.setItem(IMPORT_SELF_TUTORIAL_KEY, "1"); } catch { /* ignore */ }
+    setShowTutorial(false);
+  }, []);
 
   // 是否把这张卡当主角：只由入口(playerMode)决定，界面里不再让玩家临时勾。
   const asPlayer = playerMode;
@@ -264,6 +277,10 @@ export default function CardImportScreen({
       special: base?.special || { ...EMPTY_SPECIAL },
       specialWhy: base?.specialWhy || "",
       neigong: 5, waigong: 5,
+      // 主角的初始武学与装备：卡里没有，扫描也不产出，默认空。玩家在「设置主角」
+      // 那步点「AI 现编武学 / AI 配装备」现生成，或手填。
+      skills: Array.isArray(base?.skills) ? base.skills : [],
+      carry: Array.isArray(base?.carry) ? base.carry : [],
       persona: base?.persona || parsed?.personaCandidate || "",
       dialogueExamples: undefined,
       source: base?.source || "fallback",
@@ -347,9 +364,16 @@ export default function CardImportScreen({
           padding: "0 12px", minHeight: 52,
         }}>
           <img src={S("ui/scroll_ic.webp")} alt="" style={{ width: 22, height: 22, opacity: .9 }} />
-          <span style={{ color: "#f0e0c0", fontSize: 16, letterSpacing: 5, textShadow: "0 1px 4px #000" }}>角色入册</span>
+          <span style={{ color: "#f0e0c0", fontSize: 16, letterSpacing: 5, textShadow: "0 1px 4px #000" }}>{playerMode ? "导入角色卡当自己" : "角色入册"}</span>
           {fileName && <span style={{ fontSize: 10.5, color: "#8a8270" }}>{fileName}</span>}
           <span style={{ flex: 1 }} />
+          {playerMode && (
+            <span onClick={() => setShowTutorial(true)} title="重看这条流程的教程"
+              style={{
+                cursor: "pointer", userSelect: "none", fontSize: 11, color: accent,
+                border: `1px solid ${accent}66`, borderRadius: 4, padding: "3px 10px", marginRight: 8,
+              }}>教程</span>
+          )}
           <span title={`调用额度 ${bucket.tokens}/${bucket.cap}，每 12 秒回一次`}
             style={{ display: "flex", gap: 3, alignItems: "center", marginRight: 6 }}>
             {Array.from({ length: bucket.cap }).map((_, i) => (
@@ -412,6 +436,8 @@ export default function CardImportScreen({
             </div>
           </div>
         )}
+
+        {showTutorial && <ImportSelfTutorial accent={accent} onClose={dismissTutorial} />}
 
         <input ref={fileRef} type="file" accept=".png,.json" style={{ display: "none" }}
           onChange={e => { const f = e.target.files?.[0]; if (f) loadFile(f); e.target.value = ""; }} />
@@ -689,7 +715,7 @@ function ReviewPane({
   // 借鉴「墨色江湖」开局向导骨架：左侧步骤导航 + 主内容区 + 上一步/下一步。
   // 三步：① 选主角 → ② 调主角·选队友 → ③ 确认落册。步骤定义与跳转集中在这，
   // 内容区按 wizardStep 条件渲染。
-  const WIZARD_STEPS = ["选主角", "调主角 · 选队友", "确认落册"];
+  const WIZARD_STEPS = ["选主角", "设置主角", "选NPC · 逐个调", "同行 · 落册"];
   const [wizardStep, setWizardStep] = useState(0);
   // 开局同行：Step2 里从「落江湖的 NPC」指定 1 人开局就随队（companion 出战位）。
   // 存名字即可，落册时在 CardImportScreen.finish 里把它单独交给 onImportStarterCompanion。
@@ -725,6 +751,11 @@ function ReviewPane({
     specialWhy: "",
     neigong: Number.isFinite(npc.neigong) ? npc.neigong : 5,
     waigong: Number.isFinite(npc.waigong) ? npc.waigong : 5,
+    // 群像卡里选出来的主角，扫描时已按 NPC 扫出了招式槽(moves)与随身物(carry)。
+    // 选他当主角时直接把这些落成主角的初始武学/装备草案——省一次 AI 调用，玩家仍可在
+    // 「设置主角」那步点「AI 现编武学 / AI 配装备」重生成或手改。
+    skills: movesToSkills(npc.moves, npc.levelCap ?? 0),
+    carry: Array.isArray(npc.carry) ? [...npc.carry] : [],
     // 人设正文 + 外貌锚点都并进 persona，套得尽量全（体貌那 7 分项 NPC 没有，留空自填）
     persona: [npc.entry, npc.appearance].filter(Boolean).join("\n") || "",
     dialogueExamples: undefined,
@@ -762,6 +793,8 @@ function ReviewPane({
   const pickedNpcs = result.npcs.filter((n, i) => picked.has(i) && n.name !== playerFromNpc);
   // 「会真的出现」只统计勾选中的——没勾的人压根不进库，算进去是虚报
   const placedCount = pickedNpcs.filter(x => normalizePlacement(x.placement).mode !== "mention").length;
+  // 向导「选 NPC · 逐个调」右栏当前编辑的人：被选为主角的那位不当 NPC 编辑（他走主角档案）
+  const curNpc = cur && cur.name !== playerFromNpc ? cur : null;
 
   // ── 名单批量：不必逐个点开，勾一批人一键设落脚/品阶 ─────────────────────
   // 招式路数因人而异没法一键套（那个逐个点开在右栏 MoveEditor 里定），但落脚与
@@ -1013,27 +1046,34 @@ function ReviewPane({
             )}
 
             {wizardStep === 1 && (
-              /* ── ② 调主角 · 选队友：左主角全字段，右队友勾选 ── */
+              /* ── ② 设置主角：全字段 + 体貌(选主角时已 AI 扫入) + AI 现编武学 + AI 配装备 ── */
+              <div style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "12px 20px 28px" }}>
+                <ReviewPlayer
+                  player={result.player} accent={accent} apiCfg={apiCfg}
+                  onPatch={patchPlayer}
+                  opening={result.opening}
+                  onPatchOpening={o => setResult(r => ({ ...r, opening: o }))}
+                  worldCandidates={result.world}
+                  onPatchWorld={patchWorld}
+                  cardPersonality={parsed?.card?.fields?.personality || ""}
+                  cardMesExample={parsed?.card?.fields?.mesExample || ""}
+                />
+                {bodyBusy && (
+                  <div style={{ marginTop: 10, fontSize: 11, color: "#7a9a70" }}>⏳ 正在让 AI 从外貌拆出体貌 7 项…</div>
+                )}
+              </div>
+            )}
+
+            {wizardStep === 2 && (
+              /* ── ③ 选 NPC 入江湖 · 逐个调：左勾选名单+批量，右 ReviewNpc 全字段 ── */
               <>
-                <div style={{ flex: 3, minWidth: 0, overflowY: "auto", padding: "12px 16px 28px" }}>
-                  <ReviewPlayer
-                    player={result.player} accent={accent}
-                    onPatch={patchPlayer}
-                    opening={result.opening}
-                    onPatchOpening={o => setResult(r => ({ ...r, opening: o }))}
-                    worldCandidates={result.world}
-                    onPatchWorld={patchWorld}
-                    cardPersonality={parsed?.card?.fields?.personality || ""}
-                    cardMesExample={parsed?.card?.fields?.mesExample || ""}
-                  />
-                </div>
-                <div style={{ flex: 2, minWidth: 0, borderLeft: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
-                  <Bar right={<span style={{ fontSize: 10, color: "#8a8270" }}>{pickedNpcs.length} 人</span>}>
-                    谁一起入江湖
+                <div style={{ flex: 2, minWidth: 0, borderRight: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
+                  <Bar right={<span style={{ fontSize: 10, color: "#8a8270" }}>{pickedNpcs.length}/{result.npcs.length} 人</span>}>
+                    选谁入江湖 · 点开逐个调
                   </Bar>
                   <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px" }}>
                     <div style={{ fontSize: 10.5, color: "#8a8270", lineHeight: 1.8, marginBottom: 8 }}>
-                      勾选的人会真的落进曲措乡（可结交切磋）；再从勾选中指定 1 人开局就随队（开局同行）。
+                      勾选的人会真的落进曲措乡（可结交切磋）。点名字在右边逐个调他的品阶/招式/随身物/落脚。开局同行下一步再选。
                     </div>
 
                     {/* 批量设置（落脚/品阶），复用原有逻辑 */}
@@ -1059,18 +1099,20 @@ function ReviewPane({
                       </div>
                     )}
 
-                    {/* 队友名单：勾选落江湖 + 指定开局同行 */}
+                    {/* 名单：勾选是否入江湖 + 点名字进右栏逐个调 */}
                     {result.npcs.map((n, i) => {
                       const isPlayerSrc = playerFromNpc != null && n.name === playerFromNpc;
                       const on = picked.has(i);
-                      const isStarter = starterCompanion === n.name;
+                      const sel = detail === i && !isPlayerSrc;
+                      const pl = normalizePlacement(n.placement);
                       return (
-                        <div key={i}
+                        <div key={i} onClick={() => { if (!isPlayerSrc) setDetail(i); }}
+                          title={isPlayerSrc ? "已作主角" : "点开逐个调"}
                           style={{
                             display: "flex", alignItems: "center", gap: 7, padding: "6px 8px",
-                            borderRadius: 4, marginBottom: 3,
-                            background: isStarter ? "rgba(138,176,112,.10)" : "transparent",
-                            borderLeft: `2px solid ${isStarter ? "#8ab070" : "transparent"}`,
+                            borderRadius: 4, marginBottom: 3, cursor: isPlayerSrc ? "default" : "pointer",
+                            background: sel ? "rgba(212,168,83,.12)" : "transparent",
+                            borderLeft: `2px solid ${sel ? accent : "transparent"}`,
                             opacity: isPlayerSrc ? .8 : (on ? 1 : .45),
                           }}>
                           {isPlayerSrc ? (
@@ -1091,17 +1133,13 @@ function ReviewPane({
                             </div>
                             <div style={{ color: "#6a6250", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
                           </div>
-                          {/* 开局同行单选：只能从勾选中挑 */}
-                          {!isPlayerSrc && on && (
-                            <span onClick={() => setStarterCompanion(isStarter ? null : n.name)}
-                              title={isStarter ? "点掉，他就不随队开局" : "让他开局就随队（唯一出战位）"}
-                              style={{
-                                cursor: "pointer", flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3,
-                                border: `1px solid ${isStarter ? "#8ab070" : "#3a4a34"}`,
-                                color: isStarter ? "#bce8ac" : "#7a9a70",
-                                background: isStarter ? "rgba(138,176,112,.15)" : "transparent",
-                              }}>{isStarter ? "同行 ◉" : "同行"}</span>
+                          {!isPlayerSrc && pl.mode !== "mention" && (
+                            <span title={pl.mode === "resident" ? `驻场于${pl.district}` : "按权重游走"}
+                              style={{ fontSize: 9, color: accent, flexShrink: 0 }}>
+                              {pl.mode === "resident" ? `驻·${pl.district}` : `游·${Object.keys(pl.weights).length}处`}
+                            </span>
                           )}
+                          {n.source === "fallback" && <span title="全是默认值" style={{ fontSize: 9, color: "#6a6250", flexShrink: 0 }}>默</span>}
                         </div>
                       );
                     })}
@@ -1112,13 +1150,57 @@ function ReviewPane({
                     )}
                   </div>
                 </div>
+                {/* 右：点开谁就编辑谁（复用 ReviewNpc 全字段：品阶/招式/随身物/立绘/落脚）*/}
+                <div style={{ flex: 3, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <Bar>{curNpc ? curNpc.name : "逐个设置"}</Bar>
+                  <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 28px" }}>
+                    {curNpc ? (
+                      <ReviewNpc npc={curNpc} accent={accent} dropped={dropped} apiCfg={apiCfg} cardImage={cardImage}
+                        currentDistrict={currentDistrict}
+                        onPatch={patch => patchNpc(detail, patch)} />
+                    ) : (
+                      <div style={{ fontSize: 10.5, color: "#6a6250", lineHeight: 1.9, padding: "12px 4px", textAlign: "center" }}>
+                        {result.npcs.length ? "在左边点一个人的名字，逐个设置他的品阶、招式、随身物、落脚。" : "这张卡里没有其他人，直接下一步选同行 / 落册。"}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </>
             )}
 
-            {wizardStep === 2 && (
-              /* ── ③ 确认落册：总览 + 加入 ── */
+            {wizardStep === 3 && (
+              /* ── ④ 同行 · 落册：从入江湖的人里指定开局同行 + 总览 + 加入 ── */
               <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
-                <div style={{ fontSize: 15, color: "#e8dcc0", letterSpacing: 3, marginBottom: 16 }}>确认落册</div>
+                <div style={{ fontSize: 15, color: "#e8dcc0", letterSpacing: 3, marginBottom: 10 }}>选开局同行 · 落册</div>
+
+                {/* 开局同行：从入江湖的人里指定 1 人随队（唯一出战位）*/}
+                <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 4, background: "rgba(138,176,112,.06)", border: "1px solid #3a4a34" }}>
+                  <div style={{ fontSize: 11.5, color: "#bce8ac", marginBottom: 4 }}>谁与你一起同行（初始队友）</div>
+                  <div style={{ fontSize: 10.5, color: "#8a8270", marginBottom: 8, lineHeight: 1.7 }}>
+                    从入江湖的人里指定 1 人开局就随队（唯一出战位）；其余同伴后续可在游戏里邀请。不选也行。
+                  </div>
+                  {pickedNpcs.length ? (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {pickedNpcs.map((n, i) => {
+                        const isStarter = starterCompanion === n.name;
+                        return (
+                          <span key={i} onClick={() => setStarterCompanion(isStarter ? null : n.name)}
+                            title={isStarter ? "点掉就不随队" : "让他开局就随队"}
+                            style={{
+                              cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 11px", borderRadius: 4,
+                              border: `1px solid ${isStarter ? "#8ab070" : "#3a4a34"}`,
+                              color: isStarter ? "#bce8ac" : "#a8b8a0",
+                              background: isStarter ? "rgba(138,176,112,.15)" : "rgba(0,0,0,.2)",
+                            }}>{isStarter ? "◉ " : "○ "}{n.name}</span>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 10.5, color: "#6a6250" }}>还没勾选入江湖的人，就你自己开局。</div>
+                  )}
+                </div>
+
+                <div style={{ fontSize: 13, color: "#e8dcc0", letterSpacing: 2, marginBottom: 12 }}>确认落册</div>
 
                 <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 4, background: "rgba(212,168,83,.06)", border: `1px solid ${accent}44` }}>
                   <div style={{ fontSize: 11.5, color: "#d8c8a0", marginBottom: 6 }}>主角</div>
@@ -1128,6 +1210,8 @@ function ReviewPane({
                   <div style={{ fontSize: 10.5, color: "#8a8270", marginTop: 4, lineHeight: 1.8 }}>
                     体貌 {Object.values(result.player?.bodyProfile || {}).filter(v => (v || "").trim()).length}/7 项
                     · {result.player?.gender || "性别未定"}
+                    · 武学 {(result.player?.skills || []).length} 门
+                    · 装备 {(result.player?.carry || []).length} 件
                   </div>
                 </div>
 
@@ -1189,8 +1273,8 @@ function ReviewPane({
                 <Btn onClick={prevStep} tone="dim">← 上一步</Btn>
               )}
 
-              {/* AI 一键规划落脚 / 配装备，只在选队友那步给（Step1） */}
-              {wizardStep === 1 && (
+              {/* AI 一键规划落脚 / 配装备，只在「选 NPC · 逐个调」那步给（Step2，作用于全部 NPC）*/}
+              {wizardStep === 2 && (
                 <>
                   <span onClick={planBusy ? undefined : planAll}
                     title={`让 AI 按人设判断每个人该驻场还是游走。${result.npcs.length} 人分 ${Math.ceil(result.npcs.length / PLAN_BATCH)} 批，规划完你还能自己改`}
@@ -1225,8 +1309,8 @@ function ReviewPane({
 
               <span style={{ flex: 1 }} />
 
-              {wizardStep < 2 ? (
-                <Btn onClick={nextStep} tone="main" disabled={wizardStep === 0 && result.npcs.length > 0 ? false : false}>
+              {wizardStep < 3 ? (
+                <Btn onClick={nextStep} tone="main">
                   下一步 →
                 </Btn>
               ) : (
