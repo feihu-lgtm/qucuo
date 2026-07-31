@@ -699,7 +699,8 @@ function ReviewPane({
     specialWhy: "",
     neigong: Number.isFinite(npc.neigong) ? npc.neigong : 5,
     waigong: Number.isFinite(npc.waigong) ? npc.waigong : 5,
-    persona: npc.entry || npc.appearance || "",   // 人设正文当出身/persona 底子
+    // 人设正文 + 外貌锚点都并进 persona，套得尽量全（体貌那 7 分项 NPC 没有，留空自填）
+    persona: [npc.entry, npc.appearance].filter(Boolean).join("\n") || "",
     dialogueExamples: undefined,
     source: "fromNpc",
   });
@@ -1043,7 +1044,7 @@ function ReviewPane({
                 <div style={{ height: 3, borderRadius: 2, overflow: "hidden", background: "rgba(0,0,0,.45)", marginBottom: 5 }}>
                   <div style={{ height: "100%", width: `${Math.round(prog * 100)}%`, background: "linear-gradient(90deg,#4a6a48,#9ac088)", transition: "width .35s ease" }} />
                 </div>
-                <div style={{ fontSize: 10.5, color: busy ? "#9ac088" : "#8a8270" }}>{msg}</div>
+                <div style={{ fontSize: 10.5, color: busy ? "#bce8ac" : "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>{msg}</div>
               </div>
             );
           })()}
@@ -1054,8 +1055,9 @@ function ReviewPane({
               style={{
                 cursor: "pointer", userSelect: "none", fontSize: 11.5,
                 padding: "6px 12px", borderRadius: 4, whiteSpace: "nowrap",
-                border: `1px solid ${allOn ? accent : "#3a3428"}`,
-                color: allOn ? accent : "#8a8270",
+                border: `1px solid ${allOn ? accent : "#5a5038"}`,
+                background: "rgba(0,0,0,.3)",
+                color: allOn ? accent : "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)",
               }}>{allOn ? "◉ 全不选" : "○ 全选"}</span>
 
             {/* AI 一键规划落脚。据点从本作地图里选，回来的东西过白名单，玩家再改 */}
@@ -1065,10 +1067,10 @@ function ReviewPane({
                 cursor: planBusy ? "wait" : "pointer", userSelect: "none",
                 fontSize: 12, padding: "6px 14px", borderRadius: 4, whiteSpace: "nowrap",
                 display: "inline-flex", alignItems: "center", gap: 6,
-                color: planBusy ? "#6a7a68" : "#9ac088",
-                border: `1px solid ${planBusy ? "#3a4a38" : "#4a6a48"}`,
+                color: planBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                border: `1px solid ${planBusy ? "#3a4a38" : "#5f8256"}`,
                 background: planBusy ? "rgba(0,0,0,.3)"
-                  : "linear-gradient(180deg,rgba(130,180,120,.16),rgba(0,0,0,.32))",
+                  : "linear-gradient(180deg,rgba(74,120,64,.55),rgba(0,0,0,.5))",
               }}>
               <img src={S("ui/star.webp")} alt="" style={{ width: 13, height: 13, opacity: planBusy ? .4 : .9 }} />
               {planBusy ? "正在相地…" : "AI 一键规划落脚"}
@@ -1081,17 +1083,17 @@ function ReviewPane({
                 cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
                 fontSize: 12, padding: "6px 14px", borderRadius: 4, whiteSpace: "nowrap",
                 display: "inline-flex", alignItems: "center", gap: 6,
-                color: equipBusy ? "#5a7370" : "#8ac8b8",
-                border: `1px solid ${equipBusy ? "#3a4a48" : "#4a6a66"}`,
+                color: equipBusy ? "#6a807c" : "#b4ecdc", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                border: `1px solid ${equipBusy ? "#3a4a48" : "#4f807a"}`,
                 background: equipBusy ? "rgba(0,0,0,.3)"
-                  : "linear-gradient(180deg,rgba(120,180,175,.16),rgba(0,0,0,.32))",
+                  : "linear-gradient(180deg,rgba(60,130,120,.55),rgba(0,0,0,.5))",
               }}>
               <img src={S("ui/star.webp")} alt="" style={{ width: 13, height: 13, opacity: equipBusy ? .4 : .9 }} />
               {equipBusy ? "正在配装…" : "AI 一键配装备"}
             </span>
 
             <span style={{ flex: 1 }} />
-            <span style={{ fontSize: 11, color: "#8a8270" }}>
+            <span style={{ fontSize: 11, color: "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>
               入 {pickedNpcs.length}／{result.npcs.length} 人
               {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
               {playerFromNpc ? ` ＋ 我自己（${playerFromNpc}）` : (result.player ? " ＋ 我自己" : "")}
