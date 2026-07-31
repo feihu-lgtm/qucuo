@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 
 // 依赖链检查器的自动化入口
 // ============================================================================
@@ -33,4 +35,60 @@ describe("props 传递链的两个方向都不能断", () => {
     const r = run("scripts/propsFlow.mjs");
     expect(r.ok, `\n${r.out}`).toBe(true);
   }, 30000);
+});
+
+// 零入度守卫：src 下不该存在「没人 import 它」的源码文件。
+// ============================================================================
+// 【为什么要有这条】activityLog.js / memoryWrite.js / questHarness.js /
+// PresetEditor.jsx / BuildingPanel.jsx 五个死文件堆积了一个多月没人发现——
+// 它们不进构建（构建只从入口可达）、vitest 也不跑（没有测试 import 它们），
+// 唯一发现途径是手工对依赖图。这条守卫把「死文件」从"没人知道"变成"测试红"。
+//
+// 【入口白名单】main.jsx / debug-*.jsx 由各 .html 的 <script type="module">
+// 直接加载，不走 import 图，天然零入度——不算死文件。
+const SRC_DIR = "src";
+const ENTRY_WHITELIST = new Set([
+  "main.jsx",
+  "debug-main.jsx",
+  "debug-gamble.jsx",
+  "debug-item.jsx",
+]);
+
+function walkSource(dir, out = []) {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) walkSource(p, out);
+    else if (/\.jsx?$/.test(name) && !/\.test\./.test(name)) out.push(p);
+  }
+  return out;
+}
+
+describe("src 下没有零入度的死文件", () => {
+  it("import 图零入度且不在入口白名单 → 报出来", () => {
+    const files = walkSource(SRC_DIR).map((f) => resolve(f));
+    const rel = (f) => relative(resolve(SRC_DIR), f);
+
+    const deps = new Map(files.map((f) => [f, new Set()]));
+    for (const f of files) {
+      const src = readFileSync(f, "utf-8");
+      const re = /from\s+["'](\.[^"']+)["']/g;
+      let m;
+      while ((m = re.exec(src))) {
+        let p = join(f, "..", m[1]);
+        if (!/\.(js|jsx)$/.test(p)) p += ".js";
+        const r = resolve(p);
+        if (files.includes(r)) deps.get(f).add(r);
+      }
+    }
+
+    const indeg = new Map(files.map((f) => [f, 0]));
+    for (const targets of deps.values()) for (const t of targets) indeg.set(t, indeg.get(t) + 1);
+
+    const dead = files
+      .map(rel)
+      .filter((f) => !ENTRY_WHITELIST.has(f))
+      .filter((f) => (indeg.get(resolve(SRC_DIR, f)) || 0) === 0);
+
+    expect(dead, `以下文件无人 import（零入度死代码），删除或接线：\n  ${dead.join("\n  ")}`).toEqual([]);
+  });
 });

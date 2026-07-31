@@ -14,7 +14,7 @@ import { listSlots, saveToSlot, loadSlot, deleteSlot, renameSlot, clearAutoSave,
 import { listCharacters, npcAffectionLabel } from "./mvu.js";
 import { affectionLabel, AFFECTION_TIERS, affectionTier } from "./narrator.js";
 // 预设切换/编辑器已从 UI 移除（预设 tab 现在只放注入结构），
-// PresetManager / PresetEditor 模块本身保留未删，想接回来直接再 import 即可。
+// PresetEditor.jsx 已删除（零引用），PresetManager 仍在使用。想接回来需重新实现。
 import { clearInspectCache, inspectCacheSize } from "./inspectCache.js";
 import { clearMemories, countMemories } from "./memory/memoryStore.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
@@ -278,8 +278,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
         {/* 预设 tab = 只有 Prompt 注入结构（本轮按作者要求精简）
             原来这里上下各有一块：上面是预设切换/导入酒馆JSON/导出，下面是可编辑的
             Prompt 条目列表。作者要的是"只看清楚喂了什么"，两头都拿掉了——
-            PresetToolbar / PresetManager / PresetEditor 三个模块代码原样留着没删，
-            想接回来把这段还原即可，不必重写。 */}
+            PresetEditor 已删除（零引用），PresetManager 仍在使用。 */}
         {tab === "preset" && (
           <InjectionStructurePanel getLiveBlockText={getLiveBlockText} extractionEnabled={!!cfg.extractionEnabled} />
         )}

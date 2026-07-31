@@ -103,7 +103,6 @@ export const DEFAULT_CALL_TOKEN_LIMITS = {
   narratorWhisper: 6000, // 私聊旁白（MudRPG talkToNarrator）。原写死 600，是上一轮
                          // 「9处写死抽成配置」漏网的第 10 处；带思考的模型下思考 token
                          // 与正文共用额度，600 被吃穿后正文半句就撞 length 截断。
-  questHarness:   3000,  // 情节推进的专属叙事（questHarness.js）
   pigeonReply:    3000,  // 飞鸽回信书信体（MudRPG 飞鸽回信）
   inspect:        4000,  // 查看物品/武学介绍（MudRPG inspect 缓存）
   persuasion:     2000,  // 说服台词（persuasion.js）
