@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../utils/overlayClose.js";
 import {
-  getHomestead, loadChest, saveChest, loadWineCellar, saveWineCellar,
+  getHomestead, loadWineCellar, saveWineCellar,
   loadGarden, saveGarden, RECIPES, WINE_RECIPES, PLANT_SLOTS,
 } from "../homestead.js";
 
@@ -48,7 +48,6 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, z
           </>
         )}
 
-        {activeFeature === "chest" && <ChestFeature roomName={roomName} inv={inv} setInv={setInv} />}
         {activeFeature === "cooking" && <CookingFeature inv={inv} setInv={setInv} char={char} setChar={setChar} addLog={addLog} />}
         {activeFeature === "wine" && <WineFeature roomName={roomName} inv={inv} setInv={setInv} addLog={addLog} />}
         {activeFeature === "garden" && <GardenFeature roomName={roomName} inv={inv} setInv={setInv} addLog={addLog} />}
@@ -60,56 +59,6 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, z
         {activeFeature === "guqin" && <RestFeature label="琴桌" desc="拨了两下断弦，嗡的一声，猫都跑了。" hpRestore={5} char={char} setChar={setChar} addLog={addLog} />}
         {activeFeature === "meditation" && <RestFeature label="佛堂" desc="在蒲团上坐了一炷香。香灰落下来，心也落下来。" hpRestore={30} char={char} setChar={setChar} addLog={addLog} />}
         {activeFeature === "library" && <RestFeature label="书房" desc="地方志里翻到一段前朝旧事，蜀王庄原来是这么来的。" hpRestore={10} char={char} setChar={setChar} addLog={addLog} />}
-      </div>
-    </div>
-  );
-}
-
-function ChestFeature({ roomName, inv, setInv }) {
-  const [chest, setChest] = useState(() => loadChest(roomName));
-  const persist = (items) => { setChest(items); saveChest(roomName, items); };
-
-  const storeItem = (idx) => {
-    const item = inv[idx];
-    if (!item) return;
-    const nextInv = [...inv]; nextInv.splice(idx, 1);
-    setInv(nextInv);
-    persist([...chest, item]);
-  };
-  const retrieveItem = (idx) => {
-    const item = chest[idx];
-    if (!item) return;
-    const nextChest = [...chest]; nextChest.splice(idx, 1);
-    persist(nextChest);
-    setInv([...inv, item]);
-  };
-
-  const nameOf = (it) => typeof it === "string" ? it : it?.name || "未知物件";
-
-  return (
-    <div>
-      <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>点击物品存入/取出。箱子里的东西不会随存档走，存在浏览器本地。</div>
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: "11px", color: "#8ac8b8", marginBottom: 6 }}>📦 箱中（{chest.length}）</div>
-        {chest.length === 0 && <div style={{ color: "#3a3830", fontSize: "11px" }}>空的。</div>}
-        {chest.map((it, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", borderBottom: "1px solid #14161e" }}>
-            <span style={{ flex: 1, fontSize: "11.5px" }}>{nameOf(it)}</span>
-            <span onClick={() => retrieveItem(i)} style={{ ...btnStyle, padding: "2px 8px", fontSize: "10.5px" }}>取出</span>
-          </div>
-        ))}
-      </div>
-      <div>
-        <div style={{ fontSize: "11px", color: "#8ac8b8", marginBottom: 6 }}>🎒 背包（{inv.length}）</div>
-        {inv.length === 0 && <div style={{ color: "#3a3830", fontSize: "11px" }}>背包空空。</div>}
-        <div style={{ maxHeight: 200, overflowY: "auto" }}>
-          {inv.map((it, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", borderBottom: "1px solid #14161e" }}>
-              <span style={{ flex: 1, fontSize: "11.5px" }}>{nameOf(it)}</span>
-              <span onClick={() => storeItem(i)} style={{ ...btnStyle, padding: "2px 8px", fontSize: "10.5px" }}>存入</span>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

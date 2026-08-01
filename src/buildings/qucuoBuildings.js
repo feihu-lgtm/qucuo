@@ -31,6 +31,8 @@ export const BUILDING_TYPE = {
   PIGEON_COOP: "pigeon_coop", // 鸽子笼：每日免费领信鸽
   SECT_ENTRY: "sect_entry",   // 拜师堂：拜入门派，发弟子令牌
   AUCTION: "auction",         // 拍卖行：竞价拍品（有托儿抬价）
+  KITCHEN: "kitchen",         // 烹饪台：六格槽位（料×4+技法+炊具）自炊出 buff
+  CHEST: "chest",             // 库房木箱：存取物件（开局预填全套食材+调味料）
 };
 
 export const BUILDING_TYPE_LABEL = {
@@ -41,7 +43,7 @@ export const BUILDING_TYPE_LABEL = {
   forge: "铸剑坊", blackmarket: "黑市", bounty: "告示榜", grocery: "粮行",
   theater: "戏楼", teahouse: "茶馆", sectshop: "门派商坊", gamblestone: "玉石料场",
   pigeon_coop: "鸽子笼",
-  sect_entry: "拜师堂", auction: "拍卖行",
+  sect_entry: "拜师堂", auction: "拍卖行", kitchen: "烹饪台", chest: "库房",
 };
 
 // 各据点建筑清单
@@ -91,6 +93,14 @@ export const BUILDINGS_BY_LOCATION = {
       id: "forge_yiding", name: "铁匠铺", type: BUILDING_TYPE.FORGE,
       desc: "村东头一间冒着黑烟的铁匠铺，老铁匠祖上三代打铁，寻常农具兵器都能打，也接客人拿料定制的活计。",
     },
+    {
+      id: "kitchen_xibian", name: "溪边小屋·灶房", type: BUILDING_TYPE.KITCHEN,
+      desc: "灶台上铁锅铜壶齐整，灶膛余烬未冷。溪边小屋的灶房，一口旧铁锅炖炒皆可。有食材就能开火，自炊出 buff。",
+    },
+    {
+      id: "chest_xibian", name: "溪边小屋·库房", type: BUILDING_TYPE.CHEST, house: "溪边小屋",
+      desc: "起居室床底那只铁皮包角的旧木箱。开张时里头已备下一套食材调味料——是这屋子原先的主人留下的家底。",
+    },
   ],
 
   // ── 喇嘛庙（4 种，宗教重地） ──
@@ -136,6 +146,14 @@ export const BUILDINGS_BY_LOCATION = {
       id: "gamblestone_tiandu", name: "玉石料场", type: BUILDING_TYPE.GAMBLESTONE,
       desc: "玉器轩后院的赌石坊，堆满未开的原石。花钱进料，开三刀见涨见垮，一群人围着竞价，全凭眼力与胆识。温掌柜在此坐镇。",
     },
+    {
+      id: "kitchen_shanbie", name: "山间别墅·大厨房", type: BUILDING_TYPE.KITCHEN,
+      desc: "灶台比寻常人家大三倍，调料架、烤炉俱全。山间别墅的大厨房，能烹高级料理。",
+    },
+    {
+      id: "chest_shanbie", name: "山间别墅·库房", type: BUILDING_TYPE.CHEST, house: "山间别墅",
+      desc: "二楼主卧那只大衣柜，空得很，正好放东西。柜底也备着一套食材家底。",
+    },
   ],
 
   // ── 玉泉寨（2 种，水路要道） ──
@@ -163,6 +181,14 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "sectentry_xueshan", name: "拜师堂", type: BUILDING_TYPE.SECT_ENTRY,
       desc: "内堂正中，何雨谢坐镇处。掌门不在山上这些年，收不收徒都是她一句话。入了门便是雪山派弟子，领一枚令牌——那令牌也是弟子别院的钥匙。",
+    },
+    {
+      id: "kitchen_bieyuan", name: "弟子别院·灶房", type: BUILDING_TYPE.KITCHEN,
+      desc: "弟子别院西厢的小灶，何雨谢偶尔在此给弟子炖雪鸡汤。灶膛里松柴火常年不熄。",
+    },
+    {
+      id: "chest_bieyuan", name: "弟子别院·库房", type: BUILDING_TYPE.CHEST, house: "弟子别院",
+      desc: "东厢卧房床头那只小木箱，放私物刚好。箱底也有一份食材家底。",
     },
   ],
 
@@ -259,6 +285,14 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "theater_jingguan", name: "锦华戏楼", type: BUILDING_TYPE.THEATER, menuKey: "戏楼",
       desc: "看戏花钱，魅力可以有所提升，邀NPC同赏还能加深关系。",
+    },
+    {
+      id: "kitchen_shuwang", name: "蜀王庄·大厨房", type: BUILDING_TYPE.KITCHEN,
+      desc: "倒座房的大厨房，灶台蒸笼案板俱全，够摆一桌酒席。蜀王庄的厨房，可烹宴席。",
+    },
+    {
+      id: "chest_shuwang", name: "蜀王庄·库房", type: BUILDING_TYPE.CHEST, house: "蜀王庄",
+      desc: "后院书房那只紫檀小匣，虽空却精致。匣底也压着一份食材家底。",
     },
   ],
 

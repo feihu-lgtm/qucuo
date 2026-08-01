@@ -41,6 +41,8 @@ import TeahouseScreen from "../buildings/TeahouseScreen.jsx";
 import SectEntryScreen from "../buildings/SectEntryScreen.jsx";
 import SeaOfMindScreen from "./SeaOfMindScreen.jsx";
 import AuctionScreen from "../buildings/AuctionScreen.jsx";
+import CookingScreen from "../buildings/CookingScreen.jsx";
+import ChestScreen from "../buildings/ChestScreen.jsx";
 
 export default function CenterPanel({
   isMobile, mobileDrawer, setMobileDrawer,
@@ -70,6 +72,7 @@ export default function CenterPanel({
   gambleNegotiation, handleGambleTalk, handleGambleSettle, handleGambleInspect,
   handleListenRumor,
   handleJoinSect, sectMasterAffection, handleAuctionWin,
+  handleCook,
   seaTraumaActive, narratorVarsNow, invNames, handleComfort, handleResolveTrauma,
   log, isDayMode, clr, collapsedGroups, setCollapsedGroups,
   queueCount, pendingTalks, inspecting, logEnd, waitSecs,
@@ -319,6 +322,14 @@ export default function CenterPanel({
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.AUCTION && (
                 <AuctionScreen building={activeBuilding} char={char} inv={inv} inline
                   zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onWin={handleAuctionWin} />
+              )}
+              {activeBuilding && activeBuilding.type === BUILDING_TYPE.KITCHEN && (
+                <CookingScreen building={activeBuilding} char={char} inv={inv} inline
+                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCook={handleCook} />
+              )}
+              {activeBuilding && activeBuilding.type === BUILDING_TYPE.CHEST && (
+                <ChestScreen building={activeBuilding} inv={inv} setInv={setInv} inline
+                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} />
               )}
               {tradingShop && (
                 <TradingScreen inline shopName={tradingShop.shopName} shopItems={tradingShop.items}

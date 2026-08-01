@@ -160,6 +160,7 @@ import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
 import { tryLearnFromMaster, tryStealFrom } from "./kungfu/learnSkill.js";
 import { stealSuccessRate } from "./combat/stealSystem.js";
 import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
+import { INGREDIENT_LORE } from "./cooking.js";
 import { buildSysBase } from "./sysBase.js";
 import { DIRS, bar, STAGES, STAGE_UP_COST, STAGE_TO_QUALITY, DIR_DXY, parseDir, getTimeStr } from "./utils/mudHelpers.js";
 import { MAP_UI } from "./mapUi.js";
@@ -3888,6 +3889,38 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     act(`点了${item.name}，花费${item.price}两`, [], { settle: true });
   }, [char, dao, time, addLog, act]);
 
+  // 烹饪台：系统裁决（扣料/回血/挂 buff flag），叙事交给主管线写一段「小总结」。
+  // dish 由 CookingScreen 算好（固定配方 computeDish / 自由组合 genericDishEffect）。
+  // freestyle（妙手偶得）时菜名也由主叙事 AI 即兴起——想象归 AI、数值归系统。
+  const handleCook = useCallback(({ materials, technique, cookware, freestyle, dish }) => {
+    if (!dish || !materials?.length) return;
+    setInv(prev => {
+      const next = [...prev];
+      for (const m of materials) {
+        const idx = next.findIndex(it => (typeof it === "object" ? it?.name : it) === m);
+        if (idx >= 0) next.splice(idx, 1);
+      }
+      return next;
+    });
+    if (dish.hpDelta > 0) {
+      setChar(c => ({ ...c, hp: [Math.min(c.hp[0] + dish.hpDelta, effectiveMaxHp(c.hp[1], skills)), c.hp[1]] }));
+    }
+    if (dish.buffs?.length) {
+      setFlags(f => [...f, ...dish.buffs.map(b => makeBuffFlag(b.attr, b.val, time, b.turns))]);
+    }
+    const buffText = dish.buffs.map(b => `${b.attr}+${b.val}（${b.turns}回合）`).join("、");
+    addLog([{ t: "stat", text: `  ${freestyle ? "妙手偶得" : `「${dish.name}」出锅`} · 气血回复 ${dish.hpDelta} 点${buffText ? ` · ${buffText}` : ""}` }]);
+    // 小总结：把料性（风物志）、技法、炊具一并摆给 AI 引导想象，写一两句说书人白话古文。
+    const ings = materials.map(n => (INGREDIENT_LORE[n] ? `${n}（${INGREDIENT_LORE[n]}）` : n)).join("、");
+    const techClause = technique ? `用「${technique.id}」法${technique.desc ? `（${technique.desc}）` : ""}` : "";
+    const wareClause = cookware ? `使${cookware.name}${cookware.desc ? `（${cookware.desc}）` : ""}` : "";
+    const place = activeBuilding?.name || "灶房";
+    const prompt = freestyle
+      ? `在${place}生火下厨。手边的料是：${ings}；${techClause}，${wareClause}。这几样本无成法，全凭灶上灵机——请你给这道菜起个贴切的名字（不超过七字，要见料性、见手法），并就其色香味与来由写一两句说书人风味的白话古文小总结，收在具体动作或滋味上，禁冒号破折号。玩家随即趁热吃了。`
+      : `在${place}生火下厨。手边的料是：${ings}；${techClause}，${wareClause}。这一番炮制，做出一道「${dish.name}」。请就这道菜的色香味与来由写一两句说书人风味的白话古文小总结，收在具体动作或滋味上，禁冒号破折号。玩家随即趁热吃了。`;
+    act(prompt, [], { settle: true });
+  }, [activeBuilding, time, skills, addLog, act]);
+
   const handlePray = useCallback(() => {
     const karmaPerPray = activeBuilding?.karmaPerPray || 10;
     if ((dao.karma || 0) < karmaPerPray) return;
@@ -4763,6 +4796,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           handleGambleSettle={handleGambleSettle} handleGambleInspect={handleGambleInspect}
           handleListenRumor={handleListenRumor}
           handleJoinSect={handleJoinSect} handleAuctionWin={handleAuctionWin}
+          handleCook={handleCook}
           seaTraumaActive={narrator.stage === NNPC_STAGE.SEA_CRASHED && room.name === SEA_OF_MIND.district}
           narratorVarsNow={narratorVars(varTree)}
           invNames={inv.map(i => (typeof i === "string" ? i : i?.name)).filter(Boolean)}

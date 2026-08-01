@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import MudRPG from "./MudRPG.jsx";
 import StartScreen from "./StartScreen.jsx";
 import QuickBattleScreen from "./quickBattle/QuickBattleScreen.jsx";
+import TavernSimScreen from "./tavernSim/TavernSimScreen.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { loadAutoSave, init as initSaves } from "./saves.js";
 import CardImportScreen from "./CardImportScreen.jsx";
@@ -56,6 +57,8 @@ function App() {
   const [openSettingsOnBoot, setOpenSettingsOnBoot] = useState(false);
   // 斗蛐蛐是脱离存档的独立沙盒：不经过 MudRPG，直接在开始界面之上挂一层。
   const [inQuickBattle, setInQuickBattle] = useState(false);
+  // 酒馆经营同为独立沙盒（自带 localStorage 独立档，不碰主存档体系）。
+  const [inTavernSim, setInTavernSim] = useState(false);
   // 角色入册挂在开始界面这一层，而不是 MudRPG 里。
   // 【为什么必须在这一层】导入的卡要当主角，只能在角色创建之前用；而 MudRPG 一挂载
   // 就走 showCharCreate 的 early return（设置面板和 GlobalOverlays 都在那之后），
@@ -68,6 +71,10 @@ function App() {
 
   if (inQuickBattle) {
     return <QuickBattleScreen onExit={() => setInQuickBattle(false)} />;
+  }
+
+  if (inTavernSim) {
+    return <TavernSimScreen onExit={() => setInTavernSim(false)} />;
   }
 
   if (inCardImport) {
@@ -134,6 +141,7 @@ function App() {
           importedRegistry.init().then(() => setInCardImport(true));
         }}
         onQuickBattle={() => setInQuickBattle(true)}
+        onTavernSim={() => setInTavernSim(true)}
         onExit={() => {
           // 浏览器环境无法真正"退出进程"，只能尝试关闭标签页；
           // 多数浏览器出于安全策略会拦截非用户直接触发的 window.close()，
