@@ -57,6 +57,7 @@ export const INNER_MAP = {
         desc: `　　靠墙一张木板床，铺着藏青粗布被褥，叠得还算齐整。床底塞着一只铁皮包角的旧木箱，拖出来时木头在地上刮出一道声音。
 　　枕头下压着一只干花荷包，不知是谁留下的。床头钉着一枚铁钉，可以挂东西。墙角一只水缸，缸沿搁着木瓢，水面浮着一层细尘。`,
         exits: { s: "溪边小屋", w: "灶房" },
+        buildingId: "chest_xibian",
         unlockCondition: { type: "item", itemName: "溪边小屋钥匙" },
       },
       灶房: {
@@ -64,6 +65,7 @@ export const INNER_MAP = {
         desc: `　　灶台占了半间屋，铁锅铜壶擦得发亮，灶膛里还埋着昨夜的余烬，扒开能见一点红。旁边一只小碗柜，碗筷两人份——买屋时就是两人份。
 　　窗台上晒着一把干辣椒，红得发黑。灶台后头一个半地下的石窖入口，阴凉潮湿，坛沿长着青苔，那是酒窖。`,
         exits: { e: "起居室" },
+        buildingId: "kitchen_xibian",
         unlockCondition: { type: "item", itemName: "溪边小屋钥匙" },
       },
       菜园子: {
