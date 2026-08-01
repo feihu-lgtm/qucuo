@@ -263,12 +263,12 @@ export default function CardImportScreen({
     setStage("review");
   };
 
-  // 玩家档案补齐 AI 不产出的那几项（性别、私密层、内外功、说话示范）
+  // 玩家档案补齐 AI 不产出的那几项（性别、内外功、说话示范）
   function fillPlayer(base) {
     const bp = {};
     for (const [k] of BODY_PUBLIC) bp[k] = base?.bodyProfile?.[k] || "";
     const priv = {};
-    for (const [k] of BODY_PRIVATE) priv[k] = "";
+    for (const [k] of BODY_PRIVATE) priv[k] = base?.bodyProfilePrivate?.[k] || "";
     return {
       name: base?.name || "", nameWhy: base?.nameWhy || "",
       gender: "男",
@@ -733,10 +733,17 @@ function ReviewPane({
   const [bodyBusy, setBodyBusy] = useState(false);   // AI 自动识别体貌中
   const pickRef = useRef(null);                        // 防玩家快速切换时把上一个人的体貌写错人
   const initialPlayerRef = useRef(result.player);
-  // AI 返回的 bodyProfile 只取公开层 7 个 key 的非空字符串
+  // AI 返回的 bodyProfile 只取公开层 7 个 key 的非空字符串，私密层 5 个 key 另走一套
   const cleanBody = (bp) => {
     const out = {};
     for (const k of ["height", "build", "face", "skin", "hair", "voice", "clothing"]) {
+      if (typeof bp?.[k] === "string" && bp[k].trim()) out[k] = bp[k].trim().slice(0, 40);
+    }
+    return out;
+  };
+  const cleanBodyPrivate = (bp) => {
+    const out = {};
+    for (const k of ["scars", "scent", "intimate", "sensitive", "habit"]) {
       if (typeof bp?.[k] === "string" && bp[k].trim()) out[k] = bp[k].trim().slice(0, 40);
     }
     return out;
@@ -745,7 +752,7 @@ function ReviewPane({
     name: npc.name || "",
     nameWhy: "",
     gender: "男",
-    bodyProfile: {},          // NPC 没有体貌十二项，留空玩家补填
+    bodyProfile: {},          // NPC 没有体貌十二项，选完会自动 AI 识别体貌（含私密层）
     bodyProfilePrivate: {},
     special: (npc.special && Object.keys(npc.special).length) ? { ...npc.special } : { ...EMPTY_SPECIAL },
     specialWhy: "",
@@ -756,7 +763,7 @@ function ReviewPane({
     // 「设置主角」那步点「AI 现编武学 / AI 配装备」重生成或手改。
     skills: movesToSkills(npc.moves, npc.levelCap ?? 0),
     carry: Array.isArray(npc.carry) ? [...npc.carry] : [],
-    // 人设正文 + 外貌锚点都并进 persona，套得尽量全（体貌那 7 分项 NPC 没有，留空自填）
+    // 人设正文 + 外貌锚点都并进 persona，套得尽量全（体貌分项由 pickPlayerFrom 自动识别）
     persona: [npc.entry, npc.appearance].filter(Boolean).join("\n") || "",
     dialogueExamples: undefined,
     source: "fromNpc",
@@ -772,7 +779,7 @@ function ReviewPane({
     if (!npc) return;
     setResult(r => ({ ...r, player: npcToPlayer(npc) }));
     // 自动 AI 识别体貌：NPC 只有一段外貌锚点，让 stage3 prompt 把它拆成体貌公开层 7 项
-    // （身量/体型/面容/肤色/发式/声音/穿着）。私密层五项照规矩不碰。失败静默、留空手填。
+    // 与私密层 5 项（原文写到的才填，没写的不编）。私密层默认开启，审改界面有风险确认。
     const src = [npc.appearance, npc.entry].filter(Boolean).join("\n").trim();
     if (!src || !apiCfg) return;
     setBodyBusy(true);
@@ -780,10 +787,19 @@ function ReviewPane({
       await acquire();
       const { system, user } = buildStage3(src, { cardName: npc.name });
       const res = await callModel(apiCfg, system, [{ role: "user", content: user }], { maxTokens: 4000, temperature: 0.6 });
-      const bp = cleanBody(parseJsonLoose(res.text || "")?.bodyProfile);
+      const body = parseJsonLoose(res.text || "") || {};
+      const bp = cleanBody(body.bodyProfile);
+      const bpPriv = cleanBodyPrivate(body.bodyProfilePrivate);
       // 玩家可能已经切走了，只在还选着这个人时才落，别把上个人的体貌写到新选的人身上
-      if (pickRef.current === name && Object.keys(bp).length) {
-        setResult(r => ({ ...r, player: { ...r.player, bodyProfile: { ...(r.player?.bodyProfile || {}), ...bp } } }));
+      if (pickRef.current === name && (Object.keys(bp).length || Object.keys(bpPriv).length)) {
+        setResult(r => ({
+          ...r,
+          player: {
+            ...r.player,
+            bodyProfile: { ...(r.player?.bodyProfile || {}), ...bp },
+            bodyProfilePrivate: { ...(r.player?.bodyProfilePrivate || {}), ...bpPriv },
+          },
+        }));
       }
     } catch { /* 静默，体貌留空玩家手填 */ }
     finally { if (pickRef.current === name) setBodyBusy(false); }
@@ -1059,7 +1075,7 @@ function ReviewPane({
                   cardMesExample={parsed?.card?.fields?.mesExample || ""}
                 />
                 {bodyBusy && (
-                  <div style={{ marginTop: 10, fontSize: 11, color: "#7a9a70" }}>⏳ 正在让 AI 从外貌拆出体貌 7 项…</div>
+                  <div style={{ marginTop: 10, fontSize: 11, color: "#7a9a70" }}>⏳ 正在让 AI 从外貌拆出体貌（公开＋私密）…</div>
                 )}
               </div>
             )}
@@ -1208,7 +1224,8 @@ function ReviewPane({
                     {result.player?.name || playerFromNpc || "（未填名讳）"}
                   </div>
                   <div style={{ fontSize: 10.5, color: "#8a8270", marginTop: 4, lineHeight: 1.8 }}>
-                    体貌 {Object.values(result.player?.bodyProfile || {}).filter(v => (v || "").trim()).length}/7 项
+                    体貌公开 {Object.values(result.player?.bodyProfile || {}).filter(v => (v || "").trim()).length}/7 项
+                    · 私密 {Object.values(result.player?.bodyProfilePrivate || {}).filter(v => (v || "").trim()).length}/5 项
                     · {result.player?.gender || "性别未定"}
                     · 武学 {(result.player?.skills || []).length} 门
                     · 装备 {(result.player?.carry || []).length} 件

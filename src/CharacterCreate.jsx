@@ -36,8 +36,11 @@ export default function CharacterCreate({ onConfirm }) {
     onConfirm({ name: name.trim(), gender: finalGender, fromCard });
   };
 
-  const filledCount = pending
+  const pubFilled = pending
     ? Object.values(pending.bodyProfile || {}).filter(v => (v || "").trim()).length
+    : 0;
+  const privFilled = pending
+    ? Object.values(pending.bodyProfilePrivate || {}).filter(v => (v || "").trim()).length
     : 0;
 
   return (
@@ -61,7 +64,7 @@ export default function CharacterCreate({ onConfirm }) {
               >弃用</span>
             </div>
             <div style={{ fontSize: 11.5, color: "#c8bfa0", lineHeight: 1.8 }}>
-              {pending.name ? `名讳「${pending.name}」 · ` : ""}体貌 {filledCount}/7 项
+              {pending.name ? `名讳「${pending.name}」 · ` : ""}体貌公开 {pubFilled}/7 项 · 私密 {privFilled}/5 项
               {pending.special ? ` · 七维已录` : ""}
             </div>
             <div

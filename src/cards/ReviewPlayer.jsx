@@ -4,10 +4,10 @@
 //   名字 / 性别 / 体貌公开层七项 / 体貌私密层五项 / 性格（丢） / 出身背景 /
 //   说话风格示范 / 开场白 / 世界观地理规则 / 七维 / 内外功 / 气血
 //
-// 两条硬规矩写在这里：
-//   · 私密层五项只允许手填，不接 AI 抽取。中文卡池里动漫角色占绝大多数，让
-//     导入器自动从卡里抽「身体细节／敏感处」等于批量给未成年角色生成身体描写。
-//     这不是可配置项。
+// 两条规矩写在这里：
+//   · 私密层五项支持 AI 抽取（扫描阶段三默认开启），玩家在下方确认过风险后生效。
+//     只抽原文明确写到的项，没写的一律留空手填。卡池里动漫角色占绝大多数，自动
+//     抽取可能为未成年角色生成身体描写——确认条就是为这一条设的。
 //   · 卡的 personality 一律丢弃。玩家的性格由每轮输入实时表达，写死会跟实际
 //     操作打架——你打「我冷笑一声」，卡里写着「温和有礼」，两句话互相拆台。
 
@@ -16,7 +16,7 @@ import {
   BODY_PUBLIC, BODY_PRIVATE, TIERS, StatRow, SevenDim, Src, TextField,
   Section, Note, Pills, selStyle,
 } from "./ReviewParts.jsx";
-import { TIER_NEIGONG, parseJsonLoose } from "./scanPrompts.js";
+import { TIER_NEIGONG, parseJsonLoose, buildStage3 } from "./scanPrompts.js";
 import { hpFromNeigong } from "../npcGeneration.js";
 import { CarryPicker } from "./ReviewNpc.jsx";
 import { callModel } from "../apiConfig.js";
@@ -113,6 +113,54 @@ export default function ReviewPlayer({
   const [equipBusy, setEquipBusy] = useState(false);
   const [aiMsg, setAiMsg] = useState("");
 
+  // 私密层 AI 抽取的风险确认：功能默认开启，玩家点过「我已了解」后记住，不再打扰。
+  // 存 localStorage 而不是进档案——这是玩家对导入器的知情声明，不是角色数据。
+  const INTIMATE_ACK_KEY = "intimateScanAck";
+  const [privAcked, setPrivAcked] = useState(() => {
+    try { return localStorage.getItem(INTIMATE_ACK_KEY) === "1"; } catch { return false; }
+  });
+  const ackIntimate = () => {
+    try { localStorage.setItem(INTIMATE_ACK_KEY, "1"); } catch { /* 存不上也不影响本会话 */ }
+    setPrivAcked(true);
+  };
+
+  // 粘贴一段描写 → AI 拆成体貌字段（公开层＋私密层）补全。只合并不覆盖：AI 拆出来
+  // 的非空项才写进去，原来已有的保留。私密项原文没写到的 AI 会留空，不编造。
+  const [bodyDesc, setBodyDesc] = useState("");
+  const [bodyBusy, setBodyBusy] = useState(false);
+  const aiScanBody = async () => {
+    if (bodyBusy || !apiCfg || !bodyDesc.trim()) return;
+    setBodyBusy(true); setAiMsg("正在拆解体貌…");
+    try {
+      await acquire(ms => setAiMsg(`排队 ${Math.ceil(ms / 1000)}s…`));
+      const { system, user } = buildStage3(bodyDesc, { cardName: p.name || "玩家" });
+      const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
+        { maxTokens: 4000, temperature: 0.3 });
+      const out = parseJsonLoose(res.text || "");
+      const pub = {}, newPriv = {};
+      for (const [k] of BODY_PUBLIC) {
+        const v = out?.bodyProfile?.[k];
+        if (typeof v === "string" && v.trim()) pub[k] = v.trim().slice(0, 40);
+      }
+      for (const [k] of BODY_PRIVATE) {
+        const v = out?.bodyProfilePrivate?.[k];
+        if (typeof v === "string" && v.trim()) newPriv[k] = v.trim().slice(0, 40);
+      }
+      const nPub = Object.keys(pub).length, nPriv = Object.keys(newPriv).length;
+      if (nPub + nPriv) {
+        onPatch({
+          ...(nPub ? { bodyProfile: { ...bp, ...pub } } : {}),
+          ...(nPriv ? { bodyProfilePrivate: { ...priv, ...newPriv } } : {}),
+        });
+        setAiMsg(`拆出公开 ${nPub} 项、私密 ${nPriv} 项，可改`);
+      } else {
+        setAiMsg("没拆出认得出的字段，换个写法再试");
+      }
+    } catch (e) {
+      setAiMsg(`没成：${String(e?.message || e).slice(0, 60)}`);
+    } finally { setBodyBusy(false); }
+  };
+
   // AI 现编武学：读主角人设 + 卡的性格/招式线索，产 1-3 门武学（覆盖现有的）。
   const aiScanSkills = async () => {
     if (skillBusy || !apiCfg) return;
@@ -177,15 +225,65 @@ export default function ReviewPlayer({
       </Section>
 
       {/* 4 体貌私密层 */}
-      <Section title={<>体貌 · 私密层<Src source="manual" /><span style={{ fontSize: 10, color: "#8a8270", marginLeft: 6 }}>{privFilled}/5 项</span></>}>
+      <Section title={<>体貌 · 私密层<span style={{ fontSize: 10, color: "#8a8270", marginLeft: 6 }}>{privFilled}/5 项</span></>}>
+        {!privAcked ? (
+          <Note tone="warn">
+            AI 现在会自动从卡里抽取这五项（疤痕印记／体味／身体细节／敏感处／习惯癖好）。
+            自动抽取可能为未成年角色生成身体描写。
+            <span onClick={ackIntimate}
+              style={{ cursor: "pointer", color: "#e0b860", fontWeight: 700, textDecoration: "underline", marginLeft: 6 }}>
+              我已了解风险
+            </span>
+          </Note>
+        ) : (
+          <div style={{ fontSize: 10.5, color: "#8a8270", marginTop: 0, lineHeight: 1.7 }}>
+            ✓ 已确认风险，AI 扫描会自动抽取私密层。只抽原文明确写到的项，没写的留空由你填。
+          </div>
+        )}
         {BODY_PRIVATE.map(([k, label]) => (
-          <TextField key={k} label={label} max={40} placeholder="只能你自己填"
+          <TextField key={k} label={label} max={40}
+            placeholder={privAcked ? "AI 抽到的会自动填，留空自己写" : "留空由你自己填"}
             value={priv[k]} onChange={v => setPriv(k, v)} />
         ))}
-        <Note tone="warn">
-          这五项不从卡里抽，只能手填。卡池里动漫角色占绝大多数，自动抽取等于批量给
-          未成年角色生成身体描写，所以这条是硬性的、没有开关。填了也只在 ■ 模式开启时注入。
+        <Note tone="info">
+          填了也只在 ■ 模式开启时注入。卡池里动漫角色占绝大多数，若这张卡的描写涉及未成年
+          角色，请主动清空下方 AI 抽到的相关项。
         </Note>
+
+        {/* 4b 粘贴描写 → AI 拆成体貌字段补全 */}
+        <div style={{ marginTop: 10, padding: "8px 9px", borderRadius: 3, background: "rgba(0,0,0,.22)", border: "1px solid #2a2419" }}>
+          <div style={{ fontSize: 10.5, color: "#c0b090", marginBottom: 5, lineHeight: 1.6 }}>
+            ✨ 粘贴一段卡里的外貌／身体描写，AI 会拆成体貌字段（公开层＋私密层）补全上面两栏。
+            只是合并，不会覆盖你已填的内容。
+          </div>
+          <textarea
+            value={bodyDesc}
+            onChange={e => setBodyDesc(e.target.value.slice(0, 800))}
+            placeholder={"例：眉压得低，笑起来右边有个浅酒窝；左肋一道旧刀疤，是在锦官城挨的；凑近了闻得到松脂混一点铁锈味……"}
+            rows={3}
+            style={{
+              width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)",
+              border: "1px solid #3a3428", borderRadius: 3, padding: "5px 8px",
+              color: "#e8dcc0", fontSize: 11.5, outline: "none", resize: "vertical",
+              fontFamily: "inherit",
+            }}
+          />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+            <span onClick={bodyBusy ? undefined : aiScanBody}
+              title="让 AI 把这段描写拆成体貌字段"
+              style={{
+                cursor: bodyBusy ? "wait" : "pointer", userSelect: "none",
+                fontSize: 11.5, padding: "5px 12px", borderRadius: 4, whiteSpace: "nowrap",
+                display: "inline-flex", alignItems: "center", gap: 5,
+                color: bodyBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                border: `1px solid ${bodyBusy ? "#3a4a38" : "#5f8256"}`,
+                background: bodyBusy ? "rgba(0,0,0,.3)" : "linear-gradient(180deg,rgba(74,120,64,.5),rgba(0,0,0,.45))",
+              }}>✨ {bodyBusy ? "拆解中…" : "AI 拆解补全"}</span>
+            <span style={{ flex: 1, fontSize: 9.5, color: "#5a5448" }}>
+              私密项原文没写到的 AI 不会编。
+            </span>
+          </div>
+        </div>
       </Section>
 
       {/* 5 性格（丢弃） */}

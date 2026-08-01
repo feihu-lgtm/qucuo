@@ -16,6 +16,7 @@ import {
   buildStage1, buildStage2, buildStage3, buildStage4,
   parseJsonLoose, sanitizeSpecial, sanitizeLevelCap, sanitizeAffection,
   sanitizeMilestones, sanitizeBrief, sanitizeGongfu, sanitizeMoves, sanitizeLore,
+  BODY_PUBLIC_KEYS, BODY_PRIVATE_KEYS,
   FALLBACK_SPECIAL, FALLBACK_LEVEL_CAP, FALLBACK_MILESTONES, SLOT_DEFAULT_ARCHETYPE, MOVE_SLOTS,
 } from "./scanPrompts.js";
 import { groupEntriesByKeys, groupToNpcLore } from "./cardParse.js";
@@ -431,7 +432,7 @@ export async function runScan(parsed, callModel, cfg, opts = {}) {
         card.fields.description,
       ].filter(Boolean).join("\n\n");
       if (sources.trim()) {
-        ctx.onProgress?.({ kind: "start", stage: 3, msg: "拆出体貌与天赋" });
+        ctx.onProgress?.({ kind: "start", stage: 3, msg: "拆出体貌（公开＋私密）与天赋" });
         try {
           const built = buildStage3(sources, { cardName: card.name });
           const out = await callWithRetry(callModel, cfg, built, opts, ctx);
@@ -560,21 +561,24 @@ function fallbackNpc(p, playerName) {
   };
 }
 
-const BODY_PUBLIC_KEYS = ["height", "build", "face", "skin", "hair", "voice", "clothing"];
-
 function normalizeStage3(out) {
   const bp = {};
   for (const k of BODY_PUBLIC_KEYS) {
     bp[k] = String(out?.bodyProfile?.[k] || "").slice(0, 40);
   }
+  const bpPriv = {};
+  for (const k of BODY_PRIVATE_KEYS) {
+    bpPriv[k] = String(out?.bodyProfilePrivate?.[k] || "").slice(0, 40);
+  }
   return {
     name: String(out?.name || "").slice(0, 12),
     nameWhy: String(out?.name_why || "").slice(0, 20),
     bodyProfile: bp,
+    bodyProfilePrivate: bpPriv,
     special: sanitizeSpecial(out?.special),
     specialWhy: String(out?.special_why || "").slice(0, 20),
     persona: String(out?.persona || "").slice(0, 200),
-    missing: BODY_PUBLIC_KEYS.filter(k => !bp[k]),
+    missing: [...BODY_PUBLIC_KEYS.filter(k => !bp[k]), ...BODY_PRIVATE_KEYS.filter(k => !bpPriv[k])],
     source: "ai",
   };
 }
@@ -582,12 +586,15 @@ function normalizeStage3(out) {
 function fallbackPlayer() {
   const bp = {};
   for (const k of BODY_PUBLIC_KEYS) bp[k] = "";
+  const bpPriv = {};
+  for (const k of BODY_PRIVATE_KEYS) bpPriv[k] = "";
   return {
     name: "", nameWhy: "",
     bodyProfile: bp,
+    bodyProfilePrivate: bpPriv,
     special: { ...FALLBACK_SPECIAL }, specialWhy: "",
     persona: "",
-    missing: [...BODY_PUBLIC_KEYS],
+    missing: [...BODY_PUBLIC_KEYS, ...BODY_PRIVATE_KEYS],
     source: "fallback",
   };
 }

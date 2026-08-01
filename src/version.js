@@ -9,6 +9,19 @@
 
 export const VERSION_HISTORY = [
   {
+    codename: "体貌私密层接入 AI 自动抽取（默认开启＋风险确认）＋粘贴描写一键拆解补全",
+    time: "2026-08-01 08:30",
+    notes: [
+      "推翻了私密层「只许手填」的旧红线：体貌私密五项现在默认由 AI 自动抽取，效率优先，防护改为显式确认。",
+      "①【为什么敢推翻】旧红线（自动抽私密等于给未成年角色批量生成身体描写）的有效前提是「一次性、无把关地抽一批」。现在的承接方式把它拆成了三层：AI 只抽原文明确写到的项、没写的一律留空不编（写进 stage3 prompt 的硬性铁律）；玩家在审改界面点过「我已了解风险」才记住、不再提示（localStorage：intimateScanAck）；界面随时可逐项清空改。私密层运行时注入的硬条件没动——gateBodyProfile 仍只在 ■ 模式开启时亮私密层。",
+      "②【stage3 扩容为两层】buildStage3 的 schema 从公开层 7 项扩到 12 项，新增 bodyProfilePrivate（scars/scent/intimate/sensitive/habit）。cardScan 的 normalizeStage3/fallbackPlayer 同步补私密字段，missing 清单覆盖两层。BODY_PUBLIC_KEYS / BODY_PRIVATE_KEYS 提为 scanPrompts 的导出，卡扫描与审改界面共用，不再各写一份。",
+      "③【审改界面三处改动】私密层区块顶部：未确认时显示风险提示条（点「我已了解风险」后消失并记住）；输入框占位随确认状态变化。新增「✨ AI 拆解补全」：粘贴一段卡里的外貌/身体描写，AI 拆成体貌字段（公开＋私密）合并进两栏，只合并不覆盖，私密项没写的不编。",
+      "④【选主角的自动识别同步开启私密层】CardImportScreen 的 pickPlayerFrom 在 NPC 转主角时原本只拆公开 7 项，现在同时拆私密 5 项并入 bodyProfilePrivate；npcToPlayer 的私密层占位、两处计数（公开/5 私密）、忙碌提示文案全部更新。CharacterCreate 待用卡概览同样分列公开/私密计数。",
+      "⑤【文档与红线记录同步修正】docs/交接_角色卡入册系统.md 的「不从卡片抽取玩家的私密层体貌」与阶段三描述更新为「默认开启＋风险确认」；version.js 旧条目 ⑧ 保留原文以存史，本条目为推翻决策的依据与实现说明。",
+      "验证：vitest 全量 + pages build + propsCheck / bundleCheck 需本地复跑确认。",
+    ],
+  },
+  {
     codename: "角色入册续做：从众人选主角、名单批量设落脚品阶、AI 一键配装备、新控件加 hover 手感",
     time: "2026-07-31 09:20",
     notes: [
