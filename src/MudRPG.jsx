@@ -138,7 +138,7 @@ import GambleStoneScreen from "./buildings/GambleStoneScreen.jsx";
 import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } from "./gambleStone.js";
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
-import { invHasItemNamed, SAFE_HOUSES } from "./safeHouse.js";
+import { invHasItemNamed, SAFE_HOUSES, ownedSafeHouseKeys, makeTusiRobe } from "./safeHouse.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
 import { injectNpcs, markCarriedLost, materializeNpc, removeNpc, respawnNpc } from "./roomNpcs.js";
@@ -1807,6 +1807,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 商店预览等（默认 opts 不传 worldLook）走"瞬时缓存、不耗回合、不记事"，逛店翻看不扣时间。
     const worldLook = !!opts.worldLook;
 
+    // 教程任务「四宅家产」触发点之一：端详溪边小屋钥匙即开任务（幂等，见 startEstateTutorial）
+    if (name === "溪边小屋钥匙") setFlags(f => f.includes("tutorial_estate_started") ? f : [...f, "tutorial_estate_started"]);
+
     // 缓存命中：不论 worldLook 与否都先查缓存。命中就直接用缓存文本，不调 LLM、不显示加载态。
     const cached = getCachedInspect(kind, name, extra, itemObj);
     if (cached) {
@@ -1841,7 +1844,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
     }
     setInspecting(null);
-  }, [loading, inspecting, addLog, jotNote, genInspectText]);
+  }, [loading, inspecting, addLog, jotNote, genInspectText, setFlags]);
 
   // ── 端详描述后台预跑 ──
   // 背包/武学/装备里只要出现"该有描述但还没缓存"的东西，就在后台悄悄把它的端详
@@ -2128,6 +2131,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       talkBusyRef.current = true;
       setCmdHistory(p => [cmd, ...p].slice(0, 50));
       setHistIdx(-1);
+      // 教程任务「四宅家产」触发点之三：跟旁白聊到溪边小屋（幂等）
+      if (/溪边小屋/.test(cmd)) setFlags(f => f.includes("tutorial_estate_started") ? f : [...f, "tutorial_estate_started"]);
       talkToNarrator(cmd); // 不 await；串行由 talkBusyRef 闸门保证
       return;
     }
@@ -3888,6 +3893,51 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     setFlags(f => [...f, buffFlag]);
     act(`点了${item.name}，花费${item.price}两`, [], { settle: true });
   }, [char, dao, time, addLog, act]);
+
+  // ══ 教程任务「四宅家产」：集齐四宅钥匙，送土司礼服 ══
+  // 三个触发点（端详溪边小屋钥匙 / 初次进溪边小屋 / 跟旁白聊到溪边小屋）
+  // 都只做一件事：置位 tutorial_estate_started（幂等）。开任务与推进全由
+  // 下面三个 effect 系统裁决——钥匙顺序不固定，所以推进按持有数走，不走 completionFlag。
+  useEffect(() => {
+    if (innerRoomName === "溪边小屋") setFlags(f => f.includes("tutorial_estate_started") ? f : [...f, "tutorial_estate_started"]);
+  }, [innerRoomName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 开任务：任一触发点置位后建任务进度，主叙事播报一句"有趣的任务出现了"。
+  useEffect(() => {
+    if (!flags.includes("tutorial_estate_started")) return;
+    if (flags.includes("tutorial_estate_announced")) return;
+    setFlags(f => f.includes("tutorial_estate_announced") ? f : [...f, "tutorial_estate_announced"]);
+    setQuestProgress(prev => prev["tutorial_four_estates"] ? prev : {
+      ...prev,
+      tutorial_four_estates: {
+        ...createQuestProgress("tutorial_four_estates"),
+        currentStageIndex: Math.max(0, ownedSafeHouseKeys(inv).length - 1),
+        progress: ownedSafeHouseKeys(inv).length,
+      },
+    });
+    act("玩家摩挲着溪边小屋钥匙柄上那截褪色的红绳，忽然意识到：曲措乡境内有四栋落了锁的房子，四把钥匙散在四条路上，门后藏着无数的宝藏与秘密——一个有趣的营生浮上心头。请写一两句白话古文点拨：有个有趣的任务出现了，不妨点开任务面板看看。不要替玩家做决定。", [], { settle: true });
+  }, [flags]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 推进与完成：按背包实际持有的钥匙数同步阶段（1把→1/4 … 3把→3/4），
+  // 集齐 4 把即完成，土司礼服直接入袋（makeTusiRobe 现造，不进百物录）。
+  useEffect(() => {
+    const prog = questProgress["tutorial_four_estates"];
+    if (!prog || prog.status !== "active") return;
+    const count = ownedSafeHouseKeys(inv).length;
+    if (count >= 4) {
+      if (flags.includes("tutorial_estate_rewarded")) return;
+      setFlags(f => f.includes("tutorial_estate_rewarded") ? f : [...f, "tutorial_estate_rewarded"]);
+      setQuestProgress(prev => ({ ...prev, tutorial_four_estates: { ...prev.tutorial_four_estates, status: "completed", currentStageIndex: 4, progress: 4, completedAt: Date.now() } }));
+      setInv(prev => [...prev, makeTusiRobe()]);
+      addLog([{ t: "sys", text: "  ※ 任务「四宅家产」已完成。有人捧来一套土司礼服，放进了你的行囊。" }]);
+      act("玩家集齐了曲措乡四栋房子的钥匙——溪边小屋、山间别墅、弟子别院、蜀王庄，四份家产尽握在手。正当此时，有人捧来一套土司礼服相赠。请写两三句白话古文：四宅齐备、在曲措乡站稳脚跟的滋味，以及换上土司礼服那一刻的体面与感慨。", [], { settle: true });
+      return;
+    }
+    const idx = Math.max(0, count - 1);
+    if ((prog.currentStageIndex ?? 0) !== idx) {
+      setQuestProgress(prev => ({ ...prev, tutorial_four_estates: { ...prev.tutorial_four_estates, currentStageIndex: idx, progress: count } }));
+    }
+  }, [inv, questProgress, flags]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 烹饪台：系统裁决（扣料/回血/挂 buff flag），叙事交给主管线写一段「小总结」。
   // dish 由 CookingScreen 算好（固定配方 computeDish / 自由组合 genericDishEffect）。

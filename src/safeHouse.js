@@ -1,5 +1,7 @@
 // 安全屋（四栋房子）· 数据与判定
 // ============================================================================
+import { makeItem } from "./equipment.js";
+
 // 曲措乡境内四栋可长期落脚的房子，每栋锁着，各需一把钥匙，四把钥匙四种拿法：
 //
 //   鱼定村·溪边小屋   ← 开局背包自带（教会玩家"锁+钥匙"这套机制）
@@ -78,6 +80,19 @@ export function invHasItemNamed(inv, itemName) {
 // 玩家当前持有哪几把安全屋钥匙（供 UI/调试展示）。
 export function ownedSafeHouseKeys(inv) {
   return SAFE_HOUSE_KEYS.filter(k => invHasItemNamed(inv, k.name)).map(k => k.name);
+}
+
+// 集齐四宅钥匙的奖励：土司礼服（橙档护甲，七维各+1）。
+// 不进百物录 catalog——它是独一份的任务奖励，不想让 AI 在物件志里看见后随机发。
+// 只在「四宅家产」任务完成时由 makeTusiRobe 现造一件入袋（见 MudRPG 的 watcher）。
+export function makeTusiRobe() {
+  return makeItem({
+    name: "土司礼服",
+    category: "armor",
+    quality: "橙",
+    sixDim: { 根骨: 1, 悟性: 1, 体魄: 1, 魅力: 1, 智谋: 1, 身法: 1, 气运: 1 },
+    desc: "集齐曲措乡四宅钥匙后有人相赠的一套土司礼服。藏锦织就，金线滚边，胸前一枚小小的四曲交汇纹。穿上它，你便不再是个无名的过路人——四份家产在握，是有产有业的人了。",
+  });
 }
 
 // 某据点的安全屋是否已对玩家开放。

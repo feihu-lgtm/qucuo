@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { SAFE_HOUSES, SAFE_HOUSE_KEYS, invHasItemNamed, isSafeHouseOpen } from "./safeHouse.js";
+import { SAFE_HOUSES, SAFE_HOUSE_KEYS, invHasItemNamed, isSafeHouseOpen, ownedSafeHouseKeys, makeTusiRobe } from "./safeHouse.js";
+import { QUCUO_QUESTS } from "./quests/qucuoQuests.js";
+import { QUEST_TYPE } from "./quests/questTypes.js";
 import { getInnerRoom, visibleInnerExits, isInnerExitUnlocked, getInnerRoomNames } from "./innerMap.js";
 import { tryInnerMove } from "./act/innerMove.js";
 
@@ -137,5 +139,54 @@ describe("获取方式产出的钥匙名 必须与锁逐字一致", () => {
     for (const d of ["天都镇", "雪山派", "锦官城"]) {
       expect(names).not.toContain(lockOf(d));
     }
+  });
+});
+
+describe("ownedSafeHouseKeys：按背包持有数计数", () => {
+  it("空背包 0 把；开局只有溪边小屋钥匙 1 把", () => {
+    expect(ownedSafeHouseKeys([])).toHaveLength(0);
+    expect(ownedSafeHouseKeys([{ name: "溪边小屋钥匙", category: "misc" }])).toHaveLength(1);
+  });
+
+  it("集齐四把为 4（任意顺序都认，字符串物品也认）", () => {
+    const inv = ["溪边小屋钥匙", "银灰色钥匙", "雪山派令牌钥匙", "衔尾蛇门环"];
+    expect(ownedSafeHouseKeys(inv)).toHaveLength(4);
+  });
+});
+
+describe("土司礼服 makeTusiRobe：四宅家产任务的收官奖励", () => {
+  const robe = makeTusiRobe();
+  it("橙档护甲，七维各 +1", () => {
+    expect(robe.category).toBe("armor");
+    expect(robe.quality).toBe("橙");
+    expect(robe.sixDim).toEqual({ 根骨: 1, 悟性: 1, 体魄: 1, 魅力: 1, 智谋: 1, 身法: 1, 气运: 1 });
+  });
+
+  it("护甲数值按橙档走（有 def），且是独立实例（两次调用不共享 id）", () => {
+    expect(robe.def).toBeGreaterThan(0);
+    expect(makeTusiRobe().id).not.toBe(robe.id);
+  });
+
+  it("描述点出「四份家产」的来由", () => {
+    expect(robe.desc).toContain("四份家产");
+  });
+});
+
+describe("教程任务「四宅家产」定义自洽", () => {
+  const quest = QUCUO_QUESTS.find(q => q.id === "tutorial_four_estates");
+  it("存在且是 COLLECT 四把钥匙", () => {
+    expect(quest).toBeTruthy();
+    expect(quest.type).toBe(QUEST_TYPE.COLLECT);
+    expect(quest.requiredCount).toBe(4);
+    expect(quest.giver).toBeNull(); // 自驱寻宝，没有委托人
+  });
+
+  it("四阶段与四把钥匙一一对应，且不靠 completionFlag 推进（由 watcher 按持有数驱动）", () => {
+    expect(quest.stages).toHaveLength(4);
+    for (const s of quest.stages) expect(s.completionFlag).toBeUndefined();
+  });
+
+  it("奖励文案点出土司礼服", () => {
+    expect(quest.rewardText).toContain("土司礼服");
   });
 });
