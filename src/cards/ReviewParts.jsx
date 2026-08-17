@@ -53,7 +53,7 @@ export const BODY_PRIVATE = [
 
 export const selStyle = {
   boxSizing: "border-box", width: "100%", background: "rgba(0,0,0,.4)",
-  border: "1px solid #3a3428", borderRadius: 3, padding: "5px 7px",
+  border: "1px solid #3a3428", borderRadius: 0, padding: "5px 7px",
   color: "#e8dcc0", fontSize: 11.5, outline: "none", fontFamily: "inherit",
   textAlign: "center", textAlignLast: "center",
 };
@@ -198,7 +198,7 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
         style={{
           flex: 1, height: 9, position: "relative", cursor: onChange ? "pointer" : "default",
           backgroundImage: `url('${S("ui/bar_paper2.webp")}')`,
-          backgroundSize: "100% 100%", borderRadius: 2, overflow: "hidden",
+          backgroundSize: "100% 100%", borderRadius: 0, overflow: "hidden",
         }}
       >
         <div style={{
@@ -216,11 +216,11 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
             }}
             style={{
               width: max > 10 ? 32 : 26, textAlign: "center", background: "rgba(0,0,0,.4)",
-              border: "1px solid #3a3428", borderRadius: 2, padding: "2px 0",
+              border: "1px solid #3a3428", borderRadius: 0, padding: "2px 0",
               color: "#d4a853", fontSize: 11.5, outline: "none", fontFamily: "inherit",
             }} />
           <Step onClick={() => set(value + step)} disabled={value >= max}>＋</Step>
-          {unit ? <span style={{ fontSize: 9.5, color: "#6a6250" }}>{unit}</span> : null}
+          {unit ? <span style={{ fontSize: 9.5, color: "#8f8a7c" }}>{unit}</span> : null}
         </span>
       ) : (
         <span style={{ width: 26, textAlign: "right", fontSize: 11, color: "#d4a853", flexShrink: 0 }}>{value}</span>
@@ -236,7 +236,7 @@ export function SevenDim({ special, onChange, why }) {
         <StatRow key={k} label={k} value={special?.[k] ?? 5} max={10}
           onChange={onChange ? (v => onChange({ ...special, [k]: v })) : null} />
       ))}
-      {why && <div style={{ fontSize: 10, color: "#6a6250", marginTop: 4, fontStyle: "italic" }}>据「{why}」</div>}
+      {why && <div style={{ fontSize: 10, color: "#8f8a7c", marginTop: 4, fontStyle: "italic" }}>据「{why}」</div>}
     </div>
   );
 }
@@ -246,19 +246,19 @@ export function SevenDim({ special, onChange, why }) {
 export function Src({ source, why }) {
   if (source === "fallback") {
     return <span title="AI 没抽出来，这是默认值"
-      style={{ fontSize: 9, color: "#6a6250", border: "1px solid #3a3428", borderRadius: 2, padding: "0 3px", marginLeft: 5 }}>默认</span>;
+      style={{ fontSize: 9, color: "#8f8a7c", border: "1px solid #3a3428", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>默认</span>;
   }
   if (source === "manual") {
     return <span title="只能你自己填，不从卡里抽"
-      style={{ fontSize: 9, color: "#8a8ab0", border: "1px solid #3a3a4a", borderRadius: 2, padding: "0 3px", marginLeft: 5 }}>手填</span>;
+      style={{ fontSize: 9, color: "#8a8ab0", border: "1px solid #3a3a4a", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>手填</span>;
   }
   if (source === "drop") {
     return <span title="按规矩丢弃，不导入"
-      style={{ fontSize: 9, color: "#7a6a60", border: "1px solid #3a3028", borderRadius: 2, padding: "0 3px", marginLeft: 5 }}>已丢</span>;
+      style={{ fontSize: 9, color: "#7a6a60", border: "1px solid #3a3028", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>已丢</span>;
   }
   return (
     <span title={why ? `AI 判断依据：${why}` : "AI 抽取"}
-      style={{ fontSize: 9, color: "#7a9a70", border: "1px solid #3a4a34", borderRadius: 2, padding: "0 3px", marginLeft: 5 }}>
+      style={{ fontSize: 9, color: "#7a9a70", border: "1px solid #3a4a34", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>
       AI{why ? "·" + why.slice(0, 10) : ""}
     </span>
   );
@@ -271,7 +271,7 @@ export function TextField({ label, value, onChange, placeholder, rows = 1, max, 
   const centered = align || (rows > 1 ? "left" : "center");
   const common = {
     width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)",
-    border: "1px solid #3a3428", borderRadius: 3, padding: "5px 8px",
+    border: "1px solid #3a3428", borderRadius: 0, padding: "5px 8px",
     color: "#e8dcc0", fontSize: 11.5, outline: "none", resize: "vertical",
     textAlign: centered,
     fontFamily: mono ? "ui-monospace,Menlo,Consolas,monospace" : "inherit",
@@ -298,7 +298,7 @@ export function Stat({ label, v }) {
   return (
     <div style={{ display: "flex", fontSize: 11, marginBottom: 4, color: "#8a8270" }}>
       <span style={{ width: 84, flexShrink: 0 }}>{label}</span>
-      <span style={{ color: "#c8bfa0" }}>{v}</span>
+      <span style={{ color: "#e8e4d6" }}>{v}</span>
     </div>
   );
 }
@@ -330,7 +330,7 @@ export function Btn({ children, onClick, tone = "dim", disabled, title }) {
     <span onClick={disabled ? undefined : onClick} title={title}
       style={{
         cursor: disabled ? "not-allowed" : "pointer", userSelect: "none",
-        fontSize: 12, padding: "6px 16px", borderRadius: 4, whiteSpace: "nowrap",
+        fontSize: 12, padding: "6px 16px", borderRadius: 0, whiteSpace: "nowrap",
         color: main ? "#1a1206" : warn ? "#c0a870" : "#a89870",
         background: main ? "linear-gradient(180deg,#e0b860,#8a6a2a)" : "rgba(0,0,0,.3)",
         border: `1px solid ${main ? "#e0b860" : warn ? "#5a4a28" : "#3a3428"}`,
@@ -352,7 +352,7 @@ function Pill({ label, on, onClick, title, accent }) {
     <span onClick={onClick} title={title}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 14px", borderRadius: 3,
+        cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 14px", borderRadius: 0,
         transition: "all .14s ease",
         border: `1px solid ${on || hov ? accent : "#6a5f42"}`,
         background: on ? "rgba(212,168,83,.16)" : hov ? "rgba(212,168,83,.07)" : "rgba(0,0,0,.18)",
@@ -389,7 +389,7 @@ const TERM_TONE = {
 };
 
 /**
- * 终端样式的运行日志。视觉照 TraceViewer 来（#0a0c10 底、#9a9a8a 字、
+ * 终端样式的运行日志。视觉照 TraceViewer 来（#161510 底、#9a9a8a 字、
  * #8ac8b8 高亮、等宽、pre-wrap），因为两处要看的是同一类东西：带时序的机器动作。
  * 【为什么不用一行「实调 N 次」】那只有结果没有过程。5 次/分钟的额度下，玩家
  * 最需要看见的是"现在卡在哪、为什么等、哪一批降级了"。
@@ -401,7 +401,7 @@ export function Terminal({ lines, height = 132, onExpand }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [lines.length]);
   return (
-    <div style={{ borderTop: "1px solid #1a2020", background: "#0a0c10" }}>
+    <div style={{ borderTop: "1px solid #4a453c", background: "#161510" }}>
       <div style={{
         display: "flex", alignItems: "center", gap: 6, padding: "3px 8px",
         borderBottom: "1px solid #141a1a", fontFamily: TERM_MONO, fontSize: 9,

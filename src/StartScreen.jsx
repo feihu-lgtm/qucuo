@@ -257,7 +257,7 @@ const styles = {
     fontSize: "30px",
     color: "#e8dcc0",
     border: `1.5px solid ${t.accent}`,
-    borderRadius: "2px",
+    borderRadius: 0,
     letterSpacing: 0,
     boxShadow: `0 0 0 1px rgba(0,0,0,0.3), 0 4px 18px rgba(0,0,0,0.5)`,
     backgroundColor: "rgba(10,8,5,0.35)",

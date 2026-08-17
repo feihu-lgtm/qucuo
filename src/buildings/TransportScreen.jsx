@@ -42,7 +42,7 @@ export default function TransportScreen({
 
   const tabBtn = (id, label) => (
     <span onClick={() => setTab(id)} style={{
-      cursor: "pointer", padding: "4px 12px", fontSize: 12, borderRadius: 4,
+      cursor: "pointer", padding: "4px 12px", fontSize: 12, borderRadius: 0,
       color: tab === id ? zoneTheme.bg : zoneTheme.accent,
       background: tab === id ? zoneTheme.accent : zoneTheme.bgPanel,
       border: `1px solid ${zoneTheme.border}`,
@@ -53,7 +53,7 @@ export default function TransportScreen({
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "#8a8a7a", marginBottom: 10, fontSize: 11 }}>
+        <div style={{ color: "#8f8a7c", marginBottom: 10, fontSize: 11 }}>
           银两 {money} 两 · 信鸽 {pigeons} 只 · 当前位置：{currentRoom}
         </div>
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -63,13 +63,13 @@ export default function TransportScreen({
 
         {tab === "ride" && (
           <>
-            <div style={{ color: "#7a7a6a", fontSize: 11, marginBottom: 10 }}>选择目的地（不经过随机遭遇，直接抵达）：</div>
-            {explored.length === 0 && <div style={{ color: "#5a5a4a" }}>尚未探索其他据点。</div>}
+            <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 10 }}>选择目的地（不经过随机遭遇，直接抵达）：</div>
+            {explored.length === 0 && <div style={{ color: "#8f8a7c" }}>尚未探索其他据点。</div>}
             {explored.map(dest => {
               const price = getPriceForDest(dest);
               return (
-                <div key={dest} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "8px 10px", background: "#10121a", borderRadius: 4, border: `1px solid ${zoneTheme.border}` }}>
-                  <span style={{ color: "#c8bfa0", fontSize: 12 }}>{dest}</span>
+                <div key={dest} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "8px 10px", background: "#161510", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                  <span style={{ color: "#e8e4d6", fontSize: 12 }}>{dest}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ color: "#e8c468", fontSize: 11 }}>{price} 两</span>
                     <Btn label="前往" disabled={money < price} zoneTheme={zoneTheme} onClick={() => onTravel(dest, price)} />
@@ -83,9 +83,9 @@ export default function TransportScreen({
         {tab === "post" && (
           <>
             {/* 买鸽子 */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, padding: "8px 10px", background: "#10121a", borderRadius: 4, border: `1px solid ${zoneTheme.border}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, padding: "8px 10px", background: "#161510", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
               <div>
-                <div style={{ color: "#c4a040", fontSize: 12 }}>🕊 信鸽 <span style={{ color: "#8a8a7a" }}>（现有 {pigeons} 只）</span></div>
+                <div style={{ color: "#c4a040", fontSize: 12 }}>🕊 信鸽 <span style={{ color: "#8f8a7c" }}>（现有 {pigeons} 只）</span></div>
                 <div style={{ color: "#6a6a5a", fontSize: 10 }}>买了才能在野外随处飞鸽传书（快·只送信）；每寄一封耗一只</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -96,24 +96,24 @@ export default function TransportScreen({
             </div>
 
             {/* 寄信 / 送礼 */}
-            <div style={{ color: "#7a7a6a", fontSize: 11, marginBottom: 8 }}>
+            <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 8 }}>
               驿站寄书：给相识之人写信，或随信附一件礼（走驿卒脚程，按远近 1–12 时辰后有回音；情谊够深者或有回礼）。
             </div>
             {metNpcs.length === 0 ? (
-              <div style={{ color: "#5a5a4a", fontSize: 11 }}>你还没结识可通信的人。</div>
+              <div style={{ color: "#8f8a7c", fontSize: 11 }}>你还没结识可通信的人。</div>
             ) : (
               <>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <span style={{ color: "#8a8a7a", fontSize: 11, width: 40 }}>收信人</span>
+                  <span style={{ color: "#8f8a7c", fontSize: 11, width: 40 }}>收信人</span>
                   <select value={recipient} onChange={e => setRecipient(e.target.value)}
-                    style={{ flex: 1, background: "#10121a", color: "#c8bfa0", border: `1px solid ${zoneTheme.border}`, borderRadius: 3, padding: "4px 6px", fontSize: 12, fontFamily: "inherit" }}>
+                    style={{ flex: 1, background: "#161510", color: "#e8e4d6", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", fontSize: 12, fontFamily: "inherit" }}>
                     {metNpcs.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <span style={{ color: "#8a8a7a", fontSize: 11, width: 40 }}>附礼</span>
+                  <span style={{ color: "#8f8a7c", fontSize: 11, width: 40 }}>附礼</span>
                   <select value={gift} onChange={e => setGift(e.target.value)}
-                    style={{ flex: 1, background: "#10121a", color: gift ? "#c4a040" : "#6a6a5a", border: `1px solid ${zoneTheme.border}`, borderRadius: 3, padding: "4px 6px", fontSize: 12, fontFamily: "inherit" }}>
+                    style={{ flex: 1, background: "#161510", color: gift ? "#c4a040" : "#6a6a5a", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", fontSize: 12, fontFamily: "inherit" }}>
                     <option value="">（不附礼 · 只寄信）</option>
                     {invNames.map((n, i) => <option key={n + i} value={n}>{n}</option>)}
                   </select>
@@ -121,7 +121,7 @@ export default function TransportScreen({
                 <textarea value={letter} onChange={e => setLetter(e.target.value)}
                   placeholder={`写给${recipient || "…"}的话…`}
                   rows={4}
-                  style={{ width: "100%", boxSizing: "border-box", background: "#10121a", color: "#c8bfa0", border: `1px solid ${zoneTheme.border}`, borderRadius: 3, padding: 8, fontSize: 12, fontFamily: "inherit", resize: "vertical", marginBottom: 8 }} />
+                  style={{ width: "100%", boxSizing: "border-box", background: "#161510", color: "#e8e4d6", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 8, fontSize: 12, fontFamily: "inherit", resize: "vertical", marginBottom: 8 }} />
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <Btn label={gift ? "送礼 + 寄信" : "寄信"} disabled={!recipient || !letter.trim()} zoneTheme={zoneTheme} onClick={doSend} />
                 </div>

@@ -102,7 +102,7 @@ const styles = {
   },
   imageFallback: {
     width: "100%", height: "100%", display: "block",
-    background: "radial-gradient(ellipse at 50% 35%, #2a3340 0%, #141820 55%, #0a0c10 100%)",
+    background: "radial-gradient(ellipse at 50% 35%, #2a3340 0%, #141820 55%, #161510 100%)",
   },
   vignette: {
     position: "absolute",

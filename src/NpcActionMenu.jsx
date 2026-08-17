@@ -49,7 +49,7 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div
-        style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 6, padding: 20, width: 320, maxWidth: "90vw" }}
+        style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ color: zoneTheme.accent, fontSize: "14px", marginBottom: 4 }}>{npc.name}</div>
@@ -61,7 +61,7 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
               key={a.key}
               onClick={a.onClick}
               style={{
-                cursor: "pointer", padding: "12px 10px", borderRadius: 4, textAlign: "center",
+                cursor: "pointer", padding: "12px 10px", borderRadius: 0, textAlign: "center",
                 background: zoneTheme.bg, border: `1px solid ${zoneTheme.border}`,
                 opacity: a.available ? 1 : 0.4,
               }}
@@ -85,7 +85,7 @@ function GiftPicker({ npc, zoneTheme, inv, onBack, onConfirm }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onBack}>
       <div
-        style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 6, padding: 20, width: 320, maxWidth: "90vw", maxHeight: "70vh", overflowY: "auto" }}
+        style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw", maxHeight: "70vh", overflowY: "auto" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ color: zoneTheme.accent, fontSize: "13px", marginBottom: 12 }}>送给「{npc.name}」什么？</div>
@@ -114,7 +114,7 @@ function GiftPickerList({ zoneTheme, onPick, inv }) {
           <div
             key={isObj ? it.id : i}
             onClick={() => onPick(it)}
-            style={{ cursor: "pointer", padding: "6px 8px", borderRadius: 3, color: zoneTheme.text, fontSize: "12px", background: zoneTheme.bg }}
+            style={{ cursor: "pointer", padding: "6px 8px", borderRadius: 0, color: zoneTheme.text, fontSize: "12px", background: zoneTheme.bg }}
           >
             {name}{isObj ? ` (${it.quality})` : ""}
           </div>

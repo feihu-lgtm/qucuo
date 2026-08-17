@@ -102,7 +102,7 @@ export default function CenterPanel({
               <div onClick={() => setMobileDrawer("right")} title="行动"
                 style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
                   padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRight: "none",
-                  borderRadius: "6px 0 0 6px", color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
+                  borderRadius: 0, color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
                   boxShadow: "-2px 0 8px rgba(0,0,0,.4)", userSelect: "none" }}>行动 ▶</div>
             </>
           )}
@@ -110,7 +110,7 @@ export default function CenterPanel({
             <span>江湖</span>
             <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {loading && <span onClick={() => { setLoading(false); addLog([{ t: "sys", text: "  ⏹ 已停止等待本次生成（若结果稍后返回将被忽略）。" }]); }}
-                style={{ cursor: "pointer", fontSize: "10px", color: "#e0806a", padding: "1px 6px", border: "1px solid #4a2a1a", borderRadius: 3, userSelect: "none" }}>⏹ 停止</span>}
+                style={{ cursor: "pointer", fontSize: "10px", color: "#e0806a", padding: "1px 6px", border: "1px solid #4a2a1a", borderRadius: 0, userSelect: "none" }}>⏹ 停止</span>}
               <span onClick={() => {
                   if (!undoSnapshotRef.current) { addLog([{ t: "sys", text: "  没有可回滚的上一步。" }]); return; }
                   if (!window.confirm("回滚到上一步行动之前？当前这步的结果会被撤销。")) return;
@@ -120,9 +120,9 @@ export default function CenterPanel({
                   addLog([{ t: "sys", text: "  ↩ 已回滚到上一步之前。" }]);
                 }}
                 title="撤销上一步行动，还原到落子之前"
-                style={{ cursor: "pointer", fontSize: "10px", color: "#c8a860", padding: "1px 6px", border: "1px solid #4a3a1a", borderRadius: 3, userSelect: "none" }}>↩ 回滚</span>
-              <span onClick={() => setShowDebug(s => !s)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "#6ec6c6" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "#2a4a4a" : "#1a1d2e"}`, borderRadius: 3, userSelect: "none" }}>🛠调试</span>
-              <span onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "#d4a853" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 3, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
+                style={{ cursor: "pointer", fontSize: "10px", color: "#c8a860", padding: "1px 6px", border: "1px solid #4a3a1a", borderRadius: 0, userSelect: "none" }}>↩ 回滚</span>
+              <span onClick={() => setShowDebug(s => !s)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "#c8323a" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "#c8323a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>🛠调试</span>
+              <span onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "#d4a853" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
             </span>
           </div>
 
@@ -154,9 +154,9 @@ export default function CenterPanel({
           {/* ── 切磋确认：邀战叙事跑完后，点确认才真正开打，留一步反悔余地 ── */}
           {duelPending && (
             <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ color: "#c8bfa0", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
-              <span onClick={confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 4, color: "#0a0c14", background: "#c45044", border: "1px solid #c45044" }}>确认切磋</span>
-              <span onClick={cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 4, color: "#8a8a7a", border: "1px solid #2a2d3a" }}>算了</span>
+              <span style={{ color: "#e8e4d6", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
+              <span onClick={confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "#111110", background: "#c45044", border: "1px solid #c45044" }}>确认切磋</span>
+              <span onClick={cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "#8f8a7c", border: "1px solid #2a2d3a" }}>算了</span>
             </div>
           )}
 
@@ -182,7 +182,7 @@ export default function CenterPanel({
               {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
               <div
                 onClick={() => setBuildingPanelMinimized(true)}
-                style={{ padding: "4px 16px", fontSize: 10.5, color: "#5a5a4a", cursor: "pointer", textAlign: "right" }}
+                style={{ padding: "4px 16px", fontSize: 10.5, color: "#8f8a7c", cursor: "pointer", textAlign: "right" }}
               >
                 ▾ 最小化
               </div>
@@ -218,7 +218,7 @@ export default function CenterPanel({
                 const isJade = activeBuilding.craft === "jade";
                 const tab = (key, label) => (
                   <span key={key} onClick={() => setCraftTab(key)}
-                    style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 3,
+                    style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
                       color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
                       background: craftTab === key ? zoneTheme.accent : "transparent",
                       border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}` }}>{label}</span>
@@ -389,7 +389,7 @@ export default function CenterPanel({
                     key={gi}
                     style={{
                       border: `1px solid ${zoneTheme.border}`,
-                      borderRadius: 6,
+                      borderRadius: 0,
                       marginBottom: 10,
                       background: "rgba(255,255,255,0.015)",
                       overflow: "hidden",
@@ -448,7 +448,7 @@ export default function CenterPanel({
                 )}
               </div>
             )}
-            {pendingTalks > 0 && <div style={{ color: "#e0a0d0", animation: "pulse 1.2s ease-in-out infinite" }}>  {pendingTalks} 条对话处理中...</div>}
+            {pendingTalks > 0 && <div style={{ color: "#d68a8a", animation: "pulse 1.2s ease-in-out infinite" }}>  {pendingTalks} 条对话处理中...</div>}
             {inspecting && (
               <div style={{ color: zoneTheme.accentDim, padding: "6px 0", display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>▌</span>
@@ -503,15 +503,15 @@ export default function CenterPanel({
               borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
               background: "#141008",
             }}>
-              <span style={{ color: "#f0c060", fontSize: "11px", flexShrink: 0 }}>❢ 此处可推进</span>
+              <span style={{ color: "#c8663a", fontSize: "11px", flexShrink: 0 }}>❢ 此处可推进</span>
               {availableQuestsHere.filter(e => !e.stage.choices?.length).map(entry => (
                 <span
                   key={entry.quest.id}
                   onClick={() => triggerQuestFromPanel(entry)}
                   title={entry.stage.description}
                   style={{
-                    cursor: "pointer", color: "#f0c060", padding: "2px 10px",
-                    border: "1px solid #4a3a1a", borderRadius: 3, fontSize: "10.5px",
+                    cursor: "pointer", color: "#c8663a", padding: "2px 10px",
+                    border: "1px solid #4a3a1a", borderRadius: 0, fontSize: "10.5px",
                     background: "#1a1408", whiteSpace: "nowrap",
                   }}
                 >
@@ -528,10 +528,10 @@ export default function CenterPanel({
               borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
               background: "#0e1410",
             }}>
-              <span style={{ color: "#8ac48a", fontSize: "11px", flexShrink: 0 }}>◈ 行动抉择</span>
+              <span style={{ color: "#c07050", fontSize: "11px", flexShrink: 0 }}>◈ 行动抉择</span>
               {availableQuestsHere.filter(e => e.stage.choices?.length).map(entry => (
                 <span key={entry.quest.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <span style={{ color: "#c8bfa0", fontSize: "10.5px" }}>{entry.quest.title}：</span>
+                  <span style={{ color: "#e8e4d6", fontSize: "10.5px" }}>{entry.quest.title}：</span>
                   {entry.stage.choices
                     .filter(choice => {
                       // 部分选项有前置条件（如"亮出XX信物"需先完成对应任务）才该出现，
@@ -555,9 +555,9 @@ export default function CenterPanel({
                           onClick={() => triggerQuestChoice(entry, choice)}
                           title={choice.resolve === "combat" ? "会进入切磋，打赢才算数" : choice.resolve === "talk" ? "会进入对话，说赢才算数" : ""}
                           style={{
-                            cursor: "pointer", color: "#a8d8a8", padding: "2px 10px",
-                            border: "1px solid #2a4a2a", borderRadius: 3, fontSize: "10.5px",
-                            background: "#0e1a0e", whiteSpace: "nowrap",
+                            cursor: "pointer", color: "#c07050", padding: "2px 10px",
+                            border: "1px solid #c8323a", borderRadius: 0, fontSize: "10.5px",
+                            background: "#241211", whiteSpace: "nowrap",
                           }}
                         >
                           {icon}{choice.label}
@@ -575,7 +575,7 @@ export default function CenterPanel({
                 key={id}
                 onClick={() => { setInteractMode(id); setTalkTarget(null); setActiveTarget(null); setPigeonTarget(null); }}
                 style={{
-                  cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 3, userSelect: "none",
+                  cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 0, userSelect: "none",
                   color: interactMode === id ? zoneTheme.bg : color,
                   background: interactMode === id ? color : zoneTheme.bgPanel,
                   border: `1px solid ${interactMode === id ? color : zoneTheme.border}`,
@@ -586,7 +586,7 @@ export default function CenterPanel({
               onClick={() => setNsfwOn(x => !x)}
               title={nsfwOn ? "已开启：NSFW 写作规则已注入" : "已关闭：点击开启 NSFW 写作规则"}
               style={{
-                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 3, userSelect: "none", fontWeight: "bold", letterSpacing: "0.5px",
+                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 0, userSelect: "none", fontWeight: "bold", letterSpacing: "0.5px",
                 color: nsfwOn ? zoneTheme.bg : zoneTheme.textDim,
                 background: nsfwOn ? uiCrimson : "transparent",
                 border: `1px solid ${nsfwOn ? uiCrimson : zoneTheme.border}`,
@@ -600,7 +600,7 @@ export default function CenterPanel({
               onClick={meditate}
               title="打坐运功：消耗1回合，恢复部分气血"
               style={{
-                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 3,
+                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 0,
                 color: justMeditated ? "#e8d4ff" : "#b48adf",
                 background: justMeditated ? "#3a2a5a" : zoneTheme.bgPanel,
                 border: `1px solid ${justMeditated ? "#6a4a9a" : "#2a1d3a"}`,
@@ -620,7 +620,7 @@ export default function CenterPanel({
               <span
                 onClick={() => { setActiveTarget(null); setTalkTarget(null); }}
                 style={{
-                  cursor: "pointer", fontSize: "10.5px", padding: "2px 7px", borderRadius: 3, userSelect: "none",
+                  cursor: "pointer", fontSize: "10.5px", padding: "2px 7px", borderRadius: 0, userSelect: "none",
                   color: activeTarget ? zoneTheme.textDim : zoneTheme.accent,
                   background: activeTarget ? "transparent" : zoneTheme.accent + "20",
                   border: `1px solid ${activeTarget ? zoneTheme.border : zoneTheme.accent}`,
@@ -634,7 +634,7 @@ export default function CenterPanel({
                     onClick={() => { setActiveTarget(n.name); if (interactMode !== "action") setTalkTarget(n.name); }}
                     title={isSel ? "点击「全部」取消选定" : `聚焦 ${n.name}`}
                     style={{
-                      cursor: "pointer", fontSize: "10.5px", padding: "2px 7px", borderRadius: 3, userSelect: "none",
+                      cursor: "pointer", fontSize: "10.5px", padding: "2px 7px", borderRadius: 0, userSelect: "none",
                       color: isSel ? zoneTheme.accent : zoneTheme.textDim,
                       background: isSel ? zoneTheme.accent + "20" : "transparent",
                       border: `1px solid ${isSel ? zoneTheme.accent : zoneTheme.border}`,
@@ -662,7 +662,7 @@ export default function CenterPanel({
             padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
           }}>
             <span style={{
-              color: interactMode === "whisper" ? "#e0a0d0" : interactMode === "talk" ? "#8ac48a" : interactMode === "pigeon" ? "#c4a040" : zoneTheme.accent,
+              color: interactMode === "whisper" ? "#d68a8a" : interactMode === "talk" ? "#c07050" : interactMode === "pigeon" ? "#c4a040" : zoneTheme.accent,
               flexShrink: 0, fontSize: "13px",
             }}>{interactMode === "pigeon" ? "🕊" : "▸"}</span>
             <input

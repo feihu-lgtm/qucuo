@@ -33,7 +33,7 @@ export default function TopBar({
   // 收敛成"同一副骨架 + 三色语义"：金=重要入口，松石绿=设置/切换，绛红=上报，其余用正文/次要色。
   const topBtn = (color) => ({
     cursor: "pointer", color, padding: "2px 9px", fontSize: "10.5px",
-    border: `1px solid ${zoneTheme.border}`, borderRadius: 3, background: "transparent",
+    border: `1px solid ${zoneTheme.border}`, borderRadius: 0, background: "transparent",
   });
   const avatarPickerCloseGuard = useOverlayCloseGuard(() => setShowAvatarPicker(false));
   // 音乐按钮要同时跟 playing 和 enabled 走。原来只订阅了 playing，而
@@ -51,7 +51,7 @@ export default function TopBar({
         {isMobile && (
           <>
             <span onClick={() => setMobileTopMenu(v => !v)}
-              style={{ cursor: "pointer", color: "#e8d0a0", padding: "3px 12px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 3, fontWeight: "bold", fontSize: "13px" }}>☰ 菜单</span>
+              style={{ cursor: "pointer", color: "#e8d0a0", padding: "3px 12px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 0, fontWeight: "bold", fontSize: "13px" }}>☰ 菜单</span>
             <span style={{ color: "#8a7a5a", fontSize: "10px" }}>{CURRENT_VERSION.time}</span>
             <span style={{ flex: 1 }} />
             {mobileTopMenu && <span onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>收起 ✕</span>}
@@ -163,12 +163,12 @@ export default function TopBar({
 
       {showAvatarPicker && (
         <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(4,4,10,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={avatarPickerCloseGuard.onMouseDown} onClick={avatarPickerCloseGuard.onClick}>
-          <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 8, padding: 24, width: 460, maxWidth: "90vw", color: "#c8bfa0" }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: "#111110", border: "1px solid #4a453c", borderRadius: 0, padding: 24, width: 460, maxWidth: "90vw", color: "#e8e4d6" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ color: "#6ec6c6", fontSize: "15px" }}>选择头像</span>
-              <span style={{ color: "#5a5a4a", fontSize: "12px", cursor: "pointer" }} onClick={() => setShowAvatarPicker(false)}>× 关闭</span>
+              <span style={{ color: "#c8323a", fontSize: "15px" }}>选择头像</span>
+              <span style={{ color: "#8f8a7c", fontSize: "12px", cursor: "pointer" }} onClick={() => setShowAvatarPicker(false)}>× 关闭</span>
             </div>
-            <div style={{ fontSize: "11.5px", color: "#8a8a7a", marginBottom: 14 }}>
+            <div style={{ fontSize: "11.5px", color: "#8f8a7c", marginBottom: 14 }}>
               选一张预制头像，或上传自己的图片（建议 2:3 竖版）。选择只影响你自己的显示，存在本地浏览器。
             </div>
             {/* 预制头像：从 public/portraits/player/ 读，共8张同一批唐卡风格厚涂立绘
@@ -180,7 +180,7 @@ export default function TopBar({
                 AV_BASE + "preset4.webp", AV_BASE + "preset5.webp"].map((src, i) => (
                 <div key={i}
                   onClick={() => { setPlayerAvatarCustom(src); try { localStorage.setItem("qucuo_player_avatar", src); } catch { /* ignore */ } setShowAvatarPicker(false); }}
-                  style={{ aspectRatio: "2/3", borderRadius: 5, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid #6ec6c6" : "1px solid #2a3a3a", background: "#0c0e14" }}
+                  style={{ aspectRatio: "2/3", borderRadius: 0, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid #c8323a" : "1px solid #4a453c", background: "#111110" }}
                 >
                   <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     onError={(e) => { e.currentTarget.style.display = "none"; }} />
@@ -188,7 +188,7 @@ export default function TopBar({
               ))}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <label style={{ cursor: "pointer", fontSize: "11.5px", color: "#6ec6c6", padding: "6px 12px", border: "1px solid #1a2d2a", borderRadius: 4 }}>
+              <label style={{ cursor: "pointer", fontSize: "11.5px", color: "#c8323a", padding: "6px 12px", border: "1px solid #4a453c", borderRadius: 0 }}>
                 ⬆ 上传图片
                 <input type="file" accept="image/*" style={{ display: "none" }}
                   onChange={(e) => {
@@ -206,7 +206,7 @@ export default function TopBar({
               </label>
               {playerAvatarCustom && (
                 <span onClick={() => { setPlayerAvatarCustom(""); try { localStorage.removeItem("qucuo_player_avatar"); } catch { /* ignore */ } setShowAvatarPicker(false); }}
-                  style={{ cursor: "pointer", fontSize: "11.5px", color: "#c47070", padding: "6px 12px", border: "1px solid #3a1a1a", borderRadius: 4 }}>
+                  style={{ cursor: "pointer", fontSize: "11.5px", color: "#c47070", padding: "6px 12px", border: "1px solid #3a1a1a", borderRadius: 0 }}>
                   恢复默认（按性别）
                 </span>
               )}

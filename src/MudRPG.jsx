@@ -1730,7 +1730,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           return {
             name: it.name,
             quality: it.quality,
-            qualityColor: QUALITY_COLOR[it.quality] || "#c8bfa0",
+            qualityColor: QUALITY_COLOR[it.quality] || "#e8e4d6",
             categoryLabel: CATEGORY_LABEL[it.category] || it.category,
             desc: it.desc,
             statLine: bits.join("　") || "无直接加成",
@@ -4605,12 +4605,12 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // （正常阅读需要4.5+），叙事正文(desc)、地名(room)首当其冲。clrDay 保留
   // 每种类型的色相基因（错误依然是红系、对话依然是粉系……）但大幅拉深明度，
   // 全部核算达到4.5+对比度。
-  const clrNight = { sys: "#5a8a5a", cmd: "#d4a853", desc: "#c8bfa0", room: "#6ec6c6", item: "#c4a040", stat: "#8ab4d4", skill: "#b48adf", err: "#c45044", choice: "#6aaa8a", narrator: "#e0a0d0", crash: "#c45044", confess: "#f0c060", affection: "#f0a0c0", quest: "#f0c060" };
+  const clrNight = { sys: "#5a8a5a", cmd: "#d4a853", desc: "#e8e4d6", room: "#c8323a", item: "#c4a040", stat: "#8ab4d4", skill: "#b48adf", err: "#c45044", choice: "#6aaa8a", narrator: "#d68a8a", crash: "#c45044", confess: "#c8663a", affection: "#f0a0c0", quest: "#c8663a" };
   const clrDay = { sys: "#2e5a2e", cmd: "#7a5c14", desc: "#3d3626", room: "#1e5a6a", item: "#7a5410", stat: "#1e4a6a", skill: "#5a3a7a", err: "#a02020", choice: "#2e6a4a", narrator: "#8a2a6a", crash: "#a02020", confess: "#8a5a0a", affection: "#a0305a", quest: "#8a5a0a" };
   const clr = isDayMode ? clrDay : clrNight;
   const zoneTheme = getZoneTheme(room.name, isDayMode);
   // 语义色日夜适配（藏地三色点缀体系，见 theme.js INK）——全文件统一从这组取，
-  // 不再到处散写 #e0a0d0/#8ac48a 这类"只有暗夜版"的硬编码（日间米色底下偏淡发灰）。
+  // 不再到处散写 #d68a8a/#c07050 这类"只有暗夜版"的硬编码（日间米色底下偏淡发灰）。
   const uiPink = ink("pink", isDayMode);       // 好感/私聊粉
   const uiGreen = ink("green", isDayMode);     // NPC名/对话绿
   const uiTurquoise = ink("turquoise", isDayMode); // 松石绿：设置/交互
@@ -4630,11 +4630,11 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
   if (!apiCfg.apiKey) {
     return (
-      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#080810", color: "#c8bfa0", fontFamily: "'Songti SC','STSong','SimSun',serif", padding: 24, textAlign: "center" }}>
+      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a09", color: "#e8e4d6", fontFamily: "'Songti SC','STSong','SimSun',serif", padding: 24, textAlign: "center" }}>
         <div>
           <p style={{ color: "#c45044" }}>尚未配置 API Key</p>
           <p>点击下方按钮打开设置面板，填入你的 API Key 后即可开始游戏。</p>
-          <span onClick={() => setShowSettings(true)} style={{ cursor: "pointer", color: "#6ec6c6", padding: "6px 14px", background: "#10121a", border: "1px solid #1a2d2a", borderRadius: 3, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
+          <span onClick={() => setShowSettings(true)} style={{ cursor: "pointer", color: "#c8323a", padding: "6px 14px", background: "#161510", border: "1px solid #4a453c", borderRadius: 0, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
         </div>
         {showSettings && (
           <SettingsPanel
@@ -4891,13 +4891,13 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       {mapBig && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={mapBigCloseGuard.onMouseDown} onClick={mapBigCloseGuard.onClick}>
         <div style={{
           background: `url("${MAP_UI.scroll}") center/100% 100% no-repeat`,
-          borderRadius: 6, minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh",
+          borderRadius: 0, minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh",
           // 卷轴四周是木轴+锦缎装帧，中央才是可用纸面（约占 78%）。用大内边距把
           // 标题栏与节点图推进纸面留白区，避免压到装帧木轴上。
           padding: "8% 11% 9% 11%", boxSizing: "border-box",
         }} onClick={e => e.stopPropagation()}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span style={{ color: "#4a3520", fontSize: "13px", fontWeight: "bold" }}>{mapView === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"} <span style={{ color: "#7a6448", fontSize: "10px", fontWeight: "normal" }}>{mapView === "inner" ? "金框为当前所在 · 点相邻房间前往" : "金框为当前所在 · 问号为未探明 · 点已探明据点自动前往 · 🔒需前置"}</span></span>
+            <span style={{ color: "#4a3520", fontSize: "13px", fontWeight: "bold" }}>{mapView === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"} <span style={{ color: "#7a6448", fontSize: "10px", fontWeight: "normal" }}>{mapView === "inner" ? "朱红为当前所在 · 点相邻房间前往" : "朱红为当前所在 · 点已探明据点自动前往 · 🔒需前置"}</span></span>
             <span style={{ color: "#6a4a2a", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }} onClick={() => setMapBig(false)}>× 关闭</span>
           </div>
           {/* ── 放大 = 完整拓扑全图（ClickableMap），不再是把九宫格放大一遍 ──
@@ -4962,7 +4962,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
               };
             });
             const go = (dir) => { if (!loading && dir) { setMapBig(false); setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); } };
-            return <ClickableMap nodes={nodes} onGo={go} accent="#8ac48a" loading={loading} maxHeight="66vh" />;
+            return <ClickableMap nodes={nodes} onGo={go} accent="#c07050" loading={loading} maxHeight="66vh" />;
           })()}
         </div>
       </div>}

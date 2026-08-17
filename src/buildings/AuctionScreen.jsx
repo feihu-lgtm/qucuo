@@ -51,7 +51,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
           <>
             {/* 拍品 */}
             <div style={{
-              border: `1px solid ${zoneTheme.border}`, borderRadius: 5,
+              border: `1px solid ${zoneTheme.border}`, borderRadius: 0,
               padding: "10px 12px", marginBottom: 12, background: "rgba(255,255,255,.02)",
             }}>
               <div style={{ color: "#b48adf", fontSize: 13, marginBottom: 4 }}>
@@ -65,13 +65,13 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
               <span style={{ color: zoneTheme.textDim }}>起拍 <span style={{ color: zoneTheme.text }}>{AUCTION_CONFIG.startingBid}</span> 两</span>
               <span style={{ color: zoneTheme.textDim }}>一口价 <span style={{ color: "#c4a040" }}>{AUCTION_CONFIG.buyoutPrice}</span> 两</span>
               <span style={{ flex: 1 }} />
-              <span style={{ color: money >= next ? "#8ac48a" : "#c47070" }}>随身 {money} 两</span>
+              <span style={{ color: money >= next ? "#c07050" : "#c47070" }}>随身 {money} 两</span>
             </div>
 
             {/* 竞价记录 */}
             <div style={{
               maxHeight: 200, overflowY: "auto", border: `1px solid ${zoneTheme.border}`,
-              borderRadius: 5, padding: "8px 10px", marginBottom: 10, background: "rgba(0,0,0,.15)",
+              borderRadius: 0, padding: "8px 10px", marginBottom: 10, background: "rgba(0,0,0,.15)",
             }}>
               {st.log.length === 0 && (
                 <div style={{ color: zoneTheme.textDim, fontSize: 11.5 }}>
@@ -81,7 +81,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
               {st.log.map((l, i) => (
                 <div key={i} style={{
                   fontSize: 11.5, marginBottom: 4,
-                  color: l.who === "player" ? "#8ac48a" : l.who === "shill" ? "#c8a860" : zoneTheme.textDim,
+                  color: l.who === "player" ? "#c07050" : l.who === "shill" ? "#c8a860" : zoneTheme.textDim,
                 }}>{l.text}</div>
               ))}
               <div ref={logEndRef} />
@@ -115,7 +115,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
                 </>
               )}
               {st.phase === AUCTION_PHASE.WON && (
-                <div style={{ color: "#8ac48a", fontSize: 12 }}>
+                <div style={{ color: "#c07050", fontSize: 12 }}>
                   ✦ 以 {st.currentBid} 两拍得「{AUCTION_LOT.name}」。
                 </div>
               )}

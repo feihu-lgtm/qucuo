@@ -25,5 +25,5 @@ export default function ZoomableMap({ children, maxHeight = 100 }) {
 const zmBtn = {
   cursor: "pointer", width: 20, height: 20, padding: 0, lineHeight: "18px", textAlign: "center",
   fontSize: "14px", color: "#8ac8b8", background: "rgba(10,12,18,0.92)",
-  border: "1px solid #3a4a4a", borderRadius: 3, userSelect: "none", display: "block",
+  border: "1px solid #3a4a4a", borderRadius: 0, userSelect: "none", display: "block",
 };

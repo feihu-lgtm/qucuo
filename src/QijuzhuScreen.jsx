@@ -26,7 +26,7 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
   const border = T.border || "#2a2d3a";
   const bgPanel = T.bgPanel || "#12141c";
   const textDim = T.textDim || "#6a6a5a";
-  const text = T.text || "#c8bfa0";
+  const text = T.text || "#e8e4d6";
 
   const tally = varTree?.世界?.起居注;
   const today = tallyToday(tally, time);
@@ -46,7 +46,7 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
   const maxCount = rows.length ? Math.max(...rows.map(r => r.count)) : 1;
 
   const wrap = { position: "fixed", inset: 0, background: "rgba(4,4,8,0.9)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
-  const card = { width: "100%", maxWidth: 560, maxHeight: "86vh", background: "#0b0d13", border: `1px solid ${border}`, borderRadius: 10, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Songti SC','STSong','SimSun',serif", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
+  const card = { width: "100%", maxWidth: 560, maxHeight: "86vh", background: "#111110", border: `1px solid ${border}`, borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Songti SC','STSong','SimSun',serif", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
 
   return (
     <div style={wrap} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
@@ -63,8 +63,8 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
         <div style={{ display: "flex", gap: 4, padding: "10px 20px 0" }}>
           {[["today", `第${day}日`, totals.today], ["lifetime", "累计", totals.lifetime]].map(([k, label, n]) => (
             <span key={k} onClick={() => setTab(k)}
-              style={{ cursor: "pointer", padding: "6px 16px", borderRadius: "6px 6px 0 0", fontSize: 13,
-                color: tab === k ? "#0b0d13" : accent, background: tab === k ? accent : "transparent",
+              style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: 13,
+                color: tab === k ? "#111110" : accent, background: tab === k ? accent : "transparent",
                 border: `1px solid ${tab === k ? accent : border}`, borderBottom: "none", fontWeight: tab === k ? "bold" : "normal" }}>
               {label} · {n}
             </span>
@@ -92,7 +92,7 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
                     <span style={{ color: accent, fontSize: 13, minWidth: 34, textAlign: "right" }}>{r.count}</span>
                   </div>
                   {/* 条形只作相对比例的直观提示，不标刻度——这不是数据面板 */}
-                  <div style={{ height: 3, background: border, borderRadius: 2, marginTop: 3, overflow: "hidden" }}>
+                  <div style={{ height: 3, background: border, borderRadius: 0, marginTop: 3, overflow: "hidden" }}>
                     <div style={{ width: `${Math.max(4, (r.count / maxCount) * 100)}%`, height: "100%", background: r.aiBacked ? accent : "#6a8a6a" }} />
                   </div>
                 </div>

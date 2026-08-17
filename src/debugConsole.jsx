@@ -99,7 +99,7 @@ export default function DebugConsole() {
 
   const btn = {
     background: "#2a2214", color: "#e8d6a8", border: "1px solid #6b5836",
-    padding: "8px 14px", borderRadius: 6, cursor: busy ? "wait" : "pointer",
+    padding: "8px 14px", borderRadius: 0, cursor: busy ? "wait" : "pointer",
     fontSize: 14, fontFamily: "inherit", opacity: busy ? 0.6 : 1,
   };
   const pureBtn = { ...btn, borderColor: "#3f5a3f", color: "#bce0bc" };
@@ -117,7 +117,7 @@ export default function DebugConsole() {
 
         {/* 配置状态 */}
         <div style={{
-          background: "#1c1810", border: "1px solid #3a3020", borderRadius: 6,
+          background: "#1c1810", border: "1px solid #3a3020", borderRadius: 0,
           padding: "10px 14px", marginBottom: 16, fontSize: 13,
         }}>
           <span style={{ color: "#8a7a58" }}>当前 API 配置（来自游戏 ⚙设置 · localStorage）：</span>{" "}
@@ -138,7 +138,7 @@ export default function DebugConsole() {
 
         {/* 输出面板 */}
         <pre style={{
-          background: "#0e0c08", border: "1px solid #2a2418", borderRadius: 6,
+          background: "#0e0c08", border: "1px solid #2a2418", borderRadius: 0,
           padding: 16, minHeight: 320, maxHeight: "60vh", overflow: "auto",
           fontFamily: '"SF Mono", "Menlo", monospace', fontSize: 12.5, lineHeight: 1.6,
           color: "#cdbf9a", whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0,

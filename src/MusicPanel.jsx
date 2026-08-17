@@ -15,11 +15,11 @@ export default function MusicPanel({ onClose }) {
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 8, padding: 20, width: 360, maxWidth: "90vw", color: "#c8bfa0", fontFamily: "inherit", fontSize: "12.5px" }}
+        style={{ background: "#111110", border: "1px solid #4a453c", borderRadius: 0, padding: 20, width: 360, maxWidth: "90vw", color: "#e8e4d6", fontFamily: "inherit", fontSize: "12.5px" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <span style={{ color: "#6ec6c6", fontSize: "14px" }}>♫ 音乐面板</span>
-          <span style={{ color: "#5a5a4a", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "#c8323a", fontSize: "14px" }}>♫ 音乐面板</span>
+          <span style={{ color: "#8f8a7c", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
@@ -31,46 +31,46 @@ export default function MusicPanel({ onClose }) {
                 onClick={() => { setMusicEnabled(true); playTrack(t.id); }}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-                  borderRadius: 5, cursor: "pointer",
-                  background: active ? "#12211f" : "#0e1018",
-                  border: `1px solid ${active ? "#6ec6c6" : "#1a2d2a"}`,
+                  borderRadius: 0, cursor: "pointer",
+                  background: active ? "#241211" : "#161510",
+                  border: `1px solid ${active ? "#c8323a" : "#4a453c"}`,
                   transition: "all 0.15s ease",
                 }}
               >
-                <span style={{ fontSize: "16px", color: active && state.playing ? "#6ec6c6" : "#3a4a3a", flexShrink: 0 }}>
+                <span style={{ fontSize: "16px", color: active && state.playing ? "#c8323a" : "#3a4a3a", flexShrink: 0 }}>
                   {active && state.playing ? "♫" : "♪"}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: active ? "#c8e0d8" : "#8a8a7a", fontSize: "12.5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</div>
-                  <div style={{ color: "#5a5a4a", fontSize: "10.5px" }}>{t.artist}{t.origin ? ` · ${t.origin}` : ""}</div>
+                  <div style={{ color: active ? "#c8e0d8" : "#8f8a7c", fontSize: "12.5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</div>
+                  <div style={{ color: "#8f8a7c", fontSize: "10.5px" }}>{t.artist}{t.origin ? ` · ${t.origin}` : ""}</div>
                 </div>
                 {active && state.playing && (
-                  <span style={{ color: "#6ec6c6", fontSize: "10px", flexShrink: 0 }}>播放中</span>
+                  <span style={{ color: "#c8323a", fontSize: "10px", flexShrink: 0 }}>播放中</span>
                 )}
               </div>
             );
           })}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "#0e0c14", border: "1px solid #1a2d2a", borderRadius: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "#161510", border: "1px solid #4a453c", borderRadius: 0 }}>
           <span
             onClick={toggleMusic}
-            style={{ cursor: "pointer", color: "#6ec6c6", padding: "4px 12px", border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11.5px", flexShrink: 0 }}
+            style={{ cursor: "pointer", color: "#c8323a", padding: "4px 12px", border: "1px solid #4a453c", borderRadius: 0, fontSize: "11.5px", flexShrink: 0 }}
           >{state.playing ? "⏸ 暂停" : "▶ 播放"}</span>
-          <span style={{ fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>音量</span>
+          <span style={{ fontSize: "11px", color: "#8f8a7c", flexShrink: 0 }}>音量</span>
           <input
             type="range" min="0" max="1" step="0.05" value={state.volume}
             onChange={e => setVolume(parseFloat(e.target.value))}
             style={{ flex: 1 }}
           />
-          <span style={{ fontSize: "11px", color: "#c8bfa0", width: 36, textAlign: "right", flexShrink: 0 }}>{Math.round(state.volume * 100)}%</span>
+          <span style={{ fontSize: "11px", color: "#e8e4d6", width: 36, textAlign: "right", flexShrink: 0 }}>{Math.round(state.volume * 100)}%</span>
         </div>
 
         {/* 播放失败必须看得见。原来 play() 的 rejection 被 .catch(() => {}) 整个
             吞掉，getState() 算了 error 却没人渲染，于是"点一下、没声音、没提示、
             ♪也不变♫"——最难查的那种坏。 */}
         {state.error && (
-          <div style={{ marginTop: 10, padding: "7px 9px", background: "#1a0e0e", border: "1px solid #4a2020", borderRadius: 4, fontSize: "10.5px", color: "#d88a7a", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 10, padding: "7px 9px", background: "#1a0e0e", border: "1px solid #4a2020", borderRadius: 0, fontSize: "10.5px", color: "#d88a7a", lineHeight: 1.5 }}>
             ⚠ {state.error}
           </div>
         )}

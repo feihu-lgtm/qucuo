@@ -16,19 +16,19 @@ import React from "react";
 import { VERSION_HISTORY } from "./version.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
-export default function VersionHistoryPanel({ onClose, accentDim = "#6ec6c6" }) {
+export default function VersionHistoryPanel({ onClose, accentDim = "#c8323a" }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 420, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", fontSize: "12px", color: "#c8bfa0" }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: "#111110", border: "1px solid #4a453c", borderRadius: 0, padding: 20, width: 420, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", fontSize: "12px", color: "#e8e4d6" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ color: "#6ec6c6", fontSize: "14px" }}>版本历史</span>
-          <span style={{ color: "#5a5a4a", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "#c8323a", fontSize: "14px" }}>版本历史</span>
+          <span style={{ color: "#8f8a7c", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
         {VERSION_HISTORY.map((v, i) => (
           <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < VERSION_HISTORY.length - 1 ? "1px solid #14161e" : "none" }}>
-            <div style={{ color: i === 0 ? "#e0a0d0" : "#c8bfa0", fontSize: "12.5px" }}>「{v.codename}」{i === 0 && <span style={{ color: accentDim, fontSize: "10px" }}> · 当前版本</span>}</div>
-            <div style={{ color: "#5a5a4a", fontSize: "10.5px", marginBottom: 4 }}>{v.time}</div>
+            <div style={{ color: i === 0 ? "#d68a8a" : "#e8e4d6", fontSize: "12.5px" }}>「{v.codename}」{i === 0 && <span style={{ color: accentDim, fontSize: "10px" }}> · 当前版本</span>}</div>
+            <div style={{ color: "#8f8a7c", fontSize: "10.5px", marginBottom: 4 }}>{v.time}</div>
             {/* notes 两种写法都认：数组=一行一条逐行列出（长条目请写数组）；
                 字符串=老写法，整段显示。数组里以 ①②③ 或 一、二、开头的行
                 悬挂缩进一下，看起来才像个更新日志而不是一堵墙。 */}
@@ -38,7 +38,7 @@ export default function VersionHistoryPanel({ onClose, accentDim = "#6ec6c6" }) 
                   const isItem = /^[①-⑳【]|^[一二三四五六七八九十]、/.test(String(line).trim());
                   return (
                     <div key={j} style={{
-                      color: isItem ? "#8a8a7a" : "#a09a86",
+                      color: isItem ? "#8f8a7c" : "#a09a86",
                       fontSize: "11px", lineHeight: 1.65,
                       paddingLeft: isItem ? 12 : 0,
                       textIndent: isItem ? -12 : 0,
@@ -47,7 +47,7 @@ export default function VersionHistoryPanel({ onClose, accentDim = "#6ec6c6" }) 
                 })}
               </div>
             ) : (
-              <div style={{ color: "#8a8a7a", fontSize: "11px", lineHeight: 1.6 }}>{v.notes}</div>
+              <div style={{ color: "#8f8a7c", fontSize: "11px", lineHeight: 1.6 }}>{v.notes}</div>
             )}
           </div>
         ))}

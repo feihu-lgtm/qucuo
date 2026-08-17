@@ -29,7 +29,7 @@ export default function ImportSelfTutorial({ accent = "#d4a853", onClose }) {
   const card = {
     position: "relative", width: "min(560px, 92vw)", maxHeight: "88%",
     display: "flex", flexDirection: "column", overflow: "hidden",
-    background: "#14100a", border: `1px solid ${accent}66`, borderRadius: 8,
+    background: "#14100a", border: `1px solid ${accent}66`, borderRadius: 0,
     boxShadow: "0 12px 48px rgba(0,0,0,.6)",
   };
   return (
@@ -71,10 +71,10 @@ export default function ImportSelfTutorial({ accent = "#d4a853", onClose }) {
         </div>
 
         <div style={{ padding: "12px 18px", borderTop: `1px solid ${accent}22`, display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ flex: 1, fontSize: 10, color: "#6a6250" }}>随时可在标题栏「教程」重看这一页。</span>
+          <span style={{ flex: 1, fontSize: 10, color: "#8f8a7c" }}>随时可在标题栏「教程」重看这一页。</span>
           <span onClick={onClose}
             style={{
-              cursor: "pointer", userSelect: "none", fontSize: 13, padding: "7px 20px", borderRadius: 5,
+              cursor: "pointer", userSelect: "none", fontSize: 13, padding: "7px 20px", borderRadius: 0,
               color: "#1a1206", fontWeight: 700, letterSpacing: 1,
               background: `linear-gradient(180deg, ${accent}, #a8843f)`,
               border: `1px solid ${accent}`, boxShadow: "0 2px 8px rgba(0,0,0,.4)",

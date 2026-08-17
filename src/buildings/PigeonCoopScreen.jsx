@@ -14,7 +14,7 @@ export default function PigeonCoopScreen({ building, char, flags, time, zoneThem
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: 13 }}>{building.desc}</p>
-        <div style={{ color: "#8a8a7a", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "#8f8a7c", marginBottom: 12, fontSize: 11 }}>
           🕊 现有信鸽 {pigeons} 只 · 每日可领 {dailyQty} 只（不花银两）
         </div>
 

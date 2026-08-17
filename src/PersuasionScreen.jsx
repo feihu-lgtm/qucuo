@@ -90,7 +90,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
     }}>
       <div style={{
         width: "100%", maxWidth: 560, height: "82vh", maxHeight: 720,
-        background: panel, border: `1px solid ${border}`, borderRadius: 8,
+        background: panel, border: `1px solid ${border}`, borderRadius: 0,
         display: "flex", flexDirection: "column", overflow: "hidden",
         boxShadow: "0 12px 48px rgba(0,0,0,0.6)",
       }}>
@@ -122,7 +122,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
           </div>
           {/* 已解锁线索（戒心每降30解锁一条，按keys顺序）：这是玩家花力气破冰换来的方向指引 */}
           {unlockedHints.length > 0 && (
-            <div style={{ marginTop: 8, padding: "7px 10px", background: `${accent}12`, border: `1px solid ${accent}33`, borderRadius: 6 }}>
+            <div style={{ marginTop: 8, padding: "7px 10px", background: `${accent}12`, border: `1px solid ${accent}33`, borderRadius: 0 }}>
               <div style={{ fontSize: 10, color: accent, marginBottom: 3, letterSpacing: 1 }}>你看出的心结</div>
               {unlockedHints.map((h, i) => (
                 <div key={i} style={{ fontSize: 11.5, color: text, lineHeight: 1.6 }}>· {h}</div>
@@ -136,7 +136,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
           {turns.map((x, i) => (
             <div key={i} style={{ display: "flex", justifyContent: x.who === "npc" ? "flex-start" : "flex-end" }}>
               <div style={{
-                maxWidth: "78%", padding: "8px 13px", borderRadius: 10, fontSize: 14, lineHeight: 1.5,
+                maxWidth: "78%", padding: "8px 13px", borderRadius: 0, fontSize: 14, lineHeight: 1.5,
                 background: x.who === "npc" ? bg : accent,
                 color: x.who === "npc" ? text : bg,
                 border: x.who === "npc" ? `1px solid ${x.struck ? accent : border}` : "none",
@@ -168,13 +168,13 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
                   placeholder={`对${p.who}说些什么…（说中要害才管用）`}
                   disabled={busy}
                   style={{
-                    flex: 1, background: bg, border: `1px solid ${border}`, borderRadius: 6,
+                    flex: 1, background: bg, border: `1px solid ${border}`, borderRadius: 0,
                     padding: "9px 12px", color: text, fontSize: 13, outline: "none", fontFamily: "inherit",
                   }}
                 />
                 <button onClick={send} disabled={busy || !input.trim()} style={{
                   background: input.trim() && !busy ? accent : border, color: bg, border: "none",
-                  borderRadius: 6, padding: "9px 16px", fontSize: 13, cursor: input.trim() && !busy ? "pointer" : "default",
+                  borderRadius: 0, padding: "9px 16px", fontSize: 13, cursor: input.trim() && !busy ? "pointer" : "default",
                   fontFamily: "inherit",
                 }}>说</button>
               </div>
@@ -204,7 +204,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
 
 function chip(bc, color) {
   return {
-    background: "transparent", border: `1px solid ${bc}`, color, borderRadius: 5,
+    background: "transparent", border: `1px solid ${bc}`, color, borderRadius: 0,
     padding: "5px 11px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit",
   };
 }

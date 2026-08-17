@@ -179,7 +179,7 @@ function Scene({ sim, night, zoneTheme }) {
       {SEAT_COORDS.slice(0, sim.seats.length).map((c, i) => (
         <div key={`t${i}`} style={{
           position: "absolute", left: `${c.x + 1}%`, top: `${c.y + 7}%`,
-          width: 34, height: 22, borderRadius: 4,
+          width: 34, height: 22, borderRadius: 0,
           background: "linear-gradient(180deg, #4a3620 0%, #3a2a18 100%)",
           border: "1px solid #5a4630", boxShadow: "0 2px 4px rgba(0,0,0,0.5)",
         }} />
@@ -233,7 +233,7 @@ function ManageTab({ sim, doAct, zoneTheme, setSim }) {
       <SectionTitle zoneTheme={zoneTheme}>库存（卖菜扣份，打烊不保鲜）</SectionTitle>
       {Object.entries(STOCK_INFO).map(([k, info]) => (
         <div key={k} style={S.row}>
-          <span style={{ color: "#c8bfa0", fontSize: 12 }}>{info.icon} {info.label} × {sim.pantry[k]}</span>
+          <span style={{ color: "#e8e4d6", fontSize: 12 }}>{info.icon} {info.label} × {sim.pantry[k]}</span>
           <Btn label={`进 ${STOCK_BATCH} 份（${info.unitPrice * STOCK_BATCH}两）`} zoneTheme={zoneTheme}
             disabled={sim.funds < info.unitPrice * STOCK_BATCH}
             onClick={() => doAct(s => buyStock(s, k))} />
@@ -243,14 +243,14 @@ function ManageTab({ sim, doAct, zoneTheme, setSim }) {
       <SectionTitle zoneTheme={zoneTheme}>店面</SectionTitle>
       {up ? (
         <div style={S.box(zoneTheme)}>
-          <div style={{ color: "#c8bfa0", fontSize: 12, marginBottom: 4 }}>「{up.label}」 {up.desc}</div>
-          <div style={{ color: "#8a8a7a", fontSize: 11, marginBottom: 6 }}>需声望 {up.needRep} · 花 {up.cost} 两</div>
+          <div style={{ color: "#e8e4d6", fontSize: 12, marginBottom: 4 }}>「{up.label}」 {up.desc}</div>
+          <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 6 }}>需声望 {up.needRep} · 花 {up.cost} 两</div>
           <Btn label="升级" zoneTheme={zoneTheme}
             disabled={sim.reputation < up.needRep || sim.funds < up.cost}
             onClick={() => doAct(upgradeLevel)} />
         </div>
       ) : (
-        <div style={{ color: "#5a5a4a", fontSize: 12 }}>已是三江闻名的金字招牌。</div>
+        <div style={{ color: "#8f8a7c", fontSize: 12 }}>已是三江闻名的金字招牌。</div>
       )}
 
       <SectionTitle zoneTheme={zoneTheme}>其他</SectionTitle>
@@ -275,7 +275,7 @@ function HireTab({ sim, candidates, doAct, zoneTheme }) {
         const cur = sim.staff[role];
         return (
           <div key={role} style={S.row}>
-            <span style={{ color: "#c8bfa0", fontSize: 12 }} title={info.desc}>
+            <span style={{ color: "#e8e4d6", fontSize: 12 }} title={info.desc}>
               {info.icon} {info.label}：{cur ? `${cur.name}（技${cur.skill}·日薪${cur.wage}）` : "—空缺—"}
             </span>
             {cur && <Btn label="辞退" zoneTheme={zoneTheme} secondary onClick={() => doAct(s => fireStaff(s, role))} />}
@@ -284,20 +284,20 @@ function HireTab({ sim, candidates, doAct, zoneTheme }) {
       })}
       {sim.guards.map((g, i) => (
         <div key={g.name} style={S.row}>
-          <span style={{ color: "#c8bfa0", fontSize: 12 }}>🗡 护院：{g.name}（技{g.skill}·日薪{g.wage}）</span>
+          <span style={{ color: "#e8e4d6", fontSize: 12 }}>🗡 护院：{g.name}（技{g.skill}·日薪{g.wage}）</span>
           <Btn label="送行" zoneTheme={zoneTheme} secondary onClick={() => doAct(s => fireGuard(s, i))} />
         </div>
       ))}
 
       <SectionTitle zoneTheme={zoneTheme}>今日候选（每日刷新）</SectionTitle>
       {candidates.staff.length === 0 && candidates.guards.length === 0 && (
-        <div style={{ color: "#5a5a4a", fontSize: 12 }}>今日无人上门，明早再看看。</div>
+        <div style={{ color: "#8f8a7c", fontSize: 12 }}>今日无人上门，明早再看看。</div>
       )}
       {candidates.staff.map((c, i) => {
         const info = STAFF_ROLES[c.role];
         return (
           <div key={`s${i}`} style={S.box(zoneTheme)}>
-            <div style={{ color: "#c8bfa0", fontSize: 12 }}>{info.icon} 应${info.label} · {c.name} · 技{c.skill} · 日薪{c.wage}两</div>
+            <div style={{ color: "#e8e4d6", fontSize: 12 }}>{info.icon} 应${info.label} · {c.name} · 技{c.skill} · 日薪{c.wage}两</div>
             <div style={{ color: "#6a6a5a", fontSize: 10, margin: "3px 0 6px" }}>{info.desc}</div>
             <Btn label={sim.staff[c.role] ? "换人" : "录用"} zoneTheme={zoneTheme} onClick={() => doAct(s => hireStaff(s, c))} />
           </div>
@@ -305,7 +305,7 @@ function HireTab({ sim, candidates, doAct, zoneTheme }) {
       })}
       {candidates.guards.map((g, i) => (
         <div key={`g${i}`} style={S.box(zoneTheme)}>
-          <div style={{ color: "#c8bfa0", fontSize: 12 }}>🗡 {g.name} · 技{g.skill} · 佣金{g.fee}两 · 日薪{g.wage}两</div>
+          <div style={{ color: "#e8e4d6", fontSize: 12 }}>🗡 {g.name} · 技{g.skill} · 佣金{g.fee}两 · 日薪{g.wage}两</div>
           <div style={{ color: "#6a6a5a", fontSize: 10, margin: "3px 0 6px" }}>看场子：闹事可稳妥处理；技≥7 还有名人效应（声望日增）。</div>
           <Btn label="聘请" zoneTheme={zoneTheme} disabled={sim.funds < g.fee} onClick={() => doAct(s => hireGuard(s, g))} />
         </div>
@@ -318,7 +318,7 @@ function HireTab({ sim, candidates, doAct, zoneTheme }) {
 function MenuTab({ sim, doAct, zoneTheme }) {
   return (
     <div>
-      <div style={{ color: "#8a8a7a", fontSize: 11, marginBottom: 10 }}>
+      <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 10 }}>
         定价超过基准 1.2 倍后，客人会开始嫌贵扭头。好菜随声望解锁。
       </div>
       {MENU.map(d => {
@@ -328,7 +328,7 @@ function MenuTab({ sim, doAct, zoneTheme }) {
         return (
           <div key={d.id} style={{ ...S.box(zoneTheme), opacity: locked ? 0.45 : 1 }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#c8bfa0", fontSize: 12 }}>{d.name}</span>
+              <span style={{ color: "#e8e4d6", fontSize: 12 }}>{d.name}</span>
               <span style={{ color: "#4a8a4a", fontSize: 12 }}>{price} 两</span>
             </div>
             <div style={{ color: "#6a6a5a", fontSize: 10, margin: "2px 0 6px" }}>
@@ -338,7 +338,7 @@ function MenuTab({ sim, doAct, zoneTheme }) {
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <Btn label="−" zoneTheme={zoneTheme} secondary
                   onClick={() => doAct(s => setPrice(s, d.id, (price - 1) / d.basePrice))} />
-                <span style={{ color: "#8a8a7a", fontSize: 11, minWidth: 52, textAlign: "center" }}>
+                <span style={{ color: "#8f8a7c", fontSize: 11, minWidth: 52, textAlign: "center" }}>
                   {(price / d.basePrice).toFixed(2)}x
                 </span>
                 <Btn label="＋" zoneTheme={zoneTheme} secondary
@@ -362,17 +362,17 @@ function LedgerTab({ sim, zoneTheme }) {
           没请账房，每日流水有一成上下的糊涂损耗。请个账房（招工页）才能看明细。
         </div>
       )}
-      {rows.length === 0 && <div style={{ color: "#5a5a4a", fontSize: 12 }}>还没打过一次烊。</div>}
+      {rows.length === 0 && <div style={{ color: "#8f8a7c", fontSize: 12 }}>还没打过一次烊。</div>}
       {rows.map(r => (
         <div key={r.day} style={S.box(zoneTheme)}>
           <div style={{ color: "#d4a853", fontSize: 12, marginBottom: 3 }}>第 {r.day} 日</div>
-          <div style={{ color: "#8a8a7a", fontSize: 11 }}>
+          <div style={{ color: "#8f8a7c", fontSize: 11 }}>
             客 {r.guests}（成 {r.served} / 失 {r.lost}）· 营收 {r.revenue} · 工钱 {r.wages}
             {r.bookLoss > 0 ? ` · 损耗 ${r.bookLoss}` : ""} · <span style={{ color: r.net >= 0 ? "#4a8a4a" : "#a45a5a" }}>净 {r.net}</span>
             {r.creditGain > 0 ? ` · 回款 ${r.creditGain}` : ""}
           </div>
           {sim.nightReports[r.day] && (
-            <div style={{ color: "#c8bfa0", fontSize: 11, marginTop: 5, borderLeft: "2px solid #d4a853", paddingLeft: 8 }}>
+            <div style={{ color: "#e8e4d6", fontSize: 11, marginTop: 5, borderLeft: "2px solid #d4a853", paddingLeft: 8 }}>
               {sim.nightReports[r.day]}
             </div>
           )}
@@ -393,7 +393,7 @@ function LogPanel({ log, zoneTheme }) {
       {log.slice(-60).map((l, i) => (
         <div key={i} style={{
           fontSize: 12, lineHeight: 1.8,
-          color: l.kind === "gold" ? "#d4a853" : l.kind === "event" ? "#b08ad4" : "#8a8a7a",
+          color: l.kind === "gold" ? "#d4a853" : l.kind === "event" ? "#b08ad4" : "#8f8a7c",
         }}>
           <span style={{ color: "#4a4a3a", fontSize: 10 }}>[{l.day}日·{TICK_LABELS[l.tick]}] </span>
           {l.text}
@@ -411,9 +411,9 @@ function EventModal({ sim, zoneTheme, onResolve }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.8)", zIndex: 60,
       display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`,
-        borderRadius: 8, width: 400, maxWidth: "92vw", padding: 18 }}>
+        borderRadius: 0, width: 400, maxWidth: "92vw", padding: 18 }}>
         <div style={{ color: "#d4a853", fontSize: 14, marginBottom: 8 }}>⚠ {ev.title}</div>
-        <div style={{ color: "#c8bfa0", fontSize: 12, lineHeight: 1.8, marginBottom: 14 }}>{ev.desc}</div>
+        <div style={{ color: "#e8e4d6", fontSize: 12, lineHeight: 1.8, marginBottom: 14 }}>{ev.desc}</div>
         {(def?.options || ev.options).map(opt => {
           const needGuard = opt.needGuard && sim.guards.length === 0;
           const needFood = ev.id === "food_critic" && opt.id === "cook" && sim.pantry.food < 3;
@@ -438,7 +438,7 @@ function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
   return (
     <span onClick={disabled ? undefined : onClick}
       style={{
-        fontSize: 12, padding: "4px 12px", borderRadius: 4, cursor: disabled ? "not-allowed" : "pointer",
+        fontSize: 12, padding: "4px 12px", borderRadius: 0, cursor: disabled ? "not-allowed" : "pointer",
         color: disabled ? "#4a4a4a" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
         background: disabled ? "#1a1a1a" : secondary ? "transparent" : zoneTheme.accent,
         border: `1px solid ${disabled ? "#2a2a2a" : secondary ? zoneTheme.border : zoneTheme.accent}`,
@@ -455,11 +455,11 @@ function SectionTitle({ children, zoneTheme }) {
 const S = {
   page: (t) => ({ height: "100vh", display: "flex", flexDirection: "column", background: t.bg || "#0a0c12", fontFamily: "inherit" }),
   topbar: (t) => ({ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: `1px solid ${t.border}`, flexWrap: "wrap" }),
-  chip: (t) => ({ color: "#c8bfa0", fontSize: 12, border: `1px solid ${t.border}`, borderRadius: 4, padding: "3px 8px", background: "rgba(255,255,255,0.02)" }),
+  chip: (t) => ({ color: "#e8e4d6", fontSize: 12, border: `1px solid ${t.border}`, borderRadius: 0, padding: "3px 8px", background: "rgba(255,255,255,0.02)" }),
   mainRow: { flex: 1, display: "flex", minHeight: 0, flexWrap: "wrap" },
   sceneWrap: (t) => ({ flex: "1 1 58%", minWidth: 320, padding: 12, borderRight: `1px solid ${t.border}` }),
   scene: (night) => ({
-    position: "relative", width: "100%", height: "100%", minHeight: 300, borderRadius: 8, overflow: "hidden",
+    position: "relative", width: "100%", height: "100%", minHeight: 300, borderRadius: 0, overflow: "hidden",
     background: night
       ? "repeating-linear-gradient(90deg, #241a12 0px, #241a12 46px, #20170f 46px, #20170f 48px), linear-gradient(180deg, #1a1410 0%, #241a12 55%, #17100c 100%)"
       : "repeating-linear-gradient(90deg, #33261a 0px, #33261a 46px, #2c2015 46px, #2c2015 48px), linear-gradient(180deg, #2a2018 0%, #33261a 55%, #241a12 100%)",
@@ -473,7 +473,7 @@ const S = {
     color: active ? t.accent : "#6a6a5a", borderBottom: active ? `2px solid ${t.accent}` : "2px solid transparent",
   }),
   row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" },
-  box: (t) => ({ border: `1px solid ${t.border}`, borderRadius: 6, padding: "8px 10px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }),
+  box: (t) => ({ border: `1px solid ${t.border}`, borderRadius: 0, padding: "8px 10px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }),
   logPanel: (t) => ({ height: 130, overflowY: "auto", borderTop: `1px solid ${t.border}`, padding: "8px 14px", background: "rgba(0,0,0,0.25)" }),
   token: () => ({ fontSize: 20, marginTop: 2 }),
 };
@@ -487,7 +487,7 @@ const CSS_KEYFRAMES = `
 .ts-bubble {
   position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
   background: rgba(20,18,10,0.92); border: 1px solid #4a3a1a; border-radius: 6px;
-  color: #c8bfa0; font-size: 10px; padding: 2px 8px; white-space: nowrap;
+  color: #e8e4d6; font-size: 10px; padding: 2px 8px; white-space: nowrap;
 }
 @keyframes tsRoam {
   0% { left: 20%; top: 40%; } 25% { left: 45%; top: 60%; }

@@ -63,7 +63,7 @@ export default function CharacterCreate({ onConfirm }) {
                 style={{ cursor: "pointer", fontSize: 11, color: "#8a8270" }}
               >弃用</span>
             </div>
-            <div style={{ fontSize: 11.5, color: "#c8bfa0", lineHeight: 1.8 }}>
+            <div style={{ fontSize: 11.5, color: "#e8e4d6", lineHeight: 1.8 }}>
               {pending.name ? `名讳「${pending.name}」 · ` : ""}体貌公开 {pubFilled}/7 项 · 私密 {privFilled}/5 项
               {pending.special ? ` · 七维已录` : ""}
             </div>
@@ -144,7 +144,7 @@ const styles = {
     width: "min(420px, 88vw)",
     background: "rgba(16,12,8,0.82)",
     border: `1.5px solid ${theme.accent}`,
-    borderRadius: 10,
+    borderRadius: 0,
     padding: "36px 40px",
     boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
     backdropFilter: "blur(3px)",
@@ -159,7 +159,7 @@ const styles = {
     letterSpacing: "2px", opacity: 0.85, marginBottom: 30,
   },
   cardBox: {
-    marginBottom: 20, padding: "12px 14px", borderRadius: 6,
+    marginBottom: 20, padding: "12px 14px", borderRadius: 0,
     background: "rgba(212,168,83,.08)",
     border: `1px solid ${theme.accent}55`,
   },
@@ -171,14 +171,14 @@ const styles = {
   input: {
     width: "100%", boxSizing: "border-box",
     background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "#4a3a1a"}`,
-    borderRadius: 5, padding: "10px 14px",
+    borderRadius: 0, padding: "10px 14px",
     color: "#f0e8d8", fontSize: "15px", outline: "none",
     fontFamily: "inherit",
   },
   select: {
     width: "100%", boxSizing: "border-box",
     background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "#4a3a1a"}`,
-    borderRadius: 5, padding: "10px 14px",
+    borderRadius: 0, padding: "10px 14px",
     color: "#f0e8d8", fontSize: "15px", outline: "none",
     fontFamily: "inherit", cursor: "pointer",
   },
@@ -186,7 +186,7 @@ const styles = {
     marginTop: 14, textAlign: "center",
     background: `linear-gradient(180deg, ${theme.accent}, #8a6a2a)`,
     color: "#1a140c", fontSize: "16px", fontWeight: "bold",
-    letterSpacing: "3px", padding: "13px 0", borderRadius: 6,
+    letterSpacing: "3px", padding: "13px 0", borderRadius: 0,
     userSelect: "none", transition: "opacity 0.2s",
   },
 };

@@ -25,13 +25,13 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
 
   const inner = inline
     ? { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }
-    : { width: "min(720px, 92vw)", maxHeight: "82vh", display: "flex", flexDirection: "column", background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`, borderRadius: 8, boxShadow: "0 8px 40px rgba(0,0,0,0.6)" };
+    : { width: "min(720px, 92vw)", maxHeight: "82vh", display: "flex", flexDirection: "column", background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, boxShadow: "0 8px 40px rgba(0,0,0,0.6)" };
 
   return (
     <div style={outer}>
       <div style={inner}>
         <div style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-          <div style={{ fontSize: 14, color: zoneTheme.text || "#c8bfa0" }}>{shopName || "交易"}</div>
+          <div style={{ fontSize: 14, color: zoneTheme.text || "#e8e4d6" }}>{shopName || "交易"}</div>
           <div style={{ fontSize: 12, color: "#e8c468" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
         </div>
 
@@ -41,27 +41,27 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
           <div style={{ flex: 1, padding: 12, overflowY: "auto", borderRight: `1px solid ${zoneTheme.border}` }}>
             <div style={{ fontSize: 11, color: zoneTheme.accentDim, marginBottom: 8 }}>我的物品</div>
             {sellableItems.length === 0 && (
-              <div style={{ fontSize: 11, color: "#5a5a4a", textAlign: "center", padding: "20px 0" }}>没有可出售的物品</div>
+              <div style={{ fontSize: 11, color: "#8f8a7c", textAlign: "center", padding: "20px 0" }}>没有可出售的物品</div>
             )}
             {sellableItems.map((item, i) => (
               <div key={item.id || i} style={{
                 display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "6px 8px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 4,
+                padding: "6px 8px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 0,
               }}>
                 <div style={{ fontSize: 11.5 }}>
                   <span
                     onClick={() => onInspect?.("item", item.name, null, item)}
-                    style={{ color: QUALITY_COLOR[item.quality] || "#c8bfa0", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
+                    style={{ color: QUALITY_COLOR[item.quality] || "#e8e4d6", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                   >{item.name}</span>
                   {item.equipped && <span style={{ color: "#5a8a5a", marginLeft: 4 }}>[已装备]</span>}
-                  <span style={{ color: "#8a8a7a", marginLeft: 6 }}>售 {item.sellPrice}{currencyUnit}</span>
+                  <span style={{ color: "#8f8a7c", marginLeft: 6 }}>售 {item.sellPrice}{currencyUnit}</span>
                 </div>
                 <span
                   onClick={() => !item.equipped && onSell(item)}
                   style={{
-                    fontSize: 11, padding: "2px 10px", borderRadius: 3,
+                    fontSize: 11, padding: "2px 10px", borderRadius: 0,
                     cursor: item.equipped ? "not-allowed" : "pointer",
-                    color: item.equipped ? "#5a5a4a" : "#d4a853",
+                    color: item.equipped ? "#8f8a7c" : "#d4a853",
                     border: `1px solid ${item.equipped ? "#2a2a2a" : "#4a3a1a"}`,
                   }}
                   title={item.equipped ? "已装备的物品需先卸下才能卖出" : "卖出"}
@@ -82,22 +82,22 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
               return (
                 <div key={item.id || i} style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "6px 8px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 4,
+                  padding: "6px 8px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 0,
                 }}>
                   <div style={{ fontSize: 11.5 }}>
                     <span
                       onClick={() => onInspect?.("item", item.name, null, item)}
-                      style={{ color: QUALITY_COLOR[item.quality] || "#c8bfa0", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
+                      style={{ color: QUALITY_COLOR[item.quality] || "#e8e4d6", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                     >{item.name}</span>
-                    {discounted && <span style={{ color: "#5a5a4a", marginLeft: 6, textDecoration: "line-through" }}>{item.buyPrice}</span>}
-                    <span style={{ color: discounted ? "#8ac48a" : "#8a8a7a", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
+                    {discounted && <span style={{ color: "#8f8a7c", marginLeft: 6, textDecoration: "line-through" }}>{item.buyPrice}</span>}
+                    <span style={{ color: discounted ? "#c07050" : "#8f8a7c", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
                   </div>
                   <span
                     onClick={() => canAfford && onBuy({ ...item, buyPrice: payPrice })}
                     style={{
-                      fontSize: 11, padding: "2px 10px", borderRadius: 3,
+                      fontSize: 11, padding: "2px 10px", borderRadius: 0,
                       cursor: canAfford ? "pointer" : "not-allowed",
-                      color: canAfford ? "#6ec6c6" : "#5a5a4a",
+                      color: canAfford ? "#c8323a" : "#8f8a7c",
                       border: `1px solid ${canAfford ? "#1a3a3a" : "#2a2a2a"}`,
                     }}
                     title={canAfford ? "购买" : `${currencyName}不足`}
@@ -109,7 +109,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
         </div>
 
         <div style={{ padding: "10px 16px", borderTop: `1px solid ${zoneTheme.border}`, textAlign: "center", flexShrink: 0 }}>
-          <span onClick={onClose} style={{ fontSize: 12, color: "#8a8a8a", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 4 }}>关闭</span>
+          <span onClick={onClose} style={{ fontSize: 12, color: "#8a8a8a", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 0 }}>关闭</span>
         </div>
       </div>
     </div>

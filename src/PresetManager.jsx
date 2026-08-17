@@ -9,12 +9,12 @@ const rowStyle = {
   borderBottom: "1px solid #14161e", cursor: "grab",
 };
 const btnStyle = {
-  cursor: "pointer", color: "#6ec6c6", padding: "4px 10px", background: "#10121a",
-  border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11px", display: "inline-block",
+  cursor: "pointer", color: "#c8323a", padding: "4px 10px", background: "#161510",
+  border: "1px solid #4a453c", borderRadius: 0, fontSize: "11px", display: "inline-block",
 };
 const inputStyle = {
-  width: "100%", background: "#10121a", border: "1px solid #1a2d2a", borderRadius: 3,
-  color: "#c8bfa0", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px", boxSizing: "border-box",
+  width: "100%", background: "#161510", border: "1px solid #4a453c", borderRadius: 0,
+  color: "#e8e4d6", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px", boxSizing: "border-box",
 };
 
 // 供外部（MudRPG.jsx）调用：读取当前激活的预设对象
@@ -89,8 +89,8 @@ export function PresetToolbar({ state, onStateChange }) {
   };
 
   return (
-    <div style={{ background: "#0e0c14", border: "1px solid #2a2438", borderRadius: 4, padding: "10px 12px", marginBottom: 12 }}>
-      <div style={{ fontSize: "10px", color: "#7a7a6a", marginBottom: 6 }}>对话补全预设</div>
+    <div style={{ background: "#161510", border: "1px solid #4a453c", borderRadius: 0, padding: "10px 12px", marginBottom: 12 }}>
+      <div style={{ fontSize: "10px", color: "#8f8a7c", marginBottom: 6 }}>对话补全预设</div>
       <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
         <select
           value={state.activeIndex}
@@ -104,7 +104,7 @@ export function PresetToolbar({ state, onStateChange }) {
         <span style={{ ...btnStyle, color: "#c45044" }} onClick={handleDelete}>删除</span>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
-        <span style={{ ...btnStyle, borderColor: "#3a5a3a", color: "#8ac48a" }} onClick={handleImportClick}>📥 导入酒馆 JSON 预设</span>
+        <span style={{ ...btnStyle, borderColor: "#3a5a3a", color: "#c07050" }} onClick={handleImportClick}>📥 导入酒馆 JSON 预设</span>
         <span style={btnStyle} onClick={handleExport}>📤 导出当前预设</span>
         <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }} onChange={handleFileChange} />
       </div>
@@ -180,7 +180,7 @@ export default function PresetManager({ state, onStateChange }) {
 
   return (
     <div>
-      <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>
+      <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10 }}>
         完整兼容 SillyTavern 酒馆预设格式：可以导入酒馆导出的 Chat Completion 预设 JSON，
         每条独立的 prompt 片段都能单独开关、编辑内容、拖拽调整顺序，真正按顺序拼进最终发给模型的 system prompt。
         预设的选择、新建、导入导出已经移到设置面板最上方的常驻工具栏，这里只管理当前预设的具体内容。
@@ -215,7 +215,7 @@ export default function PresetManager({ state, onStateChange }) {
         <span style={btnStyle} onClick={addNewEntry}>+ 新增条目</span>
       </div>
 
-      <div style={{ border: "1px solid #1a2d2a", borderRadius: 4, maxHeight: 360, overflowY: "auto" }}>
+      <div style={{ border: "1px solid #4a453c", borderRadius: 0, maxHeight: 360, overflowY: "auto" }}>
         {activePreset.order.map(o => {
           const p = byId[o.id];
           if (!p) return null;
@@ -223,7 +223,7 @@ export default function PresetManager({ state, onStateChange }) {
           return (
             <div key={o.id}>
               <div
-                style={{ ...rowStyle, opacity: draggingId === o.id ? 0.4 : 1, background: o.enabled ? "transparent" : "#0a0a10" }}
+                style={{ ...rowStyle, opacity: draggingId === o.id ? 0.4 : 1, background: o.enabled ? "transparent" : "#161510" }}
                 draggable
                 onDragStart={() => handleDragStart(o.id)}
                 onDragOver={e => handleDragOver(e, o.id)}
@@ -235,7 +235,7 @@ export default function PresetManager({ state, onStateChange }) {
                   onClick={() => setEditingId(isEditing ? null : o.id)}
                   style={{
                     flex: 1, cursor: "pointer", fontSize: "12px",
-                    color: o.enabled ? "#c8bfa0" : "#5a5a4a",
+                    color: o.enabled ? "#e8e4d6" : "#8f8a7c",
                     textDecoration: p.isMarker ? "none" : "underline", textDecorationStyle: "dotted", textDecorationColor: "#3a3830",
                   }}
                 >
@@ -247,9 +247,9 @@ export default function PresetManager({ state, onStateChange }) {
                 )}
               </div>
               {isEditing && (
-                <div style={{ padding: "8px 12px", background: "#0a0a10", borderBottom: "1px solid #14161e" }}>
+                <div style={{ padding: "8px 12px", background: "#161510", borderBottom: "1px solid #14161e" }}>
                   {p.isMarker ? (
-                    <div style={{ fontSize: "11px", color: "#7a7a6a" }}>
+                    <div style={{ fontSize: "11px", color: "#8f8a7c" }}>
                       这是系统占位符，代表引擎运行时会自动填充的内容
                       {p.id === "scenario" || p.id === "charDescription" ? "（对应曲措乡的剧本设定）" : p.id === "chatHistory" ? "（对应最近的对话历史）" : "（我们的引擎暂不支持这个占位符，拼装时会跳过）"}
                       ，不能手动编辑文字内容。

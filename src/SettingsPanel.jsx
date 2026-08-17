@@ -21,16 +21,16 @@ import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import InjectionStructurePanel from "./InjectionStructurePanel.jsx";
 
 const inputStyle = {
-  width: "100%", background: "#10121a", border: "1px solid #1a2d2a", borderRadius: 3,
-  color: "#c8bfa0", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px", boxSizing: "border-box",
+  width: "100%", background: "#161510", border: "1px solid #4a453c", borderRadius: 0,
+  color: "#e8e4d6", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px", boxSizing: "border-box",
 };
 const labelStyle = { fontSize: "11px", color: "#5a8a5a", marginBottom: 4, marginTop: 10 };
 // 次级面板返回栏用的标题
 const TAB_LABELS = { api: "API 配置", preset: "预设", narrator: "旁白", saves: "存档管理", other: "其他" };
 const sectionStyle = { borderTop: "1px solid #1a1d2e", paddingTop: 12, marginTop: 12 };
 const btnStyle = {
-  cursor: "pointer", color: "#6ec6c6", padding: "5px 12px", background: "#10121a",
-  border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11.5px", display: "inline-block",
+  cursor: "pointer", color: "#c8323a", padding: "5px 12px", background: "#161510",
+  border: "1px solid #4a453c", borderRadius: 0, fontSize: "11.5px", display: "inline-block",
 };
 
 function MusicSettings() {
@@ -42,33 +42,33 @@ function MusicSettings() {
   const enabled = state.enabled;
   const currentTrack = TRACKS.find(t => t.id === state.trackId) || TRACKS[0];
   return (
-    <div style={{ padding: "8px 10px", background: "#0e0c14", border: "1px solid #2a2438", borderRadius: 4 }}>
+    <div style={{ padding: "8px 10px", background: "#161510", border: "1px solid #4a453c", borderRadius: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <input
           type="checkbox" checked={enabled}
           onChange={e => setMusicEnabled(e.target.checked)}
           style={{ cursor: "pointer" }}
         />
-        <span style={{ fontSize: "12px", color: "#6ec6c6" }}>🎵 音乐模式</span>
-        <span style={{ fontSize: "10px", color: "#5a5a4a", marginLeft: "auto" }}>{currentTrack.title} — {currentTrack.artist}</span>
+        <span style={{ fontSize: "12px", color: "#c8323a" }}>🎵 音乐模式</span>
+        <span style={{ fontSize: "10px", color: "#8f8a7c", marginLeft: "auto" }}>{currentTrack.title} — {currentTrack.artist}</span>
       </div>
       {enabled && (
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span
             onClick={toggleMusic}
-            style={{ cursor: "pointer", color: "#6ec6c6", padding: "3px 10px", border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11px" }}
+            style={{ cursor: "pointer", color: "#c8323a", padding: "3px 10px", border: "1px solid #4a453c", borderRadius: 0, fontSize: "11px" }}
           >{state.playing ? "⏸ 暂停" : "▶ 播放"}</span>
-          <span style={{ fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>音量</span>
+          <span style={{ fontSize: "11px", color: "#8f8a7c", flexShrink: 0 }}>音量</span>
           <input
             type="range" min="0" max="1" step="0.05" value={state.volume}
             onChange={e => setMusicVolume(parseFloat(e.target.value))}
             style={{ flex: 1 }}
           />
-          <span style={{ fontSize: "11px", color: "#c8bfa0", width: 36, textAlign: "right" }}>{Math.round(state.volume * 100)}%</span>
+          <span style={{ fontSize: "11px", color: "#e8e4d6", width: 36, textAlign: "right" }}>{Math.round(state.volume * 100)}%</span>
         </div>
       )}
       {state.error && (
-        <div style={{ marginTop: 6, padding: "6px 8px", background: "#1a0e0e", border: "1px solid #4a2020", borderRadius: 3, fontSize: "10px", color: "#d88a7a", lineHeight: 1.5 }}>
+        <div style={{ marginTop: 6, padding: "6px 8px", background: "#1a0e0e", border: "1px solid #4a2020", borderRadius: 0, fontSize: "10px", color: "#d88a7a", lineHeight: 1.5 }}>
           ⚠ {state.error}
         </div>
       )}
@@ -233,15 +233,15 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "#c8bfa0" }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: "#111110", border: "1px solid #4a453c", borderRadius: 0, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "#e8e4d6" }} onClick={e => e.stopPropagation()}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ color: "#6ec6c6", fontSize: "14px" }}>
+          <span style={{ color: "#c8323a", fontSize: "14px" }}>
             {tab === null ? "⚙ 游戏设置" : (
-              <span style={{ cursor: "pointer" }} onClick={() => setTab(null)}>← 返回 · <span style={{ color: "#c8bfa0" }}>{TAB_LABELS[tab] || ""}</span></span>
+              <span style={{ cursor: "pointer" }} onClick={() => setTab(null)}>← 返回 · <span style={{ color: "#e8e4d6" }}>{TAB_LABELS[tab] || ""}</span></span>
             )}
           </span>
-          <span style={{ color: "#5a5a4a", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "#8f8a7c", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
         {/* ── 主页：五个大卡片入口 ── */}
@@ -262,12 +262,12 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 setTab(id);
               }}
                 style={{
-                  cursor: "pointer", padding: "20px 16px", borderRadius: 6,
-                  background: "#0e1018", border: "1px solid #2a3a3a",
+                  cursor: "pointer", padding: "20px 16px", borderRadius: 0,
+                  background: "#161510", border: "1px solid #4a453c",
                   transition: "all 0.2s ease", textAlign: "center",
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#141a24"; e.currentTarget.style.borderColor = "#6ec6c6"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "#0e1018"; e.currentTarget.style.borderColor = "#2a3a3a"; }}>
+                onMouseEnter={e => { e.currentTarget.style.background = "#1c1a15"; e.currentTarget.style.borderColor = "#c8323a"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#161510"; e.currentTarget.style.borderColor = "#4a453c"; }}>
                 <div style={{ fontSize: "15px", color: "#c8e0d8", marginBottom: 6 }}>{title}</div>
                 <div style={{ fontSize: "10.5px", color: "#6a7a72" }}>{sub}</div>
               </div>
@@ -287,12 +287,12 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
           <div>
             {/* 【暂留·等会用】原多渠道说明文案，后续可能放到别处：
               支持 OpenAI 兼容格式、Gemini API、Anthropic 原生格式与千问。密钥仅保存在浏览器本地（localStorage），不会上传到任何服务器。 */}
-            <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 8 }}>
+            <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 8 }}>
               填入任一 OpenAI 兼容接口（DeepSeek / 硅基流动 / 各类中转站等）。密钥仅保存在浏览器本地（localStorage），不会上传到任何服务器。
             </div>
 
             {/* 配置管理：多套配置存本地、随时切换、导出/导入落盘 */}
-            <div style={{ border: "1px solid #2a2a3a", borderRadius: 5, padding: "8px 10px", marginBottom: 12, background: "#0e1018" }}>
+            <div style={{ border: "1px solid #2a2a3a", borderRadius: 0, padding: "8px 10px", marginBottom: 12, background: "#161510" }}>
               <div style={{ fontSize: "11px", color: "#8ac8b8", marginBottom: 6 }}>配置管理（多套 API 配置 · 落盘导出/导入）</div>
               <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
                 <input
@@ -307,10 +307,10 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
                   {cfgProfiles.map(p => (
                     <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px" }}>
-                      <span style={{ flex: 1, color: "#c8bfa0" }}>{p.name}
-                        <span style={{ color: "#5a5a4a", marginLeft: 6 }}>{p.cfg?.model || ""}</span>
+                      <span style={{ flex: 1, color: "#e8e4d6" }}>{p.name}
+                        <span style={{ color: "#8f8a7c", marginLeft: 6 }}>{p.cfg?.model || ""}</span>
                       </span>
-                      <span onClick={() => handleLoadCfgProfile(p.name)} style={{ cursor: "pointer", color: "#6ec6c6" }}>切换</span>
+                      <span onClick={() => handleLoadCfgProfile(p.name)} style={{ cursor: "pointer", color: "#c8323a" }}>切换</span>
                       <span onClick={() => handleDeleteCfgProfile(p.name)} style={{ cursor: "pointer", color: "#c47070" }}>删除</span>
                     </div>
                   ))}
@@ -332,11 +332,11 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                     onChange={e => patch({ openaiAutoComplete: e.target.checked })}
                     style={{ cursor: "pointer" }}
                   />
-                  <span style={{ fontSize: "11px", color: "#8a8a7a" }}>
+                  <span style={{ fontSize: "11px", color: "#8f8a7c" }}>
                     自动补全地址（补上 /v1/chat/completions）
                   </span>
                 </label>
-                <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 3 }}>
+                <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 3 }}>
                   {cfg.openaiAutoComplete
                     ? "已开启：地址缺路径时自动补 /v1/chat/completions。填的是完整/非标准路径的家请关掉，否则可能补出 404。"
                     : "默认不补：填什么就原样发什么。多数中转站需要填完整地址（含 /chat/completions）。若你的家只给了 base 地址，可勾上让它自动补。"}
@@ -358,12 +358,12 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
               <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
             )}
             {modelList && modelList.length > 0 && modelPickerTarget === null && (
-              <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #1a2d2a", borderRadius: 3 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#5a5a4a", borderBottom: "1px solid #14161e" }}>
+              <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #4a453c", borderRadius: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#8f8a7c", borderBottom: "1px solid #14161e" }}>
                   <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
                   {/* 之前这个列表没有任何关闭方式：选了模型也不会自动收起，
                       也没有×按钮，列表会一直挂着退不掉。补齐两条退出路径。 */}
-                  <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "#8a8a7a", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
+                  <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "#8f8a7c", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
                 </div>
                 {modelList.map(m => (
                   <div
@@ -371,7 +371,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                     onClick={() => { patch({ model: m }); setModelList(null); }}
                     style={{
                       padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
-                      color: m === cfg.model ? "#6ec6c6" : "#8a8a7a",
+                      color: m === cfg.model ? "#c8323a" : "#8f8a7c",
                       background: m === cfg.model ? "#1a2a2a" : "transparent",
                       borderBottom: "1px solid #14161e",
                     }}
@@ -393,7 +393,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 <input style={inputStyle} type="number" min="10" max="300" step="10"
                   value={Math.round((cfg.timeoutMs ?? 60000) / 1000)}
                   onChange={e => patch({ timeoutMs: Math.max(10, Math.min(300, parseInt(e.target.value) || 60)) * 1000 })} />
-                <div style={{ fontSize: "10px", color: "#5a5a4a", marginTop: 2 }}>
+                <div style={{ fontSize: "10px", color: "#8f8a7c", marginTop: 2 }}>
                   接口慢（如千问高峰期）常超时导致移动/操作卡住，可调长到 120~180。
                 </div>
               </div>
@@ -409,8 +409,8 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                   onClick={() => patch({ targetWordCount: val, maxTokens: wordCountToMaxTokens(val) })}
                   style={{
                     ...btnStyle, flex: 1, textAlign: "center",
-                    color: cfg.targetWordCount === val ? "#0a0c14" : "#6ec6c6",
-                    background: cfg.targetWordCount === val ? "#6ec6c6" : "#10121a",
+                    color: cfg.targetWordCount === val ? "#111110" : "#c8323a",
+                    background: cfg.targetWordCount === val ? "#c8323a" : "#161510",
                   }}
                 >{label}</span>
               ))}
@@ -426,15 +426,15 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 onChange={e => { const v = parseInt(e.target.value) || 900; patch({ targetWordCount: v, maxTokens: wordCountToMaxTokens(v) }); }}
                 style={{ ...inputStyle, width: 80 }}
               />
-              <span style={{ fontSize: "11px", color: "#7a7a6a" }}>字</span>
+              <span style={{ fontSize: "11px", color: "#8f8a7c" }}>字</span>
             </div>
-            <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 3 }}>
+            <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 3 }}>
               目标约 {cfg.targetWordCount} 字（允许±15%浮动，AI 会根据这个字数目标自行决定要写几段、每段多长）。
               API 侧的 token 上限会自动换算为 {cfg.maxTokens}，只是防止意外截断的安全余量，不需要手动调整。
             </div>
 
             {cfg.apiType === API_TYPES.QWEN && (
-              <div style={{ border: "1px solid #2a2a3a", borderRadius: 5, padding: "8px 10px", marginTop: 8, background: "#0e1018" }}>
+              <div style={{ border: "1px solid #2a2a3a", borderRadius: 0, padding: "8px 10px", marginTop: 8, background: "#161510" }}>
                 <div style={{ fontSize: "11px", color: "#8ac8b8", marginBottom: 4 }}>千问 max_tokens 上限</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <input
@@ -443,9 +443,9 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                     value={cfg.qwenMaxTokens ?? 32768}
                     onChange={e => patch({ qwenMaxTokens: Math.max(256, Math.min(65536, parseInt(e.target.value) || 32768)) })}
                   />
-                  <span style={{ fontSize: "10.5px", color: "#8a8a7a" }}>单次输出 token 上限</span>
+                  <span style={{ fontSize: "10.5px", color: "#8f8a7c" }}>单次输出 token 上限</span>
                 </div>
-                <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 4 }}>
+                <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 4 }}>
                   千问对 max_tokens 有硬上限，传太大直接报 400（Range should be [1, 65536]）。
                   这里单独封顶：qwen-max 上限 32768，qwen-plus/coder 可到 65536。默认 32768 最稳，叙事足够用。
                   上面的字数换算值再大，发给千问时也会被压到这个上限之内。
@@ -467,7 +467,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                   : DEFAULT_INTENT_BUDGETS[key];
                 return (
                   <div key={key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ flex: 1, fontSize: "11px", color: "#7a7a6a" }}>{label}</span>
+                    <span style={{ flex: 1, fontSize: "11px", color: "#8f8a7c" }}>{label}</span>
                     <input
                       type="number" min="30" step="50" value={cur}
                       onChange={e => {
@@ -476,12 +476,12 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                       }}
                       style={{ ...inputStyle, width: 70 }}
                     />
-                    <span style={{ fontSize: "11px", color: "#5a5a4a" }}>字</span>
+                    <span style={{ fontSize: "11px", color: "#8f8a7c" }}>字</span>
                   </div>
                 );
               })}
             </div>
-            <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginBottom: 6 }}>
+            <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginBottom: 6 }}>
               min 自动取 max×40%。UNKNOWN 意图和 MOVE 未匹配时回退到上面的全局字数。
             </div>
 
@@ -502,7 +502,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                   : DEFAULT_CALL_TOKEN_LIMITS[key];
                 return (
                   <div key={key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ flex: 1, fontSize: "11px", color: "#7a7a6a" }}>{label}</span>
+                    <span style={{ flex: 1, fontSize: "11px", color: "#8f8a7c" }}>{label}</span>
                     <input
                       type="number" min="1" max={CALL_TOKEN_LIMIT_MAX} step="100" value={cur}
                       onChange={e => {
@@ -513,12 +513,12 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                       }}
                       style={{ ...inputStyle, width: 84 }}
                     />
-                    <span style={{ fontSize: "11px", color: "#5a5a4a" }}>tok</span>
+                    <span style={{ fontSize: "11px", color: "#8f8a7c" }}>tok</span>
                   </div>
                 );
               })}
             </div>
-            <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginBottom: 6 }}>
+            <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginBottom: 6 }}>
               这些是各类 LLM 调用的输出 token 上限（不是字数）。默认已调大，避免带思考的模型（如 gemini-3）思考 token 吃穿正文导致半句截断。每项可调到 {CALL_TOKEN_LIMIT_MAX}。主叙事不在此列（它的上限已由上面的目标字数换算、且地板极高）。
             </div>
 
@@ -532,11 +532,11 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                   onChange={e => patch({ extractionEnabled: e.target.checked })}
                   style={{ cursor: "pointer" }}
                 />
-                <label htmlFor="extractionEnabled" style={{ fontSize: "12px", color: "#6ec6c6", cursor: "pointer", userSelect: "none" }}>
+                <label htmlFor="extractionEnabled" style={{ fontSize: "12px", color: "#c8323a", cursor: "pointer", userSelect: "none" }}>
                   启用双调用模式（大模型叙事 + 小模型提取状态）
                 </label>
               </div>
-              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginBottom: 8, lineHeight: 1.5 }}>
+              <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginBottom: 8, lineHeight: 1.5 }}>
                 开启后：主调用只输出叙事散文，提取调用按意图类型单独提取状态变化。
                 提取调用可指定更小/更快的模型——空则沿用主模型。
               </div>
@@ -559,10 +559,10 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                     <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
                   )}
                   {modelList && modelList.length > 0 && modelPickerTarget === "extractionModel" && (
-                    <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #1a2d2a", borderRadius: 3 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#5a5a4a", borderBottom: "1px solid #14161e" }}>
+                    <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid #4a453c", borderRadius: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#8f8a7c", borderBottom: "1px solid #14161e" }}>
                         <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
-                        <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "#8a8a7a", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
+                        <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "#8f8a7c", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
                       </div>
                       {modelList.map(m => (
                         <div
@@ -570,7 +570,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                           onClick={() => { patch({ extractionModel: m }); setModelList(null); }}
                           style={{
                             padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
-                            color: m === cfg.extractionModel ? "#6ec6c6" : "#8a8a7a",
+                            color: m === cfg.extractionModel ? "#c8323a" : "#8f8a7c",
                             background: m === cfg.extractionModel ? "#1a2a2a" : "transparent",
                             borderBottom: "1px solid #14161e",
                           }}
@@ -580,7 +580,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                   )}
 
                   <div style={{ ...labelStyle, marginTop: 10 }}>各意图单独指定模型（空则使用默认提取模型）</div>
-                  <div style={{ fontSize: "10px", color: "#5a5a4a", marginBottom: 4 }}>
+                  <div style={{ fontSize: "10px", color: "#8f8a7c", marginBottom: 4 }}>
                     下面每行都是可以点击填写的输入框——灰字是"当前会继承的模型"提示，不是禁用状态；要为某个意图单独指定模型，直接点进框里打字，或点🔍从检测到的列表里选。
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6 }}>
@@ -590,9 +590,9 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                       return (
                         <div key={key}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ width: 120, fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>{label}</span>
+                            <span style={{ width: 120, fontSize: "11px", color: "#8f8a7c", flexShrink: 0 }}>{label}</span>
                             <input
-                              style={{ ...inputStyle, flex: 1, borderColor: cur ? "#3a6a5a" : "#1a2d2a" }}
+                              style={{ ...inputStyle, flex: 1, borderColor: cur ? "#3a6a5a" : "#4a453c" }}
                               value={cur}
                               onChange={e => patch({
                                 extractionModels: { ...(cfg.extractionModels || {}), [key]: e.target.value },
@@ -610,10 +610,10 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                             <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3, marginLeft: 128 }}>✗ 检测失败：{modelErr}</div>
                           )}
                           {modelList && modelList.length > 0 && modelPickerTarget === key && (
-                            <div style={{ marginTop: 4, marginLeft: 128, maxHeight: 140, overflowY: "auto", border: "1px solid #1a2d2a", borderRadius: 3 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#5a5a4a", borderBottom: "1px solid #14161e" }}>
+                            <div style={{ marginTop: 4, marginLeft: 128, maxHeight: 140, overflowY: "auto", border: "1px solid #4a453c", borderRadius: 0 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "#8f8a7c", borderBottom: "1px solid #14161e" }}>
                                 <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "静态清单" : `共 ${modelList.length} 个，点击选用`}</span>
-                                <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "#8a8a7a", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
+                                <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "#8f8a7c", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
                               </div>
                               {modelList.map(m => (
                                 <div
@@ -624,7 +624,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                                   }}
                                   style={{
                                     padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
-                                    color: m === cur ? "#6ec6c6" : "#8a8a7a",
+                                    color: m === cur ? "#c8323a" : "#8f8a7c",
                                     background: m === cur ? "#1a2a2a" : "transparent",
                                     borderBottom: "1px solid #14161e",
                                   }}
@@ -655,15 +655,15 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 <button key={opt.key}
                   onClick={() => patch({ questTriggerMode: opt.key })}
                   style={{
-                    padding: "4px 10px", borderRadius: 4, border: "1px solid #2a2d3a",
+                    padding: "4px 10px", borderRadius: 0, border: "1px solid #2a2d3a",
                     cursor: "pointer", fontSize: "11px",
-                    color: (cfg.questTriggerMode || "prompt") === opt.key ? "#0a0c14" : "#6ec6c6",
-                    background: (cfg.questTriggerMode || "prompt") === opt.key ? "#6ec6c6" : "#10121a",
+                    color: (cfg.questTriggerMode || "prompt") === opt.key ? "#111110" : "#c8323a",
+                    background: (cfg.questTriggerMode || "prompt") === opt.key ? "#c8323a" : "#161510",
                   }}
                 >{opt.label}</button>
               ))}
             </div>
-            <div style={{ fontSize: "10.5px", color: "#7a7a6a", marginTop: -6, marginBottom: 6 }}>
+            <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: -6, marginBottom: 6 }}>
               点击感叹号面板里的任务时——「专属prompt harness」：触发本身由系统直接判定（不再等AI自己决定要不要演），AI只负责用一段独立的专属提示词把这件已经确定发生的事写成叙事文字，确定性最高；「对话自然演绎」：送一句话给主线AI，由AI在通常的叙事氛围里自然带出这段剧情，更有代入感但确定性略低。
             </div>
 
@@ -688,10 +688,10 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 <button key={m}
                   onClick={() => patch({ thinkingMode: m })}
                   style={{
-                    padding: "4px 10px", borderRadius: 6, fontSize: "11px", cursor: "pointer",
+                    padding: "4px 10px", borderRadius: 0, fontSize: "11px", cursor: "pointer",
                     border: "1px solid #2a3550",
-                    color: (cfg.thinkingMode || "off") === m ? "#0a0c14" : "#6ec6c6",
-                    background: (cfg.thinkingMode || "off") === m ? "#6ec6c6" : "#10121a",
+                    color: (cfg.thinkingMode || "off") === m ? "#111110" : "#c8323a",
+                    background: (cfg.thinkingMode || "off") === m ? "#c8323a" : "#161510",
                   }}>
                   {{ off: "关闭", low: "低", medium: "中", high: "高", custom: "自定义" }[m]}
                 </button>
@@ -702,22 +702,22 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 onChange={e => patch({ thinkingBudget: parseInt(e.target.value) || 0 })}
                 placeholder="自定义思考 token 预算，0=关闭" />
             )}
-            <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 3, marginBottom: 6 }}>
+            <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 3, marginBottom: 6 }}>
               默认「关闭」：把 token 全留给正文，避免 Gemini 2.5 等模型的思考过程吃穿额度、导致正文被截断。想让模型多想再答可调高，代价是更慢更贵、且可能需要把上面的目标字数调大。
             </div>
 
             <div style={labelStyle}>CORS 代理地址（可选）</div>
             <input style={inputStyle} value={cfg.corsProxy} onChange={e => patch({ corsProxy: e.target.value })} placeholder="例如 https://your-proxy.com/?url=" />
-            <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 3 }}>
+            <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 3 }}>
               如果目标 API 不支持浏览器直连（CORS 报错），可以填一个中转代理服务的地址前缀。
             </div>
 
             <div style={{ ...sectionStyle }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "#6ec6c6", fontSize: "12px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "#c8323a", fontSize: "12px" }}>
                 <input type="checkbox" checked={!!cfg.embeddingEnabled} onChange={e => patch({ embeddingEnabled: e.target.checked })} style={{ cursor: "pointer" }} />
                 启用向量记忆（长期召回）
               </label>
-              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 3 }}>
+              <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 3 }}>
                 开启后，AI 每轮会额外记一条 ≤50 字的事实摘要并向量化存入本地库；此后每轮发送前，
                 会按语义相关度从库里召回可能早已滑出对话窗口的旧事注入 prompt，让"很久以前埋的伏笔/许过的诺/结过的怨"重新被想起。
                 不开则完全不触发，游戏行为与之前一致。向量库存在浏览器 IndexedDB，不上传、不进存档文件。
@@ -730,7 +730,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                   <input style={inputStyle} type="password" value={cfg.embeddingKey} onChange={e => patch({ embeddingKey: e.target.value })} placeholder="sk-..." />
                   <div style={labelStyle}>Embedding 模型</div>
                   <input style={inputStyle} value={cfg.embeddingModel} onChange={e => patch({ embeddingModel: e.target.value })} placeholder="例如 BAAI/bge-m3" />
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, fontSize: "10.5px", color: "#5a5a4a" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, fontSize: "10.5px", color: "#8f8a7c" }}>
                     <span>本地记忆库：{memCount == null ? "…" : `${memCount} 条`}</span>
                     <span style={{ ...btnStyle, padding: "3px 10px", color: "#c46060", borderColor: "#3a2020" }} onClick={handleClearMemory}>清空记忆库</span>
                   </div>
@@ -744,11 +744,11 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
             <div style={{ ...sectionStyle, display: "flex", alignItems: "center", gap: 10 }}>
               <span style={btnStyle} onClick={handleTest}>🔗 连接测试</span>
               {testStatus === "testing" && <span style={{ color: "#5a8a5a" }}>测试中...</span>}
-              {testStatus === "ok" && <span style={{ color: "#8ac48a" }}>✓ 连接成功：{testMsg}</span>}
+              {testStatus === "ok" && <span style={{ color: "#c07050" }}>✓ 连接成功：{testMsg}</span>}
               {testStatus === "error" && <span style={{ color: "#c45044" }}>✗ {testMsg}</span>}
             </div>
 
-            <div style={{ ...sectionStyle, background: "#120e0a", border: "1px solid #3a2a1a", borderRadius: 4, padding: 10, fontSize: "10.5px", color: "#a08860" }}>
+            <div style={{ ...sectionStyle, background: "#120e0a", border: "1px solid #3a2a1a", borderRadius: 0, padding: 10, fontSize: "10.5px", color: "#a08860" }}>
               ⚠️ 这是纯前端项目，API Key 保存在浏览器本地存储中。请不要把部署后的页面公开挂在互联网上，
               否则访问者可能通过浏览器开发者工具看到你填入的 key。仅限本地自己使用，或搭配后端代理后再对外分享。
             </div>
@@ -760,7 +760,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
             一个裸数字框，私聊篇幅/token 上限原本写死在代码里，专属世界书是新增的。 */}
         {tab === "narrator" && (
           <div>
-            <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>
+            <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10 }}>
               旁白是唯一被设计成打破信息隔离的角色——好感度只决定她"怎么讲"，不决定她"知道什么"。
               这里的改动即时生效，并随存档一起保存。
             </div>
@@ -790,17 +790,17 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                   <span key={key}
                     onClick={() => setNarrator?.(n => ({ ...n, affection: v }))}
                     style={{
-                      cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 3, fontSize: "10px",
-                      color: active ? "#0a0c14" : "#6a7a72",
-                      background: active ? "#6ec6c6" : "#10121a",
-                      border: "1px solid #1a2d2a",
+                      cursor: "pointer", textAlign: "center", padding: "4px 2px", borderRadius: 0, fontSize: "10px",
+                      color: active ? "#111110" : "#6a7a72",
+                      background: active ? "#c8323a" : "#161510",
+                      border: "1px solid #4a453c",
                     }}>
                     {label}
                   </span>
                 );
               })}
             </div>
-            <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 6 }}>
+            <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 6 }}>
               这五档同时作用于叙事文风与私聊语气（narrator.js 的 narratorVoicePrompt）。
               &lt;45 档的原文就写着"简短回应几句""语气冷淡、公事公办"——私聊回复短不一定是 bug，
               也可能只是她还没被养熟。
@@ -825,21 +825,21 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                       }))}
                       style={{
                         ...btnStyle, fontSize: "11px",
-                        color: on ? "#0a0c14" : "#6ec6c6",
-                        background: on ? "#6ec6c6" : "#10121a",
+                        color: on ? "#111110" : "#c8323a",
+                        background: on ? "#c8323a" : "#161510",
                       }}>
                       {label}
                     </span>
                   );
                 })}
               </div>
-              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 6 }}>
+              <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 6 }}>
                 正常玩法里阶段由剧情推进（好感满 100 → 点粉色感叹号告白 → 私聊累积 8 次宕机），
                 这里是调试用的强制切换。宕机在游戏内不可逆，从这里能掰回来。
               </div>
               {(narrator?.stage === "cheat" || narrator?.confessed) && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-                  <span style={{ fontSize: "11px", color: "#7a7a6a", flex: 1 }}>记忆碎片（累积到 8 触发宕机）</span>
+                  <span style={{ fontSize: "11px", color: "#8f8a7c", flex: 1 }}>记忆碎片（累积到 8 触发宕机）</span>
                   <input
                     type="number" min="0" max="8" value={narrator?.memoryFragments ?? 0}
                     onChange={e => {
@@ -863,14 +863,14 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                     ? cfg.narratorWhisperWords[t.key] : t.words;
                   return (
                     <div key={t.key} style={{
-                      display: "flex", alignItems: "center", gap: 8, padding: "3px 6px", borderRadius: 3,
-                      background: cur ? "#12211f" : "transparent",
-                      border: `1px solid ${cur ? "#6ec6c6" : "transparent"}`,
+                      display: "flex", alignItems: "center", gap: 8, padding: "3px 6px", borderRadius: 0,
+                      background: cur ? "#241211" : "transparent",
+                      border: `1px solid ${cur ? "#c8323a" : "transparent"}`,
                     }}>
-                      <span style={{ width: 16, color: cur ? "#6ec6c6" : "#3a3a2a", fontSize: "10px" }}>{cur ? "▶" : ""}</span>
-                      <span style={{ flex: 1, fontSize: "11px", color: cur ? "#c8e0d8" : "#7a7a6a" }}>
+                      <span style={{ width: 16, color: cur ? "#c8323a" : "#3a3a2a", fontSize: "10px" }}>{cur ? "▶" : ""}</span>
+                      <span style={{ flex: 1, fontSize: "11px", color: cur ? "#c8e0d8" : "#8f8a7c" }}>
                         {t.label}
-                        <span style={{ color: "#5a5a4a", marginLeft: 6 }}>
+                        <span style={{ color: "#8f8a7c", marginLeft: 6 }}>
                           {t.key === "awake" ? "≥90" : `${t.min}–${AFFECTION_TIERS[AFFECTION_TIERS.indexOf(t) + 1].min}`}
                         </span>
                       </span>
@@ -882,12 +882,12 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                         }}
                         style={{ ...inputStyle, width: 70 }}
                       />
-                      <span style={{ fontSize: "11px", color: "#5a5a4a" }}>字</span>
+                      <span style={{ fontSize: "11px", color: "#8f8a7c" }}>字</span>
                     </div>
                   );
                 })}
               </div>
-              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 6 }}>
+              <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 6 }}>
                 ▶ 是当前好感度所在档。冷淡期她本就没什么话，篇幅跟着好感度一起解锁，
                 与文风、攻略档位同一条曲线。允许±30% 浮动；冷漠期的打断式回绝与宕机后的
                 空壳应答不受此值影响，仍是一句话。
@@ -905,9 +905,9 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                   }}
                   style={{ ...inputStyle, width: 100 }}
                 />
-                <span style={{ fontSize: "11px", color: "#5a5a4a" }}>tok（与 API 配置里那一项是同一个值）</span>
+                <span style={{ fontSize: "11px", color: "#8f8a7c" }}>tok（与 API 配置里那一项是同一个值）</span>
               </div>
-              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 4 }}>
+              <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 4 }}>
                 这是 token 不是字数。带思考的模型思考 token 与正文共用这个额度，
                 给小了会出现"话说一半停在逗号上"。
               </div>
@@ -922,7 +922,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 placeholder={"写在这里的内容只会注入私聊通道，主叙事看不到。\n适合放：她的来历、她对玩家的私下看法、想让她一直记住的梗、\n以及任何你希望她在私聊里知道、但不该影响正常剧情叙事的设定。\n留空则完全不注入这一段。"}
                 style={{ ...inputStyle, minHeight: 110, resize: "vertical", lineHeight: 1.6 }}
               />
-              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 4 }}>
+              <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 4 }}>
                 当前 {(cfg.narratorLorebook || "").length} 字。这段拼在私聊 system prompt 里，
                 会占用上下文，别写太长。
               </div>
@@ -954,16 +954,16 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
             <div style={{ ...sectionStyle }}>
               <div style={labelStyle}>自动存档</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ fontSize: "11.5px", color: "#8a8a7a" }}>每</span>
+                <span style={{ fontSize: "11.5px", color: "#8f8a7c" }}>每</span>
                 <input
                   type="number" min="0" max="99"
                   style={{ ...inputStyle, width: 64 }}
                   value={cfg.autoSaveEvery ?? 5}
                   onChange={e => patch({ autoSaveEvery: Math.max(0, Math.min(99, parseInt(e.target.value) || 0)) })}
                 />
-                <span style={{ fontSize: "11.5px", color: "#8a8a7a" }}>回合写一次自动存档（0 = 每回合都写）</span>
+                <span style={{ fontSize: "11.5px", color: "#8f8a7c" }}>回合写一次自动存档（0 = 每回合都写）</span>
               </div>
-              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginTop: 6, marginBottom: 8 }}>
+              <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginTop: 6, marginBottom: 8 }}>
                 关闭或刷新页面时会自动补写一次，不会丢最近几回合。间隔越大写入越省，回档最多丢对应回合数。
               </div>
               <span
@@ -982,8 +982,8 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
               {slots.map(s => (
                 <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #14161e" }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ color: "#c8bfa0" }}>{s.label}</div>
-                    <div style={{ fontSize: "10px", color: "#5a5a4a" }}>{s.presetName} · {new Date(s.savedAt).toLocaleString()}</div>
+                    <div style={{ color: "#e8e4d6" }}>{s.label}</div>
+                    <div style={{ fontSize: "10px", color: "#8f8a7c" }}>{s.presetName} · {new Date(s.savedAt).toLocaleString()}</div>
                   </div>
                   <span style={{ ...btnStyle, padding: "3px 8px" }} onClick={() => handleLoadSlot(s.id)}>读取</span>
                   <span style={{ ...btnStyle, padding: "3px 8px" }} onClick={() => {
@@ -995,14 +995,14 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
               ))}
             </div>
 
-            <div style={{ ...sectionStyle, fontSize: "10.5px", color: "#5a5a4a" }}>
+            <div style={{ ...sectionStyle, fontSize: "10.5px", color: "#8f8a7c" }}>
               自动存档按上面设定的回合间隔写入，刷新页面后会自动读取。
               进入游戏时如果看到"已从上次自动存档恢复进度"的提示，说明这次是接着上次玩的。
             </div>
 
             <div style={{ ...sectionStyle }}>
               <div style={labelStyle}>查看缓存</div>
-              <div style={{ fontSize: "10.5px", color: "#5a5a4a", marginBottom: 8 }}>
+              <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginBottom: 8 }}>
                 "查看武学/物品"的说书人描述文本会缓存在本地（当前 {inspectCacheSize()} 条），
                 同一件东西只调用一次 LLM，之后再看直接读缓存，秒开且不耗 token。
                 除非改了描述生成规则想强制刷新，否则不需要清空。
@@ -1034,19 +1034,19 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
 
         {tab === "other" && (
           <div>
-            <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>显示与其他设置。</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "8px 10px", background: "#0e0c14", border: "1px solid #2a2438", borderRadius: 4 }}>
-              <span style={{ fontSize: "11px", color: "#7a7a6a", flexShrink: 0 }}>字号</span>
+            <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10 }}>显示与其他设置。</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "8px 10px", background: "#161510", border: "1px solid #4a453c", borderRadius: 0 }}>
+              <span style={{ fontSize: "11px", color: "#8f8a7c", flexShrink: 0 }}>字号</span>
               <input
                 type="range" min="0.7" max="1.6" step="0.05"
                 value={uiScale}
                 onChange={e => setUiScale(parseFloat(e.target.value))}
                 style={{ flex: 1 }}
               />
-              <span style={{ fontSize: "11px", color: "#c8bfa0", flexShrink: 0, width: 42, textAlign: "right" }}>{Math.round(uiScale * 100)}%</span>
+              <span style={{ fontSize: "11px", color: "#e8e4d6", flexShrink: 0, width: 42, textAlign: "right" }}>{Math.round(uiScale * 100)}%</span>
               <span
                 onClick={() => setUiScale(1)}
-                style={{ fontSize: "10px", color: "#6ec6c6", cursor: "pointer", flexShrink: 0, border: "1px solid #1a2d2a", borderRadius: 3, padding: "2px 6px" }}
+                style={{ fontSize: "10px", color: "#c8323a", cursor: "pointer", flexShrink: 0, border: "1px solid #4a453c", borderRadius: 0, padding: "2px 6px" }}
               >重置</span>
             </div>
 

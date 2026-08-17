@@ -16,20 +16,20 @@ export default function ServiceScreen({ building, char, time, flags, zoneTheme, 
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "#8a8a7a", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "#8f8a7c", marginBottom: 12, fontSize: 11 }}>
           银两 {money} 两
         </div>
-        <div style={{ color: "#7a7a6a", fontSize: 11, marginBottom: 10 }}>
+        <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 10 }}>
           {building.desc}
         </div>
 
         {visibleMenu.map(item => (
-          <div key={item.name} style={{ marginBottom: 10, padding: "10px 12px", background: "#10121a", borderRadius: 6, border: `1px solid ${zoneTheme.border}` }}>
+          <div key={item.name} style={{ marginBottom: 10, padding: "10px 12px", background: "#161510", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <span style={{ color: "#c8bfa0", fontSize: 13 }}>{item.name}</span>
+              <span style={{ color: "#e8e4d6", fontSize: 13 }}>{item.name}</span>
               <span style={{ color: "#e8c468", fontSize: 12 }}>{item.price} 两</span>
             </div>
-            <div style={{ color: "#7a7a6a", fontSize: 11, marginBottom: 6 }}>{item.desc}</div>
+            <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 6 }}>{item.desc}</div>
             <div style={{ color: "#6a8a6a", fontSize: 10, marginBottom: 6 }}>
               +{item.buff} {item.val} · 持续 {item.duration} 时间单位
             </div>
@@ -69,11 +69,11 @@ export function BasementScreen({ char, time, zoneTheme, onClose, inline, onOrder
         <div style={{ color: "#8a5a3a", fontSize: 12, marginBottom: 12 }}>
           嗯…这里和楼上大不一样。香气扑鼻，烛光昏黄，不问来路，不问因由。
         </div>
-        <div style={{ color: "#8a8a7a", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "#8f8a7c", marginBottom: 12, fontSize: 11 }}>
           银两 {money} 两（消耗功德，在此用餐 karma -2）
         </div>
         {menu.map(item => (
-          <div key={item.name} style={{ marginBottom: 10, padding: "10px 12px", background: "#14100a", borderRadius: 6, border: `1px solid #4a3a2a` }}>
+          <div key={item.name} style={{ marginBottom: 10, padding: "10px 12px", background: "#14100a", borderRadius: 0, border: `1px solid #4a3a2a` }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ color: "#e8c068", fontSize: 13 }}>{item.name}</span>
               <span style={{ color: "#e8c468" }}>{item.price} 两</span>

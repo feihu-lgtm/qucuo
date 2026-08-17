@@ -70,8 +70,8 @@ export default function RightPanel({
               onClick={() => setShowAvatarPicker(true)}
               title="点击更换头像"
               style={{
-                width: 90, aspectRatio: "2/3", borderRadius: 6, overflow: "hidden",
-                border: `1px solid ${zoneTheme.border}`, background: "#0c0e14", cursor: "pointer",
+                width: 90, aspectRatio: "2/3", borderRadius: 0, overflow: "hidden",
+                border: `1px solid ${zoneTheme.border}`, background: "#111110", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
               }}
             >
@@ -86,7 +86,7 @@ export default function RightPanel({
               onClick={() => setShowBody(true)}
               title="体貌 · 身量体型与身体细节，动作描写和私聊都会照着写"
               style={{
-                cursor: "pointer", fontSize: "10px", padding: "1px 6px", borderRadius: 3,
+                cursor: "pointer", fontSize: "10px", padding: "1px 6px", borderRadius: 0,
                 border: `1px solid ${zoneTheme.border}`, whiteSpace: "nowrap",
                 color: bodyProfileFilled(char.bodyProfile).total ? zoneTheme.accent : zoneTheme.textDim,
               }}
@@ -102,8 +102,8 @@ export default function RightPanel({
                 onClick={compForms ? cycleCompForm : undefined}
                 title={compForms ? `${comp.label} · 点击切换立绘形态` : comp.label}
                 style={{
-                  width: 90, aspectRatio: "2/3", borderRadius: 6, overflow: "hidden",
-                  border: `1px solid ${zoneTheme.border}`, background: "#0c0e14",
+                  width: 90, aspectRatio: "2/3", borderRadius: 0, overflow: "hidden",
+                  border: `1px solid ${zoneTheme.border}`, background: "#111110",
                   cursor: compForms ? "pointer" : "default",
                   display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
                 }}
@@ -123,7 +123,7 @@ export default function RightPanel({
                       <span key={f.key} onClick={() => pickCompForm(f.key)}
                         title={`注入 AI 的${comp.label}外貌描述：${f.label}`}
                         style={{
-                          cursor: "pointer", fontSize: "9.5px", padding: "1px 7px", borderRadius: 3,
+                          cursor: "pointer", fontSize: "9.5px", padding: "1px 7px", borderRadius: 0,
                           color: compForm === f.key ? zoneTheme.bg : zoneTheme.accent,
                           background: compForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
                           border: `1px solid ${compForm === f.key ? zoneTheme.accent : zoneTheme.border}`,
@@ -136,7 +136,7 @@ export default function RightPanel({
                     外貌描述 {compDescOpen ? "▴" : "▾"}
                   </span>
                   {compDescOpen && (
-                    <div style={{ fontSize: "9.5px", color: zoneTheme.textDim, lineHeight: 1.6, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 4, padding: "4px 6px", maxHeight: 160, overflowY: "auto", textAlign: "left" }}>
+                    <div style={{ fontSize: "9.5px", color: zoneTheme.textDim, lineHeight: 1.6, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", maxHeight: 160, overflowY: "auto", textAlign: "left" }}>
                       {compLore.base}{compForm === "human" ? compLore.human : compLore.beast}
                     </div>
                   )}
@@ -147,7 +147,7 @@ export default function RightPanel({
           <div style={{ flex: 1, paddingTop: 4 }}>
             <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>
             <div style={{ fontSize: "11px", color: zoneTheme.textDim, marginBottom: 8 }}>{char.gender || "男"}　少侠</div>
-            <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#c8bfa0" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
+            <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#e8e4d6" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
             <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
             <div style={{ fontSize: "11.5px", marginBottom: 3 }}>经验 <span style={{ color: "#d4a853" }}>{exp}</span>　潜能 <span style={{ color: "#b48adf" }}>{pot}</span></div>
             <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "#e8c468" }}>{char.money || 0}</span> 两</div>
@@ -157,7 +157,7 @@ export default function RightPanel({
                 onClick={() => inspectItem("pigeon", "信鸽", `现有${char.pigeons || 0}只`, null, { worldLook: true })}
                 title="查看：信鸽是什么、能做什么"
                 style={{
-                  cursor: inspecting === "信鸽" ? "wait" : "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 3,
+                  cursor: inspecting === "信鸽" ? "wait" : "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 0,
                   color: zoneTheme.textDim, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`,
                   opacity: inspecting === "信鸽" ? 0.6 : 1,
                 }}
@@ -169,7 +169,7 @@ export default function RightPanel({
         <div style={{ marginBottom: 10 }}>
           {(() => {
             const es = computeEquippedStats(inv);
-            return <div style={{ fontSize: "11px", color: "#8a8a7a" }}>装备总加成：攻{es.totalAtk} 防{es.totalDef}</div>;
+            return <div style={{ fontSize: "11px", color: "#8f8a7c" }}>装备总加成：攻{es.totalAtk} 防{es.totalDef}</div>;
           })()}
         </div>
 
@@ -182,7 +182,7 @@ export default function RightPanel({
                 onClick={trainNeigong}
                 title={`运气打坐：消耗${trainCost(char.neigong ?? 0)}点潜能，内功+1（现有潜能${pot}）`}
                 style={{
-                  cursor: "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 3,
+                  cursor: "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 0,
                   color: "#8ab4d4", background: zoneTheme.bgPanel, border: "1px solid #1d2d3a", whiteSpace: "nowrap",
                 }}
               >+1（{trainCost(char.neigong ?? 0)}潜能）</span>
@@ -193,7 +193,7 @@ export default function RightPanel({
                 onClick={trainWaigong}
                 title={`拆招练武：消耗${trainCost(char.waigong ?? 0)}点潜能，外功+1（现有潜能${pot}）`}
                 style={{
-                  cursor: "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 3,
+                  cursor: "pointer", fontSize: "10px", padding: "1px 5px", borderRadius: 0,
                   color: "#d88a5a", background: zoneTheme.bgPanel, border: "1px solid #3a2a1d", whiteSpace: "nowrap",
                 }}
               >+1（{trainCost(char.waigong ?? 0)}潜能）</span>
@@ -208,14 +208,14 @@ export default function RightPanel({
                 return (
                   <div key={k} title={buffed ? `基础${v}，药力/buff生效中` : undefined}>
                     {k}
-                    <span style={{ color: buffed ? "#8ac48a" : "#c8bfa0" }}>{buffed ? eff : v}</span>
-                    {buffed && <span style={{ color: "#5a5a4a", fontSize: "9.5px" }}> ({v}+{eff - v})</span>}
+                    <span style={{ color: buffed ? "#c07050" : "#e8e4d6" }}>{buffed ? eff : v}</span>
+                    {buffed && <span style={{ color: "#8f8a7c", fontSize: "9.5px" }}> ({v}+{eff - v})</span>}
                   </div>
                 );
               })}
             </div>
             {activeBuffs.length > 0 && (
-              <div style={{ marginTop: 4, fontSize: "9.5px", color: "#8ac48a", lineHeight: 1.5 }}>
+              <div style={{ marginTop: 4, fontSize: "9.5px", color: "#c07050", lineHeight: 1.5 }}>
                 {activeBuffs.map((b, i) => (
                   <div key={i}>药力·{b.attr}+{b.val}（余{b.remaining}）</div>
                 ))}
@@ -255,7 +255,7 @@ export default function RightPanel({
                       title={isOn ? "点一下让他留守" : `换 ${slot.label} 出战`}
                       style={{
                         flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
-                        padding: "6px 8px", borderRadius: 4,
+                        padding: "6px 8px", borderRadius: 0,
                         background: isOn ? zoneTheme.accent + "18" : zoneTheme.bgPanel,
                         border: `1px solid ${isOn ? zoneTheme.accent : zoneTheme.border}`,
                       }}
@@ -267,7 +267,7 @@ export default function RightPanel({
                           {isOn && <span style={{ fontSize: "9px", color: zoneTheme.accent, marginLeft: 4 }}>出战</span>}
                         </div>
                         {typeof aff === "number" ? (
-                          <div style={{ fontSize: "10px", color: "#e0a0d0" }}>{npcAffectionLabel(aff)} · {aff}/100</div>
+                          <div style={{ fontSize: "10px", color: "#d68a8a" }}>{npcAffectionLabel(aff)} · {aff}/100</div>
                         ) : (
                           <div style={{ fontSize: "10px", color: zoneTheme.textDim }}>{isOn ? "随行在侧" : "留守"}</div>
                         )}
@@ -279,7 +279,7 @@ export default function RightPanel({
                       title="细看/切磋/送礼等"
                       style={{
                         cursor: "pointer", fontSize: "10px", color: zoneTheme.accentDim,
-                        padding: "5px 7px", borderRadius: 4, border: `1px solid ${zoneTheme.border}`,
+                        padding: "5px 7px", borderRadius: 0, border: `1px solid ${zoneTheme.border}`,
                       }}
                     >◈</span>
                   </div>
@@ -302,7 +302,7 @@ export default function RightPanel({
               return (
                 <span
                   onClick={() => setShowIdleSkills(v => !v)}
-                  style={{ cursor: "pointer", fontSize: "9.5px", color: zoneTheme.accent, border: `1px solid ${zoneTheme.border}`, borderRadius: 2, padding: "0 4px", flexShrink: 0 }}
+                  style={{ cursor: "pointer", fontSize: "9.5px", color: zoneTheme.accent, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "0 4px", flexShrink: 0 }}
                 >{showIdleSkills ? `收起未上阵 ${idle}` : `未上阵 ${idle} ▾`}</span>
               );
             })()}
@@ -310,7 +310,7 @@ export default function RightPanel({
           {skills.filter(s => s.active || showIdleSkills).map((s) => {
             const i = skills.indexOf(s);
             const q = s.quality || "白";
-            const qc = QUALITY_COLOR[q] || "#c8bfa0";
+            const qc = QUALITY_COLOR[q] || "#e8e4d6";
             // 真实招式本体：fixed（拜师/偷师完整招）直接取 s.move，可修炼武学按当前
             // 阶段 deriveMoveFromSkill 派生。moveStatLabel/moveEffectBrief 认的是招式
             // 字段（baseDamageMultiplier/forceFirst…），这些都在 move 上、不在技能外壳 s 上，
@@ -335,7 +335,7 @@ export default function RightPanel({
                     style={{ cursor: "pointer", color: s.active ? qc : "#6a6a5a" }}
                     title={s.active ? "已上阵，点击卸下" : "运功上阵"}
                   >{s.active ? "▶" : "○"}</span>
-                  {mType && <span title={`${mType}类武学`} style={{ fontSize: "9px", color: "#1a1206", background: qc, borderRadius: 2, padding: "0 3px", fontWeight: 700, flexShrink: 0 }}>{TYPE_SHORT[mType] || "?"}</span>}
+                  {mType && <span title={`${mType}类武学`} style={{ fontSize: "9px", color: "#1a1206", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700, flexShrink: 0 }}>{TYPE_SHORT[mType] || "?"}</span>}
                   <span
                     onClick={() => inspectItem("skill", s.name, s.fixed ? `${q}品·完整招式` : `${q}品·${s.stage}`, null, { worldLook: true })}
                     style={{ cursor: inspecting === s.name ? "wait" : "pointer", color: qc, fontWeight: s.active ? "bold" : "normal", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === s.name ? 0.6 : 1 }}
@@ -350,7 +350,7 @@ export default function RightPanel({
                 </div>
                 {(() => {
                   const eff = moveEffectBrief(mv);
-                  return eff ? <div style={{ paddingLeft: 18, fontSize: "9.5px", color: s.active ? "#8ac48a" : "#4a5a4a" }}>{eff}</div> : null;
+                  return eff ? <div style={{ paddingLeft: 18, fontSize: "9.5px", color: s.active ? "#c07050" : "#4a5a4a" }}>{eff}</div> : null;
                 })()}
                 {s.fixed
                   ? (s.move?.desc ? <div style={{ paddingLeft: 18 }}>
@@ -364,7 +364,7 @@ export default function RightPanel({
                       const afford = pot >= cost;
                       return (
                         <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 18, marginTop: 1 }}>
-                          <span style={{ fontSize: "10px", color: "#7a7a6a" }}>
+                          <span style={{ fontSize: "10px", color: "#8f8a7c" }}>
                             阶段 {curIdx + 1}/5 · {s.stage}
                           </span>
                           {maxed
@@ -373,8 +373,8 @@ export default function RightPanel({
                                 onClick={() => afford && breakthroughSkill(s.id)}
                                 title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`}
                                 style={{
-                                  cursor: afford ? "pointer" : "not-allowed", fontSize: "10px", padding: "1px 7px", borderRadius: 3,
-                                  color: afford ? "#b48adf" : "#5a5a4a",
+                                  cursor: afford ? "pointer" : "not-allowed", fontSize: "10px", padding: "1px 7px", borderRadius: 0,
+                                  color: afford ? "#b48adf" : "#8f8a7c",
                                   background: afford ? zoneTheme.bgPanel : "transparent",
                                   border: `1px solid ${afford ? "#4a3a5a" : zoneTheme.border}`, userSelect: "none",
                                 }}
@@ -396,11 +396,11 @@ export default function RightPanel({
               <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>临阵招式 <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>切磋自带补位 · 运功对应类型的武学即替换（回气永在，能量枯竭保命）</span></div>
               {extras.map((m, i) => {
                 const q = m.quality || "白";
-                const qc = QUALITY_COLOR[q] || "#c8bfa0";
+                const qc = QUALITY_COLOR[q] || "#e8e4d6";
                 const origin = m.learnedFromMaster ? "授" : "基础";
                 return (
                   <div key={i} style={{ marginBottom: 3, fontSize: "11px", display: "flex", alignItems: "center", gap: 5, opacity: 0.92, paddingLeft: 6 }}>
-                    <span style={{ fontSize: "9px", color: "#1a1206", background: qc, borderRadius: 2, padding: "0 3px", fontWeight: 700 }}>{TYPE_SHORT[m.type] || "?"}</span>
+                    <span style={{ fontSize: "9px", color: "#1a1206", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700 }}>{TYPE_SHORT[m.type] || "?"}</span>
                     <span
                       onClick={() => inspectItem("skill", m.name, `${q}品·临阵招式（${origin}）`, null, { worldLook: true })}
                       style={{ cursor: inspecting === m.name ? "wait" : "pointer", color: qc, textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === m.name ? 0.6 : 1 }}
@@ -421,7 +421,7 @@ export default function RightPanel({
             const equippedCount = itemsInCat.filter(i => i.equipped).length;
             return (
               <div key={cat} style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: "10.5px", color: "#7a7a6a", marginBottom: 3 }}>
+                <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginBottom: 3 }}>
                   {CATEGORY_LABEL[cat]} <span style={{ color: zoneTheme.textDim }}>（{itemsInCat.length}件，{equippedCount}件已装备）</span>
                 </div>
                 {itemsInCat.length === 0 && <div style={{ fontSize: "10.5px", color: zoneTheme.textDim, paddingLeft: 8 }}>无</div>}
@@ -436,7 +436,7 @@ export default function RightPanel({
                       onClick={() => setInv(v => toggleEquip(v, item.id))}
                       style={{
                         fontSize: "11px", cursor: "pointer", paddingLeft: 8, marginBottom: 3,
-                        color: item.equipped ? QUALITY_COLOR[item.quality] : "#5a5a4a",
+                        color: item.equipped ? QUALITY_COLOR[item.quality] : "#8f8a7c",
                         fontWeight: item.equipped ? "bold" : "normal",
                         wordBreak: "break-word",
                       }}
@@ -445,7 +445,7 @@ export default function RightPanel({
                         {item.equipped ? "▶" : "○"} {item.name} <span style={{ fontSize: "9.5px" }}>({item.quality}{stat ? `·${stat}` : ""})</span>
                       </div>
                       {eff && (
-                        <div style={{ fontSize: "9.5px", paddingLeft: 14, color: item.equipped ? "#8ac48a" : "#4a5a4a" }}>{eff}</div>
+                        <div style={{ fontSize: "9.5px", paddingLeft: 14, color: item.equipped ? "#c07050" : "#4a5a4a" }}>{eff}</div>
                       )}
                     </div>
                   );
@@ -484,10 +484,10 @@ export default function RightPanel({
           {narrator.stage === NNPC_STAGE.CRASHED ? (
             <div style={{ fontSize: "11.5px", color: "#c45044" }}>信号已断开</div>
           ) : narrator.confessed ? (
-            <div style={{ fontSize: "11.5px", color: "#f0c060" }}>已告白 · 记忆碎片 {narrator.memoryFragments}/8</div>
+            <div style={{ fontSize: "11.5px", color: "#c8663a" }}>已告白 · 记忆碎片 {narrator.memoryFragments}/8</div>
           ) : (
             <>
-              <div style={{ fontSize: "11.5px", color: "#e0a0d0" }}>{affectionLabel(narrator.affection)}</div>
+              <div style={{ fontSize: "11.5px", color: "#d68a8a" }}>{affectionLabel(narrator.affection)}</div>
               <div style={{ fontSize: "11.5px" }}>{bar(narrator.affection, 100, 8)} {narrator.affection}/100</div>
               {narrator.affection >= 100 && (
                 <div

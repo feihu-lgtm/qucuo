@@ -47,7 +47,7 @@ export default class ErrorBoundary extends React.Component {
           </div>
           <div style={{
             maxWidth: 640, background: "#1a0e0e", border: "1px solid #4a2a2a",
-            borderRadius: 4, padding: "10px 14px", marginBottom: 14, wordBreak: "break-word",
+            borderRadius: 0, padding: "10px 14px", marginBottom: 14, wordBreak: "break-word",
           }}>
             <div style={{ color: "#f0a0a0", marginBottom: 8 }}>{msg}</div>
             {stack && (
@@ -61,8 +61,8 @@ export default class ErrorBoundary extends React.Component {
             把上面这段错误发给作者，就能定位到具体是哪一行崩的。
           </div>
           <span onClick={this.handleReset} style={{
-            cursor: "pointer", color: "#a8d8a8", padding: "6px 18px",
-            border: "1px solid #2a4a2a", borderRadius: 4, background: "#0e1a0e",
+            cursor: "pointer", color: "#c07050", padding: "6px 18px",
+            border: "1px solid #c8323a", borderRadius: 0, background: "#241211",
           }}>关闭，返回</span>
         </div>
       );

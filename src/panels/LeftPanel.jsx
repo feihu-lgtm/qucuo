@@ -70,7 +70,7 @@ export default function LeftPanel({
           <div
             onClick={inSeaOfMind ? leaveSeaOfMind : enterSeaOfMind}
             style={{
-              marginBottom: 14, padding: "7px 10px", borderRadius: 4, cursor: "pointer", userSelect: "none",
+              marginBottom: 14, padding: "7px 10px", borderRadius: 0, cursor: "pointer", userSelect: "none",
               border: "1px solid #b8942a", background: "rgba(184,148,42,0.10)",
               color: "#e8c86a", fontSize: "11.5px", textAlign: "center",
             }}
@@ -94,7 +94,7 @@ export default function LeftPanel({
             {home && (
               <div onClick={() => setShowHomestead(true)} style={{ cursor: "pointer", marginBottom: 3 }}>
                 <span style={{ color: "#c8a860", fontSize: "12px" }}>🏠 {home.label || "家园"}</span>
-                <span style={{ color: "#5a5a4a", fontSize: "10.5px", marginLeft: 6 }}>
+                <span style={{ color: "#8f8a7c", fontSize: "10.5px", marginLeft: 6 }}>
                   {home.features.map(f => f.name).join("·")}
                 </span>
               </div>
@@ -103,7 +103,7 @@ export default function LeftPanel({
               <div key={b.id} onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : b)}
                 style={{ cursor: "pointer", marginBottom: 3 }}>
                 <span style={{ color: activeBuilding?.id === b.id ? zoneTheme.accent : "#8ac8b8", fontSize: "12px" }}>{b.name}</span>
-                <span style={{ color: "#5a5a4a", fontSize: "10.5px", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
+                <span style={{ color: "#8f8a7c", fontSize: "10.5px", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
               </div>
             ))}
           </div>
@@ -132,7 +132,7 @@ export default function LeftPanel({
           const presentNames = new Set(room.npcs.map(n => n.name));
           const absent = everSeen.filter(nm => !presentNames.has(nm));
           const dbgPeople = showDebug && (
-            <div style={{ fontSize: "9.5px", color: "#7a6a4a", background: "#12100a", border: "1px solid #2a2410", borderRadius: 3, padding: "4px 6px", marginBottom: 6, lineHeight: 1.5, wordBreak: "break-all" }}>
+            <div style={{ fontSize: "9.5px", color: "#7a6a4a", background: "#12100a", border: "1px solid #2a2410", borderRadius: 0, padding: "4px 6px", marginBottom: 6, lineHeight: 1.5, wordBreak: "break-all" }}>
               <div>当前内层房间: {innerRoomName || "(无/全显示)"} · room.npcs 共 {room.npcs.length} 人</div>
               {room.npcs.map((n, i) => {
                 const bound = hasInnerMap(room.name) ? getResidentRoomForNpc(room.name, n.name) : null;
@@ -189,7 +189,7 @@ export default function LeftPanel({
                   })}</div>)}
               {absent.length > 0 && (
                 <div style={{ paddingTop: 6, borderTop: `1px solid ${zoneTheme.border}` }}>
-                  {header("曾遇 · 不在场", absent.length, "absent", "#c8bfa0")}
+                  {header("曾遇 · 不在场", absent.length, "absent", "#e8e4d6")}
                   {peoplePanel.absent && absent.map(name => {
                     const known = isNpcKnown(varTree, name);
                     const attrs = varTree.角色?.[name] || {};
@@ -198,7 +198,7 @@ export default function LeftPanel({
                       <div key={name} style={{ marginBottom: 5 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span onClick={() => { setCharacterPageTarget(name); setShowCharacterPage(true); }} title="打开此人详情面板"
-                            style={{ cursor: "pointer", color: "#c8bfa0", flex: 1, fontSize: "11px" }}>{name}</span>
+                            style={{ cursor: "pointer", color: "#e8e4d6", flex: 1, fontSize: "11px" }}>{name}</span>
                           <span onClick={() => {
                               if ((char.pigeons || 0) <= 0) { addLog([{ t: "sys", text: `  没有信鸽——去驿站买鸽子，或到驿站直接寄信/送礼给${name}。` }]); return; }
                               setPigeonTarget(name); setInteractMode("pigeon"); setTimeout(() => inputRef.current?.focus(), 0);
@@ -214,7 +214,7 @@ export default function LeftPanel({
                             <span style={{ fontSize: "10px", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
                           )}
                         </div>
-                        {known && attrs.态度 && <div style={{ fontSize: "9.5px", color: "#5a5a4a" }}>{attrs.态度}</div>}
+                        {known && attrs.态度 && <div style={{ fontSize: "9.5px", color: "#8f8a7c" }}>{attrs.态度}</div>}
                         {known && attrs.生气状态?.active && (
                           <div style={{ fontSize: "9.5px", color: "#e0526a" }}>⚡ 气头上（{attrs.生气状态.reason}），还剩 {attrs.生气状态.turnsLeft} 回合</div>
                         )}
@@ -255,7 +255,7 @@ export default function LeftPanel({
                       key={name}
                       onClick={() => setPortraitTarget(name)}
                       style={{
-                        fontSize: "10px", padding: "2px 6px", borderRadius: 3, cursor: "pointer",
+                        fontSize: "10px", padding: "2px 6px", borderRadius: 0, cursor: "pointer",
                         color: target === name ? zoneTheme.bg : zoneTheme.accent,
                         background: target === name ? zoneTheme.accent : zoneTheme.bgPanel,
                         border: `1px solid ${zoneTheme.border}`,
@@ -264,7 +264,7 @@ export default function LeftPanel({
                   ))}
                 </div>
                 <div style={{
-                  width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 4,
+                  width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 0,
                   border: `1px solid ${zoneTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center",
                   overflow: "hidden",
                 }}>
@@ -293,7 +293,7 @@ export default function LeftPanel({
                       <span key={f.key}
                         onClick={() => { setSnowLeopardForm(f.key); setSlFormState(f.key); setSlImgErr(false); }}
                         style={{
-                          fontSize: "9.5px", padding: "2px 7px", borderRadius: 3, cursor: "pointer", userSelect: "none",
+                          fontSize: "9.5px", padding: "2px 7px", borderRadius: 0, cursor: "pointer", userSelect: "none",
                           color: slForm === f.key ? zoneTheme.bg : zoneTheme.accent,
                           background: slForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
                           border: `1px solid ${zoneTheme.border}`,
@@ -311,7 +311,7 @@ export default function LeftPanel({
               <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px", letterSpacing: "1px" }}>雪豹 · 随行</span>
             </div>
             <div style={{
-              width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 4,
+              width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 0,
               border: `1px solid ${zoneTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
             }}>
               {!slImgErr ? (
@@ -326,7 +326,7 @@ export default function LeftPanel({
                 <span key={f.key}
                   onClick={() => { setSnowLeopardForm(f.key); setSlFormState(f.key); setSlImgErr(false); }}
                   style={{
-                    fontSize: "9.5px", padding: "2px 7px", borderRadius: 3, cursor: "pointer", userSelect: "none",
+                    fontSize: "9.5px", padding: "2px 7px", borderRadius: 0, cursor: "pointer", userSelect: "none",
                     color: slForm === f.key ? zoneTheme.bg : zoneTheme.accent,
                     background: slForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
                     border: `1px solid ${zoneTheme.border}`,
@@ -341,7 +341,7 @@ export default function LeftPanel({
               <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px", letterSpacing: "1px" }}>珍珠 · 随行</span>
             </div>
             <div style={{
-              width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 4,
+              width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 0,
               border: `1px solid ${zoneTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
             }}>
               {!pearlImgErr ? (
@@ -356,7 +356,7 @@ export default function LeftPanel({
                 <span key={f.key}
                   onClick={() => { setPearlForm(f.key); setPearlFormState(f.key); setPearlImgErr(false); }}
                   style={{
-                    fontSize: "9.5px", padding: "2px 7px", borderRadius: 3, cursor: "pointer", userSelect: "none",
+                    fontSize: "9.5px", padding: "2px 7px", borderRadius: 0, cursor: "pointer", userSelect: "none",
                     color: pearlForm === f.key ? zoneTheme.bg : zoneTheme.accent,
                     background: pearlForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
                     border: `1px solid ${zoneTheme.border}`,
@@ -414,7 +414,7 @@ export default function LeftPanel({
             cells[dir] = dest ? { explored: true, name: dest, dir } : { explored: false, dir };
           }
           const go = (dir) => { if (!loading && curExits[dir]) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); } };
-          return <NineGridMap centerLabel={curRoom} cells={cells} onGo={go} accent="#8ac48a" loading={loading} big={mapBig} />;
+          return <NineGridMap centerLabel={curRoom} cells={cells} onGo={go} accent="#c07050" loading={loading} big={mapBig} />;
         })()}
       </div>
     </div>

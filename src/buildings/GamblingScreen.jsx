@@ -27,7 +27,7 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "#8a8a7a", marginBottom: 10, fontSize: 11 }}>
+        <div style={{ color: "#8f8a7c", marginBottom: 10, fontSize: 11 }}>
           银两 {money} 两 · 气运 {luck}/10 · 每日一次
         </div>
 
@@ -47,17 +47,17 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
 
         {mode === "money" && (
           <>
-            <div style={{ color: "#7a7a6a", fontSize: 11, marginBottom: 8 }}>
+            <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 8 }}>
               赔 {odds.lose}% · 平 {odds.tie}% · 赢 {odds.win}%（概率按气运线性插值）
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <span style={{ color: "#c8bfa0", fontSize: 12 }}>押注：</span>
+              <span style={{ color: "#e8e4d6", fontSize: 12 }}>押注：</span>
               <input
                 type="number" value={bet} min={10} max={Math.min(maxBet, money)}
                 onChange={e => setBet(Math.max(10, Math.min(Number(e.target.value), maxBet, money)))}
-                style={{ width: 80, background: "#10121a", border: `1px solid ${zoneTheme.border}`, borderRadius: 4, color: "#c8bfa0", fontSize: 12, padding: "3px 6px" }}
+                style={{ width: 80, background: "#161510", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "#e8e4d6", fontSize: 12, padding: "3px 6px" }}
               />
-              <span style={{ color: "#5a5a4a", fontSize: 11 }}>两（最多 {maxBet}）</span>
+              <span style={{ color: "#8f8a7c", fontSize: 11 }}>两（最多 {maxBet}）</span>
             </div>
             <Btn
               label={`押注 ${bet} 两`}
@@ -70,7 +70,7 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
 
         {mode === "item" && (
           <>
-            <div style={{ color: "#7a7a6a", fontSize: 11, marginBottom: 12 }}>
+            <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 12 }}>
               固定花100两，按气运随机抽一件物品（气运越高品质越好）
             </div>
             <Btn

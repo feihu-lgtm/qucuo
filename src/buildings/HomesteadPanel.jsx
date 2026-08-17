@@ -6,10 +6,10 @@ import {
 } from "../homestead.js";
 
 const btnStyle = {
-  cursor: "pointer", color: "#6ec6c6", padding: "5px 12px", background: "#10121a",
-  border: "1px solid #1a2d2a", borderRadius: 3, fontSize: "11.5px", display: "inline-block",
+  cursor: "pointer", color: "#c8323a", padding: "5px 12px", background: "#161510",
+  border: "1px solid #4a453c", borderRadius: 0, fontSize: "11.5px", display: "inline-block",
 };
-const dimBtn = { ...btnStyle, color: "#5a5a4a", borderColor: "#1a1a2a" };
+const dimBtn = { ...btnStyle, color: "#8f8a7c", borderColor: "#1a1a2a" };
 
 export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, zoneTheme, onClose, addLog }) {
   const closeGuard = useOverlayCloseGuard(onClose);
@@ -20,28 +20,28 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, z
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 210, background: "rgba(4,4,10,0.92)", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={{ background: "#0a0c14", border: "1px solid #2a3a3a", borderRadius: 6, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", color: "#c8bfa0", fontSize: "12.5px" }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: "#111110", border: "1px solid #4a453c", borderRadius: 0, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", color: "#e8e4d6", fontSize: "12.5px" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ color: "#6ec6c6", fontSize: "14px" }}>
+          <span style={{ color: "#c8323a", fontSize: "14px" }}>
             {activeFeature ? (
               <span style={{ cursor: "pointer" }} onClick={() => setActiveFeature(null)}>← 返回 · {home.label}</span>
             ) : `🏠 ${home.label}`}
           </span>
-          <span style={{ color: "#5a5a4a", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "#8f8a7c", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
         {!activeFeature && (
           <>
-            <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 12, lineHeight: 1.6, fontStyle: "italic" }}>{home.flavor}</div>
+            <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 12, lineHeight: 1.6, fontStyle: "italic" }}>{home.flavor}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {home.features.map(f => (
                 <div key={f.id} onClick={() => setActiveFeature(f.id)}
-                  style={{ cursor: "pointer", padding: "12px 10px", borderRadius: 5, background: "#0e1018", border: "1px solid #1a2d2a", transition: "all 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#6ec6c6"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#1a2d2a"; }}
+                  style={{ cursor: "pointer", padding: "12px 10px", borderRadius: 0, background: "#161510", border: "1px solid #4a453c", transition: "all 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#c8323a"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#4a453c"; }}
                 >
                   <div style={{ fontSize: "14px", marginBottom: 4 }}>{f.icon} <span style={{ color: "#c8e0d8", fontSize: "12px" }}>{f.name}</span></div>
-                  <div style={{ fontSize: "10px", color: "#5a5a4a", lineHeight: 1.4 }}>{f.desc}</div>
+                  <div style={{ fontSize: "10px", color: "#8f8a7c", lineHeight: 1.4 }}>{f.desc}</div>
                 </div>
               ))}
             </div>
@@ -81,14 +81,14 @@ function CookingFeature({ inv, setInv, char, setChar, addLog }) {
 
   return (
     <div>
-      <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>灶膛里还有余烬。有食材就能开火。</div>
+      <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10 }}>灶膛里还有余烬。有食材就能开火。</div>
       {RECIPES.map(r => {
         const ok = canCook(r);
         return (
           <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #14161e", opacity: ok ? 1 : 0.4 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "12px", color: ok ? "#c8e0d8" : "#5a5a4a" }}>{r.result}</div>
-              <div style={{ fontSize: "10px", color: "#5a5a4a" }}>需：{r.ingredients.join(" + ")} → {r.buff}（{r.duration}回合）</div>
+              <div style={{ fontSize: "12px", color: ok ? "#c8e0d8" : "#8f8a7c" }}>{r.result}</div>
+              <div style={{ fontSize: "10px", color: "#8f8a7c" }}>需：{r.ingredients.join(" + ")} → {r.buff}（{r.duration}回合）</div>
             </div>
             <span onClick={ok ? () => cook(r) : undefined} style={ok ? btnStyle : dimBtn}>烹饪</span>
           </div>
@@ -129,7 +129,7 @@ function WineFeature({ roomName, inv, setInv, addLog }) {
 
   return (
     <div>
-      <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>石窖阴凉，坛子沿上长着青苔。酿好的酒存这里不会坏。</div>
+      <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10 }}>石窖阴凉，坛子沿上长着青苔。酿好的酒存这里不会坏。</div>
       {cellar.length > 0 && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: "11px", color: "#8ac8b8", marginBottom: 6 }}>窖藏中（{cellar.length}）</div>
@@ -138,7 +138,7 @@ function WineFeature({ roomName, inv, setInv, addLog }) {
             const remain = Math.max(0, Math.ceil((c.readyAt - now) / 60000));
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid #14161e" }}>
-                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "#c8e0d8" : "#7a7a6a" }}>
+                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "#c8e0d8" : "#8f8a7c" }}>
                   🍶 {c.result} {ready ? "· 已成" : `· 还需${remain}分钟`}
                 </span>
                 <span onClick={ready ? () => collect(i) : undefined} style={ready ? btnStyle : dimBtn}>{ready ? "取酒" : "等待"}</span>
@@ -153,8 +153,8 @@ function WineFeature({ roomName, inv, setInv, addLog }) {
         return (
           <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #14161e", opacity: ok ? 1 : 0.4 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "12px", color: ok ? "#c8e0d8" : "#5a5a4a" }}>{r.result}</div>
-              <div style={{ fontSize: "10px", color: "#5a5a4a" }}>需：{r.ingredients.join(" + ")} · 窖藏{r.ageTime}分钟 → {r.buff}</div>
+              <div style={{ fontSize: "12px", color: ok ? "#c8e0d8" : "#8f8a7c" }}>{r.result}</div>
+              <div style={{ fontSize: "10px", color: "#8f8a7c" }}>需：{r.ingredients.join(" + ")} · 窖藏{r.ageTime}分钟 → {r.buff}</div>
             </div>
             <span onClick={ok ? () => brew(r) : undefined} style={ok ? btnStyle : dimBtn}>封坛</span>
           </div>
@@ -187,7 +187,7 @@ function GardenFeature({ roomName, inv, setInv, addLog }) {
 
   return (
     <div>
-      <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10 }}>巴掌大的地，最多同时种三样。按分钟计（加速生长，别太较真）。</div>
+      <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10 }}>巴掌大的地，最多同时种三样。按分钟计（加速生长，别太较真）。</div>
       {garden.length > 0 && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: "11px", color: "#8ac8b8", marginBottom: 6 }}>地里（{garden.length}/3）</div>
@@ -196,7 +196,7 @@ function GardenFeature({ roomName, inv, setInv, addLog }) {
             const remain = Math.max(0, Math.ceil((g.readyAt - now) / 60000));
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid #14161e" }}>
-                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "#c8e0d8" : "#7a7a6a" }}>
+                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "#c8e0d8" : "#8f8a7c" }}>
                   🌱 {g.yield} {ready ? "· 熟了" : `· 还需${remain}分钟`}
                 </span>
                 <span onClick={ready ? () => harvest(i) : undefined} style={ready ? btnStyle : dimBtn}>{ready ? "收" : "等"}</span>
@@ -213,8 +213,8 @@ function GardenFeature({ roomName, inv, setInv, addLog }) {
         return (
           <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #14161e", opacity: ok ? 1 : 0.4 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "12px", color: ok ? "#c8e0d8" : "#5a5a4a" }}>{s.yield}</div>
-              <div style={{ fontSize: "10px", color: "#5a5a4a" }}>{s.growTime}分钟熟 · {s.note}</div>
+              <div style={{ fontSize: "12px", color: ok ? "#c8e0d8" : "#8f8a7c" }}>{s.yield}</div>
+              <div style={{ fontSize: "10px", color: "#8f8a7c" }}>{s.growTime}分钟熟 · {s.note}</div>
             </div>
             <span onClick={ok ? () => plant(s) : undefined} style={ok ? btnStyle : dimBtn}>{planted ? "已种" : "种"}</span>
           </div>
@@ -228,7 +228,7 @@ function PigeonFeature({ addLog }) {
   const [sent, setSent] = useState(false);
   return (
     <div>
-      <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10, lineHeight: 1.6 }}>
+      <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10, lineHeight: 1.6 }}>
         竹编鸽笼里两只灰鸽，一只歪着头看你，另一只在啄自己的脚。
         笼门上刻着一行小字：「急事才放，鸽子也累。」
       </div>
@@ -253,7 +253,7 @@ function TelescopeFeature({ addLog }) {
   ];
   return (
     <div>
-      <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10, lineHeight: 1.6 }}>
+      <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10, lineHeight: 1.6 }}>
         铜制望远镜架在窗台上，镜片擦得还算干净。正对山谷，视野极好。
       </div>
       {!looked ? (
@@ -281,8 +281,8 @@ function RestFeature({ label, desc, hpRestore, char, setChar, addLog }) {
 
   return (
     <div>
-      <div style={{ fontSize: "11px", color: "#7a7a6a", marginBottom: 10, lineHeight: 1.6 }}>{desc}</div>
-      <div style={{ fontSize: "11px", color: "#8a8a7a", marginBottom: 10 }}>气血 {hp}/{maxHp} · 可恢复 {Math.min(hpRestore, maxHp - hp)} 点</div>
+      <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10, lineHeight: 1.6 }}>{desc}</div>
+      <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10 }}>气血 {hp}/{maxHp} · 可恢复 {Math.min(hpRestore, maxHp - hp)} 点</div>
       {!done ? (
         <span onClick={doRest} style={hp >= maxHp ? dimBtn : btnStyle}>{hp >= maxHp ? "气血已满" : `歇一歇（+${Math.min(hpRestore, maxHp - hp)}）`}</span>
       ) : (

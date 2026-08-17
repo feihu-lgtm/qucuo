@@ -21,13 +21,13 @@ export default function BodyProfilePanel({
   const filled = bodyProfileFilled(p);
 
   const th = zoneTheme || {};
-  const border = th.border || "#2a3a3a";
-  const accent = th.accent || "#6ec6c6";
+  const border = th.border || "#4a453c";
+  const accent = th.accent || "#c8323a";
   const textDim = th.textDim || "#6a7a72";
 
   const inputStyle = {
-    width: "100%", background: "#10121a", border: `1px solid ${border}`, borderRadius: 3,
-    color: "#c8bfa0", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px",
+    width: "100%", background: "#161510", border: `1px solid ${border}`, borderRadius: 0,
+    color: "#e8e4d6", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px",
     boxSizing: "border-box", lineHeight: 1.6, resize: "vertical",
   };
 
@@ -46,7 +46,7 @@ export default function BodyProfilePanel({
           <span style={{ width: 60, flexShrink: 0, fontSize: "11px", color: val ? accent : textDim }}>
             {f.label}
           </span>
-          <span style={{ flex: 1, fontSize: "11.5px", color: val ? "#c8bfa0" : "#4a4a3a", minWidth: 0 }}>
+          <span style={{ flex: 1, fontSize: "11.5px", color: val ? "#e8e4d6" : "#4a4a3a", minWidth: 0 }}>
             {hidden ? (val ? maskText(val) : "—")
               : isEditing ? ""
               : (previewText(val) || <span style={{ color: "#4a4a3a" }}>未填</span>)}
@@ -85,14 +85,14 @@ export default function BodyProfilePanel({
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: "#0a0c14", border: `1px solid ${border}`, borderRadius: 6, padding: 18,
+          background: "#111110", border: `1px solid ${border}`, borderRadius: 0, padding: 18,
           width: 480, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto",
-          fontFamily: "inherit", fontSize: "12.5px", color: "#c8bfa0",
+          fontFamily: "inherit", fontSize: "12.5px", color: "#e8e4d6",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <span style={{ color: accent, fontSize: "14px" }}>◈ 体貌</span>
-          <span style={{ color: "#5a5a4a", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "#8f8a7c", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
         <div style={{ fontSize: "10.5px", color: textDim, lineHeight: 1.7, marginBottom: 10 }}>
@@ -104,7 +104,7 @@ export default function BodyProfilePanel({
         <div style={{ fontSize: "11px", color: accent, marginBottom: 2 }}>
           公开层 <span style={{ color: textDim, fontSize: "10px" }}>· 外人一眼可见 · 已填 {filled.public}/{PUBLIC_FIELDS.length}</span>
         </div>
-        <div style={{ fontSize: "10px", color: "#5a5a4a", marginBottom: 4 }}>
+        <div style={{ fontSize: "10px", color: "#8f8a7c", marginBottom: 4 }}>
           近距离互动（战斗 / 对话 / 查看）与旁白私聊时注入；赶路、结算轮不发。
         </div>
         {PUBLIC_FIELDS.map(renderField)}
@@ -121,7 +121,7 @@ export default function BodyProfilePanel({
             {showIntimate ? "◉ 隐藏" : "○ 显示"}
           </span>
         </div>
-        <div style={{ fontSize: "10px", color: "#5a5a4a", margin: "3px 0 4px" }}>
+        <div style={{ fontSize: "10px", color: "#8f8a7c", margin: "3px 0 4px" }}>
           {nsfwOn
             ? "■ 模式已开，这一层会随剧情注入。"
             : "■ 模式关着，这一层一个字都不会发给 AI——写了也不发。"}
@@ -131,7 +131,7 @@ export default function BodyProfilePanel({
         {/* 荐装 */}
         <div style={{ borderTop: `1px solid ${border}`, marginTop: 14, paddingTop: 12 }}>
           <div style={{ fontSize: "11px", color: accent, marginBottom: 4 }}>按体貌荐装</div>
-          <div style={{ fontSize: "10px", color: "#5a5a4a", marginBottom: 6, lineHeight: 1.7 }}>
+          <div style={{ fontSize: "10px", color: "#8f8a7c", marginBottom: 6, lineHeight: 1.7 }}>
             拿你写的体貌去货架上比一遍，挑三件趁手的。
             只告诉你是什么、什么来历、加多少——<span style={{ color: textDim }}>怎么弄到手得自己走一趟</span>。
           </div>
@@ -139,9 +139,9 @@ export default function BodyProfilePanel({
             onClick={() => { if (!recommendState?.loading) onRecommend?.(); }}
             style={{
               cursor: recommendState?.loading ? "default" : "pointer",
-              display: "inline-block", padding: "5px 14px", borderRadius: 3, fontSize: "11.5px",
-              color: recommendState?.loading ? textDim : "#0a0c14",
-              background: recommendState?.loading ? "#10121a" : accent,
+              display: "inline-block", padding: "5px 14px", borderRadius: 0, fontSize: "11.5px",
+              color: recommendState?.loading ? textDim : "#111110",
+              background: recommendState?.loading ? "#161510" : accent,
               border: `1px solid ${recommendState?.loading ? border : accent}`,
             }}
           >
@@ -155,19 +155,19 @@ export default function BodyProfilePanel({
           {picks.length > 0 && (
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
               {picks.map((it, i) => (
-                <div key={i} style={{ border: `1px solid ${border}`, borderRadius: 4, padding: "8px 10px", background: "#0e1018" }}>
+                <div key={i} style={{ border: `1px solid ${border}`, borderRadius: 0, padding: "8px 10px", background: "#161510" }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 3 }}>
-                    <span style={{ fontSize: "12.5px", color: it.qualityColor || "#c8bfa0" }}>{it.name}</span>
+                    <span style={{ fontSize: "12.5px", color: it.qualityColor || "#e8e4d6" }}>{it.name}</span>
                     <span style={{ fontSize: "10px", color: textDim }}>{it.categoryLabel} · {it.quality}档</span>
                   </div>
-                  <div style={{ fontSize: "11px", color: "#8a8a7a", lineHeight: 1.7, marginBottom: 4 }}>{it.desc}</div>
+                  <div style={{ fontSize: "11px", color: "#8f8a7c", lineHeight: 1.7, marginBottom: 4 }}>{it.desc}</div>
                   <div style={{ fontSize: "11px", color: accent }}>{it.statLine}</div>
                   {it.reason && (
                     <div style={{ fontSize: "10.5px", color: textDim, marginTop: 4, fontStyle: "italic" }}>掌柜的话：{it.reason}</div>
                   )}
                 </div>
               ))}
-              <div style={{ fontSize: "10px", color: "#5a5a4a" }}>
+              <div style={{ fontSize: "10px", color: "#8f8a7c" }}>
                 数值取自百物录，不是 AI 现编的；掌柜只负责挑，挑不出货架上没有的东西。
               </div>
             </div>

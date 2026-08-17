@@ -107,7 +107,7 @@ export default function LootCard({ entry }) {
     ? `${entry.skill.moveType || "招式"}·招式`
     : (CATEGORY_LABEL[item.category] || "雜物");
 
-  const qc = QUALITY_COLOR[q] || "#c8bfa0";
+  const qc = QUALITY_COLOR[q] || "#e8e4d6";
   const hi = HI_QUALITY.has(q);
 
   // 切磋=暖金绛红（刀口余烬），偷窃/偷师=冷翠墨青（月黑风高）。

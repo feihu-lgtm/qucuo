@@ -4,11 +4,11 @@ import React from "react";
 // 实际位置贴说明便签，指向它介绍的界面区域。点任意处或右上角最小化收起。
 export default function TutorialOverlay({ onClose }) {
   const note = {
-    background: "rgba(14,18,26,0.96)", border: "1px solid #6a5d40", borderRadius: 8,
+    background: "rgba(14,18,26,0.96)", border: "1px solid #6a5d40", borderRadius: 0,
     padding: "12px 16px", color: "#e8dcc0", fontSize: "12.5px", lineHeight: 1.7,
     boxShadow: "0 6px 24px rgba(0,0,0,0.6)", maxWidth: 260,
   };
-  const title = { color: "#f0c060", fontWeight: "bold", fontSize: "13px", marginBottom: 6, display: "block" };
+  const title = { color: "#c8663a", fontWeight: "bold", fontSize: "13px", marginBottom: 6, display: "block" };
   return (
     <div
       onClick={onClose}
@@ -55,9 +55,9 @@ export default function TutorialOverlay({ onClose }) {
         <div style={{ ...note, maxWidth: 620 }}>
           <span style={title}>▼ 底部 · 交互模式（输入框上方那排按钮）</span>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px" }}>
-            <div><b style={{ color: "#6ec6c6" }}>◈ 行动</b>：正常移动、战斗、开箱、买卖等，<b>每次消耗一个回合</b>（时间前进）。</div>
-            <div><b style={{ color: "#8ac48a" }}>◎ 对话</b>：只和当前在场 NPC 交谈，<b>不移动、不消耗回合</b>。</div>
-            <div><b style={{ color: "#e0a0d0" }}>◆ 私聊旁白</b>：打破第四面墙，直接和「旁白」说话，<b>不消耗回合</b>。</div>
+            <div><b style={{ color: "#c8323a" }}>◈ 行动</b>：正常移动、战斗、开箱、买卖等，<b>每次消耗一个回合</b>（时间前进）。</div>
+            <div><b style={{ color: "#c07050" }}>◎ 对话</b>：只和当前在场 NPC 交谈，<b>不移动、不消耗回合</b>。</div>
+            <div><b style={{ color: "#d68a8a" }}>◆ 私聊旁白</b>：打破第四面墙，直接和「旁白」说话，<b>不消耗回合</b>。</div>
             <div><b style={{ color: "#c85a6a" }}>NSFW</b>：开关。开启后注入成人向写作规则；关闭则为常规叙事。默认关闭，按需点亮。</div>
           </div>
           <div style={{ marginTop: 8, color: "#9a9080", fontSize: "11.5px" }}>

@@ -28,9 +28,9 @@ export default function ItemActionMenu({
   const merchantsHere = roomNpcs.filter(n => QUCUO_SHOPS[n.name]);
 
   const overlay = { position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 410, display: "flex", alignItems: "center", justifyContent: "center" };
-  const panel = { background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 6, padding: 20, width: 320, maxWidth: "90vw" };
+  const panel = { background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw" };
   const cell = (enabled) => ({
-    cursor: enabled ? "pointer" : "not-allowed", padding: "12px 10px", borderRadius: 4, textAlign: "center",
+    cursor: enabled ? "pointer" : "not-allowed", padding: "12px 10px", borderRadius: 0, textAlign: "center",
     background: zoneTheme.bg, border: `1px solid ${zoneTheme.border}`, opacity: enabled ? 1 : 0.4,
   });
 
@@ -52,7 +52,7 @@ export default function ItemActionMenu({
               {list.map((n) => (
                 <div key={n.name}
                   onClick={() => { act(n, item); onClose(); }}
-                  style={{ cursor: "pointer", padding: "9px 10px", borderRadius: 4, background: zoneTheme.bg, border: `1px solid ${zoneTheme.border}` }}>
+                  style={{ cursor: "pointer", padding: "9px 10px", borderRadius: 0, background: zoneTheme.bg, border: `1px solid ${zoneTheme.border}` }}>
                   <span style={{ color: zoneTheme.accent, fontSize: "12.5px" }}>{n.name}</span>
                   <span style={{ color: zoneTheme.textDim, fontSize: "10px", marginLeft: 6 }}>{n.brief}</span>
                 </div>

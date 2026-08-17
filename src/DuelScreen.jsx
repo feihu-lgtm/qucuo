@@ -658,7 +658,7 @@ function MudRoundLog({ entry, npcName, zoneTheme }) {
 
 export function HpBar({ pct, color }) {
   return (
-    <div style={{ width: "100%", height: 8, background: "rgba(0,0,0,0.3)", borderRadius: 4, overflow: "hidden" }}>
+    <div style={{ width: "100%", height: 8, background: "rgba(0,0,0,0.3)", borderRadius: 0, overflow: "hidden" }}>
       <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.4s ease" }} />
     </div>
   );
@@ -688,7 +688,7 @@ export function MoveButton({ move, disabled, zoneTheme, onClick, onInspect }) {
         opacity: disabled ? 0.4 : 1,
         background: zoneTheme.bg,
         border: `1px solid ${color}`,
-        borderRadius: 4,
+        borderRadius: 0,
         padding: "10px 8px",
         textAlign: "center",
       }}
@@ -710,7 +710,7 @@ const styles = {
     zIndex: 450, display: "flex", alignItems: "center", justifyContent: "center",
   },
   container: {
-    width: 480, maxWidth: "94vw", maxHeight: "92vh", borderRadius: 6, padding: 16,
+    width: 480, maxWidth: "94vw", maxHeight: "92vh", borderRadius: 0, padding: 16,
     display: "flex", flexDirection: "column", gap: 12,
   },
   topBar: { display: "flex", alignItems: "center", gap: 12 },
@@ -719,7 +719,7 @@ const styles = {
   hpText: { fontSize: "10px", color: "#888", marginTop: 2 },
   vsBadge: (t) => ({
     fontSize: "10px", color: t.accent, border: `1px solid ${t.accent}`,
-    borderRadius: 12, padding: "3px 8px", display: "flex",
+    borderRadius: 0, padding: "3px 8px", display: "flex",
     alignItems: "center", justifyContent: "center", flexShrink: 0, whiteSpace: "nowrap",
   }),
   // 上半：操作区
@@ -740,7 +740,7 @@ const styles = {
     maxHeight: "22vh", overflowY: "auto",
   },
   itemBtn: (t, quality) => ({
-    cursor: "pointer", padding: "6px 10px", borderRadius: 4,
+    cursor: "pointer", padding: "6px 10px", borderRadius: 0,
     border: `1px solid ${QUALITY_COLOR[quality] || t.accentDim}`,
     background: "rgba(255,255,255,0.03)",
   }),
@@ -749,7 +749,7 @@ const styles = {
   enemyStripLabel: (t) => ({ fontSize: "10.5px", color: t.textDim, marginTop: 4 }),
   enemyStrip: { display: "flex", flexWrap: "wrap", gap: 6 },
   enemyChip: (t, revealed) => ({
-    fontSize: "11px", padding: "4px 8px", borderRadius: 4,
+    fontSize: "11px", padding: "4px 8px", borderRadius: 0,
     border: `1px dashed ${revealed ? t.accentDim : "rgba(255,255,255,0.15)"}`,
     color: revealed ? t.text : t.textDim,
     cursor: revealed ? "pointer" : "default",
@@ -764,12 +764,12 @@ const styles = {
   continueRow: { textAlign: "center", marginTop: 6 },
   continueBtn: (t) => ({
     cursor: "pointer", display: "inline-block", padding: "8px 24px",
-    color: t.accent, border: `1px solid ${t.accent}`, borderRadius: 4, fontSize: "12px",
+    color: t.accent, border: `1px solid ${t.accent}`, borderRadius: 0, fontSize: "12px",
   }),
   // 详细察看弹层
   inspectOverlay: {
     position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 460,
     display: "flex", alignItems: "center", justifyContent: "center",
   },
-  inspectCard: { width: 320, maxWidth: "88vw", borderRadius: 6, padding: 16 },
+  inspectCard: { width: 320, maxWidth: "88vw", borderRadius: 0, padding: 16 },
 };

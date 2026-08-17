@@ -23,10 +23,10 @@ export default function TeahouseScreen({ building, char, flags, time, zoneTheme,
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "#7a7a6a", fontSize: 11, marginBottom: 12 }}>
+        <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 12 }}>
           {building.desc}
         </div>
-        <div style={{ color: "#8a8a7a", marginBottom: 14, fontSize: 11 }}>
+        <div style={{ color: "#8f8a7c", marginBottom: 14, fontSize: 11 }}>
           银两 {money} 两 · 每次听消息花 {COST} 两
         </div>
         <Btn

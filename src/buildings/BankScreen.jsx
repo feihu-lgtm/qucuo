@@ -15,7 +15,7 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name="永盛钱庄" zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "#8a8a7a", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "#8f8a7c", marginBottom: 12, fontSize: 11 }}>
           银两 {money} 两 · 存款 {deposit} 两 · 利息 +{interest} 两（存入以来过了 {elapsed} 天，利率2%/天）
         </div>
 
@@ -32,12 +32,12 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
         {mode === "deposit" && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <span style={{ color: "#c8bfa0", fontSize: 12 }}>存入：</span>
+              <span style={{ color: "#e8e4d6", fontSize: 12 }}>存入：</span>
               <input type="number" value={amount} min={1} max={money}
                 onChange={e => setAmount(Math.max(0, Math.min(Number(e.target.value), money)))}
-                style={{ width: 80, background: "#10121a", border: `1px solid ${zoneTheme.border}`, borderRadius: 4, color: "#c8bfa0", fontSize: 12, padding: "3px 6px" }}
+                style={{ width: 80, background: "#161510", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "#e8e4d6", fontSize: 12, padding: "3px 6px" }}
               />
-              <span style={{ color: "#5a5a4a", fontSize: 11 }}>两</span>
+              <span style={{ color: "#8f8a7c", fontSize: 11 }}>两</span>
             </div>
             <Btn label={`存入 ${amount} 两`} disabled={amount <= 0 || money < amount} zoneTheme={zoneTheme}
               onClick={() => onDeposit(amount)} />
@@ -46,7 +46,7 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
 
         {mode === "withdraw" && (
           <div>
-            <div style={{ color: "#c8bfa0", fontSize: 12, marginBottom: 10 }}>
+            <div style={{ color: "#e8e4d6", fontSize: 12, marginBottom: 10 }}>
               可取出：{totalWithdraw} 两（含利息 {interest} 两）
             </div>
             <Btn label={`取出全部（${totalWithdraw}两）`} disabled={deposit <= 0} zoneTheme={zoneTheme}

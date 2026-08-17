@@ -258,7 +258,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
     return (
       <div onClick={() => setMinimized(false)}
         style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, cursor: "pointer",
-          background: "#23201b", border: "1px solid #6a5d40", borderRadius: 8, padding: "8px 14px",
+          background: "#23201b", border: "1px solid #6a5d40", borderRadius: 0, padding: "8px 14px",
           color: "#f0d090", fontSize: 13, boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
         ⬒ 赌桌（{SKINS[stone.skin].label}）· 点击展开
       </div>
@@ -456,7 +456,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
               )}
               {/* 当前卡：立绘 + 报价 + 简介 + 操作 */}
               <div style={{ flex: "0 1 220px", maxWidth: 220, background: "rgba(26,22,16,.95)",
-                border: "1px solid #6a5d40", borderRadius: 12, padding: 12, boxShadow: "0 8px 28px rgba(0,0,0,.6)" }}>
+                border: "1px solid #6a5d40", borderRadius: 0, padding: 12, boxShadow: "0 8px 28px rgba(0,0,0,.6)" }}>
                 <div style={{ position: "relative", width: "100%", aspectRatio: "941/1672", maxHeight: "34vh",
                   margin: "0 auto", overflow: "hidden" }}>
                   <div style={{ position: "absolute", left: WIN.x, top: WIN.y, width: WIN.w, height: WIN.h, overflow: "hidden", borderRadius: "6% / 4%" }}>
@@ -505,7 +505,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
           display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setSkinOpen(false)}>
           <div style={{ maxWidth: "min(560px, 82vw)", background: "#1e1a13", border: "1px solid #6a5d40",
-            borderRadius: 10, padding: "22px 26px", boxShadow: "0 12px 40px rgba(0,0,0,.7)" }}
+            borderRadius: 0, padding: "22px 26px", boxShadow: "0 12px 40px rgba(0,0,0,.7)" }}
             onClick={(e) => e.stopPropagation()}>
             <div style={{ color: "#f0d090", fontSize: 15, letterSpacing: 2, marginBottom: 12 }}>
               相石 · {changKouLabel} · {skinLabel}
@@ -601,10 +601,10 @@ function PanelBtn({ img, kind, big, disabled, done, grade, crack, onClick, child
   );
 }
 
-const topBtn = { background: "none", border: "1px solid #4a443a", color: "#c9bfa8", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: 12 };
+const topBtn = { background: "none", border: "1px solid #4a443a", color: "#c9bfa8", borderRadius: 0, padding: "4px 12px", cursor: "pointer", fontSize: 12 };
 const carArrow = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "1px solid #6a5d40",
   background: "rgba(20,16,11,.9)", color: "#f0d090", fontSize: 22, lineHeight: 1, cursor: "pointer", userSelect: "none" };
-const carBtn = { width: "100%", padding: "10px 0", border: "none", borderRadius: 8, fontSize: 14, fontWeight: "bold", cursor: "pointer" };
+const carBtn = { width: "100%", padding: "10px 0", border: "none", borderRadius: 0, fontSize: 14, fontWeight: "bold", cursor: "pointer" };
 const actBtn = { position: "relative", height: "6.4vh", minWidth: "24vh", border: "none", cursor: "pointer",
   background: "transparent", display: "flex", alignItems: "center", justifyContent: "center",
   fontSize: "1.9vh", fontWeight: "bold", fontFamily: "inherit", letterSpacing: 2,

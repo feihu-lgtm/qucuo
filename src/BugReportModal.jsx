@@ -41,7 +41,7 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
     overlay: "rgba(8,6,3,0.82)",
     panel: dark ? "#141019" : "#f7f2e8",
     border: dark ? "#3a3242" : "#b3987a",
-    text: dark ? "#c8bfa0" : "#3a2a14",
+    text: dark ? "#e8e4d6" : "#3a2a14",
     dim: dark ? "#7a7060" : "#8a7358",
     accent: dark ? "#d4a853" : "#8a5a12",
     inputBg: dark ? "#0d0b12" : "#fffdf6",
@@ -72,7 +72,7 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
   const inputStyle = {
     width: "100%", boxSizing: "border-box", padding: "6px 9px", fontSize: 12.5,
     fontFamily: "inherit", background: C.inputBg, border: `1px solid ${C.border}`,
-    borderRadius: 4, color: C.text, resize: "vertical", marginTop: 4,
+    borderRadius: 0, color: C.text, resize: "vertical", marginTop: 4,
   };
   const labelStyle = { fontSize: 12, color: C.accent, fontWeight: "bold" };
 
@@ -81,7 +81,7 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
       style={{ position: "fixed", inset: 0, background: C.overlay, zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ position: "relative", width: 440, maxWidth: "94vw", maxHeight: "88vh", overflowY: "auto", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: "22px 24px", color: C.text }}>
+      <div style={{ position: "relative", width: 440, maxWidth: "94vw", maxHeight: "88vh", overflowY: "auto", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 0, padding: "22px 24px", color: C.text }}>
         <span onClick={onClose} style={{ position: "absolute", top: 14, right: 16, cursor: "pointer", fontSize: 18, color: C.dim }}>✕</span>
         <div style={{ fontSize: 17, fontWeight: "bold", color: C.accent, marginBottom: 4 }}>🐞 上报 Bug · 意见信箱</div>
         <div style={{ fontSize: 11.5, color: C.dim, marginBottom: 16, lineHeight: 1.7 }}>
@@ -95,7 +95,7 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
             {result.pipelineWarning && (
               <div style={{ fontSize: 11, color: "#c08a5a", marginBottom: 18 }}>{result.pipelineWarning}</div>
             )}
-            <span onClick={onClose} style={{ cursor: "pointer", padding: "6px 20px", border: `1px solid ${C.border}`, borderRadius: 4, color: C.text }}>关闭</span>
+            <span onClick={onClose} style={{ cursor: "pointer", padding: "6px 20px", border: `1px solid ${C.border}`, borderRadius: 0, color: C.text }}>关闭</span>
           </div>
         ) : (
           <>
@@ -121,7 +121,7 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
                     {allSelected ? "全不选" : "全选"}（已选 {selectedTurns.size}/{turns.length}）
                   </span>
                 </div>
-                <div style={{ maxHeight: 180, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 4, padding: 4 }}>
+                <div style={{ maxHeight: 180, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 0, padding: 4 }}>
                   {turns.map((t, i) => (
                     <div key={i} style={{ borderBottom: i < turns.length - 1 ? `1px solid ${C.border}55` : "none", padding: "3px 2px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -132,7 +132,7 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
                         </span>
                       </div>
                       {expandedTurn === i && (
-                        <div style={{ marginLeft: 22, marginTop: 4, marginBottom: 4, padding: "6px 8px", background: C.inputBg, borderRadius: 4, fontSize: 11, color: C.dim, lineHeight: 1.7, whiteSpace: "pre-wrap", maxHeight: 160, overflowY: "auto" }}>
+                        <div style={{ marginLeft: 22, marginTop: 4, marginBottom: 4, padding: "6px 8px", background: C.inputBg, borderRadius: 0, fontSize: 11, color: C.dim, lineHeight: 1.7, whiteSpace: "pre-wrap", maxHeight: 160, overflowY: "auto" }}>
                           {t.preview || "（无文本内容）"}
                         </div>
                       )}
@@ -149,7 +149,7 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
             )}
 
             {/* 知情声明 + 勾选 */}
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", padding: "10px 12px", background: dark ? "rgba(212,168,83,0.08)" : "rgba(138,90,18,0.06)", borderRadius: 6, marginBottom: 14 }}>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", padding: "10px 12px", background: dark ? "rgba(212,168,83,0.08)" : "rgba(138,90,18,0.06)", borderRadius: 0, marginBottom: 14 }}>
               <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
               <span style={{ fontSize: 11.5, color: C.dim, lineHeight: 1.7 }}>
                 我同意在提交时，将<b style={{ color: C.text }}>本局的聊天/游戏记录</b>一并发送给开发者用于排查问题。
@@ -167,7 +167,7 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
                 onClick={submit}
                 style={{
                   cursor: agreed && !sending ? "pointer" : "not-allowed",
-                  padding: "6px 20px", borderRadius: 4, fontSize: 13, fontWeight: "bold",
+                  padding: "6px 20px", borderRadius: 0, fontSize: 13, fontWeight: "bold",
                   background: agreed && !sending ? C.accent : (dark ? "#2a2620" : "#d8cdb8"),
                   color: agreed && !sending ? (dark ? "#1a140c" : "#fff") : C.dim,
                   border: "none",

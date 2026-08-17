@@ -162,7 +162,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
             placeholder="搜名字或介绍…"
             style={{
               flex: 1, minWidth: 140, padding: "5px 10px", fontSize: 12, fontFamily: "inherit",
-              background: "rgba(255,250,235,0.6)", border: "1px solid #b3987a", borderRadius: 4, color: "#3a2a14",
+              background: "rgba(255,250,235,0.6)", border: "1px solid #b3987a", borderRadius: 0, color: "#3a2a14",
             }}
           />
           {search && <span onClick={() => setSearch("")} style={{ cursor: "pointer", color: paperDim, fontSize: 12 }}>✕清空</span>}
@@ -173,7 +173,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
 
         {/* 物品筛选 */}
         {tab === "item" && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 10, padding: "7px 10px", background: "rgba(120,90,50,0.08)", borderRadius: 6, flexShrink: 0 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 10, padding: "7px 10px", background: "rgba(120,90,50,0.08)", borderRadius: 0, flexShrink: 0 }}>
             <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
               <span style={{ color: paperDim, fontSize: 11 }}>类别</span>
               {CAT_FILTERS.map(c => <span key={c.key} style={chipStyle(catFilter === c.key)} onClick={() => setCatFilter(c.key)}>{c.label}</span>)}
@@ -202,7 +202,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
                 {SRC_TABS.map(src => (
                   <button key={src} onClick={() => setSrcTab(src)}
                     style={{
-                      fontSize: 12, padding: "3px 10px", borderRadius: 3, cursor: "pointer",
+                      fontSize: 12, padding: "3px 10px", borderRadius: 0, cursor: "pointer",
                       border: `1px solid ${srcTab === src ? "#a0651a" : "rgba(120,90,50,0.35)"}`,
                       background: srcTab === src ? "rgba(160,101,26,0.18)" : "transparent",
                       color: srcTab === src ? paperAccent : paperDim, fontFamily: "inherit",
@@ -251,7 +251,7 @@ function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, fontWeight: "bold", color: qc }}>{it.name}</span>
-          <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, color: "#fff", background: qc }}>{it.quality}</span>
+          <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 0, color: "#fff", background: qc }}>{it.quality}</span>
           <span style={{ fontSize: 10, color: paperDim }}>{CATEGORY_LABEL[it.category] || it.category}</span>
           {statBits.length > 0 && <span style={{ fontSize: 11, color: "#a05a10" }}>{statBits.join(" · ")}</span>}
           {effectName && <span style={{ fontSize: 11, color: "#a05a10" }}>· {effectName}</span>}
@@ -289,7 +289,7 @@ function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, fontWeight: "bold", color: qc }}>{sk.name}</span>
-          <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, color: "#fff", background: qc }}>{sk.quality}</span>
+          <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 0, color: "#fff", background: qc }}>{sk.quality}</span>
           <span style={{ fontSize: 10, color: paperDim }}>{sk.type}</span>
           {typeof sk.price === "number" && (
             <span style={{ fontSize: 11, color: "#a05a10" }}>

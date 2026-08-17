@@ -227,7 +227,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
               <span
                 onClick={() => { setLeopardAuto(v => !v); setLeopardIntent(null); if (stage === "leopard") setStage(firstStage()); }}
                 title="托管=雪豹凭野兽本能自行出招选目标；手动=你替它选招选目标"
-                style={{ float: "right", cursor: "pointer", fontSize: "10px", color: leopardAuto ? zoneTheme.textDim : "#b48adf", border: `1px solid ${leopardAuto ? zoneTheme.border : "#b48adf"}`, borderRadius: 3, padding: "1px 7px" }}
+                style={{ float: "right", cursor: "pointer", fontSize: "10px", color: leopardAuto ? zoneTheme.textDim : "#b48adf", border: `1px solid ${leopardAuto ? zoneTheme.border : "#b48adf"}`, borderRadius: 0, padding: "1px 7px" }}
               >雪豹：{leopardAuto ? "托管中" : "手动"}</span>
             )}
           </div>
@@ -252,7 +252,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
                   const blockedByRepeat = move.type === MOVE_TYPE.DEFENSE && pickingUnit?.defenseBroken;
                   const chosen = pickingIntent?.move?.id === move.id;
                   return (
-                    <div key={move.id || i} style={chosen ? { outline: `2px solid ${zoneTheme.accent}`, borderRadius: 4 } : undefined}>
+                    <div key={move.id || i} style={chosen ? { outline: `2px solid ${zoneTheme.accent}`, borderRadius: 0 } : undefined}>
                       <MoveButton move={move}
                         disabled={move.energyCost > (pickingUnit?.energy?.[0] ?? 0) || blockedByRepeat}
                         zoneTheme={zoneTheme}
@@ -273,7 +273,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
                     <span key={e.id}
                       onClick={() => pickTargetForUnit(stage, e.id)}
                       style={{
-                        cursor: "pointer", fontSize: "11px", padding: "3px 10px", borderRadius: 3, userSelect: "none",
+                        cursor: "pointer", fontSize: "11px", padding: "3px 10px", borderRadius: 0, userSelect: "none",
                         color: pickingIntent?.targetId === e.id ? zoneTheme.bg : "#c45044",
                         background: pickingIntent?.targetId === e.id ? "#c45044" : "transparent",
                         border: "1px solid #c45044",
@@ -399,14 +399,14 @@ const styles = {
     zIndex: 450, display: "flex", alignItems: "center", justifyContent: "center",
   },
   container: {
-    width: 560, maxWidth: "94vw", maxHeight: "92vh", borderRadius: 6, padding: 16,
+    width: 560, maxWidth: "94vw", maxHeight: "92vh", borderRadius: 0, padding: 16,
     display: "flex", flexDirection: "column", gap: 12, overflowY: "auto",
   },
   teamsRow: { display: "flex", alignItems: "flex-start", gap: 12 },
   teamCol: { flex: 1, minWidth: 0 },
   vsCol: (t) => ({
     fontSize: "10px", color: t.accent, border: `1px solid ${t.accent}`,
-    borderRadius: 12, padding: "3px 8px", flexShrink: 0, whiteSpace: "nowrap", marginTop: 18,
+    borderRadius: 0, padding: "3px 8px", flexShrink: 0, whiteSpace: "nowrap", marginTop: 18,
   }),
   opSection: { display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 },
   sectionLabel: (t) => ({ fontSize: "12px", color: t.accent, letterSpacing: "1px" }),
@@ -417,7 +417,7 @@ const styles = {
   enemyStripLabel: (t) => ({ fontSize: "10.5px", color: t.textDim, marginTop: 4 }),
   enemyStrip: { display: "flex", flexWrap: "wrap", gap: 6 },
   enemyChip: (t, revealed) => ({
-    fontSize: "11px", padding: "4px 8px", borderRadius: 4,
+    fontSize: "11px", padding: "4px 8px", borderRadius: 0,
     border: `1px dashed ${revealed ? t.accentDim : "rgba(255,255,255,0.15)"}`,
     color: revealed ? t.text : t.textDim,
     cursor: revealed ? "pointer" : "default",
@@ -431,6 +431,6 @@ const styles = {
   continueRow: { textAlign: "center", marginTop: 6 },
   continueBtn: (t) => ({
     cursor: "pointer", display: "inline-block", padding: "8px 24px",
-    color: t.accent, border: `1px solid ${t.accent}`, borderRadius: 4, fontSize: "12px",
+    color: t.accent, border: `1px solid ${t.accent}`, borderRadius: 0, fontSize: "12px",
   }),
 };

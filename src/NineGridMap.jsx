@@ -11,7 +11,7 @@ import { MAP_UI } from "./mapUi.js";
 //   accent, loading, big
 // explored=去过（亮·实心）; !explored=战争迷雾（问号·虚线）; reachable=当前有出口可点；
 // locked=有路但未解锁（点了触发 AI 叙事拦截）。current=当前所在（金框脉冲）。
-export default function NineGridMap({ centerLabel, cells, onGo, accent = "#6ec6c6", loading, big = false }) {
+export default function NineGridMap({ centerLabel, cells, onGo, accent = "#c8323a", loading, big = false }) {
   const [hover, setHover] = React.useState(null);
   // 3×3 布局：行=北/中/南，列=西/中/东
   const layout = [

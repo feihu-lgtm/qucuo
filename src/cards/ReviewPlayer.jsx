@@ -39,12 +39,12 @@ function SkillEditor({ skills, onChange, tierCap, accent, aiBusy, onAiScan }) {
   return (
     <div>
       {!list.length && (
-        <div style={{ fontSize: 10.5, color: "#6a6250", marginBottom: 8, lineHeight: 1.7 }}>
+        <div style={{ fontSize: 10.5, color: "#8f8a7c", marginBottom: 8, lineHeight: 1.7 }}>
           还没有武学。点「✨ AI 现编武学」让它照卡里的招式描写生成，或手动加一门。
         </div>
       )}
       {list.map((s, i) => (
-        <div key={i} style={{ marginBottom: 7, padding: "7px 9px", borderRadius: 3, background: "rgba(0,0,0,.22)", border: "1px solid #2a2419" }}>
+        <div key={i} style={{ marginBottom: 7, padding: "7px 9px", borderRadius: 0, background: "rgba(0,0,0,.22)", border: "1px solid #2a2419" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
             <input value={s.name || ""} placeholder="武学名"
               onChange={e => setOne(i, { name: e.target.value.slice(0, 10) })}
@@ -67,7 +67,7 @@ function SkillEditor({ skills, onChange, tierCap, accent, aiBusy, onAiScan }) {
           </div>
           <input value={s.desc || ""} placeholder="一句话写这门功夫使出来什么样（注入给说书人）"
             onChange={e => setOne(i, { desc: e.target.value.slice(0, 30) })}
-            style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "#c8bfa0" }} />
+            style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "#e8e4d6" }} />
         </div>
       ))}
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
@@ -77,7 +77,7 @@ function SkillEditor({ skills, onChange, tierCap, accent, aiBusy, onAiScan }) {
           title="让 AI 照卡里主角的招式/战斗描写现编武学"
           style={{
             cursor: aiBusy ? "wait" : "pointer", userSelect: "none",
-            fontSize: 11.5, padding: "5px 12px", borderRadius: 4, whiteSpace: "nowrap",
+            fontSize: 11.5, padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
             display: "inline-flex", alignItems: "center", gap: 5,
             color: aiBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
             border: `1px solid ${aiBusy ? "#3a4a38" : "#5f8256"}`,
@@ -251,7 +251,7 @@ export default function ReviewPlayer({
         </Note>
 
         {/* 4b 粘贴描写 → AI 拆成体貌字段补全 */}
-        <div style={{ marginTop: 10, padding: "8px 9px", borderRadius: 3, background: "rgba(0,0,0,.22)", border: "1px solid #2a2419" }}>
+        <div style={{ marginTop: 10, padding: "8px 9px", borderRadius: 0, background: "rgba(0,0,0,.22)", border: "1px solid #2a2419" }}>
           <div style={{ fontSize: 10.5, color: "#c0b090", marginBottom: 5, lineHeight: 1.6 }}>
             ✨ 粘贴一段卡里的外貌／身体描写，AI 会拆成体貌字段（公开层＋私密层）补全上面两栏。
             只是合并，不会覆盖你已填的内容。
@@ -263,7 +263,7 @@ export default function ReviewPlayer({
             rows={3}
             style={{
               width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)",
-              border: "1px solid #3a3428", borderRadius: 3, padding: "5px 8px",
+              border: "1px solid #3a3428", borderRadius: 0, padding: "5px 8px",
               color: "#e8dcc0", fontSize: 11.5, outline: "none", resize: "vertical",
               fontFamily: "inherit",
             }}
@@ -273,7 +273,7 @@ export default function ReviewPlayer({
               title="让 AI 把这段描写拆成体貌字段"
               style={{
                 cursor: bodyBusy ? "wait" : "pointer", userSelect: "none",
-                fontSize: 11.5, padding: "5px 12px", borderRadius: 4, whiteSpace: "nowrap",
+                fontSize: 11.5, padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
                 display: "inline-flex", alignItems: "center", gap: 5,
                 color: bodyBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
                 border: `1px solid ${bodyBusy ? "#3a4a38" : "#5f8256"}`,
@@ -291,10 +291,10 @@ export default function ReviewPlayer({
         {cardPersonality ? (
           <div style={{
             fontSize: 10.5, lineHeight: 1.7, color: "#7a6a60", maxHeight: 76, overflowY: "auto",
-            padding: "6px 8px", background: "rgba(0,0,0,.28)", border: "1px solid #2a2419", borderRadius: 3,
+            padding: "6px 8px", background: "rgba(0,0,0,.28)", border: "1px solid #2a2419", borderRadius: 0,
           }}>{cardPersonality}</div>
         ) : (
-          <div style={{ fontSize: 10.5, color: "#6a6250" }}>这张卡没写 personality。</div>
+          <div style={{ fontSize: 10.5, color: "#8f8a7c" }}>这张卡没写 personality。</div>
         )}
         <Note tone="info">
           卡的性格字段一律不导入。你的性格由每轮输入实时表达——写死了会跟实际操作打架，
@@ -320,7 +320,7 @@ export default function ReviewPlayer({
             </Note>
           </>
         ) : (
-          <div style={{ fontSize: 10.5, color: "#6a6250" }}>这张卡没写 mes_example，此项留空。</div>
+          <div style={{ fontSize: 10.5, color: "#8f8a7c" }}>这张卡没写 mes_example，此项留空。</div>
         )}
       </Section>
 
@@ -331,8 +331,8 @@ export default function ReviewPlayer({
             onChange={v => onPatchOpening({ ...opening, rewritten: v })} />
           {opening.source === "ai" && opening.original !== opening.rewritten && (
             <details>
-              <summary style={{ cursor: "pointer", fontSize: 10.5, color: "#6a6250" }}>看原文对照</summary>
-              <div style={{ fontSize: 10.5, lineHeight: 1.7, color: "#6a6250", whiteSpace: "pre-wrap", marginTop: 6 }}>
+              <summary style={{ cursor: "pointer", fontSize: 10.5, color: "#8f8a7c" }}>看原文对照</summary>
+              <div style={{ fontSize: 10.5, lineHeight: 1.7, color: "#8f8a7c", whiteSpace: "pre-wrap", marginTop: 6 }}>
                 {opening.original}
               </div>
             </details>
@@ -343,24 +343,24 @@ export default function ReviewPlayer({
       {/* 9 世界观、地理、规则 */}
       <Section title={<>世界观 · 地理 · 规矩<span style={{ fontSize: 10, color: "#8a8270", marginLeft: 6 }}>{(worldCandidates || []).filter(w => w.on !== false).length}/{(worldCandidates || []).length} 条</span></>}>
         {!worldCandidates?.length ? (
-          <div style={{ fontSize: 10.5, color: "#6a6250" }}>这张卡里没有地理／势力／规矩类条目。</div>
+          <div style={{ fontSize: 10.5, color: "#8f8a7c" }}>这张卡里没有地理／势力／规矩类条目。</div>
         ) : (
           <>
             {worldCandidates.map((w, i) => (
               <div key={i} onClick={() => onPatchWorld(i, { on: w.on === false })}
                 style={{
                   display: "flex", alignItems: "center", gap: 7, padding: "5px 8px", marginBottom: 3,
-                  cursor: "pointer", borderRadius: 3,
+                  cursor: "pointer", borderRadius: 0,
                   border: `1px solid ${w.on === false ? "#2a2419" : "#4a4028"}`,
                   background: w.on === false ? "transparent" : "rgba(212,168,83,.08)",
                 }}>
                 <span style={{ color: w.on === false ? "#4a4436" : accent, fontSize: 11 }}>
                   {w.on === false ? "○" : "◉"}
                 </span>
-                <span style={{ color: "#c8bfa0", fontSize: 11, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <span style={{ color: "#e8e4d6", fontSize: 11, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {w.label}
                 </span>
-                <span style={{ color: "#6a6250", fontSize: 9.5 }}>{w.kind} · {(w.content || "").length}字</span>
+                <span style={{ color: "#8f8a7c", fontSize: 9.5 }}>{w.kind} · {(w.content || "").length}字</span>
               </div>
             ))}
             <Note tone="info">
@@ -380,7 +380,7 @@ export default function ReviewPlayer({
       <Section title="内功与外功">
         <StatRow label="内功" value={neigong} max={100} width={30} onChange={v => onPatch({ neigong: v })} />
         <StatRow label="外功" value={waigong} max={100} width={30} onChange={v => onPatch({ waigong: v })} />
-        <div style={{ fontSize: 10, color: "#6a6250", marginTop: 4, lineHeight: 1.7 }}>
+        <div style={{ fontSize: 10, color: "#8f8a7c", marginTop: 4, lineHeight: 1.7 }}>
           开局默认都是 5（白档基准 {TIER_NEIGONG[0]}），往后靠花潜能修炼。
           气血由内功与体魄算出：<span style={{ color: "#d4a853" }}>{maxHp}</span>，不单独设。
         </div>
@@ -403,14 +403,14 @@ export default function ReviewPlayer({
         <CarryPicker apiCfg={apiCfg} carry={p.carry || []} levelCap={tier}
           onChange={c => onPatch({ carry: c })} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-          <span style={{ flex: 1, fontSize: 10, color: "#6a6250", lineHeight: 1.6 }}>
+          <span style={{ flex: 1, fontSize: 10, color: "#8f8a7c", lineHeight: 1.6 }}>
             兵器/护具/饰物导入后各自动装备一件，其余进背包。点上面的物件名可展开看它的词条（攻击力/特效/加成）。
           </span>
           <span onClick={equipBusy ? undefined : aiScanEquip}
             title="让 AI 按主角身份与品阶配 2-4 件随身物"
             style={{
               cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
-              fontSize: 11.5, padding: "5px 12px", borderRadius: 4, whiteSpace: "nowrap",
+              fontSize: 11.5, padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
               display: "inline-flex", alignItems: "center", gap: 5,
               color: equipBusy ? "#6a807c" : "#b4ecdc", textShadow: "0 1px 2px rgba(0,0,0,.85)",
               border: `1px solid ${equipBusy ? "#3a4a48" : "#4f807a"}`,

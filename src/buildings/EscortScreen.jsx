@@ -28,7 +28,7 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "#7a7a6a", fontSize: 11, marginBottom: 12 }}>
+        <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 12 }}>
           {building.desc}
         </div>
 
@@ -38,7 +38,7 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
             {active.map(q => {
               const prog = questProgress[q.id];
               return (
-                <div key={q.id} style={{ padding: "8px 10px", background: "#14120a", borderRadius: 4, border: "1px solid #4a3a1a", marginBottom: 6 }}>
+                <div key={q.id} style={{ padding: "8px 10px", background: "#14120a", borderRadius: 0, border: "1px solid #4a3a1a", marginBottom: 6 }}>
                   <div style={{ color: "#e8c468", fontSize: 12 }}>{q.title}</div>
                   <div style={{ color: "#7a6a4a", fontSize: 11, marginTop: 3 }}>
                     目标：前往 {q.targetLocation}，找到 {q.targetNpc} 交货
@@ -57,18 +57,18 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
         </div>
 
         {available.length === 0 && (
-          <div style={{ color: "#5a5a4a", fontSize: 12 }}>
+          <div style={{ color: "#8f8a7c", fontSize: 12 }}>
             {active.length > 0 ? "先完成手头的护镖任务吧。" : "暂无从本地出发的护镖任务。"}
           </div>
         )}
 
         {available.map(q => (
-          <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "#10121a", borderRadius: 6, border: `1px solid ${zoneTheme.border}` }}>
+          <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "#161510", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ color: "#c8bfa0", fontSize: 13 }}>{q.title}</span>
+              <span style={{ color: "#e8e4d6", fontSize: 13 }}>{q.title}</span>
               <span style={{ color: "#4a8a4a", fontSize: 12 }}>报酬 {q.reward} 两</span>
             </div>
-            <div style={{ color: "#7a7a6a", fontSize: 11, marginBottom: 4 }}>{q.desc}</div>
+            <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 4 }}>{q.desc}</div>
             <div style={{ color: "#6a8a6a", fontSize: 10, marginBottom: 8 }}>
               → 前往 {q.targetLocation} · 找 {q.targetNpc} 完成交货
             </div>

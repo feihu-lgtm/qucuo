@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useOverlayCloseGuard } from "../utils/overlayClose.js";
+import { RADIUS } from "../theme.js";
 
 // 客栈：花银两住宿，气血回满，时间推进24单位（一天）
 // healOnly=true 时作为医馆使用：不推时间，按 healPerLiang 换算回血
@@ -23,10 +24,10 @@ export default function InnScreen({ building, char, time, zoneTheme, onClose, on
         <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
         <div style={{ padding: 16 }}>
           <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: 13 }}>{building.desc}</p>
-          <div style={{ color: "#8a8a7a", marginBottom: 12 }}>
+          <div style={{ color: "#8f8a7c", marginBottom: 12 }}>
             气血 {hp}/{maxHp} · 银两 {money} 两 · 每两回 {healPerLiang} 点气血
           </div>
-          <div style={{ color: "#c8bfa0", marginBottom: 8 }}>回满需花 {cost} 两</div>
+          <div style={{ color: "#e8e4d6", marginBottom: 8 }}>回满需花 {cost} 两</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Btn label={`回满（${cost}两）`} disabled={money < cost || hp >= maxHp}
               zoneTheme={zoneTheme} onClick={() => onHeal(cost, maxHp - hp, "解毒治疗")} />
@@ -42,7 +43,7 @@ export default function InnScreen({ building, char, time, zoneTheme, onClose, on
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: 13 }}>{building.desc}</p>
-        <div style={{ color: "#8a8a7a", marginBottom: 16 }}>
+        <div style={{ color: "#8f8a7c", marginBottom: 16 }}>
           气血 {hp}/{maxHp} · 银两 {money} 两
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -60,7 +61,7 @@ export default function InnScreen({ building, char, time, zoneTheme, onClose, on
           />
           <Btn label="关闭" zoneTheme={zoneTheme} secondary onClick={onClose} />
         </div>
-        <div style={{ color: "#5a5a4a", fontSize: 11, marginTop: 12 }}>
+        <div style={{ color: "#8f8a7c", fontSize: 11, marginTop: 12 }}>
           住宿后气血回满，时间推进一天（24单位）
         </div>
       </div>
@@ -92,10 +93,10 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
       <div
         style={isMobile
           ? { background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`,
-              borderRadius: "12px 12px 0 0", width: "100%", maxWidth: "100vw", maxHeight: "92vh",
+              borderRadius: `${RADIUS.modal}px ${RADIUS.modal}px 0 0`, width: "100%", maxWidth: "100vw", maxHeight: "92vh",
               overflowY: "auto", WebkitOverflowScrolling: "touch" }
           : { background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`,
-              borderRadius: 8, width: 440, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto" }}
+              borderRadius: RADIUS.modal, width: 440, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto" }}
         onClick={e => e.stopPropagation()}
       >
         {children}
@@ -116,8 +117,13 @@ export function Header({ name, zoneTheme, onClose }) {
       // 顶部，不管滚多远都看得见、点得到。zIndex 避免被下面滚上来的内容盖住。
       position: "sticky", top: 0, zIndex: 1, background: zoneTheme.panelBg || "#14161f",
     }}>
-      <span style={{ fontSize: 14, color: zoneTheme.text || "#c8bfa0" }}>{name}</span>
-      <span onClick={onClose} style={{ color: "#5a5a4a", fontSize: 12, cursor: "pointer", padding: "2px 8px" }}>× 关闭</span>
+      <span style={{ fontSize: 14, color: zoneTheme.text || "#e8e4d6" }}>{name}</span>
+      <span
+        onClick={onClose}
+        style={{ color: zoneTheme.textDim, fontSize: 12, cursor: "pointer", padding: "2px 8px", borderRadius: RADIUS.btn, transition: "color 0.15s, background 0.15s" }}
+        onMouseEnter={e => { e.currentTarget.style.color = zoneTheme.accent; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+        onMouseLeave={e => { e.currentTarget.style.color = zoneTheme.textDim; e.currentTarget.style.background = "transparent"; }}
+      >× 关闭</span>
     </div>
   );
 }
@@ -127,13 +133,19 @@ export function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
     <span
       onClick={disabled ? undefined : onClick}
       style={{
-        fontSize: 12, padding: "5px 14px", borderRadius: 4, cursor: disabled ? "not-allowed" : "pointer",
+        fontSize: 12, padding: "5px 14px", borderRadius: RADIUS.btn, cursor: disabled ? "not-allowed" : "pointer",
         color: disabled ? "#4a4a4a" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
         background: disabled ? "#1a1a1a" : secondary ? "transparent" : zoneTheme.accent,
         border: `1px solid ${disabled ? "#2a2a2a" : secondary ? zoneTheme.border : zoneTheme.accent}`,
         opacity: disabled ? 0.5 : 1,
         userSelect: "none",
+        display: "inline-block",
+        transition: "transform 0.1s, filter 0.15s, border-color 0.15s",
       }}
+      onMouseEnter={e => { if (disabled) return; e.currentTarget.style.filter = "brightness(1.15)"; if (secondary) e.currentTarget.style.borderColor = zoneTheme.accent; }}
+      onMouseLeave={e => { if (disabled) return; e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "scale(1)"; if (secondary) e.currentTarget.style.borderColor = zoneTheme.border; }}
+      onMouseDown={e => { if (disabled) return; e.currentTarget.style.transform = "scale(0.97)"; }}
+      onMouseUp={e => { if (disabled) return; e.currentTarget.style.transform = "scale(1)"; }}
     >{label}</span>
   );
 }

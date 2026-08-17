@@ -34,7 +34,7 @@ const PORTRAIT = (v) => {
 };
 
 // 品阶→档位色（复用装备那套 QUALITY_COLOR）；levelCap 0-5 直接映射 QUALITY 索引
-const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "#c8bfa0";
+const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "#e8e4d6";
 const tierName = (levelCap) => QUALITY[Math.max(0, Math.min(5, levelCap))] || "白";
 
 const MAX_TEAM = 6; // 每队最多 6 人（宝可梦味）
@@ -243,7 +243,7 @@ function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) 
         flex: 1, minHeight: 92, padding: "10px 14px", cursor: "pointer",
         background: "rgba(20,16,10,.55)",
         border: `2px solid ${active ? accent : "rgba(255,255,255,.12)"}`,
-        borderRadius: 6, transition: "border-color .2s",
+        borderRadius: 0, transition: "border-color .2s",
       }}
     >
       <div style={{ fontSize: 13, letterSpacing: 2, color: accent, marginBottom: 8 }}>
@@ -259,7 +259,7 @@ function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) 
               title="点击移出"
               style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px",
                 background: "rgba(0,0,0,.35)", border: `1px solid ${tierColor(c.levelCap)}`,
-                borderRadius: 4, fontSize: 12, color: "#e8dfc0", cursor: "pointer" }}>
+                borderRadius: 0, fontSize: 12, color: "#e8dfc0", cursor: "pointer" }}>
               {c.name} <span style={{ color: "#8a7d5a" }}>✕</span>
             </div>
           );
@@ -278,7 +278,7 @@ function CandidateCard({ c, picked, disabled, accent, onClick }) {
       style={{
         position: "relative", width: "100%", aspectRatio: "108/148", padding: 0, cursor: disabled ? "not-allowed" : "pointer",
         border: `2px solid ${picked ? accent : tierColor(c.levelCap)}`,
-        borderRadius: 6, overflow: "hidden", background: "#14100b", boxSizing: "border-box",
+        borderRadius: 0, overflow: "hidden", background: "#14100b", boxSizing: "border-box",
         opacity: disabled ? 0.3 : 1,
         boxShadow: picked ? `0 0 14px ${accent}` : (hover && !disabled ? "0 4px 14px rgba(0,0,0,.6)" : "none"),
         transform: hover && !disabled ? "translateY(-3px)" : "none", transition: "all .18s ease",
@@ -542,8 +542,8 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
   return (
     <div className="qb-fighter" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: align, gap: 8, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexDirection: side === "ally" ? "row" : "row-reverse" }}>
-        <div className="qb-portrait" style={{ position: "relative", width: 76, height: 100, borderRadius: 6, overflow: "visible", flexShrink: 0 }}>
-          <div style={{ width: "100%", height: "100%", borderRadius: 6, overflow: "hidden", border: `2px solid ${tierColor(fighter.levelCap)}`, background: "#14100b" }}>
+        <div className="qb-portrait" style={{ position: "relative", width: 76, height: 100, borderRadius: 0, overflow: "visible", flexShrink: 0 }}>
+          <div style={{ width: "100%", height: "100%", borderRadius: 0, overflow: "hidden", border: `2px solid ${tierColor(fighter.levelCap)}`, background: "#14100b" }}>
             {fighter.portrait ? (
               <img src={PORTRAIT(fighter.portrait)} alt={fighter.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
             ) : (
@@ -596,7 +596,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
 
 function Bar({ ratio, color, bg, label, rtl, thin }) {
   return (
-    <div style={{ position: "relative", height: thin ? 8 : 14, background: bg, borderRadius: 3, overflow: "hidden", marginTop: 3 }}>
+    <div style={{ position: "relative", height: thin ? 8 : 14, background: bg, borderRadius: 0, overflow: "hidden", marginTop: 3 }}>
       <div style={{ position: "absolute", top: 0, bottom: 0, [rtl ? "right" : "left"]: 0,
         width: `${Math.max(0, Math.min(1, ratio)) * 100}%`, background: color, transition: "width .4s ease" }} />
       {!thin && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#fff", textShadow: "0 1px 2px #000" }}>{label}</div>}
@@ -605,11 +605,11 @@ function Bar({ ratio, color, bg, label, rtl, thin }) {
 }
 
 function StatusChip({ name }) {
-  return <span style={{ fontSize: 9, padding: "1px 5px", background: "rgba(180,80,80,.3)", border: "1px solid #a05050", borderRadius: 3, color: "#e0b0b0" }}>{name}</span>;
+  return <span style={{ fontSize: 9, padding: "1px 5px", background: "rgba(180,80,80,.3)", border: "1px solid #a05050", borderRadius: 0, color: "#e0b0b0" }}>{name}</span>;
 }
 
 function MoveButton({ move, usable, reason, onClick }) {
-  const qc = QUALITY_COLOR[move.quality] || "#c8bfa0";
+  const qc = QUALITY_COLOR[move.quality] || "#e8e4d6";
   const lines = explainMove(move);
   const gist = moveTypeGist(move);
   const [flipped, setFlipped] = useState(false);
@@ -653,13 +653,13 @@ function MoveButton({ move, usable, reason, onClick }) {
           ))}
           <div style={{ display: "flex", gap: 6, marginTop: 6, position: "sticky", bottom: 0 }}>
             <button onClick={() => usable && onClick()} disabled={!usable}
-              style={{ flex: 1, padding: "5px 0", fontSize: 11, fontWeight: "bold", borderRadius: 4,
+              style={{ flex: 1, padding: "5px 0", fontSize: 11, fontWeight: "bold", borderRadius: 0,
                 border: "none", cursor: usable ? "pointer" : "not-allowed",
                 background: usable ? qc : "#333", color: usable ? "#1a140c" : "#777" }}>
               {usable ? "⚔ 出招" : (reason || "不可用")}
             </button>
             <button onClick={() => setFlipped(false)}
-              style={{ padding: "5px 10px", fontSize: 11, borderRadius: 4, border: `1px solid ${qc}`,
+              style={{ padding: "5px 10px", fontSize: 11, borderRadius: 0, border: `1px solid ${qc}`,
                 background: "transparent", color: qc, cursor: "pointer" }}>返回</button>
           </div>
         </div>
@@ -735,7 +735,7 @@ const sx = {
     padding: "16px clamp(16px,4vw,60px)", boxSizing: "border-box" },
   pickHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   startBtn: { padding: "9px 18px", background: "linear-gradient(180deg,#8a6a2a,#5a4418)", border: "1px solid #c0a060",
-    borderRadius: 6, color: "#f5e8c0", fontSize: 14, letterSpacing: 1, cursor: "pointer", fontWeight: "bold" },
+    borderRadius: 0, color: "#f5e8c0", fontSize: 14, letterSpacing: 1, cursor: "pointer", fontWeight: "bold" },
   teamsRow: { display: "flex", alignItems: "stretch", gap: 12, marginBottom: 10 },
   vs: { display: "flex", alignItems: "center", fontSize: 18, color: "#e0526a", fontWeight: "bold" },
   pickHint: { fontSize: 12, color: "#a89878", marginBottom: 12, lineHeight: 1.6 },
@@ -747,16 +747,16 @@ const sx = {
     padding: "14px clamp(16px,4vw,50px)", boxSizing: "border-box" },
   battleTop: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 6 },
   arena: { display: "flex", alignItems: "flex-start", gap: 16, padding: "14px 16px", marginBottom: 12,
-    background: "rgba(15,12,8,.5)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 8 },
+    background: "rgba(15,12,8,.5)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 0 },
   arenaVs: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0, paddingTop: 20 },
   logStream: { flex: 1, overflowY: "auto", padding: "12px 16px", background: "rgba(10,8,5,.6)",
-    border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, marginBottom: 12, minHeight: 80 },
+    border: "1px solid rgba(255,255,255,.08)", borderRadius: 0, marginBottom: 12, minHeight: 80 },
   controlBar: { display: "flex", gap: 10, padding: "12px 14px", background: "rgba(20,16,10,.7)",
-    border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, minHeight: 116, alignItems: "flex-start" },
+    border: "1px solid rgba(255,255,255,.12)", borderRadius: 0, minHeight: 116, alignItems: "flex-start" },
   switchBtn: { padding: "8px 16px", background: "rgba(40,60,80,.6)", border: "1px solid #6aa0d4",
-    borderRadius: 5, color: "#cfe0ee", fontSize: 13, cursor: "pointer" },
+    borderRadius: 0, color: "#cfe0ee", fontSize: 13, cursor: "pointer" },
   switchBtnSmall: { padding: "4px 10px", background: "rgba(40,60,80,.5)", border: "1px solid #4a6a84",
-    borderRadius: 4, color: "#cfe0ee", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" },
-  dmgTag: (c) => ({ padding: "1px 7px", borderRadius: 3, background: `${c}22`, border: `1px solid ${c}`,
+    borderRadius: 0, color: "#cfe0ee", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" },
+  dmgTag: (c) => ({ padding: "1px 7px", borderRadius: 0, background: `${c}22`, border: `1px solid ${c}`,
     color: c, fontWeight: "bold", fontSize: 11 }),
 };

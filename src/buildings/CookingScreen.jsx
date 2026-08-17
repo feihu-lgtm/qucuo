@@ -12,7 +12,7 @@ import {
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const UI = (f) => `${BASE}stones/ui/${f}`;
 
-const QUAL_COLOR = { 白: "#c8bfa0", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "#b48adf", 橙: "#e0913a", 红: "#d4756a" };
+const QUAL_COLOR = { 白: "#e8e4d6", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "#b48adf", 橙: "#e0913a", 红: "#d4756a" };
 
 // 灶膛火苗 + 蒸汽 + 成功/失败反馈的 CSS（组件内注入，命名空间 ck- 防串味）
 const CK_CSS = `
@@ -200,7 +200,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                   backgroundImage: `url(${UI(sel ? "bar_paper.webp" : "bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
                   color: sel ? "#4a2d0a" : "#d8c8a0", fontSize: 12, fontWeight: "bold",
                   textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px #000" }}>
-                <span style={{ color: sel ? "#8a5a1a" : (QUAL_COLOR[cw.quality] || "#c8bfa0"), marginRight: 5, fontSize: 11 }}>●</span>
+                <span style={{ color: sel ? "#8a5a1a" : (QUAL_COLOR[cw.quality] || "#e8e4d6"), marginRight: 5, fontSize: 11 }}>●</span>
                 {cw.name}{cw.canSteam ? " ♨" : ""}
               </div>
             );
@@ -308,7 +308,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
       display: "flex", alignItems: "center", justifyContent: "center" }}
       onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div style={{ width: 520, maxWidth: "92vw", maxHeight: "86vh", overflowY: "auto",
-        border: "1px solid #4a3a20", borderRadius: 8 }} onClick={e => e.stopPropagation()}>
+        border: "1px solid #4a3a20", borderRadius: 0 }} onClick={e => e.stopPropagation()}>
         {panel}
       </div>
     </div>
