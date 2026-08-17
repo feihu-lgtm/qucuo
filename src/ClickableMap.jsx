@@ -108,7 +108,8 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
             const hov = hover === (n.name || n.dir);
             const fs = uniformFs;
             // 名牌即节点：双线框+大字。当前所在=唯一朱红边。
-            const pw = labelLen(n) * fs + 28, ph = fs + 24;
+            const pw = labelLen(n) * fs + 28;
+            const ph = fs + 24;
             const edge = n.current || (hov && clickable) ? accent : "#26221c";
             const onClickNode = (e) => {
               // 拖动过就不触发点击（避免拖完误跳转）
