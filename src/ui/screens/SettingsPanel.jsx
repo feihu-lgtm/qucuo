@@ -269,7 +269,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                   background: "var(--bg-panel)", border: "1px solid var(--border)",
                   transition: "all 0.2s ease", textAlign: "center",
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#1c1a15"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-panel)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
                 <div style={{ fontSize: "15px", color: "var(--text)", marginBottom: 6 }}>{title}</div>
                 <div style={{ fontSize: "10.5px", color: "#6a7a72" }}>{sub}</div>
