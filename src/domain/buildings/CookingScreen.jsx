@@ -121,20 +121,20 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
   }
 
   const panel = (
-    <div style={{ position: "relative", background: "linear-gradient(180deg,#1d1309 0%, #140c06 55%, #0d0805 100%)",
+    <div className="mobile-building-content" style={{ position: "relative", background: "linear-gradient(180deg,#1d1309 0%, #140c06 55%, #0d0805 100%)",
       minHeight: "100%", color: "#e8d5b0", fontFamily: "inherit" }}
       onMouseDown={inline ? undefined : closeGuard.onMouseDown}
       onClick={inline ? undefined : closeGuard.onClick}>
       <style>{CK_CSS}</style>
 
       {/* ── 灶台门面：木匾抬头 ── */}
-      <div style={{ position: "relative", margin: "14px 16px 0", padding: "10px 18px",
+      <div className="mobile-overlay-header" style={{ position: "relative", margin: "14px 16px 0", padding: "10px 18px",
         backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ color: "#f5e2b8", fontSize: 15, fontWeight: "bold", letterSpacing: 3, textShadow: "0 1px 2px #000" }}>
           🔥 烹饪台 <span style={{ color: "#c8a860", fontSize: 11.5, fontWeight: "normal", letterSpacing: 1, marginLeft: 6 }}>{building?.name || "灶房"}</span>
         </span>
-        <span onClick={onClose} title="关闭" style={{ cursor: "pointer", width: 26, height: 26, flexShrink: 0,
+        <span className="mobile-overlay-close" onClick={onClose} title="关闭" style={{ cursor: "pointer", width: 26, height: 26, flexShrink: 0,
           backgroundImage: `url(${UI("btn_close.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }} />
       </div>
 

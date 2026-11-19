@@ -81,6 +81,7 @@ export default function GameLayout({ layout }) {
   }, [isMobile, mobileDrawer]);
 
   const onTouchStart = (event) => {
+    if (suppressClick.current) suppressClick.current = false;
     if (!isMobile || event.pointerType === "mouse") return;
     swipeStart.current = { x: event.clientX, y: event.clientY };
   };
@@ -96,7 +97,18 @@ export default function GameLayout({ layout }) {
       width: window.innerWidth,
       drawer: mobileDrawer,
     });
-    if (!action) return;
+    if (!action) {
+      const dx = event.clientX - start.x;
+      const dy = event.clientY - start.y;
+      const drawerWidth = Math.min(window.innerWidth * 0.82, 340);
+      const outsideDrawer = mobileDrawer === "left"
+        ? event.clientX >= drawerWidth
+        : mobileDrawer === "right" && event.clientX <= window.innerWidth - drawerWidth;
+      if (mobileDrawer && Math.abs(dx) < 10 && Math.abs(dy) < 10 && outsideDrawer) {
+        setMobileDrawer(null);
+      }
+      return;
+    }
     setMobileDrawer(action === "close" ? null : action);
     suppressClick.current = true;
     event.preventDefault();

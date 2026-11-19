@@ -78,19 +78,21 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   if (inline) {
     return (
-      <div style={{ borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", height: "100%", overflowY: "auto" }}>
+      <div className="mobile-building-content" style={{ borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", height: "100%", overflowY: "auto" }}>
         {children}
       </div>
     );
   }
   return (
     <div
+      className="mobile-overlay-root"
       style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.88)", zIndex: 120, display: "flex",
         alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}
       onMouseDown={closeGuard.onMouseDown}
       onClick={closeGuard.onClick}
     >
       <div
+        className="mobile-overlay-panel mobile-building-panel"
         style={isMobile
           ? { background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`,
               borderRadius: `${RADIUS.modal}px ${RADIUS.modal}px 0 0`, width: "100%", maxWidth: "100vw", maxHeight: "92vh",
@@ -107,7 +109,7 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
 
 export function Header({ name, zoneTheme, onClose }) {
   return (
-    <div style={{
+    <div className="mobile-overlay-header" style={{
       padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex",
       justifyContent: "space-between", alignItems: "center",
       // 吸顶：Header 所在的父容器（Overlay 的 inline 分支）自己是可滚动区域，
@@ -119,6 +121,7 @@ export function Header({ name, zoneTheme, onClose }) {
     }}>
       <span style={{ fontSize: 14, color: zoneTheme.text || "#e8e4d6" }}>{name}</span>
       <span
+        className="mobile-overlay-close"
         onClick={onClose}
         style={{ color: zoneTheme.textDim, fontSize: 12, cursor: "pointer", padding: "2px 8px", borderRadius: RADIUS.btn, transition: "color 0.15s, background 0.15s" }}
         onMouseEnter={e => { e.currentTarget.style.color = zoneTheme.accent; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
@@ -131,6 +134,7 @@ export function Header({ name, zoneTheme, onClose }) {
 export function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
   return (
     <span
+      className="mobile-touch-target"
       onClick={disabled ? undefined : onClick}
       style={{
         fontSize: 12, padding: "5px 14px", borderRadius: RADIUS.btn, cursor: disabled ? "not-allowed" : "pointer",

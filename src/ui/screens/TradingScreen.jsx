@@ -28,35 +28,36 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
     : { width: "min(720px, 92vw)", maxHeight: "82vh", display: "flex", flexDirection: "column", background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, boxShadow: "0 8px 40px rgba(0,0,0,0.6)" };
 
   return (
-    <div style={outer}>
-      <div style={inner}>
-        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+    <div className="mobile-trading-root" style={outer}>
+      <div className="mobile-trading-panel" style={inner}>
+        <div className="mobile-trading-header" style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div style={{ fontSize: 14, color: zoneTheme.text || "var(--text)" }}>{shopName || "交易"}</div>
           <div style={{ fontSize: 12, color: "#e8c468" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
+          <span className="mobile-overlay-close mobile-only-close" onClick={onClose} aria-label="关闭交易">×</span>
         </div>
 
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <div className="mobile-trading-content" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
           {/* 左侧：玩家物品，可卖。功德商店不收货，整半边不渲染 */}
           {canSell && (
-          <div style={{ flex: 1, padding: 12, overflowY: "auto", borderRight: `1px solid ${zoneTheme.border}` }}>
+          <div className="mobile-trading-column" style={{ flex: 1, padding: 12, overflowY: "auto", borderRight: `1px solid ${zoneTheme.border}` }}>
             <div style={{ fontSize: 11, color: zoneTheme.accentDim, marginBottom: 8 }}>我的物品</div>
             {sellableItems.length === 0 && (
               <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "center", padding: "20px 0" }}>没有可出售的物品</div>
             )}
             {sellableItems.map((item, i) => (
-              <div key={item.id || i} style={{
+              <div key={item.id || i} className="mobile-trading-item" style={{
                 display: "flex", justifyContent: "space-between", alignItems: "center",
                 padding: "6px 8px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 0,
               }}>
                 <div style={{ fontSize: 11.5 }}>
-                  <span
+                  <span className="mobile-touch-target"
                     onClick={() => onInspect?.("item", item.name, null, item)}
                     style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                   >{item.name}</span>
                   {item.equipped && <span style={{ color: "var(--good)", marginLeft: 4 }}>[已装备]</span>}
                   <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>售 {item.sellPrice}{currencyUnit}</span>
                 </div>
-                <span
+                <span className="mobile-touch-target"
                   onClick={() => !item.equipped && onSell(item)}
                   style={{
                     fontSize: 11, padding: "2px 10px", borderRadius: 0,
@@ -72,7 +73,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
           )}
 
           {/* 右侧：商店物品，可买 */}
-          <div style={{ flex: 1, padding: 12, overflowY: "auto" }}>
+          <div className="mobile-trading-column" style={{ flex: 1, padding: 12, overflowY: "auto" }}>
             <div style={{ fontSize: 11, color: zoneTheme.accentDim, marginBottom: 8 }}>商店货品</div>
             {shopItems.map((item, i) => {
               // 智谋折扣：显示折后价，实付也是折后价。折扣时把原价划掉、标出省了多少。
@@ -80,19 +81,19 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
               const discounted = payPrice < item.buyPrice;
               const canAfford = (playerMoney || 0) >= payPrice;
               return (
-                <div key={item.id || i} style={{
+                <div key={item.id || i} className="mobile-trading-item" style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                   padding: "6px 8px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 0,
                 }}>
                   <div style={{ fontSize: 11.5 }}>
-                    <span
+                    <span className="mobile-touch-target"
                       onClick={() => onInspect?.("item", item.name, null, item)}
                       style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                     >{item.name}</span>
                     {discounted && <span style={{ color: "var(--text-dim)", marginLeft: 6, textDecoration: "line-through" }}>{item.buyPrice}</span>}
                     <span style={{ color: discounted ? "#c07050" : "var(--text-dim)", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
                   </div>
-                  <span
+                  <span className="mobile-touch-target"
                     onClick={() => canAfford && onBuy({ ...item, buyPrice: payPrice })}
                     style={{
                       fontSize: 11, padding: "2px 10px", borderRadius: 0,
@@ -109,7 +110,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
         </div>
 
         <div style={{ padding: "10px 16px", borderTop: `1px solid ${zoneTheme.border}`, textAlign: "center", flexShrink: 0 }}>
-          <span onClick={onClose} style={{ fontSize: 12, color: "#8a8a8a", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 0 }}>关闭</span>
+          <span className="mobile-touch-target" onClick={onClose} style={{ fontSize: 12, color: "#8a8a8a", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 0 }}>关闭</span>
         </div>
       </div>
     </div>

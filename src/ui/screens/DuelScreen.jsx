@@ -436,8 +436,8 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
   const selecting = phase === "select";
 
   return (
-    <div style={styles.overlay}>
-      <div style={{ ...styles.container, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}` }}>
+    <div className="mobile-duel-root" style={styles.overlay}>
+      <div className="mobile-duel-panel" style={{ ...styles.container, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}` }}>
 
         {/* ── 血/气条（保留）：双方对峙状态 ── */}
         <div style={styles.topBar}>
@@ -681,6 +681,7 @@ export function MoveButton({ move, disabled, zoneTheme, onClick, onInspect }) {
   const color = QUALITY_COLOR[move.quality] || zoneTheme.text;
   return (
     <div
+      className="mobile-duel-control"
       onClick={disabled ? undefined : onClick}
       style={{
         position: "relative",

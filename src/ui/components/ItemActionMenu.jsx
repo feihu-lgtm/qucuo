@@ -40,17 +40,18 @@ export default function ItemActionMenu({
     const title = picker === "sell" ? "卖给谁（此地商家）" : "送给谁（此地之人）";
     const act = picker === "sell" ? onSell : onGive;
     return (
-      <div style={overlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-        <div style={panel} onClick={(e) => e.stopPropagation()}>
+      <div className="mobile-overlay-root" style={overlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
+        <div className="mobile-action-panel" style={panel} onClick={(e) => e.stopPropagation()}>
           <div style={{ color: zoneTheme.accent, fontSize: "13px", marginBottom: 12 }}>{title}</div>
           {list.length === 0 ? (
             <div style={{ color: zoneTheme.textDim, fontSize: "11.5px", marginBottom: 12 }}>
               {picker === "sell" ? "此地没有肯收货的商家。" : "此地无人可赠。"}
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="mobile-action-grid mobile-action-list" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {list.map((n) => (
                 <div key={n.name}
+                  className="mobile-action-choice"
                   onClick={() => { act(n, item); onClose(); }}
                   style={{ cursor: "pointer", padding: "9px 10px", borderRadius: 0, background: zoneTheme.bg, border: `1px solid ${zoneTheme.border}` }}>
                   <span style={{ color: zoneTheme.accent, fontSize: "12.5px" }}>{n.name}</span>
@@ -60,7 +61,7 @@ export default function ItemActionMenu({
             </div>
           )}
           <div style={{ textAlign: "center", marginTop: 14 }}>
-            <span onClick={() => setPicker(null)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>返回</span>
+            <span className="mobile-touch-target" onClick={() => setPicker(null)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>返回</span>
           </div>
         </div>
       </div>

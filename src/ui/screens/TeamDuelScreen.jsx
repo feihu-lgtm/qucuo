@@ -197,8 +197,8 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
   const pickingNeedTarget = pickingMoveChosen && aliveEnemies.length > 1;
 
   return (
-    <div style={styles.overlay}>
-      <div style={{ ...styles.container, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}` }}>
+    <div className="mobile-duel-root" style={styles.overlay}>
+      <div className="mobile-duel-panel" style={{ ...styles.container, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}` }}>
 
         {/* ── 双方单位状态：我方2（玩家+雪豹） vs 敌方1~2 ── */}
         <div style={styles.teamsRow}>
@@ -270,7 +270,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
                     {pickingIntent.move.type === MOVE_TYPE.DEFENSE ? "防谁：" : "打谁："}
                   </span>
                   {aliveEnemies.map(e => (
-                    <span key={e.id}
+                    <span key={e.id} className="mobile-duel-control"
                       onClick={() => pickTargetForUnit(stage, e.id)}
                       style={{
                         cursor: "pointer", fontSize: "11px", padding: "3px 10px", borderRadius: 0, userSelect: "none",
