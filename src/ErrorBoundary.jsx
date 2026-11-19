@@ -20,9 +20,7 @@ export default class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, info) {
-    // 打到 console 便于开发时看完整堆栈；界面上也展示精简版。
-    console.error("[ErrorBoundary] 子组件崩溃:", error, info);
+  componentDidCatch(_error, info) {
     this.setState({ info });
   }
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import ReactDOM from "react-dom/client";
+import { createRoot } from "react-dom/client";
 import MudRPG from "./MudRPG.jsx";
 import StartScreen from "./StartScreen.jsx";
 import QuickBattleScreen from "./quickBattle/QuickBattleScreen.jsx";
@@ -174,7 +174,11 @@ function mount() {
     try { sessionStorage.setItem("wuxia_mud_force_start_screen", "1"); } catch { /* ignore */ }
     window.location.reload();
   };
-  ReactDOM.createRoot(document.getElementById("root")).render(
+  createRoot(document.getElementById("root"), {
+    onCaughtError(error, errorInfo) {
+      console.error("[ErrorBoundary] 子组件崩溃:", error, errorInfo);
+    },
+  }).render(
     <React.StrictMode>
       <ErrorBoundary label="程序" onReset={backToStart}>
         <App />

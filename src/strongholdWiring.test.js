@@ -268,7 +268,6 @@ import { getCompanionDescForm, classifyDescForm } from "./companionForms.js";
 import { COMPANION_LORE } from "./companion.js";
 import { getCompanionForm, setCompanionForm, SNOW_LEOPARD_FORMS, PEARL_FORMS } from "./portraits.js";
 import { parseDir } from "./utils/mudHelpers.js";
-import { QUCUO_MAP } from "./qucuoMap.js";
 import { HOMESTEAD_FEATURES, getHomestead } from "./homestead.js";
 
 describe("BUG1 形态：右栏选什么，发给AI的就是什么（曾经是两套状态各走各的）", () => {
