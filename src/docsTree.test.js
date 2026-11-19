@@ -204,6 +204,9 @@ describe("Hook deps 不许引用后面才定义的量（TDZ 守卫）", () => {
     "src/app/hooks/usePlayerActionHandlers.js",
     "src/app/hooks/useGameUi.js",
     "src/app/hooks/useWorldRulesRunner.js",
+    "src/app/hooks/useGameStoreBindings.js",
+    "src/app/hooks/useNotes.js",
+    "src/app/hooks/useGameStartup.js",
   ])("%s 里没有 TDZ 风险", (file) => {
     const lines = readFileSync(file, "utf-8").split("\n");
     const defs = new Map();
@@ -252,7 +255,7 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
       addDeclaration(state[1], index + 1);
       addDeclaration(state[2], index + 1);
     }
-    const value = /^\s*const (\w+)\s*=\s*(?:useCallback|useMemo|useRef|useGameStore)\b/.exec(line);
+    const value = /^\s*const (\w+)\s*=\s*(?:useCallback|useMemo|useRef|useGameStore|useOverlay)\b/.exec(line);
     if (value) addDeclaration(value[1], index + 1);
   });
 
@@ -265,12 +268,14 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
   }
 
   const hookNames = [
-    "useInitialRestore", "useAutosave", "useDaySummary",
+    "useAutosave", "useDaySummary",
     "usePrivateTalk", "useOutfitAdvice", "useAiInspect", "useTurn", "useTurnQueue",
     "useGameUi", "usePresetImport", "useWorldRulesRunner",
     "useQuestPanel", "useForcedDuelNpc", "useDuel", "usePigeonReplies", "usePigeonHandlers",
     "useAutoTravel", "useCraftingAI", "useScreenHandlers", "useCardImportHandlers",
     "useBuildingHandlers", "useProgressionHandlers", "usePlayerActionHandlers",
+    "useGameStoreBindings", "useNotes", "useGameStartup", "useGameStartupBindings",
+    "useGameStartupOpeningFaces",
   ];
   const failures = [];
   for (const hookName of hookNames) {
