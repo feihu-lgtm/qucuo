@@ -13,6 +13,7 @@ import {
 import { DIRS } from "../utils/mudHelpers.js";
 import { MAP_UI } from "../domain/map/mapUi.js";
 import { getMobileDrawerSwipeAction } from "../utils/mobileDrawerSwipe.js";
+import { useUiStore } from "../store/uiStore.js";
 
 export default function GameLayout({ layout }) {
   const {
@@ -52,6 +53,7 @@ export default function GameLayout({ layout }) {
     trainNeigong, trainWaigong, trainCost, activeBuffs, breakthroughSkill,
     confessToNarrator, setInv, mapBigCloseGuard,
   } = layout;
+  const overlayCount = useUiStore((state) => state.overlays.length);
   const swipeStart = useRef(null);
   const suppressClick = useRef(false);
 
@@ -77,6 +79,12 @@ export default function GameLayout({ layout }) {
       document.documentElement.style.removeProperty("--mobile-viewport-height");
     };
   }, [isMobile]);
+
+  useEffect(() => {
+    if (isMobile && mobileDrawer && (overlayCount > 0 || duelPending)) {
+      setMobileDrawer(null);
+    }
+  }, [isMobile, mobileDrawer, overlayCount, duelPending, setMobileDrawer]);
 
   useEffect(() => {
     if (!isMobile || !mobileDrawer) return undefined;
