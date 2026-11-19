@@ -1,7 +1,9 @@
 import { useCallback, useEffect } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
-import { recognizeNpc } from "../../features/npc/logic.js";
+import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
+import { ensureNpcCombatData } from "../../npcGeneration.js";
+import { NOTE_SOURCE, VIA } from "../../memory/note.js";
 
 export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc }) {
   useEffect(() => {
@@ -14,6 +16,7 @@ export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNp
 
 export function useDuel({
   act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
+  duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
 }) {
   const handleNpcDuel = useCallback(async (npc) => {
     applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
@@ -34,5 +37,36 @@ export function useDuel({
     setDuelPending(null);
   }, [duelPending, addLog]);
 
-  return { handleNpcDuel, confirmDuel, cancelDuel };
+  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp) => {
+    const finishedNpc = duelingNpc;
+    const result = settleNpcDuel(gameStore.getState(), finishedNpc, {
+      outcome,
+      loot,
+      battleLog,
+      grownMoveset,
+      usedItems,
+      remainingHp,
+      pendingQuestBranch,
+      createRespawnNpc: ensureNpcCombatData,
+    });
+    if (pendingQuestBranch?.mode === "combat" && finishedNpc?.questBranchFlag === pendingQuestBranch.flag) {
+      setPendingQuestBranch(null);
+    }
+    noteAction("duel");
+    setDuelingNpc(null);
+    applyResult(featureCtxRef.current, result);
+    if (result.factId) aiSummarizeFact(result.factId, result.cue);
+    if (finishedNpc) {
+      setTimeout(() => {
+        act(`切磋结束。经过：${result.recap || "双方试探几招，未及深入"}。结果：${result.outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true });
+      }, 0);
+      jotNote({
+        text: result.recapNote,
+        owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }],
+        source: NOTE_SOURCE.DUMB,
+      });
+    }
+  }, [duelingNpc, pendingQuestBranch, noteAction, act, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch]);
+
+  return { handleNpcDuel, confirmDuel, cancelDuel, duelFinishHandler };
 }

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { gameActions, gameStore, initGameStore, useGameStore } from "./store/gameStore.js";
 import {
-  OVERLAY, closeOverlay, initializeUiOverlays, openOverlay, toggleOverlay, useOverlay,
+  OVERLAY, initializeUiOverlays, openOverlay, toggleOverlay, useOverlay,
 } from "./store/uiStore.js";
+import OverlayHost from "./app/OverlayHost.jsx";
 import { useAutosave, useInitialRestore } from "./app/hooks/useAutosave.js";
 import { useDaySummary } from "./app/hooks/useDaySummary.js";
 import { usePrivateTalk } from "./app/hooks/usePrivateTalk.js";
@@ -12,17 +13,17 @@ import { useTurn, useTurnQueue } from "./app/hooks/useTurn.js";
 import { useQuestPanel } from "./app/hooks/useQuestPanel.js";
 import { useDuel, useForcedDuelNpc } from "./app/hooks/useDuel.js";
 import { usePigeonReplies } from "./app/hooks/usePigeonReplies.js";
+import { usePigeonHandlers } from "./app/hooks/usePigeonHandlers.js";
 import { useAutoTravel } from "./app/hooks/useAutoTravel.js";
 import { useCraftingAI } from "./app/hooks/useCraftingAI.js";
+import { useScreenHandlers } from "./app/hooks/useScreenHandlers.js";
+import { useCardImportHandlers } from "./app/hooks/useCardImportHandlers.js";
+import { useBuildingHandlers } from "./app/hooks/useBuildingHandlers.js";
+import { useProgressionHandlers } from "./app/hooks/useProgressionHandlers.js";
+import { usePlayerActionHandlers } from "./app/hooks/usePlayerActionHandlers.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import { applyResult } from "./features/run.js";
 import { selectEffectiveStats } from "./features/stats/logic.js";
-import { applyCharacterCard } from "./features/character/logic.js";
-import { pickGroundItem, consumeItem } from "./features/items/logic.js";
-import { comfort, resolveTrauma, enterSeaOfMind as enterSeaLogic, leaveSeaOfMind as leaveSeaLogic, confessToNarrator as confessLogic } from "./features/narrator/logic.js";
-import { switchCompanion } from "./features/companion/logic.js";
-import { joinSect } from "./features/sect/logic.js";
-import { auctionWin } from "./features/auction/logic.js";
 import { createCoalescedCheck, createWorldRules } from "./engine/worldRules.js";
 import { timeAdvanceRule } from "./features/time/rules.js";
 import { residentNpcRule } from "./features/npc/rules.js";
@@ -44,50 +45,19 @@ import {
   villaArrivalRule,
   xuannuTriggerRule,
 } from "./features/narrator/rules.js";
-import {
-  breakthroughSkill as breakthroughSkillLogic,
-  meditate as meditateLogic,
-  trainCost,
-  trainNeigong as trainNeigongLogic,
-  trainWaigong as trainWaigongLogic,
-} from "./features/cultivation/logic.js";
-import {
-  deposit as depositFeature,
-  pledge as pledgeFeature,
-  redeem as redeemFeature,
-  withdraw as withdrawFeature,
-} from "./features/bank/logic.js";
-import {
-  describeGiftForPrompt,
-  giftNpc,
-  inviteCompanion,
-  lookNpc,
-  settleNpcDuel,
-  stealFromNpc,
-  talkToNpc,
-  tradeWithNpc,
-} from "./features/npc/logic.js";
-import {
-  buyPigeon as buyPigeonLogic,
-  collectPigeons as collectPigeonsLogic,
-  pigeonDelayShichen as pigeonDelayShichenLogic,
-  sendPigeonLetter as sendPigeonLetterLogic,
-} from "./features/pigeon/logic.js";
+import { trainCost } from "./features/cultivation/logic.js";
 import { attachImportedRegistry } from "./characterMilestones.js";
 import {
   NNPC_STAGE, isInSea,
   narratorVoicePrompt, affectionLabel, buildNarratorWhisperContext,
   narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
 } from "./narrator.js";
-import { gateBodyProfile, emptyBodyProfile, buildOutfitRequest, bodyProfileFilled } from "./bodyProfile.js";
-import BodyProfilePanel from "./BodyProfilePanel.jsx";
+import { gateBodyProfile, buildOutfitRequest, bodyProfileFilled } from "./bodyProfile.js";
 import { loadConfig, saveConfig } from "./apiConfig.js";
-import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, attachExtractionPipeline, attachInjectionSnapshot, fmtMs } from "./actionTrace.js";
-import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, npcAffectionLabel, reputationLabel } from "./mvu.js";
-import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, getEquipped, toggleEquip, rollQuality, computeEquippedStats } from "./equipment.js";
+import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, getEquipped, rollQuality, computeEquippedStats } from "./equipment.js";
 import { effectBrief } from "./itemEffectText.js";
 import { describeCatalogForAI, CATALOG, makeCatalogItem } from "./items/catalog.js";
 
@@ -102,15 +72,13 @@ import { loadPortraits, setPortrait, removePortrait, fileToDataUrl, inferActiveP
 import PortraitManager from "./PortraitManager.jsx";
 import CharacterPage from "./CharacterPage.jsx";
 import QuestLogScreen from "./QuestLogScreen.jsx";
-import OpeningSequence from "./OpeningSequence.jsx";
-import CharacterCreate from "./CharacterCreate.jsx";
 import { getActivePreset } from "./PresetManager.jsx";
 import { applyPresetOverrides } from "./presetSystem.js";
 import TraceViewer from "./TraceViewer.jsx";
 import { buildBudgetInstruction, INTENT } from "./inputIntent.js";
 import NpcActionMenu from "./NpcActionMenu.jsx";
 import ItemActionMenu from "./ItemActionMenu.jsx";
-import { ensureNpcCombatData, generateNpcMoveset, MOVE_POOL, hpFromNeigong } from "./npcGeneration.js";
+import { generateNpcMoveset, MOVE_POOL } from "./npcGeneration.js";
 import { detectNewFaces, markAsSeen, markNpcAsKnown, isNpcKnown, detectReunions, buildReunionBlock, updateLastSeen, REUNION_GAP_THRESHOLD } from "./npcAwareness.js";
 import TradingScreen from "./TradingScreen.jsx";
 import { evolveKnowledge, buildInfoDomainBlock, factSummaryRequestFromRecall, registerFact, witnessFact, allFactSummaries } from "./knowledge.js";
@@ -132,11 +100,11 @@ import VersionHistoryPanel from "./VersionHistoryPanel.jsx";
 import PersuasionScreen from "./PersuasionScreen.jsx";
 import { CURRENT_VERSION } from "./version.js";
 import { recallWithVisibility } from "./memory/recallWithVisibility.js";
-import { writeNote, NOTE_SOURCE, VIA, reembedStaleNotes } from "./memory/note.js";
+import { writeNote, NOTE_SOURCE, reembedStaleNotes } from "./memory/note.js";
 import { buildDistantViewBlock } from "./memory/daySummary.js";
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
-import { setSnowLeopardActive, isSnowLeopardAvailable, unlockedCompanions, unlockImportedCompanion, COMPANION_LORE } from "./companion.js";
+import { setSnowLeopardActive, isSnowLeopardAvailable, unlockedCompanions, COMPANION_LORE } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -155,29 +123,6 @@ import JadeShopScreen from "./buildings/JadeShopScreen.jsx";
 import GambleStoneScreen from "./buildings/GambleStoneScreen.jsx";
 import { settleNegotiation as gambleSettleNegotiation } from "./gambleStone.js";
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
-import {
-  buySkill as buySkillFeature,
-  buyBook as buyBookFeature,
-  cookMeal,
-  gamble as gambleFeature,
-  healAtHospital,
-  listenToRumor,
-  orderService,
-  pray as prayFeature,
-  readBook as readBookFeature,
-  restAtInn,
-  travelByCarriage,
-} from "./features/buildings/logic.js";
-import {
-  commissionForge,
-  craftJade,
-  settleGambleStone,
-} from "./features/crafting/logic.js";
-import {
-  acceptBounty,
-  acceptEscort,
-  claimBounty,
-} from "./features/quest/logic.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
 import { injectNpcs, materializeNpc, removeNpc } from "./roomNpcs.js";
@@ -190,7 +135,6 @@ import {
 import { narratorVars, setNarratorVars } from "./mvu.js";
 import { getAllResidentNpcLore } from "./residentNpcs.js";
 import { SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
-import { stealSuccessRate } from "./combat/stealSystem.js";
 import { buildSysBase } from "./sysBase.js";
 import { DIRS, bar, STAGE_TO_QUALITY, DIR_DXY, getTimeStr } from "./utils/mudHelpers.js";
 import { MAP_UI } from "./mapUi.js";
@@ -201,15 +145,9 @@ import LeftPanel from "./panels/LeftPanel.jsx";
 import RightPanel from "./panels/RightPanel.jsx";
 import CenterPanel from "./panels/CenterPanel.jsx";
 import TopBar from "./panels/TopBar.jsx";
-import MusicPanel from "./MusicPanel.jsx";
-import HomesteadPanel from "./buildings/HomesteadPanel.jsx";
-import { getHomestead } from "./homestead.js";
-import GlobalOverlays from "./panels/GlobalOverlays.jsx";
 import * as importedRegistry from "./cards/importedRegistry.js";
 import DebugPanel from "./panels/DebugPanel.jsx";
 import ClickableMap from "./ClickableMap.jsx";
-import PipelineViewer from "./PipelineViewer.jsx";
-import { learnNpcSkill as learnNpcSkillLogic } from "./features/npc/logic.js";
 import { getCompanionDescForm } from "./companionForms.js";
 
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false } = {}) {
@@ -756,53 +694,17 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 只报字段/描述/加成，不报获取途径：怎么弄到手得自己走一趟。
   const { recommendOutfit } = useOutfitAdvice({ char, apiCfg, setOutfitState });
 
-  const confessToNarrator = useCallback(() => {
-    applyResult(featureCtxRef.current, confessLogic(gameStore.getState()));
-  }, []);
-
   const { inspecting, inspectItem } = useAiInspect({
     loading, addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv,
   });
-  // 打坐：消耗1回合，恢复部分气血，不单纯是时间跳跃
   const [justMeditated, setJustMeditated] = useState(false);
-
-  const meditate = useCallback(() => {
-    if (loading) return;
-    setJustMeditated(true);
-    setTimeout(() => setJustMeditated(false), 350);
-    applyResult(featureCtxRef.current, meditateLogic(gameStore.getState()));
-    noteAction("meditate");
-  }, [loading, noteAction]);
-
-  // 修炼：花潜能升内功/外功，越练越贵（每10点门槛成本+1），系统本地裁决，
-  // AI 不再直接改 neigong/waigong（见 presetSystem.js 的收权说明）——
-  // 战斗/任务赚潜能，潜能换修为，这是唯一的数值上升通道。
-  const trainNeigong = useCallback(() => {
-    if (loading) return;
-    applyResult(featureCtxRef.current, trainNeigongLogic(gameStore.getState()));
-  }, [loading]);
-  const trainWaigong = useCallback(() => {
-    if (loading) return;
-    applyResult(featureCtxRef.current, trainWaigongLogic(gameStore.getState()));
-  }, [loading]);
-
-  // 武学升阶：花潜能把某门【可修炼武学】(非 fixed/授业绝学)的 stage 往上推一级。
-  // 复用潜能这条唯一数值上升通道（跟内外功同源），不再靠 exp 经验累积——经验那条
-  // 断链了（战斗不发经验），改成玩家用潜能主动突破，明确可控。
-  // 成本按目标阶段递增：小成12 / 大成20 / 圆满32 / 登峰造极48（越高阶越贵，跟内外功
-  // "越练越贵"一个思路，但武学是阶跃式突破，单次成本更高）。
-  const breakthroughSkill = useCallback((skillId) => {
-    if (loading) return;
-    applyResult(featureCtxRef.current, breakthroughSkillLogic(gameStore.getState(), skillId));
-  }, [loading]);
+  const { confessToNarrator, meditate, trainNeigong, trainWaigong, breakthroughSkill } = useProgressionHandlers({
+    loading, noteAction, featureCtxRef, setJustMeditated,
+  });
 
   // 送礼：从背包选一件物品送给指定角色，走正常的行动指令流程，
   // 让主引擎 AI 描述场景、判断礼物是否合心意，并通过 <mvu> 自行决定好感度增量
   // （沿用"AI 提议 + 系统裁决"：AI 只能建议合理幅度，最终写入仍由 applyMvuCommands 裁剪）
-  const claimMilestone = useCallback((charName, threshold) => {
-    setClaimedMilestones(prev => new Set(prev).add(`${charName}:${threshold}`));
-  }, []);
-
   // extraReplies：调用方（比如点击NPC头像触发的"细看"）想在这条命令自己的框里
   // 附带插入的日志（气血条之类），必须跟 cmd 回显同一次 addLog 原子提交——
   // 之前 handleNpcLook 是先 addLog 血条、再调 act 补 cmd 行，两次独立的 addLog
@@ -882,158 +784,26 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setActivePersuasion, setInteractMode, setTalkTarget,
   });
 
-  // 切磋结算共享 handler：1v1(DuelScreen) 与 2v2(TeamDuelScreen) 两个界面
-  // 的收尾逻辑完全一致——交情/战利品/任务分支/事实账本/整场战报都跟战斗
-  // 形态无关，提取成同一个函数供两处复用（battleLog 条目形状略有差异：
-  // 1v1 是 {playerMove,npcMove,...}，2v2 是 TeamDuelScreen 拼好的 {teamText}）。
-  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp) => {
-    const finishedNpc = duelingNpc;
-    const result = settleNpcDuel(gameStore.getState(), finishedNpc, {
-      outcome,
-      loot,
-      battleLog,
-      grownMoveset,
-      usedItems,
-      remainingHp,
-      pendingQuestBranch,
-      createRespawnNpc: ensureNpcCombatData,
-    });
-    if (pendingQuestBranch?.mode === "combat" && finishedNpc?.questBranchFlag === pendingQuestBranch.flag) {
-      setPendingQuestBranch(null);
-    }
-    noteAction("duel");
-    setDuelingNpc(null);
-    applyResult(featureCtxRef.current, result);
-    if (result.factId) aiSummarizeFact(result.factId, result.cue);
-    if (finishedNpc) {
-      setTimeout(() => {
-        act(`切磋结束。经过：${result.recap || "双方试探几招，未及深入"}。结果：${result.outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true });
-      }, 0);
-      jotNote({
-        text: result.recapNote,
-        owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }],
-        source: NOTE_SOURCE.DUMB,
-      });
-    }
-  }, [duelingNpc, pendingQuestBranch, noteAction, act, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch]);
-
-  // 分支节点的具体选项点击（本轮改造，同样支持二选一模式）：
-  //   "script" 模式——送一句明确的话给主叙事AI（此前的实现）
-  //   "prompt" 模式（默认）——系统直接强制写入这个选项对应的flag、推进
-  //     stage、结算奖励，然后调用专属harness生成这个具体选择的叙事文字
-  // 细看：恢复原本"点NPC名字直接查看"的行为，走正常行动指令流程，
-  // 让主引擎描述这个人的外貌举止细节
-  const handleNpcLook = useCallback((npc) => {
-    const result = lookNpc(gameStore.getState(), npc);
-    applyResult(featureCtxRef.current, result);
-    setActiveTarget(npc.name);
-    act("look " + npc.id, result.extraReplies || []);
-  }, [act]);
-
-  // NPC 互动菜单的四个动作回调。
-  // 对话：直接把交互模式切到 talk，玩家自己接着打字说话——
-  // 不代玩家编一句开场白，因为"上前搭话"之后具体聊什么应该由玩家自己决定。
-  const handleNpcTalk = useCallback((npc) => {
-    const result = talkToNpc(gameStore.getState(), npc);
-    applyResult(featureCtxRef.current, result);
-    if (result.completedEscort) return;
-    if (npc.cannotSpeak) {
-      setActiveTarget(npc.name);
-      return;
-    }
-    setInteractMode("talk");
-    setTalkTarget(npc.name);
-    setActiveTarget(npc.name);
-  }, []);
-
-  // 送礼信息组装：把"送的是什么"落到具体的品阶+描述+建议幅度，喂给 AI 的 <mvu>
-  // 提示才有依据可循，不是空对着一个物品名字瞎猜该加多少好感。
-  // 优先查百物录（具名物品，desc 最详实）；查不到就退回背包条目自带的字段
-  // （匿名装备通常有 quality，杂物道具可能只有 name）；品阶缺失一律按白档兜底。
-  // 建议幅度区间跟着六品阶指数曲线走（品阶越高、这件东西在世界观里越贵重，
-  // 一份心意的分量也越重），最终仍会被 mvu.js 的 ±15 硬裁剪兜底，这里只是
-  // 给 AI 一个贴合实际、别瞎给的参考锚点，不是精确写死的数值。
-  // 送礼：系统裁决层先本地从背包扣除这件物品（不能让 AI 自己决定"要不要真的扣"），
-  // 再把"送出"这个既成事实和物品描述一起交给主引擎生成场景反应和好感度判断。
-  const handleNpcGift = useCallback((npc, item) => {
-    setActiveTarget(npc.name);
-    applyResult(featureCtxRef.current, giftNpc(gameStore.getState(), npc, item));
-  }, []);
-
-  // 邀请入队（目前只有雪豹）：系统裁决层直接把伙伴状态设为"已解锁+出战"
-  // （不靠AI判断"愿不愿意跟你走"这种概率性的东西——邀请入队是玩家主动点的
-  // 确定性按钮，点了就成，不该有"AI这轮心情不好就拒绝了"的不确定性，这跟
-  // 送礼的教训一致：凡是玩家主动发起、系统本该兜底成功的动作，都不能把
-  // "成不成"这件事交给AI去演，只能交给AI去描述"已经发生的事"）。
-  // 走 settle 档 + settleKind:"companion_invite"，让 buildSysBase 注入专属的
-  // "前世羁绊/认主"调性铁律（见下方 buildSysBase 里新增的分支）。
-  const handleInviteCompanion = useCallback((npc) => {
-    const result = inviteCompanion(gameStore.getState(), npc);
-    if (!result.changes) return;
-    setActiveTarget(npc.name);
-    applyResult(featureCtxRef.current, result);
-  }, []);
-
-  // ⑤ 服食：把原打字正则分支的确定性结算抽成 handler，供物品面板「服食」调用。
-  const handleConsumeItem = useCallback((item) => {
-    applyResult(featureCtxRef.current, consumeItem(gameStore.getState(), item));
-  }, []);
-
-  // ⑧ 采摘：把地上物收入背包、从 room.items 抹去（确定性，不调AI）。
-  const handleCollectGround = useCallback((item) => {
-    applyResult(featureCtxRef.current, pickGroundItem(gameStore.getState(), item, { tallyTime: timeRef.current }));
-  }, []);
-
   const autoTravelTo = useAutoTravel({
     room, loading, mapData, flags, questProgress, addLog, pendingQueue,
     autoTravelRef, setQueueCount, act, teleportLookRef, innerRoomName, setInteractMode,
   });
 
-  // ── 飞鸽传书（本轮新增）──────────────────────────────────────────────
-  // 飞鸽回信时长：按玩家当前据点与收信人所在据点的直线距离折算，钳制在 1–12 时辰。
-  const pigeonDelayShichen = useCallback(
-    (npcName) => pigeonDelayShichenLogic(gameStore.getState(), npcName),
-    [room.name, varTree],
-  );
-
-  const applyPigeonResult = useCallback((result) => {
-    applyResult(featureCtxRef.current, result);
-    if (result.factSummary) aiSummarizeFact(result.factSummary.id, result.factSummary.cue);
-    return result;
-  }, [aiSummarizeFact]);
+  const {
+    pigeonDelayShichen, applyPigeonResult, sendPigeonLetter, buyPigeon,
+    handleCollectPigeons, handlePostSend,
+  } = usePigeonHandlers({
+    room, varTree, featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
+    setInteractMode, setActiveBuilding,
+  });
 
   usePigeonReplies({ room, apiCfg, preset, applyPigeonResult, time, varTree, featureCtxRef });
 
-  const sendPigeonLetter = useCallback((npcName, content, opts = {}) => {
-    const result = sendPigeonLetterLogic(gameStore.getState(), npcName, content, opts);
-    applyPigeonResult(result);
-    if (result.sent) {
-      setInput("");
-      setPigeonTarget(null);
-      setInteractMode("action");
-    }
-    return result;
-  }, [applyPigeonResult]);
-
-  // 驿站买鸽子
-  const buyPigeon = useCallback((qty, price) => {
-    applyPigeonResult(buyPigeonLogic(gameStore.getState(), qty, price));
-  }, [applyPigeonResult]);
-
-  // 鸽子笼：每日免费领信鸽，不花银两。跟赌坊同一套"当天领没领过"判断模式，
-  // 用 flags 记 pigeon_collected_day_${dayIdx}（dayIdx = time/24，真正的天数）。
-  const handleCollectPigeons = useCallback(({ qty, dayIdx }) => {
-    applyPigeonResult(collectPigeonsLogic(gameStore.getState(), { qty, dayIdx }));
-  }, [applyPigeonResult]);
-
-  // 驿站寄信/送礼总入口（供 TransportScreen 回调）
-  const handlePostSend = useCallback(({ npcName, content, channel, gift }) => {
-    setActiveBuilding(null);
-    sendPigeonLetter(npcName, content, { channel, gift });
-  }, [sendPigeonLetter]);
-
-  const { handleNpcDuel, confirmDuel, cancelDuel } = useDuel({
+  const {
+    handleNpcDuel, confirmDuel, cancelDuel, duelFinishHandler,
+  } = useDuel({
     act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
+    duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
   });
 
   // 拜师学艺：好感度≥40 + 完成该NPC专属支线任务，两个条件同时满足才能学到技能。
@@ -1041,298 +811,36 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 打开交易界面：只在NPC是手写配置的商人时可用，货品清单固定不变，
   // 保证同一个商人每次进店看到的东西都稳定。
   const [tradingShop, setTradingShop] = useState(null); // { name: 商人名, shopName, items }
-  const handleNpcTrade = useCallback((npc) => {
-    const result = tradeWithNpc(gameStore.getState(), npc);
-    if (result.shop) setTradingShop(result.shop);
-    else applyResult(featureCtxRef.current, result);
-  }, []);
-
-  // 拜师学艺：统一走 tryLearnFromMaster（src/kungfu/learnSkill.js）。
-  // 高手（levelCap≥1）教专属招，平民（levelCap<1）教通用招池的白档基本功——
-  // 这是这次改动新加的行为，此前平民直接拒绝拜师。价格按好感折价曲线走低
-  // （40-59原价/60-79七折/80-99五折/100免费），银两不够时提示但不强行学。
-  const handleNpcLearnSkill = useCallback((npc) => {
-    const result = learnNpcSkillLogic(gameStore.getState(), npc);
-    if (result.changes) setActiveTarget(npc.name);
-    applyResult(featureCtxRef.current, result);
-  }, []);
-
-  // 偷窃：偷物+偷师（偷招）二合一，同一次判定，成功后再二选一决定这次偷到的
-  // 是物品还是招式（tryStealFrom 内部处理）。身法（char.special.身法）现在也
-  // 参与成功率计算，跟好感度独立相加——手越利索，越容易得手。
-  const handleNpcSteal = useCallback((npc) => {
-    const state = gameStore.getState();
-    const agility = state.char?.special?.身法 ?? 0;
-    const _st = startTrace(`偷窃 ${npc?.name || "?"}`, `偷窃 ${npc?.name || "?"}`);
-    const poolAll = npc?.carriedItems || [];
-    const poolUsable = poolAll.filter(it => !it.stolen);
-    traceStep(_st, "随身物池", poolUsable.length ? "info" : "block",
-      poolAll.length
-        ? `共${poolAll.length}件，可偷${poolUsable.length}件：${poolUsable.map(i => `${i.name}(${i.category || "?"}/${i.quality || "?"})`).join("、") || "无"}`
-        : `carriedItems 为空或未固化 —— 这种情况偷不到任何物件，只可能偷到招式。若此人本该有随身物，说明固化/回填没生效。`);
-    const favorability = state.varTree?.角色?.[npc?.name]?.好感度 ?? 0;
-    traceStep(_st, "身法与好感", "info",
-      `身法${agility}，好感${favorability} → 成功率约 ${(stealSuccessRate(favorability, agility) * 100).toFixed(0)}%`);
-    const result = stealFromNpc(state, npc);
-    const steal = result.steal;
-    if (result.kind === "blocked") {
-      traceStep(_st, "判定", "block", steal?.reason || "此地没有这位人物。");
-      endTrace(_st, "偷窃未进行");
-      applyResult(featureCtxRef.current, result);
-      return;
-    }
-    traceStep(_st, "掷骰", steal.success ? "pass" : "block",
-      `成功率${(steal.rate * 100).toFixed(0)}% → ${steal.success ? "得手" : "被察觉"}`);
-    if (steal.success) {
-      traceStep(_st, "产出分流", "info",
-        `结局=${steal.outcome === null ? "对方一无所有" : steal.outcome === "move" ? "偷到招式" : "偷到物件"}`
-        + (steal.outcome === "item" ? `：${steal.item.name}(${steal.item.category})` : "")
-        + (steal.outcome === "move" ? `：${steal.move.name}` : ""));
-    }
-    if (result.kind === "caught") {
-      endTrace(_st, `被${npc.name}察觉，好感-${steal.favorabilityLoss}`);
-    } else {
-      endTrace(_st, result.kind === "empty"
-        ? `得手但${npc.name}身无长物`
-        : result.kind === "item" ? `顺走「${steal.item.name}」` : `偷师「${steal.move.name}」`);
-    }
-    if (result.noteAction) noteAction(result.noteAction);
-    applyResult(featureCtxRef.current, result);
-  }, [noteAction]);
+  const {
+    handleNpcLook, handleNpcTalk, handleNpcGift, handleInviteCompanion,
+    handleConsumeItem, handleCollectGround, handleNpcTrade, handleNpcLearnSkill,
+    handleNpcSteal, giftToCharacter, handleToggleEquip, claimMilestone,
+  } = useScreenHandlers({
+    act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
+    timeRef, noteAction, inv, setTradingShop, setInv, setClaimedMilestones,
+  });
 
   useTurnQueue({ loading, act, pendingQueue, setQueueCount, autoTravelRef });
 
-  const giftToCharacter = useCallback((charName) => {
-    if (inv.length === 0) {
-      addLog([{ t: "err", text: `  背包空空如也，没有什么可以送给${charName}的。` }]);
-      return;
-    }
-    const itemNames = inv.map(i => typeof i === "string" ? i : i.name);
-    const choice = window.prompt(`要把哪件东西送给${charName}？\n${itemNames.map((n, i) => `${i + 1}. ${n}`).join("\n")}\n\n输入序号：`);
-    const idx = parseInt(choice, 10) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= itemNames.length) return;
-    const itemName = itemNames[idx];
-    const giftInfo = describeGiftForPrompt(inv[idx]);
-    setInteractMode("action");
-    act(`把${itemName}送给${charName}`, [], { settle: true, settleNpc: charName, settleKind: "gift", giftInfo });
-  }, [inv, addLog, act, describeGiftForPrompt]);
-
-  // ── 建筑交互处理 ──
-
-  const handleBuildingInn = useCallback((cost, roomType) => {
-    const result = restAtInn(gameStore.getState(), {
-      cost,
-      roomType,
-      buildingName: activeBuilding?.name,
-    });
-    applyResult(featureCtxRef.current, result);
-  }, [activeBuilding]);
-
-  const handleBuildingHeal = useCallback((cost, healAmt) => {
-    applyResult(featureCtxRef.current, healAtHospital(gameStore.getState(), {
-      cost,
-      healAmt,
-      buildingName: activeBuilding?.name,
-    }));
-  }, [activeBuilding]);
-
-  const handleBuySkill = useCallback((catalogItem) => {
-    applyResult(featureCtxRef.current, buySkillFeature(gameStore.getState(), catalogItem));
-  }, []);
-
-  const handleGamble = useCallback(({ mode, bet, luck, dayIdx }) => {
-    applyResult(featureCtxRef.current, gambleFeature(gameStore.getState(), {
-      mode,
-      bet,
-      luck,
-      dayIdx,
-      maxBet: activeBuilding?.maxBet,
-    }));
-  }, [activeBuilding]);
-
-  const handleTravel = useCallback((dest, price) => {
-    const result = travelByCarriage(gameStore.getState(), dest, price);
-    applyResult(featureCtxRef.current, result);
-    if (result.changes) setActiveBuilding(null);
-  }, []);
-
-  const handleServiceOrder = useCallback((item, karmaChange = 0) => {
-    applyResult(featureCtxRef.current, orderService(gameStore.getState(), item, karmaChange));
-  }, []);
-
-  // 烹饪台：系统裁决（扣料/回血/挂 buff flag），叙事交给主管线写一段「小总结」。
-  // dish 由 CookingScreen 算好（固定配方 computeDish / 自由组合 genericDishEffect）。
-  // freestyle（妙手偶得）时菜名也由主叙事 AI 即兴起——想象归 AI、数值归系统。
-  const handleCook = useCallback(({ materials, technique, cookware, freestyle, dish }) => {
-    applyResult(featureCtxRef.current, cookMeal(gameStore.getState(), {
-      materials,
-      technique,
-      cookware,
-      freestyle,
-      dish,
-      buildingName: activeBuilding?.name,
-    }));
-  }, [activeBuilding]);
-
-  const handlePray = useCallback(() => {
-    applyResult(featureCtxRef.current, prayFeature(
-      gameStore.getState(),
-      activeBuilding?.karmaPerPray || 10,
-    ));
-  }, [activeBuilding]);
-
-  const handleReadBook = useCallback((book) => {
-    applyResult(featureCtxRef.current, readBookFeature(gameStore.getState(), book));
-  }, []);
-
-  const handleBuyBook = useCallback((book) => {
-    applyResult(featureCtxRef.current, buyBookFeature(gameStore.getState(), book));
-  }, []);
-
-  const handleDeposit = useCallback((amount) => {
-    applyResult(featureCtxRef.current, depositFeature(gameStore.getState(), amount));
-  }, []);
-
-  const handleWithdraw = useCallback(() => {
-    applyResult(featureCtxRef.current, withdrawFeature(gameStore.getState()));
-  }, []);
-
-  const handlePledge = useCallback((item, pledgeValue) => {
-    applyResult(featureCtxRef.current, pledgeFeature(gameStore.getState(), item.id, pledgeValue));
-  }, []);
-
-  const handleRedeem = useCallback((index, redeemCost) => {
-    applyResult(featureCtxRef.current, redeemFeature(gameStore.getState(), index, redeemCost));
-  }, []);
-
-  const handleAcceptEscort = useCallback((quest) => {
-    applyResult(featureCtxRef.current, acceptEscort(gameStore.getState(), quest));
-  }, []);
-
-  const handleAcceptBounty = useCallback((quest) => {
-    applyResult(featureCtxRef.current, acceptBounty(gameStore.getState(), quest));
-  }, []);
-
-  const handleClaimBounty = useCallback((quest) => {
-    applyResult(featureCtxRef.current, claimBounty(gameStore.getState(), quest));
-  }, []);
+  const {
+    handleBuildingInn, handleBuildingHeal, handleBuySkill, handleGamble, handleTravel,
+    handleServiceOrder, handleCook, handlePray, handleReadBook, handleBuyBook,
+    handleDeposit, handleWithdraw, handlePledge, handleRedeem, handleAcceptEscort,
+    handleAcceptBounty, handleClaimBounty, handleGambleSettle, handleForgeCommission,
+    handleJadeCraft, handleListenRumor, handleJoinSect, handleAuctionWin,
+  } = useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef });
 
   const { handleGambleTalk, handleGambleInspect, handleForgeDesign, handleJadeDesign } = useCraftingAI({
     gambleTalkCtx, setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
   });
 
-  // 赌石成交/委托：系统裁决好数值后（gambleStone 已 clamp），照送礼/买卖那套——
-  // 拼一句自然语言走 act()，让主叙事演一段，convo/小纸条/账本/召回全自动挂上。
-  const handleGambleSettle = useCallback((res) => {
-    const result = settleGambleStone(gameStore.getState(), res);
-    applyResult(featureCtxRef.current, result);
-    if (res.type !== "buy" && result.changes) setActiveBuilding(null);
-  }, []);
-
-  // 玩家从 3 候选里选定一个下单。候选完整规格(name/category/effect/sixDim + 三填空原文)
-  // 编码进 pending flag——因为 effect/sixDim 是对象，塞不进下划线分隔的老格式，改成把整个
-  // spec JSON 用 encodeURIComponent 存进 flag 末段，24 时辰自动交付时解出、原样造出成品。
-  // flag 格式：forge_pending_<下单time>_<luck>_<encodeURIComponent(JSON.stringify(spec))>
-  const handleForgeCommission = useCallback((chosen, luck, currentTime, cost, threeFields) => {
-    applyResult(featureCtxRef.current, commissionForge(gameStore.getState(), {
-      chosen, luck, currentTime, cost, threeFields,
-    }));
-  }, []);
-
-  // ══ 金玉行（一个 building 两柜台，都消耗背包里的玉料）══
-  // 玉料 = 赌石开出后"据为己有"收进背包的物品(带 jadeSpec.qualityCap 品质天花板)。
-  // 成品品质 = min(玉料天花板, 气运rollQuality)——好料是上限，手气定实际发挥。
-  // 两柜台都走延时打造(复用 forge_pending flag + 自动交付)，spec 里带 jade:true + qualityCap，
-  // 交付时据此把品质封顶。下单即消耗那件玉料(从 inv 移除)。
-
-  // 下单打造（两柜台共用）：chosen=选定成品规格，jadeItemId=要消耗的玉料物品id。
-  // preset=true 表示预制柜(选购成品，词条来自 JADE_WARES 该成品本身)；false 为定制柜。
-  const handleJadeCraft = useCallback((chosen, jadeItemId, currentTime, threeFields) => {
-    applyResult(featureCtxRef.current, craftJade(gameStore.getState(), {
-      chosen, jadeItemId, currentTime, threeFields,
-    }));
-  }, []);
-
-  const handleListenRumor = useCallback((rumor, cost) => {
-    applyResult(featureCtxRef.current, listenToRumor(gameStore.getState(), rumor, cost));
-  }, []);
-
-  // ── 角色入册的落册回调 ──
-  // 人物只进全局注册表，不进存档：导入的卡是玩家资产，跨存档通用。
-  // 好感度只在作者明确配了非 0 初值时才写 varTree——写了就会出现在「人物关系」页，
-  // 而一个还没见过面的人出现在关系页是不对的。初值 0 的等自然相遇再建交情。
-  const handleImportNpcs = useCallback((npcs) => {
-    const n = importedRegistry.registerImported(npcs, {});
-    const withAff = npcs.filter(x => (x.affection || 0) !== 0);
-    if (withAff.length) {
-      setVarTree(t => {
-        const chars = { ...(t.角色 || {}) };
-        for (const x of withAff) {
-          chars[x.name] = { ...(chars[x.name] || {}), 好感度: Math.max(0, Math.min(100, x.affection)) };
-        }
-        return { ...t, 角色: chars };
-      });
-    }
-    // 不必手动推版本号：registerImported 内部的 persist 会通知订阅者，
-    // registry 的 revision 通知会调度驻场 world rule 重算
-    // 有几个人此刻就该站在这个据点里？如实说，别让玩家对着空屋子猜落册成没成。
-    const here = importedRegistry.getImportedResidentNames()
-      .filter(nm => npcs.some(x => x.name === nm));
-    addLog([
-      { t: "sys", text: `  ${n} 人已入册：${npcs.map(x => x.name).join("、")}` },
-      { t: "sys", text: "  他们的人设已挂上世界书，行走江湖时遇到便会照此登场。" },
-      ...(here.length
-        ? [{ t: "sys", text: `  其中 ${here.join("、")} 驻场于此，此刻已在场。` }]
-        : []),
-    ]);
-  }, [setVarTree, addLog]);
-
-  // 玩家档案：名讳 / 体貌公开层 / 七维。气血必须在体魄定下之后重算，顺序不能反。
-  const handleImportPlayer = useCallback((player, opening) => {
-    setChar(c => {
-      const next = { ...c };
-      if (player.name) next.name = player.name;
-      if (player.gender) next.gender = player.gender;
-      if (player.special) next.special = { ...(c.special || {}), ...player.special };
-      // bodyProfile 的十二项在数据结构上是平的（公开层七项＋私密层五项同一个对象），
-      // 界面上分两层只是为了标清"哪些能从卡里抽、哪些只能手填"。
-      if (player.bodyProfile || player.bodyProfilePrivate) {
-        next.bodyProfile = { ...(c.bodyProfile || {}), ...(player.bodyProfile || {}), ...(player.bodyProfilePrivate || {}) };
-      }
-      if (Number.isFinite(player.neigong)) next.neigong = player.neigong;
-      if (Number.isFinite(player.waigong)) next.waigong = player.waigong;
-      const maxHp = hpFromNeigong(next.neigong ?? 5, next.special?.体魄 ?? 5);
-      const curRatio = (c.hp?.[1] ? c.hp[0] / c.hp[1] : 1);
-      next.hp = [Math.max(1, Math.round(maxHp * curRatio)), maxHp];
-      return next;
-    });
-    // 主角卡的初始武学/装备，跟开局路径同一套（武学整套替换、装备追加+自动上身）。
-    // seed 带时间戳：游戏中可能反复入册，避免 carry 物品 id 撞号（撞了会一起被装备/卸下）。
-    const cardResult = applyCharacterCard(gameStore.getState(), player, `ci${Date.now().toString(36)}_`);
-    applyResult(featureCtxRef.current, cardResult);
-    const carried = cardResult.carriedCount;
-    const filled = Object.values(player.bodyProfile || {}).filter(v => (v || "").trim()).length;
-    const sk = (player.skills || []).length;
-    addLog([
-      { t: "sys", text: `  已按卡改写自身：体貌填了 ${filled}/7 项，七维已录${sk ? `，带 ${sk} 门武学` : ""}${carried ? `，${carried} 件随身物已入包` : ""}。` },
-      ...(filled < 7 ? [{ t: "sys", text: "  余下几项去右栏「◈ 体貌」自己补，私密层那五项只能手填。" }] : []),
-      ...(opening?.rewritten ? [{ t: "narr", text: opening.rewritten }] : []),
-    ]);
-  }, [setChar, setSkills, setInv, addLog]);
-
-  // 世界观条目走关键词点灯那条路（跟人物同一个机制，见 registerImportedWorld 注释）
-  const handleImportWorld = useCallback((items) => {
-    const n = importedRegistry.registerImportedWorld(items, {});
-    if (n) addLog([{ t: "sys", text: `  ${n} 条地理与规矩已入册，提到时自会浮现。` }]);
-  }, [addLog]);
-
-  // 装备/卸下。此前直接在 GlobalOverlays 里 setInv(toggleEquip(...))，
-  // 为了记一笔计数不值当再穿一层 props，收拢到这儿——将来装备变更要加别的
-  // 副作用（耐久、套装判定）也有地方放。
-  const handleToggleEquip = useCallback((it) => {
-    setInv(v => toggleEquip(v, it.id));
-    noteAction("equipToggle");
-  }, []);
+  const {
+    handleImportNpcs, handleImportPlayer, handleImportWorld,
+    handleCreateCharacter, handleOpeningFinish, handleBodyProfileChange,
+  } = useCardImportHandlers({
+    setVarTree, setChar, setSkills, setInv, setCompanionState, addLog,
+    featureCtxRef, schedulerRef,
+  });
 
   // ── 心灵之海 · 玄女点破 ──
   // "说过话"直接复用「对话即认识」的结果（commitRound 里 talkTarget/respondedNpcs
@@ -1342,46 +850,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const seaReturnRef = useRef(null); // 进海之前站在哪，出来要送回去
   const tokyoReturnTimerRef = useRef(null);
 
-  // ── 创伤线 · 安抚 ──
-  // 五个动作全走这一个入口。计分与门槛判定都在 narratorQuest（纯函数），
-  // 这里只负责落状态、写日志。**不调 AI**：这些是高频动作，每次烧一次调用不值当，
-  // 且写死的反应更稳定，不会因为模型状态忽冷忽热。
-  const handleComfort = useCallback((actionKey) => {
-    const result = comfort(gameStore.getState(), actionKey);
-    applyResult(featureCtxRef.current, result);
-    if (result.changes) noteAction("comfort");
-  }, []);
-
-  // 换出战队友（单槽互斥；传 null 表示谁都不带）
-  const handleSwitchCompanion = useCallback((key) => {
-    applyResult(featureCtxRef.current, switchCompanion(gameStore.getState(), key));
-    noteAction("companionSwitch");
-  }, []);
-
-  // ── 创伤线 · 收束（点破内核 + 承诺）──
-  const handleResolveTrauma = useCallback(() => {
-    applyResult(featureCtxRef.current, resolveTrauma(gameStore.getState()));
-  }, []);
-
-  // 进心灵之海：必须站在自己的安全屋里。这是一次纯前端传送，不调 AI、不消耗回合。
-  const enterSeaOfMind = useCallback(() => {
-    const state = gameStore.getState();
-    const result = enterSeaLogic(state);
-    if (result.changes) seaReturnRef.current = { room: state.room.name, inner: state.innerRoomName };
-    applyResult(featureCtxRef.current, result);
-    if (result.changes) {
-      setTimeout(() => setInnerRoomName(SEA_OF_MIND.anchor), 0);
-      noteAction("seaEnter");
-    }
-  }, []);
-
-  // 出心灵之海：回到进来之前站的地方。
-  const leaveSeaOfMind = useCallback(() => {
-    const back = seaReturnRef.current || { room: "鱼定村", inner: null };
-    const result = leaveSeaLogic(gameStore.getState(), back);
-    applyResult(featureCtxRef.current, result);
-    if (result.changes) setTimeout(() => setInnerRoomName(back.inner), 0);
-  }, []);
+  const {
+    handleComfort, handleSwitchCompanion, handleResolveTrauma, enterSeaOfMind, leaveSeaOfMind,
+  } = usePlayerActionHandlers({ featureCtxRef, noteAction, setInnerRoomName, seaReturnRef });
 
   // 互动菜单读当前真值，而不是点开那一刻的快照。
   // 【为什么】activeNpcMenu 存的是点击时的对象引用；菜单开着的这段时间里
@@ -1396,24 +867,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   const inSeaOfMind = room.name === SEA_OF_MIND.district;
   const seaGate = canEnterSea({ flags, varTree, districtName: room.name, innerRoomName });
-
-  // ── 拜入雪山派 ──
-  // 系统这边一次做完：扣束脩、发弟子令牌（同时是别院钥匙）、写身份 flag、
-  // 标记认识何雨谢。AI 只负责把这件既成事实写成一段像样的入门叙事。
-  // settleKind:"learn_skill" 复用授业那套铁律——拜入门派同样是"对方认可你、
-  // 把你收进门里"，好感只该往上走。
-  const handleJoinSect = useCallback(() => {
-    const result = joinSect(gameStore.getState());
-    if (result.changes) setActiveBuilding(null);
-    applyResult(featureCtxRef.current, result);
-  }, []);
-
-  // ── 拍卖落槌 ──
-  // AuctionScreen 里的竞价过程是纯前端状态机（auction.js），不调 AI；
-  // 只有最终成交这一下才交给 AI 写一段叙事。
-  const handleAuctionWin = useCallback((finalPrice) => {
-    applyResult(featureCtxRef.current, auctionWin(gameStore.getState(), finalPrice));
-  }, []);
 
   const composingRef = useRef(false); // 输入法组合态：中文/日文等 IME 正在拼字时为 true
 
@@ -1458,6 +911,40 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     scroll: { flex: 1, padding: "10px 16px", overflowY: "auto", overflowX: "hidden", fontSize: "12.5px", lineHeight: 1.8, wordBreak: "break-word" },
   };
 
+  const overlayCtx = {
+    apiCfg, setApiCfg, buildCurrentSnapshot, applySnapshot, varTree, setVarTree,
+    settingsInitialTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText,
+    showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead,
+    char, setChar, inv, setInv, innerRoomName, addLog, zoneTheme, nsfwOn,
+    recommendOutfit, outfitState, handleCreateCharacter, handleOpeningFinish,
+    handleBodyProfileChange,
+    globalOverlays: {
+      zoneTheme, isDayMode,
+      char, setChar, inv, setInv, skills,
+      varTree, room, innerRoomName, time,
+      flags, questProgress,
+      effectiveSpecialNow, companionState,
+      loading, pendingTalks, waitSecs, addLog,
+      characterPageTarget, setCharacterPageTarget,
+      claimedMilestones, claimMilestone, giftToCharacter,
+      narratorStage: narrator.stage,
+      onImportNpcs: handleImportNpcs, onImportPlayer: handleImportPlayer,
+      onImportWorld: handleImportWorld,
+      portraits, setPortraits,
+      buildBugReportTurns,
+      activeNpcMenu: liveNpcMenu, setActiveNpcMenu,
+      handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
+      handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
+      activeItemMenu, setActiveItemMenu, inspectItem, handleConsumeItem,
+      handleCollectGround, handleToggleEquip,
+      activePersuasion, setActivePersuasion,
+      apiCfg, persuasionProgress, setPersuasionProgress,
+      forceAdvanceQuest,
+      duelingNpc, setDuelingNpc, setPendingQuestBranch, duelFinishHandler,
+    },
+  };
+  const overlayHost = <OverlayHost ctx={overlayCtx} />;
+
   if (!apiCfg.apiKey) {
     return (
       <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a09", color: "#e8e4d6", fontFamily: "'Songti SC','STSong','SimSun',serif", padding: 24, textAlign: "center" }}>
@@ -1466,85 +953,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           <p>点击下方按钮打开设置面板，填入你的 API Key 后即可开始游戏。</p>
           <span onClick={() => openOverlay(OVERLAY.SETTINGS)} style={{ cursor: "pointer", color: "#c8323a", padding: "6px 14px", background: "#161510", border: "1px solid #4a453c", borderRadius: 0, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
         </div>
-        {showSettings && (
-          <SettingsPanel
-            onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
-            cfg={apiCfg}
-            setCfg={setApiCfg}
-            onClose={() => closeOverlay(OVERLAY.SETTINGS)}
-            currentSnapshot={buildCurrentSnapshot}
-            onLoadSnapshot={applySnapshot}
-            varTree={varTree}
-            setVarTree={setVarTree}
-            initialTab={settingsInitialTab}
-            uiScale={uiScale}
-            setUiScale={setUiScale}
-            narrator={narrator}
-            setNarrator={setNarrator}
-          />
-        )}
+        {overlayHost}
       </div>
     );
   }
 
-  if (showCharCreate) {
-    return <CharacterCreate onConfirm={({ name, gender, fromCard }) => {
-      const createCharacter = () => {
-        setChar(c => {
-          const next = { ...c, name, gender };
-          if (fromCard) {
-            // 顺序要紧：七维先落，气血才能按体魄算对。反了就会用旧体魄算出错的上限。
-            if (fromCard.special) next.special = { ...(c.special || {}), ...fromCard.special };
-            if (fromCard.bodyProfile || fromCard.bodyProfilePrivate) {
-              next.bodyProfile = { ...(c.bodyProfile || {}), ...(fromCard.bodyProfile || {}), ...(fromCard.bodyProfilePrivate || {}) };
-            }
-            if (Number.isFinite(fromCard.neigong)) next.neigong = fromCard.neigong;
-            if (Number.isFinite(fromCard.waigong)) next.waigong = fromCard.waigong;
-            const maxHp = hpFromNeigong(next.neigong ?? 5, next.special?.体魄 ?? 5);
-            next.hp = [maxHp, maxHp];
-          }
-          return next;
-        });
-        // 主角卡的初始武学与装备（AI 现编/AI 配的那两项）。武学整套替换默认三脚猫拳，
-        // setSkills 会触发 moveset 重算（见 skills 依赖的那个 effect）；装备追加进背包并
-        // 自动穿上兵器/护具/饰物各一件。
-        if (fromCard) {
-          const cardResult = applyCharacterCard(gameStore.getState(), fromCard, "cc_");
-          applyResult(featureCtxRef.current, cardResult);
-          const n = cardResult.carriedCount;
-          const sk = (fromCard.skills || []).length;
-          if (fromCard.persona || sk || n) {
-            addLog([{ t: "sys", text: `  （已按入册的角色卡定下体貌与天赋${sk ? `，带 ${sk} 门武学` : ""}${n ? `，${n} 件随身物已入包、装备已上身` : ""}）` }]);
-          }
-        }
-        // 开局同行：开局向导指定了「1 人开局就随队」，在这里把它解锁进 companionState
-        // （唯一出战位）。importedRegistry 的 getImportedNpc 返回入册时的完整档案，
-        // unlockImportedCompanion 会 createImportedCompanion 建出可出战的队友。
-        // 用完即清，避免下次新开局又凭空冒出来。
-        const starterName = importedRegistry.getPendingStarterCompanion();
-        if (starterName) {
-          const npcData = importedRegistry.getImportedNpc(starterName);
-          importedRegistry.clearPendingStarterCompanion();
-          if (npcData) {
-            setCompanionState(prev => unlockImportedCompanion(prev, npcData));
-            addLog([{ t: "sys", text: `  （开局同行「${starterName}」已随队）` }]);
-          }
-        }
-      };
-      const scheduler = schedulerRef.current;
-      if (scheduler) scheduler.runSilently(createCharacter);
-      else createCharacter();
-      scheduler?.resetPlayed();
-      closeOverlay(OVERLAY.CHAR_CREATE);
-    }} />;
-  }
-
-  if (showOpening) {
-    return <OpeningSequence onFinish={() => {
-      schedulerRef.current?.resetPlayed();
-      closeOverlay(OVERLAY.OPENING);
-    }} playerName={char.name} />;
-  }
+  if (showCharCreate || showOpening) return overlayHost;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "'Songti SC','STSong','SimSun',serif", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}>
@@ -1559,42 +973,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         AV_BASE={AV_BASE} genderAvatar={genderAvatar}
       />
 
-      {showMusicPanel && <MusicPanel onClose={() => closeOverlay(OVERLAY.MUSIC_PANEL)} />}
-      {showHomestead && innerRoomName && getHomestead(innerRoomName) && (
-        <HomesteadPanel
-          roomName={innerRoomName} inv={inv} setInv={setInv}
-          char={char} setChar={setChar} zoneTheme={zoneTheme}
-          onClose={() => closeOverlay(OVERLAY.HOMESTEAD)} addLog={addLog}
-        />
-      )}
-
-      <GlobalOverlays
-        zoneTheme={zoneTheme} isDayMode={isDayMode}
-        char={char} setChar={setChar} inv={inv} setInv={setInv} skills={skills}
-        varTree={varTree} room={room} innerRoomName={innerRoomName} time={time}
-        flags={flags} questProgress={questProgress}
-        effectiveSpecialNow={effectiveSpecialNow} companionState={companionState}
-        loading={loading} pendingTalks={pendingTalks} waitSecs={waitSecs} addLog={addLog}
-        characterPageTarget={characterPageTarget} setCharacterPageTarget={setCharacterPageTarget}
-        claimedMilestones={claimedMilestones} claimMilestone={claimMilestone} giftToCharacter={giftToCharacter}
-        narratorStage={narrator.stage}
-        onImportNpcs={handleImportNpcs} onImportPlayer={handleImportPlayer}
-        onImportWorld={handleImportWorld}
-        portraits={portraits} setPortraits={setPortraits}
-        buildBugReportTurns={buildBugReportTurns}
-        activeNpcMenu={liveNpcMenu} setActiveNpcMenu={setActiveNpcMenu}
-        handleNpcLook={handleNpcLook} handleNpcTalk={handleNpcTalk} handleNpcGift={handleNpcGift}
-        handleNpcDuel={handleNpcDuel} handleNpcSteal={handleNpcSteal}
-        handleNpcLearnSkill={handleNpcLearnSkill} handleNpcTrade={handleNpcTrade}
-        handleInviteCompanion={handleInviteCompanion}
-        activeItemMenu={activeItemMenu} setActiveItemMenu={setActiveItemMenu}
-        inspectItem={inspectItem} handleConsumeItem={handleConsumeItem} handleCollectGround={handleCollectGround} handleToggleEquip={handleToggleEquip}
-        activePersuasion={activePersuasion} setActivePersuasion={setActivePersuasion}
-        apiCfg={apiCfg} persuasionProgress={persuasionProgress} setPersuasionProgress={setPersuasionProgress}
-        forceAdvanceQuest={forceAdvanceQuest}
-        duelingNpc={duelingNpc} setDuelingNpc={setDuelingNpc}
-        setPendingQuestBranch={setPendingQuestBranch} duelFinishHandler={duelFinishHandler}
-      />
+      {overlayHost}
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
 
@@ -1785,38 +1164,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           })()}
         </div>
       </div>}
-
-      {showSettings && (
-        <SettingsPanel
-          onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
-          cfg={apiCfg}
-          setCfg={setApiCfg}
-          onClose={() => closeOverlay(OVERLAY.SETTINGS)}
-          currentSnapshot={buildCurrentSnapshot}
-          onLoadSnapshot={applySnapshot}
-          varTree={varTree}
-          setVarTree={setVarTree}
-          initialTab={settingsInitialTab}
-          uiScale={uiScale}
-          setUiScale={setUiScale}
-          narrator={narrator}
-          setNarrator={setNarrator}
-          getLiveBlockText={getLiveBlockText}
-        />
-      )}
-
-      {showBody && (
-        <BodyProfilePanel
-          profile={char.bodyProfile || emptyBodyProfile()}
-          onChange={(next) => setChar(c => ({ ...c, bodyProfile: next }))}
-          onClose={() => closeOverlay(OVERLAY.BODY)}
-          zoneTheme={zoneTheme}
-          nsfwOn={nsfwOn}
-          onRecommend={recommendOutfit}
-          recommendState={outfitState}
-        />
-      )}
-
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
