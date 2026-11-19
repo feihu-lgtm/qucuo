@@ -10,15 +10,15 @@ import { deriveMoveFromSkill } from "../npcGeneration.js";
 import { bodyProfileFilled } from "../bodyProfile.js";
 import { NNPC_STAGE, affectionLabel } from "../narrator.js";
 import { CATALOG_INDEX } from "../items/catalog.js";
+import { OVERLAY, openOverlay } from "../store/uiStore.js";
 
 export default function RightPanel({
   isMobile, mobileDrawer, setMobileDrawer,
   zoneTheme, S,
   char, inv, skills, exp, pot,
-  playerAvatar, setShowAvatarPicker,
+  playerAvatar,
   companionState, onSwitchCompanion, slForm, setSnowLeopardForm, setSlFormState, slImgErr, setSlImgErr,
   pearlForm, setPearlForm, setPearlFormState, pearlImgErr, setPearlImgErr,
-  setShowBody,
   trainNeigong, trainWaigong, trainCost,
   effectiveSpecialNow, activeBuffs,
   varTree,
@@ -67,7 +67,7 @@ export default function RightPanel({
           {/* 玩家一列：头像 + 体貌按钮（体貌从名字旁挪到头像正下方，与队友列对齐） */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0, width: 90 }}>
             <div
-              onClick={() => setShowAvatarPicker(true)}
+              onClick={() => openOverlay(OVERLAY.AVATAR_PICKER)}
               title="点击更换头像"
               style={{
                 width: 90, aspectRatio: "2/3", borderRadius: 0, overflow: "hidden",
@@ -83,7 +83,7 @@ export default function RightPanel({
               <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "#e8dcc0", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>换像</span>
             </div>
             <span
-              onClick={() => setShowBody(true)}
+              onClick={() => openOverlay(OVERLAY.BODY)}
               title="体貌 · 身量体型与身体细节，动作描写和私聊都会照着写"
               style={{
                 cursor: "pointer", fontSize: "10px", padding: "1px 6px", borderRadius: 0,

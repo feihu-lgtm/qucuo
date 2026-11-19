@@ -13,29 +13,26 @@ import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../version.js";
 import { getState as getMusicState, subscribe as subscribeMusic } from "../musicPlayer.js";
+import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../store/uiStore.js";
 
 export default function TopBar({
   isMobile, mobileTopMenu, setMobileTopMenu,
   zoneTheme, isDayMode, setIsDayMode,
   uiGold, uiTurquoise, uiCrimson, uiPink,
-  setShowTutorial, setShowCodex, setShowVersionHistory,
-  showTrace, setShowTrace, setShowBugReport,
-  setShowCharacterPage, setShowQuestLog, setShowLore, setShowQijuzhu, setShowCardImport,
-  setSettingsInitialTab, setShowSettings,
+  setSettingsInitialTab,
   autoSaveError, lastAutoSave,
-  showAvatarPicker, setShowAvatarPicker,
   playerAvatarCustom, setPlayerAvatarCustom,
   AV_BASE, genderAvatar,
-  setShowMusicPanel,
-  innerRoomName, setShowHomestead,
 }) {
+  const showTrace = useOverlay(OVERLAY.TRACE);
+  const showAvatarPicker = useOverlay(OVERLAY.AVATAR_PICKER);
   // 顶栏按钮统一规格：此前每个按钮各自 padding/字号/色系，一字排开像彩虹糖纸。
   // 收敛成"同一副骨架 + 三色语义"：金=重要入口，松石绿=设置/切换，绛红=上报，其余用正文/次要色。
   const topBtn = (color) => ({
     cursor: "pointer", color, padding: "2px 9px", fontSize: "10.5px",
     border: `1px solid ${zoneTheme.border}`, borderRadius: 0, background: "transparent",
   });
-  const avatarPickerCloseGuard = useOverlayCloseGuard(() => setShowAvatarPicker(false));
+  const avatarPickerCloseGuard = useOverlayCloseGuard(() => closeOverlay(OVERLAY.AVATAR_PICKER));
   // 音乐按钮要同时跟 playing 和 enabled 走。原来只订阅了 playing，而
   // `{isMusicEnabled() && ...}` 是渲染期直接读 localStorage 的非响应式调用——
   // 在设置里勾上"音乐模式"，这个按钮不会冒出来，得等别的 state 变化捎带重渲染。
@@ -65,53 +62,53 @@ export default function TopBar({
         }}>
         <span
           className="qbtn"
-          onClick={() => setShowTutorial(true)}
+          onClick={() => openOverlay(OVERLAY.TUTORIAL)}
           style={{ ...topBtn(uiGold), fontWeight: "bold" }}
         >📖 新手教程</span>
         <span
           className="qbtn"
-          onClick={() => setShowCodex(true)}
+          onClick={() => openOverlay(OVERLAY.CODEX)}
           title="百物·武学总览：看全所有物品与武学的介绍、品阶、效果"
           style={{ ...topBtn(uiGold), fontWeight: "bold" }}
         >📖 图鉴</span>
         <span
           className="qbtn"
-          onClick={() => setShowVersionHistory(true)}
+          onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)}
           title="点击查看版本历史目录"
           style={{ ...topBtn(zoneTheme.textDim), fontSize: "10px" }}
         >📅 {CURRENT_VERSION.time}</span>
 
         {/* 中组：日志 · 上报bug */}
-        <span className="qbtn" onClick={() => setShowTrace(p => !p)} style={{ ...topBtn(showTrace ? uiTurquoise : zoneTheme.textDim), marginLeft: 12 }}>🧭 全流程日志</span>
-        <span className="qbtn" onClick={() => setShowBugReport(true)} title="遇到问题或有建议，点这里上报" style={topBtn(uiCrimson)}>🐞 上报bug</span>
+        <span className="qbtn" onClick={() => toggleOverlay(OVERLAY.TRACE)} style={{ ...topBtn(showTrace ? uiTurquoise : zoneTheme.textDim), marginLeft: 12 }}>🧭 全流程日志</span>
+        <span className="qbtn" onClick={() => openOverlay(OVERLAY.BUG_REPORT)} title="遇到问题或有建议，点这里上报" style={topBtn(uiCrimson)}>🐞 上报bug</span>
 
         <span style={{ flex: 1 }} />
 
         {/* 右组：其余全部右对齐 */}
         <span
           className="qbtn"
-          onClick={() => setShowCardImport(true)}
+          onClick={() => openOverlay(OVERLAY.CARD_IMPORT)}
           title="角色入册：把外部角色卡导进曲措乡（快捷键 I）"
           style={topBtn(zoneTheme.accent)}
         >🧾 入册</span>
         <span
           className="qbtn"
-          onClick={() => setShowCharacterPage(true)}
+          onClick={() => openOverlay(OVERLAY.CHARACTER_PAGE)}
           style={topBtn(uiPink)}
         >👥 人物关系</span>
         <span
           className="qbtn"
-          onClick={() => setShowQuestLog(true)}
+          onClick={() => openOverlay(OVERLAY.QUEST_LOG)}
           style={topBtn(zoneTheme.text)}
         >📜 任务</span>
         <span
           className="qbtn"
-          onClick={() => setShowLore(true)}
+          onClick={() => openOverlay(OVERLAY.LORE)}
           style={topBtn(zoneTheme.text)}
         >📖 见闻录</span>
         <span
           className="qbtn"
-          onClick={() => setShowQijuzhu(true)}
+          onClick={() => openOverlay(OVERLAY.QIJUZHU)}
           title="起居注：逐日记录起居言动——今日行迹与开局以来的累计"
           style={topBtn(zoneTheme.text)}
         >🗒 起居注</span>
@@ -127,10 +124,10 @@ export default function TopBar({
         >⏻ 主菜单</span>
         <span
           className="qbtn"
-          onClick={() => { setSettingsInitialTab("saves"); setShowSettings(true); }}
+          onClick={() => { setSettingsInitialTab("saves"); openOverlay(OVERLAY.SETTINGS); }}
           style={topBtn(uiGold)}
         >💾 存档</span>
-        <span className="qbtn" onClick={() => { setSettingsInitialTab(null); setShowSettings(true); }} style={topBtn(uiTurquoise)}>⚙ 设置</span>
+        <span className="qbtn" onClick={() => { setSettingsInitialTab(null); openOverlay(OVERLAY.SETTINGS); }} style={topBtn(uiTurquoise)}>⚙ 设置</span>
         <span
           className="qbtn"
           onClick={() => setIsDayMode(d => !d)}
@@ -140,7 +137,7 @@ export default function TopBar({
         {musicEnabled && (
           <span
             className="qbtn"
-            onClick={() => setShowMusicPanel(true)}
+            onClick={() => openOverlay(OVERLAY.MUSIC_PANEL)}
             title={musicState.error ? `音乐出错：${musicState.error}` : "音乐面板 — 曲库切换"}
             style={topBtn(musicPlaying ? uiGold : zoneTheme.textDim)}
           >{musicPlaying ? "♫ 音乐" : "♪ 音乐"}</span>
@@ -166,7 +163,7 @@ export default function TopBar({
           <div style={{ background: "#111110", border: "1px solid #4a453c", borderRadius: 0, padding: 24, width: 460, maxWidth: "90vw", color: "#e8e4d6" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <span style={{ color: "#c8323a", fontSize: "15px" }}>选择头像</span>
-              <span style={{ color: "#8f8a7c", fontSize: "12px", cursor: "pointer" }} onClick={() => setShowAvatarPicker(false)}>× 关闭</span>
+              <span style={{ color: "#8f8a7c", fontSize: "12px", cursor: "pointer" }} onClick={() => closeOverlay(OVERLAY.AVATAR_PICKER)}>× 关闭</span>
             </div>
             <div style={{ fontSize: "11.5px", color: "#8f8a7c", marginBottom: 14 }}>
               选一张预制头像，或上传自己的图片（建议 2:3 竖版）。选择只影响你自己的显示，存在本地浏览器。
@@ -179,7 +176,7 @@ export default function TopBar({
                 AV_BASE + "preset1.webp", AV_BASE + "preset2.webp", AV_BASE + "preset3.webp",
                 AV_BASE + "preset4.webp", AV_BASE + "preset5.webp"].map((src, i) => (
                 <div key={i}
-                  onClick={() => { setPlayerAvatarCustom(src); try { localStorage.setItem("qucuo_player_avatar", src); } catch { /* ignore */ } setShowAvatarPicker(false); }}
+                  onClick={() => { setPlayerAvatarCustom(src); try { localStorage.setItem("qucuo_player_avatar", src); } catch { /* ignore */ } closeOverlay(OVERLAY.AVATAR_PICKER); }}
                   style={{ aspectRatio: "2/3", borderRadius: 0, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid #c8323a" : "1px solid #4a453c", background: "#111110" }}
                 >
                   <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -199,13 +196,13 @@ export default function TopBar({
                       const dataUrl = reader.result;
                       setPlayerAvatarCustom(dataUrl);
                       try { localStorage.setItem("qucuo_player_avatar", dataUrl); } catch { alert("图片太大，无法存入本地存储，请换小一点的图。"); }
-                      setShowAvatarPicker(false);
+                      closeOverlay(OVERLAY.AVATAR_PICKER);
                     };
                     reader.readAsDataURL(file);
                   }} />
               </label>
               {playerAvatarCustom && (
-                <span onClick={() => { setPlayerAvatarCustom(""); try { localStorage.removeItem("qucuo_player_avatar"); } catch { /* ignore */ } setShowAvatarPicker(false); }}
+                <span onClick={() => { setPlayerAvatarCustom(""); try { localStorage.removeItem("qucuo_player_avatar"); } catch { /* ignore */ } closeOverlay(OVERLAY.AVATAR_PICKER); }}
                   style={{ cursor: "pointer", fontSize: "11.5px", color: "#c47070", padding: "6px 12px", border: "1px solid #3a1a1a", borderRadius: 0 }}>
                   恢复默认（按性别）
                 </span>

@@ -4,6 +4,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const coreDir = resolve(dirname(fileURLToPath(import.meta.url)));
+const engineDir = resolve(coreDir, "../engine");
 const featuresDir = resolve(coreDir, "../features");
 
 function listJavaScriptFiles(dir) {
@@ -37,6 +38,20 @@ it("keeps React and browser globals out of feature modules", () => {
       .map((match) => `${relative(featuresDir, file)}: ${match[1]}`);
     return [...forbiddenImports, ...browserGlobals];
   });
+
+  expect(violations).toEqual([]);
+});
+
+it("keeps the UI overlay store out of core, engine, and feature modules", () => {
+  const violations = [coreDir, engineDir, featuresDir].flatMap((dir) =>
+    listJavaScriptFiles(dir).flatMap((file) => {
+      const source = readFileSync(file, "utf8");
+      const imports = [...source.matchAll(/\bfrom\s*["']([^"']+)["']/g)].map((match) => match[1]);
+      return imports
+        .filter((specifier) => specifier.includes("uiStore"))
+        .map((specifier) => `${relative(coreDir, file)}: ${specifier}`);
+    }),
+  );
 
   expect(violations).toEqual([]);
 });

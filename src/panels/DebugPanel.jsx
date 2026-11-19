@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { OVERLAY, closeOverlay } from "../store/uiStore.js";
 import { QUCUO_MAP, getMapNode } from "../qucuoMap.js";
 import { getInnerRoomNames, isNpcVisibleInInnerRoom } from "../innerMap.js";
 import { markNpcAsKnown } from "../npcAwareness.js";
@@ -19,7 +20,6 @@ export default function DebugPanel({
   addLog, setInteractMode, act,
   teleportLookRef,
   setSkills, setInv,
-  setShowDebug,
 }) {
   const [dbgFav, setDbgFav] = useState("");
   const [dbgDist, setDbgDist] = useState("");
@@ -47,7 +47,7 @@ export default function DebugPanel({
       <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between",
         margin: "-10px -14px 4px", padding: "6px 14px", background: "rgba(16,18,26,.96)", borderBottom: "1px solid #2a2d3a" }}>
         <span style={{ color: "#c8323a", fontSize: 12, fontWeight: "bold" }}>🛠 调试面板</span>
-        <span onClick={() => setShowDebug(false)} style={{ cursor: "pointer", color: "#e0806a", fontSize: 13, padding: "2px 12px", border: "1px solid #5a3a2a", borderRadius: 0 }}>✕ 关闭</span>
+        <span onClick={() => closeOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", color: "#e0806a", fontSize: 13, padding: "2px 12px", border: "1px solid #5a3a2a", borderRadius: 0 }}>✕ 关闭</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 40, ...lbl }}>金钱</span>
