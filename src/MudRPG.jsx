@@ -3,6 +3,20 @@ import { gameActions, gameStore, initGameStore, useGameStore } from "./store/gam
 import { createAutosaveScheduler } from "./core/autosaveScheduler.js";
 import { snapshotFromStore } from "./core/persist.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
+import { applyResult } from "./features/run.js";
+import {
+  breakthroughSkill as breakthroughSkillLogic,
+  meditate as meditateLogic,
+  trainCost,
+  trainNeigong as trainNeigongLogic,
+  trainWaigong as trainWaigongLogic,
+} from "./features/cultivation/logic.js";
+import {
+  deposit as depositFeature,
+  pledge as pledgeFeature,
+  redeem as redeemFeature,
+  withdraw as withdrawFeature,
+} from "./features/bank/logic.js";
 import { attachImportedRegistry } from "./characterMilestones.js";
 import {
   NNPC_STAGE, initialNarratorState, isInSea, migrateNarratorState,
@@ -166,7 +180,7 @@ import { stealSuccessRate } from "./combat/stealSystem.js";
 import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
 import { INGREDIENT_LORE } from "./cooking.js";
 import { buildSysBase } from "./sysBase.js";
-import { DIRS, bar, STAGES, STAGE_UP_COST, STAGE_TO_QUALITY, DIR_DXY, parseDir, getTimeStr } from "./utils/mudHelpers.js";
+import { DIRS, bar, STAGE_TO_QUALITY, DIR_DXY, parseDir, getTimeStr } from "./utils/mudHelpers.js";
 import { MAP_UI } from "./mapUi.js";
 import ZoomableMap from "./ZoomableMap.jsx";
 import TutorialOverlay from "./TutorialOverlay.jsx";
@@ -837,6 +851,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     writeNote({ cfg: env.apiCfg, text, turn: env.time, owner, source, place: env.roomName, knownNames })
       .catch(() => {});
   }, []);
+  const featureCtxRef = useRef(null);
 
   // 日总结（大纸条）：跨天时后台归纳刚过去这一天攒下的原料，存进 varTree.世界.日总结。
   // fire-and-forget：AI 失败就不写，缺一天日总结无伤大雅，绝不阻断游戏。
@@ -1955,102 +1970,31 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (loading) return;
     setJustMeditated(true);
     setTimeout(() => setJustMeditated(false), 350);
-    addLog([{ t: "cmd", text: "> 打坐运功" }]);
-    setChar(c => {
-      const cap = effectiveMaxHp(c.hp[1], skills);
-      const hpGain = Math.max(1, Math.round(cap * 0.15));
-      const nhp = Math.min(cap, c.hp[0] + hpGain);
-      addLog([{ t: "desc", text: `  你盘膝调息，气血回转了些。` }, { t: "stat", text: `  气血 ${c.hp[0]}→${nhp}` }]);
-      return { ...c, hp: [nhp, c.hp[1]] };
-    });
-    setTime(t => t + 1);
-    jotNote({ text: "打坐调息一回，气血回转了些。", source: NOTE_SOURCE.DUMB });
+    applyResult(featureCtxRef.current, meditateLogic(gameStore.getState()));
     noteAction("meditate");
-  }, [loading, addLog, jotNote]);
+  }, [loading, noteAction]);
 
   // 修炼：花潜能升内功/外功，越练越贵（每10点门槛成本+1），系统本地裁决，
   // AI 不再直接改 neigong/waigong（见 presetSystem.js 的收权说明）——
   // 战斗/任务赚潜能，潜能换修为，这是唯一的数值上升通道。
-  const trainCost = useCallback((val) => 4 + Math.floor((val ?? 0) / 10), []);
   const trainNeigong = useCallback(() => {
     if (loading) return;
-    const cur = char.neigong ?? 0;
-    if (cur >= 100) { addLog([{ t: "sys", text: "  内功已至大成，再无寸进之地（100/100）" }]); return; }
-    const cost = trainCost(cur);
-    if (pot < cost) { addLog([{ t: "err", text: `  潜能不足，运气尚需${cost}点潜能（现有${pot}）` }]); return; }
-    addLog([{ t: "cmd", text: "> 运气打坐（练内功）" }]);
-    setPot(p => p - cost);
-    const nv = Math.min(100, cur + 1); // 提前算好，供事实账本摘要引用（下面 setChar 里也算一次，两处保持一致）
-    setChar(c => {
-      const nvInner = Math.min(100, (c.neigong ?? 0) + 1);
-      // 内功上一分，气血上限跟着涨（跟NPC同一个 hpFromNeigong 公式，玩家也上"战力梯子"）
-      const tiPo = c.special?.体魄 ?? 5;
-      const oldMax = c.hp?.[1] ?? hpFromNeigong(c.neigong ?? 0, tiPo);
-      const newMax = hpFromNeigong(nvInner, tiPo);
-      const delta = Math.max(0, newMax - oldMax);
-      const newCur = Math.min(newMax, (c.hp?.[0] ?? newMax) + delta); // 涨的那部分直接补进当前气血
-      addLog([{ t: "desc", text: `  你盘膝运气，内息缓缓精进了一分。` }, { t: "stat", text: `  内功 ${c.neigong ?? 0}→${nvInner}（花费${cost}潜能）· 气血上限 ${oldMax}→${newMax}` }]);
-      return { ...c, neigong: nvInner, hp: [newCur, newMax] };
-    });
-    setTime(t => t + 2);
-    jotNote({ text: "运气打坐，内功精进一分。", source: NOTE_SOURCE.DUMB });
-    // 补：练功此前只写了往事纸条(jotNote)，没进事实账本(registerFact)——旁白的"全知事实"
-    // 视角(allFactSummaries)读的是事实账本，账本里没有就等于旁白完全不知道玩家练过功。
-    // factId 带 time+nv 保证每次运气都是独立事实（同一天可能练很多次，不能被幂等挡掉）。
-    // 无知晓者：这是玩家自己的事，不需要任何NPC"亲历"，账本本身就是给旁白全知视角用的。
-    setVarTree(prev => registerFact(prev, { id: `train_neigong_${time}_${nv}`, 摘要: `${char.name || "主角"}运气打坐，内功精进一分（${cur}→${nv}）。`, 标签: "修炼", 知晓者: [] }, time));
-  }, [loading, char.neigong, char.name, pot, time, addLog, trainCost, jotNote]);
+    applyResult(featureCtxRef.current, trainNeigongLogic(gameStore.getState()));
+  }, [loading]);
   const trainWaigong = useCallback(() => {
     if (loading) return;
-    const cur = char.waigong ?? 0;
-    if (cur >= 100) { addLog([{ t: "sys", text: "  外功已至大成，再无寸进之地（100/100）" }]); return; }
-    const cost = trainCost(cur);
-    if (pot < cost) { addLog([{ t: "err", text: `  潜能不足，拆招尚需${cost}点潜能（现有${pot}）` }]); return; }
-    addLog([{ t: "cmd", text: "> 拆招练武（练外功）" }]);
-    setPot(p => p - cost);
-    const nv = Math.min(100, cur + 1);
-    setChar(c => {
-      const nvInner = Math.min(100, (c.waigong ?? 0) + 1);
-      addLog([{ t: "desc", text: `  你反复拆解招式，外家功夫扎实了一分。` }, { t: "stat", text: `  外功 ${c.waigong ?? 0}→${nvInner}（花费${cost}潜能）` }]);
-      return { ...c, waigong: nvInner };
-    });
-    setTime(t => t + 2);
-    jotNote({ text: "拆招练武，外功扎实一分。", source: NOTE_SOURCE.DUMB });
-    // 同 trainNeigong：补事实账本，理由见上面那处注释。
-    setVarTree(prev => registerFact(prev, { id: `train_waigong_${time}_${nv}`, 摘要: `${char.name || "主角"}拆招练武，外功扎实一分（${cur}→${nv}）。`, 标签: "修炼", 知晓者: [] }, time));
-  }, [loading, char.waigong, char.name, pot, time, addLog, trainCost, jotNote]);
+    applyResult(featureCtxRef.current, trainWaigongLogic(gameStore.getState()));
+  }, [loading]);
 
   // 武学升阶：花潜能把某门【可修炼武学】(非 fixed/授业绝学)的 stage 往上推一级。
   // 复用潜能这条唯一数值上升通道（跟内外功同源），不再靠 exp 经验累积——经验那条
   // 断链了（战斗不发经验），改成玩家用潜能主动突破，明确可控。
   // 成本按目标阶段递增：小成12 / 大成20 / 圆满32 / 登峰造极48（越高阶越贵，跟内外功
   // "越练越贵"一个思路，但武学是阶跃式突破，单次成本更高）。
-  // 武学升阶潜能成本（模块级常量，渲染和逻辑共用）
   const breakthroughSkill = useCallback((skillId) => {
     if (loading) return;
-    setSkills(sk => {
-      const idx = sk.findIndex(s => s.id === skillId);
-      if (idx < 0) return sk;
-      const s = sk[idx];
-      if (s.fixed) { addLog([{ t: "sys", text: `  ${s.name}是授业绝学，学即完整，无需修炼。` }]); return sk; }
-      const curStageIdx = STAGES.indexOf(s.stage);
-      if (curStageIdx < 0 || curStageIdx >= STAGES.length - 1) {
-        addLog([{ t: "sys", text: `  ${s.name}已臻${s.stage}，登峰造极，再无寸进。` }]); return sk;
-      }
-      const nextStage = STAGES[curStageIdx + 1];
-      const cost = STAGE_UP_COST[nextStage] ?? 12;
-      if (pot < cost) { addLog([{ t: "err", text: `  潜能不足，${s.name}突破${nextStage}需${cost}点潜能（现有${pot}）` }]); return sk; }
-      setPot(p => p - cost);
-      addLog([
-        { t: "cmd", text: `> 潜心修炼「${s.name}」` },
-        { t: "desc", text: `  日夜揣摩，${s.name}的火候更进一层。` },
-        { t: "stat", text: `  ${s.name} ${s.stage}→${nextStage}（花费${cost}潜能）· 招式威力、品阶随之精进` },
-      ]);
-      setTime(t => t + 2);
-      jotNote({ text: `潜心修炼${s.name}，突破至${nextStage}。`, source: NOTE_SOURCE.DUMB });
-      return sk.map((ss, j) => j === idx ? { ...ss, stage: nextStage } : ss);
-    });
-  }, [loading, pot, addLog, jotNote]);
+    applyResult(featureCtxRef.current, breakthroughSkillLogic(gameStore.getState(), skillId));
+  }, [loading]);
 
   // 送礼：从背包选一件物品送给指定角色，走正常的行动指令流程，
   // 让主引擎 AI 描述场景、判断礼物是否合心意，并通过 <mvu> 自行决定好感度增量
@@ -2785,6 +2729,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
   }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, localCmd, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, pendingTalks, changePendingTalks]);
+  const featureCtx = useMemo(() => ({ addLog, jotNote, setVarTree, act }), [addLog, jotNote, setVarTree, act]);
+  featureCtxRef.current = featureCtx;
 
   // 系统强制推进任务stage（本轮新增，"档2"harness的核心）：不等AI在
   // delta.flags_add 里吐出 completionFlag，直接把这个flag塞进 flags
@@ -4020,36 +3966,20 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   }, [char, addLog, act]);
 
   const handleDeposit = useCallback((amount) => {
-    if ((char.money || 0) < amount) return;
-    setChar(c => ({ ...c, money: c.money - amount }));
-    setDeposit(d => d + amount);
-    setDepositedAt(time);
-    act(`在钱庄存入${amount}两`, [], { settle: true });
-  }, [char, time, addLog, act]);
+    applyResult(featureCtxRef.current, depositFeature(gameStore.getState(), amount));
+  }, []);
 
-  const handleWithdraw = useCallback((total) => {
-    setDeposit(0);
-    setDepositedAt(null);
-    setChar(c => ({ ...c, money: (c.money || 0) + total }));
-    act(`在钱庄取出银两${total}两（含利息）`, [], { settle: true });
-  }, [addLog, act]);
+  const handleWithdraw = useCallback(() => {
+    applyResult(featureCtxRef.current, withdrawFeature(gameStore.getState()));
+  }, []);
 
   const handlePledge = useCallback((item, pledgeValue) => {
-    setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id));
-    setPledgedItems(prev => [...prev, { item, pledgeValue }]);
-    setChar(c => ({ ...c, money: (c.money || 0) + pledgeValue }));
-    act(`把「${item.name}」质押给当铺，得${pledgeValue}两`, [], { settle: true });
-  }, [addLog, act]);
+    applyResult(featureCtxRef.current, pledgeFeature(gameStore.getState(), item.id, pledgeValue));
+  }, []);
 
-  const handleRedeem = useCallback((idx, redeemCost) => {
-    if ((char.money || 0) < redeemCost) return;
-    const pledged = pledgedItems[idx];
-    if (!pledged) return;
-    setChar(c => ({ ...c, money: c.money - redeemCost }));
-    setPledgedItems(prev => prev.filter((_, i) => i !== idx));
-    setInv(prev => [...prev, { ...pledged.item, equipped: false }]);
-    act(`从当铺赎回「${pledged.item?.name}」，花费${redeemCost}两`, [], { settle: true });
-  }, [char, pledgedItems, addLog, act]);
+  const handleRedeem = useCallback((index, redeemCost) => {
+    applyResult(featureCtxRef.current, redeemFeature(gameStore.getState(), index, redeemCost));
+  }, []);
 
   const handleAcceptEscort = useCallback((quest) => {
     setQuestProgress(prev => ({ ...prev, [quest.id]: { active: true } }));

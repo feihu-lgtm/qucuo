@@ -370,7 +370,7 @@ export default function RightPanel({
                           {maxed
                             ? <span style={{ fontSize: "10px", color: qc }}>✦ 登峰造极</span>
                             : <span
-                                onClick={() => afford && breakthroughSkill(s.id)}
+                                onClick={() => afford && breakthroughSkill(s.id ?? s.name)}
                                 title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`}
                                 style={{
                                   cursor: afford ? "pointer" : "not-allowed", fontSize: "10px", padding: "1px 7px", borderRadius: 0,
