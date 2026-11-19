@@ -254,7 +254,15 @@
   }
 
   .mobile-building-minimized-root {
+    position: absolute !important;
+    inset: auto !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
     background: transparent !important;
+    border: 0 !important;
     border-bottom: 0 !important;
     pointer-events: none !important;
   }
