@@ -175,7 +175,7 @@ import { AUCTION_LOT } from "./auction.js";
 import { seededRand } from "./utils/seededRandom.js";
 import { getResidentNpcs, getAllResidentNpcLore } from "./residentNpcs.js";
 import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
-import { tryLearnFromMaster, tryStealFrom } from "./kungfu/learnSkill.js";
+import { tryStealFrom } from "./kungfu/learnSkill.js";
 import { stealSuccessRate } from "./combat/stealSystem.js";
 import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
 import { INGREDIENT_LORE } from "./cooking.js";
@@ -197,7 +197,8 @@ import * as importedRegistry from "./cards/importedRegistry.js";
 import DebugPanel from "./panels/DebugPanel.jsx";
 import ClickableMap from "./ClickableMap.jsx";
 import PipelineViewer from "./PipelineViewer.jsx";
-import { tryInnerMove } from "./act/innerMove.js";
+import { innerMove as innerMoveLogic } from "./features/map/logic.js";
+import { learnNpcSkill as learnNpcSkillLogic } from "./features/npc/logic.js";
 import { resolveOuterLock } from "./act/outerMove.js";
 import { judgeCollect, buildQuestStageNote, buildForcedEventNote, buildArrivalNote, buildPresence, buildNpcContext } from "./act/roundNotes.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
@@ -2272,30 +2273,22 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     // ── 内层箱庭移动：优先于外层大地图判定（判定在 act/innerMove.js，副作用在此执行）──
     const forceLayer = opts.forceLayer || null;
-    const innerDecision = tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree: varTreeRef.current, questProgress, inv, char });
-    if (innerDecision?.kind === "move") {
+    const innerResult = !isTalk && movingDir
+      ? innerMoveLogic(gameStore.getState(), {
+        _trace,
+        direction: movingDir,
+        forceLayer,
+        command: cmd,
+        includeCommand: false,
+      })
+      : null;
+    if (innerResult?.changes?.innerRoomName) {
       noteAction("innerMove");
-      endTrace(_trace, innerDecision.summary);
-      addLog([{ t: "cmd", text: `> ${cmd}` }]);
+      endTrace(_trace, `内层移动到 ${room.name}·${innerResult.changes.innerRoomName}`);
       setInput("");
       setCmdHistory(p => [cmd, ...p].slice(0, 50));
       setHistIdx(-1);
-      setInnerRoomName(innerDecision.innerDest);
-      // 内层移动不调 AI，方位描述本地生成（纯函数在 mapNarration.js，可在
-      // tools/debug.mjs 调试台直接验证）：从哪来、四周内层去处、远处外层据点。
-      addLog([
-        { t: "room", text: "" },
-        { t: "room", text: `    ${room.name}·${innerDecision.innerDest}` },
-        { t: "room", text: "" },
-        ...innerDecision.arrivalLines,
-      ]);
-      setTime(t => t + 1);
-      if (innerDecision.newFaces.length) {
-        addLog(innerDecision.newFaces.map(name => ({ t: "sys", text: `  ※ 新人物出现：${name}（点击可细看其人）` })));
-        setVarTree(prev => markAsSeen(prev, innerDecision.newFaces));
-      }
-      // 久别重逢的"上次见面回合"也一并更新，跟主流程保持一致
-      setVarTree(prev => updateLastSeen(prev, innerDecision.arrivedNames, time));
+      applyResult(featureCtxRef.current, innerResult);
       // 内层移动是瞬时纯前端操作，early return 前必须把 loading+计时器清掉，
       // 否则 loading 永远停在 true：输入框锁死、spinner 空转、秒数狂涨，且 pendingQueue 因
       // loading 不归零永不出队——彻底卡死（此前"点一下卡住像在等AI"的真凶）。
@@ -2304,11 +2297,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       setWaitSecs(0);
       return;
     }
-    if (innerDecision?.kind === "blocked") {
-      endTrace(_trace, innerDecision.summary);
+    if (innerResult) {
+      const blockedText = innerResult.logs?.find(entry => entry.t === "sys")?.text || "";
+      endTrace(_trace, blockedText.includes("内里这个方向没有去处") ? "内层此路不通" : "门锁着");
       // 上锁的门要说清是缺哪把钥匙（lockedMsg），别跟"这个方向没路"混为一谈——
       // 玩家看见门却被告知"没有去处"会以为是 bug。
-      addLog([{ t: "cmd", text: `> ${cmd}` }, { t: "sys", text: `  ${innerDecision.lockedMsg || "内里这个方向没有去处。"}` }]);
+      applyResult(featureCtxRef.current, innerResult);
       setInput(""); setCmdHistory(p => [cmd, ...p].slice(0, 50)); setHistIdx(-1);
       setLoading(false);
       if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
@@ -3559,47 +3553,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 这是这次改动新加的行为，此前平民直接拒绝拜师。价格按好感折价曲线走低
   // （40-59原价/60-79七折/80-99五折/100免费），银两不够时提示但不强行学。
   const handleNpcLearnSkill = useCallback((npc) => {
-    const result = tryLearnFromMaster(npc, varTreeRef.current, skills, char);
-    if (!result.ok) {
-      addLog([{ t: "sys", text: `  ${result.reason}` }]);
-      return;
-    }
-    if ((char.money || 0) < result.totalPrice) {
-      addLog([{ t: "sys", text: `  ${npc.name}愿意传授，但束脩需银${result.totalPrice}两（现有${char.money || 0}两），你银两不够，一时难以成行。` }]);
-      return;
-    }
-
-    // 拜师本就需要好感≥40 才能走到这一步，早就该算"认识"——但不能在门槛检查
-    // 之前调用，否则 markNpcAsKnown 给的兜底好感度10会在毫无交情时被拜师流程
-    // 自己垫出资格，等于绕过门槛。放在门槛通过之后，纯粹是补齐显示状态。
-    setVarTree(prev => markNpcAsKnown(prev, npc.name));
-    setActiveTarget(npc.name);
-    setChar(c => ({ ...c, money: (c.money || 0) - result.totalPrice }));
-    // 统一并入"武学"栏：拜师所授做成【固定完整招】——不修炼、不成长，学到即完整版。
-    // 加进 skills 后，moveset 由 useEffect 自动重算带出（fixed 条目原样取用招式本体）。
-    setSkills(sk => [...sk, ...result.freshSkills]);
-    const priceNote = result.totalPrice > 0 ? `，奉上束脩银${result.totalPrice}两` : "（好感深厚，分文不取）";
-    const label = result.isMaster ? "授业绝学" : "江湖通行招";
-    addLog([{ t: "sys", text: `  （习得 ${result.freshSkills.length} 招${priceNote}，已录入武学栏 · ${label}，学即完整）` }]);
-    // 结算（加招/去重/并入武学栏）已由确定性代码完成，这里只把"发生了什么"交给主叙事AI
-    // 写成一段像样的话，不是让AI决定学没学到——参照 handleBuySkill 的"结算+act陈述"范式。
-    // settleKind:"learn_skill" 必须传——它决定了单调用走 buildSettleMvuNote 的"本轮必须给
-    // <mvu>"铁律、双调用走 LEARN_SKILL 专属提取spec。此前这里只传了 settleNpc 没传
-    // settleKind，两条路都退化成"让AI自己看着办要不要加好感"，实测基本不加，表现为
-    // "交了束脩、学了绝学，好感纹丝不动"。
-    const verb = result.isMaster ? "将平生所学" : "将几手江湖基本功";
-    act(`拜${npc.name}为师，${npc.name}${verb}「${result.moveBrief}」倾囊相授，我凝神习得`, [], {
-      settle: true,
-      settleNpc: npc.name,
-      settleKind: "learn_skill",
-      learnInfo: {
-        isMaster: result.isMaster,
-        moveBrief: result.moveBrief,
-        totalPrice: result.totalPrice,
-        beast: !!npc.beast || !!npc.cannotSpeak, // 兽类师父不说人话，叙事得靠动作示范
-      },
-    });
-  }, [char, skills, varTree, addLog, act]);
+    const result = learnNpcSkillLogic(gameStore.getState(), npc);
+    if (result.changes) setActiveTarget(npc.name);
+    applyResult(featureCtxRef.current, result);
+  }, []);
 
   // 偷窃：偷物+偷师（偷招）二合一，同一次判定，成功后再二选一决定这次偷到的
   // 是物品还是招式（tryStealFrom 内部处理）。身法（char.special.身法）现在也
