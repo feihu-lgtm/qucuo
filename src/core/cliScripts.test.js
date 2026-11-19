@@ -115,6 +115,46 @@ describe("CLI scripts", () => {
     });
   });
 
+  it("sends a pigeon letter and processes its arrival after time advances", async () => {
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir });
+    const fixture = readFileSync(join(scriptsDir, "pigeon-arrival.txt"), "utf8");
+    let failures = 0;
+    for (const line of fixture.split(/\r?\n/)) {
+      failures += await session.runLine(line);
+    }
+
+    expect(failures, output.join("\n")).toBe(0);
+    expect(session.store.getState().char.pigeons).toBe(0);
+    expect(session.pigeonArrivals).toEqual([
+      expect.objectContaining({
+        id: "letter_send_商人_6",
+        npcName: "商人",
+        arriveTime: 8,
+      }),
+    ]);
+  });
+
+  it("loads legacy in-flight pigeon letters from a save", async () => {
+    const session = createSession({ out: () => {}, cwd: tempDir });
+    const legacyLetter = {
+      id: "legacy-letter",
+      npcName: "商人",
+      sentContent: "请回信",
+      arriveTime: 2,
+      npcLoc: "鱼定村",
+    };
+    await session.runLine(":new");
+    await session.runLine(`:set varTree.世界.飞鸽待回=${JSON.stringify([legacyLetter])}`);
+    await session.runLine(":set time=2");
+    await session.runLine(":save legacy-pigeon.json");
+    await session.runLine(":new");
+    await session.runLine(":load legacy-pigeon.json");
+
+    expect(session.store.getState().varTree.世界.飞鸽待回).toEqual([legacyLetter]);
+    expect(session.pigeonArrivals).toEqual([legacyLetter]);
+  });
+
   it("runs a script with sibling replies using the default mock AI", () => {
     const output = execFileSync(process.execPath, [
       resolve(projectRoot, "cli/qucuo.mjs"),

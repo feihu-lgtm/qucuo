@@ -1,0 +1,12 @@
+:new
+:set char.pigeons=1
+:set room.npcs=[{"name":"商人"}]
+:set varTree.世界.曾经出现人物=["商人"]
+飞鸽 未曾见过的人 试问近况
+:expect char.pigeons=1
+飞鸽 商人 请在来信中谈谈近况。
+:expect char.pigeons=0
+:expect time=7
+:expect varTree.世界.飞鸽待回.0.arriveTime=8
+打坐
+:expect time=8
