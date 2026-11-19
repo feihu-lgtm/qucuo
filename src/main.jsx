@@ -8,6 +8,8 @@ import ErrorBoundary from "./ui/components/ErrorBoundary.jsx";
 import { loadAutoSave, init as initSaves } from "./infra/saves.js";
 import CardImportScreen from "./ui/screens/CardImportScreen.jsx";
 import { loadConfig } from "./infra/apiConfig.js";
+import { installErrorBuffer } from "./infra/errorBuffer.js";
+import { recordError } from "./infra/errorBuffer.js";
 import * as importedRegistry from "./domain/cards/importedRegistry.js";
 import { getZoneTheme } from "./ui/theme.js";
 
@@ -176,7 +178,16 @@ function mount() {
   };
   createRoot(document.getElementById("root"), {
     onCaughtError(error, errorInfo) {
+      recordError(error, { source: "react.onCaughtError", componentStack: errorInfo?.componentStack || "" });
       console.error("[ErrorBoundary] 子组件崩溃:", error, errorInfo);
+    },
+    onUncaughtError(error, errorInfo) {
+      recordError(error, { source: "react.onUncaughtError", componentStack: errorInfo?.componentStack || "" });
+      console.error("[React] 未捕获错误:", error, errorInfo);
+    },
+    onRecoverableError(error, errorInfo) {
+      recordError(error, { source: "react.onRecoverableError", componentStack: errorInfo?.componentStack || "" });
+      console.error("[React] 可恢复错误:", error, errorInfo);
     },
   }).render(
     <React.StrictMode>
@@ -186,4 +197,5 @@ function mount() {
     </React.StrictMode>
   );
 }
+installErrorBuffer();
 initSaves().then(mount, mount);

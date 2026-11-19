@@ -1,4 +1,6 @@
 import React from "react";
+import { buildDebugBundle, downloadDebugBundle } from "../../infra/debugBundle.js";
+import { recordError } from "../../infra/errorBuffer.js";
 
 // 通用错误边界。任何被它包住的子组件在 render / 生命周期里抛错，
 // 不再让整个 React 树白屏/黑屏，而是就地显示一段可读的错误信息 + 组件堆栈，
@@ -27,6 +29,14 @@ export default class ErrorBoundary extends React.Component {
   handleReset = () => {
     this.setState({ hasError: false, error: null, info: null });
     this.props.onReset?.();
+  };
+
+  handleDownloadDebugBundle = () => {
+    try {
+      downloadDebugBundle(buildDebugBundle());
+    } catch (error) {
+      recordError(error, { source: "ErrorBoundary.debugBundle" });
+    }
   };
 
   render() {
@@ -58,6 +68,10 @@ export default class ErrorBoundary extends React.Component {
           <div style={{ color: "#888", fontSize: 11, marginBottom: 14 }}>
             把上面这段错误发给作者，就能定位到具体是哪一行崩的。
           </div>
+          <button type="button" onClick={this.handleDownloadDebugBundle} style={{
+            cursor: "pointer", color: "#e0c0c0", padding: "6px 18px",
+            border: "1px solid #6a4a4a", background: "#1a0e0e", marginBottom: 10,
+          }}>下载调试包</button>
           <span onClick={this.handleReset} style={{
             cursor: "pointer", color: "#c07050", padding: "6px 18px",
             border: "1px solid #c8323a", borderRadius: 0, background: "#241211",

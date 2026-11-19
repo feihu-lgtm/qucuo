@@ -88,10 +88,12 @@ function pipelineEntriesToRows(entries) {
 // 只是在返回结果里带一句提示，避免"报告主体明明存进去了，却因为附带日志失败
 // 就让玩家以为整个提交都失败了"。
 // 返回 { ok: true, pipelineWarning? } 或 { ok: false, error: "人话错误" }。
-export async function submitBugReport({ playerNote, gameState, conversation, pipelineLog, version }) {
+export async function submitBugReport({ playerNote, gameState, debugBundle, conversation, pipelineLog, version }) {
   const reportBody = {
     player_note: playerNote || "",
-    game_state: gameState || null,
+    game_state: debugBundle
+      ? { ...(gameState && typeof gameState === "object" ? gameState : {}), debugBundle }
+      : gameState || null,
     conversation: conversation || null,
     version: version || "",
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
@@ -118,4 +120,3 @@ export async function submitBugReport({ playerNote, gameState, conversation, pip
   }
   return { ok: true };
 }
-
