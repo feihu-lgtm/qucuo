@@ -58,6 +58,15 @@ import * as importedRegistry from "../src/cards/importedRegistry.js";
 import { timeAdvanceRule } from "../src/features/time/rules.js";
 import { residentNpcRule } from "../src/features/npc/rules.js";
 import { innerGroundItemsRule } from "../src/features/map/rules.js";
+import {
+  buyBook,
+  getPriceForDest,
+  pray,
+  restAtInn,
+  travelByCarriage,
+} from "../src/features/buildings/logic.js";
+import { LIBRARY_BOOKS_JINGGUAN } from "../src/buildings/libraryData.js";
+import { getBuildingsForLocation, BUILDING_TYPE } from "../src/buildings/qucuoBuildings.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -531,6 +540,45 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     if (line.startsWith("换队友 ")) {
       const key = line.slice(4).trim();
       return await applyFeature(switchCompanion(state, key === "none" ? null : key));
+    }
+    if (line === "住店") {
+      const inn = getBuildingsForLocation(state.room.name).find((building) => building.type === BUILDING_TYPE.INN);
+      if (!inn) return await applyFeature({ logs: [{ t: "err", text: "  此处没有客栈。" }] });
+      return await applyFeature(restAtInn(state, {
+        cost: inn.innPrice || 10,
+        roomType: "普通客房",
+        buildingName: inn.name,
+      }));
+    }
+    const carriageMatch = /^坐车\s+(.+)$/.exec(line);
+    if (carriageMatch) {
+      const hasCarriage = getBuildingsForLocation(state.room?.name)
+        .some((building) => building.type === BUILDING_TYPE.TRANSPORT);
+      if (!hasCarriage) return await applyFeature({ logs: [{ t: "err", text: "  此处没有驿站。" }] });
+      const destName = carriageMatch[1];
+      const result = travelByCarriage(state, destName, getPriceForDest(destName));
+      const status = await applyFeature(result);
+      if (result.changes?.room) {
+        gameActions.setInnerRoomName(hasInnerMap(destName) ? getDistrictAnchor(destName) : null);
+      }
+      return status;
+    }
+    const bookMatch = /^买书\s+(.+)$/.exec(line);
+    if (bookMatch) {
+      const bookshop = getBuildingsForLocation(state.room?.name)
+        .some((building) => building.type === BUILDING_TYPE.LIBRARY && building.id?.includes("jingguan"));
+      if (!bookshop) return await applyFeature({ logs: [{ t: "err", text: "  此处没有书肆。" }] });
+      const book = LIBRARY_BOOKS_JINGGUAN
+        .find((entry) => entry.name === bookMatch[1] || entry.name.replace(/[《》]/g, "") === bookMatch[1]);
+      return await applyFeature(book
+        ? buyBook(state, book)
+        : { logs: [{ t: "err", text: `  没有这本书：${bookMatch[1]}` }] });
+    }
+    if (line === "祈福") {
+      const temple = getBuildingsForLocation(state.room?.name)
+        .find((building) => building.type === BUILDING_TYPE.TEMPLE);
+      if (!temple) return await applyFeature({ logs: [{ t: "err", text: "  此处没有寺庙。" }] });
+      return await applyFeature(pray(state, temple.karmaPerPray || 10));
     }
     const movementMatch = /^(走|去)\s+(.+)$/.exec(line);
     if (movementMatch) {

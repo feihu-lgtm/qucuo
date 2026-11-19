@@ -3,6 +3,7 @@ import {
   COMBAT_FIELDS, pickCombatData, injectNpcs, patchCombatData,
   markCarriedLost, materializeNpc, removeNpc, respawnNpc,
 } from "./roomNpcs.js";
+import { travelByCarriage } from "./features/buildings/logic.js";
 
 // room.npcs 此前有 15 个写入方，连着两个 bug 都是"谁都能改、改的时候顺手把别人
 // 写进去的东西冲掉"。这套测试是那两个 bug 的回归，也是这份状态的行为契约。
@@ -198,10 +199,12 @@ describe("不许绕过 roomNpcs 直接改名单", () => {
     expect(bad, `第 ${bad.join(",")} 行在裸操作 room.npcs——请改用 roomNpcs.js 里的具名操作，或往那儿加一个`).toEqual([]);
   });
 
-  it("整体换房间那几处不受此限（npcs: [] / 缓存名单 是换 room 不是改名单）", () => {
-    const src = readFileSync("src/MudRPG.jsx", "utf-8");
-    // 传送/进出心灵之海确实还在直接给 npcs: []，这是有意的
-    expect(src).toMatch(/npcs:\s*\[\]/);
+  it("马车整体换房间时清空 NPC 名单", () => {
+    const result = travelByCarriage({
+      char: { money: 10 },
+      mapData: { 喇嘛庙: { x: 0, y: -1 } },
+    }, "喇嘛庙", 5);
+    expect(result.changes.room.npcs).toEqual([]);
   });
 });
 

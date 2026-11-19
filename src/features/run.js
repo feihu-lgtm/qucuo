@@ -29,6 +29,9 @@ export function applyResult(ctx, result) {
     const { currentTurn, ...fact } = result.fact;
     ctx.setVarTree?.((prev) => registerFact(prev, fact, currentTurn));
   }
-  if (result.settle) ctx.act?.(result.settle, [], { ...(result.settleOptions || {}), settle: true });
+  if (result.settle) {
+    const settleOptions = result.settleOptions || {};
+    ctx.act?.(result.settle, [], { ...settleOptions, settle: settleOptions.settle ?? true });
+  }
   return result;
 }
