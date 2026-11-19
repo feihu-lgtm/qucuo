@@ -7,7 +7,7 @@ function itemNameOf(item) {
   return typeof item === "object" ? item?.name : item;
 }
 
-export function useItem(state, item) {
+export function consumeItem(state, item) {
   const itemName = itemNameOf(item);
   const consumable = (typeof item === "object" && item?.consumable)
     || CATALOG_INDEX[itemName]?.consumable

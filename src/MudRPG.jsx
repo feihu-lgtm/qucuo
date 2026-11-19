@@ -13,7 +13,7 @@ import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import { applyResult } from "./features/run.js";
 import { selectEffectiveStats } from "./features/stats/logic.js";
 import { applyCharacterCard } from "./features/character/logic.js";
-import { pickGroundItem, useItem } from "./features/items/logic.js";
+import { pickGroundItem, consumeItem } from "./features/items/logic.js";
 import { comfort, resolveTrauma, enterSeaOfMind as enterSeaLogic, leaveSeaOfMind as leaveSeaLogic, confessToNarrator as confessLogic } from "./features/narrator/logic.js";
 import { switchCompanion } from "./features/companion/logic.js";
 import { joinSect } from "./features/sect/logic.js";
@@ -1074,7 +1074,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   // ⑤ 服食：把原打字正则分支的确定性结算抽成 handler，供物品面板「服食」调用。
   const handleConsumeItem = useCallback((item) => {
-    applyResult(featureCtxRef.current, useItem(gameStore.getState(), item));
+    applyResult(featureCtxRef.current, consumeItem(gameStore.getState(), item));
   }, []);
 
   // ⑧ 采摘：把地上物收入背包、从 room.items 抹去（确定性，不调AI）。

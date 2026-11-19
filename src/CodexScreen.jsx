@@ -15,6 +15,7 @@ import { CATEGORY_LABEL, QUALITY, QUALITY_COLOR } from "./equipment.js";
 import { moveCodexBySource, groupMoves, moveCodexStats, MOVE_SOURCE } from "./kungfu/moveCodex.js";
 import { ITEM_DISTRIBUTION, isPoolable } from "./items/distribution.js";
 import { DISTRICT_REGION } from "./items/regionMap.js";
+import { moveEffectBrief, passiveBonusBrief } from "./itemEffectText.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
