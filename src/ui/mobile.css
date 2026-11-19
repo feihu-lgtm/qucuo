@@ -231,6 +231,16 @@
     display: none;
   }
 
+  .mobile-building-minimized-root {
+    background: transparent !important;
+    border-bottom: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .mobile-building-minimized-root > .mobile-gamble-minimized {
+    pointer-events: auto !important;
+  }
+
   .mobile-building-content {
     flex: 1;
     min-height: 0;

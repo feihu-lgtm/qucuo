@@ -103,7 +103,9 @@ export default function CenterPanel({
   // 的铺子，用本页签在 TradingScreen 与 ForgeScreen/JadeShopScreen 之间切换。换一家
   // 铺子(activeBuilding.id 变)就复位回"现货"，避免上家的定制页串到下家。
   const [craftTab, setCraftTab] = useState("shop");
+  const [gambleStoneMinimized, setGambleStoneMinimized] = useState(false);
   useEffect(() => { setCraftTab("shop"); }, [activeBuilding?.id]);
+  useEffect(() => { setGambleStoneMinimized(false); }, [activeBuilding?.id]);
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const showBasement = useOverlay(OVERLAY.BASEMENT);
   return (
@@ -194,7 +196,7 @@ export default function CenterPanel({
                  改成展开时建筑面板独占：叙事区在这种时候整个不渲染（见下方 log 区的条件），
                  建筑面板拿满整栏。想看叙事就点"▾ 最小化"，叙事区随即恢复全高。 ── */}
           {(activeBuilding || tradingShop) && !buildingPanelMinimized && (
-            <div className="mobile-building-root" style={{ flex: 1, minHeight: 0, height: "100%", overflowY: "auto", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)" }}>
+            <div className={`mobile-building-root${gambleStoneMinimized ? " mobile-building-minimized-root" : ""}`} style={{ flex: 1, minHeight: 0, height: "100%", overflowY: "auto", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)" }}>
               {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
               <div className="mobile-building-minimize"
                 onClick={() => setBuildingPanelMinimized(true)}
@@ -325,6 +327,7 @@ export default function CenterPanel({
               )}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.GAMBLESTONE && (
                 <GambleStoneScreen building={activeBuilding} char={char} time={time}
+                  onMinimizeChange={setGambleStoneMinimized}
                   zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)}
                   roomNpcs={(room.npcs || []).filter(n => (n.gambleBidder || n.name === "兰姐" || n.name === "温掌柜") && isNpcVisibleInInnerRoom(room.name, innerRoomName, n))}
                   negotiation={gambleNegotiation}
