@@ -205,6 +205,7 @@ export default function CenterPanel({
               >
                 ▾ 最小化
               </div>
+              {isMobile && activeBuilding?.craft && craftTab !== "shop" && tabs("mobile-trading-tabs-header")}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.INN && (
                 <InnScreen building={activeBuilding} char={char} time={time} zoneTheme={zoneTheme} inline
                   onClose={() => setActiveBuilding(null)} onRest={handleBuildingInn} onHeal={handleBuildingHeal} />
