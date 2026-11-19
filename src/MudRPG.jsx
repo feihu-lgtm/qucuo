@@ -3,6 +3,7 @@ import { gameActions, gameStore, initGameStore, useGameStore } from "./store/gam
 import { createAutosaveScheduler } from "./core/autosaveScheduler.js";
 import { snapshotFromStore } from "./core/persist.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
+import { attachImportedRegistry } from "./characterMilestones.js";
 import {
   NNPC_STAGE, initialNarratorState, isInSea, migrateNarratorState,
   narratorVoicePrompt, affectionLabel, buildNarratorWhisperContext,
