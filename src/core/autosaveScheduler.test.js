@@ -95,6 +95,25 @@ describe("createAutosaveScheduler", () => {
     expect(harness.save).toHaveBeenCalledTimes(1);
   });
 
+  it("ignores changes while busy and schedules after busy clears", () => {
+    const harness = createHarness();
+    harness.arm();
+    harness.setBusy(true);
+    harness.emit();
+    vi.advanceTimersByTime(1000);
+
+    expect(harness.onPlayed).not.toHaveBeenCalled();
+    expect(harness.save).not.toHaveBeenCalled();
+
+    harness.setBusy(false);
+    harness.emit();
+    vi.advanceTimersByTime(100);
+
+    expect(harness.onPlayed).toHaveBeenCalledTimes(1);
+    expect(harness.save).toHaveBeenCalledTimes(1);
+    harness.scheduler.dispose();
+  });
+
   it("calls onPlayed only on the first armed change", () => {
     const harness = createHarness();
     harness.emit();

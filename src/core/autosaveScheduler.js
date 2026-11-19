@@ -25,7 +25,7 @@ export function createAutosaveScheduler({
 
   const schedule = () => {
     try {
-      if (disposed || silenceDepth > 0 || !isArmed()) return;
+      if (disposed || silenceDepth > 0 || !isArmed() || isBusy()) return;
       pending = true;
       if (!played) {
         played = true;
