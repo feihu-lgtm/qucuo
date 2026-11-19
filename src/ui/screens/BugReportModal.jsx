@@ -8,9 +8,10 @@
 // getPayload 由调用方注入（游戏内能带上对话/日志/状态；开始页只有纯文字反馈）。
 
 import React, { useMemo, useState } from "react";
-import { buildDebugBundle, downloadDebugBundle, getDebugBundleSize, redact } from "../../infra/debugBundle.js";
+import { downloadDebugBundle, getDebugBundleSize, redact } from "../../infra/debugBundle.js";
 import { submitBugReport } from "../../infra/bugReport.js";
 import { CURRENT_VERSION } from "../../infra/version.js";
+import { buildModalDebugBundle, getSelectedBugReportTurns } from "./bugReportDebugBundle.js";
 
 const EMPTY_DEBUG_SOURCES = Object.freeze({});
 
@@ -49,7 +50,10 @@ export default function BugReportModal({
   const [expandedTurn, setExpandedTurn] = useState(null);
   const [includePipeline, setIncludePipeline] = useState(false); // pipeline 后台日志总开关，默认不带（量大）
   const pipelineCount = Array.isArray(pipelineData) ? pipelineData.length : 0;
-  const debugBundle = useMemo(() => buildDebugBundle(debugSources), [debugSources]);
+  const debugBundle = useMemo(
+    () => buildModalDebugBundle(debugSources, turns, selectedTurns, includePipeline),
+    [debugSources, turns, selectedTurns, includePipeline],
+  );
   const debugBundleSize = getDebugBundleSize(debugBundle);
   const formattedBundleSize = debugBundleSize >= 1024 * 1024
     ? `${(debugBundleSize / (1024 * 1024)).toFixed(2)} MB`
@@ -84,7 +88,7 @@ export default function BugReportModal({
     setSending(true);
     setResult(null);
     // 按勾选组装：选中的回合原始日志条目
-    const pickedTurns = turns.filter((_, i) => selectedTurns.has(i)).map(t => ({ label: t.label, entries: t.entries }));
+    const pickedTurns = getSelectedBugReportTurns(turns, selectedTurns);
     let gameState = null;
     try { gameState = getGameState ? getGameState() : null; } catch { /* keep the report if game state is unavailable */ }
     const report = {
@@ -188,7 +192,7 @@ export default function BugReportModal({
             <div style={{ marginBottom: 14, padding: "8px 10px", border: `1px solid ${C.border}` }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11.5, color: C.text }}>
                 <input type="checkbox" checked={includeDebugBundle} onChange={e => setIncludeDebugBundle(e.target.checked)} />
-                <span>附带调试包 (存档/日志/trace，已去除密钥)</span>
+                <span>附带调试包（存档、游戏日志、错误；对话和 AI 记录按上面的勾选）</span>
               </label>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 7, fontSize: 10.5, color: C.dim }}>
                 <span>调试包大小：{formattedBundleSize}</span>
