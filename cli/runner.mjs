@@ -8,6 +8,13 @@ import { setSeed } from "../src/core/rng.js";
 import { resetForDay, loadSquares, serializeSquares } from "../src/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/saves.js";
 import { getTimeStr } from "../src/utils/mudHelpers.js";
+import { defaultConfig } from "../src/apiConfig.js";
+import { classifyIntent, buildBudgetInstruction } from "../src/inputIntent.js";
+import { emptyBodyProfile } from "../src/bodyProfile.js";
+import { getActivePreset } from "../src/presetSystem.js";
+import { startTrace } from "../src/actionTrace.js";
+import { commitRound } from "../src/act/commitRound.js";
+import { runTurn } from "../src/engine/runTurn.js";
 import { applyResult } from "../src/features/run.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
@@ -97,14 +104,198 @@ function parsePositiveInteger(value) {
   return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
-export function createSession({ out = defaultOutput, cwd = process.cwd(), seed } = {}) {
+export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, ai, apiCfg: apiCfgOverrides } = {}) {
   const emit = typeof out === "function" ? out : (text) => out.write(`${text}\n`);
+  let pendingTurn = Promise.resolve(0);
   const featureCtx = {
     addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
     jotNote: () => {},
     setVarTree: gameActions.setVarTreeState,
-    act: (text) => emit(`(结算回合需 AI，PR E 接入：${text})`),
+    act: (text, _extraReplies, opts) => { pendingTurn = runFreeText(text, opts); return pendingTurn; },
   };
+  let session;
+
+  function runFreeText(cmd, opts = {}) {
+    return (async () => {
+      if (!ai) {
+        emit("请使用 --ai mock、--ai replay 或 --ai deepseek 配置 AI。");
+        return 1;
+      }
+      const snapshot = structuredClone(gameStore.getState());
+      const roomMapSnapshot = structuredClone(session.roomMap);
+      const squaresSnapshot = structuredClone(serializeSquares());
+      const varTreeRef = { current: snapshot.varTree };
+      const setVarTree = (next) => {
+        const value = typeof next === "function" ? next(gameStore.getState().varTree) : next;
+        gameActions.setVarTreeState(value);
+        varTreeRef.current = value;
+      };
+      const state = gameStore.getState();
+      const config = {
+        ...defaultConfig(),
+        ...apiCfgOverrides,
+        apiType: apiCfgOverrides?.apiType || "openai",
+        maxTokens: apiCfgOverrides?.maxTokens || 4000,
+        extractionEnabled: apiCfgOverrides?.extractionEnabled ?? false,
+        streamEnabled: false,
+      };
+      const intent = classifyIntent(cmd);
+      const preset = state.preset || DEFAULT_PRESETS[0];
+      const trace = startTrace("cli-turn");
+      const visibleNpcs = (state.room?.npcs || []).filter((npc) => (
+        isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)
+      ));
+      const visibleNpcsForAI = visibleNpcs;
+      const lastAiText = [...(state.convo || [])].reverse().find((message) => message.role === "assistant")?.content || "";
+      const invText = (state.inv || []).map((item) => (
+        typeof item === "string" ? item : `${item.name}(${item.quality}${item.equipped ? "·已装备" : ""})`
+      )).join(",");
+      const stateContext = `[状态] 时间:${getTimeStr(state.time)} 主角:${state.char?.name || "无名少侠"} 房间:${state.room?.name || ""}${state.innerRoomName ? `·${state.innerRoomName}` : ""} 出口:${(state.room?.exits || []).join(",")} NPCs:${visibleNpcsForAI.map((npc) => npc.name).join(",") || "无"} 物品:${(state.room?.items || []).map((item) => item.name).join(",") || "无"} HP:${(state.char?.hp || []).join("/")} 内功:${state.char?.neigong ?? 0} 外功:${state.char?.waigong ?? 0} 背包:${invText}`;
+      const apiConfig = { ...config, model: apiCfgOverrides?.model || config.model };
+      const recallInput = {
+        apiCfg: apiConfig,
+        cmd,
+        lastAiText,
+        room: state.room,
+        varTreeLatest: state.varTree,
+        flags: state.flags || [],
+        activeTarget: null,
+        isTalk: false,
+        talkTarget: null,
+      };
+      const callDeps = (memory = {}, prepared = {}) => ({
+        varTree: memory.varTree ?? state.varTree,
+        gm: false,
+        isSettle: !!opts.settle,
+        isTalk: false,
+        intent,
+        apiCfg: apiConfig,
+        narrator: state.narrator,
+        scenario: preset.scenario || getActivePreset().scenario,
+        budgetInstruction: buildBudgetInstruction(intent, cmd, apiConfig.targetWordCount, apiConfig.intentBudgets),
+        npcLoreBlockWithQuest: "",
+        visibleNpcsCount: visibleNpcs.length,
+        charName: state.char?.name,
+        charBodyProfile: state.char?.bodyProfile || emptyBodyProfile(),
+        pickupJudgment: null,
+        cmd,
+        convo: state.convo || [],
+        nsfwOn: false,
+        ctx: stateContext,
+        recallBlock: memory.recallBlock || "",
+        reunionBlock: "",
+        infoDomainBlock: memory.infoDomainBlock || "",
+        hist: prepared.hist,
+        mainConvo: prepared.mainConvo,
+        gambleTalkCtx: null,
+        recallInfo: memory.recallInfo,
+        inSeaOfMind: false,
+        settleNpc: opts.settleNpc,
+        settleKind: opts.settleKind,
+        giftInfo: opts.giftInfo,
+        learnInfo: opts.learnInfo,
+        settleBeast: !!opts.settleBeast,
+        _trace: trace,
+        ai,
+        addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
+        setLog: gameActions.setLog,
+      });
+
+      try {
+        const turn = await runTurn({
+          apiCfg: apiConfig,
+          ai,
+          callDeps,
+          convo: state.convo || [],
+          isTalk: false,
+          isSettle: !!opts.settle,
+          _trace: trace,
+          state,
+          memory: {
+            varTreeLatest: state.varTree,
+            roomNpcNames: (state.room?.npcs || []).map((npc) => npc.name),
+            time: state.time,
+            apiCfg: apiConfig,
+            flags: state.flags || [],
+            recall: recallInput,
+          },
+        }, cmd, opts);
+        const roomMapRef = { current: session.roomMap };
+        const pickupJudgmentRef = { current: null };
+        const pickupExtractionFailedRef = { current: turn.pickupExtractionFailed };
+        const collectGrantedRef = { current: [] };
+        const outerDepartRef = { current: null };
+        const pendDirRef = { current: null };
+        const gambleTalkCtx = { current: null };
+        const dayMaterialRef = { current: [] };
+        const playedThisSessionRef = { current: false };
+        const roundsSinceLastSaveRef = { current: 0 };
+        const addLog = (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]);
+        commitRound({
+          ...turn,
+          isTalk: false,
+          gm: false,
+          lockedDestName: null,
+          room: state.room,
+          innerRoomName: state.innerRoomName,
+          time: state.time,
+          mapData: state.mapData || {},
+          pendingQuestBranch: null,
+          apiCfg: apiConfig,
+          activeTarget: null,
+          talkTarget: null,
+          effectiveSpecialNow: state.char?.special || {},
+          newConvo: turn.newConvo,
+          questProgress: state.questProgress || {},
+          char: state.char,
+          preserveHp: false,
+          _trace: trace,
+          addLog,
+          setVarTree,
+          setRoom: gameActions.setRoom,
+          setGambleNegotiation: () => {},
+          setInv: gameActions.setInv,
+          setChar: gameActions.setChar,
+          setDao: gameActions.setDao,
+          setExp: gameActions.setExp,
+          setPot: gameActions.setPot,
+          setSkills: gameActions.setSkills,
+          setFlags: gameActions.setFlags,
+          setMapData: gameActions.setMapData,
+          setTime: gameActions.setTime,
+          setPendingQuestBranch: () => {},
+          setConvo: gameActions.setConvo,
+          varTreeRef,
+          roomMapRef,
+          gambleTalkCtx,
+          outerDepartRef,
+          pendDirRef,
+          pickupJudgmentRef,
+          pickupExtractionFailedRef,
+          collectGrantedRef,
+          dayMaterialRef,
+          roundsSinceLastSaveRef,
+          playedThisSessionRef,
+        });
+        session.roomMap = roomMapRef.current;
+        return 0;
+      } catch (error) {
+        initGameStore(snapshot);
+        session.roomMap = roomMapSnapshot;
+        loadSquares(squaresSnapshot);
+        varTreeRef.current = snapshot.varTree;
+        emit(error?.message || String(error));
+        return 1;
+      }
+    })();
+  }
+
+  async function applyFeature(result) {
+    applyResult(featureCtx, result);
+    const status = await pendingTurn;
+    pendingTurn = Promise.resolve(0);
+    return status;
+  }
 
   async function runLine(rawLine) {
     const line = String(rawLine).trim();
@@ -187,8 +378,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed }
         forceLayer: "inner",
       });
       if (result) {
-        applyResult(featureCtx, result);
-        return 0;
+        return await applyFeature(result);
       }
     }
 
@@ -199,75 +389,66 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed }
       ));
       const npc = visibleNpcs.find((entry) => entry?.name === learnNpcMatch[1]);
       if (!npc) {
-        applyResult(featureCtx, {
+        return await applyFeature({
           logs: [{ t: "err", text: `  此处没有 ${learnNpcMatch[1]}。` }],
         });
-        return 0;
       }
-      applyResult(featureCtx, learnNpcSkill(state, npc));
-      return 0;
+      return await applyFeature(learnNpcSkill(state, npc));
     }
 
     if (line === "打坐") {
-      applyResult(featureCtx, meditate(state));
-      return 0;
+      return await applyFeature(meditate(state));
     }
     if (line === "练内功") {
-      applyResult(featureCtx, trainNeigong(state));
-      return 0;
+      return await applyFeature(trainNeigong(state));
     }
     if (line === "练外功") {
-      applyResult(featureCtx, trainWaigong(state));
-      return 0;
+      return await applyFeature(trainWaigong(state));
     }
 
     const skillMatch = /^修炼\s+(.+)$/.exec(line);
     if (skillMatch) {
-      applyResult(featureCtx, breakthroughSkill(state, skillMatch[1]));
-      return 0;
+      return await applyFeature(breakthroughSkill(state, skillMatch[1]));
     }
 
     const depositMatch = /^存钱\s+(\S+)$/.exec(line);
     if (depositMatch) {
       const amount = parsePositiveInteger(depositMatch[1]);
-      applyResult(featureCtx, amount === null
+      return await applyFeature(amount === null
         ? { logs: [{ t: "err", text: "  数额无效" }] }
         : deposit(state, amount));
-      return 0;
     }
     if (line === "取钱") {
-      applyResult(featureCtx, withdraw(state));
-      return 0;
+      return await applyFeature(withdraw(state));
     }
 
     const pledgeMatch = /^质押\s+(.+)\s+(\S+)$/.exec(line);
     if (pledgeMatch) {
       const pledgeValue = parsePositiveInteger(pledgeMatch[2]);
       if (pledgeValue === null) {
-        applyResult(featureCtx, { logs: [{ t: "err", text: "  数额无效" }] });
-        return 0;
+        return await applyFeature({ logs: [{ t: "err", text: "  数额无效" }] });
       }
       const item = (state.inv || []).find((entry) => typeof entry === "object" && entry?.name === pledgeMatch[1]);
-      applyResult(featureCtx, pledge(state, item?.id, pledgeValue));
-      return 0;
+      return await applyFeature(pledge(state, item?.id, pledgeValue));
     }
     const redeemMatch = /^赎回\s+(\S+)\s+(\S+)$/.exec(line);
     if (redeemMatch) {
       const index = parsePositiveInteger(redeemMatch[1]);
       const redeemCost = parsePositiveInteger(redeemMatch[2]);
       if (index === null || redeemCost === null) {
-        applyResult(featureCtx, { logs: [{ t: "err", text: "  数额无效" }] });
-        return 0;
+        return await applyFeature({ logs: [{ t: "err", text: "  数额无效" }] });
       }
-      applyResult(featureCtx, redeem(state, index - 1, redeemCost));
-      return 0;
+      return await applyFeature(redeem(state, index - 1, redeemCost));
     }
 
-    emit(`暂不支持：${line}（PR C 起接入）`);
-    return 0;
+    if (line.startsWith(":")) {
+      emit(`暂不支持：${line}（PR C 起接入）`);
+      return 0;
+    }
+    return runFreeText(line);
   }
 
-  const session = {
+  session = {
     store: gameStore,
     roomMap: {},
     runLine,

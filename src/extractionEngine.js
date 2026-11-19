@@ -5,6 +5,7 @@
 // 聊天只需要好感度。按意图精确提问可以大幅提升提取准确率（token 少、任务聚焦）。
 
 import { callModel, cleanJsonString } from "./apiConfig.js";
+import { createWebAi } from "./engine/ports/ai.js";
 import { extractMvuBlock } from "./mvu.js";
 
 // ── 全意图公共字段（本轮补齐）──
@@ -281,7 +282,7 @@ export const SETTLE_KIND_SPECS = { gift: "GIFT", companion_invite: "COMPANION_IN
 // 命中时传入 { settleKind, settleNpc, giftInfo }——双调用模式下好感度判定完全交给
 // 提取层，主叙事的散文不产 <mvu>，所以"送礼必须给正向好感"这条铁律必须在这里也落一份，
 // 不能只加在 buildSysBase（那边只管单调用/双调用主叙事文风，管不到提取层怎么判好感）。
-export async function callExtraction(intentCode, narrative, state, apiCfg, settleOpts = null) {
+export async function callExtraction(intentCode, narrative, state, apiCfg, settleOpts = null, ai = createWebAi()) {
   const settleSpecKey = settleOpts?.settleNpc ? SETTLE_KIND_SPECS[settleOpts?.settleKind] : null;
   // 不能用 || 回退：META_QUERY 显式为 null（本意图不提取状态），
   // null || UNKNOWN 会让它错误地落到 UNKNOWN，使下面的 !spec 判断成为死代码。
@@ -298,7 +299,14 @@ export async function callExtraction(intentCode, narrative, state, apiCfg, settl
   // 免得在 6 份 schema 里各抄一遍、加一个字段要改六处。
   const userContent = spec.user(narrative, state, settleOpts) + commonExtractTail(state.char?.name);
 
-  const { text } = await callModel(cfg, systemPrompt, [{ role: "user", content: userContent }], { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000, callLabel: `状态提取(${intentCode})` });
+  const { text } = await ai.chat(
+    [{ role: "user", content: userContent }],
+    {
+      cfg,
+      systemPrompt,
+      modelOptions: { maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000, callLabel: `状态提取(${intentCode})` },
+    },
+  );
 
   // 解析 JSON
   let js = text.replace(/```json\s*|```\s*/g, "").trim();
@@ -459,4 +467,3 @@ ${FORGE_EFFECT_WHITELIST}
   })).filter(c => c.name);
   return { ok: clean.length > 0, candidates: clean };
 }
-

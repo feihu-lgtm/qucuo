@@ -7,9 +7,10 @@ import { labelMessage, makeBlock } from "../tavernMapping.js";
 import { buildDistantViewBlock } from "../memory/daySummary.js";
 import { embeddingReady } from "../memory/embeddingService.js";
 import { buildExtractionCfg } from "../extractionEngine.js";
-import { applyPresetOverrides } from "../presetSystem.js";
-import { getActivePreset } from "../PresetManager.jsx";
-import { callModel, callModelStream } from "../apiConfig.js";
+import { applyPresetOverrides, getActivePreset } from "../presetSystem.js";
+import { createWebAi } from "../engine/ports/ai.js";
+
+const webAi = createWebAi();
 
 // 调用一次主剧情（流式/非流式），返回 { rawFull, finishReason }。流式占位日志每次调用各自管理。
 // narrativeOnly=true：提取层模式，主调用只输出散文；流式时将文本直接展示并保留在日志里。
@@ -193,14 +194,16 @@ ${dealFmt}`;
   // 主叙事这一路是唯一真正受"叙事风格采样参数"影响的调用点，私聊旁白/方向判定
   // /提取层等辅助调用不套用这份覆盖，避免预设改动意外影响到不相关的小任务。
   const effectiveCfg = applyPresetOverrides(d.apiCfg, getActivePreset());
+  const ai = d.ai || webAi;
   if (effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini") {
     const streamLogIndex = { current: null };
     d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
     d.setLog(l => { streamLogIndex.current = l.length - 1; return l; });
-    const { text, finishReason } = await callModelStream(
-      effectiveCfg, sysBlocks,
-      chatMessages,
-      (_delta, fullSoFar) => {
+    const { text, finishReason } = await ai.chat(chatMessages, {
+      cfg: effectiveCfg,
+      systemPrompt: sysBlocks,
+      stream: true,
+      onChunk: (_delta, fullSoFar) => {
         d.setLog(l => {
           if (streamLogIndex.current == null) return l;
           const copy = [...l];
@@ -209,8 +212,9 @@ ${dealFmt}`;
           return copy;
         });
       },
-      { intent: { code: d.intent.code, label: d.intent.label }, recallInfo: d.recallInfo },
-    );
+      intent: { code: d.intent.code, label: d.intent.label },
+      recallInfo: d.recallInfo,
+    });
     if (narrativeOnly) {
       // 叙事模式：把流式条目转为永久日志项（而不是移除它）。谈价 <deal> 标签仅供系统，显示时剥掉。
       const shown = text.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
@@ -226,6 +230,12 @@ ${dealFmt}`;
     }
     return { rawFull: text, finishReason };
   }
-  const result = await callModel(effectiveCfg, sysBlocks, chatMessages, { intent: { code: d.intent.code, label: d.intent.label }, recallInfo: d.recallInfo, callLabel: "主叙事" });
+  const result = await ai.chat(chatMessages, {
+    cfg: effectiveCfg,
+    systemPrompt: sysBlocks,
+    intent: { code: d.intent.code, label: d.intent.label },
+    recallInfo: d.recallInfo,
+    modelOptions: { callLabel: "主叙事" },
+  });
   return { rawFull: result.text, finishReason: result.finishReason };
 }

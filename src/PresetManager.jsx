@@ -4,6 +4,8 @@ import {
   importFromTavernFormat, exportToTavernFormat, MARKER_IDS,
 } from "./presetSystem.js";
 
+export { getActivePreset } from "./presetSystem.js";
+
 const rowStyle = {
   display: "flex", alignItems: "center", gap: 8, padding: "6px 8px",
   borderBottom: "1px solid #14161e", cursor: "grab",
@@ -16,12 +18,6 @@ const inputStyle = {
   width: "100%", background: "#161510", border: "1px solid #4a453c", borderRadius: 0,
   color: "#e8e4d6", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px", boxSizing: "border-box",
 };
-
-// 供外部（MudRPG.jsx）调用：读取当前激活的预设对象
-export function getActivePreset() {
-  const { presets, activeIndex } = loadAllPresets();
-  return presets[activeIndex] || defaultPreset();
-}
 
 // 顶部常驻工具栏：参照酒馆"预设永远显示在最上面，不管切到哪个标签页"的布局。
 // 挂载在 SettingsPanel 弹窗顶部（标题下方、标签栏上方），而不是藏在某个标签页里。

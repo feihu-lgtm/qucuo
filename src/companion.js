@@ -21,7 +21,9 @@
 
 import { generateNpcAttributes, getTierPower, atkFromWaigong, hpFromNeigong, deriveSignatureMoveset } from "./npcGeneration.js";
 import { createEmptyStatusSlots } from "./combat/statusEffects.js";
+import { COMPANION_SLOTS } from "./companionSlots.js";
 export { initCompanionState } from "./companionState.js";
+export { COMPANION_SLOTS } from "./companionSlots.js";
 
 export const SNOW_LEOPARD_LEVEL_CAP = 2; // 蓝档——比入门功夫精深，未到镇派绝学
 
@@ -294,13 +296,6 @@ export function isAsukaAvailable(companionState) {
 // 谁上场谁 active，其余一律留守。COMPANION_SLOTS 只登记内置的具名伙伴；导入的
 // 伙伴是运行时才产生的，用 imported_<名字> 作 key 动态挂在 companionState 上。
 // 下面所有遍历一律走 allCompanionKeys（内置 + 动态），不再只认 COMPANION_SLOTS。
-export const COMPANION_SLOTS = [
-  { key: "snowLeopard", label: "雪豹", beast: true },
-  { key: "pearl", label: "珍珠", beast: true },
-  { key: "panda", label: "墨团", beast: true },
-  { key: "asuka", label: "明日香", beast: false },
-];
-
 // ── 导入 NPC 入队 ────────────────────────────────────────────────────
 // 玩家入册的角色也能被邀请入队，跟具名伙伴抢同一个出战位。跟灵兽不同，导入的是
 // 「人」：beast:false、走人类均衡战斗性格（不套雪豹那份纯野兽本能）。数值用它入册

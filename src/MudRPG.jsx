@@ -136,7 +136,7 @@ import { writeNote, NOTE_SOURCE, VIA, reembedStaleNotes } from "./memory/note.js
 import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from "./memory/daySummary.js";
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
-import { callExtraction, buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
+import { buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
 import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable, unlockPearl, unlockAsuka, activeCompanionKey, setActiveCompanion, unlockedCompanions, companionKeyByName, unlockImportedCompanion, isCompanionUnlockedByName } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
@@ -160,7 +160,6 @@ import { invHasItemNamed, SAFE_HOUSES, ownedSafeHouseKeys, makeTusiRobe } from "
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
 import { injectNpcs, markCarriedLost, materializeNpc, removeNpc, respawnNpc } from "./roomNpcs.js";
-import { buildHistBlock, histBlockSavings } from "./memory/histWindow.js";
 import { tallyAdd, describeTodayForAI, describeDayForSummary, describeTallyForWhisper } from "./memory/tally.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
 import { SEA_OF_MIND, shouldTriggerXuannu, buildXuannuScene, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
@@ -201,10 +200,8 @@ import { innerMove as innerMoveLogic } from "./features/map/logic.js";
 import { learnNpcSkill as learnNpcSkillLogic } from "./features/npc/logic.js";
 import { resolveOuterLock } from "./act/outerMove.js";
 import { judgeCollect, buildQuestStageNote, buildForcedEventNote, buildArrivalNote, buildPresence, buildNpcContext } from "./act/roundNotes.js";
-import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
-import { callMainOnce } from "./act/actCall.js";
-import { parseMainResponse } from "./act/parseResponse.js";
 import { commitRound } from "./act/commitRound.js";
+import { runTurn } from "./engine/runTurn.js";
 import {
   rollSkeleton, buildSquarePrompt, parseSquareBatch, applySquareBatch,
   consumeArrival, getLookText, burnSquare, resetForDay, pendingNodes,
@@ -2207,7 +2204,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       return;
     }
 
-    const budgetInstruction = buildBudgetInstruction(intent, cmd, apiCfg.targetWordCount, apiCfg.intentBudgets);
 
     // 行动模式处理中时：命令进入排队队列，不阻塞输入。
     // extraReplies 跟着 cmd 一起存进队列，等真正出队执行时再一并带出去，
@@ -2361,40 +2357,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     }
     if (!isTalk && lockedDestName) burnSquare(lockedDestName); // AI 叙事接管这次到达，埋好的内容作废
 
-    const newConvo = [...convo, { role: "user", content: cmd }];
-    const angryNpcsInRoom = room.npcs
-      .map(n => ({ name: n.name, angry: varTreeRef.current.角色?.[n.name]?.生气状态 }))
-      .filter(n => n.angry?.active);
-    const angryNote = angryNpcsInRoom.length
-      ? `\n[社交状态] 以下在场角色正处于生气状态，原因是：${angryNpcsInRoom.map(n => `${n.name}(${n.angry.reason}，剩${n.angry.turnsLeft}回合平息期限)`).join("、")}。若玩家此刻尝试道歉/辩解/示好/赠礼，请你根据其言行是否得体、是否切中要害来判断这次"平息怒气"的努力是否奏效：奏效就在 <mvu> 里用 _.set('角色.<该角色>.生气解除', true) 标记这次成功，并可用 _.add('角色.<该角色>.好感度', 5) 适度回补好感度；敷衍或不得体就让角色在 output 里表现出依然不满，不要设置生气解除字段。`
-      : "";
-    const targetNote = activeTarget
-      ? `[交互目标] 玩家选定了「${activeTarget}」作为本轮唯一的互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文的核心——其他在场 NPC 若与该互动无关、或不宜抢戏，本轮不必出场、不必插话。除非玩家输入本身需要多人在场（比如当众宣布什么事），否则 room.npcs 只保留「${activeTarget}」和直接相关者即可。` + "\n"
-      : ""; // 不选人时不加约束——全 NPC 发给 AI，AI 自己判断谁出场
-    // 交互模式说明。双调用/单调用要分开写：单调用主模型自己产 JSON，可以让它顺手
-    // 报一个 respondedNpcs 字段；双调用主模型只写散文（13号位明说"不要输出任何
-    // JSON"），再要它"在顶层JSON里加字段"就是两条指令打架——此前就是这么写的，
-    // 于是 respondedNpcs 在双调用下恒为 undefined，commitRound 那条"对话即认识"
-    // 只剩 talkTarget 兜底（点「全部」聊天谁都不会被标记认识）。双调用下这个字段
-    // 改由提取层的 TALK_CASUAL spec 去要，这里就不提 JSON 了。
-    const talkNoStateRule = `[交互模式] 对话模式：玩家此刻只是在和当前房间里的 NPC 说话，不是在下达行动指令。无论玩家输入什么，都只应该触发对话回应，绝不能移动房间、不能战斗、不能改变 room/char/装备/背包等任何状态`;
-    const modeNote = isTalk
-      ? (apiCfg.extractionEnabled
-        ? `${talkNoStateRule}。只写这一轮的对白、神态与心思。 `
-        : `${talkNoStateRule}，room 字段留空或原样返回，delta 各项留空。此外，请在顶层 JSON 里加一个字段 "respondedNpcs":["名字"]，列出本轮正文里【真正开口跟玩家对话/直接回应了玩家】的 NPC 名字（只列真的说了话或有来有往互动的人；只是被提到、路过、在场却没搭理玩家的，不要列入）。没有人开口回应就返回空数组 []。 `)
-      : "";
-
-    // NPC涌现·触发检测：玩家这句输入如果明确提到某个"传闻中的人物"（之前剧情
-    // 文本里提过名字，但还没真正实体化成完整NPC），指示AI这一轮把他实体化。
     const targetedRumor = findTargetedRumor(varTreeRef.current, cmd);
-    const emergenceNote = targetedRumor
-      ? `\n[人物涌现] 玩家这句话明确指向了此前提到过的人物"${targetedRumor.name}"（提及语境：${targetedRumor.context}）。如果当前场景逻辑上合理让这个人物真正登场（比如玩家确实去了他可能所在的地方，或者当前情境足以让他出现），请在 room.npcs 里加入他（{"name":"${targetedRumor.name}","id":"（自拟英文id）","brief":"≤15字简介"}），同时在返回的顶层JSON里额外加两个字段：{"emergedNpcName":"${targetedRumor.name}","emergedNpcDescription":"一句话描述这个人的身份和性格特征，比如'磨坊学徒，性格憨厚老实'"}——这段描述只需要定性，不要给出任何数值。如果场景逻辑上此刻不适合这个人登场，就不要强行加入，正常按原计划描述即可。`
-      : "";
 
     // 系统裁决层：移动时按一定基础概率+气运品质分布，判定本次是否触发路上拾取。
     // 品质由系统骰子决定，AI 只负责给这个已经确定的品质编排一个符合场景的物品名称/描述，
     // 不允许 AI 自行决定"要不要给"或"给什么品质"。
-    let pickupNote = "";
     pickupJudgmentRef.current = null;
     if (!isTalk && movingDir) {
       const PICKUP_CHANCE = 0.35; // 每次移动 35% 基础几率触发拾取判定
@@ -2403,7 +2370,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         const quality = rollQuality(luck);
         const cat = [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY, ITEM_CATEGORY.MISC][Math.floor(Math.random() * 4)];
         pickupJudgmentRef.current = { quality, category: cat };
-        pickupNote = `\n[系统裁决：本次移动途中触发拾取事件，品质已判定为「${quality}」，物品分类建议为「${CATEGORY_LABEL[cat]}」。请在 output 里自然地描述玩家路上发现/捡到了什么，并在 delta.items_add 里加入这件物品，quality 字段必须精确写成"${quality}"，category 字段写成"${cat}"，name 自拟一个符合当前场景和地域特色、且与品质相衬的名字（品质越高描述可以越有分量，但不要浮夸到脱离世界观）。如果场景逻辑上此刻不适合捡到东西（比如玩家正身处险境、被人盯着），也可以合理地不触发，只需在 output 里说明原因，不必强行塞入。]`;
       }
     }
 
@@ -2411,12 +2377,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 只在真正跨节点移动、且本轮没有"人物涌现"抢占时触发——涌现（顺藤摸瓜找具体人）
     // 优先级更高，一轮里不同时塞两个 NPC 事件，免得场面拥挤。
     // 刷出来的人隶属某已有势力，可捎传闻喂涌现系统（守契诃夫铁律，见 encounter.js）。
-    let encounterNote = "";
-    if (!isTalk && movingDir && lockedDestName && !emergenceNote) {
+    let encounterToDescribe = null;
+    if (!isTalk && movingDir && lockedDestName && !targetedRumor) {
       const luck = char.special?.气运 ?? 5;
       const encounter = rollEncounter(lockedDestName, luck);
       if (encounter) {
-        encounterNote = buildEncounterNote(encounter, lockedDestName);
+        encounterToDescribe = encounter;
         // 自动寻路途中撞见路遇 → 硬中断：清掉剩余自动步，把玩家留在此处应对，
         // 本步照常把这次相遇叙述出来。后续要不要继续赶路，由玩家自己再点。
         if (autoTravelRef.current && pendingQueue.current.length > 0) {
@@ -2444,37 +2410,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       collectNote = collectHit.note;
     }
 
-    const questStageNote = buildQuestStageNote({ questProgress, flags, char, room, inv, pendingQuestBranch });
-    const forcedEventNote = buildForcedEventNote(opts.forcedEvent, opts.forcedEventNpc, apiCfg.targetWordCount);
-    const arrivalNote = buildArrivalNote({ isTalk, movingDir, lockedDestName, outerDepart: outerDepartRef.current });
-
-    const invText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join(",");
-    const { visibleNpcs, visibleNpcsForAI } = buildPresence({ _trace, isTalk, lockedDestName, room, innerRoomName, companionState });
-    const ctx = `${targetNote}${modeNote}[状态] ${gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : ""}时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""} 出口:${room.exits.join(",")} NPCs:${visibleNpcsForAI.map(n => { const ci = (n.carriedItems || []).filter(i => !i.stolen).map(i => i.name).join("、"); const tier = typeof n.levelCap === "number" ? `〔品阶:${QUALITY[Math.max(0, Math.min(5, n.levelCap))]}档〕` : ""; return n.name + tier + (ci ? `〔身携:${ci}〕` : "〔身无长物〕"); }).join(",") || "无"} 物品:${room.items.map(i => i.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 七维:${Object.entries(char.special || {}).map(([k, v]) => k + v).join(",")} 背包:${invText} 装备:${describeEquipment(inv)} 武功:${skills.map(s => s.name + "Lv" + s.level).join(",")} 因果:${dao.karma} 劫数:${dao.jie}\n[已触发事件] ${flags.length ? flags.join(",") : "无"}${describeTodayForAI(varTreeRef.current.世界?.起居注, timeRef.current)}${pickupNote}${destinationLock}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${collectNote}${arrivalNote}${forcedEventNote}`;
-    // 对话模式取更长的历史窗口（至少 20 层全部互动）——聊天比行动更依赖前后文的来回照应；
-    // 行动模式沿用用户配置的窗口。convo 里本就混装了行动/对话/私聊三类回合，但私聊是玩家
-    // 与"旁白"这个第四面墙外角色的私密对话，普通场景 NPC 不该知道这些内容（反过来，旁白
-    // 全知是通过 allFactSummaries 单独喂给她的，两条渠道不能对调）。这里过滤掉私聊回合，
-    // 只留行动/对话回合喂给主引擎。
-    // 结算轮只需最近几句维持语气连贯，不需要长程上下文（这一轮不做任何博弈判断）。
-    const histWindow = isSettle ? 6 : isTalk ? Math.max(apiCfg.contextWindow, 20) : apiCfg.contextWindow;
-    const mainConvo = newConvo.filter(m => !(typeof m.content === "string" && (m.content.startsWith("（私聊）") || m.content.startsWith("（旁白私聊回应）"))));
-    // 历史窗口分层压缩（见 memory/histWindow.js）：近 2 轮原始保文风与即时连贯，
-    // 更早的用各轮 memory 摘要顶上。此前是把 contextWindow 条原始 JSON 全铺开，
-    // 实测约占单轮上下文四成（contextWindow=16 时 ≈4176字≈6.7k tokens）。
-    // 结算轮窗口本来就小（6），也一并走这条路，措辞统一。
-    const _histWin = mainConvo.length > histWindow ? mainConvo.slice(-histWindow) : mainConvo;
-    const hist = buildHistBlock(_histWin, { recentPairs: isTalk ? 3 : 2 });
-    {
-      const sv = histBlockSavings(_histWin, { recentPairs: isTalk ? 3 : 2 });
-      if (sv.savedChars > 0) {
-        traceStep(_trace, "历史压缩", "info", `${sv.legacyChars}→${sv.nowChars}字（省 ${sv.savedChars}，约 ${Math.round(sv.savedChars * 1.6)} tokens）`);
-      }
-    }
-
-    // ── 场景NPC世界书 + 在场任务状态 + 久别重逢（纯注入文本，汇总在 act/roundNotes.js）──
-    const { lastAiText, npcLoreBlockWithQuest, reunionBlock } = buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, questProgress, varTree: varTreeRef.current, time, companionState, nsfwOn });
-
     // loading 态 + 计时器：在第一个 await（下方 recall/knowledge）之前启动——
     // 内层移动已在上方 early return（不进 loading），这里之后才真正要调 AI。
     if (isTalk) changePendingTalks(1); else setLoading(true);
@@ -2490,15 +2425,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 所以这个快照 === 本回合开始时的状态。
     const preActVarTree = varTreeRef.current;
 
-    // ── 信息领域·知识系统（代码驱动，本轮新增）──（推演与补摘要在 act/memoryLayer.js）
-    // 推演结果写回 varTree（本回合状态的一部分，失败会随整体回滚）。
-    const knowledgeTurn = await runKnowledgeTurn({ varTreeLatest: varTreeRef.current, roomNpcNames: room.npcs.map(n => n.name), time, apiCfg, flags });
-    const infoDomainBlock = knowledgeTurn.infoDomainBlock;
-    setVarTree(knowledgeTurn.kTree); // 持久化本回合推演（后续 setVarTree(prev=>...) 基于此叠加）
-
-    // ── 三层记忆·向量召回层（请求段，无副作用，在 act/memoryLayer.js）──
-    const { recallInfo, recallBlock } = await runRecall({ apiCfg, cmd, lastAiText, room, varTreeLatest: varTreeRef.current, flags, activeTarget, isTalk, talkTarget });
-
     // ── 两阶段 pipeline·发送前快照 ──
     // 本轮 try 块里从 setVarTree(mvu) 一路 setState 到 setConvo，中间任何一步（makeItem /
     // ensureNpcCombatData / mapDescriptionToGenParams / JSON 解析等）抛错，都会留下"改了一半"的
@@ -2508,186 +2434,59 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const rollback = { room, char, dao, skills, inv, exp, pot, flags, mapData, time, varTree: preActVarTree, convo };
 
     try {
-      // ── 自动重说（本轮新增）──
-      // 被截断（解析落入救援路径 p._truncated，或 finishReason 为 length 类）或网络/代理掐断（抛错）时，
-      // 自动重发本轮请求，最多 MAX_AUTO_RETRY 次。重说时追加一句"上次过长被截断、这次务必更紧凑并完整闭合"，
-      // 专治接口输出上限型截断；网络型则原样重试（多为瞬时抖动，一试常好）。
-      // 全过程在状态应用之前（请求段），重试不产生任何副作用；次数用尽则沿用最后一次的救援结果。
-      const MAX_AUTO_RETRY = 2;
-
-      // 主叙事调用（组装 Tavern 序消息 + 流式/非流式 + trace）在 act/actCall.js。
-      // callDeps() 在每个调用点现取本回合上下文——ref 值按调用时机读取，
-      // 与原嵌套闭包每次执行时读 ref 的时序一致。
-      const callDeps = () => ({
-        varTree: varTreeRef.current, gm, isSettle, isTalk, intent, apiCfg, narrator,
-        scenario: preset.scenario, budgetInstruction, npcLoreBlockWithQuest,
-        visibleNpcsCount: visibleNpcs.length, charName: char.name, charBodyProfile: char.bodyProfile,
-        pickupJudgment: pickupJudgmentRef.current, cmd, convo, nsfwOn,
-        ctx, recallBlock, reunionBlock, infoDomainBlock, hist, mainConvo,
-        gambleTalkCtx: gambleTalkCtx.current, recallInfo,
+      const callDeps = (memory = {}, prepared = {}) => ({
+        varTree: memory.varTree ?? varTreeRef.current, gm, isSettle, isTalk, intent, apiCfg, narrator,
+        scenario: preset.scenario, budgetInstruction: prepared.budgetInstruction,
+        npcLoreBlockWithQuest: prepared.npcLoreBlockWithQuest || "",
+        visibleNpcsCount: prepared.visibleNpcsCount || 0, charName: char.name, charBodyProfile: char.bodyProfile,
+        pickupJudgment: pickupJudgmentRef.current, cmd: prepared.cmd || cmd, convo, nsfwOn,
+        ctx: prepared.ctx, recallBlock: memory.recallBlock || "", reunionBlock: prepared.reunionBlock || "",
+        infoDomainBlock: memory.infoDomainBlock || "", hist: prepared.hist, mainConvo: prepared.mainConvo,
+        lockedDestName,
+        gambleTalkCtx: gambleTalkCtx.current, recallInfo: memory.recallInfo,
         inSeaOfMind: room.name === SEA_OF_MIND.district,
         settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
         _trace, addLog, setLog,
       });
-
-      let rawFull = "", p = null, mvuCommands = [], dealResult = null;
-      // 本轮"人眼看见的叙事正文"。两种模式来源不同：单调用在 p.output 数组里，
-      // 双调用在 rawFull 散文里。下游的新面孔人设换算（mapDescriptionToGenParams）
-      // 与传闻人物记录都要用它——此前那两处写死读 p.output，双调用下恒为空串，
-      // 于是"按描述定筋骨"在双调用模式里静默退化成吃 luck 兜底。
-      let narrativeText = "";
-
-      if (apiCfg.extractionEnabled) {
-        // ── 双调用模式：主调用只生成叙事，提取调用处理状态 ──
-        // 主叙事调用与单调用模式一样享有自动重试——此前这里只试一次，
-        // 接口一超时（默认60s）整轮行动直接整体回滚，表现为"双调用模式没法用"。
-        //
-        // 提取 spec 的选择键：对话模式固定走 TALK_CASUAL。
-        // 注意不能直接把 intent 改成 INTENT.TALK_CASUAL——intent 还管着篇幅预算
-        // （TALK_CASUAL 的 wordBudget 是 [150,350]，而对话模式一贯是 UNKNOWN=
-        // "篇幅交由本次调用自行裁量"），改 intent 会连带把对话的字数管死。
-        // 这里只替换"用哪份提取 spec"，注入侧的 intent/promptScope 一概不动。
-        // 必须在 _exCfgForTrace 之前算出来：提取模型是按这个键查
-        // extractionModels[key] 的，trace 显示的模型名要和真正调用的那个一致。
-        const extractionSpecKey = isTalk ? "TALK_CASUAL" : intent.code;
-        const _exCfgForTrace = buildExtractionCfg(extractionSpecKey, apiCfg); // 仅供trace显示模型名，实际提取调用在下面callExtraction内部会重新算一份等价的cfg
-        let mainFinishReason;
-        for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
-          try {
-            const r = await callMainOnce(null, true, callDeps());
-            rawFull = r.rawFull;
-            mainFinishReason = r.finishReason;
-            if (attempt > 1) {
-              addLog([{ t: "sys", text: `  ✓ 重连成功，继续。` }]);
-              traceStep(_trace, "AI调用", "pass", `主叙事第${attempt}次尝试成功（双调用·主叙事模型=${apiCfg.model || "未设置"}）`);
-            } else {
-              traceStep(_trace, "AI调用", "pass", `主叙事一次成功（双调用·主叙事模型=${apiCfg.model || "未设置"}）`);
-            }
-            // 必须在提取调用之前挂——getPipelineLog()[0] 取的是最近一条，
-            // 等提取调用发完再挂就变成提取那条了，主叙事的 prompt 反而看不到。
-            attachPipeline(_trace, getPipelineLog()[0]);
-            break;
-          } catch (netErr) {
-            if (attempt <= MAX_AUTO_RETRY) {
-              addLog([{ t: "sys", text: `  ⚠ 接口中断（${netErr.message || netErr}），正在自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…` }]);
-              traceStep(_trace, "AI调用", "fail", `主叙事第${attempt}次失败：${netErr.message || netErr}，重试`);
-              continue;
-            }
-            traceStep(_trace, "AI调用", "fail", `主叙事重试用尽仍失败：${netErr.message || netErr}`);
-            throw netErr;
-          }
-        }
-        // 赌石谈价：从主叙事原文抠出 <deal> 结算标签，并从显示文本里剥掉（别让标签露给玩家）
-        {
-          const dm = typeof rawFull === "string" && rawFull.match(/<deal>\s*([\s\S]*?)\s*<\/deal>/i);
-          if (dm) {
-            try { dealResult = JSON.parse(dm[1].replace(/[\x00-\x1f]/g, " ").trim()); } catch (_) {}
-            rawFull = rawFull.replace(/<deal>[\s\S]*?<\/deal>/gi, "").trim();
-          }
-        }
-        // 双调用的叙事正文就是主调用的散文本身（<deal> 标签已剥掉）
-        narrativeText = rawFull;
-        // 非流式时手动把叙事加进日志（流式模式已在 callMainOnce 里转为永久条目）
-        if (!apiCfg.streamEnabled || apiCfg.apiType === "gemini") {
-          const lines = rawFull.split("\n").map(l => l.trim()).filter(Boolean);
-          addLog(lines.map(t => ({ t: "desc", text: "  " + t })));
-        }
-        // 截断检查：单调用那条一直有 finishReason 判定，双调用此前把这个字段整个丢了，
-        // 撞上限时既不提示也不重说。这里只提示不自动重说——叙事已经打到屏幕上了
-        // （流式模式更是已转成永久日志条目），再重说一遍会变成同一段剧情印两次。
-        // 位置必须在叙事落日志之后，否则"以上是已收到的部分"这句会排在正文上面。
-        if (/length|max[_ ]?tokens|max[_ ]?output/i.test(mainFinishReason || "")) {
-          traceStep(_trace, "截断检查", "block", `主叙事撞 token 上限（finishReason=${mainFinishReason}）`);
-          addLog([{ t: "sys", text: "  ⚠ 本轮叙事被接口中途截断（撞到输出 token 上限），以上是已收到的部分。提取层只能按这段残文结算状态，本轮状态可能不全。" }]);
-        }
-        // 发起提取调用
-        const exState = {
-          room, char, inv,
-          invText: inv.map(i => (typeof i === "string" ? i : i.name)).join("，") || "空",
-          dao, varTree: varTreeRef.current,
-          lockedDestName,
-          lockedExits: lockedDestName ? getMapNode(lockedDestName)?.exits : null,
-          // 本轮若系统掷骰触发了移动拾取，把裁决(品质/分类)透传给提取层。提取模型据此
-          // 从叙事散文里读出"捡到的那件东西叫什么"，直接产出到 delta.items_add——
-          // 取代此前从文本正则抠名字(extractPickupName)的脆弱兜底(量词表永远补不全，
-          // AI 写"一件软甲"就抠不到，退化成"路遇之物"垃圾名)。品质/分类仍由系统强制
-          // 覆盖(信任裁决不信任模型)，名字交给读得懂语义的小模型，比正则健壮得多。
-          pickupJudgment: pickupJudgmentRef.current,
-        };
-        // 结算轮专属场景（送礼settleKind:"gift"、伙伴认主settleKind:"companion_invite"）
-        // 传 settleOpts，让 callExtraction 切到对应的专属提取spec——不走"从叙事读心
-        // 倒推状态变不变"那套通用逻辑，直接钉死结论（送礼必给正向好感、认主必给较高
-        // 初始好感）。避免双调用模式下状态判定完全脱离 buildSysBase 那份专属铁律
-        // （主叙事只写散文，不产 mvu，状态判定全靠提取层）。
-        const settleOptsForExtraction = (opts.settleKind && opts.settleNpc)
-          ? { settleKind: opts.settleKind, settleNpc: opts.settleNpc, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast }
-          : null;
-        let extractionFailed = false;
-        const extracted = await callExtraction(extractionSpecKey, rawFull, exState, apiCfg, settleOptsForExtraction).catch(e => {
-          addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${e.message || e}），本轮状态未更新` }]);
-          traceStep(_trace, "提取调用", "fail", `提取模型=${_exCfgForTrace.model || "未设置"}调用异常：${e.message || e}，本轮状态未更新`);
-          return null;
-        });
-        if (!extracted || extracted.parseFailed) extractionFailed = true;
-        if (extracted) attachExtractionPipeline(_trace, getPipelineLog()[0]);
-        if (extracted?.parseFailed) {
-          addLog([{ t: "sys", text: `  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新` }]);
-          traceStep(_trace, "提取调用", "fail", `返回内容无法解析（提取模型=${_exCfgForTrace.model || "未设置"}），本轮状态未更新`);
-        } else if (extracted) {
-          traceStep(_trace, "提取调用", "pass", `状态提取完成（提取模型=${_exCfgForTrace.model || "未设置"}${settleOptsForExtraction ? `·${settleOptsForExtraction.settleKind}专属spec` : ""}）`);
-        }
-        p = extracted?.p || {};
-        mvuCommands = extracted?.mvuCommands || [];
-        pickupExtractionFailedRef.current = extractionFailed;  // 供拾取兜底区分"提取故障"vs"叙事拒捡"
-      } else {
-        // ── 原有单调用模式（默认）──
-        pickupExtractionFailedRef.current = false; // 单调用无独立提取层，解析失败走重试，不算"提取故障"
-        for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
-          const nudge = attempt > 1
-            ? "\n\n（注意：上一次回复未能输出完整闭合的 JSON。请确保本次输出一个语法完整、正常闭合收尾的 JSON，不要中途断开。）"
-            : "";
-          let finishReason;
-          try {
-            const r = await callMainOnce(nudge, false, callDeps());
-            rawFull = r.rawFull; finishReason = r.finishReason;
-            // 如果这次成功前发生过重试（attempt>1 说明进过下面的 continue），
-            // 明确告诉玩家"重连成功"，否则玩家只看到"正在重试…"、不知道到底恢复没有。
-            if (attempt > 1) {
-              addLog([{ t: "sys", text: `  ✓ 重连成功，继续。` }]);
-              traceStep(_trace, "AI调用", "pass", `第${attempt}次重试后成功（单调用·主模型=${apiCfg.model || "未设置"}）`);
-            } else {
-              traceStep(_trace, "AI调用", "pass", `一次成功（单调用·主模型=${apiCfg.model || "未设置"}）`);
-            }
-            // 把这一轮 AI 调用的完整 prompt/回复挂到行动日志上，让"一轮全过程"在一个
-            // 面板里看全：系统各层走向 + 喂给 AI 的总 prompt + AI 回复。
-            attachPipeline(_trace, getPipelineLog()[0]);
-          } catch (netErr) {
-            if (attempt <= MAX_AUTO_RETRY) {
-              addLog([{ t: "sys", text: `  ⚠ 接口中断（${netErr.message || netErr}），正在自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…` }]);
-              traceStep(_trace, "AI调用", "fail", `第${attempt}次失败：${netErr.message || netErr}，重试`);
-              continue;
-            }
-            traceStep(_trace, "AI调用", "fail", `重试用尽仍失败：${netErr.message || netErr}`);
-            attachPipeline(_trace, getPipelineLog()[0]);
-            endTrace(_trace, "行动中断（AI调用失败，状态未变更）");
-            throw netErr;
-          }
-          ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));
-          narrativeText = (p.output || []).join("");
-          const hitLengthCap = /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
-          const looksTruncated = p._truncated || hitLengthCap;
-          if (!looksTruncated) break;
-          if (attempt <= MAX_AUTO_RETRY) {
-            addLog([{ t: "sys", text: `  ⚠ 上一轮被接口截断，正在自动重说一遍（第 ${attempt}/${MAX_AUTO_RETRY} 次，这次会更简短）…` }]);
-          }
-        }
-      }
+      pickupExtractionFailedRef.current = false;
+      const turnResult = await runTurn({
+        apiCfg,
+        callDeps,
+        convo,
+        isTalk,
+        isSettle,
+        _trace,
+        prompt: {
+          room, char, inv, skills, dao, flags, questProgress, pendingQuestBranch,
+          varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, isTalk,
+          gm, movingDir, lockedDestName, outerDepart: outerDepartRef.current, innerRoomName, apiCfg,
+          destinationLock, pickupJudgment: pickupJudgmentRef.current, categoryLabel: CATEGORY_LABEL,
+          encounter: encounterToDescribe, buildEncounterNote, collectNote,
+          findTargetedRumor, buildPresence, buildNpcContext, buildQuestStageNote,
+          buildForcedEventNote, buildArrivalNote, buildBudgetInstruction, intent,
+          getTimeStr, hasInnerMap, quality: QUALITY, describeEquipment, describeTodayForAI,
+          timeForToday: timeRef.current,
+        },
+        memory: {
+          varTreeLatest: preActVarTree,
+          roomNpcNames: room.npcs.map(n => n.name),
+          time,
+          apiCfg,
+          flags,
+          recall: { apiCfg, cmd, room, flags, activeTarget, isTalk, talkTarget },
+        },
+        state: { room, char, inv, dao },
+        getPipelineLog,
+        getMapNode,
+      }, cmd, opts);
+      const { p, mvuCommands, dealResult, rawFull, narrativeText, pickupExtractionFailed, knowledgeTree, knowledgeTreeBase } = turnResult;
+      pickupExtractionFailedRef.current = pickupExtractionFailed;
 
       // ── 提交段（状态写回全在 act/commitRound.js，出错由下方 catch 整体回滚）──
       commitRound({
-        p, mvuCommands, dealResult, rawFull, narrativeText,
+        p, mvuCommands, dealResult, rawFull, narrativeText, knowledgeTree, knowledgeTreeBase,
         isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,
-        pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo,
+        pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo: turnResult.newConvo,
         questProgress, char, preserveHp: opts.preserveHp,
         _trace, addLog,
         setVarTree, setRoom, setGambleNegotiation, setInv, setChar, setDao, setExp, setPot,

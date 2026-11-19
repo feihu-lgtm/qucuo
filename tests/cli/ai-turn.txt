@@ -1,0 +1,7 @@
+# A mock AI turn commits both narrative and state from the same response.
+:new
+探索石阶
+:expect time=7
+:expect pot=3
+:expect varTree.世界.天气="晴"
+:state

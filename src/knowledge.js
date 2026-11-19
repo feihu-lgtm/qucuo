@@ -131,6 +131,52 @@ export function evolveKnowledge(varTree, { roomNpcNames = [], currentTurn = 0, r
   return { varTree: writeRoot(varTree, 领域), 待补摘要 };
 }
 
+function isTreeRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function equalTreeValue(a, b) {
+  if (Object.is(a, b)) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return Array.isArray(a) && Array.isArray(b)
+      && a.length === b.length
+      && a.every((value, index) => equalTreeValue(value, b[index]));
+  }
+  if (!isTreeRecord(a) || !isTreeRecord(b)) return false;
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  return aKeys.length === bKeys.length
+    && aKeys.every((key) => Object.hasOwn(b, key) && equalTreeValue(a[key], b[key]));
+}
+
+function applyTreeChanges(base, changed, latest) {
+  if (equalTreeValue(base, changed)) return latest;
+  if (isTreeRecord(base) && isTreeRecord(changed)) {
+    const result = isTreeRecord(latest) ? { ...latest } : {};
+    const keys = new Set([...Object.keys(base), ...Object.keys(changed)]);
+    for (const key of keys) {
+      const hadBase = Object.hasOwn(base, key);
+      const hasChanged = Object.hasOwn(changed, key);
+      const hasLatest = Object.hasOwn(result, key);
+      if (!hasChanged) {
+        if (hadBase && (!hasLatest || equalTreeValue(result[key], base[key]))) delete result[key];
+        continue;
+      }
+      if (!hadBase) {
+        if (!hasLatest) result[key] = changed[key];
+        continue;
+      }
+      result[key] = applyTreeChanges(base[key], changed[key], result[key]);
+    }
+    return result;
+  }
+  return equalTreeValue(base, latest) ? changed : latest;
+}
+
+export function applyKnowledgeTreeDiff(baseTree, evolvedTree, latestTree) {
+  return applyTreeChanges(baseTree || {}, evolvedTree || {}, latestTree || {});
+}
+
 // 查某人知道哪些事实（返回 [{id, 摘要, 途径}]）。
 export function factsKnownBy(varTree, npcName) {
   const 领域 = ensureRoot(varTree);

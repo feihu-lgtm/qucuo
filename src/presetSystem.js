@@ -148,6 +148,7 @@ export function applyPresetOverrides(apiCfg, preset) {
 
 export function loadAllPresets() {
   try {
+    if (typeof localStorage === "undefined") return { presets: [defaultPreset()], activeIndex: 0 };
     const raw = localStorage.getItem(PRESET_STORAGE_KEY);
     if (!raw) return { presets: [defaultPreset()], activeIndex: 0 };
     const parsed = JSON.parse(raw);
@@ -161,6 +162,11 @@ export function loadAllPresets() {
   } catch {
     return { presets: [defaultPreset()], activeIndex: 0 };
   }
+}
+
+export function getActivePreset() {
+  const { presets, activeIndex } = loadAllPresets();
+  return presets[activeIndex] || defaultPreset();
 }
 
 export function saveAllPresets(state) {

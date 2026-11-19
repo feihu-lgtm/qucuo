@@ -2,7 +2,7 @@ import { evolveKnowledge, buildInfoDomainBlock, factSummaryRequest, factSummaryR
 import { recallWithVisibility } from "../memory/recallWithVisibility.js";
 import { embeddingReady } from "../memory/embeddingService.js";
 import { reembedStaleNotes } from "../memory/note.js";
-import { callModel } from "../apiConfig.js";
+import { createWebAi } from "../engine/ports/ai.js";
 
 // 信息领域·知识系统（代码驱动）：每回合由代码确定性推演"谁知道什么"——
 // 同框传播 + 传闻淡忘（见 knowledge.js）。推演产物是"待补摘要"——在场者涉及、
@@ -15,7 +15,7 @@ import { callModel } from "../apiConfig.js";
 // （切磋结算后 setTimeout 调来的），evolveKnowledge 也基于最新状态推演——否则
 // 推演结果整体覆盖写回时会把刚进账的认识/好感度更新冲掉（"交情已加但仍显示
 // 尚未认识"bug 的根源，见 varTreeRef 注释）。
-export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, time, apiCfg, flags }) {
+export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, time, apiCfg, flags, ai = createWebAi() }) {
   const evo = evolveKnowledge(varTreeLatest, { roomNpcNames, currentTurn: time });
   let kTree = evo.varTree;
   // 按需补摘要（最多 2 条/回合，失败静默——摘要非关键，不阻断游戏）
@@ -35,7 +35,11 @@ export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, time, apiC
       const req = recallTexts.length
         ? factSummaryRequestFromRecall(fid, recallTexts)
         : factSummaryRequest(fid);
-      const r = await callModel(apiCfg, req.system, req.messages, { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens, callLabel: "事实摘要" });
+      const r = await ai.chat(req.messages, {
+        cfg: apiCfg,
+        systemPrompt: req.system,
+        modelOptions: { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens, callLabel: "事实摘要" },
+      });
       const line = (r.text || "").trim().split("\n")[0].slice(0, 40);
       if (line) kTree = setFactSummary(kTree, fid, line);
     } catch (_) { /* 补词失败就留空，下回合再试 */ }
