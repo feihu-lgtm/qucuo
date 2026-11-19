@@ -60,10 +60,10 @@ export default function CharacterCreate({ onConfirm }) {
               <span
                 onClick={() => { clearPendingPlayerCard(); clearPendingStarterCompanion(); setPending(null); setUseCard(false); }}
                 title="弃用这张卡，从头自己填"
-                style={{ cursor: "pointer", fontSize: 11, color: "#8a8270" }}
+                style={{ cursor: "pointer", fontSize: 11, color: "var(--muted)" }}
               >弃用</span>
             </div>
-            <div style={{ fontSize: 11.5, color: "#e8e4d6", lineHeight: 1.8 }}>
+            <div style={{ fontSize: 11.5, color: "var(--text)", lineHeight: 1.8 }}>
               {pending.name ? `名讳「${pending.name}」 · ` : ""}体貌公开 {pubFilled}/7 项 · 私密 {privFilled}/5 项
               {pending.special ? ` · 七维已录` : ""}
             </div>
@@ -75,7 +75,7 @@ export default function CharacterCreate({ onConfirm }) {
               }}
               style={{
                 marginTop: 8, cursor: "pointer", fontSize: 12,
-                color: useCard ? theme.accent : "#8a8270",
+                color: useCard ? theme.accent : "var(--muted)",
               }}
             >
               {useCard ? "◉" : "○"} 用这张卡的设定开局

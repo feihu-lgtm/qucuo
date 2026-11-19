@@ -35,8 +35,8 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
   const accent = t.accent || "#c8a860";
   const bg = t.bg || "#141014";
   const panel = t.bgPanel || "#1c1820";
-  const text = t.text || "#e8e0d0";
-  const textDim = t.textDim || "#8a8478";
+  const text = t.text || "var(--text)";
+  const textDim = t.textDim || "var(--text-dim)";
   const border = t.border || "#3a3038";
 
   const canBribe = p.bribe != null;

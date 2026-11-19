@@ -1,4 +1,6 @@
-import React, { useState, useRef } from "react";
+import "./ui/tokens.css";
+import "./ui/mobile.css";
+import React, { Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import MudRPG from "./app/MudRPG.jsx";
 import StartScreen from "./ui/screens/StartScreen.jsx";
@@ -12,6 +14,15 @@ import { installErrorBuffer } from "./infra/errorBuffer.js";
 import { recordError } from "./infra/errorBuffer.js";
 import * as importedRegistry from "./domain/cards/importedRegistry.js";
 import { getZoneTheme } from "./ui/theme.js";
+
+function InkSpinner() {
+  return (
+    <div className="ink-spinner-screen" role="status" aria-live="polite">
+      <span className="ink-spinner" aria-hidden="true" />
+      <span>载入中</span>
+    </div>
+  );
+}
 
 // 应用外壳：先展示开始界面，"开始"或"加载存档"之后才挂载真正的游戏主体 MudRPG。
 // MudRPG 内部已有自己的设置面板逻辑，这里的"设置"入口复用同一套面板，
@@ -49,6 +60,14 @@ function consumeForceStartScreenFlag() {
 }
 
 function App() {
+  useEffect(() => {
+    const splash = document.getElementById("startup-splash");
+    if (!splash) return undefined;
+    splash.classList.add("is-hidden");
+    const timer = window.setTimeout(() => splash.remove(), 180);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // 行为变更（本轮）：不再"有自动存档就跳过开始界面、直接续上缓存"。每次打开/刷新
   // 都先停在 StartScreen，由玩家自己选"开始（新开局）"还是"加载存档→自动存档/某个槽位"。
   // 这样避免一进来就闷头加载上次的浏览器缓存、看不到明确的读档入口。自动存档依然存在，
@@ -192,7 +211,9 @@ function mount() {
   }).render(
     <React.StrictMode>
       <ErrorBoundary label="程序" onReset={backToStart}>
-        <App />
+        <Suspense fallback={<InkSpinner />}>
+          <App />
+        </Suspense>
       </ErrorBoundary>
     </React.StrictMode>
   );

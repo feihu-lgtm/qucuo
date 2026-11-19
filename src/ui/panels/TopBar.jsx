@@ -47,11 +47,11 @@ export default function TopBar({
         {/* 手机端：顶栏收成一个☰按钮，点开才展开全部功能入口 */}
         {isMobile && (
           <>
-            <span onClick={() => setMobileTopMenu(v => !v)}
+            <span className="mobile-touch-target mobile-menu-toggle" onClick={() => setMobileTopMenu(v => !v)}
               style={{ cursor: "pointer", color: "#e8d0a0", padding: "3px 12px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 0, fontWeight: "bold", fontSize: "13px" }}>☰ 菜单</span>
             <span style={{ color: "#8a7a5a", fontSize: "10px" }}>{CURRENT_VERSION.time}</span>
             <span style={{ flex: 1 }} />
-            {mobileTopMenu && <span onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>收起 ✕</span>}
+            {mobileTopMenu && <span className="mobile-touch-target" onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>收起 ✕</span>}
           </>
         )}
         {/* 顶栏功能入口：桌面常显；手机仅在展开菜单时显示（换行铺开） */}
@@ -160,12 +160,12 @@ export default function TopBar({
 
       {showAvatarPicker && (
         <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(4,4,10,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={avatarPickerCloseGuard.onMouseDown} onClick={avatarPickerCloseGuard.onClick}>
-          <div style={{ background: "#111110", border: "1px solid #4a453c", borderRadius: 0, padding: 24, width: 460, maxWidth: "90vw", color: "#e8e4d6" }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 24, width: 460, maxWidth: "90vw", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <span style={{ color: "#c8323a", fontSize: "15px" }}>选择头像</span>
-              <span style={{ color: "#8f8a7c", fontSize: "12px", cursor: "pointer" }} onClick={() => closeOverlay(OVERLAY.AVATAR_PICKER)}>× 关闭</span>
+              <span style={{ color: "var(--accent)", fontSize: "15px" }}>选择头像</span>
+              <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "12px", cursor: "pointer" }} onClick={() => closeOverlay(OVERLAY.AVATAR_PICKER)}>× 关闭</span>
             </div>
-            <div style={{ fontSize: "11.5px", color: "#8f8a7c", marginBottom: 14 }}>
+            <div style={{ fontSize: "11.5px", color: "var(--text-dim)", marginBottom: 14 }}>
               选一张预制头像，或上传自己的图片（建议 2:3 竖版）。选择只影响你自己的显示，存在本地浏览器。
             </div>
             {/* 预制头像：从 public/portraits/player/ 读，共8张同一批唐卡风格厚涂立绘
@@ -177,7 +177,7 @@ export default function TopBar({
                 AV_BASE + "preset4.webp", AV_BASE + "preset5.webp"].map((src, i) => (
                 <div key={i}
                   onClick={() => { setPlayerAvatarCustom(src); try { localStorage.setItem("qucuo_player_avatar", src); } catch { /* ignore */ } closeOverlay(OVERLAY.AVATAR_PICKER); }}
-                  style={{ aspectRatio: "2/3", borderRadius: 0, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid #c8323a" : "1px solid #4a453c", background: "#111110" }}
+                  style={{ aspectRatio: "2/3", borderRadius: 0, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid var(--accent)" : "1px solid var(--border)", background: "var(--bg-panel)" }}
                 >
                   <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     onError={(e) => { e.currentTarget.style.display = "none"; }} />
@@ -185,7 +185,7 @@ export default function TopBar({
               ))}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <label style={{ cursor: "pointer", fontSize: "11.5px", color: "#c8323a", padding: "6px 12px", border: "1px solid #4a453c", borderRadius: 0 }}>
+              <label style={{ cursor: "pointer", fontSize: "11.5px", color: "var(--accent)", padding: "6px 12px", border: "1px solid var(--border)", borderRadius: 0 }}>
                 ⬆ 上传图片
                 <input type="file" accept="image/*" style={{ display: "none" }}
                   onChange={(e) => {

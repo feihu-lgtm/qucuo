@@ -55,7 +55,7 @@ export default function TutorialOverlay({ onClose }) {
         <div style={{ ...note, maxWidth: 620 }}>
           <span style={title}>▼ 底部 · 交互模式（输入框上方那排按钮）</span>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px" }}>
-            <div><b style={{ color: "#c8323a" }}>◈ 行动</b>：正常移动、战斗、开箱、买卖等，<b>每次消耗一个回合</b>（时间前进）。</div>
+            <div><b style={{ color: "var(--accent)" }}>◈ 行动</b>：正常移动、战斗、开箱、买卖等，<b>每次消耗一个回合</b>（时间前进）。</div>
             <div><b style={{ color: "#c07050" }}>◎ 对话</b>：只和当前在场 NPC 交谈，<b>不移动、不消耗回合</b>。</div>
             <div><b style={{ color: "#d68a8a" }}>◆ 私聊旁白</b>：打破第四面墙，直接和「旁白」说话，<b>不消耗回合</b>。</div>
             <div><b style={{ color: "#c85a6a" }}>NSFW</b>：开关。开启后注入成人向写作规则；关闭则为常规叙事。默认关闭，按需点亮。</div>

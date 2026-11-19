@@ -278,11 +278,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   if (!apiCfg.apiKey) {
     return (
-      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a09", color: "#e8e4d6", fontFamily: "'Songti SC','STSong','SimSun',serif", padding: 24, textAlign: "center" }}>
+      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)", padding: 24, textAlign: "center" }}>
         <div>
           <p style={{ color: "#c45044" }}>尚未配置 API Key</p>
           <p>点击下方按钮打开设置面板，填入你的 API Key 后即可开始游戏。</p>
-          <span onClick={() => openOverlay(OVERLAY.SETTINGS)} style={{ cursor: "pointer", color: "#c8323a", padding: "6px 14px", background: "#161510", border: "1px solid #4a453c", borderRadius: 0, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
+          <span onClick={() => openOverlay(OVERLAY.SETTINGS)} style={{ cursor: "pointer", color: "var(--accent)", padding: "6px 14px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
         </div>
         {overlayHost}
       </div>

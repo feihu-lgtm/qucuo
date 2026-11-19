@@ -9,7 +9,7 @@ import LootCard from "./LootCard.jsx";
 // 反而最影响体验。保留色相基因（对话依然是粉系、引语依然是金系），
 // 拉深明度后日间对比度分别到 6.1 / 5.5，达标。
 const DIALOGUE_COLOR = { night: "#e8a0d8", day: "#8a1e6a" };
-const QUOTE_COLOR = { night: "#d4a853", day: "#7a5c14" };
+const QUOTE_COLOR = { night: "var(--warn)", day: "var(--warn)" };
 
 function renderMixed(text, baseColor, isDayMode) {
   if (!text) return text;
@@ -44,17 +44,21 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
   // 偷招传的是 entry.skill（无 item），偷物传 entry.item——两者都要放行，
   // 否则偷师得手会漏卡、退化成一行纯文本（此前正是这个 bug）。
   if (entry.t === "loot" && (entry.item || entry.skill)) {
-    return <LootCard entry={entry} />;
+    return (
+      <div className="log-entry">
+        <LootCard entry={entry} />
+      </div>
+    );
   }
   const text = entry.text || "";
   const isDesc = entry.t === "desc";
 
   return (
     <div
-      className={entry.streaming ? "log-streaming" : undefined}
+      className={entry.streaming ? "log-entry log-streaming" : entry.streamed ? "log-entry log-entry-streamed" : "log-entry"}
       style={{
         whiteSpace: "pre-wrap", wordBreak: "break-all", color,
-        lineHeight: 2.2,
+        lineHeight: "var(--lh-narrative)",
         marginBottom: entry.t === "room" ? 8 : 4,
         fontWeight: entry.t === "room" ? "bold" : "normal",
         textIndent: isDesc ? "2em" : "0",

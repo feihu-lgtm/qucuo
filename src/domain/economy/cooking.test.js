@@ -3,6 +3,7 @@ import {
   TECHNIQUES, TECHNIQUE_IDS, COOKWARE, COOKWARE_BY_ID, DEFAULT_COOKWARE_ID,
   RECIPES, matchRecipe, canUseTechnique, computeDish, genericDishEffect,
   ownedCookware, availableMaterials, isCookingMaterial, INGREDIENT_LORE,
+  reconcileCookingSlots,
 } from "./cooking.js";
 import { STARTER_COOKING_STOCK, defaultChestStock } from "../map/homestead.js";
 
@@ -207,5 +208,18 @@ describe("cooking · 库房开局家底 defaultChestStock", () => {
   it("家底物件都带唯一 id（同名多件可分别存取）", () => {
     const ids = defaultChestStock().map(it => it.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("cooking · 当前背包里的选中材料", () => {
+  it("移除已不再拥有的材料", () => {
+    expect(reconcileCookingSlots(["熊山松茸", null, null, null], []))
+      .toEqual([null, null, null, null]);
+  });
+
+  it("同名材料只保留背包中仍有的数量", () => {
+    const materials = availableMaterials([{ name: "熊山松茸", tags: ["食材"] }]);
+    expect(reconcileCookingSlots(["熊山松茸", "熊山松茸", null, null], materials))
+      .toEqual(["熊山松茸", null, null, null]);
   });
 });

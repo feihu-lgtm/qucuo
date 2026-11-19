@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_PRESETS } from "../../core/newGame.js";
 import { canBypassExclusive, getCurrentStage, isQuestGateOpen } from "../../domain/quests/questEngine.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
@@ -73,6 +73,9 @@ export function useGameUi({
   });
   const [isDayMode, setIsDayMode] = useState(() =>
     localStorage.getItem("wuxia_mud_day_mode") === "1");
+  useEffect(() => {
+    document.documentElement.dataset.theme = isDayMode ? "day" : "night";
+  }, [isDayMode]);
   const [cmdHistory, setCmdHistory] = useState([]);
   const [histIdx, setHistIdx] = useState(-1);
   const [forcedDuelNpc, setForcedDuelNpc] = useState(null);
@@ -122,8 +125,8 @@ export function useGameUi({
   const genderAvatar = { "男": AV_BASE + "male.webp", "女": AV_BASE + "female.webp" };
   const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.webp");
   const zoneTheme = getZoneTheme(room.name, isDayMode);
-  const clrNight = { sys: "#5a8a5a", cmd: "#d4a853", desc: "#e8e4d6", room: "#c8323a", item: "#c4a040", stat: "#8ab4d4", skill: "#b48adf", err: "#c45044", choice: "#6aaa8a", narrator: "#d68a8a", crash: "#c45044", confess: "#c8663a", affection: "#f0a0c0", quest: "#c8663a" };
-  const clrDay = { sys: "#2e5a2e", cmd: "#7a5c14", desc: "#3d3626", room: "#1e5a6a", item: "#7a5410", stat: "#1e4a6a", skill: "#5a3a7a", err: "#a02020", choice: "#2e6a4a", narrator: "#8a2a6a", crash: "#a02020", confess: "#8a5a0a", affection: "#a0305a", quest: "#8a5a0a" };
+  const clrNight = { sys: "var(--good)", cmd: "var(--warn)", desc: "var(--text)", room: "var(--accent)", item: "#c4a040", stat: "#8ab4d4", skill: "#b48adf", err: "#c45044", choice: "#6aaa8a", narrator: "#d68a8a", crash: "#c45044", confess: "#c8663a", affection: "#f0a0c0", quest: "#c8663a" };
+  const clrDay = { sys: "var(--good)", cmd: "var(--warn)", desc: "#3d3626", room: "#1e5a6a", item: "#7a5410", stat: "var(--info)", skill: "#5a3a7a", err: "var(--accent)", choice: "#2e6a4a", narrator: "#8a2a6a", crash: "var(--accent)", confess: "#8a5a0a", affection: "#a0305a", quest: "#8a5a0a" };
   const clr = isDayMode ? clrDay : clrNight;
   const uiPink = ink("pink", isDayMode);
   const uiGreen = ink("green", isDayMode);

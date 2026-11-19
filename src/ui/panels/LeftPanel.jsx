@@ -38,14 +38,14 @@ export default function LeftPanel({
   const showDebug = useOverlay(OVERLAY.DEBUG);
 
   return (
-    <div style={isMobile
+    <div className={isMobile ? "mobile-drawer-panel" : undefined} style={isMobile
       ? { position: "fixed", top: 0, bottom: 0, left: 0, width: "82vw", maxWidth: 340, zIndex: 41,
           transform: mobileDrawer === "left" ? "translateX(0)" : "translateX(-100%)",
           transition: "transform .28s ease", boxShadow: mobileDrawer === "left" ? "4px 0 24px rgba(0,0,0,.6)" : "none",
           background: zoneTheme.bg, display: "flex", flexDirection: "column", overflow: "hidden" }
       : { flex: 25, ...S.panel }}>
       {isMobile && (
-        <div onClick={() => setMobileDrawer(null)} style={{ textAlign: "right", padding: "8px 12px", color: zoneTheme.textDim, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}>关闭 ✕</div>
+        <div className="mobile-drawer-close" onClick={() => setMobileDrawer(null)} style={{ textAlign: "right", padding: "8px 12px", color: zoneTheme.textDim, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}>关闭 ✕</div>
       )}
       <div style={S.label}>天地 <span style={{ fontSize: "9.5px", color: zoneTheme.textDim, letterSpacing: "1px" }}>· {zoneTheme.name}</span></div>
       <div style={S.scroll}>
@@ -56,7 +56,7 @@ export default function LeftPanel({
           )}
         </div>
         <div style={{ color: zoneTheme.textDim, fontSize: "10.5px", marginBottom: 10 }}>{getTimeStr(time)}</div>
-        <div style={{ color: zoneTheme.text, fontSize: "12px", marginBottom: 14, lineHeight: 1.9 }}>{room.desc}</div>
+        <div style={{ color: zoneTheme.text, fontSize: "12px", marginBottom: 14, lineHeight: "var(--lh-narrative)" }}>{room.desc}</div>
 
         <div style={{ color: zoneTheme.accentDim, fontSize: "10.5px", marginBottom: 5, letterSpacing: "1px" }}>出口 <span style={{ color: zoneTheme.textDim, fontSize: "9.5px" }}>（在下方输入框打字移动）</span></div>
         <div style={{ marginBottom: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -94,7 +94,7 @@ export default function LeftPanel({
             {home && (
               <div onClick={() => openOverlay(OVERLAY.HOMESTEAD)} style={{ cursor: "pointer", marginBottom: 3 }}>
                 <span style={{ color: "#c8a860", fontSize: "12px" }}>🏠 {home.label || "家园"}</span>
-                <span style={{ color: "#8f8a7c", fontSize: "10.5px", marginLeft: 6 }}>
+                <span style={{ color: "var(--text-dim)", fontSize: "10.5px", marginLeft: 6 }}>
                   {home.features.map(f => f.name).join("·")}
                 </span>
               </div>
@@ -102,8 +102,8 @@ export default function LeftPanel({
             {list.map(b => (
               <div key={b.id} onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : b)}
                 style={{ cursor: "pointer", marginBottom: 3 }}>
-                <span style={{ color: activeBuilding?.id === b.id ? zoneTheme.accent : "#8ac8b8", fontSize: "12px" }}>{b.name}</span>
-                <span style={{ color: "#8f8a7c", fontSize: "10.5px", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
+                <span style={{ color: activeBuilding?.id === b.id ? zoneTheme.accent : "var(--info)", fontSize: "12px" }}>{b.name}</span>
+                <span style={{ color: "var(--text-dim)", fontSize: "10.5px", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
               </div>
             ))}
           </div>
@@ -132,7 +132,7 @@ export default function LeftPanel({
           const presentNames = new Set(room.npcs.map(n => n.name));
           const absent = everSeen.filter(nm => !presentNames.has(nm));
           const dbgPeople = showDebug && (
-            <div style={{ fontSize: "9.5px", color: "#7a6a4a", background: "#12100a", border: "1px solid #2a2410", borderRadius: 0, padding: "4px 6px", marginBottom: 6, lineHeight: 1.5, wordBreak: "break-all" }}>
+            <div style={{ fontSize: "9.5px", color: "#7a6a4a", background: "var(--bg-panel)", border: "1px solid #2a2410", borderRadius: 0, padding: "4px 6px", marginBottom: 6, lineHeight: 1.5, wordBreak: "break-all" }}>
               <div>当前内层房间: {innerRoomName || "(无/全显示)"} · room.npcs 共 {room.npcs.length} 人</div>
               {room.npcs.map((n, i) => {
                 const bound = hasInnerMap(room.name) ? getResidentRoomForNpc(room.name, n.name) : null;
@@ -189,7 +189,7 @@ export default function LeftPanel({
                   })}</div>)}
               {absent.length > 0 && (
                 <div style={{ paddingTop: 6, borderTop: `1px solid ${zoneTheme.border}` }}>
-                  {header("曾遇 · 不在场", absent.length, "absent", "#e8e4d6")}
+                  {header("曾遇 · 不在场", absent.length, "absent", "var(--text)")}
                   {peoplePanel.absent && absent.map(name => {
                     const known = isNpcKnown(varTree, name);
                     const attrs = varTree.角色?.[name] || {};
@@ -198,7 +198,7 @@ export default function LeftPanel({
                       <div key={name} style={{ marginBottom: 5 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span onClick={() => { setCharacterPageTarget(name); openOverlay(OVERLAY.CHARACTER_PAGE); }} title="打开此人详情面板"
-                            style={{ cursor: "pointer", color: "#e8e4d6", flex: 1, fontSize: "11px" }}>{name}</span>
+                            style={{ cursor: "pointer", color: "var(--text)", flex: 1, fontSize: "11px" }}>{name}</span>
                           <span onClick={() => {
                               if ((char.pigeons || 0) <= 0) { addLog([{ t: "sys", text: `  没有信鸽——去驿站买鸽子，或到驿站直接寄信/送礼给${name}。` }]); return; }
                               setPigeonTarget(name); setInteractMode("pigeon"); setTimeout(() => inputRef.current?.focus(), 0);
@@ -214,7 +214,7 @@ export default function LeftPanel({
                             <span style={{ fontSize: "10px", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
                           )}
                         </div>
-                        {known && attrs.态度 && <div style={{ fontSize: "9.5px", color: "#8f8a7c" }}>{attrs.态度}</div>}
+                        {known && attrs.态度 && <div style={{ fontSize: "9.5px", color: "var(--text-dim)" }}>{attrs.态度}</div>}
                         {known && attrs.生气状态?.active && (
                           <div style={{ fontSize: "9.5px", color: "#e0526a" }}>⚡ 气头上（{attrs.生气状态.reason}），还剩 {attrs.生气状态.turnsLeft} 回合</div>
                         )}

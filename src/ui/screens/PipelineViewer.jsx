@@ -57,7 +57,7 @@ export default function PipelineViewer({ onClose, loading, waitSecs }) {
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.85)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={{ background: "#111110", border: "1px solid #4a453c", borderRadius: 0, padding: 16, width: 820, maxWidth: "95vw", maxHeight: "88vh", overflowY: "auto", fontFamily: "monospace", fontSize: "11px", color: "#8f8a7c" }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 16, width: 820, maxWidth: "95vw", maxHeight: "88vh", overflowY: "auto", fontFamily: "monospace", fontSize: "11px", color: "var(--text-dim)" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <span style={{ color: "#c8663a", fontSize: "13px" }}>Pipeline 日志（最近 {entries.length} 条）</span>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -66,14 +66,14 @@ export default function PipelineViewer({ onClose, loading, waitSecs }) {
               {copied === "all" ? "✓ 已复制全部" : "复制全部"}
             </span>
             <span style={{ cursor: "pointer", color: "#8a6a4a" }} onClick={() => { clearPipelineLog(); onClose(); }}>清空</span>
-            <span style={{ cursor: "pointer", color: "#8f8a7c", fontSize: "13px" }} onClick={onClose}>×</span>
+            <span style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "13px" }} onClick={onClose}>×</span>
           </div>
         </div>
         {loading && (
           <div style={{
             marginBottom: 10, padding: "6px 10px", borderRadius: 0,
             background: waitSecs >= 30 ? "#3a1a1a" : waitSecs >= 12 ? "#3a2a12" : "#12180a",
-            color: waitSecs >= 30 ? "#e08a6a" : waitSecs >= 12 ? "#e0b060" : "#8ab48a",
+            color: waitSecs >= 30 ? "#e08a6a" : waitSecs >= 12 ? "var(--warn)" : "#8ab48a",
             border: `1px solid ${waitSecs >= 30 ? "#5a2a2a" : "#2a3a1a"}`,
           }}>
             {waitSecs >= 30 ? "🐢" : "⏳"} 正在等待接口响应… 已 {waitSecs}s
@@ -88,13 +88,13 @@ export default function PipelineViewer({ onClose, loading, waitSecs }) {
           return (
             <div key={i} style={{ borderBottom: "1px solid #14161e", padding: "8px 0" }}>
               <div onClick={() => toggle(i)} style={{ cursor: "pointer", marginBottom: 4, userSelect: "none", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ color: "#c8323a" }}>{open ? "▼" : "▶"} #{entries.length - i}</span>
-                <span style={{ color: "#8f8a7c" }}>{new Date(entry.ts).toLocaleTimeString()}</span>
-                <span style={{ color: "#8f8a7c" }}>{entry.apiType}/{entry.model}</span>
+                <span style={{ color: "var(--accent)" }}>{open ? "▼" : "▶"} #{entries.length - i}</span>
+                <span style={{ color: "var(--text-dim)" }}>{new Date(entry.ts).toLocaleTimeString()}</span>
+                <span style={{ color: "var(--text-dim)" }}>{entry.apiType}/{entry.model}</span>
                 {entry.streamed && <span style={{ color: "#5a7a9a" }}>流式</span>}
                 {entry.intent && <span style={{ color: "#c07050" }}>{entry.intent.label}</span>}
-                {entry.usage && <span style={{ color: "#8f8a7c" }}>入{entry.usage.prompt_tokens ?? entry.usage.promptTokenCount ?? entry.usage.input_tokens ?? "?"}/出{entry.usage.completion_tokens ?? entry.usage.candidatesTokenCount ?? entry.usage.output_tokens ?? "?"}</span>}
-                {entry.durationMs != null && <span style={{ color: "#8f8a7c" }}>{entry.durationMs}ms</span>}
+                {entry.usage && <span style={{ color: "var(--text-dim)" }}>入{entry.usage.prompt_tokens ?? entry.usage.promptTokenCount ?? entry.usage.input_tokens ?? "?"}/出{entry.usage.completion_tokens ?? entry.usage.candidatesTokenCount ?? entry.usage.output_tokens ?? "?"}</span>}
+                {entry.durationMs != null && <span style={{ color: "var(--text-dim)" }}>{entry.durationMs}ms</span>}
                 {recall && <span style={{ color: "#c48a4a" }}>召回{recall.visible?.length ?? 0}{recall.filtered ? `(隐${recall.filtered})` : ""}</span>}
                 <span
                   onClick={(e) => { e.stopPropagation(); copyText(formatEntry(entry, entries.length - i), i); }}
@@ -103,7 +103,7 @@ export default function PipelineViewer({ onClose, loading, waitSecs }) {
                 >
                   {copied === i ? "✓已复制" : "📋复制"}
                 </span>
-                <span style={{ color: entry.success === false ? "#c46060" : "#5a8a5a", marginLeft: "auto" }}>
+                <span style={{ color: entry.success === false ? "#c46060" : "var(--good)", marginLeft: "auto" }}>
                   {entry.success === false ? "✗ 失败" : (entry.finishReason || "✓")}
                 </span>
               </div>
@@ -117,7 +117,7 @@ export default function PipelineViewer({ onClose, loading, waitSecs }) {
                         style={{
                           cursor: "pointer", padding: "2px 10px", borderRadius: 0,
                           background: tab === t ? "#241211" : "transparent",
-                          color: tab === t ? "#e8e4d6" : "#8f8a7c",
+                          color: tab === t ? "var(--text)" : "var(--text-dim)",
                         }}
                       >
                         {TAB_LABELS[t]}
@@ -126,16 +126,16 @@ export default function PipelineViewer({ onClose, loading, waitSecs }) {
                   </div>
 
                   {tab === "sys" && (
-                    <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#161510", padding: "8px", borderRadius: 0, maxHeight: 400, overflowY: "auto" }}>
+                    <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "var(--bg-panel)", padding: "8px", borderRadius: 0, maxHeight: 400, overflowY: "auto" }}>
                       {entry.systemPrompt}
                     </div>
                   )}
 
                   {tab === "user" && (
-                    <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#161510", padding: "8px", borderRadius: 0, maxHeight: 400, overflowY: "auto" }}>
+                    <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "var(--bg-panel)", padding: "8px", borderRadius: 0, maxHeight: 400, overflowY: "auto" }}>
                       {(entry.userMessages || []).map((m, mi) => (
                         <div key={mi} style={{ marginBottom: 8 }}>
-                          <div style={{ color: "#5a8a5a" }}>[{m.role}]</div>
+                          <div style={{ color: "var(--good)" }}>[{m.role}]</div>
                           <div>{m.content}</div>
                         </div>
                       ))}
@@ -149,7 +149,7 @@ export default function PipelineViewer({ onClose, loading, waitSecs }) {
                           错误：{entry.error}
                         </div>
                       ) : (
-                        <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#161510", padding: "8px", borderRadius: 0, maxHeight: 400, overflowY: "auto" }}>
+                        <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "var(--bg-panel)", padding: "8px", borderRadius: 0, maxHeight: 400, overflowY: "auto" }}>
                           {entry.response}
                         </div>
                       )}
@@ -159,16 +159,16 @@ export default function PipelineViewer({ onClose, loading, waitSecs }) {
                   {tab === "recall" && recall && (
                     <div>
                       {recall.stats && (
-                        <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap", color: "#8f8a7c" }}>
+                        <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap", color: "var(--text-dim)" }}>
                           {Object.entries(recall.stats).map(([k, v]) => (
-                            <span key={k}>{k}: <span style={{ color: "#e8e4d6" }}>{String(v)}</span></span>
+                            <span key={k}>{k}: <span style={{ color: "var(--text)" }}>{String(v)}</span></span>
                           ))}
                         </div>
                       )}
-                      <div style={{ color: "#5a8a5a", marginBottom: 4 }}>▸ 可见（已通过权限过滤，实际进入 prompt）</div>
+                      <div style={{ color: "var(--good)", marginBottom: 4 }}>▸ 可见（已通过权限过滤，实际进入 prompt）</div>
                       {(recall.visible || []).map((m, mi) => (
-                        <div key={mi} style={{ background: "#161510", padding: "6px 8px", borderRadius: 0, marginBottom: 4 }}>
-                          <div style={{ color: "#8f8a7c" }}>sim={m.similarity?.toFixed(3) ?? "-"} · {m.meta?.id || m.id}</div>
+                        <div key={mi} style={{ background: "var(--bg-panel)", padding: "6px 8px", borderRadius: 0, marginBottom: 4 }}>
+                          <div style={{ color: "var(--text-dim)" }}>sim={m.similarity?.toFixed(3) ?? "-"} · {m.meta?.id || m.id}</div>
                           <div>{m.text}</div>
                         </div>
                       ))}

@@ -45,7 +45,7 @@ export function useOutfitAdvice({ char, apiCfg, setOutfitState }) {
           return {
             name: it.name,
             quality: it.quality,
-            qualityColor: QUALITY_COLOR[it.quality] || "#e8e4d6",
+            qualityColor: QUALITY_COLOR[it.quality] || "var(--text)",
             categoryLabel: CATEGORY_LABEL[it.category] || it.category,
             desc: it.desc,
             statLine: bits.join("　") || "无直接加成",

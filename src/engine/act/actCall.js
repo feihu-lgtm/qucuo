@@ -221,7 +221,7 @@ ${dealFmt}`;
       d.setLog(l => {
         if (streamLogIndex.current == null) return l;
         const copy = [...l];
-        copy[streamLogIndex.current] = { t: "desc", text: "  " + shown, streaming: false };
+        copy[streamLogIndex.current] = { t: "desc", text: "  " + shown, streaming: false, streamed: true };
         return copy;
       });
     } else {

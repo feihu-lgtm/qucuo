@@ -128,11 +128,13 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
 
   return (
     <div
+      className="mobile-overlay-root"
       style={{ position: "fixed", inset: 0, background: "rgba(10,8,4,0.9)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onMouseDown={closeGuard.onMouseDown}
       onClick={closeGuard.onClick}
     >
       <div
+        className="mobile-overlay-panel mobile-codex-panel"
         style={{
           position: "relative", width: 760, maxWidth: "96vw", height: "88vh",
           backgroundImage: `url(${S("ui/panel_big.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
@@ -141,10 +143,10 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
         onClick={e => e.stopPropagation()}
       >
         {/* 关闭 */}
-        <span onClick={onClose} title="合上（也可按 ESC）"
+        <span className="mobile-overlay-close" onClick={onClose} title="合上（也可按 ESC）"
           style={{ position: "absolute", top: 30, right: 34, cursor: "pointer", fontSize: 18, color: paperAccent, zIndex: 2 }}>✕</span>
 
-        <div style={{ textAlign: "center", flexShrink: 0 }}>
+        <div className="mobile-overlay-header" style={{ textAlign: "center", flexShrink: 0 }}>
           <div style={{ fontSize: 22, color: paperAccent, fontWeight: "bold", letterSpacing: 3 }}>百物 · 武学总览</div>
           <div style={{ fontSize: 11, color: paperDim, margin: "3px 0 14px" }}>此卷录尽曲措乡叫得出名号的物件与武学</div>
         </div>
@@ -187,7 +189,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
         )}
 
         {/* 滚动内容区 */}
-        <div style={{ flex: 1, overflowY: "auto", paddingRight: 6 }}>
+        <div className="mobile-codex-content" style={{ flex: 1, overflowY: "auto", paddingRight: 6 }}>
           {tab === "item" ? (
             <>
               <div style={{ fontSize: 11, color: paperDim, marginBottom: 6, paddingLeft: 4 }}>
@@ -232,7 +234,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
 
 // 物品条目行
 function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
-  const qc = QUALITY_COLOR[it.quality] || "#8a8578";
+  const qc = QUALITY_COLOR[it.quality] || "var(--text-dim)";
   const jade = jadeSrc(it.quality);
   // 数值：武器给攻倍率、护甲给防倍率、有六维给六维
   const statBits = [];
@@ -269,7 +271,7 @@ function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
 
 // 武学条目行
 function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
-  const qc = QUALITY_COLOR[sk.quality] || "#8a8578";
+  const qc = QUALITY_COLOR[sk.quality] || "var(--text-dim)";
   const jade = jadeSrc(sk.quality);
   const bonusBits = [];
   if (sk.owner) bonusBits.push(`${sk.owner}·${sk.slot || ""}`);

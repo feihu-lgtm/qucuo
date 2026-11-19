@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import TopBar from "../ui/panels/TopBar.jsx";
 import LeftPanel from "../ui/panels/LeftPanel.jsx";
 import CenterPanel from "../ui/panels/CenterPanel.jsx";
@@ -11,6 +12,10 @@ import {
 } from "../domain/map/innerMap.js";
 import { DIRS } from "../utils/mudHelpers.js";
 import { MAP_UI } from "../domain/map/mapUi.js";
+import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";
+import { getMobileDrawerSwipeAction } from "../utils/mobileDrawerSwipe.js";
+import { didOpenConfirmation, didOpenOverlay } from "../utils/mobileOverlayTransitions.js";
+import { useUiStore } from "../store/uiStore.js";
 
 export default function GameLayout({ layout }) {
   const {
@@ -50,9 +55,109 @@ export default function GameLayout({ layout }) {
     trainNeigong, trainWaigong, trainCost, activeBuffs, breakthroughSkill,
     confessToNarrator, setInv, mapBigCloseGuard,
   } = layout;
+  const overlays = useUiStore((state) => state.overlays);
+  const previousOverlaysRef = useRef(overlays);
+  const previousDuelPendingRef = useRef(duelPending);
+  const swipeStart = useRef(null);
+  const suppressClick = useRef(false);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const updateHeight = () => {
+      const height = viewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty("--mobile-viewport-height", `${Math.round(height)}px`);
+      document.documentElement.toggleAttribute(
+        "data-keyboard-open",
+        isMobileKeyboardOpen({
+          isMobile,
+          isInputFocused: document.activeElement?.matches?.("input, textarea") ?? false,
+          viewportHeight: viewport?.height,
+          innerHeight: window.innerHeight,
+        }),
+      );
+    };
+    updateHeight();
+    viewport?.addEventListener("resize", updateHeight);
+    viewport?.addEventListener("scroll", updateHeight);
+    window.addEventListener("resize", updateHeight);
+    document.addEventListener("focusin", updateHeight);
+    document.addEventListener("focusout", updateHeight);
+    return () => {
+      viewport?.removeEventListener("resize", updateHeight);
+      viewport?.removeEventListener("scroll", updateHeight);
+      window.removeEventListener("resize", updateHeight);
+      document.removeEventListener("focusin", updateHeight);
+      document.removeEventListener("focusout", updateHeight);
+      document.documentElement.removeAttribute("data-keyboard-open");
+      document.documentElement.style.removeProperty("--mobile-viewport-height");
+    };
+  }, [isMobile]);
+
+  useEffect(() => {
+    const overlayOpened = didOpenOverlay(previousOverlaysRef.current, overlays);
+    const confirmationOpened = didOpenConfirmation(previousDuelPendingRef.current, duelPending);
+    previousOverlaysRef.current = overlays;
+    previousDuelPendingRef.current = duelPending;
+    if (isMobile && mobileDrawer && (overlayOpened || confirmationOpened)) {
+      setMobileDrawer(null);
+    }
+  }, [isMobile, mobileDrawer, overlays, duelPending, setMobileDrawer]);
+
+  useEffect(() => {
+    if (!isMobile || !mobileDrawer) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [isMobile, mobileDrawer]);
+
+  const onTouchStart = (event) => {
+    if (suppressClick.current) suppressClick.current = false;
+    if (!isMobile || event.pointerType === "mouse") return;
+    swipeStart.current = { x: event.clientX, y: event.clientY };
+  };
+  const onTouchEnd = (event) => {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start || !isMobile) return;
+    const action = getMobileDrawerSwipeAction({
+      startX: start.x,
+      endX: event.clientX,
+      startY: start.y,
+      endY: event.clientY,
+      width: window.innerWidth,
+      drawer: mobileDrawer,
+    });
+    if (!action) {
+      const dx = event.clientX - start.x;
+      const dy = event.clientY - start.y;
+      const drawerWidth = Math.min(window.innerWidth * 0.82, 340);
+      const outsideDrawer = mobileDrawer === "left"
+        ? event.clientX >= drawerWidth
+        : mobileDrawer === "right" && event.clientX <= window.innerWidth - drawerWidth;
+      if (mobileDrawer && Math.abs(dx) < 10 && Math.abs(dy) < 10 && outsideDrawer) {
+        setMobileDrawer(null);
+      }
+      return;
+    }
+    setMobileDrawer(action === "close" ? null : action);
+    suppressClick.current = true;
+    event.preventDefault();
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "'Songti SC','STSong','SimSun',serif", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}>
+    <div
+      className="game-layout"
+      onPointerDownCapture={onTouchStart}
+      onPointerUpCapture={onTouchEnd}
+      onPointerCancelCapture={() => { swipeStart.current = null; }}
+      onClickCapture={(event) => {
+        if (!suppressClick.current) return;
+        suppressClick.current = false;
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      style={{ display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
+    >
       <TopBar
         isMobile={isMobile} mobileTopMenu={mobileTopMenu} setMobileTopMenu={setMobileTopMenu}
         zoneTheme={zoneTheme} isDayMode={isDayMode} setIsDayMode={setIsDayMode}
@@ -65,9 +170,9 @@ export default function GameLayout({ layout }) {
 
       {overlayHost}
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+      <div className="mobile-game-columns" style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", minHeight: 0 }}>
         {isMobile && mobileDrawer && (
-          <div onClick={() => setMobileDrawer(null)}
+          <div role="button" aria-label="关闭侧栏" onClick={() => setMobileDrawer(null)}
             style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(0,0,0,.55)" }} />
         )}
 

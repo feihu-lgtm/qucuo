@@ -118,7 +118,7 @@ const OUTCOME_LABEL = { 涨: ["涨", "#7dffca"], 平: ["平", "#e8dfc0"], 垮: [
 // 刀口方位 → 刀光角度
 const SLASH_ROT = { top: "rotate(-24deg)", mid: "rotate(4deg)", bot: "rotate(21deg)" };
 
-export default function GambleStoneScreen({ building, char, time, zoneTheme, onClose, roomNpcs = [], onTalk, onSettle, onInspect, negotiation = {} }) {
+export default function GambleStoneScreen({ building, char, time, zoneTheme, onClose, roomNpcs = [], onTalk, onSettle, onInspect, onMinimizeChange, negotiation = {} }) {
   const luck = (char.special?.气运) ?? 5;
   const money = char.money || 0;
   const hourNow = ((time % 24) + 24) % 24;
@@ -143,6 +143,14 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   const [cutFx, setCutFx] = useState(null);     // 开刀动画进行中：{pos, result}
   const [skinRead, setSkinRead] = useState({}); // 相石评语缓存 {stoneId: text}
   const [carouselIdx, setCarouselIdx] = useState(0); // 竖屏竞价者轮播：当前第几张
+  const minimizeTable = () => {
+    setMinimized(true);
+    onMinimizeChange?.(true);
+  };
+  const restoreTable = () => {
+    setMinimized(false);
+    onMinimizeChange?.(false);
+  };
   const touchRef = React.useRef({ x: 0, active: false });
 
   // 赌石是横向沉浸舞台(1672:941的横图大厅)，竖屏手机塞不下会又扁又小。
@@ -228,7 +236,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   function startTalk(b) {
     if (closed || b.kind === "noise") return;
     setSelCard(null);
-    setMinimized(true);
+    minimizeTable();
     onTalk?.(
       b.name,
       `在玉石料场，我上前与${b.name}就这块${SKINS[stone.skin].label}的料子讨价还价`,
@@ -257,7 +265,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   // ── 最小化：缩成角标，主叙事照常用 ──
   if (minimized) {
     return (
-      <div onClick={() => setMinimized(false)}
+      <div className="mobile-gamble-minimized" onClick={restoreTable}
         style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, cursor: "pointer",
           background: "#23201b", border: "1px solid #6a5d40", borderRadius: 0, padding: "8px 14px",
           color: "#f0d090", fontSize: 13, boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
@@ -296,7 +304,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
           {buyWarn && <span style={{ color: "#d4756a", fontSize: 12, marginLeft: 10 }}>{buyWarn}</span>}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setMinimized(true)} style={topBtn}>最小化 ▬</button>
+          <button onClick={minimizeTable} style={topBtn}>最小化 ▬</button>
           <button onClick={onClose} style={topBtn}>离场 ✕</button>
         </div>
       </div>

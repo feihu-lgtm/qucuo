@@ -296,7 +296,7 @@ const styles = {
   menuLabel: {
     fontSize: "17px",
     letterSpacing: "6px",
-    color: "#ece3d0",
+    color: "var(--text)",
     textShadow: "0 1px 3px rgba(0,0,0,0.6)",
   },
   menuSub: (t) => ({
@@ -345,7 +345,7 @@ const styles = {
   loadPanelTitle: (t) => ({
     fontSize: "16px",
     letterSpacing: "4px",
-    color: "#ece3d0",
+    color: "var(--text)",
     marginBottom: "16px",
     textAlign: "center",
   }),
@@ -370,7 +370,7 @@ const styles = {
   }),
   loadPanelLabel: {
     fontSize: "14px",
-    color: "#ece3d0",
+    color: "var(--text)",
   },
   loadPanelMeta: (t) => ({
     fontSize: "10px",
