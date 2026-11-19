@@ -88,7 +88,7 @@ export function birthStone(changKouKey, luck = 5, seedStr = "") {
   });
 
   return {
-    id: `stone_${seed.toString(36)}`,
+    id: `stone_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
     changKou: changKouKey,
     skin,
     jadeTier: jadeTier.key,
@@ -214,7 +214,9 @@ export function biddingBase(stone) {
 // 生成本轮在场的竞价者（含偶现概率 + 各自报价，系统裁决）
 export function rollBidders(stone, luck = 5) {
   const base = biddingBase(stone);
-  const rng = makeRng(seedFromString(stone.id + "|" + stone.slots.filter(s => s.opened).length));
+  // 用出生种子固定报价，实例 ID 只用于隔离每桌的议价记录。
+  const quoteKey = stone._seed == null ? stone.id : `stone_${stone._seed.toString(36)}`;
+  const rng = makeRng(seedFromString(quoteKey + "|" + stone.slots.filter(s => s.opened).length));
   const app = appraiseStone(stone);
   const out = [];
   for (const [key, t] of Object.entries(BIDDER_TYPES)) {

@@ -29,7 +29,7 @@ it("resumes an isolated generator from a serialized 32-bit state", () => {
   expect(getRngState()).toBe(0);
 });
 
-it("repeats a stone and its bids when the wall clock changes", () => {
+it("repeats stone outcomes and bids while keeping negotiation IDs distinct", () => {
   const clock = vi.spyOn(Date, "now");
   try {
     clock.mockReturnValue(1000);
@@ -40,7 +40,8 @@ it("repeats a stone and its bids when the wall clock changes", () => {
     clock.mockReturnValue(2000);
     setSeed(42);
     const repeatedStone = birthStone("鹰曲新场");
-    expect(repeatedStone).toEqual(stone);
+    expect(repeatedStone.id).not.toBe(stone.id);
+    expect(repeatedStone).toEqual({ ...stone, id: repeatedStone.id });
     expect(rollBidders(repeatedStone)).toEqual(bids);
   } finally {
     clock.mockRestore();
