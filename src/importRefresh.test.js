@@ -4,6 +4,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MUD = readFileSync(join(HERE, "MudRPG.jsx"), "utf-8");
+const WORLD_RULES = readFileSync(join(HERE, "app", "hooks", "useWorldRulesRunner.js"), "utf-8");
 const REG = readFileSync(join(HERE, "cards", "importedRegistry.js"), "utf-8");
 const NPC_RULES = readFileSync(join(HERE, "features", "npc", "rules.js"), "utf-8");
 const OVL = readFileSync(join(HERE, "panels", "GlobalOverlays.jsx"), "utf-8");
@@ -18,9 +19,9 @@ const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
 //     onImportWorld 压根没在 GlobalOverlays 里出现过。
 describe("落册之后 room 必须重算", () => {
   it("世界规则调度器订阅入册库，且 revision 是驻场规则依赖", () => {
-    expect(MUD).toContain("importedRegistry.subscribeImported");
-    expect(MUD).toContain("importedRegistry.getImportedRevision");
-    expect(MUD).toContain("createCoalescedCheck");
+    expect(WORLD_RULES).toContain("importedRegistry.subscribeImported");
+    expect(WORLD_RULES).toContain("importedRegistry.getImportedRevision");
+    expect(WORLD_RULES).toContain("createCoalescedCheck");
     expect(NPC_RULES).toContain("state.importedVer");
     expect(NPC_RULES).toContain("getImportedForDistrict");
   });

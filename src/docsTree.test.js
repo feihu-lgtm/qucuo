@@ -202,6 +202,8 @@ describe("Hook deps 不许引用后面才定义的量（TDZ 守卫）", () => {
     "src/app/hooks/useBuildingHandlers.js",
     "src/app/hooks/useProgressionHandlers.js",
     "src/app/hooks/usePlayerActionHandlers.js",
+    "src/app/hooks/useGameUi.js",
+    "src/app/hooks/useWorldRulesRunner.js",
   ])("%s 里没有 TDZ 风险", (file) => {
     const lines = readFileSync(file, "utf-8").split("\n");
     const defs = new Map();
@@ -265,6 +267,7 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
   const hookNames = [
     "useInitialRestore", "useAutosave", "useDaySummary",
     "usePrivateTalk", "useOutfitAdvice", "useAiInspect", "useTurn", "useTurnQueue",
+    "useGameUi", "usePresetImport", "useWorldRulesRunner",
     "useQuestPanel", "useForcedDuelNpc", "useDuel", "usePigeonReplies", "usePigeonHandlers",
     "useAutoTravel", "useCraftingAI", "useScreenHandlers", "useCardImportHandlers",
     "useBuildingHandlers", "useProgressionHandlers", "usePlayerActionHandlers",

@@ -1,0 +1,253 @@
+import TopBar from "../panels/TopBar.jsx";
+import LeftPanel from "../panels/LeftPanel.jsx";
+import CenterPanel from "../panels/CenterPanel.jsx";
+import RightPanel from "../panels/RightPanel.jsx";
+import ClickableMap from "../ClickableMap.jsx";
+import ZoomableMap from "../ZoomableMap.jsx";
+import { QUCUO_MAP, isNodeUnlocked } from "../qucuoMap.js";
+import {
+  hasInnerMap, getDistrictAnchor, getInnerRoom, visibleInnerExits,
+  getInnerRoomNames, isInnerExitUnlocked,
+} from "../innerMap.js";
+import { DIRS } from "../utils/mudHelpers.js";
+import { MAP_UI } from "../mapUi.js";
+
+export default function GameLayout({ layout }) {
+  const {
+    overlayHost, uiScale, zoneTheme, isMobile, mobileDrawer, setMobileDrawer,
+    mobileTopMenu, setMobileTopMenu,
+    isDayMode, setIsDayMode, uiGold, uiTurquoise, uiCrimson, uiPink,
+    setSettingsInitialTab, autoSaveError, lastAutoSave, playerAvatarCustom,
+    setPlayerAvatarCustom, AV_BASE, genderAvatar, S, room, innerRoomName,
+    time, varTree, char, setChar, peoplePanel, setPeoplePanel, activeBuilding,
+    setActiveBuilding, setActiveItemMenu, setActiveNpcMenu, setCharacterPageTarget,
+    setPigeonTarget, setInteractMode, inputRef, addLog, pigeonTarget, portraits,
+    portraitTarget, setPortraitTarget, interactMode, activeTarget, setActiveTarget,
+    talkTarget, setTalkTarget,
+    playerAvatar, slImgErr, setSlImgErr, slForm, setSnowLeopardForm,
+    setSlFormState, pearlForm, setPearlForm, setPearlFormState, pearlImgErr,
+    setPearlImgErr, narrator, narratorImgErr, setNarratorImgErr, companionState,
+    mapView, setMapView, mapBig, setMapBig, mapData, questProgress, flags, inv,
+    inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind, loading, act,
+    autoTravelTo, uiGreen, setLoading, undoSnapshotRef, applySnapshot, gm,
+    setGm, pot, setPot, exp, setExp, dao, setDao, setVarTree, setNarrator,
+    setMapData, setRoom, setInnerRoomName, teleportLookRef, setSkills, duelPending, confirmDuel,
+    cancelDuel, tradingShop, setTradingShop, buildingPanelMinimized,
+    setBuildingPanelMinimized, handleBuildingInn, handleBuildingHeal, skills,
+    handleBuySkill, effectiveSpecialNow, inspectItem, jotNote, handleAcceptEscort,
+    handleGamble, handleCollectPigeons, buyPigeon, handlePostSend, handleTravel,
+    handleServiceOrder, handlePray, handleReadBook, handleBuyBook, deposit,
+    depositedAt, handleDeposit, handleWithdraw, pledgedItems, handlePledge,
+    handleRedeem, handleAcceptBounty, handleClaimBounty, handleForgeCommission,
+    handleForgeDesign, handleJadeDesign, handleJadeCraft, gambleNegotiation,
+    handleGambleTalk, handleGambleSettle, handleGambleInspect, handleListenRumor,
+    handleJoinSect, handleAuctionWin, handleCook, seaTraumaActive, narratorVarsNow,
+    invNames, handleComfort, handleResolveTrauma, sectMasterAffection, log,
+    clr, collapsedGroups, setCollapsedGroups, queueCount, pendingTalks, inspecting,
+    logEnd, waitSecs, availableQuestsHere, triggerQuestFromPanel,
+    triggerQuestChoice, nsfwOn, setNsfwOn, meditate, justMeditated,
+    pigeonDelayShichen, input, setInput, composingRef, onKey, handleSwitchCompanion,
+    trainNeigong, trainWaigong, trainCost, activeBuffs, breakthroughSkill,
+    confessToNarrator, setInv, mapBigCloseGuard,
+  } = layout;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "'Songti SC','STSong','SimSun',serif", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}>
+      <TopBar
+        isMobile={isMobile} mobileTopMenu={mobileTopMenu} setMobileTopMenu={setMobileTopMenu}
+        zoneTheme={zoneTheme} isDayMode={isDayMode} setIsDayMode={setIsDayMode}
+        uiGold={uiGold} uiTurquoise={uiTurquoise} uiCrimson={uiCrimson} uiPink={uiPink}
+        setSettingsInitialTab={setSettingsInitialTab}
+        autoSaveError={autoSaveError} lastAutoSave={lastAutoSave}
+        playerAvatarCustom={playerAvatarCustom} setPlayerAvatarCustom={setPlayerAvatarCustom}
+        AV_BASE={AV_BASE} genderAvatar={genderAvatar}
+      />
+
+      {overlayHost}
+
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+        {isMobile && mobileDrawer && (
+          <div onClick={() => setMobileDrawer(null)}
+            style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(0,0,0,.55)" }} />
+        )}
+
+        <LeftPanel
+          isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
+          zoneTheme={zoneTheme} S={S}
+          room={room} innerRoomName={innerRoomName} time={time}
+          varTree={varTree} char={char}
+          peoplePanel={peoplePanel} setPeoplePanel={setPeoplePanel}
+          activeBuilding={activeBuilding} setActiveBuilding={setActiveBuilding}
+          setActiveItemMenu={setActiveItemMenu}
+          setActiveNpcMenu={setActiveNpcMenu}
+          setCharacterPageTarget={setCharacterPageTarget}
+          setPigeonTarget={setPigeonTarget} setInteractMode={setInteractMode} inputRef={inputRef} addLog={addLog}
+          pigeonTarget={pigeonTarget}
+          portraits={portraits} portraitTarget={portraitTarget} setPortraitTarget={setPortraitTarget}
+          interactMode={interactMode} activeTarget={activeTarget} talkTarget={talkTarget}
+          playerAvatar={playerAvatar}
+          slImgErr={slImgErr} setSlImgErr={setSlImgErr} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState}
+          pearlForm={pearlForm} setPearlForm={setPearlForm} setPearlFormState={setPearlFormState} pearlImgErr={pearlImgErr} setPearlImgErr={setPearlImgErr}
+          narratorAffection={narrator.affection} narratorImgErr={narratorImgErr} setNarratorImgErr={setNarratorImgErr}
+          companionState={companionState}
+          mapView={mapView} setMapView={setMapView} mapBig={mapBig} setMapBig={setMapBig}
+          mapData={mapData} questProgress={questProgress} flags={flags} inv={inv}
+          inSeaOfMind={inSeaOfMind} seaGate={seaGate} enterSeaOfMind={enterSeaOfMind} leaveSeaOfMind={leaveSeaOfMind}
+          loading={loading} act={act} autoTravelTo={autoTravelTo}
+          uiGreen={uiGreen} uiPink={uiPink}
+        />
+
+        <CenterPanel
+          isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
+          zoneTheme={zoneTheme} S={S}
+          loading={loading} setLoading={setLoading} addLog={addLog}
+          undoSnapshotRef={undoSnapshotRef} applySnapshot={applySnapshot}
+          gm={gm} setGm={setGm}
+          char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
+          dao={dao} setDao={setDao}
+          varTree={varTree} setVarTree={setVarTree} narrator={narrator} setNarrator={setNarrator}
+          room={room} innerRoomName={innerRoomName}
+          mapData={mapData} setMapData={setMapData} setRoom={setRoom} setInnerRoomName={setInnerRoomName}
+          setInteractMode={setInteractMode} act={act} teleportLookRef={teleportLookRef}
+          setSkills={setSkills} setInv={setInv}
+          duelPending={duelPending} confirmDuel={confirmDuel} cancelDuel={cancelDuel}
+          activeBuilding={activeBuilding} setActiveBuilding={setActiveBuilding}
+          tradingShop={tradingShop} setTradingShop={setTradingShop}
+          buildingPanelMinimized={buildingPanelMinimized} setBuildingPanelMinimized={setBuildingPanelMinimized}
+          handleBuildingInn={handleBuildingInn} handleBuildingHeal={handleBuildingHeal}
+          skills={skills} handleBuySkill={handleBuySkill}
+          time={time} inv={inv} effectiveSpecialNow={effectiveSpecialNow}
+          inspectItem={inspectItem} jotNote={jotNote}
+          flags={flags} questProgress={questProgress}
+          handleAcceptEscort={handleAcceptEscort} handleGamble={handleGamble}
+          handleCollectPigeons={handleCollectPigeons} buyPigeon={buyPigeon}
+          handlePostSend={handlePostSend} handleTravel={handleTravel}
+          handleServiceOrder={handleServiceOrder}
+          handlePray={handlePray} handleReadBook={handleReadBook} handleBuyBook={handleBuyBook}
+          deposit={deposit} depositedAt={depositedAt} handleDeposit={handleDeposit} handleWithdraw={handleWithdraw}
+          pledgedItems={pledgedItems} handlePledge={handlePledge} handleRedeem={handleRedeem}
+          handleAcceptBounty={handleAcceptBounty} handleClaimBounty={handleClaimBounty}
+          handleForgeCommission={handleForgeCommission} handleForgeDesign={handleForgeDesign}
+          handleJadeDesign={handleJadeDesign} handleJadeCraft={handleJadeCraft}
+          gambleNegotiation={gambleNegotiation} handleGambleTalk={handleGambleTalk}
+          handleGambleSettle={handleGambleSettle} handleGambleInspect={handleGambleInspect}
+          handleListenRumor={handleListenRumor}
+          handleJoinSect={handleJoinSect} handleAuctionWin={handleAuctionWin}
+          handleCook={handleCook}
+          seaTraumaActive={seaTraumaActive}
+          narratorVarsNow={narratorVarsNow}
+          invNames={invNames}
+          handleComfort={handleComfort} handleResolveTrauma={handleResolveTrauma}
+          sectMasterAffection={sectMasterAffection}
+          log={log} isDayMode={isDayMode} clr={clr}
+          collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
+          queueCount={queueCount} pendingTalks={pendingTalks} inspecting={inspecting}
+          logEnd={logEnd} waitSecs={waitSecs}
+          availableQuestsHere={availableQuestsHere}
+          triggerQuestFromPanel={triggerQuestFromPanel} triggerQuestChoice={triggerQuestChoice}
+          uiGreen={uiGreen} uiPink={uiPink} uiCrimson={uiCrimson}
+          nsfwOn={nsfwOn} setNsfwOn={setNsfwOn}
+          meditate={meditate} justMeditated={justMeditated}
+          interactMode={interactMode} activeTarget={activeTarget} setActiveTarget={setActiveTarget}
+          setTalkTarget={setTalkTarget}
+          pigeonTarget={pigeonTarget} setPigeonTarget={setPigeonTarget} pigeonDelayShichen={pigeonDelayShichen}
+          input={input} setInput={setInput} inputRef={inputRef} onKey={onKey} composingRef={composingRef}
+        />
+
+        <RightPanel
+          isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
+          zoneTheme={zoneTheme} S={S}
+          char={char} inv={inv} skills={skills} exp={exp} pot={pot}
+          playerAvatar={playerAvatar}
+          companionState={companionState} onSwitchCompanion={handleSwitchCompanion} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState} slImgErr={slImgErr} setSlImgErr={setSlImgErr}
+          pearlForm={pearlForm} setPearlForm={setPearlForm} setPearlFormState={setPearlFormState} pearlImgErr={pearlImgErr} setPearlImgErr={setPearlImgErr}
+          trainNeigong={trainNeigong} trainWaigong={trainWaigong} trainCost={trainCost}
+          effectiveSpecialNow={effectiveSpecialNow} activeBuffs={activeBuffs}
+          varTree={varTree}
+          setActiveNpcMenu={setActiveNpcMenu}
+          setSkills={setSkills} inspectItem={inspectItem} inspecting={inspecting}
+          breakthroughSkill={breakthroughSkill}
+          setActiveItemMenu={setActiveItemMenu}
+          narrator={narrator} confessToNarrator={confessToNarrator}
+          setInv={setInv}
+        />
+      </div>
+
+      {mapBig && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={mapBigCloseGuard.onMouseDown} onClick={mapBigCloseGuard.onClick}>
+        <div style={{
+          background: `url("${MAP_UI.scroll}") center/100% 100% no-repeat`,
+          borderRadius: 0, minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh",
+          padding: "8% 11% 9% 11%", boxSizing: "border-box",
+        }} onClick={e => e.stopPropagation()}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <span style={{ color: "#4a3520", fontSize: "13px", fontWeight: "bold" }}>{mapView === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"} <span style={{ color: "#7a6448", fontSize: "10px", fontWeight: "normal" }}>{mapView === "inner" ? "朱红为当前所在 · 点相邻房间前往" : "朱红为当前所在 · 点已探明据点自动前往 · 🔒需前置"}</span></span>
+            <span style={{ color: "#6a4a2a", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }} onClick={() => setMapBig(false)}>× 关闭</span>
+          </div>
+          {mapView === "outer" && (() => {
+            const completed = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));
+            const exitByDir = QUCUO_MAP[room.name]?.exits || {};
+            const reachableDests = new Set(Object.values(exitByDir));
+            const explored = new Set(Object.keys(mapData || {}));
+            explored.add(room.name);
+            const nodes = Object.entries(QUCUO_MAP)
+              .filter(([name]) => explored.has(name))
+              .map(([name, node]) => {
+                const dirTo = Object.entries(exitByDir).find(([, d]) => d === name)?.[0] || null;
+                const unlocked = isNodeUnlocked(name, { completedQuests: completed, flags });
+                return {
+                  name, x: node.x, y: node.y, explored: true,
+                  current: name === room.name,
+                  links: Object.values(node.exits || {}).filter(d => explored.has(d)),
+                  reachable: name !== room.name && unlocked,
+                  locked: reachableDests.has(name) && !unlocked,
+                  dir: dirTo, dest: name,
+                };
+              });
+            const go = (dir, dest, locked) => {
+              if (loading) return;
+              setMapBig(false);
+              if (locked) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "outer" }); return; }
+              if (dest && mapData[dest] && dest !== room.name) { autoTravelTo(dest); return; }
+              if (dir) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "outer" }); }
+            };
+            return <ClickableMap nodes={nodes} onGo={go} accent={zoneTheme.accent} loading={loading} maxHeight="66vh" />;
+          })()}
+          {mapView === "inner" && (() => {
+            if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim }}>此地无内景可绘。</div>;
+            const curRoom = innerRoomName || getDistrictAnchor(room.name);
+            const curExits = visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char });
+            const adjacent = new Set(Object.values(curExits));
+            const nodes = getInnerRoomNames(room.name).filter((rn) => {
+              const rr = getInnerRoom(room.name, rn);
+              return !rr?.unlockCondition || rr.unlockCondition.type === "stat" || isInnerExitUnlocked(rr.unlockCondition, { questProgress, flags, inv, char });
+            }).map((rn) => {
+              const r = getInnerRoom(room.name, rn) || {};
+              const dirTo = Object.entries(curExits).find(([, d]) => d === rn)?.[0] || null;
+              return {
+                name: rn, x: r.x ?? 0, y: r.y ?? 0, explored: true,
+                current: rn === curRoom,
+                links: Object.values(r.exits || {}).filter(d => typeof d === "string"),
+                reachable: adjacent.has(rn),
+                dir: dirTo, dest: rn,
+              };
+            });
+            const go = (dir) => { if (!loading && dir) { setMapBig(false); setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); } };
+            return <ClickableMap nodes={nodes} onGo={go} accent="#c07050" loading={loading} maxHeight="66vh" />;
+          })()}
+        </div>
+      </div>}
+
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+        ::-webkit-scrollbar{width:3px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:${zoneTheme.border};border-radius:2px}
+        ::selection{background:${zoneTheme.accentDim}}
+        input::placeholder{color:${zoneTheme.textDim}}
+        .log-streaming{opacity:0.92}
+        .qbtn{transition:filter .15s ease,border-color .15s ease}
+        .qbtn:hover{filter:brightness(1.25)}
+      `}</style>
+    </div>
+  );
+}
