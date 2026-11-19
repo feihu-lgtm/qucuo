@@ -1,0 +1,82 @@
+function sameDeps(left, right) {
+  return left.length === right.length && left.every((value, index) => Object.is(value, right[index]));
+}
+
+export function createWorldRules(rules, { getState, applyResult, ctx = {} }) {
+  const lastDeps = new Map();
+  const ids = new Set();
+
+  for (const rule of rules) {
+    if (!rule?.id || typeof rule.deps !== "function" || typeof rule.run !== "function") {
+      throw new TypeError("World rules require an id, deps(state), and run(state, ctx)");
+    }
+    if (ids.has(rule.id)) throw new Error(`Duplicate world rule id: ${rule.id}`);
+    ids.add(rule.id);
+  }
+
+  function check() {
+    for (let pass = 0; pass < 5; pass++) {
+      for (const rule of rules) {
+        const state = getState();
+        const deps = rule.deps(state);
+        if (!Array.isArray(deps)) {
+          throw new TypeError(`World rule "${rule.id}" deps must return an array`);
+        }
+
+        const firstRun = !lastDeps.has(rule.id);
+        const previousDeps = lastDeps.get(rule.id);
+        if (!firstRun && sameDeps(deps, previousDeps)) continue;
+
+        lastDeps.set(rule.id, deps.slice());
+        const result = rule.run(state, {
+          ...ctx,
+          firstRun,
+          previousDeps,
+        });
+        if (result != null) applyResult(result, rule);
+      }
+
+      const pending = rules.some((rule) => {
+        const previousDeps = lastDeps.get(rule.id);
+        return !sameDeps(rule.deps(getState()), previousDeps);
+      });
+      if (!pending) return;
+      if (pass === 4) console.warn("[worldRules] Cascade exceeded 5 passes; remaining changes will wait for the next check.");
+    }
+  }
+
+  return {
+    check,
+    reset() {
+      lastDeps.clear();
+    },
+  };
+}
+
+export function createCoalescedCheck(check, enqueue = queueMicrotask) {
+  let pending = false;
+  let running = false;
+  let disposed = false;
+
+  function schedule() {
+    if (pending || running || disposed) return;
+    pending = true;
+    enqueue(() => {
+      pending = false;
+      if (disposed) return;
+      running = true;
+      try {
+        check();
+      } finally {
+        running = false;
+      }
+    });
+  }
+
+  return {
+    schedule,
+    dispose() {
+      disposed = true;
+    },
+  };
+}

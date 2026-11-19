@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MUD = readFileSync(join(HERE, "MudRPG.jsx"), "utf-8");
 const REG = readFileSync(join(HERE, "cards", "importedRegistry.js"), "utf-8");
+const NPC_RULES = readFileSync(join(HERE, "features", "npc", "rules.js"), "utf-8");
 const OVL = readFileSync(join(HERE, "panels", "GlobalOverlays.jsx"), "utf-8");
 const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
 
@@ -16,19 +17,12 @@ const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
 //     propsCheck 抓不到这类——它查的是"用了作用域里不存在的标识符"，而这里
 //     onImportWorld 压根没在 GlobalOverlays 里出现过。
 describe("落册之后 room 必须重算", () => {
-  it("用 useSyncExternalStore 订阅入册库，且 revision 进了依赖数组", () => {
-    // 【为什么验订阅而不是验手动计数】第一版是在 MudRPG 加个 state、落册回调里 +1，
-    // 当场就漏了 handleImportWorld 那个写入点。订阅挂在 registry 的 persist 上，
-    // 那是四个写操作的唯一出口，不会漏。
-    expect(MUD).toContain("useSyncExternalStore");
+  it("世界规则调度器订阅入册库，且 revision 是驻场规则依赖", () => {
     expect(MUD).toContain("importedRegistry.subscribeImported");
     expect(MUD).toContain("importedRegistry.getImportedRevision");
-    // 用 "}, [" 开头做指纹——importedVer 的声明注释里复述了这个依赖数组，
-    // 只按内容找会先撞上那条注释（第一版这条守卫就是这么误报的）
-    const line = MUD.split("\n").find(l => l.trim().startsWith("}, [room.name, dayIdx"));
-    expect(line, "没找到组装 room.npcs 的依赖数组，指纹可能变了，请同步这条守卫").toBeTruthy();
-    expect(line, "依赖数组没有 importedVer——落册后 effect 不会重跑，人不出现")
-      .toContain("importedVer");
+    expect(MUD).toContain("createCoalescedCheck");
+    expect(NPC_RULES).toContain("state.importedVer");
+    expect(NPC_RULES).toContain("getImportedForDistrict");
   });
 
   it("通知挂在 persist 上——那是所有写操作的唯一出口", () => {

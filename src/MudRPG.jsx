@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { gameActions, gameStore, initGameStore, useGameStore } from "./store/gameStore.js";
 import {
   OVERLAY, closeOverlay, initializeUiOverlays, openOverlay, toggleOverlay, useOverlay,
@@ -8,6 +8,11 @@ import { snapshotFromStore } from "./core/persist.js";
 import { setRngState } from "./core/rng.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import { applyResult } from "./features/run.js";
+import { createCoalescedCheck, createWorldRules } from "./engine/worldRules.js";
+import { timeAdvanceRule } from "./features/time/rules.js";
+import { residentNpcRule } from "./features/npc/rules.js";
+import { collectGroundItemsRule } from "./features/quest/rules.js";
+import { innerGroundItemsRule } from "./features/map/rules.js";
 import {
   breakthroughSkill as breakthroughSkillLogic,
   meditate as meditateLogic,
@@ -56,7 +61,6 @@ import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatible
 import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
-import { GROUND_ITEMS, GROUND_ITEMS_INNER } from "./groundItems.js";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, npcAffectionLabel, reputationLabel } from "./mvu.js";
 import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats, effectiveSpecial } from "./equipment.js";
 import { effectiveMaxHp } from "./kungfu/qucuoKungfu.js";
@@ -112,7 +116,7 @@ import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import CodexScreen from "./CodexScreen.jsx";
 import BugReportModal from "./BugReportModal.jsx";
 import { QUCUO_MAP, getMapNode, resolveExit, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
-import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getPublicInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom, isInnerExitUnlocked } from "./innerMap.js";
+import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom, isInnerExitUnlocked } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
 import { loadPortraits, setPortrait, removePortrait, fileToDataUrl, inferActivePortraitTarget, SNOW_LEOPARD_FORMS, PEARL_FORMS, getSnowLeopardForm, setSnowLeopardForm, snowLeopardPortraitUrl, getPearlForm, setPearlForm, pearlPortraitUrl, getCompanionForms, getCompanionForm, setCompanionForm, companionPortraitUrl } from "./portraits.js";
 import PortraitManager from "./PortraitManager.jsx";
@@ -133,7 +137,6 @@ import TradingScreen from "./TradingScreen.jsx";
 import { recordRumoredNpcs, findTargetedRumor, clearRumor } from "./npcEmergence.js";
 import { rollEncounter, buildEncounterNote } from "./encounter.js";
 import { seedKnowledge, evolveKnowledge, buildInfoDomainBlock, factSummaryRequest, factSummaryRequestFromRecall, setFactSummary, registerFact, witnessFact, allFactSummaries } from "./knowledge.js";
-import { mapDescriptionToGenParams } from "./npcDescriptionMapping.js";
 import { findQuestByGiver, NPC_TEACHABLE_SKILLS, QUCUO_QUESTS } from "./quests/qucuoQuests.js";
 import { QUEST_TYPE } from "./quests/questTypes.js";
 import { MODE_PRIMER_MESSAGES, NSFW_RULES } from "./modePrimer.js";
@@ -145,14 +148,13 @@ import { initKeyItemTracking, transferKeyItem, getKeyItemState } from "./quests/
 import { resolveStageRewards, applyStageRewards } from "./quests/questRewards.js";
   // runQuestPromptHarness 已并入主叙事（act 的 forcedEvent 参数），不再单独调用；
   // quests/questHarness.js 文件暂留作参考，不再引用。
-import { pendingGroundItems, detectCollectPickup, allCollected, alreadySatisfiedCollectStages, collectPromptLines } from "./quests/collect.js";
+import { detectCollectPickup, allCollected, alreadySatisfiedCollectStages, collectPromptLines } from "./quests/collect.js";
 import { MOVE_TYPE } from "./combat/moveTypes.js";
 import DuelScreen from "./DuelScreen.jsx";
 import TeamDuelScreen from "./TeamDuelScreen.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import VersionHistoryPanel from "./VersionHistoryPanel.jsx";
 import PersuasionScreen from "./PersuasionScreen.jsx";
-import { tickAngryState } from "./combat/stealSystem.js";
 import { CURRENT_VERSION } from "./version.js";
 import { recallWithVisibility } from "./memory/recallWithVisibility.js";
 import { writeNote, NOTE_SOURCE, VIA, reembedStaleNotes } from "./memory/note.js";
@@ -160,7 +162,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, unlockAsuka, setActiveCompanion, unlockedCompanions, companionKeyByName, unlockImportedCompanion, isCompanionUnlockedByName } from "./companion.js";
+import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, unlockAsuka, setActiveCompanion, unlockedCompanions, unlockImportedCompanion } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -179,7 +181,6 @@ import JadeShopScreen from "./buildings/JadeShopScreen.jsx";
 import GambleStoneScreen from "./buildings/GambleStoneScreen.jsx";
 import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } from "./gambleStone.js";
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
-import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
 import { invHasItemNamed, SAFE_HOUSES, ownedSafeHouseKeys, makeTusiRobe } from "./safeHouse.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
@@ -195,11 +196,10 @@ import {
 } from "./narratorQuest.js";
 import { narratorVars, setNarratorVars } from "./mvu.js";
 import { AUCTION_LOT } from "./auction.js";
-import { seededRand } from "./utils/seededRandom.js";
-import { getResidentNpcs, getAllResidentNpcLore } from "./residentNpcs.js";
+import { getAllResidentNpcLore } from "./residentNpcs.js";
 import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
 import { stealSuccessRate } from "./combat/stealSystem.js";
-import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
+import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
 import { INGREDIENT_LORE } from "./cooking.js";
 import { buildSysBase } from "./sysBase.js";
 import { DIRS, bar, STAGE_TO_QUALITY, DIR_DXY, parseDir, getTimeStr } from "./utils/mudHelpers.js";
@@ -321,17 +321,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const exp = useGameStore(s => s.exp);
   const pot = useGameStore(s => s.pot);
   const flags = useGameStore(s => s.flags);
-  // 入册库的版本号，用 React 18 的 useSyncExternalStore 直接订阅那个模块级状态。
-  // 【为什么不自己数】registerImported 改的是 importedRegistry.js 里的模块级
-  // _registry，React 依赖系统看不见；组装 room.npcs 的 effect 依赖数组里没有一项
-  // 会因落册而变，effect 不重跑，人得等玩家走出据点再回来才出现。
-  // 上一轮是加个 state 在落册回调里 +1，当场就漏了 handleImportWorld 那个写入点
-  // （它走 registerImportedWorld）。改成订阅后由 registry 的 persist 统一通知，
-  // 四个写操作全覆盖，以后新增写操作也不必记得同步。
-  const importedVer = useSyncExternalStore(
-    importedRegistry.subscribeImported,
-    importedRegistry.getImportedRevision,
-  );
   const questProgress = useGameStore(s => s.questProgress); // { questId: { count } }
   // 说服进度持久化：按 questId|flag 存 { guard, hitKeys, turns, done }，让"关掉再点同一场
   // 说服"能接着上次、且进快照存档。成功/离开时清掉该场。
@@ -726,10 +715,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }, [skills]);
 
 
-  // 每当回合推进（time变化），统一给所有处于"生气状态"的NPC递减剩余回合数。
-  // 用单一 useEffect 监听 time 而不是在每个 setTime 调用点分别处理，
-  // 保证不管从哪条路径推进回合（本地命令/AI生成/主循环），生气状态都不会被漏更新。
-  const prevTimeRef = useRef(time);
   const [forcedDuelNpc, setForcedDuelNpc] = useState(null);
   const [duelingNpc, setDuelingNpc] = useState(null);
   const [duelPending, setDuelPending] = useState(null); // 邀战叙事跑完、等玩家点确认才真正开打的NPC
@@ -904,100 +889,41 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       prerunSquares();
     }
   }, [time, summarizeDay, prerunSquares]);
+  const worldRulesRunnerRef = useRef(null);
   useEffect(() => {
-    if (time === prevTimeRef.current) return;
-    prevTimeRef.current = time;
-    // 清理已过期的临时 buff flag（消耗品系统第3步）——过期的 buff_..._untilturn_T
-    // flag 留在 flags 里既污染 AI 上下文、也让状态面板显示已失效的药力。每次回合推进
-    // 后清一遍，只在确有过期项时才 setFlags，避免无谓重渲染。cleanExpiredBuffs 只动
-    // buff_ 开头的 flag，其他剧情 flag 原样保留。
-    setFlags(prev => {
-      const cleaned = cleanExpiredBuffs(prev, time);
-      return cleaned.length === prev.length ? prev : cleaned;
-    });
-    // 铸剑坊自动交付：委托时下的 forge_pending_<下单time>_<luck> flag，到 24 时辰后
-    // 系统自动打造入袋（不必玩家回铸剑坊手动点取件——面板承诺"打好有人送来"，这里真
-    // 落实）。每次回合推进检查一遍所有 pending 订单，成熟的（time-下单≥24）就地结算、
-    // 移除 flag、成品进背包，并在日志里提示"铸剑坊伙计送来"。同一 setFlags 里顺带处理，
-    // 避免多次 setState。
-    setFlags(prev => {
-      const matured = prev.filter(f => {
-        if (!f.startsWith("forge_pending_")) return false;
-        const parts = f.split("_");
-        const orderedAt = Number(parts[2]);
-        return Number.isFinite(orderedAt) && (time - orderedAt) >= 24;
+    if (!worldRulesRunnerRef.current) {
+      worldRulesRunnerRef.current = createWorldRules([
+        timeAdvanceRule,
+        residentNpcRule,
+        collectGroundItemsRule,
+        innerGroundItemsRule,
+      ], {
+        getState: () => ({
+          ...gameStore.getState(),
+          importedVer: importedRegistry.getImportedRevision(),
+        }),
+        ctx: {
+          importedRegistry,
+          get companionState() {
+            return gameStore.getState().companionState;
+          },
+        },
+        applyResult: (result) => {
+          applyResult(featureCtxRef.current, result);
+          if (result.forcedDuelNpc) setForcedDuelNpc(result.forcedDuelNpc);
+        },
       });
-      if (!matured.length) return prev;
-      // 结算每张成熟订单
-      const deliveredNames = [];
-      for (const f of matured) {
-        const parts = f.split("_");
-        // flag 格式（新）：forge_pending_<下单time>_<luck>_<encodeURIComponent(JSON spec)>。
-        // spec = {name,category,effect,sixDim,material,requirement}，由三候选选定时写入。
-        // 品质仍由系统按 luck 定(AI 不碰)，spec 只提供名字/类别/词条。
-        // 兼容：老格式 parts[4] 是纯材料编码(非JSON)或不存在——解析失败就退化成"定制长剑"。
-        const luck = Number(parts[3]) || 5;
-        const qualities = ["白", "绿", "蓝", "紫", "橙", "红"];
-        const qIdx = Math.min(4, Math.floor(luck / 2.5)); // 气运最高到橙(rollQuality上限)
-        let quality = qualities[qIdx];
-        let spec = null;
-        if (parts[4] && parts[4] !== "-") {
-          try { spec = JSON.parse(decodeURIComponent(parts[4])); } catch { spec = null; }
-        }
-        let name, category, effect, sixDim, isJade = false;
-        if (spec && spec.name) {
-          name = spec.name;
-          category = ["weapon", "armor", "accessory"].includes(spec.category) ? spec.category : "weapon";
-          effect = (spec.effect && typeof spec.effect === "object" && Object.keys(spec.effect).length) ? spec.effect : undefined;
-          sixDim = (spec.sixDim && typeof spec.sixDim === "object" && Object.keys(spec.sixDim).length) ? spec.sixDim : undefined;
-          // 金玉行：成品品质 = min(气运档, 玉料品质天花板)。好料是上限、手气定发挥。
-          if (spec.jade && spec.qualityCap) {
-            isJade = true;
-            const capIdx = qualities.indexOf(spec.qualityCap);
-            if (capIdx >= 0 && capIdx < qualities.indexOf(quality)) quality = spec.qualityCap;
-          }
-        } else {
-          let material = "";
-          if (parts[4] && parts[4] !== "-") { try { material = decodeURIComponent(parts[4]); } catch { material = parts[4]; } }
-          name = material ? `${material}剑` : "定制长剑";
-          category = "weapon";
-        }
-        // 白/绿档不挂词条(与 catalog 潜规则一致)：品质低于蓝时丢弃 effect/sixDim。
-        const qRank = qualities.indexOf(quality);
-        if (qRank < 2) { effect = undefined; sixDim = undefined; }
-        const forgedItem = makeGameItem({ name, category, quality, ...(effect ? { effect } : {}), ...(sixDim ? { sixDim } : {}) });
-        setInv(iv => [...iv, { ...forgedItem, id: `forge_${parts[2]}_${Math.random().toString(36).slice(2, 6)}`, equipped: false }]);
-        deliveredNames.push({ text: `${name}（${quality}）`, jade: isJade });
-      }
-      const anyJade = deliveredNames.some(d => d.jade);
-      const namesStr = deliveredNames.map(d => d.text).join("」「");
-      addLog([{ t: "item", text: anyJade
-        ? `  💎 金玉行的伙计寻来，将雕琢好的「${namesStr}」奉到你手上，已收入行囊。`
-        : `  🔨 铁匠铺的伙计寻来，将打造好的「${namesStr}」送到你手上，已收入行囊。` }]);
-      return prev.filter(f => !matured.includes(f));
-    });
-    setVarTree(prev => {
-      const chars = prev.角色 || {};
-      let changed = false;
-      const nextChars = { ...chars };
-      for (const [name, attrs] of Object.entries(chars)) {
-        if (attrs.生气状态?.active) {
-          const nextAngry = tickAngryState(attrs.生气状态);
-          nextChars[name] = { ...attrs, 生气状态: nextAngry };
-          changed = true;
-          if (nextAngry.escalated) {
-            addLog([{ t: "err", text: `  ${name}积怒难平，终于按捺不住，径直朝你逼了过来——这场恶斗，躲不掉了！` }]);
-            // 强制开战：如果这个NPC此刻恰好在场，直接把他标记为待强制切磋对象，
-            // 由下方另一个effect负责真正弹出战斗界面（避免在setVarTree回调里直接
-            // setDuelingNpc引发同一渲染周期内的状态更新冲突）。
-            const npcInRoom = room.npcs.find(n => n.name === name);
-            if (npcInRoom) setForcedDuelNpc(npcInRoom);
-          }
-        }
-      }
-      return changed ? { ...prev, 角色: nextChars } : prev;
-    });
-  }, [time, addLog, room.npcs]);
+    }
+    const scheduler = createCoalescedCheck(() => worldRulesRunnerRef.current.check());
+    const unsubscribeStore = gameStore.subscribe(scheduler.schedule);
+    const unsubscribeImported = importedRegistry.subscribeImported(scheduler.schedule);
+    scheduler.schedule();
+    return () => {
+      unsubscribeStore();
+      unsubscribeImported();
+      scheduler.dispose();
+    };
+  }, []);
 
   useEffect(() => {
     if (forcedDuelNpc) {
@@ -1005,168 +931,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       setForcedDuelNpc(null);
     }
   }, [forcedDuelNpc]);
-
-  // 每天/每进新据点，往 room.npcs 里注入今日游走人口
-  const dayIdx = Math.floor(time / 24);
-  useEffect(() => {
-    if (!room.name) return;
-    // toRoomNpc 只给 {id,name,brief,carriedItems}，没有 combatStats/special/moveset——
-    // 之前这些游走NPC就这样直接进了room.npcs，一旦被切磋/细看，DuelScreen 只能
-    // 摸到一堆 undefined，要么崩要么变成假人。这里跟初始房间NPC用同一套
-    // ensureNpcCombatData + 关键词判档，游走人口该多强由他们的brief/personality决定。
-    const luck = char.special?.气运 ?? 5;
-    const toRoomNpcWithCombat = (poolNpc) => {
-      const base = toRoomNpc(poolNpc);
-      // toRoomNpc 面向游走池、只留 id/name/brief——会把驻场/野兽NPC 显式设定的
-      // levelCap 和 beast/unlearnable/cannotSpeak 等关键字段剥掉，导致品阶被
-      // 关键词猜测覆盖、野兽标记丢失。这里把这些字段补回来，让 residentNpcs.js
-      // 里设定的档位真正生效（此前是隐性失效的）。
-      // 【本轮修复】companionCandidate 漏在这份白名单外——雪豹作为驻场NPC，
-      // 经这一步转换后 companionCandidate 字段丢失，导致 NpcActionMenu.jsx 的
-      // canInvite 判断永远拿到 undefined，"邀请入队"按钮完全不显示（实测反馈）。
-      // 【本轮补 special】toRoomNpc 只留 id/name/brief/isPoolNpc/carriedItems，
-      // 七维会被剥掉。此前无影响（driven 表里没人配 special，一律走
-      // generateNpcAttributes 随机），但入册角色的七维是玩家在导入界面逐项调过
-      // 的，丢了等于白调——applyNpcDefaults 里 `npc.special || generateNpcAttributes()`
-      // 这一句只有在字段能传到才有意义。
-      // 【本轮补 portrait】跟上面 special 那条同一个问题：入册角色的立绘是玩家在
-      // 审改界面挑的（内置十张之一、卡自带的图、或自己上传的），importedRegistry
-      // 的 toPoolLike 里明明有 o.portrait = c.portrait，但这份白名单没有它，转换
-      // 一过就被剥掉——入册立绘从来没能传到运行时。
-      // 【本轮补 neigong / waigong / imported，由字段对账查出来的】
-      // npcGeneration 第 426 行是 `neigong: npc.neigong ?? tierPower.neigong`，读的是
-      // 转换之后的对象。白名单没有这两项，于是入册角色的内外功一律走 ?? 兜底、按品阶
-      // 取默认值——玩家在审改界面逐项调过的值全白调。importedRegistry 的 toPoolLike
-      // 里还专门写了注释说「不传就只能按品阶取默认值，玩家调的白调」，写注释的时候
-      // 知道要带上，白名单这一头却没加。跟前面 special、companionCandidate、portrait
-      // 是同一个坑的第四五次，所以这轮补了 cards/fieldFlow.test.js 做自动对账。
-      // imported 目前没有消费者，剥掉无害，但它是"这人是入册来的"这个事实的唯一标记，
-      // 加进来成本为零、以后想用不必再踩一次。
-      for (const k of ["levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable", "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder", "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop", "portrait", "neigong", "waigong", "imported"]) {
-        if (poolNpc[k] !== undefined) base[k] = poolNpc[k];
-      }
-      const inferred = mapDescriptionToGenParams(`${poolNpc.name || ""} ${poolNpc.brief || ""} ${poolNpc.personality || ""}`);
-      // 显式 levelCap 优先，没有才用关键词推断兜底
-      const levelCap = poolNpc.levelCap ?? inferred.levelCap;
-      return ensureNpcCombatData(base, { luck, levelCap });
-    };
-    const poolNpcs = getScheduledNpcs(room.name, time).map(toRoomNpcWithCombat);
-    // 据点固定驻场NPC：跟护镖目标NPC同一个强制注入模式，不受随机权重
-    // 影响——巴桑/丹增/兰姐/罗琦这类具名剧情角色，只要玩家进了对应据点
-    // 就必须真实存在于 room.npcs 里，感叹号面板才能检测到他们的任务
-    // （面板判定逻辑就是简单的 room.npcs.some(n => n.name === giver)，
-    // 见 findQuestByGiver 附近逻辑）。见 residentNpcs.js 的完整说明。
-    // 雪豹一旦入队，它作为"村口驻场兽"的身份就结束了——不再注入房间。此后它只以
-    // "队友"身份通过 visibleNpcsForAI 单独随玩家在场（形影不离），不再是某个据点的
-    // 固定驻场人物。用 companionState ref 读最新值（effect 依赖数组不含 companionState，
-    // 靠 ref 拿到入队后的最新状态，避免仅靠 deps 触发导致的时序问题）。
-    // 伙伴候选（雪豹/珍珠…）一旦入队就不再当驻场注入——按名字查它对应的伙伴槽位
-    // 是否已解锁，通用处理，不写死单个名字。
-    const companionJoined = (name) => {
-      const key = companionKeyByName(name);
-      return !!(key && companionStateRef.current?.[key]?.unlocked);
-    };
-    const residentNpcs = getResidentNpcs(room.name)
-      .filter(n => !(n.companionCandidate && companionJoined(n.name)))
-      .map(toRoomNpcWithCombat);
-    // 护镖任务的系统保证：接了镖之后，targetNpc 当天必须真的能在 targetLocation 找到，
-    // 不能靠 getScheduledNpcs 的随机权重抽样"赌"到——那样任务会随机卡死无法交货。
-    // 强制把还差在场的目标NPC塞进来，不受权重采样结果影响。
-    const activeEscortTargets = ESCORT_QUESTS
-      .filter(q => questProgress[q.id]?.active && q.targetLocation === room.name && !flags.includes(`quest_done_${q.id}`))
-      .map(q => NPC_POOL.find(n => n.name === q.targetNpc))
-      .filter(Boolean)
-      .map(toRoomNpcWithCombat);
-    // 赌石竞价者：固定锁料场的 gambleBidder 全部强制注入（不随机，保证料场有竞价者）；
-    // 另加 schedule 分时段角色（兰姐）——只有当她"此刻"的时段落点正好是玉石料场时才注入
-    // （白天在料场竞价、夜里回百花楼）。用 getTimeStr 同源的 hour 判断，与 getScheduledNpcs 一致。
-    const hourNow = ((time % 24) + 24) % 24;
-    const gambleBidders = (hasInnerMap(room.name) && getInnerRoomNames(room.name).includes("玉石料场"))
-      ? [
-          ...NPC_POOL.filter(n => n.gambleBidder && n.lockInnerRoom === "玉石料场").map(toRoomNpcWithCombat),
-          ...NPC_POOL.filter(n => Array.isArray(n.schedule)
-            && n.schedule.some(s => hourNow >= s.slot[0] && hourNow < s.slot[1] && s.lockInnerRoom === "玉石料场"))
-            .map(n => { const r = toRoomNpcWithCombat(n); r.lockInnerRoom = "玉石料场"; return r; }),
-        ]
-      : [];
-    // 入册角色（第五个来源）：驻场的按据点必现，游走的按权重＋时段抽。
-    // 随机源用 seededRand(dayIdx, 人名) 而不是 Math.random——同一天进出据点
-    // 反复重算时落点必须稳定，否则一个游走的人会在你走进走出之间闪现。
-    const importedNpcs = importedRegistry
-      .getImportedForDistrict(room.name, time, (name) => seededRand(Math.floor(time / 24), `imported_${room.name}_${name}`))
-      // 已被邀请入队的导入伙伴不再作为路人注入据点——此后它只以队友身份随玩家在场，
-      // 跟内置驻场兽入队即消失同理（那条走 companionJoined，导入的走 isCompanionUnlockedByName）。
-      .filter(n => !isCompanionUnlockedByName(companionStateRef.current, n.name))
-      .map(toRoomNpcWithCombat);
-    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs];
-    if (toInject.length === 0) return;
-    // 游走/护镖NPC随机落内层房间（本轮改版）：若当前据点有内层箱庭，给每个
-    // 非驻场NPC分配一个当天固化的内层房间（可落任意房间，含客栈/铺子）。用
-    // seededRand(dayIdx, 据点+人名) 保证同一人当天落点稳定、跨天才变，避免进出
-    // 房间时人物乱跳。驻场NPC（residentNpcs，走 residentNpcName 绑定）不分配。
-    if (hasInnerMap(room.name)) {
-      // 用公共房间列表而不是全集：游走NPC不该被随机丢进上锁的房间。
-      // 玩家家门口那块「乞丐与老7滚勿入」的牌子此前是空头支票——老七照样天天在屋里。
-      const rooms = getPublicInnerRoomNames(room.name);
-      // 驻场者不分配随机落点。入册的驻场角色同理——它们要么锁了 lockInnerRoom，
-      // 要么就待在据点锚点，不该被丢进随便一个房间。
-      const residentSet = new Set([
-        ...residentNpcs.map(n => n.name),
-        ...importedRegistry.getImportedResidentNames(),
-      ]);
-      for (const n of toInject) {
-        if (residentSet.has(n.name)) continue; // 驻场人不分配落点
-        if (n.innerRoom) continue;             // 已分配过（当天）就不重抽
-        if (n.lockInnerRoom) { n.innerRoom = n.lockInnerRoom; continue; } // 赌石竞价者等：落点强制锁定
-        if (rooms.length === 0) continue;
-        const rng = seededRand(dayIdx, `${room.name}|${n.name}`);
-        n.innerRoom = rooms[Math.floor(rng() * rooms.length)];
-      }
-    }
-    // 注入：该在场的人放进来，已在名单里的补齐设定（injectNpcs 内含 bug② 的修法）
-    setRoom(r => ({ ...r, npcs: injectNpcs(r.npcs, toInject) }));
-  }, [room.name, dayIdx, questProgress, flags, importedVer]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 采集机制·注入：玩家进入某据点时，若有 active 采集任务的目标物落在本据点、
-  // 且背包尚无、地上尚无，就把它真的放进 room.items——落实「地上得真有那个东西
-  // 能捡，不能凭空」。捡起后（背包已有）此 effect 自然不再补货，不会重复刷。
-  useEffect(() => {
-    if (!room.name) return;
-    const pending = pendingGroundItems(room.name, {
-      questProgress, quests: QUCUO_QUESTS, getCurrentStage, inv, roomItems: room.items,
-    });
-    if (!pending.length) return;
-    setRoom(r => {
-      const have = new Set((r.items || []).map(i => (typeof i === "string" ? i : i.name)));
-      const toAdd = pending.filter(p => !have.has(p.name));
-      if (!toAdd.length) return r;
-      return { ...r, items: [...(r.items || []), ...toAdd] };
-    });
-  }, [room.name, questProgress, inv]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 地上陈设物·注入：每个据点地上摆几件无主的环境物（见 groundItems.js），让场景
-  // 不再空荡荡，玩家可拾/可端详。照搬上面采集物的"背包尚无 + 地上尚无才补货"模式——
-  // 捡进背包后此 effect 自然不再补，不会重复刷；读档后非当前据点缓存丢失，重进时按
-  // 背包过滤重铺（捡过且仍在背包的不重现），与采集物同待遇。
-  // 内层房间专属地上物（GROUND_ITEMS_INNER）按 "据点名·内层房间名" 匹配，
-  // 只铺在对应内层房间，不污染整个据点。
-  useEffect(() => {
-    if (!room.name) return;
-    const innerKey = innerRoomName ? `${room.name}·${innerRoomName}` : null;
-    const spec = [
-      // 地上物现在只有房间级一张表（据点级已于 0730 并入）。不再按 room.name 取，
-      // 否则同一件碎石会在这个据点每一间房都躺一份。
-      ...(innerKey && GROUND_ITEMS_INNER[innerKey] ? GROUND_ITEMS_INNER[innerKey] : []),
-    ];
-    if (!spec.length) return;
-    setRoom(r => {
-      const haveGround = new Set((r.items || []).map(i => (typeof i === "string" ? i : i.name)));
-      const haveInv = new Set((inv || []).map(i => (typeof i === "string" ? i : i.name)));
-      const toAdd = spec.filter(s => !haveGround.has(s.name) && !haveInv.has(s.name)).map(s => makeGameItem(s));
-      if (!toAdd.length) return r;
-      return { ...r, items: [...(r.items || []), ...toAdd] };
-    });
-  }, [room.name, innerRoomName, inv]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 采集机制·跳过跑腿：某些采集节点是多条任务线共用的同一件东西（如燕羊胎既是
   // 兰姐线辅料，又是欢喜教线的交涉条件）。若所需物已在背包（在别处已采过），
@@ -3482,7 +3246,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       });
     }
     // 不必手动推版本号：registerImported 内部的 persist 会通知订阅者，
-    // useSyncExternalStore 拿到新 revision 自然触发重算（见 importedVer 声明处）
+    // registry 的 revision 通知会调度驻场 world rule 重算
     // 有几个人此刻就该站在这个据点里？如实说，别让玩家对着空屋子猜落册成没成。
     const here = importedRegistry.getImportedResidentNames()
       .filter(nm => npcs.some(x => x.name === nm));

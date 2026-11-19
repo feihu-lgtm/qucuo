@@ -135,6 +135,39 @@ describe("CLI scripts", () => {
     ]);
   });
 
+  it("runs world rules after time advances, room entry, and save/load deterministically", async () => {
+    const fixture = readFileSync(join(scriptsDir, "world-rules.txt"), "utf8");
+    const runFixture = async () => {
+      const output = [];
+      const session = createSession({
+        out: (text) => output.push(text),
+        cwd: tempDir,
+        seed: 42,
+      });
+      let failures = 0;
+      for (const line of fixture.split(/\r?\n/)) failures += await session.runLine(line);
+      const saved = JSON.parse(readFileSync(join(tempDir, "world-rules.json"), "utf8"));
+      return {
+        failures,
+        output,
+        residents: session.store.getState().room.npcs.map((npc) => npc.name),
+        savedResidents: saved.room.npcs.map((npc) => npc.name),
+      };
+    };
+
+    const first = await runFixture();
+    loadSquares({});
+    const second = await runFixture();
+
+    expect(first.failures, first.output.join("\n")).toBe(0);
+    expect(second.failures, second.output.join("\n")).toBe(0);
+    expect(first.residents).toEqual(first.savedResidents);
+    expect(second.residents).toEqual(second.savedResidents);
+    expect(second.residents).toEqual(first.residents);
+    expect(first.residents.length).toBeGreaterThan(0);
+    expect(first.residents).toContain("才旦");
+  });
+
   it("loads legacy in-flight pigeon letters from a save", async () => {
     const session = createSession({ out: () => {}, cwd: tempDir });
     const legacyLetter = {
