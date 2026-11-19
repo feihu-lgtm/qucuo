@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
+import { withdrawalSummary } from "../features/bank/logic.js";
 
 // 钱庄：存取银两，每24时间单位生息2%
 export default function BankScreen({ building, char, time, deposit, depositedAt, zoneTheme, onClose, inline, onDeposit, onWithdraw }) {
@@ -7,9 +8,7 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
   const [mode, setMode] = useState("deposit");
   const money = char.money || 0;
 
-  const elapsed = depositedAt != null ? Math.floor((time - depositedAt) / 24) : 0;
-  const interest = deposit > 0 ? Math.floor(deposit * (Math.pow(1.02, elapsed) - 1)) : 0;
-  const totalWithdraw = deposit + interest;
+  const { elapsed, interest, total: totalWithdraw } = withdrawalSummary({ time, deposit, depositedAt });
 
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
@@ -50,7 +49,7 @@ export default function BankScreen({ building, char, time, deposit, depositedAt,
               可取出：{totalWithdraw} 两（含利息 {interest} 两）
             </div>
             <Btn label={`取出全部（${totalWithdraw}两）`} disabled={deposit <= 0} zoneTheme={zoneTheme}
-              onClick={() => onWithdraw(totalWithdraw)} />
+              onClick={() => onWithdraw()} />
           </div>
         )}
       </div>

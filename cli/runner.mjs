@@ -8,6 +8,9 @@ import { setSeed } from "../src/core/rng.js";
 import { resetForDay, loadSquares, serializeSquares } from "../src/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/saves.js";
 import { getTimeStr } from "../src/utils/mudHelpers.js";
+import { applyResult } from "../src/features/run.js";
+import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
+import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -87,6 +90,12 @@ function actionForKey(key) {
 
 export function createSession({ out = defaultOutput, cwd = process.cwd(), seed } = {}) {
   const emit = typeof out === "function" ? out : (text) => out.write(`${text}\n`);
+  const featureCtx = {
+    addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
+    jotNote: () => {},
+    setVarTree: gameActions.setVarTreeState,
+    act: (text) => emit(`(结算回合需 AI，PR E 接入：${text})`),
+  };
 
   async function runLine(rawLine) {
     const line = String(rawLine).trim();
@@ -157,6 +166,49 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed }
       }
       emit(`期望失败：${path.join(".")}\n  expected: ${formatValue(expected)}\n  actual: ${formatValue(actual)}`);
       return 1;
+    }
+
+    const state = gameStore.getState();
+    if (line === "打坐") {
+      applyResult(featureCtx, meditate(state));
+      return 0;
+    }
+    if (line === "练内功") {
+      applyResult(featureCtx, trainNeigong(state));
+      return 0;
+    }
+    if (line === "练外功") {
+      applyResult(featureCtx, trainWaigong(state));
+      return 0;
+    }
+
+    const skillMatch = /^修炼\s+(.+)$/.exec(line);
+    if (skillMatch) {
+      const skill = (state.skills || []).find((entry) => entry.id === skillMatch[1] || entry.name === skillMatch[1]);
+      applyResult(featureCtx, breakthroughSkill(state, skill ? skill.id : skillMatch[1]));
+      return 0;
+    }
+
+    const depositMatch = /^存钱\s+(-?\d+(?:\.\d+)?)$/.exec(line);
+    if (depositMatch) {
+      applyResult(featureCtx, deposit(state, Number(depositMatch[1])));
+      return 0;
+    }
+    if (line === "取钱") {
+      applyResult(featureCtx, withdraw(state));
+      return 0;
+    }
+
+    const pledgeMatch = /^质押\s+(.+)\s+(-?\d+(?:\.\d+)?)$/.exec(line);
+    if (pledgeMatch) {
+      const item = (state.inv || []).find((entry) => typeof entry === "object" && entry?.name === pledgeMatch[1]);
+      applyResult(featureCtx, pledge(state, item?.id, Number(pledgeMatch[2])));
+      return 0;
+    }
+    const redeemMatch = /^赎回\s+(\d+)\s+(-?\d+(?:\.\d+)?)$/.exec(line);
+    if (redeemMatch) {
+      applyResult(featureCtx, redeem(state, Number(redeemMatch[1]) - 1, Number(redeemMatch[2])));
+      return 0;
     }
 
     emit(`暂不支持：${line}（PR C 起接入）`);

@@ -1,0 +1,22 @@
+# Deposit, interest, pawn, and redeem share the feature logic.
+:new
+:set char.money=100
+存钱 50
+:expect char.money=50
+:expect deposit=50
+:expect depositedAt=6
+:set time=30
+取钱
+:expect char.money=101
+:expect deposit=0
+:expect depositedAt=null
+:set char.money=200
+:set inv=[{"id":"pawn_test","name":"玉佩","sellPrice":100,"equipped":false}]
+质押 玉佩 80
+:expect char.money=280
+:expect inv=[]
+:expect pledgedItems=[{"item":{"id":"pawn_test","name":"玉佩","sellPrice":100,"equipped":false},"pledgeValue":80}]
+赎回 1 88
+:expect char.money=192
+:expect pledgedItems=[]
+:expect inv=[{"id":"pawn_test","name":"玉佩","sellPrice":100,"equipped":false}]
