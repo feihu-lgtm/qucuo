@@ -204,6 +204,9 @@ describe("Hook deps 不许引用后面才定义的量（TDZ 守卫）", () => {
     "src/app/hooks/usePlayerActionHandlers.js",
     "src/app/hooks/useGameUi.js",
     "src/app/hooks/useWorldRulesRunner.js",
+    "src/app/hooks/useGameStoreBindings.js",
+    "src/app/hooks/useNotes.js",
+    "src/app/hooks/useGameStartup.js",
   ])("%s 里没有 TDZ 风险", (file) => {
     const lines = readFileSync(file, "utf-8").split("\n");
     const defs = new Map();
@@ -252,7 +255,7 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
       addDeclaration(state[1], index + 1);
       addDeclaration(state[2], index + 1);
     }
-    const value = /^\s*const (\w+)\s*=\s*(?:useCallback|useMemo|useRef|useGameStore)\b/.exec(line);
+    const value = /^\s*const (\w+)\s*=\s*(?:useCallback|useMemo|useRef|useGameStore|useOverlay)\b/.exec(line);
     if (value) addDeclaration(value[1], index + 1);
   });
 
@@ -265,12 +268,14 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
   }
 
   const hookNames = [
-    "useInitialRestore", "useAutosave", "useDaySummary",
+    "useAutosave", "useDaySummary",
     "usePrivateTalk", "useOutfitAdvice", "useAiInspect", "useTurn", "useTurnQueue",
     "useGameUi", "usePresetImport", "useWorldRulesRunner",
     "useQuestPanel", "useForcedDuelNpc", "useDuel", "usePigeonReplies", "usePigeonHandlers",
     "useAutoTravel", "useCraftingAI", "useScreenHandlers", "useCardImportHandlers",
     "useBuildingHandlers", "useProgressionHandlers", "usePlayerActionHandlers",
+    "useGameStoreBindings", "useNotes", "useGameStartup", "useGameStartupBindings",
+    "useGameStartupOpeningFaces",
   ];
   const failures = [];
   for (const hookName of hookNames) {
@@ -305,4 +310,140 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
     }
   }
   expect(failures).toEqual([]);
+});
+
+describe("layout and overlay ctx inputs match their source shapes", () => {
+  function objectBody(source, marker, offset = 0) {
+    const markerAt = source.indexOf(marker, offset);
+    if (markerAt < 0) return null;
+    const open = source.indexOf("{", markerAt);
+    let depth = 0;
+    for (let i = open; i < source.length; i++) {
+      if (source[i] === "{") depth++;
+      if (source[i] === "}" && --depth === 0) return source.slice(open + 1, i);
+    }
+    return null;
+  }
+
+  function objectKeys(source, marker, offset = 0) {
+    const body = objectBody(source, marker, offset);
+    if (body == null) return [];
+    return body.split(",").map(entry => entry.trim().match(/^(?:\.\.\.)?([\w$]+)/)?.[1]).filter(Boolean);
+  }
+
+  function hookReturnKeys(file, hookName) {
+    const source = readFileSync(file, "utf-8");
+    const start = source.indexOf(`export function ${hookName}`);
+    const next = source.indexOf("\nexport function ", start + 1);
+    const body = source.slice(start, next < 0 ? source.length : next);
+    const returns = [...body.matchAll(/return\s*\{/g)];
+    return returns.length ? objectKeys(body, "return {", returns.at(-1).index) : [];
+  }
+
+  function memberNames(source, owner) {
+    return [...new Set([...source.matchAll(new RegExp(`\\b${owner}\\.([\\w$]+)`, "g"))].map(m => m[1]))];
+  }
+
+  it("every ctx field reference exists in the hook or assembly input shape", () => {
+    const builder = readFileSync("src/app/contextBuilders.js", "utf-8");
+    const mud = readFileSync("src/MudRPG.jsx", "utf-8");
+    const failures = [];
+    const inputShapes = [
+      ["ui", "src/app/hooks/useGameUi.js", "useGameUi"],
+      ["game", "src/app/hooks/useGameStoreBindings.js", "useGameStoreBindings"],
+      ["autosave", "src/app/hooks/useAutosave.js", "useAutosave"],
+    ];
+
+    for (const [owner, file, hookName] of inputShapes) {
+      const available = new Set(hookReturnKeys(file, hookName));
+      for (const name of memberNames(builder, owner)) {
+        if (!available.has(name)) failures.push(`${owner}.${name} is not returned by ${hookName}`);
+      }
+    }
+
+    for (const [builderName, paramSource] of [
+      ["buildOverlayCtx", "buildOverlayCtx({"],
+      ["buildLayoutCtx", "buildLayoutCtx({"],
+    ]) {
+      const params = builder.match(new RegExp(`export function ${builderName}\\(\\s*\\{([^}]+)\\}`))?.[1]
+        .split(",").map(entry => entry.trim().split(":")[0]) || [];
+      const passed = new Set(objectKeys(mud, paramSource));
+      for (const name of params) {
+        if (!passed.has(name)) failures.push(`${builderName} input ${name} is not passed by MudRPG`);
+      }
+    }
+
+    const actionKeys = new Set(objectKeys(mud, "const actions = {"));
+    for (const match of builder.matchAll(/const\s*\{([^}]+)\}\s*=\s*actions/g)) {
+      for (const entry of match[1].split(",")) {
+        const name = entry.trim().split(":")[0].trim();
+        if (name && !actionKeys.has(name)) failures.push(`actions.${name} is not assembled in MudRPG`);
+      }
+    }
+    for (const name of memberNames(builder, "actions")) {
+      if (!actionKeys.has(name)) failures.push(`actions.${name} is not assembled in MudRPG`);
+    }
+
+    const overlayStateKeys = new Set(objectKeys(mud, "const overlayState = {"));
+    for (const match of builder.matchAll(/const\s*\{([^}]+)\}\s*=\s*overlayState/g)) {
+      for (const entry of match[1].split(",")) {
+        const name = entry.trim().split(":")[0].trim();
+        if (name && !overlayStateKeys.has(name)) failures.push(`overlayState.${name} is not assembled in MudRPG`);
+      }
+    }
+
+    const actionHooks = {
+      cardImportHandlers: ["src/app/hooks/useCardImportHandlers.js", "useCardImportHandlers"],
+      screenHandlers: ["src/app/hooks/useScreenHandlers.js", "useScreenHandlers"],
+      duelHandlers: ["src/app/hooks/useDuel.js", "useDuel"],
+      questPanel: ["src/app/hooks/useQuestPanel.js", "useQuestPanel"],
+      aiInspect: ["src/app/hooks/useAiInspect.js", "useAiInspect"],
+      outfitAdvice: ["src/app/hooks/useOutfitAdvice.js", "useOutfitAdvice"],
+      pigeonHandlers: ["src/app/hooks/usePigeonHandlers.js", "usePigeonHandlers"],
+      buildingHandlers: ["src/app/hooks/useBuildingHandlers.js", "useBuildingHandlers"],
+      craftingAI: ["src/app/hooks/useCraftingAI.js", "useCraftingAI"],
+      playerActionHandlers: ["src/app/hooks/usePlayerActionHandlers.js", "usePlayerActionHandlers"],
+      progressionHandlers: ["src/app/hooks/useProgressionHandlers.js", "useProgressionHandlers"],
+    };
+    for (const [group, [file, hookName]] of Object.entries(actionHooks)) {
+      const available = new Set(hookReturnKeys(file, hookName));
+      for (const name of memberNames(builder, group)) {
+        if (!available.has(name)) failures.push(`${group}.${name} is not returned by ${hookName}`);
+      }
+    }
+
+    const portraitImports = builder.match(/import\s*\{([^}]+)\}\s*from "\.\.\/portraits\.js"/)?.[1] || "";
+    const portraitExports = readFileSync("src/portraits.js", "utf-8");
+    const layoutStart = builder.indexOf("export function buildLayoutCtx");
+    const layoutKeys = new Set(objectKeys(builder.slice(layoutStart), "return {"));
+    for (const name of ["setSnowLeopardForm", "setPearlForm"]) {
+      if (!portraitImports.split(",").map(entry => entry.trim()).includes(name)) {
+        failures.push(`${name} is not imported from portraits.js`);
+      }
+      if (!portraitExports.includes(`export function ${name}(`)) failures.push(`${name} is not exported by portraits.js`);
+      if (!layoutKeys.has(name)) failures.push(`${name} is not exposed by buildLayoutCtx`);
+    }
+
+    expect(failures).toEqual([]);
+  });
+
+  it("layout ctx exposes callable portrait persistence setters", async () => {
+    const { buildLayoutCtx } = await import("./app/contextBuilders.js");
+    const layout = buildLayoutCtx({
+      ui: {},
+      game: {
+        room: { name: "" }, flags: [], varTree: { 角色: {} }, innerRoomName: "",
+        narrator: { stage: "" }, inv: [], log: [],
+      },
+      overlayHost: null, autosave: {},
+      actions: {
+        questPanel: {}, pigeonHandlers: {}, duelHandlers: {}, screenHandlers: {}, buildingHandlers: {},
+        craftingAI: {}, playerActionHandlers: { enterSeaOfMind() {}, leaveSeaOfMind() {} },
+        progressionHandlers: {}, aiInspect: {},
+      },
+      activeBuffs: [], addLog() {}, jotNote() {},
+    });
+    expect(typeof layout.setSnowLeopardForm).toBe("function");
+    expect(typeof layout.setPearlForm).toBe("function");
+  });
 });
