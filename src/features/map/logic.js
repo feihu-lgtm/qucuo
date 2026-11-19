@@ -89,15 +89,17 @@ export function innerMove(state, dirOrRoom) {
     };
   }
 
-  let varTree = state.varTree || {};
-  if (decision.newFaces.length) varTree = markAsSeen(varTree, decision.newFaces);
-  varTree = updateLastSeen(varTree, decision.arrivedNames, state.time);
-
   return {
     changes: {
       innerRoomName: decision.innerDest,
       time: state.time + 1,
-      varTree,
+      varTree: (prev) => {
+        const current = prev || {};
+        const seen = decision.newFaces.length
+          ? markAsSeen(current, decision.newFaces)
+          : current;
+        return updateLastSeen(seen, decision.arrivedNames, state.time);
+      },
     },
     logs: [
       { t: "cmd", text: `> ${command}` },

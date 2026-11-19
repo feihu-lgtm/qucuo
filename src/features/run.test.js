@@ -11,6 +11,28 @@ describe("applyResult", () => {
     expect(setVarTree).toHaveBeenCalledWith(varTree);
   });
 
+  it("passes varTree updaters through to merge against the latest state", () => {
+    let varTree = { 世界: { 本日移动次数: 1 } };
+    const ctx = {
+      setVarTree: (update) => {
+        varTree = typeof update === "function" ? update(varTree) : update;
+      },
+    };
+
+    applyResult(ctx, {
+      changes: {
+        varTree: (prev) => ({
+          ...prev,
+          世界: { ...prev.世界, 已认识人物: ["师父"] },
+        }),
+      },
+    });
+
+    expect(varTree).toEqual({
+      世界: { 本日移动次数: 1, 已认识人物: ["师父"] },
+    });
+  });
+
   it("forwards feature settlement options while keeping settlement enabled", () => {
     const act = vi.fn();
 

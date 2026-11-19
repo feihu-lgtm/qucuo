@@ -29,7 +29,7 @@ export function learnNpcSkill(state, npc) {
 
   return {
     changes: {
-      varTree: markNpcAsKnown(state.varTree || {}, npc.name),
+      varTree: (prev) => markNpcAsKnown(prev || {}, npc.name),
       char: { ...char, money: money - decision.totalPrice },
       skills: [...skills, ...decision.freshSkills],
     },

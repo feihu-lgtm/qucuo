@@ -24,7 +24,7 @@ describe("inner movement logic", () => {
     expect(result.changes).toEqual({
       innerRoomName: "歇马居",
       time: 7,
-      varTree: {},
+      varTree: expect.any(Function),
     });
     expect(result.logs).toContainEqual({ t: "cmd", text: "> 走 东" });
     expect(result.logs).toContainEqual({ t: "room", text: "    鱼定村·歇马居" });
@@ -38,9 +38,30 @@ describe("inner movement logic", () => {
     });
     const result = innerMove(state, { direction: "e", forceLayer: "inner", command: "走 东" });
 
-    expect(result.changes.varTree.世界.曾经出现人物).toEqual(["客商"]);
-    expect(result.changes.varTree.世界.上次同框回合).toEqual({ 客商: 6 });
+    const nextVarTree = result.changes.varTree(state.varTree);
+    expect(nextVarTree.世界.曾经出现人物).toEqual(["客商"]);
+    expect(nextVarTree.世界.上次同框回合).toEqual({ 客商: 6 });
     expect(result.logs.at(-1)).toEqual({ t: "sys", text: "  ※ 新人物出现：客商（点击可细看其人）" });
+  });
+
+  it("applies movement awareness to the latest varTree without dropping intervening edits", () => {
+    const state = makeState({
+      room: { name: "鱼定村", npcs: [{ name: "客商", innerRoom: "歇马居" }] },
+      varTree: { 世界: {} },
+    });
+    const result = innerMove(state, { direction: "e", forceLayer: "inner", command: "走 东" });
+    const latestVarTree = {
+      世界: {
+        ...state.varTree.世界,
+        本日移动次数: 1,
+      },
+    };
+
+    const updated = result.changes.varTree(latestVarTree);
+
+    expect(updated.世界.本日移动次数).toBe(1);
+    expect(updated.世界.曾经出现人物).toEqual(["客商"]);
+    expect(updated.世界.上次同框回合).toEqual({ 客商: 6 });
   });
 
   it("returns logs only when an explicit inner move is blocked", () => {

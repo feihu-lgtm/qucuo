@@ -33,7 +33,7 @@ describe("NPC skill-learning logic", () => {
       fixed: true,
       source: "拜师",
     });
-    expect(result.changes.varTree.世界.已认识人物).toEqual(["师父"]);
+    expect(result.changes.varTree(makeState().varTree).世界.已认识人物).toEqual(["师父"]);
     expect(result.logs).toEqual([{
       t: "sys",
       text: "  （习得 1 招，奉上束脩银80两，已录入武学栏 · 授业绝学，学即完整）",
@@ -44,6 +44,20 @@ describe("NPC skill-learning logic", () => {
       settleKind: "learn_skill",
       learnInfo: { isMaster: true, moveBrief: "掌法(拳术)", totalPrice: 80, beast: false },
     });
+  });
+
+  it("marks the master known without dropping later varTree edits", () => {
+    const state = makeState();
+    const result = learnNpcSkill(state, npc);
+    const latestVarTree = {
+      ...state.varTree,
+      世界: { ...state.varTree.世界, 本日移动次数: 1 },
+    };
+
+    const updated = result.changes.varTree(latestVarTree);
+
+    expect(updated.世界.本日移动次数).toBe(1);
+    expect(updated.世界.已认识人物).toEqual(["师父"]);
   });
 
   it("refuses to teach below the favorability gate without changing state", () => {
