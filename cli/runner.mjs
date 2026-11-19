@@ -18,7 +18,7 @@ import { playTurn } from "../src/engine/playTurn.js";
 import { createPromptContext } from "../src/engine/prompt/index.js";
 import { createWorldRules } from "../src/engine/worldRules.js";
 import { parseLocalCommand } from "../src/engine/localCommands.js";
-import { pickGroundItem, useItem } from "../src/features/items/logic.js";
+import { pickGroundItem, consumeItem } from "../src/features/items/logic.js";
 import { derivedMovesetRule } from "../src/features/skills/rules.js";
 import {
   alreadySatisfiedCollectRule,
@@ -537,7 +537,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         (typeof entry === "object" ? entry?.name : entry) === itemName
       ));
       if (!item) return await applyFeature({ logs: [{ t: "sys", text: `  背包里没有「${itemName}」。` }] });
-      return await applyFeature(useItem(state, item));
+      return await applyFeature(consumeItem(state, item));
     }
     const pickMatch = line.match(/^捡\s+(.+)$/);
     if (pickMatch) {

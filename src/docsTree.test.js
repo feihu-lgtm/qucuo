@@ -190,6 +190,7 @@ describe("Hook deps 不许引用后面才定义的量（TDZ 守卫）", () => {
     "src/app/hooks/usePrivateTalk.js",
     "src/app/hooks/useOutfitAdvice.js",
     "src/app/hooks/useAiInspect.js",
+    "src/app/hooks/useTurn.js",
   ])("%s 里没有 TDZ 风险", (file) => {
     const lines = readFileSync(file, "utf-8").split("\n");
     const defs = new Map();
@@ -242,7 +243,7 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
     if (value) addDeclaration(value[1], index + 1);
   });
 
-  for (const match of source.matchAll(/const\s*\{([^}]+)\}\s*=\s*(gameActions|useAutosave)\b/g)) {
+  for (const match of source.matchAll(/const\s*\{([^}]+)\}\s*=\s*[\w$]+\b/g)) {
     const line = lineAt(match.index + match[0].length);
     for (const entry of match[1].split(",")) {
       const name = entry.trim().split(/\s*:\s*/).at(-1).split(/\s*=\s*/)[0].trim();
@@ -252,7 +253,7 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
 
   const hookNames = [
     "useInitialRestore", "useAutosave", "useDaySummary",
-    "usePrivateTalk", "useOutfitAdvice", "useAiInspect",
+    "usePrivateTalk", "useOutfitAdvice", "useAiInspect", "useTurn", "useTurnQueue",
   ];
   const failures = [];
   for (const hookName of hookNames) {
