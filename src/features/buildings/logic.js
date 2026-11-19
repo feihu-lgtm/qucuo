@@ -60,7 +60,7 @@ export function buySkill(state, catalogItem) {
     const current = state.char?.[catalogItem.insight.stat] ?? 0;
     if (current < catalogItem.insight.threshold) return noOpResult();
   } else {
-    if (!isPositiveAmount(catalogItem.price)) return invalidAmountResult();
+    if (!Number.isFinite(catalogItem.price) || catalogItem.price < 0) return invalidAmountResult();
     if ((state.char.money || 0) < catalogItem.price) return noOpResult();
   }
 

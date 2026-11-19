@@ -62,7 +62,16 @@ describe("building feature logic", () => {
     expect(buySkill(state(), skill).changes.char.money).toBe(70);
     expect(buySkill(state({ char: { ...state().char, 悟性: 5 } }), { ...skill, id: "insight", insight: { stat: "悟性", threshold: 5 } }).changes.skills[0].id).toBe("insight");
     expect(buySkill(state(), {})).toEqual({ logs: [] });
-    expect(buySkill(state(), { ...skill, price: 0 })).toEqual({ logs: [{ t: "err", text: "  数额无效" }] });
+    for (const freeSkill of [
+      { ...skill, id: "kf_tiyunzong", name: "梯云纵", price: 0 },
+      { ...skill, id: "kf_ting_foguang", name: "听桥·佛光", price: 0 },
+    ]) {
+      const result = buySkill(state(), freeSkill);
+      expect(result.changes.char.money).toBe(100);
+      expect(result.changes.skills[0].id).toBe(freeSkill.id);
+    }
+    expect(buySkill(state(), { ...skill, price: -1 })).toEqual({ logs: [{ t: "err", text: "  数额无效" }] });
+    expect(buySkill(state(), { ...skill, price: Number.POSITIVE_INFINITY })).toEqual({ logs: [{ t: "err", text: "  数额无效" }] });
     expect(buySkill(state({ char: { ...state().char, money: 1 } }), skill)).toEqual({ logs: [] });
     expect(buySkill(state({ skills: [{ id: "iron" }] }), skill)).toEqual({ logs: [] });
     expect(buySkill(state({ char: { ...state().char, 悟性: 4 } }), { ...skill, id: "insight", insight: { stat: "悟性", threshold: 5 } })).toEqual({ logs: [] });
