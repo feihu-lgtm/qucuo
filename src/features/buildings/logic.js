@@ -133,7 +133,7 @@ export function gamble(state, { mode, bet, luck, dayIdx, maxBet = 200 } = {}, no
 export function travelByCarriage(state, dest, price) {
   if (!isPositiveAmount(price)) return invalidAmountResult();
   const destNode = getMapNode(dest);
-  if (!destNode) return noOpResult();
+  if (!destNode || !state.mapData?.[dest]) return noOpResult();
   if ((state.char.money || 0) < price) return noOpResult();
 
   const changes = {
@@ -147,12 +147,6 @@ export function travelByCarriage(state, dest, price) {
     },
     time: state.time + 5,
   };
-  if (!state.mapData?.[dest]) {
-    changes.mapData = {
-      ...(state.mapData || {}),
-      [dest]: { x: destNode.x, y: destNode.y },
-    };
-  }
   return {
     changes,
     logs: [
@@ -189,8 +183,7 @@ export function cookMeal(state, { materials, technique, cookware, freestyle, dis
   const nextInventory = [...(state.inv || [])];
   for (const material of materials) {
     const index = nextInventory.findIndex((item) => (typeof item === "object" ? item?.name : item) === material);
-    if (index < 0) return noOpResult();
-    nextInventory.splice(index, 1);
+    if (index >= 0) nextInventory.splice(index, 1);
   }
 
   const changes = { inv: nextInventory };

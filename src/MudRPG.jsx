@@ -199,7 +199,7 @@ import BountyScreen from "./buildings/BountyScreen.jsx";
 import ForgeScreen from "./buildings/ForgeScreen.jsx";
 import JadeShopScreen from "./buildings/JadeShopScreen.jsx";
 import GambleStoneScreen from "./buildings/GambleStoneScreen.jsx";
-import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } from "./gambleStone.js";
+import { settleNegotiation as gambleSettleNegotiation } from "./gambleStone.js";
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
 import {
   buySkill as buySkillFeature,
@@ -235,10 +235,9 @@ import {
 } from "./narratorQuest.js";
 import { narratorVars, setNarratorVars } from "./mvu.js";
 import { getAllResidentNpcLore } from "./residentNpcs.js";
-import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
+import { SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
 import { stealSuccessRate } from "./combat/stealSystem.js";
 import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
-import { INGREDIENT_LORE } from "./cooking.js";
 import { buildSysBase } from "./sysBase.js";
 import { DIRS, bar, STAGE_TO_QUALITY, DIR_DXY, parseDir, getTimeStr } from "./utils/mudHelpers.js";
 import { MAP_UI } from "./mapUi.js";
@@ -2845,7 +2844,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     const result = settleGambleStone(gameStore.getState(), res);
     applyResult(featureCtxRef.current, result);
     if (res.type !== "buy" && result.changes) setActiveBuilding(null);
-  }, [act, addLog, jotNote]);
+  }, []);
 
   // 赌石相石（看皮）：系统先用 readSkinClue 按悟性裁决"能看出哪些线索"（AI 全程读不到
   // 种水真相），这里仿 inspectItem 的轻量单发——不挂预设/世界书/历史，只把线索交给说书人
@@ -2887,47 +2886,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // spec JSON 用 encodeURIComponent 存进 flag 末段，24 时辰自动交付时解出、原样造出成品。
   // flag 格式：forge_pending_<下单time>_<luck>_<encodeURIComponent(JSON.stringify(spec))>
   const handleForgeCommission = useCallback((chosen, luck, currentTime, cost, threeFields) => {
-    if (featureCtxRef.current) {
-      applyResult(featureCtxRef.current, commissionForge(gameStore.getState(), {
-        chosen, luck, currentTime, cost, threeFields,
-      }));
-      return;
-    }
-    if ((char.money || 0) < cost) return;
-    if (!chosen || !chosen.name) return;
-    setChar(c => ({ ...c, money: c.money - cost }));
-    const spec = {
-      name: chosen.name,
-      category: chosen.category || "weapon",
-      effect: chosen.effect || {},
-      sixDim: chosen.sixDim || {},
-      material: (threeFields?.material || "").trim(),
-      requirement: (threeFields?.requirement || "").trim(),
-    };
-    setFlags(f => [...f, `forge_pending_${currentTime}_${luck}_${encodeURIComponent(JSON.stringify(spec))}`]);
-    // 接单叙事：把选定这件成品的完整信息(名字/类别/词条特性)都发给主叙事，让铁匠的话
-    // 呼应实际要造的东西——比如选了带"无视防御"词条的刀，铁匠可自然说"给你开个透甲的
-    // 刃"；选了"气运"六维的饰物，可说"再给你錾道纳福的纹"。此前只发了名字/材料/要求，
-    // 词条没发过去，铁匠说的跟实际成品脱节。词条转成可读中文特性描述(不发 forceFirst 这类
-    // 原始字段名，AI 读了也是照字段念)。点明定金已付、订单已下，settle 轻档，杜绝 AI 脑补
-    // "掏不出钱"的窘迫剧情。
-    const catCN = { weapon: "兵器", armor: "护具", accessory: "饰物" }[spec.category] || "物件";
-    const EFF_TRAIT = {
-      forceFirst: "出手极快、抢在人前", ignoreDefense: "刃口锋锐、能透甲破防", doubleVsStatus: "专克身有滞碍之敌",
-      lowHpBonus: "越是绝境越见威力", afterStatusBonus: "善趁敌中招时追击", detonateMark: "能引爆积在敌身的内伤",
-      enemyCostPenalty: "缠身封穴、令敌耗力", freezeEnergyRecovery: "寒气封息、阻敌回气", applyMark: "着身留下内伤暗印",
-      onCounterSuccessDamageRatio: "以守反攻、格挡后反噬更狠", onCounterSuccessEnergyGain: "格挡得手便回一口真气",
-      hpRestore: "贴身温养、缓缓回血", energyRestore: "起手先饱一口真元",
-    };
-    const traits = [];
-    for (const k of Object.keys(spec.effect || {})) { if (EFF_TRAIT[k]) traits.push(EFF_TRAIT[k]); }
-    for (const [k, v] of Object.entries(spec.sixDim || {})) traits.push(`养${k}(+${v})`);
-    const traitClause = traits.length ? `这件东西的讲究在于：${traits.join("；")}。` : "";
-    const matPart = spec.material ? `玩家拿「${spec.material}」来打` : "玩家来定制";
-    const reqPart = spec.requirement ? `，要的是「${spec.requirement}」的路子` : "";
-    const matClause = `${matPart}一件${catCN}「${chosen.name}」${reqPart}，已当场付清定金${cost}两。${traitClause}请让铁匠据此接单：对这材料成色脾性、这活计的打法、以及要打出上面这些讲究，说道一两句(内行见识、增代入感)，交代约二十四个时辰后打成、届时遣伙计送货上门。`;
-    act(`到铁匠铺定制${catCN}「${chosen.name}」，付${cost}两定金。${matClause}`, [], { settle: true });
-  }, [char, addLog, act]);
+    applyResult(featureCtxRef.current, commissionForge(gameStore.getState(), {
+      chosen, luck, currentTime, cost, threeFields,
+    }));
+  }, []);
 
   // ══ 金玉行（一个 building 两柜台，都消耗背包里的玉料）══
   // 玉料 = 赌石开出后"据为己有"收进背包的物品(带 jadeSpec.qualityCap 品质天花板)。
@@ -2948,56 +2910,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 下单打造（两柜台共用）：chosen=选定成品规格，jadeItemId=要消耗的玉料物品id。
   // preset=true 表示预制柜(选购成品，词条来自 JADE_WARES 该成品本身)；false 为定制柜。
   const handleJadeCraft = useCallback((chosen, jadeItemId, currentTime, threeFields) => {
-    if (featureCtxRef.current) {
-      applyResult(featureCtxRef.current, craftJade(gameStore.getState(), {
-        chosen, jadeItemId, currentTime, threeFields,
-      }));
-      return;
-    }
-    if (!chosen || !chosen.name) return;
-    // 找到那件玉料，读天花板，然后消耗它
-    const jade = inv.find(i => (typeof i === "object") && i.id === jadeItemId && i.jadeSpec);
-    if (!jade) { addLog([{ t: "err", text: "  找不到要用的玉料，先去赌石开一块料收进行囊。" }]); return; }
-    const qualityCap = jade.jadeSpec?.qualityCap || jade.quality || "白";
-    setInv(prev => prev.filter(i => !((typeof i === "object") && i.id === jadeItemId)));  // 消耗玉料
-    const spec = {
-      name: chosen.name,
-      category: chosen.category || "accessory",
-      effect: chosen.effect || {},
-      sixDim: chosen.sixDim || {},
-      material: (threeFields?.material || jade.jadeSpec?.tierLabel || "玉料"),
-      requirement: (threeFields?.requirement || "").trim(),
-      jade: true,
-      qualityCap,
-    };
-    // luck 存进 flag 供交付时 rollQuality，品质封顶在交付时用 qualityCap 卡。
-    const luck = char.special?.气运 ?? 5;
-    setFlags(f => [...f, `forge_pending_${currentTime}_${luck}_${encodeURIComponent(JSON.stringify(spec))}`]);
-    // 接单叙事：玉匠语境，把料/成品/词条讲清，点明料已交、活已接，杜绝 AI 脑补。
-    const catCN = { weapon: "玉兵", armor: "玉甲", accessory: "玉饰" }[spec.category] || "玉器";
-    const EFF_TRAIT = {
-      forceFirst: "出手极快、抢在人前", ignoreDefense: "锋锐透甲", doubleVsStatus: "专克身有滞碍之敌",
-      lowHpBonus: "绝境愈见威力", afterStatusBonus: "善趁敌中招追击", detonateMark: "引爆敌身内伤",
-      enemyCostPenalty: "缠身封穴令敌耗力", freezeEnergyRecovery: "寒气封息阻敌回气", applyMark: "着身留内伤暗印",
-      onCounterSuccessDamageRatio: "以守反攻反噬更狠", onCounterSuccessEnergyGain: "格挡回气",
-      hpRestore: "贴身温养回血", energyRestore: "起手先饱一口真元",
-    };
-    const traits = [];
-    for (const k of Object.keys(spec.effect || {})) { if (EFF_TRAIT[k]) traits.push(EFF_TRAIT[k]); }
-    for (const [k, v] of Object.entries(spec.sixDim || {})) traits.push(`养${k}(+${v})`);
-    const traitClause = traits.length ? `这件东西的讲究在于：${traits.join("；")}。` : "";
-    act(`到金玉行，把一块「${jade.jadeSpec?.tierLabel || "玉料"}」交给玉匠，请雕一件${catCN}「${chosen.name}」。${traitClause}玉料已当场交付、活计已接。请让玉匠据料的种水成色、这活的雕法、要出的讲究说道一两句(内行见识、增代入感)，交代约二十四个时辰后雕成、届时遣伙计送来。`, [], { settle: true });
-  }, [inv, char, addLog, act]);
+    applyResult(featureCtxRef.current, craftJade(gameStore.getState(), {
+      chosen, jadeItemId, currentTime, threeFields,
+    }));
+  }, []);
 
   const handleListenRumor = useCallback((rumor, cost) => {
-    if (featureCtxRef.current) {
-      applyResult(featureCtxRef.current, listenToRumor(gameStore.getState(), rumor, cost));
-      return;
-    }
-    if ((char.money || 0) < cost) return;
-    setChar(c => ({ ...c, money: c.money - cost }));
-    act(`在茶馆花${cost}两，听掌柜低声说了个传闻：「${rumor}」`, [], { settle: true });
-  }, [char, addLog, act]);
+    applyResult(featureCtxRef.current, listenToRumor(gameStore.getState(), rumor, cost));
+  }, []);
 
   // ── 角色入册的落册回调 ──
   // 人物只进全局注册表，不进存档：导入的卡是玩家资产，跨存档通用。

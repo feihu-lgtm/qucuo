@@ -1,14 +1,19 @@
 :new
 :set char.money=100
 :set dao.karma=20
+:set mapData.锦官城={"x":3,"y":0}
+:set mapData.喇嘛庙={"x":0,"y":-1}
 住店
 :expect time=30
 :expect char.money=95
+坐车 锦官城
+:expect room.name="锦官城"
+:expect char.money=80
+买书 《铁指功》
+:expect char.money=50
+:expect skills.1.name="铁指功"
 坐车 喇嘛庙
 :expect room.name="喇嘛庙"
-:expect char.money=90
-买书 《铁指功》
-:expect char.money=60
-:expect skills.1.name="铁指功"
+:expect char.money=45
 祈福
 :expect dao.karma=10

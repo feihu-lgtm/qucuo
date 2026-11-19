@@ -48,6 +48,17 @@ describe("applyResult", () => {
     });
   });
 
+  it("allows a feature result to suppress its settlement turn", () => {
+    const act = vi.fn();
+
+    applyResult({ act }, {
+      settle: "委托失败",
+      settleOptions: { settle: false },
+    });
+
+    expect(act).toHaveBeenCalledWith("委托失败", [], { settle: false });
+  });
+
   it("forwards square operations to the optional context port", () => {
     const applySquareOps = vi.fn();
     const squareOps = [{ op: "consume", key: "雅江", day: 0 }];
