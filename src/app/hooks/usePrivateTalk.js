@@ -1,23 +1,23 @@
 import { useCallback } from "react";
-import { callModel, callModelStream, getPipelineLog } from "../../apiConfig.js";
-import { startTrace, step as traceStep, endTrace, attachPipeline } from "../../actionTrace.js";
+import { callModel, callModelStream, getPipelineLog } from "../../infra/apiConfig.js";
+import { startTrace, step as traceStep, endTrace, attachPipeline } from "../../infra/actionTrace.js";
 import {
   NNPC_STAGE, isInSea, narratorVoicePrompt, buildNarratorWhisperContext,
   narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
-} from "../../narrator.js";
-import { gateBodyProfile } from "../../bodyProfile.js";
-import { SEA_OF_MIND } from "../../seaOfMind.js";
-import { availableKnot, canResolve, seaDialoguePrompt } from "../../narratorQuest.js";
-import { narratorVars, setNarratorVars } from "../../mvu.js";
+} from "../../domain/narrator/narrator.js";
+import { gateBodyProfile } from "../../domain/character/bodyProfile.js";
+import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
+import { availableKnot, canResolve, seaDialoguePrompt } from "../../domain/narrator/narratorQuest.js";
+import { narratorVars, setNarratorVars } from "../../domain/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
-import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../innerMap.js";
-import { allFactSummaries } from "../../knowledge.js";
-import { embeddingReady } from "../../memory/embeddingService.js";
-import { recallWithVisibility } from "../../memory/recallWithVisibility.js";
-import { gateScenario } from "../../worldbook.js";
-import { describeTallyForWhisper } from "../../memory/tally.js";
-import { QUCUO_QUESTS } from "../../quests/qucuoQuests.js";
-import { NOTE_SOURCE, VIA } from "../../memory/note.js";
+import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { allFactSummaries } from "../../domain/prompt/knowledge.js";
+import { embeddingReady } from "../../domain/memory/embeddingService.js";
+import { recallWithVisibility } from "../../domain/memory/recallWithVisibility.js";
+import { gateScenario } from "../../domain/prompt/worldbook.js";
+import { describeTallyForWhisper } from "../../domain/memory/tally.js";
+import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 
 export function usePrivateTalk({
   narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags,

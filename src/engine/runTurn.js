@@ -1,9 +1,9 @@
-import { callMainOnce } from "../act/actCall.js";
-import { parseMainResponse } from "../act/parseResponse.js";
-import { callExtraction, buildExtractionCfg } from "../extractionEngine.js";
-import { attachExtractionPipeline, attachPipeline, endTrace, step as traceStep } from "../actionTrace.js";
-import { runKnowledgeTurn, runRecall } from "../act/memoryLayer.js";
-import { buildHistBlock, histBlockSavings } from "../memory/histWindow.js";
+import { callMainOnce } from "./act/actCall.js";
+import { parseMainResponse } from "./act/parseResponse.js";
+import { callExtraction, buildExtractionCfg } from "../domain/prompt/extractionEngine.js";
+import { attachExtractionPipeline, attachPipeline, endTrace, step as traceStep } from "../infra/actionTrace.js";
+import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
+import { buildHistBlock, histBlockSavings } from "../domain/memory/histWindow.js";
 import { createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 

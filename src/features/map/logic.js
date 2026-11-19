@@ -1,10 +1,10 @@
-import { tryInnerMove } from "../../act/innerMove.js";
-import { makeItem, QUALITY } from "../../equipment.js";
-import { getInnerRoom, hasInnerMap } from "../../innerMap.js";
-import { makeItemSmart } from "../../items/catalog.js";
-import { detectNewFaces, markAsSeen, updateLastSeen } from "../../npcAwareness.js";
-import { ensureNpcCombatData } from "../../npcGeneration.js";
-import { findPath, getMapNode, isNodeUnlocked } from "../../qucuoMap.js";
+import { tryInnerMove } from "../../engine/act/innerMove.js";
+import { makeItem, QUALITY } from "../../domain/economy/equipment.js";
+import { getInnerRoom, hasInnerMap } from "../../domain/map/innerMap.js";
+import { makeItemSmart } from "../../domain/items/catalog.js";
+import { detectNewFaces, markAsSeen, updateLastSeen } from "../../domain/npc/npcAwareness.js";
+import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
+import { findPath, getMapNode, isNodeUnlocked } from "../../domain/map/qucuoMap.js";
 import { DIRS, parseDir } from "../../utils/mudHelpers.js";
 
 const DIRECTION_TOKENS = new Set([

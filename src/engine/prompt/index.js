@@ -1,11 +1,11 @@
 import { buildPresence, buildNpcContext, buildQuestStageNote, buildForcedEventNote, buildArrivalNote } from "./roundNotes.js";
-import { buildBudgetInstruction } from "../../inputIntent.js";
-import { buildEncounterNote } from "../../encounter.js";
-import { findTargetedRumor } from "../../npcEmergence.js";
+import { buildBudgetInstruction } from "../../domain/prompt/inputIntent.js";
+import { buildEncounterNote } from "../../domain/map/encounter.js";
+import { findTargetedRumor } from "../../domain/npc/npcEmergence.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
-import { hasInnerMap } from "../../innerMap.js";
-import { QUALITY, CATEGORY_LABEL, describeEquipment } from "../../equipment.js";
-import { describeTodayForAI } from "../../memory/tally.js";
+import { hasInnerMap } from "../../domain/map/innerMap.js";
+import { QUALITY, CATEGORY_LABEL, describeEquipment } from "../../domain/economy/equipment.js";
+import { describeTodayForAI } from "../../domain/memory/tally.js";
 
 export { buildPresence, buildNpcContext, buildQuestStageNote, buildForcedEventNote, buildArrivalNote };
 export { assemblePrompt } from "./assemblePrompt.js";

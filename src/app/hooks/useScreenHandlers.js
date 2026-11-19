@@ -12,9 +12,9 @@ import {
   talkToNpc,
   tradeWithNpc,
 } from "../../features/npc/logic.js";
-import { toggleEquip } from "../../equipment.js";
-import { startTrace, step as traceStep, endTrace } from "../../actionTrace.js";
-import { stealSuccessRate } from "../../combat/stealSystem.js";
+import { toggleEquip } from "../../domain/economy/equipment.js";
+import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
+import { stealSuccessRate } from "../../domain/combat/stealSystem.js";
 
 export function useScreenHandlers({
   act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,

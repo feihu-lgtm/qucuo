@@ -1,9 +1,9 @@
 import { useCallback } from "react";
-import { callModel, cleanJsonString } from "../../apiConfig.js";
-import { buildOutfitRequest, bodyProfileFilled } from "../../bodyProfile.js";
-import { CATALOG_INDEX, CATALOG, makeCatalogItem } from "../../items/catalog.js";
-import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL } from "../../equipment.js";
-import { effectBrief } from "../../itemEffectText.js";
+import { callModel, cleanJsonString } from "../../infra/apiConfig.js";
+import { buildOutfitRequest, bodyProfileFilled } from "../../domain/character/bodyProfile.js";
+import { CATALOG_INDEX, CATALOG, makeCatalogItem } from "../../domain/items/catalog.js";
+import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL } from "../../domain/economy/equipment.js";
+import { effectBrief } from "../../domain/economy/itemEffectText.js";
 
 export function useOutfitAdvice({ char, apiCfg, setOutfitState }) {
   const recommendOutfit = useCallback(async () => {

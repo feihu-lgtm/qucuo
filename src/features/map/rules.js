@@ -1,6 +1,6 @@
-import { makeItem } from "../../equipment.js";
-import { GROUND_ITEMS_INNER } from "../../groundItems.js";
-import { makeItemSmart } from "../../items/catalog.js";
+import { makeItem } from "../../domain/economy/equipment.js";
+import { GROUND_ITEMS_INNER } from "../../domain/map/groundItems.js";
+import { makeItemSmart } from "../../domain/items/catalog.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 

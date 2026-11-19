@@ -1,8 +1,8 @@
 import { random } from "../../core/rng.js";
-import { ITEM_CATEGORY, makeItem } from "../../equipment.js";
-import { makeItemSmart } from "../../items/catalog.js";
-import { CHANG_KOU, JADE_TIERS } from "../../gambleStone.js";
-import { NOTE_SOURCE } from "../../memory/note.js";
+import { ITEM_CATEGORY, makeItem } from "../../domain/economy/equipment.js";
+import { makeItemSmart } from "../../domain/items/catalog.js";
+import { CHANG_KOU, JADE_TIERS } from "../../domain/economy/gambleStone.js";
+import { NOTE_SOURCE } from "../../domain/memory/note.js";
 
 const noOpResult = () => ({ logs: [] });
 const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }] });

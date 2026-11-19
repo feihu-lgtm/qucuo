@@ -1,5 +1,5 @@
-import { effectiveMaxHp } from "../../kungfu/qucuoKungfu.js";
-import { CATALOG_INDEX, useConsumable as resolveConsumable } from "../../items/catalog.js";
+import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
+import { CATALOG_INDEX, useConsumable as resolveConsumable } from "../../domain/items/catalog.js";
 import { tallyAdd } from "../memory/logic.js";
 import { makeBuffFlag, mergeCombatBuff } from "../../utils/buffSystem.js";
 

@@ -1,7 +1,7 @@
-import { commitRound } from "../act/commitRound.js";
+import { commitRound } from "./act/commitRound.js";
 import { gameActions, gameStore } from "../core/gameStore.js";
 import { getRngState, setRngState } from "../core/rng.js";
-import { loadSquares, serializeSquares } from "../mapSquares.js";
+import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
 import { runTurn } from "./runTurn.js";
 
 export const ROLLBACK_KEYS = [

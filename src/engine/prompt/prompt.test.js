@@ -2,17 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { createCliPromptContext, createSession } from "../../../cli/runner.mjs";
 import { buildPresence, buildNpcContext, buildQuestStageNote, buildForcedEventNote, buildArrivalNote, createPromptContext, assemblePrompt } from "./index.js";
-import { QUCUO_QUESTS } from "../../quests/qucuoQuests.js";
-import { getDistrictAnchor } from "../../innerMap.js";
-import { callMainOnce } from "../../act/actCall.js";
-import { emptyBodyProfile } from "../../bodyProfile.js";
-import { initialNarratorState } from "../../narrator.js";
-import { defaultConfig } from "../../apiConfig.js";
-import { classifyIntent } from "../../inputIntent.js";
+import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { getDistrictAnchor } from "../../domain/map/innerMap.js";
+import { callMainOnce } from "../act/actCall.js";
+import { emptyBodyProfile } from "../../domain/character/bodyProfile.js";
+import { initialNarratorState } from "../../domain/narrator/narrator.js";
+import { defaultConfig } from "../../infra/apiConfig.js";
+import { classifyIntent } from "../../domain/prompt/inputIntent.js";
 import { gameActions } from "../../core/gameStore.js";
 import { createMockAi } from "../ports/ai.js";
-import { COMPANION_LORE } from "../../companion.js";
-import { getCompanionDescForm } from "../../companionForms.js";
+import { COMPANION_LORE } from "../../domain/companion/companion.js";
+import { getCompanionDescForm } from "../../domain/companion/companionForms.js";
 
 function fixture() {
   return {

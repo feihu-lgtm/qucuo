@@ -7,8 +7,8 @@ import {
   processPigeons,
   recordPigeonNpcLocations,
 } from "../../features/pigeon/logic.js";
-import { callModel } from "../../apiConfig.js";
-import { allFactSummaries } from "../../knowledge.js";
+import { callModel } from "../../infra/apiConfig.js";
+import { allFactSummaries } from "../../domain/prompt/knowledge.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 
 export function usePigeonReplies({

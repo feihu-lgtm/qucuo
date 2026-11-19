@@ -1,15 +1,15 @@
 import React, { useState, useRef } from "react";
 import ReactDOM from "react-dom/client";
-import MudRPG from "./MudRPG.jsx";
-import StartScreen from "./StartScreen.jsx";
-import QuickBattleScreen from "./quickBattle/QuickBattleScreen.jsx";
-import TavernSimScreen from "./tavernSim/TavernSimScreen.jsx";
-import ErrorBoundary from "./ErrorBoundary.jsx";
-import { loadAutoSave, init as initSaves } from "./saves.js";
-import CardImportScreen from "./CardImportScreen.jsx";
-import { loadConfig } from "./apiConfig.js";
-import * as importedRegistry from "./cards/importedRegistry.js";
-import { getZoneTheme } from "./theme.js";
+import MudRPG from "./app/MudRPG.jsx";
+import StartScreen from "./ui/screens/StartScreen.jsx";
+import QuickBattleScreen from "./domain/quickBattle/QuickBattleScreen.jsx";
+import TavernSimScreen from "./domain/tavernSim/TavernSimScreen.jsx";
+import ErrorBoundary from "./ui/components/ErrorBoundary.jsx";
+import { loadAutoSave, init as initSaves } from "./infra/saves.js";
+import CardImportScreen from "./ui/screens/CardImportScreen.jsx";
+import { loadConfig } from "./infra/apiConfig.js";
+import * as importedRegistry from "./domain/cards/importedRegistry.js";
+import { getZoneTheme } from "./ui/theme.js";
 
 // 应用外壳：先展示开始界面，"开始"或"加载存档"之后才挂载真正的游戏主体 MudRPG。
 // MudRPG 内部已有自己的设置面板逻辑，这里的"设置"入口复用同一套面板，

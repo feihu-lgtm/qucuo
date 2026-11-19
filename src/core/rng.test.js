@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { birthStone, rollBidders } from "../gambleStone.js";
+import { birthStone, rollBidders } from "../domain/economy/gambleStone.js";
 import { createRng, getRngState, random, setRngState, setSeed } from "./rng.js";
 
 const sequence = (draw) => Array.from({ length: 8 }, () => draw());

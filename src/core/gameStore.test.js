@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildSnapshot } from "../saves.js";
+import { buildSnapshot } from "../infra/saves.js";
 import { GAME_KEYS, gameActions, gameStore, initGameStore } from "./gameStore.js";
 import { snapshotFromStore } from "./persist.js";
 import { setRngState } from "./rng.js";

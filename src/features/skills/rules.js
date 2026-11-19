@@ -1,4 +1,4 @@
-import { deriveMovesetFromSkills } from "../../npcGeneration.js";
+import { deriveMovesetFromSkills } from "../../domain/npc/npcGeneration.js";
 
 export const derivedMovesetRule = {
   id: "skills.derived-moveset",

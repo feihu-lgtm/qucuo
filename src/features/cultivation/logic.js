@@ -1,5 +1,5 @@
-import { effectiveMaxHp } from "../../kungfu/qucuoKungfu.js";
-import { hpFromNeigong } from "../../npcGeneration.js";
+import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
+import { hpFromNeigong } from "../../domain/npc/npcGeneration.js";
 import { STAGES, STAGE_UP_COST } from "../../utils/mudHelpers.js";
 
 export const trainCost = (value) => 4 + Math.floor((value ?? 0) / 10);

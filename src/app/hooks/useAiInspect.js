@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { callModel, getPipelineLog } from "../../apiConfig.js";
-import { effectBrief } from "../../itemEffectText.js";
-import { getCachedInspect, setCachedInspect } from "../../inspectCache.js";
-import { NOTE_SOURCE } from "../../memory/note.js";
-import { startTrace, step as traceStep, endTrace, attachPipeline } from "../../actionTrace.js";
+import { callModel, getPipelineLog } from "../../infra/apiConfig.js";
+import { effectBrief } from "../../domain/economy/itemEffectText.js";
+import { getCachedInspect, setCachedInspect } from "../../domain/prompt/inspectCache.js";
+import { NOTE_SOURCE } from "../../domain/memory/note.js";
+import { startTrace, step as traceStep, endTrace, attachPipeline } from "../../infra/actionTrace.js";
 
 export function useAiInspect({ loading, addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv }) {
   // 点击武学/包袱物品时，临场调用 AI 生成一段介绍文字，不修改任何游戏状态

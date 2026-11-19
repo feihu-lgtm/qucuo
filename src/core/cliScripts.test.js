@@ -4,8 +4,8 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { exportSave } from "../saves.js";
-import { loadSquares, serializeSquares } from "../mapSquares.js";
+import { exportSave } from "../infra/saves.js";
+import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
 import { createSession, runScript } from "../../cli/runner.mjs";
 import { getRngState, random, setSeed } from "./rng.js";
 import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports/ai.js";

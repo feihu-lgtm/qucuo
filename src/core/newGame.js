@@ -1,14 +1,14 @@
-import { QUCUO_PRESET } from "../presets/qucuo.js";
-import { QUCUO_MAP } from "../qucuoMap.js";
-import { hasInnerMap, getDistrictAnchor, getInnerRoomNames } from "../innerMap.js";
-import { mapDescriptionToGenParams } from "../npcDescriptionMapping.js";
-import { ensureNpcCombatData, deriveMovesetFromSkills, hpFromNeigong } from "../npcGeneration.js";
-import { backfillInventoryFromCatalog } from "../items/catalog.js";
-import { initialNarratorState } from "../narrator.js";
-import { initialVarTree } from "../mvu.js";
-import { seedKnowledge } from "../knowledge.js";
-import { initCompanionState } from "../companionState.js";
-import { CURRENT_VERSION } from "../version.js";
+import { QUCUO_PRESET } from "../domain/presets/qucuo.js";
+import { QUCUO_MAP } from "../domain/map/qucuoMap.js";
+import { hasInnerMap, getDistrictAnchor, getInnerRoomNames } from "../domain/map/innerMap.js";
+import { mapDescriptionToGenParams } from "../domain/npc/npcDescriptionMapping.js";
+import { ensureNpcCombatData, deriveMovesetFromSkills, hpFromNeigong } from "../domain/npc/npcGeneration.js";
+import { backfillInventoryFromCatalog } from "../domain/items/catalog.js";
+import { initialNarratorState } from "../domain/narrator/narrator.js";
+import { initialVarTree } from "../domain/prompt/mvu.js";
+import { seedKnowledge } from "../domain/prompt/knowledge.js";
+import { initCompanionState } from "../domain/companion/companionState.js";
+import { CURRENT_VERSION } from "../infra/version.js";
 import { setRngState, setSeed } from "./rng.js";
 
 export const DEFAULT_PRESETS = [QUCUO_PRESET];

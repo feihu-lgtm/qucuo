@@ -1,6 +1,6 @@
 // 从 qucuoQuests.js 自动提取全部任务，生成攻略手册 markdown。
 // 一字不差地读代码里的真实字段，不手抄、不编造。
-import { QUCUO_QUESTS } from "../src/quests/qucuoQuests.js";
+import { QUCUO_QUESTS } from "../src/domain/quests/qucuoQuests.js";
 
 // 任务分组（按 id 前缀归线）
 const GROUPS = [
@@ -66,7 +66,7 @@ function questBlock(q) {
 
 let md = `# 天都·曲措 · 任务攻略手册（代码核实版）
 
-> ⚠️ **本手册由脚本从游戏源码 \`src/quests/qucuoQuests.js\` 自动提取**，每个任务的开启条件、
+> ⚠️ **本手册由脚本从游戏源码 \`src/domain/quests/qucuoQuests.js\` 自动提取**，每个任务的开启条件、
 > 每阶段的通过方式、奖励数值都与代码一致，不含手写臆测。
 > 🚧 **开发中说明**：任务的骨架、判定、奖励均已实现并跑通，但**叙事文本仍在打磨**，
 > 实际游玩的对话细节可能与描述略有出入。

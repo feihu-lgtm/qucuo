@@ -1,7 +1,7 @@
 globalThis.structuredClone = globalThis.structuredClone || (v => JSON.parse(JSON.stringify(v)));
-const R = await import("../src/cards/importedRegistry.js");
-const { makeItemSmart } = await import("../src/items/catalog.js");
-const { makeItem } = await import("../src/equipment.js");
+const R = await import("../src/domain/cards/importedRegistry.js");
+const { makeItemSmart } = await import("../src/domain/items/catalog.js");
+const { makeItem } = await import("../src/domain/economy/equipment.js");
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 await R.init(); R.clearImported();
 

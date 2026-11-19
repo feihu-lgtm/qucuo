@@ -1,12 +1,12 @@
-import { collectPromptLines } from "../../quests/collect.js";
-import { QUCUO_QUESTS } from "../../quests/qucuoQuests.js";
-import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../quests/questEngine.js";
-import { getBuildingsForLocation } from "../../buildings/qucuoBuildings.js";
-import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../innerMap.js";
-import { activeCompanion, COMPANION_LORE } from "../../companion.js";
-import { getAllResidentNpcLore } from "../../residentNpcs.js";
-import { matchNpcLore, buildNpcLoreBlock } from "../../worldbook.js";
-import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../npcAwareness.js";
+import { collectPromptLines } from "../../domain/quests/collect.js";
+import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../domain/quests/questEngine.js";
+import { getBuildingsForLocation } from "../../domain/buildings/qucuoBuildings.js";
+import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { activeCompanion, COMPANION_LORE } from "../../domain/companion/companion.js";
+import { getAllResidentNpcLore } from "../../domain/npc/residentNpcs.js";
+import { matchNpcLore, buildNpcLoreBlock } from "../../domain/prompt/worldbook.js";
+import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../domain/npc/npcAwareness.js";
 
 // 多阶段任务链（虎胆三重门等）：告诉AI当前哪些任务阶段可以推进/开启，
 // 以及对应要在 delta.flags_add 里吐出的 flag 字符串——AI 只管在叙事到位

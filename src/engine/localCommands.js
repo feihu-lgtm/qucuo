@@ -1,10 +1,10 @@
-import { ITEM_CATEGORY, CATEGORY_LABEL, getEquipped } from "../equipment.js";
+import { ITEM_CATEGORY, CATEGORY_LABEL, getEquipped } from "../domain/economy/equipment.js";
 import { selectEffectiveStats } from "../features/stats/logic.js";
-import { getLookText } from "../mapSquares.js";
-import { classifyIntent } from "../inputIntent.js";
-import { QUCUO_MAP } from "../qucuoMap.js";
-import { QUCUO_QUESTS } from "../quests/qucuoQuests.js";
-import { getQuestScript } from "../quests/questScripts.js";
+import { getLookText } from "../domain/map/mapSquares.js";
+import { classifyIntent } from "../domain/prompt/inputIntent.js";
+import { QUCUO_MAP } from "../domain/map/qucuoMap.js";
+import { QUCUO_QUESTS } from "../domain/quests/qucuoQuests.js";
+import { getQuestScript } from "../domain/quests/questScripts.js";
 import { bar } from "../utils/mudHelpers.js";
 
 const ROOM_LOOK_COMMANDS = new Set(["看", "look", "l", "看看", "环顾", "环顾四周", "环视", "环视四周", "查看四周"]);

@@ -1,12 +1,12 @@
-import SettingsPanel from "../SettingsPanel.jsx";
-import BodyProfilePanel from "../BodyProfilePanel.jsx";
-import { emptyBodyProfile } from "../bodyProfile.js";
-import MusicPanel from "../MusicPanel.jsx";
-import HomesteadPanel from "../buildings/HomesteadPanel.jsx";
-import { getHomestead } from "../homestead.js";
-import GlobalOverlays from "../panels/GlobalOverlays.jsx";
-import CharacterCreate from "../CharacterCreate.jsx";
-import OpeningSequence from "../OpeningSequence.jsx";
+import SettingsPanel from "../ui/screens/SettingsPanel.jsx";
+import BodyProfilePanel from "../ui/screens/BodyProfilePanel.jsx";
+import { emptyBodyProfile } from "../domain/character/bodyProfile.js";
+import MusicPanel from "../ui/screens/MusicPanel.jsx";
+import HomesteadPanel from "../domain/buildings/HomesteadPanel.jsx";
+import { getHomestead } from "../domain/map/homestead.js";
+import GlobalOverlays from "../ui/panels/GlobalOverlays.jsx";
+import CharacterCreate from "../ui/screens/CharacterCreate.jsx";
+import OpeningSequence from "../ui/screens/OpeningSequence.jsx";
 import { OVERLAY, closeOverlay, openOverlay } from "../store/uiStore.js";
 
 export default function OverlayHost({ ctx }) {

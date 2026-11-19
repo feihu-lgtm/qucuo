@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getRngState, setRngState, setSeed } from "../../core/rng.js";
 import { createWorldRules } from "../../engine/worldRules.js";
-import { getResidentNpcs } from "../../residentNpcs.js";
+import { getResidentNpcs } from "../../domain/npc/residentNpcs.js";
 import { residentNpcRule } from "./rules.js";
 
 const importedRegistry = {

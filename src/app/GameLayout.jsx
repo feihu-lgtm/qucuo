@@ -1,16 +1,16 @@
-import TopBar from "../panels/TopBar.jsx";
-import LeftPanel from "../panels/LeftPanel.jsx";
-import CenterPanel from "../panels/CenterPanel.jsx";
-import RightPanel from "../panels/RightPanel.jsx";
-import ClickableMap from "../ClickableMap.jsx";
-import ZoomableMap from "../ZoomableMap.jsx";
-import { QUCUO_MAP, isNodeUnlocked } from "../qucuoMap.js";
+import TopBar from "../ui/panels/TopBar.jsx";
+import LeftPanel from "../ui/panels/LeftPanel.jsx";
+import CenterPanel from "../ui/panels/CenterPanel.jsx";
+import RightPanel from "../ui/panels/RightPanel.jsx";
+import ClickableMap from "../ui/components/ClickableMap.jsx";
+import ZoomableMap from "../ui/components/ZoomableMap.jsx";
+import { QUCUO_MAP, isNodeUnlocked } from "../domain/map/qucuoMap.js";
 import {
   hasInnerMap, getDistrictAnchor, getInnerRoom, visibleInnerExits,
   getInnerRoomNames, isInnerExitUnlocked,
-} from "../innerMap.js";
+} from "../domain/map/innerMap.js";
 import { DIRS } from "../utils/mudHelpers.js";
-import { MAP_UI } from "../mapUi.js";
+import { MAP_UI } from "../domain/map/mapUi.js";
 
 export default function GameLayout({ layout }) {
   const {

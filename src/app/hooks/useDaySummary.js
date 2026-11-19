@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
-import { buildDaySummaryRequest, appendDaySummary } from "../../memory/daySummary.js";
-import { describeDayForSummary } from "../../memory/tally.js";
-import { factSummaryRequest, setFactSummary } from "../../knowledge.js";
-import { resetForDay } from "../../mapSquares.js";
-import { callModel } from "../../apiConfig.js";
+import { buildDaySummaryRequest, appendDaySummary } from "../../domain/memory/daySummary.js";
+import { describeDayForSummary } from "../../domain/memory/tally.js";
+import { factSummaryRequest, setFactSummary } from "../../domain/prompt/knowledge.js";
+import { resetForDay } from "../../domain/map/mapSquares.js";
+import { callModel } from "../../infra/apiConfig.js";
 
 export function useDaySummary({ time, apiCfg, setVarTree, varTreeRef, dayMaterialRef, prerunSquares }) {
   const summarizeDay = useCallback(async (endedDay, material) => {
