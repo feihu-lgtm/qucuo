@@ -3,7 +3,7 @@ import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import {
   TECHNIQUES, TECHNIQUE_IDS, COOKWARE, COOKWARE_BY_ID, DEFAULT_COOKWARE_ID,
   matchRecipe, canUseTechnique, computeDish, genericDishEffect,
-  ownedCookware, availableMaterials, INGREDIENT_LORE,
+  ownedCookware, availableMaterials, INGREDIENT_LORE, reconcileCookingSlots,
 } from "../economy/cooking.js";
 
 // 烹饪台：六格槽位（料×4 + 技法×1 + 炊具×1）。UI 素材沿用赌石那套精美木质/纸面
@@ -66,13 +66,14 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
   const cookwares = useMemo(() => ownedCookware(inv), [inv]);
   const cookware = COOKWARE_BY_ID[cookwareId] || COOKWARE_BY_ID[DEFAULT_COOKWARE_ID];
   const mats = useMemo(() => availableMaterials(inv), [inv]);
+  const cookingSlots = useMemo(() => reconcileCookingSlots(slots, mats), [slots, mats]);
 
   // 槽内同名计数 → 剩余可放数量
   const slotCounts = {};
-  slots.forEach(s => { if (s) slotCounts[s] = (slotCounts[s] || 0) + 1; });
+  cookingSlots.forEach(s => { if (s) slotCounts[s] = (slotCounts[s] || 0) + 1; });
   const remaining = (name) => (mats.find(m => m.name === name)?.count || 0) - (slotCounts[name] || 0);
 
-  const filled = slots.filter(Boolean);
+  const filled = cookingSlots.filter(Boolean);
   const recipe = filled.length ? matchRecipe(filled, techniqueId) : null;
   const techOk = canUseTechnique(techniqueId, cookware);
   // 命中固定配方 →  deterministic；料+技法齐但没配上 → 妙手偶得（freestyle），
@@ -86,6 +87,10 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
   useEffect(() => {
     if (!cookwares.some(c => c.id === cookwareId)) setCookwareId(DEFAULT_COOKWARE_ID);
   }, [cookwares, cookwareId]);
+
+  useEffect(() => {
+    if (slots.some((slot, index) => slot !== cookingSlots[index])) setSlots(cookingSlots);
+  }, [slots, cookingSlots]);
 
   function putMaterial(name) {
     if (fx?.kind === "ok") return;
@@ -143,7 +148,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
         <div style={{ color: "#a08a5a", fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>料 · 调味料与食材混装（点击放入，点格取回）</div>
         <div className={fx?.kind === "fail" ? "ck-shake" : undefined}
           style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, position: "relative", paddingBottom: 26 }}>
-          {slots.map((s, i) => (
+          {cookingSlots.map((s, i) => (
             <div key={i} onClick={() => s && clearSlot(i)}
               className="ck-chip"
               style={{ position: "relative", aspectRatio: "1/0.82", cursor: s ? "pointer" : "default",
@@ -280,7 +285,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {mats.map(m => {
                 const left = remaining(m.name);
-                const usable = left > 0 && slots.includes(null) && fx?.kind !== "ok";
+                const usable = left > 0 && cookingSlots.includes(null) && fx?.kind !== "ok";
                 return (
                   <div key={m.name} onClick={() => usable && putMaterial(m.name)}
                     className="ck-chip"
