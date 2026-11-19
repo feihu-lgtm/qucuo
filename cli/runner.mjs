@@ -168,7 +168,9 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       }
     },
     act: (text, extraReplies, opts) => {
-      pendingTurn = runFreeText(text, { ...(opts || {}), extraReplies: extraReplies || [] });
+      pendingTurn = pendingTurn.then(() => (
+        runFreeText(text, { ...(opts || {}), extraReplies: extraReplies || [] })
+      ));
       return pendingTurn;
     },
   };
