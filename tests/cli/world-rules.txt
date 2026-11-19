@@ -1,0 +1,14 @@
+:new
+:set time=6
+:set flags=["buff_体魄+1_untilturn_6"]
+打坐
+:expect time=7
+:expect flags=[]
+:set room.name="大草甸"
+:set room.npcs=[]
+:set room.name="鱼定村"
+:expect room.name="鱼定村"
+:save world-rules.json
+:new
+:load world-rules.json
+:expect room.name="鱼定村"

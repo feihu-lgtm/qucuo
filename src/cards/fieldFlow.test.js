@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 // 字段流转对账
 // ============================================================================
 // 【为什么需要这个】入册角色进 room.npcs 要过两道转换：
-//   toPoolLike（importedRegistry）→ toRoomNpc（npcPool）→ 白名单补回（MudRPG）
+//   toPoolLike（importedRegistry）→ toRoomNpc（npcPool）→ 白名单补回（resident rule）
 // 而 toRoomNpc 只保留 id / name / brief / isPoolNpc / carriedItems 五项，其余
-// 一律丢掉——任何想活着到达运行时的字段，都必须出现在 toRoomNpcWithCombat 那份
+// 一律丢掉——任何想活着到达运行时的字段，都必须出现在 resident rule 那份
 // 白名单里。这个约束没有任何语法或类型层面的强制，全靠人记得。
 //
 // 已经栽过五次：special（玩家调的七维被剥）、companionCandidate（雪豹的邀请入队
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REG = readFileSync(join(HERE, "importedRegistry.js"), "utf-8");
 const POOL = readFileSync(join(HERE, "..", "npcPool.js"), "utf-8");
-const MUD = readFileSync(join(HERE, "..", "MudRPG.jsx"), "utf-8");
+const NPC_RULES = readFileSync(join(HERE, "..", "features", "npc", "rules.js"), "utf-8");
 
 /** toPoolLike 产出的字段：对象字面量里的 `k:` 与后续的 `o.k =` */
 function poolLikeFields() {
@@ -53,10 +53,10 @@ function toRoomNpcKept() {
   return out;
 }
 
-/** toRoomNpcWithCombat 的白名单 */
+/** resident rule 补回的 toRoomNpc 字段白名单 */
 function whitelist() {
-  const m = MUD.match(/for \(const k of \[([^\]]+)\]\) \{\s*\n\s*if \(poolNpc\[k\]/);
-  expect(m, "没找到 toRoomNpcWithCombat 的白名单，指纹可能变了，请同步这条对账").toBeTruthy();
+  const m = NPC_RULES.match(/const NPC_FIELDS = \[([\s\S]*?)\];/);
+  expect(m, "没找到 resident rule 的字段白名单，指纹可能变了，请同步这条对账").toBeTruthy();
   return new Set([...m[1].matchAll(/"([^"]+)"/g)].map(x => x[1]));
 }
 
@@ -71,7 +71,7 @@ describe("入册角色的字段必须能活着到达 room.npcs", () => {
     expect(lost,
       `以下字段会在 toRoomNpcWithCombat 转换时被静默剥掉（不报错、只是那项设置没用）：\n`
       + `  ${lost.join("、")}\n`
-      + `修法：加进 MudRPG.jsx 里 toRoomNpcWithCombat 的字段白名单。`
+      + `修法：加进 src/features/npc/rules.js 的字段白名单。`
     ).toEqual([]);
   });
 

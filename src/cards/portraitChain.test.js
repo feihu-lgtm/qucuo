@@ -9,13 +9,13 @@ import { fitSize, dataUrlBytes, fmtBytes, isCustomPortrait } from "./portraitCom
 //      PORTRAIT() 拼的是 public/portraits/ —— 全 404，onError 又把破图隐藏，
 //      表现成"这一节只有一个不设按钮"。
 //   ② 字段语义不一致：入册存英文文件名，快速战斗那边拼 bidders/full/中文名.webp。
-//   ③ 白名单剥掉：MudRPG 的 toRoomNpcWithCombat 那份字段白名单没有 portrait，
+//   ③ 白名单剥掉：resident world rule 的 toRoomNpc 字段白名单没有 portrait，
 //      importedRegistry 里 o.portrait = c.portrait 传不到运行时。
 // 三条全是"不报错、只是没图"，所以都得盯源码。
 const HERE = dirname(fileURLToPath(import.meta.url));
 const NPC = readFileSync(join(HERE, "ReviewNpc.jsx"), "utf-8");
 const PARTS = readFileSync(join(HERE, "ReviewParts.jsx"), "utf-8");
-const MUD = readFileSync(join(HERE, "..", "MudRPG.jsx"), "utf-8");
+const NPC_RULES = readFileSync(join(HERE, "..", "features", "npc", "rules.js"), "utf-8");
 const QB = readFileSync(join(HERE, "..", "quickBattle", "QuickBattleScreen.jsx"), "utf-8");
 const PORTRAITS = readFileSync(join(HERE, "..", "portraits.js"), "utf-8");
 
@@ -32,9 +32,7 @@ describe("立绘链路不能再断", () => {
   });
 
   it("room.npcs 的字段白名单含 portrait", () => {
-    const line = MUD.split("\n").find(l => l.includes('"levelCap", "special"') && l.includes("for (const k of"));
-    expect(line, "没找到 toRoomNpcWithCombat 的白名单，指纹可能变了，请同步这条守卫").toBeTruthy();
-    expect(line, "白名单漏了 portrait——入册角色的立绘会在转换时被剥掉，传不到运行时")
+    expect(NPC_RULES, "白名单漏了 portrait——入册角色的立绘会在转换时被剥掉，传不到运行时")
       .toContain('"portrait"');
   });
 

@@ -16,6 +16,7 @@ import { emptyBodyProfile } from "../src/bodyProfile.js";
 import { getActivePreset } from "../src/presetSystem.js";
 import { startTrace } from "../src/actionTrace.js";
 import { playTurn } from "../src/engine/playTurn.js";
+import { createWorldRules } from "../src/engine/worldRules.js";
 import { applyResult } from "../src/features/run.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
@@ -34,6 +35,11 @@ import {
   sendPigeonLetter,
 } from "../src/features/pigeon/logic.js";
 import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../src/innerMap.js";
+import * as importedRegistry from "../src/cards/importedRegistry.js";
+import { timeAdvanceRule } from "../src/features/time/rules.js";
+import { residentNpcRule } from "../src/features/npc/rules.js";
+import { collectGroundItemsRule } from "../src/features/quest/rules.js";
+import { innerGroundItemsRule } from "../src/features/map/rules.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -136,6 +142,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     },
   };
   let session;
+  let worldRules;
 
   function observePigeonArrivals() {
     const arrivals = processPigeons(gameStore.getState());
@@ -374,7 +381,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     return status;
   }
 
-  async function runLine(rawLine) {
+  async function runLineCommand(rawLine) {
     const line = String(rawLine).trim();
     if (!line || line.startsWith("#")) return 0;
 
@@ -659,13 +666,43 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     return runFreeText(line);
   }
 
+  async function runLine(rawLine) {
+    try {
+      return await runLineCommand(rawLine);
+    } finally {
+      worldRules?.check();
+    }
+  }
+
   session = {
     store: gameStore,
     roomMap: {},
     pigeonArrivals: [],
+    forcedDuelNpc: null,
     runLine,
     renderState: () => renderState(gameStore.getState()),
   };
+  worldRules = createWorldRules([
+    timeAdvanceRule,
+    residentNpcRule,
+    collectGroundItemsRule,
+    innerGroundItemsRule,
+  ], {
+    getState: () => ({
+      ...gameStore.getState(),
+      importedVer: importedRegistry.getImportedRevision(),
+    }),
+    ctx: {
+      importedRegistry,
+      get companionState() {
+        return gameStore.getState().companionState;
+      },
+    },
+    applyResult: (result) => {
+      if (result.forcedDuelNpc) session.forcedDuelNpc = result.forcedDuelNpc;
+      applyResult(featureCtx, result);
+    },
+  });
   return session;
 }
 
