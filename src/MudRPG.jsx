@@ -363,6 +363,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 若声明晚于那里会触发 const 暂时性死区：Cannot access 'persuasionProgress' before initialization。
   const persuasionProgress = useGameStore(s => s.persuasionProgress);
   const mapData = useGameStore(s => s.mapData);
+  const deposit = useGameStore(s => s.deposit);
+  const depositedAt = useGameStore(s => s.depositedAt);
+  const pledgedItems = useGameStore(s => s.pledgedItems);
   const [mapBig, setMapBig] = useState(false);
   const mapBigCloseGuard = useOverlayCloseGuard(() => setMapBig(false));
   const [mapView, setMapView] = useState("outer"); // ⑦ 地图框显示：outer=外层大地图 / inner=内层箱庭图
@@ -569,9 +572,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 不需要重新走一遍"点建筑名进入"的流程。
   const [buildingPanelMinimized, setBuildingPanelMinimized] = useState(false);
   useEffect(() => { setBuildingPanelMinimized(false); }, [activeBuilding?.id]);
-  const deposit = useGameStore(s => s.deposit);
-  const depositedAt = useGameStore(s => s.depositedAt);
-  const pledgedItems = useGameStore(s => s.pledgedItems);
   const addLog = useCallback((lines) => setLog(p => [...p, ...lines]), []);
 
   // 把主日志按回合分组，供 bug 上报弹窗"按编号勾选要附带的记录"用。

@@ -216,3 +216,75 @@ describe("Hook deps 不许引用后面才定义的量（TDZ 守卫）", () => {
     expect(bad, `以下位置会在渲染时抛 "Cannot access X before initialization"：\n  ${bad.join("\n  ")}`).toEqual([]);
   });
 });
+
+it("MudRPG app-hook arguments are declared before each hook call", () => {
+  const source = readFileSync("src/MudRPG.jsx", "utf-8");
+  const lines = source.split("\n");
+  const declarations = new Map();
+  const lineAt = (offset) => source.slice(0, offset).split("\n").length;
+  const addDeclaration = (name, line) => declarations.set(name, line);
+
+  const params = source.match(/function MudRPG\(\s*\{([^}]+)\}\s*=\s*\{\}\s*\)/);
+  if (params) {
+    const line = lineAt(params.index);
+    for (const entry of params[1].split(",")) {
+      addDeclaration(entry.trim().split(/\s*=\s*/)[0], line);
+    }
+  }
+
+  lines.forEach((line, index) => {
+    const state = /^\s*const \[\s*(\w+)\s*,\s*(\w+)\s*\]\s*=\s*useState\b/.exec(line);
+    if (state) {
+      addDeclaration(state[1], index + 1);
+      addDeclaration(state[2], index + 1);
+    }
+    const value = /^\s*const (\w+)\s*=\s*(?:useCallback|useMemo|useRef|useGameStore)\b/.exec(line);
+    if (value) addDeclaration(value[1], index + 1);
+  });
+
+  for (const match of source.matchAll(/const\s*\{([^}]+)\}\s*=\s*(gameActions|useAutosave)\b/g)) {
+    const line = lineAt(match.index + match[0].length);
+    for (const entry of match[1].split(",")) {
+      const name = entry.trim().split(/\s*:\s*/).at(-1).split(/\s*=\s*/)[0].trim();
+      addDeclaration(name, line);
+    }
+  }
+
+  const hookNames = [
+    "useInitialRestore", "useAutosave", "useDaySummary",
+    "usePrivateTalk", "useOutfitAdvice", "useAiInspect",
+  ];
+  const failures = [];
+  for (const hookName of hookNames) {
+    const call = new RegExp(`\\b${hookName}\\s*\\(\\s*\\{`).exec(source);
+    if (!call) {
+      failures.push(`${hookName} call not found`);
+      continue;
+    }
+    const open = source.indexOf("{", call.index);
+    let depth = 0;
+    let close = -1;
+    for (let i = open; i < source.length; i++) {
+      if (source[i] === "{") depth++;
+      if (source[i] === "}" && --depth === 0) { close = i; break; }
+    }
+    if (close < 0) {
+      failures.push(`${hookName} argument object is not closed`);
+      continue;
+    }
+
+    const callLine = lineAt(call.index);
+    const properties = source.slice(open + 1, close).split(",").map(entry => entry.trim()).filter(Boolean);
+    for (const property of properties) {
+      const value = /^(?:[\w$]+\s*:\s*)?([\w$]+)$/.exec(property)?.[1];
+      if (!value) {
+        failures.push(`${hookName} has an unsupported argument entry: ${property}`);
+        continue;
+      }
+      const declarationLine = declarations.get(value);
+      if (declarationLine == null) failures.push(`${hookName} uses undeclared ${value} at line ${callLine}`);
+      else if (declarationLine >= callLine) failures.push(`${hookName} uses ${value} at line ${callLine}, declared at line ${declarationLine}`);
+    }
+  }
+  expect(failures).toEqual([]);
+});
