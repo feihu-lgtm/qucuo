@@ -106,6 +106,20 @@ export default function CenterPanel({
   const [gambleStoneMinimized, setGambleStoneMinimized] = useState(false);
   useEffect(() => { setCraftTab("shop"); }, [activeBuilding?.id]);
   useEffect(() => { setGambleStoneMinimized(false); }, [activeBuilding?.id]);
+  const isJade = activeBuilding?.craft === "jade";
+  const tab = (key, label) => (
+    <span key={key} className="mobile-touch-target" onClick={() => setCraftTab(key)}
+      style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
+        color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
+        background: craftTab === key ? zoneTheme.accent : "transparent",
+        border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}` }}>{label}</span>
+  );
+  const tabs = (className) => (
+    <div className={className} style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
+      {tab("shop", "现货")}
+      {tab("craft", isJade ? "玉器定制" : "拿料定制")}
+    </div>
+  );
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const showBasement = useOverlay(OVERLAY.BASEMENT);
   return (
@@ -222,20 +236,6 @@ export default function CenterPanel({
                 const shopData = rollShopStock(activeBuilding.shopKey, time) || buildShopInventory(activeBuilding.shopKey);
                 if (!shopData) return null;
                 const isKarma = shopData.currency === "karma";
-                const isJade = activeBuilding.craft === "jade";
-                const tab = (key, label) => (
-                  <span key={key} className="mobile-touch-target" onClick={() => setCraftTab(key)}
-                    style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
-                      color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
-                      background: craftTab === key ? zoneTheme.accent : "transparent",
-                      border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}` }}>{label}</span>
-                );
-                const tabs = (className) => (
-                  <div className={className} style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
-                    {tab("shop", "现货")}
-                    {tab("craft", isJade ? "玉器定制" : "拿料定制")}
-                  </div>
-                );
                 const trading = (
                   <TradingScreen inline shopName={shopData.shopName} shopItems={shopData.items}
                     playerInv={inv} playerMoney={isKarma ? (dao.karma || 0) : (char.money || 0)}
