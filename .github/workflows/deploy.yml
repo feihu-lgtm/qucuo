@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - run: npm install --no-audit --no-fund
       # 先跑测试再构建。此前 CI 只跑 build，测试挂了照样绿——而 build 与 vitest
       # 恰好互为盲区：0728 有一次 version.js 写坏（未转义引号）导致 build 失败但

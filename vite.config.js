@@ -75,7 +75,7 @@ export default defineConfig({
   // dev 下 Vite 自动伺服根目录任意 .html（直接开 /debug.html 即可），
   // 这里加 input 是为了让 vite build 也把 debug.html 一并打包出来。
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: r("./index.html"),
         debug: r("./debug.html"),
