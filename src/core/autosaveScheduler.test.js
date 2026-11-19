@@ -8,6 +8,7 @@ function createHarness({ delayMs = 100 } = {}) {
   const unsubscribe = vi.fn();
   const save = vi.fn();
   const onPlayed = vi.fn();
+  const onReset = vi.fn();
   const scheduler = createAutosaveScheduler({
     subscribe: (nextListener) => {
       listener = nextListener;
@@ -17,6 +18,7 @@ function createHarness({ delayMs = 100 } = {}) {
     isBusy: () => busy,
     save,
     onPlayed,
+    onReset,
     delayMs,
   });
 
@@ -24,6 +26,7 @@ function createHarness({ delayMs = 100 } = {}) {
     scheduler,
     save,
     onPlayed,
+    onReset,
     unsubscribe,
     emit: () => listener?.(),
     arm: () => { armed = true; },
@@ -120,6 +123,43 @@ describe("createAutosaveScheduler", () => {
     expect(() => listener()).not.toThrow();
     expect(errorSpy).toHaveBeenCalledWith("[autosave]", error);
     scheduler.dispose();
+  });
+
+  it("ignores nested synchronous changes and restores silence depth", () => {
+    const harness = createHarness();
+    harness.arm();
+    harness.scheduler.runSilently(() => {
+      harness.emit();
+      harness.scheduler.runSilently(() => harness.emit());
+    });
+    expect(() => harness.scheduler.runSilently(() => {
+      throw new Error("silent callback failed");
+    })).toThrow("silent callback failed");
+    harness.emit();
+
+    vi.advanceTimersByTime(100);
+
+    expect(harness.onPlayed).toHaveBeenCalledTimes(1);
+    expect(harness.save).toHaveBeenCalledTimes(1);
+    harness.scheduler.dispose();
+  });
+
+  it("resetPlayed cancels pending work and permits a later play", () => {
+    const harness = createHarness();
+    harness.arm();
+    harness.emit();
+    expect(harness.onPlayed).toHaveBeenCalledTimes(1);
+
+    harness.scheduler.resetPlayed();
+    vi.advanceTimersByTime(100);
+    expect(harness.save).not.toHaveBeenCalled();
+    expect(harness.onReset).toHaveBeenCalledTimes(1);
+
+    harness.emit();
+    expect(harness.onPlayed).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(100);
+
+    expect(harness.save).toHaveBeenCalledTimes(1);
   });
 
   it("dispose cancels pending work and unsubscribes", () => {

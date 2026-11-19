@@ -478,6 +478,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const roundsSinceLastSaveRef = useRef(0);   // 距离上次自动存档过了几个回合
   const playedThisSessionRef = useRef(false); // 本次会话玩家是否真的行动过
   const userArmedRef = useRef(false);
+  const schedulerRef = useRef(null);
   // 默认立绘已改为硬加载（静态 import，见 portraits.js 顶部的
   // DEFAULT_PORTRAITS），构建时直接打包进产物，getPortrait() 里自动
   // 合并查询，不再需要任何异步初始化步骤——之前这里有一个
@@ -496,6 +497,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       isArmed: () => userArmedRef.current,
       isBusy: () => loadingRef.current,
       onPlayed: () => { playedThisSessionRef.current = true; },
+      onReset: () => {
+        playedThisSessionRef.current = false;
+        roundsSinceLastSaveRef.current = 0;
+      },
       save: () => {
         const result = autoSave(snapshotFromStore({
           squares: serializeSquares(),
@@ -510,10 +515,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         }
       },
     });
+    schedulerRef.current = scheduler;
     return () => {
       window.removeEventListener("pointerdown", arm, true);
       window.removeEventListener("keydown", arm, true);
       scheduler.dispose();
+      if (schedulerRef.current === scheduler) schedulerRef.current = null;
     };
   }, []);
 
@@ -540,46 +547,51 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   // 从存档槽位读取后，整体覆盖当前状态
   const applySnapshot = useCallback((snap) => {
-    const matchedPreset = presets.find(p => p.id === snap.preset?.id) || preset;
-    const restoredRoom = isCompatibleRoomShape(snap.room) ? snap.room : matchedPreset.room;
-    const roomChanged = restoredRoom.name !== useGameStore.getState().room?.name;
-    setPreset(matchedPreset);
-    setRoom(restoredRoom);
-    // 老存档可能没有 moveset/special 字段（切磋系统上线之前存的档），
-    // 兼容判定通过后还要单独补全这两个字段，不能直接假设它们存在——
-    // 之前这里漏了这一步，导致老存档读进来后 char.moveset 是 undefined，
-    // 后续任何读取它的地方（比如打开切磋界面）都可能因此出问题。
-    const restoredChar = isCompatibleCharShape(snap.char) ? snap.char : matchedPreset.char;
-    setChar(restoredChar.moveset ? restoredChar : {
-      ...restoredChar,
-      moveset: generateNpcMoveset({ id: "player" }, { luck: restoredChar.special?.气运 ?? 5, levelCap: 5 }),
-    });
-    setDao(snap.dao);
-    setSkills(snap.skills); setInv(backfillInventoryFromCatalog(snap.inv));
-    setLog(snap.log); setConvo(snap.convo); setExp(snap.exp); setPot(snap.pot);
-    setFlags(snap.flags); setMapData(snap.mapData); setTime(snap.time);
-    // 老档迁移：旧 CRASHED 阶段（告白→宕机那条已废链路）会把文风永久锁在
-    // "干瘪空壳"上，好感度再高也不变、旁白线也走不出来。归一到当前阶段定义。
-    setNarrator(migrateNarratorState(snap.narrator));
-    setVarTree(snap.varTree || initialVarTree());
-    setQuestProgress(snap.questProgress || {});
-    setClaimedMilestones(new Set(snap.claimedMilestones || []));
-    setDeposit(snap.deposit || 0);
-    setDepositedAt(snap.depositedAt ?? null);
-    setPledgedItems(snap.pledgedItems || []);
-    setCompanionState(snap.companionState || initCompanionState());
-    if (snap.roomMap) roomMapRef.current = snap.roomMap;
-    if (snap.squares) loadSquares(snap.squares);
-    // 内层箱庭位置：老存档没这个字段、或存的房间已不在该据点内景里（改过地图数据），
-    // 都退回锚点，绝不让玩家落在一个不存在的房间里。
-    {
-      const rm = restoredRoom;
-      const ok = snap.innerRoomName && hasInnerMap(rm.name) && getInnerRoomNames(rm.name).includes(snap.innerRoomName);
-      const restoredInnerRoomName = ok ? snap.innerRoomName : (hasInnerMap(rm.name) ? getDistrictAnchor(rm.name) : null);
-      if (roomChanged) restoredInnerRef.current = restoredInnerRoomName;
-      setInnerRoomName(restoredInnerRoomName);
-    }
-    setShowSettings(false);
+    const restoreSnapshot = () => {
+      const matchedPreset = presets.find(p => p.id === snap.preset?.id) || preset;
+      const restoredRoom = isCompatibleRoomShape(snap.room) ? snap.room : matchedPreset.room;
+      const roomChanged = restoredRoom.name !== useGameStore.getState().room?.name;
+      setPreset(matchedPreset);
+      setRoom(restoredRoom);
+      // 老存档可能没有 moveset/special 字段（切磋系统上线之前存的档），
+      // 兼容判定通过后还要单独补全这两个字段，不能直接假设它们存在——
+      // 之前这里漏了这一步，导致老存档读进来后 char.moveset 是 undefined，
+      // 后续任何读取它的地方（比如打开切磋界面）都可能因此出问题。
+      const restoredChar = isCompatibleCharShape(snap.char) ? snap.char : matchedPreset.char;
+      setChar(restoredChar.moveset ? restoredChar : {
+        ...restoredChar,
+        moveset: generateNpcMoveset({ id: "player" }, { luck: restoredChar.special?.气运 ?? 5, levelCap: 5 }),
+      });
+      setDao(snap.dao);
+      setSkills(snap.skills); setInv(backfillInventoryFromCatalog(snap.inv));
+      setLog(snap.log); setConvo(snap.convo); setExp(snap.exp); setPot(snap.pot);
+      setFlags(snap.flags); setMapData(snap.mapData); setTime(snap.time);
+      // 老档迁移：旧 CRASHED 阶段（告白→宕机那条已废链路）会把文风永久锁在
+      // "干瘪空壳"上，好感度再高也不变、旁白线也走不出来。归一到当前阶段定义。
+      setNarrator(migrateNarratorState(snap.narrator));
+      setVarTree(snap.varTree || initialVarTree());
+      setQuestProgress(snap.questProgress || {});
+      setClaimedMilestones(new Set(snap.claimedMilestones || []));
+      setDeposit(snap.deposit || 0);
+      setDepositedAt(snap.depositedAt ?? null);
+      setPledgedItems(snap.pledgedItems || []);
+      setCompanionState(snap.companionState || initCompanionState());
+      if (snap.roomMap) roomMapRef.current = snap.roomMap;
+      if (snap.squares) loadSquares(snap.squares);
+      // 内层箱庭位置：老存档没这个字段、或存的房间已不在该据点内景里（改过地图数据），
+      // 都退回锚点，绝不让玩家落在一个不存在的房间里。
+      {
+        const rm = restoredRoom;
+        const ok = snap.innerRoomName && hasInnerMap(rm.name) && getInnerRoomNames(rm.name).includes(snap.innerRoomName);
+        const restoredInnerRoomName = ok ? snap.innerRoomName : (hasInnerMap(rm.name) ? getDistrictAnchor(rm.name) : null);
+        if (roomChanged) restoredInnerRef.current = restoredInnerRoomName;
+        setInnerRoomName(restoredInnerRoomName);
+      }
+      setShowSettings(false);
+    };
+    const scheduler = schedulerRef.current;
+    if (scheduler) scheduler.runSilently(restoreSnapshot);
+    else restoreSnapshot();
   }, [presets, preset]);
 
   const buildCurrentSnapshot = useCallback(() => snapshotFromStore({
@@ -637,15 +649,22 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }, [buildCurrentSnapshot]);
 
   const loadPreset = useCallback((p) => {
-    setPreset(p); setRoom(p.room); setChar(p.char); setDao(p.dao);
-    setSkills(p.skills.map(s => ({ ...s }))); setInv([...p.inv]);
-    setLog([{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${p.name}` }, ...p.opening]);
-    setConvo([]); setExp(0); setPot(0); setFlags([]); setTime(6); setGm(false);
-    setMapData({ [p.room.name]: { x: 0, y: 0 } });
-    setNarrator(initialNarratorState());
-    setVarTree(prev => seedKnowledge(prev, p.知识基底, 0)); // 换预设开新局也灌基底（registerFact 幂等）
-    setCompanionState(initCompanionState()); // 新开局重置雪豹解锁/出战状态，不带上一局的伙伴进度
-    roomMapRef.current = { [p.room.name]: { items: [...p.room.items], npcs: [...p.room.npcs] } };
+    const startPreset = () => {
+      setPreset(p); setRoom(p.room); setChar(p.char); setDao(p.dao);
+      setSkills(p.skills.map(s => ({ ...s }))); setInv([...p.inv]);
+      setLog([{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${p.name}` }, ...p.opening]);
+      setConvo([]); setExp(0); setPot(0); setFlags([]); setTime(6);
+      setMapData({ [p.room.name]: { x: 0, y: 0 } });
+      setNarrator(initialNarratorState());
+      setVarTree(prev => seedKnowledge(prev, p.知识基底, 0)); // 换预设开新局也灌基底（registerFact 幂等）
+      setCompanionState(initCompanionState()); // 新开局重置雪豹解锁/出战状态，不带上一局的伙伴进度
+      roomMapRef.current = { [p.room.name]: { items: [...p.room.items], npcs: [...p.room.npcs] } };
+    };
+    const scheduler = schedulerRef.current;
+    if (scheduler) scheduler.runSilently(startPreset);
+    else startPreset();
+    scheduler?.resetPlayed();
+    setGm(false);
     setShowPresets(false);
   }, []);
 
@@ -4647,45 +4666,51 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
   if (showCharCreate) {
     return <CharacterCreate onConfirm={({ name, gender, fromCard }) => {
-      setChar(c => {
-        const next = { ...c, name, gender };
-        if (fromCard) {
-          // 顺序要紧：七维先落，气血才能按体魄算对。反了就会用旧体魄算出错的上限。
-          if (fromCard.special) next.special = { ...(c.special || {}), ...fromCard.special };
-          if (fromCard.bodyProfile || fromCard.bodyProfilePrivate) {
-            next.bodyProfile = { ...(c.bodyProfile || {}), ...(fromCard.bodyProfile || {}), ...(fromCard.bodyProfilePrivate || {}) };
+      const createCharacter = () => {
+        setChar(c => {
+          const next = { ...c, name, gender };
+          if (fromCard) {
+            // 顺序要紧：七维先落，气血才能按体魄算对。反了就会用旧体魄算出错的上限。
+            if (fromCard.special) next.special = { ...(c.special || {}), ...fromCard.special };
+            if (fromCard.bodyProfile || fromCard.bodyProfilePrivate) {
+              next.bodyProfile = { ...(c.bodyProfile || {}), ...(fromCard.bodyProfile || {}), ...(fromCard.bodyProfilePrivate || {}) };
+            }
+            if (Number.isFinite(fromCard.neigong)) next.neigong = fromCard.neigong;
+            if (Number.isFinite(fromCard.waigong)) next.waigong = fromCard.waigong;
+            const maxHp = hpFromNeigong(next.neigong ?? 5, next.special?.体魄 ?? 5);
+            next.hp = [maxHp, maxHp];
           }
-          if (Number.isFinite(fromCard.neigong)) next.neigong = fromCard.neigong;
-          if (Number.isFinite(fromCard.waigong)) next.waigong = fromCard.waigong;
-          const maxHp = hpFromNeigong(next.neigong ?? 5, next.special?.体魄 ?? 5);
-          next.hp = [maxHp, maxHp];
+          return next;
+        });
+        // 主角卡的初始武学与装备（AI 现编/AI 配的那两项）。武学整套替换默认三脚猫拳，
+        // setSkills 会触发 moveset 重算（见 skills 依赖的那个 effect）；装备追加进背包并
+        // 自动穿上兵器/护具/饰物各一件。
+        if (fromCard) {
+          applyCardSkills(fromCard, setSkills);
+          const n = applyCardCarry(fromCard, setInv, "cc_");
+          const sk = (fromCard.skills || []).length;
+          if (fromCard.persona || sk || n) {
+            addLog([{ t: "sys", text: `  （已按入册的角色卡定下体貌与天赋${sk ? `，带 ${sk} 门武学` : ""}${n ? `，${n} 件随身物已入包、装备已上身` : ""}）` }]);
+          }
         }
-        return next;
-      });
-      // 主角卡的初始武学与装备（AI 现编/AI 配的那两项）。武学整套替换默认三脚猫拳，
-      // setSkills 会触发 moveset 重算（见 skills 依赖的那个 effect）；装备追加进背包并
-      // 自动穿上兵器/护具/饰物各一件。
-      if (fromCard) {
-        applyCardSkills(fromCard, setSkills);
-        const n = applyCardCarry(fromCard, setInv, "cc_");
-        const sk = (fromCard.skills || []).length;
-        if (fromCard.persona || sk || n) {
-          addLog([{ t: "sys", text: `  （已按入册的角色卡定下体貌与天赋${sk ? `，带 ${sk} 门武学` : ""}${n ? `，${n} 件随身物已入包、装备已上身` : ""}）` }]);
+        // 开局同行：开局向导指定了「1 人开局就随队」，在这里把它解锁进 companionState
+        // （唯一出战位）。importedRegistry 的 getImportedNpc 返回入册时的完整档案，
+        // unlockImportedCompanion 会 createImportedCompanion 建出可出战的队友。
+        // 用完即清，避免下次新开局又凭空冒出来。
+        const starterName = importedRegistry.getPendingStarterCompanion();
+        if (starterName) {
+          const npcData = importedRegistry.getImportedNpc(starterName);
+          importedRegistry.clearPendingStarterCompanion();
+          if (npcData) {
+            setCompanionState(prev => unlockImportedCompanion(prev, npcData));
+            addLog([{ t: "sys", text: `  （开局同行「${starterName}」已随队）` }]);
+          }
         }
-      }
-      // 开局同行：开局向导指定了「1 人开局就随队」，在这里把它解锁进 companionState
-      // （唯一出战位）。importedRegistry 的 getImportedNpc 返回入册时的完整档案，
-      // unlockImportedCompanion 会 createImportedCompanion 建出可出战的队友。
-      // 用完即清，避免下次新开局又凭空冒出来。
-      const starterName = importedRegistry.getPendingStarterCompanion();
-      if (starterName) {
-        const npcData = importedRegistry.getImportedNpc(starterName);
-        importedRegistry.clearPendingStarterCompanion();
-        if (npcData) {
-          setCompanionState(prev => unlockImportedCompanion(prev, npcData));
-          addLog([{ t: "sys", text: `  （开局同行「${starterName}」已随队）` }]);
-        }
-      }
+      };
+      const scheduler = schedulerRef.current;
+      if (scheduler) scheduler.runSilently(createCharacter);
+      else createCharacter();
+      scheduler?.resetPlayed();
       setShowCharCreate(false);
     }} />;
   }

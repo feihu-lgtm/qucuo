@@ -4,6 +4,7 @@ export function createAutosaveScheduler({
   isBusy,
   save,
   onPlayed,
+  onReset,
   delayMs = 1500,
   timers = {
     setTimeout: (fn, ms) => setTimeout(fn, ms),
@@ -51,6 +52,21 @@ export function createAutosaveScheduler({
       cancelTimer();
       pending = false;
       unsubscribe();
+    },
+    runSilently(fn) {
+      silenceDepth += 1;
+      try {
+        return fn();
+      } finally {
+        silenceDepth -= 1;
+      }
+    },
+    resetPlayed() {
+      if (disposed) return;
+      played = false;
+      pending = false;
+      cancelTimer();
+      onReset?.();
     },
     flushNow() {
       if (disposed || !pending) return;
