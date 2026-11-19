@@ -11,10 +11,10 @@
 //   7. 交互模式切换（行动·对话·私聊旁白）+ NSFW + 打坐
 //   8. NPC 人选选择器、飞鸽传书状态条、底部输入框
 //
-// 纯展示组件：不持有任何 state，全部经 props 由 MudRPG.jsx 下传（与
-// LeftPanel/RightPanel/DebugPanel 同一套约定）。建筑面板各自的 Screen 组件
-// 已经是独立文件，本文件只负责「此刻该显示哪一个」这层调度。
+// 游戏数据经 props 下传，overlay 显隐读 uiStore，本地只保留建筑页签状态。
+// 建筑面板各自的 Screen 组件已经是独立文件，本文件只负责「此刻该显示哪一个」这层调度。
 import { useState, useEffect } from "react";
+import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../store/uiStore.js";
 import { isNpcVisibleInInnerRoom } from "../innerMap.js";
 import { BUILDING_TYPE } from "../buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../memory/note.js";
@@ -49,7 +49,6 @@ export default function CenterPanel({
   zoneTheme, S,
   loading, setLoading, addLog,
   undoSnapshotRef, applySnapshot,
-  showDebug, setShowDebug,
   gm, setGm,
   char, setChar, pot, setPot, exp, setExp, dao, setDao,
   varTree, setVarTree, narrator, setNarrator,
@@ -62,7 +61,7 @@ export default function CenterPanel({
   time, inv, effectiveSpecialNow, inspectItem, jotNote,
   flags, questProgress,
   handleAcceptEscort, handleGamble, handleCollectPigeons, buyPigeon, handlePostSend, handleTravel,
-  showBasement, setShowBasement, handleServiceOrder,
+  handleServiceOrder,
   handlePray, handleReadBook, handleBuyBook,
   deposit, depositedAt, handleDeposit, handleWithdraw,
   pledgedItems, handlePledge, handleRedeem,
@@ -89,6 +88,8 @@ export default function CenterPanel({
   // 铺子(activeBuilding.id 变)就复位回"现货"，避免上家的定制页串到下家。
   const [craftTab, setCraftTab] = useState("shop");
   useEffect(() => { setCraftTab("shop"); }, [activeBuilding?.id]);
+  const showDebug = useOverlay(OVERLAY.DEBUG);
+  const showBasement = useOverlay(OVERLAY.BASEMENT);
   return (
         <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", position: "relative" } : { flex: 55, ...S.panel }}>
           {/* 手机：叙事区左右边缘贴边小把手，点击滑出左栏(天地)/右栏(行动) */}
@@ -121,7 +122,7 @@ export default function CenterPanel({
                 }}
                 title="撤销上一步行动，还原到落子之前"
                 style={{ cursor: "pointer", fontSize: "10px", color: "#c8a860", padding: "1px 6px", border: "1px solid #4a3a1a", borderRadius: 0, userSelect: "none" }}>↩ 回滚</span>
-              <span onClick={() => setShowDebug(s => !s)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "#c8323a" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "#c8323a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>🛠调试</span>
+              <span onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "#c8323a" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "#c8323a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>🛠调试</span>
               <span onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "#d4a853" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
             </span>
           </div>
@@ -139,7 +140,6 @@ export default function CenterPanel({
               addLog={addLog} setInteractMode={setInteractMode} act={act}
               teleportLookRef={teleportLookRef}
               setSkills={setSkills} setInv={setInv}
-              setShowDebug={setShowDebug}
             />
           )}
 
@@ -269,11 +269,11 @@ export default function CenterPanel({
               {activeBuilding && (activeBuilding.type === BUILDING_TYPE.RESTAURANT || activeBuilding.type === BUILDING_TYPE.THEATER) && !showBasement && (
                 <ServiceScreen building={activeBuilding} char={char} time={time} flags={flags} inline
                   zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onOrder={handleServiceOrder}
-                  onEnterBasement={() => setShowBasement(true)} />
+                  onEnterBasement={() => openOverlay(OVERLAY.BASEMENT)} />
               )}
               {showBasement && (
                 <BasementScreen char={char} time={time} zoneTheme={zoneTheme} inline
-                  onClose={() => setShowBasement(false)} onOrder={handleServiceOrder} />
+                  onClose={() => closeOverlay(OVERLAY.BASEMENT)} onOrder={handleServiceOrder} />
               )}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.TEMPLE && (
                 <TempleScreen building={activeBuilding} char={char} dao={dao} zoneTheme={zoneTheme} inline

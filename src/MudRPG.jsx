@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
 import { gameActions, gameStore, initGameStore, useGameStore } from "./store/gameStore.js";
+import {
+  OVERLAY, closeOverlay, initializeUiOverlays, openOverlay, toggleOverlay, useOverlay,
+} from "./store/uiStore.js";
 import { createAutosaveScheduler } from "./core/autosaveScheduler.js";
 import { snapshotFromStore } from "./core/persist.js";
 import { setRngState } from "./core/rng.js";
@@ -215,10 +218,30 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 格子数据随档恢复（埋物是游戏状态的一部分；刷新重掷会允许读档刨雷）
   if (restored?.snap?.squares) loadSquares(restored.snap.squares);
 
+  const overlaysInitializedRef = useRef(false);
+  if (!overlaysInitializedRef.current) {
+    const initialOverlays = [];
+    try {
+      if (localStorage.getItem("qucuo_tutorial_seen") !== "1") initialOverlays.push(OVERLAY.TUTORIAL);
+    } catch { /* unavailable storage means no automatic tutorial */ }
+    if (initialOpenSettings) initialOverlays.push(OVERLAY.SETTINGS);
+    if (initialLoadSlotId === "new" && !restored) {
+      initialOverlays.push(OVERLAY.OPENING, OVERLAY.CHAR_CREATE);
+    }
+    initializeUiOverlays(initialOverlays);
+    overlaysInitializedRef.current = true;
+  }
+
   useState(() => {
     initGameStore(buildInitialGameState(restored));
     return true;
   });
+  const showSettings = useOverlay(OVERLAY.SETTINGS);
+  const showOpening = useOverlay(OVERLAY.OPENING);
+  const showCharCreate = useOverlay(OVERLAY.CHAR_CREATE);
+  const showBody = useOverlay(OVERLAY.BODY);
+  const showMusicPanel = useOverlay(OVERLAY.MUSIC_PANEL);
+  const showHomestead = useOverlay(OVERLAY.HOMESTEAD);
   const {
     setChar, setDao, setSkills, setExp, setPot, setInv, setCompanionState, setPreset,
     setRoom, setInnerRoomName, setMapData, setTime, setLog, setConvo, setNarrator,
@@ -323,19 +346,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const maxHpNow = effectiveMaxHp(char.hp[1], skills);
   const activeBuffs = activeBuffsWithRemaining(flags, time);
   const [gm, setGm] = useState(false);
-  const [showDebug, setShowDebug] = useState(false); // 调试面板显隐（面板内部状态已下沉到 DebugPanel.jsx）
-  const [showPresets, setShowPresets] = useState(false);
-  // 新手教程覆盖层：首次进游戏默认弹出，看过一次记进 localStorage，之后不再自动弹
-  // （左上角按钮随时可再点开）。localStorage 不可用时降级为默认不弹，避免报错。
-  const [showTutorial, setShowTutorial] = useState(() => {
-    try { return localStorage.getItem("qucuo_tutorial_seen") !== "1"; }
-    catch { return false; }
-  });
-  const closeTutorial = useCallback(() => {
-    setShowTutorial(false);
-    try { localStorage.setItem("qucuo_tutorial_seen", "1"); } catch { /* ignore */ }
-  }, []);
-  const [showCodex, setShowCodex] = useState(false); // 图鉴：百物·武学总览
 
   // ── 手机端响应式：窄屏时三栏改成"叙事占满 + 左右抽屉 + 顶栏收成菜单" ──
   // 桌面(≥768px)维持原三栏并排；手机点小按钮才滑出左栏(天地)/右栏(行动)，
@@ -353,23 +363,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-  const [showBugReport, setShowBugReport] = useState(false); // 上报bug/意见反馈弹窗
-  const [showSettings, setShowSettings] = useState(initialOpenSettings);
-  // 开场图文序列（策马入村 -> 信封特写）只在"全新开局且没有任何存档被恢复"时展示一次；
-  // 读档进入、或本局已经看过一次之后刷新页面触发自动存档恢复，都不应该再放这段序列。
-  const [showOpening, setShowOpening] = useState(
-    initialLoadSlotId === "new" && !restored
-  );
-  // 角色创建页：全新开局时，在开场信之前先让玩家填名讳+性别。存档恢复则跳过。
-  const [showCharCreate, setShowCharCreate] = useState(
-    initialLoadSlotId === "new" && !restored
-  );
   const [settingsInitialTab, setSettingsInitialTab] = useState(null);
   const [interactMode, setInteractMode] = useState("action"); // 'talk' | 'action' | 'whisper'
   const [talkTarget, setTalkTarget] = useState(null); // 对话模式下具体在跟谁说话，供立绘自动推断使用
   const [activeTarget, setActiveTarget] = useState(null); // null=全部NPC在场 | string=锁定某个NPC名
   const [nsfwOn, setNsfwOn] = useState(true); // ■ NSFW 开关：true=注入NSFW规则+primer消息（默认开启）
-  const [showBody, setShowBody] = useState(false); // ◈体貌面板
   const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" }); // 按体貌荐装的结果
   const [pigeonTarget, setPigeonTarget] = useState(null); // 飞鸽传书当前收信人（进入 pigeon 模式时设置）
   const pigeonProcessing = useRef(new Set()); // 防止同一封回信被 [time]/varTree effect 重复生成
@@ -380,24 +378,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const teleportLookRef = useRef(null); // 调试传送落地待触发标记：{dist,inner}，位置更新到位后由 effect 触发一次环顾式 act
   const [activeNpcMenu, setActiveNpcMenu] = useState(null); // 当前弹出互动菜单的NPC对象，null表示未打开
   const [activeItemMenu, setActiveItemMenu] = useState(null); // ⑤⑧ 物品次级面板：{ item, mode:"inventory"|"ground", canConsume } | null
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
-  // 版本历史面板关闭逻辑已内聚进独立组件 VersionHistoryPanel.jsx（自带 useOverlayCloseGuard），
-  // 这里不再需要单独维护一份 closeGuard 实例。
-  const [showCharacterPage, setShowCharacterPage] = useState(false);
-  // 玩家头像：优先用玩家自设的（存 localStorage），否则按性别用预制头像。showAvatarPicker 控制选择弹层。
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [showMusicPanel, setShowMusicPanel] = useState(false);
-  const [showHomestead, setShowHomestead] = useState(false);
   const [playerAvatarCustom, setPlayerAvatarCustom] = useState(() => {
     try { return localStorage.getItem("qucuo_player_avatar") || ""; } catch { return ""; }
   });
   const AV_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/player/";
   const genderAvatar = { "男": AV_BASE + "male.webp", "女": AV_BASE + "female.webp" };
   const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.webp");
-  const [showQuestLog, setShowQuestLog] = useState(false);
-  const [showLore, setShowLore] = useState(false);
-  const [showQijuzhu, setShowQijuzhu] = useState(false); // 起居注：今日行迹 + 累计年鉴 // 见闻录：小纸条+小账本可视化
-  const [showCardImport, setShowCardImport] = useState(false); // 角色入册：导入外部角色卡
   const [characterPageTarget, setCharacterPageTarget] = useState(null); // "面板"按钮指定直接打开谁的详情
   const [portraits, setPortraits] = useState(loadPortraits());
   // 雪豹立绘三形态切换（人形·立雪/人形·倚剑/雪豹真身，存 localStorage 持久化）；
@@ -408,9 +394,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [pearlImgErr, setPearlImgErr] = useState(false);
   const [narratorImgErr, setNarratorImgErr] = useState(false); // 旁白立绘文件缺失时给占位提示
   const [portraitTarget, setPortraitTarget] = useState(null); // null = 自动推断；否则玩家手动锁定查看的对象
-  const [showPortraitManager, setShowPortraitManager] = useState(false);
-  const [showPipeline, setShowPipeline] = useState(false);
-  const [showTrace, setShowTrace] = useState(false);
   const claimedMilestones = useGameStore(s => s.claimedMilestones);
   const narrator = useGameStore(s => s.narrator);
   const varTree = useGameStore(s => s.varTree);
@@ -454,7 +437,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       const t = e.target;
       const tag = (t?.tagName || "").toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "select" || t?.isContentEditable) return;
-      if (e.key === "i" || e.key === "I") { e.preventDefault(); setShowCardImport(p => !p); }
+      if (e.key === "i" || e.key === "I") { e.preventDefault(); toggleOverlay(OVERLAY.CARD_IMPORT); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -606,7 +589,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         if (roomChanged) restoredInnerRef.current = restoredInnerRoomName;
         setInnerRoomName(restoredInnerRoomName);
       }
-      setShowSettings(false);
+      closeOverlay(OVERLAY.SETTINGS);
     };
     const scheduler = schedulerRef.current;
     if (scheduler) scheduler.runSilently(restoreSnapshot);
@@ -684,7 +667,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     else startPreset();
     scheduler?.resetPlayed();
     setGm(false);
-    setShowPresets(false);
+    closeOverlay(OVERLAY.PRESETS);
   }, []);
 
   const importPreset = useCallback(() => {
@@ -748,7 +731,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 不需要重新走一遍"点建筑名进入"的流程。
   const [buildingPanelMinimized, setBuildingPanelMinimized] = useState(false);
   useEffect(() => { setBuildingPanelMinimized(false); }, [activeBuilding?.id]);
-  const [showBasement, setShowBasement] = useState(false);
   const deposit = useGameStore(s => s.deposit);
   const depositedAt = useGameStore(s => s.depositedAt);
   const pledgedItems = useGameStore(s => s.pledgedItems);
@@ -4325,14 +4307,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         <div>
           <p style={{ color: "#c45044" }}>尚未配置 API Key</p>
           <p>点击下方按钮打开设置面板，填入你的 API Key 后即可开始游戏。</p>
-          <span onClick={() => setShowSettings(true)} style={{ cursor: "pointer", color: "#c8323a", padding: "6px 14px", background: "#161510", border: "1px solid #4a453c", borderRadius: 0, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
+          <span onClick={() => openOverlay(OVERLAY.SETTINGS)} style={{ cursor: "pointer", color: "#c8323a", padding: "6px 14px", background: "#161510", border: "1px solid #4a453c", borderRadius: 0, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
         </div>
         {showSettings && (
           <SettingsPanel
-            onOpenCardImport={() => { setShowSettings(false); setShowCardImport(true); }}
+            onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
             cfg={apiCfg}
             setCfg={setApiCfg}
-            onClose={() => setShowSettings(false)}
+            onClose={() => closeOverlay(OVERLAY.SETTINGS)}
             currentSnapshot={buildCurrentSnapshot}
             onLoadSnapshot={applySnapshot}
             varTree={varTree}
@@ -4395,14 +4377,14 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       if (scheduler) scheduler.runSilently(createCharacter);
       else createCharacter();
       scheduler?.resetPlayed();
-      setShowCharCreate(false);
+      closeOverlay(OVERLAY.CHAR_CREATE);
     }} />;
   }
 
   if (showOpening) {
     return <OpeningSequence onFinish={() => {
       schedulerRef.current?.resetPlayed();
-      setShowOpening(false);
+      closeOverlay(OVERLAY.OPENING);
     }} playerName={char.name} />;
   }
 
@@ -4413,25 +4395,18 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         isMobile={isMobile} mobileTopMenu={mobileTopMenu} setMobileTopMenu={setMobileTopMenu}
         zoneTheme={zoneTheme} isDayMode={isDayMode} setIsDayMode={setIsDayMode}
         uiGold={uiGold} uiTurquoise={uiTurquoise} uiCrimson={uiCrimson} uiPink={uiPink}
-        setShowTutorial={setShowTutorial} setShowCodex={setShowCodex} setShowVersionHistory={setShowVersionHistory}
-        showTrace={showTrace} setShowTrace={setShowTrace} setShowBugReport={setShowBugReport}
-        setShowCharacterPage={setShowCharacterPage} setShowQuestLog={setShowQuestLog} setShowLore={setShowLore} setShowQijuzhu={setShowQijuzhu}
-        setShowCardImport={setShowCardImport}
-        setSettingsInitialTab={setSettingsInitialTab} setShowSettings={setShowSettings}
+        setSettingsInitialTab={setSettingsInitialTab}
         autoSaveError={autoSaveError} lastAutoSave={lastAutoSave}
-        showAvatarPicker={showAvatarPicker} setShowAvatarPicker={setShowAvatarPicker}
         playerAvatarCustom={playerAvatarCustom} setPlayerAvatarCustom={setPlayerAvatarCustom}
         AV_BASE={AV_BASE} genderAvatar={genderAvatar}
-        setShowMusicPanel={setShowMusicPanel}
-        innerRoomName={innerRoomName} setShowHomestead={setShowHomestead}
       />
 
-      {showMusicPanel && <MusicPanel onClose={() => setShowMusicPanel(false)} />}
+      {showMusicPanel && <MusicPanel onClose={() => closeOverlay(OVERLAY.MUSIC_PANEL)} />}
       {showHomestead && innerRoomName && getHomestead(innerRoomName) && (
         <HomesteadPanel
           roomName={innerRoomName} inv={inv} setInv={setInv}
           char={char} setChar={setChar} zoneTheme={zoneTheme}
-          onClose={() => setShowHomestead(false)} addLog={addLog}
+          onClose={() => closeOverlay(OVERLAY.HOMESTEAD)} addLog={addLog}
         />
       )}
 
@@ -4442,23 +4417,13 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         flags={flags} questProgress={questProgress}
         effectiveSpecialNow={effectiveSpecialNow} companionState={companionState}
         loading={loading} pendingTalks={pendingTalks} waitSecs={waitSecs} addLog={addLog}
-        showTutorial={showTutorial} closeTutorial={closeTutorial}
-        showVersionHistory={showVersionHistory} setShowVersionHistory={setShowVersionHistory}
-        showCharacterPage={showCharacterPage} setShowCharacterPage={setShowCharacterPage}
         characterPageTarget={characterPageTarget} setCharacterPageTarget={setCharacterPageTarget}
         claimedMilestones={claimedMilestones} claimMilestone={claimMilestone} giftToCharacter={giftToCharacter}
-        showQuestLog={showQuestLog} setShowQuestLog={setShowQuestLog}
-        showLore={showLore} setShowLore={setShowLore}
-        showQijuzhu={showQijuzhu} setShowQijuzhu={setShowQijuzhu} narratorStage={narrator.stage}
-        showCardImport={showCardImport} setShowCardImport={setShowCardImport}
+        narratorStage={narrator.stage}
         onImportNpcs={handleImportNpcs} onImportPlayer={handleImportPlayer}
         onImportWorld={handleImportWorld}
-        showPortraitManager={showPortraitManager} setShowPortraitManager={setShowPortraitManager}
         portraits={portraits} setPortraits={setPortraits}
-        showPipeline={showPipeline} setShowPipeline={setShowPipeline}
-        showTrace={showTrace} setShowTrace={setShowTrace}
-        showCodex={showCodex} setShowCodex={setShowCodex}
-        showBugReport={showBugReport} setShowBugReport={setShowBugReport} buildBugReportTurns={buildBugReportTurns}
+        buildBugReportTurns={buildBugReportTurns}
         activeNpcMenu={liveNpcMenu} setActiveNpcMenu={setActiveNpcMenu}
         handleNpcLook={handleNpcLook} handleNpcTalk={handleNpcTalk} handleNpcGift={handleNpcGift}
         handleNpcDuel={handleNpcDuel} handleNpcSteal={handleNpcSteal}
@@ -4484,14 +4449,13 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         <LeftPanel
           isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
           zoneTheme={zoneTheme} S={S}
-          room={room} innerRoomName={innerRoomName} time={time} setShowHomestead={setShowHomestead}
+          room={room} innerRoomName={innerRoomName} time={time}
           varTree={varTree} char={char}
-          showDebug={showDebug}
           peoplePanel={peoplePanel} setPeoplePanel={setPeoplePanel}
           activeBuilding={activeBuilding} setActiveBuilding={setActiveBuilding}
           setActiveItemMenu={setActiveItemMenu}
           setActiveNpcMenu={setActiveNpcMenu}
-          setCharacterPageTarget={setCharacterPageTarget} setShowCharacterPage={setShowCharacterPage}
+          setCharacterPageTarget={setCharacterPageTarget}
           setPigeonTarget={setPigeonTarget} setInteractMode={setInteractMode} inputRef={inputRef} addLog={addLog}
           pigeonTarget={pigeonTarget}
           portraits={portraits} portraitTarget={portraitTarget} setPortraitTarget={setPortraitTarget}
@@ -4501,7 +4465,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           pearlForm={pearlForm} setPearlForm={setPearlForm} setPearlFormState={setPearlFormState} pearlImgErr={pearlImgErr} setPearlImgErr={setPearlImgErr}
           narratorAffection={narrator.affection} narratorImgErr={narratorImgErr} setNarratorImgErr={setNarratorImgErr}
           companionState={companionState}
-          setShowPortraitManager={setShowPortraitManager}
           mapView={mapView} setMapView={setMapView} mapBig={mapBig} setMapBig={setMapBig}
           mapData={mapData} questProgress={questProgress} flags={flags} inv={inv}
           inSeaOfMind={inSeaOfMind} seaGate={seaGate} enterSeaOfMind={enterSeaOfMind} leaveSeaOfMind={leaveSeaOfMind}
@@ -4514,7 +4477,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           zoneTheme={zoneTheme} S={S}
           loading={loading} setLoading={setLoading} addLog={addLog}
           undoSnapshotRef={undoSnapshotRef} applySnapshot={applySnapshot}
-          showDebug={showDebug} setShowDebug={setShowDebug}
           gm={gm} setGm={setGm}
           char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
           dao={dao} setDao={setDao}
@@ -4535,7 +4497,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           handleAcceptEscort={handleAcceptEscort} handleGamble={handleGamble}
           handleCollectPigeons={handleCollectPigeons} buyPigeon={buyPigeon}
           handlePostSend={handlePostSend} handleTravel={handleTravel}
-          showBasement={showBasement} setShowBasement={setShowBasement} handleServiceOrder={handleServiceOrder}
+          handleServiceOrder={handleServiceOrder}
           handlePray={handlePray} handleReadBook={handleReadBook} handleBuyBook={handleBuyBook}
           deposit={deposit} depositedAt={depositedAt} handleDeposit={handleDeposit} handleWithdraw={handleWithdraw}
           pledgedItems={pledgedItems} handlePledge={handlePledge} handleRedeem={handleRedeem}
@@ -4571,10 +4533,9 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
           isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
           zoneTheme={zoneTheme} S={S}
           char={char} inv={inv} skills={skills} exp={exp} pot={pot}
-          playerAvatar={playerAvatar} setShowAvatarPicker={setShowAvatarPicker}
+          playerAvatar={playerAvatar}
           companionState={companionState} onSwitchCompanion={handleSwitchCompanion} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState} slImgErr={slImgErr} setSlImgErr={setSlImgErr}
           pearlForm={pearlForm} setPearlForm={setPearlForm} setPearlFormState={setPearlFormState} pearlImgErr={pearlImgErr} setPearlImgErr={setPearlImgErr}
-          setShowBody={setShowBody}
           trainNeigong={trainNeigong} trainWaigong={trainWaigong} trainCost={trainCost}
           effectiveSpecialNow={effectiveSpecialNow} activeBuffs={activeBuffs}
           varTree={varTree}
@@ -4669,10 +4630,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
 
       {showSettings && (
         <SettingsPanel
-          onOpenCardImport={() => { setShowSettings(false); setShowCardImport(true); }}
+          onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
           cfg={apiCfg}
           setCfg={setApiCfg}
-          onClose={() => setShowSettings(false)}
+          onClose={() => closeOverlay(OVERLAY.SETTINGS)}
           currentSnapshot={buildCurrentSnapshot}
           onLoadSnapshot={applySnapshot}
           varTree={varTree}
@@ -4690,7 +4651,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         <BodyProfilePanel
           profile={char.bodyProfile || emptyBodyProfile()}
           onChange={(next) => setChar(c => ({ ...c, bodyProfile: next }))}
-          onClose={() => setShowBody(false)}
+          onClose={() => closeOverlay(OVERLAY.BODY)}
           zoneTheme={zoneTheme}
           nsfwOn={nsfwOn}
           onRecommend={recommendOutfit}

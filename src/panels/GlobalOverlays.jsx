@@ -11,8 +11,9 @@
 //   BugReportModal/NpcActionMenu(400) · ItemActionMenu(410)
 //   TutorialOverlay/VersionHistoryPanel(500) · PipelineViewer
 //
-// 纯展示组件：不持有 state，全部经 props 下传。切磋界面额外包了一层
+// 弹层可见性读 uiStore，游戏数据与业务回调经 props 下传。切磋界面额外包了一层
 // ErrorBoundary——战斗引擎报错时不该把整局游戏拖崩，能退回房间重来。
+import { useCallback } from "react";
 import { listCharacters } from "../mvu.js";
 import { getTimeStr } from "../utils/mudHelpers.js";
 import { getPipelineLog } from "../apiConfig.js";
@@ -36,25 +37,19 @@ import ItemActionMenu from "../ItemActionMenu.jsx";
 import PersuasionScreen from "../PersuasionScreen.jsx";
 import DuelScreen from "../DuelScreen.jsx";
 import TeamDuelScreen from "../TeamDuelScreen.jsx";
+import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../store/uiStore.js";
 
 export default function GlobalOverlays({
   zoneTheme, isDayMode,
   char, setChar, inv, setInv, skills, varTree, room, innerRoomName, time,
   flags, questProgress, effectiveSpecialNow, companionState,
   loading, pendingTalks, waitSecs, addLog,
-  showTutorial, closeTutorial,
-  showVersionHistory, setShowVersionHistory,
-  showCharacterPage, setShowCharacterPage, characterPageTarget, setCharacterPageTarget,
-  showCardImport, setShowCardImport, onImportNpcs, onImportPlayer, onImportWorld,
+  characterPageTarget, setCharacterPageTarget,
+  onImportNpcs, onImportPlayer, onImportWorld,
   claimedMilestones, claimMilestone, giftToCharacter,
-  showQuestLog, setShowQuestLog,
-  showLore, setShowLore,
-  showQijuzhu, setShowQijuzhu, narratorStage,
-  showPortraitManager, setShowPortraitManager, portraits, setPortraits,
-  showPipeline, setShowPipeline,
-  showTrace, setShowTrace,
-  showCodex, setShowCodex,
-  showBugReport, setShowBugReport, buildBugReportTurns,
+  narratorStage,
+  portraits, setPortraits,
+  buildBugReportTurns,
   activeNpcMenu, setActiveNpcMenu,
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
   handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
@@ -63,17 +58,34 @@ export default function GlobalOverlays({
   forceAdvanceQuest,
   duelingNpc, setDuelingNpc, setPendingQuestBranch, duelFinishHandler,
 }) {
+  const showTutorial = useOverlay(OVERLAY.TUTORIAL);
+  const showVersionHistory = useOverlay(OVERLAY.VERSION_HISTORY);
+  const showCharacterPage = useOverlay(OVERLAY.CHARACTER_PAGE);
+  const showCardImport = useOverlay(OVERLAY.CARD_IMPORT);
+  const showQuestLog = useOverlay(OVERLAY.QUEST_LOG);
+  const showLore = useOverlay(OVERLAY.LORE);
+  const showQijuzhu = useOverlay(OVERLAY.QIJUZHU);
+  const showPortraitManager = useOverlay(OVERLAY.PORTRAIT_MANAGER);
+  const showPipeline = useOverlay(OVERLAY.PIPELINE);
+  const showTrace = useOverlay(OVERLAY.TRACE);
+  const showCodex = useOverlay(OVERLAY.CODEX);
+  const showBugReport = useOverlay(OVERLAY.BUG_REPORT);
+  const closeTutorial = useCallback(() => {
+    closeOverlay(OVERLAY.TUTORIAL);
+    try { localStorage.setItem("qucuo_tutorial_seen", "1"); } catch { /* ignore */ }
+  }, []);
+
   return (
     <>
       {showTutorial && <TutorialOverlay onClose={closeTutorial} />}
 
       {showVersionHistory && (
-        <VersionHistoryPanel onClose={() => setShowVersionHistory(false)} accentDim={zoneTheme.accentDim} />
+        <VersionHistoryPanel onClose={() => closeOverlay(OVERLAY.VERSION_HISTORY)} accentDim={zoneTheme.accentDim} />
       )}
 
       {showCardImport && (
         <CardImportScreen
-          onClose={() => setShowCardImport(false)}
+          onClose={() => closeOverlay(OVERLAY.CARD_IMPORT)}
           apiCfg={apiCfg}
           playerName={char.name}
           zoneTheme={zoneTheme}
@@ -91,7 +103,7 @@ export default function GlobalOverlays({
           onClaimMilestone={claimMilestone}
           onGift={giftToCharacter}
           initialSelected={characterPageTarget}
-          onClose={() => { setShowCharacterPage(false); setCharacterPageTarget(null); }}
+          onClose={() => { closeOverlay(OVERLAY.CHARACTER_PAGE); setCharacterPageTarget(null); }}
         />
       )}
 
@@ -99,7 +111,7 @@ export default function GlobalOverlays({
         <QuestLogScreen
           questProgress={questProgress}
           zoneTheme={zoneTheme}
-          onClose={() => setShowQuestLog(false)}
+          onClose={() => closeOverlay(OVERLAY.QUEST_LOG)}
         />
       )}
 
@@ -109,7 +121,7 @@ export default function GlobalOverlays({
           time={time}
           turnToStr={getTimeStr}
           zoneTheme={zoneTheme}
-          onClose={() => setShowLore(false)}
+          onClose={() => closeOverlay(OVERLAY.LORE)}
         />
       )}
 
@@ -119,7 +131,7 @@ export default function GlobalOverlays({
           time={time}
           narratorStage={narratorStage}
           zoneTheme={zoneTheme}
-          onClose={() => setShowQijuzhu(false)}
+          onClose={() => closeOverlay(OVERLAY.QIJUZHU)}
         />
       )}
 
@@ -128,13 +140,13 @@ export default function GlobalOverlays({
           portraits={portraits}
           onChange={setPortraits}
           knownNames={["旁白", "你", ...listCharacters(varTree).map(c => c.name), ...room.npcs.map(n => n.name)]}
-          onClose={() => setShowPortraitManager(false)}
+          onClose={() => closeOverlay(OVERLAY.PORTRAIT_MANAGER)}
         />
       )}
 
-      {showPipeline && <PipelineViewer onClose={() => setShowPipeline(false)} loading={loading || pendingTalks > 0} waitSecs={waitSecs} />}
-      {showTrace && <TraceViewer onClose={() => setShowTrace(false)} onReport={() => setShowBugReport(true)} />}
-      {showCodex && <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => setShowCodex(false)} />}
+      {showPipeline && <PipelineViewer onClose={() => closeOverlay(OVERLAY.PIPELINE)} loading={loading || pendingTalks > 0} waitSecs={waitSecs} />}
+      {showTrace && <TraceViewer onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />}
+      {showCodex && <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />}
       {showBugReport && (
         <BugReportModal
           isDayMode={isDayMode}
@@ -147,7 +159,7 @@ export default function GlobalOverlays({
             invNames: inv.map(i => typeof i === "string" ? i : i.name),
             skillNames: skills.map(s => s.name),
           })}
-          onClose={() => setShowBugReport(false)}
+          onClose={() => closeOverlay(OVERLAY.BUG_REPORT)}
         />
       )}
       {activeNpcMenu && (

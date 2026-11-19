@@ -8,18 +8,18 @@ import { QUCUO_MAP, isNodeUnlocked } from "../qucuoMap.js";
 import { QUALITY_COLOR } from "../equipment.js";
 import { DIRS, getTimeStr } from "../utils/mudHelpers.js";
 import NineGridMap from "../NineGridMap.jsx";
+import { OVERLAY, openOverlay, useOverlay } from "../store/uiStore.js";
 
 export default function LeftPanel({
   isMobile, mobileDrawer, setMobileDrawer,
   zoneTheme, S,
   room, innerRoomName, time,
   varTree, char,
-  showDebug,
   peoplePanel, setPeoplePanel,
   activeBuilding, setActiveBuilding,
   setActiveItemMenu,
   setActiveNpcMenu,
-  setCharacterPageTarget, setShowCharacterPage,
+  setCharacterPageTarget,
   setPigeonTarget, setInteractMode, inputRef, addLog,
   pigeonTarget,
   portraits, portraitTarget, setPortraitTarget,
@@ -29,14 +29,14 @@ export default function LeftPanel({
   pearlForm, setPearlForm, setPearlFormState, pearlImgErr, setPearlImgErr,
   narratorAffection, narratorImgErr, setNarratorImgErr,
   companionState,
-  setShowPortraitManager,
   mapView, setMapView, mapBig, setMapBig,
   mapData, questProgress, flags, inv,
   inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind,
   loading, act, autoTravelTo,
   uiGreen, uiPink,
-  setShowHomestead,
 }) {
+  const showDebug = useOverlay(OVERLAY.DEBUG);
+
   return (
     <div style={isMobile
       ? { position: "fixed", top: 0, bottom: 0, left: 0, width: "82vw", maxWidth: 340, zIndex: 41,
@@ -92,7 +92,7 @@ export default function LeftPanel({
           <div style={{ marginBottom: 14 }}>
             <div style={{ color: zoneTheme.accentDim, fontSize: "10.5px", marginBottom: 5, letterSpacing: "1px" }}>此地建筑</div>
             {home && (
-              <div onClick={() => setShowHomestead(true)} style={{ cursor: "pointer", marginBottom: 3 }}>
+              <div onClick={() => openOverlay(OVERLAY.HOMESTEAD)} style={{ cursor: "pointer", marginBottom: 3 }}>
                 <span style={{ color: "#c8a860", fontSize: "12px" }}>🏠 {home.label || "家园"}</span>
                 <span style={{ color: "#8f8a7c", fontSize: "10.5px", marginLeft: 6 }}>
                   {home.features.map(f => f.name).join("·")}
@@ -197,7 +197,7 @@ export default function LeftPanel({
                     return (
                       <div key={name} style={{ marginBottom: 5 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span onClick={() => { setCharacterPageTarget(name); setShowCharacterPage(true); }} title="打开此人详情面板"
+                          <span onClick={() => { setCharacterPageTarget(name); openOverlay(OVERLAY.CHARACTER_PAGE); }} title="打开此人详情面板"
                             style={{ cursor: "pointer", color: "#e8e4d6", flex: 1, fontSize: "11px" }}>{name}</span>
                           <span onClick={() => {
                               if ((char.pigeons || 0) <= 0) { addLog([{ t: "sys", text: `  没有信鸽——去驿站买鸽子，或到驿站直接寄信/送礼给${name}。` }]); return; }
@@ -230,7 +230,7 @@ export default function LeftPanel({
         <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 14, marginTop: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px", letterSpacing: "1px" }}>立绘</span>
-            <span onClick={() => setShowPortraitManager(true)} style={{ color: zoneTheme.textDim, fontSize: "10px", cursor: "pointer" }}>⚙ 管理</span>
+            <span onClick={() => openOverlay(OVERLAY.PORTRAIT_MANAGER)} style={{ color: zoneTheme.textDim, fontSize: "10px", cursor: "pointer" }}>⚙ 管理</span>
           </div>
           {(() => {
             const candidates = ["旁白", "你", ...room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name)];

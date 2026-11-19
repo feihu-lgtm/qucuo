@@ -40,3 +40,17 @@ it("keeps React and browser globals out of feature modules", () => {
 
   expect(violations).toEqual([]);
 });
+
+it("keeps the UI overlay store out of core and feature modules", () => {
+  const violations = [coreDir, featuresDir].flatMap((dir) =>
+    listJavaScriptFiles(dir).flatMap((file) => {
+      const source = readFileSync(file, "utf8");
+      const imports = [...source.matchAll(/\bfrom\s*["']([^"']+)["']/g)].map((match) => match[1]);
+      return imports
+        .filter((specifier) => specifier.includes("uiStore"))
+        .map((specifier) => `${relative(coreDir, file)}: ${specifier}`);
+    }),
+  );
+
+  expect(violations).toEqual([]);
+});
