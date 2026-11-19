@@ -1,0 +1,352 @@
+import { useCallback } from "react";
+import { callModel, callModelStream, getPipelineLog } from "../../apiConfig.js";
+import { startTrace, step as traceStep, endTrace, attachPipeline } from "../../actionTrace.js";
+import {
+  NNPC_STAGE, isInSea, narratorVoicePrompt, buildNarratorWhisperContext,
+  narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
+} from "../../narrator.js";
+import { gateBodyProfile } from "../../bodyProfile.js";
+import { SEA_OF_MIND } from "../../seaOfMind.js";
+import { availableKnot, canResolve, seaDialoguePrompt } from "../../narratorQuest.js";
+import { narratorVars, setNarratorVars } from "../../mvu.js";
+import { getTimeStr } from "../../utils/mudHelpers.js";
+import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../innerMap.js";
+import { allFactSummaries } from "../../knowledge.js";
+import { embeddingReady } from "../../memory/embeddingService.js";
+import { recallWithVisibility } from "../../memory/recallWithVisibility.js";
+import { gateScenario } from "../../worldbook.js";
+import { describeTallyForWhisper } from "../../memory/tally.js";
+import { QUCUO_QUESTS } from "../../quests/qucuoQuests.js";
+import { NOTE_SOURCE, VIA } from "../../memory/note.js";
+
+export function usePrivateTalk({
+  narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags,
+  jotNote, char, nsfwOn, questProgress, changePendingTalks, innerRoomName,
+  talkBusyRef, schedulerRef, setInput, timeRef, varTreeRef, setLog, setConvo,
+  setVarTree, setNarrator, noteAction,
+}) {
+  const talkToNarrator = useCallback(async (content) => {
+    changePendingTalks(1);
+    addLog([{ t: "cmd", text: `> 对旁白：${content}` }]);
+    setInput("");
+
+    // 行动分层日志（本轮补齐）：私聊旁白此前完全不进 trace 系统——虽然底层
+    // callModel/callModelStream 早就把每次调用的完整 prompt/回复记进了
+    // pipelineLog，但没有一条 trace 把它"挂"出来，顶部「🧭行动日志」面板
+    // 里看不到任何私聊痕迹，出问题（旁白答非所问/召回没生效）时无从排查。
+    // 补法与 act() 一致：startTrace 开局、traceStep 记各阶段、attachPipeline
+    // 挂真实 prompt/回复、endTrace 收尾。不消耗回合这件事不变——trace 只是
+    // 记录，不代表计入时间。
+    const _wt = startTrace(content, content);
+    traceStep(_wt, "意图分类", "pass", "模式=私聊旁白（不消耗回合）");
+
+    if (narrator.stage === NNPC_STAGE.CRASHED) {
+      traceStep(_wt, "旁白状态", "block", "旁白已崩溃(CRASHED)，本地兜底话术，未调用AI");
+      const flat = ["信号已断开。", "无法连接。", "……无应答。", "她不在这里。"];
+      const flatText = flat[Math.floor(Math.random() * flat.length)];
+      addLog([{ t: "narrator", text: `  「旁白」${flatText}` }]);
+      endTrace(_wt, `旁白已崩溃，本地兜底："${flatText}"`);
+      changePendingTalks(-1);
+      schedulerRef.current?.touch();
+      talkBusyRef.current = false; // 释放私聊闸门
+      return;
+    }
+
+    try {
+      const voice = narratorVoicePrompt(narrator);
+      // 背包物品是对象（{name,quality,...}），直接 inv.join(",") 会得到一串
+      // [object Object]，旁白根本读不出玩家身上有什么——这正是"玩家捡了界石、
+      // 旁白却坚称背包里只有青稞粗布"那个 bug 的根源。跟主叙事 invText 对齐，
+      // 取名字+品阶+是否装备，字符串物品也兼容。
+      const narratorInvText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
+      const worldState = `[当前世界状态，仅供你了解背景，不必主动复述] 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""}（${room.desc}） 房间里的人:${room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name).join(",") || "无"} 玩家背包:${narratorInvText}`;
+
+      // ── 旁白·全知事实（本轮新增）──
+      // 旁白设定上是跳出信息隔离的第四面墙外角色，普通 NPC 之间发生的事（哪怕玩家没
+      // 亲口跟她说过）她也该"看在眼里"。knowledge.js 的事实账本本来就是全局记账，
+      // 不受"是否在场""是否目击"这层限制，直接全量读给她——不依赖 embedding 开关，
+      // 也不需要玩家跟她提过。注意：这条只读普通事实账本，不读旁白私聊内容本身
+      // （私聊走的是下面 convo 共享那条独立渠道，两者不混）。
+      let factsBlock = "";
+      {
+        // 条数（绿灯·批五）：20→8。私聊本就是短回合（maxTokens 见 callTokenLimits.narratorWhisper），旁白也只会顺口提一两件；
+        // 喂 20 条里绝大多数是陪跑，还把真正相关的那几条冲淡。取最近 8 条，更近更准也更省。
+        const facts = allFactSummaries(varTreeRef.current, 8);
+        if (facts.length) {
+          factsBlock = "\n\n[你冷眼旁观知晓的事，未必是玩家亲口告诉过你的，回应时可以自然提起，但不要生硬列举或表现得像在念清单]\n"
+            + facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
+          traceStep(_wt, "全知事实", "pass", `注入最近${facts.length}条事实账本摘要`);
+        } else {
+          traceStep(_wt, "全知事实", "skip", "事实账本为空，未注入");
+        }
+      }
+
+      // 向量召回：让旁白"记起"可能早已滑出对话窗口的往事（与她"记得游戏里发生一切"的设定一致）。
+      // 降级安全：没开向量或召回失败则 recallInfo 为 null，这段完全不影响私聊。
+      let recallInfo = null;
+      let recallBlock = "";
+      if (embeddingReady(apiCfg)) {
+        const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
+        const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(varTreeRef.current.角色 || {}), room.name]));
+        recallInfo = await recallWithVisibility({
+          cfg: apiCfg, queryText: content,
+          contextText: `${lastAiText}\n[当前]位置:${room.name}`,
+          focusEntities, unlockedFlags: flags, presentNames: ["旁白"], topK: 5,
+        });
+        if (recallInfo && recallInfo.visible.length) {
+          recallBlock = "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n"
+            + recallInfo.visible.map(m => `· （第${m.meta.turn}回合）${m.tier === "weak" && m.text.length > 40 ? m.text.slice(0, 40) + "…" : m.text}`).join("\n");
+          traceStep(_wt, "向量召回", "pass", `召回${recallInfo.visible.length}条相关往事`);
+        } else {
+          traceStep(_wt, "向量召回", "skip", "已开启但本轮无相关召回结果");
+        }
+      } else {
+        traceStep(_wt, "向量召回", "skip", "embedding未开启，跳过召回");
+      }
+      // scenario 蓝绿灯（与 act 同一套 gateScenario）：私聊此前直接拼 preset.scenario 全文，
+      // 于是每次闲聊都要背一遍地图拓扑、契诃夫之枪、路途遭遇、装备品质六档表——
+      // 聊天一句用不上，纯烧上下文，还把她往说书人腔调上拽。scope 走独立的 "whisper"
+      // （不在任何条目的 scopes 里），因此专项段全靠关键词点亮：玩家问路才亮拓扑，
+      // 提到人名才亮具名人物，聊到掉落才亮装备规则。认不出标题的段落照旧常驻（蓝灯），
+      // 用户改过 scenario 或换自定义预设都不会因这层分流丢内容。
+      const _lastReply = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
+      const _whisperGate = gateScenario(preset.scenario, {
+        scope: "whisper",
+        userInput: content,
+        lastReply: _lastReply,
+      });
+      if (_whisperGate.lit.length || _whisperGate.dark.length) {
+        traceStep(_wt, "世界书·总纲", "info",
+          `🟢${_whisperGate.lit.join("、") || "无"}　⚫灭:${_whisperGate.dark.join("、") || "无"}`);
+      }
+
+      // 私聊话题红绿灯（身世/赌石邀帖等冷门追问）：默认不给，命中关键词才点亮。
+      // 与上面 scenario 的"默认全给、按条目灭灯"相反，是加法而非减法——这些条目
+      // 绝大多数轮次用不上，常驻只会白烧上下文；但玩家一旦问起，必须有统一口径，
+      // 否则模型只能现编，这局说是将门遗孤、下局说是灭门孤儿。
+      const _scan = `${content}\n${_lastReply}`;
+      const _topicGate = gateWhisperTopics(_scan);
+      if (_topicGate.lit.length) {
+        traceStep(_wt, "私聊话题·红绿灯", "pass", `🟢${_topicGate.lit.join("、")}`);
+      } else {
+        traceStep(_wt, "私聊话题·红绿灯", "skip", "本轮无话题命中");
+      }
+
+      // 任务线红绿灯：报出任务全名才查那一条，泛泛问只让她反问；好感度 <30 不给。
+      // 全任务表二十几条线、每条四五个 stage，全量注入等于每次闲聊背一本攻略书。
+      const _questGate = gateQuestTopic(_scan, narrator.affection, QUCUO_QUESTS, questProgress);
+      if (_questGate.lit.length) {
+        traceStep(_wt, "任务线·红绿灯", "pass", `🟢${_questGate.lit.join("、")}`);
+      } else {
+        traceStep(_wt, "任务线·红绿灯", "skip", "本轮没聊到任务");
+      }
+
+      // 体貌：私聊时公开层常亮（她一直看着你），私密层仍只认 ■ 模式。
+      const _bodyWhisper = gateBodyProfile(char.bodyProfile, {
+        whisper: true, nsfw: nsfwOn, scanText: _scan,
+      });
+      if (_bodyWhisper.lit.length || _bodyWhisper.dark.length) {
+        traceStep(_wt, "体貌", "info",
+          `🟢${_bodyWhisper.lit.join("、") || "无"}　⚫灭:${_bodyWhisper.dark.join("、") || "无"}`);
+      }
+
+      // 旁白专属世界书（设置→旁白 tab 可编辑）：只进私聊，不进主叙事。留空则一个字不发。
+      const loreText = (apiCfg.narratorLorebook || "").trim();
+      const narratorLoreBlock = loreText
+        ? `\n\n[旁白专属设定，只有你自己知道，玩家看不到这段文字，不要复述它的存在]\n${loreText}`
+        : "";
+      if (loreText) traceStep(_wt, "旁白专属世界书", "pass", `注入${loreText.length}字`);
+
+      // 篇幅指令拼在最末尾（贴生成处 = 酒馆 Depth 0，是插入深度最强的位置，
+      // 与「成文铁律放 userContent 末尾」同一条经验），别埋进开头被当耳旁风。
+      //
+      // ── 海内私聊：整套 system 换成创伤线专用 ──
+      // 她此刻不是"被抽出来对话的旁白"，而是一个人蜷在沙发上。
+      // 全知事实、旁白世界书、分档攻略、剧本总纲这些在这儿全不适用（她不在讲故事），
+      // 只留：创伤线阶段 prompt + 向量召回（她记得你们一路的事）+ 篇幅。
+      const inSeaNow = isInSea(narrator.stage) && room.name === SEA_OF_MIND.district;
+      const seaVars = narratorVars(varTreeRef.current);
+      // 起居注进私聊：她本来就是"记得游戏里发生一切"的角色，聊天时却不知道你今天
+      // 干了什么很奇怪。累计只在第六档给——那时账本是她在记（见 tally 里的注释）。
+      // 海里那条路不给：她此刻蜷在沙发上，谁还管你今天走了几步路。
+      const tallyBlock = inSeaNow ? "" : describeTallyForWhisper(
+        varTreeRef.current.世界?.起居注, timeRef.current,
+        { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
+      );
+      const sys = inSeaNow
+        ? `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: NNPC_STAGE })}${recallBlock}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`
+        : `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
+
+      // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
+      // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
+      // 对话类同样取至少 20 层全部互动。
+      const talkWindow = Math.max(apiCfg.contextWindow, 20);
+      const hist = convo.length > talkWindow ? convo.slice(-talkWindow) : convo;
+      // 私聊不需要像叙事那么长，但 600 这个旧硬编码在带思考的模型下会被思考 token 吃穿、
+      // 正文半句就撞 length 截断，故改读可调的 callTokenLimits.narratorWhisper（默认 6000）。
+      const narratorMaxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
+
+      let text;
+      let affDelta = 1; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖
+      let hadAffTag = false; // 标记是否真出现过 ⟦好感X⟧——没出现时的 +1 是兜底，不是她给的分
+      let finishReason;      // 停止原因：私聊此前完全没接这个字段，撞 length 上限也毫无提示
+      // 模型会照着历史里的「（旁白私聊回应）」前缀自己也写一遍，而下面存 convo 时又会
+      // 再加一次，于是前缀逐轮累积成「（旁白私聊回应）（旁白私聊回应）…」。存之前先剥干净：
+      // 前缀由系统负责加，模型自己写的一律不算数。
+      const stripEchoPrefix = (s) => s.replace(/^(?:\s*[（(]\s*旁白私聊回应\s*[）)])+\s*/, "");
+      const parseAffTag = (s) => {
+        const m = s.match(/⟦好感\s*([+-]?\d+)\s*⟧\s*$/);
+        const d = m ? Math.max(-3, Math.min(6, parseInt(m[1], 10) || 0)) : 1;
+        return { text: s.replace(/⟦好感\s*[+-]?\d+\s*⟧\s*$/, "").trim() || "……", delta: d, tagged: !!m };
+      };
+      if (apiCfg.streamEnabled && apiCfg.apiType !== "gemini") {
+        const logIdx = { current: null };
+        addLog([{ t: "narrator", text: "  「旁白」▌", streaming: true }]);
+        setLog(l => { logIdx.current = l.length - 1; return l; });
+        const { text: streamedText, finishReason: fr } = await callModelStream(
+          apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }],
+          (_delta, fullSoFar) => {
+            setLog(l => {
+              if (logIdx.current == null) return l;
+              const copy = [...l];
+              copy[logIdx.current] = { t: "narrator", text: `  「旁白」${fullSoFar} ▌`, streaming: true };
+              return copy;
+            });
+          },
+          { maxTokens: narratorMaxTokens, recallInfo },
+        );
+        finishReason = fr;
+        text = stripEchoPrefix(streamedText.trim()) || "……";
+        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
+        setLog(l => {
+          if (logIdx.current == null) return l;
+          const copy = [...l];
+          copy[logIdx.current] = { t: "narrator", text: `  「旁白」${text}` };
+          return copy;
+        });
+        traceStep(_wt, "AI调用", "pass", "流式一次成功");
+        attachPipeline(_wt, getPipelineLog()[0]);
+      } else {
+        const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊" });
+        finishReason = result.finishReason;
+        text = stripEchoPrefix(result.text.trim()) || "……";
+        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
+        addLog([{ t: "narrator", text: `  「旁白」${text}` }]);
+        traceStep(_wt, "AI调用", "pass", "非流式一次成功");
+        attachPipeline(_wt, getPipelineLog()[0]);
+      }
+
+      // ── 截断检查（本轮补齐）──
+      // 主叙事那条路一直有 finishReason 判定 + 自动重说，私聊却把这个字段整个丢掉了，
+      // 撞上限时界面上毫无提示，只表现成"她话说一半"，排查时无从下手。
+      // 附带一个更隐蔽的危害：⟦好感X⟧ 要求写在整段最末尾，被截断就一定读不到，
+      // parseAffTag 于是兜底 +1——她明明在敷衍，系统却在给玩家加好感。
+      // 这里不自动重试（私聊不消耗回合、玩家再问一句即可，重试反而多烧一次钱），
+      // 只把真相摆到台面上：日志提示 + trace 留痕 + 好感度按"未表态"处理成 0。
+      const whisperHitCap = /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
+      if (whisperHitCap) {
+        traceStep(_wt, "截断检查", "block", `撞 token 上限（finishReason=${finishReason}），本轮回复不完整`);
+        addLog([{ t: "sys", text: `  ⚠ 旁白这句话没说完就撞上了 token 上限（当前 ${narratorMaxTokens}）。可在 设置 → 旁白 里调大「私聊 token 输出上限」。` }]);
+        if (!hadAffTag) affDelta = 0; // 没读到她的表态就别替她表态
+      }
+
+      // 把这轮私聊也计入主引擎共享的对话历史，让旁白（以及之后的叙事）都能"记得"这次私聊
+      setConvo(c => [...c, { role: "user", content: `（私聊）${content}` }, { role: "assistant", content: `（旁白私聊回应）${text}` }]);
+
+      // 私聊旁白也浓缩一张私有小纸条，owner=旁白（你俩私有，只在旁白语境下浮现，
+      // 不进任何 NPC 的信息域）——与「对话模式=owner对话对象」同属"私语只你俩知道"这一类。
+      jotNote({ text: `与旁白私语：${content.slice(0, 24)}${content.length > 24 ? "…" : ""}`, owner: [{ name: "旁白", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.WHISPER });
+
+      // trace 收尾：摘要带上回复内容前段（trace 面板本身有完整 pipeline 可看全文，
+      // 这里摘要只做一句话定位用，避免摘要行本身过长）和好感度增量，
+      // 让「行动分层日志」列表一眼能看出这次私聊聊到了什么、好感怎么变的。
+      const textPreview = text.length > 30 ? text.slice(0, 30) + "…" : text;
+      endTrace(_wt, `旁白回应："${textPreview}"（好感${affDelta >= 0 ? "+" : ""}${affDelta}）`);
+
+      // ── 海内：好感不动，改判"这一轮她有没有把当前那条心结说出来" ──
+      // 创伤期的进度靠安抚与倾听推进，不靠聊天涨好感（她此刻不是在被追求）。
+      // 判定放本地关键词初筛：AI 已经拿到了那条心结的 guide，它写出来的正文里
+      // 必然带那几个核心意象；宁可放宽也不要卡住玩家——他都陪到这儿了。
+      if (inSeaNow) {
+        const kv = narratorVars(varTreeRef.current);
+        const cur = availableKnot(kv.comfort, kv.knots || []);
+        if (cur) {
+          const HINT = {
+            hebe:   ["没有回头", "没回头", "等过", "他没有看", "不理", "没看见我"],
+            corner: ["墙角", "那堵墙", "墙是凉", "推我", "打我", "小时候"],
+            doll:   ["布偶", "那个女人", "不看我", "她不看", "娃娃"],
+          }[cur.key] || [];
+          if (HINT.some(h => text.includes(h))) {
+            const nextKnots = [...(kv.knots || []), cur.key];
+            setVarTree(prev => setNarratorVars(prev, { knots: nextKnots, questStage: 3 }));
+            addLog([{ t: "affection", text: `  ⟡ 她把「${cur.title}」说出来了。` }]);
+            if (canResolve(kv.comfort, nextKnots)) {
+              addLog([{ t: "sys", text: "  ⟡ 三个心结都说尽了。她在等你说一句她自己说不出口的话。" }]);
+            }
+          }
+        }
+        endTrace(_wt, `海内私聊："${textPreview}"`);
+      }
+
+      // 非海内才走好感结算。刻意不用 early return——函数尾部（try/catch 之外）
+      // 统一释放 pendingTalks 与 talkBusyRef 闸门，从这里 return 会跳过它，
+      // 要么闸门永久锁死、要么得在这儿重复释放一次（两处释放又会多减一次）。
+      if (!inSeaNow) setNarrator(n => {
+        if (n.confessed) {
+          const mf = n.memoryFragments + 1;
+          if (mf >= 8) {
+            addLog([
+              { t: "sys", text: "" },
+              { t: "crash", text: "  ……她的声音忽然卡顿了一下。" },
+              { t: "crash", text: "  「等等——这些记忆，不该在这里。」" },
+              { t: "crash", text: "  文字开始扭曲，随即恢复成最初那种没有温度的公式化语气。" },
+              { t: "sys", text: "" },
+            ]);
+            return { ...n, stage: NNPC_STAGE.CRASHED, memoryFragments: mf };
+          }
+          return { ...n, memoryFragments: mf };
+        }
+        // 旁白好感同样吃日上限。她走的是 ⟦好感N⟧ 这条路、不经 applyMvuCommands，
+        // 所以那边的节流管不到她——而 90 是整条个人线的门槛（真容立绘＋心灵之海），
+        // 能一天刷满就等于门禁形同虚设。只限正向，掉好感不限。
+        let capped = affDelta;
+        if (affDelta > 0) {
+          const led = varTreeRef.current.世界?.好感日增;
+          const day = Math.floor((timeRef.current || 0) / 24);
+          const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
+          const already = Number(gained["旁白"]) || 0;
+          const room = Math.max(0, 12 - already);
+          capped = Math.min(affDelta, room);
+          if (capped <= 0) {
+            addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
+          } else {
+            gained["旁白"] = already + capped;
+            setVarTree(prev => {
+              const next = JSON.parse(JSON.stringify(prev || {}));
+              if (!next.世界) next.世界 = { 威望: 0 };
+              next.世界.好感日增 = { dayStamp: day, gained };
+              return next;
+            });
+          }
+        }
+        const inc = Math.max(-n.affection, Math.min(capped, 100 - n.affection));
+        if (inc !== 0) {
+          const next = n.affection + inc;
+          addLog([{ t: "affection", text: `  💗 好感度 ${inc > 0 ? "+" : ""}${inc}（${n.affection} → ${next}）` }]);
+          return { ...n, affection: next };
+        }
+        return n;
+      });
+    } catch (e) {
+      traceStep(_wt, "AI调用", "fail", `私聊失败：${e.message || e}`);
+      attachPipeline(_wt, getPipelineLog()[0]);
+      endTrace(_wt, `私聊中断（${e.message || e}）`);
+      addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
+    }
+    noteAction("whisper");
+    changePendingTalks(-1);
+    schedulerRef.current?.touch();
+    talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
+  }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress, changePendingTalks]);
+  return { talkToNarrator };
+}
