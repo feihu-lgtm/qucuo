@@ -555,7 +555,13 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       const hasCarriage = getBuildingsForLocation(state.room?.name)
         .some((building) => building.type === BUILDING_TYPE.TRANSPORT);
       if (!hasCarriage) return await applyFeature({ logs: [{ t: "err", text: "  此处没有驿站。" }] });
-      return await applyFeature(travelByCarriage(state, carriageMatch[1], getPriceForDest(carriageMatch[1])));
+      const destName = carriageMatch[1];
+      const result = travelByCarriage(state, destName, getPriceForDest(destName));
+      const status = await applyFeature(result);
+      if (result.changes?.room) {
+        gameActions.setInnerRoomName(hasInnerMap(destName) ? getDistrictAnchor(destName) : null);
+      }
+      return status;
     }
     const bookMatch = /^买书\s+(.+)$/.exec(line);
     if (bookMatch) {

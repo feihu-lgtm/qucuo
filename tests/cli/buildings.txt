@@ -15,5 +15,14 @@
 坐车 喇嘛庙
 :expect room.name="喇嘛庙"
 :expect char.money=45
+:expect innerRoomName="山门"
+走 北
+:expect innerRoomName="大殿"
+走 北
+:expect innerRoomName="西厢僧舍"
+:set log=[]
+看 喇嘛庙住持
+:expect log.0.t="cmd"
+:expect log.0.text="> look resident_lama_abbot"
 祈福
 :expect dao.karma=10
