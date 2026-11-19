@@ -36,6 +36,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -48,6 +49,17 @@ describe("createAutosaveScheduler", () => {
 
     expect(harness.save).not.toHaveBeenCalled();
     expect(harness.onPlayed).not.toHaveBeenCalled();
+    harness.scheduler.dispose();
+  });
+
+  it("uses the default timer wrappers", () => {
+    const harness = createHarness();
+    harness.arm();
+    harness.emit();
+
+    vi.advanceTimersByTime(100);
+
+    expect(harness.save).toHaveBeenCalledTimes(1);
     harness.scheduler.dispose();
   });
 
@@ -89,6 +101,25 @@ describe("createAutosaveScheduler", () => {
 
     expect(harness.onPlayed).toHaveBeenCalledTimes(1);
     harness.scheduler.dispose();
+  });
+
+  it("does not throw from the store listener when isArmed fails", () => {
+    let listener;
+    const error = new Error("arming failed");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const scheduler = createAutosaveScheduler({
+      subscribe: (nextListener) => {
+        listener = nextListener;
+        return () => {};
+      },
+      isArmed: () => { throw error; },
+      isBusy: () => false,
+      save: vi.fn(),
+    });
+
+    expect(() => listener()).not.toThrow();
+    expect(errorSpy).toHaveBeenCalledWith("[autosave]", error);
+    scheduler.dispose();
   });
 
   it("dispose cancels pending work and unsubscribes", () => {

@@ -5,12 +5,16 @@ export function createAutosaveScheduler({
   save,
   onPlayed,
   delayMs = 1500,
-  timers = { setTimeout, clearTimeout },
+  timers = {
+    setTimeout: (fn, ms) => setTimeout(fn, ms),
+    clearTimeout: (id) => clearTimeout(id),
+  },
 }) {
   let played = false;
   let pending = false;
   let timeoutId = null;
   let disposed = false;
+  let silenceDepth = 0;
 
   const cancelTimer = () => {
     if (timeoutId === null) return;
@@ -19,19 +23,23 @@ export function createAutosaveScheduler({
   };
 
   const schedule = () => {
-    if (disposed || !isArmed()) return;
-    pending = true;
-    if (!played) {
-      played = true;
-      onPlayed?.();
+    try {
+      if (disposed || silenceDepth > 0 || !isArmed()) return;
+      pending = true;
+      if (!played) {
+        played = true;
+        onPlayed?.();
+      }
+      cancelTimer();
+      timeoutId = timers.setTimeout(() => {
+        timeoutId = null;
+        if (disposed || !pending) return;
+        pending = false;
+        if (!isBusy()) save();
+      }, delayMs);
+    } catch (error) {
+      console.error("[autosave]", error);
     }
-    cancelTimer();
-    timeoutId = timers.setTimeout(() => {
-      timeoutId = null;
-      if (disposed || !pending) return;
-      pending = false;
-      if (!isBusy()) save();
-    }, delayMs);
   };
 
   const unsubscribe = subscribe(schedule);
