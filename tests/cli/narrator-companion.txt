@@ -1,0 +1,25 @@
+# Screen-free narrator and companion actions do not require AI or advance time.
+:new
+安抚 hug
+安抚 verbal
+安抚 verbal
+:expect varTree.世界.旁白.comfort.verbal=2
+收束创伤
+:expect varTree.世界.旁白.traumaResolved=false
+向旁白告白
+:expect narrator.confessed=false
+:set narrator.affection=100
+向旁白告白
+:expect narrator.confessed=true
+:set varTree.世界.旁白.comfort={"verbal":16}
+:set varTree.世界.旁白.knots=["hebe","corner","doll"]
+收束创伤
+:expect varTree.世界.旁白.traumaResolved=true
+:expect varTree.世界.旁白.questStage=4
+:set companionState={"snowLeopard":{"active":true},"asuka":{"active":false}}
+换队友 asuka
+:expect companionState.asuka.active=true
+:expect companionState.snowLeopard.active=false
+换队友 none
+:expect companionState.asuka.active=false
+:expect time=6
