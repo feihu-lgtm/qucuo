@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GROUND_ITEMS_INNER } from "../../groundItems.js";
+import { GROUND_ITEMS_INNER } from "../../domain/map/groundItems.js";
 import { innerGroundItemsRule } from "./rules.js";
 
 const [innerKey, itemSpecs] = Object.entries(GROUND_ITEMS_INNER)

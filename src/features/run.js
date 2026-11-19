@@ -1,5 +1,5 @@
 import { gameActions } from "../core/gameStore.js";
-import { registerFact } from "../knowledge.js";
+import { registerFact } from "../domain/prompt/knowledge.js";
 
 function actionForKey(key) {
   const actionName = `set${key[0].toUpperCase()}${key.slice(1)}`;

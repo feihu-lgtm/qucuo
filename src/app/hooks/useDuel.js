@@ -2,8 +2,8 @@ import { useCallback, useEffect } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
-import { ensureNpcCombatData } from "../../npcGeneration.js";
-import { NOTE_SOURCE, VIA } from "../../memory/note.js";
+import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
+import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 
 export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc }) {
   useEffect(() => {

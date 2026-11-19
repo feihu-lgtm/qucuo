@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { ESCORT_QUESTS } from "../../quests/escortQuests.js";
+import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
 import { setSeed } from "../../core/rng.js";
-import { VIA } from "../../memory/note.js";
+import { VIA } from "../../domain/memory/note.js";
 import {
   describeGiftForPrompt,
   giftNpc,

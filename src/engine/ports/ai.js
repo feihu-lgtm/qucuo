@@ -1,4 +1,4 @@
-import { callModel, callModelStream } from "../../apiConfig.js";
+import { callModel, callModelStream } from "../../infra/apiConfig.js";
 
 function asResponse(value) {
   if (typeof value === "string") return { text: value };

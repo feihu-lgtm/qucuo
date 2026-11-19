@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { forceAdvanceQuest as forceAdvanceQuestFeature } from "../../features/quest/logic.js";
-import { ensureNpcCombatData } from "../../npcGeneration.js";
+import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
 
 export function useQuestPanel({
   act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc,

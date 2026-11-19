@@ -1,8 +1,8 @@
-import { SECT_ENTRY, checkSectEntry } from "../../sectEntry.js";
-import { makeItem } from "../../equipment.js";
-import { makeItemSmart } from "../../items/catalog.js";
-import { markNpcAsKnown } from "../../npcAwareness.js";
-import { NOTE_SOURCE, VIA } from "../../memory/note.js";
+import { SECT_ENTRY, checkSectEntry } from "../../domain/character/sectEntry.js";
+import { makeItem } from "../../domain/economy/equipment.js";
+import { makeItemSmart } from "../../domain/items/catalog.js";
+import { markNpcAsKnown } from "../../domain/npc/npcAwareness.js";
+import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 
 export function joinSect(state) {
   const status = checkSectEntry({

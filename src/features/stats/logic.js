@@ -1,5 +1,5 @@
-import { effectiveSpecial } from "../../equipment.js";
-import { effectiveMaxHp } from "../../kungfu/qucuoKungfu.js";
+import { effectiveSpecial } from "../../domain/economy/equipment.js";
+import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
 import { activeBuffsWithRemaining, applyBuffsToSpecial } from "../../utils/buffSystem.js";
 
 export function selectEffectiveStats(state) {

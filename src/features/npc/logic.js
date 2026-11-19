@@ -1,20 +1,20 @@
-import { QUALITY, CATEGORY_LABEL, makeItem } from "../../equipment.js";
-import { makeItemSmart, CATALOG_INDEX } from "../../items/catalog.js";
-import { markNpcAsKnown as markNpcKnown } from "../../npcAwareness.js";
-import { removeNpc, markCarriedLost, respawnNpc } from "../../roomNpcs.js";
-import { tryLearnFromMaster, tryStealFrom } from "../../kungfu/learnSkill.js";
-import { stealSuccessRate } from "../../combat/stealSystem.js";
-import { duelAffGain, duelDropChance, duelPotGain, TEAMWORK_GAIN } from "../../combat/duelSettleMath.js";
+import { QUALITY, CATEGORY_LABEL, makeItem } from "../../domain/economy/equipment.js";
+import { makeItemSmart, CATALOG_INDEX } from "../../domain/items/catalog.js";
+import { markNpcAsKnown as markNpcKnown } from "../../domain/npc/npcAwareness.js";
+import { removeNpc, markCarriedLost, respawnNpc } from "../../domain/npc/roomNpcs.js";
+import { tryLearnFromMaster, tryStealFrom } from "../../domain/kungfu/learnSkill.js";
+import { stealSuccessRate } from "../../domain/combat/stealSystem.js";
+import { duelAffGain, duelDropChance, duelPotGain, TEAMWORK_GAIN } from "../../domain/combat/duelSettleMath.js";
 import { random } from "../../core/rng.js";
 import { bar } from "../../utils/mudHelpers.js";
-import { QUEST_TYPE } from "../../quests/questTypes.js";
-import { QUCUO_QUESTS } from "../../quests/qucuoQuests.js";
-import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings } from "../../quests/questEngine.js";
-import { applyStageRewards, resolveStageRewards } from "../../quests/questRewards.js";
-import { ESCORT_QUESTS } from "../../quests/escortQuests.js";
-import { activeCompanionKey, companionKeyByName, unlockImportedCompanion, unlockPearl, unlockSnowLeopard } from "../../companion.js";
-import { NOTE_SOURCE, VIA } from "../../memory/note.js";
-import { buildShopInventory, rollShopStock } from "../../shops/qucuoShops.js";
+import { QUEST_TYPE } from "../../domain/quests/questTypes.js";
+import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings } from "../../domain/quests/questEngine.js";
+import { applyStageRewards, resolveStageRewards } from "../../domain/quests/questRewards.js";
+import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
+import { activeCompanionKey, companionKeyByName, unlockImportedCompanion, unlockPearl, unlockSnowLeopard } from "../../domain/companion/companion.js";
+import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 

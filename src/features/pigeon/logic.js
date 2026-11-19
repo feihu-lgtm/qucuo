@@ -1,9 +1,9 @@
 import { random } from "../../core/rng.js";
-import { makeItem } from "../../equipment.js";
-import { registerFact } from "../../knowledge.js";
-import { makeItemSmart } from "../../items/catalog.js";
-import { NOTE_SOURCE, VIA } from "../../memory/note.js";
-import { QUCUO_MAP } from "../../qucuoMap.js";
+import { makeItem } from "../../domain/economy/equipment.js";
+import { registerFact } from "../../domain/prompt/knowledge.js";
+import { makeItemSmart } from "../../domain/items/catalog.js";
+import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 

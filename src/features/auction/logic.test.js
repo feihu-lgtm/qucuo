@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { auctionWin } from "./logic.js";
-import { AUCTION_LOT } from "../../auction.js";
+import { AUCTION_LOT } from "../../domain/economy/auction.js";
 import { applyResult } from "../run.js";
 import { gameStore, initGameStore } from "../../core/gameStore.js";
 

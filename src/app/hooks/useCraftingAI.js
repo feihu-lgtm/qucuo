@@ -1,7 +1,7 @@
 import { useCallback } from "react";
-import { callModel } from "../../apiConfig.js";
-import { forgeDesign } from "../../extractionEngine.js";
-import { NOTE_SOURCE } from "../../memory/note.js";
+import { callModel } from "../../infra/apiConfig.js";
+import { forgeDesign } from "../../domain/prompt/extractionEngine.js";
+import { NOTE_SOURCE } from "../../domain/memory/note.js";
 
 export function useCraftingAI({
   gambleTalkCtx, setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,

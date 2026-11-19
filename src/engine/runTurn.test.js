@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { emptyBodyProfile } from "../bodyProfile.js";
-import { initialNarratorState } from "../narrator.js";
-import { startTrace } from "../actionTrace.js";
-import { applyKnowledgeTreeDiff } from "../knowledge.js";
+import { emptyBodyProfile } from "../domain/character/bodyProfile.js";
+import { initialNarratorState } from "../domain/narrator/narrator.js";
+import { startTrace } from "../infra/actionTrace.js";
+import { applyKnowledgeTreeDiff } from "../domain/prompt/knowledge.js";
 import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../core/gameStore.js";
 import { getRngState, random, setRngState, setSeed } from "../core/rng.js";
-import { loadSquares, serializeSquares } from "../mapSquares.js";
+import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
 import { createMockAi } from "./ports/ai.js";
 import { createExtractionState, runTurn } from "./runTurn.js";
 import { playTurn, ROLLBACK_KEYS } from "./playTurn.js";

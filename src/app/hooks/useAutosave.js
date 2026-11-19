@@ -5,22 +5,22 @@ import { setRngState } from "../../core/rng.js";
 import { DEFAULT_PRESETS } from "../../core/newGame.js";
 import { gameStore, useGameStore } from "../../store/gameStore.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
-import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../saves.js";
-import { initialNarratorState, migrateNarratorState } from "../../narrator.js";
-import { backfillInventoryFromCatalog } from "../../items/catalog.js";
-import { generateNpcMoveset } from "../../npcGeneration.js";
-import { seedKnowledge } from "../../knowledge.js";
-import { initCompanionState } from "../../companion.js";
-import { CURRENT_VERSION } from "../../version.js";
-import { callModel } from "../../apiConfig.js";
-import { buildExtractionCfg } from "../../extractionEngine.js";
-import { getMapNode } from "../../qucuoMap.js";
-import { getDistrictAnchor, getInnerRoomNames, hasInnerMap } from "../../innerMap.js";
-import { initialVarTree } from "../../mvu.js";
+import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../infra/saves.js";
+import { initialNarratorState, migrateNarratorState } from "../../domain/narrator/narrator.js";
+import { backfillInventoryFromCatalog } from "../../domain/items/catalog.js";
+import { generateNpcMoveset } from "../../domain/npc/npcGeneration.js";
+import { seedKnowledge } from "../../domain/prompt/knowledge.js";
+import { initCompanionState } from "../../domain/companion/companion.js";
+import { CURRENT_VERSION } from "../../infra/version.js";
+import { callModel } from "../../infra/apiConfig.js";
+import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
+import { getMapNode } from "../../domain/map/qucuoMap.js";
+import { getDistrictAnchor, getInnerRoomNames, hasInnerMap } from "../../domain/map/innerMap.js";
+import { initialVarTree } from "../../domain/prompt/mvu.js";
 import {
   rollSkeleton, buildSquarePrompt, parseSquareBatch, applySquareBatch,
   pendingNodes, serializeSquares, loadSquares,
-} from "../../mapSquares.js";
+} from "../../domain/map/mapSquares.js";
 
 export function useInitialRestore({ initialLoadSlotId }) {
   const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId);

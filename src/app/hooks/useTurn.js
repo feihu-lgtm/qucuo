@@ -3,24 +3,24 @@ import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
 import { innerMove as innerMoveLogic, outerArrival as outerArrivalLogic } from "../../features/map/logic.js";
-import { resolveOuterLock } from "../../act/outerMove.js";
+import { resolveOuterLock } from "../../engine/act/outerMove.js";
 import { rollMovementEvents } from "../../features/map/encounter.js";
-import { judgeCollect } from "../../act/roundNotes.js";
-import { CATEGORY_LABEL } from "../../equipment.js";
-import { findTargetedRumor } from "../../npcEmergence.js";
-import { classifyIntent, INTENT } from "../../inputIntent.js";
-import { buildDirectionJudgeRequest, getMapNode, parseDirectionJudgeResponse, QUCUO_MAP } from "../../qucuoMap.js";
-import { buildExtractionCfg } from "../../extractionEngine.js";
-import { callModel, classifyError, getPipelineLog } from "../../apiConfig.js";
-import { startTrace, step as traceStep, endTrace } from "../../actionTrace.js";
+import { judgeCollect } from "../../engine/act/roundNotes.js";
+import { CATEGORY_LABEL } from "../../domain/economy/equipment.js";
+import { findTargetedRumor } from "../../domain/npc/npcEmergence.js";
+import { classifyIntent, INTENT } from "../../domain/prompt/inputIntent.js";
+import { buildDirectionJudgeRequest, getMapNode, parseDirectionJudgeResponse, QUCUO_MAP } from "../../domain/map/qucuoMap.js";
+import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
+import { callModel, classifyError, getPipelineLog } from "../../infra/apiConfig.js";
+import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { createPromptContext } from "../../engine/prompt/index.js";
-import * as importedRegistry from "../../cards/importedRegistry.js";
-import { COMPANION_LORE } from "../../companion.js";
-import { getCompanionDescForm } from "../../companionForms.js";
-import { SEA_OF_MIND } from "../../seaOfMind.js";
+import * as importedRegistry from "../../domain/cards/importedRegistry.js";
+import { COMPANION_LORE } from "../../domain/companion/companion.js";
+import { getCompanionDescForm } from "../../domain/companion/companionForms.js";
+import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
 import { parseDir } from "../../utils/mudHelpers.js";
 import { playTurn } from "../../engine/playTurn.js";
-import { burnSquare, consumeArrival, serializeSquares } from "../../mapSquares.js";
+import { burnSquare, consumeArrival, serializeSquares } from "../../domain/map/mapSquares.js";
 
 export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,

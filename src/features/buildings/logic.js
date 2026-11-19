@@ -1,10 +1,10 @@
 import { random } from "../../core/rng.js";
-import { ITEM_CATEGORY, makeItem } from "../../equipment.js";
-import { effectiveMaxHp, makeSkillEntry } from "../../kungfu/qucuoKungfu.js";
-import { makeItemSmart } from "../../items/catalog.js";
-import { getMapNode } from "../../qucuoMap.js";
+import { ITEM_CATEGORY, makeItem } from "../../domain/economy/equipment.js";
+import { effectiveMaxHp, makeSkillEntry } from "../../domain/kungfu/qucuoKungfu.js";
+import { makeItemSmart } from "../../domain/items/catalog.js";
+import { getMapNode } from "../../domain/map/qucuoMap.js";
 import { makeBuffFlag } from "../../utils/buffSystem.js";
-import { INGREDIENT_LORE } from "../../cooking.js";
+import { INGREDIENT_LORE } from "../../domain/economy/cooking.js";
 
 const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }] });
 const noOpResult = () => ({ logs: [] });

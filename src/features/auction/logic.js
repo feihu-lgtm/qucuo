@@ -1,8 +1,8 @@
-import { AUCTION_LOT } from "../../auction.js";
-import { invHasItemNamed } from "../../safeHouse.js";
-import { makeItem } from "../../equipment.js";
-import { makeItemSmart } from "../../items/catalog.js";
-import { NOTE_SOURCE } from "../../memory/note.js";
+import { AUCTION_LOT } from "../../domain/economy/auction.js";
+import { invHasItemNamed } from "../../domain/map/safeHouse.js";
+import { makeItem } from "../../domain/economy/equipment.js";
+import { makeItemSmart } from "../../domain/items/catalog.js";
+import { NOTE_SOURCE } from "../../domain/memory/note.js";
 
 export function auctionWin(state, finalPrice) {
   if ((state.char.money || 0) < finalPrice) return { logs: [{ t: "sys", text: "  你付不出这笔钱，掌槌的脸色很难看。" }] };

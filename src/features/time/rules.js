@@ -1,7 +1,7 @@
 import { random } from "../../core/rng.js";
-import { tickAngryState } from "../../combat/stealSystem.js";
-import { makeItem } from "../../equipment.js";
-import { makeItemSmart } from "../../items/catalog.js";
+import { tickAngryState } from "../../domain/combat/stealSystem.js";
+import { makeItem } from "../../domain/economy/equipment.js";
+import { makeItemSmart } from "../../domain/items/catalog.js";
 import { cleanExpiredBuffs } from "../../utils/buffSystem.js";
 
 const QUALITIES = ["白", "绿", "蓝", "紫", "橙", "红"];

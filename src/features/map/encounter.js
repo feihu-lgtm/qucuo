@@ -1,9 +1,9 @@
-import { ITEM_CATEGORY, makeItem, rollQuality } from "../../equipment.js";
-import { rollEncounter } from "../../encounter.js";
-import { makeItemSmart } from "../../items/catalog.js";
-import { detectCollectPickup, allCollected } from "../../quests/collect.js";
-import { getCurrentStage } from "../../quests/questEngine.js";
-import { QUCUO_QUESTS } from "../../quests/qucuoQuests.js";
+import { ITEM_CATEGORY, makeItem, rollQuality } from "../../domain/economy/equipment.js";
+import { rollEncounter } from "../../domain/map/encounter.js";
+import { makeItemSmart } from "../../domain/items/catalog.js";
+import { detectCollectPickup, allCollected } from "../../domain/quests/collect.js";
+import { getCurrentStage } from "../../domain/quests/questEngine.js";
+import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 

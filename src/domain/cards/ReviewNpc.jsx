@@ -1,0 +1,1149 @@
+// 入册审改 · 作为 NPC
+// ============================================================================
+// 字段顺序照「导入映射表 · 作为 NPC」来，一项不落：
+//   角色名 / 别名 / 一句话身份 / 人设正文 / 外貌锚点 / 好感初值 / 好感里程碑 /
+//   NSFW 段 / 品阶 / 内外功 / 七维 / 气血 / 随身物 / 招式 / 立绘 / 落脚 /
+//   已丢弃的（状态栏格式、前端脚本）
+//
+// 标 ⚠ 的四项（品阶、随身物、招式、内外功七维）卡里根本没有，是 AI 抽的草案或
+// 默认值，所以每项都带来源标记与判断依据——没有依据的话玩家只能盲信。
+
+import React, { useState, useMemo, useRef } from "react";
+import {
+  S, TIERS, SEVEN, JadeTier, StatRow, SevenDim, Src, TextField,
+  Section, Note, Pills, Step, selStyle,
+} from "./ReviewParts.jsx";
+import { normalizePlacement } from "./importedRegistry.js";
+import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose, LORE_MAX } from "./scanPrompts.js";
+import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "./placementPlan.js";
+import { acquire } from "./rateLimiter.js";
+import { MOVE_ARCHETYPES, resolveArchetype } from "../combat/moveArchetypes.js";
+import { hpFromNeigong, atkFromWaigong } from "../npc/npcGeneration.js";
+import { statsForQuality } from "../economy/equipment.js";
+import { effectBrief, MOVE_RULES, PARAM_KEYS, EFFECT_CN } from "../economy/itemEffectText.js";
+import { CATALOG } from "../items/catalog.js";
+import { callModel } from "../../infra/apiConfig.js";
+import { QUCUO_MAP } from "../map/qucuoMap.js";
+import { hasInnerMap, getPublicInnerRoomNames } from "../map/innerMap.js";
+import { DEFAULT_PORTRAITS, resolveCardPortrait } from "../companion/portraits.js";
+import { compressImage, isCustomPortrait, fmtBytes } from "./portraitCompress.js";
+
+// 心灵之海是好感解锁的意识空间、第三新东京市是终章一次性据点，都不该当日常落脚点
+const DISTRICTS = Object.keys(QUCUO_MAP).filter(d => d !== "心灵之海" && d !== "第三新东京市");
+
+// 物品描述的输出上限。跟 PLAN_MAX_TOKENS 同一个理由：原来写死 400，在带思考的
+// 模型上会被思考 token 吃穿。这一处的症状比落脚规划更隐蔽——它要的是纯文本，
+// 截断不会报错，只是玩家看到的描述莫名缺半截，还以为是模型没写好。
+const ITEM_DESC_MAX_TOKENS = 2000;
+
+const PLACEMENT_LABEL = { mention: "不落地", resident: "驻场", wander: "游走" };
+const PLACEMENT_HINT = {
+  mention: "他的人设只在被提到时注入，不会主动出现在任何据点。适合远方的人、传闻里的人。",
+  resident: "进了这个据点必定遇见他，不受时辰与运气影响。跟村长、掌柜这类人同一个待遇。",
+  wander: "按权重每天随机出现在选中的据点，且只在设定的时辰里露面。跟行商、镖师同一个待遇。",
+};
+
+// 招式效果标志位 → 人话。这些键来自 combat/moveArchetypes.js 的 tiers，
+// 直接把英文键甩给玩家看等于没显示，所以逐个给个说法。
+const EFFECT_LABEL = {
+  energyCost: "内力消耗",
+  baseDamageMultiplier: "威力倍率",
+  onCounterSuccessDamageRatio: "反打比例",
+  onCounterSuccessEnergyGain: "反制回气",
+  onCounterSuccessPreemptive: "反制抢先结算",
+  onCounterFailEnergyPenalty: "失手扣气",
+  onCounterFailDefenseNullified: "失手防御失效",
+  counterStacksGrowth: "连挡叠势",
+  dispelSelf: "运功自解",
+  doubleVsStatus: "克中状态翻倍",
+  ignoreDefense: "无视防御",
+  afterStatusBonus: "趁中招追击",
+  detonateMark: "引爆内伤",
+  forceFirst: "强制先手",
+  nullifyStatusOnHit: "命中清状态",
+  energyRestore: "回气量",
+  nextAttackBonus: "下击加成",
+  confuseChance: "迷惑概率",
+  energyDiffDamage: "气差伤害",
+  freezeEnergyRecovery: "冻结对手回气",
+  doubleReflectDamage: "双倍反伤",
+  hpRestore: "回血比例",
+  sealEnergyRecovery: "封住回气",
+  type: "招式类型",
+};
+
+function fmtEffectValue(v) {
+  if (v === true) return "有";
+  if (v === false) return "无";
+  if (typeof v === "number") return String(v);
+  if (v && typeof v === "object") {
+    return Object.entries(v).map(([k, x]) => `${EFFECT_LABEL[k] || k} ${x}`).join("、");
+  }
+  return String(v);
+}
+
+// ── 招式编辑器 ────────────────────────────────────────────────────────────────
+
+/**
+ * 【为什么是「选原型 + 起名」而不是「勾十几个标志位」】
+ * 本作的招式效果由 原型 × 品阶 自动解出（见 combat/moveArchetypes.js）：同一个
+ * 「防守反击」，白档只是挡一下，红档是听桥——近乎全免＋满反打＋抢先结算。
+ * 所以玩家该决定的是"这人走哪条路数"，不是逐个数值。改品阶，招式会跟着变强变弱。
+ * 底下那块「本档实际效果」把解出来的数值摊开给你看，不用猜。
+ */
+function MoveEditor({ moves, levelCap, onChange, why, source }) {
+  const [open, setOpen] = useState(null);
+  const slots = useMemo(() => {
+    const base = [...MOVE_SLOTS];
+    if (moves && moves["疗伤"]) base.push("疗伤");
+    return base;
+  }, [moves]);
+
+  const setSlot = (slot, patch) => onChange({ ...moves, [slot]: { ...(moves?.[slot] || {}), ...patch } });
+
+  return (
+    <div>
+      {slots.map(slot => {
+        const m = moves?.[slot] || {};
+        const arch = m.archetype || SLOT_DEFAULT_ARCHETYPE[slot];
+        const resolved = resolveArchetype(arch, levelCap) || {};
+        const isOpen = open === slot;
+        const type = MOVE_ARCHETYPES[arch]?.type || "—";
+        return (
+          <div key={slot} style={{ marginBottom: 7, padding: "7px 9px", borderRadius: 0, background: "rgba(0,0,0,.22)", border: "1px solid #2a2419" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+              <span style={{ width: 30, fontSize: 11, color: "#d4a853", flexShrink: 0 }}>{slot}</span>
+              <input value={m.name || ""} placeholder={`${arch}（未起名）`}
+                onChange={e => setSlot(slot, { name: e.target.value.slice(0, 10) })}
+                style={{ ...selStyle, flex: 1, textAlign: "center" }} />
+              {/* 回气槽固定走「回气」原型，不给选——它是能量枯竭时的保底招 */}
+              {slot === "回气" ? (
+                <span style={{ width: 86, textAlign: "center", fontSize: 11, color: "#8f8a7c" }}>回气</span>
+              ) : (
+                <select value={arch} onChange={e => setSlot(slot, { archetype: e.target.value })}
+                  style={{ ...selStyle, width: 86 }}>
+                  {MOVE_ARCHETYPE_IDS.map(a => (
+                    <option key={a} value={a} style={{ background: "#1a1206" }}>{a}</option>
+                  ))}
+                </select>
+              )}
+              <span onClick={() => setOpen(isOpen ? null : slot)}
+                title="看这一档解出来的实际效果"
+                style={{ cursor: "pointer", fontSize: 10, color: "#8ac8b8", flexShrink: 0 }}>
+                {isOpen ? "收起" : "数值"}
+              </span>
+            </div>
+            <input value={m.desc || ""} placeholder="一句话写这招看起来什么样（会注入给说书人）"
+              onChange={e => setSlot(slot, { desc: e.target.value.slice(0, 60) })}
+              style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "#e8e4d6" }} />
+            {isOpen && (
+              <div style={{ marginTop: 6, padding: "6px 8px", background: "#161510", border: "1px solid #4a453c", borderRadius: 0 }}>
+                <div style={{ fontSize: 9.5, color: "#5a6a6a", marginBottom: 4, fontFamily: "ui-monospace,Menlo,Consolas,monospace" }}>
+                  {arch} × {TIERS[levelCap]?.label}档 → 类型 {type}
+                </div>
+                {Object.entries(resolved).filter(([k]) => k !== "type").map(([k, v]) => (
+                  <div key={k} style={{ display: "flex", fontSize: 10, color: "#9a9a8a", lineHeight: 1.6 }}>
+                    <span style={{ width: 108, color: "#6a7a7a", flexShrink: 0 }}>{EFFECT_LABEL[k] || k}</span>
+                    <span style={{ color: "#8ac8b8" }}>{fmtEffectValue(v)}</span>
+                  </div>
+                ))}
+                <div style={{ fontSize: 9.5, color: "#5a6a6a", marginTop: 5 }}>
+                  这些数值由原型和品阶算出，改品阶会整套跟着变，不用手填。
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
+        {!moves?.["疗伤"] ? (
+          <span onClick={() => setSlot("疗伤", { archetype: "疗伤", name: "", desc: "" })}
+            title="第五招，只有会运功回血的人才配"
+            style={{ cursor: "pointer", fontSize: 10.5, color: "#8a8270" }}>＋ 加一个疗伤招</span>
+        ) : (
+          <span onClick={() => { const n = { ...moves }; delete n["疗伤"]; onChange(n); }}
+            style={{ cursor: "pointer", fontSize: 10.5, color: "#8a8270" }}>− 去掉疗伤招</span>
+        )}
+        <span style={{ flex: 1 }} />
+        {why ? <span style={{ fontSize: 10, color: "#8f8a7c", fontStyle: "italic" }}>据「{why}」</span> : null}
+        <Src source={source} />
+      </div>
+    </div>
+  );
+}
+
+// ── 随身物 ────────────────────────────────────────────────────────────────────
+
+/**
+ * 【默认为空是有意的】卡里没有物品信息，留空时运行时会走 rollNpcCarry 的四池
+ * 随机抽（按品阶给武器/护甲/饰品/杂物），不至于两手空空。只有你想精确指定
+ * 「这人身上一定有那把刀」时才需要在这儿挑。
+ */
+export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
+  const [cat, setCat] = useState("");
+  const [qual, setQual] = useState("");
+  const [kw, setKw] = useState("");
+  const [forging, setForging] = useState(false);   // 是否展开"新造一件"
+  const [draft, setDraft] = useState(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [detailItem, setDetailItem] = useState(null);   // 点随身物看详情（点名字展开，点 ✕ 才删）
+
+  const cats = useMemo(() => [...new Set(CATALOG.map(e => e.category).filter(Boolean))], []);
+  // 【为什么不再 slice(0,60)】百物录现在 406 件（兵器 101 / 护具 59 / 饰物 82 /
+  // 杂物 164），原来只渲染前 60 件且不做任何提示——玩家不搜名字就永远翻不到后面
+  // 那 346 件，看起来像是"库里只有这些"。406 个条目对 React 不算负担，容器给
+  // 滚动条即可，真正需要的是筛得动：类别、品阶、关键词三个维度。
+  // 关键词连 desc 一起搜，找"止血的"比记得住药名实用。
+  const list = useMemo(() => {
+    const k = kw.trim();
+    return CATALOG.filter(e =>
+      (!cat || e.category === cat)
+      && (!qual || e.quality === qual)
+      && (!k || e.name.includes(k) || (e.desc || "").includes(k)));
+  }, [cat, qual, kw]);
+
+  // carry 的元素有两种：在册物品只存名字字符串，自造物品存完整对象。
+  // 所有增删判重都必须过 nameOf，不能直接 includes——否则自造的那件永远判不出
+  // "已选"，会被重复加进去。
+  const nameOf = (c) => (typeof c === "string" ? c : (c?.name || ""));
+  const has = (name) => carry.some(c => nameOf(c) === name);
+  const add = (item) => { if (!has(nameOf(item))) onChange([...carry, item]); };
+  const del = (name) => onChange(carry.filter(c => nameOf(c) !== name));
+  // 详情/新造都在编辑同一份「物品描述」。改一件已选的自造物：按名字替换回 carry。
+  const patchItem = (name, patch) => onChange(carry.map(c =>
+    nameOf(c) === name && typeof c === "object" ? { ...c, ...patch } : c));
+
+  const blankDraft = () => ({
+    name: "", category: cat || "weapon", quality: TIERS[levelCap]?.label || "白",
+    desc: "", sixDim: {}, effect: {}, atkMul: 1, defMul: 1,
+  });
+
+  // 攻击特效的可勾选清单（物品版的武学标志位）。按 combat/resolveTurn.js 认的
+  // 字段名，给出默认值——玩家只需勾"这件装备带不带某个效果"，数值交给默认。
+  // applyMark 需要 name/stacks 这种结构，单独给默认对象。
+  const ITEM_EFFECT_CHOICES = [
+    { key: "forceFirst", label: "必先手", def: true },
+    { key: "ignoreDefense", label: "无视防御", def: true },
+    { key: "doubleVsStatus", label: "克中招翻倍", def: true },
+    { key: "lowHpBonus", label: "残血增伤", def: 0.15 },
+    { key: "highHpBonus", label: "满血增伤", def: 0.15 },
+    { key: "afterStatusBonus", label: "趁中招追击", def: 0.2 },
+    { key: "detonateMark", label: "引爆内伤", def: true },
+    { key: "energyDiffDamage", label: "打能量差", def: true },
+    { key: "freezeEnergyRecovery", label: "封气", def: true },
+    { key: "onCounterSuccessDamageRatio", label: "应对反击", def: 0.5 },
+    { key: "nullifyStatusOnHit", label: "打断状态招", def: true },
+    { key: "immuneControl", label: "免控", def: true },
+    { key: "energyRestore", label: "起手回气", def: 2 },
+    { key: "hpRestore", label: "运功回血", def: 0.2 },
+    { key: "applyMark", label: "附内伤印", def: { name: "内伤印", stacks: 1 }, param: "applyMarkChance", paramDef: 0.25 },
+    { key: "enemyCostPenalty", label: "封穴耗气", def: { value: 2, turns: 2 } },
+  ];
+
+  // 某件（自造）物品当前挂着的 effect 里，某标志位是否为真（含 param 键辅助判断）
+  const effectHas = (item, key) => {
+    const e = item?.effect || {};
+    if (key === "applyMark") return !!e.applyMark;
+    if (key === "enemyCostPenalty") return !!e.enemyCostPenalty;
+    return !!e[key];
+  };
+
+  // 勾选/取消某特效标志位。取消时把 param 键（如 applyMarkChance）一并清掉。
+  const toggleEffect = (item, choice) => {
+    const e = { ...(item.effect || {}) };
+    if (effectHas(item, choice.key)) {
+      delete e[choice.key];
+      if (choice.param) delete e[choice.param];
+    } else {
+      e[choice.key] = choice.def;
+      if (choice.param && e[choice.param] == null) e[choice.param] = choice.paramDef;
+    }
+    patchItem(nameOf(item), { effect: e });
+  };
+
+  // 一件物品（在册字符串或自造对象）算出的最终攻击力：
+  //   在册 → catalog 条目自带 atkMul；自造 → 品质基准 × 玩家调的 atkMul。
+  const computeAtk = (item) => {
+    const isStr = typeof item === "string";
+    const catEntry = isStr ? CATALOG.find(e => e.name === item) : null;
+    const quality = catEntry ? catEntry.quality : (item?.quality || "白");
+    const mul = catEntry ? (catEntry.atkMul ?? 1) : (item?.atkMul ?? 1);
+    const base = statsForQuality(catEntry?.category || item?.category || "weapon", quality);
+    return base.atk != null ? Math.round(base.atk * mul) : null;
+  };
+  // 护甲同理
+  const computeDef = (item) => {
+    const isStr = typeof item === "string";
+    const catEntry = isStr ? CATALOG.find(e => e.name === item) : null;
+    const quality = catEntry ? catEntry.quality : (item?.quality || "白");
+    const mul = catEntry ? (catEntry.defMul ?? 1) : (item?.defMul ?? 1);
+    const base = statsForQuality(catEntry?.category || item?.category || "armor", quality);
+    return base.def != null ? Math.round(base.def * mul) : null;
+  };
+
+  // 让 AI 补描述。只写描述，不碰数值——数值是玩家自己定的，AI 一插手就会
+  // 出现"界面上写着加2身法、描述里说这是把重剑"这种自相矛盾。
+  const askAiDesc = async () => {
+    if (!draft?.name || aiBusy) return;
+    setAiBusy(true);
+    try {
+      const six = Object.entries(draft.sixDim || {}).filter(([, v]) => v).map(([k, v]) => `${k}+${v}`).join("、");
+      const sys = `你在为一个中文武侠文字游戏写物品描述。用白话古文，两到三句，六十字以内。
+只写这件东西看上去什么样、摸上去什么手感、来历或用处的一点线索。
+不要复述它的属性数值，不要用"这件装备"这类游戏术语，不要夸大成神兵。
+直接输出描述正文，不要引号、不要标题、不要任何说明。`;
+      const usr = `名称：${draft.name}
+类别：${{ weapon: "兵器", armor: "护具", accessory: "饰物", misc: "杂物" }[draft.category] || draft.category}
+品阶：${draft.quality}档${six ? `\n附带：${six}` : ""}`;
+      const res = await callModel(apiCfg, sys, [{ role: "user", content: usr }], { maxTokens: ITEM_DESC_MAX_TOKENS, temperature: 0.8 });
+      const text = (res.text || "").trim().replace(/^["「『]|["」』]$/g, "");
+      if (text) setDraft(d => ({ ...d, desc: text.slice(0, 200) }));
+    } catch (e) {
+      setDraft(d => ({ ...d, desc: (d.desc || "") + (d.desc ? "" : `（AI 没写出来：${e.message.slice(0, 30)}）`) }));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 7, minHeight: 22 }}>
+        {!carry.length && (
+          <span style={{ fontSize: 10.5, color: "#8f8a7c" }}>
+            未指定 · 运行时按 {TIERS[levelCap]?.label}档 从四池随机抽
+          </span>
+        )}
+        {carry.map((c, i) => {
+          const nm = nameOf(c);
+          const custom = typeof c !== "string";
+          const open = detailItem && nameOf(detailItem) === nm;
+          return (
+            <span key={nm + i}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                fontSize: 10.5, padding: "3px 4px 3px 8px", borderRadius: 0,
+                border: `1px solid ${open ? "#d4a853" : custom ? "#6a8a70" : "#4a4028"}`,
+                background: custom ? "rgba(120,180,130,.10)" : "rgba(212,168,83,.10)", color: "#e8dcc0",
+              }}>
+              <span onClick={() => setDetailItem(open ? null : c)} title="点看详情"
+                style={{ cursor: "pointer" }}>{custom ? "⚒ " : ""}{nm}</span>
+              <span onClick={() => { del(nm); if (open) setDetailItem(null); }} title="移除这件"
+                style={{ cursor: "pointer", color: "#c08878", fontSize: 11, padding: "0 2px" }}>✕</span>
+            </span>
+          );
+        })}
+      </div>
+
+      {/* 随身物详情：点上面的名字展开。显示描述/伤害/攻击特效/六维；自造物可改，
+          在册物只读（数值由百物录裁决，改它等于改全世界的设定）。 */}
+      {detailItem && (() => {
+        const custom = typeof detailItem !== "string";
+        const catEntry = !custom ? CATALOG.find(e => e.name === detailItem) : null;
+        const quality = custom ? detailItem.quality : (catEntry?.quality || "白");
+        const category = custom ? detailItem.category : (catEntry?.category || "misc");
+        const atk = computeAtk(detailItem);
+        const def = computeDef(detailItem);
+        const sixDim = custom && detailItem.sixDim ? Object.entries(detailItem.sixDim).filter(([, v]) => v) : [];
+        const desc = custom ? detailItem.desc : (catEntry?.desc || "");
+        const effectText = custom
+          ? effectBrief(detailItem.effect, detailItem.sixDim)
+          : effectBrief(catEntry?.effect, catEntry?.sixDim);
+        return (
+          <div style={{ marginBottom: 7, padding: "8px 10px", borderRadius: 0, border: "1px solid #4a4028", background: "rgba(0,0,0,.3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <span style={{ color: "#e8dcc0", fontSize: 12 }}>{nameOf(detailItem)}</span>
+              <span style={{ fontSize: 10, color: "#a89870" }}>
+                {{ weapon: "兵器", armor: "护具", accessory: "饰物", misc: "杂物" }[category] || category} · {quality}档
+              </span>
+              <span style={{ flex: 1 }} />
+              <span onClick={() => setDetailItem(null)} style={{ cursor: "pointer", fontSize: 10, color: "#8f8a7c" }}>收起</span>
+            </div>
+
+            {/* 伤害 / 防御 */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+              {atk != null && (
+                <div style={{ fontSize: 10.5, color: "#d89050" }}>
+                  攻击力 <span style={{ color: "#e8b070", fontWeight: 700 }}>{atk}</span>
+                  {custom && category === "weapon" && (
+                    <span style={{ marginLeft: 6, color: "#8f8a7c", fontSize: 9.5 }}>
+                      倍率
+                      <input type="number" step={0.05} min={1} max={1.6}
+                        value={detailItem.atkMul ?? 1}
+                        onChange={e => patchItem(nameOf(detailItem), { atkMul: Math.max(1, Math.min(1.6, Number(e.target.value) || 1)) })}
+                        style={{ width: 46, marginLeft: 4, textAlign: "center", background: "rgba(0,0,0,.4)", border: "1px solid #3a3428", borderRadius: 0, color: "#e8b070", fontSize: 10 }} />
+                    </span>
+                  )}
+                </div>
+              )}
+              {def != null && (
+                <div style={{ fontSize: 10.5, color: "#6a9ac4" }}>
+                  防御力 <span style={{ color: "#8ab8e0", fontWeight: 700 }}>{def}</span>
+                  {custom && category === "armor" && (
+                    <span style={{ marginLeft: 6, color: "#8f8a7c", fontSize: 9.5 }}>
+                      倍率
+                      <input type="number" step={0.05} min={1} max={1.6}
+                        value={detailItem.defMul ?? 1}
+                        onChange={e => patchItem(nameOf(detailItem), { defMul: Math.max(1, Math.min(1.6, Number(e.target.value) || 1)) })}
+                        style={{ width: 46, marginLeft: 4, textAlign: "center", background: "rgba(0,0,0,.4)", border: "1px solid #3a3428", borderRadius: 0, color: "#8ab8e0", fontSize: 10 }} />
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* 描述：自造物可改，在册物只读 */}
+            {custom ? (
+              <textarea rows={2}
+                value={detailItem.desc || ""}
+                placeholder="写它什么样、什么手感或什么来历"
+                onChange={e => patchItem(nameOf(detailItem), { desc: e.target.value.slice(0, 200) })}
+                style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)", border: "1px solid #3a3428", borderRadius: 0, padding: "5px 8px", color: "#e8e4d6", fontSize: 10.5, lineHeight: 1.7, resize: "vertical", fontFamily: "inherit" }} />
+            ) : (
+              <div style={{ fontSize: 10.5, color: "#e8e4d6", lineHeight: 1.6 }}>
+                {desc || "在册物品，运行时按名字查百物录补全数值与词条。"}
+              </div>
+            )}
+
+            {/* 攻击特效：自造物可勾选，在册物只读列出 */}
+            {custom ? (
+              <div style={{ marginTop: 6 }}>
+                <div style={{ fontSize: 10, color: "#8a8270", marginBottom: 4 }}>攻击特效 · 点一下加上/去掉</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {ITEM_EFFECT_CHOICES.map(choice => {
+                    const on = effectHas(detailItem, choice.key);
+                    return (
+                      <span key={choice.key} onClick={() => toggleEffect(detailItem, choice)}
+                        title={`${choice.def === true ? "" : `默认 ${JSON.stringify(choice.def)} `}装备时叠到招式上`}
+                        style={{
+                          cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 0,
+                          border: `1px solid ${on ? "#8ab070" : "#2a2419"}`,
+                          color: on ? "#bce8ac" : "#5a5448",
+                          background: on ? "rgba(138,176,112,.12)" : "transparent",
+                        }}>{choice.label}</span>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              effectText && (
+                <div style={{ marginTop: 5, fontSize: 10, color: "#8ab070" }}>特效：{effectText}</div>
+              )
+            )}
+
+            {sixDim.length > 0 && (
+              <div style={{ marginTop: 4, fontSize: 10, color: "#8ab070" }}>加成：{sixDim.map(([k, v]) => `${k}+${v}`).join("、")}</div>
+            )}
+          </div>
+        );
+      })()}
+
+      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+        <select value={cat} onChange={e => setCat(e.target.value)} style={{ ...selStyle, width: 96 }}>
+          <option value="" style={{ background: "#1a1206" }}>全部类别</option>
+          {cats.map(c => <option key={c} value={c} style={{ background: "#1a1206" }}>{c}</option>)}
+        </select>
+        <select value={qual} onChange={e => setQual(e.target.value)} style={{ ...selStyle, width: 78 }}>
+          <option value="" style={{ background: "#1a1206" }}>全部品阶</option>
+          {TIERS.map(t => (
+            <option key={t.label} value={t.label} style={{ background: "#1a1206", color: t.color }}>{t.label}档</option>
+          ))}
+        </select>
+        <input value={kw} onChange={e => setKw(e.target.value)} placeholder="搜名字或描述"
+          style={{ ...selStyle, flex: 1 }} />
+        <span onClick={() => { setForging(f => !f); if (!draft) setDraft(blankDraft()); }}
+          title="造一件百物录里没有的东西"
+          style={{
+            cursor: "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 0, whiteSpace: "nowrap",
+            border: `1px solid ${forging ? "#8ab070" : "#3a3428"}`,
+            color: forging ? "#8ab070" : "#8a8270",
+          }}>⚒ 新造一件</span>
+      </div>
+
+      {forging && draft && (
+        <div style={{ marginBottom: 7, padding: "8px 10px", borderRadius: 0, border: "1px solid #3a4a38", background: "rgba(120,180,130,.05)" }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            <input value={draft.name} placeholder="物件名"
+              onChange={e => setDraft(d => ({ ...d, name: e.target.value.slice(0, 20) }))}
+              style={{ ...selStyle, flex: 1, textAlign: "center" }} />
+            <select value={draft.category} onChange={e => setDraft(d => ({ ...d, category: e.target.value }))}
+              style={{ ...selStyle, width: 84 }}>
+              {["weapon", "armor", "accessory", "misc"].map(c => (
+                <option key={c} value={c} style={{ background: "#1a1206" }}>
+                  {{ weapon: "兵器", armor: "护具", accessory: "饰物", misc: "杂物" }[c]}
+                </option>
+              ))}
+            </select>
+            <select value={draft.quality} onChange={e => setDraft(d => ({ ...d, quality: e.target.value }))}
+              style={{ ...selStyle, width: 72 }}>
+              {TIERS.map(t => (
+                <option key={t.label} value={t.label} style={{ background: "#1a1206", color: t.color }}>{t.label}档</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ fontSize: 10, color: "#8a8270", marginBottom: 3 }}>
+            六维加成 · 点数字改，0 就是不加（百物录里 139 件带这个，多是 +1 到 +2）
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+            {SEVEN.map(k => {
+              const v = draft.sixDim?.[k] || 0;
+              return (
+                <span key={k} onClick={() => setDraft(d => {
+                  const next = { ...(d.sixDim || {}) };
+                  const nv = v >= 3 ? 0 : v + 1;
+                  if (nv) next[k] = nv; else delete next[k];
+                  return { ...d, sixDim: next };
+                })}
+                  style={{
+                    cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 0,
+                    border: `1px solid ${v ? "#8ab070" : "#2a2419"}`,
+                    color: v ? "#c8dfc0" : "#5a5448",
+                  }}>{k}{v ? ` +${v}` : ""}</span>
+              );
+            })}
+          </div>
+
+          {/* 攻防倍率：兵器调 atkMul、护具调 defMul，显示成品攻击/防御力 */}
+          {(draft.category === "weapon" || draft.category === "armor") && (
+            <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
+              {draft.category === "weapon" && (() => {
+                const base = statsForQuality("weapon", draft.quality).atk ?? 0;
+                const mul = draft.atkMul ?? 1;
+                return (
+                  <label style={{ flex: 1 }}>
+                    <span style={{ display: "block", fontSize: 10, color: "#8a8270", marginBottom: 3 }}>
+                      攻击力 {Math.round(base * mul)} · 倍率 {mul.toFixed(2)}
+                    </span>
+                    <input type="range" min={1} max={1.6} step={0.05} value={mul}
+                      onChange={e => setDraft(d => ({ ...d, atkMul: Number(e.target.value) }))}
+                      style={{ width: "100%", accentColor: "#d89050" }} />
+                  </label>
+                );
+              })()}
+              {draft.category === "armor" && (() => {
+                const base = statsForQuality("armor", draft.quality).def ?? 0;
+                const mul = draft.defMul ?? 1;
+                return (
+                  <label style={{ flex: 1 }}>
+                    <span style={{ display: "block", fontSize: 10, color: "#8a8270", marginBottom: 3 }}>
+                      防御力 {Math.round(base * mul)} · 倍率 {mul.toFixed(2)}
+                    </span>
+                    <input type="range" min={1} max={1.6} step={0.05} value={mul}
+                      onChange={e => setDraft(d => ({ ...d, defMul: Number(e.target.value) }))}
+                      style={{ width: "100%", accentColor: "#6a9ac4" }} />
+                  </label>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* 攻击特效：跟详情面板同一份可勾选清单 */}
+          <div style={{ fontSize: 10, color: "#8a8270", marginBottom: 3 }}>攻击特效 · 点一下加上/去掉</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+            {ITEM_EFFECT_CHOICES.map(choice => {
+              const on = effectHas(draft, choice.key);
+              return (
+                <span key={choice.key} onClick={() => {
+                  const e = { ...(draft.effect || {}) };
+                  if (effectHas(draft, choice.key)) {
+                    delete e[choice.key];
+                    if (choice.param) delete e[choice.param];
+                  } else {
+                    e[choice.key] = choice.def;
+                    if (choice.param && e[choice.param] == null) e[choice.param] = choice.paramDef;
+                  }
+                  setDraft(d => ({ ...d, effect: e }));
+                }}
+                  title={`${choice.def === true ? "" : `默认 ${JSON.stringify(choice.def)} `}装备时叠到招式上`}
+                  style={{
+                    cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 0,
+                    border: `1px solid ${on ? "#8ab070" : "#2a2419"}`,
+                    color: on ? "#bce8ac" : "#5a5448",
+                    background: on ? "rgba(138,176,112,.12)" : "transparent",
+                  }}>{choice.label}</span>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+            <span style={{ fontSize: 10, color: "#8a8270", flex: 1 }}>描述</span>
+            {apiCfg && (
+              <span onClick={askAiDesc}
+                title={draft.name ? "让 AI 照名字与品阶写两三句" : "先起个名"}
+                style={{
+                  cursor: draft.name && !aiBusy ? "pointer" : "default", fontSize: 10,
+                  color: draft.name && !aiBusy ? "#8ac8b8" : "#4a5450",
+                }}>{aiBusy ? "写着…" : "✎ 让 AI 写"}</span>
+            )}
+          </div>
+          <textarea rows={3} value={draft.desc}
+            placeholder="自己写，或让 AI 写完再改"
+            onChange={e => setDraft(d => ({ ...d, desc: e.target.value.slice(0, 200) }))}
+            style={{ ...selStyle, width: "100%", textAlign: "left", resize: "vertical", lineHeight: 1.7 }} />
+
+          <div style={{ display: "flex", gap: 6, marginTop: 7, alignItems: "center" }}>
+            <span style={{ fontSize: 10, color: "#8f8a7c", flex: 1 }}>
+              造出来的东西只属于这个人，不进百物录
+            </span>
+            <span onClick={() => { setDraft(blankDraft()); }}
+              style={{ cursor: "pointer", fontSize: 10.5, color: "#8f8a7c" }}>清空</span>
+            <span
+              onClick={() => {
+                const nm = (draft.name || "").trim();
+                if (!nm) return;
+                add({ ...draft, name: nm, custom: true });
+                setDraft(blankDraft());
+                setForging(false);
+              }}
+              style={{
+                cursor: draft.name.trim() ? "pointer" : "default", fontSize: 11,
+                padding: "4px 12px", borderRadius: 0, fontWeight: 700,
+                color: draft.name.trim() ? "#1a1206" : "#5a5448",
+                background: draft.name.trim() ? "linear-gradient(180deg,#a0c890,#5a8a5a)" : "rgba(0,0,0,.3)",
+                border: `1px solid ${draft.name.trim() ? "#a0c890" : "#3a3428"}`,
+              }}>⚒ 造好，收进他身上</span>
+          </div>
+        </div>
+      )}
+
+      {/* 计数条：让"库里到底有多少、我筛掉了多少"始终可见。原来静默截断到 60 件，
+          玩家没法知道自己看的是全部还是一角 */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 6, padding: "3px 8px",
+        fontSize: 9.5, color: "#8f8a7c", background: "rgba(0,0,0,.3)",
+        border: "1px solid #2a2419", borderBottom: "none", borderRadius: 0,
+      }}>
+        <span>百物录 {CATALOG.length} 件</span>
+        {list.length !== CATALOG.length && <span style={{ color: "#a89870" }}>· 当前 {list.length} 件</span>}
+        <span style={{ flex: 1 }} />
+        {carry.length ? <span style={{ color: "#d4a853" }}>已选 {carry.length}</span> : null}
+      </div>
+
+      <div style={{
+        maxHeight: "min(38vh, 380px)", overflowY: "auto",
+        border: "1px solid #2a2419", borderRadius: "0 0 3px 3px", background: "rgba(0,0,0,.22)",
+      }}>
+        {!list.length && <div style={{ padding: 8, fontSize: 10.5, color: "#8f8a7c" }}>没有匹配的物件</div>}
+        {list.map(e => {
+          const on = has(e.name);
+          const tier = TIERS.find(t => t.label === e.quality);
+          return (
+            <div key={e.name} onClick={() => (on ? del(e.name) : add(e.name))}
+              title={e.desc ? e.desc.slice(0, 60) : undefined}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "4px 8px",
+                cursor: "pointer", fontSize: 10.5,
+                background: on ? "rgba(212,168,83,.10)" : "transparent",
+                borderBottom: "1px solid #1e1a12",
+              }}>
+              <span style={{ color: on ? "#d4a853" : "#4a4436", width: 10 }}>{on ? "◉" : "○"}</span>
+              <span style={{ color: tier?.color || "#a89870", width: 14 }}>{e.quality || "—"}</span>
+              <span style={{ color: "#e8e4d6", flex: 1 }}>{e.name}</span>
+              <span style={{ color: "#5a5448", fontSize: 9.5 }}>{e.category}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// 原卡正文对照。
+// 【为什么默认摊开而不是折叠】它存在的唯一理由就是让玩家判断上面那段重写得准不准。
+// 折起来就得多点一下，多点一下就不会有人看，那这一份数据留着也没意义。
+// 限高滚动是必须的：中文卡池里正文上千字很常见，实测一张普通卡 397 字、动漫角色
+// 卡三千字的也有，摊开会把下面十几个 Section 全推走。
+function RawEntryCompare({ raw }) {
+  const [open, setOpen] = useState(true);
+  const n = String(raw || "").length;
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div onClick={() => setOpen(o => !o)}
+        style={{
+          cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+          fontSize: 10.5, color: "#8a8270", userSelect: "none",
+          padding: "3px 0", borderTop: "1px solid #2a2419",
+        }}>
+        <span style={{ color: "#8f8a7c", width: 10 }}>{open ? "▾" : "▸"}</span>
+        <span>对照原卡正文</span>
+        <span style={{ color: "#5a5448" }}>{n} 字</span>
+        <span style={{
+          fontSize: 9, color: "#7a6a60", border: "1px solid #3a3028",
+          borderRadius: 0, padding: "0 4px",
+        }}>不注入</span>
+      </div>
+      {open && (
+        <div style={{
+          maxHeight: "min(26vh, 280px)", overflowY: "auto",
+          padding: "7px 10px", marginTop: 4,
+          background: "rgba(0,0,0,.3)", border: "1px solid #2a2419", borderRadius: 0,
+          fontSize: 10.5, lineHeight: 1.75, color: "#9a8f7a",
+          whiteSpace: "pre-wrap", wordBreak: "break-word",
+          userSelect: "text",
+        }}>{raw}</div>
+      )}
+    </div>
+  );
+}
+
+// ── 立绘 ──────────────────────────────────────────────────────────────────────
+
+// 现成立绘只有这十张（assets/portraits/），都是既有 NPC 的。让入册角色借用一张
+// 总比没有好；不选就只有名字，跟大多数路人一样。
+// 内置立绘。
+// 【为什么不再写英文文件名数组】原来是 ["caidan.webp", …] 配 PORTRAIT() 拼
+// `${BASE}portraits/xxx.webp`，而这十张在 src/assets/portraits/ 走 Vite import，
+// public/portraits/ 下压根没有它们——十张全 404，onError 又把破图隐藏掉，于是
+// 这一节看起来只有一个"不设"按钮。改成直接读 DEFAULT_PORTRAITS，键是角色名，
+// 值是打包后的 URL。存进 portrait 字段的是**键名**（打包 URL 带 content hash，
+// 存下来下次构建就失效），读时过 resolveCardPortrait 查表。
+const BUILTIN_PORTRAITS = Object.keys(DEFAULT_PORTRAITS);
+
+function PortraitPicker({ value, onChange, cardImage, npcName }) {
+  const [busy, setBusy] = useState("");
+  const [err, setErr] = useState("");
+  const [info, setInfo] = useState(null);   // 刚压完那张的体积信息
+  const fileRef = useRef(null);
+
+  const custom = isCustomPortrait(value);
+  const shown = resolveCardPortrait(value);
+
+  const take = async (src, label) => {
+    setBusy(label); setErr(""); setInfo(null);
+    try {
+      const out = await compressImage(src);
+      onChange(out.dataUrl);
+      setInfo(out);
+    } catch (e) {
+      setErr(String(e?.message || e).slice(0, 60));
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const onPick = (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";                    // 同一张图连传两次也要能触发
+    if (f) take(f, "上传");
+  };
+
+  const thumb = (on) => ({
+    width: 46, height: 46, objectFit: "cover", borderRadius: 0, cursor: "pointer",
+    border: `1px solid ${on ? "#d4a853" : "#2a2419"}`,
+    filter: on ? "none" : "grayscale(.5) brightness(.8)",
+  });
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
+        <span onClick={() => { onChange(""); setInfo(null); setErr(""); }}
+          style={{
+            cursor: "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 0,
+            border: `1px solid ${!value ? "#d4a853" : "#3a3428"}`,
+            color: !value ? "#d4a853" : "#8a8270",
+          }}>不设</span>
+
+        {/* 卡自带的图。酒馆卡的 PNG 本身就是立绘，角色卡数据藏在它的 tEXt chunk 里，
+            所以"用卡的图"就是把这张 PNG 压一份留下 */}
+        <span onClick={() => cardImage && !busy && take(cardImage, "卡图")}
+          title={cardImage ? "这张卡的 PNG 本身就是立绘，压成 webp 存下来"
+            : "这张卡不是 PNG（裸 JSON 卡没有图），只能上传或用内置的"}
+          style={{
+            cursor: cardImage && !busy ? "pointer" : "not-allowed",
+            fontSize: 10.5, padding: "4px 10px", borderRadius: 0,
+            border: `1px solid ${cardImage ? "#4a6a48" : "#2a2419"}`,
+            color: cardImage ? "#9ac088" : "#4a4436",
+            opacity: cardImage ? 1 : .55,
+          }}>
+          {busy === "卡图" ? "压缩中…" : "用卡自带的图"}
+        </span>
+
+        <span onClick={() => !busy && fileRef.current?.click()}
+          title="选一张本地图片，压成 webp 存下来"
+          style={{
+            cursor: busy ? "wait" : "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 0,
+            border: "1px solid #3a3428", color: "#8a8270",
+          }}>
+          {busy === "上传" ? "压缩中…" : "上传一张"}
+        </span>
+        <input ref={fileRef} type="file" accept="image/*" onChange={onPick} style={{ display: "none" }} />
+
+        <span style={{ flex: 1 }} />
+        {custom && (
+          <span style={{ fontSize: 9, color: "#9ac088", border: "1px solid #4a6a48", borderRadius: 0, padding: "0 4px" }}>
+            自备图
+          </span>
+        )}
+      </div>
+
+      {/* 当前这张的预览。自备图给大一点，因为它是玩家刚挑的、要看清 */}
+      {shown && (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, marginBottom: 8 }}>
+          <img src={shown} alt={npcName || ""}
+            style={{
+              width: custom ? 68 : 46, height: custom ? 100 : 46,
+              objectFit: "cover", objectPosition: "top center",
+              borderRadius: 0, border: "1px solid #4a4028",
+            }} />
+          <div style={{ fontSize: 10, color: "#8a8270", lineHeight: 1.8 }}>
+            {custom ? "已存进入册库，跟着这个角色一起落册。" : `内置立绘 · ${value}`}
+            {info && (
+              <>
+                <br />
+                <span style={{ color: "#9ac088" }}>
+                  {info.from.w}×{info.from.h}
+                  {info.from.bytes ? ` ${fmtBytes(info.from.bytes)}` : ""}
+                  {" → "}{info.w}×{info.h} {fmtBytes(info.bytes)}
+                </span>
+                {!info.scaled && <span style={{ color: "#8f8a7c" }}>（原图已在框内，未放大）</span>}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {err ? <Note tone="bad">{err}</Note> : null}
+
+      <div style={{ fontSize: 10, color: "#8f8a7c", marginBottom: 4 }}>或用内置的十张</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {BUILTIN_PORTRAITS.map(name => (
+          <img key={name} src={DEFAULT_PORTRAITS[name]} alt={name} title={name}
+            onClick={() => { onChange(name); setInfo(null); setErr(""); }}
+            style={thumb(value === name)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── 落脚 ──────────────────────────────────────────────────────────────────────
+
+function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan, currentDistrict }) {
+  const pl = normalizePlacement(value);
+  const rooms = pl.district && hasInnerMap(pl.district) ? getPublicInnerRoomNames(pl.district) : [];
+  // 手动改过之后 AI 那句依据就过期了——留着会误导（它说「镇上开铁铺」而你已经
+  // 改成了不落地）。所以任何手动改动都把依据一并清掉。
+  const set = (patch) => onChange({ ...pl, ...patch });
+  const [busy, setBusy] = useState(false);
+  const [wait, setWait] = useState(0);
+  const [err, setErr] = useState("");
+
+  // AI 只定「谁待在哪」，据点名从 DISTRICTS 里挑，回来的东西过一遍
+  // sanitizePlacementPlan 白名单过滤。内层房间它不管，玩家自己在下拉里点。
+  const askAiPlace = async () => {
+    if (busy || !npc?.name) return;
+    setBusy(true); setErr(""); setWait(0);
+    try {
+      await acquire(ms => setWait(Math.ceil(ms / 1000)));
+      setWait(0);
+      const { system, user } = buildPlacementPlan([npc], DISTRICTS);
+      const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
+        { maxTokens: PLAN_MAX_TOKENS.single, temperature: 0.6 });
+      const plans = sanitizePlacementPlan(parseJsonLoose(res.text || ""), [npc], DISTRICTS);
+      if (!plans.length) { setErr("AI 没给出认得出的安排，再点一次试试"); return; }
+      onPlan?.(plans[0].placement, plans[0].why, plans[0].rejected);
+    } catch (e) {
+      // 把模型实际吐出来的开头一并显示。只报 message 的话，「不是合法 JSON」和
+      // 「被截断」看起来一样，而两者的补救办法相反（前者改提示词，后者调额度）。
+      const raw = e?.raw ? `　模型吐的是：${String(e.raw).replace(/\s+/g, " ").slice(0, 50)}` : "";
+      setErr(`${String(e?.message || e).slice(0, 70)}${raw}`);
+    } finally {
+      setBusy(false); setWait(0);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <Pills accent={accent} value={pl.mode} onChange={m => {
+          // 【为什么切驻场/游走要立刻塞个默认据点·这是"点不动"的真因】
+          // 上面 pl = normalizePlacement(value)，而 normalizePlacement 有一条硬规则：
+          // resident 没 district、wander 没 weights，一律退回 mention。于是点「驻场」
+          // 时若据点还空着，切过去的 resident 会被当场 normalize 回 mention——Pills 的
+          // 高亮瞬间弹回「不落地」，玩家看到的就是"点了没反应、点不动"（光标是手型、
+          // 点击也触发了，只是被 normalize 吃掉）。所以切到 resident/wander 必须同时给
+          // 一个默认据点让它站得住；据点下拉/权重照旧能改。开局前 currentDistrict 为空，
+          // 退而取清单第一个。
+          const patch = { mode: m };
+          const fallback = DISTRICTS.includes(currentDistrict) ? currentDistrict : DISTRICTS[0];
+          if (m === "resident" && !pl.district) patch.district = fallback;
+          if (m === "wander" && !Object.keys(pl.weights || {}).length) patch.weights = { [fallback]: 50 };
+          set(patch);
+        }}
+          options={["mention", "resident", "wander"].map(m => ({ value: m, label: PLACEMENT_LABEL[m] }))} />
+        {/* 紧跟三个模式钮，不用 spacer 顶到天边——4:6 分栏后右栏有上千像素宽，
+            顶到最右就成了一个跟谁都不相干的孤零零按钮（实测截图如此） */}
+        <span onClick={askAiPlace} title="让 AI 按人设判断该驻场还是游走，据点只能从本作地图里选"
+          style={{
+            cursor: busy ? "wait" : "pointer", userSelect: "none",
+            fontSize: 11, padding: "4px 11px", borderRadius: 0, whiteSpace: "nowrap",
+            display: "inline-flex", alignItems: "center", gap: 5,
+            color: busy ? "#6a7a68" : "#9ac088",
+            border: `1px solid ${busy ? "#3a4a38" : "#4a6a48"}`,
+            background: busy ? "rgba(0,0,0,.3)"
+              : "linear-gradient(180deg,rgba(130,180,120,.16),rgba(0,0,0,.32))",
+          }}>
+          <img src={S("ui/star.webp")} alt="" style={{ width: 11, height: 11, opacity: busy ? .4 : .9 }} />
+          {busy ? (wait ? `排队 ${wait}s` : "正在相地…") : "AI 荐位"}
+        </span>
+      </div>
+
+      {pl.mode === "resident" && (
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <label style={{ flex: 1 }}>
+            <span style={{ display: "block", fontSize: 10.5, color: "#8a8270", marginBottom: 3 }}>据点</span>
+            <select value={pl.district || ""} onChange={e => set({ district: e.target.value || null, innerRoom: null })} style={selStyle}>
+              <option value="" style={{ background: "#1a1206" }}>（未选，等同不落地）</option>
+              {DISTRICTS.map(d => <option key={d} value={d} style={{ background: "#1a1206" }}>{d}</option>)}
+            </select>
+          </label>
+          <label style={{ flex: 1 }}>
+            <span style={{ display: "block", fontSize: 10.5, color: "#8a8270", marginBottom: 3 }}>
+              常在哪间{rooms.length ? "" : "（无内层）"}
+            </span>
+            <select value={pl.innerRoom || ""} disabled={!rooms.length}
+              onChange={e => set({ innerRoom: e.target.value || null })} style={selStyle}>
+              <option value="" style={{ background: "#1a1206" }}>不限</option>
+              {rooms.map(r => <option key={r} value={r} style={{ background: "#1a1206" }}>{r}</option>)}
+            </select>
+          </label>
+        </div>
+      )}
+      {pl.mode === "wander" && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 10.5, color: "#8a8270", marginBottom: 4 }}>出现在哪些据点 · 点一下加二十五，满了归零</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+            {DISTRICTS.map(d => {
+              const w = pl.weights?.[d] || 0;
+              return (
+                <span key={d} onClick={() => {
+                  const next = { ...(pl.weights || {}) };
+                  const nw = w >= 100 ? 0 : w + 25;
+                  if (nw > 0) next[d] = nw; else delete next[d];
+                  set({ weights: next });
+                }}
+                  style={{
+                    cursor: "pointer", fontSize: 10.5, padding: "3px 8px", borderRadius: 0,
+                    border: `1px solid ${w > 0 ? accent : "#2a2419"}`,
+                    background: w > 0 ? `rgba(212,168,83,${0.06 + w / 500})` : "transparent",
+                    color: w > 0 ? "#e8dcc0" : "#8f8a7c",
+                  }}>{d}{w > 0 ? ` ${w}` : ""}</span>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#8a8270" }}>
+            <span>时辰</span>
+            <input type="number" min={0} max={23} value={pl.timeSlot[0]}
+              onChange={e => set({ timeSlot: [Number(e.target.value), pl.timeSlot[1]] })}
+              style={{ ...selStyle, width: 52 }} />
+            <span>到</span>
+            <input type="number" min={0} max={23} value={pl.timeSlot[1]}
+              onChange={e => set({ timeSlot: [pl.timeSlot[0], Number(e.target.value)] })}
+              style={{ ...selStyle, width: 52 }} />
+            <span style={{ fontSize: 10, color: "#8f8a7c" }}>（0-23 时，跨夜请分两次入册）</span>
+          </div>
+        </div>
+      )}
+
+      {/* AI 的判断依据。撕纸条底，跟随身物那边自造物品的提示同一套视觉 */}
+      {why ? (
+        <div style={{
+          marginTop: 9, marginBottom: 6, padding: "9px 14px",
+          backgroundImage: `url('${S("ui/note_torn.webp")}')`,
+          backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
+          boxShadow: "0 2px 6px rgba(0,0,0,.45)",
+          display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap",
+        }}>
+          <span style={{
+            fontSize: 9, color: "#2f5e2c", border: "1px solid #3a6a38",
+            borderRadius: 0, padding: "0 4px", flexShrink: 0,
+          }}>AI 荐位</span>
+          <span style={{ fontSize: 10.5, lineHeight: 1.6, color: "#43331c" }}>{why}</span>
+          {rejected && (
+            <span style={{ fontSize: 10, color: "#a8443a" }}>
+              · 它给的据点不在本作地图里，已退回不落地，请自己选
+            </span>
+          )}
+        </div>
+      ) : null}
+      {err ? <Note tone="bad">{err}</Note> : null}
+
+      <Note tone="info">{PLACEMENT_HINT[pl.mode]}</Note>
+    </div>
+  );
+}
+
+// ── 主体 ──────────────────────────────────────────────────────────────────────
+
+export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardImage, currentDistrict }) {
+  const n = npc;
+  const cap = n.levelCap ?? 1;
+  const neigong = Number.isFinite(n.neigong) ? n.neigong : (TIER_NEIGONG[cap] ?? 23);
+  const waigong = Number.isFinite(n.waigong) ? n.waigong : (TIER_NEIGONG[cap] ?? 23);
+  // 气血与攻击都是算出来的，不给改——改了会跟战斗结算里的公式打两套账
+  const maxHp = hpFromNeigong(neigong, n.special?.体魄 ?? 5);
+  const atk = typeof atkFromWaigong === "function" ? atkFromWaigong(waigong) : null;
+
+  return (
+    <>
+      {/* 1 角色名 · 2 别名 · 3 一句话身份 */}
+      <div style={{ display: "flex", gap: 14 }}>
+        <div style={{ flexShrink: 0, textAlign: "center" }}>
+          <JadeTier value={cap} size={54} withSelect onChange={v => onPatch({ levelCap: v })} />
+          <div style={{ fontSize: 10, color: "#8a8270", marginTop: 5 }}>
+            品阶<Src source={n.source} why={n.levelCapWhy} />
+          </div>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <TextField label="角色名" value={n.name} max={12} onChange={v => onPatch({ name: v })} />
+            </div>
+            <div style={{ width: 92 }}>
+              <TextField label={<>初始好感<Src source={n.source} why={n.affectionWhy} /></>}
+                value={String(n.affection ?? 0)}
+                onChange={v => onPatch({ affection: Math.max(-20, Math.min(20, Number(v) || 0)) })} />
+            </div>
+          </div>
+          <TextField label={<>一句话身份<Src source={n.source} why={n.briefWhy} /></>}
+            value={n.brief} max={15} onChange={v => onPatch({ brief: v })} />
+          <TextField label="别名、称谓（顿号分隔，用于对话里认出他）"
+            value={(n.aliases || []).join("、")}
+            onChange={v => onPatch({ aliases: v.split(/[、,，]/).map(s => s.trim()).filter(Boolean) })} />
+        </div>
+      </div>
+
+      {/* 4 人设正文 */}
+      <Section title={<>
+        人设正文（注入 2／6 号位，不外显）
+        {n.entryFromAi
+          ? <Src source="ai" why="按本作格式重写过" />
+          : <Src source="fallback" />}
+        <span style={{ fontSize: 10, color: (n.entry || "").length > LORE_MAX ? "#d89080" : "#8a8270", marginLeft: 6 }}>
+          {(n.entry || "").length}/{LORE_MAX} 字
+        </span>
+      </>}>
+        <TextField label={null} rows={5} max={LORE_MAX}
+          value={n.entry} onChange={v => onPatch({ entry: v })} />
+
+        {n.entryFromAi ? (
+          <Note tone="info">
+            这段是 AI 按本作格式重写过的：第三人称、只写性格与行为、剥掉了原卡的小标题与
+            占位符。外貌与初见态度各有专门字段承接，所以这里不该再出现。对照下面的原文改。
+          </Note>
+        ) : n.rawEntry ? (
+          <Note tone="warn">
+            AI 没出重写版，这段是原卡正文清洗后顶上的——占位符与行首小标题已剥掉、压成了单行，
+            但第二人称「你」、外貌重复、说话例句这些还在。建议照下面的原文自己改一遍。
+          </Note>
+        ) : null}
+
+        {n.rawEntry ? <RawEntryCompare raw={n.rawEntry} /> : null}
+      </Section>
+
+      {/* 5 外貌锚点 */}
+      <Section title="外貌锚点与初见态度">
+        <TextField label="别人一眼看得见的" rows={3} max={100}
+          value={n.appearance} onChange={v => onPatch({ appearance: v })} />
+        <TextField label="初次照面的态度与说话方式" rows={2} max={50}
+          value={n.attitude} onChange={v => onPatch({ attitude: v })} />
+      </Section>
+
+      {/* 6-7 好感里程碑 */}
+      <Section title="好感里程碑（本作只有 30 / 60 两档）">
+        {(n.milestones || []).map((m, mi) => (
+          <div key={m.threshold} style={{ marginBottom: 9, paddingBottom: 8, borderBottom: "1px dashed #2a2419" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+              <span style={{ width: 26, fontSize: 12, color: accent, flexShrink: 0 }}>{m.threshold}</span>
+              <input value={m.title} placeholder="标题"
+                onChange={e => onPatch({ milestones: n.milestones.map((x, j) => j === mi ? { ...x, title: e.target.value.slice(0, 8) } : x) })}
+                style={{ ...selStyle, width: 76 }} />
+              <input value={m.brief} placeholder="一句话说明"
+                onChange={e => onPatch({ milestones: n.milestones.map((x, j) => j === mi ? { ...x, brief: e.target.value.slice(0, 30) } : x) })}
+                style={{ ...selStyle, flex: 1 }} />
+            </div>
+            <textarea rows={2} value={(m.text || []).join("\n")}
+              placeholder="领取这段剧情时玩家会读到的正文，一行一句。留空则领取后无内容"
+              onChange={e => onPatch({ milestones: n.milestones.map((x, j) => j === mi ? { ...x, text: e.target.value.split("\n").map(t => t.trim()).filter(Boolean) } : x) })}
+              style={{ ...selStyle, textAlign: "left", fontSize: 10.5, lineHeight: 1.7, color: "#e8e4d6", resize: "vertical" }} />
+          </div>
+        ))}
+        <Note tone="info">这两段是玩家在「人物关系」页手动领取时读到的固定剧情，本作原有角色全是手写的。AI 给的是草稿，值得你自己润一遍。</Note>
+      </Section>
+
+      {/* 8 NSFW 段 */}
+      {n.nsfwEntries?.length ? (
+        <Section title="成人向段落">
+          <Note tone="warn">
+            这张卡里有 {n.nsfwEntries.length} 条成人向条目（原卡是无条件常驻的）。
+            导入后会挂在本作的 ■ 模式开关下，关着就一个字不发。
+          </Note>
+          <div style={{ marginTop: 6 }}>
+            <Pills accent={accent} value={n.nsfwOptIn ? "in" : "out"}
+              onChange={v => onPatch({ nsfwOptIn: v === "in" })}
+              options={[{ value: "out", label: "不导入这些段落" }, { value: "in", label: "导入，挂开关下" }]} />
+          </div>
+        </Section>
+      ) : null}
+
+      {/* 9-11 内外功 · 七维 · 气血 */}
+      <Section title={<>内功与外功<Src source={n.source} why={n.gongfuWhy} /></>}>
+        <StatRow label="内功" value={neigong} max={100} step={1} width={30}
+          onChange={v => onPatch({ neigong: v })} />
+        <StatRow label="外功" value={waigong} max={100} step={1} width={30}
+          onChange={v => onPatch({ waigong: v })} />
+        <div style={{ fontSize: 10, color: "#8f8a7c", marginTop: 4, lineHeight: 1.7 }}>
+          {TIERS[cap]?.label}档的基准是 {TIER_NEIGONG[cap]}。
+          气血由内功与体魄算出：<span style={{ color: "#d4a853" }}>{maxHp}</span>
+          {atk != null ? <>；出手威力由外功算出：<span style={{ color: "#d4a853" }}>{atk}</span></> : null}
+          。这两项跟着上面走，不单独设。
+        </div>
+      </Section>
+
+      <Section title={<>七维天赋<Src source={n.source} why={n.specialWhy} /></>}>
+        <SevenDim special={n.special} onChange={s => onPatch({ special: s })} />
+      </Section>
+
+      {/* 12 招式 */}
+      <Section title="招式（选路数与起名，效果由原型×品阶算出）">
+        <MoveEditor moves={n.moves} levelCap={cap} source={n.source} why={n.movesWhy}
+          onChange={m => onPatch({ moves: m })} />
+      </Section>
+
+      {/* 13 随身物 */}
+      <Section title="随身物（偷窃与切磋掉落）">
+        <CarryPicker apiCfg={apiCfg} carry={n.carry || []} levelCap={cap} onChange={c => onPatch({ carry: c })} />
+      </Section>
+
+      {/* 14 立绘 */}
+      <Section title="立绘">
+        <PortraitPicker value={n.portrait || ""} cardImage={cardImage} npcName={n.name}
+          onChange={v => onPatch({ portrait: v })} />
+      </Section>
+
+      {/* 15 落脚 */}
+      <Section title="落脚 · 他会出现在哪">
+        <Placement value={n.placement} accent={accent} npc={n} apiCfg={apiCfg}
+          currentDistrict={currentDistrict}
+          why={n.placementWhy} rejected={n.placementRejected}
+          onChange={pl => onPatch({ placement: pl, placementWhy: "", placementRejected: false })}
+          onPlan={(pl, why, rejected) => onPatch({ placement: pl, placementWhy: why, placementRejected: rejected })} />
+      </Section>
+
+      {/* 16 已丢弃的 */}
+      {dropped?.length ? (
+        <Section title="卡里没被导入的东西" dim>
+          {dropped.map((d, i) => (
+            <div key={i} style={{ fontSize: 10.5, color: "#7a6a60", lineHeight: 1.8 }}>
+              <Src source="drop" /> {d}
+            </div>
+          ))}
+        </Section>
+      ) : null}
+
+      {n.mergedFrom?.length > 1 && (
+        <Note tone="info">这个人是由 {n.mergedFrom.length} 段合成的：{n.mergedFrom.join(" ＋ ")}</Note>
+      )}
+    </>
+  );
+}

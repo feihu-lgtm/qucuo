@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { comfort, resolveTrauma, enterSeaOfMind, leaveSeaOfMind, confessToNarrator } from "./logic.js";
-import { narratorVars, setNarratorVars } from "../../mvu.js";
-import { NNPC_STAGE } from "../../narrator.js";
-import { SCENE_ARRIVE, SCENE_RESOLVE } from "../../narratorQuest.js";
-import { SAFE_HOUSES } from "../../safeHouse.js";
-import { SEA_OF_MIND, describeSeaGate, seaEntryHint } from "../../seaOfMind.js";
-import { QUCUO_MAP } from "../../qucuoMap.js";
+import { narratorVars, setNarratorVars } from "../../domain/prompt/mvu.js";
+import { NNPC_STAGE } from "../../domain/narrator/narrator.js";
+import { SCENE_ARRIVE, SCENE_RESOLVE } from "../../domain/narrator/narratorQuest.js";
+import { SAFE_HOUSES } from "../../domain/map/safeHouse.js";
+import { SEA_OF_MIND, describeSeaGate, seaEntryHint } from "../../domain/narrator/seaOfMind.js";
+import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { applyResult } from "../run.js";
 import { gameActions } from "../../core/gameStore.js";
 
