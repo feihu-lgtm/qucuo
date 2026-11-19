@@ -129,7 +129,7 @@ export default function TraceViewer({ onClose, onReport }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid #4a453c" }}>
           <span style={{ color: "#8ac8b8", fontSize: "13px" }}>🧭 行动全流程日志（最近 {traces.length} 条 · 含各层耗时与 AI 请求）</span>
           <span style={{ marginLeft: "auto", cursor: "pointer", color: "#6a8a8a", fontSize: "11px" }} onClick={copyAll}>{copied ? "✓已复制" : "复制全部"}</span>
-          {onReport && <span style={{ cursor: "pointer", color: "#e08a6a", fontSize: "11px" }} onClick={() => { onClose(); onReport(); }}>🐞 上报bug</span>}
+          {onReport && <span style={{ cursor: "pointer", color: "#e08a6a", fontSize: "11px" }} onClick={onReport}>🐞 上报bug</span>}
           <span style={{ cursor: "pointer", color: "#8a6a4a", fontSize: "11px" }} onClick={() => { clearTraceLog(); onClose(); }}>清空</span>
           <span style={{ cursor: "pointer", color: "#8f8a7c", fontSize: "13px" }} onClick={onClose}>✕</span>
         </div>

@@ -36,6 +36,12 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
       onImportWorld: cardImportHandlers.handleImportWorld,
       portraits: ui.portraits, setPortraits: ui.setPortraits,
       buildBugReportTurns: ui.buildBugReportTurns,
+      debugSources: {
+        save: autosave.buildCurrentSnapshot,
+        recentLog: game.log,
+        conversation: game.convo,
+        apiConfig: ui.apiCfg,
+      },
       activeNpcMenu: ui.liveNpcMenu, setActiveNpcMenu: ui.setActiveNpcMenu,
       handleNpcLook: screenHandlers.handleNpcLook, handleNpcTalk: screenHandlers.handleNpcTalk,
       handleNpcGift: screenHandlers.handleNpcGift, handleNpcDuel: duelHandlers.handleNpcDuel,

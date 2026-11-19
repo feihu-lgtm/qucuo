@@ -49,7 +49,7 @@ export default function GlobalOverlays({
   claimedMilestones, claimMilestone, giftToCharacter,
   narratorStage,
   portraits, setPortraits,
-  buildBugReportTurns,
+  buildBugReportTurns, debugSources,
   activeNpcMenu, setActiveNpcMenu,
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
   handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
@@ -152,6 +152,7 @@ export default function GlobalOverlays({
           isDayMode={isDayMode}
           turns={buildBugReportTurns()}
           pipelineData={getPipelineLog()}
+          debugSources={debugSources}
           getGameState={() => ({
             room: room.name, inner: innerRoomName, time,
             hp: char.hp, money: char.money,

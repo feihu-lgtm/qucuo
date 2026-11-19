@@ -13,6 +13,9 @@
 //                  response, success, error_message, model, duration_ms, created_at)
 // 建表 SQL 见 docs/supabase_schema_v2.sql。
 
+import { loadConfig } from "./apiConfig.js";
+import { redact } from "./debugBundle.js";
+
 const SUPABASE_URL = "https://jgijklgbbaszijpfcvdf.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnaWprbGdiYmFzemlqcGZjdmRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4OTc1OTQsImV4cCI6MjEwMDQ3MzU5NH0.j4bN2kvU-7ffH7wIauxRBmuV_t1htax2-sc3WFY-LCk";
 
@@ -88,14 +91,17 @@ function pipelineEntriesToRows(entries) {
 // 只是在返回结果里带一句提示，避免"报告主体明明存进去了，却因为附带日志失败
 // 就让玩家以为整个提交都失败了"。
 // 返回 { ok: true, pipelineWarning? } 或 { ok: false, error: "人话错误" }。
-export async function submitBugReport({ playerNote, gameState, conversation, pipelineLog, version }) {
-  const reportBody = {
+export async function submitBugReport({ playerNote, gameState, debugBundle, conversation, pipelineLog, version }) {
+  const apiConfig = loadConfig();
+  const reportBody = redact({
     player_note: playerNote || "",
-    game_state: gameState || null,
+    game_state: debugBundle
+      ? { ...(gameState && typeof gameState === "object" ? gameState : {}), debugBundle }
+      : gameState || null,
     conversation: conversation || null,
     version: version || "",
     user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
-  };
+  }, apiConfig);
 
   const hasPipeline = Array.isArray(pipelineLog) && pipelineLog.length > 0;
   // 只有需要写 pipeline_calls 时才要求返回 id；不带 pipeline 时走原来的轻量路径。
@@ -111,11 +117,10 @@ export async function submitBugReport({ playerNote, gameState, conversation, pip
     return { ok: true, pipelineWarning: "报告已提交，但未能获取关联ID，本次调用日志未上传。" };
   }
 
-  const rows = pipelineEntriesToRows(pipelineLog).map(r => ({ ...r, report_id: reportId }));
+  const rows = pipelineEntriesToRows(pipelineLog).map(r => ({ ...redact(r, apiConfig), report_id: reportId }));
   const pipelineResult = await supabasePost("pipeline_calls", rows, { returnRepresentation: false });
   if (!pipelineResult.ok) {
     return { ok: true, pipelineWarning: `报告已提交，但调用日志上传失败：${pipelineResult.error}` };
   }
   return { ok: true };
 }
-

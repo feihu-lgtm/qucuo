@@ -7,26 +7,55 @@
 // 在三处复用：顶栏「🐞上报bug」、🧭全流程日志弹窗内的入口、开始页。
 // getPayload 由调用方注入（游戏内能带上对话/日志/状态；开始页只有纯文字反馈）。
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { downloadDebugBundle, getDebugBundleDownloadSize, redact } from "../../infra/debugBundle.js";
 import { submitBugReport } from "../../infra/bugReport.js";
 import { CURRENT_VERSION } from "../../infra/version.js";
+import { buildModalDebugBundle, getSelectedBugReportTurns } from "./bugReportDebugBundle.js";
+
+const EMPTY_DEBUG_SOURCES = Object.freeze({});
+
+function downloadFailedReport(report, apiConfig) {
+  const date = new Date();
+  const timestamp = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}-${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}${String(date.getSeconds()).padStart(2, "0")}`;
+  const blob = new Blob([JSON.stringify({ kind: "qucuo-bug-report", ...redact(report, apiConfig) }, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `qucuo-report-${timestamp}.json`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
 
 // turns: [{ label, preview, entries }]  —— 由调用方按回合分好组传入（游戏内才有；开始页传 []）
 //   label: "第N回合 · 玩家指令摘要"；preview: 纯文本预览（展开时显示）；entries: 该回合原始日志条目
 // pipelineCount: pipeline 后台日志条数（0 则不显示总开关）
 // getExtraPayload: 返回 { gameState }（对话/pipeline 由本组件按勾选自行组装）
-export default function BugReportModal({ turns = [], pipelineData = null, getGameState, onClose, isDayMode = false }) {
+export default function BugReportModal({
+  turns = [], pipelineData = null, getGameState, debugSources = EMPTY_DEBUG_SOURCES,
+  onClose, isDayMode = false,
+}) {
   const [agreed, setAgreed] = useState(false);
   const [bugDesc, setBugDesc] = useState("");
   const [featureWish, setFeatureWish] = useState("");
   const [misc, setMisc] = useState("");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null); // { ok, error }
+  const [failedReport, setFailedReport] = useState(null);
+  const [includeDebugBundle, setIncludeDebugBundle] = useState(true);
   // 默认全选所有回合（用 index 集合）；展开查看的回合
   const [selectedTurns, setSelectedTurns] = useState(() => new Set(turns.map((_, i) => i)));
   const [expandedTurn, setExpandedTurn] = useState(null);
   const [includePipeline, setIncludePipeline] = useState(false); // pipeline 后台日志总开关，默认不带（量大）
   const pipelineCount = Array.isArray(pipelineData) ? pipelineData.length : 0;
+  const debugBundle = useMemo(
+    () => buildModalDebugBundle(debugSources, turns, selectedTurns, includePipeline),
+    [debugSources, turns, selectedTurns, includePipeline],
+  );
+  const debugBundleSize = getDebugBundleDownloadSize(debugBundle);
+  const formattedBundleSize = `${(debugBundleSize / 1024).toFixed(1)} KB`;
 
   const toggleTurn = (i) => setSelectedTurns(prev => {
     const next = new Set(prev);
@@ -57,15 +86,25 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
     setSending(true);
     setResult(null);
     // 按勾选组装：选中的回合原始日志条目
-    const pickedTurns = turns.filter((_, i) => selectedTurns.has(i)).map(t => ({ label: t.label, entries: t.entries }));
-    const r = await submitBugReport({
+    const pickedTurns = getSelectedBugReportTurns(turns, selectedTurns);
+    let gameState = null;
+    try { gameState = getGameState ? getGameState() : null; } catch { /* keep the report if game state is unavailable */ }
+    const report = {
       playerNote: note,
       version: CURRENT_VERSION ? `${CURRENT_VERSION.codename} ${CURRENT_VERSION.time}` : "",
-      gameState: getGameState ? getGameState() : null,
+      gameState,
       conversation: pickedTurns.length ? pickedTurns : null,
       pipelineLog: includePipeline && pipelineCount ? pipelineData : null,
+    };
+    const r = await submitBugReport({
+      ...report,
+      debugBundle: includeDebugBundle ? debugBundle : null,
     });
     setSending(false);
+    setFailedReport(r.ok ? null : {
+      ...report,
+      debugBundle: includeDebugBundle ? debugBundle : null,
+    });
     setResult(r);
   };
 
@@ -148,6 +187,19 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
               </div>
             )}
 
+            <div style={{ marginBottom: 14, padding: "8px 10px", border: `1px solid ${C.border}` }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11.5, color: C.text }}>
+                <input type="checkbox" checked={includeDebugBundle} onChange={e => setIncludeDebugBundle(e.target.checked)} />
+                <span>附带调试包（存档、游戏日志、错误；对话和 AI 记录按上面的勾选）</span>
+              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 7, fontSize: 10.5, color: C.dim }}>
+                <span>调试包大小：{formattedBundleSize}</span>
+                <button type="button" onClick={() => downloadDebugBundle(debugBundle)} style={{ cursor: "pointer", padding: "4px 8px", color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
+                  仅下载调试包
+                </button>
+              </div>
+            </div>
+
             {/* 知情声明 + 勾选 */}
             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", padding: "10px 12px", background: dark ? "rgba(212,168,83,0.08)" : "rgba(138,90,18,0.06)", borderRadius: 0, marginBottom: 14 }}>
               <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -158,7 +210,17 @@ export default function BugReportModal({ turns = [], pipelineData = null, getGam
             </label>
 
             {result && !result.ok && (
-              <div style={{ fontSize: 11.5, color: "#e0526a", marginBottom: 10, lineHeight: 1.6 }}>提交失败：{result.error}</div>
+              <div style={{ fontSize: 11.5, color: "#e0526a", marginBottom: 10, lineHeight: 1.6 }}>
+                提交失败：{result.error}
+                {failedReport && (
+                  <button type="button" onClick={() => {
+                    const config = typeof debugSources?.apiConfig === "function" ? debugSources.apiConfig() : debugSources?.apiConfig;
+                    downloadFailedReport(failedReport, config);
+                  }} style={{ display: "block", cursor: "pointer", marginTop: 8, padding: "5px 9px", color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>
+                    下载未提交报告
+                  </button>
+                )}
+              </div>
             )}
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, alignItems: "center" }}>
