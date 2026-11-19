@@ -43,6 +43,7 @@ import SeaOfMindScreen from "./SeaOfMindScreen.jsx";
 import AuctionScreen from "../../domain/buildings/AuctionScreen.jsx";
 import CookingScreen from "../../domain/buildings/CookingScreen.jsx";
 import ChestScreen from "../../domain/buildings/ChestScreen.jsx";
+import { getBuildingInstanceKey } from "./buildingInstanceKey.js";
 
 function isNarrativePlaceholder(entry) {
   if (!entry.streaming) return false;
@@ -212,6 +213,7 @@ export default function CenterPanel({
                  建筑面板拿满整栏。想看叙事就点"▾ 最小化"，叙事区随即恢复全高。 ── */}
           {(activeBuilding || tradingShop) && (
             <div
+              key={getBuildingInstanceKey(activeBuilding, tradingShop)}
               className={`mobile-building-root${gambleStoneMinimized ? " mobile-building-minimized-root" : ""}${buildingPanelMinimized ? " mobile-building-hidden" : ""}`}
               style={{
                 flex: 1,

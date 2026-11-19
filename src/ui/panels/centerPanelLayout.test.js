@@ -22,11 +22,19 @@ describe("建筑面板必须独占整条主叙事栏", () => {
   });
 
   it("建筑功能区容器仍是 flex:1 + 自滚（让位之后它才拿得满）", () => {
-    const rootIndex = SRC.indexOf('<div\n              className={`mobile-building-root');
+    const classIndex = SRC.indexOf('className={`mobile-building-root');
+    const rootIndex = SRC.lastIndexOf("<div", classIndex);
     const rootElement = SRC.slice(rootIndex, SRC.indexOf("{/* 最小化入口", rootIndex));
     expect(rootElement, "没找到建筑功能区容器").toContain("flex: 1");
     expect(rootElement).toContain("minHeight: 0"); // 不加它 flex 子项不会收缩，内部滚动条出不来
     expect(rootElement).toContain('overflowY: "auto"');
+  });
+
+  it("建筑功能区容器按建筑实例 identity 复用", () => {
+    const classIndex = SRC.indexOf('className={`mobile-building-root');
+    const rootIndex = SRC.lastIndexOf("<div", classIndex);
+    const rootElement = SRC.slice(rootIndex, SRC.indexOf("{/* 最小化入口", rootIndex));
+    expect(rootElement).toContain("key={getBuildingInstanceKey(activeBuilding, tradingShop)}");
   });
 
   it("最小化仍然可用——不然让位之后就没法看叙事了", () => {
@@ -35,7 +43,8 @@ describe("建筑面板必须独占整条主叙事栏", () => {
   });
 
   it("最小化时隐藏建筑容器但不卸载其内部状态", () => {
-    const rootIndex = SRC.indexOf('<div\n              className={`mobile-building-root');
+    const classIndex = SRC.indexOf('className={`mobile-building-root');
+    const rootIndex = SRC.lastIndexOf("<div", classIndex);
     expect(rootIndex, "没找到建筑功能区容器").toBeGreaterThan(-1);
     const conditionStart = SRC.lastIndexOf("{(activeBuilding || tradingShop)", rootIndex);
     const rootElement = SRC.slice(rootIndex, SRC.indexOf("{/* 最小化入口", rootIndex));
