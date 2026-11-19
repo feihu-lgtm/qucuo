@@ -1,7 +1,7 @@
 import { narratorVoicePrompt } from "./narrator.js";
 import { MVU_SYSTEM_INSTRUCTIONS } from "./mvu.js";
 import { describeCatalogForAI } from "./items/catalog.js";
-import { getActivePreset } from "./PresetManager.jsx";
+import { getActivePreset } from "./presetSystem.js";
 import { assemblePrompt } from "./presetSystem.js";
 import { gateScenario } from "./worldbook.js";
 import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL, buildTalkItemRule } from "./enginePrompts.js";

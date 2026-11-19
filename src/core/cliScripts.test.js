@@ -7,6 +7,7 @@ import { exportSave } from "../saves.js";
 import { loadSquares, serializeSquares } from "../mapSquares.js";
 import { createSession, runScript } from "../../cli/runner.mjs";
 import { getRngState, random } from "./rng.js";
+import { createMockAi, createReplayAi } from "../engine/ports/ai.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scriptsDir = resolve(projectRoot, "tests/cli");
@@ -26,12 +27,31 @@ afterEach(() => {
 describe("CLI scripts", () => {
   it.each(scriptFiles)("%s", async (file) => {
     const output = [];
+    const ai = file === "ai-turn.txt"
+      ? createMockAi(JSON.parse(readFileSync(join(scriptsDir, "ai-turn-replies.json"), "utf8")))
+      : { chat: async () => ({ text: '{"output":["测试结算完成"]}' }) };
     const failures = await runScript(readFileSync(join(scriptsDir, file), "utf8"), {
       out: (text) => output.push(text),
       cwd: tempDir,
+      ai,
     });
 
     expect(failures, output.join("\n")).toBe(0);
+    if (file === "ai-turn.txt") {
+      expect(output.join("\n")).toContain("石阶旁的草叶轻轻摇动。");
+      const replayOutput = [];
+      const entries = readFileSync(join(scriptsDir, "ai-turn-replay.jsonl"), "utf8")
+        .split(/\r?\n/)
+        .filter((line) => line.trim())
+        .map((line) => JSON.parse(line));
+      const replayFailures = await runScript(readFileSync(join(scriptsDir, file), "utf8"), {
+        out: (text) => replayOutput.push(text),
+        cwd: tempDir,
+        ai: createReplayAi(entries),
+      });
+      expect(replayFailures, replayOutput.join("\n")).toBe(0);
+      expect(replayOutput.join("\n")).toContain("石阶旁的草叶轻轻摇动。");
+    }
   });
 
   it("round-trips a non-current district roomMap entry with its NPC and ground item", async () => {
@@ -141,5 +161,20 @@ describe("CLI scripts", () => {
     const snapshot = JSON.parse(readFileSync(join(tempDir, "after-rejection.json"), "utf8"));
     expect(snapshot.roomMap).toEqual({});
     expect(snapshot.squares).toEqual({});
+  });
+
+  it("restores the round snapshot when the AI reply is malformed", async () => {
+    const output = [];
+    const session = createSession({
+      out: (text) => output.push(text),
+      cwd: tempDir,
+      ai: createMockAi(["{not json}"]),
+    });
+    await session.runLine(":new");
+    const before = structuredClone(session.store.getState());
+
+    expect(await session.runLine("探索石阶")).toBe(1);
+    expect(session.store.getState()).toEqual(before);
+    expect(output.at(-1)).toContain("AI reply format is invalid");
   });
 });

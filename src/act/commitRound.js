@@ -10,7 +10,7 @@ import { ensureNpcCombatData } from "../npcGeneration.js";
 import { patchCombatData, materializeNpc } from "../roomNpcs.js";
 import { getAllResidentNpcNames } from "../residentNpcs.js";
 import { getImportedResidentNames } from "../cards/importedRegistry.js";
-import { COMPANION_SLOTS } from "../companion.js";
+import { COMPANION_SLOTS } from "../companionSlots.js";
 
 import { makeItemSmart } from "../items/catalog.js";
 import { makeItem, QUALITY } from "../equipment.js";
@@ -29,6 +29,8 @@ const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 写回所有世界状态。请求段无副作用、提交段可回滚——本函数里任何一步抛错，
 // 由 act 的 catch 用发送前快照整体还原。d 由 act 在调用点组装（同 callDeps 模式）。
 export function commitRound(d) {
+  if (d.knowledgeTree) d.setVarTree(d.knowledgeTree);
+
   // ── 系统采纳的在场名单（提前算，供好感度过滤 + 新面孔检测共用）──
   // 判据同下方新面孔检测：移动到缓存目的地取 cached.npcs，否则取当前 d.room.npcs，
   // 涌现登场的人(emergedNpcName)算合法新增。AI 凭空报的名字不在此列。
