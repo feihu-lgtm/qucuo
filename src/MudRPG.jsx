@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
+import { gameActions, initGameStore, useGameStore } from "./store/gameStore.js";
+import { snapshotFromStore } from "./store/persist.js";
 import { QUCUO_PRESET } from "./presets/qucuo.js";
 import {
   NNPC_STAGE, initialNarratorState, isInSea, migrateNarratorState,
@@ -201,25 +203,89 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 格子数据随档恢复（埋物是游戏状态的一部分；刷新重掷会允许读档刨雷）
   if (restored?.snap?.squares) loadSquares(restored.snap.squares);
 
-  const [preset, setPreset] = useState(restored?.preset || DEFAULT_PRESETS[0]);
-  const [room, setRoom] = useState(() => {
-    const initialRoom = restored?.snap.room || DEFAULT_PRESETS[0].room;
-    // 初始房间（无论来自预设默认值还是存档恢复）里的NPC都可能还没有 moveset/carriedItems
-    // 字段（预设手写时不会带这些，老存档存的时候这套系统还不存在），启动时补全一次。
-    const initLuck = (restored?.snap.char || DEFAULT_PRESETS[0].char).special?.气运 ?? 5;
-    return {
-      ...initialRoom,
-      // 之前这里没传 levelCap，预设手写的具名NPC（老猎户/杂货商人等）一律落到
-      // getTierPower 的默认档位（白/村民），跟他们的实际人设强度（比如"猎户"
-      // 关键词该是绿袍档）对不上——尤其是品质档位改成~20倍/档增长之后，
-      // 这个疏漏会让本该有点门槛的对手变得形同虚设。这里跟AI涌现NPC用同一套
-      // matchLevelCap 关键词映射，从名字+简介里推断档位。
-      npcs: (initialRoom.npcs || []).map(n => {
-        const { levelCap } = mapDescriptionToGenParams(`${n.name || ""} ${n.brief || ""}`);
-        return ensureNpcCombatData(n, { luck: initLuck, levelCap });
-      }),
-    };
+  useState(() => {
+    initGameStore({
+      preset: restored?.preset || DEFAULT_PRESETS[0],
+      room: (() => {
+        const initialRoom = restored?.snap.room || DEFAULT_PRESETS[0].room;
+        // 初始房间（无论来自预设默认值还是存档恢复）里的NPC都可能还没有 moveset/carriedItems
+        // 字段（预设手写时不会带这些，老存档存的时候这套系统还不存在），启动时补全一次。
+        const initLuck = (restored?.snap.char || DEFAULT_PRESETS[0].char).special?.气运 ?? 5;
+        return {
+          ...initialRoom,
+          // 之前这里没传 levelCap，预设手写的具名NPC（老猎户/杂货商人等）一律落到
+          // getTierPower 的默认档位（白/村民），跟他们的实际人设强度（比如"猎户"
+          // 关键词该是绿袍档）对不上——尤其是品质档位改成~20倍/档增长之后，
+          // 这个疏漏会让本该有点门槛的对手变得形同虚设。这里跟AI涌现NPC用同一套
+          // matchLevelCap 关键词映射，从名字+简介里推断档位。
+          npcs: (initialRoom.npcs || []).map(n => {
+            const { levelCap } = mapDescriptionToGenParams(`${n.name || ""} ${n.brief || ""}`);
+            return ensureNpcCombatData(n, { luck: initLuck, levelCap });
+          }),
+        };
+      })(),
+      innerRoomName: (() => {
+        const initial = restored?.snap.room || DEFAULT_PRESETS[0].room;
+        if (!hasInnerMap(initial.name)) return null;
+        // 优先吃存档里记的内层房间（本轮新增字段）；老存档没有、或存的房间已不在
+        // 该据点内景里，才退回锚点。
+        const saved = restored?.snap.innerRoomName;
+        if (saved && getInnerRoomNames(initial.name).includes(saved)) return saved;
+        return getDistrictAnchor(initial.name);
+      })(),
+      char: (() => {
+        const initial = restored?.snap.char || DEFAULT_PRESETS[0].char;
+        const initialSkills = restored?.snap.skills || DEFAULT_PRESETS[0].skills;
+        // moveset 不再是开局纯随机生成的独立数据，而是从"武学"（skills）派生——
+        // 见 npcGeneration.js 的 deriveMovesetFromSkills，武学阶段决定招式品质上限，
+        // 练得越深切磋越强，这样"三脚猫拳法"这类武学才是真正影响战斗的东西。
+        const base = { ...initial, moveset: deriveMovesetFromSkills(initialSkills) };
+        // 主角气血上限统一走 hpFromNeigong（与所有 NPC 同一套公式），不再用 preset 里
+        // 写死的 100——否则同为白袍内功5，主角100、NPC却116，主角凭空矮一截。仅新开局
+        // 时按公式重算上限（存档恢复则沿用存档里玩家当前的血量，不覆盖）。
+        if (!restored) {
+          const maxHp = hpFromNeigong(base.neigong ?? 5, base.special?.体魄 ?? 5);
+          base.hp = [maxHp, maxHp];
+        }
+        return base;
+      })(),
+      dao: restored?.snap.dao || DEFAULT_PRESETS[0].dao,
+      skills: restored?.snap.skills || DEFAULT_PRESETS[0].skills.map(s => ({ ...s })),
+      companionState: restored?.snap.companionState || initCompanionState(),
+      inv: backfillInventoryFromCatalog(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]),
+      log: restored
+        ? [{ t: "sys", text: `── 已从上次自动存档恢复进度（${new Date(restored.snap.savedAt || Date.now()).toLocaleString()}） ──` }, ...restored.snap.log]
+        : [{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${DEFAULT_PRESETS[0].name}` }, ...DEFAULT_PRESETS[0].opening],
+      convo: restored?.snap.convo || [],
+      exp: restored?.snap.exp || 0,
+      pot: restored?.snap.pot || 0,
+      flags: restored?.snap.flags || [],
+      questProgress: restored?.snap.questProgress || {},
+      persuasionProgress: restored?.snap.persuasionProgress || {},
+      mapData: restored?.snap.mapData || { [DEFAULT_PRESETS[0].room.name]: { x: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.x ?? 0, y: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.y ?? 0 } },
+      time: restored?.snap.time ?? 6,
+      claimedMilestones: new Set(restored?.snap.claimedMilestones || []),
+      narrator: restored?.snap.narrator || initialNarratorState(),
+      varTree: (() => {
+        if (restored?.snap.varTree) return restored.snap.varTree; // 读档：存档里已含知识领域，不重复灌
+        const base = initialVarTree();
+        const p = restored?.preset || DEFAULT_PRESETS[0];
+        return seedKnowledge(base, p.知识基底, 0); // 新局：灌入剧本写死的知识基底
+      })(),
+      deposit: restored?.snap.deposit || 0,
+      depositedAt: restored?.snap.depositedAt ?? null,
+      pledgedItems: restored?.snap.pledgedItems || [],
+    });
+    return true;
   });
+  const {
+    setChar, setDao, setSkills, setExp, setPot, setInv, setCompanionState, setPreset,
+    setRoom, setInnerRoomName, setMapData, setTime, setLog, setConvo, setNarrator,
+    setVarTreeState, setFlags, setQuestProgress, setPersuasionProgress,
+    setClaimedMilestones, setDeposit, setDepositedAt, setPledgedItems,
+  } = gameActions;
+  const preset = useGameStore(s => s.preset);
+  const room = useGameStore(s => s.room);
   // 内层箱庭导航——跟 room state 完全独立的新增状态，不改动 room.name 的
   // 语义（room.name 继续只表示"在哪个据点"，MudRPG.jsx 里现有71处引用
   // room.name 的地方全部不用动）。innerRoomName 只在当前据点有内层数据
@@ -227,15 +293,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 的名字（比如"村口"）。没有内层数据的据点（目前除鱼定村外的13个），
   // 这个值应保持为 null，UI/移动判定据此完全走原有的"整据点即一间房"
   // 逻辑，两套系统不会互相干扰。
-  const [innerRoomName, setInnerRoomName] = useState(() => {
-    const initial = restored?.snap.room || DEFAULT_PRESETS[0].room;
-    if (!hasInnerMap(initial.name)) return null;
-    // 优先吃存档里记的内层房间（本轮新增字段）；老存档没有、或存的房间已不在
-    // 该据点内景里，才退回锚点。
-    const saved = restored?.snap.innerRoomName;
-    if (saved && getInnerRoomNames(initial.name).includes(saved)) return saved;
-    return getDistrictAnchor(initial.name);
-  });
+  const innerRoomName = useGameStore(s => s.innerRoomName);
   // 读档/初始化时"这一次的内层位置是恢复来的"，用于让下面那个 room.name effect
   // 在挂载首跑时别把恢复值冲成锚点。
   const restoredInnerRef = useRef(null);
@@ -257,27 +315,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (restoredInnerRef.current !== null) { restoredInnerRef.current = null; return; }
     setInnerRoomName(hasInnerMap(room.name) ? getDistrictAnchor(room.name) : null);
   }, [room.name]);
-  const [char, setChar] = useState(() => {
-    const initial = restored?.snap.char || DEFAULT_PRESETS[0].char;
-    const initialSkills = restored?.snap.skills || DEFAULT_PRESETS[0].skills;
-    // moveset 不再是开局纯随机生成的独立数据，而是从"武学"（skills）派生——
-    // 见 npcGeneration.js 的 deriveMovesetFromSkills，武学阶段决定招式品质上限，
-    // 练得越深切磋越强，这样"三脚猫拳法"这类武学才是真正影响战斗的东西。
-    const base = { ...initial, moveset: deriveMovesetFromSkills(initialSkills) };
-    // 主角气血上限统一走 hpFromNeigong（与所有 NPC 同一套公式），不再用 preset 里
-    // 写死的 100——否则同为白袍内功5，主角100、NPC却116，主角凭空矮一截。仅新开局
-    // 时按公式重算上限（存档恢复则沿用存档里玩家当前的血量，不覆盖）。
-    if (!restored) {
-      const maxHp = hpFromNeigong(base.neigong ?? 5, base.special?.体魄 ?? 5);
-      base.hp = [maxHp, maxHp];
-    }
-    return base;
-  });
-  const [dao, setDao] = useState(restored?.snap.dao || DEFAULT_PRESETS[0].dao);
-  const [skills, setSkills] = useState(restored?.snap.skills || DEFAULT_PRESETS[0].skills.map(s => ({ ...s })));
+  const char = useGameStore(s => s.char);
+  const dao = useGameStore(s => s.dao);
+  const skills = useGameStore(s => s.skills);
   // 伙伴系统（本轮新增）：雪豹的解锁/出战状态。老存档没有这个字段，用
   // initCompanionState() 兜底成"未解锁"，不影响任何既有存档的兼容性。
-  const [companionState, setCompanionState] = useState(restored?.snap.companionState || initCompanionState());
+  const companionState = useGameStore(s => s.companionState);
   // companionState 的 latest-ref：房间注入 effect（依赖数组刻意不含 companionState，
   // 避免入队/好感变动就整屋重刷）需要读到最新入队状态来决定是否还注入驻场雪豹，
   // 靠这个 ref 拿最新值。用一个同步 effect 维护，不改动现有 setCompanionState 调用点。
@@ -286,12 +329,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 装备信息现在完全并入 inv（每个物品对象自带 category/equipped 标记），不再单独维护 equip state
   // 老档补丁：catalog 后续给具名物品补的 sixDim/effect（如红档补七维）不会追溯到
   // 早就生成好的旧实例，这里读档时顺手补一遍，见 backfillInventoryFromCatalog。
-  const [inv, setInv] = useState(() => backfillInventoryFromCatalog(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]));
-  const [log, setLog] = useState(
-    restored
-      ? [{ t: "sys", text: `── 已从上次自动存档恢复进度（${new Date(restored.snap.savedAt || Date.now()).toLocaleString()}） ──` }, ...restored.snap.log]
-      : [{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${DEFAULT_PRESETS[0].name}` }, ...DEFAULT_PRESETS[0].opening]
-  );
+  const inv = useGameStore(s => s.inv);
+  const log = useGameStore(s => s.log);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [waitSecs, setWaitSecs] = useState(0); // AI 调用已等待秒数（卡住感知）
@@ -299,10 +338,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [pendingTalks, setPendingTalks] = useState(0); // 对话/私聊模式：并行请求计数
   const [queueCount, setQueueCount] = useState(0); // 排队命令计数，驱动 UI 刷新
   const [collapsedGroups, setCollapsedGroups] = useState(new Set()); // 折叠的命令框（存 cmd 在 log 里的 index）
-  const [convo, setConvo] = useState(restored?.snap.convo || []);
-  const [exp, setExp] = useState(restored?.snap.exp || 0);
-  const [pot, setPot] = useState(restored?.snap.pot || 0);
-  const [flags, setFlags] = useState(restored?.snap.flags || []);
+  const convo = useGameStore(s => s.convo);
+  const exp = useGameStore(s => s.exp);
+  const pot = useGameStore(s => s.pot);
+  const flags = useGameStore(s => s.flags);
   // 入册库的版本号，用 React 18 的 useSyncExternalStore 直接订阅那个模块级状态。
   // 【为什么不自己数】registerImported 改的是 importedRegistry.js 里的模块级
   // _registry，React 依赖系统看不见；组装 room.npcs 的 effect 依赖数组里没有一项
@@ -314,18 +353,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     importedRegistry.subscribeImported,
     importedRegistry.getImportedRevision,
   );
-  const [questProgress, setQuestProgress] = useState(restored?.snap.questProgress || {}); // { questId: { count } }
+  const questProgress = useGameStore(s => s.questProgress); // { questId: { count } }
   // 说服进度持久化：按 questId|flag 存 { guard, hitKeys, turns, done }，让"关掉再点同一场
   // 说服"能接着上次、且进快照存档。成功/离开时清掉该场。
   // 【必须声明在 buildCurrentSnapshot(useCallback) 之前】——它被 snapshot 的依赖数组引用，
   // 若声明晚于那里会触发 const 暂时性死区：Cannot access 'persuasionProgress' before initialization。
-  const [persuasionProgress, setPersuasionProgress] = useState(restored?.snap.persuasionProgress || {});
-  const [mapData, setMapData] = useState(restored?.snap.mapData || { [DEFAULT_PRESETS[0].room.name]: { x: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.x ?? 0, y: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.y ?? 0 } });
+  const persuasionProgress = useGameStore(s => s.persuasionProgress);
+  const mapData = useGameStore(s => s.mapData);
   const [mapBig, setMapBig] = useState(false);
   const mapBigCloseGuard = useOverlayCloseGuard(() => setMapBig(false));
   const [mapView, setMapView] = useState("outer"); // ⑦ 地图框显示：outer=外层大地图 / inner=内层箱庭图
   const [peoplePanel, setPeoplePanel] = useState({ present: true, absent: true }); // 左侧人物两段各自收放
-  const [time, setTime] = useState(restored?.snap.time ?? 6); // 24回合/天，6=第1日·卯时（晨）
+  const time = useGameStore(s => s.time); // 24回合/天，6=第1日·卯时（晨）
   // time 的即时镜像：起居注在同一个事件循环里可能被连续调用（内层移动等），
   // 闭包里的 time 还是上一帧的值，跨天判定会错一格。跟 varTreeRef 同一套办法。
   const timeRef = useRef(time);
@@ -435,14 +474,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [showPortraitManager, setShowPortraitManager] = useState(false);
   const [showPipeline, setShowPipeline] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
-  const [claimedMilestones, setClaimedMilestones] = useState(new Set(restored?.snap.claimedMilestones || []));
-  const [narrator, setNarrator] = useState(restored?.snap.narrator || initialNarratorState());
-  const [varTree, setVarTreeState] = useState(() => {
-    if (restored?.snap.varTree) return restored.snap.varTree; // 读档：存档里已含知识领域，不重复灌
-    const base = initialVarTree();
-    const p = restored?.preset || DEFAULT_PRESETS[0];
-    return seedKnowledge(base, p.知识基底, 0); // 新局：灌入剧本写死的知识基底
-  });
+  const claimedMilestones = useGameStore(s => s.claimedMilestones);
+  const narrator = useGameStore(s => s.narrator);
+  const varTree = useGameStore(s => s.varTree);
   // ── varTreeRef：独立于 React 渲染时机的「绝对最新」varTree ─────────────────
   // 根治病史（切磋后"交情已加、左栏仍显示尚未认识"）：act()/handleNpcDuel 等
   // useCallback 闭包捕获的是"函数被创建那一刻"的 varTree 快照。但凡某个 handler 先
@@ -593,8 +627,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setShowSettings(false);
   }, [presets, preset]);
 
-  const buildCurrentSnapshot = useCallback(() => buildSnapshot({
-    preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState,
+  const buildCurrentSnapshot = useCallback(() => snapshotFromStore({
     squares: serializeSquares(), roomMap: roomMapRef.current,
   }), [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, persuasionProgress, innerRoomName, companionState]); // deposit/depositedAt/pledgedItems captured via closure
 
@@ -723,9 +756,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [buildingPanelMinimized, setBuildingPanelMinimized] = useState(false);
   useEffect(() => { setBuildingPanelMinimized(false); }, [activeBuilding?.id]);
   const [showBasement, setShowBasement] = useState(false);
-  const [deposit, setDeposit] = useState(restored?.snap.deposit || 0);
-  const [depositedAt, setDepositedAt] = useState(restored?.snap.depositedAt ?? null);
-  const [pledgedItems, setPledgedItems] = useState(restored?.snap.pledgedItems || []);
+  const deposit = useGameStore(s => s.deposit);
+  const depositedAt = useGameStore(s => s.depositedAt);
+  const pledgedItems = useGameStore(s => s.pledgedItems);
   const addLog = useCallback((lines) => setLog(p => [...p, ...lines]), []);
 
   // 把主日志按回合分组，供 bug 上报弹窗"按编号勾选要附带的记录"用。

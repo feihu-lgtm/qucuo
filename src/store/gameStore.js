@@ -1,0 +1,77 @@
+import { create } from "zustand";
+import { PLAYER_KEYS } from "./slices/player.js";
+import { WORLD_KEYS } from "./slices/world.js";
+import { NARRATIVE_KEYS } from "./slices/narrative.js";
+import { QUEST_KEYS } from "./slices/quest.js";
+import { ECONOMY_KEYS } from "./slices/economy.js";
+
+export const GAME_KEYS = [
+  ...PLAYER_KEYS,
+  ...WORLD_KEYS,
+  ...NARRATIVE_KEYS,
+  ...QUEST_KEYS,
+  ...ECONOMY_KEYS,
+];
+
+export const useGameStore = create(() => ({
+  char: undefined,
+  dao: undefined,
+  skills: undefined,
+  exp: undefined,
+  pot: undefined,
+  inv: undefined,
+  companionState: undefined,
+  preset: undefined,
+  room: undefined,
+  innerRoomName: undefined,
+  mapData: undefined,
+  time: undefined,
+  log: undefined,
+  convo: undefined,
+  narrator: undefined,
+  varTree: undefined,
+  flags: undefined,
+  questProgress: undefined,
+  persuasionProgress: undefined,
+  claimedMilestones: undefined,
+  deposit: undefined,
+  depositedAt: undefined,
+  pledgedItems: undefined,
+}));
+
+const createSetter = (key) => (next) => useGameStore.setState((s) => ({
+  [key]: typeof next === "function" ? next(s[key]) : next,
+}));
+
+export const gameActions = {
+  setChar: createSetter("char"),
+  setDao: createSetter("dao"),
+  setSkills: createSetter("skills"),
+  setExp: createSetter("exp"),
+  setPot: createSetter("pot"),
+  setInv: createSetter("inv"),
+  setCompanionState: createSetter("companionState"),
+  setPreset: createSetter("preset"),
+  setRoom: createSetter("room"),
+  setInnerRoomName: createSetter("innerRoomName"),
+  setMapData: createSetter("mapData"),
+  setTime: createSetter("time"),
+  setLog: createSetter("log"),
+  setConvo: createSetter("convo"),
+  setNarrator: createSetter("narrator"),
+  setVarTreeState: createSetter("varTree"),
+  setFlags: createSetter("flags"),
+  setQuestProgress: createSetter("questProgress"),
+  setPersuasionProgress: createSetter("persuasionProgress"),
+  setClaimedMilestones: createSetter("claimedMilestones"),
+  setDeposit: createSetter("deposit"),
+  setDepositedAt: createSetter("depositedAt"),
+  setPledgedItems: createSetter("pledgedItems"),
+};
+
+export function initGameStore(values) {
+  useGameStore.setState(
+    Object.fromEntries(GAME_KEYS.map((key) => [key, values[key]])),
+    true,
+  );
+}
