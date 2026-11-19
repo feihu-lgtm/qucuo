@@ -16,7 +16,7 @@ function setterForKey(key) {
 function captureSnapshot(refs = {}) {
   const state = gameStore.getState();
   return {
-    state: structuredClone(Object.fromEntries(ROLLBACK_KEYS.map((key) => [key, state[key]]))),
+    state: Object.fromEntries(ROLLBACK_KEYS.map((key) => [key, state[key]])),
     rngState: getRngState(),
     squares: serializeSquares(),
     refs: Object.fromEntries(Object.entries(refs).map(([key, ref]) => [key, structuredClone(ref.current)])),
@@ -24,7 +24,11 @@ function captureSnapshot(refs = {}) {
 }
 
 function restoreSnapshot(snapshot, refs = {}) {
-  for (const key of ROLLBACK_KEYS) gameActions[setterForKey(key)](snapshot.state[key]);
+  for (const key of ROLLBACK_KEYS) {
+    if (gameStore.getState()[key] !== snapshot.state[key]) {
+      gameActions[setterForKey(key)](snapshot.state[key]);
+    }
+  }
   setRngState(snapshot.rngState);
   loadSquares(snapshot.squares);
   for (const [key, ref] of Object.entries(refs)) ref.current = snapshot.refs[key];

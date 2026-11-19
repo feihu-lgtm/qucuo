@@ -84,6 +84,7 @@ describe("runTurn", () => {
 
     initGameStore(before);
     setRngState(rngBefore);
+    const roomBefore = gameStore.getState().room;
     const refs = {
       varTreeRef: { current: before.varTree },
       roomMapRef: { current: { 石阶: { npcs: [], items: [] } } },
@@ -93,6 +94,7 @@ describe("runTurn", () => {
       createMockAi(['{"output":["叙事"]}']),
       (deps) => {
         for (const key of ROLLBACK_KEYS) {
+          if (key === "room") continue;
           const setter = key === "varTree" ? "setVarTreeState" : `set${key[0].toUpperCase()}${key.slice(1)}`;
           gameActions[setter]({ changed: key });
         }
@@ -111,6 +113,8 @@ describe("runTurn", () => {
     expect(failed.ok).toBe(false);
     expect(failed.error.message).toBe("commit failed");
     for (const key of ROLLBACK_KEYS) expect(gameStore.getState()[key]).toEqual(before[key]);
+    expect(gameStore.getState().room).toBe(roomBefore);
+    expect(gameStore.getState().pot).toBe(before.pot);
     expect(gameStore.getState().log).toEqual([
       ...before.log,
       { t: "sys", text: "concurrent commit" },
