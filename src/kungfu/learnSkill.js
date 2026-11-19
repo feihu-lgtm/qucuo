@@ -129,7 +129,7 @@ export function tryLearnFromMaster(npc, varTree, skills, char) {
 //     调用方需要写入 varTree 的好感扣减和生气状态
 //   { ok:true, success:true, outcome:"item"|"move"|null, ... } —— 成功，
 //     outcome 为 null 表示这次判定成功但对方身上物品招式都被拿空了，白跑一趟
-export function tryStealFrom(npc, varTree, skills, char, agility = 0) {
+export function tryStealFrom(npc, varTree, skills, char, agility = 0, now = Date.now()) {
   const npcAttrs = varTree.角色?.[npc.name] || {};
   if (npcAttrs.生气状态?.active) {
     return { ok: false, reason: `${npc.name}此刻正满心戒备，你若再敢造次，怕是当场就要翻脸。（生气期间无法偷窃）` };
@@ -144,7 +144,7 @@ export function tryStealFrom(npc, varTree, skills, char, agility = 0) {
       success: false,
       rate: result.rate,
       favorabilityLoss: STEAL_CONFIG.angryFavorabilityLoss,
-      angryState: createAngryState("偷窃未遂"),
+      angryState: createAngryState("偷窃未遂", now),
     };
   }
 

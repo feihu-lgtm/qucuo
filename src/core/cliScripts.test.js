@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,8 +28,9 @@ afterEach(() => {
 describe("CLI scripts", () => {
   it.each(scriptFiles)("%s", async (file) => {
     const output = [];
-    const ai = file === "ai-turn.txt"
-      ? createMockAi(JSON.parse(readFileSync(join(scriptsDir, "ai-turn-replies.json"), "utf8")))
+    const repliesFile = `${file.slice(0, -4)}-replies.json`;
+    const ai = existsSync(join(scriptsDir, repliesFile))
+      ? createMockAi(JSON.parse(readFileSync(join(scriptsDir, repliesFile), "utf8")))
       : { chat: async () => ({ text: '{"output":["测试结算完成"]}' }) };
     const failures = await runScript(readFileSync(join(scriptsDir, file), "utf8"), {
       out: (text) => output.push(text),

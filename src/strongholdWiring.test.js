@@ -264,7 +264,8 @@ describe("游走NPC的落点只能是公共房间", () => {
 });
 
 // ── 本轮五个 bug 的回归钉子 ────────────────────────────────────────────────
-import { getCompanionDescForm, classifyDescForm, COMPANION_LORE } from "./companion.js";
+import { getCompanionDescForm, classifyDescForm } from "./companionForms.js";
+import { COMPANION_LORE } from "./companion.js";
 import { getCompanionForm, setCompanionForm, SNOW_LEOPARD_FORMS, PEARL_FORMS } from "./portraits.js";
 import { parseDir } from "./utils/mudHelpers.js";
 import { QUCUO_MAP } from "./qucuoMap.js";
