@@ -317,6 +317,7 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
         owner: [{ name: npc.name, via: VIA.FIRSTHAND }],
         source: NOTE_SOURCE.DUMB,
       },
+      noteAction: "stealFail",
       kind: "caught",
       steal: { ...result, favorability },
     };
@@ -326,6 +327,7 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
     return {
       logs: [{ t: "sys", text: `  你想对${npc.name}下手，摸了半天，却发现他身上早已一无所有，只得悻悻作罢。` }],
       note: { text: `摸了${npc.name}的身，他身上已经一无所有。`, source: NOTE_SOURCE.DUMB },
+      noteAction: "steal",
       kind: "empty",
       steal: result,
     };
@@ -348,6 +350,7 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
         { t: "loot", text: `🤫 妙手空空：「${target.name}」`, item: fullItem, source: "steal", fromNpc: npc.name },
       ],
       note: { text: `从${npc.name}身上顺走了「${target.name}」，他毫无察觉。`, source: NOTE_SOURCE.DUMB },
+      noteAction: "steal",
       kind: "item",
       steal: result,
     };
@@ -361,6 +364,7 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
       { t: "loot", text: `🤫 偷師得手：「${result.move.name}」`, skill: { name: result.move.name, quality: result.move.quality || result.skill?.quality || "白", moveType: result.move.type }, desc: result.move.desc, source: "steal", fromNpc: npc.name },
     ],
     note: { text: `偷看${npc.name}出手的门道，把「${result.move.name}」这一手学了去，他没有察觉。`, source: NOTE_SOURCE.DUMB },
+    noteAction: "steal",
     kind: "move",
     steal: result,
   };

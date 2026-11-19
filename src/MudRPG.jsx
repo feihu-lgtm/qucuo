@@ -3047,13 +3047,12 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     }
     if (result.kind === "caught") {
       endTrace(_st, `被${npc.name}察觉，好感-${steal.favorabilityLoss}`);
-      noteAction("stealFail");
     } else {
       endTrace(_st, result.kind === "empty"
         ? `得手但${npc.name}身无长物`
         : result.kind === "item" ? `顺走「${steal.item.name}」` : `偷师「${steal.move.name}」`);
-      noteAction("steal");
     }
+    if (result.noteAction) noteAction(result.noteAction);
     applyResult(featureCtxRef.current, result);
   }, [noteAction]);
 

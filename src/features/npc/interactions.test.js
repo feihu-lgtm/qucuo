@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { ESCORT_QUESTS } from "../../quests/escortQuests.js";
 import { setSeed } from "../../core/rng.js";
+import { VIA } from "../../memory/note.js";
 import {
   describeGiftForPrompt,
   giftNpc,
@@ -205,6 +206,14 @@ describe("NPC stealing logic", () => {
     throw new Error(`No seeded steal result for ${kind}`);
   };
 
+  const expectStealNote = (result, actionKind, owner) => {
+    expect(result.note).toBeDefined();
+    expect(result).not.toHaveProperty("notes");
+    expect(result.noteAction).toBe(actionKind);
+    if (owner) expect(result.note.owner).toEqual(owner);
+    else expect(result.note).not.toHaveProperty("owner");
+  };
+
   it("steals an item, marks it unavailable, and preserves later varTree edits", () => {
     const npc = { name: "商人", carriedItems: [{ id: "carry-1", name: "铜铃", category: "misc", quality: "白" }] };
     const result = findStealResult(thiefState(), npc, "item");
@@ -213,7 +222,7 @@ describe("NPC stealing logic", () => {
     expect(result.changes.inv([])[0].id).toBe("stolen_carry-1_123");
     expect(result.changes.room({ npcs: [npc] }).npcs[0].carriedItems[0].stolen).toBe(true);
     expect(result.changes).not.toHaveProperty("varTree");
-    expect(result.note).not.toHaveProperty("owner");
+    expectStealNote(result, "steal");
     expect(result.logs.map(({ t }) => t)).toEqual(["cmd", "desc", "loot"]);
   });
 
@@ -229,7 +238,7 @@ describe("NPC stealing logic", () => {
     expect(updated.角色.商人.好感度).toBe(0);
     expect(updated.角色.商人.生气状态.startedAt).toBe(123);
     expect(updated.世界).toMatchObject({ 本日移动次数: 1, 已认识人物: ["商人"] });
-    expect(result.note.owner).toEqual([{ name: "商人", via: "亲历" }]);
+    expectStealNote(result, "stealFail", [{ name: "商人", via: VIA.FIRSTHAND }]);
   });
 
   it("reports an empty target after a successful attempt", () => {
@@ -238,7 +247,27 @@ describe("NPC stealing logic", () => {
       t: "sys",
       text: "  你想对商人下手，摸了半天，却发现他身上早已一无所有，只得悻悻作罢。",
     }]);
-    expect(result.note).not.toHaveProperty("owner");
+    expectStealNote(result, "steal");
+  });
+
+  it("steals a move without attributing knowledge to the unaware NPC", () => {
+    const state = thiefState({
+      varTree: { 角色: { 师父: { 好感度: 100 } }, 世界: {} },
+    });
+    const npc = {
+      name: "师父",
+      moveset: [{
+        id: "move-test",
+        name: "断水剑",
+        type: "攻击",
+        quality: "白",
+        desc: "一招断水",
+      }],
+    };
+    const result = findStealResult(state, npc, "move");
+
+    expect(result.changes.skills([]).map(({ id }) => id)).toEqual(["move-test"]);
+    expectStealNote(result, "steal");
   });
 
   it("refuses an angry target or a missing NPC without state changes", () => {
