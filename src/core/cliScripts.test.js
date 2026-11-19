@@ -81,6 +81,7 @@ describe("CLI scripts", () => {
     });
     expect(serializeSquares().鱼定村).toMatchObject({ day: 0, desc: "鱼定村缓存" });
     expect(session.store.getState().innerRoomName).toBe("歇马居");
+    expect(session.store.getState().log.filter((entry) => entry.t === "cmd" && entry.text === "> 走 北")).toHaveLength(1);
   });
 
   it("prints initialization guidance instead of throwing when movement has no room", async () => {

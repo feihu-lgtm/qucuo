@@ -470,6 +470,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
             command: line,
           });
           if (arrival?.cached) {
+            featureCtx.addLog([{ t: "cmd", text: `> ${line}` }]);
             const status = await applyFeature(arrival);
             gameActions.setInnerRoomName(hasInnerMap(destName) ? getDistrictAnchor(destName) : null);
             return status;
