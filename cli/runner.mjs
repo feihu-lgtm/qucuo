@@ -13,8 +13,7 @@ import { classifyIntent, buildBudgetInstruction } from "../src/inputIntent.js";
 import { emptyBodyProfile } from "../src/bodyProfile.js";
 import { getActivePreset } from "../src/presetSystem.js";
 import { startTrace } from "../src/actionTrace.js";
-import { commitRound } from "../src/act/commitRound.js";
-import { runTurn } from "../src/engine/runTurn.js";
+import { playTurn } from "../src/engine/playTurn.js";
 import { applyResult } from "../src/features/run.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
@@ -121,10 +120,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         emit("请使用 --ai mock、--ai replay 或 --ai deepseek 配置 AI。");
         return 1;
       }
-      const snapshot = structuredClone(gameStore.getState());
-      const roomMapSnapshot = structuredClone(session.roomMap);
-      const squaresSnapshot = structuredClone(serializeSquares());
-      const varTreeRef = { current: snapshot.varTree };
+      const varTreeRef = { current: gameStore.getState().varTree };
       const setVarTree = (next) => {
         const value = typeof next === "function" ? next(gameStore.getState().varTree) : next;
         gameActions.setVarTreeState(value);
@@ -201,92 +197,95 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         setLog: gameActions.setLog,
       });
 
-      try {
-        const turn = await runTurn({
-          apiCfg: apiConfig,
-          ai,
-          callDeps,
-          convo: state.convo || [],
-          isTalk: false,
-          isSettle: !!opts.settle,
-          _trace: trace,
-          state,
-          memory: {
-            varTreeLatest: state.varTree,
-            roomNpcNames: (state.room?.npcs || []).map((npc) => npc.name),
-            time: state.time,
-            apiCfg: apiConfig,
-            flags: state.flags || [],
-            recall: recallInput,
-          },
-        }, cmd, opts);
-        const roomMapRef = { current: session.roomMap };
-        const pickupJudgmentRef = { current: null };
-        const pickupExtractionFailedRef = { current: turn.pickupExtractionFailed };
-        const collectGrantedRef = { current: [] };
-        const outerDepartRef = { current: null };
-        const pendDirRef = { current: null };
-        const gambleTalkCtx = { current: null };
-        const dayMaterialRef = { current: [] };
-        const playedThisSessionRef = { current: false };
-        const roundsSinceLastSaveRef = { current: 0 };
-        const addLog = (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]);
-        commitRound({
-          ...turn,
-          isTalk: false,
-          gm: false,
-          lockedDestName: null,
-          room: state.room,
-          innerRoomName: state.innerRoomName,
+      const roomMapRef = { current: session.roomMap };
+      const pickupJudgmentRef = { current: null };
+      const pickupExtractionFailedRef = { current: false };
+      const collectGrantedRef = { current: [] };
+      const outerDepartRef = { current: null };
+      const pendDirRef = { current: null };
+      const gambleTalkCtx = { current: null };
+      const dayMaterialRef = { current: [] };
+      const playedThisSessionRef = { current: false };
+      const roundsSinceLastSaveRef = { current: 0 };
+      const addLog = (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]);
+      const result = await playTurn({
+        apiCfg: apiConfig,
+        ai,
+        callDeps,
+        convo: state.convo || [],
+        isTalk: false,
+        isSettle: !!opts.settle,
+        _trace: trace,
+        state,
+        memory: {
+          varTreeLatest: state.varTree,
+          roomNpcNames: (state.room?.npcs || []).map((npc) => npc.name),
           time: state.time,
-          mapData: state.mapData || {},
-          pendingQuestBranch: null,
           apiCfg: apiConfig,
-          activeTarget: null,
-          talkTarget: null,
-          effectiveSpecialNow: state.char?.special || {},
-          newConvo: turn.newConvo,
-          questProgress: state.questProgress || {},
-          char: state.char,
-          preserveHp: false,
-          _trace: trace,
-          addLog,
-          setVarTree,
-          setRoom: gameActions.setRoom,
-          setGambleNegotiation: () => {},
-          setInv: gameActions.setInv,
-          setChar: gameActions.setChar,
-          setDao: gameActions.setDao,
-          setExp: gameActions.setExp,
-          setPot: gameActions.setPot,
-          setSkills: gameActions.setSkills,
-          setFlags: gameActions.setFlags,
-          setMapData: gameActions.setMapData,
-          setTime: gameActions.setTime,
-          setPendingQuestBranch: () => {},
-          setConvo: gameActions.setConvo,
-          varTreeRef,
-          roomMapRef,
-          gambleTalkCtx,
-          outerDepartRef,
-          pendDirRef,
-          pickupJudgmentRef,
-          pickupExtractionFailedRef,
-          collectGrantedRef,
-          dayMaterialRef,
-          roundsSinceLastSaveRef,
-          playedThisSessionRef,
-        });
+          flags: state.flags || [],
+          recall: recallInput,
+        },
+        refs: {
+          varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
+          pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
+          roundsSinceLastSaveRef, playedThisSessionRef,
+        },
+        commitDeps: (turn) => {
+          pickupExtractionFailedRef.current = turn.pickupExtractionFailed;
+          return {
+            ...turn,
+            isTalk: false,
+            gm: false,
+            lockedDestName: null,
+            room: state.room,
+            innerRoomName: state.innerRoomName,
+            time: state.time,
+            mapData: state.mapData || {},
+            pendingQuestBranch: null,
+            apiCfg: apiConfig,
+            activeTarget: null,
+            talkTarget: null,
+            effectiveSpecialNow: state.char?.special || {},
+            newConvo: turn.newConvo,
+            questProgress: state.questProgress || {},
+            char: state.char,
+            preserveHp: false,
+            _trace: trace,
+            addLog,
+            setVarTree,
+            setRoom: gameActions.setRoom,
+            setGambleNegotiation: () => {},
+            setInv: gameActions.setInv,
+            setChar: gameActions.setChar,
+            setDao: gameActions.setDao,
+            setExp: gameActions.setExp,
+            setPot: gameActions.setPot,
+            setSkills: gameActions.setSkills,
+            setFlags: gameActions.setFlags,
+            setMapData: gameActions.setMapData,
+            setTime: gameActions.setTime,
+            setPendingQuestBranch: () => {},
+            setConvo: gameActions.setConvo,
+            varTreeRef,
+            roomMapRef,
+            gambleTalkCtx,
+            outerDepartRef,
+            pendDirRef,
+            pickupJudgmentRef,
+            pickupExtractionFailedRef,
+            collectGrantedRef,
+            dayMaterialRef,
+            roundsSinceLastSaveRef,
+            playedThisSessionRef,
+          };
+        },
+      }, cmd, opts);
+      if (result.ok) {
         session.roomMap = roomMapRef.current;
         return 0;
-      } catch (error) {
-        initGameStore(snapshot);
-        session.roomMap = roomMapSnapshot;
-        loadSquares(squaresSnapshot);
-        varTreeRef.current = snapshot.varTree;
-        emit(error?.message || String(error));
-        return 1;
       }
+      emit(result.error?.message || String(result.error));
+      return 1;
     })();
   }
 

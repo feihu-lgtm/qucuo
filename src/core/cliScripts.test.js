@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -6,12 +7,12 @@ import { fileURLToPath } from "node:url";
 import { exportSave } from "../saves.js";
 import { loadSquares, serializeSquares } from "../mapSquares.js";
 import { createSession, runScript } from "../../cli/runner.mjs";
-import { getRngState, random } from "./rng.js";
+import { getRngState, random, setSeed } from "./rng.js";
 import { createMockAi, createReplayAi } from "../engine/ports/ai.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scriptsDir = resolve(projectRoot, "tests/cli");
-const scriptFiles = readdirSync(scriptsDir).filter((file) => file.endsWith(".txt")).sort();
+const scriptFiles = readdirSync(scriptsDir).filter((file) => file.endsWith(".txt") && file !== "ai-turn-rollback.txt").sort();
 
 let tempDir;
 
@@ -52,6 +53,34 @@ describe("CLI scripts", () => {
       expect(replayFailures, replayOutput.join("\n")).toBe(0);
       expect(replayOutput.join("\n")).toContain("石阶旁的草叶轻轻摇动。");
     }
+  });
+
+  it("runs a script with sibling replies using the default mock AI", () => {
+    const output = execFileSync(process.execPath, [
+      resolve(projectRoot, "cli/qucuo.mjs"),
+      "--script",
+      "tests/cli/ai-turn.txt",
+    ], { cwd: projectRoot, encoding: "utf8" });
+
+    expect(output).toContain("石阶旁的草叶轻轻摇动。");
+  });
+
+  it("restores :state and the seeded RNG sequence after a malformed CLI turn", async () => {
+    const output = [];
+    const script = readFileSync(join(scriptsDir, "ai-turn-rollback.txt"), "utf8");
+    const failures = await runScript(script, {
+      out: (text) => output.push(text),
+      cwd: tempDir,
+      ai: createMockAi(JSON.parse(readFileSync(join(scriptsDir, "ai-turn-rollback-replies.json"), "utf8"))),
+    });
+    const states = output.filter((line) => line.startsWith("room.name:"));
+
+    expect(failures).toBe(1);
+    expect(states).toHaveLength(2);
+    expect(states[0]).toBe(states[1]);
+    const actual = Array.from({ length: 5 }, () => random());
+    setSeed(123);
+    expect(actual).toEqual(Array.from({ length: 5 }, () => random()));
   });
 
   it("round-trips a non-current district roomMap entry with its NPC and ground item", async () => {

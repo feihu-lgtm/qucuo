@@ -1,7 +1,7 @@
-import { appendFile, readFile, writeFile } from "node:fs/promises";
+import { access, appendFile, readFile, writeFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { stdin, stdout } from "node:process";
-import { resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { createSession, parseSeed, runScript } from "./runner.mjs";
 import { createHttpAi, createMockAi, createRecordingAi, createReplayAi } from "../src/engine/ports/ai.js";
 
@@ -53,6 +53,15 @@ async function main() {
       default:
         throw new Error(`Unknown argument: ${args[i]}`);
     }
+  }
+
+  if (script && !aiType && !repliesFile) {
+    const siblingReplies = resolve(dirname(resolve(script)), `${basename(script).replace(/\.txt$/, "")}-replies.json`);
+    try {
+      await access(siblingReplies);
+      aiType = "mock";
+      repliesFile = siblingReplies;
+    } catch {}
   }
 
   let ai = null;
