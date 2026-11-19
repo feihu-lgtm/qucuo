@@ -3,10 +3,120 @@ import { emptyBodyProfile } from "../bodyProfile.js";
 import { initialNarratorState } from "../narrator.js";
 import { startTrace } from "../actionTrace.js";
 import { applyKnowledgeTreeDiff } from "../knowledge.js";
+import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../core/gameStore.js";
+import { getRngState, random, setRngState, setSeed } from "../core/rng.js";
+import { loadSquares, serializeSquares } from "../mapSquares.js";
 import { createMockAi } from "./ports/ai.js";
 import { createExtractionState, runTurn } from "./runTurn.js";
+import { playTurn } from "./playTurn.js";
+
+function createPlayTurnContext(ai, commitRound) {
+  const room = { name: "石阶", exits: [], npcs: [], items: [] };
+  const char = { name: "测试主角", gender: "男", hp: [10, 10], special: {}, neigong: 0, waigong: 0 };
+  const varTree = { 角色: {}, 世界: {}, 主角: {} };
+  const apiCfg = {
+    apiType: "openai", model: "test-model", targetWordCount: 220, contextWindow: 20,
+    streamEnabled: false, extractionEnabled: false, callTokenLimits: {}, intentBudgets: {},
+  };
+  const trace = startTrace("play-turn-test");
+  const ctx = {
+    ai,
+    apiCfg,
+    convo: [],
+    isTalk: false,
+    prompt: {
+      room, char, inv: [], skills: [], dao: { karma: 0, jie: 0 }, flags: [], questProgress: {},
+      varTree, time: 1, preset: { scenario: "测试剧本总纲" }, companionState: {}, nsfwOn: false,
+      activeTarget: null, isTalk: false, gm: false, movingDir: null, lockedDestName: null,
+      outerDepart: null, innerRoomName: null, apiCfg, getTimeStr: () => "卯时",
+      hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
+    },
+    callDeps: () => ({
+      varTree, gm: false, isSettle: false, isTalk: false,
+      intent: { code: "UNKNOWN", label: "无法判定" }, apiCfg, narrator: initialNarratorState(),
+      scenario: "测试剧本总纲", budgetInstruction: null, npcLoreBlockWithQuest: "",
+      visibleNpcsCount: 0, charName: char.name, charBodyProfile: emptyBodyProfile(),
+      pickupJudgment: null, convo: [], nsfwOn: false, ctx: "", recallBlock: "",
+      reunionBlock: "", hist: "", mainConvo: [], gambleTalkCtx: null, recallInfo: null,
+      _trace: trace, addLog: () => {}, setLog: () => {},
+    }),
+    memory: {
+      varTreeLatest: varTree, roomNpcNames: [], time: 1, apiCfg, flags: [],
+      recall: { apiCfg, cmd: "探索石阶", lastAiText: "", room, varTreeLatest: varTree, flags: [], activeTarget: null, isTalk: false, talkTarget: null },
+    },
+    state: { room, char, inv: [], dao: {} },
+    _trace: trace,
+    refs: {
+      varTreeRef: { current: varTree },
+      roomMapRef: { current: { 石阶: { npcs: [], items: [] } } },
+      dayMaterialRef: { current: [] },
+    },
+    commitDeps: (turn) => ({ turn, setPot: gameActions.setPot }),
+    commitRound,
+  };
+  return ctx;
+}
 
 describe("runTurn", () => {
+  it("commits a turn and restores store, refs, and RNG after a partial commit failure", async () => {
+    const originalStore = structuredClone(gameStore.getState());
+    const originalRng = getRngState();
+    const originalSquares = serializeSquares();
+    const initialStore = Object.fromEntries(GAME_KEYS.map((key) => [key, null]));
+    initialStore.room = { name: "石阶", exits: [], npcs: [], items: [] };
+    initialStore.char = { name: "测试主角", hp: [10, 10], special: {} };
+    initialStore.varTree = { 角色: {}, 世界: {}, 主角: {} };
+    initialStore.pot = 7;
+    initialStore.log = [{ t: "sys", text: "before" }];
+    initGameStore(initialStore);
+    loadSquares({ 石阶: { npcs: [], items: [{ name: "before" }] } });
+    setSeed(8123);
+    const before = structuredClone(gameStore.getState());
+    const rngBefore = getRngState();
+    const squaresBefore = serializeSquares();
+
+    const committed = await playTurn(createPlayTurnContext(
+      createMockAi(['{"output":["叙事"],"delta":{"pot":3}}']),
+      ({ turn, setPot }) => setPot(turn.p.delta.pot),
+    ), "探索石阶");
+    expect(committed.ok).toBe(true);
+    expect(gameStore.getState().pot).toBe(3);
+
+    initGameStore(before);
+    setRngState(rngBefore);
+    const refs = {
+      varTreeRef: { current: before.varTree },
+      roomMapRef: { current: { 石阶: { npcs: [], items: [] } } },
+      dayMaterialRef: { current: [] },
+    };
+    const failingContext = createPlayTurnContext(
+      createMockAi(['{"output":["叙事"]}']),
+      (deps) => {
+        deps.setPot(99);
+        gameActions.setVarTreeState({ changed: true });
+        refs.varTreeRef.current = { changed: true };
+        refs.dayMaterialRef.current.push({ turn: 1, text: "partial" });
+        refs.roomMapRef.current.石阶.items.push({ name: "partial" });
+        loadSquares({ partial: { npcs: [], items: [] } });
+        random();
+        throw new Error("commit failed");
+      },
+    );
+    failingContext.refs = refs;
+    const failed = await playTurn(failingContext, "探索石阶");
+    expect(failed.ok).toBe(false);
+    expect(failed.error.message).toBe("commit failed");
+    expect(gameStore.getState()).toEqual(before);
+    expect(getRngState()).toBe(rngBefore);
+    expect(serializeSquares()).toEqual(squaresBefore);
+    expect(refs.dayMaterialRef.current).toEqual([]);
+    expect(refs.roomMapRef.current).toEqual({ 石阶: { npcs: [], items: [] } });
+
+    initGameStore(originalStore);
+    setRngState(originalRng);
+    loadSquares(originalSquares);
+  });
+
   it("forwards the locked destination and its exits to extraction", () => {
     const extractionState = createExtractionState({
       state: {

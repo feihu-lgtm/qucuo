@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, useSyncExtern
 import { gameActions, gameStore, initGameStore, useGameStore } from "./store/gameStore.js";
 import { createAutosaveScheduler } from "./core/autosaveScheduler.js";
 import { snapshotFromStore } from "./core/persist.js";
+import { setRngState } from "./core/rng.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import { applyResult } from "./features/run.js";
 import {
@@ -200,8 +201,7 @@ import { innerMove as innerMoveLogic } from "./features/map/logic.js";
 import { learnNpcSkill as learnNpcSkillLogic } from "./features/npc/logic.js";
 import { resolveOuterLock } from "./act/outerMove.js";
 import { judgeCollect, buildQuestStageNote, buildForcedEventNote, buildArrivalNote, buildPresence, buildNpcContext } from "./act/roundNotes.js";
-import { commitRound } from "./act/commitRound.js";
-import { runTurn } from "./engine/runTurn.js";
+import { playTurn } from "./engine/playTurn.js";
 import {
   rollSkeleton, buildSquarePrompt, parseSquareBatch, applySquareBatch,
   consumeArrival, getLookText, burnSquare, resetForDay, pendingNodes,
@@ -596,6 +596,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       setCompanionState(snap.companionState || initCompanionState());
       if (snap.roomMap) roomMapRef.current = snap.roomMap;
       if (snap.squares) loadSquares(snap.squares);
+      if (snap.rngState != null) setRngState(snap.rngState);
       // 内层箱庭位置：老存档没这个字段、或存的房间已不在该据点内景里（改过地图数据），
       // 都退回锚点，绝不让玩家落在一个不存在的房间里。
       {
@@ -2417,24 +2418,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (waitTimerRef.current) clearInterval(waitTimerRef.current);
     waitTimerRef.current = setInterval(() => setWaitSecs(s => s + 1), 1000);
 
-    // 本回合动手前的 varTree 快照，供下方两阶段 pipeline 的回滚使用。
-    // 走 varTreeRef 而非闭包 varTree：保证含"进入本函数之前所有已发生的写入"
-    // （比如切磋结算刚 setVarTree 写入的认识+交情——旧闭包快照恰恰会丢掉它，
-    // 回滚时反而把玩家的交情抹掉）。主流程走到这里之前没有任何 varTree 写入
-    // （内层移动分支的 markAsSeen/updateLastSeen 在 early-return 里，到不了这），
-    // 所以这个快照 === 本回合开始时的状态。
+    // 本回合开始时的 varTree，逻辑读取走 ref 以包含已发生的同步写入。
     const preActVarTree = varTreeRef.current;
-
-    // ── 两阶段 pipeline·发送前快照 ──
-    // 本轮 try 块里从 setVarTree(mvu) 一路 setState 到 setConvo，中间任何一步（makeItem /
-    // ensureNpcCombatData / mapDescriptionToGenParams / JSON 解析等）抛错，都会留下"改了一半"的
-    // 脏状态：varTree 变了但 inv 没变、房间移动了但 time 没推进。这里在发送前把所有可能被本轮
-    // 修改的世界状态打包成一份快照，出错时（见下方 catch）整体还原，实现"请求段无副作用、
-    // 提交段可回滚"。这些状态全程走不可变更新（spread，无原地修改），因此存引用即可，无需深拷贝。
-    const rollback = { room, char, dao, skills, inv, exp, pot, flags, mapData, time, varTree: preActVarTree, convo };
-
-    try {
-      const callDeps = (memory = {}, prepared = {}) => ({
+    const callDeps = (memory = {}, prepared = {}) => ({
         varTree: memory.varTree ?? varTreeRef.current, gm, isSettle, isTalk, intent, apiCfg, narrator,
         scenario: preset.scenario, budgetInstruction: prepared.budgetInstruction,
         npcLoreBlockWithQuest: prepared.npcLoreBlockWithQuest || "",
@@ -2448,63 +2434,62 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
         _trace, addLog, setLog,
       });
-      pickupExtractionFailedRef.current = false;
-      const turnResult = await runTurn({
+    const turnCtx = {
+      apiCfg,
+      callDeps,
+      convo,
+      isTalk,
+      isSettle,
+      _trace,
+      prompt: {
+        room, char, inv, skills, dao, flags, questProgress, pendingQuestBranch,
+        varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, isTalk,
+        gm, movingDir, lockedDestName, outerDepart: outerDepartRef.current, innerRoomName, apiCfg,
+        destinationLock, pickupJudgment: pickupJudgmentRef.current, categoryLabel: CATEGORY_LABEL,
+        encounter: encounterToDescribe, buildEncounterNote, collectNote,
+        findTargetedRumor, buildPresence, buildNpcContext, buildQuestStageNote,
+        buildForcedEventNote, buildArrivalNote, buildBudgetInstruction, intent,
+        getTimeStr, hasInnerMap, quality: QUALITY, describeEquipment, describeTodayForAI,
+        timeForToday: timeRef.current,
+      },
+      memory: {
+        varTreeLatest: preActVarTree,
+        roomNpcNames: room.npcs.map(n => n.name),
+        time,
         apiCfg,
-        callDeps,
-        convo,
-        isTalk,
-        isSettle,
-        _trace,
-        prompt: {
-          room, char, inv, skills, dao, flags, questProgress, pendingQuestBranch,
-          varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, isTalk,
-          gm, movingDir, lockedDestName, outerDepart: outerDepartRef.current, innerRoomName, apiCfg,
-          destinationLock, pickupJudgment: pickupJudgmentRef.current, categoryLabel: CATEGORY_LABEL,
-          encounter: encounterToDescribe, buildEncounterNote, collectNote,
-          findTargetedRumor, buildPresence, buildNpcContext, buildQuestStageNote,
-          buildForcedEventNote, buildArrivalNote, buildBudgetInstruction, intent,
-          getTimeStr, hasInnerMap, quality: QUALITY, describeEquipment, describeTodayForAI,
-          timeForToday: timeRef.current,
-        },
-        memory: {
-          varTreeLatest: preActVarTree,
-          roomNpcNames: room.npcs.map(n => n.name),
-          time,
-          apiCfg,
-          flags,
-          recall: { apiCfg, cmd, room, flags, activeTarget, isTalk, talkTarget },
-        },
-        state: { room, char, inv, dao },
-        getPipelineLog,
-        getMapNode,
-      }, cmd, opts);
-      const { p, mvuCommands, dealResult, rawFull, narrativeText, pickupExtractionFailed, knowledgeTree, knowledgeTreeBase } = turnResult;
-      pickupExtractionFailedRef.current = pickupExtractionFailed;
-
-      // ── 提交段（状态写回全在 act/commitRound.js，出错由下方 catch 整体回滚）──
-      commitRound({
-        p, mvuCommands, dealResult, rawFull, narrativeText, knowledgeTree, knowledgeTreeBase,
-        isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,
-        pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo: turnResult.newConvo,
-        questProgress, char, preserveHp: opts.preserveHp,
-        _trace, addLog,
-        setVarTree, setRoom, setGambleNegotiation, setInv, setChar, setDao, setExp, setPot,
-        setSkills, setFlags, setMapData, setTime, setPendingQuestBranch, setConvo,
+        flags,
+        recall: { apiCfg, cmd, room, flags, activeTarget, isTalk, talkTarget },
+      },
+      state: { room, char, inv, dao },
+      getPipelineLog,
+      getMapNode,
+      beforeRun: () => { pickupExtractionFailedRef.current = false; },
+      refs: {
         varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
         pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
         roundsSinceLastSaveRef, playedThisSessionRef,
-      });
-    } catch (e) {
-      // ── 两阶段 pipeline·整体回滚 ──
-      // 本轮任何一步抛错，把所有世界状态整体还原到发送前快照，杜绝"半提交"脏数据
-      // （varTree 改了但 inv 没改 / 房间移动了但 time 没推进 之类的不一致）。
-      // log 不回滚：保留玩家的命令回显 + 下面这条错误行，让玩家看得到发生了什么。
-      // convo 本就只在上面成功路径末尾 setConvo，出错时从未改动，这里还原是幂等的双保险。
-      setRoom(rollback.room); setChar(rollback.char); setDao(rollback.dao);
-      setSkills(rollback.skills); setInv(rollback.inv); setExp(rollback.exp);
-      setPot(rollback.pot); setFlags(rollback.flags); setMapData(rollback.mapData);
-      setTime(rollback.time); setVarTree(rollback.varTree); setConvo(rollback.convo);
+      },
+      commitDeps: (turnResult) => {
+        pickupExtractionFailedRef.current = turnResult.pickupExtractionFailed;
+        return {
+          p: turnResult.p, mvuCommands: turnResult.mvuCommands, dealResult: turnResult.dealResult,
+          rawFull: turnResult.rawFull, narrativeText: turnResult.narrativeText,
+          knowledgeTree: turnResult.knowledgeTree, knowledgeTreeBase: turnResult.knowledgeTreeBase,
+          isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,
+          pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo: turnResult.newConvo,
+          questProgress, char, preserveHp: opts.preserveHp,
+          _trace, addLog,
+          setVarTree, setRoom, setGambleNegotiation, setInv, setChar, setDao, setExp, setPot,
+          setSkills, setFlags, setMapData, setTime, setPendingQuestBranch, setConvo,
+          varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
+          pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
+          roundsSinceLastSaveRef, playedThisSessionRef,
+        };
+      },
+    };
+    const result = await playTurn(turnCtx, cmd, opts);
+    if (!result.ok) {
+      const e = result.error;
       const ec = classifyError(e);
       traceStep(_trace, "状态写回", "fail", `异常回滚：${ec.title}`);
       endTrace(_trace, "行动出错，已整体回滚");
