@@ -1,0 +1,16 @@
+# Inner movement updates the shared state and survives save/load.
+:new
+走 东
+:expect innerRoomName="歇马居"
+:expect time=7
+去 马车行
+:expect innerRoomName="马车行"
+:expect time=8
+走 南
+:expect innerRoomName="马车行"
+:expect time=8
+:save inner-move.json
+:new
+:load inner-move.json
+:expect innerRoomName="马车行"
+:expect time=8

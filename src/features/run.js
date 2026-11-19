@@ -2,14 +2,20 @@ import { gameActions } from "../core/gameStore.js";
 import { registerFact } from "../knowledge.js";
 
 function actionForKey(key) {
-  const actionName = key === "varTree"
-    ? "setVarTreeState"
-    : `set${key[0].toUpperCase()}${key.slice(1)}`;
+  const actionName = `set${key[0].toUpperCase()}${key.slice(1)}`;
   return gameActions[actionName];
 }
 
 export function applyResult(ctx, result) {
   for (const [key, value] of Object.entries(result.changes || {})) {
+    if (key === "varTree") {
+      if (typeof ctx.setVarTree !== "function") {
+        throw new Error("Feature result changes.varTree requires ctx.setVarTree");
+      }
+      ctx.setVarTree(value);
+      continue;
+    }
+
     const action = actionForKey(key);
     if (!action) throw new Error(`Unknown game state key: ${key}`);
     action(value);
@@ -21,6 +27,6 @@ export function applyResult(ctx, result) {
     const { currentTurn, ...fact } = result.fact;
     ctx.setVarTree?.((prev) => registerFact(prev, fact, currentTurn));
   }
-  if (result.settle) ctx.act?.(result.settle, [], { settle: true });
+  if (result.settle) ctx.act?.(result.settle, [], { ...(result.settleOptions || {}), settle: true });
   return result;
 }

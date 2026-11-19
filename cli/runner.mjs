@@ -11,6 +11,8 @@ import { getTimeStr } from "../src/utils/mudHelpers.js";
 import { applyResult } from "../src/features/run.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
+import { innerMove } from "../src/features/map/logic.js";
+import { learnNpcSkill } from "../src/features/npc/logic.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -175,6 +177,26 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed }
     }
 
     const state = gameStore.getState();
+    const movementMatch = /^(?:走|去)\s+(.+)$/.exec(line);
+    if (movementMatch) {
+      const result = innerMove(state, {
+        target: movementMatch[1],
+        command: line,
+        forceLayer: "inner",
+      });
+      if (result) {
+        applyResult(featureCtx, result);
+        return 0;
+      }
+    }
+
+    const learnNpcMatch = /^拜师\s+(.+)$/.exec(line);
+    if (learnNpcMatch) {
+      const npc = (state.room?.npcs || []).find((entry) => entry?.name === learnNpcMatch[1]);
+      applyResult(featureCtx, learnNpcSkill(state, npc));
+      return 0;
+    }
+
     if (line === "打坐") {
       applyResult(featureCtx, meditate(state));
       return 0;
