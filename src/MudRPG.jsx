@@ -2442,6 +2442,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         pickupJudgment: pickupJudgmentRef.current, cmd: prepared.cmd || cmd, convo, nsfwOn,
         ctx: prepared.ctx, recallBlock: memory.recallBlock || "", reunionBlock: prepared.reunionBlock || "",
         infoDomainBlock: memory.infoDomainBlock || "", hist: prepared.hist, mainConvo: prepared.mainConvo,
+        lockedDestName,
         gambleTalkCtx: gambleTalkCtx.current, recallInfo: memory.recallInfo,
         inSeaOfMind: room.name === SEA_OF_MIND.district,
         settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
@@ -2478,12 +2479,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         getPipelineLog,
         getMapNode,
       }, cmd, opts);
-      const { p, mvuCommands, dealResult, rawFull, narrativeText, pickupExtractionFailed, knowledgeTree } = turnResult;
+      const { p, mvuCommands, dealResult, rawFull, narrativeText, pickupExtractionFailed, knowledgeTree, knowledgeTreeBase } = turnResult;
       pickupExtractionFailedRef.current = pickupExtractionFailed;
 
       // ── 提交段（状态写回全在 act/commitRound.js，出错由下方 catch 整体回滚）──
       commitRound({
-        p, mvuCommands, dealResult, rawFull, narrativeText, knowledgeTree,
+        p, mvuCommands, dealResult, rawFull, narrativeText, knowledgeTree, knowledgeTreeBase,
         isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,
         pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo: turnResult.newConvo,
         questProgress, char, preserveHp: opts.preserveHp,

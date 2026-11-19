@@ -42,6 +42,13 @@ export function createHttpAi({ baseUrl, apiKey, model }) {
   const endpoint = `${String(baseUrl || "").replace(/\/+$/, "")}/chat/completions`;
   return {
     async chat(messages, opts = {}) {
+      const cfg = opts.cfg || {};
+      const modelOptions = opts.modelOptions || {};
+      const maxTokens = modelOptions.maxTokens ?? opts.maxTokens ?? cfg.maxTokens;
+      const temperature = modelOptions.temperature ?? opts.temperature ?? cfg.temperature;
+      const topP = modelOptions.topP ?? opts.topP ?? cfg.topP;
+      const frequencyPenalty = modelOptions.frequencyPenalty ?? opts.frequencyPenalty ?? cfg.frequencyPenalty;
+      const presencePenalty = modelOptions.presencePenalty ?? opts.presencePenalty ?? cfg.presencePenalty;
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -49,11 +56,13 @@ export function createHttpAi({ baseUrl, apiKey, model }) {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: opts.model || opts.cfg?.model || model,
+          model: opts.model || cfg.model || model,
           messages: [...systemMessages(opts.systemPrompt), ...messages],
-          ...((opts.maxTokens ?? opts.cfg?.maxTokens) != null ? { max_tokens: opts.maxTokens ?? opts.cfg.maxTokens } : {}),
-          ...((opts.temperature ?? opts.cfg?.temperature) != null ? { temperature: opts.temperature ?? opts.cfg.temperature } : {}),
-          ...(opts.topP != null ? { top_p: opts.topP } : {}),
+          ...(maxTokens != null ? { max_tokens: maxTokens } : {}),
+          ...(temperature != null ? { temperature } : {}),
+          ...(topP != null ? { top_p: topP } : {}),
+          ...(frequencyPenalty != null ? { frequency_penalty: frequencyPenalty } : {}),
+          ...(presencePenalty != null ? { presence_penalty: presencePenalty } : {}),
         }),
         signal: opts.signal,
       });
@@ -99,7 +108,7 @@ export function createRecordingAi(ai, record) {
           systemPrompt: opts.systemPrompt ?? null,
           messages,
         },
-        response: { text: response.text },
+        response: { ...response },
       });
       return response;
     },

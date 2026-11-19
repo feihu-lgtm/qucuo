@@ -68,6 +68,23 @@ function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo) {
   };
 }
 
+export function createExtractionState(ctx, deps) {
+  const state = ctx.state || {};
+  const lockedDestName = state.lockedDestName ?? deps.lockedDestName;
+  const inv = state.inv || deps.inv || [];
+  return {
+    room: state.room || deps.room,
+    char: state.char || deps.char,
+    inv,
+    invText: inv.map((item) => typeof item === "string" ? item : item.name).join("，") || "空",
+    dao: state.dao || deps.dao,
+    varTree: deps.varTree,
+    lockedDestName,
+    lockedExits: lockedDestName ? ctx.getMapNode?.(lockedDestName)?.exits : null,
+    pickupJudgment: deps.pickupJudgment,
+  };
+}
+
 export async function runTurn(ctx, cmd, opts = {}) {
   const ai = ctx.ai || createWebAi();
   const convo = ctx.convo || [];
@@ -164,18 +181,7 @@ export async function runTurn(ctx, cmd, opts = {}) {
       addLog([{ t: "sys", text: "  ⚠ 本轮叙事被接口中途截断（撞到输出 token 上限），以上是已收到的部分。提取层只能按这段残文结算状态，本轮状态可能不全。" }]);
     }
 
-    const state = ctx.state || {};
-    const extractionState = {
-      room: state.room || deps.room,
-      char: state.char || deps.char,
-      inv: state.inv || deps.inv || [],
-      invText: (state.inv || deps.inv || []).map((item) => typeof item === "string" ? item : item.name).join("，") || "空",
-      dao: state.dao || deps.dao,
-      varTree: deps.varTree,
-      lockedDestName: deps.lockedDestName,
-      lockedExits: deps.lockedDestName ? ctx.getMapNode?.(deps.lockedDestName)?.exits : null,
-      pickupJudgment: deps.pickupJudgment,
-    };
+    const extractionState = createExtractionState(ctx, deps);
     const settleOptions = (opts.settleKind && opts.settleNpc)
       ? {
         settleKind: opts.settleKind,
@@ -233,15 +239,16 @@ export async function runTurn(ctx, cmd, opts = {}) {
         throw error;
       }
       ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));
+      narrativeText = (p.output || []).join("");
+      const truncated = p._truncated || /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
+      if (truncated && attempt <= MAX_AUTO_RETRY) {
+        addLog([{ t: "sys", text: `  ⚠ 上一轮被接口截断，正在自动重说一遍（第 ${attempt}/${MAX_AUTO_RETRY} 次，这次会更简短）…` }]);
+        continue;
+      }
       if (p.output?.[0]?.startsWith("（引擎回应格式异常，原始内容）")) {
         throw new Error("AI reply format is invalid");
       }
-      narrativeText = (p.output || []).join("");
-      const truncated = p._truncated || /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
       if (!truncated) break;
-      if (attempt <= MAX_AUTO_RETRY) {
-        addLog([{ t: "sys", text: `  ⚠ 上一轮被接口截断，正在自动重说一遍（第 ${attempt}/${MAX_AUTO_RETRY} 次，这次会更简短）…` }]);
-      }
     }
   }
 
@@ -253,6 +260,7 @@ export async function runTurn(ctx, cmd, opts = {}) {
     narrativeText,
     pickupExtractionFailed,
     knowledgeTree: knowledgeTurn?.kTree,
+    knowledgeTreeBase: knowledgeTurn ? ctx.memory.varTreeLatest : undefined,
     recallInfo: recall.recallInfo,
     recallBlock: recall.recallBlock,
     newConvo,

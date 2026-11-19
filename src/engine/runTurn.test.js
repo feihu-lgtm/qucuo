@@ -2,13 +2,50 @@ import { describe, expect, it } from "vitest";
 import { emptyBodyProfile } from "../bodyProfile.js";
 import { initialNarratorState } from "../narrator.js";
 import { startTrace } from "../actionTrace.js";
+import { applyKnowledgeTreeDiff } from "../knowledge.js";
 import { createMockAi } from "./ports/ai.js";
-import { runTurn } from "./runTurn.js";
+import { createExtractionState, runTurn } from "./runTurn.js";
 
 describe("runTurn", () => {
-  it("sends the command in the prompt and returns parsed narrative and state", async () => {
+  it("forwards the locked destination and its exits to extraction", () => {
+    const extractionState = createExtractionState({
+      state: {
+        room: { name: "山脚", exits: ["东"] },
+        char: { hp: [10, 10] },
+        inv: [],
+        dao: {},
+      },
+      getMapNode: (name) => name === "山门" ? { exits: { west: "山脚" } } : null,
+    }, { varTree: {}, lockedDestName: "山门" });
+
+    expect(extractionState.lockedDestName).toBe("山门");
+    expect(extractionState.lockedExits).toEqual({ west: "山脚" });
+  });
+
+  it("merges knowledge changes onto the latest varTree without losing intervening edits", () => {
+    const base = {
+      角色: { 阿青: { 好感度: 1 } },
+      世界: { 知识领域: { 事实: { 山洪: { 摘要: "", 知晓者: {} } } } },
+    };
+    const evolved = {
+      ...base,
+      世界: { 知识领域: { 事实: { 山洪: { 摘要: "山洪曾毁坏旧桥", 知晓者: {} } } } },
+    };
+    const latest = {
+      角色: { 阿青: { 好感度: 8 }, 小满: { 好感度: 3 } },
+      世界: { 知识领域: { 事实: { 山洪: { 摘要: "", 知晓者: { 阿青: { 途径: "目击", 得知回合: 6 } } }, 旧约: { 摘要: "旧约", 知晓者: {} } } } },
+    };
+
+    expect(applyKnowledgeTreeDiff(base, evolved, latest)).toEqual({
+      角色: { 阿青: { 好感度: 8 }, 小满: { 好感度: 3 } },
+      世界: { 知识领域: { 事实: { 山洪: { 摘要: "山洪曾毁坏旧桥", 知晓者: { 阿青: { 途径: "目击", 得知回合: 6 } } }, 旧约: { 摘要: "旧约", 知晓者: {} } } } },
+    });
+  });
+
+  it("retries a truncated unparseable response and returns the next parsed result", async () => {
     const requests = [];
     const ai = createMockAi([
+      { text: "{not json", finishReason: "length" },
       `{"output":["石阶旁的草叶轻轻摇动。"],"delta":{"pot":3}}\n<mvu>_.set('世界.天气', '晴');</mvu>`,
     ], { onRequest: (messages) => requests.push(messages) });
     const apiCfg = {
@@ -85,6 +122,7 @@ describe("runTurn", () => {
 
     expect(JSON.stringify(requests[0])).toContain("探索石阶");
     expect(JSON.stringify(requests[0])).toContain("房间:石阶");
+    expect(requests).toHaveLength(2);
     expect(result.p.output).toEqual(["石阶旁的草叶轻轻摇动。"]);
     expect(result.p.delta.pot).toBe(3);
     expect(result.mvuCommands).toHaveLength(1);
