@@ -7,6 +7,6 @@
 :expect room.items=[]
 走 北
 :expect room.name=鱼定村
+:set innerRoomName=null
 走 南
 :expect room.name=大草甸
-:expect room.items=[]
