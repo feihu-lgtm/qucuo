@@ -789,9 +789,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const visible = (room.npcs || []).filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
     const newFaces = detectNewFaces(varTreeRef.current, visible); // varTree 不在 deps 里，必须走 ref 读最新
     if (newFaces.length) {
-      addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
-      setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
-      setVarTree(prev => updateLastSeen(prev, visible.map(n => n.name), time));
+      const recordOpeningFaces = () => {
+        addLog(newFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
+        setVarTree(prev => markAsSeen(prev, newFaces.map(n => n.name)));
+        setVarTree(prev => updateLastSeen(prev, visible.map(n => n.name), time));
+      };
+      const scheduler = schedulerRef.current;
+      if (scheduler) scheduler.runSilently(recordOpeningFaces);
+      else recordOpeningFaces();
     }
   }, [showOpening, showCharCreate]); // 开场/创角结束后跑一次（内部 ref 保证只补一次）
 
@@ -4724,7 +4729,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   }
 
   if (showOpening) {
-    return <OpeningSequence onFinish={() => setShowOpening(false)} playerName={char.name} />;
+    return <OpeningSequence onFinish={() => {
+      schedulerRef.current?.resetPlayed();
+      setShowOpening(false);
+    }} playerName={char.name} />;
   }
 
   return (
