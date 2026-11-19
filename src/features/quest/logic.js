@@ -1,8 +1,47 @@
 import { ESCORT_QUESTS } from "../../quests/escortQuests.js";
 import { BOUNTY_QUESTS } from "../../quests/bountyQuests.js";
+import { advanceQuestStages, createQuestProgress, lockExclusiveSiblings } from "../../quests/questEngine.js";
+import { applyStageRewards, resolveStageRewards } from "../../quests/questRewards.js";
+import { QUCUO_QUESTS } from "../../quests/qucuoQuests.js";
 
 const noOpResult = () => ({ logs: [] });
 const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }] });
+
+export function forceAdvanceQuest(state, quest, targetFlag) {
+  const nextFlags = (state.flags || []).includes(targetFlag) ? state.flags : [...(state.flags || []), targetFlag];
+  let progress = state.questProgress?.[quest.id] || createQuestProgress(quest.id);
+  const gameState = { flags: nextFlags, char: state.char };
+  const pendingRewards = [];
+  while (progress.status === "active") {
+    const result = advanceQuestStages(quest, progress, gameState);
+    if (!result.advanced) break;
+    progress = result.progress;
+    if (result.completedStage) {
+      const rewards = resolveStageRewards(result.completedStage, result.hitFlags);
+      if (rewards) pendingRewards.push(rewards);
+    }
+    if (result.justCompleted) break;
+  }
+  let nextProgress = { ...(state.questProgress || {}), [quest.id]: progress };
+  if (progress.status === "completed") {
+    nextProgress = lockExclusiveSiblings(nextProgress, QUCUO_QUESTS, quest.id);
+  }
+
+  const changes = { flags: nextFlags, questProgress: nextProgress };
+  const capture = (key) => (value) => {
+    const previous = Object.hasOwn(changes, key) ? changes[key] : state[key];
+    changes[key] = typeof value === "function" ? value(previous) : value;
+  };
+  for (const rewards of pendingRewards) {
+    applyStageRewards(rewards, {
+      setInv: capture("inv"),
+      setChar: capture("char"),
+      setVarTree: capture("varTree"),
+      setFlags: capture("flags"),
+    });
+  }
+  return { changes };
+}
 
 export function acceptEscort(state, questRef) {
   const quest = ESCORT_QUESTS.find((entry) => entry.id === questRef?.id);

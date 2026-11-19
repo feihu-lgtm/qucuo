@@ -46,6 +46,12 @@ describe("CLI scripts", () => {
     });
 
     expect(failures, output.join("\n")).toBe(0);
+    if (file === "local-commands-items.txt") {
+      expect(output.join("\n")).toContain("── 命令列表 ──");
+      expect(output.join("\n")).toContain("── 状态 ──");
+      expect(output.join("\n")).toContain("── 包袱 ──");
+      expect(output.join("\n")).toContain("── 武学 ──");
+    }
     if (file === "ai-turn.txt") {
       expect(output.join("\n")).toContain("石阶旁的草叶轻轻摇动。");
       const replayOutput = [];
@@ -61,6 +67,17 @@ describe("CLI scripts", () => {
       expect(replayFailures, replayOutput.join("\n")).toBe(0);
       expect(replayOutput.join("\n")).toContain("石阶旁的草叶轻轻摇动。");
     }
+  });
+
+  it("prints local command responses from an interactive session", async () => {
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir });
+    await session.runLine(":new");
+    await session.runLine("帮助");
+    await session.runLine("状态");
+
+    expect(output.join("\n")).toContain("── 命令列表 ──");
+    expect(output.join("\n")).toContain("── 状态 ──");
   });
 
   it("moves between cached outer squares and restores the room after save/load", async () => {
@@ -82,6 +99,21 @@ describe("CLI scripts", () => {
     expect(serializeSquares().鱼定村).toMatchObject({ day: 0, desc: "鱼定村缓存" });
     expect(session.store.getState().innerRoomName).toBe("歇马居");
     expect(session.store.getState().log.filter((entry) => entry.t === "cmd" && entry.text === "> 走 北")).toHaveLength(1);
+  });
+
+  it("does not restore a picked-up item from the CLI room cache after travel", async () => {
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir });
+    const fixture = readFileSync(join(scriptsDir, "cached-ground-pickup.txt"), "utf8");
+    let failures = 0;
+    for (const line of fixture.split(/\r?\n/)) failures += await session.runLine(line);
+    const itemNames = (items) => (items || []).map((item) => (
+      typeof item === "object" ? item.name : item
+    ));
+
+    expect(failures, output.join("\n")).toBe(0);
+    expect(itemNames(session.store.getState().room.items)).not.toContain("石子");
+    expect(itemNames(session.roomMap["大草甸"]?.items)).not.toContain("石子");
   });
 
   it("prints initialization guidance instead of throwing when movement has no room", async () => {

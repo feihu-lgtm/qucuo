@@ -1,0 +1,40 @@
+:new
+:set time=6
+:set flags=[]
+:set skills=[]
+:set inv=[{"name":"测试丹","consumable":{"hpRestore":0.5}}]
+:set char.hp=[40,100]
+:set room.items=["石子"]
+:set varTree={"世界":{"威望":0,"起居注":{"today":{},"lifetime":{}}}}
+:mapcache {"squares":{"鱼定村":{"day":0,"lookText":"村口石阶长着青苔。"}}}
+:set log=[]
+帮助
+:expect log.0.text="> 帮助"
+:expect log.1.text="── 命令列表 ──"
+:set log=[]
+状态
+:expect log.0.text="> 状态"
+:expect log.1.text="── 状态 ──"
+:set log=[]
+背包
+:expect log.0.text="> 背包"
+:expect log.1.text="── 包袱 ──"
+:set log=[]
+武学
+:expect log.0.text="> 武学"
+:expect log.1.text="── 武学 ──"
+:set log=[]
+看
+:expect log.0.text="> 看"
+:expect log.1.text="  村口石阶长着青苔。"
+:expect time=7
+:set log=[]
+:set log=[]
+用 测试丹
+:expect time=8
+:expect inv=[]
+:expect char.hp.0=90
+:set log=[]
+捡 石子
+:expect time=9
+:expect inv.0="石子"

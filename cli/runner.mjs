@@ -17,6 +17,8 @@ import { startTrace } from "../src/actionTrace.js";
 import { playTurn } from "../src/engine/playTurn.js";
 import { createPromptContext } from "../src/engine/prompt/index.js";
 import { createWorldRules } from "../src/engine/worldRules.js";
+import { parseLocalCommand } from "../src/engine/localCommands.js";
+import { pickGroundItem, useItem } from "../src/features/items/logic.js";
 import { derivedMovesetRule } from "../src/features/skills/rules.js";
 import {
   alreadySatisfiedCollectRule,
@@ -421,7 +423,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
 
   async function runLineCommand(rawLine) {
     const line = String(rawLine).trim();
-    if (!line || line.startsWith("#")) return 0;
+    if (!line || (line.startsWith("#") && !line.startsWith("#testscript"))) return 0;
 
     pendingTurn = Promise.resolve(0);
     pendingTurnCount = 0;
@@ -518,6 +520,36 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     if (!state?.room?.name) {
       emit("尚未开始游戏，请先执行 :new 或 :load 初始化游戏。");
       return 1;
+    }
+    const localCommand = parseLocalCommand(line, state, { surface: "cli" });
+    if (localCommand) {
+      const result = localCommand.kind === "lines"
+        ? { logs: [{ t: "cmd", text: `> ${line}` }, ...localCommand.lines] }
+        : localCommand.result;
+      const status = await applyFeature(result);
+      if (result.logs?.length) emit(result.logs.map((entry) => entry.text).join("\n"));
+      return status;
+    }
+    const useMatch = line.match(/^(?:用|服)\s+(.+)$/);
+    if (useMatch) {
+      const itemName = useMatch[1].trim();
+      const item = (state.inv || []).find((entry) => (
+        (typeof entry === "object" ? entry?.name : entry) === itemName
+      ));
+      if (!item) return await applyFeature({ logs: [{ t: "sys", text: `  背包里没有「${itemName}」。` }] });
+      return await applyFeature(useItem(state, item));
+    }
+    const pickMatch = line.match(/^捡\s+(.+)$/);
+    if (pickMatch) {
+      const itemName = pickMatch[1].trim();
+      const item = (state.room.items || []).find((entry) => (
+        (typeof entry === "object" ? entry?.name : entry) === itemName
+      ));
+      if (!item) return await applyFeature({ logs: [{ t: "sys", text: `  地上没有「${itemName}」。` }] });
+      const status = await applyFeature(pickGroundItem(state, item));
+      const room = gameStore.getState().room;
+      session.roomMap[room.name] = { items: [...room.items], npcs: [...room.npcs] };
+      return status;
     }
     const visibleNpcs = (state.room?.npcs || []).filter((npc) => (
       isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)
