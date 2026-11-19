@@ -335,6 +335,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       }, cmd, opts);
       if (result.ok) {
         session.roomMap = roomMapRef.current;
+        if (opts.squareOps?.length) featureCtx.applySquareOps(opts.squareOps);
         return 0;
       }
       emit(result.error?.message || String(result.error));
@@ -473,7 +474,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
             gameActions.setInnerRoomName(hasInnerMap(destName) ? getDistrictAnchor(destName) : null);
             return status;
           }
-          if (arrival) applyResult(featureCtx, arrival);
+          if (arrival) return runFreeText(line, { squareOps: arrival.squareOps });
         }
       }
     }

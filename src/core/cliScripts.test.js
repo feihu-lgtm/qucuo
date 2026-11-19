@@ -17,6 +17,7 @@ const scriptFiles = readdirSync(scriptsDir)
     "ai-turn-rollback.txt",
     "failed-inspection-pending-turn.txt",
     "outer-arrival.txt",
+    "uncached-arrival-failure.txt",
   ].includes(file))
   .sort();
 
@@ -89,6 +90,28 @@ describe("CLI scripts", () => {
 
     expect(await session.runLine("走 东")).toBe(1);
     expect(output.join("\n")).toContain("尚未开始游戏，请先执行 :new 或 :load 初始化游戏。");
+  });
+
+  it("keeps an uncached square claimable after the CLI turn fails", async () => {
+    const output = [];
+    const failures = await runScript(
+      readFileSync(join(scriptsDir, "uncached-arrival-failure.txt"), "utf8"),
+      {
+        out: (text) => output.push(text),
+        cwd: tempDir,
+        ai: createMockAi(["{not json}"]),
+      },
+    );
+    const saved = JSON.parse(readFileSync(join(tempDir, "uncached-failure.json"), "utf8"));
+
+    expect(failures).toBe(1);
+    expect(output.join("\n")).toContain("AI reply format is invalid");
+    expect(saved.room.name).toBe("鱼定村");
+    expect(saved.squares.雅江).toMatchObject({
+      item: { name: "雪山当归" },
+      itemTaken: false,
+      burned: false,
+    });
   });
 
   it("runs a script with sibling replies using the default mock AI", () => {
