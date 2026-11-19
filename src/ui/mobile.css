@@ -228,7 +228,13 @@
   }
 
   .mobile-building-root > .mobile-building-minimize {
-    display: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 44px;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 16px !important;
   }
 
   .mobile-building-minimized-root {
