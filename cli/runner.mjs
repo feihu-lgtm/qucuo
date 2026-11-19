@@ -9,13 +9,13 @@ import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare 
 import { tryRestoreSnapshot } from "../src/saves.js";
 import { getTimeStr, parseDir } from "../src/utils/mudHelpers.js";
 import { resolveExit } from "../src/qucuoMap.js";
-import { QUALITY } from "../src/equipment.js";
 import { defaultConfig } from "../src/apiConfig.js";
-import { classifyIntent, buildBudgetInstruction } from "../src/inputIntent.js";
+import { classifyIntent } from "../src/inputIntent.js";
 import { emptyBodyProfile } from "../src/bodyProfile.js";
 import { getActivePreset } from "../src/presetSystem.js";
 import { startTrace } from "../src/actionTrace.js";
 import { playTurn } from "../src/engine/playTurn.js";
+import { createPromptContext } from "../src/engine/prompt/index.js";
 import { createWorldRules } from "../src/engine/worldRules.js";
 import { derivedMovesetRule } from "../src/features/skills/rules.js";
 import {
@@ -58,6 +58,10 @@ import { residentNpcRule } from "../src/features/npc/rules.js";
 import { innerGroundItemsRule } from "../src/features/map/rules.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
+
+export function createCliPromptContext(state, args = {}) {
+  return createPromptContext(state, { gm: false, nsfwOn: false, ...args });
+}
 
 export function parseSeed(value) {
   const seed = Number(value);
@@ -216,15 +220,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       const intent = classifyIntent(cmd);
       const preset = state.preset || DEFAULT_PRESETS[0];
       const trace = startTrace("cli-turn");
-      const visibleNpcs = (state.room?.npcs || []).filter((npc) => (
-        isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)
-      ));
-      const visibleNpcsForAI = visibleNpcs;
       const lastAiText = [...(state.convo || [])].reverse().find((message) => message.role === "assistant")?.content || "";
-      const invText = (state.inv || []).map((item) => (
-        typeof item === "string" ? item : `${item.name}(${item.quality}${item.equipped ? "·已装备" : ""})`
-      )).join(",");
-      const stateContext = `[状态] 时间:${getTimeStr(state.time)} 主角:${state.char?.name || "无名少侠"} 房间:${state.room?.name || ""}${state.innerRoomName ? `·${state.innerRoomName}` : ""} 出口:${(state.room?.exits || []).join(",")} NPCs:${visibleNpcsForAI.map((npc) => npc.name).join(",") || "无"} 物品:${(state.room?.items || []).map((item) => item.name).join(",") || "无"} HP:${(state.char?.hp || []).join("/")} 内功:${state.char?.neigong ?? 0} 外功:${state.char?.waigong ?? 0} 背包:${invText}`;
       const apiConfig = { ...config, model: apiCfgOverrides?.model || config.model };
       const recallInput = {
         apiCfg: apiConfig,
@@ -248,18 +244,18 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         apiCfg: apiConfig,
         narrator: state.narrator,
         scenario: preset.scenario || getActivePreset().scenario,
-        budgetInstruction: buildBudgetInstruction(intent, cmd, apiConfig.targetWordCount, apiConfig.intentBudgets),
-        npcLoreBlockWithQuest: "",
-        visibleNpcsCount: visibleNpcs.length,
+        budgetInstruction: prepared.budgetInstruction,
+        npcLoreBlockWithQuest: prepared.npcLoreBlockWithQuest || "",
+        visibleNpcsCount: prepared.visibleNpcsCount || 0,
         charName: state.char?.name,
         charBodyProfile: state.char?.bodyProfile || emptyBodyProfile(),
         pickupJudgment: null,
         cmd,
         convo: state.convo || [],
         nsfwOn: false,
-        ctx: stateContext,
+        ctx: prepared.ctx,
         recallBlock: memory.recallBlock || "",
-        reunionBlock: "",
+        reunionBlock: prepared.reunionBlock || "",
         infoDomainBlock: memory.infoDomainBlock || "",
         hist: prepared.hist,
         mainConvo: prepared.mainConvo,
@@ -298,7 +294,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         convo: state.convo || [],
         isTalk,
         isSettle: !!opts.settle,
-        prompt: {
+        prompt: createCliPromptContext({
           room: state.room || {},
           char: state.char || {},
           inv: state.inv || [],
@@ -318,13 +314,8 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
           gm: false,
           innerRoomName: state.innerRoomName,
           apiCfg: apiConfig,
-          visibleNpcs,
-          buildBudgetInstruction,
           intent,
-          getTimeStr,
-          hasInnerMap,
-          quality: QUALITY,
-        },
+        }, { importedNpcLore: importedRegistry.getImportedNpcLore() }),
         _trace: trace,
         state,
         memory: {

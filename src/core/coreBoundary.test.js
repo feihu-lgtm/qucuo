@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const coreDir = resolve(dirname(fileURLToPath(import.meta.url)));
 const engineDir = resolve(coreDir, "../engine");
 const featuresDir = resolve(coreDir, "../features");
+const promptDir = resolve(engineDir, "prompt");
 
 function listJavaScriptFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -53,5 +54,16 @@ it("keeps the UI overlay store out of core, engine, and feature modules", () => 
     }),
   );
 
+  expect(violations).toEqual([]);
+});
+
+it("keeps prompt builders free of UI imports and nondeterministic globals", () => {
+  const violations = listJavaScriptFiles(promptDir)
+    .filter((file) => !file.endsWith(".test.js"))
+    .flatMap((file) => {
+      const source = readFileSync(file, "utf8").replace(/\/\/[^\n]*/g, "");
+      const forbidden = /\b(?:window|document|localStorage|fetch|Date)\b|Math\.random|from\s*["'](?:react|react-dom|[^"']*uiStore)/g;
+      return [...source.matchAll(forbidden)].map((match) => `${relative(promptDir, file)}: ${match[0]}`);
+    });
   expect(violations).toEqual([]);
 });
