@@ -3,9 +3,11 @@ import { gameActions, gameStore, initGameStore, useGameStore } from "./store/gam
 import {
   OVERLAY, closeOverlay, initializeUiOverlays, openOverlay, toggleOverlay, useOverlay,
 } from "./store/uiStore.js";
-import { createAutosaveScheduler } from "./core/autosaveScheduler.js";
-import { snapshotFromStore } from "./core/persist.js";
-import { setRngState } from "./core/rng.js";
+import { useAutosave, useInitialRestore } from "./app/hooks/useAutosave.js";
+import { useDaySummary } from "./app/hooks/useDaySummary.js";
+import { usePrivateTalk } from "./app/hooks/usePrivateTalk.js";
+import { useOutfitAdvice } from "./app/hooks/useOutfitAdvice.js";
+import { useAiInspect } from "./app/hooks/useAiInspect.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import { applyResult } from "./features/run.js";
 import { comfort, resolveTrauma, enterSeaOfMind as enterSeaLogic, leaveSeaOfMind as leaveSeaLogic, confessToNarrator as confessLogic } from "./features/narrator/logic.js";
@@ -69,7 +71,7 @@ import {
 } from "./features/pigeon/logic.js";
 import { attachImportedRegistry } from "./characterMilestones.js";
 import {
-  NNPC_STAGE, initialNarratorState, isInSea, migrateNarratorState,
+  NNPC_STAGE, isInSea,
   narratorVoicePrompt, affectionLabel, buildNarratorWhisperContext,
   narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
 } from "./narrator.js";
@@ -77,7 +79,6 @@ import { gateBodyProfile, emptyBodyProfile, buildOutfitRequest, bodyProfileFille
 import BodyProfilePanel from "./BodyProfilePanel.jsx";
 import { loadConfig, saveConfig, callModel, callModelStream, cleanJsonString, getPipelineLog, classifyError } from "./apiConfig.js";
 import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, attachExtractionPipeline, attachInjectionSnapshot, fmtMs } from "./actionTrace.js";
-import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "./saves.js";
 import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
@@ -85,7 +86,7 @@ import { initialVarTree, extractMvuBlock, applyMvuCommands, npcAffectionLabel, r
 import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, rollQuality, computeEquippedStats, effectiveSpecial } from "./equipment.js";
 import { effectiveMaxHp } from "./kungfu/qucuoKungfu.js";
 import { effectBrief } from "./itemEffectText.js";
-import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem, backfillInventoryFromCatalog } from "./items/catalog.js";
+import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem } from "./items/catalog.js";
 // 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
 // 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
@@ -147,7 +148,6 @@ import CharacterCreate from "./CharacterCreate.jsx";
 import { getActivePreset } from "./PresetManager.jsx";
 import { applyPresetOverrides } from "./presetSystem.js";
 import TraceViewer from "./TraceViewer.jsx";
-import { getCachedInspect, setCachedInspect } from "./inspectCache.js";
 import { classifyIntent, buildBudgetInstruction, INTENT } from "./inputIntent.js";
 import NpcActionMenu from "./NpcActionMenu.jsx";
 import ItemActionMenu from "./ItemActionMenu.jsx";
@@ -156,7 +156,7 @@ import { detectNewFaces, markAsSeen, markNpcAsKnown, isNpcKnown, detectReunions,
 import TradingScreen from "./TradingScreen.jsx";
 import { recordRumoredNpcs, findTargetedRumor, clearRumor } from "./npcEmergence.js";
 import { rollEncounter } from "./encounter.js";
-import { seedKnowledge, evolveKnowledge, buildInfoDomainBlock, factSummaryRequest, factSummaryRequestFromRecall, setFactSummary, registerFact, witnessFact, allFactSummaries } from "./knowledge.js";
+import { evolveKnowledge, buildInfoDomainBlock, factSummaryRequestFromRecall, registerFact, witnessFact, allFactSummaries } from "./knowledge.js";
 import { findQuestByGiver, NPC_TEACHABLE_SKILLS, QUCUO_QUESTS } from "./quests/qucuoQuests.js";
 import { QUEST_TYPE } from "./quests/questTypes.js";
 import { MODE_PRIMER_MESSAGES, NSFW_RULES } from "./modePrimer.js";
@@ -178,11 +178,11 @@ import PersuasionScreen from "./PersuasionScreen.jsx";
 import { CURRENT_VERSION } from "./version.js";
 import { recallWithVisibility } from "./memory/recallWithVisibility.js";
 import { writeNote, NOTE_SOURCE, VIA, reembedStaleNotes } from "./memory/note.js";
-import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from "./memory/daySummary.js";
+import { buildDistantViewBlock } from "./memory/daySummary.js";
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, unlockedCompanions, unlockImportedCompanion, COMPANION_LORE } from "./companion.js";
+import { setSnowLeopardActive, isSnowLeopardAvailable, unlockedCompanions, unlockImportedCompanion, COMPANION_LORE } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -227,7 +227,7 @@ import {
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
 import { injectNpcs, materializeNpc, removeNpc } from "./roomNpcs.js";
-import { tallyAdd, describeDayForSummary, describeTallyForWhisper } from "./memory/tally.js";
+import { tallyAdd } from "./memory/tally.js";
 import { SECT_ENTRY } from "./sectEntry.js";
 import { SEA_OF_MIND, canEnterSea } from "./seaOfMind.js";
 import {
@@ -264,17 +264,13 @@ import { createPromptContext } from "./engine/prompt/index.js";
 import { getCompanionDescForm } from "./companionForms.js";
 import { playTurn } from "./engine/playTurn.js";
 import {
-  rollSkeleton, buildSquarePrompt, parseSquareBatch, applySquareBatch,
-  consumeArrival, getLookText, burnSquare, resetForDay, pendingNodes,
-  serializeSquares, loadSquares,
+  consumeArrival, getLookText, burnSquare, serializeSquares,
 } from "./mapSquares.js";
 
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false } = {}) {
   const [presets, setPresets] = useState(DEFAULT_PRESETS);
   // "new" 是显式新开局信号，此时无论有没有存档都不恢复。
-  const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId);
-  // 格子数据随档恢复（埋物是游戏状态的一部分；刷新重掷会允许读档刨雷）
-  if (restored?.snap?.squares) loadSquares(restored.snap.squares);
+  const restored = useInitialRestore({ initialLoadSlotId });
 
   const overlaysInitializedRef = useRef(false);
   if (!overlaysInitializedRef.current) {
@@ -363,10 +359,13 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const questProgress = useGameStore(s => s.questProgress); // { questId: { count } }
   // 说服进度持久化：按 questId|flag 存 { guard, hitKeys, turns, done }，让"关掉再点同一场
   // 说服"能接着上次、且进快照存档。成功/离开时清掉该场。
-  // 【必须声明在 buildCurrentSnapshot(useCallback) 之前】——它被 snapshot 的依赖数组引用，
+  // 【必须声明在 useAutosave 之前】——它被快照回调的依赖数组引用，
   // 若声明晚于那里会触发 const 暂时性死区：Cannot access 'persuasionProgress' before initialization。
   const persuasionProgress = useGameStore(s => s.persuasionProgress);
   const mapData = useGameStore(s => s.mapData);
+  const deposit = useGameStore(s => s.deposit);
+  const depositedAt = useGameStore(s => s.depositedAt);
+  const pledgedItems = useGameStore(s => s.pledgedItems);
   const [mapBig, setMapBig] = useState(false);
   const mapBigCloseGuard = useOverlayCloseGuard(() => setMapBig(false));
   const [mapView, setMapView] = useState("outer"); // ⑦ 地图框显示：outer=外层大地图 / inner=内层箱庭图
@@ -518,205 +517,19 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   useEffect(() => { localStorage.setItem("wuxia_mud_ui_scale", String(uiScale)); }, [uiScale]);
   useEffect(() => { localStorage.setItem("wuxia_mud_day_mode", isDayMode ? "1" : "0"); }, [isDayMode]);
 
-  // ── 自动存档：玩家操作后防抖，AI 回合与关页兜底保留原逻辑 ──
-  // 首次输入前的挂载初始化与后台预跑不算游玩，避免新开局状态覆盖旧自动档；
-  // 首次输入后的游戏状态变化会写档，关页仍同步补存。
-  const [lastAutoSave, setLastAutoSave] = useState(null);
-  const [autoSaveError, setAutoSaveError] = useState(null);
-  const roundsSinceLastSaveRef = useRef(0);   // 距离上次自动存档过了几个回合
-  const playedThisSessionRef = useRef(false); // 本次会话玩家是否真的行动过
-  const userArmedRef = useRef(false);
-  const schedulerRef = useRef(null);
-  // 默认立绘已改为硬加载（静态 import，见 portraits.js 顶部的
-  // DEFAULT_PORTRAITS），构建时直接打包进产物，getPortrait() 里自动
-  // 合并查询，不再需要任何异步初始化步骤——之前这里有一个
-  // initDefaultPortraits() 的 useEffect，现在完全不需要了。
-
-  useEffect(() => {
-    const arm = () => {
-      userArmedRef.current = true;
-      window.removeEventListener("pointerdown", arm, true);
-      window.removeEventListener("keydown", arm, true);
-    };
-    window.addEventListener("pointerdown", arm, true);
-    window.addEventListener("keydown", arm, true);
-    const scheduler = createAutosaveScheduler({
-      subscribe: gameStore.subscribe,
-      isArmed: () => userArmedRef.current,
-      isBusy: () => loadingRef.current || pendingTalksRef.current > 0,
-      onPlayed: () => { playedThisSessionRef.current = true; },
-      onReset: () => {
-        playedThisSessionRef.current = false;
-        roundsSinceLastSaveRef.current = 0;
-      },
-      save: () => {
-        const result = autoSave(snapshotFromStore({
-          squares: serializeSquares(),
-          roomMap: roomMapRef.current,
-        }));
-        if (result.ok) {
-          roundsSinceLastSaveRef.current = 0;
-          setLastAutoSave(Date.now());
-          setAutoSaveError(null);
-        } else {
-          setAutoSaveError(result.error);
-        }
-      },
-    });
-    schedulerRef.current = scheduler;
-    return () => {
-      window.removeEventListener("pointerdown", arm, true);
-      window.removeEventListener("keydown", arm, true);
-      scheduler.dispose();
-      if (schedulerRef.current === scheduler) schedulerRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!playedThisSessionRef.current) return; // 还没玩过：绝不覆盖旧档
-    // 必须确有回合完成过。roundsSinceLastSaveRef 只在 commitRound（真走完一轮）自增、
-    // 存档后归零；varTree 等状态被别的东西碰一下不算一轮。
-    // 【为什么补这条】起居注上线后，不走 AI 的动作（内层移动等）也会写 varTree，
-    // 而 varTree 在本 effect 的 deps 里。autoSaveEvery=0（每回合都存）时下面那道
-    // 区间守卫因 every>0 为假而整个跳过，于是每走一步内层都触发一次全量快照+落盘。
-    if (roundsSinceLastSaveRef.current <= 0) return;
-    const every = Math.max(0, Number(apiCfg.autoSaveEvery ?? 5));
-    if (every > 0 && roundsSinceLastSaveRef.current < every) return; // 间隔未到
-    const snapshot = buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares: serializeSquares(), roomMap: roomMapRef.current });
-    const result = autoSave(snapshot); // 同步返回（写内存必成；IDB 异步落盘、LS 尽力兜底）
-    if (result.ok) {
-      roundsSinceLastSaveRef.current = 0;
-      setLastAutoSave(Date.now());
-      setAutoSaveError(null);
-    } else {
-      setAutoSaveError(result.error);
-    }
-  }, [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, apiCfg.autoSaveEvery, companionState]);
-
-  // 从存档槽位读取后，整体覆盖当前状态
-  const applySnapshot = useCallback((snap) => {
-    const restoreSnapshot = () => {
-      const matchedPreset = presets.find(p => p.id === snap.preset?.id) || preset;
-      const restoredRoom = isCompatibleRoomShape(snap.room) ? snap.room : matchedPreset.room;
-      const roomChanged = restoredRoom.name !== useGameStore.getState().room?.name;
-      setPreset(matchedPreset);
-      setRoom(restoredRoom);
-      // 老存档可能没有 moveset/special 字段（切磋系统上线之前存的档），
-      // 兼容判定通过后还要单独补全这两个字段，不能直接假设它们存在——
-      // 之前这里漏了这一步，导致老存档读进来后 char.moveset 是 undefined，
-      // 后续任何读取它的地方（比如打开切磋界面）都可能因此出问题。
-      const restoredChar = isCompatibleCharShape(snap.char) ? snap.char : matchedPreset.char;
-      setChar(restoredChar.moveset ? restoredChar : {
-        ...restoredChar,
-        moveset: generateNpcMoveset({ id: "player" }, { luck: restoredChar.special?.气运 ?? 5, levelCap: 5 }),
-      });
-      setDao(snap.dao);
-      setSkills(snap.skills); setInv(backfillInventoryFromCatalog(snap.inv));
-      setLog(snap.log); setConvo(snap.convo); setExp(snap.exp); setPot(snap.pot);
-      setFlags(snap.flags); setMapData(snap.mapData); setTime(snap.time);
-      // 老档迁移：旧 CRASHED 阶段（告白→宕机那条已废链路）会把文风永久锁在
-      // "干瘪空壳"上，好感度再高也不变、旁白线也走不出来。归一到当前阶段定义。
-      setNarrator(migrateNarratorState(snap.narrator));
-      setVarTree(snap.varTree || initialVarTree());
-      setQuestProgress(snap.questProgress || {});
-      setClaimedMilestones(new Set(snap.claimedMilestones || []));
-      setDeposit(snap.deposit || 0);
-      setDepositedAt(snap.depositedAt ?? null);
-      setPledgedItems(snap.pledgedItems || []);
-      setCompanionState(snap.companionState || initCompanionState());
-      if (snap.roomMap) roomMapRef.current = snap.roomMap;
-      if (snap.squares) loadSquares(snap.squares);
-      if (snap.rngState != null) setRngState(snap.rngState);
-      // 内层箱庭位置：老存档没这个字段、或存的房间已不在该据点内景里（改过地图数据），
-      // 都退回锚点，绝不让玩家落在一个不存在的房间里。
-      {
-        const rm = restoredRoom;
-        const ok = snap.innerRoomName && hasInnerMap(rm.name) && getInnerRoomNames(rm.name).includes(snap.innerRoomName);
-        const restoredInnerRoomName = ok ? snap.innerRoomName : (hasInnerMap(rm.name) ? getDistrictAnchor(rm.name) : null);
-        if (roomChanged) restoredInnerRef.current = restoredInnerRoomName;
-        setInnerRoomName(restoredInnerRoomName);
-      }
-      closeOverlay(OVERLAY.SETTINGS);
-    };
-    const scheduler = schedulerRef.current;
-    if (scheduler) scheduler.runSilently(restoreSnapshot);
-    else restoreSnapshot();
-  }, [presets, preset]);
-
-  const buildCurrentSnapshot = useCallback(() => snapshotFromStore({
-    squares: serializeSquares(), roomMap: roomMapRef.current,
-  }), [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, persuasionProgress, innerRoomName, companionState]); // deposit/depositedAt/pledgedItems captured via closure
-
-  // ── 地图格子·后台预跑（扫雷式预埋，见 mapSquares.js）──
-  // 全据点批量预跑（14 节点，3 个一 call）：系统先掷骰埋拾取/路遇，小模型一次写完全套
-  // 到达素材。fire-and-forget，单批失败静默，下个触发点自愈（开局/日更/每次格子移动后）。
-  const prerunBusyRef = useRef(false);
-  const prerunSquares = useCallback(() => {
-    if (prerunBusyRef.current) return;
-    const day = Math.floor(time / 24);
-    const pending = pendingNodes(day);
-    if (!pending.length) return;
-    prerunBusyRef.current = true;
-    (async () => {
-      try {
-        const luck = char.special?.气运 ?? 5;
-        for (let i = 0; i < pending.length; i += 3) {
-          const skeletons = {};
-          const batch = pending.slice(i, i + 3).map(name => {
-            const node = getMapNode(name);
-            const sk = rollSkeleton(name, luck);
-            skeletons[name] = sk;
-            return { name, base: node.desc, exits: Object.keys(node.exits).join(","), item: sk.item, encounter: sk.encounter };
-          });
-          const req = buildSquarePrompt(batch);
-          try {
-            const cfg = buildExtractionCfg("SQUARE_PRERUN", apiCfg);
-            const r = await callModel(cfg, req.system, [{ role: "user", content: req.user }], { maxTokens: 1500, callLabel: "地图预跑" });
-            applySquareBatch(day, parseSquareBatch(r.text), skeletons);
-          } catch (_) { /* 单批失败静默，余格下个触发点重试 */ }
-        }
-      } finally { prerunBusyRef.current = false; }
-    })();
-  }, [time, apiCfg, char]);
-  const prerunBootedRef = useRef(false);
-  useEffect(() => {
-    if (prerunBootedRef.current) return;
-    prerunBootedRef.current = true;
-    prerunSquares();
-  }, [prerunSquares]);
-
-  // 关页/刷新兜底：IDB 写是异步、关页来不及落盘，故这里改用同步的 flushLocalBackup
-  // 把最新快照写一份到 localStorage（尽力而为）；下次开局 loadAutoSave 会取 IDB 与它的较新者。
-  // 同样受"本次会话行动过"保护——刚挂载就关页不会把旧档覆盖成新开局。
-  useEffect(() => {
-    const flush = () => {
-      if (!playedThisSessionRef.current) return;
-      flushLocalBackup(buildCurrentSnapshot());
-    };
-    window.addEventListener("beforeunload", flush);
-    return () => window.removeEventListener("beforeunload", flush);
-  }, [buildCurrentSnapshot]);
-
-  const loadPreset = useCallback((p) => {
-    const startPreset = () => {
-      setPreset(p); setRoom(p.room); setChar(p.char); setDao(p.dao);
-      setSkills(p.skills.map(s => ({ ...s }))); setInv([...p.inv]);
-      setLog([{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${p.name}` }, ...p.opening]);
-      setConvo([]); setExp(0); setPot(0); setFlags([]); setTime(6);
-      setMapData({ [p.room.name]: { x: 0, y: 0 } });
-      setNarrator(initialNarratorState());
-      setVarTree(prev => seedKnowledge(prev, p.知识基底, 0)); // 换预设开新局也灌基底（registerFact 幂等）
-      setCompanionState(initCompanionState()); // 新开局重置雪豹解锁/出战状态，不带上一局的伙伴进度
-      roomMapRef.current = { [p.room.name]: { items: [...p.room.items], npcs: [...p.room.npcs] } };
-    };
-    const scheduler = schedulerRef.current;
-    if (scheduler) scheduler.runSilently(startPreset);
-    else startPreset();
-    scheduler?.resetPlayed();
-    setGm(false);
-    closeOverlay(OVERLAY.PRESETS);
-  }, []);
-
+  const {
+    lastAutoSave, autoSaveError, roundsSinceLastSaveRef, playedThisSessionRef,
+    schedulerRef, applySnapshot, buildCurrentSnapshot, loadPreset, prerunSquares,
+  } = useAutosave({
+    apiCfg, preset, room, char, dao, skills, inv, log, convo, exp, pot, flags,
+    mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit,
+    depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState,
+    loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets,
+    setGm, setPreset, setRoom, setChar, setDao, setSkills, setInv, setLog,
+    setConvo, setExp, setPot, setFlags, setMapData, setTime, setNarrator,
+    setVarTree, setQuestProgress, setClaimedMilestones, setDeposit, setDepositedAt,
+    setPledgedItems, setCompanionState, setInnerRoomName,
+  });
   const importPreset = useCallback(() => {
     const el = document.createElement("input"); el.type = "file"; el.accept = ".json";
     el.onchange = (e) => {
@@ -759,9 +572,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 不需要重新走一遍"点建筑名进入"的流程。
   const [buildingPanelMinimized, setBuildingPanelMinimized] = useState(false);
   useEffect(() => { setBuildingPanelMinimized(false); }, [activeBuilding?.id]);
-  const deposit = useGameStore(s => s.deposit);
-  const depositedAt = useGameStore(s => s.depositedAt);
-  const pledgedItems = useGameStore(s => s.pledgedItems);
   const addLog = useCallback((lines) => setLog(p => [...p, ...lines]), []);
 
   // 把主日志按回合分组，供 bug 上报弹窗"按编号勾选要附带的记录"用。
@@ -864,55 +674,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   // 日总结（大纸条）：跨天时后台归纳刚过去这一天攒下的原料，存进 varTree.世界.日总结。
   // fire-and-forget：AI 失败就不写，缺一天日总结无伤大雅，绝不阻断游戏。
-  const summarizeDay = useCallback(async (endedDay, material) => {
-    const lines = (material || []).map(m => m.text).filter(Boolean);
-    if (!lines.length) return;
-    const label = `第${endedDay + 1}日`;
-    try {
-      const { system, messages } = buildDaySummaryRequest(label, lines);
-      const { text } = await callModel(apiCfg, system, messages, { maxTokens: apiCfg.callTokenLimits?.daySummary ?? 2000, callLabel: "日总结" });
-      const summary = (text || "").trim();
-      if (!summary) return;
-      setVarTree(prev => appendDaySummary(prev, { day: endedDay, label, text: summary, turn: (endedDay + 1) * 24 }));
-    } catch (_) { /* 日总结失败静默 */ }
-  }, [apiCfg]);
-
-  // 把一条结构化事实（切磋结果/飞鸽书信这类系统已知数据）交给 AI 写成一句白话古文小总结，
-  // 覆盖掉注册时先塞的结构化兜底摘要。fire-and-forget：AI 没开/失败就保留那句兜底（不再是死模板文风，
-  // 而是可读的结构化事实垫底）。cue 是喂给 AI 的事件线索，越具体 AI 写得越准。
-  const aiSummarizeFact = useCallback(async (factId, cue) => {
-    try {
-      const req = factSummaryRequest(cue);
-      const { text } = await callModel(apiCfg, req.system, req.messages, { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens, callLabel: "事实摘要" });
-      // 坑：这里原先写的是 if (line) ... setFactSummary(…, line)，但 callModel 解构出来的
-      // 是 text——line 从来就不存在，每次都抛 ReferenceError 被下面的 catch 静默吃掉，
-      // 等于 AI 摘要一次都没写进去过，一直在用注册时的结构化兜底（见 version.js 0727 修复记录）。
-      const summary = (text || "").trim();
-      if (summary) setVarTree(prev => setFactSummary(prev, factId, summary));
-    } catch (_) { /* 保留结构化兜底摘要 */ }
-  }, [apiCfg]);
-
-  // 跨天侦测：24 回合 = 1 天。time 的整天数一旦增长，就把上一天的原料交给 summarizeDay，
-  // 随即清空缓冲、推进 prevDay。用 ref 记上一整天数，避免每次 time 变都误触发。
-  const prevDayRef = useRef(Math.floor(time / 24));
-  useEffect(() => {
-    const curDay = Math.floor(time / 24);
-    if (curDay > prevDayRef.current) {
-      const ended = prevDayRef.current;
-      const material = dayMaterialRef.current;
-      dayMaterialRef.current = [];
-      prevDayRef.current = curDay;
-      // 把这一天的行动计数也交给日总结当原料。此前不走 AI 的动作（走动/打坐/安抚…）
-      // 一件都不留痕，日总结里会出现"今天什么都没干"却实际来回跑了十几趟的怪事。
-      // 注意用 prevDayRef 之前那一天的 time 去读（ended*24），否则读到的是新一天的空表。
-      const tallyLine = describeDayForSummary(varTreeRef.current.世界?.起居注, ended * 24);
-      const fullMaterial = tallyLine ? [...material, { text: tallyLine }] : material;
-      if (fullMaterial.length) summarizeDay(ended, fullMaterial);
-      // 新的一天：全图格子重埋（昨日埋物作废，预跑重新掷骰写文——给出"每天值得巡一圈"的理由）
-      resetForDay();
-      prerunSquares();
-    }
-  }, [time, summarizeDay, prerunSquares]);
+  const { aiSummarizeFact } = useDaySummary({
+    time, apiCfg, setVarTree, varTreeRef, dayMaterialRef, prerunSquares,
+  });
   const worldRulesRunnerRef = useRef(null);
   useEffect(() => {
     const cancelTokyoReturn = () => {
@@ -1058,329 +822,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     return null;
   }, [char, inv, skills, exp, pot, effectiveSpecialNow, activeBuffs]);
 
-  const talkToNarrator = useCallback(async (content) => {
-    changePendingTalks(1);
-    addLog([{ t: "cmd", text: `> 对旁白：${content}` }]);
-    setInput("");
-
-    // 行动分层日志（本轮补齐）：私聊旁白此前完全不进 trace 系统——虽然底层
-    // callModel/callModelStream 早就把每次调用的完整 prompt/回复记进了
-    // pipelineLog，但没有一条 trace 把它"挂"出来，顶部「🧭行动日志」面板
-    // 里看不到任何私聊痕迹，出问题（旁白答非所问/召回没生效）时无从排查。
-    // 补法与 act() 一致：startTrace 开局、traceStep 记各阶段、attachPipeline
-    // 挂真实 prompt/回复、endTrace 收尾。不消耗回合这件事不变——trace 只是
-    // 记录，不代表计入时间。
-    const _wt = startTrace(content, content);
-    traceStep(_wt, "意图分类", "pass", "模式=私聊旁白（不消耗回合）");
-
-    if (narrator.stage === NNPC_STAGE.CRASHED) {
-      traceStep(_wt, "旁白状态", "block", "旁白已崩溃(CRASHED)，本地兜底话术，未调用AI");
-      const flat = ["信号已断开。", "无法连接。", "……无应答。", "她不在这里。"];
-      const flatText = flat[Math.floor(Math.random() * flat.length)];
-      addLog([{ t: "narrator", text: `  「旁白」${flatText}` }]);
-      endTrace(_wt, `旁白已崩溃，本地兜底："${flatText}"`);
-      changePendingTalks(-1);
-      schedulerRef.current?.touch();
-      talkBusyRef.current = false; // 释放私聊闸门
-      return;
-    }
-
-    try {
-      const voice = narratorVoicePrompt(narrator);
-      // 背包物品是对象（{name,quality,...}），直接 inv.join(",") 会得到一串
-      // [object Object]，旁白根本读不出玩家身上有什么——这正是"玩家捡了界石、
-      // 旁白却坚称背包里只有青稞粗布"那个 bug 的根源。跟主叙事 invText 对齐，
-      // 取名字+品阶+是否装备，字符串物品也兼容。
-      const narratorInvText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
-      const worldState = `[当前世界状态，仅供你了解背景，不必主动复述] 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""}（${room.desc}） 房间里的人:${room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name).join(",") || "无"} 玩家背包:${narratorInvText}`;
-
-      // ── 旁白·全知事实（本轮新增）──
-      // 旁白设定上是跳出信息隔离的第四面墙外角色，普通 NPC 之间发生的事（哪怕玩家没
-      // 亲口跟她说过）她也该"看在眼里"。knowledge.js 的事实账本本来就是全局记账，
-      // 不受"是否在场""是否目击"这层限制，直接全量读给她——不依赖 embedding 开关，
-      // 也不需要玩家跟她提过。注意：这条只读普通事实账本，不读旁白私聊内容本身
-      // （私聊走的是下面 convo 共享那条独立渠道，两者不混）。
-      let factsBlock = "";
-      {
-        // 条数（绿灯·批五）：20→8。私聊本就是短回合（maxTokens 见 callTokenLimits.narratorWhisper），旁白也只会顺口提一两件；
-        // 喂 20 条里绝大多数是陪跑，还把真正相关的那几条冲淡。取最近 8 条，更近更准也更省。
-        const facts = allFactSummaries(varTreeRef.current, 8);
-        if (facts.length) {
-          factsBlock = "\n\n[你冷眼旁观知晓的事，未必是玩家亲口告诉过你的，回应时可以自然提起，但不要生硬列举或表现得像在念清单]\n"
-            + facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
-          traceStep(_wt, "全知事实", "pass", `注入最近${facts.length}条事实账本摘要`);
-        } else {
-          traceStep(_wt, "全知事实", "skip", "事实账本为空，未注入");
-        }
-      }
-
-      // 向量召回：让旁白"记起"可能早已滑出对话窗口的往事（与她"记得游戏里发生一切"的设定一致）。
-      // 降级安全：没开向量或召回失败则 recallInfo 为 null，这段完全不影响私聊。
-      let recallInfo = null;
-      let recallBlock = "";
-      if (embeddingReady(apiCfg)) {
-        const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
-        const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(varTreeRef.current.角色 || {}), room.name]));
-        recallInfo = await recallWithVisibility({
-          cfg: apiCfg, queryText: content,
-          contextText: `${lastAiText}\n[当前]位置:${room.name}`,
-          focusEntities, unlockedFlags: flags, presentNames: ["旁白"], topK: 5,
-        });
-        if (recallInfo && recallInfo.visible.length) {
-          recallBlock = "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n"
-            + recallInfo.visible.map(m => `· （第${m.meta.turn}回合）${m.tier === "weak" && m.text.length > 40 ? m.text.slice(0, 40) + "…" : m.text}`).join("\n");
-          traceStep(_wt, "向量召回", "pass", `召回${recallInfo.visible.length}条相关往事`);
-        } else {
-          traceStep(_wt, "向量召回", "skip", "已开启但本轮无相关召回结果");
-        }
-      } else {
-        traceStep(_wt, "向量召回", "skip", "embedding未开启，跳过召回");
-      }
-      // scenario 蓝绿灯（与 act 同一套 gateScenario）：私聊此前直接拼 preset.scenario 全文，
-      // 于是每次闲聊都要背一遍地图拓扑、契诃夫之枪、路途遭遇、装备品质六档表——
-      // 聊天一句用不上，纯烧上下文，还把她往说书人腔调上拽。scope 走独立的 "whisper"
-      // （不在任何条目的 scopes 里），因此专项段全靠关键词点亮：玩家问路才亮拓扑，
-      // 提到人名才亮具名人物，聊到掉落才亮装备规则。认不出标题的段落照旧常驻（蓝灯），
-      // 用户改过 scenario 或换自定义预设都不会因这层分流丢内容。
-      const _lastReply = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
-      const _whisperGate = gateScenario(preset.scenario, {
-        scope: "whisper",
-        userInput: content,
-        lastReply: _lastReply,
-      });
-      if (_whisperGate.lit.length || _whisperGate.dark.length) {
-        traceStep(_wt, "世界书·总纲", "info",
-          `🟢${_whisperGate.lit.join("、") || "无"}　⚫灭:${_whisperGate.dark.join("、") || "无"}`);
-      }
-
-      // 私聊话题红绿灯（身世/赌石邀帖等冷门追问）：默认不给，命中关键词才点亮。
-      // 与上面 scenario 的"默认全给、按条目灭灯"相反，是加法而非减法——这些条目
-      // 绝大多数轮次用不上，常驻只会白烧上下文；但玩家一旦问起，必须有统一口径，
-      // 否则模型只能现编，这局说是将门遗孤、下局说是灭门孤儿。
-      const _scan = `${content}\n${_lastReply}`;
-      const _topicGate = gateWhisperTopics(_scan);
-      if (_topicGate.lit.length) {
-        traceStep(_wt, "私聊话题·红绿灯", "pass", `🟢${_topicGate.lit.join("、")}`);
-      } else {
-        traceStep(_wt, "私聊话题·红绿灯", "skip", "本轮无话题命中");
-      }
-
-      // 任务线红绿灯：报出任务全名才查那一条，泛泛问只让她反问；好感度 <30 不给。
-      // 全任务表二十几条线、每条四五个 stage，全量注入等于每次闲聊背一本攻略书。
-      const _questGate = gateQuestTopic(_scan, narrator.affection, QUCUO_QUESTS, questProgress);
-      if (_questGate.lit.length) {
-        traceStep(_wt, "任务线·红绿灯", "pass", `🟢${_questGate.lit.join("、")}`);
-      } else {
-        traceStep(_wt, "任务线·红绿灯", "skip", "本轮没聊到任务");
-      }
-
-      // 体貌：私聊时公开层常亮（她一直看着你），私密层仍只认 ■ 模式。
-      const _bodyWhisper = gateBodyProfile(char.bodyProfile, {
-        whisper: true, nsfw: nsfwOn, scanText: _scan,
-      });
-      if (_bodyWhisper.lit.length || _bodyWhisper.dark.length) {
-        traceStep(_wt, "体貌", "info",
-          `🟢${_bodyWhisper.lit.join("、") || "无"}　⚫灭:${_bodyWhisper.dark.join("、") || "无"}`);
-      }
-
-      // 旁白专属世界书（设置→旁白 tab 可编辑）：只进私聊，不进主叙事。留空则一个字不发。
-      const loreText = (apiCfg.narratorLorebook || "").trim();
-      const narratorLoreBlock = loreText
-        ? `\n\n[旁白专属设定，只有你自己知道，玩家看不到这段文字，不要复述它的存在]\n${loreText}`
-        : "";
-      if (loreText) traceStep(_wt, "旁白专属世界书", "pass", `注入${loreText.length}字`);
-
-      // 篇幅指令拼在最末尾（贴生成处 = 酒馆 Depth 0，是插入深度最强的位置，
-      // 与「成文铁律放 userContent 末尾」同一条经验），别埋进开头被当耳旁风。
-      //
-      // ── 海内私聊：整套 system 换成创伤线专用 ──
-      // 她此刻不是"被抽出来对话的旁白"，而是一个人蜷在沙发上。
-      // 全知事实、旁白世界书、分档攻略、剧本总纲这些在这儿全不适用（她不在讲故事），
-      // 只留：创伤线阶段 prompt + 向量召回（她记得你们一路的事）+ 篇幅。
-      const inSeaNow = isInSea(narrator.stage) && room.name === SEA_OF_MIND.district;
-      const seaVars = narratorVars(varTreeRef.current);
-      // 起居注进私聊：她本来就是"记得游戏里发生一切"的角色，聊天时却不知道你今天
-      // 干了什么很奇怪。累计只在第六档给——那时账本是她在记（见 tally 里的注释）。
-      // 海里那条路不给：她此刻蜷在沙发上，谁还管你今天走了几步路。
-      const tallyBlock = inSeaNow ? "" : describeTallyForWhisper(
-        varTreeRef.current.世界?.起居注, timeRef.current,
-        { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
-      );
-      const sys = inSeaNow
-        ? `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: NNPC_STAGE })}${recallBlock}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`
-        : `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
-
-      // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
-      // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
-      // 对话类同样取至少 20 层全部互动。
-      const talkWindow = Math.max(apiCfg.contextWindow, 20);
-      const hist = convo.length > talkWindow ? convo.slice(-talkWindow) : convo;
-      // 私聊不需要像叙事那么长，但 600 这个旧硬编码在带思考的模型下会被思考 token 吃穿、
-      // 正文半句就撞 length 截断，故改读可调的 callTokenLimits.narratorWhisper（默认 6000）。
-      const narratorMaxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
-
-      let text;
-      let affDelta = 1; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖
-      let hadAffTag = false; // 标记是否真出现过 ⟦好感X⟧——没出现时的 +1 是兜底，不是她给的分
-      let finishReason;      // 停止原因：私聊此前完全没接这个字段，撞 length 上限也毫无提示
-      // 模型会照着历史里的「（旁白私聊回应）」前缀自己也写一遍，而下面存 convo 时又会
-      // 再加一次，于是前缀逐轮累积成「（旁白私聊回应）（旁白私聊回应）…」。存之前先剥干净：
-      // 前缀由系统负责加，模型自己写的一律不算数。
-      const stripEchoPrefix = (s) => s.replace(/^(?:\s*[（(]\s*旁白私聊回应\s*[）)])+\s*/, "");
-      const parseAffTag = (s) => {
-        const m = s.match(/⟦好感\s*([+-]?\d+)\s*⟧\s*$/);
-        const d = m ? Math.max(-3, Math.min(6, parseInt(m[1], 10) || 0)) : 1;
-        return { text: s.replace(/⟦好感\s*[+-]?\d+\s*⟧\s*$/, "").trim() || "……", delta: d, tagged: !!m };
-      };
-      if (apiCfg.streamEnabled && apiCfg.apiType !== "gemini") {
-        const logIdx = { current: null };
-        addLog([{ t: "narrator", text: "  「旁白」▌", streaming: true }]);
-        setLog(l => { logIdx.current = l.length - 1; return l; });
-        const { text: streamedText, finishReason: fr } = await callModelStream(
-          apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }],
-          (_delta, fullSoFar) => {
-            setLog(l => {
-              if (logIdx.current == null) return l;
-              const copy = [...l];
-              copy[logIdx.current] = { t: "narrator", text: `  「旁白」${fullSoFar} ▌`, streaming: true };
-              return copy;
-            });
-          },
-          { maxTokens: narratorMaxTokens, recallInfo },
-        );
-        finishReason = fr;
-        text = stripEchoPrefix(streamedText.trim()) || "……";
-        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
-        setLog(l => {
-          if (logIdx.current == null) return l;
-          const copy = [...l];
-          copy[logIdx.current] = { t: "narrator", text: `  「旁白」${text}` };
-          return copy;
-        });
-        traceStep(_wt, "AI调用", "pass", "流式一次成功");
-        attachPipeline(_wt, getPipelineLog()[0]);
-      } else {
-        const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊" });
-        finishReason = result.finishReason;
-        text = stripEchoPrefix(result.text.trim()) || "……";
-        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
-        addLog([{ t: "narrator", text: `  「旁白」${text}` }]);
-        traceStep(_wt, "AI调用", "pass", "非流式一次成功");
-        attachPipeline(_wt, getPipelineLog()[0]);
-      }
-
-      // ── 截断检查（本轮补齐）──
-      // 主叙事那条路一直有 finishReason 判定 + 自动重说，私聊却把这个字段整个丢掉了，
-      // 撞上限时界面上毫无提示，只表现成"她话说一半"，排查时无从下手。
-      // 附带一个更隐蔽的危害：⟦好感X⟧ 要求写在整段最末尾，被截断就一定读不到，
-      // parseAffTag 于是兜底 +1——她明明在敷衍，系统却在给玩家加好感。
-      // 这里不自动重试（私聊不消耗回合、玩家再问一句即可，重试反而多烧一次钱），
-      // 只把真相摆到台面上：日志提示 + trace 留痕 + 好感度按"未表态"处理成 0。
-      const whisperHitCap = /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
-      if (whisperHitCap) {
-        traceStep(_wt, "截断检查", "block", `撞 token 上限（finishReason=${finishReason}），本轮回复不完整`);
-        addLog([{ t: "sys", text: `  ⚠ 旁白这句话没说完就撞上了 token 上限（当前 ${narratorMaxTokens}）。可在 设置 → 旁白 里调大「私聊 token 输出上限」。` }]);
-        if (!hadAffTag) affDelta = 0; // 没读到她的表态就别替她表态
-      }
-
-      // 把这轮私聊也计入主引擎共享的对话历史，让旁白（以及之后的叙事）都能"记得"这次私聊
-      setConvo(c => [...c, { role: "user", content: `（私聊）${content}` }, { role: "assistant", content: `（旁白私聊回应）${text}` }]);
-
-      // 私聊旁白也浓缩一张私有小纸条，owner=旁白（你俩私有，只在旁白语境下浮现，
-      // 不进任何 NPC 的信息域）——与「对话模式=owner对话对象」同属"私语只你俩知道"这一类。
-      jotNote({ text: `与旁白私语：${content.slice(0, 24)}${content.length > 24 ? "…" : ""}`, owner: [{ name: "旁白", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.WHISPER });
-
-      // trace 收尾：摘要带上回复内容前段（trace 面板本身有完整 pipeline 可看全文，
-      // 这里摘要只做一句话定位用，避免摘要行本身过长）和好感度增量，
-      // 让「行动分层日志」列表一眼能看出这次私聊聊到了什么、好感怎么变的。
-      const textPreview = text.length > 30 ? text.slice(0, 30) + "…" : text;
-      endTrace(_wt, `旁白回应："${textPreview}"（好感${affDelta >= 0 ? "+" : ""}${affDelta}）`);
-
-      // ── 海内：好感不动，改判"这一轮她有没有把当前那条心结说出来" ──
-      // 创伤期的进度靠安抚与倾听推进，不靠聊天涨好感（她此刻不是在被追求）。
-      // 判定放本地关键词初筛：AI 已经拿到了那条心结的 guide，它写出来的正文里
-      // 必然带那几个核心意象；宁可放宽也不要卡住玩家——他都陪到这儿了。
-      if (inSeaNow) {
-        const kv = narratorVars(varTreeRef.current);
-        const cur = availableKnot(kv.comfort, kv.knots || []);
-        if (cur) {
-          const HINT = {
-            hebe:   ["没有回头", "没回头", "等过", "他没有看", "不理", "没看见我"],
-            corner: ["墙角", "那堵墙", "墙是凉", "推我", "打我", "小时候"],
-            doll:   ["布偶", "那个女人", "不看我", "她不看", "娃娃"],
-          }[cur.key] || [];
-          if (HINT.some(h => text.includes(h))) {
-            const nextKnots = [...(kv.knots || []), cur.key];
-            setVarTree(prev => setNarratorVars(prev, { knots: nextKnots, questStage: 3 }));
-            addLog([{ t: "affection", text: `  ⟡ 她把「${cur.title}」说出来了。` }]);
-            if (canResolve(kv.comfort, nextKnots)) {
-              addLog([{ t: "sys", text: "  ⟡ 三个心结都说尽了。她在等你说一句她自己说不出口的话。" }]);
-            }
-          }
-        }
-        endTrace(_wt, `海内私聊："${textPreview}"`);
-      }
-
-      // 非海内才走好感结算。刻意不用 early return——函数尾部（try/catch 之外）
-      // 统一释放 pendingTalks 与 talkBusyRef 闸门，从这里 return 会跳过它，
-      // 要么闸门永久锁死、要么得在这儿重复释放一次（两处释放又会多减一次）。
-      if (!inSeaNow) setNarrator(n => {
-        if (n.confessed) {
-          const mf = n.memoryFragments + 1;
-          if (mf >= 8) {
-            addLog([
-              { t: "sys", text: "" },
-              { t: "crash", text: "  ……她的声音忽然卡顿了一下。" },
-              { t: "crash", text: "  「等等——这些记忆，不该在这里。」" },
-              { t: "crash", text: "  文字开始扭曲，随即恢复成最初那种没有温度的公式化语气。" },
-              { t: "sys", text: "" },
-            ]);
-            return { ...n, stage: NNPC_STAGE.CRASHED, memoryFragments: mf };
-          }
-          return { ...n, memoryFragments: mf };
-        }
-        // 旁白好感同样吃日上限。她走的是 ⟦好感N⟧ 这条路、不经 applyMvuCommands，
-        // 所以那边的节流管不到她——而 90 是整条个人线的门槛（真容立绘＋心灵之海），
-        // 能一天刷满就等于门禁形同虚设。只限正向，掉好感不限。
-        let capped = affDelta;
-        if (affDelta > 0) {
-          const led = varTreeRef.current.世界?.好感日增;
-          const day = Math.floor((timeRef.current || 0) / 24);
-          const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
-          const already = Number(gained["旁白"]) || 0;
-          const room = Math.max(0, 12 - already);
-          capped = Math.min(affDelta, room);
-          if (capped <= 0) {
-            addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
-          } else {
-            gained["旁白"] = already + capped;
-            setVarTree(prev => {
-              const next = JSON.parse(JSON.stringify(prev || {}));
-              if (!next.世界) next.世界 = { 威望: 0 };
-              next.世界.好感日增 = { dayStamp: day, gained };
-              return next;
-            });
-          }
-        }
-        const inc = Math.max(-n.affection, Math.min(capped, 100 - n.affection));
-        if (inc !== 0) {
-          const next = n.affection + inc;
-          addLog([{ t: "affection", text: `  💗 好感度 ${inc > 0 ? "+" : ""}${inc}（${n.affection} → ${next}）` }]);
-          return { ...n, affection: next };
-        }
-        return n;
-      });
-    } catch (e) {
-      traceStep(_wt, "AI调用", "fail", `私聊失败：${e.message || e}`);
-      attachPipeline(_wt, getPipelineLog()[0]);
-      endTrace(_wt, `私聊中断（${e.message || e}）`);
-      addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
-    }
-    noteAction("whisper");
-    changePendingTalks(-1);
-    schedulerRef.current?.touch();
-    talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
-  }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress, changePendingTalks]);
+  const { talkToNarrator } = usePrivateTalk({
+    narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags,
+    jotNote, char, nsfwOn, questProgress, changePendingTalks, innerRoomName,
+    talkBusyRef, schedulerRef, setInput, timeRef, varTreeRef, setLog, setConvo,
+    setVarTree, setNarrator, noteAction,
+  });
 
   // 「拉取目前」：把当前这一局的动态块真值抓出来，按 blockId 返回一张表。
   // 刻意不拼成一整篇——注入结构面板是一块一块看的，拼成全文等于又回到"一堵墙"。
@@ -1441,235 +888,15 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 数值一概不由它给——挑完拿名字回 CATALOG_INDEX 查真值。这样既不会凭空冒出
   // 货架上没有的神兵，也不会出现同一件东西这次加 20 下次加 200。
   // 只报字段/描述/加成，不报获取途径：怎么弄到手得自己走一趟。
-  const recommendOutfit = useCallback(async () => {
-    const profile = char.bodyProfile;
-    if (bodyProfileFilled(profile).total === 0) {
-      setOutfitState({ loading: false, picks: [], error: "先写点体貌，掌柜才有的可挑。" });
-      return;
-    }
-    setOutfitState({ loading: true, picks: [], error: "" });
-    try {
-      // 货架 = 装备三类的全部具名+制式条目。杂货(misc)不是穿戴的，不进池子。
-      const pool = CATALOG.filter(e =>
-        e.category === ITEM_CATEGORY.WEAPON ||
-        e.category === ITEM_CATEGORY.ARMOR ||
-        e.category === ITEM_CATEGORY.ACCESSORY
-      );
-      const req = buildOutfitRequest(profile, pool);
-      const { text } = await callModel(apiCfg, req.system, [{ role: "user", content: req.user }], {
-        maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000,
-        callLabel: "按体貌荐装",
-      });
-      let parsed = {};
-      try { parsed = JSON.parse(cleanJsonString(text.replace(/```json\s*|```\s*/g, "").trim())); }
-      catch { parsed = {}; }
-
-      const picks = (Array.isArray(parsed.picks) ? parsed.picks : [])
-        .map(pick => {
-          // 只认货架上真实存在的名字。AI 编出来的一律丢掉，不做模糊匹配——
-          // "看起来像"的匹配一旦错了，玩家拿到的就是另一件东西的数值。
-          const entry = CATALOG_INDEX[String(pick?.name || "").trim()];
-          if (!entry) return null;
-          const it = makeCatalogItem(entry);
-          const bits = [];
-          if (it.atk != null) bits.push(`攻 +${it.atk}`);
-          if (it.def != null) bits.push(`防 +${it.def}`);
-          if (it.sixDim) bits.push(Object.entries(it.sixDim).map(([k, v]) => `${k} +${v}`).join(" "));
-          // 走 itemEffectText 那份唯一词典，别把 ignoreDefenseRatio 这种英文字段名打给玩家看
-          if (it.effect) { const t = effectBrief(it.effect, null); if (t) bits.push(`特效：${t}`); }
-          return {
-            name: it.name,
-            quality: it.quality,
-            qualityColor: QUALITY_COLOR[it.quality] || "#e8e4d6",
-            categoryLabel: CATEGORY_LABEL[it.category] || it.category,
-            desc: it.desc,
-            statLine: bits.join("　") || "无直接加成",
-            reason: String(pick?.reason || "").trim(),
-          };
-        })
-        .filter(Boolean)
-        .slice(0, 3);
-
-      if (!picks.length) {
-        setOutfitState({ loading: false, picks: [], error: "掌柜报的名字货架上都没有，再点一次试试。" });
-        return;
-      }
-      setOutfitState({ loading: false, picks, error: "" });
-    } catch (e) {
-      setOutfitState({ loading: false, picks: [], error: `掌柜没应声：${e.message || e}` });
-    }
-  }, [char.bodyProfile, apiCfg]);
+  const { recommendOutfit } = useOutfitAdvice({ char, apiCfg, setOutfitState });
 
   const confessToNarrator = useCallback(() => {
     applyResult(featureCtxRef.current, confessLogic(gameStore.getState()));
   }, []);
 
-  // 点击武学/包袱物品时，临场调用 AI 生成一段介绍文字，不修改任何游戏状态
-  const [inspecting, setInspecting] = useState(null); // 记录正在查看哪个名字，用于按钮禁用/loading态展示
-  // kind 标签映射：目前 "skill"(武学) / "item"(随身物品) / "pigeon"(信鸽) 三种，
-  // 以后再加新 kind 只需在这两张表里添一行，不用到处写嵌套三元。
-  const INSPECT_KIND_LABEL = { skill: "武学", item: "物品", pigeon: "信鸽" };
-  const INSPECT_KIND_NOUN = { skill: "武学功法", item: "随身物品", pigeon: "信鸽（用于飞鸽传书的鸟）" };
-  // 生成一件东西的端详描述文本（纯计算：构造 prompt → 调 AI → 返回文本）。
-  // 抽成独立函数，让"点击查看"和"后台预跑"共用同一套 prompt，保证两边算出的
-  // 内容一致、缓存键也一致（否则预跑存进去的缓存，点击时因 prompt 不同而读不到）。
-  // 只负责生成文本，不碰缓存、不写日志、不算时间——这些副作用留给调用方按场景处理。
-  const genInspectText = useCallback(async (kind, name, extra, itemObj) => {
-    const kindLabel = INSPECT_KIND_LABEL[kind] || "物品";
-    const kindNoun = INSPECT_KIND_NOUN[kind] || "随身物品";
-    const sys = `你是曲措乡这个武侠世界的说书人，现在玩家想仔细端详一件${kindNoun}。
-用 3-5 句话、章回说书人口吻描述这个${kindLabel}的来历、外观或效用，符合当前世界观（澜湄雪域、曲措乡）。不需要 JSON，不需要更新任何状态，纯文本即可。
-如果给出了品质和数值信息，请在描述里自然地体现这个品阶应有的分量感（品质越高描述越有气势），但不要机械地报数字。`;
-    let prompt = kind === "skill"
-      ? `功法名称：${name}${extra ? `，当前修炼进度：${extra}` : ""}`
-      : kind === "pigeon"
-        ? `信鸽${extra ? `，${extra}` : ""}`
-        : `物品名称：${name}`;
-    if (itemObj && typeof itemObj === "object") {
-      const statBits = [];
-      if (itemObj.atk != null) statBits.push(`攻击力${itemObj.atk}`);
-      if (itemObj.def != null) statBits.push(`防御力${itemObj.def}`);
-      // 饰品的战力在 sixDim/effect 上，鉴定 prompt 此前只给 AI 看 atk/def/bonus，
-      // 于是问一件饰品，AI 只知道它是「白档、加成0.3」——真正的词条一个都没看见。
-      if (itemObj.sixDim) statBits.push(Object.entries(itemObj.sixDim).map(([k, v]) => `${k}+${v}`).join("，"));
-      if (itemObj.effect) { const t = effectBrief(itemObj.effect, null); if (t) statBits.push(`特效：${t}`); }
-      prompt += `，品质：${itemObj.quality}${statBits.length ? `，${statBits.join("，")}` : ""}${itemObj.desc ? `，已知描述：${itemObj.desc}` : ""}`;
-    }
-    const { text } = await callModel(apiCfg, sys, [{ role: "user", content: prompt }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000, callLabel: "查看端详" });
-    return (text || "").trim();
-  }, [apiCfg]);
-
-  const inspectItem = useCallback(async (kind, name, extra, itemObj, opts = {}) => {
-    if (loading || inspecting) return;
-    const kindLabel = INSPECT_KIND_LABEL[kind] || "物品";
-    // worldLook：玩家在游戏世界里端详自己的东西（背包/武学），走主叙事口吻的端详、
-    // 算 1 回合时间、并写一张公共小纸条。描述文本本身可以吃缓存（后台可能已预跑好），
-    // 但"算时间+写纸条"这两个副作用只跟"玩家真的点了查看"这个动作绑定，跟缓存无关——
-    // 命中缓存也照样执行副作用（等于又端详了一遍，只是不用重新调 AI）。
-    // 商店预览等（默认 opts 不传 worldLook）走"瞬时缓存、不耗回合、不记事"，逛店翻看不扣时间。
-    const worldLook = !!opts.worldLook;
-
-    // 教程任务「四宅家产」触发点之一：端详溪边小屋钥匙即开任务（幂等，见 startEstateTutorial）
-    if (name === "溪边小屋钥匙") setFlags(f => f.includes("tutorial_estate_started") ? f : [...f, "tutorial_estate_started"]);
-
-    // 缓存命中：不论 worldLook 与否都先查缓存。命中就直接用缓存文本，不调 LLM、不显示加载态。
-    const cached = getCachedInspect(kind, name, extra, itemObj);
-    if (cached) {
-      addLog([
-        { t: "cmd", text: `> 查看${kindLabel}：${name}` },
-        { t: "desc", text: "  " + cached.text },
-      ]);
-      // worldLook 命中缓存也要执行副作用（端详动作本身发生了）。
-      if (worldLook) {
-        setTime(t => t + 1);
-        jotNote({ text: `端详了${kindLabel}「${name}」，看清了它的来历门道。`, owner: [], source: NOTE_SOURCE.NARRATIVE });
-      }
-      return;
-    }
-
-    setInspecting(name);
-    addLog([{ t: "cmd", text: `> 查看${kindLabel}：${name}` }]);
-    try {
-      const text = await genInspectText(kind, name, extra, itemObj);
-      const finalText = text || "旁白一时沉默，未能看出什么门道。";
-      addLog([{ t: "desc", text: "  " + finalText }]);
-      // 只缓存真正拿到内容的结果；空响应退化不缓存，免得一次偶然的空响应把这件东西
-      // 永久锁死成没有描述。worldLook 和非 worldLook 都写缓存（供下次秒显示/供预跑复用）。
-      if (text) setCachedInspect(kind, name, extra, itemObj, finalText);
-      if (worldLook && text) {
-        // 端详是世界里的一个动作，算 1 回合时间 + 写一张公共小纸条
-        // （日后"我那把剑当初端详过什么来历"能被召回）。
-        setTime(t => t + 1);
-        jotNote({ text: `端详了${kindLabel}「${name}」，看清了它的来历门道。`, owner: [], source: NOTE_SOURCE.NARRATIVE });
-      }
-    } catch (e) {
-      addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
-    }
-    setInspecting(null);
-  }, [loading, inspecting, addLog, jotNote, genInspectText, setFlags]);
-
-  // ── 端详描述后台预跑 ──
-  // 背包/武学/装备里只要出现"该有描述但还没缓存"的东西，就在后台悄悄把它的端详
-  // 描述先跑好存进缓存，玩家日后点"查看"时直接秒显示（命中缓存那条路径）。
-  // 预跑只调 genInspectText（纯生成文本），不带任何副作用（不算时间、不写纸条）——
-  // 那些副作用只绑在玩家真的点击查看那一刻。调度上每 20 秒跑一件，避开反代限流
-  // （1分钟5次那个坑），东西再多也是排队慢慢消化，不会一拥而上打爆额度。
-  const prewarmingRef = useRef(false); // 防止同一件正在跑时被重复触发
-
-  // 从当前状态推导"所有该有端详描述的东西"清单。每条的 {kind,name,extra,itemObj}
-  // 必须和点击查看时传给 inspectItem 的参数逐字一致，否则缓存键对不上、预跑白做。
-  const collectInspectables = useCallback(() => {
-    const list = [];
-    // 可修炼武学：extra 跟点击调用逐字对齐（含品阶+阶段+等级，升级后键会变、自然重跑）
-    for (const s of (skills || [])) {
-      const q = s.quality || "白";
-      const extra = s.fixed ? `${q}品·授业绝学（完整）` : `${q}品·${s.stage}`;
-      list.push({ kind: "skill", name: s.name, extra, itemObj: null });
-    }
-    // 临阵招式：extra 跟点击调用逐字对齐
-    for (const m of (char.moveset || []).filter(mv => !mv.sourceSkill)) {
-      const q = m.quality || "白";
-      const origin = m.learnedFromMaster ? "授" : "基础";
-      list.push({ kind: "skill", name: m.name, extra: `${q}品·临阵招式（${origin}）`, itemObj: null });
-    }
-    // 背包物品：对象传 itemObj，字符串只传 name
-    for (const it of (inv || [])) {
-      if (typeof it === "object" && it) list.push({ kind: "item", name: it.name, extra: null, itemObj: it });
-      else if (typeof it === "string") list.push({ kind: "item", name: it, extra: null, itemObj: null });
-    }
-    return list;
-  }, [skills, char.moveset, inv]);
-
-  // 用 ref 持有最新的 collectInspectables，让下面那个"每20秒一跳"的定时循环始终能读到
-  // 当前最新清单，而不必把 collectInspectables 放进 effect 依赖——否则背包一变 effect 就重跑、
-  // 定时器被反复清掉重起，玩家频繁操作时会永远等不满 20 秒、预跑一直不触发。
-  const collectInspectablesRef = useRef(collectInspectables);
-  useEffect(() => { collectInspectablesRef.current = collectInspectables; }, [collectInspectables]);
-  const genInspectTextRef = useRef(genInspectText);
-  useEffect(() => { genInspectTextRef.current = genInspectText; }, [genInspectText]);
-
-  useEffect(() => {
-    // 挂载时起一个自维持的定时循环：每 20 秒醒一次，扫当前清单，取第一件没缓存的跑掉。
-    // 全跑完了就空转（继续每20秒扫一次，等有新东西再跑）——空转只是几次纯本地缓存读取，
-    // 开销可忽略，换来的是不用管列表怎么变、定时节奏始终稳定。
-    let stopped = false;
-    let timer = null;
-    const tick = async () => {
-      if (stopped) return;
-      if (!prewarmingRef.current) {
-        const pending = collectInspectablesRef.current().filter(x => !getCachedInspect(x.kind, x.name, x.extra, x.itemObj));
-        if (pending.length) {
-          const job = pending[0];
-          prewarmingRef.current = true;
-          // 每件预跑单独开一条 trace，推到顶栏「🧭全流程日志」面板（不碰主叙事）。
-          // 玩家/调试时能看到后台正在预热什么、跑好没、耗时多久、以及喂给AI的完整prompt。
-          const jobLabel = `${job.kind === "skill" ? "武学" : "物品"}「${job.name}」`;
-          const _pw = startTrace(`后台预跑端详·${jobLabel}`, `[后台预跑] ${jobLabel} 描述生成`);
-          traceStep(_pw, "后台预跑", "info", `开始预热 ${jobLabel} 的端详描述`);
-          try {
-            const text = await genInspectTextRef.current(job.kind, job.name, job.extra, job.itemObj);
-            attachPipeline(_pw, getPipelineLog()[0]); // 挂上刚才这次AI调用的完整prompt/回复
-            if (text && !stopped) {
-              setCachedInspect(job.kind, job.name, job.extra, job.itemObj, text);
-              traceStep(_pw, "写入缓存", "pass", `${jobLabel} 描述已备好，点查看即秒显示`);
-              endTrace(_pw, `预热完成：${jobLabel}`);
-            } else {
-              traceStep(_pw, "写入缓存", "skip", "AI 返回空，未写缓存，下轮再试");
-              endTrace(_pw, `预热未成（空响应）：${jobLabel}`);
-            }
-          } catch (e) {
-            traceStep(_pw, "AI调用", "fail", `预跑失败：${e?.message || e}`);
-            endTrace(_pw, `预热失败：${jobLabel}`);
-          }
-          prewarmingRef.current = false;
-        }
-      }
-      if (!stopped) timer = setTimeout(tick, 20000);
-    };
-    timer = setTimeout(tick, 20000); // 首件也等 20 秒再跑，避开刚进游戏/读档时的一堆其它请求
-    return () => { stopped = true; if (timer) clearTimeout(timer); };
-  }, []);
-
+  const { inspecting, inspectItem } = useAiInspect({
+    loading, addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv,
+  });
   // 打坐：消耗1回合，恢复部分气血，不单纯是时间跳跃
   const [justMeditated, setJustMeditated] = useState(false);
 

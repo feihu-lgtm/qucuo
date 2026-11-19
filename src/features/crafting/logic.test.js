@@ -23,8 +23,8 @@ function withSeed(seed, run) {
 describe("crafting feature logic", () => {
   it("buys and keeps a gamble stone", () => {
     expect(settleGambleStone(state(), { type: "buy", price: 100 }).changes.char.money).toBe(400);
-    const first = withSeed(42, () => settleGambleStone(state(), { type: "keep", stone: { jadeTier: 2, quality: "绿", changKou: "鹰曲新场" } }));
-    const second = withSeed(42, () => settleGambleStone(state(), { type: "keep", stone: { jadeTier: 2, quality: "绿", changKou: "鹰曲新场" } }));
+    const first = withSeed(42, () => settleGambleStone(state(), { type: "keep", stone: { jadeTier: 2, quality: "绿", changKou: "鹰曲新场" } }, 1700000000000));
+    const second = withSeed(42, () => settleGambleStone(state(), { type: "keep", stone: { jadeTier: 2, quality: "绿", changKou: "鹰曲新场" } }, 1700000000000));
     expect(first.changes.inv).toHaveLength(2);
     expect(first.changes.inv[1].id).toBe(second.changes.inv[1].id);
   });

@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { isCompatibleCharShape, isCompatibleRoomShape } from "./saves.js";
 
-// 这个测试的存在意义：这两个判定曾经是 saves.js 的模块私有函数，而 MudRPG.jsx
-// 的 applySnapshot（手动读槽位 + ↩回滚）直接裸调用它们——既没 export 也没 import，
+// 这个测试的存在意义：这两个判定曾经是 saves.js 的模块私有函数，而
+// useAutosave.applySnapshot（手动读槽位 + ↩回滚）直接裸调用它们——既没 export 也没 import，
 // 一点就 ReferenceError，读档和回滚两个入口全废，而且因为没有任何测试覆盖，
 // 静默坏了很久没人发现。现在改成 export，这里钉死"必须可从外部导入且行为正确"。
 
-describe("存档结构兼容判定（必须保持 export，MudRPG.applySnapshot 依赖）", () => {
+describe("存档结构兼容判定（必须保持 export，useAutosave.applySnapshot 依赖）", () => {
   it("两个判定都能从 saves.js 导入", () => {
     expect(typeof isCompatibleCharShape).toBe("function");
     expect(typeof isCompatibleRoomShape).toBe("function");
