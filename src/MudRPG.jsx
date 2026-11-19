@@ -255,6 +255,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [waitSecs, setWaitSecs] = useState(0); // AI 调用已等待秒数（卡住感知）
   const waitTimerRef = useRef(null);
   const [pendingTalks, setPendingTalks] = useState(0); // 对话/私聊模式：并行请求计数
+  const pendingTalksRef = useRef(0);
+  const changePendingTalks = useCallback((delta) => {
+    const next = Math.max(0, pendingTalksRef.current + delta);
+    pendingTalksRef.current = next;
+    setPendingTalks(next);
+  }, []);
   const [queueCount, setQueueCount] = useState(0); // 排队命令计数，驱动 UI 刷新
   const [collapsedGroups, setCollapsedGroups] = useState(new Set()); // 折叠的命令框（存 cmd 在 log 里的 index）
   const convo = useGameStore(s => s.convo);
@@ -495,7 +501,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const scheduler = createAutosaveScheduler({
       subscribe: gameStore.subscribe,
       isArmed: () => userArmedRef.current,
-      isBusy: () => loadingRef.current,
+      isBusy: () => loadingRef.current || pendingTalksRef.current > 0,
       onPlayed: () => { playedThisSessionRef.current = true; },
       onReset: () => {
         playedThisSessionRef.current = false;
@@ -1318,7 +1324,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }, [char, inv, skills, exp, pot, effectiveSpecialNow, activeBuffs]);
 
   const talkToNarrator = useCallback(async (content) => {
-    setPendingTalks(n => n + 1);
+    changePendingTalks(1);
     addLog([{ t: "cmd", text: `> 对旁白：${content}` }]);
     setInput("");
 
@@ -1338,7 +1344,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       const flatText = flat[Math.floor(Math.random() * flat.length)];
       addLog([{ t: "narrator", text: `  「旁白」${flatText}` }]);
       endTrace(_wt, `旁白已崩溃，本地兜底："${flatText}"`);
-      setPendingTalks(n => Math.max(0, n - 1));
+      changePendingTalks(-1);
       talkBusyRef.current = false; // 释放私聊闸门
       return;
     }
@@ -1635,9 +1641,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
     }
     noteAction("whisper");
-    setPendingTalks(n => Math.max(0, n - 1));
+    changePendingTalks(-1);
     talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
-  }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress]);
+  }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress, changePendingTalks]);
 
   // 「拉取目前」：把当前这一局的动态块真值抓出来，按 blockId 返回一张表。
   // 刻意不拼成一整篇——注入结构面板是一块一块看的，拼成全文等于又回到"一堵墙"。
@@ -2526,7 +2532,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     // loading 态 + 计时器：在第一个 await（下方 recall/knowledge）之前启动——
     // 内层移动已在上方 early return（不进 loading），这里之后才真正要调 AI。
-    if (isTalk) setPendingTalks(n => n + 1); else setLoading(true);
+    if (isTalk) changePendingTalks(1); else setLoading(true);
     setWaitSecs(0);
     if (waitTimerRef.current) clearInterval(waitTimerRef.current);
     waitTimerRef.current = setInterval(() => setWaitSecs(s => s + 1), 1000);
@@ -2766,12 +2772,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       ]);
     }
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
-    if (isTalk) { setPendingTalks(n => Math.max(0, n - 1)); }
+    if (isTalk) { changePendingTalks(-1); }
     else { setLoading(false); }
     // 停计时
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, localCmd, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, pendingTalks]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, localCmd, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, pendingTalks, changePendingTalks]);
 
   // 系统强制推进任务stage（本轮新增，"档2"harness的核心）：不等AI在
   // delta.flags_add 里吐出 completionFlag，直接把这个flag塞进 flags
