@@ -8,6 +8,7 @@ import { setSeed } from "../src/core/rng.js";
 import { resetForDay, loadSquares, serializeSquares } from "../src/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/saves.js";
 import { getTimeStr } from "../src/utils/mudHelpers.js";
+import { QUALITY } from "../src/equipment.js";
 import { defaultConfig } from "../src/apiConfig.js";
 import { classifyIntent, buildBudgetInstruction } from "../src/inputIntent.js";
 import { emptyBodyProfile } from "../src/bodyProfile.js";
@@ -26,7 +27,7 @@ import {
   stealFromNpc,
   talkToNpc,
 } from "../src/features/npc/logic.js";
-import { isNpcVisibleInInnerRoom } from "../src/innerMap.js";
+import { hasInnerMap, isNpcVisibleInInnerRoom } from "../src/innerMap.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -233,6 +234,33 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         convo: state.convo || [],
         isTalk,
         isSettle: !!opts.settle,
+        prompt: {
+          room: state.room || {},
+          char: state.char || {},
+          inv: state.inv || [],
+          skills: state.skills || [],
+          dao: state.dao || {},
+          flags: state.flags || [],
+          questProgress: state.questProgress || {},
+          pendingQuestBranch: null,
+          varTree: state.varTree || {},
+          time: state.time,
+          preset,
+          companionState: state.companionState || {},
+          nsfwOn: false,
+          activeTarget,
+          talkTarget,
+          isTalk,
+          gm: false,
+          innerRoomName: state.innerRoomName,
+          apiCfg: apiConfig,
+          visibleNpcs,
+          buildBudgetInstruction,
+          intent,
+          getTimeStr,
+          hasInnerMap,
+          quality: QUALITY,
+        },
         _trace: trace,
         state,
         memory: {

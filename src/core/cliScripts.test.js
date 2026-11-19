@@ -8,7 +8,7 @@ import { exportSave } from "../saves.js";
 import { loadSquares, serializeSquares } from "../mapSquares.js";
 import { createSession, runScript } from "../../cli/runner.mjs";
 import { getRngState, random, setSeed } from "./rng.js";
-import { createMockAi, createReplayAi } from "../engine/ports/ai.js";
+import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports/ai.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scriptsDir = resolve(projectRoot, "tests/cli");
@@ -64,6 +64,24 @@ describe("CLI scripts", () => {
     ], { cwd: projectRoot, encoding: "utf8" });
 
     expect(output).toContain("石阶旁的草叶轻轻摇动。");
+  });
+
+  it("includes the selected NPC in a CLI conversation prompt", async () => {
+    const output = [];
+    const recorded = [];
+    const ai = createRecordingAi(
+      createMockAi(JSON.parse(readFileSync(join(scriptsDir, "npc-talk-target-replies.json"), "utf8"))),
+      (entry) => recorded.push(entry),
+    );
+    const failures = await runScript(readFileSync(join(scriptsDir, "npc-talk-target.txt"), "utf8"), {
+      out: (text) => output.push(text),
+      cwd: tempDir,
+      ai,
+    });
+
+    expect(failures, output.join("\n")).toBe(0);
+    expect(JSON.stringify(recorded.map(({ request }) => request)))
+      .toContain("[交互目标] 玩家选定了「商人」作为本轮唯一的互动对象");
   });
 
   it("restores :state and the seeded RNG sequence after a malformed CLI turn", async () => {
