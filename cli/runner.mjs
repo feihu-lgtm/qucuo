@@ -544,7 +544,10 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         (typeof entry === "object" ? entry?.name : entry) === itemName
       ));
       if (!item) return await applyFeature({ logs: [{ t: "sys", text: `  地上没有「${itemName}」。` }] });
-      return await applyFeature(pickGroundItem(state, item));
+      const status = await applyFeature(pickGroundItem(state, item));
+      const room = gameStore.getState().room;
+      session.roomMap[room.name] = { items: [...room.items], npcs: [...room.npcs] };
+      return status;
     }
     const visibleNpcs = (state.room?.npcs || []).filter((npc) => (
       isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)
