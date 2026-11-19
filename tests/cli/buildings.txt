@@ -1,0 +1,14 @@
+:new
+:set char.money=100
+:set dao.karma=20
+住店
+:expect time=30
+:expect char.money=95
+坐车 喇嘛庙
+:expect room.name="喇嘛庙"
+:expect char.money=90
+买书 《铁指功》
+:expect char.money=60
+:expect skills.1.name="铁指功"
+祈福
+:expect dao.karma=10
