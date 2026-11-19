@@ -356,9 +356,9 @@ export default function CardImportScreen({
   };
 
   return (
-    <div style={shell} onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
-      <div style={panel}>
-        <div style={{
+    <div className="mobile-overlay-root" style={shell} onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
+      <div className="mobile-overlay-panel mobile-card-import-panel" style={panel}>
+        <div className="mobile-overlay-header" style={{
           display: "flex", alignItems: "center", gap: 10,
           ...barFrame(S("ui/bar_paper.webp")),
           padding: "0 12px", minHeight: 52,
@@ -384,11 +384,12 @@ export default function CardImportScreen({
               }} />
             ))}
           </span>
-          <img src={S("ui/btn_close.webp")} alt="关闭" onClick={onClose}
-            style={{ width: 24, height: 24, cursor: "pointer", opacity: .85 }} />
+          <span className="mobile-card-import-close" onClick={onClose} role="button" aria-label="关闭角色入册">
+            <img src={S("ui/btn_close.webp")} alt="" style={{ width: 24, height: 24, cursor: "pointer", opacity: .85 }} />
+          </span>
         </div>
 
-        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+        <div className="mobile-card-import-body" style={{ flex: 1, overflow: "hidden", display: "flex" }}>
           {stage === "empty" && (
             <EmptyPane dragOver={dragOver} setDragOver={setDragOver} err={err}
               onPick={() => fileRef.current?.click()} onFile={loadFile} accent={accent} />

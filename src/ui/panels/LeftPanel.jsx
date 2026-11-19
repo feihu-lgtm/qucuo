@@ -38,14 +38,14 @@ export default function LeftPanel({
   const showDebug = useOverlay(OVERLAY.DEBUG);
 
   return (
-    <div style={isMobile
+    <div className={isMobile ? "mobile-drawer-panel" : undefined} style={isMobile
       ? { position: "fixed", top: 0, bottom: 0, left: 0, width: "82vw", maxWidth: 340, zIndex: 41,
           transform: mobileDrawer === "left" ? "translateX(0)" : "translateX(-100%)",
           transition: "transform .28s ease", boxShadow: mobileDrawer === "left" ? "4px 0 24px rgba(0,0,0,.6)" : "none",
           background: zoneTheme.bg, display: "flex", flexDirection: "column", overflow: "hidden" }
       : { flex: 25, ...S.panel }}>
       {isMobile && (
-        <div onClick={() => setMobileDrawer(null)} style={{ textAlign: "right", padding: "8px 12px", color: zoneTheme.textDim, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}>关闭 ✕</div>
+        <div className="mobile-drawer-close" onClick={() => setMobileDrawer(null)} style={{ textAlign: "right", padding: "8px 12px", color: zoneTheme.textDim, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}>关闭 ✕</div>
       )}
       <div style={S.label}>天地 <span style={{ fontSize: "9.5px", color: zoneTheme.textDim, letterSpacing: "1px" }}>· {zoneTheme.name}</span></div>
       <div style={S.scroll}>

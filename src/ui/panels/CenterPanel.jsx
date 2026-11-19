@@ -43,6 +43,7 @@ import SeaOfMindScreen from "./SeaOfMindScreen.jsx";
 import AuctionScreen from "../../domain/buildings/AuctionScreen.jsx";
 import CookingScreen from "../../domain/buildings/CookingScreen.jsx";
 import ChestScreen from "../../domain/buildings/ChestScreen.jsx";
+import { getBuildingInstanceKey } from "./buildingInstanceKey.js";
 
 function isNarrativePlaceholder(entry) {
   if (!entry.streaming) return false;
@@ -103,7 +104,23 @@ export default function CenterPanel({
   // 的铺子，用本页签在 TradingScreen 与 ForgeScreen/JadeShopScreen 之间切换。换一家
   // 铺子(activeBuilding.id 变)就复位回"现货"，避免上家的定制页串到下家。
   const [craftTab, setCraftTab] = useState("shop");
+  const [gambleStoneMinimized, setGambleStoneMinimized] = useState(false);
   useEffect(() => { setCraftTab("shop"); }, [activeBuilding?.id]);
+  useEffect(() => { setGambleStoneMinimized(false); }, [activeBuilding?.id]);
+  const isJade = activeBuilding?.craft === "jade";
+  const tab = (key, label) => (
+    <span key={key} className="mobile-touch-target" onClick={() => setCraftTab(key)}
+      style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
+        color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
+        background: craftTab === key ? zoneTheme.accent : "transparent",
+        border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}` }}>{label}</span>
+  );
+  const tabs = (className) => (
+    <div className={className} style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
+      {tab("shop", "现货")}
+      {tab("craft", isJade ? "玉器定制" : "拿料定制")}
+    </div>
+  );
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const showBasement = useOverlay(OVERLAY.BASEMENT);
   return (
@@ -111,12 +128,12 @@ export default function CenterPanel({
           {/* 手机：叙事区左右边缘贴边小把手，点击滑出左栏(天地)/右栏(行动) */}
           {isMobile && !mobileDrawer && (
             <>
-              <div onClick={() => setMobileDrawer("left")} title="天地"
+              <div className="mobile-drawer-tab mobile-drawer-tab-left" onClick={() => setMobileDrawer("left")} title="天地"
                 style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
                   padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderLeft: "none",
                   borderRadius: "0 6px 6px 0", color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
                   boxShadow: "2px 0 8px rgba(0,0,0,.4)", userSelect: "none" }}>◀ 天地</div>
-              <div onClick={() => setMobileDrawer("right")} title="行动"
+              <div className="mobile-drawer-tab mobile-drawer-tab-right" onClick={() => setMobileDrawer("right")} title="行动"
                 style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
                   padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRight: "none",
                   borderRadius: 0, color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
@@ -125,10 +142,11 @@ export default function CenterPanel({
           )}
           <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>江湖</span>
-            <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {loading && <span onClick={() => { setLoading(false); addLog([{ t: "sys", text: "  ⏹ 已停止等待本次生成（若结果稍后返回将被忽略）。" }]); }}
+                className="mobile-touch-target"
                 style={{ cursor: "pointer", fontSize: "10px", color: "#e0806a", padding: "1px 6px", border: "1px solid #4a2a1a", borderRadius: 0, userSelect: "none" }}>⏹ 停止</span>}
-              <span onClick={() => {
+              <span className="mobile-touch-target" onClick={() => {
                   if (!undoSnapshotRef.current) { addLog([{ t: "sys", text: "  没有可回滚的上一步。" }]); return; }
                   if (!window.confirm("回滚到上一步行动之前？当前这步的结果会被撤销。")) return;
                   applySnapshot(undoSnapshotRef.current);
@@ -138,8 +156,8 @@ export default function CenterPanel({
                 }}
                 title="撤销上一步行动，还原到落子之前"
                 style={{ cursor: "pointer", fontSize: "10px", color: "#c8a860", padding: "1px 6px", border: "1px solid #4a3a1a", borderRadius: 0, userSelect: "none" }}>↩ 回滚</span>
-              <span onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "var(--accent)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>🛠调试</span>
-              <span onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "var(--warn)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
+              <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "var(--accent)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>🛠调试</span>
+              <span className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "var(--warn)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
             </span>
           </div>
 
@@ -193,15 +211,30 @@ export default function CenterPanel({
                  面板自己那层 overflow 又被压在半屏里）。
                  改成展开时建筑面板独占：叙事区在这种时候整个不渲染（见下方 log 区的条件），
                  建筑面板拿满整栏。想看叙事就点"▾ 最小化"，叙事区随即恢复全高。 ── */}
-          {(activeBuilding || tradingShop) && !buildingPanelMinimized && (
-            <div style={{ flex: 1, minHeight: 0, height: "100%", overflowY: "auto", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)" }}>
+          {(activeBuilding || tradingShop) && (
+            <div
+              key={getBuildingInstanceKey(activeBuilding, tradingShop)}
+              className={`mobile-building-root${gambleStoneMinimized ? " mobile-building-minimized-root" : ""}${buildingPanelMinimized ? " mobile-building-hidden" : ""}`}
+              style={{
+                flex: 1,
+                minHeight: 0,
+                height: "100%",
+                overflowY: "auto",
+                borderBottom: `1px solid ${zoneTheme.border}`,
+                background: "rgba(255,255,255,0.02)",
+                display: buildingPanelMinimized ? "none" : undefined,
+                visibility: buildingPanelMinimized ? "hidden" : undefined,
+                pointerEvents: buildingPanelMinimized ? "none" : undefined,
+              }}
+            >
               {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
-              <div
+              <div className="mobile-building-minimize"
                 onClick={() => setBuildingPanelMinimized(true)}
                 style={{ padding: "4px 16px", fontSize: 10.5, color: "var(--text-dim)", cursor: "pointer", textAlign: "right" }}
               >
                 ▾ 最小化
               </div>
+              {isMobile && activeBuilding?.craft && craftTab !== "shop" && tabs("mobile-trading-tabs-building")}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.INN && (
                 <InnScreen building={activeBuilding} char={char} time={time} zoneTheme={zoneTheme} inline
                   onClose={() => setActiveBuilding(null)} onRest={handleBuildingInn} onHeal={handleBuildingHeal} />
@@ -222,6 +255,7 @@ export default function CenterPanel({
                   <TradingScreen inline shopName={shopData.shopName} shopItems={shopData.items}
                     playerInv={inv} playerMoney={isKarma ? (dao.karma || 0) : (char.money || 0)}
                     currencyName={isKarma ? "功德" : "银两"} currencyUnit={isKarma ? "点" : "两"} canSell={!isKarma}
+                    headerContent={activeBuilding.craft ? tabs("mobile-trading-tabs-header") : null}
                     playerWit={effectiveSpecialNow?.智谋 ?? 5}
                     zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onInspect={inspectItem}
                     onBuy={(item) => { if (isKarma) { if ((dao.karma||0)<item.buyPrice) return; setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((char.money||0)<item.buyPrice) return; setChar(c=>({...c,money:c.money-item.buyPrice})); if (shopData.karmaLoss) setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); }}
@@ -231,20 +265,9 @@ export default function CenterPanel({
                 // 不带定制的铺子：只渲染现货商店（绝大多数）。
                 if (!activeBuilding.craft) return trading;
                 // 带定制的铺子（孟记铁铺=forge / 玉器轩=jade）：现货/定制 页签切换。
-                const isJade = activeBuilding.craft === "jade";
-                const tab = (key, label) => (
-                  <span key={key} onClick={() => setCraftTab(key)}
-                    style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
-                      color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
-                      background: craftTab === key ? zoneTheme.accent : "transparent",
-                      border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}` }}>{label}</span>
-                );
                 return (
                   <>
-                    <div style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
-                      {tab("shop", "现货")}
-                      {tab("craft", isJade ? "玉器定制" : "拿料定制")}
-                    </div>
+                    {tabs("mobile-trading-tabs-desktop")}
                     {craftTab === "shop" ? trading : (isJade
                       ? <JadeShopScreen building={{ ...activeBuilding, flags }} char={char} inv={inv} time={time} inline
                           zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onDesign={handleJadeDesign} onCraft={handleJadeCraft} />
@@ -321,6 +344,7 @@ export default function CenterPanel({
               )}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.GAMBLESTONE && (
                 <GambleStoneScreen building={activeBuilding} char={char} time={time}
+                  onMinimizeChange={setGambleStoneMinimized}
                   zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)}
                   roomNpcs={(room.npcs || []).filter(n => (n.gambleBidder || n.name === "兰姐" || n.name === "温掌柜") && isNpcVisibleInInnerRoom(room.name, innerRoomName, n))}
                   negotiation={gambleNegotiation}
@@ -613,10 +637,11 @@ export default function CenterPanel({
             </div>
           )}
 
-          <div style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <div className="mobile-control-row" style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
             {[["action", "◈ 行动", zoneTheme.accent], ["talk", "◎ 对话", uiGreen], ["whisper", "◆ 私聊旁白", uiPink]].map(([id, label, color]) => (
               <span
                 key={id}
+                className="mobile-touch-target mobile-mode-control"
                 onClick={() => { setInteractMode(id); setTalkTarget(null); setActiveTarget(null); setPigeonTarget(null); }}
                 style={{
                   cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 0, userSelect: "none",
@@ -627,6 +652,7 @@ export default function CenterPanel({
               >{label}</span>
             ))}
             <span
+              className="mobile-touch-target mobile-mode-control"
               onClick={() => setNsfwOn(x => !x)}
               title={nsfwOn ? "已开启：NSFW 写作规则已注入" : "已关闭：点击开启 NSFW 写作规则"}
               style={{
@@ -641,6 +667,7 @@ export default function CenterPanel({
             {/* 注：运气·内功+1 / 拆招·外功+1 两个升级按钮已移至右栏「内功外功」区，
                 挂在对应数值行后面，就近操作。这里只留打坐（恢复气血，非升级）。 */}
             <span
+              className="mobile-touch-target mobile-mode-control"
               onClick={meditate}
               title="打坐运功：消耗1回合，恢复部分气血"
               style={{
@@ -656,12 +683,13 @@ export default function CenterPanel({
 
           {/* ── NPC 人选选择器：点选某人 → 对话/行动聚焦此人；不选=全人物发给AI ── */}
           {interactMode !== "whisper" && interactMode !== "pigeon" && room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).length > 0 && (
-            <div style={{
+            <div className="mobile-people-row" style={{
               padding: "4px 14px", display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
               borderTop: `1px solid ${zoneTheme.border}`, flexWrap: "wrap",
             }}>
               <span style={{ color: zoneTheme.textDim, fontSize: "10px", flexShrink: 0 }}>人选：</span>
               <span
+                className="mobile-touch-target mobile-person-chip"
                 onClick={() => { setActiveTarget(null); setTalkTarget(null); }}
                 style={{
                   cursor: "pointer", fontSize: "10.5px", padding: "2px 7px", borderRadius: 0, userSelect: "none",
@@ -675,6 +703,7 @@ export default function CenterPanel({
                 return (
                   <span
                     key={n.name}
+                    className="mobile-touch-target mobile-person-chip"
                     onClick={() => { setActiveTarget(n.name); if (interactMode !== "action") setTalkTarget(n.name); }}
                     title={isSel ? "点击「全部」取消选定" : `聚焦 ${n.name}`}
                     style={{
@@ -696,11 +725,11 @@ export default function CenterPanel({
                 <span style={{ color: "#c4a040" }}>🕊 飞鸽传书 · 致「{pigeonTarget}」</span>
                 <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>信往{loc}，约 {delay} 时辰后有回音</span>
                 <span style={{ flex: 1 }} />
-                <span onClick={() => { setPigeonTarget(null); setInteractMode("action"); }} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "10px" }}>× 取消</span>
+                <span className="mobile-touch-target" onClick={() => { setPigeonTarget(null); setInteractMode("action"); }} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "10px" }}>× 取消</span>
               </div>
             );
           })()}
-          <div style={{
+          <div className="mobile-input-bar" style={{
             borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid #4a3a1a" : `1px solid ${zoneTheme.border}`,
             background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
             padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
@@ -710,6 +739,7 @@ export default function CenterPanel({
               flexShrink: 0, fontSize: "13px",
             }}>{interactMode === "pigeon" ? "🕊" : "▸"}</span>
             <input
+              className="game-input"
               ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={onKey}
               onCompositionStart={() => { composingRef.current = true; }}
               onCompositionEnd={() => { composingRef.current = false; }}

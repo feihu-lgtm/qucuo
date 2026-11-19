@@ -117,12 +117,15 @@ export default function BugReportModal({
 
   return (
     <div
+      className="mobile-overlay-root"
       style={{ position: "fixed", inset: 0, background: C.overlay, zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ position: "relative", width: 440, maxWidth: "94vw", maxHeight: "88vh", overflowY: "auto", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 0, padding: "22px 24px", color: C.text }}>
-        <span onClick={onClose} style={{ position: "absolute", top: 14, right: 16, cursor: "pointer", fontSize: 18, color: C.dim }}>✕</span>
-        <div style={{ fontSize: 17, fontWeight: "bold", color: C.accent, marginBottom: 4 }}>🐞 上报 Bug · 意见信箱</div>
+      <div className="mobile-overlay-panel mobile-report-panel" style={{ position: "relative", width: 440, maxWidth: "94vw", maxHeight: "88vh", overflowY: "auto", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 0, padding: "22px 24px", color: C.text }}>
+        <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: C.panel }}>
+          <div style={{ fontSize: 17, fontWeight: "bold", color: C.accent, marginBottom: 4 }}>🐞 上报 Bug · 意见信箱</div>
+          <span className="mobile-overlay-close" onClick={onClose} aria-label="关闭上报窗口" style={{ cursor: "pointer", fontSize: 18, color: C.dim }}>✕</span>
+        </div>
         <div style={{ fontSize: 11.5, color: C.dim, marginBottom: 16, lineHeight: 1.7 }}>
           遇到问题、想要的功能、任何想说的，都可以留在这里。
         </div>

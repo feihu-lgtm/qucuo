@@ -36,11 +36,11 @@ export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--
     ...extra,
   });
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap, width: "100%" }}>
+    <div className="mobile-mini-map" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap, width: "100%" }}>
       {layout.flat().map((key) => {
         if (key === "center") {
           return (
-            <div key="center" style={cellStyle({}, MAP_UI.current)}>
+            <div key="center" className="mobile-mini-map-cell" style={cellStyle({}, MAP_UI.current)}>
               <span style={{ color: "#fff", fontWeight: "bold", fontSize: fontMain, textShadow: "0 1px 3px rgba(0,0,0,0.85)" }}>{short(centerLabel) || "我"}</span>
             </div>
           );
@@ -51,7 +51,7 @@ export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--
         // 未探索：战争迷雾（fog 贴图），只留一个问号，不显方向字
         if (!c.explored) {
           return (
-            <div key={key} onClick={() => clickable && onGo(key)}
+            <div key={key} className="mobile-mini-map-cell" onClick={() => clickable && onGo(key)}
               onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
               style={cellStyle({ cursor: clickable ? "pointer" : "default", opacity: hov ? 1 : 0.82, filter: hov ? "brightness(1.25)" : "none" }, MAP_UI.fog)}>
               <span style={{ color: hov ? "#c0a060" : "#6a6a58", fontSize: big ? 18 : 14, fontWeight: "bold", textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>?</span>
@@ -60,7 +60,7 @@ export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--
         }
         // 已探索：idle 贴图 + 地名（不显方向字）
         return (
-          <div key={key} onClick={() => clickable && onGo(key)}
+          <div key={key} className="mobile-mini-map-cell" onClick={() => clickable && onGo(key)}
             onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
             style={cellStyle({ cursor: clickable ? "pointer" : "default", filter: hov ? "brightness(1.3)" : "none" }, MAP_UI.idle)}>
             <span style={{ color: hov ? "#eaf4ee" : "#cddcd4", fontSize: fontMain, fontWeight: hov ? "bold" : "normal", textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{short(c.name)}</span>

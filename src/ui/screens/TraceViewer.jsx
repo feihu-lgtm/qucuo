@@ -124,16 +124,16 @@ export default function TraceViewer({ onClose, onReport }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(8,10,14,0.9)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ width: "100%", maxWidth: 620, maxHeight: "84vh", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
+    <div className="mobile-overlay-root" style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(8,10,14,0.9)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div className="mobile-overlay-panel mobile-trace-panel" style={{ width: "100%", maxWidth: 620, maxHeight: "84vh", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div className="mobile-overlay-header" style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
           <span style={{ color: "var(--info)", fontSize: "13px" }}>🧭 行动全流程日志（最近 {traces.length} 条 · 含各层耗时与 AI 请求）</span>
           <span style={{ marginLeft: "auto", cursor: "pointer", color: "#6a8a8a", fontSize: "11px" }} onClick={copyAll}>{copied ? "✓已复制" : "复制全部"}</span>
           {onReport && <span style={{ cursor: "pointer", color: "#e08a6a", fontSize: "11px" }} onClick={onReport}>🐞 上报bug</span>}
           <span style={{ cursor: "pointer", color: "#8a6a4a", fontSize: "11px" }} onClick={() => { clearTraceLog(); onClose(); }}>清空</span>
-          <span style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "13px" }} onClick={onClose}>✕</span>
+          <span className="mobile-overlay-close" style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "13px" }} onClick={onClose}>✕</span>
         </div>
-        <div style={{ overflowY: "auto", padding: "8px 12px" }}>
+        <div className="mobile-trace-content" style={{ overflowY: "auto", padding: "8px 12px" }}>
           {traces.length === 0 && <div style={{ color: "var(--text-dim)", fontSize: "12px", padding: 12 }}>还没有行动记录。做点什么（移动、对话、行动）就会出现在这里，每一步花了多久也会实时显示。</div>}
           {traces.map((t, i) => (
             <div key={t.ts} style={{ borderBottom: "1px solid #14181c", padding: "8px 4px" }}>

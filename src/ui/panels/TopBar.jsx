@@ -47,11 +47,11 @@ export default function TopBar({
         {/* 手机端：顶栏收成一个☰按钮，点开才展开全部功能入口 */}
         {isMobile && (
           <>
-            <span onClick={() => setMobileTopMenu(v => !v)}
+            <span className="mobile-touch-target mobile-menu-toggle" onClick={() => setMobileTopMenu(v => !v)}
               style={{ cursor: "pointer", color: "#e8d0a0", padding: "3px 12px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 0, fontWeight: "bold", fontSize: "13px" }}>☰ 菜单</span>
             <span style={{ color: "#8a7a5a", fontSize: "10px" }}>{CURRENT_VERSION.time}</span>
             <span style={{ flex: 1 }} />
-            {mobileTopMenu && <span onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>收起 ✕</span>}
+            {mobileTopMenu && <span className="mobile-touch-target" onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>收起 ✕</span>}
           </>
         )}
         {/* 顶栏功能入口：桌面常显；手机仅在展开菜单时显示（换行铺开） */}
@@ -163,7 +163,7 @@ export default function TopBar({
           <div style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 24, width: 460, maxWidth: "90vw", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <span style={{ color: "var(--accent)", fontSize: "15px" }}>选择头像</span>
-              <span style={{ color: "var(--text-dim)", fontSize: "12px", cursor: "pointer" }} onClick={() => closeOverlay(OVERLAY.AVATAR_PICKER)}>× 关闭</span>
+              <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "12px", cursor: "pointer" }} onClick={() => closeOverlay(OVERLAY.AVATAR_PICKER)}>× 关闭</span>
             </div>
             <div style={{ fontSize: "11.5px", color: "var(--text-dim)", marginBottom: 14 }}>
               选一张预制头像，或上传自己的图片（建议 2:3 竖版）。选择只影响你自己的显示，存在本地浏览器。

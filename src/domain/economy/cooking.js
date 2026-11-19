@@ -228,3 +228,14 @@ export function availableMaterials(inv) {
   }
   return Object.entries(counts).map(([name, count]) => ({ name, count }));
 }
+
+export function reconcileCookingSlots(slots, materials) {
+  const remaining = new Map((materials || []).map(({ name, count }) => [name, count]));
+  return slots.map(name => {
+    if (!name) return null;
+    const count = remaining.get(name) || 0;
+    if (count === 0) return null;
+    remaining.set(name, count - 1);
+    return name;
+  });
+}

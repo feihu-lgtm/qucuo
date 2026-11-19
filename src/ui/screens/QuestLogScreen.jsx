@@ -15,7 +15,7 @@ export default function QuestLogScreen({ questProgress, zoneTheme, onClose, inli
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name="任务" zoneTheme={zoneTheme} onClose={onClose} />
-      <div style={{ padding: 16 }}>
+      <div className="mobile-overlay-content" style={{ padding: 16 }}>
         {!active.length && !completed.length && !locked.length && (
           <div style={{ color: "var(--text-dim)", fontSize: 11 }}>尚无已接取的任务。与故事中的人物深入交谈，也许会有委托。</div>
         )}
