@@ -10,6 +10,10 @@ import { useOutfitAdvice } from "./app/hooks/useOutfitAdvice.js";
 import { useAiInspect } from "./app/hooks/useAiInspect.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import { applyResult } from "./features/run.js";
+import { parseLocalCommand } from "./engine/localCommands.js";
+import { selectEffectiveStats } from "./features/stats/logic.js";
+import { applyCharacterCard } from "./features/character/logic.js";
+import { pickGroundItem, useItem } from "./features/items/logic.js";
 import { comfort, resolveTrauma, enterSeaOfMind as enterSeaLogic, leaveSeaOfMind as leaveSeaLogic, confessToNarrator as confessLogic } from "./features/narrator/logic.js";
 import { switchCompanion } from "./features/companion/logic.js";
 import { joinSect } from "./features/sect/logic.js";
@@ -83,54 +87,9 @@ import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, npcAffectionLabel, reputationLabel } from "./mvu.js";
-import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, rollQuality, computeEquippedStats, effectiveSpecial } from "./equipment.js";
-import { effectiveMaxHp } from "./kungfu/qucuoKungfu.js";
+import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, getEquipped, toggleEquip, rollQuality, computeEquippedStats } from "./equipment.js";
 import { effectBrief } from "./itemEffectText.js";
-import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem } from "./items/catalog.js";
-// 具名优先的物品生成：AI 发放/掉落/购买的物品名若命中百物录，吃具名的专属
-// 数值+特效+六维；否则回退 equipment.makeItem 匿名公式。全项目物品生成走这个。
-const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
-
-// 入册主角卡的随身物(carry)→背包物品(inv)。carry 的元素两形态：在册物是名字字符串，
-// 自造物是完整对象（跟 CarryPicker 存的一致）。都过 makeGameItem 补全数值/词条，配
-// 唯一 id。兵器/护具/饰物各把品阶最高的一件标为 equipped（开局即战力，见玩家选择）。
-function cardCarryToInvItems(carry, seed = "") {
-  const items = (carry || [])
-    .map((c, i) => {
-      const spec = typeof c === "string" ? { name: c } : c;
-      const base = makeGameItem(spec);
-      if (!base || !base.name) return null;
-      return { ...base, id: `cardcarry_${seed}${i}`, equipped: false, stolen: false };
-    })
-    .filter(Boolean);
-  for (const cat of [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY]) {
-    const ofCat = items.filter(it => it.category === cat);
-    if (!ofCat.length) continue;
-    ofCat.sort((a, b) => QUALITY.indexOf(b.quality) - QUALITY.indexOf(a.quality));
-    ofCat[0].equipped = true;
-  }
-  return items;
-}
-
-// 把入册主角卡的技能/装备并进现有 skills / inv。用在开局(CharacterCreate)与游戏中入册
-// 两条路径，逻辑一致：武学有就整套替换（覆盖默认三脚猫拳），装备追加进背包并按类别
-// 自动穿上最好的一件（同类别的旧装备先卸下，免得两把兵器同时算进战力）。
-function applyCardSkills(fromCard, setSkills) {
-  if (Array.isArray(fromCard?.skills) && fromCard.skills.length) {
-    setSkills(fromCard.skills.map(s => ({ ...s })));
-  }
-}
-function applyCardCarry(fromCard, setInv, seed = "") {
-  const cardItems = cardCarryToInvItems(fromCard?.carry, seed);
-  if (!cardItems.length) return 0;
-  const takenCats = new Set(cardItems.filter(i => i.equipped).map(i => i.category));
-  setInv(prev => {
-    const base = (prev || []).map(it =>
-      (it && typeof it === "object" && it.equipped && takenCats.has(it.category)) ? { ...it, equipped: false } : it);
-    return [...base, ...cardItems];
-  });
-  return cardItems.length;
-}
+import { describeCatalogForAI, CATALOG, makeCatalogItem } from "./items/catalog.js";
 
 import { getZoneTheme, ink } from "./theme.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
@@ -155,17 +114,16 @@ import { ensureNpcCombatData, generateNpcMoveset, MOVE_POOL, hpFromNeigong } fro
 import { detectNewFaces, markAsSeen, markNpcAsKnown, isNpcKnown, detectReunions, buildReunionBlock, updateLastSeen, REUNION_GAP_THRESHOLD } from "./npcAwareness.js";
 import TradingScreen from "./TradingScreen.jsx";
 import { recordRumoredNpcs, findTargetedRumor, clearRumor } from "./npcEmergence.js";
-import { rollEncounter } from "./encounter.js";
+import { rollMovementEvents } from "./features/map/encounter.js";
+import { judgeCollect } from "./act/roundNotes.js";
 import { evolveKnowledge, buildInfoDomainBlock, factSummaryRequestFromRecall, registerFact, witnessFact, allFactSummaries } from "./knowledge.js";
 import { findQuestByGiver, NPC_TEACHABLE_SKILLS, QUCUO_QUESTS } from "./quests/qucuoQuests.js";
 import { QUEST_TYPE } from "./quests/questTypes.js";
 import { MODE_PRIMER_MESSAGES, NSFW_RULES } from "./modePrimer.js";
 import { labelMessage, makeBlock } from "./tavernMapping.js";
-import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings, canBypassExclusive, isQuestGateOpen } from "./quests/questEngine.js";
-import { getQuestScript } from "./quests/questScripts.js";
+import { getCurrentStage, canBypassExclusive, isQuestGateOpen } from "./quests/questEngine.js";
 import { resolveEnding } from "./quests/endingResolver.js";
 import { initKeyItemTracking, transferKeyItem, getKeyItemState } from "./quests/itemTracking.js";
-import { resolveStageRewards, applyStageRewards } from "./quests/questRewards.js";
   // runQuestPromptHarness 已并入主叙事（act 的 forcedEvent 参数），不再单独调用；
   // quests/questHarness.js 文件暂留作参考，不再引用。
 import { detectCollectPickup, allCollected, collectPromptLines } from "./quests/collect.js";
@@ -223,6 +181,7 @@ import {
   acceptBounty,
   acceptEscort,
   claimBounty,
+  forceAdvanceQuest as forceAdvanceQuestFeature,
 } from "./features/quest/logic.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
@@ -237,7 +196,6 @@ import { narratorVars, setNarratorVars } from "./mvu.js";
 import { getAllResidentNpcLore } from "./residentNpcs.js";
 import { SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
 import { stealSuccessRate } from "./combat/stealSystem.js";
-import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
 import { buildSysBase } from "./sysBase.js";
 import { DIRS, bar, STAGE_TO_QUALITY, DIR_DXY, parseDir, getTimeStr } from "./utils/mudHelpers.js";
 import { MAP_UI } from "./mapUi.js";
@@ -259,12 +217,11 @@ import PipelineViewer from "./PipelineViewer.jsx";
 import { innerMove as innerMoveLogic, outerArrival as outerArrivalLogic, planAutoTravel } from "./features/map/logic.js";
 import { learnNpcSkill as learnNpcSkillLogic } from "./features/npc/logic.js";
 import { resolveOuterLock } from "./act/outerMove.js";
-import { judgeCollect } from "./act/roundNotes.js";
 import { createPromptContext } from "./engine/prompt/index.js";
 import { getCompanionDescForm } from "./companionForms.js";
 import { playTurn } from "./engine/playTurn.js";
 import {
-  consumeArrival, getLookText, burnSquare, serializeSquares,
+  consumeArrival, burnSquare, serializeSquares,
 } from "./mapSquares.js";
 
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false } = {}) {
@@ -387,10 +344,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 突破10"，不设上限）。反过来嵌套会让装备加成被 buff 的封顶吃掉。
   // 此前这里只有 buff 一层：装备的 sixDim 与内功轻功的 speedBonus 在面板上完全
   // 看不见（战斗里倒是通过 effectiveSpecial 生效了，两边显示对不上）。
-  const effectiveSpecialNow = effectiveSpecial(applyBuffsToSpecial(char.special, flags, time), inv, skills);
-  // 有效气血上限 = 存档 hp[1] + 内功被动。面板显示与各处回血封顶都走它。
-  const maxHpNow = effectiveMaxHp(char.hp[1], skills);
-  const activeBuffs = activeBuffsWithRemaining(flags, time);
+  const { effectiveSpecialNow, maxHpNow, activeBuffs } = selectEffectiveStats({ char, flags, time, inv, skills });
   const [gm, setGm] = useState(false);
 
   // ── 手机端响应式：窄屏时三栏改成"叙事占满 + 左右抽屉 + 顶栏收成菜单" ──
@@ -752,76 +706,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     }
   }, [forcedDuelNpc]);
 
-  const localCmd = useCallback((cmd) => {
-    const c = cmd.trim().toLowerCase();
-    if (c === "help" || c === "帮助") {
-      return [
-        { t: "sys", text: "── 命令列表 ──" },
-        { t: "sys", text: "  look/l        查看房间" },
-        { t: "sys", text: "  n/s/e/w/u/d   移动" },
-        { t: "sys", text: "  look <目标>   查看NPC/物品" },
-        { t: "sys", text: "  kill <NPC>    攻击" },
-        { t: "sys", text: "  ask <NPC> about <话题>  对话" },
-        { t: "sys", text: "  get/drop <物品>  拿/丢" },
-        { t: "sys", text: "  wear/wield <物品>  穿/持" },
-        { t: "sys", text: "  eat/drink <物品>  吃喝" },
-        { t: "sys", text: "  用/服 <丹药>  服用消耗品（回血等，探索态即时结算）" },
-        { t: "sys", text: "  practice <武功>  运功修炼" },
-        { t: "sys", text: "  ◈行动/◎对话/◆私聊旁白 三态切换：行动消耗回合，对话与私聊不消耗回合" },
-        { t: "sys", text: "  对话模式下只能和房间里的人说话，不能移动或战斗" },
-        { t: "sys", text: "  ⊙ 打坐：消耗1回合，恢复部分气血" },
-        { t: "sys", text: "  hp/状态  i/背包  skills/武功" },
-        { t: "sys", text: "  或输入任意动作，引擎会处理。" },
-      ];
-    }
-    if (c === "hp" || c === "状态") {
-      const sp = char.special || {};
-      const eff = effectiveSpecialNow;
-      // 有 buff 加成的维度显示"基础→有效"，没加成的只显示数值
-      const sevenDimLine = Object.entries(sp).map(([k, v]) => {
-        const ev = eff[k] ?? v;
-        return ev !== v ? `${k}${v}→${ev}` : `${k}${v}`;
-      }).join(" ");
-      const buffLines = activeBuffs.length
-        ? [{ t: "stat", text: `  丹药药力：${activeBuffs.map(b => `${b.attr}+${b.val}(余${b.remaining}回合)`).join("、")}` }]
-        : [];
-      return [
-        { t: "sys", text: "── 状态 ──" },
-        // 上限走 maxHpNow（含内功被动）。此前这里读裸 hp[1]，而客栈住宿已经按
-        // effectiveMaxHp 把当前血回满，于是回满之后显示成「135/100」，血条还溢出格子。
-        { t: "stat", text: `  气血 ${bar(char.hp[0], maxHpNow)} ${char.hp[0]}/${maxHpNow}` },
-        { t: "stat", text: `  内功 ${bar(char.neigong ?? 0, 100)} ${char.neigong ?? 0}/100` },
-        { t: "stat", text: `  外功 ${bar(char.waigong ?? 0, 100)} ${char.waigong ?? 0}/100` },
-        { t: "sys", text: "── 根骨悟性体魄魅力智谋身法气运 ──" },
-        { t: "stat", text: `  ${sevenDimLine || "（无数据）"}` },
-        ...buffLines,
-        { t: "stat", text: `  经验 ${exp}  潜能 ${pot}` },
-      ];
-    }
-    if (c === "i" || c === "背包" || c === "inventory") {
-      return [{ t: "sys", text: "── 包袱 ──" }, ...inv.map(i => {
-        if (typeof i === "string") return { t: "item", text: `  · ${i}` };
-        const eq = i.equipped ? "[已装备] " : "";
-        return { t: "item", text: `  · ${eq}${i.name}（${i.quality}）` };
-      }), inv.length === 0 ? { t: "sys", text: "  （空空如也）" } : null].filter(Boolean);
-    }
-    if (c === "skills" || c === "武功") {
-      return [{ t: "sys", text: "── 武学 ──" }, ...skills.map(s => ({ t: "skill", text: `  ${s.active ? "▶" : "○"} ${s.name}·${s.stage || "完整"}（${s.quality || "白"}品）` }))];
-    }
-    if (c === "eq" || c === "装备") {
-      const cats = [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY];
-      return [
-        { t: "sys", text: "── 装备 ──" },
-        ...cats.map(cat => {
-          const items = getEquipped(inv, cat);
-          const label = CATEGORY_LABEL[cat];
-          return { t: "item", text: `  ${label}：${items.length ? items.map(i => `${i.name}(${i.quality})`).join("、") : "无"}` };
-        }),
-      ];
-    }
-    return null;
-  }, [char, inv, skills, exp, pot, effectiveSpecialNow, activeBuffs]);
-
   const { talkToNarrator } = usePrivateTalk({
     narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags,
     jotNote, char, nsfwOn, questProgress, changePendingTalks, innerRoomName,
@@ -1059,6 +943,29 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     const _trace = startTrace(cmd, rawCmd);
     traceStep(_trace, "意图分类", "pass", `模式=${isTalk ? "对话" : "行动"} · 意图=${intent?.label || intent || "未知"}`);
 
+    const localCommand = !isTalk
+      ? parseLocalCommand(cmd, { ...gameStore.getState(), isTalk, convo })
+      : null;
+    if (localCommand) {
+      setInput("");
+      if (localCommand.recordHistory !== false) {
+        setCmdHistory(p => [cmd, ...p].slice(0, 50));
+        setHistIdx(-1);
+      }
+      if (localCommand.kind === "lines") {
+        applyResult(featureCtxRef.current, {
+          logs: [{ t: "cmd", text: `> ${cmd}` }, ...localCommand.lines],
+        });
+      } else {
+        applyResult(featureCtxRef.current, localCommand.result);
+        if (localCommand.localKind === "cachedLook") {
+          traceStep(_trace, "查看", "pass", "格子预成文本，纯前端秒回");
+          endTrace(_trace, "查看（纯前端）");
+        }
+      }
+      return;
+    }
+
     // 元问题（help/怎么玩/你是谁/卡住了等，regex 精确命中的那几种写法）本地直接
     // 兜底回答，不占旁白的一次生成——玩家问"这游戏怎么玩"要的是准确的操作说明，
     // 不是角色扮演式的拒答，之前全丢给LLM去演"旁白不该被问"，新玩家真按 help
@@ -1077,69 +984,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       ]);
       return;
     }
-
-    // ── 查看/环顾：当前据点有预跑好的格子文本时纯前端秒回 ──
-    // 预跑已写好环顾文本（lookText），不必再劳烦旁白 AI 复述一遍。
-    // 格子未就绪（预跑失败）则穿透回下方原有 AI 路径。
-    if (!isTalk && intent.code === "LOOK" && QUCUO_MAP[room.name]) {
-      const lookText = getLookText(room.name, Math.floor(time / 24));
-      if (lookText) {
-        addLog([{ t: "cmd", text: `> ${cmd}` }]);
-        setInput("");
-        setCmdHistory(p => [cmd, ...p].slice(0, 50));
-        setHistIdx(-1);
-        addLog([{ t: "desc", text: "  " + lookText }]);
-        traceStep(_trace, "查看", "pass", "格子预成文本，纯前端秒回");
-        endTrace(_trace, "查看（纯前端）");
-        setTime(t => t + 1);
-        setConvo([...convo, { role: "user", content: cmd }, { role: "assistant", content: lookText.slice(0, 500) }]);
-        return;
-      }
-    }
-
-    // ── 调试指令：#testscript <任务id> <flag> ──（本轮新增，仅供本地测试）
-    // 手动模拟"AI这一轮返回了这个flag"，直接跑一遍台本夺舍判断，
-    // 不需要真的调AI、不需要精心构造存档去赌AI会不会吐出这个flag——
-    // 用于验证 questScripts.js 的固定台本能不能被正确展示出来。
-    // 用法示例：
-    //   #testscript village2_jieshixiajiu quest_village2_s2
-    //   #testscript village2_jieshixiajiu quest_village2_s3_a
-    //   #testscript heifengzhai_5_langyanjiuzhang quest_heifengzhai5_s1
-    if (!isTalk && cmd.startsWith("#testscript")) {
-      addLog([{ t: "cmd", text: `> ${cmd}` }]);
-      setInput("");
-      const parts = cmd.split(/\s+/);
-      const testQuestId = parts[1];
-      const testFlag = parts[2];
-      if (!testQuestId || !testFlag) {
-        addLog([{ t: "sys", text: "  用法：#testscript <任务id> <flag>，比如 #testscript village2_jieshixiajiu quest_village2_s2" }]);
-        return;
-      }
-      const quest = QUCUO_QUESTS.find(q => q.id === testQuestId);
-      if (!quest) {
-        addLog([{ t: "sys", text: `  ✗ 找不到任务 "${testQuestId}"，检查一下id有没有打对` }]);
-        return;
-      }
-      // 找到这个flag对应的具体stage（可能是普通flag也可能是分支数组里的一个）
-      const stage = quest.stages?.find(s => {
-        const cf = Array.isArray(s.completionFlag) ? s.completionFlag : [s.completionFlag];
-        return cf.includes(testFlag);
-      });
-      if (!stage) {
-        addLog([{ t: "sys", text: `  ✗ 任务 "${testQuestId}" 里没有任何 stage 的 completionFlag 包含 "${testFlag}"` }]);
-        return;
-      }
-      const script = getQuestScript(quest.id, stage.id, [testFlag]);
-      if (!script) {
-        addLog([{ t: "sys", text: `  ⚠ 这个stage（${stage.id}）在 questScripts.js 里没有登记固定台本，正常情况下会走AI生成` }]);
-        return;
-      }
-      addLog([{ t: "sys", text: `  ── 台本夺舍测试：${quest.title} / ${stage.id} / flag=${testFlag} ──` }]);
-      addLog(script.split("\n").filter(line => line.length).map(t => ({ t: "desc", text: "  " + t })));
-      addLog([{ t: "sys", text: "  ── 以上为固定台本展示效果，未调用AI ──" }]);
-      return;
-    }
-
 
     // 行动模式处理中时：命令进入排队队列，不阻塞输入。
     // extraReplies 跟着 cmd 一起存进队列，等真正出队执行时再一并带出去，
@@ -1165,9 +1009,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setInput("");
     setCmdHistory(p => [cmd, ...p].slice(0, 50));
     setHistIdx(-1);
-
-    // ④ localCmd 打字命令（hp/i/skills/eq/背包/状态/武功/装备/help）已废除——
-    // 这些一律走右栏面板/CharacterPage 按钮，不再从打字框识别。
 
     // ⑤ 探索态服用消耗品：打字「用/服/吃 X」正则已废除——改由「包袱」里每件消耗品的
     // 「⊙用」按钮打开次级面板（查看/服食/送人/卖掉），走 handleConsumeItem 确定性 handler。
@@ -1291,40 +1132,20 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
     const targetedRumor = findTargetedRumor(varTreeRef.current, cmd);
 
-    // 系统裁决层：移动时按一定基础概率+气运品质分布，判定本次是否触发路上拾取。
-    // 品质由系统骰子决定，AI 只负责给这个已经确定的品质编排一个符合场景的物品名称/描述，
-    // 不允许 AI 自行决定"要不要给"或"给什么品质"。
-    pickupJudgmentRef.current = null;
-    if (!isTalk && movingDir) {
-      const PICKUP_CHANCE = 0.35; // 每次移动 35% 基础几率触发拾取判定
-      if (Math.random() < PICKUP_CHANCE) {
-        const luck = char.special?.气运 ?? 5;
-        const quality = rollQuality(luck);
-        const cat = [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY, ITEM_CATEGORY.MISC][Math.floor(Math.random() * 4)];
-        pickupJudgmentRef.current = { quality, category: cat };
-      }
-    }
-
-    // 系统裁决层：随机遭遇（路遇过路人）。挂在移动时，与拾取并列独立掷骰。
-    // 只在真正跨节点移动、且本轮没有"人物涌现"抢占时触发——涌现（顺藤摸瓜找具体人）
-    // 优先级更高，一轮里不同时塞两个 NPC 事件，免得场面拥挤。
-    // 刷出来的人隶属某已有势力，可捎传闻喂涌现系统（守契诃夫铁律，见 encounter.js）。
-    let encounterToDescribe = null;
-    if (!isTalk && movingDir && lockedDestName && !targetedRumor) {
-      const luck = char.special?.气运 ?? 5;
-      const encounter = rollEncounter(lockedDestName, luck);
-      if (encounter) {
-        encounterToDescribe = encounter;
-        // 自动寻路途中撞见路遇 → 硬中断：清掉剩余自动步，把玩家留在此处应对，
-        // 本步照常把这次相遇叙述出来。后续要不要继续赶路，由玩家自己再点。
-        if (autoTravelRef.current && pendingQueue.current.length > 0) {
-          const dropped = pendingQueue.current.length;
-          pendingQueue.current = [];
-          setQueueCount(0);
-          autoTravelRef.current = false;
-          addLog([{ t: "sys", text: `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`, standalone: true }]);
-        }
-      }
+    const { pickupJudgment, encounterToDescribe } = rollMovementEvents({
+      isTalk,
+      movingDir,
+      lockedDestName,
+      targetedRumor,
+      luck: char.special?.气运 ?? 5,
+    });
+    pickupJudgmentRef.current = pickupJudgment;
+    if (encounterToDescribe && autoTravelRef.current && pendingQueue.current.length > 0) {
+      const dropped = pendingQueue.current.length;
+      pendingQueue.current = [];
+      setQueueCount(0);
+      autoTravelRef.current = false;
+      addLog([{ t: "sys", text: `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`, standalone: true }]);
     }
 
     // ── 采集裁决（系统层）──（判定在 act/roundNotes.js，副作用在此执行）
@@ -1437,7 +1258,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 停计时
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, localCmd, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, pendingTalks, changePendingTalks]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, pendingTalks, changePendingTalks]);
   const featureCtx = useMemo(() => ({
     addLog,
     jotNote,
@@ -1452,47 +1273,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }), [addLog, jotNote, setVarTree, act]);
   featureCtxRef.current = featureCtx;
 
-  // 系统强制推进任务stage（本轮新增，"档2"harness的核心）：不等AI在
-  // delta.flags_add 里吐出 completionFlag，直接把这个flag塞进 flags
-  // 状态里，然后复用现有的 advanceQuestStages/lockExclusiveSiblings/
-  // resolveStageRewards/applyStageRewards 这一整套状态机——"这一步的
-  // 效果"完全由系统层面的既有逻辑决定，不依赖AI这次调用是否成功、
-  // 也不依赖AI有没有在文字里"演对了"。
-  //
-  // 实现上刻意不用"setState回调里嵌套setState回调"这种写法（虽然React
-  // 允许，但深度嵌套很容易在后续维护时引入隐蔽bug、也难以在没有真实
-  // 浏览器环境的地方验证正确性）。改成：先用当前渲染时已经拿到的
-  // flags/questProgress 快照算出这次操作的最终结果，再依次调用各个
-  // setter——逻辑是线性的，每一步做什么一目了然。
-  // 唯一的代价是：如果两次点击在同一个渲染周期内非常连续地发生（正常
-  // 点击操作不会），可能读到的是同一份旧快照——这个场景概率极低，且
-  // 感叹号点击本身有UI层面的天然间隔（等上一次AI调用完成才会展示下
-  // 一次机会），不是需要特别处理的边界情况。
   const forceAdvanceQuest = useCallback((quest, targetFlag) => {
-    const nextFlags = flags.includes(targetFlag) ? flags : [...flags, targetFlag];
-    let prog = questProgress[quest.id] || createQuestProgress(quest.id);
-    const gameState = { flags: nextFlags, char };
-    const pendingRewards = [];
-    while (prog.status === "active") {
-      const result = advanceQuestStages(quest, prog, gameState);
-      if (!result.advanced) break;
-      prog = result.progress;
-      if (result.completedStage) {
-        const rewards = resolveStageRewards(result.completedStage, result.hitFlags);
-        if (rewards) pendingRewards.push(rewards);
-      }
-      if (result.justCompleted) break;
-    }
-    let nextProgress = { ...questProgress, [quest.id]: prog };
-    if (prog.status === "completed") {
-      nextProgress = lockExclusiveSiblings(nextProgress, QUCUO_QUESTS, quest.id);
-    }
-    setFlags(nextFlags);
-    setQuestProgress(nextProgress);
-    for (const rewards of pendingRewards) {
-      applyStageRewards(rewards, { setInv, setChar, setVarTree, setFlags });
-    }
-  }, [flags, questProgress, char, setInv, setChar, setVarTree]);
+    applyResult(featureCtxRef.current, forceAdvanceQuestFeature(gameStore.getState(), quest, targetFlag));
+  }, []);
 
   // 点击感叹号面板里的某条任务（本轮改造，支持 questTriggerMode 二选一）：
   //   "script" 模式——走原有逻辑，送一句话让主叙事AI自然演绎（这条路径
@@ -1678,37 +1461,13 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   // ⑤ 服食：把原打字正则分支的确定性结算抽成 handler，供物品面板「服食」调用。
   const handleConsumeItem = useCallback((item) => {
-    const itemName = typeof item === "object" ? item.name : item;
-    const consumable = (typeof item === "object" && item.consumable) || CATALOG_INDEX[itemName]?.consumable || null;
-    if (!consumable) { addLog([{ t: "sys", text: `  ${itemName}并非可服用之物。` }]); return; }
-    const res = useConsumable(consumable, char);
-    if (!res.ok) { addLog([{ t: "sys", text: `  ${res.reason}` }]); return; }
-    if (res.hpDelta) setChar(c => ({ ...c, hp: [Math.min(effectiveMaxHp(c.hp[1], skills), c.hp[0] + res.hpDelta), c.hp[1]] }));
-    if (res.sixDimBuffs && res.sixDimBuffs.length) {
-      const nf = res.sixDimBuffs.map(b => makeBuffFlag(b.attr, b.val, time, b.duration));
-      setFlags(f => [...f, ...nf]);
-    }
-    if (res.combatBuff) setChar(c => ({ ...c, pendingCombatBuff: mergeCombatBuff(c.pendingCombatBuff, res.combatBuff) }));
-    setInv(prev => { const n = [...prev]; const j = n.findIndex(i => (typeof i === "object" ? i.name : i) === itemName); if (j !== -1) n.splice(j, 1); return n; });
-    addLog([{ t: "item", text: `  ⊙ ${res.note}` }]);
-    setTime(t => t + 1);
-  }, [char, time, addLog]);
+    applyResult(featureCtxRef.current, useItem(gameStore.getState(), item));
+  }, []);
 
   // ⑧ 采摘：把地上物收入背包、从 room.items 抹去（确定性，不调AI）。
   const handleCollectGround = useCallback((item) => {
-    noteAction("pickGround");
-    const itemName = typeof item === "object" ? item.name : item;
-    setInv(prev => [...prev, item]);
-    setRoom(r => {
-      const items = [...(r.items || [])];
-      let j = items.findIndex(it => (typeof item === "object" && item.id != null) ? (typeof it === "object" && it.id === item.id) : it === item);
-      if (j === -1) j = items.findIndex(it => (typeof it === "object" ? it.name : it) === itemName);
-      if (j !== -1) items.splice(j, 1);
-      return { ...r, items };
-    });
-    addLog([{ t: "item", text: `  ✓ 你拾起「${itemName}」，收入囊中。` }]);
-    setTime(t => t + 1);
-  }, [addLog]);
+    applyResult(featureCtxRef.current, pickGroundItem(gameStore.getState(), item, { tallyTime: timeRef.current }));
+  }, []);
 
   // ⑥ 自动寻路：点已探索地图节点 → BFS 取路（只穿行已探索+已解锁节点）→ 逐步行走。
   // 实现借力现有命令队列：首步走 act()，其余方向**同步**预填 pendingQueue（ref，无 setState
@@ -2197,8 +1956,9 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     });
     // 主角卡的初始武学/装备，跟开局路径同一套（武学整套替换、装备追加+自动上身）。
     // seed 带时间戳：游戏中可能反复入册，避免 carry 物品 id 撞号（撞了会一起被装备/卸下）。
-    applyCardSkills(player, setSkills);
-    const carried = applyCardCarry(player, setInv, `ci${Date.now().toString(36)}_`);
+    const cardResult = applyCharacterCard(gameStore.getState(), player, `ci${Date.now().toString(36)}_`);
+    applyResult(featureCtxRef.current, cardResult);
+    const carried = cardResult.carriedCount;
     const filled = Object.values(player.bodyProfile || {}).filter(v => (v || "").trim()).length;
     const sk = (player.skills || []).length;
     addLog([
@@ -2397,8 +2157,9 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
         // setSkills 会触发 moveset 重算（见 skills 依赖的那个 effect）；装备追加进背包并
         // 自动穿上兵器/护具/饰物各一件。
         if (fromCard) {
-          applyCardSkills(fromCard, setSkills);
-          const n = applyCardCarry(fromCard, setInv, "cc_");
+          const cardResult = applyCharacterCard(gameStore.getState(), fromCard, "cc_");
+          applyResult(featureCtxRef.current, cardResult);
+          const n = cardResult.carriedCount;
           const sk = (fromCard.skills || []).length;
           if (fromCard.persona || sk || n) {
             addLog([{ t: "sys", text: `  （已按入册的角色卡定下体貌与天赋${sk ? `，带 ${sk} 门武学` : ""}${n ? `，${n} 件随身物已入包、装备已上身` : ""}）` }]);
