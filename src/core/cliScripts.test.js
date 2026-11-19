@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,11 +8,13 @@ import { exportSave } from "../saves.js";
 import { loadSquares, serializeSquares } from "../mapSquares.js";
 import { createSession, runScript } from "../../cli/runner.mjs";
 import { getRngState, random, setSeed } from "./rng.js";
-import { createMockAi, createReplayAi } from "../engine/ports/ai.js";
+import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports/ai.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scriptsDir = resolve(projectRoot, "tests/cli");
-const scriptFiles = readdirSync(scriptsDir).filter((file) => file.endsWith(".txt") && file !== "ai-turn-rollback.txt").sort();
+const scriptFiles = readdirSync(scriptsDir)
+  .filter((file) => file.endsWith(".txt") && !["ai-turn-rollback.txt", "failed-inspection-pending-turn.txt"].includes(file))
+  .sort();
 
 let tempDir;
 
@@ -28,8 +30,9 @@ afterEach(() => {
 describe("CLI scripts", () => {
   it.each(scriptFiles)("%s", async (file) => {
     const output = [];
-    const ai = file === "ai-turn.txt"
-      ? createMockAi(JSON.parse(readFileSync(join(scriptsDir, "ai-turn-replies.json"), "utf8")))
+    const repliesFile = `${file.slice(0, -4)}-replies.json`;
+    const ai = existsSync(join(scriptsDir, repliesFile))
+      ? createMockAi(JSON.parse(readFileSync(join(scriptsDir, repliesFile), "utf8")))
       : { chat: async () => ({ text: '{"output":["测试结算完成"]}' }) };
     const failures = await runScript(readFileSync(join(scriptsDir, file), "utf8"), {
       out: (text) => output.push(text),
@@ -63,6 +66,24 @@ describe("CLI scripts", () => {
     ], { cwd: projectRoot, encoding: "utf8" });
 
     expect(output).toContain("石阶旁的草叶轻轻摇动。");
+  });
+
+  it("includes the selected NPC in a CLI conversation prompt", async () => {
+    const output = [];
+    const recorded = [];
+    const ai = createRecordingAi(
+      createMockAi(JSON.parse(readFileSync(join(scriptsDir, "npc-talk-target-replies.json"), "utf8"))),
+      (entry) => recorded.push(entry),
+    );
+    const failures = await runScript(readFileSync(join(scriptsDir, "npc-talk-target.txt"), "utf8"), {
+      out: (text) => output.push(text),
+      cwd: tempDir,
+      ai,
+    });
+
+    expect(failures, output.join("\n")).toBe(0);
+    expect(JSON.stringify(recorded.map(({ request }) => request)))
+      .toContain("[交互目标] 玩家选定了「商人」作为本轮唯一的互动对象");
   });
 
   it("restores :state and the seeded RNG sequence after a malformed CLI turn", async () => {
@@ -205,5 +226,20 @@ describe("CLI scripts", () => {
     expect(await session.runLine("探索石阶")).toBe(1);
     expect(session.store.getState()).toEqual(before);
     expect(output.at(-1)).toContain("AI reply format is invalid");
+  });
+
+  it("does not reuse a failed inspection status for the next local command", async () => {
+    const output = [];
+    const failures = await runScript(
+      readFileSync(join(scriptsDir, "failed-inspection-pending-turn.txt"), "utf8"),
+      {
+        out: (text) => output.push(text),
+        cwd: tempDir,
+        ai: createMockAi(JSON.parse(readFileSync(join(scriptsDir, "failed-inspection-pending-turn-replies.json"), "utf8"))),
+      },
+    );
+
+    expect(failures).toBe(1);
+    expect(output.join("\n")).toContain("✓ time");
   });
 });

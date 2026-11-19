@@ -8,6 +8,7 @@ import { setSeed } from "../src/core/rng.js";
 import { resetForDay, loadSquares, serializeSquares } from "../src/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/saves.js";
 import { getTimeStr } from "../src/utils/mudHelpers.js";
+import { QUALITY } from "../src/equipment.js";
 import { defaultConfig } from "../src/apiConfig.js";
 import { classifyIntent, buildBudgetInstruction } from "../src/inputIntent.js";
 import { emptyBodyProfile } from "../src/bodyProfile.js";
@@ -18,8 +19,15 @@ import { applyResult } from "../src/features/run.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
 import { innerMove } from "../src/features/map/logic.js";
-import { learnNpcSkill } from "../src/features/npc/logic.js";
-import { isNpcVisibleInInnerRoom } from "../src/innerMap.js";
+import {
+  giftNpc,
+  inviteCompanion,
+  learnNpcSkill,
+  lookNpc,
+  stealFromNpc,
+  talkToNpc,
+} from "../src/features/npc/logic.js";
+import { hasInnerMap, isNpcVisibleInInnerRoom } from "../src/innerMap.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -110,7 +118,10 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
     jotNote: () => {},
     setVarTree: gameActions.setVarTreeState,
-    act: (text, _extraReplies, opts) => { pendingTurn = runFreeText(text, opts); return pendingTurn; },
+    act: (text, extraReplies, opts) => {
+      pendingTurn = runFreeText(text, { ...(opts || {}), extraReplies: extraReplies || [] });
+      return pendingTurn;
+    },
   };
   let session;
 
@@ -127,6 +138,9 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         varTreeRef.current = value;
       };
       const state = gameStore.getState();
+      const isTalk = !!opts.isTalk;
+      const activeTarget = opts.activeTarget || null;
+      const talkTarget = opts.talkTarget || null;
       const config = {
         ...defaultConfig(),
         ...apiCfgOverrides,
@@ -155,15 +169,17 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         room: state.room,
         varTreeLatest: state.varTree,
         flags: state.flags || [],
-        activeTarget: null,
-        isTalk: false,
-        talkTarget: null,
+        activeTarget,
+        isTalk,
+        talkTarget,
       };
       const callDeps = (memory = {}, prepared = {}) => ({
         varTree: memory.varTree ?? state.varTree,
         gm: false,
         isSettle: !!opts.settle,
-        isTalk: false,
+        isTalk,
+        activeTarget,
+        talkTarget,
         intent,
         apiCfg: apiConfig,
         narrator: state.narrator,
@@ -208,13 +224,43 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       const playedThisSessionRef = { current: false };
       const roundsSinceLastSaveRef = { current: 0 };
       const addLog = (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]);
+      if (opts.echoCommand || opts.extraReplies?.length) {
+        addLog([{ t: "cmd", text: `> ${opts.displayCmd || cmd}` }, ...(opts.extraReplies || [])]);
+      }
       const result = await playTurn({
         apiCfg: apiConfig,
         ai,
         callDeps,
         convo: state.convo || [],
-        isTalk: false,
+        isTalk,
         isSettle: !!opts.settle,
+        prompt: {
+          room: state.room || {},
+          char: state.char || {},
+          inv: state.inv || [],
+          skills: state.skills || [],
+          dao: state.dao || {},
+          flags: state.flags || [],
+          questProgress: state.questProgress || {},
+          pendingQuestBranch: null,
+          varTree: state.varTree || {},
+          time: state.time,
+          preset,
+          companionState: state.companionState || {},
+          nsfwOn: false,
+          activeTarget,
+          talkTarget,
+          isTalk,
+          gm: false,
+          innerRoomName: state.innerRoomName,
+          apiCfg: apiConfig,
+          visibleNpcs,
+          buildBudgetInstruction,
+          intent,
+          getTimeStr,
+          hasInnerMap,
+          quality: QUALITY,
+        },
         _trace: trace,
         state,
         memory: {
@@ -234,7 +280,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
           pickupExtractionFailedRef.current = turn.pickupExtractionFailed;
           return {
             ...turn,
-            isTalk: false,
+            isTalk,
             gm: false,
             lockedDestName: null,
             room: state.room,
@@ -243,8 +289,8 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
             mapData: state.mapData || {},
             pendingQuestBranch: null,
             apiCfg: apiConfig,
-            activeTarget: null,
-            talkTarget: null,
+            activeTarget,
+            talkTarget,
             effectiveSpecialNow: state.char?.special || {},
             newConvo: turn.newConvo,
             questProgress: state.questProgress || {},
@@ -299,6 +345,8 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
   async function runLine(rawLine) {
     const line = String(rawLine).trim();
     if (!line || line.startsWith("#")) return 0;
+
+    pendingTurn = Promise.resolve(0);
 
     if (/^:seed(?:\s|$)/.test(line)) {
       seed = parseSeed(line.slice(5).trim());
@@ -368,6 +416,12 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     }
 
     const state = gameStore.getState();
+    const visibleNpcs = (state.room?.npcs || []).filter((npc) => (
+      isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)
+    ));
+    const missingNpc = (name) => applyFeature({
+      logs: [{ t: "err", text: `  此处没有 ${name}。` }],
+    });
     const movementMatch = /^(走|去)\s+(.+)$/.exec(line);
     if (movementMatch) {
       const result = innerMove(state, {
@@ -381,11 +435,72 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       }
     }
 
+    const lookMatch = /^看\s+(.+)$/.exec(line);
+    if (lookMatch) {
+      const npc = visibleNpcs.find((entry) => entry?.name === lookMatch[1]);
+      if (!npc) return await missingNpc(lookMatch[1]);
+      const result = lookNpc(state, npc);
+      applyResult(featureCtx, result);
+      return await featureCtx.act(`look ${npc.id}`, result.extraReplies, {
+        echoCommand: true,
+        displayCmd: `look ${npc.id}`,
+      });
+    }
+
+    const giftCommand = /^送\s+(.+)$/.exec(line);
+    if (giftCommand) {
+      const tail = giftCommand[1];
+      const npc = [...visibleNpcs]
+        .sort((a, b) => (b?.name?.length || 0) - (a?.name?.length || 0))
+        .find((entry) => tail.endsWith(` ${entry.name}`));
+      if (!npc) {
+        const fallbackName = tail.split(/\s+/).at(-1);
+        return await missingNpc(fallbackName);
+      }
+      const itemName = tail.slice(0, -(npc.name.length)).trim();
+      const item = (state.inv || []).find((entry) => (
+        (typeof entry === "string" ? entry : entry?.name) === itemName
+      ));
+      return await applyFeature(giftNpc(state, npc, item || null));
+    }
+
+    const stealMatch = /^偷\s+(.+)$/.exec(line);
+    if (stealMatch) {
+      const npc = visibleNpcs.find((entry) => entry?.name === stealMatch[1]);
+      if (!npc) return await missingNpc(stealMatch[1]);
+      return await applyFeature(stealFromNpc(state, npc));
+    }
+
+    const inviteMatch = /^邀\s+(.+)$/.exec(line);
+    if (inviteMatch) {
+      const npc = visibleNpcs.find((entry) => entry?.name === inviteMatch[1]);
+      if (!npc) return await missingNpc(inviteMatch[1]);
+      return await applyFeature(inviteCompanion(state, npc));
+    }
+
+    const talkCommand = /^交谈\s+(.+)$/.exec(line);
+    if (talkCommand) {
+      const tail = talkCommand[1];
+      const npc = [...visibleNpcs]
+        .sort((a, b) => (b?.name?.length || 0) - (a?.name?.length || 0))
+        .find((entry) => tail.startsWith(`${entry.name} `));
+      if (!npc) {
+        const fallbackName = tail.split(/\s+/)[0];
+        return await missingNpc(fallbackName);
+      }
+      const utterance = tail.slice(npc.name.length).trim();
+      const result = talkToNpc(state, npc);
+      applyResult(featureCtx, result);
+      if (result.completedEscort || npc.cannotSpeak) return await pendingTurn;
+      return await runFreeText(utterance, {
+        isTalk: true,
+        activeTarget: npc.name,
+        talkTarget: npc.name,
+      });
+    }
+
     const learnNpcMatch = /^拜师\s+(.+)$/.exec(line);
     if (learnNpcMatch) {
-      const visibleNpcs = (state.room?.npcs || []).filter((entry) => (
-        isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, entry)
-      ));
       const npc = visibleNpcs.find((entry) => entry?.name === learnNpcMatch[1]);
       if (!npc) {
         return await applyFeature({

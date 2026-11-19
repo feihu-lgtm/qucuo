@@ -59,12 +59,12 @@ export function pickStealOutcome(hasStealableMove, hasStealableItem) {
 }
 
 // 生气状态的数据结构，存进 varTree.角色[npcName].生气状态
-export function createAngryState(reason) {
+export function createAngryState(reason, now = Date.now()) {
   return {
     active: true,
     reason,                          // "偷窃未遂" 之类的原因说明
     turnsLeft: STEAL_CONFIG.angryTurns,
-    startedAt: Date.now(),
+    startedAt: now,
   };
 }
 

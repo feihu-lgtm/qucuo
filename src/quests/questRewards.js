@@ -44,12 +44,12 @@ export function resolveStageRewards(stage, hitFlags = []) {
 
 // 把 resolveStageRewards 的结果真正落地成游戏状态变化。
 // setters: { setInv, setChar, setVarTree, setFlags } —— 全部是 MudRPG.jsx 里已有的 setState。
-export function applyStageRewards(rewards, { setInv, setChar, setVarTree, setFlags }) {
+export function applyStageRewards(rewards, { setInv, setChar, setVarTree, setFlags }, now = Date.now()) {
   if (!rewards) return;
   if (rewards.items?.length) {
     setInv(prev => [
       ...prev,
-      ...rewards.items.map((it, i) => ({ ...it, id: it.id || `quest_reward_${Date.now()}_${i}`, equipped: false })),
+      ...rewards.items.map((it, i) => ({ ...it, id: it.id || `quest_reward_${now}_${i}`, equipped: false })),
     ]);
   }
   if (rewards.money) {

@@ -18,13 +18,13 @@ import { QUEST_TYPE } from "./questTypes.js";
 //   rewardSkillId: "...",      // LEARN_SKILL类：完成后解锁的技能
 // }
 
-export function createQuestProgress(questId) {
+export function createQuestProgress(questId, now = Date.now()) {
   return {
     questId,
     status: "active",  // 'active' | 'completed' | 'failed' | 'locked_by_exclusive'
     progress: 0,        // 数字型进度（击杀数/收集数），布尔型任务忽略这个字段
     currentStageIndex: 0, // 多阶段任务链（quest.stages）用，见 advanceQuestStages
-    startedAt: Date.now(),
+    startedAt: now,
     completedAt: null,
   };
 }
@@ -49,7 +49,7 @@ export function getCurrentStage(quest, progress) {
 //   completedStage—— 刚刚推进过去的那个 stage 对象（供调用方读取 onReach 奖励数据）
 //   hitFlags      —— 这次实际命中的 flag（数组，通常只有一个；分支点里是玩家
 //                     实际选中的那一支），供 questRewards.js 按分支查具体奖励
-export function advanceQuestStages(quest, progress, gameState) {
+export function advanceQuestStages(quest, progress, gameState, now = Date.now()) {
   if (!quest?.stages?.length || !progress || progress.status !== "active") {
     return { progress, advanced: false, justCompleted: false, completedStage: null, hitFlags: [] };
   }
@@ -77,7 +77,7 @@ export function advanceQuestStages(quest, progress, gameState) {
     currentStageIndex: nextIndex,
     status: justCompleted ? "completed" : "active",
     outcome: justCompleted ? outcome : progress.outcome,
-    completedAt: justCompleted ? Date.now() : progress.completedAt,
+    completedAt: justCompleted ? now : progress.completedAt,
   };
   return { progress: nextProgress, advanced: true, justCompleted, completedStage: stage, hitFlags };
 }

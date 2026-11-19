@@ -21,6 +21,17 @@ import {
   redeem as redeemFeature,
   withdraw as withdrawFeature,
 } from "./features/bank/logic.js";
+import {
+  describeGiftForPrompt,
+  giftNpc,
+  inviteCompanion,
+  lookNpc,
+  recognizeNpc,
+  settleNpcDuel,
+  stealFromNpc,
+  talkToNpc,
+  tradeWithNpc,
+} from "./features/npc/logic.js";
 import { attachImportedRegistry } from "./characterMilestones.js";
 import {
   NNPC_STAGE, initialNarratorState, isInSea, migrateNarratorState,
@@ -102,14 +113,12 @@ import CharacterCreate from "./CharacterCreate.jsx";
 import { getActivePreset } from "./PresetManager.jsx";
 import { applyPresetOverrides } from "./presetSystem.js";
 import TraceViewer from "./TraceViewer.jsx";
-import { duelPotGain, duelAffGain, duelDropChance, TEAMWORK_GAIN } from "./combat/duelSettleMath.js";
 import { getCachedInspect, setCachedInspect } from "./inspectCache.js";
 import { classifyIntent, buildBudgetInstruction, INTENT } from "./inputIntent.js";
 import NpcActionMenu from "./NpcActionMenu.jsx";
 import ItemActionMenu from "./ItemActionMenu.jsx";
 import { ensureNpcCombatData, generateNpcMoveset, MOVE_POOL, deriveMovesetFromSkills, hpFromNeigong } from "./npcGeneration.js";
 import { detectNewFaces, markAsSeen, markNpcAsKnown, isNpcKnown, detectReunions, buildReunionBlock, updateLastSeen, REUNION_GAP_THRESHOLD } from "./npcAwareness.js";
-import { buildShopInventory, rollShopStock } from "./shops/qucuoShops.js";
 import TradingScreen from "./TradingScreen.jsx";
 import { recordRumoredNpcs, findTargetedRumor, clearRumor } from "./npcEmergence.js";
 import { rollEncounter, buildEncounterNote } from "./encounter.js";
@@ -141,7 +150,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, unlockSnowLeopard, setSnowLeopardActive, isSnowLeopardAvailable, unlockPearl, unlockAsuka, activeCompanionKey, setActiveCompanion, unlockedCompanions, companionKeyByName, unlockImportedCompanion, isCompanionUnlockedByName } from "./companion.js";
+import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, unlockAsuka, setActiveCompanion, unlockedCompanions, companionKeyByName, unlockImportedCompanion, isCompanionUnlockedByName } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -152,7 +161,8 @@ import TempleScreen from "./buildings/TempleScreen.jsx";
 import LibraryScreen from "./buildings/LibraryScreen.jsx";
 import BankScreen from "./buildings/BankScreen.jsx";
 import PawnScreen from "./buildings/PawnScreen.jsx";
-import EscortScreen, { ESCORT_QUESTS } from "./buildings/EscortScreen.jsx";
+import EscortScreen from "./buildings/EscortScreen.jsx";
+import { ESCORT_QUESTS } from "./quests/escortQuests.js";
 import BountyScreen from "./buildings/BountyScreen.jsx";
 import ForgeScreen from "./buildings/ForgeScreen.jsx";
 import JadeShopScreen from "./buildings/JadeShopScreen.jsx";
@@ -163,7 +173,7 @@ import { getScheduledNpcs, toRoomNpc, NPC_POOL } from "./npcPool.js";
 import { invHasItemNamed, SAFE_HOUSES, ownedSafeHouseKeys, makeTusiRobe } from "./safeHouse.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
-import { injectNpcs, markCarriedLost, materializeNpc, removeNpc, respawnNpc } from "./roomNpcs.js";
+import { injectNpcs, materializeNpc, removeNpc } from "./roomNpcs.js";
 import { tallyAdd, describeTodayForAI, describeDayForSummary, describeTallyForWhisper } from "./memory/tally.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
 import { SEA_OF_MIND, shouldTriggerXuannu, buildXuannuScene, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
@@ -178,7 +188,6 @@ import { AUCTION_LOT } from "./auction.js";
 import { seededRand } from "./utils/seededRandom.js";
 import { getResidentNpcs, getAllResidentNpcLore } from "./residentNpcs.js";
 import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
-import { tryStealFrom } from "./kungfu/learnSkill.js";
 import { stealSuccessRate } from "./combat/stealSystem.js";
 import { parseActiveBuffs, makeBuffFlag, applyBuffsToSpecial, cleanExpiredBuffs, activeBuffsWithRemaining, mergeCombatBuff } from "./utils/buffSystem.js";
 import { INGREDIENT_LORE } from "./cooking.js";
@@ -2571,248 +2580,35 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 形态无关，提取成同一个函数供两处复用（battleLog 条目形状略有差异：
   // 1v1 是 {playerMove,npcMove,...}，2v2 是 TeamDuelScreen 拼好的 {teamText}）。
   const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp) => {
-      // 把这场切磋的逐回合【系统数据】写进主日志备查（招式+伤害，客观事实）。
-      // 逐回合的 AI 说书不在这里逐条刷屏——它们会被打包发给主叙事 AI 写成
-      // 一篇连贯的整场战报（见下方 finishedNpc 那段的 act 调用），避免重复。
-      if (Array.isArray(battleLog) && battleLog.length) {
-        const foe = duelingNpc?.name || "对手";
-        const logs = [{ t: "sys", text: `　── 与${foe}切磋 · 逐回合 ──` }];
-        for (const e of battleLog) {
-          if (e.round && e.teamText) {
-            logs.push({ t: "desc", text: `  第${e.round}回合 ${e.teamText}` }); // 2v2团战条目（TeamDuelScreen已拼好单行）
-          } else if (e.round && e.playerMove) {
-            logs.push({ t: "desc", text: `  第${e.round}回合 你「${e.playerMove}」 对 ${foe}「${e.npcMove}」${e.dmgToNpc > 0 ? `　${foe}−${e.dmgToNpc}` : ""}${e.dmgToPlayer > 0 ? `　你−${e.dmgToPlayer}` : ""}` });
-          }
-        }
-        if (logs.length > 1) addLog(logs);
-      }
-      // 战前餐（pendingCombatBuff）是一次性的：这场战斗已经进场应用过，无论
-      // 胜负都清掉，不会带到下一场。放在最前面清，跟其他结算互不干扰。
-      if (char.pendingCombatBuff) setChar(c => { const { pendingCombatBuff, ...rest } = c; return rest; });
-      // 切磋后气血写回：打了多少血回主界面就是多少血。remainingHp 是战斗界面
-      // 结算时的 [当前, 上限]，上限可能因战前餐抬高过——写回时夹回原始上限。
-      if (remainingHp) setChar(c => ({ ...c, hp: [Math.max(0, Math.min(remainingHp[0], c.hp[1])), c.hp[1]] }));
-      // 永久成长型招式（permanentGrowthOnUse）这场打出来的威力增长要
-      // 持久化到char.moveset，不然下次战斗又是原始倍率，"永久"就名不
-      // 副实了。绝大多数角色没装备博弈层招式，grownMoveset跟改动前的
-      // char.moveset内容完全一致，这行不会产生任何可观察的变化。
-      if (grownMoveset) setChar(c => ({ ...c, moveset: grownMoveset }));
-
-      // ── 任务分支·战斗解决 ──
-      // 这场架若是任务分支（选了"打"）触发的：打赢才推进该分支 stage 并结算，
-      // 打输/逃跑不推进——"选了打就得真打赢"，避免按钮式白嫖结果。
-      if (pendingQuestBranch?.mode === "combat" && duelingNpc?.questBranchFlag === pendingQuestBranch.flag) {
-        if (outcome === "win") {
-          const q = QUCUO_QUESTS.find(x => x.id === pendingQuestBranch.questId);
-          if (q) {
-            forceAdvanceQuest(q, pendingQuestBranch.flag);
-            addLog([{ t: "affection", text: `  ✓ 你打退了他们，「${q.title}」推进。` }]);
-          }
-        } else {
-          addLog([{ t: "sys", text: `  你没能打赢——这条路没走通，可换个法子再试。` }]);
-        }
-        setPendingQuestBranch(null);
-      }
-
-      // 战斗内服用的消耗品：从背包按名逐件扣除（同名多件只扣服过的份数）。
-      // 药是"点到为止"的切磋里也真吃了，无论胜负都要扣。
-      if (usedItems && usedItems.length) {
-        setInv(prev => {
-          const next = [...prev];
-          for (const name of usedItems) {
-            const idx = next.findIndex(i => (typeof i === "object" ? i.name : i) === name);
-            if (idx !== -1) next.splice(idx, 1);
-          }
-          return next;
-        });
-        const tally = usedItems.reduce((m, n) => (m[n] = (m[n] || 0) + 1, m), {});
-        addLog([{ t: "item", text: `  ⊙ 切磋中服用：${Object.entries(tally).map(([n, c]) => `${n}×${c}`).join("、")}` }]);
-      }
-      // 切磋历练潜能：按对手品阶给（打强敌长见识多，打杂鱼给得少，玩家自然会
-      // 越级挑战换潜能，符合武侠成长逻辑）。胜利全额，落败/罢手减半取整——
-      // 以武会友、输了也长见识，但打出结果给得多。保底不靠 AI 心情。
-      // 数值量级（与作者确认·翻倍档）：白10/绿20/蓝40/紫70/橙110/红160，
-      // 让中期主打紫橙袍时约十几场胜利即可把内外功推到红名水平（各95、双线约
-      // 1570潜能）。cap 兜底 0（白袍），越界 clamp 到 0~5。
-      {
-        const { potGain, tierLabel } = duelPotGain(duelingNpc?.levelCap, outcome);
-        setPot(p => p + potGain);
-        addLog([{ t: "item", text: `  ✦ 与${tierLabel}高手切磋${outcome === "win" ? "获胜" : outcome === "lose" ? "落败" : "罢手"}，长了见识，潜能 +${potGain}` }]);
-      }
-      // 切磋后好感度：跟人认认真真过了招（点到为止），关系会拉近。但只对"具名 NPC 的
-      // 切磋"生效——路遇的野兽/山贼这类泛用清剿目标（带 tag）是打杀、不是以武会友，
-      // 不加好感度。赢了不失礼、输了也虚心，都算长交情，不论胜负都 +，赢略多。
-      if (duelingNpc?.name && !duelingNpc.tag) {
-        const affGain = duelAffGain(outcome);
-        const foeName = duelingNpc.name;
-        setVarTree(prev => {
-          const tree = markNpcAsKnown(prev, foeName);
-          const roles = { ...(tree.角色 || {}) };
-          const cur = roles[foeName]?.好感度 ?? 0;
-          roles[foeName] = { ...(roles[foeName] || {}), 好感度: Math.max(0, Math.min(100, cur + affGain)) };
-          return { ...tree, 角色: roles };
-        });
-        addLog([{ t: "affection", text: `  💗 与${foeName}切磋一场，交情 +${affGain}` }]);
-      }
-      // 默契加成（本轮新增，与作者确认：只算2v2团战胜利这一种场景）：这场战斗
-      // 若走的是2v2团战（isSnowLeopardAvailable 为真时渲染分流到 TeamDuelScreen，
-      // 见下方渲染分支，不需要额外传参标记"这是不是团战"，用同一个判据即可复用），
-      // 且以胜利收场，系统直接确定性给雪豹加好感度——不靠AI判断"这场配合默契不
-      // 默契"，团战打赢本身就是最直接的默契证明。落败/罢手不加（默契要打出结果
-      // 才算数，不能"陪打就有分"）。跟对手好感度那条是两件独立的事，互不冲突：
-      // 一场胜利的团战里，玩家和对手交情+4、玩家和雪豹默契+3，各自成立。
-      if (outcome === "win" && activeCompanionKey(companionState)) {
-        const teamworkGain = TEAMWORK_GAIN;
-        setVarTree(prev => {
-          const tree = markNpcAsKnown(prev, "雪豹");
-          const roles = { ...(tree.角色 || {}) };
-          const cur = roles.雪豹?.好感度 ?? 0;
-          roles.雪豹 = { ...(roles.雪豹 || {}), 好感度: Math.max(0, Math.min(100, cur + teamworkGain)) };
-          return { ...tree, 角色: roles };
-        });
-        addLog([{ t: "affection", text: `  💗 与雪豹并肩破敌，默契渐深，好感 +${teamworkGain}` }]);
-      }
-      // 必掉物（关键钥匙等）：赢了就一定给，不看气运、不掷骰。
-      // 跟下面那段"按气运概率掉一件随身物"是两回事——钥匙这种卡住一整栋安全屋
-      // 的关键物件不能交给骰子，否则玩家得反复打同一个人刷钥匙。已在背包里就不再给。
-      noteAction("duel");
-      if (outcome === "win" && duelingNpc?.guaranteedDrop) {
-        const gd = duelingNpc.guaranteedDrop;
-        if (!invHasItemNamed(inv, gd.name)) {
-          const keyItem = makeGameItem({ name: gd.name, category: gd.category || "misc", quality: gd.quality || "白", desc: gd.desc });
-          setInv(prev => [...prev, keyItem]);
-          addLog([{ t: "loot", text: `✦ ${duelingNpc.name}倒地时，那件${gd.name}从他身上滑落——你捡了起来。`, item: keyItem, source: "duel", fromNpc: duelingNpc.name }]);
-          jotNote({ text: `打赢${duelingNpc.name}，从他身上得了「${gd.name}」。`, owner: [{ name: duelingNpc.name, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE });
-        }
-      }
-      // 切磋概率获得战利品（本轮）：赢了之后，按气运（福缘）概率从对手随身物品
-      // （carriedItems，即出场时"所见即所得"固化的那些）里随机掉一件给玩家。
-      // 概率非线性：p = 0.5 * (气运/10)^1.7 —— 气运10 约 50%，气运5 约 15%，
-      // 气运0 为 0，低福缘时明显偏低、高福缘才明显上来（凸曲线，不是线性）。
-      // 只在"具名NPC切磋获胜"时触发；清剿目标(带tag)的掉落仍走 DuelScreen 的 loot。
-      if (outcome === "win" && duelingNpc?.name && !duelingNpc.tag) {
-        const pool = (duelingNpc.carriedItems || []).filter(it => !it.stolen && !it.dropped);
-        if (pool.length) {
-          const luck = char.special?.气运 ?? 5;
-          const dropChance = duelDropChance(luck);
-          if (Math.random() < dropChance) {
-            const got = pool[Math.floor(Math.random() * pool.length)];
-            const fullItem = makeGameItem({ name: got.name, category: got.category || "misc", quality: got.quality || "白" });
-            setInv(prev => [...prev, fullItem]);
-            // 标记这件已从对手身上失去，避免重复掉（carriedItems 是固化清单）
-            setRoom(r => ({ ...r, npcs: markCarriedLost(r.npcs, duelingNpc.name, got, "dropped") }));
-            addLog([{ t: "loot", text: `✦ 一番切磋，${duelingNpc.name}的「${got.name}」竟落入你手（福缘所致）`, item: fullItem, source: "duel", fromNpc: duelingNpc.name }]);
-          }
-        }
-      }
-      // 练级点·大公鸡无限刷（本轮）：带 respawn 标记的怪（村口大公鸡）打赢后，
-      // 立刻在原地重新注入一只满血、carry 又带一枚新金蛋的同名怪，供无限连打刷
-      // 金蛋。用 ensureNpcCombatData 按 levelCap 重新固化战斗数值与随身物品。
-      if (outcome === "win" && duelingNpc?.respawn) {
-        const fresh = ensureNpcCombatData(
-          { name: duelingNpc.name, id: duelingNpc.id, brief: duelingNpc.brief, beast: true, respawn: true, cannotSpeak: true,
-            personality: duelingNpc.personality, carry: [{ name: "金蛋", category: "misc", quality: "绿" }] },
-          { luck: char.special?.气运 ?? 5, levelCap: duelingNpc.levelCap ?? 0 }
-        );
-        setRoom(r => ({ ...r, npcs: respawnNpc(r.npcs, fresh) }));
-        addLog([{ t: "sys", text: `  那大公鸡扑棱着翅膀又蹦了回来，梗着脖子冲你叫，似乎还想再斗一场。` }]);
-      }
-      if (outcome === "win" && duelingNpc?.tag) {
-        const matchedQuest = QUCUO_QUESTS.find(q => q.type === QUEST_TYPE.KILL && q.targetTag === duelingNpc.tag);
-        if (matchedQuest) {
-          setQuestProgress(prev => {
-            const cur = prev[matchedQuest.id]?.count || 0;
-            const nextCount = cur + 1;
-            const done = nextCount >= matchedQuest.requiredCount;
-            if (done && cur < matchedQuest.requiredCount) {
-              addLog([{ t: "affection", text: `  ✓ 任务「${matchedQuest.title}」达成：${matchedQuest.rewardText}` }]);
-              setFlags(f => f.includes(`quest_done_${matchedQuest.id}`) ? f : [...f, `quest_done_${matchedQuest.id}`]);
-            } else {
-              addLog([{ t: "sys", text: `  任务「${matchedQuest.title}」进度：${nextCount}/${matchedQuest.requiredCount}` }]);
-            }
-            return { ...prev, [matchedQuest.id]: { count: nextCount } };
-          });
-        }
-      }
-
-      // 战斗掉落：装备进背包，银两加到char.money，都是本地系统裁决，
-      // 不经过AI——跟拾取/爆装备系统一贯的原则一致。物品名直接用它自己的
-      // 正式名字（比如"藏纹银扣"），不再需要额外拼接NPC名字前缀。
-      if (loot) {
-        if (loot.droppedItem) {
-          setInv(prev => [...prev, { ...loot.droppedItem, equipped: false }]);
-          addLog([{ t: "loot", text: `⚔ 战利品：获得「${loot.droppedItem.name}」`, item: loot.droppedItem, source: "duel", fromNpc: duelingNpc?.name }]);
-          // 所见即所得的另一半：东西到了玩家手里，就得从NPC身上消失
-          // （标记 stolen 复用偷窃系统的语义），再打一场不会凭空再爆一件。
-          setRoom(r => ({ ...r, npcs: markCarriedLost(r.npcs, duelingNpc?.name, loot.droppedItem, "stolen") }));
-        }
-        if (loot.droppedMoney > 0) {
-          setChar(c => ({ ...c, money: (c.money || 0) + loot.droppedMoney }));
-          addLog([{ t: "item", text: `  💰 战利品：获得银两 ${loot.droppedMoney} 两` }]);
-        }
-        // 固定必掉（boss/剧情级，如虎王的虎胆+虎牙+虎筋）：一次全给
-        if (loot.guaranteedLoot?.length) {
-          setInv(prev => [...prev, ...loot.guaranteedLoot]);
-          for (const g of loot.guaranteedLoot) {
-            addLog([{ t: "item", text: `  ⚔ 战利品：取得「${g.name}」（${g.quality}）` }]);
-          }
-        }
-      }
-
-      const finishedNpc = duelingNpc;
-      setDuelingNpc(null);
-
-      // 把这场切磋的结果登记成"事实"，交给信息域系统（knowledge.js）——
-      // 同框的其他人这一刻也"目击"了，之后按同框传播规则自然扩散给路人。
-      // 胜负和对手名字是已知结构化数据：先塞一句结构化兜底摘要保证不空，
-      // 随即叫 AI 把它写成白话古文小总结覆盖上去（AI 关了就留兜底）。
-      if (finishedNpc && outcome) {
-        const factId = `duel_${finishedNpc.name}_${time}`;
-        const cue = `主角与${finishedNpc.name}切磋比武，结果主角${outcome === "win" ? "技高一筹取胜" : "落于下风告负"}`;
-        const witnesses = [finishedNpc.name, ...room.npcs.filter(n => n.name !== finishedNpc.name).map(n => n.name)]
-          .map(name => ({ name, 途径: "目击" }));
-        setVarTree(prev => registerFact(prev, { id: factId, 摘要: cue, 标签: "切磋", 知晓者: witnesses }, time));
-        aiSummarizeFact(factId, cue);
-      }
-
-      // 战斗结束后自动触发一次对话过渡，跟战前"抱拳邀战"的铺垫首尾呼应——
-      // 不能打完直接冷冰冰切回房间画面。这里把完整回合经过（谁用了什么招、
-      // 伤害多少）拼进这句"指令"文本里，让主引擎AI照着真实经过写总结，
-      // 而不是每次都写"技高一筹"这种没有细节的套话。
-      if (finishedNpc) {
-        // recap 把每回合的系统数据 + AI 说书文字都拼进去，让主叙事 AI 写整场
-        // 总结时既有硬数据（招式/伤害）又有说书人的味道打底，比只给数字更生动。
-        const recap = (battleLog || []).map(r => {
-          if (r.teamText) return `第${r.round}回合，${r.teamText}`; // 2v2团战条目（TeamDuelScreen已拼好单行战报）
-          const bits = [`第${r.round}回合你使「${r.playerMove}」`];
-          if (r.npcMove) bits.push(`对方使「${r.npcMove}」`);
-          if (r.dmgToNpc > 0) bits.push(`对方受创${r.dmgToNpc}`);
-          if (r.dmgToPlayer > 0) bits.push(`你受创${r.dmgToPlayer}`);
-          if (r.narration) bits.push(`（说书：${r.narration}）`); // 逐回合说书打包进素材
-          return bits.join("，");
-        }).join("；");
-        const outcomeText = outcome === "win"
-          ? `你技高一筹，${finishedNpc.name}抱拳认输`
-          : outcome === "lose"
-            ? `你技逊一筹，向${finishedNpc.name}抱拳致意`
-            : `这场切磋不了了之，收招罢手`;
-        // 主叙事里这条结算的标题：明确标出「XXX 切磋 XXX · 战斗结算」
-        addLog([{ t: "affection", text: `　◈ ${char.name || "你"} 切磋 ${finishedNpc.name} · 战斗结算` }]);
-        // 这条整场战报请求曾需要 setTimeout 400ms 来躲"act 闭包读到旧 varTree"
-        // 的时序坑（上面刚 setVarTree 写入认识+交情，旧 act 里 evolveKnowledge
-        // 拿旧快照推演后整体覆盖写回，会把更新冲掉——交情已加、左栏却仍"尚未认识"）。
-        // 现已根治：setVarTree 包装后同步刷新 varTreeRef，act 内所有 varTree 读取
-        // 都走 ref——哪怕这里的 act 是旧闭包，evolveKnowledge 拿到的也是最新值，
-        // 延迟归零、不再依赖"等 React 渲染完"的概率性时序。
-        setTimeout(() => {
-          act(`切磋结束。经过：${recap || "双方试探几招，未及深入"}。结果：${outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true });
-        }, 0);
-        // 兜底小纸条：不管 AI 那轮是否吐了 memory，系统先按 battleLog 直接补记一条
-        // 客观战斗事实进往事（DUMB 源），确保"战斗过程"一定有一张小纸条可供日后召回。
-        const recapNote = `在${room.name}与${finishedNpc.name}切磋，${recap ? recap.replace(/；/g, "、") + "，" : ""}${outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负"}。`;
-        jotNote({ text: recapNote.slice(0, 60), owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.DUMB });
-      }
-  }, [duelingNpc, pendingQuestBranch, char, room, time, companionState, addLog, forceAdvanceQuest, act, jotNote, aiSummarizeFact, setChar, setInv, setRoom, setVarTree, setPot, setQuestProgress, setFlags, setDuelingNpc, setPendingQuestBranch]);
+    const finishedNpc = duelingNpc;
+    const result = settleNpcDuel(gameStore.getState(), finishedNpc, {
+      outcome,
+      loot,
+      battleLog,
+      grownMoveset,
+      usedItems,
+      remainingHp,
+      pendingQuestBranch,
+      createRespawnNpc: ensureNpcCombatData,
+    });
+    if (pendingQuestBranch?.mode === "combat" && finishedNpc?.questBranchFlag === pendingQuestBranch.flag) {
+      setPendingQuestBranch(null);
+    }
+    noteAction("duel");
+    setDuelingNpc(null);
+    applyResult(featureCtxRef.current, result);
+    if (result.factId) aiSummarizeFact(result.factId, result.cue);
+    if (finishedNpc) {
+      setTimeout(() => {
+        act(`切磋结束。经过：${result.recap || "双方试探几招，未及深入"}。结果：${result.outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true });
+      }, 0);
+      jotNote({
+        text: result.recapNote,
+        owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }],
+        source: NOTE_SOURCE.DUMB,
+      });
+    }
+  }, [duelingNpc, pendingQuestBranch, noteAction, act, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch]);
 
   // 分支节点的具体选项点击（本轮改造，同样支持二选一模式）：
   //   "script" 模式——送一句明确的话给主叙事AI（此前的实现）
@@ -2879,63 +2675,27 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 细看：恢复原本"点NPC名字直接查看"的行为，走正常行动指令流程，
   // 让主引擎描述这个人的外貌举止细节
   const handleNpcLook = useCallback((npc) => {
-    setVarTree(prev => markNpcAsKnown(prev, npc.name));
-    // 锁定交互目标：让 act() 生成的 [交互目标] 约束知道这次细看的是谁，
-    // 主叙事才会真正聚焦这个人、把细看这件事的反应写进旁白，而不只是
-    // 系统本地悄悄记一笔"认识+好感度10"——玩家在叙事里完全看不到任何反应。
+    const result = lookNpc(gameStore.getState(), npc);
+    applyResult(featureCtxRef.current, result);
     setActiveTarget(npc.name);
-    // 细看不该只有文字描述——玩家想知道这个人的实力/状态，血条是最直观的信息，
-    // 之前完全没有展示，细看跟"猜"没什么区别。这里用已生成的 combatStats
-    // （NPC出生时就固定好的气血上限）画一条血条，作为 extraReplies 交给 act，
-    // 让它跟"> look X"这行 cmd 回显同一次原子提交进日志——不能自己先 addLog，
-    // 否则连续点两个不同NPC时，第二个人的血条会插在数组里排在自己的cmd行
-    // 之前，被分组算法错误地划进第一个人的框。
-    const extraReplies = [];
-    if (npc.combatStats?.hp) {
-      const [hp, maxHp] = npc.combatStats.hp;
-      extraReplies.push({ t: "stat", text: `  ${npc.name} 气血 ${bar(hp, maxHp, 10)} ${hp}/${maxHp}` });
-    }
-    // 品阶直接读npc.levelCap系统本地展示——不等AI猜，AI也确实猜不准。
-    // 之前旁白写NPC描述完全不知道这人是什么分量，现在细看至少让玩家自己先看到。
-    if (typeof npc.levelCap === "number") {
-      const tier = QUALITY[Math.max(0, Math.min(5, npc.levelCap))];
-      extraReplies.push({ t: "stat", text: `  ${npc.name} 品阶 ${tier}袍` });
-    }
-    act("look " + npc.id, extraReplies);
+    act("look " + npc.id, result.extraReplies || []);
   }, [act]);
 
   // NPC 互动菜单的四个动作回调。
   // 对话：直接把交互模式切到 talk，玩家自己接着打字说话——
   // 不代玩家编一句开场白，因为"上前搭话"之后具体聊什么应该由玩家自己决定。
   const handleNpcTalk = useCallback((npc) => {
-    setVarTree(prev => markNpcAsKnown(prev, npc.name));
-    // 护镖任务完成：玩家对话目标 NPC 且当前在目标据点
-    const activeEscort = ESCORT_QUESTS.find(q => {
-      const prog = questProgress[q.id];
-      return prog?.active && q.targetNpc === npc.name && q.targetLocation === room.name && !flags.includes(`quest_done_${q.id}`);
-    });
-    if (activeEscort) {
-      setQuestProgress(prev => ({ ...prev, [activeEscort.id]: { active: false } }));
-      setFlags(f => [...f, `quest_done_${activeEscort.id}`]);
-      setChar(c => ({ ...c, money: (c.money || 0) + activeEscort.reward }));
-      setPot(p => p + 10); // 保底潜能：完成护镖任务
-      addLog([
-        { t: "sys", text: `  你找到了${npc.name}，交出货物，护镖任务「${activeEscort.title}」圆满完成！` },
-        { t: "item", text: `  💰 报酬：${activeEscort.reward} 两 · 潜能 +10` },
-      ]);
-      return;
-    }
+    const result = talkToNpc(gameStore.getState(), npc);
+    applyResult(featureCtxRef.current, result);
+    if (result.completedEscort) return;
     if (npc.cannotSpeak) {
-      setVarTree(prev => markNpcAsKnown(prev, npc.name));
       setActiveTarget(npc.name);
-      addLog([{ t: "sys", text: `  ${npc.name}歪着头看你，喉间发出低低的声响，却说不出半句人话——它听不懂你的言语，你也无从与它交谈。（它不能说话，但你可以投喂食物，日久或能与它亲近）` }]);
       return;
     }
     setInteractMode("talk");
     setTalkTarget(npc.name);
-    setActiveTarget(npc.name); // talkTarget 只管输入框对话聚焦；activeTarget 才是 act() 里 [交互目标] 的判据，两者要同步
-    addLog([{ t: "sys", text: `  你走向${npc.name}，看样子是想说些什么。` }]);
-  }, [addLog, questProgress, room.name, flags]);
+    setActiveTarget(npc.name);
+  }, []);
 
   // 送礼信息组装：把"送的是什么"落到具体的品阶+描述+建议幅度，喂给 AI 的 <mvu>
   // 提示才有依据可循，不是空对着一个物品名字瞎猜该加多少好感。
@@ -2944,69 +2704,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 建议幅度区间跟着六品阶指数曲线走（品阶越高、这件东西在世界观里越贵重，
   // 一份心意的分量也越重），最终仍会被 mvu.js 的 ±15 硬裁剪兜底，这里只是
   // 给 AI 一个贴合实际、别瞎给的参考锚点，不是精确写死的数值。
-  const GIFT_AFFECTION_RANGE = { 白: [2, 4], 绿: [4, 6], 蓝: [6, 9], 紫: [9, 12], 橙: [11, 14], 红: [13, 15] };
-  const describeGiftForPrompt = useCallback((item) => {
-    const itemName = typeof item === "string" ? item : item?.name;
-    const catalogEntry = CATALOG_INDEX[itemName];
-    const invEntry = typeof item === "object" ? item : null;
-    const quality = catalogEntry?.quality || invEntry?.quality || "白";
-    const desc = catalogEntry?.desc || invEntry?.desc || "";
-    const category = catalogEntry?.category || invEntry?.category || null;
-    const categoryLabel = category ? (CATEGORY_LABEL[category] || category) : null;
-    const [lo, hi] = GIFT_AFFECTION_RANGE[quality] || GIFT_AFFECTION_RANGE.白;
-    const suggestedDelta = Math.round((lo + hi) / 2);
-    return { itemName, quality, desc, categoryLabel, range: [lo, hi], suggestedDelta };
-  }, []);
-
   // 送礼：系统裁决层先本地从背包扣除这件物品（不能让 AI 自己决定"要不要真的扣"），
   // 再把"送出"这个既成事实和物品描述一起交给主引擎生成场景反应和好感度判断。
   const handleNpcGift = useCallback((npc, item) => {
-    setVarTree(prev => markNpcAsKnown(prev, npc.name));
-    setActiveTarget(npc.name); // 让 act() 知道这次送礼针对谁，主叙事才会聚焦这个人写出反应
-    const itemName = typeof item === "string" ? item : item.name;
-    const giftInfo = describeGiftForPrompt(item);
-    setInv(prev => {
-      if (typeof item === "object" && item.id != null) {
-        return prev.filter(i => !(typeof i === "object" && i.id === item.id));
-      }
-      const idx = prev.findIndex(i => (typeof i === "string" ? i : i.name) === itemName);
-      if (idx === -1) return prev;
-      return [...prev.slice(0, idx), ...prev.slice(idx + 1)];
-    });
-
-    // ── 送物任务 check ──
-    // 若当前有进行中的送物类任务，其当前 stage 声明了 deliver:{item,to}，
-    // 且这次正好是"把那件物送给那个人"，就推进任务——送对东西给对的人才算数，
-    // 不是随便送个礼就过。任务推进走既有 forceAdvanceQuest 链（结算 onReach）。
-    let deliveredQuest = null;
-    for (const quest of QUCUO_QUESTS) {
-      if (!quest.stages?.length) continue;
-      const prog = questProgress[quest.id];
-      if (prog?.status !== "active") continue;
-      const stage = getCurrentStage(quest, prog);
-      const d = stage?.deliver;
-      if (!d) continue;
-      // to 匹配收礼NPC，item 匹配送出物（支持"包含"匹配，容忍"修好的马鞭"vs"马鞭"）
-      const toOk = d.to === npc.name;
-      const itemOk = itemName === d.item || itemName.includes(d.item) || d.item.includes(itemName);
-      if (toOk && itemOk) { deliveredQuest = { quest, flag: Array.isArray(stage.completionFlag) ? stage.completionFlag[0] : stage.completionFlag }; break; }
-    }
-    if (deliveredQuest) {
-      forceAdvanceQuest(deliveredQuest.quest, deliveredQuest.flag);
-      addLog([{ t: "affection", text: `  ✓ 你把「${itemName}」交到${npc.name}手上，「${deliveredQuest.quest.title}」推进。` }]);
-    }
-
-    const isAngry = varTreeRef.current.角色?.[npc.name]?.生气状态?.active;
-    const cmd = isAngry
-      ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好`
-      : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
-    // 之前这里漏传 opts，导致送礼走了普通 talk 档意图分类（inputIntent 把"赠予"归到
-    // TALK_CASUAL），拿不到 settle 档专属的"这一轮必须判好感"强提示，好感度全凭 AI
-    // 自己想不想得到。补上 settle:true + settleNpc 才能真正吃到下面 settleKind:"gift"
-    // 那条硬规则。生气赔罪场景不算"送啥都开心"，好感能不能回升交给 AI 按情境自行判断，
-    // 所以只在非生气的正常送礼时才标 settleKind。
-    act(cmd, [], { settle: true, settleNpc: npc.name, settleKind: isAngry ? null : "gift", giftInfo });
-  }, [act, varTree, questProgress, forceAdvanceQuest, addLog, describeGiftForPrompt]);
+    setActiveTarget(npc.name);
+    applyResult(featureCtxRef.current, giftNpc(gameStore.getState(), npc, item));
+  }, []);
 
   // 邀请入队（目前只有雪豹）：系统裁决层直接把伙伴状态设为"已解锁+出战"
   // （不靠AI判断"愿不愿意跟你走"这种概率性的东西——邀请入队是玩家主动点的
@@ -3016,22 +2719,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 走 settle 档 + settleKind:"companion_invite"，让 buildSysBase 注入专属的
   // "前世羁绊/认主"调性铁律（见下方 buildSysBase 里新增的分支）。
   const handleInviteCompanion = useCallback((npc) => {
-    // 内置伙伴候选（雪豹/珍珠…）按名字分发到各自的解锁函数；玩家入册导入的 NPC
-    // （npc.imported）走动态登记。都不是的直接返回（双重保险，按钮本就不该出现）。
-    const key = companionKeyByName(npc.name);
-    if (key === "snowLeopard") setCompanionState(prev => unlockSnowLeopard(prev));
-    else if (key === "pearl") setCompanionState(prev => unlockPearl(prev));
-    else if (npc.imported) setCompanionState(prev => unlockImportedCompanion(prev, npc));
-    else return;
-    setVarTree(prev => markNpcAsKnown(prev, npc.name));
-    // 入队即时生效：把它从当前房间移除，此地之人/在场名单/互动入口当场都不再有它
-    // （此后只以队友身份随玩家在场）。内置驻场兽认 companionCandidate，导入的认
-    // imported。重进据点不再重现：内置的由房间注入 effect 的 companionStateRef 过滤，
-    // 导入的由 getImportedForDistrict 调用处按 isCompanionUnlockedByName 过滤。
-    setRoom(r => ({ ...r, npcs: removeNpc(r.npcs, n => n.name === npc.name && (n.companionCandidate || n.imported)) }));
+    const result = inviteCompanion(gameStore.getState(), npc);
+    if (!result.changes) return;
     setActiveTarget(npc.name);
-    act(`向${npc.name}伸出手，郑重邀它同行`, [], { settle: true, settleNpc: npc.name, settleKind: "companion_invite", settleBeast: !!npc.beast });
-  }, [act]);
+    applyResult(featureCtxRef.current, result);
+  }, []);
 
   // ⑤ 服食：把原打字正则分支的确定性结算抽成 handler，供物品面板「服食」调用。
   const handleConsumeItem = useCallback((item) => {
@@ -3280,7 +2972,7 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   const handleNpcDuel = useCallback(async (npc) => {
     // 实质性互动（打过一场架）本来就是认识对方的充分条件，不能只靠"细看/对话"
     // 两个入口才算认识——玩家跟这个人交过手、见过好感度变化，说"尚未认识"是反直觉的。
-    setVarTree(prev => markNpcAsKnown(prev, npc.name));
+    applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name); // 让邀战这段过渡叙事聚焦这个人，而非把在场所有人都发给AI
     // 切磋不再是点了就直接弹战斗界面：先走一次正常的行动结算，让AI描述
     // "抱拳邀战、对方如何应允/摆开架势"这类过渡场景；叙事跑完之后，还要
@@ -3306,13 +2998,10 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 保证同一个商人每次进店看到的东西都稳定。
   const [tradingShop, setTradingShop] = useState(null); // { name: 商人名, shopName, items }
   const handleNpcTrade = useCallback((npc) => {
-    const shopData = rollShopStock(npc.name, time) || buildShopInventory(npc.name);
-    if (!shopData) {
-      addLog([{ t: "sys", text: `  ${npc.name}摆摆手，「小店暂无货可卖。」` }]);
-      return;
-    }
-    setTradingShop({ npcName: npc.name, ...shopData });
-  }, [addLog]);
+    const result = tradeWithNpc(gameStore.getState(), npc);
+    if (result.shop) setTradingShop(result.shop);
+    else applyResult(featureCtxRef.current, result);
+  }, []);
 
   // 拜师学艺：统一走 tryLearnFromMaster（src/kungfu/learnSkill.js）。
   // 高手（levelCap≥1）教专属招，平民（levelCap<1）教通用招池的白档基本功——
@@ -3328,11 +3017,8 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 是物品还是招式（tryStealFrom 内部处理）。身法（char.special.身法）现在也
   // 参与成功率计算，跟好感度独立相加——手越利索，越容易得手。
   const handleNpcSteal = useCallback((npc) => {
-    const agility = char.special?.身法 ?? 0;
-    // 开 trace。偷窃此前完全不进「🧭全流程日志」——一旦偷不到东西，玩家和我都
-    // 只能猜（是没得手？池子空？还是转成偷招了？），只好靠反复试。
-    // 现在把判定链的每一步都记下来，尤其**池子的实际内容**：那是前几次反复修
-    // 掉落/偷窃 bug 时最想看却看不到的东西。
+    const state = gameStore.getState();
+    const agility = state.char?.special?.身法 ?? 0;
     const _st = startTrace(`偷窃 ${npc?.name || "?"}`, `偷窃 ${npc?.name || "?"}`);
     const poolAll = npc?.carriedItems || [];
     const poolUsable = poolAll.filter(it => !it.stolen);
@@ -3340,109 +3026,35 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
       poolAll.length
         ? `共${poolAll.length}件，可偷${poolUsable.length}件：${poolUsable.map(i => `${i.name}(${i.category || "?"}/${i.quality || "?"})`).join("、") || "无"}`
         : `carriedItems 为空或未固化 —— 这种情况偷不到任何物件，只可能偷到招式。若此人本该有随身物，说明固化/回填没生效。`);
+    const favorability = state.varTree?.角色?.[npc?.name]?.好感度 ?? 0;
     traceStep(_st, "身法与好感", "info",
-      `身法${agility}，好感${varTreeRef.current.角色?.[npc?.name]?.好感度 ?? 0} → 成功率约 ${(stealSuccessRate(varTreeRef.current.角色?.[npc?.name]?.好感度 ?? 0, agility) * 100).toFixed(0)}%`);
-
-    const result = tryStealFrom(npc, varTreeRef.current, skills, char, agility);
-
-    if (!result.ok) {
-      traceStep(_st, "判定", "block", result.reason);
+      `身法${agility}，好感${favorability} → 成功率约 ${(stealSuccessRate(favorability, agility) * 100).toFixed(0)}%`);
+    const result = stealFromNpc(state, npc);
+    const steal = result.steal;
+    if (result.kind === "blocked") {
+      traceStep(_st, "判定", "block", steal?.reason || "此地没有这位人物。");
       endTrace(_st, "偷窃未进行");
-      addLog([{ t: "sys", text: `  ${result.reason}` }]);
+      applyResult(featureCtxRef.current, result);
       return;
     }
-    traceStep(_st, "掷骰", result.success ? "pass" : "block",
-      `成功率${(result.rate * 100).toFixed(0)}% → ${result.success ? "得手" : "被察觉"}`);
-    if (result.success) {
+    traceStep(_st, "掷骰", steal.success ? "pass" : "block",
+      `成功率${(steal.rate * 100).toFixed(0)}% → ${steal.success ? "得手" : "被察觉"}`);
+    if (steal.success) {
       traceStep(_st, "产出分流", "info",
-        `结局=${result.outcome === null ? "对方一无所有" : result.outcome === "move" ? "偷到招式" : "偷到物件"}`
-        + (result.outcome === "item" ? `：${result.item.name}(${result.item.category})` : "")
-        + (result.outcome === "move" ? `：${result.move.name}` : ""));
+        `结局=${steal.outcome === null ? "对方一无所有" : steal.outcome === "move" ? "偷到招式" : "偷到物件"}`
+        + (steal.outcome === "item" ? `：${steal.item.name}(${steal.item.category})` : "")
+        + (steal.outcome === "move" ? `：${steal.move.name}` : ""));
     }
-
-    if (!result.success) {
-      addLog([
-        { t: "cmd", text: `> 偷窃 ${npc.name}` },
-        { t: "desc", text: `  你手法生涩，被${npc.name}当场察觉！他脸色一沉，显然动了真怒。` },
-      ]);
-      // 偷窃被当场发现，跟偷窃成功（神不知鬼不觉）性质完全相反——
-      // 对方已经知道玩家是谁、双方有了正面冲突接触，这时候标记认识才合理；
-      // 偷窃成功恰恰不该标记，因为那意味着对方完全没察觉玩家的存在。
-      endTrace(_st, `被${npc.name}察觉，好感-${result.favorabilityLoss}`);
-      noteAction("stealFail");
-      // 被当场发现：对方**确实知道**是你干的，所以这条记忆记在他名下（亲历），
-      // 日后他提起来、别人问起来都对得上。
-      jotNote({
-        text: `对${npc.name}下手偷窃，被他当场察觉，好感掉了${result.favorabilityLoss}，他动了真怒。`,
-        owner: [{ name: npc.name, via: VIA.FIRSTHAND }],
-        source: NOTE_SOURCE.DUMB,
-      });
-      setVarTree(prev => {
-        const known = markNpcAsKnown(prev, npc.name);
-        const cur = known.角色?.[npc.name] || {};
-        const newFavorability = Math.max(0, (cur.好感度 || 0) - result.favorabilityLoss);
-        return {
-          ...known,
-          角色: {
-            ...known.角色,
-            [npc.name]: { ...cur, 好感度: newFavorability, 生气状态: result.angryState },
-          },
-        };
-      });
-      return;
+    if (result.kind === "caught") {
+      endTrace(_st, `被${npc.name}察觉，好感-${steal.favorabilityLoss}`);
+    } else {
+      endTrace(_st, result.kind === "empty"
+        ? `得手但${npc.name}身无长物`
+        : result.kind === "item" ? `顺走「${steal.item.name}」` : `偷师「${steal.move.name}」`);
     }
-
-    if (result.outcome === null) {
-      endTrace(_st, `得手但${npc.name}身无长物`);
-      noteAction("steal");
-      addLog([{ t: "sys", text: `  你想对${npc.name}下手，摸了半天，却发现他身上早已一无所有，只得悻悻作罢。` }]);
-      // 手法得逞但一无所获。仍记一笔——"这个人身上已经没东西了"本身是有用的信息，
-      // 免得玩家过一阵子又去摸一遍。同样不挂 owner（他没察觉）。
-      jotNote({
-        text: `摸了${npc.name}的身，他身上已经一无所有。`,
-        source: NOTE_SOURCE.DUMB,
-      });
-      return;
-    }
-
-    if (result.outcome === "item") {
-      const target = result.item;
-      const fullItem = makeGameItem({ name: target.name, category: target.category || "misc", quality: target.quality || "白" });
-      addLog([
-        { t: "cmd", text: `> 偷窃 ${npc.name}` },
-        { t: "desc", text: `  你运指如风，趁${npc.name}不备，将「${target.name}」（${target.quality}）神不知鬼不觉地顺入了自己怀中。` },
-        { t: "loot", text: `🤫 妙手空空：「${target.name}」`, item: fullItem, source: "steal", fromNpc: npc.name },
-      ]);
-      setInv(prev => [...prev, { ...fullItem, id: `stolen_${target.id}_${Date.now()}` }]);
-      endTrace(_st, `顺走「${target.name}」`);
-      noteAction("steal");
-      // 【owner 刻意留空】偷窃得手意味着对方**完全没察觉**。若把他挂成 owner，
-      // 这条就成了他"亲历/目击"的事实，之后他会在对话里提起自己被偷——
-      // 而他根本不知道。这跟上面"被发现"那条的处理正相反，是同一套 owner 语义的两面。
-      jotNote({
-        text: `从${npc.name}身上顺走了「${target.name}」，他毫无察觉。`,
-        source: NOTE_SOURCE.DUMB,
-      });
-      // 标记这件物品已被偷走，避免同一件东西被偷第二次
-      setRoom(r => ({ ...r, npcs: markCarriedLost(r.npcs, npc.name, target, "stolen") }));
-      return;
-    }
-
-  // result.outcome === "move"：偷师成功，把偷来的招并入武学栏（fixed，学即完整）
-  addLog([
-    { t: "cmd", text: `> 偷窃 ${npc.name}` },
-    { t: "desc", text: `  你悄然窥破${npc.name}出手的门道，趁其不备，竟将「${result.move.name}」这一手偷学了去！` },
-    { t: "loot", text: `🤫 偷師得手：「${result.move.name}」`, skill: { name: result.move.name, quality: result.move.quality || result.skill?.quality || "白", moveType: result.move.type }, desc: result.move.desc, source: "steal", fromNpc: npc.name },
-  ]);
-  setSkills(sk => sk.some(s => s.id === result.skill.id) ? sk : [...sk, result.skill]);
-  endTrace(_st, `偷师「${result.move.name}」`);
-  noteAction("steal");
-  // 偷师同理不挂 owner——他不知道自己的招被人看会了。
-  jotNote({
-    text: `偷看${npc.name}出手的门道，把「${result.move.name}」这一手学了去，他没有察觉。`,
-    source: NOTE_SOURCE.DUMB,
-  });
-  }, [varTree, skills, char, addLog, noteAction, jotNote]);
+    if (result.noteAction) noteAction(result.noteAction);
+    applyResult(featureCtxRef.current, result);
+  }, [noteAction]);
 
   // loading 变为 false 时，处理队列中的下一条命令。
   // 关键修复：依赖数组必须包含 act 本身——act 是 useCallback，依赖里有 room 等

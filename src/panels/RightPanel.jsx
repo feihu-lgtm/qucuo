@@ -3,7 +3,8 @@ import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, computeEquippedStats, tog
 import { bar, STAGES, STAGE_UP_COST } from "../utils/mudHelpers.js";
 import { npcAffectionLabel } from "../mvu.js";
 import { SNOW_LEOPARD_FORMS, PEARL_FORMS, snowLeopardPortraitUrl, pearlPortraitUrl, getCompanionForms, companionPortraitUrl } from "../portraits.js";
-import { activeCompanion, COMPANION_LORE, COMPANION_DESC_FORMS, getCompanionDescForm, setCompanionDescForm } from "../companion.js";
+import { activeCompanion, COMPANION_LORE, COMPANION_DESC_FORMS } from "../companion.js";
+import { getCompanionDescForm, setCompanionDescForm } from "../companionForms.js";
 import { unlockedCompanions, activeCompanionKey, isSnowLeopardAvailable } from "../companion.js";
 import { effectBrief, statLabel, moveStatLabel, moveEffectBrief } from "../itemEffectText.js";
 import { deriveMoveFromSkill } from "../npcGeneration.js";
