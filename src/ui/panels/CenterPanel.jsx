@@ -171,7 +171,7 @@ export default function CenterPanel({
           {duelPending && (
             <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ color: "var(--text)", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
-              <span onClick={confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--bg-panel)", background: "#c45044", border: "1px solid #c45044" }}>确认切磋</span>
+              <span onClick={confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "#111110", background: "#c45044", border: "1px solid #c45044" }}>确认切磋</span>
               <span onClick={cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid #2a2d3a" }}>算了</span>
             </div>
           )}

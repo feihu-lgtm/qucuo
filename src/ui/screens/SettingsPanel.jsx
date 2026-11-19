@@ -271,7 +271,7 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = "#1c1a15"; e.currentTarget.style.borderColor = "var(--accent)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-panel)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
-                <div style={{ fontSize: "15px", color: "#c8e0d8", marginBottom: 6 }}>{title}</div>
+                <div style={{ fontSize: "15px", color: "var(--text)", marginBottom: 6 }}>{title}</div>
                 <div style={{ fontSize: "10.5px", color: "#6a7a72" }}>{sub}</div>
               </div>
             ))}

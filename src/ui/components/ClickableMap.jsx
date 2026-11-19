@@ -132,7 +132,7 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
                     <rect x={cx - pw / 2 + 3} y={cy - ph / 2 + 3} width={pw - 6} height={ph - 6} fill="none" stroke={edge} strokeWidth={1} />
                   </g>
                   <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
-                    fill={n.current ? accent : "var(--text)"} fontSize={fs} fontFamily="inherit" fontWeight="bold">{label}</text>
+                    fill={n.current ? accent : "#201d18"} fontSize={fs} fontFamily="inherit" fontWeight="bold">{label}</text>
                 </g>
               )}
               {n.locked && <text x={cx + pw / 2 - 8} y={cy - ph / 2 + 12} textAnchor="middle" fontSize="12" style={{ pointerEvents: "none" }}>🔒</text>}
