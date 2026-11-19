@@ -60,6 +60,10 @@ export default function GameLayout({ layout }) {
     const updateHeight = () => {
       const height = viewport?.height || window.innerHeight;
       document.documentElement.style.setProperty("--mobile-viewport-height", `${Math.round(height)}px`);
+      document.documentElement.classList.toggle(
+        "mobile-keyboard-open",
+        !!isMobile && !!viewport && viewport.height < window.innerHeight - 100,
+      );
     };
     updateHeight();
     viewport?.addEventListener("resize", updateHeight);
@@ -69,9 +73,10 @@ export default function GameLayout({ layout }) {
       viewport?.removeEventListener("resize", updateHeight);
       viewport?.removeEventListener("scroll", updateHeight);
       window.removeEventListener("resize", updateHeight);
+      document.documentElement.classList.remove("mobile-keyboard-open");
       document.documentElement.style.removeProperty("--mobile-viewport-height");
     };
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     if (!isMobile || !mobileDrawer) return undefined;
