@@ -14,6 +14,7 @@ import { buildExtractionCfg } from "../../extractionEngine.js";
 import { callModel, classifyError, getPipelineLog } from "../../apiConfig.js";
 import { startTrace, step as traceStep, endTrace } from "../../actionTrace.js";
 import { createPromptContext } from "../../engine/prompt/index.js";
+import * as importedRegistry from "../../cards/importedRegistry.js";
 import { COMPANION_LORE } from "../../companion.js";
 import { getCompanionDescForm } from "../../companionForms.js";
 import { SEA_OF_MIND } from "../../seaOfMind.js";

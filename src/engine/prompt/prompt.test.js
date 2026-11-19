@@ -70,7 +70,7 @@ describe("pure prompt builders", () => {
         vi.unstubAllGlobals();
       }
     }
-    const webSource = readFileSync(new URL("../../MudRPG.jsx", import.meta.url), "utf8");
+    const webSource = readFileSync(new URL("../../app/hooks/useTurn.js", import.meta.url), "utf8");
     expect(webSource).toContain("Object.keys(COMPANION_LORE).map(key => [key, getCompanionDescForm(key)])");
   });
 
@@ -163,7 +163,7 @@ it("assembles byte-identical complete prompts through web and CLI wiring, includ
     return request;
   };
   expect(await capture(web)).toEqual(await capture(cli));
-  const webSource = readFileSync(new URL("../../MudRPG.jsx", import.meta.url), "utf8");
+  const webSource = readFileSync(new URL("../../app/hooks/useTurn.js", import.meta.url), "utf8");
   expect(webSource).toContain("prompt: createPromptContext({");
 });
 
