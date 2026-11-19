@@ -31,6 +31,18 @@ describe("inner movement logic", () => {
     expect(result.logs.some((entry) => entry.text.includes("村里的客栈"))).toBe(true);
   });
 
+  it("emits exactly one command entry when act already echoed the movement", () => {
+    const actEcho = { t: "cmd", text: "> 走 东" };
+    const result = innerMove(makeState(), {
+      direction: "e",
+      forceLayer: "inner",
+      command: "走 东",
+      includeCommand: false,
+    });
+
+    expect([actEcho, ...result.logs].filter((entry) => entry.t === "cmd")).toEqual([actEcho]);
+  });
+
   it("marks newly visible NPCs seen and records their last-seen turn", () => {
     const state = makeState({
       room: { name: "鱼定村", npcs: [{ name: "客商", innerRoom: "歇马居" }] },

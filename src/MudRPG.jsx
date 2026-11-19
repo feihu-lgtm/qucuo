@@ -2274,7 +2274,13 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // ── 内层箱庭移动：优先于外层大地图判定（判定在 act/innerMove.js，副作用在此执行）──
     const forceLayer = opts.forceLayer || null;
     const innerResult = !isTalk && movingDir
-      ? innerMoveLogic(gameStore.getState(), { _trace, direction: movingDir, forceLayer, command: cmd })
+      ? innerMoveLogic(gameStore.getState(), {
+        _trace,
+        direction: movingDir,
+        forceLayer,
+        command: cmd,
+        includeCommand: false,
+      })
       : null;
     if (innerResult?.changes?.innerRoomName) {
       noteAction("innerMove");

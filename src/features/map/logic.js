@@ -53,6 +53,10 @@ function commandText(request, direction) {
   return value || (direction ? `往${DIRS[direction] || direction}走` : "内层移动");
 }
 
+function commandLogs(request, command) {
+  return request.includeCommand === false ? [] : [{ t: "cmd", text: `> ${command}` }];
+}
+
 export function innerMove(state, dirOrRoom) {
   const request = normalizeRequest(dirOrRoom);
   const forceLayer = Object.hasOwn(request, "forceLayer") ? request.forceLayer : "inner";
@@ -82,7 +86,7 @@ export function innerMove(state, dirOrRoom) {
     if (!forceLayer || forceLayer === "outer") return null;
     return {
       logs: [
-        { t: "cmd", text: `> ${command}` },
+        ...commandLogs(request, command),
         { t: "sys", text: "  内里这个方向没有去处。" },
       ],
     };
@@ -106,7 +110,7 @@ export function innerMove(state, dirOrRoom) {
   if (decision.kind === "blocked") {
     return {
       logs: [
-        { t: "cmd", text: `> ${command}` },
+        ...commandLogs(request, command),
         { t: "sys", text: `  ${decision.lockedMsg || "内里这个方向没有去处。"}` },
       ],
     };
@@ -125,7 +129,7 @@ export function innerMove(state, dirOrRoom) {
       },
     },
     logs: [
-      { t: "cmd", text: `> ${command}` },
+      ...commandLogs(request, command),
       { t: "room", text: "" },
       { t: "room", text: `    ${state.room.name}·${decision.innerDest}` },
       { t: "room", text: "" },
