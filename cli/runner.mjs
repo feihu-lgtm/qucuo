@@ -5,9 +5,10 @@ import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../src/core/ga
 import { buildInitialGameState, DEFAULT_PRESETS } from "../src/core/newGame.js";
 import { snapshotFromStore } from "../src/core/persist.js";
 import { setSeed } from "../src/core/rng.js";
-import { resetForDay, loadSquares, serializeSquares } from "../src/mapSquares.js";
+import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare } from "../src/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/saves.js";
-import { getTimeStr } from "../src/utils/mudHelpers.js";
+import { getTimeStr, parseDir } from "../src/utils/mudHelpers.js";
+import { resolveExit } from "../src/qucuoMap.js";
 import { QUALITY } from "../src/equipment.js";
 import { defaultConfig } from "../src/apiConfig.js";
 import { classifyIntent, buildBudgetInstruction } from "../src/inputIntent.js";
@@ -18,7 +19,7 @@ import { playTurn } from "../src/engine/playTurn.js";
 import { applyResult } from "../src/features/run.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
-import { innerMove } from "../src/features/map/logic.js";
+import { innerMove, outerArrival } from "../src/features/map/logic.js";
 import {
   giftNpc,
   inviteCompanion,
@@ -118,6 +119,12 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
     jotNote: () => {},
     setVarTree: gameActions.setVarTreeState,
+    applySquareOps: (ops) => {
+      for (const { op, key, day } of ops) {
+        if (op === "consume") consumeArrival(key, day);
+        else if (op === "burn") burnSquare(key);
+      }
+    },
     act: (text, extraReplies, opts) => {
       pendingTurn = runFreeText(text, { ...(opts || {}), extraReplies: extraReplies || [] });
       return pendingTurn;
@@ -424,14 +431,30 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     });
     const movementMatch = /^(走|去)\s+(.+)$/.exec(line);
     if (movementMatch) {
+      const isWalk = movementMatch[1] === "走";
       const result = innerMove(state, {
         target: movementMatch[2],
         command: line,
         targetKind: movementMatch[1] === "去" ? "room" : "direction",
-        forceLayer: "inner",
+        forceLayer: isWalk ? null : "inner",
       });
       if (result) {
         return await applyFeature(result);
+      }
+      if (isWalk) {
+        const direction = parseDir(movementMatch[2]);
+        const destName = direction ? resolveExit(state.room?.name, direction) : null;
+        if (destName) {
+          const arrival = outerArrival(state, {
+            direction,
+            destName,
+            roomMap: session.roomMap,
+            squares: serializeSquares(),
+            command: line,
+          });
+          if (arrival?.cached) return await applyFeature(arrival);
+          if (arrival) applyResult(featureCtx, arrival);
+        }
       }
     }
 

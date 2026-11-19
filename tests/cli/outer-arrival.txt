@@ -1,0 +1,7 @@
+:set innerRoomName=null
+走 东
+:expect room.name=雅江
+:save cached-outer.json
+:new
+:load cached-outer.json
+:expect room.name=雅江

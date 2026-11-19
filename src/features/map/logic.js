@@ -1,6 +1,10 @@
 import { tryInnerMove } from "../../act/innerMove.js";
+import { makeItem, QUALITY } from "../../equipment.js";
 import { getInnerRoom, hasInnerMap } from "../../innerMap.js";
-import { markAsSeen, updateLastSeen } from "../../npcAwareness.js";
+import { makeItemSmart } from "../../items/catalog.js";
+import { detectNewFaces, markAsSeen, updateLastSeen } from "../../npcAwareness.js";
+import { ensureNpcCombatData } from "../../npcGeneration.js";
+import { findPath, getMapNode, isNodeUnlocked } from "../../qucuoMap.js";
 import { DIRS, parseDir } from "../../utils/mudHelpers.js";
 
 const DIRECTION_TOKENS = new Set([
@@ -136,5 +140,127 @@ export function innerMove(state, dirOrRoom) {
       ...decision.arrivalLines,
       ...decision.newFaces.map((name) => ({ t: "sys", text: `  ※ 新人物出现：${name}（点击可细看其人）` })),
     ],
+  };
+}
+
+function makeGameItem(spec) {
+  return makeItemSmart(spec, makeItem);
+}
+
+function completedQuestIds(questProgress) {
+  return new Set(Object.entries(questProgress || {})
+    .filter(([, progress]) => progress?.status === "completed" || progress?.done)
+    .map(([id]) => id));
+}
+
+export function planAutoTravel(state, destName) {
+  const unlocked = { completedQuests: completedQuestIds(state.questProgress), flags: state.flags || [] };
+  if (!isNodeUnlocked(destName, unlocked)) return { locked: true, path: null };
+  const allowed = new Set(Object.keys(state.mapData || {}).filter((name) => isNodeUnlocked(name, unlocked)));
+  return { locked: false, path: findPath(state.room?.name, destName, allowed) };
+}
+
+function readArrivalSquare(square, day) {
+  if (!square || square.day !== day) {
+    return { desc: null, findLine: "", item: null, encounter: null };
+  }
+  return {
+    desc: square.desc,
+    findLine: square.findLine || "",
+    item: square.item && !square.itemTaken && !square.burned ? square.item : null,
+    encounter: square.encounter && !square.encounterMet && !square.burned ? square.encounter : null,
+  };
+}
+
+export function outerArrival(state, { direction, destName, roomMap, squares, command = "" } = {}) {
+  if (!destName) return null;
+  const destNode = getMapNode(destName);
+  if (!destNode) return null;
+
+  const unlockContext = { completedQuests: completedQuestIds(state.questProgress), flags: state.flags || [] };
+  if (!isNodeUnlocked(destName, unlockContext)) return null;
+
+  const squareOps = [{ op: "burn", key: destName }];
+  const cached = roomMap?.[destName];
+  if (!cached) return { cached: false, squareOps };
+
+  const day = Math.floor(state.time / 24);
+  const square = readArrivalSquare(squares?.[destName], day);
+  const arrivalDesc = square.desc || destNode.desc;
+  const gridNpcs = [...(cached.npcs || [])];
+  const logs = [
+    { t: "room", text: "" },
+    { t: "room", text: `    ${destName}` },
+    { t: "room", text: "" },
+    { t: "desc", text: `  ${arrivalDesc}` },
+  ];
+  const gainedItem = square.item ? makeGameItem(square.item) : null;
+  if (gainedItem) {
+    logs.push({
+      t: "item",
+      text: `  ${square.findLine ? `${square.findLine}  ` : ""}✓ 你拾得「${square.item.name}」，收入行囊。`,
+    });
+  }
+
+  if (square.encounter) {
+    const encounter = square.encounter;
+    gridNpcs.push(ensureNpcCombatData({
+      name: encounter.name,
+      id: encounter.id,
+      brief: encounter.brief,
+      levelCap: Math.max(0, QUALITY.indexOf(encounter.tier || "白")),
+    }, { luck: state.char?.special?.气运 ?? 5 }));
+    if (encounter.line) logs.push({ t: "desc", text: `  ${encounter.line}` });
+  }
+
+  const newFaces = detectNewFaces(state.varTree || {}, gridNpcs).map((npc) => npc.name);
+  logs.push(...newFaces.map((name) => ({
+    t: "sys",
+    text: `  ※ 新人物出现：${name}（点击可细看其人）`,
+  })));
+
+  const changes = {
+    room: {
+      name: destName,
+      desc: arrivalDesc,
+      exits: Object.keys(destNode.exits),
+      npcs: gridNpcs,
+      items: [...(cached.items || [])],
+    },
+    time: (previous) => previous + 1,
+    convo: [
+      ...(state.convo || []),
+      { role: "user", content: command },
+      { role: "assistant", content: arrivalDesc.slice(0, 500) },
+    ],
+    varTree: (previous) => {
+      const latest = previous || {};
+      const withNewFaces = newFaces.length ? markAsSeen(latest, newFaces) : latest;
+      return updateLastSeen(withNewFaces, gridNpcs.map((npc) => npc.name), state.time);
+    },
+  };
+  if (gainedItem) changes.inv = (previous) => [...(previous || []), gainedItem];
+  if (!state.mapData?.[destName]) {
+    changes.mapData = (previous) => {
+      const latest = previous || {};
+      return latest[destName] ? latest : {
+        ...latest,
+        [destName]: { x: destNode.x, y: destNode.y },
+      };
+    };
+  }
+  squareOps[0] = { op: "consume", key: destName, day };
+
+  return {
+    cached: true,
+    changes,
+    logs,
+    squareOps,
+    traceInfo: {
+      direction,
+      hasSquareDesc: !!square.desc,
+      item: square.item,
+      encounter: square.encounter,
+    },
   };
 }

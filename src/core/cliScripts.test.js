@@ -13,7 +13,11 @@ import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scriptsDir = resolve(projectRoot, "tests/cli");
 const scriptFiles = readdirSync(scriptsDir)
-  .filter((file) => file.endsWith(".txt") && !["ai-turn-rollback.txt", "failed-inspection-pending-turn.txt"].includes(file))
+  .filter((file) => file.endsWith(".txt") && ![
+    "ai-turn-rollback.txt",
+    "failed-inspection-pending-turn.txt",
+    "outer-arrival.txt",
+  ].includes(file))
   .sort();
 
 let tempDir;
@@ -56,6 +60,34 @@ describe("CLI scripts", () => {
       expect(replayFailures, replayOutput.join("\n")).toBe(0);
       expect(replayOutput.join("\n")).toContain("石阶旁的草叶轻轻摇动。");
     }
+  });
+
+  it("moves between cached outer squares and restores the room after save/load", async () => {
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir });
+    await session.runLine(":new");
+    session.roomMap = {
+      鱼定村: { npcs: [], items: [] },
+      雅江: { npcs: [], items: [] },
+    };
+    loadSquares({
+      鱼定村: { day: 0, desc: "鱼定村缓存", item: null, encounter: null, burned: false },
+      雅江: { day: 0, desc: "雅江缓存", item: null, encounter: null, burned: false },
+    });
+
+    let failures = 0;
+    const fixture = readFileSync(join(scriptsDir, "outer-arrival.txt"), "utf8");
+    for (const line of fixture.split(/\r?\n/)) {
+      failures += await session.runLine(line);
+    }
+
+    expect(failures, output.join("\n")).toBe(0);
+    expect(session.store.getState().room.name).toBe("雅江");
+    expect(session.roomMap).toEqual({
+      鱼定村: { npcs: [], items: [] },
+      雅江: { npcs: [], items: [] },
+    });
+    expect(serializeSquares().雅江).toMatchObject({ day: 0, desc: "雅江缓存" });
   });
 
   it("runs a script with sibling replies using the default mock AI", () => {
