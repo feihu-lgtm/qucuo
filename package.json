@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "verify": "vitest run && vite build --config vite.config.pages.js"
+    "verify": "vitest run && vite build --config vite.config.pages.js",
+    "cli": "node cli/qucuo.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

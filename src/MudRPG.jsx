@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
 import { gameActions, initGameStore, useGameStore } from "./store/gameStore.js";
-import { snapshotFromStore } from "./store/persist.js";
-import { QUCUO_PRESET } from "./presets/qucuo.js";
+import { snapshotFromStore } from "./core/persist.js";
+import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import {
   NNPC_STAGE, initialNarratorState, isInSea, migrateNarratorState,
   narratorVoicePrompt, affectionLabel, buildNarratorWhisperContext,
@@ -194,8 +194,6 @@ import {
   serializeSquares, loadSquares,
 } from "./mapSquares.js";
 
-const DEFAULT_PRESETS = [QUCUO_PRESET];
-
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false } = {}) {
   const [presets, setPresets] = useState(DEFAULT_PRESETS);
   // "new" 是显式新开局信号，此时无论有没有存档都不恢复。
@@ -204,78 +202,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   if (restored?.snap?.squares) loadSquares(restored.snap.squares);
 
   useState(() => {
-    initGameStore({
-      preset: restored?.preset || DEFAULT_PRESETS[0],
-      room: (() => {
-        const initialRoom = restored?.snap.room || DEFAULT_PRESETS[0].room;
-        // 初始房间（无论来自预设默认值还是存档恢复）里的NPC都可能还没有 moveset/carriedItems
-        // 字段（预设手写时不会带这些，老存档存的时候这套系统还不存在），启动时补全一次。
-        const initLuck = (restored?.snap.char || DEFAULT_PRESETS[0].char).special?.气运 ?? 5;
-        return {
-          ...initialRoom,
-          // 之前这里没传 levelCap，预设手写的具名NPC（老猎户/杂货商人等）一律落到
-          // getTierPower 的默认档位（白/村民），跟他们的实际人设强度（比如"猎户"
-          // 关键词该是绿袍档）对不上——尤其是品质档位改成~20倍/档增长之后，
-          // 这个疏漏会让本该有点门槛的对手变得形同虚设。这里跟AI涌现NPC用同一套
-          // matchLevelCap 关键词映射，从名字+简介里推断档位。
-          npcs: (initialRoom.npcs || []).map(n => {
-            const { levelCap } = mapDescriptionToGenParams(`${n.name || ""} ${n.brief || ""}`);
-            return ensureNpcCombatData(n, { luck: initLuck, levelCap });
-          }),
-        };
-      })(),
-      innerRoomName: (() => {
-        const initial = restored?.snap.room || DEFAULT_PRESETS[0].room;
-        if (!hasInnerMap(initial.name)) return null;
-        // 优先吃存档里记的内层房间（本轮新增字段）；老存档没有、或存的房间已不在
-        // 该据点内景里，才退回锚点。
-        const saved = restored?.snap.innerRoomName;
-        if (saved && getInnerRoomNames(initial.name).includes(saved)) return saved;
-        return getDistrictAnchor(initial.name);
-      })(),
-      char: (() => {
-        const initial = restored?.snap.char || DEFAULT_PRESETS[0].char;
-        const initialSkills = restored?.snap.skills || DEFAULT_PRESETS[0].skills;
-        // moveset 不再是开局纯随机生成的独立数据，而是从"武学"（skills）派生——
-        // 见 npcGeneration.js 的 deriveMovesetFromSkills，武学阶段决定招式品质上限，
-        // 练得越深切磋越强，这样"三脚猫拳法"这类武学才是真正影响战斗的东西。
-        const base = { ...initial, moveset: deriveMovesetFromSkills(initialSkills) };
-        // 主角气血上限统一走 hpFromNeigong（与所有 NPC 同一套公式），不再用 preset 里
-        // 写死的 100——否则同为白袍内功5，主角100、NPC却116，主角凭空矮一截。仅新开局
-        // 时按公式重算上限（存档恢复则沿用存档里玩家当前的血量，不覆盖）。
-        if (!restored) {
-          const maxHp = hpFromNeigong(base.neigong ?? 5, base.special?.体魄 ?? 5);
-          base.hp = [maxHp, maxHp];
-        }
-        return base;
-      })(),
-      dao: restored?.snap.dao || DEFAULT_PRESETS[0].dao,
-      skills: restored?.snap.skills || DEFAULT_PRESETS[0].skills.map(s => ({ ...s })),
-      companionState: restored?.snap.companionState || initCompanionState(),
-      inv: backfillInventoryFromCatalog(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]),
-      log: restored
-        ? [{ t: "sys", text: `── 已从上次自动存档恢复进度（${new Date(restored.snap.savedAt || Date.now()).toLocaleString()}） ──` }, ...restored.snap.log]
-        : [{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${DEFAULT_PRESETS[0].name}` }, ...DEFAULT_PRESETS[0].opening],
-      convo: restored?.snap.convo || [],
-      exp: restored?.snap.exp || 0,
-      pot: restored?.snap.pot || 0,
-      flags: restored?.snap.flags || [],
-      questProgress: restored?.snap.questProgress || {},
-      persuasionProgress: restored?.snap.persuasionProgress || {},
-      mapData: restored?.snap.mapData || { [DEFAULT_PRESETS[0].room.name]: { x: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.x ?? 0, y: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.y ?? 0 } },
-      time: restored?.snap.time ?? 6,
-      claimedMilestones: new Set(restored?.snap.claimedMilestones || []),
-      narrator: restored?.snap.narrator || initialNarratorState(),
-      varTree: (() => {
-        if (restored?.snap.varTree) return restored.snap.varTree; // 读档：存档里已含知识领域，不重复灌
-        const base = initialVarTree();
-        const p = restored?.preset || DEFAULT_PRESETS[0];
-        return seedKnowledge(base, p.知识基底, 0); // 新局：灌入剧本写死的知识基底
-      })(),
-      deposit: restored?.snap.deposit || 0,
-      depositedAt: restored?.snap.depositedAt ?? null,
-      pledgedItems: restored?.snap.pledgedItems || [],
-    });
+    initGameStore(buildInitialGameState(restored));
     return true;
   });
   const {
@@ -294,24 +221,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 这个值应保持为 null，UI/移动判定据此完全走原有的"整据点即一间房"
   // 逻辑，两套系统不会互相干扰。
   const innerRoomName = useGameStore(s => s.innerRoomName);
-  // 读档/初始化时"这一次的内层位置是恢复来的"，用于让下面那个 room.name effect
-  // 在挂载首跑时别把恢复值冲成锚点。
   const restoredInnerRef = useRef(null);
-  const innerInitRef = useRef(false);
-  // 玩家在大地图上移动到一个新据点（room.name 变化）时，如果这个据点有
-  // 内层数据，自动把内层位置重置为锚点房间（比如走进"鱼定村"落脚在
-  // "村口"）；没有内层数据则清空，回退到旧模式。注意这里故意不依赖
-  // innerRoomName 自身，只依赖 room.name，避免"内层移动时也触发一次
-  // 重置回锚点"这种误触发。
-  //
-  // 首跑跳过（本轮修）：useEffect 在**挂载时也会跑一次**，会把 useState 初始化
-  // 好的"存档里的内层房间"立刻冲成锚点，等于存了也白存。而热更新(HMR)/读档
-  // 造成的重挂载正是玩家遇到的"人在玉石料场，一动却从镇口起步"的直接来源。
-  // 所以只在**真正的据点切换**时才重置。
+  const prevRoomNameRef = useRef(room.name);
+  // Outer-district changes reset inner navigation; restored locations are preserved once.
   useEffect(() => {
-    if (!innerInitRef.current) { innerInitRef.current = true; return; }
-    // 读档刚设过内层房间：这一跑是 applySnapshot 改 room.name 引发的，不是玩家换据点，
-    // 放行一次，别把刚恢复的位置冲掉。
+    if (prevRoomNameRef.current === room.name) return;
+    prevRoomNameRef.current = room.name;
     if (restoredInnerRef.current !== null) { restoredInnerRef.current = null; return; }
     setInnerRoomName(hasInnerMap(room.name) ? getDistrictAnchor(room.name) : null);
   }, [room.name]);
@@ -589,8 +504,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 从存档槽位读取后，整体覆盖当前状态
   const applySnapshot = useCallback((snap) => {
     const matchedPreset = presets.find(p => p.id === snap.preset?.id) || preset;
+    const restoredRoom = isCompatibleRoomShape(snap.room) ? snap.room : matchedPreset.room;
+    const roomChanged = restoredRoom.name !== useGameStore.getState().room?.name;
     setPreset(matchedPreset);
-    setRoom(isCompatibleRoomShape(snap.room) ? snap.room : matchedPreset.room);
+    setRoom(restoredRoom);
     // 老存档可能没有 moveset/special 字段（切磋系统上线之前存的档），
     // 兼容判定通过后还要单独补全这两个字段，不能直接假设它们存在——
     // 之前这里漏了这一步，导致老存档读进来后 char.moveset 是 undefined，
@@ -619,10 +536,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // 内层箱庭位置：老存档没这个字段、或存的房间已不在该据点内景里（改过地图数据），
     // 都退回锚点，绝不让玩家落在一个不存在的房间里。
     {
-      const rm = isCompatibleRoomShape(snap.room) ? snap.room : matchedPreset.room;
+      const rm = restoredRoom;
       const ok = snap.innerRoomName && hasInnerMap(rm.name) && getInnerRoomNames(rm.name).includes(snap.innerRoomName);
-      restoredInnerRef.current = ok ? snap.innerRoomName : (hasInnerMap(rm.name) ? getDistrictAnchor(rm.name) : null);
-      setInnerRoomName(restoredInnerRef.current);
+      const restoredInnerRoomName = ok ? snap.innerRoomName : (hasInnerMap(rm.name) ? getDistrictAnchor(rm.name) : null);
+      if (roomChanged) restoredInnerRef.current = restoredInnerRoomName;
+      setInnerRoomName(restoredInnerRoomName);
     }
     setShowSettings(false);
   }, [presets, preset]);
