@@ -236,6 +236,12 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  .mobile-building-root.mobile-building-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
   .mobile-building-root > .mobile-building-minimize {
     display: flex;
     align-items: center;

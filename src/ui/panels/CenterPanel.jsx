@@ -210,8 +210,21 @@ export default function CenterPanel({
                  面板自己那层 overflow 又被压在半屏里）。
                  改成展开时建筑面板独占：叙事区在这种时候整个不渲染（见下方 log 区的条件），
                  建筑面板拿满整栏。想看叙事就点"▾ 最小化"，叙事区随即恢复全高。 ── */}
-          {(activeBuilding || tradingShop) && !buildingPanelMinimized && (
-            <div className={`mobile-building-root${gambleStoneMinimized ? " mobile-building-minimized-root" : ""}`} style={{ flex: 1, minHeight: 0, height: "100%", overflowY: "auto", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)" }}>
+          {(activeBuilding || tradingShop) && (
+            <div
+              className={`mobile-building-root${gambleStoneMinimized ? " mobile-building-minimized-root" : ""}${buildingPanelMinimized ? " mobile-building-hidden" : ""}`}
+              style={{
+                flex: 1,
+                minHeight: 0,
+                height: "100%",
+                overflowY: "auto",
+                borderBottom: `1px solid ${zoneTheme.border}`,
+                background: "rgba(255,255,255,0.02)",
+                display: buildingPanelMinimized ? "none" : undefined,
+                visibility: buildingPanelMinimized ? "hidden" : undefined,
+                pointerEvents: buildingPanelMinimized ? "none" : undefined,
+              }}
+            >
               {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
               <div className="mobile-building-minimize"
                 onClick={() => setBuildingPanelMinimized(true)}
