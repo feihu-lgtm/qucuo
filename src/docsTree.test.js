@@ -187,10 +187,14 @@ describe("Hook deps 不许引用后面才定义的量（TDZ 守卫）", () => {
     const lines = readFileSync(file, "utf-8").split("\n");
     const defs = new Map();
     lines.forEach((l, i) => {
-      const m = /^\s*const (\w+) = (useCallback|useMemo|useRef)\(/.exec(l);
+      const m = /^\s*const (\w+) = (useCallback|useMemo|useRef|useGameStore)\(/.exec(l);
       if (m) defs.set(m[1], i);
       const m2 = /^\s*const \[(\w+), set\w+\] = useState/.exec(l);
       if (m2) defs.set(m2[1], i);
+      const m3 = /^\s*const \{([^}]+)\} = gameActions/.exec(l);
+      if (m3) {
+        for (const name of m3[1].split(",").map(x => x.trim())) defs.set(name, i);
+      }
     });
     const bad = [];
     lines.forEach((l, i) => {
