@@ -25,6 +25,24 @@ describe("debug bundle redaction", () => {
     });
   });
 
+  it("does not globally scrub short configured values or a bare URL scheme", () => {
+    const result = redact({
+      endpoint: "/api",
+      note: "Use /api over https:// for the request.",
+      shortKey: "12345678",
+    }, {
+      endpoint: "/api",
+      baseUrl: "https://",
+      apiKey: "12345678",
+    });
+
+    expect(result).toEqual({
+      endpoint: "/api",
+      note: "Use /api over https:// for the request.",
+      shortKey: "[REDACTED]",
+    });
+  });
+
   it("builds a schema-1 bundle with capped sources and safe fallbacks for throwing sources", () => {
     const bundle = buildDebugBundle({
       version: "test-version",
@@ -72,5 +90,39 @@ describe("debug bundle redaction", () => {
     expect(bundle.traces).toHaveLength(0);
     expect(bundle.pipelineCalls).toHaveLength(0);
     expect(bundle.recentLog[0]).not.toContain("log-0-");
+  });
+
+  it("keeps newest-first traces and pipeline calls when size trimming removes old entries", () => {
+    const traces = buildDebugBundle({
+      save: null,
+      apiConfig: { model: "test", endpoint: "https://provider.example" },
+      recentLog: [],
+      conversation: [],
+      traces: Array.from({ length: 30 }, (_, index) => ({
+        id: index === 0 ? "trace-newest" : index === 29 ? "trace-oldest" : `trace-${index}`,
+        raw: "t".repeat(80_000),
+      })),
+      pipelineCalls: [],
+      errors: [],
+    });
+    const pipelineCalls = buildDebugBundle({
+      save: null,
+      apiConfig: { model: "test", endpoint: "https://provider.example" },
+      recentLog: [],
+      conversation: [],
+      traces: [],
+      pipelineCalls: Array.from({ length: 20 }, (_, index) => ({
+        id: index === 0 ? "pipeline-newest" : index === 19 ? "pipeline-oldest" : `pipeline-${index}`,
+        response: "p".repeat(80_000),
+      })),
+      errors: [],
+    });
+
+    expect(traces.truncated.traces).toBeGreaterThan(0);
+    expect(traces.traces[0].id).toBe("trace-newest");
+    expect(traces.traces.some(trace => trace.id === "trace-oldest")).toBe(false);
+    expect(pipelineCalls.truncated.pipelineCalls).toBeGreaterThan(0);
+    expect(pipelineCalls.pipelineCalls[0].id).toBe("pipeline-newest");
+    expect(pipelineCalls.pipelineCalls.some(call => call.id === "pipeline-oldest")).toBe(false);
   });
 });

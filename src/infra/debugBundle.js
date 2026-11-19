@@ -54,7 +54,7 @@ function collectConfigValues(config) {
   const seen = new WeakSet();
   const visit = (value, key = "") => {
     if (typeof value === "string") {
-      if (CONFIG_VALUE_KEY.test(key) && value) values.push(value);
+      if (CONFIG_VALUE_KEY.test(key) && value.length >= 8 && !/^https?:\/\/$/i.test(value)) values.push(value);
       return;
     }
     if (!value || typeof value !== "object" || seen.has(value)) return;
