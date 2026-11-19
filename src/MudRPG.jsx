@@ -9,6 +9,11 @@ import { usePrivateTalk } from "./app/hooks/usePrivateTalk.js";
 import { useOutfitAdvice } from "./app/hooks/useOutfitAdvice.js";
 import { useAiInspect } from "./app/hooks/useAiInspect.js";
 import { useTurn, useTurnQueue } from "./app/hooks/useTurn.js";
+import { useQuestPanel } from "./app/hooks/useQuestPanel.js";
+import { useDuel, useForcedDuelNpc } from "./app/hooks/useDuel.js";
+import { usePigeonReplies } from "./app/hooks/usePigeonReplies.js";
+import { useAutoTravel } from "./app/hooks/useAutoTravel.js";
+import { useCraftingAI } from "./app/hooks/useCraftingAI.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import { applyResult } from "./features/run.js";
 import { selectEffectiveStats } from "./features/stats/logic.js";
@@ -57,20 +62,15 @@ import {
   giftNpc,
   inviteCompanion,
   lookNpc,
-  recognizeNpc,
   settleNpcDuel,
   stealFromNpc,
   talkToNpc,
   tradeWithNpc,
 } from "./features/npc/logic.js";
 import {
-  applyPigeonReply,
   buyPigeon as buyPigeonLogic,
   collectPigeons as collectPigeonsLogic,
-  failPigeonReply,
   pigeonDelayShichen as pigeonDelayShichenLogic,
-  processPigeons,
-  recordPigeonNpcLocations,
   sendPigeonLetter as sendPigeonLetterLogic,
 } from "./features/pigeon/logic.js";
 import { attachImportedRegistry } from "./characterMilestones.js";
@@ -81,7 +81,7 @@ import {
 } from "./narrator.js";
 import { gateBodyProfile, emptyBodyProfile, buildOutfitRequest, bodyProfileFilled } from "./bodyProfile.js";
 import BodyProfilePanel from "./BodyProfilePanel.jsx";
-import { loadConfig, saveConfig, callModel } from "./apiConfig.js";
+import { loadConfig, saveConfig } from "./apiConfig.js";
 import { startTrace, step as traceStep, endTrace, getTraceLog, clearTraceLog, formatTrace, attachPipeline, attachExtractionPipeline, attachInjectionSnapshot, fmtMs } from "./actionTrace.js";
 import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
@@ -136,7 +136,6 @@ import { writeNote, NOTE_SOURCE, VIA, reembedStaleNotes } from "./memory/note.js
 import { buildDistantViewBlock } from "./memory/daySummary.js";
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
-import { forgeDesign } from "./extractionEngine.js";
 import { setSnowLeopardActive, isSnowLeopardAvailable, unlockedCompanions, unlockImportedCompanion, COMPANION_LORE } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
@@ -178,7 +177,6 @@ import {
   acceptBounty,
   acceptEscort,
   claimBounty,
-  forceAdvanceQuest as forceAdvanceQuestFeature,
 } from "./features/quest/logic.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
@@ -211,7 +209,6 @@ import * as importedRegistry from "./cards/importedRegistry.js";
 import DebugPanel from "./panels/DebugPanel.jsx";
 import ClickableMap from "./ClickableMap.jsx";
 import PipelineViewer from "./PipelineViewer.jsx";
-import { planAutoTravel } from "./features/map/logic.js";
 import { learnNpcSkill as learnNpcSkillLogic } from "./features/npc/logic.js";
 import { getCompanionDescForm } from "./companionForms.js";
 
@@ -361,7 +358,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const [nsfwOn, setNsfwOn] = useState(true); // ■ NSFW 开关：true=注入NSFW规则+primer消息（默认开启）
   const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" }); // 按体貌荐装的结果
   const [pigeonTarget, setPigeonTarget] = useState(null); // 飞鸽传书当前收信人（进入 pigeon 模式时设置）
-  const pigeonProcessing = useRef(new Set()); // 防止同一封回信被 [time]/varTree effect 重复生成
   const autoTravelRef = useRef(false); // 自动寻路进行中标记：途中遇随机遭遇时据此硬中断剩余队列
   const lastMoveRef = useRef(0); // 移动防连点：内层移动是瞬时的(不设loading)，手抖双击会连走两步甚至穿到外层走AI，用时间戳挡住
   const talkBusyRef = useRef(false); // 私聊串行闸门：一条私聊在途时为 true，挡住第二条。用 ref 而非 state，因为 ref 同步更新、不等 re-render，能挡住极快连点
@@ -690,12 +686,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     };
   }, []);
 
-  useEffect(() => {
-    if (forcedDuelNpc) {
-      setDuelingNpc(forcedDuelNpc);
-      setForcedDuelNpc(null);
-    }
-  }, [forcedDuelNpc]);
+  useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc });
 
   const { talkToNarrator } = usePrivateTalk({
     narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags,
@@ -886,41 +877,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setGambleNegotiation, setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
     setPendingQuestBranch, setConvo, jotNote, setLog,
   });
-  const forceAdvanceQuest = useCallback((quest, targetFlag) => {
-    applyResult(featureCtxRef.current, forceAdvanceQuestFeature(gameStore.getState(), quest, targetFlag));
-  }, []);
-
-  // 点击感叹号面板里的某条任务（本轮改造，支持 questTriggerMode 二选一）：
-  //   "script" 模式——走原有逻辑，送一句话让主叙事AI自然演绎（这条路径
-  //     本身不强制触发，AI依然可能选择怎么演，保留作为对照/备选）
-  //   "prompt" 模式（默认）——系统直接强制推进这个stage（forceAdvanceQuest），
-  //     不等AI自己判断，随后调用任务专属harness（questHarness.js）单独
-  //     生成一段贴合这件事的叙事文字展示出来，AI只负责组织语言，"发生
-  //     不发生"这个决定权已经不在AI手里
-  const triggerQuestFromPanel = useCallback(async (entry) => {
-    const { quest, stage, isNewlyGiven } = entry;
-    if (apiCfg.questTriggerMode === "script") {
-      const line = isNewlyGiven
-        ? `我想找${quest.giver}问问「${quest.title}」这件事`
-        : `我继续跟${quest.giver}谈「${quest.title}」的事`;
-      act(line);
-      return;
-    }
-    // prompt 模式：系统先强制推进（用这个stage的completionFlag，如果是
-    // 数组取第一个作为默认，分支节点应该走 triggerQuestChoice 而不是
-    // 这个函数，这里只处理非分支的普通stage）
-    const targetFlag = Array.isArray(stage.completionFlag) ? stage.completionFlag[0] : stage.completionFlag;
-    forceAdvanceQuest(quest, targetFlag);
-    // 点了感叹号先给一句仪式感的系统告示（在 AI 叙事之前），点明这一步是开启还是推进，
-    // 并提示去任务面板看详情——让"点一下就推进"这件事有个郑重的落点，不是悄没声地过去。
-    addLog([
-      { t: "quest", text: `  ❖ ${entry.isNewlyGiven ? "任务开启" : "任务推进"} 「${quest.title}」` },
-      { t: "sys", text: `  〔详情可查任务面板〕` },
-    ]);
-    // 并入主叙事：不再单独调 harness，改走 act() 主管线，把这一步作为"本步已定情节"
-    // 追加进主 prompt 末尾（act 会自己记 > 命令行、走时间+1、写小纸条进记忆）。
-    await act(`❢ ${quest.title}`, [], { forcedEvent: stage.description, forcedEventNpc: quest.giver });
-  }, [act, apiCfg, forceAdvanceQuest, addLog]);
+  const { forceAdvanceQuest, triggerQuestFromPanel, triggerQuestChoice } = useQuestPanel({
+    act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc,
+    setActivePersuasion, setInteractMode, setTalkTarget,
+  });
 
   // 切磋结算共享 handler：1v1(DuelScreen) 与 2v2(TeamDuelScreen) 两个界面
   // 的收尾逻辑完全一致——交情/战利品/任务分支/事实账本/整场战报都跟战斗
@@ -961,64 +921,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   //   "script" 模式——送一句明确的话给主叙事AI（此前的实现）
   //   "prompt" 模式（默认）——系统直接强制写入这个选项对应的flag、推进
   //     stage、结算奖励，然后调用专属harness生成这个具体选择的叙事文字
-  const triggerQuestChoice = useCallback(async (entry, choice) => {
-    const { quest, stage } = entry;
-    if (apiCfg.questTriggerMode === "script") {
-      act(`（关于「${quest.title}」）我选择：${choice.label}`);
-      return;
-    }
-    const resolve = choice.resolve || "auto";
-
-    // ── 选项要动手：进真·切磋，打赢才推进这个分支 ──
-    if (resolve === "combat" && choice.combatNpc) {
-      addLog([{ t: "cmd", text: `> ❢ ${quest.title}：${choice.label}` }]);
-      // 记住这场架是为哪个分支打的，DuelScreen onFinish 里胜了才 forceAdvance
-      setPendingQuestBranch({ questId: quest.id, flag: choice.flag, mode: "combat" });
-      // 造一个临时敌人 NPC 进战斗（带 tag 供胜利回调识别；hostile 表示是真打不是切磋）
-      const foe = ensureNpcCombatData({
-        id: `questfoe_${choice.flag}_${Date.now()}`,
-        name: choice.combatNpc.name,
-        levelCap: choice.combatNpc.levelCap ?? 1,
-        tag: choice.combatNpc.tag,
-        hostile: true,
-        questBranchFlag: choice.flag, // onFinish 用这个认领分支
-      }, { levelCap: choice.combatNpc.levelCap ?? 1 });
-      setDuelingNpc(foe);
-      return;
-    }
-
-    // ── 选项要周旋/说服：有 persuade 结构则开说服界面（短对话+攻心判定），
-    //    否则退回自由对话模式 ──
-    if (resolve === "talk") {
-      addLog([{ t: "cmd", text: `> ❢ ${quest.title}：${choice.label}` }]);
-      if (choice.persuade) {
-        setActivePersuasion({
-          persuade: choice.persuade,
-          questId: quest.id,
-          flag: choice.flag,
-        });
-        return;
-      }
-      // 无 persuade：老的自由对话兜底
-      setPendingQuestBranch({ questId: quest.id, flag: choice.flag, mode: "talk", goal: choice.talkGoal });
-      setInteractMode("talk");
-      setTalkTarget(choice.talkTarget || quest.giver);
-      addLog([
-        { t: "sys", text: `  你决定${choice.label}。` },
-        { t: "sys", text: `  〔说赢了对方才会松口。〕` },
-      ]);
-      return;
-    }
-
-    // ── 袖手/无需机制：直接推进结算 ──
-    forceAdvanceQuest(quest, choice.flag);
-    addLog([
-      { t: "quest", text: `  ❖ 任务推进 「${quest.title}」——你选择：${choice.label}` },
-      { t: "sys", text: `  〔详情可查任务面板〕` },
-    ]);
-    await act(`❢ ${quest.title}：${choice.label}`, [], { forcedEvent: `${stage.description}（玩家的选择：${choice.label}）`, forcedEventNpc: quest.giver });
-  }, [act, apiCfg, forceAdvanceQuest, addLog]);
-
   // 细看：恢复原本"点NPC名字直接查看"的行为，走正常行动指令流程，
   // 让主引擎描述这个人的外貌举止细节
   const handleNpcLook = useCallback((npc) => {
@@ -1082,50 +984,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     applyResult(featureCtxRef.current, pickGroundItem(gameStore.getState(), item, { tallyTime: timeRef.current }));
   }, []);
 
-  // ⑥ 自动寻路：点已探索地图节点 → BFS 取路（只穿行已探索+已解锁节点）→ 逐步行走。
-  // 实现借力现有命令队列：首步走 act()，其余方向**同步**预填 pendingQueue（ref，无 setState
-  // 竞态），act 首步结束后由现有出队 useEffect 顺次执行——每步照常耗时/掷遭遇/写叙事，
-  // 掷中遭遇/拾取时那一步的叙事自然停在该据点，玩家看得见、可随时改打别的（后续命令仍在队列）。
-  const autoTravelTo = useCallback((destName) => {
-    if (!destName || destName === room.name) return;
-    if (loading) { addLog([{ t: "sys", text: `  正忙着，稍候再另择去处。` }]); return; }
-    const route = planAutoTravel({ room, mapData, flags, questProgress }, destName);
-    if (route.locked) { addLog([{ t: "sys", text: `  「${destName}」此刻还去不得，路未通。` }]); return; }
-    const path = route.path;
-    if (!path) { addLog([{ t: "sys", text: `  「${destName}」尚无已探明、可通行的路径。` }]); return; }
-    if (path.length === 0) return;
-    addLog([{ t: "sys", text: `  ⇢ 起身前往「${destName}」，需行 ${path.length} 程（每程一个时辰）……` }]);
-    const words = path.map(d => DIRS[d] || d);
-    const [first, ...rest] = words;
-    // 自动寻路是跨据点的外层移动，必须标记 forceLayer:"outer"——否则 autoTravelTo 发出的
-    // act("西") 不带 forceLayer，当玩家此刻正站在某个内层房间(innerRoomName 有值)时，会被
-    // 2713 行的内层判定(forceLayer!=="outer" 即触发)截胡，表现为"外层点方向去已探索据点，
-    // 却变成了内层房间移动判定"。首步和队列后续步都要带，队列消费处(4649)会透传 opts。
-    rest.forEach(w => pendingQueue.current.push({ cmd: w, extraReplies: [], opts: { forceLayer: "outer" } }));
-    autoTravelRef.current = rest.length > 0; // 有后续排队步时才需要"遇遭遇硬停"
-    setQueueCount(pendingQueue.current.length);
-    act(first, [], { forceLayer: "outer" });
-  }, [room.name, loading, mapData, flags, questProgress, act, addLog]);
-
-  // 调试传送落地：位置(据点+内层房间)都更新到目标后，触发一次"环顾"式 act，
-  // 让 AI 读新场子、系统跑 look 分支（原地锁定/场内任务注入/主叙事查看/NPC 已投放），
-  // 与玩家自己走到此地完全同一条加载链。触发后清标记，只跑一次。
-  useEffect(() => {
-    const pend = teleportLookRef.current;
-    if (!pend) return;
-    if (room.name !== pend.dist) return;                    // 据点还没切到位
-    if (pend.inner && innerRoomName !== pend.inner) return; // 内层房间还没到位
-    teleportLookRef.current = null;
-    setInteractMode("action");
-    act("环顾四周");
-  }, [room.name, innerRoomName, act]);
+  const autoTravelTo = useAutoTravel({
+    room, loading, mapData, flags, questProgress, addLog, pendingQueue,
+    autoTravelRef, setQueueCount, act, teleportLookRef, innerRoomName, setInteractMode,
+  });
 
   // ── 飞鸽传书（本轮新增）──────────────────────────────────────────────
-  // 记下每个在场 NPC 此刻的所在据点，作为日后"往哪寄信、隔多远"的依据（最后见到的地方）。
-  useEffect(() => {
-    applyResult(featureCtxRef.current, recordPigeonNpcLocations(gameStore.getState()));
-  }, [room.name, room.npcs]);
-
   // 飞鸽回信时长：按玩家当前据点与收信人所在据点的直线距离折算，钳制在 1–12 时辰。
   const pigeonDelayShichen = useCallback(
     (npcName) => pigeonDelayShichenLogic(gameStore.getState(), npcName),
@@ -1137,6 +1001,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (result.factSummary) aiSummarizeFact(result.factSummary.id, result.factSummary.cue);
     return result;
   }, [aiSummarizeFact]);
+
+  usePigeonReplies({ room, apiCfg, preset, applyPigeonResult, time, varTree, featureCtxRef });
 
   const sendPigeonLetter = useCallback((npcName, content, opts = {}) => {
     const result = sendPigeonLetterLogic(gameStore.getState(), npcName, content, opts);
@@ -1166,65 +1032,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     sendPigeonLetter(npcName, content, { channel, gift });
   }, [sendPigeonLetter]);
 
-  // 回信生成：以收信人口吻 + 其独立信件线（记忆独立）+ 共享事实账本（记忆共享）作答。
-  const replyPigeonLetter = useCallback(async (letter) => {
-    const { npcName, sentContent, id, channel, giftName } = letter;
-    const state = gameStore.getState();
-    try {
-      const npcObj = room.npcs.find(n => n.name === npcName) || {};
-      const attrs = state.varTree?.角色?.[npcName] || {};
-      const curAff = typeof attrs.好感度 === "number" ? attrs.好感度 : 0;
-      const thread = (attrs.飞鸽 || []).map(m => `${m.dir === "send" ? "主角来信" : "你的回信"}：${m.content}${m.gift ? `（附礼：${m.gift}）` : ""}`).join("\n");
-      const facts = allFactSummaries(state.varTree, 12).map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
-      const gaveGift = channel === "postgift" && giftName;
-      const canReturnGift = gaveGift; // 只有对方收到礼、且好感够(系统另判≥50)才可能回礼
-      const sys = `你是武侠世界「曲措乡」中的【${npcName}】${npcObj.brief ? "，" + npcObj.brief : ""}。${npcObj.fullBio ? npcObj.fullBio + " " : ""}${npcObj.personality ? "性情：" + npcObj.personality + "。" : ""}
-你与主角的关系：好感度 ${curAff}/100${attrs.态度 ? "，" + attrs.态度 : ""}。好感越低越冷淡疏离，越高越亲近热络。
-剧本背景：${preset.scenario || ""}
-你收到主角${gaveGift ? `托驿卒捎来的信，并随信附赠了「${giftName}」` : "寄来的信"}。你们此前往来的信件（须前后连贯、不自相矛盾）：
-${thread || "（这是你们第一次通信）"}
-${facts ? "你也隐约知道的近来见闻（可自然带一两句，不要生硬罗列）：\n" + facts : ""}
-请以【${npcName}】的口吻，用白话古文书信体写一封回信。只写信的正文（可含简短落款），约 80–160 字，关系冷淡则简短公事甚至推拒、亲厚则温言絮语${gaveGift ? "；收了礼要有所表示（谢或却）" : ""}。
-写完信正文后，另起附两个隐藏标记（会被系统读走、玩家看不到，不要在正文提它们）：
-① ⟦好感X⟧：X 为整数 -3~+8，表示这次通信${gaveGift ? "与收礼" : ""}让你对主角好感升降多少（寻常问候+1~2；说到心坎/贴心/有趣+3~+6；${gaveGift ? "礼物合心意可再高些至+8；" : ""}敷衍冒犯给负数）。
-${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼（类别取 weapon/armor/accessory/misc 之一），从你身份/处境合理拿得出手的东西里挑一件写在这里（例如僧人回赠念珠、猎户回赠兽皮、富贵者回赠玉器）；不想回或拿不出就整条省略。" : "（这次不涉及回礼，无需第二个标记。）"}`;
-      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: `主角的来信：${sentContent}` }], { maxTokens: apiCfg.callTokenLimits?.pigeonReply ?? 3000, callLabel: "飞鸽回信" });
-      applyPigeonResult(applyPigeonReply(state, letter, text));
-    } catch {
-      pigeonProcessing.current.delete(id);
-      applyPigeonResult(failPigeonReply(gameStore.getState(), letter));
-    }
-  }, [room.npcs, apiCfg, preset, applyPigeonResult]);
-
-  // 到点收信：时间推进到 arriveTime 时，逐封生成回信（ref 去重，防重复触发）。
-  useEffect(() => {
-    const due = processPigeons(gameStore.getState()).filter(l => !pigeonProcessing.current.has(l.id));
-    if (!due.length) return;
-    due.forEach(l => { pigeonProcessing.current.add(l.id); replyPigeonLetter(l); });
-  }, [time, varTree, replyPigeonLetter]);
-
-  const handleNpcDuel = useCallback(async (npc) => {
-    // 实质性互动（打过一场架）本来就是认识对方的充分条件，不能只靠"细看/对话"
-    // 两个入口才算认识——玩家跟这个人交过手、见过好感度变化，说"尚未认识"是反直觉的。
-    applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
-    setActiveTarget(npc.name); // 让邀战这段过渡叙事聚焦这个人，而非把在场所有人都发给AI
-    // 切磋不再是点了就直接弹战斗界面：先走一次正常的行动结算，让AI描述
-    // "抱拳邀战、对方如何应允/摆开架势"这类过渡场景；叙事跑完之后，还要
-    // 玩家自己点"确认切磋"才真正开打——中间留一步反悔的余地，不是敬个礼
-    // 战斗界面就毫无征兆地砸到眼前。
-    await act(`向${npc.name}抱拳邀战，请他切磋一番`);
-    setDuelPending(npc);
-  }, [act]);
-  const confirmDuel = useCallback(() => {
-    if (!duelPending) return;
-    setDuelingNpc(duelPending);
-    setDuelPending(null);
-  }, [duelPending]);
-  const cancelDuel = useCallback(() => {
-    if (!duelPending) return;
-    addLog([{ t: "sys", text: `  你收起架势，这场切磋作罢，${duelPending.name}也顺势松了口气。` }]);
-    setDuelPending(null);
-  }, [duelPending, addLog]);
+  const { handleNpcDuel, confirmDuel, cancelDuel } = useDuel({
+    act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
+  });
 
   // 拜师学艺：好感度≥40 + 完成该NPC专属支线任务，两个条件同时满足才能学到技能。
   // 不满足时给出具体卡在哪个条件的说明，而不是一句笼统的"不行"。
@@ -1407,18 +1217,9 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     applyResult(featureCtxRef.current, claimBounty(gameStore.getState(), quest));
   }, []);
 
-  // 赌石谈价：走 act 对话主管线（convo/小纸条/账本/召回/好感全自动挂上），
-  // 只额外挂一个轻量标记 gambleTalkCtx —— talk 模式拼 prompt 时据此追加 <deal> 规则，
-  // AI 回复里的 <deal>{priceMult,addItem}</deal> 由系统 clamp/校验后落到 gambleNegotiation。
-  // 不重构主 prompt、不自造 harness，仿 inspectItem 的轻。
-  const handleGambleTalk = useCallback((bidderName, content, ctx) => {
-    // 不关闭赌桌（关了会 unmount、每日石头重生成、negotiation 对不上 stoneId）——
-    // 由组件自己最小化到角标，主对话框照常聊；谈成的价写进 gambleNegotiation，展开即见。
-    gambleTalkCtx.current = ctx || { bidderName };  // { bidderName, stoneId, baseOffer, cash, carry }
-    setInteractMode("talk");
-    setTalkTarget(bidderName);
-    act(content);
-  }, [act]);
+  const { handleGambleTalk, handleGambleInspect, handleForgeDesign, handleJadeDesign } = useCraftingAI({
+    gambleTalkCtx, setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
+  });
 
   // 赌石成交/委托：系统裁决好数值后（gambleStone 已 clamp），照送礼/买卖那套——
   // 拼一句自然语言走 act()，让主叙事演一段，convo/小纸条/账本/召回全自动挂上。
@@ -1427,41 +1228,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     applyResult(featureCtxRef.current, result);
     if (res.type !== "buy" && result.changes) setActiveBuilding(null);
   }, []);
-
-  // 赌石相石（看皮）：系统先用 readSkinClue 按悟性裁决"能看出哪些线索"（AI 全程读不到
-  // 种水真相），这里仿 inspectItem 的轻量单发——不挂预设/世界书/历史，只把线索交给说书人
-  // 演一段相石口诀。算一次真端详：+1 回合 + 公共小纸条（组件侧对同一块石头做了缓存，重看不再调）。
-  const handleGambleInspect = useCallback(async (stone, clue) => {
-    try {
-      const sys = `你是曲措乡这个武侠世界的说书人。玩家在天都镇玉石料场端详一块未开的赌石，请一位老师傅的口吻看皮相石。用3-5句章回说书人口吻，把下面的看皮线索演成一段相石评语（可用"雾""砂""蟒带"等行话），只说表象与吉凶暗示，绝不断言内里种水成色，绝不编造线索之外的判断。纯文本，不要JSON。`;
-      const lines = [
-        `皮壳：${clue.skinLabel}——${clue.skinClue}`,
-        clue.changKouHint ? `场口眼力：${clue.changKouHint}` : "（认不出场口来历，悟性眼力未及）",
-        clue.mistHint ? `雾象：${clue.mistHint}` : "",
-      ].filter(Boolean).join("\n");
-      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: lines }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000, callLabel: "赌石相石" });
-      const t = (text || "").trim();
-      if (t) {
-        addLog([{ t: "cmd", text: "> 相石 · 看皮" }, { t: "desc", text: "  " + t }]);
-        setTime(x => x + 1);
-        jotNote({ text: "在玉石料场相了一块赌石的皮壳，听老师傅讲了一段看皮的门道。", owner: [], source: NOTE_SOURCE.NARRATIVE });
-      }
-      return t;
-    } catch (e) {
-      addLog([{ t: "err", text: `  [错误] 相石失败：${e.message}` }]);
-      return "";
-    }
-  }, [apiCfg, addLog, jotNote]);
-
-  // 铁匠铺定制：小模型据三填空出 3 候选，供 ForgeScreen 展示。只做设计，不扣钱不下单。
-  const handleForgeDesign = useCallback(async ({ material, category, requirement }) => {
-    try {
-      return await forgeDesign({ material, category, requirement }, apiCfg);
-    } catch (e) {
-      addLog([{ t: "err", text: `  [错误] 铁匠铺设计失败：${e.message || e}` }]);
-      return { ok: false, candidates: [] };
-    }
-  }, [apiCfg, addLog]);
 
   // 玩家从 3 候选里选定一个下单。候选完整规格(name/category/effect/sixDim + 三填空原文)
   // 编码进 pending flag——因为 effect/sixDim 是对象，塞不进下划线分隔的老格式，改成把整个
@@ -1478,16 +1244,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 成品品质 = min(玉料天花板, 气运rollQuality)——好料是上限，手气定实际发挥。
   // 两柜台都走延时打造(复用 forge_pending flag + 自动交付)，spec 里带 jade:true + qualityCap，
   // 交付时据此把品质封顶。下单即消耗那件玉料(从 inv 移除)。
-
-  // 定制柜：小模型据三填空出 3 候选(玉匠语境)。只设计不下单。
-  const handleJadeDesign = useCallback(async ({ material, category, requirement }) => {
-    try {
-      return await forgeDesign({ material, category, requirement, craft: { shop: "金玉行", maker: "玉匠", wares: "玉器饰物护身之物" } }, apiCfg);
-    } catch (e) {
-      addLog([{ t: "err", text: `  [错误] 金玉行设计失败：${e.message || e}` }]);
-      return { ok: false, candidates: [] };
-    }
-  }, [apiCfg, addLog]);
 
   // 下单打造（两柜台共用）：chosen=选定成品规格，jadeItemId=要消耗的玉料物品id。
   // preset=true 表示预制柜(选购成品，词条来自 JADE_WARES 该成品本身)；false 为定制柜。
