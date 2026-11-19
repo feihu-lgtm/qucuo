@@ -44,6 +44,22 @@ import AuctionScreen from "../../domain/buildings/AuctionScreen.jsx";
 import CookingScreen from "../../domain/buildings/CookingScreen.jsx";
 import ChestScreen from "../../domain/buildings/ChestScreen.jsx";
 
+function isNarrativePlaceholder(entry) {
+  if (!entry.streaming) return false;
+  const text = (entry.text || "").trim();
+  return text === "▌" || text === "「旁白」▌";
+}
+
+function NarrativeSkeleton() {
+  return (
+    <div className="narrative-skeleton" role="status" aria-label="叙事生成中">
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
+
 export default function CenterPanel({
   isMobile, mobileDrawer, setMobileDrawer,
   zoneTheme, S,
@@ -122,8 +138,8 @@ export default function CenterPanel({
                 }}
                 title="撤销上一步行动，还原到落子之前"
                 style={{ cursor: "pointer", fontSize: "10px", color: "#c8a860", padding: "1px 6px", border: "1px solid #4a3a1a", borderRadius: 0, userSelect: "none" }}>↩ 回滚</span>
-              <span onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "#c8323a" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "#c8323a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>🛠调试</span>
-              <span onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "#d4a853" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
+              <span onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "var(--accent)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>🛠调试</span>
+              <span onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "var(--warn)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
             </span>
           </div>
 
@@ -154,9 +170,9 @@ export default function CenterPanel({
           {/* ── 切磋确认：邀战叙事跑完后，点确认才真正开打，留一步反悔余地 ── */}
           {duelPending && (
             <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ color: "#e8e4d6", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
-              <span onClick={confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "#111110", background: "#c45044", border: "1px solid #c45044" }}>确认切磋</span>
-              <span onClick={cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "#8f8a7c", border: "1px solid #2a2d3a" }}>算了</span>
+              <span style={{ color: "var(--text)", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
+              <span onClick={confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--bg-panel)", background: "#c45044", border: "1px solid #c45044" }}>确认切磋</span>
+              <span onClick={cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid #2a2d3a" }}>算了</span>
             </div>
           )}
 
@@ -164,7 +180,7 @@ export default function CenterPanel({
           {(activeBuilding || tradingShop) && buildingPanelMinimized && (
             <div
               onClick={() => setBuildingPanelMinimized(false)}
-              style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: 11.5, color: "#8ac8b8", display: "flex", alignItems: "center", gap: 6 }}
+              style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: 11.5, color: "var(--info)", display: "flex", alignItems: "center", gap: 6 }}
             >
               <span>▸ {activeBuilding?.name || tradingShop?.shopName}（已最小化，点击展开）</span>
             </div>
@@ -182,7 +198,7 @@ export default function CenterPanel({
               {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
               <div
                 onClick={() => setBuildingPanelMinimized(true)}
-                style={{ padding: "4px 16px", fontSize: 10.5, color: "#8f8a7c", cursor: "pointer", textAlign: "right" }}
+                style={{ padding: "4px 16px", fontSize: 10.5, color: "var(--text-dim)", cursor: "pointer", textAlign: "right" }}
               >
                 ▾ 最小化
               </div>
@@ -345,7 +361,7 @@ export default function CenterPanel({
           {/* 叙事正文区。建筑面板展开时整个让位——两个 flex:1 的兄弟会平分高度，
               那样建筑面板只有半屏、内容长的下半截看不到（见上方注释）。
               让位而不是压缩，是因为压缩解决不了「一半」这个根因。 */}
-          <div style={{ display: ((activeBuilding || tradingShop) && !buildingPanelMinimized) ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: 2.0, letterSpacing: "0.3px" }}>
+          <div style={{ display: ((activeBuilding || tradingShop) && !buildingPanelMinimized) ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
             {(() => {
               // 按"一问一答"分组：玩家的一条 cmd 开启一个新轮次，后面紧跟的所有内容
               // （desc/stat/affection/sys/err 等）都归进这一组，直到下一条 cmd 出现为止。
@@ -370,13 +386,39 @@ export default function CenterPanel({
               }
               if (current) groups.push(current);
 
+              let lastCommandIndex = -1;
+              for (let i = log.length - 1; i >= 0; i -= 1) {
+                if (log[i].t === "cmd") {
+                  lastCommandIndex = i;
+                  break;
+                }
+              }
+              const lastCommand = lastCommandIndex >= 0 ? log[lastCommandIndex] : null;
+              const currentReplies = lastCommandIndex >= 0 ? log.slice(lastCommandIndex + 1) : [];
+              const hasNarrative = currentReplies.some(entry =>
+                (entry.t === "desc" || entry.t === "narrator") &&
+                (!entry.streaming || !isNarrativePlaceholder(entry)));
+              const showSkeleton = (loading || pendingTalks > 0 || inspecting) && !hasNarrative;
+              if (showSkeleton) {
+                const group = groups.find(item => item.cmd === lastCommand);
+                if (group) {
+                  const placeholderIndex = group.replies.findIndex(isNarrativePlaceholder);
+                  if (placeholderIndex >= 0) group.replies[placeholderIndex] = { skeleton: true };
+                  else group.replies.push({ skeleton: true });
+                } else {
+                  groups.push({ skeleton: true });
+                }
+              }
+
               return groups.map((g, gi) => {
+                if (g.skeleton) return <NarrativeSkeleton key={`skeleton-${gi}`} />;
                 if (g.standalone) {
                   return <LogEntry key={gi} entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={act} isDayMode={isDayMode} />;
                 }
                 // 折叠逻辑：用 cmd 在 log 数组里的位置作为稳定 key
                 const cmdIdx = g.cmd ? log.indexOf(g.cmd) : -1;
-                const canCollapse = g.cmd && g.replies.length > 0;
+                const replyCount = g.replies.filter(entry => !entry.skeleton).length;
+                const canCollapse = g.cmd && replyCount > 0;
                 const collapsed = canCollapse && collapsedGroups.has(cmdIdx);
                 const toggleCollapse = canCollapse ? () => setCollapsedGroups(prev => {
                   const next = new Set(prev);
@@ -413,7 +455,7 @@ export default function CenterPanel({
                         </div>
                         {collapsed && (
                           <span style={{ color: zoneTheme.accentDim, fontSize: "10px", flexShrink: 0 }}>
-                            +{g.replies.length}条
+                            +{replyCount}条
                           </span>
                         )}
                       </div>
@@ -421,7 +463,9 @@ export default function CenterPanel({
                     {!collapsed && g.replies.length > 0 && (
                       <div style={{ padding: g.cmd ? "0 12px 8px 26px" : "8px 12px" }}>
                         {g.replies.map((entry, ri) => (
-                          <LogEntry key={ri} entry={entry} color={clr[entry.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
+                          entry.skeleton
+                            ? <NarrativeSkeleton key="narrative-skeleton" />
+                            : <LogEntry key={ri} entry={entry} color={clr[entry.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
                         ))}
                       </div>
                     )}
@@ -467,9 +511,9 @@ export default function CenterPanel({
             <div style={{
               display: "flex", alignItems: "center", gap: 8, padding: "5px 14px",
               borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0,
-              background: waitSecs >= 30 ? "#3a1a1a" : waitSecs >= 12 ? "#3a2a12" : "#12100a",
+              background: waitSecs >= 30 ? "#3a1a1a" : waitSecs >= 12 ? "#3a2a12" : "var(--bg-panel)",
               fontSize: "11.5px",
-              color: waitSecs >= 30 ? "#e08a6a" : waitSecs >= 12 ? "#e0b060" : zoneTheme.textDim,
+              color: waitSecs >= 30 ? "#e08a6a" : waitSecs >= 12 ? "var(--warn)" : zoneTheme.textDim,
             }}>
               <span>{waitSecs >= 30 ? "🐢" : "⏳"}</span>
               <span>
@@ -531,7 +575,7 @@ export default function CenterPanel({
               <span style={{ color: "#c07050", fontSize: "11px", flexShrink: 0 }}>◈ 行动抉择</span>
               {availableQuestsHere.filter(e => e.stage.choices?.length).map(entry => (
                 <span key={entry.quest.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <span style={{ color: "#e8e4d6", fontSize: "10.5px" }}>{entry.quest.title}：</span>
+                  <span style={{ color: "var(--text)", fontSize: "10.5px" }}>{entry.quest.title}：</span>
                   {entry.stage.choices
                     .filter(choice => {
                       // 部分选项有前置条件（如"亮出XX信物"需先完成对应任务）才该出现，
@@ -556,7 +600,7 @@ export default function CenterPanel({
                           title={choice.resolve === "combat" ? "会进入切磋，打赢才算数" : choice.resolve === "talk" ? "会进入对话，说赢才算数" : ""}
                           style={{
                             cursor: "pointer", color: "#c07050", padding: "2px 10px",
-                            border: "1px solid #c8323a", borderRadius: 0, fontSize: "10.5px",
+                            border: "1px solid var(--accent)", borderRadius: 0, fontSize: "10.5px",
                             background: "#241211", whiteSpace: "nowrap",
                           }}
                         >

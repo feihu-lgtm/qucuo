@@ -52,7 +52,7 @@ const DAY_INK = {
   bgPanel: "#f4f2e9",     // 面板更白，制造层次
   border: "#2a2620",      // 墨线：近黑描边
   text: "#201d18",        // 墨黑正文
-  textDim: "#726c5e",     // 中灰次要文字
+  textDim: "#6d6759",     // 中灰次要文字，满足宣纸背景上的 WCAG AA
 };
 
 export const ZONE_THEMES_DAY = {

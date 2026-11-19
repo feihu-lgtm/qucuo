@@ -72,7 +72,7 @@ export default function RightPanel({
               title="点击更换头像"
               style={{
                 width: 90, aspectRatio: "2/3", borderRadius: 0, overflow: "hidden",
-                border: `1px solid ${zoneTheme.border}`, background: "#111110", cursor: "pointer",
+                border: `1px solid ${zoneTheme.border}`, background: "var(--bg-panel)", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
               }}
             >
@@ -104,7 +104,7 @@ export default function RightPanel({
                 title={compForms ? `${comp.label} · 点击切换立绘形态` : comp.label}
                 style={{
                   width: 90, aspectRatio: "2/3", borderRadius: 0, overflow: "hidden",
-                  border: `1px solid ${zoneTheme.border}`, background: "#111110",
+                  border: `1px solid ${zoneTheme.border}`, background: "var(--bg-panel)",
                   cursor: compForms ? "pointer" : "default",
                   display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
                 }}
@@ -148,9 +148,9 @@ export default function RightPanel({
           <div style={{ flex: 1, paddingTop: 4 }}>
             <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>
             <div style={{ fontSize: "11px", color: zoneTheme.textDim, marginBottom: 8 }}>{char.gender || "男"}　少侠</div>
-            <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#e8e4d6" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
+            <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "var(--text)" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
             <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
-            <div style={{ fontSize: "11.5px", marginBottom: 3 }}>经验 <span style={{ color: "#d4a853" }}>{exp}</span>　潜能 <span style={{ color: "#b48adf" }}>{pot}</span></div>
+            <div style={{ fontSize: "11.5px", marginBottom: 3 }}>经验 <span style={{ color: "var(--warn)" }}>{exp}</span>　潜能 <span style={{ color: "#b48adf" }}>{pot}</span></div>
             <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "#e8c468" }}>{char.money || 0}</span> 两</div>
             <div style={{ fontSize: "11.5px", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
               <span>信鸽 <span style={{ color: "#c4a040" }}>{char.pigeons || 0}</span> 只</span>
@@ -170,7 +170,7 @@ export default function RightPanel({
         <div style={{ marginBottom: 10 }}>
           {(() => {
             const es = computeEquippedStats(inv);
-            return <div style={{ fontSize: "11px", color: "#8f8a7c" }}>装备总加成：攻{es.totalAtk} 防{es.totalDef}</div>;
+            return <div style={{ fontSize: "11px", color: "var(--text-dim)" }}>装备总加成：攻{es.totalAtk} 防{es.totalDef}</div>;
           })()}
         </div>
 
@@ -209,8 +209,8 @@ export default function RightPanel({
                 return (
                   <div key={k} title={buffed ? `基础${v}，药力/buff生效中` : undefined}>
                     {k}
-                    <span style={{ color: buffed ? "#c07050" : "#e8e4d6" }}>{buffed ? eff : v}</span>
-                    {buffed && <span style={{ color: "#8f8a7c", fontSize: "9.5px" }}> ({v}+{eff - v})</span>}
+                    <span style={{ color: buffed ? "#c07050" : "var(--text)" }}>{buffed ? eff : v}</span>
+                    {buffed && <span style={{ color: "var(--text-dim)", fontSize: "9.5px" }}> ({v}+{eff - v})</span>}
                   </div>
                 );
               })}
@@ -311,7 +311,7 @@ export default function RightPanel({
           {skills.filter(s => s.active || showIdleSkills).map((s) => {
             const i = skills.indexOf(s);
             const q = s.quality || "白";
-            const qc = QUALITY_COLOR[q] || "#e8e4d6";
+            const qc = QUALITY_COLOR[q] || "var(--text)";
             // 真实招式本体：fixed（拜师/偷师完整招）直接取 s.move，可修炼武学按当前
             // 阶段 deriveMoveFromSkill 派生。moveStatLabel/moveEffectBrief 认的是招式
             // 字段（baseDamageMultiplier/forceFirst…），这些都在 move 上、不在技能外壳 s 上，
@@ -365,7 +365,7 @@ export default function RightPanel({
                       const afford = pot >= cost;
                       return (
                         <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 18, marginTop: 1 }}>
-                          <span style={{ fontSize: "10px", color: "#8f8a7c" }}>
+                          <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
                             阶段 {curIdx + 1}/5 · {s.stage}
                           </span>
                           {maxed
@@ -375,7 +375,7 @@ export default function RightPanel({
                                 title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`}
                                 style={{
                                   cursor: afford ? "pointer" : "not-allowed", fontSize: "10px", padding: "1px 7px", borderRadius: 0,
-                                  color: afford ? "#b48adf" : "#8f8a7c",
+                                  color: afford ? "#b48adf" : "var(--text-dim)",
                                   background: afford ? zoneTheme.bgPanel : "transparent",
                                   border: `1px solid ${afford ? "#4a3a5a" : zoneTheme.border}`, userSelect: "none",
                                 }}
@@ -397,7 +397,7 @@ export default function RightPanel({
               <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>临阵招式 <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>切磋自带补位 · 运功对应类型的武学即替换（回气永在，能量枯竭保命）</span></div>
               {extras.map((m, i) => {
                 const q = m.quality || "白";
-                const qc = QUALITY_COLOR[q] || "#e8e4d6";
+                const qc = QUALITY_COLOR[q] || "var(--text)";
                 const origin = m.learnedFromMaster ? "授" : "基础";
                 return (
                   <div key={i} style={{ marginBottom: 3, fontSize: "11px", display: "flex", alignItems: "center", gap: 5, opacity: 0.92, paddingLeft: 6 }}>
@@ -422,7 +422,7 @@ export default function RightPanel({
             const equippedCount = itemsInCat.filter(i => i.equipped).length;
             return (
               <div key={cat} style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: "10.5px", color: "#8f8a7c", marginBottom: 3 }}>
+                <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 3 }}>
                   {CATEGORY_LABEL[cat]} <span style={{ color: zoneTheme.textDim }}>（{itemsInCat.length}件，{equippedCount}件已装备）</span>
                 </div>
                 {itemsInCat.length === 0 && <div style={{ fontSize: "10.5px", color: zoneTheme.textDim, paddingLeft: 8 }}>无</div>}
@@ -437,7 +437,7 @@ export default function RightPanel({
                       onClick={() => setInv(v => toggleEquip(v, item.id))}
                       style={{
                         fontSize: "11px", cursor: "pointer", paddingLeft: 8, marginBottom: 3,
-                        color: item.equipped ? QUALITY_COLOR[item.quality] : "#8f8a7c",
+                        color: item.equipped ? QUALITY_COLOR[item.quality] : "var(--text-dim)",
                         fontWeight: item.equipped ? "bold" : "normal",
                         wordBreak: "break-word",
                       }}

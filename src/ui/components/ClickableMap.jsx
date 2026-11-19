@@ -5,7 +5,7 @@ import { MAP_UI } from "../../domain/map/mapUi.js";
 // nodes: [{name,x,y,explored,current,reachable,dir,dest,locked}]  onGo(dir,dest,locked)
 // explored=去过（亮·实心）; !explored=战争迷雾（问号·虚线）; reachable=当前有出口可点；
 // locked=有路但未解锁（点了触发 AI 叙事拦截）。current=当前所在（金框脉冲）。
-export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = "62vh", accent = "#c8323a", loading }) {
+export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = "62vh", accent = "var(--accent)", loading }) {
   const [hover, setHover] = React.useState(null);
   // 拖动+缩放状态：view = {tx, ty, scale}。tx/ty 是平移量，scale 是缩放倍数。
   // 开图即以当前所在为中心放大：地名大字是导航核心（长刀式），默认全览缩得太小看不清。
@@ -132,7 +132,7 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
                     <rect x={cx - pw / 2 + 3} y={cy - ph / 2 + 3} width={pw - 6} height={ph - 6} fill="none" stroke={edge} strokeWidth={1} />
                   </g>
                   <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
-                    fill={n.current ? accent : "#201d18"} fontSize={fs} fontFamily="inherit" fontWeight="bold">{label}</text>
+                    fill={n.current ? accent : "var(--text)"} fontSize={fs} fontFamily="inherit" fontWeight="bold">{label}</text>
                 </g>
               )}
               {n.locked && <text x={cx + pw / 2 - 8} y={cy - ph / 2 + 12} textAnchor="middle" fontSize="12" style={{ pointerEvents: "none" }}>🔒</text>}

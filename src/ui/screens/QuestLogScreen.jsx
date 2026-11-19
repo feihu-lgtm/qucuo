@@ -17,7 +17,7 @@ export default function QuestLogScreen({ questProgress, zoneTheme, onClose, inli
       <Header name="任务" zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
         {!active.length && !completed.length && !locked.length && (
-          <div style={{ color: "#8f8a7c", fontSize: 11 }}>尚无已接取的任务。与故事中的人物深入交谈，也许会有委托。</div>
+          <div style={{ color: "var(--text-dim)", fontSize: 11 }}>尚无已接取的任务。与故事中的人物深入交谈，也许会有委托。</div>
         )}
 
         {active.length > 0 && (
@@ -28,12 +28,12 @@ export default function QuestLogScreen({ questProgress, zoneTheme, onClose, inli
               const stage = getCurrentStage(q, prog);
               const idx = (prog.currentStageIndex ?? 0) + 1;
               return (
-                <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "#161510", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-panel)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "#e8e4d6", fontSize: 13 }}>{q.title}</span>
+                    <span style={{ color: "var(--text)", fontSize: 13 }}>{q.title}</span>
                     <span style={{ color: "#6a8aaa", fontSize: 11 }}>{idx}/{q.stages.length}</span>
                   </div>
-                  {q.giver && <div style={{ color: "#8f8a7c", fontSize: 10.5, marginBottom: 4 }}>委托人：{q.giver}</div>}
+                  {q.giver && <div style={{ color: "var(--text-dim)", fontSize: 10.5, marginBottom: 4 }}>委托人：{q.giver}</div>}
                   {stage && <div style={{ color: "#a89a6a", fontSize: 11.5, lineHeight: 1.6 }}>{stage.description}</div>}
                 </div>
               );
@@ -47,7 +47,7 @@ export default function QuestLogScreen({ questProgress, zoneTheme, onClose, inli
             {completed.map(q => {
               const negative = questProgress[q.id]?.outcome === "negative";
               return (
-                <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: negative ? "#140a0a" : "#0a140a", borderRadius: 0, border: `1px solid ${negative ? "#4a2a2a" : "#c8323a"}` }}>
+                <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: negative ? "#140a0a" : "#0a140a", borderRadius: 0, border: `1px solid ${negative ? "#4a2a2a" : "var(--accent)"}` }}>
                   <div style={{ color: negative ? "#aa6a6a" : "#6aaa6a", fontSize: 12, marginBottom: 3 }}>{negative ? "✗" : "✓"} {q.title}</div>
                   {q.rewardText && <div style={{ color: negative ? "#8a6a6a" : "#7a8a6a", fontSize: 10.5, lineHeight: 1.5 }}>{q.rewardText}</div>}
                 </div>

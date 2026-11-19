@@ -51,7 +51,7 @@ export default function SeaOfMindScreen({
             <span key={k.key} style={{
               fontSize: 10.5, padding: "2px 9px", borderRadius: 0,
               color: done ? "#c07050" : isNext ? "#e8c86a" : "#4a4a44",
-              border: `1px solid ${done ? "#c8323a" : isNext ? "#4a3a1a" : "#25252a"}`,
+              border: `1px solid ${done ? "var(--accent)" : isNext ? "#4a3a1a" : "#25252a"}`,
               background: done ? "rgba(138,196,138,.08)" : "transparent",
             }}>
               {done ? "✓ " : isNext ? "◦ " : "· "}
@@ -75,7 +75,7 @@ export default function SeaOfMindScreen({
                 fontSize: 11, padding: "4px 11px", borderRadius: 0,
                 // 越级/缺物**不置灰也不禁用**——玩家该被允许试，然后从她的反应里
                 // 知道时候未到。置灰等于把机制摊开，那一段的手感就没了。
-                color: gate.ok ? "#e8d4a0" : "#8a8478",
+                color: gate.ok ? "#e8d4a0" : "var(--text-dim)",
                 border: `1px solid ${gate.ok ? "#5a4a20" : "#2e2e33"}`,
                 background: gate.ok ? "rgba(232,200,106,.08)" : "transparent",
               }}

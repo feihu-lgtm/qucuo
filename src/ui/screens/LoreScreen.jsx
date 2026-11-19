@@ -8,7 +8,7 @@ import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 //
 // props: varTree（读账本）、time（当前回合，算淡忘倒计时）、turnToStr（回合→"第X日·时辰"）、zoneTheme、onClose
 
-const 途径色 = { 亲历: "#c07050", 目击: "#c8323a", 告知: "#c4a86a", 传闻: "#c08a6a", 剧本: "#9a8ac0" };
+const 途径色 = { 亲历: "#c07050", 目击: "var(--accent)", 告知: "#c4a86a", 传闻: "#c08a6a", 剧本: "#9a8ac0" };
 const 途径说明 = { 亲历: "亲身经历", 目击: "当场看见", 告知: "有人明说", 传闻: "道听途说", 剧本: "夙来知晓" };
 
 export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, onClose }) {
@@ -33,7 +33,7 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, on
   const facts = Object.values(领域.事实 || {}).sort((a, b) => (b.诞生回合 || 0) - (a.诞生回合 || 0));
 
   const wrap = { position: "fixed", inset: 0, background: "rgba(4,4,8,0.9)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
-  const card = { width: "100%", maxWidth: 720, maxHeight: "86vh", background: "#111110", border: `1px solid ${border}`, borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Songti SC','STSong','SimSun',serif", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
+  const card = { width: "100%", maxWidth: 720, maxHeight: "86vh", background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Songti SC','STSong','SimSun',serif", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" };
 
   return (
     <div style={wrap} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
@@ -51,7 +51,7 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, on
           {[["account", "事实账本", facts.length], ["notes", "记忆碎片", notes?.length]].map(([k, label, n]) => (
             <span key={k} onClick={() => setTab(k)}
               style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: 13,
-                color: tab === k ? "#111110" : accent, background: tab === k ? accent : "transparent",
+                color: tab === k ? "var(--bg-panel)" : accent, background: tab === k ? accent : "transparent",
                 border: `1px solid ${tab === k ? accent : border}`, borderBottom: "none", fontWeight: tab === k ? "bold" : "normal" }}>
               {label}{n != null ? ` · ${n}` : ""}
             </span>
@@ -105,7 +105,7 @@ function FactCard({ fact, time, fmtTurn, accent, border, bgPanel, textDim }) {
             return (
               <span key={name} title={`${途径说明[途] || 途}｜${fmtTurn(info.得知回合 || 0)}得知${会淡忘 ? `｜再过约 ${Math.max(0, 剩余)} 回合若无人再提便淡忘` : "｜记牢不忘"}`}
                 style={{ fontSize: 11, padding: "2px 8px", borderRadius: 0, background: "rgba(255,255,255,0.02)",
-                  border: `1px solid ${途径色[途] || border}55`, color: "#e8e4d6", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  border: `1px solid ${途径色[途] || border}55`, color: "var(--text)", display: "inline-flex", alignItems: "center", gap: 5 }}>
                 <span>{name}</span>
                 <span style={{ fontSize: 9, color: 途径色[途] || textDim }}>{途}</span>
                 {会淡忘 && <span style={{ fontSize: 9, color: 剩余 <= 10 ? "#c08a6a" : textDim }}>◷{Math.max(0, 剩余)}</span>}

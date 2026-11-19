@@ -74,7 +74,7 @@ export default class ErrorBoundary extends React.Component {
           }}>下载调试包</button>
           <span onClick={this.handleReset} style={{
             cursor: "pointer", color: "#c07050", padding: "6px 18px",
-            border: "1px solid #c8323a", borderRadius: 0, background: "#241211",
+            border: "1px solid var(--accent)", borderRadius: 0, background: "#241211",
           }}>关闭，返回</span>
         </div>
       );

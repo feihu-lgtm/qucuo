@@ -14,7 +14,7 @@ const SRC = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "CenterPa
 describe("建筑面板必须独占整条主叙事栏", () => {
   it("叙事正文区带着「建筑展开时让位」的显示条件", () => {
     // 找到叙事正文区那个 div（padding 20px 32px + lineHeight 2.0 是它的指纹）
-    const line = SRC.split("\n").find(l => l.includes('padding: "20px 32px"') && l.includes("lineHeight: 2.0"));
+    const line = SRC.split("\n").find(l => l.includes('padding: "20px 32px"') && l.includes('lineHeight: "var(--lh-narrative)"'));
     expect(line, "没找到叙事正文区容器，指纹可能变了，请同步这条守卫").toBeTruthy();
     expect(line, "叙事区没有让位条件——它会和建筑面板平分高度，建筑面板又只剩一半")
       .toMatch(/display:\s*\(\(activeBuilding \|\| tradingShop\) && !buildingPanelMinimized\)\s*\?\s*"none"/);

@@ -221,7 +221,7 @@ export function usePrivateTalk({
         setLog(l => {
           if (logIdx.current == null) return l;
           const copy = [...l];
-          copy[logIdx.current] = { t: "narrator", text: `  「旁白」${text}` };
+          copy[logIdx.current] = { t: "narrator", text: `  「旁白」${text}`, streamed: true };
           return copy;
         });
         traceStep(_wt, "AI调用", "pass", "流式一次成功");

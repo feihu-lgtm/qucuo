@@ -11,12 +11,12 @@ const rowStyle = {
   borderBottom: "1px solid #14161e", cursor: "grab",
 };
 const btnStyle = {
-  cursor: "pointer", color: "#c8323a", padding: "4px 10px", background: "#161510",
-  border: "1px solid #4a453c", borderRadius: 0, fontSize: "11px", display: "inline-block",
+  cursor: "pointer", color: "var(--accent)", padding: "4px 10px", background: "var(--bg-panel)",
+  border: "1px solid var(--border)", borderRadius: 0, fontSize: "11px", display: "inline-block",
 };
 const inputStyle = {
-  width: "100%", background: "#161510", border: "1px solid #4a453c", borderRadius: 0,
-  color: "#e8e4d6", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px", boxSizing: "border-box",
+  width: "100%", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
+  color: "var(--text)", padding: "6px 8px", fontFamily: "inherit", fontSize: "12px", boxSizing: "border-box",
 };
 
 // 顶部常驻工具栏：参照酒馆"预设永远显示在最上面，不管切到哪个标签页"的布局。
@@ -85,8 +85,8 @@ export function PresetToolbar({ state, onStateChange }) {
   };
 
   return (
-    <div style={{ background: "#161510", border: "1px solid #4a453c", borderRadius: 0, padding: "10px 12px", marginBottom: 12 }}>
-      <div style={{ fontSize: "10px", color: "#8f8a7c", marginBottom: 6 }}>对话补全预设</div>
+    <div style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: "10px 12px", marginBottom: 12 }}>
+      <div style={{ fontSize: "10px", color: "var(--text-dim)", marginBottom: 6 }}>对话补全预设</div>
       <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
         <select
           value={state.activeIndex}
@@ -176,7 +176,7 @@ export default function PresetManager({ state, onStateChange }) {
 
   return (
     <div>
-      <div style={{ fontSize: "11px", color: "#8f8a7c", marginBottom: 10 }}>
+      <div style={{ fontSize: "11px", color: "var(--text-dim)", marginBottom: 10 }}>
         完整兼容 SillyTavern 酒馆预设格式：可以导入酒馆导出的 Chat Completion 预设 JSON，
         每条独立的 prompt 片段都能单独开关、编辑内容、拖拽调整顺序，真正按顺序拼进最终发给模型的 system prompt。
         预设的选择、新建、导入导出已经移到设置面板最上方的常驻工具栏，这里只管理当前预设的具体内容。
@@ -184,7 +184,7 @@ export default function PresetManager({ state, onStateChange }) {
 
       <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: "10.5px", color: "#5a8a5a", marginBottom: 3 }}>Temperature（留空跟随全局设置）</div>
+          <div style={{ fontSize: "10.5px", color: "var(--good)", marginBottom: 3 }}>Temperature（留空跟随全局设置）</div>
           <input
             type="number" step="0.1" placeholder="跟随全局"
             value={activePreset.temperature ?? ""}
@@ -193,7 +193,7 @@ export default function PresetManager({ state, onStateChange }) {
           />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: "10.5px", color: "#5a8a5a", marginBottom: 3 }}>最大输出 Token（留空跟随全局设置）</div>
+          <div style={{ fontSize: "10.5px", color: "var(--good)", marginBottom: 3 }}>最大输出 Token（留空跟随全局设置）</div>
           <input
             type="number" step="100" placeholder="跟随全局"
             value={activePreset.maxTokens ?? ""}
@@ -204,14 +204,14 @@ export default function PresetManager({ state, onStateChange }) {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <div style={{ fontSize: "11px", color: "#5a8a5a" }}>
+        <div style={{ fontSize: "11px", color: "var(--good)" }}>
           Prompt 条目（{activePreset.order.length} 条，{activePreset.order.filter(o => o.enabled).length} 条已启用）
           <span style={{ color: "#3a3830", fontSize: "10px" }}> · 拖拽排序 · 点名字展开编辑</span>
         </div>
         <span style={btnStyle} onClick={addNewEntry}>+ 新增条目</span>
       </div>
 
-      <div style={{ border: "1px solid #4a453c", borderRadius: 0, maxHeight: 360, overflowY: "auto" }}>
+      <div style={{ border: "1px solid var(--border)", borderRadius: 0, maxHeight: 360, overflowY: "auto" }}>
         {activePreset.order.map(o => {
           const p = byId[o.id];
           if (!p) return null;
@@ -219,7 +219,7 @@ export default function PresetManager({ state, onStateChange }) {
           return (
             <div key={o.id}>
               <div
-                style={{ ...rowStyle, opacity: draggingId === o.id ? 0.4 : 1, background: o.enabled ? "transparent" : "#161510" }}
+                style={{ ...rowStyle, opacity: draggingId === o.id ? 0.4 : 1, background: o.enabled ? "transparent" : "var(--bg-panel)" }}
                 draggable
                 onDragStart={() => handleDragStart(o.id)}
                 onDragOver={e => handleDragOver(e, o.id)}
@@ -231,11 +231,11 @@ export default function PresetManager({ state, onStateChange }) {
                   onClick={() => setEditingId(isEditing ? null : o.id)}
                   style={{
                     flex: 1, cursor: "pointer", fontSize: "12px",
-                    color: o.enabled ? "#e8e4d6" : "#8f8a7c",
+                    color: o.enabled ? "var(--text)" : "var(--text-dim)",
                     textDecoration: p.isMarker ? "none" : "underline", textDecorationStyle: "dotted", textDecorationColor: "#3a3830",
                   }}
                 >
-                  {p.name} {p.isMarker && <span style={{ fontSize: "9.5px", color: "#5a8a5a" }}>[占位符]</span>}
+                  {p.name} {p.isMarker && <span style={{ fontSize: "9.5px", color: "var(--good)" }}>[占位符]</span>}
                   <span style={{ fontSize: "9.5px", color: "#4a4a4a", marginLeft: 6 }}>{p.role}</span>
                 </span>
                 {!p.isMarker && (
@@ -243,9 +243,9 @@ export default function PresetManager({ state, onStateChange }) {
                 )}
               </div>
               {isEditing && (
-                <div style={{ padding: "8px 12px", background: "#161510", borderBottom: "1px solid #14161e" }}>
+                <div style={{ padding: "8px 12px", background: "var(--bg-panel)", borderBottom: "1px solid #14161e" }}>
                   {p.isMarker ? (
-                    <div style={{ fontSize: "11px", color: "#8f8a7c" }}>
+                    <div style={{ fontSize: "11px", color: "var(--text-dim)" }}>
                       这是系统占位符，代表引擎运行时会自动填充的内容
                       {p.id === "scenario" || p.id === "charDescription" ? "（对应曲措乡的剧本设定）" : p.id === "chatHistory" ? "（对应最近的对话历史）" : "（我们的引擎暂不支持这个占位符，拼装时会跳过）"}
                       ，不能手动编辑文字内容。

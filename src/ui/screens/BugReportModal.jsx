@@ -68,12 +68,12 @@ export default function BugReportModal({
   const dark = !isDayMode;
   const C = {
     overlay: "rgba(8,6,3,0.82)",
-    panel: dark ? "#141019" : "#f7f2e8",
+    panel: dark ? "#141019" : "var(--bg-panel)",
     border: dark ? "#3a3242" : "#b3987a",
-    text: dark ? "#e8e4d6" : "#3a2a14",
+    text: dark ? "var(--text)" : "#3a2a14",
     dim: dark ? "#7a7060" : "#8a7358",
-    accent: dark ? "#d4a853" : "#8a5a12",
-    inputBg: dark ? "#0d0b12" : "#fffdf6",
+    accent: dark ? "var(--warn)" : "#8a5a12",
+    inputBg: dark ? "#0d0b12" : "var(--bg-panel)",
   };
 
   const submit = async () => {
@@ -230,7 +230,7 @@ export default function BugReportModal({
                 style={{
                   cursor: agreed && !sending ? "pointer" : "not-allowed",
                   padding: "6px 20px", borderRadius: 0, fontSize: 13, fontWeight: "bold",
-                  background: agreed && !sending ? C.accent : (dark ? "#2a2620" : "#d8cdb8"),
+                  background: agreed && !sending ? C.accent : (dark ? "var(--border)" : "#d8cdb8"),
                   color: agreed && !sending ? (dark ? "#1a140c" : "#fff") : C.dim,
                   border: "none",
                 }}

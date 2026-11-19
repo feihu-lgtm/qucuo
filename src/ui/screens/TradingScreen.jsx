@@ -31,7 +31,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
     <div style={outer}>
       <div style={inner}>
         <div style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-          <div style={{ fontSize: 14, color: zoneTheme.text || "#e8e4d6" }}>{shopName || "交易"}</div>
+          <div style={{ fontSize: 14, color: zoneTheme.text || "var(--text)" }}>{shopName || "交易"}</div>
           <div style={{ fontSize: 12, color: "#e8c468" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
         </div>
 
@@ -41,7 +41,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
           <div style={{ flex: 1, padding: 12, overflowY: "auto", borderRight: `1px solid ${zoneTheme.border}` }}>
             <div style={{ fontSize: 11, color: zoneTheme.accentDim, marginBottom: 8 }}>我的物品</div>
             {sellableItems.length === 0 && (
-              <div style={{ fontSize: 11, color: "#8f8a7c", textAlign: "center", padding: "20px 0" }}>没有可出售的物品</div>
+              <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "center", padding: "20px 0" }}>没有可出售的物品</div>
             )}
             {sellableItems.map((item, i) => (
               <div key={item.id || i} style={{
@@ -51,17 +51,17 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                 <div style={{ fontSize: 11.5 }}>
                   <span
                     onClick={() => onInspect?.("item", item.name, null, item)}
-                    style={{ color: QUALITY_COLOR[item.quality] || "#e8e4d6", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
+                    style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                   >{item.name}</span>
-                  {item.equipped && <span style={{ color: "#5a8a5a", marginLeft: 4 }}>[已装备]</span>}
-                  <span style={{ color: "#8f8a7c", marginLeft: 6 }}>售 {item.sellPrice}{currencyUnit}</span>
+                  {item.equipped && <span style={{ color: "var(--good)", marginLeft: 4 }}>[已装备]</span>}
+                  <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>售 {item.sellPrice}{currencyUnit}</span>
                 </div>
                 <span
                   onClick={() => !item.equipped && onSell(item)}
                   style={{
                     fontSize: 11, padding: "2px 10px", borderRadius: 0,
                     cursor: item.equipped ? "not-allowed" : "pointer",
-                    color: item.equipped ? "#8f8a7c" : "#d4a853",
+                    color: item.equipped ? "var(--text-dim)" : "var(--warn)",
                     border: `1px solid ${item.equipped ? "#2a2a2a" : "#4a3a1a"}`,
                   }}
                   title={item.equipped ? "已装备的物品需先卸下才能卖出" : "卖出"}
@@ -87,17 +87,17 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                   <div style={{ fontSize: 11.5 }}>
                     <span
                       onClick={() => onInspect?.("item", item.name, null, item)}
-                      style={{ color: QUALITY_COLOR[item.quality] || "#e8e4d6", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
+                      style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                     >{item.name}</span>
-                    {discounted && <span style={{ color: "#8f8a7c", marginLeft: 6, textDecoration: "line-through" }}>{item.buyPrice}</span>}
-                    <span style={{ color: discounted ? "#c07050" : "#8f8a7c", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
+                    {discounted && <span style={{ color: "var(--text-dim)", marginLeft: 6, textDecoration: "line-through" }}>{item.buyPrice}</span>}
+                    <span style={{ color: discounted ? "#c07050" : "var(--text-dim)", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
                   </div>
                   <span
                     onClick={() => canAfford && onBuy({ ...item, buyPrice: payPrice })}
                     style={{
                       fontSize: 11, padding: "2px 10px", borderRadius: 0,
                       cursor: canAfford ? "pointer" : "not-allowed",
-                      color: canAfford ? "#c8323a" : "#8f8a7c",
+                      color: canAfford ? "var(--accent)" : "var(--text-dim)",
                       border: `1px solid ${canAfford ? "#1a3a3a" : "#2a2a2a"}`,
                     }}
                     title={canAfford ? "购买" : `${currencyName}不足`}

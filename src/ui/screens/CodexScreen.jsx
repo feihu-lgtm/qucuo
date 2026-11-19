@@ -232,7 +232,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
 
 // 物品条目行
 function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
-  const qc = QUALITY_COLOR[it.quality] || "#8a8578";
+  const qc = QUALITY_COLOR[it.quality] || "var(--text-dim)";
   const jade = jadeSrc(it.quality);
   // 数值：武器给攻倍率、护甲给防倍率、有六维给六维
   const statBits = [];
@@ -269,7 +269,7 @@ function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
 
 // 武学条目行
 function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
-  const qc = QUALITY_COLOR[sk.quality] || "#8a8578";
+  const qc = QUALITY_COLOR[sk.quality] || "var(--text-dim)";
   const jade = jadeSrc(sk.quality);
   const bonusBits = [];
   if (sk.owner) bonusBits.push(`${sk.owner}·${sk.slot || ""}`);

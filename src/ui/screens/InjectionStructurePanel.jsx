@@ -64,7 +64,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
   };
 
   const box = {
-    background: "#111110", border: "1px solid #4a453c", borderRadius: 0,
+    background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
     padding: "8px 10px", marginTop: 6, fontSize: 11, lineHeight: 1.75,
     color: "#9a9484", whiteSpace: "pre-wrap", wordBreak: "break-word",
     maxHeight: 260, overflowY: "auto", fontFamily: "inherit",
@@ -75,7 +75,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
     const t = traces.find(x => x.pipeline?.systemPrompt);
     if (!t) {
       return (
-        <div style={{ fontSize: 11, color: "#8f8a7c", padding: "12px 0" }}>
+        <div style={{ fontSize: 11, color: "var(--text-dim)", padding: "12px 0" }}>
           当前还没有主叙事调用记录。触发一次行动（移动、对话、行动）后，这里会按酒馆 13 位置展示实际发出去的 prompt 结构。
         </div>
       );
@@ -102,13 +102,13 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             const label = m.tavernLabel || m.tavernBlock || (isSys ? "system" : m.role);
             const len = (m.content || "").length;
             return (
-              <div key={i} style={{ border: "1px solid #4a453c", borderRadius: 0, padding: "6px 8px" }}>
+              <div key={i} style={{ border: "1px solid var(--border)", borderRadius: 0, padding: "6px 8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 9, color: isSys ? "#7a9ab8" : "#8f8a7c" }}>#{Math.floor(m.order)}</span>
-                  <span style={{ fontSize: 11, color: isSys ? "#e8e4d6" : "#a8a898", fontWeight: "bold" }}>{label}</span>
-                  <span style={{ fontSize: 9, color: "#8f8a7c" }}>{m.role} · {len} 字</span>
+                  <span style={{ fontSize: 9, color: isSys ? "#7a9ab8" : "var(--text-dim)" }}>#{Math.floor(m.order)}</span>
+                  <span style={{ fontSize: 11, color: isSys ? "var(--text)" : "#a8a898", fontWeight: "bold" }}>{label}</span>
+                  <span style={{ fontSize: 9, color: "var(--text-dim)" }}>{m.role} · {len} 字</span>
                 </div>
-                <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 9.5, lineHeight: 1.45, color: "#9a9484", background: "#161510", border: "1px solid #4a453c", borderRadius: 0, padding: "5px 7px", maxHeight: 140, overflowY: "auto" }}>{m.content || "（空）"}</pre>
+                <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 9.5, lineHeight: 1.45, color: "#9a9484", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: "5px 7px", maxHeight: 140, overflowY: "auto" }}>{m.content || "（空）"}</pre>
               </div>
             );
           })}
@@ -121,15 +121,15 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
     <div>
       {/* 视图切换：动作分类 vs 酒馆 13 位置 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 10.5, color: "#8f8a7c" }}>查看视角：</span>
+        <span style={{ fontSize: 10.5, color: "var(--text-dim)" }}>查看视角：</span>
         {[["tavern", "🍺 酒馆 13 位置"], ["action", "⚔ 动作分类"]].map(([m, label]) => (
           <span key={m}
             onClick={() => { setViewMode(m); setOpenBlock(null); }}
             style={{
               cursor: "pointer", padding: "2px 10px", borderRadius: 0, fontSize: 11,
               background: viewMode === m ? "#241211" : "transparent",
-              color: viewMode === m ? "#e8e4d6" : "#8f8a7c",
-              border: `1px solid ${viewMode === m ? "#c8323a" : "#4a453c"}`,
+              color: viewMode === m ? "var(--text)" : "var(--text-dim)",
+              border: `1px solid ${viewMode === m ? "var(--accent)" : "var(--border)"}`,
             }}>
             {label}
           </span>
@@ -152,8 +152,8 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             style={{
               cursor: "pointer", padding: "3px 10px", borderRadius: 0, fontSize: 11.5,
               background: actionId === v.id ? "#241211" : "transparent",
-              color: actionId === v.id ? "#e8e4d6" : "#8f8a7c",
-              border: `1px solid ${actionId === v.id ? "#c8323a" : "#4a453c"}`,
+              color: actionId === v.id ? "var(--text)" : "var(--text-dim)",
+              border: `1px solid ${actionId === v.id ? "var(--accent)" : "var(--border)"}`,
             }}>
             {v.label}
           </span>
@@ -165,15 +165,15 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
           extractionEngine.js 的提取层，是另一次独立AI调用，可配不同模型）。
           默认跟随设置里实际生效的档位，也可以手动切换来对比两种架构的差异。 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 10.5, color: "#8f8a7c" }}>查看模式：</span>
+        <span style={{ fontSize: 10.5, color: "var(--text-dim)" }}>查看模式：</span>
         {[["single", "单调用"], ["dual", "双调用"]].map(([m, label]) => (
           <span key={m}
             onClick={() => { setMode(m); setOpenBlock(null); }}
             style={{
               cursor: "pointer", padding: "2px 10px", borderRadius: 0, fontSize: 11,
               background: mode === m ? "#241211" : "transparent",
-              color: mode === m ? "#c07050" : "#8f8a7c",
-              border: `1px solid ${mode === m ? "#c8323a" : "#4a453c"}`,
+              color: mode === m ? "#c07050" : "var(--text-dim)",
+              border: `1px solid ${mode === m ? "var(--accent)" : "var(--border)"}`,
             }}>
             {label}
           </span>
@@ -185,7 +185,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
 
       <div style={{ fontSize: 11, color: "#7a7460", marginBottom: 6, lineHeight: 1.65 }}>
         {view.note}
-        <span style={{ color: "#8f8a7c" }}>
+        <span style={{ color: "var(--text-dim)" }}>
           {"　"}scope=<b style={{ color: "#8a9a8a" }}>{view.scope}</b>
           {view.intent ? `　intent=${view.intent}` : ""}
           {"　"}{litCount}/{blocks.length} 块亮灯
@@ -197,11 +197,11 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
         <span onClick={pullLive}
           style={{
             cursor: "pointer", fontSize: 11, padding: "3px 12px", borderRadius: 0,
-            color: "#111110", background: "#c8323a", border: "1px solid #c8323a",
+            color: "var(--bg-panel)", background: "var(--accent)", border: "1px solid var(--accent)",
           }}>
           ⟳ 拉取目前
         </span>
-        <span style={{ fontSize: 10, color: "#8f8a7c" }}>
+        <span style={{ fontSize: 10, color: "var(--text-dim)" }}>
           {Object.keys(live).length
             ? `已拉到 ${Object.keys(live).length} 块当前局真值`
             : "动态块默认显示字段模板，点这里抓当前这一局的真实内容"}
@@ -212,7 +212,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
       {/* 图例 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8, fontSize: 10 }}>
         {Object.entries(KIND_META).map(([k, m]) => (
-          <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "#8f8a7c" }}>
+          <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--text-dim)" }}>
             <span style={{ width: 8, height: 8, borderRadius: 0, background: m.color, display: "inline-block" }} />
             {m.label}
           </span>
@@ -228,7 +228,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
         const liveText = live[b.id];
         return (
           <div key={b.id} style={{
-            border: `1px solid ${open ? "#c8323a" : "#4a453c"}`, borderRadius: 0,
+            border: `1px solid ${open ? "var(--accent)" : "var(--border)"}`, borderRadius: 0,
             marginBottom: 4, opacity: b.lit ? 1 : 0.5, background: open ? "#0e1118" : "transparent",
           }}>
             <div
@@ -237,9 +237,9 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             >
               <span style={{ color: "#4a4a3a", fontSize: 10, width: 18, flexShrink: 0 }}>{open ? "▼" : "▶"}</span>
               <span style={{ width: 8, height: 8, borderRadius: 0, background: b.lit ? meta.color : "#3a3a3a", flexShrink: 0 }} />
-              <span style={{ flex: 1, fontSize: 12, color: b.lit ? "#e8e4d6" : "#8f8a7c", minWidth: 0 }}>
+              <span style={{ flex: 1, fontSize: 12, color: b.lit ? "var(--text)" : "var(--text-dim)", minWidth: 0 }}>
                 {b.name}
-                {!b.lit && <span style={{ color: "#8f8a7c", fontSize: 10 }}>　⚫灭</span>}
+                {!b.lit && <span style={{ color: "var(--text-dim)", fontSize: 10 }}>　⚫灭</span>}
               </span>
               <span style={{ fontSize: 9.5, color: "#4a4a3a", flexShrink: 0 }}>{meta.label}　#{b.depth}</span>
             </div>
@@ -249,7 +249,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                 {!b.lit && b.off && (
                   <div style={{ fontSize: 10.5, color: "#c08a5a", marginBottom: 4 }}>本动作下不注入：{b.off}</div>
                 )}
-                <div style={{ fontSize: 10.5, color: "#8f8a7c", lineHeight: 1.7 }}>{b.summary}</div>
+                <div style={{ fontSize: 10.5, color: "var(--text-dim)", lineHeight: 1.7 }}>{b.summary}</div>
 
                 {/* 文体铁律展开成字段级 */}
                 {b.id === "preset_wenfeng" && (
@@ -260,7 +260,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
 
                 {liveText != null ? (
                   <>
-                    <div style={{ fontSize: 10, color: "#c8323a", marginTop: 6 }}>⟳ 当前这一局的真实内容</div>
+                    <div style={{ fontSize: 10, color: "var(--accent)", marginTop: 6 }}>⟳ 当前这一局的真实内容</div>
                     <div style={box}>{liveText}</div>
                   </>
                 ) : text != null ? (
@@ -271,7 +271,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                     <div style={box}>{text}</div>
                   </>
                 ) : (
-                  <div style={{ fontSize: 10.5, color: "#8f8a7c", marginTop: 6, fontStyle: "italic" }}>
+                  <div style={{ fontSize: 10.5, color: "var(--text-dim)", marginTop: 6, fontStyle: "italic" }}>
                     运行时动态生成，没有固定原文 —— 点上方「⟳ 拉取目前」看这一局的真实内容。
                   </div>
                 )}
