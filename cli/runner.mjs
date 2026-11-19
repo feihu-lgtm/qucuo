@@ -526,7 +526,9 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       const result = localCommand.kind === "lines"
         ? { logs: [{ t: "cmd", text: `> ${line}` }, ...localCommand.lines] }
         : localCommand.result;
-      return await applyFeature(result);
+      const status = await applyFeature(result);
+      if (result.logs?.length) emit(result.logs.map((entry) => entry.text).join("\n"));
+      return status;
     }
     const useMatch = line.match(/^(?:用|服)\s+(.+)$/);
     if (useMatch) {

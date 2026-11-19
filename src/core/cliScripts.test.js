@@ -46,6 +46,12 @@ describe("CLI scripts", () => {
     });
 
     expect(failures, output.join("\n")).toBe(0);
+    if (file === "local-commands-items.txt") {
+      expect(output.join("\n")).toContain("── 命令列表 ──");
+      expect(output.join("\n")).toContain("── 状态 ──");
+      expect(output.join("\n")).toContain("── 包袱 ──");
+      expect(output.join("\n")).toContain("── 武学 ──");
+    }
     if (file === "ai-turn.txt") {
       expect(output.join("\n")).toContain("石阶旁的草叶轻轻摇动。");
       const replayOutput = [];
@@ -61,6 +67,17 @@ describe("CLI scripts", () => {
       expect(replayFailures, replayOutput.join("\n")).toBe(0);
       expect(replayOutput.join("\n")).toContain("石阶旁的草叶轻轻摇动。");
     }
+  });
+
+  it("prints local command responses from an interactive session", async () => {
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir });
+    await session.runLine(":new");
+    await session.runLine("帮助");
+    await session.runLine("状态");
+
+    expect(output.join("\n")).toContain("── 命令列表 ──");
+    expect(output.join("\n")).toContain("── 状态 ──");
   });
 
   it("moves between cached outer squares and restores the room after save/load", async () => {
