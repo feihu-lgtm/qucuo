@@ -14,6 +14,7 @@ import { DIRS } from "../utils/mudHelpers.js";
 import { MAP_UI } from "../domain/map/mapUi.js";
 import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";
 import { getMobileDrawerSwipeAction } from "../utils/mobileDrawerSwipe.js";
+import { didOpenConfirmation, didOpenOverlay } from "../utils/mobileOverlayTransitions.js";
 import { useUiStore } from "../store/uiStore.js";
 
 export default function GameLayout({ layout }) {
@@ -54,7 +55,9 @@ export default function GameLayout({ layout }) {
     trainNeigong, trainWaigong, trainCost, activeBuffs, breakthroughSkill,
     confessToNarrator, setInv, mapBigCloseGuard,
   } = layout;
-  const overlayCount = useUiStore((state) => state.overlays.length);
+  const overlays = useUiStore((state) => state.overlays);
+  const previousOverlaysRef = useRef(overlays);
+  const previousDuelPendingRef = useRef(duelPending);
   const swipeStart = useRef(null);
   const suppressClick = useRef(false);
 
@@ -91,10 +94,14 @@ export default function GameLayout({ layout }) {
   }, [isMobile]);
 
   useEffect(() => {
-    if (isMobile && mobileDrawer && (overlayCount > 0 || duelPending)) {
+    const overlayOpened = didOpenOverlay(previousOverlaysRef.current, overlays);
+    const confirmationOpened = didOpenConfirmation(previousDuelPendingRef.current, duelPending);
+    previousOverlaysRef.current = overlays;
+    previousDuelPendingRef.current = duelPending;
+    if (isMobile && mobileDrawer && (overlayOpened || confirmationOpened)) {
       setMobileDrawer(null);
     }
-  }, [isMobile, mobileDrawer, overlayCount, duelPending, setMobileDrawer]);
+  }, [isMobile, mobileDrawer, overlays, duelPending, setMobileDrawer]);
 
   useEffect(() => {
     if (!isMobile || !mobileDrawer) return undefined;
