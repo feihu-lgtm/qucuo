@@ -35,6 +35,8 @@ import {
   xuannuTriggerRule,
 } from "../src/features/narrator/rules.js";
 import { applyResult } from "../src/features/run.js";
+import { comfort, resolveTrauma, confessToNarrator } from "../src/features/narrator/logic.js";
+import { switchCompanion } from "../src/features/companion/logic.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
 import { innerMove, outerArrival } from "../src/features/map/logic.js";
@@ -519,6 +521,17 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     const missingNpc = (name) => applyFeature({
       logs: [{ t: "err", text: `  此处没有 ${name}。` }],
     });
+    if (line === ":help narrator") {
+      emit("安抚 <verbal|food|medication|hug|kiss> · 收束创伤 · 向旁白告白 · 换队友 <snowLeopard|asuka|none>");
+      return 0;
+    }
+    if (line.startsWith("安抚 ")) return await applyFeature(comfort(state, line.slice(3).trim()));
+    if (line === "收束创伤") return await applyFeature(resolveTrauma(state));
+    if (line === "向旁白告白") return await applyFeature(confessToNarrator(state));
+    if (line.startsWith("换队友 ")) {
+      const key = line.slice(4).trim();
+      return await applyFeature(switchCompanion(state, key === "none" ? null : key));
+    }
     const movementMatch = /^(走|去)\s+(.+)$/.exec(line);
     if (movementMatch) {
       const isWalk = movementMatch[1] === "走";

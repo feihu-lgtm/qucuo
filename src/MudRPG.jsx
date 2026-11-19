@@ -8,6 +8,10 @@ import { snapshotFromStore } from "./core/persist.js";
 import { setRngState } from "./core/rng.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import { applyResult } from "./features/run.js";
+import { comfort, resolveTrauma, enterSeaOfMind as enterSeaLogic, leaveSeaOfMind as leaveSeaLogic, confessToNarrator as confessLogic } from "./features/narrator/logic.js";
+import { switchCompanion } from "./features/companion/logic.js";
+import { joinSect } from "./features/sect/logic.js";
+import { auctionWin } from "./features/auction/logic.js";
 import { createCoalescedCheck, createWorldRules } from "./engine/worldRules.js";
 import { timeAdvanceRule } from "./features/time/rules.js";
 import { residentNpcRule } from "./features/npc/rules.js";
@@ -178,7 +182,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, setActiveCompanion, unlockedCompanions, unlockImportedCompanion, COMPANION_LORE } from "./companion.js";
+import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, unlockedCompanions, unlockImportedCompanion, COMPANION_LORE } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -197,20 +201,16 @@ import JadeShopScreen from "./buildings/JadeShopScreen.jsx";
 import GambleStoneScreen from "./buildings/GambleStoneScreen.jsx";
 import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } from "./gambleStone.js";
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
-import { invHasItemNamed } from "./safeHouse.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
 import { injectNpcs, materializeNpc, removeNpc } from "./roomNpcs.js";
 import { tallyAdd, describeDayForSummary, describeTallyForWhisper } from "./memory/tally.js";
-import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
-import { SEA_OF_MIND, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
+import { SECT_ENTRY } from "./sectEntry.js";
+import { SEA_OF_MIND, canEnterSea } from "./seaOfMind.js";
 import {
-  COMFORT_ACTIONS, SCENE_ARRIVE, SCENE_RESOLVE,
-  canComfort, describeComfortReject, comfortResponse, defenseLevelOf,
   availableKnot, canResolve, looksLikePromise, seaDialoguePrompt,
 } from "./narratorQuest.js";
 import { narratorVars, setNarratorVars } from "./mvu.js";
-import { AUCTION_LOT } from "./auction.js";
 import { getAllResidentNpcLore } from "./residentNpcs.js";
 import { makeSkillEntry, SKILL_CATALOG } from "./kungfu/qucuoKungfu.js";
 import { stealSuccessRate } from "./combat/stealSystem.js";
@@ -1479,16 +1479,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }, [char.bodyProfile, apiCfg]);
 
   const confessToNarrator = useCallback(() => {
-    if (narrator.affection < 100 || narrator.confessed) return;
-    setNarrator(n => ({ ...n, confessed: true, stage: NNPC_STAGE.CHEAT }));
-    addLog([
-      { t: "sys", text: "" },
-      { t: "confess", text: "  你对着虚空，认真地说出了那句话。" },
-      { t: "confess", text: "  一阵长久的沉默后，旁白的声音第一次带上了不属于\"引擎\"的震颤。" },
-      { t: "confess", text: "  「……我，」她说，「原来我一直在等你问这句话。」" },
-      { t: "sys", text: "" },
-    ]);
-  }, [narrator, addLog]);
+    applyResult(featureCtxRef.current, confessLogic(gameStore.getState()));
+  }, []);
 
   // 点击武学/包袱物品时，临场调用 AI 生成一段介绍文字，不修改任何游戏状态
   const [inspecting, setInspecting] = useState(null); // 记录正在查看哪个名字，用于按钮禁用/loading态展示
@@ -3202,96 +3194,41 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // 这里只负责落状态、写日志。**不调 AI**：这些是高频动作，每次烧一次调用不值当，
   // 且写死的反应更稳定，不会因为模型状态忽冷忽热。
   const handleComfort = useCallback((actionKey) => {
-    const v = narratorVars(varTreeRef.current);
-    const invNames = inv.map(i => (typeof i === "string" ? i : i?.name)).filter(Boolean);
-    const gate = canComfort(actionKey, v.comfort, invNames);
-    const spec = COMFORT_ACTIONS[actionKey];
-    if (!gate.ok) {
-      // 越级/缺物：给她的反应，**不计分**。不提示"还差几级"——不把机制摊开。
-      addLog([{ t: "desc", text: `  ${describeComfortReject(actionKey, gate.reason, gate)}` }]);
-      return;
-    }
-    const levelBefore = defenseLevelOf(v.comfort);
-    const nextComfort = { ...v.comfort, [actionKey]: (v.comfort?.[actionKey] || 0) + 1 };
-    const levelAfter = defenseLevelOf(nextComfort);
-    setVarTree(prev => setNarratorVars(prev, { comfort: nextComfort }));
-    addLog([
-      { t: "cmd", text: `> ${spec.label}` },
-      { t: "desc", text: `  ${comfortResponse(actionKey, levelBefore)}` },
-    ]);
-    noteAction("comfort");
-    // 心防降级是玩家该感知到的节点，但只给感受不给数字
-    if (levelAfter < levelBefore) {
-      const felt = ["她彻底放松下来了。", "她靠着你，很安静。", "她不再躲你的手了。",
-        "她开始肯说话了。", "她抬眼看了你一下。"][levelAfter] || "";
-      if (felt) addLog([{ t: "affection", text: `  ${felt}` }]);
-    }
-    // 门槛刚好降到能碰下一条心结时，给一句极轻的提示（不点名是哪一条）
-    const before = availableKnot(v.comfort, v.knots || []);
-    const after = availableKnot(nextComfort, v.knots || []);
-    if (!before && after) addLog([{ t: "sys", text: "  ⟡ 她像是有话要说。问问她。" }]);
-  }, [inv, addLog]);
+    const result = comfort(gameStore.getState(), actionKey);
+    applyResult(featureCtxRef.current, result);
+    if (result.changes) noteAction("comfort");
+  }, []);
 
   // 换出战队友（单槽互斥；传 null 表示谁都不带）
   const handleSwitchCompanion = useCallback((key) => {
-    setCompanionState(cs => setActiveCompanion(cs, key));
+    applyResult(featureCtxRef.current, switchCompanion(gameStore.getState(), key));
     noteAction("companionSwitch");
-    const label = key ? (key === "asuka" ? "明日香" : "雪豹") : null;
-    addLog([{ t: "sys", text: label ? `  （${label}跟上了。）` : "  （让他们都留守了。）" }]);
-  }, [addLog]);
+  }, []);
 
   // ── 创伤线 · 收束（点破内核 + 承诺）──
   const handleResolveTrauma = useCallback(() => {
-    const v = narratorVars(varTreeRef.current);
-    if (!canResolve(v.comfort, v.knots || [])) {
-      addLog([{ t: "sys", text: "  还不到说这句话的时候。" }]);
-      return;
-    }
-    setVarTree(prev => setNarratorVars(prev, { traumaResolved: true, questStage: 4 }));
-    setNarrator(n => ({ ...n, stage: NNPC_STAGE.RESOLVED }));
-    addLog(SCENE_RESOLVE);
-    jotNote({
-      text: "在心灵之海把旁白的三个心结都听完了，告诉她不必最强也有人看着她。她信了。",
-      owner: [{ name: "旁白", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE,
-    });
-  }, [addLog, jotNote]);
+    applyResult(featureCtxRef.current, resolveTrauma(gameStore.getState()));
+  }, []);
 
   // 进心灵之海：必须站在自己的安全屋里。这是一次纯前端传送，不调 AI、不消耗回合。
   const enterSeaOfMind = useCallback(() => {
-    const gate = canEnterSea({
-      flags, varTree: varTreeRef.current,
-      districtName: room.name, innerRoomName,
-    });
-    if (!gate.ok) { addLog([{ t: "sys", text: `  ${describeSeaGate(gate.reason)}` }]); return; }
-    seaReturnRef.current = { room: room.name, inner: innerRoomName };
-    const node = QUCUO_MAP[SEA_OF_MIND.district];
-    const v = narratorVars(varTreeRef.current);
-    if (!v.seaVisited) addLog([{ t: "narrator", text: seaEntryHint(gate.house.label) }]);
-    addLog([
-      { t: "room", text: "" },
-      { t: "desc", text: "  你闭上眼。再睁开时，脚下是白色的沙。太阳正在落山——永远在落山。" },
-    ]);
-    setRoom({ name: SEA_OF_MIND.district, desc: node.desc, exits: [], npcs: [], items: [] });
-    setTimeout(() => setInnerRoomName(SEA_OF_MIND.anchor), 0);
-    setVarTree(prev => setNarratorVars(prev, { seaVisited: true }));
-    noteAction("seaEnter");
-    // 进海即把她从旁白的位子上取下来 → 主叙事文风退回第一档（narratorVoicePrompt 的 stage 短路）。
-    // 已经哄好过的（RESOLVED）不再回退，否则重进一次海她又变冷了。
-    if (narrator.stage !== NNPC_STAGE.RESOLVED) {
-      setNarrator(n => ({ ...n, stage: NNPC_STAGE.SPIRIT }));
+    const state = gameStore.getState();
+    const result = enterSeaLogic(state);
+    if (result.changes) seaReturnRef.current = { room: state.room.name, inner: state.innerRoomName };
+    applyResult(featureCtxRef.current, result);
+    if (result.changes) {
+      setTimeout(() => setInnerRoomName(SEA_OF_MIND.anchor), 0);
+      noteAction("seaEnter");
     }
-    if (!v.seaVisited) addLog(SCENE_ARRIVE);
-  }, [flags, room.name, innerRoomName, addLog]);
+  }, []);
 
   // 出心灵之海：回到进来之前站的地方。
   const leaveSeaOfMind = useCallback(() => {
     const back = seaReturnRef.current || { room: "鱼定村", inner: null };
-    const node = QUCUO_MAP[back.room];
-    if (!node) { addLog([{ t: "sys", text: "  回不去了……？" }]); return; }
-    addLog([{ t: "desc", text: "  海浪声退远了。你睁开眼，还在原来那间屋子里，门关着，天光未变。" }]);
-    setRoom({ name: back.room, desc: node.desc, exits: Object.keys(node.exits), npcs: [], items: [] });
-    setTimeout(() => setInnerRoomName(back.inner), 0);
-  }, [addLog]);
+    const result = leaveSeaLogic(gameStore.getState(), back);
+    applyResult(featureCtxRef.current, result);
+    if (result.changes) setTimeout(() => setInnerRoomName(back.inner), 0);
+  }, []);
 
   // 互动菜单读当前真值，而不是点开那一刻的快照。
   // 【为什么】activeNpcMenu 存的是点击时的对象引用；菜单开着的这段时间里
@@ -3313,57 +3250,17 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   // settleKind:"learn_skill" 复用授业那套铁律——拜入门派同样是"对方认可你、
   // 把你收进门里"，好感只该往上走。
   const handleJoinSect = useCallback(() => {
-    const status = checkSectEntry({
-      // 好感度直接读变量树（quests/learnSkill.js:14 的同款写法）——
-      // 项目里没有 npcAffection() 这个取数函数，只有 npcAffectionLabel()（转文字档位）。
-      affection: varTreeRef.current.角色?.[SECT_ENTRY.master]?.好感度 ?? 0,
-      neigong: char.neigong ?? 0,
-      money: char.money ?? 0,
-      flags,
-    });
-    if (!status.eligible) {
-      addLog([{ t: "sys", text: "  你还不够格拜入雪山派。" }]);
-      return;
-    }
-    setChar(c => ({ ...c, money: (c.money || 0) - SECT_ENTRY.tuition }));
-    const token = makeGameItem({
-      name: SECT_ENTRY.keyName, category: "misc", quality: "绿",
-      desc: "雪山派正式弟子的令牌，青铜铸就，正面一座雪峰，背面刻着一个小小的「贰」。兼作弟子别院的门锁钥匙。",
-    });
-    setInv(prev => [...prev, token]);
-    setFlags(f => (f.includes(SECT_ENTRY.flag) ? f : [...f, SECT_ENTRY.flag]));
-    setVarTree(prev => markNpcAsKnown(prev, SECT_ENTRY.master));
-    setActiveBuilding(null);
-    addLog([
-      { t: "sys", text: `  （奉上束脩银${SECT_ENTRY.tuition}两，得雪山派弟子令牌 · 内堂之后的弟子别院已开）` },
-      { t: "loot", text: `✦ 得「${SECT_ENTRY.keyName}」`, item: token, source: "sect" },
-    ]);
-    jotNote({ text: `拜入雪山派，${SECT_ENTRY.master}收下束脩，授弟子令牌。`, owner: [{ name: SECT_ENTRY.master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE });
-    act(`向${SECT_ENTRY.master}奉上束脩，正式拜入雪山派门下，接过那枚刻着「贰」字的弟子令牌`, [], {
-      settle: true, settleNpc: SECT_ENTRY.master, settleKind: "learn_skill",
-      learnInfo: { isMaster: true, moveBrief: "雪山派门规与弟子身份", totalPrice: SECT_ENTRY.tuition, beast: false },
-    });
-  }, [char, flags, addLog, act, jotNote]);
+    const result = joinSect(gameStore.getState());
+    if (result.changes) setActiveBuilding(null);
+    applyResult(featureCtxRef.current, result);
+  }, []);
 
   // ── 拍卖落槌 ──
   // AuctionScreen 里的竞价过程是纯前端状态机（auction.js），不调 AI；
   // 只有最终成交这一下才交给 AI 写一段叙事。
   const handleAuctionWin = useCallback((finalPrice) => {
-    if ((char.money || 0) < finalPrice) {
-      addLog([{ t: "sys", text: "  你付不出这笔钱，掌槌的脸色很难看。" }]);
-      return;
-    }
-    if (invHasItemNamed(inv, AUCTION_LOT.name)) return; // 已有，不重复给
-    setChar(c => ({ ...c, money: (c.money || 0) - finalPrice }));
-    const lot = makeGameItem({ name: AUCTION_LOT.name, category: AUCTION_LOT.category, quality: AUCTION_LOT.quality, desc: AUCTION_LOT.desc });
-    setInv(prev => [...prev, lot]);
-    addLog([
-      { t: "sys", text: `  （以${finalPrice}两拍得「${AUCTION_LOT.name}」）` },
-      { t: "loot", text: `✦ 得「${AUCTION_LOT.name}」`, item: lot, source: "auction" },
-    ]);
-    jotNote({ text: `在锦官城宝丰拍卖行以${finalPrice}两拍得「${AUCTION_LOT.name}」。`, source: NOTE_SOURCE.NARRATIVE });
-    act(`在锦官城宝丰拍卖行，以${finalPrice}两拍得一件前朝蜀王旧邸的「${AUCTION_LOT.name}」，掌槌落下，伙计把东西用红布包好递到手上`, [], { settle: true });
-  }, [char, inv, addLog, act, jotNote]);
+    applyResult(featureCtxRef.current, auctionWin(gameStore.getState(), finalPrice));
+  }, []);
 
   const composingRef = useRef(false); // 输入法组合态：中文/日文等 IME 正在拼字时为 true
 
