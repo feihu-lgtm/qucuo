@@ -13,14 +13,14 @@ export { assemblePrompt } from "./assemblePrompt.js";
 export function createPromptContext(state, args = {}) {
   const { importedNpcLore = [], companionForms = {}, ...explicit } = args;
   return {
-    ...state,
-    timeForToday: state.time,
-    ...explicit,
     buildPresence,
     buildNpcContext: (input) => buildNpcContext({ ...input, importedNpcLore, companionForms }),
     buildQuestStageNote, buildForcedEventNote, buildArrivalNote,
     buildBudgetInstruction, buildEncounterNote, findTargetedRumor,
     getTimeStr, hasInnerMap, quality: QUALITY, categoryLabel: CATEGORY_LABEL,
     describeEquipment, describeTodayForAI,
+    ...state,
+    timeForToday: state.timeForToday ?? state.time,
+    ...explicit,
   };
 }

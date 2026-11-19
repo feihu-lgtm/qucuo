@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { createCliPromptContext, createSession } from "../../../cli/runner.mjs";
 import { buildPresence, buildNpcContext, buildQuestStageNote, buildForcedEventNote, buildArrivalNote, createPromptContext, assemblePrompt } from "./index.js";
@@ -11,6 +11,8 @@ import { defaultConfig } from "../../apiConfig.js";
 import { classifyIntent } from "../../inputIntent.js";
 import { gameActions } from "../../core/gameStore.js";
 import { createMockAi } from "../ports/ai.js";
+import { COMPANION_LORE } from "../../companion.js";
+import { getCompanionDescForm } from "../../companionForms.js";
 
 function fixture() {
   return {
@@ -25,6 +27,53 @@ function fixture() {
 }
 
 describe("pure prompt builders", () => {
+  it("preserves caller values and uses the explicit tally time across a day boundary", () => {
+    const state = {
+      ...fixture(), time: 24, timeForToday: 23,
+      categoryLabel: { misc: "自定义分类" }, quality: ["自定义品阶"],
+      varTree: { 世界: { 起居注: { today: { meditate: 2 }, dayStamp: 0 } } },
+    };
+    const args = { apiCfg: defaultConfig(), intent: classifyIntent("你好") };
+    const prompt = createPromptContext(state, args);
+    for (const [key, value] of Object.entries(state)) {
+      expect(prompt[key]).toBe(value);
+    }
+    const assembled = assemblePrompt({ prompt }, "你好", {}, [], [], "", []);
+    expect(assembled.ctx).toContain("[今日行迹] 打坐调息2次");
+    expect(createPromptContext({ ...state, timeForToday: undefined }).timeForToday).toBe(24);
+    expect(createPromptContext({ ...state, timeForToday: null }).timeForToday).toBe(24);
+    expect(createPromptContext({ ...state, timeForToday: 0 }).timeForToday).toBe(0);
+    expect(createPromptContext(state, { timeForToday: 48, quality: ["覆盖"] })).toMatchObject({
+      timeForToday: 48, quality: ["覆盖"],
+    });
+    const customBuilder = () => "自定义";
+    expect(createPromptContext({ ...state, describeEquipment: customBuilder }).describeEquipment).toBe(customBuilder);
+  });
+
+  it("uses beast as the unset or unavailable appearance fallback for all lore companions", () => {
+    const state = fixture();
+    const keys = Object.keys(COMPANION_LORE);
+    for (const getItem of [() => null, () => { throw new Error("unavailable"); }]) {
+      vi.stubGlobal("localStorage", { getItem });
+      try {
+        for (const key of keys) {
+          expect(getCompanionDescForm(key)).toBe("beast");
+          const args = {
+            ...state, cmd: "", visibleNpcs: [],
+            companionState: { [key]: { unlocked: true, active: true, data: { name: key } } },
+          };
+          expect(buildNpcContext(args)).toEqual(buildNpcContext({
+            ...args, companionForms: { [key]: getCompanionDescForm(key) },
+          }));
+        }
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    }
+    const webSource = readFileSync(new URL("../../MudRPG.jsx", import.meta.url), "utf8");
+    expect(webSource).toContain("Object.keys(COMPANION_LORE).map(key => [key, getCompanionDescForm(key)])");
+  });
+
   it("filters inner rooms, bypasses filtering on arrival, and includes companions without mutating state", () => {
     const state = fixture();
     state.room.name = "鱼定村";

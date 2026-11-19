@@ -178,7 +178,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, setActiveCompanion, unlockedCompanions, unlockImportedCompanion } from "./companion.js";
+import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, setActiveCompanion, unlockedCompanions, unlockImportedCompanion, COMPANION_LORE } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -2140,7 +2140,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
         timeForToday: timeRef.current,
       }, {
         importedNpcLore: importedRegistry.getImportedNpcLore(),
-        companionForms: Object.fromEntries(["snowLeopard", "pearl"].map(key => [key, getCompanionDescForm(key)])),
+        companionForms: Object.fromEntries(Object.keys(COMPANION_LORE).map(key => [key, getCompanionDescForm(key)])),
       }),
       memory: {
         varTreeLatest: preActVarTree,
