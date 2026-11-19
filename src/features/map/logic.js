@@ -3,25 +3,48 @@ import { getInnerRoom, hasInnerMap } from "../../innerMap.js";
 import { markAsSeen, updateLastSeen } from "../../npcAwareness.js";
 import { DIRS, parseDir } from "../../utils/mudHelpers.js";
 
+const DIRECTION_TOKENS = new Set([
+  "n", "s", "e", "w", "u", "d", "ne", "nw", "se", "sw",
+  "north", "south", "east", "west", "up", "down",
+  "northeast", "northwest", "southeast", "southwest",
+  "北", "南", "东", "西", "上", "下", "东北", "西北", "东南", "西南",
+]);
+
+function isDirectionToken(value) {
+  const token = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^(?:向|往|朝|到)/, "")
+    .replace(/(?:边|面)?走?$/, "");
+  return DIRECTION_TOKENS.has(token);
+}
+
 function normalizeRequest(dirOrRoom) {
   if (dirOrRoom && typeof dirOrRoom === "object") return dirOrRoom;
   const command = String(dirOrRoom ?? "");
+  const match = /^(走|去)\s*(.*)$/.exec(command.trim());
   return {
-    target: command.replace(/^(?:走|去)\s*/, "").trim(),
+    target: match ? match[2].trim() : command.trim(),
     command,
+    targetKind: match?.[1] === "去" ? "room" : match?.[1] === "走" ? "direction" : undefined,
     forceLayer: "inner",
   };
 }
 
 function resolveDirection(state, request) {
   const raw = request.direction ?? request.dir ?? request.target ?? request.room ?? "";
-  const parsed = parseDir(raw);
-  if (parsed) return parsed;
-
   const currentRoom = getInnerRoom(state.room?.name, state.innerRoomName);
   const destination = request.room ?? request.target ?? raw;
-  return Object.entries(currentRoom?.exits || {})
-    .find(([, roomName]) => roomName === destination)?.[0] || null;
+  const matchedExit = Object.entries(currentRoom?.exits || {})
+    .find(([, roomName]) => roomName === destination);
+  if (matchedExit) return matchedExit[0];
+
+  if (request.direction !== undefined || request.dir !== undefined) {
+    return parseDir(request.direction ?? request.dir);
+  }
+  if (request.room !== undefined || request.targetKind === "room") return null;
+  if (request.targetKind !== "direction" && !isDirectionToken(raw)) return null;
+  return parseDir(raw);
 }
 
 function commandText(request, direction) {

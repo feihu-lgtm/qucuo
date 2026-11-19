@@ -86,6 +86,42 @@ describe("inner movement logic", () => {
     expect(result.changes.time).toBe(7);
   });
 
+  it("resolves room names only through actual adjacent exits", () => {
+    const pandaValley = makeState({
+      room: { name: "雅江", npcs: [] },
+      innerRoomName: "熊猫谷",
+    });
+    const gate = innerMove(pandaValley, {
+      target: "东城门",
+      targetKind: "room",
+      command: "去 东城门",
+    });
+    expect(gate.changes.innerRoomName).toBe("东城门");
+
+    const nonAdjacentRoom = innerMove(pandaValley, {
+      target: "西厢僧舍",
+      targetKind: "room",
+      command: "去 西厢僧舍",
+    });
+    expect(nonAdjacentRoom).toEqual({
+      logs: [
+        { t: "cmd", text: "> 去 西厢僧舍" },
+        { t: "sys", text: "  内里这个方向没有去处。" },
+      ],
+    });
+
+    const monastery = makeState({
+      room: { name: "喇嘛庙", npcs: [] },
+      innerRoomName: "大殿",
+    });
+    const adjacentRoom = innerMove(monastery, {
+      target: "西厢僧舍",
+      targetKind: "room",
+      command: "去 西厢僧舍",
+    });
+    expect(adjacentRoom.changes.innerRoomName).toBe("西厢僧舍");
+  });
+
   it("leaves non-inner directions to the outer movement path unless forced", () => {
     expect(innerMove(makeState({ innerRoomName: "马车行" }), {
       direction: "s",

@@ -177,11 +177,12 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed }
     }
 
     const state = gameStore.getState();
-    const movementMatch = /^(?:走|去)\s+(.+)$/.exec(line);
+    const movementMatch = /^(走|去)\s+(.+)$/.exec(line);
     if (movementMatch) {
       const result = innerMove(state, {
-        target: movementMatch[1],
+        target: movementMatch[2],
         command: line,
+        targetKind: movementMatch[1] === "去" ? "room" : "direction",
         forceLayer: "inner",
       });
       if (result) {
