@@ -23,6 +23,6 @@
 :set log=[]
 看 喇嘛庙住持
 :expect log.0.t="cmd"
-:expect log.0.text="> look resident_lama_abbot"
+:expect log.0.text="> look pool_resident_lama_abbot"
 祈福
 :expect dao.karma=10
