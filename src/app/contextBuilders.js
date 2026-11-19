@@ -3,6 +3,7 @@ import { NNPC_STAGE } from "../narrator.js";
 import { narratorVars } from "../mvu.js";
 import { SECT_ENTRY } from "../sectEntry.js";
 import { SEA_OF_MIND, canEnterSea } from "../seaOfMind.js";
+import { setPearlForm, setSnowLeopardForm } from "../portraits.js";
 
 export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, addLog, effectiveSpecialNow }) {
   const { showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead } = overlayState;
@@ -83,8 +84,8 @@ export function buildLayoutCtx({ ui, game, overlayHost, autosave, actions, activ
     interactMode: ui.interactMode, activeTarget: ui.activeTarget,
     setActiveTarget: ui.setActiveTarget, talkTarget: ui.talkTarget, setTalkTarget: ui.setTalkTarget,
     playerAvatar: ui.playerAvatar, slImgErr: ui.slImgErr, setSlImgErr: ui.setSlImgErr,
-    slForm: ui.slForm, setSnowLeopardForm: ui.setSnowLeopardForm,
-    setSlFormState: ui.setSlFormState, pearlForm: ui.pearlForm, setPearlForm: ui.setPearlForm,
+    slForm: ui.slForm, setSnowLeopardForm,
+    setSlFormState: ui.setSlFormState, pearlForm: ui.pearlForm, setPearlForm,
     setPearlFormState: ui.setPearlFormState, pearlImgErr: ui.pearlImgErr,
     setPearlImgErr: ui.setPearlImgErr, narrator: game.narrator,
     narratorImgErr: ui.narratorImgErr, setNarratorImgErr: ui.setNarratorImgErr,
