@@ -165,7 +165,7 @@ export function commitRound(d) {
     // 走 companionState 独立管理，更不该变成 room.npcs 里的一个路人。
     // 入册的驻场角色同样有固定归属，一并纳入幽灵过滤——否则玩家在鱼定村
     // 入册的人，AI 可能在锦官城凭空刷出来一个同名的。
-    const _residentNames = [...getAllResidentNpcNames(), ...getImportedResidentNames()];
+    const _residentNames = new Set([...getAllResidentNpcNames(), ...getImportedResidentNames()]);
     const _companionNames = new Set(COMPANION_SLOTS.map(s => s.label));
     const _currentNames = new Set((d.room.npcs || []).map(n => n.name));
     d.p.room.npcs = d.p.room.npcs.filter(n => {
