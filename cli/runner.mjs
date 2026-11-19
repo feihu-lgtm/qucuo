@@ -13,6 +13,7 @@ import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
 import { innerMove } from "../src/features/map/logic.js";
 import { learnNpcSkill } from "../src/features/npc/logic.js";
+import { isNpcVisibleInInnerRoom } from "../src/innerMap.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -193,7 +194,16 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed }
 
     const learnNpcMatch = /^拜师\s+(.+)$/.exec(line);
     if (learnNpcMatch) {
-      const npc = (state.room?.npcs || []).find((entry) => entry?.name === learnNpcMatch[1]);
+      const visibleNpcs = (state.room?.npcs || []).filter((entry) => (
+        isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, entry)
+      ));
+      const npc = visibleNpcs.find((entry) => entry?.name === learnNpcMatch[1]);
+      if (!npc) {
+        applyResult(featureCtx, {
+          logs: [{ t: "err", text: `  此处没有 ${learnNpcMatch[1]}。` }],
+        });
+        return 0;
+      }
       applyResult(featureCtx, learnNpcSkill(state, npc));
       return 0;
     }

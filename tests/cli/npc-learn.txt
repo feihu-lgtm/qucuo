@@ -8,3 +8,11 @@
 :expect char.money=20
 :expect skills.length=1
 :expect varTree.世界.已认识人物=["师父"]
+
+# A master assigned to another inner room is not available for teaching here.
+:new
+:set room.npcs=[{"name":"师父","innerRoom":"歇马居","levelCap":1,"moveset":[{"id":"move_teaching_palm","name":"掌法","type":"攻击","archetype":"拳术","quality":"白"}]}]
+:set log=[]
+拜师 师父
+:expect log.0.text="  此处没有 师父。"
+:expect skills.length=0
