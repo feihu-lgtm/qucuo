@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSnapshot } from "../saves.js";
-import { GAME_KEYS, gameActions, initGameStore, useGameStore } from "./gameStore.js";
+import { GAME_KEYS, gameActions, gameStore, initGameStore } from "./gameStore.js";
 import { snapshotFromStore } from "./persist.js";
 
 afterEach(() => {
@@ -14,7 +14,7 @@ describe("game store", () => {
 
     gameActions.setRoom({ name: "鱼定村" });
 
-    expect(useGameStore.getState().room).toEqual({ name: "鱼定村" });
+    expect(gameStore.getState().room).toEqual({ name: "鱼定村" });
   });
 
   it("composes sequential functional updates against the latest value", () => {
@@ -23,7 +23,7 @@ describe("game store", () => {
     gameActions.setExp((current) => current + 1);
     gameActions.setExp((current) => current * 3);
 
-    expect(useGameStore.getState().exp).toBe(9);
+    expect(gameStore.getState().exp).toBe(9);
   });
 
   it("resets keys missing from init values to undefined", () => {
@@ -31,7 +31,7 @@ describe("game store", () => {
 
     initGameStore({ char: { name: "新少侠" } });
 
-    const state = useGameStore.getState();
+    const state = gameStore.getState();
     expect(state.char).toEqual({ name: "新少侠" });
     expect(GAME_KEYS.filter((key) => key !== "char").every((key) => state[key] === undefined)).toBe(true);
     expect(Object.keys(state)).toEqual(GAME_KEYS);

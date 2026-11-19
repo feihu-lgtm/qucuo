@@ -1,0 +1,6 @@
+# A fresh game starts at the preset defaults.
+:new
+:expect room.name=鱼定村
+:expect time=6
+:expect exp=0
+:state

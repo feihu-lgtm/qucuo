@@ -21,6 +21,7 @@
 
 import { generateNpcAttributes, getTierPower, atkFromWaigong, hpFromNeigong, deriveSignatureMoveset } from "./npcGeneration.js";
 import { createEmptyStatusSlots } from "./combat/statusEffects.js";
+export { initCompanionState } from "./companionState.js";
 
 export const SNOW_LEOPARD_LEVEL_CAP = 2; // 蓝档——比入门功夫精深，未到镇派绝学
 
@@ -61,19 +62,6 @@ export function createSnowLeopard() {
       energy: [10, 10],
       statusSlots: createEmptyStatusSlots(),
     },
-  };
-}
-
-// ── 入队状态 ──────────────────────────────────────────────────────────
-// companionState 挂在存档顶层（跟 char/inv/skills 平级），结构：
-//   { snowLeopard: { unlocked: bool, active: bool, data: <createSnowLeopard()的结果> } }
-// unlocked：雪豹是否已经被玩家"结识/收服"过（剧情解锁，一旦为真永久为真）
-// active：当前是否带在身边参战（玩家可以让雪豹"留守"某处，不强制每场战斗都带它）
-// data：雪豹固化后的数值+招式，解锁时生成一次，之后只读不重新生成
-export function initCompanionState() {
-  return {
-    snowLeopard: { unlocked: false, active: false, data: null },
-    pearl: { unlocked: false, active: false, data: null },
   };
 }
 

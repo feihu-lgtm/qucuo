@@ -237,6 +237,9 @@ export function isCompatibleRoomShape(room) {
 //   "auto"/null/undefined → 自动存档；其他字符串 → 手动槽位 id。
 // 存档已在启动时由 saves.init() 全量灌入内存缓存，故 loadAutoSave/loadSlot 是同步读缓存，
 // 这里保持同步、MudRPG 一整套 useState(restored?…) 初始化不受影响。
+/**
+ * @returns {{ snap: object, preset: object } | null}
+ */
 export function tryRestoreSave(presets, loadSlotId) {
   let snap = null;
   if (loadSlotId === "auto" || loadSlotId === undefined || loadSlotId === null) {
@@ -244,6 +247,13 @@ export function tryRestoreSave(presets, loadSlotId) {
   } else {
     snap = loadSlot(loadSlotId);
   }
+  return tryRestoreSnapshot(presets, snap);
+}
+
+/**
+ * @returns {{ snap: object, preset: object } | null}
+ */
+export function tryRestoreSnapshot(presets, snap) {
   if (!snap) return null;
   const matchedPreset = presets.find(p => p.id === snap.preset?.id);
   if (!matchedPreset) return null;
