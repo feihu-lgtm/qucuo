@@ -50,6 +50,10 @@
     padding: 8px 12px !important;
   }
 
+  .mobile-center-toolbar-controls {
+    gap: 8px !important;
+  }
+
   .mobile-control-row,
   .mobile-people-row,
   .mobile-action-grid,

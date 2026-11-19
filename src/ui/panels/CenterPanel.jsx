@@ -127,10 +127,11 @@ export default function CenterPanel({
           )}
           <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>江湖</span>
-            <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {loading && <span onClick={() => { setLoading(false); addLog([{ t: "sys", text: "  ⏹ 已停止等待本次生成（若结果稍后返回将被忽略）。" }]); }}
+                className="mobile-touch-target"
                 style={{ cursor: "pointer", fontSize: "10px", color: "#e0806a", padding: "1px 6px", border: "1px solid #4a2a1a", borderRadius: 0, userSelect: "none" }}>⏹ 停止</span>}
-              <span onClick={() => {
+              <span className="mobile-touch-target" onClick={() => {
                   if (!undoSnapshotRef.current) { addLog([{ t: "sys", text: "  没有可回滚的上一步。" }]); return; }
                   if (!window.confirm("回滚到上一步行动之前？当前这步的结果会被撤销。")) return;
                   applySnapshot(undoSnapshotRef.current);
@@ -140,8 +141,8 @@ export default function CenterPanel({
                 }}
                 title="撤销上一步行动，还原到落子之前"
                 style={{ cursor: "pointer", fontSize: "10px", color: "#c8a860", padding: "1px 6px", border: "1px solid #4a3a1a", borderRadius: 0, userSelect: "none" }}>↩ 回滚</span>
-              <span onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "var(--accent)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>🛠调试</span>
-              <span onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "var(--warn)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
+              <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "var(--accent)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${showDebug ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>🛠调试</span>
+              <span className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "var(--warn)" : "#2a2d3a", padding: "1px 6px", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
             </span>
           </div>
 
