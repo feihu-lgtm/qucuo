@@ -101,7 +101,7 @@ import { getZoneTheme, ink } from "./theme.js";
 import { useOverlayCloseGuard } from "./utils/overlayClose.js";
 import CodexScreen from "./CodexScreen.jsx";
 import BugReportModal from "./BugReportModal.jsx";
-import { QUCUO_MAP, getMapNode, resolveExit, findPath, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
+import { QUCUO_MAP, getMapNode, resolveExit, isNodeUnlocked, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "./qucuoMap.js";
 import { hasInnerMap, getDistrictAnchor, getInnerRoom, resolveInnerExit, visibleInnerExits, getResidentRoomForNpc, getInnerRoomNames, getPublicInnerRoomNames, getBuildingIdForInnerRoom, isNpcVisibleInInnerRoom, isInnerExitUnlocked } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
 import { loadPortraits, setPortrait, removePortrait, fileToDataUrl, inferActivePortraitTarget, SNOW_LEOPARD_FORMS, PEARL_FORMS, getSnowLeopardForm, setSnowLeopardForm, snowLeopardPortraitUrl, getPearlForm, setPearlForm, pearlPortraitUrl, getCompanionForms, getCompanionForm, setCompanionForm, companionPortraitUrl } from "./portraits.js";
@@ -209,7 +209,7 @@ import * as importedRegistry from "./cards/importedRegistry.js";
 import DebugPanel from "./panels/DebugPanel.jsx";
 import ClickableMap from "./ClickableMap.jsx";
 import PipelineViewer from "./PipelineViewer.jsx";
-import { innerMove as innerMoveLogic } from "./features/map/logic.js";
+import { innerMove as innerMoveLogic, outerArrival as outerArrivalLogic, planAutoTravel } from "./features/map/logic.js";
 import { learnNpcSkill as learnNpcSkillLogic } from "./features/npc/logic.js";
 import { resolveOuterLock } from "./act/outerMove.js";
 import { judgeCollect, buildQuestStageNote, buildForcedEventNote, buildArrivalNote, buildPresence, buildNpcContext } from "./act/roundNotes.js";
@@ -2307,47 +2307,43 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (outerLock.blocked) { movingDir = null; pendDirRef.current = null; }
     if (outerLock.outerDepart) outerDepartRef.current = outerLock.outerDepart;
 
-    // ── 格子命中：回访已探索据点纯前端、零 API（mapSquares.js）──
-    // 到达文本/拾取/路遇都由后台预跑提前掷骰+写好，在此就地消费。首次到访（无缓存）
-    // 继续走下方 AI 叙事建场，同时烧掉该格（埋好的内容作废，避免与 AI 轮自己的拾取骰
-    // 双重发放）。格子未就绪（预跑失败）→ 用 destNode.desc 兜底，回访照样纯前端。
-    if (!isTalk && lockedDestName && roomMapRef.current[lockedDestName]) {
-      const sq = consumeArrival(lockedDestName, Math.floor(time / 24));
-      const destNode = getMapNode(lockedDestName);
-      const cached = roomMapRef.current[lockedDestName];
-      const arrivalDesc = sq.desc || destNode.desc;
-      traceStep(_trace, "格子移动", "pass", `${room.name}→${lockedDestName} 格子命中，纯前端${sq.desc ? "" : "（格子未就绪，兜底文本）"}`);
-      const arrivalLines = [{ t: "room", text: "" }, { t: "room", text: `    ${lockedDestName}` }, { t: "room", text: "" }, { t: "desc", text: "  " + arrivalDesc }];
-      let gridNpcs = [...(cached.npcs || [])];
-      if (sq.item) {
-        const gained = makeGameItem(sq.item);
-        setInv(v => [...v, gained]);
-        arrivalLines.push({ t: "item", text: `  ${sq.findLine ? sq.findLine + "  " : ""}✓ 你拾得「${sq.item.name}」，收入行囊。` });
-        traceStep(_trace, "拾取判定", "pass", `格子预埋：${sq.item.name}（品质「${sq.item.quality}」）前端发放`);
+    const arrivalResult = !isTalk && lockedDestName
+      ? outerArrivalLogic(
+        {
+          ...gameStore.getState(),
+          char,
+          convo,
+          mapData,
+          time,
+          questProgress,
+          flags,
+          varTree: varTreeRef.current,
+        },
+        {
+          direction: movingDir,
+          destName: lockedDestName,
+          roomMap: roomMapRef.current,
+          squares: serializeSquares(),
+          command: cmd,
+        },
+      )
+      : null;
+    if (arrivalResult?.cached) {
+      const traceInfo = arrivalResult.traceInfo;
+      traceStep(_trace, "格子移动", "pass", `${room.name}→${lockedDestName} 格子命中，纯前端${traceInfo.hasSquareDesc ? "" : "（格子未就绪，兜底文本）"}`);
+      if (traceInfo.item) {
+        traceStep(_trace, "拾取判定", "pass", `格子预埋：${traceInfo.item.name}（品质「${traceInfo.item.quality}」）前端发放`);
       }
-      if (sq.encounter) {
-        const en = sq.encounter;
-        gridNpcs = [...gridNpcs, ensureNpcCombatData({ name: en.name, id: en.id, brief: en.brief, levelCap: Math.max(0, QUALITY.indexOf(en.tier || "白")) }, { luck: char.special?.气运 ?? 5 })];
-        if (en.line) arrivalLines.push({ t: "desc", text: "  " + en.line });
-        traceStep(_trace, "路遇", "pass", `格子预埋路遇：${en.name}（${en.label}）`);
+      if (traceInfo.encounter) {
+        traceStep(_trace, "路遇", "pass", `格子预埋路遇：${traceInfo.encounter.name}（${traceInfo.encounter.label}）`);
       }
-      addLog(arrivalLines);
-      setRoom({ name: lockedDestName, desc: arrivalDesc, exits: Object.keys(destNode.exits), npcs: gridNpcs, items: [...(cached.items || [])] });
-      if (!mapData[lockedDestName]) setMapData(m => ({ ...m, [lockedDestName]: { x: destNode.x, y: destNode.y } }));
+      applyResult(featureCtxRef.current, arrivalResult);
       outerDepartRef.current = null; pendDirRef.current = null; pickupJudgmentRef.current = null;
-      const gridFaces = detectNewFaces(varTreeRef.current, gridNpcs);
-      if (gridFaces.length) {
-        addLog(gridFaces.map(n => ({ t: "sys", text: `  ※ 新人物出现：${n.name}（点击可细看其人）` })));
-        setVarTree(prev => markAsSeen(prev, gridFaces.map(n => n.name)));
-      }
-      setVarTree(prev => updateLastSeen(prev, gridNpcs.map(n => n.name), time));
-      setTime(t => t + 1);
-      setConvo([...convo, { role: "user", content: cmd }, { role: "assistant", content: arrivalDesc.slice(0, 500) }]);
       endTrace(_trace, `到达 ${lockedDestName}（格子·纯前端）`);
       prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
       return;
     }
-    if (!isTalk && lockedDestName) burnSquare(lockedDestName); // AI 叙事接管这次到达，埋好的内容作废
+    if (arrivalResult) applyResult(featureCtxRef.current, arrivalResult);
 
     const targetedRumor = findTargetedRumor(varTreeRef.current, cmd);
 
@@ -2498,7 +2494,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
   }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, localCmd, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, pendingTalks, changePendingTalks]);
-  const featureCtx = useMemo(() => ({ addLog, jotNote, setVarTree, act }), [addLog, jotNote, setVarTree, act]);
+  const featureCtx = useMemo(() => ({
+    addLog,
+    jotNote,
+    setVarTree,
+    act,
+    applySquareOps: (ops) => {
+      for (const { op, key, day } of ops) {
+        if (op === "consume") consumeArrival(key, day);
+        else if (op === "burn") burnSquare(key);
+      }
+    },
+  }), [addLog, jotNote, setVarTree, act]);
   featureCtxRef.current = featureCtx;
 
   // 系统强制推进任务stage（本轮新增，"档2"harness的核心）：不等AI在
@@ -2766,10 +2773,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const autoTravelTo = useCallback((destName) => {
     if (!destName || destName === room.name) return;
     if (loading) { addLog([{ t: "sys", text: `  正忙着，稍候再另择去处。` }]); return; }
-    const completedQuests = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));
-    const allowed = new Set(Object.keys(mapData).filter(n => isNodeUnlocked(n, { completedQuests, flags })));
-    if (!isNodeUnlocked(destName, { completedQuests, flags })) { addLog([{ t: "sys", text: `  「${destName}」此刻还去不得，路未通。` }]); return; }
-    const path = findPath(room.name, destName, allowed);
+    const route = planAutoTravel({ room, mapData, flags, questProgress }, destName);
+    if (route.locked) { addLog([{ t: "sys", text: `  「${destName}」此刻还去不得，路未通。` }]); return; }
+    const path = route.path;
     if (!path) { addLog([{ t: "sys", text: `  「${destName}」尚无已探明、可通行的路径。` }]); return; }
     if (path.length === 0) return;
     addLog([{ t: "sys", text: `  ⇢ 起身前往「${destName}」，需行 ${path.length} 程（每程一个时辰）……` }]);

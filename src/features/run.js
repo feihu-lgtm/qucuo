@@ -7,6 +7,8 @@ function actionForKey(key) {
 }
 
 export function applyResult(ctx, result) {
+  if (result.squareOps?.length) ctx.applySquareOps?.(result.squareOps);
+
   for (const [key, value] of Object.entries(result.changes || {})) {
     if (key === "varTree") {
       if (typeof ctx.setVarTree !== "function") {

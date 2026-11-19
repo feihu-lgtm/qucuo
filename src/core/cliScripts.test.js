@@ -13,7 +13,12 @@ import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scriptsDir = resolve(projectRoot, "tests/cli");
 const scriptFiles = readdirSync(scriptsDir)
-  .filter((file) => file.endsWith(".txt") && !["ai-turn-rollback.txt", "failed-inspection-pending-turn.txt"].includes(file))
+  .filter((file) => file.endsWith(".txt") && ![
+    "ai-turn-rollback.txt",
+    "failed-inspection-pending-turn.txt",
+    "outer-arrival.txt",
+    "uncached-arrival-failure.txt",
+  ].includes(file))
   .sort();
 
 let tempDir;
@@ -56,6 +61,58 @@ describe("CLI scripts", () => {
       expect(replayFailures, replayOutput.join("\n")).toBe(0);
       expect(replayOutput.join("\n")).toContain("石阶旁的草叶轻轻摇动。");
     }
+  });
+
+  it("moves between cached outer squares and restores the room after save/load", async () => {
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir });
+
+    let failures = 0;
+    const fixture = readFileSync(join(scriptsDir, "outer-arrival.txt"), "utf8");
+    for (const line of fixture.split(/\r?\n/)) {
+      failures += await session.runLine(line);
+    }
+
+    expect(failures, output.join("\n")).toBe(0);
+    expect(session.store.getState().room.name).toBe("鱼定村");
+    expect(session.roomMap).toEqual({
+      大草甸: { npcs: [], items: [] },
+      鱼定村: { npcs: [], items: [] },
+    });
+    expect(serializeSquares().鱼定村).toMatchObject({ day: 0, desc: "鱼定村缓存" });
+    expect(session.store.getState().innerRoomName).toBe("歇马居");
+    expect(session.store.getState().log.filter((entry) => entry.t === "cmd" && entry.text === "> 走 北")).toHaveLength(1);
+  });
+
+  it("prints initialization guidance instead of throwing when movement has no room", async () => {
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir });
+    await session.runLine(":set room=null");
+
+    expect(await session.runLine("走 东")).toBe(1);
+    expect(output.join("\n")).toContain("尚未开始游戏，请先执行 :new 或 :load 初始化游戏。");
+  });
+
+  it("keeps an uncached square claimable after the CLI turn fails", async () => {
+    const output = [];
+    const failures = await runScript(
+      readFileSync(join(scriptsDir, "uncached-arrival-failure.txt"), "utf8"),
+      {
+        out: (text) => output.push(text),
+        cwd: tempDir,
+        ai: createMockAi(["{not json}"]),
+      },
+    );
+    const saved = JSON.parse(readFileSync(join(tempDir, "uncached-failure.json"), "utf8"));
+
+    expect(failures).toBe(1);
+    expect(output.join("\n")).toContain("AI reply format is invalid");
+    expect(saved.room.name).toBe("鱼定村");
+    expect(saved.squares.雅江).toMatchObject({
+      item: { name: "雪山当归" },
+      itemTaken: false,
+      burned: false,
+    });
   });
 
   it("runs a script with sibling replies using the default mock AI", () => {

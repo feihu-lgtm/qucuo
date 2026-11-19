@@ -1,0 +1,14 @@
+:new
+:set room.name="大草甸"
+:set innerRoomName=null
+:mapcache {"roomMap":{"大草甸":{"npcs":[],"items":[]},"鱼定村":{"npcs":[],"items":[]}},"squares":{"大草甸":{"day":0,"desc":"大草甸缓存","item":null,"encounter":null,"burned":false},"鱼定村":{"day":0,"desc":"鱼定村缓存","item":null,"encounter":null,"burned":false}}}
+走 北
+:expect room.name=鱼定村
+:expect innerRoomName="村口"
+:save cached-outer.json
+:new
+:load cached-outer.json
+:expect room.name=鱼定村
+:expect innerRoomName="村口"
+走 东
+:expect innerRoomName="歇马居"

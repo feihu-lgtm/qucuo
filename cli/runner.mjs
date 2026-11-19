@@ -5,9 +5,10 @@ import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../src/core/ga
 import { buildInitialGameState, DEFAULT_PRESETS } from "../src/core/newGame.js";
 import { snapshotFromStore } from "../src/core/persist.js";
 import { setSeed } from "../src/core/rng.js";
-import { resetForDay, loadSquares, serializeSquares } from "../src/mapSquares.js";
+import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare } from "../src/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/saves.js";
-import { getTimeStr } from "../src/utils/mudHelpers.js";
+import { getTimeStr, parseDir } from "../src/utils/mudHelpers.js";
+import { resolveExit } from "../src/qucuoMap.js";
 import { QUALITY } from "../src/equipment.js";
 import { defaultConfig } from "../src/apiConfig.js";
 import { classifyIntent, buildBudgetInstruction } from "../src/inputIntent.js";
@@ -18,7 +19,7 @@ import { playTurn } from "../src/engine/playTurn.js";
 import { applyResult } from "../src/features/run.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
-import { innerMove } from "../src/features/map/logic.js";
+import { innerMove, outerArrival } from "../src/features/map/logic.js";
 import {
   giftNpc,
   inviteCompanion,
@@ -27,7 +28,7 @@ import {
   stealFromNpc,
   talkToNpc,
 } from "../src/features/npc/logic.js";
-import { hasInnerMap, isNpcVisibleInInnerRoom } from "../src/innerMap.js";
+import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../src/innerMap.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -118,6 +119,12 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
     jotNote: () => {},
     setVarTree: gameActions.setVarTreeState,
+    applySquareOps: (ops) => {
+      for (const { op, key, day } of ops) {
+        if (op === "consume") consumeArrival(key, day);
+        else if (op === "burn") burnSquare(key);
+      }
+    },
     act: (text, extraReplies, opts) => {
       pendingTurn = runFreeText(text, { ...(opts || {}), extraReplies: extraReplies || [] });
       return pendingTurn;
@@ -328,6 +335,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       }, cmd, opts);
       if (result.ok) {
         session.roomMap = roomMapRef.current;
+        if (opts.squareOps?.length) featureCtx.applySquareOps(opts.squareOps);
         return 0;
       }
       emit(result.error?.message || String(result.error));
@@ -393,6 +401,18 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       return 0;
     }
 
+    if (line.startsWith(":mapcache ")) {
+      const cache = JSON.parse(line.slice(":mapcache".length).trim());
+      if (!cache || typeof cache !== "object" || Array.isArray(cache)) {
+        throw new Error(":mapcache expects a JSON object");
+      }
+      session.roomMap = cache.roomMap && typeof cache.roomMap === "object" && !Array.isArray(cache.roomMap)
+        ? cache.roomMap
+        : {};
+      loadSquares(cache.squares && typeof cache.squares === "object" ? cache.squares : {});
+      return 0;
+    }
+
     if (line.startsWith(":set ")) {
       const { path, value } = parseAssignment(line.slice(5));
       const [key, ...nestedPath] = path;
@@ -416,6 +436,10 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     }
 
     const state = gameStore.getState();
+    if (!state?.room?.name) {
+      emit("尚未开始游戏，请先执行 :new 或 :load 初始化游戏。");
+      return 1;
+    }
     const visibleNpcs = (state.room?.npcs || []).filter((npc) => (
       isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)
     ));
@@ -424,14 +448,35 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     });
     const movementMatch = /^(走|去)\s+(.+)$/.exec(line);
     if (movementMatch) {
+      const isWalk = movementMatch[1] === "走";
       const result = innerMove(state, {
         target: movementMatch[2],
         command: line,
         targetKind: movementMatch[1] === "去" ? "room" : "direction",
-        forceLayer: "inner",
+        forceLayer: isWalk ? null : "inner",
       });
       if (result) {
         return await applyFeature(result);
+      }
+      if (isWalk) {
+        const direction = parseDir(movementMatch[2]);
+        const destName = direction ? resolveExit(state.room?.name, direction) : null;
+        if (destName) {
+          const arrival = outerArrival(state, {
+            direction,
+            destName,
+            roomMap: session.roomMap,
+            squares: serializeSquares(),
+            command: line,
+          });
+          if (arrival?.cached) {
+            featureCtx.addLog([{ t: "cmd", text: `> ${line}` }]);
+            const status = await applyFeature(arrival);
+            gameActions.setInnerRoomName(hasInnerMap(destName) ? getDistrictAnchor(destName) : null);
+            return status;
+          }
+          if (arrival) return runFreeText(line, { squareOps: arrival.squareOps });
+        }
       }
     }
 

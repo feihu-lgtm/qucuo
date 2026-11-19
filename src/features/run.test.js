@@ -47,4 +47,13 @@ describe("applyResult", () => {
       settle: true,
     });
   });
+
+  it("forwards square operations to the optional context port", () => {
+    const applySquareOps = vi.fn();
+    const squareOps = [{ op: "consume", key: "雅江", day: 0 }];
+
+    applyResult({ applySquareOps }, { squareOps });
+
+    expect(applySquareOps).toHaveBeenCalledWith(squareOps);
+  });
 });
