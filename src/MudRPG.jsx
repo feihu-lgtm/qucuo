@@ -78,7 +78,7 @@ import SettingsPanel from "./SettingsPanel.jsx";
 import LogEntry from "./LogEntry.jsx";
 import LoreScreen from "./LoreScreen.jsx";
 import { initialVarTree, extractMvuBlock, applyMvuCommands, npcAffectionLabel, reputationLabel } from "./mvu.js";
-import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, describeEquipment, rollQuality, computeEquippedStats, effectiveSpecial } from "./equipment.js";
+import { QUALITY, QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, makeItem, getEquipped, toggleEquip, rollQuality, computeEquippedStats, effectiveSpecial } from "./equipment.js";
 import { effectiveMaxHp } from "./kungfu/qucuoKungfu.js";
 import { effectBrief } from "./itemEffectText.js";
 import { makeItemSmart, describeCatalogForAI, useConsumable, CATALOG_INDEX, CATALOG, makeCatalogItem, backfillInventoryFromCatalog } from "./items/catalog.js";
@@ -151,7 +151,7 @@ import { ensureNpcCombatData, generateNpcMoveset, MOVE_POOL, hpFromNeigong } fro
 import { detectNewFaces, markAsSeen, markNpcAsKnown, isNpcKnown, detectReunions, buildReunionBlock, updateLastSeen, REUNION_GAP_THRESHOLD } from "./npcAwareness.js";
 import TradingScreen from "./TradingScreen.jsx";
 import { recordRumoredNpcs, findTargetedRumor, clearRumor } from "./npcEmergence.js";
-import { rollEncounter, buildEncounterNote } from "./encounter.js";
+import { rollEncounter } from "./encounter.js";
 import { seedKnowledge, evolveKnowledge, buildInfoDomainBlock, factSummaryRequest, factSummaryRequestFromRecall, setFactSummary, registerFact, witnessFact, allFactSummaries } from "./knowledge.js";
 import { findQuestByGiver, NPC_TEACHABLE_SKILLS, QUCUO_QUESTS } from "./quests/qucuoQuests.js";
 import { QUEST_TYPE } from "./quests/questTypes.js";
@@ -178,7 +178,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, setActiveCompanion, unlockedCompanions, unlockImportedCompanion } from "./companion.js";
+import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, setActiveCompanion, unlockedCompanions, unlockImportedCompanion, COMPANION_LORE } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -201,7 +201,7 @@ import { invHasItemNamed } from "./safeHouse.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
 import { injectNpcs, materializeNpc, removeNpc } from "./roomNpcs.js";
-import { tallyAdd, describeTodayForAI, describeDayForSummary, describeTallyForWhisper } from "./memory/tally.js";
+import { tallyAdd, describeDayForSummary, describeTallyForWhisper } from "./memory/tally.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
 import { SEA_OF_MIND, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
 import {
@@ -237,7 +237,9 @@ import PipelineViewer from "./PipelineViewer.jsx";
 import { innerMove as innerMoveLogic, outerArrival as outerArrivalLogic, planAutoTravel } from "./features/map/logic.js";
 import { learnNpcSkill as learnNpcSkillLogic } from "./features/npc/logic.js";
 import { resolveOuterLock } from "./act/outerMove.js";
-import { judgeCollect, buildQuestStageNote, buildForcedEventNote, buildArrivalNote, buildPresence, buildNpcContext } from "./act/roundNotes.js";
+import { judgeCollect } from "./act/roundNotes.js";
+import { createPromptContext } from "./engine/prompt/index.js";
+import { getCompanionDescForm } from "./companionForms.js";
 import { playTurn } from "./engine/playTurn.js";
 import {
   rollSkeleton, buildSquarePrompt, parseSquareBatch, applySquareBatch,
@@ -2129,17 +2131,17 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       isTalk,
       isSettle,
       _trace,
-      prompt: {
+      prompt: createPromptContext({
         room, char, inv, skills, dao, flags, questProgress, pendingQuestBranch,
         varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, isTalk,
         gm, movingDir, lockedDestName, outerDepart: outerDepartRef.current, innerRoomName, apiCfg,
         destinationLock, pickupJudgment: pickupJudgmentRef.current, categoryLabel: CATEGORY_LABEL,
-        encounter: encounterToDescribe, buildEncounterNote, collectNote,
-        findTargetedRumor, buildPresence, buildNpcContext, buildQuestStageNote,
-        buildForcedEventNote, buildArrivalNote, buildBudgetInstruction, intent,
-        getTimeStr, hasInnerMap, quality: QUALITY, describeEquipment, describeTodayForAI,
+        encounter: encounterToDescribe, collectNote, intent,
         timeForToday: timeRef.current,
-      },
+      }, {
+        importedNpcLore: importedRegistry.getImportedNpcLore(),
+        companionForms: Object.fromEntries(Object.keys(COMPANION_LORE).map(key => [key, getCompanionDescForm(key)])),
+      }),
       memory: {
         varTreeLatest: preActVarTree,
         roomNpcNames: room.npcs.map(n => n.name),
