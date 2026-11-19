@@ -32,6 +32,16 @@ import {
   talkToNpc,
   tradeWithNpc,
 } from "./features/npc/logic.js";
+import {
+  applyPigeonReply,
+  buyPigeon as buyPigeonLogic,
+  collectPigeons as collectPigeonsLogic,
+  failPigeonReply,
+  pigeonDelayShichen as pigeonDelayShichenLogic,
+  processPigeons,
+  recordPigeonNpcLocations,
+  sendPigeonLetter as sendPigeonLetterLogic,
+} from "./features/pigeon/logic.js";
 import { attachImportedRegistry } from "./characterMilestones.js";
 import {
   NNPC_STAGE, initialNarratorState, isInSea, migrateNarratorState,
@@ -2807,85 +2817,42 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // ── 飞鸽传书（本轮新增）──────────────────────────────────────────────
   // 记下每个在场 NPC 此刻的所在据点，作为日后"往哪寄信、隔多远"的依据（最后见到的地方）。
   useEffect(() => {
-    if (!room.npcs?.length) return;
-    setVarTree(prev => {
-      const chars = { ...(prev.角色 || {}) };
-      let changed = false;
-      for (const n of room.npcs) {
-        const cur = chars[n.name] || {};
-        if (cur.所在地 !== room.name) { chars[n.name] = { ...cur, 所在地: room.name }; changed = true; }
-      }
-      return changed ? { ...prev, 角色: chars } : prev;
-    });
+    applyResult(featureCtxRef.current, recordPigeonNpcLocations(gameStore.getState()));
   }, [room.name, room.npcs]);
 
   // 飞鸽回信时长：按玩家当前据点与收信人所在据点的直线距离折算，钳制在 1–12 时辰。
-  const pigeonDelayShichen = useCallback((npcName) => {
-    const here = QUCUO_MAP[room.name] || { x: 0, y: 0 };
-    const loc = varTreeRef.current.角色?.[npcName]?.所在地 || room.name;
-    const there = QUCUO_MAP[loc] || here;
-    const dist = Math.hypot((there.x ?? 0) - (here.x ?? 0), (there.y ?? 0) - (here.y ?? 0));
-    return { delay: Math.max(1, Math.min(12, Math.round(dist * 1.5) || 1)), loc };
-  }, [room.name, varTree]);
+  const pigeonDelayShichen = useCallback(
+    (npcName) => pigeonDelayShichenLogic(gameStore.getState(), npcName),
+    [room.name, varTree],
+  );
 
-  // 发信：写进该 NPC 的独立信件线（飞鸽）+ 登记进共享事实账本（knowledge），排入待回队列。
+  const applyPigeonResult = useCallback((result) => {
+    applyResult(featureCtxRef.current, result);
+    if (result.factSummary) aiSummarizeFact(result.factSummary.id, result.factSummary.cue);
+    return result;
+  }, [aiSummarizeFact]);
+
   const sendPigeonLetter = useCallback((npcName, content, opts = {}) => {
-    const channel = opts.channel || "pigeon"; // pigeon 飞鸽(需鸽子·只信) | post 驿站寄信 | postgift 驿站送礼+信
-    const giftName = opts.gift || null;
-    const text = (content || "").trim();
-    if (!npcName) { addLog([{ t: "sys", text: "  未指定收信之人。" }]); return; }
-    if (!text) { addLog([{ t: "sys", text: "  信笺空空，无从落笔。" }]); return; }
-    if (channel === "pigeon" && (char.pigeons || 0) <= 0) {
-      addLog([{ t: "sys", text: "  你手头没有信鸽——去驿站买鸽子，或直接到驿站寄信。" }]); return;
+    const result = sendPigeonLetterLogic(gameStore.getState(), npcName, content, opts);
+    applyPigeonResult(result);
+    if (result.sent) {
+      setInput("");
+      setPigeonTarget(null);
+      setInteractMode("action");
     }
-    // 附礼（仅 postgift）：从背包取出该物
-    if (channel === "postgift" && giftName) {
-      setInv(prev => { const i = prev.findIndex(x => (typeof x === "object" ? x.name : x) === giftName); return i === -1 ? prev : [...prev.slice(0, i), ...prev.slice(i + 1)]; });
-    }
-    const { delay, loc } = pigeonDelayShichen(npcName);
-    // 飞鸽快（×1），驿卒脚程慢（×1.5）
-    const shichen = channel === "pigeon" ? delay : Math.max(1, Math.min(12, Math.round(delay * 1.5)));
-    const arriveTime = time + shichen * 2; // 1 时辰 = 2 回合
-    const factId = `letter_send_${npcName}_${time}`;
-    const chLabel = channel === "pigeon" ? "飞鸽传书" : channel === "postgift" ? "驿站送礼" : "驿站寄书";
-    addLog([{ t: "cmd", text: `> ${chLabel}致「${npcName}」：${text}${giftName ? `（附礼：${giftName}）` : ""}` }]);
-    if (channel === "pigeon") setChar(c => ({ ...c, pigeons: Math.max(0, (c.pigeons || 0) - 1) }));
-    setVarTree(prev => {
-      const chars = { ...(prev.角色 || {}) };
-      const cur = chars[npcName] || {};
-      chars[npcName] = { ...cur, 飞鸽: [...(cur.飞鸽 || []), { dir: "send", content: text, turn: time, gift: giftName || undefined }] };
-      const 世界 = { ...(prev.世界 || {}) };
-      世界.飞鸽待回 = [...(世界.飞鸽待回 || []), { id: factId, npcName, sentContent: text, arriveTime, npcLoc: loc, channel, giftName: giftName || null }];
-      let vt = { ...prev, 角色: chars, 世界 };
-      vt = registerFact(vt, { id: factId, 摘要: `${char.name || "主角"}${chLabel}致信${npcName}${giftName ? `并附礼「${giftName}」` : ""}（往${loc}）。`, 标签: "飞鸽传书", 知晓者: [{ name: npcName, 途径: "亲历" }] }, time);
-      return vt;
-    });
-    // 结构化摘要先垫底，随即叫 AI 结合信文写一句白话古文小总结覆盖上去（不再是死模板）。
-    aiSummarizeFact(factId, `主角${chLabel}修书给${npcName}${giftName ? `，随信附礼「${giftName}」` : ""}，信中大意：${text.slice(0, 50)}`);
-    addLog([{ t: "item", text: `  🕊 ${channel === "pigeon" ? "信鸽已放飞" : "书信已托驿卒送出"}，往「${loc}」，约 ${shichen} 个时辰后当有回音。` }]);
-    setInput(""); setPigeonTarget(null); setInteractMode("action");
-    setTime(t => t + 1);
-    // 飞鸽全文线之外，额外浓缩一张 owner=收信人 的私有小纸条进向量库——
-    // 全文线管逐字重读保证回信连贯，这张管"日后模糊想起你俩这段书信往来"，两者并行不冲突。
-    jotNote({ text: `修书致${npcName}${giftName ? `并附礼「${giftName}」` : ""}：${text.slice(0, 24)}${text.length > 24 ? "…" : ""}`, owner: [{ name: npcName, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.PIGEON });
-  }, [time, char, inv, pigeonDelayShichen, addLog, jotNote, aiSummarizeFact]);
+    return result;
+  }, [applyPigeonResult]);
 
   // 驿站买鸽子
   const buyPigeon = useCallback((qty, price) => {
-    const cost = qty * price;
-    if ((char.money || 0) < cost) { addLog([{ t: "sys", text: "  银两不够，买不起这些鸽子。" }]); return; }
-    setChar(c => ({ ...c, money: (c.money || 0) - cost, pigeons: (c.pigeons || 0) + qty }));
-    addLog([{ t: "item", text: `  🕊 买下 ${qty} 只信鸽（-${cost} 两），现有 ${(char.pigeons || 0) + qty} 只。` }]);
-  }, [char, addLog]);
+    applyPigeonResult(buyPigeonLogic(gameStore.getState(), qty, price));
+  }, [applyPigeonResult]);
 
   // 鸽子笼：每日免费领信鸽，不花银两。跟赌坊同一套"当天领没领过"判断模式，
   // 用 flags 记 pigeon_collected_day_${dayIdx}（dayIdx = time/24，真正的天数）。
   const handleCollectPigeons = useCallback(({ qty, dayIdx }) => {
-    if (flags.includes(`pigeon_collected_day_${dayIdx}`)) return;
-    setFlags(f => [`pigeon_collected_day_${dayIdx}`, ...f.filter(x => !x.startsWith("pigeon_collected_day_"))]);
-    setChar(c => ({ ...c, pigeons: (c.pigeons || 0) + qty }));
-    addLog([{ t: "item", text: `  🕊 从鸽子笼领了 ${qty} 只信鸽，现有 ${(char.pigeons || 0) + qty} 只。` }]);
-  }, [char, flags, addLog]);
+    applyPigeonResult(collectPigeonsLogic(gameStore.getState(), { qty, dayIdx }));
+  }, [applyPigeonResult]);
 
   // 驿站寄信/送礼总入口（供 TransportScreen 回调）
   const handlePostSend = useCallback(({ npcName, content, channel, gift }) => {
@@ -2895,13 +2862,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   // 回信生成：以收信人口吻 + 其独立信件线（记忆独立）+ 共享事实账本（记忆共享）作答。
   const replyPigeonLetter = useCallback(async (letter) => {
-    const { npcName, sentContent, id, arriveTime, channel, giftName } = letter;
+    const { npcName, sentContent, id, channel, giftName } = letter;
+    const state = gameStore.getState();
     try {
       const npcObj = room.npcs.find(n => n.name === npcName) || {};
-      const attrs = varTreeRef.current.角色?.[npcName] || {};
+      const attrs = state.varTree?.角色?.[npcName] || {};
       const curAff = typeof attrs.好感度 === "number" ? attrs.好感度 : 0;
       const thread = (attrs.飞鸽 || []).map(m => `${m.dir === "send" ? "主角来信" : "你的回信"}：${m.content}${m.gift ? `（附礼：${m.gift}）` : ""}`).join("\n");
-      const facts = allFactSummaries(varTreeRef.current, 12).map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
+      const facts = allFactSummaries(state.varTree, 12).map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
       const gaveGift = channel === "postgift" && giftName;
       const canReturnGift = gaveGift; // 只有对方收到礼、且好感够(系统另判≥50)才可能回礼
       const sys = `你是武侠世界「曲措乡」中的【${npcName}】${npcObj.brief ? "，" + npcObj.brief : ""}。${npcObj.fullBio ? npcObj.fullBio + " " : ""}${npcObj.personality ? "性情：" + npcObj.personality + "。" : ""}
@@ -2915,62 +2883,16 @@ ${facts ? "你也隐约知道的近来见闻（可自然带一两句，不要生
 ① ⟦好感X⟧：X 为整数 -3~+8，表示这次通信${gaveGift ? "与收礼" : ""}让你对主角好感升降多少（寻常问候+1~2；说到心坎/贴心/有趣+3~+6；${gaveGift ? "礼物合心意可再高些至+8；" : ""}敷衍冒犯给负数）。
 ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼（类别取 weapon/armor/accessory/misc 之一），从你身份/处境合理拿得出手的东西里挑一件写在这里（例如僧人回赠念珠、猎户回赠兽皮、富贵者回赠玉器）；不想回或拿不出就整条省略。" : "（这次不涉及回礼，无需第二个标记。）"}`;
       const { text } = await callModel(apiCfg, sys, [{ role: "user", content: `主角的来信：${sentContent}` }], { maxTokens: apiCfg.callTokenLimits?.pigeonReply ?? 3000, callLabel: "飞鸽回信" });
-      let reply = (text || "").trim() || "（信纸空落落的，对方似乎无话可说。）";
-      // 解析隐藏标记
-      let affDelta = 1;
-      const am = reply.match(/⟦好感\s*([+-]?\d+)\s*⟧/);
-      if (am) affDelta = Math.max(-3, Math.min(8, parseInt(am[1], 10) || 0));
-      let giftBack = null;
-      const gm = reply.match(/⟦回礼[:：]\s*([^|｜⟧]+)[|｜]\s*(weapon|armor|accessory|misc)\s*⟧/);
-      if (gm) giftBack = { name: gm[1].trim(), category: gm[2].trim() };
-      reply = reply.replace(/⟦好感\s*[+-]?\d+\s*⟧/g, "").replace(/⟦回礼[:：][^⟧]*⟧/g, "").trim();
-
-      const newAff = Math.max(0, Math.min(100, curAff + affDelta));
-      // 回礼硬门槛：必须送过礼 + 回信后好感度≥50，才真的回礼
-      const doReturnGift = canReturnGift && giftBack && newAff >= 50;
-      let giftItem = null;
-      if (doReturnGift) {
-        // 品质按好感度档裁决（系统定，AI 只提名合身之物）：50~69→白/绿，70~89→绿/蓝，90+→蓝/紫
-        const pool = newAff >= 90 ? ["蓝", "紫"] : newAff >= 70 ? ["绿", "蓝"] : ["白", "绿"];
-        const q = pool[Math.floor(Math.random() * pool.length)];
-        giftItem = makeGameItem({ name: giftBack.name, category: giftBack.category, quality: q });
-      }
-
-      const replyFactId = `letter_reply_${npcName}_${arriveTime}`;
-      setVarTree(prev => {
-        const chars = { ...(prev.角色 || {}) };
-        const cur = chars[npcName] || {};
-        chars[npcName] = { ...cur, 好感度: newAff, 飞鸽: [...(cur.飞鸽 || []), { dir: "reply", content: reply, turn: arriveTime, gift: doReturnGift ? giftBack.name : undefined }] };
-        const 世界 = { ...(prev.世界 || {}) };
-        世界.飞鸽待回 = (世界.飞鸽待回 || []).filter(l => l.id !== id);
-        let vt = { ...prev, 角色: chars, 世界 };
-        vt = registerFact(vt, { id: replyFactId, 摘要: `${npcName}回信${char.name || "主角"}${doReturnGift ? `并回赠「${giftBack.name}」` : ""}。`, 标签: "飞鸽传书", 知晓者: [{ name: npcName, 途径: "亲历" }] }, arriveTime);
-        return vt;
-      });
-      // 结构化摘要垫底，随即叫 AI 结合回信内容写一句小总结覆盖。
-      aiSummarizeFact(replyFactId, `${npcName}回信${char.name || "主角"}${doReturnGift ? `，并回赠「${giftBack.name}」` : ""}，信中大意：${reply.slice(0, 50)}`);
-      if (giftItem) setInv(prev => [...prev, giftItem]);
-      const logs = [
-        { t: "item", text: `  🕊 一只信鸽落下——${npcName}的回信到了。` },
-        { t: "narrator", text: `  「${npcName}来信」${reply}` },
-      ];
-      if (affDelta !== 0) logs.push({ t: "affection", text: `  💗 ${npcName} 好感度 ${affDelta > 0 ? "+" : ""}${affDelta}（${curAff} → ${newAff}）` });
-      if (doReturnGift) logs.push({ t: "item", text: `  🎁 随信附回礼一件：「${giftItem.name}」（${giftItem.quality}）。` });
-      else if (canReturnGift && giftBack && newAff < 50) logs.push({ t: "sys", text: `  （${npcName}收下了礼，情谊尚浅，未便回赠。）` });
-      addLog(logs);
-      // 回信同样额外浓缩一张 owner=对方 的私有小纸条（与全文线并行）。
-      jotNote({ text: `收到${npcName}的回信${doReturnGift ? `并得回礼「${giftItem.name}」` : ""}：${reply.slice(0, 24)}${reply.length > 24 ? "…" : ""}`, owner: [{ name: npcName, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.PIGEON });
-    } catch (e) {
+      applyPigeonResult(applyPigeonReply(state, letter, text));
+    } catch {
       pigeonProcessing.current.delete(id);
-      setVarTree(prev => { const 世界 = { ...(prev.世界 || {}) }; 世界.飞鸽待回 = (世界.飞鸽待回 || []).filter(l => l.id !== id); return { ...prev, 世界 }; });
-      addLog([{ t: "sys", text: `  （寄往${npcName}的信鸽半途迷了路，这封回信终未送达。）` }]);
+      applyPigeonResult(failPigeonReply(gameStore.getState(), letter));
     }
-  }, [room.npcs, varTree, apiCfg, preset, char, addLog, jotNote, aiSummarizeFact]);
+  }, [room.npcs, apiCfg, preset, applyPigeonResult]);
 
   // 到点收信：时间推进到 arriveTime 时，逐封生成回信（ref 去重，防重复触发）。
   useEffect(() => {
-    const pending = varTree.世界?.飞鸽待回 || [];
-    const due = pending.filter(l => time >= l.arriveTime && !pigeonProcessing.current.has(l.id));
+    const due = processPigeons(gameStore.getState()).filter(l => !pigeonProcessing.current.has(l.id));
     if (!due.length) return;
     due.forEach(l => { pigeonProcessing.current.add(l.id); replyPigeonLetter(l); });
   }, [time, varTree, replyPigeonLetter]);

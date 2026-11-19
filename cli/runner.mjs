@@ -28,6 +28,11 @@ import {
   stealFromNpc,
   talkToNpc,
 } from "../src/features/npc/logic.js";
+import {
+  processPigeons,
+  recordPigeonNpcLocations,
+  sendPigeonLetter,
+} from "../src/features/pigeon/logic.js";
 import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../src/innerMap.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
@@ -131,6 +136,16 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     },
   };
   let session;
+
+  function observePigeonArrivals() {
+    const arrivals = processPigeons(gameStore.getState());
+    const knownIds = new Set(session.pigeonArrivals.map((letter) => letter.id));
+    session.pigeonArrivals.push(...arrivals.filter((letter) => !knownIds.has(letter.id)));
+  }
+
+  function recordPigeonLocations() {
+    applyResult(featureCtx, recordPigeonNpcLocations(gameStore.getState()));
+  }
 
   function runFreeText(cmd, opts = {}) {
     return (async () => {
@@ -336,6 +351,9 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       if (result.ok) {
         session.roomMap = roomMapRef.current;
         if (opts.squareOps?.length) featureCtx.applySquareOps(opts.squareOps);
+        const nextState = gameStore.getState();
+        recordPigeonLocations();
+        if (nextState.time > state.time) observePigeonArrivals();
         return 0;
       }
       emit(result.error?.message || String(result.error));
@@ -344,9 +362,15 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
   }
 
   async function applyFeature(result) {
+    const previousTime = gameStore.getState().time;
     applyResult(featureCtx, result);
     const status = await pendingTurn;
     pendingTurn = Promise.resolve(0);
+    const nextState = gameStore.getState();
+    if (nextState.time > previousTime) {
+      recordPigeonLocations();
+      observePigeonArrivals();
+    }
     return status;
   }
 
@@ -364,8 +388,10 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
 
     if (line === ":new") {
       session.roomMap = {};
+      session.pigeonArrivals = [];
       resetForDay();
       initGameStore(buildInitialGameState(null, seed));
+      recordPigeonLocations();
       return 0;
     }
 
@@ -397,6 +423,9 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         resetForDay();
       }
       initGameStore(buildInitialGameState(restored, seed));
+      session.pigeonArrivals = [];
+      recordPigeonLocations();
+      observePigeonArrivals();
       emit(restored ? `已读取：${file}` : "存档不可用，已开始新局");
       return 0;
     }
@@ -417,10 +446,12 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       const { path, value } = parseAssignment(line.slice(5));
       const [key, ...nestedPath] = path;
       if (!GAME_KEYS.includes(key)) throw new Error(`Unknown game state path: ${path.join(".")}`);
+      const previousTime = gameStore.getState().time;
       const action = actionForKey(key);
       action(nestedPath.length
         ? (current) => setNestedValue(current, nestedPath, value)
         : value);
+      if (key === "time" && gameStore.getState().time > previousTime) observePigeonArrivals();
       return 0;
     }
 
@@ -443,6 +474,11 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     const visibleNpcs = (state.room?.npcs || []).filter((npc) => (
       isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)
     ));
+    const currentNpcNames = new Set((state.room?.npcs || []).map((npc) => npc.name));
+    const pigeonTargets = [...new Set([
+      ...visibleNpcs.map((npc) => npc.name),
+      ...(state.varTree?.世界?.曾经出现人物 || []).filter((name) => !currentNpcNames.has(name)),
+    ])].filter(Boolean).sort((a, b) => b.length - a.length);
     const missingNpc = (name) => applyFeature({
       logs: [{ t: "err", text: `  此处没有 ${name}。` }],
     });
@@ -478,6 +514,22 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
           if (arrival) return runFreeText(line, { squareOps: arrival.squareOps });
         }
       }
+    }
+
+    const pigeonMatch = /^飞鸽(?:\s+(.+))?$/.exec(line);
+    if (pigeonMatch) {
+      const tail = (pigeonMatch[1] || "").trim();
+      const npcName = pigeonTargets.find((name) => tail === name || tail.startsWith(`${name} `));
+      if (!npcName) {
+        return await applyFeature(tail
+          ? { logs: [{ t: "sys", text: "  此人未在曾遇名册中，无法飞鸽传书。" }] }
+          : sendPigeonLetter(state, null, ""));
+      }
+      return await applyFeature(sendPigeonLetter(
+        state,
+        npcName,
+        tail.slice(npcName.length).trim(),
+      ));
     }
 
     const lookMatch = /^看\s+(.+)$/.exec(line);
@@ -610,6 +662,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
   session = {
     store: gameStore,
     roomMap: {},
+    pigeonArrivals: [],
     runLine,
     renderState: () => renderState(gameStore.getState()),
   };
