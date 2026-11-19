@@ -101,9 +101,12 @@ export function trainWaigong(state) {
   };
 }
 
-export function breakthroughSkill(state, skillId) {
+export function breakthroughSkill(state, skillRef) {
   const skills = state.skills || [];
-  const index = skills.findIndex((skill) => skill.id === skillId);
+  const hasMatchingId = skillRef !== undefined && skills.some((skill) => skill.id === skillRef);
+  const index = hasMatchingId
+    ? skills.findIndex((skill) => skill.id === skillRef)
+    : skills.findIndex((skill) => skill.name === skillRef);
   if (index < 0) return { logs: [] };
 
   const skill = skills[index];

@@ -118,6 +118,24 @@ describe("cultivation logic", () => {
     expect(result.note).toEqual({ text: "潜心修炼三脚猫拳法，突破至小成。", source: "dumb" });
   });
 
+  it("resolves id-less skills by name without upgrading another id-less skill", () => {
+    const state = makeState({
+      pot: 20,
+      skills: [
+        { name: "甲拳", stage: "入门" },
+        { name: "乙拳", stage: "入门" },
+      ],
+    });
+    expect(breakthroughSkill(state, "乙拳").changes).toEqual({
+      pot: 8,
+      skills: [
+        { name: "甲拳", stage: "入门" },
+        { name: "乙拳", stage: "小成" },
+      ],
+      time: 8,
+    });
+  });
+
   it("refuses unknown, fixed, maxed, and underfunded skill breakthroughs", () => {
     expect(breakthroughSkill(makeState(), "missing")).toEqual({ logs: [] });
     expect(breakthroughSkill(makeState({
