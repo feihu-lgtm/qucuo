@@ -1345,6 +1345,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       addLog([{ t: "narrator", text: `  「旁白」${flatText}` }]);
       endTrace(_wt, `旁白已崩溃，本地兜底："${flatText}"`);
       changePendingTalks(-1);
+      schedulerRef.current?.touch();
       talkBusyRef.current = false; // 释放私聊闸门
       return;
     }
@@ -1642,6 +1643,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     }
     noteAction("whisper");
     changePendingTalks(-1);
+    schedulerRef.current?.touch();
     talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
   }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress, changePendingTalks]);
 

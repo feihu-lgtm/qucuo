@@ -23,9 +23,9 @@ export function createAutosaveScheduler({
     timeoutId = null;
   };
 
-  const schedule = () => {
+  const scheduleChange = (skipBusyCheck) => {
     try {
-      if (disposed || silenceDepth > 0 || !isArmed() || isBusy()) return;
+      if (disposed || silenceDepth > 0 || !isArmed() || (!skipBusyCheck && isBusy())) return;
       pending = true;
       if (!played) {
         played = true;
@@ -42,6 +42,8 @@ export function createAutosaveScheduler({
       console.error("[autosave]", error);
     }
   };
+
+  const schedule = () => scheduleChange(false);
 
   const unsubscribe = subscribe(schedule);
 
@@ -60,6 +62,9 @@ export function createAutosaveScheduler({
       } finally {
         silenceDepth -= 1;
       }
+    },
+    touch() {
+      scheduleChange(true);
     },
     resetPlayed() {
       if (disposed) return;

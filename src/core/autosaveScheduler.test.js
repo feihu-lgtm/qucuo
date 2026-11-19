@@ -114,6 +114,41 @@ describe("createAutosaveScheduler", () => {
     harness.scheduler.dispose();
   });
 
+  it("touch schedules while busy at change time", () => {
+    const harness = createHarness();
+    harness.arm();
+    harness.setBusy(true);
+    harness.scheduler.touch();
+
+    expect(harness.onPlayed).toHaveBeenCalledTimes(1);
+    harness.setBusy(false);
+    vi.advanceTimersByTime(100);
+
+    expect(harness.save).toHaveBeenCalledTimes(1);
+    harness.scheduler.dispose();
+  });
+
+  it("ignores touch before the session is armed", () => {
+    const harness = createHarness();
+    harness.scheduler.touch();
+
+    vi.advanceTimersByTime(1000);
+
+    expect(harness.save).not.toHaveBeenCalled();
+    expect(harness.onPlayed).not.toHaveBeenCalled();
+    harness.scheduler.dispose();
+  });
+
+  it("marks the first touch as played", () => {
+    const harness = createHarness();
+    harness.arm();
+    harness.scheduler.touch();
+    harness.scheduler.touch();
+
+    expect(harness.onPlayed).toHaveBeenCalledTimes(1);
+    harness.scheduler.dispose();
+  });
+
   it("calls onPlayed only on the first armed change", () => {
     const harness = createHarness();
     harness.emit();
