@@ -399,6 +399,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       resetForDay();
       initGameStore(buildInitialGameState(null, seed));
       recordPigeonLocations();
+      worldRules?.reset();
       return 0;
     }
 
@@ -433,6 +434,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       session.pigeonArrivals = [];
       recordPigeonLocations();
       observePigeonArrivals();
+      worldRules?.reset();
       emit(restored ? `已读取：${file}` : "存档不可用，已开始新局");
       return 0;
     }

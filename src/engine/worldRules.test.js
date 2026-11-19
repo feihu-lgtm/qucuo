@@ -30,6 +30,27 @@ describe("world rules", () => {
     expect(run.mock.calls[1][1]).toMatchObject({ firstRun: false, previousDeps: [1, expect.any(Object)] });
   });
 
+  it("reset forgets dependencies so the next check is a first run", () => {
+    const state = { time: 8 };
+    const run = vi.fn();
+    const runner = createWorldRules([{
+      id: "time",
+      deps: (current) => [current.time],
+      run,
+    }], {
+      getState: () => state,
+      applyResult: vi.fn(),
+    });
+
+    runner.check();
+    state.time = 9;
+    runner.reset();
+    runner.check();
+
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run.mock.calls[1][1]).toMatchObject({ firstRun: true, previousDeps: undefined });
+  });
+
   it("applies cascaded changes in rule order until dependencies settle", () => {
     const state = { stage: 0, done: false };
     const applied = [];

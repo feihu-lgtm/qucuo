@@ -45,7 +45,12 @@ export function createWorldRules(rules, { getState, applyResult, ctx = {} }) {
     }
   }
 
-  return { check };
+  return {
+    check,
+    reset() {
+      lastDeps.clear();
+    },
+  };
 }
 
 export function createCoalescedCheck(check, enqueue = queueMicrotask) {
