@@ -20,3 +20,31 @@
 :expect char.money=192
 :expect pledgedItems=[]
 :expect inv=[{"id":"pawn_test","name":"玉佩","sellPrice":100,"equipped":false}]
+:set char.money=100
+:set log=[]
+存钱 -50
+:expect char.money=100
+:expect deposit=0
+:expect log=[{"t":"err","text":"  数额无效"}]
+:set log=[]
+存钱 1.5
+:expect char.money=100
+:expect log=[{"t":"err","text":"  数额无效"}]
+:set inv=[{"id":"invalid_pawn","name":"x","sellPrice":100,"equipped":false}]
+:set log=[]
+质押 x -1
+:expect char.money=100
+:expect inv=[{"id":"invalid_pawn","name":"x","sellPrice":100,"equipped":false}]
+:expect pledgedItems=[]
+:expect log=[{"t":"err","text":"  数额无效"}]
+:set pledgedItems=[{"item":{"id":"invalid_pawn","name":"x","sellPrice":100,"equipped":false},"pledgeValue":80}]
+:set log=[]
+赎回 1 -88
+:expect char.money=100
+:expect pledgedItems=[{"item":{"id":"invalid_pawn","name":"x","sellPrice":100,"equipped":false},"pledgeValue":80}]
+:expect inv=[{"id":"invalid_pawn","name":"x","sellPrice":100,"equipped":false}]
+:expect log=[{"t":"err","text":"  数额无效"}]
+:set log=[]
+存钱 nope
+:expect char.money=100
+:expect log=[{"t":"err","text":"  数额无效"}]

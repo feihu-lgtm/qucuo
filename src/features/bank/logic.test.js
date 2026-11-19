@@ -25,6 +25,20 @@ describe("bank logic", () => {
     expect(deposit(makeState({ char: { money: 20 } }), 50)).toEqual({ logs: [] });
   });
 
+  it("rejects non-finite and non-positive transaction amounts", () => {
+    const invalidResult = { logs: [{ t: "err", text: "  数额无效" }] };
+    const redeemable = makeState({
+      char: { money: 100 },
+      pledgedItems: [{ item, pledgeValue: 80 }],
+    });
+    expect(deposit(makeState(), -50)).toEqual(invalidResult);
+    expect(deposit(makeState(), Number.NaN)).toEqual(invalidResult);
+    expect(pledge(makeState(), "jade", 0)).toEqual(invalidResult);
+    expect(pledge(makeState(), "jade", Number.POSITIVE_INFINITY)).toEqual(invalidResult);
+    expect(redeem(redeemable, 0, -88)).toEqual(invalidResult);
+    expect(redeem(redeemable, 0, "88")).toEqual(invalidResult);
+  });
+
   it("computes the same whole-day interest shown in the bank UI", () => {
     const state = makeState({ char: { money: 50 }, deposit: 50, depositedAt: 6, time: 30 });
     expect(withdrawalSummary(state)).toEqual({ elapsed: 1, interest: 1, total: 51 });

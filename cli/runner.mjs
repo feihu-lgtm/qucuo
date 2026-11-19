@@ -88,6 +88,12 @@ function actionForKey(key) {
   return gameActions[actionName];
 }
 
+function parsePositiveInteger(value) {
+  if (!/^[1-9]\d*$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
 export function createSession({ out = defaultOutput, cwd = process.cwd(), seed } = {}) {
   const emit = typeof out === "function" ? out : (text) => out.write(`${text}\n`);
   const featureCtx = {
@@ -184,14 +190,16 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed }
 
     const skillMatch = /^修炼\s+(.+)$/.exec(line);
     if (skillMatch) {
-      const skill = (state.skills || []).find((entry) => entry.id === skillMatch[1] || entry.name === skillMatch[1]);
-      applyResult(featureCtx, breakthroughSkill(state, skill ? skill.id : skillMatch[1]));
+      applyResult(featureCtx, breakthroughSkill(state, skillMatch[1]));
       return 0;
     }
 
-    const depositMatch = /^存钱\s+(-?\d+(?:\.\d+)?)$/.exec(line);
+    const depositMatch = /^存钱\s+(\S+)$/.exec(line);
     if (depositMatch) {
-      applyResult(featureCtx, deposit(state, Number(depositMatch[1])));
+      const amount = parsePositiveInteger(depositMatch[1]);
+      applyResult(featureCtx, amount === null
+        ? { logs: [{ t: "err", text: "  数额无效" }] }
+        : deposit(state, amount));
       return 0;
     }
     if (line === "取钱") {
@@ -199,15 +207,26 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed }
       return 0;
     }
 
-    const pledgeMatch = /^质押\s+(.+)\s+(-?\d+(?:\.\d+)?)$/.exec(line);
+    const pledgeMatch = /^质押\s+(.+)\s+(\S+)$/.exec(line);
     if (pledgeMatch) {
+      const pledgeValue = parsePositiveInteger(pledgeMatch[2]);
+      if (pledgeValue === null) {
+        applyResult(featureCtx, { logs: [{ t: "err", text: "  数额无效" }] });
+        return 0;
+      }
       const item = (state.inv || []).find((entry) => typeof entry === "object" && entry?.name === pledgeMatch[1]);
-      applyResult(featureCtx, pledge(state, item?.id, Number(pledgeMatch[2])));
+      applyResult(featureCtx, pledge(state, item?.id, pledgeValue));
       return 0;
     }
-    const redeemMatch = /^赎回\s+(\d+)\s+(-?\d+(?:\.\d+)?)$/.exec(line);
+    const redeemMatch = /^赎回\s+(\S+)\s+(\S+)$/.exec(line);
     if (redeemMatch) {
-      applyResult(featureCtx, redeem(state, Number(redeemMatch[1]) - 1, Number(redeemMatch[2])));
+      const index = parsePositiveInteger(redeemMatch[1]);
+      const redeemCost = parsePositiveInteger(redeemMatch[2]);
+      if (index === null || redeemCost === null) {
+        applyResult(featureCtx, { logs: [{ t: "err", text: "  数额无效" }] });
+        return 0;
+      }
+      applyResult(featureCtx, redeem(state, index - 1, redeemCost));
       return 0;
     }
 
