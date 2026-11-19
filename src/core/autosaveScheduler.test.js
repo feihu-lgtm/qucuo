@@ -1,0 +1,119 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createAutosaveScheduler } from "./autosaveScheduler.js";
+
+function createHarness({ delayMs = 100 } = {}) {
+  let armed = false;
+  let busy = false;
+  let listener;
+  const unsubscribe = vi.fn();
+  const save = vi.fn();
+  const onPlayed = vi.fn();
+  const scheduler = createAutosaveScheduler({
+    subscribe: (nextListener) => {
+      listener = nextListener;
+      return unsubscribe;
+    },
+    isArmed: () => armed,
+    isBusy: () => busy,
+    save,
+    onPlayed,
+    delayMs,
+  });
+
+  return {
+    scheduler,
+    save,
+    onPlayed,
+    unsubscribe,
+    emit: () => listener?.(),
+    arm: () => { armed = true; },
+    setBusy: (value) => { busy = value; },
+  };
+}
+
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("createAutosaveScheduler", () => {
+  it("does not save changes before the session is armed", () => {
+    const harness = createHarness();
+    harness.emit();
+
+    vi.advanceTimersByTime(1000);
+
+    expect(harness.save).not.toHaveBeenCalled();
+    expect(harness.onPlayed).not.toHaveBeenCalled();
+    harness.scheduler.dispose();
+  });
+
+  it("debounces an armed burst into one delayed save", () => {
+    const harness = createHarness();
+    harness.arm();
+    harness.emit();
+    vi.advanceTimersByTime(50);
+    harness.emit();
+    vi.advanceTimersByTime(99);
+    expect(harness.save).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+
+    expect(harness.save).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips a busy timer and saves after a later change", () => {
+    const harness = createHarness();
+    harness.arm();
+    harness.emit();
+    harness.setBusy(true);
+    vi.advanceTimersByTime(100);
+    expect(harness.save).not.toHaveBeenCalled();
+
+    harness.setBusy(false);
+    harness.emit();
+    vi.advanceTimersByTime(100);
+
+    expect(harness.save).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onPlayed only on the first armed change", () => {
+    const harness = createHarness();
+    harness.emit();
+    harness.arm();
+    harness.emit();
+    harness.emit();
+
+    expect(harness.onPlayed).toHaveBeenCalledTimes(1);
+    harness.scheduler.dispose();
+  });
+
+  it("dispose cancels pending work and unsubscribes", () => {
+    const harness = createHarness();
+    harness.arm();
+    harness.emit();
+    harness.scheduler.dispose();
+    harness.emit();
+    vi.advanceTimersByTime(1000);
+
+    expect(harness.save).not.toHaveBeenCalled();
+    expect(harness.unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("flushNow saves immediately only when a change is pending", () => {
+    const harness = createHarness();
+    harness.scheduler.flushNow();
+    expect(harness.save).not.toHaveBeenCalled();
+
+    harness.arm();
+    harness.emit();
+    vi.advanceTimersByTime(50);
+    harness.scheduler.flushNow();
+    vi.advanceTimersByTime(100);
+
+    expect(harness.save).toHaveBeenCalledTimes(1);
+  });
+});

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
-import { gameActions, initGameStore, useGameStore } from "./store/gameStore.js";
+import { gameActions, gameStore, initGameStore, useGameStore } from "./store/gameStore.js";
+import { createAutosaveScheduler } from "./core/autosaveScheduler.js";
 import { snapshotFromStore } from "./core/persist.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "./core/newGame.js";
 import {
@@ -248,6 +249,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const log = useGameStore(s => s.log);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(loading);
+  useEffect(() => { loadingRef.current = loading; }, [loading]);
   const [waitSecs, setWaitSecs] = useState(0); // AI 调用已等待秒数（卡住感知）
   const waitTimerRef = useRef(null);
   const [pendingTalks, setPendingTalks] = useState(0); // 对话/私聊模式：并行请求计数
@@ -466,19 +469,52 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   useEffect(() => { localStorage.setItem("wuxia_mud_ui_scale", String(uiScale)); }, [uiScale]);
   useEffect(() => { localStorage.setItem("wuxia_mud_day_mode", isDayMode ? "1" : "0"); }, [isDayMode]);
 
-  // ── 自动存档（回合间隔制）──
-  // 旧实现是"任何状态变化立刻覆盖写"，有个致命问题：组件一挂载 useEffect 就执行，
-  // 恢复失败/点了新开局时，全新的初始状态瞬间覆盖掉旧自动存档——玩家的进度就是这么没的。
-  // 现在改成：本次会话至少完成过 1 个回合才允许写（挂载绝不覆盖），
-  // 且每满 autoSaveEvery 个回合才写一次（0 = 每回合都写）；页面关闭/刷新时兜底写一次。
+  // ── 自动存档：玩家操作后防抖，AI 回合与关页兜底保留原逻辑 ──
+  // 首次输入前的挂载初始化与后台预跑不算游玩，避免新开局状态覆盖旧自动档；
+  // 首次输入后的游戏状态变化会写档，关页仍同步补存。
   const [lastAutoSave, setLastAutoSave] = useState(null);
   const [autoSaveError, setAutoSaveError] = useState(null);
   const roundsSinceLastSaveRef = useRef(0);   // 距离上次自动存档过了几个回合
   const playedThisSessionRef = useRef(false); // 本次会话玩家是否真的行动过
+  const userArmedRef = useRef(false);
   // 默认立绘已改为硬加载（静态 import，见 portraits.js 顶部的
   // DEFAULT_PORTRAITS），构建时直接打包进产物，getPortrait() 里自动
   // 合并查询，不再需要任何异步初始化步骤——之前这里有一个
   // initDefaultPortraits() 的 useEffect，现在完全不需要了。
+
+  useEffect(() => {
+    const arm = () => {
+      userArmedRef.current = true;
+      window.removeEventListener("pointerdown", arm, true);
+      window.removeEventListener("keydown", arm, true);
+    };
+    window.addEventListener("pointerdown", arm, true);
+    window.addEventListener("keydown", arm, true);
+    const scheduler = createAutosaveScheduler({
+      subscribe: gameStore.subscribe,
+      isArmed: () => userArmedRef.current,
+      isBusy: () => loadingRef.current,
+      onPlayed: () => { playedThisSessionRef.current = true; },
+      save: () => {
+        const result = autoSave(snapshotFromStore({
+          squares: serializeSquares(),
+          roomMap: roomMapRef.current,
+        }));
+        if (result.ok) {
+          roundsSinceLastSaveRef.current = 0;
+          setLastAutoSave(Date.now());
+          setAutoSaveError(null);
+        } else {
+          setAutoSaveError(result.error);
+        }
+      },
+    });
+    return () => {
+      window.removeEventListener("pointerdown", arm, true);
+      window.removeEventListener("keydown", arm, true);
+      scheduler.dispose();
+    };
+  }, []);
 
   useEffect(() => {
     if (!playedThisSessionRef.current) return; // 还没玩过：绝不覆盖旧档
