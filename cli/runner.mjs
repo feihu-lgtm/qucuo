@@ -142,6 +142,7 @@ function parsePositiveInteger(value) {
 export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, ai, apiCfg: apiCfgOverrides } = {}) {
   const emit = typeof out === "function" ? out : (text) => out.write(`${text}\n`);
   let pendingTurn = Promise.resolve(0);
+  let pendingTurnCount = 0;
   let tokyoReturnTimer = null;
   const cancelTokyoReturn = () => {
     if (tokyoReturnTimer) clearTimeout(tokyoReturnTimer);
@@ -168,6 +169,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       }
     },
     act: (text, extraReplies, opts) => {
+      pendingTurnCount += 1;
       pendingTurn = pendingTurn.then(() => (
         runFreeText(text, { ...(opts || {}), extraReplies: extraReplies || [] })
       ));
@@ -406,6 +408,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     applyResult(featureCtx, result);
     const status = await pendingTurn;
     pendingTurn = Promise.resolve(0);
+    pendingTurnCount = 0;
     const nextState = gameStore.getState();
     if (nextState.time > previousTime) {
       recordPigeonLocations();
@@ -419,6 +422,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     if (!line || line.startsWith("#")) return 0;
 
     pendingTurn = Promise.resolve(0);
+    pendingTurnCount = 0;
 
     if (/^:seed(?:\s|$)/.test(line)) {
       seed = parseSeed(line.slice(5).trim());
@@ -706,11 +710,15 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     try {
       status = await runLineCommand(rawLine);
     } finally {
-      worldRules?.check();
-      const ruleTurn = pendingTurn;
-      pendingTurn = Promise.resolve(0);
-      const ruleStatus = await ruleTurn;
-      if (status === 0 && ruleStatus) status = ruleStatus;
+      for (let pass = 0; pass < 5; pass += 1) {
+        worldRules?.check();
+        if (!pendingTurnCount) break;
+        const ruleStatus = await pendingTurn;
+        pendingTurn = Promise.resolve(0);
+        pendingTurnCount = 0;
+        if (status === 0 && ruleStatus) status = ruleStatus;
+        if (pass === 4) console.warn("CLI world-rule settle loop reached five passes.");
+      }
     }
     return status;
   }

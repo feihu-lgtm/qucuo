@@ -202,6 +202,25 @@ describe("CLI scripts", () => {
     expect(saved.inv.filter((item) => item.name === "土司礼服")).toHaveLength(1);
   });
 
+  it("rechecks world rules after a tutorial settle before the next command saves", async () => {
+    const fixture = readFileSync(join(scriptsDir, "world-rules-forge-delivery.txt"), "utf8");
+    const replies = JSON.parse(readFileSync(join(scriptsDir, "world-rules-forge-delivery-replies.json"), "utf8"));
+    const output = [];
+    const failures = await runScript(fixture, {
+      out: (text) => output.push(text),
+      cwd: tempDir,
+      ai: createMockAi(replies),
+    });
+    const saved = JSON.parse(readFileSync(join(tempDir, "world-rules-forge.json"), "utf8"));
+
+    expect(failures, output.join("\n")).toBe(0);
+    expect(saved.time).toBe(24);
+    expect(saved.flags).not.toContain("forge_pending_0_5_-");
+    expect(saved.inv).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "定制长剑", quality: "蓝" }),
+    ]));
+  });
+
   it("loads legacy in-flight pigeon letters from a save", async () => {
     const session = createSession({ out: () => {}, cwd: tempDir });
     const legacyLetter = {
