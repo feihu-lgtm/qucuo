@@ -61,16 +61,9 @@
     gap: 8px !important;
   }
 
-  .mobile-keyboard-open .mobile-control-row,
-  .mobile-keyboard-open .mobile-people-row {
+  html[data-keyboard-open] .mobile-control-row,
+  html[data-keyboard-open] .mobile-people-row {
     display: none !important;
-  }
-
-  @media (max-height: 560px) {
-    .mobile-control-row,
-    .mobile-people-row {
-      display: none !important;
-    }
   }
 
   .mobile-mode-control,

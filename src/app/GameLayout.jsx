@@ -12,6 +12,7 @@ import {
 } from "../domain/map/innerMap.js";
 import { DIRS } from "../utils/mudHelpers.js";
 import { MAP_UI } from "../domain/map/mapUi.js";
+import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";
 import { getMobileDrawerSwipeAction } from "../utils/mobileDrawerSwipe.js";
 import { useUiStore } from "../store/uiStore.js";
 
@@ -62,20 +63,29 @@ export default function GameLayout({ layout }) {
     const updateHeight = () => {
       const height = viewport?.height || window.innerHeight;
       document.documentElement.style.setProperty("--mobile-viewport-height", `${Math.round(height)}px`);
-      document.documentElement.classList.toggle(
-        "mobile-keyboard-open",
-        !!isMobile && !!viewport && viewport.height < window.innerHeight - 100,
+      document.documentElement.toggleAttribute(
+        "data-keyboard-open",
+        isMobileKeyboardOpen({
+          isMobile,
+          isInputFocused: document.activeElement?.matches?.("input, textarea") ?? false,
+          viewportHeight: viewport?.height,
+          innerHeight: window.innerHeight,
+        }),
       );
     };
     updateHeight();
     viewport?.addEventListener("resize", updateHeight);
     viewport?.addEventListener("scroll", updateHeight);
     window.addEventListener("resize", updateHeight);
+    document.addEventListener("focusin", updateHeight);
+    document.addEventListener("focusout", updateHeight);
     return () => {
       viewport?.removeEventListener("resize", updateHeight);
       viewport?.removeEventListener("scroll", updateHeight);
       window.removeEventListener("resize", updateHeight);
-      document.documentElement.classList.remove("mobile-keyboard-open");
+      document.removeEventListener("focusin", updateHeight);
+      document.removeEventListener("focusout", updateHeight);
+      document.documentElement.removeAttribute("data-keyboard-open");
       document.documentElement.style.removeProperty("--mobile-viewport-height");
     };
   }, [isMobile]);
