@@ -128,6 +128,30 @@ describe("NPC gift logic", () => {
     });
   });
 
+  it("removes the divine_huxiao delivery material before adding its reward", () => {
+    const material = { id: "huxiao-material", name: "虎王的牙筋", category: "misc", quality: "橙" };
+    const retainedItem = { id: "kept-item", name: "草药", category: "misc", quality: "白" };
+    const state = makeState({
+      inv: [material, retainedItem],
+      questProgress: {
+        divine_huxiao: { status: "active", currentStageIndex: 3 },
+      },
+    });
+    const result = giftNpc(state, { name: "老猎户" }, material, 100);
+    const nextInventory = result.changes.inv(state.inv);
+
+    expect(result.deliveredQuest?.id).toBe("divine_huxiao");
+    expect(nextInventory).toEqual([
+      retainedItem,
+      expect.objectContaining({
+        id: "quest_reward_100_0",
+        name: "虎啸",
+        category: "weapon",
+        quality: "红",
+      }),
+    ]);
+  });
+
   it("refuses a missing NPC or missing gift", () => {
     expect(giftNpc(makeState(), null, { name: "鱼定枪" })).toEqual({
       logs: [{ t: "err", text: "  此地没有这位人物。" }],

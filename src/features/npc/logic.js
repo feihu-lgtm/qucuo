@@ -231,8 +231,8 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);
     for (const [key, update] of Object.entries(advancement)) {
-      changes[key] = key === "varTree" && changes.varTree
-        ? composeUpdates(changes.varTree, update)
+      changes[key] = (key === "varTree" || key === "inv") && changes[key]
+        ? composeUpdates(changes[key], update)
         : update;
     }
     logs.push({
