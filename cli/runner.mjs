@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../src/core/gameStore.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "../src/core/newGame.js";
 import { snapshotFromStore } from "../src/core/persist.js";
-import { loadSquares, serializeSquares } from "../src/mapSquares.js";
+import { resetForDay, loadSquares, serializeSquares } from "../src/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/saves.js";
 import { getTimeStr } from "../src/utils/mudHelpers.js";
 
@@ -84,6 +84,8 @@ export function createSession({ out = defaultOutput, cwd = process.cwd() } = {})
     if (!line || line.startsWith("#")) return 0;
 
     if (line === ":new") {
+      session.roomMap = {};
+      resetForDay();
       initGameStore(buildInitialGameState(null));
       return 0;
     }
@@ -96,7 +98,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd() } = {})
     if (line.startsWith(":save ")) {
       const file = line.slice(6).trim();
       if (!file) throw new Error(":save requires a file path");
-      const snapshot = snapshotFromStore({ squares: serializeSquares(), roomMap: {} });
+      const snapshot = snapshotFromStore({ squares: serializeSquares(), roomMap: session.roomMap });
       await writeFile(resolve(cwd, file), `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
       emit(`已保存：${file}`);
       return 0;
@@ -105,9 +107,11 @@ export function createSession({ out = defaultOutput, cwd = process.cwd() } = {})
     if (line.startsWith(":load ")) {
       const file = line.slice(6).trim();
       if (!file) throw new Error(":load requires a file path");
-      const snapshot = JSON.parse(await readFile(resolve(cwd, file), "utf8"));
+      const data = JSON.parse(await readFile(resolve(cwd, file), "utf8"));
+      const snapshot = data?.kind === "qucuo-save-export" ? data.snapshot : data;
       const restored = tryRestoreSnapshot(DEFAULT_PRESETS, snapshot);
-      if (restored?.snap?.squares) loadSquares(restored.snap.squares);
+      session.roomMap = snapshot?.roomMap || {};
+      loadSquares(snapshot?.squares || {});
       initGameStore(buildInitialGameState(restored));
       emit(restored ? `已读取：${file}` : "存档不可用，已开始新局");
       return 0;
@@ -139,11 +143,13 @@ export function createSession({ out = defaultOutput, cwd = process.cwd() } = {})
     return 0;
   }
 
-  return {
+  const session = {
     store: gameStore,
+    roomMap: {},
     runLine,
     renderState: () => renderState(gameStore.getState()),
   };
+  return session;
 }
 
 export async function runScript(lines, { out = defaultOutput, cwd = process.cwd() } = {}) {
