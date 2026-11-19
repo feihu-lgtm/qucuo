@@ -93,4 +93,27 @@ describe("CLI scripts", () => {
 
     expect(serializeSquares()).toEqual({});
   });
+
+  it("does not import caches from rejected saves", async () => {
+    const session = createSession({ out: () => {}, cwd: tempDir });
+    await session.runLine(":new");
+    await session.runLine(":save current.json");
+    const rejectedSnapshot = JSON.parse(readFileSync(join(tempDir, "current.json"), "utf8"));
+    rejectedSnapshot.char = { hp: [1, 1] };
+    rejectedSnapshot.roomMap = {
+      雅江: {
+        npcs: [{ id: "rejected_npc", name: "拒收人物" }],
+        items: [{ id: "rejected_item", name: "拒收物品" }],
+      },
+    };
+    rejectedSnapshot.squares = { 雅江: { day: 1, desc: "拒收格子" } };
+    writeFileSync(join(tempDir, "rejected.json"), JSON.stringify(rejectedSnapshot), "utf8");
+
+    await session.runLine(":load rejected.json");
+    await session.runLine(":save after-rejection.json");
+
+    const snapshot = JSON.parse(readFileSync(join(tempDir, "after-rejection.json"), "utf8"));
+    expect(snapshot.roomMap).toEqual({});
+    expect(snapshot.squares).toEqual({});
+  });
 });

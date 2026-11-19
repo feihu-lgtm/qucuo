@@ -110,8 +110,13 @@ export function createSession({ out = defaultOutput, cwd = process.cwd() } = {})
       const data = JSON.parse(await readFile(resolve(cwd, file), "utf8"));
       const snapshot = data?.kind === "qucuo-save-export" ? data.snapshot : data;
       const restored = tryRestoreSnapshot(DEFAULT_PRESETS, snapshot);
-      session.roomMap = snapshot?.roomMap || {};
-      loadSquares(snapshot?.squares || {});
+      if (restored) {
+        session.roomMap = snapshot?.roomMap || {};
+        loadSquares(snapshot?.squares || {});
+      } else {
+        session.roomMap = {};
+        resetForDay();
+      }
       initGameStore(buildInitialGameState(restored));
       emit(restored ? `已读取：${file}` : "存档不可用，已开始新局");
       return 0;
