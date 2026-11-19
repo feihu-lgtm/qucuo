@@ -8,6 +8,7 @@
 // 数值计算（伤害、克制、成功率），如果每次都让AI自由发挥，同一个NPC今天有这四个
 // 技能明天变成另外四个，战斗和偷窃系统就没有稳定的地基可用。
 
+import { random } from "./core/rng.js";
 import { rollQuality, QUALITY, makeItem, ITEM_CATEGORY } from "./equipment.js";
 import { makeItemSmart, makeNamedItem, CATALOG_INDEX } from "./items/catalog.js";
 import { ITEM_DISTRIBUTION } from "./items/distribution.js";
@@ -23,7 +24,7 @@ import { resolveArchetype } from "./combat/moveArchetypes.js";
 // "身法"就是速度值，切磋时同类型对撞靠这个字段判定先手，不新增单独的speed字段。
 export function generateNpcAttributes({ levelCap = 2 } = {}) {
   const base = 3 + levelCap; // levelCap 0-5 对应基准值 3-8
-  const rand = () => Math.max(1, Math.min(10, base + Math.floor(Math.random() * 3) - 1));
+  const rand = () => Math.max(1, Math.min(10, base + Math.floor(random() * 3) - 1));
   return {
     根骨: rand(), 悟性: rand(), 体魄: rand(),
     魅力: rand(), 智谋: rand(), 身法: rand(), 气运: rand(),
@@ -300,13 +301,13 @@ const CARRIED_ITEM_POOL = {
 // 品质起步（同时数量也跟着涨），气运只决定"在下限之上能不能超常发挥"。
 export function generateNpcCarriedItems(npc, { luck = 5, count = null, levelCap = 0 } = {}) {
   const cap = Math.max(0, Math.min(5, levelCap));
-  const itemCount = count ?? (1 + cap + Math.floor(Math.random() * 3));
+  const itemCount = count ?? (1 + cap + Math.floor(random() * 3));
   const items = [];
   for (let i = 0; i < itemCount; i++) {
     const rolled = rollQuality(luck);
     const quality = QUALITY[Math.max(QUALITY.indexOf(rolled), cap)];
     const pool = CARRIED_ITEM_POOL[quality] || CARRIED_ITEM_POOL["白"];
-    const picked = pool[Math.floor(Math.random() * pool.length)];
+    const picked = pool[Math.floor(random() * pool.length)];
     const item = makeItem({ name: picked.name, category: picked.category, quality });
     items.push({ ...item, id: `${npc.id}_item_${i}`, stolen: false });
   }
@@ -345,7 +346,7 @@ export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
   // 数量：role 决定区间，levelCap 高的取偏上
   const [lo, hi] = style.count;
   const bias = cap >= 3 ? 1 : 0;
-  const n = Math.min(hi, lo + bias + Math.floor(Math.random() * (hi - lo + 1)));
+  const n = Math.min(hi, lo + bias + Math.floor(random() * (hi - lo + 1)));
   if (!candidates.length || n <= 0) {
     // 该地域该身份没有对味候选 → 回退旧匿名池，保证不空手崩溃
     return generateNpcCarriedItems(npc, { luck, count: Math.max(1, n), levelCap: cap });
@@ -367,7 +368,7 @@ export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
   // 无放回抽样，避免同一件重复出现
   const bag = [...picks];
   for (let i = 0; i < n && bag.length; i++) {
-    const idx = Math.floor(Math.random() * bag.length);
+    const idx = Math.floor(random() * bag.length);
     const name = bag.splice(idx, 1)[0];
     const it = makeNamedItem(name);
     if (it) items.push({ ...it, id: `${npc.id}_ci${i}`, stolen: false });
@@ -563,7 +564,7 @@ export function deriveMovesetFromSkills(skills) {
 export function rollBattleLoot(npc) {
   const availableItems = (npc.carriedItems || []).filter(i => !i.stolen);
   const droppedItem = availableItems.length > 0
-    ? makeGameItem(availableItems[Math.floor(Math.random() * availableItems.length)])
+    ? makeGameItem(availableItems[Math.floor(random() * availableItems.length)])
     : null;
 
   // 固定必掉（guaranteedLoot）：boss 级/剧情级 NPC 身上按剧情必掉的素材，
@@ -580,7 +581,7 @@ export function rollBattleLoot(npc) {
   // getTierPower），这里直接拿来做银两的主要来源，体魄只作为同档位内的小幅浮动。
   const bodyStat = npc.special?.体魄 ?? 5;
   const baseMoney = 10 + Math.round((npc.baseAtk ?? 18) * 0.5) + bodyStat * 3;
-  const droppedMoney = baseMoney + Math.floor(Math.random() * baseMoney * 0.6);
+  const droppedMoney = baseMoney + Math.floor(random() * baseMoney * 0.6);
 
   return { droppedItem, droppedMoney, guaranteedLoot };
 }

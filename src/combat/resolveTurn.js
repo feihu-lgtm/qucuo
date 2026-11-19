@@ -9,6 +9,7 @@
 // pendingAtkBonus/costPenalty 传入，结果里通过 counterSuccess*/pendingAtkBonusTo*/
 // costPenaltyTo*/freezeEnergyTo*/defenseBroken* 传出，由 DuelScreen 存进下一回合。
 
+import { random } from "../core/rng.js";
 import { judgeTypeMatchup, MOVE_TYPE } from "./moveTypes.js";
 import { applyStatus, tickStatusEffects } from "./statusEffects.js";
 import { defFromNeigong } from "../npcGeneration.js";
@@ -98,14 +99,14 @@ function decideFirst(sideA, sideB) {
   if (sideA.move.forceFirst && !sideB.move.forceFirst) return "A";
   if (sideB.move.forceFirst && !sideA.move.forceFirst) return "B";
   const sa = sideA.special?.身法 ?? 5, sb = sideB.special?.身法 ?? 5;
-  if (sa === sb) return Math.random() < 0.5 ? "A" : "B";
+  if (sa === sb) return random() < 0.5 ? "A" : "B";
   return sa > sb ? "A" : "B";
 }
 
 // 通用状态施加：move.applyStatus = { name, chance }；旧的 confuseChance 视为施加"气乱"。
 function rollStatusApply(move) {
-  if (move.confuseChance && Math.random() < move.confuseChance) return "气乱";
-  if (move.applyStatus && Math.random() < (move.applyStatus.chance ?? 1)) return move.applyStatus.name;
+  if (move.confuseChance && random() < move.confuseChance) return "气乱";
+  if (move.applyStatus && random() < (move.applyStatus.chance ?? 1)) return move.applyStatus.name;
   return null;
 }
 
@@ -142,7 +143,7 @@ export function resolveTurn(sideA, sideB) {
   const markApply = (move, targetTag, winnerTag) => {
     if (!move.applyMark) return;
     const chance = move.applyMarkChance ?? 1;
-    if (Math.random() >= chance) return;
+    if (random() >= chance) return;
     const { name = "内伤", stacks = 1, max = 5 } = move.applyMark;
     result[`markAppliedTo${targetTag}`] = { name, stacks, max };
     result[`statusSuccess${winnerTag}`] = true;
@@ -165,7 +166,7 @@ export function resolveTurn(sideA, sideB) {
   const applyMarkOnHitCheck = (defMove, defTag, attackerTag) => {
     if (!defMove.applyMarkOnHit) return;
     const chance = defMove.applyMarkChance ?? 1;
-    if (Math.random() >= chance) return;
+    if (random() >= chance) return;
     const mk = defMove.applyMark || { name: "内伤", stacks: 1, max: 5 };
     result[`markAppliedTo${attackerTag}`] = { name: mk.name ?? "内伤", stacks: mk.stacks ?? 1, max: mk.max ?? 5 };
     result.notes.push(`触及那身诡异衣料，一缕暗劲反噬，攻方隐隐添了内伤`);

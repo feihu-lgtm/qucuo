@@ -1,0 +1,15 @@
+# A seed controls NPC generation when starting a new game.
+:seed 42
+:new
+:expect room.npcs.0.special.根骨=5
+:expect room.npcs.0.special.智谋=4
+
+:seed 7
+:new
+:expect room.npcs.0.special.根骨=4
+:expect room.npcs.0.special.智谋=5
+
+:seed 42
+:new
+:expect room.npcs.0.special.根骨=5
+:expect room.npcs.0.special.智谋=4

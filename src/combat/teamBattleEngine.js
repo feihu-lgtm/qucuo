@@ -41,6 +41,7 @@
 //   5. 全部单位行动完毕后，返回本回合的完整战报（供UI渲染）。
 // ============================================================================
 
+import { random } from "../core/rng.js";
 import { resolveTurn, applyEndOfTurnStatus } from "./resolveTurn.js";
 import { applyStatus, applyMark, dispelControlDrain } from "./statusEffects.js";
 import { decideNpcMove } from "./aiDecision.js";
@@ -180,11 +181,11 @@ export function resolveOneOnOne(attackerUnit, attackerMove, defenderUnit, defend
 
 // 按身法（special.身法）从高到低排出全部存活单位的行动顺序。相同身法随机决定
 // 谁先——跟 resolveTurn.js 里同类型对撞比身法的规则保持一致的处理方式（那边
-// 也是身法相同时 Math.random()<0.5 决定），不新增另一套规则。
+// 也是身法相同时 random()<0.5 决定），不新增另一套规则。
 function orderBySpeed(units) {
   return [...units]
     .filter(u => u.alive)
-    .map(u => ({ u, jitter: Math.random() }))
+    .map(u => ({ u, jitter: random() }))
     .sort((a, b) => {
       const sa = a.u.special?.身法 ?? 5, sb = b.u.special?.身法 ?? 5;
       if (sa !== sb) return sb - sa;
@@ -198,7 +199,7 @@ function orderBySpeed(units) {
 function pickRandomAliveTarget(candidateUnits) {
   const alive = candidateUnits.filter(u => u.alive);
   if (alive.length === 0) return null;
-  return alive[Math.floor(Math.random() * alive.length)];
+  return alive[Math.floor(random() * alive.length)];
 }
 
 // 目标转移：若原目标已不在存活列表里，自动转移到该阵营另一个存活单位

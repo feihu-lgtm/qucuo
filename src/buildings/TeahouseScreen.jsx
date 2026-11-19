@@ -1,4 +1,5 @@
 import React from "react";
+import { random } from "../core/rng.js";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
 
 // 茶馆：花少量银两听掌柜说话，注入随机传闻
@@ -34,7 +35,7 @@ export default function TeahouseScreen({ building, char, flags, time, zoneTheme,
           disabled={money < COST}
           zoneTheme={zoneTheme}
           onClick={() => {
-            const idx = Math.floor(Math.random() * RUMORS.length);
+            const idx = Math.floor(random() * RUMORS.length);
             onListenRumor(RUMORS[idx], COST);
           }}
         />

@@ -18,6 +18,7 @@
 //     解锁门槛（复用现有"生气状态期间不可偷"这条锁），身法/敏捷进成功率
 //     公式，好感也仍计入成功率（两项独立相加，见 stealSystem.js）。
 
+import { random } from "../core/rng.js";
 import { makeLearnedMoveSkill } from "./qucuoKungfu.js";
 import { canLearnSkillFrom, describeLearnSkillGate, teachPrice, teachDiscountFactor } from "../quests/learnSkill.js";
 import { attemptSteal, pickStealOutcome, createAngryState, STEAL_CONFIG } from "../combat/stealSystem.js";
@@ -153,12 +154,12 @@ export function tryStealFrom(npc, varTree, skills, char, agility = 0) {
   const outcome = pickStealOutcome(stealableMoves.length > 0, stealableItems.length > 0);
 
   if (outcome === "move") {
-    const target = stealableMoves[Math.floor(Math.random() * stealableMoves.length)];
+    const target = stealableMoves[Math.floor(random() * stealableMoves.length)];
     const skill = makeLearnedMoveSkill(target, "偷师");
     return { ok: true, success: true, outcome: "move", rate: result.rate, skill, move: target };
   }
   if (outcome === "item") {
-    const target = stealableItems[Math.floor(Math.random() * stealableItems.length)];
+    const target = stealableItems[Math.floor(random() * stealableItems.length)];
     return { ok: true, success: true, outcome: "item", rate: result.rate, item: target };
   }
   // outcome === null：身手得逞，但对方身上确实一无所有（招学光了、物件也偷空了）

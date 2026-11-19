@@ -20,6 +20,8 @@ const KROOT = "知识领域";
 const 会淡忘途径 = { 传闻: true, 目击: false, 告知: false, 剧本: false };
 
 // 代码写死的推演参数（可调）：
+import { random } from "./core/rng.js";
+
 export const KNOWLEDGE_PARAMS = {
   传闻默认忘却回合: 40,   // 传闻途径得知后，多少回合没被再次强化就淡忘
   同框传播概率: 0.35,     // 同一场景里，知情者每回合把某事实传给未知者的概率
@@ -89,7 +91,7 @@ export function setFactSummary(varTree, factId, 摘要) {
 // 2) 传播：同一场景内，某事实的知情者按概率把它扩散给同场景的未知者（记为传闻途径）。
 // 返回 { varTree, 待补摘要 }。待补摘要是"此刻在场者涉及、但还没有一句话描述"的事实 id 列表，
 // 供外层决定是否点 AI 补词。
-export function evolveKnowledge(varTree, { roomNpcNames = [], currentTurn = 0, rng = Math.random } = {}) {
+export function evolveKnowledge(varTree, { roomNpcNames = [], currentTurn = 0, rng = random } = {}) {
   const 领域 = JSON.parse(JSON.stringify(ensureRoot(varTree)));
   const present = roomNpcNames.filter(Boolean);
 

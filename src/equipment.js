@@ -1,3 +1,4 @@
+import { random } from "./core/rng.js";
 import { computePassiveBonus } from "./kungfu/qucuoKungfu.js";
 // 装备与物品系统
 // 三大分类（武器/护甲/饰品）各自不限数量存放在背包里，
@@ -28,7 +29,7 @@ export function qualityDistribution(luck) {
 // 按分布随机抽取一个品质
 export function rollQuality(luck) {
   const dist = qualityDistribution(luck);
-  const r = Math.random() * 100;
+  const r = random() * 100;
   let acc = 0;
   for (let i = 0; i < dist.length; i++) {
     acc += dist[i];
@@ -245,4 +246,3 @@ export function effectiveSpecial(baseSpecial, inv, skills) {
   if (speed) out.身法 = (out.身法 ?? 5) + speed;
   return out;
 }
-

@@ -9,6 +9,8 @@
 // 2026-07 扩展：偷窃现在不只偷物品，也能偷招（偷师）——判定用同一套成功率和
 // 惩罚，只是成功之后，从"偷到手的到底是物品还是招式"这一步开始分叉。
 
+import { random } from "../core/rng.js";
+
 export const STEAL_CONFIG = {
   baseRate: 0.45,       // 好感度为0时的基础成功率（原0.2太低，叠加偷物分叉后体感像坏了）
   bonusPerTen: 0.06,    // 好感度每10点，成功率+6%
@@ -34,7 +36,7 @@ export function stealSuccessRate(favorability, agility = 0) {
 // agility 参数默认0，向后兼容旧调用（只传 favorability 的地方行为不变）。
 export function attemptSteal(favorability, agility = 0) {
   const rate = stealSuccessRate(favorability, agility);
-  const roll = Math.random();
+  const roll = random();
   return {
     success: roll < rate,
     rate,      // 附带这次判定用的实际成功率，方便调试面板展示
@@ -53,7 +55,7 @@ export function pickStealOutcome(hasStealableMove, hasStealableItem) {
   if (!hasStealableMove) return "item";
   if (!hasStealableItem) return "move";
   // 两边都有得偷时，偏向偷物（偷窃按钮的主诉求）；偷招只是小概率添头。
-  return Math.random() < STEAL_CONFIG.stealMoveChance ? "move" : "item";
+  return random() < STEAL_CONFIG.stealMoveChance ? "move" : "item";
 }
 
 // 生气状态的数据结构，存进 varTree.角色[npcName].生气状态

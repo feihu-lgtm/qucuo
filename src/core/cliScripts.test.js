@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { exportSave } from "../saves.js";
 import { loadSquares, serializeSquares } from "../mapSquares.js";
 import { createSession, runScript } from "../../cli/runner.mjs";
+import { getRngState, random } from "./rng.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scriptsDir = resolve(projectRoot, "tests/cli");
@@ -65,6 +66,27 @@ describe("CLI scripts", () => {
     expect(session.store.getState().time).toBe(23);
   });
 
+  it("resumes the saved random sequence even when an NPC needs backfilling", async () => {
+    const session = createSession({ out: () => {}, cwd: tempDir, seed: 42 });
+    await session.runLine(":new");
+    random();
+    const checkpoint = getRngState();
+    await session.runLine(":save seeded.json");
+    const expected = Array.from({ length: 5 }, () => random());
+
+    const path = join(tempDir, "seeded.json");
+    const snapshot = JSON.parse(readFileSync(path, "utf8"));
+    expect(snapshot.rngState).toBe(checkpoint);
+    delete snapshot.room.npcs[0].special;
+    writeFileSync(path, JSON.stringify(snapshot), "utf8");
+
+    await session.runLine(":seed 7");
+    await session.runLine(":load seeded.json");
+    expect(session.store.getState().room.npcs[0].special).toBeDefined();
+    expect(getRngState()).toBe(checkpoint);
+    expect(Array.from({ length: 5 }, () => random())).toEqual(expected);
+  });
+
   it("clears loaded squares when starting a new game", async () => {
     const session = createSession({ out: () => {}, cwd: tempDir });
     const savedSquares = { 鱼定村: { day: 2, desc: "saved square" } };
@@ -80,18 +102,22 @@ describe("CLI scripts", () => {
     expect(serializeSquares()).toEqual({});
   });
 
-  it("clears prior squares when loading a legacy snapshot without squares", async () => {
-    const session = createSession({ out: () => {}, cwd: tempDir });
+  it("loads a legacy snapshot without squares or RNG state", async () => {
+    const session = createSession({ out: () => {}, cwd: tempDir, seed: 42 });
     await session.runLine(":new");
     await session.runLine(":save current.json");
     const legacySnapshot = JSON.parse(readFileSync(join(tempDir, "current.json"), "utf8"));
     delete legacySnapshot.squares;
+    delete legacySnapshot.rngState;
+    legacySnapshot.time = 9;
     writeFileSync(join(tempDir, "legacy.json"), JSON.stringify(legacySnapshot), "utf8");
     loadSquares({ stale: { day: 1, desc: "stale square" } });
 
     await session.runLine(":load legacy.json");
 
+    expect(session.store.getState().time).toBe(9);
     expect(serializeSquares()).toEqual({});
+    expect(getRngState()).toBe(42);
   });
 
   it("does not import caches from rejected saves", async () => {
