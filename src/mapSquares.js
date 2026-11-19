@@ -1,3 +1,4 @@
+import { random } from "./core/rng.js";
 import { QUCUO_MAP } from "./qucuoMap.js";
 import { rollEncounter } from "./encounter.js";
 import { rollQuality, ITEM_CATEGORY } from "./equipment.js";
@@ -26,9 +27,9 @@ const PICKUP_CHANCE = 0.35; // 与主流程移动拾取基础几率一致
 // 系统掷骰：这个格子埋不埋拾取（品质/分类）、埋不埋路遇（势力）。AI 只管写作。
 export function rollSkeleton(nodeName, luck = 5) {
   let item = null;
-  if (Math.random() < PICKUP_CHANCE) {
+  if (random() < PICKUP_CHANCE) {
     const quality = rollQuality(luck);
-    const category = [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY, ITEM_CATEGORY.MISC][Math.floor(Math.random() * 4)];
+    const category = [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY, ITEM_CATEGORY.MISC][Math.floor(random() * 4)];
     item = { quality, category };
   }
   const en = rollEncounter(nodeName, luck);
@@ -73,7 +74,7 @@ function pickCatalogName(quality, category) {
   if (!pool.length) pool = filterCatalog({ category });
   if (!pool.length) pool = filterCatalog({ quality });
   if (!pool.length) return { name: `${quality === "白" ? "" : quality}品物件`, desc: "路上拾得的物件。" };
-  const e = pool[Math.floor(Math.random() * pool.length)];
+  const e = pool[Math.floor(random() * pool.length)];
   return { name: e.name, desc: e.desc || "" };
 }
 

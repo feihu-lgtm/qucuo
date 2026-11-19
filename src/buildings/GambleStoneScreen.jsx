@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { random } from "../core/rng.js";
 import {
   CHANG_KOU, SKINS, JADE_TIERS, GRADE,
   birthStone, cutSlot, appraiseStone,
@@ -127,7 +128,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   const [dailyStones] = useState(() => {
     const picks = [];
     for (let i = 0; i < 3; i++) {
-      const ck = CHANG_KOU_KEYS[Math.floor(Math.random() * CHANG_KOU_KEYS.length)];
+      const ck = CHANG_KOU_KEYS[Math.floor(random() * CHANG_KOU_KEYS.length)];
       picks.push(birthStone(ck, luck, `${char.name || "guest"}|${time}|${i}`));
     }
     return picks;

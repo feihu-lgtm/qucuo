@@ -2,6 +2,8 @@
 // 武侠化命名，机制照抄洛克王国：控制类互斥（同一时间只能有一种控制状态），
 // 掉血类互斥（同一时间只能有一种掉血状态），两组之间不冲突（可以同时中毒又被点穴）。
 
+import { random } from "../core/rng.js";
+
 export const STATUS_GROUP = {
   CONTROL: "control",   // 影响能否行动
   DRAIN: "drain",       // 持续掉血
@@ -135,7 +137,7 @@ export function tickStatusEffects(slots, maxHp) {
 
   if (control) {
     const def = STATUS_EFFECTS[control.name];
-    if (def.autoRecoverChance && Math.random() < def.autoRecoverChance) {
+    if (def.autoRecoverChance && random() < def.autoRecoverChance) {
       log.push(`${control.name}状态自行缓解`);
       control = null;
     } else if (def.autoExpireTurns && control.turnsElapsed + 1 >= def.autoExpireTurns) {

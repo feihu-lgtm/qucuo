@@ -11,6 +11,8 @@
 // AI 只负责把这个已定的势力过路人写得具体生动。AI 不决定概率、不决定势力。
 
 // 势力定义：每方给一个"典型在路上晃悠的人"的角色池，供 AI 拿到具体的"谁"。
+import { random } from "./core/rng.js";
+
 export const FACTIONS = {
   土司府: {
     label: "鱼定土司府",
@@ -66,14 +68,14 @@ export function rollEncounter(destNodeName, luck = 5) {
   const cfg = NODE_ENCOUNTERS[destNodeName] || DEFAULT_ENCOUNTER;
   const luckBonus = Math.max(0, (luck - 5)) * 0.01; // 气运每高于5一点，+1%，封顶影响很小
   const p = Math.min(0.6, cfg.prob + luckBonus);
-  if (Math.random() >= p) return null;
+  if (random() >= p) return null;
 
   // 从该地合理势力里随机挑一方；越靠前的权重略高（简单线性衰减）。
   const list = cfg.factions.filter(Boolean);
   if (!list.length) return null;
   const weights = list.map((_, i) => list.length - i);
   const total = weights.reduce((a, b) => a + b, 0);
-  let r = Math.random() * total;
+  let r = random() * total;
   let picked = list[0];
   for (let i = 0; i < list.length; i++) {
     if (r < weights[i]) { picked = list[i]; break; }

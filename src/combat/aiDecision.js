@@ -2,6 +2,7 @@
 // 每回合真正选招式的地方：纯本地计算，不调用任何API，读取 personalityProfile.js
 // 生成好的权重表，按权重加权随机选类型，再按 riskAppetite 决定敢不敢用高品质技能。
 
+import { random } from "../core/rng.js";
 import { MOVE_TYPE } from "./moveTypes.js";
 
 function weightedRandomPick(weights) {
@@ -9,7 +10,7 @@ function weightedRandomPick(weights) {
   if (entries.length === 0) return null; // 权重表为空（残缺/未生成的profile）：返回null，交由上游用moveset兜底，绝不 entries[0][0] 崩
   const total = entries.reduce((sum, [, w]) => sum + Math.max(0, w), 0);
   if (total <= 0) return entries[0][0]; // 全部权重非正时兜底选第一个，避免除零
-  let roll = Math.random() * total;
+  let roll = random() * total;
   for (const [key, w] of entries) {
     roll -= Math.max(0, w);
     if (roll <= 0) return key;
@@ -75,7 +76,7 @@ export function decideNpcMove(profile, moveset, battleState) {
   let chosenType = weightedRandomPick(weights);
   if (chosenType == null) {
     const availableTypes = [...new Set(safeMoveset.map(m => m.type))];
-    chosenType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+    chosenType = availableTypes[Math.floor(random() * availableTypes.length)];
   }
 
   const move = pickAffordableMove(safeMoveset, chosenType, st.npcEnergy ?? 0, p.riskAppetite ?? 0.5);

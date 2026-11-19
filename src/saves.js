@@ -11,6 +11,7 @@
 // 关页兜底：IDB 异步写关页来不及落盘，故 autoSave 顺带尽力同步写一份 LS；init 取 IDB 与 LS 较新者。
 
 import { statsForQuality } from "./equipment.js";
+import { getRngState } from "./core/rng.js";
 
 const AUTOSAVE_KEY = "wuxia_mud_autosave";       // 旧 localStorage 键（迁移/降级用）
 const SLOTS_INDEX_KEY = "wuxia_mud_save_slots";
@@ -107,10 +108,11 @@ export async function init() {
 }
 
 // state 快照结构
-export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares, roomMap }) {
+export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares, roomMap, rngState = getRngState() }) {
   return {
     version: 1,
     savedAt: Date.now(),
+    rngState,
     preset: { id: preset.id, name: preset.name },
     room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree,
     // 内层箱庭位置（本轮补）：此前快照只存 room.name（外层据点），没存玩家站在据点内的

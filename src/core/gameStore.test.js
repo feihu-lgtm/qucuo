@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSnapshot } from "../saves.js";
 import { GAME_KEYS, gameActions, gameStore, initGameStore } from "./gameStore.js";
 import { snapshotFromStore } from "./persist.js";
+import { setRngState } from "./rng.js";
 
 afterEach(() => {
   initGameStore({});
@@ -66,7 +67,10 @@ describe("game store", () => {
     const extra = { squares: { day: 1 }, roomMap: { 曲措乡: { items: [], npcs: [] } } };
     vi.spyOn(Date, "now").mockReturnValue(1234);
     initGameStore(values);
+    setRngState(0);
 
-    expect(snapshotFromStore(extra)).toEqual(buildSnapshot({ ...values, ...extra }));
+    const snapshot = snapshotFromStore(extra);
+    expect(snapshot).toEqual(buildSnapshot({ ...values, ...extra }));
+    expect(snapshot.rngState).toBe(0);
   });
 });

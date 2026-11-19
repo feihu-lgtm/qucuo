@@ -4,11 +4,20 @@ import { resolve } from "node:path";
 import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../src/core/gameStore.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "../src/core/newGame.js";
 import { snapshotFromStore } from "../src/core/persist.js";
+import { setSeed } from "../src/core/rng.js";
 import { resetForDay, loadSquares, serializeSquares } from "../src/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/saves.js";
 import { getTimeStr } from "../src/utils/mudHelpers.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
+
+export function parseSeed(value) {
+  const seed = Number(value);
+  if (!/^[+-]?\d+$/.test(value ?? "") || !Number.isSafeInteger(seed)) {
+    throw new Error("Seed must be a safe decimal integer");
+  }
+  return seed;
+}
 
 function formatValue(value) {
   if (value === undefined) return "undefined";
@@ -76,17 +85,23 @@ function actionForKey(key) {
   return gameActions[actionName];
 }
 
-export function createSession({ out = defaultOutput, cwd = process.cwd() } = {}) {
+export function createSession({ out = defaultOutput, cwd = process.cwd(), seed } = {}) {
   const emit = typeof out === "function" ? out : (text) => out.write(`${text}\n`);
 
   async function runLine(rawLine) {
     const line = String(rawLine).trim();
     if (!line || line.startsWith("#")) return 0;
 
+    if (/^:seed(?:\s|$)/.test(line)) {
+      seed = parseSeed(line.slice(5).trim());
+      setSeed(seed);
+      return 0;
+    }
+
     if (line === ":new") {
       session.roomMap = {};
       resetForDay();
-      initGameStore(buildInitialGameState(null));
+      initGameStore(buildInitialGameState(null, seed));
       return 0;
     }
 
@@ -117,7 +132,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd() } = {})
         session.roomMap = {};
         resetForDay();
       }
-      initGameStore(buildInitialGameState(restored));
+      initGameStore(buildInitialGameState(restored, seed));
       emit(restored ? `已读取：${file}` : "存档不可用，已开始新局");
       return 0;
     }
@@ -157,8 +172,8 @@ export function createSession({ out = defaultOutput, cwd = process.cwd() } = {})
   return session;
 }
 
-export async function runScript(lines, { out = defaultOutput, cwd = process.cwd() } = {}) {
-  const session = createSession({ out, cwd });
+export async function runScript(lines, options) {
+  const session = createSession(options);
   const scriptLines = Array.isArray(lines) ? lines : String(lines).split(/\r?\n/);
   let failures = 0;
   for (const line of scriptLines) {

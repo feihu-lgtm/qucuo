@@ -2,18 +2,13 @@
 // 铁律：所有数值（种水/品相/裂缝/报价/成交/委托结果）由本模块 seededRand 骰定并写死，
 // AI 只拿到结果做叙事，绝不参与裁决。对照主文档《赌石_玉器与原石设计.md》§4 职责划分。
 
+import { createRng, random } from "./core/rng.js";
 import { QUALITY, rollQuality } from "./equipment.js";
 
 // ---------- 基础：可复现随机（出生固化用） ----------
 // mulberry32：给一个种子，产出确定性的伪随机序列。同一石头同一种子 → 每次结果一致。
 export function makeRng(seed) {
-  let s = seed >>> 0;
-  return function () {
-    s |= 0; s = (s + 0x6D2B79F5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+  return createRng(seed).random;
 }
 function seedFromString(str) {
   let h = 1779033703 ^ str.length;
@@ -72,7 +67,7 @@ const SLOT_POS = ["top", "mid", "bot"];
 // 进料场买石时调用一次，seededRand 骰定全部真相并写死。AI 全程读不到真相。
 export function birthStone(changKouKey, luck = 5, seedStr = "") {
   const ck = CHANG_KOU[changKouKey] || CHANG_KOU.鹰曲新场;
-  const seed = seedFromString(`${changKouKey}|${seedStr}|${Date.now()}|${Math.random()}`);
+  const seed = seedFromString(`${changKouKey}|${seedStr}|${random()}`);
   const rng = makeRng(seed);
 
   // 种水档：气运 + 场口 jadeBias 抬升高档概率
@@ -93,7 +88,7 @@ export function birthStone(changKouKey, luck = 5, seedStr = "") {
   });
 
   return {
-    id: `stone_${seed.toString(36)}`,
+    id: `stone_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
     changKou: changKouKey,
     skin,
     jadeTier: jadeTier.key,
@@ -219,7 +214,9 @@ export function biddingBase(stone) {
 // 生成本轮在场的竞价者（含偶现概率 + 各自报价，系统裁决）
 export function rollBidders(stone, luck = 5) {
   const base = biddingBase(stone);
-  const rng = makeRng(seedFromString(stone.id + "|" + stone.slots.filter(s => s.opened).length));
+  // 用出生种子固定报价，实例 ID 只用于隔离每桌的议价记录。
+  const quoteKey = stone._seed == null ? stone.id : `stone_${stone._seed.toString(36)}`;
+  const rng = makeRng(seedFromString(quoteKey + "|" + stone.slots.filter(s => s.opened).length));
   const app = appraiseStone(stone);
   const out = [];
   for (const [key, t] of Object.entries(BIDDER_TYPES)) {
@@ -262,9 +259,9 @@ export function settleNegotiation(bidder, aiResponse, carryItems = []) {
 
 // ---------- 委托做装备（30 被偷 / 10 失败 / 60 成功，接主文档 §2.4/§3） ----------
 export function rollCommission(stone, luck, feePaid, feeThreshold = 200) {
-  const rng = Math.random();
-  if (rng < 0.30) return { result: "stolen", item: null };   // 料被偷
-  if (rng < 0.40) return { result: "failed", item: null };   // 料废了
+  const roll = random();
+  if (roll < 0.30) return { result: "stolen", item: null };   // 料被偷
+  if (roll < 0.40) return { result: "failed", item: null };   // 料废了
   // 成功：有效 luck' = 气运 + 品质档加成 + floor(手工费/阈值)
   const qIdx = QUALITY.indexOf(stone.quality);
   const effLuck = Math.max(0, Math.min(10, luck + qIdx + Math.floor(feePaid / feeThreshold)));

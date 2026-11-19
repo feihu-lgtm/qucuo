@@ -11,6 +11,7 @@ const EXTRACTION_INTENT_LABELS = [
   ["UNKNOWN",        "未知意图（兜底）"],
 ];
 import { listSlots, saveToSlot, loadSlot, deleteSlot, renameSlot, clearAutoSave, autoSave, exportSave, importSave } from "./saves.js";
+import { setRngState, setSeed } from "./core/rng.js";
 import { listCharacters, npcAffectionLabel } from "./mvu.js";
 import { affectionLabel, AFFECTION_TIERS, affectionTier } from "./narrator.js";
 // 预设切换/编辑器已从 UI 移除（预设 tab 现在只放注入结构），
@@ -223,7 +224,9 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
 
   const handleLoadSlot = (id) => {
     const snap = loadSlot(id);
-    if (snap) onLoadSnapshot(snap);
+    if (!snap) return;
+    onLoadSnapshot(snap);
+    if (!setRngState(snap.rngState)) setSeed(Date.now());
   };
 
   const handleDeleteSlot = (id) => {

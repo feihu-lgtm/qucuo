@@ -9,15 +9,21 @@ import { initialVarTree } from "../mvu.js";
 import { seedKnowledge } from "../knowledge.js";
 import { initCompanionState } from "../companionState.js";
 import { CURRENT_VERSION } from "../version.js";
+import { setRngState, setSeed } from "./rng.js";
 
 export const DEFAULT_PRESETS = [QUCUO_PRESET];
 
 /**
  * @param {{ preset: object, snap: object } | null} restored
+ * @param {number} [seed] 新局或没有随机状态的旧存档使用的种子
  * @returns {object}
  */
-export function buildInitialGameState(restored) {
-  return {
+export function buildInitialGameState(restored, seed) {
+  const savedRngState = restored?.snap.rngState;
+  const hasSavedRngState = setRngState(savedRngState);
+  if (!hasSavedRngState) setSeed(seed ?? Date.now());
+
+  const state = {
     preset: restored?.preset || DEFAULT_PRESETS[0],
     room: (() => {
       const initialRoom = restored?.snap.room || DEFAULT_PRESETS[0].room;
@@ -89,4 +95,7 @@ export function buildInitialGameState(restored) {
     depositedAt: restored?.snap.depositedAt ?? null,
     pledgedItems: restored?.snap.pledgedItems || [],
   };
+  // 读档时补全 NPC 数据可能掷骰，补全后仍从存档记录的位置继续。
+  if (hasSavedRngState) setRngState(savedRngState);
+  return state;
 }

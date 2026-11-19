@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { random } from "../core/rng.js";
 import { useOverlayCloseGuard } from "../utils/overlayClose.js";
 import {
   getHomestead, loadWineCellar, saveWineCellar,
@@ -257,7 +258,7 @@ function TelescopeFeature({ addLog }) {
         铜制望远镜架在窗台上，镜片擦得还算干净。正对山谷，视野极好。
       </div>
       {!looked ? (
-        <span onClick={() => { setLooked(true); addLog?.({ text: `【望远镜】你凑上去看了一眼——${sights[Math.floor(Math.random() * sights.length)]}`, type: "system" }); }} style={btnStyle}>
+        <span onClick={() => { setLooked(true); addLog?.({ text: `【望远镜】你凑上去看了一眼——${sights[Math.floor(random() * sights.length)]}`, type: "system" }); }} style={btnStyle}>
           🔭 远眺
         </span>
       ) : (
