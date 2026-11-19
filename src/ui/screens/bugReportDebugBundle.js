@@ -1,5 +1,15 @@
 import { buildDebugBundle } from "../../infra/debugBundle.js";
 
+const MODAL_RECENT_LOG_TYPES = new Set([
+  "sys",
+  "stat",
+  "err",
+  "quest",
+  "item",
+  "loot",
+  "skill",
+]);
+
 export function getSelectedBugReportTurns(turns, selectedTurns) {
   return turns
     .filter((_, index) => selectedTurns.has(index))
@@ -15,5 +25,7 @@ export function buildModalDebugBundle(debugSources, turns, selectedTurns, includ
     sources.pipelineCalls = [];
     sources.traces = [];
   }
-  return buildDebugBundle(sources);
+  const bundle = buildDebugBundle(sources);
+  bundle.recentLog = bundle.recentLog.filter(entry => MODAL_RECENT_LOG_TYPES.has(entry?.t));
+  return bundle;
 }
