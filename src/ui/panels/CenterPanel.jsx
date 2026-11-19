@@ -111,12 +111,12 @@ export default function CenterPanel({
           {/* 手机：叙事区左右边缘贴边小把手，点击滑出左栏(天地)/右栏(行动) */}
           {isMobile && !mobileDrawer && (
             <>
-              <div onClick={() => setMobileDrawer("left")} title="天地"
+              <div className="mobile-drawer-tab mobile-drawer-tab-left" onClick={() => setMobileDrawer("left")} title="天地"
                 style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
                   padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderLeft: "none",
                   borderRadius: "0 6px 6px 0", color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
                   boxShadow: "2px 0 8px rgba(0,0,0,.4)", userSelect: "none" }}>◀ 天地</div>
-              <div onClick={() => setMobileDrawer("right")} title="行动"
+              <div className="mobile-drawer-tab mobile-drawer-tab-right" onClick={() => setMobileDrawer("right")} title="行动"
                 style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
                   padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRight: "none",
                   borderRadius: 0, color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
@@ -613,10 +613,11 @@ export default function CenterPanel({
             </div>
           )}
 
-          <div style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <div className="mobile-control-row" style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
             {[["action", "◈ 行动", zoneTheme.accent], ["talk", "◎ 对话", uiGreen], ["whisper", "◆ 私聊旁白", uiPink]].map(([id, label, color]) => (
               <span
                 key={id}
+                className="mobile-touch-target mobile-mode-control"
                 onClick={() => { setInteractMode(id); setTalkTarget(null); setActiveTarget(null); setPigeonTarget(null); }}
                 style={{
                   cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 0, userSelect: "none",
@@ -627,6 +628,7 @@ export default function CenterPanel({
               >{label}</span>
             ))}
             <span
+              className="mobile-touch-target mobile-mode-control"
               onClick={() => setNsfwOn(x => !x)}
               title={nsfwOn ? "已开启：NSFW 写作规则已注入" : "已关闭：点击开启 NSFW 写作规则"}
               style={{
@@ -641,6 +643,7 @@ export default function CenterPanel({
             {/* 注：运气·内功+1 / 拆招·外功+1 两个升级按钮已移至右栏「内功外功」区，
                 挂在对应数值行后面，就近操作。这里只留打坐（恢复气血，非升级）。 */}
             <span
+              className="mobile-touch-target mobile-mode-control"
               onClick={meditate}
               title="打坐运功：消耗1回合，恢复部分气血"
               style={{
@@ -656,12 +659,13 @@ export default function CenterPanel({
 
           {/* ── NPC 人选选择器：点选某人 → 对话/行动聚焦此人；不选=全人物发给AI ── */}
           {interactMode !== "whisper" && interactMode !== "pigeon" && room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).length > 0 && (
-            <div style={{
+            <div className="mobile-people-row" style={{
               padding: "4px 14px", display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
               borderTop: `1px solid ${zoneTheme.border}`, flexWrap: "wrap",
             }}>
               <span style={{ color: zoneTheme.textDim, fontSize: "10px", flexShrink: 0 }}>人选：</span>
               <span
+                className="mobile-touch-target mobile-person-chip"
                 onClick={() => { setActiveTarget(null); setTalkTarget(null); }}
                 style={{
                   cursor: "pointer", fontSize: "10.5px", padding: "2px 7px", borderRadius: 0, userSelect: "none",
@@ -675,6 +679,7 @@ export default function CenterPanel({
                 return (
                   <span
                     key={n.name}
+                    className="mobile-touch-target mobile-person-chip"
                     onClick={() => { setActiveTarget(n.name); if (interactMode !== "action") setTalkTarget(n.name); }}
                     title={isSel ? "点击「全部」取消选定" : `聚焦 ${n.name}`}
                     style={{
@@ -696,11 +701,11 @@ export default function CenterPanel({
                 <span style={{ color: "#c4a040" }}>🕊 飞鸽传书 · 致「{pigeonTarget}」</span>
                 <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>信往{loc}，约 {delay} 时辰后有回音</span>
                 <span style={{ flex: 1 }} />
-                <span onClick={() => { setPigeonTarget(null); setInteractMode("action"); }} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "10px" }}>× 取消</span>
+                <span className="mobile-touch-target" onClick={() => { setPigeonTarget(null); setInteractMode("action"); }} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "10px" }}>× 取消</span>
               </div>
             );
           })()}
-          <div style={{
+          <div className="mobile-input-bar" style={{
             borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid #4a3a1a" : `1px solid ${zoneTheme.border}`,
             background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
             padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
@@ -710,6 +715,7 @@ export default function CenterPanel({
               flexShrink: 0, fontSize: "13px",
             }}>{interactMode === "pigeon" ? "🕊" : "▸"}</span>
             <input
+              className="game-input"
               ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={onKey}
               onCompositionStart={() => { composingRef.current = true; }}
               onCompositionEnd={() => { composingRef.current = false; }}

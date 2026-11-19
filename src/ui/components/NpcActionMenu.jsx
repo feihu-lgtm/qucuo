@@ -47,18 +47,20 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
+      <div className="mobile-overlay-root" style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div
+        className="mobile-action-panel"
         style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ color: zoneTheme.accent, fontSize: "14px", marginBottom: 4 }}>{npc.name}</div>
         <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 16 }}>{npc.brief}</div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+        <div className="mobile-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {ACTIONS.map((a) => (
             <div
               key={a.key}
+              className="mobile-action-choice"
               onClick={a.onClick}
               style={{
                 cursor: "pointer", padding: "12px 10px", borderRadius: 0, textAlign: "center",
@@ -73,7 +75,7 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
         </div>
 
         <div style={{ textAlign: "center", marginTop: 14 }}>
-          <span onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>取消</span>
+          <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>取消</span>
         </div>
       </div>
     </div>

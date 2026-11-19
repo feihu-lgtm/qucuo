@@ -84,8 +84,8 @@ export default function ItemActionMenu({
       ];
 
   return (
-    <div style={overlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={panel} onClick={(e) => e.stopPropagation()}>
+    <div className="mobile-overlay-root" style={overlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
+      <div className="mobile-action-panel" style={panel} onClick={(e) => e.stopPropagation()}>
         <div style={{ color: quality ? undefined : zoneTheme.accent, fontSize: "14px", marginBottom: 4 }}>
           {name}{quality ? <span style={{ fontSize: "11px", color: zoneTheme.textDim, marginLeft: 6 }}>（{quality}）</span> : null}
         </div>
@@ -94,16 +94,16 @@ export default function ItemActionMenu({
             : canEquip ? `${{ weapon: "兵器", armor: "护身之具", accessory: "随身饰物" }[item.category]}${statLabel ? ` · ${statLabel}` : ""}${equipped ? " · 已在身" : ""}`
             : canConsume ? "可服用之物" : "随身之物"}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: mode === "ground" ? "1fr 1fr" : "1fr 1fr", gap: 8 }}>
+        <div className="mobile-action-grid" style={{ display: "grid", gridTemplateColumns: mode === "ground" ? "1fr 1fr" : "1fr 1fr", gap: 8 }}>
           {actions.map((a) => (
-            <div key={a.key} onClick={a.onClick} style={cell(a.enabled)}>
+            <div key={a.key} className="mobile-action-choice" onClick={a.onClick} style={cell(a.enabled)}>
               <div style={{ color: zoneTheme.accent, fontSize: "13px", marginBottom: 3 }}>{a.label}</div>
               <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>{a.desc}</div>
             </div>
           ))}
         </div>
         <div style={{ textAlign: "center", marginTop: 14 }}>
-          <span onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>取消</span>
+          <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>取消</span>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import "./ui/tokens.css";
+import "./ui/mobile.css";
 import React, { Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import MudRPG from "./app/MudRPG.jsx";
