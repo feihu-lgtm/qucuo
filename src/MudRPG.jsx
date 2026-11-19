@@ -944,7 +944,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     traceStep(_trace, "意图分类", "pass", `模式=${isTalk ? "对话" : "行动"} · 意图=${intent?.label || intent || "未知"}`);
 
     const localCommand = !isTalk
-      ? parseLocalCommand(cmd, { ...gameStore.getState(), isTalk, convo })
+      ? parseLocalCommand(cmd, { ...gameStore.getState(), isTalk, convo }, { surface: "web" })
       : null;
     if (localCommand) {
       setInput("");

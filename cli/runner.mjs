@@ -521,7 +521,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       emit("尚未开始游戏，请先执行 :new 或 :load 初始化游戏。");
       return 1;
     }
-    const localCommand = parseLocalCommand(line, state);
+    const localCommand = parseLocalCommand(line, state, { surface: "cli" });
     if (localCommand) {
       const result = localCommand.kind === "lines"
         ? { logs: [{ t: "cmd", text: `> ${line}` }, ...localCommand.lines] }

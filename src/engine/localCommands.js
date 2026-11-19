@@ -42,12 +42,19 @@ function questScriptLines(command) {
   ];
 }
 
-export function parseLocalCommand(text, state = {}) {
+export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
   const command = String(text ?? "");
   const normalized = command.trim().toLowerCase();
   if (!normalized || state.isTalk) return null;
 
   if (normalized === "help" || normalized === "帮助") {
+    if (surface === "web") {
+      return localLines([
+        { t: "sys", text: "  ▸ 方向 n/s/e/w 移动 · look 查看 · 输入框上方可切换「◈行动 / ◎对话 / ◆私聊旁白」三种模式" },
+        { t: "sys", text: "  ▸ 对话模式：只跟房间里的人说话，不移动、不消耗回合；私聊旁白：直接找旁白聊天，同样不消耗回合" },
+        { t: "sys", text: "  ▸ 完整玩法说明见右上角 ⚙ 设置 →「玩法说明」" },
+      ]);
+    }
     return localLines([
       { t: "sys", text: "── 命令列表 ──" },
       { t: "sys", text: "  look/l        查看房间" },
@@ -68,7 +75,7 @@ export function parseLocalCommand(text, state = {}) {
     ]);
   }
 
-  if (normalized === "hp" || normalized === "状态") {
+  if (surface === "cli" && (normalized === "hp" || normalized === "状态")) {
     const { effectiveSpecialNow, maxHpNow, activeBuffs } = selectEffectiveStats(state);
     const special = state.char?.special || {};
     const sevenDimLine = Object.entries(special).map(([key, value]) => {
@@ -90,7 +97,7 @@ export function parseLocalCommand(text, state = {}) {
     ]);
   }
 
-  if (normalized === "i" || normalized === "背包" || normalized === "inventory") {
+  if (surface === "cli" && (normalized === "i" || normalized === "背包" || normalized === "inventory")) {
     const inv = state.inv || [];
     return localLines([
       { t: "sys", text: "── 包袱 ──" },
@@ -103,7 +110,7 @@ export function parseLocalCommand(text, state = {}) {
     ]);
   }
 
-  if (normalized === "skills" || normalized === "武功" || normalized === "武学") {
+  if (surface === "cli" && (normalized === "skills" || normalized === "武功" || normalized === "武学")) {
     return localLines([
       { t: "sys", text: "── 武学 ──" },
       ...(state.skills || []).map((skill) => ({
@@ -113,7 +120,7 @@ export function parseLocalCommand(text, state = {}) {
     ]);
   }
 
-  if (normalized === "eq" || normalized === "装备") {
+  if (surface === "cli" && (normalized === "eq" || normalized === "装备")) {
     const categories = [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY];
     return localLines([
       { t: "sys", text: "── 装备 ──" },
@@ -130,7 +137,10 @@ export function parseLocalCommand(text, state = {}) {
   }
 
   const intent = classifyIntent(command);
-  if ((ROOM_LOOK_COMMANDS.has(normalized) || intent.code === "LOOK") && QUCUO_MAP[state.room?.name]) {
+  const isRoomLook = surface === "cli"
+    ? ROOM_LOOK_COMMANDS.has(normalized) || intent.code === "LOOK"
+    : intent.code === "LOOK";
+  if (isRoomLook && QUCUO_MAP[state.room?.name]) {
     const lookText = getLookText(state.room.name, Math.floor(state.time / 24));
     if (!lookText) return null;
     return {
