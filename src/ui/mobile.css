@@ -357,6 +357,16 @@
     padding: 4px 0 0 !important;
   }
 
+  .mobile-trading-tabs-building {
+    display: flex !important;
+    flex: 0 0 52px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 8px !important;
+    padding: 4px 12px 8px !important;
+  }
+
   .mobile-trading-tabs-desktop {
     display: none !important;
   }
