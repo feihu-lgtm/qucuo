@@ -1,0 +1,5 @@
+:new
+:set time=23
+:set inv=[{"name":"溪边小屋钥匙"},{"name":"银灰色钥匙"},{"name":"雪山派令牌钥匙"},{"name":"衔尾蛇门环"}]
+:set flags=["tutorial_estate_started"]
+:save estate-queue.json

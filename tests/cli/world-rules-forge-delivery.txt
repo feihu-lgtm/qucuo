@@ -1,0 +1,6 @@
+:new
+:set time=23
+:set flags=["forge_pending_0_5_-"]
+:set inv=[{"name":"溪边小屋钥匙"}]
+:set innerRoomName="溪边小屋"
+:save world-rules-forge.json

@@ -168,6 +168,59 @@ describe("CLI scripts", () => {
     expect(first.residents).toContain("才旦");
   });
 
+  it("runs batch-two quest-flag and narrator world rules in the CLI", async () => {
+    const fixture = readFileSync(join(scriptsDir, "world-rules-batch2.txt"), "utf8");
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir, seed: 42 });
+    let failures = 0;
+    for (const line of fixture.split(/\r?\n/)) failures += await session.runLine(line);
+
+    const state = session.store.getState();
+    expect(failures, output.join("\n")).toBe(0);
+    expect(state.questProgress.zhaxi_line.status).toBe("active");
+    expect(state.narrator.stage).toBe("sea_crashed");
+    expect(state.varTree.世界.旁白.villaEntered).toBe(true);
+  });
+
+  it("serializes estate narration turns when the first reply fails", async () => {
+    const fixture = readFileSync(join(scriptsDir, "world-rules-estate-queue.txt"), "utf8");
+    const replies = JSON.parse(readFileSync(join(scriptsDir, "world-rules-estate-queue-replies.json"), "utf8"));
+    const output = [];
+    const failures = await runScript(fixture, {
+      out: (text) => output.push(text),
+      cwd: tempDir,
+      ai: createMockAi(replies),
+    });
+    const saved = JSON.parse(readFileSync(join(tempDir, "estate-queue.json"), "utf8"));
+
+    expect(failures, output.join("\n")).toBe(0);
+    expect(output.join("\n")).toContain("AI reply format is invalid");
+    expect(saved.time).toBe(24);
+    expect(saved.flags).toContain("tutorial_estate_announced");
+    expect(saved.flags).toContain("tutorial_estate_rewarded");
+    expect(saved.questProgress.tutorial_four_estates.status).toBe("completed");
+    expect(saved.inv.filter((item) => item.name === "土司礼服")).toHaveLength(1);
+  });
+
+  it("rechecks world rules after a tutorial settle before the next command saves", async () => {
+    const fixture = readFileSync(join(scriptsDir, "world-rules-forge-delivery.txt"), "utf8");
+    const replies = JSON.parse(readFileSync(join(scriptsDir, "world-rules-forge-delivery-replies.json"), "utf8"));
+    const output = [];
+    const failures = await runScript(fixture, {
+      out: (text) => output.push(text),
+      cwd: tempDir,
+      ai: createMockAi(replies),
+    });
+    const saved = JSON.parse(readFileSync(join(tempDir, "world-rules-forge.json"), "utf8"));
+
+    expect(failures, output.join("\n")).toBe(0);
+    expect(saved.time).toBe(24);
+    expect(saved.flags).not.toContain("forge_pending_0_5_-");
+    expect(saved.inv).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "定制长剑", quality: "蓝" }),
+    ]));
+  });
+
   it("loads legacy in-flight pigeon letters from a save", async () => {
     const session = createSession({ out: () => {}, cwd: tempDir });
     const legacyLetter = {

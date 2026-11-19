@@ -17,6 +17,23 @@ import { getActivePreset } from "../src/presetSystem.js";
 import { startTrace } from "../src/actionTrace.js";
 import { playTurn } from "../src/engine/playTurn.js";
 import { createWorldRules } from "../src/engine/worldRules.js";
+import { derivedMovesetRule } from "../src/features/skills/rules.js";
+import {
+  alreadySatisfiedCollectRule,
+  collectGroundItemsRule,
+  estateAnnouncementRule,
+  estateProgressRule,
+  estateStartRule,
+  escortArrivalRule,
+  questFlagRule,
+} from "../src/features/quest/rules.js";
+import {
+  finishTokyoReturn,
+  portalOpenedRule,
+  scheduleTokyoReturnRule,
+  villaArrivalRule,
+  xuannuTriggerRule,
+} from "../src/features/narrator/rules.js";
 import { applyResult } from "../src/features/run.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
@@ -38,7 +55,6 @@ import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../src/
 import * as importedRegistry from "../src/cards/importedRegistry.js";
 import { timeAdvanceRule } from "../src/features/time/rules.js";
 import { residentNpcRule } from "../src/features/npc/rules.js";
-import { collectGroundItemsRule } from "../src/features/quest/rules.js";
 import { innerGroundItemsRule } from "../src/features/map/rules.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
@@ -126,6 +142,22 @@ function parsePositiveInteger(value) {
 export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, ai, apiCfg: apiCfgOverrides } = {}) {
   const emit = typeof out === "function" ? out : (text) => out.write(`${text}\n`);
   let pendingTurn = Promise.resolve(0);
+  let pendingTurnCount = 0;
+  let tokyoReturnTimer = null;
+  const cancelTokyoReturn = () => {
+    if (tokyoReturnTimer) clearTimeout(tokyoReturnTimer);
+    tokyoReturnTimer = null;
+  };
+  const scheduleTokyoReturn = ({ back, label }) => {
+    cancelTokyoReturn();
+    tokyoReturnTimer = setTimeout(() => {
+      tokyoReturnTimer = null;
+      if (gameStore.getState().room?.name !== "第三新东京市") return;
+      const { result, innerRoomName } = finishTokyoReturn(back, label);
+      applyResult(featureCtx, result);
+      if (innerRoomName !== undefined) setTimeout(() => gameActions.setInnerRoomName(innerRoomName), 0);
+    }, 3500);
+  };
   const featureCtx = {
     addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
     jotNote: () => {},
@@ -137,7 +169,10 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       }
     },
     act: (text, extraReplies, opts) => {
-      pendingTurn = runFreeText(text, { ...(opts || {}), extraReplies: extraReplies || [] });
+      pendingTurnCount += 1;
+      pendingTurn = pendingTurn.then(() => (
+        runFreeText(text, { ...(opts || {}), extraReplies: extraReplies || [] })
+      ));
       return pendingTurn;
     },
   };
@@ -373,6 +408,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     applyResult(featureCtx, result);
     const status = await pendingTurn;
     pendingTurn = Promise.resolve(0);
+    pendingTurnCount = 0;
     const nextState = gameStore.getState();
     if (nextState.time > previousTime) {
       recordPigeonLocations();
@@ -386,6 +422,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     if (!line || line.startsWith("#")) return 0;
 
     pendingTurn = Promise.resolve(0);
+    pendingTurnCount = 0;
 
     if (/^:seed(?:\s|$)/.test(line)) {
       seed = parseSeed(line.slice(5).trim());
@@ -669,11 +706,21 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
   }
 
   async function runLine(rawLine) {
+    let status = 0;
     try {
-      return await runLineCommand(rawLine);
+      status = await runLineCommand(rawLine);
     } finally {
-      worldRules?.check();
+      for (let pass = 0; pass < 5; pass += 1) {
+        worldRules?.check();
+        if (!pendingTurnCount) break;
+        const ruleStatus = await pendingTurn;
+        pendingTurn = Promise.resolve(0);
+        pendingTurnCount = 0;
+        if (status === 0 && ruleStatus) status = ruleStatus;
+        if (pass === 4) console.warn("CLI world-rule settle loop reached five passes.");
+      }
     }
+    return status;
   }
 
   session = {
@@ -689,6 +736,17 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     residentNpcRule,
     collectGroundItemsRule,
     innerGroundItemsRule,
+    derivedMovesetRule,
+    alreadySatisfiedCollectRule,
+    escortArrivalRule,
+    questFlagRule,
+    estateStartRule,
+    estateAnnouncementRule,
+    estateProgressRule,
+    xuannuTriggerRule,
+    villaArrivalRule,
+    portalOpenedRule,
+    scheduleTokyoReturnRule,
   ], {
     getState: () => ({
       ...gameStore.getState(),
@@ -699,6 +757,10 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       get companionState() {
         return gameStore.getState().companionState;
       },
+      getSeaReturn: () => null,
+      cancelTokyoReturn,
+      scheduleTokyoReturn,
+      getNow: () => Date.now(),
     },
     applyResult: (result) => {
       if (result.forcedDuelNpc) session.forcedDuelNpc = result.forcedDuelNpc;
