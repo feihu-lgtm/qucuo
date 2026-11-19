@@ -7,6 +7,7 @@ import React from "react";
 import { QUALITY_COLOR, discountedBuyPrice } from "../../domain/economy/equipment.js";
 
 export default function TradingScreen({ shopName, shopItems, playerInv, playerMoney, playerWit = 5, onBuy, onSell, onClose, zoneTheme, inline, onInspect,
+  headerContent,
   // 货币名。雪山派门派商坊用功德（QUCUO_SHOPS 里 currency:"karma"），调用方
   // 传进来的 playerMoney 与各件的 buyPrice 都是功德值——但此前本组件五处
   // 都把单位写死成"银两/两"，于是界面显示「银两：37 两」，玩家一对自己的实际
@@ -31,6 +32,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
     <div className="mobile-trading-root" style={outer}>
       <div className="mobile-trading-panel" style={inner}>
         <div className="mobile-trading-header" style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          {headerContent}
           <div style={{ fontSize: 14, color: zoneTheme.text || "var(--text)" }}>{shopName || "交易"}</div>
           <div style={{ fontSize: 12, color: "#e8c468" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
           <span className="mobile-overlay-close mobile-only-close" onClick={onClose} aria-label="关闭交易">×</span>

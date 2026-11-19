@@ -218,10 +218,25 @@ export default function CenterPanel({
                 const shopData = rollShopStock(activeBuilding.shopKey, time) || buildShopInventory(activeBuilding.shopKey);
                 if (!shopData) return null;
                 const isKarma = shopData.currency === "karma";
+                const isJade = activeBuilding.craft === "jade";
+                const tab = (key, label) => (
+                  <span key={key} className="mobile-touch-target" onClick={() => setCraftTab(key)}
+                    style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
+                      color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
+                      background: craftTab === key ? zoneTheme.accent : "transparent",
+                      border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}` }}>{label}</span>
+                );
+                const tabs = (className) => (
+                  <div className={className} style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
+                    {tab("shop", "现货")}
+                    {tab("craft", isJade ? "玉器定制" : "拿料定制")}
+                  </div>
+                );
                 const trading = (
                   <TradingScreen inline shopName={shopData.shopName} shopItems={shopData.items}
                     playerInv={inv} playerMoney={isKarma ? (dao.karma || 0) : (char.money || 0)}
                     currencyName={isKarma ? "功德" : "银两"} currencyUnit={isKarma ? "点" : "两"} canSell={!isKarma}
+                    headerContent={activeBuilding.craft ? tabs("mobile-trading-tabs-header") : null}
                     playerWit={effectiveSpecialNow?.智谋 ?? 5}
                     zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onInspect={inspectItem}
                     onBuy={(item) => { if (isKarma) { if ((dao.karma||0)<item.buyPrice) return; setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((char.money||0)<item.buyPrice) return; setChar(c=>({...c,money:c.money-item.buyPrice})); if (shopData.karmaLoss) setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); }}
@@ -231,20 +246,9 @@ export default function CenterPanel({
                 // 不带定制的铺子：只渲染现货商店（绝大多数）。
                 if (!activeBuilding.craft) return trading;
                 // 带定制的铺子（孟记铁铺=forge / 玉器轩=jade）：现货/定制 页签切换。
-                const isJade = activeBuilding.craft === "jade";
-                const tab = (key, label) => (
-                  <span key={key} onClick={() => setCraftTab(key)}
-                    style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
-                      color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
-                      background: craftTab === key ? zoneTheme.accent : "transparent",
-                      border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}` }}>{label}</span>
-                );
                 return (
                   <>
-                    <div style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
-                      {tab("shop", "现货")}
-                      {tab("craft", isJade ? "玉器定制" : "拿料定制")}
-                    </div>
+                    {tabs("mobile-trading-tabs-desktop")}
                     {craftTab === "shop" ? trading : (isJade
                       ? <JadeShopScreen building={{ ...activeBuilding, flags }} char={char} inv={inv} time={time} inline
                           zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onDesign={handleJadeDesign} onCraft={handleJadeCraft} />

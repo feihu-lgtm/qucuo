@@ -293,11 +293,32 @@
     overflow: hidden;
   }
 
+  .mobile-trading-tabs-header {
+    display: none;
+  }
+
+  .mobile-trading-tabs-desktop {
+    display: flex;
+  }
+
   .mobile-trading-header {
     flex-wrap: wrap;
     gap: 8px;
     min-height: 44px;
     padding: 8px 12px !important;
+  }
+
+  .mobile-trading-tabs-header {
+    display: flex !important;
+    flex: 0 0 100%;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 8px !important;
+    padding: 4px 0 0 !important;
+  }
+
+  .mobile-trading-tabs-desktop {
+    display: none !important;
   }
 
   .mobile-trading-root .mobile-trading-content {
