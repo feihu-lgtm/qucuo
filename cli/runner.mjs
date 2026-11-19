@@ -28,7 +28,7 @@ import {
   stealFromNpc,
   talkToNpc,
 } from "../src/features/npc/logic.js";
-import { hasInnerMap, isNpcVisibleInInnerRoom } from "../src/innerMap.js";
+import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../src/innerMap.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -400,6 +400,18 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       return 0;
     }
 
+    if (line.startsWith(":mapcache ")) {
+      const cache = JSON.parse(line.slice(":mapcache".length).trim());
+      if (!cache || typeof cache !== "object" || Array.isArray(cache)) {
+        throw new Error(":mapcache expects a JSON object");
+      }
+      session.roomMap = cache.roomMap && typeof cache.roomMap === "object" && !Array.isArray(cache.roomMap)
+        ? cache.roomMap
+        : {};
+      loadSquares(cache.squares && typeof cache.squares === "object" ? cache.squares : {});
+      return 0;
+    }
+
     if (line.startsWith(":set ")) {
       const { path, value } = parseAssignment(line.slice(5));
       const [key, ...nestedPath] = path;
@@ -423,6 +435,10 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     }
 
     const state = gameStore.getState();
+    if (!state?.room?.name) {
+      emit("尚未开始游戏，请先执行 :new 或 :load 初始化游戏。");
+      return 1;
+    }
     const visibleNpcs = (state.room?.npcs || []).filter((npc) => (
       isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)
     ));
@@ -452,7 +468,11 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
             squares: serializeSquares(),
             command: line,
           });
-          if (arrival?.cached) return await applyFeature(arrival);
+          if (arrival?.cached) {
+            const status = await applyFeature(arrival);
+            gameActions.setInnerRoomName(hasInnerMap(destName) ? getDistrictAnchor(destName) : null);
+            return status;
+          }
           if (arrival) applyResult(featureCtx, arrival);
         }
       }

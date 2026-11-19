@@ -65,15 +65,6 @@ describe("CLI scripts", () => {
   it("moves between cached outer squares and restores the room after save/load", async () => {
     const output = [];
     const session = createSession({ out: (text) => output.push(text), cwd: tempDir });
-    await session.runLine(":new");
-    session.roomMap = {
-      鱼定村: { npcs: [], items: [] },
-      雅江: { npcs: [], items: [] },
-    };
-    loadSquares({
-      鱼定村: { day: 0, desc: "鱼定村缓存", item: null, encounter: null, burned: false },
-      雅江: { day: 0, desc: "雅江缓存", item: null, encounter: null, burned: false },
-    });
 
     let failures = 0;
     const fixture = readFileSync(join(scriptsDir, "outer-arrival.txt"), "utf8");
@@ -82,12 +73,22 @@ describe("CLI scripts", () => {
     }
 
     expect(failures, output.join("\n")).toBe(0);
-    expect(session.store.getState().room.name).toBe("雅江");
+    expect(session.store.getState().room.name).toBe("鱼定村");
     expect(session.roomMap).toEqual({
+      大草甸: { npcs: [], items: [] },
       鱼定村: { npcs: [], items: [] },
-      雅江: { npcs: [], items: [] },
     });
-    expect(serializeSquares().雅江).toMatchObject({ day: 0, desc: "雅江缓存" });
+    expect(serializeSquares().鱼定村).toMatchObject({ day: 0, desc: "鱼定村缓存" });
+    expect(session.store.getState().innerRoomName).toBe("歇马居");
+  });
+
+  it("prints initialization guidance instead of throwing when movement has no room", async () => {
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir });
+    await session.runLine(":set room=null");
+
+    expect(await session.runLine("走 东")).toBe(1);
+    expect(output.join("\n")).toContain("尚未开始游戏，请先执行 :new 或 :load 初始化游戏。");
   });
 
   it("runs a script with sibling replies using the default mock AI", () => {
