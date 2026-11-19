@@ -3,23 +3,17 @@ import { getRecentErrors } from "./errorBuffer.js";
 import { getTraceLog } from "./actionTrace.js";
 import { getPipelineLog, loadConfig } from "./apiConfig.js";
 import { loadAutoSave } from "./saves.js";
+import { collectConfigValues, scrubString, setScrubbedProperty } from "./textRedaction.js";
 import { CURRENT_VERSION } from "./version.js";
 
 export const MAX_DEBUG_BUNDLE_BYTES = 1.5 * 1024 * 1024;
 
 const SECRET_KEY = /api[-_]?key|token|secret|password|authorization|cookie/i;
-const CONFIG_VALUE_KEY = /key$|token|secret|password|authorization|cookie|endpoint|base[-_]?url|proxy/i;
 const EMPTY_SOURCES = Object.freeze({});
 
 function serialize(value, secrets, seen = new WeakSet()) {
   try {
-    if (typeof value === "string") {
-      let result = value
-        .replace(/sk-[A-Za-z0-9]{16,}/g, "[REDACTED]")
-        .replace(/Bearer\s+\S+/gi, "[REDACTED]");
-      for (const secret of secrets) result = result.split(secret).join("[REDACTED]");
-      return result;
-    }
+    if (typeof value === "string") return scrubString(value, secrets);
     if (value == null || typeof value === "number" || typeof value === "boolean") return value;
     if (typeof value === "bigint") return String(value);
     if (typeof value === "function") return `[Function ${value.name || "anonymous"}]`;
@@ -37,9 +31,9 @@ function serialize(value, secrets, seen = new WeakSet()) {
     for (const key of Object.keys(value)) {
       if (SECRET_KEY.test(key)) continue;
       try {
-      result[key] = serialize(value[key], secrets, seen);
+        setScrubbedProperty(result, key, serialize(value[key], secrets, seen), secrets);
       } catch {
-        result[key] = "[Unreadable]";
+        setScrubbedProperty(result, key, "[Unreadable]", secrets);
       }
     }
     seen.delete(value);
@@ -47,26 +41,6 @@ function serialize(value, secrets, seen = new WeakSet()) {
   } catch {
     return "[Unreadable]";
   }
-}
-
-function collectConfigValues(config) {
-  const values = [];
-  const seen = new WeakSet();
-  const visit = (value, key = "") => {
-    if (typeof value === "string") {
-      if (CONFIG_VALUE_KEY.test(key) && value.length >= 8 && !/^https?:\/\/$/i.test(value)) values.push(value);
-      return;
-    }
-    if (!value || typeof value !== "object" || seen.has(value)) return;
-    seen.add(value);
-    if (Array.isArray(value)) {
-      for (const item of value) visit(item, key);
-    } else {
-      for (const [childKey, child] of Object.entries(value)) visit(child, childKey);
-    }
-  };
-  try { visit(config); } catch { /* a hostile config object is simply not used for redaction */ }
-  return [...new Set(values)].sort((a, b) => b.length - a.length);
 }
 
 export function redact(value, apiConfig = null) {
@@ -116,21 +90,26 @@ function configString(config, keys) {
   return "";
 }
 
-function safeConfigLabel(value) {
-  return typeof value === "string"
-    ? value.replace(/sk-[A-Za-z0-9]{16,}/g, "[REDACTED]").replace(/Bearer\s+\S+/gi, "[REDACTED]")
-    : "";
+function textSize(text) {
+  return typeof TextEncoder === "function"
+    ? new TextEncoder().encode(text).length
+    : text.length;
 }
 
 function serializedSize(value) {
-  const json = JSON.stringify(value);
-  return typeof TextEncoder === "function"
-    ? new TextEncoder().encode(json).length
-    : json.length;
+  return textSize(JSON.stringify(value));
+}
+
+function formattedDebugBundle(bundle) {
+  return JSON.stringify(bundle, null, 2);
 }
 
 export function getDebugBundleSize(bundle) {
   try { return serializedSize(bundle); } catch { return 0; }
+}
+
+export function getDebugBundleDownloadSize(bundle) {
+  try { return textSize(formattedDebugBundle(bundle)); } catch { return 0; }
 }
 
 export function buildDebugBundle(sources = EMPTY_SOURCES) {
@@ -171,8 +150,8 @@ export function buildDebugBundle(sources = EMPTY_SOURCES) {
 
   const configValues = collectConfigValues(apiConfig);
   const redacted = serialize(bundle, configValues);
-  redacted.model = safeConfigLabel(bundle.model);
-  redacted.providerHost = safeConfigLabel(bundle.providerHost);
+  redacted.model = scrubString(bundle.model, configValues);
+  redacted.providerHost = scrubString(bundle.providerHost, configValues);
   if (redacted.save && typeof redacted.save === "object" && !Array.isArray(redacted.save)) {
     delete redacted.save.log;
     delete redacted.save.convo;
@@ -212,7 +191,7 @@ function timestampForFilename(date) {
 export function downloadDebugBundle(bundle) {
   const version = String(bundle?.version || "unknown").replace(/[^A-Za-z0-9._-]+/g, "_");
   const filename = `qucuo-debug-${version}-${timestampForFilename(new Date())}.json`;
-  const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+  const blob = new Blob([formattedDebugBundle(bundle)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;

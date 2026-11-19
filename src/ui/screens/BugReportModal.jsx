@@ -8,7 +8,7 @@
 // getPayload 由调用方注入（游戏内能带上对话/日志/状态；开始页只有纯文字反馈）。
 
 import React, { useMemo, useState } from "react";
-import { downloadDebugBundle, getDebugBundleSize, redact } from "../../infra/debugBundle.js";
+import { downloadDebugBundle, getDebugBundleDownloadSize, redact } from "../../infra/debugBundle.js";
 import { submitBugReport } from "../../infra/bugReport.js";
 import { CURRENT_VERSION } from "../../infra/version.js";
 import { buildModalDebugBundle, getSelectedBugReportTurns } from "./bugReportDebugBundle.js";
@@ -54,10 +54,8 @@ export default function BugReportModal({
     () => buildModalDebugBundle(debugSources, turns, selectedTurns, includePipeline),
     [debugSources, turns, selectedTurns, includePipeline],
   );
-  const debugBundleSize = getDebugBundleSize(debugBundle);
-  const formattedBundleSize = debugBundleSize >= 1024 * 1024
-    ? `${(debugBundleSize / (1024 * 1024)).toFixed(2)} MB`
-    : `${(debugBundleSize / 1024).toFixed(1)} KB`;
+  const debugBundleSize = getDebugBundleDownloadSize(debugBundle);
+  const formattedBundleSize = `${(debugBundleSize / 1024).toFixed(1)} KB`;
 
   const toggleTurn = (i) => setSelectedTurns(prev => {
     const next = new Set(prev);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDebugBundle,
+  getDebugBundleDownloadSize,
   getDebugBundleSize,
   MAX_DEBUG_BUNDLE_BYTES,
   redact,
@@ -23,6 +24,32 @@ describe("debug bundle redaction", () => {
     expect(result).toEqual({
       nested: { safe: "[REDACTED] [REDACTED] [REDACTED] [REDACTED]" },
     });
+  });
+
+  it("scrubs secrets in nested property names and suffixes redaction collisions", () => {
+    const apiKey = "cfg-value-123456";
+    const endpoint = "https://private.example/v1/chat";
+    const result = redact({
+      nested: {
+        [apiKey]: "configured",
+        "sk-abcdefghijklmnop": "key pattern",
+        "Bearer private-value": "entry value",
+        [endpoint]: "endpoint",
+        "[REDACTED]": "existing redacted key",
+      },
+    }, { apiKey, endpoint });
+
+    expect(result.nested).toEqual({
+      "[REDACTED]": "configured",
+      "[REDACTED]#2": "key pattern",
+      "[REDACTED]#3": "entry value",
+      "[REDACTED]#4": "endpoint",
+      "[REDACTED]#5": "existing redacted key",
+    });
+    const serialized = JSON.stringify(result);
+    for (const secret of [apiKey, endpoint, "sk-abcdefghijklmnop", "Bearer private-value"]) {
+      expect(serialized).not.toContain(secret);
+    }
   });
 
   it("does not globally scrub short configured values or a bare URL scheme", () => {
@@ -110,6 +137,14 @@ describe("debug bundle redaction", () => {
       save: true,
     });
     expect(bundle.truncated.overLimit).toBeUndefined();
+  });
+
+  it("measures the pretty-printed JSON used by the download", () => {
+    const bundle = { version: "test", nested: { text: "你好，江湖" } };
+    const downloadedJson = JSON.stringify(bundle, null, 2);
+
+    expect(getDebugBundleDownloadSize(bundle)).toBe(new TextEncoder().encode(downloadedJson).length);
+    expect(getDebugBundleDownloadSize(bundle)).toBeGreaterThan(getDebugBundleSize(bundle));
   });
 
   it("drops oldest traces, then pipeline calls, then log entries to meet the byte cap", () => {
