@@ -1,0 +1,7 @@
+:new
+:set flags=["quest_zhaxi_s1"]
+:expect questProgress.zhaxi_line.status="active"
+:set room.name="心灵之海"
+:set innerRoomName="白色别墅"
+:expect narrator.stage="sea_crashed"
+:expect varTree.世界.旁白.villaEntered=true

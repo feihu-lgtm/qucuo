@@ -11,8 +11,24 @@ import { applyResult } from "./features/run.js";
 import { createCoalescedCheck, createWorldRules } from "./engine/worldRules.js";
 import { timeAdvanceRule } from "./features/time/rules.js";
 import { residentNpcRule } from "./features/npc/rules.js";
-import { collectGroundItemsRule } from "./features/quest/rules.js";
+import {
+  alreadySatisfiedCollectRule,
+  collectGroundItemsRule,
+  estateAnnouncementRule,
+  estateProgressRule,
+  estateStartRule,
+  escortArrivalRule,
+  questFlagRule,
+} from "./features/quest/rules.js";
 import { innerGroundItemsRule } from "./features/map/rules.js";
+import { derivedMovesetRule } from "./features/skills/rules.js";
+import {
+  finishTokyoReturn,
+  portalOpenedRule,
+  scheduleTokyoReturnRule,
+  villaArrivalRule,
+  xuannuTriggerRule,
+} from "./features/narrator/rules.js";
 import {
   breakthroughSkill as breakthroughSkillLogic,
   meditate as meditateLogic,
@@ -131,7 +147,7 @@ import { getCachedInspect, setCachedInspect } from "./inspectCache.js";
 import { classifyIntent, buildBudgetInstruction, INTENT } from "./inputIntent.js";
 import NpcActionMenu from "./NpcActionMenu.jsx";
 import ItemActionMenu from "./ItemActionMenu.jsx";
-import { ensureNpcCombatData, generateNpcMoveset, MOVE_POOL, deriveMovesetFromSkills, hpFromNeigong } from "./npcGeneration.js";
+import { ensureNpcCombatData, generateNpcMoveset, MOVE_POOL, hpFromNeigong } from "./npcGeneration.js";
 import { detectNewFaces, markAsSeen, markNpcAsKnown, isNpcKnown, detectReunions, buildReunionBlock, updateLastSeen, REUNION_GAP_THRESHOLD } from "./npcAwareness.js";
 import TradingScreen from "./TradingScreen.jsx";
 import { recordRumoredNpcs, findTargetedRumor, clearRumor } from "./npcEmergence.js";
@@ -148,7 +164,7 @@ import { initKeyItemTracking, transferKeyItem, getKeyItemState } from "./quests/
 import { resolveStageRewards, applyStageRewards } from "./quests/questRewards.js";
   // runQuestPromptHarness 已并入主叙事（act 的 forcedEvent 参数），不再单独调用；
   // quests/questHarness.js 文件暂留作参考，不再引用。
-import { detectCollectPickup, allCollected, alreadySatisfiedCollectStages, collectPromptLines } from "./quests/collect.js";
+import { detectCollectPickup, allCollected, collectPromptLines } from "./quests/collect.js";
 import { MOVE_TYPE } from "./combat/moveTypes.js";
 import DuelScreen from "./DuelScreen.jsx";
 import TeamDuelScreen from "./TeamDuelScreen.jsx";
@@ -162,7 +178,7 @@ import { buildDaySummaryRequest, appendDaySummary, buildDistantViewBlock } from 
 import { embeddingReady } from "./memory/embeddingService.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "./worldbook.js";
 import { buildExtractionCfg, forgeDesign } from "./extractionEngine.js";
-import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, unlockAsuka, setActiveCompanion, unlockedCompanions, unlockImportedCompanion } from "./companion.js";
+import { initCompanionState, setSnowLeopardActive, isSnowLeopardAvailable, setActiveCompanion, unlockedCompanions, unlockImportedCompanion } from "./companion.js";
 import InnScreen from "./buildings/InnScreen.jsx";
 import WuguanScreen from "./buildings/WuguanScreen.jsx";
 import GamblingScreen from "./buildings/GamblingScreen.jsx";
@@ -181,16 +197,15 @@ import JadeShopScreen from "./buildings/JadeShopScreen.jsx";
 import GambleStoneScreen from "./buildings/GambleStoneScreen.jsx";
 import { settleNegotiation as gambleSettleNegotiation, JADE_TIERS, CHANG_KOU } from "./gambleStone.js";
 import TeahouseScreen from "./buildings/TeahouseScreen.jsx";
-import { invHasItemNamed, SAFE_HOUSES, ownedSafeHouseKeys, makeTusiRobe } from "./safeHouse.js";
+import { invHasItemNamed } from "./safeHouse.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部：此前 15 个写入方各写一遍，
 // 连着两个 bug 都是"谁都能改、改的时候顺手把别人写的冲掉"）
 import { injectNpcs, materializeNpc, removeNpc } from "./roomNpcs.js";
 import { tallyAdd, describeTodayForAI, describeDayForSummary, describeTallyForWhisper } from "./memory/tally.js";
 import { SECT_ENTRY, checkSectEntry } from "./sectEntry.js";
-import { SEA_OF_MIND, shouldTriggerXuannu, buildXuannuScene, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
+import { SEA_OF_MIND, canEnterSea, describeSeaGate, seaEntryHint } from "./seaOfMind.js";
 import {
-  COMFORT_ACTIONS, SCENE_ARRIVE, SCENE_VILLA, SCENE_RESOLVE,
-  SCENE_PORTAL_OPEN, SCENE_TOKYO, SCENE_RETURN,
+  COMFORT_ACTIONS, SCENE_ARRIVE, SCENE_RESOLVE,
   canComfort, describeComfortReject, comfortResponse, defenseLevelOf,
   availableKnot, canResolve, looksLikePromise, seaDialoguePrompt,
 } from "./narratorQuest.js";
@@ -700,21 +715,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   useEffect(() => { if (!loading) inputRef.current?.focus(); }, [loading]);
   useEffect(() => { roomMapRef.current[room.name] = { items: [...room.items], npcs: [...room.npcs] }; }, [room]);
 
-  // 武学（skills）变化时，同步重算切磋招式池——升级、新学一门武学都应该
-  // 立刻反映到能打出来的招式上，不能让"三脚猫拳法"练了等级却对战斗毫无影响。
-  // 拜师学艺额外学到的技能（sourceSkill为null且不在武学派生结果里的）要保留，
-  // 不能被这次重算覆盖掉，所以是"合并"而不是"整体替换"。
-  useEffect(() => {
-    setChar(c => {
-      const derived = deriveMovesetFromSkills(skills);
-      const extraLearned = (c.moveset || []).filter(m =>
-        !derived.some(d => d.id === m.id) && m.learnedFromMaster
-      );
-      return { ...c, moveset: [...derived, ...extraLearned] };
-    });
-  }, [skills]);
-
-
   const [forcedDuelNpc, setForcedDuelNpc] = useState(null);
   const [duelingNpc, setDuelingNpc] = useState(null);
   const [duelPending, setDuelPending] = useState(null); // 邀战叙事跑完、等玩家点确认才真正开打的NPC
@@ -891,12 +891,39 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }, [time, summarizeDay, prerunSquares]);
   const worldRulesRunnerRef = useRef(null);
   useEffect(() => {
+    const cancelTokyoReturn = () => {
+      if (tokyoReturnTimerRef.current) clearTimeout(tokyoReturnTimerRef.current);
+      tokyoReturnTimerRef.current = null;
+    };
+    const scheduleTokyoReturn = ({ back, label }) => {
+      cancelTokyoReturn();
+      tokyoReturnTimerRef.current = setTimeout(() => {
+        tokyoReturnTimerRef.current = null;
+        if (gameStore.getState().room?.name !== "第三新东京市") return;
+        const { result, innerRoomName: returnInnerRoomName } = finishTokyoReturn(back, label);
+        applyResult(featureCtxRef.current, result);
+        if (returnInnerRoomName !== undefined) {
+          setTimeout(() => gameActions.setInnerRoomName(returnInnerRoomName), 0);
+        }
+      }, 3500);
+    };
     if (!worldRulesRunnerRef.current) {
       worldRulesRunnerRef.current = createWorldRules([
         timeAdvanceRule,
         residentNpcRule,
         collectGroundItemsRule,
         innerGroundItemsRule,
+        derivedMovesetRule,
+        alreadySatisfiedCollectRule,
+        escortArrivalRule,
+        questFlagRule,
+        estateStartRule,
+        estateAnnouncementRule,
+        estateProgressRule,
+        xuannuTriggerRule,
+        villaArrivalRule,
+        portalOpenedRule,
+        scheduleTokyoReturnRule,
       ], {
         getState: () => ({
           ...gameStore.getState(),
@@ -907,6 +934,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           get companionState() {
             return gameStore.getState().companionState;
           },
+          getSeaReturn: () => seaReturnRef.current,
+          cancelTokyoReturn,
+          scheduleTokyoReturn,
+          getNow: () => Date.now(),
         },
         applyResult: (result) => {
           applyResult(featureCtxRef.current, result);
@@ -922,6 +953,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       unsubscribeStore();
       unsubscribeImported();
       scheduler.dispose();
+      cancelTokyoReturn();
     };
   }, []);
 
@@ -931,111 +963,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
       setForcedDuelNpc(null);
     }
   }, [forcedDuelNpc]);
-
-  // 采集机制·跳过跑腿：某些采集节点是多条任务线共用的同一件东西（如燕羊胎既是
-  // 兰姐线辅料，又是欢喜教线的交涉条件）。若所需物已在背包（在别处已采过），
-  // 这一步就该直接算完成，不必再跑一趟——由系统裁决，不劳 AI。
-  useEffect(() => {
-    const done = alreadySatisfiedCollectStages({
-      questProgress, quests: QUCUO_QUESTS, getCurrentStage, inv,
-    });
-    if (!done.length) return;
-    const { quest, flag } = done[0]; // 一次推进一个，推进后 questProgress 变化会再触发本 effect 处理下一个
-    forceAdvanceQuest(quest, flag);
-    addLog([{ t: "affection", text: `  ✓ 采集所需之物早已在身，「${quest.title}」自动推进。` }]);
-  }, [questProgress, inv]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 护镖任务：到达目标据点时给玩家提示
-  useEffect(() => {
-    if (!room.name) return;
-    const activeEscort = ESCORT_QUESTS.find(q => {
-      const prog = questProgress[q.id];
-      return prog?.active && q.targetLocation === room.name && !flags.includes(`quest_done_${q.id}`);
-    });
-    if (activeEscort) {
-      addLog([{ t: "sys", text: `  ※ 护镖任务「${activeEscort.title}」目的地到了，在此处找到 ${activeEscort.targetNpc} 交货即可完成。` }]);
-    }
-  }, [room.name]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 多阶段任务链系统裁决层（虎胆三重门等，见总纲第七章7.1/7.2/7.4）：
-  // AI 只需要在叙事到位时通过已有的 flags_add 机制吐出对应 stage 的
-  // completionFlag 字符串，stage 推进、互斥锁定、结局判定全部交给系统状态机，
-  // 不再靠 AI 自己记住"现在第几阶段""这条线是否已经被另一条线锁死"。
-  useEffect(() => {
-    const stageQuests = QUCUO_QUESTS.filter(q => q.stages?.length);
-    if (!stageQuests.length) return;
-    const gameState = { flags, char };
-    let next = { ...questProgress };
-    let changed = false;
-    const justCompletedIds = [];
-    const pendingRewards = [];
-
-    for (const quest of stageQuests) {
-      if (!isQuestGateOpen(quest, next, flags)) continue;
-      if (quest.id === "hidden_all_collect_line" && !canBypassExclusive(gameState)) continue;
-
-      let prog = next[quest.id];
-      if (!prog) {
-        const firstFlag = quest.stages[0].completionFlag;
-        const firstFlagHit = Array.isArray(firstFlag) ? firstFlag.some(f => flags.includes(f)) : flags.includes(firstFlag);
-        if (!firstFlagHit) continue;
-        prog = createQuestProgress(quest.id);
-        changed = true;
-      }
-      if (prog.status !== "active") continue;
-
-      // 一次性把已经满足条件的连续 stage 全部推进完（防止 AI 一轮叙事里
-      // 同时带出好几个 stage 的 flag 时，系统只推进一格、卡在半路）。
-      // 每推进过一个 stage，就把它的 onReach 奖励收集起来——不只是最后一个
-      // stage 才发奖励，中途 stage 也可能带物品/好感度变化（比如村1的三选一）。
-      let advancedAny = false;
-      while (prog.status === "active") {
-        const result = advanceQuestStages(quest, prog, gameState);
-        if (!result.advanced) break;
-        prog = result.progress;
-        advancedAny = true;
-        if (result.completedStage) {
-          const rewards = resolveStageRewards(result.completedStage, result.hitFlags);
-          if (rewards) pendingRewards.push(rewards);
-        }
-        if (result.justCompleted) { justCompletedIds.push(quest.id); break; }
-      }
-      if (advancedAny) { next[quest.id] = prog; changed = true; }
-    }
-
-    for (const qid of justCompletedIds) {
-      next = lockExclusiveSiblings(next, QUCUO_QUESTS, qid);
-      changed = true;
-      const quest = stageQuests.find(q => q.id === qid);
-      addLog([{ t: "sys", text: `  ※ 任务「${quest.title}」已完成。${quest.rewardText || ""}` }]);
-    }
-    if (changed) setQuestProgress(next);
-    for (const rewards of pendingRewards) {
-      applyStageRewards(rewards, { setInv, setChar, setVarTree, setFlags });
-    }
-
-    // 关键道具（虎胆）持有者追踪——见总纲第七章7.3节，供AI/系统查表用，
-    // 不直接展示给玩家。只在明确的流转节点更新，不覆盖未涉及的部分。
-    if (justCompletedIds.length) {
-      setVarTree(vt => {
-        let nvt = initKeyItemTracking(vt);
-        if (justCompletedIds.includes("zhaxi_line")) {
-          nvt = transferKeyItem(nvt, "虎胆", "土司府", "抵税所得，库房封存", time, "扎西献虎胆抵税，管家「明年照收」");
-        }
-        return nvt;
-      });
-    } else if (flags.includes("quest_zhaxi_s3") && getKeyItemState(varTreeRef.current, "虎胆")?.holder !== "扎西") {
-      setVarTree(vt => transferKeyItem(initKeyItemTracking(vt), "虎胆", "扎西", "已猎得，尚未献出", time, "扎西在熊山猎得虎胆"));
-    } else if (flags.includes("quest_allin_s2") && getKeyItemState(varTreeRef.current, "虎胆")?.holder !== "玩家") {
-      setVarTree(vt => transferKeyItem(initKeyItemTracking(vt), "虎胆", "玩家", "夜闯土司府偷回", time, "玩家夜闯土司府偷回虎胆"));
-    }
-
-    const resolvedEnding = resolveEnding(gameState);
-    if (resolvedEnding && !flags.includes(`story_ending_${resolvedEnding}`)) {
-      setFlags(f => [...new Set([...f, `story_ending_${resolvedEnding}`])]);
-      addLog([{ t: "sys", text: `  ※ 「虎胆三重门」结局已判定：${resolvedEnding}` }]);
-    }
-  }, [flags]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const localCmd = useCallback((cmd) => {
     const c = cmd.trim().toLowerCase();
@@ -2160,7 +2087,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     // ── 采集裁决（系统层）──（判定在 act/roundNotes.js，副作用在此执行）
     // 玩家表达采集意图、且所采之物此刻真在地上时，由系统直接把物搬入背包、
     // 从地上抹去——「采没采到」不交给 AI 决定。推进则由背包变化触发的
-    // alreadySatisfiedCollectStages effect 接管（采齐才推进）。
+    // alreadySatisfiedCollectRule 接管（采齐才推进）。
     let collectNote = "";
     collectGrantedRef.current = [];
     const collectHit = judgeCollect({ isTalk, cmd, room, questProgress, inv });
@@ -2887,51 +2814,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     act(`点了${item.name}，花费${item.price}两`, [], { settle: true });
   }, [char, dao, time, addLog, act]);
 
-  // ══ 教程任务「四宅家产」：集齐四宅钥匙，送土司礼服 ══
-  // 三个触发点（端详溪边小屋钥匙 / 初次进溪边小屋 / 跟旁白聊到溪边小屋）
-  // 都只做一件事：置位 tutorial_estate_started（幂等）。开任务与推进全由
-  // 下面三个 effect 系统裁决——钥匙顺序不固定，所以推进按持有数走，不走 completionFlag。
-  useEffect(() => {
-    if (innerRoomName === "溪边小屋") setFlags(f => f.includes("tutorial_estate_started") ? f : [...f, "tutorial_estate_started"]);
-  }, [innerRoomName]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 开任务：任一触发点置位后建任务进度，主叙事播报一句"有趣的任务出现了"。
-  useEffect(() => {
-    if (!flags.includes("tutorial_estate_started")) return;
-    if (flags.includes("tutorial_estate_announced")) return;
-    setFlags(f => f.includes("tutorial_estate_announced") ? f : [...f, "tutorial_estate_announced"]);
-    setQuestProgress(prev => prev["tutorial_four_estates"] ? prev : {
-      ...prev,
-      tutorial_four_estates: {
-        ...createQuestProgress("tutorial_four_estates"),
-        currentStageIndex: Math.max(0, ownedSafeHouseKeys(inv).length - 1),
-        progress: ownedSafeHouseKeys(inv).length,
-      },
-    });
-    act("玩家摩挲着溪边小屋钥匙柄上那截褪色的红绳，忽然意识到：曲措乡境内有四栋落了锁的房子，四把钥匙散在四条路上，门后藏着无数的宝藏与秘密——一个有趣的营生浮上心头。请写一两句白话古文点拨：有个有趣的任务出现了，不妨点开任务面板看看。不要替玩家做决定。", [], { settle: true });
-  }, [flags]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 推进与完成：按背包实际持有的钥匙数同步阶段（1把→1/4 … 3把→3/4），
-  // 集齐 4 把即完成，土司礼服直接入袋（makeTusiRobe 现造，不进百物录）。
-  useEffect(() => {
-    const prog = questProgress["tutorial_four_estates"];
-    if (!prog || prog.status !== "active") return;
-    const count = ownedSafeHouseKeys(inv).length;
-    if (count >= 4) {
-      if (flags.includes("tutorial_estate_rewarded")) return;
-      setFlags(f => f.includes("tutorial_estate_rewarded") ? f : [...f, "tutorial_estate_rewarded"]);
-      setQuestProgress(prev => ({ ...prev, tutorial_four_estates: { ...prev.tutorial_four_estates, status: "completed", currentStageIndex: 4, progress: 4, completedAt: Date.now() } }));
-      setInv(prev => [...prev, makeTusiRobe()]);
-      addLog([{ t: "sys", text: "  ※ 任务「四宅家产」已完成。有人捧来一套土司礼服，放进了你的行囊。" }]);
-      act("玩家集齐了曲措乡四栋房子的钥匙——溪边小屋、山间别墅、弟子别院、蜀王庄，四份家产尽握在手。正当此时，有人捧来一套土司礼服相赠。请写两三句白话古文：四宅齐备、在曲措乡站稳脚跟的滋味，以及换上土司礼服那一刻的体面与感慨。", [], { settle: true });
-      return;
-    }
-    const idx = Math.max(0, count - 1);
-    if ((prog.currentStageIndex ?? 0) !== idx) {
-      setQuestProgress(prev => ({ ...prev, tutorial_four_estates: { ...prev.tutorial_four_estates, currentStageIndex: idx, progress: count } }));
-    }
-  }, [inv, questProgress, flags]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // 烹饪台：系统裁决（扣料/回血/挂 buff flag），叙事交给主管线写一段「小总结」。
   // dish 由 CookingScreen 算好（固定配方 computeDish / 自由组合 genericDishEffect）。
   // freestyle（妙手偶得）时菜名也由主叙事 AI 即兴起——想象归 AI、数值归系统。
@@ -3306,46 +3188,12 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
   }, []);
 
   // ── 心灵之海 · 玄女点破 ──
-  // 触发条件见 seaOfMind.shouldTriggerXuannu：好感≥90 + 已跟玄女说过话。
   // "说过话"直接复用「对话即认识」的结果（commitRound 里 talkTarget/respondedNpcs
   // 会把人标记为已认识），不另造一套"聊过没"的记账。
   // 用 effect 而不是塞进对话结算里，是因为两个条件可能任意顺序满足：先攒够好感再去
   // 见她、或先见过她后来才攒够，两条路都要能触发。
   const seaReturnRef = useRef(null); // 进海之前站在哪，出来要送回去
-  useEffect(() => {
-    if (!shouldTriggerXuannu({
-      affection: narrator.affection,
-      varTree: varTreeRef.current,
-      knownNames: varTreeRef.current.世界?.已认识人物 || [],
-    })) return;
-    setVarTree(prev => setNarratorVars(prev, { metXuannu: true, seaUnlocked: true, questStage: 1 }));
-    setFlags(f => (f.includes(SEA_OF_MIND.flag) ? f : [...f, SEA_OF_MIND.flag]));
-    addLog(buildXuannuScene(char.name || "你"));
-    jotNote({
-      text: `雪山派后山温泉，玄女说旁白"不是这里的人""她在等"，让我找个自己的地方去她心里看看。`,
-      owner: [{ name: "玄女", via: VIA.FIRSTHAND }, { name: "旁白", via: VIA.FIRSTHAND }],
-      source: NOTE_SOURCE.NARRATIVE,
-    });
-  }, [narrator.affection, varTree, char.name, addLog, jotNote]);
-
-  // ── 创伤线 · 进白色别墅触发阶段2 ──
-  // 用 effect 监听而不是塞进移动里：海内移动是纯前端的（tryInnerMove 直接 return），
-  // 挂在移动上要改动那条早已稳定的路径，不如在这儿观察"人到了没"。
-  // villaEntered 做闸门，手工剧情只播一次。
-  useEffect(() => {
-    if (room.name !== SEA_OF_MIND.district) return;
-    if (innerRoomName !== "白色别墅") return;
-    const v = narratorVars(varTreeRef.current);
-    if (v.villaEntered) return;
-    if (narrator.stage === NNPC_STAGE.RESOLVED) return; // 哄好之后重进不再发作
-    setVarTree(prev => setNarratorVars(prev, { villaEntered: true, questStage: 2 }));
-    setNarrator(n => ({ ...n, stage: NNPC_STAGE.SEA_CRASHED }));
-    addLog(SCENE_VILLA);
-    jotNote({
-      text: "在心灵之海的白色别墅里，旁白看见墙上那幅红色巨人的画，全都想起来了，蜷在沙发角落不让人看。",
-      owner: [{ name: "旁白", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE,
-    });
-  }, [room.name, innerRoomName, narrator.stage, addLog, jotNote]);
+  const tokyoReturnTimerRef = useRef(null);
 
   // ── 创伤线 · 安抚 ──
   // 五个动作全走这一个入口。计分与门槛判定都在 narratorQuest（纯函数），
@@ -3389,53 +3237,6 @@ ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一�
     const label = key ? (key === "asuka" ? "明日香" : "雪豹") : null;
     addLog([{ t: "sys", text: label ? `  （${label}跟上了。）` : "  （让他们都留守了。）" }]);
   }, [addLog]);
-
-  // ── 终章 · 传送门开启 ──
-  // 心结尽解后再回心灵之海，地下室那道裂缝就开了。写 flag 让地下室房间解锁
-  // （innerMap 里它挂着 unlockCondition: {type:"flag", flag:"传送门已开"}）。
-  useEffect(() => {
-    if (room.name !== SEA_OF_MIND.district) return;
-    const v = narratorVars(varTreeRef.current);
-    if (!v.traumaResolved) return;
-    if (v.portalOpened) return;
-    setVarTree(prev => setNarratorVars(prev, { portalOpened: true, questStage: 5 }));
-    setFlags(f => (f.includes("传送门已开") ? f : [...f, "传送门已开"]));
-    addLog(SCENE_PORTAL_OPEN);
-    // deps 必须带 narrator.stage：玩家通常是**在海里**哄好她的，那一刻 room.name
-    // 没有变化，只有 stage 从 SEA_CRASHED 变成 RESOLVED。此前 deps 只有 room.name，
-    // effect 不会重跑 → 门不开，玩家得先离开心灵之海再进来一次才触发，
-    // 而剧情上她刚说完"你居然真的没走"，这时候让玩家出去再进来非常出戏。
-  }, [room.name, narrator.stage, addLog]);
-
-  // ── 终章 · 东京见证 → 自动回小屋 + 入队 ──
-  // 这一段是见证不是探索：进去、看完、送回家。不给第二次机会。
-  // 送回的目标用 seaReturnRef（玩家闭眼那间屋子）；万一丢了就退回鱼定村。
-  useEffect(() => {
-    if (room.name !== "第三新东京市") return;
-    const v = narratorVars(varTreeRef.current);
-    if (v.tokyoVisited) return;
-    setVarTree(prev => setNarratorVars(prev, { tokyoVisited: true, questStage: 6 }));
-    addLog(SCENE_TOKYO);
-    // 让玩家把那段读完再送走。3.5 秒不是"动画时长"，是给一个换气的停顿——
-    // 立刻切场景会把おめでとう那一下压掉。
-    const back = seaReturnRef.current || { room: "鱼定村", inner: "溪边小屋" };
-    const label = SAFE_HOUSES.find(h => h.room === back.inner)?.label || back.inner || back.room;
-    const timer = setTimeout(() => {
-      const node = QUCUO_MAP[back.room];
-      if (node) {
-        setRoom({ name: back.room, desc: node.desc, exits: Object.keys(node.exits), npcs: [], items: [] });
-        setTimeout(() => setInnerRoomName(back.inner), 0);
-      }
-      addLog(SCENE_RETURN(label));
-      setCompanionState(cs => unlockAsuka(cs));
-      setVarTree(prev => setNarratorVars(prev, { asukaFree: true, questStage: 7 }));
-      jotNote({
-        text: "跟明日香一起去看了第三新东京市，那儿有人在住。回来之后她就跟着我了。",
-        owner: [{ name: "明日香", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE,
-      });
-    }, 3500);
-    return () => clearTimeout(timer);
-  }, [room.name, addLog, jotNote]);
 
   // ── 创伤线 · 收束（点破内核 + 承诺）──
   const handleResolveTrauma = useCallback(() => {

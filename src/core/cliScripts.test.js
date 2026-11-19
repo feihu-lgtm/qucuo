@@ -168,6 +168,20 @@ describe("CLI scripts", () => {
     expect(first.residents).toContain("才旦");
   });
 
+  it("runs batch-two quest-flag and narrator world rules in the CLI", async () => {
+    const fixture = readFileSync(join(scriptsDir, "world-rules-batch2.txt"), "utf8");
+    const output = [];
+    const session = createSession({ out: (text) => output.push(text), cwd: tempDir, seed: 42 });
+    let failures = 0;
+    for (const line of fixture.split(/\r?\n/)) failures += await session.runLine(line);
+
+    const state = session.store.getState();
+    expect(failures, output.join("\n")).toBe(0);
+    expect(state.questProgress.zhaxi_line.status).toBe("active");
+    expect(state.narrator.stage).toBe("sea_crashed");
+    expect(state.varTree.世界.旁白.villaEntered).toBe(true);
+  });
+
   it("loads legacy in-flight pigeon letters from a save", async () => {
     const session = createSession({ out: () => {}, cwd: tempDir });
     const legacyLetter = {
