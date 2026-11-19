@@ -8,7 +8,7 @@ import { getRngState, random, setRngState, setSeed } from "../core/rng.js";
 import { loadSquares, serializeSquares } from "../mapSquares.js";
 import { createMockAi } from "./ports/ai.js";
 import { createExtractionState, runTurn } from "./runTurn.js";
-import { playTurn } from "./playTurn.js";
+import { playTurn, ROLLBACK_KEYS } from "./playTurn.js";
 
 function createPlayTurnContext(ai, commitRound) {
   const room = { name: "石阶", exits: [], npcs: [], items: [] };
@@ -58,7 +58,7 @@ function createPlayTurnContext(ai, commitRound) {
 }
 
 describe("runTurn", () => {
-  it("commits a turn and restores store, refs, and RNG after a partial commit failure", async () => {
+  it("restores rollback keys, refs, and RNG while preserving concurrent log writes", async () => {
     const originalStore = structuredClone(gameStore.getState());
     const originalRng = getRngState();
     const originalSquares = serializeSquares();
@@ -92,8 +92,12 @@ describe("runTurn", () => {
     const failingContext = createPlayTurnContext(
       createMockAi(['{"output":["叙事"]}']),
       (deps) => {
-        deps.setPot(99);
-        gameActions.setVarTreeState({ changed: true });
+        for (const key of ROLLBACK_KEYS) {
+          const setter = key === "varTree" ? "setVarTreeState" : `set${key[0].toUpperCase()}${key.slice(1)}`;
+          gameActions[setter]({ changed: key });
+        }
+        gameActions.setLog((previous) => [...previous, { t: "sys", text: "concurrent commit" }]);
+        gameActions.setQuestProgress({ concurrent: true });
         refs.varTreeRef.current = { changed: true };
         refs.dayMaterialRef.current.push({ turn: 1, text: "partial" });
         refs.roomMapRef.current.石阶.items.push({ name: "partial" });
@@ -106,7 +110,12 @@ describe("runTurn", () => {
     const failed = await playTurn(failingContext, "探索石阶");
     expect(failed.ok).toBe(false);
     expect(failed.error.message).toBe("commit failed");
-    expect(gameStore.getState()).toEqual(before);
+    for (const key of ROLLBACK_KEYS) expect(gameStore.getState()[key]).toEqual(before[key]);
+    expect(gameStore.getState().log).toEqual([
+      ...before.log,
+      { t: "sys", text: "concurrent commit" },
+    ]);
+    expect(gameStore.getState().questProgress).toEqual({ concurrent: true });
     expect(getRngState()).toBe(rngBefore);
     expect(serializeSquares()).toEqual(squaresBefore);
     expect(refs.dayMaterialRef.current).toEqual([]);
