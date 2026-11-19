@@ -346,6 +346,8 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     const line = String(rawLine).trim();
     if (!line || line.startsWith("#")) return 0;
 
+    pendingTurn = Promise.resolve(0);
+
     if (/^:seed(?:\s|$)/.test(line)) {
       seed = parseSeed(line.slice(5).trim());
       setSeed(seed);

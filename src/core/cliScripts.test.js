@@ -12,7 +12,9 @@ import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scriptsDir = resolve(projectRoot, "tests/cli");
-const scriptFiles = readdirSync(scriptsDir).filter((file) => file.endsWith(".txt") && file !== "ai-turn-rollback.txt").sort();
+const scriptFiles = readdirSync(scriptsDir)
+  .filter((file) => file.endsWith(".txt") && !["ai-turn-rollback.txt", "failed-inspection-pending-turn.txt"].includes(file))
+  .sort();
 
 let tempDir;
 
@@ -224,5 +226,20 @@ describe("CLI scripts", () => {
     expect(await session.runLine("探索石阶")).toBe(1);
     expect(session.store.getState()).toEqual(before);
     expect(output.at(-1)).toContain("AI reply format is invalid");
+  });
+
+  it("does not reuse a failed inspection status for the next local command", async () => {
+    const output = [];
+    const failures = await runScript(
+      readFileSync(join(scriptsDir, "failed-inspection-pending-turn.txt"), "utf8"),
+      {
+        out: (text) => output.push(text),
+        cwd: tempDir,
+        ai: createMockAi(JSON.parse(readFileSync(join(scriptsDir, "failed-inspection-pending-turn-replies.json"), "utf8"))),
+      },
+    );
+
+    expect(failures).toBe(1);
+    expect(output.join("\n")).toContain("✓ time");
   });
 });
