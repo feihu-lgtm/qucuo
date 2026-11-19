@@ -173,6 +173,11 @@ export function buildDebugBundle(sources = EMPTY_SOURCES) {
   const redacted = serialize(bundle, configValues);
   redacted.model = safeConfigLabel(bundle.model);
   redacted.providerHost = safeConfigLabel(bundle.providerHost);
+  if (redacted.save && typeof redacted.save === "object" && !Array.isArray(redacted.save)) {
+    delete redacted.save.log;
+    delete redacted.save.convo;
+  }
+  redacted.truncated.saveHistoryStripped = true;
   redacted.traces = Array.isArray(redacted.traces) ? redacted.traces.slice(0, 30) : [];
   redacted.pipelineCalls = Array.isArray(redacted.pipelineCalls) ? redacted.pipelineCalls.slice(0, 20) : [];
   redacted.recentLog = Array.isArray(redacted.recentLog) ? redacted.recentLog.slice(-200) : [];
@@ -190,6 +195,10 @@ export function buildDebugBundle(sources = EMPTY_SOURCES) {
   while (!withinLimit() && redacted.recentLog.length) {
     redacted.recentLog.shift();
     redacted.truncated.logEntries++;
+  }
+  if (!withinLimit()) {
+    redacted.save = { omitted: true, bytes: getDebugBundleSize(redacted.save) };
+    redacted.truncated.save = true;
   }
   if (!withinLimit()) redacted.truncated.overLimit = true;
   return redacted;

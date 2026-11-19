@@ -72,6 +72,46 @@ describe("debug bundle redaction", () => {
     expect(JSON.stringify(bundle)).not.toContain("apiKey");
   });
 
+  it("strips save history while retaining other save data", () => {
+    const bundle = buildDebugBundle({
+      save: { mapData: { room: "inner" }, log: ["saved log"], convo: [{ content: "saved conversation" }] },
+      apiConfig: { model: "test", endpoint: "https://provider.example" },
+      traces: [],
+      pipelineCalls: [],
+      errors: [],
+    });
+
+    expect(bundle.save).toEqual({ mapData: { room: "inner" } });
+    expect(bundle.recentLog).toEqual(["saved log"]);
+    expect(bundle.conversation).toEqual([{ content: "saved conversation" }]);
+    expect(bundle.truncated.saveHistoryStripped).toBe(true);
+    expect(bundle.truncated.save).toBeUndefined();
+  });
+
+  it("omits an oversized save after trimming and remains within the size cap", () => {
+    const bundle = buildDebugBundle({
+      save: {
+        log: ["l".repeat(512 * 1024)],
+        convo: [{ content: "c".repeat(512 * 1024) }],
+        mapData: "m".repeat(2 * 1024 * 1024),
+      },
+      apiConfig: { model: "test", endpoint: "https://provider.example" },
+      traces: [],
+      pipelineCalls: [],
+      errors: [],
+    });
+
+    expect(getDebugBundleSize(bundle)).toBeLessThanOrEqual(MAX_DEBUG_BUNDLE_BYTES);
+    expect(bundle.save.log).toBeUndefined();
+    expect(bundle.save).toEqual({ omitted: true, bytes: expect.any(Number) });
+    expect(bundle.save.bytes).toBeGreaterThan(2 * 1024 * 1024);
+    expect(bundle.truncated).toMatchObject({
+      saveHistoryStripped: true,
+      save: true,
+    });
+    expect(bundle.truncated.overLimit).toBeUndefined();
+  });
+
   it("drops oldest traces, then pipeline calls, then log entries to meet the byte cap", () => {
     const bundle = buildDebugBundle({
       save: null,
