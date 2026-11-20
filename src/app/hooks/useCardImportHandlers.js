@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { gameStore } from "../../store/gameStore.js";
+import { gameStore, markGameReplaced } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { applyCharacterCard } from "../../features/character/logic.js";
 import * as importedRegistry from "../../domain/cards/importedRegistry.js";
@@ -101,6 +101,7 @@ export function useCardImportHandlers({
           addLog([{ t: "sys", text: `  （开局同行「${starterName}」已随队）` }]);
         }
       }
+      markGameReplaced();
     };
     const scheduler = schedulerRef.current;
     if (scheduler) scheduler.runSilently(createCharacter);

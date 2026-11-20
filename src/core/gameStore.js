@@ -69,9 +69,23 @@ export const gameActions = {
   setPledgedItems: createSetter("pledgedItems"),
 };
 
+const replacedListeners = new Set();
+
+// 读档、新开局、创角会整体换掉一局：时间等字段的跳变不是"过了一回合"，
+// 依赖历史（如世界规则的上一次 deps）必须随之作废。
+export function subscribeGameReplaced(listener) {
+  replacedListeners.add(listener);
+  return () => replacedListeners.delete(listener);
+}
+
+export function markGameReplaced() {
+  for (const listener of [...replacedListeners]) listener();
+}
+
 export function initGameStore(values) {
   gameStore.setState(
     Object.fromEntries(GAME_KEYS.map((key) => [key, values[key]])),
     true,
   );
+  markGameReplaced();
 }

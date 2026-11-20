@@ -22,7 +22,7 @@ import {
 } from "../../features/narrator/rules.js";
 import { applyResult } from "../../features/run.js";
 import * as importedRegistry from "../../domain/cards/importedRegistry.js";
-import { gameActions, gameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 
 export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuelNpc }) {
   const worldRulesRunnerRef = useRef(null);
@@ -86,9 +86,11 @@ export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuel
     const scheduler = createCoalescedCheck(() => worldRulesRunnerRef.current.check());
     const unsubscribeStore = gameStore.subscribe(scheduler.schedule);
     const unsubscribeImported = importedRegistry.subscribeImported(scheduler.schedule);
+    const unsubscribeReplaced = subscribeGameReplaced(() => worldRulesRunnerRef.current.reset());
     scheduler.schedule();
     return () => {
       unsubscribeStore();
+      unsubscribeReplaced();
       unsubscribeImported();
       scheduler.dispose();
       cancelTokyoReturn();
