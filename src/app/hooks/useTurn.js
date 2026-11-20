@@ -31,7 +31,7 @@ import { classifyActCommand } from "../../core/commands.js";
 
 export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
-  addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget,
+  addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
   nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
   turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
   waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
@@ -321,6 +321,11 @@ export function useTurn({
 
     // 本回合开始时的 varTree，逻辑读取走 ref 以包含已发生的同步写入。
     const preActVarTree = varTreeRef.current;
+    const activeGroundItemForTurn = !isTalk && activeGroundItem
+      && collectHit?.item !== activeGroundItem
+      && (room.items || []).some(item => (typeof item === "string" ? item : item?.name) === activeGroundItem)
+      ? activeGroundItem
+      : null;
     const callDeps = (memory = {}, prepared = {}) => ({
         varTree: memory.varTree ?? varTreeRef.current, gm, isSettle, isTalk, intent, apiCfg, narrator,
         scenario: preset.scenario, budgetInstruction: prepared.budgetInstruction,
@@ -345,7 +350,7 @@ export function useTurn({
       _trace,
       prompt: createPromptContext({
         room, char, inv, skills, dao, flags, questProgress, pendingQuestBranch,
-        varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, isTalk,
+        varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk,
         gm, movingDir, lockedDestName, outerDepart: outerDepartRef.current, innerRoomName, apiCfg,
         destinationLock, pickupJudgment: pickupJudgmentRef.current, categoryLabel: CATEGORY_LABEL,
         encounter: encounterToDescribe, collectNote, intent,
@@ -360,7 +365,7 @@ export function useTurn({
         time,
         apiCfg,
         flags,
-        recall: { apiCfg, cmd, room, flags, activeTarget, isTalk, talkTarget },
+        recall: { apiCfg, cmd, room, flags, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk, talkTarget },
       },
       state: { room, char, inv, dao },
       getMapNode,
@@ -415,7 +420,7 @@ export function useTurn({
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
   actRef.current = act;
   const featureCtx = useMemo(() => ({
     addLog,

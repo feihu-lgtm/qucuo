@@ -27,6 +27,22 @@ function fixture() {
 }
 
 describe("pure prompt builders", () => {
+  it("adds the selected ground-item note only when an item is selected", () => {
+    const state = { ...fixture(), activeGroundItem: "界石" };
+    const prompt = createPromptContext(state, {
+      apiCfg: defaultConfig(),
+      intent: classifyIntent("查看地上的石头"),
+    });
+    const assembled = assemblePrompt({ prompt }, "查看地上的石头", {}, state.convo, state.convo, "", state.convo);
+    const note = "玩家本轮的行动涉及地上的「界石」（仍在地上，尚未拾取）。叙事须围绕玩家对这件东西的举动展开；除非玩家明确说要拾取或拿走，它仍留在原处，不得写成已入囊。";
+    expect(assembled.ctx).toContain(`[涉及物品] ${note}`);
+
+    const withoutItem = assemblePrompt({
+      prompt: { ...prompt, activeGroundItem: null },
+    }, "查看地上的石头", {}, state.convo, state.convo, "", state.convo);
+    expect(withoutItem.ctx).not.toContain("[涉及物品]");
+  });
+
   it("preserves caller values and uses the explicit tally time across a day boundary", () => {
     const state = {
       ...fixture(), time: 24, timeForToday: 23,
