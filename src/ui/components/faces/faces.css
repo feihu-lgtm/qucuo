@@ -1,0 +1,178 @@
+.face-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.face-bar {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid;
+}
+
+.face-labels {
+  position: relative;
+  height: 22px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  perspective: 400px;
+  color: var(--text-dim);
+}
+
+.face-label {
+  position: absolute;
+  left: 33.333%;
+  width: 33.333%;
+  height: 22px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: transform 250ms ease, opacity 250ms ease;
+}
+
+.face-label-current { color: var(--text); font-size: 14px; transform: translateX(0) rotateY(0); opacity: 1; }
+.face-label-previous { transform: translateX(-100%) rotateY(-15deg) scale(.96); opacity: .85; }
+.face-label-next { transform: translateX(100%) rotateY(15deg) scale(.96); opacity: .85; }
+.face-label-hidden { transform: rotateY(180deg) scale(.65); opacity: 0; visibility: hidden; }
+.face-label button {
+  display: block;
+  width: 100%;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.face-label button:hover { text-decoration: underline; }
+.face-controls { display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
+.face-bar button { flex-shrink: 0; }
+
+.face-bar button,
+.face-editor button { font-family: inherit; }
+
+.face-bar button:disabled,
+.face-editor button:disabled {
+  opacity: .4;
+  cursor: default !important;
+}
+
+.face-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  perspective: 900px;
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+
+.face-edge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+  z-index: 1;
+  width: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 28px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.face-edge-previous { left: 0; }
+.face-edge-next { right: 0; }
+.face-edge:focus-visible { opacity: .65; }
+
+@media (hover: hover) and (pointer: fine) {
+  .face-stage:hover .face-edge { opacity: .16; }
+  .face-stage .face-edge:hover { opacity: .55; }
+}
+
+@media (hover: none) {
+  .face-edge { opacity: .18; }
+}
+
+.face-content {
+  width: 100%;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 12.5px;
+  line-height: 1.8;
+  word-break: break-word;
+  backface-visibility: hidden;
+  animation-duration: 250ms;
+  animation-timing-function: ease-out;
+}
+
+.face-forward { animation-name: face-forward; transform-origin: left center; }
+.face-backward { animation-name: face-backward; transform-origin: right center; }
+
+.face-modules {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.face-modules > * { flex-shrink: 0; min-width: 0; }
+.face-modules > section > * { margin-bottom: 0 !important; }
+.face-empty { color: var(--text-dim); }
+
+.face-editor {
+  padding: 10px;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 48%;
+  overflow-y: auto;
+  border-bottom: 1px solid;
+  font-size: 12px;
+}
+
+.face-name { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.face-name input { min-width: 0; width: 100%; padding: 4px; border: 1px solid; font: inherit; }
+.face-editor-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.face-module-list { display: grid; gap: 4px; }
+.face-module-option { display: flex; align-items: center; gap: 6px; min-height: 28px; }
+.face-module-option label { flex: 1; display: flex; align-items: center; gap: 6px; }
+.face-module-option input { accent-color: var(--accent); }
+
+@keyframes face-forward {
+  from { transform: rotateY(24deg); opacity: .5; }
+  to { transform: rotateY(0); opacity: 1; }
+}
+
+@keyframes face-backward {
+  from { transform: rotateY(-24deg); opacity: .5; }
+  to { transform: rotateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .face-content { animation: none; }
+  .face-edge { transition: none; }
+  .face-label { transition: none; }
+}
