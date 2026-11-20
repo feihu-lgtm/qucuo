@@ -88,7 +88,7 @@ describe("Vertex ADC", () => {
       return Response.json({ choices: [{ message: { content: "曲措" }, finish_reason: "stop" }] });
     });
     vi.stubGlobal("fetch", fetch);
-    const vertexProject = importVertexCredential(JSON.stringify(authorizedUser));
+    const vertexProject = await importVertexCredential(JSON.stringify(authorizedUser));
     const vertexModel = "google/gemini-2.5-pro";
     saveConfig({ ...defaultConfig(), apiType: API_TYPES.VERTEX, vertexProject, vertexModel, model: "openai-model", corsProxy: "https://wrong.example/" });
     const cfg = loadConfig();

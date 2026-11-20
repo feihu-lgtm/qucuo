@@ -1,10 +1,9 @@
-import { createVertexAuth, parseVertexAdc, vertexDefaultProject } from "./vertexAdc.js";
-
 const ADC_KEY = "wuxia_mud_vertex_adc";
 let storedText;
 let getHeaders;
 
-export function importVertexCredential(text) {
+export async function importVertexCredential(text) {
+  const { parseVertexAdc, vertexDefaultProject } = await import("./vertexAdc.js");
   const adc = parseVertexAdc(text);
   localStorage.setItem(ADC_KEY, text);
   storedText = undefined;
@@ -20,7 +19,8 @@ export function hasVertexCredential() {
   return !!readVertexCredential();
 }
 
-export function getStoredVertexHeaders(fetch) {
+export async function getStoredVertexHeaders(fetch) {
+  const { createVertexAuth, parseVertexAdc } = await import("./vertexAdc.js");
   const text = readVertexCredential();
   if (!text) throw new Error("请先在设置中导入 Vertex AI 的 ADC JSON 文件");
   if (!getHeaders || storedText !== text) {

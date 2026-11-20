@@ -1,4 +1,4 @@
-import SettingsPanel from "../ui/screens/SettingsPanel.jsx";
+import { lazy, Suspense } from "react";
 import BodyProfilePanel from "../ui/screens/BodyProfilePanel.jsx";
 import { emptyBodyProfile } from "../domain/character/bodyProfile.js";
 import MusicPanel from "../ui/screens/MusicPanel.jsx";
@@ -9,26 +9,30 @@ import CharacterCreate from "../ui/screens/CharacterCreate.jsx";
 import OpeningSequence from "../ui/screens/OpeningSequence.jsx";
 import { OVERLAY, closeOverlay, openOverlay } from "../store/uiStore.js";
 
+const SettingsPanel = lazy(() => import("../ui/screens/SettingsPanel.jsx"));
+
 export default function OverlayHost({ ctx, apiReady }) {
   if (!apiReady) {
     return ctx.showSettings && (
-      <SettingsPanel
-        onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
-        cfg={ctx.apiCfg}
-        setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
-        dispatchCommand={ctx.dispatchCommand}
-        onClose={() => closeOverlay(OVERLAY.SETTINGS)}
-        currentSnapshot={ctx.buildCurrentSnapshot}
-        onLoadSnapshot={ctx.applySnapshot}
-        varTree={ctx.varTree}
-        setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
-        initialTab={ctx.settingsInitialTab}
-        onSelectTab={ctx.setSettingsInitialTab}
-        uiScale={ctx.uiScale}
-        setUiScale={ctx.setUiScale}
-        narrator={ctx.narrator}
-        setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
-      />
+      <Suspense>
+        <SettingsPanel
+          onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
+          cfg={ctx.apiCfg}
+          setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
+          dispatchCommand={ctx.dispatchCommand}
+          onClose={() => closeOverlay(OVERLAY.SETTINGS)}
+          currentSnapshot={ctx.buildCurrentSnapshot}
+          onLoadSnapshot={ctx.applySnapshot}
+          varTree={ctx.varTree}
+          setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
+          initialTab={ctx.settingsInitialTab}
+          onSelectTab={ctx.setSettingsInitialTab}
+          uiScale={ctx.uiScale}
+          setUiScale={ctx.setUiScale}
+          narrator={ctx.narrator}
+          setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
+        />
+      </Suspense>
     );
   }
 
@@ -58,24 +62,26 @@ export default function OverlayHost({ ctx, apiReady }) {
       )}
       <GlobalOverlays {...ctx.globalOverlays} />
       {ctx.showSettings && (
-        <SettingsPanel
-          onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
-          cfg={ctx.apiCfg}
-          setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
-          dispatchCommand={ctx.dispatchCommand}
-          onClose={() => closeOverlay(OVERLAY.SETTINGS)}
-          currentSnapshot={ctx.buildCurrentSnapshot}
-          onLoadSnapshot={ctx.applySnapshot}
-          varTree={ctx.varTree}
-          setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
-          initialTab={ctx.settingsInitialTab}
-          onSelectTab={ctx.setSettingsInitialTab}
-          uiScale={ctx.uiScale}
-          setUiScale={ctx.setUiScale}
-          narrator={ctx.narrator}
-          setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
-          getLiveBlockText={ctx.getLiveBlockText}
-        />
+        <Suspense>
+          <SettingsPanel
+            onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
+            cfg={ctx.apiCfg}
+            setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
+            dispatchCommand={ctx.dispatchCommand}
+            onClose={() => closeOverlay(OVERLAY.SETTINGS)}
+            currentSnapshot={ctx.buildCurrentSnapshot}
+            onLoadSnapshot={ctx.applySnapshot}
+            varTree={ctx.varTree}
+            setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
+            initialTab={ctx.settingsInitialTab}
+            onSelectTab={ctx.setSettingsInitialTab}
+            uiScale={ctx.uiScale}
+            setUiScale={ctx.setUiScale}
+            narrator={ctx.narrator}
+            setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
+            getLiveBlockText={ctx.getLiveBlockText}
+          />
+        </Suspense>
       )}
       {ctx.showBody && (
         <BodyProfilePanel

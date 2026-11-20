@@ -1,7 +1,7 @@
 // 顶栏——横贯全宽的功能入口条 + 头像选择弹层。
 // ---------------------------------------------------------------------------
 // 从 MudRPG.jsx 抽出。两部分内容：
-//   1. 顶栏本体：教程/图鉴、上报bug、人物关系/任务/见闻录、
+//   1. 顶栏本体：教程/图鉴、上报bug、
 //      主菜单/存档/设置/日夜切换，以及右端的自动存档状态指示。
 //      桌面端常显；手机端收成一个「☰ 菜单」，点开才换行铺开全部入口。
 //   2. 头像选择弹层（showAvatarPicker）：8 张预制立绘 + 上传自定义 + 恢复默认。
@@ -88,27 +88,6 @@ export default function TopBar({
           title="角色入册：把外部角色卡导进曲措乡（快捷键 I）"
           style={topBtn()}
         >入册</span>
-        <span
-          className="qbtn"
-          onClick={() => openOverlay(OVERLAY.CHARACTER_PAGE)}
-          style={topBtn()}
-        >人物关系</span>
-        <span
-          className="qbtn"
-          onClick={() => openOverlay(OVERLAY.QUEST_LOG)}
-          style={topBtn()}
-        >任务</span>
-        <span
-          className="qbtn"
-          onClick={() => openOverlay(OVERLAY.LORE)}
-          style={topBtn()}
-        >见闻录</span>
-        <span
-          className="qbtn"
-          onClick={() => openOverlay(OVERLAY.QIJUZHU)}
-          title="起居注：逐日记录起居言动——今日行迹与开局以来的累计"
-          style={topBtn()}
-        >起居注</span>
         <span
           className="qbtn"
           onClick={() => {

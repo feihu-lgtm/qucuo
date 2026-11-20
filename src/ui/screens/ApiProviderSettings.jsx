@@ -12,7 +12,7 @@ export default function ApiProviderSettings({
     event.target.value = "";
     if (!file) return;
     try {
-      const project = importCredential(await file.text());
+      const project = await importCredential(await file.text());
       patch({ vertexProject: project || cfg.vertexProject || "" });
       setStatus("");
     } catch (error) {

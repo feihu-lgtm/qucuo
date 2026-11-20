@@ -2,7 +2,6 @@
 import { DEFAULT_WHISPER_WORDS } from "../domain/narrator/narrator.js";
 import { observeAi } from "../core/observeAi.js";
 import { readSSE } from "./apiSse.js";
-import { buildVertexEndpoint } from "./vertexAdc.js";
 import { getStoredVertexHeaders, hasVertexCredential } from "./vertexCredentials.js";
 import { getApiModel } from "../core/apiModel.js";
 export { importVertexCredential } from "./vertexCredentials.js";
@@ -514,7 +513,7 @@ const isOpenAICompatible = type => [API_TYPES.OPENAI, API_TYPES.QWEN, API_TYPES.
 
 async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
   const vertex = cfg.apiType === API_TYPES.VERTEX;
-  const url = vertex ? buildVertexEndpoint(cfg.vertexProject, cfg.vertexLocation)
+  const url = vertex ? (await import("./vertexAdc.js")).buildVertexEndpoint(cfg.vertexProject, cfg.vertexLocation)
     : withProxy(normalizeOpenAIEndpoint(cfg.endpoint || DEFAULT_ENDPOINTS[cfg.apiType], cfg.openaiAutoComplete), cfg);
   const system = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock) : [systemPrompt];
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
