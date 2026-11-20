@@ -1,6 +1,7 @@
 :root {
   color-scheme: dark;
   --mobile-viewport-height: 100dvh;
+  --mobile-viewport-offset: 0px;
   --bg: #0a0a09;
   --bg-panel: #111110;
   --border: #4a453c;
