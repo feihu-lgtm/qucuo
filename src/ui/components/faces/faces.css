@@ -41,9 +41,9 @@
   transition: transform 250ms ease, opacity 250ms ease;
 }
 
-.face-label-current { color: var(--text); transform: translateX(0) rotateY(0); opacity: 1; }
-.face-label-previous { transform: translateX(-100%) rotateY(-35deg) scale(.8); opacity: .45; }
-.face-label-next { transform: translateX(100%) rotateY(35deg) scale(.8); opacity: .45; }
+.face-label-current { color: var(--text); font-size: 14px; transform: translateX(0) rotateY(0); opacity: 1; }
+.face-label-previous { transform: translateX(-100%) rotateY(-15deg) scale(.96); opacity: .85; }
+.face-label-next { transform: translateX(100%) rotateY(15deg) scale(.96); opacity: .85; }
 .face-label-hidden { transform: rotateY(180deg) scale(.65); opacity: 0; visibility: hidden; }
 .face-label button {
   display: block;
