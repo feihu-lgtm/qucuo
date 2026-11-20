@@ -8,10 +8,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "verify": "eslint \"src/**/*.{js,jsx}\" \"cli/**/*.{js,jsx,mjs,cjs}\" && vitest run && vite build --config vite.config.pages.js",
+    "verify": "eslint \"src/**/*.{js,jsx}\" \"cli/**/*.{js,jsx,mjs,cjs}\" \"e2e/**/*.mjs\" && vitest run && vite build --config vite.config.pages.js",
     "ratchet": "node scripts/ratchet.mjs",
     "ratchet:update": "node scripts/ratchet.mjs --update",
-    "cli": "node cli/qucuo.mjs"
+    "cli": "node cli/qucuo.mjs",
+    "e2e": "node e2e/run.mjs",
+    "dev:qa": "node e2e/harness/server.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
