@@ -1,5 +1,10 @@
 export const DIRS = { n: "北", s: "南", e: "东", w: "西", u: "上", d: "下", ne: "东北", nw: "西北", se: "东南", sw: "西南" };
-export const bar = (v, mx, len = 10) => { const f = Math.max(0, Math.round((v / mx) * len)); return "█".repeat(f) + "░".repeat(len - f); };
+export const bar = (v, mx, len = 10) => {
+  const width = Number.isFinite(len) ? Math.max(0, Math.floor(len)) : 0;
+  const ratio = Number.isFinite(v) && Number.isFinite(mx) && mx > 0 ? v / mx : 0;
+  const filled = Math.round(Math.min(1, Math.max(0, ratio)) * width);
+  return "█".repeat(filled) + "░".repeat(width - filled);
+};
 export const STAGES = ["入门", "小成", "大成", "圆满", "登峰造极"];
 // 武学升阶潜能成本（模块级，渲染和逻辑共用）：越高阶越贵，阶跃式突破单次成本较高
 export const STAGE_UP_COST = { 小成: 12, 大成: 20, 圆满: 32, 登峰造极: 48 };

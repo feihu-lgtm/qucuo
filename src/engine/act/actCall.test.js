@@ -16,6 +16,8 @@ import { callMainOnce } from "./actCall.js";
 import { startTrace } from "../../infra/actionTrace.js";
 import { initialNarratorState } from "../../domain/narrator/narrator.js";
 import { emptyBodyProfile } from "../../domain/character/bodyProfile.js";
+import { deposit } from "../../features/bank/logic.js";
+import { applyResult } from "../../features/run.js";
 
 // 回合上下文 fixture：形状与 act 里 callDeps() 一致。
 function makeDeps(over = {}) {
@@ -61,6 +63,19 @@ function makeDeps(over = {}) {
 
 describe("callMainOnce 组装黄金快照", () => {
   beforeEach(() => { callModel.mockClear(); });
+
+  it("passes completed bank deposit facts to the settlement model without relying on state context", async () => {
+    const act = vi.fn();
+    applyResult({ act }, deposit({ char: { money: 100 }, deposit: 20, time: 6 }, 50));
+    const [cmd, , options] = act.mock.calls[0];
+    await callMainOnce(null, false, makeDeps({ cmd, isSettle: options.settle, ctx: "" }));
+    const messages = JSON.stringify(callModel.mock.calls[0].slice(1));
+    expect(messages).toContain("钱庄存款已完成：本次存入50两");
+    expect(messages).toContain("存款余额70两，随身银两剩余50两");
+    expect(messages).toContain("每24时间单位2%");
+    expect(messages).toContain("不得再询问存期、利率或要求确认存款");
+    expect(messages).toContain("不得重复扣款或入账");
+  });
 
   it("full 档：system 13 位置块 + user 侧消息", async () => {
     const d = makeDeps();

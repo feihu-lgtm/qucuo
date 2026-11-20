@@ -65,12 +65,12 @@ export default function DebugPanel({
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 40, ...lbl }}>外功</span>
-        <input type="number" value={char.waigong ?? 0}
-          onChange={e => setChar(c => ({ ...c, waigong: parseInt(e.target.value) || 0 }))}
+        <input type="number" min={0} max={100} value={char.waigong ?? 0}
+          onChange={e => setChar(c => ({ ...c, waigong: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) }))}
           style={{ width: 90, ...inp }} />
         <span style={{ width: 40, ...lbl, marginLeft: 8 }}>内功</span>
-        <input type="number" value={char.neigong ?? 0}
-          onChange={e => setChar(c => ({ ...c, neigong: parseInt(e.target.value) || 0 }))}
+        <input type="number" min={0} max={100} value={char.neigong ?? 0}
+          onChange={e => setChar(c => ({ ...c, neigong: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) }))}
           style={{ width: 90, ...inp }} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>

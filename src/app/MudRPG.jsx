@@ -60,6 +60,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const {
     presets, setPresets, input, setInput, loading, setLoading, loadingRef,
     setWaitSecs, waitTimerRef, pendingTalks, pendingTalksRef, changePendingTalks,
+    queueCount,
     setQueueCount, gm, setGm, setIsMobile, setMobileDrawer, setMobileTopMenu,
     interactMode, setInteractMode, talkTarget, setTalkTarget, activeTarget, setActiveTarget,
     nsfwOn, setOutfitState, pigeonTarget, setPigeonTarget, apiCfg, uiScale, isDayMode,
@@ -232,7 +233,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     timeRef, noteAction, inv, setTradingShop, setInv, setClaimedMilestones,
   });
 
-  useTurnQueue({ loading, act, pendingQueue, setQueueCount, autoTravelRef });
+  useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef });
 
   const buildingHandlers = useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef });
 
