@@ -14,7 +14,7 @@ export function useGameStartup({ initialLoadSlotId, initialOpenSettings }) {
   if (!overlaysInitializedRef.current) {
     const initialOverlays = [];
     try {
-      if (localStorage.getItem("qucuo_tutorial_seen") !== "1") initialOverlays.push(OVERLAY.TUTORIAL);
+      if (!initialOpenSettings && localStorage.getItem("qucuo_tutorial_seen") !== "1") initialOverlays.push(OVERLAY.TUTORIAL);
     } catch { /* unavailable storage means no automatic tutorial */ }
     if (initialOpenSettings) initialOverlays.push(OVERLAY.SETTINGS);
     if (initialLoadSlotId === "new" && !restored) {

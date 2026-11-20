@@ -2,6 +2,7 @@ import React from "react";
 import { MAP_UI } from "../../domain/map/mapUi.js";
 import { getMapDragUpdate } from "./mapDrag.js";
 import { makeNodeHitArea } from "./mapHitArea.js";
+import { getMapFitView } from "./mapViewFit.js";
 
 // 可点击移动地图：节点即操作。点相邻据点/房间 = 往那个方向走（复用 act 移动链）。
 // nodes: [{name,x,y,explored,current,reachable,dir,dest,locked}]  onGo(dir,dest,locked)
@@ -9,23 +10,27 @@ import { makeNodeHitArea } from "./mapHitArea.js";
 // locked=有路但未解锁（点了触发 AI 叙事拦截）。current=当前所在（金框脉冲）。
 export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = "62vh", accent = "var(--accent)", loading }) {
   const [hover, setHover] = React.useState(null);
-  // 拖动+缩放状态：view = {tx, ty, scale}。tx/ty 是平移量，scale 是缩放倍数。
-  // 开图即以当前所在为中心放大：地名大字是导航核心（长刀式），默认全览缩得太小看不清。
-  const fitZoom = React.useMemo(() => {
-    if (!nodes.length) return { tx: 0, ty: 0, scale: 1 };
-    const C = cell || 132;
-    const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
-    const W = (Math.max(...xs) - Math.min(...xs) + 1) * C + pad * 2, H = (Math.max(...ys) - Math.min(...ys) + 1) * C + pad * 2;
-    const cur0 = nodes.find(n => n.current);
-    const s = 1.5;
-    const cx0 = (cur0.x - Math.min(...xs)) * C + pad + C / 2, cy0 = (cur0.y - Math.min(...ys)) * C + pad + C / 2;
-    return { tx: (W / 2 - cx0) * s, ty: (H / 2 - cy0) * s, scale: s };
-  }, [nodes, cell, pad]);
+  const mapNodes = React.useMemo(() => {
+    const occupied = new Set();
+    const spiral = [[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1],[2,0],[0,2],[-2,0],[0,-2]];
+    return nodes.map(node => {
+      for (const [dx, dy] of spiral) {
+        const x = node.x + dx, y = node.y + dy, key = `${x},${y}`;
+        if (!occupied.has(key)) {
+          occupied.add(key);
+          return dx || dy ? { ...node, x, y } : node;
+        }
+      }
+      return node;
+    });
+  }, [nodes]);
+  const fitZoom = React.useMemo(() => getMapFitView(mapNodes, { cell: cell || 132, pad }), [mapNodes, cell, pad]);
   const [view, setView] = React.useState(fitZoom);
   const dragRef = React.useRef(null); // 拖动中：{ startX, startY, baseTx, baseTy }
   const suppressClickRef = React.useRef(false);
   const [dragging, setDragging] = React.useState(false);
-  if (!nodes.length) return null;
+  if (!mapNodes.length) return null;
+  nodes = mapNodes;
 
   // 节点用固定尺寸的正方贴图格子（贴图是正方，显示也正方，统一比例）。
   const NW = 84, NH = 84; // 节点贴图显示宽高（正方）
@@ -34,16 +39,6 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
   const labelLen = (n) => [...(n.name ? (n.name.includes("·") ? n.name.split("·").pop() : n.name) : "")].length;
   const maxLabelLen = Math.max(2, ...nodes.map(labelLen));
   const uniformFs = maxLabelLen >= 5 ? 18 : maxLabelLen >= 4 ? 19 : 21;
-  // 坐标防撞：数据里偶有两个节点坐标相同，展示层螺旋偏移到最近空格。
-  const occupied = new Set();
-  const SPIRAL = [[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1],[2,0],[0,2],[-2,0],[0,-2]];
-  nodes = nodes.map(n => {
-    for (const [dx, dy] of SPIRAL) {
-      const nx = n.x + dx, ny = n.y + dy, k = nx + "," + ny;
-      if (!occupied.has(k)) { occupied.add(k); return (dx || dy) ? { ...n, x: nx, y: ny } : n; }
-    }
-    return n;
-  });
   const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
   const mnX = Math.min(...xs), mxX = Math.max(...xs), mnY = Math.min(...ys), mxY = Math.max(...ys);
   const w = (mxX - mnX + 1) * CELL + pad * 2, h = (mxY - mnY + 1) * CELL + pad * 2;
@@ -88,12 +83,15 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
   const resetView = () => setView(fitZoom);
 
   return (
-    <div style={{ position: "relative", width: "100%", maxHeight, overflow: "hidden" }}>
+    <div data-testid="clickable-map" style={{ position: "relative", width: "100%", maxHeight, minHeight: 90, overflow: "hidden" }}>
       {/* 缩放控制按钮 */}
       <div style={{ position: "absolute", top: 6, right: 6, zIndex: 3, display: "flex", flexDirection: "column", gap: 4 }}>
         <span onClick={() => zoomBtn(1.25)} style={cmZoomBtn}>＋</span>
         <span onClick={() => zoomBtn(0.8)} style={cmZoomBtn}>－</span>
-        <span onClick={resetView} style={{ ...cmZoomBtn, fontSize: "10px" }}>⤢</span>
+        <span role="button" tabIndex={0} aria-label="重置地图视图" title="重置地图视图"
+          onClick={resetView} onKeyDown={event => {
+            if (event.key === "Enter" || event.key === " ") { event.preventDefault(); resetView(); }
+          }} style={{ ...cmZoomBtn, fontSize: "10px" }}>⤢</span>
       </div>
       <svg viewBox={`0 0 ${w} ${h}`}
         style={{ width: "100%", maxHeight, display: "block", cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}
