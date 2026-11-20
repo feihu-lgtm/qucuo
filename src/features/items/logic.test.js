@@ -39,4 +39,27 @@ describe("item logic", () => {
     expect(result.changes.varTree(current.varTree).世界.起居注.today.pickGround).toBe(1);
     expect(result.logs).toEqual([{ t: "item", text: "  ✓ 你拾起「石子」，收入囊中。" }]);
   });
+
+  it.each(["石子", { id: "stone", name: "石子" }])("ignores a queued duplicate pickup of %s", (item) => {
+    const current = state({ room: { items: [item] } });
+    const first = pickGroundItem(current, item);
+    const afterPickup = { ...current };
+    for (const [key, update] of Object.entries(first.changes)) {
+      afterPickup[key] = update(current[key]);
+    }
+
+    expect(afterPickup.inv).toEqual(["小还丹", item]);
+    expect(afterPickup.time).toBe(7);
+    expect(afterPickup.room.items).toEqual([]);
+    expect(pickGroundItem(afterPickup, item)).toEqual({});
+  });
+
+  it("does not pick up a different item with the same name as a stale identified item", () => {
+    const current = state({ room: { items: [{ id: "other", name: "石子" }] } });
+    expect(pickGroundItem(current, { id: "gone", name: "石子" })).toEqual({});
+  });
+
+  it("does nothing when ground items are missing", () => {
+    expect(pickGroundItem(state({ room: {} }), "石子")).toEqual({});
+  });
 });

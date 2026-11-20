@@ -3,9 +3,8 @@ import { hasInnerMap, getBuildingIdForInnerRoom, getResidentRoomForNpc, getDistr
 import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../../domain/buildings/qucuoBuildings.js";
 import { isNpcKnown } from "../../domain/npc/npcAwareness.js";
 import { npcAffectionLabel } from "../../domain/prompt/mvu.js";
-import { inferActivePortraitTarget, SNOW_LEOPARD_FORMS, PEARL_FORMS, snowLeopardPortraitUrl, pearlPortraitUrl, narratorPortraitUrl, narratorPortraitLabel, resolvePortrait } from "../../domain/companion/portraits.js";
 import { QUCUO_MAP, isNodeUnlocked } from "../../domain/map/qucuoMap.js";
-import { QUALITY_COLOR } from "../../domain/economy/equipment.js";
+import { VersionHistoryButton } from "./TopBar.jsx";
 import { DIRS, getTimeStr } from "../../utils/mudHelpers.js";
 import NineGridMap from "../components/NineGridMap.jsx";
 import { OVERLAY, openOverlay, useOverlay } from "../../store/uiStore.js";
@@ -18,18 +17,10 @@ export default function LeftPanel({
   varTree, char,
   peoplePanel, setPeoplePanel,
   activeBuilding, setActiveBuilding,
-  setActiveItemMenu,
   setActiveNpcMenu,
   setCharacterPageTarget,
   setPigeonTarget, setInteractMode, inputRef, addLog,
   pigeonTarget,
-  portraits, portraitTarget, setPortraitTarget,
-  interactMode, activeTarget, talkTarget,
-  playerAvatar,
-  slImgErr, setSlImgErr, slForm, setSnowLeopardForm, setSlFormState,
-  pearlForm, setPearlForm, setPearlFormState, pearlImgErr, setPearlImgErr,
-  narratorAffection, narratorImgErr, setNarratorImgErr,
-  companionState,
   mapView, setMapView, mapBig, setMapBig,
   mapData, questProgress, flags, inv,
   inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind,
@@ -48,7 +39,7 @@ export default function LeftPanel({
       {isMobile && (
         <div className="mobile-drawer-close" onClick={() => setMobileDrawer(null)} style={{ textAlign: "right", padding: "8px 12px", color: zoneTheme.textDim, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}>关闭 ✕</div>
       )}
-      <div style={S.label}>天地 <span style={{ fontSize: "9.5px", color: zoneTheme.textDim, letterSpacing: "1px" }}>· {zoneTheme.name}</span></div>
+      <div style={{ ...S.label, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>天地 <span style={{ fontSize: "9.5px", color: zoneTheme.textDim, letterSpacing: "1px" }}>· {zoneTheme.name}</span><VersionHistoryButton theme={zoneTheme} /></div>
       <div style={S.scroll}>
         <div style={{ color: zoneTheme.accent, fontWeight: "bold", fontSize: "14px", marginBottom: 4, letterSpacing: "1px" }}>
           {room.name}
@@ -110,22 +101,6 @@ export default function LeftPanel({
           </div>
           );
         })()}
-
-        <div style={{ color: zoneTheme.accentDim, fontSize: "11px", marginBottom: 3 }}>此地之物</div>
-        <div style={{ marginBottom: 10 }}>
-          {(room.items || []).length === 0 && <div style={{ color: zoneTheme.textDim, fontSize: "11px" }}>地上空无一物</div>}
-          {(room.items || []).map((it, i) => {
-            const nm = typeof it === "object" ? it.name : it;
-            const col = (typeof it === "object" && QUALITY_COLOR[it.quality]) || "#c4a040";
-            return (
-              <div key={(typeof it === "object" && it.id) || i}
-                onClick={() => setActiveItemMenu({ item: it, mode: "ground" })}
-                style={{ fontSize: "11.5px", color: col, cursor: "pointer", marginBottom: 2, textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim }}>
-                · {nm}{typeof it === "object" && it.quality ? `（${it.quality}）` : ""}
-              </div>
-            );
-          })}
-        </div>
 
         {(() => {
           const present = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
@@ -226,144 +201,6 @@ export default function LeftPanel({
           );
         })()}
 
-        <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 14, marginTop: 6 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px", letterSpacing: "1px" }}>立绘</span>
-            <span onClick={() => openOverlay(OVERLAY.PORTRAIT_MANAGER)} style={{ color: zoneTheme.textDim, fontSize: "10px", cursor: "pointer" }}>⚙ 管理</span>
-          </div>
-          {(() => {
-            const candidates = ["旁白", "你", ...room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name)];
-            const target = portraitTarget && candidates.includes(portraitTarget) ? portraitTarget : inferActivePortraitTarget(interactMode, room, activeTarget || talkTarget);
-            const isSnowLeopard = target === "雪豹";
-            // 旁白立绘按好感度自动切档（五档：声之涟漪→水手服的猫→猫裹黄裙→人形剪影→真容）。
-            // 与雪豹的差别：雪豹三形态是玩家手动选，旁白这五张是显形进度条，玩家不能选。
-            // 但若玩家在「⚙管理」里手动传过旁白立绘，仍以他自己传的为准——不夺用户的手。
-            const isNarrator = target === "旁白";
-            const img = isSnowLeopard
-              ? (slImgErr ? null : snowLeopardPortraitUrl(slForm))
-              : isNarrator
-                ? (portraits["旁白"] || (narratorImgErr ? null : narratorPortraitUrl(narratorAffection)))
-                // 走 resolvePortrait 才能吃到内置默认立绘（玄女/梅朵/何雨谢那批）——
-                // 直接读 portraits[target] 只拿得到玩家自己上传的那份。
-                : (target === "你" ? (portraits["你"] || playerAvatar) : resolvePortrait(portraits, target));
-            return (
-              <>
-                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
-                  {candidates.map(name => (
-                    <span
-                      key={name}
-                      onClick={() => setPortraitTarget(name)}
-                      style={{
-                        fontSize: "10px", padding: "2px 6px", borderRadius: 0, cursor: "pointer",
-                        color: target === name ? zoneTheme.bg : zoneTheme.accent,
-                        background: target === name ? zoneTheme.accent : zoneTheme.bgPanel,
-                        border: `1px solid ${zoneTheme.border}`,
-                      }}
-                    >{name}</span>
-                  ))}
-                </div>
-                <div style={{
-                  width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 0,
-                  border: `1px solid ${zoneTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center",
-                  overflow: "hidden",
-                }}>
-                  {img ? (
-                    <img src={img} alt={target} style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      onError={isSnowLeopard ? () => setSlImgErr(true) : isNarrator ? () => setNarratorImgErr(true) : undefined} />
-                  ) : (
-                    <span style={{ color: zoneTheme.textDim, fontSize: "11px", textAlign: "center", padding: "0 8px" }}>
-                      {isSnowLeopard && slImgErr ? "雪豹立绘待投放（portraits/snowleopard/）"
-                        : isNarrator && narratorImgErr ? "旁白立绘待投放（portraits/narrator/）"
-                        : `${target} 暂无立绘`}
-                    </span>
-                  )}
-                </div>
-                {/* 旁白：标出当前是第几形态。她的立绘是好感度进度条，不给切换按钮——
-                    这跟雪豹三形态（玩家想看哪个看哪个）是两回事，显形到哪一步由好感度说了算。 */}
-                {isNarrator && !portraits["旁白"] && (
-                  <div style={{ marginTop: 6, textAlign: "center", fontSize: "9.5px", color: zoneTheme.textDim }}>
-                    {narratorPortraitLabel(narratorAffection)}
-                    <span style={{ color: zoneTheme.accentDim }}>　好感 {narratorAffection}</span>
-                  </div>
-                )}
-                {isSnowLeopard && (
-                  <div style={{ display: "flex", gap: 4, marginTop: 6, justifyContent: "center" }}>
-                    {SNOW_LEOPARD_FORMS.map(f => (
-                      <span key={f.key}
-                        onClick={() => { setSnowLeopardForm(f.key); setSlFormState(f.key); setSlImgErr(false); }}
-                        style={{
-                          fontSize: "9.5px", padding: "2px 7px", borderRadius: 0, cursor: "pointer", userSelect: "none",
-                          color: slForm === f.key ? zoneTheme.bg : zoneTheme.accent,
-                          background: slForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
-                          border: `1px solid ${zoneTheme.border}`,
-                        }}>{f.label}</span>
-                    ))}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
-        {companionState?.snowLeopard?.unlocked && (
-          <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 14, marginTop: 6 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px", letterSpacing: "1px" }}>雪豹 · 随行</span>
-            </div>
-            <div style={{
-              width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 0,
-              border: `1px solid ${zoneTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
-            }}>
-              {!slImgErr ? (
-                <img src={snowLeopardPortraitUrl(slForm)} alt="雪豹" style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  onError={() => setSlImgErr(true)} />
-              ) : (
-                <span style={{ color: zoneTheme.textDim, fontSize: "11px", textAlign: "center", padding: "0 8px" }}>雪豹立绘待投放（portraits/snowleopard/）</span>
-              )}
-            </div>
-            <div style={{ display: "flex", gap: 4, marginTop: 6, justifyContent: "center" }}>
-              {SNOW_LEOPARD_FORMS.map(f => (
-                <span key={f.key}
-                  onClick={() => { setSnowLeopardForm(f.key); setSlFormState(f.key); setSlImgErr(false); }}
-                  style={{
-                    fontSize: "9.5px", padding: "2px 7px", borderRadius: 0, cursor: "pointer", userSelect: "none",
-                    color: slForm === f.key ? zoneTheme.bg : zoneTheme.accent,
-                    background: slForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
-                    border: `1px solid ${zoneTheme.border}`,
-                  }}>{f.label}</span>
-              ))}
-            </div>
-          </div>
-        )}
-        {companionState?.pearl?.unlocked && (
-          <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 14, marginTop: 6 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px", letterSpacing: "1px" }}>珍珠 · 随行</span>
-            </div>
-            <div style={{
-              width: "100%", aspectRatio: "2/3", background: zoneTheme.bgPanel, borderRadius: 0,
-              border: `1px solid ${zoneTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
-            }}>
-              {!pearlImgErr ? (
-                <img src={pearlPortraitUrl(pearlForm)} alt="珍珠" style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  onError={() => setPearlImgErr(true)} />
-              ) : (
-                <span style={{ color: zoneTheme.textDim, fontSize: "11px", textAlign: "center", padding: "0 8px" }}>珍珠立绘待投放（portraits/pearl/）</span>
-              )}
-            </div>
-            <div style={{ display: "flex", gap: 4, marginTop: 6, justifyContent: "center" }}>
-              {PEARL_FORMS.map(f => (
-                <span key={f.key}
-                  onClick={() => { setPearlForm(f.key); setPearlFormState(f.key); setPearlImgErr(false); }}
-                  style={{
-                    fontSize: "9.5px", padding: "2px 7px", borderRadius: 0, cursor: "pointer", userSelect: "none",
-                    color: pearlForm === f.key ? zoneTheme.bg : zoneTheme.accent,
-                    background: pearlForm === f.key ? zoneTheme.accent : zoneTheme.bgPanel,
-                    border: `1px solid ${zoneTheme.border}`,
-                  }}>{f.label}</span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
       <div style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "6px 12px", flexShrink: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>

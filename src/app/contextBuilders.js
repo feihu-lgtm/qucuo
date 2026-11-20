@@ -117,6 +117,7 @@ export function buildLayoutCtx({ ui, game, overlayHost, autosave, actions, activ
     handleBuildingInn: buildingHandlers.handleBuildingInn,
     handleBuildingHeal: buildingHandlers.handleBuildingHeal, skills: game.skills,
     handleBuySkill: buildingHandlers.handleBuySkill, effectiveSpecialNow: actions.effectiveSpecialNow,
+    handleCollectGround: screenHandlers.handleCollectGround,
     inspectItem: aiInspect.inspectItem, jotNote, handleAcceptEscort: buildingHandlers.handleAcceptEscort,
     handleGamble: buildingHandlers.handleGamble, handleCollectPigeons: pigeonHandlers.handleCollectPigeons,
     buyPigeon: pigeonHandlers.buyPigeon, handlePostSend: pigeonHandlers.handlePostSend,
