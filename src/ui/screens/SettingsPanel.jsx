@@ -255,7 +255,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               ["other", "🎚 其他", "字号 · 显示"],
               ["__portraits", "立绘管理", "上传 · 更换人物立绘"],
               ["__cards", "🧾 角色入册", "游戏中 · 导入外部角色卡成江湖人物 · 快捷键 I"],
-            ].map(([id, title, sub]) => (
+            ].filter(([id]) => id !== "__portraits" || cfg.apiKey).map(([id, title, sub]) => (
               <div key={id} onClick={() => {
                 // 入册界面本身是全屏浮层，塞在设置里会套两层弹窗。
                 // 这里改成关掉设置、把浮层交给 MudRPG 开。
