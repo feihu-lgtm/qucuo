@@ -26,7 +26,7 @@ export function snowLeopardPresent(state) {
   return !!state.room?.npcs?.some((npc) => npc.name === "雪豹" && isNpcVisibleInInnerRoom(state.room.name, state.innerRoomName, npc));
 }
 
-function snowLeopardHealingAvailable(state) {
+export function snowLeopardHealingAvailable(state) {
   return snowQuestActive(state) && snowLeopardPresent(state) && !state.flags?.includes("snow_spirit_medicine") &&
     !!state.room?.npcs?.some((npc) => npc.name === "才旦" && isNpcVisibleInInnerRoom(state.room.name, state.innerRoomName, npc));
 }

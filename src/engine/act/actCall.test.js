@@ -18,6 +18,7 @@ import { initialNarratorState } from "../../domain/narrator/narrator.js";
 import { emptyBodyProfile } from "../../domain/character/bodyProfile.js";
 import { deposit } from "../../features/bank/logic.js";
 import { applyResult } from "../../features/run.js";
+import { assemblePrompt } from "../prompt/assemblePrompt.js";
 
 // 回合上下文 fixture：形状与 act 里 callDeps() 一致。
 function makeDeps(over = {}) {
@@ -70,6 +71,32 @@ describe("callMainOnce 组装黄金快照", () => {
     const schema = messages.find((message) => message.tavernBlock === "phi").content;
     expect(schema.includes('"flags_add":["snow_spirit_meat"]')).toBe(active);
     expect(schema).toContain(active ? "只允许snow_spirit_meat" : "不要输出 room / char / dao / delta");
+    expect(schema).not.toContain("snow_spirit_scratch");
+  });
+
+  it.each([
+    ["available", {}, {}, true],
+    ["inactive", { questProgress: {} }, {}, false],
+    ["healed", { flags: ["snow_spirit_medicine"] }, {}, false],
+    ["healer absent", { room: { name: "鱼定村", npcs: [{ name: "雪豹" }] } }, {}, false],
+    ["leopard absent", { room: { name: "鱼定村", npcs: [{ name: "才旦" }] } }, {}, false],
+    ["off site", { innerRoomName: "才旦家" }, {}, false],
+    ["other recipient", {}, { settleNpc: "村长" }, false],
+    ["not a gift", {}, { settleKind: "learn" }, false],
+  ])("permits only medicine credit for a 才旦 gift when healing is %s", async (_, changes, options, allowed) => {
+    const prompt = {
+      char: {}, dao: {}, apiCfg: {}, flags: [], innerRoomName: "村口",
+      questProgress: { snow_leopard_quest: { status: "active" } },
+      room: { name: "鱼定村", npcs: [{ name: "雪豹" }, { name: "才旦" }] },
+      ...changes,
+    };
+    const settle = { settleKind: "gift", settleNpc: "才旦", ...options };
+    const { snowLeopardContext, snowLeopardHealingAvailable } = assemblePrompt({ prompt }, "送礼给才旦", settle, [], [], [], []);
+    await callMainOnce(null, false, makeDeps({ isSettle: true, ...settle, snowLeopardContext, snowLeopardHealingAvailable }));
+    const schema = callModel.mock.calls[0][2].find((message) => message.tavernBlock === "phi").content;
+    expect(schema.includes('"flags_add":["snow_spirit_medicine"]')).toBe(allowed);
+    expect(schema).toContain(allowed ? "只允许snow_spirit_medicine" : "不要输出 room / char / dao / delta");
+    expect(schema).not.toContain("snow_spirit_meat");
     expect(schema).not.toContain("snow_spirit_scratch");
   });
 
