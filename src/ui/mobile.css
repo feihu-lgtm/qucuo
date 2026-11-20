@@ -44,7 +44,36 @@
   }
 
   .mobile-menu-toggle {
-    padding: 8px 12px !important;
+    padding: 0 10px !important;
+  }
+
+  /* 顶栏一行 44px：按钮去框只留文字，点按区仍是 44px */
+  .mobile-top-row {
+    padding: 0 6px !important;
+    gap: 2px !important;
+    row-gap: 6px !important;
+    flex-wrap: wrap;
+  }
+
+  .mobile-top-row > .mobile-touch-target,
+  .mobile-top-row .mobile-center-toolbar-controls > .mobile-touch-target {
+    border-color: transparent !important;
+    background: transparent !important;
+    padding: 0 10px !important;
+  }
+
+  .mobile-top-menu {
+    padding-bottom: 6px;
+  }
+
+  .mobile-top-menu > * {
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .mobile-center-toolbar-controls {

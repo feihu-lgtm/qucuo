@@ -78,7 +78,7 @@ export default function TopBar({
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "11px", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 8 }}>
+      <div className="mobile-top-row" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "11px", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 8 }}>
         {/* 手机端：顶栏收成一个☰按钮，点开才展开全部功能入口 */}
         {isMobile && (
           <>
@@ -90,8 +90,9 @@ export default function TopBar({
           </>
         )}
         {/* 顶栏功能入口：桌面常显；手机仅在展开菜单时显示（换行铺开） */}
-        <div style={{
-          display: (!isMobile || mobileTopMenu) ? "flex" : "none",
+        <div className="mobile-top-menu" style={{
+          display: (!isMobile || mobileTopMenu) ? (isMobile ? "grid" : "flex") : "none",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           alignItems: "center", gap: 8, flexWrap: "wrap", rowGap: 8,
           width: isMobile ? "100%" : "auto", flex: isMobile ? "none" : 1,
         }}>
@@ -109,7 +110,7 @@ export default function TopBar({
         >图鉴</span>
         <span className="qbtn" onClick={() => openOverlay(OVERLAY.BUG_REPORT)} title="遇到问题或有建议，点这里上报" style={topBtn()}>上报bug</span>
 
-        <span style={{ flex: 1 }} />
+        <span className="mobile-hide" style={{ flex: 1 }} />
 
         {/* 右组：其余全部右对齐 */}
         <span
