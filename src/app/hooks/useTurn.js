@@ -238,7 +238,7 @@ export function useTurn({
     // 系统裁决层：固定拓扑地图决定移动的合法性和目的地，AI 不能自己决定去了哪里。
     // 判定在 act/outerMove.js：方向在 QUCUO_MAP 有登记出口就锁定目的地；没有就明确
     // 告诉 AI 这个方向走不通，不允许它凭空编一个新地方出来。
-    const outerLock = resolveOuterLock({ _trace, isTalk, movingDir, roomName: room.name, questProgress, flags, innerRoomName }); showOuterNoExitNotice(outerLock, movingDir, room.name);
+    const outerLock = resolveOuterLock({ _trace, isTalk, movingDir, roomName: room.name, questProgress, flags, innerRoomName }); showOuterNoExitNotice(outerLock, movingDir, room.name, { questProgress, flags });
     const destinationLock = outerLock.destinationLock;
     const lockedDestName = outerLock.lockedDestName;
     if (outerLock.blocked) { movingDir = null; pendDirRef.current = null; }

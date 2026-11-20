@@ -15,10 +15,10 @@ describe("blocked movement notices", () => {
   });
 
   it("shows the outer notice only for a known no-exit direction", () => {
-    showOuterNoExitNotice({ noExit: true }, "n", "雅江");
-    expect(uiStore.getState().notice.text).toBe("此路不通 · 往北没有路\n可走：西、东");
+    showOuterNoExitNotice({ noExit: true }, "s", "玉泉寨", { questProgress: {}, flags: [] });
+    expect(uiStore.getState().notice.text).toBe("此路不通 · 往南没有路\n可走：北、东");
     clearNotice();
-    showOuterNoExitNotice({ noExit: false }, "n", "雅江");
+    showOuterNoExitNotice({ noExit: false }, "s", "玉泉寨", { questProgress: {}, flags: [] });
     expect(uiStore.getState().notice).toBeNull();
   });
 });

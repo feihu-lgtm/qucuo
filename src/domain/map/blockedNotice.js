@@ -1,5 +1,20 @@
 import { DIRS } from "../../utils/mudHelpers.js";
-import { getDistrictAnchor, visibleInnerExits } from "./innerMap.js";
+import { getDistrictAnchor, getInnerRoom, isInnerExitUnlocked, visibleInnerExits } from "./innerMap.js";
+import { isNodeUnlocked } from "./qucuoMap.js";
+
+export function passableExits(exitsObj, { layer, districtName, questProgress, flags, inv, char } = {}) {
+  const completedQuests = new Set(Object.entries(questProgress || {})
+    .filter(([, progress]) => progress?.status === "completed" || progress?.done)
+    .map(([id]) => id));
+  return Object.fromEntries(Object.entries(exitsObj || {}).filter(([, dest]) => {
+    if (layer === "outer") return isNodeUnlocked(dest, { completedQuests, flags });
+    if (layer === "inner") {
+      const unlockCondition = getInnerRoom(districtName, dest)?.unlockCondition;
+      return !unlockCondition || isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv, char });
+    }
+    return true;
+  }));
+}
 
 export function blockedNoticeText(dir, exitsObj) {
   const exits = Object.keys(exitsObj || {}).map(exitDir => DIRS[exitDir] || exitDir);
@@ -8,5 +23,7 @@ export function blockedNoticeText(dir, exitsObj) {
 }
 
 export function innerBlockedNoticeText(dir, districtName, roomName, options) {
-  return blockedNoticeText(dir, visibleInnerExits(districtName, roomName || getDistrictAnchor(districtName), options));
+  const currentRoom = roomName || getDistrictAnchor(districtName);
+  const exits = visibleInnerExits(districtName, currentRoom, options);
+  return blockedNoticeText(dir, passableExits(exits, { ...options, layer: "inner", districtName }));
 }

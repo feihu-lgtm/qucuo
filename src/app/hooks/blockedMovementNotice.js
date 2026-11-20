@@ -1,9 +1,12 @@
-import { innerBlockedNoticeText, blockedNoticeText } from "../../domain/map/blockedNotice.js";
+import { innerBlockedNoticeText, blockedNoticeText, passableExits } from "../../domain/map/blockedNotice.js";
 import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { showNotice } from "../../store/uiStore.js";
 
-export function showOuterNoExitNotice(outerLock, dir, roomName) {
-  if (outerLock.noExit) showNotice(blockedNoticeText(dir, QUCUO_MAP[roomName]?.exits));
+export function showOuterNoExitNotice(outerLock, dir, roomName, options) {
+  if (outerLock.noExit) {
+    const exits = passableExits(QUCUO_MAP[roomName]?.exits, { ...options, layer: "outer" });
+    showNotice(blockedNoticeText(dir, exits));
+  }
 }
 
 export function resolveInnerBlockedSummary(innerResult, dir, districtName, roomName, options) {
