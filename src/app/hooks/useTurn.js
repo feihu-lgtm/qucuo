@@ -27,6 +27,7 @@ import { parseDir } from "../../utils/mudHelpers.js";
 import { playTurn } from "../../engine/playTurn.js";
 import { burnSquare, consumeArrival, serializeSquares } from "../../domain/map/mapSquares.js";
 import { createTurnStaleCheck } from "./useUndo.js";
+import { resolveInnerBlockedSummary, showOuterNoExitNotice } from "./blockedMovementNotice.js";
 import { classifyActCommand } from "../../core/commands.js";
 
 export function useTurn({
@@ -223,8 +224,7 @@ export function useTurn({
       return;
     }
     if (innerResult) {
-      const blockedText = innerResult.logs?.find(entry => entry.t === "sys")?.text || "";
-      summary = blockedText.includes("内里这个方向没有去处") ? "内层此路不通" : "门锁着";
+      summary = resolveInnerBlockedSummary(innerResult, movingDir, room.name, innerRoomName, { questProgress, flags, inv, char });
       // 上锁的门要说清是缺哪把钥匙（lockedMsg），别跟"这个方向没路"混为一谈——
       // 玩家看见门却被告知"没有去处"会以为是 bug。
       applyLocal(innerResult, "内层移动");
@@ -238,7 +238,7 @@ export function useTurn({
     // 系统裁决层：固定拓扑地图决定移动的合法性和目的地，AI 不能自己决定去了哪里。
     // 判定在 act/outerMove.js：方向在 QUCUO_MAP 有登记出口就锁定目的地；没有就明确
     // 告诉 AI 这个方向走不通，不允许它凭空编一个新地方出来。
-    const outerLock = resolveOuterLock({ _trace, isTalk, movingDir, roomName: room.name, questProgress, flags, innerRoomName });
+    const outerLock = resolveOuterLock({ _trace, isTalk, movingDir, roomName: room.name, questProgress, flags, innerRoomName }); showOuterNoExitNotice(outerLock, movingDir, room.name);
     const destinationLock = outerLock.destinationLock;
     const lockedDestName = outerLock.lockedDestName;
     if (outerLock.blocked) { movingDir = null; pendDirRef.current = null; }

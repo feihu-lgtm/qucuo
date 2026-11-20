@@ -25,8 +25,19 @@ export const OVERLAY = Object.freeze({
   BASEMENT: "basement",
 });
 
+let noticeSequence = 0;
+
 export const uiStore = createStore((set) => ({
   overlays: [],
+  notice: null,
+  showNotice: (text) => {
+    const notice = { id: ++noticeSequence, text };
+    set({ notice });
+    return notice;
+  },
+  clearNotice: (id) => set((state) => (
+    state.notice && (id == null || state.notice.id === id) ? { notice: null } : state
+  )),
   openOverlay: (name) => set((state) => (
     state.overlays.includes(name)
       ? state
@@ -52,11 +63,14 @@ useUiStore.getState = uiStore.getState;
 useUiStore.setState = uiStore.setState;
 
 export const useOverlay = (name) => useUiStore((state) => state.overlays.includes(name));
+export const useNotice = () => useUiStore((state) => state.notice);
 
 export const openOverlay = (name) => uiStore.getState().openOverlay(name);
 export const closeOverlay = (name) => uiStore.getState().closeOverlay(name);
 export const toggleOverlay = (name) => uiStore.getState().toggleOverlay(name);
 export const closeAll = () => uiStore.getState().closeAll();
+export const showNotice = (text) => uiStore.getState().showNotice(text);
+export const clearNotice = (id) => uiStore.getState().clearNotice(id);
 
 export const initializeUiOverlays = (names) => {
   const overlays = [...new Set(names)];

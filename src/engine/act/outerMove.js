@@ -16,13 +16,14 @@ import { DIRS } from "../../utils/mudHelpers.js";
 export function resolveOuterLock({ _trace, isTalk, movingDir, roomName, questProgress, flags, innerRoomName }) {
   let destinationLock = "";
   let lockedDestName = null;
+  let noExit = false;
   if (!isTalk && movingDir) {
     const dest = resolveExit(roomName, movingDir);
     if (dest && !isNodeUnlocked(dest, { completedQuests: new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id)), flags })) {
       // 解锁门禁：目标据点尚未解锁（如黑风寨需先完成 heifengzhai_2）——此路未通，不移动。
       destinationLock = `\n[系统裁决：此路未通] 玩家想往${DIRS[movingDir] || movingDir}去「${dest}」，但此地此刻尚未对玩家开启（前置条件未达成）。请在 output 里合理写出这条路走不通/被拦/时机未到，room.name 必须保持"${roomName}"不变，不要移动、不要凭空编新地点。`;
       traceStep(_trace, "外层移动", "block", `往${DIRS[movingDir] || movingDir}→${dest} 未解锁（前置未达成），不移动`);
-      return { destinationLock, lockedDestName, blocked: true, outerDepart: null };
+      return { destinationLock, lockedDestName, blocked: true, outerDepart: null, noExit: false };
     } else if (dest) {
       lockedDestName = dest;
       // 内层→外层移动规则（用户拍板）：玩家在任意内层房间走外层出口时，逻辑上是
@@ -38,11 +39,12 @@ export function resolveOuterLock({ _trace, isTalk, movingDir, roomName, questPro
       destinationLock = `\n[系统裁决：固定地图] 玩家往${DIRS[movingDir] || movingDir}走，这个方向确定通向"${dest}"，地图上这个据点的基础设定：${destNode.desc}
 你必须把 room.name 设为"${dest}"，room.exits 必须严格等于该据点在固定地图上的实际出口方向列表：${Object.keys(destNode.exits).join(",")}（不能增删出口）。
 你只负责基于上述基础设定，结合当前时间/剧情进展，生成更具体生动的场景描述文本（room.desc）、当前在场的 NPC、地上的物品——这些细节由你发挥，但地点本身、出口列表是固定的，不能更改。`;
-      return { destinationLock, lockedDestName, blocked: false, outerDepart };
+      return { destinationLock, lockedDestName, blocked: false, outerDepart, noExit: false };
     } else if (QUCUO_MAP[roomName]) {
       // 当前房间在固定地图里，但这个方向没有登记出口——明确告知此路不通
       destinationLock = `\n[系统裁决：固定地图] 玩家尝试往${DIRS[movingDir] || movingDir}走，但曲措乡的固定地图里，"${roomName}"这个方向没有已知出口。你应该在 output 里合理描述"此路不通"或"是荒野/断崖/无路可走"，room.name 保持不变（不要移动），不要凭空编造一个新地点。`;
       traceStep(_trace, "外层移动", "block", `往${DIRS[movingDir] || movingDir} 无出口，不移动`);
+      noExit = true;
     }
     // 如果当前房间不在 QUCUO_MAP 里（不应该发生，但作为兜底），不加任何锁定说明，走原有自由生成逻辑
   } else if (!isTalk && !movingDir && QUCUO_MAP[roomName]) {
@@ -54,5 +56,5 @@ export function resolveOuterLock({ _trace, isTalk, movingDir, roomName, questPro
     // 叙事和状态在打架。明确告诉AI这回合不会真的挪地方，把两边说法对齐。
     destinationLock = `\n[系统裁决：固定地图] 玩家这句输入没有明确的移动方向（不是"往东/南/西/北/上/下"这类清晰指令）。无论玩家写了什么（哪怕提到了别的地名），本回合都不会真的改变所在位置：room.name 必须保持"${roomName}"不变，room.exits 必须严格等于：${Object.keys(QUCUO_MAP[roomName].exits).join(",")}。output 里可以自由描述这个动作本身（比如打量四周、随便走走的心境、跟人搭话等），但不能暗示"已经到了别的地方"。`;
   }
-  return { destinationLock, lockedDestName, blocked: false, outerDepart: null };
+  return { destinationLock, lockedDestName, blocked: false, outerDepart: null, noExit };
 }

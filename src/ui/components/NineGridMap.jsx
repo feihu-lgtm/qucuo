@@ -11,7 +11,7 @@ import { MAP_UI } from "../../domain/map/mapUi.js";
 //   accent, loading, big
 // explored=去过（亮·实心）; !explored=战争迷雾（问号·虚线）; reachable=当前有出口可点；
 // locked=有路但未解锁（点了触发 AI 叙事拦截）。current=当前所在（金框脉冲）。
-export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--accent)", loading, big = false }) {
+export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--accent)", textDim = "var(--text-dim)", loading, big = false }) {
   const [hover, setHover] = React.useState(null);
   // 3×3 布局：行=北/中/南，列=西/中/东
   const layout = [
@@ -48,6 +48,17 @@ export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--
         const c = cells[key] || { explored: false };
         const clickable = !loading;
         const hov = hover === key;
+        if (c.blocked) {
+          return (
+            <div key={key} className="mobile-mini-map-cell" role="button" aria-label={`${DIR_CN[c.dir || key]}不通`} aria-disabled={!clickable}
+              tabIndex={clickable ? 0 : -1} onClick={() => clickable && onGo(key)}
+              onKeyDown={event => { if (clickable && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onGo(key); } }}
+              onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
+              style={cellStyle({ cursor: clickable ? "pointer" : "default", opacity: hov ? 0.55 : 0.45 }, MAP_UI.fog)}>
+              <span style={{ color: textDim, fontSize: big ? 18 : 14, fontWeight: "bold" }}>✕</span>
+            </div>
+          );
+        }
         // 未探索：战争迷雾（fog 贴图），只留一个问号，不显方向字
         if (!c.explored) {
           return (

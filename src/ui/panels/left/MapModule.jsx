@@ -1,5 +1,7 @@
-import { hasInnerMap, getDistrictAnchor, visibleInnerExits } from "../../../domain/map/innerMap.js";
+import { hasInnerMap, getDistrictAnchor, getInnerRoom, visibleInnerExits } from "../../../domain/map/innerMap.js";
 import { QUCUO_MAP, isNodeUnlocked } from "../../../domain/map/qucuoMap.js";
+import { blockedNoticeText } from "../../../domain/map/blockedNotice.js";
+import { showNotice } from "../../../store/uiStore.js";
 import { DIRS } from "../../../utils/mudHelpers.js";
 import NineGridMap from "../../components/NineGridMap.jsx";
 import { chromeBtn } from "../../theme.js";
@@ -27,7 +29,9 @@ export default function MapModule({ zoneTheme, room, innerRoomName, mapView, set
         for (const dir of DIRS8) {
           const dest = exitByDir[dir];
           const explored = !!(dest && mapData[dest]);
-          cells[dir] = explored ? { explored: true, name: dest, dir } : { explored: false, dir };
+          cells[dir] = dest
+            ? explored ? { explored: true, name: dest, dir } : { explored: false, dir }
+            : QUCUO_MAP[room.name] ? { blocked: true, dir } : { explored: false, dir };
         }
         const go = (dir) => {
           if (loading) return;
@@ -36,21 +40,26 @@ export default function MapModule({ zoneTheme, room, innerRoomName, mapView, set
           if (dest && mapData[dest] && isNodeUnlocked(dest, { completedQuests: completed, flags })) { autoTravelTo(dest); return; }
           setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "outer" });
         };
-        return <NineGridMap centerLabel={room.name} cells={cells} onGo={go} accent={zoneTheme.accent} loading={loading} big={mapBig} />;
+        return <NineGridMap centerLabel={room.name} cells={cells} onGo={go} accent={zoneTheme.accent} textDim={zoneTheme.textDim} loading={loading} big={mapBig} />;
       })()}
       {mapView === "inner" && (() => {
         if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>此地无内景可绘。</div>;
         const curRoom = innerRoomName || getDistrictAnchor(room.name);
         // 上锁的房间不出现在九宫格里（此前这里直接读裸 exits，锁着的安全屋照样是可点格子）
         const curExits = (curRoom && visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char })) || {};
+        const rawExits = getInnerRoom(room.name, curRoom)?.exits || {};
         const DIRS8 = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
         const cells = {};
         for (const dir of DIRS8) {
           const dest = curExits[dir];
-          cells[dir] = dest ? { explored: true, name: dest, dir } : { explored: false, dir };
+          cells[dir] = dest ? { explored: true, name: dest, dir } : rawExits[dir] ? { explored: false, dir } : { blocked: true, dir };
         }
-        const go = (dir) => { if (!loading && curExits[dir]) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); } };
-        return <NineGridMap centerLabel={curRoom} cells={cells} onGo={go} accent={zoneTheme.accent} loading={loading} big={mapBig} />;
+        const go = (dir) => {
+          if (loading) return;
+          if (curExits[dir]) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); }
+          else if (!rawExits[dir]) showNotice(blockedNoticeText(dir, curExits));
+        };
+        return <NineGridMap centerLabel={curRoom} cells={cells} onGo={go} accent={zoneTheme.accent} textDim={zoneTheme.textDim} loading={loading} big={mapBig} />;
       })()}
     </div>
   );
