@@ -38,6 +38,15 @@ export default async function mobileStartSettings({ page, game }) {
 
   await configureApi(page);
   await page.getByText("设置", { exact: true }).click();
+  await page.getByText("立绘管理", { exact: true }).click();
+  await page.getByText("为旁白、主角本人、或任意已登场角色导入立绘图片", { exact: false }).waitFor();
+  await page.getByText("× 关闭", { exact: true }).click();
+  await page.locator(".game-input").waitFor({ state: "visible" });
+
+  await configureApi(page);
+  await page.getByText("开始游戏", { exact: true }).waitFor();
+
+  await page.getByText("设置", { exact: true }).click();
   await page.getByText("× 关闭", { exact: true }).click();
   await page.getByText("开始游戏", { exact: true }).waitFor();
   assert.equal(await page.locator(".game-input").count(), 0);
