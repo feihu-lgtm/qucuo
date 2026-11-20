@@ -513,7 +513,7 @@ async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
   const body = {
     model: getApiModel(cfg), max_tokens: vertex ? Math.min(maxTokens ?? 65535, 65535) : clampMaxTokensForType(maxTokens, cfg),
     temperature: opts.temperature ?? cfg.temperature,
-    messages: [...system.map(content => ({ role: "system", content })), ...messages],
+    messages: [...system.map(content => ({ role: "system", content })), ...(vertex ? vertex.prepareVertexMessages(messages) : messages)],
   };
   if (stream) Object.assign(body, { stream: true, stream_options: { include_usage: true } });
   else for (const [option, field] of [["topP", "top_p"], ["frequencyPenalty", "frequency_penalty"], ["presencePenalty", "presence_penalty"]]) {

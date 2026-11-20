@@ -17,6 +17,16 @@ export function vertexReasoningEffort(model, effort) {
   return VERTEX_OFF_EFFORT.find(([pattern]) => pattern.test(modelId))?.[1] ?? "low";
 }
 
+export function prepareVertexMessages(messages) {
+  let end = messages.length;
+  while (end > 0 && messages[end - 1].role === "assistant") end--;
+  if (end === messages.length) return messages;
+  const text = messages.slice(end).map(message => message.content).filter(content => content?.trim()).join("\n");
+  const result = messages.slice(0, end);
+  if (text) result.push({ role: "user", content: "（请直接接着下面这段继续写，不要重复）\n" + text });
+  return result;
+}
+
 export function parseVertexAdc(text) {
   let adc;
   try { adc = JSON.parse(text); } catch { throw new Error("ADC 文件不是有效的 JSON"); }

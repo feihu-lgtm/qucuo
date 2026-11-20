@@ -139,6 +139,27 @@ describe("Vertex ADC", () => {
     expect(body).not.toHaveProperty("enable_thinking");
   });
 
+  it.each([
+    [API_TYPES.VERTEX, ["续写正文："], "续写正文："],
+    [API_TYPES.VERTEX, ["叙事格式", "续写正文："], "叙事格式\n续写正文："],
+    [API_TYPES.VERTEX, [""], ""],
+    [API_TYPES.VERTEX, [], ""],
+    [API_TYPES.OPENAI, ["续写正文："], null],
+  ])("handles the assistant tail for %s with tail %j", async (apiType, tail, continuation) => {
+    const fetch = vi.fn(async () => Response.json({ choices: [{ message: { content: "曲措" } }] }));
+    vi.stubGlobal("fetch", fetch);
+    const ai = createWebAi({ getVertexHeaders: async () => ({ Authorization: "Bearer test-token" }) });
+    const cfg = { ...defaultConfig(), apiType, vertexProject: "test-project", apiKey: "test-key" };
+    const history = [{ role: "assistant", content: "上一回合" }, { role: "user", content: "探索石阶" }];
+    const messages = [...history, ...tail.map(content => ({ role: "assistant", content }))];
+    const original = structuredClone(messages);
+    await ai.chat(messages, { cfg, systemPrompt: "叙述" });
+    const expected = continuation === null ? original : [...history];
+    if (continuation) expected.push({ role: "user", content: "（请直接接着下面这段继续写，不要重复）\n" + continuation });
+    expect(JSON.parse(fetch.mock.calls[0][1].body).messages).toEqual([{ role: "system", content: "叙述" }, ...expected]);
+    expect(messages).toEqual(original);
+  });
+
   it("reuses the monitored JSON and streaming paths without a proxy or credential-bearing config", async () => {
     const store = new Map();
     const getItem = vi.fn(key => store.get(key) ?? null);
