@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "verify": "eslint \"src/**/*.{js,jsx}\" \"cli/**/*.{js,jsx,mjs,cjs}\" && vitest run && vite build --config vite.config.pages.js",
+    "ratchet": "node scripts/ratchet.mjs",
+    "ratchet:update": "node scripts/ratchet.mjs --update",
     "cli": "node cli/qucuo.mjs"
   },
   "dependencies": {
