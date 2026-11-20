@@ -13,7 +13,13 @@ async function capture(page, filename) {
 }
 
 export default async function settingsTutorial({ page }) {
-  await page.evaluate(() => localStorage.removeItem("qucuo_tutorial_seen"));
+  await page.evaluate(async fixture => {
+    localStorage.removeItem("qucuo_tutorial_seen");
+    const saves = await import("/src/infra/saves.js");
+    await saves.init();
+    saves.importSave(JSON.stringify(fixture));
+  }, villageSave);
+  await page.waitForTimeout(350);
   await page.reload();
   await page.getByText("设置", { exact: true }).click();
   await page.getByText("API 配置", { exact: true }).click();
@@ -34,16 +40,9 @@ export default async function settingsTutorial({ page }) {
   assert.equal(await page.locator(".tutorial-overlay").count(), 0);
   await capture(page, "settings-after-import.png");
 
-  await page.getByText("× 关闭", { exact: true }).click();
-  await page.getByText("开始游戏", { exact: true }).waitFor();
-  await page.evaluate(async fixture => {
-    const saves = await import("/src/infra/saves.js");
-    await saves.init();
-    saves.importSave(JSON.stringify(fixture));
-  }, villageSave);
-  await page.waitForTimeout(350);
-  await page.reload();
-  await page.getByText("加载游戏", { exact: true }).click();
+  await page.getByText(/← 返回/).click();
+  await page.getByText("💾 存档管理", { exact: true }).click();
   await page.getByText(`${villageSave.label}（导入）`, { exact: true }).click();
+  await page.getByText("读取", { exact: true }).click();
   await page.locator(".tutorial-overlay").waitFor({ state: "visible" });
 }

@@ -48,6 +48,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const showHomestead = useOverlay(OVERLAY.HOMESTEAD);
   const markGameStarted = useCallback(() => {
     bootedForSettingsRef.current = false;
+    try {
+      if (localStorage.getItem("qucuo_tutorial_seen") !== "1") openOverlay(OVERLAY.TUTORIAL);
+    } catch {}
   }, []);
   useEffect(() => {
     if (showCharCreate || showOpening) markGameStarted();
