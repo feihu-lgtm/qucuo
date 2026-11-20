@@ -10,6 +10,15 @@ import { DIRS, getTimeStr } from "../../utils/mudHelpers.js";
 import NineGridMap from "../components/NineGridMap.jsx";
 import { OVERLAY, openOverlay, useOverlay } from "../../store/uiStore.js";
 
+export function NpcAngerLine({ angerState }) {
+  if (!angerState?.active) return null;
+  return (
+    <div style={{ fontSize: "9.5px", color: "#e0526a" }}>
+      ⚡ 气头上（{angerState.reason}），还剩 {angerState.turnsLeft} 回合 · 已求和 {(angerState.attempts || []).length} 次
+    </div>
+  );
+}
+
 export default function LeftPanel({
   isMobile, mobileDrawer, setMobileDrawer,
   zoneTheme, S,
@@ -184,6 +193,7 @@ export default function LeftPanel({
                         </div>
                         <span onClick={() => setActiveNpcMenu(n)} title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
                           style={{ fontSize: "10px", color: zoneTheme.accent, cursor: "pointer", display: "block", marginTop: 2 }}>◈ 角色面板</span>
+                        {known && <NpcAngerLine angerState={attrs.生气状态} />}
                       </div>
                     );
                   })}</div>)}
@@ -215,9 +225,7 @@ export default function LeftPanel({
                           )}
                         </div>
                         {known && attrs.态度 && <div style={{ fontSize: "9.5px", color: "var(--text-dim)" }}>{attrs.态度}</div>}
-                        {known && attrs.生气状态?.active && (
-                          <div style={{ fontSize: "9.5px", color: "#e0526a" }}>⚡ 气头上（{attrs.生气状态.reason}），还剩 {attrs.生气状态.turnsLeft} 回合 · 已求和 {(attrs.生气状态.attempts || []).length} 次</div>
-                        )}
+                        {known && <NpcAngerLine angerState={attrs.生气状态} />}
                       </div>
                     );
                   })}
