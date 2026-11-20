@@ -1,15 +1,17 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   closeAll,
+  clearNotice,
   closeOverlay,
   openOverlay,
   OVERLAY,
+  showNotice,
   toggleOverlay,
   uiStore,
 } from "./uiStore.js";
 
 describe("ui overlay store", () => {
-  afterEach(() => closeAll());
+  afterEach(() => { closeAll(); clearNotice(); });
 
   it("keeps the ordered stack and does not duplicate an open overlay", () => {
     openOverlay(OVERLAY.SETTINGS);
@@ -52,5 +54,15 @@ describe("ui overlay store", () => {
     expect(Object.values(OVERLAY)).toHaveLength(21);
     expect(OVERLAY).not.toHaveProperty("PIPELINE");
     expect(new Set(Object.values(OVERLAY)).size).toBe(21);
+  });
+
+  it("replaces notices and ignores a stale dismissal", () => {
+    const first = showNotice("先前提示");
+    const second = showNotice("此路不通");
+    expect(uiStore.getState().notice).toEqual(second);
+    clearNotice(first.id);
+    expect(uiStore.getState().notice).toEqual(second);
+    clearNotice(second.id);
+    expect(uiStore.getState().notice).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import TopBar from "../ui/panels/TopBar.jsx";
 import { LeftPanel, CenterPanel, RightPanel, MobileTabBar, usePanelFaces } from "../ui/panels/gamePanels.js";
 import ClickableMap from "../ui/components/ClickableMap.jsx";
 import ZoomableMap from "../ui/components/ZoomableMap.jsx";
+import NoticeToast from "../ui/components/NoticeToast.jsx";
 import { QUCUO_MAP, isNodeUnlocked } from "../domain/map/qucuoMap.js";
 import {
   hasInnerMap, getDistrictAnchor, getInnerRoom, visibleInnerExits,
@@ -304,6 +305,8 @@ export default function GameLayout({ layout }) {
           })()}
         </div>
       </div>}
+
+      <NoticeToast zoneTheme={zoneTheme} />
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
