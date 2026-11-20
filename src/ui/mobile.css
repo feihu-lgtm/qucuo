@@ -752,3 +752,14 @@
 @keyframes statusLightPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 .status-light-busy > span { animation: statusLightPulse 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .status-light-busy > span { animation: none; } }
+
+/* 键盘弹出时：整个界面钉在可见区域内，顶栏信号灯与最新叙事始终可见 */
+@media (max-width: 767px) {
+  html[data-keyboard-open] .game-layout {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--mobile-viewport-offset, 0px);
+    height: var(--mobile-viewport-height, 100vh) !important;
+  }
+}
