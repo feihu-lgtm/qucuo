@@ -92,7 +92,9 @@ export default function GameLayout({ layout }) {
     const updateHeight = () => {
       const height = viewport?.height || window.innerHeight;
       document.documentElement.style.setProperty("--mobile-viewport-height", `${Math.round(height)}px`);
-      document.documentElement.toggleAttribute(
+      document.documentElement.style.setProperty("--mobile-viewport-offset", `${Math.round(viewport?.offsetTop || 0)}px`);
+      const wasOpen = document.documentElement.hasAttribute("data-keyboard-open");
+      const open = document.documentElement.toggleAttribute(
         "data-keyboard-open",
         isMobileKeyboardOpen({
           isMobile,
@@ -101,6 +103,7 @@ export default function GameLayout({ layout }) {
           innerHeight: window.innerHeight,
         }),
       );
+      if (open && !wasOpen) requestAnimationFrame(() => logEnd?.current?.scrollIntoView?.({ block: "end" }));
     };
     updateHeight();
     viewport?.addEventListener("resize", updateHeight);
@@ -116,8 +119,9 @@ export default function GameLayout({ layout }) {
       document.removeEventListener("focusout", updateHeight);
       document.documentElement.removeAttribute("data-keyboard-open");
       document.documentElement.style.removeProperty("--mobile-viewport-height");
+      document.documentElement.style.removeProperty("--mobile-viewport-offset");
     };
-  }, [isMobile]);
+  }, [isMobile, logEnd]);
 
   return (
     <div

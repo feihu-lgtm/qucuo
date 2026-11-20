@@ -175,5 +175,5 @@ export function formatTurnStatus({ current, trees, backgroundCount }, now = Date
   const model = current?.model && [AI_WAIT, AI_STREAM].includes(current.phase) ? ` · ${current.model}` : "";
   const elapsed = current ? time(current.totalMs ?? now - current.ts) : "";
   const rollback = trees?.some((turn) => turn.commandId === "rollback" && turn.queued) ? " · 回滚已排队" : "";
-  return { label: `${label}${model}${elapsed ? ` · ${elapsed}` : ""}${rollback}`, backgroundCount };
+  return { label: `${label}${model}${elapsed ? ` · ${elapsed}` : ""}${rollback}`, backgroundCount, phase: current?.phase ?? null };
 }
