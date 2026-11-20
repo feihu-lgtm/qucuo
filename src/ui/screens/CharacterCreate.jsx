@@ -44,9 +44,9 @@ export default function CharacterCreate({ onConfirm }) {
     : 0;
 
   return (
-    <div style={styles.container}>
+    <div className="character-create-root" style={styles.container}>
       <div style={styles.vignette} />
-      <div style={styles.card}>
+      <div className="character-create-card" style={styles.card}>
         <div style={styles.title}>初入江湖</div>
         <div style={styles.sub}>—— 报上名号，方好行走曲措乡 ——</div>
 

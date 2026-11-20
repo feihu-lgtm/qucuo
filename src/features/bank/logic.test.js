@@ -17,7 +17,7 @@ describe("bank logic", () => {
     expect(deposit(makeState(), 50)).toEqual({
       changes: { char: { money: 50 }, deposit: 50, depositedAt: 6 },
       logs: [],
-      settle: "在钱庄存入50两",
+      settle: expect.stringContaining("钱庄存款已完成：本次存入50两"),
     });
   });
 

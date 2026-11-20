@@ -22,7 +22,7 @@ export function deposit(state, amount) {
       depositedAt: state.time,
     },
     logs: [],
-    settle: `在钱庄存入${amount}两`,
+    settle: `钱庄存款已完成：本次存入${amount}两，已从随身银两扣除并入账，存款余额${state.deposit + amount}两，随身银两剩余${(state.char.money || 0) - amount}两。利息由系统按每24时间单位2%自动计算，无需选择存期或利率。只描写掌柜收讫入账后的反应，不得再询问存期、利率或要求确认存款，也不得重复扣款或入账。`,
   };
 }
 
