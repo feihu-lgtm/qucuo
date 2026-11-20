@@ -6,7 +6,7 @@ import { RESIDENT_NPCS } from "../../domain/npc/residentNpcs.js";
 import { tickAngryState } from "../../domain/combat/stealSystem.js";
 import { makeItem } from "../../domain/economy/equipment.js";
 import { makeItemSmart } from "../../domain/items/catalog.js";
-import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { cleanExpiredBuffs } from "../../utils/buffSystem.js";
 import { buildRoomNpcWithCombat } from "../npc/rules.js";
 
@@ -57,8 +57,11 @@ function moveNpcRoomCache(roomMap, room, npcs) {
   return next;
 }
 
-function moveNpcToInnerRoom(npc, innerRoomName) {
-  const moved = { ...npc };
+function moveNpcToInnerRoom(npc, districtName, innerRoomName) {
+  const moved = {
+    ...npc,
+    pursuitInnerRoom: hasInnerMap(districtName) ? (innerRoomName || null) : null,
+  };
   if (innerRoomName) moved.innerRoom = innerRoomName;
   else delete moved.innerRoom;
   return moved;
@@ -194,7 +197,7 @@ export const timeAdvanceRule = {
         logs.push({ t: "sys", text: `  ${name}已不知所踪，积怒也随时间不了了之。` });
         continue;
       }
-      const pursuer = moveNpcToInnerRoom(foundNpc, state.innerRoomName);
+      const pursuer = moveNpcToInnerRoom(foundNpc, state.room?.name, state.innerRoomName);
       pursuedNpcs.push(pursuer);
       forcedDuelNpc = pursuer;
       logs.push({ t: "err", text: `  ${name}一路寻来，堵在你面前——积怒难平，这场恶斗躲不掉了！` });
