@@ -34,7 +34,7 @@ function downloadFailedReport(report, apiConfig) {
 // pipelineCount: pipeline 后台日志条数（0 则不显示总开关）
 // getExtraPayload: 返回 { gameState }（对话/pipeline 由本组件按勾选自行组装）
 export default function BugReportModal({
-  turns = [], pipelineData = null, getGameState, debugSources = EMPTY_DEBUG_SOURCES,
+  turns = [], actionTrees = [], pipelineData = null, getGameState, debugSources = EMPTY_DEBUG_SOURCES,
   onClose, isDayMode = false,
 }) {
   const [agreed, setAgreed] = useState(false);
@@ -48,11 +48,11 @@ export default function BugReportModal({
   // 默认全选所有回合（用 index 集合）；展开查看的回合
   const [selectedTurns, setSelectedTurns] = useState(() => new Set(turns.map((_, i) => i)));
   const [expandedTurn, setExpandedTurn] = useState(null);
-  const [includePipeline, setIncludePipeline] = useState(false); // pipeline 后台日志总开关，默认不带（量大）
+  const [includeActionTrees, setIncludeActionTrees] = useState(false);
   const pipelineCount = Array.isArray(pipelineData) ? pipelineData.length : 0;
   const debugBundle = useMemo(
-    () => buildModalDebugBundle(debugSources, turns, selectedTurns, includePipeline),
-    [debugSources, turns, selectedTurns, includePipeline],
+    () => buildModalDebugBundle(debugSources, turns, selectedTurns, includeActionTrees, actionTrees),
+    [debugSources, turns, selectedTurns, includeActionTrees, actionTrees],
   );
   const debugBundleSize = getDebugBundleDownloadSize(debugBundle);
   const formattedBundleSize = `${(debugBundleSize / 1024).toFixed(1)} KB`;
@@ -94,7 +94,7 @@ export default function BugReportModal({
       version: CURRENT_VERSION ? `${CURRENT_VERSION.codename} ${CURRENT_VERSION.time}` : "",
       gameState,
       conversation: pickedTurns.length ? pickedTurns : null,
-      pipelineLog: includePipeline && pipelineCount ? pipelineData : null,
+      pipelineLog: includeActionTrees && includeDebugBundle && pipelineCount ? pipelineData : null,
     };
     const r = await submitBugReport({
       ...report,
@@ -181,20 +181,20 @@ export default function BugReportModal({
                     </div>
                   ))}
                 </div>
-                {pipelineCount > 0 && (
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 8, fontSize: 11.5, color: C.dim }}>
-                    <input type="checkbox" checked={includePipeline} onChange={e => setIncludePipeline(e.target.checked)} style={{ flexShrink: 0 }} />
-                    <span>附带后台 AI 调用日志（{pipelineCount} 条，含完整 prompt/回复，debug 更准但数据量大）</span>
-                  </label>
-                )}
               </div>
             )}
 
             <div style={{ marginBottom: 14, padding: "8px 10px", border: `1px solid ${C.border}` }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11.5, color: C.text }}>
                 <input type="checkbox" checked={includeDebugBundle} onChange={e => setIncludeDebugBundle(e.target.checked)} />
-                <span>附带调试包（存档、游戏日志、错误；对话和 AI 记录按上面的勾选）</span>
+                <span>附带调试包（存档、游戏日志、错误；对话和行动记录按勾选附带）</span>
               </label>
+              {actionTrees.length > 0 && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 11.5, color: C.dim }}>
+                  <input type="checkbox" disabled={!includeDebugBundle} checked={includeActionTrees} onChange={e => setIncludeActionTrees(e.target.checked)} />
+                  <span>附带全流程行动记录（{actionTrees.length} 条，含 AI 输入和回复）</span>
+                </label>
+              )}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 7, fontSize: 10.5, color: C.dim }}>
                 <span>调试包大小：{formattedBundleSize}</span>
                 <button type="button" onClick={() => downloadDebugBundle(debugBundle)} style={{ cursor: "pointer", padding: "4px 8px", color: C.text, background: C.inputBg, border: `1px solid ${C.border}` }}>

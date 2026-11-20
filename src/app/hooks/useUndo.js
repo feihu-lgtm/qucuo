@@ -1,4 +1,7 @@
 import { useCallback, useMemo, useRef } from "react";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../core/turnMonitor.js";
+
+const undoOwners = new WeakMap();
 
 export function createUndoController({
   undoSnapshotRef, buildCurrentSnapshot, applySnapshot, addLog,
@@ -8,19 +11,37 @@ export function createUndoController({
   setWaitSecs, turnGenerationRef, confirmRollback = () => true,
 }) {
   const invalidateTurns = () => { turnGenerationRef.current += 1; };
-  const captureUndo = () => {
-    try { undoSnapshotRef.current = structuredClone(buildCurrentSnapshot()); } catch { undoSnapshotRef.current = null; }
+  const captureUndo = (turn = getTurnContext()) => {
+    try {
+      undoSnapshotRef.current = structuredClone(buildCurrentSnapshot());
+      if (turn && undoSnapshotRef.current) {
+        undoOwners.set(undoSnapshotRef.current, turn.id);
+        turnMonitor.add(turn, "app", "保存撤销点", { kind: "undo" });
+      }
+    } catch { undoSnapshotRef.current = null; }
   };
 
   const rollbackOneStep = () => {
     const snapshot = undoSnapshotRef.current;
+    const turn = turnMonitor.start("回滚一步", {
+      source: "button", parentId: undoOwners.get(snapshot),
+    });
     if (!snapshot) {
       addLog([{ t: "sys", text: "  没有可回滚的上一步。" }]);
+      turnMonitor.finish(turn, "没有可回滚的上一步");
       return false;
     }
-    if (!confirmRollback()) return false;
+    if (!confirmRollback()) {
+      turnMonitor.transition(turn, PHASE.DISCARDED, "取消回滚");
+      return false;
+    }
     invalidateTurns();
-    applySnapshot(snapshot);
+    try {
+      withTurnContext(turn, () => applySnapshot(snapshot));
+    } catch (error) {
+      turnMonitor.transition(turn, PHASE.ERROR, String(error));
+      throw error;
+    }
     undoSnapshotRef.current = null;
     setActiveBuilding(null);
     clearCommandQueue();
@@ -37,6 +58,8 @@ export function createUndoController({
     setWaitSecs(0);
     setLoading(false);
     addLog([{ t: "sys", text: "  ↩ 已回滚到上一步之前。" }]);
+    turnMonitor.add(turn, "app", "还原撤销点", { kind: "undo" });
+    turnMonitor.transition(turn, PHASE.ROLLED_BACK, "已回滚到上一步之前");
     return true;
   };
 

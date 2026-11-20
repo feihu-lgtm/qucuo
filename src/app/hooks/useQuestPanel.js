@@ -4,7 +4,11 @@ import { applyResult } from "../../features/run.js";
 import { forceAdvanceQuest as forceAdvanceQuestFeature } from "../../features/quest/logic.js";
 import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
 
-export async function runQuestChoice({
+export function runQuestChoice(ctx, entry, choice) {
+  return applyResult(null, () => resolveQuestChoice(ctx, entry, choice), { feature: "quest.choose" });
+}
+
+async function resolveQuestChoice({
   act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
   setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
 }, entry, choice) {
@@ -59,12 +63,12 @@ export function useQuestPanel({
   act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc,
   setActivePersuasion, setInteractMode, setTalkTarget, captureUndo,
 }) {
-  const forceAdvanceQuest = useCallback((quest, targetFlag) => {
+  const forceAdvanceQuest = useCallback((quest, targetFlag) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, forceAdvanceQuestFeature(gameStore.getState(), quest, targetFlag));
-  }, [captureUndo, featureCtxRef]);
+  }, { feature: "quest.advance" }), [captureUndo, featureCtxRef]);
 
-  const triggerQuestFromPanel = useCallback(async (entry) => {
+  const triggerQuestFromPanel = useCallback((entry) => applyResult(featureCtxRef.current, async () => {
     const { quest, stage, isNewlyGiven } = entry;
     if (apiCfg.questTriggerMode === "script") {
       const line = isNewlyGiven
@@ -80,7 +84,7 @@ export function useQuestPanel({
       { t: "sys", text: `  〔详情可查任务面板〕` },
     ]);
     await act(`❢ ${quest.title}`, [], { forcedEvent: stage.description, forcedEventNpc: quest.giver, keepUndo: true });
-  }, [act, apiCfg, forceAdvanceQuest, addLog]);
+  }, { feature: "quest.trigger" }), [act, apiCfg, forceAdvanceQuest, addLog, featureCtxRef]);
 
   const triggerQuestChoice = useCallback((entry, choice) => runQuestChoice({
     act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,

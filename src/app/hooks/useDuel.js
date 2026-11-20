@@ -27,27 +27,27 @@ export function useDuel({
   duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
   captureUndo, turnGenerationRef,
 }) {
-  const handleNpcDuel = useCallback(async (npc) => {
+  const handleNpcDuel = useCallback((npc) => applyResult(featureCtxRef.current, async () => {
     const isStale = createTurnStaleCheck(turnGenerationRef);
     captureUndo();
     applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name);
     await openDuelAfterNarration({ act, setDuelPending, isStale }, npc);
-  }, [act, captureUndo, featureCtxRef, setActiveTarget, setDuelPending, turnGenerationRef]);
+  }, { feature: "npc.duel" }), [act, captureUndo, featureCtxRef, setActiveTarget, setDuelPending, turnGenerationRef]);
 
-  const confirmDuel = useCallback(() => {
+  const confirmDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
     if (!duelPending) return;
     setDuelingNpc(duelPending);
     setDuelPending(null);
-  }, [duelPending]);
+  }, { feature: "duel.confirm" }), [duelPending, featureCtxRef]);
 
-  const cancelDuel = useCallback(() => {
+  const cancelDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
     if (!duelPending) return;
     addLog([{ t: "sys", text: `  你收起架势，这场切磋作罢，${duelPending.name}也顺势松了口气。` }]);
     setDuelPending(null);
-  }, [duelPending, addLog]);
+  }, { feature: "duel.cancel" }), [duelPending, addLog, featureCtxRef]);
 
-  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp) => {
+  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp) => applyResult(featureCtxRef.current, () => {
     const finishedNpc = duelingNpc;
     const result = settleNpcDuel(gameStore.getState(), finishedNpc, {
       outcome,
@@ -76,7 +76,7 @@ export function useDuel({
         source: NOTE_SOURCE.DUMB,
       });
     }
-  }, [duelingNpc, pendingQuestBranch, noteAction, act, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch]);
+  }, { feature: "duel.finish" }), [duelingNpc, pendingQuestBranch, noteAction, act, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch, featureCtxRef]);
 
   return { handleNpcDuel, confirmDuel, cancelDuel, duelFinishHandler };
 }

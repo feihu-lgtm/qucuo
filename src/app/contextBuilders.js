@@ -27,7 +27,7 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
       varTree: game.varTree, room: game.room, innerRoomName: game.innerRoomName, time: game.time,
       flags: game.flags, questProgress: game.questProgress,
       effectiveSpecialNow, companionState: game.companionState,
-      loading: ui.loading, pendingTalks: ui.pendingTalks, waitSecs: ui.waitSecs, addLog,
+      loading: ui.loading, addLog,
       characterPageTarget: ui.characterPageTarget, setCharacterPageTarget: ui.setCharacterPageTarget,
       claimedMilestones: game.claimedMilestones, claimMilestone: screenHandlers.claimMilestone,
       giftToCharacter: screenHandlers.giftToCharacter,

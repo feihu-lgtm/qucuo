@@ -1,12 +1,34 @@
 import { gameActions } from "../core/gameStore.js";
 import { registerFact } from "../domain/prompt/knowledge.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
 
 function actionForKey(key) {
   const actionName = `set${key[0].toUpperCase()}${key.slice(1)}`;
   return gameActions[actionName];
 }
 
-export function applyResult(ctx, result) {
+export function applyResult(ctx, result, { turn = getTurnContext(), feature, background = false } = {}) {
+  const action = typeof result === "function";
+  feature ||= result.feature || result.settle || result.kind || "本地操作";
+  const trace = turn || turnMonitor.start(feature, { source: background ? "background" : "button", background });
+  const inRules = getTurnContext() === trace && trace.inRules;
+  if (!inRules) {
+    if (action || !trace.nodes.some((node) => node.layer === "feature")) turnMonitor.add(trace, "feature", feature);
+    if (!action) turnMonitor.add(trace, "domain", "裁决结果", {
+      detail: Object.keys(result.changes || {}).join("、") || result.logs?.map(({ text }) => text).join("\n"),
+    });
+  }
+  try {
+    const applied = withTurnContext(trace, () => action ? result() : writeResult(ctx, result, trace));
+    if (!turn && !trace.awaitingSettlement) turnMonitor.finish(trace);
+    return applied;
+  } catch (error) {
+    if (!turn) turnMonitor.transition(trace, PHASE.ERROR, String(error));
+    throw error;
+  }
+}
+
+function writeResult(ctx, result, trace) {
   if (result.squareOps?.length) ctx.applySquareOps?.(result.squareOps);
 
   for (const [key, value] of Object.entries(result.changes || {})) {
@@ -31,7 +53,11 @@ export function applyResult(ctx, result) {
   }
   if (result.settle) {
     const settleOptions = result.settleOptions || {};
-    ctx.act?.(result.settle, [], { ...settleOptions, settle: settleOptions.settle ?? true, keepUndo: true });
+    if (ctx.act) {
+      const join = trace.phase === PHASE.MACHINE;
+      withTurnContext(join ? trace : undefined, () =>
+        ctx.act(result.settle, [], { ...settleOptions, settle: settleOptions.settle ?? true, keepUndo: true }));
+    }
   }
   return result;
 }

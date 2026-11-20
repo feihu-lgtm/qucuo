@@ -49,7 +49,8 @@ describe("ui overlay store", () => {
 
   it("defines one frozen name for every former overlay flag", () => {
     expect(Object.isFrozen(OVERLAY)).toBe(true);
-    expect(Object.values(OVERLAY)).toHaveLength(22);
-    expect(new Set(Object.values(OVERLAY)).size).toBe(22);
+    expect(Object.values(OVERLAY)).toHaveLength(21);
+    expect(OVERLAY).not.toHaveProperty("PIPELINE");
+    expect(new Set(Object.values(OVERLAY)).size).toBe(21);
   });
 });

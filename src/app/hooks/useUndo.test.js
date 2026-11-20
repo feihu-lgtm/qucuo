@@ -6,6 +6,7 @@ import { applyResult } from "../../features/run.js";
 import { runQuestChoice } from "./useQuestPanel.js";
 import { restorePersuasionProgress } from "./useAutosave.js";
 import { createTurnStaleCheck, createUndoController } from "./useUndo.js";
+import { turnMonitor } from "../../core/turnMonitor.js";
 
 function createController(overrides = {}) {
   const pendingQueue = { current: ["next"] };
@@ -104,6 +105,7 @@ describe("undo controller", () => {
       expect(gameStore.getState().varTree).not.toEqual(before.varTree);
       expect(settleOptions[0].keepUndo).toBe(true);
       harness.controller.rollbackOneStep();
+      expect(turnMonitor.getSnapshot().current).toMatchObject({ phase: "ROLLED_BACK" });
       expect(gameStore.getState().inv).toEqual([item]);
       expect(gameStore.getState().varTree).toEqual(before.varTree);
     } finally {

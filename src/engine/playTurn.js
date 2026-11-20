@@ -3,6 +3,7 @@ import { gameActions, gameStore } from "../core/gameStore.js";
 import { getRngState, setRngState } from "../core/rng.js";
 import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
 import { runTurn } from "./runTurn.js";
+import { PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
@@ -35,20 +36,36 @@ function restoreSnapshot(snapshot, refs = {}) {
 }
 
 export async function playTurn(ctx, cmd, opts = {}) {
+  const trace = ctx._trace || turnMonitor.start(cmd, { source: "engine" });
+  const stale = (error) => {
+    turnMonitor.transition(trace, PHASE.DISCARDED, "回滚后收到过期结果");
+    return { ok: false, stale: true, ...(error && { error }) };
+  };
   ctx.setCommandPhase?.("machine");
   let snapshot;
   try {
     snapshot = captureSnapshot(ctx.refs);
+    turnMonitor.add(trace, "app", "事务快照", { kind: "snapshot" });
+    turnMonitor.add(trace, "feature", "engine.runTurn");
+    turnMonitor.add(trace, "domain", "整理世界状态与叙事上下文");
     ctx.beforeRun?.();
     ctx.setCommandPhase?.("ai");
-    const turn = await runTurn(ctx, cmd, opts);
-    if (ctx.isStale?.()) return { ok: false, stale: true };
+    const turn = await runTurn({ ...ctx, _trace: trace }, cmd, opts);
+    if (turn.stale || ctx.isStale?.()) return stale();
     ctx.setCommandPhase?.("commit");
-    (ctx.commitRound || commitRound)(ctx.commitDeps(turn));
+    withTurnContext(trace, () => {
+      if (ctx.commitRound) {
+        turnMonitor.transition(trace, PHASE.COMMIT);
+        ctx.commitRound(ctx.commitDeps(turn));
+      } else commitRound({ ...ctx.commitDeps(turn), _trace: trace });
+    });
+    await Promise.resolve();
+    if (!ctx.deferMonitorFinish) turnMonitor.finish(trace, "行动完成");
     return { ok: true, turn };
   } catch (error) {
-    if (ctx.isStale?.()) return { ok: false, stale: true, error };
-    if (snapshot) restoreSnapshot(snapshot, ctx.refs);
+    if (ctx.isStale?.()) return stale(error);
+    if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs));
+    turnMonitor.transition(trace, PHASE.ERROR, String(error));
     return { ok: false, error };
   }
 }

@@ -12,7 +12,7 @@
 //   8. NPC 人选选择器、飞鸽传书状态条、底部输入框
 //
 // 游戏数据经 props 下传，overlay 显隐读 uiStore，本地只保留建筑页签状态。
-// 建筑面板各自的 Screen 组件已经是独立文件，本文件只负责「此刻该显示哪一个」这层调度。
+import TurnStatusPill from "../components/TurnStatusPill.jsx";
 import { chromeBtn } from "../theme.js";
 import { useState, useEffect } from "react";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
@@ -709,7 +709,7 @@ export default function CenterPanel({
               </div>
             );
           })()}
-          <div className="mobile-input-bar" style={{
+          <TurnStatusPill theme={zoneTheme} mobile={isMobile} /><div className="mobile-input-bar" style={{
             borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid #4a3a1a" : `1px solid ${zoneTheme.border}`,
             background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
             padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,

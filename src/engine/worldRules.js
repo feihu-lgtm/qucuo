@@ -1,3 +1,5 @@
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
+
 function sameDeps(left, right) {
   return left.length === right.length && left.every((value, index) => Object.is(value, right[index]));
 }
@@ -14,7 +16,29 @@ export function createWorldRules(rules, { getState, applyResult, ctx = {} }) {
     ids.add(rule.id);
   }
 
-  function check() {
+  function check(turn = getTurnContext()) {
+    let trace = turn;
+    try {
+      checkRules((result, rule) => {
+        if (!trace && result == null) return;
+        trace ||= turnMonitor.start("世界规则", { source: "world-rules", background: true });
+        turnMonitor.add(trace, "rules", rule.id, {
+          status: result == null ? "skip" : "pass",
+          detail: result == null ? "无变更" : Object.keys(result.changes || result).join("、"),
+        });
+        if (result == null) return;
+        trace.inRules = true;
+        try { withTurnContext(trace, () => applyResult(result, rule)); }
+        finally { delete trace.inRules; }
+      });
+      if (!turn && trace) turnMonitor.finish(trace);
+    } catch (error) {
+      if (!turn && trace) turnMonitor.transition(trace, PHASE.ERROR, String(error));
+      throw error;
+    }
+  }
+
+  function checkRules(apply) {
     for (let pass = 0; pass < 5; pass++) {
       for (const rule of rules) {
         const state = getState();
@@ -33,7 +57,7 @@ export function createWorldRules(rules, { getState, applyResult, ctx = {} }) {
           firstRun,
           previousDeps,
         });
-        if (result != null) applyResult(result, rule);
+        apply(result, rule);
       }
 
       const pending = rules.some((rule) => {
@@ -57,17 +81,21 @@ export function createCoalescedCheck(check, enqueue = queueMicrotask) {
   let pending = false;
   let running = false;
   let disposed = false;
+  let context;
 
   function schedule() {
-    if (pending || running || disposed) return;
+    if (running || disposed) return;
+    context = getTurnContext() || context;
+    if (pending) return;
     pending = true;
     enqueue(() => {
       pending = false;
       if (disposed) return;
       running = true;
       try {
-        check();
+        withTurnContext(context, check);
       } finally {
+        context = undefined;
         running = false;
       }
     });

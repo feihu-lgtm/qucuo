@@ -1,10 +1,11 @@
 import { callMainOnce } from "./act/actCall.js";
 import { parseMainResponse } from "./act/parseResponse.js";
 import { callExtraction, buildExtractionCfg } from "../domain/prompt/extractionEngine.js";
-import { attachExtractionPipeline, attachPipeline, endTrace, step as traceStep } from "../infra/actionTrace.js";
+import { step as traceStep } from "../infra/actionTrace.js";
+import { PHASE, turnMonitor } from "../core/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
 import { buildHistBlock, histBlockSavings } from "../domain/memory/histWindow.js";
-import { createWebAi } from "./ports/ai.js";
+import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 
 const MAX_AUTO_RETRY = 2;
@@ -42,7 +43,22 @@ export function createExtractionState(ctx, deps) {
 }
 
 export async function runTurn(ctx, cmd, opts = {}) {
-  const ai = ctx.ai || createWebAi();
+  const trace = ctx._trace || turnMonitor.start(cmd, { source: "engine" });
+  try {
+    const result = await runTurnSteps({ ...ctx, _trace: trace }, cmd, opts);
+    if (!ctx._trace) {
+      if (result.stale) turnMonitor.transition(trace, PHASE.DISCARDED, "结果已过期");
+      else turnMonitor.finish(trace);
+    }
+    return result;
+  } catch (error) {
+    if (!ctx._trace) turnMonitor.transition(trace, PHASE.ERROR, String(error));
+    throw error;
+  }
+}
+
+async function runTurnSteps(ctx, cmd, opts) {
+  const ai = bindTurnAi(ctx.ai || createWebAi(), ctx._trace);
   const convo = ctx.convo || [];
   const newConvo = [...convo, { role: "user", content: cmd }];
   const mainConvo = newConvo.filter((message) => !(
@@ -86,10 +102,6 @@ export async function runTurn(ctx, cmd, opts = {}) {
   const deps = { ...baseDeps, ...Object.fromEntries(Object.entries(memoryDeps).filter(([, value]) => value !== undefined)), cmd, ai };
   const addLog = deps.addLog || ctx.addLog || (() => {});
   const trace = (layer, status, detail) => traceStep(deps._trace, layer, status, detail);
-  const attach = (fn) => {
-    const entry = ctx.getPipelineLog?.()?.[0];
-    if (entry) fn(deps._trace, entry);
-  };
   const callDeps = () => ({ ...deps });
   const apiCfg = deps.apiCfg;
   let rawFull = "";
@@ -112,7 +124,6 @@ export async function runTurn(ctx, cmd, opts = {}) {
         trace("AI调用", "pass", attempt > 1
           ? `主叙事第${attempt}次尝试成功（双调用·主叙事模型=${apiCfg.model || "未设置"}）`
           : `主叙事一次成功（双调用·主叙事模型=${apiCfg.model || "未设置"}）`);
-        attach(attachPipeline);
         break;
       } catch (error) {
         if (ctx.isStale?.()) return { stale: true };
@@ -167,7 +178,6 @@ export async function runTurn(ctx, cmd, opts = {}) {
     });
     if (ctx.isStale?.()) return { stale: true };
     pickupExtractionFailed = !extracted || !!extracted.parseFailed;
-    if (extracted) attach(attachExtractionPipeline);
     if (extracted?.parseFailed) {
       addLog([{ t: "sys", text: "  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新" }]);
       trace("提取调用", "fail", `返回内容无法解析（提取模型=${extractionCfg.model || "未设置"}），本轮状态未更新`);
@@ -190,7 +200,6 @@ export async function runTurn(ctx, cmd, opts = {}) {
         trace("AI调用", "pass", attempt > 1
           ? `第${attempt}次重试后成功（单调用·主模型=${apiCfg.model || "未设置"}）`
           : `一次成功（单调用·主模型=${apiCfg.model || "未设置"}）`);
-        attach(attachPipeline);
       } catch (error) {
         if (ctx.isStale?.()) return { stale: true };
         if (attempt <= MAX_AUTO_RETRY) {
@@ -199,8 +208,6 @@ export async function runTurn(ctx, cmd, opts = {}) {
           continue;
         }
         trace("AI调用", "fail", `重试用尽仍失败：${error.message || error}`);
-        attach(attachPipeline);
-        endTrace(deps._trace, "行动中断（AI调用失败，状态未变更）");
         throw error;
       }
       ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));

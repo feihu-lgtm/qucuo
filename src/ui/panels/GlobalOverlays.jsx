@@ -9,14 +9,14 @@
 //   TraceViewer(70) · PersuasionScreen(60) · Duel/TeamDuelScreen
 //   CharacterPage/QuestLogScreen/LoreScreen/PortraitManager/CodexScreen(300)
 //   BugReportModal/NpcActionMenu(400) · ItemActionMenu(410)
-//   TutorialOverlay/VersionHistoryPanel(500) · PipelineViewer
+//   TutorialOverlay/VersionHistoryPanel(500)
 //
 // 弹层可见性读 uiStore，游戏数据与业务回调经 props 下传。切磋界面额外包了一层
 // ErrorBoundary——战斗引擎报错时不该把整局游戏拖崩，能退回房间重来。
 import { useCallback } from "react";
 import { listCharacters } from "../../domain/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
-import { getPipelineLog } from "../../infra/apiConfig.js";
+import { getPipelineEntries, getTraceLog } from "../../infra/actionTrace.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { activeCompanion, isCompanionUnlockedByName } from "../../domain/companion/companion.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
@@ -28,7 +28,6 @@ import QuestLogScreen from "../screens/QuestLogScreen.jsx";
 import LoreScreen from "../screens/LoreScreen.jsx";
 import QijuzhuScreen from "../screens/QijuzhuScreen.jsx";
 import PortraitManager from "../screens/PortraitManager.jsx";
-import PipelineViewer from "../screens/PipelineViewer.jsx";
 import TraceViewer from "../screens/TraceViewer.jsx";
 import CodexScreen from "../screens/CodexScreen.jsx";
 import BugReportModal from "../screens/BugReportModal.jsx";
@@ -43,7 +42,7 @@ export default function GlobalOverlays({
   zoneTheme, isDayMode,
   char, setChar, inv, setInv, skills, varTree, room, innerRoomName, time,
   flags, questProgress, effectiveSpecialNow, companionState,
-  loading, pendingTalks, waitSecs, addLog,
+  loading, addLog,
   characterPageTarget, setCharacterPageTarget,
   onImportNpcs, onImportPlayer, onImportWorld,
   claimedMilestones, claimMilestone, giftToCharacter,
@@ -66,7 +65,6 @@ export default function GlobalOverlays({
   const showLore = useOverlay(OVERLAY.LORE);
   const showQijuzhu = useOverlay(OVERLAY.QIJUZHU);
   const showPortraitManager = useOverlay(OVERLAY.PORTRAIT_MANAGER);
-  const showPipeline = useOverlay(OVERLAY.PIPELINE);
   const showTrace = useOverlay(OVERLAY.TRACE);
   const showCodex = useOverlay(OVERLAY.CODEX);
   const showBugReport = useOverlay(OVERLAY.BUG_REPORT);
@@ -144,14 +142,14 @@ export default function GlobalOverlays({
         />
       )}
 
-      {showPipeline && <PipelineViewer onClose={() => closeOverlay(OVERLAY.PIPELINE)} loading={loading || pendingTalks > 0} waitSecs={waitSecs} />}
-      {showTrace && <TraceViewer onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />}
+      {showTrace && <TraceViewer theme={zoneTheme} onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />}
       {showCodex && <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />}
       {showBugReport && (
         <BugReportModal
           isDayMode={isDayMode}
           turns={buildBugReportTurns()}
-          pipelineData={getPipelineLog()}
+          pipelineData={getPipelineEntries()}
+          actionTrees={getTraceLog()}
           debugSources={debugSources}
           getGameState={() => ({
             room: room.name, inner: innerRoomName, time,

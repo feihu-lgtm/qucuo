@@ -15,8 +15,9 @@ import { findTargetedRumor } from "../../domain/npc/npcEmergence.js";
 import { classifyIntent, INTENT } from "../../domain/prompt/inputIntent.js";
 import { buildDirectionJudgeRequest, getMapNode, parseDirectionJudgeResponse, QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
-import { callModel, classifyError, getPipelineLog } from "../../infra/apiConfig.js";
-import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
+import { callModel, classifyError } from "../../infra/apiConfig.js";
+import { step as traceStep } from "../../infra/actionTrace.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../core/turnMonitor.js";
 import { createPromptContext } from "../../engine/prompt/index.js";
 import * as importedRegistry from "../../domain/cards/importedRegistry.js";
 import { COMPANION_LORE } from "../../domain/companion/companion.js";
@@ -54,6 +55,12 @@ export function useTurn({
       return dispatchCommand(commandId, () => actRef.current(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: commandText });
     }
     const cmd = rawCmd.trim(), isStale = createTurnStaleCheck(turnGenerationRef);
+    const parent = opts.turn || getTurnContext();
+    const _trace = parent?.phase === PHASE.MACHINE ? parent : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading });
+    if (parent === _trace) _trace.awaitingSettlement = true;
+    const applyLocal = (result, feature) => applyResult(featureCtxRef.current, result, { turn: _trace, feature });
+    let summary, queued = false;
+    try {
     const stopAutoTravel = () => {
       if (!autoTravelRef.current) return;
       const dropped = clearRouteQueue();
@@ -62,10 +69,6 @@ export function useTurn({
       addLog([{ t: "sys", text: message, standalone: true }]);
     };
 
-    // 移动防连点：方向按钮/九宫格点击带 forceLayer。内层移动是瞬时的（不设 loading），
-    // 手抖或误触双击会在极短时间内连发两次——第二次时 innerRoomName 可能已变、或穿到外层
-    // 触发一次多余的 AI 调用（表现为"点一下却出现两个北、还卡在引擎运转"）。300ms 内的重复
-    // 移动直接忽略。只拦移动，不影响对话/私聊（那些走 pendingTalks 允许并发）。
     if (opts.forceLayer) {
       const now = Date.now();
       if (shouldThrottleMovement({
@@ -80,8 +83,7 @@ export function useTurn({
       // 私聊串行：一条还在跑时不允许真的发出第二条——否则两条并发会读到同一份
       // 发送前的 convo（历史一样），且流式占位用的 logIdx.current 是共享 ref，两条
       // 回调互相踩踏，表现为"日志一下出两条/重复"。用 talkBusyRef（同步 ref，不等
-      // re-render）挡住极快连点；输入框允许预打字，只拦实际发送。不 startTrace
-      // （避免与 talkToNarrator 内部完整 trace 重复的空壳记录）。
+      // re-render）挡住极快连点；输入框允许预打字，只拦实际发送。
       if (talkBusyRef.current || pendingTalks > 0) {
         addLog([{ t: "sys", text: "  旁白还在回话，稍候再说下一句。" }]);
         return;
@@ -91,21 +93,14 @@ export function useTurn({
       setHistIdx(-1);
       // 教程任务「四宅家产」触发点之三：跟旁白聊到溪边小屋（幂等）
       if (/溪边小屋/.test(cmd)) setFlags(f => f.includes("tutorial_estate_started") ? f : [...f, "tutorial_estate_started"]);
-      return talkToNarrator(cmd, { isStale });
+      await talkToNarrator(cmd, { isStale, turn: _trace });
+      return;
     }
-    if (!opts.keepUndo) captureUndo();
+    if (!opts.keepUndo) captureUndo(_trace);
 
-    // 方向按钮点击时会带 opts.forceLayer（inner/outer），这是明确的"我要移动"信号——
-    // 即便此刻交互模式停在"对话"，也必须按移动处理，不能被当成对话发给 AI（否则点
-    // 移动按钮却因为模式是对话，整个移动判定被跳过、room.name 不变，表现为"外层走
-    // 路变不了"）。所以有 forceLayer 时强制 isTalk=false。
     const isTalk = interactMode === "talk" && !opts.forceLayer;
 
-    // ── 结算轮（绿灯·批一，见 docs/开发_挂载分级与蓝绿灯设计.md §三）──
-    // 各建筑面板（住店/求医/送礼/买卖/存取/当押/赌坊/打醮/接交任务/赌石成交…）在调 act 之前，
-    // 系统已把钱扣完、物入袋、flag 置好——AI 对状态没有任何裁量权，只负责把这件既定事实
-    // 写成一段好看的正文。这类轮次以前统统走 full 档（物件志+认知隔离+全量schema+MVU+世界观全文），
-    // 现在切到 settle 轻档。创造模式除外（gm 下玩家是神，要保留全量能力）。
+    // 结算轮的既定结果只由 AI 描述；创造模式保留完整能力。
     const isSettle = !!opts.settle && !gm;
 
     // 意图分类：本地正则判断这句输入的性质，决定这次调用该给多长的篇幅。
@@ -113,30 +108,27 @@ export function useTurn({
     // 不需要再区分是元问题还是战斗；只有行动模式的自由输入才需要分类。
     const intent = isTalk ? INTENT.UNKNOWN : classifyIntent(cmd);
 
-    // 行动分层日志：为这次行动开一条 trace，沿途各层记录通过/拦截/失败，
-    // act 收尾时归档。可在「📋 Pipeline」旁的「🧭行动日志」查看，用于排查
-    // "移动没生效/在场名单不对/说服不中"这类问题究竟卡在哪一层。
-    const _trace = startTrace(cmd, rawCmd);
     traceStep(_trace, "意图分类", "pass", `模式=${isTalk ? "对话" : "行动"} · 意图=${intent?.label || intent || "未知"}`);
 
     const localCommand = !isTalk
       ? parseLocalCommand(cmd, { ...gameStore.getState(), isTalk, convo }, { surface: "web" })
       : null;
     if (localCommand) {
+      turnMonitor.activate(_trace);
       setInput("");
       if (localCommand.recordHistory !== false) {
         setCmdHistory(p => [cmd, ...p].slice(0, 50));
         setHistIdx(-1);
       }
       if (localCommand.kind === "lines") {
-        applyResult(featureCtxRef.current, {
+        applyLocal({
           logs: [{ t: "cmd", text: `> ${cmd}` }, ...localCommand.lines],
-        });
+        }, localCommand.kind);
       } else {
-        applyResult(featureCtxRef.current, localCommand.result);
+        applyLocal(localCommand.result, localCommand.localKind);
         if (localCommand.localKind === "cachedLook") {
           traceStep(_trace, "查看", "pass", "格子预成文本，纯前端秒回");
-          endTrace(_trace, "查看（纯前端）");
+          summary = "查看（纯前端）";
         }
       }
       return;
@@ -149,6 +141,7 @@ export function useTurn({
     // 没被 regex 精确命中的模糊写法（比如"找个人""刷新npc"）不受影响，
     // 依然走 UNKNOWN 交给 narrator.js 里那套"该不该打断"的判断去演绎。
     if (!isTalk && intent.code === "META_QUERY") {
+      turnMonitor.activate(_trace);
       addLog([{ t: "cmd", text: `> ${cmd}` }]);
       setInput("");
       setCmdHistory(p => [cmd, ...p].slice(0, 50));
@@ -161,9 +154,8 @@ export function useTurn({
       return;
     }
 
+    turnMonitor.activate(_trace);
     // 指令显示：默认显示 `> ${cmd}`；但某些内部指令（如战斗结算发给AI写战报的
-    // 长prompt）不该原样打印给玩家看——传 opts.silentCmd 则完全不显示，或
-    // opts.displayCmd 用一句干净的标题替代真实指令。
     if (!opts.silentCmd) {
       addLog([{ t: "cmd", text: `> ${opts.displayCmd || cmd}` }, ...extraReplies]);
     } else if (extraReplies.length) {
@@ -172,9 +164,6 @@ export function useTurn({
     setInput("");
     setCmdHistory(p => [cmd, ...p].slice(0, 50));
     setHistIdx(-1);
-
-    // ⑤ 探索态服用消耗品：打字「用/服/吃 X」正则已废除——改由「包袱」里每件消耗品的
-    // 「⊙用」按钮打开次级面板（查看/服食/送人/卖掉），走 handleConsumeItem 确定性 handler。
 
     // loading 态 + 计时器启动已挪到下方"信息域·知识系统"之前——内层移动（上方 early return）
     // 是瞬时纯前端操作，不该进入 loading 态；此前设在这里会导致内层移动也转 spinner，
@@ -220,11 +209,11 @@ export function useTurn({
       : null;
     if (innerResult?.changes?.innerRoomName) {
       noteAction("innerMove");
-      endTrace(_trace, `内层移动到 ${room.name}·${innerResult.changes.innerRoomName}`);
+      summary = `内层移动到 ${room.name}·${innerResult.changes.innerRoomName}`;
       setInput("");
       setCmdHistory(p => [cmd, ...p].slice(0, 50));
       setHistIdx(-1);
-      applyResult(featureCtxRef.current, innerResult);
+      applyLocal(innerResult, "内层移动");
       // 内层移动是瞬时纯前端操作，early return 前必须把 loading+计时器清掉，
       // 否则输入框锁死、spinner 空转、秒数狂涨。
       setLoading(false);
@@ -234,10 +223,10 @@ export function useTurn({
     }
     if (innerResult) {
       const blockedText = innerResult.logs?.find(entry => entry.t === "sys")?.text || "";
-      endTrace(_trace, blockedText.includes("内里这个方向没有去处") ? "内层此路不通" : "门锁着");
+      summary = blockedText.includes("内里这个方向没有去处") ? "内层此路不通" : "门锁着";
       // 上锁的门要说清是缺哪把钥匙（lockedMsg），别跟"这个方向没路"混为一谈——
       // 玩家看见门却被告知"没有去处"会以为是 bug。
-      applyResult(featureCtxRef.current, innerResult);
+      applyLocal(innerResult, "内层移动");
       setInput(""); setCmdHistory(p => [cmd, ...p].slice(0, 50)); setHistIdx(-1);
       setLoading(false);
       if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
@@ -284,14 +273,14 @@ export function useTurn({
       if (traceInfo.encounter) {
         traceStep(_trace, "路遇", "pass", `格子预埋路遇：${traceInfo.encounter.name}（${traceInfo.encounter.label}）`);
       }
-      applyResult(featureCtxRef.current, arrivalResult);
+      applyLocal(arrivalResult, "格子移动");
       if (traceInfo.encounter) stopAutoTravel();
       outerDepartRef.current = null; pendDirRef.current = null; pickupJudgmentRef.current = null;
-      endTrace(_trace, `到达 ${lockedDestName}（格子·纯前端）`);
+      summary = `到达 ${lockedDestName}（格子·纯前端）`;
       prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
       return;
     }
-    if (arrivalResult) applyResult(featureCtxRef.current, arrivalResult);
+    if (arrivalResult) applyLocal(arrivalResult, "格子移动");
 
     const targetedRumor = findTargetedRumor(varTreeRef.current, cmd);
 
@@ -313,8 +302,10 @@ export function useTurn({
     collectGrantedRef.current = [];
     const collectHit = judgeCollect({ isTalk, cmd, room, questProgress, inv });
     if (collectHit) {
-      setInv(v => [...v, collectHit.gained]);
-      setRoom(r => ({ ...r, items: (r.items || []).filter(i => (typeof i === "string" ? i : i.name) !== collectHit.item) }));
+      withTurnContext(_trace, () => {
+        setInv(v => [...v, collectHit.gained]);
+        setRoom(r => ({ ...r, items: (r.items || []).filter(i => (typeof i === "string" ? i : i.name) !== collectHit.item) }));
+      });
       collectGrantedRef.current = [collectHit.item];
       addLog([{ t: "item", text: `  ✓ 你采得「${collectHit.item}」，收入背包。` }]);
       collectNote = collectHit.note;
@@ -371,7 +362,6 @@ export function useTurn({
         recall: { apiCfg, cmd, room, flags, activeTarget, isTalk, talkTarget },
       },
       state: { room, char, inv, dao },
-      getPipelineLog,
       getMapNode,
       beforeRun: () => { pickupExtractionFailedRef.current = false; },
       setCommandPhase,
@@ -404,7 +394,6 @@ export function useTurn({
       const e = result.error;
       const ec = classifyError(e);
       traceStep(_trace, "状态写回", "fail", `异常回滚：${ec.title}`);
-      endTrace(_trace, "行动出错，已整体回滚");
       addLog([
         { t: "err", text: `  ${ec.icon} ${ec.title}` },
         { t: "err", text: `     ${ec.detail}` },
@@ -415,9 +404,16 @@ export function useTurn({
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
     if (isTalk) { changePendingTalks(-1); }
     else { setLoading(false); }
-    // 停计时
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
+    } catch (error) {
+      if (_trace.totalMs == null) turnMonitor.transition(_trace, PHASE.ERROR, String(error));
+      throw error;
+    } finally {
+      if (!queued) await Promise.resolve();
+      if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "回滚后收到过期结果");
+      else if (!queued) turnMonitor.finish(_trace, summary);
+    }
   }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
   actRef.current = act;
   const featureCtx = useMemo(() => ({

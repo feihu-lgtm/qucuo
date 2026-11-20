@@ -15,7 +15,8 @@ import { emptyBodyProfile } from "../src/domain/character/bodyProfile.js";
 import { getActivePreset } from "../src/domain/prompt/presetSystem.js";
 import { getCommand } from "../src/core/commands.js";
 import { decide } from "../src/core/commandScheduler.js";
-import { startTrace } from "../src/infra/actionTrace.js";
+import { formatTrace } from "../src/infra/actionTrace.js";
+import { formatTurnStatus, getTurnContext, PHASE, turnMonitor, withTurnContext } from "../src/core/turnMonitor.js";
 import { playTurn } from "../src/engine/playTurn.js";
 import { createPromptContext } from "../src/engine/prompt/index.js";
 import { createWorldRules } from "../src/engine/worldRules.js";
@@ -214,15 +215,17 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       }
     },
     act: (text, extraReplies, opts) => {
+      const turn = getTurnContext();
       pendingTurnCount += 1;
       pendingTurn = pendingTurn.then(() => (
-        runFreeText(text, { ...(opts || {}), extraReplies: extraReplies || [] })
+        runFreeText(text, { ...(opts || {}), turn, extraReplies: extraReplies || [] })
       ));
       return pendingTurn;
     },
   };
   let session;
   let worldRules;
+  let lineTurn;
 
   function observePigeonArrivals() {
     const arrivals = processPigeons(gameStore.getState());
@@ -231,7 +234,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
   }
 
   function recordPigeonLocations() {
-    applyResult(featureCtx, recordPigeonNpcLocations(gameStore.getState()));
+    applyResult(featureCtx, recordPigeonNpcLocations(gameStore.getState()), { turn: lineTurn, feature: "pigeon.recordLocations" });
   }
 
   function runFreeText(cmd, opts = {}) {
@@ -260,7 +263,9 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       };
       const intent = classifyIntent(cmd);
       const preset = state.preset || DEFAULT_PRESETS[0];
-      const trace = startTrace("cli-turn");
+      const parent = opts.turn || lineTurn;
+      const trace = parent?.phase === PHASE.MACHINE
+        ? parent : turnMonitor.start(cmd, { source: "cli", parentId: parent?.id });
       const lastAiText = [...(state.convo || [])].reverse().find((message) => message.role === "assistant")?.content || "";
       const apiConfig = { ...config, model: apiCfgOverrides?.model || config.model };
       const recallInput = {
@@ -358,6 +363,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
           intent,
         }, { importedNpcLore: importedRegistry.getImportedNpcLore() }),
         _trace: trace,
+        deferMonitorFinish: trace === lineTurn,
         state,
         memory: {
           varTreeLatest: state.varTree,
@@ -844,12 +850,30 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
   }
 
   async function runLine(rawLine) {
+    const line = String(rawLine).trim();
+    if (!line || (line.startsWith("#") && !line.startsWith("#testscript"))) return 0;
+    if (line === ":status") {
+      const snapshot = turnMonitor.getSnapshot();
+      const { label, backgroundCount } = formatTurnStatus(snapshot);
+      emit(`${snapshot.current?.phase || "IDLE"} · ${label} · 后台 AI ×${backgroundCount}`);
+      return 0;
+    }
+    if (/^:tree(?:\s|$)/.test(line)) {
+      const count = Number(line.slice(5).trim() || "5");
+      if (!Number.isSafeInteger(count) || count < 1) {
+        emit("用法：:tree [n]");
+        return 1;
+      }
+      turnMonitor.getTrees().slice(0, count).forEach((turn) => emit(formatTrace(turn, { full: false })));
+      return 0;
+    }
+    const trace = turnMonitor.start(line, { source: "cli" });
+    lineTurn = trace;
     let status = 0;
     try {
-      status = await runLineCommand(rawLine);
-    } finally {
+      status = await withTurnContext(trace, () => runLineCommand(rawLine));
       for (let pass = 0; pass < 5; pass += 1) {
-        worldRules?.check();
+        worldRules?.check(trace);
         if (!pendingTurnCount) break;
         const ruleStatus = await pendingTurn;
         pendingTurn = Promise.resolve(0);
@@ -857,6 +881,13 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         if (status === 0 && ruleStatus) status = ruleStatus;
         if (pass === 4) console.warn("CLI world-rule settle loop reached five passes.");
       }
+      if (status && trace.totalMs == null) turnMonitor.transition(trace, PHASE.ERROR, "命令未完成");
+      else turnMonitor.finish(trace);
+    } catch (error) {
+      if (trace.totalMs == null) turnMonitor.transition(trace, PHASE.ERROR, String(error));
+      throw error;
+    } finally {
+      lineTurn = undefined;
     }
     return status;
   }
