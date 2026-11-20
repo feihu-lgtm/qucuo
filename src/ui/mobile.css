@@ -696,3 +696,42 @@
     margin-bottom: 8px !important;
   }
 }
+
+/* 手机中栏各行统一 52px 高：顶栏、模式、人选、地上、输入栏、底部栏目 */
+@media (max-width: 767px) {
+  .mobile-top-row,
+  .mobile-control-row,
+  .mobile-people-row,
+  .mobile-ground-strip,
+  .mobile-input-bar,
+  .mobile-tab-bar {
+    box-sizing: border-box;
+    min-height: 52px !important;
+    align-items: center !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .mobile-control-row,
+  .mobile-people-row,
+  .mobile-ground-strip,
+  .mobile-input-bar {
+    height: 52px;
+  }
+
+  .mobile-tab-bar {
+    height: calc(52px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+
+  .mobile-tab-bar > button {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-ground-strip > button {
+    min-height: 44px;
+  }
+}
