@@ -8,7 +8,9 @@ export default async function queueRollback({ page, ai, game }) {
   const held = ai.hold();
   await game.act(page, "我拾起一片落叶，仔细辨认上面的纹路。");
   await game.waitFor(page, () => Boolean(held.request), { timeout: 10000, message: "held main AI request" });
-  const npcName = page.getByText("才旦", { exact: false }).first();
+  const leftPanel = page.getByTestId("left-panel");
+  await leftPanel.getByRole("button", { name: "下一面", exact: true }).first().click();
+  const npcName = leftPanel.locator('[data-module="npcs"]').getByText("才旦", { exact: false }).first();
   await npcName.locator("xpath=../..").getByTitle(/打开互动菜单/).click();
   await page.locator(".mobile-action-panel").getByText("送礼", { exact: true }).click();
   await page.locator(".mobile-action-list").getByText("半袋青稞", { exact: true }).click();
