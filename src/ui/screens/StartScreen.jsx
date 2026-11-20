@@ -221,9 +221,6 @@ const styles = {
     inset: 0,
     boxSizing: "border-box",
     backgroundColor: t.bg,
-    backgroundImage: `url('${((typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/")}start-bg.webp')`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
     fontFamily: "'Noto Serif SC', 'Songti SC', serif",
     overflowX: "hidden",
     overflowY: "auto",
@@ -240,11 +237,13 @@ const styles = {
     padding: "0 clamp(32px, 8vw, 120px)",
     boxSizing: "border-box",
   },
+  // 背景图与暗角固定在视口上，菜单在手机上滚动时不会露出接缝
   vignette: {
-    position: "absolute",
+    position: "fixed",
     inset: 0,
     background:
-      "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.55) 100%), linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.6) 100%)",
+      "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.55) 100%), linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.6) 100%), " +
+      `center / cover no-repeat url('${((typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/")}start-bg.webp')`,
     pointerEvents: "none",
   },
   titleBlock: {
