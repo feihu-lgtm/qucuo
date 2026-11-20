@@ -199,17 +199,22 @@ ${dealFmt}`;
   // /提取层等辅助调用不套用这份覆盖，避免预设改动意外影响到不相关的小任务。
   const effectiveCfg = applyPresetOverrides(d.apiCfg, getActivePreset());
   const ai = d.ai || webAi;
+  if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
   if (effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini") {
     const streamLogIndex = { current: null };
     d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
-    d.setLog(l => { streamLogIndex.current = l.length - 1; return l; });
+    d.setLog(l => {
+      if (d.isStale?.()) return l;
+      streamLogIndex.current = l.length - 1;
+      return l;
+    });
     const { text, finishReason } = await ai.chat(chatMessages, {
       cfg: effectiveCfg,
       systemPrompt: sysBlocks,
       stream: true,
       onChunk: (_delta, fullSoFar) => {
         d.setLog(l => {
-          if (streamLogIndex.current == null) return l;
+          if (d.isStale?.() || streamLogIndex.current == null) return l;
           const copy = [...l];
           // 叙事模式：直接展示散文文本；JSON模式：只看最后200字（避免长 JSON 刷屏）
           copy[streamLogIndex.current] = { t: "desc", text: "  " + (narrativeOnly ? fullSoFar : fullSoFar.slice(-200)) + " ▌", streaming: true };
@@ -219,18 +224,19 @@ ${dealFmt}`;
       intent: { code: d.intent.code, label: d.intent.label },
       recallInfo: d.recallInfo,
     });
+    if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
     if (narrativeOnly) {
       // 叙事模式：把流式条目转为永久日志项（而不是移除它）。谈价 <deal> 标签仅供系统，显示时剥掉。
       const shown = text.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
       d.setLog(l => {
-        if (streamLogIndex.current == null) return l;
+        if (d.isStale?.() || streamLogIndex.current == null) return l;
         const copy = [...l];
         copy[streamLogIndex.current] = { t: "desc", text: "  " + shown, streaming: false, streamed: true };
         return copy;
       });
     } else {
       // JSON 模式：移除占位条目（正式 output 会在解析后追加）
-      d.setLog(l => (streamLogIndex.current == null ? l : l.filter((_, i) => i !== streamLogIndex.current)));
+      d.setLog(l => (d.isStale?.() || streamLogIndex.current == null ? l : l.filter((_, i) => i !== streamLogIndex.current)));
     }
     return { rawFull: text, finishReason };
   }
@@ -241,5 +247,6 @@ ${dealFmt}`;
     recallInfo: d.recallInfo,
     modelOptions: { callLabel: "主叙事" },
   });
+  if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
   return { rawFull: result.text, finishReason: result.finishReason };
 }

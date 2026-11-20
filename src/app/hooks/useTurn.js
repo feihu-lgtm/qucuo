@@ -25,12 +25,13 @@ import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
 import { parseDir } from "../../utils/mudHelpers.js";
 import { playTurn } from "../../engine/playTurn.js";
 import { burnSquare, consumeArrival, serializeSquares } from "../../domain/map/mapSquares.js";
+import { createTurnStaleCheck } from "./useUndo.js";
 
 export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
   addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget,
-  nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, buildCurrentSnapshot,
-  undoSnapshotRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
+  nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
+  turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
   waitTimerRef, setWaitSecs, pendingQueue, setQueueCount, pendDirRef, featureCtxRef,
   noteAction, roomMapRef, questProgress, innerRoomName, setRoom, setInv, collectGrantedRef,
   autoTravelRef, outerDepartRef, varTreeRef, pickupJudgmentRef, pickupExtractionFailedRef,
@@ -41,7 +42,7 @@ export function useTurn({
 }) {
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
     if (!rawCmd.trim()) return;
-    const cmd = rawCmd.trim();
+    const cmd = rawCmd.trim(), isStale = createTurnStaleCheck(turnGenerationRef);
     const stopAutoTravel = () => {
       if (!autoTravelRef.current || pendingQueue.current.length === 0) return;
       const dropped = pendingQueue.current.length;
@@ -66,10 +67,6 @@ export function useTurn({
       if (!opts.autoTravel) lastMoveRef.current = now;
     }
 
-    // 回滚点：每次实际行动前，存一份当前整局快照，供玩家"回滚一步"。只在真正要执行行动时存
-    // （whisper 私聊上面已 return，不算行动步）。存的是"这步之前"的状态，回滚即还原到落子前。
-    try { undoSnapshotRef.current = buildCurrentSnapshot(); } catch (e) { /* 存快照失败不阻断行动 */ }
-
     if (interactMode === "whisper") {
       // 私聊串行：一条还在跑时不允许真的发出第二条——否则两条并发会读到同一份
       // 发送前的 convo（历史一样），且流式占位用的 logIdx.current 是共享 ref，两条
@@ -85,9 +82,10 @@ export function useTurn({
       setHistIdx(-1);
       // 教程任务「四宅家产」触发点之三：跟旁白聊到溪边小屋（幂等）
       if (/溪边小屋/.test(cmd)) setFlags(f => f.includes("tutorial_estate_started") ? f : [...f, "tutorial_estate_started"]);
-      talkToNarrator(cmd); // 不 await；串行由 talkBusyRef 闸门保证
+      talkToNarrator(cmd, { isStale }); // 不 await；串行由 talkBusyRef 闸门保证
       return;
     }
+    if (!opts.keepUndo) captureUndo();
 
     // 方向按钮点击时会带 opts.forceLayer（inner/outer），这是明确的"我要移动"信号——
     // 即便此刻交互模式停在"对话"，也必须按移动处理，不能被当成对话发给 AI（否则点
@@ -349,7 +347,7 @@ export function useTurn({
         gambleTalkCtx: gambleTalkCtx.current, recallInfo: memory.recallInfo,
         inSeaOfMind: room.name === SEA_OF_MIND.district,
         settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
-        _trace, addLog, setLog,
+        _trace, addLog, setLog, isStale,
       });
     const turnCtx = {
       apiCfg,
@@ -357,6 +355,7 @@ export function useTurn({
       convo,
       isTalk,
       isSettle,
+      isStale,
       _trace,
       prompt: createPromptContext({
         room, char, inv, skills, dao, flags, questProgress, pendingQuestBranch,
@@ -405,6 +404,7 @@ export function useTurn({
       },
     };
     const result = await playTurn(turnCtx, cmd, opts);
+    if (result.stale) return;
     if (!result.ok) {
       const e = result.error;
       const ec = classifyError(e);
@@ -423,7 +423,7 @@ export function useTurn({
     // 停计时
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo]);
   const featureCtx = useMemo(() => ({
     addLog,
     jotNote,

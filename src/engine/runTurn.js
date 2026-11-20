@@ -65,11 +65,13 @@ export async function runTurn(ctx, cmd, opts = {}) {
   let recall = { recallInfo: null, recallBlock: "" };
   if (ctx.memory) {
     knowledgeTurn = await runKnowledgeTurn({ ...ctx.memory, ai });
+    if (ctx.isStale?.()) return { stale: true };
     recall = await runRecall({
       ...ctx.memory.recall,
       lastAiText: preparedPrompt.lastAiText || ctx.memory.recall.lastAiText,
       varTreeLatest: knowledgeTurn.kTree,
     });
+    if (ctx.isStale?.()) return { stale: true };
   }
   const memoryDeps = {
     varTree: knowledgeTurn?.kTree,
@@ -104,6 +106,7 @@ export async function runTurn(ctx, cmd, opts = {}) {
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
       try {
         const result = await callMainOnce(null, true, callDeps());
+        if (ctx.isStale?.()) return { stale: true };
         rawFull = result.rawFull;
         mainFinishReason = result.finishReason;
         trace("AI调用", "pass", attempt > 1
@@ -112,6 +115,7 @@ export async function runTurn(ctx, cmd, opts = {}) {
         attach(attachPipeline);
         break;
       } catch (error) {
+        if (ctx.isStale?.()) return { stale: true };
         if (attempt <= MAX_AUTO_RETRY) {
           addLog([{ t: "sys", text: `  ⚠ 接口中断（${error.message || error}），正在自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…` }]);
           trace("AI调用", "fail", `主叙事第${attempt}次失败：${error.message || error}，重试`);
@@ -155,10 +159,13 @@ export async function runTurn(ctx, cmd, opts = {}) {
       settleOptions,
       deps.ai,
     ).catch((error) => {
-      addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${error.message || error}），本轮状态未更新` }]);
-      trace("提取调用", "fail", `提取模型=${extractionCfg.model || "未设置"}调用异常：${error.message || error}，本轮状态未更新`);
+      if (!ctx.isStale?.()) {
+        addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${error.message || error}），本轮状态未更新` }]);
+        trace("提取调用", "fail", `提取模型=${extractionCfg.model || "未设置"}调用异常：${error.message || error}，本轮状态未更新`);
+      }
       return null;
     });
+    if (ctx.isStale?.()) return { stale: true };
     pickupExtractionFailed = !extracted || !!extracted.parseFailed;
     if (extracted) attach(attachExtractionPipeline);
     if (extracted?.parseFailed) {
@@ -177,6 +184,7 @@ export async function runTurn(ctx, cmd, opts = {}) {
       let finishReason;
       try {
         const result = await callMainOnce(nudge, false, callDeps());
+        if (ctx.isStale?.()) return { stale: true };
         rawFull = result.rawFull;
         finishReason = result.finishReason;
         trace("AI调用", "pass", attempt > 1
@@ -184,6 +192,7 @@ export async function runTurn(ctx, cmd, opts = {}) {
           : `一次成功（单调用·主模型=${apiCfg.model || "未设置"}）`);
         attach(attachPipeline);
       } catch (error) {
+        if (ctx.isStale?.()) return { stale: true };
         if (attempt <= MAX_AUTO_RETRY) {
           addLog([{ t: "sys", text: `  ⚠ 接口中断（${error.message || error}），正在自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…` }]);
           trace("AI调用", "fail", `第${attempt}次失败：${error.message || error}，重试`);

@@ -25,7 +25,7 @@ export function usePrivateTalk({
   talkBusyRef, schedulerRef, setInput, timeRef, varTreeRef, setLog, setConvo,
   setVarTree, setNarrator, noteAction,
 }) {
-  const talkToNarrator = useCallback(async (content) => {
+  const talkToNarrator = useCallback(async (content, { isStale = () => false } = {}) => {
     changePendingTalks(1);
     addLog([{ t: "cmd", text: `> 对旁白：${content}` }]);
     setInput("");
@@ -93,6 +93,7 @@ export function usePrivateTalk({
           contextText: `${lastAiText}\n[当前]位置:${room.name}`,
           focusEntities, unlockedFlags: flags, presentNames: ["旁白"], topK: 5,
         });
+        if (isStale()) return;
         if (recallInfo && recallInfo.visible.length) {
           recallBlock = "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n"
             + recallInfo.visible.map(m => `· （第${m.meta.turn}回合）${m.tier === "weak" && m.text.length > 40 ? m.text.slice(0, 40) + "…" : m.text}`).join("\n");
@@ -202,12 +203,16 @@ export function usePrivateTalk({
       if (apiCfg.streamEnabled && apiCfg.apiType !== "gemini") {
         const logIdx = { current: null };
         addLog([{ t: "narrator", text: "  「旁白」▌", streaming: true }]);
-        setLog(l => { logIdx.current = l.length - 1; return l; });
+        setLog(l => {
+          if (isStale()) return l;
+          logIdx.current = l.length - 1;
+          return l;
+        });
         const { text: streamedText, finishReason: fr } = await callModelStream(
           apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }],
           (_delta, fullSoFar) => {
             setLog(l => {
-              if (logIdx.current == null) return l;
+              if (isStale() || logIdx.current == null) return l;
               const copy = [...l];
               copy[logIdx.current] = { t: "narrator", text: `  「旁白」${fullSoFar} ▌`, streaming: true };
               return copy;
@@ -215,11 +220,12 @@ export function usePrivateTalk({
           },
           { maxTokens: narratorMaxTokens, recallInfo },
         );
+        if (isStale()) return;
         finishReason = fr;
         text = stripEchoPrefix(streamedText.trim()) || "……";
         { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
         setLog(l => {
-          if (logIdx.current == null) return l;
+          if (isStale() || logIdx.current == null) return l;
           const copy = [...l];
           copy[logIdx.current] = { t: "narrator", text: `  「旁白」${text}`, streamed: true };
           return copy;
@@ -228,6 +234,7 @@ export function usePrivateTalk({
         attachPipeline(_wt, getPipelineLog()[0]);
       } else {
         const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊" });
+        if (isStale()) return;
         finishReason = result.finishReason;
         text = stripEchoPrefix(result.text.trim()) || "……";
         { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
@@ -251,7 +258,7 @@ export function usePrivateTalk({
       }
 
       // 把这轮私聊也计入主引擎共享的对话历史，让旁白（以及之后的叙事）都能"记得"这次私聊
-      setConvo(c => [...c, { role: "user", content: `（私聊）${content}` }, { role: "assistant", content: `（旁白私聊回应）${text}` }]);
+      setConvo(c => isStale() ? c : [...c, { role: "user", content: `（私聊）${content}` }, { role: "assistant", content: `（旁白私聊回应）${text}` }]);
 
       // 私聊旁白也浓缩一张私有小纸条，owner=旁白（你俩私有，只在旁白语境下浮现，
       // 不进任何 NPC 的信息域）——与「对话模式=owner对话对象」同属"私语只你俩知道"这一类。
@@ -338,6 +345,7 @@ export function usePrivateTalk({
         return n;
       });
     } catch (e) {
+      if (isStale()) return;
       traceStep(_wt, "AI调用", "fail", `私聊失败：${e.message || e}`);
       attachPipeline(_wt, getPipelineLog()[0]);
       endTrace(_wt, `私聊中断（${e.message || e}）`);

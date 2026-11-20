@@ -59,6 +59,6 @@ describe("CenterPanel 把功德单位与只出不进传下去", () => {
 
   it("playerMoney 与扣款用同一种货币（数值侧本来就是对的，别改坏）", () => {
     expect(src).toMatch(/playerMoney=\{isKarma \? \(dao\.karma \|\| 0\) : \(char\.money \|\| 0\)\}/);
-    expect(src).toMatch(/if \(isKarma\) \{ if \(\(dao\.karma\|\|0\)<item\.buyPrice\) return; setDao/);
+    expect(src).toMatch(/if \(isKarma\) \{ if \(\(dao\.karma\|\|0\)<item\.buyPrice\) return; captureUndo\(\); setDao/);
   });
 });

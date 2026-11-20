@@ -31,7 +31,7 @@ export function applyResult(ctx, result) {
   }
   if (result.settle) {
     const settleOptions = result.settleOptions || {};
-    ctx.act?.(result.settle, [], { ...settleOptions, settle: settleOptions.settle ?? true });
+    ctx.act?.(result.settle, [], { ...settleOptions, settle: settleOptions.settle ?? true, keepUndo: true });
   }
   return result;
 }

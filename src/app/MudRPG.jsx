@@ -5,6 +5,7 @@ import {
 import OverlayHost from "./OverlayHost.jsx";
 import GameLayout from "./GameLayout.jsx";
 import { useAutosave } from "./hooks/useAutosave.js";
+import { useUndo } from "./hooks/useUndo.js";
 import { useDaySummary } from "./hooks/useDaySummary.js";
 import { usePrivateTalk } from "./hooks/usePrivateTalk.js";
 import { useOutfitAdvice } from "./hooks/useOutfitAdvice.js";
@@ -106,6 +107,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const pickupExtractionFailedRef = useRef(false); // 双调用下本轮提取层是否解析失败——供拾取兜底区分"提取故障(该保底发)"vs"叙事拒捡(该尊重不发)"
   const collectGrantedRef = useRef([]); // 本轮系统已代发的采集物名单，供items_add处理时防止AI重复入袋
   const pendingQueue = useRef([]); // 处理中时暂存排队命令
+  const queueTimerRef = useRef(null);
   const roomMapRef = useRef(restored?.snap.roomMap || { [(restored?.snap.room || DEFAULT_PRESETS[0].room).name]: { items: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).items], npcs: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).npcs] } });
 
   // API 配置变更时持久化到 localStorage
@@ -120,12 +122,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets,
     setGm, setPreset, setRoom, setChar, setDao, setSkills, setInv, setLog,
     setConvo, setExp, setPot, setFlags, setMapData, setTime, setNarrator,
-    setVarTree, setQuestProgress, setClaimedMilestones, setDeposit, setDepositedAt,
+    setVarTree, setQuestProgress, setPersuasionProgress, setClaimedMilestones, setDeposit, setDepositedAt,
     setPledgedItems, setCompanionState, setInnerRoomName,
   });
   const {
     roundsSinceLastSaveRef, playedThisSessionRef, schedulerRef,
-    buildCurrentSnapshot, loadPreset, prerunSquares,
+    applySnapshot, buildCurrentSnapshot, loadPreset, prerunSquares,
   } = autosave;
   const importPreset = usePresetImport({ loadPreset, setPresets, setLog });
 
@@ -137,6 +139,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const gambleTalkCtx = useRef(null);
   useEffect(() => { setBuildingPanelMinimized(false); }, [activeBuilding?.id]);
   const addLog = useCallback((lines) => setLog(p => [...p, ...lines]), []);
+  const { captureUndo, rollbackOneStep, turnGenerationRef } = useUndo({
+    undoSnapshotRef, buildCurrentSnapshot, applySnapshot,
+    addLog, pendingQueue, setQueueCount, autoTravelRef, queueTimerRef,
+    setDuelPending, setDuelingNpc, setActiveBuilding, pendingTalksRef, changePendingTalks, talkBusyRef,
+    setLoading, waitTimerRef, setWaitSecs,
+  });
 
   useGameStartupOpeningFaces({
     restored, showOpening, showCharCreate, room, innerRoomName, varTreeRef,
@@ -175,7 +183,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     loading, addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv,
   });
   const progressionHandlers = useProgressionHandlers({
-    loading, noteAction, featureCtxRef, setJustMeditated,
+    loading, noteAction, featureCtxRef, setJustMeditated, captureUndo,
   });
   const { confessToNarrator } = progressionHandlers;
 
@@ -191,8 +199,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const { act } = useTurn({
     loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
     addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget,
-    nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, buildCurrentSnapshot,
-    undoSnapshotRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
+    nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
+    turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
     waitTimerRef, setWaitSecs, pendingQueue, setQueueCount, pendDirRef, featureCtxRef,
     noteAction, roomMapRef, questProgress, innerRoomName, setRoom, setInv, collectGrantedRef,
     autoTravelRef, outerDepartRef, varTreeRef, pickupJudgmentRef, pickupExtractionFailedRef,
@@ -202,7 +210,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setPendingQuestBranch, setConvo, jotNote, setLog,
   });
   const questPanel = useQuestPanel({
-    act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc,
+    act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc, captureUndo,
     setActivePersuasion, setInteractMode, setTalkTarget,
   });
 
@@ -213,7 +221,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   const pigeonHandlers = usePigeonHandlers({
     room, varTree, featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
-    setInteractMode, setActiveBuilding,
+    setInteractMode, setActiveBuilding, captureUndo,
   });
   const { applyPigeonResult, sendPigeonLetter } = pigeonHandlers;
 
@@ -222,6 +230,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const duelHandlers = useDuel({
     act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
     duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
+    captureUndo, turnGenerationRef,
   });
 
   // 拜师学艺：好感度≥40 + 完成该NPC专属支线任务，两个条件同时满足才能学到技能。
@@ -230,12 +239,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 保证同一个商人每次进店看到的东西都稳定。
   const screenHandlers = useScreenHandlers({
     act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
-    timeRef, noteAction, inv, setTradingShop, setInv, setClaimedMilestones,
+    timeRef, noteAction, inv, setTradingShop, setInv, setClaimedMilestones, captureUndo,
   });
 
-  useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef });
+  useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef, queueTimerRef });
 
-  const buildingHandlers = useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef });
+  const buildingHandlers = useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo });
 
   const craftingAI = useCraftingAI({
     gambleTalkCtx, setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
@@ -252,7 +261,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 用 effect 而不是塞进对话结算里，是因为两个条件可能任意顺序满足：先攒够好感再去
   // 见她、或先见过她后来才攒够，两条路都要能触发。
   const playerActionHandlers = usePlayerActionHandlers({
-    featureCtxRef, noteAction, setInnerRoomName, seaReturnRef,
+    featureCtxRef, noteAction, setInnerRoomName, seaReturnRef, captureUndo,
   });
 
   const onKey = createInputKeyHandler({
@@ -261,7 +270,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   });
 
   const actions = {
-    act, autoTravelTo, undoSnapshotRef, teleportLookRef, effectiveSpecialNow, onKey,
+    act, autoTravelTo, captureUndo, rollbackOneStep, teleportLookRef, effectiveSpecialNow, onKey,
     questPanel, pigeonHandlers, duelHandlers, screenHandlers, buildingHandlers,
     craftingAI, playerActionHandlers, progressionHandlers, aiInspect, outfitAdvice,
     cardImportHandlers,

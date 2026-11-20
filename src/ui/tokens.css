@@ -13,7 +13,7 @@
   --warn: #d4a853;
   --info: #8ac8b8;
   --muted: #8a8270;
-  --font-body: "Songti SC", "STSong", "SimSun", serif;
+  --font-body: "Songti SC", "STSong", "SimSun", serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
   --fs-xs: 11px;
   --fs-sm: 12px;
   --fs-md: 14px;

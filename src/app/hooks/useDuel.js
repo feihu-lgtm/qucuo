@@ -4,6 +4,14 @@ import { applyResult } from "../../features/run.js";
 import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
 import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+import { createTurnStaleCheck } from "./useUndo.js";
+
+export async function openDuelAfterNarration({ act, setDuelPending, isStale }, npc) {
+  await act(`向${npc.name}抱拳邀战，请他切磋一番`, [], { keepUndo: true });
+  if (isStale()) return false;
+  setDuelPending(npc);
+  return true;
+}
 
 export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc }) {
   useEffect(() => {
@@ -17,13 +25,15 @@ export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNp
 export function useDuel({
   act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
   duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
+  captureUndo, turnGenerationRef,
 }) {
   const handleNpcDuel = useCallback(async (npc) => {
+    const isStale = createTurnStaleCheck(turnGenerationRef);
+    captureUndo();
     applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name);
-    await act(`向${npc.name}抱拳邀战，请他切磋一番`);
-    setDuelPending(npc);
-  }, [act]);
+    await openDuelAfterNarration({ act, setDuelPending, isStale }, npc);
+  }, [act, captureUndo, featureCtxRef, setActiveTarget, setDuelPending, turnGenerationRef]);
 
   const confirmDuel = useCallback(() => {
     if (!duelPending) return;
@@ -58,7 +68,7 @@ export function useDuel({
     if (result.factId) aiSummarizeFact(result.factId, result.cue);
     if (finishedNpc) {
       setTimeout(() => {
-        act(`切磋结束。经过：${result.recap || "双方试探几招，未及深入"}。结果：${result.outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true });
+        act(`切磋结束。经过：${result.recap || "双方试探几招，未及深入"}。结果：${result.outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true, keepUndo: true });
       }, 0);
       jotNote({
         text: result.recapNote,

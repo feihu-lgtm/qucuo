@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { emptyBodyProfile } from "../domain/character/bodyProfile.js";
 import { initialNarratorState } from "../domain/narrator/narrator.js";
 import { startTrace } from "../infra/actionTrace.js";
@@ -56,6 +56,30 @@ function createPlayTurnContext(ai, commitRound) {
   };
   return ctx;
 }
+
+describe("stale turn handling", () => {
+  it("does not commit an AI response after turn invalidation", async () => {
+    let releaseResponse;
+    let signalStarted;
+    const started = new Promise((resolve) => { signalStarted = resolve; });
+    const response = new Promise((resolve) => { releaseResponse = resolve; });
+    const ai = { chat: vi.fn(() => { signalStarted(); return response; }) };
+    const committed = vi.fn();
+    const ctx = createPlayTurnContext(ai, committed);
+    const generation = { current: 0 };
+    ctx.isStale = () => generation.current !== 0;
+    const callDeps = ctx.callDeps;
+    ctx.callDeps = (...args) => ({ ...callDeps(...args), isStale: ctx.isStale });
+
+    const pendingTurn = playTurn(ctx, "探索石阶");
+    await started;
+    generation.current += 1;
+    releaseResponse({ text: '{"output":["迟到的叙事"],"delta":{"pot":3}}', finishReason: "stop" });
+
+    await expect(pendingTurn).resolves.toMatchObject({ ok: false, stale: true });
+    expect(committed).not.toHaveBeenCalled();
+  });
+});
 
 describe("runTurn", () => {
   it("restores rollback keys, refs, and RNG while preserving concurrent log writes", async () => {

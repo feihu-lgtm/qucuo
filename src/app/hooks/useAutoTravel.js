@@ -43,7 +43,7 @@ export function useAutoTravel({
   return autoTravelTo;
 }
 
-export function useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef }) {
+export function useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef, queueTimerRef }) {
   const actRef = useRef(act);
   actRef.current = act;
 
@@ -54,13 +54,18 @@ export function useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueC
       hasQueuedCommands: pendingQueue.current.length > 0,
     })) {
       const timer = setTimeout(() => {
+        queueTimerRef.current = null;
         const next = pendingQueue.current.shift();
         if (!next) return;
         setQueueCount(pendingQueue.current.length);
         if (pendingQueue.current.length === 0) autoTravelRef.current = false;
         actRef.current(next.cmd, next.extraReplies, next.opts || {});
       }, 50);
-      return () => clearTimeout(timer);
+      queueTimerRef.current = timer;
+      return () => {
+        clearTimeout(timer);
+        if (queueTimerRef.current === timer) queueTimerRef.current = null;
+      };
     }
-  }, [loading, queueCount, pendingQueue, setQueueCount, autoTravelRef]);
+  }, [loading, queueCount, pendingQueue, setQueueCount, autoTravelRef, queueTimerRef]);
 }
