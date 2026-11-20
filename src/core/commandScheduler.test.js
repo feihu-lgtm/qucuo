@@ -324,6 +324,26 @@ describe("command scheduler", () => {
     await settings;
   });
 
+  it.each(["settings", "apiConfig"])("keeps the generating turn during and after %s", async (id) => {
+    const scheduler = createScheduler();
+    const response = Promise.withResolvers();
+    const generation = scheduler.dispatch("typedAction", async () => {
+      const ai = turnMonitor.beginAi(getTurnContext(), { model: "mock-model", callLabel: "主叙事" });
+      ai.chunk();
+      await response.promise;
+      ai.end({ success: true });
+    });
+    const during = await scheduler.dispatch(id, () => turnMonitor.getSnapshot().current);
+    const after = turnMonitor.getSnapshot().current;
+    response.resolve();
+    await generation;
+
+    expect(during).toMatchObject({ commandId: "typedAction", phase: PHASE.AI_STREAM, model: "mock-model" });
+    expect(after).toMatchObject({ id: during.id, phase: PHASE.AI_STREAM });
+    expect(turnMonitor.getSnapshot().current).toMatchObject({ id: during.id, phase: PHASE.DONE });
+    expect(turnMonitor.getTrees().find((tree) => tree.commandId === id)).toMatchObject({ phase: PHASE.DONE });
+  });
+
   it("clears route legs and queues rollback after the active auto-travel leg", async () => {
     const scheduler = createScheduler();
     let finishLeg;

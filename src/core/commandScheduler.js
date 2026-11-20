@@ -139,7 +139,10 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
   const runEntry = (entry) => {
     if (entry.id === SYSTEM_COMMANDS.rollback) clearQueue();
     turnMonitor.dequeue(entry.trace);
-    if (![CATEGORY.VIEW, CATEGORY.BACKGROUND].includes(entry.category)) turnMonitor.activate(entry.trace);
+    const current = turnMonitor.getSnapshot().current;
+    const nonBlockingSystem = entry.category === CATEGORY.SYSTEM && !BLOCKING_SYSTEM_IDS.has(entry.id);
+    if (![CATEGORY.VIEW, CATEGORY.BACKGROUND].includes(entry.category)
+      && !(nonBlockingSystem && current && current.totalMs == null)) turnMonitor.activate(entry.trace);
     const record = {
       id: entry.id,
       category: entry.category,
