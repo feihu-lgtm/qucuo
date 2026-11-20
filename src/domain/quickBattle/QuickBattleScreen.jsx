@@ -74,7 +74,6 @@ const QB_CSS = `
   @media (max-width: 767px){
     .qb-candgrid{
       grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-      grid-auto-rows:max-content !important;
       gap:8px !important;
     }
     .qb-candgrid .qb-candidate-card{ min-height:44px !important; }
@@ -90,6 +89,7 @@ const QB_CSS = `
       height:clamp(96px,32dvh,132px) !important;
     }
   }
+  .qb-candgrid{ grid-auto-rows:max-content !important; }
 `;
 
 export default function QuickBattleScreen({ onExit }) {
