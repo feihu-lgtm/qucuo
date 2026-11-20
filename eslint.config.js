@@ -37,8 +37,13 @@ export default [
   },
   {
     ...common,
-    files: ["cli/**/*.{js,jsx,mjs,cjs}"],
+    files: ["cli/**/*.{js,jsx,mjs,cjs}", "e2e/**/*.mjs"],
     languageOptions: { ...common.languageOptions, globals: globals.node },
+  },
+  {
+    ...common,
+    files: ["e2e/harness/game.mjs", "e2e/harness/saves.mjs"],
+    languageOptions: { ...common.languageOptions, globals: { ...globals.node, ...globals.browser } },
   },
   {
     files: ["src/**/*.{test,spec}.{js,jsx}", "cli/**/*.{test,spec}.{js,jsx,mjs,cjs}"],
