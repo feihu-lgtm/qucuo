@@ -232,6 +232,12 @@ export default function CenterPanel({
               >
                 ▾ 最小化
               </div>
+              {queueCount > 0 && !gambleStoneMinimized && !activeBuilding?.shopKey && !tradingShop && (
+                <div role="status" aria-live="polite"
+                  style={{ ...chromeBtn(zoneTheme), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
+                  ⏳ 排队中 {queueCount} · 等待落盘后执行
+                </div>
+              )}
               {isMobile && activeBuilding?.craft && craftTab !== "shop" && tabs("mobile-trading-tabs-building")}
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.INN && (
                 <InnScreen building={activeBuilding} char={char} time={time} zoneTheme={zoneTheme} inline
@@ -250,7 +256,7 @@ export default function CenterPanel({
                 if (!shopData) return null;
                 const isKarma = shopData.currency === "karma";
                 const trading = (
-                  <TradingScreen inline shopName={shopData.shopName} shopItems={shopData.items}
+                  <TradingScreen inline queueCount={queueCount} shopName={shopData.shopName} shopItems={shopData.items}
                     playerInv={inv} playerMoney={isKarma ? (dao.karma || 0) : (char.money || 0)}
                     currencyName={isKarma ? "功德" : "银两"} currencyUnit={isKarma ? "点" : "两"} canSell={!isKarma}
                     headerContent={activeBuilding.craft ? tabs("mobile-trading-tabs-header") : null}
@@ -282,7 +288,7 @@ export default function CenterPanel({
               {activeBuilding && activeBuilding.type === BUILDING_TYPE.ESCORT && activeBuilding.shopKey && (() => {
                 const shopData = rollShopStock(activeBuilding.shopKey, time) || buildShopInventory(activeBuilding.shopKey);
                 return shopData ? (
-                  <TradingScreen inline shopName={shopData.shopName} shopItems={shopData.items}
+                  <TradingScreen inline queueCount={queueCount} shopName={shopData.shopName} shopItems={shopData.items}
                     playerInv={inv} playerMoney={char.money||0} playerWit={effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={inspectItem}
                     onClose={() => setActiveBuilding(null)}
                     onBuy={(item)=>runCommand("shopBuy",()=>{if((char.money||0)<item.buyPrice)return;captureUndo();setChar(c=>({...c,money:c.money-item.buyPrice}));setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]);addLog([{t:"item",text:`  购得「${item.name}」，花费${item.buyPrice}两。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB });})}
@@ -370,7 +376,7 @@ export default function CenterPanel({
                   zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} />
               )}
               {tradingShop && (
-                <TradingScreen inline shopName={tradingShop.shopName} shopItems={tradingShop.items}
+                <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
                   playerInv={inv} playerMoney={char.money || 0} playerWit={effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={inspectItem}
                   onClose={() => setTradingShop(null)}
                   onBuy={(item) => runCommand("shopBuy", () => { if ((char.money || 0) < item.buyPrice) return; captureUndo(); setChar(c => ({ ...c, money: c.money - item.buyPrice })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); addLog([{ t: "item", text: `  你花费${item.buyPrice}两，购得「${item.name}」。` }]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
