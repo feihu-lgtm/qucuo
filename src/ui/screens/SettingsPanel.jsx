@@ -251,7 +251,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
         {tab === null && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
             {[
-              ["api", "🔑 API 配置", "接口地址 · 密钥 · 模型"],
+              ["api", "API 配置", "接口地址 · 密钥 · 模型"],
               ["preset", "📜 预设", "对话补全预设 · 编辑器"],
               ["narrator", "🎭 旁白", "好感度 · 阶段 · 私聊篇幅 · 专属世界书"],
               ["saves", "💾 存档管理", "读取 · 导出 · 删除"],
@@ -296,42 +296,6 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               选择服务商，并按其接口协议配置地址、密钥与模型。
             </div>
 
-            <ApiSettingsGroup title="配置管理" expanded={apiGroups.profiles} zoneTheme={zoneTheme}
-              onToggle={() => setApiGroups(groups => ({ ...groups, profiles: !groups.profiles }))}>
-            <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: "8px 10px", marginBottom: 12, background: "var(--bg-panel)" }}>
-              <div style={{ fontSize: "11px", color: "var(--info)", marginBottom: 6 }}>配置管理（多套 API 配置 · 落盘导出/导入）</div>
-              <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-                <input
-                  style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
-                  value={cfgProfileName}
-                  onChange={e => setCfgProfileName(e.target.value)}
-                  placeholder="给当前配置起个名（如 DS主号 / 备用）"
-                />
-                <span onClick={handleSaveCfgProfile} style={{ ...btnStyle, whiteSpace: "nowrap" }}>保存这套</span>
-              </div>
-              {cfgProfiles.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
-                  {cfgProfiles.map(p => (
-                    <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px" }}>
-                      <span style={{ flex: 1, color: "var(--text)" }}>{p.name}
-                        <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>{getApiModel(p.cfg) || ""}</span>
-                      </span>
-                      <span onClick={() => handleLoadCfgProfile(p.name)} style={{ cursor: "pointer", color: "var(--accent)" }}>切换</span>
-                      <span onClick={() => handleDeleteCfgProfile(p.name)} style={{ cursor: "pointer", color: "#c47070" }}>删除</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 6 }}>
-                <span onClick={handleExportCfg} style={{ ...btnStyle, flex: 1, textAlign: "center" }}>⬇ 导出配置到文件</span>
-                <span onClick={handleImportCfg} style={{ ...btnStyle, flex: 1, textAlign: "center" }}>⬆ 从文件导入配置</span>
-              </div>
-            </div>
-            <div style={{ ...sectionStyle, background: "var(--bg-panel)", border: "1px solid var(--border)", padding: 10, fontSize: "10.5px", color: "var(--text-dim)" }}>
-              凭证保存在当前浏览器中，请勿在公共设备上导入。Vertex AI 直接连接 Google，不使用代理。
-            </div>
-            </ApiSettingsGroup>
-
             <ApiProviderSettings cfg={cfg} patch={patch} providers={PROVIDERS}
               isDefaultEndpoint={isDefaultEndpoint} migrateProvider={migrateProvider} providerApiType={providerApiType}
               importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)}
@@ -344,7 +308,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 {(PROVIDERS[providerId]?.models || []).map(model => <option key={model} value={model} />)}
               </datalist>
               <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(null)}>
-                {modelStatus === "loading" && modelPickerTarget === null ? "检测中…" : "🔍 自动检测"}
+                {modelStatus === "loading" && modelPickerTarget === null ? "检测中…" : "自动检测"}
               </span>
             </div></>}
             {!isVertex && modelStatus === "error" && modelPickerTarget === null && (
@@ -550,7 +514,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                       placeholder={`留空则使用主模型 ${getApiModel(cfg)}`}
                     />
                     <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels("extractionModel")}>
-                      {modelStatus === "loading" && modelPickerTarget === "extractionModel" ? "检测中…" : "🔍 检测"}
+                      {modelStatus === "loading" && modelPickerTarget === "extractionModel" ? "检测中…" : "检测"}
                     </span>
                   </div>
                   {modelStatus === "error" && modelPickerTarget === "extractionModel" && (
@@ -579,7 +543,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
 
                   <div style={{ ...labelStyle, marginTop: 10 }}>各意图单独指定模型（空则使用默认提取模型）</div>
                   <div style={{ fontSize: "10px", color: "var(--text-dim)", marginBottom: 4 }}>
-                    下面每行都是可以点击填写的输入框——灰字是"当前会继承的模型"提示，不是禁用状态；要为某个意图单独指定模型，直接点进框里打字，或点🔍从检测到的列表里选。
+                    下面每行都是可以点击填写的输入框——灰字是"当前会继承的模型"提示，不是禁用状态；要为某个意图单独指定模型，直接点进框里打字，或点「检测」从列表中选择。
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6 }}>
                     {EXTRACTION_INTENT_LABELS.map(([key, label]) => {
@@ -601,7 +565,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                               style={{ ...btnStyle, whiteSpace: "nowrap", fontSize: "10px", padding: "4px 8px", flexShrink: 0, opacity: modelStatus === "loading" ? 0.5 : 1 }}
                               onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(key)}
                             >
-                              {modelStatus === "loading" && modelPickerTarget === key ? "…" : "🔍"}
+                              {modelStatus === "loading" && modelPickerTarget === key ? "检测中…" : "检测"}
                             </span>
                           </div>
                           {modelStatus === "error" && modelPickerTarget === key && (
@@ -731,8 +695,44 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
             </div>
             </ApiSettingsGroup>
 
+            <ApiSettingsGroup title="配置管理" expanded={apiGroups.profiles} zoneTheme={zoneTheme}
+              onToggle={() => setApiGroups(groups => ({ ...groups, profiles: !groups.profiles }))}>
+              <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: "8px 10px", marginBottom: 12, background: "var(--bg-panel)" }}>
+                <div style={{ fontSize: "11px", color: "var(--info)", marginBottom: 6 }}>配置管理（多套 API 配置 · 落盘导出/导入）</div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                  <input
+                    style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
+                    value={cfgProfileName}
+                    onChange={e => setCfgProfileName(e.target.value)}
+                    placeholder="给当前配置起个名（如 DS主号 / 备用）"
+                  />
+                  <span onClick={handleSaveCfgProfile} style={{ ...btnStyle, whiteSpace: "nowrap" }}>保存这套</span>
+                </div>
+                {cfgProfiles.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
+                    {cfgProfiles.map(p => (
+                      <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px" }}>
+                        <span style={{ flex: 1, color: "var(--text)" }}>{p.name}
+                          <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>{getApiModel(p.cfg) || ""}</span>
+                        </span>
+                        <span onClick={() => handleLoadCfgProfile(p.name)} style={{ cursor: "pointer", color: "var(--accent)" }}>切换</span>
+                        <span onClick={() => handleDeleteCfgProfile(p.name)} style={{ cursor: "pointer", color: "#c47070" }}>删除</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 6 }}>
+                  <span onClick={handleExportCfg} style={{ ...btnStyle, flex: 1, textAlign: "center" }}>导出配置到文件</span>
+                  <span onClick={handleImportCfg} style={{ ...btnStyle, flex: 1, textAlign: "center" }}>从文件导入配置</span>
+                </div>
+              </div>
+              <div style={{ ...sectionStyle, background: "var(--bg-panel)", border: "1px solid var(--border)", padding: 10, fontSize: "10.5px", color: "var(--text-dim)" }}>
+                凭证保存在当前浏览器中，请勿在公共设备上导入。Vertex AI 直接连接 Google，不使用代理。
+              </div>
+            </ApiSettingsGroup>
+
             <div style={{ ...sectionStyle, display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={btnStyle} onClick={handleTest}>🔗 连接测试</span>
+              <span style={btnStyle} onClick={handleTest}>连接测试</span>
               {testStatus === "testing" && <span style={{ color: "var(--text-dim)" }}>测试中...</span>}
             </div>
             {testStatus && testStatus !== "testing" && (
