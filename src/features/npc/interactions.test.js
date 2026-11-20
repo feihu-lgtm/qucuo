@@ -367,6 +367,15 @@ describe("NPC duel settlement logic", () => {
     expect(result.logs.at(-1).text).toBe("　◈ 你 切磋 师父 · 战斗结算");
   });
 
+  it("never re-awards an item stolen during the duel", () => {
+    const item = { id: "carry-1", name: "铜铃", category: "misc", quality: "白" };
+    const npc = { name: "师父", levelCap: 1, carriedItems: [item] };
+    const result = settleNpcDuel(makeState({ room: { name: "玉泉寨", npcs: [npc] } }), npc, {
+      outcome: "win", dodgeStolenItems: [item], rng: () => 0,
+    });
+    expect(result.changes.inv([]).filter(({ name }) => name === item.name)).toHaveLength(1);
+  });
+
   it("recreates a respawning NPC through the injected generator", () => {
     const freshNpc = { name: "村口大公鸡", respawn: true };
     const createRespawnNpc = vi.fn(() => freshNpc);

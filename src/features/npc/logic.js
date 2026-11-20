@@ -520,7 +520,7 @@ export function settleNpcDuel(state, npc, {
   }
 
   if (outcome === "win" && npc.name && !npc.tag) {
-    const pool = (npc.carriedItems || []).filter((item) => !item.stolen && !item.dropped);
+    const pool = (npc.carriedItems || []).filter((item) => !item.stolen && !item.dropped && !(dodgeStolenItems || []).some((stolen) => stolen.id ? item.id === stolen.id || (!item.id && item.name === stolen.name) : item.name === stolen.name));
     if (pool.length) {
       const dropChance = duelDropChance(working.char.special?.气运 ?? 5);
       if (rng() < dropChance) {
