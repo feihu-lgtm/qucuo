@@ -39,16 +39,10 @@ const tierName = (levelCap) => QUALITY[Math.max(0, Math.min(5, levelCap))] || "�
 
 const MAX_TEAM = 6; // 每队最多 6 人（宝可梦味）
 
-// 技能卡翻牌动画：复用赌石坊 GambleStoneScreen 那套 preserve-3d + backface-hidden
-// 的翻面机制，尺寸适配技能卡。悬停/点选时卡片绕 Y 轴翻到背面，露出字段理解器
-// 翻译出的完整招式说明。.qb-flip 是 3D 容器，两个 .qb-face 是正反面。
 const QB_CSS = `
-  .qb-card{ perspective:900px; }
-  .qb-flip{ position:relative; width:100%; height:100%; transform-style:preserve-3d; -webkit-transform-style:preserve-3d;
-    transition:transform .5s cubic-bezier(.4,0,.2,1); }
-  .qb-face{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
-    display:flex; flex-direction:column; border-radius:5px; overflow:hidden; }
-  .qb-face.qb-back{ transform:rotateY(180deg); }
+  .qb-flip{ position:relative; width:100%; height:100%; }
+  .qb-face{ position:absolute; inset:0; display:flex; flex-direction:column; border-radius:5px; overflow:hidden; animation:qbFaceIn .16s ease both; }
+  @keyframes qbFaceIn{from{opacity:0;transform:scaleX(.96)}to{opacity:1;transform:scaleX(1)}}
   /* 伤害数字弹跳：结算后在对峙区飘一下 */
   .qb-dmg{ animation:qbDmg .9s ease-out forwards; }
   @keyframes qbDmg{
@@ -636,10 +630,9 @@ function MoveButton({ move, usable, reason, onClick }) {
   const mainLine = lines.length ? lines[0].text : "";
 
   return (
-    <div className="qb-card" style={{ width: 128, height: 96, perspective: 900 }}>
-      <div className="qb-flip" style={{ transform: flipped ? "rotateY(180deg)" : undefined }}>
-        {/* 正面：招名 + 类型/品阶/耗气 + 主效果一行 + 可用性；点击翻到详情 */}
-        <button
+    <div className="qb-card" style={{ width: 128, height: 96 }}>
+      <div className="qb-flip">
+        {!flipped && <button
           className="qb-face"
           onClick={() => setFlipped(true)}
           style={{
@@ -656,9 +649,8 @@ function MoveButton({ move, usable, reason, onClick }) {
           {reason
             ? <div style={{ fontSize: 9.5, color: "#c8483a", marginTop: "auto" }}>{reason}</div>
             : <div style={{ fontSize: 9, color: "#6a5f4a", marginTop: "auto" }}>点击看详情 →</div>}
-        </button>
-        {/* 背面：完整字段说明 + 明确的出招/返回按钮 */}
-        <div
+        </button>}
+        {flipped && <div
           className="qb-face qb-back"
           style={{ padding: "7px 9px", background: "rgba(24,20,13,.98)", border: `2px solid ${qc}`, overflowY: "auto" }}
         >
@@ -682,7 +674,7 @@ function MoveButton({ move, usable, reason, onClick }) {
               style={{ padding: "5px 10px", fontSize: 11, borderRadius: 0, border: `1px solid ${qc}`,
                 background: "transparent", color: qc, cursor: "pointer" }}>返回</button>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );
