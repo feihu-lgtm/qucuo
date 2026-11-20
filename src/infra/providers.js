@@ -113,7 +113,9 @@ export function providerApiType(providerId) {
 
 export function migrateProvider(cfg = {}) {
   const source = cfg && typeof cfg === "object" ? cfg : {};
-  let providerId = Object.prototype.hasOwnProperty.call(PROVIDERS, source.provider) ? source.provider : "";
+  const savedProvider = Object.prototype.hasOwnProperty.call(PROVIDERS, source.provider) ? source.provider : "";
+  let providerId = savedProvider && (!source.apiType || providerApiType(savedProvider) === source.apiType)
+    ? savedProvider : "";
 
   if (!providerId) {
     if (["anthropic", "gemini", "vertex"].includes(source.apiType)) providerId = source.apiType;

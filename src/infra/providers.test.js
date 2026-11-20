@@ -224,10 +224,12 @@ describe("provider migration", () => {
       .toMatchObject({ provider: "custom", apiType: "openai", endpoint: "https://relay.example/v1/chat/completions" });
   });
 
-  it("keeps provider as canonical and synchronizes the legacy API type", () => {
-    expect(migrateProvider({ provider: "deepseek", apiType: "anthropic" })).toMatchObject({
-      provider: "deepseek", apiType: "openai",
-    });
+  it("resolves a provider and API type conflict from the configured protocol", () => {
+    expect(migrateProvider({
+      provider: "anthropic", apiType: "vertex", endpoint: PROVIDERS.anthropic.endpoint,
+    })).toMatchObject({ provider: "vertex", apiType: "vertex" });
+    expect(migrateProvider({ provider: "deepseek", apiType: "anthropic" }))
+      .toMatchObject({ provider: "anthropic", apiType: "anthropic" });
     expect(isDefaultEndpoint(`${PROVIDERS.zhipu.altEndpoints[0].url}/`)).toBe(true);
     expect(isDefaultEndpoint("https://my-relay.example/v1")).toBe(false);
   });
