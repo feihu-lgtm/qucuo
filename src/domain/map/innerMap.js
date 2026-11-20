@@ -1118,13 +1118,13 @@ export function getBuildingIdForInnerRoom(districtName, roomName) {
   return INNER_MAP[districtName]?.rooms?.[roomName]?.buildingId || null;
 }
 
-// 判断一个 NPC 此刻是否应当在"当前内层房间"显示。规则（本轮改版）：
-//   1. 驻场NPC（被某房间登记为 residentNpcName）→ 只在其绑定房间显示。
-//   2. 游走/临时NPC（对象上带 innerRoom 字段，每天随机落点固化）→ 只在 innerRoom 显示。
-//   3. 都没有的（既非驻场、也没落点，比如剧情涌现刚加入还没分配）→ 兜底在锚点房间显示，
-//      避免"哪个房间都不显示"导致人间蒸发。
-// districtName 无内层数据时一律返回 true（老逻辑：整据点即一间房，不过滤）。
+// 判断NPC是否显示，优先级依次为：
+//   1. 追踪覆写（pursuitInnerRoom）→ 只在追到的房间。
+//   2. 驻场绑定（residentNpcName）→ 只在绑定房间。
+//   3. 游走落点（innerRoom）→ 只在该房间。
+//   4. 无上述位置时，仅在锚点显示；无追踪覆写且无内层地图时不过滤。
 export function isNpcVisibleInInnerRoom(districtName, innerRoomName, npc) {
+  if (typeof npc?.pursuitInnerRoom === "string") return npc.pursuitInnerRoom === innerRoomName;
   if (!hasInnerMap(districtName)) return true;
   if (!innerRoomName) return true;
   const bound = getResidentRoomForNpc(districtName, npc.name);

@@ -1,3 +1,39 @@
+const ATTEMPT_LABELS = {
+  talk: "交谈",
+  gift: "送礼",
+  trade: "交易",
+  learn: "求教",
+  steal: "偷窃",
+  invite: "邀同行",
+};
+
+function formatAngerAttempt(attempt) {
+  const label = ATTEMPT_LABELS[attempt?.kind] || attempt?.kind || "其他行动";
+  const detail = typeof attempt?.detail === "string" ? attempt.detail.trim() : "";
+  return detail && (attempt.kind === "gift" || attempt.kind === "talk")
+    ? `${label}「${detail}」`
+    : label;
+}
+
+export function buildAngryNote(varTree, names = []) {
+  const npcNames = Array.from(new Set((Array.isArray(names) ? names : [names])
+    .map((entry) => typeof entry === "string" ? entry : entry?.name)
+    .filter(Boolean)));
+  const angryNpcs = npcNames
+    .map((name) => ({ name, angry: varTree?.角色?.[name]?.生气状态 }))
+    .filter((npc) => npc.angry?.active);
+  if (!angryNpcs.length) return "";
+
+  const summaries = angryNpcs.map(({ name, angry }) => {
+    const attempts = Array.isArray(angry.attempts) ? angry.attempts : [];
+    const history = attempts.length
+      ? `此前已尝试：${attempts.map(formatAngerAttempt).join("、")}`
+      : "此前暂无求和记录";
+    return `${name}(${angry.reason}，剩${angry.turnsLeft}回合平息期限，${history})`;
+  });
+  return `\n[社交状态] 以下在场角色正处于生气状态，原因是：${summaries.join("、")}。请结合此前尝试的方式，判断玩家本轮当前行为是否真正缓和了对方。若玩家此刻尝试道歉/辩解/示好/赠礼，请你根据其言行是否得体、是否切中要害来判断这次"平息怒气"的努力是否奏效：奏效就在 <mvu> 里用 _.set('角色.<该角色>.生气解除', true) 标记这次成功，并可用 _.add('角色.<该角色>.好感度', 5) 适度回补好感度；敷衍或不得体就让角色在 output 里表现出依然不满，不要设置生气解除字段。`;
+}
+
 export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo) {
   const input = ctx.prompt;
   if (!input) return { cmd, newConvo, mainConvo, hist };
@@ -8,12 +44,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     gm, movingDir, lockedDestName, outerDepart, innerRoomName, apiCfg,
   } = input;
   const budgetInstruction = input.buildBudgetInstruction?.(input.intent, cmd, apiCfg.targetWordCount, apiCfg.intentBudgets) || "";
-  const angryNpcsInRoom = (room?.npcs || [])
-    .map((npc) => ({ name: npc.name, angry: varTree?.角色?.[npc.name]?.生气状态 }))
-    .filter((npc) => npc.angry?.active);
-  const angryNote = angryNpcsInRoom.length
-    ? `\n[社交状态] 以下在场角色正处于生气状态，原因是：${angryNpcsInRoom.map((npc) => `${npc.name}(${npc.angry.reason}，剩${npc.angry.turnsLeft}回合平息期限)`).join("、")}。若玩家此刻尝试道歉/辩解/示好/赠礼，请你根据其言行是否得体、是否切中要害来判断这次"平息怒气"的努力是否奏效：奏效就在 <mvu> 里用 _.set('角色.<该角色>.生气解除', true) 标记这次成功，并可用 _.add('角色.<该角色>.好感度', 5) 适度回补好感度；敷衍或不得体就让角色在 output 里表现出依然不满，不要设置生气解除字段。`
-    : "";
+  const angryNote = buildAngryNote(varTree, (room?.npcs || []).map((npc) => npc.name));
   const targetNote = activeTarget
     ? `[交互目标] 玩家选定了「${activeTarget}」作为本轮唯一的互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文的核心——其他在场 NPC 若与该互动无关、或不宜抢戏，本轮不必出场、不必插话。除非玩家输入本身需要多人在场（比如当众宣布什么事），否则 room.npcs 只保留「${activeTarget}」和直接相关者即可。\n`
     : "";

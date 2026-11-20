@@ -404,13 +404,13 @@ export function getImportedStats(name) {
 }
 
 /**
- * 返回某入册角色的完整档案（供开局同行建 companion 用）。查不到返回 null。
- * 开局向导指定「开局同行」后，MudRPG 新开局时用它 createImportedCompanion 解锁。
+ * 返回某入册角色档案；asPoolNpc=true 时返回 room.npcs hydration 使用的 NPC 池形状。
  */
-export function getImportedNpc(name) {
+export function getImportedNpc(name, { asPoolNpc = false } = {}) {
   const c = _registry.chars.find(x => x.name === name
     || (x.aliases || []).includes(name));
   if (!c) return null;
+  if (asPoolNpc) return toPoolLike(c, c.placement?.mode === "resident" ? c.placement.innerRoom : null);
   return {
     name: c.name,
     aliases: c.aliases || [],

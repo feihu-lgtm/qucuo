@@ -73,9 +73,10 @@ describe("拜师 learn_skill 铁律（0728 起改由 11 号位承载，不再在
 import { buildExtractionSpecExample, SETTLE_KIND_SPECS } from "./extractionEngine.js";
 
 describe("结算专属提取 spec 的路由", () => {
-  it("三种 settleKind 都注册在映射表里", () => {
+  it("所有 settleKind 都注册在映射表里", () => {
     expect(SETTLE_KIND_SPECS).toEqual({
       gift: "GIFT", companion_invite: "COMPANION_INVITE", learn_skill: "LEARN_SKILL",
+      appease: "APPEASE",
     });
   });
 

@@ -15,6 +15,21 @@ const NPC_FIELDS = [
   "portrait", "neigong", "waigong", "imported",
 ];
 
+export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5 } = {}) {
+  if (existingNpc?.moveset && existingNpc?.carriedItems && existingNpc?.special && existingNpc?.combatStats) {
+    return { ...existingNpc };
+  }
+  const base = toRoomNpc(poolNpc);
+  for (const key of NPC_FIELDS) {
+    if (poolNpc[key] !== undefined) base[key] = poolNpc[key];
+  }
+  const inferred = mapDescriptionToGenParams(
+    `${poolNpc.name || ""} ${poolNpc.brief || ""} ${poolNpc.personality || ""}`,
+  );
+  const levelCap = poolNpc.levelCap ?? inferred.levelCap;
+  return ensureNpcCombatData(base, { luck, levelCap });
+}
+
 export const residentNpcRule = {
   id: "npc.residents",
   deps: (state) => [
@@ -24,27 +39,22 @@ export const residentNpcRule = {
     state.flags,
     state.importedVer,
   ],
-  run(state, { importedRegistry, companionState = state.companionState }) {
+  run(state, { importedRegistry, roomMapRef, companionState = state.companionState }) {
     const { room, time, questProgress = {}, flags = [], char } = state;
     if (!room?.name) return null;
     const dayIdx = Math.floor(time / 24);
     const luck = char?.special?.气运 ?? 5;
     const existingByName = new Map((room.npcs || []).map((npc) => [npc.name, npc]));
-    const toRoomNpcWithCombat = (poolNpc) => {
-      const existing = existingByName.get(poolNpc.name);
-      if (existing?.moveset && existing?.carriedItems && existing?.special && existing?.combatStats) {
-        return { ...existing };
-      }
-      const base = toRoomNpc(poolNpc);
-      for (const key of NPC_FIELDS) {
-        if (poolNpc[key] !== undefined) base[key] = poolNpc[key];
-      }
-      const inferred = mapDescriptionToGenParams(
-        `${poolNpc.name || ""} ${poolNpc.brief || ""} ${poolNpc.personality || ""}`,
-      );
-      const levelCap = poolNpc.levelCap ?? inferred.levelCap;
-      return ensureNpcCombatData(base, { luck, levelCap });
-    };
+    const currentNpcNames = new Set(existingByName.keys());
+    const cachedNpcNames = new Set(
+      Object.entries(roomMapRef?.current || {})
+        .filter(([roomName]) => roomName !== room.name)
+        .flatMap(([, cached]) => (cached?.npcs || []).map((npc) => npc.name)),
+    );
+    const toRoomNpcWithCombat = (poolNpc) => buildRoomNpcWithCombat(poolNpc, {
+      existingNpc: existingByName.get(poolNpc.name),
+      luck,
+    });
 
     const poolNpcs = getScheduledNpcs(room.name, time).map(toRoomNpcWithCombat);
     const companionJoined = (name) => {
@@ -53,6 +63,7 @@ export const residentNpcRule = {
     };
     const residentNpcs = getResidentNpcs(room.name)
       .filter((npc) => !(npc.companionCandidate && companionJoined(npc.name)))
+      .filter((npc) => currentNpcNames.has(npc.name) || !cachedNpcNames.has(npc.name))
       .map(toRoomNpcWithCombat);
     const activeEscortTargets = ESCORT_QUESTS
       .filter((quest) => (

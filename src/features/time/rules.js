@@ -1,11 +1,71 @@
 import { random } from "../../core/rng.js";
+import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
+import { mapDescriptionToGenParams } from "../../domain/npc/npcDescriptionMapping.js";
+import { NPC_POOL, toRoomNpc } from "../../domain/npc/npcPool.js";
+import { RESIDENT_NPCS } from "../../domain/npc/residentNpcs.js";
 import { tickAngryState } from "../../domain/combat/stealSystem.js";
 import { makeItem } from "../../domain/economy/equipment.js";
 import { makeItemSmart } from "../../domain/items/catalog.js";
+import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { cleanExpiredBuffs } from "../../utils/buffSystem.js";
+import { buildRoomNpcWithCombat } from "../npc/rules.js";
 
 const QUALITIES = ["白", "绿", "蓝", "紫", "橙", "红"];
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
+
+function makeEscalationNpc(record, state, { pool = false } = {}) {
+  const base = pool
+    ? { ...toRoomNpc(record), ...record, id: toRoomNpc(record).id }
+    : { ...record, id: record.id || `npc_${record.name}` };
+  const inferred = mapDescriptionToGenParams(`${base.name || ""} ${base.brief || ""} ${base.personality || ""}`);
+  return ensureNpcCombatData(base, {
+    luck: state.char?.special?.气运 ?? 5,
+    levelCap: base.levelCap ?? inferred.levelCap,
+  });
+}
+
+function findEscalationNpc(name, state, roomMap, importedRegistry) {
+  const present = (state.room?.npcs || []).find((npc) => npc.name === name);
+  if (present) return present;
+  for (const cachedRoom of Object.values(roomMap || {})) {
+    const cachedNpc = (cachedRoom?.npcs || []).find((npc) => npc.name === name);
+    if (cachedNpc) return ensureNpcCombatData(cachedNpc, { luck: state.char?.special?.气运 ?? 5 });
+  }
+  const imported = importedRegistry?.getImportedNpc?.(name, { asPoolNpc: true });
+  if (imported) return buildRoomNpcWithCombat(imported, { luck: state.char?.special?.气运 ?? 5 });
+  const resident = Object.values(RESIDENT_NPCS).flat().find((npc) => npc.name === name);
+  if (resident) return makeEscalationNpc(resident, state);
+  const poolNpc = NPC_POOL.find((npc) => npc.name === name);
+  return poolNpc ? makeEscalationNpc(poolNpc, state, { pool: true }) : null;
+}
+
+function moveNpcRoomCache(roomMap, room, npcs) {
+  const names = new Set(npcs.map((npc) => npc.name));
+  const next = Object.fromEntries(Object.entries(roomMap).map(([roomName, cached]) => {
+    if (!Array.isArray(cached?.npcs)) return [roomName, cached];
+    const filtered = cached.npcs.filter((npc) => !names.has(npc.name));
+    return [roomName, filtered.length === cached.npcs.length ? cached : { ...cached, npcs: filtered }];
+  }));
+  if (room?.name) {
+    const cached = next[room.name] || {};
+    next[room.name] = {
+      ...cached,
+      items: [...(room.items || cached.items || [])],
+      npcs: [...(room.npcs || []).filter((npc) => !names.has(npc.name)), ...npcs],
+    };
+  }
+  return next;
+}
+
+function moveNpcToInnerRoom(npc, districtName, innerRoomName) {
+  const moved = {
+    ...npc,
+    pursuitInnerRoom: hasInnerMap(districtName) ? (innerRoomName || null) : null,
+  };
+  if (innerRoomName) moved.innerRoom = innerRoomName;
+  else delete moved.innerRoom;
+  return moved;
+}
 
 function parseForgeOrder(flag) {
   const parts = flag.split("_");
@@ -70,7 +130,7 @@ function parseForgeOrder(flag) {
 export const timeAdvanceRule = {
   id: "time.advance",
   deps: (state) => [state.time, state.room?.npcs],
-  run(state, { firstRun, previousDeps }) {
+  run(state, { firstRun, previousDeps, roomMapRef, importedRegistry }) {
     if (firstRun || Object.is(state.time, previousDeps?.[0])) return null;
 
     const time = state.time;
@@ -117,15 +177,30 @@ export const timeAdvanceRule = {
     }
 
     const angerUpdates = [];
+    const pursuedNpcs = [];
+    const roomMap = roomMapRef?.current;
+    let nextRoomMap;
     let forcedDuelNpc;
     for (const [name, attrs] of Object.entries(state.varTree?.角色 || {})) {
       if (!attrs.生气状态?.active) continue;
       const anger = tickAngryState(attrs.生气状态);
       angerUpdates.push([name, anger]);
       if (!anger.escalated) continue;
-      logs.push({ t: "err", text: `  ${name}积怒难平，终于按捺不住，径直朝你逼了过来——这场恶斗，躲不掉了！` });
       const npc = (state.room?.npcs || []).find((entry) => entry.name === name);
-      if (npc) forcedDuelNpc = npc;
+      if (npc && isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)) {
+        logs.push({ t: "err", text: `  ${name}积怒难平，终于按捺不住，径直朝你逼了过来——这场恶斗，躲不掉了！` });
+        forcedDuelNpc = npc;
+        continue;
+      }
+      const foundNpc = findEscalationNpc(name, state, roomMap, importedRegistry);
+      if (!foundNpc) {
+        logs.push({ t: "sys", text: `  ${name}已不知所踪，积怒也随时间不了了之。` });
+        continue;
+      }
+      const pursuer = moveNpcToInnerRoom(foundNpc, state.room?.name, state.innerRoomName);
+      pursuedNpcs.push(pursuer);
+      forcedDuelNpc = pursuer;
+      logs.push({ t: "err", text: `  ${name}一路寻来，堵在你面前——积怒难平，这场恶斗躲不掉了！` });
     }
 
     if (angerUpdates.length) {
@@ -137,11 +212,29 @@ export const timeAdvanceRule = {
         return { ...previous, 角色: characters };
       };
     }
+    if (pursuedNpcs.length) {
+      const pursuersByName = new Map(pursuedNpcs.map((npc) => [npc.name, npc]));
+      changes.room = (previous) => {
+        const updatedNames = new Set();
+        const npcs = (previous.npcs || []).map((npc) => {
+          const pursuer = pursuersByName.get(npc.name);
+          if (!pursuer) return npc;
+          updatedNames.add(npc.name);
+          return pursuer;
+        });
+        return {
+          ...previous,
+          npcs: [...npcs, ...pursuedNpcs.filter((npc) => !updatedNames.has(npc.name))],
+        };
+      };
+      if (roomMap) nextRoomMap = moveNpcRoomCache(roomMap, state.room, pursuedNpcs);
+    }
 
     if (!Object.keys(changes).length && !logs.length) return null;
     return {
       changes,
       logs,
+      ...(nextRoomMap ? { roomMap: nextRoomMap } : {}),
       ...(forcedDuelNpc ? { forcedDuelNpc } : {}),
     };
   },

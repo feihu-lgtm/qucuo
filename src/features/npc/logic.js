@@ -3,7 +3,7 @@ import { makeItemSmart, CATALOG_INDEX } from "../../domain/items/catalog.js";
 import { markNpcAsKnown as markNpcKnown } from "../../domain/npc/npcAwareness.js";
 import { removeNpc, markCarriedLost, respawnNpc } from "../../domain/npc/roomNpcs.js";
 import { tryLearnFromMaster, tryStealFrom } from "../../domain/kungfu/learnSkill.js";
-import { stealSuccessRate } from "../../domain/combat/stealSystem.js";
+import { isNpcAngry, stealSuccessRate } from "../../domain/combat/stealSystem.js";
 import { duelAffGain, duelDropChance, duelPotGain, TEAMWORK_GAIN } from "../../domain/combat/duelSettleMath.js";
 import { random } from "../../core/rng.js";
 import { bar } from "../../utils/mudHelpers.js";
@@ -15,6 +15,9 @@ import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
 import { activeCompanionKey, companionKeyByName, unlockImportedCompanion, unlockPearl, unlockSnowLeopard } from "../../domain/companion/companion.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
+import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
+
+export { appeaseAngryNpc };
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
@@ -132,11 +135,9 @@ export function lookNpc(_state, npc) {
   };
 }
 
-export function talkToNpc(state, npc) {
+export function talkToNpc(state, npc, { now = Date.now() } = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
-  const result = {
-    changes: { varTree: (prev) => markNpcKnown(prev || {}, npc.name) },
-  };
+  const result = { changes: { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "talk", detail: "", time: now }) } };
   const roomName = state.room?.name;
   const flags = state.flags || [];
   const activeEscort = ESCORT_QUESTS.find((quest) => (
@@ -219,14 +220,9 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     }
   }
 
-  const isAngry = !!state.varTree?.角色?.[npc.name]?.生气状态?.active;
-  const command = isAngry
-    ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好`
-    : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
-  const changes = {
-    varTree: (prev) => markNpcKnown(prev || {}, npc.name),
-    inv: nextInv,
-  };
+  const isAngry = isNpcAngry(state.varTree, npc.name);
+  const command = isAngry ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好` : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
+  const changes = { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }), inv: nextInv };
   const logs = [];
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);
@@ -244,13 +240,14 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     changes,
     logs,
     settle: command,
-    settleOptions: { settleNpc: npc.name, settleKind: isAngry ? null : "gift", giftInfo },
+    settleOptions: { settleNpc: npc.name, settleKind: isAngry ? "appease" : "gift", giftInfo },
     deliveredQuest: deliveredQuest?.quest || null,
   };
 }
 
 export function tradeWithNpc(state, npc) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
+  if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "trade" });
   const shopData = rollShopStock(npc.name, state.time) || buildShopInventory(npc.name);
   if (!shopData) {
     return { logs: [{ t: "sys", text: `  ${npc.name}摆摆手，「小店暂无货可卖。」` }] };
@@ -260,6 +257,7 @@ export function tradeWithNpc(state, npc) {
 
 export function inviteCompanion(state, npc) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
+  if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "invite" });
   const key = companionKeyByName(npc.name);
   let companionState = state.companionState || {};
   if (key === "snowLeopard") companionState = unlockSnowLeopard(companionState);
@@ -283,6 +281,7 @@ export function inviteCompanion(state, npc) {
 
 export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }], kind: "blocked" };
+  if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "steal", detail: "偷窃", now });
   const agility = state.char?.special?.身法 ?? 0;
   const result = tryStealFrom(npc, state.varTree || {}, state.skills || [], state.char || {}, agility, now);
   if (!result.ok) {
@@ -631,6 +630,7 @@ export function settleNpcDuel(state, npc, {
 
 export function learnNpcSkill(state, npc) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
+  if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "learn" });
 
   const char = state.char || {};
   const skills = state.skills || [];

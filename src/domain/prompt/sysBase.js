@@ -74,6 +74,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     if (o.settleKind === "learn_skill") {
       return `\n【授业传艺铁律】在曲措乡这方江湖里，肯把本事传给一个人，是极重的情分——那意味着认可、托付，也意味着从此多了一层师徒名分。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式都已由系统结算完毕，是既成事实），务必写成他/它郑重其事地把这身功夫交出来、态度较先前更亲近一分；不许写成勉强、敷衍、留一手或临时反悔——这是本轮叙事唯一的走向，不接受其他写法。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
     }
+    if (o.settleKind === "appease") {
+      return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，玩家本轮这次行为是一次新的缓和尝试。请结合此前尝试的方式，判断当前行为是否真诚、得体并切中要害；有效才写成怒气有所消解，无效就让${o.settleNpc}依然不满，不得把和解当成既成事实。`;
+    }
     return "";
   }
   // isSettle 分支：管"MVU 那部分该怎么写"（单调用模式下，主模型直接产 JSON+MVU，
@@ -92,6 +95,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     if (o.settleKind === "learn_skill") {
       return `\n【授业传艺铁律】肯把本事传给一个人，在江湖里是极重的情分——那意味着认可与托付。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式均已由系统结算完毕，是既成事实），所以他/它对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。`;
     }
+    if (o.settleKind === "appease") {
+      return `\n【怒气缓和状态裁决】只有当玩家本轮当前行为确实缓和了${o.settleNpc}，才可写 _.set('角色.${o.settleNpc}.生气解除', true)；未奏效时不得设置。只有成功时才可选写 _.add('角色.${o.settleNpc}.好感度', N)，其中 N 为 0~5 的整数。除此之外不得输出任何 MVU 变更。`;
+    }
     return "";
   }
   function buildSettleMvuExample(o) {
@@ -105,6 +111,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     if (o.settleKind === "learn_skill") {
       const master = !!o.learnInfo?.isMaster;
       return `\n授业这一轮好感度增量建议落在 +${master ? "4~+8" : "2~+4"} 之间（${master ? "所授是压箱底的绝学，情分重，可取上沿" : "所授是通用功夫，取下沿即可"}），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${master ? 6 : 3});`;
+    }
+    if (o.settleKind === "appease") {
+      return `\n成功示例（不成功则不输出这两条）：\n_.set('角色.${o.settleNpc}.生气解除', true);\n_.add('角色.${o.settleNpc}.好感度', 3);`;
     }
     return "";
   }

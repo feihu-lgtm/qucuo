@@ -49,6 +49,7 @@ import {
   lookNpc,
   stealFromNpc,
   talkToNpc,
+  tradeWithNpc,
 } from "../src/features/npc/logic.js";
 import {
   processPigeons,
@@ -691,6 +692,18 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       return await applyFeature(giftNpc(state, npc, item || null));
     }
 
+    const tradeMatch = /^交易\s+(.+)$/.exec(line);
+    if (tradeMatch) {
+      const npc = visibleNpcs.find((entry) => entry?.name === tradeMatch[1]);
+      if (!npc) return await missingNpc(tradeMatch[1]);
+      const result = tradeWithNpc(state, npc);
+      if (result.shop) {
+        emit(`${result.shop.shopName || `${npc.name}的铺子`}已开张。`);
+        return 0;
+      }
+      return await applyFeature(result);
+    }
+
     const stealMatch = /^偷\s+(.+)$/.exec(line);
     if (stealMatch) {
       const npc = visibleNpcs.find((entry) => entry?.name === stealMatch[1]);
@@ -838,6 +851,10 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     }),
     ctx: {
       importedRegistry,
+      roomMapRef: {
+        get current() { return session.roomMap; },
+        set current(next) { session.roomMap = next; },
+      },
       get companionState() {
         return gameStore.getState().companionState;
       },
@@ -847,6 +864,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       getNow: () => Date.now(),
     },
     applyResult: (result) => {
+      if (result.roomMap) session.roomMap = result.roomMap;
       if (result.forcedDuelNpc) session.forcedDuelNpc = result.forcedDuelNpc;
       applyResult(featureCtx, result);
     },

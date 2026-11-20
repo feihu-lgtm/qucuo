@@ -7,6 +7,7 @@
 import { callModel, cleanJsonString } from "../../infra/apiConfig.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { extractMvuBlock } from "./mvu.js";
+import { APPEASE_EXTRACTION_SPEC } from "./appeaseExtraction.js";
 
 // ── 全意图公共字段（本轮补齐）──
 // 单调用模式下这两个字段由主叙事的 JSON schema 一并产出，双调用模式下主调用只写
@@ -194,6 +195,8 @@ ${narrative}
     },
   },
 
+  APPEASE: APPEASE_EXTRACTION_SPEC,
+
   EXPLORE_ACTION: {
     system: "你是游戏状态提取器，从叙事中提取探索/调查行动产生的状态变化。",
     user: (narrative, s) =>
@@ -271,17 +274,12 @@ export function buildExtractionCfg(intentCode, apiCfg) {
   };
 }
 
-// settleKind → 专属提取spec 的映射表。不用 if-else 链一个个判断，是因为这类
-// "结算轮专属spec"以后大概率还会继续加（新的伙伴/新的特殊结算场景），映射表
-// 比继续堆叠 if-else 更容易扩展——加一个新 settleKind 只需要在这张表里加一行。
-export const SETTLE_KIND_SPECS = { gift: "GIFT", companion_invite: "COMPANION_INVITE", learn_skill: "LEARN_SKILL" };
+// settleKind → 专属提取 spec 映射，新增结算类型只需注册映射。
+export const SETTLE_KIND_SPECS = { gift: "GIFT", companion_invite: "COMPANION_INVITE", learn_skill: "LEARN_SKILL", appease: "APPEASE" };
 
 // 调用提取层，返回 { p, mvuCommands, parseFailed }（p/mvuCommands 与 parseMainResponse 返回结构相同，可直接复用状态应用代码）。
 // 如果这个意图不需要状态提取（META_QUERY），返回 null。
-// settleOpts：结算轮专属上下文（目前只用于送礼场景），由 MudRPG.jsx 在 opts.settleKind
-// 命中时传入 { settleKind, settleNpc, giftInfo }——双调用模式下好感度判定完全交给
-// 提取层，主叙事的散文不产 <mvu>，所以"送礼必须给正向好感"这条铁律必须在这里也落一份，
-// 不能只加在 buildSysBase（那边只管单调用/双调用主叙事文风，管不到提取层怎么判好感）。
+// settleOpts 携带目标NPC和结算类型所需的上下文；双调用模式的状态判定由专属提取 spec 约束。
 export async function callExtraction(intentCode, narrative, state, apiCfg, settleOpts = null, ai = createWebAi()) {
   const settleSpecKey = settleOpts?.settleNpc ? SETTLE_KIND_SPECS[settleOpts?.settleKind] : null;
   // 不能用 || 回退：META_QUERY 显式为 null（本意图不提取状态），
@@ -377,6 +375,7 @@ const EXTRACTION_SAMPLE_SETTLE = {
     },
   },
   companion_invite: { settleKind: "companion_invite", settleNpc: "雪豹", settleBeast: true },
+  appease: { settleKind: "appease", settleNpc: "才旦" },
   learn_skill: {
     settleKind: "learn_skill",
     settleNpc: "雪豹",
