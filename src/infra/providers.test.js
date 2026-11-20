@@ -203,6 +203,12 @@ describe("provider migration", () => {
       .toBe("deepseek");
   });
 
+  it("prioritizes a native legacy API type over a different endpoint", () => {
+    expect(migrateProvider({
+      apiType: "vertex", endpoint: PROVIDERS.anthropic.endpoint, vertexProject: "legacy-project",
+    })).toMatchObject({ provider: "vertex", apiType: "vertex", vertexProject: "legacy-project" });
+  });
+
   it.each([
     ["anthropic", "anthropic"],
     ["gemini", "gemini"],

@@ -116,13 +116,17 @@ export function migrateProvider(cfg = {}) {
   let providerId = Object.prototype.hasOwnProperty.call(PROVIDERS, source.provider) ? source.provider : "";
 
   if (!providerId) {
+    if (["anthropic", "gemini", "vertex"].includes(source.apiType)) providerId = source.apiType;
     const endpoint = trimSlashes(source.endpoint);
-    providerId = Object.values(PROVIDERS).find(provider =>
-      provider.id !== "custom" &&
-      [provider.endpoint, ...provider.altEndpoints.map(alt => alt.url)].some(url => trimSlashes(url) === endpoint),
-    )?.id || "";
-    if (!providerId && endpoint === "https://api.deepseek.com/v1/chat/completions") providerId = "deepseek";
-    if (!providerId && ["anthropic", "gemini", "vertex", "qwen"].includes(source.apiType)) providerId = source.apiType;
+    if (!providerId && (!source.apiType || ["openai", "qwen"].includes(source.apiType))) {
+      const protocol = source.apiType ? "openai" : null;
+      providerId = Object.values(PROVIDERS).find(provider =>
+        provider.id !== "custom" && (!protocol || provider.protocol === protocol) &&
+        [provider.endpoint, ...provider.altEndpoints.map(alt => alt.url)].some(url => trimSlashes(url) === endpoint),
+      )?.id || "";
+      if (!providerId && endpoint === "https://api.deepseek.com/v1/chat/completions") providerId = "deepseek";
+    }
+    if (!providerId && source.apiType === "qwen") providerId = "qwen";
     if (!providerId && source.apiType === "openai" && endpoint === trimSlashes(PROVIDERS.openai.endpoint)) providerId = "openai";
     if (!providerId) providerId = "custom";
   }
