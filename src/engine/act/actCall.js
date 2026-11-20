@@ -9,6 +9,7 @@ import { embeddingReady } from "../../domain/memory/embeddingService.js";
 import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
 import { applyPresetOverrides, getActivePreset } from "../../domain/prompt/presetSystem.js";
 import { createWebAi } from "../ports/ai.js";
+import { buildAngryNote } from "../prompt/assemblePrompt.js";
 
 const webAi = createWebAi();
 
@@ -101,8 +102,11 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   // 模型会当成自己已说出的话去续写。顺序上先立规矩、再给 [状态]。
   if (phiRules) rulesBlock += (rulesBlock ? "\n\n" : "") + phiRules;
   const rulesPrefix = rulesBlock ? rulesBlock + "\n\n" : "";
+  const angrySettleNote = d.isSettle && d.settleNpc
+    ? buildAngryNote(d.varTree, [d.settleNpc])
+    : "";
   const inChatContent = d.isSettle
-    ? rulesPrefix + (d.settleNpc ? d.reunionBlock : "") + "\n\n" + proseRule
+    ? rulesPrefix + (d.settleNpc ? d.reunionBlock : "") + angrySettleNote + "\n\n" + proseRule
     : rulesPrefix + d.ctx + distantBlock + d.recallBlock + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 

@@ -65,7 +65,20 @@ export function createAngryState(reason, now = Date.now()) {
     reason,                          // "偷窃未遂" 之类的原因说明
     turnsLeft: STEAL_CONFIG.angryTurns,
     startedAt: now,
+    attempts: [],
   };
+}
+
+export function recordAngerAttempt(angryState, { kind, detail = "", time = Date.now() } = {}) {
+  if (!angryState?.active) return angryState;
+  return {
+    ...angryState,
+    attempts: [...(Array.isArray(angryState.attempts) ? angryState.attempts : []), { kind, detail, time }].slice(-10),
+  };
+}
+
+export function isNpcAngry(varTree, name) {
+  return !!varTree?.角色?.[name]?.生气状态?.active;
 }
 
 // 每回合（玩家每次行动后）调用一次，递减生气状态的剩余回合数。
@@ -75,7 +88,7 @@ export function tickAngryState(angryState) {
   if (!angryState || !angryState.active) return angryState;
   const turnsLeft = angryState.turnsLeft - 1;
   if (turnsLeft <= 0) {
-    return { active: false, escalated: true, reason: angryState.reason };
+    return { ...angryState, active: false, escalated: true };
   }
   return { ...angryState, turnsLeft };
 }

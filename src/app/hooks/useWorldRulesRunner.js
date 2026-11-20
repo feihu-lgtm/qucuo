@@ -24,7 +24,7 @@ import { applyResult } from "../../features/run.js";
 import * as importedRegistry from "../../domain/cards/importedRegistry.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 
-export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef }) {
+export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef }) {
   const replacedRef = useRef(false);
   const [replacedTick, setReplacedTick] = useState(0);
   const worldRulesRunnerRef = useRef(null);
@@ -71,6 +71,7 @@ export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuel
         }),
         ctx: {
           importedRegistry,
+          roomMapRef,
           get companionState() {
             return gameStore.getState().companionState;
           },
@@ -80,6 +81,7 @@ export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuel
           getNow: () => Date.now(),
         },
         applyResult: (result) => {
+          if (result.roomMap) roomMapRef.current = result.roomMap;
           applyResult(featureCtxRef.current, result);
           if (result.forcedDuelNpc) setForcedDuelNpc(result.forcedDuelNpc);
         },

@@ -14,7 +14,7 @@ import {
 } from "../../features/npc/logic.js";
 import { toggleEquip } from "../../domain/economy/equipment.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
-import { stealSuccessRate } from "../../domain/combat/stealSystem.js";
+import { isNpcAngry, stealSuccessRate } from "../../domain/combat/stealSystem.js";
 
 export function useScreenHandlers({
   act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
@@ -74,6 +74,10 @@ export function useScreenHandlers({
 
   const handleNpcSteal = useCallback((npc) => {
     const state = gameStore.getState();
+    if (isNpcAngry(state.varTree, npc?.name)) {
+      applyResult(featureCtxRef.current, stealFromNpc(state, npc));
+      return;
+    }
     const agility = state.char?.special?.身法 ?? 0;
     const _st = startTrace(`偷窃 ${npc?.name || "?"}`, `偷窃 ${npc?.name || "?"}`);
     const poolAll = npc?.carriedItems || [];

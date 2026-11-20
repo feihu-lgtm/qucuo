@@ -294,13 +294,19 @@ describe("NPC stealing logic", () => {
     expectStealNote(result, "steal");
   });
 
-  it("refuses an angry target or a missing NPC without state changes", () => {
-    expect(stealFromNpc(thiefState({
+  it("routes an angry target to appeasement without rolling a steal", () => {
+    const state = thiefState({
       varTree: { 角色: { 商人: { 好感度: 40, 生气状态: { active: true } } }, 世界: {} },
-    }), { name: "商人" })).toMatchObject({
-      kind: "blocked",
-      logs: [{ t: "sys", text: expect.stringContaining("生气期间无法偷窃") }],
     });
+    const result = stealFromNpc(state, { name: "商人" }, { now: 123 });
+
+    expect(result).not.toHaveProperty("steal");
+    expect(result.settleOptions).toEqual({ settleNpc: "商人", settleKind: "appease" });
+    expect(result.changes.varTree(state.varTree).角色.商人.生气状态.attempts)
+      .toEqual([{ kind: "steal", detail: "偷窃", time: 123 }]);
+  });
+
+  it("blocks a missing NPC without state changes", () => {
     expect(stealFromNpc(thiefState(), null)).toMatchObject({
       kind: "blocked",
       logs: [{ t: "err", text: "  此地没有这位人物。" }],

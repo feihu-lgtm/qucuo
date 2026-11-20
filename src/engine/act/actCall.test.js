@@ -111,6 +111,41 @@ describe("callMainOnce 组装黄金快照", () => {
     expect(JSON.stringify(chatMessages)).toMatchSnapshot();
   });
 
+  it("settle prompt includes the anger note only while the target remains angry", async () => {
+    const angryVarTree = {
+      角色: {
+        八云: {
+          生气状态: {
+            active: true,
+            reason: "偷窃未遂",
+            turnsLeft: 2,
+            attempts: [{ kind: "trade", detail: "", time: 1 }],
+          },
+        },
+      },
+    };
+    await callMainOnce(null, false, makeDeps({
+      isSettle: true,
+      settleNpc: "八云",
+      settleKind: "appease",
+      varTree: angryVarTree,
+    }));
+    let chatMessages = callModel.mock.calls[0][2];
+    expect(chatMessages.find((message) => message.tavernBlock === "inChat").content)
+      .toContain("此前已尝试：交易");
+
+    callModel.mockClear();
+    await callMainOnce(null, false, makeDeps({
+      isSettle: true,
+      settleNpc: "八云",
+      settleKind: "appease",
+      varTree: { 角色: { 八云: { 生气状态: { active: false } } } },
+    }));
+    chatMessages = callModel.mock.calls[0][2];
+    expect(chatMessages.find((message) => message.tavernBlock === "inChat").content)
+      .not.toContain("[社交状态]");
+  });
+
   it("谈价·轻量档：整体换成单块 system + 近 8 条对话", async () => {
     const d = makeDeps({
       isTalk: true,

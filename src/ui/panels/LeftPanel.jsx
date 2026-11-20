@@ -216,7 +216,7 @@ export default function LeftPanel({
                         </div>
                         {known && attrs.态度 && <div style={{ fontSize: "9.5px", color: "var(--text-dim)" }}>{attrs.态度}</div>}
                         {known && attrs.生气状态?.active && (
-                          <div style={{ fontSize: "9.5px", color: "#e0526a" }}>⚡ 气头上（{attrs.生气状态.reason}），还剩 {attrs.生气状态.turnsLeft} 回合</div>
+                          <div style={{ fontSize: "9.5px", color: "#e0526a" }}>⚡ 气头上（{attrs.生气状态.reason}），还剩 {attrs.生气状态.turnsLeft} 回合 · 已求和 {(attrs.生气状态.attempts || []).length} 次</div>
                         )}
                       </div>
                     );

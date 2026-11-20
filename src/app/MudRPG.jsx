@@ -154,7 +154,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     time, apiCfg, setVarTree, varTreeRef, dayMaterialRef, prerunSquares,
   });
   const seaReturnRef = useRef(null);
-  useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef });
+  useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef });
 
   useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc });
 
