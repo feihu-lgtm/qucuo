@@ -31,7 +31,7 @@ function findEscalationNpc(name, state, roomMap, importedRegistry) {
     const cachedNpc = (cachedRoom?.npcs || []).find((npc) => npc.name === name);
     if (cachedNpc) return ensureNpcCombatData(cachedNpc, { luck: state.char?.special?.气运 ?? 5 });
   }
-  const imported = importedRegistry?.getImportedPoolNpc?.(name);
+  const imported = importedRegistry?.getImportedNpc?.(name, { asPoolNpc: true });
   if (imported) return buildRoomNpcWithCombat(imported, { luck: state.char?.special?.气运 ?? 5 });
   const resident = Object.values(RESIDENT_NPCS).flat().find((npc) => npc.name === name);
   if (resident) return makeEscalationNpc(resident, state);

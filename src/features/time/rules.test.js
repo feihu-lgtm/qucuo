@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getRngState, setRngState, setSeed } from "../../core/rng.js";
 import { makeBuffFlag } from "../../utils/buffSystem.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
-import { clearImported, getImportedPoolNpc, registerImported } from "../../domain/cards/importedRegistry.js";
+import { clearImported, getImportedNpc, registerImported } from "../../domain/cards/importedRegistry.js";
 import { timeAdvanceRule } from "./rules.js";
 
 let previousRngState;
@@ -176,7 +176,7 @@ describe("time advance world rule", () => {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
       roomMapRef: { current: {} },
-      importedRegistry: { getImportedPoolNpc: () => ({
+      importedRegistry: { getImportedNpc: () => ({
         id: "imported_入册旅人",
         name: "入册旅人",
         brief: "远道而来的旅人",
@@ -209,7 +209,7 @@ describe("time advance world rule", () => {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
       roomMapRef: { current: {} },
-      importedRegistry: { getImportedPoolNpc },
+      importedRegistry: { getImportedNpc },
     });
 
     expect(result.forcedDuelNpc.carriedItems.map((item) => item.name)).toEqual(
@@ -226,7 +226,7 @@ describe("time advance world rule", () => {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
       roomMapRef: { current: {} },
-      importedRegistry: { getImportedPoolNpc: () => null },
+      importedRegistry: { getImportedNpc: () => null },
     });
 
     expect(result.forcedDuelNpc).toBeUndefined();
