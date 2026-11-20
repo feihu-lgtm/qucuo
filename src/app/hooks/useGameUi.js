@@ -17,6 +17,7 @@ import { loadPortraits, getSnowLeopardForm, getPearlForm } from "../../domain/co
 import * as importedRegistry from "../../domain/cards/importedRegistry.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import { readMobileColumn, writeMobileColumn } from "../../utils/mobileColumn.js";
 
 export function useGameUi({
   room, innerRoomName, char, inv, log, time, narrator, preset,
@@ -44,7 +45,8 @@ export function useGameUi({
   const [gm, setGm] = useState(false);
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" && window.innerWidth < 768);
-  const [mobileDrawer, setMobileDrawer] = useState(null);
+  const [mobileColumn, setMobileColumn] = useState(() => readMobileColumn());
+  useEffect(() => { writeMobileColumn(undefined, mobileColumn); }, [mobileColumn]);
   const [mobileTopMenu, setMobileTopMenu] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState(null);
   const [interactMode, setInteractMode] = useState("action");
@@ -225,7 +227,7 @@ export function useGameUi({
     input, setInput, loading, setLoading, loadingRef, waitSecs, setWaitSecs, waitTimerRef,
     pendingTalks, setPendingTalks, pendingTalksRef, changePendingTalks, queueCount, setQueueCount,
     collapsedGroups, setCollapsedGroups, mapBig, setMapBig, mapBigCloseGuard, mapView, setMapView,
-    peoplePanel, setPeoplePanel, gm, setGm, isMobile, setIsMobile, mobileDrawer, setMobileDrawer,
+    peoplePanel, setPeoplePanel, gm, setGm, isMobile, setIsMobile, mobileColumn, setMobileColumn,
     mobileTopMenu, setMobileTopMenu, settingsInitialTab, setSettingsInitialTab,
     interactMode, setInteractMode, talkTarget, setTalkTarget, activeTarget, setActiveTarget,
     nsfwOn, setNsfwOn, outfitState, setOutfitState, pigeonTarget, setPigeonTarget,

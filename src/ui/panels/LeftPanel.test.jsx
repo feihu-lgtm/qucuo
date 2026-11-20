@@ -5,7 +5,14 @@ import NpcAngerLine from "./NpcAngerLine.jsx";
 import LeftPanel from "./LeftPanel.jsx";
 import { ZONE_THEMES } from "../theme.js";
 import { LEFT_FACE_DEFAULTS, LEFT_FACE_PREF_KEY, LEFT_MODULES } from "./left/leftFaces.js";
-import { readFacePreferences } from "../components/faces/useFaces.js";
+import useFaces, { readFacePreferences } from "../components/faces/useFaces.js";
+
+function Demo(props) {
+  const faces = useFaces(LEFT_FACE_PREF_KEY, LEFT_FACE_DEFAULTS, {
+    availableModules: LEFT_MODULES, editable: false, enableKeyboard: false,
+  });
+  return createElement(LeftPanel, { ...props, faces });
+}
 
 const props = {
   zoneTheme: ZONE_THEMES.village, S: {},
@@ -18,7 +25,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("left faces", () => {
   it("renders the location face and fixed date header without an editor", () => {
-    const html = renderToStaticMarkup(createElement(LeftPanel, props));
+    const html = renderToStaticMarkup(createElement(Demo, props));
     expect(html).toContain("三水交汇");
     expect(html).toContain("出口");
     expect(html).toContain("点击查看版本历史目录");
@@ -31,7 +38,7 @@ describe("left faces", () => {
   it("reads the left preference key and renders NPCs and map on the second face", () => {
     const getItem = vi.fn(() => JSON.stringify({ ...LEFT_FACE_DEFAULTS, currentIndex: 1 }));
     vi.stubGlobal("window", { localStorage: { getItem } });
-    const html = renderToStaticMarkup(createElement(LeftPanel, props));
+    const html = renderToStaticMarkup(createElement(Demo, props));
     expect(getItem).toHaveBeenCalledWith("qucuo_left_faces");
     expect(LEFT_FACE_PREF_KEY).toBe("qucuo_left_faces");
     expect(html).toContain("此地建筑");

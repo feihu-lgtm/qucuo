@@ -47,7 +47,7 @@
     "infra/apiConfig.js": 845,
     "infra/version.js": 2588,
     "tests/docsTree.test.js": 449,
-    "ui/panels/CenterPanel.jsx": 758,
+    "ui/panels/CenterPanel.jsx": 723,
     "ui/screens/CardImportScreen.jsx": 1522,
     "ui/screens/DuelScreen.jsx": 776,
     "ui/screens/SettingsPanel.jsx": 1062,

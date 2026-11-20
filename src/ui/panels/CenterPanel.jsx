@@ -62,7 +62,7 @@ function NarrativeSkeleton() {
 }
 
 export default function CenterPanel({
-  isMobile, mobileDrawer, setMobileDrawer,
+  isMobile, mobileColumn,
   zoneTheme, S,
   loading, addLog, handleCollectGround,
   rollbackOneStep, captureUndo, rollbackBlocked, stopRunning, dispatchCommand,
@@ -125,22 +125,7 @@ export default function CenterPanel({
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const showBasement = useOverlay(OVERLAY.BASEMENT);
   return (
-        <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", position: "relative" } : { flex: 55, ...S.panel }}>
-          {/* 手机：叙事区左右边缘贴边小把手，点击滑出左栏(天地)/右栏(行动) */}
-          {isMobile && !mobileDrawer && (
-            <>
-              <div className="mobile-drawer-tab mobile-drawer-tab-left" onClick={() => setMobileDrawer("left")} title="天地"
-                style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
-                  padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderLeft: "none",
-                  borderRadius: "0 6px 6px 0", color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
-                  boxShadow: "2px 0 8px rgba(0,0,0,.4)", userSelect: "none" }}>◀ 天地</div>
-              <div className="mobile-drawer-tab mobile-drawer-tab-right" onClick={() => setMobileDrawer("right")} title="行动"
-                style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
-                  padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRight: "none",
-                  borderRadius: 0, color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
-                  boxShadow: "-2px 0 8px rgba(0,0,0,.4)", userSelect: "none" }}>行动 ▶</div>
-            </>
-          )}
+        <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", display: mobileColumn === "center" ? "flex" : "none" } : { flex: 55, ...S.panel }}>
           <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>江湖</span>
             <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -388,7 +373,7 @@ export default function CenterPanel({
           {/* 叙事正文区。建筑面板展开时整个让位——两个 flex:1 的兄弟会平分高度，
               那样建筑面板只有半屏、内容长的下半截看不到（见上方注释）。
               让位而不是压缩，是因为压缩解决不了「一半」这个根因。 */}
-          <div style={{ display: ((activeBuilding || tradingShop) && !buildingPanelMinimized) ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
+          <div data-testid="narrative-log" style={{ display: ((activeBuilding || tradingShop) && !buildingPanelMinimized) ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
             {(() => {
               // 按"一问一答"分组：玩家的一条 cmd 开启一个新轮次，后面紧跟的所有内容
               // （desc/stat/affection/sys/err 等）都归进这一组，直到下一条 cmd 出现为止。
