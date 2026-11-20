@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DEFAULT_VERTEX_MODEL } from "../../core/apiModel.js";
+import { chromeBtn } from "../theme.js";
 
 const VERTEX_MODELS = [
   [DEFAULT_VERTEX_MODEL],
@@ -14,13 +15,21 @@ const VERTEX_MODELS = [
 ];
 
 export default function ApiProviderSettings({
-  cfg, patch, types, importCredential, hasCredential, labelStyle, inputStyle,
+  cfg, patch, providers, isDefaultEndpoint, migrateProvider, providerApiType,
+  importCredential, hasCredential, labelStyle, inputStyle, zoneTheme,
 }) {
   const [status, setStatus] = useState("");
-  const vertex = cfg.apiType === types.VERTEX;
+  const provider = providers[migrateProvider(cfg).provider] || providers.custom;
+  const vertex = provider.protocol === "vertex";
   const fieldLabel = { ...labelStyle, display: "block" };
   const vertexModel = cfg.vertexModel ?? DEFAULT_VERTEX_MODEL;
   const preset = VERTEX_MODELS.some(([id]) => id === vertexModel) ? vertexModel : "";
+
+  function selectProvider(providerId) {
+    const selected = providers[providerId];
+    const endpoint = !cfg.endpoint || isDefaultEndpoint(cfg.endpoint) ? selected.endpoint : cfg.endpoint;
+    patch({ provider: providerId, apiType: providerApiType(providerId), endpoint });
+  }
 
   async function importFile(event) {
     const file = event.target.files?.[0];
@@ -38,9 +47,8 @@ export default function ApiProviderSettings({
   return (
     <>
       <label style={fieldLabel} htmlFor="api-provider">服务商</label>
-      <select id="api-provider" style={inputStyle} value={cfg.apiType} onChange={e => patch({ apiType: e.target.value })}>
-        <option value={types.OPENAI}>OpenAI 兼容</option>
-        <option value={types.VERTEX}>Vertex AI</option>
+      <select id="api-provider" style={inputStyle} value={provider.id} onChange={e => selectProvider(e.target.value)}>
+        {Object.values(providers).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
       </select>
       {vertex ? (
         <>
@@ -67,8 +75,21 @@ export default function ApiProviderSettings({
       ) : (
         <>
           <div style={labelStyle}>API 地址（Endpoint）</div>
-          <input style={inputStyle} value={cfg.endpoint} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
-          {cfg.apiType === types.OPENAI && (
+          <input id="api-endpoint" style={inputStyle} value={cfg.endpoint || ""} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
+          {provider.altEndpoints.length > 0 && (
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 5 }}>
+              {provider.altEndpoints.map(alt => (
+                <button
+                  key={alt.url}
+                  type="button"
+                  onClick={() => patch({ endpoint: alt.url })}
+                  aria-pressed={cfg.endpoint === alt.url}
+                  style={{ ...chromeBtn(zoneTheme, { active: cfg.endpoint === alt.url }), padding: "3px 8px", fontSize: "10.5px" }}
+                >{alt.label}</button>
+              ))}
+            </div>
+          )}
+          {provider.id === "custom" && (
             <>
               <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, cursor: "pointer" }}>
                 <input type="checkbox" checked={!!cfg.openaiAutoComplete} onChange={e => patch({ openaiAutoComplete: e.target.checked })} style={{ cursor: "pointer" }} />
@@ -84,7 +105,12 @@ export default function ApiProviderSettings({
             </>
           )}
           <div style={labelStyle}>API Key</div>
-          <input style={inputStyle} type="password" value={cfg.apiKey} onChange={e => patch({ apiKey: e.target.value })} placeholder="sk-..." />
+          <input style={inputStyle} type="password" value={cfg.apiKey || ""} onChange={e => patch({ apiKey: e.target.value })} placeholder="sk-..." />
+          {provider.corsProxyRequired && !String(cfg.corsProxy || "").trim() && (
+            <div role="status" style={{ color: "var(--accent)", fontSize: "10.5px", marginTop: 5 }}>
+              此厂商不允许浏览器直连，请在下方填 CORS 代理
+            </div>
+          )}
         </>
       )}
     </>

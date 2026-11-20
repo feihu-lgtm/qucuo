@@ -4,7 +4,15 @@ import { observeAi } from "../core/observeAi.js";
 import { readSSE } from "./apiSse.js";
 import { getStoredVertexHeaders, hasVertexCredential } from "./vertexCredentials.js";
 import { getApiModel } from "../core/apiModel.js";
+import {
+  applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI, clampMaxTokensForProvider,
+  migrateProvider, normalizeAnthropicEndpoint, normalizeGeminiBase, normalizeOpenAIEndpoint, PROVIDERS,
+} from "./providers.js";
 export { importVertexCredential } from "./vertexCredentials.js";
+export {
+  DEFAULT_ENDPOINTS, isDefaultEndpoint, migrateProvider, providerApiType, PROVIDERS,
+  QWEN_DEFAULT_ENDPOINT, QWEN_MAX_TOKENS_CAP,
+} from "./providers.js";
 
 const CONFIG_KEY = "wuxia_mud_api_config";
 
@@ -31,31 +39,8 @@ export const API_TYPES = {
                 // 只是预设好 base_url，用户填 key + 模型名（如 qwen3.5-plus-2026-04-20）即可。
 };
 
-// 千问 OpenAI 兼容端点（国内默认；国际版为 dashscope-intl）。
-export const QWEN_DEFAULT_ENDPOINT = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
-
-// 各 API 类型的默认 endpoint。切换类型时用它自动把地址换成对应渠道的默认地址，
-// 免得切到千问还留着 OpenAI 的 URL 连不上。OPENAI 是"泛兼容"，默认给 openai 官方；
-// DeepSeek/其他中转站属于 OPENAI 类型但地址各异，靠"快速填入"预设或用户手填。
-export const DEFAULT_ENDPOINTS = {
-  [API_TYPES.ANTHROPIC]: "https://api.anthropic.com/v1/messages",
-  [API_TYPES.OPENAI]: "https://api.openai.com/v1/chat/completions",
-  [API_TYPES.GEMINI]: "https://generativelanguage.googleapis.com/v1beta/models",
-  [API_TYPES.QWEN]: QWEN_DEFAULT_ENDPOINT,
-};
-
-// 判断某个 endpoint 是否"是某个类型的默认地址"（即用户没手动改过，切类型时可安全替换）。
-export function isDefaultEndpoint(endpoint) {
-  if (!endpoint || !endpoint.trim()) return true; // 空的也算"没自定义"
-  const e = endpoint.trim().replace(/\/+$/, "");
-  return Object.values(DEFAULT_ENDPOINTS).some(d => d.replace(/\/+$/, "") === e)
-    // DeepSeek 是最常见的 OPENAI 预设，也算"预设地址"，切换时可替换
-    || e === "https://api.deepseek.com/v1/chat/completions";
-}
-
-// 思考档位 → 各家参数的映射由 applyThinkingParams 处理。默认 "off"：把 token 全留给正文。
+// 思考档位 → 各家参数的映射由 providers.js 处理。默认 "off"：把 token 全留给正文。
 export const THINKING_MODES = ["off", "low", "medium", "high", "custom"];
-const THINKING_BUDGET_BY_MODE = { low: 512, medium: 2048, high: 8192 };
 
 // 各动作类型的输出字数上限默认值。min 在 buildBudgetInstruction 里自动取 max×0.4。
 export const DEFAULT_INTENT_BUDGETS = {
@@ -73,19 +58,9 @@ export const DEFAULT_INTENT_BUDGETS = {
 // length 上限，故默认调大。想省钱可自行调小；想彻底不担心截断可拉到 100000。
 export const CALL_TOKEN_LIMIT_MAX = 100000;
 
-// 千问（及部分第三方兼容接口）对 max_tokens 有硬上限，超了直接 400
-// （InternalError.Algo.InvalidParameter: Range of max_tokens should be [1, 65536]）。
-// 我们内部的 maxTokens 地板是 20 万（给带思考的模型留余量），远超千问上限，故对
-// 千问单独封顶。取 32768：覆盖绝大多数千问模型（qwen-max 上限就是 32768；
-// qwen-plus/coder 能到 65536，但叙事根本用不了这么多，32768 足够且最稳）。
-// 用户想自定义可在 cfg.qwenMaxTokens 里改。
-export const QWEN_MAX_TOKENS_CAP = 32768;
 export function clampMaxTokensForType(maxTokens, cfg) {
-  if (cfg.apiType === API_TYPES.QWEN) {
-    const cap = Number(cfg.qwenMaxTokens) > 0 ? Math.min(Number(cfg.qwenMaxTokens), 65536) : QWEN_MAX_TOKENS_CAP;
-    return Math.max(1, Math.min(maxTokens, cap));
-  }
-  return maxTokens;
+  const migrated = migrateProvider(cfg);
+  return clampMaxTokensForProvider(maxTokens, migrated);
 }
 export const DEFAULT_CALL_TOKEN_LIMITS = {
   narratorWhisper: 6000, // 私聊旁白（MudRPG talkToNarrator）。原写死 600，是上一轮
@@ -104,7 +79,8 @@ export const DEFAULT_CALL_TOKEN_LIMITS = {
 export function defaultConfig() {
   return {
     apiType: API_TYPES.ANTHROPIC,
-    endpoint: "https://api.anthropic.com/v1/messages",
+    provider: "anthropic",
+    endpoint: PROVIDERS.anthropic.endpoint,
     apiKey: "",
     vertexProject: "",
     vertexLocation: "global",
@@ -177,7 +153,8 @@ export function loadConfig() {
     const raw = localStorage.getItem(CONFIG_KEY);
     if (!raw) return defaultConfig();
     const saved = JSON.parse(raw);
-    const merged = { ...defaultConfig(), ...saved };
+    const migrated = migrateProvider(saved);
+    const merged = { ...defaultConfig(), ...migrated };
     // 嵌套兜底：callTokenLimits / intentBudgets 是对象，浅合并会整体替换、
     // 丢掉新增项，故按 默认 <- 存档 的顺序逐键补全，确保九项/五项始终齐全。
     merged.callTokenLimits = { ...DEFAULT_CALL_TOKEN_LIMITS, ...(saved.callTokenLimits || {}) };
@@ -201,7 +178,7 @@ export function loadConfig() {
 }
 
 export function saveConfig(cfg) {
-  localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(migrateProvider(cfg)));
 }
 
 // ── 多套配置（profiles）：存不同渠道/不同 key 的整套配置，随时切换，不用每次重填 ──
@@ -226,14 +203,14 @@ function writeConfigProfiles(profiles) {
 export function saveConfigProfile(name, cfg) {
   const nm = (name || "").trim() || `配置${Date.now()}`;
   const profiles = listConfigProfiles().filter(p => p.name !== nm);
-  profiles.push({ name: nm, cfg: { ...cfg }, savedAt: Date.now() });
+  profiles.push({ name: nm, cfg: migrateProvider(cfg), savedAt: Date.now() });
   writeConfigProfiles(profiles);
   return nm;
 }
 
 export function loadConfigProfile(name) {
   const p = listConfigProfiles().find(x => x.name === name);
-  return p ? p.cfg : null;
+  return p ? migrateProvider(p.cfg) : null;
 }
 
 export function deleteConfigProfile(name) {
@@ -246,8 +223,8 @@ export function exportConfigProfiles(currentCfg) {
     kind: "qucuo-config-export",
     version: 1,
     exportedAt: Date.now(),
-    current: currentCfg || null,
-    profiles: listConfigProfiles(),
+    current: currentCfg ? migrateProvider(currentCfg) : null,
+    profiles: listConfigProfiles().map(profile => ({ ...profile, cfg: migrateProvider(profile.cfg) })),
   }, null, 2);
 }
 
@@ -257,7 +234,7 @@ export function importConfigProfiles(jsonText) {
   const incoming = Array.isArray(data.profiles) ? data.profiles : [];
   const byName = new Map(listConfigProfiles().map(p => [p.name, p]));
   for (const p of incoming) {
-    if (p && p.name && p.cfg) byName.set(p.name, { name: p.name, cfg: p.cfg, savedAt: p.savedAt || Date.now() });
+    if (p && p.name && p.cfg) byName.set(p.name, { name: p.name, cfg: migrateProvider(p.cfg), savedAt: p.savedAt || Date.now() });
   }
   writeConfigProfiles([...byName.values()]);
   return incoming.length;
@@ -269,69 +246,6 @@ function withProxy(url, cfg) {
     return "/api/proxy?url=" + encodeURIComponent(url);
   }
   return url;
-}
-
-function normalizeOpenAIEndpoint(endpoint, autoComplete = false) {
-  const url = endpoint.trim().replace(/\/+$/, "");
-  if (!autoComplete) return url;
-  if (url.endsWith("/chat/completions")) return url;
-  if (url.endsWith("/v1")) return url + "/chat/completions";
-  return url + "/v1/chat/completions";
-}
-
-// Anthropic 地址自动补全（保守规则，只在缺路径时补，已填全的绝不改动）：
-//   https://relay.com            → https://relay.com/v1/messages
-//   https://relay.com/v1         → https://relay.com/v1/messages
-//   https://relay.com/v1/messages→ 原样不动
-function normalizeAnthropicEndpoint(endpoint) {
-  const url = endpoint.trim().replace(/\/+$/, "");
-  if (url.endsWith("/messages")) return url;       // 含 /v1/messages 或自定义 /messages
-  if (url.endsWith("/v1")) return url + "/messages";
-  return url + "/v1/messages";
-}
-
-// Gemini base 自动归一（补到 .../models，且防止把整条 generateContent 路径重复拼接）：
-//   https://x.com                       → https://x.com/v1beta/models
-//   https://x.com/v1beta                → https://x.com/v1beta/models
-//   https://x.com/v1beta/models         → 原样
-//   https://x.com/v1beta/models/gm:gen… → 砍回 https://x.com/v1beta/models
-function normalizeGeminiBase(endpoint) {
-  let url = endpoint.trim().replace(/\/+$/, "");
-  // 若误填了完整的 models/<model>:generateContent，砍回到 .../models
-  url = url.replace(/\/models\/[^/]+:generateContent.*$/, "/models");
-  if (url.endsWith("/models")) return url;
-  if (/\/v1(beta)?$/.test(url)) return url + "/models";
-  return url + "/v1beta/models";
-}
-
-// 按思考档位给 OpenAI 兼容请求体注入参数。没有单一通用参数，故多塞几个无害兼容字段，
-// 谁认谁生效、不认的自动忽略：reasoning_effort（Gemini 官方兼容口）+ enable_thinking（Qwen/硅基）。
-function applyThinkingOpenAI(body, cfg, vertex) {
-  const mode = cfg.thinkingMode || "off";
-  const budget = Number(cfg.thinkingBudget) || 0;
-  const effort = mode === "custom" ? (budget <= 0 ? "off" : budget < 1024 ? "low" : budget < 4096 ? "medium" : "high") : mode;
-  body.reasoning_effort = vertex ? vertex.vertexReasoningEffort(body.model, effort) : (effort === "off" ? "none" : effort);
-  if (!vertex) body.enable_thinking = effort !== "off";
-}
-
-// Gemini 原生口：thinkingConfig.thinkingBudget（0=关）。
-function applyThinkingGemini(genConfig, cfg) {
-  const mode = cfg.thinkingMode || "off";
-  let budget = 0;
-  if (mode === "custom") budget = Math.max(0, Number(cfg.thinkingBudget) || 0);
-  else if (mode !== "off") budget = THINKING_BUDGET_BY_MODE[mode] || 0;
-  genConfig.thinkingConfig = { thinkingBudget: budget };
-}
-
-// Anthropic 扩展思考默认关闭（不发即关）；开启需 budget < max_tokens 且 temperature=1。
-function applyThinkingAnthropic(body, cfg, maxTokens) {
-  const mode = cfg.thinkingMode || "off";
-  if (mode === "off") return;
-  let budget = mode === "custom" ? (Number(cfg.thinkingBudget) || 0) : (THINKING_BUDGET_BY_MODE[mode] || 0);
-  if (budget > 0 && budget < maxTokens) {
-    body.thinking = { type: "enabled", budget_tokens: budget };
-    body.temperature = 1; // 扩展思考要求 temperature=1
-  }
 }
 
 // 剥离思考内容：把 <think>/<thinking> 块（含被截断未闭合的尾巴）从文本里去掉，
@@ -499,19 +413,24 @@ function formatBlock(b) {
 }
 
 export function hasApiCredentials(cfg) {
-  return cfg.apiType === API_TYPES.VERTEX ? hasVertexCredential() : !!String(cfg.apiKey || "").trim();
+  return migrateProvider(cfg).apiType === API_TYPES.VERTEX ? hasVertexCredential() : !!String(cfg.apiKey || "").trim();
 }
 
 const isOpenAICompatible = type => [API_TYPES.OPENAI, API_TYPES.QWEN, API_TYPES.VERTEX].includes(type);
 
 async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
-  const vertex = cfg.apiType === API_TYPES.VERTEX ? await import("./vertexAdc.js") : null;
+  const provider = PROVIDERS[cfg.provider] || PROVIDERS.custom;
+  const vertex = provider.protocol === "vertex" ? await import("./vertexAdc.js") : null;
   const url = vertex ? vertex.buildVertexEndpoint(cfg.vertexProject, cfg.vertexLocation)
-    : withProxy(normalizeOpenAIEndpoint(cfg.endpoint || DEFAULT_ENDPOINTS[cfg.apiType], cfg.openaiAutoComplete), cfg);
+    : withProxy(normalizeOpenAIEndpoint(
+      cfg.endpoint || provider.endpoint,
+      provider.id === "custom" && cfg.openaiAutoComplete,
+    ), cfg);
   const system = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock) : [systemPrompt];
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
+  const tokenField = provider.maxTokensField;
   const body = {
-    model: getApiModel(cfg), max_tokens: vertex ? Math.min(maxTokens ?? 65535, 65535) : clampMaxTokensForType(maxTokens, cfg),
+    model: getApiModel(cfg), [tokenField]: clampMaxTokensForProvider(maxTokens, cfg, provider),
     temperature: opts.temperature ?? cfg.temperature,
     messages: [...system.map(content => ({ role: "system", content })), ...(vertex ? vertex.prepareVertexMessages(messages) : messages)],
   };
@@ -520,12 +439,12 @@ async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
     const value = opts[option] ?? cfg[option];
     if (value != null) body[field] = value;
   }
-  applyThinkingOpenAI(body, cfg, vertex);
+  applyThinkingOpenAI(body, cfg, provider, vertex);
   const auth = vertex ? await (opts.getVertexHeaders || (() => getStoredVertexHeaders(fetchWithTimeout)))()
     : { Authorization: `Bearer ${cfg.apiKey}` };
   try {
     const res = await fetchWithTimeout(url, {
-      method: "POST", headers: { "Content-Type": "application/json", ...auth },
+      method: "POST", headers: { "Content-Type": "application/json", ...provider.extraHeaders, ...auth },
       body: JSON.stringify(body), ...(vertex ? { redirect: "error" } : {}),
     });
     if (vertex && !res.ok) throw await vertex.vertexResponseError(res, auth.Authorization);
@@ -542,7 +461,8 @@ async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
 // systemPrompt: string | [{role:'system', content:string, tavernBlock?, tavernLabel?}]
 // messages: [{role:'user'|'assistant', content:string}]
 export function callModel(cfg, systemPrompt, messages, opts = {}) {
-  return observeAi(messages, { ...opts, cfg, systemPrompt }, () => requestModel(cfg, systemPrompt, messages, opts));
+  const migrated = migrateProvider(cfg);
+  return observeAi(messages, { ...opts, cfg: migrated, systemPrompt }, () => requestModel(migrated, systemPrompt, messages, opts));
 }
 
 async function requestModel(cfg, systemPrompt, messages, opts) {
@@ -564,11 +484,13 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
     let text, raw, finishReason, usage;
 
     if (cfg.apiType === API_TYPES.ANTHROPIC) {
-      const url = withProxy(normalizeAnthropicEndpoint(cfg.endpoint || "https://api.anthropic.com/v1/messages"), cfg);
+      const provider = PROVIDERS[cfg.provider];
+      const url = withProxy(normalizeAnthropicEndpoint(cfg.endpoint || provider.endpoint), cfg);
       const system = Array.isArray(systemPrompt)
         ? (systemPrompt.length === 1 ? formatBlock(systemPrompt[0]) : systemPrompt.map(b => ({ type: "text", text: formatBlock(b) })))
         : systemPrompt;
-      const abody = { model: cfg.model, max_tokens: maxTokens, system, messages };
+      const maxOutputTokens = clampMaxTokensForProvider(maxTokens, cfg, provider);
+      const abody = { model: cfg.model, [provider.maxTokensField]: maxOutputTokens, system, messages };
       // Opus 4.8（及未来同类"自适应采样"模型）直接拒绝任何采样参数——传了就 400。
       // 判断依据是模型名包含 opus-4-8/opus-4.8 这类标识；命中就完全不传任何采样参数，
       // 让模型用它自己的自适应采样，静默跳过而不是让整轮请求失败。
@@ -581,16 +503,14 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
         if (topK != null) abody.top_k = topK;
         // frequency_penalty/presence_penalty：Anthropic API 没有这两个概念，永远不传。
       }
-      applyThinkingAnthropic(abody, cfg, maxTokens);
+      applyThinkingAnthropic(abody, cfg, maxOutputTokens);
       const res = await fetchWithTimeout(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...provider.extraHeaders,
           "x-api-key": cfg.apiKey,
           "anthropic-version": "2023-06-01",
-          // 允许从浏览器直连 Anthropic API（GitHub Pages 等纯静态托管没有服务端代理时必需）。
-          // 这是 Anthropic 官方支持的 header，"bring your own key" 模式的标准做法。
-          "anthropic-dangerous-direct-browser-access": "true",
         },
         body: JSON.stringify(abody),
       });
@@ -608,14 +528,15 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
       usage = raw.usage;
 
     } else if (cfg.apiType === API_TYPES.GEMINI) {
-      const base = normalizeGeminiBase(cfg.endpoint || "https://generativelanguage.googleapis.com/v1beta/models");
-      const url = withProxy(`${base}/${cfg.model}:generateContent?key=${cfg.apiKey}`, cfg);
+      const provider = PROVIDERS[cfg.provider];
+      const base = normalizeGeminiBase(cfg.endpoint || provider.endpoint);
+      const url = withProxy(`${base}/${encodeURIComponent(cfg.model)}:generateContent?key=${encodeURIComponent(cfg.apiKey)}`, cfg);
       const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
       if (contents.length && contents[0].role === "user") {
         const systemText = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : systemPrompt;
         contents[0].parts[0].text = systemText + "\n\n" + contents[0].parts[0].text;
       }
-      const genConfig = { temperature, maxOutputTokens: maxTokens };
+      const genConfig = { temperature, maxOutputTokens: clampMaxTokensForProvider(maxTokens, cfg, provider) };
       // Gemini 的 generationConfig 原生支持这四个字段，直接按官方字段名传。
       if (topP != null) genConfig.topP = topP;
       if (topK != null) genConfig.topK = topK;
@@ -629,7 +550,7 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
       applyThinkingGemini(genConfig, cfg);
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...provider.extraHeaders, "Content-Type": "application/json" },
         body: JSON.stringify({ contents, generationConfig: genConfig }),
       });
       raw = await readJsonOrThrow(res, "Gemini 调用");
@@ -659,8 +580,9 @@ export async function testConnection(cfg) {
 // 只支持 Anthropic 和 OpenAI 兼容格式的 SSE 协议；Gemini 流式协议差异较大，暂不支持，
 // 调用方应在 UI 层根据 cfg.apiType 决定是否允许勾选"流式输出"。
 export function callModelStream(cfg, systemPrompt, messages, onChunk, opts = {}) {
-  return observeAi(messages, { ...opts, cfg, systemPrompt, onChunk, stream: true },
-    (chunk) => requestStream(cfg, systemPrompt, messages, chunk, opts));
+  const migrated = migrateProvider(cfg);
+  return observeAi(messages, { ...opts, cfg: migrated, systemPrompt, onChunk, stream: true },
+    (chunk) => requestStream(migrated, systemPrompt, messages, chunk, opts));
 }
 
 async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
@@ -677,15 +599,20 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
     let finishReason, usage; // 捕获停止原因与 token 用量，供 Pipeline 判断"是正常收尾还是被 length 截断"
 
     if (cfg.apiType === API_TYPES.ANTHROPIC) {
-      const url = withProxy(normalizeAnthropicEndpoint(cfg.endpoint || "https://api.anthropic.com/v1/messages"), cfg);
+      const provider = PROVIDERS[cfg.provider];
+      const url = withProxy(normalizeAnthropicEndpoint(cfg.endpoint || provider.endpoint), cfg);
       const system = Array.isArray(systemPrompt)
         ? (systemPrompt.length === 1 ? formatBlock(systemPrompt[0]) : systemPrompt.map(b => ({ type: "text", text: formatBlock(b) })))
         : systemPrompt;
-      const abody = { model: cfg.model, max_tokens: maxTokens, temperature, system, messages, stream: true };
-      applyThinkingAnthropic(abody, cfg, maxTokens);
+      const maxOutputTokens = clampMaxTokensForProvider(maxTokens, cfg, provider);
+      const abody = { model: cfg.model, [provider.maxTokensField]: maxOutputTokens, temperature, system, messages, stream: true };
+      applyThinkingAnthropic(abody, cfg, maxOutputTokens);
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": cfg.apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+        headers: {
+          "Content-Type": "application/json", ...provider.extraHeaders, "x-api-key": cfg.apiKey,
+          "anthropic-version": "2023-06-01",
+        },
         body: JSON.stringify(abody),
       });
       if (!res.ok) {
@@ -739,18 +666,23 @@ const ANTHROPIC_KNOWN_MODELS = [
 ];
 
 export async function listModels(cfg) {
-  if (cfg.apiType === API_TYPES.VERTEX) throw new Error("Vertex AI 请手动填写模型名称");
-  if (cfg.apiType === API_TYPES.ANTHROPIC) {
+  const config = migrateProvider(cfg);
+  const provider = PROVIDERS[config.provider];
+  if (provider.protocol === "vertex") throw new Error("Vertex AI 请手动填写模型名称");
+  if (provider.protocol === "anthropic") {
     return ANTHROPIC_KNOWN_MODELS;
   }
 
-  if ((cfg.apiType === API_TYPES.OPENAI || cfg.apiType === API_TYPES.QWEN)) {
+  if (provider.protocol === "openai") {
     // 模型列表要请求 <base>/models。base 从用户地址稳妥推导，不走自动补全逻辑：
     // 地址里含 /chat/completions 就砍掉取 base；否则把用户填的（去尾斜杠）直接当 base。
-    const base = (cfg.endpoint || (cfg.apiType === API_TYPES.QWEN ? QWEN_DEFAULT_ENDPOINT : "https://api.openai.com/v1/chat/completions"))
-      .trim().replace(/\/+$/, "").replace(/\/chat\/completions$/, "");
-    const url = withProxy(`${base}/models`, cfg);
-    const res = await fetchWithTimeout(url, { headers: { "Authorization": `Bearer ${cfg.apiKey}` } });
+    const endpoint = config.endpoint || provider.endpoint;
+    const base = normalizeOpenAIEndpoint(endpoint, provider.id === "custom" && config.openaiAutoComplete)
+      .replace(/\/chat\/completions$/, "");
+    const url = withProxy(`${base}/models`, config);
+    const res = await fetchWithTimeout(url, {
+      headers: { ...provider.extraHeaders, Authorization: `Bearer ${config.apiKey}` },
+    });
     const data = await readJsonOrThrow(res, "获取模型列表");
     if (data.error) throw new Error(data.error.message || "获取模型列表失败");
     const list = (data.data || []).map(m => m.id).sort();
@@ -758,10 +690,10 @@ export async function listModels(cfg) {
     return list;
   }
 
-  if (cfg.apiType === API_TYPES.GEMINI) {
-    const cleanBase = normalizeGeminiBase(cfg.endpoint || "https://generativelanguage.googleapis.com/v1beta/models");
-    const url = withProxy(`${cleanBase}?key=${cfg.apiKey}`, cfg);
-    const res = await fetch(url);
+  if (provider.protocol === "gemini") {
+    const cleanBase = normalizeGeminiBase(config.endpoint || provider.endpoint);
+    const url = withProxy(`${cleanBase}?key=${encodeURIComponent(config.apiKey)}`, config);
+    const res = await fetch(url, { headers: provider.extraHeaders });
     const data = await readJsonOrThrow(res, "获取模型列表");
     if (data.error) throw new Error(data.error.message || "获取模型列表失败");
     const list = (data.models || [])
@@ -772,5 +704,5 @@ export async function listModels(cfg) {
     return list;
   }
 
-  throw new Error(`未知的 API 类型: ${cfg.apiType}`);
+  throw new Error(`未知的 API 类型: ${config.apiType}`);
 }

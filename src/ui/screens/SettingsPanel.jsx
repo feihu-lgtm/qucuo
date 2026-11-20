@@ -1,7 +1,7 @@
 import { OVERLAY, closeOverlay, openOverlay } from "../../store/uiStore.js";
 import React, { useState } from "react";
 import { isMusicEnabled, setMusicEnabled, getState as getMusicState, setVolume as setMusicVolume, subscribe as subscribeMusic, toggleMusic, TRACKS } from "../../infra/musicPlayer.js";
-import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, DEFAULT_ENDPOINTS, isDefaultEndpoint, hasApiCredentials, importVertexCredential } from "../../infra/apiConfig.js";
+import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, hasApiCredentials, importVertexCredential, isDefaultEndpoint, migrateProvider, providerApiType, PROVIDERS } from "../../infra/apiConfig.js";
 import { getApiModel } from "../../core/apiModel.js";
 const EXTRACTION_INTENT_LABELS = [
   ["LOOK",           "查看 / 环顾"],
@@ -111,13 +111,8 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
     if (tab === "api") countMemories().then(setMemCount).catch(() => setMemCount(null));
   }, [tab]);
 
-  const isVertex = cfg.apiType === API_TYPES.VERTEX;
-  // 旧存档或旧配置里若残留 anthropic/gemini/qwen 类型，挂载时统一纠正为 openai，
-  // 避免界面里出现已删除的类型分支、或请求走错协议。
-  React.useEffect(() => {
-    if (!isVertex && cfg.apiType !== API_TYPES.OPENAI) patch({ apiType: API_TYPES.OPENAI });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const providerId = migrateProvider(cfg).provider;
+  const isVertex = providerId === "vertex";
 
   const handleClearMemory = async () => {
     if (!window.confirm("确定清空全部长期向量记忆？此操作不可撤销（存档本身不受影响）。")) return;
@@ -165,7 +160,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
   // 切换到某套 profile
   const handleLoadCfgProfile = (name) => {
     const c = loadConfigProfile(name);
-    if (c) { setCfg(c); alert(`已切换到配置「${name}」。`); }
+    if (c) { setCfg(migrateProvider(c)); alert(`已切换到配置「${name}」。`); }
   };
   const handleDeleteCfgProfile = (name) => {
     if (!window.confirm(`删除配置「${name}」？`)) return;
@@ -293,7 +288,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
             {/* 【暂留·等会用】原多渠道说明文案，后续可能放到别处：
               支持 OpenAI 兼容格式、Gemini API、Anthropic 原生格式与千问。密钥仅保存在浏览器本地（localStorage），不会上传到任何服务器。 */}
             <div style={{ fontSize: "11px", color: "var(--text-dim)", marginBottom: 8 }}>
-              选择 OpenAI 兼容接口或 Vertex AI。
+              选择服务商，并按其接口协议配置地址、密钥与模型。
             </div>
 
             {/* 配置管理：多套配置存本地、随时切换、导出/导入落盘 */}
@@ -327,13 +322,17 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               </div>
             </div>
 
-            <ApiProviderSettings cfg={cfg} patch={patch} types={API_TYPES}
+            <ApiProviderSettings cfg={cfg} patch={patch} providers={PROVIDERS}
+              isDefaultEndpoint={isDefaultEndpoint} migrateProvider={migrateProvider} providerApiType={providerApiType}
               importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)}
-              labelStyle={labelStyle} inputStyle={inputStyle} />
+              labelStyle={labelStyle} inputStyle={inputStyle} zoneTheme={zoneTheme} />
 
             {!isVertex && <><label htmlFor="api-model" style={{ ...labelStyle, display: "block" }}>模型名称</label>
             <div style={{ display: "flex", gap: 6 }}>
-              <input id="api-model" style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="例如 deepseek-chat / deepseek-reasoner" />
+              <input id="api-model" list="provider-model-suggestions" style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="输入服务商要求的模型名称" />
+              <datalist id="provider-model-suggestions">
+                {(PROVIDERS[providerId]?.models || []).map(model => <option key={model} value={model} />)}
+              </datalist>
               <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(null)}>
                 {modelStatus === "loading" && modelPickerTarget === null ? "检测中…" : "🔍 自动检测"}
               </span>

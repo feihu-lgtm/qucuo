@@ -91,7 +91,7 @@ describe("Vertex ADC", () => {
     const error = { code: 404, message, status: "ignored-extra-field" };
     vi.stubGlobal("fetch", vi.fn(async () => Response.json(stream ? { error } : [{ error }], { status: 404 })));
     const ai = createWebAi({ getVertexHeaders: async () => ({ Authorization: "Bearer test-raw-access" }) });
-    const cfg = { ...defaultConfig(), apiType: API_TYPES.VERTEX, vertexProject: "test-project" };
+    const cfg = { ...defaultConfig(), provider: "vertex", apiType: API_TYPES.VERTEX, vertexProject: "test-project" };
     await expect(ai.chat([], { cfg, systemPrompt: "叙述", stream }))
       .rejects.toThrow(/^Vertex AI HTTP 404：Publisher model not found; \[已拦截\]; \[已拦截\]$/);
   });
@@ -102,7 +102,7 @@ describe("Vertex ADC", () => {
       .mockResolvedValueOnce(new Response("untrusted response", { status: 502 }));
     vi.stubGlobal("fetch", fetch);
     const ai = createWebAi({ getVertexHeaders: async () => ({ Authorization: "Bearer test-token" }) });
-    const cfg = { ...defaultConfig(), apiType: API_TYPES.VERTEX, vertexProject: "test-project" };
+    const cfg = { ...defaultConfig(), provider: "vertex", apiType: API_TYPES.VERTEX, vertexProject: "test-project" };
     const opts = { cfg, systemPrompt: "叙述" };
     await expect(ai.chat([], opts)).rejects.toThrow(new Error("Vertex AI HTTP 404：" + "x".repeat(199) + "…"));
     await expect(ai.chat([], opts)).rejects.toThrow(/^Vertex AI HTTP 502$/);
@@ -149,7 +149,8 @@ describe("Vertex ADC", () => {
     const fetch = vi.fn(async () => Response.json({ choices: [{ message: { content: "曲措" } }] }));
     vi.stubGlobal("fetch", fetch);
     const ai = createWebAi({ getVertexHeaders: async () => ({ Authorization: "Bearer test-token" }) });
-    const cfg = { ...defaultConfig(), apiType, vertexProject: "test-project", apiKey: "test-key" };
+    const provider = apiType === API_TYPES.VERTEX ? "vertex" : "custom";
+    const cfg = { ...defaultConfig(), provider, apiType, vertexProject: "test-project", apiKey: "test-key" };
     const history = [{ role: "assistant", content: "上一回合" }, { role: "user", content: "探索石阶" }];
     const messages = [...history, ...tail.map(content => ({ role: "assistant", content }))];
     const original = structuredClone(messages);
@@ -174,7 +175,7 @@ describe("Vertex ADC", () => {
     vi.stubGlobal("fetch", fetch);
     const vertexProject = await importVertexCredential(JSON.stringify(authorizedUser));
     const vertexModel = "google/gemini-4-hydrogen";
-    saveConfig({ ...defaultConfig(), apiType: API_TYPES.VERTEX, vertexProject, vertexModel, model: "openai-model", corsProxy: "https://wrong.example/" });
+    saveConfig({ ...defaultConfig(), provider: "vertex", apiType: API_TYPES.VERTEX, vertexProject, vertexModel, model: "openai-model", corsProxy: "https://wrong.example/" });
     const cfg = loadConfig();
     expect(tavernHasCredentials()).toBe(true);
     expect(battleHasCredentials()).toBe(true);

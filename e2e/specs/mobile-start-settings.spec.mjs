@@ -136,4 +136,22 @@ export default async function mobileStartSettings({ page, game }) {
   await page.reload();
   await page.waitForFunction(() => globalThis.document.documentElement.dataset.font === "song");
   assert.equal(await page.evaluate(() => localStorage.getItem("wuxia_mud_ui_font")), "song");
+
+  if (await page.getByText("开始游戏", { exact: true }).isVisible()) {
+    await page.getByText("设置", { exact: true }).click();
+  } else {
+    if (!(await topMenu.isVisible())) await page.getByText("☰ 菜单", { exact: true }).click();
+    await topMenu.waitFor({ state: "visible" });
+    await topMenu.getByText("设置", { exact: true }).click();
+  }
+  await page.getByText("🔑 API 配置", { exact: true }).click();
+  await page.locator("#api-provider").selectOption("openai");
+  await page.locator("#api-endpoint").fill("https://api.openai.com/v1/chat/completions");
+  await page.locator("#api-provider").selectOption("qwen");
+  assert.equal(await page.locator("#api-endpoint").inputValue(), "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
+  await page.getByRole("button", { name: "国际", exact: true }).click();
+  assert.equal(await page.locator("#api-endpoint").inputValue(), "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions");
+  await page.locator("#api-provider").selectOption("zhipu");
+  await page.getByText("此厂商不允许浏览器直连，请在下方填 CORS 代理", { exact: true }).waitFor();
+  await capture(page, "api-tab.png");
 }
