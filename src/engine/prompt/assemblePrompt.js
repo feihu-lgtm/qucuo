@@ -1,4 +1,4 @@
-import { snowLeopardNote, snowLeopardHealingAvailable } from "../../domain/quests/snowLeopardQuest.js";
+import { snowLeopardNote } from "../../domain/quests/snowLeopardQuest.js";
 
 const ATTEMPT_LABELS = {
   talk: "交谈",
@@ -84,7 +84,6 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     cmd, newConvo, mainConvo, hist, budgetInstruction,
     ctx: context,
     snowLeopardContext: snowLeopardNote({ ...input, cmd, settleNpc: opts.settleNpc, settleKind: opts.settleKind }),
-    snowLeopardHealingAvailable: snowLeopardHealingAvailable(input),
     npcLoreBlockWithQuest: npcContext.npcLoreBlockWithQuest || "",
     reunionBlock: npcContext.reunionBlock || "",
     lastAiText: npcContext.lastAiText || "",

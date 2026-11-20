@@ -44,7 +44,6 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
       snowLeopardGift: d.settleKind === "gift" && d.settleNpc === "雪豹" && !!d.snowLeopardContext,
-      snowLeopardHealingGift: d.settleKind === "gift" && d.settleNpc === "才旦" && !!d.snowLeopardHealingAvailable,
       giftInfo: d.giftInfo || null,
       settleBeast: !!d.settleBeast,
       hasNpc: d.visibleNpcsCount > 0,
