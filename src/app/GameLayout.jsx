@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import TopBar from "../ui/panels/TopBar.jsx";
 import { LeftPanel, CenterPanel, RightPanel, MobileTabBar, usePanelFaces } from "../ui/panels/gamePanels.js";
 import ClickableMap from "../ui/components/ClickableMap.jsx";
@@ -11,6 +11,8 @@ import {
 import { DIRS } from "../utils/mudHelpers.js";
 import { MAP_UI } from "../domain/map/mapUi.js";
 import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";
+import { didOpenCenterContent } from "../utils/mobileColumn.js";
+import { OVERLAY, useOverlay } from "../store/uiStore.js";
 
 export default function GameLayout({ layout }) {
   const {
@@ -52,6 +54,21 @@ export default function GameLayout({ layout }) {
     confessToNarrator, setInv, mapBigCloseGuard,
   } = layout;
   const { leftFaces, rightFaces } = usePanelFaces();
+  const showDebug = useOverlay(OVERLAY.DEBUG);
+  const showBasement = useOverlay(OVERLAY.BASEMENT);
+  const previousCenterContent = useRef(null);
+
+  useEffect(() => {
+    const content = {
+      building: activeBuilding?.id, trade: tradingShop, duel: duelPending,
+      interaction: interactMode !== "action" ? `${interactMode}:${pigeonTarget || talkTarget || ""}` : null,
+      trauma: seaTraumaActive, debug: showDebug, basement: showBasement,
+    };
+    const opened = didOpenCenterContent(previousCenterContent.current, content);
+    previousCenterContent.current = content;
+    if (isMobile && opened) setMobileColumn("center");
+  }, [isMobile, activeBuilding?.id, tradingShop, duelPending, interactMode, pigeonTarget,
+    talkTarget, seaTraumaActive, showDebug, showBasement, setMobileColumn]);
 
   useEffect(() => {
     const viewport = window.visualViewport;

@@ -37,6 +37,13 @@ export default async function mobileTabs({ page, game }) {
   await game.waitFor(page, async () => (await activeColumn()) === "左 2/2", { message: "touch face switch" });
   assert.equal(await left.locator('[aria-current="true"]').innerText(), "周遭");
 
+  await left.locator('[data-module="buildings"]').getByRole("button").first().click();
+  await game.waitFor(page, async () => (await activeColumn()) === "中", { message: "building opens center column" });
+  assert.equal(await page.getByText(/现有信鸽.*每日可领/).isVisible(), true);
+  await page.getByText("关闭", { exact: true }).click();
+  await choose("左");
+  assert.equal(await activeColumn(), "左 2/2");
+
   await choose("右");
   assert.equal(await right.isVisible(), true);
   assert.match(await activeColumn(), /^右 \d+\/\d+$/);

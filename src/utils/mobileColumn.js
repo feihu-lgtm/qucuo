@@ -1,6 +1,10 @@
 export const MOBILE_COLUMN_KEY = "qucuo_mobile_column";
 const valid = value => ["left", "center", "right"].includes(value);
 
+export function didOpenCenterContent(previous, current) {
+  return !!previous && Object.entries(current).some(([key, value]) => value && value !== previous[key]);
+}
+
 export function readMobileColumn(storage) {
   try {
     const value = (storage ?? globalThis.localStorage).getItem(MOBILE_COLUMN_KEY);

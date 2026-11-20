@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { MOBILE_COLUMN_KEY, readMobileColumn, writeMobileColumn } from "./mobileColumn.js";
+import { MOBILE_COLUMN_KEY, readMobileColumn, writeMobileColumn, didOpenCenterContent } from "./mobileColumn.js";
 
 describe("mobile column preferences", () => {
   it.each(["left", "center", "right"])("reads and writes %s outside game saves", column => {
@@ -21,5 +21,19 @@ describe("mobile column preferences", () => {
     const storage = { getItem: () => { throw Error("blocked"); }, setItem: () => { throw Error("quota"); } };
     expect(readMobileColumn(storage)).toBe("center");
     expect(writeMobileColumn(storage, "right")).toBe(false);
+  });
+});
+
+describe("center-hosted content transitions", () => {
+  it.each(["building", "trade", "duel", "interaction", "trauma", "debug", "basement"])("detects opening %s independently of other open content", key => {
+    expect(didOpenCenterContent({ other: true }, { other: true, [key]: "opened" })).toBe(true);
+  });
+
+  it("does not override restored columns, unchanged screens, or closing screens", () => {
+    expect(didOpenCenterContent(null, { building: "inn" })).toBe(false);
+    expect(didOpenCenterContent({}, {})).toBe(false);
+    expect(didOpenCenterContent({ building: "inn" }, { building: "inn" })).toBe(false);
+    expect(didOpenCenterContent({ building: "inn" }, { building: null })).toBe(false);
+    expect(didOpenCenterContent({ building: "inn" }, { building: "shop" })).toBe(true);
   });
 });
