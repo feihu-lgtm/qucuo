@@ -235,12 +235,15 @@ export const HOOK_COMMANDS = Object.freeze({
     forceAdvanceQuest: "questChoice",
     triggerQuestFromPanel: "questChoice",
     triggerQuestChoice: "questChoice",
+    savePersuasionProgress: "persuasionTurn",
+    finishPersuasion: "persuasionTurn",
   }),
   useDuel: Object.freeze({
     handleNpcDuel: "duel",
     confirmDuel: "duel",
     cancelDuel: "duel",
     duelFinishHandler: "duel",
+    resetDuel: "duel",
   }),
   usePlayerActionHandlers: Object.freeze({
     handleComfort: "rightPanelSkills",

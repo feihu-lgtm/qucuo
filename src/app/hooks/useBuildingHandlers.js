@@ -34,7 +34,7 @@ import { joinSect } from "../../features/sect/logic.js";
 import { auctionWin } from "../../features/auction/logic.js";
 
 export function useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo }) {
-  const handleBuildingInn = useCallback((cost, roomType) => {
+  const handleBuildingInn = useCallback((cost, roomType) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     const result = restAtInn(gameStore.getState(), {
       cost,
@@ -42,23 +42,23 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
       buildingName: activeBuilding?.name,
     });
     applyResult(featureCtxRef.current, result);
-  }, [activeBuilding, captureUndo]);
+  }, { feature: "building.restAtInn" }), [activeBuilding, captureUndo]);
 
-  const handleBuildingHeal = useCallback((cost, healAmt) => {
+  const handleBuildingHeal = useCallback((cost, healAmt) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, healAtHospital(gameStore.getState(), {
       cost,
       healAmt,
       buildingName: activeBuilding?.name,
     }));
-  }, [activeBuilding, captureUndo]);
+  }, { feature: "building.healAtHospital" }), [activeBuilding, captureUndo]);
 
-  const handleBuySkill = useCallback((catalogItem) => {
+  const handleBuySkill = useCallback((catalogItem) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, buySkillFeature(gameStore.getState(), catalogItem));
-  }, [captureUndo]);
+  }, { feature: "building.buySkill" }), [captureUndo]);
 
-  const handleGamble = useCallback(({ mode, bet, luck, dayIdx }) => {
+  const handleGamble = useCallback(({ mode, bet, luck, dayIdx }) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, gambleFeature(gameStore.getState(), {
       mode,
@@ -67,9 +67,9 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
       dayIdx,
       maxBet: activeBuilding?.maxBet,
     }));
-  }, [activeBuilding, captureUndo]);
+  }, { feature: "building.gamble" }), [activeBuilding, captureUndo]);
 
-  const handleTravel = useCallback((dest, price) => {
+  const handleTravel = useCallback((dest, price) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     const state = gameStore.getState();
     const roomMap = {
@@ -87,14 +87,14 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     }
     applyResult(featureCtxRef.current, result);
     if (result.changes) setActiveBuilding(null);
-  }, [captureUndo]);
+  }, { feature: "building.travel" }), [captureUndo]);
 
-  const handleServiceOrder = useCallback((item, karmaChange = 0) => {
+  const handleServiceOrder = useCallback((item, karmaChange = 0) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, orderService(gameStore.getState(), item, karmaChange));
-  }, [captureUndo]);
+  }, { feature: "building.serviceOrder" }), [captureUndo]);
 
-  const handleCook = useCallback(({ materials, technique, cookware, freestyle, dish }) => {
+  const handleCook = useCallback(({ materials, technique, cookware, freestyle, dish }) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, cookMeal(gameStore.getState(), {
       materials,
@@ -104,98 +104,98 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
       dish,
       buildingName: activeBuilding?.name,
     }));
-  }, [activeBuilding, captureUndo]);
+  }, { feature: "building.cook" }), [activeBuilding, captureUndo]);
 
-  const handlePray = useCallback(() => {
+  const handlePray = useCallback(() => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, prayFeature(
       gameStore.getState(),
       activeBuilding?.karmaPerPray || 10,
     ));
-  }, [activeBuilding, captureUndo]);
+  }, { feature: "building.pray" }), [activeBuilding, captureUndo]);
 
-  const handleReadBook = useCallback((book) => {
+  const handleReadBook = useCallback((book) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, readBookFeature(gameStore.getState(), book));
-  }, [captureUndo]);
+  }, { feature: "building.readBook" }), [captureUndo]);
 
-  const handleBuyBook = useCallback((book) => {
+  const handleBuyBook = useCallback((book) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, buyBookFeature(gameStore.getState(), book));
-  }, [captureUndo]);
+  }, { feature: "building.buyBook" }), [captureUndo]);
 
-  const handleDeposit = useCallback((amount) => {
+  const handleDeposit = useCallback((amount) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, depositFeature(gameStore.getState(), amount));
-  }, [captureUndo]);
+  }, { feature: "building.deposit" }), [captureUndo]);
 
-  const handleWithdraw = useCallback(() => {
+  const handleWithdraw = useCallback(() => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, withdrawFeature(gameStore.getState()));
-  }, [captureUndo]);
+  }, { feature: "building.withdraw" }), [captureUndo]);
 
-  const handlePledge = useCallback((item, pledgeValue) => {
+  const handlePledge = useCallback((item, pledgeValue) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, pledgeFeature(gameStore.getState(), item.id, pledgeValue));
-  }, [captureUndo]);
+  }, { feature: "building.pledge" }), [captureUndo]);
 
-  const handleRedeem = useCallback((index, redeemCost) => {
+  const handleRedeem = useCallback((index, redeemCost) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, redeemFeature(gameStore.getState(), index, redeemCost));
-  }, [captureUndo]);
+  }, { feature: "building.redeem" }), [captureUndo]);
 
-  const handleAcceptEscort = useCallback((quest) => {
+  const handleAcceptEscort = useCallback((quest) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, acceptEscort(gameStore.getState(), quest));
-  }, [captureUndo]);
+  }, { feature: "building.acceptEscort" }), [captureUndo]);
 
-  const handleAcceptBounty = useCallback((quest) => {
+  const handleAcceptBounty = useCallback((quest) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, acceptBounty(gameStore.getState(), quest));
-  }, [captureUndo]);
+  }, { feature: "building.acceptBounty" }), [captureUndo]);
 
-  const handleClaimBounty = useCallback((quest) => {
+  const handleClaimBounty = useCallback((quest) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, claimBounty(gameStore.getState(), quest));
-  }, [captureUndo]);
+  }, { feature: "building.claimBounty" }), [captureUndo]);
 
-  const handleGambleSettle = useCallback((res) => {
+  const handleGambleSettle = useCallback((res) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     const result = settleGambleStone(gameStore.getState(), res);
     applyResult(featureCtxRef.current, result);
     if (res.type !== "buy" && result.changes) setActiveBuilding(null);
-  }, [captureUndo]);
+  }, { feature: "building.gambleSettle" }), [captureUndo]);
 
-  const handleForgeCommission = useCallback((chosen, luck, currentTime, cost, threeFields) => {
+  const handleForgeCommission = useCallback((chosen, luck, currentTime, cost, threeFields) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, commissionForge(gameStore.getState(), {
       chosen, luck, currentTime, cost, threeFields,
     }));
-  }, [captureUndo]);
+  }, { feature: "building.forgeCommission" }), [captureUndo]);
 
-  const handleJadeCraft = useCallback((chosen, jadeItemId, currentTime, threeFields) => {
+  const handleJadeCraft = useCallback((chosen, jadeItemId, currentTime, threeFields) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, craftJade(gameStore.getState(), {
       chosen, jadeItemId, currentTime, threeFields,
     }));
-  }, [captureUndo]);
+  }, { feature: "building.jadeCraft" }), [captureUndo]);
 
-  const handleListenRumor = useCallback((rumor, cost) => {
+  const handleListenRumor = useCallback((rumor, cost) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, listenToRumor(gameStore.getState(), rumor, cost));
-  }, [captureUndo]);
+  }, { feature: "building.listenRumor" }), [captureUndo]);
 
-  const handleJoinSect = useCallback(() => {
+  const handleJoinSect = useCallback(() => applyResult(featureCtxRef.current, () => {
     captureUndo();
     const result = joinSect(gameStore.getState());
     if (result.changes) setActiveBuilding(null);
     applyResult(featureCtxRef.current, result);
-  }, [captureUndo]);
+  }, { feature: "building.joinSect" }), [captureUndo]);
 
-  const handleAuctionWin = useCallback((finalPrice) => {
+  const handleAuctionWin = useCallback((finalPrice) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, auctionWin(gameStore.getState(), finalPrice));
-  }, [captureUndo]);
+  }, { feature: "building.auctionWin" }), [captureUndo]);
 
   return {
     handleBuildingInn,

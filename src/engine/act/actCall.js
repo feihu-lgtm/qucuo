@@ -223,6 +223,7 @@ ${dealFmt}`;
       },
       intent: { code: d.intent.code, label: d.intent.label },
       recallInfo: d.recallInfo,
+      modelOptions: { callLabel: "主叙事" },
     });
     if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
     if (narrativeOnly) {

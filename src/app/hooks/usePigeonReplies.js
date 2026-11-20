@@ -17,7 +17,8 @@ export function usePigeonReplies({
   const pigeonProcessing = useRef(new Set());
 
   useEffect(() => {
-    applyResult(featureCtxRef.current, recordPigeonNpcLocations(gameStore.getState()));
+    const result = recordPigeonNpcLocations(gameStore.getState());
+    if (result.changes) applyResult(featureCtxRef.current, result, { feature: "pigeon.recordNpcLocations", background: true });
   }, [room.name, room.npcs]);
 
   const replyPigeonLetter = useCallback(async (letter) => {
@@ -42,10 +43,10 @@ ${facts ? "你也隐约知道的近来见闻（可自然带一两句，不要生
 ① ⟦好感X⟧：X 为整数 -3~+8，表示这次通信${gaveGift ? "与收礼" : ""}让你对主角好感升降多少（寻常问候+1~2；说到心坎/贴心/有趣+3~+6；${gaveGift ? "礼物合心意可再高些至+8；" : ""}敷衍冒犯给负数）。
 ${canReturnGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼（类别取 weapon/armor/accessory/misc 之一），从你身份/处境合理拿得出手的东西里挑一件写在这里（例如僧人回赠念珠、猎户回赠兽皮、富贵者回赠玉器）；不想回或拿不出就整条省略。" : "（这次不涉及回礼，无需第二个标记。）"}`;
       const { text } = await callModel(apiCfg, sys, [{ role: "user", content: `主角的来信：${sentContent}` }], { maxTokens: apiCfg.callTokenLimits?.pigeonReply ?? 3000, callLabel: "飞鸽回信" });
-      applyPigeonResult(applyPigeonReply(state, letter, text));
+      applyPigeonResult(applyPigeonReply(state, letter, text), { feature: "pigeon.reply", background: true });
     } catch {
       pigeonProcessing.current.delete(id);
-      applyPigeonResult(failPigeonReply(gameStore.getState(), letter));
+      applyPigeonResult(failPigeonReply(gameStore.getState(), letter), { feature: "pigeon.reply", background: true });
     }
   }, [room.npcs, apiCfg, preset, applyPigeonResult]);
 

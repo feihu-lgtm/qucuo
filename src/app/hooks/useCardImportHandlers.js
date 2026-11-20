@@ -11,7 +11,7 @@ export function useCardImportHandlers({
   setVarTree, setChar, setSkills, setInv, setCompanionState, addLog,
   featureCtxRef, schedulerRef,
 }) {
-  const handleImportNpcs = useCallback((npcs) => {
+  const handleImportNpcs = useCallback((npcs) => applyResult(featureCtxRef.current, () => {
     const n = importedRegistry.registerImported(npcs, {});
     const withAff = npcs.filter(x => (x.affection || 0) !== 0);
     if (withAff.length) {
@@ -32,9 +32,9 @@ export function useCardImportHandlers({
         ? [{ t: "sys", text: `  其中 ${here.join("、")} 驻场于此，此刻已在场。` }]
         : []),
     ]);
-  }, [setVarTree, addLog]);
+  }, { feature: "cards.importNpcs" }), [setVarTree, addLog]);
 
-  const handleImportPlayer = useCallback((player, opening) => {
+  const handleImportPlayer = useCallback((player, opening) => applyResult(featureCtxRef.current, () => {
     setChar(c => {
       const next = { ...c };
       if (player.name) next.name = player.name;
@@ -60,14 +60,14 @@ export function useCardImportHandlers({
       ...(filled < 7 ? [{ t: "sys", text: "  余下几项去右栏「◈ 体貌」自己补，私密层那五项只能手填。" }] : []),
       ...(opening?.rewritten ? [{ t: "narr", text: opening.rewritten }] : []),
     ]);
-  }, [setChar, setSkills, setInv, addLog]);
+  }, { feature: "cards.importPlayer" }), [setChar, setSkills, setInv, addLog]);
 
-  const handleImportWorld = useCallback((items) => {
+  const handleImportWorld = useCallback((items) => applyResult(featureCtxRef.current, () => {
     const n = importedRegistry.registerImportedWorld(items, {});
     if (n) addLog([{ t: "sys", text: `  ${n} 条地理与规矩已入册，提到时自会浮现。` }]);
-  }, [addLog]);
+  }, { feature: "cards.importWorld" }), [addLog]);
 
-  const handleCreateCharacter = ({ name, gender, fromCard }) => {
+  const handleCreateCharacter = ({ name, gender, fromCard }) => applyResult(featureCtxRef.current, () => {
     const createCharacter = () => {
       setChar(c => {
         const next = { ...c, name, gender };
@@ -108,14 +108,16 @@ export function useCardImportHandlers({
     else createCharacter();
     scheduler?.resetPlayed();
     closeOverlay(OVERLAY.CHAR_CREATE);
-  };
+  }, { feature: "cards.createCharacter" });
 
   const handleOpeningFinish = () => {
     schedulerRef.current?.resetPlayed();
     closeOverlay(OVERLAY.OPENING);
   };
 
-  const handleBodyProfileChange = (next) => setChar(c => ({ ...c, bodyProfile: next }));
+  const handleBodyProfileChange = (next) => applyResult(featureCtxRef.current, {
+    changes: { char: (c) => ({ ...c, bodyProfile: next }) },
+  }, { feature: "character.bodyProfile" });
 
   return {
     handleImportNpcs,

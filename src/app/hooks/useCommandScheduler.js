@@ -39,7 +39,7 @@ export function useCommandScheduler({ addLog, setQueueCount }) {
   const clearQueue = useCallback(() => scheduler.clearQueue(), [scheduler]);
   const clearRouteQueue = useCallback(() => scheduler.clearRouteQueue(), [scheduler]);
   const stopRunning = useCallback(() => scheduler.stopRunning(), [scheduler]);
-  const setPhase = useCallback((phase) => scheduler.setPhase(phase), [scheduler]);
+  const setPhase = useCallback((phase, trace) => scheduler.setPhase(phase, trace), [scheduler]);
 
   const wrapHandlers = useCallback((group, handlers) => {
     const mappings = HOOK_COMMANDS[group];

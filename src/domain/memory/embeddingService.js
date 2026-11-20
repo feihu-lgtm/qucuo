@@ -10,6 +10,8 @@
 //   3. 指纹校验——换了 embedding 模型，旧向量维度/语义空间不兼容，靠 fingerprint 标记，
 //      召回时对不上就跳过那条旧记忆，而不是拿错误向量去算相似度（见 recallEngine）。
 
+import { observeAi } from "../../core/observeAi.js";
+
 // SiliconFlow 默认地址（用户不填 endpoint 时兜底）
 const DEFAULT_ENDPOINT = "https://api.siliconflow.cn/v1/embeddings";
 
@@ -52,23 +54,26 @@ export async function getEmbedding(cfg, text) {
   if (!key) return null;
 
   try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: cfg.embeddingModel,
-        input: clean,
-        encoding_format: "float",
-      }),
+    const { vector } = await observeAi([], { model: cfg.embeddingModel, callLabel: "记忆向量" }, async () => {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: cfg.embeddingModel,
+          input: clean,
+          encoding_format: "float",
+        }),
+      });
+      const data = await res.json();
+      if (res.ok === false || data.error) throw new Error(`embedding HTTP ${res.status}`);
+      const vec = data?.data?.[0]?.embedding;
+      if (!Array.isArray(vec) || !vec.length) throw new Error("embedding 响应结构异常");
+      return { vector: Float32Array.from(vec) };
     });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || "embedding 接口返回错误");
-    const vec = data?.data?.[0]?.embedding;
-    if (!Array.isArray(vec) || !vec.length) throw new Error("embedding 响应结构异常");
-    return Float32Array.from(vec);
+    return vector;
   } catch (err) {
     // 降级：单次 embedding 失败不应影响这一轮游戏，静默返回 null，
     // 由上层（recallWithVisibility / 记忆写入）决定跳过召回或跳过入库。

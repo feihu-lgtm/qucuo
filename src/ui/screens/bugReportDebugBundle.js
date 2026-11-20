@@ -16,14 +16,16 @@ export function getSelectedBugReportTurns(turns, selectedTurns) {
     .map(turn => ({ label: turn.label, entries: turn.entries }));
 }
 
-export function buildModalDebugBundle(debugSources, turns, selectedTurns, includePipeline) {
+export function buildModalDebugBundle(debugSources, turns, selectedTurns, includeActionTrees, actionTrees) {
   const sources = {
     ...debugSources,
     conversation: getSelectedBugReportTurns(turns, selectedTurns),
   };
-  if (!includePipeline) {
+  if (!includeActionTrees) {
     sources.pipelineCalls = [];
     sources.traces = [];
+  } else if (actionTrees) {
+    sources.traces = actionTrees;
   }
   const bundle = buildDebugBundle(sources);
   bundle.recentLog = bundle.recentLog.filter(entry => MODAL_RECENT_LOG_TYPES.has(entry?.t));

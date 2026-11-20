@@ -1,203 +1,72 @@
-import React, { useState, useEffect } from "react";
-import { getTraceLog, clearTraceLog, formatTrace, fmtMs } from "../../infra/actionTrace.js";
-import * as ENGINE from "../../domain/prompt/enginePrompts.js";
+import { useState, useSyncExternalStore } from "react";
+import { turnMonitor } from "../../core/turnMonitor.js";
+import { fmtMs, formatTrace, pipelineTabs } from "../../infra/actionTrace.js";
+import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
+import { chromeBtn } from "../theme.js";
 
-const LAW_CHECKS = [
-  { key: "ENGINE_IDENTITY", label: "引擎身份" },
-  { key: "MAP_LAW", label: "地图铁律" },
-  { key: "ISOLATION", label: "认知隔离" },
-  { key: "CATALOG_TAIL", label: "物件志尾" },
-  { key: "GM_RULE", label: "创造模式" },
-];
+const LAYER = { ui: "入口", app: "应用", feature: "功能", domain: "规则判定", engine: "引擎", rules: "世界规则", result: "结果" };
 
-export default function TraceViewer({ onClose, onReport }) {
-  const [, forceTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => forceTick(t => t + 1), 400);
-    return () => clearInterval(id);
-  }, []);
-  const traces = getTraceLog();
-  const [copied, setCopied] = useState(false);
-  const [plOpen, setPlOpen] = useState(null);
-  const [exOpen, setExOpen] = useState(null);
-  const ICON = { pass: "✓", block: "⛔", fail: "✗", skip: "·", info: "•" };
-  const COLOR = { pass: "#c07050", block: "#c8a860", fail: "#c46060", skip: "var(--text-dim)", info: "#7a9ab8" };
-  const copyAll = () => {
-    const text = traces.map((t, i) => formatTrace(t, traces.length - i)).join("\n\n");
-    navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
-  };
-
-  const systemPromptLen = (sys) => {
-    if (Array.isArray(sys)) return sys.reduce((sum, b) => sum + (b.content?.length || 0), 0);
-    return (sys || "").length;
-  };
-
-  const formatSystemPrompt = (sys) => {
-    if (Array.isArray(sys)) {
-      return sys.map((b, i) => (
-        <div key={i} style={{ marginBottom: 6 }}>
-          <div style={{ fontSize: "9px", color: "#6a8a8a", marginBottom: 2 }}>
-            #{i + 1} {b.tavernLabel || b.tavernBlock || "system"} · {b.content?.length || 0} 字
-          </div>
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9px", lineHeight: 1.45, color: "#9a9a8a", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: "5px 7px", maxHeight: 180, overflowY: "auto" }}>{b.content || "（空）"}</pre>
-        </div>
-      ));
-    }
-    return <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9.5px", lineHeight: 1.5, color: "#9a9a8a", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: "6px 8px", maxHeight: 220, overflowY: "auto" }}>{sys || "（空）"}</pre>;
-  };
-
-  const formatUserMessages = (msgs) => {
-    return (msgs || []).map((m, i) => (
-      <div key={i} style={{ marginBottom: 6 }}>
-        <div style={{ fontSize: "9px", color: "#6a8a8a", marginBottom: 2 }}>
-          [{m.role}]{m.tavernLabel || m.tavernBlock ? ` ${m.tavernLabel || m.tavernBlock}` : ""} · {(m.content || "").length} 字
-        </div>
-        <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9px", lineHeight: 1.45, color: "#9a9a8a", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: "5px 7px", maxHeight: 180, overflowY: "auto" }}>{m.content || "（空）"}</pre>
-      </div>
-    ));
-  };
-
-  const renderPromptBody = (pl, respLabel) => {
-    const sys = pl.systemPrompt || "";
-    const usr = pl.userMessages || [];
-    const resp = pl.response || pl.text || (pl.error ? `（无回复）报错：${pl.error}` : "（无回复）");
-    return (
-      <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
-        <div>
-          <div style={{ fontSize: "9.5px", color: "#6a8a8a", marginBottom: 2 }}>System Prompt（共 {systemPromptLen(sys)} 字 · 按酒馆 13 位置拆分）</div>
-          {formatSystemPrompt(sys)}
-        </div>
-        <div>
-          <div style={{ fontSize: "9.5px", color: "#6a8a8a", marginBottom: 2 }}>输入（本轮 user / assistant 消息）</div>
-          {usr.length ? formatUserMessages(usr) : <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9.5px", lineHeight: 1.5, color: "#9a9a8a", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: "6px 8px" }}>（空）</pre>}
-        </div>
-        <div>
-          <div style={{ fontSize: "9.5px", color: "#6a8a8a", marginBottom: 2 }}>{respLabel}</div>
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "9.5px", lineHeight: 1.5, color: "#9a9a8a", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: "6px 8px", maxHeight: 220, overflowY: "auto" }}>{resp}</pre>
-        </div>
-      </div>
-    );
-  };
-
-  const renderLawCheck = (sys, meta) => {
-    const hasMeta = meta && typeof meta === "object";
-    const systemText = Array.isArray(sys)
-      ? sys.map(b => b.content || "").join("\n")
-      : (sys || "");
-    const expectLit = (key) => {
-      if (!hasMeta) return null;
-      if (key === "ISOLATION") return !!meta.wantIsolation;
-      if (key === "CATALOG_TAIL") return !!meta.wantCatalog;
-      return true;
-    };
-    const rows = LAW_CHECKS.map(c => {
-      const present = typeof systemText === "string" && systemText.includes(ENGINE[c.key]);
-      const exp = expectLit(c.key);
-      let mark, color;
-      if (present) { mark = "✓"; color = "#c07050"; }
-      else if (exp === false) { mark = "✓灭"; color = "#6a7a6a"; }
-      else if (exp === true) { mark = "✗漂移?"; color = "#c46060"; }
-      else { mark = "·"; color = "var(--text-dim)"; }
-      return { ...c, present, mark, color };
-    });
-    const presentN = rows.filter(r => r.present).length;
-    const metaLine = hasMeta
-      ? `scope=${meta.scope ?? "?"} · ${meta.narrativeOnly ? "双调用主叙事" : "单调用"}${meta.isSettle ? " · settle" : ""}${meta.settleKind ? ` · ${meta.settleKind}` : ""} · 判据 want[隔离=${meta.wantIsolation ? 1 : 0}/物件志=${meta.wantCatalog ? 1 : 0}/MVU=${meta.wantMvu ? 1 : 0}]`
-      : "（本条 trace 无注入快照判据，仅做存在性陈述——旧记录或快照未接通时如此）";
-    return (
-      <div style={{ marginTop: 6, border: "1px solid #20262e", borderRadius: 0, padding: "6px 8px", background: "#0a0d12" }}>
-        <div style={{ fontSize: "9.5px", color: "#7a9ab8", marginBottom: 4 }}>
-          引擎铁律核对（{presentN}/{rows.length} 段见于本轮 system · ✓=在 / ✓灭=按规则本就不注入 / ✗漂移?=规则说该亮却未见，疑似与单一真源脱节）
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px", fontSize: "9.5px" }}>
-          {rows.map(r => (
-            <span key={r.key} style={{ color: r.color }}>
-              {r.mark} {r.label}
-            </span>
-          ))}
-        </div>
-        <div style={{ fontSize: "9px", color: hasMeta ? "#5a7a6a" : "#4a5a5a", marginTop: 4, lineHeight: 1.6 }}>
-          {metaLine}。判据来自 buildSysBase 本轮自记的 wantXxx 局部变量，与注入文本同源；完整亮灭规则与灭因见 设置 → Prompt 注入结构面板。
-        </div>
-      </div>
-    );
-  };
-
+function AiDetails({ node, theme }) {
+  const tabs = pipelineTabs(node.pipeline);
+  const [tab, setTab] = useState("System");
   return (
-    <div className="mobile-overlay-root" style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(8,10,14,0.9)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div className="mobile-overlay-panel mobile-trace-panel" style={{ width: "100%", maxWidth: 620, maxHeight: "84vh", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div className="mobile-overlay-header" style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
-          <span style={{ color: "var(--info)", fontSize: "13px" }}>🧭 行动全流程日志（最近 {traces.length} 条 · 含各层耗时与 AI 请求）</span>
-          <span style={{ marginLeft: "auto", cursor: "pointer", color: "#6a8a8a", fontSize: "11px" }} onClick={copyAll}>{copied ? "✓已复制" : "复制全部"}</span>
-          {onReport && <span style={{ cursor: "pointer", color: "#e08a6a", fontSize: "11px" }} onClick={onReport}>🐞 上报bug</span>}
-          <span style={{ cursor: "pointer", color: "#8a6a4a", fontSize: "11px" }} onClick={() => { clearTraceLog(); onClose(); }}>清空</span>
-          <span className="mobile-overlay-close" style={{ cursor: "pointer", color: "var(--text-dim)", fontSize: "13px" }} onClick={onClose}>✕</span>
-        </div>
-        <div className="mobile-trace-content" style={{ overflowY: "auto", padding: "8px 12px" }}>
-          {traces.length === 0 && <div style={{ color: "var(--text-dim)", fontSize: "12px", padding: 12 }}>还没有行动记录。做点什么（移动、对话、行动）就会出现在这里，每一步花了多久也会实时显示。</div>}
-          {traces.map((t, i) => (
-            <div key={t.ts} style={{ borderBottom: "1px solid #14181c", padding: "8px 4px" }}>
-              <div style={{ fontSize: "11px", color: "var(--text)", marginBottom: 4 }}>
-                <span style={{ color: "var(--text-dim)" }}>#{traces.length - i}</span>
-                <span style={{ color: "#4a4a3a", marginLeft: 6, fontSize: "9.5px" }}>{new Date(t.ts).toLocaleTimeString()}</span>
-                {t.totalMs != null && <span style={{ color: "#c8a860", marginLeft: 6, fontSize: "9.5px" }}>共 {fmtMs(t.totalMs)}</span>}
-                {t._running && <span style={{ color: "var(--info)", marginLeft: 6, fontSize: "9.5px" }}>⏳ 进行中·当前「{t.steps.length ? t.steps[t.steps.length - 1].layer : "启动"}」</span>}
-              </div>
-              <div style={{ fontFamily: "ui-monospace,Menlo,Consolas,monospace", fontSize: "11px", color: "var(--info)", background: "var(--bg-panel)", border: "1px solid #1a2430", borderRadius: 0, padding: "4px 8px", marginBottom: 6, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                <span style={{ color: "#4a6a5a" }}>$ </span>{t.raw != null ? t.raw : t.cmd}
-              </div>
-              {t.steps.map((s, si) => {
-                const isAI = /AI|召回|模型|生成|提取/.test(s.layer);
-                return (
-                  <div key={si} style={{ fontSize: "10.5px", lineHeight: 1.75, paddingLeft: 8, display: "flex", gap: 4 }}>
-                    <span style={{ color: COLOR[s.status] || "#7a9ab8", width: 14, flexShrink: 0 }}>{ICON[s.status] || "•"}</span>
-                    <span style={{ flexShrink: 0, fontSize: "9px", color: isAI ? "#c88ae0" : "#5a7a8a" }}>{isAI ? "🤖AI" : "⚙系统"}</span>
-                    <span style={{ color: isAI ? "#c8a8d8" : "var(--text-dim)", flexShrink: 0 }}>[{s.layer}]</span>
-                    <span style={{ color: "#a8a898", flex: 1 }}>{s.detail}</span>
-                    {s.dt != null && <span style={{ color: s.dt > 3000 ? "#c8a860" : "#4a5a4a", flexShrink: 0, fontSize: "9.5px" }}>{fmtMs(s.dt)}</span>}
-                  </div>
-                );
-              })}
-              {t._running
-                ? <div style={{ fontSize: "10.5px", color: "var(--info)", paddingLeft: 22, marginTop: 2 }}>⏳ 正在进行……当前「{t.steps.length ? t.steps[t.steps.length - 1].layer : "启动"}」</div>
-                : <div style={{ fontSize: "10.5px", color: "#c07050", paddingLeft: 22, marginTop: 2 }}>✓ 已完成{t.summary ? `：${t.summary}` : ""}（全程 {fmtMs(t.totalMs)}）</div>}
-              {t.pipeline && (() => {
-                const pl = t.pipeline;
-                const open = plOpen === t.ts;
-                const sys = pl.systemPrompt || "";
-                const usrLen = (pl.userMessages || []).reduce((a, m) => a + (m.content || "").length, 0);
-                return (
-                  <div style={{ marginTop: 6, paddingLeft: 8 }}>
-                    <div onClick={() => setPlOpen(open ? null : t.ts)} style={{ cursor: "pointer", fontSize: "10.5px", color: "#c8a860", userSelect: "none" }}>
-                      {open ? "▾" : "▸"} 主叙事 AI 请求全文（总 prompt {Math.round(systemPromptLen(sys) + usrLen)} 字 · 回复 {(pl.response || pl.text || "").length} 字{pl.error ? " · ✗有错误" : ""}）
-                    </div>
-                    {open && (
-                      <>
-                        {renderPromptBody(pl, "AI 回复")}
-                        {renderLawCheck(sys, t.injectionSnapshot?.meta)}
-                      </>
-                    )}
-                  </div>
-                );
-              })()}
-              {t.extractionPipeline && (() => {
-                const pl = t.extractionPipeline;
-                const open = exOpen === t.ts;
-                const sys = pl.systemPrompt || "";
-                const usrLen = (pl.userMessages || []).reduce((a, m) => a + (m.content || "").length, 0);
-                return (
-                  <div style={{ marginTop: 6, paddingLeft: 8 }}>
-                    <div onClick={() => setExOpen(open ? null : t.ts)} style={{ cursor: "pointer", fontSize: "10.5px", color: "#c88ae0", userSelect: "none" }}>
-                      {open ? "▾" : "▸"} → 提取层调用全文（双调用·第二次 AI 调用 · prompt {Math.round(systemPromptLen(sys) + usrLen)} 字 · 回复 {(pl.response || pl.text || "").length} 字{pl.error ? " · ✗有错误" : ""}）
-                    </div>
-                    {open && renderPromptBody(pl, "提取层回复")}
-                  </div>
-                );
-              })()}
-            </div>
-          ))}
-        </div>
+    <details>
+      <summary style={{ cursor: "pointer" }}>{node.label} · {node.model || "未指定模型"} · {fmtMs(node.durationMs) || "进行中"}{node.pipeline.success === false ? " · 失败" : ""}</summary>
+      <div style={{ display: "flex", gap: 4, marginBlock: 6 }} role="tablist" aria-label="AI 调用详情">
+        {Object.keys(tabs).map((name) => (
+          <button key={name} type="button" role="tab" aria-selected={tab === name}
+            onClick={() => setTab(name)} style={{ ...chromeBtn(theme, { active: tab === name }), fontFamily: "inherit" }}>{name}</button>
+        ))}
       </div>
+      <pre role="tabpanel" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: "35dvh", overflow: "auto" }}>
+        {tabs[tab] || "（无内容）"}
+      </pre>
+    </details>
+  );
+}
+
+export default function TraceViewer({ theme, onClose, onReport }) {
+  const { trees } = useSyncExternalStore(turnMonitor.subscribe, turnMonitor.getSnapshot);
+  const closeGuard = useOverlayCloseGuard(onClose);
+  const [copied, setCopied] = useState("");
+  const button = { ...chromeBtn(theme), fontFamily: "inherit" };
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 70, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${theme.bg} 78%, transparent)` }} {...closeGuard}>
+      <section role="dialog" aria-modal="true" aria-label="全流程日志" style={{
+        width: "min(760px, calc(100vw - 24px))", maxHeight: "85dvh", overflow: "auto", boxSizing: "border-box",
+        background: theme.bg, color: theme.text, border: `1px solid ${theme.border}`, padding: 12,
+      }}>
+        <header style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          <strong style={{ marginRight: "auto" }}>全流程日志</strong>
+          <button type="button" style={button} onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(trees.map((turn) => formatTrace(turn)).join("\n\n"));
+              setCopied("已复制");
+            } catch { setCopied("复制失败"); }
+          }}>{copied || "复制全部"}</button>
+          <button type="button" style={button} onClick={() => { turnMonitor.clear(); setCopied(""); }}>清空</button>
+          <button type="button" style={button} onClick={onReport}>报告问题</button>
+          <button type="button" style={button} onClick={onClose}>关闭</button>
+        </header>
+        {trees.length === 0 && <p style={{ color: theme.textDim }}>还没有行动记录。</p>}
+        {trees.map((turn) => (
+          <details key={turn.id} style={{ borderTop: `1px solid ${theme.border}`, padding: "8px 0" }}>
+            <summary style={{ cursor: "pointer", overflowWrap: "anywhere" }}>
+              {turn.background ? "后台 · " : ""}{turn.cmd} · {turn.queued && turn.commandId === "rollback" ? "回滚已排队" : turn.phase} {fmtMs(turn.totalMs)}
+            </summary>
+            <ol style={{ margin: "8px 0", paddingInlineStart: 24 }}>
+              {turn.nodes.map((node) => (
+                <li key={node.id} style={{ marginBottom: 6, overflowWrap: "anywhere" }}>
+                  <small style={{ color: theme.textDim }}>{LAYER[node.layer]} · +{fmtMs(node.atMs)}</small>
+                  {node.pipeline
+                    ? <AiDetails node={node} theme={theme} />
+                    : <div>{node.label}{node.detail && `：${node.detail}`}</div>}
+                </li>
+              ))}
+            </ol>
+          </details>
+        ))}
+      </section>
     </div>
   );
 }

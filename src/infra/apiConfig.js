@@ -3,23 +3,9 @@
 // 上层调用者只需要传 (systemPrompt, messages)，不需要关心具体是哪家供应商。
 
 import { DEFAULT_WHISPER_WORDS } from "../domain/narrator/narrator.js";
+import { observeAi } from "../core/observeAi.js";
 
 const CONFIG_KEY = "wuxia_mud_api_config";
-
-// Pipeline 日志：记录每次 API 调用的完整请求/响应，保留最近 20 条。
-// 不做内容截断——调试时恰恰最需要看到被截断的那部分，截断了等于没记。
-// recall 字段预留给向量召回结果（memory/ 模块接入后填充），召回功能未启用时始终为 null。
-const MAX_PIPELINE = 20;
-const pipelineLog = [];
-let pipelineSeqCounter = 0; // 全局递增序号，跟 ts 一起用——ts 精确到毫秒但同一毫秒可能撞车，
-                            // seq 保证严格递增、排序/编号引用时不会有歧义。
-export function getPipelineLog() { return pipelineLog; }
-export function clearPipelineLog() { pipelineLog.length = 0; pipelineSeqCounter = 0; }
-function addPipelineEntry(entry) {
-  pipelineSeqCounter += 1;
-  pipelineLog.unshift({ seq: pipelineSeqCounter, ts: Date.now(), ...entry });
-  if (pipelineLog.length > MAX_PIPELINE) pipelineLog.length = MAX_PIPELINE;
-}
 
 // 目标汉字数 → API 侧的 maxTokens 安全上限。
 // 中文一个汉字大约占 1.5-2 个 token，JSON 结构本身（字段名、引号、转义）也要占一部分，
@@ -521,7 +507,11 @@ function formatBlock(b) {
 // 统一调用入口。返回 { text, raw } ；text 是模型输出的纯文本。
 // systemPrompt: string | [{role:'system', content:string, tavernBlock?, tavernLabel?}]
 // messages: [{role:'user'|'assistant', content:string}]
-export async function callModel(cfg, systemPrompt, messages, opts = {}) {
+export function callModel(cfg, systemPrompt, messages, opts = {}) {
+  return observeAi(messages, { ...opts, cfg, systemPrompt }, () => requestModel(cfg, systemPrompt, messages, opts));
+}
+
+async function requestModel(cfg, systemPrompt, messages, opts) {
   if (cfg.timeoutMs) setRequestTimeout(cfg.timeoutMs);
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
   const temperature = opts.temperature ?? cfg.temperature;
@@ -536,28 +526,6 @@ export async function callModel(cfg, systemPrompt, messages, opts = {}) {
   const topK = opts.topK ?? cfg.topK ?? null;
   const frequencyPenalty = opts.frequencyPenalty ?? cfg.frequencyPenalty ?? null;
   const presencePenalty = opts.presencePenalty ?? cfg.presencePenalty ?? null;
-  const startedAt = Date.now();
-  // recallInfo 由调用方（MudRPG.jsx 里组装 prompt 那一步）通过 opts.recallInfo 传入，
-  // 结构对齐 memory/recallWithVisibility.js 的返回值：{ visible, filtered, stats }
-  const recallInfo = opts.recallInfo ?? null;
-  const intentInfo = opts.intent ?? null; // 本轮意图分类结果，来自 inputIntent.js，纯调试展示用
-  // 调用用途标签：每个调用点应该显式传 opts.callLabel 标明"这次调用是干什么的"
-  // （比如"主叙事""状态提取""飞鸽回信"），不是靠猜 systemPrompt 内容反推。
-  // 缺省兜底成"未标注"——出现这个值说明有调用点漏传了，方便发现遗漏。
-  const callLabel = opts.callLabel || "未标注";
-
-  const baseLogFields = {
-    apiType: cfg.apiType,
-    model: cfg.model,
-    callLabel,
-    systemPrompt,
-    userMessages: messages,
-    maxTokens,
-    temperature,
-    recall: recallInfo,
-    intent: intentInfo,
-  };
-
   try {
     let text, raw, finishReason, usage;
 
@@ -656,25 +624,9 @@ export async function callModel(cfg, systemPrompt, messages, opts = {}) {
       throw new Error(`未知的 API 类型: ${cfg.apiType}`);
     }
 
-    addPipelineEntry({
-      ...baseLogFields,
-      success: true,
-      response: text,
-      rawResponse: raw,
-      finishReason,
-      usage,
-      durationMs: Date.now() - startedAt,
-    });
     return { text, raw, finishReason, usage };
 
   } catch (err) {
-    // 失败也要记：调试时"为什么这次没出结果"往往比"这次出了什么结果"更需要排查
-    addPipelineEntry({
-      ...baseLogFields,
-      success: false,
-      error: err.message || String(err),
-      durationMs: Date.now() - startedAt,
-    });
     throw err;
   }
 }
@@ -688,17 +640,15 @@ export async function testConnection(cfg) {
 // 流式调用：通过 onChunk(deltaText) 回调逐段返回文本，onDone(fullText) 在结束时给出完整拼接结果。
 // 只支持 Anthropic 和 OpenAI 兼容格式的 SSE 协议；Gemini 流式协议差异较大，暂不支持，
 // 调用方应在 UI 层根据 cfg.apiType 决定是否允许勾选"流式输出"。
-export async function callModelStream(cfg, systemPrompt, messages, onChunk, opts = {}) {
+export function callModelStream(cfg, systemPrompt, messages, onChunk, opts = {}) {
+  return observeAi(messages, { ...opts, cfg, systemPrompt, onChunk, stream: true },
+    (chunk) => requestStream(cfg, systemPrompt, messages, chunk, opts));
+}
+
+async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
   if (cfg.timeoutMs) setRequestTimeout(cfg.timeoutMs);
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
   const temperature = opts.temperature ?? cfg.temperature;
-  const startedAt = Date.now();
-  const recallInfo = opts.recallInfo ?? null;
-  const intentInfo = opts.intent ?? null;
-  const baseLogFields = {
-    apiType: cfg.apiType, model: cfg.model, systemPrompt, userMessages: messages,
-    maxTokens, temperature, recall: recallInfo, intent: intentInfo, streamed: true,
-  };
 
   if (cfg.apiType === API_TYPES.GEMINI) {
     throw new Error("Gemini 暂不支持流式输出，请在设置里关闭流式开关或切换 API 类型");
@@ -765,11 +715,9 @@ export async function callModelStream(cfg, systemPrompt, messages, onChunk, opts
       throw new Error(`未知的 API 类型: ${cfg.apiType}`);
     }
 
-    addPipelineEntry({ ...baseLogFields, success: true, response: full, finishReason, usage, durationMs: Date.now() - startedAt });
     return { text: stripReasoning(full), finishReason, usage };
 
   } catch (err) {
-    addPipelineEntry({ ...baseLogFields, success: false, error: err.message || String(err), durationMs: Date.now() - startedAt });
     throw err;
   }
 }

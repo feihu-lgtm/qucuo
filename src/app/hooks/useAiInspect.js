@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { callModel, getPipelineLog } from "../../infra/apiConfig.js";
+import { callModel } from "../../infra/apiConfig.js";
 import { effectBrief } from "../../domain/economy/itemEffectText.js";
 import { getCachedInspect, setCachedInspect } from "../../domain/prompt/inspectCache.js";
 import { NOTE_SOURCE } from "../../domain/memory/note.js";
-import { startTrace, step as traceStep, endTrace, attachPipeline } from "../../infra/actionTrace.js";
+import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
+import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 
 export function useAiInspect({
   addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv, dispatchCommand,
@@ -18,7 +19,7 @@ export function useAiInspect({
   // 抽成独立函数，让"点击查看"和"后台预跑"共用同一套 prompt，保证两边算出的
   // 内容一致、缓存键也一致（否则预跑存进去的缓存，点击时因 prompt 不同而读不到）。
   // 只负责生成文本，不碰缓存、不写日志、不算时间——这些副作用留给调用方按场景处理。
-  const genInspectText = useCallback(async (kind, name, extra, itemObj) => {
+  const genInspectText = useCallback(async (kind, name, extra, itemObj, turn) => {
     const kindLabel = INSPECT_KIND_LABEL[kind] || "物品";
     const kindNoun = INSPECT_KIND_NOUN[kind] || "随身物品";
     const sys = `你是曲措乡这个武侠世界的说书人，现在玩家想仔细端详一件${kindNoun}。
@@ -39,13 +40,14 @@ export function useAiInspect({
       if (itemObj.effect) { const t = effectBrief(itemObj.effect, null); if (t) statBits.push(`特效：${t}`); }
       prompt += `，品质：${itemObj.quality}${statBits.length ? `，${statBits.join("，")}` : ""}${itemObj.desc ? `，已知描述：${itemObj.desc}` : ""}`;
     }
-    const { text } = await callModel(apiCfg, sys, [{ role: "user", content: prompt }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000, callLabel: "查看端详" });
+    const { text } = await callModel(apiCfg, sys, [{ role: "user", content: prompt }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000, callLabel: "查看端详", turn });
     return (text || "").trim();
   }, [apiCfg]);
 
   const inspectItem = useCallback(async (kind, name, extra, itemObj, opts = {}) => {
     if (inspecting) return;
     const kindLabel = INSPECT_KIND_LABEL[kind] || "物品";
+    const turn = startTrace(`查看${kindLabel}：${name}`, undefined, { source: "button", commandId: "inspect" });
     // worldLook：玩家在游戏世界里端详自己的东西（背包/武学），走主叙事口吻的端详、
     // 算 1 回合时间、并写一张公共小纸条。描述文本本身可以吃缓存（后台可能已预跑好），
     // 但"算时间+写纸条"这两个副作用只跟"玩家真的点了查看"这个动作绑定，跟缓存无关——
@@ -68,13 +70,15 @@ export function useAiInspect({
         setTime(t => t + 1);
         jotNote({ text: `端详了${kindLabel}「${name}」，看清了它的来历门道。`, owner: [], source: NOTE_SOURCE.NARRATIVE });
       }
+      endTrace(turn, "命中缓存");
       return;
     }
 
     setInspecting(name);
     addLog([{ t: "cmd", text: `> 查看${kindLabel}：${name}` }]);
     try {
-      const text = await genInspectText(kind, name, extra, itemObj);
+      const text = await genInspectText(kind, name, extra, itemObj, turn);
+      turnMonitor.transition(turn, PHASE.COMMIT);
       const finalText = text || "旁白一时沉默，未能看出什么门道。";
       addLog([{ t: "desc", text: "  " + finalText }]);
       // 只缓存真正拿到内容的结果；空响应退化不缓存，免得一次偶然的空响应把这件东西
@@ -88,7 +92,9 @@ export function useAiInspect({
       }
     } catch (e) {
       addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
+      turnMonitor.transition(turn, PHASE.ERROR, String(e));
     }
+    endTrace(turn);
     setInspecting(null);
   }, [inspecting, addLog, jotNote, genInspectText, setFlags]);
 
@@ -148,26 +154,26 @@ export function useAiInspect({
           // 每件预跑单独开一条 trace，推到顶栏「🧭全流程日志」面板（不碰主叙事）。
           // 玩家/调试时能看到后台正在预热什么、跑好没、耗时多久、以及喂给AI的完整prompt。
           const jobLabel = `${job.kind === "skill" ? "武学" : "物品"}「${job.name}」`;
-          const _pw = startTrace(`后台预跑端详·${jobLabel}`, `[后台预跑] ${jobLabel} 描述生成`);
-          traceStep(_pw, "后台预跑", "info", `开始预热 ${jobLabel} 的端详描述`);
-          try {
-            const runPrewarm = () => genInspectTextRef.current(job.kind, job.name, job.extra, job.itemObj);
-            const text = dispatchCommand
-              ? await dispatchCommand("inspectPrewarm", runPrewarm)
-              : await runPrewarm();
-            attachPipeline(_pw, getPipelineLog()[0]); // 挂上刚才这次AI调用的完整prompt/回复
-            if (text && !stopped) {
-              setCachedInspect(job.kind, job.name, job.extra, job.itemObj, text);
-              traceStep(_pw, "写入缓存", "pass", `${jobLabel} 描述已备好，点查看即秒显示`);
-              endTrace(_pw, `预热完成：${jobLabel}`);
-            } else {
-              traceStep(_pw, "写入缓存", "skip", "AI 返回空，未写缓存，下轮再试");
-              endTrace(_pw, `预热未成（空响应）：${jobLabel}`);
+          const runPrewarm = async () => {
+            const _pw = startTrace(`后台预跑端详·${jobLabel}`, `[后台预跑] ${jobLabel} 描述生成`, { background: true, commandId: "inspectPrewarm" });
+            traceStep(_pw, "后台预跑", "info", `开始预热 ${jobLabel} 的端详描述`);
+            try {
+              const text = await genInspectTextRef.current(job.kind, job.name, job.extra, job.itemObj, _pw);
+              if (text && !stopped) {
+                setCachedInspect(job.kind, job.name, job.extra, job.itemObj, text);
+                traceStep(_pw, "写入缓存", "pass", `${jobLabel} 描述已备好，点查看即秒显示`);
+                endTrace(_pw, `预热完成：${jobLabel}`);
+              } else {
+                traceStep(_pw, "写入缓存", "skip", "AI 返回空，未写缓存，下轮再试");
+                endTrace(_pw, `预热未成（空响应）：${jobLabel}`);
+              }
+            } catch (e) {
+              traceStep(_pw, "AI调用", "fail", `预跑失败：${e?.message || e}`);
+              turnMonitor.transition(_pw, PHASE.ERROR, `预热失败：${jobLabel}`);
             }
-          } catch (e) {
-            traceStep(_pw, "AI调用", "fail", `预跑失败：${e?.message || e}`);
-            endTrace(_pw, `预热失败：${jobLabel}`);
-          }
+          };
+          if (dispatchCommand) await dispatchCommand("inspectPrewarm", runPrewarm);
+          else await runPrewarm();
           prewarmingRef.current = false;
         }
       }

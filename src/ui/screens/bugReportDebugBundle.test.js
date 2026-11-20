@@ -73,4 +73,16 @@ describe("modal debug bundle selection", () => {
     expect(bundle.traces).toEqual([]);
     expect(bundle.pipelineCalls).toEqual([]);
   });
+
+  it("includes redacted AI nodes linked to their action tree when selected", () => {
+    const apiKey = "test-configured-key-value";
+    const actionTrees = [{ id: "turn-1", nodes: [{
+      id: "node-2", pipeline: { turnId: "turn-1", nodeId: "node-2", response: `response ${apiKey}` },
+    }] }];
+    const bundle = buildModalDebugBundle({ apiConfig: { apiKey } }, [], new Set(), true, actionTrees);
+
+    expect(bundle.traces[0].nodes[0].pipeline).toEqual({
+      turnId: "turn-1", nodeId: "node-2", response: "response [REDACTED]",
+    });
+  });
 });
