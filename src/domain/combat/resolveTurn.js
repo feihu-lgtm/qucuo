@@ -373,6 +373,8 @@ export function resolveTurn(sideA, sideB) {
 
   applyDodgeResult(result, sideA, "A", sideB, "B");
   applyDodgeResult(result, sideB, "B", sideA, "A");
+  if (sideA.move.type === MOVE_TYPE.ATTACK && sideA.move.applyStatus && result.damageToB > 0) result.statusAppliedToB = rollStatusApply(sideA.move);
+  if (sideB.move.type === MOVE_TYPE.ATTACK && sideB.move.applyStatus && result.damageToA > 0) result.statusAppliedToA = rollStatusApply(sideB.move);
 
   return result;
 }
