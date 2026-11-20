@@ -11,6 +11,8 @@
 
 import { random } from "../../core/rng.js";
 import { judgeTypeMatchup, MOVE_TYPE } from "./moveTypes.js";
+import { applyDodgeResult } from "./dodgeTurn.js";
+import { rollStatusApply } from "./resolveStatus.js";
 import { applyStatus, tickStatusEffects } from "./statusEffects.js";
 import { defFromNeigong } from "../npc/npcGeneration.js";
 
@@ -103,13 +105,7 @@ function decideFirst(sideA, sideB) {
   return sa > sb ? "A" : "B";
 }
 
-// 通用状态施加：move.applyStatus = { name, chance }；旧的 confuseChance 视为施加"气乱"。
-function rollStatusApply(move) {
-  if (move.confuseChance && random() < move.confuseChance) return "气乱";
-  if (move.applyStatus && random() < (move.applyStatus.chance ?? 1)) return move.applyStatus.name;
-  return null;
-}
-
+// 通用状态施加：兼容对象写法与字符串 + statusChance；confuseChance 视为施加"气乱"。
 export function resolveTurn(sideA, sideB) {
   const result = {
     matchup: null, speedWinner: null,
@@ -374,6 +370,9 @@ export function resolveTurn(sideA, sideB) {
   if (sideB.move.permanentGrowthOnUse) result.moveGrowthB = { moveId: sideB.move.id, delta: sideB.move.permanentGrowthOnUse };
   if (sideA.move.permanentCostReductionOnUse) result.moveCostReductionA = { moveId: sideA.move.id, delta: sideA.move.permanentCostReductionOnUse };
   if (sideB.move.permanentCostReductionOnUse) result.moveCostReductionB = { moveId: sideB.move.id, delta: sideB.move.permanentCostReductionOnUse };
+
+  applyDodgeResult(result, sideA, "A", sideB, "B");
+  applyDodgeResult(result, sideB, "B", sideA, "A");
 
   return result;
 }

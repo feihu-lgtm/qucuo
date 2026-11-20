@@ -98,8 +98,9 @@ export function useScreenHandlers({
         ? `共${poolAll.length}件，可偷${poolUsable.length}件：${poolUsable.map(i => `${i.name}(${i.category || "?"}/${i.quality || "?"})`).join("、") || "无"}`
         : `carriedItems 为空或未固化 —— 这种情况偷不到任何物件，只可能偷到招式。若此人本该有随身物，说明固化/回填没生效。`);
     const favorability = state.varTree?.角色?.[npc?.name]?.好感度 ?? 0;
+    const stealBonus = state.skills?.some((skill) => skill?.name === "讨饭手") ? 0.1 : 0;
     traceStep(_st, "身法与好感", "info",
-      `身法${agility}，好感${favorability} → 成功率约 ${(stealSuccessRate(favorability, agility) * 100).toFixed(0)}%`);
+      `身法${agility}，好感${favorability} → 成功率约 ${(stealSuccessRate(favorability, agility, stealBonus) * 100).toFixed(0)}%`);
     const result = stealFromNpc(state, npc);
     const steal = result.steal;
     if (result.kind === "blocked") {

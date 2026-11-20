@@ -3,7 +3,8 @@ import { gameStore, markGameReplaced } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { applyCharacterCard } from "../../features/character/logic.js";
 import * as importedRegistry from "../../domain/cards/importedRegistry.js";
-import { hpFromNeigong } from "../../domain/npc/npcGeneration.js";
+import { deriveMovesetFromSkills, hpFromNeigong } from "../../domain/npc/npcGeneration.js";
+import { STARTER_SKILLS } from "../../domain/kungfu/starterKungfu.js";
 import { unlockImportedCompanion } from "../../domain/companion/companion.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 
@@ -67,7 +68,12 @@ export function useCardImportHandlers({
     if (n) addLog([{ t: "sys", text: `  ${n} 条地理与规矩已入册，提到时自会浮现。` }]);
   }, { feature: "cards.importWorld" }), [addLog]);
 
-  const handleCreateCharacter = ({ name, gender, fromCard }) => applyResult(featureCtxRef.current, () => {
+  const handleCreateCharacter = ({ name, gender, fromCard, special, starterSkillId }) => applyResult(featureCtxRef.current, () => {
+    const starterSkill = !fromCard && STARTER_SKILLS.find((skill) => skill.id === starterSkillId);
+    const initialSkills = starterSkill ? [{
+      ...starterSkill, level: 1, exp: 0, maxExp: 100, stage: "入门",
+      active: true, source: "开局", upgradable: true,
+    }] : null;
     const createCharacter = () => {
       setChar(c => {
         const next = { ...c, name, gender };
@@ -80,6 +86,11 @@ export function useCardImportHandlers({
           if (Number.isFinite(fromCard.waigong)) next.waigong = fromCard.waigong;
           const maxHp = hpFromNeigong(next.neigong ?? 5, next.special?.体魄 ?? 5);
           next.hp = [maxHp, maxHp];
+        } else if (special && initialSkills) {
+          next.special = { ...special };
+          const maxHp = hpFromNeigong(next.neigong ?? 5, special.体魄);
+          next.hp = [maxHp, maxHp];
+          next.moveset = deriveMovesetFromSkills(initialSkills);
         }
         return next;
       });
@@ -91,6 +102,8 @@ export function useCardImportHandlers({
         if (fromCard.persona || sk || n) {
           addLog([{ t: "sys", text: `  （已按入册的角色卡定下体貌与天赋${sk ? `，带 ${sk} 门武学` : ""}${n ? `，${n} 件随身物已入包、装备已上身` : ""}）` }]);
         }
+      } else if (initialSkills) {
+        setSkills(initialSkills);
       }
       const starterName = importedRegistry.getPendingStarterCompanion();
       if (starterName) {

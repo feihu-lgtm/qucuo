@@ -4,6 +4,9 @@
 import React, { useState } from "react";
 import { ZONE_THEMES } from "../theme.js";
 import { getPendingPlayerCard, clearPendingPlayerCard, clearPendingStarterCompanion } from "../../domain/cards/importedRegistry.js";
+import { adjustSpecial, baseSpecial, drawStarterSkills, remainingSpecialPoints, randomizeSpecial } from "../../domain/character/starterBuild.js";
+import StatAllocator from "./StatAllocator.jsx";
+import StarterSkillCards from "./StarterSkillCards.jsx";
 
 const theme = ZONE_THEMES.village;
 const BASE = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/";
@@ -22,18 +25,43 @@ export default function CharacterCreate({ onConfirm }) {
   const [name, setName] = useState(() => getPendingPlayerCard()?.name || "");
   const [gender, setGender] = useState("男");
   const [customGender, setCustomGender] = useState("");
+  const [step, setStep] = useState("identity");
+  const [special, setSpecial] = useState(baseSpecial);
+  const [starterChoices, setStarterChoices] = useState([]);
+  const [starterSkillId, setStarterSkillId] = useState(null);
+  const [rerolls, setRerolls] = useState(3);
 
   const finalGender = gender === "其他" ? (customGender.trim() || "其他") : gender;
   const canConfirm = name.trim().length > 0;
 
-  const submit = () => {
+  const submitIdentity = () => {
     if (!canConfirm) return;
-    // 用卡时把体貌与七维一并交出去，由 MudRPG 写进 char 并重算气血。
-    // 不管用不用，这张待用卡都要清掉——它是一次性的，留着会在下次新开局时
-    // 莫名其妙又冒出来。
     const fromCard = useCard && pending ? pending : null;
     clearPendingPlayerCard();
-    onConfirm({ name: name.trim(), gender: finalGender, fromCard });
+    if (fromCard) {
+      onConfirm({ name: name.trim(), gender: finalGender, fromCard, special: undefined, starterSkillId: undefined });
+      return;
+    }
+    setStep("stats");
+  };
+
+  const continueToSkills = () => {
+    if (remainingSpecialPoints(special) !== 0) return;
+    setStarterChoices(drawStarterSkills());
+    setStarterSkillId(null);
+    setStep("skills");
+  };
+
+  const rerollSkills = () => {
+    if (rerolls <= 0) return;
+    setStarterChoices(drawStarterSkills(undefined, starterChoices.map((skill) => skill.id)));
+    setStarterSkillId(null);
+    setRerolls((count) => count - 1);
+  };
+
+  const confirmBuild = () => {
+    if (!starterSkillId) return;
+    onConfirm({ name: name.trim(), gender: finalGender, fromCard: null, special, starterSkillId });
   };
 
   const pubFilled = pending
@@ -83,45 +111,74 @@ export default function CharacterCreate({ onConfirm }) {
           </div>
         )}
 
-        <label style={styles.field}>
-          <span style={styles.fieldLabel}>少侠名讳</span>
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value.slice(0, 12))}
-            onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-            placeholder="请输入你的名字（最多 12 字）"
-            style={styles.input}
-          />
-        </label>
+        {step === "identity" && (
+          <>
+            <label style={styles.field}>
+              <span style={styles.fieldLabel}>少侠名讳</span>
+              <input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value.slice(0, 12))}
+                onKeyDown={(e) => { if (e.key === "Enter") submitIdentity(); }}
+                placeholder="请输入你的名字（最多 12 字）"
+                style={styles.input}
+              />
+            </label>
 
-        <label style={styles.field}>
-          <span style={styles.fieldLabel}>性别</span>
-          <select value={gender} onChange={(e) => setGender(e.target.value)} style={styles.select}>
-            {GENDERS.map((g) => (
-              <option key={g.value} value={g.value} style={{ background: "#1a140c" }}>{g.label}</option>
-            ))}
-          </select>
-        </label>
+            <label style={styles.field}>
+              <span style={styles.fieldLabel}>性别</span>
+              <select value={gender} onChange={(e) => setGender(e.target.value)} style={styles.select}>
+                {GENDERS.map((g) => (
+                  <option key={g.value} value={g.value} style={{ background: "#1a140c" }}>{g.label}</option>
+                ))}
+              </select>
+            </label>
 
-        {gender === "其他" && (
-          <label style={styles.field}>
-            <span style={styles.fieldLabel}>自定义</span>
-            <input
-              value={customGender}
-              onChange={(e) => setCustomGender(e.target.value.slice(0, 8))}
-              placeholder="填写你认同的称谓（可留空）"
-              style={styles.input}
-            />
-          </label>
+            {gender === "其他" && (
+              <label style={styles.field}>
+                <span style={styles.fieldLabel}>自定义</span>
+                <input
+                  value={customGender}
+                  onChange={(e) => setCustomGender(e.target.value.slice(0, 8))}
+                  placeholder="填写你认同的称谓（可留空）"
+                  style={styles.input}
+                />
+              </label>
+            )}
+
+            <button
+              type="button"
+              onClick={submitIdentity}
+              disabled={!canConfirm}
+              style={{ ...styles.confirm, opacity: canConfirm ? 1 : 0.4, cursor: canConfirm ? "pointer" : "not-allowed" }}
+            >
+              {useCard && pending ? "踏入曲措乡 ▸" : "下一步：分配七维 ▸"}
+            </button>
+          </>
         )}
 
-        <div
-          onClick={submit}
-          style={{ ...styles.confirm, opacity: canConfirm ? 1 : 0.4, cursor: canConfirm ? "pointer" : "not-allowed" }}
-        >
-          踏入曲措乡 ▸
-        </div>
+        {step === "stats" && (
+          <StatAllocator
+            special={special}
+            remaining={remainingSpecialPoints(special)}
+            onAdjust={(key, delta) => setSpecial((current) => adjustSpecial(current, key, delta))}
+            onRandomize={() => setSpecial(randomizeSpecial())}
+            onContinue={continueToSkills}
+            theme={theme}
+          />
+        )}
+
+        {step === "skills" && (
+          <StarterSkillCards
+            skills={starterChoices}
+            selectedId={starterSkillId}
+            rerolls={rerolls}
+            onSelect={setStarterSkillId}
+            onReroll={rerollSkills}
+            onConfirm={confirmBuild}
+            theme={theme}
+          />
+        )}
       </div>
     </div>
   );

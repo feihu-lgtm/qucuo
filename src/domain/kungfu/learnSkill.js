@@ -136,7 +136,8 @@ export function tryStealFrom(npc, varTree, skills, char, agility = 0, now = Date
   }
 
   const favorability = npcAttrs.好感度 ?? 0;
-  const result = attemptSteal(favorability, agility);
+  const bonus = skills.some((skill) => skill?.name === "讨饭手") ? 0.1 : 0;
+  const result = attemptSteal(favorability, agility, bonus);
 
   if (!result.success) {
     return {

@@ -475,7 +475,7 @@ export const SKILL_EFFECT_KEYS = [
   "forceFirst", "forceCrit", "ignoreDefense", "ignoreDefenseRatio", "nullifyStatusOnHit",
   "doubleVsStatus", "lowHpBonus", "highHpBonus", "afterStatusBonus", "afterCounterBonus",
   "justiceStrike", "applyMark", "applyMarkChance", "applyMarkOnHit", "detonateMark",
-  "applyStatus", "statusChance", "confuseChance", "enemyCostPenalty", "freezeEnergyRecovery",
+  "applyStatus", "statusChance", "confuseChance", "dodgeChance", "stealOnDodge", "enemyCostPenalty", "freezeEnergyRecovery",
   "onCounterSuccessDamageRatio", "onCounterSuccessEnergyGain", "doubleReflectDamage",
   "immuneControl", "ignoreDefensePartialImmune", "rebirthOnce",
   "hpRestore", "energyRestore", "selfSacrifice", "allInDamage",

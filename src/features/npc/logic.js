@@ -388,7 +388,7 @@ function recapBattleLog(battleLog) {
 }
 
 export function settleNpcDuel(state, npc, {
-  outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, pendingQuestBranch,
+  outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, dodgeStolenItems, pendingQuestBranch,
   now = Date.now(), rng = random, createRespawnNpc,
 } = {}) {
   if (!npc) return {};
@@ -459,6 +459,19 @@ export function settleNpcDuel(state, npc, {
     });
     const tally = usedItems.reduce((counts, name) => (counts[name] = (counts[name] || 0) + 1, counts), {});
     logs.push({ t: "item", text: `  ⊙ 切磋中服用：${Object.entries(tally).map(([name, count]) => `${name}×${count}`).join("、")}` });
+  }
+
+  for (const stolen of dodgeStolenItems || []) {
+    const item = {
+      ...makeGameItem({ name: stolen.name, category: stolen.category || "misc", quality: stolen.quality || "白" }),
+      id: `duel_stolen_${stolen.id || stolen.name}_${now}`,
+    };
+    addChange(changes, working, "inv", (prev) => [...prev, item]);
+    addChange(changes, working, "room", (prev) => ({
+      ...prev,
+      npcs: markCarriedLost(prev.npcs, npc.name, stolen, "stolen"),
+    }));
+    logs.push({ t: "loot", text: `  🤫 顺手摸走了「${stolen.name}」`, item, source: "steal", fromNpc: npc.name });
   }
 
   const { potGain, tierLabel } = duelPotGain(npc.levelCap, outcome);

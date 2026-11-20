@@ -24,18 +24,18 @@ export const STEAL_CONFIG = {
 // 成功率计算：好感项 + 身法项独立相加，封顶。
 // 身法按每5点一档（修默认身法5零加成的坑）；好感仍按每10点一档。
 // agility 参数默认0，不传时行为等同纯好感公式（向后兼容旧调用点）。
-export function stealSuccessRate(favorability, agility = 0) {
+export function stealSuccessRate(favorability, agility = 0, bonus = 0) {
   const favBonus = Math.floor((favorability || 0) / 10) * STEAL_CONFIG.bonusPerTen;
   const agiBonus = Math.floor((agility || 0) / 5) * STEAL_CONFIG.agilityBonusPerTen;
-  return Math.min(STEAL_CONFIG.maxRate, STEAL_CONFIG.baseRate + favBonus + agiBonus);
+  return Math.min(STEAL_CONFIG.maxRate, STEAL_CONFIG.baseRate + favBonus + agiBonus + (Number(bonus) || 0));
 }
 
 // 执行一次偷窃判定，返回结果对象，不直接修改状态——
 // 调用方（MudRPG.jsx）拿到结果后自己决定怎么写入 varTree/log，
 // 这个函数保持纯函数，方便单独测试概率分布是否符合预期。
 // agility 参数默认0，向后兼容旧调用（只传 favorability 的地方行为不变）。
-export function attemptSteal(favorability, agility = 0) {
-  const rate = stealSuccessRate(favorability, agility);
+export function attemptSteal(favorability, agility = 0, bonus = 0) {
+  const rate = stealSuccessRate(favorability, agility, bonus);
   const roll = random();
   return {
     success: roll < rate,

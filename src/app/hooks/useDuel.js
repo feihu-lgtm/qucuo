@@ -47,7 +47,7 @@ export function useDuel({
     setDuelPending(null);
   }, { feature: "duel.cancel" }), [duelPending, addLog, featureCtxRef]);
 
-  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp) => applyResult(featureCtxRef.current, () => {
+  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, dodgeStolenItems) => applyResult(featureCtxRef.current, () => {
     const finishedNpc = duelingNpc;
     const result = settleNpcDuel(gameStore.getState(), finishedNpc, {
       outcome,
@@ -56,6 +56,7 @@ export function useDuel({
       grownMoveset,
       usedItems,
       remainingHp,
+      dodgeStolenItems,
       pendingQuestBranch,
       createRespawnNpc: ensureNpcCombatData,
     });
