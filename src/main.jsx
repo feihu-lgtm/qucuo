@@ -1,19 +1,20 @@
 import "./ui/tokens.css";
 import "./ui/mobile.css";
-import React, { Suspense, useEffect, useState, useRef } from "react";
+import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import MudRPG from "./app/MudRPG.jsx";
 import StartScreen from "./ui/screens/StartScreen.jsx";
-import QuickBattleScreen from "./domain/quickBattle/QuickBattleScreen.jsx";
-import TavernSimScreen from "./domain/tavernSim/TavernSimScreen.jsx";
 import ErrorBoundary from "./ui/components/ErrorBoundary.jsx";
 import { loadAutoSave, init as initSaves } from "./infra/saves.js";
-import CardImportScreen from "./ui/screens/CardImportScreen.jsx";
 import { loadConfig } from "./infra/apiConfig.js";
 import { installErrorBuffer } from "./infra/errorBuffer.js";
 import { recordError } from "./infra/errorBuffer.js";
 import * as importedRegistry from "./domain/cards/importedRegistry.js";
 import { getZoneTheme } from "./ui/theme.js";
+
+const QuickBattleScreen = lazy(() => import("./domain/quickBattle/QuickBattleScreen.jsx"));
+const TavernSimScreen = lazy(() => import("./domain/tavernSim/TavernSimScreen.jsx"));
+const CardImportScreen = lazy(() => import("./ui/screens/CardImportScreen.jsx"));
 
 function InkSpinner() {
   return (

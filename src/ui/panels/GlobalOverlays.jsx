@@ -13,7 +13,7 @@
 //
 // 弹层可见性读 uiStore，游戏数据与业务回调经 props 下传。切磋界面额外包了一层
 // ErrorBoundary——战斗引擎报错时不该把整局游戏拖崩，能退回房间重来。
-import { useCallback } from "react";
+import { lazy, Suspense, useCallback } from "react";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { listCharacters } from "../../domain/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
@@ -23,7 +23,6 @@ import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import TutorialOverlay from "../screens/TutorialOverlay.jsx";
 import VersionHistoryPanel from "../screens/VersionHistoryPanel.jsx";
 import CharacterPage from "../screens/CharacterPage.jsx";
-import CardImportScreen from "../screens/CardImportScreen.jsx";
 import QuestLogScreen from "../screens/QuestLogScreen.jsx";
 import LoreScreen from "../screens/LoreScreen.jsx";
 import QijuzhuScreen from "../screens/QijuzhuScreen.jsx";
@@ -37,6 +36,8 @@ import PersuasionScreen from "../screens/PersuasionScreen.jsx";
 import DuelScreen from "../screens/DuelScreen.jsx";
 import TeamDuelScreen from "../screens/TeamDuelScreen.jsx";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
+
+const CardImportScreen = lazy(() => import("../screens/CardImportScreen.jsx"));
 
 export default function GlobalOverlays({
   zoneTheme, isDayMode,
@@ -81,6 +82,7 @@ export default function GlobalOverlays({
       )}
 
       {showCardImport && (
+        <Suspense fallback={<div role="status" aria-live="polite">载入中</div>}>
         <CardImportScreen
           onClose={() => closeOverlay(OVERLAY.CARD_IMPORT)}
           apiCfg={apiCfg}
@@ -91,6 +93,7 @@ export default function GlobalOverlays({
           onImportWorld={onImportWorld}
           currentDistrict={room.name}
         />
+        </Suspense>
       )}
 
       {showCharacterPage && (

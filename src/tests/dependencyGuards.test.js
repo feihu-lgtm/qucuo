@@ -63,7 +63,21 @@ function walkSource(dir, out = []) {
   return out;
 }
 
+function relativeImports(source) {
+  return [...source.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)["'](\.[^"']+)["']/g)].map((match) => match[1]);
+}
+
 describe("src 下没有零入度的死文件", () => {
+  it.each([
+    ["import Screen from './Screen.jsx';", ["./Screen.jsx"]],
+    ['const Screen = lazy(() => import("./Screen.jsx"));', ["./Screen.jsx"]],
+    ["export { value } from './data.js';", ["./data.js"]],
+    ["const empty = {};", []],
+    ["import(name);", []],
+  ])("recognizes static and literal dynamic dependencies: %s", (source, expected) => {
+    expect(relativeImports(source)).toEqual(expected);
+  });
+
   it("import 图零入度且不在入口白名单 → 报出来", () => {
     const files = walkSource(SRC_DIR).map((f) => resolve(f));
     const rel = (f) => relative(resolve(SRC_DIR), f);
@@ -71,10 +85,8 @@ describe("src 下没有零入度的死文件", () => {
     const deps = new Map(files.map((f) => [f, new Set()]));
     for (const f of files) {
       const src = readFileSync(f, "utf-8");
-      const re = /from\s+["'](\.[^"']+)["']/g;
-      let m;
-      while ((m = re.exec(src))) {
-        let p = join(f, "..", m[1]);
+      for (const specifier of relativeImports(src)) {
+        let p = join(f, "..", specifier);
         if (!/\.(js|jsx)$/.test(p)) p += ".js";
         const r = resolve(p);
         if (files.includes(r)) deps.get(f).add(r);
