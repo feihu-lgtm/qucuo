@@ -1,4 +1,4 @@
-export const DEFAULT_VERTEX_MODEL = "google/gemini-3.5-flash";
+export const DEFAULT_VERTEX_MODEL = "google/gemini-4-hydrogen";
 
 export const apiModelField = cfg => cfg?.apiType === "vertex" ? "vertexModel" : "model";
 

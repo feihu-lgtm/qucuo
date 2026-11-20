@@ -306,11 +306,11 @@ function normalizeGeminiBase(endpoint) {
 
 // 按思考档位给 OpenAI 兼容请求体注入参数。没有单一通用参数，故多塞几个无害兼容字段，
 // 谁认谁生效、不认的自动忽略：reasoning_effort（Gemini 官方兼容口）+ enable_thinking（Qwen/硅基）。
-function applyThinkingOpenAI(body, cfg, vertex = false) {
+function applyThinkingOpenAI(body, cfg, vertex) {
   const mode = cfg.thinkingMode || "off";
   const budget = Number(cfg.thinkingBudget) || 0;
   const effort = mode === "custom" ? (budget <= 0 ? "off" : budget < 1024 ? "low" : budget < 4096 ? "medium" : "high") : mode;
-  body.reasoning_effort = vertex ? (["low", "medium", "high"].includes(effort) ? effort : "minimal") : (effort === "off" ? "none" : effort);
+  body.reasoning_effort = vertex ? vertex.vertexReasoningEffort(body.model, effort) : (effort === "off" ? "none" : effort);
   if (!vertex) body.enable_thinking = effort !== "off";
 }
 
@@ -520,7 +520,7 @@ async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
     const value = opts[option] ?? cfg[option];
     if (value != null) body[field] = value;
   }
-  applyThinkingOpenAI(body, cfg, !!vertex);
+  applyThinkingOpenAI(body, cfg, vertex);
   const auth = vertex ? await (opts.getVertexHeaders || (() => getStoredVertexHeaders(fetchWithTimeout)))()
     : { Authorization: `Bearer ${cfg.apiKey}` };
   try {

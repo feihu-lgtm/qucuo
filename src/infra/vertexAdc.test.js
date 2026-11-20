@@ -109,15 +109,24 @@ describe("Vertex ADC", () => {
   });
 
   it.each([
-    [{}, "minimal"],
-    [{ thinkingMode: "off" }, "minimal"],
-    [{ thinkingMode: "custom", thinkingBudget: 0 }, "minimal"],
+    [{}, "low"],
+    [{ thinkingMode: "off" }, "low"],
+    [{ thinkingMode: "custom", thinkingBudget: 0 }, "low"],
     [{ thinkingMode: "low" }, "low"],
     [{ thinkingMode: "medium" }, "medium"],
     [{ thinkingMode: "high" }, "high"],
     [{ thinkingMode: "custom", thinkingBudget: 512 }, "low"],
     [{ thinkingMode: "custom", thinkingBudget: 1024 }, "medium"],
     [{ thinkingMode: "custom", thinkingBudget: 4096 }, "high"],
+    [{ vertexModel: "google/gemini-3-flash-preview" }, "minimal"],
+    [{ vertexModel: "google/gemini-3.5-flash" }, "minimal"],
+    [{ vertexModel: "google/gemini-3.6-flash" }, "minimal"],
+    [{ vertexModel: "gemini-3.1-flash-lite", thinkingMode: "custom", thinkingBudget: 0 }, "minimal"],
+    [{ vertexModel: "google/gemini-3.5-flash-lite" }, "minimal"],
+    [{ vertexModel: "google/gemini-3.7-flash" }, "low"],
+    [{ vertexModel: "google/gemini-3.8-flash" }, "low"],
+    [{ vertexModel: "google/gemini-3.1-pro-preview" }, "low"],
+    [{ vertexModel: "google/future-model" }, "low"],
   ])("maps thinking settings %j to Vertex %s", async (thinking, effort) => {
     const fetch = vi.fn(async () => Response.json({ choices: [{ message: { content: "曲措" } }] }));
     vi.stubGlobal("fetch", fetch);
@@ -125,7 +134,7 @@ describe("Vertex ADC", () => {
     const cfg = { apiType: API_TYPES.VERTEX, vertexProject: "test-project", ...thinking };
     await ai.chat([], { cfg, systemPrompt: "叙述" });
     const body = JSON.parse(fetch.mock.calls[0][1].body);
-    expect(body).toMatchObject({ model: "google/gemini-3.5-flash", reasoning_effort: effort });
+    expect(body).toMatchObject({ model: thinking.vertexModel || "google/gemini-4-hydrogen", reasoning_effort: effort });
     expect(body).not.toHaveProperty("enable_thinking");
   });
 
@@ -142,7 +151,7 @@ describe("Vertex ADC", () => {
     });
     vi.stubGlobal("fetch", fetch);
     const vertexProject = await importVertexCredential(JSON.stringify(authorizedUser));
-    const vertexModel = "google/gemini-2.5-pro";
+    const vertexModel = "google/gemini-4-hydrogen";
     saveConfig({ ...defaultConfig(), apiType: API_TYPES.VERTEX, vertexProject, vertexModel, model: "openai-model", corsProxy: "https://wrong.example/" });
     const cfg = loadConfig();
     expect(tavernHasCredentials()).toBe(true);
@@ -167,7 +176,7 @@ describe("Vertex ADC", () => {
         "Content-Type": "application/json", Authorization: "Bearer ya29.mock-token-1", "x-goog-user-project": "test-quota-project",
       });
       expect(JSON.parse(request.body)).toMatchObject({
-        model: vertexModel, max_tokens: 1000, messages: [{ role: "system", content: "叙述" }, ...messages], reasoning_effort: "minimal",
+        model: vertexModel, max_tokens: 1000, messages: [{ role: "system", content: "叙述" }, ...messages], reasoning_effort: "low",
       });
     }
     expect(turn.nodes.filter(node => node.pipeline).map(node => node.pipeline.response)).toEqual(["曲措", "江湖"]);

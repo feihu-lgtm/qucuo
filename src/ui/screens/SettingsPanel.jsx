@@ -686,7 +686,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 placeholder="自定义思考 token 预算，0=关闭" />
             )}
             <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3, marginBottom: 6 }}>
-              默认「关闭」：把 token 全留给正文，避免 Gemini 2.5 等模型的思考过程吃穿额度、导致正文被截断。想让模型多想再答可调高，代价是更慢更贵、且可能需要把上面的目标字数调大。
+              {isVertex ? "Vertex 的「关闭」会使用模型支持的最低思考档位，仍可能消耗输出 token。" : "默认「关闭」：把 token 全留给正文，避免 Gemini 2.5 等模型的思考过程吃穿额度、导致正文被截断。想让模型多想再答可调高，代价是更慢更贵、且可能需要把上面的目标字数调大。"}
             </div>
 
             {!isVertex && <><div style={labelStyle}>CORS 代理地址（可选）</div>

@@ -150,11 +150,11 @@ npx vitest run    # 跑测试（纯函数/数据层回归，498 条）
 
 ### 使用 Vertex AI
 
-- **网页**：打开「设置」→「API 配置」→「服务商」选「Vertex AI」，在「导入 ADC JSON」选择你的本地文件。确认「项目 ID」（默认取用户凭证的 `quota_project_id` 或服务账号的 `project_id`）、「位置」（默认 `global`）和「模型名称」（默认 `google/gemini-3.5-flash`）。关闭设置，开始或加载游戏，在输入框输入「探索石阶」并发送。
+- **网页**：打开「设置」→「API 配置」→「服务商」选「Vertex AI」，在「导入 ADC JSON」选择你的本地文件。确认「项目 ID」（默认取用户凭证的 `quota_project_id` 或服务账号的 `project_id`）、「位置」（默认 `global`）和「模型名称」（默认 `google/gemini-4-hydrogen`）。关闭设置，开始或加载游戏，在输入框输入「探索石阶」并发送。
 - **CLI**：在项目目录执行下面的命令。输入「探索石阶」并回车，再输入 `:state` 查看回合结果，按 Ctrl+D 退出。需要覆盖项目或位置时，可加 `--project 项目ID` 或 `--location us-central1`。
 
 ```bash
-GOOGLE_APPLICATION_CREDENTIALS="/你的路径/adc.json" npm run cli -- --ai vertex --model google/gemini-3.5-flash
+GOOGLE_APPLICATION_CREDENTIALS="/你的路径/adc.json" npm run cli -- --ai vertex --model google/gemini-4-hydrogen
 ```
 
 网页直连 Google，不用代理。请只在你信任的设备和站点上导入凭证，不要把 ADC 文件发给别人。
