@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from "react";
-import { chromeBtn } from "../theme.js";
+import FacePanel from "../components/FacePanel.jsx";
+import useFaces from "../components/faces/useFaces.js";
+import { uiStore } from "../../store/uiStore.js";
 import { unlockedCompanions } from "../../domain/companion/companion.js";
 import ProfileModule from "./right/ProfileModule.jsx";
 import EquipmentBonusModule from "./right/EquipmentBonusModule.jsx";
@@ -10,39 +11,28 @@ import CombatMovesModule from "./right/CombatMovesModule.jsx";
 import EquipmentModule from "./right/EquipmentModule.jsx";
 import InventoryModule from "./right/InventoryModule.jsx";
 import NarratorModule from "./right/NarratorModule.jsx";
-import FaceEditor from "./right/FaceEditor.jsx";
-import FaceContent from "./right/FaceContent.jsx";
-import useFacePreferences from "./right/useFacePreferences.js";
-import useFaceNavigation from "./right/useFaceNavigation.js";
-import { rotateFace } from "./right/facePreferences.js";
-import "./right/rightFaces.css";
+import JianghuModule from "./right/JianghuModule.jsx";
+import { FACE_PREF_KEY, RIGHT_MODULES, RIGHT_FACE_DEFAULTS } from "./right/rightFaces.js";
 
 const MODULES = {
   profile: ProfileModule, equipmentBonus: EquipmentBonusModule, attributes: AttributesModule,
   team: TeamModule, skills: SkillsModule, combatMoves: CombatMovesModule,
-  equipment: EquipmentModule, inventory: InventoryModule, narrator: NarratorModule,
+  equipment: EquipmentModule, inventory: InventoryModule, narrator: NarratorModule, jianghu: JianghuModule,
 };
+
+const isKeyboardBlocked = () => uiStore.getState().overlays.length > 0;
 
 export default function RightPanel(props) {
   const { isMobile, mobileDrawer, setMobileDrawer, zoneTheme, S, companionState, char } = props;
-  const [preferences, setPreferences] = useFacePreferences();
-  const [editing, setEditing] = useState(false);
-  const [direction, setDirection] = useState(1);
-  const contentRef = useRef(null);
-  const rotate = useCallback(delta => {
-    setDirection(delta);
-    setPreferences(state => rotateFace(state, delta));
-  }, [setPreferences]);
-  useFaceNavigation({ isMobile, editing, contentRef, rotate });
-  const face = preferences.faces[preferences.currentIndex];
-  const modules = face.modules.filter(id => {
+  const faces = useFaces(FACE_PREF_KEY, RIGHT_FACE_DEFAULTS, { availableModules: RIGHT_MODULES, enableKeyboard: true });
+  const isModuleVisible = id => {
     if (id === "team") return unlockedCompanions(companionState).length > 0;
     if (id === "combatMoves") return (char.moveset || []).some(move => !move.sourceSkill);
     return true;
-  }).map(id => ({ id, Component: MODULES[id] }));
-  const selectFace = index => {
-    setDirection(index < preferences.currentIndex ? -1 : 1);
-    setPreferences(state => ({ ...state, currentIndex: index }));
+  };
+  const renderModule = id => {
+    const Component = MODULES[id];
+    return <Component {...props} />;
   };
   return (
     <div data-testid="right-panel" className={isMobile ? "mobile-drawer-panel" : undefined} style={isMobile
@@ -55,23 +45,8 @@ export default function RightPanel(props) {
         <div className="mobile-drawer-close" onClick={() => setMobileDrawer(null)} style={{ padding: "8px 12px", color: zoneTheme.textDim, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}>✕ 关闭</div>
       )}
       <div style={S.label}>侠客</div>
-      <nav className="right-face-bar" aria-label="侠客面切换" style={{ borderColor: zoneTheme.border }}>
-        <div className="right-face-tabs" role="tablist" aria-label="侠客各面">
-          {preferences.faces.map((item, index) => (
-            <button key={item.id} type="button" role="tab" aria-selected={index === preferences.currentIndex}
-              aria-controls={`right-face-${item.id}`} style={chromeBtn(zoneTheme, { active: index === preferences.currentIndex })}
-              onClick={() => selectFace(index)}>{item.name || "未命名"}</button>
-          ))}
-        </div>
-        <button type="button" aria-label="上一面" style={chromeBtn(zoneTheme)} onClick={() => rotate(-1)}>◀</button>
-        <button type="button" aria-label="下一面" style={chromeBtn(zoneTheme)} onClick={() => rotate(1)}>▶</button>
-        <button type="button" aria-expanded={editing} style={chromeBtn(zoneTheme, { active: editing })}
-          onClick={() => setEditing(value => !value)}>编排</button>
-      </nav>
-      {editing && <FaceEditor preferences={preferences} setPreferences={setPreferences} theme={zoneTheme} />}
-      <div className="right-face-stage" ref={contentRef}>
-        <FaceContent key={face.id} face={face} direction={direction} modules={modules} moduleProps={props} />
-      </div>
+      <FacePanel faces={faces} theme={zoneTheme} label="侠客" isMobile={isMobile}
+        renderModule={renderModule} isModuleVisible={isModuleVisible} isKeyboardBlocked={isKeyboardBlocked} />
     </div>
   );
 }

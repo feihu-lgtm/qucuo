@@ -12,8 +12,11 @@ import CombatMovesModule from "./CombatMovesModule.jsx";
 import EquipmentModule from "./EquipmentModule.jsx";
 import InventoryModule from "./InventoryModule.jsx";
 import NarratorModule from "./NarratorModule.jsx";
-import FaceEditor from "./FaceEditor.jsx";
-import { defaultFacePreferences } from "./facePreferences.js";
+import FaceEditor from "../../components/faces/FaceEditor.jsx";
+import { RIGHT_FACE_DEFAULTS, RIGHT_MODULES } from "./rightFaces.js";
+import JianghuModule, { JIANGHU_ENTRIES } from "./JianghuModule.jsx";
+import { OVERLAY } from "../../../store/uiStore.js";
+import { validateFacePreferences } from "../../components/faces/facePreferences.js";
 
 const base = {
   zoneTheme: ZONE_THEMES.village,
@@ -78,13 +81,31 @@ describe("extracted right-panel modules", () => {
     expect(render(NarratorModule, { narrator: { stage: NNPC_STAGE.CRASHED } })).toContain("信号已断开");
   });
 
-  it("offers all nine modules in the current-face editor, including unchecked conditional modules", () => {
+  it("offers all ten modules in the current-face editor, including unchecked conditional modules", () => {
     const html = renderToStaticMarkup(createElement(FaceEditor, {
-      preferences: defaultFacePreferences(), theme: ZONE_THEMES.village,
+      faces: { preferences: RIGHT_FACE_DEFAULTS, face: RIGHT_FACE_DEFAULTS.faces[0],
+        availableModules: RIGHT_MODULES, minFaces: 1, maxFaces: 6 }, theme: ZONE_THEMES.village,
     }));
-    expect(html.match(/type="checkbox"/g)).toHaveLength(9);
+    expect(html.match(/type="checkbox"/g)).toHaveLength(10);
     expect(html).toContain("恢复默认");
     expect(html).toContain("上移侠客资料");
     expect(html).toContain("队伍");
+    expect(html).toContain("江湖");
+  });
+
+  it("adds Jianghu for new layouts without changing legacy saved layouts", () => {
+    expect(RIGHT_FACE_DEFAULTS.faces).toHaveLength(5);
+    expect(RIGHT_FACE_DEFAULTS.faces.at(-1).modules).toEqual(["jianghu"]);
+    const legacy = { faces: RIGHT_FACE_DEFAULTS.faces.slice(0, 4), currentIndex: 2 };
+    expect(validateFacePreferences(legacy, RIGHT_FACE_DEFAULTS, { availableModules: RIGHT_MODULES })).toEqual(legacy);
+  });
+
+  it("renders the same four overlay entries previously in TopBar", () => {
+    expect(JIANGHU_ENTRIES.map(entry => entry.overlay)).toEqual([
+      OVERLAY.QUEST_LOG, OVERLAY.CHARACTER_PAGE, OVERLAY.LORE, OVERLAY.QIJUZHU,
+    ]);
+    const html = render(JianghuModule);
+    expect(html.match(/<button/g)).toHaveLength(4);
+    for (const entry of JIANGHU_ENTRIES) expect(html).toContain(entry.label);
   });
 });

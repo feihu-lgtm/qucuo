@@ -1,15 +1,30 @@
 import { describe, expect, it } from "vitest";
 import {
-  MAX_FACES, defaultFacePreferences, validateFacePreferences, parseFacePreferences,
-  rotateFace, renameFace, toggleModule, moveModule, addFace, removeFace, distributedGap,
+  cloneDefaults, validateFacePreferences as validate, parseFacePreferences as parse,
+  rotateFace, renameFace, toggleModule as toggle, moveModule, addFace, removeFace, distributedGap,
 } from "./facePreferences.js";
-import { readFacePreferences, writeFacePreferences } from "./useFacePreferences.js";
+import { readFacePreferences as read, writeFacePreferences as write } from "./useFaces.js";
 import { faceKeyDirection, faceSwipeDirection } from "./useFaceNavigation.js";
 
-describe("right face preferences", () => {
+const MAX_FACES = 6;
+const defaults = { faces: [
+  { id: "summary", name: "概览", modules: ["summary", "totals", "metrics"] },
+  { id: "details", name: "详情", modules: ["details", "extras"] },
+  { id: "tools", name: "工具", modules: ["tools", "items"] },
+  { id: "notes", name: "记录", modules: ["members", "notes"] },
+], currentIndex: 0 };
+const options = { availableModules: defaults.faces.flatMap(face => face.modules).map(id => ({ id, label: id })) };
+const defaultFacePreferences = () => cloneDefaults(defaults);
+const validateFacePreferences = value => validate(value, defaults, options);
+const parseFacePreferences = raw => parse(raw, defaults, options);
+const toggleModule = (state, id) => toggle(state, id, options.availableModules);
+const readFacePreferences = storage => read(storage, "test_faces", defaults, options);
+const writeFacePreferences = (storage, state) => write(storage, "test_faces", state);
+
+describe("generic face preferences", () => {
   it("creates four independent default faces with the existing nine modules", () => {
     const first = defaultFacePreferences();
-    expect(first.faces.map(face => face.name)).toEqual(["人物", "武学", "行囊", "羁绊"]);
+    expect(first.faces.map(face => face.name)).toEqual(["概览", "详情", "工具", "记录"]);
     expect(first.faces.flatMap(face => face.modules)).toHaveLength(9);
     first.faces[0].modules.pop();
     expect(defaultFacePreferences().faces[0].modules).toHaveLength(3);
@@ -25,13 +40,13 @@ describe("right face preferences", () => {
 
   it("drops unknown, non-string and duplicate module ids, but permits empty and shared modules", () => {
     const value = { faces: [
-      { id: "a", name: " A ", modules: ["skills", "unknown", "skills", "__proto__", null, ["profile"]] },
-      { id: "b", name: "B", modules: ["skills"] },
+      { id: "a", name: " A ", modules: ["details", "unknown", "details", "__proto__", null, ["summary"]] },
+      { id: "b", name: "B", modules: ["details"] },
       { id: "c", name: "C", modules: [] },
     ], currentIndex: 99 };
     expect(validateFacePreferences(value)).toEqual({ faces: [
-      { id: "a", name: "A", modules: ["skills"] },
-      { id: "b", name: "B", modules: ["skills"] },
+      { id: "a", name: "A", modules: ["details"] },
+      { id: "b", name: "B", modules: ["details"] },
       { id: "c", name: "C", modules: [] },
     ], currentIndex: 2 });
     expect(validateFacePreferences({ ...value, currentIndex: -1 }).currentIndex).toBe(0);
@@ -56,18 +71,18 @@ describe("right face preferences", () => {
 
   it("renames, toggles and reorders only the current face without mutating input", () => {
     const state = defaultFacePreferences();
-    const renamed = renameFace(state, "自定义人物");
-    expect(renamed.faces[0].name).toBe("自定义人物");
-    expect(state.faces[0].name).toBe("人物");
-    const reordered = moveModule(renamed, "attributes", -1);
-    expect(reordered.faces[0].modules).toEqual(["profile", "attributes", "equipmentBonus"]);
-    expect(moveModule(state, "profile", -1)).toEqual(state);
+    const renamed = renameFace(state, "自定义概览");
+    expect(renamed.faces[0].name).toBe("自定义概览");
+    expect(state.faces[0].name).toBe("概览");
+    const reordered = moveModule(renamed, "metrics", -1);
+    expect(reordered.faces[0].modules).toEqual(["summary", "metrics", "totals"]);
+    expect(moveModule(state, "summary", -1)).toEqual(state);
     expect(moveModule(state, "unknown", 1)).toEqual(state);
-    expect(moveModule(state, "attributes", 1)).toEqual(state);
+    expect(moveModule(state, "metrics", 1)).toEqual(state);
     expect(toggleModule(state, "unknown")).toBe(state);
-    const removed = toggleModule(state, "profile");
-    expect(removed.faces[0].modules).not.toContain("profile");
-    expect(toggleModule(removed, "profile").faces[0].modules.at(-1)).toBe("profile");
+    const removed = toggleModule(state, "summary");
+    expect(removed.faces[0].modules).not.toContain("summary");
+    expect(toggleModule(removed, "summary").faces[0].modules.at(-1)).toBe("summary");
     expect(removed.faces[1]).toBe(state.faces[1]);
   });
 
@@ -87,7 +102,7 @@ describe("right face preferences", () => {
     let state = rotateFace(defaultFacePreferences(), -1);
     state = removeFace(state);
     expect(state.currentIndex).toBe(2);
-    expect(state.faces.map(face => face.name)).toEqual(["人物", "武学", "行囊"]);
+    expect(state.faces.map(face => face.name)).toEqual(["概览", "详情", "工具"]);
     state = removeFace(removeFace(state));
     expect(removeFace(state)).toBe(state);
     expect(state.faces).toHaveLength(1);
@@ -106,7 +121,7 @@ describe("spacing, storage and navigation guards", () => {
   it("persists customized modules and the current face; unavailable storage is nonfatal", () => {
     const values = new Map();
     const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
-    const state = renameFace(rotateFace(defaultFacePreferences(), 1), "常用武学");
+    const state = renameFace(rotateFace(defaultFacePreferences(), 1), "常用详情");
     expect(writeFacePreferences(storage, state)).toBe(true);
     expect(readFacePreferences(storage)).toEqual(state);
     const unavailable = { getItem() { throw Error("blocked"); }, setItem() { throw Error("quota"); } };

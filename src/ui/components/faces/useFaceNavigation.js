@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { uiStore } from "../../../store/uiStore.js";
 
 export function faceKeyDirection(event) {
   if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return 0;
@@ -15,7 +14,6 @@ export function faceSwipeDirection(start, end) {
 }
 
 function hasBlockingLayer() {
-  if (uiStore.getState().overlays.length) return true;
   return [...document.querySelectorAll('[role="dialog"], [aria-modal="true"], [style*="position: fixed"]')]
     .some(element => {
       const style = getComputedStyle(element);
@@ -24,24 +22,24 @@ function hasBlockingLayer() {
     });
 }
 
-export default function useFaceNavigation({ isMobile, editing, contentRef, rotate }) {
+export default function useFaceNavigation({ isMobile, editing, contentRef, rotate, enableKeyboard, isKeyboardBlocked, swipe }) {
   useEffect(() => {
-    if (isMobile || editing) return undefined;
+    if (!enableKeyboard || isMobile || editing) return undefined;
     const onKey = event => {
       const direction = faceKeyDirection(event);
-      if (!direction || hasBlockingLayer()) return;
+      if (!direction || isKeyboardBlocked() || hasBlockingLayer()) return;
       event.preventDefault();
       rotate(direction);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isMobile, editing, rotate]);
+  }, [isMobile, editing, rotate, enableKeyboard, isKeyboardBlocked]);
 
   useEffect(() => {
-    if (!isMobile) return undefined;
+    if (!swipe) return undefined;
     let start = null;
     let suppressClickUntil = 0;
-    // The layout handles drawer gestures in React capture; intercept earlier, on document.
+    // Intercept earlier than ancestor capture handlers for gestures starting in this panel.
     const onDown = event => {
       if (event.pointerType !== "touch" || !event.isPrimary || !contentRef.current?.contains(event.target)) return;
       start = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
@@ -73,5 +71,5 @@ export default function useFaceNavigation({ isMobile, editing, contentRef, rotat
     return () => {
       for (const [type, listener] of Object.entries(listeners)) document.removeEventListener(type, listener, true);
     };
-  }, [isMobile, contentRef, rotate]);
+  }, [swipe, contentRef, rotate]);
 }

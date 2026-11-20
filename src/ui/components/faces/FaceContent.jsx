@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { distributedGap } from "./facePreferences.js";
 
-export default function FaceContent({ face, direction, modules, moduleProps }) {
+export default function FaceContent({ face, panelId, tabId, direction, modules, renderModule, editable }) {
   const scrollRef = useRef(null);
   const listRef = useRef(null);
   useLayoutEffect(() => {
@@ -19,14 +19,11 @@ export default function FaceContent({ face, direction, modules, moduleProps }) {
     return () => observer.disconnect();
   }, [modules]);
   return (
-    <div ref={scrollRef} id={`right-face-${face.id}`} role="tabpanel" aria-label={face.name || "未命名"}
-      className={`right-face-content ${direction < 0 ? "right-face-backward" : "right-face-forward"}`}>
-      <div className="right-face-modules" ref={listRef}>
-        {modules.map(entry => {
-          const Component = entry.Component;
-          return <section key={entry.id} data-module={entry.id}><Component {...moduleProps} /></section>;
-        })}
-        {!modules.length && <p className="right-face-empty">本面暂无可显示的模块，可点「编排」添加。</p>}
+    <div ref={scrollRef} id={panelId} role="tabpanel" aria-label={face.name || "未命名"} aria-labelledby={tabId}
+      className={`face-content ${direction < 0 ? "face-backward" : "face-forward"}`}>
+      <div className="face-modules" ref={listRef}>
+        {modules.map(id => <section key={id} data-module={id}>{renderModule(id)}</section>)}
+        {!modules.length && <p className="face-empty">本面暂无可显示的模块。{editable && "可点「编排」添加。"}</p>}
       </div>
     </div>
   );

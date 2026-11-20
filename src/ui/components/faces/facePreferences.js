@@ -1,44 +1,22 @@
-export const FACE_PREF_KEY = "qucuo_right_faces";
-export const MAX_FACES = 6;
-export const MODULE_LABELS = Object.freeze({
-  profile: "侠客资料",
-  equipmentBonus: "装备总加成",
-  attributes: "内外功七维",
-  team: "队伍",
-  skills: "武学",
-  combatMoves: "临阵招式",
-  equipment: "装备",
-  inventory: "包袱",
-  narrator: "旁白",
-});
-
-export function defaultFacePreferences() {
-  return {
-    faces: [
-      { id: "character", name: "人物", modules: ["profile", "equipmentBonus", "attributes"] },
-      { id: "martial", name: "武学", modules: ["skills", "combatMoves"] },
-      { id: "belongings", name: "行囊", modules: ["equipment", "inventory"] },
-      { id: "bonds", name: "羁绊", modules: ["team", "narrator"] },
-    ],
-    currentIndex: 0,
-  };
+export function cloneDefaults(defaults) {
+  return { faces: defaults.faces.map(face => ({ ...face, modules: [...face.modules] })), currentIndex: defaults.currentIndex ?? 0 };
 }
 
-export function validateFacePreferences(value) {
-  if (!value || !Array.isArray(value.faces) || value.faces.length < 1 || value.faces.length > MAX_FACES) {
-    return defaultFacePreferences();
+export function validateFacePreferences(value, defaults, { availableModules, minFaces = 1, maxFaces = 6 }) {
+  if (!value || !Array.isArray(value.faces) || value.faces.length < minFaces || value.faces.length > maxFaces) {
+    return cloneDefaults(defaults);
   }
+  const allowed = new Set(availableModules.map(module => module.id));
   const ids = new Set();
   const faces = [];
   for (const face of value.faces) {
     if (!face || typeof face.id !== "string" || !/^[\w-]{1,80}$/.test(face.id)
       || ids.has(face.id) || typeof face.name !== "string" || !face.name.trim()
-      || !Array.isArray(face.modules)) return defaultFacePreferences();
+      || !Array.isArray(face.modules)) return cloneDefaults(defaults);
     ids.add(face.id);
     faces.push({
-      id: face.id,
-      name: face.name.trim().slice(0, 12),
-      modules: [...new Set(face.modules.filter(id => typeof id === "string" && Object.hasOwn(MODULE_LABELS, id)))],
+      id: face.id, name: face.name.trim().slice(0, 12),
+      modules: [...new Set(face.modules.filter(id => allowed.has(id)))],
     });
   }
   const currentIndex = Number.isInteger(value.currentIndex)
@@ -46,9 +24,9 @@ export function validateFacePreferences(value) {
   return { faces, currentIndex };
 }
 
-export function parseFacePreferences(raw) {
-  try { return validateFacePreferences(JSON.parse(raw)); }
-  catch { return defaultFacePreferences(); }
+export function parseFacePreferences(raw, defaults, options) {
+  try { return validateFacePreferences(JSON.parse(raw), defaults, options); }
+  catch { return cloneDefaults(defaults); }
 }
 
 export function rotateFace(preferences, delta) {
@@ -57,21 +35,17 @@ export function rotateFace(preferences, delta) {
 }
 
 function updateCurrent(preferences, update) {
-  return {
-    ...preferences,
-    faces: preferences.faces.map((face, i) => i === preferences.currentIndex ? update(face) : face),
-  };
+  return { ...preferences, faces: preferences.faces.map((face, i) => i === preferences.currentIndex ? update(face) : face) };
 }
 
 export function renameFace(preferences, name) {
   return updateCurrent(preferences, face => ({ ...face, name: name.slice(0, 12) }));
 }
 
-export function toggleModule(preferences, id) {
-  if (!Object.hasOwn(MODULE_LABELS, id)) return preferences;
+export function toggleModule(preferences, id, availableModules) {
+  if (!availableModules.some(module => module.id === id)) return preferences;
   return updateCurrent(preferences, face => ({
-    ...face,
-    modules: face.modules.includes(id) ? face.modules.filter(item => item !== id) : [...face.modules, id],
+    ...face, modules: face.modules.includes(id) ? face.modules.filter(item => item !== id) : [...face.modules, id],
   }));
 }
 
@@ -86,8 +60,8 @@ export function moveModule(preferences, id, delta) {
   });
 }
 
-export function addFace(preferences) {
-  if (preferences.faces.length >= MAX_FACES) return preferences;
+export function addFace(preferences, maxFaces = 6) {
+  if (preferences.faces.length >= maxFaces) return preferences;
   let n = 1;
   while (preferences.faces.some(face => face.id === `face-${n}`)) n += 1;
   return {
@@ -96,8 +70,8 @@ export function addFace(preferences) {
   };
 }
 
-export function removeFace(preferences) {
-  if (preferences.faces.length <= 1) return preferences;
+export function removeFace(preferences, minFaces = 1) {
+  if (preferences.faces.length <= minFaces) return preferences;
   const faces = preferences.faces.filter((_, i) => i !== preferences.currentIndex);
   return { faces, currentIndex: Math.min(preferences.currentIndex, faces.length - 1) };
 }
