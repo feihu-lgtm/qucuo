@@ -20,7 +20,7 @@ export default async function mobileTabs({ page, game }) {
   assert.ok(statusBox.y + statusBox.height <= tabBox.y);
   for (const button of await tabs.getByRole("button").all()) {
     const box = await button.boundingBox();
-    assert.ok(box.width >= 44 && box.height >= 44);
+    assert.ok(box.width >= 44 && box.height >= 28);
   }
 
   await choose("左");

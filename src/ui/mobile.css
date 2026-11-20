@@ -697,7 +697,7 @@
   }
 }
 
-/* 手机中栏各行统一 52px 高：顶栏、模式、人选、地上、输入栏、底部栏目 */
+/* 手机中栏各行统一 35px 高：顶栏、模式、人选、地上、输入栏、底部栏目 */
 @media (max-width: 767px) {
   .mobile-top-row,
   .mobile-control-row,
@@ -706,7 +706,7 @@
   .mobile-input-bar,
   .mobile-tab-bar {
     box-sizing: border-box;
-    min-height: 52px !important;
+    min-height: 35px !important;
     align-items: center !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
@@ -716,11 +716,11 @@
   .mobile-people-row,
   .mobile-ground-strip,
   .mobile-input-bar {
-    height: 52px;
+    height: 35px;
   }
 
   .mobile-tab-bar {
-    height: calc(52px + env(safe-area-inset-bottom));
+    height: calc(35px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom) !important;
   }
 
@@ -731,7 +731,20 @@
     justify-content: center;
   }
 
-  .mobile-ground-strip > button {
-    min-height: 44px;
+  .mobile-top-row .mobile-touch-target,
+  .mobile-control-row .mobile-touch-target,
+  .mobile-people-row .mobile-touch-target,
+  .mobile-ground-strip > button,
+  .mobile-tab-bar > button {
+    min-height: 29px !important;
+    height: 29px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .mobile-top-row button,
+  .mobile-top-menu > * {
+    min-height: 29px !important;
+    height: 29px !important;
   }
 }
