@@ -66,7 +66,7 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
       }}
     >
       <span style={{ cursor: entry.action ? "pointer" : undefined }} onClick={entry.action ? () => onAction(entry.action) : undefined}>
-        {isDesc ? renderMixed(text, color, isDayMode) : entry.t === "room" ? `— ${text} —` : text}
+        {isDesc ? renderMixed(text, color, isDayMode) : entry.t === "room" && text.trim() ? `— ${text.trim()} —` : text}
       </span>
     </div>
   );
