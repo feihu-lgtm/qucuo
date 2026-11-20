@@ -57,6 +57,7 @@ export default function GameLayout({ layout }) {
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const showBasement = useOverlay(OVERLAY.BASEMENT);
   const previousCenterContent = useRef(null);
+  const narrativeView = useRef({ visible: false, log: null });
 
   useEffect(() => {
     const content = {
@@ -71,8 +72,19 @@ export default function GameLayout({ layout }) {
     talkTarget, seaTraumaActive, showDebug, showBasement, setMobileColumn]);
 
   useEffect(() => {
-    if (isMobile && mobileColumn === "center") logEnd.current?.scrollIntoView({ behavior: "instant" });
-  }, [isMobile, mobileColumn, logEnd]);
+    const previous = narrativeView.current;
+    const visible = !isMobile || mobileColumn === "center";
+    if (visible) {
+      if (isMobile && !previous.visible && previous.log !== log) {
+        const seen = new Set(previous.log);
+        if (previous.log === null || log.some(entry => !seen.has(entry))) {
+          logEnd.current?.scrollIntoView({ behavior: "instant" });
+        }
+      }
+      previous.log = log;
+    }
+    previous.visible = visible;
+  }, [isMobile, mobileColumn, log, logEnd]);
 
   useEffect(() => {
     const viewport = window.visualViewport;

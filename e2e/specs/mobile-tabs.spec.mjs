@@ -65,6 +65,18 @@ export default async function mobileTabs({ page, game }) {
   const narrative = page.getByTestId("narrative-log");
   assert.equal(await narrative.evaluate(element => element.scrollHeight > element.clientHeight), true);
   await game.waitFor(page, () => narrative.evaluate(element => element.scrollHeight - element.clientHeight - element.scrollTop < 2), { message: "restored narrative scrolled to bottom" });
+  await narrative.evaluate(element => { element.scrollTop = 0; });
+  await choose("左");
+  await choose("中");
+  assert.equal(await narrative.evaluate(element => element.scrollTop), 0);
+  await choose("左");
+  await page.evaluate(async () => {
+    const { gameStore } = await import("/src/store/gameStore.js");
+    gameStore.setState(state => ({ log: [...state.log, { t: "sys", text: "QA hidden narrative update" }] }));
+  });
+  await page.getByText("QA hidden narrative update", { exact: true }).waitFor({ state: "attached" });
+  await choose("中");
+  await game.waitFor(page, () => narrative.evaluate(element => element.scrollHeight - element.clientHeight - element.scrollTop < 2), { message: "hidden narrative update scrolled to bottom" });
   await page.locator("html").evaluate(element => element.setAttribute("data-keyboard-open", ""));
   assert.equal(await tabs.isVisible(), false);
   await page.locator("html").evaluate(element => element.removeAttribute("data-keyboard-open"));
