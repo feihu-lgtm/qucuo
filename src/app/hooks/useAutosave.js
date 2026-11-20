@@ -3,7 +3,7 @@ import { createAutosaveScheduler } from "../../core/autosaveScheduler.js";
 import { snapshotFromStore } from "../../core/persist.js";
 import { setRngState } from "../../core/rng.js";
 import { DEFAULT_PRESETS } from "../../core/newGame.js";
-import { gameStore, useGameStore } from "../../store/gameStore.js";
+import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../infra/saves.js";
 import { initialNarratorState, migrateNarratorState } from "../../domain/narrator/narrator.js";
@@ -156,6 +156,7 @@ export function useAutosave({
         if (roomChanged) restoredInnerRef.current = restoredInnerRoomName;
         setInnerRoomName(restoredInnerRoomName);
       }
+      markGameReplaced();
       closeOverlay(OVERLAY.SETTINGS);
     };
     const scheduler = schedulerRef.current;
@@ -228,6 +229,7 @@ export function useAutosave({
       setVarTree(prev => seedKnowledge(prev, p.知识基底, 0)); // 换预设开新局也灌基底（registerFact 幂等）
       setCompanionState(initCompanionState()); // 新开局重置雪豹解锁/出战状态，不带上一局的伙伴进度
       roomMapRef.current = { [p.room.name]: { items: [...p.room.items], npcs: [...p.room.npcs] } };
+      markGameReplaced();
     };
     const scheduler = schedulerRef.current;
     if (scheduler) scheduler.runSilently(startPreset);

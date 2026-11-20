@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";
 import { timeAdvanceRule } from "../../features/time/rules.js";
 import { residentNpcRule } from "../../features/npc/rules.js";
@@ -22,9 +22,11 @@ import {
 } from "../../features/narrator/rules.js";
 import { applyResult } from "../../features/run.js";
 import * as importedRegistry from "../../domain/cards/importedRegistry.js";
-import { gameActions, gameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 
-export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuelNpc }) {
+export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef }) {
+  const replacedRef = useRef(false);
+  const [replacedTick, setReplacedTick] = useState(0);
   const worldRulesRunnerRef = useRef(null);
   const tokyoReturnTimerRef = useRef(null);
 
@@ -83,15 +85,34 @@ export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuel
         },
       });
     }
-    const scheduler = createCoalescedCheck(() => worldRulesRunnerRef.current.check());
+    const scheduler = createCoalescedCheck(() => {
+      if (!replacedRef.current) worldRulesRunnerRef.current.check();
+    });
     const unsubscribeStore = gameStore.subscribe(scheduler.schedule);
     const unsubscribeImported = importedRegistry.subscribeImported(scheduler.schedule);
+    const unsubscribeReplaced = subscribeGameReplaced(() => {
+      worldRulesRunnerRef.current.reset();
+      replacedRef.current = true;
+      setReplacedTick((tick) => tick + 1);
+    });
     scheduler.schedule();
     return () => {
       unsubscribeStore();
+      unsubscribeReplaced();
       unsubscribeImported();
       scheduler.dispose();
       cancelTokyoReturn();
     };
   }, []);
+
+  // 整体换局后的首跑等 React 提交完再做：featureCtxRef 已换成新局的闭包（act 不会带旧局对话），
+  // 且在 runSilently 里跑，首跑写入不算游玩、不会触发自动存档覆盖旧档。
+  useEffect(() => {
+    if (!replacedRef.current) return;
+    replacedRef.current = false;
+    const check = () => worldRulesRunnerRef.current.check();
+    const autosave = schedulerRef?.current;
+    if (autosave) autosave.runSilently(check);
+    else check();
+  }, [replacedTick, schedulerRef]);
 }

@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useMemo } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
 import {
   innerMove as innerMoveLogic,
   outerArrival as outerArrivalLogic,
-  shouldDispatchQueuedAutoTravel,
   shouldThrottleMovement,
 } from "../../features/map/logic.js";
 import { resolveOuterLock } from "../../engine/act/outerMove.js";
@@ -440,26 +439,4 @@ export function useTurn({
   featureCtxRef.current = featureCtx;
 
   return { act };
-}
-
-export function useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef }) {
-  const actRef = useRef(act);
-  actRef.current = act;
-
-  useEffect(() => {
-    if (shouldDispatchQueuedAutoTravel({
-      loading,
-      queueCount,
-      hasQueuedCommands: pendingQueue.current.length > 0,
-    })) {
-      const timer = setTimeout(() => {
-        const next = pendingQueue.current.shift();
-        if (!next) return;
-        setQueueCount(pendingQueue.current.length);
-        if (pendingQueue.current.length === 0) autoTravelRef.current = false;
-        actRef.current(next.cmd, next.extraReplies, next.opts || {});
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, queueCount, pendingQueue, setQueueCount, autoTravelRef]);
 }
