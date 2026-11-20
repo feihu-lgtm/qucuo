@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { resolveRerankUrl, rerank, applyRerank } from "./rerank.js";
+import { getEmbedding } from "./embeddingService.js";
+import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 
 // 精排是可选的第四步：粗排（intent/context/词法三路 RRF）拿到十几条大致相关的，
 // cross-encoder 把 (查询,候选) 成对喂进模型直接出相关度。它贵但准，只用在粗排之后。
@@ -29,6 +31,32 @@ const CANDS = [
   { id: "c", text: "少侠在镇口打服了赫连铸。" },
 ];
 const CFG = { endpoint: "https://x.com/v1", apiKey: "k" };
+
+it("observes concurrent embedding and reranking without advancing the active turn", async () => {
+  const turn = turnMonitor.start("foreground");
+  const fetch = vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ embedding: [1, 2] }] }) })
+    .mockResolvedValueOnce({ ok: false, status: 503 });
+  vi.stubGlobal("fetch", fetch);
+
+  const embedding = getEmbedding({
+    embeddingEnabled: true, embeddingKey: "test-key", embeddingModel: "test-embedding",
+  }, "test input");
+  const reranking = rerank("test query", CANDS, CFG);
+  expect(turnMonitor.getSnapshot()).toMatchObject({ backgroundCount: 2, current: { id: turn.id, phase: PHASE.MACHINE } });
+  expect(await embedding).toEqual(Float32Array.of(1, 2));
+  expect(await reranking).toBeNull();
+  expect(turnMonitor.getSnapshot()).toMatchObject({ backgroundCount: 0, current: { id: turn.id, phase: PHASE.MACHINE } });
+  const nodes = turnMonitor.getTrees().filter(tree => tree.background).flatMap(tree => tree.nodes);
+  expect(nodes.find(node => node.kind === "ai" && node.model === "test-embedding")).toMatchObject({
+    durationMs: expect.any(Number), pipeline: { callLabel: "记忆向量", success: true },
+  });
+  expect(nodes.find(node => node.kind === "ai" && node.model === "BAAI/bge-reranker-v2-m3")).toMatchObject({
+    durationMs: expect.any(Number), pipeline: { callLabel: "召回精排", success: false, error: "rerank HTTP 503" },
+  });
+  turnMonitor.finish(turn);
+  turnMonitor.clear();
+});
 
 describe("缺条件时不发请求（省一次白调用）", () => {
   it.each([

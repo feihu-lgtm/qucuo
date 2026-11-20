@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { CATEGORY, COMMANDS, HOOK_COMMANDS, INVENTORY_COMMAND_IDS } from "./commands.js";
 import { createScheduler, decide } from "./commandScheduler.js";
+import { formatTurnStatus, getTurnContext, PHASE, turnMonitor } from "./turnMonitor.js";
 import { classifyCliCommand } from "../../cli/runner.mjs";
 
 const categories = Object.values(CATEGORY);
@@ -105,7 +106,7 @@ describe("command scheduler", () => {
     expect(COMMANDS.prayer.label).toBe("祈福");
     expect(COMMANDS.book.label).toBe("书籍");
     expect(COMMANDS.duel.label).toBe("决斗");
-    expect(Object.values(HOOK_COMMANDS.useDuel)).toEqual(["duel", "duel", "duel", "duel"]);
+    expect(Object.values(HOOK_COMMANDS.useDuel)).toEqual(["duel", "duel", "duel", "duel", "duel"]);
   });
 
   it("returns the rejection text for SettingsPanel alerts", async () => {
@@ -323,6 +324,26 @@ describe("command scheduler", () => {
     await settings;
   });
 
+  it.each(["settings", "apiConfig"])("keeps the generating turn during and after %s", async (id) => {
+    const scheduler = createScheduler();
+    const response = Promise.withResolvers();
+    const generation = scheduler.dispatch("typedAction", async () => {
+      const ai = turnMonitor.beginAi(getTurnContext(), { model: "mock-model", callLabel: "主叙事" });
+      ai.chunk();
+      await response.promise;
+      ai.end({ success: true });
+    });
+    const during = await scheduler.dispatch(id, () => turnMonitor.getSnapshot().current);
+    const after = turnMonitor.getSnapshot().current;
+    response.resolve();
+    await generation;
+
+    expect(during).toMatchObject({ commandId: "typedAction", phase: PHASE.AI_STREAM, model: "mock-model" });
+    expect(after).toMatchObject({ id: during.id, phase: PHASE.AI_STREAM });
+    expect(turnMonitor.getSnapshot().current).toMatchObject({ id: during.id, phase: PHASE.DONE });
+    expect(turnMonitor.getTrees().find((tree) => tree.commandId === id)).toMatchObject({ phase: PHASE.DONE });
+  });
+
   it("clears route legs and queues rollback after the active auto-travel leg", async () => {
     const scheduler = createScheduler();
     let finishLeg;
@@ -341,10 +362,37 @@ describe("command scheduler", () => {
     expect(scheduler.queue.map(entry => entry.id)).toEqual(["rollback", "actLocal"]);
     expect(state.rollbackBlocked).toBe(false);
     expect(rollbackFn).not.toHaveBeenCalled();
+    const pending = turnMonitor.getSnapshot();
+    const rollbackTree = pending.trees.find((tree) => tree.commandId === "rollback");
+    expect(rollbackTree).toMatchObject({
+      category: CATEGORY.SYSTEM, queued: true, parentId: pending.current.id,
+      nodes: expect.arrayContaining([expect.objectContaining({ kind: "queued", label: "回滚已排队" })]),
+    });
+    expect(formatTurnStatus(pending).label).toContain("回滚已排队");
 
     finishLeg();
     expect(await queuedLocal).toEqual({ status: "cleared" });
     await Promise.all([leg, rollback]);
     expect(rollbackFn).toHaveBeenCalledOnce();
+    expect(turnMonitor.getTrees().find((tree) => tree.id === rollbackTree.id)).toMatchObject({
+      queued: false, phase: PHASE.DONE,
+    });
+    expect(formatTurnStatus(turnMonitor.getSnapshot()).label).not.toContain("回滚已排队");
+  });
+
+  it("records a stopped command as discarded only when its late result arrives", async () => {
+    const scheduler = createScheduler();
+    const gate = Promise.withResolvers();
+    let trace;
+    const running = scheduler.dispatch("typedAction", () => {
+      trace = getTurnContext();
+      return gate.promise;
+    });
+    expect(scheduler.stopRunning()).toBe(true);
+    await expect(running).resolves.toEqual({ status: "stopped" });
+    expect(trace.phase).toBe(PHASE.MACHINE);
+    gate.resolve();
+    await gate.promise;
+    expect(trace).toMatchObject({ commandId: "typedAction", category: CATEGORY.AI_TURN, phase: PHASE.DISCARDED });
   });
 });

@@ -1,0 +1,33 @@
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { formatTurnStatus, turnMonitor } from "../../core/turnMonitor.js";
+import { OVERLAY, openOverlay, useOverlay } from "../../store/uiStore.js";
+import { chromeBtn } from "../theme.js";
+
+export default function TurnStatusPill({ theme, mobile }) {
+  const snapshot = useSyncExternalStore(turnMonitor.subscribe, turnMonitor.getSnapshot);
+  const active = useOverlay(OVERLAY.TRACE);
+  const [now, setNow] = useState(Date.now);
+  const running = snapshot.current && snapshot.current.totalMs == null;
+  useEffect(() => {
+    if (!running) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, [running]);
+  const status = formatTurnStatus(snapshot, Math.max(now, snapshot.current?.ts ?? 0));
+  const label = `${status.label}${status.backgroundCount ? ` · 后台 AI ×${status.backgroundCount}` : ""}`;
+  return (
+    <div style={mobile
+      ? { display: "flex", justifyContent: "flex-end", padding: "3px 10px", flexShrink: 0 }
+      : { position: "fixed", right: 12, bottom: 12, zIndex: 40 }}>
+      <button type="button" title={label} aria-label={`全流程日志：${label}`}
+        onClick={() => openOverlay(OVERLAY.TRACE)}
+        style={{
+          ...chromeBtn(theme, { active }), height: 28, borderRadius: 14, maxWidth: "100%",
+          background: active ? `color-mix(in srgb, ${theme.accent} 14%, ${theme.bg})` : theme.bg,
+          fontFamily: "inherit",
+        }}>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+      </button>
+    </div>
+  );
+}

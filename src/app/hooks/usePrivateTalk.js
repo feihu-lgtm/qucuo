@@ -1,6 +1,7 @@
 import { useCallback } from "react";
-import { callModel, callModelStream, getPipelineLog } from "../../infra/apiConfig.js";
-import { startTrace, step as traceStep, endTrace, attachPipeline } from "../../infra/actionTrace.js";
+import { callModel, callModelStream } from "../../infra/apiConfig.js";
+import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
+import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 import {
   NNPC_STAGE, isInSea, narratorVoicePrompt, buildNarratorWhisperContext,
   narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
@@ -25,19 +26,13 @@ export function usePrivateTalk({
   talkBusyRef, schedulerRef, setInput, timeRef, varTreeRef, setLog, setConvo,
   setVarTree, setNarrator, noteAction,
 }) {
-  const talkToNarrator = useCallback(async (content, { isStale = () => false } = {}) => {
+  const talkToNarrator = useCallback(async (content, { isStale = () => false, turn } = {}) => {
     changePendingTalks(1);
     addLog([{ t: "cmd", text: `> 对旁白：${content}` }]);
     setInput("");
 
-    // 行动分层日志（本轮补齐）：私聊旁白此前完全不进 trace 系统——虽然底层
-    // callModel/callModelStream 早就把每次调用的完整 prompt/回复记进了
-    // pipelineLog，但没有一条 trace 把它"挂"出来，顶部「🧭行动日志」面板
-    // 里看不到任何私聊痕迹，出问题（旁白答非所问/召回没生效）时无从排查。
-    // 补法与 act() 一致：startTrace 开局、traceStep 记各阶段、attachPipeline
-    // 挂真实 prompt/回复、endTrace 收尾。不消耗回合这件事不变——trace 只是
-    // 记录，不代表计入时间。
-    const _wt = startTrace(content, content);
+    const _wt = turn || startTrace(content, content);
+    let summary;
     traceStep(_wt, "意图分类", "pass", "模式=私聊旁白（不消耗回合）");
 
     if (narrator.stage === NNPC_STAGE.CRASHED) {
@@ -218,7 +213,7 @@ export function usePrivateTalk({
               return copy;
             });
           },
-          { maxTokens: narratorMaxTokens, recallInfo },
+          { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt },
         );
         if (isStale()) return;
         finishReason = fr;
@@ -231,16 +226,14 @@ export function usePrivateTalk({
           return copy;
         });
         traceStep(_wt, "AI调用", "pass", "流式一次成功");
-        attachPipeline(_wt, getPipelineLog()[0]);
       } else {
-        const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊" });
+        const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt });
         if (isStale()) return;
         finishReason = result.finishReason;
         text = stripEchoPrefix(result.text.trim()) || "……";
         { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
         addLog([{ t: "narrator", text: `  「旁白」${text}` }]);
         traceStep(_wt, "AI调用", "pass", "非流式一次成功");
-        attachPipeline(_wt, getPipelineLog()[0]);
       }
 
       // ── 截断检查（本轮补齐）──
@@ -258,17 +251,15 @@ export function usePrivateTalk({
       }
 
       // 把这轮私聊也计入主引擎共享的对话历史，让旁白（以及之后的叙事）都能"记得"这次私聊
+      turnMonitor.transition(_wt, PHASE.COMMIT);
       setConvo(c => isStale() ? c : [...c, { role: "user", content: `（私聊）${content}` }, { role: "assistant", content: `（旁白私聊回应）${text}` }]);
 
       // 私聊旁白也浓缩一张私有小纸条，owner=旁白（你俩私有，只在旁白语境下浮现，
       // 不进任何 NPC 的信息域）——与「对话模式=owner对话对象」同属"私语只你俩知道"这一类。
       jotNote({ text: `与旁白私语：${content.slice(0, 24)}${content.length > 24 ? "…" : ""}`, owner: [{ name: "旁白", via: VIA.FIRSTHAND }], source: NOTE_SOURCE.WHISPER });
 
-      // trace 收尾：摘要带上回复内容前段（trace 面板本身有完整 pipeline 可看全文，
-      // 这里摘要只做一句话定位用，避免摘要行本身过长）和好感度增量，
-      // 让「行动分层日志」列表一眼能看出这次私聊聊到了什么、好感怎么变的。
       const textPreview = text.length > 30 ? text.slice(0, 30) + "…" : text;
-      endTrace(_wt, `旁白回应："${textPreview}"（好感${affDelta >= 0 ? "+" : ""}${affDelta}）`);
+      summary = `旁白回应："${textPreview}"（好感${affDelta >= 0 ? "+" : ""}${affDelta}）`;
 
       // ── 海内：好感不动，改判"这一轮她有没有把当前那条心结说出来" ──
       // 创伤期的进度靠安抚与倾听推进，不靠聊天涨好感（她此刻不是在被追求）。
@@ -292,7 +283,7 @@ export function usePrivateTalk({
             }
           }
         }
-        endTrace(_wt, `海内私聊："${textPreview}"`);
+        summary = `海内私聊："${textPreview}"`;
       }
 
       // 非海内才走好感结算。刻意不用 early return——函数尾部（try/catch 之外）
@@ -347,10 +338,10 @@ export function usePrivateTalk({
     } catch (e) {
       if (isStale()) return;
       traceStep(_wt, "AI调用", "fail", `私聊失败：${e.message || e}`);
-      attachPipeline(_wt, getPipelineLog()[0]);
-      endTrace(_wt, `私聊中断（${e.message || e}）`);
+      turnMonitor.transition(_wt, PHASE.ERROR, `私聊中断（${e.message || e}）`);
       addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
     }
+    endTrace(_wt, summary);
     noteAction("whisper");
     changePendingTalks(-1);
     schedulerRef.current?.touch();

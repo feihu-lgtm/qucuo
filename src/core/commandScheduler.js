@@ -1,4 +1,5 @@
 import { CATEGORY, SYSTEM_COMMANDS, getCommand } from "./commands.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "./turnMonitor.js";
 
 const WHISPER_IDS = new Set(["privateWhisper", "actWhisper"]);
 const BLOCKING_CATEGORIES = new Set([CATEGORY.LOCAL, CATEGORY.MOVE, CATEGORY.AI_TURN, CATEGORY.SYSTEM]);
@@ -99,6 +100,15 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
   const settleEntry = (entry, status, value) => {
     if (entry.settled) return;
     entry.settled = true;
+    if (value?.status !== "stopped") {
+      turnMonitor.dequeue(entry.trace);
+      if (entry.trace.totalMs == null) {
+        if (status === "error") turnMonitor.transition(entry.trace, PHASE.ERROR, String(value));
+        else if (["replaced", "cleared", "rejected"].includes(value?.status)) {
+          turnMonitor.transition(entry.trace, PHASE.DISCARDED, value.message || value.status);
+        } else turnMonitor.finish(entry.trace);
+      }
+    }
     if (status === "error") entry.reject(value);
     else entry.resolve(value);
   };
@@ -128,6 +138,11 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
 
   const runEntry = (entry) => {
     if (entry.id === SYSTEM_COMMANDS.rollback) clearQueue();
+    turnMonitor.dequeue(entry.trace);
+    const current = turnMonitor.getSnapshot().current;
+    const nonBlockingSystem = entry.category === CATEGORY.SYSTEM && !BLOCKING_SYSTEM_IDS.has(entry.id);
+    if (![CATEGORY.VIEW, CATEGORY.BACKGROUND].includes(entry.category)
+      && !(nonBlockingSystem && current && current.totalMs == null)) turnMonitor.activate(entry.trace);
     const record = {
       id: entry.id,
       category: entry.category,
@@ -143,7 +158,7 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
     let value;
     executionStack.push(record);
     try {
-      value = entry.fn();
+      value = withTurnContext(entry.trace, entry.fn);
     } catch (error) {
       executionStack.pop();
       active.delete(record.token);
@@ -156,7 +171,7 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
 
     Promise.resolve(value).then(
       (result) => {
-        if (!active.has(record.token)) return;
+        if (!active.has(record.token)) { discardStopped(entry); return; }
         record.phase = "done";
         active.delete(record.token);
         publish();
@@ -164,7 +179,7 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
         void drain();
       },
       (error) => {
-        if (!active.has(record.token)) return;
+        if (!active.has(record.token)) { discardStopped(entry); return; }
         record.phase = "error";
         active.delete(record.token);
         publish();
@@ -174,8 +189,16 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
     );
   };
 
+  const discardStopped = (entry) => {
+    if (entry.trace.totalMs == null) turnMonitor.transition(entry.trace, PHASE.DISCARDED, "收到已停止命令的过期结果");
+  };
+
   const makeEntry = (id, fn, meta = {}) => {
     const command = getCommand(id);
+    const trace = turnMonitor.start(meta.displayText || command.label, {
+      commandId: command.id, raw: meta.displayText || command.label, passive: true,
+      background: command.category === CATEGORY.BACKGROUND, parentId: getTurnContext()?.id,
+    });
     let resolve;
     let reject;
     const promise = new Promise((res, rej) => {
@@ -184,6 +207,7 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
     });
     return {
       ...command,
+      trace,
       fn,
       meta,
       promise,
@@ -196,6 +220,7 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
   const enqueue = (id, fn, meta = {}) => {
     const entry = makeEntry(id, fn, meta);
     queue.push(entry);
+    turnMonitor.queue(entry.trace);
     publish();
     return entry.promise;
   };
@@ -242,10 +267,12 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
     if (decision === "queue") {
       if (id === SYSTEM_COMMANDS.rollback && running?.id === "autoTravel") {
         clearRouteQueue();
+        entry.trace.parentId = running.entry.trace.id;
         queue.unshift(entry);
       } else {
         queue.push(entry);
       }
+      turnMonitor.queue(entry.trace);
       onQueue(entry, queue.indexOf(entry) + 1);
       publish();
       return entry.promise;
@@ -253,6 +280,7 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
     if (decision === "replaceRoute") {
       const index = removeQueuedRoute();
       queue.splice(Math.min(index, queue.length), 0, entry);
+      turnMonitor.queue(entry.trace);
       onQueue(entry, queue.indexOf(entry) + 1);
       publish();
       return entry.promise;
@@ -278,8 +306,8 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
     return true;
   };
 
-  const setPhase = (phase) => {
-    const task = latestTurn();
+  const setPhase = (phase, trace) => {
+    const task = trace ? orderedActive().find((record) => record.entry.trace === trace) : latestTurn();
     if (!task) return;
     task.phase = phase;
     publish();

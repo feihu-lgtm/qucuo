@@ -78,6 +78,7 @@ describe("stale turn handling", () => {
 
     await expect(pendingTurn).resolves.toMatchObject({ ok: false, stale: true });
     expect(committed).not.toHaveBeenCalled();
+    expect(ctx._trace.phases).toEqual(["MACHINE", "AI_WAIT", "DISCARDED"]);
   });
 });
 

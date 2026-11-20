@@ -166,7 +166,7 @@ describe("callMainOnce 组装黄金快照", () => {
   it("trace 契约：Prompt注入/调用模式标签照常打出", async () => {
     const d = makeDeps();
     await callMainOnce(null, false, d);
-    const layers = d._trace.steps.map(s => s.layer);
+    const layers = d._trace.nodes.map(s => s.label);
     expect(layers).toContain("Prompt注入");
     expect(layers).toContain("调用模式");
   });

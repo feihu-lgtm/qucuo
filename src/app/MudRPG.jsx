@@ -245,7 +245,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   });
   const questPanel = commandScheduler.wrapHandlers("useQuestPanel", useQuestPanel({
     act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc, captureUndo,
-    setActivePersuasion, setInteractMode, setTalkTarget,
+    setActivePersuasion, setInteractMode, setTalkTarget, setPersuasionProgress, setChar,
   }));
 
   const autoTravelTo = useAutoTravel({
@@ -274,7 +274,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 保证同一个商人每次进店看到的东西都稳定。
   const screenHandlers = commandScheduler.wrapHandlers("useScreenHandlers", useScreenHandlers({
     act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
-    timeRef, noteAction, inv, setTradingShop, setInv, setClaimedMilestones, captureUndo,
+    timeRef, noteAction, inv, setTradingShop, captureUndo,
   }));
 
   const buildingHandlers = commandScheduler.wrapHandlers("useBuildingHandlers", useBuildingHandlers({

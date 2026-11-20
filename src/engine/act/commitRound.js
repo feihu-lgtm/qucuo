@@ -1,4 +1,4 @@
-import { step as traceStep, endTrace } from "../../infra/actionTrace.js";
+import { step as traceStep } from "../../infra/actionTrace.js";
 import { applyMvuCommands } from "../../domain/prompt/mvu.js";
 import { QUCUO_MAP, getMapNode } from "../../domain/map/qucuoMap.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
@@ -26,8 +26,7 @@ import { filterGhostCommands, findScriptOverride } from "./commitHelpers.js";
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
 // 两阶段 pipeline 的提交段：把本轮解析结果（d.p / d.mvuCommands / d.dealResult）
-// 写回所有世界状态。请求段无副作用、提交段可回滚——本函数里任何一步抛错，
-// 由 act 的 catch 用发送前快照整体还原。d 由 act 在调用点组装（同 callDeps 模式）。
+// 写回世界状态；提交失败由 playTurn 还原事务快照。
 export function commitRound(d) {
   if (d.knowledgeTree) {
     if (d.knowledgeTreeBase) {
@@ -485,5 +484,4 @@ export function commitRound(d) {
   // 状态没变，存了也是重复盘。
   d.roundsSinceLastSaveRef.current += 1;
   d.playedThisSessionRef.current = true;
-  endTrace(d._trace, "行动完成");
 }

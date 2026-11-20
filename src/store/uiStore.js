@@ -21,7 +21,6 @@ export const OVERLAY = Object.freeze({
   QIJUZHU: "qijuzhu",
   CARD_IMPORT: "cardImport",
   PORTRAIT_MANAGER: "portraitManager",
-  PIPELINE: "pipeline",
   TRACE: "trace",
   BASEMENT: "basement",
 });

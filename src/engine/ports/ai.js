@@ -1,4 +1,12 @@
 import { callModel, callModelStream } from "../../infra/apiConfig.js";
+import { observeAi, observed } from "../../core/observeAi.js";
+
+export function bindTurnAi(ai, turn) {
+  return {
+    chat: (messages, opts = {}) => observeAi(messages, { ...opts, turn }, (onChunk) =>
+      ai.chat(messages, { ...opts, onChunk, [observed]: true })),
+  };
+}
 
 function asResponse(value) {
   if (typeof value === "string") return { text: value };
@@ -86,12 +94,14 @@ export function createWebAi() {
     if (opts.stream && cfg.apiType !== "gemini") {
       return callModelStream(cfg, opts.systemPrompt, messages, opts.onChunk, {
         ...(opts.modelOptions || {}),
+        [observed]: opts[observed],
         intent: opts.intent,
         recallInfo: opts.recallInfo,
       });
     }
     return callModel(cfg, opts.systemPrompt, messages, {
       ...(opts.modelOptions || {}),
+      [observed]: opts[observed],
       intent: opts.intent,
       recallInfo: opts.recallInfo,
     });

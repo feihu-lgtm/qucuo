@@ -1,7 +1,7 @@
 import { getRngState } from "../core/rng.js";
 import { getRecentErrors } from "./errorBuffer.js";
 import { getTraceLog } from "./actionTrace.js";
-import { getPipelineLog, loadConfig } from "./apiConfig.js";
+import { loadConfig } from "./apiConfig.js";
 import { loadAutoSave } from "./saves.js";
 import { collectConfigValues, scrubString, setScrubbedProperty } from "./textRedaction.js";
 import { CURRENT_VERSION } from "./version.js";
@@ -128,7 +128,7 @@ export function buildDebugBundle(sources = EMPTY_SOURCES) {
   const recentLog = readSource(safeSources, "recentLog", () => save?.log || [], sourceErrors);
   const conversation = readSource(safeSources, "conversation", () => save?.convo || [], sourceErrors);
   const traces = readSource(safeSources, "traces", getTraceLog, sourceErrors);
-  const pipelineCalls = readSource(safeSources, "pipelineCalls", getPipelineLog, sourceErrors);
+  const pipelineCalls = readSource(safeSources, "pipelineCalls", () => [], sourceErrors);
   const errors = readSource(safeSources, "errors", getRecentErrors, sourceErrors);
   const bundle = {
     schema: 1,

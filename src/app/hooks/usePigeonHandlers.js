@@ -17,13 +17,13 @@ export function usePigeonHandlers({
     [room.name, varTree],
   );
 
-  const applyPigeonResult = useCallback((result) => {
-    applyResult(featureCtxRef.current, result);
+  const applyPigeonResult = useCallback((result, options) => {
+    applyResult(featureCtxRef.current, result, options);
     if (result.factSummary) aiSummarizeFact(result.factSummary.id, result.factSummary.cue);
     return result;
   }, [aiSummarizeFact]);
 
-  const sendPigeonLetter = useCallback((npcName, content, opts = {}) => {
+  const sendPigeonLetter = useCallback((npcName, content, opts = {}) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     const result = sendPigeonLetterLogic(gameStore.getState(), npcName, content, opts);
     applyPigeonResult(result);
@@ -33,17 +33,17 @@ export function usePigeonHandlers({
       setInteractMode("action");
     }
     return result;
-  }, [applyPigeonResult, captureUndo]);
+  }, { feature: "pigeon.sendLetter" }), [applyPigeonResult, captureUndo]);
 
-  const buyPigeon = useCallback((qty, price) => {
+  const buyPigeon = useCallback((qty, price) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyPigeonResult(buyPigeonLogic(gameStore.getState(), qty, price));
-  }, [applyPigeonResult, captureUndo]);
+  }, { feature: "pigeon.buy" }), [applyPigeonResult, captureUndo]);
 
-  const handleCollectPigeons = useCallback(({ qty, dayIdx }) => {
+  const handleCollectPigeons = useCallback(({ qty, dayIdx }) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyPigeonResult(collectPigeonsLogic(gameStore.getState(), { qty, dayIdx }));
-  }, [applyPigeonResult, captureUndo]);
+  }, { feature: "pigeon.collect" }), [applyPigeonResult, captureUndo]);
 
   const handlePostSend = useCallback(({ npcName, content, channel, gift }) => {
     setActiveBuilding(null);

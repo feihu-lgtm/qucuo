@@ -72,7 +72,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
 
   const renderTavernView = () => {
     const traces = getTraceLog();
-    const t = traces.find(x => x.pipeline?.systemPrompt);
+    const t = traces.find(x => x.nodes.some(node => node.pipeline?.callLabel === "主叙事"));
     if (!t) {
       return (
         <div style={{ fontSize: 11, color: "var(--text-dim)", padding: "12px 0" }}>
@@ -80,7 +80,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
         </div>
       );
     }
-    const pl = t.pipeline;
+    const pl = t.nodes.find(node => node.pipeline?.callLabel === "主叙事").pipeline;
     const sys = Array.isArray(pl.systemPrompt) ? pl.systemPrompt : [{ role: "system", content: pl.systemPrompt || "", tavernBlock: "main", tavernLabel: "Main Prompt" }];
     const msgs = [
       ...sys.map((b, i) => ({ ...b, order: (getPositionMeta(b.tavernBlock)?.order || 0) + i * 0.01 })),

@@ -23,11 +23,11 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
     handleBodyProfileChange: cardImportHandlers.handleBodyProfileChange,
     globalOverlays: {
       zoneTheme: ui.zoneTheme, isDayMode: ui.isDayMode,
-      char: game.char, setChar: game.setChar, inv: game.inv, setInv: game.setInv, skills: game.skills,
+      char: game.char, inv: game.inv, skills: game.skills,
       varTree: game.varTree, room: game.room, innerRoomName: game.innerRoomName, time: game.time,
       flags: game.flags, questProgress: game.questProgress,
       effectiveSpecialNow, companionState: game.companionState,
-      loading: ui.loading, pendingTalks: ui.pendingTalks, waitSecs: ui.waitSecs, addLog,
+      loading: ui.loading,
       characterPageTarget: ui.characterPageTarget, setCharacterPageTarget: ui.setCharacterPageTarget,
       claimedMilestones: game.claimedMilestones, claimMilestone: screenHandlers.claimMilestone,
       giftToCharacter: screenHandlers.giftToCharacter,
@@ -51,11 +51,10 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
       activeItemMenu: ui.activeItemMenu, setActiveItemMenu: ui.setActiveItemMenu,
       inspectItem: aiInspect.inspectItem, handleConsumeItem: screenHandlers.handleConsumeItem,
       handleCollectGround: screenHandlers.handleCollectGround, handleToggleEquip: screenHandlers.handleToggleEquip,
-      activePersuasion: ui.activePersuasion, setActivePersuasion: ui.setActivePersuasion,
+      activePersuasion: ui.activePersuasion,
       apiCfg: ui.apiCfg, persuasionProgress: game.persuasionProgress,
-      setPersuasionProgress: game.setPersuasionProgress, forceAdvanceQuest: questPanel.forceAdvanceQuest,
-      duelingNpc: ui.duelingNpc, setDuelingNpc: ui.setDuelingNpc,
-      setPendingQuestBranch: ui.setPendingQuestBranch, duelFinishHandler: duelHandlers.duelFinishHandler,
+      savePersuasionProgress: questPanel.savePersuasionProgress, finishPersuasion: questPanel.finishPersuasion,
+      duelingNpc: ui.duelingNpc, resetDuel: duelHandlers.resetDuel, duelFinishHandler: duelHandlers.duelFinishHandler,
     },
   };
 }
