@@ -16,7 +16,8 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
       onGameStarted?.();
       return result;
     }, varTree: game.varTree, setVarTree: game.setVarTree,
-    settingsInitialTab: ui.settingsInitialTab, setSettingsInitialTab: ui.setSettingsInitialTab, uiScale: ui.uiScale, setUiScale: ui.setUiScale,
+    settingsInitialTab: ui.settingsInitialTab, setSettingsInitialTab: ui.setSettingsInitialTab,
+    uiScale: ui.uiScale, setUiScale: ui.setUiScale, font: ui.font, setFont: ui.setFont,
     narrator: game.narrator, setNarrator: game.setNarrator, getLiveBlockText: ui.getLiveBlockText,
     showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead,
     char: game.char, setChar: game.setChar, inv: game.inv, setInv: game.setInv,

@@ -16,6 +16,13 @@ const QuickBattleScreen = lazy(() => import("./domain/quickBattle/QuickBattleScr
 const TavernSimScreen = lazy(() => import("./domain/tavernSim/TavernSimScreen.jsx"));
 const CardImportScreen = lazy(() => import("./ui/screens/CardImportScreen.jsx"));
 
+try {
+  document.documentElement.dataset.font =
+    localStorage.getItem("wuxia_mud_ui_font") === "song" ? "song" : "pixel";
+} catch {
+  document.documentElement.dataset.font = "pixel";
+}
+
 function InkSpinner() {
   return (
     <div className="ink-spinner-screen" role="status" aria-live="polite">

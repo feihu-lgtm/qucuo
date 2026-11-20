@@ -83,6 +83,11 @@ export function useGameUi({
     const saved = localStorage.getItem("wuxia_mud_ui_scale");
     return saved ? parseFloat(saved) : 1;
   });
+  const [font, setFont] = useState(() =>
+    localStorage.getItem("wuxia_mud_ui_font") === "song" ? "song" : "pixel");
+  useEffect(() => {
+    document.documentElement.dataset.font = font;
+  }, [font]);
   const [isDayMode, setIsDayMode] = useState(() =>
     localStorage.getItem("wuxia_mud_day_mode") === "1");
   useEffect(() => {
@@ -247,7 +252,7 @@ export function useGameUi({
     portraits, setPortraits, slForm, setSlFormState, slImgErr, setSlImgErr,
     pearlForm, setPearlFormState, pearlImgErr, setPearlImgErr,
     narratorImgErr, setNarratorImgErr, portraitTarget, setPortraitTarget,
-    apiCfg, setApiCfg, uiScale, setUiScale, isDayMode, setIsDayMode, cmdHistory, setCmdHistory,
+    apiCfg, setApiCfg, uiScale, setUiScale, font, setFont, isDayMode, setIsDayMode, cmdHistory, setCmdHistory,
     histIdx, setHistIdx, forcedDuelNpc, setForcedDuelNpc, duelingNpc, setDuelingNpc,
     duelPending, setDuelPending, pendingQuestBranch, setPendingQuestBranch,
     activePersuasion, setActivePersuasion, activeBuilding, setActiveBuilding,

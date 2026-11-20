@@ -22,6 +22,7 @@ import { clearMemories, countMemories } from "../../domain/memory/memoryStore.js
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import InjectionStructurePanel from "./InjectionStructurePanel.jsx";
 import ApiProviderSettings from "./ApiProviderSettings.jsx";
+import { chromeBtn } from "../theme.js";
 
 const inputStyle = {
   width: "100%", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
@@ -82,7 +83,7 @@ function MusicSettings() {
   );
 }
 
-export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, onOpenCardImport, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, onSelectTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText }) {
+export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, onOpenCardImport, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, onSelectTab, uiScale, setUiScale, font, setFont, zoneTheme, narrator, setNarrator, getLiveBlockText }) {
   // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
   // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
   // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
@@ -1030,6 +1031,12 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 onClick={() => setUiScale(1)}
                 style={{ fontSize: "10px", color: "var(--accent)", cursor: "pointer", flexShrink: 0, border: "1px solid var(--border)", borderRadius: 0, padding: "2px 6px" }}
               >重置</span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "8px 10px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0 }}>
+              <span style={{ fontSize: "11px", color: "var(--text-dim)", flexShrink: 0 }}>字体</span>
+              <button type="button" aria-pressed={font === "pixel"} onClick={() => setFont("pixel")} style={chromeBtn(zoneTheme, { active: font === "pixel" })}>缝合像素</button>
+              <button type="button" aria-pressed={font === "song"} onClick={() => setFont("song")} style={chromeBtn(zoneTheme, { active: font === "song" })}>宋体</button>
             </div>
 
             <MusicSettings />

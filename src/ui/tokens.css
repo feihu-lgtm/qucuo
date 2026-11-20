@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "Fusion Pixel";
+  src: url("/fonts/fusion-pixel-zh_hans.woff2") format("woff2");
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
   --mobile-viewport-height: 100dvh;
@@ -36,6 +42,10 @@
   --qc-glow: rgba(200, 50, 58, 0.32);
   --qc-hi: #e8e4d6;
   --slash-rot: rotate(0deg);
+}
+
+:root[data-font="pixel"] {
+  --font-body: "Fusion Pixel", "Songti SC", "STSong", "SimSun", serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
 }
 
 :root[data-theme="day"] {
