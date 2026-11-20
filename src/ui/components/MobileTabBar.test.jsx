@@ -13,7 +13,7 @@ describe("mobile column tabs", () => {
     }));
     expect(html).toContain("左 2/2");
     expect(html).toContain('aria-label="右 3/5 · 行囊"');
-    expect(html).toContain('aria-label="中 · 江湖"');
+    expect(html).toContain('aria-label="中 · 叙事"');
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
     expect(html).toContain("height:44px");
     expect(html).toContain("min-width:44px");

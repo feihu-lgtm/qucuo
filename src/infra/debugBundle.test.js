@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildDebugBundle,
+  downloadDebugBundle,
   getDebugBundleDownloadSize,
   getDebugBundleSize,
   MAX_DEBUG_BUNDLE_BYTES,
@@ -22,7 +23,7 @@ describe("debug bundle redaction", () => {
     }, apiConfig);
 
     expect(result).toEqual({
-      nested: { safe: "[REDACTED] [REDACTED] [REDACTED] [REDACTED]" },
+      nested: { safe: "[已拦截] [已拦截] [REDACTED] [REDACTED]" },
     });
   });
 
@@ -41,10 +42,10 @@ describe("debug bundle redaction", () => {
 
     expect(result.nested).toEqual({
       "[REDACTED]": "configured",
-      "[REDACTED]#2": "key pattern",
-      "[REDACTED]#3": "entry value",
-      "[REDACTED]#4": "endpoint",
-      "[REDACTED]#5": "existing redacted key",
+      "[已拦截]": "key pattern",
+      "[已拦截]#2": "entry value",
+      "[REDACTED]#2": "endpoint",
+      "[REDACTED]#3": "existing redacted key",
     });
     const serialized = JSON.stringify(result);
     for (const secret of [apiKey, endpoint, "sk-abcdefghijklmnop", "Bearer private-value"]) {
@@ -137,6 +138,44 @@ describe("debug bundle redaction", () => {
       save: true,
     });
     expect(bundle.truncated.overLimit).toBeUndefined();
+  });
+
+  it("exports a bundle with planted ADC credentials removed from saves, logs and prompts", async () => {
+    const pem = "-----BEGIN RSA PRIVATE KEY-----\nsecret-key-material\n-----END RSA PRIVATE KEY-----";
+    const adc = { type: "service_account", private_key: pem };
+    const userAdc = { refresh_token: "1//planted-refresh", client_secret: "planted-client-secret" };
+    const accessToken = "ya29.planted-access-token";
+    const bundle = buildDebugBundle({
+      save: { adc, userAdc, log: [{ text: "sk-planted-api-key" }] },
+      traces: [],
+      pipelineCalls: [{
+        systemPrompt: JSON.stringify(adc),
+        userMessages: [{ content: JSON.stringify(JSON.stringify(userAdc)) }],
+        response: "Authorization: Bearer planted-bearer-token",
+      }],
+      errors: [{ message: accessToken }],
+    });
+    expect(bundle.redactions).toBeGreaterThanOrEqual(9);
+    const standaloneRefreshToken = "1//0mock-google-refresh-token_123";
+    bundle.errors.push({ message: "Bearer late-token-value" }, { message: `OAuth error: ${standaloneRefreshToken}` });
+    const createUrl = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock");
+    const anchor = { click: vi.fn(), remove: vi.fn() };
+    vi.stubGlobal("document", { createElement: () => anchor, body: { appendChild: vi.fn() } });
+    try {
+      downloadDebugBundle(bundle);
+      expect(anchor.click).toHaveBeenCalledOnce();
+      const exported = await createUrl.mock.calls[0][0].text();
+      for (const secret of [accessToken, "late-token-value", "planted-bearer-token", "sk-planted-api-key",
+        "secret-key-material", "PRIVATE KEY-----", "private_key", "refresh_token", "client_secret", standaloneRefreshToken, ...Object.values(userAdc)]) {
+        expect(exported).not.toContain(secret);
+      }
+      expect(exported).toContain("[已拦截]");
+      expect(JSON.parse(exported).errors.at(-1).message).toBe("OAuth error: [已拦截]");
+      expect(JSON.parse(exported).redactions).toBe(bundle.redactions + 2);
+    } finally {
+      createUrl.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("measures the pretty-printed JSON used by the download", () => {

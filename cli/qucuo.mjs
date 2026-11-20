@@ -2,8 +2,10 @@ import { access, appendFile, readFile, writeFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { stdin, stdout } from "node:process";
 import { basename, dirname, resolve } from "node:path";
+import { webcrypto } from "node:crypto";
 import { createSession, parseSeed, runScript } from "./runner.mjs";
-import { createHttpAi, createMockAi, createRecordingAi, createReplayAi } from "../src/engine/ports/ai.js";
+import { createHttpAi, createMockAi, createRecordingAi, createReplayAi, createWebAi } from "../src/engine/ports/ai.js";
+import { createVertexAuth, parseVertexAdc, vertexDefaultProject } from "../src/infra/vertexAdc.js";
 
 const print = (text) => stdout.write(`${text}\n`);
 
@@ -15,6 +17,8 @@ async function main() {
   let repliesFile;
   let replayFile;
   let model;
+  let project;
+  let location;
   let recordFile;
   const nextValue = (name, index) => {
     const value = args[index + 1];
@@ -45,6 +49,12 @@ async function main() {
       case "--model":
         model = nextValue("--model", i);
         i++;
+        break;
+      case "--project":
+        project = nextValue("--project", i++);
+        break;
+      case "--location":
+        location = nextValue("--location", i++);
         break;
       case "--record":
         recordFile = nextValue("--record", i);
@@ -82,6 +92,19 @@ async function main() {
     model ||= "deepseek-flash";
     apiCfg = { apiType: "openai", model, endpoint: "https://api.deepseek.com/chat/completions" };
     ai = createHttpAi({ baseUrl: "https://api.deepseek.com", apiKey, model });
+  } else if (aiType === "vertex") {
+    const path = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (!path) throw new Error("请将 GOOGLE_APPLICATION_CREDENTIALS 设为 ADC JSON 文件路径");
+    const adc = parseVertexAdc(await readFile(path, "utf8").catch(() => { throw new Error("无法读取 ADC JSON 文件"); }));
+    const getVertexHeaders = createVertexAuth(adc, {
+      fetch: (url, options) => fetch(url, { ...options, signal: AbortSignal.timeout(60000) }),
+      crypto: webcrypto, now: Date.now,
+    });
+    apiCfg = {
+      apiType: "vertex", vertexModel: model,
+      vertexProject: project || vertexDefaultProject(adc), vertexLocation: location || "global",
+    };
+    ai = createWebAi({ getVertexHeaders });
   } else if (aiType) {
     throw new Error(`Unknown AI adapter: ${aiType}`);
   }

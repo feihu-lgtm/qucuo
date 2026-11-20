@@ -7,15 +7,14 @@
 // 退回系统自带的 notes 短句，绝不因为战报生成失败而中断战斗——战斗本身
 // 一秒都不依赖网络。
 
-import { loadConfig, callModel } from "../../infra/apiConfig.js";
+import { loadConfig, callModel, hasApiCredentials } from "../../infra/apiConfig.js";
 
 // 当前配置里有没有可用的 key（判断"能不能调 AI 战报"）。UI 拿它决定
-// 是否显示"已启用 AI 战报"的提示。判断从宽：有 apiKey 字段且非空即认为可用，
+// 是否显示"已启用 AI 战报"的提示。判断从宽：有凭证即认为可用，
 // 真正能不能通只有发出去才知道，失败自然会走降级。
 export function hasApiKey() {
   try {
-    const cfg = loadConfig();
-    return !!(cfg && cfg.apiKey && String(cfg.apiKey).trim());
+    return hasApiCredentials(loadConfig());
   } catch {
     return false;
   }

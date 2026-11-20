@@ -12,7 +12,7 @@
 
 一款在浏览器里玩的中文武侠文字 RPG。舞台是藏地风格的高原山乡，AI 给你当说书人、回合制切磋、和各色 NPC 打交道，地图是写死的江湖拓扑——纯前端运行，不用装任何东西，打开网页就能玩。
 
-> **在线体验**：打开 [feihu-lgtm.github.io/qucuo](https://feihu-lgtm.github.io/qucuo/)，在设置里填入自己的 AI API 密钥（OpenAI 兼容格式，如 DeepSeek / 硅基流动 / 各类中转站）即可游玩。密钥仅存于你本地浏览器，不上传任何服务器。
+> **在线体验**：打开 [feihu-lgtm.github.io/qucuo](https://feihu-lgtm.github.io/qucuo/)，在设置里填写 OpenAI 兼容 API 密钥，或导入 Vertex AI 的 ADC JSON，即可游玩。
 
 ---
 
@@ -23,7 +23,7 @@
 
 ## 新手教程
 
-**第一步 · 填 API 密钥**：进游戏后点左上角 `⚙ 设置` → `API 配置`，填入你自己的密钥（OpenAI 兼容格式，如 DeepSeek、硅基流动或各类中转站均可），保存即可开始。密钥只存在你本地浏览器，不上传任何服务器。**首次进游戏会自动弹出图文教程**覆盖在界面上；看过后不再自动弹，左上角 `📖 新手教程` 按钮随时可再打开。
+**第一步 · 配置 AI**：点 `⚙ 设置` → `API 配置`，填入 OpenAI 兼容 API 密钥，或选「Vertex AI」导入 ADC JSON。**首次进游戏会自动弹出图文教程**覆盖在界面上；看过后不再自动弹，左上角 `📖 新手教程` 按钮随时可再打开。
 
 **界面分三栏**：
 
@@ -146,7 +146,32 @@ npx vitest run    # 跑测试（纯函数/数据层回归，498 条）
 
 也可直接双击 `启动游戏.command`（macOS）或 `启动游戏.bat`（Windows）一键运行。
 
-首次运行需在设置面板填入 AI API 密钥（Anthropic / Gemini / OpenAI 兼容任选其一）。
+首次运行需在设置面板填入 OpenAI 兼容 API 密钥，或按下面的步骤配置 Vertex AI。
+
+### 使用 Vertex AI
+
+- **网页**：打开「设置」→「API 配置」→「服务商」选「Vertex AI」，在「导入 ADC JSON」选择你的本地文件。确认「项目 ID」（默认取用户凭证的 `quota_project_id` 或服务账号的 `project_id`）和「位置」（默认 `global`）。可选「Vertex 预设模型」（默认 `google/gemini-3.8-flash`），也可直接编辑「模型名称」。关闭设置，开始或加载游戏，在输入框输入「探索石阶」并发送。
+- **CLI**：在项目目录执行下面的命令。输入「探索石阶」并回车，再输入 `:state` 查看回合结果，按 Ctrl+D 退出。需要覆盖项目或位置时，可加 `--project 项目ID` 或 `--location us-central1`。
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS="/你的路径/adc.json" npm run cli -- --ai vertex --model google/gemini-3.8-flash
+```
+
+Vertex 预设模型（按设置中的顺序）：
+
+1. `google/gemini-3.8-flash`（默认）
+2. `google/gemini-3.7-flash`
+3. `google/gemini-3.6-flash`
+4. `google/gemini-3.5-flash`
+5. `google/gemini-3-flash-preview`
+6. `google/gemini-3.1-pro-preview`
+7. `google/gemini-3.5-flash-lite`
+8. `google/gemini-3.1-flash-lite`
+9. `google/gemini-4-hydrogen`（需开通 Gemini 4 额度）
+
+用户在自己的项目用真实 ADC 测试：前 8 个模型返回 HTTP 200，`gemini-4-*` 返回 429，`gemini-2.5-*` 返回 404。模型是否可用取决于项目权限和额度。
+
+网页直连 Google，不用代理。请只在你信任的设备和站点上导入凭证，不要把 ADC 文件发给别人。
 
 ## 目录结构
 

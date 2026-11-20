@@ -1,9 +1,10 @@
 // API 配置与统一调用层
-// 支持 Anthropic 原生格式 / OpenAI 兼容格式 / Gemini API 三种后端，
-// 上层调用者只需要传 (systemPrompt, messages)，不需要关心具体是哪家供应商。
-
 import { DEFAULT_WHISPER_WORDS } from "../domain/narrator/narrator.js";
 import { observeAi } from "../core/observeAi.js";
+import { readSSE } from "./apiSse.js";
+import { getStoredVertexHeaders, hasVertexCredential } from "./vertexCredentials.js";
+import { getApiModel } from "../core/apiModel.js";
+export { importVertexCredential } from "./vertexCredentials.js";
 
 const CONFIG_KEY = "wuxia_mud_api_config";
 
@@ -25,6 +26,7 @@ export const API_TYPES = {
   ANTHROPIC: "anthropic",
   OPENAI: "openai",
   GEMINI: "gemini",
+  VERTEX: "vertex",
   QWEN: "qwen", // 通义千问（阿里百炼）——协议完全 OpenAI 兼容，内部走 OPENAI 同一套逻辑，
                 // 只是预设好 base_url，用户填 key + 模型名（如 qwen3.5-plus-2026-04-20）即可。
 };
@@ -104,6 +106,8 @@ export function defaultConfig() {
     apiType: API_TYPES.ANTHROPIC,
     endpoint: "https://api.anthropic.com/v1/messages",
     apiKey: "",
+    vertexProject: "",
+    vertexLocation: "global",
     model: "claude-sonnet-4-6",
     temperature: 1.0,
     targetWordCount: 900, // 用户真正关心的：这一轮想要大约多少个汉字，不是 token 数
@@ -267,9 +271,6 @@ function withProxy(url, cfg) {
   return url;
 }
 
-// OpenAI 兼容地址处理：默认不补全（autoComplete=false），用户填什么就原样发什么，
-// 只去掉末尾多余斜杠——因为有的家地址本就是完整/非标准路径，硬补 /v1/chat/completions
-// 反而 404。只有显式勾选了自动补全（autoComplete=true）才走原来的补路径逻辑。
 function normalizeOpenAIEndpoint(endpoint, autoComplete = false) {
   const url = endpoint.trim().replace(/\/+$/, "");
   if (!autoComplete) return url;
@@ -305,19 +306,12 @@ function normalizeGeminiBase(endpoint) {
 
 // 按思考档位给 OpenAI 兼容请求体注入参数。没有单一通用参数，故多塞几个无害兼容字段，
 // 谁认谁生效、不认的自动忽略：reasoning_effort（Gemini 官方兼容口）+ enable_thinking（Qwen/硅基）。
-function applyThinkingOpenAI(body, cfg) {
+function applyThinkingOpenAI(body, cfg, vertex) {
   const mode = cfg.thinkingMode || "off";
-  if (mode === "off") {
-    body.reasoning_effort = "none";
-    body.enable_thinking = false;
-  } else if (mode === "custom") {
-    const b = Number(cfg.thinkingBudget) || 0;
-    if (b <= 0) { body.reasoning_effort = "none"; body.enable_thinking = false; }
-    else { body.reasoning_effort = b < 1024 ? "low" : b < 4096 ? "medium" : "high"; body.enable_thinking = true; }
-  } else {
-    body.reasoning_effort = mode; // low | medium | high
-    body.enable_thinking = true;
-  }
+  const budget = Number(cfg.thinkingBudget) || 0;
+  const effort = mode === "custom" ? (budget <= 0 ? "off" : budget < 1024 ? "low" : budget < 4096 ? "medium" : "high") : mode;
+  body.reasoning_effort = vertex ? vertex.vertexReasoningEffort(body.model, effort) : (effort === "off" ? "none" : effort);
+  if (!vertex) body.enable_thinking = effort !== "off";
 }
 
 // Gemini 原生口：thinkingConfig.thinkingBudget（0=关）。
@@ -504,6 +498,46 @@ function formatBlock(b) {
   return `[${b.tavernLabel || b.tavernBlock || "system"}]\n${b.content || ""}`;
 }
 
+export function hasApiCredentials(cfg) {
+  return cfg.apiType === API_TYPES.VERTEX ? hasVertexCredential() : !!String(cfg.apiKey || "").trim();
+}
+
+const isOpenAICompatible = type => [API_TYPES.OPENAI, API_TYPES.QWEN, API_TYPES.VERTEX].includes(type);
+
+async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
+  const vertex = cfg.apiType === API_TYPES.VERTEX ? await import("./vertexAdc.js") : null;
+  const url = vertex ? vertex.buildVertexEndpoint(cfg.vertexProject, cfg.vertexLocation)
+    : withProxy(normalizeOpenAIEndpoint(cfg.endpoint || DEFAULT_ENDPOINTS[cfg.apiType], cfg.openaiAutoComplete), cfg);
+  const system = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock) : [systemPrompt];
+  const maxTokens = opts.maxTokens ?? cfg.maxTokens;
+  const body = {
+    model: getApiModel(cfg), max_tokens: vertex ? Math.min(maxTokens ?? 65535, 65535) : clampMaxTokensForType(maxTokens, cfg),
+    temperature: opts.temperature ?? cfg.temperature,
+    messages: [...system.map(content => ({ role: "system", content })), ...(vertex ? vertex.prepareVertexMessages(messages) : messages)],
+  };
+  if (stream) Object.assign(body, { stream: true, stream_options: { include_usage: true } });
+  else for (const [option, field] of [["topP", "top_p"], ["frequencyPenalty", "frequency_penalty"], ["presencePenalty", "presence_penalty"]]) {
+    const value = opts[option] ?? cfg[option];
+    if (value != null) body[field] = value;
+  }
+  applyThinkingOpenAI(body, cfg, vertex);
+  const auth = vertex ? await (opts.getVertexHeaders || (() => getStoredVertexHeaders(fetchWithTimeout)))()
+    : { Authorization: `Bearer ${cfg.apiKey}` };
+  try {
+    const res = await fetchWithTimeout(url, {
+      method: "POST", headers: { "Content-Type": "application/json", ...auth },
+      body: JSON.stringify(body), ...(vertex ? { redirect: "error" } : {}),
+    });
+    if (vertex && !res.ok) throw await vertex.vertexResponseError(res, auth.Authorization);
+    if (stream) return res;
+    return vertex ? await res.json().catch(() => { throw new Error("Vertex AI 返回的内容无法解析"); })
+      : await readJsonOrThrow(res, "OpenAI 兼容调用");
+  } catch (error) {
+    if (vertex && error.code === "network") throw new Error("Vertex AI 网络请求失败");
+    throw error;
+  }
+}
+
 // 统一调用入口。返回 { text, raw } ；text 是模型输出的纯文本。
 // systemPrompt: string | [{role:'system', content:string, tavernBlock?, tavernLabel?}]
 // messages: [{role:'user'|'assistant', content:string}]
@@ -566,25 +600,9 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
       finishReason = raw.stop_reason;
       usage = raw.usage;
 
-    } else if ((cfg.apiType === API_TYPES.OPENAI || cfg.apiType === API_TYPES.QWEN)) {
-      const url = withProxy(normalizeOpenAIEndpoint(cfg.endpoint || (cfg.apiType === API_TYPES.QWEN ? QWEN_DEFAULT_ENDPOINT : "https://api.openai.com/v1/chat/completions"), cfg.openaiAutoComplete), cfg);
-      const systemMessages = Array.isArray(systemPrompt)
-        ? systemPrompt.map(b => ({ role: "system", content: formatBlock(b) }))
-        : [{ role: "system", content: systemPrompt }];
-      const obody = { model: cfg.model, max_tokens: clampMaxTokensForType(maxTokens, cfg), temperature, messages: [...systemMessages, ...messages] };
-      // OpenAI（及兼容中转站）支持 top_p/frequency_penalty/presence_penalty，
-      // 但没有 top_k 这个概念，即便配置了也不传。
-      if (topP != null) obody.top_p = topP;
-      if (frequencyPenalty != null) obody.frequency_penalty = frequencyPenalty;
-      if (presencePenalty != null) obody.presence_penalty = presencePenalty;
-      applyThinkingOpenAI(obody, cfg);
-      const res = await fetchWithTimeout(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${cfg.apiKey}` },
-        body: JSON.stringify(obody),
-      });
-      raw = await readJsonOrThrow(res, "OpenAI 兼容调用");
-      if (raw.error) throw new Error(raw.error.message || "OpenAI 兼容 API 错误");
+    } else if (isOpenAICompatible(cfg.apiType)) {
+      raw = await fetchOpenAI(cfg, systemPrompt, messages, opts);
+      if (raw.error) throw new Error((cfg.apiType !== API_TYPES.VERTEX && raw.error.message) || "OpenAI 兼容 API 错误");
       text = stripReasoning(raw.choices?.[0]?.message?.content || "");
       finishReason = raw.choices?.[0]?.finish_reason;
       usage = raw.usage;
@@ -687,18 +705,8 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
         }
       });
 
-    } else if ((cfg.apiType === API_TYPES.OPENAI || cfg.apiType === API_TYPES.QWEN)) {
-      const url = withProxy(normalizeOpenAIEndpoint(cfg.endpoint || (cfg.apiType === API_TYPES.QWEN ? QWEN_DEFAULT_ENDPOINT : "https://api.openai.com/v1/chat/completions"), cfg.openaiAutoComplete), cfg);
-      const systemMessages = Array.isArray(systemPrompt)
-        ? systemPrompt.map(b => ({ role: "system", content: formatBlock(b) }))
-        : [{ role: "system", content: systemPrompt }];
-      const obody = { model: cfg.model, max_tokens: clampMaxTokensForType(maxTokens, cfg), temperature, messages: [...systemMessages, ...messages], stream: true, stream_options: { include_usage: true } };
-      applyThinkingOpenAI(obody, cfg);
-      const res = await fetchWithTimeout(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${cfg.apiKey}` },
-        body: JSON.stringify(obody),
-      });
+    } else if (isOpenAICompatible(cfg.apiType)) {
+      const res = await fetchOpenAI(cfg, systemPrompt, messages, opts, true);
       if (!res.ok) {
         const errData = await res.json().catch(() => null);
         throw new Error(errData?.error?.message || `OpenAI 兼容 API HTTP ${res.status}`);
@@ -722,32 +730,6 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
   }
 }
 
-// SSE 通用读取器：解析 "data: {...}" 格式的流，遇到 [DONE] 停止。
-// 每解析出一个合法 JSON 事件就调用一次 onEvent(parsedObject)。
-async function readSSE(res, onEvent) {
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder("utf-8");
-  let buf = "";
-  const handleLine = (line) => {
-    const trimmed = line.trim();
-    if (!trimmed.startsWith("data:")) return;
-    const dataStr = trimmed.slice(5).trim();
-    if (!dataStr || dataStr === "[DONE]") return;
-    try { onEvent(JSON.parse(dataStr)); } catch { /* 跳过无法解析的单条事件，不影响后续流 */ }
-  };
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop(); // 保留最后一行（可能不完整）到下一轮
-    for (const line of lines) handleLine(line);
-  }
-  // 流结束后，缓冲区里可能还残留最后一个"没有以换行收尾"的事件——
-  // 某些中转站（尤其假流式）最后一段不补换行，若不 flush 就会丢掉尾部内容，造成"莫名截断"。
-  if (buf) buf.split("\n").forEach(handleLine);
-}
-
 // 自动检测可用模型列表。
 // - OpenAI 兼容（含 DeepSeek 等）：真实调用 GET /models
 // - Gemini：真实调用 GET /v1beta/models
@@ -757,6 +739,7 @@ const ANTHROPIC_KNOWN_MODELS = [
 ];
 
 export async function listModels(cfg) {
+  if (cfg.apiType === API_TYPES.VERTEX) throw new Error("Vertex AI 请手动填写模型名称");
   if (cfg.apiType === API_TYPES.ANTHROPIC) {
     return ANTHROPIC_KNOWN_MODELS;
   }

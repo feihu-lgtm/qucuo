@@ -7,6 +7,7 @@ import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
 import { buildHistBlock, histBlockSavings } from "../domain/memory/histWindow.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
+import { getApiModel } from "../core/apiModel.js";
 
 const MAX_AUTO_RETRY = 2;
 
@@ -126,8 +127,8 @@ async function runTurnSteps(ctx, cmd, opts) {
         rawFull = result.rawFull;
         mainFinishReason = result.finishReason;
         trace("AI调用", "pass", attempt > 1
-          ? `主叙事第${attempt}次尝试成功（双调用·主叙事模型=${apiCfg.model || "未设置"}）`
-          : `主叙事一次成功（双调用·主叙事模型=${apiCfg.model || "未设置"}）`);
+          ? `主叙事第${attempt}次尝试成功（双调用·主叙事模型=${getApiModel(apiCfg) || "未设置"}）`
+          : `主叙事一次成功（双调用·主叙事模型=${getApiModel(apiCfg) || "未设置"}）`);
         break;
       } catch (error) {
         if (ctx.isStale?.()) return { stale: true };
@@ -202,8 +203,8 @@ async function runTurnSteps(ctx, cmd, opts) {
         rawFull = result.rawFull;
         finishReason = result.finishReason;
         trace("AI调用", "pass", attempt > 1
-          ? `第${attempt}次重试后成功（单调用·主模型=${apiCfg.model || "未设置"}）`
-          : `一次成功（单调用·主模型=${apiCfg.model || "未设置"}）`);
+          ? `第${attempt}次重试后成功（单调用·主模型=${getApiModel(apiCfg) || "未设置"}）`
+          : `一次成功（单调用·主模型=${getApiModel(apiCfg) || "未设置"}）`);
       } catch (error) {
         if (ctx.isStale?.()) return { stale: true };
         if (attempt <= MAX_AUTO_RETRY) {
