@@ -153,4 +153,13 @@ describe("收复雪豹", () => {
     await callExtraction("TALK_CASUAL", "你替雪豹挠了痒。", state, {}, null, { chat });
     expect(chat.mock.calls[0][0][0].content).toContain("snow_spirit_scratch");
   });
+
+  it("permits only the meat spirit in dual-call leopard gift extraction", async () => {
+    const chat = vi.fn().mockResolvedValue({ text: '{"delta":{"flags_add":["snow_spirit_meat"]}}' });
+    const result = await callExtraction("TALK_CASUAL", "雪豹吃掉了肉。", active(), {}, { settleKind: "gift", settleNpc: "雪豹" }, { chat });
+    const prompt = chat.mock.calls[0][0][0].content;
+    expect(prompt).toContain("flags_add只允许snow_spirit_meat");
+    expect(prompt).not.toContain("snow_spirit_scratch");
+    expect(result.p.delta.flags_add).toEqual(["snow_spirit_meat"]);
+  });
 });

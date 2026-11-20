@@ -135,9 +135,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   const schemaBlock = narrativeOnly
     ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。`
     : isSettle
-      ? `回复纯JSON，字符串不换行。这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文：
+      ? `回复纯JSON，字符串不换行。${opts.snowLeopardGift ? "这一轮的数值与状态变化由系统结算，只把已经确定发生的事写成生动的正文：" : "这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文："}
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
-不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。不要重复结算任何奖励、物品、银两或状态。
+${opts.snowLeopardGift ? '唯一例外：收复雪豹任务进行中且雪豹在场，本次赠礼若为肉，可输出 "delta":{"flags_add":["snow_spirit_meat"]}；非肉则拒吃并讲个短笑话，不加flag。delta只允许flags_add，且只允许snow_spirit_meat，不得输出其他flag或状态。不要输出 room / char / dao。' : '不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。'}不要重复结算任何奖励、物品、银两或状态。
 "memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
 在 JSON 输出完毕之后，另起一行输出 <mvu> 块（不要放进 JSON 内部）。该写什么、能写什么，见上文规则。` : ""}`
       : scope === "move"

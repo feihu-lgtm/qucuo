@@ -295,7 +295,7 @@ export async function callExtraction(intentCode, narrative, state, apiCfg, settl
   const cfg = buildExtractionCfg(settleSpecKey || intentCode, apiCfg);
   const systemPrompt = spec.system;
   // 公共字段统一拼在末尾，避免各意图的 schema 漂移。
-  const userContent = spec.user(narrative, state, settleOpts) + commonExtractTail(state.char?.name) + snowLeopardNote({ ...state, settleNpc: settleOpts?.settleNpc });
+  const userContent = spec.user(narrative, state, settleOpts) + commonExtractTail(state.char?.name) + snowLeopardNote({ ...state, ...settleOpts });
 
   const { text } = await ai.chat(
     [{ role: "user", content: userContent }],

@@ -83,7 +83,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   return {
     cmd, newConvo, mainConvo, hist, budgetInstruction,
     ctx: context,
-    snowLeopardContext: snowLeopardNote({ ...input, cmd, settleNpc: opts.settleNpc }),
+    snowLeopardContext: snowLeopardNote({ ...input, cmd, settleNpc: opts.settleNpc, settleKind: opts.settleKind }),
     npcLoreBlockWithQuest: npcContext.npcLoreBlockWithQuest || "",
     reunionBlock: npcContext.reunionBlock || "",
     lastAiText: npcContext.lastAiText || "",
