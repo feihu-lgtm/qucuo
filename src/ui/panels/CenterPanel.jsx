@@ -10,12 +10,13 @@
 //   8. NPC 人选选择器、飞鸽传书状态条、底部输入框
 //
 // 游戏数据经 props 下传，overlay 显隐读 uiStore，本地只保留建筑页签状态。
-import GroundItemStrip from "../components/GroundItemStrip.jsx";
 import TurnStatusPill from "../components/TurnStatusPill.jsx";
+import CenterControlRows from "./CenterControlRows.jsx";
+import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { DevControls, TurnControls } from "./TopBar.jsx";
 import { chromeBtn } from "../theme.js";
 import { useState, useEffect } from "react";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
-import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { BUILDING_TYPE } from "../../domain/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
@@ -97,6 +98,7 @@ export default function CenterPanel({
   nsfwOn, setNsfwOn,
   meditate, justMeditated,
   interactMode, activeTarget, setActiveTarget, setTalkTarget,
+  activeGroundItem, setActiveGroundItem,
   pigeonTarget, setPigeonTarget, pigeonDelayShichen,
   input, setInput, inputRef, onKey, composingRef,
 }) {
@@ -126,20 +128,11 @@ export default function CenterPanel({
   const showBasement = useOverlay(OVERLAY.BASEMENT);
   return (
         <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", display: mobileColumn === "center" ? "flex" : "none" } : { flex: 55, ...S.panel }}>
-          <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="mobile-hide" style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>江湖</span>
-            <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              {loading && <span onClick={stopRunning}
-                className="mobile-touch-target"
-                style={chromeBtn(zoneTheme)}>⏹ 停止</span>}
-              <span className="mobile-touch-target" onClick={rollbackBlocked ? undefined : rollbackOneStep}
-                aria-disabled={rollbackBlocked}
-                title="撤销上一步行动，还原到落子之前"
-                style={{ ...chromeBtn(zoneTheme), ...(rollbackBlocked ? { color: zoneTheme.textDim, cursor: "not-allowed" } : {}) }}>
-                {rollbackBlocked ? "等待落盘" : "↩ 回滚"}
-              </span>
-              <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={chromeBtn(zoneTheme, { active: showDebug })}>调试</span>
-              <span className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={chromeBtn(zoneTheme, { active: gm })}>/gamemode {gm ? "0" : "1"}</span>
+            <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <TurnControls theme={zoneTheme} loading={loading} stopRunning={stopRunning} rollbackBlocked={rollbackBlocked} rollbackOneStep={rollbackOneStep} />
+              <DevControls theme={zoneTheme} gm={gm} setGm={setGm} addLog={addLog} />
             </span>
           </div>
 
@@ -625,76 +618,28 @@ export default function CenterPanel({
             </div>
           )}
 
-          <div className="mobile-control-row" style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
-            {[["action", "◈ 行动"], ["talk", "◎ 对话"], ["whisper", "◆ 私聊旁白"]].map(([id, label]) => (
-              <span
-                key={id}
-                className="mobile-touch-target mobile-mode-control"
-                onClick={() => { setInteractMode(id); setTalkTarget(null); setActiveTarget(null); setPigeonTarget(null); }}
-                style={chromeBtn(zoneTheme, { active: interactMode === id })}
-              >{label}</span>
-            ))}
-            <span
-              className="mobile-touch-target mobile-mode-control"
-              onClick={() => setNsfwOn(x => !x)}
-              title={nsfwOn ? "已开启：NSFW 写作规则已注入" : "已关闭：点击开启 NSFW 写作规则"}
-              style={chromeBtn(zoneTheme, { active: nsfwOn })}
-            >NSFW</span>
-            <span style={{ flex: 1 }} />
-            {/* 注：运气·内功+1 / 拆招·外功+1 两个升级按钮已移至右栏「内功外功」区，
-                挂在对应数值行后面，就近操作。这里只留打坐（恢复气血，非升级）。 */}
-            <span
-              className="mobile-touch-target mobile-mode-control"
-              onClick={meditate}
-              title="打坐运功：消耗1回合，恢复部分气血"
-              style={{
-                ...chromeBtn(zoneTheme, { active: justMeditated }),
-                transform: justMeditated ? "scale(0.95)" : "scale(1)",
-                transition: "all 0.15s ease",
-              }}
-            >⊙ 打坐{justMeditated ? "…" : ""}</span>
-          </div>
-
-          {/* ── NPC 人选选择器：点选某人 → 对话/行动聚焦此人；不选=全人物发给AI ── */}
-          {interactMode !== "whisper" && interactMode !== "pigeon" && room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).length > 0 && (
-            <div className="mobile-people-row" style={{
-              padding: "6px 14px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
-              borderTop: `1px solid ${zoneTheme.border}`, flexWrap: "wrap",
-            }}>
-              <span style={{ color: zoneTheme.textDim, fontSize: "10px", flexShrink: 0 }}>人选：</span>
-              <span
-                className="mobile-touch-target mobile-person-chip"
-                onClick={() => { setActiveTarget(null); setTalkTarget(null); }}
-                style={chromeBtn(zoneTheme, { active: !activeTarget })}
-              >全部</span>
-              {room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => {
-                const isSel = activeTarget === n.name;
-                return (
-                  <span
-                    key={n.name}
-                    className="mobile-touch-target mobile-person-chip"
-                    onClick={() => { setActiveTarget(n.name); if (interactMode !== "action") setTalkTarget(n.name); }}
-                    title={isSel ? "点击「全部」取消选定" : `聚焦 ${n.name}`}
-                    style={chromeBtn(zoneTheme, { active: isSel })}
-                  >{n.name}</span>
-                );
-              })}
-            </div>
-          )}
-
-          {interactMode === "pigeon" && pigeonTarget && (() => {
-            const { delay, loc } = pigeonDelayShichen(pigeonTarget);
-            return (
-              <div style={{ padding: "6px 16px 0", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, fontSize: "11px" }}>
-                <span style={{ color: "#c4a040" }}>🕊 飞鸽传书 · 致「{pigeonTarget}」</span>
-                <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>信往{loc}，约 {delay} 时辰后有回音</span>
-                <span style={{ flex: 1 }} />
-                <span className="mobile-touch-target" onClick={() => { setPigeonTarget(null); setInteractMode("action"); }} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "10px" }}>× 取消</span>
-              </div>
-            );
-          })()}
-          <GroundItemStrip items={room.items} theme={zoneTheme} onPickUp={handleCollectGround} />
-          <TurnStatusPill theme={zoneTheme} mobile={isMobile} /><div className="mobile-input-bar" style={{
+          <CenterControlRows
+            isMobile={isMobile} mobileColumn={mobileColumn} zoneTheme={zoneTheme}
+            room={room} innerRoomName={innerRoomName}
+            handleCollectGround={handleCollectGround}
+            setInteractMode={setInteractMode} interactMode={interactMode} activeTarget={activeTarget}
+            setActiveTarget={setActiveTarget} setTalkTarget={setTalkTarget} setPigeonTarget={setPigeonTarget}
+            activeGroundItem={activeGroundItem} setActiveGroundItem={setActiveGroundItem}
+            nsfwOn={nsfwOn} setNsfwOn={setNsfwOn} meditate={meditate} justMeditated={justMeditated}
+          >
+            {interactMode === "pigeon" && pigeonTarget && (() => {
+              const { delay, loc } = pigeonDelayShichen(pigeonTarget);
+              return (
+                <div style={{ padding: "6px 16px 0", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, fontSize: "11px" }}>
+                  <span style={{ color: "#c4a040" }}>🕊 飞鸽传书 · 致「{pigeonTarget}」</span>
+                  <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>信往{loc}，约 {delay} 时辰后有回音</span>
+                  <span style={{ flex: 1 }} />
+                  <span className="mobile-touch-target" onClick={() => { setPigeonTarget(null); setInteractMode("action"); }} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "10px" }}>× 取消</span>
+                </div>
+              );
+            })()}
+          </CenterControlRows>
+          {!isMobile && <TurnStatusPill theme={zoneTheme} />}<div className="mobile-input-bar" style={{
             borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid #4a3a1a" : `1px solid ${zoneTheme.border}`,
             background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
             padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,

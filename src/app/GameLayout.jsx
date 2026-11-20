@@ -26,6 +26,7 @@ export default function GameLayout({ layout }) {
     setActiveBuilding, setActiveItemMenu, setActiveNpcMenu, setCharacterPageTarget,
     setPigeonTarget, setInteractMode, inputRef, addLog, pigeonTarget, portraits,
     portraitTarget, setPortraitTarget, interactMode, activeTarget, setActiveTarget,
+    activeGroundItem, setActiveGroundItem,
     talkTarget, setTalkTarget,
     playerAvatar, slImgErr, setSlImgErr, slForm, setSnowLeopardForm,
     setSlFormState, pearlForm, setPearlForm, setPearlFormState, pearlImgErr,
@@ -131,6 +132,7 @@ export default function GameLayout({ layout }) {
         autoSaveError={autoSaveError} lastAutoSave={lastAutoSave}
         playerAvatarCustom={playerAvatarCustom} setPlayerAvatarCustom={setPlayerAvatarCustom}
         AV_BASE={AV_BASE} genderAvatar={genderAvatar}
+        turnControls={{ loading, stopRunning, rollbackBlocked, rollbackOneStep }} gm={gm} setGm={setGm} addLog={addLog}
       />
 
       {overlayHost}
@@ -207,6 +209,7 @@ export default function GameLayout({ layout }) {
           nsfwOn={nsfwOn} setNsfwOn={setNsfwOn}
           meditate={meditate} justMeditated={justMeditated}
           interactMode={interactMode} activeTarget={activeTarget} setActiveTarget={setActiveTarget}
+          activeGroundItem={activeGroundItem} setActiveGroundItem={setActiveGroundItem}
           setTalkTarget={setTalkTarget}
           pigeonTarget={pigeonTarget} setPigeonTarget={setPigeonTarget} pigeonDelayShichen={pigeonDelayShichen}
           input={input} setInput={setInput} inputRef={inputRef} onKey={onKey} composingRef={composingRef}

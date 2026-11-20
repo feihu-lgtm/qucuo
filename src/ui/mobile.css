@@ -44,7 +44,36 @@
   }
 
   .mobile-menu-toggle {
-    padding: 8px 12px !important;
+    padding: 0 10px !important;
+  }
+
+  /* 顶栏一行 44px：按钮去框只留文字，点按区仍是 44px */
+  .mobile-top-row {
+    padding: 0 6px !important;
+    gap: 2px !important;
+    row-gap: 6px !important;
+    flex-wrap: wrap;
+  }
+
+  .mobile-top-row > .mobile-touch-target,
+  .mobile-top-row .mobile-center-toolbar-controls > .mobile-touch-target {
+    border-color: transparent !important;
+    background: transparent !important;
+    padding: 0 10px !important;
+  }
+
+  .mobile-top-menu {
+    padding-bottom: 6px;
+  }
+
+  .mobile-top-menu > * {
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .mobile-center-toolbar-controls {
@@ -58,6 +87,31 @@
     gap: 8px !important;
   }
 
+  .mobile-hide {
+    display: none !important;
+  }
+
+  /* 中栏控制行在窄屏上只占一行，放不下就横向滑动，不折行挤占叙事区 */
+  .mobile-control-row,
+  .mobile-people-row {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .mobile-control-row::-webkit-scrollbar,
+  .mobile-people-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-control-row > *,
+  .mobile-people-row > * {
+    flex-shrink: 0;
+  }
+
+  html[data-keyboard-open] .mobile-ground-strip,
   html[data-keyboard-open] .mobile-control-row,
   html[data-keyboard-open] .mobile-people-row {
     display: none !important;
@@ -640,5 +694,57 @@
     font-size: clamp(13px, 1.9dvh, 17px) !important;
     line-height: 1.6 !important;
     margin-bottom: 8px !important;
+  }
+}
+
+/* 手机中栏各行统一 35px 高：顶栏、模式、人选、地上、输入栏、底部栏目 */
+@media (max-width: 767px) {
+  .mobile-top-row,
+  .mobile-control-row,
+  .mobile-people-row,
+  .mobile-ground-strip,
+  .mobile-input-bar,
+  .mobile-tab-bar {
+    box-sizing: border-box;
+    min-height: 35px !important;
+    align-items: center !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .mobile-control-row,
+  .mobile-people-row,
+  .mobile-ground-strip,
+  .mobile-input-bar {
+    height: 35px;
+  }
+
+  .mobile-tab-bar {
+    height: calc(35px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+
+  .mobile-tab-bar > button {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-top-row .mobile-touch-target,
+  .mobile-control-row .mobile-touch-target,
+  .mobile-people-row .mobile-touch-target,
+  .mobile-ground-strip > button,
+  .mobile-tab-bar > button {
+    min-height: 29px !important;
+    height: 29px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .mobile-top-row button,
+  .mobile-top-menu > * {
+    min-height: 29px !important;
+    height: 29px !important;
   }
 }

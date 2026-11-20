@@ -52,6 +52,16 @@ export function useGameUi({
   const [interactMode, setInteractMode] = useState("action");
   const [talkTarget, setTalkTarget] = useState(null);
   const [activeTarget, setActiveTarget] = useState(null);
+  const [activeGroundItem, setActiveGroundItem] = useState(null);
+  const activeGroundItemContextRef = useRef({ roomName: room.name, innerRoomName });
+  useEffect(() => {
+    const previous = activeGroundItemContextRef.current;
+    const contextChanged = previous.roomName !== room.name || previous.innerRoomName !== innerRoomName;
+    activeGroundItemContextRef.current = { roomName: room.name, innerRoomName };
+    const stillGrounded = (room.items || []).some(item =>
+      (typeof item === "string" ? item : item?.name) === activeGroundItem);
+    if (activeGroundItem && (contextChanged || !stillGrounded)) setActiveGroundItem(null);
+  }, [activeGroundItem, room.name, innerRoomName, room.items]);
   const [nsfwOn, setNsfwOn] = useState(true);
   const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" });
   const [pigeonTarget, setPigeonTarget] = useState(null);
@@ -230,6 +240,7 @@ export function useGameUi({
     peoplePanel, setPeoplePanel, gm, setGm, isMobile, setIsMobile, mobileColumn, setMobileColumn,
     mobileTopMenu, setMobileTopMenu, settingsInitialTab, setSettingsInitialTab,
     interactMode, setInteractMode, talkTarget, setTalkTarget, activeTarget, setActiveTarget,
+    activeGroundItem, setActiveGroundItem,
     nsfwOn, setNsfwOn, outfitState, setOutfitState, pigeonTarget, setPigeonTarget,
     activeNpcMenu, setActiveNpcMenu, activeItemMenu, setActiveItemMenu,
     playerAvatarCustom, setPlayerAvatarCustom, characterPageTarget, setCharacterPageTarget,

@@ -65,6 +65,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     queueCount,
     setQueueCount, gm, setGm, setIsMobile, setMobileTopMenu,
     interactMode, setInteractMode, talkTarget, setTalkTarget, activeTarget, setActiveTarget,
+    activeGroundItem,
     nsfwOn, setOutfitState, pigeonTarget, setPigeonTarget, apiCfg, uiScale, isDayMode,
     cmdHistory, setCmdHistory, histIdx, setHistIdx, forcedDuelNpc, setForcedDuelNpc,
     duelingNpc, setDuelingNpc, duelPending, setDuelPending, pendingQuestBranch,
@@ -230,7 +231,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 这条"look X"自己的框。
   const { act } = useTurn({
     loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
-    addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget,
+    addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
     nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
     turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
     waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,

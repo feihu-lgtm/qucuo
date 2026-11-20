@@ -91,6 +91,7 @@ export function buildLayoutCtx({ ui, game, overlayHost, autosave, actions, activ
     inputRef: ui.inputRef, addLog, pigeonTarget: ui.pigeonTarget, portraits: ui.portraits,
     portraitTarget: ui.portraitTarget, setPortraitTarget: ui.setPortraitTarget,
     interactMode: ui.interactMode, activeTarget: ui.activeTarget,
+    activeGroundItem: ui.activeGroundItem, setActiveGroundItem: ui.setActiveGroundItem,
     setActiveTarget: ui.setActiveTarget, talkTarget: ui.talkTarget, setTalkTarget: ui.setTalkTarget,
     playerAvatar: ui.playerAvatar, slImgErr: ui.slImgErr, setSlImgErr: ui.setSlImgErr,
     slForm: ui.slForm, setSnowLeopardForm,

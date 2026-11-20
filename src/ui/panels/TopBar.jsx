@@ -14,7 +14,34 @@ import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../../infra/version.js";
 import { getState as getMusicState, subscribe as subscribeMusic } from "../../infra/musicPlayer.js";
-import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
+import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
+import TurnStatusPill from "../components/TurnStatusPill.jsx";
+
+// 回合控制（停止/回滚）：桌面在中栏标题行，手机并入顶栏同一行
+export function TurnControls({ theme, loading, stopRunning, rollbackBlocked, rollbackOneStep }) {
+  return (
+    <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      {loading && <span onClick={stopRunning} className="mobile-touch-target" style={chromeBtn(theme)}>⏹ 停止</span>}
+      <span className="mobile-touch-target" onClick={rollbackBlocked ? undefined : rollbackOneStep}
+        aria-disabled={rollbackBlocked}
+        title="撤销上一步行动，还原到落子之前"
+        style={{ ...chromeBtn(theme), ...(rollbackBlocked ? { color: theme.textDim, cursor: "not-allowed" } : {}) }}>
+        {rollbackBlocked ? "等待落盘" : "↩ 回滚"}
+      </span>
+    </span>
+  );
+}
+
+// 调试开关：桌面在中栏标题行，手机收进「☰ 菜单」
+export function DevControls({ theme, gm, setGm, addLog }) {
+  const showDebug = useOverlay(OVERLAY.DEBUG);
+  return (
+    <>
+      <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={chromeBtn(theme, { active: showDebug })}>调试</span>
+      <span className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={chromeBtn(theme, { active: gm })}>/gamemode {gm ? "0" : "1"}</span>
+    </>
+  );
+}
 
 export function VersionHistoryButton({ theme }) {
   return <button type="button" onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title="点击查看版本历史目录" style={chromeBtn(theme, { active: false })}>{CURRENT_VERSION.time}</button>;
@@ -28,6 +55,7 @@ export default function TopBar({
   autoSaveError, lastAutoSave,
   playerAvatarCustom, setPlayerAvatarCustom,
   AV_BASE, genderAvatar,
+  turnControls, gm, setGm, addLog,
 }) {
   const openSettings = (tab) => dispatchCommand
     ? dispatchCommand("settings", () => {
@@ -50,22 +78,25 @@ export default function TopBar({
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "11px", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 8 }}>
+      <div className="mobile-top-row" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "11px", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 8 }}>
         {/* 手机端：顶栏收成一个☰按钮，点开才展开全部功能入口 */}
         {isMobile && (
           <>
             <span className="mobile-touch-target mobile-menu-toggle" onClick={() => setMobileTopMenu(v => !v)}
               style={{ ...topBtn(mobileTopMenu), fontSize: "13px" }}>☰ 菜单</span>
             <span style={{ flex: 1 }} />
+            {!mobileTopMenu && turnControls && <><TurnControls theme={zoneTheme} {...turnControls} /><TurnStatusPill theme={zoneTheme} mobile /></>}
             {mobileTopMenu && <span className="mobile-touch-target" onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>收起 ✕</span>}
           </>
         )}
         {/* 顶栏功能入口：桌面常显；手机仅在展开菜单时显示（换行铺开） */}
-        <div style={{
-          display: (!isMobile || mobileTopMenu) ? "flex" : "none",
+        <div className="mobile-top-menu" style={{
+          display: (!isMobile || mobileTopMenu) ? (isMobile ? "grid" : "flex") : "none",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           alignItems: "center", gap: 8, flexWrap: "wrap", rowGap: 8,
           width: isMobile ? "100%" : "auto", flex: isMobile ? "none" : 1,
         }}>
+        {isMobile && setGm && <DevControls theme={zoneTheme} gm={gm} setGm={setGm} addLog={addLog} />}
         <span
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.TUTORIAL)}
@@ -79,7 +110,7 @@ export default function TopBar({
         >图鉴</span>
         <span className="qbtn" onClick={() => openOverlay(OVERLAY.BUG_REPORT)} title="遇到问题或有建议，点这里上报" style={topBtn()}>上报bug</span>
 
-        <span style={{ flex: 1 }} />
+        <span className="mobile-hide" style={{ flex: 1 }} />
 
         {/* 右组：其余全部右对齐 */}
         <span
