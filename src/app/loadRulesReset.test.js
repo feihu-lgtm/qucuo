@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { gameActions, gameStore, initGameStore, markGameReplaced, subscribeGameReplaced } from "../core/gameStore.js";
+import { createAutosaveScheduler } from "../core/autosaveScheduler.js";
 import { createWorldRules } from "../engine/worldRules.js";
 import { applyResult } from "../features/run.js";
+import { derivedMovesetRule } from "../features/skills/rules.js";
 import { timeAdvanceRule } from "../features/time/rules.js";
 
 // 回归：网页读一个更早时间的存档时，time.advance 曾把读档造成的时间跳变当成过了一回合，
@@ -20,12 +22,15 @@ const savedState = () => ({
 
 let disconnect = () => {};
 
-function connectRunner() {
-  const runner = createWorldRules([timeAdvanceRule], {
+function connectRunner(rules = [timeAdvanceRule]) {
+  const runner = createWorldRules(rules, {
     getState: gameStore.getState,
     applyResult: (result) => applyResult({ setVarTree: gameActions.setVarTreeState, addLog: () => {} }, result),
   });
-  const unsubscribeReplaced = subscribeGameReplaced(() => runner.reset());
+  const unsubscribeReplaced = subscribeGameReplaced(() => {
+    runner.reset();
+    runner.check();
+  });
   disconnect = unsubscribeReplaced;
   return runner;
 }
@@ -98,6 +103,33 @@ describe("loading a save resets world rule history", () => {
   });
 });
 
+describe("replacement first-run writes stay out of autosave", () => {
+  it("does not arm the autosave when a silent new game or load re-runs world rules", async () => {
+    initGameStore({ ...savedState(), skills: [], char: { name: "旧档侠", moveset: [] } });
+    const runner = connectRunner([timeAdvanceRule, derivedMovesetRule]);
+    runner.check();
+    const timers = { setTimeout: vi.fn(() => 1), clearTimeout: vi.fn() };
+    const autosave = createAutosaveScheduler({
+      subscribe: gameStore.subscribe,
+      isArmed: () => true,
+      isBusy: () => false,
+      save: vi.fn(),
+      timers,
+    });
+
+    autosave.runSilently(() => {
+      gameActions.setChar({ name: "新侠", moveset: [] });
+      markGameReplaced();
+    });
+    await Promise.resolve();
+    autosave.dispose();
+
+    expect(timers.setTimeout).not.toHaveBeenCalled();
+    expect(gameStore.getState().char.name).toBe("新侠");
+    expect(gameStore.getState().char.moveset).not.toBe(undefined);
+  });
+});
+
 describe("web load paths signal a game replacement", () => {
   const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
   const between = (source, start, end) => {
@@ -110,7 +142,7 @@ describe("web load paths signal a game replacement", () => {
 
   it("the web world rules runner resets on replacement", () => {
     const source = read("./hooks/useWorldRulesRunner.js");
-    expect(source).toMatch(/subscribeGameReplaced\(\(\) => worldRulesRunnerRef\.current\.reset\(\)\)/);
+    expect(between(source, "subscribeGameReplaced(() => {", "});")).toMatch(/\.reset\(\);\s*worldRulesRunnerRef\.current\.check\(\);/);
     expect(source).toContain("unsubscribeReplaced();");
   });
 

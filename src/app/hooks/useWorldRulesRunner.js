@@ -86,7 +86,11 @@ export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuel
     const scheduler = createCoalescedCheck(() => worldRulesRunnerRef.current.check());
     const unsubscribeStore = gameStore.subscribe(scheduler.schedule);
     const unsubscribeImported = importedRegistry.subscribeImported(scheduler.schedule);
-    const unsubscribeReplaced = subscribeGameReplaced(() => worldRulesRunnerRef.current.reset());
+    // 同步重跑：首跑规则的写入落在读档/开局调用方的 runSilently 里，不会被当成游玩触发自动存档。
+    const unsubscribeReplaced = subscribeGameReplaced(() => {
+      worldRulesRunnerRef.current.reset();
+      worldRulesRunnerRef.current.check();
+    });
     scheduler.schedule();
     return () => {
       unsubscribeStore();
