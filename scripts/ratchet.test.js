@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareRatchetMetrics } from "./ratchet.mjs";
+import { compareRatchetMetrics, extractImportSpecifiers } from "./ratchet.mjs";
 
 const baseline = {
   layerViolations: { "app->ui": 2 },
@@ -9,6 +9,25 @@ const baseline = {
   largeFiles: { "app/MudRPG.jsx": 500 },
   mainJsGzipBytes: 1000,
 };
+
+describe("extractImportSpecifiers", () => {
+  it("ignores line and block comments without treating comment markers in strings as comments", () => {
+    const source = [
+      'const url = "https://example.test/path/*literal*/";',
+      '// import("../ui/line-comment.js")',
+      '/* import("../app/block-comment.js") */',
+      'import "../domain/actual.js"; // import("../ui/trailing-comment.js")',
+    ].join("\n");
+
+    expect(extractImportSpecifiers(source)).toEqual(["../domain/actual.js"]);
+  });
+
+  it("counts static template-literal imports and skips interpolated specifiers", () => {
+    const source = "import(`../ui/static.js`); import(`../features/${name}.js`);";
+
+    expect(extractImportSpecifiers(source)).toEqual(["../ui/static.js"]);
+  });
+});
 
 describe("compareRatchetMetrics", () => {
   it("passes when metrics are unchanged", () => {

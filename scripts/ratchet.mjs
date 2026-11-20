@@ -15,8 +15,65 @@ const LAYER_ORDER = {
   core: 3,
   utils: 3,
 };
-const IMPORT_SOURCE = /\b(?:from\s*|import\s*(?:\(\s*)?)["']([^"']+)["']/g;
+const IMPORT_SOURCE = /\b(?:from\s*|import\s*(?:\(\s*)?)(?:"([^"]+)"|'([^']+)'|`([^`]+)`)/g;
 const HEX_COLOR = /#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})(?![\da-f])/gi;
+
+function stripComments(source) {
+  let output = "";
+  let quote = null;
+  let escaped = false;
+  let index = 0;
+
+  while (index < source.length) {
+    const char = source[index];
+    const next = source[index + 1];
+    if (quote) {
+      output += char;
+      index += 1;
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = null;
+    } else if (char === "'" || char === "\"" || char === "`") {
+      quote = char;
+      output += char;
+      index += 1;
+    } else if (char === "/" && next === "/") {
+      output += "  ";
+      index += 2;
+      while (index < source.length && source[index] !== "\n" && source[index] !== "\r") {
+        output += " ";
+        index += 1;
+      }
+    } else if (char === "/" && next === "*") {
+      output += "  ";
+      index += 2;
+      while (index < source.length && !(source[index] === "*" && source[index + 1] === "/")) {
+        const commentChar = source[index];
+        output += commentChar === "\n" || commentChar === "\r" ? commentChar : " ";
+        index += 1;
+      }
+      if (index < source.length) {
+        output += "  ";
+        index += 2;
+      }
+    } else {
+      output += char;
+      index += 1;
+    }
+  }
+
+  return output;
+}
+
+export function extractImportSpecifiers(source) {
+  const specifiers = [];
+  for (const match of stripComments(source).matchAll(IMPORT_SOURCE)) {
+    const specifier = match[1] ?? match[2] ?? match[3];
+    if (match[3] !== undefined && specifier.includes("${")) continue;
+    specifiers.push(specifier);
+  }
+  return specifiers;
+}
 
 function listFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -57,8 +114,7 @@ function countLayerImports(files, srcRoot) {
   for (const importer of files) {
     const source = readFileSync(importer, "utf8");
     const importerLayer = layerFor(srcRoot, importer);
-    for (const match of source.matchAll(IMPORT_SOURCE)) {
-      const specifier = match[1];
+    for (const specifier of extractImportSpecifiers(source)) {
       if (!specifier.startsWith(".")) continue;
       const target = resolveRelativeImport(importer, specifier, srcRoot);
       if (!target || isTestFile(target)) continue;
