@@ -156,7 +156,8 @@ describe("debug bundle redaction", () => {
       errors: [{ message: accessToken }],
     });
     expect(bundle.redactions).toBeGreaterThanOrEqual(9);
-    bundle.errors.push({ message: "Bearer late-token-value" });
+    const standaloneRefreshToken = "1//0mock-google-refresh-token_123";
+    bundle.errors.push({ message: "Bearer late-token-value" }, { message: `OAuth error: ${standaloneRefreshToken}` });
     const createUrl = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock");
     const anchor = { click: vi.fn(), remove: vi.fn() };
     vi.stubGlobal("document", { createElement: () => anchor, body: { appendChild: vi.fn() } });
@@ -165,11 +166,12 @@ describe("debug bundle redaction", () => {
       expect(anchor.click).toHaveBeenCalledOnce();
       const exported = await createUrl.mock.calls[0][0].text();
       for (const secret of [accessToken, "late-token-value", "planted-bearer-token", "sk-planted-api-key",
-        "secret-key-material", "PRIVATE KEY-----", "private_key", "refresh_token", "client_secret", ...Object.values(userAdc)]) {
+        "secret-key-material", "PRIVATE KEY-----", "private_key", "refresh_token", "client_secret", standaloneRefreshToken, ...Object.values(userAdc)]) {
         expect(exported).not.toContain(secret);
       }
       expect(exported).toContain("[已拦截]");
-      expect(JSON.parse(exported).redactions).toBe(bundle.redactions + 1);
+      expect(JSON.parse(exported).errors.at(-1).message).toBe("OAuth error: [已拦截]");
+      expect(JSON.parse(exported).redactions).toBe(bundle.redactions + 2);
     } finally {
       createUrl.mockRestore();
       vi.unstubAllGlobals();

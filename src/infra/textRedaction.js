@@ -7,7 +7,7 @@ const CREDENTIAL_PATTERNS = [
   /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g,
   /(?:\\*["'])?\b(?:private_key|refresh_token|client_secret)\b(?:\\*["'])?(?:\s*[:=]\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\\+"[^"\s,}&]*"|[^\s,}&"']+))?/gi,
   /\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi,
-  /\b(?:ya29\.[A-Za-z0-9._-]+|sk-[A-Za-z0-9_-]+)/g,
+  /\b(?:ya29\.[A-Za-z0-9._-]+|sk-[A-Za-z0-9_-]+|1\/\/0[A-Za-z0-9_-]{20,})/g,
 ];
 
 export function scrubCredentialPatterns(text, onMatch) {
