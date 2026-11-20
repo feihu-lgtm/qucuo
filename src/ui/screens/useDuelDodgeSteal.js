@@ -9,6 +9,14 @@ export function addDodgeStealNote(result, move, carriedItems, trySteal) {
   if (stolen) result.notes.push(`顺手摸走了${stolen.name}`);
 }
 
+export function addTeamDodgeStealNotes(turnLog, playerId, move, carriedItems, trySteal) {
+  for (const entry of turnLog) {
+    if ((entry.actorId === playerId && entry.dodgeSuccessActor) || (entry.targetId === playerId && entry.dodgeSuccessTarget)) {
+      addDodgeStealNote({ dodgeSuccessA: true, notes: entry.notes }, move, carriedItems, trySteal);
+    }
+  }
+}
+
 export function useDuelDodgeSteal() {
   const [dodgeStolenItems, setDodgeStolenItems] = useState([]);
   const used = useRef(false);

@@ -19,7 +19,7 @@ import { buildPlayerUnit, buildLeopardUnit, buildEnemyUnit } from "../../domain/
 import { rollBattleLoot } from "../../domain/npc/npcGeneration.js";
 import { resolveCombatBuff } from "../../utils/buffSystem.js";
 import { HpBar, EnergyDots, MoveButton, MoveInspect, TYPE_ICON } from "./DuelScreen.jsx";
-
+import { addTeamDodgeStealNotes, excludeDodgeStolenItems, useDuelDodgeSteal } from "./useDuelDodgeSteal.js";
 export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendingCombatBuff, playerInv, playerMoveset, zoneTheme, onFinish , playerSkills = []}) {
   // 战前餐 buff：跟 DuelScreen 同一套进场应用（waigong/气血上限进玩家单位装配，
   // moveMul 在出招时叠进攻击招倍率——见下方 pickMoveForUnit）。
@@ -31,7 +31,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
   ]);
   const [enemyUnits, setEnemyUnits] = useState(() => (enemies || []).map((n, i) => buildEnemyUnit(n, i)));
 
-  const [round, setRound] = useState(1);
+  const [round, setRound] = useState(1), { dodgeStolenItems, tryStealOnDodge } = useDuelDodgeSteal();
   const [phase, setPhase] = useState("select"); // select | result | over
   const [outcome, setOutcome] = useState(null); // win | lose | draw
   // 选招向导：player → leopard → ready。玩家已倒下时开场直接跳过 player 段；
@@ -52,7 +52,6 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
   const aliveEnemies = enemyUnits.filter(u => u.alive);
   const needPlayerPick = playerUnit?.alive;
   const needLeopardPick = leopardUnit?.alive && !leopardAuto;
-
   // 当前阶段的初始段（本回合从哪一段开始）：玩家活着先玩家，否则雪豹，都不行就 ready
   const firstStage = () => (needPlayerPick ? "player" : needLeopardPick ? "leopard" : "ready");
 
@@ -140,6 +139,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
       // 本回合战报文字：渲染用 + 结束时打包给外层（teamText 单行格式，
       // MudRPG onFinish 的逐回合系统日志和AI整场战报都直接复用这行文字）
       const lines = turnLog.map(e => {
+        addTeamDodgeStealNotes([e], playerUnit.id, playerIntent?.move, enemies[0]?.carriedItems, tryStealOnDodge);
         if (e.skipped) return { text: `${e.actorName}这一击落了空（${e.reason}）。`, notes: [], statusLog: [] };
         const clash = e.targetMove ? `，${e.targetName}以「${e.targetMove}」相抗` : `，${e.targetName}无暇他顾`;
         // 【点名是谁占上风】原来只写"占了上风/被压了一头"，不说主语——
@@ -182,11 +182,11 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
   const handleClose = () => {
     // 掉落只从主敌（enemies[0]）身上roll——跟1v1同一个 rollBattleLoot；
     // draw 按"罢手"处理（外层 outcome 三分支：win/lose/其他=不了了之）。
-    const loot = outcome === "win" ? rollBattleLoot(enemies[0]) : null;
+    const loot = outcome === "win" ? rollBattleLoot(excludeDodgeStolenItems(enemies[0], dodgeStolenItems)) : null;
     const battleLog = rounds.flatMap(r => r.lines.map(l => ({ round: r.round, teamText: l.text, narration: null })));
     // 永久成长型招式的威力累积在玩家单位的 movesetLocal 里，回传外层持久化
     // （跟 DuelScreen 第四参同一约定）；2v2 v1 暂无战斗内道具栏，usedItems 恒空。
-    onFinish?.(outcome === "draw" ? null : outcome, loot, battleLog, playerUnit.movesetLocal, [], playerUnit.hp);
+    onFinish?.(outcome === "draw" ? null : outcome, loot, battleLog, playerUnit.movesetLocal, [], playerUnit.hp, dodgeStolenItems);
   };
 
   const selecting = phase === "select";
