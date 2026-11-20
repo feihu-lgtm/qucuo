@@ -6,7 +6,7 @@ import { removeNpc } from "../../domain/npc/roomNpcs.js";
 import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_INVITED } from "../../domain/quests/snowLeopardQuest.js";
 import { createQuestProgress } from "../../domain/quests/questEngine.js";
 
-export function inviteCompanion(state, npc) {
+export function inviteCompanion(state, npc, ctx = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "invite" });
   const key = companionKeyByName(npc.name);
@@ -20,12 +20,13 @@ export function inviteCompanion(state, npc) {
   else if (npc.imported) companionState = unlockImportedCompanion(companionState, npc);
   else return {};
 
+  const now = ctx.getNow?.() ?? Date.now();
   return {
     changes: {
       companionState,
       ...(key === "snowLeopard" ? {
         flags: (f) => [...new Set([...f, SNOW_INVITED])],
-        questProgress: (p) => ({ ...p, [SNOW_QUEST_ID]: { ...(p?.[SNOW_QUEST_ID] || createQuestProgress(SNOW_QUEST_ID)), status: "completed", currentStageIndex: 2, completedAt: Date.now() } }),
+        questProgress: (p) => ({ ...p, [SNOW_QUEST_ID]: { ...(p?.[SNOW_QUEST_ID] || createQuestProgress(SNOW_QUEST_ID, now)), status: "completed", currentStageIndex: 2, completedAt: now } }),
       } : {}),
       varTree: (prev) => markNpcKnown(prev || {}, npc.name),
       room: (prev) => ({

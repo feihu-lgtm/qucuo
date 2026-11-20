@@ -136,6 +136,16 @@ describe("收复雪豹", () => {
     expect(setFlags.mock.calls[0][0]([])).toEqual(["snow_spirit_meat", "snow_spirit_scratch", "other_quest"]);
   });
 
+  it.each([0, 123])("uses the injected invitation clock %s exactly once", (now) => {
+    const state = active();
+    state.flags.push(SNOW_TRUSTED);
+    const ctx = { getNow: vi.fn(() => now) };
+    apply(state, inviteCompanion(state, leopard, ctx));
+    expect(state.questProgress[SNOW_QUEST_ID].completedAt).toBe(now);
+    expect(inviteCompanion(state, leopard, ctx)).toEqual({});
+    expect(ctx.getNow).toHaveBeenCalledTimes(1);
+  });
+
   it.each(SNOW_SPIRITS)("counts $label as the fifth spirit", ({ flag }) => {
     const state = active();
     state.flags = SNOW_SPIRITS.filter((s) => s.flag !== flag).slice(0, 4).map((s) => s.flag);

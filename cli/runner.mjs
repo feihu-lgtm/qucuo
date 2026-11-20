@@ -186,7 +186,7 @@ export function classifyCliCommand(line) {
   return getCommand(id);
 }
 
-export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, ai, apiCfg: apiCfgOverrides } = {}) {
+export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, ai, apiCfg: apiCfgOverrides, getNow = () => Date.now() } = {}) {
   const emit = typeof out === "function" ? out : (text) => out.write(`${text}\n`);
   let pendingTurn = Promise.resolve(0);
   let pendingTurnCount = 0;
@@ -760,7 +760,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     if (inviteMatch) {
       const npc = visibleNpcs.find((entry) => entry?.name === inviteMatch[1]);
       if (!npc) return await missingNpc(inviteMatch[1]);
-      return await applyFeature(inviteCompanion(state, npc));
+      return await applyFeature(inviteCompanion(state, npc, { getNow }));
     }
 
     const talkCommand = /^交谈\s+(.+)$/.exec(line);
@@ -933,7 +933,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       getSeaReturn: () => null,
       cancelTokyoReturn,
       scheduleTokyoReturn,
-      getNow: () => Date.now(),
+      getNow,
     },
     applyResult: (result) => {
       if (result.roomMap) session.roomMap = result.roomMap;
