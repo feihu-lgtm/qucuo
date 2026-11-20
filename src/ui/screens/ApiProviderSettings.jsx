@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export default function ApiProviderSettings({
-  cfg, patch, types, vertexModel, importCredential, hasCredential, labelStyle, inputStyle,
+  cfg, patch, types, importCredential, hasCredential, labelStyle, inputStyle,
 }) {
   const [status, setStatus] = useState("");
   const vertex = cfg.apiType === types.VERTEX;
@@ -23,10 +23,7 @@ export default function ApiProviderSettings({
   return (
     <>
       <label style={fieldLabel} htmlFor="api-provider">服务商</label>
-      <select id="api-provider" style={inputStyle} value={cfg.apiType} onChange={e => patch({
-        apiType: e.target.value,
-        ...(e.target.value === types.VERTEX ? { model: vertexModel } : {}),
-      })}>
+      <select id="api-provider" style={inputStyle} value={cfg.apiType} onChange={e => patch({ apiType: e.target.value })}>
         <option value={types.OPENAI}>OpenAI 兼容</option>
         <option value={types.VERTEX}>Vertex AI</option>
       </select>

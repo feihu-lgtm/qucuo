@@ -1,4 +1,5 @@
 import { getRngState } from "../core/rng.js";
+import { getApiModel } from "../core/apiModel.js";
 import { getRecentErrors } from "./errorBuffer.js";
 import { getTraceLog } from "./actionTrace.js";
 import { loadConfig } from "./apiConfig.js";
@@ -156,7 +157,11 @@ export function buildDebugBundle(sources = EMPTY_SOURCES) {
     createdAt,
     userAgent,
     viewport,
-    model: configString(apiConfig, ["model"]),
+    model: getApiModel({
+      apiType: configString(apiConfig, ["apiType"]),
+      model: configString(apiConfig, ["model"]),
+      vertexModel: configString(apiConfig, ["vertexModel"]),
+    }),
     providerHost: providerHost(configString(apiConfig, ["endpoint", "baseUrl", "baseURL"])),
     save,
     rngState,

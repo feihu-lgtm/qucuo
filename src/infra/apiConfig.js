@@ -4,7 +4,7 @@ import { observeAi } from "../core/observeAi.js";
 import { readSSE } from "./apiSse.js";
 import { buildVertexEndpoint } from "./vertexAdc.js";
 import { getStoredVertexHeaders, hasVertexCredential } from "./vertexCredentials.js";
-export { DEFAULT_VERTEX_MODEL } from "./vertexAdc.js";
+import { getApiModel } from "../core/apiModel.js";
 export { importVertexCredential } from "./vertexCredentials.js";
 
 const CONFIG_KEY = "wuxia_mud_api_config";
@@ -519,7 +519,7 @@ async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
   const system = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock) : [systemPrompt];
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
   const body = {
-    model: cfg.model, max_tokens: vertex ? Math.min(maxTokens ?? 65535, 65535) : clampMaxTokensForType(maxTokens, cfg),
+    model: getApiModel(cfg), max_tokens: vertex ? Math.min(maxTokens ?? 65535, 65535) : clampMaxTokensForType(maxTokens, cfg),
     temperature: opts.temperature ?? cfg.temperature,
     messages: [...system.map(content => ({ role: "system", content })), ...messages],
   };

@@ -2,6 +2,7 @@ import { webcrypto } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { bindTurnAi, createWebAi } from "../engine/ports/ai.js";
 import { turnMonitor } from "../core/turnMonitor.js";
+import { buildExtractionCfg } from "../domain/prompt/extractionEngine.js";
 import { hasApiKey as tavernHasCredentials } from "../domain/tavernSim/simNarrator.js";
 import { hasApiKey as battleHasCredentials } from "../domain/quickBattle/battleNarration.js";
 import { API_TYPES, defaultConfig, importVertexCredential, loadConfig, saveConfig } from "./apiConfig.js";
@@ -88,7 +89,8 @@ describe("Vertex ADC", () => {
     });
     vi.stubGlobal("fetch", fetch);
     const vertexProject = importVertexCredential(JSON.stringify(authorizedUser));
-    saveConfig({ ...defaultConfig(), apiType: API_TYPES.VERTEX, vertexProject, model: "google/gemini-2.5-flash", corsProxy: "https://wrong.example/" });
+    const vertexModel = "google/gemini-2.5-pro";
+    saveConfig({ ...defaultConfig(), apiType: API_TYPES.VERTEX, vertexProject, vertexModel, model: "openai-model", corsProxy: "https://wrong.example/" });
     const cfg = loadConfig();
     expect(tavernHasCredentials()).toBe(true);
     expect(battleHasCredentials()).toBe(true);
@@ -111,16 +113,20 @@ describe("Vertex ADC", () => {
         "Content-Type": "application/json", Authorization: "Bearer ya29.mock-token-1", "x-goog-user-project": "test-quota-project",
       });
       expect(JSON.parse(request.body)).toMatchObject({
-        model: cfg.model, max_tokens: 1000, messages: [{ role: "system", content: "叙述" }, ...messages],
+        model: vertexModel, max_tokens: 1000, messages: [{ role: "system", content: "叙述" }, ...messages],
       });
     }
     expect(turn.nodes.filter(node => node.pipeline).map(node => node.pipeline.response)).toEqual(["曲措", "江湖"]);
+    expect(turn.nodes.filter(node => node.pipeline).map(node => node.pipeline.model)).toEqual([vertexModel, vertexModel]);
+    expect(buildExtractionCfg("LOOK", cfg)).toMatchObject({ vertexModel, model: "openai-model" });
+    expect(buildExtractionCfg("LOOK", { ...cfg, extractionModel: "google/extraction-model" }))
+      .toMatchObject({ vertexModel: "google/extraction-model", model: "openai-model" });
     const privateEntry = [...store.entries()].find(([, value]) => value.includes(authorizedUser.client_secret));
     expect(privateEntry?.[0]).toBe("wuxia_mud_vertex_adc");
     expect(JSON.stringify(cfg)).not.toContain(authorizedUser.refresh_token);
     expect(JSON.stringify(turn)).not.toContain("ya29.mock-token-1");
     getItem.mockClear();
-    buildDebugBundle();
+    expect(buildDebugBundle().model).toBe(vertexModel);
     expect(getItem).not.toHaveBeenCalledWith(privateEntry[0]);
   });
 });

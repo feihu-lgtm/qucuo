@@ -5,7 +5,7 @@ import { basename, dirname, resolve } from "node:path";
 import { webcrypto } from "node:crypto";
 import { createSession, parseSeed, runScript } from "./runner.mjs";
 import { createHttpAi, createMockAi, createRecordingAi, createReplayAi, createWebAi } from "../src/engine/ports/ai.js";
-import { createVertexAuth, DEFAULT_VERTEX_MODEL, parseVertexAdc, vertexDefaultProject } from "../src/infra/vertexAdc.js";
+import { createVertexAuth, parseVertexAdc, vertexDefaultProject } from "../src/infra/vertexAdc.js";
 
 const print = (text) => stdout.write(`${text}\n`);
 
@@ -101,7 +101,7 @@ async function main() {
       crypto: webcrypto, now: Date.now,
     });
     apiCfg = {
-      apiType: "vertex", model: model || DEFAULT_VERTEX_MODEL,
+      apiType: "vertex", vertexModel: model,
       vertexProject: project || vertexDefaultProject(adc), vertexLocation: location || "global",
     };
     ai = createWebAi({ getVertexHeaders });

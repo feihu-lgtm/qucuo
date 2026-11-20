@@ -3,8 +3,6 @@ const SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 const RSA = "RSASSA-PKCS1-v1_5";
 const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
-export const DEFAULT_VERTEX_MODEL = "google/gemini-2.5-flash";
-
 export function parseVertexAdc(text) {
   let adc;
   try { adc = JSON.parse(text); } catch { throw new Error("ADC 文件不是有效的 JSON"); }

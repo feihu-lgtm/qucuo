@@ -8,7 +8,7 @@ import { callModel, cleanJsonString } from "../../infra/apiConfig.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { extractMvuBlock } from "./mvu.js";
 import { APPEASE_EXTRACTION_SPEC } from "./appeaseExtraction.js";
-
+import { apiModelField, getApiModel } from "../../core/apiModel.js";
 // ── 全意图公共字段（本轮补齐）──
 // 单调用模式下这两个字段由主叙事的 JSON schema 一并产出，双调用模式下主调用只写
 // 散文、不产 JSON，而下面各意图的提取 schema 里谁都没要过它们，于是 p.memory 与
@@ -265,10 +265,10 @@ export function buildExtractionCfg(intentCode, apiCfg) {
   const model =
     (apiCfg.extractionModels?.[intentCode]) ||
     apiCfg.extractionModel ||
-    apiCfg.model;
+    getApiModel(apiCfg);
   return {
     ...apiCfg,
-    model,
+    [apiModelField(apiCfg)]: model,
     thinkingMode: "off",  // 提取是结构化任务，不需要思考
     maxTokens: apiCfg.callTokenLimits?.extraction ?? 2000,      // 提取结果很短，给足但不浪费（可在设置里调，上限 100000）
   };

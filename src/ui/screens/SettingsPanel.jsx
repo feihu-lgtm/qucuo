@@ -1,8 +1,8 @@
 import { OVERLAY, openOverlay } from "../../store/uiStore.js";
 import React, { useState } from "react";
 import { isMusicEnabled, setMusicEnabled, getState as getMusicState, setVolume as setMusicVolume, subscribe as subscribeMusic, toggleMusic, TRACKS } from "../../infra/musicPlayer.js";
-import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, DEFAULT_ENDPOINTS, isDefaultEndpoint, DEFAULT_VERTEX_MODEL, hasApiCredentials, importVertexCredential } from "../../infra/apiConfig.js";
-
+import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, DEFAULT_ENDPOINTS, isDefaultEndpoint, hasApiCredentials, importVertexCredential } from "../../infra/apiConfig.js";
+import { apiModelField, DEFAULT_VERTEX_MODEL, getApiModel } from "../../core/apiModel.js";
 const EXTRACTION_INTENT_LABELS = [
   ["LOOK",           "查看 / 环顾"],
   ["MOVE",           "移动"],
@@ -312,7 +312,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                   {cfgProfiles.map(p => (
                     <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px" }}>
                       <span style={{ flex: 1, color: "var(--text)" }}>{p.name}
-                        <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>{p.cfg?.model || ""}</span>
+                        <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>{getApiModel(p.cfg) || ""}</span>
                       </span>
                       <span onClick={() => handleLoadCfgProfile(p.name)} style={{ cursor: "pointer", color: "var(--accent)" }}>切换</span>
                       <span onClick={() => handleDeleteCfgProfile(p.name)} style={{ cursor: "pointer", color: "#c47070" }}>删除</span>
@@ -326,21 +326,21 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               </div>
             </div>
 
-            <ApiProviderSettings cfg={cfg} patch={patch} types={API_TYPES} vertexModel={DEFAULT_VERTEX_MODEL}
+            <ApiProviderSettings cfg={cfg} patch={patch} types={API_TYPES}
               importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)}
               labelStyle={labelStyle} inputStyle={inputStyle} />
 
             <label htmlFor="api-model" style={{ ...labelStyle, display: "block" }}>模型名称</label>
             <div style={{ display: "flex", gap: 6 }}>
-              <input id="api-model" style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder={isVertex ? DEFAULT_VERTEX_MODEL : "例如 deepseek-chat / deepseek-reasoner"} />
+              <input id="api-model" style={{ ...inputStyle, flex: 1 }} value={isVertex ? cfg.vertexModel ?? DEFAULT_VERTEX_MODEL : cfg.model} onChange={e => patch({ [apiModelField(cfg)]: e.target.value })} placeholder={isVertex ? DEFAULT_VERTEX_MODEL : "例如 deepseek-chat / deepseek-reasoner"} />
               {!isVertex && <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(null)}>
                 {modelStatus === "loading" && modelPickerTarget === null ? "检测中…" : "🔍 自动检测"}
               </span>}
             </div>
-            {modelStatus === "error" && modelPickerTarget === null && (
+            {!isVertex && modelStatus === "error" && modelPickerTarget === null && (
               <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
             )}
-            {modelList && modelList.length > 0 && modelPickerTarget === null && (
+            {!isVertex && modelList && modelList.length > 0 && modelPickerTarget === null && (
               <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid #14161e" }}>
                   <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
@@ -362,7 +362,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 ))}
               </div>
             )}
-            {modelList && modelList.length === 0 && (
+            {!isVertex && modelList && modelList.length === 0 && (
               <div style={{ fontSize: "10.5px", color: "#c4a040", marginTop: 3 }}>接口未返回任何模型，请手动填写模型名称</div>
             )}
 
@@ -532,7 +532,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                       style={{ ...inputStyle, flex: 1 }}
                       value={cfg.extractionModel || ""}
                       onChange={e => patch({ extractionModel: e.target.value })}
-                      placeholder={`留空则使用主模型 ${cfg.model}`}
+                      placeholder={`留空则使用主模型 ${getApiModel(cfg)}`}
                     />
                     <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels("extractionModel")}>
                       {modelStatus === "loading" && modelPickerTarget === "extractionModel" ? "检测中…" : "🔍 检测"}
@@ -569,7 +569,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6 }}>
                     {EXTRACTION_INTENT_LABELS.map(([key, label]) => {
                       const cur = cfg.extractionModels?.[key] ?? "";
-                      const placeholder = cfg.extractionModel || cfg.model || "主模型";
+                      const placeholder = cfg.extractionModel || getApiModel(cfg) || "主模型";
                       return (
                         <div key={key}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -9,6 +9,7 @@
 //   （localStorage，loadConfig 读取）；没配就提示去游戏里配，key 只显后 4 位。
 
 import React, { useState } from "react";
+import { getApiModel } from "../core/apiModel.js";
 import { loadConfig, callModel, hasApiCredentials, API_TYPES } from "../infra/apiConfig.js";
 import { describeInnerArrival } from "../domain/map/mapNarration.js";
 import { resolveInnerExit } from "../domain/map/innerMap.js";
@@ -123,7 +124,7 @@ export default function DebugConsole() {
         }}>
           <span style={{ color: "#8a7a58" }}>当前 API 配置（来自游戏 ⚙设置 · localStorage）：</span>{" "}
           {hasApiCredentials(cfg)
-            ? <span style={{ color: "#bce0bc" }}>{cfg.apiType} · {cfg.model} · {describeCredentials(cfg)}</span>
+            ? <span style={{ color: "#bce0bc" }}>{cfg.apiType} · {getApiModel(cfg)} · {describeCredentials(cfg)}</span>
             : <span style={{ color: "#d08a6a" }}>未配置（调 AI 的按钮会提示）</span>}
           <button onClick={reloadCfg} style={{ ...btn, padding: "3px 10px", marginLeft: 12, fontSize: 12 }}>重载配置</button>
         </div>
