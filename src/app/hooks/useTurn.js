@@ -56,7 +56,7 @@ export function useTurn({
     }
     const cmd = rawCmd.trim(), isStale = createTurnStaleCheck(turnGenerationRef);
     const parent = opts.turn || getTurnContext();
-    const _trace = parent?.phase === PHASE.MACHINE ? parent : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading });
+    const _trace = parent?.phase === PHASE.MACHINE && !parent.background ? parent : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading });
     if (parent === _trace) _trace.awaitingSettlement = true;
     const applyLocal = (result, feature) => applyResult(featureCtxRef.current, result, { turn: _trace, feature });
     let summary, queued = false;
