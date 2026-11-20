@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getRngState, setRngState, setSeed } from "../../core/rng.js";
 import { makeBuffFlag } from "../../utils/buffSystem.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { timeAdvanceRule } from "./rules.js";
 
 let previousRngState;
@@ -71,6 +72,7 @@ describe("time advance world rule", () => {
     const npc = {
       name: "猎户",
       id: "hunter",
+      innerRoom: "猎户小屋",
       moveset: [],
       carriedItems: [],
       special: {},
@@ -87,14 +89,42 @@ describe("time advance world rule", () => {
       roomMapRef,
     });
 
-    expect(result.forcedDuelNpc).toBe(npc);
-    expect(result.changes.room(state.room).npcs).toEqual([npc]);
+    expect(result.forcedDuelNpc).not.toBe(npc);
+    expect(result.forcedDuelNpc).toMatchObject({ name: "猎户", id: "hunter" });
+    expect(result.forcedDuelNpc).not.toHaveProperty("innerRoom");
+    expect(result.changes.room(state.room).npcs).toEqual([result.forcedDuelNpc]);
     expect(result.roomMap.鱼定村.npcs).toEqual([]);
     expect(result.roomMap.玉泉寨.npcs).toEqual([npc]);
     expect(result.logs).toContainEqual({
       t: "err",
       text: "  猎户一路寻来，堵在你面前——积怒难平，这场恶斗躲不掉了！",
     });
+  });
+
+  it("sets a cached pursuer's inner room to the player's room and keeps it visible", () => {
+    const npc = {
+      name: "远道旅人",
+      id: "traveler",
+      innerRoom: "玉石料场",
+      moveset: [],
+      carriedItems: [],
+      special: {},
+      combatStats: { hp: [10, 10] },
+    };
+    const state = makeState({
+      room: { name: "鱼定村", items: [], npcs: [] },
+      innerRoomName: "村口",
+      varTree: { 角色: { 远道旅人: { 生气状态: { active: true, turnsLeft: 1 } } } },
+    });
+    const result = timeAdvanceRule.run(state, {
+      firstRun: false,
+      previousDeps: [state.time - 1, state.room.npcs],
+      roomMapRef: { current: { 玉泉寨: { items: [], npcs: [npc] } } },
+    });
+
+    expect(result.forcedDuelNpc.innerRoom).toBe("村口");
+    expect(isNpcVisibleInInnerRoom("鱼定村", "村口", result.forcedDuelNpc)).toBe(true);
+    expect(npc.innerRoom).toBe("玉石料场");
   });
 
   it("uses the imported registry when an imported NPC is absent from the room map", () => {

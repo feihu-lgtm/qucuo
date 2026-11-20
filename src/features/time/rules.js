@@ -59,6 +59,13 @@ function moveNpcRoomCache(roomMap, room, npcs) {
   return next;
 }
 
+function moveNpcToInnerRoom(npc, innerRoomName) {
+  const moved = { ...npc };
+  if (innerRoomName) moved.innerRoom = innerRoomName;
+  else delete moved.innerRoom;
+  return moved;
+}
+
 function parseForgeOrder(flag) {
   const parts = flag.split("_");
   const luck = Number(parts[3]) || 5;
@@ -184,11 +191,12 @@ export const timeAdvanceRule = {
         forcedDuelNpc = npc;
         continue;
       }
-      const pursuer = findEscalationNpc(name, state, roomMap, importedRegistry);
-      if (!pursuer) {
+      const foundNpc = findEscalationNpc(name, state, roomMap, importedRegistry);
+      if (!foundNpc) {
         logs.push({ t: "sys", text: `  ${name}已不知所踪，积怒也随时间不了了之。` });
         continue;
       }
+      const pursuer = moveNpcToInnerRoom(foundNpc, state.innerRoomName);
       pursuedNpcs.push(pursuer);
       forcedDuelNpc = pursuer;
       logs.push({ t: "err", text: `  ${name}一路寻来，堵在你面前——积怒难平，这场恶斗躲不掉了！` });
