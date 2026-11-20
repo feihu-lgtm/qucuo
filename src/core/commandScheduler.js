@@ -24,7 +24,9 @@ export function decide(cmd, running) {
     return "run";
   }
 
-  if (cmd.category === CATEGORY.MOVE && running.id === "autoTravel") return "replaceRoute";
+  if (cmd.category === CATEGORY.MOVE && running.id === "autoTravel") {
+    return cmd.meta?.routeLeg ? "queue" : "replaceRoute";
+  }
   if (
     [CATEGORY.AI_TURN, CATEGORY.LOCAL, CATEGORY.MOVE].includes(cmd.category)
     && [CATEGORY.AI_TURN, CATEGORY.MOVE].includes(running.category)
@@ -202,17 +204,11 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
         const entry = queue[0];
         const running = runningFor(entry);
         const decision = decide(entry, running);
-        if (decision === "queue") break;
+        if (decision === "queue" || decision === "replaceRoute") break;
         queue.shift();
         if (decision === "reject") {
           const message = onReject(entry, running);
           settleEntry(entry, "value", { status: "rejected", message });
-          publish();
-          continue;
-        }
-        if (decision === "replaceRoute") {
-          const index = removeQueuedRoute();
-          queue.splice(Math.min(index, queue.length), 0, entry);
           publish();
           continue;
         }

@@ -124,6 +124,35 @@ describe("command scheduler", () => {
     })).toBe("queue");
   });
 
+  it("lets background completion drain wait on the active route before running later legs", async () => {
+    const scheduler = createScheduler();
+    const order = [];
+    let finishFirstLeg;
+    let finishBackground;
+    const firstLeg = scheduler.dispatch("autoTravel", () => {
+      order.push("first");
+      return new Promise(resolve => { finishFirstLeg = resolve; });
+    });
+    const secondLeg = scheduler.enqueue("autoTravel", () => { order.push("second"); }, {
+      routeQueue: true, routeLeg: true,
+    });
+    const thirdLeg = scheduler.enqueue("autoTravel", () => { order.push("third"); }, {
+      routeQueue: true, routeLeg: true,
+    });
+    const background = scheduler.dispatch("squarePrerun", () => new Promise(resolve => {
+      finishBackground = resolve;
+    }));
+
+    finishBackground();
+    await background;
+    expect(order).toEqual(["first"]);
+    expect(scheduler.queue).toHaveLength(2);
+
+    finishFirstLeg();
+    await Promise.all([firstLeg, secondLeg, thirdLeg]);
+    expect(order).toEqual(["first", "second", "third"]);
+  });
+
   it("classifies sequential CLI commands through the shared registry", () => {
     for (const [line, id] of [[":new", "cliSystem"], ["坐车 鱼定村", "cliCarriage"], ["走 北", "cliMovement"]]) {
       const command = classifyCliCommand(line);
