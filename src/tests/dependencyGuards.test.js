@@ -63,18 +63,32 @@ function walkSource(dir, out = []) {
   return out;
 }
 
+function localImports(source) {
+  const imports = /from\s+["'](\.[^"']+)["']|\bimport\s*\(\s*(["'])(\.[^"'\r\n]+)\2\s*(?=[,)])/g;
+  return [...source.matchAll(imports)].map(([, staticPath, , dynamicPath]) => staticPath ?? dynamicPath);
+}
+
 describe("src 下没有零入度的死文件", () => {
+  it("识别静态和字符串字面量动态导入，不把拼接路径当成依赖", () => {
+    const source = [
+      'import { read } from "./static.js";',
+      'import("./dynamic.js");',
+      "import ( '../other.jsx' );",
+      'import("./prefix" + name);',
+      'import("external");',
+      'import(path);',
+    ].join("\n");
+    expect(localImports(source)).toEqual(["./static.js", "./dynamic.js", "../other.jsx"]);
+  });
+
   it("import 图零入度且不在入口白名单 → 报出来", () => {
     const files = walkSource(SRC_DIR).map((f) => resolve(f));
     const rel = (f) => relative(resolve(SRC_DIR), f);
 
     const deps = new Map(files.map((f) => [f, new Set()]));
     for (const f of files) {
-      const src = readFileSync(f, "utf-8");
-      const re = /from\s+["'](\.[^"']+)["']/g;
-      let m;
-      while ((m = re.exec(src))) {
-        let p = join(f, "..", m[1]);
+      for (const path of localImports(readFileSync(f, "utf-8"))) {
+        let p = join(f, "..", path);
         if (!/\.(js|jsx)$/.test(p)) p += ".js";
         const r = resolve(p);
         if (files.includes(r)) deps.get(f).add(r);

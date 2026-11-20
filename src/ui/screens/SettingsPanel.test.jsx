@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import SettingsPanel from "./SettingsPanel.jsx";
 
-const render = (cfg) => renderToStaticMarkup(createElement(SettingsPanel, { cfg }));
+const render = (cfg, initialTab) => renderToStaticMarkup(createElement(SettingsPanel, { cfg, initialTab }));
 
 describe("SettingsPanel portrait management entry", () => {
   it.each([{}, { apiKey: "" }])("hides portrait management without a configured API key: %s", (cfg) => {
@@ -14,5 +14,29 @@ describe("SettingsPanel portrait management entry", () => {
 
   it("shows portrait management when the game overlays are available", () => {
     expect(render({ apiKey: "test-placeholder" })).toContain("立绘管理");
+  });
+});
+
+describe("SettingsPanel provider models", () => {
+  it("displays only the active provider's saved model", () => {
+    const cfg = { model: "openai-model", vertexModel: "google/vertex-model" };
+    expect(render({ ...cfg, apiType: "vertex" }, "api")).toContain('value="google/vertex-model"');
+    expect(render({ ...cfg, apiType: "openai" }, "api")).toContain('value="openai-model"');
+    const vertexHtml = render({ apiType: "vertex", model: cfg.model }, "api");
+    expect(vertexHtml).toContain('value="google/gemini-3.8-flash" selected=""');
+    expect(vertexHtml).toContain('placeholder="google/gemini-3.8-flash"');
+    expect(vertexHtml).toContain("每个浏览器只保存一份 ADC，导入新文件会替换旧的");
+  });
+
+  it("offers Vertex presets in order and labels Hydrogen quota requirements", () => {
+    const html = render({ apiType: "vertex" }, "api");
+    const options = html.match(/<select id="vertex-model-preset"[^>]*>(.*?)<\/select>/)?.[1] ?? "";
+    expect([...options.matchAll(/<option value="([^"]+)"[^>]*>([^<]+)<\/option>/g)].map(([, id]) => id)).toEqual([
+      "google/gemini-3.8-flash", "google/gemini-3.7-flash", "google/gemini-3.6-flash",
+      "google/gemini-3.5-flash", "google/gemini-3-flash-preview", "google/gemini-3.1-pro-preview",
+      "google/gemini-3.5-flash-lite", "google/gemini-3.1-flash-lite", "google/gemini-4-hydrogen",
+    ]);
+    expect(options).toContain(">google/gemini-4-hydrogen（需开通 Gemini 4 额度）</option>");
+    expect(render({ apiType: "openai" }, "api")).not.toContain('id="vertex-model-preset"');
   });
 });

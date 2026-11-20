@@ -10,6 +10,7 @@ import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
 import { applyPresetOverrides, getActivePreset } from "../../domain/prompt/presetSystem.js";
 import { createWebAi } from "../ports/ai.js";
 import { buildAngryNote } from "../prompt/assemblePrompt.js";
+import { getApiModel } from "../../core/apiModel.js";
 
 const webAi = createWebAi();
 
@@ -183,9 +184,9 @@ ${dealFmt}`;
     const exKey = d.isTalk ? "TALK_CASUAL" : d.intent.code;
     const exCfg = buildExtractionCfg(exKey, d.apiCfg);
     traceStep(d._trace, "调用模式", "info",
-      `双调用（叙事/状态分离）　主叙事模型=${d.apiCfg.model || "未设置"}　提取模型(spec=${exKey})=${exCfg.model || "未设置"}${exCfg.model === d.apiCfg.model ? "（未单独配置，沿用主模型）" : ""}`);
+      `双调用（叙事/状态分离）　主叙事模型=${getApiModel(d.apiCfg) || "未设置"}　提取模型(spec=${exKey})=${getApiModel(exCfg) || "未设置"}${getApiModel(exCfg) === getApiModel(d.apiCfg) ? "（未单独配置，沿用主模型）" : ""}`);
   } else {
-    traceStep(d._trace, "调用模式", "info", `单调用（叙事+状态一次性产出）　主模型=${d.apiCfg.model || "未设置"}`);
+    traceStep(d._trace, "调用模式", "info", `单调用（叙事+状态一次性产出）　主模型=${getApiModel(d.apiCfg) || "未设置"}`);
   }
   // 世界书点灯明细：🟢亮了哪条（被什么词/哪个状态点亮）、⚫灭了哪条。排"AI 怎么不知道 X"用。
   if (_gateReport && (_gateReport.lit.length || _gateReport.dark.length)) {

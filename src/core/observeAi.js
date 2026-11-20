@@ -1,4 +1,5 @@
 import { turnMonitor } from "./turnMonitor.js";
+import { getApiModel } from "./apiModel.js";
 
 export const observed = Symbol("observed-ai");
 
@@ -7,7 +8,7 @@ export async function observeAi(messages, opts, request) {
   const { cfg = {}, modelOptions = {} } = opts;
   const call = turnMonitor.beginAi(opts.turn, {
     apiType: cfg.apiType,
-    model: opts.model || cfg.model,
+    model: opts.model || getApiModel(cfg),
     callLabel: opts.callLabel || modelOptions.callLabel || "AI 调用",
     systemPrompt: opts.systemPrompt,
     userMessages: messages,

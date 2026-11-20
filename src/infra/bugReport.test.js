@@ -23,8 +23,31 @@ describe("submitBugReport debug bundle payload", () => {
     ]);
     expect(JSON.parse(request.body).game_state).toEqual({
       room: "曲措乡",
-      debugBundle: { schema: 1, version: "test" },
+      debugBundle: { schema: 1, version: "test", redactions: 0 },
     });
+  });
+
+  it("hard-scans both upload tables and counts newly blocked bundle credentials", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 12 }] })
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+    await submitBugReport({
+      playerNote: 'client_secret: "note-secret-value"',
+      debugBundle: { redactions: 2, errors: ["Bearer nested-access-value"] },
+      pipelineLog: [{
+        systemPrompt: { private_key: "structured-key-value" },
+        userMessages: [{ content: '{"refresh_token":"pipeline-refresh-value"}' }],
+        response: "ya29.pipeline-access-value",
+        success: true,
+      }],
+    });
+    const bodies = fetchMock.mock.calls.map(([, options]) => options.body);
+    for (const secret of ["note-secret-value", "nested-access-value", "structured-key-value", "pipeline-refresh-value", "pipeline-access-value"]) {
+      expect(bodies.join("\n")).not.toContain(secret);
+    }
+    expect(JSON.parse(bodies[0]).game_state.debugBundle).toEqual({ redactions: 3, errors: ["[已拦截]"] });
+    expect(JSON.parse(bodies[1])[0]).toMatchObject({ user_message: "[user] {[已拦截]}", response: "[已拦截]" });
   });
 
   it("redacts configured secrets from player notes and submitted free-text fields", async () => {

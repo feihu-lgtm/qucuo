@@ -1,8 +1,8 @@
 import { OVERLAY, openOverlay } from "../../store/uiStore.js";
 import React, { useState } from "react";
 import { isMusicEnabled, setMusicEnabled, getState as getMusicState, setVolume as setMusicVolume, subscribe as subscribeMusic, toggleMusic, TRACKS } from "../../infra/musicPlayer.js";
-import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, DEFAULT_ENDPOINTS, isDefaultEndpoint } from "../../infra/apiConfig.js";
-
+import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, DEFAULT_ENDPOINTS, isDefaultEndpoint, hasApiCredentials, importVertexCredential } from "../../infra/apiConfig.js";
+import { getApiModel } from "../../core/apiModel.js";
 const EXTRACTION_INTENT_LABELS = [
   ["LOOK",           "查看 / 环顾"],
   ["MOVE",           "移动"],
@@ -21,6 +21,7 @@ import { clearInspectCache, inspectCacheSize } from "../../domain/prompt/inspect
 import { clearMemories, countMemories } from "../../domain/memory/memoryStore.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import InjectionStructurePanel from "./InjectionStructurePanel.jsx";
+import ApiProviderSettings from "./ApiProviderSettings.jsx";
 
 const inputStyle = {
   width: "100%", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
@@ -81,13 +82,14 @@ function MusicSettings() {
   );
 }
 
-export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, onOpenCardImport, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText }) {
+export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, onOpenCardImport, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, onSelectTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText }) {
   // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
   // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
   // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
   // 都精确落在遮罩本身才真正关闭，见 utils/overlayClose.js。
   const closeGuard = useOverlayCloseGuard(onClose);
   const [tab, setTab] = useState(initialTab || null); // null=主页卡片 | api | preset | saves | other
+  const selectTab = (next) => { setTab(next); onSelectTab?.(next); };
   const [testStatus, setTestStatus] = useState(null); // null | 'testing' | 'ok' | 'error'
   const [testMsg, setTestMsg] = useState("");
   const [slots, setSlots] = useState(listSlots());
@@ -108,11 +110,11 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
     if (tab === "api") countMemories().then(setMemCount).catch(() => setMemCount(null));
   }, [tab]);
 
-  // 本项目只对外提供 OpenAI 兼容一种接入方式（DeepSeek/硅基/中转站等）。
+  const isVertex = cfg.apiType === API_TYPES.VERTEX;
   // 旧存档或旧配置里若残留 anthropic/gemini/qwen 类型，挂载时统一纠正为 openai，
   // 避免界面里出现已删除的类型分支、或请求走错协议。
   React.useEffect(() => {
-    if (cfg.apiType !== API_TYPES.OPENAI) patch({ apiType: API_TYPES.OPENAI });
+    if (!isVertex && cfg.apiType !== API_TYPES.OPENAI) patch({ apiType: API_TYPES.OPENAI });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -240,7 +242,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
         <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <span style={{ color: "var(--accent)", fontSize: "14px" }}>
             {tab === null ? "⚙ 游戏设置" : (
-              <span style={{ cursor: "pointer" }} onClick={() => setTab(null)}>← 返回 · <span style={{ color: "var(--text)" }}>{TAB_LABELS[tab] || ""}</span></span>
+              <span style={{ cursor: "pointer" }} onClick={() => selectTab(null)}>← 返回 · <span style={{ color: "var(--text)" }}>{TAB_LABELS[tab] || ""}</span></span>
             )}
           </span>
           <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
@@ -255,13 +257,13 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               ["other", "🎚 其他", "字号 · 显示"],
               ["__portraits", "立绘管理", "上传 · 更换人物立绘"],
               ["__cards", "🧾 角色入册", "游戏中 · 导入外部角色卡成江湖人物 · 快捷键 I"],
-            ].filter(([id]) => id !== "__portraits" || cfg.apiKey).map(([id, title, sub]) => (
+            ].filter(([id]) => id !== "__portraits" || hasApiCredentials(cfg)).map(([id, title, sub]) => (
               <div key={id} onClick={() => {
                 // 入册界面本身是全屏浮层，塞在设置里会套两层弹窗。
                 // 这里改成关掉设置、把浮层交给 MudRPG 开。
                 if (id === "__portraits") { onClose(); openOverlay(OVERLAY.PORTRAIT_MANAGER); return; }
                 if (id === "__cards") { onOpenCardImport?.(); return; }
-                setTab(id);
+                selectTab(id);
               }}
                 style={{
                   cursor: "pointer", padding: "20px 16px", borderRadius: 0,
@@ -290,7 +292,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
             {/* 【暂留·等会用】原多渠道说明文案，后续可能放到别处：
               支持 OpenAI 兼容格式、Gemini API、Anthropic 原生格式与千问。密钥仅保存在浏览器本地（localStorage），不会上传到任何服务器。 */}
             <div style={{ fontSize: "11px", color: "var(--text-dim)", marginBottom: 8 }}>
-              填入任一 OpenAI 兼容接口（DeepSeek / 硅基流动 / 各类中转站等）。密钥仅保存在浏览器本地（localStorage），不会上传到任何服务器。
+              选择 OpenAI 兼容接口或 Vertex AI。
             </div>
 
             {/* 配置管理：多套配置存本地、随时切换、导出/导入落盘 */}
@@ -310,7 +312,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                   {cfgProfiles.map(p => (
                     <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px" }}>
                       <span style={{ flex: 1, color: "var(--text)" }}>{p.name}
-                        <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>{p.cfg?.model || ""}</span>
+                        <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>{getApiModel(p.cfg) || ""}</span>
                       </span>
                       <span onClick={() => handleLoadCfgProfile(p.name)} style={{ cursor: "pointer", color: "var(--accent)" }}>切换</span>
                       <span onClick={() => handleDeleteCfgProfile(p.name)} style={{ cursor: "pointer", color: "#c47070" }}>删除</span>
@@ -324,42 +326,21 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               </div>
             </div>
 
-            <div style={labelStyle}>API 地址（Endpoint）</div>
-            <input style={inputStyle} value={cfg.endpoint} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
-            {cfg.apiType === API_TYPES.OPENAI && (
-              <>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, cursor: "pointer" }}>
-                  <input
-                    type="checkbox" checked={!!cfg.openaiAutoComplete}
-                    onChange={e => patch({ openaiAutoComplete: e.target.checked })}
-                    style={{ cursor: "pointer" }}
-                  />
-                  <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-                    自动补全地址（补上 /v1/chat/completions）
-                  </span>
-                </label>
-                <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3 }}>
-                  {cfg.openaiAutoComplete
-                    ? "已开启：地址缺路径时自动补 /v1/chat/completions。填的是完整/非标准路径的家请关掉，否则可能补出 404。"
-                    : "默认不补：填什么就原样发什么。多数中转站需要填完整地址（含 /chat/completions）。若你的家只给了 base 地址，可勾上让它自动补。"}
-                </div>
-              </>
-            )}
+            <ApiProviderSettings cfg={cfg} patch={patch} types={API_TYPES}
+              importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)}
+              labelStyle={labelStyle} inputStyle={inputStyle} />
 
-            <div style={labelStyle}>API Key</div>
-            <input style={inputStyle} type="password" value={cfg.apiKey} onChange={e => patch({ apiKey: e.target.value })} placeholder="sk-..." />
-
-            <div style={labelStyle}>模型名称</div>
+            {!isVertex && <><label htmlFor="api-model" style={{ ...labelStyle, display: "block" }}>模型名称</label>
             <div style={{ display: "flex", gap: 6 }}>
-              <input style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="例如 deepseek-chat / deepseek-reasoner" />
+              <input id="api-model" style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="例如 deepseek-chat / deepseek-reasoner" />
               <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(null)}>
                 {modelStatus === "loading" && modelPickerTarget === null ? "检测中…" : "🔍 自动检测"}
               </span>
-            </div>
-            {modelStatus === "error" && modelPickerTarget === null && (
+            </div></>}
+            {!isVertex && modelStatus === "error" && modelPickerTarget === null && (
               <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
             )}
-            {modelList && modelList.length > 0 && modelPickerTarget === null && (
+            {!isVertex && modelList && modelList.length > 0 && modelPickerTarget === null && (
               <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid #14161e" }}>
                   <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
@@ -381,7 +362,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 ))}
               </div>
             )}
-            {modelList && modelList.length === 0 && (
+            {!isVertex && modelList && modelList.length === 0 && (
               <div style={{ fontSize: "10.5px", color: "#c4a040", marginTop: 3 }}>接口未返回任何模型，请手动填写模型名称</div>
             )}
 
@@ -551,7 +532,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                       style={{ ...inputStyle, flex: 1 }}
                       value={cfg.extractionModel || ""}
                       onChange={e => patch({ extractionModel: e.target.value })}
-                      placeholder={`留空则使用主模型 ${cfg.model}`}
+                      placeholder={`留空则使用主模型 ${getApiModel(cfg)}`}
                     />
                     <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels("extractionModel")}>
                       {modelStatus === "loading" && modelPickerTarget === "extractionModel" ? "检测中…" : "🔍 检测"}
@@ -588,7 +569,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6 }}>
                     {EXTRACTION_INTENT_LABELS.map(([key, label]) => {
                       const cur = cfg.extractionModels?.[key] ?? "";
-                      const placeholder = cfg.extractionModel || cfg.model || "主模型";
+                      const placeholder = cfg.extractionModel || getApiModel(cfg) || "主模型";
                       return (
                         <div key={key}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -705,14 +686,14 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 placeholder="自定义思考 token 预算，0=关闭" />
             )}
             <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3, marginBottom: 6 }}>
-              默认「关闭」：把 token 全留给正文，避免 Gemini 2.5 等模型的思考过程吃穿额度、导致正文被截断。想让模型多想再答可调高，代价是更慢更贵、且可能需要把上面的目标字数调大。
+              {isVertex ? "Vertex 的「关闭」会使用模型支持的最低思考档位，仍可能消耗输出 token。" : "默认「关闭」：把 token 全留给正文，避免 Gemini 2.5 等模型的思考过程吃穿额度、导致正文被截断。想让模型多想再答可调高，代价是更慢更贵、且可能需要把上面的目标字数调大。"}
             </div>
 
-            <div style={labelStyle}>CORS 代理地址（可选）</div>
+            {!isVertex && <><div style={labelStyle}>CORS 代理地址（可选）</div>
             <input style={inputStyle} value={cfg.corsProxy} onChange={e => patch({ corsProxy: e.target.value })} placeholder="例如 https://your-proxy.com/?url=" />
             <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3 }}>
               如果目标 API 不支持浏览器直连（CORS 报错），可以填一个中转代理服务的地址前缀。
-            </div>
+            </div></>}
 
             <div style={{ ...sectionStyle }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "var(--accent)", fontSize: "12px" }}>
@@ -751,8 +732,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
             </div>
 
             <div style={{ ...sectionStyle, background: "var(--bg-panel)", border: "1px solid #3a2a1a", borderRadius: 0, padding: 10, fontSize: "10.5px", color: "#a08860" }}>
-              ⚠️ 这是纯前端项目，API Key 保存在浏览器本地存储中。请不要把部署后的页面公开挂在互联网上，
-              否则访问者可能通过浏览器开发者工具看到你填入的 key。仅限本地自己使用，或搭配后端代理后再对外分享。
+              ⚠️ 凭证保存在当前浏览器中，请勿在公共设备上导入。Vertex AI 直接连接 Google，不使用代理。
             </div>
           </div>
         )}

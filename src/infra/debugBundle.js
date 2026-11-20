@@ -1,9 +1,10 @@
 import { getRngState } from "../core/rng.js";
+import { getApiModel } from "../core/apiModel.js";
 import { getRecentErrors } from "./errorBuffer.js";
 import { getTraceLog } from "./actionTrace.js";
 import { loadConfig } from "./apiConfig.js";
 import { loadAutoSave } from "./saves.js";
-import { collectConfigValues, scrubString, setScrubbedProperty } from "./textRedaction.js";
+import { ADC_SECRET_KEY, BLOCKED_CREDENTIAL, collectConfigValues, scrubCredentialPatterns, scrubString, setScrubbedProperty } from "./textRedaction.js";
 import { CURRENT_VERSION } from "./version.js";
 
 export const MAX_DEBUG_BUNDLE_BYTES = 1.5 * 1024 * 1024;
@@ -11,29 +12,39 @@ export const MAX_DEBUG_BUNDLE_BYTES = 1.5 * 1024 * 1024;
 const SECRET_KEY = /api[-_]?key|token|secret|password|authorization|cookie/i;
 const EMPTY_SOURCES = Object.freeze({});
 
-function serialize(value, secrets, seen = new WeakSet()) {
+function serialize(value, scrub, seen = new WeakSet()) {
   try {
-    if (typeof value === "string") return scrubString(value, secrets);
+    if (typeof value === "string") return scrub(value);
     if (value == null || typeof value === "number" || typeof value === "boolean") return value;
     if (typeof value === "bigint") return String(value);
-    if (typeof value === "function") return `[Function ${value.name || "anonymous"}]`;
-    if (value instanceof Error) return serialize({ name: value.name, message: value.message, stack: value.stack || "" }, secrets, seen);
+    if (typeof value === "function") return scrub(`[Function ${value.name || "anonymous"}]`);
+    if (value instanceof Error) return serialize({ name: value.name, message: value.message, stack: value.stack || "" }, scrub, seen);
     if (value instanceof Date) return value.toISOString();
     if (typeof value !== "object") return String(value);
     if (seen.has(value)) return "[Circular]";
     seen.add(value);
     if (Array.isArray(value)) {
-      const result = value.map(item => serialize(item, secrets, seen));
+      const result = value.map(item => serialize(item, scrub, seen));
       seen.delete(value);
       return result;
     }
     const result = {};
     for (const key of Object.keys(value)) {
-      if (SECRET_KEY.test(key)) continue;
+      const adcSecret = ADC_SECRET_KEY.test(key);
       try {
-        setScrubbedProperty(result, key, serialize(value[key], secrets, seen), secrets);
+        if (!adcSecret && SECRET_KEY.test(key)) {
+          const safeKey = scrub(key);
+          const raw = value[key];
+          const safeValue = typeof raw === "string" ? scrub(raw) : "";
+          if (safeKey.includes(BLOCKED_CREDENTIAL) || safeValue.includes(BLOCKED_CREDENTIAL)) {
+            setScrubbedProperty(result, BLOCKED_CREDENTIAL, BLOCKED_CREDENTIAL);
+          }
+          continue;
+        }
+        const safeValue = adcSecret ? BLOCKED_CREDENTIAL : serialize(value[key], scrub, seen);
+        setScrubbedProperty(result, key, safeValue, [], scrub);
       } catch {
-        setScrubbedProperty(result, key, "[Unreadable]", secrets);
+        setScrubbedProperty(result, key, "[Unreadable]", [], scrub);
       }
     }
     seen.delete(value);
@@ -43,8 +54,18 @@ function serialize(value, secrets, seen = new WeakSet()) {
   }
 }
 
-export function redact(value, apiConfig = null) {
-  return serialize(value, collectConfigValues(apiConfig));
+export function redact(value, apiConfig = null, onMatch = () => {}) {
+  const configured = collectConfigValues(apiConfig);
+  return serialize(value, text => scrubString(scrubCredentialPatterns(text, onMatch), configured));
+}
+
+export function redactDebugBundle(bundle, apiConfig) {
+  let count = 0;
+  const redacted = redact(bundle, apiConfig, () => { count++; });
+  if (redacted && typeof redacted === "object") {
+    redacted.redactions = count + (Number.isSafeInteger(bundle?.redactions) ? bundle.redactions : 0);
+  }
+  return redacted;
 }
 
 function readSource(sources, name, fallback, sourceErrors) {
@@ -136,7 +157,11 @@ export function buildDebugBundle(sources = EMPTY_SOURCES) {
     createdAt,
     userAgent,
     viewport,
-    model: configString(apiConfig, ["model"]),
+    model: getApiModel({
+      apiType: configString(apiConfig, ["apiType"]),
+      model: configString(apiConfig, ["model"]),
+      vertexModel: configString(apiConfig, ["vertexModel"]),
+    }),
     providerHost: providerHost(configString(apiConfig, ["endpoint", "baseUrl", "baseURL"])),
     save,
     rngState,
@@ -148,10 +173,9 @@ export function buildDebugBundle(sources = EMPTY_SOURCES) {
     truncated: { traces: 0, pipelineCalls: 0, logEntries: 0 },
   };
 
-  const configValues = collectConfigValues(apiConfig);
-  const redacted = serialize(bundle, configValues);
-  redacted.model = scrubString(bundle.model, configValues);
-  redacted.providerHost = scrubString(bundle.providerHost, configValues);
+  const redacted = redactDebugBundle(bundle, apiConfig);
+  redacted.model = redact(bundle.model, apiConfig);
+  redacted.providerHost = redact(bundle.providerHost, apiConfig);
   if (redacted.save && typeof redacted.save === "object" && !Array.isArray(redacted.save)) {
     delete redacted.save.log;
     delete redacted.save.convo;
@@ -189,9 +213,10 @@ function timestampForFilename(date) {
 }
 
 export function downloadDebugBundle(bundle) {
-  const version = String(bundle?.version || "unknown").replace(/[^A-Za-z0-9._-]+/g, "_");
+  const redacted = redactDebugBundle(bundle, loadConfig());
+  const version = String(redacted?.version || "unknown").replace(/[^A-Za-z0-9._-]+/g, "_");
   const filename = `qucuo-debug-${version}-${timestampForFilename(new Date())}.json`;
-  const blob = new Blob([formattedDebugBundle(bundle)], { type: "application/json" });
+  const blob = new Blob([formattedDebugBundle(redacted)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
