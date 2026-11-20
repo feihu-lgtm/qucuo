@@ -18,16 +18,18 @@ import { isNpcAngry, stealSuccessRate } from "../../domain/combat/stealSystem.js
 
 export function useScreenHandlers({
   act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
-  timeRef, noteAction, inv, setTradingShop, setInv, setClaimedMilestones,
+  timeRef, noteAction, inv, setTradingShop, setInv, setClaimedMilestones, captureUndo,
 }) {
   const handleNpcLook = useCallback((npc) => {
+    captureUndo();
     const result = lookNpc(gameStore.getState(), npc);
     applyResult(featureCtxRef.current, result);
     setActiveTarget(npc.name);
-    act("look " + npc.id, result.extraReplies || []);
-  }, [act]);
+    act("look " + npc.id, result.extraReplies || [], { keepUndo: true });
+  }, [act, captureUndo]);
 
   const handleNpcTalk = useCallback((npc) => {
+    captureUndo();
     const result = talkToNpc(gameStore.getState(), npc);
     applyResult(featureCtxRef.current, result);
     if (result.completedEscort) return;
@@ -38,41 +40,48 @@ export function useScreenHandlers({
     setInteractMode("talk");
     setTalkTarget(npc.name);
     setActiveTarget(npc.name);
-  }, []);
+  }, [captureUndo]);
 
   const handleNpcGift = useCallback((npc, item) => {
+    captureUndo();
     setActiveTarget(npc.name);
     applyResult(featureCtxRef.current, giftNpc(gameStore.getState(), npc, item));
-  }, []);
+  }, [captureUndo]);
 
   const handleInviteCompanion = useCallback((npc) => {
+    captureUndo();
     const result = inviteCompanion(gameStore.getState(), npc);
     if (!result.changes) return;
     setActiveTarget(npc.name);
     applyResult(featureCtxRef.current, result);
-  }, []);
+  }, [captureUndo]);
 
   const handleConsumeItem = useCallback((item) => {
+    captureUndo();
     applyResult(featureCtxRef.current, consumeItem(gameStore.getState(), item));
-  }, []);
+  }, [captureUndo]);
 
   const handleCollectGround = useCallback((item) => {
+    captureUndo();
     applyResult(featureCtxRef.current, pickGroundItem(gameStore.getState(), item, { tallyTime: timeRef.current }));
-  }, []);
+  }, [captureUndo]);
 
   const handleNpcTrade = useCallback((npc) => {
+    captureUndo();
     const result = tradeWithNpc(gameStore.getState(), npc);
     if (result.shop) setTradingShop(result.shop);
     else applyResult(featureCtxRef.current, result);
-  }, []);
+  }, [captureUndo]);
 
   const handleNpcLearnSkill = useCallback((npc) => {
+    captureUndo();
     const result = learnNpcSkillLogic(gameStore.getState(), npc);
     if (result.changes) setActiveTarget(npc.name);
     applyResult(featureCtxRef.current, result);
-  }, []);
+  }, [captureUndo]);
 
   const handleNpcSteal = useCallback((npc) => {
+    captureUndo();
     const state = gameStore.getState();
     if (isNpcAngry(state.varTree, npc?.name)) {
       applyResult(featureCtxRef.current, stealFromNpc(state, npc));
@@ -114,7 +123,7 @@ export function useScreenHandlers({
     }
     if (result.noteAction) noteAction(result.noteAction);
     applyResult(featureCtxRef.current, result);
-  }, [noteAction]);
+  }, [noteAction, captureUndo]);
 
   const giftToCharacter = useCallback((charName) => {
     if (inv.length === 0) {
@@ -132,13 +141,15 @@ export function useScreenHandlers({
   }, [inv, addLog, act, describeGiftForPrompt]);
 
   const handleToggleEquip = useCallback((it) => {
+    captureUndo();
     setInv(v => toggleEquip(v, it.id));
     noteAction("equipToggle");
-  }, []);
+  }, [captureUndo]);
 
   const claimMilestone = useCallback((charName, threshold) => {
+    captureUndo();
     setClaimedMilestones(prev => new Set(prev).add(`${charName}:${threshold}`));
-  }, []);
+  }, [captureUndo]);
 
   return {
     handleNpcLook,

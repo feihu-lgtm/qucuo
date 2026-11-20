@@ -6,11 +6,12 @@ import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
 
 export function useQuestPanel({
   act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc,
-  setActivePersuasion, setInteractMode, setTalkTarget,
+  setActivePersuasion, setInteractMode, setTalkTarget, captureUndo,
 }) {
   const forceAdvanceQuest = useCallback((quest, targetFlag) => {
+    captureUndo();
     applyResult(featureCtxRef.current, forceAdvanceQuestFeature(gameStore.getState(), quest, targetFlag));
-  }, []);
+  }, [captureUndo, featureCtxRef]);
 
   const triggerQuestFromPanel = useCallback(async (entry) => {
     const { quest, stage, isNewlyGiven } = entry;
@@ -27,7 +28,7 @@ export function useQuestPanel({
       { t: "quest", text: `  ❖ ${entry.isNewlyGiven ? "任务开启" : "任务推进"} 「${quest.title}」` },
       { t: "sys", text: `  〔详情可查任务面板〕` },
     ]);
-    await act(`❢ ${quest.title}`, [], { forcedEvent: stage.description, forcedEventNpc: quest.giver });
+    await act(`❢ ${quest.title}`, [], { forcedEvent: stage.description, forcedEventNpc: quest.giver, keepUndo: true });
   }, [act, apiCfg, forceAdvanceQuest, addLog]);
 
   const triggerQuestChoice = useCallback(async (entry, choice) => {
@@ -78,7 +79,7 @@ export function useQuestPanel({
       { t: "quest", text: `  ❖ 任务推进 「${quest.title}」——你选择：${choice.label}` },
       { t: "sys", text: `  〔详情可查任务面板〕` },
     ]);
-    await act(`❢ ${quest.title}：${choice.label}`, [], { forcedEvent: `${stage.description}（玩家的选择：${choice.label}）`, forcedEventNpc: quest.giver });
+    await act(`❢ ${quest.title}：${choice.label}`, [], { forcedEvent: `${stage.description}（玩家的选择：${choice.label}）`, forcedEventNpc: quest.giver, keepUndo: true });
   }, [act, apiCfg, forceAdvanceQuest, addLog]);
 
   return { forceAdvanceQuest, triggerQuestFromPanel, triggerQuestChoice };

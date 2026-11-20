@@ -10,7 +10,7 @@ import {
 
 export function usePigeonHandlers({
   room, varTree, featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
-  setInteractMode, setActiveBuilding,
+  setInteractMode, setActiveBuilding, captureUndo,
 }) {
   const pigeonDelayShichen = useCallback(
     (npcName) => pigeonDelayShichenLogic(gameStore.getState(), npcName),
@@ -24,6 +24,7 @@ export function usePigeonHandlers({
   }, [aiSummarizeFact]);
 
   const sendPigeonLetter = useCallback((npcName, content, opts = {}) => {
+    captureUndo();
     const result = sendPigeonLetterLogic(gameStore.getState(), npcName, content, opts);
     applyPigeonResult(result);
     if (result.sent) {
@@ -32,15 +33,17 @@ export function usePigeonHandlers({
       setInteractMode("action");
     }
     return result;
-  }, [applyPigeonResult]);
+  }, [applyPigeonResult, captureUndo]);
 
   const buyPigeon = useCallback((qty, price) => {
+    captureUndo();
     applyPigeonResult(buyPigeonLogic(gameStore.getState(), qty, price));
-  }, [applyPigeonResult]);
+  }, [applyPigeonResult, captureUndo]);
 
   const handleCollectPigeons = useCallback(({ qty, dayIdx }) => {
+    captureUndo();
     applyPigeonResult(collectPigeonsLogic(gameStore.getState(), { qty, dayIdx }));
-  }, [applyPigeonResult]);
+  }, [applyPigeonResult, captureUndo]);
 
   const handlePostSend = useCallback(({ npcName, content, channel, gift }) => {
     setActiveBuilding(null);
