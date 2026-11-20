@@ -62,7 +62,7 @@ function NarrativeSkeleton() {
 }
 
 export default function CenterPanel({
-  isMobile, mobileDrawer, setMobileDrawer,
+  isMobile, mobileColumn,
   zoneTheme, S,
   loading, addLog, handleCollectGround,
   rollbackOneStep, captureUndo, rollbackBlocked, stopRunning, dispatchCommand,
@@ -125,22 +125,7 @@ export default function CenterPanel({
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const showBasement = useOverlay(OVERLAY.BASEMENT);
   return (
-        <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", position: "relative" } : { flex: 55, ...S.panel }}>
-          {/* 手机：叙事区左右边缘贴边小把手，点击滑出左栏(天地)/右栏(行动) */}
-          {isMobile && !mobileDrawer && (
-            <>
-              <div className="mobile-drawer-tab mobile-drawer-tab-left" onClick={() => setMobileDrawer("left")} title="天地"
-                style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
-                  padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderLeft: "none",
-                  borderRadius: "0 6px 6px 0", color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
-                  boxShadow: "2px 0 8px rgba(0,0,0,.4)", userSelect: "none" }}>◀ 天地</div>
-              <div className="mobile-drawer-tab mobile-drawer-tab-right" onClick={() => setMobileDrawer("right")} title="行动"
-                style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", zIndex: 30,
-                  padding: "14px 4px", background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRight: "none",
-                  borderRadius: 0, color: zoneTheme.accent, cursor: "pointer", fontSize: "12px", writingMode: "vertical-rl",
-                  boxShadow: "-2px 0 8px rgba(0,0,0,.4)", userSelect: "none" }}>行动 ▶</div>
-            </>
-          )}
+        <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", display: mobileColumn === "center" ? "flex" : "none" } : { flex: 55, ...S.panel }}>
           <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>江湖</span>
             <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 8, alignItems: "center" }}>

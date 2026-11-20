@@ -34,7 +34,7 @@ export function useGameStartup({ initialLoadSlotId, initialOpenSettings }) {
 export function useGameStartupBindings({
   room, prevRoomNameRef, restoredInnerRef, setInnerRoomName, companionState,
   companionStateRef, loading, loadingRef, time, timeRef, setIsMobile,
-  setMobileDrawer, setMobileTopMenu,
+  setMobileTopMenu,
 }) {
   useEffect(() => {
     if (prevRoomNameRef.current === room.name) return;
@@ -49,7 +49,7 @@ export function useGameStartupBindings({
     const onResize = () => {
       const m = window.innerWidth < 768;
       setIsMobile(m);
-      if (!m) { setMobileDrawer(null); setMobileTopMenu(false); }
+      if (!m) setMobileTopMenu(false);
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
