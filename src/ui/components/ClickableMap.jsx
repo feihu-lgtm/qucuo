@@ -1,5 +1,6 @@
 import React from "react";
 import { MAP_UI } from "../../domain/map/mapUi.js";
+import { makeNodeHitArea } from "./mapHitArea.js";
 
 // 可点击移动地图：节点即操作。点相邻据点/房间 = 往那个方向走（复用 act 移动链）。
 // nodes: [{name,x,y,explored,current,reachable,dir,dest,locked}]  onGo(dir,dest,locked)
@@ -94,11 +95,11 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
             const d = byName[dest]; if (!d || !n.explored || !d.explored) return null;
             const diag = n.x !== d.x && n.y !== d.y;
             return <line key={`${n.name}-${dest}`.split("").sort().join("")} x1={px(n.x)} y1={py(n.y)} x2={px(d.x)} y2={py(d.y)}
-              stroke="#7a6448" strokeWidth={2.5} strokeDasharray={diag ? "6,4" : "none"} opacity={0.75} />;
+              stroke="#7a6448" strokeWidth={2.5} strokeDasharray={diag ? "6,4" : "none"} opacity={0.75} pointerEvents="none" />;
           }).filter(Boolean))}
           {cur && nodes.filter(n => n.reachable || n.locked).map(n => (
             <line key={`go-${n.dir}-${n.name || n.dest}`} x1={px(cur.x)} y1={py(cur.y)} x2={px(n.x)} y2={py(n.y)}
-              stroke={n.locked ? "#8a6a3a" : accent} strokeWidth={2} strokeDasharray={n.explored ? "none" : "6,5"} opacity={0.6} />
+              stroke={n.locked ? "#8a6a3a" : accent} strokeWidth={2} strokeDasharray={n.explored ? "none" : "6,5"} opacity={0.6} pointerEvents="none" />
           ))}
           {/* 节点：用九宫格三态贴图 */}
           {nodes.map(n => {
@@ -110,6 +111,7 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
             // 名牌即节点：双线框+大字。当前所在=唯一朱红边。
             const pw = labelLen(n) * fs + 28;
             const ph = fs + 24;
+            const hitArea = makeNodeHitArea(cx, cy, pw, ph);
             const edge = n.current || (hov && clickable) ? accent : "#26221c";
             const onClickNode = (e) => {
               // 拖动过就不触发点击（避免拖完误跳转）
@@ -119,6 +121,7 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
             return <g key={n.name || n.dir} style={{ cursor: clickable ? "pointer" : "default" }}
               onClick={onClickNode}
               onMouseEnter={() => setHover(n.name || n.dir)} onMouseLeave={() => setHover(null)}>
+              {clickable && <rect data-map-node-hit-target="" {...hitArea} fill="transparent" pointerEvents="all" />}
               {!n.explored && (
                 <image href={MAP_UI.fog} x={cx - NW/2} y={cy - NH/2} width={NW} height={NH} preserveAspectRatio="none"
                   style={{ filter: hov && clickable ? "brightness(1.25)" : "none" }} />
