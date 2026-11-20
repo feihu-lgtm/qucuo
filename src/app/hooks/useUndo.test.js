@@ -3,6 +3,7 @@ import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../core/gam
 import { travelByCarriage } from "../../features/buildings/logic.js";
 import { giftNpc } from "../../features/npc/logic.js";
 import { applyResult } from "../../features/run.js";
+import { runQuestChoice } from "./useQuestPanel.js";
 import { restorePersuasionProgress } from "./useAutosave.js";
 import { createUndoController } from "./useUndo.js";
 
@@ -183,4 +184,31 @@ describe("undo controller", () => {
     restorePersuasionProgress({}, (value) => { current = value; });
     expect(current).toEqual({});
   });
+
+  it("captures undo before a quest-choice combat opens the duel", async () => {
+    const calls = [];
+    await runQuestChoice({
+      act: vi.fn(),
+      apiCfg: { questTriggerMode: "ai" },
+      addLog: () => calls.push("log"),
+      setPendingQuestBranch: () => calls.push("branch"),
+      setDuelingNpc: () => calls.push("duel"),
+      setActivePersuasion: vi.fn(),
+      setInteractMode: vi.fn(),
+      setTalkTarget: vi.fn(),
+      captureUndo: () => calls.push("capture"),
+      forceAdvanceQuest: vi.fn(),
+    }, {
+      quest: { id: "quest-1", title: "山路之争" },
+      stage: {},
+    }, {
+      resolve: "combat",
+      flag: "quest_branch_won",
+      label: "迎战",
+      combatNpc: { name: "山匪", levelCap: 1 },
+    });
+
+    expect(calls).toEqual(["capture", "log", "branch", "duel"]);
+  });
+
 });
