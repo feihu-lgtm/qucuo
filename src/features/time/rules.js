@@ -69,7 +69,8 @@ function moveNpcToInnerRoom(npc, districtName, innerRoomName) {
 
 function parseForgeOrder(flag) {
   const parts = flag.split("_");
-  const luck = Number(parts[3]) || 5;
+  const n = Number(parts[3]);
+  const luck = Number.isFinite(n) ? n : 5;
   let quality = QUALITIES[Math.min(4, Math.floor(luck / 2.5))];
   let spec = null;
   if (parts[4] && parts[4] !== "-") {
