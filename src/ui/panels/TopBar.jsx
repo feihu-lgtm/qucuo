@@ -45,7 +45,7 @@ export default function TopBar({
         {isMobile && (
           <>
             <span className="mobile-touch-target mobile-menu-toggle" onClick={() => setMobileTopMenu(v => !v)}
-              style={{ cursor: "pointer", color: "#e8d0a0", padding: "3px 12px", background: "#1a140c", border: "1px solid #4a3a1a", borderRadius: 0, fontWeight: "bold", fontSize: "13px" }}>☰ 菜单</span>
+              style={{ ...topBtn(mobileTopMenu), fontSize: "13px" }}>☰ 菜单</span>
             <span style={{ color: "#8a7a5a", fontSize: "10px" }}>{CURRENT_VERSION.time}</span>
             <span style={{ flex: 1 }} />
             {mobileTopMenu && <span className="mobile-touch-target" onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>收起 ✕</span>}
