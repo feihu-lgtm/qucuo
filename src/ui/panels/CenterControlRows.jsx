@@ -44,7 +44,7 @@ export default function CenterControlRows({
   };
   const choosePerson = npc => {
     setActiveTarget(npc?.name || null);
-    if (!npc || interactMode !== "action") setTalkTarget(npc?.name || null);
+    setTalkTarget(npc?.name || null);
   };
   const trigger = (id, label, { active = false, disabled = false } = {}) => (
     <button
