@@ -40,7 +40,7 @@ export default function GameLayout({ layout }) {
     setMapData, setRoom, setInnerRoomName, teleportLookRef, setSkills, duelPending, confirmDuel,
     cancelDuel, tradingShop, setTradingShop, buildingPanelMinimized,
     setBuildingPanelMinimized, handleBuildingInn, handleBuildingHeal, skills,
-    handleBuySkill, effectiveSpecialNow, inspectItem, jotNote, handleAcceptEscort,
+    handleBuySkill, effectiveSpecialNow, inspectItem, jotNote, handleAcceptEscort, handleCollectGround,
     handleGamble, handleCollectPigeons, buyPigeon, handlePostSend, handleTravel,
     handleServiceOrder, handlePray, handleReadBook, handleBuyBook, deposit,
     depositedAt, handleDeposit, handleWithdraw, pledgedItems, handlePledge,
@@ -184,18 +184,10 @@ export default function GameLayout({ layout }) {
           varTree={varTree} char={char}
           peoplePanel={peoplePanel} setPeoplePanel={setPeoplePanel}
           activeBuilding={activeBuilding} setActiveBuilding={setActiveBuilding}
-          setActiveItemMenu={setActiveItemMenu}
           setActiveNpcMenu={setActiveNpcMenu}
           setCharacterPageTarget={setCharacterPageTarget}
           setPigeonTarget={setPigeonTarget} setInteractMode={setInteractMode} inputRef={inputRef} addLog={addLog}
           pigeonTarget={pigeonTarget}
-          portraits={portraits} portraitTarget={portraitTarget} setPortraitTarget={setPortraitTarget}
-          interactMode={interactMode} activeTarget={activeTarget} talkTarget={talkTarget}
-          playerAvatar={playerAvatar}
-          slImgErr={slImgErr} setSlImgErr={setSlImgErr} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState}
-          pearlForm={pearlForm} setPearlForm={setPearlForm} setPearlFormState={setPearlFormState} pearlImgErr={pearlImgErr} setPearlImgErr={setPearlImgErr}
-          narratorAffection={narrator.affection} narratorImgErr={narratorImgErr} setNarratorImgErr={setNarratorImgErr}
-          companionState={companionState}
           mapView={mapView} setMapView={setMapView} mapBig={mapBig} setMapBig={setMapBig}
           mapData={mapData} questProgress={questProgress} flags={flags} inv={inv}
           inSeaOfMind={inSeaOfMind} seaGate={seaGate} enterSeaOfMind={enterSeaOfMind} leaveSeaOfMind={leaveSeaOfMind}
@@ -224,7 +216,7 @@ export default function GameLayout({ layout }) {
           handleBuildingInn={handleBuildingInn} handleBuildingHeal={handleBuildingHeal}
           skills={skills} handleBuySkill={handleBuySkill}
           time={time} inv={inv} effectiveSpecialNow={effectiveSpecialNow}
-          inspectItem={inspectItem} jotNote={jotNote}
+          inspectItem={inspectItem} jotNote={jotNote} handleCollectGround={handleCollectGround}
           flags={flags} questProgress={questProgress}
           handleAcceptEscort={handleAcceptEscort} handleGamble={handleGamble}
           handleCollectPigeons={handleCollectPigeons} buyPigeon={buyPigeon}

@@ -48,10 +48,10 @@
     "infra/version.js": 2588,
     "tests/docsTree.test.js": 449,
     "ui/panels/CenterPanel.jsx": 758,
-    "ui/panels/LeftPanel.jsx": 422,
+    "ui/panels/LeftPanel.jsx": 258,
     "ui/screens/CardImportScreen.jsx": 1522,
     "ui/screens/DuelScreen.jsx": 776,
-    "ui/screens/SettingsPanel.jsx": 1063,
+    "ui/screens/SettingsPanel.jsx": 1062,
     "ui/screens/StartScreen.jsx": 411,
     "ui/screens/TeamDuelScreen.jsx": 436
   },

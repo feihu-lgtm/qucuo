@@ -55,6 +55,13 @@ export function consumeItem(state, item) {
 
 export function pickGroundItem(state, item, { tallyTime = state.time } = {}) {
   const itemName = itemNameOf(item);
+  const matches = (entry) => (
+    typeof item === "object" && item?.id != null
+      ? typeof entry === "object" && entry?.id === item.id
+      : itemNameOf(entry) === itemName
+  );
+  const groundItem = (state.room.items || []).find(matches);
+  if (groundItem === undefined) return {};
   return {
     changes: {
       varTree: (previous) => {
@@ -63,15 +70,10 @@ export function pickGroundItem(state, item, { tallyTime = state.time } = {}) {
         next.世界.起居注 = tallyAdd(next.世界.起居注, "pickGround", tallyTime);
         return next;
       },
-      inv: (previous) => [...previous, item],
+      inv: (previous) => [...previous, groundItem],
       room: (previous) => {
         const items = [...(previous.items || [])];
-        let index = items.findIndex((entry) => (
-          typeof item === "object" && item.id != null
-            ? typeof entry === "object" && entry.id === item.id
-            : entry === item
-        ));
-        if (index === -1) index = items.findIndex((entry) => itemNameOf(entry) === itemName);
+        const index = items.findIndex(matches);
         if (index !== -1) items.splice(index, 1);
         return { ...previous, items };
       },

@@ -1,7 +1,7 @@
 // 顶栏——横贯全宽的功能入口条 + 头像选择弹层。
 // ---------------------------------------------------------------------------
 // 从 MudRPG.jsx 抽出。两部分内容：
-//   1. 顶栏本体：教程/图鉴/版本、全流程日志/上报bug、
+//   1. 顶栏本体：教程/图鉴、上报bug、
 //      主菜单/存档/设置/日夜切换，以及右端的自动存档状态指示。
 //      桌面端常显；手机端收成一个「☰ 菜单」，点开才换行铺开全部入口。
 //   2. 头像选择弹层（showAvatarPicker）：8 张预制立绘 + 上传自定义 + 恢复默认。
@@ -14,7 +14,11 @@ import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../../infra/version.js";
 import { getState as getMusicState, subscribe as subscribeMusic } from "../../infra/musicPlayer.js";
-import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
+import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
+
+export function VersionHistoryButton({ theme }) {
+  return <button type="button" onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)} title="点击查看版本历史目录" style={chromeBtn(theme, { active: false })}>{CURRENT_VERSION.time}</button>;
+}
 
 export default function TopBar({
   isMobile, mobileTopMenu, setMobileTopMenu,
@@ -31,7 +35,6 @@ export default function TopBar({
       openOverlay(OVERLAY.SETTINGS);
     })
     : (setSettingsInitialTab(tab), openOverlay(OVERLAY.SETTINGS));
-  const showTrace = useOverlay(OVERLAY.TRACE);
   const showAvatarPicker = useOverlay(OVERLAY.AVATAR_PICKER);
   // 顶栏按钮统一规格：此前每个按钮各自 padding/字号/色系，一字排开像彩虹糖纸。
   // 收敛成"同一副骨架 + 三色语义"：金=重要入口，松石绿=设置/切换，绛红=上报，其余用正文/次要色。
@@ -53,7 +56,6 @@ export default function TopBar({
           <>
             <span className="mobile-touch-target mobile-menu-toggle" onClick={() => setMobileTopMenu(v => !v)}
               style={{ ...topBtn(mobileTopMenu), fontSize: "13px" }}>☰ 菜单</span>
-            <span style={{ color: "#8a7a5a", fontSize: "10px" }}>{CURRENT_VERSION.time}</span>
             <span style={{ flex: 1 }} />
             {mobileTopMenu && <span className="mobile-touch-target" onClick={() => setMobileTopMenu(false)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>收起 ✕</span>}
           </>
@@ -75,15 +77,6 @@ export default function TopBar({
           title="百物·武学总览：看全所有物品与武学的介绍、品阶、效果"
           style={topBtn()}
         >图鉴</span>
-        <span
-          className="qbtn"
-          onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)}
-          title="点击查看版本历史目录"
-          style={topBtn()}
-        >{CURRENT_VERSION.time}</span>
-
-        {/* 中组：日志 · 上报bug */}
-        <span className="qbtn" onClick={() => toggleOverlay(OVERLAY.TRACE)} style={topBtn(showTrace)}>全流程日志</span>
         <span className="qbtn" onClick={() => openOverlay(OVERLAY.BUG_REPORT)} title="遇到问题或有建议，点这里上报" style={topBtn()}>上报bug</span>
 
         <span style={{ flex: 1 }} />
