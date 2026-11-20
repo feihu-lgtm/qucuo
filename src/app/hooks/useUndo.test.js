@@ -15,6 +15,7 @@ function createController(overrides = {}) {
   const waitTimerRef = { current: null };
   const setDuelPending = vi.fn();
   const setDuelingNpc = vi.fn();
+  const setActiveBuilding = vi.fn();
   const setQueueCount = vi.fn();
   const turnGenerationRef = { current: 0 };
   const controller = createUndoController({
@@ -28,6 +29,7 @@ function createController(overrides = {}) {
     queueTimerRef,
     setDuelPending,
     setDuelingNpc,
+    setActiveBuilding,
     pendingTalksRef,
     changePendingTalks: (delta) => {
       pendingTalksRef.current = Math.max(0, pendingTalksRef.current + delta);
@@ -42,7 +44,7 @@ function createController(overrides = {}) {
   return {
     controller, pendingQueue, autoTravelRef, queueTimerRef, pendingTalksRef,
     talkBusyRef, waitTimerRef, setDuelPending, setDuelingNpc, setQueueCount,
-    turnGenerationRef,
+    setActiveBuilding, turnGenerationRef,
   };
 }
 
@@ -162,6 +164,7 @@ describe("undo controller", () => {
       expect(harness.waitTimerRef.current).toBeNull();
       expect(harness.setDuelPending).toHaveBeenCalledWith(null);
       expect(harness.setDuelingNpc).toHaveBeenCalledWith(null);
+      expect(harness.setActiveBuilding).toHaveBeenCalledWith(null);
       expect(harness.pendingTalksRef.current).toBe(0);
       expect(harness.talkBusyRef.current).toBe(false);
       expect(vi.getTimerCount()).toBe(0);

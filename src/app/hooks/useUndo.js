@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef } from "react";
 
 export function createUndoController({
   undoSnapshotRef, buildCurrentSnapshot, applySnapshot, addLog, pendingQueue,
-  setQueueCount, autoTravelRef, queueTimerRef, setDuelPending, setDuelingNpc,
+  setQueueCount, autoTravelRef, queueTimerRef, setDuelPending, setDuelingNpc, setActiveBuilding,
   pendingTalksRef, changePendingTalks, talkBusyRef, setLoading, waitTimerRef,
   setWaitSecs, turnGenerationRef, confirmRollback = () => true,
 }) {
@@ -21,6 +21,7 @@ export function createUndoController({
     invalidateTurns();
     applySnapshot(snapshot);
     undoSnapshotRef.current = null;
+    setActiveBuilding(null);
     pendingQueue.current = [];
     setQueueCount(0);
     autoTravelRef.current = false;
@@ -58,6 +59,7 @@ export function useUndo(deps) {
       deps.undoSnapshotRef, deps.buildCurrentSnapshot, deps.applySnapshot, deps.addLog,
       deps.pendingQueue, deps.setQueueCount, deps.autoTravelRef, deps.queueTimerRef,
       deps.setDuelPending, deps.setDuelingNpc, deps.pendingTalksRef,
+      deps.setActiveBuilding,
       deps.changePendingTalks, deps.talkBusyRef, deps.setLoading, deps.waitTimerRef,
       deps.setWaitSecs, confirmRollback,
     ],

@@ -142,7 +142,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const { captureUndo, rollbackOneStep, turnGenerationRef } = useUndo({
     undoSnapshotRef, buildCurrentSnapshot, applySnapshot,
     addLog, pendingQueue, setQueueCount, autoTravelRef, queueTimerRef,
-    setDuelPending, setDuelingNpc, pendingTalksRef, changePendingTalks, talkBusyRef,
+    setDuelPending, setDuelingNpc, setActiveBuilding, pendingTalksRef, changePendingTalks, talkBusyRef,
     setLoading, waitTimerRef, setWaitSecs,
   });
 
