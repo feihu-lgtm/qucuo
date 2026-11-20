@@ -240,8 +240,8 @@ export default function GameLayout({ layout }) {
       {mapBig && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={mapBigCloseGuard.onMouseDown} onClick={mapBigCloseGuard.onClick}>
         <div style={{
           background: `url("${MAP_UI.scroll}") center/100% 100% no-repeat`,
-          borderRadius: 0, minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh",
-          padding: "8% 11% 9% 11%", boxSizing: "border-box",
+          borderRadius: 0, minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh", overflowY: "auto",
+          padding: "14% 11% 9% 11%", boxSizing: "border-box",
         }} onClick={e => e.stopPropagation()}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <span style={{ color: "#4a3520", fontSize: "13px", fontWeight: "bold" }}>{mapView === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"} <span style={{ color: "#7a6448", fontSize: "10px", fontWeight: "normal" }}>{mapView === "inner" ? "朱红为当前所在 · 点相邻房间前往" : "朱红为当前所在 · 点已探明据点自动前往 · 🔒需前置"}</span></span>
