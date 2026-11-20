@@ -42,6 +42,17 @@ describe("SettingsPanel provider models", () => {
     expect(options).toContain(">google/gemini-4-hydrogen（需开通 Gemini 4 额度）</option>");
     expect(render({ apiType: "openai" }, "api")).not.toContain('id="vertex-model-preset"');
   });
+
+  it("keeps core API fields visible and collapses secondary settings by default", () => {
+    const html = render({ provider: "deepseek", apiType: "openai", apiKey: "test-key", model: "deepseek-chat" }, "api");
+    expect(html).toContain('id="api-provider"');
+    expect(html).toContain('id="api-key"');
+    expect(html).toContain('id="api-model"');
+    expect(html).not.toContain('id="api-temperature"');
+    expect(html).toContain("生成参数");
+    expect(html).toContain("篇幅与超时");
+    expect(html).toContain("配置管理");
+  });
 });
 
 describe("SettingsPanel font preference", () => {

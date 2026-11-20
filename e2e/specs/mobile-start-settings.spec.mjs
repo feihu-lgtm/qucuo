@@ -145,13 +145,64 @@ export default async function mobileStartSettings({ page, game }) {
     await topMenu.getByText("设置", { exact: true }).click();
   }
   await page.getByText("🔑 API 配置", { exact: true }).click();
+  assert.equal(await page.locator("#api-temperature").isVisible().catch(() => false), false);
+  await page.getByRole("button", { name: /生成参数/ }).click();
+  await page.locator("#api-temperature").waitFor({ state: "visible" });
+  await page.getByRole("button", { name: /生成参数/ }).click();
   await page.locator("#api-provider").selectOption("openai");
+  await page.getByRole("button", { name: /接口地址/ }).click();
   await page.locator("#api-endpoint").fill("https://api.openai.com/v1/chat/completions");
   await page.locator("#api-provider").selectOption("qwen");
+  await page.getByRole("button", { name: /接口地址/ }).click();
   assert.equal(await page.locator("#api-endpoint").inputValue(), "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
   await page.getByRole("button", { name: "国际", exact: true }).click();
   assert.equal(await page.locator("#api-endpoint").inputValue(), "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions");
   await page.locator("#api-provider").selectOption("zhipu");
   await page.getByText("此厂商不允许浏览器直连，请在下方填 CORS 代理", { exact: true }).waitFor();
-  await capture(page, "api-tab.png");
+  await page.waitForFunction(() => {
+    const header = [...globalThis.document.querySelectorAll("button[aria-expanded]")].find(button => button.textContent.includes("接口地址"));
+    return header?.getAttribute("aria-expanded") === "true";
+  });
+  assert.equal(await page.getByRole("button", { name: /接口地址/ }).getAttribute("aria-expanded"), "true");
+  await capture(page, "api-zhipu.png");
+
+  await page.locator("#api-provider").selectOption("deepseek");
+  await page.waitForFunction(() => {
+    const header = [...globalThis.document.querySelectorAll("button[aria-expanded]")].find(button => button.textContent.includes("接口地址"));
+    return globalThis.document.querySelector("#api-provider")?.value === "deepseek" && header?.getAttribute("aria-expanded") === "false";
+  });
+  assert.equal(await page.getByRole("button", { name: /接口地址/ }).getAttribute("aria-expanded"), "false");
+  await capture(page, "api-simple.png");
+  await page.getByRole("button", { name: /生成参数/ }).click();
+  await page.locator("#api-temperature").waitFor({ state: "visible" });
+  await capture(page, "api-expanded.png");
+  await page.getByRole("button", { name: /生成参数/ }).click();
+
+  await page.locator("#api-key").fill("deepseek-e2e-key");
+  await page.locator("#api-model").fill("deepseek-chat");
+  await page.route("https://api.deepseek.com/**", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ choices: [{ message: { content: "连接成功" }, finish_reason: "stop" }] }),
+  }));
+  await page.getByText("🔗 连接测试", { exact: true }).click();
+  await page.getByTestId("api-test-result").waitFor();
+  assert.match(await page.getByTestId("api-test-result").innerText(), /^✓ 连通 · deepseek-chat · \d+ms$/);
+  await capture(page, "test-ok.png");
+
+  await page.route("https://generativelanguage.googleapis.com/**", route => route.fulfill({
+    status: 404,
+    contentType: "application/json",
+    body: JSON.stringify({ error: { message: "model not found" } }),
+  }));
+  await page.locator("#api-provider").selectOption("gemini");
+  await page.locator("#api-key").fill("gemini-e2e-secret");
+  await page.locator("#api-model").fill("gemini-2.5-flash");
+  await page.getByText("🔗 连接测试", { exact: true }).click();
+  await page.getByTestId("api-test-result").waitFor();
+  const failureText = await page.getByTestId("api-test-result").innerText();
+  assert.match(failureText, /^✕ 404 · 地址或模型名不对 · 检查请求地址：/);
+  assert.match(failureText, /key=\[REDACTED\]/);
+  assert.doesNotMatch(failureText, /gemini-e2e-secret/);
+  await capture(page, "test-404.png");
 }

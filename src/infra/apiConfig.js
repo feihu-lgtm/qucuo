@@ -294,10 +294,63 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = _requestTimeoutMs
 
 // ── 错误分类：把五花八门的原始错误翻成玩家看得懂的话 + 给出处理建议 ──
 // 返回 { kind, icon, title, detail, hint }，供 UI 分级展示。
-export function classifyError(err) {
+function redactErrorValue(value, apiKey = "") {
+  let text = String(value || "");
+  if (apiKey) text = text.split(apiKey).join("[REDACTED]");
+  return text
+    .replace(/\bBearer\s+[^\s,;"']+/gi, "Bearer [REDACTED]")
+    .replace(/(authorization\s*[:=]\s*)[^\s,;"']+/gi, "$1[REDACTED]")
+    .replace(/(x-api-key\s*[:=]\s*)[^\s,;"']+/gi, "$1[REDACTED]")
+    .replace(/([?&](?:key|api[_-]?key|token)=)[^&\s]*/gi, "$1[REDACTED]");
+}
+
+function redactRequestUrl(value, apiKey) {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    for (const key of ["key", "api_key", "apikey", "token", "access_token"]) {
+      if (url.searchParams.has(key)) url.searchParams.set(key, "[REDACTED]");
+    }
+    return redactErrorValue(url.toString(), apiKey);
+  } catch {
+    return redactErrorValue(value, apiKey);
+  }
+}
+
+function connectionError(err, apiKey) {
+  const msg = redactErrorValue(err?.message || err, apiKey);
+  const status = Number(err?.httpStatus) || Number(msg.match(/\bHTTP\s+(\d{3})\b/i)?.[1]);
+  const requestUrl = redactRequestUrl(err?.requestUrl, apiKey);
+  const result = (code, cause, fix, kind) => ({ code, cause, fix, kind });
+  if (err?.code === "html" || /网页而不是数据|text\/html|<!DOCTYPE|<html/i.test(msg)) {
+    return result("HTML", "地址填成了网页", "检查接口地址", "endpoint");
+  }
+  if (status === 400) {
+    const vendorMessage = redactErrorValue(err?.vendorMessage || msg, apiKey).slice(0, 80);
+    return result("400", `参数被拒${vendorMessage ? `：${vendorMessage}` : ""}`, "检查模型名和请求参数", "parameter");
+  }
+  if (status === 401 || status === 403) return result(String(status), "Key 无效或没权限", "检查 API Key 与账号权限", "auth");
+  if (status === 404) return result("404", "地址或模型名不对", `检查请求地址：${requestUrl || "确认接口地址和模型名"}`, "endpoint");
+  if (status === 429) return result("429", "限流或余额不足", "稍后重试或检查账户额度", "quota");
+  if (status >= 500 && status <= 599) return result(String(status), "厂商服务出错，稍后再试", "稍后重试", "server");
+  if (err?.code === "timeout" || /超过|timeout|timed out/i.test(msg)) {
+    const seconds = msg.match(/(?:超过|after)\s*(\d+)/i)?.[1] || "?";
+    return result("超时", `${seconds}秒没响应`, "检查网络或延长超时设置", "timeout");
+  }
+  if (err?.code === "network" || err instanceof TypeError || /Failed to fetch|NetworkError|ERR_/i.test(msg)) {
+    return result("网络", "网络或浏览器被拦", "可能需要 CORS 代理", "network");
+  }
+  return result("错误", msg.slice(0, 80) || "请求失败", "检查网络和接口配置", "unknown");
+}
+
+export function classifyError(err, options = {}) {
   const msg = String(err?.message || err || "");
   const code = err?.code;
   const has = (...ks) => ks.some(k => msg.includes(k));
+  if (options.connection) {
+    const connection = connectionError(err, options.apiKey);
+    return { kind: connection.kind, connection };
+  }
 
   if (code === "timeout" || has("超过", "timeout", "timed out")) {
     return { kind: "timeout", icon: "⏱", title: "接口超时", detail: msg, hint: "网络慢或模型太忙。可稍等重试，或在设置里换个更快的模型/中转站。" };
@@ -323,12 +376,16 @@ export function classifyError(err) {
   return { kind: "unknown", icon: "⚠", title: "出错了", detail: msg, hint: "可重试一次；反复出现请把这条错误发给作者。" };
 }
 
-async function readJsonOrThrow(res, label) {
+async function readJsonOrThrow(res, label, requestUrl = "") {
   const bodyText = await res.text();
   const head = bodyText.trimStart().slice(0, 1);
   const looksHtml = head === "<" || /text\/html/i.test(res.headers.get("content-type") || "");
   if (looksHtml) {
-    throw new Error(`${label}：接口返回的是网页而不是数据（HTTP ${res.status}）。多半是接口地址(baseURL)填错或填漏了一截、中转站挂了、或密钥不对。请到设置里检查：地址是否完整、密钥是否正确、接口类型是否选对。`);
+    const err = new Error(`${label}：接口返回的是网页而不是数据（HTTP ${res.status}）。`);
+    err.code = "html";
+    err.httpStatus = res.status;
+    err.requestUrl = requestUrl || res.url;
+    throw err;
   }
   try {
     const json = JSON.parse(bodyText);
@@ -338,11 +395,21 @@ async function readJsonOrThrow(res, label) {
       const apiMsg = json?.error?.message || json?.message || bodyText.slice(0, 120);
       const err = new Error(`${label} HTTP ${res.status}：${apiMsg}`);
       err.httpStatus = res.status;
+      err.vendorMessage = String(apiMsg);
+      err.requestUrl = requestUrl || res.url;
       throw err;
     }
     return json;
   } catch (e) {
     if (e.httpStatus) throw e; // 上面主动抛的带码错误，直接透传
+    if (!res.ok) {
+      const vendorMessage = bodyText.slice(0, 120) || e.message;
+      const err = new Error(`${label} HTTP ${res.status}：${vendorMessage}`);
+      err.httpStatus = res.status;
+      err.vendorMessage = vendorMessage;
+      err.requestUrl = requestUrl || res.url;
+      throw err;
+    }
     throw new Error(`${label}：接口返回的内容无法解析（HTTP ${res.status}）。返回开头是「${bodyText.slice(0, 60)}」——请检查设置里的接口地址与密钥。`);
   }
 }
@@ -450,7 +517,7 @@ async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
     if (vertex && !res.ok) throw await vertex.vertexResponseError(res, auth.Authorization);
     if (stream) return res;
     return vertex ? await res.json().catch(() => { throw new Error("Vertex AI 返回的内容无法解析"); })
-      : await readJsonOrThrow(res, "OpenAI 兼容调用");
+      : await readJsonOrThrow(res, "OpenAI 兼容调用", url);
   } catch (error) {
     if (vertex && error.code === "network") throw new Error("Vertex AI 网络请求失败");
     throw error;
@@ -514,7 +581,7 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
         },
         body: JSON.stringify(abody),
       });
-      raw = await readJsonOrThrow(res, "Anthropic 调用");
+      raw = await readJsonOrThrow(res, "Anthropic 调用", url);
       if (raw.error) throw new Error(raw.error.message || "Anthropic API 错误");
       text = stripReasoning(raw.content?.map(b => b.text || "").join("") || "");
       finishReason = raw.stop_reason;
@@ -553,7 +620,7 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
         headers: { ...provider.extraHeaders, "Content-Type": "application/json" },
         body: JSON.stringify({ contents, generationConfig: genConfig }),
       });
-      raw = await readJsonOrThrow(res, "Gemini 调用");
+      raw = await readJsonOrThrow(res, "Gemini 调用", url);
       if (raw.error) throw new Error(raw.error.message || "Gemini API 错误");
       text = stripReasoning(raw.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "");
       finishReason = raw.candidates?.[0]?.finishReason;
@@ -572,8 +639,16 @@ async function requestModel(cfg, systemPrompt, messages, opts) {
 
 // 连接测试：发一条最小的问候消息，确认 key/endpoint/model 都配置正确
 export async function testConnection(cfg) {
-  const { text } = await callModel(cfg, "你是一个测试助手。", [{ role: "user", content: "请回复：连接成功" }], { maxTokens: cfg.callTokenLimits?.connectionTest ?? DEFAULT_CALL_TOKEN_LIMITS.connectionTest });
-  return text;
+  try {
+    const { text } = await callModel(cfg, "你是一个测试助手。", [{ role: "user", content: "请回复：连接成功" }], { maxTokens: cfg.callTokenLimits?.connectionTest ?? DEFAULT_CALL_TOKEN_LIMITS.connectionTest });
+    return text;
+  } catch (error) {
+    if (migrateProvider(cfg).provider === "vertex" && !error.requestUrl) {
+      const { buildVertexEndpoint } = await import("./vertexAdc.js");
+      error.requestUrl = buildVertexEndpoint(cfg.vertexProject, cfg.vertexLocation);
+    }
+    throw error;
+  }
 }
 
 // 流式调用：通过 onChunk(deltaText) 回调逐段返回文本，onDone(fullText) 在结束时给出完整拼接结果。

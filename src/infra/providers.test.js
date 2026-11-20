@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { API_TYPES, callModel, defaultConfig, listModels } from "./apiConfig.js";
+import { API_TYPES, callModel, classifyError, defaultConfig, listModels, testConnection } from "./apiConfig.js";
 import { buildVertexEndpoint, vertexReasoningEffort } from "./vertexAdc.js";
 import {
   isDefaultEndpoint, migrateProvider, providerApiType, PROVIDERS,
@@ -242,5 +242,69 @@ describe("provider migration", () => {
       .toMatchObject({ provider: "anthropic", apiType: "anthropic" });
     expect(isDefaultEndpoint(`${PROVIDERS.zhipu.altEndpoints[0].url}/`)).toBe(true);
     expect(isDefaultEndpoint("https://my-relay.example/v1")).toBe(false);
+  });
+});
+
+describe("connection test error summaries", () => {
+  const deepseekConfig = { ...configFor(PROVIDERS.deepseek), apiKey: "test-api-key" };
+  const jsonResponse = (status, message) => new Response(JSON.stringify({ error: { message } }), {
+    status, headers: { "Content-Type": "application/json" },
+  });
+  const classifyFailure = async (cfg = deepseekConfig) => {
+    try {
+      await testConnection(cfg);
+      throw new Error("Expected the connection test to fail");
+    } catch (error) {
+      return classifyError(error, { connection: true, apiKey: cfg.apiKey }).connection;
+    }
+  };
+
+  it.each([
+    [400, `参数被拒：${"x".repeat(80)}`, "400"],
+    [401, "Key 无效或没权限", "401"],
+    [403, "Key 无效或没权限", "403"],
+    [429, "限流或余额不足", "429"],
+    [500, "厂商服务出错，稍后再试", "500"],
+  ])("summarizes HTTP %i without exposing credentials", async (status, cause, code) => {
+    const vendorMessage = status === 400 ? `${"x".repeat(85)}${deepseekConfig.apiKey}` : "vendor error";
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(status, vendorMessage)));
+    const summary = await classifyFailure();
+    expect(summary).toMatchObject({ code, cause });
+    expect(JSON.stringify(summary)).not.toContain(deepseekConfig.apiKey);
+  });
+
+  it("redacts Gemini's query key from a 404 request URL", async () => {
+    const cfg = { ...configFor(PROVIDERS.gemini), apiKey: "gemini-secret-key", model: "gemini-2.5-flash" };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("Not Found", {
+      status: 404,
+      headers: { "content-type": "text/plain" },
+    })));
+    const summary = await classifyFailure(cfg);
+    expect(summary).toMatchObject({ code: "404", cause: "地址或模型名不对" });
+    expect(summary.fix).toContain("key=[REDACTED]");
+    expect(JSON.stringify(summary)).not.toContain(cfg.apiKey);
+  });
+
+  it("classifies timeout and network fetch failures", async () => {
+    const timeout = new Error("aborted");
+    timeout.name = "AbortError";
+    vi.stubGlobal("fetch", vi.fn(async () => { throw timeout; }));
+    expect(await classifyFailure()).toMatchObject({
+      code: "超时", cause: "60秒没响应", fix: "检查网络或延长超时设置",
+    });
+
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
+    expect(await classifyFailure()).toMatchObject({
+      code: "网络", cause: "网络或浏览器被拦", fix: "可能需要 CORS 代理",
+    });
+  });
+
+  it("classifies an HTML response as a web page", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>login</html>", {
+      status: 200, headers: { "Content-Type": "text/html" },
+    })));
+    expect(await classifyFailure()).toMatchObject({
+      code: "HTML", cause: "地址填成了网页", fix: "检查接口地址",
+    });
   });
 });

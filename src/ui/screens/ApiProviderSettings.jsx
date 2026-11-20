@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DEFAULT_VERTEX_MODEL } from "../../core/apiModel.js";
 import { chromeBtn } from "../theme.js";
 
@@ -14,16 +14,34 @@ const VERTEX_MODELS = [
   ["google/gemini-4-hydrogen", "需开通 Gemini 4 额度"],
 ];
 
+export function ApiSettingsGroup({ title, expanded, onToggle, children, zoneTheme }) {
+  return (
+    <section>
+      <button type="button" aria-expanded={expanded} onClick={onToggle}
+        style={{ ...chromeBtn(zoneTheme, { active: expanded }), width: "100%", justifyContent: "flex-start", marginTop: 8 }}>
+        {expanded ? "▾" : "▸"} {title}
+      </button>
+      {expanded && <div style={{ paddingTop: 6 }}>{children}</div>}
+    </section>
+  );
+}
+
 export default function ApiProviderSettings({
   cfg, patch, providers, isDefaultEndpoint, migrateProvider, providerApiType,
   importCredential, hasCredential, labelStyle, inputStyle, zoneTheme,
 }) {
   const [status, setStatus] = useState("");
+  const [endpointExpanded, setEndpointExpanded] = useState(false);
   const provider = providers[migrateProvider(cfg).provider] || providers.custom;
   const vertex = provider.protocol === "vertex";
   const fieldLabel = { ...labelStyle, display: "block" };
   const vertexModel = cfg.vertexModel ?? DEFAULT_VERTEX_MODEL;
   const preset = VERTEX_MODELS.some(([id]) => id === vertexModel) ? vertexModel : "";
+
+  useEffect(() => {
+    if (provider.corsProxyRequired && !String(cfg.corsProxy || "").trim()) setEndpointExpanded(true);
+    else if (!provider.corsProxyRequired) setEndpointExpanded(false);
+  }, [provider.id, provider.corsProxyRequired, cfg.corsProxy]);
 
   function selectProvider(providerId) {
     const selected = providers[providerId];
@@ -74,22 +92,40 @@ export default function ApiProviderSettings({
         </>
       ) : (
         <>
-          <div style={labelStyle}>API 地址（Endpoint）</div>
-          <input id="api-endpoint" style={inputStyle} value={cfg.endpoint || ""} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
-          {provider.altEndpoints.length > 0 && (
-            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 5 }}>
-              {provider.altEndpoints.map(alt => (
-                <button
-                  key={alt.url}
-                  type="button"
-                  onClick={() => patch({ endpoint: alt.url })}
-                  aria-pressed={cfg.endpoint === alt.url}
-                  style={{ ...chromeBtn(zoneTheme, { active: cfg.endpoint === alt.url }), padding: "3px 8px", fontSize: "10.5px" }}
-                >{alt.label}</button>
-              ))}
-            </div>
-          )}
           {provider.id === "custom" && (
+            <>
+              <label style={fieldLabel} htmlFor="api-endpoint">API 地址（Endpoint）</label>
+              <input id="api-endpoint" style={inputStyle} value={cfg.endpoint || ""} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
+            </>
+          )}
+          <button
+            type="button"
+            aria-expanded={endpointExpanded}
+            onClick={() => setEndpointExpanded(value => !value)}
+            style={{ ...chromeBtn(zoneTheme, { active: endpointExpanded }), width: "100%", justifyContent: "flex-start", marginTop: 6 }}
+          >{endpointExpanded ? "▾" : "▸"} 接口地址</button>
+          {endpointExpanded && (
+            <div>
+              {provider.id !== "custom" && (
+                <>
+                  <label style={fieldLabel} htmlFor="api-endpoint">API 地址（Endpoint）</label>
+                  <input id="api-endpoint" style={inputStyle} value={cfg.endpoint || ""} onChange={e => patch({ endpoint: e.target.value })} placeholder="留空使用默认地址" />
+                </>
+              )}
+              {provider.altEndpoints.length > 0 && (
+                <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 5 }}>
+                  {provider.altEndpoints.map(alt => (
+                    <button
+                      key={alt.url}
+                      type="button"
+                      onClick={() => patch({ endpoint: alt.url })}
+                      aria-pressed={cfg.endpoint === alt.url}
+                      style={{ ...chromeBtn(zoneTheme, { active: cfg.endpoint === alt.url }), padding: "3px 8px", fontSize: "10.5px" }}
+                    >{alt.label}</button>
+                  ))}
+                </div>
+              )}
+              {provider.id === "custom" && (
             <>
               <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, cursor: "pointer" }}>
                 <input type="checkbox" checked={!!cfg.openaiAutoComplete} onChange={e => patch({ openaiAutoComplete: e.target.checked })} style={{ cursor: "pointer" }} />
@@ -100,12 +136,19 @@ export default function ApiProviderSettings({
               <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3 }}>
                 {cfg.openaiAutoComplete
                   ? "已开启：地址缺路径时自动补 /v1/chat/completions。填的是完整/非标准路径的家请关掉，否则可能补出 404。"
-                  : "默认不补：填什么就原样发什么。多数中转站需要填完整地址（含 /chat/completions）。若你的家只给了 base 地址，可勾上让它自动补。"}
+                : "默认不补：填什么就原样发什么。多数中转站需要填完整地址（含 /chat/completions）。若你的家只给了 base 地址，可勾上让它自动补。"}
               </div>
             </>
+              )}
+              <label style={fieldLabel}>CORS 代理地址（可选）</label>
+              <input style={inputStyle} value={cfg.corsProxy || ""} onChange={e => patch({ corsProxy: e.target.value })} placeholder="例如 https://your-proxy.com/?url=" />
+              <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3 }}>
+                如果目标 API 不支持浏览器直连（CORS 报错），可以填一个中转代理服务的地址前缀。
+              </div>
+            </div>
           )}
           <div style={labelStyle}>API Key</div>
-          <input style={inputStyle} type="password" value={cfg.apiKey || ""} onChange={e => patch({ apiKey: e.target.value })} placeholder="sk-..." />
+          <input id="api-key" style={inputStyle} type="password" value={cfg.apiKey || ""} onChange={e => patch({ apiKey: e.target.value })} placeholder="sk-..." />
           {provider.corsProxyRequired && !String(cfg.corsProxy || "").trim() && (
             <div role="status" style={{ color: "var(--accent)", fontSize: "10.5px", marginTop: 5 }}>
               此厂商不允许浏览器直连，请在下方填 CORS 代理
