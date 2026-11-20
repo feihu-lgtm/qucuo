@@ -38,6 +38,7 @@ import { hasApiCredentials, saveConfig } from "../infra/apiConfig.js";
 import { chromeBtn } from "../ui/theme.js";
 
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false, onReturnToStart } = {}) {
+  const bootedForSettingsRef = useRef(initialOpenSettings);
   const { restored } = useGameStartup({ initialLoadSlotId, initialOpenSettings });
   const showSettings = useOverlay(OVERLAY.SETTINGS);
   const showOpening = useOverlay(OVERLAY.OPENING);
@@ -45,6 +46,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const showBody = useOverlay(OVERLAY.BODY);
   const showMusicPanel = useOverlay(OVERLAY.MUSIC_PANEL);
   const showHomestead = useOverlay(OVERLAY.HOMESTEAD);
+  const markGameStarted = useCallback(() => {
+    bootedForSettingsRef.current = false;
+  }, []);
+  useEffect(() => {
+    if (showCharCreate || showOpening) markGameStarted();
+  }, [showCharCreate, showOpening, markGameStarted]);
   const bindings = useGameStoreBindings({ restored });
   const {
     setChar, setDao, setSkills, setExp, setPot, setInv, setCompanionState, setPreset,
@@ -319,11 +326,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   };
   const overlayCtx = buildOverlayCtx({
     ui, game: bindings, overlayState, autosave, actions, addLog, effectiveSpecialNow,
+    onGameStarted: markGameStarted,
   });
   const apiReady = hasApiCredentials(apiCfg);
   const returnToStart = useCallback(() => onReturnToStart?.(), [onReturnToStart]);
   const overlayHost = <OverlayHost ctx={overlayCtx} apiReady={apiReady}
-    onCloseInitialSettings={initialOpenSettings && !apiReady ? returnToStart : undefined} />;
+    onCloseInitialSettings={() => { if (bootedForSettingsRef.current) returnToStart(); }} />;
   const layout = buildLayoutCtx({
     ui, game: bindings, overlayHost, autosave, actions, activeBuffs, addLog, jotNote,
   });

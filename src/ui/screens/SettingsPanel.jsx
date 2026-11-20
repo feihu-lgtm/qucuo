@@ -1,4 +1,4 @@
-import { OVERLAY, openOverlay } from "../../store/uiStore.js";
+import { OVERLAY, closeOverlay, openOverlay } from "../../store/uiStore.js";
 import React, { useState } from "react";
 import { isMusicEnabled, setMusicEnabled, getState as getMusicState, setVolume as setMusicVolume, subscribe as subscribeMusic, toggleMusic, TRACKS } from "../../infra/musicPlayer.js";
 import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, DEFAULT_ENDPOINTS, isDefaultEndpoint, hasApiCredentials, importVertexCredential } from "../../infra/apiConfig.js";
@@ -261,7 +261,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               <div key={id} onClick={() => {
                 // 入册界面本身是全屏浮层，塞在设置里会套两层弹窗。
                 // 这里改成关掉设置、把浮层交给 MudRPG 开。
-                if (id === "__portraits") { onClose(); openOverlay(OVERLAY.PORTRAIT_MANAGER); return; }
+                if (id === "__portraits") { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.PORTRAIT_MANAGER); return; }
                 if (id === "__cards") { onOpenCardImport?.(); return; }
                 selectTab(id);
               }}
