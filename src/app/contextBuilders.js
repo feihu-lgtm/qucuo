@@ -74,7 +74,7 @@ export function buildLayoutCtx({ ui, game, overlayHost, autosave, actions, activ
     stopRunning: actions.stopRunning,
     dispatchCommand: actions.dispatchCommand,
     overlayHost, uiScale: ui.uiScale, zoneTheme: ui.zoneTheme, isMobile: ui.isMobile,
-    mobileDrawer: ui.mobileDrawer, setMobileDrawer: ui.setMobileDrawer,
+    mobileColumn: ui.mobileColumn, setMobileColumn: ui.setMobileColumn,
     mobileTopMenu: ui.mobileTopMenu, setMobileTopMenu: ui.setMobileTopMenu,
     isDayMode: ui.isDayMode, setIsDayMode: ui.setIsDayMode, uiGold: ui.uiGold,
     uiTurquoise: ui.uiTurquoise, uiCrimson: ui.uiCrimson, uiPink: ui.uiPink,

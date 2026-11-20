@@ -28,8 +28,6 @@
 
   .mobile-touch-target,
   .qbtn,
-  .mobile-drawer-tab,
-  .mobile-drawer-close,
   .mobile-overlay-close,
   .mobile-mini-map-cell {
     box-sizing: border-box;
@@ -39,7 +37,6 @@
 
   .mobile-touch-target,
   .qbtn,
-  .mobile-drawer-close,
   .mobile-overlay-close {
     display: inline-flex;
     align-items: center;
@@ -76,27 +73,6 @@
     max-width: min(128px, 40vw);
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .mobile-drawer-panel {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    overflow-wrap: anywhere;
-  }
-
-  .mobile-drawer-close {
-    flex: 0 0 44px;
-    justify-content: flex-end;
-    padding: 0 12px !important;
-  }
-
-  .mobile-drawer-tab {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px !important;
-    padding: 0 6px !important;
-    touch-action: manipulation;
   }
 
   .mobile-mini-map {
