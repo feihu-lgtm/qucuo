@@ -104,21 +104,21 @@ export default function TavernSimScreen({ onExit }) {
         <Btn label="退出" zoneTheme={zoneTheme} secondary onClick={onExit} />
       </div>
 
-      <div style={S.mainRow}>
+      <div className="ts-main-row" style={S.mainRow}>
         {/* ── 像素大堂 ── */}
-        <div style={S.sceneWrap(zoneTheme)}>
+        <div className="ts-scene-wrap" style={S.sceneWrap(zoneTheme)}>
           <Scene sim={sim} night={night} zoneTheme={zoneTheme} />
         </div>
 
         {/* ── 经营面板 ── */}
-        <div style={S.side(zoneTheme)}>
+        <div className="ts-side" style={S.side(zoneTheme)}>
           <div style={S.tabRow(zoneTheme)}>
             {[["manage", "经营"], ["hire", "招工"], ["menu", "菜单"], ["ledger", "账本"]].map(([k, label]) => (
               <span key={k} onClick={() => setTab(k)}
                 style={S.tab(zoneTheme, tab === k)}>{label}</span>
             ))}
           </div>
-          <div style={{ padding: 12, overflowY: "auto", flex: 1 }}>
+          <div style={{ padding: 12, overflowY: "auto", flex: 1, minHeight: 0 }}>
             {tab === "manage" && <ManageTab sim={sim} doAct={doAct} zoneTheme={zoneTheme} setSim={setSim} />}
             {tab === "hire" && <HireTab sim={sim} candidates={candidates} doAct={doAct} zoneTheme={zoneTheme} />}
             {tab === "menu" && <MenuTab sim={sim} doAct={doAct} zoneTheme={zoneTheme} />}
@@ -389,7 +389,7 @@ function LogPanel({ log, zoneTheme }) {
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
   }, [log.length]);
   return (
-    <div ref={ref} style={S.logPanel(zoneTheme)}>
+    <div ref={ref} className="ts-log-panel" style={S.logPanel(zoneTheme)}>
       {log.slice(-60).map((l, i) => (
         <div key={i} style={{
           fontSize: 12, lineHeight: 1.8,
@@ -474,7 +474,7 @@ const S = {
   }),
   row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" },
   box: (t) => ({ border: `1px solid ${t.border}`, borderRadius: 0, padding: "8px 10px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }),
-  logPanel: (t) => ({ height: 130, overflowY: "auto", borderTop: `1px solid ${t.border}`, padding: "8px 14px", background: "rgba(0,0,0,0.25)" }),
+  logPanel: (t) => ({ height: 130, flex: "0 0 130px", minHeight: 0, overflowY: "auto", borderTop: `1px solid ${t.border}`, padding: "8px 14px", background: "rgba(0,0,0,0.25)" }),
   token: () => ({ fontSize: 20, marginTop: 2 }),
 };
 
@@ -493,7 +493,7 @@ const CSS_KEYFRAMES = `
   0% { left: 20%; top: 40%; } 25% { left: 45%; top: 60%; }
   50% { left: 55%; top: 38%; } 75% { left: 30%; top: 66%; } 100% { left: 20%; top: 40%; }
 }
-.ts-runner { position: absolute; font-size: 20px; animation: tsRoam 18s linear infinite; }
+.ts-runner { position: absolute; font-size: 20px; animation: tsRoam 18s linear infinite; } @media(max-width:767px){.ts-main-row{flex-direction:column;flex-wrap:nowrap;overflow:hidden}.ts-scene-wrap{flex:0 0 32vh!important;min-width:0!important;min-height:0!important;padding:8px!important;border-right:0!important}.ts-scene-wrap>div{min-height:0!important}.ts-side{flex:1 1 0!important;min-width:0!important;min-height:0!important}.ts-log-panel{position:relative;flex:0 0 130px!important;max-height:130px}}
 @keyframes tsSteam { 0% { transform: translateY(0); opacity: 0.5; } 100% { transform: translateY(-14px); opacity: 0; } }
 .ts-steam { position: absolute; left: 50%; top: -6px; }
 .ts-steam i { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: #9a9a8a; margin: 0 2px; animation: tsSteam 1.8s ease-out infinite; }

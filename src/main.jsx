@@ -179,7 +179,8 @@ function App() {
     );
   }
 
-  return <MudRPG initialLoadSlotId={pendingLoadSlotId} initialOpenSettings={openSettingsOnBoot} />;
+  return <MudRPG initialLoadSlotId={pendingLoadSlotId} initialOpenSettings={openSettingsOnBoot}
+    onReturnToStart={() => { setOpenSettingsOnBoot(false); setPendingLoadSlotId("new"); setBooted(false); }} />;
 }
 
 // 启动先把存档从 IndexedDB 全量灌进内存缓存（saves.init），之后所有存档读取都是同步的

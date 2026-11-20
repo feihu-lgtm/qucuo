@@ -44,7 +44,7 @@ const MAX_TEAM = 6; // 每队最多 6 人（宝可梦味）
 // 翻译出的完整招式说明。.qb-flip 是 3D 容器，两个 .qb-face 是正反面。
 const QB_CSS = `
   .qb-card{ perspective:900px; }
-  .qb-flip{ position:relative; width:100%; height:100%; transform-style:preserve-3d;
+  .qb-flip{ position:relative; width:100%; height:100%; transform-style:preserve-3d; -webkit-transform-style:preserve-3d;
     transition:transform .5s cubic-bezier(.4,0,.2,1); }
   .qb-face{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
     display:flex; flex-direction:column; border-radius:5px; overflow:hidden; }

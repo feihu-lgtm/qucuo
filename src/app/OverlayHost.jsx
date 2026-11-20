@@ -11,7 +11,11 @@ import { OVERLAY, closeOverlay, openOverlay } from "../store/uiStore.js";
 
 const SettingsPanel = lazy(() => import("../ui/screens/SettingsPanel.jsx"));
 
-export default function OverlayHost({ ctx, apiReady }) {
+export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
+  const closeSettings = () => {
+    closeOverlay(OVERLAY.SETTINGS);
+    onCloseInitialSettings?.();
+  };
   if (!apiReady) {
     return ctx.showSettings && (
       <Suspense>
@@ -20,7 +24,7 @@ export default function OverlayHost({ ctx, apiReady }) {
           cfg={ctx.apiCfg}
           setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
           dispatchCommand={ctx.dispatchCommand}
-          onClose={() => closeOverlay(OVERLAY.SETTINGS)}
+          onClose={closeSettings}
           currentSnapshot={ctx.buildCurrentSnapshot}
           onLoadSnapshot={ctx.applySnapshot}
           varTree={ctx.varTree}
@@ -68,7 +72,7 @@ export default function OverlayHost({ ctx, apiReady }) {
             cfg={ctx.apiCfg}
             setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
             dispatchCommand={ctx.dispatchCommand}
-            onClose={() => closeOverlay(OVERLAY.SETTINGS)}
+            onClose={closeSettings}
             currentSnapshot={ctx.buildCurrentSnapshot}
             onLoadSnapshot={ctx.applySnapshot}
             varTree={ctx.varTree}

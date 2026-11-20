@@ -35,8 +35,9 @@ import { useWorldRulesRunner } from "./hooks/useWorldRulesRunner.js";
 import { DEFAULT_PRESETS } from "../core/newGame.js";
 import { selectEffectiveStats } from "../features/stats/logic.js";
 import { hasApiCredentials, saveConfig } from "../infra/apiConfig.js";
+import { chromeBtn } from "../ui/theme.js";
 
-export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false } = {}) {
+export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false, onReturnToStart } = {}) {
   const { restored } = useGameStartup({ initialLoadSlotId, initialOpenSettings });
   const showSettings = useOverlay(OVERLAY.SETTINGS);
   const showOpening = useOverlay(OVERLAY.OPENING);
@@ -320,7 +321,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     ui, game: bindings, overlayState, autosave, actions, addLog, effectiveSpecialNow,
   });
   const apiReady = hasApiCredentials(apiCfg);
-  const overlayHost = <OverlayHost ctx={overlayCtx} apiReady={apiReady} />;
+  const returnToStart = useCallback(() => onReturnToStart?.(), [onReturnToStart]);
+  const overlayHost = <OverlayHost ctx={overlayCtx} apiReady={apiReady}
+    onCloseInitialSettings={initialOpenSettings ? returnToStart : undefined} />;
   const layout = buildLayoutCtx({
     ui, game: bindings, overlayHost, autosave, actions, activeBuffs, addLog, jotNote,
   });
@@ -332,6 +335,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
           <p style={{ color: "#c45044" }}>尚未配置 API 凭证</p>
           <p>打开设置，填入 API Key 或导入 Vertex AI 的 ADC JSON 文件后即可开始游戏。</p>
           <span onClick={() => openOverlay(OVERLAY.SETTINGS)} style={{ cursor: "pointer", color: "var(--accent)", padding: "6px 14px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
+          <button type="button" onClick={returnToStart} style={{ ...chromeBtn(ui.zoneTheme), marginTop: 10, marginLeft: 8 }}>返回主菜单</button>
         </div>
         {overlayHost}
       </div>
