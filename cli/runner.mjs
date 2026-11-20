@@ -589,7 +589,19 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         .some((building) => building.type === BUILDING_TYPE.TRANSPORT);
       if (!hasCarriage) return await applyFeature({ logs: [{ t: "err", text: "  此处没有驿站。" }] });
       const destName = carriageMatch[1];
-      const result = travelByCarriage(state, destName, getPriceForDest(destName));
+      const roomMap = {
+        ...session.roomMap,
+        ...(state.room?.name ? {
+          [state.room.name]: {
+            items: [...(state.room.items || [])],
+            npcs: [...(state.room.npcs || [])],
+          },
+        } : {}),
+      };
+      const result = travelByCarriage(state, destName, getPriceForDest(destName), { roomMap });
+      if (result.changes?.room && state.room?.name) {
+        session.roomMap[state.room.name] = roomMap[state.room.name];
+      }
       const status = await applyFeature(result);
       if (result.changes?.room) {
         gameActions.setInnerRoomName(hasInnerMap(destName) ? getDistrictAnchor(destName) : null);

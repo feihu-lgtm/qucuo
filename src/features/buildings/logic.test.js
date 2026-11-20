@@ -148,4 +148,26 @@ describe("building feature logic", () => {
     expect(travelByCarriage(state(), "喇嘛庙", -1)).toEqual({ logs: [{ t: "err", text: "  数额无效" }] });
     expect(travelByCarriage(state({ char: { ...state().char, money: 1 } }), "喇嘛庙", 5)).toEqual({ logs: [] });
   });
+
+  it("restores cached NPCs and items on carriage arrival", () => {
+    const cached = {
+      npcs: [{ id: "merchant", name: "杂货商人" }],
+      items: [{ id: "ground_item", name: "石阶旁的草叶" }],
+    };
+    const result = travelByCarriage(state(), "喇嘛庙", 5, {
+      roomMap: { 喇嘛庙: cached },
+    });
+
+    expect(result.changes.room.npcs).toEqual(cached.npcs);
+    expect(result.changes.room.items).toEqual(cached.items);
+    expect(result.changes.room.npcs).not.toBe(cached.npcs);
+    expect(result.changes.room.items).not.toBe(cached.items);
+  });
+
+  it("keeps an uncached carriage arrival empty", () => {
+    const result = travelByCarriage(state(), "喇嘛庙", 5, { roomMap: {} });
+
+    expect(result.changes.room.npcs).toEqual([]);
+    expect(result.changes.room.items).toEqual([]);
+  });
 });

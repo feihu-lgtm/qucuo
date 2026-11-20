@@ -130,20 +130,21 @@ export function gamble(state, { mode, bet, luck, dayIdx, maxBet = 200 } = {}, no
   return { changes, logs: [], settle: narrateLine };
 }
 
-export function travelByCarriage(state, dest, price) {
+export function travelByCarriage(state, dest, price, { roomMap } = {}) {
   if (!isPositiveAmount(price)) return invalidAmountResult();
   const destNode = getMapNode(dest);
   if (!destNode || !state.mapData?.[dest]) return noOpResult();
   if ((state.char.money || 0) < price) return noOpResult();
 
+  const cached = roomMap?.[dest];
   const changes = {
     char: { ...state.char, money: (state.char.money || 0) - price },
     room: {
       name: dest,
       desc: destNode.desc,
       exits: Object.keys(destNode.exits),
-      npcs: [],
-      items: [],
+      npcs: [...(cached?.npcs || [])],
+      items: [...(cached?.items || [])],
     },
     time: state.time + 5,
   };
