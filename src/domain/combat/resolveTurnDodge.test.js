@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { setSeed } from "../../core/rng.js";
+import { applyDodgeResult } from "./dodgeTurn.js";
 import { resolveTurn } from "./resolveTurn.js";
 
 describe("讨饭手闪避", () => {
@@ -44,5 +45,19 @@ describe("讨饭手闪避", () => {
     expect(avoided.dodgeSuccessA).toBe(true);
     expect(avoided.damageToA).toBe(0);
     expect(avoided.statusAppliedToA).toBeNull();
+  });
+
+  it("clears only armor contact marks from the attacker when dodging", () => {
+    const moveMark = { name: "招式印", stacks: 1, max: 5 };
+    const contactMark = { name: "护甲反噬", stacks: 1, max: 5 };
+    const result = {
+      notes: [], damageToA: 10, statusAppliedToA: "麻穴", markAppliedToA: moveMark,
+      markAppliedToB: contactMark, markDetonatedOnA: 1, counterSuccessB: false,
+    };
+    applyDodgeResult(result, { move: { dodgeChance: 1 } }, "A", { move: {} }, "B", {
+      move: { B: moveMark }, contact: { B: contactMark },
+    });
+    expect(result.markAppliedToA).toBeNull();
+    expect(result.markAppliedToB).toBe(moveMark);
   });
 });

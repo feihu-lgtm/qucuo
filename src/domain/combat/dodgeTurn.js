@@ -1,6 +1,6 @@
 import { random } from "../../core/rng.js";
 
-export function applyDodgeResult(result, defender, defenderTag, attacker, attackerTag) {
+export function applyDodgeResult(result, defender, defenderTag, attacker, attackerTag, markSources = {}) {
   const chance = defender.move.dodgeChance ?? 0;
   if (chance <= 0 || random() >= chance) return;
   result[`dodgeSuccess${defenderTag}`] = true;
@@ -8,6 +8,9 @@ export function applyDodgeResult(result, defender, defenderTag, attacker, attack
   result[`statusAppliedTo${defenderTag}`] = null;
   result[`markAppliedTo${defenderTag}`] = null;
   result[`markDetonatedOn${defenderTag}`] = 0;
+  const attackerMarkKey = `markAppliedTo${attackerTag}`;
+  const contactMark = markSources.contact?.[attackerTag];
+  if (contactMark && result[attackerMarkKey] === contactMark) result[attackerMarkKey] = markSources.move?.[attackerTag] ?? null;
   result[`freezeEnergyTo${defenderTag}`] = false;
   result[`costPenaltyTo${defenderTag}`] = null;
   result[`defenseBroken${defenderTag}`] = false;
