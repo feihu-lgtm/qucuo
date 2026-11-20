@@ -60,33 +60,37 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
 
   if (showStartChoice) {
     return (
-      <div style={styles.container(theme)}>
+      <div className="start-screen-root" style={styles.container(theme)}>
         <div style={styles.vignette} />
-        <div style={styles.loadPanel(theme)}>
-          <div style={styles.loadPanelTitle(theme)}>新的旅程</div>
-          <div style={styles.loadPanelList}>
-            <button
-              style={styles.loadPanelItem(theme, hovered === "new")}
-              onMouseEnter={() => setHovered("new")}
-              onMouseLeave={() => setHovered(null)}
-              onClick={() => { setShowStartChoice(false); onStart(); }}
-            >
-              <span style={styles.loadPanelLabel}>新建角色</span>
-              <span style={styles.loadPanelMeta(theme)}>从头创建你的少侠</span>
-            </button>
-            <button
-              style={styles.loadPanelItem(theme, hovered === "importself")}
-              onMouseEnter={() => setHovered("importself")}
-              onMouseLeave={() => setHovered(null)}
-              onClick={() => { setShowStartChoice(false); onStartImportSelf?.(); }}
-            >
-              <span style={styles.loadPanelLabel}>导入角色卡当自己</span>
-              <span style={styles.loadPanelMeta(theme)}>先看教程 → 选主角 → 设主角(AI 扫技能装备) → 选NPC逐个调 → 选同伴</span>
+        <div className="start-screen-content start-screen-panel-content" style={styles.content}>
+          <div className="start-screen-load-panel" style={styles.loadPanel(theme)}>
+            <div style={styles.loadPanelTitle(theme)}>新的旅程</div>
+            <div className="start-screen-load-panel-list" style={styles.loadPanelList}>
+              <button
+                className="start-screen-panel-item"
+                style={styles.loadPanelItem(theme, hovered === "new")}
+                onMouseEnter={() => setHovered("new")}
+                onMouseLeave={() => setHovered(null)}
+                onClick={() => { setShowStartChoice(false); onStart(); }}
+              >
+                <span style={styles.loadPanelLabel}>新建角色</span>
+                <span style={styles.loadPanelMeta(theme)}>从头创建你的少侠</span>
+              </button>
+              <button
+                className="start-screen-panel-item"
+                style={styles.loadPanelItem(theme, hovered === "importself")}
+                onMouseEnter={() => setHovered("importself")}
+                onMouseLeave={() => setHovered(null)}
+                onClick={() => { setShowStartChoice(false); onStartImportSelf?.(); }}
+              >
+                <span style={styles.loadPanelLabel}>导入角色卡当自己</span>
+                <span style={styles.loadPanelMeta(theme)}>先看教程 → 选主角 → 设主角(AI 扫技能装备) → 选NPC逐个调 → 选同伴</span>
+              </button>
+            </div>
+            <button className="start-screen-back-button" style={styles.backButton(theme)} onClick={() => setShowStartChoice(false)}>
+              ← 返回
             </button>
           </div>
-          <button style={styles.backButton(theme)} onClick={() => setShowStartChoice(false)}>
-            ← 返回
-          </button>
         </div>
       </div>
     );
@@ -94,61 +98,67 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
 
   if (showLoadPanel) {
     return (
-      <div style={styles.container(theme)}>
+      <div className="start-screen-root" style={styles.container(theme)}>
         <div style={styles.vignette} />
-        <div style={styles.loadPanel(theme)}>
-          <div style={styles.loadPanelTitle(theme)}>选择存档</div>
-          <div style={styles.loadPanelList}>
-            {hasAutoSave && (
-              <button
-                style={styles.loadPanelItem(theme, hovered === "auto")}
-                onMouseEnter={() => setHovered("auto")}
-                onMouseLeave={() => setHovered(null)}
-                onClick={() => onLoadSlot(null)} // null 约定为"读取自动存档"，main.jsx 里转成 "auto"
-              >
-                <span style={styles.loadPanelLabel}>自动存档</span>
-                <span style={styles.loadPanelMeta(theme)}>最近一次行动后</span>
-              </button>
-            )}
-            {slots.map((s) => (
-              <button
-                key={s.id}
-                style={styles.loadPanelItem(theme, hovered === s.id)}
-                onMouseEnter={() => setHovered(s.id)}
-                onMouseLeave={() => setHovered(null)}
-                onClick={() => onLoadSlot(s.id)}
-              >
-                <span style={styles.loadPanelLabel}>{s.label}</span>
-                <span style={styles.loadPanelMeta(theme)}>
-                  {s.presetName} · {new Date(s.savedAt).toLocaleString()}
-                </span>
-              </button>
-            ))}
+        <div className="start-screen-content start-screen-panel-content" style={styles.content}>
+          <div className="start-screen-load-panel" style={styles.loadPanel(theme)}>
+            <div style={styles.loadPanelTitle(theme)}>选择存档</div>
+            <div className="start-screen-load-panel-list" style={styles.loadPanelList}>
+              {hasAutoSave && (
+                <button
+                  className="start-screen-panel-item"
+                  style={styles.loadPanelItem(theme, hovered === "auto")}
+                  onMouseEnter={() => setHovered("auto")}
+                  onMouseLeave={() => setHovered(null)}
+                  onClick={() => onLoadSlot(null)} // null 约定为"读取自动存档"，main.jsx 里转成 "auto"
+                >
+                  <span style={styles.loadPanelLabel}>自动存档</span>
+                  <span style={styles.loadPanelMeta(theme)}>最近一次行动后</span>
+                </button>
+              )}
+              {slots.map((s) => (
+                <button
+                  key={s.id}
+                  className="start-screen-panel-item"
+                  style={styles.loadPanelItem(theme, hovered === s.id)}
+                  onMouseEnter={() => setHovered(s.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  onClick={() => onLoadSlot(s.id)}
+                >
+                  <span style={styles.loadPanelLabel}>{s.label}</span>
+                  <span style={styles.loadPanelMeta(theme)}>
+                    {s.presetName} · {new Date(s.savedAt).toLocaleString()}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button className="start-screen-back-button" style={styles.backButton(theme)} onClick={() => setShowLoadPanel(false)}>
+              ← 返回
+            </button>
           </div>
-          <button style={styles.backButton(theme)} onClick={() => setShowLoadPanel(false)}>
-            ← 返回
-          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container(theme)}>
+    <div className="start-screen-root" style={styles.container(theme)}>
       <div style={styles.vignette} />
 
-      <div style={styles.titleBlock}>
+      <div className="start-screen-content" style={styles.content}>
+      <div className="start-screen-title" style={styles.titleBlock}>
         <img src={`${((import.meta.env && import.meta.env.BASE_URL) || "/")}title_tianducuo_v3.webp`}
-          alt="天都曲措" style={styles.titleImg} />
+          alt="天都曲措" className="start-screen-title-image" style={styles.titleImg} />
         <div style={styles.subtitle(theme)}>—— 三曲交汇处的江湖 ——</div>
       </div>
 
-      <nav style={styles.menu}>
+      <nav className="start-screen-menu" style={styles.menu}>
         {menuItems.map((item) => {
           const disabled = !item.always;
           return (
             <button
               key={item.key}
+              className="start-screen-menu-item"
               disabled={disabled}
               onClick={() => !disabled && item.action && item.action()}
               onMouseEnter={() => setHovered(item.key)}
@@ -162,23 +172,23 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
         })}
       </nav>
 
-      <div style={styles.footer(theme)}>
+      <div className="start-screen-footer" style={styles.footer(theme)}>
         <span>天都·曲措 · MUD引擎</span>
-        <span style={styles.footerSep}>·</span>
+        <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
         <a href="https://github.com/feihu-lgtm/qucuo" target="_blank" rel="noopener noreferrer" style={styles.footerLink(theme)}>
           开源代码 GitHub ↗
         </a>
-        <span style={styles.footerSep}>·</span>
+        <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
         <span onClick={() => setShowBugReport(true)} style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
           🐞 意见信箱 / 上报bug
         </span>
-        <span style={styles.footerSep}>·</span>
+        <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
         <span onClick={() => setShowVersionHistory(true)} title="点击查看版本历史目录" style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
           📅 {CURRENT_VERSION.time}
         </span>
         {(visitStats.hits != null || visitStats.todayActive != null) && (
           <>
-            <span style={styles.footerSep}>·</span>
+            <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
             <span>
               {visitStats.hits != null && `共有 ${visitStats.hits.toLocaleString()} 人次踏足曲措乡`}
               {visitStats.hits != null && visitStats.todayActive != null && "，"}
@@ -186,6 +196,7 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
             </span>
           </>
         )}
+      </div>
       </div>
 
       {showBugReport && (
@@ -208,19 +219,27 @@ const styles = {
   container: (t) => ({
     position: "fixed",
     inset: 0,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    justifyContent: "center",
-    padding: "0 clamp(32px, 8vw, 120px)",
     boxSizing: "border-box",
     backgroundColor: t.bg,
     backgroundImage: `url('${((typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/")}start-bg.webp')`,
     backgroundSize: "cover",
     backgroundPosition: "center",
     fontFamily: "'Noto Serif SC', 'Songti SC', serif",
-    overflow: "hidden",
+    overflowX: "hidden",
+    overflowY: "auto",
   }),
+  content: {
+    position: "relative",
+    zIndex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    justifyContent: "safe center",
+    width: "100%",
+    minHeight: "100dvh",
+    padding: "0 clamp(32px, 8vw, 120px)",
+    boxSizing: "border-box",
+  },
   vignette: {
     position: "absolute",
     inset: 0,
@@ -285,7 +304,7 @@ const styles = {
     alignItems: "flex-start",
     gap: "4px",
     padding: "14px 16px",
-    background: isHover && !disabled ? "rgba(20,16,10,0.55)" : "rgba(10,8,5,0.25)",
+    background: isHover && !disabled ? "rgba(20,16,10,0.55)" : "var(--start-menu-card-bg, rgba(10,8,5,0.25))",
     border: "none",
     borderLeft: `2px solid ${isHover && !disabled ? t.accent : "rgba(255,255,255,0.12)"}`,
     cursor: disabled ? "default" : "pointer",
@@ -334,13 +353,15 @@ const styles = {
     position: "relative",
     zIndex: 1,
     width: "min(420px, 85vw)",
-    maxHeight: "70vh",
+    maxHeight: "min(70dvh, calc(100dvh - 32px))",
     display: "flex",
     flexDirection: "column",
+    minHeight: 0,
     padding: "28px 24px 20px",
     backgroundColor: "rgba(10,8,5,0.72)",
     border: `1px solid ${t.border}`,
     backdropFilter: "blur(2px)",
+    overflowY: "auto",
   }),
   loadPanelTitle: (t) => ({
     fontSize: "16px",

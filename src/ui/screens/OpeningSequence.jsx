@@ -50,7 +50,7 @@ export default function OpeningSequence({ onFinish, playerName }) {
   };
 
   return (
-    <div style={styles.container} onClick={advance}>
+    <div className="opening-sequence-root" style={styles.container} onClick={advance}>
       {/* 缺图兜底：public/intro-1.webp 与 intro-2.webp 由作者自行投放（提示词见
           docs/开场图提示词.md）。没投放时不显示破图图标——降级成一层渐变底，
           文案照样读得清，开场流程不受影响。此前是裸 <img> 无 onError，
@@ -69,15 +69,15 @@ export default function OpeningSequence({ onFinish, playerName }) {
           用法沿用 GambleStoneScreen 的既有约定：backgroundSize "100% 100%" 拉伸铺满
           （不做九宫格切片——那批图本就是整幅设计好的，拉伸幅度不大时观感没问题）。
           左右留出 12% 内边距把文字压在纸面上、不压到两端木轴。 */}
-      <div style={styles.scrollWrap}>
+      <div className="opening-sequence-scroll" style={styles.scrollWrap}>
         <div style={styles.scrollPanel}>
-          <p style={styles.captionText}>{slide.caption}</p>
+          <p className="opening-sequence-caption" style={styles.captionText}>{slide.caption}</p>
           <div style={styles.hint(theme)}>
             {index < SLIDES.length - 1 ? "点击继续 ▸" : "点击进入曲措乡"}
           </div>
         </div>
       </div>
-      <div style={styles.dots}>
+      <div className="opening-sequence-dots" style={styles.dots}>
         {SLIDES.map((_, i) => (
           <span key={i} style={styles.dot(theme, i === index)} />
         ))}
