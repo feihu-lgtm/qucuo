@@ -232,8 +232,8 @@ export function applyThinkingOpenAI(body, cfg, provider, vertex) {
 export function applyThinkingGemini(genConfig, cfg) {
   const mode = cfg.thinkingMode || "off";
   const effort = thinkingEffort(cfg);
-  if (effort === "off") return;
   if (/^gemini-3/i.test(cfg.model || "")) {
+    if (effort === "off") return;
     genConfig.thinkingConfig = { thinkingLevel: effort };
   } else {
     const budget = mode === "custom" ? Math.max(0, Number(cfg.thinkingBudget) || 0) : THINKING_BUDGET_BY_MODE[mode] || 0;

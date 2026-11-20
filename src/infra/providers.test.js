@@ -166,6 +166,16 @@ describe("provider request catalog", () => {
     expect(requests[0].body).not.toHaveProperty("reasoning_effort");
   });
 
+  it("explicitly disables thinking on Gemini 2.5 when off or the custom budget is zero", async () => {
+    const requests = mockFetch(PROVIDERS.gemini);
+    const cfg = { ...configFor(PROVIDERS.gemini), model: "gemini-2.5-flash" };
+    await callModel({ ...cfg, thinkingMode: "off" }, "system", [{ role: "user", content: "hello" }]);
+    await callModel({ ...cfg, thinkingMode: "custom", thinkingBudget: 0 }, "system", [{ role: "user", content: "hello" }]);
+    expect(requests.map(request => request.body.generationConfig.thinkingConfig)).toEqual([
+      { thinkingBudget: 0 }, { thinkingBudget: 0 },
+    ]);
+  });
+
   it("follows SillyTavern's custom KoboldCpp reasoning-effort exception", async () => {
     const requests = mockFetch(PROVIDERS.custom);
     await callModel({
