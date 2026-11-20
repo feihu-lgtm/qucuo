@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { distributedGap } from "./facePreferences.js";
 
-export default function FaceContent({ face, panelId, tabId, direction, modules, renderModule, editable }) {
+export default function FaceContent({ face, panelId, labelId, direction, modules, renderModule, editable }) {
   const scrollRef = useRef(null);
   const listRef = useRef(null);
   useLayoutEffect(() => {
@@ -19,7 +19,7 @@ export default function FaceContent({ face, panelId, tabId, direction, modules, 
     return () => observer.disconnect();
   }, [modules]);
   return (
-    <div ref={scrollRef} id={panelId} role="tabpanel" aria-label={face.name || "未命名"} aria-labelledby={tabId}
+    <div ref={scrollRef} id={panelId} role="region" aria-label={face.name || "未命名"} aria-labelledby={labelId}
       className={`face-content ${direction < 0 ? "face-backward" : "face-forward"}`}>
       <div className="face-modules" ref={listRef}>
         {modules.map(id => <section key={id} data-module={id}>{renderModule(id)}</section>)}

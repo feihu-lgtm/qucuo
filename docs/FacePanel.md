@@ -29,12 +29,19 @@ Return: `preferences`, `face`, `index` (zero-based), `count`, `direction`, `avai
 
 Place it inside a height-constrained flex column. Every face fills the remaining
 height; gaps are measured and capped to 6–28px, with internal scrolling when tall.
-Tabs scroll horizontally on narrow panels; 22px controls stay on the same row at the right, with 8px gaps.
+The 22px face bar shows a display-only current name centered between smaller, faded
+previous/next names; clicking either side rotates. Other names stay hidden.
+With two faces only the next name appears; with one only the current name appears.
+Names transition around the carousel in 250ms (disabled under reduced motion).
+The chrome gear (accessible name/title 编排) stays at the right, with an 8px gap.
+Borderless previous/next hints overlay the content's 28px edge strips without taking layout space.
+On hover-capable pointers they appear faintly over the content and strengthen over the hovered edge;
+on touch devices they remain very faint. Both are keyboard-focusable with accessible labels.
 Touch swipes beginning in content are isolated from ancestor gesture handlers.
 Keyboard ignores typing/modified/consumed events and visible modal layers. Prefer
 one keyboard-enabled instance per view; if multiple opt in, the first eligible
 listener consumes each arrow event, so only one rotates. Use the caller guard to
-select an active instance when desired. Tab/panel DOM IDs are instance-unique.
+select an active instance when desired. Label/content DOM IDs are instance-unique.
 
 ```jsx
 const defaults = { faces: [{ id: "overview", name: "概览", modules: ["summary"] }], currentIndex: 0 };

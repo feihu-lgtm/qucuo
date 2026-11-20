@@ -20,13 +20,20 @@ function Demo({ editable = true, empty = false, hidden = false, swipe = true }) 
 }
 
 describe("generic FacePanel", () => {
-  it("renders caller-supplied modules and a labeled tab bar without panel-specific data", () => {
+  it("renders caller-supplied modules and a labeled carousel without panel-specific data", () => {
     const html = renderToStaticMarkup(createElement(Demo));
     expect(html).toContain("Rendered alpha");
     expect(html).toContain("Example 1/2");
     expect(html).toContain('aria-label="Example面切换"');
     expect(html).toContain("编排");
     expect(html).not.toContain("侠客");
+    const bar = html.match(/<nav[\s\S]*?<\/nav>/)[0];
+    expect(bar).not.toContain("face-edge");
+    expect(bar).not.toContain('role="tab"');
+    expect(bar).toContain('aria-label="编排" title="编排"');
+    expect(bar).toContain("⚙");
+    expect(html).toContain('class="face-edge face-edge-previous" aria-label="上一面"');
+    expect(html).toContain('class="face-edge face-edge-next" aria-label="下一面"');
   });
 
   it("supports non-editable, empty and conditionally hidden modules", () => {
@@ -38,10 +45,27 @@ describe("generic FacePanel", () => {
     expect(renderToStaticMarkup(createElement(Demo, { hidden: true }))).not.toContain("Rendered alpha");
   });
 
-  it("keeps tab and panel IDs unique across instances", () => {
+  it("keeps label and content IDs unique across instances", () => {
     const html = renderToStaticMarkup(createElement("div", null, createElement(Demo), createElement(Demo)));
     const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("shows only current and adjacent labels, with one side for two faces", () => {
+    for (const count of [1, 2, 5]) {
+      const preferences = { faces: Array.from({ length: count }, (_, index) => ({
+        id: `face-${index}`, name: `Face ${index}`, modules: [],
+      })), currentIndex: 0 };
+      const faces = { preferences, face: preferences.faces[0], direction: 1, editable: false, rotate: () => {} };
+      const html = renderToStaticMarkup(createElement(FacePanel, {
+        faces, theme: ZONE_THEMES.village, renderModule: () => null,
+      }));
+      const bar = html.match(/<nav[\s\S]*?<\/nav>/)[0];
+      expect(bar).toContain('<span aria-current="true">Face 0</span>');
+      expect((bar.match(/aria-label="下一面"/g) || []).length).toBe(count > 1 ? 1 : 0);
+      expect((bar.match(/aria-label="上一面"/g) || []).length).toBe(count > 2 ? 1 : 0);
+      expect((bar.match(/aria-hidden="true"/g) || []).length).toBe(Math.max(0, count - 3));
+    }
   });
 
   it("honors configurable minimum and maximum face counts", () => {
