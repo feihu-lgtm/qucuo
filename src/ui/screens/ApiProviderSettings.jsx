@@ -40,8 +40,7 @@ export default function ApiProviderSettings({
 
   useEffect(() => {
     if (provider.corsProxyRequired && !String(cfg.corsProxy || "").trim()) setEndpointExpanded(true);
-    else if (!provider.corsProxyRequired) setEndpointExpanded(false);
-  }, [provider.id, provider.corsProxyRequired, cfg.corsProxy]);
+  }, [cfg.provider]);
 
   function selectProvider(providerId) {
     const selected = providers[providerId];
@@ -141,7 +140,7 @@ export default function ApiProviderSettings({
             </>
               )}
               <label style={fieldLabel}>CORS 代理地址（可选）</label>
-              <input style={inputStyle} value={cfg.corsProxy || ""} onChange={e => patch({ corsProxy: e.target.value })} placeholder="例如 https://your-proxy.com/?url=" />
+              <input id="api-cors-proxy" style={inputStyle} value={cfg.corsProxy || ""} onChange={e => patch({ corsProxy: e.target.value })} placeholder="例如 https://your-proxy.com/?url=" />
               <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3 }}>
                 如果目标 API 不支持浏览器直连（CORS 报错），可以填一个中转代理服务的地址前缀。
               </div>

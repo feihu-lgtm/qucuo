@@ -144,7 +144,7 @@ export default async function mobileStartSettings({ page, game }) {
     await topMenu.waitFor({ state: "visible" });
     await topMenu.getByText("设置", { exact: true }).click();
   }
-  await page.getByText("🔑 API 配置", { exact: true }).click();
+  await page.getByText("API 配置", { exact: true }).click();
   assert.equal(await page.locator("#api-temperature").isVisible().catch(() => false), false);
   await page.getByRole("button", { name: /生成参数/ }).click();
   await page.locator("#api-temperature").waitFor({ state: "visible" });
@@ -153,7 +153,7 @@ export default async function mobileStartSettings({ page, game }) {
   await page.getByRole("button", { name: /接口地址/ }).click();
   await page.locator("#api-endpoint").fill("https://api.openai.com/v1/chat/completions");
   await page.locator("#api-provider").selectOption("qwen");
-  await page.getByRole("button", { name: /接口地址/ }).click();
+  await page.locator("#api-endpoint").waitFor({ state: "visible" });
   assert.equal(await page.locator("#api-endpoint").inputValue(), "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
   await page.getByRole("button", { name: "国际", exact: true }).click();
   assert.equal(await page.locator("#api-endpoint").inputValue(), "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions");
@@ -169,10 +169,19 @@ export default async function mobileStartSettings({ page, game }) {
   await page.locator("#api-provider").selectOption("deepseek");
   await page.waitForFunction(() => {
     const header = [...globalThis.document.querySelectorAll("button[aria-expanded]")].find(button => button.textContent.includes("接口地址"));
-    return globalThis.document.querySelector("#api-provider")?.value === "deepseek" && header?.getAttribute("aria-expanded") === "false";
+    return globalThis.document.querySelector("#api-provider")?.value === "deepseek" && header?.getAttribute("aria-expanded") === "true";
   });
+  const endpointToggle = page.getByRole("button", { name: /接口地址/ });
+  await endpointToggle.click();
   assert.equal(await page.getByRole("button", { name: /接口地址/ }).getAttribute("aria-expanded"), "false");
   await capture(page, "api-simple.png");
+  await endpointToggle.click();
+  const proxyInput = page.locator("#api-cors-proxy");
+  await proxyInput.fill("https://proxy.example/?url=");
+  assert.equal(await proxyInput.isVisible(), true);
+  assert.equal(await endpointToggle.getAttribute("aria-expanded"), "true");
+  await proxyInput.fill("");
+  await endpointToggle.click();
   await page.getByRole("button", { name: /生成参数/ }).click();
   await page.locator("#api-temperature").waitFor({ state: "visible" });
   await capture(page, "api-expanded.png");
@@ -185,7 +194,7 @@ export default async function mobileStartSettings({ page, game }) {
     contentType: "application/json",
     body: JSON.stringify({ choices: [{ message: { content: "连接成功" }, finish_reason: "stop" }] }),
   }));
-  await page.getByText("🔗 连接测试", { exact: true }).click();
+  await page.getByText("连接测试", { exact: true }).click();
   await page.getByTestId("api-test-result").waitFor();
   assert.match(await page.getByTestId("api-test-result").innerText(), /^✓ 连通 · deepseek-chat · \d+ms$/);
   await capture(page, "test-ok.png");
@@ -198,7 +207,7 @@ export default async function mobileStartSettings({ page, game }) {
   await page.locator("#api-provider").selectOption("gemini");
   await page.locator("#api-key").fill("gemini-e2e-secret");
   await page.locator("#api-model").fill("gemini-2.5-flash");
-  await page.getByText("🔗 连接测试", { exact: true }).click();
+  await page.getByText("连接测试", { exact: true }).click();
   await page.getByTestId("api-test-result").waitFor();
   const failureText = await page.getByTestId("api-test-result").innerText();
   assert.match(failureText, /^✕ 404 · 地址或模型名不对 · 检查请求地址：/);
