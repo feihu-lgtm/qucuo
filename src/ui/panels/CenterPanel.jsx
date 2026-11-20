@@ -65,8 +65,8 @@ function NarrativeSkeleton() {
 export default function CenterPanel({
   isMobile, mobileDrawer, setMobileDrawer,
   zoneTheme, S,
-  loading, setLoading, addLog,
-  rollbackOneStep, captureUndo, schedulerRunning, dispatchCommand,
+  loading, addLog,
+  rollbackOneStep, captureUndo, rollbackBlocked, stopRunning, dispatchCommand,
   gm, setGm,
   char, setChar, pot, setPot, exp, setExp, dao, setDao,
   varTree, setVarTree, narrator, setNarrator,
@@ -145,14 +145,14 @@ export default function CenterPanel({
           <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>江湖</span>
             <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              {loading && <span onClick={() => { setLoading(false); addLog([{ t: "sys", text: "  ⏹ 已停止等待本次生成（若结果稍后返回将被忽略）。" }]); }}
+              {loading && <span onClick={stopRunning}
                 className="mobile-touch-target"
                 style={chromeBtn(zoneTheme)}>⏹ 停止</span>}
-              <span className="mobile-touch-target" onClick={schedulerRunning && ["AI_TURN", "MOVE"].includes(schedulerRunning.category) ? undefined : rollbackOneStep}
-                aria-disabled={!!schedulerRunning && ["AI_TURN", "MOVE"].includes(schedulerRunning.category)}
+              <span className="mobile-touch-target" onClick={rollbackBlocked ? undefined : rollbackOneStep}
+                aria-disabled={rollbackBlocked}
                 title="撤销上一步行动，还原到落子之前"
-                style={{ ...chromeBtn(zoneTheme), ...(schedulerRunning && ["AI_TURN", "MOVE"].includes(schedulerRunning.category) ? { color: zoneTheme.textDim, cursor: "not-allowed" } : {}) }}>
-                {schedulerRunning && ["AI_TURN", "MOVE"].includes(schedulerRunning.category) ? "等待落盘" : "↩ 回滚"}
+                style={{ ...chromeBtn(zoneTheme), ...(rollbackBlocked ? { color: zoneTheme.textDim, cursor: "not-allowed" } : {}) }}>
+                {rollbackBlocked ? "等待落盘" : "↩ 回滚"}
               </span>
               <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={chromeBtn(zoneTheme, { active: showDebug })}>调试</span>
               <span className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={chromeBtn(zoneTheme, { active: gm })}>/gamemode {gm ? "0" : "1"}</span>
@@ -510,7 +510,7 @@ export default function CenterPanel({
                   ))}
                 </span>
                 {queueCount > 0 && (
-                  <span style={{ color: "#c4a040", fontSize: "10.5px" }}>队列 {queueCount}</span>
+                  <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px" }}>排队中 {queueCount}</span>
                 )}
               </div>
             )}

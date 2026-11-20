@@ -49,7 +49,8 @@ export function useTurn({
       const isTalkCommand = interactMode === "talk" && !opts.forceLayer;
       const localCommand = isTalkCommand ? null : parseLocalCommand(commandText, { ...gameStore.getState(), isTalk: isTalkCommand, convo }, { surface: "web" });
       const commandId = classifyActCommand({ rawCmd: commandText, opts, interactMode, localCommand, isMove: !!parseDir(commandText) });
-      return dispatchCommand(commandId, () => act(rawCmd, extraReplies, { ...opts, schedulerManaged: true }));
+      setInput("");
+      return dispatchCommand(commandId, () => act(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: commandText });
     }
     const cmd = rawCmd.trim(), isStale = createTurnStaleCheck(turnGenerationRef);
     const stopAutoTravel = () => {

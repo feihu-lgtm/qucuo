@@ -5,7 +5,7 @@ import { giftNpc } from "../../features/npc/logic.js";
 import { applyResult } from "../../features/run.js";
 import { runQuestChoice } from "./useQuestPanel.js";
 import { restorePersuasionProgress } from "./useAutosave.js";
-import { createUndoController } from "./useUndo.js";
+import { createTurnStaleCheck, createUndoController } from "./useUndo.js";
 
 function createController(overrides = {}) {
   const pendingQueue = { current: ["next"] };
@@ -59,6 +59,13 @@ function freshStore(overrides) {
 }
 
 describe("undo controller", () => {
+  it("exposes turn invalidation for the generation stop action", () => {
+    const harness = createController();
+    const isStale = createTurnStaleCheck(harness.turnGenerationRef);
+    harness.controller.invalidateTurns();
+    expect(isStale()).toBe(true);
+  });
+
   it("preserves the pre-gift snapshot across the nested settle action", () => {
     const item = { id: "gift-1", name: "青玉" };
     const npc = { name: "商人" };

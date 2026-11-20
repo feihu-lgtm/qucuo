@@ -148,7 +148,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     () => commandScheduler.dispatch("squarePrerun", () => prerunSquares()),
     [commandScheduler.dispatch, prerunSquares],
   );
-  const { captureUndo, rollbackOneStep, turnGenerationRef } = useUndo({
+  const { captureUndo, rollbackOneStep, invalidateTurns, turnGenerationRef } = useUndo({
     undoSnapshotRef, buildCurrentSnapshot, applySnapshot,
     addLog, setQueueCount, autoTravelRef, queueTimerRef,
     setDuelPending, setDuelingNpc, setActiveBuilding, pendingTalksRef, changePendingTalks, talkBusyRef,
@@ -158,6 +158,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     () => commandScheduler.dispatch("rollback", rollbackOneStep),
     [commandScheduler.dispatch, rollbackOneStep],
   );
+  const stopGeneration = useCallback(() => {
+    return commandScheduler.dispatch("stopGeneration", () => {
+      invalidateTurns();
+      commandScheduler.stopRunning();
+      setLoading(false);
+      addLog([{ t: "sys", text: "  ⏹ 已停止等待本次生成（若结果稍后返回将被忽略）。" }]);
+    });
+  }, [invalidateTurns, commandScheduler.stopRunning, setLoading, addLog]);
 
   useGameStartupOpeningFaces({
     restored, showOpening, showCharCreate, room, innerRoomName, varTreeRef,
@@ -295,7 +303,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   const actions = {
     act, autoTravelTo, captureUndo, rollbackOneStep: scheduledRollback, teleportLookRef,
-    effectiveSpecialNow, onKey, schedulerRunning: commandScheduler.running,
+    effectiveSpecialNow, onKey, rollbackBlocked: commandScheduler.rollbackBlocked, stopRunning: stopGeneration,
     dispatchCommand: commandScheduler.dispatch,
     questPanel, pigeonHandlers, duelHandlers, screenHandlers, buildingHandlers,
     craftingAI, playerActionHandlers, progressionHandlers, aiInspect, outfitAdvice,

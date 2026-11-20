@@ -15,7 +15,7 @@ export default function OverlayHost({ ctx }) {
       <SettingsPanel
         onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
         cfg={ctx.apiCfg}
-        setCfg={(update) => ctx.dispatchCommand("apiConfig", () => ctx.setApiCfg(update))}
+        setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
         dispatchCommand={ctx.dispatchCommand}
         onClose={() => closeOverlay(OVERLAY.SETTINGS)}
         currentSnapshot={ctx.buildCurrentSnapshot}
@@ -53,7 +53,6 @@ export default function OverlayHost({ ctx }) {
           onClose={() => closeOverlay(OVERLAY.HOMESTEAD)}
           addLog={ctx.addLog}
           dispatchCommand={ctx.dispatchCommand}
-          dispatchCommand={ctx.dispatchCommand}
         />
       )}
       <GlobalOverlays {...ctx.globalOverlays} />
@@ -61,7 +60,7 @@ export default function OverlayHost({ ctx }) {
         <SettingsPanel
           onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
           cfg={ctx.apiCfg}
-          setCfg={(update) => ctx.dispatchCommand("apiConfig", () => ctx.setApiCfg(update))}
+          setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
           dispatchCommand={ctx.dispatchCommand}
           onClose={() => closeOverlay(OVERLAY.SETTINGS)}
           currentSnapshot={ctx.buildCurrentSnapshot}

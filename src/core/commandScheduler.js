@@ -8,10 +8,12 @@ export function decide(cmd, running) {
 
   if (cmd.category === CATEGORY.SYSTEM) {
     if (cmd.id === SYSTEM_COMMANDS.rollback) {
+      if (running.id === "autoTravel" && running.category === CATEGORY.MOVE) return "queue";
       return [CATEGORY.AI_TURN, CATEGORY.MOVE].includes(running.category) ? "reject" : "run";
     }
     if (cmd.id === SYSTEM_COMMANDS.settings) return "run";
-    if (cmd.id === SYSTEM_COMMANDS.save || cmd.id === SYSTEM_COMMANDS.apiConfig) return "queue";
+    if (cmd.id === SYSTEM_COMMANDS.save) return "queue";
+    if (cmd.id === SYSTEM_COMMANDS.apiConfig) return "run"; // Active turns keep the config captured at their start.
     if (cmd.id === SYSTEM_COMMANDS.load || cmd.id === SYSTEM_COMMANDS.newGame) return "reject";
     return "reject";
   }
@@ -31,7 +33,7 @@ export function decide(cmd, running) {
   return "run";
 }
 
-export function createScheduler({ onReject = () => {}, onChange = () => {} } = {}) {
+export function createScheduler({ onReject = () => {}, onQueue = () => {}, onChange = () => {} } = {}) {
   const queue = [];
   const active = new Map();
   const listeners = new Set();
@@ -39,18 +41,16 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
   let sequence = 0;
   let draining = false;
 
-  const orderedActive = () => [...active.values()].sort((a, b) => a.startedAt - b.startedAt);
+  const orderedActive = () => [...active.values()].sort((a, b) => a.token - b.token);
+  const latestTurn = () => orderedActive().reverse()
+    .find((task) => [CATEGORY.AI_TURN, CATEGORY.MOVE].includes(task.category)) || null;
   const primaryRunning = () => {
     const tasks = orderedActive();
     return tasks.find((task) => task.category === CATEGORY.SYSTEM)
-      || tasks.find((task) => [CATEGORY.AI_TURN, CATEGORY.MOVE, CATEGORY.LOCAL].includes(task.category))
+      || latestTurn()
+      || tasks.find((task) => task.category === CATEGORY.LOCAL)
       || tasks[0]
       || null;
-  };
-  const publish = () => {
-    const state = { running: primaryRunning(), queue: [...queue] };
-    onChange(state);
-    for (const listener of listeners) listener(state);
   };
   const runningFor = (cmd) => {
     const tasks = orderedActive();
@@ -60,10 +60,34 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
       const whisper = tasks.find((task) => WHISPER_IDS.has(task.id));
       if (whisper) return whisper;
     }
-    if (cmd.category === CATEGORY.SYSTEM) return tasks.at(-1) || null;
-    return tasks.find((task) => [CATEGORY.AI_TURN, CATEGORY.MOVE, CATEGORY.LOCAL].includes(task.category))
+    if (cmd.category === CATEGORY.SYSTEM) {
+      const autoTravel = cmd.id === SYSTEM_COMMANDS.rollback
+        ? tasks.find((task) => task.id === "autoTravel" && task.category === CATEGORY.MOVE)
+        : null;
+      return autoTravel || latestTurn() || tasks.at(-1) || null;
+    }
+    return latestTurn()
+      || tasks.find((task) => task.category === CATEGORY.LOCAL)
       || tasks[0]
       || null;
+  };
+  const canRun = (id) => {
+    const command = getCommand(id);
+    return decide(command, runningFor(command)) === "run";
+  };
+  const publish = () => {
+    const rollback = getCommand(SYSTEM_COMMANDS.rollback);
+    const rollbackRunning = runningFor(rollback);
+    const rollbackDecision = decide(rollback, rollbackRunning);
+    const state = {
+      running: primaryRunning(),
+      queue: [...queue],
+      rollbackBlocked: !canRun(rollback.id)
+        && rollbackDecision === "reject"
+        && [CATEGORY.AI_TURN, CATEGORY.MOVE].includes(rollbackRunning?.category),
+    };
+    onChange(state);
+    for (const listener of listeners) listener(state);
   };
 
   const settleEntry = (entry, status, value) => {
@@ -97,6 +121,7 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
   };
 
   const runEntry = (entry) => {
+    if (entry.id === SYSTEM_COMMANDS.rollback) clearQueue();
     const record = {
       id: entry.id,
       category: entry.category,
@@ -104,6 +129,7 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
       phase: "machine",
       startedAt: Date.now(),
       token: ++sequence,
+      entry,
     };
     active.set(record.token, record);
     publish();
@@ -124,6 +150,7 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
 
     Promise.resolve(value).then(
       (result) => {
+        if (!active.has(record.token)) return;
         record.phase = "done";
         active.delete(record.token);
         publish();
@@ -131,6 +158,7 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
         void drain();
       },
       (error) => {
+        if (!active.has(record.token)) return;
         record.phase = "error";
         active.delete(record.token);
         publish();
@@ -177,8 +205,8 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
         if (decision === "queue") break;
         queue.shift();
         if (decision === "reject") {
-          onReject(entry, running);
-          settleEntry(entry, "value", { status: "rejected" });
+          const message = onReject(entry, running);
+          settleEntry(entry, "value", { status: "rejected", message });
           publish();
           continue;
         }
@@ -207,22 +235,28 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
     const running = runningFor(entry);
     const decision = decide(entry, running);
     if (decision === "reject") {
-      onReject(entry, running);
-      settleEntry(entry, "value", { status: "rejected" });
+      const message = onReject(entry, running);
+      settleEntry(entry, "value", { status: "rejected", message });
       return entry.promise;
     }
     if (decision === "queue") {
-      queue.push(entry);
+      if (id === SYSTEM_COMMANDS.rollback && running?.id === "autoTravel") {
+        clearRouteQueue();
+        queue.unshift(entry);
+      } else {
+        queue.push(entry);
+      }
+      onQueue(entry, queue.indexOf(entry) + 1);
       publish();
       return entry.promise;
     }
     if (decision === "replaceRoute") {
       const index = removeQueuedRoute();
       queue.splice(Math.min(index, queue.length), 0, entry);
+      onQueue(entry, queue.indexOf(entry) + 1);
       publish();
       return entry.promise;
     }
-    if (id === SYSTEM_COMMANDS.rollback) clearQueue();
     runEntry(entry);
     return entry.promise;
   };
@@ -232,8 +266,20 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
     publish();
   }
 
+  const stopRunning = () => {
+    const record = orderedActive().reverse()
+      .find((task) => [CATEGORY.AI_TURN, CATEGORY.MOVE].includes(task.category));
+    if (!record) return false;
+    active.delete(record.token);
+    record.phase = "stopped";
+    settleEntry(record.entry, "value", { status: "stopped" });
+    publish();
+    void drain();
+    return true;
+  };
+
   const setPhase = (phase) => {
-    const task = primaryRunning();
+    const task = latestTurn();
     if (!task) return;
     task.phase = phase;
     publish();
@@ -253,6 +299,8 @@ export function createScheduler({ onReject = () => {}, onChange = () => {} } = {
     get running() {
       return primaryRunning();
     },
+    canRun,
+    stopRunning,
     setPhase,
     subscribe,
   };

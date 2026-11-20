@@ -74,8 +74,31 @@ describe("command scheduler", () => {
     expect(decide({ id: "save", category: CATEGORY.SYSTEM }, running)).toBe("queue");
     expect(decide({ id: "load", category: CATEGORY.SYSTEM }, running)).toBe("reject");
     expect(decide({ id: "newGame", category: CATEGORY.SYSTEM }, running)).toBe("reject");
-    expect(decide({ id: "apiConfig", category: CATEGORY.SYSTEM }, running)).toBe("queue");
+    expect(decide({ id: "apiConfig", category: CATEGORY.SYSTEM }, running)).toBe("run");
     expect(decide({ id: "settings", category: CATEGORY.SYSTEM }, running)).toBe("run");
+  });
+
+  it("registers web-specific building and duel labels", () => {
+    expect(COMMANDS.inn.label).toBe("住店与求医");
+    expect(COMMANDS.carriage).toMatchObject({ category: CATEGORY.MOVE, label: "坐车" });
+    expect(COMMANDS.bank.label).toBe("钱庄与当铺");
+    expect(COMMANDS.prayer.label).toBe("祈福");
+    expect(COMMANDS.book.label).toBe("书籍");
+    expect(COMMANDS.duel.label).toBe("决斗");
+    expect(Object.values(HOOK_COMMANDS.useDuel)).toEqual(["duel", "duel", "duel", "duel"]);
+  });
+
+  it("returns the rejection text for SettingsPanel alerts", async () => {
+    const scheduler = createScheduler({ onReject: () => "  当前操作尚未落盘，请稍候再读取。" });
+    let finishTurn;
+    const turn = scheduler.dispatch("typedAction", () => new Promise(resolve => {
+      finishTurn = resolve;
+    }));
+    const load = await scheduler.dispatch("load", vi.fn());
+
+    expect(load).toEqual({ status: "rejected", message: "  当前操作尚未落盘，请稍候再读取。" });
+    finishTurn();
+    await turn;
   });
 
   it.each([CATEGORY.AI_TURN, CATEGORY.MOVE].flatMap(category => phases.map(phase => [category, phase])))(
@@ -92,6 +115,12 @@ describe("command scheduler", () => {
     })).toBe("replaceRoute");
     expect(decide({ id: "privateWhisper", category: CATEGORY.BACKGROUND }, {
       id: "actWhisper", category: CATEGORY.BACKGROUND, phase: "ai",
+    })).toBe("queue");
+  });
+
+  it.each(phases)("queues rollback behind an auto-travel leg during %s", (phase) => {
+    expect(decide({ id: "rollback", category: CATEGORY.SYSTEM }, {
+      id: "autoTravel", category: CATEGORY.MOVE, phase,
     })).toBe("queue");
   });
 
@@ -166,5 +195,107 @@ describe("command scheduler", () => {
     await local;
     expect(phasesSeen).toEqual(["commit"]);
     expect(localFn).toHaveBeenCalledOnce();
+  });
+
+  it("stops the active turn, drains queued local work, and ignores its late result", async () => {
+    const scheduler = createScheduler();
+    const updates = [];
+    scheduler.subscribe(state => updates.push(state));
+    let finishTurn;
+    const turn = scheduler.dispatch("typedAction", () => new Promise(resolve => {
+      finishTurn = resolve;
+    }));
+    const localFn = vi.fn();
+    const local = scheduler.dispatch("actLocal", localFn);
+
+    expect(localFn).not.toHaveBeenCalled();
+    expect(scheduler.stopRunning()).toBe(true);
+    expect(await turn).toEqual({ status: "stopped" });
+    await local;
+    expect(localFn).toHaveBeenCalledOnce();
+
+    const updateCount = updates.length;
+    finishTurn("late");
+    await Promise.resolve();
+    expect(updates).toHaveLength(updateCount);
+    expect(scheduler.running).toBeNull();
+  });
+
+  it("reports queued command text and positions", async () => {
+    const onQueue = vi.fn();
+    const scheduler = createScheduler({ onQueue });
+    let finishTurn;
+    const turn = scheduler.dispatch("typedAction", () => new Promise(resolve => {
+      finishTurn = resolve;
+    }));
+    const local = scheduler.dispatch("actLocal", vi.fn(), { displayText: "给商人送礼" });
+
+    expect(onQueue).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "actLocal", meta: { displayText: "给商人送礼" } }),
+      1,
+    );
+    finishTurn();
+    await Promise.all([turn, local]);
+  });
+
+  it("targets nested AI phases and rollback blocking over the local parent", async () => {
+    const scheduler = createScheduler();
+    let finishTurn;
+    const parent = scheduler.dispatch("npcGift", () => scheduler.dispatch(
+      "typedAction",
+      () => new Promise(resolve => { finishTurn = resolve; }),
+    ));
+    let state;
+    scheduler.subscribe(next => { state = next; });
+
+    expect(scheduler.running.id).toBe("typedAction");
+    scheduler.setPhase("commit");
+    expect(scheduler.running.phase).toBe("commit");
+    expect(scheduler.canRun("rollback")).toBe(false);
+    expect(state.rollbackBlocked).toBe(true);
+
+    finishTurn();
+    await parent;
+  });
+
+  it("keeps rollback clickable while a system command is active", async () => {
+    const scheduler = createScheduler();
+    let state;
+    scheduler.subscribe(next => { state = next; });
+    let finishSettings;
+    const settings = scheduler.dispatch("settings", () => new Promise(resolve => {
+      finishSettings = resolve;
+    }));
+
+    expect(scheduler.canRun("rollback")).toBe(false);
+    expect(state.rollbackBlocked).toBe(false);
+
+    finishSettings();
+    await settings;
+  });
+
+  it("clears route legs and queues rollback after the active auto-travel leg", async () => {
+    const scheduler = createScheduler();
+    let finishLeg;
+    const leg = scheduler.dispatch("autoTravel", () => new Promise(resolve => {
+      finishLeg = resolve;
+    }));
+    const queuedRoute = scheduler.enqueue("autoTravel", vi.fn(), { routeQueue: true });
+    const queuedLocal = scheduler.dispatch("actLocal", vi.fn());
+    const rollbackFn = vi.fn();
+    let state;
+    scheduler.subscribe(next => { state = next; });
+    const rollback = scheduler.dispatch("rollback", rollbackFn);
+
+    expect(await queuedRoute).toEqual({ status: "cleared" });
+    expect(scheduler.canRun("rollback")).toBe(false);
+    expect(scheduler.queue.map(entry => entry.id)).toEqual(["rollback", "actLocal"]);
+    expect(state.rollbackBlocked).toBe(false);
+    expect(rollbackFn).not.toHaveBeenCalled();
+
+    finishLeg();
+    expect(await queuedLocal).toEqual({ status: "cleared" });
+    await Promise.all([leg, rollback]);
+    expect(rollbackFn).toHaveBeenCalledOnce();
   });
 });

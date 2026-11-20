@@ -40,7 +40,7 @@ export function createUndoController({
     return true;
   };
 
-  return { captureUndo, rollbackOneStep };
+  return { captureUndo, rollbackOneStep, invalidateTurns };
 }
 
 export function createTurnStaleCheck(turnGenerationRef) {
@@ -54,7 +54,7 @@ export function useUndo(deps) {
     () => window.confirm("回滚到上一步行动之前？当前这步的结果会被撤销。"),
     [],
   );
-  const { captureUndo, rollbackOneStep } = useMemo(
+  const { captureUndo, rollbackOneStep, invalidateTurns } = useMemo(
     () => createUndoController({ ...deps, turnGenerationRef, confirmRollback }),
     [
       deps.undoSnapshotRef, deps.buildCurrentSnapshot, deps.applySnapshot, deps.addLog,
@@ -66,5 +66,5 @@ export function useUndo(deps) {
       deps.setWaitSecs, confirmRollback,
     ],
   );
-  return { captureUndo, rollbackOneStep, turnGenerationRef };
+  return { captureUndo, rollbackOneStep, invalidateTurns, turnGenerationRef };
 }

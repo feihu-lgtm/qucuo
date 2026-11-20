@@ -216,6 +216,10 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
   };
 
   const runCommand = (id, fn) => dispatchCommand ? dispatchCommand(id, fn) : fn();
+  const runCommandWithAlert = (id, fn) => Promise.resolve(runCommand(id, fn)).then(result => {
+    if (result?.status === "rejected" && result.message) alert(result.message);
+    return result;
+  });
   const handleManualSave = () => runCommand("save", () => {
     if (!currentSnapshot) return;
     saveToSlot(currentSnapshot(), slotLabel.trim() || undefined);
@@ -223,7 +227,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
     refreshSlots();
   });
 
-  const handleLoadSlot = (id) => runCommand("load", () => {
+  const handleLoadSlot = (id) => runCommandWithAlert("load", () => {
     const snap = loadSlot(id); if (!snap) return;
     onLoadSnapshot(snap); if (!setRngState(snap.rngState)) setSeed(Date.now());
   });
@@ -1020,7 +1024,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
             <div style={{ ...sectionStyle }}>
               <span
                 style={{ ...btnStyle, color: "#c45044", borderColor: "#3a1d1d" }}
-                onClick={() => runCommand("newGame", () => {
+                onClick={() => runCommandWithAlert("newGame", () => {
                   if (window.confirm("确定要清空自动存档、从头开始吗？此操作不可撤销（手动存档槽位不受影响）。")) {
                     clearAutoSave();
                     window.location.reload();

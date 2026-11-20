@@ -20,7 +20,7 @@ import { useUiStore } from "../store/uiStore.js";
 export default function GameLayout({ layout }) {
   const {
     overlayHost, uiScale, zoneTheme, isMobile, mobileDrawer, setMobileDrawer,
-    schedulerRunning, dispatchCommand,
+    rollbackBlocked, stopRunning, dispatchCommand,
     mobileTopMenu, setMobileTopMenu,
     isDayMode, setIsDayMode, uiGold, uiTurquoise, uiCrimson, uiPink,
     setSettingsInitialTab, autoSaveError, lastAutoSave, playerAvatarCustom,
@@ -206,9 +206,9 @@ export default function GameLayout({ layout }) {
         <CenterPanel
           isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
           zoneTheme={zoneTheme} S={S}
-          loading={loading} setLoading={setLoading} addLog={addLog}
+          loading={loading} addLog={addLog}
           rollbackOneStep={rollbackOneStep} captureUndo={captureUndo}
-          schedulerRunning={schedulerRunning} dispatchCommand={dispatchCommand}
+          rollbackBlocked={rollbackBlocked} stopRunning={stopRunning} dispatchCommand={dispatchCommand}
           gm={gm} setGm={setGm}
           char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
           dao={dao} setDao={setDao}

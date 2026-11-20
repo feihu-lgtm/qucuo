@@ -14,14 +14,23 @@ export function useCommandScheduler({ addLog, setQueueCount }) {
           ? `  ${label}尚未落盘，请稍候再${command.id === "load" ? "读取" : "开始新游戏"}。`
           : `  正在${label}，请稍候。`;
         addLogRef.current([{ t: "sys", text: message, standalone: true }]);
+        return message;
+      },
+      onQueue: (command, position) => {
+        const label = command.meta.displayText || command.label;
+        addLogRef.current([{ t: "sys", text: `  ⏳ 「${label}」已入队（排队中 ${position}）`, standalone: true }]);
       },
     });
   }
   const scheduler = schedulerRef.current;
-  const [state, setState] = useState({ running: null, queue: [] });
+  const [state, setState] = useState({ running: null, queue: [], rollbackBlocked: false });
 
-  useEffect(() => scheduler.subscribe(({ running, queue }) => {
-    setState({ running: running ? { id: running.id, category: running.category, phase: running.phase, label: running.label } : null, queue });
+  useEffect(() => scheduler.subscribe(({ running, queue, rollbackBlocked }) => {
+    setState({
+      running: running ? { id: running.id, category: running.category, phase: running.phase, label: running.label } : null,
+      queue,
+      rollbackBlocked,
+    });
     setQueueCount(queue.length);
   }), [scheduler, setQueueCount]);
 
@@ -29,6 +38,7 @@ export function useCommandScheduler({ addLog, setQueueCount }) {
   const enqueue = useCallback((commandId, fn, meta) => scheduler.enqueue(commandId, fn, meta), [scheduler]);
   const clearQueue = useCallback(() => scheduler.clearQueue(), [scheduler]);
   const clearRouteQueue = useCallback(() => scheduler.clearRouteQueue(), [scheduler]);
+  const stopRunning = useCallback(() => scheduler.stopRunning(), [scheduler]);
   const setPhase = useCallback((phase) => scheduler.setPhase(phase), [scheduler]);
 
   const wrapHandlers = useCallback((group, handlers) => {
@@ -56,10 +66,13 @@ export function useCommandScheduler({ addLog, setQueueCount }) {
     enqueue,
     clearQueue,
     clearRouteQueue,
+    stopRunning,
     setPhase,
     wrapHandlers,
     running: state.running,
     queue: state.queue,
+    rollbackBlocked: state.rollbackBlocked,
+    canRun: scheduler.canRun,
     scheduler,
   };
 }

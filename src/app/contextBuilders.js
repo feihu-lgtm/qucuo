@@ -71,7 +71,8 @@ export function buildLayoutCtx({ ui, game, overlayHost, autosave, actions, activ
     districtName: game.room.name, innerRoomName: game.innerRoomName,
   });
   return {
-    schedulerRunning: actions.schedulerRunning,
+    rollbackBlocked: actions.rollbackBlocked,
+    stopRunning: actions.stopRunning,
     dispatchCommand: actions.dispatchCommand,
     overlayHost, uiScale: ui.uiScale, zoneTheme: ui.zoneTheme, isMobile: ui.isMobile,
     mobileDrawer: ui.mobileDrawer, setMobileDrawer: ui.setMobileDrawer,
