@@ -306,19 +306,12 @@ function normalizeGeminiBase(endpoint) {
 
 // 按思考档位给 OpenAI 兼容请求体注入参数。没有单一通用参数，故多塞几个无害兼容字段，
 // 谁认谁生效、不认的自动忽略：reasoning_effort（Gemini 官方兼容口）+ enable_thinking（Qwen/硅基）。
-function applyThinkingOpenAI(body, cfg) {
+function applyThinkingOpenAI(body, cfg, vertex = false) {
   const mode = cfg.thinkingMode || "off";
-  if (mode === "off") {
-    body.reasoning_effort = "none";
-    body.enable_thinking = false;
-  } else if (mode === "custom") {
-    const b = Number(cfg.thinkingBudget) || 0;
-    if (b <= 0) { body.reasoning_effort = "none"; body.enable_thinking = false; }
-    else { body.reasoning_effort = b < 1024 ? "low" : b < 4096 ? "medium" : "high"; body.enable_thinking = true; }
-  } else {
-    body.reasoning_effort = mode; // low | medium | high
-    body.enable_thinking = true;
-  }
+  const budget = Number(cfg.thinkingBudget) || 0;
+  const effort = mode === "custom" ? (budget <= 0 ? "off" : budget < 1024 ? "low" : budget < 4096 ? "medium" : "high") : mode;
+  body.reasoning_effort = vertex ? (["low", "medium", "high"].includes(effort) ? effort : "minimal") : (effort === "off" ? "none" : effort);
+  if (!vertex) body.enable_thinking = effort !== "off";
 }
 
 // Gemini 原生口：thinkingConfig.thinkingBudget（0=关）。
@@ -512,8 +505,8 @@ export function hasApiCredentials(cfg) {
 const isOpenAICompatible = type => [API_TYPES.OPENAI, API_TYPES.QWEN, API_TYPES.VERTEX].includes(type);
 
 async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
-  const vertex = cfg.apiType === API_TYPES.VERTEX;
-  const url = vertex ? (await import("./vertexAdc.js")).buildVertexEndpoint(cfg.vertexProject, cfg.vertexLocation)
+  const vertex = cfg.apiType === API_TYPES.VERTEX ? await import("./vertexAdc.js") : null;
+  const url = vertex ? vertex.buildVertexEndpoint(cfg.vertexProject, cfg.vertexLocation)
     : withProxy(normalizeOpenAIEndpoint(cfg.endpoint || DEFAULT_ENDPOINTS[cfg.apiType], cfg.openaiAutoComplete), cfg);
   const system = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock) : [systemPrompt];
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
@@ -527,7 +520,7 @@ async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
     const value = opts[option] ?? cfg[option];
     if (value != null) body[field] = value;
   }
-  if (!vertex) applyThinkingOpenAI(body, cfg);
+  applyThinkingOpenAI(body, cfg, !!vertex);
   const auth = vertex ? await (opts.getVertexHeaders || (() => getStoredVertexHeaders(fetchWithTimeout)))()
     : { Authorization: `Bearer ${cfg.apiKey}` };
   try {
@@ -535,7 +528,7 @@ async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
       method: "POST", headers: { "Content-Type": "application/json", ...auth },
       body: JSON.stringify(body), ...(vertex ? { redirect: "error" } : {}),
     });
-    if (vertex && !res.ok) throw new Error(`Vertex AI HTTP ${res.status}`);
+    if (vertex && !res.ok) throw await vertex.vertexResponseError(res, auth.Authorization);
     if (stream) return res;
     return vertex ? await res.json().catch(() => { throw new Error("Vertex AI 返回的内容无法解析"); })
       : await readJsonOrThrow(res, "OpenAI 兼容调用");

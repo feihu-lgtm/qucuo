@@ -76,6 +76,59 @@ describe("Vertex ADC", () => {
     expect(() => buildVertexEndpoint("", "global")).toThrow(/项目/);
   });
 
+  it("reports only scrubbed OAuth error fields", async () => {
+    const fetch = vi.fn(async () => Response.json({
+      error: "invalid_grant",
+      error_description: `Expired ${authorizedUser.refresh_token}, ${authorizedUser.client_secret}, ya29.sample-access`,
+      message: "ignored-extra-field",
+    }, { status: 400 }));
+    const getHeaders = createVertexAuth(authorizedUser, { fetch, now: Date.now });
+    await expect(getHeaders()).rejects.toThrow(/^Vertex AI 令牌交换失败（HTTP 400）：invalid_grant：Expired \[已拦截\], \[已拦截\], \[已拦截\]$/);
+  });
+
+  it.each([false, true])("surfaces scrubbed Vertex HTTP details (stream=%s)", async stream => {
+    const message = "Publisher model not found; ya29.echoed-access; test-raw-access";
+    const error = { code: 404, message, status: "ignored-extra-field" };
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(stream ? { error } : [{ error }], { status: 404 })));
+    const ai = createWebAi({ getVertexHeaders: async () => ({ Authorization: "Bearer test-raw-access" }) });
+    const cfg = { ...defaultConfig(), apiType: API_TYPES.VERTEX, vertexProject: "test-project" };
+    await expect(ai.chat([], { cfg, systemPrompt: "叙述", stream }))
+      .rejects.toThrow(/^Vertex AI HTTP 404：Publisher model not found; \[已拦截\]; \[已拦截\]$/);
+  });
+
+  it("limits Google error details and falls back to status for non-JSON", async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json({ error: { message: "x".repeat(500) } }, { status: 404 }))
+      .mockResolvedValueOnce(new Response("untrusted response", { status: 502 }));
+    vi.stubGlobal("fetch", fetch);
+    const ai = createWebAi({ getVertexHeaders: async () => ({ Authorization: "Bearer test-token" }) });
+    const cfg = { ...defaultConfig(), apiType: API_TYPES.VERTEX, vertexProject: "test-project" };
+    const opts = { cfg, systemPrompt: "叙述" };
+    await expect(ai.chat([], opts)).rejects.toThrow(new Error("Vertex AI HTTP 404：" + "x".repeat(199) + "…"));
+    await expect(ai.chat([], opts)).rejects.toThrow(/^Vertex AI HTTP 502$/);
+  });
+
+  it.each([
+    [{}, "minimal"],
+    [{ thinkingMode: "off" }, "minimal"],
+    [{ thinkingMode: "custom", thinkingBudget: 0 }, "minimal"],
+    [{ thinkingMode: "low" }, "low"],
+    [{ thinkingMode: "medium" }, "medium"],
+    [{ thinkingMode: "high" }, "high"],
+    [{ thinkingMode: "custom", thinkingBudget: 512 }, "low"],
+    [{ thinkingMode: "custom", thinkingBudget: 1024 }, "medium"],
+    [{ thinkingMode: "custom", thinkingBudget: 4096 }, "high"],
+  ])("maps thinking settings %j to Vertex %s", async (thinking, effort) => {
+    const fetch = vi.fn(async () => Response.json({ choices: [{ message: { content: "曲措" } }] }));
+    vi.stubGlobal("fetch", fetch);
+    const ai = createWebAi({ getVertexHeaders: async () => ({ Authorization: "Bearer test-token" }) });
+    const cfg = { apiType: API_TYPES.VERTEX, vertexProject: "test-project", ...thinking };
+    await ai.chat([], { cfg, systemPrompt: "叙述" });
+    const body = JSON.parse(fetch.mock.calls[0][1].body);
+    expect(body).toMatchObject({ model: "google/gemini-3.5-flash", reasoning_effort: effort });
+    expect(body).not.toHaveProperty("enable_thinking");
+  });
+
   it("reuses the monitored JSON and streaming paths without a proxy or credential-bearing config", async () => {
     const store = new Map();
     const getItem = vi.fn(key => store.get(key) ?? null);
@@ -101,7 +154,8 @@ describe("Vertex ADC", () => {
     const onChunk = vi.fn();
     try {
       expect((await ai.chat(messages, opts)).text).toBe("曲措");
-      expect((await ai.chat(messages, { ...opts, stream: true, onChunk })).text).toBe("江湖");
+      const extractionCfg = buildExtractionCfg("LOOK", { ...cfg, thinkingMode: "high" });
+      expect((await ai.chat(messages, { ...opts, cfg: extractionCfg, stream: true, onChunk })).text).toBe("江湖");
     } finally {
       turnMonitor.finish(turn);
     }
@@ -113,7 +167,7 @@ describe("Vertex ADC", () => {
         "Content-Type": "application/json", Authorization: "Bearer ya29.mock-token-1", "x-goog-user-project": "test-quota-project",
       });
       expect(JSON.parse(request.body)).toMatchObject({
-        model: vertexModel, max_tokens: 1000, messages: [{ role: "system", content: "叙述" }, ...messages],
+        model: vertexModel, max_tokens: 1000, messages: [{ role: "system", content: "叙述" }, ...messages], reasoning_effort: "minimal",
       });
     }
     expect(turn.nodes.filter(node => node.pipeline).map(node => node.pipeline.response)).toEqual(["曲措", "江湖"]);

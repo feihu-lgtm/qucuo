@@ -22,6 +22,9 @@ describe("SettingsPanel provider models", () => {
     const cfg = { model: "openai-model", vertexModel: "google/vertex-model" };
     expect(render({ ...cfg, apiType: "vertex" }, "api")).toContain('value="google/vertex-model"');
     expect(render({ ...cfg, apiType: "openai" }, "api")).toContain('value="openai-model"');
-    expect(render({ apiType: "vertex", model: cfg.model }, "api")).toContain('value="google/gemini-2.5-flash"');
+    const vertexHtml = render({ apiType: "vertex", model: cfg.model }, "api");
+    expect(vertexHtml).toContain('value="google/gemini-3.5-flash"');
+    expect(vertexHtml).toContain('placeholder="google/gemini-3.5-flash"');
+    expect(vertexHtml).toContain("每个浏览器只保存一份 ADC，导入新文件会替换旧的");
   });
 });

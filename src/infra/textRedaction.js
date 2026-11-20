@@ -13,7 +13,7 @@ const CREDENTIAL_PATTERNS = [
 export function scrubCredentialPatterns(text, onMatch) {
   for (const pattern of CREDENTIAL_PATTERNS) {
     text = text.replace(pattern, () => {
-      onMatch();
+      onMatch?.();
       return BLOCKED_CREDENTIAL;
     });
   }

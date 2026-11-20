@@ -1,3 +1,5 @@
+import { BLOCKED_CREDENTIAL, scrubCredentialPatterns } from "./textRedaction.js";
+
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 const RSA = "RSASSA-PKCS1-v1_5";
@@ -53,6 +55,22 @@ async function signJwt(adc, crypto, nowMs) {
   }
 }
 
+function vertexError(prefix, parts, credentials) {
+  let detail = parts.filter(value => typeof value === "string" && value.trim()).join("：");
+  for (const credential of credentials) {
+    if (credential) detail = detail.split(credential).join(BLOCKED_CREDENTIAL);
+  }
+  detail = scrubCredentialPatterns(detail).trim();
+  if (detail.length > 200) detail = detail.slice(0, 199) + "…";
+  return new Error(detail ? prefix + "：" + detail : prefix);
+}
+
+export async function vertexResponseError(response, authorization) {
+  const data = await response.json().catch(() => null);
+  const message = (Array.isArray(data) ? data[0] : data)?.error?.message;
+  return vertexError(`Vertex AI HTTP ${response.status}`, [message], [authorization?.replace(/^Bearer\s+/i, "")]);
+}
+
 export function createVertexAuth(adc, { fetch, crypto, now }) {
   let token;
   let refreshAt = 0;
@@ -74,8 +92,11 @@ export function createVertexAuth(adc, { fetch, crypto, now }) {
     } catch {
       throw new Error("Vertex AI 令牌交换失败：无法连接 Google OAuth");
     }
-    if (!response.ok) throw new Error(`Vertex AI 令牌交换失败（HTTP ${response.status}）`);
     const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw vertexError(`Vertex AI 令牌交换失败（HTTP ${response.status}）`, [data?.error, data?.error_description],
+        [params.assertion, params.client_id, params.client_secret, params.refresh_token]);
+    }
     const lifetime = Number(data?.expires_in) * 1000;
     if (typeof data?.access_token !== "string" || !data.access_token || !(lifetime > 0 && Number.isFinite(lifetime))) {
       throw new Error("Google OAuth 未返回有效的 Vertex AI 令牌");

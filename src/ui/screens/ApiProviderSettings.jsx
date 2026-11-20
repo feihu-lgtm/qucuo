@@ -36,7 +36,11 @@ export default function ApiProviderSettings({
           <input id="vertex-project" style={inputStyle} value={cfg.vertexProject || ""} onChange={e => patch({ vertexProject: e.target.value })} />
           <label htmlFor="vertex-location" style={fieldLabel}>位置</label>
           <input id="vertex-location" style={inputStyle} value={cfg.vertexLocation ?? "global"} onChange={e => patch({ vertexLocation: e.target.value })} placeholder="global" />
-          <div style={{ fontSize: "11px", color: "var(--text-dim)", marginTop: 4 }}>凭证仅保存在此浏览器，不会随配置、存档或报告导出。仅在信任的设备上使用。</div>
+          <div style={{ fontSize: "11px", color: "var(--text-dim)", marginTop: 4 }}>
+            每个浏览器只保存一份 ADC，导入新文件会替换旧的
+            <br />
+            凭证不会随配置、存档或报告导出。仅在信任的设备上使用。
+          </div>
         </>
       ) : (
         <>
