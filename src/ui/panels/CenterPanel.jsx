@@ -143,10 +143,10 @@ export default function CenterPanel({
           )}
           <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>江湖</span>
-            <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               {loading && <span onClick={() => { setLoading(false); addLog([{ t: "sys", text: "  ⏹ 已停止等待本次生成（若结果稍后返回将被忽略）。" }]); }}
                 className="mobile-touch-target"
-                style={{ cursor: "pointer", fontSize: "10px", color: "#e0806a", padding: "0 7px", display: "inline-flex", alignItems: "center", height: 22, boxSizing: "border-box", lineHeight: 1, letterSpacing: 0, whiteSpace: "nowrap", border: "1px solid #4a2a1a", borderRadius: 0, userSelect: "none" }}>⏹ 停止</span>}
+                style={chromeBtn(zoneTheme)}>⏹ 停止</span>}
               <span className="mobile-touch-target" onClick={rollbackOneStep}
                 title="撤销上一步行动，还原到落子之前"
                 style={chromeBtn(zoneTheme)}>↩ 回滚</span>
