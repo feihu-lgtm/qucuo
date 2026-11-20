@@ -323,7 +323,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const apiReady = hasApiCredentials(apiCfg);
   const returnToStart = useCallback(() => onReturnToStart?.(), [onReturnToStart]);
   const overlayHost = <OverlayHost ctx={overlayCtx} apiReady={apiReady}
-    onCloseInitialSettings={initialOpenSettings ? returnToStart : undefined} />;
+    onCloseInitialSettings={initialOpenSettings && !apiReady ? returnToStart : undefined} />;
   const layout = buildLayoutCtx({
     ui, game: bindings, overlayHost, autosave, actions, activeBuffs, addLog, jotNote,
   });
