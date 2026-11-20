@@ -71,6 +71,10 @@ export default function GameLayout({ layout }) {
     talkTarget, seaTraumaActive, showDebug, showBasement, setMobileColumn]);
 
   useEffect(() => {
+    if (isMobile && mobileColumn === "center") logEnd.current?.scrollIntoView({ behavior: "instant" });
+  }, [isMobile, mobileColumn, logEnd]);
+
+  useEffect(() => {
     const viewport = window.visualViewport;
     const updateHeight = () => {
       const height = viewport?.height || window.innerHeight;

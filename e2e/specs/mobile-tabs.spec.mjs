@@ -37,6 +37,7 @@ export default async function mobileTabs({ page, game }) {
   await game.waitFor(page, async () => (await activeColumn()) === "左 2/2", { message: "touch face switch" });
   assert.equal(await left.locator('[aria-current="true"]').innerText(), "周遭");
 
+  await page.waitForTimeout(550);
   await left.locator('[data-module="buildings"]').getByRole("button").first().click();
   await game.waitFor(page, async () => (await activeColumn()) === "中", { message: "building opens center column" });
   assert.equal(await page.getByText(/现有信鸽.*每日可领/).isVisible(), true);
@@ -61,6 +62,9 @@ export default async function mobileTabs({ page, game }) {
   await choose("左");
   assert.equal(await activeColumn(), "左 2/2");
   await choose("中");
+  const narrative = page.getByTestId("narrative-log");
+  assert.equal(await narrative.evaluate(element => element.scrollHeight > element.clientHeight), true);
+  await game.waitFor(page, () => narrative.evaluate(element => element.scrollHeight - element.clientHeight - element.scrollTop < 2), { message: "restored narrative scrolled to bottom" });
   await page.locator("html").evaluate(element => element.setAttribute("data-keyboard-open", ""));
   assert.equal(await tabs.isVisible(), false);
   await page.locator("html").evaluate(element => element.removeAttribute("data-keyboard-open"));

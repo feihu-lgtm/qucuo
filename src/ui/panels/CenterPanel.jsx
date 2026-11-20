@@ -373,7 +373,7 @@ export default function CenterPanel({
           {/* 叙事正文区。建筑面板展开时整个让位——两个 flex:1 的兄弟会平分高度，
               那样建筑面板只有半屏、内容长的下半截看不到（见上方注释）。
               让位而不是压缩，是因为压缩解决不了「一半」这个根因。 */}
-          <div style={{ display: ((activeBuilding || tradingShop) && !buildingPanelMinimized) ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
+          <div data-testid="narrative-log" style={{ display: ((activeBuilding || tradingShop) && !buildingPanelMinimized) ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
             {(() => {
               // 按"一问一答"分组：玩家的一条 cmd 开启一个新轮次，后面紧跟的所有内容
               // （desc/stat/affection/sys/err 等）都归进这一组，直到下一条 cmd 出现为止。
