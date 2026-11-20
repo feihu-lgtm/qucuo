@@ -12,7 +12,7 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
     dispatchCommand: actions.dispatchCommand,
     apiCfg: ui.apiCfg, setApiCfg: ui.setApiCfg, buildCurrentSnapshot: autosave.buildCurrentSnapshot,
     applySnapshot: autosave.applySnapshot, varTree: game.varTree, setVarTree: game.setVarTree,
-    settingsInitialTab: ui.settingsInitialTab, uiScale: ui.uiScale, setUiScale: ui.setUiScale,
+    settingsInitialTab: ui.settingsInitialTab, setSettingsInitialTab: ui.setSettingsInitialTab, uiScale: ui.uiScale, setUiScale: ui.setUiScale,
     narrator: game.narrator, setNarrator: game.setNarrator, getLiveBlockText: ui.getLiveBlockText,
     showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead,
     char: game.char, setChar: game.setChar, inv: game.inv, setInv: game.setInv,

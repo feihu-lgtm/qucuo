@@ -87,13 +87,14 @@ export function createHttpAi({ baseUrl, apiKey, model }) {
   };
 }
 
-export function createWebAi() {
+export function createWebAi({ getVertexHeaders } = {}) {
   const chat = async (messages, opts = {}) => {
     const cfg = opts.cfg;
     if (!cfg || !opts.systemPrompt) throw new Error("Web AI requires cfg and systemPrompt");
     if (opts.stream && cfg.apiType !== "gemini") {
       return callModelStream(cfg, opts.systemPrompt, messages, opts.onChunk, {
         ...(opts.modelOptions || {}),
+        getVertexHeaders,
         [observed]: opts[observed],
         intent: opts.intent,
         recallInfo: opts.recallInfo,
@@ -101,6 +102,7 @@ export function createWebAi() {
     }
     return callModel(cfg, opts.systemPrompt, messages, {
       ...(opts.modelOptions || {}),
+      getVertexHeaders,
       [observed]: opts[observed],
       intent: opts.intent,
       recallInfo: opts.recallInfo,

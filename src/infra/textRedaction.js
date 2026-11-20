@@ -1,5 +1,25 @@
 const CONFIG_VALUE_KEY = /key$|token|secret|password|authorization|cookie|endpoint|base[-_]?url|proxy/i;
 
+export const BLOCKED_CREDENTIAL = "[已拦截]";
+export const ADC_SECRET_KEY = /^(?:private_key|refresh_token|client_secret)$/i;
+
+const CREDENTIAL_PATTERNS = [
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g,
+  /(?:\\*["'])?\b(?:private_key|refresh_token|client_secret)\b(?:\\*["'])?(?:\s*[:=]\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\\+"[^"\s,}&]*"|[^\s,}&"']+))?/gi,
+  /\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi,
+  /\b(?:ya29\.[A-Za-z0-9._-]+|sk-[A-Za-z0-9_-]+)/g,
+];
+
+export function scrubCredentialPatterns(text, onMatch) {
+  for (const pattern of CREDENTIAL_PATTERNS) {
+    text = text.replace(pattern, () => {
+      onMatch();
+      return BLOCKED_CREDENTIAL;
+    });
+  }
+  return text;
+}
+
 export function collectConfigValues(config) {
   const values = [];
   const seen = new WeakSet();
@@ -31,8 +51,8 @@ export function scrubString(value, configuredValues = []) {
   return result;
 }
 
-export function setScrubbedProperty(target, key, value, configuredValues = []) {
-  const base = scrubString(key, configuredValues);
+export function setScrubbedProperty(target, key, value, configuredValues = [], scrubKey = scrubString) {
+  const base = scrubKey(key, configuredValues);
   let safeKey = base;
   let suffix = 2;
   while (Object.prototype.hasOwnProperty.call(target, safeKey)) {

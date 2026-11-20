@@ -9,13 +9,14 @@
 //   （localStorage，loadConfig 读取）；没配就提示去游戏里配，key 只显后 4 位。
 
 import React, { useState } from "react";
-import { loadConfig, callModel } from "../infra/apiConfig.js";
+import { loadConfig, callModel, hasApiCredentials, API_TYPES } from "../infra/apiConfig.js";
 import { describeInnerArrival } from "../domain/map/mapNarration.js";
 import { resolveInnerExit } from "../domain/map/innerMap.js";
 import { extractMvuBlock, applyMvuCommands, initialVarTree } from "../domain/prompt/mvu.js";
 import { callExtraction } from "../domain/prompt/extractionEngine.js";
 
 const redact = (k) => (k ? `***${String(k).slice(-4)}` : "(空)");
+const describeCredentials = cfg => cfg.apiType === API_TYPES.VERTEX ? "ADC 已导入" : `key ${redact(cfg.apiKey)}`;
 
 export default function DebugConsole() {
   const [out, setOut] = useState([]);
@@ -64,9 +65,9 @@ export default function DebugConsole() {
   async function runApi() {
     const c = loadConfig();
     log("========== API 连通 · callModel ==========");
-    if (!c.apiKey) { log("⚠ 未配置 API key。去游戏 ⚙设置 里填好，再点上方「重载配置」。", ""); return; }
+    if (!hasApiCredentials(c)) { log("⚠ 未配置 API 凭证。去游戏 ⚙设置 里配置，再点上方「重载配置」。", ""); return; }
     setBusy(true);
-    log(`${c.apiType} · ${c.model} · key ${redact(c.apiKey)}`);
+    log(`${c.apiType} · ${c.model} · ${describeCredentials(c)}`);
     const t0 = Date.now();
     try {
       const { text } = await callModel(c, "你是连通性测试助手，只回极短的话，不要多余解释。",
@@ -80,7 +81,7 @@ export default function DebugConsole() {
   async function runExtract() {
     const c = loadConfig();
     log("========== 叙事→状态 · callExtraction ==========");
-    if (!c.apiKey) { log("⚠ 未配置 API key。去游戏 ⚙设置 里填好，再点上方「重载配置」。", ""); return; }
+    if (!hasApiCredentials(c)) { log("⚠ 未配置 API 凭证。去游戏 ⚙设置 里配置，再点上方「重载配置」。", ""); return; }
     setBusy(true);
     const narrative = "你从怀里摸出一壶温热的青稞酒递过去，呼延雪怔了怔，接过时指尖微顿，冷淡的眉眼间难得柔和了几分，低声道了句「有心了」。";
     const state = {
@@ -121,8 +122,8 @@ export default function DebugConsole() {
           padding: "10px 14px", marginBottom: 16, fontSize: 13,
         }}>
           <span style={{ color: "#8a7a58" }}>当前 API 配置（来自游戏 ⚙设置 · localStorage）：</span>{" "}
-          {cfg.apiKey
-            ? <span style={{ color: "#bce0bc" }}>{cfg.apiType} · {cfg.model} · key {redact(cfg.apiKey)}</span>
+          {hasApiCredentials(cfg)
+            ? <span style={{ color: "#bce0bc" }}>{cfg.apiType} · {cfg.model} · {describeCredentials(cfg)}</span>
             : <span style={{ color: "#d08a6a" }}>未配置（调 AI 的按钮会提示）</span>}
           <button onClick={reloadCfg} style={{ ...btn, padding: "3px 10px", marginLeft: 12, fontSize: 12 }}>重载配置</button>
         </div>

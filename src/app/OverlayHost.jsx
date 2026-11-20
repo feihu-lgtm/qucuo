@@ -9,8 +9,8 @@ import CharacterCreate from "../ui/screens/CharacterCreate.jsx";
 import OpeningSequence from "../ui/screens/OpeningSequence.jsx";
 import { OVERLAY, closeOverlay, openOverlay } from "../store/uiStore.js";
 
-export default function OverlayHost({ ctx }) {
-  if (!ctx.apiCfg.apiKey) {
+export default function OverlayHost({ ctx, apiReady }) {
+  if (!apiReady) {
     return ctx.showSettings && (
       <SettingsPanel
         onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
@@ -23,6 +23,7 @@ export default function OverlayHost({ ctx }) {
         varTree={ctx.varTree}
         setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
         initialTab={ctx.settingsInitialTab}
+        onSelectTab={ctx.setSettingsInitialTab}
         uiScale={ctx.uiScale}
         setUiScale={ctx.setUiScale}
         narrator={ctx.narrator}
@@ -68,6 +69,7 @@ export default function OverlayHost({ ctx }) {
           varTree={ctx.varTree}
           setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
           initialTab={ctx.settingsInitialTab}
+          onSelectTab={ctx.setSettingsInitialTab}
           uiScale={ctx.uiScale}
           setUiScale={ctx.setUiScale}
           narrator={ctx.narrator}

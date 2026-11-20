@@ -34,7 +34,7 @@ import { buildLayoutCtx, buildOverlayCtx } from "./contextBuilders.js";
 import { useWorldRulesRunner } from "./hooks/useWorldRulesRunner.js";
 import { DEFAULT_PRESETS } from "../core/newGame.js";
 import { selectEffectiveStats } from "../features/stats/logic.js";
-import { saveConfig } from "../infra/apiConfig.js";
+import { hasApiCredentials, saveConfig } from "../infra/apiConfig.js";
 
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false } = {}) {
   const { restored } = useGameStartup({ initialLoadSlotId, initialOpenSettings });
@@ -318,17 +318,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const overlayCtx = buildOverlayCtx({
     ui, game: bindings, overlayState, autosave, actions, addLog, effectiveSpecialNow,
   });
-  const overlayHost = <OverlayHost ctx={overlayCtx} />;
+  const apiReady = hasApiCredentials(apiCfg);
+  const overlayHost = <OverlayHost ctx={overlayCtx} apiReady={apiReady} />;
   const layout = buildLayoutCtx({
     ui, game: bindings, overlayHost, autosave, actions, activeBuffs, addLog, jotNote,
   });
 
-  if (!apiCfg.apiKey) {
+  if (!apiReady) {
     return (
       <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-body)", padding: 24, textAlign: "center" }}>
         <div>
-          <p style={{ color: "#c45044" }}>尚未配置 API Key</p>
-          <p>点击下方按钮打开设置面板，填入你的 API Key 后即可开始游戏。</p>
+          <p style={{ color: "#c45044" }}>尚未配置 API 凭证</p>
+          <p>打开设置，填入 API Key 或导入 Vertex AI 的 ADC JSON 文件后即可开始游戏。</p>
           <span onClick={() => openOverlay(OVERLAY.SETTINGS)} style={{ cursor: "pointer", color: "var(--accent)", padding: "6px 14px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, display: "inline-block", marginTop: 10 }}>⚙ 打开设置</span>
         </div>
         {overlayHost}
