@@ -108,7 +108,7 @@ export function useTurn({
     // 意图分类：本地正则判断这句输入的性质，决定这次调用该给多长的篇幅。
     // 对话模式（isTalk）下不分类——对话模式本来就是"跟NPC说话"这个单一意图，
     // 不需要再区分是元问题还是战斗；只有行动模式的自由输入才需要分类。
-    const intent = isTalk ? INTENT.UNKNOWN : classifyIntent(cmd);
+    const intent = isTalk ? INTENT.TALK_CASUAL : classifyIntent(cmd);
 
     traceStep(_trace, "意图分类", "pass", `模式=${isTalk ? "对话" : "行动"} · 意图=${intent?.label || intent || "未知"}`);
 
