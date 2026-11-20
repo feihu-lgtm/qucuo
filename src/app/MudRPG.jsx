@@ -6,6 +6,7 @@ import OverlayHost from "./OverlayHost.jsx";
 import GameLayout from "./GameLayout.jsx";
 import { useAutosave } from "./hooks/useAutosave.js";
 import { useUndo } from "./hooks/useUndo.js";
+import { useCommandScheduler } from "./hooks/useCommandScheduler.js";
 import { useDaySummary } from "./hooks/useDaySummary.js";
 import { usePrivateTalk } from "./hooks/usePrivateTalk.js";
 import { useOutfitAdvice } from "./hooks/useOutfitAdvice.js";
@@ -15,7 +16,7 @@ import { useQuestPanel } from "./hooks/useQuestPanel.js";
 import { useDuel, useForcedDuelNpc } from "./hooks/useDuel.js";
 import { usePigeonReplies } from "./hooks/usePigeonReplies.js";
 import { usePigeonHandlers } from "./hooks/usePigeonHandlers.js";
-import { useAutoTravel, useTurnQueue } from "./hooks/useAutoTravel.js";
+import { useAutoTravel } from "./hooks/useAutoTravel.js";
 import { useCraftingAI } from "./hooks/useCraftingAI.js";
 import { useScreenHandlers } from "./hooks/useScreenHandlers.js";
 import { useCardImportHandlers } from "./hooks/useCardImportHandlers.js";
@@ -106,7 +107,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const pickupJudgmentRef = useRef(null); // 本轮如果触发了拾取判定，保存 { quality, category }，供响应解析时强制校验
   const pickupExtractionFailedRef = useRef(false); // 双调用下本轮提取层是否解析失败——供拾取兜底区分"提取故障(该保底发)"vs"叙事拒捡(该尊重不发)"
   const collectGrantedRef = useRef([]); // 本轮系统已代发的采集物名单，供items_add处理时防止AI重复入袋
-  const pendingQueue = useRef([]); // 处理中时暂存排队命令
   const queueTimerRef = useRef(null);
   const roomMapRef = useRef(restored?.snap.roomMap || { [(restored?.snap.room || DEFAULT_PRESETS[0].room).name]: { items: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).items], npcs: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).npcs] } });
 
@@ -139,12 +139,25 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const gambleTalkCtx = useRef(null);
   useEffect(() => { setBuildingPanelMinimized(false); }, [activeBuilding?.id]);
   const addLog = useCallback((lines) => setLog(p => [...p, ...lines]), []);
+  const commandScheduler = useCommandScheduler({ addLog, setQueueCount });
+  const {
+    dispatch: dispatchCommand, clearQueue: clearCommandQueue,
+    clearRouteQueue, setPhase: setCommandPhase, scheduler: coreScheduler,
+  } = commandScheduler;
+  const scheduledPrerunSquares = useCallback(
+    () => commandScheduler.dispatch("squarePrerun", () => prerunSquares()),
+    [commandScheduler.dispatch, prerunSquares],
+  );
   const { captureUndo, rollbackOneStep, turnGenerationRef } = useUndo({
     undoSnapshotRef, buildCurrentSnapshot, applySnapshot,
-    addLog, pendingQueue, setQueueCount, autoTravelRef, queueTimerRef,
+    addLog, setQueueCount, autoTravelRef, queueTimerRef,
     setDuelPending, setDuelingNpc, setActiveBuilding, pendingTalksRef, changePendingTalks, talkBusyRef,
-    setLoading, waitTimerRef, setWaitSecs,
+    setLoading, waitTimerRef, setWaitSecs, clearCommandQueue,
   });
+  const scheduledRollback = useCallback(
+    () => commandScheduler.dispatch("rollback", rollbackOneStep),
+    [commandScheduler.dispatch, rollbackOneStep],
+  );
 
   useGameStartupOpeningFaces({
     restored, showOpening, showCharCreate, room, innerRoomName, varTreeRef,
@@ -158,11 +171,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   // 日总结（大纸条）：跨天时后台归纳刚过去这一天攒下的原料，存进 varTree.世界.日总结。
   // fire-and-forget：AI 失败就不写，缺一天日总结无伤大雅，绝不阻断游戏。
-  const { aiSummarizeFact } = useDaySummary({
-    time, apiCfg, setVarTree, varTreeRef, dayMaterialRef, prerunSquares,
+  const { aiSummarizeFact: summarizeFact } = useDaySummary({
+    time, apiCfg, setVarTree, varTreeRef, dayMaterialRef, prerunSquares: scheduledPrerunSquares,
   });
+  const aiSummarizeFact = useCallback(
+    (...args) => commandScheduler.dispatch("daySummary", () => summarizeFact(...args)),
+    [commandScheduler.dispatch, summarizeFact],
+  );
   const seaReturnRef = useRef(null);
-  useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef });
+  useWorldRulesRunner({
+    featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef,
+    dispatchCommand,
+  });
 
   useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc });
 
@@ -178,13 +198,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 数值一概不由它给——挑完拿名字回 CATALOG_INDEX 查真值。这样既不会凭空冒出
   // 货架上没有的神兵，也不会出现同一件东西这次加 20 下次加 200。
   // 只报字段/描述/加成，不报获取途径：怎么弄到手得自己走一趟。
-  const outfitAdvice = useOutfitAdvice({ char, apiCfg, setOutfitState });
-  const aiInspect = useAiInspect({
-    loading, addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv,
-  });
-  const progressionHandlers = useProgressionHandlers({
+  const outfitAdvice = commandScheduler.wrapHandlers("useOutfitAdvice", useOutfitAdvice({ char, apiCfg, setOutfitState }));
+  const aiInspect = commandScheduler.wrapHandlers("useAiInspect", useAiInspect({
+    addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv,
+    dispatchCommand,
+  }));
+  const progressionHandlers = commandScheduler.wrapHandlers("useProgressionHandlers", useProgressionHandlers({
     loading, noteAction, featureCtxRef, setJustMeditated, captureUndo,
-  });
+  }));
   const { confessToNarrator } = progressionHandlers;
 
   // 送礼：从背包选一件物品送给指定角色，走正常的行动指令流程，
@@ -201,68 +222,71 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget,
     nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
     turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
-    waitTimerRef, setWaitSecs, pendingQueue, setQueueCount, pendDirRef, featureCtxRef,
+    waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
     noteAction, roomMapRef, questProgress, innerRoomName, setRoom, setInv, collectGrantedRef,
-    autoTravelRef, outerDepartRef, varTreeRef, pickupJudgmentRef, pickupExtractionFailedRef,
-    prerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
+    autoTravelRef, clearRouteQueue,
+    dispatchCommand, setCommandPhase,
+    outerDepartRef, varTreeRef, pickupJudgmentRef, pickupExtractionFailedRef,
+    prerunSquares: scheduledPrerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
     timeRef, talkTarget, companionState, pendingQuestBranch, effectiveSpecialNow, setVarTree,
     setGambleNegotiation, setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
     setPendingQuestBranch, setConvo, jotNote, setLog,
   });
-  const questPanel = useQuestPanel({
+  const questPanel = commandScheduler.wrapHandlers("useQuestPanel", useQuestPanel({
     act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc, captureUndo,
     setActivePersuasion, setInteractMode, setTalkTarget,
-  });
+  }));
 
   const autoTravelTo = useAutoTravel({
-    room, loading, mapData, flags, questProgress, addLog, pendingQueue,
-    autoTravelRef, setQueueCount, act, teleportLookRef, innerRoomName, setInteractMode,
+    room, mapData, flags, questProgress, addLog,
+    autoTravelRef, scheduler: coreScheduler,
+    act, teleportLookRef, innerRoomName, setInteractMode,
   });
 
-  const pigeonHandlers = usePigeonHandlers({
+  const pigeonHandlers = commandScheduler.wrapHandlers("usePigeonHandlers", usePigeonHandlers({
     room, varTree, featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
     setInteractMode, setActiveBuilding, captureUndo,
-  });
+  }));
   const { applyPigeonResult, sendPigeonLetter } = pigeonHandlers;
 
   usePigeonReplies({ room, apiCfg, preset, applyPigeonResult, time, varTree, featureCtxRef });
 
-  const duelHandlers = useDuel({
+  const duelHandlers = commandScheduler.wrapHandlers("useDuel", useDuel({
     act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
     duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
     captureUndo, turnGenerationRef,
-  });
+  }));
 
   // 拜师学艺：好感度≥40 + 完成该NPC专属支线任务，两个条件同时满足才能学到技能。
   // 不满足时给出具体卡在哪个条件的说明，而不是一句笼统的"不行"。
   // 打开交易界面：只在NPC是手写配置的商人时可用，货品清单固定不变，
   // 保证同一个商人每次进店看到的东西都稳定。
-  const screenHandlers = useScreenHandlers({
+  const screenHandlers = commandScheduler.wrapHandlers("useScreenHandlers", useScreenHandlers({
     act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
     timeRef, noteAction, inv, setTradingShop, setInv, setClaimedMilestones, captureUndo,
-  });
+  }));
 
-  useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef, queueTimerRef });
+  const buildingHandlers = commandScheduler.wrapHandlers("useBuildingHandlers", useBuildingHandlers({
+    activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo,
+  }));
 
-  const buildingHandlers = useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo });
-
-  const craftingAI = useCraftingAI({
+  const craftingAI = commandScheduler.wrapHandlers("useCraftingAI", useCraftingAI({
     gambleTalkCtx, setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
-  });
+  }));
 
-  const cardImportHandlers = useCardImportHandlers({
+  const cardImportHandlers = commandScheduler.wrapHandlers("useCardImportHandlers", useCardImportHandlers({
     setVarTree, setChar, setSkills, setInv, setCompanionState, addLog,
     featureCtxRef, schedulerRef,
-  });
+  }));
 
   // ── 心灵之海 · 玄女点破 ──
   // "说过话"直接复用「对话即认识」的结果（commitRound 里 talkTarget/respondedNpcs
   // 会把人标记为已认识），不另造一套"聊过没"的记账。
   // 用 effect 而不是塞进对话结算里，是因为两个条件可能任意顺序满足：先攒够好感再去
   // 见她、或先见过她后来才攒够，两条路都要能触发。
-  const playerActionHandlers = usePlayerActionHandlers({
+  const playerActionHandlers = commandScheduler.wrapHandlers("usePlayerActionHandlers", usePlayerActionHandlers({
     featureCtxRef, noteAction, setInnerRoomName, seaReturnRef, captureUndo,
-  });
+  }));
 
   const onKey = createInputKeyHandler({
     composingRef, interactMode, sendPigeonLetter, pigeonTarget, input, act,
@@ -270,7 +294,9 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   });
 
   const actions = {
-    act, autoTravelTo, captureUndo, rollbackOneStep, teleportLookRef, effectiveSpecialNow, onKey,
+    act, autoTravelTo, captureUndo, rollbackOneStep: scheduledRollback, teleportLookRef,
+    effectiveSpecialNow, onKey, schedulerRunning: commandScheduler.running,
+    dispatchCommand: commandScheduler.dispatch,
     questPanel, pigeonHandlers, duelHandlers, screenHandlers, buildingHandlers,
     craftingAI, playerActionHandlers, progressionHandlers, aiInspect, outfitAdvice,
     cardImportHandlers,

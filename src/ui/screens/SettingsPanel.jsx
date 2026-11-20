@@ -80,7 +80,7 @@ function MusicSettings() {
   );
 }
 
-export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText }) {
+export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, onOpenCardImport, currentSnapshot, onLoadSnapshot, varTree, setVarTree, initialTab, uiScale, setUiScale, narrator, setNarrator, getLiveBlockText }) {
   // 遮罩误触修复：原来外层遮罩单纯 onClick={onClose}，在弹窗内输入框/文本区域
   // 选字拖拽、鼠标移出弹窗范围松手时会被浏览器合成一次落在遮罩上的 click，
   // 导致"复制粘贴选着选着弹窗自己关了"。closeGuard 要求 mousedown 和 click
@@ -215,24 +215,20 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
     });
   };
 
-  const handleManualSave = () => {
+  const runCommand = (id, fn) => dispatchCommand ? dispatchCommand(id, fn) : fn();
+  const handleManualSave = () => runCommand("save", () => {
     if (!currentSnapshot) return;
     saveToSlot(currentSnapshot(), slotLabel.trim() || undefined);
     setSlotLabel("");
     refreshSlots();
-  };
+  });
 
-  const handleLoadSlot = (id) => {
-    const snap = loadSlot(id);
-    if (!snap) return;
-    onLoadSnapshot(snap);
-    if (!setRngState(snap.rngState)) setSeed(Date.now());
-  };
+  const handleLoadSlot = (id) => runCommand("load", () => {
+    const snap = loadSlot(id); if (!snap) return;
+    onLoadSnapshot(snap); if (!setRngState(snap.rngState)) setSeed(Date.now());
+  });
 
-  const handleDeleteSlot = (id) => {
-    deleteSlot(id);
-    refreshSlots();
-  };
+  const handleDeleteSlot = (id) => runCommand("save", () => { deleteSlot(id); refreshSlots(); });
 
   return (
     <div className="mobile-overlay-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
@@ -948,10 +944,10 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
                 const snap = currentSnapshot();
                 downloadText(`曲措乡-存档-${ts()}.json`, exportSave(snap, slotLabel.trim() || undefined));
               }}>⬇ 导出当前进度到文件</span>
-              <span style={{ ...btnStyle, flex: 1, textAlign: "center" }} onClick={() => pickTextFile((text) => {
+              <span style={{ ...btnStyle, flex: 1, textAlign: "center" }} onClick={() => pickTextFile((text) => runCommand("save", () => {
                 try { importSave(text); refreshSlots(); alert("已导入存档，可在下方槽位读取。"); }
                 catch (e) { alert("导入失败：" + e.message); }
-              })}>⬆ 从文件导入存档</span>
+              }))}>⬆ 从文件导入存档</span>
             </div>
 
             <div style={{ ...sectionStyle }}>
@@ -971,11 +967,11 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
               </div>
               <span
                 style={btnStyle}
-                onClick={() => {
+                onClick={() => runCommand("save", () => {
                   if (!currentSnapshot) return;
                   const r = autoSave(currentSnapshot());
                   alert(r.ok ? "已立即写入自动存档" : `写入失败：${r.error}`);
-                }}
+                })}
               >💾 立即写入自动存档</span>
             </div>
 
@@ -1024,12 +1020,12 @@ export default function SettingsPanel({ cfg, setCfg, onClose, onOpenCardImport, 
             <div style={{ ...sectionStyle }}>
               <span
                 style={{ ...btnStyle, color: "#c45044", borderColor: "#3a1d1d" }}
-                onClick={() => {
+                onClick={() => runCommand("newGame", () => {
                   if (window.confirm("确定要清空自动存档、从头开始吗？此操作不可撤销（手动存档槽位不受影响）。")) {
                     clearAutoSave();
                     window.location.reload();
                   }
-                }}
+                })}
               >🗑 清空自动存档，重新开始</span>
             </div>
           </div>

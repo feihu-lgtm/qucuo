@@ -15,17 +15,18 @@ export default function OverlayHost({ ctx }) {
       <SettingsPanel
         onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
         cfg={ctx.apiCfg}
-        setCfg={ctx.setApiCfg}
+        setCfg={(update) => ctx.dispatchCommand("apiConfig", () => ctx.setApiCfg(update))}
+        dispatchCommand={ctx.dispatchCommand}
         onClose={() => closeOverlay(OVERLAY.SETTINGS)}
         currentSnapshot={ctx.buildCurrentSnapshot}
         onLoadSnapshot={ctx.applySnapshot}
         varTree={ctx.varTree}
-        setVarTree={ctx.setVarTree}
+        setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
         initialTab={ctx.settingsInitialTab}
         uiScale={ctx.uiScale}
         setUiScale={ctx.setUiScale}
         narrator={ctx.narrator}
-        setNarrator={ctx.setNarrator}
+        setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
       />
     );
   }
@@ -51,6 +52,8 @@ export default function OverlayHost({ ctx }) {
           zoneTheme={ctx.zoneTheme}
           onClose={() => closeOverlay(OVERLAY.HOMESTEAD)}
           addLog={ctx.addLog}
+          dispatchCommand={ctx.dispatchCommand}
+          dispatchCommand={ctx.dispatchCommand}
         />
       )}
       <GlobalOverlays {...ctx.globalOverlays} />
@@ -58,17 +61,18 @@ export default function OverlayHost({ ctx }) {
         <SettingsPanel
           onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
           cfg={ctx.apiCfg}
-          setCfg={ctx.setApiCfg}
+          setCfg={(update) => ctx.dispatchCommand("apiConfig", () => ctx.setApiCfg(update))}
+          dispatchCommand={ctx.dispatchCommand}
           onClose={() => closeOverlay(OVERLAY.SETTINGS)}
           currentSnapshot={ctx.buildCurrentSnapshot}
           onLoadSnapshot={ctx.applySnapshot}
           varTree={ctx.varTree}
-          setVarTree={ctx.setVarTree}
+          setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
           initialTab={ctx.settingsInitialTab}
           uiScale={ctx.uiScale}
           setUiScale={ctx.setUiScale}
           narrator={ctx.narrator}
-          setNarrator={ctx.setNarrator}
+          setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
           getLiveBlockText={ctx.getLiveBlockText}
         />
       )}

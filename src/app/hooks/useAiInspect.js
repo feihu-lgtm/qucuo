@@ -5,7 +5,9 @@ import { getCachedInspect, setCachedInspect } from "../../domain/prompt/inspectC
 import { NOTE_SOURCE } from "../../domain/memory/note.js";
 import { startTrace, step as traceStep, endTrace, attachPipeline } from "../../infra/actionTrace.js";
 
-export function useAiInspect({ loading, addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv }) {
+export function useAiInspect({
+  addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv, dispatchCommand,
+}) {
   // 点击武学/包袱物品时，临场调用 AI 生成一段介绍文字，不修改任何游戏状态
   const [inspecting, setInspecting] = useState(null); // 记录正在查看哪个名字，用于按钮禁用/loading态展示
   // kind 标签映射：目前 "skill"(武学) / "item"(随身物品) / "pigeon"(信鸽) 三种，
@@ -42,7 +44,7 @@ export function useAiInspect({ loading, addLog, jotNote, setTime, setFlags, apiC
   }, [apiCfg]);
 
   const inspectItem = useCallback(async (kind, name, extra, itemObj, opts = {}) => {
-    if (loading || inspecting) return;
+    if (inspecting) return;
     const kindLabel = INSPECT_KIND_LABEL[kind] || "物品";
     // worldLook：玩家在游戏世界里端详自己的东西（背包/武学），走主叙事口吻的端详、
     // 算 1 回合时间、并写一张公共小纸条。描述文本本身可以吃缓存（后台可能已预跑好），
@@ -88,7 +90,7 @@ export function useAiInspect({ loading, addLog, jotNote, setTime, setFlags, apiC
       addLog([{ t: "err", text: `  [错误] ${e.message}` }]);
     }
     setInspecting(null);
-  }, [loading, inspecting, addLog, jotNote, genInspectText, setFlags]);
+  }, [inspecting, addLog, jotNote, genInspectText, setFlags]);
 
   // ── 端详描述后台预跑 ──
   // 背包/武学/装备里只要出现"该有描述但还没缓存"的东西，就在后台悄悄把它的端详
@@ -149,7 +151,10 @@ export function useAiInspect({ loading, addLog, jotNote, setTime, setFlags, apiC
           const _pw = startTrace(`后台预跑端详·${jobLabel}`, `[后台预跑] ${jobLabel} 描述生成`);
           traceStep(_pw, "后台预跑", "info", `开始预热 ${jobLabel} 的端详描述`);
           try {
-            const text = await genInspectTextRef.current(job.kind, job.name, job.extra, job.itemObj);
+            const runPrewarm = () => genInspectTextRef.current(job.kind, job.name, job.extra, job.itemObj);
+            const text = dispatchCommand
+              ? await dispatchCommand("inspectPrewarm", runPrewarm)
+              : await runPrewarm();
             attachPipeline(_pw, getPipelineLog()[0]); // 挂上刚才这次AI调用的完整prompt/回复
             if (text && !stopped) {
               setCachedInspect(job.kind, job.name, job.extra, job.itemObj, text);
@@ -170,7 +175,7 @@ export function useAiInspect({ loading, addLog, jotNote, setTime, setFlags, apiC
     };
     timer = setTimeout(tick, 20000); // 首件也等 20 秒再跑，避开刚进游戏/读档时的一堆其它请求
     return () => { stopped = true; if (timer) clearTimeout(timer); };
-  }, []);
+  }, [dispatchCommand]);
 
   return { inspecting, inspectItem };
 }

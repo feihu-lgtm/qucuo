@@ -26,15 +26,17 @@ import { parseDir } from "../../utils/mudHelpers.js";
 import { playTurn } from "../../engine/playTurn.js";
 import { burnSquare, consumeArrival, serializeSquares } from "../../domain/map/mapSquares.js";
 import { createTurnStaleCheck } from "./useUndo.js";
+import { classifyActCommand } from "../../core/commands.js";
 
 export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
   addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget,
   nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
   turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
-  waitTimerRef, setWaitSecs, pendingQueue, setQueueCount, pendDirRef, featureCtxRef,
+  waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
   noteAction, roomMapRef, questProgress, innerRoomName, setRoom, setInv, collectGrantedRef,
-  autoTravelRef, outerDepartRef, varTreeRef, pickupJudgmentRef, pickupExtractionFailedRef,
+  autoTravelRef, clearRouteQueue, setCommandPhase, dispatchCommand,
+  outerDepartRef, varTreeRef, pickupJudgmentRef, pickupExtractionFailedRef,
   prerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
   timeRef, talkTarget, companionState, pendingQuestBranch, effectiveSpecialNow, setVarTree,
   setGambleNegotiation, setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
@@ -42,12 +44,17 @@ export function useTurn({
 }) {
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
     if (!rawCmd.trim()) return;
+    if (!opts.schedulerManaged) {
+      const commandText = rawCmd.trim();
+      const isTalkCommand = interactMode === "talk" && !opts.forceLayer;
+      const localCommand = isTalkCommand ? null : parseLocalCommand(commandText, { ...gameStore.getState(), isTalk: isTalkCommand, convo }, { surface: "web" });
+      const commandId = classifyActCommand({ rawCmd: commandText, opts, interactMode, localCommand, isMove: !!parseDir(commandText) });
+      return dispatchCommand(commandId, () => act(rawCmd, extraReplies, { ...opts, schedulerManaged: true }));
+    }
     const cmd = rawCmd.trim(), isStale = createTurnStaleCheck(turnGenerationRef);
     const stopAutoTravel = () => {
-      if (!autoTravelRef.current || pendingQueue.current.length === 0) return;
-      const dropped = pendingQueue.current.length;
-      pendingQueue.current = [];
-      setQueueCount(0);
+      if (!autoTravelRef.current) return;
+      const dropped = clearRouteQueue();
       autoTravelRef.current = false;
       const message = `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`;
       addLog([{ t: "sys", text: message, standalone: true }]);
@@ -82,8 +89,7 @@ export function useTurn({
       setHistIdx(-1);
       // 教程任务「四宅家产」触发点之三：跟旁白聊到溪边小屋（幂等）
       if (/溪边小屋/.test(cmd)) setFlags(f => f.includes("tutorial_estate_started") ? f : [...f, "tutorial_estate_started"]);
-      talkToNarrator(cmd, { isStale }); // 不 await；串行由 talkBusyRef 闸门保证
-      return;
+      return talkToNarrator(cmd, { isStale });
     }
     if (!opts.keepUndo) captureUndo();
 
@@ -153,19 +159,6 @@ export function useTurn({
       return;
     }
 
-    // 行动模式处理中时：命令进入排队队列，不阻塞输入。
-    // extraReplies 跟着 cmd 一起存进队列，等真正出队执行时再一并带出去，
-    // 不能在这里就地 addLog——那样会插进"当前还开着"的上一条命令的框里。
-    // 排队提示本身标记 standalone：它说的是"现在系统正忙"这件事，
-    // 不属于正在处理的上一条命令，也不属于还没执行的这一条，谁的框都不该进。
-    if (!isTalk && loading) {
-      pendingQueue.current.push({ cmd, extraReplies, opts });
-      setQueueCount(pendingQueue.current.length);
-      addLog([{ t: "sys", text: `  ⏳ 「${cmd.slice(0, 20)}${cmd.length > 20 ? "…" : ""}」已入队（前 ${pendingQueue.current.length} 条）`, standalone: true }]);
-      setInput("");
-      return;
-    }
-
     // 指令显示：默认显示 `> ${cmd}`；但某些内部指令（如战斗结算发给AI写战报的
     // 长prompt）不该原样打印给玩家看——传 opts.silentCmd 则完全不显示，或
     // opts.displayCmd 用一句干净的标题替代真实指令。
@@ -231,8 +224,7 @@ export function useTurn({
       setHistIdx(-1);
       applyResult(featureCtxRef.current, innerResult);
       // 内层移动是瞬时纯前端操作，early return 前必须把 loading+计时器清掉，
-      // 否则 loading 永远停在 true：输入框锁死、spinner 空转、秒数狂涨，且 pendingQueue 因
-      // loading 不归零永不出队——彻底卡死（此前"点一下卡住像在等AI"的真凶）。
+      // 否则输入框锁死、spinner 空转、秒数狂涨。
       setLoading(false);
       if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
       setWaitSecs(0);
@@ -380,6 +372,7 @@ export function useTurn({
       getPipelineLog,
       getMapNode,
       beforeRun: () => { pickupExtractionFailedRef.current = false; },
+      setCommandPhase,
       refs: {
         varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
         pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
@@ -423,7 +416,7 @@ export function useTurn({
     // 停计时
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
   const featureCtx = useMemo(() => ({
     addLog,
     jotNote,
