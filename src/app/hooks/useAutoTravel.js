@@ -19,10 +19,14 @@ export function useAutoTravel({
     const words = path.map(d => DIRS[d] || d);
     const [first, ...rest] = words;
     // Outer-layer options keep the route from being intercepted by an inner-room movement check.
-    rest.forEach(w => pendingQueue.current.push({ cmd: w, extraReplies: [], opts: { forceLayer: "outer" } }));
+    rest.forEach(w => pendingQueue.current.push({
+      cmd: w,
+      extraReplies: [],
+      opts: { forceLayer: "outer", autoTravel: true },
+    }));
     autoTravelRef.current = rest.length > 0;
     setQueueCount(pendingQueue.current.length);
-    act(first, [], { forceLayer: "outer" });
+    act(first, [], { forceLayer: "outer", autoTravel: true });
   }, [room.name, loading, mapData, flags, questProgress, act, addLog]);
 
   // The teleport follow-up waits for both the district and inner room to update before looking.
