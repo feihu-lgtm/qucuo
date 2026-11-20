@@ -43,6 +43,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
+      snowLeopardGift: d.settleKind === "gift" && d.settleNpc === "雪豹" && !!d.snowLeopardContext,
       giftInfo: d.giftInfo || null,
       settleBeast: !!d.settleBeast,
       hasNpc: d.visibleNpcsCount > 0,
@@ -107,7 +108,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     ? buildAngryNote(d.varTree, [d.settleNpc])
     : "";
   const inChatContent = d.isSettle
-    ? rulesPrefix + (d.settleNpc ? d.reunionBlock : "") + angrySettleNote + "\n\n" + proseRule
+    ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? d.reunionBlock : "") + angrySettleNote + "\n\n" + proseRule
     : rulesPrefix + d.ctx + distantBlock + d.recallBlock + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 

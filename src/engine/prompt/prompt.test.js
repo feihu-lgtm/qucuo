@@ -113,7 +113,7 @@ describe("pure prompt builders", () => {
   it("builds active quest and persuasion instructions and handles empty progress", () => {
     const state = fixture();
     expect(buildQuestStageNote(state)).toBe("");
-    const quest = QUCUO_QUESTS.find(q => q.stages?.length && !q.exclusiveGroup && !q.requires);
+    const quest = QUCUO_QUESTS.find(q => q.id !== "snow_leopard_quest" && q.stages?.length && !q.exclusiveGroup && !q.requires);
     const note = buildQuestStageNote({
       ...state, questProgress: { [quest.id]: { status: "active", currentStageIndex: 0 } },
       pendingQuestBranch: { mode: "talk", goal: "交出旧信", flag: "交信" },

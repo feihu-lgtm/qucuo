@@ -64,6 +64,15 @@ function makeDeps(over = {}) {
 describe("callMainOnce 组装黄金快照", () => {
   beforeEach(() => { callModel.mockClear(); });
 
+  it.each([true, false])("permits only meat credit in an active leopard gift settlement (%s)", async (active) => {
+    await callMainOnce(null, false, makeDeps({ isSettle: true, settleKind: "gift", settleNpc: "雪豹", snowLeopardContext: active ? "[收复雪豹] 在场" : "" }));
+    const messages = callModel.mock.calls[0][2];
+    const schema = messages.find((message) => message.tavernBlock === "phi").content;
+    expect(schema.includes('"flags_add":["snow_spirit_meat"]')).toBe(active);
+    expect(schema).toContain(active ? "只允许snow_spirit_meat" : "不要输出 room / char / dao / delta");
+    expect(schema).not.toContain("snow_spirit_scratch");
+  });
+
   it("passes completed bank deposit facts to the settlement model without relying on state context", async () => {
     const act = vi.fn();
     applyResult({ act }, deposit({ char: { money: 100 }, deposit: 20, time: 6 }, 50));

@@ -67,7 +67,7 @@ export function createSnowLeopard() {
   };
 }
 
-// 解锁雪豹（剧情触发，比如玩家跟格桑的雪豹培养出感情后）：若已解锁则不重复生成
+// 无主雪豹由「收复雪豹」任务解锁：若已解锁则不重复生成
 // （幂等，防止某个剧情节点被多次触发时把雪豹的数值重新随机一遍）。
 export function unlockSnowLeopard(companionState) {
   const cur = companionState?.snowLeopard;

@@ -91,7 +91,7 @@ export const RESIDENT_NPCS = {
     {
       name: "雪豹", id: "resident_snow_leopard", levelCap: 2,
       beast: true, cannotSpeak: true, companionCandidate: true,
-      brief: "通体雪白的灵兽，眼神沉静，只安安静静卧在村口一角",
+      brief: "无主的雪白灵兽，前爪有旧伤，只认有灵之人，长卧村口青石",
       personality: "不惧生人也不主动亲近，只是静静看着，仿佛在等一个自己认准的人",
       fullBio: `归属与命定（重要·纠正旧误传）：这头通体雪白的雪豹，并非嘎则或任何人的
 兽——嘎则养的是白虎雪团，与它无关。它无主，自雪线之上而来，长长久久卧在村口

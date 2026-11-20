@@ -1,3 +1,4 @@
+import { snowLeopardNote } from "../../domain/quests/snowLeopardQuest.js";
 import { collectPromptLines } from "../../domain/quests/collect.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../domain/quests/questEngine.js";
@@ -17,11 +18,11 @@ import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../
 // AI 要把这当成一场真交锋来演：只有玩家的话在理、把对方驳倒/说动时，
 // 才在 flags_add 吐出成功 flag 推进；玩家词不达意、被反驳、气势输了，
 // 就让对方继续刁难，不给过。
-export function buildQuestStageNote({ questProgress, flags, char, room, inv, pendingQuestBranch }) {
+export function buildQuestStageNote({ questProgress, flags, char, room, inv, pendingQuestBranch, visibleNpcs, convo, settleNpc, cmd, innerRoomName }) {
   const describeFlag = (f) => Array.isArray(f) ? f.map(x => `"${x}"`).join("/或") + "（按玩家实际选择的分支，只加其中一个）" : `"${f}"`;
   const noteLines = [];
   for (const quest of QUCUO_QUESTS) {
-    if (!quest.stages?.length) continue;
+    if (!quest.stages?.length || quest.id === "snow_leopard_quest") continue;
     const prog = questProgress[quest.id];
     if (prog?.status === "locked_by_exclusive" || prog?.status === "completed") continue;
     if (!isQuestGateOpen(quest, questProgress, flags)) continue;
@@ -41,7 +42,7 @@ export function buildQuestStageNote({ questProgress, flags, char, room, inv, pen
   if (pendingQuestBranch?.mode === "talk" && pendingQuestBranch.goal) {
     note += `\n[说服判定] 玩家正试图通过言辞达成：${pendingQuestBranch.goal}。这是一场真正的言语交锋，不是走过场——评估玩家这句话是否切中要害、有理有据、气势压得住对方。若确实说动/驳倒了对方，在 flags_add 加入「${pendingQuestBranch.flag}」并让对方让步；若玩家只是空喊、被驳倒或理亏，让对方继续刁难，不要吐这个 flag，玩家可以再想说辞。`;
   }
-  return note;
+  return note + snowLeopardNote({ questProgress, flags, room: { ...room, npcs: visibleNpcs ?? room.npcs }, convo, settleNpc, cmd, innerRoomName });
 }
 
 // 本步已定情节（原任务专属 harness 并入主叙事，取代单独一次 AI 调用）：

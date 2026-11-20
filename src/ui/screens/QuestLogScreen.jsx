@@ -1,12 +1,13 @@
 import React from "react";
 import { Overlay, Header, Btn } from "../../domain/buildings/InnScreen.jsx";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { SNOW_QUEST_ID, SNOW_SPIRITS, snowSpiritCount } from "../../domain/quests/snowLeopardQuest.js";
 import { getCurrentStage } from "../../domain/quests/questEngine.js";
 
 // 任务面板——参照 Bethesda 系 RPG 的任务日志：玩家能看到自己接了什么、
 // 现在卡在哪个阶段、上一步做了什么选择，而不是只能靠聊天记录里翻旧的
 // system 提示自己拼状态。分三组：进行中 / 已完成 / 被锁定（互斥线用）。
-export default function QuestLogScreen({ questProgress, zoneTheme, onClose, inline }) {
+export default function QuestLogScreen({ questProgress, flags = [], zoneTheme, onClose, inline }) {
   const stageQuests = QUCUO_QUESTS.filter(q => q.stages?.length);
   const active = stageQuests.filter(q => questProgress[q.id]?.status === "active");
   const completed = stageQuests.filter(q => questProgress[q.id]?.status === "completed");
@@ -33,6 +34,7 @@ export default function QuestLogScreen({ questProgress, zoneTheme, onClose, inli
                     <span style={{ color: "var(--text)", fontSize: 13 }}>{q.title}</span>
                     <span style={{ color: "#6a8aaa", fontSize: 11 }}>{idx}/{q.stages.length}</span>
                   </div>
+                  {q.id === SNOW_QUEST_ID && <div style={{ color: "var(--text-dim)", fontSize: 11 }}><div>{stage?.title} · {snowSpiritCount(flags)}/5</div>{SNOW_SPIRITS.map(({ flag, label }) => <div key={flag}>{flags.includes(flag) ? "✓" : "○"} {label}</div>)}</div>}
                   {q.giver && <div style={{ color: "var(--text-dim)", fontSize: 10.5, marginBottom: 4 }}>委托人：{q.giver}</div>}
                   {stage && <div style={{ color: "#a89a6a", fontSize: 11.5, lineHeight: 1.6 }}>{stage.description}</div>}
                 </div>

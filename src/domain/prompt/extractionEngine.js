@@ -4,6 +4,7 @@
 // 每个意图类型的提取范围不同——look 只需要场景刷新，战斗需要 HP/掉落，
 // 聊天只需要好感度。按意图精确提问可以大幅提升提取准确率（token 少、任务聚焦）。
 
+import { snowLeopardNote } from "../quests/snowLeopardQuest.js";
 import { callModel, cleanJsonString } from "../../infra/apiConfig.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { extractMvuBlock } from "./mvu.js";
@@ -293,9 +294,8 @@ export async function callExtraction(intentCode, narrative, state, apiCfg, settl
 
   const cfg = buildExtractionCfg(settleSpecKey || intentCode, apiCfg);
   const systemPrompt = spec.system;
-  // 公共字段（memory / mentionedNewNpcs）统一拼在每个意图的 user prompt 末尾，
-  // 免得在 6 份 schema 里各抄一遍、加一个字段要改六处。
-  const userContent = spec.user(narrative, state, settleOpts) + commonExtractTail(state.char?.name);
+  // 公共字段统一拼在末尾，避免各意图的 schema 漂移。
+  const userContent = spec.user(narrative, state, settleOpts) + commonExtractTail(state.char?.name) + snowLeopardNote({ ...state, ...settleOpts });
 
   const { text } = await ai.chat(
     [{ role: "user", content: userContent }],

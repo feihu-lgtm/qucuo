@@ -1,0 +1,41 @@
+import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_SPIRITS, snowQuestActive, snowSpiritCount, snowLeopardPresent } from "../../domain/quests/snowLeopardQuest.js";
+import { createQuestProgress } from "../../domain/quests/questEngine.js";
+import { selectEffectiveStats } from "../stats/logic.js";
+import { CATALOG_INDEX } from "../../domain/items/catalog.js";
+
+export const snowLeopardRule = {
+  id: "quest.snow-leopard",
+  deps: (s) => [s.questProgress, s.flags, s.char, s.inv, s.skills, s.time, s.companionState],
+  run(state, ctx = {}) {
+    const now = ctx.getNow?.() ?? Date.now();
+    const previous = state.questProgress?.[SNOW_QUEST_ID];
+    if (state.companionState?.snowLeopard?.unlocked) {
+      if (previous?.status === "completed") return null;
+      return { changes: { questProgress: (p) => ({ ...p, [SNOW_QUEST_ID]: { ...(previous || createQuestProgress(SNOW_QUEST_ID, now)), status: "completed", currentStageIndex: 2, completedAt: now } }) } };
+    }
+    if (previous && previous.status !== "active") return null;
+    const flags = state.flags || [];
+    const stats = selectEffectiveStats({ ...state, inv: state.inv || [], skills: state.skills || [], flags }).effectiveSpecialNow;
+    const checks = {
+      strength: stats.体魄 >= 7, charm: stats.魅力 >= 7,
+      village: Object.entries(state.questProgress || {}).some(([id, p]) => /^village[1-6]_/.test(id) && p.status === "completed"),
+    };
+    const added = SNOW_SPIRITS.filter(({ key, flag }) => checks[key] && !flags.includes(flag)).map(({ flag }) => flag);
+    const trusted = snowSpiritCount([...flags, ...added]) >= 5 && !flags.includes(SNOW_TRUSTED);
+    if (trusted) added.push(SNOW_TRUSTED);
+    if (previous && !added.length) return null;
+    return {
+      changes: {
+        ...(!previous ? { questProgress: (p) => ({ ...p, [SNOW_QUEST_ID]: createQuestProgress(SNOW_QUEST_ID, now) }) } : {}),
+        ...(added.length ? { flags: (f) => [...new Set([...(f || []), ...added])] } : {}),
+      },
+      logs: trusted ? [{ t: "sys", text: "  ※ 五灵已备，雪豹缓缓以额抵掌——它认准了你，可伸手相邀。" }] : [],
+    };
+  },
+};
+
+export function snowMedicineGift(state, npc, item) {
+  if (npc.name !== "雪豹" || !snowQuestActive(state) || !snowLeopardPresent(state) || state.flags?.includes("snow_spirit_medicine")) return false;
+  const entry = CATALOG_INDEX[typeof item === "string" ? item : item.name] || item;
+  return ["medicine", "药品"].includes(entry?.category) || entry?.tags?.some((tag) => ["药材", "疗伤", "丹药"].includes(tag));
+}

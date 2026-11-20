@@ -40,6 +40,10 @@ export function createExtractionState(ctx, deps) {
     lockedDestName,
     lockedExits: lockedDestName ? ctx.getMapNode?.(lockedDestName)?.exits : null,
     pickupJudgment: deps.pickupJudgment,
+    questProgress: state.questProgress || deps.questProgress || ctx.prompt?.questProgress,
+    flags: state.flags || deps.flags || ctx.prompt?.flags,
+    cmd: deps.cmd,
+    innerRoomName: state.innerRoomName ?? deps.innerRoomName ?? ctx.prompt?.innerRoomName,
   };
 }
 

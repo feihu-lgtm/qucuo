@@ -1,3 +1,4 @@
+import { snowLeopardRule } from "../../features/quest/snowLeopard.js";
 import { useEffect, useRef, useState } from "react";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";
 import { timeAdvanceRule } from "../../features/time/rules.js";
@@ -61,6 +62,7 @@ export function useWorldRulesRunner({
         alreadySatisfiedCollectRule,
         escortArrivalRule,
         questFlagRule,
+        snowLeopardRule,
         estateStartRule,
         estateAnnouncementRule,
         estateProgressRule,

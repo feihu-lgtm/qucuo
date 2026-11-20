@@ -197,6 +197,7 @@ describe("NPC trade and companion invitation logic", () => {
   it("unlocks an eligible companion with a settlement and removal updater", () => {
     setSeed(17);
     const result = inviteCompanion(makeState({
+      flags: ["snow_leopard_trusted"],
       room: { name: "鱼定村", npcs: [{ name: "雪豹", companionCandidate: true }] },
     }), { name: "雪豹", beast: true });
 

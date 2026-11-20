@@ -69,6 +69,16 @@ function localImports(source) {
 }
 
 describe("src 下没有零入度的死文件", () => {
+  it.each([
+    ["import Screen from './Screen.jsx';", ["./Screen.jsx"]],
+    ['const Screen = lazy(() => import("./Screen.jsx"));', ["./Screen.jsx"]],
+    ["export { value } from './data.js';", ["./data.js"]],
+    ["const empty = {};", []],
+    ["import(name);", []],
+  ])("recognizes static and literal dynamic dependencies: %s", (source, expected) => {
+    expect(localImports(source)).toEqual(expected);
+  });
+
   it("识别静态和字符串字面量动态导入，不把拼接路径当成依赖", () => {
     const source = [
       'import { read } from "./static.js";',
