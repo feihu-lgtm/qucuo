@@ -34,7 +34,7 @@ export default function GameLayout({ layout }) {
     setPearlImgErr, narrator, narratorImgErr, setNarratorImgErr, companionState,
     mapView, setMapView, mapBig, setMapBig, mapData, questProgress, flags, inv,
     inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind, loading, act,
-    autoTravelTo, uiGreen, setLoading, undoSnapshotRef, applySnapshot, gm,
+    autoTravelTo, uiGreen, setLoading, rollbackOneStep, captureUndo, gm,
     setGm, pot, setPot, exp, setExp, dao, setDao, setVarTree, setNarrator,
     setMapData, setRoom, setInnerRoomName, teleportLookRef, setSkills, duelPending, confirmDuel,
     cancelDuel, tradingShop, setTradingShop, buildingPanelMinimized,
@@ -205,7 +205,7 @@ export default function GameLayout({ layout }) {
           isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
           zoneTheme={zoneTheme} S={S}
           loading={loading} setLoading={setLoading} addLog={addLog}
-          undoSnapshotRef={undoSnapshotRef} applySnapshot={applySnapshot}
+          rollbackOneStep={rollbackOneStep} captureUndo={captureUndo}
           gm={gm} setGm={setGm}
           char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
           dao={dao} setDao={setDao}

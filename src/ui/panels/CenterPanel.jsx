@@ -66,7 +66,7 @@ export default function CenterPanel({
   isMobile, mobileDrawer, setMobileDrawer,
   zoneTheme, S,
   loading, setLoading, addLog,
-  undoSnapshotRef, applySnapshot,
+  rollbackOneStep, captureUndo,
   gm, setGm,
   char, setChar, pot, setPot, exp, setExp, dao, setDao,
   varTree, setVarTree, narrator, setNarrator,
@@ -147,14 +147,7 @@ export default function CenterPanel({
               {loading && <span onClick={() => { setLoading(false); addLog([{ t: "sys", text: "  ⏹ 已停止等待本次生成（若结果稍后返回将被忽略）。" }]); }}
                 className="mobile-touch-target"
                 style={{ cursor: "pointer", fontSize: "10px", color: "#e0806a", padding: "0 7px", display: "inline-flex", alignItems: "center", height: 22, boxSizing: "border-box", lineHeight: 1, letterSpacing: 0, whiteSpace: "nowrap", border: "1px solid #4a2a1a", borderRadius: 0, userSelect: "none" }}>⏹ 停止</span>}
-              <span className="mobile-touch-target" onClick={() => {
-                  if (!undoSnapshotRef.current) { addLog([{ t: "sys", text: "  没有可回滚的上一步。" }]); return; }
-                  if (!window.confirm("回滚到上一步行动之前？当前这步的结果会被撤销。")) return;
-                  applySnapshot(undoSnapshotRef.current);
-                  undoSnapshotRef.current = null;
-                  setLoading(false);
-                  addLog([{ t: "sys", text: "  ↩ 已回滚到上一步之前。" }]);
-                }}
+              <span className="mobile-touch-target" onClick={rollbackOneStep}
                 title="撤销上一步行动，还原到落子之前"
                 style={chromeBtn(zoneTheme)}>↩ 回滚</span>
               <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={chromeBtn(zoneTheme, { active: showDebug })}>调试</span>
@@ -259,8 +252,8 @@ export default function CenterPanel({
                     headerContent={activeBuilding.craft ? tabs("mobile-trading-tabs-header") : null}
                     playerWit={effectiveSpecialNow?.智谋 ?? 5}
                     zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onInspect={inspectItem}
-                    onBuy={(item) => { if (isKarma) { if ((dao.karma||0)<item.buyPrice) return; setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((char.money||0)<item.buyPrice) return; setChar(c=>({...c,money:c.money-item.buyPrice})); if (shopData.karmaLoss) setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); }}
-                    onSell={(item) => { if (item.equipped||isKarma) return; setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id)); setChar(c=>({...c,money:(c.money||0)+item.sellPrice})); addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); }}
+                    onBuy={(item) => { if (isKarma) { if ((dao.karma||0)<item.buyPrice) return; captureUndo(); setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((char.money||0)<item.buyPrice) return; captureUndo(); setChar(c=>({...c,money:c.money-item.buyPrice})); if (shopData.karmaLoss) setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); }}
+                    onSell={(item) => { if (item.equipped||isKarma) return; captureUndo(); setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id)); setChar(c=>({...c,money:(c.money||0)+item.sellPrice})); addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); }}
                   />
                 );
                 // 不带定制的铺子：只渲染现货商店（绝大多数）。
@@ -288,8 +281,8 @@ export default function CenterPanel({
                   <TradingScreen inline shopName={shopData.shopName} shopItems={shopData.items}
                     playerInv={inv} playerMoney={char.money||0} playerWit={effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={inspectItem}
                     onClose={() => setActiveBuilding(null)}
-                    onBuy={(item)=>{if((char.money||0)<item.buyPrice)return;setChar(c=>({...c,money:c.money-item.buyPrice}));setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]);addLog([{t:"item",text:`  购得「${item.name}」，花费${item.buyPrice}两。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB });}}
-                    onSell={(item)=>{if(item.equipped)return;setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id));setChar(c=>({...c,money:(c.money||0)+item.sellPrice}));addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB });}}
+                    onBuy={(item)=>{if((char.money||0)<item.buyPrice)return;captureUndo();setChar(c=>({...c,money:c.money-item.buyPrice}));setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]);addLog([{t:"item",text:`  购得「${item.name}」，花费${item.buyPrice}两。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB });}}
+                    onSell={(item)=>{if(item.equipped)return;captureUndo();setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id));setChar(c=>({...c,money:(c.money||0)+item.sellPrice}));addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB });}}
                   />
                 ) : null;
               })()}
@@ -376,8 +369,8 @@ export default function CenterPanel({
                 <TradingScreen inline shopName={tradingShop.shopName} shopItems={tradingShop.items}
                   playerInv={inv} playerMoney={char.money || 0} playerWit={effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={inspectItem}
                   onClose={() => setTradingShop(null)}
-                  onBuy={(item) => { if ((char.money || 0) < item.buyPrice) return; setChar(c => ({ ...c, money: c.money - item.buyPrice })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); addLog([{ t: "item", text: `  你花费${item.buyPrice}两，购得「${item.name}」。` }]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB }); }}
-                  onSell={(item) => { if (item.equipped) return; setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + item.sellPrice })); addLog([{ t: "item", text: `  你卖出「${item.name}」，得银两${item.sellPrice}两。` }]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); }}
+                  onBuy={(item) => { if ((char.money || 0) < item.buyPrice) return; captureUndo(); setChar(c => ({ ...c, money: c.money - item.buyPrice })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); addLog([{ t: "item", text: `  你花费${item.buyPrice}两，购得「${item.name}」。` }]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB }); }}
+                  onSell={(item) => { if (item.equipped) return; captureUndo(); setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + item.sellPrice })); addLog([{ t: "item", text: `  你卖出「${item.name}」，得银两${item.sellPrice}两。` }]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); }}
                 />
               )}
             </div>

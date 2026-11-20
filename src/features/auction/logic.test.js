@@ -17,7 +17,7 @@ describe("auction logic", () => {
     expect(result.logs[1].item).toMatchObject({ name: AUCTION_LOT.name, category: AUCTION_LOT.category, quality: AUCTION_LOT.quality });
     expect(result.logs.map(l => l.t)).toEqual(["sys", "loot"]);
     expect(calls).toEqual(["logs", "note", "settle"]);
-    expect(act).toHaveBeenCalledWith(result.settle, [], { settle: true });
+    expect(act).toHaveBeenCalledWith(result.settle, [], { settle: true, keepUndo: true });
     expect(s).toEqual({ char: { money: 300 }, inv: [] });
   });
 

@@ -40,9 +40,11 @@ export async function playTurn(ctx, cmd, opts = {}) {
     snapshot = captureSnapshot(ctx.refs);
     ctx.beforeRun?.();
     const turn = await runTurn(ctx, cmd, opts);
+    if (ctx.isStale?.()) return { ok: false, stale: true };
     (ctx.commitRound || commitRound)(ctx.commitDeps(turn));
     return { ok: true, turn };
   } catch (error) {
+    if (ctx.isStale?.()) return { ok: false, stale: true, error };
     if (snapshot) restoreSnapshot(snapshot, ctx.refs);
     return { ok: false, error };
   }

@@ -101,7 +101,7 @@ export function buildLayoutCtx({ ui, game, overlayHost, autosave, actions, activ
     inSeaOfMind, seaGate, enterSeaOfMind: playerActionHandlers.enterSeaOfMind,
     leaveSeaOfMind: playerActionHandlers.leaveSeaOfMind, loading: ui.loading, act: actions.act,
     autoTravelTo, uiGreen: ui.uiGreen, setLoading: ui.setLoading,
-    undoSnapshotRef: actions.undoSnapshotRef, applySnapshot: autosave.applySnapshot,
+    rollbackOneStep: actions.rollbackOneStep, captureUndo: actions.captureUndo,
     gm: ui.gm, setGm: ui.setGm, pot: game.pot, setPot: game.setPot,
     exp: game.exp, setExp: game.setExp, dao: game.dao, setDao: game.setDao,
     setVarTree: game.setVarTree, setNarrator: game.setNarrator,

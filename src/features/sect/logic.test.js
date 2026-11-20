@@ -24,7 +24,7 @@ describe("sect logic", () => {
     expect(result.logs.map(l => l.t)).toEqual(["sys", "loot"]);
     expect(jotNote).toHaveBeenCalledWith(result.note);
     expect(act).toHaveBeenCalledWith(result.settle, [], {
-      settle: true, settleNpc: SECT_ENTRY.master, settleKind: "learn_skill",
+      settle: true, settleNpc: SECT_ENTRY.master, settleKind: "learn_skill", keepUndo: true,
       learnInfo: { isMaster: true, moveBrief: "雪山派门规与弟子身份", totalPrice: SECT_ENTRY.tuition, beast: false },
     });
     expect(s).toEqual(before);

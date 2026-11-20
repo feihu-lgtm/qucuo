@@ -22,6 +22,10 @@ import {
   pendingNodes, serializeSquares, loadSquares,
 } from "../../domain/map/mapSquares.js";
 
+export function restorePersuasionProgress(snap, setPersuasionProgress) {
+  setPersuasionProgress(snap.persuasionProgress || {});
+}
+
 export function useInitialRestore({ initialLoadSlotId }) {
   const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId);
   if (restored?.snap?.squares) loadSquares(restored.snap.squares);
@@ -35,7 +39,7 @@ export function useAutosave({
   loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets,
   setGm, setPreset, setRoom, setChar, setDao, setSkills, setInv, setLog,
   setConvo, setExp, setPot, setFlags, setMapData, setTime, setNarrator,
-  setVarTree, setQuestProgress, setClaimedMilestones, setDeposit, setDepositedAt,
+  setVarTree, setQuestProgress, setPersuasionProgress, setClaimedMilestones, setDeposit, setDepositedAt,
   setPledgedItems, setCompanionState, setInnerRoomName,
 }) {
   // ── 自动存档：玩家操作后防抖，AI 回合与关页兜底保留原逻辑 ──
@@ -139,6 +143,7 @@ export function useAutosave({
       setNarrator(migrateNarratorState(snap.narrator));
       setVarTree(snap.varTree || initialVarTree());
       setQuestProgress(snap.questProgress || {});
+      restorePersuasionProgress(snap, setPersuasionProgress);
       setClaimedMilestones(new Set(snap.claimedMilestones || []));
       setDeposit(snap.deposit || 0);
       setDepositedAt(snap.depositedAt ?? null);
@@ -162,7 +167,7 @@ export function useAutosave({
     const scheduler = schedulerRef.current;
     if (scheduler) scheduler.runSilently(restoreSnapshot);
     else restoreSnapshot();
-  }, [presets, preset]);
+  }, [presets, preset, setPersuasionProgress]);
 
   const buildCurrentSnapshot = useCallback(() => snapshotFromStore({
     squares: serializeSquares(), roomMap: roomMapRef.current,

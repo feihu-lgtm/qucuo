@@ -45,6 +45,7 @@ describe("applyResult", () => {
       settleNpc: "师父",
       settleKind: "learn_skill",
       settle: true,
+      keepUndo: true,
     });
   });
 
@@ -56,7 +57,7 @@ describe("applyResult", () => {
       settleOptions: { settle: false },
     });
 
-    expect(act).toHaveBeenCalledWith("委托失败", [], { settle: false });
+    expect(act).toHaveBeenCalledWith("委托失败", [], { settle: false, keepUndo: true });
   });
 
   it("forwards square operations to the optional context port", () => {
