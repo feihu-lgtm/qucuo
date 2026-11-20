@@ -136,6 +136,46 @@ describe("收复雪豹", () => {
     expect(setFlags.mock.calls[0][0]([])).toEqual(["snow_spirit_meat", "snow_spirit_scratch", "other_quest"]);
   });
 
+  it("lets visible 才旦 heal the leopard through validated AI flags", async () => {
+    const state = active();
+    state.innerRoomName = "村口";
+    state.room.npcs.push({ name: "才旦" });
+    expect(filterSnowModelFlags(["snow_spirit_medicine", "snow_spirit_duel", SNOW_TRUSTED], state)).toEqual(["snow_spirit_medicine"]);
+    expect(buildQuestStageNote(state)).toContain("[雪豹疗伤]");
+    expect(snowLeopardNote(state)).toContain("实际治好才在delta.flags_add加入snow_spirit_medicine");
+    const setFlags = vi.fn();
+    commitModelFlags({ ...state, p: { delta: { flags_add: ["snow_spirit_medicine"] } }, setFlags });
+    state.flags = setFlags.mock.calls[0][0](state.flags);
+    expect(state.flags).toContain("snow_spirit_medicine");
+    expect(filterSnowModelFlags(["snow_spirit_medicine"], state)).toEqual([]);
+    expect(snowLeopardNote(state)).not.toContain("[雪豹疗伤]");
+    state.flags = [];
+    const chat = vi.fn().mockResolvedValue({ text: '{}' });
+    await callExtraction("TALK_CASUAL", "才旦拿出止血散，替雪豹治好了旧伤。", state, {}, null, { chat });
+    expect(chat.mock.calls[0][0][0].content).toContain("[雪豹疗伤]");
+  });
+
+  it.each([
+    ["healer absent", { room: { name: "鱼定村", npcs: [leopard] } }],
+    ["unapproved healer", { room: { name: "鱼定村", npcs: [leopard, { name: "郎中" }] } }],
+    ["leopard absent", { room: { name: "鱼定村", npcs: [{ name: "才旦" }] } }],
+    ["empty room", { room: { name: "鱼定村", npcs: [] } }],
+    ["quest inactive", { questProgress: {} }],
+    ["already healed", { flags: ["snow_spirit_medicine"] }],
+    ["healer in another inner room", { room: { name: "鱼定村", npcs: [leopard, { name: "才旦", innerRoom: "才旦家" }] } }],
+    ["leopard in another inner room", { room: { name: "鱼定村", npcs: [{ ...leopard, innerRoom: "才旦家" }, { name: "才旦" }] } }],
+  ])("rejects AI healing and omits its note when %s", (_, changes) => {
+    const state = { ...active(), innerRoomName: "村口", ...changes };
+    if (!changes.room) state.room = { name: "鱼定村", npcs: [leopard, { name: "才旦" }] };
+    expect(filterSnowModelFlags(["snow_spirit_medicine"], state)).toEqual([]);
+    expect(filterSnowModelFlags([], state)).toEqual([]);
+    expect(snowLeopardNote(state)).not.toContain("[雪豹疗伤]");
+    expect(buildQuestStageNote(state)).not.toContain("[雪豹疗伤]");
+    const setFlags = vi.fn();
+    commitModelFlags({ ...state, p: { delta: { flags_add: ["snow_spirit_medicine"] } }, setFlags });
+    expect(setFlags).not.toHaveBeenCalled();
+  });
+
   it.each(SNOW_SPIRITS)("counts $label as the fifth spirit", ({ flag }) => {
     const state = active();
     state.flags = SNOW_SPIRITS.filter((s) => s.flag !== flag).slice(0, 4).map((s) => s.flag);

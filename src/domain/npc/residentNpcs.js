@@ -34,7 +34,7 @@ export const RESIDENT_NPCS = {
     {
       name: "才旦", id: "resident_caidan", levelCap: 1,
       brief: "村长之女，账算得滴水不漏",
-      personality: "工于心计说话不留破绽，卸下防备才露出年纪相符的脆弱",
+      personality: "工于心计说话不留破绽，卸下防备才露出年纪相符的脆弱。随母亲学过些草药包扎，身上常带止血散",
       carry: [
         { name: "鱼定猎刀", category: "weapon", quality: "白" },
         { name: "鱼定粗布短打", category: "armor", quality: "白" },

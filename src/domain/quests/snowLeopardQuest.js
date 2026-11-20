@@ -26,18 +26,25 @@ export function snowLeopardPresent(state) {
   return !!state.room?.npcs?.some((npc) => npc.name === "雪豹" && isNpcVisibleInInnerRoom(state.room.name, state.innerRoomName, npc));
 }
 
+function snowLeopardHealingAvailable(state) {
+  return snowQuestActive(state) && snowLeopardPresent(state) && !state.flags?.includes("snow_spirit_medicine") &&
+    !!state.room?.npcs?.some((npc) => npc.name === "才旦" && isNpcVisibleInInnerRoom(state.room.name, state.innerRoomName, npc));
+}
+
 export function filterSnowModelFlags(flags = [], state) {
   const allowed = snowQuestActive(state) && snowLeopardPresent(state);
   return flags.filter((flag) => typeof flag === "string" && (
-    !flag.startsWith("snow_") || (allowed && ["snow_spirit_meat", "snow_spirit_scratch"].includes(flag))
+    !flag.startsWith("snow_") || (allowed && ["snow_spirit_meat", "snow_spirit_scratch"].includes(flag)) ||
+    (flag === "snow_spirit_medicine" && snowLeopardHealingAvailable(state))
   ));
 }
 
 export function snowLeopardNote(state) {
   if (!snowQuestActive(state) || !snowLeopardPresent(state)) return "";
   const flags = state.flags || [];
+  const healing = snowLeopardHealingAvailable(state);
   if (state.settleKind === "gift" && state.settleNpc === "雪豹") return '\n[收复雪豹·赠礼] 只判断这次礼物是否为肉：是肉才在delta.flags_add中加入snow_spirit_meat；非肉则拒吃并讲个短笑话。该赠礼结算的flags_add只允许snow_spirit_meat，不得加入挠痒、信任或其他旗标；物品已由系统扣除，不得重复处理。';
-  return `\n[收复雪豹] 雪豹无主，只接受有灵之人，七灵得五才可信任，邀请入队与信任由系统结算，不得由AI发flag。玩家赠送或自由叙述喂食雪豹时，由你判断是否为肉：是肉才在delta.flags_add加入snow_spirit_meat；非肉则拒吃，写一个短笑话，它只吃肉。${!flags.includes("snow_spirit_scratch") ? "与雪豹说话或在附近时，写它坐立不安、像母鸡一样蹲着，原来身上发痒；玩家实际替它挠痒时，才在delta.flags_add加入snow_spirit_scratch。鱼定村村民及旁白被问及雪豹时，可暗示它想让人挠痒。" : ""}${!flags.includes("snow_spirit_medicine") ? "它前爪有陈年旧伤，走动时微跛；送药可治，由系统结算。" : "前爪旧伤已愈，不再跛行。"}本任务AI只可添加snow_spirit_meat、snow_spirit_scratch，其他灵性与阶段旗标一概由系统判定。`;
+  return `\n[收复雪豹] 雪豹无主，只接受有灵之人，七灵得五才可信任，邀请入队与信任由系统结算，不得由AI发flag。玩家赠送或自由叙述喂食雪豹时，由你判断是否为肉：是肉才在delta.flags_add加入snow_spirit_meat；非肉则拒吃，写一个短笑话，它只吃肉。${!flags.includes("snow_spirit_scratch") ? "与雪豹说话或在附近时，写它坐立不安、像母鸡一样蹲着，原来身上发痒；玩家实际替它挠痒时，才在delta.flags_add加入snow_spirit_scratch。鱼定村村民及旁白被问及雪豹时，可暗示它想让人挠痒。" : ""}${!flags.includes("snow_spirit_medicine") ? "它前爪有陈年旧伤，走动时微跛；送药可治，由系统结算。" : "前爪旧伤已愈，不再跛行。"}${healing ? "\n[雪豹疗伤] 才旦与雪豹都在眼前；玩家相求，或她留意到雪豹前爪旧伤时，可自然拿出止血散替它包扎。实际治好才在delta.flags_add加入snow_spirit_medicine，不要凭空算作痊愈。" : ""}本任务AI只可添加snow_spirit_meat、snow_spirit_scratch${healing ? "、snow_spirit_medicine" : ""}，其他灵性与阶段旗标一概由系统判定。`;
 }
 
 export function snowLeopardHint(state) {
