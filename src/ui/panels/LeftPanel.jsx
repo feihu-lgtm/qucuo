@@ -1,258 +1,44 @@
 import { getHomestead } from "../../domain/map/homestead.js";
-import { hasInnerMap, getBuildingIdForInnerRoom, getResidentRoomForNpc, getDistrictAnchor, getInnerRoom, isNpcVisibleInInnerRoom, visibleInnerExits } from "../../domain/map/innerMap.js";
-import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../../domain/buildings/qucuoBuildings.js";
-import { isNpcKnown } from "../../domain/npc/npcAwareness.js";
-import { npcAffectionLabel } from "../../domain/prompt/mvu.js";
-import { QUCUO_MAP, isNodeUnlocked } from "../../domain/map/qucuoMap.js";
+import FacePanel from "../components/FacePanel.jsx";
+import useFaces from "../components/faces/useFaces.js";
 import { VersionHistoryButton } from "./TopBar.jsx";
-import { DIRS, getTimeStr } from "../../utils/mudHelpers.js";
-import NineGridMap from "../components/NineGridMap.jsx";
-import { OVERLAY, openOverlay, useOverlay } from "../../store/uiStore.js";
-import NpcAngerLine from "./NpcAngerLine.jsx";
+import LocationModule from "./left/LocationModule.jsx";
+import ExitsModule from "./left/ExitsModule.jsx";
+import HomesteadModule from "./left/HomesteadModule.jsx";
+import BuildingsModule, { visibleBuildings } from "./left/BuildingsModule.jsx";
+import NpcsModule from "./left/NpcsModule.jsx";
+import MapModule from "./left/MapModule.jsx";
+import { LEFT_FACE_PREF_KEY, LEFT_MODULES, LEFT_FACE_DEFAULTS } from "./left/leftFaces.js";
 
-export default function LeftPanel({
-  isMobile, mobileDrawer, setMobileDrawer,
-  zoneTheme, S,
-  room, innerRoomName, time,
-  varTree, char,
-  peoplePanel, setPeoplePanel,
-  activeBuilding, setActiveBuilding,
-  setActiveNpcMenu,
-  setCharacterPageTarget,
-  setPigeonTarget, setInteractMode, inputRef, addLog,
-  pigeonTarget,
-  mapView, setMapView, mapBig, setMapBig,
-  mapData, questProgress, flags, inv,
-  inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind,
-  loading, act, autoTravelTo,
-  uiGreen, uiPink,
-}) {
-  const showDebug = useOverlay(OVERLAY.DEBUG);
+const MODULES = { location: LocationModule, exits: ExitsModule, homestead: HomesteadModule, buildings: BuildingsModule, npcs: NpcsModule, map: MapModule };
 
+export default function LeftPanel(props) {
+  const { isMobile, mobileDrawer, setMobileDrawer, zoneTheme, S, room, innerRoomName } = props;
+  const faces = useFaces(LEFT_FACE_PREF_KEY, LEFT_FACE_DEFAULTS, {
+    availableModules: LEFT_MODULES, editable: false, enableKeyboard: false,
+  });
+  const isModuleVisible = id => {
+    if (id === "homestead") return !!(innerRoomName && getHomestead(innerRoomName));
+    if (id === "buildings") return visibleBuildings(room, innerRoomName).length > 0;
+    return true;
+  };
+  const renderModule = id => {
+    const Component = MODULES[id];
+    return <Component {...props} />;
+  };
   return (
-    <div className={isMobile ? "mobile-drawer-panel" : undefined} style={isMobile
+    <div data-testid="left-panel" className={isMobile ? "mobile-drawer-panel" : undefined} style={isMobile
       ? { position: "fixed", top: 0, bottom: 0, left: 0, width: "82vw", maxWidth: 340, zIndex: 41,
           transform: mobileDrawer === "left" ? "translateX(0)" : "translateX(-100%)",
           transition: "transform .28s ease", boxShadow: mobileDrawer === "left" ? "4px 0 24px rgba(0,0,0,.6)" : "none",
           background: zoneTheme.bg, display: "flex", flexDirection: "column", overflow: "hidden" }
-      : { flex: 25, ...S.panel }}>
+      : { flex: 25, ...S.panel, minHeight: 0 }}>
       {isMobile && (
         <div className="mobile-drawer-close" onClick={() => setMobileDrawer(null)} style={{ textAlign: "right", padding: "8px 12px", color: zoneTheme.textDim, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}>关闭 ✕</div>
       )}
       <div style={{ ...S.label, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>天地 <span style={{ fontSize: "9.5px", color: zoneTheme.textDim, letterSpacing: "1px" }}>· {zoneTheme.name}</span><VersionHistoryButton theme={zoneTheme} /></div>
-      <div style={S.scroll}>
-        <div style={{ color: zoneTheme.accent, fontWeight: "bold", fontSize: "14px", marginBottom: 4, letterSpacing: "1px" }}>
-          {room.name}
-          {hasInnerMap(room.name) && innerRoomName && (
-            <span style={{ color: zoneTheme.accentDim, fontWeight: "normal", fontSize: "11px", marginLeft: 6, letterSpacing: 0 }}>· {innerRoomName}</span>
-          )}
-        </div>
-        <div style={{ color: zoneTheme.textDim, fontSize: "10.5px", marginBottom: 10 }}>{getTimeStr(time)}</div>
-        <div style={{ color: zoneTheme.text, fontSize: "12px", marginBottom: 14, lineHeight: "var(--lh-narrative)" }}>{room.desc}</div>
-
-        <div style={{ color: zoneTheme.accentDim, fontSize: "10.5px", marginBottom: 5, letterSpacing: "1px" }}>出口 <span style={{ color: zoneTheme.textDim, fontSize: "9.5px" }}>（在下方输入框打字移动）</span></div>
-        <div style={{ marginBottom: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          {room.exits.map(e => (<span key={e} style={{ color: zoneTheme.accent }}>{DIRS[e] || e}</span>))}
-          {room.exits.length === 0 && <span style={{ color: zoneTheme.textDim }}>无路可走</span>}
-        </div>
-
-        {/* 心灵之海入口。只在"站在自己的安全屋里 + 已被玄女点破"时出现——
-            往人心里走不是往地图上走，得有个能关上门的地方。在海里时这里变成出口。 */}
-        {(inSeaOfMind || seaGate?.ok) && (
-          <div
-            onClick={inSeaOfMind ? leaveSeaOfMind : enterSeaOfMind}
-            style={{
-              marginBottom: 14, padding: "7px 10px", borderRadius: 0, cursor: "pointer", userSelect: "none",
-              border: "1px solid #b8942a", background: "rgba(184,148,42,0.10)",
-              color: "#e8c86a", fontSize: "11.5px", textAlign: "center",
-            }}
-          >
-            {inSeaOfMind ? "⟡ 睁开眼，回去" : "⟡ 闭上眼，进心灵之海"}
-          </div>
-        )}
-
-        {(() => {
-          const all = getBuildingsForLocation(room.name);
-          let list = all;
-          if (hasInnerMap(room.name) && innerRoomName) {
-            const bid = getBuildingIdForInnerRoom(room.name, innerRoomName);
-            list = bid ? all.filter(b => b.id === bid) : [];
-          }
-          // 家园设施跟建筑同属"这间屋子里有什么可用的"，从顶栏挪进来跟建筑并列。
-          const home = innerRoomName ? getHomestead(innerRoomName) : null;
-          return (list.length > 0 || home) && (
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ color: zoneTheme.accentDim, fontSize: "10.5px", marginBottom: 5, letterSpacing: "1px" }}>此地建筑</div>
-            {home && (
-              <div onClick={() => openOverlay(OVERLAY.HOMESTEAD)} style={{ cursor: "pointer", marginBottom: 3 }}>
-                <span style={{ color: "#c8a860", fontSize: "12px" }}>🏠 {home.label || "家园"}</span>
-                <span style={{ color: "var(--text-dim)", fontSize: "10.5px", marginLeft: 6 }}>
-                  {home.features.map(f => f.name).join("·")}
-                </span>
-              </div>
-            )}
-            {list.map(b => (
-              <div key={b.id} onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : b)}
-                style={{ cursor: "pointer", marginBottom: 3 }}>
-                <span style={{ color: activeBuilding?.id === b.id ? zoneTheme.accent : "var(--info)", fontSize: "12px" }}>{b.name}</span>
-                <span style={{ color: "var(--text-dim)", fontSize: "10.5px", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
-              </div>
-            ))}
-          </div>
-          );
-        })()}
-
-        {(() => {
-          const present = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
-          const everSeen = varTree.世界?.曾经出现人物 || [];
-          const presentNames = new Set(room.npcs.map(n => n.name));
-          const absent = everSeen.filter(nm => !presentNames.has(nm));
-          const dbgPeople = showDebug && (
-            <div style={{ fontSize: "9.5px", color: "#7a6a4a", background: "var(--bg-panel)", border: "1px solid #2a2410", borderRadius: 0, padding: "4px 6px", marginBottom: 6, lineHeight: 1.5, wordBreak: "break-all" }}>
-              <div>当前内层房间: {innerRoomName || "(无/全显示)"} · room.npcs 共 {room.npcs.length} 人</div>
-              {room.npcs.map((n, i) => {
-                const bound = hasInnerMap(room.name) ? getResidentRoomForNpc(room.name, n.name) : null;
-                const vis = isNpcVisibleInInnerRoom(room.name, innerRoomName, n);
-                return <div key={i}>{vis ? "●" : "○"} {n.name} · 驻{bound || "-"} · 落{n.innerRoom || "-"}</div>;
-              })}
-            </div>
-          );
-          const header = (label, count, key, color, rightContent) => (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px", marginBottom: 4 }}>
-              <span onClick={() => setPeoplePanel(p => ({ ...p, [key]: !p[key] }))}
-                style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none", flex: 1 }}>
-                <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>{peoplePanel[key] ? "▾" : "▸"}</span>
-                <span style={{ color }}>{label}</span>
-                <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>（{count}）</span>
-              </span>
-              {rightContent}
-            </div>
-          );
-          const pigeonBadge = (
-            <span style={{ fontSize: "10px", color: (char.pigeons || 0) > 0 ? "#c4a040" : zoneTheme.textDim, flexShrink: 0 }} title={`现有信鸽 ${char.pigeons || 0} 只`}>
-              信鸽 {char.pigeons || 0}
-            </span>
-          );
-          return (
-            <div style={{ marginBottom: 10 }}>
-              {dbgPeople}
-              {header("此地之人 · 在场", present.length, "present", zoneTheme.accentDim, pigeonBadge)}
-              {peoplePanel.present && (present.length === 0
-                ? <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 8, paddingLeft: 16 }}>空无一人</div>
-                : <div style={{ marginBottom: 8 }}>{present.map((n, i) => {
-                    const known = isNpcKnown(varTree, n.name);
-                    const attrs = varTree.角色?.[n.name] || {};
-                    const hasAffection = known && typeof attrs.好感度 === "number";
-                    return (
-                      <div key={i} style={{ marginBottom: 6, paddingBottom: 6, borderBottom: i < present.length - 1 ? `1px solid ${zoneTheme.border}` : "none" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ color: uiGreen, flex: 1 }}>
-                            {n.name}<span style={{ color: zoneTheme.textDim, fontSize: "11px", marginLeft: 6 }}>{n.brief}</span>
-                          </span>
-                          {hasAffection ? (
-                            <span style={{ fontSize: "10.5px", flexShrink: 0, textAlign: "right", whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
-                              <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>
-                              <span style={{ color: zoneTheme.textDim, marginLeft: 4 }}>{attrs.好感度}</span>
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: "10px", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
-                          )}
-                        </div>
-                        <span onClick={() => setActiveNpcMenu(n)} title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
-                          style={{ fontSize: "10px", color: zoneTheme.accent, cursor: "pointer", display: "block", marginTop: 2 }}>◈ 角色面板</span>{known && <NpcAngerLine angerState={attrs.生气状态} />}
-                      </div>
-                    );
-                  })}</div>)}
-              {absent.length > 0 && (
-                <div style={{ paddingTop: 6, borderTop: `1px solid ${zoneTheme.border}` }}>
-                  {header("曾遇 · 不在场", absent.length, "absent", "var(--text)")}
-                  {peoplePanel.absent && absent.map(name => {
-                    const known = isNpcKnown(varTree, name);
-                    const attrs = varTree.角色?.[name] || {};
-                    const hasAff = known && typeof attrs.好感度 === "number";
-                    return (
-                      <div key={name} style={{ marginBottom: 5 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span onClick={() => { setCharacterPageTarget(name); openOverlay(OVERLAY.CHARACTER_PAGE); }} title="打开此人详情面板"
-                            style={{ cursor: "pointer", color: "var(--text)", flex: 1, fontSize: "11px" }}>{name}</span>
-                          <span onClick={() => {
-                              if ((char.pigeons || 0) <= 0) { addLog([{ t: "sys", text: `  没有信鸽——去驿站买鸽子，或到驿站直接寄信/送礼给${name}。` }]); return; }
-                              setPigeonTarget(name); setInteractMode("pigeon"); setTimeout(() => inputRef.current?.focus(), 0);
-                            }}
-                            title={(char.pigeons || 0) > 0 ? `飞鸽传书（现有信鸽 ${char.pigeons} 只，寄一封耗一只·只送信）` : "需先去驿站买信鸽"}
-                            style={{ fontSize: "10px", color: (char.pigeons || 0) <= 0 ? zoneTheme.textDim : (pigeonTarget === name ? zoneTheme.accent : "#c4a040"), cursor: "pointer", flexShrink: 0 }}>飞鸽</span>
-                          {hasAff ? (
-                            <span style={{ fontSize: "10px", flexShrink: 0, whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
-                              <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>
-                              <span style={{ color: zoneTheme.textDim, marginLeft: 4 }}>{attrs.好感度}</span>
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: "10px", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
-                          )}
-                        </div>
-                        {known && attrs.态度 && <div style={{ fontSize: "9.5px", color: "var(--text-dim)" }}>{attrs.态度}</div>}
-                        {known && <NpcAngerLine angerState={attrs.生气状态} />}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-      </div>
-      <div style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "6px 12px", flexShrink: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <span style={{ color: zoneTheme.accentDim, fontSize: "10px", cursor: "pointer" }} onClick={() => setMapBig(true)} title="点击放大">
-            {mapView === "inner" ? "村图·内" : "舆图·外"} <span style={{ color: zoneTheme.textDim }}>⤢放大{mapView === "outer" ? " · 点已探明据点自动前往" : ""}</span>
-          </span>
-          {hasInnerMap(room.name) && (
-            <span style={{ display: "flex", fontSize: "9.5px", flexShrink: 0 }}>
-              {[["outer", "外"], ["inner", "内"]].map(([v, lb]) => (
-                <span key={v} onClick={() => setMapView(v)}
-                  style={{ cursor: "pointer", padding: "1px 7px",
-                    color: mapView === v ? zoneTheme.bg : zoneTheme.accent,
-                    background: mapView === v ? zoneTheme.accent : zoneTheme.bgPanel,
-                    border: `1px solid ${zoneTheme.border}` }}>{lb}</span>
-              ))}
-            </span>
-          )}
-        </div>
-        {mapView === "outer" && (() => {
-          const completedQuests = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));
-          const exitByDir = QUCUO_MAP[room.name]?.exits || {};
-          const DIRS8 = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
-          const cells = {};
-          for (const dir of DIRS8) {
-            const dest = exitByDir[dir];
-            const explored = !!(dest && mapData[dest]);
-            cells[dir] = explored ? { explored: true, name: dest, dir } : { explored: false, dir };
-          }
-          const go = (dir) => {
-            if (loading) return;
-            const dest = exitByDir[dir];
-            const completed = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));
-            if (dest && mapData[dest] && isNodeUnlocked(dest, { completedQuests: completed, flags })) { autoTravelTo(dest); return; }
-            setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "outer" });
-          };
-          return <NineGridMap centerLabel={room.name} cells={cells} onGo={go} accent={zoneTheme.accent} loading={loading} big={mapBig} />;
-        })()}
-        {mapView === "inner" && (() => {
-          if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>此地无内景可绘。</div>;
-          const curRoom = innerRoomName || getDistrictAnchor(room.name);
-          // 上锁的房间不出现在九宫格里（此前这里直接读裸 exits，锁着的安全屋照样是可点格子）
-          const curExits = (curRoom && visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char })) || {};
-          const DIRS8 = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
-          const cells = {};
-          for (const dir of DIRS8) {
-            const dest = curExits[dir];
-            cells[dir] = dest ? { explored: true, name: dest, dir } : { explored: false, dir };
-          }
-          const go = (dir) => { if (!loading && curExits[dir]) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); } };
-          return <NineGridMap centerLabel={curRoom} cells={cells} onGo={go} accent="#c07050" loading={loading} big={mapBig} />;
-        })()}
-      </div>
+      <FacePanel faces={faces} theme={zoneTheme} label="天地" isMobile={isMobile}
+        renderModule={renderModule} isModuleVisible={isModuleVisible} />
     </div>
   );
 }
