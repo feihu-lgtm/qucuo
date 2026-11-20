@@ -10,7 +10,7 @@ import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare 
 import { tryRestoreSnapshot } from "../src/infra/saves.js";
 import { getTimeStr, parseDir } from "../src/utils/mudHelpers.js";
 import { resolveExit } from "../src/domain/map/qucuoMap.js";
-import { defaultConfig } from "../src/infra/apiConfig.js";
+import { defaultConfig, migrateProvider, providerApiType, PROVIDERS } from "../src/infra/apiConfig.js";
 import { classifyIntent } from "../src/domain/prompt/inputIntent.js";
 import { emptyBodyProfile } from "../src/domain/character/bodyProfile.js";
 import { getActivePreset } from "../src/domain/prompt/presetSystem.js";
@@ -87,6 +87,24 @@ export function parseSeed(value) {
     throw new Error("Seed must be a safe decimal integer");
   }
   return seed;
+}
+
+export function buildCliApiConfig(overrides = {}) {
+  const requestedProvider = overrides.provider;
+  const apiType = overrides.apiType || (requestedProvider ? providerApiType(requestedProvider) : "openai");
+  const provider = requestedProvider || (["anthropic", "gemini", "vertex", "qwen"].includes(apiType) ? apiType : "");
+  const config = {
+    ...defaultConfig(),
+    ...overrides,
+    apiType,
+    endpoint: overrides.endpoint || PROVIDERS[provider || "openai"].endpoint,
+    maxTokens: overrides.maxTokens || 4000,
+    extractionEnabled: overrides.extractionEnabled ?? false,
+    streamEnabled: false,
+  };
+  if (provider) config.provider = provider;
+  else delete config.provider;
+  return migrateProvider(config);
 }
 
 function formatValue(value) {
@@ -254,14 +272,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       const isTalk = !!opts.isTalk;
       const activeTarget = opts.activeTarget || null;
       const talkTarget = opts.talkTarget || null;
-      const config = {
-        ...defaultConfig(),
-        ...apiCfgOverrides,
-        apiType: apiCfgOverrides?.apiType || "openai",
-        maxTokens: apiCfgOverrides?.maxTokens || 4000,
-        extractionEnabled: apiCfgOverrides?.extractionEnabled ?? false,
-        streamEnabled: false,
-      };
+      const config = buildCliApiConfig(apiCfgOverrides);
       const intent = classifyIntent(cmd);
       const preset = state.preset || DEFAULT_PRESETS[0];
       const parent = opts.turn || lineTurn;
