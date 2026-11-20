@@ -9,15 +9,16 @@ const hooks = {
   usePlayerActionHandlers: "handleComfort handleSwitchCompanion handleResolveTrauma enterSeaOfMind leaveSeaOfMind",
   usePigeonHandlers: "pigeonDelayShichen applyPigeonResult sendPigeonLetter buyPigeon handleCollectPigeons handlePostSend",
   useCardImportHandlers: "handleImportNpcs handleImportPlayer handleImportWorld handleCreateCharacter handleOpeningFinish handleBodyProfileChange",
-  useDuel: "handleNpcDuel confirmDuel cancelDuel duelFinishHandler",
-  useQuestPanel: "forceAdvanceQuest triggerQuestFromPanel triggerQuestChoice",
+  useDuel: "handleNpcDuel confirmDuel cancelDuel duelFinishHandler resetDuel",
+  useQuestPanel: "forceAdvanceQuest triggerQuestFromPanel triggerQuestChoice savePersuasionProgress finishPersuasion",
 };
 const nonMutating = new Set(["pigeonDelayShichen", "handleOpeningFinish"]);
 
-function parse(source) {
+function parse(source, visitors = {}) {
   let program;
   const messages = new Linter().verify(source, {
-    plugins: { test: { rules: { capture: { create: () => ({ Program: (node) => { program = node; } }) } } } },
+    languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } },
+    plugins: { test: { rules: { capture: { create: () => ({ ...visitors, Program: (node) => { program = node; } }) } } } },
     rules: { "test/capture": "error" },
   });
   expect(messages).toEqual([]);
@@ -46,12 +47,34 @@ it("enumerates all hook handler keys and checks gameplay handlers enter the moni
       const entries = calls(handler.body);
       if (key === "applyPigeonResult") expect(entries[0], key).toBe("applyResult");
       else if (key === "handlePostSend") expect(entries, key).toEqual(["setActiveBuilding", "sendPigeonLetter"]);
-      else if (key === "triggerQuestChoice") {
-        expect(entries, key).toEqual(["runQuestChoice"]);
-        const choice = ast.body.find((node) => node.declaration?.id?.name === "runQuestChoice").declaration;
-        expect(choice.body.body[0].argument.callee.name).toBe("applyResult");
+      else if (key === "triggerQuestChoice" || key === "finishPersuasion") {
+        const delegate = key === "triggerQuestChoice" ? "runQuestChoice" : "settlePersuasion";
+        expect(entries, key).toEqual([delegate]);
+        const definition = ast.body.find((node) => node.declaration?.id?.name === delegate).declaration;
+        expect(definition.body.body[0].argument.callee.name).toBe("applyResult");
       }
       else expect(entries, key).toEqual(["applyResult"]);
     }
+  }
+});
+
+function directMutations(source) {
+  const presentation = new Set(["setCharacterPageTarget", "setActiveNpcMenu", "setActiveItemMenu"]);
+  const found = [];
+  parse(source, { CallExpression({ callee }) {
+    const name = callee.type === "MemberExpression" ? callee.property.name ?? callee.property.value : callee.name;
+    const owner = callee.object?.name;
+    if (owner === "localStorage" && name === "setItem") return;
+    if (owner === "gameActions" || owner === "gameStore" && name === "setState"
+      || !presentation.has(name) && /^(set[A-Z]|addLog$|applySnapshot$)/.test(name)) found.push(name);
+  } });
+  return found;
+}
+
+it("keeps inline gameplay mutations out of overlay and host components", () => {
+  const fixture = '<Screen onFinish={() => { if (won) ctx.setChar(update); gameActions.setInv(items); }} />';
+  expect(directMutations(fixture)).toEqual(["setChar", "setInv"]);
+  for (const path of ["../../ui/panels/GlobalOverlays.jsx", "../OverlayHost.jsx"]) {
+    expect(directMutations(readFileSync(new URL(path, import.meta.url), "utf8")), path).toEqual([]);
   }
 });

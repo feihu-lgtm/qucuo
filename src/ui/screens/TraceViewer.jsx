@@ -15,7 +15,7 @@ function AiDetails({ node, theme }) {
       <div style={{ display: "flex", gap: 4, marginBlock: 6 }} role="tablist" aria-label="AI 调用详情">
         {Object.keys(tabs).map((name) => (
           <button key={name} type="button" role="tab" aria-selected={tab === name}
-            onClick={() => setTab(name)} style={chromeBtn(theme, { active: tab === name })}>{name}</button>
+            onClick={() => setTab(name)} style={{ ...chromeBtn(theme, { active: tab === name }), fontFamily: "inherit" }}>{name}</button>
         ))}
       </div>
       <pre role="tabpanel" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: "35dvh", overflow: "auto" }}>
@@ -29,7 +29,7 @@ export default function TraceViewer({ theme, onClose, onReport }) {
   const { trees } = useSyncExternalStore(turnMonitor.subscribe, turnMonitor.getSnapshot);
   const closeGuard = useOverlayCloseGuard(onClose);
   const [copied, setCopied] = useState("");
-  const button = chromeBtn(theme);
+  const button = { ...chromeBtn(theme), fontFamily: "inherit" };
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 70, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${theme.bg} 78%, transparent)` }} {...closeGuard}>
       <section role="dialog" aria-modal="true" aria-label="全流程日志" style={{

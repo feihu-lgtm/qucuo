@@ -15,6 +15,8 @@
 // endpoint/key。收益是召回精度，而我们粗排刚补完词法路、基线已经不差。
 // 所以默认关，跟 extractionEnabled 一个待遇——想要精度的人自己开。
 
+import { observeAi } from "../../core/observeAi.js";
+
 const DEFAULT_MODEL = "BAAI/bge-reranker-v2-m3";
 const DEFAULT_TIMEOUT = 12000;
 
@@ -39,22 +41,25 @@ export async function rerank(query, candidates, cfg = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), cfg.timeout || DEFAULT_TIMEOUT);
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model: cfg.model || DEFAULT_MODEL,
-        query: String(query),
-        documents: docs,
-        top_n: Math.min(cfg.topN || docs.length, docs.length),
-      }),
-      signal: ctrl.signal,
+    const model = cfg.model || DEFAULT_MODEL;
+    const { rows } = await observeAi([], { model, callLabel: "召回精排" }, async () => {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({
+          model,
+          query: String(query),
+          documents: docs,
+          top_n: Math.min(cfg.topN || docs.length, docs.length),
+        }),
+        signal: ctrl.signal,
+      });
+      if (!res.ok) throw new Error(`rerank HTTP ${res.status}`);
+      const data = await res.json();
+      const rows = data?.results || data?.data;
+      if (!Array.isArray(rows)) throw new Error("rerank 响应结构异常");
+      return { rows };
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    // 兼容两种返回形态：{results:[{index,relevance_score}]} 与 {data:[...]}
-    const rows = data?.results || data?.data;
-    if (!Array.isArray(rows) || !rows.length) return null;
     const minScore = cfg.minScore ?? 0.1;
     const out = rows
       .map(r => {

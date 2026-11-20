@@ -3,6 +3,31 @@ import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { forceAdvanceQuest as forceAdvanceQuestFeature } from "../../features/quest/logic.js";
 import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
+import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+
+export function settlePersuasion({ setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog }, { questId, flag }, result) {
+  return applyResult(null, () => {
+    setActivePersuasion(null);
+    setPersuasionProgress(progress => {
+      const rest = { ...progress };
+      delete rest[`${questId}|${flag}`];
+      return rest;
+    });
+    if (result.outcome !== "success") {
+      addLog([{ t: "sys", text: "  没谈成——这条路暂时没走通，可换个法子再试。" }]);
+      return;
+    }
+    if (result.via === "bribe" && result.cost) {
+      setChar(c => ({ ...c, money: (c.money || 0) - result.cost }));
+    }
+    const quest = QUCUO_QUESTS.find(x => x.id === questId);
+    if (quest) {
+      forceAdvanceQuest(quest, flag);
+      const viaText = result.via === "bribe" ? "使了银子" : result.via === "identity" ? "亮了身份" : "把话说到了点子上";
+      addLog([{ t: "affection", text: `  ✓ 你${viaText}，「${quest.title}」推进。` }]);
+    }
+  }, { feature: "quest.persuasionFinish" });
+}
 
 export function runQuestChoice(ctx, entry, choice) {
   return applyResult(null, () => resolveQuestChoice(ctx, entry, choice), { feature: "quest.choose" });
@@ -61,7 +86,7 @@ async function resolveQuestChoice({
 
 export function useQuestPanel({
   act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc,
-  setActivePersuasion, setInteractMode, setTalkTarget, captureUndo,
+  setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, setPersuasionProgress, setChar,
 }) {
   const forceAdvanceQuest = useCallback((quest, targetFlag) => applyResult(featureCtxRef.current, () => {
     captureUndo();
@@ -94,5 +119,13 @@ export function useQuestPanel({
     setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
   ]);
 
-  return { forceAdvanceQuest, triggerQuestFromPanel, triggerQuestChoice };
+  const savePersuasionProgress = useCallback((key, progress) => applyResult(featureCtxRef.current, () => {
+    setPersuasionProgress(m => ({ ...m, [key]: progress }));
+  }, { feature: "quest.persuasionProgress" }), [featureCtxRef, setPersuasionProgress]);
+
+  const finishPersuasion = useCallback((active, result) => settlePersuasion({
+    setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog,
+  }, active, result), [setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog]);
+
+  return { forceAdvanceQuest, triggerQuestFromPanel, triggerQuestChoice, savePersuasionProgress, finishPersuasion };
 }

@@ -78,5 +78,10 @@ export function useDuel({
     }
   }, { feature: "duel.finish" }), [duelingNpc, pendingQuestBranch, noteAction, act, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch, featureCtxRef]);
 
-  return { handleNpcDuel, confirmDuel, cancelDuel, duelFinishHandler };
+  const resetDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
+    setDuelingNpc(null);
+    setPendingQuestBranch(null);
+  }, { feature: "duel.reset" }), [featureCtxRef, setDuelingNpc, setPendingQuestBranch]);
+
+  return { handleNpcDuel, confirmDuel, cancelDuel, duelFinishHandler, resetDuel };
 }

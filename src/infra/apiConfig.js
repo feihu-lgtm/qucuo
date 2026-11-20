@@ -3,7 +3,7 @@
 // 上层调用者只需要传 (systemPrompt, messages)，不需要关心具体是哪家供应商。
 
 import { DEFAULT_WHISPER_WORDS } from "../domain/narrator/narrator.js";
-import { observeAi } from "../engine/ports/observeAi.js";
+import { observeAi } from "../core/observeAi.js";
 
 const CONFIG_KEY = "wuxia_mud_api_config";
 

@@ -1,5 +1,5 @@
 import { callModel, callModelStream } from "../../infra/apiConfig.js";
-import { observeAi, observed } from "./observeAi.js";
+import { observeAi, observed } from "../../core/observeAi.js";
 
 export function bindTurnAi(ai, turn) {
   return {

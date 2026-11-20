@@ -17,7 +17,6 @@ import { useCallback } from "react";
 import { listCharacters } from "../../domain/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { getPipelineEntries, getTraceLog } from "../../infra/actionTrace.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { activeCompanion, isCompanionUnlockedByName } from "../../domain/companion/companion.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import TutorialOverlay from "../screens/TutorialOverlay.jsx";
@@ -40,9 +39,9 @@ import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiSt
 
 export default function GlobalOverlays({
   zoneTheme, isDayMode,
-  char, setChar, inv, setInv, skills, varTree, room, innerRoomName, time,
+  char, inv, skills, varTree, room, innerRoomName, time,
   flags, questProgress, effectiveSpecialNow, companionState,
-  loading, addLog,
+  loading,
   characterPageTarget, setCharacterPageTarget,
   onImportNpcs, onImportPlayer, onImportWorld,
   claimedMilestones, claimMilestone, giftToCharacter,
@@ -53,9 +52,8 @@ export default function GlobalOverlays({
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
   handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
   activeItemMenu, setActiveItemMenu, inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip,
-  activePersuasion, setActivePersuasion, apiCfg, persuasionProgress, setPersuasionProgress,
-  forceAdvanceQuest,
-  duelingNpc, setDuelingNpc, setPendingQuestBranch, duelFinishHandler,
+  activePersuasion, apiCfg, persuasionProgress, savePersuasionProgress, finishPersuasion,
+  duelingNpc, resetDuel, duelFinishHandler,
 }) {
   const showTutorial = useOverlay(OVERLAY.TUTORIAL);
   const showVersionHistory = useOverlay(OVERLAY.VERSION_HISTORY);
@@ -206,32 +204,14 @@ export default function GlobalOverlays({
           playerSpecial={effectiveSpecialNow}
           zoneTheme={zoneTheme}
           savedProgress={persuasionProgress[pkey] || null}
-          onProgress={(prog) => setPersuasionProgress(m => ({ ...m, [pkey]: prog }))}
-          onFinish={(result) => {
-            const ap = activePersuasion;
-            setActivePersuasion(null);
-            // 一场说服结束（不管成没成），清掉该场的续接进度——下次是全新一场。
-            setPersuasionProgress(m => { const n = { ...m }; delete n[pkey]; return n; });
-            if (result.outcome === "success") {
-              if (result.via === "bribe" && result.cost) {
-                setChar(c => ({ ...c, money: (c.money || 0) - result.cost }));
-              }
-              const q = QUCUO_QUESTS.find(x => x.id === ap.questId);
-              if (q) {
-                forceAdvanceQuest(q, ap.flag);
-                const viaText = result.via === "bribe" ? "使了银子" : result.via === "identity" ? "亮了身份" : "把话说到了点子上";
-                addLog([{ t: "affection", text: `  ✓ 你${viaText}，「${q.title}」推进。` }]);
-              }
-            } else {
-              addLog([{ t: "sys", text: `  没谈成——这条路暂时没走通，可换个法子再试。` }]);
-            }
-          }}
+          onProgress={(prog) => savePersuasionProgress(pkey, prog)}
+          onFinish={(result) => finishPersuasion(activePersuasion, result)}
         />
         );
       })()}
       {duelingNpc && (() => {
         return (
-        <ErrorBoundary label="切磋界面" onReset={() => { setDuelingNpc(null); setPendingQuestBranch(null); }}>
+        <ErrorBoundary label="切磋界面" onReset={resetDuel}>
         {activeCompanion(companionState)?.data ? (
           // 有队友出战：2v2团战（玩家+队友 vs 当前对手）。
           // 【改成读通用出战位】此前写死 companionState.snowLeopard.data，

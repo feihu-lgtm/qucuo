@@ -1,4 +1,4 @@
-import { turnMonitor } from "../../core/turnMonitor.js";
+import { turnMonitor } from "./turnMonitor.js";
 
 export const observed = Symbol("observed-ai");
 

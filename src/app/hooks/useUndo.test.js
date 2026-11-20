@@ -3,10 +3,30 @@ import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../core/gam
 import { travelByCarriage } from "../../features/buildings/logic.js";
 import { giftNpc } from "../../features/npc/logic.js";
 import { applyResult } from "../../features/run.js";
-import { runQuestChoice } from "./useQuestPanel.js";
+import { runQuestChoice, settlePersuasion } from "./useQuestPanel.js";
 import { restorePersuasionProgress } from "./useAutosave.js";
 import { createTurnStaleCheck, createUndoController } from "./useUndo.js";
 import { turnMonitor } from "../../core/turnMonitor.js";
+
+it("records persuasion settlement as one command and clears only that attempt", () => {
+  const setActivePersuasion = vi.fn();
+  const setPersuasionProgress = vi.fn();
+  const setChar = vi.fn();
+  const forceAdvanceQuest = vi.fn();
+  const addLog = vi.fn();
+  const active = { questId: "hunter_learn_quest", flag: "agreed" };
+  settlePersuasion({ setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog }, active, {
+    outcome: "success", via: "bribe", cost: 3,
+  });
+  expect(setActivePersuasion).toHaveBeenCalledWith(null);
+  expect(setPersuasionProgress.mock.calls[0][0]({ "hunter_learn_quest|agreed": 1, other: 2 })).toEqual({ other: 2 });
+  expect(setChar.mock.calls[0][0]({ money: 10 })).toEqual({ money: 7 });
+  expect(forceAdvanceQuest).toHaveBeenCalledWith(expect.objectContaining({ id: active.questId }), "agreed");
+  expect(addLog).toHaveBeenCalledWith([expect.objectContaining({ t: "affection" })]);
+  expect(turnMonitor.getTrees()[0]).toMatchObject({
+    cmd: "quest.persuasionFinish", phases: ["MACHINE", "COMMIT", "DONE"],
+  });
+});
 
 function createController(overrides = {}) {
   const pendingQueue = { current: ["next"] };
