@@ -321,7 +321,7 @@ export function useTurn({
 
     // 本回合开始时的 varTree，逻辑读取走 ref 以包含已发生的同步写入。
     const preActVarTree = varTreeRef.current;
-    const activeGroundItemForTurn = !isTalk && activeGroundItem
+    const activeGroundItemForTurn = activeGroundItem
       && collectHit?.item !== activeGroundItem
       && (room.items || []).some(item => (typeof item === "string" ? item : item?.name) === activeGroundItem)
       ? activeGroundItem
