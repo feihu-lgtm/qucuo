@@ -429,6 +429,15 @@ export function getImportedNpc(name) {
   };
 }
 
+/** 返回转换成 NPC 池形状的入册角色，供 room.npcs hydration 复用。 */
+export function getImportedPoolNpc(name) {
+  const c = _registry.chars.find(x => x.name === name
+    || (x.aliases || []).includes(name));
+  if (!c) return null;
+  const lockInnerRoom = c.placement?.mode === "resident" ? c.placement.innerRoom : null;
+  return toPoolLike(c, lockInnerRoom);
+}
+
 /** 好感度初值：写 varTree 时用。没配过的返回 0 */
 // ── 待用主角卡 ──────────────────────────────────────────────────────────────
 // 【为什么单独放 localStorage 而不进上面那个 IndexedDB 库】

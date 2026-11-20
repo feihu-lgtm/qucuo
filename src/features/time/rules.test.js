@@ -2,16 +2,19 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getRngState, setRngState, setSeed } from "../../core/rng.js";
 import { makeBuffFlag } from "../../utils/buffSystem.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { clearImported, getImportedPoolNpc, registerImported } from "../../domain/cards/importedRegistry.js";
 import { timeAdvanceRule } from "./rules.js";
 
 let previousRngState;
 
 beforeEach(() => {
   previousRngState = getRngState();
+  clearImported();
 });
 
 afterEach(() => {
   setRngState(previousRngState);
+  clearImported();
 });
 
 const makeState = (overrides = {}) => ({
@@ -136,7 +139,13 @@ describe("time advance world rule", () => {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
       roomMapRef: { current: {} },
-      importedRegistry: { getImportedNpc: () => ({ name: "入册旅人", brief: "远道而来的旅人", levelCap: 2 }) },
+      importedRegistry: { getImportedPoolNpc: () => ({
+        id: "imported_入册旅人",
+        name: "入册旅人",
+        brief: "远道而来的旅人",
+        levelCap: 2,
+        imported: true,
+      }) },
     });
 
     expect(result.forcedDuelNpc).toMatchObject({
@@ -148,6 +157,29 @@ describe("time advance world rule", () => {
     expect(result.changes.room(state.room).npcs).toHaveLength(1);
   });
 
+  it("hydrates an uncached imported pursuer through the room NPC path with equipment intact", () => {
+    registerImported([{
+      name: "武装旅人",
+      brief: "携带自备兵刃的旅人",
+      levelCap: 2,
+      carry: ["青锋剑", "药包"],
+    }]);
+    const state = makeState({
+      room: { name: "玉泉寨", items: [], npcs: [] },
+      varTree: { 角色: { 武装旅人: { 生气状态: { active: true, turnsLeft: 1 } } } },
+    });
+    const result = timeAdvanceRule.run(state, {
+      firstRun: false,
+      previousDeps: [state.time - 1, state.room.npcs],
+      roomMapRef: { current: {} },
+      importedRegistry: { getImportedPoolNpc },
+    });
+
+    expect(result.forcedDuelNpc.carriedItems.map((item) => item.name)).toEqual(
+      expect.arrayContaining(["青锋剑", "药包"]),
+    );
+  });
+
   it("lets anger lapse when no NPC record can be found", () => {
     const state = makeState({
       room: { name: "玉泉寨", npcs: [] },
@@ -157,7 +189,7 @@ describe("time advance world rule", () => {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
       roomMapRef: { current: {} },
-      importedRegistry: { getImportedNpc: () => null },
+      importedRegistry: { getImportedPoolNpc: () => null },
     });
 
     expect(result.forcedDuelNpc).toBeUndefined();

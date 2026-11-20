@@ -7,18 +7,15 @@ import { tickAngryState } from "../../domain/combat/stealSystem.js";
 import { makeItem } from "../../domain/economy/equipment.js";
 import { makeItemSmart } from "../../domain/items/catalog.js";
 import { cleanExpiredBuffs } from "../../utils/buffSystem.js";
+import { buildRoomNpcWithCombat } from "../npc/rules.js";
 
 const QUALITIES = ["白", "绿", "蓝", "紫", "橙", "红"];
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
-function makeEscalationNpc(record, state, { pool = false, imported = false } = {}) {
+function makeEscalationNpc(record, state, { pool = false } = {}) {
   const base = pool
     ? { ...toRoomNpc(record), ...record, id: toRoomNpc(record).id }
     : { ...record, id: record.id || `npc_${record.name}` };
-  if (imported) {
-    base.id = `imported_${record.name}`;
-    base.imported = true;
-  }
   const inferred = mapDescriptionToGenParams(`${base.name || ""} ${base.brief || ""} ${base.personality || ""}`);
   return ensureNpcCombatData(base, {
     luck: state.char?.special?.气运 ?? 5,
@@ -33,8 +30,8 @@ function findEscalationNpc(name, state, roomMap, importedRegistry) {
     const cachedNpc = (cachedRoom?.npcs || []).find((npc) => npc.name === name);
     if (cachedNpc) return ensureNpcCombatData(cachedNpc, { luck: state.char?.special?.气运 ?? 5 });
   }
-  const imported = importedRegistry?.getImportedNpc?.(name);
-  if (imported) return makeEscalationNpc(imported, state, { imported: true });
+  const imported = importedRegistry?.getImportedPoolNpc?.(name);
+  if (imported) return buildRoomNpcWithCombat(imported, { luck: state.char?.special?.气运 ?? 5 });
   const resident = Object.values(RESIDENT_NPCS).flat().find((npc) => npc.name === name);
   if (resident) return makeEscalationNpc(resident, state);
   const poolNpc = NPC_POOL.find((npc) => npc.name === name);
