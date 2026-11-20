@@ -162,10 +162,13 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     return commandScheduler.dispatch("stopGeneration", () => {
       invalidateTurns();
       commandScheduler.stopRunning();
+      if (waitTimerRef.current) clearInterval(waitTimerRef.current);
+      waitTimerRef.current = null;
+      setWaitSecs(0);
       setLoading(false);
       addLog([{ t: "sys", text: "  ⏹ 已停止等待本次生成（若结果稍后返回将被忽略）。" }]);
     });
-  }, [invalidateTurns, commandScheduler.stopRunning, setLoading, addLog]);
+  }, [invalidateTurns, commandScheduler.stopRunning, waitTimerRef, setWaitSecs, setLoading, addLog]);
 
   useGameStartupOpeningFaces({
     restored, showOpening, showCharCreate, room, innerRoomName, varTreeRef,
