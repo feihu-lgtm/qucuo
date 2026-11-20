@@ -97,7 +97,7 @@ describe("time advance world rule", () => {
     expect(result.forcedDuelNpc).not.toHaveProperty("innerRoom");
     expect(result.changes.room(state.room).npcs).toEqual([result.forcedDuelNpc]);
     expect(result.roomMap.鱼定村.npcs).toEqual([]);
-    expect(result.roomMap.玉泉寨.npcs).toEqual([npc]);
+    expect(result.roomMap.玉泉寨.npcs).toEqual([result.forcedDuelNpc]);
     expect(result.logs).toContainEqual({
       t: "err",
       text: "  猎户一路寻来，堵在你面前——积怒难平，这场恶斗躲不掉了！",
