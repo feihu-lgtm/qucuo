@@ -61,7 +61,11 @@ describe("command scheduler", () => {
       id: commandCategory === CATEGORY.SYSTEM ? "settings" : `command-${commandCategory}`,
       category: commandCategory,
     };
-    const running = { id: `running-${runningCategory}`, category: runningCategory, phase };
+    const running = {
+      id: runningCategory === CATEGORY.SYSTEM ? "save" : `running-${runningCategory}`,
+      category: runningCategory,
+      phase,
+    };
     const expected = commandCategory === CATEGORY.SYSTEM && command.id === "settings"
       ? (runningCategory === CATEGORY.SYSTEM ? "reject" : "run")
       : expectedDecision(commandCategory, runningCategory);
@@ -77,6 +81,22 @@ describe("command scheduler", () => {
     expect(decide({ id: "apiConfig", category: CATEGORY.SYSTEM }, running)).toBe("run");
     expect(decide({ id: "settings", category: CATEGORY.SYSTEM }, running)).toBe("run");
   });
+
+  it.each(["settings", "apiConfig"])("does not block commands while %s is running", (id) => {
+    const running = { id, category: CATEGORY.SYSTEM, phase: "machine" };
+    for (const category of categories) {
+      const command = { id: category === CATEGORY.SYSTEM ? "load" : "worldRules", category };
+      expect(decide(command, running)).toBe("run");
+    }
+  });
+
+  it.each(["save", "load", "newGame", "rollback", "autosave"])(
+    "blocks commands while %s is running",
+    id => expect(decide(
+      { id: "worldRules", category: CATEGORY.BACKGROUND },
+      { id, category: CATEGORY.SYSTEM, phase: "machine" },
+    )).toBe("reject"),
+  );
 
   it("registers web-specific building and duel labels", () => {
     expect(COMMANDS.inn.label).toBe("住店与求医");
@@ -287,7 +307,7 @@ describe("command scheduler", () => {
     await parent;
   });
 
-  it("keeps rollback clickable while a system command is active", async () => {
+  it("keeps rollback clickable while a settings task is active", async () => {
     const scheduler = createScheduler();
     let state;
     scheduler.subscribe(next => { state = next; });
@@ -296,7 +316,7 @@ describe("command scheduler", () => {
       finishSettings = resolve;
     }));
 
-    expect(scheduler.canRun("rollback")).toBe(false);
+    expect(scheduler.canRun("rollback")).toBe(true);
     expect(state.rollbackBlocked).toBe(false);
 
     finishSettings();

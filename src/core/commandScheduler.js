@@ -2,9 +2,13 @@ import { CATEGORY, SYSTEM_COMMANDS, getCommand } from "./commands.js";
 
 const WHISPER_IDS = new Set(["privateWhisper", "actWhisper"]);
 const BLOCKING_CATEGORIES = new Set([CATEGORY.LOCAL, CATEGORY.MOVE, CATEGORY.AI_TURN, CATEGORY.SYSTEM]);
+const BLOCKING_SYSTEM_IDS = new Set([
+  SYSTEM_COMMANDS.save, SYSTEM_COMMANDS.load, SYSTEM_COMMANDS.newGame,
+  SYSTEM_COMMANDS.rollback, "autosave",
+]);
 export function decide(cmd, running) {
   if (!running) return "run";
-  if (running.category === CATEGORY.SYSTEM) return "reject";
+  if (running.category === CATEGORY.SYSTEM) return BLOCKING_SYSTEM_IDS.has(running.id) ? "reject" : "run";
 
   if (cmd.category === CATEGORY.SYSTEM) {
     if (cmd.id === SYSTEM_COMMANDS.rollback) {
