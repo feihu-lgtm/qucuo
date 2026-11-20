@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getRngState, setRngState, setSeed } from "../../core/rng.js";
 import { createWorldRules } from "../../engine/worldRules.js";
 import { getResidentNpcs } from "../../domain/npc/residentNpcs.js";
+import { getScheduledNpcs } from "../../domain/npc/npcPool.js";
+import { travelByCarriage } from "../buildings/logic.js";
 import { timeAdvanceRule } from "../time/rules.js";
 import { residentNpcRule } from "./rules.js";
 
@@ -122,6 +124,36 @@ describe("resident NPC world rule", () => {
 
     expect(homeAfterReentry.some((npc) => npc.name === residentName)).toBe(false);
     expect(cachedOccurrences).toHaveLength(1);
+  });
+
+  it("reinjects residents after carriage arrival despite the district's own cache", () => {
+    setSeed(42);
+    const visitedState = makeState();
+    const visitedNpcs = residentNpcRule.run(visitedState, { importedRegistry })
+      .changes.room(visitedState.room).npcs;
+    const arrivalTime = 11;
+    const scheduledNames = new Set(getScheduledNpcs("鱼定村", arrivalTime).map((npc) => npc.name));
+    const residentName = getResidentNpcs("鱼定村").find((npc) => !scheduledNames.has(npc.name)).name;
+    const carriage = travelByCarriage({
+      ...makeState(),
+      time: 6,
+      room: { name: "玉泉寨", items: [], npcs: [] },
+      mapData: { 鱼定村: {} },
+      char: { money: 100, special: { 气运: 5 } },
+    }, "鱼定村", 5);
+    const arrivalState = {
+      ...makeState(),
+      time: carriage.changes.time,
+      room: carriage.changes.room,
+    };
+    const result = residentNpcRule.run(arrivalState, {
+      importedRegistry,
+      roomMapRef: { current: { 鱼定村: { items: [], npcs: visitedNpcs } } },
+    });
+
+    expect(carriage.changes.room.npcs).toEqual([]);
+    expect(visitedNpcs.some((npc) => npc.name === residentName)).toBe(true);
+    expect(result.changes.room(arrivalState.room).npcs.some((npc) => npc.name === residentName)).toBe(true);
   });
 
   it("depends on imported registry revision, quest progress, and flags", () => {

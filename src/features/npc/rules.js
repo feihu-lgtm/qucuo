@@ -47,7 +47,9 @@ export const residentNpcRule = {
     const existingByName = new Map((room.npcs || []).map((npc) => [npc.name, npc]));
     const currentNpcNames = new Set(existingByName.keys());
     const cachedNpcNames = new Set(
-      Object.values(roomMapRef?.current || {}).flatMap((cached) => (cached?.npcs || []).map((npc) => npc.name)),
+      Object.entries(roomMapRef?.current || {})
+        .filter(([roomName]) => roomName !== room.name)
+        .flatMap(([, cached]) => (cached?.npcs || []).map((npc) => npc.name)),
     );
     const toRoomNpcWithCombat = (poolNpc) => buildRoomNpcWithCombat(poolNpc, {
       existingNpc: existingByName.get(poolNpc.name),
