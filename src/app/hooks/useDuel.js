@@ -4,6 +4,14 @@ import { applyResult } from "../../features/run.js";
 import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
 import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+import { createTurnStaleCheck } from "./useUndo.js";
+
+export async function openDuelAfterNarration({ act, setDuelPending, isStale }, npc) {
+  await act(`向${npc.name}抱拳邀战，请他切磋一番`, [], { keepUndo: true });
+  if (isStale()) return false;
+  setDuelPending(npc);
+  return true;
+}
 
 export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc }) {
   useEffect(() => {
@@ -17,15 +25,15 @@ export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNp
 export function useDuel({
   act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
   duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
-  captureUndo,
+  captureUndo, turnGenerationRef,
 }) {
   const handleNpcDuel = useCallback(async (npc) => {
+    const isStale = createTurnStaleCheck(turnGenerationRef);
     captureUndo();
     applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name);
-    await act(`向${npc.name}抱拳邀战，请他切磋一番`, [], { keepUndo: true });
-    setDuelPending(npc);
-  }, [act, captureUndo, featureCtxRef, setActiveTarget, setDuelPending]);
+    await openDuelAfterNarration({ act, setDuelPending, isStale }, npc);
+  }, [act, captureUndo, featureCtxRef, setActiveTarget, setDuelPending, turnGenerationRef]);
 
   const confirmDuel = useCallback(() => {
     if (!duelPending) return;
