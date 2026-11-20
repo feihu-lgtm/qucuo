@@ -62,10 +62,11 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
         marginBottom: entry.t === "room" ? 8 : 4,
         fontWeight: entry.t === "room" ? "bold" : "normal",
         textIndent: isDesc ? "2em" : "0",
+        ...(entry.t === "room" ? { textAlign: "center", fontSize: "0.9em", letterSpacing: "0.2em", opacity: 0.85 } : {}),
       }}
     >
       <span style={{ cursor: entry.action ? "pointer" : undefined }} onClick={entry.action ? () => onAction(entry.action) : undefined}>
-        {isDesc ? renderMixed(text, color, isDayMode) : text}
+        {isDesc ? renderMixed(text, color, isDayMode) : entry.t === "room" ? `— ${text} —` : text}
       </span>
     </div>
   );
