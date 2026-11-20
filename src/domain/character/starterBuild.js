@@ -2,7 +2,7 @@ import { random } from "../../core/rng.js";
 import { STARTER_SKILLS } from "../kungfu/starterKungfu.js";
 
 export const SPECIAL_KEYS = ["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"];
-export const SPECIAL_BASE = 2;
+export const SPECIAL_BASE = 0;
 export const SPECIAL_POINTS = 20;
 export const SPECIAL_TOTAL = SPECIAL_KEYS.length * SPECIAL_BASE + SPECIAL_POINTS;
 

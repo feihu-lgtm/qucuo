@@ -1,3 +1,5 @@
+import assert from "node:assert/strict";
+
 export const viewport = { width: 390, height: 693 };
 
 export default async function characterCreate({ page, game }) {
@@ -19,8 +21,15 @@ export default async function characterCreate({ page, game }) {
   await page.getByText("少侠名讳", { exact: true }).waitFor();
   await page.locator(".character-create-card input").first().fill("QA少侠");
   await page.getByRole("button", { name: "下一步：分配七维 ▸" }).click();
+  const continueButton = page.getByRole("button", { name: "选好了 ▸" });
+  await page.getByText("七维分配 · 尚余 20 点", { exact: true }).waitFor();
+  assert.equal(await continueButton.isDisabled(), true);
+  if (process.env.QA_SCREENSHOT_PATH) {
+    await page.screenshot({ path: process.env.QA_SCREENSHOT_PATH });
+  }
   await page.getByRole("button", { name: "随机分配", exact: true }).click();
-  await page.getByRole("button", { name: "选好了 ▸" }).click();
+  assert.equal(await continueButton.isDisabled(), false);
+  await continueButton.click();
   const firstCard = page.locator(".starter-skill-card-list > button").first();
   const skillName = await firstCard.locator("span").first().innerText();
   await firstCard.click();
