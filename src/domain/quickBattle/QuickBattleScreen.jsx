@@ -71,6 +71,25 @@ const QB_CSS = `
     .qb-candgrid{ grid-template-columns:repeat(auto-fill,minmax(84px,1fr)) !important; gap:8px !important; }
     .qb-face.qb-back{ font-size:11px !important; }
   }
+  @media (max-width: 767px){
+    .qb-candgrid{
+      grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+      grid-auto-rows:max-content !important;
+      gap:8px !important;
+    }
+    .qb-candgrid .qb-candidate-card{ min-height:44px !important; }
+    .qb-battle-screen{
+      overflow-x:hidden !important;
+      overflow-y:auto !important;
+      -webkit-overflow-scrolling:touch;
+    }
+  }
+  @media (max-width: 767px) and (max-height: 450px){
+    .qb-candgrid .qb-candidate-card{
+      aspect-ratio:auto !important;
+      height:clamp(96px,32dvh,132px) !important;
+    }
+  }
 `;
 
 export default function QuickBattleScreen({ onExit }) {
@@ -273,6 +292,7 @@ function CandidateCard({ c, picked, disabled, accent, onClick }) {
   const [hover, setHover] = useState(false);
   return (
     <button
+      className="qb-candidate-card"
       onClick={onClick} disabled={disabled}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
@@ -423,7 +443,7 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
   const canSwitch = mode === "team" && battle.allyTeam.some((f, i) => i !== battle.allyIdx && f.combatState.hp[0] > 0);
 
   return (
-    <div style={sx.battleWrap}>
+    <div className="qb-battle-screen" style={sx.battleWrap}>
       {/* 顶栏 */}
       <div style={sx.battleTop}>
         <TextBtn onClick={onQuit}>← 认输退出</TextBtn>
