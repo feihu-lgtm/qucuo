@@ -13,7 +13,7 @@ export default function StatAllocator({ special, remaining, onAdjust, onRandomiz
         {SPECIAL_KEYS.map((key) => (
           <div key={key} style={{ display: "flex", alignItems: "center", gap: 6, border: `1px solid ${theme.border}`, padding: "5px 7px" }}>
             <span style={{ flex: 1, color: theme.text, fontSize: 12 }}>{key}</span>
-            <button type="button" aria-label={`${key}减一`} disabled={special[key] <= 2} onClick={() => onAdjust(key, -1)} style={buttonStyle}>−</button>
+            <button type="button" aria-label={`${key}减一`} disabled={special[key] <= 0} onClick={() => onAdjust(key, -1)} style={buttonStyle}>−</button>
             <span style={{ width: 20, textAlign: "center", color: theme.accent }}>{special[key]}</span>
             <button type="button" aria-label={`${key}加一`} disabled={special[key] >= 10 || remaining <= 0} onClick={() => onAdjust(key, 1)} style={buttonStyle}>+</button>
           </div>

@@ -58,6 +58,22 @@ describe("time advance world rule", () => {
     expect(result.logs.map((entry) => entry.t)).toEqual(["item", "err"]);
   });
 
+  it("keeps zero luck when delivering a forge order", () => {
+    setSeed(42);
+    const state = makeState({
+      flags: ["forge_pending_0_0_-"],
+      varTree: { 角色: {} },
+    });
+    const result = timeAdvanceRule.run(state, {
+      firstRun: false,
+      previousDeps: [29, state.room.npcs],
+    });
+
+    expect(result.changes.inv(state.inv)).toMatchObject([
+      { name: "定制长剑", quality: "白" },
+    ]);
+  });
+
   it("preserves unrelated flags and does not write unchanged anger state", () => {
     const state = makeState({
       time: 12,
