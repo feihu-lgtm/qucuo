@@ -67,6 +67,15 @@ describe("收复雪豹", () => {
     expect(state.flags.includes("snow_spirit_duel")).toBe(hostile);
   });
 
+  it.each(["黑风寨山贼", "熊山野兽", "unknown", undefined])("uses the explicit encounter bandit tag, not a name heuristic (%s)", (tag) => {
+    const state = active();
+    const npc = { name: "拦路山贼", id: "generated_42", tag, levelCap: 1 };
+    apply(state, settleNpcDuel(state, npc, { outcome: "lose", rng: () => 1 }));
+    expect(state.flags).not.toContain("snow_spirit_duel");
+    apply(state, settleNpcDuel(state, npc, { outcome: "win", rng: () => 1 }));
+    expect(state.flags.includes("snow_spirit_duel")).toBe(tag === "黑风寨山贼");
+  });
+
   it("cures only medicine gifts, not food, wrong NPC or inactive quest", () => {
     const state = active();
     for (const item of ["老孙饭馆的糌粑", "金疮药"]) {

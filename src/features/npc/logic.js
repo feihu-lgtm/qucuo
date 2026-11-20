@@ -406,7 +406,7 @@ export function settleNpcDuel(state, npc, {
   const changes = {};
   const logs = [];
 
-  if (outcome === "win" && (npc.hostile || state.varTree?.角色?.[npc.name]?.生气状态?.escalated) && snowQuestActive(state)) {
+  if (outcome === "win" && (npc.hostile || npc.tag === "黑风寨山贼" || state.varTree?.角色?.[npc.name]?.生气状态?.escalated) && snowQuestActive(state)) {
     addChange(changes, working, "flags", (f) => [...new Set([...f, "snow_spirit_duel"])]);
   }
   if (Array.isArray(battleLog) && battleLog.length) {
