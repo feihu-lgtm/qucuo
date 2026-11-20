@@ -10,7 +10,10 @@ function actionForKey(key) {
 export function applyResult(ctx, result, { turn = getTurnContext(), feature, background = false } = {}) {
   const action = typeof result === "function";
   feature ||= result.feature || result.settle || result.kind || "本地操作";
-  const trace = turn || turnMonitor.start(feature, { source: background ? "background" : "button", background });
+  const trace = turn || turnMonitor.start(feature, {
+    source: background ? "background" : "button", background,
+    commandId: background ? "pigeonReply" : "actLocal",
+  });
   const inRules = getTurnContext() === trace && trace.inRules;
   if (!inRules) {
     if (action || !trace.nodes.some((node) => node.layer === "feature")) turnMonitor.add(trace, "feature", feature);

@@ -52,7 +52,7 @@ export default function TraceViewer({ theme, onClose, onReport }) {
         {trees.map((turn) => (
           <details key={turn.id} style={{ borderTop: `1px solid ${theme.border}`, padding: "8px 0" }}>
             <summary style={{ cursor: "pointer", overflowWrap: "anywhere" }}>
-              {turn.background ? "后台 · " : ""}{turn.cmd} · {turn.phase} {fmtMs(turn.totalMs)}
+              {turn.background ? "后台 · " : ""}{turn.cmd} · {turn.queued && turn.commandId === "rollback" ? "回滚已排队" : turn.phase} {fmtMs(turn.totalMs)}
             </summary>
             <ol style={{ margin: "8px 0", paddingInlineStart: 24 }}>
               {turn.nodes.map((node) => (

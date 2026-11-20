@@ -47,7 +47,7 @@ export function useAiInspect({
   const inspectItem = useCallback(async (kind, name, extra, itemObj, opts = {}) => {
     if (inspecting) return;
     const kindLabel = INSPECT_KIND_LABEL[kind] || "物品";
-    const turn = startTrace(`查看${kindLabel}：${name}`, undefined, { source: "button" });
+    const turn = startTrace(`查看${kindLabel}：${name}`, undefined, { source: "button", commandId: "inspect" });
     // worldLook：玩家在游戏世界里端详自己的东西（背包/武学），走主叙事口吻的端详、
     // 算 1 回合时间、并写一张公共小纸条。描述文本本身可以吃缓存（后台可能已预跑好），
     // 但"算时间+写纸条"这两个副作用只跟"玩家真的点了查看"这个动作绑定，跟缓存无关——
@@ -154,25 +154,26 @@ export function useAiInspect({
           // 每件预跑单独开一条 trace，推到顶栏「🧭全流程日志」面板（不碰主叙事）。
           // 玩家/调试时能看到后台正在预热什么、跑好没、耗时多久、以及喂给AI的完整prompt。
           const jobLabel = `${job.kind === "skill" ? "武学" : "物品"}「${job.name}」`;
-          const _pw = startTrace(`后台预跑端详·${jobLabel}`, `[后台预跑] ${jobLabel} 描述生成`, { background: true });
-          traceStep(_pw, "后台预跑", "info", `开始预热 ${jobLabel} 的端详描述`);
-          try {
-            const runPrewarm = () => genInspectTextRef.current(job.kind, job.name, job.extra, job.itemObj, _pw);
-            const text = dispatchCommand
-              ? await dispatchCommand("inspectPrewarm", runPrewarm)
-              : await runPrewarm();
-            if (text && !stopped) {
-              setCachedInspect(job.kind, job.name, job.extra, job.itemObj, text);
-              traceStep(_pw, "写入缓存", "pass", `${jobLabel} 描述已备好，点查看即秒显示`);
-              endTrace(_pw, `预热完成：${jobLabel}`);
-            } else {
-              traceStep(_pw, "写入缓存", "skip", "AI 返回空，未写缓存，下轮再试");
-              endTrace(_pw, `预热未成（空响应）：${jobLabel}`);
+          const runPrewarm = async () => {
+            const _pw = startTrace(`后台预跑端详·${jobLabel}`, `[后台预跑] ${jobLabel} 描述生成`, { background: true, commandId: "inspectPrewarm" });
+            traceStep(_pw, "后台预跑", "info", `开始预热 ${jobLabel} 的端详描述`);
+            try {
+              const text = await genInspectTextRef.current(job.kind, job.name, job.extra, job.itemObj, _pw);
+              if (text && !stopped) {
+                setCachedInspect(job.kind, job.name, job.extra, job.itemObj, text);
+                traceStep(_pw, "写入缓存", "pass", `${jobLabel} 描述已备好，点查看即秒显示`);
+                endTrace(_pw, `预热完成：${jobLabel}`);
+              } else {
+                traceStep(_pw, "写入缓存", "skip", "AI 返回空，未写缓存，下轮再试");
+                endTrace(_pw, `预热未成（空响应）：${jobLabel}`);
+              }
+            } catch (e) {
+              traceStep(_pw, "AI调用", "fail", `预跑失败：${e?.message || e}`);
+              turnMonitor.transition(_pw, PHASE.ERROR, `预热失败：${jobLabel}`);
             }
-          } catch (e) {
-            traceStep(_pw, "AI调用", "fail", `预跑失败：${e?.message || e}`);
-            turnMonitor.transition(_pw, PHASE.ERROR, `预热失败：${jobLabel}`);
-          }
+          };
+          if (dispatchCommand) await dispatchCommand("inspectPrewarm", runPrewarm);
+          else await runPrewarm();
           prewarmingRef.current = false;
         }
       }

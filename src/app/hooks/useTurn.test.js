@@ -1,4 +1,5 @@
 import { expect, it, vi } from "vitest";
+import { createScheduler } from "../../core/commandScheduler.js";
 import { gameActions, gameStore, initGameStore } from "../../core/gameStore.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 import { playTurn } from "../../engine/playTurn.js";
@@ -32,9 +33,10 @@ it("keeps the key inspection's estate announcement open until its narration comm
   const featureCtxRef = { current: null };
   const waitTimerRef = { current: null };
   const state = gameStore.getState();
+  const commands = createScheduler();
   useTurn({
     ...state, apiCfg: {}, preset: {}, convo: [], addLog: vi.fn(),
-    featureCtxRef, waitTimerRef, turnGenerationRef: { current: 0 },
+    featureCtxRef, waitTimerRef, turnGenerationRef: { current: 0 }, dispatchCommand: commands.dispatch,
     pendDirRef: {}, outerDepartRef: {}, pickupJudgmentRef: {}, collectGrantedRef: {},
     varTreeRef: { current: {} }, timeRef: { current: 1 },
     setInput: vi.fn(), setCmdHistory: vi.fn(), setHistIdx: vi.fn(), setLoading: vi.fn(),

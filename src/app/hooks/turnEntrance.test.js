@@ -61,7 +61,13 @@ it("enumerates all hook handler keys and checks gameplay handlers enter the moni
 function directMutations(source) {
   const presentation = new Set(["setCharacterPageTarget", "setActiveNpcMenu", "setActiveItemMenu"]);
   const found = [];
-  parse(source, { CallExpression({ callee }) {
+  parse(source, { CallExpression(node) {
+    const { callee } = node;
+    for (let child = node; child.parent; child = child.parent) {
+      const parent = child.parent;
+      if (parent.type === "CallExpression" && parent.arguments[1] === child
+        && parent.callee.type === "MemberExpression" && parent.callee.property.name === "dispatchCommand") return;
+    }
     const name = callee.type === "MemberExpression" ? callee.property.name ?? callee.property.value : callee.name;
     const owner = callee.object?.name;
     if (owner === "localStorage" && name === "setItem") return;
@@ -74,6 +80,7 @@ function directMutations(source) {
 it("keeps inline gameplay mutations out of overlay and host components", () => {
   const fixture = '<Screen onFinish={() => { if (won) ctx.setChar(update); gameActions.setInv(items); }} />';
   expect(directMutations(fixture)).toEqual(["setChar", "setInv"]);
+  expect(directMutations('<Screen onSave={() => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))} />')).toEqual([]);
   for (const path of ["../../ui/panels/GlobalOverlays.jsx", "../OverlayHost.jsx"]) {
     expect(directMutations(readFileSync(new URL(path, import.meta.url), "utf8")), path).toEqual([]);
   }

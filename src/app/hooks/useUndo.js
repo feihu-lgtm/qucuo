@@ -23,9 +23,10 @@ export function createUndoController({
 
   const rollbackOneStep = () => {
     const snapshot = undoSnapshotRef.current;
-    const turn = turnMonitor.start("回滚一步", {
-      source: "button", parentId: undoOwners.get(snapshot),
+    const turn = getTurnContext() || turnMonitor.start("回滚一步", {
+      source: "button", commandId: "rollback",
     });
+    turn.parentId = undoOwners.get(snapshot) ?? turn.parentId;
     if (!snapshot) {
       addLog([{ t: "sys", text: "  没有可回滚的上一步。" }]);
       turnMonitor.finish(turn, "没有可回滚的上一步");

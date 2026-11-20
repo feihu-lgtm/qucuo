@@ -36,12 +36,17 @@ function restoreSnapshot(snapshot, refs = {}) {
 }
 
 export async function playTurn(ctx, cmd, opts = {}) {
-  const trace = ctx._trace || turnMonitor.start(cmd, { source: "engine" });
+  const trace = ctx._trace || turnMonitor.start(cmd, { source: "engine", commandId: "turnCommit" });
+  const setCommandPhase = (phase) => {
+    ctx.setCommandPhase?.(phase, trace);
+    const next = { machine: PHASE.MACHINE, ai: PHASE.AI_WAIT, commit: PHASE.COMMIT }[phase];
+    if (trace.phase !== next) turnMonitor.transition(trace, next);
+  };
   const stale = (error) => {
-    turnMonitor.transition(trace, PHASE.DISCARDED, "回滚后收到过期结果");
+    turnMonitor.transition(trace, PHASE.DISCARDED, "收到过期结果");
     return { ok: false, stale: true, ...(error && { error }) };
   };
-  ctx.setCommandPhase?.("machine");
+  setCommandPhase("machine");
   let snapshot;
   try {
     snapshot = captureSnapshot(ctx.refs);
@@ -49,16 +54,11 @@ export async function playTurn(ctx, cmd, opts = {}) {
     turnMonitor.add(trace, "feature", "engine.runTurn");
     turnMonitor.add(trace, "domain", "整理世界状态与叙事上下文");
     ctx.beforeRun?.();
-    ctx.setCommandPhase?.("ai");
+    setCommandPhase("ai");
     const turn = await runTurn({ ...ctx, _trace: trace }, cmd, opts);
     if (turn.stale || ctx.isStale?.()) return stale();
-    ctx.setCommandPhase?.("commit");
-    withTurnContext(trace, () => {
-      if (ctx.commitRound) {
-        turnMonitor.transition(trace, PHASE.COMMIT);
-        ctx.commitRound(ctx.commitDeps(turn));
-      } else commitRound({ ...ctx.commitDeps(turn), _trace: trace });
-    });
+    setCommandPhase("commit");
+    withTurnContext(trace, () => (ctx.commitRound || commitRound)({ ...ctx.commitDeps(turn), _trace: trace }));
     await Promise.resolve();
     if (!ctx.deferMonitorFinish) turnMonitor.finish(trace, "行动完成");
     return { ok: true, turn };

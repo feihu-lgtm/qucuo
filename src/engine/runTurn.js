@@ -43,7 +43,7 @@ export function createExtractionState(ctx, deps) {
 }
 
 export async function runTurn(ctx, cmd, opts = {}) {
-  const trace = ctx._trace || turnMonitor.start(cmd, { source: "engine" });
+  const trace = ctx._trace || turnMonitor.start(cmd, { source: "engine", commandId: "turnCommit" });
   try {
     const result = await runTurnSteps({ ...ctx, _trace: trace }, cmd, opts);
     if (!ctx._trace) {

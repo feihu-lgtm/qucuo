@@ -21,7 +21,7 @@ export function createWorldRules(rules, { getState, applyResult, ctx = {} }) {
     try {
       checkRules((result, rule) => {
         if (!trace && result == null) return;
-        trace ||= turnMonitor.start("世界规则", { source: "world-rules", background: true });
+        trace ||= turnMonitor.start("世界规则", { source: "world-rules", background: true, commandId: "worldRules" });
         turnMonitor.add(trace, "rules", rule.id, {
           status: result == null ? "skip" : "pass",
           detail: result == null ? "无变更" : Object.keys(result.changes || result).join("、"),

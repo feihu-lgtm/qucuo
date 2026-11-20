@@ -52,14 +52,16 @@ export function useTurn({
       const localCommand = isTalkCommand ? null : parseLocalCommand(commandText, { ...gameStore.getState(), isTalk: isTalkCommand, convo }, { surface: "web" });
       const commandId = classifyActCommand({ rawCmd: commandText, opts, interactMode, localCommand, isMove: !!parseDir(commandText) });
       setInput("");
-      return dispatchCommand(commandId, () => actRef.current(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: commandText });
+      return dispatchCommand(commandId, () => actRef.current(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: opts.displayCmd || commandText });
     }
     const cmd = rawCmd.trim(), isStale = createTurnStaleCheck(turnGenerationRef);
-    const parent = opts.turn || getTurnContext();
-    const _trace = parent?.phase === PHASE.MACHINE && !parent.background ? parent : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading });
+    const parent = getTurnContext() || opts.turn;
+    const _trace = parent?.phase === PHASE.MACHINE && (!parent.background || parent.commandId === "actWhisper")
+      ? parent
+      : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading, commandId: "actRouter" });
     if (parent === _trace) _trace.awaitingSettlement = true;
     const applyLocal = (result, feature) => applyResult(featureCtxRef.current, result, { turn: _trace, feature });
-    let summary, queued = false;
+    let summary;
     try {
     const stopAutoTravel = () => {
       if (!autoTravelRef.current) return;
@@ -154,7 +156,6 @@ export function useTurn({
       return;
     }
 
-    turnMonitor.activate(_trace);
     // 指令显示：默认显示 `> ${cmd}`；但某些内部指令（如战斗结算发给AI写战报的
     if (!opts.silentCmd) {
       addLog([{ t: "cmd", text: `> ${opts.displayCmd || cmd}` }, ...extraReplies]);
@@ -407,12 +408,12 @@ export function useTurn({
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
     } catch (error) {
-      if (_trace.totalMs == null) turnMonitor.transition(_trace, PHASE.ERROR, String(error));
+      if (_trace.totalMs == null && !isStale()) turnMonitor.transition(_trace, PHASE.ERROR, String(error));
       throw error;
     } finally {
-      if (!queued) await Promise.resolve();
-      if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "回滚后收到过期结果");
-      else if (!queued) turnMonitor.finish(_trace, summary);
+      await Promise.resolve();
+      if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
+      else turnMonitor.finish(_trace, summary);
     }
   }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
   actRef.current = act;

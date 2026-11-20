@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { CATEGORY, COMMANDS, HOOK_COMMANDS, INVENTORY_COMMAND_IDS } from "./commands.js";
 import { createScheduler, decide } from "./commandScheduler.js";
+import { formatTurnStatus, getTurnContext, PHASE, turnMonitor } from "./turnMonitor.js";
 import { classifyCliCommand } from "../../cli/runner.mjs";
 
 const categories = Object.values(CATEGORY);
@@ -105,7 +106,7 @@ describe("command scheduler", () => {
     expect(COMMANDS.prayer.label).toBe("祈福");
     expect(COMMANDS.book.label).toBe("书籍");
     expect(COMMANDS.duel.label).toBe("决斗");
-    expect(Object.values(HOOK_COMMANDS.useDuel)).toEqual(["duel", "duel", "duel", "duel"]);
+    expect(Object.values(HOOK_COMMANDS.useDuel)).toEqual(["duel", "duel", "duel", "duel", "duel"]);
   });
 
   it("returns the rejection text for SettingsPanel alerts", async () => {
@@ -341,10 +342,37 @@ describe("command scheduler", () => {
     expect(scheduler.queue.map(entry => entry.id)).toEqual(["rollback", "actLocal"]);
     expect(state.rollbackBlocked).toBe(false);
     expect(rollbackFn).not.toHaveBeenCalled();
+    const pending = turnMonitor.getSnapshot();
+    const rollbackTree = pending.trees.find((tree) => tree.commandId === "rollback");
+    expect(rollbackTree).toMatchObject({
+      category: CATEGORY.SYSTEM, queued: true, parentId: pending.current.id,
+      nodes: expect.arrayContaining([expect.objectContaining({ kind: "queued", label: "回滚已排队" })]),
+    });
+    expect(formatTurnStatus(pending).label).toContain("回滚已排队");
 
     finishLeg();
     expect(await queuedLocal).toEqual({ status: "cleared" });
     await Promise.all([leg, rollback]);
     expect(rollbackFn).toHaveBeenCalledOnce();
+    expect(turnMonitor.getTrees().find((tree) => tree.id === rollbackTree.id)).toMatchObject({
+      queued: false, phase: PHASE.DONE,
+    });
+    expect(formatTurnStatus(turnMonitor.getSnapshot()).label).not.toContain("回滚已排队");
+  });
+
+  it("records a stopped command as discarded only when its late result arrives", async () => {
+    const scheduler = createScheduler();
+    const gate = Promise.withResolvers();
+    let trace;
+    const running = scheduler.dispatch("typedAction", () => {
+      trace = getTurnContext();
+      return gate.promise;
+    });
+    expect(scheduler.stopRunning()).toBe(true);
+    await expect(running).resolves.toEqual({ status: "stopped" });
+    expect(trace.phase).toBe(PHASE.MACHINE);
+    gate.resolve();
+    await gate.promise;
+    expect(trace).toMatchObject({ commandId: "typedAction", category: CATEGORY.AI_TURN, phase: PHASE.DISCARDED });
   });
 });

@@ -44,7 +44,7 @@ export function pipelineTabs(p) {
 
 export function formatTrace(turn, { full = true } = {}) {
   return [
-    `=== ${turn.id} ${turn.raw} | ${turn.phases.join(" → ")} | ${fmtMs(turn.totalMs)} ===`,
+    `=== ${turn.id} ${turn.raw} | ${turn.phases.join(" → ")} | ${fmtMs(turn.totalMs)}${turn.commandId ? ` | ${turn.commandId} · ${turn.category}` : ""} ===`,
     ...turn.nodes.flatMap((node) => [
       `  [${node.layer}] ${node.label}${node.model ? ` · ${node.model}` : ""}${node.detail ? `：${node.detail}` : ""}${node.durationMs != null ? ` (${fmtMs(node.durationMs)})` : ""}`,
       ...(full && node.pipeline ? Object.entries(pipelineTabs(node.pipeline)).map(([tab, content]) => `[${tab}]\n${content ?? ""}`) : []),

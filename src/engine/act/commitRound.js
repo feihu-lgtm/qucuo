@@ -1,5 +1,4 @@
 import { step as traceStep } from "../../infra/actionTrace.js";
-import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 import { applyMvuCommands } from "../../domain/prompt/mvu.js";
 import { QUCUO_MAP, getMapNode } from "../../domain/map/qucuoMap.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
@@ -29,7 +28,6 @@ const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 两阶段 pipeline 的提交段：把本轮解析结果（d.p / d.mvuCommands / d.dealResult）
 // 写回世界状态；提交失败由 playTurn 还原事务快照。
 export function commitRound(d) {
-  if (d._trace) turnMonitor.transition(d._trace, PHASE.COMMIT);
   if (d.knowledgeTree) {
     if (d.knowledgeTreeBase) {
       d.setVarTree((latest) => applyKnowledgeTreeDiff(d.knowledgeTreeBase, d.knowledgeTree, latest));

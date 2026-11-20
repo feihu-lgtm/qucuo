@@ -265,7 +265,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       const preset = state.preset || DEFAULT_PRESETS[0];
       const parent = opts.turn || lineTurn;
       const trace = parent?.phase === PHASE.MACHINE
-        ? parent : turnMonitor.start(cmd, { source: "cli", parentId: parent?.id });
+        ? parent : turnMonitor.start(cmd, { source: "cli", parentId: parent?.id, commandId: "cliFallback" });
       const lastAiText = [...(state.convo || [])].reverse().find((message) => message.role === "assistant")?.content || "";
       const apiConfig = { ...config, model: apiCfgOverrides?.model || config.model };
       const recallInput = {
@@ -455,10 +455,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     return status;
   }
 
-  async function runLineCommand(rawLine) {
-    const line = String(rawLine).trim();
-    if (!line || (line.startsWith("#") && !line.startsWith("#testscript"))) return 0;
-    const command = classifyCliCommand(line);
+  async function runLineCommand(line, command) {
     if (decide(command, null) !== "run") throw new Error(`CLI command cannot run sequentially: ${command.id}`);
 
     pendingTurn = Promise.resolve(0);
@@ -867,11 +864,12 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       turnMonitor.getTrees().slice(0, count).forEach((turn) => emit(formatTrace(turn, { full: false })));
       return 0;
     }
-    const trace = turnMonitor.start(line, { source: "cli" });
+    const command = classifyCliCommand(line);
+    const trace = turnMonitor.start(line, { source: "cli", commandId: command.id });
     lineTurn = trace;
     let status = 0;
     try {
-      status = await withTurnContext(trace, () => runLineCommand(rawLine));
+      status = await withTurnContext(trace, () => runLineCommand(line, command));
       for (let pass = 0; pass < 5; pass += 1) {
         worldRules?.check(trace);
         if (!pendingTurnCount) break;
