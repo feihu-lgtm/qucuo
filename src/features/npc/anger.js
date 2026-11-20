@@ -12,10 +12,6 @@ export function recordNpcAttempt(varTree, npcName, attempt) {
   };
 }
 
-export function recordInitialStealAttempt(angryState, now) {
-  return recordAngerAttempt(angryState, { kind: "steal", detail: "偷窃未遂", time: now });
-}
-
 const ACTIONS = {
   trade: { command: "交易", settle: "想与他交易" },
   learn: { command: "求教", settle: "想向他求教武艺" },

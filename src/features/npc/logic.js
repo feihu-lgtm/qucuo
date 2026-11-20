@@ -15,7 +15,7 @@ import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
 import { activeCompanionKey, companionKeyByName, unlockImportedCompanion, unlockPearl, unlockSnowLeopard } from "../../domain/companion/companion.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
-import { appeaseAngryNpc, recordInitialStealAttempt, recordNpcAttempt } from "./anger.js";
+import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 
 export { appeaseAngryNpc };
 
@@ -301,7 +301,7 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
               [npc.name]: {
                 ...current,
                 好感度: Math.max(0, (current.好感度 || 0) - result.favorabilityLoss),
-                生气状态: recordInitialStealAttempt(result.angryState, now),
+                生气状态: result.angryState,
               },
             },
           };

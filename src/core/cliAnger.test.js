@@ -19,12 +19,16 @@ afterEach(() => {
 describe("CLI angry NPC appeasement", () => {
   it("routes a failed steal into an AI-judged trade appeasement without opening a shop", async () => {
     const output = [];
+    const prompts = [];
     let aiCalls = 0;
     const ai = createMockAi([
       `{"output":["他沉默片刻，怒意渐渐平息。"]}
 <mvu>_.set('角色.杂货商人.生气解除', true);
 _.add('角色.杂货商人.好感度', 3);</mvu>`,
-    ], { onRequest: () => { aiCalls += 1; } });
+    ], { onRequest: (messages) => {
+      aiCalls += 1;
+      prompts.push(messages.map((message) => message.content || "").join("\n"));
+    } });
     const session = createSession({ out: (text) => output.push(text), cwd: tempDir, ai });
 
     await session.runLine(":new");
@@ -41,13 +45,14 @@ _.add('角色.杂货商人.好感度', 3);</mvu>`,
     expect(output.join("\n")).not.toContain("此处没有 杂货商人");
     expect(session.store.getState().varTree.角色.杂货商人.生气状态.active).toBe(true);
     expect(session.store.getState().varTree.角色.杂货商人.生气状态.attempts)
-      .toMatchObject([{ kind: "steal", detail: "偷窃未遂" }]);
+      .toEqual([]);
 
     await session.runLine("交易 杂货商人");
 
     expect(session.store.getState().varTree.角色.杂货商人.生气状态.active).toBe(false);
     expect(session.store.getState().varTree.角色.杂货商人.生气状态.resolvedBy).toBe("persuasion");
     expect(aiCalls).toBe(1);
+    expect(prompts.join("\n")).not.toContain("此前已尝试：偷窃");
     expect(output.join("\n")).not.toContain("已开张");
   });
 });
