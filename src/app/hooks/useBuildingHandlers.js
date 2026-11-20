@@ -33,7 +33,7 @@ import {
 import { joinSect } from "../../features/sect/logic.js";
 import { auctionWin } from "../../features/auction/logic.js";
 
-export function useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef }) {
+export function useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef }) {
   const handleBuildingInn = useCallback((cost, roomType) => {
     const result = restAtInn(gameStore.getState(), {
       cost,
@@ -66,7 +66,20 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
   }, [activeBuilding]);
 
   const handleTravel = useCallback((dest, price) => {
-    const result = travelByCarriage(gameStore.getState(), dest, price);
+    const state = gameStore.getState();
+    const roomMap = {
+      ...roomMapRef.current,
+      ...(state.room?.name ? {
+        [state.room.name]: {
+          items: [...(state.room.items || [])],
+          npcs: [...(state.room.npcs || [])],
+        },
+      } : {}),
+    };
+    const result = travelByCarriage(state, dest, price, { roomMap });
+    if (result.changes?.room && state.room?.name) {
+      roomMapRef.current[state.room.name] = roomMap[state.room.name];
+    }
     applyResult(featureCtxRef.current, result);
     if (result.changes) setActiveBuilding(null);
   }, []);

@@ -235,7 +235,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef });
 
-  const buildingHandlers = useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef });
+  const buildingHandlers = useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef });
 
   const craftingAI = useCraftingAI({
     gambleTalkCtx, setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
