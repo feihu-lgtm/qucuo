@@ -12,10 +12,11 @@ const btnStyle = {
 };
 const dimBtn = { ...btnStyle, color: "#8f8a7c", borderColor: "#1a1a2a" };
 
-export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, zoneTheme, onClose, addLog }) {
+export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, zoneTheme, onClose, addLog, dispatchCommand }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const home = getHomestead(roomName);
   const [activeFeature, setActiveFeature] = useState(null);
+  const runCommand = (id, fn) => dispatchCommand ? dispatchCommand(id, fn) : fn();
 
   if (!home) return null;
 
@@ -49,27 +50,27 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, z
           </>
         )}
 
-        {activeFeature === "cooking" && <CookingFeature inv={inv} setInv={setInv} char={char} setChar={setChar} addLog={addLog} />}
-        {activeFeature === "wine" && <WineFeature roomName={roomName} inv={inv} setInv={setInv} addLog={addLog} />}
-        {activeFeature === "garden" && <GardenFeature roomName={roomName} inv={inv} setInv={setInv} addLog={addLog} />}
-        {activeFeature === "pigeon" && <PigeonFeature addLog={addLog} />}
-        {activeFeature === "fireplace" && <RestFeature label="壁炉" desc="生起火来，松木噼啪响。暖意从脚底漫上来。" hpRestore={20} char={char} setChar={setChar} addLog={addLog} />}
-        {activeFeature === "telescope" && <TelescopeFeature addLog={addLog} />}
-        {activeFeature === "training" && <RestFeature label="练功场" desc="对着木桩打了一套拳，指节磕得生疼，但筋骨松开了。" hpRestore={10} char={char} setChar={setChar} addLog={addLog} />}
-        {activeFeature === "study" && <RestFeature label="书房" desc="翻了几页杂书，读到一句有意思的，抄在掌心。" hpRestore={5} char={char} setChar={setChar} addLog={addLog} />}
-        {activeFeature === "guqin" && <RestFeature label="琴桌" desc="拨了两下断弦，嗡的一声，猫都跑了。" hpRestore={5} char={char} setChar={setChar} addLog={addLog} />}
-        {activeFeature === "meditation" && <RestFeature label="佛堂" desc="在蒲团上坐了一炷香。香灰落下来，心也落下来。" hpRestore={30} char={char} setChar={setChar} addLog={addLog} />}
-        {activeFeature === "library" && <RestFeature label="书房" desc="地方志里翻到一段前朝旧事，蜀王庄原来是这么来的。" hpRestore={10} char={char} setChar={setChar} addLog={addLog} />}
+        {activeFeature === "cooking" && <CookingFeature inv={inv} setInv={setInv} char={char} setChar={setChar} addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "wine" && <WineFeature roomName={roomName} inv={inv} setInv={setInv} addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "garden" && <GardenFeature roomName={roomName} inv={inv} setInv={setInv} addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "pigeon" && <PigeonFeature addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "fireplace" && <RestFeature label="壁炉" desc="生起火来，松木噼啪响。暖意从脚底漫上来。" hpRestore={20} char={char} setChar={setChar} addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "telescope" && <TelescopeFeature addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "training" && <RestFeature label="练功场" desc="对着木桩打了一套拳，指节磕得生疼，但筋骨松开了。" hpRestore={10} char={char} setChar={setChar} addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "study" && <RestFeature label="书房" desc="翻了几页杂书，读到一句有意思的，抄在掌心。" hpRestore={5} char={char} setChar={setChar} addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "guqin" && <RestFeature label="琴桌" desc="拨了两下断弦，嗡的一声，猫都跑了。" hpRestore={5} char={char} setChar={setChar} addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "meditation" && <RestFeature label="佛堂" desc="在蒲团上坐了一炷香。香灰落下来，心也落下来。" hpRestore={30} char={char} setChar={setChar} addLog={addLog} runCommand={runCommand} />}
+        {activeFeature === "library" && <RestFeature label="书房" desc="地方志里翻到一段前朝旧事，蜀王庄原来是这么来的。" hpRestore={10} char={char} setChar={setChar} addLog={addLog} runCommand={runCommand} />}
       </div>
     </div>
   );
 }
 
-function CookingFeature({ inv, setInv, char, setChar, addLog }) {
+function CookingFeature({ inv, setInv, char, setChar, addLog, runCommand }) {
   const invNames = inv.map(it => typeof it === "string" ? it : it?.name);
   const canCook = (r) => r.ingredients.every(ing => invNames.includes(ing));
 
-  const cook = (recipe) => {
+  const cook = (recipe) => runCommand("homesteadCook", () => {
     const nextInv = [...inv];
     for (const ing of recipe.ingredients) {
       const idx = nextInv.findIndex(it => (typeof it === "string" ? it : it?.name) === ing);
@@ -78,7 +79,7 @@ function CookingFeature({ inv, setInv, char, setChar, addLog }) {
     nextInv.push({ name: recipe.result, category: "misc", quality: "绿", desc: `烹饪所得。${recipe.buff}，持续${recipe.duration}回合。` });
     setInv(nextInv);
     addLog?.({ text: `【烹饪】你生火做饭，炮制出一份「${recipe.result}」。${recipe.buff}。`, type: "system" });
-  };
+  });
 
   return (
     <div>
@@ -99,14 +100,14 @@ function CookingFeature({ inv, setInv, char, setChar, addLog }) {
   );
 }
 
-function WineFeature({ roomName, inv, setInv, addLog }) {
+function WineFeature({ roomName, inv, setInv, addLog, runCommand }) {
   const [cellar, setCellar] = useState(() => loadWineCellar(roomName));
   const invNames = inv.map(it => typeof it === "string" ? it : it?.name);
   const now = Date.now();
 
   const persist = (items) => { setCellar(items); saveWineCellar(roomName, items); };
 
-  const brew = (recipe) => {
+  const brew = (recipe) => runCommand("homesteadWine", () => {
     const ok = recipe.ingredients.every(ing => invNames.includes(ing));
     if (!ok) return;
     const nextInv = [...inv];
@@ -117,16 +118,16 @@ function WineFeature({ roomName, inv, setInv, addLog }) {
     setInv(nextInv);
     persist([...cellar, { recipe: recipe.id, result: recipe.result, buff: recipe.buff, note: recipe.note, readyAt: now + recipe.ageTime * 60000 }]);
     addLog?.({ text: `【酿酒】你把${recipe.ingredients.join("、")}封进坛子，搁在窖里。${recipe.ageTime}分钟后可取。`, type: "system" });
-  };
+  });
 
-  const collect = (idx) => {
+  const collect = (idx) => runCommand("homesteadWine", () => {
     const item = cellar[idx];
     if (!item || item.readyAt > now) return;
     const next = [...cellar]; next.splice(idx, 1);
     persist(next);
     setInv([...inv, { name: item.result, category: "misc", quality: "蓝", desc: `${item.note} ${item.buff}` }]);
     addLog?.({ text: `【酒窖】你起开泥封，「${item.result}」成了。${item.note}`, type: "system" });
-  };
+  });
 
   return (
     <div>
@@ -165,26 +166,26 @@ function WineFeature({ roomName, inv, setInv, addLog }) {
   );
 }
 
-function GardenFeature({ roomName, inv, setInv, addLog }) {
+function GardenFeature({ roomName, inv, setInv, addLog, runCommand }) {
   const [garden, setGarden] = useState(() => loadGarden(roomName));
   const now = Date.now();
   const persist = (items) => { setGarden(items); saveGarden(roomName, items); };
 
-  const plant = (slot) => {
+  const plant = (slot) => runCommand("homesteadGarden", () => {
     if (garden.length >= 3) return;
     if (garden.some(g => g.id === slot.id)) return;
     persist([...garden, { id: slot.id, yield: slot.yield, readyAt: now + slot.growTime * 60000 }]);
     addLog?.({ text: `【菜畦】你翻土下种，${slot.note}`, type: "system" });
-  };
+  });
 
-  const harvest = (idx) => {
+  const harvest = (idx) => runCommand("homesteadGarden", () => {
     const g = garden[idx];
     if (!g || g.readyAt > now) return;
     const next = [...garden]; next.splice(idx, 1);
     persist(next);
     setInv([...inv, { name: g.yield, category: "misc", quality: "白", desc: "自家菜畦种的。" }]);
     addLog?.({ text: `【菜畦】你拔出一把「${g.yield}」，带着泥，新鲜。`, type: "system" });
-  };
+  });
 
   return (
     <div>
@@ -225,7 +226,7 @@ function GardenFeature({ roomName, inv, setInv, addLog }) {
   );
 }
 
-function PigeonFeature({ addLog }) {
+function PigeonFeature({ addLog, runCommand }) {
   const [sent, setSent] = useState(false);
   return (
     <div>
@@ -234,7 +235,7 @@ function PigeonFeature({ addLog }) {
         笼门上刻着一行小字：「急事才放，鸽子也累。」
       </div>
       {!sent ? (
-        <span onClick={() => { setSent(true); addLog?.({ text: "【鸽子笼】你解下一只灰鸽，脚环上拴了纸条，往天上一抛。鸽子扑棱棱飞远了。", type: "system" }); }} style={btnStyle}>
+        <span onClick={() => runCommand("homesteadLeisure", () => { setSent(true); addLog?.({ text: "【鸽子笼】你解下一只灰鸽，脚环上拴了纸条，往天上一抛。鸽子扑棱棱飞远了。", type: "system" }); })} style={btnStyle}>
           🕊 放飞信鸽
         </span>
       ) : (
@@ -244,7 +245,7 @@ function PigeonFeature({ addLog }) {
   );
 }
 
-function TelescopeFeature({ addLog }) {
+function TelescopeFeature({ addLog, runCommand }) {
   const [looked, setLooked] = useState(false);
   const sights = [
     "山谷里起了雾，什么都看不见。",
@@ -258,7 +259,7 @@ function TelescopeFeature({ addLog }) {
         铜制望远镜架在窗台上，镜片擦得还算干净。正对山谷，视野极好。
       </div>
       {!looked ? (
-        <span onClick={() => { setLooked(true); addLog?.({ text: `【望远镜】你凑上去看了一眼——${sights[Math.floor(random() * sights.length)]}`, type: "system" }); }} style={btnStyle}>
+        <span onClick={() => runCommand("homesteadLeisure", () => { setLooked(true); addLog?.({ text: `【望远镜】你凑上去看了一眼——${sights[Math.floor(random() * sights.length)]}`, type: "system" }); })} style={btnStyle}>
           🔭 远眺
         </span>
       ) : (
@@ -268,17 +269,17 @@ function TelescopeFeature({ addLog }) {
   );
 }
 
-function RestFeature({ label, desc, hpRestore, char, setChar, addLog }) {
+function RestFeature({ label, desc, hpRestore, char, setChar, addLog, runCommand }) {
   const [done, setDone] = useState(false);
   const hp = char.hp[0];
   const maxHp = char.hp[1];
 
-  const doRest = () => {
+  const doRest = () => runCommand("homesteadLeisure", () => {
     const newHp = Math.min(maxHp, hp + hpRestore);
     setChar(c => ({ ...c, hp: [newHp, c.hp[1]] }));
     setDone(true);
     addLog?.({ text: `【${label}】${desc} 气血恢复 ${newHp - hp} 点。`, type: "system" });
-  };
+  });
 
   return (
     <div>

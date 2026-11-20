@@ -20,10 +20,17 @@ export default function TopBar({
   isMobile, mobileTopMenu, setMobileTopMenu,
   zoneTheme, isDayMode, setIsDayMode,
   setSettingsInitialTab,
+  dispatchCommand,
   autoSaveError, lastAutoSave,
   playerAvatarCustom, setPlayerAvatarCustom,
   AV_BASE, genderAvatar,
 }) {
+  const openSettings = (tab) => dispatchCommand
+    ? dispatchCommand("settings", () => {
+      setSettingsInitialTab(tab);
+      openOverlay(OVERLAY.SETTINGS);
+    })
+    : (setSettingsInitialTab(tab), openOverlay(OVERLAY.SETTINGS));
   const showTrace = useOverlay(OVERLAY.TRACE);
   const showAvatarPicker = useOverlay(OVERLAY.AVATAR_PICKER);
   // 顶栏按钮统一规格：此前每个按钮各自 padding/字号/色系，一字排开像彩虹糖纸。
@@ -121,10 +128,10 @@ export default function TopBar({
         >主菜单</span>
         <span
           className="qbtn"
-          onClick={() => { setSettingsInitialTab("saves"); openOverlay(OVERLAY.SETTINGS); }}
+          onClick={() => openSettings("saves")}
           style={topBtn()}
         >存档</span>
-        <span className="qbtn" onClick={() => { setSettingsInitialTab(null); openOverlay(OVERLAY.SETTINGS); }} style={topBtn()}>设置</span>
+        <span className="qbtn" onClick={() => openSettings(null)} style={topBtn()}>设置</span>
         <span
           className="qbtn"
           onClick={() => setIsDayMode(d => !d)}

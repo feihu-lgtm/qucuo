@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useRef } from "react";
 
 export function createUndoController({
-  undoSnapshotRef, buildCurrentSnapshot, applySnapshot, addLog, pendingQueue,
-  setQueueCount, autoTravelRef, queueTimerRef, setDuelPending, setDuelingNpc, setActiveBuilding,
+  undoSnapshotRef, buildCurrentSnapshot, applySnapshot, addLog,
+  setQueueCount, autoTravelRef, queueTimerRef, clearCommandQueue = () => {},
+  setDuelPending, setDuelingNpc, setActiveBuilding,
   pendingTalksRef, changePendingTalks, talkBusyRef, setLoading, waitTimerRef,
   setWaitSecs, turnGenerationRef, confirmRollback = () => true,
 }) {
@@ -22,7 +23,7 @@ export function createUndoController({
     applySnapshot(snapshot);
     undoSnapshotRef.current = null;
     setActiveBuilding(null);
-    pendingQueue.current = [];
+    clearCommandQueue();
     setQueueCount(0);
     autoTravelRef.current = false;
     if (queueTimerRef.current != null) clearTimeout(queueTimerRef.current);
@@ -39,7 +40,7 @@ export function createUndoController({
     return true;
   };
 
-  return { captureUndo, rollbackOneStep };
+  return { captureUndo, rollbackOneStep, invalidateTurns };
 }
 
 export function createTurnStaleCheck(turnGenerationRef) {
@@ -53,16 +54,17 @@ export function useUndo(deps) {
     () => window.confirm("回滚到上一步行动之前？当前这步的结果会被撤销。"),
     [],
   );
-  const { captureUndo, rollbackOneStep } = useMemo(
+  const { captureUndo, rollbackOneStep, invalidateTurns } = useMemo(
     () => createUndoController({ ...deps, turnGenerationRef, confirmRollback }),
     [
       deps.undoSnapshotRef, deps.buildCurrentSnapshot, deps.applySnapshot, deps.addLog,
-      deps.pendingQueue, deps.setQueueCount, deps.autoTravelRef, deps.queueTimerRef,
+      deps.setQueueCount, deps.autoTravelRef, deps.queueTimerRef,
+      deps.clearCommandQueue,
       deps.setDuelPending, deps.setDuelingNpc, deps.pendingTalksRef,
       deps.setActiveBuilding,
       deps.changePendingTalks, deps.talkBusyRef, deps.setLoading, deps.waitTimerRef,
       deps.setWaitSecs, confirmRollback,
     ],
   );
-  return { captureUndo, rollbackOneStep, turnGenerationRef };
+  return { captureUndo, rollbackOneStep, invalidateTurns, turnGenerationRef };
 }

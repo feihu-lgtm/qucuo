@@ -24,7 +24,9 @@ import { applyResult } from "../../features/run.js";
 import * as importedRegistry from "../../domain/cards/importedRegistry.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 
-export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef }) {
+export function useWorldRulesRunner({
+  featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef, dispatchCommand = (_id, fn) => fn(),
+}) {
   const replacedRef = useRef(false);
   const [replacedTick, setReplacedTick] = useState(0);
   const worldRulesRunnerRef = useRef(null);
@@ -41,10 +43,12 @@ export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuel
         tokyoReturnTimerRef.current = null;
         if (gameStore.getState().room?.name !== "第三新东京市") return;
         const { result, innerRoomName: returnInnerRoomName } = finishTokyoReturn(back, label);
-        applyResult(featureCtxRef.current, result);
-        if (returnInnerRoomName !== undefined) {
-          setTimeout(() => gameActions.setInnerRoomName(returnInnerRoomName), 0);
-        }
+        dispatchCommand("worldRules", () => {
+          applyResult(featureCtxRef.current, result);
+          if (returnInnerRoomName !== undefined) {
+            setTimeout(() => dispatchCommand("worldRules", () => gameActions.setInnerRoomName(returnInnerRoomName)), 0);
+          }
+        });
       }, 3500);
     };
     if (!worldRulesRunnerRef.current) {
@@ -81,9 +85,11 @@ export function useWorldRulesRunner({ featureCtxRef, seaReturnRef, setForcedDuel
           getNow: () => Date.now(),
         },
         applyResult: (result) => {
-          if (result.roomMap) roomMapRef.current = result.roomMap;
-          applyResult(featureCtxRef.current, result);
-          if (result.forcedDuelNpc) setForcedDuelNpc(result.forcedDuelNpc);
+          dispatchCommand("worldRules", () => {
+            if (result.roomMap) roomMapRef.current = result.roomMap;
+            applyResult(featureCtxRef.current, result);
+            if (result.forcedDuelNpc) setForcedDuelNpc(result.forcedDuelNpc);
+          });
         },
       });
     }

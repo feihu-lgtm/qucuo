@@ -269,7 +269,7 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
 
   const hookNames = [
     "useAutosave", "useDaySummary",
-    "usePrivateTalk", "useOutfitAdvice", "useAiInspect", "useTurn", "useTurnQueue",
+    "usePrivateTalk", "useOutfitAdvice", "useAiInspect", "useTurn",
     "useGameUi", "usePresetImport", "useWorldRulesRunner",
     "useQuestPanel", "useForcedDuelNpc", "useDuel", "usePigeonReplies", "usePigeonHandlers",
     "useAutoTravel", "useCraftingAI", "useScreenHandlers", "useCardImportHandlers",

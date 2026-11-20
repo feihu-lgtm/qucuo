@@ -9,6 +9,7 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
   const { showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead } = overlayState;
   const { cardImportHandlers, screenHandlers, duelHandlers, questPanel, aiInspect, outfitAdvice } = actions;
   return {
+    dispatchCommand: actions.dispatchCommand,
     apiCfg: ui.apiCfg, setApiCfg: ui.setApiCfg, buildCurrentSnapshot: autosave.buildCurrentSnapshot,
     applySnapshot: autosave.applySnapshot, varTree: game.varTree, setVarTree: game.setVarTree,
     settingsInitialTab: ui.settingsInitialTab, uiScale: ui.uiScale, setUiScale: ui.setUiScale,
@@ -70,6 +71,9 @@ export function buildLayoutCtx({ ui, game, overlayHost, autosave, actions, activ
     districtName: game.room.name, innerRoomName: game.innerRoomName,
   });
   return {
+    rollbackBlocked: actions.rollbackBlocked,
+    stopRunning: actions.stopRunning,
+    dispatchCommand: actions.dispatchCommand,
     overlayHost, uiScale: ui.uiScale, zoneTheme: ui.zoneTheme, isMobile: ui.isMobile,
     mobileDrawer: ui.mobileDrawer, setMobileDrawer: ui.setMobileDrawer,
     mobileTopMenu: ui.mobileTopMenu, setMobileTopMenu: ui.setMobileTopMenu,

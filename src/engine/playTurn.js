@@ -35,12 +35,15 @@ function restoreSnapshot(snapshot, refs = {}) {
 }
 
 export async function playTurn(ctx, cmd, opts = {}) {
+  ctx.setCommandPhase?.("machine");
   let snapshot;
   try {
     snapshot = captureSnapshot(ctx.refs);
     ctx.beforeRun?.();
+    ctx.setCommandPhase?.("ai");
     const turn = await runTurn(ctx, cmd, opts);
     if (ctx.isStale?.()) return { ok: false, stale: true };
+    ctx.setCommandPhase?.("commit");
     (ctx.commitRound || commitRound)(ctx.commitDeps(turn));
     return { ok: true, turn };
   } catch (error) {

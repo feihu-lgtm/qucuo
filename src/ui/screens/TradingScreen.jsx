@@ -5,8 +5,9 @@
 
 import React from "react";
 import { QUALITY_COLOR, discountedBuyPrice } from "../../domain/economy/equipment.js";
+import { chromeBtn } from "../theme.js";
 
-export default function TradingScreen({ shopName, shopItems, playerInv, playerMoney, playerWit = 5, onBuy, onSell, onClose, zoneTheme, inline, onInspect,
+export default function TradingScreen({ shopName, shopItems, playerInv, playerMoney, playerWit = 5, onBuy, onSell, onClose, zoneTheme, inline, onInspect, queueCount = 0,
   headerContent,
   // 货币名。雪山派门派商坊用功德（QUCUO_SHOPS 里 currency:"karma"），调用方
   // 传进来的 playerMoney 与各件的 buyPrice 都是功德值——但此前本组件五处
@@ -31,6 +32,12 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
   return (
     <div className="mobile-trading-root" style={outer}>
       <div className="mobile-trading-panel" style={inner}>
+        {inline && queueCount > 0 && (
+          <div role="status" aria-live="polite"
+            style={{ ...chromeBtn(zoneTheme), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
+            ⏳ 排队中 {queueCount} · 等待落盘后执行
+          </div>
+        )}
         <div className="mobile-trading-header" style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           {headerContent}
           <div style={{ fontSize: 14, color: zoneTheme.text || "var(--text)" }}>{shopName || "交易"}</div>

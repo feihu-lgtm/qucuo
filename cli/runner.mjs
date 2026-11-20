@@ -13,6 +13,8 @@ import { defaultConfig } from "../src/infra/apiConfig.js";
 import { classifyIntent } from "../src/domain/prompt/inputIntent.js";
 import { emptyBodyProfile } from "../src/domain/character/bodyProfile.js";
 import { getActivePreset } from "../src/domain/prompt/presetSystem.js";
+import { getCommand } from "../src/core/commands.js";
+import { decide } from "../src/core/commandScheduler.js";
 import { startTrace } from "../src/infra/actionTrace.js";
 import { playTurn } from "../src/engine/playTurn.js";
 import { createPromptContext } from "../src/engine/prompt/index.js";
@@ -155,6 +157,31 @@ function parsePositiveInteger(value) {
   if (!/^[1-9]\d*$/.test(value)) return null;
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+export function classifyCliCommand(line) {
+  const text = String(line).trim();
+  const id = text.startsWith(":") ? "cliSystem"
+    : /^(?:用|服|捡)\s/.test(text) ? "cliItemUse"
+      : /^坐车\s/.test(text) ? "cliCarriage"
+        : /^(?:走|去)\s/.test(text) ? "cliMovement"
+          : /^(?:住店|求医)$/.test(text) ? "cliInn"
+            : /^买书\s/.test(text) ? "cliBook"
+              : text === "祈福" ? "cliPrayer"
+                : /(?:飞鸽|寄信)/.test(text) ? "cliPigeon"
+                  : /^(?:安抚|收束创伤|向旁白告白|换队友)/.test(text) ? "cliNarratorCompanion"
+                    : /^(?:看|查看)\s/.test(text) ? "cliNpcLook"
+                      : /^送\s/.test(text) ? "cliNpcGift"
+                        : /^交易\s/.test(text) ? "cliNpcTrade"
+                          : /^偷\s/.test(text) ? "cliNpcSteal"
+                            : /^邀请\s/.test(text) ? "cliNpcInvite"
+                              : /^(?:对话|说话)\s/.test(text) ? "cliNpcTalk"
+                                : /^学艺\s/.test(text) ? "cliNpcLearn"
+                                  : /^(?:打坐|修炼|突破)/.test(text) ? "cliMeditateTrain"
+                                    : /^(?:存钱|取钱|当|赎)/.test(text) ? "cliBankPawn"
+                                      : /^:?(?:help|帮助|背包|状态|看地图)/i.test(text) ? "cliLookHelp"
+                                        : "cliRunner";
+  return getCommand(id);
 }
 
 export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, ai, apiCfg: apiCfgOverrides } = {}) {
@@ -425,6 +452,8 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
   async function runLineCommand(rawLine) {
     const line = String(rawLine).trim();
     if (!line || (line.startsWith("#") && !line.startsWith("#testscript"))) return 0;
+    const command = classifyCliCommand(line);
+    if (decide(command, null) !== "run") throw new Error(`CLI command cannot run sequentially: ${command.id}`);
 
     pendingTurn = Promise.resolve(0);
     pendingTurnCount = 0;

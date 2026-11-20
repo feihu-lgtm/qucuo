@@ -5,7 +5,7 @@ import { giftNpc } from "../../features/npc/logic.js";
 import { applyResult } from "../../features/run.js";
 import { runQuestChoice } from "./useQuestPanel.js";
 import { restorePersuasionProgress } from "./useAutosave.js";
-import { createUndoController } from "./useUndo.js";
+import { createTurnStaleCheck, createUndoController } from "./useUndo.js";
 
 function createController(overrides = {}) {
   const pendingQueue = { current: ["next"] };
@@ -18,6 +18,7 @@ function createController(overrides = {}) {
   const setDuelingNpc = vi.fn();
   const setActiveBuilding = vi.fn();
   const setQueueCount = vi.fn();
+  const clearCommandQueue = vi.fn();
   const turnGenerationRef = { current: 0 };
   const controller = createUndoController({
     undoSnapshotRef: { current: null },
@@ -26,6 +27,7 @@ function createController(overrides = {}) {
     addLog: vi.fn(),
     pendingQueue,
     setQueueCount,
+    clearCommandQueue,
     autoTravelRef,
     queueTimerRef,
     setDuelPending,
@@ -44,7 +46,7 @@ function createController(overrides = {}) {
   });
   return {
     controller, pendingQueue, autoTravelRef, queueTimerRef, pendingTalksRef,
-    talkBusyRef, waitTimerRef, setDuelPending, setDuelingNpc, setQueueCount,
+    talkBusyRef, waitTimerRef, setDuelPending, setDuelingNpc, setQueueCount, clearCommandQueue,
     setActiveBuilding, turnGenerationRef,
   };
 }
@@ -57,6 +59,13 @@ function freshStore(overrides) {
 }
 
 describe("undo controller", () => {
+  it("exposes turn invalidation for the generation stop action", () => {
+    const harness = createController();
+    const isStale = createTurnStaleCheck(harness.turnGenerationRef);
+    harness.controller.invalidateTurns();
+    expect(isStale()).toBe(true);
+  });
+
   it("preserves the pre-gift snapshot across the nested settle action", () => {
     const item = { id: "gift-1", name: "青玉" };
     const npc = { name: "商人" };
@@ -158,7 +167,7 @@ describe("undo controller", () => {
       harness.controller.rollbackOneStep();
 
       expect(harness.turnGenerationRef.current).toBe(1);
-      expect(harness.pendingQueue.current).toEqual([]);
+      expect(harness.clearCommandQueue).toHaveBeenCalledOnce();
       expect(harness.setQueueCount).toHaveBeenCalledWith(0);
       expect(harness.autoTravelRef.current).toBe(false);
       expect(harness.queueTimerRef.current).toBeNull();
