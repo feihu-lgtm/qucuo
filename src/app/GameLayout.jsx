@@ -131,6 +131,7 @@ export default function GameLayout({ layout }) {
         autoSaveError={autoSaveError} lastAutoSave={lastAutoSave}
         playerAvatarCustom={playerAvatarCustom} setPlayerAvatarCustom={setPlayerAvatarCustom}
         AV_BASE={AV_BASE} genderAvatar={genderAvatar}
+        turnControls={{ loading, stopRunning, rollbackBlocked, rollbackOneStep }} gm={gm} setGm={setGm} addLog={addLog}
       />
 
       {overlayHost}

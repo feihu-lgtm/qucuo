@@ -58,6 +58,31 @@
     gap: 8px !important;
   }
 
+  .mobile-hide {
+    display: none !important;
+  }
+
+  /* 中栏控制行在窄屏上只占一行，放不下就横向滑动，不折行挤占叙事区 */
+  .mobile-control-row,
+  .mobile-people-row {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .mobile-control-row::-webkit-scrollbar,
+  .mobile-people-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-control-row > *,
+  .mobile-people-row > * {
+    flex-shrink: 0;
+  }
+
+  html[data-keyboard-open] .mobile-ground-strip,
   html[data-keyboard-open] .mobile-control-row,
   html[data-keyboard-open] .mobile-people-row {
     display: none !important;

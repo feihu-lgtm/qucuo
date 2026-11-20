@@ -12,6 +12,7 @@
 // 游戏数据经 props 下传，overlay 显隐读 uiStore，本地只保留建筑页签状态。
 import GroundItemStrip from "../components/GroundItemStrip.jsx";
 import TurnStatusPill from "../components/TurnStatusPill.jsx";
+import { DevControls, TurnControls } from "./TopBar.jsx";
 import { chromeBtn } from "../theme.js";
 import { useState, useEffect } from "react";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
@@ -126,20 +127,11 @@ export default function CenterPanel({
   const showBasement = useOverlay(OVERLAY.BASEMENT);
   return (
         <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", display: mobileColumn === "center" ? "flex" : "none" } : { flex: 55, ...S.panel }}>
-          <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="mobile-hide" style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>江湖</span>
-            <span className="mobile-center-toolbar-controls" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              {loading && <span onClick={stopRunning}
-                className="mobile-touch-target"
-                style={chromeBtn(zoneTheme)}>⏹ 停止</span>}
-              <span className="mobile-touch-target" onClick={rollbackBlocked ? undefined : rollbackOneStep}
-                aria-disabled={rollbackBlocked}
-                title="撤销上一步行动，还原到落子之前"
-                style={{ ...chromeBtn(zoneTheme), ...(rollbackBlocked ? { color: zoneTheme.textDim, cursor: "not-allowed" } : {}) }}>
-                {rollbackBlocked ? "等待落盘" : "↩ 回滚"}
-              </span>
-              <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={chromeBtn(zoneTheme, { active: showDebug })}>调试</span>
-              <span className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={chromeBtn(zoneTheme, { active: gm })}>/gamemode {gm ? "0" : "1"}</span>
+            <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <TurnControls theme={zoneTheme} loading={loading} stopRunning={stopRunning} rollbackBlocked={rollbackBlocked} rollbackOneStep={rollbackOneStep} />
+              <DevControls theme={zoneTheme} gm={gm} setGm={setGm} addLog={addLog} />
             </span>
           </div>
 
@@ -694,7 +686,7 @@ export default function CenterPanel({
             );
           })()}
           <GroundItemStrip items={room.items} theme={zoneTheme} onPickUp={handleCollectGround} />
-          <TurnStatusPill theme={zoneTheme} mobile={isMobile} /><div className="mobile-input-bar" style={{
+          {!isMobile && <TurnStatusPill theme={zoneTheme} />}<div className="mobile-input-bar" style={{
             borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid #4a3a1a" : `1px solid ${zoneTheme.border}`,
             background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
             padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
