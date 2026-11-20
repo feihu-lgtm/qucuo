@@ -79,6 +79,21 @@ describe("收复雪豹", () => {
     expect(giftNpc(active(), null, "金疮药").logs[0].t).toBe("err");
   });
 
+  it.each([
+    { name: "another room", room: { name: "大草甸", npcs: [] } },
+    { name: "another inner room", innerRoomName: "猎户小屋" },
+    { name: "empty room", room: { name: "鱼定村", npcs: [] } },
+  ])("rejects remote treatment and AI credit in $name despite retained targeting", (remote) => {
+    const state = { ...active(), ...remote, settleNpc: "雪豹", activeTarget: "雪豹", cmd: "给雪豹喂肉、挠痒、治伤", inv: ["金疮药"] };
+    expect(snowLeopardNote(state)).toBe("");
+    expect(filterSnowModelFlags(["snow_spirit_meat", "snow_spirit_scratch"], state)).toEqual([]);
+    apply(state, giftNpc(state, leopard, "金疮药"));
+    expect(state.flags).not.toContain("snow_spirit_medicine");
+    const setFlags = vi.fn();
+    commitModelFlags({ ...state, p: { delta: { flags_add: ["snow_spirit_meat", "snow_spirit_scratch"] } }, setFlags });
+    expect(setFlags).not.toHaveBeenCalled();
+  });
+
   it("advances at five distinct spirits, not four or duplicates, then unlocks exactly once", () => {
     const state = active();
     state.flags = SNOW_SPIRITS.slice(0, 4).map((s) => s.flag);

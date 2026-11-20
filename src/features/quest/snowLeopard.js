@@ -1,4 +1,4 @@
-import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_SPIRITS, snowQuestActive, snowSpiritCount } from "../../domain/quests/snowLeopardQuest.js";
+import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_SPIRITS, snowQuestActive, snowSpiritCount, snowLeopardPresent } from "../../domain/quests/snowLeopardQuest.js";
 import { createQuestProgress } from "../../domain/quests/questEngine.js";
 import { selectEffectiveStats } from "../stats/logic.js";
 import { CATALOG_INDEX } from "../../domain/items/catalog.js";
@@ -35,7 +35,7 @@ export const snowLeopardRule = {
 };
 
 export function snowMedicineGift(state, npc, item) {
-  if (npc.name !== "雪豹" || !snowQuestActive(state) || state.flags?.includes("snow_spirit_medicine")) return false;
+  if (npc.name !== "雪豹" || !snowQuestActive(state) || !snowLeopardPresent(state) || state.flags?.includes("snow_spirit_medicine")) return false;
   const entry = CATALOG_INDEX[typeof item === "string" ? item : item.name] || item;
   return ["medicine", "药品"].includes(entry?.category) || entry?.tags?.some((tag) => ["药材", "疗伤", "丹药"].includes(tag));
 }

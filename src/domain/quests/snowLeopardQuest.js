@@ -23,7 +23,7 @@ export const SNOW_LEOPARD_QUEST = {
 };
 
 export function snowLeopardPresent(state) {
-  return state.room?.npcs?.some((npc) => npc.name === "雪豹" && isNpcVisibleInInnerRoom(state.room.name, state.innerRoomName, npc)) || state.settleNpc === "雪豹" || state.activeTarget === "雪豹" || state.cmd?.includes("雪豹");
+  return !!state.room?.npcs?.some((npc) => npc.name === "雪豹" && isNpcVisibleInInnerRoom(state.room.name, state.innerRoomName, npc));
 }
 
 export function filterSnowModelFlags(flags = [], state) {

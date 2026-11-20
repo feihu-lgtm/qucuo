@@ -14,6 +14,7 @@
 // 弹层可见性读 uiStore，游戏数据与业务回调经 props 下传。切磋界面额外包了一层
 // ErrorBoundary——战斗引擎报错时不该把整局游戏拖崩，能退回房间重来。
 import { useCallback } from "react";
+import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { listCharacters } from "../../domain/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { getPipelineEntries, getTraceLog } from "../../infra/actionTrace.js";
@@ -181,7 +182,7 @@ export default function GlobalOverlays({
           item={activeItemMenu.item}
           mode={activeItemMenu.mode}
           canConsume={activeItemMenu.canConsume}
-          roomNpcs={room.npcs || []}
+          roomNpcs={(room.npcs || []).filter((npc) => isNpcVisibleInInnerRoom(room.name, innerRoomName, npc))}
           zoneTheme={zoneTheme}
           onClose={() => setActiveItemMenu(null)}
           onInspect={(it) => inspectItem("item", typeof it === "object" ? it.name : it, null, typeof it === "object" ? it : null, { worldLook: true })}
