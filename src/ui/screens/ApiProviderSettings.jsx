@@ -1,4 +1,17 @@
 import { useState } from "react";
+import { DEFAULT_VERTEX_MODEL } from "../../core/apiModel.js";
+
+const VERTEX_MODELS = [
+  [DEFAULT_VERTEX_MODEL],
+  ["google/gemini-3.7-flash"],
+  ["google/gemini-3.6-flash"],
+  ["google/gemini-3.5-flash"],
+  ["google/gemini-3-flash-preview"],
+  ["google/gemini-3.1-pro-preview"],
+  ["google/gemini-3.5-flash-lite"],
+  ["google/gemini-3.1-flash-lite"],
+  ["google/gemini-4-hydrogen", "需开通 Gemini 4 额度"],
+];
 
 export default function ApiProviderSettings({
   cfg, patch, types, importCredential, hasCredential, labelStyle, inputStyle,
@@ -6,6 +19,8 @@ export default function ApiProviderSettings({
   const [status, setStatus] = useState("");
   const vertex = cfg.apiType === types.VERTEX;
   const fieldLabel = { ...labelStyle, display: "block" };
+  const vertexModel = cfg.vertexModel ?? DEFAULT_VERTEX_MODEL;
+  const preset = VERTEX_MODELS.some(([id]) => id === vertexModel) ? vertexModel : "";
 
   async function importFile(event) {
     const file = event.target.files?.[0];
@@ -41,6 +56,13 @@ export default function ApiProviderSettings({
             <br />
             凭证不会随配置、存档或报告导出。仅在信任的设备上使用。
           </div>
+          <label htmlFor="vertex-model-preset" style={fieldLabel}>Vertex 预设模型</label>
+          <select id="vertex-model-preset" style={inputStyle} value={preset} onChange={e => patch({ vertexModel: e.target.value })}>
+            {!preset && <option value="" disabled hidden>自定义模型</option>}
+            {VERTEX_MODELS.map(([id, note]) => <option key={id} value={id}>{note ? `${id}（${note}）` : id}</option>)}
+          </select>
+          <label htmlFor="api-model" style={fieldLabel}>模型名称</label>
+          <input id="api-model" style={inputStyle} value={vertexModel} onChange={e => patch({ vertexModel: e.target.value })} placeholder={DEFAULT_VERTEX_MODEL} />
         </>
       ) : (
         <>

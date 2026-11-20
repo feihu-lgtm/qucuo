@@ -125,6 +125,7 @@ describe("Vertex ADC", () => {
     [{ vertexModel: "google/gemini-3.5-flash-lite" }, "minimal"],
     [{ vertexModel: "google/gemini-3.7-flash" }, "low"],
     [{ vertexModel: "google/gemini-3.8-flash" }, "low"],
+    [{ vertexModel: "google/gemini-4-hydrogen" }, "low"],
     [{ vertexModel: "google/gemini-3.1-pro-preview" }, "low"],
     [{ vertexModel: "google/future-model" }, "low"],
   ])("maps thinking settings %j to Vertex %s", async (thinking, effort) => {
@@ -134,7 +135,7 @@ describe("Vertex ADC", () => {
     const cfg = { apiType: API_TYPES.VERTEX, vertexProject: "test-project", ...thinking };
     await ai.chat([], { cfg, systemPrompt: "叙述" });
     const body = JSON.parse(fetch.mock.calls[0][1].body);
-    expect(body).toMatchObject({ model: thinking.vertexModel || "google/gemini-4-hydrogen", reasoning_effort: effort });
+    expect(body).toMatchObject({ model: thinking.vertexModel || "google/gemini-3.8-flash", reasoning_effort: effort });
     expect(body).not.toHaveProperty("enable_thinking");
   });
 

@@ -2,7 +2,7 @@ import { OVERLAY, openOverlay } from "../../store/uiStore.js";
 import React, { useState } from "react";
 import { isMusicEnabled, setMusicEnabled, getState as getMusicState, setVolume as setMusicVolume, subscribe as subscribeMusic, toggleMusic, TRACKS } from "../../infra/musicPlayer.js";
 import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, DEFAULT_ENDPOINTS, isDefaultEndpoint, hasApiCredentials, importVertexCredential } from "../../infra/apiConfig.js";
-import { apiModelField, DEFAULT_VERTEX_MODEL, getApiModel } from "../../core/apiModel.js";
+import { getApiModel } from "../../core/apiModel.js";
 const EXTRACTION_INTENT_LABELS = [
   ["LOOK",           "查看 / 环顾"],
   ["MOVE",           "移动"],
@@ -330,13 +330,13 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               importCredential={importVertexCredential} hasCredential={isVertex && hasApiCredentials(cfg)}
               labelStyle={labelStyle} inputStyle={inputStyle} />
 
-            <label htmlFor="api-model" style={{ ...labelStyle, display: "block" }}>模型名称</label>
+            {!isVertex && <><label htmlFor="api-model" style={{ ...labelStyle, display: "block" }}>模型名称</label>
             <div style={{ display: "flex", gap: 6 }}>
-              <input id="api-model" style={{ ...inputStyle, flex: 1 }} value={isVertex ? cfg.vertexModel ?? DEFAULT_VERTEX_MODEL : cfg.model} onChange={e => patch({ [apiModelField(cfg)]: e.target.value })} placeholder={isVertex ? DEFAULT_VERTEX_MODEL : "例如 deepseek-chat / deepseek-reasoner"} />
-              {!isVertex && <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(null)}>
+              <input id="api-model" style={{ ...inputStyle, flex: 1 }} value={cfg.model} onChange={e => patch({ model: e.target.value })} placeholder="例如 deepseek-chat / deepseek-reasoner" />
+              <span style={{ ...btnStyle, whiteSpace: "nowrap", opacity: modelStatus === "loading" ? 0.5 : 1 }} onClick={modelStatus === "loading" ? undefined : () => handleDetectModels(null)}>
                 {modelStatus === "loading" && modelPickerTarget === null ? "检测中…" : "🔍 自动检测"}
-              </span>}
-            </div>
+              </span>
+            </div></>}
             {!isVertex && modelStatus === "error" && modelPickerTarget === null && (
               <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
             )}
