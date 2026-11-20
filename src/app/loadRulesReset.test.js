@@ -22,17 +22,27 @@ const savedState = () => ({
 
 let disconnect = () => {};
 
+// 与 useWorldRulesRunner 同构：换局时 reset 并挂起常规检查，等提交后（afterCommit）静默首跑。
 function connectRunner(rules = [timeAdvanceRule]) {
-  const runner = createWorldRules(rules, {
+  let replaced = false;
+  const inner = createWorldRules(rules, {
     getState: gameStore.getState,
     applyResult: (result) => applyResult({ setVarTree: gameActions.setVarTreeState, addLog: () => {} }, result),
   });
-  const unsubscribeReplaced = subscribeGameReplaced(() => {
-    runner.reset();
-    runner.check();
+  disconnect = subscribeGameReplaced(() => {
+    inner.reset();
+    replaced = true;
   });
-  disconnect = unsubscribeReplaced;
-  return runner;
+  return {
+    check() {
+      if (!replaced) inner.check();
+    },
+    afterCommit(runSilently = (fn) => fn()) {
+      if (!replaced) return;
+      replaced = false;
+      runSilently(() => inner.check());
+    },
+  };
 }
 
 function playTwoTurns(runner) {
@@ -50,6 +60,7 @@ function loadEarlierSave(runner, { replaced = true } = {}) {
   gameActions.setVarTreeState(snap.varTree);
   if (replaced) markGameReplaced();
   runner.check();
+  runner.afterCommit();
 }
 
 afterEach(() => {
@@ -86,6 +97,7 @@ describe("loading a save resets world rule history", () => {
 
     initGameStore(savedState());
     runner.check();
+    runner.afterCommit();
 
     expect(anger()).toEqual(angry(3));
   });
@@ -121,7 +133,9 @@ describe("replacement first-run writes stay out of autosave", () => {
       gameActions.setChar({ name: "新侠", moveset: [] });
       markGameReplaced();
     });
+    runner.check();
     await Promise.resolve();
+    runner.afterCommit(autosave.runSilently);
     autosave.dispose();
 
     expect(timers.setTimeout).not.toHaveBeenCalled();
@@ -142,8 +156,11 @@ describe("web load paths signal a game replacement", () => {
 
   it("the web world rules runner resets on replacement", () => {
     const source = read("./hooks/useWorldRulesRunner.js");
-    expect(between(source, "subscribeGameReplaced(() => {", "});")).toMatch(/\.reset\(\);\s*worldRulesRunnerRef\.current\.check\(\);/);
+    expect(between(source, "subscribeGameReplaced(() => {", "});")).toMatch(/\.reset\(\);\s*replacedRef\.current = true;/);
+    expect(source).toMatch(/if \(!replacedRef\.current\) worldRulesRunnerRef\.current\.check\(\);/);
+    expect(source).toMatch(/autosave\.runSilently\(check\)/);
     expect(source).toContain("unsubscribeReplaced();");
+    expect(read("./MudRPG.jsx")).toMatch(/useWorldRulesRunner\(\{[^}]*schedulerRef[^}]*\}\)/);
   });
 
   it("start-screen load and autosave restore go through initGameStore", () => {
