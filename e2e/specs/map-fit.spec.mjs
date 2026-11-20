@@ -65,4 +65,39 @@ export default async function mapFit({ page }) {
   await map.getByText("＋", { exact: true }).click();
   await reset.click();
   await assertExploredNodesFit();
+
+  await close.click();
+  const innerSave = structuredClone(villageSave);
+  innerSave.label = "QA inner map";
+  innerSave.snapshot.room = { ...innerSave.snapshot.room, name: "锦官城" };
+  innerSave.snapshot.innerRoomName = "锦官大车店";
+  innerSave.snapshot.mapData = { ...innerSave.snapshot.mapData, 锦官城: { x: 3, y: 0 } };
+  await page.evaluate(async fixture => {
+    const saves = await import("/src/infra/saves.js");
+    await saves.init();
+    saves.importSave(JSON.stringify(fixture));
+  }, innerSave);
+  await page.waitForTimeout(350);
+  await page.reload();
+  await page.getByText("加载游戏", { exact: true }).click();
+  await page.getByText(`${innerSave.label}（导入）`, { exact: true }).click();
+  await page.getByText("锦官大车店", { exact: true }).waitFor({ state: "visible" });
+  await tabs.getByRole("button", { name: /^左/ }).click();
+  const innerMapModule = left.locator('[data-module="map"]');
+  const nextFace = left.getByRole("button", { name: "下一面" }).first();
+  for (let i = 0; i < 3 && !(await innerMapModule.isVisible()); i++) await nextFace.click();
+  await innerMapModule.waitFor({ state: "visible" });
+  await innerMapModule.getByText("内", { exact: true }).click();
+  await innerMapModule.getByText(/村图·内/).click();
+  const innerMap = page.getByTestId("clickable-map");
+  const horse = innerMap.locator("svg text").filter({ hasText: /^马行$/ });
+  await horse.waitFor();
+  const horseBounds = await horse.boundingBox();
+  const controlsBounds = await innerMap.getByTestId("map-zoom-controls").boundingBox();
+  assert.ok(horseBounds.x + horseBounds.width < controlsBounds.x, "马行 should be outside the map controls column");
+  await page.mouse.click(horseBounds.x + horseBounds.width / 2, horseBounds.y + horseBounds.height / 2);
+  await page.waitForFunction(async () => {
+    const { gameStore } = await import("/src/store/gameStore.js");
+    return gameStore.getState().innerRoomName === "马行";
+  }, null, { timeout: 10000 });
 }

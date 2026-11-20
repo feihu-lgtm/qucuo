@@ -1,7 +1,7 @@
 export const MIN_MAP_SCALE = 0.4;
 export const MAX_MAP_SCALE = 3;
 
-export function getMapFitView(nodes, { cell = 132, pad = 40, margin = 24 } = {}) {
+export function getMapFitView(nodes, { cell = 132, pad = 40, margin = 24, controlsReserve = 144 } = {}) {
   if (!nodes.length) return { tx: 0, ty: 0, scale: 1 };
 
   const allXs = nodes.map(node => node.x);
@@ -28,10 +28,14 @@ export function getMapFitView(nodes, { cell = 132, pad = 40, margin = 24 } = {})
   const right = Math.max(...bounds.map(bound => bound.right));
   const top = Math.min(...bounds.map(bound => bound.top));
   const bottom = Math.max(...bounds.map(bound => bound.bottom));
+  const rightInset = Math.min(width * 0.35, Math.max(controlsReserve, width * 0.18));
+  const fitLeft = margin;
+  const fitRight = Math.max(fitLeft + 1, width - margin - rightInset);
+  const fitWidth = fitRight - fitLeft;
   const scale = Math.max(MIN_MAP_SCALE, Math.min(MAX_MAP_SCALE,
-    (width - margin * 2) / Math.max(1, right - left),
+    fitWidth / Math.max(1, right - left),
     (height - margin * 2) / Math.max(1, bottom - top)));
-  const centerX = (left + right) / 2;
+  const centerX = (fitLeft + fitRight) / 2;
   const centerY = (top + bottom) / 2;
-  return { tx: width / 2 - centerX * scale, ty: height / 2 - centerY * scale, scale };
+  return { tx: centerX - ((left + right) / 2) * scale, ty: height / 2 - centerY * scale, scale };
 }

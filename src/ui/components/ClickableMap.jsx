@@ -85,7 +85,7 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
   return (
     <div data-testid="clickable-map" style={{ position: "relative", width: "100%", maxHeight, minHeight: 90, overflow: "hidden" }}>
       {/* 缩放控制按钮 */}
-      <div style={{ position: "absolute", top: 6, right: 6, zIndex: 3, display: "flex", flexDirection: "column", gap: 4 }}>
+      <div data-testid="map-zoom-controls" style={{ position: "absolute", top: 6, right: 6, zIndex: 3, display: "flex", flexDirection: "column", gap: 4 }}>
         <span onClick={() => zoomBtn(1.25)} style={cmZoomBtn}>＋</span>
         <span onClick={() => zoomBtn(0.8)} style={cmZoomBtn}>－</span>
         <span role="button" tabIndex={0} aria-label="重置地图视图" title="重置地图视图"
