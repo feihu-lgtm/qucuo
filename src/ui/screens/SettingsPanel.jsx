@@ -1,3 +1,4 @@
+import { OVERLAY, openOverlay } from "../../store/uiStore.js";
 import React, { useState } from "react";
 import { isMusicEnabled, setMusicEnabled, getState as getMusicState, setVolume as setMusicVolume, subscribe as subscribeMusic, toggleMusic, TRACKS } from "../../infra/musicPlayer.js";
 import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, DEFAULT_ENDPOINTS, isDefaultEndpoint } from "../../infra/apiConfig.js";
@@ -119,8 +120,6 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
     if (!window.confirm("确定清空全部长期向量记忆？此操作不可撤销（存档本身不受影响）。")) return;
     try { await clearMemories(); setMemCount(0); } catch (e) { alert("清空失败：" + e.message); }
   };
-
-
   const patch = (fields) => setCfg(c => ({ ...c, ...fields }));
 
   // ── 配置 profile（多套 API 配置）与落盘导出/导入 ──
@@ -246,8 +245,6 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
           </span>
           <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
-
-        {/* ── 主页：五个大卡片入口 ── */}
         {tab === null && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
             {[
@@ -256,11 +253,13 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               ["narrator", "🎭 旁白", "好感度 · 阶段 · 私聊篇幅 · 专属世界书"],
               ["saves", "💾 存档管理", "读取 · 导出 · 删除"],
               ["other", "🎚 其他", "字号 · 显示"],
+              ["__portraits", "立绘管理", "上传 · 更换人物立绘"],
               ["__cards", "🧾 角色入册", "游戏中 · 导入外部角色卡成江湖人物 · 快捷键 I"],
             ].map(([id, title, sub]) => (
               <div key={id} onClick={() => {
                 // 入册界面本身是全屏浮层，塞在设置里会套两层弹窗。
                 // 这里改成关掉设置、把浮层交给 MudRPG 开。
+                if (id === "__portraits") { onClose(); openOverlay(OVERLAY.PORTRAIT_MANAGER); return; }
                 if (id === "__cards") { onOpenCardImport?.(); return; }
                 setTab(id);
               }}

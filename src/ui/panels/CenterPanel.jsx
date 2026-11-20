@@ -1,7 +1,5 @@
 // 中栏（江湖）——三栏布局的正中一栏，游戏的主视野。
 // ---------------------------------------------------------------------------
-// 从 MudRPG.jsx 抽出（0727 三栏拆分的最后一块：左栏 LeftPanel、右栏 RightPanel
-// 已先行抽出，本文件补齐中栏）。自上而下的版面顺序：
 //   1. 标题栏「江湖」+ 停止/回滚/调试/gamemode 四个开关
 //   2. DebugPanel 挂载点（showDebug 时展开）
 //   3. 切磋确认条（duelPending：邀战叙事跑完后点确认才真开打）
@@ -12,6 +10,7 @@
 //   8. NPC 人选选择器、飞鸽传书状态条、底部输入框
 //
 // 游戏数据经 props 下传，overlay 显隐读 uiStore，本地只保留建筑页签状态。
+import GroundItemStrip from "../components/GroundItemStrip.jsx";
 import TurnStatusPill from "../components/TurnStatusPill.jsx";
 import { chromeBtn } from "../theme.js";
 import { useState, useEffect } from "react";
@@ -65,7 +64,7 @@ function NarrativeSkeleton() {
 export default function CenterPanel({
   isMobile, mobileDrawer, setMobileDrawer,
   zoneTheme, S,
-  loading, addLog,
+  loading, addLog, handleCollectGround,
   rollbackOneStep, captureUndo, rollbackBlocked, stopRunning, dispatchCommand,
   gm, setGm,
   char, setChar, pot, setPot, exp, setExp, dao, setDao,
@@ -709,6 +708,7 @@ export default function CenterPanel({
               </div>
             );
           })()}
+          <GroundItemStrip items={room.items} theme={zoneTheme} onPickUp={handleCollectGround} />
           <TurnStatusPill theme={zoneTheme} mobile={isMobile} /><div className="mobile-input-bar" style={{
             borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid #4a3a1a" : `1px solid ${zoneTheme.border}`,
             background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
