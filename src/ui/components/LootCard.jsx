@@ -65,7 +65,7 @@ const LOOT_CSS = `
   .loot-banner{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:10.5px; letter-spacing:.18em;
     padding:3px 12px 3px 9px; margin:0 auto 12px; width:max-content; max-width:100%;
     clip-path:polygon(0 0,100% 0,calc(100% - 9px) 100%,0 100%); font-weight:700; text-shadow:0 1px 1px rgba(0,0,0,.4); }
-  .loot-name{ font-family:"STKaiti","KaiTi","Noto Serif SC","Songti SC",serif; font-size:22px; font-weight:900;
+  .loot-name{ font-family:var(--font-body); font-size:22px; font-weight:900;
     line-height:1.22; letter-spacing:.06em; text-shadow:0 2px 3px rgba(0,0,0,.7), 0 0 13px var(--qc-glow); }
   .loot-name.loot-shimmer{ background:linear-gradient(100deg, var(--qc) 18%, var(--qc-hi) 44%, var(--qc) 62%);
     background-size:220% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
@@ -81,7 +81,7 @@ const LOOT_CSS = `
   .loot-eff-tag{ font-size:10px; padding:2px 8px; letter-spacing:.08em; border:1px solid var(--qc);
     color:var(--qc-hi); background:rgba(0,0,0,.34); clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%); text-shadow:0 1px 1px rgba(0,0,0,.7); }
   .loot-desc{ margin-top:11px; padding:8px 11px; font-size:12px; line-height:1.92; color:#e2d6b4; text-align:center;
-    font-family:"STKaiti","KaiTi","Noto Serif SC","Songti SC",serif; letter-spacing:.03em;
+    font-family:var(--font-body); letter-spacing:.03em;
     background:rgba(0,0,0,.26); border-left:3px solid var(--qc); }
   .loot-foot{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px 14px; margin-top:11px; font-size:11px; color:#c2b288; }
   .loot-foot img{ width:13px; height:13px; vertical-align:-2px; image-rendering:pixelated; }

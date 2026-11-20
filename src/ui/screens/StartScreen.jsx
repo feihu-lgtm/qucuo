@@ -221,7 +221,7 @@ const styles = {
     inset: 0,
     boxSizing: "border-box",
     backgroundColor: t.bg,
-    fontFamily: "'Noto Serif SC', 'Songti SC', serif",
+    fontFamily: "var(--font-body)",
     overflowX: "hidden",
     overflowY: "auto",
   }),

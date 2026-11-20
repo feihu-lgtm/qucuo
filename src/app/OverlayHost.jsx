@@ -33,6 +33,9 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
           onSelectTab={ctx.setSettingsInitialTab}
           uiScale={ctx.uiScale}
           setUiScale={ctx.setUiScale}
+          font={ctx.font}
+          setFont={ctx.setFont}
+          zoneTheme={ctx.zoneTheme}
           narrator={ctx.narrator}
           setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
         />
@@ -81,6 +84,9 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
             onSelectTab={ctx.setSettingsInitialTab}
             uiScale={ctx.uiScale}
             setUiScale={ctx.setUiScale}
+            font={ctx.font}
+            setFont={ctx.setFont}
+            zoneTheme={ctx.zoneTheme}
             narrator={ctx.narrator}
             setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
             getLiveBlockText={ctx.getLiveBlockText}

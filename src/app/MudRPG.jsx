@@ -74,7 +74,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setQueueCount, gm, setGm, setIsMobile, setMobileTopMenu,
     interactMode, setInteractMode, talkTarget, setTalkTarget, activeTarget, setActiveTarget,
     activeGroundItem,
-    nsfwOn, setOutfitState, pigeonTarget, setPigeonTarget, apiCfg, uiScale, isDayMode,
+    nsfwOn, setOutfitState, pigeonTarget, setPigeonTarget, apiCfg, uiScale, font, isDayMode,
     cmdHistory, setCmdHistory, histIdx, setHistIdx, forcedDuelNpc, setForcedDuelNpc,
     duelingNpc, setDuelingNpc, duelPending, setDuelPending, pendingQuestBranch,
     setPendingQuestBranch,
@@ -122,6 +122,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // API 配置变更时持久化到 localStorage
   useEffect(() => { saveConfig(apiCfg); }, [apiCfg]);
   useEffect(() => { localStorage.setItem("wuxia_mud_ui_scale", String(uiScale)); }, [uiScale]);
+  useEffect(() => { localStorage.setItem("wuxia_mud_ui_font", font); }, [font]);
   useEffect(() => { localStorage.setItem("wuxia_mud_day_mode", isDayMode ? "1" : "0"); }, [isDayMode]);
 
   const autosave = useAutosave({

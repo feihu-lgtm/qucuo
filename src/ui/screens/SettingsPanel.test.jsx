@@ -2,8 +2,11 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import SettingsPanel from "./SettingsPanel.jsx";
+import { ZONE_THEMES } from "../theme.js";
 
-const render = (cfg, initialTab) => renderToStaticMarkup(createElement(SettingsPanel, { cfg, initialTab }));
+const render = (cfg, initialTab, props = {}) => renderToStaticMarkup(createElement(SettingsPanel, {
+  cfg, initialTab, font: "pixel", setFont: () => {}, zoneTheme: ZONE_THEMES.village, ...props,
+}));
 
 describe("SettingsPanel portrait management entry", () => {
   it.each([{}, { apiKey: "" }])("hides portrait management without a configured API key: %s", (cfg) => {
@@ -38,5 +41,14 @@ describe("SettingsPanel provider models", () => {
     ]);
     expect(options).toContain(">google/gemini-4-hydrogen（需开通 Gemini 4 额度）</option>");
     expect(render({ apiType: "openai" }, "api")).not.toContain('id="vertex-model-preset"');
+  });
+});
+
+describe("SettingsPanel font preference", () => {
+  it("offers Fusion Pixel and Songti choices with the default selected", () => {
+    const html = render({ apiKey: "test-placeholder" }, "other");
+    expect(html).toContain("缝合像素");
+    expect(html).toContain("宋体");
+    expect(html).toContain('aria-pressed="true"');
   });
 });

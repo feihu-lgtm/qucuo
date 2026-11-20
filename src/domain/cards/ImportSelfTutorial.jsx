@@ -24,7 +24,7 @@ export default function ImportSelfTutorial({ accent = "#d4a853", onClose }) {
     position: "absolute", inset: 0, zIndex: 20,
     display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
     background: "rgba(6,4,2,.86)", backdropFilter: "blur(3px)",
-    fontFamily: "'Noto Serif SC','Songti SC','STSong',serif",
+    fontFamily: "var(--font-body)",
   };
   const card = {
     position: "relative", width: "min(560px, 92vw)", maxHeight: "88%",

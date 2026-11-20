@@ -735,7 +735,7 @@ function TextBtn({ children, onClick, style }) {
 
 // ─────────────────────────── 样式 ───────────────────────────
 const sx = {
-  root: { position: "fixed", inset: 0, fontFamily: "'Noto Serif SC','Songti SC',serif", overflow: "hidden", color: "#e8dfc0" },
+  root: { position: "fixed", inset: 0, fontFamily: "var(--font-body)", overflow: "hidden", color: "#e8dfc0" },
   bg: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" },
   scrim: { position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,6,4,.72) 0%, rgba(8,6,4,.55) 40%, rgba(8,6,4,.8) 100%)" },
   centerCol: { position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column",
