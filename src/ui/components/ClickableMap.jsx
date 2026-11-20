@@ -1,5 +1,6 @@
 import React from "react";
 import { MAP_UI } from "../../domain/map/mapUi.js";
+import { getMapDragUpdate } from "./mapDrag.js";
 import { makeNodeHitArea } from "./mapHitArea.js";
 
 // 可点击移动地图：节点即操作。点相邻据点/房间 = 往那个方向走（复用 act 移动链）。
@@ -22,6 +23,7 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
   }, [nodes, cell, pad]);
   const [view, setView] = React.useState(fitZoom);
   const dragRef = React.useRef(null); // 拖动中：{ startX, startY, baseTx, baseTy }
+  const suppressClickRef = React.useRef(false);
   const [dragging, setDragging] = React.useState(false);
   if (!nodes.length) return null;
 
@@ -52,17 +54,28 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
 
   // ── 拖动 ──
   const onPointerDown = (e) => {
-    // 只在点空白处开始拖动（点节点交给节点自己的 onClick）
+    suppressClickRef.current = false;
+    if (e.target.closest?.("[data-map-node-hit-target]")) return;
     dragRef.current = { startX: e.clientX, startY: e.clientY, baseTx: view.tx, baseTy: view.ty, moved: false };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     setDragging(true);
   };
   const onPointerMove = (e) => {
-    if (!dragRef.current) return;
-    const dx = e.clientX - dragRef.current.startX, dy = e.clientY - dragRef.current.startY;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragRef.current.moved = true;
-    setView(v => ({ ...v, tx: dragRef.current.baseTx + dx, ty: dragRef.current.baseTy + dy }));
+    const drag = dragRef.current;
+    if (!drag) return;
+    const update = getMapDragUpdate(drag, e.clientX, e.clientY);
+    drag.moved = update.moved;
+    if (update.moved) suppressClickRef.current = true;
+    setView(v => ({ ...v, tx: update.tx, ty: update.ty }));
   };
-  const onPointerUp = () => { dragRef.current = null; setDragging(false); };
+  const onPointerUp = (e) => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    setDragging(false);
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
   // ── 缩放（滚轮）──
   const onWheel = (e) => {
     e.preventDefault();
@@ -84,7 +97,8 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
       </div>
       <svg viewBox={`0 0 ${w} ${h}`}
         style={{ width: "100%", maxHeight, display: "block", cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}
-        onMouseDown={onPointerDown} onMouseMove={onPointerMove} onMouseUp={onPointerUp} onMouseLeave={onPointerUp}
+        onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp} onLostPointerCapture={onPointerUp}
         onWheel={onWheel}>
         <defs>
           <style>{`@keyframes cmPulse{0%,100%{opacity:.4}50%{opacity:1}}`}</style>
@@ -115,7 +129,10 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
             const edge = n.current || (hov && clickable) ? accent : "#26221c";
             const onClickNode = (e) => {
               // 拖动过就不触发点击（避免拖完误跳转）
-              if (dragRef.current?.moved) return;
+              if (suppressClickRef.current) {
+                suppressClickRef.current = false;
+                return;
+              }
               if (clickable) onGo(n.dir, n.explored ? n.name : n.dest, n.locked);
             };
             return <g key={n.name || n.dir} style={{ cursor: clickable ? "pointer" : "default" }}
