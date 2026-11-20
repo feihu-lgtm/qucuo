@@ -1,13 +1,21 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
-import { innerMove as innerMoveLogic, outerArrival as outerArrivalLogic } from "../../features/map/logic.js";
+import {
+  getAutoTravelStopReason,
+  hasQuestProgressChanged,
+  innerMove as innerMoveLogic,
+  outerArrival as outerArrivalLogic,
+  shouldDispatchQueuedAutoTravel,
+  shouldThrottleMovement,
+} from "../../features/map/logic.js";
 import { resolveOuterLock } from "../../engine/act/outerMove.js";
 import { rollMovementEvents } from "../../features/map/encounter.js";
 import { judgeCollect } from "../../engine/act/roundNotes.js";
 import { CATEGORY_LABEL } from "../../domain/economy/equipment.js";
 import { findTargetedRumor } from "../../domain/npc/npcEmergence.js";
+import { detectNewFaces } from "../../domain/npc/npcAwareness.js";
 import { classifyIntent, INTENT } from "../../domain/prompt/inputIntent.js";
 import { buildDirectionJudgeRequest, getMapNode, parseDirectionJudgeResponse, QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
@@ -38,6 +46,19 @@ export function useTurn({
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
     if (!rawCmd.trim()) return;
     const cmd = rawCmd.trim();
+    const stopAutoTravel = (reason) => {
+      if (!reason || !autoTravelRef.current || pendingQueue.current.length === 0) return;
+      const dropped = pendingQueue.current.length;
+      pendingQueue.current = [];
+      setQueueCount(0);
+      autoTravelRef.current = false;
+      const message = {
+        encounter: `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`,
+        newNpc: `  ⚠ 遇见新人物，自动赶路就此打住（余下 ${dropped} 程未走）。`,
+        quest: `  ⚠ 触发了新的任务进展，自动赶路就此打住（余下 ${dropped} 程未走）。`,
+      }[reason];
+      addLog([{ t: "sys", text: message, standalone: true }]);
+    };
 
     // 移动防连点：方向按钮/九宫格点击带 forceLayer。内层移动是瞬时的（不设 loading），
     // 手抖或误触双击会在极短时间内连发两次——第二次时 innerRoomName 可能已变、或穿到外层
@@ -45,8 +66,12 @@ export function useTurn({
     // 移动直接忽略。只拦移动，不影响对话/私聊（那些走 pendingTalks 允许并发）。
     if (opts.forceLayer) {
       const now = Date.now();
-      if (now - lastMoveRef.current < 300) return;
-      lastMoveRef.current = now;
+      if (shouldThrottleMovement({
+        forceLayer: opts.forceLayer,
+        autoTravel: opts.autoTravel,
+        elapsed: now - lastMoveRef.current,
+      })) return;
+      if (!opts.autoTravel) lastMoveRef.current = now;
     }
 
     // 回滚点：每次实际行动前，存一份当前整局快照，供玩家"回滚一步"。只在真正要执行行动时存
@@ -268,6 +293,7 @@ export function useTurn({
       : null;
     if (arrivalResult?.cached) {
       const traceInfo = arrivalResult.traceInfo;
+      const previousQuestProgress = gameStore.getState().questProgress;
       traceStep(_trace, "格子移动", "pass", `${room.name}→${lockedDestName} 格子命中，纯前端${traceInfo.hasSquareDesc ? "" : "（格子未就绪，兜底文本）"}`);
       if (traceInfo.item) {
         traceStep(_trace, "拾取判定", "pass", `格子预埋：${traceInfo.item.name}（品质「${traceInfo.item.quality}」）前端发放`);
@@ -276,6 +302,11 @@ export function useTurn({
         traceStep(_trace, "路遇", "pass", `格子预埋路遇：${traceInfo.encounter.name}（${traceInfo.encounter.label}）`);
       }
       applyResult(featureCtxRef.current, arrivalResult);
+      stopAutoTravel(getAutoTravelStopReason({
+        encounter: traceInfo.encounter,
+        newFaces: traceInfo.newFaces,
+        questProgressChanged: hasQuestProgressChanged(previousQuestProgress, gameStore.getState().questProgress),
+      }));
       outerDepartRef.current = null; pendDirRef.current = null; pickupJudgmentRef.current = null;
       endTrace(_trace, `到达 ${lockedDestName}（格子·纯前端）`);
       prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
@@ -293,13 +324,7 @@ export function useTurn({
       luck: char.special?.气运 ?? 5,
     });
     pickupJudgmentRef.current = pickupJudgment;
-    if (encounterToDescribe && autoTravelRef.current && pendingQueue.current.length > 0) {
-      const dropped = pendingQueue.current.length;
-      pendingQueue.current = [];
-      setQueueCount(0);
-      autoTravelRef.current = false;
-      addLog([{ t: "sys", text: `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`, standalone: true }]);
-    }
+    if (encounterToDescribe) stopAutoTravel("encounter");
 
     // ── 采集裁决（系统层）──（判定在 act/roundNotes.js，副作用在此执行）
     // 玩家表达采集意图、且所采之物此刻真在地上时，由系统直接把物搬入背包、
@@ -404,6 +429,15 @@ export function useTurn({
         { t: "sys", text: `     ▸ ${ec.hint}` },
         { t: "sys", text: `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
       ]);
+    } else if (autoTravelRef.current && pendingQueue.current.length > 0) {
+      const stateAfter = gameStore.getState();
+      const currentNpcNames = new Set((room.npcs || []).map((npc) => npc.name));
+      const newFaces = detectNewFaces(preActVarTree, stateAfter.room?.npcs || [])
+        .filter((npc) => !currentNpcNames.has(npc.name));
+      stopAutoTravel(getAutoTravelStopReason({
+        newFaces,
+        questProgressChanged: hasQuestProgressChanged(questProgress, stateAfter.questProgress),
+      }));
     }
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
     if (isTalk) { changePendingTalks(-1); }
@@ -411,7 +445,7 @@ export function useTurn({
     // 停计时
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, pendingTalks, changePendingTalks]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks]);
   const featureCtx = useMemo(() => ({
     addLog,
     jotNote,
@@ -429,23 +463,24 @@ export function useTurn({
   return { act };
 }
 
-export function useTurnQueue({ loading, act, pendingQueue, setQueueCount, autoTravelRef }) {
-  // loading 变为 false 时，处理队列中的下一条命令。
-  // 关键修复：依赖数组必须包含 act 本身——act 是 useCallback，依赖里有 room 等
-  // 状态，每次这些状态变化 act 都会重新生成一份新闭包。之前这里只依赖 [loading]，
-  // 导致 setTimeout 里调用的是某次渲染时捕获的旧版本 act，其内部闭包的 room 也是
-  // 那时的旧快照——如果玩家排队攒了好几条指令，出队执行时用的还是过时的房间状态
-  // 去算 resolveExit(旧room.name, dir)，算出来的 lockedDestName 就可能是错的或者
-  // 干脆判定"当前房间不在固定地图里"而走了自由生成兜底分支，这正是"移动到了系统
-  // 不认识的地名（比如AI自由发挥的'熊曲山谷'过渡场景），后续再次移动时方向判定
-  // 用错基准房间"这个bug的根因。加入 act 依赖后，每次都会用最新闭包出队执行。
+export function useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef }) {
+  const actRef = useRef(act);
+  actRef.current = act;
+
   useEffect(() => {
-    if (!loading && pendingQueue.current.length > 0) {
-      const { cmd: nextCmd, extraReplies: nextExtra, opts: nextOpts } = pendingQueue.current.shift();
-      setQueueCount(pendingQueue.current.length);
-      if (pendingQueue.current.length === 0) autoTravelRef.current = false; // 最后一步出队：自动寻路自然结束
-      const timer = setTimeout(() => act(nextCmd, nextExtra, nextOpts || {}), 50);
+    if (shouldDispatchQueuedAutoTravel({
+      loading,
+      queueCount,
+      hasQueuedCommands: pendingQueue.current.length > 0,
+    })) {
+      const timer = setTimeout(() => {
+        const next = pendingQueue.current.shift();
+        if (!next) return;
+        setQueueCount(pendingQueue.current.length);
+        if (pendingQueue.current.length === 0) autoTravelRef.current = false;
+        actRef.current(next.cmd, next.extraReplies, next.opts || {});
+      }, 50);
       return () => clearTimeout(timer);
     }
-  }, [loading, act]);
+  }, [loading, queueCount, pendingQueue, setQueueCount, autoTravelRef]);
 }

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { innerMove, outerArrival, planAutoTravel } from "./logic.js";
+import {
+  getAutoTravelStopReason,
+  hasQuestProgressChanged,
+  innerMove,
+  outerArrival,
+  planAutoTravel,
+  shouldDispatchQueuedAutoTravel,
+  shouldThrottleMovement,
+} from "./logic.js";
 
 const makeState = (overrides = {}) => ({
   room: { name: "鱼定村", npcs: [] },
@@ -176,6 +184,7 @@ describe("inner movement logic", () => {
     });
 
     expect(result.cached).toBe(true);
+    expect(result.traceInfo.newFaces).toEqual(["客商"]);
     expect(result.squareOps).toEqual([{ op: "consume", key: "雅江", day: 0 }]);
     expect(result.changes.room).toMatchObject({
       name: "雅江",
@@ -230,5 +239,31 @@ describe("inner movement logic", () => {
 
     expect(planAutoTravel(state, "雅江")).toEqual({ locked: false, path: ["e"] });
     expect(planAutoTravel(state, "黑风寨")).toEqual({ locked: true, path: null });
+  });
+});
+
+describe("auto-travel continuation", () => {
+  it("continues only when idle with queued commands", () => {
+    expect(shouldDispatchQueuedAutoTravel({ loading: false, queueCount: 1, hasQueuedCommands: true })).toBe(true);
+    expect(shouldDispatchQueuedAutoTravel({ loading: true, queueCount: 1, hasQueuedCommands: true })).toBe(false);
+    expect(shouldDispatchQueuedAutoTravel({ loading: false, queueCount: 0, hasQueuedCommands: true })).toBe(false);
+  });
+
+  it("stops on encounters, new NPCs, and quest progress changes", () => {
+    expect(getAutoTravelStopReason({ encounter: { name: "路人" } })).toBe("encounter");
+    expect(getAutoTravelStopReason({ newFaces: ["新人物"] })).toBe("newNpc");
+    expect(getAutoTravelStopReason({ questProgressChanged: true })).toBe("quest");
+    expect(getAutoTravelStopReason()).toBeNull();
+  });
+
+  it("compares quest progress snapshots", () => {
+    expect(hasQuestProgressChanged({ a: { status: "active" } }, { a: { status: "active" } })).toBe(false);
+    expect(hasQuestProgressChanged({}, { a: { status: "active" } })).toBe(true);
+  });
+
+  it("does not debounce queued auto-travel steps as rapid manual movement", () => {
+    expect(shouldThrottleMovement({ forceLayer: "outer", autoTravel: false, elapsed: 50 })).toBe(true);
+    expect(shouldThrottleMovement({ forceLayer: "outer", autoTravel: true, elapsed: 50 })).toBe(false);
+    expect(shouldThrottleMovement({ forceLayer: "outer", autoTravel: false, elapsed: 300 })).toBe(false);
   });
 });
