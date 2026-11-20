@@ -25,7 +25,8 @@ try {
   browser = await chromium.launch({ headless: true });
   for (const file of specFiles) {
     const name = basename(file, ".spec.mjs");
-    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const { default: spec, viewport = { width: 1440, height: 900 } } = await import(pathToFileURL(file).href);
+    const context = await browser.newContext({ viewport });
     const page = await context.newPage();
     const errors = [];
     page.on("console", (message) => {
@@ -56,7 +57,6 @@ try {
         });
       });
       const ai = await installMockAi(page);
-      const { default: spec } = await import(pathToFileURL(file).href);
       await page.goto(server.url);
       await spec({ page, ai, game: { ...game, consoleErrors: errors } });
       console.log(`PASS ${name}`);

@@ -1,0 +1,10 @@
+.mobile-tab-bar {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 4px max(8px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+}
+
+html[data-keyboard-open] .mobile-tab-bar {
+  display: none;
+}

@@ -63,7 +63,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     presets, setPresets, input, setInput, loading, setLoading, loadingRef,
     setWaitSecs, waitTimerRef, pendingTalks, pendingTalksRef, changePendingTalks,
     queueCount,
-    setQueueCount, gm, setGm, setIsMobile, setMobileDrawer, setMobileTopMenu,
+    setQueueCount, gm, setGm, setIsMobile, setMobileTopMenu,
     interactMode, setInteractMode, talkTarget, setTalkTarget, activeTarget, setActiveTarget,
     nsfwOn, setOutfitState, pigeonTarget, setPigeonTarget, apiCfg, uiScale, isDayMode,
     cmdHistory, setCmdHistory, histIdx, setHistIdx, forcedDuelNpc, setForcedDuelNpc,
@@ -76,7 +76,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   useGameStartupBindings({
     room, prevRoomNameRef, restoredInnerRef, setInnerRoomName, companionState,
     companionStateRef, loading, loadingRef, time, timeRef, setIsMobile,
-    setMobileDrawer, setMobileTopMenu,
+    setMobileTopMenu,
   });
 
   // ── 临时七维 buff 的读取端（消耗品系统第3步）──

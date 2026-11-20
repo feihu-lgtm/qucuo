@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "react";
 import TopBar from "../ui/panels/TopBar.jsx";
-import LeftPanel from "../ui/panels/LeftPanel.jsx";
-import CenterPanel from "../ui/panels/CenterPanel.jsx";
-import RightPanel from "../ui/panels/RightPanel.jsx";
+import { LeftPanel, CenterPanel, RightPanel, MobileTabBar, usePanelFaces } from "../ui/panels/gamePanels.js";
 import ClickableMap from "../ui/components/ClickableMap.jsx";
 import ZoomableMap from "../ui/components/ZoomableMap.jsx";
 import { QUCUO_MAP, isNodeUnlocked } from "../domain/map/qucuoMap.js";
@@ -13,13 +11,12 @@ import {
 import { DIRS } from "../utils/mudHelpers.js";
 import { MAP_UI } from "../domain/map/mapUi.js";
 import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";
-import { getMobileDrawerSwipeAction } from "../utils/mobileDrawerSwipe.js";
-import { didOpenConfirmation, didOpenOverlay } from "../utils/mobileOverlayTransitions.js";
-import { useUiStore } from "../store/uiStore.js";
+import { didOpenCenterContent } from "../utils/mobileColumn.js";
+import { OVERLAY, useOverlay } from "../store/uiStore.js";
 
 export default function GameLayout({ layout }) {
   const {
-    overlayHost, uiScale, zoneTheme, isMobile, mobileDrawer, setMobileDrawer,
+    overlayHost, uiScale, zoneTheme, isMobile, mobileColumn, setMobileColumn,
     rollbackBlocked, stopRunning, dispatchCommand,
     mobileTopMenu, setMobileTopMenu,
     isDayMode, setIsDayMode, uiGold, uiTurquoise, uiCrimson, uiPink,
@@ -56,11 +53,38 @@ export default function GameLayout({ layout }) {
     trainNeigong, trainWaigong, trainCost, activeBuffs, breakthroughSkill,
     confessToNarrator, setInv, mapBigCloseGuard,
   } = layout;
-  const overlays = useUiStore((state) => state.overlays);
-  const previousOverlaysRef = useRef(overlays);
-  const previousDuelPendingRef = useRef(duelPending);
-  const swipeStart = useRef(null);
-  const suppressClick = useRef(false);
+  const { leftFaces, rightFaces } = usePanelFaces();
+  const showDebug = useOverlay(OVERLAY.DEBUG);
+  const showBasement = useOverlay(OVERLAY.BASEMENT);
+  const previousCenterContent = useRef(null);
+  const narrativeView = useRef({ visible: false, log: null });
+
+  useEffect(() => {
+    const content = {
+      building: activeBuilding?.id, trade: tradingShop, duel: duelPending,
+      interaction: interactMode !== "action" ? `${interactMode}:${pigeonTarget || talkTarget || ""}` : null,
+      trauma: seaTraumaActive, debug: showDebug, basement: showBasement,
+    };
+    const opened = didOpenCenterContent(previousCenterContent.current, content);
+    previousCenterContent.current = content;
+    if (isMobile && opened) setMobileColumn("center");
+  }, [isMobile, activeBuilding?.id, tradingShop, duelPending, interactMode, pigeonTarget,
+    talkTarget, seaTraumaActive, showDebug, showBasement, setMobileColumn]);
+
+  useEffect(() => {
+    const previous = narrativeView.current;
+    const visible = !isMobile || mobileColumn === "center";
+    if (visible) {
+      if (isMobile && !previous.visible && previous.log !== log) {
+        const seen = new Set(previous.log);
+        if (previous.log === null || log.some(entry => !seen.has(entry))) {
+          logEnd.current?.scrollIntoView({ behavior: "instant" });
+        }
+      }
+      previous.log = log;
+    }
+    previous.visible = visible;
+  }, [isMobile, mobileColumn, log, logEnd]);
 
   useEffect(() => {
     const viewport = window.visualViewport;
@@ -94,69 +118,9 @@ export default function GameLayout({ layout }) {
     };
   }, [isMobile]);
 
-  useEffect(() => {
-    const overlayOpened = didOpenOverlay(previousOverlaysRef.current, overlays);
-    const confirmationOpened = didOpenConfirmation(previousDuelPendingRef.current, duelPending);
-    previousOverlaysRef.current = overlays;
-    previousDuelPendingRef.current = duelPending;
-    if (isMobile && mobileDrawer && (overlayOpened || confirmationOpened)) {
-      setMobileDrawer(null);
-    }
-  }, [isMobile, mobileDrawer, overlays, duelPending, setMobileDrawer]);
-
-  useEffect(() => {
-    if (!isMobile || !mobileDrawer) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, [isMobile, mobileDrawer]);
-
-  const onTouchStart = (event) => {
-    if (suppressClick.current) suppressClick.current = false;
-    if (!isMobile || event.pointerType === "mouse") return;
-    swipeStart.current = { x: event.clientX, y: event.clientY };
-  };
-  const onTouchEnd = (event) => {
-    const start = swipeStart.current;
-    swipeStart.current = null;
-    if (!start || !isMobile) return;
-    const action = getMobileDrawerSwipeAction({
-      startX: start.x,
-      endX: event.clientX,
-      startY: start.y,
-      endY: event.clientY,
-      width: window.innerWidth,
-      drawer: mobileDrawer,
-    });
-    if (!action) {
-      const dx = event.clientX - start.x;
-      const dy = event.clientY - start.y;
-      const drawerWidth = Math.min(window.innerWidth * 0.82, 340);
-      const outsideDrawer = mobileDrawer === "left"
-        ? event.clientX >= drawerWidth
-        : mobileDrawer === "right" && event.clientX <= window.innerWidth - drawerWidth;
-      if (mobileDrawer && Math.abs(dx) < 10 && Math.abs(dy) < 10 && outsideDrawer) {
-        setMobileDrawer(null);
-      }
-      return;
-    }
-    setMobileDrawer(action === "close" ? null : action);
-    suppressClick.current = true;
-    event.preventDefault();
-  };
-
   return (
     <div
       className="game-layout"
-      onPointerDownCapture={onTouchStart}
-      onPointerUpCapture={onTouchEnd}
-      onPointerCancelCapture={() => { swipeStart.current = null; }}
-      onClickCapture={(event) => {
-        if (!suppressClick.current) return;
-        suppressClick.current = false;
-        event.preventDefault();
-        event.stopPropagation();
-      }}
       style={{ display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
     >
       <TopBar
@@ -172,13 +136,8 @@ export default function GameLayout({ layout }) {
       {overlayHost}
 
       <div className="mobile-game-columns" style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", minHeight: 0 }}>
-        {isMobile && mobileDrawer && (
-          <div role="button" aria-label="关闭侧栏" onClick={() => setMobileDrawer(null)}
-            style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(0,0,0,.55)" }} />
-        )}
-
         <LeftPanel
-          isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
+          isMobile={isMobile} mobileColumn={mobileColumn} faces={leftFaces}
           zoneTheme={zoneTheme} S={S}
           room={room} innerRoomName={innerRoomName} time={time}
           varTree={varTree} char={char}
@@ -196,7 +155,7 @@ export default function GameLayout({ layout }) {
         />
 
         <CenterPanel
-          isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
+          isMobile={isMobile} mobileColumn={mobileColumn}
           zoneTheme={zoneTheme} S={S}
           loading={loading} addLog={addLog}
           rollbackOneStep={rollbackOneStep} captureUndo={captureUndo}
@@ -254,7 +213,7 @@ export default function GameLayout({ layout }) {
         />
 
         <RightPanel
-          isMobile={isMobile} mobileDrawer={mobileDrawer} setMobileDrawer={setMobileDrawer}
+          isMobile={isMobile} mobileColumn={mobileColumn} faces={rightFaces}
           zoneTheme={zoneTheme} S={S}
           char={char} inv={inv} skills={skills} exp={exp} pot={pot}
           playerAvatar={playerAvatar}
@@ -271,6 +230,9 @@ export default function GameLayout({ layout }) {
           setInv={setInv}
         />
       </div>
+
+      {isMobile && <MobileTabBar theme={zoneTheme} column={mobileColumn} onSelect={setMobileColumn}
+        leftFaces={leftFaces} rightFaces={rightFaces} />}
 
       {mapBig && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={mapBigCloseGuard.onMouseDown} onClick={mapBigCloseGuard.onClick}>
         <div style={{
