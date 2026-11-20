@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getRngState, setRngState, setSeed } from "../../core/rng.js";
 import { createWorldRules } from "../../engine/worldRules.js";
 import { getResidentNpcs } from "../../domain/npc/residentNpcs.js";
+import { timeAdvanceRule } from "../time/rules.js";
 import { residentNpcRule } from "./rules.js";
 
 const importedRegistry = {
@@ -86,6 +87,41 @@ describe("resident NPC world rule", () => {
     }, { importedRegistry });
 
     expect(getRngState()).toBe(checkpoint);
+  });
+
+  it("does not reinject a resident after a pursuit moves them to another cached room", () => {
+    setSeed(42);
+    const homeState = makeState();
+    const homeResult = residentNpcRule.run(homeState, { importedRegistry });
+    const homeNpcs = homeResult.changes.room(homeState.room).npcs;
+    const residentName = getResidentNpcs("鱼定村")[0].name;
+    const roomMapRef = { current: { 鱼定村: { items: [], npcs: homeNpcs } } };
+    const awayState = {
+      ...makeState(),
+      time: 31,
+      room: { name: "玉泉寨", items: [], npcs: [] },
+      varTree: { 角色: { [residentName]: { 生气状态: { active: true, turnsLeft: 1 } } } },
+    };
+    const pursuit = timeAdvanceRule.run(awayState, {
+      firstRun: false,
+      previousDeps: [30, awayState.room.npcs],
+      roomMapRef,
+    });
+    const homeAgain = {
+      ...makeState(),
+      room: { ...homeState.room, items: pursuit.roomMap.鱼定村.items, npcs: pursuit.roomMap.鱼定村.npcs },
+    };
+    const reentry = residentNpcRule.run(homeAgain, {
+      importedRegistry,
+      roomMapRef: { current: pursuit.roomMap },
+    });
+    const homeAfterReentry = reentry.changes.room(homeAgain.room).npcs;
+    const cachedOccurrences = Object.values(pursuit.roomMap)
+      .flatMap((room) => room.npcs || [])
+      .filter((npc) => npc.name === residentName);
+
+    expect(homeAfterReentry.some((npc) => npc.name === residentName)).toBe(false);
+    expect(cachedOccurrences).toHaveLength(1);
   });
 
   it("depends on imported registry revision, quest progress, and flags", () => {
