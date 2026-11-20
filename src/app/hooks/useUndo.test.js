@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../core/gameStore.js";
 import { travelByCarriage } from "../../features/buildings/logic.js";
 import { giftNpc } from "../../features/npc/logic.js";
@@ -7,6 +9,7 @@ import { runQuestChoice, settlePersuasion } from "./useQuestPanel.js";
 import { restorePersuasionProgress } from "./useAutosave.js";
 import { createTurnStaleCheck, createUndoController } from "./useUndo.js";
 import { turnMonitor } from "../../core/turnMonitor.js";
+import { useScreenHandlers } from "./useScreenHandlers.js";
 
 it("records persuasion settlement as one command and clears only that attempt", () => {
   const setActivePersuasion = vi.fn();
@@ -80,6 +83,41 @@ function freshStore(overrides) {
 }
 
 describe("undo controller", () => {
+  it("keeps the real pickup undo point when a queued duplicate is a no-op", () => {
+    const item = { id: "ground-stone", name: "石子" };
+    const before = { room: { items: [item] }, inv: [], time: 6, varTree: {} };
+    const restoreStore = freshStore(before);
+    try {
+      const harness = createController({
+        buildCurrentSnapshot: () => gameStore.getState(),
+        applySnapshot: initGameStore,
+      });
+      const captureUndo = vi.fn(harness.controller.captureUndo);
+      const addLog = vi.fn();
+      let handlers;
+      function Harness() {
+        handlers = useScreenHandlers({
+          featureCtxRef: { current: { setVarTree: gameActions.setVarTreeState, addLog } },
+          timeRef: { current: 6 },
+          captureUndo,
+        });
+        return null;
+      }
+      renderToStaticMarkup(createElement(Harness));
+
+      handlers.handleCollectGround(item);
+      handlers.handleCollectGround(item);
+
+      expect(captureUndo).toHaveBeenCalledTimes(1);
+      expect(addLog).toHaveBeenCalledTimes(1);
+      expect(gameStore.getState()).toMatchObject({ inv: [item], room: { items: [] }, time: 7 });
+      expect(harness.controller.rollbackOneStep()).toBe(true);
+      expect(gameStore.getState()).toMatchObject(before);
+    } finally {
+      restoreStore();
+    }
+  });
+
   it("exposes turn invalidation for the generation stop action", () => {
     const harness = createController();
     const isStale = createTurnStaleCheck(harness.turnGenerationRef);

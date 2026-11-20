@@ -62,8 +62,10 @@ export function useScreenHandlers({
   }, { feature: "items.consumeItem" }), [captureUndo]);
 
   const handleCollectGround = useCallback((item) => applyResult(featureCtxRef.current, () => {
+    const result = pickGroundItem(gameStore.getState(), item, { tallyTime: timeRef.current });
+    if (!result.changes) return;
     captureUndo();
-    applyResult(featureCtxRef.current, pickGroundItem(gameStore.getState(), item, { tallyTime: timeRef.current }));
+    applyResult(featureCtxRef.current, result);
   }, { feature: "items.pickGroundItem" }), [captureUndo]);
 
   const handleNpcTrade = useCallback((npc) => applyResult(featureCtxRef.current, () => {
