@@ -6,6 +6,7 @@ import { RESIDENT_NPCS } from "../../domain/npc/residentNpcs.js";
 import { tickAngryState } from "../../domain/combat/stealSystem.js";
 import { makeItem } from "../../domain/economy/equipment.js";
 import { makeItemSmart } from "../../domain/items/catalog.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { cleanExpiredBuffs } from "../../utils/buffSystem.js";
 import { buildRoomNpcWithCombat } from "../npc/rules.js";
 
@@ -183,7 +184,7 @@ export const timeAdvanceRule = {
       angerUpdates.push([name, anger]);
       if (!anger.escalated) continue;
       const npc = (state.room?.npcs || []).find((entry) => entry.name === name);
-      if (npc) {
+      if (npc && isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)) {
         logs.push({ t: "err", text: `  ${name}积怒难平，终于按捺不住，径直朝你逼了过来——这场恶斗，躲不掉了！` });
         forcedDuelNpc = npc;
         continue;
@@ -209,11 +210,20 @@ export const timeAdvanceRule = {
       };
     }
     if (pursuedNpcs.length) {
-      const names = new Set(pursuedNpcs.map((npc) => npc.name));
-      changes.room = (previous) => ({
-        ...previous,
-        npcs: [...(previous.npcs || []).filter((npc) => !names.has(npc.name)), ...pursuedNpcs],
-      });
+      const pursuersByName = new Map(pursuedNpcs.map((npc) => [npc.name, npc]));
+      changes.room = (previous) => {
+        const updatedNames = new Set();
+        const npcs = (previous.npcs || []).map((npc) => {
+          const pursuer = pursuersByName.get(npc.name);
+          if (!pursuer) return npc;
+          updatedNames.add(npc.name);
+          return pursuer;
+        });
+        return {
+          ...previous,
+          npcs: [...npcs, ...pursuedNpcs.filter((npc) => !updatedNames.has(npc.name))],
+        };
+      };
       if (roomMap) nextRoomMap = moveNpcRoomCache(roomMap, state.room, pursuedNpcs);
     }
 

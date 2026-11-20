@@ -130,6 +130,43 @@ describe("time advance world rule", () => {
     expect(npc.innerRoom).toBe("玉石料场");
   });
 
+  it("pursues an angry NPC hidden in another inner room and updates the existing room entry", () => {
+    const npc = {
+      name: "流动商人",
+      id: "wandering-merchant",
+      innerRoom: "杂货铺摊位",
+      moveset: [],
+      carriedItems: [],
+      special: {},
+      combatStats: { hp: [10, 10] },
+    };
+    const state = makeState({
+      room: { name: "鱼定村", items: [], npcs: [npc] },
+      innerRoomName: "村口",
+      varTree: { 角色: { 流动商人: { 生气状态: { active: true, turnsLeft: 1 } } } },
+    });
+    const result = timeAdvanceRule.run(state, {
+      firstRun: false,
+      previousDeps: [state.time - 1, state.room.npcs],
+      roomMapRef: { current: { 鱼定村: { items: [], npcs: [npc] } } },
+    });
+    const currentNpcs = result.changes.room(state.room).npcs;
+
+    expect(isNpcVisibleInInnerRoom("鱼定村", "村口", npc)).toBe(false);
+    expect(result.forcedDuelNpc.innerRoom).toBe("村口");
+    expect(isNpcVisibleInInnerRoom("鱼定村", "村口", result.forcedDuelNpc)).toBe(true);
+    expect(currentNpcs).toHaveLength(1);
+    expect(currentNpcs[0]).toBe(result.forcedDuelNpc);
+    expect(result.logs).toContainEqual({
+      t: "err",
+      text: "  流动商人一路寻来，堵在你面前——积怒难平，这场恶斗躲不掉了！",
+    });
+    expect(result.logs).not.toContainEqual({
+      t: "err",
+      text: "  流动商人积怒难平，终于按捺不住，径直朝你逼了过来——这场恶斗，躲不掉了！",
+    });
+  });
+
   it("uses the imported registry when an imported NPC is absent from the room map", () => {
     const state = makeState({
       room: { name: "玉泉寨", items: [], npcs: [] },
