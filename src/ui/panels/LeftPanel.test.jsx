@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { NpcAngerLine } from "./LeftPanel.jsx";
+import NpcAngerLine from "./NpcAngerLine.jsx";
 
 describe("LeftPanel NPC anger status", () => {
   it("renders the shared anger line with its existing color and attempt count", () => {
