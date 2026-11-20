@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { distributedGap } from "./facePreferences.js";
 
-export default function FaceContent({ face, panelId, labelId, direction, modules, renderModule, editable }) {
+export default function FaceContent({ face, panelId, labelId, direction, modules, renderModule, editable, onScrollbarChange }) {
   const scrollRef = useRef(null);
   const listRef = useRef(null);
   useLayoutEffect(() => {
@@ -11,13 +11,14 @@ export default function FaceContent({ face, panelId, labelId, direction, modules
       const heights = [...list.children].map(child => child.offsetHeight);
       const gap = distributedGap(scroll.clientHeight - 20, heights);
       list.style.rowGap = `${gap}px`;
+      onScrollbarChange(scroll.offsetWidth - scroll.clientWidth);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(scroll);
     for (const child of list.children) observer.observe(child);
     measure();
     return () => observer.disconnect();
-  }, [modules]);
+  }, [modules, onScrollbarChange]);
   return (
     <div ref={scrollRef} id={panelId} role="region" aria-label={face.name || "未命名"} aria-labelledby={labelId}
       className={`face-content ${direction < 0 ? "face-backward" : "face-forward"}`}>

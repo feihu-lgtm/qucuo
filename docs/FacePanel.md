@@ -34,7 +34,8 @@ previous/next names; clicking either side rotates. Other names stay hidden.
 With two faces only the next name appears; with one only the current name appears.
 Names transition around the carousel in 250ms (disabled under reduced motion).
 The chrome gear (accessible name/title 编排) stays at the right, with an 8px gap.
-Borderless previous/next hints overlay the content's 28px edge strips without taking layout space.
+Borderless previous/next hints overlay centered 28×44px edge targets without taking layout space.
+The next hint is inset beyond the measured scrollbar width (at least 16px for overlay scrollbars).
 On hover-capable pointers they appear faintly over the content and strengthen over the hovered edge;
 on touch devices they remain very faint. Both are keyboard-focusable with accessible labels.
 Touch swipes beginning in content are isolated from ancestor gesture handlers.

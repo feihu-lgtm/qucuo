@@ -86,8 +86,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  top: 0;
-  bottom: 0;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
   z-index: 1;
   width: 28px;
   padding: 0;

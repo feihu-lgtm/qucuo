@@ -11,6 +11,7 @@ const unblocked = () => false;
 export default function FacePanel({ faces, theme, renderModule, isMobile = false, swipe = true,
   isModuleVisible = visible, isKeyboardBlocked = unblocked, label = "面板", className = "" }) {
   const [editing, setEditing] = useState(false);
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
   const contentRef = useRef(null);
   const instanceId = useId();
   const { preferences, face, direction, editable, enableKeyboard, rotate } = faces;
@@ -34,11 +35,12 @@ export default function FacePanel({ faces, theme, renderModule, isMobile = false
       {editable && editing && <FaceEditor faces={faces} theme={theme} />}
       <div className="face-stage" ref={contentRef} style={{ touchAction: swipe ? "pan-y pinch-zoom" : "auto" }}>
         <FaceContent key={face.id} face={face} panelId={panelId} labelId={`${instanceId}-label-${face.id}`}
-          direction={direction} modules={modules} renderModule={renderModule} editable={editable} />
+          direction={direction} modules={modules} renderModule={renderModule} editable={editable}
+          onScrollbarChange={setScrollbarWidth} />
         <button type="button" className="face-edge face-edge-previous" aria-label="上一面"
           style={{ color: theme.textDim }} onClick={() => rotate(-1)}>‹</button>
         <button type="button" className="face-edge face-edge-next" aria-label="下一面"
-          style={{ color: theme.textDim }} onClick={() => rotate(1)}>›</button>
+          style={{ color: theme.textDim, right: Math.max(16, scrollbarWidth) }} onClick={() => rotate(1)}>›</button>
       </div>
     </div>
   );
