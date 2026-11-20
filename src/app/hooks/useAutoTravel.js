@@ -1,5 +1,5 @@
-import { useCallback, useEffect } from "react";
-import { planAutoTravel } from "../../features/map/logic.js";
+import { useCallback, useEffect, useRef } from "react";
+import { planAutoTravel, shouldDispatchQueuedAutoTravel } from "../../features/map/logic.js";
 import { DIRS } from "../../utils/mudHelpers.js";
 
 export function useAutoTravel({
@@ -41,4 +41,26 @@ export function useAutoTravel({
   }, [room.name, innerRoomName, act]);
 
   return autoTravelTo;
+}
+
+export function useTurnQueue({ loading, act, queueCount, pendingQueue, setQueueCount, autoTravelRef }) {
+  const actRef = useRef(act);
+  actRef.current = act;
+
+  useEffect(() => {
+    if (shouldDispatchQueuedAutoTravel({
+      loading,
+      queueCount,
+      hasQueuedCommands: pendingQueue.current.length > 0,
+    })) {
+      const timer = setTimeout(() => {
+        const next = pendingQueue.current.shift();
+        if (!next) return;
+        setQueueCount(pendingQueue.current.length);
+        if (pendingQueue.current.length === 0) autoTravelRef.current = false;
+        actRef.current(next.cmd, next.extraReplies, next.opts || {});
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, queueCount, pendingQueue, setQueueCount, autoTravelRef]);
 }
