@@ -1,7 +1,7 @@
 import { QUALITY, CATEGORY_LABEL, makeItem } from "../../domain/economy/equipment.js";
 import { makeItemSmart, CATALOG_INDEX } from "../../domain/items/catalog.js";
 import { markNpcAsKnown as markNpcKnown } from "../../domain/npc/npcAwareness.js";
-import { removeNpc, markCarriedLost, respawnNpc } from "../../domain/npc/roomNpcs.js";
+import { markCarriedLost, respawnNpc } from "../../domain/npc/roomNpcs.js";
 import { tryLearnFromMaster, tryStealFrom } from "../../domain/kungfu/learnSkill.js";
 import { isNpcAngry, stealSuccessRate } from "../../domain/combat/stealSystem.js";
 import { duelAffGain, duelDropChance, duelPotGain, TEAMWORK_GAIN } from "../../domain/combat/duelSettleMath.js";
@@ -12,7 +12,9 @@ import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings } from "../../domain/quests/questEngine.js";
 import { applyStageRewards, resolveStageRewards } from "../../domain/quests/questRewards.js";
 import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
-import { activeCompanionKey, companionKeyByName, unlockImportedCompanion, unlockPearl, unlockSnowLeopard } from "../../domain/companion/companion.js";
+import { activeCompanionKey } from "../../domain/companion/companion.js";
+import { snowMedicineGift } from "../quest/snowLeopard.js";
+import { snowQuestActive } from "../../domain/quests/snowLeopardQuest.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
@@ -224,6 +226,10 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   const command = isAngry ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好` : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
   const changes = { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }), inv: nextInv };
   const logs = [];
+  if (snowMedicineGift(state, npc, item)) {
+    changes.flags = (f) => [...new Set([...f, "snow_spirit_medicine"])];
+    logs.push({ t: "sys", text: "  你替雪豹敷药，前爪的陈年旧伤终于好了。" });
+  }
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);
     for (const [key, update] of Object.entries(advancement)) {
@@ -255,29 +261,7 @@ export function tradeWithNpc(state, npc) {
   return { shop: { npcName: npc.name, ...shopData } };
 }
 
-export function inviteCompanion(state, npc) {
-  if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
-  if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "invite" });
-  const key = companionKeyByName(npc.name);
-  let companionState = state.companionState || {};
-  if (key === "snowLeopard") companionState = unlockSnowLeopard(companionState);
-  else if (key === "pearl") companionState = unlockPearl(companionState);
-  else if (npc.imported) companionState = unlockImportedCompanion(companionState, npc);
-  else return {};
-
-  return {
-    changes: {
-      companionState,
-      varTree: (prev) => markNpcKnown(prev || {}, npc.name),
-      room: (prev) => ({
-        ...prev,
-        npcs: removeNpc(prev.npcs, (entry) => entry.name === npc.name && (entry.companionCandidate || entry.imported)),
-      }),
-    },
-    settle: `向${npc.name}伸出手，郑重邀它同行`,
-    settleOptions: { settleNpc: npc.name, settleKind: "companion_invite", settleBeast: !!npc.beast },
-  };
-}
+export { inviteCompanion } from "./inviteCompanion.js";
 
 export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }], kind: "blocked" };
@@ -422,6 +406,9 @@ export function settleNpcDuel(state, npc, {
   const changes = {};
   const logs = [];
 
+  if (outcome === "win" && (npc.hostile || state.varTree?.角色?.[npc.name]?.生气状态?.escalated) && snowQuestActive(state)) {
+    addChange(changes, working, "flags", (f) => [...new Set([...f, "snow_spirit_duel"])]);
+  }
   if (Array.isArray(battleLog) && battleLog.length) {
     const foe = npc.name || "对手";
     const battleLogs = [{ t: "sys", text: `　── 与${foe}切磋 · 逐回合 ──` }];

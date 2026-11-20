@@ -19,7 +19,7 @@ import { embeddingReady } from "../../domain/memory/embeddingService.js";
 import { writeNote, NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { applyKnowledgeTreeDiff, registerFact } from "../../domain/prompt/knowledge.js";
 import { settleNegotiation as gambleSettleNegotiation } from "../../domain/economy/gambleStone.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { commitModelFlags } from "./commitFlags.js";
 import { DIR_DXY } from "../../utils/mudHelpers.js";
 import { filterGhostCommands, findScriptOverride } from "./commitHelpers.js";
 
@@ -394,16 +394,7 @@ export function commitRound(d) {
       })]);
     }
   }
-  if (d.p.delta?.flags_add?.length) {
-    d.setFlags(f => [...new Set([...f, ...d.p.delta.flags_add])]);
-    // 说服型任务分支：AI 吐出了成功 flag，说明玩家把对方说动了——
-    // 清挂起态（停止继续注入说服判定），forceAdvance 交给现有的 flag→stage 推进链。
-    if (d.pendingQuestBranch?.mode === "talk" && d.p.delta.flags_add.includes(d.pendingQuestBranch.flag)) {
-      const pq2 = QUCUO_QUESTS.find(x => x.id === d.pendingQuestBranch.questId);
-      if (pq2) d.addLog([{ t: "affection", text: `  ✓ 你把话说到了点子上，「${pq2.title}」推进。` }]);
-      d.setPendingQuestBranch(null);
-    }
-  }
+  commitModelFlags(d);
   // 选项在叙事之后、隔一拍再浮现——不要跟叙事同一帧糊在一起。让玩家先把这段
   // 剧情读进去，行动选项再"卡一下"缓缓出来，读感上先有戏、后给抉择。
   if (d.p.choices?.length) {

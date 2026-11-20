@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { snowLeopardHint } from "../../domain/quests/snowLeopardQuest.js";
 import { callModel, callModelStream } from "../../infra/apiConfig.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
@@ -171,7 +172,7 @@ export function usePrivateTalk({
       );
       const sys = inSeaNow
         ? `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: NNPC_STAGE })}${recallBlock}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`
-        : `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
+        : `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${snowLeopardHint({ questProgress, flags, cmd: content })}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
 
       // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
       // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。

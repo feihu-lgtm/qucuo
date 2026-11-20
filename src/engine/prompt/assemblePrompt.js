@@ -1,3 +1,5 @@
+import { snowLeopardNote } from "../../domain/quests/snowLeopardQuest.js";
+
 const ATTEMPT_LABELS = {
   talk: "交谈",
   gift: "送礼",
@@ -65,7 +67,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     convo, preset, visibleNpcs: presence.visibleNpcs, room, cmd, isTalk,
     questProgress, varTree, time, companionState, nsfwOn,
   }) || {};
-  const questStageNote = input.buildQuestStageNote?.({ questProgress, flags, char, room, inv, pendingQuestBranch }) || "";
+  const questStageNote = input.buildQuestStageNote?.({ questProgress, flags, char, room, inv, pendingQuestBranch, visibleNpcs: presence.visibleNpcs, convo, settleNpc: opts.settleNpc, cmd, innerRoomName }) || "";
   const forcedEventNote = input.buildForcedEventNote?.(opts.forcedEvent, opts.forcedEventNpc, apiCfg.targetWordCount) || "";
   const arrivalNote = input.buildArrivalNote?.({ isTalk, movingDir, lockedDestName, outerDepart }) || "";
   const encounterNote = input.encounter
@@ -81,6 +83,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   return {
     cmd, newConvo, mainConvo, hist, budgetInstruction,
     ctx: context,
+    snowLeopardContext: snowLeopardNote({ ...input, cmd, settleNpc: opts.settleNpc }),
     npcLoreBlockWithQuest: npcContext.npcLoreBlockWithQuest || "",
     reunionBlock: npcContext.reunionBlock || "",
     lastAiText: npcContext.lastAiText || "",

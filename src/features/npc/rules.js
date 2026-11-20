@@ -12,7 +12,7 @@ const NPC_FIELDS = [
   "levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable",
   "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder",
   "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop",
-  "portrait", "neigong", "waigong", "imported",
+  "portrait", "neigong", "waigong", "imported", "hostile",
 ];
 
 export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5 } = {}) {

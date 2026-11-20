@@ -1,3 +1,4 @@
+import { snowLeopardRule } from "../src/features/quest/snowLeopard.js";
 import { readFile, writeFile } from "node:fs/promises";
 import { isDeepStrictEqual } from "node:util";
 import { resolve } from "node:path";
@@ -907,6 +908,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     alreadySatisfiedCollectRule,
     escortArrivalRule,
     questFlagRule,
+    snowLeopardRule,
     estateStartRule,
     estateAnnouncementRule,
     estateProgressRule,

@@ -106,7 +106,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     ? buildAngryNote(d.varTree, [d.settleNpc])
     : "";
   const inChatContent = d.isSettle
-    ? rulesPrefix + (d.settleNpc ? d.reunionBlock : "") + angrySettleNote + "\n\n" + proseRule
+    ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? d.reunionBlock : "") + angrySettleNote + "\n\n" + proseRule
     : rulesPrefix + d.ctx + distantBlock + d.recallBlock + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 

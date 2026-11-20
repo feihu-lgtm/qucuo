@@ -8,8 +8,8 @@
 // rewardText 只是完成时展示给玩家看的一句收尾描述，两者分工不同。
 
 import { QUEST_TYPE } from "./questTypes.js";
-
-export const QUCUO_QUESTS = [
+import { SNOW_LEOPARD_QUEST } from "./snowLeopardQuest.js";
+export const QUCUO_QUESTS = [SNOW_LEOPARD_QUEST,
   {
     id: "hunter_learn_quest",
     type: QUEST_TYPE.KILL,

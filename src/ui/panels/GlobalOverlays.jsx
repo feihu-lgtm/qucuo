@@ -105,7 +105,7 @@ export default function GlobalOverlays({
 
       {showQuestLog && (
         <QuestLogScreen
-          questProgress={questProgress}
+          questProgress={questProgress} flags={flags}
           zoneTheme={zoneTheme}
           onClose={() => closeOverlay(OVERLAY.QUEST_LOG)}
         />
@@ -173,7 +173,7 @@ export default function GlobalOverlays({
           onLearnSkill={handleNpcLearnSkill}
           onTrade={handleNpcTrade}
           onInviteCompanion={handleInviteCompanion}
-          companionUnlocked={isCompanionUnlockedByName(companionState, activeNpcMenu.name)}
+          flags={flags} companionUnlocked={isCompanionUnlockedByName(companionState, activeNpcMenu.name)}
         />
       )}
       {activeItemMenu && (
