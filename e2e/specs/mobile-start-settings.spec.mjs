@@ -40,6 +40,17 @@ export default async function mobileStartSettings({ page, game }) {
   assert.equal(await page.locator("html").getAttribute("data-font"), "pixel");
   await capture(page, "start-screen.png");
 
+  await page.evaluate(() => localStorage.setItem("wuxia_mud_ui_font", "song"));
+  await page.reload();
+  await page.getByText("开始游戏", { exact: true }).waitFor();
+  await page.waitForFunction(() => globalThis.document.documentElement.dataset.font === "song");
+  await capture(page, "start-screen-song.png");
+
+  await page.evaluate(() => localStorage.removeItem("wuxia_mud_ui_font"));
+  await page.reload();
+  await page.getByText("开始游戏", { exact: true }).waitFor();
+  await page.waitForFunction(() => globalThis.document.documentElement.dataset.font === "pixel");
+
   await page.getByText("设置", { exact: true }).click();
   await page.getByText("× 关闭", { exact: true }).click();
   await page.getByText("开始游戏", { exact: true }).waitFor();
