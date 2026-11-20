@@ -13,6 +13,7 @@
 //
 // 游戏数据经 props 下传，overlay 显隐读 uiStore，本地只保留建筑页签状态。
 // 建筑面板各自的 Screen 组件已经是独立文件，本文件只负责「此刻该显示哪一个」这层调度。
+import { chromeBtn } from "../theme.js";
 import { useState, useEffect } from "react";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
@@ -155,9 +156,9 @@ export default function CenterPanel({
                   addLog([{ t: "sys", text: "  ↩ 已回滚到上一步之前。" }]);
                 }}
                 title="撤销上一步行动，还原到落子之前"
-                style={{ cursor: "pointer", fontSize: "10px", color: "#c8a860", padding: "0 7px", display: "inline-flex", alignItems: "center", height: 22, boxSizing: "border-box", lineHeight: 1, letterSpacing: 0, whiteSpace: "nowrap", border: "1px solid #4a3a1a", borderRadius: 0, userSelect: "none" }}>↩ 回滚</span>
-              <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", fontSize: "10px", color: showDebug ? "var(--accent)" : "#2a2d3a", padding: "0 7px", display: "inline-flex", alignItems: "center", height: 22, boxSizing: "border-box", lineHeight: 1, letterSpacing: 0, whiteSpace: "nowrap", border: `1px solid ${showDebug ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>调试</span>
-              <span className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={{ cursor: "pointer", fontSize: "10px", color: gm ? "var(--warn)" : "#2a2d3a", padding: "0 7px", display: "inline-flex", alignItems: "center", height: 22, boxSizing: "border-box", lineHeight: 1, letterSpacing: 0, whiteSpace: "nowrap", border: `1px solid ${gm ? "#4a3a1a" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>/gamemode {gm ? "0" : "1"}</span>
+                style={chromeBtn(zoneTheme)}>↩ 回滚</span>
+              <span className="mobile-touch-target" onClick={() => toggleOverlay(OVERLAY.DEBUG)} style={chromeBtn(zoneTheme, { active: showDebug })}>调试</span>
+              <span className="mobile-touch-target" onClick={() => { setGm(g => { const nv = !g; addLog([{ t: "sys", text: nv ? "  [/gamemode 1] 创造模式：无敌，战斗必胜，啥都能干" : "  [/gamemode 0] 生存模式：回归凡人之躯" }]); return nv; }); }} style={chromeBtn(zoneTheme, { active: gm })}>/gamemode {gm ? "0" : "1"}</span>
             </span>
           </div>
 
@@ -637,31 +638,20 @@ export default function CenterPanel({
             </div>
           )}
 
-          <div className="mobile-control-row" style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
-            {[["action", "◈ 行动", zoneTheme.accent], ["talk", "◎ 对话", uiGreen], ["whisper", "◆ 私聊旁白", uiPink]].map(([id, label, color]) => (
+          <div className="mobile-control-row" style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
+            {[["action", "◈ 行动"], ["talk", "◎ 对话"], ["whisper", "◆ 私聊旁白"]].map(([id, label]) => (
               <span
                 key={id}
                 className="mobile-touch-target mobile-mode-control"
                 onClick={() => { setInteractMode(id); setTalkTarget(null); setActiveTarget(null); setPigeonTarget(null); }}
-                style={{
-                  cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 0, userSelect: "none",
-                  color: interactMode === id ? zoneTheme.bg : color,
-                  background: interactMode === id ? color : zoneTheme.bgPanel,
-                  border: `1px solid ${interactMode === id ? color : zoneTheme.border}`,
-                }}
+                style={chromeBtn(zoneTheme, { active: interactMode === id })}
               >{label}</span>
             ))}
             <span
               className="mobile-touch-target mobile-mode-control"
               onClick={() => setNsfwOn(x => !x)}
               title={nsfwOn ? "已开启：NSFW 写作规则已注入" : "已关闭：点击开启 NSFW 写作规则"}
-              style={{
-                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 0, userSelect: "none", fontWeight: "bold", letterSpacing: "0.5px",
-                color: nsfwOn ? zoneTheme.bg : zoneTheme.textDim,
-                background: nsfwOn ? uiCrimson : "transparent",
-                border: `1px solid ${nsfwOn ? uiCrimson : zoneTheme.border}`,
-                marginRight: 8,
-              }}
+              style={chromeBtn(zoneTheme, { active: nsfwOn })}
             >NSFW</span>
             <span style={{ flex: 1 }} />
             {/* 注：运气·内功+1 / 拆招·外功+1 两个升级按钮已移至右栏「内功外功」区，
@@ -671,10 +661,7 @@ export default function CenterPanel({
               onClick={meditate}
               title="打坐运功：消耗1回合，恢复部分气血"
               style={{
-                cursor: "pointer", fontSize: "10.5px", padding: "3px 8px", borderRadius: 0,
-                color: justMeditated ? "#e8d4ff" : "#b48adf",
-                background: justMeditated ? "#3a2a5a" : zoneTheme.bgPanel,
-                border: `1px solid ${justMeditated ? "#6a4a9a" : "#2a1d3a"}`,
+                ...chromeBtn(zoneTheme, { active: justMeditated }),
                 transform: justMeditated ? "scale(0.95)" : "scale(1)",
                 transition: "all 0.15s ease",
               }}
@@ -684,19 +671,14 @@ export default function CenterPanel({
           {/* ── NPC 人选选择器：点选某人 → 对话/行动聚焦此人；不选=全人物发给AI ── */}
           {interactMode !== "whisper" && interactMode !== "pigeon" && room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).length > 0 && (
             <div className="mobile-people-row" style={{
-              padding: "4px 14px", display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
+              padding: "6px 14px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
               borderTop: `1px solid ${zoneTheme.border}`, flexWrap: "wrap",
             }}>
               <span style={{ color: zoneTheme.textDim, fontSize: "10px", flexShrink: 0 }}>人选：</span>
               <span
                 className="mobile-touch-target mobile-person-chip"
                 onClick={() => { setActiveTarget(null); setTalkTarget(null); }}
-                style={{
-                  cursor: "pointer", fontSize: "10.5px", padding: "2px 7px", borderRadius: 0, userSelect: "none",
-                  color: activeTarget ? zoneTheme.textDim : zoneTheme.accent,
-                  background: activeTarget ? "transparent" : zoneTheme.accent + "20",
-                  border: `1px solid ${activeTarget ? zoneTheme.border : zoneTheme.accent}`,
-                }}
+                style={chromeBtn(zoneTheme, { active: !activeTarget })}
               >全部</span>
               {room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => {
                 const isSel = activeTarget === n.name;
@@ -706,12 +688,7 @@ export default function CenterPanel({
                     className="mobile-touch-target mobile-person-chip"
                     onClick={() => { setActiveTarget(n.name); if (interactMode !== "action") setTalkTarget(n.name); }}
                     title={isSel ? "点击「全部」取消选定" : `聚焦 ${n.name}`}
-                    style={{
-                      cursor: "pointer", fontSize: "10.5px", padding: "2px 7px", borderRadius: 0, userSelect: "none",
-                      color: isSel ? zoneTheme.accent : zoneTheme.textDim,
-                      background: isSel ? zoneTheme.accent + "20" : "transparent",
-                      border: `1px solid ${isSel ? zoneTheme.accent : zoneTheme.border}`,
-                    }}
+                    style={chromeBtn(zoneTheme, { active: isSel })}
                   >{n.name}</span>
                 );
               })}

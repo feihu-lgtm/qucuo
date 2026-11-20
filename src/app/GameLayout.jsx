@@ -161,7 +161,6 @@ export default function GameLayout({ layout }) {
       <TopBar
         isMobile={isMobile} mobileTopMenu={mobileTopMenu} setMobileTopMenu={setMobileTopMenu}
         zoneTheme={zoneTheme} isDayMode={isDayMode} setIsDayMode={setIsDayMode}
-        uiGold={uiGold} uiTurquoise={uiTurquoise} uiCrimson={uiCrimson} uiPink={uiPink}
         setSettingsInitialTab={setSettingsInitialTab}
         autoSaveError={autoSaveError} lastAutoSave={lastAutoSave}
         playerAvatarCustom={playerAvatarCustom} setPlayerAvatarCustom={setPlayerAvatarCustom}

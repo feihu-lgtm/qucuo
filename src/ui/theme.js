@@ -94,3 +94,15 @@ export const RADIUS = { btn: 0, card: 0, modal: 0 };
 export function getZoneName(roomName) {
   return ZONE_MAP[roomName] || "village";
 }
+
+// 主界面统一按钮：一种底色/文字/边框；只有「当前开启」用朱红强调。
+export function chromeBtn(theme, { active = false } = {}) {
+  return {
+    cursor: "pointer", display: "inline-flex", alignItems: "center", height: 22, padding: "0 9px",
+    boxSizing: "border-box", lineHeight: 1, whiteSpace: "nowrap", fontSize: "10.5px", letterSpacing: 0,
+    borderRadius: 0, userSelect: "none",
+    color: active ? theme.accent : theme.text,
+    background: active ? `color-mix(in srgb, ${theme.accent} 14%, transparent)` : "transparent",
+    border: `1px solid ${active ? theme.accent : theme.border}`,
+  };
+}
