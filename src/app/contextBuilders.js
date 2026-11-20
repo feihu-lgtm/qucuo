@@ -5,20 +5,27 @@ import { SECT_ENTRY } from "../domain/character/sectEntry.js";
 import { SEA_OF_MIND, canEnterSea } from "../domain/narrator/seaOfMind.js";
 import { setPearlForm, setSnowLeopardForm } from "../domain/companion/portraits.js";
 
-export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, addLog, effectiveSpecialNow }) {
+export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, addLog, effectiveSpecialNow, onGameStarted }) {
   const { showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead } = overlayState;
   const { cardImportHandlers, screenHandlers, duelHandlers, questPanel, aiInspect, outfitAdvice } = actions;
   return {
     dispatchCommand: actions.dispatchCommand,
     apiCfg: ui.apiCfg, setApiCfg: ui.setApiCfg, buildCurrentSnapshot: autosave.buildCurrentSnapshot,
-    applySnapshot: autosave.applySnapshot, varTree: game.varTree, setVarTree: game.setVarTree,
+    applySnapshot: (...args) => {
+      const result = autosave.applySnapshot(...args);
+      onGameStarted?.();
+      return result;
+    }, varTree: game.varTree, setVarTree: game.setVarTree,
     settingsInitialTab: ui.settingsInitialTab, setSettingsInitialTab: ui.setSettingsInitialTab, uiScale: ui.uiScale, setUiScale: ui.setUiScale,
     narrator: game.narrator, setNarrator: game.setNarrator, getLiveBlockText: ui.getLiveBlockText,
     showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead,
     char: game.char, setChar: game.setChar, inv: game.inv, setInv: game.setInv,
     innerRoomName: game.innerRoomName, addLog, zoneTheme: ui.zoneTheme, nsfwOn: ui.nsfwOn,
     recommendOutfit: outfitAdvice.recommendOutfit, outfitState: ui.outfitState,
-    handleCreateCharacter: cardImportHandlers.handleCreateCharacter,
+    handleCreateCharacter: (...args) => {
+      onGameStarted?.();
+      return cardImportHandlers.handleCreateCharacter(...args);
+    },
     handleOpeningFinish: cardImportHandlers.handleOpeningFinish,
     handleBodyProfileChange: cardImportHandlers.handleBodyProfileChange,
     globalOverlays: {
