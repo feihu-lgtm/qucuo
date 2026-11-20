@@ -40,7 +40,7 @@ export default function TopBar({
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "11px", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderBottom: `1px solid ${zoneTheme.border}`, flexShrink: 0, fontSize: "11px", backgroundImage: `linear-gradient(180deg, ${zoneTheme.bgPanel}, transparent)`, flexWrap: "wrap", rowGap: 8 }}>
         {/* 手机端：顶栏收成一个☰按钮，点开才展开全部功能入口 */}
         {isMobile && (
           <>
@@ -54,7 +54,7 @@ export default function TopBar({
         {/* 顶栏功能入口：桌面常显；手机仅在展开菜单时显示（换行铺开） */}
         <div style={{
           display: (!isMobile || mobileTopMenu) ? "flex" : "none",
-          alignItems: "center", gap: 8, flexWrap: "wrap", rowGap: 6,
+          alignItems: "center", gap: 8, flexWrap: "wrap", rowGap: 8,
           width: isMobile ? "100%" : "auto", flex: isMobile ? "none" : 1,
         }}>
         <span
