@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
@@ -42,6 +42,7 @@ export function useTurn({
   setGambleNegotiation, setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
   setPendingQuestBranch, setConvo, jotNote, setLog
 }) {
+  const actRef = useRef(null);
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
     if (!rawCmd.trim()) return;
     if (!opts.schedulerManaged) {
@@ -50,7 +51,7 @@ export function useTurn({
       const localCommand = isTalkCommand ? null : parseLocalCommand(commandText, { ...gameStore.getState(), isTalk: isTalkCommand, convo }, { surface: "web" });
       const commandId = classifyActCommand({ rawCmd: commandText, opts, interactMode, localCommand, isMove: !!parseDir(commandText) });
       setInput("");
-      return dispatchCommand(commandId, () => act(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: commandText });
+      return dispatchCommand(commandId, () => actRef.current(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: commandText });
     }
     const cmd = rawCmd.trim(), isStale = createTurnStaleCheck(turnGenerationRef);
     const stopAutoTravel = () => {
@@ -418,6 +419,7 @@ export function useTurn({
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
   }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
+  actRef.current = act;
   const featureCtx = useMemo(() => ({
     addLog,
     jotNote,
