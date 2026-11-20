@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { formatTurnStatus, turnMonitor } from "../../core/turnMonitor.js";
+import { PHASE, formatTurnStatus, turnMonitor } from "../../core/turnMonitor.js";
 import { OVERLAY, openOverlay, useOverlay } from "../../store/uiStore.js";
 import { chromeBtn } from "../theme.js";
 
@@ -15,6 +15,20 @@ export default function TurnStatusPill({ theme, mobile }) {
   }, [running]);
   const status = formatTurnStatus(snapshot, Math.max(now, snapshot.current?.ts ?? 0));
   const label = `${status.label}${status.backgroundCount ? ` · 后台 AI ×${status.backgroundCount}` : ""}`;
+  if (mobile) {
+    // 手机：固定大小的信号灯，只靠颜色表示阶段，宽度不随文字变化
+    const failed = status.phase === PHASE.ERROR;
+    const busy = running && !failed;
+    const color = busy || failed ? theme.accent : theme.textDim;
+    return (
+      <button type="button" title={label} aria-label={`全流程日志：${label}`}
+        className={`mobile-touch-target status-light${busy ? " status-light-busy" : ""}`}
+        onClick={() => openOverlay(OVERLAY.TRACE)}
+        style={{ ...chromeBtn(theme, { active }), width: 29, minWidth: 29, height: 29, padding: 0, borderRadius: "50%", justifyContent: "center", flexShrink: 0, ...(failed ? { border: `2px solid ${theme.accent}` } : {}) }}>
+        <span style={{ width: 11, height: 11, borderRadius: "50%", background: color, boxShadow: busy ? `0 0 6px ${color}` : "none" }} />
+      </button>
+    );
+  }
   return (
     <div style={mobile
       ? { display: "flex", justifyContent: "flex-end", padding: "3px 10px", flexShrink: 0 }

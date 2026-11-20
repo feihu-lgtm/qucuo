@@ -97,6 +97,7 @@ export default function TopBar({
           width: isMobile ? "100%" : "auto", flex: isMobile ? "none" : 1,
         }}>
         {isMobile && setGm && <DevControls theme={zoneTheme} gm={gm} setGm={setGm} addLog={addLog} />}
+        {isMobile && <span className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)} style={topBtn()}>日志</span>}
         <span
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.TUTORIAL)}

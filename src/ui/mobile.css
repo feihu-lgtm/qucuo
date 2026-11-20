@@ -748,3 +748,7 @@
     height: 29px !important;
   }
 }
+
+@keyframes statusLightPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.status-light-busy > span { animation: statusLightPulse 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .status-light-busy > span { animation: none; } }
