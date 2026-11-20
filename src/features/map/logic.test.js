@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  getAutoTravelStopReason,
-  hasQuestProgressChanged,
   innerMove,
   outerArrival,
   planAutoTravel,
@@ -184,7 +182,7 @@ describe("inner movement logic", () => {
     });
 
     expect(result.cached).toBe(true);
-    expect(result.traceInfo.newFaces).toEqual(["客商"]);
+    expect(result.traceInfo).not.toHaveProperty("newFaces");
     expect(result.squareOps).toEqual([{ op: "consume", key: "雅江", day: 0 }]);
     expect(result.changes.room).toMatchObject({
       name: "雅江",
@@ -247,18 +245,6 @@ describe("auto-travel continuation", () => {
     expect(shouldDispatchQueuedAutoTravel({ loading: false, queueCount: 1, hasQueuedCommands: true })).toBe(true);
     expect(shouldDispatchQueuedAutoTravel({ loading: true, queueCount: 1, hasQueuedCommands: true })).toBe(false);
     expect(shouldDispatchQueuedAutoTravel({ loading: false, queueCount: 0, hasQueuedCommands: true })).toBe(false);
-  });
-
-  it("stops on encounters, new NPCs, and quest progress changes", () => {
-    expect(getAutoTravelStopReason({ encounter: { name: "路人" } })).toBe("encounter");
-    expect(getAutoTravelStopReason({ newFaces: ["新人物"] })).toBe("newNpc");
-    expect(getAutoTravelStopReason({ questProgressChanged: true })).toBe("quest");
-    expect(getAutoTravelStopReason()).toBeNull();
-  });
-
-  it("compares quest progress snapshots", () => {
-    expect(hasQuestProgressChanged({ a: { status: "active" } }, { a: { status: "active" } })).toBe(false);
-    expect(hasQuestProgressChanged({}, { a: { status: "active" } })).toBe(true);
   });
 
   it("does not debounce queued auto-travel steps as rapid manual movement", () => {

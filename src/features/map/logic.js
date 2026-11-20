@@ -160,17 +160,6 @@ export function planAutoTravel(state, destName) {
   return { locked: false, path: findPath(state.room?.name, destName, allowed) };
 }
 
-export function getAutoTravelStopReason({ encounter, newFaces = [], questProgressChanged = false } = {}) {
-  if (encounter) return "encounter";
-  if (newFaces.length) return "newNpc";
-  if (questProgressChanged) return "quest";
-  return null;
-}
-
-export function hasQuestProgressChanged(previous, next) {
-  return JSON.stringify(previous || {}) !== JSON.stringify(next || {});
-}
-
 export function shouldDispatchQueuedAutoTravel({ loading, queueCount, hasQueuedCommands }) {
   return !loading && queueCount > 0 && hasQueuedCommands;
 }
@@ -280,7 +269,6 @@ export function outerArrival(state, { direction, destName, roomMap, squares, com
       hasSquareDesc: !!square.desc,
       item: square.item,
       encounter: square.encounter,
-      newFaces,
     },
   };
 }

@@ -3,8 +3,6 @@ import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
 import {
-  getAutoTravelStopReason,
-  hasQuestProgressChanged,
   innerMove as innerMoveLogic,
   outerArrival as outerArrivalLogic,
   shouldDispatchQueuedAutoTravel,
@@ -15,7 +13,6 @@ import { rollMovementEvents } from "../../features/map/encounter.js";
 import { judgeCollect } from "../../engine/act/roundNotes.js";
 import { CATEGORY_LABEL } from "../../domain/economy/equipment.js";
 import { findTargetedRumor } from "../../domain/npc/npcEmergence.js";
-import { detectNewFaces } from "../../domain/npc/npcAwareness.js";
 import { classifyIntent, INTENT } from "../../domain/prompt/inputIntent.js";
 import { buildDirectionJudgeRequest, getMapNode, parseDirectionJudgeResponse, QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
@@ -46,17 +43,13 @@ export function useTurn({
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
     if (!rawCmd.trim()) return;
     const cmd = rawCmd.trim();
-    const stopAutoTravel = (reason) => {
-      if (!reason || !autoTravelRef.current || pendingQueue.current.length === 0) return;
+    const stopAutoTravel = () => {
+      if (!autoTravelRef.current || pendingQueue.current.length === 0) return;
       const dropped = pendingQueue.current.length;
       pendingQueue.current = [];
       setQueueCount(0);
       autoTravelRef.current = false;
-      const message = {
-        encounter: `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`,
-        newNpc: `  ⚠ 遇见新人物，自动赶路就此打住（余下 ${dropped} 程未走）。`,
-        quest: `  ⚠ 触发了新的任务进展，自动赶路就此打住（余下 ${dropped} 程未走）。`,
-      }[reason];
+      const message = `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`;
       addLog([{ t: "sys", text: message, standalone: true }]);
     };
 
@@ -293,7 +286,6 @@ export function useTurn({
       : null;
     if (arrivalResult?.cached) {
       const traceInfo = arrivalResult.traceInfo;
-      const previousQuestProgress = gameStore.getState().questProgress;
       traceStep(_trace, "格子移动", "pass", `${room.name}→${lockedDestName} 格子命中，纯前端${traceInfo.hasSquareDesc ? "" : "（格子未就绪，兜底文本）"}`);
       if (traceInfo.item) {
         traceStep(_trace, "拾取判定", "pass", `格子预埋：${traceInfo.item.name}（品质「${traceInfo.item.quality}」）前端发放`);
@@ -302,11 +294,7 @@ export function useTurn({
         traceStep(_trace, "路遇", "pass", `格子预埋路遇：${traceInfo.encounter.name}（${traceInfo.encounter.label}）`);
       }
       applyResult(featureCtxRef.current, arrivalResult);
-      stopAutoTravel(getAutoTravelStopReason({
-        encounter: traceInfo.encounter,
-        newFaces: traceInfo.newFaces,
-        questProgressChanged: hasQuestProgressChanged(previousQuestProgress, gameStore.getState().questProgress),
-      }));
+      if (traceInfo.encounter) stopAutoTravel();
       outerDepartRef.current = null; pendDirRef.current = null; pickupJudgmentRef.current = null;
       endTrace(_trace, `到达 ${lockedDestName}（格子·纯前端）`);
       prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
@@ -324,7 +312,7 @@ export function useTurn({
       luck: char.special?.气运 ?? 5,
     });
     pickupJudgmentRef.current = pickupJudgment;
-    if (encounterToDescribe) stopAutoTravel("encounter");
+    if (encounterToDescribe) stopAutoTravel();
 
     // ── 采集裁决（系统层）──（判定在 act/roundNotes.js，副作用在此执行）
     // 玩家表达采集意图、且所采之物此刻真在地上时，由系统直接把物搬入背包、
@@ -429,15 +417,6 @@ export function useTurn({
         { t: "sys", text: `     ▸ ${ec.hint}` },
         { t: "sys", text: `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
       ]);
-    } else if (autoTravelRef.current && pendingQueue.current.length > 0) {
-      const stateAfter = gameStore.getState();
-      const currentNpcNames = new Set((room.npcs || []).map((npc) => npc.name));
-      const newFaces = detectNewFaces(preActVarTree, stateAfter.room?.npcs || [])
-        .filter((npc) => !currentNpcNames.has(npc.name));
-      stopAutoTravel(getAutoTravelStopReason({
-        newFaces,
-        questProgressChanged: hasQuestProgressChanged(questProgress, stateAfter.questProgress),
-      }));
     }
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
     if (isTalk) { changePendingTalks(-1); }
