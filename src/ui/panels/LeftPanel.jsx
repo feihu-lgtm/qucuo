@@ -155,7 +155,7 @@ export default function LeftPanel({
           );
           const pigeonBadge = (
             <span style={{ fontSize: "10px", color: (char.pigeons || 0) > 0 ? "#c4a040" : zoneTheme.textDim, flexShrink: 0 }} title={`现有信鸽 ${char.pigeons || 0} 只`}>
-              🕊{char.pigeons || 0}
+              信鸽 {char.pigeons || 0}
             </span>
           );
           return (
@@ -205,7 +205,7 @@ export default function LeftPanel({
                               setPigeonTarget(name); setInteractMode("pigeon"); setTimeout(() => inputRef.current?.focus(), 0);
                             }}
                             title={(char.pigeons || 0) > 0 ? `飞鸽传书（现有信鸽 ${char.pigeons} 只，寄一封耗一只·只送信）` : "需先去驿站买信鸽"}
-                            style={{ fontSize: "10px", color: (char.pigeons || 0) <= 0 ? zoneTheme.textDim : (pigeonTarget === name ? zoneTheme.accent : "#c4a040"), cursor: "pointer", flexShrink: 0 }}>🕊飞鸽</span>
+                            style={{ fontSize: "10px", color: (char.pigeons || 0) <= 0 ? zoneTheme.textDim : (pigeonTarget === name ? zoneTheme.accent : "#c4a040"), cursor: "pointer", flexShrink: 0 }}>飞鸽</span>
                           {hasAff ? (
                             <span style={{ fontSize: "10px", flexShrink: 0, whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
                               <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>

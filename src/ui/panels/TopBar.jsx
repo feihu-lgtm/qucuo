@@ -29,8 +29,9 @@ export default function TopBar({
   // 顶栏按钮统一规格：此前每个按钮各自 padding/字号/色系，一字排开像彩虹糖纸。
   // 收敛成"同一副骨架 + 三色语义"：金=重要入口，松石绿=设置/切换，绛红=上报，其余用正文/次要色。
   const topBtn = (color) => ({
-    cursor: "pointer", color, padding: "2px 9px", fontSize: "10.5px",
+    cursor: "pointer", color, padding: "0 9px", fontSize: "10.5px",
     border: `1px solid ${zoneTheme.border}`, borderRadius: 0, background: "transparent",
+    display: "inline-flex", alignItems: "center", height: 22, boxSizing: "border-box", lineHeight: 1, whiteSpace: "nowrap",
   });
   const avatarPickerCloseGuard = useOverlayCloseGuard(() => closeOverlay(OVERLAY.AVATAR_PICKER));
   // 音乐按钮要同时跟 playing 和 enabled 走。原来只订阅了 playing，而
@@ -64,23 +65,23 @@ export default function TopBar({
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.TUTORIAL)}
           style={{ ...topBtn(uiGold), fontWeight: "bold" }}
-        >📖 新手教程</span>
+        >新手教程</span>
         <span
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.CODEX)}
           title="百物·武学总览：看全所有物品与武学的介绍、品阶、效果"
           style={{ ...topBtn(uiGold), fontWeight: "bold" }}
-        >📖 图鉴</span>
+        >图鉴</span>
         <span
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.VERSION_HISTORY)}
           title="点击查看版本历史目录"
           style={{ ...topBtn(zoneTheme.textDim), fontSize: "10px" }}
-        >📅 {CURRENT_VERSION.time}</span>
+        >{CURRENT_VERSION.time}</span>
 
         {/* 中组：日志 · 上报bug */}
-        <span className="qbtn" onClick={() => toggleOverlay(OVERLAY.TRACE)} style={{ ...topBtn(showTrace ? uiTurquoise : zoneTheme.textDim), marginLeft: 12 }}>🧭 全流程日志</span>
-        <span className="qbtn" onClick={() => openOverlay(OVERLAY.BUG_REPORT)} title="遇到问题或有建议，点这里上报" style={topBtn(uiCrimson)}>🐞 上报bug</span>
+        <span className="qbtn" onClick={() => toggleOverlay(OVERLAY.TRACE)} style={{ ...topBtn(showTrace ? uiTurquoise : zoneTheme.textDim), marginLeft: 12 }}>全流程日志</span>
+        <span className="qbtn" onClick={() => openOverlay(OVERLAY.BUG_REPORT)} title="遇到问题或有建议，点这里上报" style={topBtn(uiCrimson)}>上报bug</span>
 
         <span style={{ flex: 1 }} />
 
@@ -90,28 +91,28 @@ export default function TopBar({
           onClick={() => openOverlay(OVERLAY.CARD_IMPORT)}
           title="角色入册：把外部角色卡导进曲措乡（快捷键 I）"
           style={topBtn(zoneTheme.accent)}
-        >🧾 入册</span>
+        >入册</span>
         <span
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.CHARACTER_PAGE)}
           style={topBtn(uiPink)}
-        >👥 人物关系</span>
+        >人物关系</span>
         <span
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.QUEST_LOG)}
           style={topBtn(zoneTheme.text)}
-        >📜 任务</span>
+        >任务</span>
         <span
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.LORE)}
           style={topBtn(zoneTheme.text)}
-        >📖 见闻录</span>
+        >见闻录</span>
         <span
           className="qbtn"
           onClick={() => openOverlay(OVERLAY.QIJUZHU)}
           title="起居注：逐日记录起居言动——今日行迹与开局以来的累计"
           style={topBtn(zoneTheme.text)}
-        >🗒 起居注</span>
+        >起居注</span>
         <span
           className="qbtn"
           onClick={() => {
@@ -121,26 +122,26 @@ export default function TopBar({
             }
           }}
           style={topBtn(zoneTheme.textDim)}
-        >⏻ 主菜单</span>
+        >主菜单</span>
         <span
           className="qbtn"
           onClick={() => { setSettingsInitialTab("saves"); openOverlay(OVERLAY.SETTINGS); }}
           style={topBtn(uiGold)}
-        >💾 存档</span>
-        <span className="qbtn" onClick={() => { setSettingsInitialTab(null); openOverlay(OVERLAY.SETTINGS); }} style={topBtn(uiTurquoise)}>⚙ 设置</span>
+        >存档</span>
+        <span className="qbtn" onClick={() => { setSettingsInitialTab(null); openOverlay(OVERLAY.SETTINGS); }} style={topBtn(uiTurquoise)}>设置</span>
         <span
           className="qbtn"
           onClick={() => setIsDayMode(d => !d)}
           title={isDayMode ? "切回暗夜模式" : "切换到日间模式（米色底+棕框）"}
           style={topBtn(uiTurquoise)}
-        >{isDayMode ? "☀ 日间" : "☾ 夜间"}</span>
+        >{isDayMode ? "日间" : "夜间"}</span>
         {musicEnabled && (
           <span
             className="qbtn"
             onClick={() => openOverlay(OVERLAY.MUSIC_PANEL)}
             title={musicState.error ? `音乐出错：${musicState.error}` : "音乐面板 — 曲库切换"}
             style={topBtn(musicPlaying ? uiGold : zoneTheme.textDim)}
-          >{musicPlaying ? "♫ 音乐" : "♪ 音乐"}</span>
+          >{musicPlaying ? "音乐·播放中" : "音乐"}</span>
         )}
         {/* 🏠 家园入口已挪到左栏「此地建筑」区——它本来就是"这间屋子里有什么设施"，
             跟顶栏那排全局按钮（设置/存档/图鉴/音乐）不是一回事，摆在顶栏既占地方
