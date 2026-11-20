@@ -56,6 +56,8 @@ export const MOVE_RULES = [
 
   // ── 情境增伤 ──
   { key: "lowHpBonus", when: (m) => m.lowHpBonus, label: "残血增伤", text: (m) => `残血反扑：自身生命每损失10%，威力 +${pct(m.lowHpBonus)}` },
+  { key: "dodgeChance", when: (m) => m.dodgeChance, label: "闪身", text: (m) => `${pct(m.dodgeChance)} 几率闪身避开对手本轮招式` },
+  { key: "stealOnDodge", when: (m) => m.stealOnDodge, label: "顺手牵羊", text: (m) => `闪避成功后，有 ${pct(m.stealOnDodge)} 几率顺手摸走对手一件随身物` },
   { key: "highHpBonus", when: (m) => m.highHpBonus, label: "满血增伤", text: (m) => `自身满血/高血（≥80%）时，额外 +${pct(m.highHpBonus)} 威力` },
   { key: "afterStatusBonus", when: (m) => m.afterStatusBonus, label: "趁中招追击", text: (m) => `上一回合成功施加过状态/印记，这一击额外 +${pct(m.afterStatusBonus)} 威力` },
   { key: "afterCounterBonus", when: (m) => m.afterCounterBonus, label: "接反击追打", text: (m) => `上一回合应对成功过，这一击额外 +${pct(m.afterCounterBonus)} 威力（乘胜追击）` },
@@ -70,7 +72,7 @@ export const MOVE_RULES = [
   { key: "detonateMark", when: (m) => m.detonateMark, label: "引爆内伤", text: (m) => `引爆对方体内积压的印记，每层追加约 ${pct(m.detonateMark.perStackRatio ?? 0.4)} 攻击力的暗伤` },
 
   // ── 控制与干扰 ──
-  { key: "applyStatus", when: (m) => m.applyStatus, label: "附异状", text: (m) => `命中施加「${m.applyStatus}」状态` },
+  { key: "applyStatus", when: (m) => m.applyStatus, label: "附异状", text: (m) => `${m.statusChance != null && m.statusChance < 1 ? `${pct(m.statusChance)} 几率` : ""}命中施加「${typeof m.applyStatus === "string" ? m.applyStatus : m.applyStatus.name}」状态` },
   { key: "confuseChance", when: (m) => m.confuseChance, label: "致乱", text: (m) => `${pct(m.confuseChance)} 几率令对方本回合招式类型判定错乱` },
   { key: "energyDiffDamage", when: (m) => m.energyDiffDamage, label: "打能量差", text: () => "按双方当前气力差值造成额外伤害（对方越虚越疼）" },
   { key: "enemyCostPenalty", when: (m) => m.enemyCostPenalty, label: "封穴耗气", text: (m) => `扰乱对方气机，其后 ${m.enemyCostPenalty.turns ?? 1} 回合出招多耗 ${m.enemyCostPenalty.value ?? 1} 气力` },

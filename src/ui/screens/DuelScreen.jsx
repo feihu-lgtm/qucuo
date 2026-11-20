@@ -14,6 +14,7 @@ import { createEmptyStatusSlots, applyStatus, applyMark, dispelControlDrain } fr
 import { rollBattleLoot, atkFromWaigong } from "../../domain/npc/npcGeneration.js";
 import { resolveCombatBuff } from "../../utils/buffSystem.js";
 import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
+import { addDodgeStealNote, excludeDodgeStolenItems, useDuelDodgeSteal } from "./useDuelDodgeSteal.js";
 
 // TYPE_ICON / HpBar / EnergyDots / MoveButton / MoveInspect 同时导出给
 // TeamDuelScreen.jsx（2v2团战界面）复用——纯展示组件，不含任何1v1状态逻辑。
@@ -106,8 +107,7 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
   const [inspectMove, setInspectMove] = useState(null); // 当前正在详细察看的招式（弹层）
   // 完整的回合战报，结束时整个发给AI生成总结——不只是招式类型（那个只给AI对手做决策用），
   // 而是具体招式名+双方伤害，这样AI才能写出"谁在第几回合用什么招打赢了"这种有细节的总结。
-  const [battleLog, setBattleLog] = useState([]);
-
+  const [battleLog, setBattleLog] = useState([]), { dodgeStolenItems, tryStealOnDodge } = useDuelDodgeSteal();
   // ── 战斗内道具栏（消耗品系统第1步）──
   // 战斗中嗑掉的消耗品名列表，战斗结束时通过 onFinish 第五参回传父组件，从背包扣除。
   // 战斗内只支持"即时救命"类效果（A档）：回血 hpRestore、回气 energyRestore、
@@ -208,7 +208,7 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
       };
 
       const result = resolveTurn(sideA, sideB);
-
+      addDodgeStealNote(result, playerMoveEquipped, npc.carriedItems, tryStealOnDodge);
       // 博弈层的生命消耗（selfSacrifice）跟对方伤害是两件独立的事，一起扣；疗伤回血（hpRestore）
       // 同回合一并结算——净值决定生死（一边疗伤一边挨打，回血抵掉多少算多少），并夹在 0~上限之间
       const newPlayerHp = Math.max(0, Math.min(playerHp[1], playerHp[0] - result.damageToA - result.selfHpCostA + (result.hpRestoreA || 0)));
@@ -412,7 +412,7 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
     // 赢了才有掉落——参照参考实现里"战斗结束把结果摘要抛给外层容器"的思路，
     // 这里不在DuelScreen内部直接改玩家的钱/背包（DuelScreen不该知道MudRPG的
     // 完整状态结构），只计算掉落内容，交给外层的onFinish去真正应用状态变更。
-    const loot = outcome === "win" ? rollBattleLoot(npc) : null;
+    const loot = outcome === "win" ? rollBattleLoot(excludeDodgeStolenItems(npc, dodgeStolenItems)) : null;
 
     // 完整战报交给外层——MudRPG.jsx 有 apiCfg/callModel，由它异步请求AI写总结
     // （谁在第几回合用了什么招、最后怎么分出胜负），不在这里裁决文字内容。
@@ -423,7 +423,7 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
     // NPC第二次，持久化的收益远小于额外维护一套NPC存档结构的成本。
     // 第五参 usedItems：战斗内嗑掉的消耗品名列表，交给父组件从背包扣除。
     // 无论胜负/中途撤退都要扣——药已经吃进肚子了，不会因为输了而吐出来。
-    onFinish?.(outcome, loot, battleLog, playerMovesetLocal, usedItems, playerHp);
+    onFinish?.(outcome, loot, battleLog, playerMovesetLocal, usedItems, playerHp, dodgeStolenItems);
   };
 
   const playerHpPct = (playerHp[0] / playerHp[1]) * 100;

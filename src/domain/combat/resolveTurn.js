@@ -11,6 +11,8 @@
 
 import { random } from "../../core/rng.js";
 import { judgeTypeMatchup, MOVE_TYPE } from "./moveTypes.js";
+import { applyDodgeResult } from "./dodgeTurn.js";
+import { rollStatusApply } from "./resolveStatus.js";
 import { applyStatus, tickStatusEffects } from "./statusEffects.js";
 import { defFromNeigong } from "../npc/npcGeneration.js";
 
@@ -103,13 +105,7 @@ function decideFirst(sideA, sideB) {
   return sa > sb ? "A" : "B";
 }
 
-// 通用状态施加：move.applyStatus = { name, chance }；旧的 confuseChance 视为施加"气乱"。
-function rollStatusApply(move) {
-  if (move.confuseChance && random() < move.confuseChance) return "气乱";
-  if (move.applyStatus && random() < (move.applyStatus.chance ?? 1)) return move.applyStatus.name;
-  return null;
-}
-
+// 通用状态施加：兼容对象写法与字符串 + statusChance；confuseChance 视为施加"气乱"。
 export function resolveTurn(sideA, sideB) {
   const result = {
     matchup: null, speedWinner: null,
@@ -137,6 +133,7 @@ export function resolveTurn(sideA, sideB) {
     notes: [],
   };
 
+  const markSources = { move: {}, contact: {} };
   // 叠印记：把 move.applyMark 记成"给对方叠印"，并标记我方施加成功（触发下回合 afterStatusBonus）。
   // 支持 move.applyMarkChance（0~1）：装备特效叠上来的印记多带概率，掷骰命中才叠；
   // 招式自带的 applyMark 通常无 chance 字段（默认必叠，保持既有招式行为不变）。
@@ -145,7 +142,7 @@ export function resolveTurn(sideA, sideB) {
     const chance = move.applyMarkChance ?? 1;
     if (random() >= chance) return;
     const { name = "内伤", stacks = 1, max = 5 } = move.applyMark;
-    result[`markAppliedTo${targetTag}`] = { name, stacks, max };
+    result[`markAppliedTo${targetTag}`] = markSources.move[targetTag] = { name, stacks, max };
     result[`statusSuccess${winnerTag}`] = true;
   };
   // 引爆印记：读被引爆方当前印记层数，按 baseAtk×perStackRatio×层数 追加伤害，并标记清空。
@@ -168,7 +165,7 @@ export function resolveTurn(sideA, sideB) {
     const chance = defMove.applyMarkChance ?? 1;
     if (random() >= chance) return;
     const mk = defMove.applyMark || { name: "内伤", stacks: 1, max: 5 };
-    result[`markAppliedTo${attackerTag}`] = { name: mk.name ?? "内伤", stacks: mk.stacks ?? 1, max: mk.max ?? 5 };
+    result[`markAppliedTo${attackerTag}`] = markSources.contact[attackerTag] = { name: mk.name ?? "内伤", stacks: mk.stacks ?? 1, max: mk.max ?? 5 };
     result.notes.push(`触及那身诡异衣料，一缕暗劲反噬，攻方隐隐添了内伤`);
   };
 
@@ -374,6 +371,11 @@ export function resolveTurn(sideA, sideB) {
   if (sideB.move.permanentGrowthOnUse) result.moveGrowthB = { moveId: sideB.move.id, delta: sideB.move.permanentGrowthOnUse };
   if (sideA.move.permanentCostReductionOnUse) result.moveCostReductionA = { moveId: sideA.move.id, delta: sideA.move.permanentCostReductionOnUse };
   if (sideB.move.permanentCostReductionOnUse) result.moveCostReductionB = { moveId: sideB.move.id, delta: sideB.move.permanentCostReductionOnUse };
+
+  applyDodgeResult(result, sideA, "A", sideB, "B", markSources);
+  applyDodgeResult(result, sideB, "B", sideA, "A", markSources);
+  if (sideA.move.type === MOVE_TYPE.ATTACK && sideA.move.applyStatus && result.damageToB > 0) result.statusAppliedToB = rollStatusApply(sideA.move);
+  if (sideB.move.type === MOVE_TYPE.ATTACK && sideB.move.applyStatus && result.damageToA > 0) result.statusAppliedToA = rollStatusApply(sideB.move);
 
   return result;
 }

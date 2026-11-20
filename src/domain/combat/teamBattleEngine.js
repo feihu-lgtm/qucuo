@@ -280,7 +280,7 @@ export function runTeamTurn(allyUnits, enemyUnits, intents) {
       targetId: target.id, targetName: target.name,
       targetMove: targetReallyFacesActor ? targetMove.name : null, // 裸奔时不展示"目标用了什么招"，因为它根本没把招用在这
       targetWasIdle: !targetReallyFacesActor,
-      matchup: result.matchup, notes: result.notes,
+      matchup: result.matchup, notes: result.notes, dodgeSuccessActor: result.dodgeSuccessA, dodgeSuccessTarget: result.dodgeSuccessB,
       dmgToTarget: result.damageToB, dmgToActor: result.damageToA,
       statusLog: [...(statusLogA || []), ...(statusLogB || [])],
       targetRedirected: intent.targetId != null && intent.targetId !== target.id,

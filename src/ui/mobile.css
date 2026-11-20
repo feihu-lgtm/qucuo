@@ -1,4 +1,30 @@
 @media (max-width: 767px) {
+  .character-create-root {
+    overflow-y: auto !important;
+    align-items: flex-start !important;
+    padding: 14px 0;
+    box-sizing: border-box;
+  }
+
+  .character-create-card {
+    width: 92vw !important;
+    max-height: calc(100vh - 28px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 22px 12px !important;
+  }
+
+  .starter-skill-card-list > button {
+    padding: 6px !important;
+    min-height: 190px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .character-create-stat-grid > div {
+    gap: 3px !important;
+    padding: 4px !important;
+  }
+
   html,
   body,
   #root {

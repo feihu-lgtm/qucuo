@@ -3,8 +3,16 @@ import {
   createAngryState,
   isNpcAngry,
   recordAngerAttempt,
+  stealSuccessRate,
   tickAngryState,
 } from "./stealSystem.js";
+
+describe("讨饭手偷窃加成", () => {
+  it("keeps the old formula by default and adds the optional bonus", () => {
+    expect(stealSuccessRate(0, 0)).toBe(0.45);
+    expect(stealSuccessRate(0, 0, 0.1)).toBe(0.55);
+  });
+});
 
 describe("angry state attempts", () => {
   it("starts an empty attempt history and caps recorded attempts at ten", () => {

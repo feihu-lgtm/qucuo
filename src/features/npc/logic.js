@@ -388,7 +388,7 @@ function recapBattleLog(battleLog) {
 }
 
 export function settleNpcDuel(state, npc, {
-  outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, pendingQuestBranch,
+  outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, dodgeStolenItems, pendingQuestBranch,
   now = Date.now(), rng = random, createRespawnNpc,
 } = {}) {
   if (!npc) return {};
@@ -461,6 +461,19 @@ export function settleNpcDuel(state, npc, {
     logs.push({ t: "item", text: `  ⊙ 切磋中服用：${Object.entries(tally).map(([name, count]) => `${name}×${count}`).join("、")}` });
   }
 
+  for (const stolen of dodgeStolenItems || []) {
+    const item = {
+      ...makeGameItem({ name: stolen.name, category: stolen.category || "misc", quality: stolen.quality || "白" }),
+      id: `duel_stolen_${stolen.id || stolen.name}_${now}`,
+    };
+    addChange(changes, working, "inv", (prev) => [...prev, item]);
+    addChange(changes, working, "room", (prev) => ({
+      ...prev,
+      npcs: markCarriedLost(prev.npcs, npc.name, stolen, "stolen"),
+    }));
+    logs.push({ t: "loot", text: `  🤫 顺手摸走了「${stolen.name}」`, item, source: "steal", fromNpc: npc.name });
+  }
+
   const { potGain, tierLabel } = duelPotGain(npc.levelCap, outcome);
   addChange(changes, working, "pot", (prev) => prev + potGain);
   logs.push({ t: "item", text: `  ✦ 与${tierLabel}高手切磋${outcome === "win" ? "获胜" : outcome === "lose" ? "落败" : "罢手"}，长了见识，潜能 +${potGain}` });
@@ -507,7 +520,7 @@ export function settleNpcDuel(state, npc, {
   }
 
   if (outcome === "win" && npc.name && !npc.tag) {
-    const pool = (npc.carriedItems || []).filter((item) => !item.stolen && !item.dropped);
+    const pool = (npc.carriedItems || []).filter((item) => !item.stolen && !item.dropped && !(dodgeStolenItems || []).some((stolen) => stolen.id ? item.id === stolen.id || (!item.id && item.name === stolen.name) : item.name === stolen.name));
     if (pool.length) {
       const dropChance = duelDropChance(working.char.special?.气运 ?? 5);
       if (rng() < dropChance) {
