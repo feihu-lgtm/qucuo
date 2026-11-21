@@ -91,8 +91,8 @@ export function parseChineseNumber(text) {
 
 // 「一百两」「100两银子」「五十两」→ 数量；只认带「两」的银两数额，避免把「两个馒头」当钱。
 export function parseSilverAmount(text) {
-  const match = String(text || "").match(/(\d+|[零一二两三四五六七八九十百千万]+?)\s*两(?:银子|银|纹银)?/);
-  if (!match) return null;
+  const match = String(text || "").match(/(?<![\d.])(\d+(?:\.\d+)?|[零一二两三四五六七八九十百千万]+?)\s*两(?:银子|银|纹银)?/);
+  if (!match || match[1].includes(".")) return null;
   const value = parseChineseNumber(match[1]);
   return Number.isFinite(value) && value > 0 ? value : null;
 }
