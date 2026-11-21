@@ -192,6 +192,20 @@ describe("runSoftSettle", () => {
     expect(gain.actualDelta).toBeLessThanOrEqual(8);
   });
 
+  it("explicit ctx.giftRange wins over the derived one", async () => {
+    const ai = createMockAi(['{"choice":"收下","probs":{"收下":1}}']);
+    const result = await runSoftSettle({
+      ai, apiCfg: {}, kind: "gift",
+      ctx: {
+        npc: "才旦", charm: 10, time: 0, giftRange: [0, 1],
+        varTree: { 角色: { 才旦: { 好感度: 0 } }, 世界: { 威望: 0 } },
+        giftInfo: { itemName: "一束野花" },
+      },
+    });
+    const gain = result.deltas.find((d) => d.path === "角色.才旦.好感度");
+    expect(gain.actualDelta).toBeLessThanOrEqual(1);
+  });
+
   it("narrator affection respects the daily allowance ledger", async () => {
     const ai = createMockAi(['{"choice":"投机贴心","probs":{"投机贴心":1}}']);
     const varTree = {

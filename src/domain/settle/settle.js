@@ -79,8 +79,9 @@ export async function runSoftSettle({ ai, apiCfg, kind, ctx = {} } = {}) {
     const extra = {};
     if (kind === "gift") {
       const info = ctx.giftInfo || {};
-      extra.giftRange = info.weight?.range || info.range
-        || (info.quality ? giftRange(info.quality) : undefined);
+      // 调用方显式给的区间优先，其次分量档、info.range、品阶档
+      extra.giftRange = ctx.giftRange ?? info.weight?.range ?? info.range
+        ?? (info.quality ? giftRange(info.quality) : undefined);
     }
     let command = delta;
     if (delta.path === "narrator.affection" && delta.op === "add") {
