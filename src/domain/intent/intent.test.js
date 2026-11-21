@@ -215,7 +215,10 @@ describe("conditional steps", () => {
     ];
     armIntentTriggers(steps);
     expect(intentTriggers()).toHaveLength(2);
-    const fired = fireIntentTriggers("encounter", {});
+    // 和气的势力过路人不算「遇敌」，触发器原样留着。
+    expect(fireIntentTriggers("encounter", { hostile: false })).toEqual([]);
+    expect(intentTriggers()).toHaveLength(2);
+    const fired = fireIntentTriggers("encounter", { hostile: true });
     expect(fired.map((entry) => entry.step.kind)).toEqual(["切磋"]);
     expect(intentTriggers()).toHaveLength(1);
     // 行程未完、前提也没点名目的地时，「到达」不算应验。

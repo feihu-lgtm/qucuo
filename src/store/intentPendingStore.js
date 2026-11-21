@@ -34,9 +34,11 @@ function arriveMatches(detail, dest, travelDone) {
   return travelDone && !PLACE_NAMES.some((name) => detail.includes(name));
 }
 
-// 某类事件发生时取出并移除匹配的触发器。
-export function fireIntentTriggers(on, { dest, travelDone = true } = {}) {
-  const match = (entry) => entry.on === on && (on !== "arrive" || arriveMatches(entry.detail, dest, travelDone));
+// 某类事件发生时取出并移除匹配的触发器。「遇敌」只认 hostile 路遇，和气的过路人不算。
+export function fireIntentTriggers(on, { dest, travelDone = true, hostile = false } = {}) {
+  const match = (entry) => entry.on === on &&
+    (on !== "arrive" || arriveMatches(entry.detail, dest, travelDone)) &&
+    (on !== "encounter" || hostile);
   const fired = intentTriggers().filter(match);
   if (fired.length) {
     intentPendingStore.setState({ triggers: intentTriggers().filter((entry) => !match(entry)) });
