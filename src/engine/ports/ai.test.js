@@ -39,6 +39,12 @@ describe("AI ports", () => {
     expect(JSON.parse(fetch.mock.calls[0][1].body).model).toBe("test");
   });
 
+  it("keeps the HTTP status on vendor error messages so callers can retry 429", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 429, json: async () => ({ error: { message: "Resource exhausted for key" } }) })));
+    const ai = createHttpAi({ baseUrl: "https://api.example.test", apiKey: "key", model: "test" });
+    await expect(ai.chat([], {})).rejects.toMatchObject({ status: 429, message: "Resource exhausted for [redacted]" });
+  });
+
   it("maps modelOptions sampling values like the web callModel adapter", async () => {
     const fetch = vi.fn(async () => ({
       ok: true,

@@ -1,0 +1,1121 @@
+{
+ "state": {
+  "room": {
+   "name": "测试镇",
+   "npcs": [
+    {
+     "name": "才旦"
+    },
+    {
+     "name": "卓玛"
+    },
+    {
+     "name": "王掌柜"
+    },
+    {
+     "name": "李师傅"
+    }
+   ]
+  },
+  "innerRoomName": null,
+  "inv": [
+   "酥油茶",
+   "金疮药",
+   "青稞酒",
+   "馒头"
+  ],
+  "char": {
+   "money": 150
+  }
+ },
+ "lines": [
+  {
+   "id": "L01",
+   "text": "把100两给才旦",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "才旦",
+      "item": "银两",
+      "amount": 100
+     }
+    ]
+   }
+  },
+  {
+   "id": "L02",
+   "text": "送卓玛一壶酥油茶",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "卓玛",
+      "item": "酥油茶"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L03",
+   "text": "把金疮药送给李师傅",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "李师傅",
+      "item": "金疮药"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L04",
+   "text": "给王掌柜五十两银子",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "王掌柜",
+      "item": "银两",
+      "amount": 50
+     }
+    ]
+   }
+  },
+  {
+   "id": "L05",
+   "text": "打赏才旦二十两",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "才旦",
+      "item": "银两",
+      "amount": 20
+     }
+    ]
+   }
+  },
+  {
+   "id": "L06",
+   "text": "把青稞酒递给卓玛",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "卓玛",
+      "item": "青稞酒"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L07",
+   "text": "向王掌柜买些干粮",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "购买",
+      "target": "王掌柜"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L08",
+   "text": "找王掌柜置办点东西",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "购买",
+      "target": "王掌柜"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L09",
+   "text": "我想跟王掌柜买把刀",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "购买",
+      "target": "王掌柜"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L10",
+   "text": "和才旦切磋一番",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "切磋",
+      "target": "才旦"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L11",
+   "text": "向李师傅讨教几招",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "切磋",
+      "target": "李师傅"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L12",
+   "text": "跟卓玛比试比试",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "切磋",
+      "target": "卓玛"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L13",
+   "text": "与才旦过招",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "切磋",
+      "target": "才旦"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L14",
+   "text": "拜李师傅为师",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "拜师/学艺",
+      "target": "李师傅"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L15",
+   "text": "向李师傅学艺",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "拜师/学艺",
+      "target": "李师傅"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L16",
+   "text": "求李师傅教我剑法",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "拜师/学艺",
+      "target": "李师傅"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L17",
+   "text": "往东走",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "移动",
+      "direction": "东"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L18",
+   "text": "向北边去",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "移动",
+      "direction": "北"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L19",
+   "text": "朝西行",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "移动",
+      "direction": "西"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L20",
+   "text": "往南去看看",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "移动",
+      "direction": "南"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L21",
+   "text": "吃个馒头",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "使用物品",
+      "item": "馒头"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L22",
+   "text": "喝一口青稞酒",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "使用物品",
+      "item": "青稞酒"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L23",
+   "text": "服下金疮药",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "使用物品",
+      "item": "金疮药"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L24",
+   "text": "喝了酥油茶暖暖身子",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "使用物品",
+      "item": "酥油茶"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L25",
+   "text": "问才旦最近镇上有什么新鲜事",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈",
+      "target": "才旦"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L26",
+   "text": "跟卓玛聊聊她家的牦牛",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈",
+      "target": "卓玛"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L27",
+   "text": "向王掌柜打听去拉萨的路",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈",
+      "target": "王掌柜"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L28",
+   "text": "孝敬李师傅一壶青稞酒",
+   "category": "single",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "李师傅",
+      "item": "青稞酒"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L29",
+   "text": "送才旦一壶青稞酒，然后跟他切磋",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "才旦",
+      "item": "青稞酒"
+     },
+     {
+      "kind": "切磋",
+      "target": "才旦"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L30",
+   "text": "给卓玛三十两，再向王掌柜买干粮",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "卓玛",
+      "item": "银两",
+      "amount": 30
+     },
+     {
+      "kind": "购买",
+      "target": "王掌柜"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L31",
+   "text": "喝了青稞酒，再和才旦过招",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "使用物品",
+      "item": "青稞酒"
+     },
+     {
+      "kind": "切磋",
+      "target": "才旦"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L32",
+   "text": "把金疮药送给李师傅，接着拜他为师",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "李师傅",
+      "item": "金疮药"
+     },
+     {
+      "kind": "拜师/学艺"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L33",
+   "text": "先吃个馒头，然后往东走",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "使用物品",
+      "item": "馒头"
+     },
+     {
+      "kind": "移动",
+      "direction": "东"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L34",
+   "text": "给才旦100两，再给卓玛100两",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "才旦",
+      "item": "银两",
+      "amount": 100
+     },
+     {
+      "kind": "赠送",
+      "target": "卓玛",
+      "item": "银两",
+      "amount": 100
+     }
+    ]
+   }
+  },
+  {
+   "id": "L35",
+   "text": "送卓玛酥油茶，顺便问问她阿爸的事",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "卓玛",
+      "item": "酥油茶"
+     },
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L36",
+   "text": "向王掌柜买点药，然后往北去",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "购买",
+      "target": "王掌柜"
+     },
+     {
+      "kind": "移动",
+      "direction": "北"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L37",
+   "text": "和才旦切磋完再跟卓玛比试",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "切磋",
+      "target": "才旦"
+     },
+     {
+      "kind": "切磋",
+      "target": "卓玛"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L38",
+   "text": "服下金疮药，接着向李师傅讨教几招",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "使用物品",
+      "item": "金疮药"
+     },
+     {
+      "kind": "切磋",
+      "target": "李师傅"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L39",
+   "text": "给王掌柜十两银子，再买一壶酒",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "王掌柜",
+      "item": "银两",
+      "amount": 10
+     },
+     {
+      "kind": "购买"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L40",
+   "text": "往西走，然后找卓玛聊天",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "移动",
+      "direction": "西"
+     },
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L41",
+   "text": "把青稞酒递给才旦，再送卓玛一个馒头",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "才旦",
+      "item": "青稞酒"
+     },
+     {
+      "kind": "赠送",
+      "target": "卓玛",
+      "item": "馒头"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L42",
+   "text": "喝口酥油茶，再拜李师傅为师",
+   "category": "compound",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "使用物品",
+      "item": "酥油茶"
+     },
+     {
+      "kind": "拜师/学艺",
+      "target": "李师傅"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L43",
+   "text": "给他点东西",
+   "category": "ambiguous",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "无"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L44",
+   "text": "送点钱",
+   "category": "ambiguous",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "无",
+      "item": "银两"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L45",
+   "text": "跟他比划比划",
+   "category": "ambiguous",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "切磋",
+      "target": "无"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L46",
+   "text": "去那边",
+   "category": "ambiguous",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "移动",
+      "direction": "无"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L47",
+   "text": "买",
+   "category": "ambiguous",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "购买",
+      "target": "无"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L48",
+   "text": "把那个给她",
+   "category": "ambiguous",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "无"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L49",
+   "text": "学两手",
+   "category": "ambiguous",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "拜师/学艺",
+      "target": "无"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L50",
+   "text": "用一下",
+   "category": "ambiguous",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "使用物品",
+      "item": "无"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L51",
+   "text": "今天天气真好",
+   "category": "chitchat",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "其他"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L52",
+   "text": "你好啊",
+   "category": "chitchat",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L53",
+   "text": "多谢才旦大哥",
+   "category": "chitchat",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈",
+      "target": "才旦"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L54",
+   "text": "哈哈哈",
+   "category": "chitchat",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "其他"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L55",
+   "text": "环顾四周",
+   "category": "chitchat",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "其他"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L56",
+   "text": "坐下来歇一会儿",
+   "category": "chitchat",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "其他"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L57",
+   "text": "这镇子叫什么名字",
+   "category": "chitchat",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L58",
+   "text": "看看天色",
+   "category": "chitchat",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "其他"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L59",
+   "text": "我不想切磋",
+   "category": "refusal",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L60",
+   "text": "不要跟才旦比试",
+   "category": "refusal",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L61",
+   "text": "算了，不买了",
+   "category": "refusal",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L62",
+   "text": "我不打算拜师",
+   "category": "refusal",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L63",
+   "text": "别送了，留着自己喝",
+   "category": "refusal",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L64",
+   "text": "我不想往东走",
+   "category": "refusal",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "交谈"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L65",
+   "text": "给才旦100两，路上要是碰到山贼就打他",
+   "category": "conditional",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "才旦",
+      "item": "银两",
+      "amount": 100
+     },
+     {
+      "kind": "其他",
+      "condition": "encounter"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L66",
+   "text": "要是到了白塔就看看四周",
+   "category": "conditional",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "其他",
+      "condition": "arrive"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L67",
+   "text": "若他不肯教，就走",
+   "category": "conditional",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "其他",
+      "condition": "refused"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L68",
+   "text": "送卓玛一壶青稞酒，万一她不肯收就换成酥油茶给她",
+   "category": "conditional",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "赠送",
+      "target": "卓玛",
+      "item": "青稞酒"
+     },
+     {
+      "kind": "其他",
+      "condition": "refused"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L69",
+   "text": "如果下雨就找地方避一避",
+   "category": "conditional",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "其他"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L70",
+   "text": "跟才旦切磋，要是输了就把青稞酒给他",
+   "category": "conditional",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "切磋",
+      "target": "才旦"
+     },
+     {
+      "kind": "其他"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L71",
+   "text": "往北走，要是碰到野兽就跑",
+   "category": "conditional",
+   "expected": {
+    "compound": true,
+    "actions": [
+     {
+      "kind": "移动",
+      "direction": "北"
+     },
+     {
+      "kind": "其他",
+      "condition": "encounter"
+     }
+    ]
+   }
+  },
+  {
+   "id": "L72",
+   "text": "让才旦带路去白塔，要是到了白塔就给他二十两",
+   "category": "conditional",
+   "expected": {
+    "compound": false,
+    "actions": [
+     {
+      "kind": "赠送",
+      "condition": "arrive"
+     }
+    ]
+   }
+  }
+ ]
+}

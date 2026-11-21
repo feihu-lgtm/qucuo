@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 //   1. 标题栏「江湖」+ 停止/回滚/调试/gamemode 四个开关
 //   2. DebugPanel 挂载点（showDebug 时展开）
-//   3. 切磋确认条（duelPending：邀战叙事跑完后点确认才真开打）
+//   3. 切磋确认条（duelPending：邀战叙事跑完后点确认才真开打）；行动识别确认条（IntentConfirmBar）同位
 //   4. 建筑/交易内联功能区（近 20 种 BUILDING_TYPE 的条件渲染 + 最小化开关）
 //   5. 叙事日志区（按「一问一答」分组折叠 + loading/端详/队列的等待态提示）
 //   6. 任务提示条 / ❢触发框 / ◈抉择框
@@ -11,6 +11,7 @@
 //
 // 游戏数据经 props 下传，overlay 显隐读 uiStore，本地只保留建筑页签状态。
 import TurnStatusPill from "../components/TurnStatusPill.jsx";
+import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
 import CenterControlRows from "./CenterControlRows.jsx";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { DevControls, TurnControls } from "./TopBar.jsx";
@@ -55,9 +56,7 @@ function isNarrativePlaceholder(entry) {
 function NarrativeSkeleton() {
   return (
     <div className="narrative-skeleton" role="status" aria-label="叙事生成中">
-      <span />
-      <span />
-      <span />
+      <span /><span /><span />
     </div>
   );
 }
@@ -160,7 +159,7 @@ export default function CenterPanel({
             />
           )}
 
-          {/* ── 切磋确认：邀战叙事跑完后，点确认才真正开打，留一步反悔余地 ── */}
+          <IntentConfirmBar zoneTheme={zoneTheme} />{/* ── 切磋确认：邀战叙事跑完后点确认才开打 ── */}
           {duelPending && (
             <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ color: "var(--text)", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>

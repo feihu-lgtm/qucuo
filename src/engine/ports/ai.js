@@ -77,7 +77,7 @@ export function createHttpAi({ baseUrl, apiKey, model }) {
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         const message = String(body?.error?.message || `AI request failed (HTTP ${response.status})`);
-        throw new Error(apiKey ? message.split(apiKey).join("[redacted]") : message);
+        throw Object.assign(new Error(apiKey ? message.split(apiKey).join("[redacted]") : message), { status: response.status });
       }
       const body = await response.json();
       const text = body.choices?.[0]?.message?.content;

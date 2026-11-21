@@ -19,6 +19,7 @@ import { usePigeonHandlers } from "./hooks/usePigeonHandlers.js";
 import { useAutoTravel } from "./hooks/useAutoTravel.js";
 import { useCraftingAI } from "./hooks/useCraftingAI.js";
 import { useScreenHandlers } from "./hooks/useScreenHandlers.js";
+import { useIntentRouter } from "./hooks/useIntentRouter.js";
 import { useCardImportHandlers } from "./hooks/useCardImportHandlers.js";
 import { useBuildingHandlers } from "./hooks/useBuildingHandlers.js";
 import { useProgressionHandlers } from "./hooks/useProgressionHandlers.js";
@@ -241,6 +242,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 调用中间一旦被"上一条命令还在处理中"的排队分支截胡，血条就会插在数组里
   // "cmd行"之前，按分组算法（以cmd为界）被错误地划进上一条命令的框，而不是
   // 这条"look X"自己的框。
+  const intentRouterRef = useRef(null);
   const { act } = useTurn({
     loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
     addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
@@ -255,7 +257,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     prerunSquares: scheduledPrerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
     timeRef, talkTarget, companionState, pendingQuestBranch, effectiveSpecialNow, setVarTree,
     setGambleNegotiation, setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
-    setPendingQuestBranch, setConvo, jotNote, setLog,
+    setPendingQuestBranch, setConvo, jotNote, setLog, intentRouterRef,
   });
   const questPanel = commandScheduler.wrapHandlers("useQuestPanel", useQuestPanel({
     act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc, captureUndo,
@@ -265,7 +267,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const autoTravelTo = useAutoTravel({
     room, mapData, flags, questProgress, addLog,
     autoTravelRef, scheduler: coreScheduler,
-    act, teleportLookRef, innerRoomName, setInteractMode,
+    act, teleportLookRef, innerRoomName, setInteractMode, intentRouterRef,
   });
 
   const pigeonHandlers = commandScheduler.wrapHandlers("usePigeonHandlers", usePigeonHandlers({
@@ -290,6 +292,10 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
     timeRef, noteAction, inv, setTradingShop, captureUndo,
   }));
+  useIntentRouter(intentRouterRef, {
+    apiCfg, act, addLog, featureCtxRef, dispatchCommand, setActiveTarget, setDuelPending, setTradingShop,
+    handleNpcDuel: duelHandlers.handleNpcDuel, handleNpcTrade: screenHandlers.handleNpcTrade,
+  });
 
   const buildingHandlers = commandScheduler.wrapHandlers("useBuildingHandlers", useBuildingHandlers({
     activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo,

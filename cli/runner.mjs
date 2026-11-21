@@ -41,6 +41,7 @@ import {
   xuannuTriggerRule,
 } from "../src/features/narrator/rules.js";
 import { applyResult } from "../src/features/run.js";
+import { createCliIntentRouter } from "./intentRoute.mjs";
 import { comfort, resolveTrauma, confessToNarrator } from "../src/features/narrator/logic.js";
 import { switchCompanion } from "../src/features/companion/logic.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
@@ -327,6 +328,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         settleBeast: !!opts.settleBeast,
         _trace: trace,
         ai,
+        intentPlan: opts.intentPlan,
         addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
         setLog: gameActions.setLog,
       });
@@ -357,6 +359,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
           char: state.char || {},
           inv: state.inv || [],
           skills: state.skills || [],
+          collectNote: opts.intentPlanNote || "",
           dao: state.dao || {},
           flags: state.flags || [],
           questProgress: state.questProgress || {},
@@ -858,6 +861,8 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       emit(`暂不支持：${line}（PR C 起接入）`);
       return 0;
     }
+    const routed = await intentRouter?.(line);
+    if (routed != null) return routed;
     return runFreeText(line);
   }
 
@@ -904,6 +909,11 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     }
     return status;
   }
+
+  const intentRouter = apiCfgOverrides?.intentRecognitionEnabled ? createCliIntentRouter({
+    ai, apiCfg: buildCliApiConfig(apiCfgOverrides), emit, getState: () => gameStore.getState(), getTurn: () => lineTurn,
+    applyFeature, runFreeText, runCommand: (text) => runLineCommand(text, classifyCliCommand(text)),
+  }) : null;
 
   session = {
     store: gameStore,
