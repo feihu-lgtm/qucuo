@@ -52,6 +52,11 @@ const ENTRY_WHITELIST = new Set([
   "debug/debug-main.jsx",
   "debug/debug-gamble.jsx",
   "debug/debug-item.jsx",
+  // 预置模块：先入库、后续回合才接线的库文件，登记在此避免被当成死文件。
+  "domain/prompt/materials/index.js",
+  // 记账调用卡片：已登记进 prompt registry，但按设计要求暂不接入正式回合流程
+  // （bookkeep 是阶段四「记账」，待识别/结算/叙事三阶段落地后才接线），暂列白名单。
+  "domain/memory/bookkeep.js",
 ]);
 
 function walkSource(dir, out = []) {
@@ -64,13 +69,14 @@ function walkSource(dir, out = []) {
 }
 
 function localImports(source) {
-  const imports = /from\s+["'](\.[^"']+)["']|\bimport\s*\(\s*(["'])(\.[^"'\r\n]+)\2\s*(?=[,)])/g;
-  return [...source.matchAll(imports)].map(([, staticPath, , dynamicPath]) => staticPath ?? dynamicPath);
+  const imports = /from\s+["'](\.[^"']+)["']|\bimport\s*["'](\.[^"']+)["']|\bimport\s*\(\s*(["'])(\.[^"'\r\n]+)\3\s*(?=[,)])/g;
+  return [...source.matchAll(imports)].map(([, fromPath, sideEffectPath, , dynamicPath]) => fromPath ?? sideEffectPath ?? dynamicPath);
 }
 
 describe("src 下没有零入度的死文件", () => {
   it.each([
     ["import Screen from './Screen.jsx';", ["./Screen.jsx"]],
+    ['import "./sideEffect.js";', ["./sideEffect.js"]],
     ['const Screen = lazy(() => import("./Screen.jsx"));', ["./Screen.jsx"]],
     ["export { value } from './data.js';", ["./data.js"]],
     ["const empty = {};", []],
@@ -94,7 +100,6 @@ describe("src 下没有零入度的死文件", () => {
   it("import 图零入度且不在入口白名单 → 报出来", () => {
     const files = walkSource(SRC_DIR).map((f) => resolve(f));
     const rel = (f) => relative(resolve(SRC_DIR), f);
-
     const deps = new Map(files.map((f) => [f, new Set()]));
     for (const f of files) {
       for (const path of localImports(readFileSync(f, "utf-8"))) {

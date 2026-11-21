@@ -43,6 +43,7 @@
 
 import { random } from "../../core/rng.js";
 import { resolveTurn, applyEndOfTurnStatus } from "./resolveTurn.js";
+import { finalizeDuelRound } from "./finalizeDuelRound.js";
 import { applyStatus, applyMark, dispelControlDrain } from "./statusEffects.js";
 import { decideNpcMove } from "./aiDecision.js";
 import { MOVE_TYPE } from "./moveTypes.js";
@@ -141,7 +142,7 @@ function applyResultToUnit(unit, result, tag, move) {
 }
 
 // 单次1v1结算：attacker 对 defender 使出各自选的招，返回 { attacker, defender, result }
-// （两个单位对象是更新后的新对象；result 是 resolveTurn 原始返回，供战报文案使用）。
+// （result 在 resolveTurn 结算后补齐回合末战斗状态，供战报和UI共用）。
 // 这是调度层的最小单元，2v2的每一次"谁打谁"都调用这个函数一次。
 export function resolveOneOnOne(attackerUnit, attackerMove, defenderUnit, defenderMove) {
   const sideA = unitToSide(attackerUnit, attackerMove);
@@ -162,7 +163,6 @@ export function resolveOneOnOne(attackerUnit, attackerMove, defenderUnit, defend
 
   newAttacker = { ...newAttacker, hp: [finalAttackerHp, newAttacker.hp[1]], statusSlots: endTick.statusSlotsA };
   newDefender = { ...newDefender, hp: [finalDefenderHp, newDefender.hp[1]], statusSlots: endTick.statusSlotsB };
-
   // 复活特效（涅槃引 rebirthOnce）：跟 DuelScreen.jsx 一致，一场限一次。
   if (finalAttackerHp <= 0 && newAttacker.equipEffects?.rebirthOnce && !newAttacker.rebirthUsed) {
     newAttacker = { ...newAttacker, hp: [Math.round(newAttacker.hp[1] * 0.5), newAttacker.hp[1]], rebirthUsed: true };
@@ -172,11 +172,17 @@ export function resolveOneOnOne(attackerUnit, attackerMove, defenderUnit, defend
     newDefender = { ...newDefender, hp: [Math.round(newDefender.hp[1] * 0.5), newDefender.hp[1]], rebirthUsed: true };
     result.notes.push(`${newDefender.name}气血将尽，却凭一缕异香生生续住了性命`);
   }
+  const finalizedResult = finalizeDuelRound(result, endTick, {
+    hpAfterA: newAttacker.hp,
+    hpAfterB: newDefender.hp,
+    nameA: attackerUnit.name,
+    nameB: defenderUnit.name,
+  });
 
   newAttacker = { ...newAttacker, alive: newAttacker.hp[0] > 0 };
   newDefender = { ...newDefender, alive: newDefender.hp[0] > 0 };
 
-  return { attacker: newAttacker, defender: newDefender, result, statusLogA: endTick.logA, statusLogB: endTick.logB };
+  return { attacker: newAttacker, defender: newDefender, result: finalizedResult, statusLogA: endTick.logA, statusLogB: endTick.logB };
 }
 
 // 按身法（special.身法）从高到低排出全部存活单位的行动顺序。相同身法随机决定
@@ -247,7 +253,7 @@ export function runTeamTurn(allyUnits, enemyUnits, intents) {
 
     const enemyPoolForActor = actor.side === "ally" ? enemyPool : allyPool;
     const target = resolveActualTarget(intent.targetId, idMap, enemyPoolForActor);
-    if (!target) { turnLog.push({ actorId: actor.id, actorName: actor.name, skipped: true, reason: "对方已全部倒下，这一击没有目标" }); continue; }
+    if (!target) { turnLog.push({ actor: { id: actor.id, name: actor.name }, skipped: true, reason: "对方已全部倒下，这一击没有目标" }); continue; }
 
     // 裸奔规则：目标B这回合的招，只有在"B自己指向的目标也是A（这次的actor）"
     // 时才真正用上；否则B在这次交锋里被视为没有防御姿态，换成空转状态招——
@@ -267,7 +273,7 @@ export function runTeamTurn(allyUnits, enemyUnits, intents) {
     // target 并没有真把招用出去，不算消耗，它稍后仍可作为主动 actor 打自己选的目标。
     if (targetReallyFacesActor) consumed.add(target.id);
 
-    const { attacker, defender, result, statusLogA, statusLogB } = resolveOneOnOne(actor, intent.move, target, targetMove);
+    const { attacker, defender, result } = resolveOneOnOne(actor, intent.move, target, targetMove);
 
     // 把更新后的单位写回对应的池子
     allyPool = allyPool.map(u => u.id === attacker.id ? attacker : u.id === defender.id ? defender : u);
@@ -276,13 +282,9 @@ export function runTeamTurn(allyUnits, enemyUnits, intents) {
     // 各自只会命中真正属于该池子的那个id，不会误伤。
 
     turnLog.push({
-      actorId: actor.id, actorName: actor.name, actorMove: intent.move.name,
-      targetId: target.id, targetName: target.name,
-      targetMove: targetReallyFacesActor ? targetMove.name : null, // 裸奔时不展示"目标用了什么招"，因为它根本没把招用在这
-      targetWasIdle: !targetReallyFacesActor,
-      matchup: result.matchup, notes: result.notes, dodgeSuccessActor: result.dodgeSuccessA, dodgeSuccessTarget: result.dodgeSuccessB,
-      dmgToTarget: result.damageToB, dmgToActor: result.damageToA,
-      statusLog: [...(statusLogA || []), ...(statusLogB || [])],
+      actor: { id: actor.id, name: actor.name, move: intent.move },
+      target: { id: target.id, name: target.name, move: targetReallyFacesActor ? targetMove : null },
+      result,
       targetRedirected: intent.targetId != null && intent.targetId !== target.id,
     });
   }

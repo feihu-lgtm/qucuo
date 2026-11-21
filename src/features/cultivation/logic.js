@@ -1,3 +1,4 @@
+import { set, updateField } from "../../domain/state/applyWrite.js";
 import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
 import { hpFromNeigong } from "../../domain/npc/npcGeneration.js";
 import { STAGES, STAGE_UP_COST } from "../../utils/mudHelpers.js";
@@ -11,7 +12,7 @@ export function meditate(state) {
   const nextHp = Math.min(cap, char.hp[0] + hpGain);
   return {
     changes: {
-      char: { ...char, hp: [nextHp, char.hp[1]] },
+      char: updateField("char", set("char.hp", [nextHp, char.hp[1]]))(char),
       time: state.time + 1,
     },
     logs: [
@@ -46,7 +47,7 @@ export function trainNeigong(state) {
   return {
     changes: {
       pot: state.pot - cost,
-      char: { ...char, neigong: next, hp: [newCurrentHp, newMax] },
+      char: updateField("char", [set("char.neigong", next), set("char.hp", [newCurrentHp, newMax])])(char),
       time: state.time + 2,
     },
     logs: [
@@ -82,7 +83,7 @@ export function trainWaigong(state) {
   return {
     changes: {
       pot: state.pot - cost,
-      char: { ...char, waigong: next },
+      char: updateField("char", set("char.waigong", next))(char),
       time: state.time + 2,
     },
     logs: [

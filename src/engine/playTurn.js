@@ -58,7 +58,14 @@ export async function playTurn(ctx, cmd, opts = {}) {
     const turn = await runTurn({ ...ctx, _trace: trace }, cmd, opts);
     if (turn.stale || ctx.isStale?.()) return stale();
     setCommandPhase("commit");
-    const committed = withTurnContext(trace, () => (ctx.commitRound || commitRound)({ ...ctx.commitDeps(turn), _trace: trace }));
+    const committed = withTurnContext(trace, () => (ctx.commitRound || commitRound)({
+      ...ctx.commitDeps(turn),
+      duelReport: opts.duelReport || null,
+      giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
+        ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
+      giftAlreadySettled: !!opts.giftInfo?.weight,
+      _trace: trace,
+    }));
     await Promise.resolve();
     if (!ctx.deferMonitorFinish) turnMonitor.finish(trace, "行动完成");
     return { ok: true, turn, duelRequest: committed?.duelRequest ?? turn.p?.duelRequest };

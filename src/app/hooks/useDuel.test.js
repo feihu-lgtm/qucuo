@@ -103,12 +103,13 @@ describe("duel battle report", () => {
     });
     vi.useFakeTimers();
     try {
+      const addLog = vi.fn();
       const act = vi.fn();
-      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog: vi.fn() } };
+      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog } };
       const handlers = {};
       function Harness() {
         Object.assign(handlers, useDuel({
-          act, addLog: vi.fn(), duelPending: null, featureCtxRef,
+          act, addLog, duelPending: null, featureCtxRef,
           setActiveTarget: vi.fn(), setDuelPending: vi.fn(), setDuelingNpc: vi.fn(),
           duelingNpc: npc, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
           aiSummarizeFact: vi.fn(), setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
@@ -121,9 +122,55 @@ describe("duel battle report", () => {
       handlers.duelFinishHandler("win", null, [], null, [], null, []);
       vi.runOnlyPendingTimers();
 
-      expect(act).toHaveBeenCalledWith(expect.stringContaining("连贯的整场战报"), [], {
-        silentCmd: true, preserveHp: true, keepUndo: true, duelReport: true,
+      expect(act).toHaveBeenCalledWith(expect.stringContaining("连贯的整场战报"), [], expect.objectContaining({
+        silentCmd: true, preserveHp: true, keepUndo: true, duelReport: { rounds: [] },
+        duelReportFallback: expect.any(Function),
+      }));
+    } finally {
+      vi.useRealTimers();
+      restoreStore();
+    }
+  });
+
+  it.each([
+    ["failed", { ok: false, error: new Error("report failed") }],
+    ["stale", { ok: true, stale: true }],
+  ])("logs settled system rows when the report turn is %s", async (_label, reportResult) => {
+    const npc = { name: "才旦", levelCap: 1 };
+    const restoreStore = freshStore({
+      room: { name: "鱼定村", npcs: [npc], items: [] },
+      char: { name: "测试主角", hp: [10, 10], special: { 气运: 5 } },
+      varTree: { 角色: {}, 世界: {} },
+      pot: 0, inv: [], skills: [], flags: [], questProgress: {}, time: 1,
+    });
+    vi.useFakeTimers();
+    try {
+      const addLog = vi.fn();
+      const act = vi.fn((_prompt, _args, options) => {
+        options.duelReportFallback();
+        return Promise.resolve(reportResult);
       });
+      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog } };
+      const handlers = {};
+      function Harness() {
+        Object.assign(handlers, useDuel({
+          act, addLog, duelPending: null, featureCtxRef,
+          setActiveTarget: vi.fn(), setDuelPending: vi.fn(), setDuelingNpc: vi.fn(),
+          duelingNpc: npc, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
+          aiSummarizeFact: vi.fn(), setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
+          turnGenerationRef: { current: 0 },
+        }));
+        return null;
+      }
+      renderToStaticMarkup(createElement(Harness));
+
+      handlers.duelFinishHandler("win", null, [{ round: 1, teamText: "一招既定" }], null, [], null, []);
+      await vi.runOnlyPendingTimersAsync();
+
+      const logs = addLog.mock.calls.flatMap(([entries]) => entries || []);
+      expect(logs).toContainEqual(expect.objectContaining({
+        t: "sys", text: expect.stringContaining("第1回合"),
+      }));
     } finally {
       vi.useRealTimers();
       restoreStore();

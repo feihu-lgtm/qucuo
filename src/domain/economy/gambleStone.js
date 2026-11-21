@@ -4,6 +4,7 @@
 
 import { createRng, random } from "../../core/rng.js";
 import { QUALITY, rollQuality } from "./equipment.js";
+import { DEAL_MULTIPLIER } from "../state/fields.js";
 
 // ---------- 基础：可复现随机（出生固化用） ----------
 // mulberry32：给一个种子，产出确定性的伪随机序列。同一石头同一种子 → 每次结果一致。
@@ -246,7 +247,8 @@ export function rollBidders(stone, luck = 5) {
 // aiResponse: { narrative, priceMult, addItem }
 export function settleNegotiation(bidder, aiResponse, carryItems = []) {
   const raw = Number(aiResponse?.priceMult);
-  const mult = isFinite(raw) ? Math.max(0.8, Math.min(1.5, raw)) : 1.0; // clamp 死区间
+  const { min, max, default: fallback } = DEAL_MULTIPLIER;
+  const mult = isFinite(raw) ? Math.max(min, Math.min(max, raw)) : fallback;
   const finalOffer = Math.min(Math.round(bidder.offer * mult), bidder.cash);
   // 校验追加物品：必须在该竞价者 carry 里、且是合法物品
   let addItem = null;

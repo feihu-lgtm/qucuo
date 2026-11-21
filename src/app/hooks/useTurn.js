@@ -63,7 +63,7 @@ export function useTurn({
       : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading, commandId: "actRouter" });
     if (parent === _trace) _trace.awaitingSettlement = true;
     const applyLocal = (result, feature) => applyResult(featureCtxRef.current, result, { turn: _trace, feature });
-    let summary;
+    let summary, result;
     try {
     const stopAutoTravel = () => {
       if (!autoTravelRef.current) return;
@@ -395,7 +395,7 @@ export function useTurn({
         };
       },
     };
-    const result = await playTurn(turnCtx, cmd, opts);
+    result = await playTurn(turnCtx, cmd, opts);
     if (result.stale) return;
     if (!result.ok) {
       const e = result.error;
@@ -418,7 +418,7 @@ export function useTurn({
       if (_trace.totalMs == null && !isStale()) turnMonitor.transition(_trace, PHASE.ERROR, String(error));
       throw error;
     } finally {
-      await Promise.resolve();
+      if (opts.duelReportFallback && (!result?.ok || result.stale || isStale())) opts.duelReportFallback(); await Promise.resolve();
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }

@@ -1,3 +1,4 @@
+import { add, set, updateField } from "../../domain/state/applyWrite.js";
 import { SECT_ENTRY, checkSectEntry } from "../../domain/character/sectEntry.js";
 import { makeItem } from "../../domain/economy/equipment.js";
 import { makeItemSmart } from "../../domain/items/catalog.js";
@@ -16,9 +17,9 @@ export function joinSect(state) {
   }, makeItem);
   return {
     changes: {
-      char: c => ({ ...c, money: (c.money || 0) - SECT_ENTRY.tuition }),
-      inv: prev => [...prev, token],
-      flags: f => f.includes(SECT_ENTRY.flag) ? f : [...f, SECT_ENTRY.flag],
+      char: updateField("char", add("char.money", -SECT_ENTRY.tuition)),
+      inv: updateField("inv", (inv) => set("inv", [...inv, token])),
+      flags: updateField("flags", (flags) => set("flags", flags.includes(SECT_ENTRY.flag) ? flags : [...flags, SECT_ENTRY.flag])),
       varTree: prev => markNpcAsKnown(prev, SECT_ENTRY.master),
     },
     logs: [

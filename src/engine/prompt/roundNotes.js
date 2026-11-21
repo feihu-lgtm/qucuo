@@ -3,7 +3,8 @@ import { collectPromptLines } from "../../domain/quests/collect.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../domain/quests/questEngine.js";
 import { getBuildingsForLocation } from "../../domain/buildings/qucuoBuildings.js";
-import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { hasInnerMap, getDistrictAnchor } from "../../domain/map/innerMap.js";
+import { getPresentNpcs } from "../../domain/prompt/promptRefs.js";
 import { activeCompanion, COMPANION_LORE } from "../../domain/companion/companion.js";
 import { getAllResidentNpcLore } from "../../domain/npc/residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../../domain/prompt/worldbook.js";
@@ -86,9 +87,10 @@ export function buildArrivalNote({ isTalk, movingDir, lockedDestName, outerDepar
 // （matchNpcLore 在场判定、NPC 认知隔离等）复用同一份列表，天然把雪豹当成
 // 一个真实在场的角色对待，不用另开一条"伙伴专属"的叙事通道。
 export function buildPresence({ isTalk, lockedDestName, room, innerRoomName, companionState }) {
+  const { npcs } = room;
   const visibleNpcs = (!isTalk && lockedDestName)
-    ? room.npcs
-    : room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
+    ? npcs
+    : getPresentNpcs({ room, innerRoomName });
   // 随行队友并入喂给AI的在场名单（不影响「此地之人」的UI列表——那是本地人口）。
   // 【改成读通用出战位】此前这里写死只认雪豹，明日香入队后 AI 压根不知道她跟着，
   // 叙事里她就凭空消失了。现在读 activeCompanion（单槽互斥，同时只有一个）。

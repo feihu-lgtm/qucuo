@@ -1,5 +1,7 @@
 import { narratorVoicePrompt } from "../narrator/narrator.js";
 import { MVU_SYSTEM_INSTRUCTIONS } from "./mvu.js";
+import { AFFECTION_RULES, CARRY_COUNT, FIELD, FIELDS, formatRange, giftRange, learnRange } from "../state/fields.js";
+import { renderFieldScales, renderPromptTemplate } from "./promptRefs.js";
 import { describeCatalogForAI } from "../items/catalog.js";
 import { getActivePreset } from "./presetSystem.js";
 import { assemblePrompt } from "./presetSystem.js";
@@ -7,10 +9,23 @@ import { gateScenario } from "./worldbook.js";
 import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL, buildTalkItemRule } from "./enginePrompts.js";
 import { buildSeaOfMindRule } from "../narrator/seaOfMind.js";
 import { makeBlock } from "./tavernMapping.js";
+import { renderDuelReportRounds } from "../combat/duelReport.js";
+
+function buildDuelReportRules(duelReport, narrativeOnly, onMissingPaths) {
+  if (!duelReport) return "";
+  const rounds = Array.isArray(duelReport.rounds) ? duelReport.rounds : [];
+  const { text: battleData, missingPaths } = renderDuelReportRounds(rounds);
+  if (missingPaths.length) onMissingPaths?.(missingPaths);
+  const segmentShape = narrativeOnly
+    ? "散文必须恰好分成N+1个段落，每段首句以对应标记开头"
+    : "顶层 output 数组必须恰好有N+1项，每项以对应标记开头";
+  return `\n【切磋战报逐回合规矩】本场系统已结算${rounds.length}回合。${segmentShape}：依次为${rounds.map((round) => `「【第${round.round}回合】」`).join("、") || "无回合段"}，最后一段为「【结局】」。每回合段只能写该回合给定的招式、伤害与状态，不得补造、调换、合并回合或改动任何数值；结局段只写本场结果。\nHP带字段中 healthy=健旺（≥60%），写得如无事发生；hurt=受创（25%–<60%），写出明显震荡；nearDown=将倒（<25%），写成眼看就要倒下。只按受伤一方自己的回合后HP带叙述，玩家与 NPC 一视同仁。\n系统给定战况如下，只能据此叙述：\n${battleData || "本场没有逐回合记录。"}\n`;
+}
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
 // 返回 SillyTavern 13 位置风格的 system 消息数组，每条带 tavernBlock/tavernLabel。
 export function buildSysBase(targetWordCount, narratorState, scenario, budgetInstruction, embeddingEnabled, npcLoreBlock, narrativeOnly = false, scope = "full", opts = {}) {
+  const giftWeight = (template) => renderPromptTemplate(template, opts, { trace: opts.onPromptRefMissing }).text;
   // memory 摘要统一用玩家角色名字第三人称叙述，不用"你/我/玩家"这几种代词混着写——
   // 事实账本(knowledge.js)的摘要要在多处被复用（旁白全知视角、其他NPC传闻转述、飞鸽书信
   // 里提起），人称一旦不统一，转述出来的句子会主客体错乱、读起来别扭。
@@ -66,6 +81,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战叙事铁律】只写玩家发出邀战、${npcName}接受邀战与双方摆开架势，写到第一招交手之前立刻停止。严禁描写任何招式交锋、回合、伤势、胜负、任一方喊停或${npcName}拒绝。切磋是否开始由玩家通过确认栏选择，本轮不得替玩家开始战斗。`;
     }
     if (o.settleKind === "gift") {
+      if (o.giftInfo?.weight) return giftWeight(
+        "\n【赠礼反应】礼物「@giftInfo.itemName」已由系统交付，不得重复扣除。分量：@{赠礼.分量}。反应：@赠礼.反应。按收礼人的性格写，不同分量不能写成同样的反应。",
+      );
       return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。这一轮${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，务必写成她欣然收下、态度转暖，不许写成推辞、质疑来意或婉拒不受——这是本轮叙事唯一的走向，不接受其他写法。`;
     }
     if (o.settleKind === "companion_invite") {
@@ -79,7 +97,8 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【授业传艺铁律】在曲措乡这方江湖里，肯把本事传给一个人，是极重的情分——那意味着认可、托付，也意味着从此多了一层师徒名分。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式都已由系统结算完毕，是既成事实），务必写成他/它郑重其事地把这身功夫交出来、态度较先前更亲近一分；不许写成勉强、敷衍、留一手或临时反悔——这是本轮叙事唯一的走向，不接受其他写法。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
     }
     if (o.settleKind === "appease") {
-      return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，玩家本轮这次行为是一次新的缓和尝试。请结合此前尝试的方式，判断当前行为是否真诚、得体并切中要害；有效才写成怒气有所消解，无效就让${o.settleNpc}依然不满，不得把和解当成既成事实。`;
+      return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，玩家本轮这次行为是一次新的缓和尝试。请结合此前尝试的方式，判断当前行为是否真诚、得体并切中要害；有效才写成怒气有所消解，无效就让${o.settleNpc}依然不满，不得把和解当成既成事实。`
+        + (o.giftInfo?.weight ? giftWeight("本次赠礼分量：@{赠礼.分量}。分量不等于已经消气。") : "");
     }
     return "";
   }
@@ -90,6 +109,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战状态铁律】本轮只是邀战与摆开架势，不发生战斗或任何状态变化。不得输出 <mvu>，不得修改气血、好感、物品或其他状态。`;
     }
     if (o.settleKind === "gift") {
+      if (o.giftInfo?.weight) return buildSettleNarrativeNote(o);
       return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。所以这一轮${o.settleNpc}收下${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}时，对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n这件礼物的实际来历（好感幅度请依此掂量分量，越贵重、越用心，情谊越重）：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}${o.giftInfo?.desc ? `。物件描述：${o.giftInfo.desc}` : "（无特别来历，寻常物件）"}`;
     }
     if (o.settleKind === "companion_invite") {
@@ -103,7 +123,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【授业传艺铁律】肯把本事传给一个人，在江湖里是极重的情分——那意味着认可与托付。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式均已由系统结算完毕，是既成事实），所以他/它对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。`;
     }
     if (o.settleKind === "appease") {
-      return `\n【怒气缓和状态裁决】只有当玩家本轮当前行为确实缓和了${o.settleNpc}，才可写 _.set('角色.${o.settleNpc}.生气解除', true)；未奏效时不得设置。只有成功时才可选写 _.add('角色.${o.settleNpc}.好感度', N)，其中 N 为 0~5 的整数。除此之外不得输出任何 MVU 变更。`;
+      return `\n【怒气缓和状态裁决】只有当玩家本轮当前行为确实缓和了${o.settleNpc}，才可写 _.set('角色.${o.settleNpc}.生气解除', true)；未奏效时不得设置。只有成功时才可选写 _.add('角色.${o.settleNpc}.好感度', N)，其中 N 为 ${AFFECTION_RULES.appease.join("~")} 的整数。除此之外不得输出任何 MVU 变更。`;
     }
     return "";
   }
@@ -112,15 +132,21 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战状态示例】本轮没有任何状态变化，不输出 <mvu> 块。`;
     }
     if (o.settleKind === "gift") {
-      return `\n依上面这件礼物的品阶与来历，本轮好感度增量建议落在 +${o.giftInfo?.range?.[0] ?? 2}~+${o.giftInfo?.range?.[1] ?? 4} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? 3});`;
+      if (o.giftInfo?.weight) return giftWeight(
+        "\n只可给收礼人一条 _.add 好感，允许整数区间 @赠礼.好感范围；允许零时，礼貌而无态度变化可以省略。不写其他 MVU。",
+      );
+      const range = o.giftInfo?.range ?? giftRange(o.giftInfo?.quality);
+      return `\n依上面这件礼物的品阶与来历，本轮好感度增量建议落在 ${formatRange(range)} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? Math.round((range[0] + range[1]) / 2)});`;
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
-      return `\n${cn}是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"刚结为同行的伙伴"的情分，不是从0慢慢培养的陌生关系），建议直接 _.set 到 40~55 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', 45);`;
+      const { min, max, example } = AFFECTION_RULES.companion;
+      return `\n${cn}是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"刚结为同行的伙伴"的情分，不是从0慢慢培养的陌生关系），建议直接 _.set 到 ${min}~${max} 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', ${example});`;
     }
     if (o.settleKind === "learn_skill") {
       const master = !!o.learnInfo?.isMaster;
-      return `\n授业这一轮好感度增量建议落在 +${master ? "4~+8" : "2~+4"} 之间（${master ? "所授是压箱底的绝学，情分重，可取上沿" : "所授是通用功夫，取下沿即可"}），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${master ? 6 : 3});`;
+      const [min, max, example] = learnRange(master);
+      return `\n授业这一轮好感度增量建议落在 ${formatRange([min, max])} 之间（${master ? "所授是压箱底的绝学，情分重，可取上沿" : "所授是通用功夫，取下沿即可"}），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${example});`;
     }
     if (o.settleKind === "appease") {
       return `\n成功示例（不成功则不输出这两条）：\n_.set('角色.${o.settleNpc}.生气解除', true);\n_.add('角色.${o.settleNpc}.好感度', 3);`;
@@ -130,7 +156,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
 
   // 预设系统负责的部分：文体/通用规则/剧本设定的拼装顺序和内容，可由用户在设置面板里自由编辑，
   // 完整兼容酒馆格式导入。scenario 通过 marker 占位符注入，不需要在这里手动拼接。
-  const preset = getActivePreset();
+  const preset = Object.hasOwn(opts, "activePreset") ? opts.activePreset : getActivePreset();
   // scenario 绿灯（批三）：世界观总纲按"关键词 OR 状态"分条点灯，见 worldbook.js gateScenario。
   // 蓝灯段（地理概要/地图铁律/好感度规则）常驻；专项段（拓扑路线/契诃夫之枪/路途遭遇/
   // 装备掉落）只在玩家或上轮回复提到、或该 scope 确需时才亮。opts.gateCtx 不传则不裁剪。
@@ -153,13 +179,13 @@ ${opts.snowLeopardGift ? '唯一例外：收复雪豹任务进行中且雪豹在
       : scope === "move"
         ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
-npcs 的 carry 字段只在该 NPC 首次登场那一轮写（0-3件肉眼可见随身物，出场叙事需描述其外观）。
+npcs 的 carry 字段只在该 NPC 首次登场那一轮写（${CARRY_COUNT.min}-${CARRY_COUNT.max}件肉眼可见随身物，出场叙事需描述其外观）。
 可选字段 "memory"：用不超过50字纯客观事实概括本轮到达了何处、路上是否有值得记的事，一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，寻常赶路可省略。
 若这次移动让某个从未出现的具名人物被提及，加 "mentionedNewNpcs":["名"]。`
         : `回复纯JSON，字符串不换行：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}],"items":[{"name":"名","id":"id"}]},"char":{"hp":[60,100],"neigong":5,"waigong":8,"special":{"根骨":5,"悟性":6,"体魄":5,"魅力":5,"智谋":5,"身法":5,"气运":5}},"dao":{"karma":0,"jie":0,"sign":"天象","rumor":["事"]},"delta":{"items_add":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}],"items_rm":[],"skill_up":{},"exp":0,"pot":0,"flags_add":[]}}
 items_add 里的元素也可以是纯字符串（不需要装备系统参与的剧情道具/杂物），结构化写法仅用于武器/护甲/饰品类物品。
-npcs 的 carry 字段只在该 NPC 首次登场那一轮写：列出出场描述里玩家肉眼可见的随身物品（兵器、猎具、饰物、包裹等，0-3件，寻常人多为白/绿档），出场叙事必须描述其外观且提到这些东西——所见即所得，之后系统会固化这份清单作为他的全部随身家当（掉落/偷窃都只出自这里），后续轮次不必再写 carry。
+npcs 的 carry 字段只在该 NPC 首次登场那一轮写：列出出场描述里玩家肉眼可见的随身物品（兵器、猎具、饰物、包裹等，${CARRY_COUNT.min}-${CARRY_COUNT.max}件，寻常人多为白/绿档），出场叙事必须描述其外观且提到这些东西——所见即所得，之后系统会固化这份清单作为他的全部随身家当（掉落/偷窃都只出自这里），后续轮次不必再写 carry。
 npcs 里某个 NPC 如果是路途遭遇生成的生态猛兽/山贼游哨这类"泛用清剿目标"（不是具名剧情人物），可选加一个 "tag" 字段（比如 "熊山野兽""黑风寨山贼"，具体归属看当前地域的路途遭遇说明），系统会用它核对是否推进对应的清剿类任务进度；具名剧情人物不要加这个字段。
 如果这一轮的旁白/对话文本里，你让某个此前从未出现过的具名人物被提及（比如"我那侄子阿福在山下磨坊"），在顶层JSON里加 "mentionedNewNpcs":["阿福"] 字段列出这些名字，不需要每次都有，绝大多数时候留空或省略这个字段即可，只有真的提到全新的具名人物时才加。
 ${scope === "full" && !opts.duelReport ? '仅当本轮玩家明确向当前在场名单中的 NPC 发起切磋/比试、且该 NPC 明确应允并与玩家摆开架势时，才在顶层 JSON 加 "duelRequest":"NPC名"。NPC 拒绝或躲避、玩家拒绝切磋、或只是在谈论打斗时，必须省略此字段。' : ""}
@@ -172,7 +198,7 @@ ${wantMvu ? `
   // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
   // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
   const messages = [
-    makeBlock("main", `${ENGINE_IDENTITY}\n\n篇幅要求：${lenNote}\n${narratorVoicePrompt(narratorState)}`),
+    makeBlock("main", `${ENGINE_IDENTITY}\n\n篇幅要求：${lenNote}\n${narratorVoicePrompt(narratorState, opts.onPromptRefMissing)}`),
     makeBlock("worldInfoBefore", `${presetContent}${npcLoreBlock || ""}`),
     makeBlock("charDescription", `玩家角色：${playerName}。系统会维护气血、内外功、物品等状态；你只需叙事，不要擅自修改状态。`),
     makeBlock("charPersonality", `旁白/说书人的语气由「Main Prompt」中的声线控制，保持统一。`),
@@ -196,12 +222,17 @@ ${wantMvu ? `
   // 靠后取优先级，本就不是 prefill。
   const phiRules = [
     scope === "full" && !opts.duelReport ? "\n【战斗叙事边界】任何战斗的招式交锋与胜负结果均由系统战斗结算，叙事不得自行描写。" : "",
+    buildDuelReportRules(opts.duelReport, narrativeOnly, opts.onDuelReportMissing),
     narrativeOnly ? buildSettleNarrativeNote(opts) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuNote(opts) : "",
-    (!narrativeOnly && isSettle && wantMvu && opts.settleKind !== "duel_invite")
+    (!narrativeOnly && isSettle && wantMvu && opts.settleKind !== "duel_invite" && !opts.giftInfo?.weight)
       ? `\n关于下面那条 <mvu>：${(opts.settleKind === "gift" || opts.settleKind === "companion_invite" || opts.settleKind === "learn_skill") ? "这一轮必须给出" : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化才给出"}。`
       : "",
-    (!narrativeOnly && wantMvu && opts.settleKind !== "duel_invite") ? MVU_SYSTEM_INSTRUCTIONS : "",
+    (!narrativeOnly && wantMvu && opts.settleKind !== "duel_invite") ? MVU_SYSTEM_INSTRUCTIONS
+      + renderFieldScales(isSettle ? (opts.giftInfo?.weight ? [] : [FIELD.affection])
+        : Object.keys(FIELDS).filter((path) => FIELDS[path].ai === true), opts, opts.onPromptRefMissing) : "",
+    (!narrativeOnly && !isSettle && scope !== "move")
+      ? renderFieldScales([FIELD.hp, "char.neigong", "char.waigong", "char.special", "dao.karma", "dao.jie", FIELD.inv, FIELD.flags, "skills", "exp", "pot"], {}, opts.onPromptRefMissing) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuExample(opts) : "",
   ].filter(Boolean).join("\n");
 

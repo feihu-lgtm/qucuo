@@ -87,7 +87,7 @@ export default function DebugConsole() {
     const narrative = "你从怀里摸出一壶温热的青稞酒递过去，呼延雪怔了怔，接过时指尖微顿，冷淡的眉眼间难得柔和了几分，低声道了句「有心了」。";
     const state = {
       room: { name: "雪山派·内堂", npcs: [{ name: "呼延雪" }], items: [], exits: ["s"] },
-      char: { hp: [80, 100] }, inv: ["青稞酒"], invText: "青稞酒", dao: { karma: 0, jie: 0 },
+      char: { hp: [80, 100] }, inv: ["青稞酒"], dao: { karma: 0, jie: 0 },
       varTree: { 角色: { 呼延雪: { 好感度: 20, 态度: "冷淡" } } }, lockedDestName: null, lockedExits: null,
     };
     log(`意图 TALK_CASUAL｜叙事：${narrative.slice(0, 26)}…`);
