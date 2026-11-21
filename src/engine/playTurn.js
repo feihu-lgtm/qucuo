@@ -10,11 +10,9 @@ import {
   applySettledDeltas, captureSettledChanges, revertSettled, runSoftSettle,
 } from "../domain/settle/settle.js";
 import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
+import { SOFT_SETTLE_KINDS } from "../domain/settle/softRules.js";
 import { applyMvuCommands } from "../domain/prompt/mvu.js";
 import { formatAngerResolutionLog, resolveAngerSignals } from "../domain/combat/stealSystem.js";
-
-// 会跑软结算的 settle 类型（其余 settleKind 仍走原有叙事+提取路径）。
-const SOFT_SETTLE_KINDS = new Set(["appease", "gift", "companion_invite", "learn_skill"]);
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",

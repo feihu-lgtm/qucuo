@@ -22,6 +22,9 @@ import { UNKNOWN_CHOICE } from "./judge.js";
 //   是否回退已结算的系统变更由未来接线层决定，本层只管好感。
 // · appease 的好感回补现状是"0~5 随意给一个"，这里取中值 +3（与提取 spec 示例一致）。
 
+// 会跑软结算的 settle 类型（narrator_affinity 不经回合，由私聊侧直接调 runSoftSettle）。
+export const SOFT_SETTLE_KINDS = new Set(["appease", "gift", "companion_invite", "learn_skill"]);
+
 const UNKNOWN = UNKNOWN_CHOICE;
 const mid = ([lo, hi]) => Math.round((lo + hi) / 2);
 
