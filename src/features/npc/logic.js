@@ -9,7 +9,7 @@ import { bar } from "../../utils/mudHelpers.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { getCurrentStage } from "../../domain/quests/questEngine.js";
 import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
-import { snowMedicineGift } from "../quest/snowLeopard.js";
+import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
@@ -144,6 +144,10 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   if (snowMedicineGift(state, npc, item)) {
     changes.flags = updateField("flags", (flags) => set("flags", [...new Set([...flags, "snow_spirit_medicine"])]));
     logs.push({ t: "sys", text: "  你替雪豹敷药，前爪的陈年旧伤终于好了。" });
+  }
+  if (snowMeatGift(state, npc, item)) {
+    changes.flags = updateField("flags", (flags) => set("flags", [...new Set([...flags, "snow_spirit_meat"])]));
+    logs.push({ t: "sys", text: "  雪豹衔起肉来三两口吞下，金瞳里透出几分满足。" });
   }
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);
