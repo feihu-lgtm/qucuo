@@ -120,8 +120,10 @@ export function defaultConfig() {
     intentBudgets: { ...DEFAULT_INTENT_BUDGETS },
     // 各类 LLM 调用的输出 token 上限（原来散在代码里写死，现集中可调，范围 0–100000）
     callTokenLimits: { ...DEFAULT_CALL_TOKEN_LIMITS },
-    // 提取层（叙事/状态分离模式）：大模型只输出叙事，小模型按意图提取状态变化
-    extractionEnabled: false,
+    // 提取层（叙事/状态分离模式）：大模型只输出叙事正文，状态由系统/软结算裁决后
+    // 小模型按意图提取残余字段；settle 回合跳过提取。关掉则回到单调用 JSON 老路
+    //（回放/离线兜底，确定性 fixture 依赖它）。
+    extractionEnabled: true,
     // 行动识别默认开：打字与按钮落到同一套系统结算路径；想要原来自由行动的用户可在设置里关。
     intentRecognitionEnabled: true,
     bookkeepEnabled: true,

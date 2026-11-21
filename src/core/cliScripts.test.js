@@ -20,7 +20,7 @@ const scriptFiles = readdirSync(scriptsDir)
 let tempDir;
 
 // 行动识别与软结算现在都默认开；本文件的脚本 fixture 录制于默认关的时代，确定性回放须显式关掉。
-const DETERMINISTIC_API = { intentRecognitionEnabled: false, softSettleEnabled: false };
+const DETERMINISTIC_API = { intentRecognitionEnabled: false, softSettleEnabled: false, extractionEnabled: false };
 const createSession = (opts) => rawCreateSession({ apiCfg: DETERMINISTIC_API, ...opts });
 const runScript = (lines, opts) => rawRunScript(lines, { apiCfg: DETERMINISTIC_API, ...opts });
 
@@ -277,7 +277,7 @@ describe("CLI scripts", () => {
   it("runs a script with sibling replies using the default mock AI", () => {
     const output = execFileSync(process.execPath, [
       resolve(projectRoot, "cli/qucuo.mjs"),
-      "--script", "tests/cli/ai-turn.txt", "--no-intent", "--no-soft-settle",
+      "--script", "tests/cli/ai-turn.txt", "--no-intent", "--no-soft-settle", "--no-extraction",
     ], { cwd: projectRoot, encoding: "utf8" });
 
     expect(output).toContain("石阶旁的草叶轻轻摇动。");
