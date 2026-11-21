@@ -4,7 +4,10 @@
 // 判定走 persuasion.js 的隐藏结构化字段，UI 只呈现结果。
 
 import React, { useState, useRef, useEffect } from "react";
+import { createWebAi } from "../../engine/ports/ai.js";
 import { runPersuadeTurn, hintsUnlockedByGuard } from "../../domain/quests/persuasion.js";
+
+const webAi = createWebAi();
 
 export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], playerMoney = 0, playerIdentities = [], playerSpecial = {}, zoneTheme, savedProgress = null, onProgress, onFinish }) {
   const p = persuade;
@@ -54,7 +57,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
     setTurns(prev => [...prev, { who: "player", text: say }]);
     setBusy(true);
     const history = turns.map(x => ({ role: x.who === "npc" ? "assistant" : "user", content: x.text }));
-    const res = await runPersuadeTurn(p, say, hitKeys, ownedFlags, history, apiCfg, guard, playerSpecial?.智谋 ?? 5);
+    const res = await runPersuadeTurn(p, say, hitKeys, ownedFlags, history, apiCfg, guard, playerSpecial?.智谋 ?? 5, webAi);
     setHitKeys(res.newHitKeys);
     setGuard(res.newGuard);
     setTurns(prev => [...prev, { who: "npc", text: res.line, struck: !!res.hit }]);

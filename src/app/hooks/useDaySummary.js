@@ -4,7 +4,7 @@ import { describeDayForSummary } from "../../domain/memory/tally.js";
 import { setFactSummary } from "../../domain/prompt/knowledge.js";
 import { resetForDay } from "../../domain/map/mapSquares.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../engine/ports/withAI.js";
+import { withAI } from "../../domain/prompt/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();
