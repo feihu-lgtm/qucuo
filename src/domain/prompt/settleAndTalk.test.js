@@ -49,7 +49,7 @@ describe("拜师 learn_skill 铁律（0728 起改由 11 号位承载，不再在
     expect(phiRules).toContain("授业传艺铁律");
     expect(phiRules).toContain("+4~+8");
     expect(phiRules).toContain("_.add('角色.雪豹.好感度', 6)");
-    expect(phiRules).toContain("这一轮必须给出");
+    expect(phiRules).toContain("本轮必须输出 <mvu> 且为正向增量");
     // 13 位只剩形状：JSON 骨架在、铁律不在
     expect(phiBlock.content).toContain('"output"');
     expect(phiBlock.content).not.toContain("授业传艺铁律");

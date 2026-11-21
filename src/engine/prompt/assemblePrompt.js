@@ -34,7 +34,7 @@ export function buildAngryNote(varTree, names = []) {
       : "此前暂无求和记录";
     return `${name}(${angry.reason}，剩${angry.turnsLeft}回合平息期限，${history})`;
   });
-  return `\n[社交状态] 以下在场角色正处于生气状态，原因是：${summaries.join("、")}。请结合此前尝试的方式，判断玩家本轮当前行为是否真正缓和了对方。若玩家此刻尝试道歉/辩解/示好/赠礼，请你根据其言行是否得体、是否切中要害来判断这次"平息怒气"的努力是否奏效：奏效就在 <mvu> 里用 _.set('角色.<该角色>.生气解除', true) 标记这次成功，并可用 _.add('角色.<该角色>.好感度', 5) 适度回补好感度；敷衍或不得体就让角色在 output 里表现出依然不满，不要设置生气解除字段。`;
+  return `\n[社交状态] 在场生气角色：${summaries.join("、")}。结合此前尝试方式，判断玩家本轮行为（道歉/辩解/示好/赠礼等）是否得体、切中要害并真正缓和对方：奏效则在 output 中体现怒气缓和；敷衍或不得体则表现为依然不满。`;
 }
 
 export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo) {

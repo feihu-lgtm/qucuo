@@ -228,7 +228,7 @@ describe("11 号位收下全部约束", () => {
     expect(phiRules).toContain("送礼世界观铁律");
     expect(phiRules).toContain("+4~+6");
     expect(phiRules).toContain("<mvu>...</mvu>");
-    expect(phiRules).toContain("这一轮必须给出");
+    expect(phiRules).toContain("本轮必须输出 <mvu> 且为正向增量");
   });
 
   it("settle无settleKind：措辞是软的「确有变化才给出」", () => {

@@ -22,9 +22,9 @@ describe("angry NPC prompt note", () => {
     const note = buildAngryNote(varTree, ["商人"]);
 
     expect(note).toContain("此前已尝试：送礼「青稞饼」、交易");
-    expect(note).toContain("判断玩家本轮当前行为是否真正缓和");
-    expect(note).toContain("生气解除");
-    expect(note).toContain("角色.<该角色>.好感度");
+    expect(note).toContain("在场生气角色");
+    expect(note).toContain("道歉/辩解/示好/赠礼");
+    expect(note).toContain("奏效则在 output 中体现怒气缓和");
   });
 
   it("uses the same note in the in-room prompt context", () => {

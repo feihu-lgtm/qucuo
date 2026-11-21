@@ -85,22 +85,22 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     }
     if (o.settleKind === "gift") {
       if (o.giftInfo?.weight) return giftWeight(
-        "\n【赠礼反应】礼物「@giftInfo.itemName」已由系统交付，不得重复扣除。分量：@{赠礼.分量}。反应：@赠礼.反应。按收礼人的性格写，不同分量不能写成同样的反应。",
+        "\n【赠礼反应】「@giftInfo.itemName」已由系统交付，禁重复扣除。分量：@{赠礼.分量}；反应：@{赠礼.反应}。贴合收礼人性格，不同分量禁雷同。",
       );
-      return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。这一轮${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，务必写成她欣然收下、态度转暖，不许写成推辞、质疑来意或婉拒不受——这是本轮叙事唯一的走向，不接受其他写法。`;
+      return `\n【送礼世界观铁律】曲措乡人情厚重，当面送礼无论贵贱皆生惊喜与暖意，绝不为难、起疑或冷脸不领情。本轮唯一走向：${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，必写其欣然收下、态度转暖；禁写推辞、质疑来意或婉拒不受。`;
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
       const speech = o.settleBeast
-        ? `它不通人言（cannotSpeak），全程不出人言，情感全靠动作、眼神、姿态传达（如以额抵掌、绕身而行、伏低臣服等，用符合它兽类身份的方式）。`
-        : `它（他/她）能正常开口说话，用言语与神情把这份结伴之意表达出来。`;
-      return `\n【伙伴入队铁律】${cn}与主角此刻正式结为同行的伙伴——是主角郑重相邀、${cn}欣然应下，此心已决，不是这一刻才临时起意。这一轮务必写成${cn}爽快应下、就此定下同行情谊；不许写成犹豫、观望、抗拒或需要主角再三哄劝——${cn}的答应是必然的、毫无保留的，这是本轮叙事唯一的走向，不接受其他写法。${speech}`;
+        ? `它不通人言（cannotSpeak），全程不出人言，情感全靠动作、眼神、姿态传达（如以额抵掌、绕身而行、伏低臣服等，用符合它兽类身份的方式）`
+        : `能正常开口说话，用言语与神情表达结伴之意`;
+      return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行，非临时起意。本轮唯一走向：必写其毫不保留、爽快应下并定下同行情谊，${speech}；禁写犹豫、观望、抗拒或需再三哄劝。`;
     }
     if (o.settleKind === "learn_skill") {
-      return `\n【授业传艺铁律】在曲措乡这方江湖里，肯把本事传给一个人，是极重的情分——那意味着认可、托付，也意味着从此多了一层师徒名分。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式都已由系统结算完毕，是既成事实），务必写成他/它郑重其事地把这身功夫交出来、态度较先前更亲近一分；不许写成勉强、敷衍、留一手或临时反悔——这是本轮叙事唯一的走向，不接受其他写法。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
+      return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授并结师徒名分（好感门槛、束脩、招式均由系统结算完毕，为既成事实）。本轮唯一走向：必写其郑重传授功夫、态度较前更亲近；禁写勉强、敷衍、留一手或临时反悔。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
     }
     if (o.settleKind === "appease") {
-      return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，玩家本轮这次行为是一次新的缓和尝试。请结合此前尝试的方式，判断当前行为是否真诚、得体并切中要害；有效才写成怒气有所消解，无效就让${o.settleNpc}依然不满，不得把和解当成既成事实。`
+      return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，本轮为新缓和尝试。结合此前方式，判断当前言行是否真诚、得体且切中要害：有效才写怒气消解，无效则保持不满，禁把和解写成既成事实。`
         + (o.giftInfo?.weight ? giftWeight("本次赠礼分量：@{赠礼.分量}。分量不等于已经消气。") : "");
     }
     return "";
@@ -116,20 +116,24 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     }
     if (o.settleKind === "gift") {
       if (o.giftInfo?.weight) return buildSettleNarrativeNote(o);
-      return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。所以这一轮${o.settleNpc}收下${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}时，对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n这件礼物的实际来历（好感幅度请依此掂量分量，越贵重、越用心，情谊越重）：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}${o.giftInfo?.desc ? `。物件描述：${o.giftInfo.desc}` : "（无特别来历，寻常物件）"}`;
+      const range = o.giftInfo?.range ?? giftRange(o.giftInfo?.quality);
+      return `\n【送礼世界观铁律】曲措乡人情厚重，当面送礼无论贵贱皆生惊喜与暖意，绝不冷脸拒情。本轮${o.settleNpc}收下${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}，观感只能变好，禁不变或变差。\n礼物信息：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}，描述：${o.giftInfo?.desc || "无特别来历，寻常物件"}。\n本轮必须输出 <mvu> 且为正向增量：依品阶与来历在${formatRange(range)}内取值（贵重/用心取上沿，寻常取下沿），禁为 0 或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? Math.round((range[0] + range[1]) / 2)});`;
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
+      const { min, max, example } = AFFECTION_RULES.companion;
       const speech = o.settleBeast
-        ? `用动作/眼神/姿态（如以额抵掌、绕身而行、伏低臣服等，它不能说话）表明结伴之意`
-        : `用言语与神情郑重应下`;
-      return `\n【伙伴入队铁律】${cn}与主角此刻正式结为同行的伙伴——是主角郑重相邀、${cn}欣然应下，此心已决。这一轮务必写成${cn}爽快应下、就此定下同行情谊，${speech}；不许写成犹豫或抗拒——下面这条 <mvu> 块本轮必须给出，且必须是正向增量（这是${cn}正式结为同行的时刻，好感度理应给一个较高的起始值）。`;
+        ? `用动作、眼神、姿态（如以额抵掌、绕身而行、伏低臣服等）表明结伴之意`
+        : `用言语与神情郑重定下同行情谊`;
+      return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行。本轮必写其爽快应下、${speech}；禁写犹豫或抗拒。\n本轮必须输出 <mvu> 且为正向：${cn}属初登场伙伴，直接 _.set 好感度至 ${min}~${max} 间。\n示例：_.set('角色.${cn}.好感度', ${example});`;
     }
     if (o.settleKind === "learn_skill") {
-      return `\n【授业传艺铁律】肯把本事传给一个人，在江湖里是极重的情分——那意味着认可与托付。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式均已由系统结算完毕，是既成事实），所以他/它对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。`;
+      const master = !!o.learnInfo?.isMaster;
+      const [min, max, example] = learnRange(master);
+      return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授（好感门槛、束脩、招式均由系统结算完毕，为既成事实）；本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。对玩家观感只能变好，禁不变或变差。\n本轮必须输出 <mvu> 且为正向增量：在${formatRange([min, max])}内取值（${master ? "所授是压箱底的绝学，情分重，可取上沿" : "所授是通用功夫，取下沿即可"}），禁为 0 或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${example});`;
     }
     if (o.settleKind === "appease") {
-      return `\n【怒气缓和状态裁决】只有当玩家本轮当前行为确实缓和了${o.settleNpc}，才可写 _.set('角色.${o.settleNpc}.生气解除', true)；未奏效时不得设置。只有成功时才可选写 _.add('角色.${o.settleNpc}.好感度', N)，其中 N 为 ${AFFECTION_RULES.appease.join("~")} 的整数。除此之外不得输出任何 MVU 变更。`;
+      return `\n【怒气缓和状态裁决】仅当本轮行为确实缓和${o.settleNpc}，才输出 <mvu>：必写生气解除，观感确有变化时可选附好感度增量 N（${AFFECTION_RULES.appease.join("~")} 整数）。未奏效禁设生气解除且不输出 <mvu>；除此之外禁写任何 MVU 变更。\n成功示例（未奏效不输出）：\n_.set('角色.${o.settleNpc}.生气解除', true);\n_.add('角色.${o.settleNpc}.好感度', 3);`;
     }
     return "";
   }
@@ -140,23 +144,8 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     }
     if (o.settleKind === "gift") {
       if (o.giftInfo?.weight) return giftWeight(
-        "\n只可给收礼人一条 _.add 好感，允许整数区间 @赠礼.好感范围；允许零时，礼貌而无态度变化可以省略。不写其他 MVU。",
+        "\n仅给收礼人写一条 _.add 好感，整数区间 @赠礼.好感范围；允许0且礼貌无态度变化可省。禁写其他 MVU。",
       );
-      const range = o.giftInfo?.range ?? giftRange(o.giftInfo?.quality);
-      return `\n依上面这件礼物的品阶与来历，本轮好感度增量建议落在 ${formatRange(range)} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? Math.round((range[0] + range[1]) / 2)});`;
-    }
-    if (o.settleKind === "companion_invite") {
-      const cn = o.settleNpc || "对方";
-      const { min, max, example } = AFFECTION_RULES.companion;
-      return `\n${cn}是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"刚结为同行的伙伴"的情分，不是从0慢慢培养的陌生关系），建议直接 _.set 到 ${min}~${max} 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', ${example});`;
-    }
-    if (o.settleKind === "learn_skill") {
-      const master = !!o.learnInfo?.isMaster;
-      const [min, max, example] = learnRange(master);
-      return `\n授业这一轮好感度增量建议落在 ${formatRange([min, max])} 之间（${master ? "所授是压箱底的绝学，情分重，可取上沿" : "所授是通用功夫，取下沿即可"}），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${example});`;
-    }
-    if (o.settleKind === "appease") {
-      return `\n成功示例（不成功则不输出这两条）：\n_.set('角色.${o.settleNpc}.生气解除', true);\n_.add('角色.${o.settleNpc}.好感度', 3);`;
     }
     return "";
   }
@@ -232,12 +221,11 @@ ${wantMvu ? `
     buildDuelReportRules(opts.duelReport, narrativeOnly, opts.onDuelReportMissing),
     narrativeOnly ? buildSettleNarrativeNote(opts) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuNote(opts) : "",
-    (!narrativeOnly && isSettle && wantMvu && !opts.softSettle && opts.settleKind !== "duel_invite" && !opts.giftInfo?.weight)
-      ? `\n关于下面那条 <mvu>：${(opts.settleKind === "gift" || opts.settleKind === "companion_invite" || opts.settleKind === "learn_skill") ? "这一轮必须给出" : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化才给出"}。`
+    (!narrativeOnly && isSettle && wantMvu && !opts.softSettle
+      && !["duel_invite", "gift", "companion_invite", "learn_skill", "appease"].includes(opts.settleKind))
+      ? `\n关于下面那条 <mvu>：如果这一轮牵涉的人物（${opts.settleNpc}）对玩家的观感确有变化才给出。`
       : "",
-    (!narrativeOnly && wantMvu && opts.settleKind !== "duel_invite") ? MVU_SYSTEM_INSTRUCTIONS
-      + renderFieldScales(isSettle ? (opts.giftInfo?.weight ? [] : [FIELD.affection])
-        : Object.keys(FIELDS).filter((path) => FIELDS[path].ai === true), opts, opts.onPromptRefMissing) : "",
+    (!narrativeOnly && wantMvu && opts.settleKind !== "duel_invite") ? MVU_SYSTEM_INSTRUCTIONS : "",
     (!narrativeOnly && !isSettle && scope !== "move")
       ? renderFieldScales([FIELD.hp, "char.neigong", "char.waigong", "char.special", "dao.karma", "dao.jie", FIELD.inv, FIELD.flags, "skills", "exp", "pot"], {}, opts.onPromptRefMissing) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuExample(opts) : "",
