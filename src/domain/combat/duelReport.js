@@ -153,6 +153,8 @@ export function createDuelRoundMetadata(result, endTick, hpAfterPlayer, hpAfterN
     playerMoveType: result.moveTypeA, npcMoveType: result.moveTypeB,
     dmgToNpc: result.damageToB, dmgToPlayer: result.damageToA,
     statusDamageToPlayer: endTick.statusDamageA, statusDamageToNpc: endTick.statusDamageB,
+    dodgeSuccessPlayer: result.dodgeSuccessA, dodgeSuccessNpc: result.dodgeSuccessB,
+    hpRestorePlayer: result.hpRestoreA, hpRestoreNpc: result.hpRestoreB,
     hpAfterPlayer, hpAfterNpc,
     statusAppliedToPlayer: result.statusAppliedToA, statusAppliedToNpc: result.statusAppliedToB,
     markAppliedToPlayer: result.markAppliedToA, markAppliedToNpc: result.markAppliedToB,

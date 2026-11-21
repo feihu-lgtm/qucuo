@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyEndOfTurnStatus, resolveTurn } from "./resolveTurn.js";
 import {
   buildDuelReportRounds,
+  createDuelRoundMetadata,
   formatDuelDisplayLine,
   interleaveDuelReport,
   selectDuelPhrase,
@@ -84,6 +85,29 @@ describe("战报回合数据和短句", () => {
     expect(report.aiData).toContain("麻穴");
     expect(report.aiData).toContain("本轮吃亏：才旦");
     expect(report.text).toContain("才旦 −3");
+  });
+
+  it("保留共享结算中的闪避与NPC疗伤标记", () => {
+    const endTick = {
+      statusDamageA: 0, statusDamageB: 0, statusSlotsA: {}, statusSlotsB: {}, logA: [], logB: [],
+    };
+    const dodgeMetadata = createDuelRoundMetadata({
+      moveTypeA: "轻功", moveTypeB: "攻击", damageToA: 0, damageToB: 0,
+      dodgeSuccessA: true, dodgeSuccessB: false, hpRestoreA: 0, hpRestoreB: 0,
+    }, endTick, [60, 60], [60, 60]);
+    const dodgeLine = formatDuelDisplayLine({
+      round: 1, playerMove: "凌波微步", npcMove: "连环腿", ...dodgeMetadata,
+    }, { playerName: "陈尧天", npcName: "才旦" });
+    expect(dodgeLine).toContain("躲过才旦的连环腿");
+
+    const healMetadata = createDuelRoundMetadata({
+      moveTypeA: "攻击", moveTypeB: "内功", damageToA: 0, damageToB: 0,
+      dodgeSuccessA: false, dodgeSuccessB: false, hpRestoreA: 0, hpRestoreB: 10,
+    }, endTick, [60, 60], [50, 60]);
+    const healLine = formatDuelDisplayLine({
+      round: 1, playerMove: "野球拳", npcMove: "回春功", ...healMetadata,
+    }, { playerName: "陈尧天", npcName: "才旦" });
+    expect(healLine).toContain("才旦运起回春功");
   });
 
   it("把伤势按健旺、受创、将倒分级，濒倒显示剩余气血", () => {
