@@ -20,6 +20,7 @@ function normalizeMoveType(type) {
 
 const hash = (value) => [...String(value)].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 7);
 const USED_FRAGMENTS = Symbol("usedFragments");
+const cleanClause = (value) => value.replace(/^[，,。！？；：、]+|[，,。！？；：、]+$/g, "");
 
 export function selectUnused(pool, key, seed, used) {
   const indices = used.get(key) || new Set();
@@ -35,7 +36,13 @@ export function selectUnused(pool, key, seed, used) {
       return pool[index];
     }
   }
-  throw new Error(`Phrase pool exhausted: ${key}`);
+  indices.clear();
+  for (const fragment of pool) fragments.delete(fragment);
+  indices.add(start);
+  fragments.add(pool[start]);
+  used.set(key, indices);
+  used.set(USED_FRAGMENTS, fragments);
+  return pool[start];
 }
 
 const tags = ["A", "B"];
@@ -121,7 +128,7 @@ function fillFighterHalf(entry, actor, target, used, round) {
     const reportedBand = result[`hpBand${reactedSide.tag}`];
     const hpBand = DUEL_HP_BANDS.includes(reportedBand) ? reportedBand : "healthy";
     const pool = REACTION_POOLS[reactionFamily][hpBand];
-    reaction = `，${selectUnused(pool, `reaction:${reactionFamily}:${hpBand}`, round, used).replaceAll("{target}", reactedSide.name)}`;
+    reaction = cleanClause(selectUnused(pool, `reaction:${reactionFamily}:${hpBand}`, round, used).replaceAll("{target}", reactedSide.name));
   }
   const roundScope = { round: entry };
   const values = {
@@ -130,7 +137,7 @@ function fillFighterHalf(entry, actor, target, used, round) {
     move: move.name || result[`moveName${actor.tag}`] || "未明招式",
     targetMove: target.move?.name || result[`moveName${target.tag}`] || "未明招式",
   };
-  const template = `${opening}，${effect}${reaction}`;
+  const template = [opening, effect, reaction].map(cleanClause).filter(Boolean).join("，");
   const filled = template.replace(/\{(actor|target|move|targetMove)\}/g, (_, key) => values[key] || "");
   return resolveDuelReportTemplate(filled, roundScope).text;
 }
@@ -175,7 +182,15 @@ function soloRound(entry, round, used = new Map()) {
   const heals = tags.map((tag) => Number(result[`hpRestore${tag}`]) > 0
     ? `${result[`name${tag}`] || (tag === "A" ? "你" : "对手")} +@round.result.hpRestore${tag}`
     : "").filter(Boolean);
-  const sentence = `${firstText}，${connector}，${contact ? `${contact}，` : ""}${secondText}${[...damage, ...status, ...heals].length ? `（${[...damage, ...status, ...heals].join("，")}）` : ""}`;
+  const contactText = contact
+    ? contact
+      .replaceAll("{actor}", result.nameA || "你")
+      .replaceAll("{target}", result.nameB || "对手")
+      .replaceAll("{move}", entry.playerMove?.name || result.moveNameA || "未明招式")
+      .replaceAll("{targetMove}", entry.npcMove?.name || result.moveNameB || "未明招式")
+    : "";
+  const sentence = [firstText, connector, contactText, secondText].map(cleanClause).filter(Boolean).join("，")
+    + ([...damage, ...status, ...heals].length ? `（${[...damage, ...status, ...heals].join("，")}）` : "");
   return { round, text: resolveDuelReportTemplate(sentence, { round: entry }).text };
 }
 

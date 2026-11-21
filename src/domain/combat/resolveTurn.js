@@ -296,14 +296,15 @@ export function resolveTurn(sideA, sideB) {
     counterStatus: () => {
       const statusTag = sideA.move.type === MOVE_TYPE.STATUS ? "A" : "B";
       const attackTag = statusTag === "A" ? "B" : "A";
-      result.counterStatus = rule.counterKind;
       const statusWins = rule.counterKind === "reflect"
         ? true
         : decideFirst(sideA, sideB) === statusTag;
       if (rule.counterKind === "control") result.speedWinner = statusWins ? statusTag : attackTag;
       result.matchup = statusWins ? statusTag : attackTag;
-      if (statusWins) resolveStatusWin(statusTag === "A", rule.counterKind);
-      else resolveAttackWin(attackTag === "A", { controlCounter: true });
+      if (statusWins) {
+        result.counterStatus = rule.counterKind;
+        resolveStatusWin(statusTag === "A", rule.counterKind);
+      } else resolveAttackWin(attackTag === "A", { controlCounter: true });
     },
     block: () => {
       resolveDefenseBlock(result, sideA, sideB, rule.winner === "A", {
