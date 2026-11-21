@@ -1,7 +1,7 @@
 // 把系统裁决结果交给第二段（叙事）做结构化上下文，并约束第三段（写入）不得为被拒步骤落任何效果。
 import { describeAction } from "./gate.js";
 import { giftWeightBand } from "./systemGate.js";
-import { ACTION_KINDS } from "./actionKinds.js";
+import { ACTION_KINDS, SILVER } from "./actionKinds.js";
 
 export function planToContext(plan) {
   const view = (action) => ({ step: action.index + 1, kind: action.kind, target: action.target ?? null, item: action.item ?? null, amount: action.amount ?? null, text: action.text });
@@ -43,4 +43,14 @@ export function filterRejectedEffects(mvuCommands, plan) {
     const text = typeof command === "string" ? command : JSON.stringify(command);
     return !names.some((name) => text.includes(name));
   });
+}
+
+// 第三段提取的 delta.items_rm 按名字删光同名物品：被拒/跳过步骤涉及的物品、以及系统已按步骤扣过的物品都不得再删。
+export function filterPlanDelta(p, plan) {
+  const rm = p?.delta?.items_rm;
+  if (!plan || !Array.isArray(rm) || !rm.length) return p;
+  const steps = [...(plan.valid || []), ...(plan.rejected ? [plan.rejected] : []), ...(plan.skipped || [])];
+  const guarded = new Set(steps.filter((step) => step.item && step.item !== SILVER).map((step) => step.item));
+  const items = rm.filter((entry) => !guarded.has(typeof entry === "string" ? entry : entry?.name));
+  return items.length === rm.length ? p : { ...p, delta: { ...p.delta, items_rm: items } };
 }
