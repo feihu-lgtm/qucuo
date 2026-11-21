@@ -85,4 +85,38 @@ describe("prompt registry & buildPrompt", () => {
     expect(c.system).toBe(" 首段 \n尾段\n");
     expect(c.messages).toEqual([{ role: "user", content: "问A\n问B" }]);
   });
+
+  it("prepends call.history messages before user block without mutating source history", () => {
+    define("block", "h.sys", { slot: "sys", text: "多轮系统" });
+    define("block", "h.user", { slot: "user", text: (ctx) => ctx.say || "" });
+    define("call", "multiTurn", {
+      history: (ctx) => ctx.history,
+      blocks: ["h.sys", "h.user"],
+    });
+    define("call", "historyOnly", {
+      history: (ctx) => ctx.history,
+      blocks: ["h.sys"],
+    });
+
+    const history = [
+      { role: "assistant", content: "你要买管控的药？" },
+      { role: "user", content: "我有急用。" },
+    ];
+    const withUser = buildPrompt("multiTurn", { history, say: "账本的事我也知道。" });
+    expect(withUser.messages).toEqual([
+      { role: "assistant", content: "你要买管控的药？" },
+      { role: "user", content: "我有急用。" },
+      { role: "user", content: "账本的事我也知道。" },
+    ]);
+    expect(history).toHaveLength(2);
+
+    const noUser = buildPrompt("historyOnly", { history });
+    expect(noUser.messages).toEqual(history);
+
+    const emptyUser = buildPrompt("multiTurn", { history, say: "" });
+    expect(emptyUser.messages).toEqual(history);
+
+    const noHistory = buildPrompt("multiTurn", { say: "单轮开场" });
+    expect(noHistory.messages).toEqual([{ role: "user", content: "单轮开场" }]);
+  });
 });

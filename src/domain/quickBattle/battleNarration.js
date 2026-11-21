@@ -7,7 +7,12 @@
 // 退回系统自带的 notes 短句，绝不因为战报生成失败而中断战斗——战斗本身
 // 一秒都不依赖网络。
 
-import { loadConfig, callModel, hasApiCredentials } from "../../infra/apiConfig.js";
+import { loadConfig, hasApiCredentials } from "../../infra/apiConfig.js";
+import "../prompt/calls/domainCalls.js";
+import { createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../engine/ports/withAI.js";
+
+const webAi = createWebAi();
 
 // 当前配置里有没有可用的 key（判断"能不能调 AI 战报"）。UI 拿它决定
 // 是否显示"已启用 AI 战报"的提示。判断从宽：有凭证即认为可用，
@@ -48,21 +53,16 @@ export async function narrateTurn(myFighter, foeFighter, myMove, foeMove, result
   }
 
   const digest = buildTurnDigest(myFighter, foeFighter, myMove, foeMove, result);
-  const sys = `你是曲措乡的说书人。下面给你一个切磋回合已经算好的结果（谁用什么招、克制、伤害、状态），
-你的唯一任务是把它讲成一段生动的说书文字，不要改动任何胜负和数字，不要额外添加战斗结果。
-要求：白话古文的说书人口吻，句子完整，用"虽然/至于/倒也"这类转折连词，不用冒号破折号；
-控制在两到三句、八十字以内；只讲这一回合，不预告后续。只输出这段话，不要任何前后缀。`;
-  const user = `本回合结果：${digest}`;
 
   try {
     // 说书是短润色请求：强制关思考（thinkingMode:off）覆盖玩家全局配置，
     // 否则思考会吃掉 token 额度，把两三句说书截断在半句（项目已知坑：
     // thinking 与 maxOutputTokens 共享预算）。同时给足 maxTokens 兜底。
-    const noThinkCfg = { ...cfg, thinkingMode: "off" };
-    const { text } = await callModel(noThinkCfg, sys, [{ role: "user", content: user }], {
-      maxTokens: 800, // 两三句正文足够，关思考后不会被占，给足余量防截断
-      callLabel: "斗蛐蛐说书",
-    });
+    const { text } = await withAI(
+      "battle.narrateTurn",
+      { digest },
+      { ai: webAi, apiCfg: cfg },
+    );
     const clean = (text || "").replace(/<thinking>[\s\S]*?<\/thinking>/g, "").trim();
     return clean || null;
   } catch {
