@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { applyCharacterCard, cardCarryToInvItems } from "./logic.js";
+import { applyCharacterCard } from "./logic.js";
 
 describe("character-card conversion", () => {
   it("builds carried items and equips the highest quality item per category", () => {
-    const items = cardCarryToInvItems([
-      { name: "测试短剑", category: "weapon", quality: "白" },
-      { name: "测试长剑", category: "weapon", quality: "蓝" },
-      { name: "测试外衣", category: "armor", quality: "绿" },
-    ], "seed_");
+    const result = applyCharacterCard({}, {
+      carry: [
+        { name: "测试短剑", category: "weapon", quality: "白" },
+        { name: "测试长剑", category: "weapon", quality: "蓝" },
+        { name: "测试外衣", category: "armor", quality: "绿" },
+      ],
+    }, "seed_");
 
+    const items = result.changes.inv([]);
     expect(items.map(({ id, name, equipped, stolen }) => ({ id, name, equipped, stolen }))).toEqual([
       { id: "cardcarry_seed_0", name: "测试短剑", equipped: false, stolen: false },
       { id: "cardcarry_seed_1", name: "测试长剑", equipped: true, stolen: false },

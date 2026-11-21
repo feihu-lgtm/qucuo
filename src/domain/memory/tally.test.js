@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
-  TALLY_KINDS, DAY_TURNS, emptyTally, dayOf, tallyAdd,
-  tallyToday, tallyLifetime, tallyTotals,
+  TALLY_KINDS, DAY_TURNS, emptyTally, tallyAdd,
+  tallyToday, tallyTotals,
   describeTodayForAI, describeDayForSummary, describeLifetime,
 } from "./tally.js";
 import { initialVarTree, isProtectedMvuPath, applyMvuCommands } from "../prompt/mvu.js";
@@ -12,7 +12,7 @@ describe("两个视野：今日会滚，累计不滚", () => {
     t = tallyAdd(t, "innerMove", 5);
     t = tallyAdd(t, "innerMove", 7);
     expect(tallyToday(t, 7).innerMove).toBe(2);
-    expect(tallyLifetime(t).innerMove).toBe(2);
+    expect(t.lifetime.innerMove).toBe(2);
   });
 
   it("跨天：今日清零、累计续上", () => {
@@ -20,7 +20,7 @@ describe("两个视野：今日会滚，累计不滚", () => {
     for (let i = 0; i < 5; i++) t = tallyAdd(t, "meditate", 5);   // 第0天
     t = tallyAdd(t, "meditate", DAY_TURNS + 2);                    // 第1天
     expect(tallyToday(t, DAY_TURNS + 2).meditate).toBe(1);
-    expect(tallyLifetime(t).meditate).toBe(6);
+    expect(t.lifetime.meditate).toBe(6);
   });
 
   it("跨天在写入时就地滚，不依赖任何 effect", () => {
@@ -28,7 +28,7 @@ describe("两个视野：今日会滚，累计不滚", () => {
     let t = tallyAdd(emptyTally(), "action", 5);
     expect(t.dayStamp).toBe(0);
     t = tallyAdd(t, "action", 100);        // 直接跳到第4天
-    expect(t.dayStamp).toBe(dayOf(100));
+    expect(t.dayStamp).toBe(Math.floor(100 / DAY_TURNS));
     expect(tallyToday(t, 100).action).toBe(1);
   });
 
@@ -36,14 +36,14 @@ describe("两个视野：今日会滚，累计不滚", () => {
     const t = tallyAdd(emptyTally(), "action", 5);
     expect(tallyToday(t, 5).action).toBe(1);
     expect(tallyToday(t, DAY_TURNS + 1)).toEqual({});   // 新的一天，今日空
-    expect(tallyLifetime(t).action).toBe(1);            // 累计还在
+    expect(t.lifetime.action).toBe(1);                  // 累计还在
   });
 
-  it("dayOf 按 24 回合切", () => {
-    expect(dayOf(0)).toBe(0);
-    expect(dayOf(23)).toBe(0);
-    expect(dayOf(24)).toBe(1);
-    expect(dayOf(47)).toBe(1);
+  it("dayStamp 按 24 回合切", () => {
+    expect(tallyAdd(emptyTally(), "action", 0).dayStamp).toBe(0);
+    expect(tallyAdd(emptyTally(), "action", 23).dayStamp).toBe(0);
+    expect(tallyAdd(emptyTally(), "action", 24).dayStamp).toBe(1);
+    expect(tallyAdd(emptyTally(), "action", 47).dayStamp).toBe(1);
   });
 });
 
@@ -55,7 +55,7 @@ describe("健壮性", () => {
   it("非正数增量不记", () => {
     let t = tallyAdd(emptyTally(), "action", 5, 0);
     t = tallyAdd(t, "action", 5, -3);
-    expect(tallyLifetime(t).action).toBeUndefined();
+    expect(t.lifetime.action).toBeUndefined();
   });
   it("脏输入不炸", () => {
     for (const v of [null, undefined, {}, "abc"]) {

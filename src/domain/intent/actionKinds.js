@@ -60,7 +60,7 @@ export const SILVER = "银两";
 export const NONE = "无";
 // 「装备/卸下」从玩家原话判断方向：卸下类用词 → 脱，否则 → 穿。识别与闸门共用。
 export const UNEQUIP_RE = /卸[下掉]?|脱[下掉]?|摘[下掉]?|解下|取[下掉]|拿[下掉]|收起/;
-export const DIRECTIONS = Object.freeze(["北", "南", "东", "西"]);
+const DIRECTIONS = Object.freeze(["北", "南", "东", "西"]);
 
 export function visibleNpcs(state) {
   const room = state?.room;
@@ -102,7 +102,7 @@ export function slotOptions(state, kind, slot) {
 const DIGITS = { 零: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
 const UNITS = { 十: 10, 百: 100, 千: 1000, 万: 10000 };
 
-export function parseChineseNumber(text) {
+function parseChineseNumber(text) {
   if (/^\d+$/.test(text)) return Number(text);
   let total = 0;
   let section = 0;

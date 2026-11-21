@@ -1,4 +1,4 @@
-export const MIN_MAP_NODE_HIT_SIZE = 100;
+const MIN_MAP_NODE_HIT_SIZE = 100;
 
 export function makeNodeHitArea(cx, cy, width, height, minSize = MIN_MAP_NODE_HIT_SIZE) {
   const hitWidth = Math.max(width, minSize);

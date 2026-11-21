@@ -7,18 +7,10 @@
 // ③ 攒批合并：一天的营收/客流/事件打包成**一次**调用写成夜报，
 //    绝不一件事一次调用——5 次/分钟的预算，烧得起夜报，烧不起碎碎念。
 
-import { loadConfig, callModel, hasApiCredentials } from "../../infra/apiConfig.js";
+import { hasApiKey, askStoryteller } from "../prompt/storyteller.js";
 
 const BUCKET_CAPACITY = 5;
 const REFILL_MS = 15000;
-
-export function hasApiKey() {
-  try {
-    return hasApiCredentials(loadConfig());
-  } catch {
-    return false;
-  }
-}
 
 export function createNarrator() {
   let tokens = BUCKET_CAPACITY;
@@ -46,28 +38,10 @@ export function createNarrator() {
   }
 
   async function ask(sys, user, callLabel) {
-    let cfg;
-    try {
-      cfg = loadConfig();
-    } catch {
-      return null;
-    }
-    try {
-      // 短润色请求强制关思考（thinking 与输出共享 token 预算，是项目已知坑），
-      // 否则两三句夜报会被思考吃断在半句。
-      const noThinkCfg = { ...cfg, thinkingMode: "off" };
-      const { text } = await callModel(noThinkCfg, sys, [{ role: "user", content: user }], {
-        maxTokens: 800,
-        callLabel,
-      });
-      const clean = (text || "").replace(/<thinking>[\s\S]*?<\/thinking>/g, "").trim();
-      if (clean) { failStreak = 0; return clean; }
-      failStreak += 1;
-      return null;
-    } catch {
-      failStreak += 1;
-      return null; // 静默降级，调用方用模板兜底
-    }
+    const clean = await askStoryteller(sys, user, { callLabel });
+    if (clean) { failStreak = 0; return clean; }
+    failStreak += 1;
+    return null; // 静默降级，调用方用模板兜底
   }
 
   const SYS = `你是曲措乡「醉三江」酒馆账台边那位说书人。把给你的账目事实讲成一段有烟火气的夜报。

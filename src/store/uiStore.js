@@ -1,6 +1,8 @@
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
+const useUiStore = (selector) => useStore(uiStore, selector);
+
 export const OVERLAY = Object.freeze({
   DEBUG: "debug",
   PRESETS: "presets",
@@ -58,9 +60,6 @@ export const uiStore = createStore((set) => ({
   )),
 }));
 
-export const useUiStore = (selector) => useStore(uiStore, selector);
-useUiStore.getState = uiStore.getState;
-useUiStore.setState = uiStore.setState;
 
 export const useOverlay = (name) => useUiStore((state) => state.overlays.includes(name));
 export const useNotice = () => useUiStore((state) => state.notice);

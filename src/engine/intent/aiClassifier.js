@@ -14,7 +14,7 @@ export class IntentTruncatedError extends Error {
   }
 }
 
-export function finishReasonOf(response) {
+function finishReasonOf(response) {
   return response?.finishReason ?? response?.raw?.choices?.[0]?.finish_reason ?? response?.raw?.candidates?.[0]?.finishReason ?? null;
 }
 

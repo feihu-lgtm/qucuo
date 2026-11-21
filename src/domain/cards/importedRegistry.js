@@ -302,10 +302,6 @@ export function registerImportedWorld(items, meta = {}) {
   return items.length;
 }
 
-export function listImportedWorld() {
-  return (_registry.world || []).slice();
-}
-
 export function listImported() {
   return _registry.chars.slice();
 }
@@ -485,9 +481,4 @@ export function getPendingStarterCompanion() {
 
 export function clearPendingStarterCompanion() {
   try { localStorage.removeItem(STARTER_KEY); } catch { /* */ }
-}
-
-export function getImportedAffection(name) {
-  const c = _registry.chars.find(x => x.name === name);
-  return c ? (c.affection || 0) : 0;
 }

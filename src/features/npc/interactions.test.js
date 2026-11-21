@@ -5,7 +5,6 @@ import { VIA } from "../../domain/memory/note.js";
 import {
   describeGiftForPrompt,
   giftNpc,
-  inviteCompanion,
   lookNpc,
   recognizeNpc,
   settleNpcDuel,
@@ -13,6 +12,7 @@ import {
   talkToNpc,
   tradeWithNpc,
 } from "./logic.js";
+import { inviteCompanion } from "./inviteCompanion.js";
 
 const makeState = (overrides = {}) => ({
   char: { money: 0, special: {} },

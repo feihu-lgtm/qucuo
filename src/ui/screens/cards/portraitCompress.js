@@ -17,9 +17,9 @@
 
 // 立绘的目标尺寸。9:16 竖版是 portraits.js 里定的建议比例，这里按它给上限，
 // 但不强制裁切——原图是方的就让它保持方的，只是不许超过这个框。
-export const PORTRAIT_MAX_W = 360;
-export const PORTRAIT_MAX_H = 540;
-export const PORTRAIT_QUALITY = 0.82;
+const PORTRAIT_MAX_W = 360;
+const PORTRAIT_MAX_H = 540;
+const PORTRAIT_QUALITY = 0.82;
 
 /**
  * 等比缩到框内。纯函数，单独抽出来是因为 canvas 在测试环境里没有，

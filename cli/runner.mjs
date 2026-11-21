@@ -49,13 +49,13 @@ import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js
 import { innerMove, outerArrival } from "../src/features/map/logic.js";
 import {
   giftNpc,
-  inviteCompanion,
   learnNpcSkill,
   lookNpc,
   stealFromNpc,
   talkToNpc,
   tradeWithNpc,
 } from "../src/features/npc/logic.js";
+import { inviteCompanion } from "../src/features/npc/inviteCompanion.js";
 import {
   processPigeons,
   recordPigeonNpcLocations,

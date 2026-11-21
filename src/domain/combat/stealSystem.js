@@ -96,11 +96,6 @@ export function tickAngryState(angryState) {
 // 嘴辩解除生气状态：不是自由聊天就能哄好，而是需要一次"说服判定"。
 // 判定本身不在这个纯函数里做（措辞是否得体需要交给LLM判断），这里只提供
 // "说服成功后，生气状态应该如何变化"的规则：直接解除，不留残余。
-export function resolveAngryByPersuasion(angryState) {
-  if (!angryState || !angryState.active) return angryState;
-  return { active: false, escalated: false, resolvedBy: "persuasion" };
-}
-
 export function resolveAngerSignals(varTree, names) {
   if (!names?.length) return varTree;
   const nextChars = { ...(varTree?.角色 || {}) };

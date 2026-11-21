@@ -20,7 +20,7 @@ const BASE_DIST = [50, 30, 10, 8, 1.5, 0.5];
 const PEAK_DIST = [0, 20, 20, 20, 20, 20];
 
 // 根据气运（0-10，超出范围会被裁剪）返回六档品质的概率分布（百分比，合计100）
-export function qualityDistribution(luck) {
+function qualityDistribution(luck) {
   const g = Math.max(0, Math.min(10, luck));
   const t = g / 10;
   return BASE_DIST.map((b, i) => b + (PEAK_DIST[i] - b) * t);
@@ -125,13 +125,13 @@ export function describeEquipment(inv) {
 // 数值(i) = base × ratio^i，i 为品质索引（白=0 ... 红=5）
 export const QUALITY_RATIO = Math.pow(20, 1 / 5);
 
-export function qualityIndex(quality) {
+function qualityIndex(quality) {
   const i = QUALITY.indexOf(quality);
   return i === -1 ? 0 : i;
 }
 
 // 给定某分类的基准值，返回该品质下的实际数值（四舍五入取整）
-export function scaledValue(base, quality) {
+function scaledValue(base, quality) {
   return Math.round(base * Math.pow(QUALITY_RATIO, qualityIndex(quality)));
 }
 
@@ -157,8 +157,8 @@ export const CATEGORY_BASE = {
 // 新伤害公式：攻击输出=(baseAtk+装备攻击力)×招式倍率×体魄系数；
 // 防御力=(基础防御力+装备防御力)×防御系数(招式)×根骨系数，攻击输出减防御力
 // 得到最终伤害（见 combat/resolveTurn.js 顶部注释）。
-export const WEAPON_ATK_RATIO = Math.pow(CATEGORY_BASE.weapon.atk > 0 ? 100 / CATEGORY_BASE.weapon.atk : 1, 1 / 5);
-export const ARMOR_DEF_RATIO = Math.pow(CATEGORY_BASE.armor.def > 0 ? 80 / CATEGORY_BASE.armor.def : 1, 1 / 5);
+const WEAPON_ATK_RATIO = Math.pow(CATEGORY_BASE.weapon.atk > 0 ? 100 / CATEGORY_BASE.weapon.atk : 1, 1 / 5);
+const ARMOR_DEF_RATIO = Math.pow(CATEGORY_BASE.armor.def > 0 ? 80 / CATEGORY_BASE.armor.def : 1, 1 / 5);
 
 // 根据分类和品质，生成对应的数值字段（供 makeItem 或系统随机生成装备时调用）
 export function statsForQuality(category, quality) {

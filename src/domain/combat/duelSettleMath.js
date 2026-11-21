@@ -1,6 +1,6 @@
 export const POT_BY_TIER = [10, 20, 40, 70, 110, 160];
 
-export const TIER_LABELS = ["白", "绿", "蓝", "紫", "橙", "红"];
+const TIER_LABELS = ["白", "绿", "蓝", "紫", "橙", "红"];
 
 export const TEAMWORK_GAIN = 3;
 

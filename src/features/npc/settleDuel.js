@@ -13,7 +13,7 @@ import { activeCompanionKey } from "../../domain/companion/companion.js";
 import { snowQuestActive } from "../../domain/quests/snowLeopardQuest.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { add, applyWrite, set, updateField } from "../../domain/state/applyWrite.js";
-import { forceAdvanceQuest } from "./questAdvancement.js";
+import { forceAdvanceQuest } from "../quest/logic.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
@@ -30,7 +30,7 @@ function addChange(changes, state, key, update) {
 
 function appendQuestAdvancement(state, changes, quest, flag, now) {
   const advancement = forceAdvanceQuest(state, quest, flag, now);
-  for (const [key, update] of Object.entries(advancement)) {
+  for (const [key, update] of Object.entries(advancement.changes)) {
     addChange(changes, state, key, update);
   }
 }

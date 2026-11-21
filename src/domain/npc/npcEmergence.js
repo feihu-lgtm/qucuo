@@ -32,12 +32,8 @@ export function recordRumoredNpcs(varTree, mentionedNames, context) {
   };
 }
 
-export function getRumoredNpc(varTree, name) {
+function getRumoredNpc(varTree, name) {
   return varTree.世界?.[RUMOR_KEY]?.[name] || null;
-}
-
-export function isRumoredNpc(varTree, name) {
-  return !!getRumoredNpc(varTree, name);
 }
 
 // 判断玩家这句输入是否在"明确指向"某个传闻人物——对应触发实体化的第二阶段。

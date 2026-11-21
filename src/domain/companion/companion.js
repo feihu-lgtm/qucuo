@@ -25,7 +25,7 @@ import { COMPANION_SLOTS } from "./companionSlots.js";
 export { initCompanionState } from "./companionState.js";
 export { COMPANION_SLOTS } from "./companionSlots.js";
 
-export const SNOW_LEOPARD_LEVEL_CAP = 2; // 蓝档——比入门功夫精深，未到镇派绝学
+const SNOW_LEOPARD_LEVEL_CAP = 2; // 蓝档——比入门功夫精深，未到镇派绝学
 
 // 雪豹的固定性格档案："纯野兽本能"——高攻击权重、高风险偏好，不特意配合玩家
 // 选的招式或目标。跟人类NPC的profile（由AI起草+固化）不同，这份是纯手写常量，
@@ -96,7 +96,7 @@ export function isSnowLeopardAvailable(companionState) {
 // 睫毛长长，丰神俊朗，却志不在驰骋，平生两大爱好：专心干饭、就地躺平。可一旦认主，
 // 忠心无二，脚力强健，关键时刻撒开四蹄快如白影。蓝档(levelCap=2)，坐骑定位：
 // 比雪豹更皮实（体魄高）、更能护主（防御权重高），不冒进。
-export const PEARL_LEVEL_CAP = 2; // 蓝档
+const PEARL_LEVEL_CAP = 2; // 蓝档
 
 // 珍珠的战斗性格：坐骑护主，皮实稳健，不冒进——防御权重比雪豹高，风险偏好低。
 // 平时懒洋洋（干饭躺平），护主时才见真章，故 avoidRepeat 略高于雪豹（会换着法子护主）。
@@ -163,15 +163,15 @@ export function isPearlAvailable(companionState) {
 // 但一掌下去谁都扛不住。所以攻击权重不低、防御权重高、状态权重最低——
 // 它没有"扰乱对手"这种心眼，它只是坐在那里，然后拍你。
 // avoidRepeat 也压低：熊猫不在乎被看穿，反正你躲不开。
-export const PANDA_LEVEL_CAP = 4; // 橙档
+const PANDA_LEVEL_CAP = 4; // 橙档
 
-export const PANDA_PROFILE = {
+const PANDA_PROFILE = {
   moveWeights: { 攻击: 0.45, 防御: 0.4, 状态: 0.15 },
   riskAppetite: 0.2,   // 最低：它不冒险，它不需要冒险
   avoidRepeat: 0.1,    // 最低：被看穿也无所谓
 };
 
-export function createPanda() {
+function createPanda() {
   const levelCap = PANDA_LEVEL_CAP;
   const special = generateNpcAttributes({ levelCap });
   // 体魄拉满（力大无穷）、根骨高（皮糙肉厚），身法压低（慢），悟性压低（憨）。
@@ -201,37 +201,14 @@ export function createPanda() {
 }
 
 // 解锁墨团（熊猫谷任务线走完时调用，幂等）。跟其余伙伴一样：一入队顶掉出战位。
-export function unlockPanda(companionState) {
-  const cur = companionState?.panda;
-  if (cur?.unlocked && cur?.data) return companionState;
-  const next = {
-    ...companionState,
-    panda: { unlocked: true, active: true, data: createPanda() },
-  };
-  for (const s of COMPANION_SLOTS) {
-    if (s.key !== "panda" && next[s.key]) next[s.key] = { ...next[s.key], active: false };
-  }
-  return next;
-}
-
-export function isPandaAvailable(companionState) {
-  return !!(companionState?.panda?.unlocked && companionState?.panda?.active && companionState?.panda?.data);
-}
-
 // ── 明日香入队（终章走完解锁）─────────────────────────────────────────
 // 【与雪豹的差别】雪豹是兽：不穿装备、招式走兽性、不能对话。
 // 明日香是人，红档，用枪，能说话——所以她的数值走人类档的常规生成，
 // 不套雪豹那份"纯野兽本能"的 profile。
-export const ASUKA_LEVEL_CAP = 5; // 红档
+const ASUKA_LEVEL_CAP = 5; // 红档
 
 // 她的战斗性格：高攻高风险、几乎不防御，且**极不愿重复同一招**——
 // "被人看穿套路"对她是不能忍的事，这条比雪豹高得多（雪豹 0.15，她 0.7）。
-export const ASUKA_PROFILE = {
-  moveWeights: { 攻击: 0.6, 防御: 0.1, 状态: 0.3 },
-  riskAppetite: 0.85,
-  avoidRepeat: 0.7,
-};
-
 export function createAsuka() {
   const levelCap = ASUKA_LEVEL_CAP;
   const special = generateNpcAttributes({ levelCap });
@@ -302,13 +279,13 @@ export function isAsukaAvailable(companionState) {
 // 时配的品阶/七维/内外功，缺的按品阶兜底；招式若入册配过，deriveSignatureMoveset
 // 会经 getImportedSignatureMoves 读到，没配则按品阶回退随机。产出形状与
 // createSnowLeopard 一致，buildLeopardUnit 直接能用，战斗引擎无须改动。
-export const IMPORTED_COMPANION_PROFILE = {
+const IMPORTED_COMPANION_PROFILE = {
   moveWeights: { 攻击: 0.45, 防御: 0.3, 状态: 0.25 },
   riskAppetite: 0.5,
   avoidRepeat: 0.4,
 };
 
-export function importedCompanionKey(name) {
+function importedCompanionKey(name) {
   return `imported_${name}`;
 }
 

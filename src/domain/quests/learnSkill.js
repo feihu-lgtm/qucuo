@@ -8,7 +8,7 @@
 // 兼容性：canLearnSkillFrom 仍保留第三个参数（questFlags）不删，避免改动所有
 // 调用点的函数签名；参数现在不参与判定，留着只为向后兼容。
 
-export const LEARN_SKILL_MIN_FAVORABILITY = 40;
+const LEARN_SKILL_MIN_FAVORABILITY = 40;
 
 export function canLearnSkillFrom(npcName, varTree, _questFlags) {
   const favorability = varTree.角色?.[npcName]?.好感度 ?? 0;

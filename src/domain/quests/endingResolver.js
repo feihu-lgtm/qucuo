@@ -9,7 +9,10 @@ import { canBypassExclusive } from "./questEngine.js";
 // 三条常规线互斥（见 lockExclusiveSiblings），正常游玩下 quest_heyx_s4 /
 // quest_zhaxi_s5 / quest_lanjie_s6 三个完成flag里通常只会有一个成立；
 // 全收集隐藏线绕过互斥锁后，允许多个同时成立，此时 priority 0 优先命中。
-export const HUDAN_ENDINGS = [
+// 通用结局判定：按 priority 从小到大检查，第一个成立的即为最终结局。
+// endings 参数可传入不同的结局集合（目前只有虎胆三重门一套，未来终局七方
+// 博弈的结局集可以是另一个数组，调用同一个函数）。
+const HUDAN_ENDINGS = [
   {
     id: "全收集·后宫",
     priority: 0,
@@ -32,9 +35,6 @@ export const HUDAN_ENDINGS = [
   },
 ];
 
-// 通用结局判定：按 priority 从小到大检查，第一个成立的即为最终结局。
-// endings 参数可传入不同的结局集合（目前只有虎胆三重门一套，未来终局七方
-// 博弈的结局集可以是另一个数组，调用同一个函数）。
 export function resolveEnding(gameState, endings = HUDAN_ENDINGS) {
   const sorted = [...endings].sort((a, b) => a.priority - b.priority);
   for (const e of sorted) {

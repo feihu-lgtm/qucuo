@@ -3,7 +3,7 @@ import { describeAction } from "./gate.js";
 import { giftWeightBand } from "./systemGate.js";
 import { ACTION_KINDS, SILVER } from "./actionKinds.js";
 
-export function planToContext(plan) {
+function planToContext(plan) {
   const view = (action) => ({ step: action.index + 1, kind: action.kind, target: action.target ?? null, item: action.item ?? null, amount: action.amount ?? null, text: action.text });
   const viewTrigger = (action) => ({ ...view(action), on: action.condition?.on ?? null, detail: action.condition?.detail ?? null });
   return {

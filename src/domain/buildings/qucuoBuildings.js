@@ -345,6 +345,3 @@ export function getBuildingsForLocation(locationName) {
 }
 
 // 返回建筑类型对应的中文标签
-export function getBuildingTypeLabel(type) {
-  return BUILDING_TYPE_LABEL[type] || type;
-}

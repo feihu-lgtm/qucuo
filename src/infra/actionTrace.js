@@ -1,7 +1,6 @@
 import { getTurnContext, turnMonitor } from "../core/turnMonitor.js";
 
 export const getTraceLog = turnMonitor.getTrees;
-export const clearTraceLog = turnMonitor.clear;
 export function getPipelineEntries() {
   return getTraceLog().flatMap((turn) => turn.nodes.flatMap((node) => node.pipeline?.success != null ? [node.pipeline] : []))
     .sort((a, b) => b.seq - a.seq).slice(0, 20);

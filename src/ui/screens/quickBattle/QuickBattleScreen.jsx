@@ -14,7 +14,8 @@ import {
   initCombatState, pickAiMove, resolveBattleTurn,
   nextAliveIndex, isTeamWiped,
 } from "../../../domain/quickBattle/battleEngine.js";
-import { narrateTurn, hasApiKey } from "../../../domain/quickBattle/battleNarration.js";
+import { narrateTurn } from "../../../domain/quickBattle/battleNarration.js";
+import { hasApiKey } from "../../../domain/prompt/storyteller.js";
 import { explainMove, moveTypeGist } from "../../../domain/economy/itemEffectText.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";

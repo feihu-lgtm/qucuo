@@ -21,7 +21,7 @@
 // ============================================================================
 
 // 把 collect 归一成数组，空则返回 []
-export function normalizeCollect(collect) {
+function normalizeCollect(collect) {
   if (!collect) return [];
   return Array.isArray(collect) ? collect : [collect];
 }
@@ -29,7 +29,7 @@ export function normalizeCollect(collect) {
 // 背包里是否已有某物。容忍三种情况：
 //   · 结构化对象 {name} 与纯字符串混存
 //   · "修好的马鞭" ⊇ "马鞭" 这类前后缀包裹（与送物判定同一套宽松匹配）
-export function invHasItem(inv, itemName) {
+function invHasItem(inv, itemName) {
   if (!itemName) return false;
   return (inv || []).some((i) => {
     const n = typeof i === "string" ? i : i && i.name;

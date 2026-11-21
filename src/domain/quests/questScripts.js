@@ -19,7 +19,7 @@
 // script_byFlag：{ 具体flag: script } —— 分支点（completionFlag是数组）
 //   按玩家实际选中的那一支，展示对应的那一版固定文本
 
-export const QUEST_SCRIPTS = {
+const QUEST_SCRIPTS = {
 
   village1_lubujianbuping: {
     s1_hear: {

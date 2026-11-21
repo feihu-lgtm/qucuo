@@ -52,7 +52,7 @@ export function buildVertexEndpoint(project, location = "global") {
   return `https://${host}/v1/projects/${encodeURIComponent(project)}/locations/${location}/endpoints/openapi/chat/completions`;
 }
 
-export function buildVertexJwtClaims(adc, nowMs) {
+function buildVertexJwtClaims(adc, nowMs) {
   const iat = Math.floor(nowMs / 1000);
   return { iss: adc.client_email, scope: SCOPE, aud: TOKEN_URL, iat, exp: iat + 3600 };
 }

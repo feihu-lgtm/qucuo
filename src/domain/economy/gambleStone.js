@@ -8,7 +8,7 @@ import { DEAL_MULTIPLIER } from "../state/fields.js";
 
 // ---------- 基础：可复现随机（出生固化用） ----------
 // mulberry32：给一个种子，产出确定性的伪随机序列。同一石头同一种子 → 每次结果一致。
-export function makeRng(seed) {
+function makeRng(seed) {
   return createRng(seed).random;
 }
 function seedFromString(str) {
@@ -201,7 +201,7 @@ export const BIDDER_TYPES = {
 };
 
 // Deal-or-No-Deal 式定价地基：基准 = 剩余期望 × 折价系数
-export function biddingBase(stone) {
+function biddingBase(stone) {
   const app = appraiseStone(stone);
   const openedValue = app.total;
   const remain = stone.slots.filter((s) => !s.opened).length;
@@ -271,9 +271,3 @@ export function rollCommission(stone, luck, feePaid, feeThreshold = 200) {
 }
 
 // ---------- 供前端渲染：某料位露哪张肉图 ----------
-export function slotJadeSprite(stone, slot) {
-  const tier = JADE_TIERS[stone.jadeTier - 1];
-  return `jade_${tier.key}_${tier.code}_${slot.grade}.png`;
-}
-export function skinSprite(stone) { return `skin_${stone.skin}.png`; }
-export function crackSprite(pos) { return `crack_${pos}.png`; }

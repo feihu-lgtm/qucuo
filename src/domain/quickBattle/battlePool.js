@@ -13,7 +13,7 @@ import { mapDescriptionToGenParams } from "../npc/npcDescriptionMapping.js";
 // 有写实立绘的角色（public/bidders/full/）：名字 → 立绘文件名（去 .png）。
 // 只有这几位有精美立绘，选人界面拿他们当"卖相担当"，其余人用品阶色占位卡。
 // 值跟 GambleStoneScreen 的 PORTRAIT_BY_NAME 保持一致（雪山弟子→雪山门人）。
-export const PORTRAIT_NAME = {
+const PORTRAIT_NAME = {
   李若由: "李若由", 锦官差役: "锦官差役", 雪山弟子: "雪山门人",
   黑风寨采买: "黑风寨采买", 才旦: "才旦", 苏宛: "苏宛",
   兰姐: "兰姐", 温掌柜: "温掌柜",

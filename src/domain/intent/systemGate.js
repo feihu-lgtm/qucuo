@@ -110,4 +110,3 @@ export function validatePlan(state, actions) {
 
 // 赠礼分量钩子：PR #69 若提供 `@赠礼.分量`，在这里接入；目前返回空串，不影响提示词。
 export let giftWeightBand = () => "";
-export function setGiftWeightBand(fn) { giftWeightBand = typeof fn === "function" ? fn : () => ""; }

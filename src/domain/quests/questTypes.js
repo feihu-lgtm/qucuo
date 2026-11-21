@@ -32,54 +32,5 @@ export const QUEST_TYPE = {
   CHAIN: "QT_CHAIN",               // 连锁委托：完成后自动解锁下一个
 };
 
-export const QUEST_TYPE_LABEL = {
-  [QUEST_TYPE.MURDER]: "刺杀",
-  [QUEST_TYPE.KILL]: "清剿",
-  [QUEST_TYPE.FETCH]: "拿取",
-  [QUEST_TYPE.COLLECT]: "收集",
-  [QUEST_TYPE.DELIVERY]: "传信",
-  [QUEST_TYPE.ESCORT]: "护送",
-  [QUEST_TYPE.RESCUE]: "营救",
-  [QUEST_TYPE.TALK]: "说服",
-  [QUEST_TYPE.PUZZLE]: "解谜",
-  [QUEST_TYPE.TIMED]: "限时",
-  [QUEST_TYPE.DEFEND]: "防守",
-  [QUEST_TYPE.CONQUEST]: "攻占",
-  [QUEST_TYPE.DUNGEON]: "探秘",
-  [QUEST_TYPE.JOIN_FACTION]: "入门",
-  [QUEST_TYPE.LEARN_SKILL]: "拜师",
-  [QUEST_TYPE.BOSS_LOOT]: "夺宝",
-  [QUEST_TYPE.UNLOCK_MAP]: "开图",
-  [QUEST_TYPE.ARTIFACT]: "寻宝",
-  [QUEST_TYPE.MYSTERY]: "查案",
-  [QUEST_TYPE.ROMANCE]: "情缘",
-  [QUEST_TYPE.BOUNTY]: "悬赏",
-  [QUEST_TYPE.CHAIN]: "委托",
-};
-
 // 每种类型天然对应的完成条件字段——这不是强制约束，只是给任务作者一个默认参照，
 // 具体任务的 completionCheck 函数可以自己写更复杂的逻辑。
-export const QUEST_TYPE_DEFAULT_FIELDS = {
-  [QUEST_TYPE.MURDER]: ["targetNpcId"],
-  [QUEST_TYPE.KILL]: ["targetTag", "requiredCount"],
-  [QUEST_TYPE.FETCH]: ["itemId", "returnToNpcId"],
-  [QUEST_TYPE.COLLECT]: ["itemId", "requiredCount"],
-  [QUEST_TYPE.DELIVERY]: ["itemId", "fromNpcId", "toNpcId"],
-  [QUEST_TYPE.ESCORT]: ["npcId", "destinationRoomId"],
-  [QUEST_TYPE.RESCUE]: ["npcId", "fromRoomId"],
-  [QUEST_TYPE.TALK]: ["npcId", "topicFlag"],
-  [QUEST_TYPE.PUZZLE]: ["puzzleFlag"],
-  [QUEST_TYPE.TIMED]: ["deadlineTurn"],
-  [QUEST_TYPE.DEFEND]: ["roomId", "waveCount"],
-  [QUEST_TYPE.CONQUEST]: ["roomId"],
-  [QUEST_TYPE.DUNGEON]: ["dungeonRoomIds"],
-  [QUEST_TYPE.JOIN_FACTION]: ["factionId"],
-  [QUEST_TYPE.LEARN_SKILL]: ["npcId", "skillId", "minFavorability"],
-  [QUEST_TYPE.BOSS_LOOT]: ["bossNpcId", "itemId"],
-  [QUEST_TYPE.UNLOCK_MAP]: ["roomId"],
-  [QUEST_TYPE.ARTIFACT]: ["stageFlags"],
-  [QUEST_TYPE.MYSTERY]: ["clueFlags"],
-  [QUEST_TYPE.ROMANCE]: ["npcId", "choiceFlag"],
-  [QUEST_TYPE.BOUNTY]: ["targetTag"],
-  [QUEST_TYPE.CHAIN]: ["nextQuestId"],
-};

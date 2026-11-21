@@ -156,10 +156,6 @@ export function passiveBonusBrief(pb) {
 }
 
 // 只要六维那部分（人物面板想单独标出"装备加了多少"时用）
-export function sixDimBrief(sixDim) {
-  return Object.entries(sixDim || {}).map(([k, v]) => `${k}+${v}`).join("、");
-}
-
 // 类型定性一句话（技能卡正面/背面顶部用）
 const TYPE_GIST = {
   [MOVE_TYPE.ATTACK]: "攻击招：克状态招，被防御招克",

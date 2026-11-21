@@ -24,7 +24,7 @@ import { random } from "../../core/rng.js";
 import { buildPrompt } from "./buildPrompt.js";
 import "./calls/sideCalls.js";
 
-export const KNOWLEDGE_PARAMS = {
+const KNOWLEDGE_PARAMS = {
   传闻默认忘却回合: 40,   // 传闻途径得知后，多少回合没被再次强化就淡忘
   同框传播概率: 0.35,     // 同一场景里，知情者每回合把某事实传给未知者的概率
   单事实同框最多传播: 1,  // 一个事实一回合最多新扩散给几个人，防止一轮全知道
@@ -70,16 +70,6 @@ export function seedKnowledge(varTree, seeds, currentTurn = 0) {
 }
 
 // 目击：把当前在场者标记为"亲眼见到/亲历"某事实（记牢，不淡忘）。
-export function witnessFact(varTree, factId, npcNames, currentTurn) {
-  const 领域 = JSON.parse(JSON.stringify(ensureRoot(varTree)));
-  const f = 领域.事实[factId];
-  if (!f) return varTree;
-  for (const name of (npcNames || [])) {
-    f.知晓者[name] = { 途径: "目击", 得知回合: currentTurn };
-  }
-  return writeRoot(varTree, 领域);
-}
-
 // 设置某事实的一句话摘要（AI 填词的结果由外层写回这里）。
 export function setFactSummary(varTree, factId, 摘要) {
   const 领域 = JSON.parse(JSON.stringify(ensureRoot(varTree)));
@@ -180,16 +170,6 @@ export function applyKnowledgeTreeDiff(baseTree, evolvedTree, latestTree) {
 }
 
 // 查某人知道哪些事实（返回 [{id, 摘要, 途径}]）。
-export function factsKnownBy(varTree, npcName) {
-  const 领域 = ensureRoot(varTree);
-  const out = [];
-  for (const fid of Object.keys(领域.事实)) {
-    const f = 领域.事实[fid];
-    if (f.知晓者[npcName]) out.push({ id: fid, 摘要: f.摘要, 途径: f.知晓者[npcName].途径 });
-  }
-  return out;
-}
-
 // 组装注入主剧情 prompt 的"信息域"硬约束块：列出此刻在场人物对各关键事实的知情状态。
 // 只列"至少有一个在场者知情"的事实（无人知情的不占篇幅）。没有则返回空串。
 export function buildInfoDomainBlock(varTree, roomNpcNames = []) {

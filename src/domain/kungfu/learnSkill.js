@@ -27,9 +27,9 @@ import { MOVE_TYPE } from "../combat/moveTypes.js";
 
 // 通用招池的基础拜师价——平民没有专属招那么值钱，江湖通行招意思意思收点束脩。
 // 只对"白"档收这个价：平民就该只会白档，教不了更高品阶（更高品阶按理该找高手拜师）。
-export const GENERIC_MOVE_TEACH_BASE_PRICE = 15;
+const GENERIC_MOVE_TEACH_BASE_PRICE = 15;
 // 专属招（拜高手为师）的基础拜师价，走原有折价曲线时用这个做基准。
-export const SIGNATURE_MOVE_TEACH_BASE_PRICE = 80;
+const SIGNATURE_MOVE_TEACH_BASE_PRICE = 80;
 
 // 从某个 NPC 身上取出玩家还没学过的"可学招列表"——同时供拜师和偷师复用，
 // 避免同一段过滤逻辑写两份、以后改一处漏一处。

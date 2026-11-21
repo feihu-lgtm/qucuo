@@ -1,7 +1,7 @@
 // 置信度闸门：≥0.9 直接执行；中间档先问玩家一句确认；低于下限回落到原有自由行动路径（完全不变）。
 import { ACTION_KINDS, NONE, SILVER, UNEQUIP_RE } from "./actionKinds.js";
 
-export const THRESHOLDS = Object.freeze({ execute: 0.9, confirm: 0.6 });
+const THRESHOLDS = Object.freeze({ execute: 0.9, confirm: 0.6 });
 
 export const ROUTES = Object.freeze({ EXECUTE: "execute", CONFIRM: "confirm", FALLBACK: "fallback" });
 
@@ -52,8 +52,6 @@ function describePlain(action) {
     default: return action.text || "这么做";
   }
 }
-
-export const CONDITION_LABEL = Object.freeze({ encounter: "遇敌", arrive: "到达", refused: "被拒" });
 
 // 「你是要把100两给才旦吗？」
 export function confirmLine(actions) {

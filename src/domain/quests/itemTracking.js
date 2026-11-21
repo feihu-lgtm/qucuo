@@ -11,7 +11,7 @@
 // transferKeyItem(vt, ...)) 这种写法接。
 
 // 每个关键道具的初始状态——尚未被任何人取得时的默认叙事状态。
-export const KEY_ITEM_DEFAULTS = {
+const KEY_ITEM_DEFAULTS = {
   虎胆: { holder: "熊山", state: "尚未现踪，虎王仍活着" },
   税册: { holder: "土司府", state: "库房封存" },
 };

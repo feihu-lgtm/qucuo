@@ -142,10 +142,6 @@ export function getMapNode(name) {
 }
 
 // 返回所有据点名称列表
-export function allMapNodes() {
-  return Object.keys(QUCUO_MAP);
-}
-
 // 检查某个据点的某个方向是否有效出口，返回目的地名称或 null
 export function resolveExit(fromName, dir) {
   const node = QUCUO_MAP[fromName];

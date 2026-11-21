@@ -7,18 +7,7 @@
 // 退回系统自带的 notes 短句，绝不因为战报生成失败而中断战斗——战斗本身
 // 一秒都不依赖网络。
 
-import { loadConfig, callModel, hasApiCredentials } from "../../infra/apiConfig.js";
-
-// 当前配置里有没有可用的 key（判断"能不能调 AI 战报"）。UI 拿它决定
-// 是否显示"已启用 AI 战报"的提示。判断从宽：有凭证即认为可用，
-// 真正能不能通只有发出去才知道，失败自然会走降级。
-export function hasApiKey() {
-  try {
-    return hasApiCredentials(loadConfig());
-  } catch {
-    return false;
-  }
-}
+import { hasApiKey, askStoryteller } from "../prompt/storyteller.js";
 
 // 把一回合的结构化结果拼成给 AI 的输入摘要（纯数据，AI 不改判、只润色）。
 function buildTurnDigest(myFighter, foeFighter, myMove, foeMove, result) {
@@ -40,12 +29,6 @@ function buildTurnDigest(myFighter, foeFighter, myMove, foeMove, result) {
 // 允许战报慢半拍异步补上，不阻塞。
 export async function narrateTurn(myFighter, foeFighter, myMove, foeMove, result) {
   if (!hasApiKey()) return null;
-  let cfg;
-  try {
-    cfg = loadConfig();
-  } catch {
-    return null;
-  }
 
   const digest = buildTurnDigest(myFighter, foeFighter, myMove, foeMove, result);
   const sys = `你是曲措乡的说书人。下面给你一个切磋回合已经算好的结果（谁用什么招、克制、伤害、状态），
@@ -54,18 +37,6 @@ export async function narrateTurn(myFighter, foeFighter, myMove, foeMove, result
 控制在两到三句、八十字以内；只讲这一回合，不预告后续。只输出这段话，不要任何前后缀。`;
   const user = `本回合结果：${digest}`;
 
-  try {
-    // 说书是短润色请求：强制关思考（thinkingMode:off）覆盖玩家全局配置，
-    // 否则思考会吃掉 token 额度，把两三句说书截断在半句（项目已知坑：
-    // thinking 与 maxOutputTokens 共享预算）。同时给足 maxTokens 兜底。
-    const noThinkCfg = { ...cfg, thinkingMode: "off" };
-    const { text } = await callModel(noThinkCfg, sys, [{ role: "user", content: user }], {
-      maxTokens: 800, // 两三句正文足够，关思考后不会被占，给足余量防截断
-      callLabel: "斗蛐蛐说书",
-    });
-    const clean = (text || "").replace(/<thinking>[\s\S]*?<\/thinking>/g, "").trim();
-    return clean || null;
-  } catch {
-    return null; // 失败静默降级，交给调用方用 result.notes 兜底
-  }
+  // 失败静默降级（返回 null），交给调用方用 result.notes 兜底。
+  return askStoryteller(sys, user, { callLabel: "斗蛐蛐说书" });
 }

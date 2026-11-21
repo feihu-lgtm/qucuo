@@ -75,7 +75,7 @@
 // ── 常量 ──────────────────────────────────────────────────────────────────────
 
 // SillyTavern 世界书条目的内部位置枚举（entry.extensions.position）
-export const ST_POSITION = {
+const ST_POSITION = {
   0: "before_char",
   1: "after_char",
   2: "an_top",
@@ -86,13 +86,13 @@ export const ST_POSITION = {
 };
 
 // entry.extensions.role
-export const ST_ROLE = { 0: "system", 1: "user", 2: "assistant" };
+const ST_ROLE = { 0: "system", 1: "user", 2: "assistant" };
 
 // ST 内部位置 → 本项目 13 位注入块（见 tavernMapping.js）
 // at_depth 的落点取决于 depth：depth 0 是贴在最末的关键指令，本项目 13 号位是
 // JSON schema 的 assistant prefill，塞不得（见 sysBase.js 顶部那段），所以一律
 // 落到 11 号位 inChat。
-export const POSITION_TO_BLOCK = {
+const POSITION_TO_BLOCK = {
   before_char: "worldInfoBefore",
   after_char: "worldInfoAfter",
   an_top: "authorsNote",
@@ -103,8 +103,8 @@ export const POSITION_TO_BLOCK = {
 };
 
 // 单条长度闸（字符）。超上限拒收，超警戒线标记为需手动确认。
-export const ENTRY_LEN_WARN = 2000;
-export const ENTRY_LEN_MAX = 8000;
+const ENTRY_LEN_WARN = 2000;
+const ENTRY_LEN_MAX = 8000;
 
 // keys 元素内部的分隔符（F14）
 const KEY_SPLIT_RE = /[，,、;；\/／|｜]+/;
@@ -158,7 +158,7 @@ export function isPng(bytes) {
  * 不解压（实测 8 张卡全部用 tEXt，没有一张用 zTXt，属于理论分支）。
  * @returns {{texts: Record<string,string>, zipped: string[]}} texts 的值是 latin1 原文
  */
-export function readPngTextChunks(bytes) {
+function readPngTextChunks(bytes) {
   if (!isPng(bytes)) throw new Error("不是 PNG 文件");
   const texts = {};
   const zipped = [];
@@ -185,7 +185,7 @@ export function readPngTextChunks(bytes) {
  * 从 PNG 字节里取出角色卡 JSON。
  * F1：只认 keyword 精确等于 ccv3/chara。F2：两个都在时用 ccv3。
  */
-export function extractCardJsonFromPng(bytes) {
+function extractCardJsonFromPng(bytes) {
   const { texts, zipped } = readPngTextChunks(bytes);
   const hasCcv3 = Object.prototype.hasOwnProperty.call(texts, "ccv3");
   const hasChara = Object.prototype.hasOwnProperty.call(texts, "chara");
@@ -216,7 +216,7 @@ export function extractCardJsonFromPng(bytes) {
 // ── 脏值清洗 ──────────────────────────────────────────────────────────────────
 
 /** F14：把 keys 里逗号连写的元素切开，去重去空。返回 {keys, dirty} */
-export function splitKeys(rawKeys) {
+function splitKeys(rawKeys) {
   const out = [];
   const dirty = [];
   for (const k of (Array.isArray(rawKeys) ? rawKeys : [])) {
@@ -237,7 +237,7 @@ export function splitKeys(rawKeys) {
 }
 
 /** F15/CBS：展开 {{user}} {{char}} <user> <char> <bot>。names 缺省时原样保留。 */
-export function expandMacros(text, names = {}) {
+function expandMacros(text, names = {}) {
   if (typeof text !== "string" || !text) return text || "";
   const user = names.user || "";
   const char = names.char || "";
@@ -254,7 +254,7 @@ export function expandMacros(text, names = {}) {
  * 规范说装饰器必须在进 prompt 前去掉；这里同时把解析出的装饰器回传，
  * 万一以后遇到真用装饰器的卡，@@position / @@role / @@depth 可以接上。
  */
-export function stripDecorators(content) {
+function stripDecorators(content) {
   if (typeof content !== "string" || !content) return { content: "", decorators: [] };
   const lines = content.split("\n");
   const decorators = [];
@@ -321,7 +321,7 @@ const KIND_RULES = [
       || (k[0] && k[0].length >= 2 && l !== k[0] && l.includes(k[0])) },
 ];
 
-export function classifyEntry(label, keys) {
+function classifyEntry(label, keys) {
   for (const r of KIND_RULES) {
     if (r.test(label || "", keys || [])) return r.kind;
   }
@@ -333,7 +333,7 @@ export function classifyEntry(label, keys) {
 /**
  * 把一条原始世界书条目归一成中性结构。不判断去向，只描述事实 + 给建议。
  */
-export function normalizeEntry(raw, index) {
+function normalizeEntry(raw, index) {
   const ext = (raw && raw.extensions) || {};
   const { content, decorators } = stripDecorators(raw?.content);
   const { keys, dirty } = splitKeys(raw?.keys);
@@ -462,7 +462,7 @@ export function groupToNpcLore(group, { includeNsfw = false } = {}) {
  * @param {object} rawCard 解析出来的卡 JSON（可能是 {spec,data:{…}} 也可能是裸 V1）
  * @param {object} carrier extractCardJsonFromPng 回传的载体信息
  */
-export function normalizeCard(rawCard, carrier = {}) {
+function normalizeCard(rawCard, carrier = {}) {
   const data = (rawCard && typeof rawCard.data === "object" && rawCard.data) || rawCard || {};
   const ext = data.extensions || {};
   const book = data.character_book || null;
@@ -531,7 +531,7 @@ export function normalizeCard(rawCard, carrier = {}) {
 /**
  * 给出「这张卡能不能导、要拒什么」的结论。不改数据，只出报告。
  */
-export function assessCard(card) {
+function assessCard(card) {
   const es = card.entries;
   const n = es.length;
   const lens = es.map(e => e.length);

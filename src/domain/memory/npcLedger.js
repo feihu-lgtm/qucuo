@@ -10,7 +10,7 @@
 export const LEDGER_MAX_LINES = 5; // 每人最多留 5 条，旧的先滚
 export const LEDGER_LINE_MAX = 40; // 每条最多 40 字
 
-export const EMPTY_LEDGER = Object.freeze({ lines: [], updatedTurn: 0 });
+const EMPTY_LEDGER = Object.freeze({ lines: [], updatedTurn: 0 });
 
 /**
  * 读取某 NPC 的旧账。旧存档/无账目时返回空账本 { lines: [], updatedTurn: 0 }。
