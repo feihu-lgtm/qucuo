@@ -17,7 +17,7 @@ import { SERVICE_MENUS } from "../buildings/menuData.js";
 function promptState() {
   return {
     char: {
-      name: "少侠", gender: "女", hp: [70, 100], neigong: 3, waigong: 4,
+      name: "少侠", gender: "女", hp: [70, 100], neigong: 3, waigong: 4, money: 73,
       special: { 根骨: 5, 悟性: 6 },
     },
     inv: [{ name: "刀", quality: "蓝", equipped: true }, "草药"],
@@ -119,6 +119,8 @@ describe("declared numeric scales", () => {
     expect(combat).toContain(FIELDS[FIELD.hp].scale);
     expect(combat).not.toContain("小额谢礼");
     expect(unknown).toContain(renderFieldScales([FIELD.money]).split("\n").at(-1));
+    expect(unknown).toContain("随身银两=73两");
+    expect(unknown).toContain("不填本次收支额");
   });
 
   it("uses each channel's own affection scale for the hidden marker", () => {
@@ -181,7 +183,7 @@ describe("model-bound state refs", () => {
     ["LOOK", '当前场景：鱼定村，NPCs：才旦、老猎户，物品：石子\n出口固定（不能改变）：[n,s]'],
     ["EXPLORE_ACTION", "当前场景：鱼定村，背包：刀，草药"],
     ["COMBAT", "当前状态：HP=70/100，背包：刀，草药"],
-    ["UNKNOWN", '当前状态：场景=鱼定村，HP=70/100，背包=刀，草药，NPC 关系={"才旦":{"好感度":37,"态度":"爽朗"}}'],
+    ["UNKNOWN", '当前状态：场景=鱼定村，HP=70/100，背包=刀，草药，NPC 关系={"才旦":{"好感度":37,"态度":"爽朗"}}，随身银两=73两'],
     ["TALK_CASUAL", '当前 NPC 关系：{"才旦":{"好感度":37,"态度":"爽朗"}}\n在场人物与其随身之物：\n· 才旦〔身携:猎刀〕\n· 老猎户〔身无长物〕\n玩家背包：刀，草药'],
     ["MOVE", "玩家到达新地点：山门（由系统固定，不能修改）\n固定出口：[w]（不能修改）"],
   ])("%s preserves its state prefix and duel visibility constraint", async (intent, header) => {

@@ -131,7 +131,7 @@ const EXTRACTION_SAMPLE_SNAPSHOT = {
     npcs: [{ name: "才旦", id: "caidan", brief: "背着猎弓的汉子" }],
     items: [{ name: "碎石", id: "stone" }],
   },
-  char: { hp: [85, 100], name: "主角" },
+  char: { hp: [85, 100], name: "主角", money: 30 },
   inv: [],
   dao: 0,
   varTree: { 角色: { 才旦: { 好感度: 30 } } },

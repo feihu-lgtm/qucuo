@@ -200,13 +200,14 @@ mvu 字段留空即可，除非叙事里**明确写出**某个 NPC 因这场战�
     scaleFields: [FIELD.hp, FIELD.money, FIELD.affection, FIELD.reputation, FIELD.inv, FIELD.flags, "exp", "pot"],
     system: "你是游戏状态提取器，从叙事中提取所有发生变化的游戏状态。",
     user: (_narrative, _state, _settle, render) =>
-      render(`当前状态：场景=@room.name，HP=@气血，背包=@背包，NPC 关系=@角色关系
+      render(`当前状态：场景=@room.name，HP=@气血，背包=@背包，NPC 关系=@角色关系，随身银两=@{char.money}两
 
 叙事内容：
 @narrative
 
 根据叙事，输出所有变化的 JSON（只包含实际变化的字段，未变化的省略，无变化输出 {}）：
-{"room":{"desc":"","npcs":[],"items":[]},"char":{"hp":[当前,最大值],"money":当前银两},"delta":{"items_add":[],"items_rm":[],"exp":0,"pot":0,"flags_add":[]},"mvu":"_.add(...);\n"}`),
+{"room":{"desc":"","npcs":[],"items":[]},"char":{"hp":[当前,最大值],"money":结算后余额},"delta":{"items_add":[],"items_rm":[],"exp":0,"pot":0,"flags_add":[]},"mvu":"_.add(...);\n"}
+若随身银两确有变化，char.money 填上面余额加上实际收支后的总额，不填本次收支额；不清楚余额或收支金额时省略。`),
   },
 };
 
