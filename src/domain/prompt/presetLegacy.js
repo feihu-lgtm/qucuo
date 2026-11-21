@@ -35,8 +35,10 @@ export function upgradeLegacyDefaults(preset, defaults) {
   if (preset?.name !== "默认预设" || !Array.isArray(preset.prompts)) return preset;
   let changed = false;
   const prompts = preset.prompts.map((entry) => {
-    const legacy = LEGACY_DEFAULT_CONTENT[entry?.id];
-    const next = defaults[entry?.id];
+    const id = entry?.id;
+    if (!Object.hasOwn(LEGACY_DEFAULT_CONTENT, id) || !Object.hasOwn(defaults, id)) return entry;
+    const legacy = LEGACY_DEFAULT_CONTENT[id];
+    const next = defaults[id];
     if (!legacy || next == null || !legacy.includes(entry.content)) return entry;
     changed = true;
     return { ...entry, content: next };

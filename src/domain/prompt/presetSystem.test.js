@@ -68,4 +68,8 @@ describe("legacy preset upgrades", () => {
 
     expect(upgradeLegacyDefaults(preset, defaultContents())).toBe(preset);
   });
+  it("leaves entries with inherited identifiers untouched", () => {
+    const preset = { name: "默认预设", prompts: [{ id: "constructor", content: "x" }, { id: "toString", content: "y" }] };
+    expect(upgradeLegacyDefaults(preset, { genrules: "new" })).toBe(preset);
+  });
 });
