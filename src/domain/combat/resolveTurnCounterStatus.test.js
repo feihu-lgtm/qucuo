@@ -154,7 +154,7 @@ describe("attack and counter-status resolution", () => {
     );
 
     expect(result).toMatchObject({
-      counterStatus: "control",
+      counterStatus: null,
       matchup: "A",
       speedWinner: "A",
       interruptedB: true,

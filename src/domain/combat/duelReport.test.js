@@ -72,6 +72,52 @@ describe("战报逐回合交错", () => {
 });
 
 describe("战报模板路径解析", () => {
+  it("renders a faster attack beating control as a hit and interruption, not immobilization", () => {
+    const attack = {
+      move: { name: "快拳", type: "攻击" },
+      special: { 身法: 8 },
+      hp: [100, 100],
+      energy: [0, 100],
+      baseAtk: 20,
+      baseDef: 0,
+    };
+    const control = {
+      move: { name: "点穴指", type: "状态", applyStatus: { name: "麻穴", chance: 1 } },
+      special: { 身法: 2 },
+      hp: [100, 100],
+      energy: [0, 100],
+      baseAtk: 10,
+      baseDef: 0,
+    };
+    const result = resolveTurn(attack, control);
+    const line = formatDuelDisplayLine({
+      round: 1,
+      playerMove: attack.move,
+      npcMove: control.move,
+      result: {
+        ...result,
+        nameA: "陈尧天",
+        nameB: "才旦",
+        hpAfterA: [100, 100],
+        hpAfterB: [100 - result.damageToB, 100],
+        hpBandA: "healthy",
+        hpBandB: "hurt",
+      },
+    });
+
+    expect(result).toMatchObject({
+      counterStatus: null,
+      speedWinner: "A",
+      interruptedB: true,
+      statusAppliedToA: null,
+    });
+    expect(result.damageToB).toBeGreaterThan(0);
+    expect(line).toContain("劲力");
+    expect(line).toContain("刚要运气");
+    expect(line).toContain("打断");
+    expect(line).not.toContain("动弹不得");
+  });
+
   it("解析简单和嵌套字段，未知路径留空并返回trace字段", () => {
     const resolved = resolveDuelReportTemplate(
       "第@round.index回合，气血@round.hpAfter.player；缺失=@round.unknown.value。",
