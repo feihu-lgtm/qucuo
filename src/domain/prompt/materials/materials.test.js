@@ -77,28 +77,35 @@ describe("材料库", () => {
   it("lastTurn 取最后完成的玩家句+引擎回复，不配对未回答的当前命令", () => {
     const block = lastTurn(base());
     expect(block).toContain("【上一轮】");
-    // mainConvo の末尾は未回答の「向才旦赔礼」→ 上一轮はその前の対
+    // mainConvo 的末尾是未回答的「向才旦赔礼」→ 上一轮应是它前面那对
     expect(block).toContain("玩家：看看她的脸色");
     expect(block).toContain("引擎：她抬眼瞥见你");
     expect(block).not.toContain("向才旦赔礼");
-    // 末尾が assistant で終わる会話ならその対を返す
-    const answered = { ...base(), mainConvo: base().mainConvo.concat([{ role: "assistant", content: "才旦は渋々謝罪を受けた。" }]) };
+    // 会话以 assistant 结尾时，返回的就是这一对
+    const answered = { ...base(), mainConvo: base().mainConvo.concat([{ role: "assistant", content: "才旦不情愿地收下了赔礼。" }]) };
     expect(lastTurn(answered)).toContain("玩家：向才旦赔礼");
-    const longCmd = { ...base(), mainConvo: [{ role: "user", content: "长".repeat(200) }, { role: "assistant", content: "応".repeat(200) }] };
+    const longCmd = { ...base(), mainConvo: [{ role: "user", content: "长".repeat(200) }, { role: "assistant", content: "答".repeat(200) }] };
     expect(lastTurn(longCmd)).toContain("…");
     expect(lastTurn({})).toBe("");
   });
 
   it("recentTurns 默认取最近 3 轮，可自定义轮数", () => {
     const block = recentTurns()(base());
-    expect(block).toContain("【最近3轮】");
+    // 末尾未回答的「向才旦赔礼」不算一轮，只剩 2 个已完成回合
+    expect(block).toContain("【最近2轮】");
     expect(block).toContain("玩家：环顾四周");
-    expect(block.match(/玩家：/g).length).toBe(3);
+    expect(block.match(/玩家：/g).length).toBe(2);
+    expect(block).not.toContain("玩家：向才旦赔礼");
     const one = recentTurns(1)(base());
     expect(one).toContain("【最近1轮】");
-    expect(one).toContain("玩家：向才旦赔礼");
+    expect(one).toContain("玩家：看看她的脸色");
     expect(one).not.toContain("玩家：环顾四周");
     expect(recentTurns()({})).toBe("");
+  });
+
+  it("recentTurns 不收末尾未回答的当前命令（已由 playerLine 提供）", () => {
+    const snap = { mainConvo: [{ role: "user", content: "新的命令" }] };
+    expect(recentTurns()(snap)).toBe("");
   });
 
   it("presentNpcs 只列当前内层房间可见的人", () => {

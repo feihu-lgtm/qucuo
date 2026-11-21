@@ -52,6 +52,8 @@ const ENTRY_WHITELIST = new Set([
   "debug/debug-main.jsx",
   "debug/debug-gamble.jsx",
   "debug/debug-item.jsx",
+  // 预置模块：先入库、后续回合才接线的库文件，登记在此避免被当成死文件。
+  "domain/prompt/materials/index.js",
 ]);
 
 function walkSource(dir, out = []) {

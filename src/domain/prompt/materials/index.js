@@ -12,8 +12,7 @@
 // 注意：domain 层不引 engine；在场判定复用 state/fields.js 的 getPresentNpcs，
 // 远景复用 memory/daySummary.js 的 buildDistantViewBlock。
 
-import { CATEGORY_LABEL } from "../../economy/equipment.js";
-import { QUALITY } from "../../economy/equipment.js";
+import { CATEGORY_LABEL, QUALITY } from "../../economy/equipment.js";
 import { hasInnerMap } from "../../map/innerMap.js";
 import { getPresentNpcs } from "../../state/fields.js";
 import { buildDistantViewBlock } from "../../memory/daySummary.js";
@@ -39,8 +38,8 @@ export function playerLine(snap) {
   return snap.cmd ? `【玩家这句话】${snap.cmd}` : "";
 }
 
-// mainConvo を user→assistant の対に分ける。末尾に未回答の user が残れば、
-// それは"今回のコマンド"なので対の末尾には含めない（前ターンの対と混ぜない）。
+// 把 mainConvo 配成 user→assistant 的回合对。末尾若留下没有引擎回复的 user，
+// 那是本轮刚下达的命令，不能和上一轮的对混到一起。
 function pairTurns(convo) {
   const pairs = [];
   let pending = null;
@@ -56,10 +55,9 @@ function pairTurns(convo) {
   return pairs;
 }
 
-// 取 mainConvo 里最近一轮已完成 玩家→引擎 对（引擎回复がない末尾の user は今回の命令）。
+// 取 mainConvo 里最近一轮已完成的 玩家→引擎 对（末尾没有引擎回复的 user 是本轮命令）。
 function lastPair(snap) {
-  const pairs = pairTurns(snap.mainConvo);
-  const done = pairs.filter((p) => p.assistant);
+  const done = pairTurns(snap.mainConvo).filter((p) => p.assistant);
   return done.length ? done[done.length - 1] : null;
 }
 
@@ -75,7 +73,8 @@ export function lastTurn(snap) {
 // ── 最近 n 轮（默认 3 轮）──
 export function recentTurns(n = 3) {
   return (snap) => {
-    const turns = pairTurns(snap.mainConvo).slice(-n);
+    // 只收已完成的回合——本轮尚未回答的命令已由 playerLine 给，不重复计入。
+    const turns = pairTurns(snap.mainConvo).filter((p) => p.assistant).slice(-n);
     if (!turns.length) return "";
     const body = turns
       .map((t) => `玩家：${cut(t.user, 80)}${t.assistant ? `\n引擎：${cut(t.assistant, 80)}` : ""}`)
@@ -126,7 +125,7 @@ function itemLine(item, owner) {
 export function items(snap) {
   const groups = [];
   const npc = resolveTarget(snap);
-  // stolen（窃取済み）も dropped（切磋で玩家に落としたもの）も相手の持ち物には出さない。
+  // stolen（已被偷走）和 dropped（切磋掉落到玩家手里）都不再算对方身上的东西。
   const theirs = (npc?.carriedItems || []).filter((i) => !i?.stolen && !i?.dropped)
     .map((i) => itemLine(i, "对方")).filter(Boolean);
   if (theirs.length) groups.push(`对方身上：\n${theirs.join("\n")}`);
