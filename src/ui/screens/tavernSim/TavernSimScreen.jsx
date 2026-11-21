@@ -20,7 +20,6 @@ import { hasApiKey } from "../../../domain/prompt/storyteller.js";
 
 const SAVE_KEY = "qucuo_tavern_sim_v1";
 const LEVEL_NAMES = ["破落小馆", "热闹酒肆", "闻名三江"];
-
 function loadSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
