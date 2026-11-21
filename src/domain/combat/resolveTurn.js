@@ -10,7 +10,8 @@
 // costPenaltyTo*/freezeEnergyTo*/defenseBroken* 传出，由 DuelScreen 存进下一回合。
 
 import { random } from "../../core/rng.js";
-import { judgeTypeMatchup, MOVE_TYPE } from "./moveTypes.js";
+import { MOVE_TYPE, resolveMatchupRule } from "./moveTypes.js";
+import { resolveDefenseBlock } from "./resolveDefenseBlock.js";
 import { applyDodgeResult } from "./dodgeTurn.js";
 import { rollStatusApply } from "./resolveStatus.js";
 import { applyStatus, tickStatusEffects } from "./statusEffects.js";
@@ -108,7 +109,10 @@ function decideFirst(sideA, sideB) {
 // 通用状态施加：兼容对象写法与字符串 + statusChance；confuseChance 视为施加"气乱"。
 export function resolveTurn(sideA, sideB) {
   const result = {
-    matchup: null, speedWinner: null,
+    matchup: null, speedWinner: null, counterStatus: null,
+    interruptedA: false, interruptedB: false,
+    cancelledA: false, cancelledB: false,
+    reflectedA: false, reflectedB: false,
     moveNameA: sideA.move?.name || "未明招式", moveNameB: sideB.move?.name || "未明招式",
     moveTypeA: sideA.move?.type || "状态", moveTypeB: sideB.move?.type || "状态",
     damageToA: 0, damageToB: 0, dodgeSuccessA: false, dodgeSuccessB: false,
@@ -171,20 +175,93 @@ export function resolveTurn(sideA, sideB) {
     result.notes.push(`触及那身诡异衣料，一缕暗劲反噬，攻方隐隐添了内伤`);
   };
 
+  const resolveAttackWin = (winnerIsA, { controlCounter = false } = {}) => {
+    const winnerSide = winnerIsA ? sideA : sideB;
+    const loserSide = winnerIsA ? sideB : sideA;
+    const winnerMove = winnerSide.move;
+    const loserMove = loserSide.move;
+    const winnerTag = winnerIsA ? "A" : "B";
+    const loserTag = winnerIsA ? "B" : "A";
+    let damage = calcBaseDamage(winnerMove, winnerSide, loserSide);
+    if (winnerMove.doubleVsStatus) {
+      damage *= 2;
+      result.notes.push(`${winnerMove.name}克中对方状态招式，威力倍增`);
+    }
+    result[`damageTo${loserTag}`] = damage;
+    if (loserMove.type === MOVE_TYPE.STATUS) result[`interrupted${loserTag}`] = true;
+    if (controlCounter) {
+      result.notes.push(`${loserMove.name}抢先运转不及，被${winnerMove.name}正面打断`);
+    } else if (winnerMove.nullifyStatusOnHit) {
+      result.notes.push(`${loserMove.name}尚未运转便被${winnerMove.name}生生打散，全无效果`);
+    } else {
+      result.notes.push(`${loserMove.name}尚未运转完全，便被${winnerMove.name}正面打断`);
+    }
+    applySelfStatusMoveEffects(winnerSide, winnerTag, result);
+    markApply(winnerMove, loserTag, winnerTag);
+    detonate(winnerMove, loserSide, loserTag, winnerSide);
+  };
+
+  const resolveStatusWin = (winnerIsA, counterKind = null) => {
+    const winnerSide = winnerIsA ? sideA : sideB;
+    const loserSide = winnerIsA ? sideB : sideA;
+    const winnerMove = winnerSide.move;
+    const loserMove = loserSide.move;
+    const winnerTag = winnerIsA ? "A" : "B";
+    const loserTag = winnerIsA ? "B" : "A";
+    if (counterKind === "reflect") {
+      result.notes.push(`${winnerMove.name}护体反劲截住${loserMove.name}，攻势被反弹`);
+      result[`cancelled${loserTag}`] = true;
+      result[`reflected${loserTag}`] = true;
+    } else if (counterKind === "control") {
+      result.notes.push(`${winnerMove.name}抢先点中${loserMove.name}，攻势被截断`);
+      result[`cancelled${loserTag}`] = true;
+    } else {
+      result.notes.push(`${loserMove.name}只顾防住正面，却漏了${winnerMove.name}这一手`);
+    }
+    if (winnerMove.energyDiffDamage) {
+      const damage = Math.abs((sideA.energy?.[0] ?? 0) - (sideB.energy?.[0] ?? 0)) * 3;
+      result[`damageTo${loserTag}`] += damage;
+    }
+    if (winnerMove.doubleReflectDamage) {
+      const wouldBlock = calcBaseDamage(loserMove, loserSide, winnerSide)
+        * (loserMove.baseDamageMultiplier ?? 0.5);
+      result[`damageTo${loserTag}`] += Math.round(wouldBlock * 2);
+      result.notes.push(`${winnerMove.name}二倍反弹，力道尽数奉还`);
+    }
+    const status = rollStatusApply(winnerMove);
+    if (status) result[`statusAppliedTo${loserTag}`] = status;
+    markApply(winnerMove, loserTag, winnerTag);
+    if (winnerMove.freezeEnergyRecovery) {
+      result[`freezeEnergyTo${loserTag}`] = true;
+      result.notes.push(`${loserMove.name === loserSide.move.name ? "对方" : ""}回气被封，下回合无法调息`);
+    }
+    if (winnerMove.enemyCostPenalty) {
+      result[`costPenaltyTo${loserTag}`] = { ...winnerMove.enemyCostPenalty };
+      result.notes.push(`${winnerMove.name}扰乱对方气机，其后数招出手愈发滞涩`);
+    }
+    applySelfStatusMoveEffects(winnerSide, winnerTag, result);
+    if (loserMove.onCounterFailEnergyPenalty) {
+      result[`energyDelta${loserTag}`] -= loserMove.onCounterFailEnergyPenalty;
+      result.notes.push(`${loserMove.name}这一守赌错了方向，真气虚耗`);
+    }
+    if (loserMove.onCounterFailDefenseNullified) {
+      result[`defenseBroken${loserTag}`] = true;
+      result.notes.push("守势被看穿，门户大开，下回合再难守住");
+    }
+  };
+
   // 蓄势加成用掉就要清（标记给 DuelScreen 清除）
   if (sideA.pendingAtkBonus) result.consumedPendingA = true;
   if (sideB.pendingAtkBonus) result.consumedPendingB = true;
 
-  const matchup = judgeTypeMatchup(sideA.move.type, sideB.move.type);
-  result.matchup = matchup;
-
-  if (matchup === "tie") {
-    const winner = decideFirst(sideA, sideB);
-    result.speedWinner = winner;
-    if (sideA.move.type === MOVE_TYPE.ATTACK) {
+  const rule = resolveMatchupRule(sideA.move, sideB.move);
+  result.matchup = rule.winner;
+  const handlers = {
+    "collide-speed": () => {
+      const winner = decideFirst(sideA, sideB);
+      result.speedWinner = winner;
       const dmgA = calcBaseDamage(sideA.move, sideA, sideB);
       const dmgB = calcBaseDamage(sideB.move, sideB, sideA);
-      // 先手方若一击能打死后手方，后手方来不及还手（先手击杀免伤）
       const first = winner === "A" ? { dmg: dmgA, targetHp: sideB.hp?.[0] ?? 1 } : { dmg: dmgB, targetHp: sideA.hp?.[0] ?? 1 };
       const firstKills = first.dmg >= first.targetHp;
       result.damageToB = dmgA;
@@ -195,157 +272,49 @@ export function resolveTurn(sideA, sideB) {
       } else {
         result.notes.push(`同为攻招硬碰硬，${winner === "A" ? "你" : "对方"}快了半分`);
       }
-      // 双攻硬碰，双方都命中：各自的 applyMark 都可触发
       markApply(sideA.move, "B", "A"); detonate(sideA.move, sideB, "B", sideA);
       markApply(sideB.move, "A", "B"); detonate(sideB.move, sideA, "A", sideB);
-    } else if (sideA.move.type === MOVE_TYPE.DEFENSE) {
+    },
+    standoff: () => {
+      result.speedWinner = decideFirst(sideA, sideB);
       result.notes.push("双方皆采守势，僵持不下，未有实质交锋");
-    } else {
-      // 双方都用状态类，各自独立生效
-      const sa = rollStatusApply(sideA.move); if (sa) result.statusAppliedToB = sa;
-      const sb = rollStatusApply(sideB.move); if (sb) result.statusAppliedToA = sb;
-      markApply(sideA.move, "B", "A");
-      markApply(sideB.move, "A", "B");
-      applySelfStatusMoveEffects(sideA, "A", result);
-      applySelfStatusMoveEffects(sideB, "B", result);
-      result.notes.push("双方各自运使身法，暗中角力");
-    }
-  } else {
-    const winnerIsA = matchup === "A";
-    const winnerSide = winnerIsA ? sideA : sideB;
-    const loserSide = winnerIsA ? sideB : sideA;
-    const winnerMove = winnerSide.move;
-    const loserMove = loserSide.move;
-
-    if (winnerMove.type === MOVE_TYPE.ATTACK) {
-      // 攻击克状态：状态被打断，攻击命中
-      let dmg = calcBaseDamage(winnerMove, winnerSide, loserSide);
-      if (winnerMove.doubleVsStatus) { dmg *= 2; result.notes.push(`${winnerMove.name}克中对方状态招式，威力倍增`); }
-      if (winnerIsA) result.damageToB = dmg; else result.damageToA = dmg;
-      // nullifyStatusOnHit：确保被打断的状态招不会遗留任何施加效果（本就不会，这里显式保证）
-      if (winnerMove.nullifyStatusOnHit) result.notes.push(`${loserMove.name}尚未运转便被${winnerMove.name}生生打散，全无效果`);
-      else result.notes.push(`${loserMove.name}尚未运转完全，便被${winnerMove.name}正面打断`);
-      // 攻击方自身的蓄势/施毒等自益（若这一招同时挂了）在这里也生效
-      applySelfStatusMoveEffects(winnerSide, winnerIsA ? "A" : "B", result);
-      // 命中即可叠印记（招式或装备带的 applyMark），并引爆对方已有印记
-      markApply(winnerMove, winnerIsA ? "B" : "A", winnerIsA ? "A" : "B");
-      detonate(winnerMove, loserSide, winnerIsA ? "B" : "A", winnerSide);
-    } else if (winnerMove.type === MOVE_TYPE.STATUS) {
-      // 【本轮修复·结构性错位】以下这一整段（"只顾防住正面"那句话起，直到状态招的
-      // 全套效果）本来写在**攻击分支内部**——注释自己写着"状态克防御"，却落在了
-      // "攻击克状态"里。两个后果：
-      //   ① 攻击克状态时会同时输出两句意思重复的话，玩家看到的就是
-      //      「踞原嗥月尚未运转完全，便被碎岩击正面打断。」
-      //      「踞原嗥月只顾防住正面，却漏了碎岩击这一手。」——同一件事说两遍。
-      //   ② 更要紧的是，攻击招赢的时候还会把**状态招的整套效果**跑一遍
-      //      （施加状态、封回气、加耗、二倍反弹…）。那些效果本该只属于状态招取胜。
-      // 补上这个 else if，各归各位。
-      result.notes.push(`${loserMove.name}只顾防住正面，却漏了${winnerMove.name}这一手`);
-      // 状态招的伤害/效果
-      if (winnerMove.energyDiffDamage) {
-        const dmg = Math.abs((sideA.energy?.[0] ?? 0) - (sideB.energy?.[0] ?? 0)) * 3;
-        if (winnerIsA) result.damageToB += dmg; else result.damageToA += dmg;
-      }
-      if (winnerMove.doubleReflectDamage) {
-        const wouldBlock = calcBaseDamage(loserMove, loserSide, winnerSide) * (loserMove.baseDamageMultiplier ?? 0.5);
-        const reflect = Math.round(wouldBlock * 2);
-        if (winnerIsA) result.damageToB += reflect; else result.damageToA += reflect;
-        result.notes.push(`${winnerMove.name}二倍反弹，力道尽数奉还`);
-      }
-      const st = rollStatusApply(winnerMove);
-      if (st) { if (winnerIsA) result.statusAppliedToB = st; else result.statusAppliedToA = st; }
-      markApply(winnerMove, winnerIsA ? "B" : "A", winnerIsA ? "A" : "B");
-      if (winnerMove.freezeEnergyRecovery) {
-        if (winnerIsA) result.freezeEnergyToB = true; else result.freezeEnergyToA = true;
-        result.notes.push(`${loserMove.name === loserSide.move.name ? "对方" : ""}回气被封，下回合无法调息`);
-      }
-      if (winnerMove.enemyCostPenalty) {
-        if (winnerIsA) result.costPenaltyToB = { ...winnerMove.enemyCostPenalty };
-        else result.costPenaltyToA = { ...winnerMove.enemyCostPenalty };
-        result.notes.push(`${winnerMove.name}扰乱对方气机，其后数招出手愈发滞涩`);
-      }
-      applySelfStatusMoveEffects(winnerSide, winnerIsA ? "A" : "B", result);
-      // 防御方"应对失败"的惩罚（听桥系高风险防御赌输了要付代价）
-      if (loserMove.onCounterFailEnergyPenalty) {
-        if (winnerIsA) result.energyDeltaB -= loserMove.onCounterFailEnergyPenalty;
-        else result.energyDeltaA -= loserMove.onCounterFailEnergyPenalty;
-        result.notes.push(`${loserMove.name}这一守赌错了方向，真气虚耗`);
-      }
-      if (loserMove.onCounterFailDefenseNullified) {
-        if (winnerIsA) result.defenseBrokenB = true; else result.defenseBrokenA = true;
-        result.notes.push(`守势被看穿，门户大开，下回合再难守住`);
-      }
-
-    } else {
-      // 防御克攻击：防御生效大幅减伤，可能触发应对反击
-      const rawDmg = calcBaseDamage(loserMove, loserSide, winnerSide); // 攻击方本来的伤害
-      // 防御方装备的"部分免疫无视防御"（如守塔僧团铁网衲/官铸镇边重铠）：
-      // 当攻击方用 ignoreDefense 时，本来防御白挡全额吃伤，但这层护甲能挡下
-      // partialImmune 比例（0~1）的那部分伤害，让"无视防御"不再是100%生效。
-      const partialImmune = winnerMove.ignoreDefensePartialImmune ?? winnerSide.ignoreDefensePartialImmune ?? 0;
-      // 【ignoreDefenseRatio·此前是死 flag】ignoreDefense 是"全部无视防御"的布尔，
-      // 而 ignoreDefenseRatio 是"只无视其中一部分"的小数版（开山锤0.3、十三针囊0.3、
-      // 三棱透骨钉0.4，还有唐门那套暗器）。它进了 itemEffectText 的词典、界面上
-      // 老老实实显示着「破防」，战斗里却**一处都没读**——玩家看着破防生效，实际
-      // 挨的是满额防御减伤。这里补上：按比例把一部分伤害走"无视防御"通道结算。
-      const idRatio = Math.max(0, Math.min(1, loserMove.ignoreDefenseRatio ?? loserSide.ignoreDefenseRatio ?? 0));
-      if (!loserMove.ignoreDefense && idRatio > 0) {
-        const pierced = Math.round(rawDmg * idRatio);                 // 这部分绕过防御
-        const immuned = partialImmune > 0 ? Math.round(pierced * partialImmune) : 0;
-        const blockedPart = rawDmg - pierced;                          // 剩下的照常被防御削
-        const reducedBlocked = Math.round(blockedPart * (loserMove.defenseDiscount ?? 0.35));
-        const dmg = Math.max(1, pierced - immuned + reducedBlocked);
-        if (winnerIsA) result.damageToA = dmg; else result.damageToB = dmg;
-        result.notes.push(`${loserMove.name}专挑劲力薄处扎，${winnerMove.name}挡住了大半，仍被透进去几分`);
-        applyMarkOnHitCheck(winnerMove, winnerIsA ? "A" : "B", winnerIsA ? "B" : "A");
-      } else if (loserMove.ignoreDefense) {
-        // 攻击方"无视防御"：防御大幅失效；但防御方若有部分免疫，仍能削掉一截
-        const immuned = partialImmune > 0 ? Math.round(rawDmg * partialImmune) : 0;
-        const dmg = Math.max(1, rawDmg - immuned);
-        if (winnerIsA) result.damageToA = dmg; else result.damageToB = dmg;
-        result.notes.push(immuned > 0
-          ? `${loserMove.name}势大力沉，${winnerMove.name}的护体之力堪堪卸去几分，未被全然击穿`
-          : `${loserMove.name}势大力沉，${winnerMove.name}竟未能卸去分毫`);
-        // 部分免疫护甲同样触发"挨打叠印"（见下方 applyMarkOnHit 统一处理）
-        applyMarkOnHitCheck(winnerMove, winnerIsA ? "A" : "B", winnerIsA ? "B" : "A");
+    },
+    each: () => {
+      if (sideA.move.type === MOVE_TYPE.STATUS && sideB.move.type === MOVE_TYPE.STATUS) {
+        result.speedWinner = decideFirst(sideA, sideB);
+        const sa = rollStatusApply(sideA.move); if (sa) result.statusAppliedToB = sa;
+        const sb = rollStatusApply(sideB.move); if (sb) result.statusAppliedToA = sb;
+        markApply(sideA.move, "B", "A");
+        markApply(sideB.move, "A", "B");
+        applySelfStatusMoveEffects(sideA, "A", result);
+        applySelfStatusMoveEffects(sideB, "B", result);
+        result.notes.push("双方各自运使身法，暗中角力");
       } else {
-        // 招式自带折扣（原有强度曲线不变）之上，再叠一层装备/内功/根骨带来的
-        // 固定防御力——这是这次新增的维度，见 calcDefenseValue 顶部注释。
-        // 保底 1 点伤害：顶级防御配置（内功根骨拉满+橙红护甲+红档听桥类招式）
-        // 数学上可能把 reduced 完全吃掉，保底避免出现"永远0伤害、战斗打不动"的僵局。
-        const reduced = Math.round(rawDmg * (winnerMove.baseDamageMultiplier ?? 0.6));
-        const defenseValue = calcDefenseValue(winnerSide, winnerMove);
-        const finalReduced = Math.max(1, reduced - defenseValue);
-        let counterDmg = 0;
-        if (winnerMove.onCounterSuccessDamageRatio) {
-          counterDmg = Math.round(rawDmg * winnerMove.onCounterSuccessDamageRatio);
-          result.counterTriggered = true;
-          if (winnerIsA) result.counterSuccessA = true; else result.counterSuccessB = true;
-        }
-        // 抢先结算：反击若能一击击杀攻击方，防御方免掉这次减伤后的伤害
-        const attackerHp = loserSide.hp?.[0] ?? 1;
-        const preemptiveKill = winnerMove.onCounterSuccessPreemptive && counterDmg >= attackerHp;
-        if (winnerIsA) {
-          result.damageToB += counterDmg;
-          result.damageToA = preemptiveKill ? 0 : finalReduced;
-        } else {
-          result.damageToA += counterDmg;
-          result.damageToB = preemptiveKill ? 0 : finalReduced;
-        }
-        result.notes.push(
-          counterDmg > 0
-            ? `${winnerMove.name}稳稳架住来招，反手一击${preemptiveKill ? "抢先制敌，对方再无还手" : "凌厉奉还"}`
-            : `${winnerMove.name}架住来招，${loserMove.name}力道去了大半`
-        );
-        if (winnerMove.onCounterSuccessEnergyGain) {
-          if (winnerIsA) result.energyDeltaA += winnerMove.onCounterSuccessEnergyGain;
-          else result.energyDeltaB += winnerMove.onCounterSuccessEnergyGain;
-        }
-        // 挨打反叠印：防御方护甲带 applyMarkOnHit，架住来招时攻方触及衣料反沾内伤
-        applyMarkOnHitCheck(winnerMove, winnerIsA ? "A" : "B", winnerIsA ? "B" : "A");
+        resolveStatusWin(rule.winner === "A");
       }
-    }
-  }
+    },
+    interrupt: () => resolveAttackWin(rule.winner === "A"),
+    counterStatus: () => {
+      const statusTag = sideA.move.type === MOVE_TYPE.STATUS ? "A" : "B";
+      const attackTag = statusTag === "A" ? "B" : "A";
+      result.counterStatus = rule.counterKind;
+      const statusWins = rule.counterKind === "reflect"
+        ? true
+        : decideFirst(sideA, sideB) === statusTag;
+      if (rule.counterKind === "control") result.speedWinner = statusWins ? statusTag : attackTag;
+      result.matchup = statusWins ? statusTag : attackTag;
+      if (statusWins) resolveStatusWin(statusTag === "A", rule.counterKind);
+      else resolveAttackWin(attackTag === "A", { controlCounter: true });
+    },
+    block: () => {
+      resolveDefenseBlock(result, sideA, sideB, rule.winner === "A", {
+        calcBaseDamage,
+        calcDefenseValue,
+        applyMarkOnHitCheck,
+      });
+    },
+  };
+  handlers[rule.resolve]();
 
   // 能量结算：双方按自己招式扣能量（叠加封穴带来的临时耗气惩罚），回气招回能量
   const costA = (sideA.move.energyCost ?? 0) + (sideA.costPenalty ?? 0);
@@ -355,10 +324,16 @@ export function resolveTurn(sideA, sideB) {
   if (sideA.move.energyRestore) result.energyDeltaA += sideA.move.energyRestore;
   if (sideB.move.energyRestore) result.energyDeltaB += sideB.move.energyRestore;
 
-  // 疗伤：按最大气血比例回血，无条件生效（与回气一致，不被相克打断）；实际加血由 DuelScreen
-  // 夹到上限。用疗伤这回合仍可能挨打，净值决定续航。
-  if (sideA.move.hpRestore) { result.hpRestoreA = Math.round((sideA.hp?.[1] ?? 100) * sideA.move.hpRestore); result.notes.push(`${sideA.move.name}运转真气自疗，气血回复`); }
-  if (sideB.move.hpRestore) result.hpRestoreB = Math.round((sideB.hp?.[1] ?? 100) * sideB.move.hpRestore);
+  // 疗伤只在招式实际生效时结算；被攻击打断或被抢先点穴截断时不回血。
+  // 实际加血由 DuelScreen 夹到上限。
+  if (sideA.move.hpRestore && !result.interruptedA && !result.cancelledA) {
+    result.hpRestoreA = Math.round((sideA.hp?.[1] ?? 100) * sideA.move.hpRestore);
+    result.notes.push(`${sideA.move.name}运转真气自疗，气血回复`);
+  }
+  if (sideB.move.hpRestore && !result.interruptedB && !result.cancelledB) {
+    result.hpRestoreB = Math.round((sideB.hp?.[1] ?? 100) * sideB.move.hpRestore);
+    result.notes.push(`${sideB.move.name}运转真气自疗，气血回复`);
+  }
 
   // 蓄势：把 nextAttackBonus 记成"给下回合的威力加成"（真正生效，不再只是文字）
   if (sideA.move.nextAttackBonus) { result.pendingAtkBonusToA = sideA.move.nextAttackBonus; result.notes.push("蓄势已成，下一击威力大涨"); }

@@ -59,7 +59,7 @@ describe("修战报重复：攻击克状态 与 状态克防御 是两个分支"
   it("攻击克状态时不该跑状态招的效果（此前会顺带施加状态）", () => {
     const r = resolveTurn(
       side("碎岩击", "攻击", 1),
-      side("乱心指", "状态", 0, { confuseChance: 1 }),
+      side("乱心指", "状态", 0, { applyStatus: "淬毒", statusChance: 1 }),
     );
     expect(r.statusAppliedToB).toBeFalsy();
     expect(r.statusAppliedToA).toBeFalsy();
