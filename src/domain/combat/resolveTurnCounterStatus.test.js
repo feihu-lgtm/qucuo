@@ -84,6 +84,17 @@ describe("attack and counter-status resolution", () => {
     expect(result.damageToB).toBeGreaterThan(0);
   });
 
+  it("keeps a potion-style item heal when the drinker is interrupted", () => {
+    const result = resolveTurn(
+      side("碎岩击", MOVE_TYPE.ATTACK),
+      side("服药", MOVE_TYPE.STATUS, { fromItem: true, hpRestore: 0.2 }),
+    );
+
+    expect(result.interruptedB).toBe(true);
+    expect(result.damageToB).toBeGreaterThan(0);
+    expect(result.hpRestoreB).toBe(20);
+  });
+
   it("lets a reflect status win, block the attack, apply status, and return reflected damage", () => {
     const result = resolveTurn(
       side("直拳", MOVE_TYPE.ATTACK),
