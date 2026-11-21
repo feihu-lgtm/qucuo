@@ -285,6 +285,26 @@ export function usePrivateTalk({
           affDelta = 0; // 判不了就不替她表态
           traceStep(_wt, "结算·软判定", "skip", "旁白观感判不了，本轮好感不变");
         }
+      } else if (!inSeaNow && !narrator.confessed && apiCfg.softSettleEnabled === false && affDelta > 0) {
+        // softSettleEnabled 关着的兜底：好感照旧 +1，但日上限仍要管——这条路的节流
+        // 不走软结算（narratorDailyDelta），沿用原来手工账本，否则私聊一天就能刷满门槛。
+        const led = varTreeRef.current.世界?.好感日增;
+        const day = Math.floor((timeRef.current || 0) / 24);
+        const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
+        const already = Number(gained["旁白"]) || 0;
+        const room = Math.max(0, WHISPER_AFFECTION_RULES.daily - already);
+        affDelta = Math.min(affDelta, room);
+        if (affDelta <= 0) {
+          addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
+        } else {
+          gained["旁白"] = already + affDelta;
+          setVarTree(prev => {
+            const next = JSON.parse(JSON.stringify(prev || {}));
+            if (!next.世界) next.世界 = { 威望: 0 };
+            next.世界.好感日增 = { dayStamp: day, gained };
+            return next;
+          });
+        }
       }
 
       // 把这轮私聊也计入主引擎共享的对话历史，让旁白（以及之后的叙事）都能"记得"这次私聊
