@@ -26,10 +26,15 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
     return status;
   }
 
-  // 条件步触发：CLI 里按单步走原路径（移动/交易/切磋/自由文本）。
+  // 条件步触发：CLI 里按单步走原路径——立即结算类走 stepEffect，交互类走 runDeferred，自由文本照原文。
   async function fireTriggerStep(step, turn) {
     traceNode(turn, "行动识别·触发", "pass", `「${step.condition?.detail || ""}」应验，触发：${describeAction(step)}`);
-    return runDeferred(step, true);
+    if (DEFERRED_KINDS.has(step.kind)) return runDeferred(step, true);
+    if (step.kind === ACTION_KINDS.OTHER || step.kind === ACTION_KINDS.TALK) return runFreeText(step.text, { echoCommand: true });
+    const result = stepEffect(getState(), step);
+    if (!result) return 0;
+    if (result.logs?.length) emit(result.logs.map((entry) => entry.text).join("\n"));
+    return applyFeature(result);
   }
 
   async function execute(line, actions) {
@@ -42,7 +47,6 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
     let status = 0;
     const armed = armIntentTriggers(plan.triggers);
     if (armed.length) traceNode(turn, "行动识别·触发", "pass", `挂起 ${armed.length} 个条件步：${armed.map((entry) => describeAction(entry.step)).join("；")}`);
-    if (plan.refused) status = Math.max(status, await fireTriggerStep(plan.refused, turn));
     for (const step of plan.valid) {
       if (DEFERRED_KINDS.has(step.kind)) continue;
       const result = stepEffect(getState(), step);
@@ -55,6 +59,8 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
       status = Math.max(status, await runFreeText(line, { intentPlan: plan, intentPlanNote: note, echoCommand: true }));
     }
     for (const step of plan.valid) if (DEFERRED_KINDS.has(step.kind)) status = Math.max(status, await runDeferred(step, single));
+    // 「被拒」触发在已核准步骤都跑完之后才发，免得它抢走前面步骤要用的资源。
+    if (plan.refused) status = Math.max(status, await fireTriggerStep(plan.refused, turn));
     for (const step of plan.freeSteps || []) status = Math.max(status, await runFreeText(step.text, { echoCommand: true }));
     return status;
   }
