@@ -6,6 +6,7 @@ import { tryLearnFromMaster, tryStealFrom } from "../../domain/kungfu/learnSkill
 import { isNpcAngry, stealSuccessRate } from "../../domain/combat/stealSystem.js";
 import { duelAffGain, duelDropChance, duelPotGain, TEAMWORK_GAIN } from "../../domain/combat/duelSettleMath.js";
 import { random } from "../../core/rng.js";
+import { buildDuelReportRounds } from "../../domain/combat/duelReport.js";
 import { bar } from "../../utils/mudHelpers.js";
 import { QUEST_TYPE } from "../../domain/quests/questTypes.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
@@ -389,7 +390,7 @@ function recapBattleLog(battleLog) {
 
 export function settleNpcDuel(state, npc, {
   outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, dodgeStolenItems, pendingQuestBranch,
-  now = Date.now(), rng = random, createRespawnNpc,
+  reportFollows = false, now = Date.now(), rng = random, createRespawnNpc,
 } = {}) {
   if (!npc) return {};
   const working = {
@@ -405,21 +406,18 @@ export function settleNpcDuel(state, npc, {
   };
   const changes = {};
   const logs = [];
+  const reportRounds = buildDuelReportRounds(battleLog, { playerName: working.char.name || "你", npcName: npc.name || "对手" });
 
   if (outcome === "win" && (npc.hostile || npc.tag === "黑风寨山贼" || state.varTree?.角色?.[npc.name]?.生气状态?.escalated) && snowQuestActive(state)) {
     addChange(changes, working, "flags", (f) => [...new Set([...f, "snow_spirit_duel"])]);
   }
   if (Array.isArray(battleLog) && battleLog.length) {
     const foe = npc.name || "对手";
-    const battleLogs = [{ t: "sys", text: `　── 与${foe}切磋 · 逐回合 ──` }];
-    for (const entry of battleLog) {
-      if (entry.round && entry.teamText) {
-        battleLogs.push({ t: "desc", text: `  第${entry.round}回合 ${entry.teamText}` });
-      } else if (entry.round && entry.playerMove) {
-        battleLogs.push({ t: "desc", text: `  第${entry.round}回合 你「${entry.playerMove}」 对 ${foe}「${entry.npcMove}」${entry.dmgToNpc > 0 ? `　${foe}−${entry.dmgToNpc}` : ""}${entry.dmgToPlayer > 0 ? `　你−${entry.dmgToPlayer}` : ""}` });
-      }
+    const battleLogs = [{ t: "sys", text: `　── 与${foe}切磋 ──` }];
+    if (!reportFollows) {
+      battleLogs.push(...reportRounds.map((entry) => ({ t: "desc", text: `  第${entry.round}回合 ${entry.text}` })));
     }
-    if (battleLogs.length > 1) logs.push(...battleLogs);
+    logs.push(...battleLogs);
   }
 
   if (working.char.pendingCombatBuff) {
@@ -623,6 +621,7 @@ export function settleNpcDuel(state, npc, {
     factId,
     cue,
     recap,
+    reportRounds,
     outcomeText,
     recapNote: recapNote.slice(0, 60),
   };

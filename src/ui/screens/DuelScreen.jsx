@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { QUALITY_COLOR, computeEquippedStats, effectiveSpecial, mergeItemEffects } from "../../domain/economy/equipment.js";
 import { MOVE_TYPE } from "../../domain/combat/moveTypes.js";
 import { resolveTurn, applyEndOfTurnStatus } from "../../domain/combat/resolveTurn.js";
+import { createDuelRoundMetadata } from "../../domain/combat/duelReport.js";
 import { decideNpcMove } from "../../domain/combat/aiDecision.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { getDefaultProfile } from "../../domain/combat/personalityProfile.js";
@@ -246,8 +247,8 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
         { statusSlots: newPlayerStatus, hp: [newPlayerHp, playerHp[1]] },
         { statusSlots: newNpcStatus, hp: [newNpcHp, npcHp[1]] },
       );
-      let finalPlayerHp = Math.max(0, newPlayerHp - endTick.statusDamageA);
-      let finalNpcHp = Math.max(0, newNpcHp - endTick.statusDamageB);
+      let finalPlayerHp = endTick.hpAfterA;
+      let finalNpcHp = endTick.hpAfterB;
 
       // 复活（涅槃引 rebirthOnce）：气血归零时，若装备带此特效且本场未用过，
       // 回复50%气血续命一次。用 ref 记录本场是否已触发，保证一场只复活一次。
@@ -330,10 +331,8 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
         playerMove: playerMove.name,
         npcMove: npcMove.name,
         matchup: result.matchup, // 'A'=你克制 'B'=对方克制 'tie'=同类
-        dmgToNpc: result.damageToB,
-        dmgToPlayer: result.damageToA,
-        playerEnergyLeft: newPlayerEnergy,
-        npcEnergyLeft: newNpcEnergy,
+        ...createDuelRoundMetadata(result, endTick, [finalPlayerHp, playerHp[1]], [finalNpcHp, npcHp[1]]),
+        playerEnergyLeft: newPlayerEnergy, npcEnergyLeft: newNpcEnergy,
         notes: result.notes,
         statusLog: [...(endTick.logA || []), ...(endTick.logB || [])],
       }]);

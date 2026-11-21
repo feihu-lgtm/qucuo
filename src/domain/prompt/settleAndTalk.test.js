@@ -120,13 +120,31 @@ describe("AI duelRequest", () => {
   });
 
   it("duel-report prompt permits the requested report without opening another duel", () => {
+    const duelReport = {
+      rounds: [{ round: 1, text: "陈尧天一记野球拳正中才旦", aiData: "才旦 57/60（健旺）" }],
+    };
     const { phiBlock, phiRules } = buildSysBase(
       220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "full",
-      { hasNpc: true, duelReport: true },
+      { hasNpc: true, duelReport },
     );
     expect(phiBlock.content).toContain('"output"');
     expect(phiBlock.content).not.toContain('"duelRequest"');
     expect(phiRules).not.toContain("战斗叙事边界");
+    expect(phiRules).toContain("恰好有N+1项");
+    expect(phiRules).toContain("【第1回合】");
+    expect(phiRules).toContain("【结局】");
+    expect(phiRules).toContain("健旺（≥60%）");
+    expect(phiRules).toContain("受创（25%–<60%）");
+    expect(phiRules).toContain("将倒（<25%）");
+    expect(phiRules).toContain("玩家与 NPC 一视同仁");
+    expect(phiRules).toContain("才旦 57/60（健旺）");
+
+    const dual = buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", true, "full",
+      { hasNpc: true, duelReport },
+    );
+    expect(dual.phiRules).toContain("恰好分成N+1个段落");
+    expect(dual.phiRules).toContain("受创（25%–<60%）");
   });
 
   it("dual-call extraction prompt includes the accepted-spar rule", () => {

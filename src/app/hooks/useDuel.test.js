@@ -122,7 +122,7 @@ describe("duel battle report", () => {
       vi.runOnlyPendingTimers();
 
       expect(act).toHaveBeenCalledWith(expect.stringContaining("连贯的整场战报"), [], {
-        silentCmd: true, preserveHp: true, keepUndo: true, duelReport: true,
+        silentCmd: true, preserveHp: true, keepUndo: true, duelReport: { rounds: [] },
       });
     } finally {
       vi.useRealTimers();

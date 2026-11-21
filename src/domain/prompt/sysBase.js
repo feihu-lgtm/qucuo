@@ -8,6 +8,16 @@ import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL, buildTalkItemRule } 
 import { buildSeaOfMindRule } from "../narrator/seaOfMind.js";
 import { makeBlock } from "./tavernMapping.js";
 
+function buildDuelReportRules(duelReport, narrativeOnly) {
+  if (!duelReport) return "";
+  const rounds = Array.isArray(duelReport.rounds) ? duelReport.rounds : [];
+  const battleData = rounds.map((round) => round.aiData || `第${round.round}回合：${round.text || ""}`).join("\n");
+  const segmentShape = narrativeOnly
+    ? "散文必须恰好分成N+1个段落，每段首句以对应标记开头"
+    : "顶层 output 数组必须恰好有N+1项，每项以对应标记开头";
+  return `\n【切磋战报逐回合规矩】本场系统已结算${rounds.length}回合。${segmentShape}：依次为${rounds.map((round) => `「【第${round.round}回合】」`).join("、") || "无回合段"}，最后一段为「【结局】」。每回合段只能写该回合给定的招式、伤害与状态，不得补造、调换、合并回合或改动任何数值；结局段只写本场结果。\n受创者的回合后气血比例决定措辞：健旺（≥60%）写得如无事发生；受创（25%–<60%）写出明显震荡；将倒（<25%）写成眼看就要倒下。此规则对玩家与 NPC 一视同仁。\n系统给定战况如下，只能据此叙述：\n${battleData || "本场没有逐回合记录。"}\n`;
+}
+
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
 // 返回 SillyTavern 13 位置风格的 system 消息数组，每条带 tavernBlock/tavernLabel。
 export function buildSysBase(targetWordCount, narratorState, scenario, budgetInstruction, embeddingEnabled, npcLoreBlock, narrativeOnly = false, scope = "full", opts = {}) {
@@ -196,6 +206,7 @@ ${wantMvu ? `
   // 靠后取优先级，本就不是 prefill。
   const phiRules = [
     scope === "full" && !opts.duelReport ? "\n【战斗叙事边界】任何战斗的招式交锋与胜负结果均由系统战斗结算，叙事不得自行描写。" : "",
+    buildDuelReportRules(opts.duelReport, narrativeOnly),
     narrativeOnly ? buildSettleNarrativeNote(opts) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuNote(opts) : "",
     (!narrativeOnly && isSettle && wantMvu && opts.settleKind !== "duel_invite")

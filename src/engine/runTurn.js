@@ -148,7 +148,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       rawFull = rawFull.replace(/<deal>[\s\S]*?<\/deal>/gi, "").trim();
     }
     narrativeText = rawFull;
-    if (!apiCfg.streamEnabled || apiCfg.apiType === "gemini") {
+    if (!opts.duelReport && (!apiCfg.streamEnabled || apiCfg.apiType === "gemini")) {
       const lines = rawFull.split("\n").map((line) => line.trim()).filter(Boolean);
       addLog(lines.map((text) => ({ t: "desc", text: `  ${text}` })));
     }

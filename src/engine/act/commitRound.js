@@ -22,6 +22,7 @@ import { settleNegotiation as gambleSettleNegotiation } from "../../domain/econo
 import { commitModelFlags } from "./commitFlags.js";
 import { DIR_DXY } from "../../utils/mudHelpers.js";
 import { filterGhostCommands, findScriptOverride } from "./commitHelpers.js";
+import { interleaveDuelReport } from "../../domain/combat/duelReport.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
@@ -132,7 +133,10 @@ export function commitRound(d) {
   // 一次AI返回可能同时命中好几个stage的flag（理论上少见，但为免遗漏，
   // 按 QUCUO_QUESTS 顺序找到第一个命中的即可，不叠加展示多段台本）。
   const scriptOverride = findScriptOverride(d.p.delta?.flags_add || [], d.questProgress);
-  if (scriptOverride) {
+  if (d.duelReport?.rounds) {
+    const narrative = Array.isArray(d.p.output) && d.p.output.length ? d.p.output : d.narrativeText || d.rawFull || "";
+    d.addLog(interleaveDuelReport(d.duelReport.rounds, narrative));
+  } else if (scriptOverride) {
     d.addLog(scriptOverride.split("\n").filter(line => line.length).map(t => ({ t: "desc", text: "  " + t })));
   } else if (d.p.output) {
     d.addLog(d.p.output.map(t => ({ t: "desc", text: "  " + t })));

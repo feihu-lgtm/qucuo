@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MOVE_TYPE } from "../../domain/combat/moveTypes.js";
-import { learnNpcSkill } from "./logic.js";
+import { learnNpcSkill, settleNpcDuel } from "./logic.js";
 
 const npc = {
   name: "师父",
@@ -19,6 +19,40 @@ const makeState = (overrides = {}) => ({
   skills: [],
   varTree: { 角色: { 师父: { 好感度: 40 } }, 世界: {} },
   ...overrides,
+});
+
+describe("NPC duel report settlement", () => {
+  it("returns report rounds and suppresses their old log rows when a report follows", () => {
+    const state = {
+      char: { name: "少侠", hp: [60, 60], special: { 气运: 5 }, money: 100 },
+      room: { name: "鱼定村", npcs: [], items: [] },
+      varTree: { 角色: {}, 世界: {} },
+      inv: [], flags: [], skills: [], pot: 0, questProgress: {}, time: 0,
+    };
+    const result = settleNpcDuel(state, { name: "师父", levelCap: 1 }, {
+      outcome: "win",
+      reportFollows: true,
+      battleLog: [{
+        round: 1,
+        playerMove: "野球拳",
+        npcMove: "铁布衫",
+        playerMoveType: "攻击",
+        npcMoveType: "防御",
+        dmgToNpc: 3,
+        dmgToPlayer: 0,
+        hpAfterPlayer: [60, 60],
+        hpAfterNpc: [57, 60],
+      }],
+    });
+
+    expect(result.reportRounds[0]).toMatchObject({
+      round: 1,
+      text: expect.stringContaining("师父 −3"),
+      aiData: expect.stringContaining("铁布衫/防御"),
+    });
+    expect(result.logs[0]).toMatchObject({ t: "sys", text: "　── 与师父切磋 ──" });
+    expect(result.logs.some(({ text }) => text?.includes("第1回合"))).toBe(false);
+  });
 });
 
 describe("NPC skill-learning logic", () => {

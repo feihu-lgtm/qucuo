@@ -70,6 +70,7 @@ export function useDuel({
       outcome,
       loot,
       battleLog,
+      reportFollows: true,
       grownMoveset,
       usedItems,
       remainingHp,
@@ -86,7 +87,7 @@ export function useDuel({
     if (result.factId) aiSummarizeFact(result.factId, result.cue);
     if (finishedNpc) {
       setTimeout(() => {
-        act(`切磋结束。经过：${result.recap || "双方试探几招，未及深入"}。结果：${result.outcomeText}。请把上面每回合的说书片段串成一篇连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true, keepUndo: true, duelReport: true });
+        act(`切磋结束。经过：${result.recap || "双方试探几招，未及深入"}。结果：${result.outcomeText}。请把每回合的既定战况写成连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true, keepUndo: true, duelReport: { rounds: result.reportRounds } });
       }, 0);
       jotNote({
         text: result.recapNote,

@@ -151,11 +151,10 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
         const redirect = e.targetRedirected ? "（原目标已倒，转火）" : "";
         const dmg = [e.dmgToTarget > 0 ? `${e.targetName}受创${e.dmgToTarget}` : null, e.dmgToActor > 0 ? `${e.actorName}受创${e.dmgToActor}` : null].filter(Boolean).join("，");
         return {
-          actorId: e.actorId,
+          ...e,
           // 破折号去掉，改用句号断开：原来"…相抗——占了上风。"读起来像半句话被硬接上，
           // 而且项目的成文铁律本来就写着"禁冒号破折号"。
           text: `${e.actorName}以「${e.actorMove}」击向${e.targetName}${redirect}${clash}。${updown}${dmg ? "。" + dmg : ""}。`,
-          notes: e.notes || [], statusLog: e.statusLog || [],
         };
       });
       setRounds(prev => [...prev, { round, lines }]);
@@ -183,7 +182,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
     // 掉落只从主敌（enemies[0]）身上roll——跟1v1同一个 rollBattleLoot；
     // draw 按"罢手"处理（外层 outcome 三分支：win/lose/其他=不了了之）。
     const loot = outcome === "win" ? rollBattleLoot(excludeDodgeStolenItems(enemies[0], dodgeStolenItems)) : null;
-    const battleLog = rounds.flatMap(r => r.lines.map(l => ({ round: r.round, teamText: l.text, narration: null })));
+    const battleLog = rounds.flatMap(r => r.lines.map(l => ({ ...l, round: r.round, teamText: l.text, narration: null })));
     // 永久成长型招式的威力累积在玩家单位的 movesetLocal 里，回传外层持久化
     // （跟 DuelScreen 第四参同一约定）；2v2 v1 暂无战斗内道具栏，usedItems 恒空。
     onFinish?.(outcome === "draw" ? null : outcome, loot, battleLog, playerUnit.movesetLocal, [], playerUnit.hp, dodgeStolenItems);

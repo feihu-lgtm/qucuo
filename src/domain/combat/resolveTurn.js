@@ -109,6 +109,8 @@ function decideFirst(sideA, sideB) {
 export function resolveTurn(sideA, sideB) {
   const result = {
     matchup: null, speedWinner: null,
+    moveNameA: sideA.move?.name || "未明招式", moveNameB: sideB.move?.name || "未明招式",
+    moveTypeA: sideA.move?.type || "状态", moveTypeB: sideB.move?.type || "状态",
     damageToA: 0, damageToB: 0,
     energyDeltaA: 0, energyDeltaB: 0,
     statusAppliedToA: null, statusAppliedToB: null,
@@ -392,8 +394,7 @@ export function applyEndOfTurnStatus(sideA, sideB) {
   const tickA = tickStatusEffects(sideA.statusSlots, sideA.hp[1]);
   const tickB = tickStatusEffects(sideB.statusSlots, sideB.hp[1]);
   return {
-    statusSlotsA: tickA.slots, statusSlotsB: tickB.slots,
-    statusDamageA: tickA.damage, statusDamageB: tickB.damage,
-    logA: tickA.log, logB: tickB.log,
+    statusSlotsA: tickA.slots, statusSlotsB: tickB.slots, statusDamageA: tickA.damage, statusDamageB: tickB.damage,
+    hpAfterA: Math.max(0, sideA.hp[0] - tickA.damage), hpAfterB: Math.max(0, sideB.hp[0] - tickB.damage), logA: tickA.log, logB: tickB.log,
   };
 }

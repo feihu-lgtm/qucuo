@@ -43,7 +43,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
-      duelReport: !!d.duelReport,
+      duelReport: d.duelReport || null,
       snowLeopardGift: d.settleKind === "gift" && d.settleNpc === "雪豹" && !!d.snowLeopardContext,
       giftInfo: d.giftInfo || null,
       settleBeast: !!d.settleBeast,
@@ -203,7 +203,7 @@ ${dealFmt}`;
   const effectiveCfg = applyPresetOverrides(d.apiCfg, getActivePreset());
   const ai = d.ai || webAi;
   if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
-  if (effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini") {
+  if (effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini" && !d.duelReport) {
     const streamLogIndex = { current: null };
     d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
     d.setLog(l => {

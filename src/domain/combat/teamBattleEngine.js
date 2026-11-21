@@ -162,6 +162,8 @@ export function resolveOneOnOne(attackerUnit, attackerMove, defenderUnit, defend
 
   newAttacker = { ...newAttacker, hp: [finalAttackerHp, newAttacker.hp[1]], statusSlots: endTick.statusSlotsA };
   newDefender = { ...newDefender, hp: [finalDefenderHp, newDefender.hp[1]], statusSlots: endTick.statusSlotsB };
+  result.statusDamageA = endTick.statusDamageA;
+  result.statusDamageB = endTick.statusDamageB;
 
   // 复活特效（涅槃引 rebirthOnce）：跟 DuelScreen.jsx 一致，一场限一次。
   if (finalAttackerHp <= 0 && newAttacker.equipEffects?.rebirthOnce && !newAttacker.rebirthUsed) {
@@ -172,6 +174,10 @@ export function resolveOneOnOne(attackerUnit, attackerMove, defenderUnit, defend
     newDefender = { ...newDefender, hp: [Math.round(newDefender.hp[1] * 0.5), newDefender.hp[1]], rebirthUsed: true };
     result.notes.push(`${newDefender.name}气血将尽，却凭一缕异香生生续住了性命`);
   }
+  result.hpAfterA = newAttacker.hp;
+  result.hpAfterB = newDefender.hp;
+  result.statusSlotsAfterA = newAttacker.statusSlots;
+  result.statusSlotsAfterB = newDefender.statusSlots;
 
   newAttacker = { ...newAttacker, alive: newAttacker.hp[0] > 0 };
   newDefender = { ...newDefender, alive: newDefender.hp[0] > 0 };
@@ -277,11 +283,22 @@ export function runTeamTurn(allyUnits, enemyUnits, intents) {
 
     turnLog.push({
       actorId: actor.id, actorName: actor.name, actorMove: intent.move.name,
+      actorMoveType: result.moveTypeA,
       targetId: target.id, targetName: target.name,
       targetMove: targetReallyFacesActor ? targetMove.name : null, // 裸奔时不展示"目标用了什么招"，因为它根本没把招用在这
+      targetMoveType: targetReallyFacesActor ? result.moveTypeB : null,
       targetWasIdle: !targetReallyFacesActor,
       matchup: result.matchup, notes: result.notes, dodgeSuccessActor: result.dodgeSuccessA, dodgeSuccessTarget: result.dodgeSuccessB,
       dmgToTarget: result.damageToB, dmgToActor: result.damageToA,
+      statusDamageToActor: result.statusDamageA,
+      statusDamageToTarget: result.statusDamageB,
+      hpAfterActor: result.hpAfterA,
+      hpAfterTarget: result.hpAfterB,
+      statusSlotsAfterActor: result.statusSlotsAfterA,
+      statusSlotsAfterTarget: result.statusSlotsAfterB,
+      worseName: (result.damageToA + result.statusDamageA) === (result.damageToB + result.statusDamageB)
+        ? "平手"
+        : (result.damageToA + result.statusDamageA) > (result.damageToB + result.statusDamageB) ? actor.name : target.name,
       statusLog: [...(statusLogA || []), ...(statusLogB || [])],
       targetRedirected: intent.targetId != null && intent.targetId !== target.id,
     });
