@@ -1,6 +1,7 @@
 import { QUALITY, CATEGORY_LABEL, makeItem } from "../../domain/economy/equipment.js";
 import { makeItemSmart, CATALOG_INDEX } from "../../domain/items/catalog.js";
 import { markNpcAsKnown as markNpcKnown } from "../../domain/npc/npcAwareness.js";
+import { computeGiftWeight } from "../../domain/npc/giftWeight.js";
 import { markCarriedLost } from "../../domain/npc/roomNpcs.js";
 import { tryLearnFromMaster, tryStealFrom } from "../../domain/kungfu/learnSkill.js";
 import { isNpcAngry, stealSuccessRate } from "../../domain/combat/stealSystem.js";
@@ -105,6 +106,8 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   if (!item) return { logs: [{ t: "err", text: "  背包中没有这件物品。" }] };
   const itemName = typeof item === "string" ? item : item.name;
   const giftInfo = describeGiftForPrompt(item);
+  const weight = computeGiftWeight(npc, typeof item === "string" ? CATALOG_INDEX[item] || {} : item);
+  giftInfo.weight = weight;
   const inv = state.inv || [];
   let nextInv = inv;
   if (typeof item === "object" && item.id != null) {
@@ -113,6 +116,7 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     const index = inv.findIndex((entry) => (typeof entry === "string" ? entry : entry.name) === itemName);
     if (index !== -1) nextInv = [...inv.slice(0, index), ...inv.slice(index + 1)];
   }
+  if (nextInv.length === inv.length) return { logs: [{ t: "err", text: "  背包中没有这件物品。" }] };
 
   let deliveredQuest = null;
   for (const quest of QUCUO_QUESTS) {
@@ -159,6 +163,26 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     settle: command,
     settleOptions: { settleNpc: npc.name, settleKind: isAngry ? "appease" : "gift", giftInfo },
     deliveredQuest: deliveredQuest?.quest || null,
+  };
+}
+
+export function giftSilver(state, npc, amount, now = Date.now()) {
+  if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
+  if (!Number.isSafeInteger(amount) || amount <= 0) return { logs: [{ t: "err", text: "  礼金须为正整数两。" }] };
+  if ((state.char?.money ?? 0) < amount) return { logs: [{ t: "err", text: "  随身银两不足，未送出。" }] };
+  const angry = isNpcAngry(state.varTree, npc.name);
+  const itemName = `${amount}两银子`;
+  return {
+    changes: {
+      char: updateField("char", add("char.money", -amount)),
+      varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }),
+    },
+    settle: `将${itemName}赠予${npc.name}`,
+    settleOptions: {
+      settleNpc: npc.name,
+      settleKind: angry ? "appease" : "gift",
+      giftInfo: { itemName, amount, weight: computeGiftWeight(npc, { amount }) },
+    },
   };
 }
 

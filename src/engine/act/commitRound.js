@@ -46,9 +46,19 @@ export function commitRound(d) {
   const _knownChars = new Set(Object.keys(d.varTreeRef.current.角色 || {}));
 
   d.mvuCommands = filterGhostCommands(d.mvuCommands, systemAcceptedNames, _knownChars);
+  if (d.giftSettlement) {
+    const { npc } = d.giftSettlement;
+    const command = d.mvuCommands.find(({ op, path, value }) =>
+      op === "add" && path === `角色.${npc}.好感度` && Number.isFinite(value));
+    d.mvuCommands = command ? [command] : [];
+  }
   if (d.mvuCommands.length) {
     d.setVarTree(prev => {
-      const { tree, applied, rejected, logs } = applyMvuCommands(prev, d.mvuCommands, { charm: d.effectiveSpecialNow?.魅力 ?? 5, time: d.time });
+      const { tree, applied, rejected, logs } = applyMvuCommands(prev, d.mvuCommands, {
+        charm: d.effectiveSpecialNow?.魅力 ?? 5,
+        time: d.time,
+        giftRange: d.giftSettlement?.range,
+      });
       // 被裁决拒绝的指令要能在「🧭全流程日志」里看见。此前只 console.warn，
       // 排查"好感怎么没变/剧情怎么没推"时翻不到证据——那正是最需要它的时候。
       if (rejected.length) {

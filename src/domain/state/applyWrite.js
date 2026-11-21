@@ -30,10 +30,11 @@ function writePath(node, [key, ...rest], value) {
   return copy;
 }
 
-function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0 }) {
+function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange }) {
   if (delta > 0) delta *= 1 + (clamp(charm, 0, 10) - 5) * 0.06;
   const { maxDelta, daily } = AFFECTION_RULES.mvu;
   delta = clamp(Math.round(delta), -maxDelta, maxDelta);
+  if (giftRange) delta = clamp(delta, ...giftRange);
   if (delta <= 0) return { state, delta };
   const dayStamp = Math.floor((Number(time) || 0) / 24);
   const last = state.varTree.世界?.好感日增;

@@ -1,5 +1,11 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { commitRound } from "../engine/act/commitRound.js";
+import { parseLocalCommand } from "../engine/localCommands.js";
+import { computeGiftWeight } from "../domain/npc/giftWeight.js";
+import { NPC_POOL, toRoomNpc } from "../domain/npc/npcPool.js";
+import { getResidentNpcs } from "../domain/npc/residentNpcs.js";
+import { callExtraction } from "../domain/prompt/extractionEngine.js";
+import { buildSysBase } from "../domain/prompt/sysBase.js";
 import { deposit, pledge, redeem, withdraw } from "../features/bank/logic.js";
 import { meditate, trainNeigong } from "../features/cultivation/logic.js";
 import { consumeItem, pickGroundItem } from "../features/items/logic.js";
@@ -45,6 +51,71 @@ function baseState() {
     skills: [], pot: 20, exp: 0, time: 25,
   };
 }
+
+const beggar = toRoomNpc(NPC_POOL.find(({ name }) => name === "乞丐老七"));
+const chieftain = getResidentNpcs("鱼定土司").find(({ name }) => name === "桑杰朵杰");
+
+it("values the same silver and the same item differently for a beggar and a chieftain", () => {
+  expect([beggar, chieftain].map((npc) => computeGiftWeight(npc, { amount: 10 }).label))
+    .toEqual(["厚礼", "薄礼"]);
+  expect(computeGiftWeight(chieftain, { amount: 100 }).label).toBe("厚礼");
+  expect([beggar, chieftain].map((npc) => computeGiftWeight(npc, { category: "misc", quality: "白" }).label))
+    .toEqual(["厚礼", "薄礼"]);
+  const item = { id: "礼物", name: "青布", category: "misc", quality: "白" };
+  const gift = giftNpc({ ...baseState(), inv: [item] }, chieftain, item);
+  expect(gift.changes.inv).toEqual([]);
+  expect(gift.settleOptions.giftInfo.weight.label).toBe("薄礼");
+});
+
+it("shares money gifting between web and CLI and rejects insufficient cash or absent recipients", () => {
+  const state = { ...baseState(), room: { name: "市集", npcs: [chieftain] } };
+  for (const surface of ["web", "cli"]) {
+    const gift = parseLocalCommand("给桑杰朵杰 10元", state, { surface }).result;
+    expect(applyChanges(state, gift).char.money).toBe(20);
+    expect(gift.settleOptions.giftInfo.weight.label).toBe("薄礼");
+    expect(parseLocalCommand("给桑杰朵杰100两", state, { surface }).result.changes).toBeUndefined();
+    expect(parseLocalCommand("给乞丐老七 10两", state, { surface }).result.changes).toBeUndefined();
+  }
+});
+
+it("passes the band and its reaction to both narration and extraction", async () => {
+  const state = { ...baseState(), room: { name: "市集", npcs: [chieftain] } };
+  const { settleOptions } = parseLocalCommand("给桑杰朵杰 10元", state).result;
+  for (const narrativeOnly of [true, false]) {
+    const { phiRules } = buildSysBase(200, {}, "", "", false, "", narrativeOnly, "settle", settleOptions);
+    expect(phiRules).toContain("分量：薄礼");
+    expect(phiRules).toContain("礼貌致谢");
+    if (!narrativeOnly) expect(phiRules).toContain("0~+1");
+  }
+  const chat = vi.fn(async () => ({ text: "{}" }));
+  await callExtraction("UNKNOWN", "对方道谢。", state, {}, settleOptions, { chat });
+  expect(chat.mock.calls[0][0][0].content).toContain("分量：薄礼");
+  expect(chat.mock.calls[0][0][0].content).toContain("0~+1");
+  expect(chat.mock.calls[0][0][0].content).not.toContain("@赠礼");
+});
+
+it.each([0, 11])("clamps the gift and preserves the daily cap (already gained %s)", (gained) => {
+  const state = baseState();
+  state.room.npcs = [chieftain, beggar];
+  state.varTree.角色[chieftain.name] = { 好感度: 60 };
+  state.varTree.世界.好感日增 = { dayStamp: 1, gained: { [chieftain.name]: gained } };
+  const { deps } = makeDeps(state, { char: { money: 0 }, delta: { items_rm: ["药丸"] } }, {
+    giftAlreadySettled: true,
+    effectiveSpecialNow: { 魅力: 10 },
+    giftSettlement: { npc: chieftain.name, range: computeGiftWeight(chieftain, { amount: 100 }).range },
+    mvuCommands: [
+      { op: "set", path: `角色.${chieftain.name}.好感度`, value: 100 },
+      { op: "add", path: `角色.${beggar.name}.好感度`, value: 50 },
+      { op: "add", path: `角色.${chieftain.name}.好感度`, value: 50 },
+      { op: "add", path: `角色.${chieftain.name}.好感度`, value: 50 },
+    ],
+  });
+  commitRound(deps);
+  expect(state.varTree.角色[chieftain.name].好感度).toBe(gained ? 61 : 65);
+  expect(state.varTree.角色[beggar.name]?.好感度).toBeUndefined();
+  expect(state.char.money).toBe(30);
+  expect(state.inv).toEqual(["药丸", "药丸"]);
+});
 
 it.each([{}, { gm: true }, { gm: true, preserveHp: true }, { isTalk: true }])(
   "keeps resolved proposal fields, drop order and silence (%j)", (overrides) => {

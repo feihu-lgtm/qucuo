@@ -61,6 +61,9 @@ export async function playTurn(ctx, cmd, opts = {}) {
     const committed = withTurnContext(trace, () => (ctx.commitRound || commitRound)({
       ...ctx.commitDeps(turn),
       duelReport: opts.duelReport || null,
+      giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
+        ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
+      giftAlreadySettled: !!opts.giftInfo?.weight,
       _trace: trace,
     }));
     await Promise.resolve();
