@@ -18,7 +18,7 @@ function formatAngerAttempt(attempt) {
     : label;
 }
 
-export function buildAngryNote(varTree, names = []) {
+export function buildAngryNote(varTree, names = [], { mvu = false } = {}) {
   const npcNames = Array.from(new Set((Array.isArray(names) ? names : [names])
     .map((entry) => typeof entry === "string" ? entry : entry?.name)
     .filter(Boolean)));
@@ -34,7 +34,7 @@ export function buildAngryNote(varTree, names = []) {
       : "此前暂无求和记录";
     return `${name}(${angry.reason}，剩${angry.turnsLeft}回合平息期限，${history})`;
   });
-  return `\n[社交状态] 在场生气角色：${summaries.join("、")}。结合此前尝试方式，判断玩家本轮行为（道歉/辩解/示好/赠礼等）是否得体、切中要害并真正缓和对方：奏效则在 output 中体现怒气缓和；敷衍或不得体则表现为依然不满。`;
+  return `\n[社交状态] 在场生气角色：${summaries.join("、")}。结合此前尝试方式，判断玩家本轮行为（道歉/辩解/示好/赠礼等）是否得体、切中要害并真正缓和对方：奏效则在 output 中体现怒气缓和；敷衍或不得体则表现为依然不满。${mvu ? "奏效则在 <mvu> 写 _.set('角色.<该角色>.生气解除', true)，可 _.add('角色.<该角色>.好感度', N) 回补（N≤5）；未奏效禁设生气解除。" : ""}`;
 }
 
 export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo) {
@@ -47,7 +47,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     gm, movingDir, lockedDestName, outerDepart, innerRoomName, apiCfg,
   } = input;
   const budgetInstruction = input.buildBudgetInstruction?.(input.intent, cmd, apiCfg.targetWordCount, apiCfg.intentBudgets) || "";
-  const angryNote = buildAngryNote(varTree, (room?.npcs || []).map((npc) => npc.name));
+  const angryNote = buildAngryNote(varTree, (room?.npcs || []).map((npc) => npc.name), { mvu: !apiCfg.extractionEnabled });
   const render = (template) => renderPromptTemplate(template, input, { trace: ctx.onPromptRefMissing }).text;
   const targetNote = activeTarget
     ? render(`[交互目标] 玩家选定了「@activeTarget」作为本轮唯一的互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文的核心——其他在场 NPC 若与该互动无关、或不宜抢戏，本轮不必出场、不必插话。除非玩家输入本身需要多人在场（比如当众宣布什么事），否则 room.npcs 只保留「@activeTarget」和直接相关者即可。\n`)
