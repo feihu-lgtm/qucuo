@@ -1,6 +1,6 @@
 import { withAI } from "../prompt/withAI.js";
 import { applyWrite } from "../state/applyWrite.js";
-import { WHISPER_AFFECTION_RULES } from "../state/fields.js";
+import { WHISPER_AFFECTION_RULES, giftRange } from "../state/fields.js";
 import { SOFT_RULES } from "./softRules.js";
 import { UNKNOWN_CHOICE } from "./judge.js";
 
@@ -15,7 +15,7 @@ function emptyResult(kind) {
 
 // 校验一条 delta：varTree 路径按 mvu 规则裁（与今天提取层落账同一条路）；
 // narrator.affection 不是变量树字段，走普通字段校验并先按私语尺度裁幅。
-function vetDelta(state, delta, ctx) {
+function vetDelta(state, delta, ctx, extra = {}) {
   const command = { ...delta };
   const isNarrator = command.path === "narrator.affection";
   if (isNarrator && command.op === "add") {
@@ -29,6 +29,7 @@ function vetDelta(state, delta, ctx) {
     charm: ctx.charm,
     time: ctx.time,
     giftRange: ctx.giftRange,
+    ...extra,
   });
   if (result.reason) return { rejected: { ...command, reason: result.reason }, state };
   const applied = {
@@ -37,6 +38,20 @@ function vetDelta(state, delta, ctx) {
     ...(result.actualDelta == null ? {} : { actualDelta: result.actualDelta }),
   };
   return { applied, state: result.state, logs: result.logs };
+}
+
+// 旁白好感与 NPC 好感同吃"日上限"账本（世界.好感日增["旁白"]，usePrivateTalk 现状）。
+// 结算层照抄这条：正向增量按当日剩余额度裁，并把账本一起写进 deltas。
+function narratorDailyDelta(state, value, ctx) {
+  if (value <= 0) return { value, ledger: null };
+  const dayStamp = Math.floor((Number(ctx.time) || 0) / 24);
+  const last = state.varTree?.世界?.好感日增;
+  const gained = last?.dayStamp === dayStamp ? { ...(last.gained || {}) } : {};
+  const already = Number(gained["旁白"]) || 0;
+  const value2 = Math.min(value, Math.max(0, WHISPER_AFFECTION_RULES.daily - already));
+  if (value2 <= 0) return { value: 0, ledger: null };
+  gained["旁白"] = already + value2;
+  return { value: value2, ledger: { dayStamp, gained } };
 }
 
 export async function runSoftSettle({ ai, apiCfg, kind, ctx = {} } = {}) {
@@ -59,7 +74,28 @@ export async function runSoftSettle({ ai, apiCfg, kind, ctx = {} } = {}) {
   const result = { kind, target, choice, probs, deltas: [], rejected: [], note: "" };
   let state = { varTree: ctx.varTree || {}, narrator: ctx.narrator || {} };
   for (const delta of rule.deltas(choice, ctx) || []) {
-    const vetted = vetDelta(state, delta, ctx);
+    // 送礼的好感区间跟今天一样喂给 applyWrite（commitRound.js:60 的 giftRange），
+    // 魅力加成不能把它顶出区间；旁白好感先过日上限账本。
+    const extra = {};
+    if (kind === "gift") {
+      const info = ctx.giftInfo || {};
+      extra.giftRange = info.weight?.range || info.range
+        || (info.quality ? giftRange(info.quality) : undefined);
+    }
+    let command = delta;
+    if (delta.path === "narrator.affection" && delta.op === "add") {
+      const daily = narratorDailyDelta(state, delta.value, ctx);
+      if (daily.value <= 0 && delta.value > 0) continue; // 今日额度已满，不加也不写账
+      command = { ...delta, value: daily.value };
+      if (daily.ledger) {
+        // 账本写入是系统记账不是 AI 提议，不走 mvu 白名单
+        const ledgerWrite = vetDelta(state, { path: "世界.好感日增", op: "set", value: daily.ledger }, ctx, { source: "settle" });
+        state = ledgerWrite.state;
+        if (ledgerWrite.applied) result.deltas.push(ledgerWrite.applied);
+        if (ledgerWrite.rejected) result.rejected.push(ledgerWrite.rejected);
+      }
+    }
+    const vetted = vetDelta(state, command, ctx, extra);
     state = vetted.state;
     if (vetted.applied) result.deltas.push(vetted.applied);
     if (vetted.rejected) result.rejected.push(vetted.rejected);

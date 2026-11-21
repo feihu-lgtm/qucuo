@@ -178,6 +178,50 @@ describe("runSoftSettle", () => {
     expect(result.note).toContain("不快");
   });
 
+  it("gift affection stays inside the gift range even at max charm", async () => {
+    const ai = createMockAi(['{"choice":"收下","probs":{"收下":1}}']);
+    const result = await runSoftSettle({
+      ai, apiCfg: {}, kind: "gift",
+      ctx: {
+        npc: "土司", charm: 10, time: 0,
+        varTree: { 角色: { 土司: { 好感度: 0 } }, 世界: { 威望: 0 } },
+        giftInfo: { itemName: "金线软甲", weight: { label: "重金", range: [5, 8] } },
+      },
+    });
+    const gain = result.deltas.find((d) => d.path === "角色.土司.好感度");
+    expect(gain.actualDelta).toBeLessThanOrEqual(8);
+  });
+
+  it("narrator affection respects the daily allowance ledger", async () => {
+    const ai = createMockAi(['{"choice":"投机贴心","probs":{"投机贴心":1}}']);
+    const varTree = {
+      角色: {},
+      世界: { 威望: 0, 好感日增: { dayStamp: 0, gained: { 旁白: 10 } } },
+    };
+    const result = await runSoftSettle({
+      ai, apiCfg: {}, kind: "narrator_affinity",
+      ctx: { narrator: { affection: 50 }, varTree, time: 0, playerSay: "陪你坐坐" },
+    });
+    const gain = result.deltas.find((d) => d.path === "narrator.affection");
+    expect(gain.actualDelta).toBe(2); // 日上限12，已得10，只能再+2
+    const ledger = result.deltas.find((d) => d.path === "世界.好感日增");
+    expect(ledger.finalValue.gained["旁白"]).toBe(12);
+  });
+
+  it("narrator affection adds nothing when today's allowance is exhausted", async () => {
+    const ai = createMockAi(['{"choice":"投机贴心","probs":{"投机贴心":1}}']);
+    const varTree = {
+      角色: {},
+      世界: { 威望: 0, 好感日增: { dayStamp: 0, gained: { 旁白: 12 } } },
+    };
+    const result = await runSoftSettle({
+      ai, apiCfg: {}, kind: "narrator_affinity",
+      ctx: { narrator: { affection: 50 }, varTree, time: 0 },
+    });
+    expect(result.deltas.find((d) => d.path === "narrator.affection")).toBeUndefined();
+    expect(result.deltas.find((d) => d.path === "世界.好感日增")).toBeUndefined();
+  });
+
   it("formatSettleNote wraps the note for the narrative prompt", () => {
     expect(formatSettleNote(null)).toBe("");
     expect(formatSettleNote({ note: "才旦收下了酥油，好感+3" })).toContain("才旦收下了酥油");
