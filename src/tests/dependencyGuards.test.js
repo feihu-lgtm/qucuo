@@ -52,6 +52,9 @@ const ENTRY_WHITELIST = new Set([
   "debug/debug-main.jsx",
   "debug/debug-gamble.jsx",
   "debug/debug-item.jsx",
+  // 记账调用卡片：已登记进 prompt registry，但按设计要求暂不接入正式回合流程
+  // （bookkeep 是阶段四「记账」，待识别/结算/叙事三阶段落地后才接线），暂列白名单。
+  "domain/memory/bookkeep.js",
 ]);
 
 function walkSource(dir, out = []) {
