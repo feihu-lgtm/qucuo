@@ -110,6 +110,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     room: ctx.prompt?.room ?? baseDeps.room,
     activeTarget: ctx.prompt?.activeTarget ?? baseDeps.activeTarget,
     talkTarget: ctx.prompt?.talkTarget ?? ctx.prompt?.recall?.talkTarget ?? baseDeps.talkTarget,
+    softSettle: opts.softSettle,
     cmd,
     ai,
   };

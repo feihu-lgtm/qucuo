@@ -112,6 +112,8 @@ describe("runSoftSettle", () => {
     });
     expect(result.target).toBe("才旦");
     expect(result.choice).toBe("奏效");
+    expect(result.varTree.角色.才旦.生气解除).toBe(true);
+    expect(result.varTree.角色.才旦.好感度).toBe(23);
     expect(result.deltas).toContainEqual({
       path: "角色.才旦.生气解除", op: "set", value: true, finalValue: true,
     });
@@ -134,6 +136,7 @@ describe("runSoftSettle", () => {
     expect(result.choice).toBe(UNKNOWN_CHOICE);
     expect(result.deltas).toEqual([]);
     expect(result.note).toContain("判不了");
+    expect(result.varTree).toEqual(angryTree());
   });
 
   it("unparseable reply falls back to 无法判断 with no deltas", async () => {
@@ -144,6 +147,7 @@ describe("runSoftSettle", () => {
     });
     expect(result.choice).toBe(UNKNOWN_CHOICE);
     expect(result.deltas).toEqual([]);
+    expect(result.varTree).toEqual(angryTree("师父"));
   });
 
   it("AI off / offline → 无法判断, no deltas", async () => {
@@ -238,7 +242,7 @@ describe("runSoftSettle", () => {
 
   it("formatSettleNote wraps the note for the narrative prompt", () => {
     expect(formatSettleNote(null)).toBe("");
-    expect(formatSettleNote({ note: "才旦收下了酥油，好感+3" })).toContain("才旦收下了酥油");
+    expect(formatSettleNote({ note: "才旦消了气，好感+3" })).toContain("【系统结算】才旦消了气，好感+3");
     expect(formatSettleNote({ note: "" })).toBe("");
   });
 });

@@ -56,7 +56,7 @@ function narratorDailyDelta(state, value, ctx) {
 
 export async function runSoftSettle({ ai, apiCfg, kind, ctx = {} } = {}) {
   const rule = SOFT_RULES[kind];
-  if (!rule) return emptyResult(kind);
+  if (!rule) return { ...emptyResult(kind), varTree: ctx.varTree || {} };
   const target = rule.target(ctx) || null;
 
   // 「无法判断」永远占一个选项；规则表里写的具体选项放前面。
@@ -104,11 +104,11 @@ export async function runSoftSettle({ ai, apiCfg, kind, ctx = {} } = {}) {
   result.note = choice === UNKNOWN_CHOICE && !result.deltas.length
     ? `${target || rule.label}这轮判不了，按没有变化处理`
     : rule.note(choice, ctx, result.deltas);
-  return result;
+  return { ...result, varTree: state.varTree };
 }
 
 // 给叙事层的一句话结算说明：主模型只照这个结果写散文，不许再编数值。
 export function formatSettleNote(result) {
   if (!result || !result.note) return "";
-  return `\n[系统结算] ${result.note}。以上数值是系统裁决，请照此叙事，不得更改或补写其他状态变化。`;
+  return `\n【系统结算】${result.note}。以上数值是系统裁决，请照此叙事，不得更改或补写其他状态变化。`;
 }

@@ -155,6 +155,18 @@ describe("callMainOnce 组装黄金快照", () => {
       .not.toContain("[社交状态]");
   });
 
+  it("adds the soft-settle result to the in-chat narration payload", async () => {
+    await callMainOnce(null, false, makeDeps({
+      isSettle: true,
+      settleNpc: "八云",
+      settleKind: "appease",
+      softSettle: { choice: "奏效", note: "八云消了气，好感+3" },
+    }));
+    const content = callModel.mock.calls[0][2]
+      .find((message) => message.tavernBlock === "inChat").content;
+    expect(content).toContain("【系统结算】八云消了气，好感+3");
+  });
+
   it.each([
     ["normal", { activeTarget: "阿旺", recallBlock: "【回忆】旧事", reunionBlock: "【重逢】相见" }],
     ["settle", { isSettle: true, settleNpc: "阿旺", reunionBlock: "【重逢】相见" }],

@@ -102,6 +102,7 @@ export function buildCliApiConfig(overrides = {}) {
     maxTokens: overrides.maxTokens || 4000,
     extractionEnabled: overrides.extractionEnabled ?? false,
     bookkeepEnabled: overrides.bookkeepEnabled ?? false,
+    softSettleEnabled: overrides.softSettleEnabled ?? false,
     streamEnabled: false,
   };
   if (provider) config.provider = provider;

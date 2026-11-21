@@ -4,8 +4,10 @@ import { getRngState, setRngState } from "../core/rng.js";
 import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
 import { runTurn } from "./runTurn.js";
 import { PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
-import { createWebAi } from "./ports/ai.js";
+import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { runBookkeepAfterTurn } from "./act/bookkeepTurn.js";
+import { runSoftSettle } from "../domain/settle/settle.js";
+import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
@@ -58,12 +60,40 @@ export async function playTurn(ctx, cmd, opts = {}) {
     turnMonitor.add(trace, "domain", "整理世界状态与叙事上下文");
     ctx.beforeRun?.();
     setCommandPhase("ai");
-    const turn = await runTurn({ ...turnCtx, _trace: trace }, cmd, opts);
-    if (turn.stale || ctx.isStale?.()) return stale();
+    const turnOpts = { ...opts };
+    if (turnOpts.settleKind === "appease" && turnOpts.settleNpc && ctx.apiCfg?.softSettleEnabled !== false) {
+      const state = gameStore.getState();
+      const softSettle = await (ctx.softSettle || runSoftSettle)({
+        ai: bindTurnAi(turnCtx.ai, trace),
+        apiCfg: turnCtx.apiCfg,
+        kind: "appease",
+        ctx: {
+          npc: turnOpts.settleNpc,
+          varTree: state.varTree,
+          attempt: cmd,
+          time: state.time,
+        },
+      });
+      if (ctx.isStale?.()) return stale();
+      if (softSettle && softSettle.choice !== UNKNOWN_CHOICE) {
+        gameActions.setVarTreeState(softSettle.varTree);
+        turnOpts.softSettle = softSettle;
+        turnMonitor.add(trace, "engine", "结算·软判定", {
+          status: "pass",
+          detail: `${softSettle.choice}（${softSettle.note}）`,
+        });
+      }
+    }
+    const turn = await runTurn({ ...turnCtx, _trace: trace }, cmd, turnOpts);
+    if (turn.stale || ctx.isStale?.()) {
+      if (turnOpts.softSettle) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs));
+      return stale();
+    }
     setCommandPhase("commit");
     const commitDeps = ctx.commitDeps(turn) || {};
     const committed = withTurnContext(trace, () => (ctx.commitRound || commitRound)({
       ...commitDeps,
+      softSettle: turnOpts.softSettle || null,
       duelReport: opts.duelReport || null,
       giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
         ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,

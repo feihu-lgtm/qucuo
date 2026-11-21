@@ -19,6 +19,7 @@ export async function loadSave(page, name) {
       model: "browser-fixture",
       streamEnabled: false,
       bookkeepEnabled: false,
+      softSettleEnabled: false,
       questTriggerMode: "prompt",
       autoSaveEvery: 1,
     }));
