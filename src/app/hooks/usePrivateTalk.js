@@ -11,8 +11,7 @@ import { gateBodyProfile } from "../../domain/character/bodyProfile.js";
 import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
 import { availableKnot, canResolve, seaDialoguePrompt } from "../../domain/narrator/narratorQuest.js";
 import { narratorVars, setNarratorVars } from "../../domain/prompt/mvu.js";
-import { getTimeStr } from "../../utils/mudHelpers.js";
-import { buildWhisperStatePrompt } from "../../domain/prompt/promptRefs.js";
+import { buildWhisperStatePrompt, formatFactSummariesForPrompt } from "../../domain/prompt/promptRefs.js";
 import { allFactSummaries } from "../../domain/prompt/knowledge.js";
 import { embeddingReady } from "../../domain/memory/embeddingService.js";
 import { recallWithVisibility } from "../../domain/memory/recallWithVisibility.js";
@@ -20,10 +19,11 @@ import { gateScenario } from "../../domain/prompt/worldbook.js";
 import { describeTallyForWhisper } from "../../domain/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+import { gameStore } from "../../store/gameStore.js";
 
 export function usePrivateTalk({
-  narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags,
-  jotNote, char, nsfwOn, questProgress, changePendingTalks, innerRoomName,
+  narrator, addLog, apiCfg, convo, room, preset, flags,
+  jotNote, char, nsfwOn, questProgress, changePendingTalks,
   talkBusyRef, schedulerRef, setInput, timeRef, varTreeRef, setLog, setConvo,
   setVarTree, setNarrator, noteAction,
 }) {
@@ -49,10 +49,7 @@ export function usePrivateTalk({
     }
 
     try {
-      const voice = narratorVoicePrompt(narrator, varTreeRef.current);
-      const worldState = buildWhisperStatePrompt({
-        char, time, room, inv, innerRoomName, getTimeStr,
-      }, { includeLabel: true, includeInnerRoomName: true });
+      const trace = (paths) => traceStep(_wt, "提示词引用缺失", "warn", paths.join("、"));
 
       // ── 旁白·全知事实（本轮新增）──
       // 旁白设定上是跳出信息隔离的第四面墙外角色，普通 NPC 之间发生的事（哪怕玩家没
@@ -67,7 +64,7 @@ export function usePrivateTalk({
         const facts = allFactSummaries(varTreeRef.current, 8);
         if (facts.length) {
           factsBlock = "\n\n[你冷眼旁观知晓的事，未必是玩家亲口告诉过你的，回应时可以自然提起，但不要生硬列举或表现得像在念清单]\n"
-            + facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
+            + formatFactSummariesForPrompt(facts);
           traceStep(_wt, "全知事实", "pass", `注入最近${facts.length}条事实账本摘要`);
         } else {
           traceStep(_wt, "全知事实", "skip", "事实账本为空，未注入");
@@ -167,9 +164,10 @@ export function usePrivateTalk({
         varTreeRef.current.世界?.起居注, timeRef.current,
         { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
       );
+      const worldState = inSeaNow ? "" : buildWhisperStatePrompt(gameStore.getState(), { trace });
       const sys = inSeaNow
         ? `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: NNPC_STAGE })}${recallBlock}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`
-        : `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${snowLeopardHint({ questProgress, flags, cmd: content })}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
+        : `${buildNarratorWhisperContext(narrator.affection)}\n${narratorVoicePrompt(narrator, trace)}\n\n${worldState}${snowLeopardHint({ questProgress, flags, cmd: content })}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
 
       // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
       // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
@@ -344,6 +342,6 @@ export function usePrivateTalk({
     changePendingTalks(-1);
     schedulerRef.current?.touch();
     talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
-  }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress, changePendingTalks]);
+  }, [narrator, addLog, apiCfg, convo, room, preset, flags, jotNote, char, nsfwOn, questProgress, changePendingTalks]);
   return { talkToNarrator };
 }

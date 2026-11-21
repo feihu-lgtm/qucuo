@@ -44,7 +44,6 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
       duelReport: d.duelReport || null,
-      varTree: d.varTree,
       snowLeopardGift: d.settleKind === "gift" && d.settleNpc === "雪豹" && !!d.snowLeopardContext,
       giftInfo: d.giftInfo || null,
       settleBeast: !!d.settleBeast,
@@ -64,6 +63,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       onGateReport: (g) => { _gateReport = g; },
       onSnapshot: (snap) => attachInjectionSnapshot(d._trace, snap),
       onDuelReportMissing: (paths) => traceStep(d._trace, "战报模板字段缺失", "warn", paths.join("、")),
+      onPromptRefMissing: (paths) => traceStep(d._trace, "提示词引用缺失", "warn", paths.join("、")),
     }
   );
 

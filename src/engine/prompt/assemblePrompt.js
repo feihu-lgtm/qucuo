@@ -1,5 +1,5 @@
 import { snowLeopardNote } from "../../domain/quests/snowLeopardQuest.js";
-import { buildMainStatePrompt } from "../../domain/prompt/promptRefs.js";
+import { buildMainStatePrompt, renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
 
 const ATTEMPT_LABELS = {
   talk: "交谈",
@@ -48,11 +48,12 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   } = input;
   const budgetInstruction = input.buildBudgetInstruction?.(input.intent, cmd, apiCfg.targetWordCount, apiCfg.intentBudgets) || "";
   const angryNote = buildAngryNote(varTree, (room?.npcs || []).map((npc) => npc.name));
+  const render = (template) => renderPromptTemplate(template, input, { trace: ctx.onPromptRefMissing }).text;
   const targetNote = activeTarget
-    ? `[交互目标] 玩家选定了「${activeTarget}」作为本轮唯一的互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文的核心——其他在场 NPC 若与该互动无关、或不宜抢戏，本轮不必出场、不必插话。除非玩家输入本身需要多人在场（比如当众宣布什么事），否则 room.npcs 只保留「${activeTarget}」和直接相关者即可。\n`
+    ? render(`[交互目标] 玩家选定了「@activeTarget」作为本轮唯一的互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文的核心——其他在场 NPC 若与该互动无关、或不宜抢戏，本轮不必出场、不必插话。除非玩家输入本身需要多人在场（比如当众宣布什么事），否则 room.npcs 只保留「@activeTarget」和直接相关者即可。\n`)
     : "";
   const groundItemNote = activeGroundItem
-    ? `[涉及物品] 玩家本轮的行动涉及地上的「${activeGroundItem}」（仍在地上，尚未拾取）。叙事须围绕玩家对这件东西的举动展开；除非玩家明确说要拾取或拿走，它仍留在原处，不得写成已入囊。\n`
+    ? render("[涉及物品] 玩家本轮的行动涉及地上的「@activeGroundItem」（仍在地上，尚未拾取）。叙事须围绕玩家对这件东西的举动展开；除非玩家明确说要拾取或拿走，它仍留在原处，不得写成已入囊。\n")
     : "";
   const talkNoStateRule = "[交互模式] 对话模式：玩家此刻只是在和当前房间里的 NPC 说话，不是在下达行动指令。无论玩家输入什么，都只应该触发对话回应，绝不能移动房间、不能战斗、不能改变 room/char/装备/背包等任何状态";
   const modeNote = isTalk
@@ -84,6 +85,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     ...input,
     visibleNpcsForAI: presence.visibleNpcsForAI || presence.visibleNpcs || [],
   }, {
+    trace: ctx.onPromptRefMissing,
     gmNote: gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : "",
   });
   const context = `${targetNote}${groundItemNote}${modeNote}${stateContext}${pickupNote}${input.destinationLock || ""}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${input.collectNote || ""}${arrivalNote}${forcedEventNote}`;

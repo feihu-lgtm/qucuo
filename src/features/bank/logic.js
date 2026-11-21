@@ -1,3 +1,5 @@
+import { renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
+
 export function withdrawalSummary(state) {
   const elapsed = state.depositedAt != null
     ? Math.floor((state.time - state.depositedAt) / 24)
@@ -15,14 +17,18 @@ function invalidAmountResult() {
 export function deposit(state, amount) {
   if (!Number.isFinite(amount) || amount <= 0) return invalidAmountResult();
   if ((state.char.money || 0) < amount) return { logs: [] };
+  const changes = {
+    char: { ...state.char, money: (state.char.money || 0) - amount },
+    deposit: state.deposit + amount,
+    depositedAt: state.time,
+  };
   return {
-    changes: {
-      char: { ...state.char, money: (state.char.money || 0) - amount },
-      deposit: state.deposit + amount,
-      depositedAt: state.time,
-    },
+    changes,
     logs: [],
-    settle: `钱庄存款已完成：本次存入${amount}两，已从随身银两扣除并入账，存款余额${state.deposit + amount}两，随身银两剩余${(state.char.money || 0) - amount}两。利息由系统按每24时间单位2%自动计算，无需选择存期或利率。只描写掌柜收讫入账后的反应，不得再询问存期、利率或要求确认存款，也不得重复扣款或入账。`,
+    settle: renderPromptTemplate(
+      "钱庄存款已完成：本次存入@amount两，已从随身银两扣除并入账，存款余额@deposit两，随身银两剩余@char.money两。利息由系统按每24时间单位2%自动计算，无需选择存期或利率。只描写掌柜收讫入账后的反应，不得再询问存期、利率或要求确认存款，也不得重复扣款或入账。",
+      { ...changes, amount },
+    ).text,
   };
 }
 

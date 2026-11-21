@@ -9,16 +9,15 @@ import { describeCatalogForAI } from "../../domain/items/catalog.js";
 import { buildBudgetInstruction, INTENT } from "../../domain/prompt/inputIntent.js";
 import { buildNarratorWhisperContext, gateQuestTopic, narratorVoicePrompt, narratorWhisperLengthNote } from "../../domain/narrator/narrator.js";
 import { gateBodyProfile } from "../../domain/character/bodyProfile.js";
-import { allFactSummaries } from "../../domain/prompt/knowledge.js";
 import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "../../domain/prompt/worldbook.js";
 import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { isNpcVisibleInInnerRoom as isVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { loadPortraits, getSnowLeopardForm, getPearlForm } from "../../domain/companion/portraits.js";
 import * as importedRegistry from "../../domain/cards/importedRegistry.js";
-import { getTimeStr } from "../../utils/mudHelpers.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { readMobileColumn, writeMobileColumn } from "../../utils/mobileColumn.js";
-import { buildPreviewStatePrompt, buildWhisperStatePrompt } from "../../domain/prompt/promptRefs.js";
+import { buildMainStatePrompt, buildWhisperStatePrompt, getPresentNpcs, renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
+import { gameStore } from "../../store/gameStore.js";
 
 export function useGameUi({
   room, innerRoomName, char, inv, log, time, narrator, preset,
@@ -195,15 +194,15 @@ export function useGameUi({
     try {
       const scope = view?.scope || "full";
       const activePreset = getActivePreset();
+      const state = gameStore.getState();
 
       if (scope === "whisper") {
         put("whisper_ctx", buildNarratorWhisperContext(narrator.affection));
-        put("voice", narratorVoicePrompt(narrator, varTree));
-        put("world_state", buildWhisperStatePrompt({
-          char, time, room, inv, innerRoomName, getTimeStr,
-        }, { includeInnerRoomName: false }));
-        const facts = allFactSummaries(varTreeRef.current, 8);
-        put("facts", facts.length ? facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n") : "（事实账本当前为空）");
+        put("voice", narratorVoicePrompt(narrator));
+        put("world_state", buildWhisperStatePrompt(state, { preview: true }));
+        put("facts", renderPromptTemplate("@事实摘要", {
+          varTree: varTreeRef.current, promptRefOptions: { factLimit: 8 },
+        }).text || "（事实账本当前为空）");
         put("narrator_lore", (apiCfg.narratorLorebook || "").trim() || "（未填写，本块一个字都不发）");
         const bg = gateBodyProfile(char.bodyProfile, { whisper: true, nsfw: nsfwOn, scanText: "" });
         put("body_gate", bg.text || `（当前灭灯：${bg.dark.join("、") || "体貌未填写"}）`);
@@ -215,7 +214,7 @@ export function useGameUi({
         return out;
       }
 
-      put("voice", narratorVoicePrompt(narrator, varTree));
+      put("voice", narratorVoicePrompt(narrator));
       const intentCode = view?.intent || "UNKNOWN";
       const fakeIntent = INTENT[intentCode] || INTENT.UNKNOWN;
       put("length", buildBudgetInstruction(fakeIntent, "", apiCfg.targetWordCount, apiCfg.intentBudgets));
@@ -224,7 +223,7 @@ export function useGameUi({
         const found = (preset.prompts || []).find(x => x.id === promptId || (x.name || "").includes(blockId === "preset_genrules" ? "通用规则" : "文体"));
         if (found?.content) put(blockId, found.content);
       }
-      const visible = room.npcs.filter(n => isVisibleInInnerRoom(room.name, innerRoomName, n));
+      const visible = getPresentNpcs(state);
       put("npc_lore", buildNpcLoreBlock(matchNpcLore(
         [...(preset.npcLore || []), ...importedRegistry.getImportedNpcLore()],
         { roomNpcNames: visible.map(n => n.name), userInput: "", lastReply: "", includeLastReply: false }
@@ -232,9 +231,7 @@ export function useGameUi({
       if (scope === "full") put("catalog", describeCatalogForAI());
       const bg2 = gateBodyProfile(char.bodyProfile, { scope, nsfw: nsfwOn, scanText: "" });
       put("body_gate", bg2.text || `（当前灭灯：${bg2.dark.join("、") || "体貌未填写"}）`);
-      put("user_ctx", buildPreviewStatePrompt({
-        char, time, room, inv, innerRoomName, visibleNpcs: visible, getTimeStr,
-      }));
+      put("user_ctx", buildMainStatePrompt({ ...state, visibleNpcs: visible }, { preview: true }));
     } catch (e) {
       out.__error = `拉取时出错：${e.message || e}`;
     }
