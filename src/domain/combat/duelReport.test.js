@@ -8,7 +8,7 @@ import {
   renderDuelReportRounds,
   resolveDuelReportTemplate,
 } from "./duelReport.js";
-import { MUTUAL_CONTACTS, REACTION_POOLS } from "./duelPhrases/index.js";
+import { EFFECT_POOLS, MUTUAL_CONTACTS, REACTION_POOLS } from "./duelPhrases/index.js";
 
 describe("战报逐回合交错", () => {
   const rounds = [
@@ -72,6 +72,51 @@ describe("战报逐回合交错", () => {
 });
 
 describe("战报模板路径解析", () => {
+  it("renders a faster attack beating control as a hit and interruption, not immobilization", () => {
+    const attack = {
+      move: { name: "快拳", type: "攻击" },
+      special: { 身法: 8 },
+      hp: [100, 100],
+      energy: [0, 100],
+      baseAtk: 20,
+      baseDef: 0,
+    };
+    const control = {
+      move: { name: "点穴指", type: "状态", applyStatus: { name: "麻穴", chance: 1 } },
+      special: { 身法: 2 },
+      hp: [100, 100],
+      energy: [0, 100],
+      baseAtk: 10,
+      baseDef: 0,
+    };
+    const result = resolveTurn(attack, control);
+    const line = formatDuelDisplayLine({
+      round: 1,
+      playerMove: attack.move,
+      npcMove: control.move,
+      result: {
+        ...result,
+        nameA: "陈尧天",
+        nameB: "才旦",
+        hpAfterA: [100, 100],
+        hpAfterB: [100 - result.damageToB, 100],
+        hpBandA: "healthy",
+        hpBandB: "hurt",
+      },
+    });
+
+    expect(result).toMatchObject({
+      counterStatus: null,
+      speedWinner: "A",
+      interruptedB: true,
+      statusAppliedToA: null,
+    });
+    expect(result.damageToB).toBeGreaterThan(0);
+    expect(EFFECT_POOLS.hit.some((fragment) => line.includes(fragment.replace("{target}", "才旦").replace(/[，,。！？；：、]+$/g, "")))).toBe(true);
+    expect(EFFECT_POOLS.interrupted.some((fragment) => line.includes(fragment.replaceAll("{target}", "陈尧天").replace(/[，,。！？；：、]+$/g, "")))).toBe(true);
+    expect(line).not.toContain("动弹不得");
+  });
+
   it("解析简单和嵌套字段，未知路径留空并返回trace字段", () => {
     const resolved = resolveDuelReportTemplate(
       "第@round.index回合，气血@round.hpAfter.player；缺失=@round.unknown.value。",
@@ -123,8 +168,14 @@ describe("战报回合数据和短句", () => {
       result,
     };
   };
+  const renderFragment = (fragment, actor = "陈尧天", target = "才旦") => fragment
+    .replaceAll("{actor}", actor)
+    .replaceAll("{target}", target)
+    .replaceAll("{move}", "野球拳")
+    .replaceAll("{targetMove}", "铁布衫")
+    .replace(/[，,。！？；：、]+$/g, "");
   const containsReaction = (line, family, band, name) => REACTION_POOLS[family][band]
-    .some((fragment) => line.includes(fragment.replace("{target}", name)));
+    .some((fragment) => line.includes(renderFragment(fragment, "陈尧天", name)));
 
   it("给AI提供招式类型、回合后气血、伤害、状态、吃亏方及HP色调", () => {
     const source = entry();
@@ -157,7 +208,7 @@ describe("战报回合数据和短句", () => {
       playerMove: "凌波微步", playerMoveType: "轻功", npcMove: "连环腿", npcMoveType: "攻击",
       dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null, dodgeSuccessPlayer: true,
     }));
-    expect(dodgeLine).toContain("躲过才旦的连环腿");
+    expect(EFFECT_POOLS.dodged.some((fragment) => dodgeLine.includes(fragment.replace("{target}", "才旦").replace("{targetMove}", "连环腿").replace(/[，,。！？；：、]+$/g, "")))).toBe(true);
 
     const healLine = formatDuelDisplayLine(entry({
       playerMove: "野球拳", npcMove: "回春功", npcMoveType: "内功",
@@ -165,7 +216,7 @@ describe("战报回合数据和短句", () => {
     }));
     expect(healLine).toContain("才旦");
     expect(healLine).toContain("回春功");
-    expect(healLine).toContain("气血渐复（+10）");
+    expect(healLine).toContain("+10");
   });
 
   it("区分招式伤害和持续伤害，不把纯持续伤害算作招式命中", () => {
@@ -208,7 +259,7 @@ describe("战报回合数据和短句", () => {
 
     expect(containsReaction(line, "damaged", "nearDown", "陈尧天")).toBe(true);
     expect(containsReaction(line, "damaged", "healthy", "才旦")).toBe(true);
-    expect(MUTUAL_CONTACTS.some((fragment) => line.includes(fragment))).toBe(true);
+    expect(MUTUAL_CONTACTS.some((fragment) => line.includes(renderFragment(fragment)))).toBe(true);
   });
 
   it("互攻只有一方受伤时只加入该方的反应", () => {
@@ -222,7 +273,7 @@ describe("战报回合数据和短句", () => {
 
     expect(containsReaction(line, "damaged", "healthy", "才旦")).toBe(true);
     expect(playerReaction).toBe(false);
-    expect(MUTUAL_CONTACTS.some((fragment) => line.includes(fragment))).toBe(false);
+    expect(MUTUAL_CONTACTS.some((fragment) => line.includes(renderFragment(fragment)))).toBe(false);
   });
 
   it("取消的回气会明确写成被更快的控制招打断", () => {
