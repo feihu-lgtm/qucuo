@@ -110,6 +110,26 @@ describe("战报回合数据和短句", () => {
     expect(healLine).toContain("才旦运起回春功");
   });
 
+  it("区分招式伤害和持续伤害，不把纯持续伤害算作命中", () => {
+    const metadata = createDuelRoundMetadata({
+      moveTypeA: "攻击", moveTypeB: "防御", damageToA: 0, damageToB: 0,
+      dodgeSuccessA: false, dodgeSuccessB: false, hpRestoreA: 0, hpRestoreB: 0,
+    }, {
+      statusDamageA: 0, statusDamageB: 4, statusSlotsA: {},
+      statusSlotsB: { poison: { name: "毒伤" } }, logA: [], logB: [],
+    }, [60, 60], [56, 60]);
+    expect(metadata).toMatchObject({
+      moveDamageToNpc: 0, dotDamageToNpc: 4, dmgToNpc: 0, statusDamageToNpc: 4,
+    });
+
+    const record = { round: 1, playerMove: "野球拳", npcMove: "铁布衫", ...metadata };
+    const line = formatDuelDisplayLine(record, { playerName: "陈尧天", npcName: "才旦" });
+    const [report] = buildDuelReportRounds([record], { playerName: "陈尧天", npcName: "才旦" });
+    expect(line).toContain("才旦 −4，含持续伤害 4");
+    expect(line).not.toContain("正中");
+    expect(report.aiData).toContain("才旦 4（招式 0，持续伤害 4）");
+  });
+
   it("把伤势按健旺、受创、将倒分级，濒倒显示剩余气血", () => {
     const healthy = formatDuelDisplayLine(entry(), { playerName: "陈尧天", npcName: "才旦" });
     const hurt = formatDuelDisplayLine(entry({ hpAfterNpc: [40, 100] }), { playerName: "陈尧天", npcName: "才旦" });

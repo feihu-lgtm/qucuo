@@ -36,8 +36,12 @@ function normalizeMoveType(type) {
 }
 
 function makeOutcome(entry, playerName, npcName) {
-  const playerDamage = Math.max(0, (entry.dmgToPlayer ?? entry.damageToA ?? 0) + (entry.statusDamageToPlayer ?? entry.statusDamageA ?? 0));
-  const npcDamage = Math.max(0, (entry.dmgToNpc ?? entry.damageToB ?? 0) + (entry.statusDamageToNpc ?? entry.statusDamageB ?? 0));
+  const playerMoveDamage = Math.max(0, entry.moveDamageToPlayer ?? entry.dmgToPlayer ?? entry.damageToA ?? 0);
+  const npcMoveDamage = Math.max(0, entry.moveDamageToNpc ?? entry.dmgToNpc ?? entry.damageToB ?? 0);
+  const playerDotDamage = Math.max(0, entry.dotDamageToPlayer ?? entry.statusDamageToPlayer ?? entry.statusDamageA ?? 0);
+  const npcDotDamage = Math.max(0, entry.dotDamageToNpc ?? entry.statusDamageToNpc ?? entry.statusDamageB ?? 0);
+  const playerDamage = playerMoveDamage + playerDotDamage;
+  const npcDamage = npcMoveDamage + npcDotDamage;
   const playerMove = entry.playerMove || entry.moveNameA || "未明招式";
   const npcMove = entry.npcMove || entry.moveNameB || "未明招式";
   const playerType = normalizeMoveType(entry.playerMoveType || entry.moveTypeA);
@@ -61,7 +65,7 @@ function makeOutcome(entry, playerName, npcName) {
     targetMove = playerDodged ? npcMove : playerMove;
     moveType = playerDodged ? playerType : npcType;
     outcome = "dodged";
-  } else if (playerDamage > 0 && npcDamage > 0) {
+  } else if (playerMoveDamage > 0 && npcMoveDamage > 0) {
     const playerBand = hpBandFor(playerHp);
     const npcBand = hpBandFor(npcHp);
     if (npcDamage > playerDamage || (npcDamage === playerDamage && BAND_SEVERITY[npcBand] > BAND_SEVERITY[playerBand])) {
@@ -72,11 +76,11 @@ function makeOutcome(entry, playerName, npcName) {
       actorMove = npcMove; targetMove = playerMove; moveType = npcType;
     }
     outcome = "bothHit";
-  } else if (npcDamage > 0) {
+  } else if (npcMoveDamage > 0) {
     actorName = playerName; targetName = npcName;
     actorMove = playerMove; targetMove = npcMove; moveType = playerType;
     outcome = npcType === "防御" ? "blocked" : "hit";
-  } else if (playerDamage > 0) {
+  } else if (playerMoveDamage > 0) {
     actorName = npcName; targetName = playerName;
     actorMove = npcMove; targetMove = playerMove; moveType = npcType;
     outcome = playerType === "防御" ? "blocked" : "hit";
@@ -94,7 +98,8 @@ function makeOutcome(entry, playerName, npcName) {
   if (npcDamage > 0) damagedBands.push(hpBandFor(npcHp));
   const band = damagedBands.sort((a, b) => BAND_SEVERITY[b] - BAND_SEVERITY[a])[0] || "healthy";
   return {
-    playerDamage, npcDamage, playerMove, npcMove, playerType, npcType, playerHp, npcHp,
+    playerDamage, npcDamage, playerMoveDamage, npcMoveDamage, playerDotDamage, npcDotDamage,
+    playerMove, npcMove, playerType, npcType, playerHp, npcHp,
     playerName, npcName, worse, actorName, targetName, actorMove, targetMove, moveType, outcome, band,
   };
 }
@@ -109,10 +114,12 @@ export function selectDuelPhrase(moveType, outcome, band, round = 1) {
   return templates[(Math.max(1, Number(round) || 1) - 1) % templates.length];
 }
 
-function damagePart(name, damage, hp) {
+function damagePart(name, moveDamage, dotDamage, hp) {
+  const damage = moveDamage + dotDamage;
   if (damage <= 0) return null;
   const remaining = hp && hpBandFor(hp) === "nearDown" ? `，剩 ${hp[0]}` : "";
-  return `${name} −${damage}${remaining}`;
+  const dot = dotDamage > 0 ? `，含持续伤害 ${dotDamage}` : "";
+  return `${name} −${damage}${dot}${remaining}`;
 }
 
 function soloRound(entry, round, playerName, npcName) {
@@ -124,8 +131,8 @@ function soloRound(entry, round, playerName, npcName) {
     targetMove: data.targetMove,
   });
   const damages = [
-    damagePart(playerName, data.playerDamage, data.playerHp),
-    damagePart(npcName, data.npcDamage, data.npcHp),
+    damagePart(playerName, data.playerMoveDamage, data.playerDotDamage, data.playerHp),
+    damagePart(npcName, data.npcMoveDamage, data.npcDotDamage, data.npcHp),
   ].filter(Boolean);
   const displayText = `${text}${damages.length ? `（${damages.join("，")}）` : ""}`;
   const hpText = (name, hp) => `${name} ${hp ? `${hp[0]}/${hp[1]}` : "未记录"}`;
@@ -133,6 +140,9 @@ function soloRound(entry, round, playerName, npcName) {
     data.playerDamage > 0 ? `${playerName}：${BAND_LABELS[hpBandFor(data.playerHp)]}` : null,
     data.npcDamage > 0 ? `${npcName}：${BAND_LABELS[hpBandFor(data.npcHp)]}` : null,
   ].filter(Boolean).join("，") || "本轮无人受创";
+  const damageText = (name, moveDamage, dotDamage) => (
+    `${name} ${moveDamage + dotDamage}（招式 ${moveDamage}，持续伤害 ${dotDamage}）`
+  );
   const statusText = [
     ...statusList(entry, "Player"),
     ...statusList(entry, "Npc"),
@@ -140,7 +150,7 @@ function soloRound(entry, round, playerName, npcName) {
     ...statusList(entry, "B"),
     ...(entry.notes || []),
   ];
-  const aiData = `第${round}回合：${playerName}用【${data.playerMove}/${data.playerType}】，${npcName}用【${data.npcMove}/${data.npcType}】；回合后气血：${hpText(playerName, data.playerHp)}，${hpText(npcName, data.npcHp)}；${bandText}；受到伤害：${playerName} ${data.playerDamage}，${npcName} ${data.npcDamage}；状态：${[...new Set(statusText)].join("、") || "无"}；本轮吃亏：${data.worse}。`;
+  const aiData = `第${round}回合：${playerName}用【${data.playerMove}/${data.playerType}】，${npcName}用【${data.npcMove}/${data.npcType}】；回合后气血：${hpText(playerName, data.playerHp)}，${hpText(npcName, data.npcHp)}；${bandText}；受到伤害：${damageText(playerName, data.playerMoveDamage, data.playerDotDamage)}，${damageText(npcName, data.npcMoveDamage, data.npcDotDamage)}；状态：${[...new Set(statusText)].join("、") || "无"}；本轮吃亏：${data.worse}。`;
   return { round, text: displayText, aiData, disadvantage: data.worse };
 }
 
@@ -153,6 +163,8 @@ export function createDuelRoundMetadata(result, endTick, hpAfterPlayer, hpAfterN
     playerMoveType: result.moveTypeA, npcMoveType: result.moveTypeB,
     dmgToNpc: result.damageToB, dmgToPlayer: result.damageToA,
     statusDamageToPlayer: endTick.statusDamageA, statusDamageToNpc: endTick.statusDamageB,
+    moveDamageToPlayer: result.damageToA, moveDamageToNpc: result.damageToB,
+    dotDamageToPlayer: endTick.statusDamageA, dotDamageToNpc: endTick.statusDamageB,
     dodgeSuccessPlayer: result.dodgeSuccessA, dodgeSuccessNpc: result.dodgeSuccessB,
     hpRestorePlayer: result.hpRestoreA, hpRestoreNpc: result.hpRestoreB,
     hpAfterPlayer, hpAfterNpc,
