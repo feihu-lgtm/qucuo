@@ -121,7 +121,37 @@ describe("AI duelRequest", () => {
 
   it("duel-report prompt permits the requested report without opening another duel", () => {
     const duelReport = {
-      rounds: [{ round: 1, text: "陈尧天一记野球拳正中才旦", aiData: "才旦 57/60（健旺）" }],
+      rounds: [{
+        round: 1,
+        text: "陈尧天一记野球拳正中才旦",
+        playerMove: { name: "野球拳", type: "攻击" },
+        npcMove: { name: "铁布衫", type: "防御" },
+        result: {
+          nameA: "陈尧天",
+          nameB: "才旦",
+          damageToA: 0,
+          damageToB: 3,
+          statusDamageA: 0,
+          statusDamageB: 0,
+          hpRestoreA: 0,
+          hpRestoreB: 0,
+          dodgeSuccessA: false,
+          dodgeSuccessB: false,
+          hpAfterA: [60, 60],
+          hpAfterB: [57, 60],
+          hpBandA: "healthy",
+          hpBandB: "healthy",
+          statusAppliedToA: null,
+          statusAppliedToB: "麻穴",
+          markAppliedToA: null,
+          markAppliedToB: null,
+          statusSlotsAfterA: {},
+          statusSlotsAfterB: { control: { name: "麻穴", duration: 2 } },
+          statusLogA: [],
+          statusLogB: ["才旦气机受阻"],
+          worseName: "才旦",
+        },
+      }],
     };
     const { phiBlock, phiRules } = buildSysBase(
       220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "full",
@@ -137,7 +167,10 @@ describe("AI duelRequest", () => {
     expect(phiRules).toContain("受创（25%–<60%）");
     expect(phiRules).toContain("将倒（<25%）");
     expect(phiRules).toContain("玩家与 NPC 一视同仁");
-    expect(phiRules).toContain("才旦 57/60（健旺）");
+    expect(phiRules).toContain("回合后气血：A 60/60、B 57/60");
+    expect(phiRules).toContain("HP带：A healthy、B healthy");
+    expect(phiRules).toContain("当前状态：A {}、B {\"control\":{\"name\":\"麻穴\",\"duration\":2}}");
+    expect(phiRules).toContain("状态日志：A []、B [\"才旦气机受阻\"]");
 
     const dual = buildSysBase(
       220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", true, "full",
@@ -145,6 +178,18 @@ describe("AI duelRequest", () => {
     );
     expect(dual.phiRules).toContain("恰好分成N+1个段落");
     expect(dual.phiRules).toContain("受创（25%–<60%）");
+  });
+
+  it("duel-report missing paths reach the prompt trace callback", () => {
+    const onDuelReportMissing = vi.fn();
+    buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "full",
+      { duelReport: { rounds: [{ round: 1, result: {} }] }, onDuelReportMissing },
+    );
+    expect(onDuelReportMissing).toHaveBeenCalledWith(expect.arrayContaining([
+      "第1回合 @round.playerMove.name",
+      "第1回合 @round.result.hpAfterA",
+    ]));
   });
 
   it("dual-call extraction prompt includes the accepted-spar rule", () => {

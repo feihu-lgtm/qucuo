@@ -64,6 +64,11 @@ export default {
     "{actor}{move}点中{target}穴道，气机顿滞",
     "{actor}趁隙使{move}封住{target}周身劲路",
   ],
+  dot: [
+    "余毒循着旧劲窜动，{target}气息一沉",
+    "残存劲力在经脉间回荡，{target}肩头微颤",
+    "一缕暗劲余波翻涌，{target}脚下稍滞",
+  ],
   bothHit: [
     "{actor}的{move}与{target}的{targetMove}迎面相撞",
     "{actor}{move}递出，正撞上{targetMove}",

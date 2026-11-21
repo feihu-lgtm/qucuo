@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { applyEndOfTurnStatus, resolveTurn } from "./resolveTurn.js";
+import { finalizeDuelRound } from "./finalizeDuelRound.js";
 import {
   buildDuelReportRounds,
-  createDuelRoundMetadata,
   formatDuelDisplayLine,
   interleaveDuelReport,
+  renderDuelReportRounds,
+  resolveDuelReportTemplate,
   selectDuelPhrase,
 } from "./duelReport.js";
 import { DUEL_HP_BANDS, DUEL_MOVE_TYPES, DUEL_OUTCOMES, DUEL_PHRASE_BANK } from "./duelPhrases/index.js";
@@ -49,91 +51,125 @@ describe("战报逐回合交错", () => {
 
   it("团战按回合合并既有 teamText 并保留吃亏方", () => {
     const [report] = buildDuelReportRounds([
-      { round: 1, teamText: "雪豹一爪击中山贼", worseName: "山贼" },
-      { round: 1, teamText: "少侠挡开刀势", worseName: "山贼" },
+      { round: 1, teamText: "雪豹一爪击中山贼", actor: { name: "雪豹" }, result: { worseName: "山贼" } },
+      { round: 1, teamText: "少侠挡开刀势", actor: { name: "少侠" }, result: { worseName: "山贼" } },
     ]);
     expect(report.text).toBe("雪豹一爪击中山贼；少侠挡开刀势（山贼吃亏）");
-    expect(report.aiData).toContain("本轮吃亏：山贼");
+    expect(report.teamLines[0].result.worseName).toBe("山贼");
+    expect(renderDuelReportRounds([report]).text).toContain("雪豹");
+  });
+
+  it("团战吃亏方不可得时只保留原系统战报", () => {
+    const [report] = buildDuelReportRounds([
+      { round: 1, teamText: "雪豹架住一招", result: { worseName: "平手" } },
+      { round: 1, teamText: "少侠转身避开", result: { worseName: "平手" } },
+    ]);
+    expect(report.text).toBe("雪豹架住一招；少侠转身避开");
+  });
+});
+
+describe("战报模板路径解析", () => {
+  it("解析简单和嵌套字段，未知路径留空并返回trace字段", () => {
+    const resolved = resolveDuelReportTemplate(
+      "第@round.index回合，气血@round.hpAfter.player；缺失=@round.unknown.value。",
+      { round: { index: 2, hpAfter: { player: [9, 20] } } },
+    );
+    expect(resolved.text).toBe("第2回合，气血9/20；缺失=。");
+    expect(resolved.missingPaths).toEqual(["round.unknown.value"]);
   });
 });
 
 describe("战报回合数据和短句", () => {
-  const entry = (overrides = {}) => ({
-    round: 1,
-    playerMove: "野球拳",
-    npcMove: "铁布衫",
-    playerMoveType: "攻击",
-    npcMoveType: "防御",
-    dmgToNpc: 3,
-    dmgToPlayer: 0,
-    hpAfterPlayer: [60, 60],
-    hpAfterNpc: [57, 60],
-    statusAppliedToNpc: "麻穴",
-    statusSlotsAfterNpc: { control: { name: "麻穴" } },
-    notes: ["才旦气机受阻"],
-    ...overrides,
-  });
+  const hpBand = ([current, max]) => current / max >= 0.6 ? "healthy" : current / max < 0.25 ? "nearDown" : "hurt";
+  const entry = (overrides = {}) => {
+    const values = {
+      playerMove: "野球拳", npcMove: "铁布衫",
+      playerMoveType: "攻击", npcMoveType: "防御",
+      dmgToNpc: 3, dmgToPlayer: 0, statusDamageToNpc: 0, statusDamageToPlayer: 0,
+      hpAfterPlayer: [60, 60], hpAfterNpc: [57, 60],
+      statusAppliedToPlayer: null, statusAppliedToNpc: "麻穴",
+      markAppliedToPlayer: null, markAppliedToNpc: null,
+      hpRestorePlayer: 0, hpRestoreNpc: 0,
+      dodgeSuccessPlayer: false, dodgeSuccessNpc: false,
+      statusSlotsAfterPlayer: {}, statusSlotsAfterNpc: { control: { name: "麻穴", duration: 2 } },
+      statusLogPlayer: [], statusLogNpc: [], notes: ["才旦气机受阻"],
+      ...overrides,
+    };
+    const result = {
+      damageToA: values.dmgToPlayer, damageToB: values.dmgToNpc,
+      statusDamageA: values.statusDamageToPlayer, statusDamageB: values.statusDamageToNpc,
+      nameA: "陈尧天", nameB: "才旦",
+      hpAfterA: values.hpAfterPlayer, hpAfterB: values.hpAfterNpc,
+      hpBandA: hpBand(values.hpAfterPlayer), hpBandB: hpBand(values.hpAfterNpc),
+      statusAppliedToA: values.statusAppliedToPlayer, statusAppliedToB: values.statusAppliedToNpc,
+      markAppliedToA: values.markAppliedToPlayer, markAppliedToB: values.markAppliedToNpc,
+      hpRestoreA: values.hpRestorePlayer, hpRestoreB: values.hpRestoreNpc,
+      dodgeSuccessA: values.dodgeSuccessPlayer, dodgeSuccessB: values.dodgeSuccessNpc,
+      statusSlotsAfterA: values.statusSlotsAfterPlayer, statusSlotsAfterB: values.statusSlotsAfterNpc,
+      statusLogA: values.statusLogPlayer, statusLogB: values.statusLogNpc,
+      notes: values.notes,
+      worseName: (values.dmgToPlayer + values.statusDamageToPlayer) === (values.dmgToNpc + values.statusDamageToNpc)
+        ? "平手"
+        : (values.dmgToPlayer + values.statusDamageToPlayer) > (values.dmgToNpc + values.statusDamageToNpc) ? "陈尧天" : "才旦",
+      ...values.result,
+    };
+    return {
+      round: 1,
+      playerMove: { name: values.playerMove, type: values.playerMoveType },
+      npcMove: { name: values.npcMove, type: values.npcMoveType },
+      result,
+    };
+  };
 
   it("给AI提供招式类型、回合后气血、伤害、状态、吃亏方及HP色调", () => {
-    const [report] = buildDuelReportRounds([entry()], { playerName: "陈尧天", npcName: "才旦" });
-    expect(report.aiData).toContain("野球拳/攻击");
-    expect(report.aiData).toContain("铁布衫/防御");
-    expect(report.aiData).toContain("陈尧天 60/60");
-    expect(report.aiData).toContain("才旦 57/60");
-    expect(report.aiData).toContain("才旦：健旺");
-    expect(report.aiData).toContain("才旦 3");
-    expect(report.aiData).toContain("麻穴");
-    expect(report.aiData).toContain("本轮吃亏：才旦");
+    const source = entry();
+    const [report] = buildDuelReportRounds([source]);
+    const prompt = renderDuelReportRounds([report]).text;
+    expect(report.result).toBe(source.result);
+    expect(report).not.toHaveProperty("playerName");
+    expect(prompt).toContain("玩家陈尧天为A，才旦为B");
+    expect(prompt).toContain("野球拳（攻击）对铁布衫（防御）");
+    expect(prompt).toContain("回合后气血：A 60/60、B 57/60");
+    expect(prompt).toContain("HP带：A healthy、B healthy");
+    expect(prompt).toContain("招式伤害：A 0、B 3");
+    expect(prompt).toContain("麻穴");
+    expect(prompt).toContain("本轮吃亏：才旦");
     expect(report.text).toContain("才旦 −3");
   });
 
   it("保留共享结算中的闪避与NPC疗伤标记", () => {
-    const endTick = {
-      statusDamageA: 0, statusDamageB: 0, statusSlotsA: {}, statusSlotsB: {}, logA: [], logB: [],
-    };
-    const dodgeMetadata = createDuelRoundMetadata({
-      moveTypeA: "轻功", moveTypeB: "攻击", damageToA: 0, damageToB: 0,
-      dodgeSuccessA: true, dodgeSuccessB: false, hpRestoreA: 0, hpRestoreB: 0,
-    }, endTick, [60, 60], [60, 60]);
-    const dodgeLine = formatDuelDisplayLine({
-      round: 1, playerMove: "凌波微步", npcMove: "连环腿", ...dodgeMetadata,
-    }, { playerName: "陈尧天", npcName: "才旦" });
+    const dodgeLine = formatDuelDisplayLine(entry({
+      playerMove: "凌波微步", playerMoveType: "轻功", npcMove: "连环腿", npcMoveType: "攻击",
+      dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null, dodgeSuccessPlayer: true,
+    }));
     expect(dodgeLine).toContain("躲过才旦的连环腿");
 
-    const healMetadata = createDuelRoundMetadata({
-      moveTypeA: "攻击", moveTypeB: "内功", damageToA: 0, damageToB: 0,
-      dodgeSuccessA: false, dodgeSuccessB: false, hpRestoreA: 0, hpRestoreB: 10,
-    }, endTick, [60, 60], [50, 60]);
-    const healLine = formatDuelDisplayLine({
-      round: 1, playerMove: "野球拳", npcMove: "回春功", ...healMetadata,
-    }, { playerName: "陈尧天", npcName: "才旦" });
+    const healLine = formatDuelDisplayLine(entry({
+      playerMove: "野球拳", npcMove: "回春功", npcMoveType: "内功",
+      dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null, hpRestoreNpc: 10,
+    }));
     expect(healLine).toContain("才旦运起回春功");
   });
 
   it("区分招式伤害和持续伤害，不把纯持续伤害算作命中", () => {
-    const metadata = createDuelRoundMetadata({
-      moveTypeA: "攻击", moveTypeB: "防御", damageToA: 0, damageToB: 0,
-      dodgeSuccessA: false, dodgeSuccessB: false, hpRestoreA: 0, hpRestoreB: 0,
-    }, {
-      statusDamageA: 0, statusDamageB: 4, statusSlotsA: {},
-      statusSlotsB: { poison: { name: "毒伤" } }, logA: [], logB: [],
-    }, [60, 60], [56, 60]);
-    expect(metadata).toMatchObject({
-      moveDamageToNpc: 0, dotDamageToNpc: 4, dmgToNpc: 0, statusDamageToNpc: 4,
+    const record = entry({
+      dmgToNpc: 0, dmgToPlayer: 0, statusDamageToNpc: 4,
+      hpAfterNpc: [56, 60], statusAppliedToNpc: null,
+      statusSlotsAfterNpc: { poison: { name: "毒伤", duration: 2 } },
     });
-
-    const record = { round: 1, playerMove: "野球拳", npcMove: "铁布衫", ...metadata };
-    const line = formatDuelDisplayLine(record, { playerName: "陈尧天", npcName: "才旦" });
-    const [report] = buildDuelReportRounds([record], { playerName: "陈尧天", npcName: "才旦" });
+    const line = formatDuelDisplayLine(record);
+    const [report] = buildDuelReportRounds([record]);
+    const dotPhrase = selectDuelPhrase("状态", "dot", "healthy", 1).replace(/\{target\}/g, "才旦");
+    expect(line).toContain(dotPhrase);
     expect(line).toContain("才旦 −4，含持续伤害 4");
     expect(line).not.toContain("正中");
-    expect(report.aiData).toContain("才旦 4（招式 0，持续伤害 4）");
+    expect(renderDuelReportRounds([report]).text).toContain("持续伤害：A 0、B 4");
   });
 
   it("把伤势按健旺、受创、将倒分级，濒倒显示剩余气血", () => {
-    const healthy = formatDuelDisplayLine(entry(), { playerName: "陈尧天", npcName: "才旦" });
-    const hurt = formatDuelDisplayLine(entry({ hpAfterNpc: [40, 100] }), { playerName: "陈尧天", npcName: "才旦" });
-    const nearDown = formatDuelDisplayLine(entry({ hpAfterNpc: [9, 100] }), { playerName: "陈尧天", npcName: "才旦" });
+    const healthy = formatDuelDisplayLine(entry());
+    const hurt = formatDuelDisplayLine(entry({ hpAfterNpc: [40, 100] }));
+    const nearDown = formatDuelDisplayLine(entry({ hpAfterNpc: [9, 100] }));
     expect(healthy).toContain("浑若无事");
     expect(hurt).toContain("身形一晃");
     expect(nearDown).toContain("眼看就要倒下");
@@ -144,11 +180,11 @@ describe("战报回合数据和短句", () => {
     const mutual = formatDuelDisplayLine(entry({
       dmgToNpc: 40, dmgToPlayer: 10,
       hpAfterPlayer: [9, 100], hpAfterNpc: [58, 100],
-    }), { playerName: "陈尧天", npcName: "才旦" });
+    }));
     const playerTarget = formatDuelDisplayLine(entry({
       dmgToNpc: 0, dmgToPlayer: 20, npcMoveType: "攻击",
       hpAfterPlayer: [40, 100], hpAfterNpc: [60, 60],
-    }), { playerName: "陈尧天", npcName: "才旦" });
+    }));
 
     expect(mutual).toContain("身形一晃气息微乱");
     expect(mutual).not.toContain("眼看就要倒下");
@@ -159,22 +195,22 @@ describe("战报回合数据和短句", () => {
     const dodge = formatDuelDisplayLine(entry({
       dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null,
       dodgeSuccessPlayer: true, hpAfterPlayer: [9, 100], hpAfterNpc: [60, 60],
-    }), { playerName: "陈尧天", npcName: "才旦" });
+    }));
     const heal = formatDuelDisplayLine(entry({
       dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null, hpRestoreNpc: 10,
       hpAfterPlayer: [60, 60], hpAfterNpc: [9, 100],
-    }), { playerName: "陈尧天", npcName: "才旦" });
+    }));
 
     expect(dodge).toContain("几乎失势");
     expect(heal).toContain("勉强支身");
   });
 
   it.each([
-    ["命中", "hit", entry({ npcMoveType: "攻击" }), "攻击", "你", "对手", "野球拳", "铁布衫"],
-    ["格挡", "blocked", entry(), "攻击", "你", "对手", "野球拳", "铁布衫"],
-    ["闪避", "dodged", entry({ dodgeSuccessPlayer: true }), "攻击", "你", "对手", "野球拳", "铁布衫"],
-    ["运功", "heal", entry({ dmgToNpc: 0, statusAppliedToNpc: null, hpRestoreNpc: 10 }), "防御", "对手", "对手", "铁布衫", "野球拳"],
-    ["双方中招", "bothHit", entry({ dmgToNpc: 4, dmgToPlayer: 2 }), "攻击", "你", "对手", "野球拳", "铁布衫"],
+    ["命中", "hit", entry({ npcMoveType: "攻击" }), "攻击", "陈尧天", "才旦", "野球拳", "铁布衫"],
+    ["格挡", "blocked", entry(), "攻击", "陈尧天", "才旦", "野球拳", "铁布衫"],
+    ["闪避", "dodged", entry({ dodgeSuccessPlayer: true }), "攻击", "陈尧天", "才旦", "野球拳", "铁布衫"],
+    ["运功", "heal", entry({ dmgToNpc: 0, statusAppliedToNpc: null, hpRestoreNpc: 10 }), "防御", "才旦", "才旦", "铁布衫", "野球拳"],
+    ["双方中招", "bothHit", entry({ dmgToNpc: 4, dmgToPlayer: 2 }), "攻击", "陈尧天", "才旦", "野球拳", "铁布衫"],
   ])("按%s结果渲染对应短句模板", (_label, outcome, record, moveType, actor, target, move, targetMove) => {
     const expected = selectDuelPhrase(moveType, outcome, "healthy", 1)
       .replace(/\{actor\}/g, actor)
@@ -193,7 +229,7 @@ describe("战报回合数据和短句", () => {
       .replace(/\{target\}/g, "才旦")
       .replace(/\{move\}/g, "野球拳")
       .replace(/\{targetMove\}/g, "铁布衫");
-    expect(formatDuelDisplayLine(record, { playerName: "陈尧天", npcName: "才旦" })).toContain(expected);
+    expect(formatDuelDisplayLine(record)).toContain(expected);
   });
 
   it("NPC施加状态时由NPC作为控制结果的施招者", () => {
@@ -205,7 +241,7 @@ describe("战报回合数据和短句", () => {
       .replace(/\{target\}/g, "陈尧天")
       .replace(/\{move\}/g, "铁布衫")
       .replace(/\{targetMove\}/g, "野球拳");
-    expect(formatDuelDisplayLine(record, { playerName: "陈尧天", npcName: "才旦" })).toContain(expected);
+    expect(formatDuelDisplayLine(record)).toContain(expected);
   });
 
   it("双方都受创时列出两边伤害和较吃亏者，伤害相等则平手", () => {
@@ -214,14 +250,30 @@ describe("战报回合数据和短句", () => {
       dmgToPlayer: 40,
       hpAfterPlayer: [9, 100],
       hpAfterNpc: [20, 100],
-    })], { playerName: "陈尧天", npcName: "才旦" });
+    })]);
     expect(worse.text).toContain("陈尧天 −40，剩 9");
     expect(worse.text).toContain("才旦 −24，剩 20");
-    expect(worse.aiData).toContain("本轮吃亏：陈尧天");
+    expect(renderDuelReportRounds([worse]).text).toContain("本轮吃亏：陈尧天");
 
     const [tie] = buildDuelReportRounds([entry({ dmgToNpc: 4, dmgToPlayer: 4 })]);
-    expect(tie.disadvantage).toBe("平手");
-    expect(tie.aiData).toContain("本轮吃亏：平手");
+    expect(tie.result.worseName).toBe("平手");
+    expect(renderDuelReportRounds([tie]).text).toContain("本轮吃亏：平手");
+  });
+
+  it("控制结果用目标自己的HP带，不用施招者的HP带", () => {
+    const line = formatDuelDisplayLine(entry({
+      dmgToNpc: 0, dmgToPlayer: 0,
+      statusAppliedToNpc: "麻穴",
+      hpAfterPlayer: [9, 100],
+      hpAfterNpc: [60, 60],
+    }));
+    const expected = selectDuelPhrase("攻击", "control", "healthy", 1)
+      .replace(/\{actor\}/g, "陈尧天")
+      .replace(/\{target\}/g, "才旦")
+      .replace(/\{move\}/g, "野球拳")
+      .replace(/\{targetMove\}/g, "铁布衫");
+    expect(line).toContain(expected);
+    expect(line).not.toContain("眼看就要倒下");
   });
 
   it("使用移动类型、结果和血量三维模板，所有分支可确定性选取", () => {
@@ -230,7 +282,7 @@ describe("战报回合数据和短句", () => {
         for (const band of DUEL_HP_BANDS) {
           const cell = DUEL_PHRASE_BANK[type][outcome][band];
           expect(cell.length, `${type}/${outcome}/${band}`)
-            .toBeGreaterThanOrEqual(outcome === "control" ? 3 : 12);
+            .toBeGreaterThanOrEqual(["control", "dot"].includes(outcome) ? 3 : 12);
           expect(selectDuelPhrase(type, outcome, band, 1)).toBe(cell[0]);
           expect(selectDuelPhrase(type, outcome, band, 1)).toBe(selectDuelPhrase(type, outcome, band, 1));
         }
@@ -247,6 +299,12 @@ describe("战报回合数据和短句", () => {
     for (const template of templates) {
       const placeholders = [...template.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]);
       expect(placeholders.every((name) => ["actor", "target", "move", "targetMove"].includes(name))).toBe(true);
+      const sentence = template
+        .replace(/\{actor\}/g, "甲")
+        .replace(/\{target\}/g, "乙")
+        .replace(/\{move\}/g, "招")
+        .replace(/\{targetMove\}/g, "招");
+      expect([...sentence].length).toBeLessThanOrEqual(36);
     }
   });
 
@@ -262,5 +320,24 @@ describe("战报回合数据和短句", () => {
     );
     expect(endTick.hpAfterA).toBe(57);
     expect(endTick.hpAfterB).toBe(60);
+    const finalized = finalizeDuelRound(
+      { ...result, damageToA: 5, damageToB: 2 },
+      {
+        statusDamageA: 1, statusDamageB: 0,
+        statusSlotsA: { poison: { name: "毒伤", duration: 2 } }, statusSlotsB: {},
+        logA: ["毒伤"], logB: [],
+      },
+      { hpAfterA: [57, 100], hpAfterB: [55, 100], nameA: "陈尧天", nameB: "才旦" },
+    );
+    expect(finalized).toMatchObject({
+      nameA: "陈尧天",
+      nameB: "才旦",
+      statusDamageA: 1,
+      hpAfterA: [57, 100],
+      hpBandA: "hurt",
+      hpBandB: "hurt",
+      statusSlotsAfterA: { poison: { name: "毒伤", duration: 2 } },
+      worseName: "陈尧天",
+    });
   });
 });

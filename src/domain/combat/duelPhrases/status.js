@@ -64,6 +64,11 @@ export default {
     "{actor}{move}如丝入脉，令{target}气机微滞",
     "{actor}引动{move}，{target}顿觉周身受缚",
   ],
+  dot: [
+    "前招留下的气机翻涌，{target}经脉微滞",
+    "余下劲意悄然发作，{target}气息稍乱",
+    "一线残力仍缠周身，{target}步势顿缓",
+  ],
   bothHit: [
     "{actor}的{move}与{target}的{targetMove}同时落定",
     "{actor}以{move}引气，{targetMove}也击中一处",

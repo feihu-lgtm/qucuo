@@ -127,9 +127,9 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
         const next = new Map(prev);
         for (const e of turnLog) {
           if (e.skipped) continue;
-          const owner = nextEnemy.find(u => u.id === e.actorId && u.side === "enemy");
+          const owner = nextEnemy.find(u => u.id === e.actor.id && u.side === "enemy");
           if (!owner) continue;
-          const mv = owner.movesetLocal.find(m => m.name === e.actorMove);
+          const mv = owner.movesetLocal.find(m => m.name === e.actor.move.name);
           if (!mv) continue;
           next.set(owner.id, new Set([...(next.get(owner.id) || []), mv.id]));
         }
@@ -140,21 +140,21 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
       // MudRPG onFinish 的逐回合系统日志和AI整场战报都直接复用这行文字）
       const lines = turnLog.map(e => {
         addTeamDodgeStealNotes([e], playerUnit.id, playerIntent?.move, enemies[0]?.carriedItems, tryStealOnDodge);
-        if (e.skipped) return { text: `${e.actorName}这一击落了空（${e.reason}）。`, notes: [], statusLog: [] };
-        const clash = e.targetMove ? `，${e.targetName}以「${e.targetMove}」相抗` : `，${e.targetName}无暇他顾`;
+        if (e.skipped) return { ...e, text: `${e.actor.name}这一击落了空（${e.reason}）。`, notes: [], statusLog: [] };
+        const { actor, target, result } = e, clash = target.move ? `，${target.name}以「${target.move.name}」相抗` : `，${target.name}无暇他顾`;
         // 【点名是谁占上风】原来只写"占了上风/被压了一头"，不说主语——
         // 2v2 里一行文字有两三个人名，读者根本分不清是谁赢了那一下（实测反馈）。
         // matchup "A" 是出手方(actor)赢、"B" 是应战方(target)赢。
-        const updown = e.matchup === "A" ? `${e.actorName}占了上风`
-          : e.matchup === "B" ? `${e.targetName}占了上风`
-          : "两招同门相撞";
+        const updown = result.matchup === "A" ? `${actor.name}占了上风` : result.matchup === "B" ? `${target.name}占了上风` : "两招同门相撞";
         const redirect = e.targetRedirected ? "（原目标已倒，转火）" : "";
-        const dmg = [e.dmgToTarget > 0 ? `${e.targetName}受创${e.dmgToTarget}` : null, e.dmgToActor > 0 ? `${e.actorName}受创${e.dmgToActor}` : null].filter(Boolean).join("，");
+        const dmg = [result.damageToB > 0 ? `${target.name}受创${result.damageToB}` : null, result.damageToA > 0 ? `${actor.name}受创${result.damageToA}` : null].filter(Boolean).join("，");
         return {
           ...e,
+          notes: result.notes,
+          statusLog: [...result.statusLogA, ...result.statusLogB],
           // 破折号去掉，改用句号断开：原来"…相抗——占了上风。"读起来像半句话被硬接上，
           // 而且项目的成文铁律本来就写着"禁冒号破折号"。
-          text: `${e.actorName}以「${e.actorMove}」击向${e.targetName}${redirect}${clash}。${updown}${dmg ? "。" + dmg : ""}。`,
+          text: `${actor.name}以「${actor.move.name}」击向${target.name}${redirect}${clash}。${updown}${dmg ? "。" + dmg : ""}。`,
         };
       });
       setRounds(prev => [...prev, { round, lines }]);

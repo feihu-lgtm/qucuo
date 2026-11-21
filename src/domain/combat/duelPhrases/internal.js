@@ -64,6 +64,11 @@ export default {
     "{actor}{move}如溪入石，令{target}真气一滞",
     "{actor}催动{move}隔空牵引，{target}招意顿消",
   ],
+  dot: [
+    "余下内劲逆脉翻涌，{target}气息微滞",
+    "旧力沿经脉回荡，{target}真气稍乱",
+    "暗劲未消，{target}气血微微一震",
+  ],
   bothHit: [
     "{actor}的{move}与{targetMove}劲力相撞",
     "{actor}气劲递出，{target}也以{targetMove}还击",

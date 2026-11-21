@@ -64,6 +64,11 @@ export default {
     "{actor}借{move}反锁{target}劲路",
     "{actor}一式{move}牵住{target}来势",
   ],
+  dot: [
+    "卸开的劲力仍有余波，{target}呼吸微窒",
+    "架势虽稳，余劲仍震得{target}肩背一沉",
+    "残余气劲穿过招架，{target}身形一晃",
+  ],
   bothHit: [
     "{actor}横架{move}，仍被{targetMove}带中一招",
     "{actor}与{target}招架相交，双方各受一击",

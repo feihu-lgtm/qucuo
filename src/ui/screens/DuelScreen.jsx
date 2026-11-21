@@ -7,7 +7,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { QUALITY_COLOR, computeEquippedStats, effectiveSpecial, mergeItemEffects } from "../../domain/economy/equipment.js";
 import { MOVE_TYPE } from "../../domain/combat/moveTypes.js";
 import { resolveTurn, applyEndOfTurnStatus } from "../../domain/combat/resolveTurn.js";
-import { createDuelRoundMetadata } from "../../domain/combat/duelReport.js";
+import { finalizeDuelRound } from "../../domain/combat/finalizeDuelRound.js";
 import { decideNpcMove } from "../../domain/combat/aiDecision.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { getDefaultProfile } from "../../domain/combat/personalityProfile.js";
@@ -323,18 +323,18 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
       setPlayerDefenseBroken(playerMove.type === MOVE_TYPE.DEFENSE || result.defenseBrokenA);
       setNpcDefenseBroken(npcMove.type === MOVE_TYPE.DEFENSE || result.defenseBrokenB);
 
-      setLastResult({ ...result, playerMove, npcMove, statusLogA: endTick.logA, statusLogB: endTick.logB });
+      const roundResult = finalizeDuelRound(result, endTick, {
+        hpAfterA: [finalPlayerHp, playerHp[1]], hpAfterB: [finalNpcHp, npcHp[1]], nameA: playerChar.name || "你", nameB: npc.name,
+      });
+      setLastResult({ ...roundResult, playerMove, npcMove });
       // 对方这一招被使用了 → 揭示，之后玩家可详细察看
       setRevealedNpcMoves(prev => { const n = new Set(prev); n.add(npcMove.id); return n; });
       setBattleLog(log => [...log, {
         round,
-        playerMove: playerMove.name,
-        npcMove: npcMove.name,
-        matchup: result.matchup, // 'A'=你克制 'B'=对方克制 'tie'=同类
-        ...createDuelRoundMetadata(result, endTick, [finalPlayerHp, playerHp[1]], [finalNpcHp, npcHp[1]]),
+        playerMove: playerMoveEquipped,
+        npcMove,
+        result: roundResult,
         playerEnergyLeft: newPlayerEnergy, npcEnergyLeft: newNpcEnergy,
-        notes: result.notes,
-        statusLog: [...(endTick.logA || []), ...(endTick.logB || [])],
       }]);
       // 注：每回合的 AI 说书已移除——反代限流（1分钟5次），一场切磋六七回合会打爆额度。
       // 改为只在战斗结束打包发一次「整场战报」（见 MudRPG onFinish 的 act 调用），
@@ -621,23 +621,24 @@ export function MoveInspect({ move, zoneTheme, onClose }) {
 
 // 一个回合的MUD式结算文字
 function MudRoundLog({ entry, npcName, zoneTheme }) {
-  const matchupText = entry.matchup === "A" ? "你占了上风" : entry.matchup === "B" ? `${npcName}占了上风` : "两招同门相撞";
+  const result = entry.result;
+  const matchupText = result.matchup === "A" ? "你占了上风" : result.matchup === "B" ? `${npcName}占了上风` : "两招同门相撞";
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ fontSize: "11px", color: zoneTheme.accent }}>▸ 第 {entry.round} 回合</div>
       <div style={{ fontSize: "12.5px", color: zoneTheme.text, marginTop: 2 }}>
-        你使「{entry.playerMove}」，{npcName}使「{entry.npcMove}」——{matchupText}。
+        你使「{entry.playerMove.name}」，{npcName}使「{entry.npcMove.name}」——{matchupText}。
       </div>
-      {entry.notes.map((n, i) => (
+      {result.notes.map((n, i) => (
         <div key={i} style={{ fontSize: "12px", color: zoneTheme.textDim, marginTop: 1 }}>{n}。</div>
       ))}
-      {(entry.dmgToNpc > 0 || entry.dmgToPlayer > 0) && (
+      {(result.damageToB > 0 || result.damageToA > 0) && (
         <div style={{ fontSize: "12px", marginTop: 2 }}>
-          {entry.dmgToNpc > 0 && <span style={{ color: "#e08b6f" }}>{npcName}受创 {entry.dmgToNpc}　</span>}
-          {entry.dmgToPlayer > 0 && <span style={{ color: "#c45044" }}>你受创 {entry.dmgToPlayer}</span>}
+          {result.damageToB > 0 && <span style={{ color: "#e08b6f" }}>{npcName}受创 {result.damageToB}　</span>}
+          {result.damageToA > 0 && <span style={{ color: "#c45044" }}>你受创 {result.damageToA}</span>}
         </div>
       )}
-      {(entry.statusLog || []).map((l, i) => (
+      {[...result.statusLogA, ...result.statusLogB].map((l, i) => (
         <div key={"s" + i} style={{ fontSize: "11px", color: zoneTheme.textDim, marginTop: 1 }}>{l}</div>
       ))}
       {/* AI 说书：另起一行润色，不覆盖上面的系统结算文字（斜体+左边框区分） */}

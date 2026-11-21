@@ -62,6 +62,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       },
       onGateReport: (g) => { _gateReport = g; },
       onSnapshot: (snap) => attachInjectionSnapshot(d._trace, snap),
+      onDuelReportMissing: (paths) => traceStep(d._trace, "战报模板字段缺失", "warn", paths.join("、")),
     }
   );
 

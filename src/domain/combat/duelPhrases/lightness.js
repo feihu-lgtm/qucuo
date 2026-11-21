@@ -64,6 +64,11 @@ export default {
     "{actor}借{move}牵引步势，{target}难以转身",
     "{actor}轻展{move}，将{target}引入迟滞步点",
   ],
+  dot: [
+    "余毒趁换步时发作，{target}落地微晃",
+    "身法虽避锋芒，余劲仍令{target}气息一窒",
+    "脚下才定，旧伤余波涌来，{target}身形微滞",
+  ],
   bothHit: [
     "{actor}踏风使{move}，{targetMove}也迎面而来",
     "{actor}与{target}身影交错，双方各中一招",

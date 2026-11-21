@@ -379,10 +379,11 @@ function invHasNamedItem(inv, name) {
 function recapBattleLog(battleLog) {
   return (battleLog || []).map((row) => {
     if (row.teamText) return `第${row.round}回合，${row.teamText}`;
-    const bits = [`第${row.round}回合你使「${row.playerMove}」`];
-    if (row.npcMove) bits.push(`对方使「${row.npcMove}」`);
-    if (row.dmgToNpc > 0) bits.push(`对方受创${row.dmgToNpc}`);
-    if (row.dmgToPlayer > 0) bits.push(`你受创${row.dmgToPlayer}`);
+    const result = row.result || {};
+    const bits = [`第${row.round}回合你使「${row.playerMove?.name || "未明招式"}」`];
+    if (row.npcMove) bits.push(`对方使「${row.npcMove.name}」`);
+    if (result.damageToB > 0) bits.push(`对方受创${result.damageToB}`);
+    if (result.damageToA > 0) bits.push(`你受创${result.damageToA}`);
     if (row.narration) bits.push(`（说书：${row.narration}）`);
     return bits.join("，");
   }).join("；");
@@ -406,7 +407,7 @@ export function settleNpcDuel(state, npc, {
   };
   const changes = {};
   const logs = [];
-  const reportRounds = buildDuelReportRounds(battleLog, { playerName: working.char.name || "你", npcName: npc.name || "对手" });
+  const reportRounds = buildDuelReportRounds(battleLog);
 
   if (outcome === "win" && (npc.hostile || npc.tag === "黑风寨山贼" || state.varTree?.角色?.[npc.name]?.生气状态?.escalated) && snowQuestActive(state)) {
     addChange(changes, working, "flags", (f) => [...new Set([...f, "snow_spirit_duel"])]);

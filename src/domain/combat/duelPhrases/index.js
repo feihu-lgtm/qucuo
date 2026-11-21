@@ -5,7 +5,7 @@ import lightness from "./lightness.js";
 import internal from "./internal.js";
 
 export const DUEL_MOVE_TYPES = ["攻击", "防御", "状态", "轻功", "内功"];
-export const DUEL_OUTCOMES = ["hit", "blocked", "dodged", "heal", "bothHit", "control"];
+export const DUEL_OUTCOMES = ["hit", "blocked", "dodged", "heal", "bothHit", "control", "dot"];
 export const DUEL_HP_BANDS = ["healthy", "hurt", "nearDown"];
 
 const phrasesByType = {
@@ -42,7 +42,7 @@ const controlTones = {
 
 const toneSets = {
   hit: hpTones, blocked: hpTones, bothHit: hpTones,
-  dodged: dodgeTones, heal: recoveryTones, control: controlTones,
+  dodged: dodgeTones, heal: recoveryTones, control: controlTones, dot: hpTones,
 };
 
 export const DUEL_PHRASE_BANK = Object.fromEntries(DUEL_MOVE_TYPES.map((type) => [

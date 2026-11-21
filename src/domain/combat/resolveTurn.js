@@ -111,7 +111,7 @@ export function resolveTurn(sideA, sideB) {
     matchup: null, speedWinner: null,
     moveNameA: sideA.move?.name || "未明招式", moveNameB: sideB.move?.name || "未明招式",
     moveTypeA: sideA.move?.type || "状态", moveTypeB: sideB.move?.type || "状态",
-    damageToA: 0, damageToB: 0,
+    damageToA: 0, damageToB: 0, dodgeSuccessA: false, dodgeSuccessB: false,
     energyDeltaA: 0, energyDeltaB: 0,
     statusAppliedToA: null, statusAppliedToB: null,
     counterTriggered: false,
