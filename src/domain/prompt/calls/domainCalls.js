@@ -1,4 +1,9 @@
 import { define } from "../registry.js";
+import { registerSettleCalls } from "../../settle/judge.js";
+
+// 结算层入口（本批只注册+导出，回合流程尚未接线）：软判断选择题走 settle.judge，
+// 结果落账见 domain/settle/settle.js。
+export { runSoftSettle, formatSettleNote } from "../../settle/settle.js";
 
 // ── 铸剑坊/铁匠铺 定制设计：词条全集白名单（combat/resolveTurn.js 真正读取的字段） ──
 const FORGE_EFFECT_WHITELIST = `
@@ -12,6 +17,7 @@ effect 与 sixDim 二选一为主(一件东西通常只挂其一，紫橙档可�
 
 // 注册 domain 层迁入 withAI 的提示词块与调用定义
 export function registerDomainCalls() {
+  registerSettleCalls();
   define("block", "persuasion.turn.sys", {
     label: "说服交锋系统指令",
     slot: "sys",
