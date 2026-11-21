@@ -1,11 +1,38 @@
 // 评测用 Vertex 调用：复用 src/infra/vertexAdc.js 的 ADC 解析、authorized_user 刷新令牌流程与 global 端点，
-// 额外请求 logprobs（Provider 不支持时自动去掉重试，退回模型自报概率）。
+// 以及 src/infra/providers.js 的短调用设置（关思考、JSON 输出）。额外请求 logprobs；遇 400 逐级降级：
+// 去掉 logprobs → 改用 reasoning_effort=none 关思考 → 去掉 response_format。
 import { readFile } from "node:fs/promises";
 import { webcrypto } from "node:crypto";
 import {
   buildVertexEndpoint, createVertexAuth, parseVertexAdc, prepareVertexMessages,
   vertexDefaultProject, vertexReasoningEffort, vertexResponseError,
 } from "../../src/infra/vertexAdc.js";
+import { applyShortCallOpenAI } from "../../src/infra/providers.js";
+
+const VERTEX = { id: "vertex", thinking: "vertex" };
+
+export function buildVertexEvalBody(modelId, messages, opts = {}) {
+  const modelOptions = opts.modelOptions || {};
+  const body = {
+    model: modelId,
+    messages: [...(opts.systemPrompt ? [{ role: "system", content: opts.systemPrompt }] : []), ...prepareVertexMessages(messages)],
+    temperature: modelOptions.temperature ?? 0,
+    max_tokens: Math.max(1024, modelOptions.maxTokens ?? 1024),
+    reasoning_effort: vertexReasoningEffort(modelId, "off"),
+  };
+  applyShortCallOpenAI(body, VERTEX, { disableThinking: modelOptions.disableThinking ?? true, jsonOnly: modelOptions.jsonOnly ?? true });
+  return body;
+}
+
+export function vertexFallbacks(body, { logprobs = true, topLogprobs = 5 } = {}) {
+  const { extra_body: _extra, ...noExtra } = body;
+  const effortNone = body.extra_body ? { ...noExtra, reasoning_effort: "none" } : body;
+  const { response_format: _format, ...plain } = effortNone;
+  return [
+    ...(logprobs ? [{ ...body, logprobs: true, top_logprobs: topLogprobs }] : []),
+    body, effortNone, plain,
+  ].filter((candidate, index, list) => list.findIndex((other) => JSON.stringify(other) === JSON.stringify(candidate)) === index);
+}
 
 export async function createVertexEvalAi({ adcPath, project, location = "global", model, timeoutMs = 60000, logprobs = true }) {
   if (!adcPath) throw new Error("缺少 ADC 文件：传 --adc 或设置 GOOGLE_APPLICATION_CREDENTIALS");
@@ -17,33 +44,30 @@ export async function createVertexEvalAi({ adcPath, project, location = "global"
     crypto: webcrypto, now: Date.now,
   });
   const modelId = model.includes("/") ? model : `google/${model}`;
-  let useLogprobs = logprobs;
+  let variant = 0;
   async function post(body) {
     const auth = await getHeaders();
-    return fetch(endpoint, {
+    const res = await fetch(endpoint, {
       method: "POST", redirect: "error", signal: AbortSignal.timeout(timeoutMs),
-      headers: { "Content-Type": "application/json", ...auth },
-      body: JSON.stringify(body),
-    }).then(async (res) => ({ res, auth }));
+      headers: { "Content-Type": "application/json", ...auth }, body: JSON.stringify(body),
+    });
+    return { res, auth };
   }
   return {
     async chat(messages, opts = {}) {
-      const modelOptions = opts.modelOptions || {};
-      const body = {
-        model: modelId,
-        messages: [...(opts.systemPrompt ? [{ role: "system", content: opts.systemPrompt }] : []), ...prepareVertexMessages(messages)],
-        temperature: modelOptions.temperature ?? 0,
-        max_tokens: modelOptions.maxTokens ?? 200,
-        reasoning_effort: vertexReasoningEffort(modelId, "off"),
-      };
-      let { res, auth } = await post(useLogprobs ? { ...body, logprobs: true, top_logprobs: modelOptions.topLogprobs ?? 5 } : body);
-      if (useLogprobs && res.status === 400) {
-        useLogprobs = false;
-        ({ res, auth } = await post(body));
+      const candidates = vertexFallbacks(buildVertexEvalBody(modelId, messages, opts), { logprobs, topLogprobs: opts.modelOptions?.topLogprobs });
+      for (;;) {
+        const { res, auth } = await post(candidates[Math.min(variant, candidates.length - 1)]);
+        if (res.status === 400 && variant < candidates.length - 1) { variant++; continue; }
+        if (!res.ok) {
+          const error = await vertexResponseError(res, auth.Authorization);
+          const retryAfter = Number(res.headers.get("retry-after"));
+          throw Object.assign(error, { status: res.status, ...(retryAfter > 0 ? { retryAfterMs: retryAfter * 1000 } : {}) });
+        }
+        const raw = await res.json();
+        const choice = raw.choices?.[0];
+        return { text: choice?.message?.content || "", finishReason: choice?.finish_reason ?? null, logprobs: choice?.logprobs || null, usage: raw.usage || null, raw };
       }
-      if (!res.ok) throw await vertexResponseError(res, auth.Authorization);
-      const raw = await res.json();
-      return { text: raw.choices?.[0]?.message?.content || "", logprobs: raw.choices?.[0]?.logprobs || null, raw };
     },
   };
 }

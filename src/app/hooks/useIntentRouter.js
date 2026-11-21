@@ -10,7 +10,7 @@ import { ACTION_KINDS, KIND_COMMAND } from "../../domain/intent/actionKinds.js";
 import { ROUTES } from "../../domain/intent/gate.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../../features/intent/logic.js";
 import { planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../../features/intent/route.js";
-import { createAiClassifier } from "../../engine/intent/aiClassifier.js";
+import { createAiClassifier, INTENT_TRUNCATED } from "../../engine/intent/aiClassifier.js";
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 
 const DIR_CMD = { 北: "n", 南: "s", 东: "e", 西: "w" };
@@ -62,7 +62,9 @@ export function useIntentRouter(routerRef, {
       const classifier = createAiClassifier(bindTurnAi(createWebAi(), _trace), { cfg: apiCfg });
       const onStage = stageTracer(_trace);
       const gate = await recognizeAndGate(gameStore.getState(), cmd, { classifier, onStage }).catch((error) => {
-        traceNode(_trace, "行动识别·闸门", "fail", `识别失败，回落自由行动：${error.message || error}`);
+        const truncated = error.code === INTENT_TRUNCATED;
+        traceNode(_trace, "行动识别·闸门", "fail", `${truncated ? "回复被截断" : "识别失败"}，回落自由行动：${error.message || error}`);
+        if (truncated) addLog([{ t: "sys", text: "  ⚠ 行动识别的回复被截断（输出预算用尽），本次按自由行动处理。" }]);
         return null;
       });
       if (!gate) return false;

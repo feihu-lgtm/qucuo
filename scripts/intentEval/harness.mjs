@@ -25,30 +25,56 @@ export function percentile(values, p) {
 
 const ratio = (num, den) => (den ? Number((num / den).toFixed(4)) : null);
 
-export async function runEval({ fixtures, classifier, thresholds = DEFAULT_THRESHOLDS, limit, now = () => performance.now() }) {
+const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// concurrency：同时在跑的语料条数；delayMs：相邻两条开始请求的最小间隔（限速，配合 429 退避）。
+// createClassifier(onResponse)：每条语料单独建 classifier，把模型原始回复记进 result.raw。
+export async function runEval({
+  fixtures, classifier, createClassifier, thresholds = DEFAULT_THRESHOLDS, limit,
+  concurrency = 1, delayMs = 0, now = () => performance.now(), sleep = defaultSleep,
+}) {
   const lines = limit ? fixtures.lines.slice(0, limit) : fixtures.lines;
-  const results = [];
-  for (const line of lines) {
+  const results = new Array(lines.length);
+  let next = 0;
+  let nextStartAt = 0;
+  async function runLine(line) {
+    const raw = [];
+    const lineClassifier = createClassifier ? createClassifier((entry) => raw.push(entry)) : classifier;
     const startedAt = now();
     let recognition;
     let error = null;
+    let errorType = null;
     try {
-      recognition = await recognizeIntent(fixtures.state, line.text, { classifier });
+      recognition = await recognizeIntent(fixtures.state, line.text, { classifier: lineClassifier });
     } catch (err) {
       recognition = { compound: 0, actions: [] };
       error = String(err?.message || err);
+      errorType = err?.code || "error";
     }
     const latencyMs = Math.round(now() - startedAt);
-    results.push({
-      id: line.id, text: line.text, category: line.category, expected: line.expected, error, latencyMs,
+    return {
+      id: line.id, text: line.text, category: line.category, expected: line.expected, error, errorType, latencyMs,
       predicted: recognition.actions.map(({ kind, target, item, amount, direction, confidence }) => ({ kind, target, item, amount, direction, confidence: Number((confidence ?? 0).toFixed(4)) })),
       compound: Number((recognition.compound ?? 0).toFixed(4)),
       confidence: Number(planConfidence(recognition).toFixed(4)),
       route: gateRecognition(recognition).route,
       correct: lineCorrect(recognition, line.expected),
       actions: recognition.actions,
-    });
+      ...(createClassifier ? { raw } : {}),
+    };
   }
+  async function worker() {
+    while (next < lines.length) {
+      const index = next++;
+      if (delayMs > 0) {
+        const wait = nextStartAt - now();
+        nextStartAt = Math.max(now(), nextStartAt) + delayMs;
+        if (wait > 0) await sleep(wait);
+      }
+      results[index] = await runLine(lines[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, lines.length || 1)) }, worker));
   return summarize(results, thresholds);
 }
 
@@ -87,6 +113,7 @@ export function summarize(results, thresholds = DEFAULT_THRESHOLDS) {
     total: results.length,
     overallAccuracy: ratio(results.filter((r) => r.correct).length, results.length),
     errors: results.filter((r) => r.error).length,
+    errorsByType: results.reduce((acc, r) => (r.errorType ? { ...acc, [r.errorType]: (acc[r.errorType] || 0) + 1 } : acc), {}),
     perKind,
     perCategory,
     compound: { lines: compoundLines.length, splitAccuracy: ratio(splitOk.length, compoundLines.length), detectionAccuracy: ratio(detectionOk.length, results.length) },
@@ -106,7 +133,7 @@ export function toMarkdown(report, meta = {}) {
     `# 行动识别评测报告`,
     ``,
     `- Provider：${meta.provider || "mock"}${meta.model ? ` · 模型：${meta.model}` : ""} · 提示词版本：${report.promptVersion}`,
-    `- 样本：${report.total} 条 · 整体准确率：${pct(report.overallAccuracy)} · 出错：${report.errors}`,
+    `- 样本：${report.total} 条 · 整体准确率：${pct(report.overallAccuracy)} · 出错：${report.errors}${Object.keys(report.errorsByType || {}).length ? `（${Object.entries(report.errorsByType).map(([type, n]) => `${type} ${n}`).join("，")}）` : ""}`,
     `- 复合拆分准确率：${pct(report.compound.splitAccuracy)}（${report.compound.lines} 条复合）· 复合判定准确率：${pct(report.compound.detectionAccuracy)}`,
     `- 延迟：p50 ${report.latencyMs.p50} ms · p95 ${report.latencyMs.p95} ms`,
     ``,

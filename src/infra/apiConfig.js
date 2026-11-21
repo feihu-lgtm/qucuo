@@ -506,7 +506,7 @@ async function fetchOpenAI(cfg, systemPrompt, messages, opts, stream = false) {
     const value = opts[option] ?? cfg[option];
     if (value != null) body[field] = value;
   }
-  applyThinkingOpenAI(body, cfg, provider, vertex);
+  applyThinkingOpenAI(body, cfg, provider, vertex, opts);
   const auth = vertex ? await (opts.getVertexHeaders || (() => getStoredVertexHeaders(fetchWithTimeout)))()
     : { Authorization: `Bearer ${cfg.apiKey}` };
   try {

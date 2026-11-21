@@ -2,7 +2,7 @@
 // 中置信度时打印确认句，下一行输入「是/不是」作答。
 import { ACTION_KINDS } from "../src/domain/intent/actionKinds.js";
 import { ROUTES } from "../src/domain/intent/gate.js";
-import { createAiClassifier } from "../src/engine/intent/aiClassifier.js";
+import { createAiClassifier, INTENT_TRUNCATED } from "../src/engine/intent/aiClassifier.js";
 import { bindTurnAi } from "../src/engine/ports/ai.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../src/features/intent/logic.js";
 import { planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../src/features/intent/route.js";
@@ -58,7 +58,9 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
     const turn = getTurn();
     const classifier = createAiClassifier(bindTurnAi(ai, turn), { cfg: apiCfg });
     const gate = await recognizeAndGate(getState(), line, { classifier, onStage: stageTracer(turn) }).catch((error) => {
-      traceNode(turn, "行动识别·闸门", "fail", `识别失败，回落自由行动：${error.message || error}`);
+      const truncated = error.code === INTENT_TRUNCATED;
+      traceNode(turn, "行动识别·闸门", "fail", `${truncated ? "回复被截断" : "识别失败"}，回落自由行动：${error.message || error}`);
+      if (truncated) emit("⚠ 行动识别的回复被截断（输出预算用尽），本次按自由行动处理。");
       return null;
     });
     if (!gate) return null;
