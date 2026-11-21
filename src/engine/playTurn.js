@@ -91,7 +91,8 @@ export async function playTurn(ctx, cmd, opts = {}) {
             formatAngerResolutionLog(turnOpts.settleNpc),
           ];
         }
-        gameActions.setVarTreeState(settledTree);
+        if (ctx.setVarTree) ctx.setVarTree(() => settledTree);
+        else gameActions.setVarTreeState(settledTree);
         turnOpts.softSettle = { ...softSettle, varTree: settledTree };
         turnMonitor.add(trace, "engine", "结算·软判定", {
           status: "pass",

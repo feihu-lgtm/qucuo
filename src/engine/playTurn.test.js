@@ -111,6 +111,37 @@ describe("playTurn background bookkeep", () => {
     expect(ctx._trace.nodes.map(({ label }) => label)).toContain("结算·软判定");
   });
 
+  it("keeps a ref-backed setter current for the commit's functional update", async () => {
+    const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
+    gameActions.setVarTreeState(varTree);
+    const varTreeRef = { current: varTree };
+    const setVarTree = (next) => {
+      const value = typeof next === "function" ? next(varTreeRef.current) : next;
+      varTreeRef.current = value;
+      gameActions.setVarTreeState(value);
+    };
+    const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']);
+    let commitTree;
+    runTurn.mockResolvedValue({ narrativeText: "八云的神情缓和下来。" });
+    commitRound.mockImplementation(({ setVarTree: commitSetVarTree }) => {
+      commitSetVarTree((prev) => {
+        commitTree = prev;
+        return prev;
+      });
+    });
+
+    await playTurn(makeContext({
+      ai, apiCfg: {}, bookkeep: false, setVarTree, refs: { varTreeRef },
+      commitDeps: () => ({ setVarTree }),
+    }), "赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
+
+    expect(varTreeRef.current.角色.八云).toMatchObject({
+      好感度: 23,
+      生气状态: { active: false, resolvedBy: "persuasion" },
+    });
+    expect(commitTree).toBe(varTreeRef.current);
+  });
+
   it("leaves the old narrator path intact for unknown, offline, or disabled soft settlement", async () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
     const opts = { settle: true, settleKind: "appease", settleNpc: "八云" };
@@ -147,15 +178,24 @@ describe("playTurn background bookkeep", () => {
   it("rolls back the soft-settled tree when runTurn fails", async () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
     gameActions.setVarTreeState(varTree);
+    const varTreeRef = { current: varTree };
+    const setVarTree = (next) => {
+      const value = typeof next === "function" ? next(varTreeRef.current) : next;
+      varTreeRef.current = value;
+      gameActions.setVarTreeState(value);
+    };
     const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']);
     runTurn.mockRejectedValue(new Error("narration failed"));
 
-    const result = await playTurn(makeContext({ ai, apiCfg: {}, bookkeep: false }), "赔罪", {
+    const result = await playTurn(makeContext({
+      ai, apiCfg: {}, bookkeep: false, setVarTree, refs: { varTreeRef },
+    }), "赔罪", {
       settle: true, settleKind: "appease", settleNpc: "八云",
     });
 
     expect(result.ok).toBe(false);
     expect(gameStore.getState().varTree).toBe(varTree);
+    expect(varTreeRef.current).toEqual(varTree);
   });
 
   it("rolls back the soft-settled tree when runTurn becomes stale", async () => {

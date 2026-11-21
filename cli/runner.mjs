@@ -381,6 +381,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         }, { importedNpcLore: importedRegistry.getImportedNpcLore() }),
         _trace: trace,
         deferMonitorFinish: trace === lineTurn,
+        setVarTree,
         state,
         memory: {
           varTreeLatest: state.varTree,
