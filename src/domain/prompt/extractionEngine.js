@@ -282,6 +282,7 @@ export const SETTLE_KIND_SPECS = { gift: "GIFT", companion_invite: "COMPANION_IN
 // 如果这个意图不需要状态提取（META_QUERY），返回 null。
 // settleOpts 携带目标NPC和结算类型所需的上下文；双调用模式的状态判定由专属提取 spec 约束。
 export async function callExtraction(intentCode, narrative, state, apiCfg, settleOpts = null, ai = createWebAi()) {
+  if (settleOpts?.settleKind === "duel_invite") return { p: {}, mvuCommands: [] };
   const settleSpecKey = settleOpts?.settleNpc ? SETTLE_KIND_SPECS[settleOpts?.settleKind] : null;
   // 不能用 || 回退：META_QUERY 显式为 null（本意图不提取状态），
   // null || UNKNOWN 会让它错误地落到 UNKNOWN，使下面的 !spec 判断成为死代码。

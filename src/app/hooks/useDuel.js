@@ -7,7 +7,9 @@ import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 
 export async function openDuelAfterNarration({ act, setDuelPending, isStale }, npc) {
-  await act(`向${npc.name}抱拳邀战，请他切磋一番`, [], { keepUndo: true });
+  await act(`向${npc.name}抱拳邀战，请他切磋一番`, [], {
+    keepUndo: true, settle: true, settleKind: "duel_invite", settleNpc: npc,
+  });
   if (isStale()) return false;
   setDuelPending(npc);
   return true;

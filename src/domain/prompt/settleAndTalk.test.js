@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { buildSysBase } from "./sysBase.js";
+import { buildExtractionSpecExample, callExtraction, SETTLE_KIND_SPECS } from "./extractionEngine.js";
 
 function wia(scope, narrativeOnly, opts = {}) {
   const { sysBlocks } = buildSysBase(
@@ -69,9 +70,39 @@ describe("拜师 learn_skill 铁律（0728 起改由 11 号位承载，不再在
   });
 });
 
-// ── 提取层（二调用）侧 ──────────────────────────────────────────────
-import { buildExtractionSpecExample, SETTLE_KIND_SPECS } from "./extractionEngine.js";
+describe("切磋邀战结算", () => {
+  const build = (narrativeOnly) => buildSysBase(
+    220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", narrativeOnly, "settle",
+    { playerName: "少侠", settleNpc: { name: "才旦" }, settleKind: "duel_invite" },
+  );
 
+  it("叙事只到接受邀战、摆开架势，明确在第一招前停止", () => {
+    const { phiRules } = build(true);
+    expect(phiRules).toContain("接受邀战");
+    expect(phiRules).toContain("第一招交手之前立刻停止");
+    expect(phiRules).toContain("严禁描写任何招式交锋、回合、伤势、胜负");
+    expect(phiRules).toContain("切磋是否开始由玩家");
+    expect(phiRules).not.toContain("[object Object]");
+  });
+
+  it("状态结算禁止任何 MVU 变化", () => {
+    const { phiRules } = build(false);
+    expect(phiRules).toContain("不得输出 <mvu>");
+    expect(phiRules).toContain("不得修改气血、好感、物品或其他状态");
+    expect(phiRules).not.toContain("关于下面那条 <mvu>");
+    expect(phiRules).toContain("本轮没有任何状态变化");
+  });
+
+  it("dual-call extraction returns a no-op without calling the model", async () => {
+    const ai = { chat: vi.fn() };
+    await expect(callExtraction("COMBAT", "邀战", { char: {} }, {}, {
+      settleKind: "duel_invite", settleNpc: { name: "才旦" },
+    }, ai)).resolves.toEqual({ p: {}, mvuCommands: [] });
+    expect(ai.chat).not.toHaveBeenCalled();
+  });
+});
+
+// ── 提取层（二调用）侧 ──────────────────────────────────────────────
 describe("结算专属提取 spec 的路由", () => {
   it("所有 settleKind 都注册在映射表里", () => {
     expect(SETTLE_KIND_SPECS).toEqual({
