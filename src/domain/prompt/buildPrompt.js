@@ -81,7 +81,7 @@ export function buildPrompt(callId, ctx = {}, { overrides = {} } = {}) {
   const sysJoin = typeof call.join === "object" ? (call.join?.sys ?? "") : (call.join ?? "");
   const userJoin = typeof call.join === "object" ? (call.join?.user ?? "") : (call.join ?? "");
   const system = buckets.sys.join(sysJoin);
-  const messages = [];
+  const messages = [...(call.history?.(ctx) || [])];
   if (buckets.user.length) {
     messages.push({ role: "user", content: buckets.user.join(userJoin) });
   }

@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef } from "react";
-import { buildDaySummaryRequest, appendDaySummary } from "../../domain/memory/daySummary.js";
+import { appendDaySummary } from "../../domain/memory/daySummary.js";
 import { describeDayForSummary } from "../../domain/memory/tally.js";
-import { factSummaryRequest, setFactSummary } from "../../domain/prompt/knowledge.js";
+import { setFactSummary } from "../../domain/prompt/knowledge.js";
 import { resetForDay } from "../../domain/map/mapSquares.js";
-import { callModel } from "../../infra/apiConfig.js";
+import { createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../domain/prompt/withAI.js";
+import "../calls/hookCalls.js";
+
+const webAi = createWebAi();
 
 export function useDaySummary({ time, apiCfg, setVarTree, varTreeRef, dayMaterialRef, prerunSquares }) {
   const summarizeDay = useCallback(async (endedDay, material) => {
@@ -11,8 +15,7 @@ export function useDaySummary({ time, apiCfg, setVarTree, varTreeRef, dayMateria
     if (!lines.length) return;
     const label = `第${endedDay + 1}日`;
     try {
-      const { system, messages } = buildDaySummaryRequest(label, lines);
-      const { text } = await callModel(apiCfg, system, messages, { maxTokens: apiCfg.callTokenLimits?.daySummary ?? 2000, callLabel: "日总结" });
+      const { text } = await withAI("day.summary", { dayLabel: label, materialLines: lines }, { ai: webAi, apiCfg });
       const summary = (text || "").trim();
       if (!summary) return;
       setVarTree(prev => appendDaySummary(prev, { day: endedDay, label, text: summary, turn: (endedDay + 1) * 24 }));
@@ -24,8 +27,7 @@ export function useDaySummary({ time, apiCfg, setVarTree, varTreeRef, dayMateria
   // 而是可读的结构化事实垫底）。cue 是喂给 AI 的事件线索，越具体 AI 写得越准。
   const aiSummarizeFact = useCallback(async (factId, cue) => {
     try {
-      const req = factSummaryRequest(cue);
-      const { text } = await callModel(apiCfg, req.system, req.messages, { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens, callLabel: "事实摘要" });
+      const { text } = await withAI("fact.summary", { cue }, { ai: webAi, apiCfg });
       // 坑：这里原先写的是 if (line) ... setFactSummary(…, line)，但 callModel 解构出来的
       // 是 text——line 从来就不存在，每次都抛 ReferenceError 被下面的 catch 静默吃掉，
       // 等于 AI 摘要一次都没写进去过，一直在用注册时的结构化兜底（见 version.js 0727 修复记录）。

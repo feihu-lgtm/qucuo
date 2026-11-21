@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { define, resetRegistryForTest } from "../../domain/prompt/registry.js";
-import { createMockAi } from "./ai.js";
+import { define, resetRegistryForTest } from "./registry.js";
+import { createMockAi } from "../../engine/ports/ai.js";
 import { withAI } from "./withAI.js";
 
 describe("withAI", () => {
