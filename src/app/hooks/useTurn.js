@@ -66,8 +66,7 @@ export function useTurn({
     let summary, result;
     try {
     const stopAutoTravel = (encounter) => {
-      const hostile = Boolean(encounter?.hostile); // 势力过路人默认不算敌，只有标了 hostile 的路遇才应验「遇敌」
-      if (!autoTravelRef.current) return void intentRouterRef?.current?.fireEvent?.("encounter", { hostile }); // 手动走动同样应验
+      const hostile = Boolean(encounter?.hostile); if (!autoTravelRef.current) return void intentRouterRef?.current?.fireEvent?.("encounter", { hostile }); // 只有 hostile 路遇应验「遇敌」，手动走动同样
       const dropped = clearRouteQueue();
       autoTravelRef.current = false;
       const message = `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`;
