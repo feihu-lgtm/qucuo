@@ -6,7 +6,8 @@ import {
   renderFieldScales,
   resolveRef,
 } from "./promptRefs.js";
-import { buildPigeonPrompt } from "./pigeonPrompt.js";
+import { buildPrompt } from "./buildPrompt.js";
+import "./calls/sideCalls.js";
 import { callExtraction } from "./extractionEngine.js";
 import { AFFECTION_RULES, FIELD, FIELDS, WHISPER_AFFECTION_RULES } from "../state/fields.js";
 import { buildNarratorWhisperContext } from "../narrator/narrator.js";
@@ -124,7 +125,11 @@ describe("declared numeric scales", () => {
   });
 
   it("uses each channel's own affection scale for the hidden marker", () => {
-    expect(buildPigeonPrompt(promptState(), { npcName: "才旦" }, {})).toContain(resolveRef({}, "尺度.飞鸽"));
+    expect(buildPrompt("pigeon.reply", {
+      state: promptState(),
+      letter: { npcName: "才旦" },
+      preset: {},
+    }).system).toContain(resolveRef({}, "尺度.飞鸽"));
     expect(buildNarratorWhisperContext(10)).toContain(resolveRef({}, "尺度.私语"));
   });
 });
@@ -172,7 +177,12 @@ describe("model-bound state refs", () => {
       飞鸽: [{ dir: "send", content: "你好 @主角.名", gift: "竹笛" }, { dir: "reply", content: "已阅" }],
     };
     const trace = vi.fn();
-    const prompt = buildPigeonPrompt(state, { npcName }, { scenario: "@不替换" }, trace);
+    const prompt = buildPrompt("pigeon.reply", {
+      state,
+      letter: { npcName },
+      preset: { scenario: "@不替换" },
+      trace,
+    }).system;
     expect(prompt.split("\n").slice(0, 6).join("\n")).toBe(
       "你是武侠世界「曲措乡」中的【艾·青 山】\n你与主角的关系：好感度 42/100，熟稔。好感越低越冷淡疏离，越高越亲近热络。\n剧本背景：@不替换\n你收到主角寄来的信。你们此前往来的信件（须前后连贯、不自相矛盾）：\n主角来信：你好 @主角.名（附礼：竹笛）\n你的回信：已阅",
     );
