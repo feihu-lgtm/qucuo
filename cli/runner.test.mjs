@@ -20,8 +20,8 @@ describe("CLI API configuration", () => {
     expect(buildCliApiConfig({ bookkeepEnabled: true })).toMatchObject({ bookkeepEnabled: true });
   });
 
-  it("keeps soft settle off for deterministic CLI runs unless explicitly enabled", () => {
-    expect(buildCliApiConfig()).toMatchObject({ softSettleEnabled: false });
-    expect(buildCliApiConfig({ softSettleEnabled: true })).toMatchObject({ softSettleEnabled: true });
+  it("keeps soft settle on by default and honors an explicit opt-out", () => {
+    expect(buildCliApiConfig()).toMatchObject({ softSettleEnabled: true });
+    expect(buildCliApiConfig({ softSettleEnabled: false })).toMatchObject({ softSettleEnabled: false });
   });
 });

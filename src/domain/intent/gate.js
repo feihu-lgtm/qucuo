@@ -41,6 +41,11 @@ function describePlain(action) {
     case ACTION_KINDS.BUY: return `向${who(action)}买东西`;
     case ACTION_KINDS.DUEL: return `和${who(action)}切磋`;
     case ACTION_KINDS.LEARN: return `向${who(action)}拜师学艺`;
+    case ACTION_KINDS.INVITE: return `邀${who(action)}同行`;
+    case ACTION_KINDS.STEAL: return `偷${who(action)}的东西`;
+    case ACTION_KINDS.APPEASE: return `向${who(action)}赔罪`;
+    case ACTION_KINDS.PICKUP: return `捡起${action.item && action.item !== NONE ? action.item : "东西"}`;
+    case ACTION_KINDS.EQUIP: return `穿戴${action.item && action.item !== NONE ? action.item : "装备"}`;
     case ACTION_KINDS.MOVE: return `往${action.direction && action.direction !== NONE ? action.direction : "前"}走`;
     case ACTION_KINDS.USE_ITEM: return `用掉${action.item && action.item !== NONE ? action.item : "东西"}`;
     case ACTION_KINDS.TALK: return `和${who(action)}说话`;

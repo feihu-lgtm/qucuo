@@ -18,7 +18,11 @@ it("records and replays the seeded opening leopard quest without a second unlock
   const ai = createRecordingAi(createMockAi(replies), (entry) => recorded.push(entry));
   for (const backend of [ai, createReplayAi(recorded)]) {
     const output = [];
-    const session = createSession({ cwd: directory, ai: backend, out: (line) => output.push(line) });
+    const session = createSession({
+      cwd: directory, ai: backend, out: (line) => output.push(line),
+      // fixture 录制于行动识别/软结算默认关的时代：确定性回放须显式关掉。
+      apiCfg: { intentRecognitionEnabled: false, softSettleEnabled: false },
+    });
     for (const line of script.split(/\r?\n/)) {
       expect(await session.runLine(line), output.join("\n")).toBe(0);
       if (line === ":new") {

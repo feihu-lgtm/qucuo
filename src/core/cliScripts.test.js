@@ -6,22 +6,23 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exportSave } from "../infra/saves.js";
 import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
-import { createSession, runScript } from "../../cli/runner.mjs";
+import { createSession as rawCreateSession, runScript as rawRunScript } from "../../cli/runner.mjs";
 import { getRngState, random, setSeed } from "./rng.js";
 import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports/ai.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scriptsDir = resolve(projectRoot, "tests/cli");
 const scriptFiles = readdirSync(scriptsDir)
-  .filter((file) => file.endsWith(".txt") && ![
-    "ai-turn-rollback.txt",
-    "failed-inspection-pending-turn.txt",
-    "outer-arrival.txt",
-    "uncached-arrival-failure.txt",
-  ].includes(file))
+  .filter((file) => file.endsWith(".txt")
+    && !["ai-turn-rollback.txt", "failed-inspection-pending-turn.txt", "outer-arrival.txt", "uncached-arrival-failure.txt"].includes(file))
   .sort();
 
 let tempDir;
+
+// 行动识别与软结算现在都默认开；本文件的脚本 fixture 录制于默认关的时代，确定性回放须显式关掉。
+const DETERMINISTIC_API = { intentRecognitionEnabled: false, softSettleEnabled: false };
+const createSession = (opts) => rawCreateSession({ apiCfg: DETERMINISTIC_API, ...opts });
+const runScript = (lines, opts) => rawRunScript(lines, { apiCfg: DETERMINISTIC_API, ...opts });
 
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), "qucuo-cli-"));
@@ -276,8 +277,7 @@ describe("CLI scripts", () => {
   it("runs a script with sibling replies using the default mock AI", () => {
     const output = execFileSync(process.execPath, [
       resolve(projectRoot, "cli/qucuo.mjs"),
-      "--script",
-      "tests/cli/ai-turn.txt",
+      "--script", "tests/cli/ai-turn.txt", "--no-intent", "--no-soft-settle",
     ], { cwd: projectRoot, encoding: "utf8" });
 
     expect(output).toContain("石阶旁的草叶轻轻摇动。");

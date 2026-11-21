@@ -102,7 +102,7 @@ export function buildCliApiConfig(overrides = {}) {
     maxTokens: overrides.maxTokens || 4000,
     extractionEnabled: overrides.extractionEnabled ?? false,
     bookkeepEnabled: overrides.bookkeepEnabled ?? false,
-    softSettleEnabled: overrides.softSettleEnabled ?? false,
+    softSettleEnabled: overrides.softSettleEnabled ?? true,
     streamEnabled: false,
   };
   if (provider) config.provider = provider;
@@ -914,7 +914,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
     return status;
   }
 
-  const intentRouter = apiCfgOverrides?.intentRecognitionEnabled ? createCliIntentRouter({
+  const intentRouter = apiCfgOverrides?.intentRecognitionEnabled !== false ? createCliIntentRouter({
     ai, apiCfg: buildCliApiConfig(apiCfgOverrides), emit, getState: () => gameStore.getState(), getTurn: () => lineTurn,
     applyFeature, runFreeText, runCommand: (text) => runLineCommand(text, classifyCliCommand(text)),
   }) : null;

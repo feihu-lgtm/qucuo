@@ -42,6 +42,7 @@ const inventoryCommands = [
   ["npcTrade", CATEGORY.LOCAL, "NPC 交易"],
   ["npcLearnSkill", CATEGORY.LOCAL, "向 NPC 学艺"],
   ["npcSteal", CATEGORY.LOCAL, "偷窃 NPC"],
+  ["npcAppease", CATEGORY.LOCAL, "向生气 NPC 赔罪"],
   ["characterGift", CATEGORY.AI_TURN, "向人物赠礼"],
   ["milestoneClaim", CATEGORY.LOCAL, "领取人物里程碑"],
   ["menuEquip", CATEGORY.LOCAL, "物品菜单装备"],

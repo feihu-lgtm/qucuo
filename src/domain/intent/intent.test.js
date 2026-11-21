@@ -146,6 +146,26 @@ describe("system gate", () => {
     expect(plan.skipped).toHaveLength(1);
     expect(validatePlan(angry, [learn]).rejected.reason).toBe("才旦正在气头上，不肯传授");
   });
+
+  it("gates steal/invite/appease/pickup/equip to the same presence and item checks", () => {
+    const angry = { ...state, varTree: { 角色: { 才旦: { 生气状态: { active: true } } } } };
+    const ground = { ...state, room: { ...state.room, items: [{ name: "枯枝" }] } };
+    // 拾取的物品槽列的是地上物，装备槽列的是背包。
+    expect(slotOptions(ground, ACTION_KINDS.PICKUP, "item")).toEqual(["枯枝", NONE]);
+    expect(slotOptions(state, ACTION_KINDS.PICKUP, "item")).toEqual([NONE]);
+    expect(slotOptions(state, ACTION_KINDS.EQUIP, "item")).toEqual(["酥油茶", "青稞酒", NONE]);
+    // 目标类：偷窃/邀同行/平息都要求对象在场。
+    expect(validatePlan(state, [{ kind: "偷窃", target: "王掌柜" }]).rejected.reason).toBe("王掌柜不在此处");
+    expect(validatePlan(state, [{ kind: "偷窃", target: "才旦" }]).rejected).toBeNull();
+    expect(validatePlan(state, [{ kind: "邀同行", target: "卓玛" }]).rejected).toBeNull();
+    expect(validatePlan(state, [{ kind: "平息/道歉", target: "才旦" }]).rejected.reason).toBe("才旦并没有在生气");
+    expect(validatePlan(angry, [{ kind: "平息/道歉", target: "才旦" }]).rejected).toBeNull();
+    // 物品类：拾取查地上物，装备查背包。
+    expect(validatePlan(ground, [{ kind: "拾取", item: "枯枝" }]).rejected).toBeNull();
+    expect(validatePlan(state, [{ kind: "拾取", item: "枯枝" }]).rejected.reason).toBe("地上没有枯枝");
+    expect(validatePlan(state, [{ kind: "装备/卸下", item: "酥油茶" }]).rejected).toBeNull();
+    expect(validatePlan(state, [{ kind: "装备/卸下", item: "长剑" }]).rejected.reason).toBe("背包里没有长剑");
+  });
 });
 
 describe("conditional steps", () => {
