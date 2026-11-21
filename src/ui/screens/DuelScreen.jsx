@@ -383,8 +383,7 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
     const pseudoMove = {
       id: `__consume_${invItem.name}`,
       name: `服「${invItem.name}」`,
-      type: MOVE_TYPE.STATUS,
-      fromItem: true,
+      type: MOVE_TYPE.STATUS, fromItem: true,
       energyCost: 0,
       baseDamageMultiplier: 0,
     };
