@@ -96,7 +96,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
         ctx: {
           npc: turnOpts.settleNpc,
           varTree: state.varTree,
-          attempt: cmd,
+          attempt: turnOpts.attempt || cmd,
           time: state.time,
           charm: turnCtx.effectiveSpecialNow?.魅力 ?? 5,
           giftInfo: turnOpts.giftInfo,

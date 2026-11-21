@@ -160,11 +160,21 @@ describe("system gate", () => {
     expect(validatePlan(state, [{ kind: "邀同行", target: "卓玛" }]).rejected).toBeNull();
     expect(validatePlan(state, [{ kind: "平息/道歉", target: "才旦" }]).rejected.reason).toBe("才旦并没有在生气");
     expect(validatePlan(angry, [{ kind: "平息/道歉", target: "才旦" }]).rejected).toBeNull();
-    // 物品类：拾取查地上物，装备查背包。
+    // 物品类：拾取查地上物，装备查背包；装备候选额外含地上物（先捡后穿的复合指令）。
+    expect(slotOptions(ground, ACTION_KINDS.EQUIP, "item")).toEqual(["酥油茶", "青稞酒", "枯枝", NONE]);
     expect(validatePlan(ground, [{ kind: "拾取", item: "枯枝" }]).rejected).toBeNull();
     expect(validatePlan(state, [{ kind: "拾取", item: "枯枝" }]).rejected.reason).toBe("地上没有枯枝");
     expect(validatePlan(state, [{ kind: "装备/卸下", item: "酥油茶" }]).rejected).toBeNull();
     expect(validatePlan(state, [{ kind: "装备/卸下", item: "长剑" }]).rejected.reason).toBe("背包里没有长剑");
+  });
+
+  it("lets a pickup-then-equip compound pass: picked items enter the simulated bag", () => {
+    const ground = { ...state, room: { ...state.room, items: [{ name: "枯枝" }] } };
+    const plan = validatePlan(ground, [{ kind: "拾取", item: "枯枝" }, { kind: "装备/卸下", item: "枯枝" }]);
+    expect(plan.rejected).toBeNull();
+    expect(plan.valid).toHaveLength(2);
+    // 同一件地上物不能连捡两次。
+    expect(validatePlan(ground, [{ kind: "拾取", item: "枯枝" }, { kind: "拾取", item: "枯枝" }]).rejected.reason).toBe("地上没有枯枝");
   });
 });
 

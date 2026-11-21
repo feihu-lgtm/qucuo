@@ -58,6 +58,8 @@ export const SLOT_SPECS = Object.freeze({
 
 export const SILVER = "银两";
 export const NONE = "无";
+// 「装备/卸下」从玩家原话判断方向：卸下类用词 → 脱，否则 → 穿。识别与闸门共用。
+export const UNEQUIP_RE = /卸下|脱下|脱掉|摘下|摘掉|取下|拿掉|拿下|收起/;
 export const DIRECTIONS = Object.freeze(["北", "南", "东", "西"]);
 
 export function visibleNpcs(state) {
@@ -82,11 +84,16 @@ export function slotOptions(state, kind, slot) {
   if (slot === "target") return [...new Set(visibleNpcs(state).map((npc) => npc.name)), NONE];
   if (slot === "direction") return [...DIRECTIONS, NONE];
   if (slot === "item") {
-    // 拾取的对象是地上的东西；其余物品槽都从背包出。
+    // 拾取的对象是地上的东西；装备候选含地上物（复合指令先捡后穿）；其余物品槽都从背包出。
     if (kind === ACTION_KINDS.PICKUP) {
       return [...new Set((state?.room?.items || []).map(itemNameOf).filter(Boolean)), NONE];
     }
     const items = [...inventoryCounts(state).keys()];
+    // 「先捡起来再装备」这类复合指令里，装备目标此刻还在地上；候选把地上物一并放出，由闸门按步校验到位。
+    if (kind === ACTION_KINDS.EQUIP) {
+      const ground = (state?.room?.items || []).map(itemNameOf).filter(Boolean);
+      return [...new Set([...items, ...ground]), NONE];
+    }
     return kind === ACTION_KINDS.GIFT ? [SILVER, ...items, NONE] : [...items, NONE];
   }
   return [];
