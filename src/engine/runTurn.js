@@ -167,7 +167,10 @@ async function runTurnSteps(ctx, cmd, opts) {
     }
 
     // settle 回合的状态已由系统/软结算裁决并落账，提取层只对自由行动/闲聊等未裁决回合补漏。
-    if (isSettle) {
+    // 但软结算关掉时 settle 回合没有任何系统裁决，提取层须照旧兜底（老双调用语义），
+    // 否则礼物扣物不返好感、道歉消不了怒气。
+    const extractionSkipped = isSettle && apiCfg.softSettleEnabled !== false;
+    if (extractionSkipped) {
       trace("提取调用", "skip", "settle 回合由系统结算接管状态，跳过提取");
     } else {
       const extractionState = createExtractionState(ctx, deps);

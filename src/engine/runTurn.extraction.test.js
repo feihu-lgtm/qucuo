@@ -7,7 +7,7 @@ import { runTurn } from "./runTurn.js";
 
 describe("runTurn dual-call extraction", () => {
   it("skips the extraction call on settle turns but keeps it on free turns", async () => {
-    const buildCtx = (settle) => {
+    const buildCtx = (settle, softSettleEnabled = true) => {
       const calls = { count: 0 };
       const ai = createMockAi([
         "石阶旁的草叶轻轻摇动。",
@@ -15,7 +15,7 @@ describe("runTurn dual-call extraction", () => {
       ], { onRequest: () => { calls.count += 1; } });
       const apiCfg = {
         apiType: "openai", model: "test-model", targetWordCount: 220, contextWindow: 20,
-        streamEnabled: false, extractionEnabled: true, callTokenLimits: {}, intentBudgets: {},
+        streamEnabled: false, extractionEnabled: true, softSettleEnabled, callTokenLimits: {}, intentBudgets: {},
       };
       const ctx = {
         ai,
@@ -60,5 +60,10 @@ describe("runTurn dual-call extraction", () => {
     const freeTurn = buildCtx(false);
     await runTurn(freeTurn.ctx, "探索石阶");
     expect(freeTurn.calls.count).toBe(2); // 主叙事 + 极简提取
+
+    // 软结算关闭时 settle 回合没有系统裁决，提取层照旧兜底
+    const noSoftSettle = buildCtx(true, false);
+    await runTurn(noSoftSettle.ctx, "向八云赔罪", { settle: true });
+    expect(noSoftSettle.calls.count).toBe(2);
   });
 });
