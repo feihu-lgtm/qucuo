@@ -8,6 +8,7 @@ import { buildHistBlock, histBlockSavings } from "../domain/memory/histWindow.js
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 import { getApiModel } from "../core/apiModel.js";
+import { filterRejectedEffects, planExtractionNote } from "../domain/intent/planNotes.js";
 
 const MAX_AUTO_RETRY = 2;
 
@@ -169,7 +170,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       : null;
     const extracted = await callExtraction(
       extractionSpecKey,
-      rawFull,
+      rawFull + planExtractionNote(deps.intentPlan),
       extractionState,
       apiCfg,
       settleOptions,
@@ -190,7 +191,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       trace("提取调用", "pass", `状态提取完成（提取模型=${extractionCfg.model || "未设置"}${settleOptions ? `·${settleOptions.settleKind}专属spec` : ""}）`);
     }
     p = extracted?.p || {};
-    mvuCommands = extracted?.mvuCommands || [];
+    mvuCommands = filterRejectedEffects(extracted?.mvuCommands || [], deps.intentPlan);
   } else {
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
       const nudge = attempt > 1
@@ -216,6 +217,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         throw error;
       }
       ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));
+      mvuCommands = filterRejectedEffects(mvuCommands, deps.intentPlan);
       narrativeText = (p.output || []).join("");
       const truncated = p._truncated || /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
       if (truncated && attempt <= MAX_AUTO_RETRY) {

@@ -42,7 +42,7 @@ export function useTurn({
   prerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
   timeRef, talkTarget, companionState, pendingQuestBranch, effectiveSpecialNow, setVarTree,
   setGambleNegotiation, setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
-  setPendingQuestBranch, setConvo, jotNote, setLog
+  setPendingQuestBranch, setConvo, jotNote, setLog, intentRouterRef,
 }) {
   const actRef = useRef(null);
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
@@ -156,6 +156,7 @@ export function useTurn({
       ]);
       return;
     }
+    if (!isTalk && !isSettle && await intentRouterRef?.current?.(cmd, { _trace, opts })) return;
 
     // 指令显示：默认显示 `> ${cmd}`；但某些内部指令（如战斗结算发给AI写战报的
     if (!opts.silentCmd) {
@@ -338,7 +339,7 @@ export function useTurn({
         gambleTalkCtx: gambleTalkCtx.current, recallInfo: memory.recallInfo,
         inSeaOfMind: room.name === SEA_OF_MIND.district,
         settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
-        _trace, addLog, setLog, isStale,
+        _trace, addLog, setLog, isStale, intentPlan: opts.intentPlan,
       });
     const turnCtx = {
       apiCfg,
@@ -353,7 +354,7 @@ export function useTurn({
         varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk,
         gm, movingDir, lockedDestName, outerDepart: outerDepartRef.current, innerRoomName, apiCfg,
         destinationLock, pickupJudgment: pickupJudgmentRef.current, categoryLabel: CATEGORY_LABEL,
-        encounter: encounterToDescribe, collectNote, intent,
+        encounter: encounterToDescribe, collectNote: collectNote + (opts.intentPlanNote || ""), intent,
         timeForToday: timeRef.current,
       }, {
         importedNpcLore: importedRegistry.getImportedNpcLore(),

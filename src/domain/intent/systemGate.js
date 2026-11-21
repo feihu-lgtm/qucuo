@@ -1,0 +1,57 @@
+// 系统闸门：按顺序在模拟状态上逐步校验原子行动（钱够不够、人在不在、东西有没有），
+// 第 2 步看到的是第 1 步结算后的状态。遇到第一个不通过的步骤就停下并给出原因，
+// 之前已通过的步骤照常执行，之后的步骤一律跳过。
+import { ACTION_KINDS, NONE, SILVER, inventoryCounts, visibleNpcs } from "./actionKinds.js";
+
+const NEEDS_TARGET = new Set([ACTION_KINDS.GIFT, ACTION_KINDS.BUY, ACTION_KINDS.DUEL, ACTION_KINDS.LEARN]);
+
+function simulate(state) {
+  return {
+    money: Number(state?.char?.money) || 0,
+    inv: inventoryCounts(state),
+    npcs: new Set(visibleNpcs(state).map((npc) => npc.name)),
+  };
+}
+
+function checkStep(sim, action) {
+  if (NEEDS_TARGET.has(action.kind)) {
+    if (!action.target || action.target === NONE) return "没说清是对谁";
+    if (!sim.npcs) return `走动之后还不知道${action.target}在不在`;
+    if (!sim.npcs.has(action.target)) return `${action.target}不在此处`;
+  }
+  if (action.kind === ACTION_KINDS.GIFT || action.kind === ACTION_KINDS.USE_ITEM) {
+    if (!action.item || action.item === NONE) return "没说清是哪件东西";
+    if (action.item === SILVER) {
+      if (action.kind !== ACTION_KINDS.GIFT) return "银两不能这样用";
+      if (!action.amount) return "没说清给多少银两";
+      if (action.amount > sim.money) return `银两不够（身上只有${sim.money}两）`;
+    } else if (!(sim.inv.get(action.item) > 0)) {
+      return `背包里没有${action.item}`;
+    }
+  }
+  if (action.kind === ACTION_KINDS.MOVE && (!action.direction || action.direction === NONE)) return "没说清往哪走";
+  return null;
+}
+
+function applyStep(sim, action) {
+  if (action.kind === ACTION_KINDS.GIFT && action.item === SILVER) sim.money -= action.amount;
+  else if (action.kind === ACTION_KINDS.GIFT || action.kind === ACTION_KINDS.USE_ITEM) sim.inv.set(action.item, sim.inv.get(action.item) - 1);
+  if (action.kind === ACTION_KINDS.MOVE) sim.npcs = null;
+}
+
+export function validatePlan(state, actions) {
+  const sim = simulate(state);
+  const valid = [];
+  for (let index = 0; index < (actions || []).length; index++) {
+    const action = { ...actions[index], index };
+    const reason = checkStep(sim, action);
+    if (reason) return { valid, rejected: { ...action, reason }, skipped: actions.slice(index + 1).map((a, i) => ({ ...a, index: index + 1 + i })) };
+    applyStep(sim, action);
+    valid.push(action);
+  }
+  return { valid, rejected: null, skipped: [] };
+}
+
+// 赠礼分量钩子：PR #69 若提供 `@赠礼.分量`，在这里接入；目前返回空串，不影响提示词。
+export let giftWeightBand = () => "";
+export function setGiftWeightBand(fn) { giftWeightBand = typeof fn === "function" ? fn : () => ""; }

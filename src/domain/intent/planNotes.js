@@ -1,0 +1,46 @@
+// 把系统裁决结果交给第二段（叙事）做结构化上下文，并约束第三段（写入）不得为被拒步骤落任何效果。
+import { describeAction } from "./gate.js";
+import { giftWeightBand } from "./systemGate.js";
+import { ACTION_KINDS } from "./actionKinds.js";
+
+export function planToContext(plan) {
+  const view = (action) => ({ step: action.index + 1, kind: action.kind, target: action.target ?? null, item: action.item ?? null, amount: action.amount ?? null, text: action.text });
+  return {
+    valid: (plan?.valid || []).map(view),
+    rejected: plan?.rejected ? { ...view(plan.rejected), reason: plan.rejected.reason } : null,
+    skipped: (plan?.skipped || []).map(view),
+  };
+}
+
+export function formatPlanNote(plan, state) {
+  if (!plan) return "";
+  const lines = (plan.valid || []).map((action) => {
+    const band = action.kind === ACTION_KINDS.GIFT ? giftWeightBand(action, state) : "";
+    return `${action.index + 1}. ${describeAction(action)}（系统已核准${band ? `，${band}` : ""}）`;
+  });
+  if (plan.rejected) lines.push(`${plan.rejected.index + 1}. ${describeAction(plan.rejected)}（系统拒绝：${plan.rejected.reason}；写成没能做成）`);
+  for (const action of plan.skipped || []) lines.push(`${action.index + 1}. ${describeAction(action)}（前一步受阻，未执行）`);
+  return `\n[行动识别·系统裁决] 本回合玩家依次：\n${lines.join("\n")}\n只叙述已核准的步骤及其直接结果，被拒或未执行的步骤不得写成已发生。\n结构化：${JSON.stringify(planToContext(plan))}`;
+}
+
+function blockedNames(plan) {
+  const allowed = new Set((plan?.valid || []).map((action) => action.target).filter(Boolean));
+  const blocked = [plan?.rejected, ...(plan?.skipped || [])].map((action) => action?.target).filter(Boolean);
+  return [...new Set(blocked)].filter((name) => !allowed.has(name) && name !== "无");
+}
+
+export function planExtractionNote(plan) {
+  if (!plan?.rejected) return "";
+  const steps = [plan.rejected, ...(plan.skipped || [])].map(describeAction).join("、");
+  return `\n[行动识别] 以下步骤已被系统拒绝或未执行，不得为其输出任何状态变化：${steps}。`;
+}
+
+// 第三段写入的确定性兜底：只出现在被拒/跳过步骤里的人物，其相关 MVU 命令一律丢弃。
+export function filterRejectedEffects(mvuCommands, plan) {
+  const names = blockedNames(plan);
+  if (!names.length || !Array.isArray(mvuCommands)) return mvuCommands;
+  return mvuCommands.filter((command) => {
+    const text = typeof command === "string" ? command : JSON.stringify(command);
+    return !names.some((name) => text.includes(name));
+  });
+}
