@@ -11,6 +11,7 @@
 
 import { random } from "../../core/rng.js";
 import { MOVE_TYPE, resolveMatchupRule } from "./moveTypes.js";
+import { resolveDefenseBlock } from "./resolveDefenseBlock.js";
 import { applyDodgeResult } from "./dodgeTurn.js";
 import { rollStatusApply } from "./resolveStatus.js";
 import { applyStatus, tickStatusEffects } from "./statusEffects.js";
@@ -306,78 +307,11 @@ export function resolveTurn(sideA, sideB) {
       else resolveAttackWin(attackTag === "A", { controlCounter: true });
     },
     block: () => {
-      const winnerIsA = rule.winner === "A";
-      const winnerSide = winnerIsA ? sideA : sideB;
-      const loserSide = winnerIsA ? sideB : sideA;
-      const winnerMove = winnerSide.move;
-      const loserMove = loserSide.move;
-      // 防御克攻击：防御生效大幅减伤，可能触发应对反击
-      const rawDmg = calcBaseDamage(loserMove, loserSide, winnerSide); // 攻击方本来的伤害
-      // 防御方装备的"部分免疫无视防御"（如守塔僧团铁网衲/官铸镇边重铠）：
-      // 当攻击方用 ignoreDefense 时，本来防御白挡全额吃伤，但这层护甲能挡下
-      // partialImmune 比例（0~1）的那部分伤害，让"无视防御"不再是100%生效。
-      const partialImmune = winnerMove.ignoreDefensePartialImmune ?? winnerSide.ignoreDefensePartialImmune ?? 0;
-      // 【ignoreDefenseRatio·此前是死 flag】ignoreDefense 是"全部无视防御"的布尔，
-      // 而 ignoreDefenseRatio 是"只无视其中一部分"的小数版（开山锤0.3、十三针囊0.3、
-      // 三棱透骨钉0.4，还有唐门那套暗器）。它进了 itemEffectText 的词典、界面上
-      // 老老实实显示着「破防」，战斗里却**一处都没读**——玩家看着破防生效，实际
-      // 挨的是满额防御减伤。这里补上：按比例把一部分伤害走"无视防御"通道结算。
-      const idRatio = Math.max(0, Math.min(1, loserMove.ignoreDefenseRatio ?? loserSide.ignoreDefenseRatio ?? 0));
-      if (!loserMove.ignoreDefense && idRatio > 0) {
-        const pierced = Math.round(rawDmg * idRatio);                 // 这部分绕过防御
-        const immuned = partialImmune > 0 ? Math.round(pierced * partialImmune) : 0;
-        const blockedPart = rawDmg - pierced;                          // 剩下的照常被防御削
-        const reducedBlocked = Math.round(blockedPart * (loserMove.defenseDiscount ?? 0.35));
-        const dmg = Math.max(1, pierced - immuned + reducedBlocked);
-        if (winnerIsA) result.damageToA = dmg; else result.damageToB = dmg;
-        result.notes.push(`${loserMove.name}专挑劲力薄处扎，${winnerMove.name}挡住了大半，仍被透进去几分`);
-        applyMarkOnHitCheck(winnerMove, winnerIsA ? "A" : "B", winnerIsA ? "B" : "A");
-      } else if (loserMove.ignoreDefense) {
-        // 攻击方"无视防御"：防御大幅失效；但防御方若有部分免疫，仍能削掉一截
-        const immuned = partialImmune > 0 ? Math.round(rawDmg * partialImmune) : 0;
-        const dmg = Math.max(1, rawDmg - immuned);
-        if (winnerIsA) result.damageToA = dmg; else result.damageToB = dmg;
-        result.notes.push(immuned > 0
-          ? `${loserMove.name}势大力沉，${winnerMove.name}的护体之力堪堪卸去几分，未被全然击穿`
-          : `${loserMove.name}势大力沉，${winnerMove.name}竟未能卸去分毫`);
-        // 部分免疫护甲同样触发"挨打叠印"（见下方 applyMarkOnHit 统一处理）
-        applyMarkOnHitCheck(winnerMove, winnerIsA ? "A" : "B", winnerIsA ? "B" : "A");
-      } else {
-        // 招式自带折扣（原有强度曲线不变）之上，再叠一层装备/内功/根骨带来的
-        // 固定防御力——这是这次新增的维度，见 calcDefenseValue 顶部注释。
-        // 保底 1 点伤害：顶级防御配置（内功根骨拉满+橙红护甲+红档听桥类招式）
-        // 数学上可能把 reduced 完全吃掉，保底避免出现"永远0伤害、战斗打不动"的僵局。
-        const reduced = Math.round(rawDmg * (winnerMove.baseDamageMultiplier ?? 0.6));
-        const defenseValue = calcDefenseValue(winnerSide, winnerMove);
-        const finalReduced = Math.max(1, reduced - defenseValue);
-        let counterDmg = 0;
-        if (winnerMove.onCounterSuccessDamageRatio) {
-          counterDmg = Math.round(rawDmg * winnerMove.onCounterSuccessDamageRatio);
-          result.counterTriggered = true;
-          if (winnerIsA) result.counterSuccessA = true; else result.counterSuccessB = true;
-        }
-        // 抢先结算：反击若能一击击杀攻击方，防御方免掉这次减伤后的伤害
-        const attackerHp = loserSide.hp?.[0] ?? 1;
-        const preemptiveKill = winnerMove.onCounterSuccessPreemptive && counterDmg >= attackerHp;
-        if (winnerIsA) {
-          result.damageToB += counterDmg;
-          result.damageToA = preemptiveKill ? 0 : finalReduced;
-        } else {
-          result.damageToA += counterDmg;
-          result.damageToB = preemptiveKill ? 0 : finalReduced;
-        }
-        result.notes.push(
-          counterDmg > 0
-            ? `${winnerMove.name}稳稳架住来招，反手一击${preemptiveKill ? "抢先制敌，对方再无还手" : "凌厉奉还"}`
-            : `${winnerMove.name}架住来招，${loserMove.name}力道去了大半`
-        );
-        if (winnerMove.onCounterSuccessEnergyGain) {
-          if (winnerIsA) result.energyDeltaA += winnerMove.onCounterSuccessEnergyGain;
-          else result.energyDeltaB += winnerMove.onCounterSuccessEnergyGain;
-        }
-        // 挨打反叠印：防御方护甲带 applyMarkOnHit，架住来招时攻方触及衣料反沾内伤
-        applyMarkOnHitCheck(winnerMove, winnerIsA ? "A" : "B", winnerIsA ? "B" : "A");
-      }
+      resolveDefenseBlock(result, sideA, sideB, rule.winner === "A", {
+        calcBaseDamage,
+        calcDefenseValue,
+        applyMarkOnHitCheck,
+      });
     },
   };
   handlers[rule.resolve]();
