@@ -7,7 +7,7 @@ export const DUEL_EFFECT_FAMILIES = [
 
 export { OPENING_POOLS } from "./openings/index.js";
 export { CONNECTORS, CONNECTOR_FAMILIES, EFFECT_POOLS, MUTUAL_CONTACTS, STANDOFF_FRAGMENTS } from "./contacts/index.js";
-export { REACTION_POOLS } from "./reactions/index.js";
+export { REACTION_POOLS, REACTION_PLACEHOLDER_DROPS } from "./reactions/index.js";
 
 export function hpBandFor(hp) {
   const [current, maximum] = Array.isArray(hp) ? hp : [];

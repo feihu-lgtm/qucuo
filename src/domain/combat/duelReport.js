@@ -125,7 +125,11 @@ function fillFighterHalf(entry, actor, target, used, round) {
     const reportedBand = result[`hpBand${reactedSide.tag}`];
     const hpBand = DUEL_HP_BANDS.includes(reportedBand) ? reportedBand : "healthy";
     const pool = REACTION_POOLS[reactionFamily][hpBand];
-    reaction = cleanClause(selectUnused(pool, `reaction:${reactionFamily}:${hpBand}`, round, used).replaceAll("{target}", reactedSide.name));
+    const opponent = reactedSide.tag === actor.tag ? target : actor;
+    reaction = cleanClause(selectUnused(pool, `reaction:${reactionFamily}:${hpBand}`, round, used)
+      .replaceAll("{target}", reactedSide.name)
+      .replaceAll("{actor}", opponent.name)
+      .replaceAll("{move}", opponent.move?.name || result[`moveName${opponent.tag}`] || "未明招式"));
   }
   const roundScope = { round: entry };
   const values = {

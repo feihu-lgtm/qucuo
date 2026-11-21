@@ -177,6 +177,42 @@ describe("战报回合数据和短句", () => {
   const containsReaction = (line, family, band, name) => REACTION_POOLS[family][band]
     .some((fragment) => line.includes(renderFragment(fragment, "陈尧天", name)));
 
+  it("把闪避和打断反应中的攻击者绑定到对手", () => {
+    const dodgePool = REACTION_POOLS.dodged.healthy;
+    const damagePool = REACTION_POOLS.damaged.healthy;
+    const originalDodgePool = [...dodgePool];
+    const originalDamagePool = [...damagePool];
+
+    try {
+      dodgePool.splice(0, dodgePool.length, "{target}避开了{actor}的{move}");
+      damagePool.splice(0, damagePool.length, "{target}受了{actor}的{move}");
+
+      const dodgeLine = formatDuelDisplayLine(entry({
+        playerMoveType: "防御",
+        npcMoveType: "攻击",
+        dmgToNpc: 0,
+        dmgToPlayer: 0,
+        dodgeSuccessPlayer: true,
+      }));
+      expect(dodgeLine).toContain("陈尧天避开了才旦的铁布衫");
+      expect(dodgeLine).not.toContain("陈尧天避开了陈尧天");
+
+      const interruptLine = formatDuelDisplayLine(entry({
+        playerMove: "回气",
+        playerMoveType: "状态",
+        npcMove: "快拳",
+        npcMoveType: "攻击",
+        dmgToPlayer: 3,
+        result: { interruptedA: true },
+      }));
+      expect(interruptLine).toContain("陈尧天受了才旦的快拳");
+      expect(interruptLine).not.toContain("陈尧天受了陈尧天");
+    } finally {
+      dodgePool.splice(0, dodgePool.length, ...originalDodgePool);
+      damagePool.splice(0, damagePool.length, ...originalDamagePool);
+    }
+  });
+
   it("给AI提供招式类型、回合后气血、伤害、状态、吃亏方及HP色调", () => {
     const source = entry();
     const [report] = buildDuelReportRounds([source]);

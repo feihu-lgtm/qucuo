@@ -1,1 +1,1 @@
-export { REACTION_POOLS } from "./pools.js";
+export { REACTION_POOLS, REACTION_PLACEHOLDER_DROPS } from "./pools.js";

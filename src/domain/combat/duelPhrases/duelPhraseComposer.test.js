@@ -14,6 +14,7 @@ import {
   EFFECT_POOLS,
   MUTUAL_CONTACTS,
   OPENING_POOLS,
+  REACTION_PLACEHOLDER_DROPS,
   REACTION_POOLS,
   STANDOFF_FRAGMENTS,
 } from "./index.js";
@@ -76,7 +77,8 @@ describe("duel phrase pools and composition", () => {
 
     expect(openings).toHaveLength(222);
     expect(effects).toHaveLength(661);
-    expect(reactions).toHaveLength(571);
+    expect(reactions).toHaveLength(551);
+    expect(REACTION_PLACEHOLDER_DROPS).toBe(20);
     for (const pool of [
       ...Object.values(OPENING_POOLS),
       ...Object.values(EFFECT_POOLS),
