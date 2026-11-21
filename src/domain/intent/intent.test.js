@@ -173,8 +173,10 @@ describe("system gate", () => {
     const plan = validatePlan(ground, [{ kind: "拾取", item: "枯枝" }, { kind: "装备/卸下", item: "枯枝" }]);
     expect(plan.rejected).toBeNull();
     expect(plan.valid).toHaveLength(2);
-    // 同一件地上物不能连捡两次。
+    // 同一件地上物不能连捡两次；地上有两件同名物则可以。
     expect(validatePlan(ground, [{ kind: "拾取", item: "枯枝" }, { kind: "拾取", item: "枯枝" }]).rejected.reason).toBe("地上没有枯枝");
+    const twoTwigs = { ...state, room: { ...state.room, items: [{ name: "枯枝" }, { name: "枯枝" }] } };
+    expect(validatePlan(twoTwigs, [{ kind: "拾取", item: "枯枝" }, { kind: "拾取", item: "枯枝" }]).rejected).toBeNull();
   });
 });
 

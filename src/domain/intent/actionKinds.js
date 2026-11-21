@@ -59,7 +59,7 @@ export const SLOT_SPECS = Object.freeze({
 export const SILVER = "银两";
 export const NONE = "无";
 // 「装备/卸下」从玩家原话判断方向：卸下类用词 → 脱，否则 → 穿。识别与闸门共用。
-export const UNEQUIP_RE = /卸下|脱下|脱掉|摘下|摘掉|取下|拿掉|拿下|收起/;
+export const UNEQUIP_RE = /卸[下掉]?|脱[下掉]?|摘[下掉]?|解下|取[下掉]|拿[下掉]|收起/;
 export const DIRECTIONS = Object.freeze(["北", "南", "东", "西"]);
 
 export function visibleNpcs(state) {

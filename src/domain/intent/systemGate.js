@@ -54,8 +54,9 @@ function checkStep(sim, action) {
   }
   if (action.kind === ACTION_KINDS.PICKUP) {
     if (!action.item || action.item === NONE) return "没说清捡什么";
-    const ground = new Set((sim.state?.room?.items || []).map(itemNameOf));
-    if (!ground.has(action.item) || sim.picked?.has(action.item)) return `地上没有${action.item}`;
+    // 同名地上物可以连捡，按已捡次数递减；捡光才算没有。
+    const groundCount = (sim.state?.room?.items || []).map(itemNameOf).filter((n) => n === action.item).length;
+    if (groundCount <= (sim.picked?.get(action.item) || 0)) return `地上没有${action.item}`;
   }
   if (action.kind === ACTION_KINDS.EQUIP) {
     if (!action.item || action.item === NONE) return "没说清是哪件装备";
@@ -69,8 +70,8 @@ function applyStep(sim, action) {
   if (action.kind === ACTION_KINDS.GIFT && action.item === SILVER) sim.money -= action.amount;
   else if (action.kind === ACTION_KINDS.GIFT || action.kind === ACTION_KINDS.USE_ITEM) sim.inv.set(action.item, sim.inv.get(action.item) - 1);
   if (action.kind === ACTION_KINDS.PICKUP) {
-    // 捡起来的东西进模拟背包，后续步骤（如接着装备）才认得它；同时从地上撤掉防重复捡。
-    (sim.picked ??= new Set()).add(action.item);
+    // 捡起来的东西进模拟背包，后续步骤（如接着装备）才认得它；计数防把同一件捡两回。
+    (sim.picked ??= new Map()).set(action.item, (sim.picked.get(action.item) || 0) + 1);
     sim.inv.set(action.item, (sim.inv.get(action.item) || 0) + 1);
   }
   if (action.kind === ACTION_KINDS.LEARN) sim.money -= learnPrice(sim, action).price || 0;

@@ -17,7 +17,7 @@ const state = {
 
 describe("stepEffect 装备/卸下", () => {
   it("按原话定方向：卸下已穿的脱下，装备已穿的原样保留", () => {
-    const off = stepEffect(state, { kind: "装备/卸下", item: "铁剑", text: "把铁剑卸下来" });
+    const off = stepEffect(state, { kind: "装备/卸下", item: "铁剑", text: "解下铁剑" });
     expect(off.changes.inv(state.inv).find((i) => i.id === "w1").equipped).toBe(false);
     const on = stepEffect(state, { kind: "装备/卸下", item: "铁剑", text: "穿戴铁剑" });
     expect(on.changes.inv(state.inv).find((i) => i.id === "w1").equipped).toBe(true);
