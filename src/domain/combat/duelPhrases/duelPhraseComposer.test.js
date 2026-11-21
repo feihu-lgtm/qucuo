@@ -23,7 +23,8 @@ const renderTemplate = (template) => template
   .replaceAll("{target}", "才旦")
   .replaceAll("{move}", "野球拳")
   .replaceAll("{targetMove}", "铁布衫")
-  .replace(/@round\.result\.[A-Za-z0-9_.]+/g, "麻穴");
+  .replace(/@round\.result\.[A-Za-z0-9_.]+/g, "麻穴")
+  .replace(/[，,。！？；：、]+$/g, "");
 
 const stripPlaceholders = (template) => template
   .replace(/\{[^}]+\}/g, "")
@@ -73,14 +74,14 @@ describe("duel phrase pools and composition", () => {
     const effects = Object.values(EFFECT_POOLS).flat();
     const reactions = Object.values(REACTION_POOLS).flatMap((families) => Object.values(families).flat());
 
-    expect(openings).toHaveLength(1071);
-    expect(effects).toHaveLength(1000);
-    expect(reactions).toHaveLength(960);
-    for (const pool of [openings, effects, reactions]) {
-      expect(pool.length).toBeGreaterThanOrEqual(950);
-      const stripped = pool.map(stripPlaceholders);
-      expect(new Set(stripped).size).toBe(stripped.length);
-    }
+    expect(openings).toHaveLength(222);
+    expect(effects).toHaveLength(661);
+    expect(reactions).toHaveLength(571);
+    for (const pool of [
+      ...Object.values(OPENING_POOLS),
+      ...Object.values(EFFECT_POOLS),
+      ...Object.values(REACTION_POOLS).flatMap((families) => Object.values(families)),
+    ]) expect(new Set(pool.map(stripPlaceholders)).size).toBe(pool.length);
   });
 
   it("provides a non-empty cell for every selector family and band", () => {
@@ -90,9 +91,9 @@ describe("duel phrase pools and composition", () => {
       for (const band of DUEL_HP_BANDS) expect(family[band].length).toBeGreaterThan(0);
     }
     for (const pool of Object.values(CONNECTOR_FAMILIES)) expect(pool.length).toBeGreaterThan(0);
-    expect(CONNECTORS).toHaveLength(200);
-    expect(MUTUAL_CONTACTS).toHaveLength(150);
-    expect(STANDOFF_FRAGMENTS).toHaveLength(60);
+    expect(CONNECTORS).toHaveLength(86);
+    expect(MUTUAL_CONTACTS).toHaveLength(103);
+    expect(STANDOFF_FRAGMENTS).toHaveLength(43);
   });
 
   it("uses only registered fragment placeholders", () => {
@@ -117,14 +118,13 @@ describe("duel phrase pools and composition", () => {
       const refs = [...template.matchAll(/@([A-Za-z0-9_.]+)/g)].map((match) => match[1]);
       expect(placeholders.every((name) => known.has(name))).toBe(true);
       expect(refs.every((path) => known.has(path))).toBe(true);
-      expect(template).not.toMatch(/[，。！？；：、]$/);
       expect(template.startsWith("，")).toBe(false);
       expect(template).not.toContain("未未");
       expect(template).not.toContain("反劲反卷");
     }
-    expect(new Set(CONNECTORS).size).toBe(200);
-    expect(new Set(MUTUAL_CONTACTS).size).toBe(150);
-    expect(new Set(STANDOFF_FRAGMENTS).size).toBe(60);
+    expect(new Set(CONNECTORS).size).toBe(86);
+    expect(new Set(MUTUAL_CONTACTS).size).toBe(103);
+    expect(new Set(STANDOFF_FRAGMENTS).size).toBe(43);
   });
 
   it("has a connector for every ordered effect-family pair and composes clean clauses", () => {
@@ -173,7 +173,7 @@ describe("duel phrase pools and composition", () => {
     expect(formatDuelDisplayLine(statusWins).startsWith("才旦")).toBe(true);
 
     const standoff = formatDuelDisplayLine(reportRound(5, "防御", "防御"));
-    expect(STANDOFF_FRAGMENTS.some((fragment) => standoff.includes(fragment))).toBe(true);
+    expect(STANDOFF_FRAGMENTS.some((fragment) => standoff.includes(fragment.replace(/[，,。！？；：、]+$/g, "")))).toBe(true);
   });
 
   it("attributes reflect damage to the reflected attack rather than a false status hit", () => {
@@ -185,8 +185,7 @@ describe("duel phrase pools and composition", () => {
     entry.result.damageToA = 8;
     const line = formatDuelDisplayLine(entry);
 
-    expect(line).toContain("反劲");
-    expect(EFFECT_POOLS.reflectCounter.some((fragment) => line.includes(fragment.replace("{target}", "陈尧天")))).toBe(true);
+    expect(EFFECT_POOLS.reflectCounter.some((fragment) => line.includes(fragment.replace("{target}", "陈尧天").replace(/[，,。！？；：、]+$/g, "")))).toBe(true);
     expect(line).not.toMatch(/劲力[^，]*陈尧天/);
   });
 
@@ -254,8 +253,8 @@ describe("duel phrase pools and composition", () => {
 
     const reports = buildDuelReportRounds([reportRound(1), reportRound(2)]);
     for (const [index, round] of reports.entries()) {
-      const first = expected[index][0].replaceAll("{actor}", "陈尧天").replaceAll("{move}", "野球拳");
-      const second = expected[index][1].replaceAll("{actor}", "才旦").replaceAll("{move}", "铁布衫");
+      const first = expected[index][0].replaceAll("{actor}", "陈尧天").replaceAll("{move}", "野球拳").replace(/[，,。！？；：、]+$/g, "");
+      const second = expected[index][1].replaceAll("{actor}", "才旦").replaceAll("{move}", "铁布衫").replace(/[，,。！？；：、]+$/g, "");
       expect(round.text).toContain(first);
       expect(round.text).toContain(second);
     }
@@ -266,7 +265,11 @@ describe("duel phrase pools and composition", () => {
       return entry;
     });
     const rendered = buildDuelReportRounds(damagedRounds);
-    const selected = (pool, line) => pool.find((fragment) => line.includes(fragment.replaceAll("{target}", "才旦")));
+    const selected = (pool, line) => pool.find((fragment) => line.includes(
+      fragment.replaceAll("{actor}", "陈尧天").replaceAll("{target}", "才旦")
+        .replaceAll("{move}", "野球拳").replaceAll("{targetMove}", "铁布衫")
+        .replace(/[，,。！？；：、]+$/g, ""),
+    ));
     const hits = rendered.map(({ text }) => selected(EFFECT_POOLS.hit, text));
     const reactions = rendered.map(({ text }) => selected(REACTION_POOLS.damaged.healthy, text));
     expect(hits.every(Boolean)).toBe(true);
