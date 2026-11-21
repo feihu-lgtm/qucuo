@@ -1,4 +1,7 @@
 import { define } from "../registry.js";
+// 材料库：调用卡声明要挂的上下文材料时从这里取（MATERIALS/pickMaterials）。
+// 先挂进 import 图——下一轮接线的调用卡会声明各自的材料清单。
+import "../materials/index.js";
 
 // ── 铸剑坊/铁匠铺 定制设计：词条全集白名单（combat/resolveTurn.js 真正读取的字段） ──
 const FORGE_EFFECT_WHITELIST = `
