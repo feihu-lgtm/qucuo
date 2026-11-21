@@ -3,7 +3,8 @@ import { NNPC_STAGE } from "../narrator/narrator.js";
 import { callExtraction } from "./extractionEngine.js";
 import { EXTRACTION_SPECS } from "./extractionSpecs.js";
 import { factSummaryRequest, factSummaryRequestFromRecall } from "./knowledge.js";
-import { buildPigeonPrompt } from "./pigeonPrompt.js";
+import { buildPrompt } from "./buildPrompt.js";
+import "./calls/sideCalls.js";
 import { buildWhisperStatePrompt } from "./promptRefs.js";
 import { buildPrivateTalkPayload } from "./privateTalkPayload.js";
 import { snowLeopardHint } from "../quests/snowLeopardQuest.js";
@@ -197,7 +198,11 @@ describe("model prompt golden snapshots", () => {
         },
       },
     };
-    const prompt = buildPigeonPrompt(state, { npcName: "才旦", giftName, channel }, { scenario: "曲措乡多山临水。" });
+    const prompt = buildPrompt("pigeon.reply", {
+      state,
+      letter: { npcName: "才旦", giftName, channel },
+      preset: { scenario: "曲措乡多山临水。" },
+    }).system;
     expect(prompt).toMatchSnapshot(`pigeon ${name}`);
   });
 
