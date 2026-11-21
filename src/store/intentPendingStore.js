@@ -30,7 +30,7 @@ export function armIntentTriggers(steps) {
 
 // 「到达」：前提点了地名 → 只在到那儿时应验；没点地名 → 行程走完才应验。
 // 「从X出发/离开X」里的 X 是起点，不算目的地。
-const ORIGIN = /(?:从|离开|出了)[^，,到去往]*/g;
+const ORIGIN = new RegExp(`(?:从|离开|出了)(?:${[...PLACE_NAMES].sort((a, b) => b.length - a.length).join("|")})`, "g");
 
 function arriveMatches(detail, dest, travelDone) {
   const goal = detail.replace(ORIGIN, "");
