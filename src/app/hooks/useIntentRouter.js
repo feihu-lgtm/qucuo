@@ -69,7 +69,6 @@ export function useIntentRouter(routerRef, {
       // 条件步不立即执行，挂为待定触发；前提为「被拒」的步此刻立即触发。
       const armed = armIntentTriggers(plan.triggers);
       if (armed.length) traceNode(turn, "行动识别·触发", "pass", `挂起 ${armed.length} 个条件步：${armed.map((entry) => describeAction(entry.step)).join("；")}`);
-      if (plan.refused) fireTriggerStep(plan.refused, turn);
       for (const step of plan.valid) {
         if (DEFERRED_KINDS.has(step.kind)) continue;
         dispatchCommand(KIND_COMMAND[step.kind], () => {
@@ -81,6 +80,8 @@ export function useIntentRouter(routerRef, {
       }
       if (!single && plan.valid.length) act(cmd, [], { intentPlan: plan, intentPlanNote: note, silentCmd: true, keepUndo: true });
       for (const step of plan.valid) if (DEFERRED_KINDS.has(step.kind)) runDeferred(step, single);
+      // 「被拒」触发在已核准步骤都派完之后才发，免得它抢走前面步骤要用的资源。
+      if (plan.refused) fireTriggerStep(plan.refused, turn);
       // 前提判不进封闭集合的从句，按原文各走一趟自由行动。
       for (const step of plan.freeSteps || []) act(step.text, [], { silentCmd: true, intentSkip: true, keepUndo: true });
     }
