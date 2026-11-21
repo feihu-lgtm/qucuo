@@ -8,9 +8,21 @@ export function createUndoController({
   setQueueCount, autoTravelRef, queueTimerRef, clearCommandQueue = () => {},
   setDuelPending, setDuelingNpc, setActiveBuilding,
   pendingTalksRef, changePendingTalks, talkBusyRef, setLoading, waitTimerRef,
-  setWaitSecs, turnGenerationRef, confirmRollback = () => true,
+  setWaitSecs, turnGenerationRef, turnInvalidationListeners = new Set(), confirmRollback = () => true,
 }) {
-  const invalidateTurns = () => { turnGenerationRef.current += 1; };
+  const onTurnsInvalidated = (listener) => {
+    if (typeof listener !== "function") return () => {};
+    turnInvalidationListeners.add(listener);
+    return () => turnInvalidationListeners.delete(listener);
+  };
+  const invalidateTurns = () => {
+    turnGenerationRef.current += 1;
+    const listeners = [...turnInvalidationListeners];
+    turnInvalidationListeners.clear();
+    for (const listener of listeners) {
+      try { listener(); } catch {}
+    }
+  };
   const captureUndo = (turn = getTurnContext()) => {
     try {
       undoSnapshotRef.current = structuredClone(buildCurrentSnapshot());
@@ -64,7 +76,7 @@ export function createUndoController({
     return true;
   };
 
-  return { captureUndo, rollbackOneStep, invalidateTurns };
+  return { captureUndo, rollbackOneStep, invalidateTurns, onTurnsInvalidated };
 }
 
 export function createTurnStaleCheck(turnGenerationRef) {
@@ -74,12 +86,15 @@ export function createTurnStaleCheck(turnGenerationRef) {
 
 export function useUndo(deps) {
   const turnGenerationRef = useRef(0);
+  const turnInvalidationListenersRef = useRef(new Set());
   const confirmRollback = useCallback(
     () => window.confirm("回滚到上一步行动之前？当前这步的结果会被撤销。"),
     [],
   );
-  const { captureUndo, rollbackOneStep, invalidateTurns } = useMemo(
-    () => createUndoController({ ...deps, turnGenerationRef, confirmRollback }),
+  const { captureUndo, rollbackOneStep, invalidateTurns, onTurnsInvalidated } = useMemo(
+    () => createUndoController({
+      ...deps, turnGenerationRef, turnInvalidationListeners: turnInvalidationListenersRef.current, confirmRollback,
+    }),
     [
       deps.undoSnapshotRef, deps.buildCurrentSnapshot, deps.applySnapshot, deps.addLog,
       deps.setQueueCount, deps.autoTravelRef, deps.queueTimerRef,
@@ -90,5 +105,5 @@ export function useUndo(deps) {
       deps.setWaitSecs, confirmRollback,
     ],
   );
-  return { captureUndo, rollbackOneStep, invalidateTurns, turnGenerationRef };
+  return { captureUndo, rollbackOneStep, invalidateTurns, onTurnsInvalidated, turnGenerationRef };
 }

@@ -60,10 +60,19 @@ export async function playTurn(ctx, cmd, opts = {}) {
   let softSettleLogs = [];
   let softSettleRevertRecords = [];
   let softSettleApplied = false;
-  const revertSoftSettle = () => {
-    if (!softSettleApplied) return;
+  let softSettleReverted = false;
+  let invalidationListenerRegistered = false;
+  let unsubscribeInvalidation;
+  const revertSoftSettleOnce = () => {
+    if (!softSettleApplied || softSettleReverted) return;
+    softSettleReverted = true;
     if (ctx.setVarTree) ctx.setVarTree(prev => revertSettled(prev, softSettleRevertRecords));
     else gameActions.setVarTreeState(revertSettled(gameStore.getState().varTree, softSettleRevertRecords));
+  };
+  const unsubscribeFromInvalidation = () => {
+    const unsubscribe = unsubscribeInvalidation;
+    unsubscribeInvalidation = null;
+    if (typeof unsubscribe === "function") unsubscribe();
   };
   try {
     snapshot = captureSnapshot(ctx.refs);
@@ -116,6 +125,10 @@ export async function playTurn(ctx, cmd, opts = {}) {
         softSettleApplied = true;
         if (ctx.setVarTree) ctx.setVarTree(applySoftSettle);
         else gameActions.setVarTreeState(applySoftSettle(gameStore.getState().varTree));
+        if (typeof ctx.onTurnsInvalidated === "function") {
+          unsubscribeInvalidation = ctx.onTurnsInvalidated(revertSoftSettleOnce);
+          invalidationListenerRegistered = true;
+        }
         turnOpts.softSettle = { ...softSettle, varTree: settledTree };
         turnMonitor.add(trace, "engine", "结算·软判定", {
           status: "pass",
@@ -125,9 +138,12 @@ export async function playTurn(ctx, cmd, opts = {}) {
     }
     const turn = await runTurn({ ...turnCtx, _trace: trace }, cmd, turnOpts);
     if (turn.stale || ctx.isStale?.()) {
-      if (softSettleApplied) withTurnContext(trace, revertSoftSettle);
+      if (softSettleApplied && !invalidationListenerRegistered) {
+        withTurnContext(trace, revertSoftSettleOnce);
+      }
       return stale();
     }
+    unsubscribeFromInvalidation();
     setCommandPhase("commit");
     const commitDeps = ctx.commitDeps(turn) || {};
     const committed = withTurnContext(trace, () => {
@@ -172,11 +188,16 @@ export async function playTurn(ctx, cmd, opts = {}) {
     return { ok: true, turn, duelRequest: committed?.duelRequest ?? turn.p?.duelRequest };
   } catch (error) {
     if (ctx.isStale?.()) {
-      if (softSettleApplied) withTurnContext(trace, revertSoftSettle);
+      if (softSettleApplied && !invalidationListenerRegistered) {
+        withTurnContext(trace, revertSoftSettleOnce);
+      }
       return stale(error);
     }
+    unsubscribeFromInvalidation();
     if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs));
     turnMonitor.transition(trace, PHASE.ERROR, String(error));
     return { ok: false, error };
+  } finally {
+    unsubscribeFromInvalidation();
   }
 }

@@ -35,7 +35,7 @@ export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
   addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, setActiveTarget, setDuelPending,
   nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
-  turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
+  turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
   waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
   noteAction, roomMapRef, questProgress, innerRoomName, setRoom, setInv, collectGrantedRef,
   autoTravelRef, clearRouteQueue, setCommandPhase, dispatchCommand,
@@ -372,7 +372,7 @@ export function useTurn({
       state: { room, char, inv, dao },
       getMapNode,
       beforeRun: () => { pickupExtractionFailedRef.current = false; },
-      setCommandPhase, setVarTree, effectiveSpecialNow,
+      setCommandPhase, setVarTree, effectiveSpecialNow, onTurnsInvalidated,
       refs: {
         varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
         pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
@@ -422,7 +422,7 @@ export function useTurn({
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, setActiveTarget, setDuelPending, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, setActiveTarget, setDuelPending, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue, onTurnsInvalidated]);
   actRef.current = act;
   const featureCtx = useMemo(() => ({
     addLog,

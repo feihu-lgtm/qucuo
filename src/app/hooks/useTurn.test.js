@@ -30,6 +30,7 @@ vi.mock("../../domain/prompt/inspectCache.js", () => ({
 it("keeps the key inspection's estate announcement open until its narration commits", async () => {
   const [room, char] = [{ name: "曲措乡", npcs: [] }, { name: "行旅" }];
   const effectiveSpecialNow = { 魅力: 10 };
+  const onTurnsInvalidated = vi.fn(() => vi.fn());
   initGameStore({ flags: [], inv: ["溪边小屋钥匙"], questProgress: {}, room, char });
   const featureCtxRef = { current: null };
   const waitTimerRef = { current: null };
@@ -37,7 +38,7 @@ it("keeps the key inspection's estate announcement open until its narration comm
   const commands = createScheduler();
   useTurn({
     ...state, apiCfg: {}, preset: {}, convo: [], addLog: vi.fn(),
-    effectiveSpecialNow,
+    effectiveSpecialNow, onTurnsInvalidated,
     featureCtxRef, waitTimerRef, turnGenerationRef: { current: 0 }, dispatchCommand: commands.dispatch,
     pendDirRef: {}, outerDepartRef: {}, pickupJudgmentRef: {}, collectGrantedRef: {},
     varTreeRef: { current: {} }, timeRef: { current: 1 },
@@ -65,6 +66,7 @@ it("keeps the key inspection's estate announcement open until its narration comm
     await inspectItem("item", "溪边小屋钥匙");
     expect(gameStore.getState().flags).toContain("tutorial_estate_announced");
     expect(playTurn).toHaveBeenCalledOnce();
+    expect(playTurn.mock.calls[0][0].onTurnsInvalidated).toBe(onTurnsInvalidated);
     const pending = turnMonitor.getSnapshot().current;
     gate.resolve({ text: "四宅任务已开启。" });
     const [outcome] = await Promise.allSettled([narration]);

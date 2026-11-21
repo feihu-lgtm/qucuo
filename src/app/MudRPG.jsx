@@ -162,7 +162,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     () => commandScheduler.dispatch("squarePrerun", () => prerunSquares()),
     [commandScheduler.dispatch, prerunSquares],
   );
-  const { captureUndo, rollbackOneStep, invalidateTurns, turnGenerationRef } = useUndo({
+  const { captureUndo, rollbackOneStep, invalidateTurns, onTurnsInvalidated, turnGenerationRef } = useUndo({
     undoSnapshotRef, buildCurrentSnapshot, applySnapshot,
     addLog, setQueueCount, autoTravelRef, queueTimerRef,
     setDuelPending, setDuelingNpc, setActiveBuilding, pendingTalksRef, changePendingTalks, talkBusyRef,
@@ -248,7 +248,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
     setActiveTarget, setDuelPending,
     nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
-    turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
+    turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
     waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
     noteAction, roomMapRef, questProgress, innerRoomName, setRoom, setInv, collectGrantedRef,
     autoTravelRef, clearRouteQueue,
