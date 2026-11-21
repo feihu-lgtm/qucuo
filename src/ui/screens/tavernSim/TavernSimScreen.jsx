@@ -5,17 +5,17 @@
 // AI 叙事走 simNarrator.js 的令牌桶，失败静默落回模板文本。
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { getZoneTheme } from "../../ui/theme.js";
+import { getZoneTheme } from "../../theme.js";
 import {
   TICK_LABELS, MENU, STOCK_INFO, STOCK_BATCH, STAFF_ROLES,
   SEAT_COORDS, ZONES, LEVEL_UP, EVENTS, PRICE_MULT_MIN, PRICE_MULT_MAX,
-} from "./simData.js";
+} from "../../../domain/tavernSim/simData.js";
 import {
   initSim, advanceTick, buyStock, setPrice, hireStaff, fireStaff,
   hireGuard, fireGuard, upgradeLevel, resolveEvent, getDailyCandidates,
   appendLog, setNightReport,
-} from "./simEngine.js";
-import { createNarrator, hasApiKey } from "./simNarrator.js";
+} from "../../../domain/tavernSim/simEngine.js";
+import { createNarrator, hasApiKey } from "../../../domain/tavernSim/simNarrator.js";
 
 const SAVE_KEY = "qucuo_tavern_sim_v1";
 const LEVEL_NAMES = ["破落小馆", "热闹酒肆", "闻名三江"];

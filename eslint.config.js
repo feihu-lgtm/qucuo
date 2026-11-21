@@ -79,6 +79,17 @@ export default [
     },
   },
   {
+    files: ["src/domain/**/*.{js,jsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/ui/**", "**/app/**"],
+          message: "Domain modules must not depend on UI or app modules.",
+        }],
+      }],
+    },
+  },
+  {
     files: ["src/store/**/*.{js,jsx}"],
     rules: {
       "no-restricted-imports": ["error", {

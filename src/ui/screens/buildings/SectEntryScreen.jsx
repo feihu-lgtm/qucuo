@@ -1,6 +1,6 @@
 import React from "react";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
-import { SECT_ENTRY, checkSectEntry } from "../character/sectEntry.js";
+import { SECT_ENTRY, checkSectEntry } from "../../../domain/character/sectEntry.js";
 
 // 拜师堂——雪山派入门。挂在内堂（何雨谢坐镇处）。
 // 结算全在系统这边做完（扣束脩、发令牌、写身份 flag），AI 只负责把这件既成事实

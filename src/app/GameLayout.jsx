@@ -10,7 +10,7 @@ import {
   getInnerRoomNames, isInnerExitUnlocked,
 } from "../domain/map/innerMap.js";
 import { DIRS } from "../utils/mudHelpers.js";
-import { MAP_UI } from "../domain/map/mapUi.js";
+import { MAP_UI } from "../ui/mapUi.js";
 import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";
 import { didOpenCenterContent } from "../utils/mobileColumn.js";
 import { OVERLAY, useOverlay } from "../store/uiStore.js";

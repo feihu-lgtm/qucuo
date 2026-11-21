@@ -1,6 +1,6 @@
 import React from "react";
-import { SKILL_CATALOG, hasSkill } from "../kungfu/qucuoKungfu.js";
-import { QUALITY_COLOR } from "../economy/equipment.js";
+import { SKILL_CATALOG, hasSkill } from "../../../domain/kungfu/qucuoKungfu.js";
+import { QUALITY_COLOR } from "../../../domain/economy/equipment.js";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
 
 const SKILL_TYPE_LABEL = { 招式: "招", 内功: "内", 轻功: "轻" };
