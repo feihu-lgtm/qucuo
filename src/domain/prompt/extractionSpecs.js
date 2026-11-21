@@ -96,15 +96,23 @@ export const EXTRACTION_SPECS = {
 · 全都没有变化时输出 {}。`),
   },
 
-  // 送礼专属提取——不是从叙事"读心"式倒推好感度变不变、变多少，而是直接钉死结论：
-  // 这个世界收礼必因礼貌/信义/心情而高兴，本轮好感度只能是正向增量，且按礼物的
-  // 品阶/描述给出有依据的幅度参考。settleOpts 由调用方在命中 settleKind:"gift" 时传入
-  // （见 MudRPG.jsx handleNpcGift/giftToCharacter），未命中时仍走上面通用 TALK_CASUAL。
+  // 送礼已由系统交付，提取层只判断收礼人好感。
   GIFT: {
     scaleFields: [FIELD.affection],
-    system: "你是游戏状态提取器，专门处理送礼场景的好感度结算——这个世界收礼必然让人欣喜，好感度只能往上走，不做\"读心\"式判断。",
-    user: (narrative, s, settleOpts) => {
+    system: "你是游戏状态提取器，专门处理送礼场景的好感度结算，遵守系统给定的分量和好感区间。",
+    user: (narrative, s, settleOpts, render) => {
       const info = settleOpts?.giftInfo || {};
+      if (info.weight) {
+        const npcName = settleOpts.settleNpc;
+        const example = info.weight.range.at(0);
+        return render(`@settleNpc 已收到系统交付的「@giftInfo.itemName」。分量：@{赠礼.分量}。反应：@赠礼.反应。
+
+叙事内容：
+@narrative
+
+只允许对收礼者 _.add 一次好感，整数范围 @赠礼.好感范围。若允许零且态度未变，可省略。礼物已扣除，不重复写入物品或银两变动。
+输出 JSON：{"mvu":"_.add('角色.${npcName}.好感度', ${example});"}`, {}, settleOpts);
+      }
       const [lo, hi] = info.range || giftRange(info.quality);
       const suggested = info.suggestedDelta ?? Math.round((lo + hi) / 2);
       return `${settleOpts?.settleNpc || "对方"}刚收到玩家赠送的礼物：${info.itemName ? `「${info.itemName}」` : "一件物品"}，品阶【${info.quality || "白"}】${info.categoryLabel ? `，类别「${info.categoryLabel}」` : ""}${info.desc ? `。物件描述：${info.desc}` : ""}
@@ -216,6 +224,7 @@ export function renderExtractionSpec(spec, narrative, state, settleOpts, trace) 
     ...state, narrative, ...overrides,
     promptRefOptions: { inventoryNames: true, inventorySeparator: "，", emptyInventory: "空", ...options },
   }, { trace }).text;
+  const scaleFields = spec === EXTRACTION_SPECS.GIFT && settleOpts?.giftInfo?.weight ? [] : spec.scaleFields;
   return spec.user(narrative, state, settleOpts, render) + commonExtractTail(render)
-    + renderFieldScales(spec.scaleFields || [], state, trace);
+    + renderFieldScales(scaleFields || [], state, trace);
 }

@@ -4,12 +4,11 @@ import { callModel, callModelStream } from "../../infra/apiConfig.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 import {
-  NNPC_STAGE, isInSea, narratorVoicePrompt, buildNarratorWhisperContext,
-  narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
+  NNPC_STAGE, isInSea, gateWhisperTopics, gateQuestTopic,
 } from "../../domain/narrator/narrator.js";
 import { gateBodyProfile } from "../../domain/character/bodyProfile.js";
 import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
-import { availableKnot, canResolve, seaDialoguePrompt } from "../../domain/narrator/narratorQuest.js";
+import { availableKnot, canResolve } from "../../domain/narrator/narratorQuest.js";
 import { narratorVars, setNarratorVars } from "../../domain/prompt/mvu.js";
 import { buildWhisperStatePrompt, formatFactSummariesForPrompt } from "../../domain/prompt/promptRefs.js";
 import { WHISPER_AFFECTION_RULES } from "../../domain/state/fields.js";
@@ -21,6 +20,7 @@ import { describeTallyForWhisper } from "../../domain/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { gameStore } from "../../store/gameStore.js";
+import { buildPrivateTalkPayload } from "../../domain/prompt/privateTalkPayload.js";
 
 export function usePrivateTalk({
   narrator, addLog, apiCfg, convo, room, preset, flags,
@@ -166,18 +166,29 @@ export function usePrivateTalk({
         { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
       );
       const worldState = inSeaNow ? "" : buildWhisperStatePrompt(gameStore.getState(), { trace });
-      const sys = inSeaNow
-        ? `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: NNPC_STAGE })}${recallBlock}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`
-        : `${buildNarratorWhisperContext(narrator.affection)}\n${narratorVoicePrompt(narrator, trace)}\n\n${worldState}${snowLeopardHint({ questProgress, flags, cmd: content })}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
-
-      // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
-      // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
-      // 对话类同样取至少 20 层全部互动。
-      const talkWindow = Math.max(apiCfg.contextWindow, 20);
-      const hist = convo.length > talkWindow ? convo.slice(-talkWindow) : convo;
-      // 私聊不需要像叙事那么长，但 600 这个旧硬编码在带思考的模型下会被思考 token 吃穿、
-      // 正文半句就撞 length 截断，故改读可调的 callTokenLimits.narratorWhisper（默认 6000）。
-      const narratorMaxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
+      const privateTalkPayload = buildPrivateTalkPayload({
+        narrator,
+        content,
+        apiCfg,
+        convo,
+        inSeaNow,
+        seaVars,
+        worldState,
+        snowLeopardBlock: snowLeopardHint({ questProgress, flags, cmd: content }),
+        factsBlock,
+        recallBlock,
+        tallyBlock,
+        narratorLoreBlock,
+        bodyWhisperText: _bodyWhisper.text,
+        topicGateText: _topicGate.text,
+        questGateText: _questGate.text,
+        whisperGateText: _whisperGate.text,
+        narratorStage: NNPC_STAGE,
+      });
+      for (const paths of privateTalkPayload.promptRefEvents) {
+        traceStep(_wt, "提示词引用缺失", "warn", paths.join("、"));
+      }
+      const { systemPrompt: sys, messages: talkMessages, maxTokens: narratorMaxTokens } = privateTalkPayload;
 
       let text;
       let affDelta = WHISPER_AFFECTION_RULES.fallback; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖
@@ -201,7 +212,7 @@ export function usePrivateTalk({
           return l;
         });
         const { text: streamedText, finishReason: fr } = await callModelStream(
-          apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }],
+          apiCfg, sys, talkMessages,
           (_delta, fullSoFar) => {
             setLog(l => {
               if (isStale() || logIdx.current == null) return l;
@@ -224,7 +235,7 @@ export function usePrivateTalk({
         });
         traceStep(_wt, "AI调用", "pass", "流式一次成功");
       } else {
-        const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt });
+        const result = await callModel(apiCfg, sys, talkMessages, { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt });
         if (isStale()) return;
         finishReason = result.finishReason;
         text = stripEchoPrefix(result.text.trim()) || "……";

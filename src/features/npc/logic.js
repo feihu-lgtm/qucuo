@@ -1,113 +1,26 @@
 import { QUALITY, CATEGORY_LABEL, makeItem } from "../../domain/economy/equipment.js";
 import { makeItemSmart, CATALOG_INDEX } from "../../domain/items/catalog.js";
 import { markNpcAsKnown as markNpcKnown } from "../../domain/npc/npcAwareness.js";
-import { markCarriedLost, respawnNpc } from "../../domain/npc/roomNpcs.js";
+import { computeGiftWeight } from "../../domain/npc/giftWeight.js";
+import { markCarriedLost } from "../../domain/npc/roomNpcs.js";
 import { tryLearnFromMaster, tryStealFrom } from "../../domain/kungfu/learnSkill.js";
 import { isNpcAngry, stealSuccessRate } from "../../domain/combat/stealSystem.js";
-import { duelAffGain, duelDropChance, duelPotGain, TEAMWORK_GAIN } from "../../domain/combat/duelSettleMath.js";
-import { random } from "../../core/rng.js";
-import { buildDuelReportRounds } from "../../domain/combat/duelReport.js";
 import { bar } from "../../utils/mudHelpers.js";
-import { QUEST_TYPE } from "../../domain/quests/questTypes.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings } from "../../domain/quests/questEngine.js";
-import { applyStageRewards, resolveStageRewards } from "../../domain/quests/questRewards.js";
+import { getCurrentStage } from "../../domain/quests/questEngine.js";
 import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
-import { activeCompanionKey } from "../../domain/companion/companion.js";
 import { snowMedicineGift } from "../quest/snowLeopard.js";
-import { snowQuestActive } from "../../domain/quests/snowLeopardQuest.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
+import { add, applyWrite, set, updateField } from "../../domain/state/applyWrite.js";
+import { giftRange } from "../../domain/state/fields.js";
+import { forceAdvanceQuest } from "./questAdvancement.js";
 
+export { settleNpcDuel } from "./settleDuel.js";
 export { appeaseAngryNpc };
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
-
-function forceAdvanceQuest(state, quest, targetFlag, now) {
-  const flags = state.flags || [];
-  const addedFlag = flags.includes(targetFlag) ? flags : [...flags, targetFlag];
-  let progress = state.questProgress?.[quest.id] || createQuestProgress(quest.id, now);
-  const gameState = { flags: addedFlag, char: state.char || {} };
-  const pendingRewards = [];
-
-  while (progress.status === "active") {
-    const result = advanceQuestStages(quest, progress, gameState, now);
-    if (!result.advanced) break;
-    progress = result.progress;
-    if (result.completedStage) {
-      const rewards = resolveStageRewards(result.completedStage, result.hitFlags);
-      if (rewards) pendingRewards.push(rewards);
-    }
-    if (result.justCompleted) break;
-  }
-
-  let nextProgress = { ...(state.questProgress || {}), [quest.id]: progress };
-  if (progress.status === "completed") {
-    nextProgress = lockExclusiveSiblings(nextProgress, QUCUO_QUESTS, quest.id);
-  }
-
-  const flagUpdates = [(prev) => prev.includes(targetFlag) ? prev : [...prev, targetFlag]];
-  const changedProgress = Object.fromEntries(
-    Object.entries(nextProgress).filter(([id, value]) => state.questProgress?.[id] !== value),
-  );
-  const changes = {
-    flags: (prev) => flagUpdates.reduce((value, update) => update(value), prev || []),
-    questProgress: (prev) => ({ ...(prev || {}), ...changedProgress }),
-  };
-  const local = {
-    inv: state.inv || [],
-    char: state.char || {},
-    varTree: state.varTree || {},
-    flags: addedFlag,
-  };
-  const varTreeUpdates = [];
-  const invUpdates = [];
-  const charUpdates = [];
-  const setters = {
-    setInv: (update) => {
-      invUpdates.push(update);
-      local.inv = typeof update === "function" ? update(local.inv) : update;
-    },
-    setChar: (update) => {
-      charUpdates.push(update);
-      local.char = typeof update === "function" ? update(local.char) : update;
-    },
-    setVarTree: (update) => {
-      varTreeUpdates.push(update);
-      local.varTree = typeof update === "function" ? update(local.varTree) : update;
-    },
-    setFlags: (update) => {
-      flagUpdates.push(update);
-      local.flags = typeof update === "function" ? update(local.flags) : update;
-    },
-  };
-
-  for (const rewards of pendingRewards) applyStageRewards(rewards, setters, now);
-  if (invUpdates.length) {
-    changes.inv = (prev) => invUpdates.reduce(
-      (value, update) => typeof update === "function" ? update(value) : update,
-      prev || [],
-    );
-  }
-  if (charUpdates.length) {
-    changes.char = (prev) => charUpdates.reduce(
-      (value, update) => typeof update === "function" ? update(value) : update,
-      prev || {},
-    );
-  }
-  changes.flags = (prev) => flagUpdates.reduce(
-    (value, update) => typeof update === "function" ? update(value) : update,
-    prev || [],
-  );
-  if (varTreeUpdates.length) {
-    changes.varTree = (prev) => varTreeUpdates.reduce(
-      (tree, update) => typeof update === "function" ? update(tree) : update,
-      prev || {},
-    );
-  }
-  return changes;
-}
 
 function composeUpdates(first, second) {
   return (prev) => {
@@ -155,7 +68,7 @@ export function talkToNpc(state, npc, { now = Date.now() } = {}) {
       ...result.changes,
       questProgress: (prev) => ({ ...prev, [activeEscort.id]: { active: false } }),
       flags: (prev) => [...prev, doneFlag],
-      char: (prev) => ({ ...prev, money: (prev.money || 0) + activeEscort.reward }),
+      char: updateField("char", add("char.money", activeEscort.reward)),
       pot: (prev) => prev + 10,
     };
     result.logs = [
@@ -176,8 +89,6 @@ export function talkToNpc(state, npc, { now = Date.now() } = {}) {
   return result;
 }
 
-const GIFT_AFFECTION_RANGE = { 白: [2, 4], 绿: [4, 6], 蓝: [6, 9], 紫: [9, 12], 橙: [11, 14], 红: [13, 15] };
-
 export function describeGiftForPrompt(item) {
   const itemName = typeof item === "string" ? item : item?.name;
   const catalogEntry = CATALOG_INDEX[itemName];
@@ -186,7 +97,7 @@ export function describeGiftForPrompt(item) {
   const desc = catalogEntry?.desc || inventoryEntry?.desc || "";
   const category = catalogEntry?.category || inventoryEntry?.category || null;
   const categoryLabel = category ? (CATEGORY_LABEL[category] || category) : null;
-  const [lo, hi] = GIFT_AFFECTION_RANGE[quality] || GIFT_AFFECTION_RANGE.白;
+  const [lo, hi] = giftRange(quality);
   return { itemName, quality, desc, categoryLabel, range: [lo, hi], suggestedDelta: Math.round((lo + hi) / 2) };
 }
 
@@ -195,6 +106,8 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   if (!item) return { logs: [{ t: "err", text: "  背包中没有这件物品。" }] };
   const itemName = typeof item === "string" ? item : item.name;
   const giftInfo = describeGiftForPrompt(item);
+  const weight = computeGiftWeight(npc, typeof item === "string" ? CATALOG_INDEX[item] || {} : item);
+  giftInfo.weight = weight;
   const inv = state.inv || [];
   let nextInv = inv;
   if (typeof item === "object" && item.id != null) {
@@ -203,6 +116,7 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     const index = inv.findIndex((entry) => (typeof entry === "string" ? entry : entry.name) === itemName);
     if (index !== -1) nextInv = [...inv.slice(0, index), ...inv.slice(index + 1)];
   }
+  if (nextInv.length === inv.length) return { logs: [{ t: "err", text: "  背包中没有这件物品。" }] };
 
   let deliveredQuest = null;
   for (const quest of QUCUO_QUESTS) {
@@ -225,10 +139,10 @@ export function giftNpc(state, npc, item, now = Date.now()) {
 
   const isAngry = isNpcAngry(state.varTree, npc.name);
   const command = isAngry ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好` : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
-  const changes = { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }), inv: nextInv };
+  const changes = { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }), inv: applyWrite(state, set("inv", nextInv)).state.inv };
   const logs = [];
   if (snowMedicineGift(state, npc, item)) {
-    changes.flags = (f) => [...new Set([...f, "snow_spirit_medicine"])];
+    changes.flags = updateField("flags", (flags) => set("flags", [...new Set([...flags, "snow_spirit_medicine"])]));
     logs.push({ t: "sys", text: "  你替雪豹敷药，前爪的陈年旧伤终于好了。" });
   }
   if (deliveredQuest) {
@@ -249,6 +163,26 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     settle: command,
     settleOptions: { settleNpc: npc.name, settleKind: isAngry ? "appease" : "gift", giftInfo },
     deliveredQuest: deliveredQuest?.quest || null,
+  };
+}
+
+export function giftSilver(state, npc, amount, now = Date.now()) {
+  if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
+  if (!Number.isSafeInteger(amount) || amount <= 0) return { logs: [{ t: "err", text: "  礼金须为正整数两。" }] };
+  if ((state.char?.money ?? 0) < amount) return { logs: [{ t: "err", text: "  随身银两不足，未送出。" }] };
+  const angry = isNpcAngry(state.varTree, npc.name);
+  const itemName = `${amount}两银子`;
+  return {
+    changes: {
+      char: updateField("char", add("char.money", -amount)),
+      varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }),
+    },
+    settle: `将${itemName}赠予${npc.name}`,
+    settleOptions: {
+      settleNpc: npc.name,
+      settleKind: angry ? "appease" : "gift",
+      giftInfo: { itemName, amount, weight: computeGiftWeight(npc, { amount }) },
+    },
   };
 }
 
@@ -278,18 +212,10 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
       changes: {
         varTree: (prev) => {
           const known = markNpcKnown(prev || {}, npc.name);
-          const current = known.角色?.[npc.name] || {};
-          return {
-            ...known,
-            角色: {
-              ...known.角色,
-              [npc.name]: {
-                ...current,
-                好感度: Math.max(0, (current.好感度 || 0) - result.favorabilityLoss),
-                生气状态: result.angryState,
-              },
-            },
-          };
+          return updateField("varTree", [
+            add(["角色", npc.name, "好感度"], -result.favorabilityLoss),
+            set(["角色", npc.name, "生气状态"], result.angryState),
+          ])(known);
         },
       },
       logs: [
@@ -325,7 +251,7 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
     };
     return {
       changes: {
-        inv: (prev) => [...prev, fullItem],
+        inv: updateField("inv", (prev) => set("inv", [...prev, fullItem])),
         room: (prev) => ({ ...prev, npcs: markCarriedLost(prev.npcs, npc.name, target, "stolen") }),
       },
       logs: [
@@ -351,280 +277,6 @@ export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
     noteAction: "steal",
     kind: "move",
     steal: result,
-  };
-}
-
-function addChange(changes, state, key, update) {
-  const previous = changes[key];
-  changes[key] = previous
-    ? (value) => {
-      const afterPrevious = previous(value);
-      return typeof update === "function" ? update(afterPrevious) : update;
-    }
-    : (value) => typeof update === "function" ? update(value) : update;
-  state[key] = typeof update === "function" ? update(state[key]) : update;
-}
-
-function appendQuestAdvancement(state, changes, quest, flag, now) {
-  const advancement = forceAdvanceQuest(state, quest, flag, now);
-  for (const [key, update] of Object.entries(advancement)) {
-    addChange(changes, state, key, update);
-  }
-}
-
-function invHasNamedItem(inv, name) {
-  return (inv || []).some((item) => (typeof item === "string" ? item : item?.name) === name);
-}
-
-function recapBattleLog(battleLog) {
-  return (battleLog || []).map((row) => {
-    if (row.teamText) return `第${row.round}回合，${row.teamText}`;
-    const result = row.result || {};
-    const bits = [`第${row.round}回合你使「${row.playerMove?.name || "未明招式"}」`];
-    if (row.npcMove) bits.push(`对方使「${row.npcMove.name}」`);
-    if (result.damageToB > 0) bits.push(`对方受创${result.damageToB}`);
-    if (result.damageToA > 0) bits.push(`你受创${result.damageToA}`);
-    if (row.narration) bits.push(`（说书：${row.narration}）`);
-    return bits.join("，");
-  }).join("；");
-}
-
-export function settleNpcDuel(state, npc, {
-  outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, dodgeStolenItems, pendingQuestBranch,
-  reportFollows = false, now = Date.now(), rng = random, createRespawnNpc,
-} = {}) {
-  if (!npc) return {};
-  const working = {
-    ...state,
-    char: state.char || {},
-    room: state.room || {},
-    inv: state.inv || [],
-    skills: state.skills || [],
-    flags: state.flags || [],
-    questProgress: state.questProgress || {},
-    varTree: state.varTree || {},
-    pot: state.pot || 0,
-  };
-  const changes = {};
-  const logs = [];
-  const reportRounds = buildDuelReportRounds(battleLog);
-
-  if (outcome === "win" && (npc.hostile || npc.tag === "黑风寨山贼" || state.varTree?.角色?.[npc.name]?.生气状态?.escalated) && snowQuestActive(state)) {
-    addChange(changes, working, "flags", (f) => [...new Set([...f, "snow_spirit_duel"])]);
-  }
-  if (Array.isArray(battleLog) && battleLog.length) {
-    const foe = npc.name || "对手";
-    const battleLogs = [{ t: "sys", text: `　── 与${foe}切磋 ──` }];
-    if (!reportFollows) {
-      battleLogs.push(...reportRounds.map((entry) => ({ t: "desc", text: `  第${entry.round}回合 ${entry.text}` })));
-    }
-    logs.push(...battleLogs);
-  }
-
-  if (working.char.pendingCombatBuff) {
-    addChange(changes, working, "char", (prev) => {
-      const { pendingCombatBuff, ...rest } = prev;
-      return rest;
-    });
-  }
-  if (remainingHp) {
-    addChange(changes, working, "char", (prev) => ({
-      ...prev,
-      hp: [Math.max(0, Math.min(remainingHp[0], prev.hp[1])), prev.hp[1]],
-    }));
-  }
-  if (grownMoveset) addChange(changes, working, "char", (prev) => ({ ...prev, moveset: grownMoveset }));
-
-  if (pendingQuestBranch?.mode === "combat" && npc.questBranchFlag === pendingQuestBranch.flag) {
-    if (outcome === "win") {
-      const quest = QUCUO_QUESTS.find((entry) => entry.id === pendingQuestBranch.questId);
-      if (quest) {
-        appendQuestAdvancement(working, changes, quest, pendingQuestBranch.flag, now);
-        logs.push({ t: "affection", text: `  ✓ 你打退了他们，「${quest.title}」推进。` });
-      }
-    } else {
-      logs.push({ t: "sys", text: `  你没能打赢——这条路没走通，可换个法子再试。` });
-    }
-  }
-
-  if (usedItems?.length) {
-    addChange(changes, working, "inv", (prev) => {
-      const next = [...prev];
-      for (const name of usedItems) {
-        const index = next.findIndex((item) => (typeof item === "object" ? item.name : item) === name);
-        if (index !== -1) next.splice(index, 1);
-      }
-      return next;
-    });
-    const tally = usedItems.reduce((counts, name) => (counts[name] = (counts[name] || 0) + 1, counts), {});
-    logs.push({ t: "item", text: `  ⊙ 切磋中服用：${Object.entries(tally).map(([name, count]) => `${name}×${count}`).join("、")}` });
-  }
-
-  for (const stolen of dodgeStolenItems || []) {
-    const item = {
-      ...makeGameItem({ name: stolen.name, category: stolen.category || "misc", quality: stolen.quality || "白" }),
-      id: `duel_stolen_${stolen.id || stolen.name}_${now}`,
-    };
-    addChange(changes, working, "inv", (prev) => [...prev, item]);
-    addChange(changes, working, "room", (prev) => ({
-      ...prev,
-      npcs: markCarriedLost(prev.npcs, npc.name, stolen, "stolen"),
-    }));
-    logs.push({ t: "loot", text: `  🤫 顺手摸走了「${stolen.name}」`, item, source: "steal", fromNpc: npc.name });
-  }
-
-  const { potGain, tierLabel } = duelPotGain(npc.levelCap, outcome);
-  addChange(changes, working, "pot", (prev) => prev + potGain);
-  logs.push({ t: "item", text: `  ✦ 与${tierLabel}高手切磋${outcome === "win" ? "获胜" : outcome === "lose" ? "落败" : "罢手"}，长了见识，潜能 +${potGain}` });
-
-  if (npc.name && !npc.tag) {
-    const affGain = duelAffGain(outcome);
-    addChange(changes, working, "varTree", (prev) => {
-      const tree = markNpcKnown(prev || {}, npc.name);
-      const roles = { ...(tree.角色 || {}) };
-      const current = roles[npc.name]?.好感度 ?? 0;
-      roles[npc.name] = { ...(roles[npc.name] || {}), 好感度: Math.max(0, Math.min(100, current + affGain)) };
-      return { ...tree, 角色: roles };
-    });
-    logs.push({ t: "affection", text: `  💗 与${npc.name}切磋一场，交情 +${affGain}` });
-  }
-
-  if (outcome === "win" && activeCompanionKey(state.companionState)) {
-    addChange(changes, working, "varTree", (prev) => {
-      const tree = markNpcKnown(prev || {}, "雪豹");
-      const roles = { ...(tree.角色 || {}) };
-      const current = roles.雪豹?.好感度 ?? 0;
-      roles.雪豹 = { ...(roles.雪豹 || {}), 好感度: Math.max(0, Math.min(100, current + TEAMWORK_GAIN)) };
-      return { ...tree, 角色: roles };
-    });
-    logs.push({ t: "affection", text: `  💗 与雪豹并肩破敌，默契渐深，好感 +${TEAMWORK_GAIN}` });
-  }
-
-  let note = null;
-  if (outcome === "win" && npc.guaranteedDrop && !invHasNamedItem(working.inv, npc.guaranteedDrop.name)) {
-    const drop = npc.guaranteedDrop;
-    const item = makeGameItem({
-      name: drop.name,
-      category: drop.category || "misc",
-      quality: drop.quality || "白",
-      desc: drop.desc,
-    });
-    addChange(changes, working, "inv", (prev) => [...prev, item]);
-    logs.push({ t: "loot", text: `✦ ${npc.name}倒地时，那件${drop.name}从他身上滑落——你捡了起来。`, item, source: "duel", fromNpc: npc.name });
-    note = {
-      text: `打赢${npc.name}，从他身上得了「${drop.name}」。`,
-      owner: [{ name: npc.name, via: VIA.FIRSTHAND }],
-      source: NOTE_SOURCE.NARRATIVE,
-    };
-  }
-
-  if (outcome === "win" && npc.name && !npc.tag) {
-    const pool = (npc.carriedItems || []).filter((item) => !item.stolen && !item.dropped && !(dodgeStolenItems || []).some((stolen) => stolen.id ? item.id === stolen.id || (!item.id && item.name === stolen.name) : item.name === stolen.name));
-    if (pool.length) {
-      const dropChance = duelDropChance(working.char.special?.气运 ?? 5);
-      if (rng() < dropChance) {
-        const dropped = pool[Math.floor(rng() * pool.length)];
-        const item = makeGameItem({ name: dropped.name, category: dropped.category || "misc", quality: dropped.quality || "白" });
-        addChange(changes, working, "inv", (prev) => [...prev, item]);
-        addChange(changes, working, "room", (prev) => ({
-          ...prev,
-          npcs: markCarriedLost(prev.npcs, npc.name, dropped, "dropped"),
-        }));
-        logs.push({ t: "loot", text: `✦ 一番切磋，${npc.name}的「${dropped.name}」竟落入你手（福缘所致）`, item, source: "duel", fromNpc: npc.name });
-      }
-    }
-  }
-
-  if (outcome === "win" && npc.respawn) {
-    const fresh = createRespawnNpc?.(
-      {
-        name: npc.name,
-        id: npc.id,
-        brief: npc.brief,
-        beast: true,
-        respawn: true,
-        cannotSpeak: true,
-        personality: npc.personality,
-        carry: [{ name: "金蛋", category: "misc", quality: "绿" }],
-      },
-      { luck: working.char.special?.气运 ?? 5, levelCap: npc.levelCap ?? 0 },
-    );
-    if (fresh) {
-      addChange(changes, working, "room", (prev) => ({ ...prev, npcs: respawnNpc(prev.npcs, fresh) }));
-      logs.push({ t: "sys", text: `  那大公鸡扑棱着翅膀又蹦了回来，梗着脖子冲你叫，似乎还想再斗一场。` });
-    }
-  }
-
-  if (outcome === "win" && npc.tag) {
-    const quest = QUCUO_QUESTS.find((entry) => entry.type === QUEST_TYPE.KILL && entry.targetTag === npc.tag);
-    if (quest) {
-      const current = state.questProgress?.[quest.id]?.count || 0;
-      const nextCount = current + 1;
-      const done = nextCount >= quest.requiredCount;
-      addChange(changes, working, "questProgress", (prev) => ({
-        ...prev,
-        [quest.id]: { count: (prev[quest.id]?.count || 0) + 1 },
-      }));
-      if (done && current < quest.requiredCount) {
-        logs.push({ t: "affection", text: `  ✓ 任务「${quest.title}」达成：${quest.rewardText}` });
-        addChange(changes, working, "flags", (prev) => prev.includes(`quest_done_${quest.id}`) ? prev : [...prev, `quest_done_${quest.id}`]);
-      } else {
-        logs.push({ t: "sys", text: `  任务「${quest.title}」进度：${nextCount}/${quest.requiredCount}` });
-      }
-    }
-  }
-
-  if (loot?.droppedItem) {
-    const droppedItem = loot.droppedItem;
-    const item = { ...droppedItem, equipped: false };
-    addChange(changes, working, "inv", (prev) => [...prev, item]);
-    logs.push({ t: "loot", text: `⚔ 战利品：获得「${droppedItem.name}」`, item: droppedItem, source: "duel", fromNpc: npc.name });
-    addChange(changes, working, "room", (prev) => ({
-      ...prev,
-      npcs: markCarriedLost(prev.npcs, npc.name, droppedItem, "stolen"),
-    }));
-  }
-  if (loot?.droppedMoney > 0) {
-    addChange(changes, working, "char", (prev) => ({ ...prev, money: (prev.money || 0) + loot.droppedMoney }));
-    logs.push({ t: "item", text: `  💰 战利品：获得银两 ${loot.droppedMoney} 两` });
-  }
-  if (loot?.guaranteedLoot?.length) {
-    addChange(changes, working, "inv", (prev) => [...prev, ...loot.guaranteedLoot]);
-    for (const item of loot.guaranteedLoot) {
-      logs.push({ t: "item", text: `  ⚔ 战利品：取得「${item.name}」（${item.quality}）` });
-    }
-  }
-
-  const recap = recapBattleLog(battleLog);
-  const outcomeText = outcome === "win"
-    ? `你技高一筹，${npc.name}抱拳认输`
-    : outcome === "lose"
-      ? `你技逊一筹，向${npc.name}抱拳致意`
-      : `这场切磋不了了之，收招罢手`;
-  const factId = outcome ? `duel_${npc.name}_${state.time}` : null;
-  const cue = outcome
-    ? `主角与${npc.name}切磋比武，结果主角${outcome === "win" ? "技高一筹取胜" : "落于下风告负"}`
-    : null;
-  const witnesses = [
-    npc.name,
-    ...(state.room?.npcs || []).filter((entry) => entry.name !== npc.name).map((entry) => entry.name),
-  ].map((name) => ({ name, 途径: "目击" }));
-  if (factId) {
-    logs.push({ t: "affection", text: `　◈ ${state.char?.name || "你"} 切磋 ${npc.name} · 战斗结算` });
-  }
-  const recapNote = `在${state.room?.name}与${npc.name}切磋${recap ? `，${recap.replace(/；/g, "、")}，` : "，"}${outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负"}。`;
-
-  return {
-    changes,
-    logs,
-    ...(note ? { note } : {}),
-    ...(factId ? { fact: { id: factId, 摘要: cue, 标签: "切磋", 知晓者: witnesses, currentTurn: state.time } } : {}),
-    factId,
-    cue,
-    recap,
-    reportRounds,
-    outcomeText,
-    recapNote: recapNote.slice(0, 60),
   };
 }
 
@@ -658,7 +310,7 @@ export function learnNpcSkill(state, npc) {
   return {
     changes: {
       varTree: (prev) => markNpcKnown(prev || {}, npc.name),
-      char: { ...char, money: money - decision.totalPrice },
+      char: applyWrite({ char }, add("char.money", -decision.totalPrice)).state.char,
       skills: [...skills, ...decision.freshSkills],
     },
     logs: [{

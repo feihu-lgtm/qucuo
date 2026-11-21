@@ -7,9 +7,12 @@ import {
   processPigeons,
   recordPigeonNpcLocations,
 } from "../../features/pigeon/logic.js";
-import { callModel } from "../../infra/apiConfig.js";
-import { buildPigeonPrompt } from "../../domain/prompt/pigeonPrompt.js";
+import { createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../domain/prompt/withAI.js";
+import "../../domain/prompt/calls/sideCalls.js";
 import { turnMonitor } from "../../core/turnMonitor.js";
+
+const webAi = createWebAi();
 
 export function usePigeonReplies({
   room, apiCfg, preset, applyPigeonResult, time, varTree, featureCtxRef,
@@ -22,15 +25,19 @@ export function usePigeonReplies({
   }, [room.name, room.npcs]);
 
   const replyPigeonLetter = useCallback(async (letter) => {
-    const { sentContent, id } = letter;
+    const { id } = letter;
     const state = gameStore.getState();
     try {
-      const sys = buildPigeonPrompt(state, letter, preset, (paths) => {
-        const turn = turnMonitor.start("飞鸽回信", { background: true, source: "background-ai" });
-        turnMonitor.add(turn, "domain", "提示词引用缺失", { status: "warn", detail: paths.join("、") });
-        turnMonitor.finish(turn);
-      });
-      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: `主角的来信：${sentContent}` }], { maxTokens: apiCfg.callTokenLimits?.pigeonReply ?? 3000, callLabel: "飞鸽回信" });
+      const { text } = await withAI("pigeon.reply", {
+        state,
+        letter,
+        preset,
+        trace: (paths) => {
+          const turn = turnMonitor.start("飞鸽回信", { background: true, source: "background-ai" });
+          turnMonitor.add(turn, "domain", "提示词引用缺失", { status: "warn", detail: paths.join("、") });
+          turnMonitor.finish(turn);
+        },
+      }, { ai: webAi, apiCfg });
       applyPigeonResult(applyPigeonReply(state, letter, text), { feature: "pigeon.reply", background: true });
     } catch {
       pigeonProcessing.current.delete(id);

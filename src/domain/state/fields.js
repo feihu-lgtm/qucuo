@@ -80,6 +80,23 @@ const whisperRules = {
 };
 export const DEAL_MULTIPLIER = { min: 0.8, max: 1.5, default: 1 };
 export const CARRY_COUNT = { min: 0, max: 3 };
+const foodPrice = () => SERVICE_MENUS.饭馆.find((dish) => dish.name === "青稞糌粑").price;
+const weaponPrice = () => priceForQuality("weapon", "白").buyPrice;
+export const GIFT_WEIGHT = {
+  modest: /乞丐|流浪汉/,
+  wealthy: /土司本人|土司之女|^土司$/,
+  baseline: {
+    modest: foodPrice,
+    ordinary: () => priceForQuality("misc", "白").buyPrice,
+    wealthy: weaponPrice,
+  },
+  bands: [
+    { ratio: 0, label: "薄礼", range: [0, 1], reaction: "礼貌致谢，不必惊喜，也不必拉近关系" },
+    { ratio: 1, label: "寻常", range: [1, 3], reaction: "自然领情，略显亲切" },
+    { ratio: 2, label: "厚礼", range: [3, 5], reaction: "明显动容，具体说出这份礼对自己为何有用" },
+    { ratio: 5, label: "重金", range: [5, 8], reaction: "郑重承情，表现出礼物非同寻常，但不凭空许诺回报" },
+  ],
+};
 export const AFFECTION_RULES = affectionRules;
 export const WHISPER_AFFECTION_RULES = whisperRules;
 export const giftRange = (quality) => affectionRules.gift[quality] ?? ordinaryGift;
@@ -186,9 +203,14 @@ export const FIELDS = Object.freeze({
   "varTree.角色.**": { label: "角色关系", ai: true, refs: { 角色关系: (s) => s.varTree?.角色 || {} } },
   "varTree.世界.**": { label: "世界剧情变量", ai: true },
   "varTree.主角.**": { label: "主角剧情变量", ai: true },
-  "物价": { label: "物价参考", refs: {
-    "物价.主食": () => SERVICE_MENUS.饭馆.find((dish) => dish.name === "青稞糌粑")?.price,
-    "物价.兵器": () => priceForQuality("weapon", "白").buyPrice,
+  "物价": { label: "物价参考", readOnly: true, refs: {
+    "物价.主食": foodPrice,
+    "物价.兵器": weaponPrice,
+  } },
+  "giftInfo.weight": { label: "赠礼分量", readOnly: true, refs: {
+    "赠礼.分量": (_s, weight) => weight?.label,
+    "赠礼.反应": (_s, weight) => weight?.reaction,
+    "赠礼.好感范围": (_s, weight) => weight && formatRange(weight.range),
   } },
 });
 

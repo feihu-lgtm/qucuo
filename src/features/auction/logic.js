@@ -1,3 +1,4 @@
+import { add, set, updateField } from "../../domain/state/applyWrite.js";
 import { AUCTION_LOT } from "../../domain/economy/auction.js";
 import { invHasItemNamed } from "../../domain/map/safeHouse.js";
 import { makeItem } from "../../domain/economy/equipment.js";
@@ -10,8 +11,8 @@ export function auctionWin(state, finalPrice) {
   const lot = makeItemSmart({ name: AUCTION_LOT.name, category: AUCTION_LOT.category, quality: AUCTION_LOT.quality, desc: AUCTION_LOT.desc }, makeItem);
   return {
     changes: {
-      char: c => ({ ...c, money: (c.money || 0) - finalPrice }),
-      inv: prev => [...prev, lot],
+      char: updateField("char", add("char.money", -finalPrice)),
+      inv: updateField("inv", (inv) => set("inv", [...inv, lot])),
     },
     logs: [
       { t: "sys", text: `  （以${finalPrice}两拍得「${AUCTION_LOT.name}」）` },
