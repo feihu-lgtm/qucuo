@@ -184,7 +184,10 @@ export function resolveDuelReportTemplate(template, data) {
 export function renderDuelReportRounds(rounds) {
   const missingPaths = [];
   const rendered = rounds.map((round) => {
-    const template = Array.isArray(round.teamLines) ? TEAM_ROUND_TEMPLATE : SOLO_ROUND_TEMPLATE;
+    const hasNotes = Array.isArray(round.result?.notes) ? round.result.notes.length > 0 : Boolean(round.result?.notes);
+    const template = Array.isArray(round.teamLines)
+      ? TEAM_ROUND_TEMPLATE
+      : `${SOLO_ROUND_TEMPLATE}${hasNotes ? " 引擎备注：@round.result.notes" : ""}`;
     const result = resolveDuelReportTemplate(template, { round });
     missingPaths.push(...result.missingPaths.map((path) => `第${round.round}回合 @${path}`));
     return result.text;

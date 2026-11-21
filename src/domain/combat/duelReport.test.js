@@ -51,12 +51,16 @@ describe("战报逐回合交错", () => {
 
   it("团战按回合合并既有 teamText 并保留吃亏方", () => {
     const [report] = buildDuelReportRounds([
-      { round: 1, teamText: "雪豹一爪击中山贼", actor: { name: "雪豹" }, result: { worseName: "山贼" } },
+      {
+        round: 1, teamText: "雪豹一爪击中山贼", actor: { name: "雪豹" },
+        result: { worseName: "山贼", notes: ["山贼凭涅槃引续住气血"] },
+      },
       { round: 1, teamText: "少侠挡开刀势", actor: { name: "少侠" }, result: { worseName: "山贼" } },
     ]);
     expect(report.text).toBe("雪豹一爪击中山贼；少侠挡开刀势（山贼吃亏）");
     expect(report.teamLines[0].result.worseName).toBe("山贼");
     expect(renderDuelReportRounds([report]).text).toContain("雪豹");
+    expect(renderDuelReportRounds([report]).text).toContain("山贼凭涅槃引续住气血");
   });
 
   it("团战吃亏方不可得时只保留原系统战报", () => {
@@ -135,6 +139,16 @@ describe("战报回合数据和短句", () => {
     expect(prompt).toContain("麻穴");
     expect(prompt).toContain("本轮吃亏：才旦");
     expect(report.text).toContain("才旦 −3");
+  });
+
+  it("只在存在时把引擎复活备注加入单人提示", () => {
+    const note = "涅槃引护住才旦，使她气血复生";
+    const [withNote] = buildDuelReportRounds([entry({ notes: [note] })]);
+    const [withoutNote] = buildDuelReportRounds([entry({ notes: [] })]);
+
+    expect(renderDuelReportRounds([withNote]).text).toContain(note);
+    expect(renderDuelReportRounds([withNote]).text).toContain("引擎备注：");
+    expect(renderDuelReportRounds([withoutNote]).text).not.toContain("引擎备注：");
   });
 
   it("保留共享结算中的闪避与NPC疗伤标记", () => {
