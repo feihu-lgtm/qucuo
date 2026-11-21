@@ -318,8 +318,7 @@ export function useTurn({
     // loading 态 + 计时器：在第一个 await（下方 recall/knowledge）之前启动——
     // 内层移动已在上方 early return（不进 loading），这里之后才真正要调 AI。
     if (isTalk) changePendingTalks(1); else setLoading(true);
-    setWaitSecs(0);
-    if (waitTimerRef.current) clearInterval(waitTimerRef.current);
+    setWaitSecs(0); if (waitTimerRef.current) clearInterval(waitTimerRef.current);
     waitTimerRef.current = setInterval(() => setWaitSecs(s => s + 1), 1000);
 
     // 本回合开始时的 varTree，逻辑读取走 ref 以包含已发生的同步写入。
@@ -412,8 +411,7 @@ export function useTurn({
     }
     consumeDuelRequest(result, { opts, isStale, isTalk, interactMode, setActiveTarget, setDuelPending, featureCtxRef, trace: _trace });
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
-    if (isTalk) { changePendingTalks(-1); }
-    else { setLoading(false); }
+    if (isTalk) changePendingTalks(-1); else setLoading(false);
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
     } catch (error) {

@@ -23,7 +23,7 @@ describe("duel narration rollback", () => {
       isStale: () => false,
     }, npc)).resolves.toBe(true);
     expect(act).toHaveBeenCalledWith("向才旦抱拳邀战，请他切磋一番", [], {
-      keepUndo: true, settle: true, settleKind: "duel_invite", settleNpc: npc,
+      keepUndo: true, intentSkip: true, settle: true, settleKind: "duel_invite", settleNpc: npc,
     });
     expect(setDuelPending).toHaveBeenCalledWith(npc);
   });
