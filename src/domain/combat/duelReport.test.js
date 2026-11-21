@@ -7,9 +7,8 @@ import {
   interleaveDuelReport,
   renderDuelReportRounds,
   resolveDuelReportTemplate,
-  selectDuelPhrase,
 } from "./duelReport.js";
-import { DUEL_HP_BANDS, DUEL_MOVE_TYPES, DUEL_OUTCOMES, DUEL_PHRASE_BANK } from "./duelPhrases/index.js";
+import { MUTUAL_CONTACTS, REACTION_POOLS } from "./duelPhrases/index.js";
 
 describe("战报逐回合交错", () => {
   const rounds = [
@@ -124,6 +123,8 @@ describe("战报回合数据和短句", () => {
       result,
     };
   };
+  const containsReaction = (line, family, band, name) => REACTION_POOLS[family][band]
+    .some((fragment) => line.includes(fragment.replace("{target}", name)));
 
   it("给AI提供招式类型、回合后气血、伤害、状态、吃亏方及HP色调", () => {
     const source = entry();
@@ -162,10 +163,12 @@ describe("战报回合数据和短句", () => {
       playerMove: "野球拳", npcMove: "回春功", npcMoveType: "内功",
       dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null, hpRestoreNpc: 10,
     }));
-    expect(healLine).toContain("才旦运起回春功");
+    expect(healLine).toContain("才旦");
+    expect(healLine).toContain("回春功");
+    expect(healLine).toContain("气血渐复（+10）");
   });
 
-  it("区分招式伤害和持续伤害，不把纯持续伤害算作命中", () => {
+  it("区分招式伤害和持续伤害，不把纯持续伤害算作招式命中", () => {
     const record = entry({
       dmgToNpc: 0, dmgToPlayer: 0, statusDamageToNpc: 4,
       hpAfterNpc: [56, 60], statusAppliedToNpc: null,
@@ -173,97 +176,86 @@ describe("战报回合数据和短句", () => {
     });
     const line = formatDuelDisplayLine(record);
     const [report] = buildDuelReportRounds([record]);
-    const dotPhrase = selectDuelPhrase("状态", "dot", "healthy", 1).replace(/\{target\}/g, "才旦");
-    expect(line).toContain(dotPhrase);
-    expect(line).toContain("才旦 −4，含持续伤害 4");
-    expect(line).not.toContain("正中");
+
+    expect(line).toContain("持续伤害 4");
+    expect(line).not.toContain("才旦 −0");
+    expect(line).not.toContain("才旦 −4");
     expect(renderDuelReportRounds([report]).text).toContain("持续伤害：A 0、B 4");
   });
 
-  it("把伤势按健旺、受创、将倒分级，濒倒显示剩余气血", () => {
-    const healthy = formatDuelDisplayLine(entry());
-    const hurt = formatDuelDisplayLine(entry({ hpAfterNpc: [40, 100] }));
-    const nearDown = formatDuelDisplayLine(entry({ hpAfterNpc: [9, 100] }));
-    expect(healthy).toContain("浑若无事");
-    expect(hurt).toContain("身形一晃");
-    expect(nearDown).toContain("眼看就要倒下");
+  it("按每名受击者自己的HP带选择反应并在濒倒时显示余血", () => {
+    const healthy = formatDuelDisplayLine(entry({
+      npcMoveType: "攻击", statusAppliedToNpc: null,
+    }));
+    const hurt = formatDuelDisplayLine(entry({
+      npcMoveType: "攻击", statusAppliedToNpc: null, hpAfterNpc: [40, 100],
+    }));
+    const nearDown = formatDuelDisplayLine(entry({
+      npcMoveType: "攻击", statusAppliedToNpc: null, hpAfterNpc: [9, 100],
+    }));
+    expect(containsReaction(healthy, "damaged", "healthy", "才旦")).toBe(true);
+    expect(containsReaction(hurt, "damaged", "hurt", "才旦")).toBe(true);
+    expect(containsReaction(nearDown, "damaged", "nearDown", "才旦")).toBe(true);
     expect(nearDown).toContain("剩 9");
   });
 
-  it("只用受击方自己的血量带决定伤势语气", () => {
-    const mutual = formatDuelDisplayLine(entry({
-      dmgToNpc: 40, dmgToPlayer: 10,
-      hpAfterPlayer: [9, 100], hpAfterNpc: [58, 100],
-    }));
-    const playerTarget = formatDuelDisplayLine(entry({
-      dmgToNpc: 0, dmgToPlayer: 20, npcMoveType: "攻击",
-      hpAfterPlayer: [40, 100], hpAfterNpc: [60, 60],
+  it("互攻时分别使用A、B各自的HP带反应", () => {
+    const line = formatDuelDisplayLine(entry({
+      playerMoveType: "攻击", npcMoveType: "攻击",
+      dmgToNpc: 40, dmgToPlayer: 10, statusAppliedToNpc: null, statusAppliedToPlayer: null,
+      hpAfterPlayer: [9, 100], hpAfterNpc: [75, 120],
     }));
 
-    expect(mutual).toContain("身形一晃气息微乱");
-    expect(mutual).not.toContain("眼看就要倒下");
-    expect(playerTarget).toContain("身形一晃气息微乱");
+    expect(containsReaction(line, "damaged", "nearDown", "陈尧天")).toBe(true);
+    expect(containsReaction(line, "damaged", "healthy", "才旦")).toBe(true);
+    expect(MUTUAL_CONTACTS.some((fragment) => line.includes(fragment))).toBe(true);
   });
 
-  it("无伤闪避与疗伤使用行动者自己的血量带", () => {
-    const dodge = formatDuelDisplayLine(entry({
-      dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null,
-      dodgeSuccessPlayer: true, hpAfterPlayer: [9, 100], hpAfterNpc: [60, 60],
+  it("互攻只有一方受伤时只加入该方的反应", () => {
+    const line = formatDuelDisplayLine(entry({
+      playerMoveType: "攻击", npcMoveType: "攻击",
+      dmgToNpc: 5, dmgToPlayer: 0, statusAppliedToNpc: null, statusAppliedToPlayer: null,
+      hpAfterNpc: [55, 60],
     }));
-    const heal = formatDuelDisplayLine(entry({
-      dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null, hpRestoreNpc: 10,
-      hpAfterPlayer: [60, 60], hpAfterNpc: [9, 100],
-    }));
+    const playerReaction = Object.values(REACTION_POOLS).some((families) =>
+      Object.values(families).flat().some((fragment) => line.includes(fragment.replace("{target}", "陈尧天"))));
 
-    expect(dodge).toContain("几乎失势");
-    expect(heal).toContain("勉强支身");
+    expect(containsReaction(line, "damaged", "healthy", "才旦")).toBe(true);
+    expect(playerReaction).toBe(false);
+    expect(MUTUAL_CONTACTS.some((fragment) => line.includes(fragment))).toBe(false);
   });
 
-  it.each([
-    ["命中", "hit", entry({ npcMoveType: "攻击" }), "攻击", "陈尧天", "才旦", "野球拳", "铁布衫"],
-    ["格挡", "blocked", entry(), "攻击", "陈尧天", "才旦", "野球拳", "铁布衫"],
-    ["闪避", "dodged", entry({ dodgeSuccessPlayer: true }), "攻击", "陈尧天", "才旦", "野球拳", "铁布衫"],
-    ["运功", "heal", entry({ dmgToNpc: 0, statusAppliedToNpc: null, hpRestoreNpc: 10 }), "防御", "才旦", "才旦", "铁布衫", "野球拳"],
-    ["双方中招", "bothHit", entry({ dmgToNpc: 4, dmgToPlayer: 2 }), "攻击", "陈尧天", "才旦", "野球拳", "铁布衫"],
-  ])("按%s结果渲染对应短句模板", (_label, outcome, record, moveType, actor, target, move, targetMove) => {
-    const expected = selectDuelPhrase(moveType, outcome, "healthy", 1)
-      .replace(/\{actor\}/g, actor)
-      .replace(/\{target\}/g, target)
-      .replace(/\{move\}/g, move)
-      .replace(/\{targetMove\}/g, targetMove);
-    expect(formatDuelDisplayLine(record)).toContain(expected);
-  });
-
-  it.each(DUEL_MOVE_TYPES)("将%s无伤施加的状态归给施招者", (moveType) => {
+  it("取消的回气会明确写成被更快的控制招打断", () => {
     const record = entry({
-      playerMoveType: moveType, dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: "麻穴",
-    });
-    const expected = selectDuelPhrase(moveType, "control", "healthy", 1)
-      .replace(/\{actor\}/g, "陈尧天")
-      .replace(/\{target\}/g, "才旦")
-      .replace(/\{move\}/g, "野球拳")
-      .replace(/\{targetMove\}/g, "铁布衫");
-    expect(formatDuelDisplayLine(record)).toContain(expected);
-  });
-
-  it("NPC施加状态时由NPC作为控制结果的施招者", () => {
-    const record = entry({
+      playerMove: "回气", playerMoveType: "状态", npcMove: "点穴一指", npcMoveType: "状态",
       dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null, statusAppliedToPlayer: "麻穴",
+      result: { counterStatus: "control", speedWinner: "B", cancelledA: true, interruptedA: true },
     });
-    const expected = selectDuelPhrase("防御", "control", "healthy", 1)
-      .replace(/\{actor\}/g, "才旦")
-      .replace(/\{target\}/g, "陈尧天")
-      .replace(/\{move\}/g, "铁布衫")
-      .replace(/\{targetMove\}/g, "野球拳");
-    expect(formatDuelDisplayLine(record)).toContain(expected);
+    const candidates = Array.from({ length: 1000 }, (_, index) =>
+      formatDuelDisplayLine(record, { round: index + 1 }));
+    const line = candidates.find((text) => text.includes("一指点住"));
+
+    expect(line).toContain("陈尧天");
+    expect(line).toContain("刚要运气");
+    expect(line).toContain("便被才旦");
+    expect(line).toContain("动弹不得");
   });
 
-  it("双方都受创时列出两边伤害和较吃亏者，伤害相等则平手", () => {
+  it("控制语气按目标血带选取，而不是施招者血带", () => {
+    const line = formatDuelDisplayLine(entry({
+      dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: "麻穴",
+      hpAfterPlayer: [9, 100], hpAfterNpc: [60, 60],
+    }));
+    expect(containsReaction(line, "controlled", "healthy", "才旦")).toBe(true);
+    expect(containsReaction(line, "controlled", "nearDown", "才旦")).toBe(false);
+  });
+
+  it("双方都受创时分别列伤害、持续伤害和较吃亏者", () => {
     const [worse] = buildDuelReportRounds([entry({
-      dmgToNpc: 24,
-      dmgToPlayer: 40,
-      hpAfterPlayer: [9, 100],
-      hpAfterNpc: [20, 100],
+      playerMoveType: "攻击", npcMoveType: "攻击",
+      dmgToNpc: 24, dmgToPlayer: 40,
+      hpAfterPlayer: [9, 100], hpAfterNpc: [20, 100],
+      statusAppliedToNpc: null, statusAppliedToPlayer: null,
     })]);
     expect(worse.text).toContain("陈尧天 −40，剩 9");
     expect(worse.text).toContain("才旦 −24，剩 20");
@@ -272,54 +264,6 @@ describe("战报回合数据和短句", () => {
     const [tie] = buildDuelReportRounds([entry({ dmgToNpc: 4, dmgToPlayer: 4 })]);
     expect(tie.result.worseName).toBe("平手");
     expect(renderDuelReportRounds([tie]).text).toContain("本轮吃亏：平手");
-  });
-
-  it("控制结果用目标自己的HP带，不用施招者的HP带", () => {
-    const line = formatDuelDisplayLine(entry({
-      dmgToNpc: 0, dmgToPlayer: 0,
-      statusAppliedToNpc: "麻穴",
-      hpAfterPlayer: [9, 100],
-      hpAfterNpc: [60, 60],
-    }));
-    const expected = selectDuelPhrase("攻击", "control", "healthy", 1)
-      .replace(/\{actor\}/g, "陈尧天")
-      .replace(/\{target\}/g, "才旦")
-      .replace(/\{move\}/g, "野球拳")
-      .replace(/\{targetMove\}/g, "铁布衫");
-    expect(line).toContain(expected);
-    expect(line).not.toContain("眼看就要倒下");
-  });
-
-  it("使用移动类型、结果和血量三维模板，所有分支可确定性选取", () => {
-    for (const type of DUEL_MOVE_TYPES) {
-      for (const outcome of DUEL_OUTCOMES) {
-        for (const band of DUEL_HP_BANDS) {
-          const cell = DUEL_PHRASE_BANK[type][outcome][band];
-          expect(cell.length, `${type}/${outcome}/${band}`)
-            .toBeGreaterThanOrEqual(["control", "dot"].includes(outcome) ? 3 : 12);
-          expect(selectDuelPhrase(type, outcome, band, 1)).toBe(cell[0]);
-          expect(selectDuelPhrase(type, outcome, band, 1)).toBe(selectDuelPhrase(type, outcome, band, 1));
-        }
-      }
-    }
-  });
-
-  it("模板库至少有950条互不重复的句式，且只用已知占位符", () => {
-    const templates = DUEL_MOVE_TYPES.flatMap((type) => DUEL_OUTCOMES.flatMap((outcome) => (
-      DUEL_HP_BANDS.flatMap((band) => DUEL_PHRASE_BANK[type][outcome][band])
-    )));
-    expect(templates.length).toBeGreaterThanOrEqual(950);
-    expect(new Set(templates).size).toBe(templates.length);
-    for (const template of templates) {
-      const placeholders = [...template.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]);
-      expect(placeholders.every((name) => ["actor", "target", "move", "targetMove"].includes(name))).toBe(true);
-      const sentence = template
-        .replace(/\{actor\}/g, "甲")
-        .replace(/\{target\}/g, "乙")
-        .replace(/\{move\}/g, "招")
-        .replace(/\{targetMove\}/g, "招");
-      expect([...sentence].length).toBeLessThanOrEqual(36);
-    }
   });
 
   it("共享结算引擎记录招式类型和回合末气血", () => {
