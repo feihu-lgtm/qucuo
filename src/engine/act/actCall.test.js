@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
 
 // callModel / callModelStream 打桩：捕获组装好的消息数组（黄金快照对象），返回固定假回复。
 // 其余导出（cleanJsonString 等）保持真实实现。
@@ -18,6 +18,17 @@ import { initialNarratorState } from "../../domain/narrator/narrator.js";
 import { emptyBodyProfile } from "../../domain/character/bodyProfile.js";
 import { deposit } from "../../features/bank/logic.js";
 import { applyResult } from "../../features/run.js";
+import { defaultPreset } from "../../domain/prompt/presetSystem.js";
+import { LEGACY_DEFAULT_CONTENT } from "../../domain/prompt/presetLegacy.js";
+
+const legacySnapshotPreset = {
+  ...defaultPreset(),
+  name: "旧版快照预设",
+  prompts: defaultPreset().prompts.map((entry) => {
+    const legacy = LEGACY_DEFAULT_CONTENT[entry.id]?.[0];
+    return legacy ? { ...entry, content: legacy } : entry;
+  }),
+};
 
 // 回合上下文 fixture：形状与 act 里 callDeps() 一致。
 function makeDeps(over = {}) {
@@ -62,7 +73,13 @@ function makeDeps(over = {}) {
 }
 
 describe("callMainOnce 组装黄金快照", () => {
-  beforeEach(() => { callModel.mockClear(); });
+  beforeEach(() => {
+    callModel.mockClear();
+    vi.stubGlobal("localStorage", {
+      getItem: () => JSON.stringify({ presets: [legacySnapshotPreset], activeIndex: 0 }),
+    });
+  });
+  afterEach(() => { vi.unstubAllGlobals(); });
 
   it.each([true, false])("permits only meat credit in an active leopard gift settlement (%s)", async (active) => {
     await callMainOnce(null, false, makeDeps({ isSettle: true, settleKind: "gift", settleNpc: "雪豹", snowLeopardContext: active ? "[收复雪豹] 在场" : "" }));
