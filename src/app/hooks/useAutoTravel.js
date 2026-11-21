@@ -39,7 +39,7 @@ export function useAutoTravel({
       enqueueAutoTravelLegs(path, {
         scheduler, actRef, autoTravelRef,
         // 全程走完：「到达」条件步应验，其余触发器过期。
-        onTravelEnd: () => intentRouterRef?.current?.settleTriggers?.(),
+        onTravelEnd: () => intentRouterRef?.current?.settleTriggers?.({ dest: destName }),
       });
     }, { routeQueue: true, routePlanner: true });
   }, [room.name, mapData, flags, questProgress, scheduler, addLog, autoTravelRef, intentRouterRef]);

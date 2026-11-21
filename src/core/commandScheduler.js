@@ -269,6 +269,10 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
         clearRouteQueue();
         entry.trace.parentId = running.entry.trace.id;
         queue.unshift(entry);
+      } else if (meta.beforeRoute) {
+        // 途经点上应验的条件步：插到剩余路程之前，在当前这一程走完后立刻执行。
+        const at = queue.findIndex((queued) => queued.meta?.routeQueue);
+        queue.splice(at < 0 ? queue.length : at, 0, entry);
       } else {
         queue.push(entry);
       }

@@ -9,7 +9,7 @@ import { recognizeNpc, tradeWithNpc } from "../../features/npc/logic.js";
 import { ACTION_KINDS, KIND_COMMAND } from "../../domain/intent/actionKinds.js";
 import { ROUTES, describeAction } from "../../domain/intent/gate.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../../features/intent/logic.js";
-import { planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../../features/intent/route.js";
+import { isFreshTyped, planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../../features/intent/route.js";
 import { createAiClassifier, INTENT_TRUNCATED } from "../../engine/intent/aiClassifier.js";
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 
@@ -21,7 +21,7 @@ export function useIntentRouter(routerRef, {
   useEffect(() => {
     function runDeferred(step, single) {
       const npc = findStepNpc(gameStore.getState(), step);
-      if (step.kind === ACTION_KINDS.MOVE) return act(DIR_CMD[step.direction] || step.direction, [], { keepUndo: true });
+      if (step.kind === ACTION_KINDS.MOVE) return act(DIR_CMD[step.direction] || step.direction, [], { keepUndo: true, intentSkip: true });
       if (step.kind === ACTION_KINDS.BUY && single) return handleNpcTrade(npc);
       if (step.kind === ACTION_KINDS.BUY && npc) {
         const result = tradeWithNpc(gameStore.getState(), npc);
@@ -37,8 +37,8 @@ export function useIntentRouter(routerRef, {
     }
 
     // 条件步触发：走原有命令调度器排队；立即结算类照旧 stepEffect，需要交互/自由文本的走原入口。
-    function fireTriggerStep(step, turn) {
-      traceNode(turn, "行动识别·触发", "pass", `「${step.condition?.detail || ""}」应验，触发：${describeAction(step)}`);
+    // beforeRoute：自动寻路途经点上应验时，排在剩余路程之前（不拖到终点才做）。
+    function runTriggerStep(step) {
       if (DEFERRED_KINDS.has(step.kind)) return runDeferred(step, true);
       if (step.kind === ACTION_KINDS.TALK || step.kind === ACTION_KINDS.OTHER) {
         return dispatchCommand(KIND_COMMAND[step.kind], () => act(step.text, [], { silentCmd: true, intentSkip: true, keepUndo: true }));
@@ -47,6 +47,12 @@ export function useIntentRouter(routerRef, {
         const result = stepEffect(gameStore.getState(), step);
         if (result) applyResult(featureCtxRef.current, result, { feature: `intent.${step.kind}` });
       });
+    }
+
+    function fireTriggerStep(step, turn, { beforeRoute = false } = {}) {
+      traceNode(turn, "行动识别·触发", "pass", `「${step.condition?.detail || ""}」应验，触发：${describeAction(step)}`);
+      if (!beforeRoute) return runTriggerStep(step);
+      return dispatchCommand(KIND_COMMAND[step.kind], () => runTriggerStep(step), { beforeRoute: true });
     }
 
     // 行程结束/被打断：剩余「到达」触发算应验，其余触发器过期，统一记进行动树。
@@ -88,8 +94,7 @@ export function useIntentRouter(routerRef, {
 
     routerRef.current = async (cmd, { _trace, opts = {} } = {}) => {
       // 玩家又输入了一句新指令：上一波挂起的条件步到期。
-      const freshTyped = !opts.autoTravel && !opts.schedulerManaged && !opts.intentPlan && !opts.intentSkip && !opts.silentCmd && !opts.settle;
-      if (freshTyped) {
+      if (isFreshTyped(opts)) {
         for (const entry of expireIntentTriggers()) {
           traceNode(_trace, "行动识别·触发", "skip", `新指令到来，「${entry.detail}」的触发器过期：${describeAction(entry.step)}`);
         }
@@ -132,7 +137,8 @@ export function useIntentRouter(routerRef, {
     routerRef.current.fireTriggerStep = fireTriggerStep;
     routerRef.current.fireEvent = (on, opts) => {
       const turn = getTurnContext();
-      for (const entry of fireIntentTriggers(on, opts)) fireTriggerStep(entry.step, turn);
+      const beforeRoute = on === "arrive" && opts?.travelDone === false;
+      for (const entry of fireIntentTriggers(on, opts)) fireTriggerStep(entry.step, turn, { beforeRoute });
     };
     routerRef.current.settleTriggers = settleTriggers;
     routerRef.current.expireTriggers = (trace) => {

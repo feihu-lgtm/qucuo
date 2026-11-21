@@ -25,7 +25,7 @@ export function useScreenHandlers({
     const result = lookNpc(gameStore.getState(), npc);
     applyResult(featureCtxRef.current, result);
     setActiveTarget(npc.name);
-    act("look " + npc.id, result.extraReplies || [], { keepUndo: true });
+    act("look " + npc.id, result.extraReplies || [], { keepUndo: true, inspect: true });
   }, { feature: "npc.lookNpc" }), [act, captureUndo]);
 
   const handleNpcTalk = useCallback((npc) => applyResult(featureCtxRef.current, () => {

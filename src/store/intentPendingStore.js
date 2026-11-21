@@ -1,5 +1,8 @@
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
+import { QUCUO_MAP } from "../domain/map/qucuoMap.js";
+
+const PLACE_NAMES = Object.keys(QUCUO_MAP);
 
 // 行动识别中置信度时挂起的确认（「你是要把100两给才旦吗？」）：{ text, onConfirm, onCancel } | null
 // 以及条件步骤挂起的触发器：{ step, on, detail, status: "armed" }，
@@ -25,10 +28,21 @@ export function armIntentTriggers(steps) {
   return armed;
 }
 
-// 某类事件发生时取出并移除匹配的触发器。arrive 只在行程走完、或前提里点了目的地名时才算命中。
-export function fireIntentTriggers(on, { dest, travelDone = true } = {}) {
-  const match = (entry) => entry.on === on
-    && (on !== "arrive" || travelDone || (dest && entry.detail.includes(dest)));
+// 「到达」：前提点了地名 → 只在到那儿时应验；没点地名 → 行程走完才应验。
+// 「从X出发/离开X」里的 X 是起点，不算目的地。
+const ORIGIN = new RegExp(`(?:从|离开|出了)(?:${[...PLACE_NAMES].sort((a, b) => b.length - a.length).join("|")})`, "g");
+
+function arriveMatches(detail, dest, travelDone) {
+  const goal = detail.replace(ORIGIN, "");
+  if (dest && goal.includes(dest)) return true;
+  return travelDone && !PLACE_NAMES.some((name) => goal.includes(name));
+}
+
+// 某类事件发生时取出并移除匹配的触发器。「遇敌」只认 hostile 路遇，和气的过路人不算。
+export function fireIntentTriggers(on, { dest, travelDone = true, hostile = false } = {}) {
+  const match = (entry) => entry.on === on &&
+    (on !== "arrive" || arriveMatches(entry.detail, dest, travelDone)) &&
+    (on !== "encounter" || hostile);
   const fired = intentTriggers().filter(match);
   if (fired.length) {
     intentPendingStore.setState({ triggers: intentTriggers().filter((entry) => !match(entry)) });
