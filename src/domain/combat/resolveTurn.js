@@ -10,7 +10,7 @@
 // costPenaltyTo*/freezeEnergyTo*/defenseBroken* 传出，由 DuelScreen 存进下一回合。
 
 import { random } from "../../core/rng.js";
-import { counterStatusKind, judgeTypeMatchup, MOVE_TYPE } from "./moveTypes.js";
+import { MOVE_TYPE, resolveMatchupRule } from "./moveTypes.js";
 import { applyDodgeResult } from "./dodgeTurn.js";
 import { rollStatusApply } from "./resolveStatus.js";
 import { applyStatus, tickStatusEffects } from "./statusEffects.js";
@@ -253,35 +253,14 @@ export function resolveTurn(sideA, sideB) {
   if (sideA.pendingAtkBonus) result.consumedPendingA = true;
   if (sideB.pendingAtkBonus) result.consumedPendingB = true;
 
-  const matchup = judgeTypeMatchup(sideA.move.type, sideB.move.type);
-  result.matchup = matchup;
-
-  const statusKindA = counterStatusKind(sideA.move);
-  const statusKindB = counterStatusKind(sideB.move);
-  const counterEncounter = sideA.move.type === MOVE_TYPE.ATTACK && statusKindB
-    ? { kind: statusKindB, statusTag: "B", attackTag: "A" }
-    : sideB.move.type === MOVE_TYPE.ATTACK && statusKindA
-      ? { kind: statusKindA, statusTag: "A", attackTag: "B" }
-      : null;
-
-  if (counterEncounter) {
-    result.counterStatus = counterEncounter.kind;
-    const statusWins = counterEncounter.kind === "reflect"
-      ? true
-      : decideFirst(sideA, sideB) === counterEncounter.statusTag;
-    if (counterEncounter.kind === "control") {
-      result.speedWinner = statusWins ? counterEncounter.statusTag : counterEncounter.attackTag;
-    }
-    result.matchup = statusWins ? counterEncounter.statusTag : counterEncounter.attackTag;
-    if (statusWins) resolveStatusWin(counterEncounter.statusTag === "A", counterEncounter.kind);
-    else resolveAttackWin(counterEncounter.attackTag === "A", { controlCounter: true });
-  } else if (matchup === "tie") {
-    const winner = decideFirst(sideA, sideB);
-    result.speedWinner = winner;
-    if (sideA.move.type === MOVE_TYPE.ATTACK) {
+  const rule = resolveMatchupRule(sideA.move, sideB.move);
+  result.matchup = rule.winner;
+  const handlers = {
+    "collide-speed": () => {
+      const winner = decideFirst(sideA, sideB);
+      result.speedWinner = winner;
       const dmgA = calcBaseDamage(sideA.move, sideA, sideB);
       const dmgB = calcBaseDamage(sideB.move, sideB, sideA);
-      // 先手方若一击能打死后手方，后手方来不及还手（先手击杀免伤）
       const first = winner === "A" ? { dmg: dmgA, targetHp: sideB.hp?.[0] ?? 1 } : { dmg: dmgB, targetHp: sideA.hp?.[0] ?? 1 };
       const firstKills = first.dmg >= first.targetHp;
       result.damageToB = dmgA;
@@ -292,43 +271,46 @@ export function resolveTurn(sideA, sideB) {
       } else {
         result.notes.push(`同为攻招硬碰硬，${winner === "A" ? "你" : "对方"}快了半分`);
       }
-      // 双攻硬碰，双方都命中：各自的 applyMark 都可触发
       markApply(sideA.move, "B", "A"); detonate(sideA.move, sideB, "B", sideA);
       markApply(sideB.move, "A", "B"); detonate(sideB.move, sideA, "A", sideB);
-    } else if (sideA.move.type === MOVE_TYPE.DEFENSE) {
+    },
+    standoff: () => {
+      result.speedWinner = decideFirst(sideA, sideB);
       result.notes.push("双方皆采守势，僵持不下，未有实质交锋");
-    } else {
-      // 双方都用状态类，各自独立生效
-      const sa = rollStatusApply(sideA.move); if (sa) result.statusAppliedToB = sa;
-      const sb = rollStatusApply(sideB.move); if (sb) result.statusAppliedToA = sb;
-      markApply(sideA.move, "B", "A");
-      markApply(sideB.move, "A", "B");
-      applySelfStatusMoveEffects(sideA, "A", result);
-      applySelfStatusMoveEffects(sideB, "B", result);
-      result.notes.push("双方各自运使身法，暗中角力");
-    }
-  } else {
-    const winnerIsA = matchup === "A";
-    const winnerSide = winnerIsA ? sideA : sideB;
-    const loserSide = winnerIsA ? sideB : sideA;
-    const winnerMove = winnerSide.move;
-    const loserMove = loserSide.move;
-
-    if (winnerMove.type === MOVE_TYPE.ATTACK) {
-      resolveAttackWin(winnerIsA);
-    } else if (winnerMove.type === MOVE_TYPE.STATUS) {
-      // 【本轮修复·结构性错位】以下这一整段（"只顾防住正面"那句话起，直到状态招的
-      // 全套效果）本来写在**攻击分支内部**——注释自己写着"状态克防御"，却落在了
-      // "攻击克状态"里。两个后果：
-      //   ① 攻击克状态时会同时输出两句意思重复的话，玩家看到的就是
-      //      「踞原嗥月尚未运转完全，便被碎岩击正面打断。」
-      //      「踞原嗥月只顾防住正面，却漏了碎岩击这一手。」——同一件事说两遍。
-      //   ② 更要紧的是，攻击招赢的时候还会把**状态招的整套效果**跑一遍
-      //      （施加状态、封回气、加耗、二倍反弹…）。那些效果本该只属于状态招取胜。
-      // 补上这个 else if，各归各位。
-      resolveStatusWin(winnerIsA);
-
-    } else {
+    },
+    each: () => {
+      if (sideA.move.type === MOVE_TYPE.STATUS && sideB.move.type === MOVE_TYPE.STATUS) {
+        result.speedWinner = decideFirst(sideA, sideB);
+        const sa = rollStatusApply(sideA.move); if (sa) result.statusAppliedToB = sa;
+        const sb = rollStatusApply(sideB.move); if (sb) result.statusAppliedToA = sb;
+        markApply(sideA.move, "B", "A");
+        markApply(sideB.move, "A", "B");
+        applySelfStatusMoveEffects(sideA, "A", result);
+        applySelfStatusMoveEffects(sideB, "B", result);
+        result.notes.push("双方各自运使身法，暗中角力");
+      } else {
+        resolveStatusWin(rule.winner === "A");
+      }
+    },
+    interrupt: () => resolveAttackWin(rule.winner === "A"),
+    counterStatus: () => {
+      const statusTag = sideA.move.type === MOVE_TYPE.STATUS ? "A" : "B";
+      const attackTag = statusTag === "A" ? "B" : "A";
+      result.counterStatus = rule.counterKind;
+      const statusWins = rule.counterKind === "reflect"
+        ? true
+        : decideFirst(sideA, sideB) === statusTag;
+      if (rule.counterKind === "control") result.speedWinner = statusWins ? statusTag : attackTag;
+      result.matchup = statusWins ? statusTag : attackTag;
+      if (statusWins) resolveStatusWin(statusTag === "A", rule.counterKind);
+      else resolveAttackWin(attackTag === "A", { controlCounter: true });
+    },
+    block: () => {
+      const winnerIsA = rule.winner === "A";
+      const winnerSide = winnerIsA ? sideA : sideB;
+      const loserSide = winnerIsA ? sideB : sideA;
+      const winnerMove = winnerSide.move;
+      const loserMove = loserSide.move;
       // 防御克攻击：防御生效大幅减伤，可能触发应对反击
       const rawDmg = calcBaseDamage(loserMove, loserSide, winnerSide); // 攻击方本来的伤害
       // 防御方装备的"部分免疫无视防御"（如守塔僧团铁网衲/官铸镇边重铠）：
@@ -396,8 +378,9 @@ export function resolveTurn(sideA, sideB) {
         // 挨打反叠印：防御方护甲带 applyMarkOnHit，架住来招时攻方触及衣料反沾内伤
         applyMarkOnHitCheck(winnerMove, winnerIsA ? "A" : "B", winnerIsA ? "B" : "A");
       }
-    }
-  }
+    },
+  };
+  handlers[rule.resolve]();
 
   // 能量结算：双方按自己招式扣能量（叠加封穴带来的临时耗气惩罚），回气招回能量
   const costA = (sideA.move.energyCost ?? 0) + (sideA.costPenalty ?? 0);

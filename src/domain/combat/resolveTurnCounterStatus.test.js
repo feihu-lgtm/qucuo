@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { resolveTurn } from "./resolveTurn.js";
-import { counterStatusKind, isCounterStatusMove, MOVE_TYPE } from "./moveTypes.js";
+import {
+  BEATS,
+  counterStatusKind,
+  isCounterStatusMove,
+  judgeTypeMatchup,
+  MATCHUP_TABLE,
+  MOVE_TYPE,
+  resolveMatchupRule,
+} from "./moveTypes.js";
 
 const side = (name, type, effects = {}, stats = {}) => ({
   move: {
@@ -17,6 +25,37 @@ const side = (name, type, effects = {}, stats = {}) => ({
   equipAtk: 0,
   equipDef: 0,
   statusSlots: {},
+});
+
+describe("table-driven move matchup rules", () => {
+  it("covers every type pair and expresses the settled rules", () => {
+    const types = Object.values(MOVE_TYPE);
+    for (const typeA of types) {
+      expect(Object.keys(MATCHUP_TABLE[typeA]).sort()).toEqual([...types].sort());
+    }
+    expect(MATCHUP_TABLE[MOVE_TYPE.ATTACK][MOVE_TYPE.STATUS]).toMatchObject({ winner: "A", resolve: "interrupt" });
+    expect(MATCHUP_TABLE[MOVE_TYPE.ATTACK][MOVE_TYPE.DEFENSE]).toMatchObject({ winner: "B", resolve: "block" });
+    expect(MATCHUP_TABLE[MOVE_TYPE.ATTACK][MOVE_TYPE.ATTACK]).toMatchObject({ winner: "tie", resolve: "collide-speed" });
+    expect(MATCHUP_TABLE[MOVE_TYPE.DEFENSE][MOVE_TYPE.STATUS]).toMatchObject({ winner: "B", resolve: "each" });
+    expect(MATCHUP_TABLE[MOVE_TYPE.DEFENSE][MOVE_TYPE.DEFENSE]).toMatchObject({ winner: "tie", resolve: "standoff" });
+    expect(MATCHUP_TABLE[MOVE_TYPE.STATUS][MOVE_TYPE.STATUS]).toMatchObject({ winner: "tie", resolve: "each" });
+    expect(BEATS).toEqual({
+      [MOVE_TYPE.ATTACK]: MOVE_TYPE.STATUS,
+      [MOVE_TYPE.DEFENSE]: MOVE_TYPE.ATTACK,
+      [MOVE_TYPE.STATUS]: MOVE_TYPE.DEFENSE,
+    });
+    expect(judgeTypeMatchup(MOVE_TYPE.STATUS, MOVE_TYPE.DEFENSE)).toBe("A");
+  });
+
+  it("selects reflect and control overrides for counter-class status moves", () => {
+    const attack = side("拳", MOVE_TYPE.ATTACK).move;
+    const reflect = side("反劲诀", MOVE_TYPE.STATUS, { doubleReflectDamage: true }).move;
+    const control = side("点穴指", MOVE_TYPE.STATUS, { applyStatus: "麻穴" }).move;
+
+    expect(resolveMatchupRule(attack, reflect)).toMatchObject({ winner: "B", resolve: "counterStatus", counterKind: "reflect" });
+    expect(resolveMatchupRule(attack, control)).toMatchObject({ winner: "tie", resolve: "counterStatus", counterKind: "control" });
+    expect(resolveMatchupRule(attack, side("回气", MOVE_TYPE.STATUS).move)).toMatchObject({ winner: "A", resolve: "interrupt", counterKind: null });
+  });
 });
 
 describe("counter status move classification", () => {
