@@ -1,5 +1,6 @@
 import { step as traceStep } from "../../infra/actionTrace.js";
 import { applyMvuCommands } from "../../domain/prompt/mvu.js";
+import { formatAngerResolutionLog, resolveAngerSignals } from "../../domain/combat/stealSystem.js";
 import { QUCUO_MAP, getMapNode } from "../../domain/map/qucuoMap.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { detectNewFaces, markAsSeen, updateLastSeen, markNpcAsKnown } from "../../domain/npc/npcAwareness.js";
@@ -90,17 +91,9 @@ export function commitRound(d) {
       const resolvedNames = applied
         .filter(c => c.path.endsWith(".生气解除") && c.finalValue === true)
         .map(c => c.path.split(".")[1]);
-      let finalTree = tree;
+      const finalTree = resolveAngerSignals(tree, resolvedNames);
       if (resolvedNames.length) {
-        const nextChars = { ...finalTree.角色 };
-        for (const name of resolvedNames) {
-          if (nextChars[name]) {
-            const { 生气解除, ...rest } = nextChars[name];
-            nextChars[name] = { ...rest, 生气状态: { active: false, resolvedBy: "persuasion" } };
-          }
-        }
-        finalTree = { ...finalTree, 角色: nextChars };
-        d.addLog(resolvedNames.map(name => ({ t: "affection", text: `  ✓ ${name}的怒气已经消解，这场风波算是揭过去了。` })));
+        d.addLog(resolvedNames.map(formatAngerResolutionLog));
       }
       return finalTree;
     });

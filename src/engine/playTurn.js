@@ -8,6 +8,8 @@ import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { runBookkeepAfterTurn } from "./act/bookkeepTurn.js";
 import { runSoftSettle } from "../domain/settle/settle.js";
 import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
+import { applyMvuCommands } from "../domain/prompt/mvu.js";
+import { formatAngerResolutionLog, resolveAngerSignals } from "../domain/combat/stealSystem.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
@@ -53,6 +55,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
   };
   setCommandPhase("machine");
   let snapshot;
+  let softSettleLogs = [];
   try {
     snapshot = captureSnapshot(ctx.refs);
     turnMonitor.add(trace, "app", "事务快照", { kind: "snapshot" });
@@ -76,8 +79,20 @@ export async function playTurn(ctx, cmd, opts = {}) {
       });
       if (ctx.isStale?.()) return stale();
       if (softSettle && softSettle.choice !== UNKNOWN_CHOICE) {
-        gameActions.setVarTreeState(softSettle.varTree);
-        turnOpts.softSettle = softSettle;
+        const angerSignalApplied = softSettle.choice === "奏效" && softSettle.deltas?.some(
+          delta => delta.path === `角色.${turnOpts.settleNpc}.生气解除`
+            && delta.op === "set" && delta.finalValue === true,
+        );
+        let settledTree = softSettle.varTree;
+        if (angerSignalApplied) {
+          settledTree = resolveAngerSignals(settledTree, [turnOpts.settleNpc]);
+          softSettleLogs = [
+            ...applyMvuCommands(state.varTree, softSettle.deltas, { time: state.time }).logs,
+            formatAngerResolutionLog(turnOpts.settleNpc),
+          ];
+        }
+        gameActions.setVarTreeState(settledTree);
+        turnOpts.softSettle = { ...softSettle, varTree: settledTree };
         turnMonitor.add(trace, "engine", "结算·软判定", {
           status: "pass",
           detail: `${softSettle.choice}（${softSettle.note}）`,
@@ -91,15 +106,19 @@ export async function playTurn(ctx, cmd, opts = {}) {
     }
     setCommandPhase("commit");
     const commitDeps = ctx.commitDeps(turn) || {};
-    const committed = withTurnContext(trace, () => (ctx.commitRound || commitRound)({
-      ...commitDeps,
-      softSettle: turnOpts.softSettle || null,
-      duelReport: opts.duelReport || null,
-      giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
-        ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
-      giftAlreadySettled: !!opts.giftInfo?.weight,
-      _trace: trace,
-    }));
+    const committed = withTurnContext(trace, () => {
+      const result = (ctx.commitRound || commitRound)({
+        ...commitDeps,
+        softSettle: turnOpts.softSettle || null,
+        duelReport: opts.duelReport || null,
+        giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
+          ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
+        giftAlreadySettled: !!opts.giftInfo?.weight,
+        _trace: trace,
+      });
+      if (softSettleLogs.length) (commitDeps.addLog || ctx.addLog)?.(softSettleLogs);
+      return result;
+    });
     await Promise.resolve();
     if (!ctx.deferMonitorFinish) turnMonitor.finish(trace, "行动完成");
     const bookkeep = ctx.bookkeep === false ? null : ctx.bookkeep || runBookkeepAfterTurn;

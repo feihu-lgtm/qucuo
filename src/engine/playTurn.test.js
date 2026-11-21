@@ -82,18 +82,24 @@ describe("playTurn background bookkeep", () => {
     gameActions.setVarTreeState(varTree);
     const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']);
     const turn = { narrativeText: "八云的神情缓和下来。" };
+    const addLog = vi.fn();
     runTurn.mockResolvedValue(turn);
-    const ctx = makeContext({ ai, apiCfg: { bookkeepEnabled: false }, bookkeep: false });
+    const ctx = makeContext({ ai, apiCfg: { bookkeepEnabled: false }, bookkeep: false, commitDeps: () => ({ addLog }) });
 
     const result = await playTurn(ctx, "郑重赔罪", {
       settle: true, settleKind: "appease", settleNpc: "八云",
     });
 
     expect(result).toMatchObject({ ok: true, turn });
-    expect(gameStore.getState().varTree.角色.八云).toMatchObject({
-      生气解除: true,
+    expect(gameStore.getState().varTree.角色.八云).toEqual({
       好感度: 23,
+      生气状态: { active: false, resolvedBy: "persuasion" },
     });
+    expect(gameStore.getState().varTree.角色.八云).not.toHaveProperty("生气解除");
+    expect(addLog.mock.calls.flatMap(([entries]) => entries)).toEqual([
+      { t: "affection", text: "  💗 八云 好感度 +3（→ 23）" },
+      { t: "affection", text: "  ✓ 八云的怒气已经消解，这场风波算是揭过去了。" },
+    ]);
     expect(runTurn).toHaveBeenCalledWith(
       expect.objectContaining({ ai }),
       "郑重赔罪",
