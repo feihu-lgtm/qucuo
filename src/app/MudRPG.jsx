@@ -289,7 +289,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     timeRef, noteAction, inv, setTradingShop, captureUndo,
   }));
   useIntentRouter(intentRouterRef, {
-    apiCfg, act, addLog, featureCtxRef, dispatchCommand, setActiveTarget, setDuelPending,
+    apiCfg, act, addLog, featureCtxRef, dispatchCommand, setActiveTarget, setDuelPending, setTradingShop,
     handleNpcDuel: duelHandlers.handleNpcDuel, handleNpcTrade: screenHandlers.handleNpcTrade,
   });
 

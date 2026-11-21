@@ -5,7 +5,7 @@ import { gameStore } from "../../store/gameStore.js";
 import { setIntentPending } from "../../store/intentPendingStore.js";
 import { turnMonitor, getTurnContext } from "../../core/turnMonitor.js";
 import { applyResult } from "../../features/run.js";
-import { recognizeNpc } from "../../features/npc/logic.js";
+import { recognizeNpc, tradeWithNpc } from "../../features/npc/logic.js";
 import { ACTION_KINDS, KIND_COMMAND } from "../../domain/intent/actionKinds.js";
 import { ROUTES } from "../../domain/intent/gate.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../../features/intent/logic.js";
@@ -16,13 +16,17 @@ import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 const DIR_CMD = { 北: "n", 南: "s", 东: "e", 西: "w" };
 
 export function useIntentRouter(routerRef, {
-  apiCfg, act, addLog, featureCtxRef, dispatchCommand, handleNpcDuel, handleNpcTrade, setActiveTarget, setDuelPending,
+  apiCfg, act, addLog, featureCtxRef, dispatchCommand, handleNpcDuel, handleNpcTrade, setActiveTarget, setDuelPending, setTradingShop,
 }) {
   useEffect(() => {
     function runDeferred(step, single) {
       const npc = findStepNpc(gameStore.getState(), step);
       if (step.kind === ACTION_KINDS.MOVE) return act(DIR_CMD[step.direction] || step.direction, [], { keepUndo: true });
-      if (step.kind === ACTION_KINDS.BUY) return handleNpcTrade(npc);
+      if (step.kind === ACTION_KINDS.BUY && single) return handleNpcTrade(npc);
+      if (step.kind === ACTION_KINDS.BUY && npc) {
+        const result = tradeWithNpc(gameStore.getState(), npc);
+        return result.shop ? setTradingShop(result.shop) : applyResult(featureCtxRef.current, result);
+      }
       if (step.kind !== ACTION_KINDS.DUEL || !npc) return undefined;
       if (single) return handleNpcDuel(npc);
       return dispatchCommand(KIND_COMMAND[step.kind], () => applyResult(featureCtxRef.current, () => {
