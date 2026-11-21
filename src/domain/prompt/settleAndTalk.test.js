@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { buildSysBase } from "./sysBase.js";
-import { buildExtractionSpecExample, callExtraction, SETTLE_KIND_SPECS } from "./extractionEngine.js";
+import { buildExtractionSpecExample, callExtraction, normalizeExtractedFields, SETTLE_KIND_SPECS } from "./extractionEngine.js";
+import { classifyIntent, INTENT } from "./inputIntent.js";
 
 function wia(scope, narrativeOnly, opts = {}) {
   const { sysBlocks } = buildSysBase(
@@ -99,6 +100,42 @@ describe("切磋邀战结算", () => {
       settleKind: "duel_invite", settleNpc: { name: "才旦" },
     }, ai)).resolves.toEqual({ p: {}, mvuCommands: [] });
     expect(ai.chat).not.toHaveBeenCalled();
+  });
+});
+
+describe("AI duelRequest", () => {
+  it("keeps duel vocabulary as combat-intent hints only", () => {
+    expect(classifyIntent("切搓")).toEqual(INTENT.COMBAT);
+    expect(classifyIntent("比武")).toEqual(INTENT.COMBAT);
+  });
+
+  it("full-mode schema requests only an accepted spar with a present NPC", () => {
+    const { phiBlock, phiRules } = buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "full", { hasNpc: true },
+    );
+    expect(phiBlock.content).toContain('"duelRequest":"NPC名"');
+    expect(phiBlock.content).toContain("当前在场名单中的 NPC");
+    expect(phiBlock.content).toContain("NPC 拒绝或躲避");
+    expect(phiRules).toContain("任何战斗的招式交锋与胜负结果均由系统战斗结算");
+  });
+
+  it("dual-call extraction prompt includes the accepted-spar rule", () => {
+    const example = buildExtractionSpecExample("UNKNOWN");
+    expect(example).toContain('"duelRequest"');
+    expect(example).toContain("NPC 拒绝或躲避");
+  });
+
+  it("keeps only room-visible NPCs from either string or object form", () => {
+    const presentNpc = { name: "才旦", innerRoom: "村口广场" };
+    const absentNpc = { name: "老猎户" };
+    const state = {
+      room: { name: "鱼定村", npcs: [presentNpc, absentNpc] },
+      innerRoomName: "村口广场",
+    };
+    expect(normalizeExtractedFields({ duelRequest: "才旦" }, state).duelRequest).toBe(presentNpc);
+    expect(normalizeExtractedFields({ duelRequest: { name: "才旦" } }, state).duelRequest).toBe(presentNpc);
+    expect(normalizeExtractedFields({ duelRequest: "老猎户" }, state)).not.toHaveProperty("duelRequest");
+    expect(normalizeExtractedFields({ duelRequest: "无此人" }, state)).not.toHaveProperty("duelRequest");
   });
 });
 

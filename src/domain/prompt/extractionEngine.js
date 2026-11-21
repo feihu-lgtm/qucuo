@@ -10,34 +10,20 @@ import { createWebAi } from "../../engine/ports/ai.js";
 import { extractMvuBlock } from "./mvu.js";
 import { APPEASE_EXTRACTION_SPEC } from "./appeaseExtraction.js";
 import { apiModelField, getApiModel } from "../../core/apiModel.js";
-// ── 全意图公共字段（本轮补齐）──
-// 单调用模式下这两个字段由主叙事的 JSON schema 一并产出，双调用模式下主调用只写
-// 散文、不产 JSON，而下面各意图的提取 schema 里谁都没要过它们，于是 p.memory 与
-// p.mentionedNewNpcs 在双调用下恒为 undefined，连带把三条链整个跳过：
-//   · memory → 向量小纸条不写、当日原料不进（日总结没素材）、事实账本不登记
-//     （事实账本正是旁白"全知事实"的来源，账本空了她私聊时就真的什么都不知道）
-//   · mentionedNewNpcs → NPC 涌现第一阶段（传闻中的人物）永不触发
-// 与其在 6 份 schema 里各抄一遍，不如统一拼在每个意图的 user prompt 末尾。
-//
-// 【本轮补充：mvu 路径规矩也挂这里】
-// 单调用模式下"哪些路径可写、哪些禁写"由 MVU_SYSTEM_INSTRUCTIONS 交代（它随 schema
-// 进 13 号位）；但双调用模式下主叙事只写散文、根本不注入那份说明书，MVU 的唯一
-// 落点是**提取层这一次调用**——而七份要 mvu 字段的 spec 里，没有一份提过路径规矩。
-// 结果就是：提取模型从来不知道 世界.旁白.* 是禁区，可能反复去写、被裁决层反复丢弃，
-// 白烧 token 还在全流程日志里刷一串"被拒"。这跟当初 memory/mentionedNewNpcs 在
-// 双调用下恒为 undefined 是同一个坑（都是"单调用那条路补了、双调用这条路漏了"），
-// 修法也一样：挂进这条共用尾巴，一处生效、七份 spec 全覆盖。
-// memory 摘要统一用玩家角色名字第三人称叙述，不用"你/我/玩家"这几种代词混着写——
-// 事实账本(knowledge.js)的摘要要在多处被复用（旁白全知视角、其他NPC传闻转述、飞鸽书信
-// 里提起），人称一旦不统一，转述出来的句子会主客体错乱、读起来别扭。跟 MudRPG.jsx 里
-// buildSysBase（单调用/主叙事模式）的同一条约束保持一致，双调用的提取层这边不能漏掉。
-function commonExtractTail(playerName) {
+import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
+// 公共字段和 MVU 路径规矩统一追加到每个提取提示，确保单/双调用保持一致。
+// memory 摘要使用玩家角色名的第三人称，供回忆与事实账本复用。
+function commonExtractTail(playerName, state = {}) {
   const name = playerName || "主角";
+  const presentNpcs = (state.room?.npcs || [])
+    .filter((npc) => npc?.name && isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc))
+    .map((npc) => npc.name);
   return `
 
-除上面那个 JSON 里的字段之外，无论本轮有无状态变化，都请在**同一个顶层 JSON 对象**里额外补上这两个字段：
+除上面那个 JSON 里的字段之外，无论本轮有无状态变化，都请在**同一个顶层 JSON 对象**里额外补上这些字段：
 "memory": 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${name}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事（纯环顾、纯赶路且路上无事）可省略此字段。
 "mentionedNewNpcs": 数组，填叙事里被提到姓名、但此刻并不在场的**新**具名人物（例如别人口中提起的某个人）。当前在场的人不算，已经出现过的人不算，没有就省略此字段。
+"duelRequest": 可选，仅当本轮玩家明确向当前在场 NPC 发起切磋/比试，且该 NPC 明确应允、双方开始摆开架势时，填写该 NPC 名字（字符串）；本轮在场 NPC 仅限：${presentNpcs.join("、") || "无"}。NPC 拒绝或躲避、玩家拒绝切磋、或只是在谈论打斗时，必须省略此字段。
 
 【mvu 字段的路径规矩】若本轮你要输出 mvu 指令：路径只能用 角色 / 世界 / 主角 三个前缀；好感度写 角色.<姓名>.好感度，全局声望写 世界.威望。**世界.旁白.\* 这一支是系统维护的剧情进度与门禁（是否解锁了某处、个人线走到第几步），绝对不要写它的任何子键——写了会被系统直接丢弃。**剧情该不该推进由系统按条件判定，不由叙事或提取决定。`;
 }
@@ -242,7 +228,19 @@ ${narrative}
 // （writeNote / registerFact / recordRumoredNpcs）都假定 string 与 string[]，
 // 这里一次性收拾干净——脏数据一旦写进事实账本，日后再查是谁写的就很麻烦。
 // 空值直接删掉而不是留空串：下游一律用 if (p.memory) 判断，留空串等于多绕一圈。
-export function normalizeExtractedFields(parsed) {
+export function normalizeDuelRequest(parsed, state = {}) {
+  if (!parsed || typeof parsed !== "object" || parsed.duelRequest == null) return parsed;
+  const raw = parsed.duelRequest;
+  let name = "";
+  if (typeof raw === "string") name = raw.trim();
+  else if (typeof raw?.name === "string") name = raw.name.trim();
+  const npc = (state.room?.npcs || []).find(candidate => candidate?.name === name
+    && isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, candidate));
+  if (npc) parsed.duelRequest = npc; else delete parsed.duelRequest;
+  return parsed;
+}
+
+export function normalizeExtractedFields(parsed, state = {}) {
   if (!parsed || typeof parsed !== "object") return parsed;
   if (parsed.memory != null && typeof parsed.memory !== "string") {
     parsed.memory = String(parsed.memory);
@@ -258,7 +256,7 @@ export function normalizeExtractedFields(parsed) {
     if (cleaned.length) parsed.mentionedNewNpcs = cleaned;
     else delete parsed.mentionedNewNpcs;
   }
-  return parsed;
+  return normalizeDuelRequest(parsed, state);
 }
 
 // 从 apiCfg 解析出这个意图应该用哪个模型（intent-specific > 默认提取模型 > 主模型）。
@@ -296,7 +294,7 @@ export async function callExtraction(intentCode, narrative, state, apiCfg, settl
   const cfg = buildExtractionCfg(settleSpecKey || intentCode, apiCfg);
   const systemPrompt = spec.system;
   // 公共字段统一拼在末尾，避免各意图的 schema 漂移。
-  const userContent = spec.user(narrative, state, settleOpts) + commonExtractTail(state.char?.name) + snowLeopardNote({ ...state, ...settleOpts });
+  const userContent = spec.user(narrative, state, settleOpts) + commonExtractTail(state.char?.name, state) + snowLeopardNote({ ...state, ...settleOpts });
 
   const { text } = await ai.chat(
     [{ role: "user", content: userContent }],
@@ -317,7 +315,7 @@ export async function callExtraction(intentCode, narrative, state, apiCfg, settl
   let parseFailed = false;
   try { parsed = JSON.parse(js); } catch { parsed = {}; parseFailed = true; }
 
-  normalizeExtractedFields(parsed);
+  normalizeExtractedFields(parsed, state);
 
   // 从 JSON 的 "mvu" 字符串字段提取 MVU 指令（复用 extractMvuBlock 的正则解析）
   let mvuCommands = [];
@@ -402,7 +400,7 @@ export function buildExtractionSpecExample(intentCode, settleKind = null) {
   // 发出去的少了一整段，而这块代码的注释恰恰写着"保证面板看到的内容与实际调用同构、
   // 不另写一份示例防漂移"——又漂了一次（前一次是示例缺 settleKind，见上方注释）。
   const user = spec.user(EXTRACTION_SAMPLE_NARRATIVE, EXTRACTION_SAMPLE_SNAPSHOT, settleOpts)
-    + commonExtractTail(EXTRACTION_SAMPLE_SNAPSHOT.char?.name);
+    + commonExtractTail(EXTRACTION_SAMPLE_SNAPSHOT.char?.name, EXTRACTION_SAMPLE_SNAPSHOT);
   return `【提取层 System Prompt】
 ${system}
 

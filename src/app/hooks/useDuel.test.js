@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createTurnStaleCheck } from "./useUndo.js";
-import { openDuelAfterNarration, routeDuelInvitation } from "./useDuel.js";
-import { classifyIntent, INTENT } from "../../domain/prompt/inputIntent.js";
+import { consumeDuelRequest, openDuelAfterNarration } from "./useDuel.js";
 
 describe("duel narration rollback", () => {
   it("uses the duel invitation settle without allowing the fight to start", async () => {
@@ -38,50 +37,46 @@ describe("duel narration rollback", () => {
   });
 });
 
-describe("typed duel invitations", () => {
-  const room = { npcs: [{ name: "大公鸡" }, { name: "才旦" }] };
+describe("AI duel request consumption", () => {
+  const npc = { name: "才旦" };
+  const makeOptions = (overrides = {}) => ({
+    opts: {}, isStale: () => false, isTalk: false, interactMode: "action",
+    recognize: vi.fn(), setActiveTarget: vi.fn(), setDuelPending: vi.fn(),
+    ...overrides,
+  });
 
-  it("routes the typo with a selected target to the duel handler, not free action", () => {
-    const handleNpcDuel = vi.fn();
-    const act = vi.fn();
-    expect(classifyIntent("切搓")).toEqual(INTENT.COMBAT);
-    const routed = routeDuelInvitation("切搓", {
-      interactMode: "action", room, activeTarget: "大公鸡", handleNpcDuel,
+  it("recognizes the present NPC, selects it, and opens the confirmation bar", () => {
+    const options = makeOptions();
+    expect(consumeDuelRequest({ ok: true, duelRequest: npc }, options)).toBe(true);
+    expect(options.recognize).toHaveBeenCalledWith(npc);
+    expect(options.setActiveTarget).toHaveBeenCalledWith(npc.name);
+    expect(options.setDuelPending).toHaveBeenCalledWith(npc);
+  });
+
+  it("records recognition through the feature context", () => {
+    const setVarTree = vi.fn();
+    const options = makeOptions({
+      recognize: undefined,
+      featureCtxRef: { current: { setVarTree } },
     });
-    if (!routed) act("切搓");
-    expect(routed).toBe(true);
-    expect(handleNpcDuel).toHaveBeenCalledWith(room.npcs[0]);
-    expect(act).not.toHaveBeenCalled();
+    expect(consumeDuelRequest({ ok: true, duelRequest: npc }, options)).toBe(true);
+    expect(setVarTree).toHaveBeenCalledWith(expect.any(Function));
   });
 
-  it("routes a named NPC ahead of a different selected target", () => {
-    const handleNpcDuel = vi.fn();
-    expect(classifyIntent("比武")).toEqual(INTENT.COMBAT);
-    expect(routeDuelInvitation("和才旦切磋", {
-      interactMode: "action", room, activeTarget: "大公鸡", handleNpcDuel,
-    })).toBe(true);
-    expect(handleNpcDuel).toHaveBeenCalledWith(room.npcs[1]);
-  });
-
-  it("leaves a duel word with no resolvable target as a normal action", () => {
-    const handleNpcDuel = vi.fn();
-    expect(routeDuelInvitation("切磋", {
-      interactMode: "action", room, activeTarget: null, handleNpcDuel,
-    })).toBe(false);
-    expect(handleNpcDuel).not.toHaveBeenCalled();
-  });
-
-  it("does not route longer combat discussion or talk-mode input", () => {
-    const handleNpcDuel = vi.fn();
-    expect(routeDuelInvitation("我想跟他切磋一下刀法的心得", {
-      interactMode: "action", room, activeTarget: "大公鸡", handleNpcDuel,
-    })).toBe(false);
-    expect(routeDuelInvitation("和才旦切磋", {
-      interactMode: "talk", room, activeTarget: null, handleNpcDuel,
-    })).toBe(false);
-    expect(routeDuelInvitation("切磋", {
-      interactMode: "whisper", room, activeTarget: "大公鸡", handleNpcDuel,
-    })).toBe(false);
-    expect(handleNpcDuel).not.toHaveBeenCalled();
+  it("ignores talk, whisper, stale, and settle results", () => {
+    const ignored = [
+      [{ ok: true, duelRequest: npc }, makeOptions({ isTalk: true })],
+      [{ ok: true, duelRequest: npc }, makeOptions({ interactMode: "whisper" })],
+      [{ ok: true, duelRequest: npc }, makeOptions({ isStale: () => true })],
+      [{ ok: true, duelRequest: npc }, makeOptions({ opts: { settle: true } })],
+      [{ ok: true, duelRequest: npc }, makeOptions({ opts: { settleKind: "duel_invite" } })],
+      [{ ok: false, duelRequest: npc }, makeOptions()],
+    ];
+    for (const [result, options] of ignored) {
+      expect(consumeDuelRequest(result, options)).toBe(false);
+      expect(options.recognize).not.toHaveBeenCalled();
+      expect(options.setActiveTarget).not.toHaveBeenCalled();
+      expect(options.setDuelPending).not.toHaveBeenCalled();
+    }
   });
 });

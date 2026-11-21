@@ -58,10 +58,10 @@ export async function playTurn(ctx, cmd, opts = {}) {
     const turn = await runTurn({ ...ctx, _trace: trace }, cmd, opts);
     if (turn.stale || ctx.isStale?.()) return stale();
     setCommandPhase("commit");
-    withTurnContext(trace, () => (ctx.commitRound || commitRound)({ ...ctx.commitDeps(turn), _trace: trace }));
+    const committed = withTurnContext(trace, () => (ctx.commitRound || commitRound)({ ...ctx.commitDeps(turn), _trace: trace }));
     await Promise.resolve();
     if (!ctx.deferMonitorFinish) turnMonitor.finish(trace, "行动完成");
-    return { ok: true, turn };
+    return { ok: true, turn, duelRequest: committed?.duelRequest ?? turn.p?.duelRequest };
   } catch (error) {
     if (ctx.isStale?.()) return stale(error);
     if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs));

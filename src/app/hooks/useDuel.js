@@ -4,31 +4,20 @@ import { applyResult } from "../../features/run.js";
 import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
 import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
-import { isDuelInput } from "../../domain/prompt/inputIntent.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 
-const DUEL_WORDS = /(切磋|切搓|比试|比武|过招|较量)/g;
-const INVITATION_CONNECTORS = /和|跟|与|找/g;
-const INVITATION_PUNCTUATION = /[\s，,。.!！?？、：:；;「」『』"'“”‘’（）()【】\[\]{}<>《》·—\-]/g;
-
-export function resolveDuelInvitation(rawInput, { interactMode, room, activeTarget }) {
-  if (["talk", "whisper"].includes(interactMode) || !isDuelInput(rawInput)) return null;
-  const input = (rawInput || "").trim();
-  const npcs = Array.isArray(room?.npcs) ? room.npcs : [];
-  const npc = npcs.find((candidate) => candidate?.name && input.includes(candidate.name))
-    || npcs.find((candidate) => candidate?.name === activeTarget);
-  if (!npc) return null;
-  const remainder = input.split(npc.name).join("")
-    .replace(DUEL_WORDS, "")
-    .replace(INVITATION_CONNECTORS, "")
-    .replace(INVITATION_PUNCTUATION, "");
-  return [...remainder].length <= 4 ? npc : null;
-}
-
-export function routeDuelInvitation(rawInput, options) {
-  const npc = resolveDuelInvitation(rawInput, options);
-  if (!npc || typeof options.handleNpcDuel !== "function") return false;
-  options.handleNpcDuel(npc);
+export function consumeDuelRequest(result, {
+  opts = {}, isStale, isTalk, interactMode, recognize,
+  setActiveTarget, setDuelPending, featureCtxRef, trace,
+}) {
+  const npc = result?.duelRequest;
+  if (!result?.ok || result.stale || (typeof isStale === "function" && isStale())
+    || isTalk || interactMode === "talk" || interactMode === "whisper"
+    || opts.settle || opts.settleKind === "duel_invite" || !npc?.name) return false;
+  if (recognize) recognize(npc);
+  else applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc), { turn: trace, feature: "npc.duel" });
+  setActiveTarget(npc.name);
+  setDuelPending(npc);
   return true;
 }
 

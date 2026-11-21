@@ -1,6 +1,6 @@
 import { callMainOnce } from "./act/actCall.js";
 import { parseMainResponse } from "./act/parseResponse.js";
-import { callExtraction, buildExtractionCfg } from "../domain/prompt/extractionEngine.js";
+import { callExtraction, buildExtractionCfg, normalizeDuelRequest } from "../domain/prompt/extractionEngine.js";
 import { step as traceStep } from "../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../core/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
@@ -216,6 +216,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         throw error;
       }
       ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));
+      normalizeDuelRequest(p, createExtractionState(ctx, deps));
       narrativeText = (p.output || []).join("");
       const truncated = p._truncated || /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
       if (truncated && attempt <= MAX_AUTO_RETRY) {

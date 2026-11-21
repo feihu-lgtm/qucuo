@@ -83,6 +83,24 @@ describe("stale turn handling", () => {
 });
 
 describe("runTurn", () => {
+  it("normalizes and returns a duel request for an NPC present in the room", async () => {
+    const npc = { name: "才旦" };
+    const commit = vi.fn();
+    const ctx = createPlayTurnContext(
+      createMockAi(['{"output":["双方摆开架势"],"duelRequest":"才旦"}']),
+      commit,
+    );
+    ctx.state.room.npcs = [npc];
+
+    const result = await playTurn(ctx, "向才旦切磋");
+
+    expect(result).toMatchObject({ ok: true, duelRequest: npc });
+    expect(result.turn.p.duelRequest).toBe(npc);
+    expect(commit).toHaveBeenCalledWith(expect.objectContaining({
+      turn: expect.objectContaining({ p: expect.objectContaining({ duelRequest: npc }) }),
+    }));
+  });
+
   it("restores rollback keys, refs, and RNG while preserving concurrent log writes", async () => {
     const originalStore = structuredClone(gameStore.getState());
     const originalRng = getRngState();
