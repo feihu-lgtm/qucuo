@@ -119,6 +119,16 @@ describe("AI duelRequest", () => {
     expect(phiRules).toContain("任何战斗的招式交锋与胜负结果均由系统战斗结算");
   });
 
+  it("duel-report prompt permits the requested report without opening another duel", () => {
+    const { phiBlock, phiRules } = buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "full",
+      { hasNpc: true, duelReport: true },
+    );
+    expect(phiBlock.content).toContain('"output"');
+    expect(phiBlock.content).not.toContain('"duelRequest"');
+    expect(phiRules).not.toContain("战斗叙事边界");
+  });
+
   it("dual-call extraction prompt includes the accepted-spar rule", () => {
     const example = buildExtractionSpecExample("UNKNOWN");
     expect(example).toContain('"duelRequest"');

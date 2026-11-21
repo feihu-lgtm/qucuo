@@ -338,7 +338,7 @@ export function useTurn({
         lockedDestName,
         gambleTalkCtx: gambleTalkCtx.current, recallInfo: memory.recallInfo,
         inSeaOfMind: room.name === SEA_OF_MIND.district,
-        settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
+        settleNpc: opts.settleNpc, settleKind: opts.settleKind, duelReport: opts.duelReport, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
         _trace, addLog, setLog, isStale,
       });
     const turnCtx = {

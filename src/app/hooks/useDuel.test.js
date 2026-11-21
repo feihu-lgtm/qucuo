@@ -1,6 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { createTurnStaleCheck } from "./useUndo.js";
-import { consumeDuelRequest, openDuelAfterNarration } from "./useDuel.js";
+import { consumeDuelRequest, openDuelAfterNarration, useDuel } from "./useDuel.js";
+import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../core/gameStore.js";
+
+function freshStore(overrides) {
+  const original = structuredClone(gameStore.getState());
+  const initial = Object.fromEntries(GAME_KEYS.map((key) => [key, null]));
+  initGameStore({ ...initial, ...overrides });
+  return () => initGameStore(original);
+}
 
 describe("duel narration rollback", () => {
   it("uses the duel invitation settle without allowing the fight to start", async () => {
@@ -70,6 +80,7 @@ describe("AI duel request consumption", () => {
       [{ ok: true, duelRequest: npc }, makeOptions({ isStale: () => true })],
       [{ ok: true, duelRequest: npc }, makeOptions({ opts: { settle: true } })],
       [{ ok: true, duelRequest: npc }, makeOptions({ opts: { settleKind: "duel_invite" } })],
+      [{ ok: true, duelRequest: npc }, makeOptions({ opts: { duelReport: true } })],
       [{ ok: false, duelRequest: npc }, makeOptions()],
     ];
     for (const [result, options] of ignored) {
@@ -77,6 +88,45 @@ describe("AI duel request consumption", () => {
       expect(options.recognize).not.toHaveBeenCalled();
       expect(options.setActiveTarget).not.toHaveBeenCalled();
       expect(options.setDuelPending).not.toHaveBeenCalled();
+    }
+  });
+});
+
+describe("duel battle report", () => {
+  it("requests the settled report through a duelReport turn", () => {
+    const npc = { name: "才旦", levelCap: 1 };
+    const restoreStore = freshStore({
+      room: { name: "鱼定村", npcs: [npc], items: [] },
+      char: { name: "测试主角", hp: [10, 10], special: { 气运: 5 } },
+      varTree: { 角色: {}, 世界: {} },
+      pot: 0, inv: [], skills: [], flags: [], questProgress: {}, time: 1,
+    });
+    vi.useFakeTimers();
+    try {
+      const act = vi.fn();
+      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog: vi.fn() } };
+      const handlers = {};
+      function Harness() {
+        Object.assign(handlers, useDuel({
+          act, addLog: vi.fn(), duelPending: null, featureCtxRef,
+          setActiveTarget: vi.fn(), setDuelPending: vi.fn(), setDuelingNpc: vi.fn(),
+          duelingNpc: npc, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
+          aiSummarizeFact: vi.fn(), setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
+          turnGenerationRef: { current: 0 },
+        }));
+        return null;
+      }
+      renderToStaticMarkup(createElement(Harness));
+
+      handlers.duelFinishHandler("win", null, [], null, [], null, []);
+      vi.runOnlyPendingTimers();
+
+      expect(act).toHaveBeenCalledWith(expect.stringContaining("连贯的整场战报"), [], {
+        silentCmd: true, preserveHp: true, keepUndo: true, duelReport: true,
+      });
+    } finally {
+      vi.useRealTimers();
+      restoreStore();
     }
   });
 });
