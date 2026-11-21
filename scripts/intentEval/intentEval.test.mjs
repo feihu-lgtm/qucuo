@@ -82,7 +82,10 @@ describe("intentEval", () => {
     expect(body).not.toHaveProperty("reasoning_effort");
     const chain = vertexFallbacks(body);
     expect(chain[0]).toMatchObject({ logprobs: true });
-    expect(chain.at(-2)).toMatchObject({ reasoning_effort: "none" });
-    expect(chain.at(-1)).not.toHaveProperty("response_format");
+    expect(chain.at(-2)).not.toHaveProperty("response_format");
+    expect(chain.at(-2).extra_body).toEqual(body.extra_body);
+    expect(chain.at(-1)).not.toHaveProperty("extra_body");
+    expect(chain.at(-1).reasoning_effort).toBeTruthy();
+    expect(chain.at(-1).reasoning_effort).not.toBe("none");
   });
 });

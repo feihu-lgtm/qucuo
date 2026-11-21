@@ -1,6 +1,6 @@
 // 评测用 Vertex 调用：复用 src/infra/vertexAdc.js 的 ADC 解析、authorized_user 刷新令牌流程与 global 端点，
 // 以及 src/infra/providers.js 的短调用设置（关思考、JSON 输出）。额外请求 logprobs；遇 400 逐级降级：
-// 去掉 logprobs → 改用 reasoning_effort=none 关思考 → 去掉 response_format。
+// 去掉 logprobs → 去掉 response_format → 改回目录里的 reasoning_effort（reasoning_effort=none 在 Vertex 上会 400）。
 import { readFile } from "node:fs/promises";
 import { webcrypto } from "node:crypto";
 import {
@@ -25,12 +25,12 @@ export function buildVertexEvalBody(modelId, messages, opts = {}) {
 }
 
 export function vertexFallbacks(body, { logprobs = true, topLogprobs = 5 } = {}) {
-  const { extra_body: _extra, ...noExtra } = body;
-  const effortNone = body.extra_body ? { ...noExtra, reasoning_effort: "none" } : body;
-  const { response_format: _format, ...plain } = effortNone;
+  const { response_format: _format, ...noFormat } = body;
+  const { extra_body: _extra, ...catalog } = noFormat;
   return [
     ...(logprobs ? [{ ...body, logprobs: true, top_logprobs: topLogprobs }] : []),
-    body, effortNone, plain,
+    body, noFormat,
+    { ...catalog, reasoning_effort: vertexReasoningEffort(String(body.model).replace(/^google\//, ""), "off") },
   ].filter((candidate, index, list) => list.findIndex((other) => JSON.stringify(other) === JSON.stringify(candidate)) === index);
 }
 
