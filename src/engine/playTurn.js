@@ -102,7 +102,6 @@ export async function playTurn(ctx, cmd, opts = {}) {
     }
     const turn = await runTurn({ ...turnCtx, _trace: trace }, cmd, turnOpts);
     if (turn.stale || ctx.isStale?.()) {
-      if (turnOpts.softSettle) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs));
       return stale();
     }
     setCommandPhase("commit");

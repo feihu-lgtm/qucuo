@@ -198,18 +198,42 @@ describe("playTurn background bookkeep", () => {
     expect(varTreeRef.current).toEqual(varTree);
   });
 
-  it("rolls back the soft-settled tree when runTurn becomes stale", async () => {
+  it("preserves an undo-restored tree when runTurn becomes stale", async () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
     gameActions.setVarTreeState(varTree);
+    const varTreeRef = { current: varTree };
+    const setVarTree = (next) => {
+      const value = typeof next === "function" ? next(varTreeRef.current) : next;
+      varTreeRef.current = value;
+      gameActions.setVarTreeState(value);
+    };
     const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']);
-    runTurn.mockResolvedValue({ stale: true });
-
-    const result = await playTurn(makeContext({ ai, apiCfg: {}, bookkeep: false }), "赔罪", {
+    const started = Promise.withResolvers();
+    const response = Promise.withResolvers();
+    runTurn.mockImplementation(() => {
+      started.resolve();
+      return response.promise;
+    });
+    const generation = { current: 0 };
+    const pending = playTurn(makeContext({
+      ai, apiCfg: {}, bookkeep: false, setVarTree, refs: { varTreeRef },
+      isStale: () => generation.current !== 0,
+    }), "赔罪", {
       settle: true, settleKind: "appease", settleNpc: "八云",
     });
+    await started.promise;
+    const restoredTree = {
+      角色: { 八云: { 好感度: 12, 生气状态: { active: true }, 旧账: { lines: ["撤销后状态"] } } },
+    };
+    setVarTree(restoredTree);
+    generation.current += 1;
+    response.resolve({ stale: true });
+
+    const result = await pending;
 
     expect(result.stale).toBe(true);
-    expect(gameStore.getState().varTree).toBe(varTree);
+    expect(gameStore.getState().varTree).toBe(restoredTree);
+    expect(varTreeRef.current).toBe(restoredTree);
   });
 
   it("keeps varTree unchanged when appeasement does not work", async () => {
