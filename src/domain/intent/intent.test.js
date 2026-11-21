@@ -207,6 +207,16 @@ describe("conditional steps", () => {
     expect(plan.skipped.map((s) => s.condition?.on)).toEqual(["arrive"]);
   });
 
+  it("treats a place named as the departure point as origin, not destination", () => {
+    expireIntentTriggers();
+    armIntentTriggers([{ kind: "其他", text: "歇一歇", condition: { on: "arrive", detail: "从白塔出发到了" } }]);
+    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: false })).toEqual([]);
+    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: true })).toHaveLength(1);
+    armIntentTriggers([{ kind: "其他", text: "歇一歇", condition: { on: "arrive", detail: "从白塔到了喇嘛庙" } }]);
+    expect(fireIntentTriggers("arrive", { dest: "白塔", travelDone: true })).toEqual([]);
+    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: false })).toHaveLength(1);
+  });
+
   it("arms, fires and expires triggers in the shared intent store", () => {
     expireIntentTriggers();
     const steps = [

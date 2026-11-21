@@ -29,9 +29,13 @@ export function armIntentTriggers(steps) {
 }
 
 // 「到达」：前提点了地名 → 只在到那儿时应验；没点地名 → 行程走完才应验。
+// 「从X出发/离开X」里的 X 是起点，不算目的地。
+const ORIGIN = /(?:从|离开|出了)[^，,到去往]*/g;
+
 function arriveMatches(detail, dest, travelDone) {
-  if (dest && detail.includes(dest)) return true;
-  return travelDone && !PLACE_NAMES.some((name) => detail.includes(name));
+  const goal = detail.replace(ORIGIN, "");
+  if (dest && goal.includes(dest)) return true;
+  return travelDone && !PLACE_NAMES.some((name) => goal.includes(name));
 }
 
 // 某类事件发生时取出并移除匹配的触发器。「遇敌」只认 hostile 路遇，和气的过路人不算。
