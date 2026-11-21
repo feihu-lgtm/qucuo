@@ -29,14 +29,17 @@ describe("playTurn background bookkeep", () => {
   it("calls the injected hook once after a successful commit", async () => {
     const turn = { narrativeText: "少侠走进鱼定村。" };
     const bookkeep = vi.fn();
-    const ctx = makeContext({ bookkeep });
+    const setVarTree = vi.fn();
+    const commitDeps = vi.fn(() => ({ setVarTree }));
+    const ctx = makeContext({ bookkeep, commitDeps });
     runTurn.mockResolvedValue(turn);
 
     const result = await playTurn(ctx, "进村");
 
     expect(result).toMatchObject({ ok: true, turn });
     expect(bookkeep).toHaveBeenCalledTimes(1);
-    expect(bookkeep.mock.calls[0][0]).toMatchObject({ ctx: { ai: ctx.ai }, turn, opts: {} });
+    expect(bookkeep.mock.calls[0][0]).toMatchObject({ ctx: { ai: ctx.ai, setVarTree }, turn, opts: {} });
+    expect(commitDeps).toHaveBeenCalledOnce();
     expect(bookkeep.mock.calls[0][0].trace.phase).toBe(PHASE.DONE);
   });
 

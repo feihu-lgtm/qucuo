@@ -37,6 +37,27 @@ describe("runBookkeepAfterTurn", () => {
     expect(tree.角色.阿旺.旧账.memory).toBeUndefined();
   });
 
+  it("uses the ref-backed setter supplied by the Web turn", async () => {
+    const varTreeRef = { current: gameStore.getState().varTree };
+    const setVarTree = vi.fn((next) => {
+      const value = typeof next === "function" ? next(varTreeRef.current) : next;
+      varTreeRef.current = value;
+      gameActions.setVarTreeState(value);
+    });
+    await runBookkeepAfterTurn({
+      ctx: {
+        ai: createMockAi(['{"memory":"x","ledger":{"阿旺":["少侠砍伤阿旺"]}}']),
+        apiCfg: {},
+        setVarTree,
+      },
+      turn: { narrativeText: narration },
+      opts: {},
+    });
+    expect(setVarTree).toHaveBeenCalledOnce();
+    expect(typeof setVarTree.mock.calls[0][0]).toBe("function");
+    expect(getLedger(varTreeRef.current, "阿旺").lines).toEqual(["少侠砍伤阿旺"]);
+  });
+
   it("ignores ledger entries for names that are not in the room", async () => {
     const onRequest = vi.fn();
     const ai = createMockAi(['{"memory":"","ledger":{"路人甲":["少侠帮过路人甲"]}}'], { onRequest });

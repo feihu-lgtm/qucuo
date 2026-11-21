@@ -61,8 +61,9 @@ export async function playTurn(ctx, cmd, opts = {}) {
     const turn = await runTurn({ ...turnCtx, _trace: trace }, cmd, opts);
     if (turn.stale || ctx.isStale?.()) return stale();
     setCommandPhase("commit");
+    const commitDeps = ctx.commitDeps(turn) || {};
     const committed = withTurnContext(trace, () => (ctx.commitRound || commitRound)({
-      ...ctx.commitDeps(turn),
+      ...commitDeps,
       duelReport: opts.duelReport || null,
       giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
         ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
@@ -72,6 +73,10 @@ export async function playTurn(ctx, cmd, opts = {}) {
     await Promise.resolve();
     if (!ctx.deferMonitorFinish) turnMonitor.finish(trace, "行动完成");
     const bookkeep = ctx.bookkeep === false ? null : ctx.bookkeep || runBookkeepAfterTurn;
+    const bookkeepCtx = {
+      ...turnCtx,
+      setVarTree: commitDeps.setVarTree || ctx.setVarTree,
+    };
     const recordBookkeepError = (error) => {
       const detail = error?.message || String(error);
       const backgroundTrace = turnMonitor.start("回合记账", {
@@ -84,7 +89,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
     };
     if (bookkeep) {
       try {
-        Promise.resolve(bookkeep({ ctx: turnCtx, turn, opts, trace })).catch((error) => {
+        Promise.resolve(bookkeep({ ctx: bookkeepCtx, turn, opts, trace })).catch((error) => {
           recordBookkeepError(error);
         });
       } catch (error) {

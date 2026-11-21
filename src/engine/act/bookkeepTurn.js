@@ -51,11 +51,11 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
       },
     });
 
-    const latest = gameStore.getState();
     if (result?.ledger && Object.keys(result.ledger).length) {
       // memory will replace p.memory when narration goes prose-only.
-      const next = applyBookkeep(latest.varTree, result, latest.time);
-      if (next !== latest.varTree) gameActions.setVarTreeState(next);
+      const time = gameStore.getState().time;
+      const setVarTree = typeof ctx.setVarTree === "function" ? ctx.setVarTree : gameActions.setVarTreeState;
+      setVarTree((prev) => applyBookkeep(prev, result, time));
     }
     const updated = Object.keys(result?.ledger || {}).length > 0;
     turnMonitor.add(bookkeepTrace, "engine", "记账完成", {
