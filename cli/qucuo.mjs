@@ -1,3 +1,4 @@
+import { loadDefaultContent } from "../src/content/index.js";
 import { access, appendFile, readFile, writeFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { stdin, stdout } from "node:process";
@@ -6,6 +7,8 @@ import { webcrypto } from "node:crypto";
 import { createSession, parseSeed, runScript } from "./runner.mjs";
 import { createHttpAi, createMockAi, createRecordingAi, createReplayAi, createWebAi } from "../src/engine/ports/ai.js";
 import { createVertexAuth, parseVertexAdc, vertexDefaultProject } from "../src/infra/vertexAdc.js";
+
+loadDefaultContent();
 
 const print = (text) => stdout.write(`${text}\n`);
 
