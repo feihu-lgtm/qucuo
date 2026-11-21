@@ -60,7 +60,7 @@ describe("拜师 learn_skill 铁律（0728 起改由 11 号位承载，不再在
     expect(phiRules).toContain("授业传艺铁律");
     expect(phiRules).toContain("cannotSpeak");
     expect(phiRules).not.toContain("<mvu>");            // 散文模式状态交提取层
-    expect(phiBlock.content).toContain("不要输出 <mvu> 块");
+    expect(phiBlock.content).toContain("禁输出JSON、<mvu>块及任何结构化内容");
   });
 
   it("通用 settle（无 settleKind）仍是软措辞", () => {
@@ -138,9 +138,8 @@ describe("AI duelRequest", () => {
     const { phiBlock, phiRules } = buildSysBase(
       220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "full", { hasNpc: true },
     );
-    expect(phiBlock.content).toContain('"duelRequest":"NPC名"');
-    expect(phiBlock.content).toContain("当前在场名单中的 NPC");
-    expect(phiBlock.content).toContain("NPC 拒绝或躲避");
+    expect(phiBlock.content).toContain('duelRequest（顶层）：仅玩家向在场NPC提切磋且对方应允开架时填"NPC名"');
+    expect(phiBlock.content).toContain("拒绝/躲避/仅谈打斗须省略");
     expect(phiRules).toContain("任何战斗的招式交锋与胜负结果均由系统战斗结算");
   });
 
@@ -183,7 +182,7 @@ describe("AI duelRequest", () => {
       { hasNpc: true, duelReport },
     );
     expect(phiBlock.content).toContain('"output"');
-    expect(phiBlock.content).not.toContain('"duelRequest"');
+    expect(phiBlock.content).not.toContain("duelRequest");
     expect(phiRules).not.toContain("战斗叙事边界");
     expect(phiRules).toContain("恰好有N+1项");
     expect(phiRules).toContain("【第1回合】");

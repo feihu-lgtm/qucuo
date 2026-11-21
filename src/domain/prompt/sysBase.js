@@ -165,31 +165,28 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
 
   // 各分支的 JSON schema / 叙事指令，与旧模板字符串完全一致。
   const schemaBlock = narrativeOnly
-    ? `直接输出叙事散文正文，写完即结束。不要输出任何 JSON，不要输出 <mvu> 块，不要在末尾附加任何结构化内容。`
+    ? `直接输出叙事散文正文，写完即止；禁输出JSON、<mvu>块及任何结构化内容。`
     : isSettle
-      ? `回复纯JSON，字符串不换行。${opts.snowLeopardGift ? "这一轮的数值与状态变化由系统结算，只把已经确定发生的事写成生动的正文：" : "这一轮的所有数值与状态变化，系统均已结算完毕，你不负责也无权改动任何状态——只把这件已经确定发生的事写成生动的正文："}
+      ? `回复纯JSON，字符串不换行。状态已结算，只写生动正文，禁改状态或重复结算奖励/物品/银两${opts.snowLeopardGift ? "：" : "，禁输出 room/char/dao/delta："}
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
-${opts.snowLeopardGift ? '唯一例外：收复雪豹任务进行中且雪豹在场，本次赠礼若为肉，可输出 "delta":{"flags_add":["snow_spirit_meat"]}；非肉则拒吃并讲个短笑话，不加flag。delta只允许flags_add，且只允许snow_spirit_meat，不得输出其他flag或状态。不要输出 room / char / dao。' : '不要输出 room / char / dao / delta 任何字段（写了也不会生效，只会拖长回复）。'}不要重复结算任何奖励、物品、银两或状态。
-"memory" 用不超过50字的纯客观事实概括本轮发生了什么（谁在何处做了什么、花了多少、得了什么），一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，供日后回想与旁人提起；确实无足记的琐事可省略此字段。${wantMvu ? `
-在 JSON 输出完毕之后，另起一行输出 <mvu> 块（不要放进 JSON 内部）。该写什么、能写什么，见上文规则。` : ""}`
+${opts.snowLeopardGift ? '唯一例外：收复雪豹任务进行中且雪豹在场，本次赠礼若为肉，可输出 "delta":{"flags_add":["snow_spirit_meat"]}；非肉则拒吃并讲个短笑话，不加flag。delta只允许flags_add，且只允许snow_spirit_meat，不得输出其他flag或状态。不要输出 room / char / dao。\n' : ""}memory：≤50字纯客观事实，玩家称"${playerName}"，禁"你/我/玩家"；琐事省略。${wantMvu ? `
+JSON后另起一行附 <mvu> 块（禁入JSON内），见上文规则。` : ""}`
       : scope === "move"
-        ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
+        ? `回复纯JSON，字符串不换行。移动到达：只写叙事、场景与在场人物，不发物品、不改复杂状态：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
-npcs 的 carry 字段只在该 NPC 首次登场那一轮写（${CARRY_COUNT.min}-${CARRY_COUNT.max}件肉眼可见随身物，出场叙事需描述其外观）。
-可选字段 "memory"：用不超过50字纯客观事实概括本轮到达了何处、路上是否有值得记的事，一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，寻常赶路可省略。
-若这次移动让某个从未出现的具名人物被提及，加 "mentionedNewNpcs":["名"]。`
+carry：仅NPC首登场写${CARRY_COUNT.min}-${CARRY_COUNT.max}件可见随身物，叙事须写外观。
+memory（可选）：≤50字纯客观事实，记到达地与途中要事；玩家称"${playerName}"，禁"你/我/玩家"；寻常赶路省略。
+mentionedNewNpcs：提全新具名人物时加["名"]。`
         : `回复纯JSON，字符串不换行：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}],"items":[{"name":"名","id":"id"}]},"char":{"hp":[60,100],"neigong":5,"waigong":8,"special":{"根骨":5,"悟性":6,"体魄":5,"魅力":5,"智谋":5,"身法":5,"气运":5}},"dao":{"karma":0,"jie":0,"sign":"天象","rumor":["事"]},"delta":{"items_add":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}],"items_rm":[],"skill_up":{},"exp":0,"pot":0,"flags_add":[]}}
-items_add 里的元素也可以是纯字符串（不需要装备系统参与的剧情道具/杂物），结构化写法仅用于武器/护甲/饰品类物品。
-npcs 的 carry 字段只在该 NPC 首次登场那一轮写：列出出场描述里玩家肉眼可见的随身物品（兵器、猎具、饰物、包裹等，${CARRY_COUNT.min}-${CARRY_COUNT.max}件，寻常人多为白/绿档），出场叙事必须描述其外观且提到这些东西——所见即所得，之后系统会固化这份清单作为他的全部随身家当（掉落/偷窃都只出自这里），后续轮次不必再写 carry。
-npcs 里某个 NPC 如果是路途遭遇生成的生态猛兽/山贼游哨这类"泛用清剿目标"（不是具名剧情人物），可选加一个 "tag" 字段（比如 "熊山野兽""黑风寨山贼"，具体归属看当前地域的路途遭遇说明），系统会用它核对是否推进对应的清剿类任务进度；具名剧情人物不要加这个字段。
-如果这一轮的旁白/对话文本里，你让某个此前从未出现过的具名人物被提及（比如"我那侄子阿福在山下磨坊"），在顶层JSON里加 "mentionedNewNpcs":["阿福"] 字段列出这些名字，不需要每次都有，绝大多数时候留空或省略这个字段即可，只有真的提到全新的具名人物时才加。
-${scope === "full" && !opts.duelReport ? '仅当本轮玩家明确向当前在场名单中的 NPC 发起切磋/比试、且该 NPC 明确应允并与玩家摆开架势时，才在顶层 JSON 加 "duelRequest":"NPC名"。NPC 拒绝或躲避、玩家拒绝切磋、或只是在谈论打斗时，必须省略此字段。' : ""}
-如果收到"人物涌现"指令且这一轮确实让对应人物登场，在顶层JSON里额外加 "emergedNpcName" 和 "emergedNpcDescription" 两个字段（一句话定性描述，不含任何数值），其余情况完全不要出现这两个字段。
-可选字段 "memory"：用不超过50字的纯客观事实，概括本轮真正发生、日后可能需要回想起来的关键事件（谁做了什么、得到或失去了什么、去了何处、结下或了断了什么关系、许下或应承了什么）。一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"这几种代词。只记事实，不写情绪，不写心理，不加评述。若这一轮只是寻常闲谈、查看状态、无关紧要的往来，省略这个字段即可，不必硬凑。这条会被单独存档，供日后当作往事重新想起，因此务必写得具体（写清人名地名，不要用"那人""某处"这类含糊指代）。这条摘要除了供你自己日后回想，也会被登记为在场者共同"目击"的事实，供其他 NPC 之后自然提起（比如路人听说"${playerName}在鱼定村打伤了谁"），所以只在真有值得旁人知道的事发生时才写，纯私密心理活动或不宜外传的隐秘不要写进来。
+items_add：剧情道具/杂物可用纯字符串；武器/护甲/饰品用对象。
+carry：仅NPC首登场写${CARRY_COUNT.min}-${CARRY_COUNT.max}件可见随身物（常人多白/绿档），叙事须写外观并提及；后续不写。
+NPC加tag：仅路途泛用清剿目标（猛兽/山贼等，按地域说明填）可选；具名人物不加。
+mentionedNewNpcs（顶层）：仅提全新具名人物时加["名"]，否则省略或留空。
+${scope === "full" && !opts.duelReport ? 'duelRequest（顶层）：仅玩家向在场NPC提切磋且对方应允开架时填"NPC名"；拒绝/躲避/仅谈打斗须省略。\n' : ""}emergedNpcName与emergedNpcDescription（顶层）：仅收到"人物涌现"指令且本轮登场时加（后者一句话定性、无数值），其余禁写。
+memory（顶层可选）：≤50字纯客观事实，记可公开关键事件（写清人名地名，忌含糊指代）；玩家称"${playerName}"，禁"你/我/玩家"；禁情绪/心理/评述/私密；琐事省略。${wantMvu ? `
 
-${wantMvu ? `
-在这个 JSON 对象输出完毕之后，如果需要维护角色/世界状态变量，另起一行输出 <mvu> 块（不要放在 JSON 字符串内部，作为 JSON 后面独立的一段纯文本）。该写什么、能写什么，见上文规则。` : ""}`;
+JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> 块（禁入JSON），见上文规则。` : ""}`;
 
   // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
   // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
