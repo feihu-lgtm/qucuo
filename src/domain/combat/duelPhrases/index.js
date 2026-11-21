@@ -5,7 +5,7 @@ import lightness from "./lightness.js";
 import internal from "./internal.js";
 
 export const DUEL_MOVE_TYPES = ["攻击", "防御", "状态", "轻功", "内功"];
-export const DUEL_OUTCOMES = ["hit", "blocked", "dodged", "heal", "bothHit"];
+export const DUEL_OUTCOMES = ["hit", "blocked", "dodged", "heal", "bothHit", "control"];
 export const DUEL_HP_BANDS = ["healthy", "hurt", "nearDown"];
 
 const phrasesByType = {
@@ -34,7 +34,16 @@ const recoveryTones = {
   nearDown: ["，气息稍复勉强支身", "，真元回转暂稳心脉", "，仍需提气站稳脚跟"],
 };
 
-const toneSets = { hit: hpTones, blocked: hpTones, bothHit: hpTones, dodged: dodgeTones, heal: recoveryTones };
+const controlTones = {
+  healthy: ["，对方气机略滞", "，只见衣袂微微一顿", "，对方步势稍缓"],
+  hurt: ["，对方呼吸一窒", "，其势微乱难以续招", "，一缕劲意仍缠经脉"],
+  nearDown: ["，对方勉强稳住身形", "，其气机迟滞难舒", "，对方脚步一顿"],
+};
+
+const toneSets = {
+  hit: hpTones, blocked: hpTones, bothHit: hpTones,
+  dodged: dodgeTones, heal: recoveryTones, control: controlTones,
+};
 
 export const DUEL_PHRASE_BANK = Object.fromEntries(DUEL_MOVE_TYPES.map((type) => [
   type,

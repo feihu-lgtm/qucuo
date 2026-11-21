@@ -144,7 +144,7 @@ describe("战报回合数据和短句", () => {
     ["命中", "hit", entry({ npcMoveType: "攻击" }), "攻击", "你", "对手", "野球拳", "铁布衫"],
     ["格挡", "blocked", entry(), "攻击", "你", "对手", "野球拳", "铁布衫"],
     ["闪避", "dodged", entry({ dodgeSuccessPlayer: true }), "攻击", "你", "对手", "野球拳", "铁布衫"],
-    ["运功", "heal", entry({ dmgToNpc: 0, statusAppliedToNpc: "护体" }), "防御", "对手", "对手", "铁布衫", "野球拳"],
+    ["运功", "heal", entry({ dmgToNpc: 0, statusAppliedToNpc: null, hpRestoreNpc: 10 }), "防御", "对手", "对手", "铁布衫", "野球拳"],
     ["双方中招", "bothHit", entry({ dmgToNpc: 4, dmgToPlayer: 2 }), "攻击", "你", "对手", "野球拳", "铁布衫"],
   ])("按%s结果渲染对应短句模板", (_label, outcome, record, moveType, actor, target, move, targetMove) => {
     const expected = selectDuelPhrase(moveType, outcome, "healthy", 1)
@@ -153,6 +153,30 @@ describe("战报回合数据和短句", () => {
       .replace(/\{move\}/g, move)
       .replace(/\{targetMove\}/g, targetMove);
     expect(formatDuelDisplayLine(record)).toContain(expected);
+  });
+
+  it.each(DUEL_MOVE_TYPES)("将%s无伤施加的状态归给施招者", (moveType) => {
+    const record = entry({
+      playerMoveType: moveType, dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: "麻穴",
+    });
+    const expected = selectDuelPhrase(moveType, "control", "healthy", 1)
+      .replace(/\{actor\}/g, "陈尧天")
+      .replace(/\{target\}/g, "才旦")
+      .replace(/\{move\}/g, "野球拳")
+      .replace(/\{targetMove\}/g, "铁布衫");
+    expect(formatDuelDisplayLine(record, { playerName: "陈尧天", npcName: "才旦" })).toContain(expected);
+  });
+
+  it("NPC施加状态时由NPC作为控制结果的施招者", () => {
+    const record = entry({
+      dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null, statusAppliedToPlayer: "麻穴",
+    });
+    const expected = selectDuelPhrase("防御", "control", "healthy", 1)
+      .replace(/\{actor\}/g, "才旦")
+      .replace(/\{target\}/g, "陈尧天")
+      .replace(/\{move\}/g, "铁布衫")
+      .replace(/\{targetMove\}/g, "野球拳");
+    expect(formatDuelDisplayLine(record, { playerName: "陈尧天", npcName: "才旦" })).toContain(expected);
   });
 
   it("双方都受创时列出两边伤害和较吃亏者，伤害相等则平手", () => {
@@ -176,7 +200,8 @@ describe("战报回合数据和短句", () => {
       for (const outcome of DUEL_OUTCOMES) {
         for (const band of DUEL_HP_BANDS) {
           const cell = DUEL_PHRASE_BANK[type][outcome][band];
-          expect(cell.length, `${type}/${outcome}/${band}`).toBeGreaterThanOrEqual(12);
+          expect(cell.length, `${type}/${outcome}/${band}`)
+            .toBeGreaterThanOrEqual(outcome === "control" ? 3 : 12);
           expect(selectDuelPhrase(type, outcome, band, 1)).toBe(cell[0]);
           expect(selectDuelPhrase(type, outcome, band, 1)).toBe(selectDuelPhrase(type, outcome, band, 1));
         }

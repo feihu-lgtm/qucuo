@@ -40,6 +40,12 @@ function makeOutcome(entry, playerName, npcName) {
   const npcMoveDamage = Math.max(0, entry.moveDamageToNpc ?? entry.dmgToNpc ?? entry.damageToB ?? 0);
   const playerDotDamage = Math.max(0, entry.dotDamageToPlayer ?? entry.statusDamageToPlayer ?? entry.statusDamageA ?? 0);
   const npcDotDamage = Math.max(0, entry.dotDamageToNpc ?? entry.statusDamageToNpc ?? entry.statusDamageB ?? 0);
+  const playerAppliedControl = Boolean(
+    entry.statusAppliedToNpc || entry.statusAppliedToB || entry.markAppliedToNpc || entry.markAppliedToB,
+  );
+  const npcAppliedControl = Boolean(
+    entry.statusAppliedToPlayer || entry.statusAppliedToA || entry.markAppliedToPlayer || entry.markAppliedToA,
+  );
   const playerDamage = playerMoveDamage + playerDotDamage;
   const npcDamage = npcMoveDamage + npcDotDamage;
   const playerMove = entry.playerMove || entry.moveNameA || "未明招式";
@@ -84,12 +90,20 @@ function makeOutcome(entry, playerName, npcName) {
     actorName = npcName; targetName = playerName;
     actorMove = npcMove; targetMove = playerMove; moveType = npcType;
     outcome = playerType === "防御" ? "blocked" : "hit";
+  } else if (playerAppliedControl || npcAppliedControl) {
+    const playerApplied = playerAppliedControl;
+    actorName = playerApplied ? playerName : npcName;
+    targetName = playerApplied ? npcName : playerName;
+    actorMove = playerApplied ? playerMove : npcMove;
+    targetMove = playerApplied ? npcMove : playerMove;
+    moveType = playerApplied ? playerType : npcType;
+    outcome = "control";
   } else {
     outcome = "heal";
-    if (entry.hpRestoreNpc || entry.hpRestoreB || entry.statusAppliedToNpc || entry.statusAppliedToB) {
+    if (entry.hpRestoreNpc || entry.hpRestoreB) {
       actorName = npcName; targetName = npcName; actorMove = npcMove; targetMove = playerMove; moveType = npcType;
     } else {
-      targetName = playerName;
+      actorName = playerName; targetName = playerName; actorMove = playerMove; targetMove = npcMove; moveType = playerType;
     }
   }
 

@@ -59,6 +59,11 @@ export default {
     "{actor}指掌收回，{move}的余韵护住心脉",
     "{actor}默默行功，{move}使真元缓缓归位",
   ],
+  control: [
+    "{actor}催动{move}，一缕劲意缠住{target}",
+    "{actor}{move}如丝入脉，令{target}气机微滞",
+    "{actor}引动{move}，{target}顿觉周身受缚",
+  ],
   bothHit: [
     "{actor}的{move}与{target}的{targetMove}同时落定",
     "{actor}以{move}引气，{targetMove}也击中一处",

@@ -59,6 +59,11 @@ export default {
     "{actor}稳住架势运{move}，气息渐归平稳",
     "{actor}收势吐纳，{move}带动真气周流",
   ],
+  control: [
+    "{actor}运{move}引开来势，封住{target}后招",
+    "{actor}借{move}反锁{target}劲路",
+    "{actor}一式{move}牵住{target}来势",
+  ],
   bothHit: [
     "{actor}横架{move}，仍被{targetMove}带中一招",
     "{actor}与{target}招架相交，双方各受一击",

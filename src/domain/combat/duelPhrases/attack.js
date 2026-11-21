@@ -59,6 +59,11 @@ export default {
     "{actor}借{move}安定心神，气息重新绵长",
     "{actor}凝神行{move}，周身真气缓缓归位",
   ],
+  control: [
+    "{actor}一记{move}暗劲透入{target}经脉",
+    "{actor}{move}点中{target}穴道，气机顿滞",
+    "{actor}趁隙使{move}封住{target}周身劲路",
+  ],
   bothHit: [
     "{actor}的{move}与{target}的{targetMove}迎面相撞",
     "{actor}{move}递出，正撞上{targetMove}",

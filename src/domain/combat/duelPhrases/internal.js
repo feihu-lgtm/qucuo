@@ -59,6 +59,11 @@ export default {
     "{actor}默默催动{move}，散乱气息缓缓收拢",
     "{actor}气沉丹田运{move}，呼吸重归匀长",
   ],
+  control: [
+    "{actor}暗运{move}，一缕内劲扰乱{target}气机",
+    "{actor}{move}如溪入石，令{target}真气一滞",
+    "{actor}催动{move}隔空牵引，{target}招意顿消",
+  ],
   bothHit: [
     "{actor}的{move}与{targetMove}劲力相撞",
     "{actor}气劲递出，{target}也以{targetMove}还击",

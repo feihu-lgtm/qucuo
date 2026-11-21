@@ -59,6 +59,11 @@ export default {
     "{actor}缓缓踏出{move}，真元循脉回转",
     "{actor}身形渐定，{move}使呼吸回归绵长",
   ],
+  control: [
+    "{actor}踏{move}绕至身侧，令{target}出招失势",
+    "{actor}借{move}牵引步势，{target}难以转身",
+    "{actor}轻展{move}，将{target}引入迟滞步点",
+  ],
   bothHit: [
     "{actor}踏风使{move}，{targetMove}也迎面而来",
     "{actor}与{target}身影交错，双方各中一招",
