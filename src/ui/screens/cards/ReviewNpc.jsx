@@ -13,23 +13,20 @@ import {
   S, TIERS, SEVEN, JadeTier, StatRow, SevenDim, Src, TextField,
   Section, Note, Pills, Step, selStyle,
 } from "./ReviewParts.jsx";
-import { normalizePlacement } from "./importedRegistry.js";
-import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose, LORE_MAX } from "./scanPrompts.js";
-import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "./placementPlan.js";
-import { acquire } from "./rateLimiter.js";
-import { MOVE_ARCHETYPES, resolveArchetype } from "../combat/moveArchetypes.js";
-import { hpFromNeigong, atkFromWaigong } from "../npc/npcGeneration.js";
-import { statsForQuality } from "../economy/equipment.js";
-import { effectBrief, MOVE_RULES, PARAM_KEYS, EFFECT_CN } from "../economy/itemEffectText.js";
-import { CATALOG } from "../items/catalog.js";
-import { callModel } from "../../infra/apiConfig.js";
-import { QUCUO_MAP } from "../map/qucuoMap.js";
-import { hasInnerMap, getPublicInnerRoomNames } from "../map/innerMap.js";
-import { DEFAULT_PORTRAITS, resolveCardPortrait } from "../companion/portraits.js";
+import { normalizePlacement } from "../../../domain/cards/importedRegistry.js";
+import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose, LORE_MAX } from "../../../domain/cards/scanPrompts.js";
+import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "../../../domain/cards/placementPlan.js";
+import { acquire } from "../../../domain/cards/rateLimiter.js";
+import { MOVE_ARCHETYPES, resolveArchetype } from "../../../domain/combat/moveArchetypes.js";
+import { hpFromNeigong, atkFromWaigong } from "../../../domain/npc/npcGeneration.js";
+import { statsForQuality } from "../../../domain/economy/equipment.js";
+import { effectBrief, MOVE_RULES, PARAM_KEYS, EFFECT_CN } from "../../../domain/economy/itemEffectText.js";
+import { CATALOG } from "../../../domain/items/catalog.js";
+import { callModel } from "../../../infra/apiConfig.js";
+import { DISTRICTS } from "../../../domain/cards/reviewRules.js";
+import { hasInnerMap, getPublicInnerRoomNames } from "../../../domain/map/innerMap.js";
+import { DEFAULT_PORTRAITS, resolveCardPortrait } from "../../../domain/companion/portraits.js";
 import { compressImage, isCustomPortrait, fmtBytes } from "./portraitCompress.js";
-
-// 心灵之海是好感解锁的意识空间、第三新东京市是终章一次性据点，都不该当日常落脚点
-const DISTRICTS = Object.keys(QUCUO_MAP).filter(d => d !== "心灵之海" && d !== "第三新东京市");
 
 // 物品描述的输出上限。跟 PLAN_MAX_TOKENS 同一个理由：原来写死 400，在带思考的
 // 模型上会被思考 token 吃穿。这一处的症状比落脚规划更隐蔽——它要的是纯文本，

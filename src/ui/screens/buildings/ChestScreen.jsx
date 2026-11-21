@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
-import { loadChest, saveChest } from "../map/homestead.js";
+import { useOverlayCloseGuard } from "../../../utils/overlayClose.js";
+import { loadChest, saveChest } from "../../../domain/map/homestead.js";
 
 // 库房木箱：存取物件。开局预填全套食材+调味料（见 homestead.js defaultChestStock）。
 // 原是右上角家园面板里的一个图标，现挪成左栏建筑——站在据点就能进库房，不必先回小屋。

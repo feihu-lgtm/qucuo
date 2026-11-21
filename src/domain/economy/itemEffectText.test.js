@@ -98,10 +98,10 @@ describe("数值标签", () => {
 
 describe("词典只留一份（此前三处各写一份、都不全）", () => {
   it("ForgeScreen 与 JadeShopScreen 改用公共词典，不再自带副本", () => {
-    for (const f of ["src/domain/buildings/ForgeScreen.jsx", "src/domain/buildings/JadeShopScreen.jsx"]) {
+    for (const f of ["src/ui/screens/buildings/ForgeScreen.jsx", "src/ui/screens/buildings/JadeShopScreen.jsx"]) {
       const src = readFileSync(f, "utf-8");
       expect(src, `${f} 仍自带 effectBrief 副本`).not.toMatch(/function effectBrief\(/);
-      expect(src).toMatch(/from "\.\.\/economy\/itemEffectText\.js"/);
+      expect(src).toMatch(/from "\.\.\/\.\.\/\.\.\/domain\/economy\/itemEffectText\.js"/);
     }
   });
 });

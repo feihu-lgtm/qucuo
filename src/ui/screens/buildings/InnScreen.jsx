@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
-import { RADIUS } from "../../ui/theme.js";
+import { useOverlayCloseGuard } from "../../../utils/overlayClose.js";
+import { RADIUS } from "../../theme.js";
 
 // 客栈：花银两住宿，气血回满，时间推进24单位（一天）
 // healOnly=true 时作为医馆使用：不推时间，按 healPerLiang 换算回血

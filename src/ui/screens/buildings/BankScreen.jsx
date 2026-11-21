@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
-import { withdrawalSummary } from "../../features/bank/logic.js";
+import { withdrawalSummary } from "../../../features/bank/logic.js";
 
 // 钱庄：存取银两，每24时间单位生息2%
 export default function BankScreen({ building, char, time, deposit, depositedAt, zoneTheme, onClose, inline, onDeposit, onWithdraw }) {

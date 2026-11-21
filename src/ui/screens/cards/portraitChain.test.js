@@ -15,9 +15,9 @@ import { fitSize, dataUrlBytes, fmtBytes, isCustomPortrait } from "./portraitCom
 const HERE = dirname(fileURLToPath(import.meta.url));
 const NPC = readFileSync(join(HERE, "ReviewNpc.jsx"), "utf-8");
 const PARTS = readFileSync(join(HERE, "ReviewParts.jsx"), "utf-8");
-const NPC_RULES = readFileSync(join(HERE, "..", "..", "features", "npc", "rules.js"), "utf-8");
+const NPC_RULES = readFileSync(join(HERE, "..", "..", "..", "features", "npc", "rules.js"), "utf-8");
 const QB = readFileSync(join(HERE, "..", "quickBattle", "QuickBattleScreen.jsx"), "utf-8");
-const PORTRAITS = readFileSync(join(HERE, "..", "companion", "portraits.js"), "utf-8");
+const PORTRAITS = readFileSync(join(HERE, "../../../domain", "companion", "portraits.js"), "utf-8");
 
 describe("立绘链路不能再断", () => {
   it("选择器读 DEFAULT_PORTRAITS，不再自己拼 public 路径", () => {

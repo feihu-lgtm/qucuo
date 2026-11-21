@@ -1,7 +1,7 @@
 import React from "react";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
-import { BOUNTY_QUESTS } from "../quests/bountyQuests.js";
-export { BOUNTY_QUESTS } from "../quests/bountyQuests.js";
+import { BOUNTY_QUESTS } from "../../../domain/quests/bountyQuests.js";
+export { BOUNTY_QUESTS } from "../../../domain/quests/bountyQuests.js";
 
 // 悬赏任务列表：官府发布的通缉/清剿任务
 // 完成条件通过 flags 判断（击败目标时由 DuelScreen 写入）

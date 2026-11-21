@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { random } from "../../core/rng.js";
+import { random } from "../../../core/rng.js";
 import {
   CHANG_KOU, SKINS, JADE_TIERS, GRADE,
   birthStone, cutSlot, appraiseStone,
   rollBidders, rollCommission, readSkinClue,
-} from "../economy/gambleStone.js";
+} from "../../../domain/economy/gambleStone.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const S = (f) => `${BASE}stones/${f}`;

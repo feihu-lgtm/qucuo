@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
-import { getPriceForDest } from "../../features/buildings/logic.js";
+import { getPriceForDest } from "../../../features/buildings/logic.js";
 
 // 驿站（原「马车行」）：车马传送 + 邮传（买鸽子 / 寄信 / 送礼+信）合一。
 // 车马：花银两直接传送到已探索据点，不触发随机遭遇。

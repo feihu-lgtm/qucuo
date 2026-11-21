@@ -1,5 +1,5 @@
 import React from "react";
-import { MAP_UI } from "../../domain/map/mapUi.js";
+import { MAP_UI } from "../mapUi.js";
 import { getMapDragUpdate } from "./mapDrag.js";
 import { makeNodeHitArea } from "./mapHitArea.js";
 

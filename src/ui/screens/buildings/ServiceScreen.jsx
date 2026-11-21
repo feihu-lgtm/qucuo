@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SERVICE_MENUS } from "./menuData.js";
+import { SERVICE_MENUS } from "../../../domain/buildings/menuData.js";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
 
 // 饭馆/酒楼/戏楼：点菜/点单，生成 buff flag，消耗银两

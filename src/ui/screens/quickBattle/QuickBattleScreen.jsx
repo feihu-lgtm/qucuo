@@ -8,17 +8,17 @@
 // 没 key 就用系统自带 notes，功能完全不缺。
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { QUALITY, QUALITY_COLOR } from "../economy/equipment.js";
-import { getAllBattleCandidates, buildBattleFighter } from "./battlePool.js";
+import { QUALITY, QUALITY_COLOR } from "../../../domain/economy/equipment.js";
+import { getAllBattleCandidates, buildBattleFighter } from "../../../domain/quickBattle/battlePool.js";
 import {
   initCombatState, pickAiMove, resolveBattleTurn,
   nextAliveIndex, isTeamWiped,
-} from "./battleEngine.js";
-import { narrateTurn, hasApiKey } from "./battleNarration.js";
-import { explainMove, moveTypeGist } from "../economy/itemEffectText.js";
+} from "../../../domain/quickBattle/battleEngine.js";
+import { narrateTurn, hasApiKey } from "../../../domain/quickBattle/battleNarration.js";
+import { explainMove, moveTypeGist } from "../../../domain/economy/itemEffectText.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
-import { resolveCardPortrait } from "../companion/portraits.js";
+import { resolveCardPortrait } from "../../../domain/companion/portraits.js";
 const S = (f) => `${BASE}stones/${f}`;
 const UI = (f) => `${BASE}stones/ui/${f}`;
 // 【为什么不能直接拼】这个函数原本只服务内置八人（public/bidders/full/ 下是

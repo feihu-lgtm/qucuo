@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./InnScreen.jsx";
-import { QUALITY_COLOR } from "../economy/equipment.js";
-import { FREE_BOOKS, LIBRARY_BOOKS_JINGGUAN } from "./libraryData.js";
+import { QUALITY_COLOR } from "../../../domain/economy/equipment.js";
+import { FREE_BOOKS, LIBRARY_BOOKS_JINGGUAN } from "../../../domain/buildings/libraryData.js";
 
 export default function LibraryScreen({ building, char, skills, zoneTheme, onClose, inline, onReadBook, onBuyBook }) {
   const [tab, setTab] = useState("free");

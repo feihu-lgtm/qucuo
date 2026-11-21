@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import BodyProfilePanel from "../ui/screens/BodyProfilePanel.jsx";
 import { emptyBodyProfile } from "../domain/character/bodyProfile.js";
 import MusicPanel from "../ui/screens/MusicPanel.jsx";
-import HomesteadPanel from "../domain/buildings/HomesteadPanel.jsx";
+import HomesteadPanel from "../ui/screens/buildings/HomesteadPanel.jsx";
 import { getHomestead } from "../domain/map/homestead.js";
 import GlobalOverlays from "../ui/panels/GlobalOverlays.jsx";
 import CharacterCreate from "../ui/screens/CharacterCreate.jsx";

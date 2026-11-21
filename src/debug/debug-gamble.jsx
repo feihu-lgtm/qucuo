@@ -3,7 +3,7 @@
 // onTalk/onSettle 只打日志，方便肉眼验证卡牌围台布局与交互。
 import React from "react";
 import { createRoot } from "react-dom/client";
-import GambleStoneScreen from "../domain/buildings/GambleStoneScreen.jsx";
+import GambleStoneScreen from "../ui/screens/buildings/GambleStoneScreen.jsx";
 
 const mockNpcs = [
   { name: "李若由", gambleBidder: true, carry: [{ name: "紫檀小算盘", category: "misc", quality: "蓝" }] },
