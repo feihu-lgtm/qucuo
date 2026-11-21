@@ -39,15 +39,28 @@ export function playerLine(snap) {
   return snap.cmd ? `【玩家这句话】${snap.cmd}` : "";
 }
 
-// 取 mainConvo 里最近一轮 玩家→引擎 对（玩家句之后的引擎回复）。
+// mainConvo を user→assistant の対に分ける。末尾に未回答の user が残れば、
+// それは"今回のコマンド"なので対の末尾には含めない（前ターンの対と混ぜない）。
+function pairTurns(convo) {
+  const pairs = [];
+  let pending = null;
+  for (const m of convo || []) {
+    if (m.role === "user") {
+      if (pending) pairs.push(pending);
+      pending = { user: m.content, assistant: "" };
+    } else if (m.role === "assistant" && pending) {
+      pending.assistant = (pending.assistant ? pending.assistant + "\n" : "") + m.content;
+    }
+  }
+  if (pending) pairs.push(pending);
+  return pairs;
+}
+
+// 取 mainConvo 里最近一轮已完成 玩家→引擎 对（引擎回复がない末尾の user は今回の命令）。
 function lastPair(snap) {
-  const convo = snap.mainConvo || [];
-  const lastUserIdx = convo.map((m, i) => (m.role === "user" ? i : -1)).filter((i) => i >= 0).pop();
-  if (lastUserIdx == null) return null;
-  const userText = convo[lastUserIdx].content;
-  const assistant = [...convo.slice(lastUserIdx + 1)].find((m) => m.role === "assistant")
-    || [...convo.slice(0, lastUserIdx)].reverse().find((m) => m.role === "assistant");
-  return { user: userText, assistant: assistant?.content || "" };
+  const pairs = pairTurns(snap.mainConvo);
+  const done = pairs.filter((p) => p.assistant);
+  return done.length ? done[done.length - 1] : null;
 }
 
 // ── 上一轮（玩家句 + 引擎回复，截短） ──
@@ -62,20 +75,7 @@ export function lastTurn(snap) {
 // ── 最近 n 轮（默认 3 轮）──
 export function recentTurns(n = 3) {
   return (snap) => {
-    const convo = snap.mainConvo || [];
-    // 把连续消息按 user→assistant 配成轮，取最后 n 轮。
-    const pairs = [];
-    let pending = null;
-    for (const m of convo) {
-      if (m.role === "user") {
-        if (pending) pairs.push(pending);
-        pending = { user: m.content, assistant: "" };
-      } else if (m.role === "assistant" && pending) {
-        pending.assistant = (pending.assistant ? pending.assistant + "\n" : "") + m.content;
-      }
-    }
-    if (pending) pairs.push(pending);
-    const turns = pairs.slice(-n);
+    const turns = pairTurns(snap.mainConvo).slice(-n);
     if (!turns.length) return "";
     const body = turns
       .map((t) => `玩家：${cut(t.user, 80)}${t.assistant ? `\n引擎：${cut(t.assistant, 80)}` : ""}`)
@@ -126,7 +126,8 @@ function itemLine(item, owner) {
 export function items(snap) {
   const groups = [];
   const npc = resolveTarget(snap);
-  const theirs = (npc?.carriedItems || []).filter((i) => !i?.stolen)
+  // stolen（窃取済み）も dropped（切磋で玩家に落としたもの）も相手の持ち物には出さない。
+  const theirs = (npc?.carriedItems || []).filter((i) => !i?.stolen && !i?.dropped)
     .map((i) => itemLine(i, "对方")).filter(Boolean);
   if (theirs.length) groups.push(`对方身上：\n${theirs.join("\n")}`);
   const mine = (snap.inv || []).map((i) => itemLine(i, "我")).filter(Boolean);

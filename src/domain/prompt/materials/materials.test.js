@@ -74,12 +74,17 @@ describe("材料库", () => {
     expect(playerLine({})).toBe("");
   });
 
-  it("lastTurn 取最后一轮玩家句+引擎回复并截短", () => {
+  it("lastTurn 取最后完成的玩家句+引擎回复，不配对未回答的当前命令", () => {
     const block = lastTurn(base());
     expect(block).toContain("【上一轮】");
-    expect(block).toContain("玩家：向才旦赔礼");
+    // mainConvo の末尾は未回答の「向才旦赔礼」→ 上一轮はその前の対
+    expect(block).toContain("玩家：看看她的脸色");
     expect(block).toContain("引擎：她抬眼瞥见你");
-    const longCmd = { ...base(), mainConvo: [{ role: "user", content: "长".repeat(200) }] };
+    expect(block).not.toContain("向才旦赔礼");
+    // 末尾が assistant で終わる会話ならその対を返す
+    const answered = { ...base(), mainConvo: base().mainConvo.concat([{ role: "assistant", content: "才旦は渋々謝罪を受けた。" }]) };
+    expect(lastTurn(answered)).toContain("玩家：向才旦赔礼");
+    const longCmd = { ...base(), mainConvo: [{ role: "user", content: "长".repeat(200) }, { role: "assistant", content: "応".repeat(200) }] };
     expect(lastTurn(longCmd)).toContain("…");
     expect(lastTurn({})).toBe("");
   });
@@ -139,10 +144,10 @@ describe("材料库", () => {
     expect(block).not.toMatch(/\d+两|atk|def/); // 不许有数值
   });
 
-  it("items 空空如也返回空串；被偷的不列", () => {
+  it("items 空空如也返回空串；被偷・被掉落的不列", () => {
     expect(items({})).toBe("");
     const s = base();
-    s.target = { name: "才旦", carriedItems: [{ name: "赃物", stolen: true }] };
+    s.target = { name: "才旦", carriedItems: [{ name: "赃物", stolen: true }, { name: "掉落的刀", dropped: true }] };
     s.inv = [];
     s.room.items = [];
     expect(items(s)).toBe("");
