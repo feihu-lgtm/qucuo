@@ -9,7 +9,7 @@ import { bar } from "../../utils/mudHelpers.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { getCurrentStage } from "../../domain/quests/questEngine.js";
 import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
-import { snowMedicineGift } from "../quest/snowLeopard.js";
+import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
@@ -141,9 +141,17 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   const command = isAngry ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好` : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
   const changes = { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }), inv: applyWrite(state, set("inv", nextInv)).state.inv };
   const logs = [];
+  const snowFlags = [];
   if (snowMedicineGift(state, npc, item)) {
-    changes.flags = updateField("flags", (flags) => set("flags", [...new Set([...flags, "snow_spirit_medicine"])]));
+    snowFlags.push("snow_spirit_medicine");
     logs.push({ t: "sys", text: "  你替雪豹敷药，前爪的陈年旧伤终于好了。" });
+  }
+  if (snowMeatGift(state, npc, item)) {
+    snowFlags.push("snow_spirit_meat");
+    logs.push({ t: "sys", text: "  雪豹衔起肉来三两口吞下，金瞳里透出几分满足。" });
+  }
+  if (snowFlags.length) {
+    changes.flags = updateField("flags", (flags) => set("flags", [...new Set([...flags, ...snowFlags])]));
   }
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);

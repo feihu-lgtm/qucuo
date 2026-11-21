@@ -39,3 +39,16 @@ export function snowMedicineGift(state, npc, item) {
   const entry = CATALOG_INDEX[typeof item === "string" ? item : item.name] || item;
   return ["medicine", "药品"].includes(entry?.category) || entry?.tags?.some((tag) => ["药材", "疗伤", "丹药"].includes(tag));
 }
+
+const SNOW_MEAT_TAGS = new Set(["肉食", "食品", "食材", "主食", "兽食"]);
+const SNOW_MEAT_RE = /肉|羊|鸡|鸭|鱼|猪|牛|兔|鹿|腿|排/;
+
+export function snowMeatGift(state, npc, item) {
+  if (npc.name !== "雪豹" || !snowQuestActive(state) || !snowLeopardPresent(state) || state.flags?.includes("snow_spirit_meat")) return false;
+  const name = typeof item === "string" ? item : item?.name || "";
+  const entry = CATALOG_INDEX[name] || (typeof item === "object" ? item : null);
+  const tags = entry?.tags || [];
+  if (tags.includes("肉食")) return true;
+  if (tags.length) return tags.some((tag) => SNOW_MEAT_TAGS.has(tag)) && SNOW_MEAT_RE.test(name);
+  return SNOW_MEAT_RE.test(name);
+}
