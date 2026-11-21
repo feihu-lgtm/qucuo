@@ -2,6 +2,8 @@
 // 第 2 步看到的是第 1 步结算后的状态。遇到第一个不通过的步骤就停下并给出原因，
 // 之前已通过的步骤照常执行，之后的步骤一律跳过。
 import { ACTION_KINDS, NONE, SILVER, inventoryCounts, visibleNpcs } from "./actionKinds.js";
+import { tryLearnFromMaster } from "../kungfu/learnSkill.js";
+import { isNpcAngry } from "../combat/stealSystem.js";
 
 const NEEDS_TARGET = new Set([ACTION_KINDS.GIFT, ACTION_KINDS.BUY, ACTION_KINDS.DUEL, ACTION_KINDS.LEARN]);
 
@@ -10,7 +12,20 @@ function simulate(state) {
     money: Number(state?.char?.money) || 0,
     inv: inventoryCounts(state),
     npcs: new Set(visibleNpcs(state).map((npc) => npc.name)),
+    npcByName: new Map(visibleNpcs(state).map((npc) => [npc.name, npc])),
+    state,
   };
+}
+
+// 拜师与按钮同一套门槛：生气不教、好感不够/无招可学不教、束脩不够不教；束脩计入模拟银两。
+function learnPrice(sim, action) {
+  const npc = sim.npcByName.get(action.target);
+  const { varTree = {}, skills = [], char = {} } = sim.state || {};
+  if (isNpcAngry(varTree, npc.name)) return { reason: `${npc.name}正在气头上，不肯传授` };
+  const decision = tryLearnFromMaster(npc, varTree, skills, { ...char, money: sim.money });
+  if (!decision.ok) return { reason: decision.reason.replace(/[。！]$/, "") };
+  if (decision.totalPrice > sim.money) return { reason: `束脩需银${decision.totalPrice}两（身上只有${sim.money}两）` };
+  return { price: decision.totalPrice };
 }
 
 function checkStep(sim, action) {
@@ -30,12 +45,14 @@ function checkStep(sim, action) {
     }
   }
   if (action.kind === ACTION_KINDS.MOVE && (!action.direction || action.direction === NONE)) return "没说清往哪走";
+  if (action.kind === ACTION_KINDS.LEARN && sim.npcs) return learnPrice(sim, action).reason || null;
   return null;
 }
 
 function applyStep(sim, action) {
   if (action.kind === ACTION_KINDS.GIFT && action.item === SILVER) sim.money -= action.amount;
   else if (action.kind === ACTION_KINDS.GIFT || action.kind === ACTION_KINDS.USE_ITEM) sim.inv.set(action.item, sim.inv.get(action.item) - 1);
+  if (action.kind === ACTION_KINDS.LEARN) sim.money -= learnPrice(sim, action).price || 0;
   if (action.kind === ACTION_KINDS.MOVE) sim.npcs = null;
 }
 
