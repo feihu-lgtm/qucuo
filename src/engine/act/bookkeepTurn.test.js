@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { gameActions, gameStore } from "../../core/gameStore.js";
+import { gameActions, gameStore, markGameReplaced } from "../../core/gameStore.js";
 import { turnMonitor } from "../../core/turnMonitor.js";
 import { createMockAi } from "../ports/ai.js";
 import { getLedger } from "../../domain/memory/npcLedger.js";
@@ -118,6 +118,70 @@ describe("runBookkeepAfterTurn", () => {
     });
     expect(gameStore.getState().varTree.角色.旁人).toEqual({ 标记: "保留" });
     expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["少侠砍伤阿旺"]);
+  });
+
+  it("discards a late result after an undo restores the tree", async () => {
+    let stale = false;
+    let releaseResponse;
+    let signalStarted;
+    const started = new Promise((resolve) => { signalStarted = resolve; });
+    const response = new Promise((resolve) => { releaseResponse = resolve; });
+    const restoredTree = { 角色: { 阿旺: { 好感度: 3 } } };
+    const setVarTree = vi.fn((next) => gameActions.setVarTreeState(next));
+    const trace = turnMonitor.start("回滚中的记账");
+    const pending = runBookkeepAfterTurn({
+      ctx: {
+        ai: { chat: vi.fn(() => { signalStarted(); return response; }) },
+        apiCfg: {},
+        isStale: () => stale,
+        setVarTree,
+      },
+      turn: { narrativeText: narration },
+      opts: {},
+      trace,
+    });
+    await started;
+    gameActions.setVarTreeState(restoredTree);
+    stale = true;
+    releaseResponse({ text: '{"memory":"x","ledger":{"阿旺":["少侠砍伤阿旺"]}}' });
+    await pending;
+
+    expect(gameStore.getState().varTree).toEqual(restoredTree);
+    expect(setVarTree).not.toHaveBeenCalled();
+    const bookkeepTree = turnMonitor.getTrees().find((tree) => tree.background && tree.parentId === trace.id);
+    expect(bookkeepTree.nodes).toContainEqual(expect.objectContaining({
+      label: "记账结果已作废（回合已回滚）",
+    }));
+  });
+
+  it("discards a late result after the game is replaced", async () => {
+    let releaseResponse;
+    let signalStarted;
+    const started = new Promise((resolve) => { signalStarted = resolve; });
+    const response = new Promise((resolve) => { releaseResponse = resolve; });
+    const restoredTree = { 角色: { 阿旺: { 好感度: 3 } } };
+    const trace = turnMonitor.start("换档中的记账");
+    const pending = runBookkeepAfterTurn({
+      ctx: {
+        ai: { chat: vi.fn(() => { signalStarted(); return response; }) },
+        apiCfg: {},
+        setVarTree: vi.fn((next) => gameActions.setVarTreeState(next)),
+      },
+      turn: { narrativeText: narration },
+      opts: {},
+      trace,
+    });
+    await started;
+    gameActions.setVarTreeState(restoredTree);
+    markGameReplaced();
+    releaseResponse({ text: '{"memory":"x","ledger":{"阿旺":["少侠砍伤阿旺"]}}' });
+    await pending;
+
+    expect(gameStore.getState().varTree).toEqual(restoredTree);
+    const bookkeepTree = turnMonitor.getTrees().find((tree) => tree.background && tree.parentId === trace.id);
+    expect(bookkeepTree.nodes).toContainEqual(expect.objectContaining({
+      label: "记账结果已作废（回合已回滚）",
+    }));
   });
 
   it("skips when no NPCs are present or narration is empty", async () => {

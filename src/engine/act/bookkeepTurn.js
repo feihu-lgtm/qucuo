@@ -2,7 +2,7 @@ import { formatPlanNote } from "../../domain/intent/planNotes.js";
 import { applyBookkeep, runBookkeep } from "../../domain/memory/bookkeep.js";
 import { getLedger } from "../../domain/memory/npcLedger.js";
 import { bindTurnAi, createWebAi } from "../ports/ai.js";
-import { gameActions, gameStore } from "../../core/gameStore.js";
+import { gameActions, gameStore, subscribeGameReplaced } from "../../core/gameStore.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 
 function targetName(target) {
@@ -11,6 +11,8 @@ function targetName(target) {
 
 export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, trace } = {}) {
   let bookkeepTrace = null;
+  let unsubscribeGameReplaced = null;
+  let gameReplaced = false;
   try {
     const narration = typeof turn.narrativeText === "string" ? turn.narrativeText : "";
     if (opts.duelReport || ctx.apiCfg?.bookkeepEnabled === false || !narration.trim()) return null;
@@ -36,6 +38,7 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
       background: true,
       parentId: trace?.id,
     });
+    unsubscribeGameReplaced = subscribeGameReplaced(() => { gameReplaced = true; });
     turnMonitor.add(bookkeepTrace, "engine", "记账准备", { status: "pass", detail: `${names.join("、")}在场` });
 
     const intentPlan = turn.intentPlan ?? ctx.intentPlan ?? opts.intentPlan;
@@ -50,6 +53,15 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
         turn: state.time,
       },
     });
+
+    if (ctx.isStale?.() || gameReplaced) {
+      turnMonitor.add(bookkeepTrace, "engine", "记账结果已作废（回合已回滚）", {
+        status: "warn",
+        detail: gameReplaced ? "游戏已替换" : "回合已回滚",
+      });
+      turnMonitor.finish(bookkeepTrace, "记账结果已作废");
+      return null;
+    }
 
     if (result?.ledger && Object.keys(result.ledger).length) {
       // memory will replace p.memory when narration goes prose-only.
@@ -74,5 +86,7 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
     turnMonitor.add(errorTrace, "engine", "记账失败", { status: "fail", detail });
     turnMonitor.transition(errorTrace, PHASE.ERROR, detail);
     return null;
+  } finally {
+    unsubscribeGameReplaced?.();
   }
 }
