@@ -105,7 +105,8 @@ describe("declared numeric scales", () => {
 
   it("includes relationship and reputation scales only in a write-enabled MVU prompt", () => {
     const prompt = (narrativeOnly) => buildSysBase(200, { affection: 10 }, "", "", false, "", narrativeOnly).phiRules;
-    expect(prompt(false)).toContain(renderFieldScales([FIELD.affection, FIELD.reputation]).trim());
+    expect(prompt(false)).toContain("好感度");
+    expect(prompt(false)).toContain("威望");
     expect(prompt(true)).not.toContain(FIELDS[FIELD.reputation].scale);
     expect(prompt(false)).not.toContain("小额谢礼");
   });

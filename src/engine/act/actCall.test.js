@@ -86,7 +86,7 @@ describe("callMainOnce 组装黄金快照", () => {
     const messages = callModel.mock.calls[0][2];
     const schema = messages.find((message) => message.tavernBlock === "phi").content;
     expect(schema.includes('"flags_add":["snow_spirit_meat"]')).toBe(active);
-    expect(schema).toContain(active ? "只允许snow_spirit_meat" : "不要输出 room / char / dao / delta");
+    expect(schema).toContain(active ? "只允许snow_spirit_meat" : "禁输出 room/char/dao/delta");
     expect(schema).not.toContain("snow_spirit_scratch");
   });
 

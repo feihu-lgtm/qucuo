@@ -27,9 +27,9 @@ describe("appease settle prompts", () => {
       { playerName: "少侠", settleNpc: "才旦", settleKind: "appease" },
     );
 
-    expect(phiRules).toContain("只有当玩家本轮当前行为确实缓和了才旦");
+    expect(phiRules).toContain("仅当本轮行为确实缓和才旦");
     expect(phiRules).toContain("生气解除");
-    expect(phiRules).toContain("0~5 的整数");
-    expect(phiRules).not.toContain("这一轮必须给出");
+    expect(phiRules).toContain("0~5");
+    expect(phiRules).toContain("未奏效禁设生气解除");
   });
 });

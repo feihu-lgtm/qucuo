@@ -159,9 +159,9 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     const pers = g.persona || {};
     const dealWords = Math.min(d.apiCfg.targetWordCount || 220, 220);
     const dealFmt = narrativeOnly
-      ? `直接输出对白叙事正文（散文），写完即止。若这一轮谈成了明确协议（对方加价/让价/搭赠物件），在正文最末尾另起一行附：<deal>{"priceMult":1.0,"addItem":null}</deal>；没谈成就不附。`
-      : `回复纯JSON，字符串不换行：{"output":["行1","行2"],"memory":"≤50字本轮谈价关键事实（无实质进展可省略此字段）"}
-若这一轮谈成了明确协议（对方加价/让价/搭赠物件），在 JSON 之后另起一行附：<deal>{"priceMult":1.0,"addItem":null}</deal>；没谈成就不附标签。`;
+      ? `直接输出对白叙事散文，写完即止。谈成明确协议（加价/让价/搭赠）则末尾另起一行附<deal>{"priceMult":1.0,"addItem":null}</deal>；未谈成不附。`
+      : `回复纯JSON，字符串不换行：{"output":["行1","行2"],"memory":"≤50字谈价关键事实（无进展可省略）"}
+谈成明确协议（加价/让价/搭赠）则另起一行附<deal>{"priceMult":1.0,"addItem":null}</deal>；未谈成不附。`;
     const gambleSys = `你是曲措乡这个武侠世界的说书人。此刻玩家在天都镇玉石料场的赌桌前，与竞价者「${g.bidderName}」就一块开出的玉料讨价还价——这是一场一对一的砍价对手戏，只演这一件事。
 
 [这位竞价者]

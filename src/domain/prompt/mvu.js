@@ -150,18 +150,17 @@ export function npcAffectionLabel(affection) {
 
 // 拼进 system prompt 的说明，教会 AI 这套指令语法
 export const MVU_SYSTEM_INSTRUCTIONS = `
-你可以通过在回复末尾追加一个 <mvu>...</mvu> 块来维护角色和世界的持久化状态变量。
+回复末尾可追加 <mvu>...</mvu> 维护持久化状态（不展示给玩家，仅 output 展示，块内不考虑文风）。
 语法（每行一条，分号结尾）：
-  _.set('角色.某某.好感度', 30);   // 直接设置某个数值/文本
-  _.add('角色.某某.好感度', 5);    // 在现有值基础上增减
-路径规则：
-- 新出场的 NPC，如果剧情需要追踪她/他和玩家的关系，请用 角色.<姓名>.好感度 声明并维护，初始值建议给 ${AFFECTION_RULES.firstMeeting.join("-")} 之间的合理数字
-- 角色还可以有其他属性，如 角色.<姓名>.态度、角色.<姓名>.身份，按需自由声明
-- 世界.威望 是全局唯一的江湖声望，按下方尺度裁决，不能与某个 NPC 的好感混用。
-- 其余世界状态用 世界.<名称> 声明，按需自由声明（威望之外没有固定字段名）
-- 主角自身状态用 主角.<名称> 声明
-- 绝对值区间：好感度 ${FIELDS[FIELD.affection].min}~${FIELDS[FIELD.affection].max}，威望 ${FIELDS[FIELD.reputation].min}~${FIELDS[FIELD.reputation].max}；单次增减不超过 ±${MAX_SINGLE_ADD}。
-- 不要虚构不存在的路径根，只能用 角色 / 世界 / 主角 三个前缀
-- 【禁写】世界.旁白.* 这一支是系统维护的剧情进度与门禁（是否解锁了某处、个人线走到第几步），你不得用 _.set/_.add 碰它的任何子键——写了会被系统直接丢弃。剧情该不该推进由系统按条件判定，不由叙事决定
-- 这个 <mvu> 块不会展示给玩家看，只有你的 output 正文会展示，所以块内不需要考虑文风
+  _.set('角色.某某.好感度', 30);   // 设数值/文本
+  _.add('角色.某某.好感度', 5);    // 增减数值
+路径与区间：
+- 仅可用 角色 / 世界 / 主角 三个前缀，禁虚构路径根。
+- 需追踪关系的新 NPC 用 角色.<姓名>.好感度 声明（建议初始 ${AFFECTION_RULES.firstMeeting.join("-")}）；其他属性如 角色.<姓名>.态度、角色.<姓名>.身份 按需声明。
+- 世界.威望 全局唯一；其余世界状态用 世界.<名称> 自由声明（威望外无固定字段）；主角状态用 主角.<名称> 声明。
+- 绝对区间：好感度 ${FIELDS[FIELD.affection].min}~${FIELDS[FIELD.affection].max}，威望 ${FIELDS[FIELD.reputation].min}~${FIELDS[FIELD.reputation].max}；单次增减不超 ±${MAX_SINGLE_ADD}。
+- 【禁写】世界.旁白.* 属系统维护的剧情进度与门禁，禁 _.set/_.add 碰任何子键（会被丢弃）；剧情推进由系统按条件判定，不由叙事决定。
+变动尺度（以本轮专用规则为准）：
+- 好感度：寻常友好聊天 +1；白档礼物通常 +${AFFECTION_RULES.gift["白"][0]}~+${AFFECTION_RULES.gift["白"][1]}；重情分（如传授绝学）可到 +${AFFECTION_RULES.learn.master[1]}；无态度变化不改。
+- 威望：公开义举（路见不平、兑现承诺）+5~${FIELDS[FIELD.reputation].maxDelta}，广为人知的恶行同量扣减；私下态度不是威望，禁与单人好感混用。
 `;
