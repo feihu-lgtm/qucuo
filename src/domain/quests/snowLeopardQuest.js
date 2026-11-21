@@ -1,5 +1,6 @@
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
-import { QUEST_TYPE } from "./questTypes.js";
+import "../../content/index.js";
+import { get } from "../content/registry.js";
 
 export const SNOW_QUEST_ID = "snow_leopard_quest";
 export const SNOW_TRUSTED = "snow_leopard_trusted";
@@ -12,15 +13,7 @@ export const SNOW_SPIRITS = [
 export const snowSpiritCount = (flags = []) => SNOW_SPIRITS.filter(({ flag }) => flags.includes(flag)).length;
 export const snowQuestActive = (state) => state.questProgress?.[SNOW_QUEST_ID]?.status === "active";
 
-export const SNOW_LEOPARD_QUEST = {
-  id: SNOW_QUEST_ID, type: QUEST_TYPE.COLLECT, title: "收复雪豹", giver: null,
-  description: "鱼定村有头无主的雪豹，长长久久卧在村口那块青石上，不亲近谁，也不归谁所有，只静静等着一个它自己认准的人。它只认有灵之人；七样灵性占得五样，才肯随你踏遍山川。",
-  rewardText: "雪豹以额抵掌，从此山长水远，与你同行。",
-  stages: [
-    { id: "s1", title: "证明与山川有缘", description: "先莫急着招手。割肉喂它，留心它为何坐立不安，治好前爪旧伤；或为鱼定村出力，练得体魄七分、魅力七分，打赢一个恶人。七样灵性占得五样，青石上的金瞳自会认你。", completionFlag: SNOW_TRUSTED },
-    { id: "s2", title: "伸手相邀", description: "雪豹不再背过身去，粗长尾巴轻轻拂着你的脚踝。伸出手，邀它入队；它若将额头抵入掌心，这份山川之缘便算定了。", completionFlag: SNOW_INVITED },
-  ],
-};
+export const SNOW_LEOPARD_QUEST = get("quest", SNOW_QUEST_ID);
 
 export function snowLeopardPresent(state) {
   return !!state.room?.npcs?.some((npc) => npc.name === "雪豹" && isNpcVisibleInInnerRoom(state.room.name, state.innerRoomName, npc));
