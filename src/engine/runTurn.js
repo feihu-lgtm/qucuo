@@ -166,41 +166,46 @@ async function runTurnSteps(ctx, cmd, opts) {
       addLog([{ t: "sys", text: "  ⚠ 本轮叙事被接口中途截断（撞到输出 token 上限），以上是已收到的部分。提取层只能按这段残文结算状态，本轮状态可能不全。" }]);
     }
 
-    const extractionState = createExtractionState(ctx, deps);
-    const settleOptions = (opts.settleKind && opts.settleNpc)
-      ? {
-        settleKind: opts.settleKind,
-        settleNpc: opts.settleNpc,
-        giftInfo: opts.giftInfo,
-        learnInfo: opts.learnInfo,
-        settleBeast: !!opts.settleBeast,
+    // settle 回合的状态已由系统/软结算裁决并落账，提取层只对自由行动/闲聊等未裁决回合补漏。
+    if (isSettle) {
+      trace("提取调用", "skip", "settle 回合由系统结算接管状态，跳过提取");
+    } else {
+      const extractionState = createExtractionState(ctx, deps);
+      const settleOptions = (opts.settleKind && opts.settleNpc)
+        ? {
+          settleKind: opts.settleKind,
+          settleNpc: opts.settleNpc,
+          giftInfo: opts.giftInfo,
+          learnInfo: opts.learnInfo,
+          settleBeast: !!opts.settleBeast,
+        }
+        : null;
+      const extracted = await callExtraction(
+        extractionSpecKey,
+        rawFull + planExtractionNote(deps.intentPlan),
+        extractionState,
+        apiCfg,
+        settleOptions,
+        deps.ai,
+        onPromptRefMissing,
+      ).catch((error) => {
+        if (!ctx.isStale?.()) {
+          addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${error.message || error}），本轮状态未更新` }]);
+          trace("提取调用", "fail", `提取模型=${extractionCfg.model || "未设置"}调用异常：${error.message || error}，本轮状态未更新`);
+        }
+        return null;
+      });
+      if (ctx.isStale?.()) return { stale: true };
+      pickupExtractionFailed = !extracted || !!extracted.parseFailed;
+      if (extracted?.parseFailed) {
+        addLog([{ t: "sys", text: "  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新" }]);
+        trace("提取调用", "fail", `返回内容无法解析（提取模型=${extractionCfg.model || "未设置"}），本轮状态未更新`);
+      } else if (extracted) {
+        trace("提取调用", "pass", `状态提取完成（提取模型=${extractionCfg.model || "未设置"}${settleOptions ? `·${settleOptions.settleKind}专属spec` : ""}）`);
       }
-      : null;
-    const extracted = await callExtraction(
-      extractionSpecKey,
-      rawFull + planExtractionNote(deps.intentPlan),
-      extractionState,
-      apiCfg,
-      settleOptions,
-      deps.ai,
-      onPromptRefMissing,
-    ).catch((error) => {
-      if (!ctx.isStale?.()) {
-        addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${error.message || error}），本轮状态未更新` }]);
-        trace("提取调用", "fail", `提取模型=${extractionCfg.model || "未设置"}调用异常：${error.message || error}，本轮状态未更新`);
-      }
-      return null;
-    });
-    if (ctx.isStale?.()) return { stale: true };
-    pickupExtractionFailed = !extracted || !!extracted.parseFailed;
-    if (extracted?.parseFailed) {
-      addLog([{ t: "sys", text: "  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新" }]);
-      trace("提取调用", "fail", `返回内容无法解析（提取模型=${extractionCfg.model || "未设置"}），本轮状态未更新`);
-    } else if (extracted) {
-      trace("提取调用", "pass", `状态提取完成（提取模型=${extractionCfg.model || "未设置"}${settleOptions ? `·${settleOptions.settleKind}专属spec` : ""}）`);
+      p = filterPlanDelta(extracted?.p || {}, deps.intentPlan);
+      mvuCommands = filterRejectedEffects(extracted?.mvuCommands || [], deps.intentPlan);
     }
-    p = filterPlanDelta(extracted?.p || {}, deps.intentPlan);
-    mvuCommands = filterRejectedEffects(extracted?.mvuCommands || [], deps.intentPlan);
   } else {
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
       const nudge = attempt > 1

@@ -26,6 +26,7 @@ async function main() {
   let intent = true;
   let bookkeep = false;
   let softSettle = true;
+  let extraction = true;
   const nextValue = (name, index) => {
     const value = args[index + 1];
     if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
@@ -76,6 +77,12 @@ async function main() {
         break;
       case "--no-soft-settle":
         softSettle = false;
+        break;
+      case "--extraction":
+        extraction = true;
+        break;
+      case "--no-extraction":
+        extraction = false;
         break;
       case "--record":
         recordFile = nextValue("--record", i);
@@ -142,6 +149,7 @@ async function main() {
   apiCfg = { ...apiCfg, intentRecognitionEnabled: intent };
   if (bookkeep) apiCfg = { ...apiCfg, bookkeepEnabled: true };
   apiCfg = { ...apiCfg, softSettleEnabled: softSettle };
+  apiCfg = { ...apiCfg, extractionEnabled: extraction };
   const options = { out: print, seed, ai, apiCfg };
   if (script) {
     const lines = await readFile(script, "utf8");
