@@ -12,15 +12,18 @@ import { generateNpcMoveset } from "../../domain/npc/npcGeneration.js";
 import { seedKnowledge } from "../../domain/prompt/knowledge.js";
 import { initCompanionState } from "../../domain/companion/companion.js";
 import { CURRENT_VERSION } from "../../infra/version.js";
-import { callModel } from "../../infra/apiConfig.js";
-import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
 import { getMapNode } from "../../domain/map/qucuoMap.js";
 import { getDistrictAnchor, getInnerRoomNames, hasInnerMap } from "../../domain/map/innerMap.js";
 import { initialVarTree } from "../../domain/prompt/mvu.js";
 import {
-  rollSkeleton, buildSquarePrompt, parseSquareBatch, applySquareBatch,
+  rollSkeleton, parseSquareBatch, applySquareBatch,
   pendingNodes, serializeSquares, loadSquares,
 } from "../../domain/map/mapSquares.js";
+import { createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../engine/ports/withAI.js";
+import "../calls/hookCalls.js";
+
+const webAi = createWebAi();
 
 export function restorePersuasionProgress(snap, setPersuasionProgress) {
   setPersuasionProgress(snap.persuasionProgress || {});
@@ -194,10 +197,8 @@ export function useAutosave({
             skeletons[name] = sk;
             return { name, base: node.desc, exits: Object.keys(node.exits).join(","), item: sk.item, encounter: sk.encounter };
           });
-          const req = buildSquarePrompt(batch);
           try {
-            const cfg = buildExtractionCfg("SQUARE_PRERUN", apiCfg);
-            const r = await callModel(cfg, req.system, [{ role: "user", content: req.user }], { maxTokens: 1500, callLabel: "地图预跑" });
+            const r = await withAI("map.prerun", { batch }, { ai: webAi, apiCfg });
             applySquareBatch(day, parseSquareBatch(r.text), skeletons);
           } catch (_) { /* 单批失败静默，余格下个触发点重试 */ }
         }

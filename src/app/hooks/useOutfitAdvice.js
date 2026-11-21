@@ -1,9 +1,14 @@
 import { useCallback } from "react";
-import { callModel, cleanJsonString } from "../../infra/apiConfig.js";
-import { buildOutfitRequest, bodyProfileFilled } from "../../domain/character/bodyProfile.js";
+import { cleanJsonString } from "../../infra/apiConfig.js";
+import { bodyProfileFilled } from "../../domain/character/bodyProfile.js";
 import { CATALOG_INDEX, CATALOG, makeCatalogItem } from "../../domain/items/catalog.js";
 import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL } from "../../domain/economy/equipment.js";
 import { effectBrief } from "../../domain/economy/itemEffectText.js";
+import { createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../engine/ports/withAI.js";
+import "../calls/hookCalls.js";
+
+const webAi = createWebAi();
 
 export function useOutfitAdvice({ char, apiCfg, setOutfitState }) {
   const recommendOutfit = useCallback(async () => {
@@ -20,11 +25,7 @@ export function useOutfitAdvice({ char, apiCfg, setOutfitState }) {
         e.category === ITEM_CATEGORY.ARMOR ||
         e.category === ITEM_CATEGORY.ACCESSORY
       );
-      const req = buildOutfitRequest(profile, pool);
-      const { text } = await callModel(apiCfg, req.system, [{ role: "user", content: req.user }], {
-        maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000,
-        callLabel: "按体貌荐装",
-      });
+      const { text } = await withAI("outfit.advice", { profile, pool }, { ai: webAi, apiCfg });
       let parsed = {};
       try { parsed = JSON.parse(cleanJsonString(text.replace(/```json\s*|```\s*/g, "").trim())); }
       catch { parsed = {}; }

@@ -43,10 +43,13 @@ export async function withAI(
   }
 
   try {
+    const callLabel = typeof call.label === "function" ? call.label(ctx) : call.label;
+    const cfg = typeof call.cfg === "function" ? call.cfg(apiCfg, ctx) : apiCfg;
+    const extraModelOptions = typeof call.modelOptions === "function" ? call.modelOptions(ctx) : call.modelOptions;
     const res = await ai.chat(built.messages, {
-      cfg: apiCfg,
+      cfg,
       systemPrompt: built.system,
-      modelOptions: { maxTokens, callLabel: call.label },
+      modelOptions: { ...(extraModelOptions || {}), maxTokens, callLabel },
     });
     if (isStale?.()) {
       return { ok: false, text: "", finishReason: res?.finishReason, data: null, promptMeta };

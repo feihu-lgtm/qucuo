@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { callModel } from "../../infra/apiConfig.js";
-import { effectBrief } from "../../domain/economy/itemEffectText.js";
 import { getCachedInspect, setCachedInspect } from "../../domain/prompt/inspectCache.js";
 import { NOTE_SOURCE } from "../../domain/memory/note.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
+import { createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../engine/ports/withAI.js";
+import "../calls/hookCalls.js";
+
+const webAi = createWebAi();
 
 export function useAiInspect({
   addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv, dispatchCommand,
@@ -14,33 +17,12 @@ export function useAiInspect({
   // kind 标签映射：目前 "skill"(武学) / "item"(随身物品) / "pigeon"(信鸽) 三种，
   // 以后再加新 kind 只需在这两张表里添一行，不用到处写嵌套三元。
   const INSPECT_KIND_LABEL = { skill: "武学", item: "物品", pigeon: "信鸽" };
-  const INSPECT_KIND_NOUN = { skill: "武学功法", item: "随身物品", pigeon: "信鸽（用于飞鸽传书的鸟）" };
   // 生成一件东西的端详描述文本（纯计算：构造 prompt → 调 AI → 返回文本）。
   // 抽成独立函数，让"点击查看"和"后台预跑"共用同一套 prompt，保证两边算出的
   // 内容一致、缓存键也一致（否则预跑存进去的缓存，点击时因 prompt 不同而读不到）。
   // 只负责生成文本，不碰缓存、不写日志、不算时间——这些副作用留给调用方按场景处理。
   const genInspectText = useCallback(async (kind, name, extra, itemObj, turn) => {
-    const kindLabel = INSPECT_KIND_LABEL[kind] || "物品";
-    const kindNoun = INSPECT_KIND_NOUN[kind] || "随身物品";
-    const sys = `你是曲措乡这个武侠世界的说书人，现在玩家想仔细端详一件${kindNoun}。
-用 3-5 句话、章回说书人口吻描述这个${kindLabel}的来历、外观或效用，符合当前世界观（澜湄雪域、曲措乡）。不需要 JSON，不需要更新任何状态，纯文本即可。
-如果给出了品质和数值信息，请在描述里自然地体现这个品阶应有的分量感（品质越高描述越有气势），但不要机械地报数字。`;
-    let prompt = kind === "skill"
-      ? `功法名称：${name}${extra ? `，当前修炼进度：${extra}` : ""}`
-      : kind === "pigeon"
-        ? `信鸽${extra ? `，${extra}` : ""}`
-        : `物品名称：${name}`;
-    if (itemObj && typeof itemObj === "object") {
-      const statBits = [];
-      if (itemObj.atk != null) statBits.push(`攻击力${itemObj.atk}`);
-      if (itemObj.def != null) statBits.push(`防御力${itemObj.def}`);
-      // 饰品的战力在 sixDim/effect 上，鉴定 prompt 此前只给 AI 看 atk/def/bonus，
-      // 于是问一件饰品，AI 只知道它是「白档、加成0.3」——真正的词条一个都没看见。
-      if (itemObj.sixDim) statBits.push(Object.entries(itemObj.sixDim).map(([k, v]) => `${k}+${v}`).join("，"));
-      if (itemObj.effect) { const t = effectBrief(itemObj.effect, null); if (t) statBits.push(`特效：${t}`); }
-      prompt += `，品质：${itemObj.quality}${statBits.length ? `，${statBits.join("，")}` : ""}${itemObj.desc ? `，已知描述：${itemObj.desc}` : ""}`;
-    }
-    const { text } = await callModel(apiCfg, sys, [{ role: "user", content: prompt }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000, callLabel: "查看端详", turn });
+    const { text } = await withAI("inspect.describe", { kind, name, extra, itemObj, turn }, { ai: webAi, apiCfg });
     return (text || "").trim();
   }, [apiCfg]);
 

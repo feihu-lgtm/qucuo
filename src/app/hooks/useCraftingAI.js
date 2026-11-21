@@ -1,7 +1,11 @@
 import { useCallback } from "react";
-import { callModel } from "../../infra/apiConfig.js";
 import { forgeDesign } from "../../domain/prompt/extractionEngine.js";
 import { NOTE_SOURCE } from "../../domain/memory/note.js";
+import { createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../engine/ports/withAI.js";
+import "../calls/hookCalls.js";
+
+const webAi = createWebAi();
 
 export function useCraftingAI({
   gambleTalkCtx, setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
@@ -15,13 +19,7 @@ export function useCraftingAI({
 
   const handleGambleInspect = useCallback(async (stone, clue) => {
     try {
-      const sys = `你是曲措乡这个武侠世界的说书人。玩家在天都镇玉石料场端详一块未开的赌石，请一位老师傅的口吻看皮相石。用3-5句章回说书人口吻，把下面的看皮线索演成一段相石评语（可用"雾""砂""蟒带"等行话），只说表象与吉凶暗示，绝不断言内里种水成色，绝不编造线索之外的判断。纯文本，不要JSON。`;
-      const lines = [
-        `皮壳：${clue.skinLabel}——${clue.skinClue}`,
-        clue.changKouHint ? `场口眼力：${clue.changKouHint}` : "（认不出场口来历，悟性眼力未及）",
-        clue.mistHint ? `雾象：${clue.mistHint}` : "",
-      ].filter(Boolean).join("\n");
-      const { text } = await callModel(apiCfg, sys, [{ role: "user", content: lines }], { maxTokens: apiCfg.callTokenLimits?.inspect ?? 4000, callLabel: "赌石相石" });
+      const { text } = await withAI("crafting.appraise", { stone, clue }, { ai: webAi, apiCfg });
       const t = (text || "").trim();
       if (t) {
         addLog([{ t: "cmd", text: "> 相石 · 看皮" }, { t: "desc", text: "  " + t }]);
