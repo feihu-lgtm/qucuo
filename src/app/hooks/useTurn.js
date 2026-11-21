@@ -13,6 +13,7 @@ import { judgeCollect } from "../../engine/act/roundNotes.js";
 import { CATEGORY_LABEL } from "../../domain/economy/equipment.js";
 import { findTargetedRumor } from "../../domain/npc/npcEmergence.js";
 import { classifyIntent, INTENT } from "../../domain/prompt/inputIntent.js";
+import { routeDuelInvitation } from "./useDuel.js";
 import { buildDirectionJudgeRequest, getMapNode, parseDirectionJudgeResponse, QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
 import { callModel, classifyError } from "../../infra/apiConfig.js";
@@ -32,7 +33,7 @@ import { classifyActCommand } from "../../core/commands.js";
 
 export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
-  addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
+  addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, handleNpcDuelRef,
   nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
   turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
   waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
@@ -48,6 +49,7 @@ export function useTurn({
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
     if (!rawCmd.trim()) return;
     if (!opts.schedulerManaged) {
+      if (!opts.forceLayer && !opts.settle && !opts.silentCmd && routeDuelInvitation(rawCmd, { interactMode, room, activeTarget, handleNpcDuel: handleNpcDuelRef.current })) { setInput(""); return; }
       const commandText = rawCmd.trim();
       const isTalkCommand = interactMode === "talk" && !opts.forceLayer;
       const localCommand = isTalkCommand ? null : parseLocalCommand(commandText, { ...gameStore.getState(), isTalk: isTalkCommand, convo }, { surface: "web" });
@@ -420,7 +422,7 @@ export function useTurn({
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, handleNpcDuelRef, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
   actRef.current = act;
   const featureCtx = useMemo(() => ({
     addLog,

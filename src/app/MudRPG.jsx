@@ -238,9 +238,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 调用中间一旦被"上一条命令还在处理中"的排队分支截胡，血条就会插在数组里
   // "cmd行"之前，按分组算法（以cmd为界）被错误地划进上一条命令的框，而不是
   // 这条"look X"自己的框。
+  const handleNpcDuelRef = useRef(null);
   const { act } = useTurn({
     loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
     addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
+    handleNpcDuelRef,
     nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
     turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
     waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
@@ -277,6 +279,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
     captureUndo, turnGenerationRef,
   }));
+  handleNpcDuelRef.current = duelHandlers.handleNpcDuel;
 
   // 拜师学艺：好感度≥40 + 完成该NPC专属支线任务，两个条件同时满足才能学到技能。
   // 不满足时给出具体卡在哪个条件的说明，而不是一句笼统的"不行"。
