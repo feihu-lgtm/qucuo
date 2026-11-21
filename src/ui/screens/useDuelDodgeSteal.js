@@ -11,8 +11,9 @@ export function addDodgeStealNote(result, move, carriedItems, trySteal) {
 
 export function addTeamDodgeStealNotes(turnLog, playerId, move, carriedItems, trySteal) {
   for (const entry of turnLog) {
-    if ((entry.actorId === playerId && entry.dodgeSuccessActor) || (entry.targetId === playerId && entry.dodgeSuccessTarget)) {
-      addDodgeStealNote({ dodgeSuccessA: true, notes: entry.notes }, move, carriedItems, trySteal);
+    if ((entry.actor?.id === playerId && entry.result?.dodgeSuccessA)
+      || (entry.target?.id === playerId && entry.result?.dodgeSuccessB)) {
+      addDodgeStealNote({ dodgeSuccessA: true, notes: entry.result.notes }, move, carriedItems, trySteal);
     }
   }
 }

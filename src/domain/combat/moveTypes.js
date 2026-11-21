@@ -12,24 +12,77 @@
 //   类型判定影响——博弈层招式依然要声明 type 参与克制判定，只是伤害/
 //   能耗计算不再是简单的 baseDamageMultiplier 缩放。
 
+import { STATUS_EFFECTS, STATUS_GROUP } from "./statusEffects.js";
+
 export const MOVE_TYPE = {
   ATTACK: "攻击",
   DEFENSE: "防御",
   STATUS: "状态",
 };
 
-// BEATS[A] === B 表示 A 克 B
-export const BEATS = {
-  [MOVE_TYPE.ATTACK]: MOVE_TYPE.STATUS,
-  [MOVE_TYPE.STATUS]: MOVE_TYPE.DEFENSE,
-  [MOVE_TYPE.DEFENSE]: MOVE_TYPE.ATTACK,
+export const MATCHUP_TABLE = {
+  [MOVE_TYPE.ATTACK]: {
+    [MOVE_TYPE.ATTACK]: { winner: "tie", resolve: "collide-speed" },
+    [MOVE_TYPE.DEFENSE]: { winner: "B", resolve: "block" },
+    [MOVE_TYPE.STATUS]: {
+      winner: "A",
+      resolve: "interrupt",
+      counterStatus: {
+        reflect: { winner: "B", resolve: "counterStatus" },
+        control: { winner: "tie", resolve: "counterStatus" },
+      },
+    },
+  },
+  [MOVE_TYPE.DEFENSE]: {
+    [MOVE_TYPE.ATTACK]: { winner: "A", resolve: "block" },
+    [MOVE_TYPE.DEFENSE]: { winner: "tie", resolve: "standoff" },
+    [MOVE_TYPE.STATUS]: { winner: "B", resolve: "each" },
+  },
+  [MOVE_TYPE.STATUS]: {
+    [MOVE_TYPE.ATTACK]: {
+      winner: "B",
+      resolve: "interrupt",
+      counterStatus: {
+        reflect: { winner: "A", resolve: "counterStatus" },
+        control: { winner: "tie", resolve: "counterStatus" },
+      },
+    },
+    [MOVE_TYPE.DEFENSE]: { winner: "A", resolve: "each" },
+    [MOVE_TYPE.STATUS]: { winner: "tie", resolve: "each" },
+  },
 };
 
-// 判定两个技能类型对撞的结果
-// 返回 'A' 表示A方这回合"赢"（触发应对效果），'B' 表示B方赢，'tie' 表示同类型需要比速度
+export const BEATS = Object.fromEntries(
+  Object.entries(MATCHUP_TABLE).map(([typeA, row]) => [
+    typeA,
+    Object.keys(row).find((typeB) => typeA !== typeB && row[typeB].winner === "A"),
+  ]),
+);
+
 export function judgeTypeMatchup(typeA, typeB) {
-  if (typeA === typeB) return "tie";
-  if (BEATS[typeA] === typeB) return "A";
-  if (BEATS[typeB] === typeA) return "B";
-  return "tie"; // 理论上不会走到这里，兜底避免未定义行为
+  return MATCHUP_TABLE[typeA]?.[typeB]?.winner ?? "tie";
+}
+
+export function counterStatusKind(move) {
+  if (move?.type !== MOVE_TYPE.STATUS) return null;
+  if (move.doubleReflectDamage) return "reflect";
+  const statusNames = [
+    move.confuseChance ? "气乱" : null,
+    typeof move.applyStatus === "string" ? move.applyStatus : move.applyStatus?.name,
+  ].filter(Boolean);
+  return statusNames.some((name) => STATUS_EFFECTS[name]?.group === STATUS_GROUP.CONTROL)
+    ? "control"
+    : null;
+}
+
+export function isCounterStatusMove(move) {
+  return counterStatusKind(move) !== null;
+}
+
+export function resolveMatchupRule(moveA, moveB) {
+  const base = MATCHUP_TABLE[moveA?.type]?.[moveB?.type] || { winner: "tie", resolve: "each" };
+  const statusMove = moveA?.type === MOVE_TYPE.STATUS ? moveA : moveB?.type === MOVE_TYPE.STATUS ? moveB : null;
+  const kind = counterStatusKind(statusMove);
+  const override = base.counterStatus?.[kind];
+  return { ...base, ...(override || {}), counterKind: override ? kind : null };
 }

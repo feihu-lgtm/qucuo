@@ -10,6 +10,7 @@ import { PLANNABLE_DISTRICTS } from "./cards/placementPlan.js";
 import { QUCUO_MAP } from "./map/qucuoMap.js";
 import { DEFAULT_PORTRAITS, PORTRAIT_BY_FILE, resolveCardPortrait } from "./companion/portraits.js";
 import { PLACEMENT_MODES } from "./cards/importedRegistry.js";
+import { DISTRICTS } from "./cards/reviewRules.js";
 
 // 跨文件契约对账
 // ============================================================================
@@ -79,9 +80,7 @@ describe("可规划据点必须来自真实地图", () => {
   });
 
   it("ReviewNpc 的 DISTRICTS 用同一套过滤条件", () => {
-    // 两处各写一遍 filter，条件必须一致，否则 AI 能选的与玩家能选的不是同一批
-    const src = read("cards", "ReviewNpc.jsx");
-    expect(src).toContain('d !== "心灵之海" && d !== "第三新东京市"');
+    expect(DISTRICTS).toEqual(PLANNABLE_DISTRICTS);
   });
 });
 
@@ -107,7 +106,7 @@ describe("立绘两张索引表必须一一对应", () => {
 
 describe("落脚三态：数据层与界面标签必须同键", () => {
   it("PLACEMENT_MODES 每一项都有界面标签与说明", () => {
-    const src = read("cards", "ReviewNpc.jsx");
+    const src = read("..", "ui", "screens", "cards", "ReviewNpc.jsx");
     for (const mode of PLACEMENT_MODES) {
       expect(src.includes(`${mode}:`), `PLACEMENT_LABEL/HINT 缺 ${mode}——界面上会显示 undefined`).toBe(true);
     }

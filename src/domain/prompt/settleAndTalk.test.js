@@ -1,5 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { buildSysBase } from "./sysBase.js";
+import { buildExtractionSpecExample, callExtraction, normalizeExtractedFields, SETTLE_KIND_SPECS } from "./extractionEngine.js";
+import { classifyIntent, INTENT } from "./inputIntent.js";
 
 function wia(scope, narrativeOnly, opts = {}) {
   const { sysBlocks } = buildSysBase(
@@ -69,9 +71,148 @@ describe("拜师 learn_skill 铁律（0728 起改由 11 号位承载，不再在
   });
 });
 
-// ── 提取层（二调用）侧 ──────────────────────────────────────────────
-import { buildExtractionSpecExample, SETTLE_KIND_SPECS } from "./extractionEngine.js";
+describe("切磋邀战结算", () => {
+  const build = (narrativeOnly) => buildSysBase(
+    220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", narrativeOnly, "settle",
+    { playerName: "少侠", settleNpc: { name: "才旦" }, settleKind: "duel_invite" },
+  );
 
+  it("叙事只到接受邀战、摆开架势，明确在第一招前停止", () => {
+    const { phiRules } = build(true);
+    expect(phiRules).toContain("接受邀战");
+    expect(phiRules).toContain("第一招交手之前立刻停止");
+    expect(phiRules).toContain("严禁描写任何招式交锋、回合、伤势、胜负");
+    expect(phiRules).toContain("切磋是否开始由玩家");
+    expect(phiRules).not.toContain("[object Object]");
+  });
+
+  it("状态结算禁止任何 MVU 变化", () => {
+    const { phiRules } = build(false);
+    expect(phiRules).toContain("不得输出 <mvu>");
+    expect(phiRules).toContain("不得修改气血、好感、物品或其他状态");
+    expect(phiRules).not.toContain("关于下面那条 <mvu>");
+    expect(phiRules).toContain("本轮没有任何状态变化");
+  });
+
+  it("dual-call extraction returns a no-op without calling the model", async () => {
+    const ai = { chat: vi.fn() };
+    await expect(callExtraction("COMBAT", "邀战", { char: {} }, {}, {
+      settleKind: "duel_invite", settleNpc: { name: "才旦" },
+    }, ai)).resolves.toEqual({ p: {}, mvuCommands: [] });
+    expect(ai.chat).not.toHaveBeenCalled();
+  });
+});
+
+describe("AI duelRequest", () => {
+  it("keeps duel vocabulary as combat-intent hints only", () => {
+    expect(classifyIntent("切搓")).toEqual(INTENT.COMBAT);
+    expect(classifyIntent("比武")).toEqual(INTENT.COMBAT);
+  });
+
+  it("full-mode schema requests only an accepted spar with a present NPC", () => {
+    const { phiBlock, phiRules } = buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "full", { hasNpc: true },
+    );
+    expect(phiBlock.content).toContain('"duelRequest":"NPC名"');
+    expect(phiBlock.content).toContain("当前在场名单中的 NPC");
+    expect(phiBlock.content).toContain("NPC 拒绝或躲避");
+    expect(phiRules).toContain("任何战斗的招式交锋与胜负结果均由系统战斗结算");
+  });
+
+  it("duel-report prompt permits the requested report without opening another duel", () => {
+    const duelReport = {
+      rounds: [{
+        round: 1,
+        text: "陈尧天一记野球拳正中才旦",
+        playerMove: { name: "野球拳", type: "攻击" },
+        npcMove: { name: "铁布衫", type: "防御" },
+        result: {
+          nameA: "陈尧天",
+          nameB: "才旦",
+          damageToA: 0,
+          damageToB: 3,
+          statusDamageA: 0,
+          statusDamageB: 0,
+          hpRestoreA: 0,
+          hpRestoreB: 0,
+          dodgeSuccessA: false,
+          dodgeSuccessB: false,
+          hpAfterA: [60, 60],
+          hpAfterB: [57, 60],
+          hpBandA: "healthy",
+          hpBandB: "healthy",
+          statusAppliedToA: null,
+          statusAppliedToB: "麻穴",
+          markAppliedToA: null,
+          markAppliedToB: null,
+          statusSlotsAfterA: {},
+          statusSlotsAfterB: { control: { name: "麻穴", duration: 2 } },
+          statusLogA: [],
+          statusLogB: ["才旦气机受阻"],
+          worseName: "才旦",
+        },
+      }],
+    };
+    const { phiBlock, phiRules } = buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "full",
+      { hasNpc: true, duelReport },
+    );
+    expect(phiBlock.content).toContain('"output"');
+    expect(phiBlock.content).not.toContain('"duelRequest"');
+    expect(phiRules).not.toContain("战斗叙事边界");
+    expect(phiRules).toContain("恰好有N+1项");
+    expect(phiRules).toContain("【第1回合】");
+    expect(phiRules).toContain("【结局】");
+    expect(phiRules).toContain("健旺（≥60%）");
+    expect(phiRules).toContain("受创（25%–<60%）");
+    expect(phiRules).toContain("将倒（<25%）");
+    expect(phiRules).toContain("玩家与 NPC 一视同仁");
+    expect(phiRules).toContain("回合后气血：A 60/60、B 57/60");
+    expect(phiRules).toContain("HP带：A healthy、B healthy");
+    expect(phiRules).toContain("当前状态：A {}、B {\"control\":{\"name\":\"麻穴\",\"duration\":2}}");
+    expect(phiRules).toContain("状态日志：A []、B [\"才旦气机受阻\"]");
+
+    const dual = buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", true, "full",
+      { hasNpc: true, duelReport },
+    );
+    expect(dual.phiRules).toContain("恰好分成N+1个段落");
+    expect(dual.phiRules).toContain("受创（25%–<60%）");
+  });
+
+  it("duel-report missing paths reach the prompt trace callback", () => {
+    const onDuelReportMissing = vi.fn();
+    buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "full",
+      { duelReport: { rounds: [{ round: 1, result: {} }] }, onDuelReportMissing },
+    );
+    expect(onDuelReportMissing).toHaveBeenCalledWith(expect.arrayContaining([
+      "第1回合 @round.playerMove.name",
+      "第1回合 @round.result.hpAfterA",
+    ]));
+  });
+
+  it("dual-call extraction prompt includes the accepted-spar rule", () => {
+    const example = buildExtractionSpecExample("UNKNOWN");
+    expect(example).toContain('"duelRequest"');
+    expect(example).toContain("NPC 拒绝或躲避");
+  });
+
+  it("keeps only room-visible NPCs from either string or object form", () => {
+    const presentNpc = { name: "才旦", innerRoom: "村口广场" };
+    const absentNpc = { name: "老猎户" };
+    const state = {
+      room: { name: "鱼定村", npcs: [presentNpc, absentNpc] },
+      innerRoomName: "村口广场",
+    };
+    expect(normalizeExtractedFields({ duelRequest: "才旦" }, state).duelRequest).toBe(presentNpc);
+    expect(normalizeExtractedFields({ duelRequest: { name: "才旦" } }, state).duelRequest).toBe(presentNpc);
+    expect(normalizeExtractedFields({ duelRequest: "老猎户" }, state)).not.toHaveProperty("duelRequest");
+    expect(normalizeExtractedFields({ duelRequest: "无此人" }, state)).not.toHaveProperty("duelRequest");
+  });
+});
+
+// ── 提取层（二调用）侧 ──────────────────────────────────────────────
 describe("结算专属提取 spec 的路由", () => {
   it("所有 settleKind 都注册在映射表里", () => {
     expect(SETTLE_KIND_SPECS).toEqual({

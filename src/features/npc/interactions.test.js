@@ -333,7 +333,7 @@ describe("NPC duel settlement logic", () => {
     };
     const result = settleNpcDuel(state, sparNpc, {
       outcome: "win",
-      battleLog: [{ round: 1, playerMove: "掌法", npcMove: "剑招", dmgToNpc: 4, dmgToPlayer: 2 }],
+      battleLog: [{ round: 1, playerMove: { name: "掌法", type: "攻击" }, npcMove: { name: "剑招", type: "攻击" }, result: { damageToA: 2, damageToB: 4, statusDamageA: 0, statusDamageB: 0, worseName: "师父" } }],
       remainingHp: [30, 120],
       grownMoveset: [{ id: "grown" }],
       rng: () => 0,

@@ -1,5 +1,5 @@
 import React from "react";
-import { MAP_UI } from "../../domain/map/mapUi.js";
+import { MAP_UI } from "../mapUi.js";
 
 // 固定九宫格视窗地图：玩家永远居中不动，走一步"世界卷一格"（周围八格内容刷新）。
 // 像老式 RPG 主角居中、地图卷动。内外层通用。

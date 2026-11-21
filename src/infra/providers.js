@@ -196,7 +196,7 @@ function supportsOpenAIReasoning(model) {
   return /^(?:o1|o3(?:-[\w.-]+)?|o4-mini(?:-[\w.-]+)?|gpt-5(?:[.-][\w.-]+)?|gpt-6-astra(?:-[\w.-]+)?)$/i.test(model || "");
 }
 
-export function applyThinkingOpenAI(body, cfg, provider, vertex) {
+export function applyThinkingOpenAI(body, cfg, provider, vertex, opts = {}) {
   const effort = thinkingEffort(cfg);
   const enabled = effort !== "off";
   switch (provider.thinking) {
@@ -227,6 +227,21 @@ export function applyThinkingOpenAI(body, cfg, provider, vertex) {
       }
       break;
   }
+  applyShortCallOpenAI(body, provider, opts);
+}
+
+// 识别/分类这类短调用（opts.disableThinking）：Gemini 2.5 在 Vertex 上即便 reasoning_effort=low 也会思考，
+// 思考 token 吃光输出预算后 JSON 被截断；改用 thinking_budget 关掉思考（2.5 Pro 不能为 0，取下限 128）。
+// opts.jsonOnly：对文档确认支持 response_format 的服务请求 JSON 输出。
+const JSON_MODE_PROVIDERS = new Set(["vertex", "openai", "deepseek"]);
+
+export function applyShortCallOpenAI(body, provider, opts = {}) {
+  const model = String(body.model || "").replace(/^google\//, "");
+  if (opts.disableThinking && provider.thinking === "vertex" && /^gemini-2\.5/i.test(model)) {
+    delete body.reasoning_effort;
+    body.extra_body = { google: { thinking_config: { thinking_budget: /pro/i.test(model) ? 128 : 0, include_thoughts: false } } };
+  }
+  if (opts.jsonOnly && JSON_MODE_PROVIDERS.has(provider.id)) body.response_format = { type: "json_object" };
 }
 
 export function applyThinkingGemini(genConfig, cfg) {

@@ -1,3 +1,4 @@
+import { loadDefaultContent } from "../src/content/index.js";
 import { access, appendFile, readFile, writeFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { stdin, stdout } from "node:process";
@@ -6,6 +7,8 @@ import { webcrypto } from "node:crypto";
 import { createSession, parseSeed, runScript } from "./runner.mjs";
 import { createHttpAi, createMockAi, createRecordingAi, createReplayAi, createWebAi } from "../src/engine/ports/ai.js";
 import { createVertexAuth, parseVertexAdc, vertexDefaultProject } from "../src/infra/vertexAdc.js";
+
+loadDefaultContent();
 
 const print = (text) => stdout.write(`${text}\n`);
 
@@ -20,6 +23,7 @@ async function main() {
   let project;
   let location;
   let recordFile;
+  let intent = false;
   const nextValue = (name, index) => {
     const value = args[index + 1];
     if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
@@ -55,6 +59,9 @@ async function main() {
         break;
       case "--location":
         location = nextValue("--location", i++);
+        break;
+      case "--intent":
+        intent = true;
         break;
       case "--record":
         recordFile = nextValue("--record", i);
@@ -118,6 +125,7 @@ async function main() {
     ai = createRecordingAi(ai, (entry) => appendFile(destination, `${JSON.stringify(entry)}\n`, "utf8"));
   }
 
+  if (intent) apiCfg = { ...apiCfg, intentRecognitionEnabled: true };
   const options = { out: print, seed, ai, apiCfg };
   if (script) {
     const lines = await readFile(script, "utf8");

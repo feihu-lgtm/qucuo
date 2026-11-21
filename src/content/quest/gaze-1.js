@@ -1,0 +1,80 @@
+export default { quest: {
+"gaze_1_mitu": {
+    id: "gaze_1_mitu",
+    type: "QT_TALK",
+    title: "虎1·迷途",
+    giver: null,
+    description: "野兽低吼从胸腔震出，一头成年白虎侧卧溪边，左前腿夹着猎人的铁制兽夹，伤口化脓起不了身。旁边蹲着一个少女徒手试着掰开兽夹，指缝渗血一声不吭——不是怕你伤她，是怕你伤虎。",
+    requiresQuestCompleted: "heifengzhai_3_shangshan",
+    stages: [
+      {
+        id: "s1_help",
+        description: "玩家施以援手撬开兽夹，她快速撕下自己袖口布条给虎包扎，手法熟练。用额头碰虎鼻尖，藏语轻声说了句话，才转向玩家：「它叫雪团。我是嘎则。你认识巴桑吗？他是我哥。」她不知怎么道谢，解下虎脖子上的旧铃铛塞给玩家：「雪团说这个给你。它不会说话，我替它说了。」",
+        playerHint: "有只白虎被兽夹困住，救不救它你自己决定。",
+        completionFlag: "quest_gaze1_s1",
+        at: "狼曲河谷",
+        isCgMoment: true,
+        onReach: { exp: 2, favorability: { "嘎则": 25 }, reputation: 8, items: [{ name: "虎铃", category: "accessory", quality: "白", desc: "铃舌歪了响声闷闷的，其实雪团什么都没说，是嘎则觉得雪团应该谢谢你。" }] },
+      },
+    ],
+    rewardText: "回程雪团一瘸一拐，嘎则扶着虎一起走，全程不回头看玩家，但玩家若停下脚步，她会立刻察觉侧耳听。",
+  },
+"gaze_2_xiashan": {
+    id: "gaze_2_xiashan",
+    type: "QT_TALK",
+    title: "虎2·下山",
+    giver: "巴桑",
+    description: "巴桑请玩家带嘎则下山采办止咳草药，寨中老弱过冬急需，他抽不开身，嘎则自告奋勇但他不放心她独自去玉泉寨——「这丫头三年没下过山。跟着你，我放心——不是放心你，是放心雪团。雪团认的人，跑不偏。」",
+    requiresQuestCompleted: "heifengzhai_3_5_jieyao",
+    stages: [
+      {
+        id: "s1_scare",
+        description: "嘎则牵雪团走在玉泉寨土路上，逐一认出巴桑提过的地方，全记得只是没见过。杂货铺门口一个外来商客没见过白虎，惊叫「老虎下山吃人了」，周围外乡人慌乱有人摸刀。嘎则挡在雪团前，蹲下抱住虎脖子把脸埋进毛里反复说「不是的」，抱虎的手发抖，雪团一动不动用尾巴圈住她。",
+        playerHint: "嘎则牵着白虎进了玉泉寨，跟上看看会发生什么。",
+        completionFlag: "quest_gaze2_s1",
+        onReach: { exp: 2 },
+      },
+      {
+        id: "s2_confession",
+        description: "人群散去后，若玩家是男性，嘎则突然攥住玩家的手，把手指扣进自己的手指里：「就是喜欢你啊。你帮我救了雪团。你是好人。寨子里的阿雅婶说，好人不能等。」若玩家是女性，嘎则会挽住手臂靠在肩上：「她们都有姐姐。我没有……你是女的，可以当我姐。」",
+        playerHint: "人群散了，听嘎则把话说完。",
+        completionFlag: "quest_gaze2_s2",
+        isCgMoment: true,
+        onReach: { exp: 3, favorability: { "嘎则": 30 }, flags: ["rumor_baihu_xiashan"] },
+      },
+    ],
+    rewardText: "止咳草药带回寨中全寨老人分到一碗，雪团自此被玉泉寨的人认识。",
+  },
+"gaze_3_buhuan": {
+    id: "gaze_3_buhuan",
+    type: "QT_TALK",
+    title: "虎3·不还",
+    giver: null,
+    description: "主线终局前，嘎则得知玩家即将离开黑风寨。她坐在寨门口石头上，雪团趴脚边下巴搁她膝上，把雪团挪开让出半个位置拍了拍。",
+    requiresQuestCompleted: "gaze_2_xiashan",
+    stages: [
+      {
+        id: "s1_token",
+        description: "若玩家坐下，她解下手腕上白虎乳牙系在玩家手腕上，低头辫子垂下挡脸看不清表情。系完抬头，眼眶红但没哭，指指乳牙又指指雪团的嘴——这枚是雪团小时候换下的牙，现在给你了。把玩家袖子拉下盖住乳牙。",
+        playerHint: "嘎则想跟你多待一会——坐或不坐，随你。",
+        completionFlag: "quest_gaze3_s1",
+        at: "黑风寨",
+        onReach: { exp: 2 },
+      },
+      {
+        id: "s2_promise",
+        description: "她靠在玩家肩上闭眼：「阿雅婶说，山下的人走了就不回来。但是我说你不一样。」睁开一只眼偷看反应，又闭上：「你要是真的不回来，我就让雪团去找你。雪团认得你的气味——你上次在寨子里吃饭掉了半块糌粑，它闻过了。」玩家若承诺归来她点头不再说话；若沉默她也点头，幅度更小：「也行。那你把雪团记住——它比人好记。」",
+        playerHint: "听嘎则把她的心里话说完。",
+        completionFlag: "quest_gaze3_s2",
+        at: "黑风寨",
+        isCgMoment: true,
+        onReach: {
+          exp: 3,
+          favorabilitySet: { "嘎则": 100 },
+          items: [{ name: "虎乳牙", category: "accessory", quality: "蓝", desc: "耐久不磨损，根部缠着嘎则辫子上拆下的彩线——不是借，是不还。" }],
+        },
+      },
+    ],
+    rewardText: "终局后若留在曲措乡，嘎则每隔三天骑雪团来鱼定村找玩家，「人还没到，铃铛先响」。",
+  }
+} };

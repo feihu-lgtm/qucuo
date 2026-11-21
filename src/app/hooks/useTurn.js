@@ -13,6 +13,7 @@ import { judgeCollect } from "../../engine/act/roundNotes.js";
 import { CATEGORY_LABEL } from "../../domain/economy/equipment.js";
 import { findTargetedRumor } from "../../domain/npc/npcEmergence.js";
 import { classifyIntent, INTENT } from "../../domain/prompt/inputIntent.js";
+import { consumeDuelRequest } from "./useDuel.js";
 import { buildDirectionJudgeRequest, getMapNode, parseDirectionJudgeResponse, QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
 import { callModel, classifyError } from "../../infra/apiConfig.js";
@@ -32,7 +33,7 @@ import { classifyActCommand } from "../../core/commands.js";
 
 export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
-  addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
+  addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, setActiveTarget, setDuelPending,
   nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
   turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
   waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
@@ -42,7 +43,7 @@ export function useTurn({
   prerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
   timeRef, talkTarget, companionState, pendingQuestBranch, effectiveSpecialNow, setVarTree,
   setGambleNegotiation, setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
-  setPendingQuestBranch, setConvo, jotNote, setLog
+  setPendingQuestBranch, setConvo, jotNote, setLog, intentRouterRef,
 }) {
   const actRef = useRef(null);
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
@@ -62,7 +63,7 @@ export function useTurn({
       : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading, commandId: "actRouter" });
     if (parent === _trace) _trace.awaitingSettlement = true;
     const applyLocal = (result, feature) => applyResult(featureCtxRef.current, result, { turn: _trace, feature });
-    let summary;
+    let summary, result;
     try {
     const stopAutoTravel = () => {
       if (!autoTravelRef.current) return;
@@ -70,6 +71,7 @@ export function useTurn({
       autoTravelRef.current = false;
       const message = `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`;
       addLog([{ t: "sys", text: message, standalone: true }]);
+      intentRouterRef?.current?.fireEvent?.("encounter", {}); intentRouterRef?.current?.expireTriggers?.(_trace); // 路遇应验遇敌步；行程中断，其余触发器过期
     };
 
     if (opts.forceLayer) {
@@ -156,6 +158,7 @@ export function useTurn({
       ]);
       return;
     }
+    if (!isTalk && !isSettle && await intentRouterRef?.current?.(cmd, { _trace, opts })) return;
 
     // 指令显示：默认显示 `> ${cmd}`；但某些内部指令（如战斗结算发给AI写战报的
     if (!opts.silentCmd) {
@@ -275,7 +278,7 @@ export function useTurn({
         traceStep(_trace, "路遇", "pass", `格子预埋路遇：${traceInfo.encounter.name}（${traceInfo.encounter.label}）`);
       }
       applyLocal(arrivalResult, "格子移动");
-      if (traceInfo.encounter) stopAutoTravel();
+      if (traceInfo.encounter) stopAutoTravel(); else if (lockedDestName) intentRouterRef?.current?.fireEvent?.("arrive", { dest: lockedDestName, travelDone: !autoTravelRef.current });
       outerDepartRef.current = null; pendDirRef.current = null; pickupJudgmentRef.current = null;
       summary = `到达 ${lockedDestName}（格子·纯前端）`;
       prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
@@ -293,7 +296,7 @@ export function useTurn({
       luck: char.special?.气运 ?? 5,
     });
     pickupJudgmentRef.current = pickupJudgment;
-    if (encounterToDescribe) stopAutoTravel();
+    if (encounterToDescribe) stopAutoTravel(); else if (lockedDestName) intentRouterRef?.current?.fireEvent?.("arrive", { dest: lockedDestName, travelDone: !autoTravelRef.current });
 
     // ── 采集裁决（系统层）──（判定在 act/roundNotes.js，副作用在此执行）
     // 玩家表达采集意图、且所采之物此刻真在地上时，由系统直接把物搬入背包、
@@ -315,8 +318,7 @@ export function useTurn({
     // loading 态 + 计时器：在第一个 await（下方 recall/knowledge）之前启动——
     // 内层移动已在上方 early return（不进 loading），这里之后才真正要调 AI。
     if (isTalk) changePendingTalks(1); else setLoading(true);
-    setWaitSecs(0);
-    if (waitTimerRef.current) clearInterval(waitTimerRef.current);
+    setWaitSecs(0); if (waitTimerRef.current) clearInterval(waitTimerRef.current);
     waitTimerRef.current = setInterval(() => setWaitSecs(s => s + 1), 1000);
 
     // 本回合开始时的 varTree，逻辑读取走 ref 以包含已发生的同步写入。
@@ -337,8 +339,8 @@ export function useTurn({
         lockedDestName,
         gambleTalkCtx: gambleTalkCtx.current, recallInfo: memory.recallInfo,
         inSeaOfMind: room.name === SEA_OF_MIND.district,
-        settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
-        _trace, addLog, setLog, isStale,
+        settleNpc: opts.settleNpc, settleKind: opts.settleKind, duelReport: opts.duelReport, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
+        _trace, addLog, setLog, isStale, intentPlan: opts.intentPlan,
       });
     const turnCtx = {
       apiCfg,
@@ -353,7 +355,7 @@ export function useTurn({
         varTree: preActVarTree, time, preset, companionState, nsfwOn, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk,
         gm, movingDir, lockedDestName, outerDepart: outerDepartRef.current, innerRoomName, apiCfg,
         destinationLock, pickupJudgment: pickupJudgmentRef.current, categoryLabel: CATEGORY_LABEL,
-        encounter: encounterToDescribe, collectNote, intent,
+        encounter: encounterToDescribe, collectNote: collectNote + (opts.intentPlanNote || ""), intent,
         timeForToday: timeRef.current,
       }, {
         importedNpcLore: importedRegistry.getImportedNpcLore(),
@@ -394,7 +396,7 @@ export function useTurn({
         };
       },
     };
-    const result = await playTurn(turnCtx, cmd, opts);
+    result = await playTurn(turnCtx, cmd, opts);
     if (result.stale) return;
     if (!result.ok) {
       const e = result.error;
@@ -407,20 +409,20 @@ export function useTurn({
         { t: "sys", text: `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
       ]);
     }
+    consumeDuelRequest(result, { opts, isStale, isTalk, interactMode, setActiveTarget, setDuelPending, featureCtxRef, trace: _trace });
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
-    if (isTalk) { changePendingTalks(-1); }
-    else { setLoading(false); }
+    if (isTalk) changePendingTalks(-1); else setLoading(false);
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
     } catch (error) {
       if (_trace.totalMs == null && !isStale()) turnMonitor.transition(_trace, PHASE.ERROR, String(error));
       throw error;
     } finally {
-      await Promise.resolve();
+      if (opts.duelReportFallback && (!result?.ok || result.stale || isStale())) opts.duelReportFallback(); await Promise.resolve();
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, setActiveTarget, setDuelPending, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
   actRef.current = act;
   const featureCtx = useMemo(() => ({
     addLog,

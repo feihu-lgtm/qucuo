@@ -1,3 +1,6 @@
+import { add, applyWrite, set } from "../../domain/state/applyWrite.js";
+import { renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
+
 export function withdrawalSummary(state) {
   const elapsed = state.depositedAt != null
     ? Math.floor((state.time - state.depositedAt) / 24)
@@ -15,14 +18,18 @@ function invalidAmountResult() {
 export function deposit(state, amount) {
   if (!Number.isFinite(amount) || amount <= 0) return invalidAmountResult();
   if ((state.char.money || 0) < amount) return { logs: [] };
+  const changes = {
+    char: applyWrite(state, add("char.money", -amount)).state.char,
+    deposit: state.deposit + amount,
+    depositedAt: state.time,
+  };
   return {
-    changes: {
-      char: { ...state.char, money: (state.char.money || 0) - amount },
-      deposit: state.deposit + amount,
-      depositedAt: state.time,
-    },
+    changes,
     logs: [],
-    settle: `钱庄存款已完成：本次存入${amount}两，已从随身银两扣除并入账，存款余额${state.deposit + amount}两，随身银两剩余${(state.char.money || 0) - amount}两。利息由系统按每24时间单位2%自动计算，无需选择存期或利率。只描写掌柜收讫入账后的反应，不得再询问存期、利率或要求确认存款，也不得重复扣款或入账。`,
+    settle: renderPromptTemplate(
+      "钱庄存款已完成：本次存入@amount两，已从随身银两扣除并入账，存款余额@deposit两，随身银两剩余@char.money两。利息由系统按每24时间单位2%自动计算，无需选择存期或利率。只描写掌柜收讫入账后的反应，不得再询问存期、利率或要求确认存款，也不得重复扣款或入账。",
+      { ...changes, amount },
+    ).text,
   };
 }
 
@@ -32,7 +39,7 @@ export function withdraw(state) {
     changes: {
       deposit: 0,
       depositedAt: null,
-      char: { ...state.char, money: (state.char.money || 0) + total },
+      char: applyWrite(state, add("char.money", total)).state.char,
     },
     logs: [],
     settle: `在钱庄取出银两${total}两（含利息）`,
@@ -48,9 +55,9 @@ export function pledge(state, itemId, pledgeValue) {
 
   return {
     changes: {
-      inv: state.inv.filter((entry) => (typeof entry === "object" ? entry.id : entry) !== item.id),
+      inv: applyWrite(state, set("inv", state.inv.filter((entry) => (typeof entry === "object" ? entry.id : entry) !== item.id))).state.inv,
       pledgedItems: [...(state.pledgedItems || []), { item, pledgeValue }],
-      char: { ...state.char, money: (state.char.money || 0) + pledgeValue },
+      char: applyWrite(state, add("char.money", pledgeValue)).state.char,
     },
     logs: [],
     settle: `把「${item.name}」质押给当铺，得${pledgeValue}两`,
@@ -65,9 +72,9 @@ export function redeem(state, index, redeemCost) {
 
   return {
     changes: {
-      char: { ...state.char, money: state.char.money - redeemCost },
+      char: applyWrite(state, add("char.money", -redeemCost)).state.char,
       pledgedItems: state.pledgedItems.filter((_, entryIndex) => entryIndex !== index),
-      inv: [...state.inv, { ...pledged.item, equipped: false }],
+      inv: applyWrite(state, set("inv", [...state.inv, { ...pledged.item, equipped: false }])).state.inv,
     },
     logs: [],
     settle: `从当铺赎回「${pledged.item?.name}」，花费${redeemCost}两`,

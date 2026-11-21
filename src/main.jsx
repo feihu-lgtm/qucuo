@@ -1,3 +1,4 @@
+import { loadDefaultContent } from "./content/index.js";
 import "./ui/tokens.css";
 import "./ui/mobile.css";
 import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
@@ -12,8 +13,10 @@ import { recordError } from "./infra/errorBuffer.js";
 import * as importedRegistry from "./domain/cards/importedRegistry.js";
 import { getZoneTheme } from "./ui/theme.js";
 
-const QuickBattleScreen = lazy(() => import("./domain/quickBattle/QuickBattleScreen.jsx"));
-const TavernSimScreen = lazy(() => import("./domain/tavernSim/TavernSimScreen.jsx"));
+loadDefaultContent();
+
+const QuickBattleScreen = lazy(() => import("./ui/screens/quickBattle/QuickBattleScreen.jsx"));
+const TavernSimScreen = lazy(() => import("./ui/screens/tavernSim/TavernSimScreen.jsx"));
 const CardImportScreen = lazy(() => import("./ui/screens/CardImportScreen.jsx"));
 
 try {

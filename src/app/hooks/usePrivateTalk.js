@@ -4,15 +4,14 @@ import { callModel, callModelStream } from "../../infra/apiConfig.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 import {
-  NNPC_STAGE, isInSea, narratorVoicePrompt, buildNarratorWhisperContext,
-  narratorWhisperLengthNote, gateWhisperTopics, gateQuestTopic,
+  NNPC_STAGE, isInSea, gateWhisperTopics, gateQuestTopic,
 } from "../../domain/narrator/narrator.js";
 import { gateBodyProfile } from "../../domain/character/bodyProfile.js";
 import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
-import { availableKnot, canResolve, seaDialoguePrompt } from "../../domain/narrator/narratorQuest.js";
+import { availableKnot, canResolve } from "../../domain/narrator/narratorQuest.js";
 import { narratorVars, setNarratorVars } from "../../domain/prompt/mvu.js";
-import { getTimeStr } from "../../utils/mudHelpers.js";
-import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { buildWhisperStatePrompt, formatFactSummariesForPrompt } from "../../domain/prompt/promptRefs.js";
+import { WHISPER_AFFECTION_RULES } from "../../domain/state/fields.js";
 import { allFactSummaries } from "../../domain/prompt/knowledge.js";
 import { embeddingReady } from "../../domain/memory/embeddingService.js";
 import { recallWithVisibility } from "../../domain/memory/recallWithVisibility.js";
@@ -20,10 +19,12 @@ import { gateScenario } from "../../domain/prompt/worldbook.js";
 import { describeTallyForWhisper } from "../../domain/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+import { gameStore } from "../../store/gameStore.js";
+import { buildPrivateTalkPayload } from "../../domain/prompt/privateTalkPayload.js";
 
 export function usePrivateTalk({
-  narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags,
-  jotNote, char, nsfwOn, questProgress, changePendingTalks, innerRoomName,
+  narrator, addLog, apiCfg, convo, room, preset, flags,
+  jotNote, char, nsfwOn, questProgress, changePendingTalks,
   talkBusyRef, schedulerRef, setInput, timeRef, varTreeRef, setLog, setConvo,
   setVarTree, setNarrator, noteAction,
 }) {
@@ -49,13 +50,7 @@ export function usePrivateTalk({
     }
 
     try {
-      const voice = narratorVoicePrompt(narrator);
-      // 背包物品是对象（{name,quality,...}），直接 inv.join(",") 会得到一串
-      // [object Object]，旁白根本读不出玩家身上有什么——这正是"玩家捡了界石、
-      // 旁白却坚称背包里只有青稞粗布"那个 bug 的根源。跟主叙事 invText 对齐，
-      // 取名字+品阶+是否装备，字符串物品也兼容。
-      const narratorInvText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
-      const worldState = `[当前世界状态，仅供你了解背景，不必主动复述] 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""}（${room.desc}） 房间里的人:${room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name).join(",") || "无"} 玩家背包:${narratorInvText}`;
+      const trace = (paths) => traceStep(_wt, "提示词引用缺失", "warn", paths.join("、"));
 
       // ── 旁白·全知事实（本轮新增）──
       // 旁白设定上是跳出信息隔离的第四面墙外角色，普通 NPC 之间发生的事（哪怕玩家没
@@ -70,7 +65,7 @@ export function usePrivateTalk({
         const facts = allFactSummaries(varTreeRef.current, 8);
         if (facts.length) {
           factsBlock = "\n\n[你冷眼旁观知晓的事，未必是玩家亲口告诉过你的，回应时可以自然提起，但不要生硬列举或表现得像在念清单]\n"
-            + facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
+            + formatFactSummariesForPrompt(facts);
           traceStep(_wt, "全知事实", "pass", `注入最近${facts.length}条事实账本摘要`);
         } else {
           traceStep(_wt, "全知事实", "skip", "事实账本为空，未注入");
@@ -170,21 +165,33 @@ export function usePrivateTalk({
         varTreeRef.current.世界?.起居注, timeRef.current,
         { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
       );
-      const sys = inSeaNow
-        ? `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: NNPC_STAGE })}${recallBlock}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`
-        : `${buildNarratorWhisperContext(narrator.affection)}\n${voice}\n\n${worldState}${snowLeopardHint({ questProgress, flags, cmd: content })}${factsBlock}${recallBlock}${tallyBlock}${narratorLoreBlock}${_bodyWhisper.text}${_topicGate.text}${_questGate.text}\n\n剧本背景设定：${_whisperGate.text}\n${narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords)}`;
-
-      // 共享主引擎的完整历史 convo，这样她"记得"游戏里发生的一切，
-      // 包括之前私聊聊过什么——因为私聊内容也会被记入同一份 convo（见下方 setConvo）。
-      // 对话类同样取至少 20 层全部互动。
-      const talkWindow = Math.max(apiCfg.contextWindow, 20);
-      const hist = convo.length > talkWindow ? convo.slice(-talkWindow) : convo;
-      // 私聊不需要像叙事那么长，但 600 这个旧硬编码在带思考的模型下会被思考 token 吃穿、
-      // 正文半句就撞 length 截断，故改读可调的 callTokenLimits.narratorWhisper（默认 6000）。
-      const narratorMaxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
+      const worldState = inSeaNow ? "" : buildWhisperStatePrompt(gameStore.getState(), { trace });
+      const privateTalkPayload = buildPrivateTalkPayload({
+        narrator,
+        content,
+        apiCfg,
+        convo,
+        inSeaNow,
+        seaVars,
+        worldState,
+        snowLeopardBlock: snowLeopardHint({ questProgress, flags, cmd: content }),
+        factsBlock,
+        recallBlock,
+        tallyBlock,
+        narratorLoreBlock,
+        bodyWhisperText: _bodyWhisper.text,
+        topicGateText: _topicGate.text,
+        questGateText: _questGate.text,
+        whisperGateText: _whisperGate.text,
+        narratorStage: NNPC_STAGE,
+      });
+      for (const paths of privateTalkPayload.promptRefEvents) {
+        traceStep(_wt, "提示词引用缺失", "warn", paths.join("、"));
+      }
+      const { systemPrompt: sys, messages: talkMessages, maxTokens: narratorMaxTokens } = privateTalkPayload;
 
       let text;
-      let affDelta = 1; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖
+      let affDelta = WHISPER_AFFECTION_RULES.fallback; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖
       let hadAffTag = false; // 标记是否真出现过 ⟦好感X⟧——没出现时的 +1 是兜底，不是她给的分
       let finishReason;      // 停止原因：私聊此前完全没接这个字段，撞 length 上限也毫无提示
       // 模型会照着历史里的「（旁白私聊回应）」前缀自己也写一遍，而下面存 convo 时又会
@@ -193,7 +200,7 @@ export function usePrivateTalk({
       const stripEchoPrefix = (s) => s.replace(/^(?:\s*[（(]\s*旁白私聊回应\s*[）)])+\s*/, "");
       const parseAffTag = (s) => {
         const m = s.match(/⟦好感\s*([+-]?\d+)\s*⟧\s*$/);
-        const d = m ? Math.max(-3, Math.min(6, parseInt(m[1], 10) || 0)) : 1;
+        const d = m ? Math.max(WHISPER_AFFECTION_RULES.min, Math.min(WHISPER_AFFECTION_RULES.max, parseInt(m[1], 10) || 0)) : WHISPER_AFFECTION_RULES.fallback;
         return { text: s.replace(/⟦好感\s*[+-]?\d+\s*⟧\s*$/, "").trim() || "……", delta: d, tagged: !!m };
       };
       if (apiCfg.streamEnabled && apiCfg.apiType !== "gemini") {
@@ -205,7 +212,7 @@ export function usePrivateTalk({
           return l;
         });
         const { text: streamedText, finishReason: fr } = await callModelStream(
-          apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }],
+          apiCfg, sys, talkMessages,
           (_delta, fullSoFar) => {
             setLog(l => {
               if (isStale() || logIdx.current == null) return l;
@@ -228,7 +235,7 @@ export function usePrivateTalk({
         });
         traceStep(_wt, "AI调用", "pass", "流式一次成功");
       } else {
-        const result = await callModel(apiCfg, sys, [...hist, { role: "user", content: `（私聊）${content}` }], { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt });
+        const result = await callModel(apiCfg, sys, talkMessages, { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt });
         if (isStale()) return;
         finishReason = result.finishReason;
         text = stripEchoPrefix(result.text.trim()) || "……";
@@ -314,7 +321,7 @@ export function usePrivateTalk({
           const day = Math.floor((timeRef.current || 0) / 24);
           const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
           const already = Number(gained["旁白"]) || 0;
-          const room = Math.max(0, 12 - already);
+          const room = Math.max(0, WHISPER_AFFECTION_RULES.daily - already);
           capped = Math.min(affDelta, room);
           if (capped <= 0) {
             addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
@@ -347,6 +354,6 @@ export function usePrivateTalk({
     changePendingTalks(-1);
     schedulerRef.current?.touch();
     talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
-  }, [narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags, jotNote, char, nsfwOn, questProgress, changePendingTalks]);
+  }, [narrator, addLog, apiCfg, convo, room, preset, flags, jotNote, char, nsfwOn, questProgress, changePendingTalks]);
   return { talkToNarrator };
 }

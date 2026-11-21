@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore } from "react";
 import { turnMonitor } from "../../core/turnMonitor.js";
-import { fmtMs, formatTrace, pipelineTabs } from "../../infra/actionTrace.js";
+import { fmtClock, fmtMs, formatTrace, pipelineTabs } from "../../infra/actionTrace.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { chromeBtn } from "../theme.js";
 
@@ -52,7 +52,7 @@ export default function TraceViewer({ theme, onClose, onReport }) {
         {trees.map((turn) => (
           <details key={turn.id} style={{ borderTop: `1px solid ${theme.border}`, padding: "8px 0" }}>
             <summary style={{ cursor: "pointer", overflowWrap: "anywhere" }}>
-              {turn.background ? "后台 · " : ""}{turn.cmd} · {turn.queued && turn.commandId === "rollback" ? "回滚已排队" : turn.phase} {fmtMs(turn.totalMs)}
+              {fmtClock(turn.ts)} · {turn.background ? "后台 · " : ""}{turn.cmd} · {turn.queued && turn.commandId === "rollback" ? "回滚已排队" : turn.phase} {fmtMs(turn.totalMs)}
             </summary>
             <ol style={{ margin: "8px 0", paddingInlineStart: 24 }}>
               {turn.nodes.map((node) => (

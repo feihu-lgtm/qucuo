@@ -21,6 +21,7 @@ import { clearInspectCache, inspectCacheSize } from "../../domain/prompt/inspect
 import { clearMemories, countMemories } from "../../domain/memory/memoryStore.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import InjectionStructurePanel from "./InjectionStructurePanel.jsx";
+import IntentRecognitionToggle from "./IntentRecognitionToggle.jsx";
 import ApiProviderSettings, { ApiSettingsGroup } from "./ApiProviderSettings.jsx";
 import { chromeBtn } from "../theme.js";
 
@@ -51,8 +52,7 @@ function MusicSettings() {
         <input
           type="checkbox" checked={enabled}
           onChange={e => setMusicEnabled(e.target.checked)}
-          style={{ cursor: "pointer" }}
-        />
+          style={{ cursor: "pointer" }} />
         <span style={{ fontSize: "12px", color: "var(--accent)" }}>🎵 音乐模式</span>
         <span style={{ fontSize: "10px", color: "var(--text-dim)", marginLeft: "auto" }}>{currentTrack.title} — {currentTrack.artist}</span>
       </div>
@@ -484,6 +484,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               <label htmlFor="api-temperature" style={labelStyle}>Temperature</label>
               <input id="api-temperature" aria-label="温度" style={inputStyle} type="number" min="0" max="2" step="0.1" value={cfg.temperature} onChange={e => patch({ temperature: parseFloat(e.target.value) || 0 })} />
             </div>
+            <IntentRecognitionToggle cfg={cfg} patch={patch} />
             {/* ── 提取层配置 ── */}
             <div style={{ borderTop: "1px solid #1a2d3a", paddingTop: 12, marginTop: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
@@ -492,8 +493,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                   id="extractionEnabled"
                   checked={!!cfg.extractionEnabled}
                   onChange={e => patch({ extractionEnabled: e.target.checked })}
-                  style={{ cursor: "pointer" }}
-                />
+                  style={{ cursor: "pointer" }} />
                 <label htmlFor="extractionEnabled" style={{ fontSize: "12px", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}>
                   启用双调用模式（大模型叙事 + 小模型提取状态）
                 </label>

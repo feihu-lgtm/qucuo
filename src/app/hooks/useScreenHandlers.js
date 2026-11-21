@@ -3,7 +3,6 @@ import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { consumeItem, pickGroundItem } from "../../features/items/logic.js";
 import {
-  describeGiftForPrompt,
   giftNpc,
   inviteCompanion,
   learnNpcSkill as learnNpcSkillLogic,
@@ -13,6 +12,7 @@ import {
   tradeWithNpc,
 } from "../../features/npc/logic.js";
 import { toggleEquip } from "../../domain/economy/equipment.js";
+import { getPresentNpcs } from "../../domain/state/fields.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { isNpcAngry, stealSuccessRate } from "../../domain/combat/stealSystem.js";
 
@@ -137,11 +137,12 @@ export function useScreenHandlers({
     const choice = window.prompt(`要把哪件东西送给${charName}？\n${itemNames.map((n, i) => `${i + 1}. ${n}`).join("\n")}\n\n输入序号：`);
     const idx = parseInt(choice, 10) - 1;
     if (isNaN(idx) || idx < 0 || idx >= itemNames.length) return;
-    const itemName = itemNames[idx];
-    const giftInfo = describeGiftForPrompt(inv[idx]);
+    const state = gameStore.getState();
+    const npc = getPresentNpcs(state).find(({ name }) => name === charName);
+    captureUndo();
     setInteractMode("action");
-    act(`把${itemName}送给${charName}`, [], { settle: true, settleNpc: charName, settleKind: "gift", giftInfo });
-  }, { feature: "npc.giftToCharacter" }), [inv, addLog, act, describeGiftForPrompt]);
+    applyResult(featureCtxRef.current, giftNpc(state, npc, inv[idx]));
+  }, { feature: "npc.giftToCharacter" }), [inv, addLog, captureUndo]);
 
   const handleToggleEquip = useCallback((it) => applyResult(featureCtxRef.current, () => {
     captureUndo();

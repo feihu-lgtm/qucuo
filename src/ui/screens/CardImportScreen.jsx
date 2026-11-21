@@ -16,7 +16,7 @@ import { callModel } from "../../infra/apiConfig.js";
 import {
   S, TIERS, KIND_META, BODY_PUBLIC, BODY_PRIVATE, TERM_MONO,
   Bar, JadeTier, Src, Stat, Note, Btn, Pills, Terminal, barFrame,
-} from "../../domain/cards/ReviewParts.jsx";
+} from "./cards/ReviewParts.jsx";
 import { sanitizeMoves, TIER_NEIGONG, parseJsonLoose, buildStage3 } from "../../domain/cards/scanPrompts.js";
 import { normalizePlacement } from "../../domain/cards/importedRegistry.js";
 import {
@@ -25,9 +25,9 @@ import {
 } from "../../domain/cards/placementPlan.js";
 import { buildCarryPlan, sanitizeCarryPlan, CARRY_PLAN_MAX_TOKENS } from "../../domain/cards/carryPlan.js";
 import { movesToSkills } from "../../domain/cards/skillPlan.js";
-import ReviewNpc from "../../domain/cards/ReviewNpc.jsx";
-import ReviewPlayer from "../../domain/cards/ReviewPlayer.jsx";
-import ImportSelfTutorial, { IMPORT_SELF_TUTORIAL_KEY } from "../../domain/cards/ImportSelfTutorial.jsx";
+import ReviewNpc from "./cards/ReviewNpc.jsx";
+import ReviewPlayer from "./cards/ReviewPlayer.jsx";
+import ImportSelfTutorial, { IMPORT_SELF_TUTORIAL_KEY } from "./cards/ImportSelfTutorial.jsx";
 
 const EMPTY_SPECIAL = { 根骨: 5, 悟性: 5, 体魄: 5, 魅力: 5, 智谋: 5, 身法: 5, 气运: 5 };
 
