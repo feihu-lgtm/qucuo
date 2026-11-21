@@ -27,6 +27,36 @@ describe("extractImportSpecifiers", () => {
 
     expect(extractImportSpecifiers(source)).toEqual(["../ui/static.js"]);
   });
+
+  it("counts every re-export form as a dependency", () => {
+    // 整文件再导出（export * / export { x } from）在 import 图上是一条真实依赖边，
+    // 分层越界检查不许漏。domain/memory/tally.js 就是一条 `export *`。
+    const source = [
+      'export * from "../features/star.js";',
+      'export { a, b as c } from "../features/named.js";',
+      'export * as ns from "../features/namespace.js";',
+      'export { d } from \'../features/single-quote.js\';',
+      "export { local };",
+    ].join("\n");
+
+    expect(extractImportSpecifiers(source)).toEqual([
+      "../features/star.js",
+      "../features/named.js",
+      "../features/namespace.js",
+      "../features/single-quote.js",
+    ]);
+  });
+
+  it("counts a multiline re-export with members on their own lines", () => {
+    const source = [
+      "export {",
+      "  first,",
+      "  second,",
+      '} from "../features/multiline.js";',
+    ].join("\n");
+
+    expect(extractImportSpecifiers(source)).toEqual(["../features/multiline.js"]);
+  });
 });
 
 describe("compareRatchetMetrics", () => {

@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { define, resetRegistryForTest } from "./registry.js";
+import { definePrompt, resetPromptRegistryForTest } from "./registry.js";
 import { createMockAi } from "../../engine/ports/ai.js";
 import { withAI } from "./withAI.js";
 
 describe("withAI", () => {
   beforeEach(() => {
-    resetRegistryForTest();
-    define("block", "t.sys", { slot: "sys", text: "系统：@role" });
-    define("block", "t.user", { slot: "user", text: "来信：@body" });
-    define("call", "t.call", {
+    resetPromptRegistryForTest();
+    definePrompt("block", "t.sys", { slot: "sys", text: "系统：@role" });
+    definePrompt("block", "t.user", { slot: "user", text: "来信：@body" });
+    definePrompt("call", "t.call", {
       label: "测试调用",
       tokenLimitKey: "testLimit",
       defaultMaxTokens: 500,
@@ -53,7 +53,7 @@ describe("withAI", () => {
   });
 
   it("falls back to call.offline when vet fails", async () => {
-    define("call", "t.vetted", {
+    definePrompt("call", "t.vetted", {
       label: "校验调用",
       defaultMaxTokens: 100,
       blocks: ["t.sys", "t.user"],

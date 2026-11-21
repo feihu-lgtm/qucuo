@@ -7,7 +7,7 @@ import * as items from "../items/catalog.js";
 import { RESIDENT_NPCS } from "../npc/residentNpcs.js";
 import { INNER_MAP } from "../map/innerMap.js";
 import { SNOW_LEOPARD_QUEST } from "../quests/snowLeopardQuest.js";
-import { all, get } from "./registry.js";
+import { allContent, getContent } from "./registry.js";
 
 const original = JSON.parse(readFileSync(new URL("./original-fingerprints.json", import.meta.url), "utf8"));
 const current = { ...quests, ...items, RESIDENT_NPCS, INNER_MAP, SNOW_LEOPARD_QUEST };
@@ -39,10 +39,10 @@ describe("default content compatibility", () => {
 
   it("uses registry definitions, including the separately exported snow quest", () => {
     expect(SNOW_LEOPARD_QUEST).toBe(quests.QUCUO_QUESTS[0]);
-    expect(quests.QUCUO_QUESTS).toEqual(all("quest"));
-    for (const item of items.CATALOG) expect(item).toBe(get("item", item.name));
-    for (const [id, district] of Object.entries(INNER_MAP)) expect(district).toBe(get("district", id));
-    for (const [id, npcs] of Object.entries(RESIDENT_NPCS)) expect(npcs).toBe(get("residentGroup", id));
+    expect(quests.QUCUO_QUESTS).toEqual(allContent("quest"));
+    for (const item of items.CATALOG) expect(item).toBe(getContent("item", item.name));
+    for (const [id, district] of Object.entries(INNER_MAP)) expect(district).toBe(getContent("district", id));
+    for (const [id, npcs] of Object.entries(RESIDENT_NPCS)) expect(npcs).toBe(getContent("residentGroup", id));
   });
 
   it.each([

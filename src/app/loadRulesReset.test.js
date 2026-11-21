@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { gameActions, gameStore, initGameStore, markGameReplaced, subscribeGameReplaced } from "../core/gameStore.js";
+import { gameActions, gameStore, initGameStore, markGameReplaced, subscribeGameReplaced } from "../store/gameStore.js";
 import { createAutosaveScheduler } from "../core/autosaveScheduler.js";
 import { createWorldRules } from "../engine/worldRules.js";
 import { applyResult } from "../features/run.js";
@@ -165,7 +165,7 @@ describe("web load paths signal a game replacement", () => {
 
   it("start-screen load and autosave restore go through initGameStore", () => {
     expect(read("./hooks/useGameStartup.js")).toContain("initGameStore(buildInitialGameState(restored))");
-    expect(read("../core/gameStore.js")).toMatch(/export function initGameStore[\s\S]*?markGameReplaced\(\);\n\}/);
+    expect(read("../store/gameStore.js")).toMatch(/export function initGameStore[\s\S]*?markGameReplaced\(\);\n\}/);
   });
 
   it("Settings load (applySnapshot) and new game (loadPreset) mark the replacement", () => {

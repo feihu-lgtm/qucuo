@@ -3,7 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createTurnStaleCheck } from "./useUndo.js";
 import { consumeDuelRequest, openDuelAfterNarration, useDuel } from "./useDuel.js";
-import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../core/gameStore.js";
+import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../store/gameStore.js";
 
 function freshStore(overrides) {
   const original = structuredClone(gameStore.getState());

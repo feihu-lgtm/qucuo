@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { gameActions, gameStore, markGameReplaced } from "../../core/gameStore.js";
+import { gameActions, gameStore, markGameReplaced } from "../../store/gameStore.js";
 import { turnMonitor } from "../../core/turnMonitor.js";
 import { createMockAi } from "../ports/ai.js";
 import { getLedger } from "../../domain/memory/npcLedger.js";

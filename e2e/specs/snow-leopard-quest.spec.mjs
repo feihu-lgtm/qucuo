@@ -41,7 +41,7 @@ export default async function snowLeopardQuest({ page, ai, game }) {
   ai.next({ output: ["雪豹把额头抵入掌心，从此与你同行。"] });
   await invite.click();
   await game.waitFor(page, async () => page.evaluate(async () => {
-    const { gameStore } = await import("/src/core/gameStore.js");
+    const { gameStore } = await import("/src/store/gameStore.js");
     const state = gameStore.getState();
     return state.companionState.snowLeopard.unlocked && state.questProgress.snow_leopard_quest.status === "completed";
   }), { message: "leopard companion and completed quest" });

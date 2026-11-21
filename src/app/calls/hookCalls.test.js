@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { define, resetRegistryForTest } from "../../domain/prompt/registry.js";
+import { definePrompt, resetPromptRegistryForTest } from "../../domain/prompt/registry.js";
 import { registerSideCalls } from "../../domain/prompt/calls/sideCalls.js";
 import { createMockAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../domain/prompt/withAI.js";
@@ -14,7 +14,7 @@ import { registerHookCalls } from "./hookCalls.js";
 
 describe("hookCalls parity with legacy requests", () => {
   beforeEach(() => {
-    resetRegistryForTest();
+    resetPromptRegistryForTest();
     registerSideCalls();
     registerHookCalls();
   });
@@ -230,9 +230,9 @@ describe("hookCalls parity with legacy requests", () => {
 
 describe("withAI extensions", () => {
   beforeEach(() => {
-    resetRegistryForTest();
-    define("block", "ext.sys", { slot: "sys", text: "sys" });
-    define("block", "ext.user", { slot: "user", text: "user:@tag" });
+    resetPromptRegistryForTest();
+    definePrompt("block", "ext.sys", { slot: "sys", text: "sys" });
+    definePrompt("block", "ext.user", { slot: "user", text: "user:@tag" });
   });
 
   it("supports function label, cfg transform using raw apiCfg for tokenLimitKey, and non-overriding modelOptions", async () => {
@@ -241,7 +241,7 @@ describe("withAI extensions", () => {
       model: `derived-${ctx.tag}`,
       callTokenLimits: { extLimit: 9999 }, // 派生 cfg 的限制不应影响 maxTokens
     }));
-    define("call", "ext.call", {
+    definePrompt("call", "ext.call", {
       label: (ctx) => `动态标签:${ctx.tag}`,
       tokenLimitKey: "extLimit",
       defaultMaxTokens: 300,

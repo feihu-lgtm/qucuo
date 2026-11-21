@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { createSession } from "../../cli/runner.mjs";
 import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports/ai.js";
 import { QUCUO_QUESTS } from "../domain/quests/qucuoQuests.js";
-import { gameStore } from "./gameStore.js";
+import { gameStore } from "../store/gameStore.js";
 
 let directory;
 afterEach(() => { if (directory) rmSync(directory, { recursive: true, force: true }); });

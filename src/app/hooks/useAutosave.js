@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createAutosaveScheduler } from "../../core/autosaveScheduler.js";
-import { snapshotFromStore } from "../../core/persist.js";
+import { snapshotFromStore } from "../../store/persist.js";
 import { setRngState } from "../../core/rng.js";
 import { DEFAULT_PRESETS } from "../../core/newGame.js";
 import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore.js";

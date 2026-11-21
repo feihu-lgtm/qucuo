@@ -3,7 +3,7 @@ import { applyBookkeep, runBookkeep } from "../../domain/memory/bookkeep.js";
 import { getLedger } from "../../domain/memory/npcLedger.js";
 import { buildPresence } from "../prompt/roundNotes.js";
 import { bindTurnAi, createWebAi } from "../ports/ai.js";
-import { gameActions, gameStore, subscribeGameReplaced } from "../../core/gameStore.js";
+import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 
 function targetName(target) {

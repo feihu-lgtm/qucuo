@@ -1,4 +1,4 @@
-import { define } from "../registry.js";
+import { definePrompt } from "../registry.js";
 import { registerSettleCalls } from "../../settle/judge.js";
 
 // 结算层入口（本批只注册+导出，回合流程尚未接线）：软判断选择题走 settle.judge，
@@ -18,7 +18,7 @@ effect 与 sixDim 二选一为主(一件东西通常只挂其一，紫橙档可�
 // 注册 domain 层迁入 withAI 的提示词块与调用定义
 export function registerDomainCalls() {
   registerSettleCalls();
-  define("block", "persuasion.turn.sys", {
+  definePrompt("block", "persuasion.turn.sys", {
     label: "说服交锋系统指令",
     slot: "sys",
     text: (ctx) => {
@@ -65,13 +65,13 @@ ${keysDesc}
     },
   });
 
-  define("block", "persuasion.turn.user", {
+  definePrompt("block", "persuasion.turn.user", {
     label: "说服玩家本轮发言",
     slot: "user",
     text: (ctx) => ctx.playerSay ?? "",
   });
 
-  define("call", "persuasion.turn", {
+  definePrompt("call", "persuasion.turn", {
     label: (ctx) => `说服（${ctx.persuade.who}）`,
     tokenLimitKey: "persuasion",
     defaultMaxTokens: 2000,
@@ -80,7 +80,7 @@ ${keysDesc}
     blocks: ["persuasion.turn.sys", "persuasion.turn.user"],
   });
 
-  define("block", "forge.design.sys", {
+  definePrompt("block", "forge.design.sys", {
     label: "定制设计系统指令",
     slot: "sys",
     text: (ctx) => {
@@ -94,7 +94,7 @@ ${keysDesc}
     },
   });
 
-  define("block", "forge.design.user", {
+  definePrompt("block", "forge.design.user", {
     label: "定制设计需求与词条白名单",
     slot: "user",
     text: (ctx) => `玩家定制需求：
@@ -112,7 +112,7 @@ ${FORGE_EFFECT_WHITELIST}
 注意：category 必须是 weapon/armor/accessory 之一的英文；effect 和 sixDim 若不给就写空对象 {}；name 要贴合材料(玩家写了陨铁/某玉料，名字里就该见其质感)。`,
   });
 
-  define("call", "forge.design", {
+  definePrompt("call", "forge.design", {
     label: (ctx) => `${ctx.craft?.shop || "铁匠铺"}定制设计`,
     tokenLimitKey: "extraction",
     defaultMaxTokens: 2000,

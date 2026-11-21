@@ -1,4 +1,4 @@
-import { load } from "../domain/content/registry.js";
+import { loadContent } from "../domain/content/registry.js";
 import pack5 from "./teachableSkill/teachableSkill-1.js";
 import pack6 from "./item/weapons-1.js";
 import pack7 from "./item/armors-1.js";
@@ -55,7 +55,7 @@ import quest8 from "./quest/divine-arms-1.js";
 let loaded = false;
 export function loadDefaultContent() {
   if (loaded) return;
-  [quest0, quest1, quest2, quest3, quest4, quest5, quest6, quest7, quest8, pack5, pack6, pack7, pack8, pack9, pack10, pack11, pack12, pack13, pack14, pack15, pack16, pack17, pack18, pack19, pack20, pack21, pack22, pack23, pack24, pack25, pack26, pack27, pack28, pack29, pack30, pack31, pack32, pack33, pack34, pack35, pack36, pack37, pack38, pack39, pack40, pack41, pack42, pack43, pack44, pack45, pack46].forEach(load);
+  [quest0, quest1, quest2, quest3, quest4, quest5, quest6, quest7, quest8, pack5, pack6, pack7, pack8, pack9, pack10, pack11, pack12, pack13, pack14, pack15, pack16, pack17, pack18, pack19, pack20, pack21, pack22, pack23, pack24, pack25, pack26, pack27, pack28, pack29, pack30, pack31, pack32, pack33, pack34, pack35, pack36, pack37, pack38, pack39, pack40, pack41, pack42, pack43, pack44, pack45, pack46].forEach(loadContent);
   loaded = true;
 }
 

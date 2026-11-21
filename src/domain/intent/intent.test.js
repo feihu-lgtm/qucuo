@@ -7,6 +7,9 @@ import { validatePlan } from "./systemGate.js";
 import { formatPlanNote, planExtractionNote, filterRejectedEffects, filterPlanDelta } from "./planNotes.js";
 import { splitConditionClause } from "./conditions.js";
 import { armIntentTriggers, fireIntentTriggers, expireIntentTriggers, intentTriggers } from "../../store/intentPendingStore.js";
+import { QUCUO_MAP } from "../map/qucuoMap.js";
+
+const INTENT_PLACE_NAMES = Object.keys(QUCUO_MAP);
 
 const state = {
   room: { name: "测试镇", npcs: [{ name: "才旦" }, { name: "卓玛" }] },
@@ -242,14 +245,14 @@ describe("conditional steps", () => {
   it("treats a place named as the departure point as origin, not destination", () => {
     expireIntentTriggers();
     armIntentTriggers([{ kind: "其他", text: "歇一歇", condition: { on: "arrive", detail: "从白塔出发到了" } }]);
-    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: false })).toEqual([]);
-    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: true })).toHaveLength(1);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "喇嘛庙", travelDone: false })).toEqual([]);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "喇嘛庙", travelDone: true })).toHaveLength(1);
     armIntentTriggers([{ kind: "其他", text: "歇一歇", condition: { on: "arrive", detail: "从白塔到了喇嘛庙" } }]);
-    expect(fireIntentTriggers("arrive", { dest: "白塔", travelDone: true })).toEqual([]);
-    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: false })).toHaveLength(1);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "白塔", travelDone: true })).toEqual([]);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "喇嘛庙", travelDone: false })).toHaveLength(1);
     armIntentTriggers([{ kind: "其他", text: "歇一歇", condition: { on: "arrive", detail: "从白塔抵达喇嘛庙" } }]);
-    expect(fireIntentTriggers("arrive", { dest: "顶峰", travelDone: true })).toEqual([]);
-    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: false })).toHaveLength(1);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "顶峰", travelDone: true })).toEqual([]);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "喇嘛庙", travelDone: false })).toHaveLength(1);
   });
 
   it("arms, fires and expires triggers in the shared intent store", () => {
@@ -267,12 +270,12 @@ describe("conditional steps", () => {
     expect(fired.map((entry) => entry.step.kind)).toEqual(["切磋"]);
     expect(intentTriggers()).toHaveLength(1);
     // 行程未完、前提也没点名目的地时，「到达」不算应验。
-    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: false })).toEqual([]);
-    expect(fireIntentTriggers("arrive", { dest: "白塔", travelDone: false })).toHaveLength(1);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "喇嘛庙", travelDone: false })).toEqual([]);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "白塔", travelDone: false })).toHaveLength(1);
     // 前提点名了别处：行程在别处走完也不算应验；没点地名：行程走完才应验。
     armIntentTriggers([{ kind: "其他", text: "拜佛", condition: { on: "arrive", detail: "到了喇嘛庙" } }, { kind: "其他", text: "歇脚", condition: { on: "arrive", detail: "到了以后" } }]);
-    expect(fireIntentTriggers("arrive", { dest: "白塔", travelDone: true }).map((entry) => entry.step.text)).toEqual(["歇脚"]);
-    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: true }).map((entry) => entry.step.text)).toEqual(["拜佛"]);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "白塔", travelDone: true }).map((entry) => entry.step.text)).toEqual(["歇脚"]);
+    expect(fireIntentTriggers("arrive", { placeNames: INTENT_PLACE_NAMES, dest: "喇嘛庙", travelDone: true }).map((entry) => entry.step.text)).toEqual(["拜佛"]);
     armIntentTriggers([{ kind: "其他", text: "走", condition: { on: "refused", detail: "他不肯" } }]);
     expect(expireIntentTriggers()).toHaveLength(1);
     expect(intentTriggers()).toHaveLength(0);

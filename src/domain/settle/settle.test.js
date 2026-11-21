@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetRegistryForTest } from "../prompt/registry.js";
+import { resetPromptRegistryForTest } from "../prompt/registry.js";
 import { createMockAi } from "../../engine/ports/ai.js";
 import { parseJudgeAnswer, registerSettleCalls, UNKNOWN_CHOICE } from "./judge.js";
 import { SOFT_RULES } from "./softRules.js";
 import { applySettledDeltas, runSoftSettle, formatSettleNote } from "./settle.js";
 
 beforeEach(() => {
-  resetRegistryForTest();
+  resetPromptRegistryForTest();
   registerSettleCalls();
 });
 

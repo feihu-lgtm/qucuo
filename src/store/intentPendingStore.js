@@ -1,8 +1,5 @@
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
-import { QUCUO_MAP } from "../domain/map/qucuoMap.js";
-
-const PLACE_NAMES = Object.keys(QUCUO_MAP);
 
 // 行动识别中置信度时挂起的确认（「你是要把100两给才旦吗？」）：{ text, onConfirm, onCancel } | null
 // 以及条件步骤挂起的触发器：{ step, on, detail, status: "armed" }，
@@ -30,18 +27,20 @@ export function armIntentTriggers(steps) {
 
 // 「到达」：前提点了地名 → 只在到那儿时应验；没点地名 → 行程走完才应验。
 // 「从X出发/离开X」里的 X 是起点，不算目的地。
-const ORIGIN = new RegExp(`(?:从|离开|出了)(?:${[...PLACE_NAMES].sort((a, b) => b.length - a.length).join("|")})`, "g");
+// 地名清单由调用方注入（web 传 QUCUO_MAP 的键），store 不反向依赖 domain。
+const originPattern = (placeNames) =>
+  new RegExp(`(?:从|离开|出了)(?:${[...placeNames].sort((a, b) => b.length - a.length).join("|")})`, "g");
 
-function arriveMatches(detail, dest, travelDone) {
-  const goal = detail.replace(ORIGIN, "");
+function arriveMatches(detail, dest, travelDone, placeNames) {
+  const goal = detail.replace(originPattern(placeNames), "");
   if (dest && goal.includes(dest)) return true;
-  return travelDone && !PLACE_NAMES.some((name) => goal.includes(name));
+  return travelDone && !placeNames.some((name) => goal.includes(name));
 }
 
 // 某类事件发生时取出并移除匹配的触发器。「遇敌」只认 hostile 路遇，和气的过路人不算。
-export function fireIntentTriggers(on, { dest, travelDone = true, hostile = false } = {}) {
+export function fireIntentTriggers(on, { dest, travelDone = true, hostile = false, placeNames = [] } = {}) {
   const match = (entry) => entry.on === on &&
-    (on !== "arrive" || arriveMatches(entry.detail, dest, travelDone)) &&
+    (on !== "arrive" || arriveMatches(entry.detail, dest, travelDone, placeNames)) &&
     (on !== "encounter" || hostile);
   const fired = intentTriggers().filter(match);
   if (fired.length) {

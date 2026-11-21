@@ -15,7 +15,7 @@ function requireFields(kind, id, def, fields) {
   }
 }
 
-export function define(kind, id, def) {
+export function defineContent(kind, id, def) {
   if (typeof kind !== "string" || !kind || typeof id !== "string" || !id) {
     throw new Error("Content kind and id must be non-empty strings");
   }
@@ -32,20 +32,20 @@ export function define(kind, id, def) {
   return def;
 }
 
-export function load(pack) {
+export function loadContent(pack) {
   for (const [kind, entries] of Object.entries(pack)) {
-    for (const [id, def] of Object.entries(entries)) define(kind, id, def);
+    for (const [id, def] of Object.entries(entries)) defineContent(kind, id, def);
   }
 }
 
-export function get(kind, id) {
+export function getContent(kind, id) {
   return kinds.get(kind)?.get(id);
 }
 
-export function all(kind) {
+export function allContent(kind) {
   return [...(kinds.get(kind)?.values() || [])];
 }
 
-export function entries(kind) {
+export function contentEntries(kind) {
   return [...(kinds.get(kind)?.entries() || [])];
 }

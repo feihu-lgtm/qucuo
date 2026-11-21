@@ -1,5 +1,5 @@
 import { commitRound } from "./act/commitRound.js";
-import { gameActions, gameStore } from "../core/gameStore.js";
+import { gameActions, gameStore } from "../store/gameStore.js";
 import { getRngState, setRngState } from "../core/rng.js";
 import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
 import { runTurn } from "./runTurn.js";

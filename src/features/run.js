@@ -1,4 +1,4 @@
-import { gameActions } from "../core/gameStore.js";
+import { gameActions } from "../store/gameStore.js";
 import { registerFact } from "../domain/prompt/knowledge.js";
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
 

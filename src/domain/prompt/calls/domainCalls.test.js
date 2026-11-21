@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetRegistryForTest } from "../registry.js";
+import { resetPromptRegistryForTest } from "../registry.js";
 import { createMockAi } from "../../../engine/ports/ai.js";
 import { withAI } from "../withAI.js";
 import { buildExtractionCfg } from "../extractionEngine.js";
@@ -56,7 +56,7 @@ ${keysDesc}
 
 describe("domainCalls parity with legacy requests", () => {
   beforeEach(() => {
-    resetRegistryForTest();
+    resetPromptRegistryForTest();
     registerDomainCalls();
   });
 
