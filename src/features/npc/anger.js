@@ -17,6 +17,7 @@ const ACTIONS = {
   learn: { command: "求教", settle: "想向他求教武艺" },
   steal: { command: "偷窃", settle: "想对他下手偷窃" },
   invite: { command: "邀同行", settle: "想邀他同行" },
+  apologize: { command: "赔罪", settle: "向他赔罪求和" },
 };
 
 export function appeaseAngryNpc(state, npc, { kind, detail = "", now = Date.now() } = {}) {

@@ -1,5 +1,5 @@
 // 置信度闸门：≥0.9 直接执行；中间档先问玩家一句确认；低于下限回落到原有自由行动路径（完全不变）。
-import { ACTION_KINDS, NONE, SILVER } from "./actionKinds.js";
+import { ACTION_KINDS, NONE, SILVER, UNEQUIP_RE } from "./actionKinds.js";
 
 export const THRESHOLDS = Object.freeze({ execute: 0.9, confirm: 0.6 });
 
@@ -41,6 +41,11 @@ function describePlain(action) {
     case ACTION_KINDS.BUY: return `向${who(action)}买东西`;
     case ACTION_KINDS.DUEL: return `和${who(action)}切磋`;
     case ACTION_KINDS.LEARN: return `向${who(action)}拜师学艺`;
+    case ACTION_KINDS.INVITE: return `邀${who(action)}同行`;
+    case ACTION_KINDS.STEAL: return `偷${who(action)}的东西`;
+    case ACTION_KINDS.APPEASE: return `向${who(action)}赔罪`;
+    case ACTION_KINDS.PICKUP: return `捡起${action.item && action.item !== NONE ? action.item : "东西"}`;
+    case ACTION_KINDS.EQUIP: return `${UNEQUIP_RE.test(action.text || "") ? "卸下" : "穿戴"}${action.item && action.item !== NONE ? action.item : "装备"}`;
     case ACTION_KINDS.MOVE: return `往${action.direction && action.direction !== NONE ? action.direction : "前"}走`;
     case ACTION_KINDS.USE_ITEM: return `用掉${action.item && action.item !== NONE ? action.item : "东西"}`;
     case ACTION_KINDS.TALK: return `和${who(action)}说话`;

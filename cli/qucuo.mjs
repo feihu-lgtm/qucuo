@@ -23,9 +23,9 @@ async function main() {
   let project;
   let location;
   let recordFile;
-  let intent = false;
+  let intent = true;
   let bookkeep = false;
-  let softSettle = false;
+  let softSettle = true;
   const nextValue = (name, index) => {
     const value = args[index + 1];
     if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
@@ -65,11 +65,17 @@ async function main() {
       case "--intent":
         intent = true;
         break;
+      case "--no-intent":
+        intent = false;
+        break;
       case "--bookkeep":
         bookkeep = true;
         break;
       case "--soft-settle":
         softSettle = true;
+        break;
+      case "--no-soft-settle":
+        softSettle = false;
         break;
       case "--record":
         recordFile = nextValue("--record", i);
@@ -133,9 +139,9 @@ async function main() {
     ai = createRecordingAi(ai, (entry) => appendFile(destination, `${JSON.stringify(entry)}\n`, "utf8"));
   }
 
-  if (intent) apiCfg = { ...apiCfg, intentRecognitionEnabled: true };
+  apiCfg = { ...apiCfg, intentRecognitionEnabled: intent };
   if (bookkeep) apiCfg = { ...apiCfg, bookkeepEnabled: true };
-  if (softSettle) apiCfg = { ...apiCfg, softSettleEnabled: true };
+  apiCfg = { ...apiCfg, softSettleEnabled: softSettle };
   const options = { out: print, seed, ai, apiCfg };
   if (script) {
     const lines = await readFile(script, "utf8");

@@ -29,7 +29,11 @@ _.add('角色.杂货商人.好感度', 3);</mvu>`,
       aiCalls += 1;
       prompts.push(messages.map((message) => message.content || "").join("\n"));
     } });
-    const session = createSession({ out: (text) => output.push(text), cwd: tempDir, ai });
+    const session = createSession({
+      out: (text) => output.push(text), cwd: tempDir, ai,
+      // 本用例走 mvu 生气解除老路（软结算关，行动识别关），mock 回复按顺序供主叙事。
+      apiCfg: { intentRecognitionEnabled: false, softSettleEnabled: false },
+    });
 
     await session.runLine(":new");
     await session.runLine(':set room.name="怒气试炼场"');

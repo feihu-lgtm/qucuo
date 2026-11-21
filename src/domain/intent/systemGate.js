@@ -1,12 +1,15 @@
 // 系统闸门：按顺序在模拟状态上逐步校验原子行动（钱够不够、人在不在、东西有没有），
 // 第 2 步看到的是第 1 步结算后的状态。遇到第一个不通过的步骤就停下并给出原因，
 // 之前已通过的步骤照常执行，之后的步骤一律跳过。
-import { ACTION_KINDS, NONE, SILVER, inventoryCounts, visibleNpcs } from "./actionKinds.js";
+import { ACTION_KINDS, NONE, SILVER, inventoryCounts, itemNameOf, visibleNpcs } from "./actionKinds.js";
 import { CONDITION_ON } from "./conditions.js";
 import { tryLearnFromMaster } from "../kungfu/learnSkill.js";
 import { isNpcAngry } from "../combat/stealSystem.js";
 
-const NEEDS_TARGET = new Set([ACTION_KINDS.GIFT, ACTION_KINDS.BUY, ACTION_KINDS.DUEL, ACTION_KINDS.LEARN]);
+const NEEDS_TARGET = new Set([
+  ACTION_KINDS.GIFT, ACTION_KINDS.BUY, ACTION_KINDS.DUEL, ACTION_KINDS.LEARN,
+  ACTION_KINDS.INVITE, ACTION_KINDS.STEAL, ACTION_KINDS.APPEASE,
+]);
 
 function simulate(state) {
   return {
@@ -46,6 +49,19 @@ function checkStep(sim, action) {
     }
   }
   if (action.kind === ACTION_KINDS.MOVE && (!action.direction || action.direction === NONE)) return "没说清往哪走";
+  if (action.kind === ACTION_KINDS.APPEASE) {
+    if (!isNpcAngry(sim.state?.varTree, action.target)) return `${action.target}并没有在生气`;
+  }
+  if (action.kind === ACTION_KINDS.PICKUP) {
+    if (!action.item || action.item === NONE) return "没说清捡什么";
+    // 同名地上物可以连捡，按已捡次数递减；捡光才算没有。
+    const groundCount = (sim.state?.room?.items || []).map(itemNameOf).filter((n) => n === action.item).length;
+    if (groundCount <= (sim.picked?.get(action.item) || 0)) return `地上没有${action.item}`;
+  }
+  if (action.kind === ACTION_KINDS.EQUIP) {
+    if (!action.item || action.item === NONE) return "没说清是哪件装备";
+    if (!(sim.inv.get(action.item) > 0)) return `背包里没有${action.item}`;
+  }
   if (action.kind === ACTION_KINDS.LEARN && sim.npcs) return learnPrice(sim, action).reason || null;
   return null;
 }
@@ -53,6 +69,11 @@ function checkStep(sim, action) {
 function applyStep(sim, action) {
   if (action.kind === ACTION_KINDS.GIFT && action.item === SILVER) sim.money -= action.amount;
   else if (action.kind === ACTION_KINDS.GIFT || action.kind === ACTION_KINDS.USE_ITEM) sim.inv.set(action.item, sim.inv.get(action.item) - 1);
+  if (action.kind === ACTION_KINDS.PICKUP) {
+    // 捡起来的东西进模拟背包，后续步骤（如接着装备）才认得它；计数防把同一件捡两回。
+    (sim.picked ??= new Map()).set(action.item, (sim.picked.get(action.item) || 0) + 1);
+    sim.inv.set(action.item, (sim.inv.get(action.item) || 0) + 1);
+  }
   if (action.kind === ACTION_KINDS.LEARN) sim.money -= learnPrice(sim, action).price || 0;
   if (action.kind === ACTION_KINDS.MOVE) sim.npcs = null;
 }

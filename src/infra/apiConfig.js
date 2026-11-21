@@ -122,6 +122,8 @@ export function defaultConfig() {
     callTokenLimits: { ...DEFAULT_CALL_TOKEN_LIMITS },
     // 提取层（叙事/状态分离模式）：大模型只输出叙事，小模型按意图提取状态变化
     extractionEnabled: false,
+    // 行动识别默认开：打字与按钮落到同一套系统结算路径；想要原来自由行动的用户可在设置里关。
+    intentRecognitionEnabled: true,
     bookkeepEnabled: true,
     softSettleEnabled: true,
     extractionModel: "",  // 空 = 沿用主模型；填入后所有意图共用此模型

@@ -1,6 +1,7 @@
 // 行动识别的封闭行动集合与槽位规格。名称对齐 src/core/commands.js 里现有的本地命令：
-// 赠送=npcGift、购买=npcTrade、切磋=duel、拜师/学艺=npcLearnSkill、移动=mapMovement、
-// 交谈=npcTalk、使用物品=itemUseCollect；其他=原有自由行动 typedAction。
+// 赠送=npcGift、购买=npcTrade、切磋=duel、拜师/学艺=npcLearnSkill、邀同行=companionInvite、
+// 偷窃=npcSteal、平息/道歉=npcAppease、移动=mapMovement、交谈=npcTalk、使用物品/拾取=itemUseCollect、
+// 装备/卸下=menuEquip；其他=原有自由行动 typedAction。
 // 槽位选项一律从实时世界状态生成；数量（银两）由系统从玩家原文解析，不交给模型。
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
 
@@ -9,9 +10,14 @@ export const ACTION_KINDS = Object.freeze({
   BUY: "购买",
   DUEL: "切磋",
   LEARN: "拜师/学艺",
+  INVITE: "邀同行",
+  STEAL: "偷窃",
+  APPEASE: "平息/道歉",
   MOVE: "移动",
   TALK: "交谈",
   USE_ITEM: "使用物品",
+  PICKUP: "拾取",
+  EQUIP: "装备/卸下",
   OTHER: "其他",
 });
 
@@ -22,9 +28,14 @@ export const KIND_COMMAND = Object.freeze({
   [ACTION_KINDS.BUY]: "npcTrade",
   [ACTION_KINDS.DUEL]: "duel",
   [ACTION_KINDS.LEARN]: "npcLearnSkill",
+  [ACTION_KINDS.INVITE]: "companionInvite",
+  [ACTION_KINDS.STEAL]: "npcSteal",
+  [ACTION_KINDS.APPEASE]: "npcAppease",
   [ACTION_KINDS.MOVE]: "mapMovement",
   [ACTION_KINDS.TALK]: "npcTalk",
   [ACTION_KINDS.USE_ITEM]: "itemUseCollect",
+  [ACTION_KINDS.PICKUP]: "itemUseCollect",
+  [ACTION_KINDS.EQUIP]: "menuEquip",
   [ACTION_KINDS.OTHER]: "typedAction",
 });
 
@@ -34,14 +45,21 @@ export const SLOT_SPECS = Object.freeze({
   [ACTION_KINDS.BUY]: ["target"],
   [ACTION_KINDS.DUEL]: ["target"],
   [ACTION_KINDS.LEARN]: ["target"],
+  [ACTION_KINDS.INVITE]: ["target"],
+  [ACTION_KINDS.STEAL]: ["target"],
+  [ACTION_KINDS.APPEASE]: ["target"],
   [ACTION_KINDS.MOVE]: ["direction"],
   [ACTION_KINDS.TALK]: ["target"],
   [ACTION_KINDS.USE_ITEM]: ["item"],
+  [ACTION_KINDS.PICKUP]: ["item"],
+  [ACTION_KINDS.EQUIP]: ["item"],
   [ACTION_KINDS.OTHER]: [],
 });
 
 export const SILVER = "银两";
 export const NONE = "无";
+// 「装备/卸下」从玩家原话判断方向：卸下类用词 → 脱，否则 → 穿。识别与闸门共用。
+export const UNEQUIP_RE = /卸[下掉]?|脱[下掉]?|摘[下掉]?|解下|取[下掉]|拿[下掉]|收起/;
 export const DIRECTIONS = Object.freeze(["北", "南", "东", "西"]);
 
 export function visibleNpcs(state) {
@@ -66,7 +84,16 @@ export function slotOptions(state, kind, slot) {
   if (slot === "target") return [...new Set(visibleNpcs(state).map((npc) => npc.name)), NONE];
   if (slot === "direction") return [...DIRECTIONS, NONE];
   if (slot === "item") {
+    // 拾取的对象是地上的东西；装备候选含地上物（复合指令先捡后穿）；其余物品槽都从背包出。
+    if (kind === ACTION_KINDS.PICKUP) {
+      return [...new Set((state?.room?.items || []).map(itemNameOf).filter(Boolean)), NONE];
+    }
     const items = [...inventoryCounts(state).keys()];
+    // 「先捡起来再装备」这类复合指令里，装备目标此刻还在地上；候选把地上物一并放出，由闸门按步校验到位。
+    if (kind === ACTION_KINDS.EQUIP) {
+      const ground = (state?.room?.items || []).map(itemNameOf).filter(Boolean);
+      return [...new Set([...items, ...ground]), NONE];
+    }
     return kind === ACTION_KINDS.GIFT ? [SILVER, ...items, NONE] : [...items, NONE];
   }
   return [];

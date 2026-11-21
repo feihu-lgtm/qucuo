@@ -13,6 +13,9 @@ import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
 import { applyMvuCommands } from "../domain/prompt/mvu.js";
 import { formatAngerResolutionLog, resolveAngerSignals } from "../domain/combat/stealSystem.js";
 
+// 会跑软结算的 settle 类型（其余 settleKind 仍走原有叙事+提取路径）。
+const SOFT_SETTLE_KINDS = new Set(["appease", "gift", "companion_invite", "learn_skill"]);
+
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
   "mapData", "time", "varTree", "convo",
@@ -82,23 +85,27 @@ export async function playTurn(ctx, cmd, opts = {}) {
     ctx.beforeRun?.();
     setCommandPhase("ai");
     const turnOpts = { ...opts };
-    if (turnOpts.settleKind === "appease" && turnOpts.settleNpc && ctx.apiCfg?.softSettleEnabled !== false) {
+    // 软结算入口：四种 settle 动作的结果（消气与否、收礼与否、答应同行与否、收徒与否）
+    // 先由结算段小模型裁决，叙事只照裁决写正文；AI 不再在 <mvu> 里顺手定这些结果。
+    if (SOFT_SETTLE_KINDS.has(turnOpts.settleKind) && turnOpts.settleNpc && ctx.apiCfg?.softSettleEnabled !== false) {
       const state = gameStore.getState();
       const softSettle = await (ctx.softSettle || runSoftSettle)({
         ai: bindTurnAi(turnCtx.ai, trace),
         apiCfg: turnCtx.apiCfg,
-        kind: "appease",
+        kind: turnOpts.settleKind,
         ctx: {
           npc: turnOpts.settleNpc,
           varTree: state.varTree,
-          attempt: cmd,
+          attempt: turnOpts.attempt || cmd,
           time: state.time,
           charm: turnCtx.effectiveSpecialNow?.魅力 ?? 5,
+          giftInfo: turnOpts.giftInfo,
+          learnInfo: turnOpts.learnInfo,
         },
       });
       if (ctx.isStale?.()) return stale();
       if (softSettle && softSettle.choice !== UNKNOWN_CHOICE) {
-        const angerSignalApplied = softSettle.choice === "奏效" && softSettle.deltas?.some(
+        const angerSignalApplied = turnOpts.settleKind === "appease" && softSettle.choice === "奏效" && softSettle.deltas?.some(
           delta => delta.path === `角色.${turnOpts.settleNpc}.生气解除`
             && delta.op === "set" && delta.finalValue === true,
         );

@@ -8,7 +8,11 @@ it("shows the phase order and layered nodes of a mock AI script turn", async () 
   const output = [];
   const script = ":new\n探索石阶\n:status\n:tree 1";
   const ai = createMockAi(['{"output":["石阶旁的草叶轻轻摇动。"]}']);
-  expect(await runScript(script, { out: (text) => output.push(text), ai })).toBe(0);
+  expect(await runScript(script, {
+    out: (text) => output.push(text), ai,
+    // 单条 mock 回复只够主叙事用：关掉默认开启的行动识别/软结算保持确定性。
+    apiCfg: { intentRecognitionEnabled: false, softSettleEnabled: false },
+  })).toBe(0);
   expect(output.join("\n")).toMatch(/DONE · 完成/);
   const tree = output.find((text) => text.includes("MACHINE →"));
   expect(tree).toMatch(/=== \d{2}:\d{2}:\d{2} turn-\d+ 探索石阶/);
