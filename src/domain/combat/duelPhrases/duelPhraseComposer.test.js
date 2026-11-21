@@ -129,6 +129,20 @@ describe("duel phrase pools and composition", () => {
     expect(new Set(STANDOFF_FRAGMENTS).size).toBe(43);
   });
 
+  it("keeps common Traditional Chinese characters out of all phrase pools", () => {
+    const traditionalOnly = /[體氣經勁搖隨擊數頭點護開間對轉腳飛劍風雙長無後將為聲龍]/u;
+    const templates = [
+      ...Object.values(OPENING_POOLS).flat(),
+      ...Object.values(EFFECT_POOLS).flat(),
+      ...Object.values(REACTION_POOLS).flatMap((families) => Object.values(families).flat()),
+      ...CONNECTORS,
+      ...MUTUAL_CONTACTS,
+      ...STANDOFF_FRAGMENTS,
+    ];
+
+    expect(templates.filter((template) => traditionalOnly.test(template))).toEqual([]);
+  });
+
   it("has a connector for every ordered effect-family pair and composes clean clauses", () => {
     for (const first of DUEL_EFFECT_FAMILIES) {
       for (const second of DUEL_EFFECT_FAMILIES) {
