@@ -131,6 +131,46 @@ export function applySettledDeltas(varTree, deltas = []) {
   }, varTree || {});
 }
 
+function readSettledPath(tree, path) {
+  let value = tree;
+  for (const part of path.split(".")) {
+    if (value == null || !Object.hasOwn(value, part)) return { exists: false, value: undefined };
+    value = value[part];
+  }
+  return { exists: true, value };
+}
+
+export function captureSettledChanges(beforeTree, afterTree, paths = []) {
+  return [...new Set(paths.filter((path) => typeof path === "string" && path))].map((path) => ({
+    path,
+    before: readSettledPath(beforeTree, path),
+    after: readSettledPath(afterTree, path),
+  }));
+}
+
+function deleteSettledPath(tree, [key, ...rest]) {
+  const current = tree && typeof tree === "object" ? tree : {};
+  if (!Object.hasOwn(current, key)) return current;
+  if (!rest.length) {
+    const next = { ...current };
+    delete next[key];
+    return next;
+  }
+  const child = deleteSettledPath(current[key], rest);
+  return child === current[key] ? current : { ...current, [key]: child };
+}
+
+export function revertSettled(varTree, records = []) {
+  return (records || []).reduce((tree, record) => {
+    if (typeof record?.path !== "string" || !record.path) return tree;
+    const current = readSettledPath(tree, record.path);
+    if (current.exists !== record.after.exists || !Object.is(current.value, record.after.value)) return tree;
+    return record.before.exists
+      ? writeSettledPath(tree, record.path.split("."), record.before.value)
+      : deleteSettledPath(tree, record.path.split("."));
+  }, varTree || {});
+}
+
 // 给叙事层的一句话结算说明：主模型只照这个结果写散文，不许再编数值。
 export function formatSettleNote(result) {
   if (!result || !result.note) return "";

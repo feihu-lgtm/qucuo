@@ -19,6 +19,14 @@ function makeContext(overrides = {}) {
   };
 }
 
+function refBackedSetter(varTreeRef) {
+  return (next) => {
+    const value = typeof next === "function" ? next(varTreeRef.current) : next;
+    varTreeRef.current = value;
+    gameActions.setVarTreeState(value);
+  };
+}
+
 const originalVarTree = gameStore.getState().varTree;
 
 describe("playTurn background bookkeep", () => {
@@ -137,11 +145,7 @@ describe("playTurn background bookkeep", () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
     gameActions.setVarTreeState(varTree);
     const varTreeRef = { current: varTree };
-    const setVarTree = (next) => {
-      const value = typeof next === "function" ? next(varTreeRef.current) : next;
-      varTreeRef.current = value;
-      gameActions.setVarTreeState(value);
-    };
+    const setVarTree = refBackedSetter(varTreeRef);
     const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']);
     let commitTree;
     runTurn.mockResolvedValue({ narrativeText: "八云的神情缓和下来。" });
@@ -171,11 +175,7 @@ describe("playTurn background bookkeep", () => {
     };
     gameActions.setVarTreeState(varTree);
     const varTreeRef = { current: varTree };
-    const setVarTree = (next) => {
-      const value = typeof next === "function" ? next(varTreeRef.current) : next;
-      varTreeRef.current = value;
-      gameActions.setVarTreeState(value);
-    };
+    const setVarTree = refBackedSetter(varTreeRef);
     const started = Promise.withResolvers();
     const response = Promise.withResolvers();
     const softSettle = vi.fn(({ ctx: settleCtx }) => {
@@ -220,11 +220,7 @@ describe("playTurn background bookkeep", () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
     gameActions.setVarTreeState(varTree);
     const varTreeRef = { current: varTree };
-    const setVarTree = (next) => {
-      const value = typeof next === "function" ? next(varTreeRef.current) : next;
-      varTreeRef.current = value;
-      gameActions.setVarTreeState(value);
-    };
+    const setVarTree = refBackedSetter(varTreeRef);
     const started = Promise.withResolvers();
     const response = Promise.withResolvers();
     const softSettle = vi.fn(() => {
@@ -287,11 +283,7 @@ describe("playTurn background bookkeep", () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
     gameActions.setVarTreeState(varTree);
     const varTreeRef = { current: varTree };
-    const setVarTree = (next) => {
-      const value = typeof next === "function" ? next(varTreeRef.current) : next;
-      varTreeRef.current = value;
-      gameActions.setVarTreeState(value);
-    };
+    const setVarTree = refBackedSetter(varTreeRef);
     const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']);
     runTurn.mockRejectedValue(new Error("narration failed"));
 
@@ -310,11 +302,7 @@ describe("playTurn background bookkeep", () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
     gameActions.setVarTreeState(varTree);
     const varTreeRef = { current: varTree };
-    const setVarTree = (next) => {
-      const value = typeof next === "function" ? next(varTreeRef.current) : next;
-      varTreeRef.current = value;
-      gameActions.setVarTreeState(value);
-    };
+    const setVarTree = refBackedSetter(varTreeRef);
     const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']);
     const started = Promise.withResolvers();
     const response = Promise.withResolvers();
@@ -343,6 +331,55 @@ describe("playTurn background bookkeep", () => {
     expect(gameStore.getState().varTree).toBe(restoredTree);
     expect(varTreeRef.current).toBe(restoredTree);
   });
+
+  it.each([["without concurrent writes", false], ["with concurrent 旧账", true]])(
+    "reverts stopped settlement %s",
+    async (_label, writeLedger) => {
+      const varTree = {
+        角色: { 八云: { 好感度: 20, 生气状态: { active: true, reason: "偷窃未遂" } } },
+        世界: { 威望: 0 },
+      };
+      gameActions.setVarTreeState(varTree);
+      const varTreeRef = { current: varTree };
+      const setVarTree = refBackedSetter(varTreeRef);
+      const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']);
+      const started = Promise.withResolvers();
+      const response = Promise.withResolvers();
+      let stopped = false;
+      runTurn.mockImplementation(() => {
+        started.resolve();
+        return response.promise;
+      });
+      const pending = playTurn(makeContext({
+        ai, apiCfg: {}, bookkeep: false, setVarTree, refs: { varTreeRef },
+        isStale: () => stopped,
+      }), "赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
+
+      await started.promise;
+      if (writeLedger) {
+        const settledTree = varTreeRef.current;
+        setVarTree({
+          ...settledTree,
+          角色: {
+            ...settledTree.角色,
+            八云: { ...settledTree.角色.八云, 旧账: { lines: ["后台记下的旧账"] } },
+          },
+        });
+      }
+      stopped = true;
+      response.resolve({ narrativeText: "八云的神情缓和下来。" });
+
+      const result = await pending;
+
+      expect(result.stale).toBe(true);
+      expect(gameStore.getState().varTree.角色.八云.好感度).toBe(20);
+      expect(gameStore.getState().varTree.角色.八云.生气状态).toEqual(varTree.角色.八云.生气状态);
+      expect(gameStore.getState().varTree.角色.八云).not.toHaveProperty("生气解除");
+      expect(gameStore.getState().varTree.世界).not.toHaveProperty("好感日增");
+      if (!writeLedger) expect(varTreeRef.current).toEqual(varTree);
+      else expect(varTreeRef.current.角色.八云.旧账).toEqual({ lines: ["后台记下的旧账"] });
+    },
+  );
 
   it("keeps varTree unchanged when appeasement does not work", async () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };

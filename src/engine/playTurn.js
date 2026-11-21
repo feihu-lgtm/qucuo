@@ -6,7 +6,9 @@ import { runTurn } from "./runTurn.js";
 import { PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { runBookkeepAfterTurn } from "./act/bookkeepTurn.js";
-import { applySettledDeltas, runSoftSettle } from "../domain/settle/settle.js";
+import {
+  applySettledDeltas, captureSettledChanges, revertSettled, runSoftSettle,
+} from "../domain/settle/settle.js";
 import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
 import { applyMvuCommands } from "../domain/prompt/mvu.js";
 import { formatAngerResolutionLog, resolveAngerSignals } from "../domain/combat/stealSystem.js";
@@ -56,6 +58,13 @@ export async function playTurn(ctx, cmd, opts = {}) {
   setCommandPhase("machine");
   let snapshot;
   let softSettleLogs = [];
+  let softSettleRevertRecords = [];
+  let softSettleApplied = false;
+  const revertSoftSettle = () => {
+    if (!softSettleApplied) return;
+    if (ctx.setVarTree) ctx.setVarTree(prev => revertSettled(prev, softSettleRevertRecords));
+    else gameActions.setVarTreeState(revertSettled(gameStore.getState().varTree, softSettleRevertRecords));
+  };
   try {
     snapshot = captureSnapshot(ctx.refs);
     turnMonitor.add(trace, "app", "事务快照", { kind: "snapshot" });
@@ -97,8 +106,14 @@ export async function playTurn(ctx, cmd, opts = {}) {
         const applySoftSettle = (prev) => {
           settledTree = applySettledDeltas(prev, softSettle.deltas);
           if (angerSignalApplied) settledTree = resolveAngerSignals(settledTree, [turnOpts.settleNpc]);
+          const revertPaths = (softSettle.deltas || []).map(delta => delta?.path);
+          if (angerSignalApplied) {
+            revertPaths.push(`角色.${turnOpts.settleNpc}.生气状态`, `角色.${turnOpts.settleNpc}.生气解除`);
+          }
+          softSettleRevertRecords = captureSettledChanges(prev, settledTree, revertPaths);
           return settledTree;
         };
+        softSettleApplied = true;
         if (ctx.setVarTree) ctx.setVarTree(applySoftSettle);
         else gameActions.setVarTreeState(applySoftSettle(gameStore.getState().varTree));
         turnOpts.softSettle = { ...softSettle, varTree: settledTree };
@@ -110,6 +125,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
     }
     const turn = await runTurn({ ...turnCtx, _trace: trace }, cmd, turnOpts);
     if (turn.stale || ctx.isStale?.()) {
+      if (softSettleApplied) withTurnContext(trace, revertSoftSettle);
       return stale();
     }
     setCommandPhase("commit");
@@ -155,7 +171,10 @@ export async function playTurn(ctx, cmd, opts = {}) {
     }
     return { ok: true, turn, duelRequest: committed?.duelRequest ?? turn.p?.duelRequest };
   } catch (error) {
-    if (ctx.isStale?.()) return stale(error);
+    if (ctx.isStale?.()) {
+      if (softSettleApplied) withTurnContext(trace, revertSoftSettle);
+      return stale(error);
+    }
     if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs));
     turnMonitor.transition(trace, PHASE.ERROR, String(error));
     return { ok: false, error };
