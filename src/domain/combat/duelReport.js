@@ -54,6 +54,8 @@ function makeOutcome(entry, playerName, npcName) {
   const npcType = normalizeMoveType(entry.npcMoveType || entry.moveTypeB);
   const playerHp = readHp(entry, "Player") || readHp(entry, "A");
   const npcHp = readHp(entry, "Npc") || readHp(entry, "B");
+  const playerBand = hpBandFor(playerHp);
+  const npcBand = hpBandFor(npcHp);
   const worse = playerDamage === npcDamage ? "平手" : playerDamage > npcDamage ? playerName : npcName;
 
   let actorName = playerName;
@@ -72,8 +74,6 @@ function makeOutcome(entry, playerName, npcName) {
     moveType = playerDodged ? playerType : npcType;
     outcome = "dodged";
   } else if (playerMoveDamage > 0 && npcMoveDamage > 0) {
-    const playerBand = hpBandFor(playerHp);
-    const npcBand = hpBandFor(npcHp);
     if (npcDamage > playerDamage || (npcDamage === playerDamage && BAND_SEVERITY[npcBand] > BAND_SEVERITY[playerBand])) {
       actorName = playerName; targetName = npcName;
       actorMove = playerMove; targetMove = npcMove; moveType = playerType;
@@ -107,10 +107,8 @@ function makeOutcome(entry, playerName, npcName) {
     }
   }
 
-  const damagedBands = [];
-  if (playerDamage > 0) damagedBands.push(hpBandFor(playerHp));
-  if (npcDamage > 0) damagedBands.push(hpBandFor(npcHp));
-  const band = damagedBands.sort((a, b) => BAND_SEVERITY[b] - BAND_SEVERITY[a])[0] || "healthy";
+  const toneSubject = ["dodged", "heal", "control"].includes(outcome) ? actorName : targetName;
+  const band = toneSubject === playerName ? playerBand : npcBand;
   return {
     playerDamage, npcDamage, playerMoveDamage, npcMoveDamage, playerDotDamage, npcDotDamage,
     playerMove, npcMove, playerType, npcType, playerHp, npcHp,

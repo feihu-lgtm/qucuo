@@ -140,6 +140,35 @@ describe("战报回合数据和短句", () => {
     expect(nearDown).toContain("剩 9");
   });
 
+  it("只用受击方自己的血量带决定伤势语气", () => {
+    const mutual = formatDuelDisplayLine(entry({
+      dmgToNpc: 40, dmgToPlayer: 10,
+      hpAfterPlayer: [9, 100], hpAfterNpc: [58, 100],
+    }), { playerName: "陈尧天", npcName: "才旦" });
+    const playerTarget = formatDuelDisplayLine(entry({
+      dmgToNpc: 0, dmgToPlayer: 20, npcMoveType: "攻击",
+      hpAfterPlayer: [40, 100], hpAfterNpc: [60, 60],
+    }), { playerName: "陈尧天", npcName: "才旦" });
+
+    expect(mutual).toContain("身形一晃气息微乱");
+    expect(mutual).not.toContain("眼看就要倒下");
+    expect(playerTarget).toContain("身形一晃气息微乱");
+  });
+
+  it("无伤闪避与疗伤使用行动者自己的血量带", () => {
+    const dodge = formatDuelDisplayLine(entry({
+      dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null,
+      dodgeSuccessPlayer: true, hpAfterPlayer: [9, 100], hpAfterNpc: [60, 60],
+    }), { playerName: "陈尧天", npcName: "才旦" });
+    const heal = formatDuelDisplayLine(entry({
+      dmgToNpc: 0, dmgToPlayer: 0, statusAppliedToNpc: null, hpRestoreNpc: 10,
+      hpAfterPlayer: [60, 60], hpAfterNpc: [9, 100],
+    }), { playerName: "陈尧天", npcName: "才旦" });
+
+    expect(dodge).toContain("几乎失势");
+    expect(heal).toContain("勉强支身");
+  });
+
   it.each([
     ["命中", "hit", entry({ npcMoveType: "攻击" }), "攻击", "你", "对手", "野球拳", "铁布衫"],
     ["格挡", "blocked", entry(), "攻击", "你", "对手", "野球拳", "铁布衫"],
