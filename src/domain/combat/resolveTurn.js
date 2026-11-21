@@ -223,8 +223,7 @@ export function resolveTurn(sideA, sideB) {
       result[`damageTo${loserTag}`] += damage;
     }
     if (winnerMove.doubleReflectDamage) {
-      const wouldBlock = calcBaseDamage(loserMove, loserSide, winnerSide)
-        * (loserMove.baseDamageMultiplier ?? 0.5);
+      const wouldBlock = calcBaseDamage(loserMove, loserSide, winnerSide);
       result[`damageTo${loserTag}`] += Math.round(wouldBlock * 2);
       result.notes.push(`${winnerMove.name}二倍反弹，力道尽数奉还`);
     }
@@ -326,11 +325,11 @@ export function resolveTurn(sideA, sideB) {
 
   // 疗伤只在招式实际生效时结算；被攻击打断或被抢先点穴截断时不回血。
   // 实际加血由 DuelScreen 夹到上限。
-  if (sideA.move.hpRestore && !result.interruptedA && !result.cancelledA) {
+  if (sideA.move.hpRestore && (sideA.move.fromItem || (!result.interruptedA && !result.cancelledA))) {
     result.hpRestoreA = Math.round((sideA.hp?.[1] ?? 100) * sideA.move.hpRestore);
     result.notes.push(`${sideA.move.name}运转真气自疗，气血回复`);
   }
-  if (sideB.move.hpRestore && !result.interruptedB && !result.cancelledB) {
+  if (sideB.move.hpRestore && (sideB.move.fromItem || (!result.interruptedB && !result.cancelledB))) {
     result.hpRestoreB = Math.round((sideB.hp?.[1] ?? 100) * sideB.move.hpRestore);
     result.notes.push(`${sideB.move.name}运转真气自疗，气血回复`);
   }
