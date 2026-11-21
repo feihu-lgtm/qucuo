@@ -9,6 +9,8 @@ import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 import { getApiModel } from "../core/apiModel.js";
 import { filterPlanDelta, filterRejectedEffects, planExtractionNote } from "../domain/intent/planNotes.js";
+import { SOFT_SETTLE_KINDS } from "../domain/settle/softRules.js";
+import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
 
 const MAX_AUTO_RETRY = 2;
 
@@ -166,41 +168,52 @@ async function runTurnSteps(ctx, cmd, opts) {
       addLog([{ t: "sys", text: "  ⚠ 本轮叙事被接口中途截断（撞到输出 token 上限），以上是已收到的部分。提取层只能按这段残文结算状态，本轮状态可能不全。" }]);
     }
 
-    const extractionState = createExtractionState(ctx, deps);
-    const settleOptions = (opts.settleKind && opts.settleNpc)
-      ? {
-        settleKind: opts.settleKind,
-        settleNpc: opts.settleNpc,
-        giftInfo: opts.giftInfo,
-        learnInfo: opts.learnInfo,
-        settleBeast: !!opts.settleBeast,
+    // settle 回合的状态已由系统/软结算裁决并落账，提取层只对自由行动/闲聊等未裁决回合补漏。
+    // 例外：软种类（赔罪/赠礼/邀同行/求教）在软结算被关掉或没裁出结果时，叙事里没有裁决，
+    // 提取层仍是兜底裁决者——否则道歉消不了气、送礼学艺不结算。
+    const settleDecided = isSettle && (
+      !SOFT_SETTLE_KINDS.has(opts.settleKind)
+      || (opts.softSettle && opts.softSettle.choice !== UNKNOWN_CHOICE)
+    );
+    if (settleDecided) {
+      trace("提取调用", "skip", "settle 回合由系统结算接管状态，跳过提取");
+    } else {
+      const extractionState = createExtractionState(ctx, deps);
+      const settleOptions = (opts.settleKind && opts.settleNpc)
+        ? {
+          settleKind: opts.settleKind,
+          settleNpc: opts.settleNpc,
+          giftInfo: opts.giftInfo,
+          learnInfo: opts.learnInfo,
+          settleBeast: !!opts.settleBeast,
+        }
+        : null;
+      const extracted = await callExtraction(
+        extractionSpecKey,
+        rawFull + planExtractionNote(deps.intentPlan),
+        extractionState,
+        apiCfg,
+        settleOptions,
+        deps.ai,
+        onPromptRefMissing,
+      ).catch((error) => {
+        if (!ctx.isStale?.()) {
+          addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${error.message || error}），本轮状态未更新` }]);
+          trace("提取调用", "fail", `提取模型=${extractionCfg.model || "未设置"}调用异常：${error.message || error}，本轮状态未更新`);
+        }
+        return null;
+      });
+      if (ctx.isStale?.()) return { stale: true };
+      pickupExtractionFailed = !extracted || !!extracted.parseFailed;
+      if (extracted?.parseFailed) {
+        addLog([{ t: "sys", text: "  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新" }]);
+        trace("提取调用", "fail", `返回内容无法解析（提取模型=${extractionCfg.model || "未设置"}），本轮状态未更新`);
+      } else if (extracted) {
+        trace("提取调用", "pass", `状态提取完成（提取模型=${extractionCfg.model || "未设置"}${settleOptions ? `·${settleOptions.settleKind}专属spec` : ""}）`);
       }
-      : null;
-    const extracted = await callExtraction(
-      extractionSpecKey,
-      rawFull + planExtractionNote(deps.intentPlan),
-      extractionState,
-      apiCfg,
-      settleOptions,
-      deps.ai,
-      onPromptRefMissing,
-    ).catch((error) => {
-      if (!ctx.isStale?.()) {
-        addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${error.message || error}），本轮状态未更新` }]);
-        trace("提取调用", "fail", `提取模型=${extractionCfg.model || "未设置"}调用异常：${error.message || error}，本轮状态未更新`);
-      }
-      return null;
-    });
-    if (ctx.isStale?.()) return { stale: true };
-    pickupExtractionFailed = !extracted || !!extracted.parseFailed;
-    if (extracted?.parseFailed) {
-      addLog([{ t: "sys", text: "  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新" }]);
-      trace("提取调用", "fail", `返回内容无法解析（提取模型=${extractionCfg.model || "未设置"}），本轮状态未更新`);
-    } else if (extracted) {
-      trace("提取调用", "pass", `状态提取完成（提取模型=${extractionCfg.model || "未设置"}${settleOptions ? `·${settleOptions.settleKind}专属spec` : ""}）`);
+      p = filterPlanDelta(extracted?.p || {}, deps.intentPlan);
+      mvuCommands = filterRejectedEffects(extracted?.mvuCommands || [], deps.intentPlan);
     }
-    p = filterPlanDelta(extracted?.p || {}, deps.intentPlan);
-    mvuCommands = filterRejectedEffects(extracted?.mvuCommands || [], deps.intentPlan);
   } else {
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
       const nudge = attempt > 1
@@ -239,6 +252,14 @@ async function runTurnSteps(ctx, cmd, opts) {
       }
       if (!truncated) break;
     }
+  }
+
+  // settle 回合提取被跳过（或没吐出 memory）时，把结算文本登记为本轮事实：
+  // 事实账本/小纸条/日总结都走 p.memory 这一个入口，不能因为是结算轮就漏记。
+  // 只取首句：settle 文本尾部常带叙事指令（"请让…说道""只描写…"），不是事实不能入账。
+  if (isSettle && !(p && p.memory)) {
+    const memoryText = cmd.split(/[。！？]/).filter(Boolean)[0] || cmd;
+    p = { ...p, memory: memoryText };
   }
 
   return {

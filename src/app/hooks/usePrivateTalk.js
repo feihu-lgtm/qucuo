@@ -21,6 +21,9 @@ import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
 import { gameStore } from "../../store/gameStore.js";
 import { buildPrivateTalkPayload } from "../../domain/prompt/privateTalkPayload.js";
+import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
+import { applySettledDeltas, runSoftSettle } from "../../domain/settle/settle.js";
+import { UNKNOWN_CHOICE } from "../../domain/settle/judge.js";
 
 export function usePrivateTalk({
   narrator, addLog, apiCfg, convo, room, preset, flags,
@@ -191,18 +194,14 @@ export function usePrivateTalk({
       const { systemPrompt: sys, messages: talkMessages, maxTokens: narratorMaxTokens } = privateTalkPayload;
 
       let text;
-      let affDelta = WHISPER_AFFECTION_RULES.fallback; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖
-      let hadAffTag = false; // 标记是否真出现过 ⟦好感X⟧——没出现时的 +1 是兜底，不是她给的分
+      // ② 内容化好感已下线：⟦好感X⟧ 不再由她写在文末，改走 narrator_affinity 软结算（AI 提议、系统裁决）。
+      // softSettleEnabled 关着（回放/离线兜底）时退回固定寻常闲聊 +1。
+      let affDelta = WHISPER_AFFECTION_RULES.fallback;
       let finishReason;      // 停止原因：私聊此前完全没接这个字段，撞 length 上限也毫无提示
       // 模型会照着历史里的「（旁白私聊回应）」前缀自己也写一遍，而下面存 convo 时又会
       // 再加一次，于是前缀逐轮累积成「（旁白私聊回应）（旁白私聊回应）…」。存之前先剥干净：
       // 前缀由系统负责加，模型自己写的一律不算数。
       const stripEchoPrefix = (s) => s.replace(/^(?:\s*[（(]\s*旁白私聊回应\s*[）)])+\s*/, "");
-      const parseAffTag = (s) => {
-        const m = s.match(/⟦好感\s*([+-]?\d+)\s*⟧\s*$/);
-        const d = m ? Math.max(WHISPER_AFFECTION_RULES.min, Math.min(WHISPER_AFFECTION_RULES.max, parseInt(m[1], 10) || 0)) : WHISPER_AFFECTION_RULES.fallback;
-        return { text: s.replace(/⟦好感\s*[+-]?\d+\s*⟧\s*$/, "").trim() || "……", delta: d, tagged: !!m };
-      };
       if (apiCfg.streamEnabled && apiCfg.apiType !== "gemini") {
         const logIdx = { current: null };
         addLog([{ t: "narrator", text: "  「旁白」▌", streaming: true }]);
@@ -226,7 +225,6 @@ export function usePrivateTalk({
         if (isStale()) return;
         finishReason = fr;
         text = stripEchoPrefix(streamedText.trim()) || "……";
-        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
         setLog(l => {
           if (isStale() || logIdx.current == null) return l;
           const copy = [...l];
@@ -239,7 +237,6 @@ export function usePrivateTalk({
         if (isStale()) return;
         finishReason = result.finishReason;
         text = stripEchoPrefix(result.text.trim()) || "……";
-        { const pr = parseAffTag(text); text = pr.text; affDelta = pr.delta; hadAffTag = pr.tagged; }
         addLog([{ t: "narrator", text: `  「旁白」${text}` }]);
         traceStep(_wt, "AI调用", "pass", "非流式一次成功");
       }
@@ -247,15 +244,67 @@ export function usePrivateTalk({
       // ── 截断检查（本轮补齐）──
       // 主叙事那条路一直有 finishReason 判定 + 自动重说，私聊却把这个字段整个丢掉了，
       // 撞上限时界面上毫无提示，只表现成"她话说一半"，排查时无从下手。
-      // 附带一个更隐蔽的危害：⟦好感X⟧ 要求写在整段最末尾，被截断就一定读不到，
-      // parseAffTag 于是兜底 +1——她明明在敷衍，系统却在给玩家加好感。
       // 这里不自动重试（私聊不消耗回合、玩家再问一句即可，重试反而多烧一次钱），
-      // 只把真相摆到台面上：日志提示 + trace 留痕 + 好感度按"未表态"处理成 0。
+      // 只把真相摆到台面上：日志提示 + trace 留痕。好感改由软结算裁决玩家的话，
+      // 不再依赖她写在文末的标记，截断与否不影响裁决。
       const whisperHitCap = /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
       if (whisperHitCap) {
         traceStep(_wt, "截断检查", "block", `撞 token 上限（finishReason=${finishReason}），本轮回复不完整`);
         addLog([{ t: "sys", text: `  ⚠ 旁白这句话没说完就撞上了 token 上限（当前 ${narratorMaxTokens}）。可在 设置 → 旁白 里调大「私聊 token 输出上限」。` }]);
-        if (!hadAffTag) affDelta = 0; // 没读到她的表态就别替她表态
+      }
+
+      // ── 好感裁决：narrator_affinity 软结算 ──
+      // AI 提议、系统裁决：结算段小模型判玩家这句话落到什么份上，数值和日上限账本
+      // 由系统落账，不再读她文末的 ⟦好感X⟧。判的是玩家的话，与回复是否被截断无关。
+      // 海内/告白后不走这条路：创伤期靠心结推进，告白后走 memoryFragments。
+      if (!inSeaNow && !narrator.confessed && apiCfg.softSettleEnabled !== false) {
+        const soft = await runSoftSettle({
+          ai: bindTurnAi(createWebAi(), _wt),
+          apiCfg,
+          kind: "narrator_affinity",
+          ctx: {
+            playerSay: content,
+            varTree: varTreeRef.current,
+            narrator,
+            time: timeRef.current,
+            charm: char?.special?.魅力 ?? 5,
+          },
+        });
+        if (isStale()) return;
+        if (soft && soft.choice !== UNKNOWN_CHOICE) {
+          const affApplied = (soft.deltas || []).find((d) => d.path === "narrator.affection");
+          affDelta = affApplied?.actualDelta ?? 0;
+          if (!affApplied && soft.choice !== "敷衍冒犯") {
+            // 正向观感却没落 delta = 今日额度已满（软结算按日上限账本裁掉了）
+            addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
+          }
+          const treeDeltas = (soft.deltas || []).filter((d) => !d.path.startsWith("narrator."));
+          if (treeDeltas.length) setVarTree((prev) => applySettledDeltas(prev, treeDeltas));
+          traceStep(_wt, "结算·软判定", "pass", `旁白观感=${soft.choice}（${soft.note}）`);
+        } else {
+          affDelta = 0; // 判不了就不替她表态
+          traceStep(_wt, "结算·软判定", "skip", "旁白观感判不了，本轮好感不变");
+        }
+      } else if (!inSeaNow && !narrator.confessed && apiCfg.softSettleEnabled === false && affDelta > 0) {
+        // softSettleEnabled 关着的兜底：好感照旧 +1，但日上限仍要管——这条路的节流
+        // 不走软结算（narratorDailyDelta），沿用原来手工账本，否则私聊一天就能刷满门槛。
+        const led = varTreeRef.current.世界?.好感日增;
+        const day = Math.floor((timeRef.current || 0) / 24);
+        const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
+        const already = Number(gained["旁白"]) || 0;
+        const room = Math.max(0, WHISPER_AFFECTION_RULES.daily - already);
+        affDelta = Math.min(affDelta, room);
+        if (affDelta <= 0) {
+          addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
+        } else {
+          gained["旁白"] = already + affDelta;
+          setVarTree(prev => {
+            const next = JSON.parse(JSON.stringify(prev || {}));
+            if (!next.世界) next.世界 = { 威望: 0 };
+            next.世界.好感日增 = { dayStamp: day, gained };
+            return next;
+          });
+        }
       }
 
       // 把这轮私聊也计入主引擎共享的对话历史，让旁白（以及之后的叙事）都能"记得"这次私聊
@@ -312,30 +361,9 @@ export function usePrivateTalk({
           }
           return { ...n, memoryFragments: mf };
         }
-        // 旁白好感同样吃日上限。她走的是 ⟦好感N⟧ 这条路、不经 applyMvuCommands，
-        // 所以那边的节流管不到她——而 90 是整条个人线的门槛（真容立绘＋心灵之海），
-        // 能一天刷满就等于门禁形同虚设。只限正向，掉好感不限。
-        let capped = affDelta;
-        if (affDelta > 0) {
-          const led = varTreeRef.current.世界?.好感日增;
-          const day = Math.floor((timeRef.current || 0) / 24);
-          const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
-          const already = Number(gained["旁白"]) || 0;
-          const room = Math.max(0, WHISPER_AFFECTION_RULES.daily - already);
-          capped = Math.min(affDelta, room);
-          if (capped <= 0) {
-            addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
-          } else {
-            gained["旁白"] = already + capped;
-            setVarTree(prev => {
-              const next = JSON.parse(JSON.stringify(prev || {}));
-              if (!next.世界) next.世界 = { 威望: 0 };
-              next.世界.好感日增 = { dayStamp: day, gained };
-              return next;
-            });
-          }
-        }
-        const inc = Math.max(-n.affection, Math.min(capped, 100 - n.affection));
+        // 日上限账本已搬进软结算（narratorDailyDelta 写 世界.好感日增 并裁幅），
+        // 这里只把裁决出来的实际增量施加到旁白状态上。掉好感不限。
+        const inc = Math.max(-n.affection, Math.min(affDelta, 100 - n.affection));
         if (inc !== 0) {
           const next = n.affection + inc;
           addLog([{ t: "affection", text: `  💗 好感度 ${inc > 0 ? "+" : ""}${inc}（${n.affection} → ${next}）` }]);

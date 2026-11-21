@@ -100,7 +100,7 @@ export function buildCliApiConfig(overrides = {}) {
     apiType,
     endpoint: overrides.endpoint || PROVIDERS[provider || "openai"].endpoint,
     maxTokens: overrides.maxTokens || 4000,
-    extractionEnabled: overrides.extractionEnabled ?? false,
+    extractionEnabled: overrides.extractionEnabled ?? true,
     bookkeepEnabled: overrides.bookkeepEnabled ?? false,
     softSettleEnabled: overrides.softSettleEnabled ?? true,
     streamEnabled: false,

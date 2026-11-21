@@ -125,13 +125,14 @@ describe("declared numeric scales", () => {
     expect(unknown).toContain("不填本次收支额");
   });
 
-  it("uses each channel's own affection scale for the hidden marker", () => {
+  it("keeps the pigeon affection scale while whisper dropped the hidden marker", () => {
     expect(buildPrompt("pigeon.reply", {
       state: promptState(),
       letter: { npcName: "才旦" },
       preset: {},
     }).system).toContain(resolveRef({}, "尺度.飞鸽"));
-    expect(buildNarratorWhisperContext(10)).toContain(resolveRef({}, "尺度.私语"));
+    // 私语尺度已搬进 narrator_affinity 软结算的判题，旁白私聊提示词不再挂隐藏好感标记
+    expect(buildNarratorWhisperContext(10)).not.toContain("⟦好感");
   });
 });
 
