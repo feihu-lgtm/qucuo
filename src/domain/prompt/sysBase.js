@@ -1,7 +1,7 @@
 import { narratorVoicePrompt } from "../narrator/narrator.js";
 import { MVU_SYSTEM_INSTRUCTIONS } from "./mvu.js";
 import { AFFECTION_RULES, CARRY_COUNT, FIELD, FIELDS, formatRange, giftRange, learnRange } from "../state/fields.js";
-import { renderFieldScales } from "./promptRefs.js";
+import { renderFieldScales, renderPromptTemplate } from "./promptRefs.js";
 import { describeCatalogForAI } from "../items/catalog.js";
 import { getActivePreset } from "./presetSystem.js";
 import { assemblePrompt } from "./presetSystem.js";
@@ -25,6 +25,7 @@ function buildDuelReportRules(duelReport, narrativeOnly, onMissingPaths) {
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
 // 返回 SillyTavern 13 位置风格的 system 消息数组，每条带 tavernBlock/tavernLabel。
 export function buildSysBase(targetWordCount, narratorState, scenario, budgetInstruction, embeddingEnabled, npcLoreBlock, narrativeOnly = false, scope = "full", opts = {}) {
+  const giftWeight = (template) => renderPromptTemplate(template, opts, { trace: opts.onPromptRefMissing }).text;
   // memory 摘要统一用玩家角色名字第三人称叙述，不用"你/我/玩家"这几种代词混着写——
   // 事实账本(knowledge.js)的摘要要在多处被复用（旁白全知视角、其他NPC传闻转述、飞鸽书信
   // 里提起），人称一旦不统一，转述出来的句子会主客体错乱、读起来别扭。
@@ -80,6 +81,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战叙事铁律】只写玩家发出邀战、${npcName}接受邀战与双方摆开架势，写到第一招交手之前立刻停止。严禁描写任何招式交锋、回合、伤势、胜负、任一方喊停或${npcName}拒绝。切磋是否开始由玩家通过确认栏选择，本轮不得替玩家开始战斗。`;
     }
     if (o.settleKind === "gift") {
+      if (o.giftInfo?.weight) return giftWeight(
+        "\n【赠礼反应】礼物「@giftInfo.itemName」已由系统交付，不得重复扣除。分量：@{赠礼.分量}。反应：@赠礼.反应。按收礼人的性格写，不同分量不能写成同样的反应。",
+      );
       return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。这一轮${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，务必写成她欣然收下、态度转暖，不许写成推辞、质疑来意或婉拒不受——这是本轮叙事唯一的走向，不接受其他写法。`;
     }
     if (o.settleKind === "companion_invite") {
@@ -93,7 +97,8 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【授业传艺铁律】在曲措乡这方江湖里，肯把本事传给一个人，是极重的情分——那意味着认可、托付，也意味着从此多了一层师徒名分。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式都已由系统结算完毕，是既成事实），务必写成他/它郑重其事地把这身功夫交出来、态度较先前更亲近一分；不许写成勉强、敷衍、留一手或临时反悔——这是本轮叙事唯一的走向，不接受其他写法。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
     }
     if (o.settleKind === "appease") {
-      return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，玩家本轮这次行为是一次新的缓和尝试。请结合此前尝试的方式，判断当前行为是否真诚、得体并切中要害；有效才写成怒气有所消解，无效就让${o.settleNpc}依然不满，不得把和解当成既成事实。`;
+      return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，玩家本轮这次行为是一次新的缓和尝试。请结合此前尝试的方式，判断当前行为是否真诚、得体并切中要害；有效才写成怒气有所消解，无效就让${o.settleNpc}依然不满，不得把和解当成既成事实。`
+        + (o.giftInfo?.weight ? giftWeight("本次赠礼分量：@{赠礼.分量}。分量不等于已经消气。") : "");
     }
     return "";
   }
@@ -104,6 +109,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战状态铁律】本轮只是邀战与摆开架势，不发生战斗或任何状态变化。不得输出 <mvu>，不得修改气血、好感、物品或其他状态。`;
     }
     if (o.settleKind === "gift") {
+      if (o.giftInfo?.weight) return buildSettleNarrativeNote(o);
       return `\n【送礼世界观铁律】曲措乡这方水土人情厚重，收礼从不是件让人为难或起疑的事——不管东西贵重与否，只要是当面郑重递到手上的心意，对方都会真心生出一份惊喜与暖意；纵是相熟不深，出于最起码的礼貌、江湖上讲究的信义，或纯是那一刻的好心情，也断没有板起脸不领情、把这份情谊晾在一边的道理。所以这一轮${o.settleNpc}收下${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}时，对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n这件礼物的实际来历（好感幅度请依此掂量分量，越贵重、越用心，情谊越重）：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}${o.giftInfo?.desc ? `。物件描述：${o.giftInfo.desc}` : "（无特别来历，寻常物件）"}`;
     }
     if (o.settleKind === "companion_invite") {
@@ -126,6 +132,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战状态示例】本轮没有任何状态变化，不输出 <mvu> 块。`;
     }
     if (o.settleKind === "gift") {
+      if (o.giftInfo?.weight) return giftWeight(
+        "\n只可给收礼人一条 _.add 好感，允许整数区间 @赠礼.好感范围；允许零时，礼貌而无态度变化可以省略。不写其他 MVU。",
+      );
       const range = o.giftInfo?.range ?? giftRange(o.giftInfo?.quality);
       return `\n依上面这件礼物的品阶与来历，本轮好感度增量建议落在 ${formatRange(range)} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? Math.round((range[0] + range[1]) / 2)});`;
     }
@@ -216,10 +225,12 @@ ${wantMvu ? `
     buildDuelReportRules(opts.duelReport, narrativeOnly, opts.onDuelReportMissing),
     narrativeOnly ? buildSettleNarrativeNote(opts) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuNote(opts) : "",
-    (!narrativeOnly && isSettle && wantMvu && opts.settleKind !== "duel_invite")
+    (!narrativeOnly && isSettle && wantMvu && opts.settleKind !== "duel_invite" && !opts.giftInfo?.weight)
       ? `\n关于下面那条 <mvu>：${(opts.settleKind === "gift" || opts.settleKind === "companion_invite" || opts.settleKind === "learn_skill") ? "这一轮必须给出" : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化才给出"}。`
       : "",
-    (!narrativeOnly && wantMvu && opts.settleKind !== "duel_invite") ? MVU_SYSTEM_INSTRUCTIONS + renderFieldScales(isSettle ? [FIELD.affection] : Object.keys(FIELDS).filter((path) => FIELDS[path].ai === true), {}, opts.onPromptRefMissing) : "",
+    (!narrativeOnly && wantMvu && opts.settleKind !== "duel_invite") ? MVU_SYSTEM_INSTRUCTIONS
+      + renderFieldScales(isSettle ? (opts.giftInfo?.weight ? [] : [FIELD.affection])
+        : Object.keys(FIELDS).filter((path) => FIELDS[path].ai === true), opts, opts.onPromptRefMissing) : "",
     (!narrativeOnly && !isSettle && scope !== "move")
       ? renderFieldScales([FIELD.hp, "char.neigong", "char.waigong", "char.special", "dao.karma", "dao.jie", FIELD.inv, FIELD.flags, "skills", "exp", "pot"], {}, opts.onPromptRefMissing) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuExample(opts) : "",

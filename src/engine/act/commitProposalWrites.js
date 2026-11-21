@@ -7,7 +7,7 @@ import { commitModelFlags } from "./commitFlags.js";
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
 export function commitProposalWrites(d, trace) {
-  if (d.p.char && !d.isTalk) {
+  if (d.p.char && !d.isTalk && !d.giftAlreadySettled) {
     d.setChar((char) => {
       const { hp, ...changes } = d.p.char;
       const nextHp = d.preserveHp ? char.hp : hp ?? char.hp;
@@ -31,7 +31,7 @@ export function commitProposalWrites(d, trace) {
     // 这次没用上的品质/分类。
     const judgment = d.pickupJudgmentRef.current;
     let usedJudgment = false;
-    if (d.p.delta?.items_add?.length) {
+    if (d.p.delta?.items_add?.length && !d.giftAlreadySettled) {
       // 系统本轮已代发的采集物：即便 AI 又在 items_add 里塞了一份，也剔除，防重复入袋。
       const granted = d.collectGrantedRef.current || [];
       const rawAdds = granted.length
@@ -85,7 +85,7 @@ export function commitProposalWrites(d, trace) {
     // 物）。此前用 extractPickupName 正则从散文抠名那套已废弃（量词表补不全，"一件
     // 软甲"抠不到）。至此拾取物名一律走"读得懂语义的提取模型"，不再有任何正则抠名。
   }
-  if (d.p.delta && !d.isTalk) {
+  if (d.p.delta && !d.isTalk && !d.giftAlreadySettled) {
     if (d.p.delta.items_rm?.length) {
       const names = d.p.delta.items_rm.map(i => typeof i === 'string' ? i : i.name || String(i));
       d.setInv(updateField("inv", (inv) => set("inv", inv.filter((item) => !names.includes(typeof item === "string" ? item : item.name)))));
