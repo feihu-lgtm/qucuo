@@ -1,3 +1,5 @@
+import { AFFECTION_RULES } from "../state/fields.js";
+
 export const APPEASE_EXTRACTION_SPEC = {
   system: "你是游戏状态提取器，专门判断当前尝试是否缓和了NPC的怒气。只输出规则允许的怒气解除与有限好感度变化，不得修改其他状态。",
   user: (narrative, state, settleOpts) => {
@@ -8,7 +10,7 @@ export const APPEASE_EXTRACTION_SPEC = {
 叙事内容：
 ${narrative}
 
-仅当本次确实成功时，允许输出 _.set('角色.${npcName}.生气解除', true)，并可选输出 _.add('角色.${npcName}.好感度', N)，其中 N 为 0~5 的整数。若未成功或无法确定，不输出任何 MVU 指令。严禁输出其他路径、字段、delta 或变更。
+仅当本次确实成功时，允许输出 _.set('角色.${npcName}.生气解除', true)，并可选输出 _.add('角色.${npcName}.好感度', N)，其中 N 为 ${AFFECTION_RULES.appease.join("~")} 的整数。若未成功或无法确定，不输出任何 MVU 指令。严禁输出其他路径、字段、delta 或变更。
 成功示例：{"mvu":"_.set('角色.${npcName}.生气解除', true);\\n_.add('角色.${npcName}.好感度', 3);"}
 失败示例：{}`;
   },

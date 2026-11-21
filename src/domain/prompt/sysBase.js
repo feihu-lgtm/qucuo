@@ -1,5 +1,7 @@
 import { narratorVoicePrompt } from "../narrator/narrator.js";
 import { MVU_SYSTEM_INSTRUCTIONS } from "./mvu.js";
+import { AFFECTION_RULES, CARRY_COUNT, FIELD, FIELDS, formatRange, giftRange, learnRange } from "../state/fields.js";
+import { renderFieldScales } from "./promptRefs.js";
 import { describeCatalogForAI } from "../items/catalog.js";
 import { getActivePreset } from "./presetSystem.js";
 import { assemblePrompt } from "./presetSystem.js";
@@ -115,7 +117,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【授业传艺铁律】肯把本事传给一个人，在江湖里是极重的情分——那意味着认可与托付。这一轮${o.settleNpc}已经决定倾囊相授（好感门槛、束脩、招式均已由系统结算完毕，是既成事实），所以他/它对玩家的观感只能是变好、绝不会不变或变差——下面这条 <mvu> 块本轮必须给出，且必须是正向增量。\n本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。`;
     }
     if (o.settleKind === "appease") {
-      return `\n【怒气缓和状态裁决】只有当玩家本轮当前行为确实缓和了${o.settleNpc}，才可写 _.set('角色.${o.settleNpc}.生气解除', true)；未奏效时不得设置。只有成功时才可选写 _.add('角色.${o.settleNpc}.好感度', N)，其中 N 为 0~5 的整数。除此之外不得输出任何 MVU 变更。`;
+      return `\n【怒气缓和状态裁决】只有当玩家本轮当前行为确实缓和了${o.settleNpc}，才可写 _.set('角色.${o.settleNpc}.生气解除', true)；未奏效时不得设置。只有成功时才可选写 _.add('角色.${o.settleNpc}.好感度', N)，其中 N 为 ${AFFECTION_RULES.appease.join("~")} 的整数。除此之外不得输出任何 MVU 变更。`;
     }
     return "";
   }
@@ -124,15 +126,18 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战状态示例】本轮没有任何状态变化，不输出 <mvu> 块。`;
     }
     if (o.settleKind === "gift") {
-      return `\n依上面这件礼物的品阶与来历，本轮好感度增量建议落在 +${o.giftInfo?.range?.[0] ?? 2}~+${o.giftInfo?.range?.[1] ?? 4} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? 3});`;
+      const range = o.giftInfo?.range ?? giftRange(o.giftInfo?.quality);
+      return `\n依上面这件礼物的品阶与来历，本轮好感度增量建议落在 ${formatRange(range)} 这个区间内自行斟酌（品阶越高、描述越贵重可取区间上沿，寻常物件取下沿），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? Math.round((range[0] + range[1]) / 2)});`;
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
-      return `\n${cn}是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"刚结为同行的伙伴"的情分，不是从0慢慢培养的陌生关系），建议直接 _.set 到 40~55 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', 45);`;
+      const { min, max, example } = AFFECTION_RULES.companion;
+      return `\n${cn}是初登场的伙伴角色，好感度应有一个较高的初始值（毕竟是"刚结为同行的伙伴"的情分，不是从0慢慢培养的陌生关系），建议直接 _.set 到 ${min}~${max} 之间，示例写法：\n_.set('角色.${o.settleNpc}.好感度', ${example});`;
     }
     if (o.settleKind === "learn_skill") {
       const master = !!o.learnInfo?.isMaster;
-      return `\n授业这一轮好感度增量建议落在 +${master ? "4~+8" : "2~+4"} 之间（${master ? "所授是压箱底的绝学，情分重，可取上沿" : "所授是通用功夫，取下沿即可"}），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${master ? 6 : 3});`;
+      const [min, max, example] = learnRange(master);
+      return `\n授业这一轮好感度增量建议落在 ${formatRange([min, max])} 之间（${master ? "所授是压箱底的绝学，情分重，可取上沿" : "所授是通用功夫，取下沿即可"}），不得为 0 或负数。示例写法：\n_.add('角色.${o.settleNpc}.好感度', ${example});`;
     }
     if (o.settleKind === "appease") {
       return `\n成功示例（不成功则不输出这两条）：\n_.set('角色.${o.settleNpc}.生气解除', true);\n_.add('角色.${o.settleNpc}.好感度', 3);`;
@@ -165,13 +170,13 @@ ${opts.snowLeopardGift ? '唯一例外：收复雪豹任务进行中且雪豹在
       : scope === "move"
         ? `回复纯JSON，字符串不换行。这是一次移动到达，你只需生成到达新地点的叙事与该地点的场景/在场人物，不涉及发放物品或复杂状态变更：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
-npcs 的 carry 字段只在该 NPC 首次登场那一轮写（0-3件肉眼可见随身物，出场叙事需描述其外观）。
+npcs 的 carry 字段只在该 NPC 首次登场那一轮写（${CARRY_COUNT.min}-${CARRY_COUNT.max}件肉眼可见随身物，出场叙事需描述其外观）。
 可选字段 "memory"：用不超过50字纯客观事实概括本轮到达了何处、路上是否有值得记的事，一律用"${playerName}"称呼玩家角色，不要用"你/我/玩家"，寻常赶路可省略。
 若这次移动让某个从未出现的具名人物被提及，加 "mentionedNewNpcs":["名"]。`
         : `回复纯JSON，字符串不换行：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}],"items":[{"name":"名","id":"id"}]},"char":{"hp":[60,100],"neigong":5,"waigong":8,"special":{"根骨":5,"悟性":6,"体魄":5,"魅力":5,"智谋":5,"身法":5,"气运":5}},"dao":{"karma":0,"jie":0,"sign":"天象","rumor":["事"]},"delta":{"items_add":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}],"items_rm":[],"skill_up":{},"exp":0,"pot":0,"flags_add":[]}}
 items_add 里的元素也可以是纯字符串（不需要装备系统参与的剧情道具/杂物），结构化写法仅用于武器/护甲/饰品类物品。
-npcs 的 carry 字段只在该 NPC 首次登场那一轮写：列出出场描述里玩家肉眼可见的随身物品（兵器、猎具、饰物、包裹等，0-3件，寻常人多为白/绿档），出场叙事必须描述其外观且提到这些东西——所见即所得，之后系统会固化这份清单作为他的全部随身家当（掉落/偷窃都只出自这里），后续轮次不必再写 carry。
+npcs 的 carry 字段只在该 NPC 首次登场那一轮写：列出出场描述里玩家肉眼可见的随身物品（兵器、猎具、饰物、包裹等，${CARRY_COUNT.min}-${CARRY_COUNT.max}件，寻常人多为白/绿档），出场叙事必须描述其外观且提到这些东西——所见即所得，之后系统会固化这份清单作为他的全部随身家当（掉落/偷窃都只出自这里），后续轮次不必再写 carry。
 npcs 里某个 NPC 如果是路途遭遇生成的生态猛兽/山贼游哨这类"泛用清剿目标"（不是具名剧情人物），可选加一个 "tag" 字段（比如 "熊山野兽""黑风寨山贼"，具体归属看当前地域的路途遭遇说明），系统会用它核对是否推进对应的清剿类任务进度；具名剧情人物不要加这个字段。
 如果这一轮的旁白/对话文本里，你让某个此前从未出现过的具名人物被提及（比如"我那侄子阿福在山下磨坊"），在顶层JSON里加 "mentionedNewNpcs":["阿福"] 字段列出这些名字，不需要每次都有，绝大多数时候留空或省略这个字段即可，只有真的提到全新的具名人物时才加。
 ${scope === "full" && !opts.duelReport ? '仅当本轮玩家明确向当前在场名单中的 NPC 发起切磋/比试、且该 NPC 明确应允并与玩家摆开架势时，才在顶层 JSON 加 "duelRequest":"NPC名"。NPC 拒绝或躲避、玩家拒绝切磋、或只是在谈论打斗时，必须省略此字段。' : ""}
@@ -214,7 +219,9 @@ ${wantMvu ? `
     (!narrativeOnly && isSettle && wantMvu && opts.settleKind !== "duel_invite")
       ? `\n关于下面那条 <mvu>：${(opts.settleKind === "gift" || opts.settleKind === "companion_invite" || opts.settleKind === "learn_skill") ? "这一轮必须给出" : "如果这一轮牵涉的人物（" + opts.settleNpc + "）对玩家的观感确有变化才给出"}。`
       : "",
-    (!narrativeOnly && wantMvu && opts.settleKind !== "duel_invite") ? MVU_SYSTEM_INSTRUCTIONS : "",
+    (!narrativeOnly && wantMvu && opts.settleKind !== "duel_invite") ? MVU_SYSTEM_INSTRUCTIONS + renderFieldScales(isSettle ? [FIELD.affection] : Object.keys(FIELDS).filter((path) => FIELDS[path].ai === true), {}, opts.onPromptRefMissing) : "",
+    (!narrativeOnly && !isSettle && scope !== "move")
+      ? renderFieldScales([FIELD.hp, "char.neigong", "char.waigong", "char.special", "dao.karma", "dao.jie", FIELD.inv, FIELD.flags, "skills", "exp", "pot"], {}, opts.onPromptRefMissing) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuExample(opts) : "",
   ].filter(Boolean).join("\n");
 

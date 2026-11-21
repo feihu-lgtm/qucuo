@@ -1,5 +1,6 @@
 import { APPEASE_EXTRACTION_SPEC } from "./appeaseExtraction.js";
-import { renderPromptTemplate } from "./promptRefs.js";
+import { renderFieldScales, renderPromptTemplate } from "./promptRefs.js";
+import { AFFECTION_RULES, FIELD, giftRange, learnRange } from "../state/fields.js";
 
 // 公共字段和 MVU 路径规矩统一追加到每个提取提示，确保单/双调用保持一致。
 // memory 摘要使用玩家角色名的第三人称，供回忆与事实账本复用。
@@ -34,6 +35,7 @@ export const EXTRACTION_SPECS = {
   },
 
   MOVE: {
+    scaleFields: [FIELD.inv],
     system: "你是游戏状态提取器，只做结构化提取，不添加叙事里没有描述到的内容。",
     user: (_narrative, s, _settle, render) => {
       const exits = s.lockedExits ? Object.keys(s.lockedExits) : s.room.exits;
@@ -74,6 +76,7 @@ export const EXTRACTION_SPECS = {
   // commitRound 那条"对话即认识"只剩 talkTarget 兜底——点「全部」聊天谁都不会被
   // 标记认识。放在这里要，正好补上。
   TALK_CASUAL: {
+    scaleFields: [FIELD.affection, FIELD.inv, FIELD.flags],
     system: "你是游戏状态提取器，从叙事中提取 NPC 互动产生的状态变化（好感度、物品交换、谁开口回应了）。只提取叙事里确实写到的内容，不添加、不脑补。",
     user: (_narrative, _state, _settle, render) =>
       render(`当前 NPC 关系：@角色关系
@@ -98,10 +101,11 @@ export const EXTRACTION_SPECS = {
   // 品阶/描述给出有依据的幅度参考。settleOpts 由调用方在命中 settleKind:"gift" 时传入
   // （见 MudRPG.jsx handleNpcGift/giftToCharacter），未命中时仍走上面通用 TALK_CASUAL。
   GIFT: {
+    scaleFields: [FIELD.affection],
     system: "你是游戏状态提取器，专门处理送礼场景的好感度结算——这个世界收礼必然让人欣喜，好感度只能往上走，不做\"读心\"式判断。",
     user: (narrative, s, settleOpts) => {
       const info = settleOpts?.giftInfo || {};
-      const [lo, hi] = info.range || [2, 4];
+      const [lo, hi] = info.range || giftRange(info.quality);
       const suggested = info.suggestedDelta ?? Math.round((lo + hi) / 2);
       return `${settleOpts?.settleNpc || "对方"}刚收到玩家赠送的礼物：${info.itemName ? `「${info.itemName}」` : "一件物品"}，品阶【${info.quality || "白"}】${info.categoryLabel ? `，类别「${info.categoryLabel}」` : ""}${info.desc ? `。物件描述：${info.desc}` : ""}
 
@@ -120,6 +124,7 @@ ${narrative}
   // settleKind:"companion_invite" 时传入（见 MudRPG.jsx handleInviteCompanion）。
   // settleBeast 区分兽类/人类伙伴：兽类不通人言（cannotSpeak），人类正常说话。
   COMPANION_INVITE: {
+    scaleFields: [FIELD.affection],
     system: "你是游戏状态提取器，专门处理伙伴入队场景的好感度结算——伙伴刚接受邀请结为同行，好感度应直接给一个较高的初始值，不做\"读心\"式判断。",
     user: (narrative, s, settleOpts) => {
       const npcName = settleOpts?.settleNpc || "伙伴";
@@ -131,9 +136,9 @@ ${narrative}
 叙事内容：
 ${narrative}
 
-【铁律】不管叙事写得含蓄还是热络，这一轮${npcName}对玩家的好感度都应直接设为一个较高的初始值（40~55之间，体现"刚结为同行的伙伴、一见如故"而非从零培养），不得低于30。
+【铁律】不管叙事写得含蓄还是热络，这一轮${npcName}对玩家的好感度都应直接设为一个较高的初始值（${AFFECTION_RULES.companion.min}~${AFFECTION_RULES.companion.max}之间，体现"刚结为同行的伙伴、一见如故"而非从零培养），不得低于${AFFECTION_RULES.companion.floor}。
 输出 JSON（mvu 字段必须是一条 _.set 好感度指令，用 set 不用 add——这是初次登场，不是在已有基础上增减）：
-{"mvu":"_.set('角色.${npcName}.好感度', 45);\n","delta":{"items_add":[],"flags_add":[]}}`;
+{"mvu":"_.set('角色.${npcName}.好感度', ${AFFECTION_RULES.companion.example});\n","delta":{"items_add":[],"flags_add":[]}}`;
     },
   },
 
@@ -143,13 +148,14 @@ ${narrative}
   // 情分，好感度只可能往上走。此前拜师压根没传 settleKind，于是落到通用 spec 去
   // 让小模型从散文里猜"这轮好感变没变"，结果基本猜不出来，表现为"拜完师好感纹丝不动"。
   LEARN_SKILL: {
+    scaleFields: [FIELD.affection],
     system: "你是游戏状态提取器，专门处理拜师学艺场景的好感度结算——授业传艺是江湖里极重的情分，好感度只能往上走，不做\"读心\"式判断。",
     user: (narrative, s, settleOpts) => {
       const npcName = settleOpts?.settleNpc || "师父";
       const info = settleOpts?.learnInfo || {};
       // 授平生绝学(isMaster) 比随手指点几手通用功夫情分重，幅度分档。
-      const [lo, hi] = info.isMaster ? [4, 8] : [2, 4];
-      const suggested = info.isMaster ? 6 : 3;
+      const [lo, hi, suggested] = learnRange(info.isMaster);
+
       return `${npcName}刚刚收玩家为徒，${info.isMaster ? "将自己的看家绝学" : "把几手江湖基本功"}「${info.moveBrief || "所学"}」倾囊相授${info.totalPrice ? `，玩家奉上束脩银${info.totalPrice}两` : "，分文未取"}。
 
 叙事内容：
@@ -161,9 +167,10 @@ ${narrative}
     },
   },
 
-  APPEASE: APPEASE_EXTRACTION_SPEC,
+  APPEASE: { ...APPEASE_EXTRACTION_SPEC, scaleFields: [FIELD.affection] },
 
   EXPLORE_ACTION: {
+    scaleFields: [FIELD.affection, FIELD.inv, FIELD.flags],
     system: "你是游戏状态提取器，从叙事中提取探索/调查行动产生的状态变化。",
     user: (_narrative, _state, _settle, render) =>
       render(`当前场景：@room.name，背包：@背包
@@ -176,6 +183,7 @@ ${narrative}
   },
 
   COMBAT: {
+    scaleFields: [FIELD.hp, FIELD.affection, FIELD.inv, "exp", "pot"],
     system: "你是游戏状态提取器，从叙事中提取战斗结果（HP 变化、掉落、经验等）。",
     user: (_narrative, _state, _settle, render) =>
       render(`当前状态：HP=@气血，背包：@背包
@@ -189,6 +197,7 @@ mvu 字段留空即可，除非叙事里**明确写出**某个 NPC 因这场战�
   },
 
   UNKNOWN: {
+    scaleFields: [FIELD.hp, FIELD.money, FIELD.affection, FIELD.reputation, FIELD.inv, FIELD.flags, "exp", "pot"],
     system: "你是游戏状态提取器，从叙事中提取所有发生变化的游戏状态。",
     user: (_narrative, _state, _settle, render) =>
       render(`当前状态：场景=@room.name，HP=@气血，背包=@背包，NPC 关系=@角色关系
@@ -197,7 +206,7 @@ mvu 字段留空即可，除非叙事里**明确写出**某个 NPC 因这场战�
 @narrative
 
 根据叙事，输出所有变化的 JSON（只包含实际变化的字段，未变化的省略，无变化输出 {}）：
-{"room":{"desc":"","npcs":[],"items":[]},"char":{"hp":[当前,最大值]},"delta":{"items_add":[],"items_rm":[],"exp":0,"pot":0,"flags_add":[]},"mvu":"_.add(...);\n"}`),
+{"room":{"desc":"","npcs":[],"items":[]},"char":{"hp":[当前,最大值],"money":当前银两},"delta":{"items_add":[],"items_rm":[],"exp":0,"pot":0,"flags_add":[]},"mvu":"_.add(...);\n"}`),
   },
 };
 
@@ -206,5 +215,6 @@ export function renderExtractionSpec(spec, narrative, state, settleOpts, trace) 
     ...state, narrative, ...overrides,
     promptRefOptions: { inventoryNames: true, inventorySeparator: "，", emptyInventory: "空", ...options },
   }, { trace }).text;
-  return spec.user(narrative, state, settleOpts, render) + commonExtractTail(render);
+  return spec.user(narrative, state, settleOpts, render) + commonExtractTail(render)
+    + renderFieldScales(spec.scaleFields || [], state, trace);
 }

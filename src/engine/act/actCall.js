@@ -1,4 +1,5 @@
 import { buildSysBase } from "../../domain/prompt/sysBase.js";
+import { renderFieldScales, renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
 import { step as traceStep, attachInjectionSnapshot } from "../../infra/actionTrace.js";
 import { NSFW_RULES, MODE_PRIMER_MESSAGES } from "../../domain/prompt/modePrimer.js";
 import { GM_RULE } from "../../domain/prompt/enginePrompts.js";
@@ -159,7 +160,7 @@ ${pers.bio || ""}
 [砍价规则] 按其性格接招：玩家说得在理便松口，胡搅蛮缠便顶回去，也可主动搭赠随身物件促成交易；不要一轮就把价谈死，留出拉扯余地。本轮不改变房间/物品/任何游戏状态，只有对白、神态与心思。
 对话用「」包裹，旁白叙述不加标记，心理用*斜体*。总字数约 ${dealWords} 字。
 
-[结算标签说明] priceMult 是对原报价 ${g.baseOffer || "?"} 两的倍率（对方肯多出→>1，让利→<1，没谈拢→1.0；系统只认 0.8~1.5，超出无效）；addItem 只能填其随身确有且愿搭的物件名，否则填 null。标签只给系统看，玩家看不到。
+[结算标签说明] priceMult 是对原报价 ${g.baseOffer || "?"} 两的倍率（范围 ${renderPromptTemplate("@尺度.谈价", {}, { trace: d.onPromptRefMissing }).text}）；addItem 只能填其随身确有且愿搭的物件名，否则填 null。标签只给系统看，玩家看不到。${renderFieldScales(["gambleNegotiation.*.*.mult"])}
 
 ${dealFmt}`;
     const dealHist = d.mainConvo.slice(-8).map(m => (m.role === "user" ? "[玩家] " : "[引擎] ") + m.content).join("\n");

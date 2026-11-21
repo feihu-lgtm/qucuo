@@ -3,10 +3,16 @@ import {
   buildMainStatePrompt,
   buildWhisperStatePrompt,
   renderPromptTemplate,
+  renderFieldScales,
   resolveRef,
 } from "./promptRefs.js";
 import { buildPigeonPrompt } from "./pigeonPrompt.js";
 import { callExtraction } from "./extractionEngine.js";
+import { AFFECTION_RULES, FIELD, FIELDS, WHISPER_AFFECTION_RULES } from "../state/fields.js";
+import { buildNarratorWhisperContext } from "../narrator/narrator.js";
+import { buildSysBase } from "./sysBase.js";
+import { priceForQuality } from "../economy/equipment.js";
+import { SERVICE_MENUS } from "../buildings/menuData.js";
 
 function promptState() {
   return {
@@ -42,6 +48,7 @@ describe("prompt reference resolver", () => {
     expect(resolveRef(state, "char.hp")).toEqual([70, 100]);
     expect(resolveRef(state, "主角.名")).toBe("少侠");
     expect(resolveRef(state, "varTree.角色.才旦.好感度")).toBe(37);
+    expect(resolveRef(state, "角色.才旦.好感度")).toBe(37);
     expect(renderPromptTemplate("@气血 / @varTree.角色.才旦.好感度", state).text).toBe("70/100 / 37");
   });
 
@@ -63,6 +70,60 @@ describe("prompt reference resolver", () => {
       missingPaths: ["missing.value"],
     });
     expect(trace).toHaveBeenCalledWith(["missing.value"]);
+  });
+});
+
+describe("declared numeric scales", () => {
+  const numbers = (text) => Array.from(text.matchAll(/[+-]?\d+(?:\.\d+)?/g), ([value]) => Number(value));
+  const within = (text, { min = -Infinity, max = Infinity }, label) => {
+    for (const value of numbers(text)) {
+      expect(value, label).toBeGreaterThanOrEqual(min);
+      expect(value, label).toBeLessThanOrEqual(max);
+    }
+  };
+
+  it("fails on missing scale references or figures outside the declared bounds", () => {
+    for (const [path, spec] of Object.entries(FIELDS)) {
+      if (!spec.scale) continue;
+      const { text, missingPaths } = renderPromptTemplate(spec.scale, {});
+      expect(missingPaths, path).toEqual([]);
+      within(text, spec, path);
+    }
+    within(resolveRef({}, "尺度.飞鸽"), AFFECTION_RULES.pigeon, "飞鸽增量");
+    within(resolveRef({}, "尺度.私语"), WHISPER_AFFECTION_RULES, "私语增量");
+    for (const [name, values] of Object.entries({ ...AFFECTION_RULES.gift, ...AFFECTION_RULES.learn })) {
+      within(values.join(" "), FIELDS[FIELD.affection], name);
+      within(values.join(" "), { max: AFFECTION_RULES.mvu.maxDelta }, name);
+    }
+  });
+
+  it("generates silver scale from the live menu and weapon price rules", () => {
+    expect(renderFieldScales([FIELD.money])).toContain(`${SERVICE_MENUS.饭馆[0].price}两`);
+    expect(renderFieldScales([FIELD.money])).toContain(`${priceForQuality("weapon", "白").buyPrice}两`);
+  });
+
+  it("includes relationship and reputation scales only in a write-enabled MVU prompt", () => {
+    const prompt = (narrativeOnly) => buildSysBase(200, { affection: 10 }, "", "", false, "", narrativeOnly).phiRules;
+    expect(prompt(false)).toContain(renderFieldScales([FIELD.affection, FIELD.reputation]).trim());
+    expect(prompt(true)).not.toContain(FIELDS[FIELD.reputation].scale);
+    expect(prompt(false)).not.toContain("小额谢礼");
+  });
+
+  it("shows only the appropriate fields in extraction prompts", async () => {
+    const chat = vi.fn(async () => ({ text: "{}" }));
+    for (const intent of ["LOOK", "COMBAT", "UNKNOWN"]) {
+      await callExtraction(intent, "点头", promptState(), {}, null, { chat });
+    }
+    const [look, combat, unknown] = chat.mock.calls.map(([messages]) => messages[0].content);
+    expect(look).not.toContain("本轮可写字段的尺度");
+    expect(combat).toContain(FIELDS[FIELD.hp].scale);
+    expect(combat).not.toContain("小额谢礼");
+    expect(unknown).toContain(renderFieldScales([FIELD.money]).split("\n").at(-1));
+  });
+
+  it("uses each channel's own affection scale for the hidden marker", () => {
+    expect(buildPigeonPrompt(promptState(), { npcName: "才旦" }, {})).toContain(resolveRef({}, "尺度.飞鸽"));
+    expect(buildNarratorWhisperContext(10)).toContain(resolveRef({}, "尺度.私语"));
   });
 });
 

@@ -1,4 +1,5 @@
 import { random } from "../../core/rng.js";
+import { AFFECTION_RULES } from "../../domain/state/fields.js";
 import { makeItem } from "../../domain/economy/equipment.js";
 import { registerFact } from "../../domain/prompt/knowledge.js";
 import { makeItemSmart } from "../../domain/items/catalog.js";
@@ -148,7 +149,7 @@ export function applyPigeonReply(state, letter, responseText) {
   let reply = (responseText || "").trim() || "（信纸空落落的，对方似乎无话可说。）";
   let affDelta = 1;
   const affectionMatch = reply.match(/⟦好感\s*([+-]?\d+)\s*⟧/);
-  if (affectionMatch) affDelta = Math.max(-3, Math.min(8, parseInt(affectionMatch[1], 10) || 0));
+  if (affectionMatch) affDelta = Math.max(AFFECTION_RULES.pigeon.min, Math.min(AFFECTION_RULES.pigeon.max, parseInt(affectionMatch[1], 10) || 0));
   const giftMatch = reply.match(/⟦回礼[:：]\s*([^|｜⟧]+)[|｜]\s*(weapon|armor|accessory|misc)\s*⟧/);
   const giftBack = giftMatch
     ? { name: giftMatch[1].trim(), category: giftMatch[2].trim() }

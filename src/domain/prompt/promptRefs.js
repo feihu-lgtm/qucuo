@@ -1,106 +1,5 @@
-import { hasInnerMap, isNpcVisibleInInnerRoom } from "../map/innerMap.js";
-import { getTimeStr } from "../../utils/mudHelpers.js";
-import { allFactSummaries } from "./knowledge.js";
-
-export function formatFactSummariesForPrompt(facts) {
-  return facts.map((fact) => `· （${getTimeStr(fact.诞生回合 || 0)}）${fact.摘要}${fact.标签 ? `〔${fact.标签}〕` : ""}`).join("\n");
-}
-
-export function getPresentNpcs({ room, innerRoomName }) {
-  return (room?.npcs || []).filter((npc) => npc?.name &&
-    isNpcVisibleInInnerRoom(room.name, innerRoomName, npc));
-}
-
-function formatCarried(npc) {
-  const items = (npc.carriedItems || []).filter((item) => !item.stolen).map((item) => item.name).join("、");
-  return items ? `〔身携:${items}〕` : "〔身无长物〕";
-}
-
-function formatNpcs(scope) {
-  const npcs = scope.visibleNpcsForAI ?? scope.visibleNpcs ?? getPresentNpcs(scope);
-  const { npcSeparator = ",", detailedNpcs } = scope.promptRefOptions || {};
-  return npcs.map((npc) => {
-    if (!detailedNpcs) return npc.name;
-    const tier = typeof npc.levelCap === "number"
-      ? `〔品阶:${scope.quality?.[Math.max(0, Math.min(5, npc.levelCap))]}档〕` : "";
-    return npc.name + tier + formatCarried(npc);
-  }).join(npcSeparator) || "无";
-}
-
-function formatInventory(scope) {
-  const { inventoryNames, inventorySeparator = ",", emptyInventory = "" } = scope.promptRefOptions || {};
-  return (scope.inv || []).map((item) => {
-    if (typeof item === "string") return item;
-    if (inventoryNames) return item.name;
-    return `${item.name}(${item.quality}${item.equipped ? "·已装备" : ""})`;
-  }).join(inventorySeparator) || emptyInventory;
-}
-
-function formatRoomName(scope) {
-  const name = scope.room?.name;
-  if (name === undefined) return undefined;
-  const hasMap = scope.hasInnerMap ?? hasInnerMap;
-  return !scope.promptRefOptions?.outerRoomOnly && hasMap(name) && scope.innerRoomName
-    ? `${name}·${scope.innerRoomName}` : name;
-}
-
-function npcAttrs(scope) {
-  const characters = scope.varTree?.角色;
-  return characters && Object.hasOwn(characters, scope.npcName) ? characters[scope.npcName] : undefined;
-}
-
-export const PROMPT_FIELDS = Object.freeze({
-  "主角.名": ({ char, promptRefOptions }) => char?.name || promptRefOptions?.playerFallback || "无名少侠",
-  "主角.性别": ({ char }) => char?.gender || "男",
-  时间: (scope) => scope.time === undefined ? undefined
-    : scope.getTimeStr ? scope.getTimeStr(scope.time) || scope.time : getTimeStr(scope.time),
-  "房间.名": formatRoomName,
-  "房间.出口": ({ room }) => (room?.exits || []).join(","),
-  "房间.出口示例": ({ room }) => (room?.exits || []).map((exit) => `"${exit}"`).join(","),
-  "房间.全员": ({ room }) => (room?.npcs || []).map((npc) => npc.name).join("、") || "无",
-  "房间.全员随身": ({ room }) => (room?.npcs || []).map((npc) =>
-    `· ${npc.name}${formatCarried(npc)}`).join("\n") || "· （无人在场）",
-  在场NPC: formatNpcs,
-  地上物品: ({ room, promptRefOptions }) => (room?.items || [])
-    .map((item) => item.name).join(promptRefOptions?.itemSeparator ?? ",") || "无",
-  气血: ({ char }) => (char?.hp || []).join("/"),
-  内功: ({ char }) => char?.neigong ?? 0,
-  外功: ({ char }) => char?.waigong ?? 0,
-  特殊属性: ({ char }) => Object.entries(char?.special || {}).map(([key, value]) => key + value).join(","),
-  背包: formatInventory,
-  装备: (scope) => scope.describeEquipment?.(scope.inv) || "",
-  武学: ({ skills }) => (skills || []).map((skill) => skill.name + "Lv" + skill.level).join(","),
-  道德: ({ dao }) => dao?.karma,
-  劫数: ({ dao }) => dao?.jie,
-  标记: ({ flags }) => flags?.length ? flags.join(",") : "无",
-  今日起居: (scope) => scope.describeTodayForAI?.(
-    scope.varTree?.世界?.起居注, scope.timeForToday ?? scope.time) || "",
-  角色关系: ({ varTree }) => varTree?.角色 || {},
-  "旁白.好感度": ({ narrator }) => String(narrator?.affection),
-  事实摘要: ({ varTree, promptRefOptions }) => formatFactSummariesForPrompt(
-    allFactSummaries(varTree || {}, promptRefOptions?.factLimit)),
-  "通信.好感度": (scope) => {
-    const value = npcAttrs(scope)?.好感度;
-    return typeof value === "number" ? value : 0;
-  },
-  "通信.态度": (scope) => {
-    const attitude = npcAttrs(scope)?.态度;
-    return attitude ? `，${attitude}` : "";
-  },
-  "通信.往来": (scope) => (npcAttrs(scope)?.飞鸽 || []).map((m) =>
-    `${m.dir === "send" ? "主角来信" : "你的回信"}：${m.content}${m.gift ? `（附礼：${m.gift}）` : ""}`
-  ).join("\n") || "（这是你们第一次通信）",
-});
-
-export function resolveRef(scope, path) {
-  if (Object.hasOwn(PROMPT_FIELDS, path)) return PROMPT_FIELDS[path](scope);
-  let value = scope;
-  for (const part of path.split(".")) {
-    if (value == null || !Object.hasOwn(value, part)) return undefined;
-    value = value[part];
-  }
-  return value;
-}
+import { FIELDS, readField } from "../state/fields.js";
+export { getPresentNpcs, formatFactSummariesForPrompt, readField as resolveRef } from "../state/fields.js";
 
 function displayPromptValue(value) {
   if (value == null) return "";
@@ -115,13 +14,21 @@ export function renderPromptTemplate(template, scope, { trace } = {}) {
   const missing = new Set();
   const text = template.replace(REF_PATTERN, (_, braced, bare) => {
     const path = braced ?? bare;
-    const value = resolveRef(scope, path);
+    const value = readField(scope, path);
     if (value === undefined) missing.add(path);
     return displayPromptValue(value);
   });
   const missingPaths = [...missing];
   if (missingPaths.length) trace?.(missingPaths);
   return { text, missingPaths };
+}
+
+export function renderFieldScales(paths, scope = {}, trace) {
+  const lines = [...new Set(paths)].flatMap((path) => {
+    const field = FIELDS[path];
+    return field?.scale ? [`- ${field.label}：${renderPromptTemplate(field.scale, scope, { trace }).text}`] : [];
+  });
+  return lines.length ? "\n【本轮可写字段的尺度（以本轮专用规则为准）】\n" + lines.join("\n") : "";
 }
 
 const PLAYER = "主角:@主角.名〔@主角.性别〕";

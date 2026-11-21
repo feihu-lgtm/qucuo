@@ -12,6 +12,7 @@
 // 【为什么要 ensure 而不是只在 initialVarTree 里给初值】老存档的 varTree 里没有这一支，
 // 直接 varTree.世界.旁白.seaUnlocked 会炸；读的地方一律走 narratorVars() 兜底。
 import { emptyTally } from "../memory/tally.js";
+import { AFFECTION_RULES, FIELD, FIELDS } from "../state/fields.js";
 
 export function initialNarratorVars() {
   return {
@@ -153,7 +154,7 @@ export function isProtectedMvuPath(path) {
 }
 const AFFECTION_KEY = "好感度";
 const REPUTATION_PATH = "世界.威望";
-const MAX_SINGLE_ADD = 15;
+const MAX_SINGLE_ADD = AFFECTION_RULES.mvu.maxDelta;
 
 // ── 好感度日上限（防刷）──────────────────────────────────────────────
 // 【为什么要这个】此前只有"单次 ±15"和"总量 0-100"两道限，没有任何**频次**限制。
@@ -163,7 +164,7 @@ const MAX_SINGLE_ADD = 15;
 // 参考姬侠传 char_card_1 的 clampFavorabilityGain：它按**周**给每个 NPC 设涨幅上限，
 // 且只限正向、不限下降。我们的时间单位是 24 回合一天，所以按天。
 // 只限正向是关键：得罪人该是立刻见效的，那不需要节流。
-const AFFECTION_DAY_CAP = 12;   // 单个 NPC 每天最多涨这么多
+const AFFECTION_DAY_CAP = AFFECTION_RULES.mvu.daily;
 const DAY_TURNS_MVU = 24;       // 与 memory/tally.js 的 DAY_TURNS 一致
 
 export function applyMvuCommands(varTree, commands, opts = {}) {
@@ -189,7 +190,8 @@ export function applyMvuCommands(varTree, commands, opts = {}) {
 
     const isAffection = cmd.path.endsWith("." + AFFECTION_KEY);
     const isReputation = cmd.path === REPUTATION_PATH;
-    const clampRange = isReputation ? [-100, 100] : [0, 100];
+    const { min, max } = FIELDS[isReputation ? FIELD.reputation : FIELD.affection];
+    const clampRange = [min, max];
 
     if (cmd.op === "set") {
       let value = cmd.value;
@@ -276,12 +278,12 @@ export const MVU_SYSTEM_INSTRUCTIONS = `
   _.set('角色.某某.好感度', 30);   // 直接设置某个数值/文本
   _.add('角色.某某.好感度', 5);    // 在现有值基础上增减
 路径规则：
-- 新出场的 NPC，如果剧情需要追踪她/他和玩家的关系，请用 角色.<姓名>.好感度 声明并维护，初始值建议给 0-20 之间的合理数字
+- 新出场的 NPC，如果剧情需要追踪她/他和玩家的关系，请用 角色.<姓名>.好感度 声明并维护，初始值建议给 ${AFFECTION_RULES.firstMeeting.join("-")} 之间的合理数字
 - 角色还可以有其他属性，如 角色.<姓名>.态度、角色.<姓名>.身份，按需自由声明
-- 世界.威望 是全局唯一的总声望值（-100 到 100，初始 0，不分势力/据点），玩家做的事在江湖上传开、被人看在眼里时才用 _.add 调整——路见不平出手相助、兑现承诺、救人性命等义举加分（幅度参考好感度：明显的义举 +5~15）；坑蒙拐骗、恃强凌弱、背弃承诺等劣行减分（同等幅度扣分）。日常寻常对话、纯私人恩怨、没有旁人知晓的事不必触发这个字段——威望是"江湖怎么看你"，不是"某个人怎么看你"（那是好感度该管的事），两者不要混用
+- 世界.威望 是全局唯一的江湖声望，按下方尺度裁决，不能与某个 NPC 的好感混用。
 - 其余世界状态用 世界.<名称> 声明，按需自由声明（威望之外没有固定字段名）
 - 主角自身状态用 主角.<名称> 声明
-- 好感度、威望这两类数值都会被系统自动限制在各自的合理区间（好感度0-100，威望-100~100），单次增减都不会超过 ±15，不需要你自己计算裁剪
+- 绝对值区间：好感度 ${FIELDS[FIELD.affection].min}~${FIELDS[FIELD.affection].max}，威望 ${FIELDS[FIELD.reputation].min}~${FIELDS[FIELD.reputation].max}；单次增减不超过 ±${MAX_SINGLE_ADD}。
 - 不要虚构不存在的路径根，只能用 角色 / 世界 / 主角 三个前缀
 - 【禁写】世界.旁白.* 这一支是系统维护的剧情进度与门禁（是否解锁了某处、个人线走到第几步），你不得用 _.set/_.add 碰它的任何子键——写了会被系统直接丢弃。剧情该不该推进由系统按条件判定，不由叙事决定
 - 这个 <mvu> 块不会展示给玩家看，只有你的 output 正文会展示，所以块内不需要考虑文风

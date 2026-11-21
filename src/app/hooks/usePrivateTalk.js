@@ -12,6 +12,7 @@ import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
 import { availableKnot, canResolve, seaDialoguePrompt } from "../../domain/narrator/narratorQuest.js";
 import { narratorVars, setNarratorVars } from "../../domain/prompt/mvu.js";
 import { buildWhisperStatePrompt, formatFactSummariesForPrompt } from "../../domain/prompt/promptRefs.js";
+import { WHISPER_AFFECTION_RULES } from "../../domain/state/fields.js";
 import { allFactSummaries } from "../../domain/prompt/knowledge.js";
 import { embeddingReady } from "../../domain/memory/embeddingService.js";
 import { recallWithVisibility } from "../../domain/memory/recallWithVisibility.js";
@@ -179,7 +180,7 @@ export function usePrivateTalk({
       const narratorMaxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
 
       let text;
-      let affDelta = 1; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖
+      let affDelta = WHISPER_AFFECTION_RULES.fallback; // ② 内容化好感：默认寻常闲聊 +1，被 ⟦好感X⟧ 标记覆盖
       let hadAffTag = false; // 标记是否真出现过 ⟦好感X⟧——没出现时的 +1 是兜底，不是她给的分
       let finishReason;      // 停止原因：私聊此前完全没接这个字段，撞 length 上限也毫无提示
       // 模型会照着历史里的「（旁白私聊回应）」前缀自己也写一遍，而下面存 convo 时又会
@@ -188,7 +189,7 @@ export function usePrivateTalk({
       const stripEchoPrefix = (s) => s.replace(/^(?:\s*[（(]\s*旁白私聊回应\s*[）)])+\s*/, "");
       const parseAffTag = (s) => {
         const m = s.match(/⟦好感\s*([+-]?\d+)\s*⟧\s*$/);
-        const d = m ? Math.max(-3, Math.min(6, parseInt(m[1], 10) || 0)) : 1;
+        const d = m ? Math.max(WHISPER_AFFECTION_RULES.min, Math.min(WHISPER_AFFECTION_RULES.max, parseInt(m[1], 10) || 0)) : WHISPER_AFFECTION_RULES.fallback;
         return { text: s.replace(/⟦好感\s*[+-]?\d+\s*⟧\s*$/, "").trim() || "……", delta: d, tagged: !!m };
       };
       if (apiCfg.streamEnabled && apiCfg.apiType !== "gemini") {
@@ -309,7 +310,7 @@ export function usePrivateTalk({
           const day = Math.floor((timeRef.current || 0) / 24);
           const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
           const already = Number(gained["旁白"]) || 0;
-          const room = Math.max(0, 12 - already);
+          const room = Math.max(0, WHISPER_AFFECTION_RULES.daily - already);
           capped = Math.min(affDelta, room);
           if (capped <= 0) {
             addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
