@@ -9,6 +9,8 @@ import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 import { getApiModel } from "../core/apiModel.js";
 import { filterPlanDelta, filterRejectedEffects, planExtractionNote } from "../domain/intent/planNotes.js";
+import { SOFT_SETTLE_KINDS } from "../domain/settle/softRules.js";
+import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
 
 const MAX_AUTO_RETRY = 2;
 
@@ -167,7 +169,13 @@ async function runTurnSteps(ctx, cmd, opts) {
     }
 
     // settle 回合的状态已由系统/软结算裁决并落账，提取层只对自由行动/闲聊等未裁决回合补漏。
-    if (isSettle) {
+    // 例外：软种类（赔罪/赠礼/邀同行/求教）在软结算被关掉或没裁出结果时，叙事里没有裁决，
+    // 提取层仍是兜底裁决者——否则道歉消不了气、送礼学艺不结算。
+    const settleDecided = isSettle && (
+      !SOFT_SETTLE_KINDS.has(opts.settleKind)
+      || (opts.softSettle && opts.softSettle.choice !== UNKNOWN_CHOICE)
+    );
+    if (settleDecided) {
       trace("提取调用", "skip", "settle 回合由系统结算接管状态，跳过提取");
     } else {
       const extractionState = createExtractionState(ctx, deps);
@@ -245,6 +253,10 @@ async function runTurnSteps(ctx, cmd, opts) {
       if (!truncated) break;
     }
   }
+
+  // settle 回合提取被跳过（或没吐出 memory）时，把结算文本本身登记为本轮事实：
+  // 事实账本/小纸条/日总结都走 p.memory 这一个入口，不能因为是结算轮就漏记。
+  if (isSettle && !(p && p.memory)) p = { ...p, memory: cmd };
 
   return {
     p,
