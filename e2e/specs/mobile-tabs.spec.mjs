@@ -77,8 +77,11 @@ export default async function mobileTabs({ page, game }) {
   await page.getByText("QA hidden narrative update", { exact: true }).waitFor({ state: "attached" });
   await choose("中");
   await game.waitFor(page, () => narrative.evaluate(element => element.scrollHeight - element.clientHeight - element.scrollTop < 2), { message: "hidden narrative update scrolled to bottom" });
-  await page.locator("html").evaluate(element => element.setAttribute("data-keyboard-open", ""));
-  assert.equal(await tabs.isVisible(), false);
+  await page.locator("html").evaluate(element => {
+    element.ownerDocument.activeElement?.blur();
+    element.setAttribute("data-keyboard-open", "");
+  });
+  await tabs.waitFor({ state: "hidden" });
   await page.locator("html").evaluate(element => element.removeAttribute("data-keyboard-open"));
-  assert.equal(await tabs.isVisible(), true);
+  await tabs.waitFor({ state: "visible" });
 }
