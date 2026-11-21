@@ -104,7 +104,15 @@ async function runTurnSteps(ctx, cmd, opts) {
     ...(typeof ctx.callDeps === "function" ? ctx.callDeps(memoryDeps, promptContext) : (ctx.callDeps || ctx)),
     ...promptContext,
   };
-  const deps = { ...baseDeps, ...Object.fromEntries(Object.entries(memoryDeps).filter(([, value]) => value !== undefined)), cmd, ai };
+  const deps = {
+    ...baseDeps,
+    ...Object.fromEntries(Object.entries(memoryDeps).filter(([, value]) => value !== undefined)),
+    room: ctx.prompt?.room ?? baseDeps.room,
+    activeTarget: ctx.prompt?.activeTarget ?? baseDeps.activeTarget,
+    talkTarget: ctx.prompt?.talkTarget ?? ctx.prompt?.recall?.talkTarget ?? baseDeps.talkTarget,
+    cmd,
+    ai,
+  };
   const addLog = deps.addLog || ctx.addLog || (() => {});
   const trace = (layer, status, detail) => traceStep(deps._trace, layer, status, detail);
   const callDeps = () => ({ ...deps });

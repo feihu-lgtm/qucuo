@@ -6,6 +6,7 @@ import { GM_RULE } from "../../domain/prompt/enginePrompts.js";
 import { gateBodyProfile } from "../../domain/character/bodyProfile.js";
 import { labelMessage, makeBlock } from "../../domain/prompt/tavernMapping.js";
 import { buildDistantViewBlock } from "../../domain/memory/daySummary.js";
+import { targetLedger } from "../../domain/prompt/materials/index.js";
 import { embeddingReady } from "../../domain/memory/embeddingService.js";
 import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
 import { applyPresetOverrides, getActivePreset } from "../../domain/prompt/presetSystem.js";
@@ -115,9 +116,15 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const angrySettleNote = d.isSettle && d.settleNpc
     ? buildAngryNote(d.varTree, [d.settleNpc])
     : "";
+  const ledgerBlock = targetLedger({
+    target: d.settleNpc || d.activeTarget || d.talkTarget,
+    room: d.room,
+    varTree: d.varTree,
+  });
+  const ledgerSuffix = ledgerBlock ? `\n\n${ledgerBlock}` : "";
   const inChatContent = d.isSettle
-    ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? d.reunionBlock : "") + angrySettleNote + "\n\n" + proseRule
-    : rulesPrefix + d.ctx + distantBlock + d.recallBlock + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
+    ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? d.reunionBlock : "") + ledgerSuffix + angrySettleNote + "\n\n" + proseRule
+    : rulesPrefix + d.ctx + distantBlock + d.recallBlock + ledgerSuffix + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。

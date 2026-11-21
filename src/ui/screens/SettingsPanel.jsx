@@ -502,6 +502,14 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 开启后：主调用只输出叙事散文，提取调用按意图类型单独提取状态变化。
                 提取调用可指定更小/更快的模型——空则沿用主模型。
               </div>
+              <div style={{ borderTop: "1px solid #1a2d3a", paddingTop: 12, marginTop: 12 }}>
+                <label htmlFor="bookkeepEnabled" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "12px", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}>
+                  <input type="checkbox" id="bookkeepEnabled" checked={cfg.bookkeepEnabled !== false}
+                    onChange={e => patch({ bookkeepEnabled: e.target.checked })} style={{ cursor: "pointer" }} />
+                  回合记账（人物旧账）
+                </label>
+                <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>每回合结束后台用提取模型记一笔人物旧账，多一次小调用</div>
+              </div>
 
               {cfg.extractionEnabled && (
                 <>

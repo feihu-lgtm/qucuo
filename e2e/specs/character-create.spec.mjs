@@ -10,6 +10,7 @@ export default async function characterCreate({ page, game }) {
       apiKey: "local-test-only",
       model: "browser-fixture",
       streamEnabled: false,
+      bookkeepEnabled: false,
       questTriggerMode: "prompt",
       autoSaveEvery: 1,
     }));
