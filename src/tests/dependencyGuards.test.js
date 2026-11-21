@@ -54,23 +54,24 @@ const ENTRY_WHITELIST = new Set([
   "debug/debug-item.jsx",
 ]);
 
-function walkSource(dir, out = []) {
+function walkSource(dir, out = [], includeTests = false) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
-    if (statSync(p).isDirectory()) walkSource(p, out);
-    else if (/\.jsx?$/.test(name) && !/\.test\./.test(name)) out.push(p);
+    if (statSync(p).isDirectory()) walkSource(p, out, includeTests);
+    else if (/\.jsx?$/.test(name) && (includeTests || !/\.test\./.test(name))) out.push(p);
   }
   return out;
 }
 
 function localImports(source) {
-  const imports = /from\s+["'](\.[^"']+)["']|\bimport\s*\(\s*(["'])(\.[^"'\r\n]+)\2\s*(?=[,)])/g;
-  return [...source.matchAll(imports)].map(([, staticPath, , dynamicPath]) => staticPath ?? dynamicPath);
+  const imports = /from\s+["'](\.[^"']+)["']|\bimport\s*["'](\.[^"']+)["']|\bimport\s*\(\s*(["'])(\.[^"'\r\n]+)\3\s*(?=[,)])/g;
+  return [...source.matchAll(imports)].map(([, fromPath, sideEffectPath, , dynamicPath]) => fromPath ?? sideEffectPath ?? dynamicPath);
 }
 
 describe("src 下没有零入度的死文件", () => {
   it.each([
     ["import Screen from './Screen.jsx';", ["./Screen.jsx"]],
+    ['import "./sideEffect.js";', ["./sideEffect.js"]],
     ['const Screen = lazy(() => import("./Screen.jsx"));', ["./Screen.jsx"]],
     ["export { value } from './data.js';", ["./data.js"]],
     ["const empty = {};", []],
@@ -94,19 +95,17 @@ describe("src 下没有零入度的死文件", () => {
   it("import 图零入度且不在入口白名单 → 报出来", () => {
     const files = walkSource(SRC_DIR).map((f) => resolve(f));
     const rel = (f) => relative(resolve(SRC_DIR), f);
-
-    const deps = new Map(files.map((f) => [f, new Set()]));
-    for (const f of files) {
+    const indeg = new Map(files.map((f) => [f, 0]));
+    for (const f of walkSource(SRC_DIR, [], true).map((p) => resolve(p))) {
+      const targets = new Set();
       for (const path of localImports(readFileSync(f, "utf-8"))) {
         let p = join(f, "..", path);
         if (!/\.(js|jsx)$/.test(p)) p += ".js";
         const r = resolve(p);
-        if (files.includes(r)) deps.get(f).add(r);
+        if (indeg.has(r)) targets.add(r);
       }
+      for (const target of targets) indeg.set(target, indeg.get(target) + 1);
     }
-
-    const indeg = new Map(files.map((f) => [f, 0]));
-    for (const targets of deps.values()) for (const t of targets) indeg.set(t, indeg.get(t) + 1);
 
     const dead = files
       .map(rel)
