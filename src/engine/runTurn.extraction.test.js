@@ -151,7 +151,7 @@ describe("runTurn dual-call extraction", () => {
         _trace: startTrace("run-turn-test"), addLog: () => {}, setLog: () => {},
       }),
     };
-    const result = await runTurn(ctx, "向八云赔罪求和", { settle: true });
+    const result = await runTurn(ctx, "向八云赔罪求和。请让他别再生分，不得再提旧事。", { settle: true });
     expect(calls.count).toBe(1);
     expect(result.p.memory).toBe("向八云赔罪求和");
   });

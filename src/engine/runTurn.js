@@ -254,9 +254,13 @@ async function runTurnSteps(ctx, cmd, opts) {
     }
   }
 
-  // settle 回合提取被跳过（或没吐出 memory）时，把结算文本本身登记为本轮事实：
+  // settle 回合提取被跳过（或没吐出 memory）时，把结算文本登记为本轮事实：
   // 事实账本/小纸条/日总结都走 p.memory 这一个入口，不能因为是结算轮就漏记。
-  if (isSettle && !(p && p.memory)) p = { ...p, memory: cmd };
+  // 只取首句：settle 文本尾部常带叙事指令（"请让…说道""只描写…"），不是事实不能入账。
+  if (isSettle && !(p && p.memory)) {
+    const memoryText = cmd.split(/[。！？]/).filter(Boolean)[0] || cmd;
+    p = { ...p, memory: memoryText };
+  }
 
   return {
     p,
