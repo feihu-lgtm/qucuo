@@ -66,7 +66,7 @@ export function useTurn({
     let summary, result;
     try {
     const stopAutoTravel = () => {
-      if (!autoTravelRef.current) return;
+      if (!autoTravelRef.current) return void intentRouterRef?.current?.fireEvent?.("encounter", {}); // 手动走动路遇同样应验遇敌步
       const dropped = clearRouteQueue();
       autoTravelRef.current = false;
       const message = `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`;
