@@ -32,7 +32,13 @@ export function selectUnused(pool, key, seed, used) {
       return pool[index];
     }
   }
-  throw new Error(`Phrase pool exhausted: ${key}`);
+  indices.clear();
+  for (const fragment of pool) fragments.delete(fragment);
+  indices.add(start);
+  fragments.add(pool[start]);
+  used.set(key, indices);
+  used.set(USED_FRAGMENTS, fragments);
+  return pool[start];
 }
 
 const tags = ["A", "B"];

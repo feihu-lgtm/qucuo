@@ -73,6 +73,42 @@ describe("NPC duel report settlement", () => {
     expect(result.logs[0]).toMatchObject({ t: "sys", text: "　── 与师父切磋 ──" });
     expect(result.logs.some(({ text }) => text?.includes("第1回合"))).toBe(false);
   });
+
+  it("settles 60 nothing-versus-nothing rounds after phrase pools exhaust", () => {
+    const battleLog = Array.from({ length: 60 }, (_, index) => ({
+      round: index + 1,
+      playerMove: { name: "回气", type: MOVE_TYPE.STATUS },
+      npcMove: { name: "调息", type: MOVE_TYPE.STATUS },
+      result: {
+        nameA: "少侠",
+        nameB: "师父",
+        damageToA: 0,
+        damageToB: 0,
+        statusDamageA: 0,
+        statusDamageB: 0,
+        hpRestoreA: 0,
+        hpRestoreB: 0,
+        statusAppliedToA: null,
+        statusAppliedToB: null,
+        markAppliedToA: null,
+        markAppliedToB: null,
+        statusSlotsAfterA: {},
+        statusSlotsAfterB: {},
+        hpBandA: "healthy",
+        hpBandB: "healthy",
+      },
+    }));
+
+    const result = settleNpcDuel(makeState(), { name: "师父", levelCap: 1 }, {
+      outcome: "win",
+      battleLog,
+    });
+    const reportLines = result.logs.filter(({ t }) => t === "desc");
+
+    expect(result.reportRounds).toHaveLength(60);
+    expect(reportLines).toHaveLength(60);
+    expect(reportLines.every(({ text }) => text.length > 0)).toBe(true);
+  });
 });
 
 describe("NPC skill-learning logic", () => {

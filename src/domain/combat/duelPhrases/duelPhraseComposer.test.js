@@ -276,6 +276,6 @@ describe("duel phrase pools and composition", () => {
 
     const crossPoolUsed = new Map();
     const sharedPhrase = selectUnused(["共用片段"], "opening:攻击", 1, crossPoolUsed);
-    expect(() => selectUnused([sharedPhrase], "effect:hit", 1, crossPoolUsed)).toThrow("Phrase pool exhausted");
+    expect(selectUnused([sharedPhrase], "effect:hit", 1, crossPoolUsed)).toBe(sharedPhrase);
   });
 });
