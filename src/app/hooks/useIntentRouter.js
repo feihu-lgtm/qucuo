@@ -9,7 +9,7 @@ import { recognizeNpc, tradeWithNpc } from "../../features/npc/logic.js";
 import { ACTION_KINDS, KIND_COMMAND } from "../../domain/intent/actionKinds.js";
 import { ROUTES, describeAction } from "../../domain/intent/gate.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../../features/intent/logic.js";
-import { planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../../features/intent/route.js";
+import { isFreshTyped, planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../../features/intent/route.js";
 import { createAiClassifier, INTENT_TRUNCATED } from "../../engine/intent/aiClassifier.js";
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 
@@ -21,7 +21,7 @@ export function useIntentRouter(routerRef, {
   useEffect(() => {
     function runDeferred(step, single) {
       const npc = findStepNpc(gameStore.getState(), step);
-      if (step.kind === ACTION_KINDS.MOVE) return act(DIR_CMD[step.direction] || step.direction, [], { keepUndo: true });
+      if (step.kind === ACTION_KINDS.MOVE) return act(DIR_CMD[step.direction] || step.direction, [], { keepUndo: true, intentSkip: true });
       if (step.kind === ACTION_KINDS.BUY && single) return handleNpcTrade(npc);
       if (step.kind === ACTION_KINDS.BUY && npc) {
         const result = tradeWithNpc(gameStore.getState(), npc);
@@ -88,8 +88,7 @@ export function useIntentRouter(routerRef, {
 
     routerRef.current = async (cmd, { _trace, opts = {} } = {}) => {
       // 玩家又输入了一句新指令：上一波挂起的条件步到期。
-      const freshTyped = !opts.autoTravel && !opts.schedulerManaged && !opts.intentPlan && !opts.intentSkip && !opts.silentCmd && !opts.settle;
-      if (freshTyped) {
+      if (isFreshTyped(opts)) {
         for (const entry of expireIntentTriggers()) {
           traceNode(_trace, "行动识别·触发", "skip", `新指令到来，「${entry.detail}」的触发器过期：${describeAction(entry.step)}`);
         }
