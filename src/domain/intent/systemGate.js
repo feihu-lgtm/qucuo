@@ -2,6 +2,7 @@
 // 第 2 步看到的是第 1 步结算后的状态。遇到第一个不通过的步骤就停下并给出原因，
 // 之前已通过的步骤照常执行，之后的步骤一律跳过。
 import { ACTION_KINDS, NONE, SILVER, inventoryCounts, visibleNpcs } from "./actionKinds.js";
+import { CONDITION_ON } from "./conditions.js";
 import { tryLearnFromMaster } from "../kungfu/learnSkill.js";
 import { isNpcAngry } from "../combat/stealSystem.js";
 
@@ -59,14 +60,31 @@ function applyStep(sim, action) {
 export function validatePlan(state, actions) {
   const sim = simulate(state);
   const valid = [];
+  const triggers = [];
+  const freeSteps = [];
   for (let index = 0; index < (actions || []).length; index++) {
     const action = { ...actions[index], index };
+    // 自由回落段不进闸门；条件步不立即执行，记为待定触发（触发时再走原有校验）。
+    if (action.free) { freeSteps.push(action); continue; }
+    if (action.condition) { triggers.push(action); continue; }
     const reason = checkStep(sim, action);
-    if (reason) return { valid, rejected: { ...action, reason }, skipped: actions.slice(index + 1).map((a, i) => ({ ...a, index: index + 1 + i })) };
+    if (reason) {
+      const rest = actions.slice(index + 1).map((a, i) => ({ ...a, index: index + 1 + i }));
+      // 前一步被拒会拦住后面所有步；唯一例外是前提正好为「被拒」的条件步，此刻立即触发。
+      const refused = rest.find((a) => a.condition?.on === CONDITION_ON.REFUSED) || null;
+      return {
+        valid,
+        rejected: { ...action, reason },
+        skipped: refused ? rest.filter((a) => a.index !== refused.index) : rest,
+        triggers,
+        freeSteps,
+        refused,
+      };
+    }
     applyStep(sim, action);
     valid.push(action);
   }
-  return { valid, rejected: null, skipped: [] };
+  return { valid, rejected: null, skipped: [], triggers, freeSteps, refused: null };
 }
 
 // 赠礼分量钩子：PR #69 若提供 `@赠礼.分量`，在这里接入；目前返回空串，不影响提示词。

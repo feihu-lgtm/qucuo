@@ -1,7 +1,8 @@
 // CLI 端的行动识别（--intent 开启）：与 web 共用 src/domain/intent + src/features/intent，
 // 中置信度时打印确认句，下一行输入「是/不是」作答。
 import { ACTION_KINDS } from "../src/domain/intent/actionKinds.js";
-import { ROUTES } from "../src/domain/intent/gate.js";
+import { ROUTES, describeAction } from "../src/domain/intent/gate.js";
+import { armIntentTriggers, expireIntentTriggers } from "../src/store/intentPendingStore.js";
 import { createAiClassifier, INTENT_TRUNCATED } from "../src/engine/intent/aiClassifier.js";
 import { bindTurnAi } from "../src/engine/ports/ai.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../src/features/intent/logic.js";
@@ -17,11 +18,23 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
   async function runDeferred(step, single) {
     const npc = findStepNpc(getState(), step);
     if (step.kind === ACTION_KINDS.MOVE) return runCommand(DIR_CMD[step.direction] || step.direction);
+    if (step.kind === ACTION_KINDS.OTHER || step.kind === ACTION_KINDS.TALK) return runFreeText(step.text, { echoCommand: true });
     if (!npc) return 0;
     if (step.kind === ACTION_KINDS.BUY) return runCommand(`交易 ${npc.name}`);
     const status = single ? await runFreeText(`向${npc.name}抱拳邀战，请他切磋一番`, { echoCommand: true }) : 0;
     emit(`（${npc.name}已应下邀战；正式切磋需在 web 端点「确认切磋」，CLI 暂无对战界面。）`);
     return status;
+  }
+
+  // 条件步触发：CLI 里按单步走原路径——立即结算类走 stepEffect，交互类走 runDeferred，自由文本照原文。
+  async function fireTriggerStep(step, turn) {
+    traceNode(turn, "行动识别·触发", "pass", `「${step.condition?.detail || ""}」应验，触发：${describeAction(step)}`);
+    if (DEFERRED_KINDS.has(step.kind)) return runDeferred(step, true);
+    if (step.kind === ACTION_KINDS.OTHER || step.kind === ACTION_KINDS.TALK) return runFreeText(step.text, { echoCommand: true });
+    const result = stepEffect(getState(), step);
+    if (!result) return 0;
+    if (result.logs?.length) emit(result.logs.map((entry) => entry.text).join("\n"));
+    return applyFeature(result);
   }
 
   async function execute(line, actions) {
@@ -32,6 +45,8 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
     const rejected = rejectionLog(plan);
     if (rejected) emit(rejected.text.trim());
     let status = 0;
+    const armed = armIntentTriggers(plan.triggers);
+    if (armed.length) traceNode(turn, "行动识别·触发", "pass", `挂起 ${armed.length} 个条件步：${armed.map((entry) => describeAction(entry.step)).join("；")}`);
     for (const step of plan.valid) {
       if (DEFERRED_KINDS.has(step.kind)) continue;
       const result = stepEffect(getState(), step);
@@ -44,6 +59,9 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
       status = Math.max(status, await runFreeText(line, { intentPlan: plan, intentPlanNote: note, echoCommand: true }));
     }
     for (const step of plan.valid) if (DEFERRED_KINDS.has(step.kind)) status = Math.max(status, await runDeferred(step, single));
+    // 「被拒」触发在已核准步骤都跑完之后才发，免得它抢走前面步骤要用的资源。
+    if (plan.refused) status = Math.max(status, await fireTriggerStep(plan.refused, turn));
+    for (const step of plan.freeSteps || []) status = Math.max(status, await runFreeText(step.text, { echoCommand: true }));
     return status;
   }
 
@@ -53,6 +71,10 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
       pending = null;
       if (YES.test(line)) return execute(original, actions);
       if (NO.test(line)) return runFreeText(original, { intentSkip: true });
+    }
+    // 新的输入：上一波挂起的条件步到期（CLI 无自动寻路，遇敌/到达触发不会被点燃）。
+    for (const entry of expireIntentTriggers()) {
+      traceNode(getTurn(), "行动识别·触发", "skip", `新指令到来，「${entry.detail}」的触发器过期：${describeAction(entry.step)}`);
     }
     if (!ai || !shouldRecognize(apiCfg, line)) return null;
     const turn = getTurn();

@@ -3,6 +3,7 @@
 // classifier 端口：{ decide(question, vars, options) -> { choice, probs }, split(vars) -> string[] }，
 // 任何实现（现有 AI 端口、Jev、规则 mock）都可替换。
 import { ACTION_KINDS, KIND_LIST, SLOT_SPECS, NONE, SILVER, slotOptions, parseSilverAmount } from "./actionKinds.js";
+import { splitConditionClause, resolveCondition } from "./conditions.js";
 
 const COMPOUND_HINT = /然后|再|接着|随后|之后|并且|顺便|同时|[，,、；;]|又/;
 const YES = "是";
@@ -60,6 +61,22 @@ export async function recognizeIntent(state, text, { classifier, onStage } = {})
   const certainty = Math.max(compound, 1 - compound);
   const actions = [];
   for (const part of parts) {
+    const clause = splitConditionClause(part);
+    if (clause) {
+      // 条件从句：前提判成封闭集合内的触发，动作照常识别并挂上 condition；
+      // 判成「其他」→ 整段保留原文，交给自由行动路径。
+      const cond = await resolveCondition(clause.detail, classifier, onStage, timed);
+      const on = cond.on;
+      if (!on) {
+        actions.push({ kind: ACTION_KINDS.OTHER, target: null, item: null, text: part, free: true, confidence: cond.confidence * certainty });
+        continue;
+      }
+      const action = await recognizeAtomic(state, clause.actionText, classifier, onStage);
+      action.condition = { on, detail: clause.detail };
+      action.confidence *= cond.confidence * certainty;
+      actions.push(action);
+      continue;
+    }
     const action = await recognizeAtomic(state, part, classifier, onStage);
     action.confidence *= certainty;
     actions.push(action);

@@ -5,6 +5,8 @@ import { recognizeIntent } from "./recognizer.js";
 import { gateRecognition, ROUTES, confirmLine } from "./gate.js";
 import { validatePlan } from "./systemGate.js";
 import { formatPlanNote, planExtractionNote, filterRejectedEffects, filterPlanDelta } from "./planNotes.js";
+import { splitConditionClause } from "./conditions.js";
+import { armIntentTriggers, fireIntentTriggers, expireIntentTriggers, intentTriggers } from "../../store/intentPendingStore.js";
 
 const state = {
   room: { name: "测试镇", npcs: [{ name: "才旦" }, { name: "卓玛" }] },
@@ -143,5 +145,84 @@ describe("system gate", () => {
     expect(plan.rejected.reason).toBeTruthy();
     expect(plan.skipped).toHaveLength(1);
     expect(validatePlan(angry, [learn]).rejected.reason).toBe("才旦正在气头上，不肯传授");
+  });
+});
+
+describe("conditional steps", () => {
+  it("splits 「要是/如果/若/万一…就/便」 clauses into premise and action", () => {
+    expect(splitConditionClause("路上要是碰到山贼就打他")).toMatchObject({ detail: "路上碰到山贼", actionText: "打他" });
+    expect(splitConditionClause("若他不肯教，就走")).toMatchObject({ detail: "他不肯教", actionText: "走" });
+    expect(splitConditionClause("如果下雨就找地方避一避")).toMatchObject({ detail: "下雨", actionText: "找地方避一避" });
+    expect(splitConditionClause("给才旦100两")).toBeNull();
+    expect(splitConditionClause("我想切磋")).toBeNull();
+  });
+
+  it("asks the cond question once and attaches the trigger to the action", async () => {
+    const classifier = scripted({
+      cond: () => ["遇敌", 0.92],
+      kind: () => ["切磋", 0.97],
+      target: () => ["才旦", 0.99],
+    });
+    const result = await recognizeIntent(state, "要是碰到山贼就跟他切磋", { classifier });
+    expect(classifier.calls.map((c) => c.question)).toEqual(["cond", "kind", "target"]);
+    expect(result.actions[0]).toMatchObject({ kind: "切磋", target: "才旦", condition: { on: "encounter", detail: "碰到山贼" } });
+    expect(gateRecognition(result).route).toBe(ROUTES.CONFIRM);
+    expect(validatePlan(state, result.actions).triggers).toHaveLength(1);
+  });
+
+  it("falls back to free text for the clause alone when the premise is outside the fixed list", async () => {
+    const classifier = scripted({
+      compound: () => ["是", 0.9],
+      kind: (text) => (text.includes("切磋") ? ["切磋", 0.97] : ["赠送", 0.97]),
+      cond: () => ["其他", 0.9],
+      target: () => ["才旦", 0.99], item: () => [SILVER, 0.99],
+      split: undefined,
+    });
+    classifier.split = async () => ["给才旦100两", "要是下雨就躲"];
+    const result = await recognizeIntent(state, "给才旦100两，要是下雨就躲", { classifier });
+    expect(result.actions[1]).toMatchObject({ kind: "其他", free: true, text: "要是下雨就躲" });
+    // 条件段只回落它自己；其余步骤照常过闸。
+    expect(gateRecognition(result).route).not.toBe(ROUTES.FALLBACK);
+    const plan = validatePlan(state, result.actions);
+    expect(plan.valid).toHaveLength(1);
+    expect(plan.freeSteps).toHaveLength(1);
+  });
+
+  it("keeps conditioned steps out of immediate validation and arms them as triggers", () => {
+    const gift = { kind: "赠送", target: "才旦", item: SILVER, amount: 100 };
+    const cond = { kind: "切磋", target: "不在场的人", condition: { on: "encounter", detail: "碰到山贼" } };
+    const plan = validatePlan(state, [gift, cond]);
+    expect(plan.valid).toHaveLength(1);
+    expect(plan.rejected).toBeNull();
+    expect(plan.triggers).toMatchObject([{ kind: "切磋", condition: { on: "encounter" } }]);
+  });
+
+  it("lets a refused-conditioned step fire while later steps are skipped", () => {
+    const learn = { kind: "拜师/学艺", target: "才旦" }; // 好感不够，系统必拒
+    const refused = { kind: "交谈", target: "才旦", condition: { on: "refused", detail: "他不肯教" } };
+    const other = { kind: "其他", text: "回家", condition: { on: "arrive", detail: "到家" } };
+    const plan = validatePlan(state, [learn, refused, other]);
+    expect(plan.rejected.kind).toBe("拜师/学艺");
+    expect(plan.refused).toMatchObject({ condition: { on: "refused" } });
+    expect(plan.skipped.map((s) => s.condition?.on)).toEqual(["arrive"]);
+  });
+
+  it("arms, fires and expires triggers in the shared intent store", () => {
+    expireIntentTriggers();
+    const steps = [
+      { kind: "切磋", target: "才旦", condition: { on: "encounter", detail: "碰到山贼" } },
+      { kind: "其他", text: "看看四周", condition: { on: "arrive", detail: "到了白塔" } },
+    ];
+    armIntentTriggers(steps);
+    expect(intentTriggers()).toHaveLength(2);
+    const fired = fireIntentTriggers("encounter", {});
+    expect(fired.map((entry) => entry.step.kind)).toEqual(["切磋"]);
+    expect(intentTriggers()).toHaveLength(1);
+    // 行程未完、前提也没点名目的地时，「到达」不算应验。
+    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: false })).toEqual([]);
+    expect(fireIntentTriggers("arrive", { dest: "白塔", travelDone: false })).toHaveLength(1);
+    armIntentTriggers([{ kind: "其他", text: "走", condition: { on: "refused", detail: "他不肯" } }]);
+    expect(expireIntentTriggers()).toHaveLength(1);
+    expect(intentTriggers()).toHaveLength(0);
   });
 });
