@@ -10,6 +10,7 @@ import {
 import { callModel } from "../../infra/apiConfig.js";
 import { allFactSummaries } from "../../domain/prompt/knowledge.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
+import { renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
 
 export function usePigeonReplies({
   room, apiCfg, preset, applyPigeonResult, time, varTree, featureCtxRef,
@@ -27,13 +28,16 @@ export function usePigeonReplies({
     try {
       const npcObj = room.npcs.find(n => n.name === npcName) || {};
       const attrs = state.varTree?.角色?.[npcName] || {};
-      const curAff = typeof attrs.好感度 === "number" ? attrs.好感度 : 0;
+      const relationship = renderPromptTemplate(
+        `好感度 @好感.${npcName}/100@态度.${npcName}`,
+        state,
+      ).text;
       const thread = (attrs.飞鸽 || []).map(m => `${m.dir === "send" ? "主角来信" : "你的回信"}：${m.content}${m.gift ? `（附礼：${m.gift}）` : ""}`).join("\n");
       const facts = allFactSummaries(state.varTree, 12).map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n");
       const gaveGift = channel === "postgift" && giftName;
       const canReturnGift = gaveGift;
       const sys = `你是武侠世界「曲措乡」中的【${npcName}】${npcObj.brief ? "，" + npcObj.brief : ""}${npcObj.fullBio ? npcObj.fullBio + " " : ""}${npcObj.personality ? "性情：" + npcObj.personality + "。" : ""}
-你与主角的关系：好感度 ${curAff}/100${attrs.态度 ? "，" + attrs.态度 : ""}。好感越低越冷淡疏离，越高越亲近热络。
+你与主角的关系：${relationship}。好感越低越冷淡疏离，越高越亲近热络。
 剧本背景：${preset.scenario || ""}
 你收到主角${gaveGift ? `托驿卒捎来的信，并随信附赠了「${giftName}」` : "寄来的信"}。你们此前往来的信件（须前后连贯、不自相矛盾）：
 ${thread || "（这是你们第一次通信）"}

@@ -18,6 +18,7 @@ import * as importedRegistry from "../../domain/cards/importedRegistry.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { readMobileColumn, writeMobileColumn } from "../../utils/mobileColumn.js";
+import { buildPreviewStatePrompt, buildWhisperStatePrompt } from "../../domain/prompt/promptRefs.js";
 
 export function useGameUi({
   room, innerRoomName, char, inv, log, time, narrator, preset,
@@ -197,9 +198,10 @@ export function useGameUi({
 
       if (scope === "whisper") {
         put("whisper_ctx", buildNarratorWhisperContext(narrator.affection));
-        put("voice", narratorVoicePrompt(narrator));
-        const invText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
-        put("world_state", `主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}（${room.desc}） 房间里的人:${room.npcs.map(n => n.name).join(",") || "无"} 玩家背包:${invText}`);
+        put("voice", narratorVoicePrompt(narrator, varTree));
+        put("world_state", buildWhisperStatePrompt({
+          char, time, room, inv, innerRoomName, getTimeStr,
+        }, { includeInnerRoomName: false }));
         const facts = allFactSummaries(varTreeRef.current, 8);
         put("facts", facts.length ? facts.map(f => `· （${getTimeStr(f.诞生回合 || 0)}）${f.摘要}${f.标签 ? `〔${f.标签}〕` : ""}`).join("\n") : "（事实账本当前为空）");
         put("narrator_lore", (apiCfg.narratorLorebook || "").trim() || "（未填写，本块一个字都不发）");
@@ -213,7 +215,7 @@ export function useGameUi({
         return out;
       }
 
-      put("voice", narratorVoicePrompt(narrator));
+      put("voice", narratorVoicePrompt(narrator, varTree));
       const intentCode = view?.intent || "UNKNOWN";
       const fakeIntent = INTENT[intentCode] || INTENT.UNKNOWN;
       put("length", buildBudgetInstruction(fakeIntent, "", apiCfg.targetWordCount, apiCfg.intentBudgets));
@@ -230,7 +232,9 @@ export function useGameUi({
       if (scope === "full") put("catalog", describeCatalogForAI());
       const bg2 = gateBodyProfile(char.bodyProfile, { scope, nsfw: nsfwOn, scanText: "" });
       put("body_gate", bg2.text || `（当前灭灯：${bg2.dark.join("、") || "体貌未填写"}）`);
-      put("user_ctx", `时间:${getTimeStr(time)} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name} 出口:${room.exits.join(",")} NPCs:${visible.map(n => n.name).join(",") || "无"} HP:${char.hp.join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 背包:${inv.map(i => typeof i === "string" ? i : i.name).join("，") || "空"}`);
+      put("user_ctx", buildPreviewStatePrompt({
+        char, time, room, inv, innerRoomName, visibleNpcs: visible, getTimeStr,
+      }));
     } catch (e) {
       out.__error = `拉取时出错：${e.message || e}`;
     }

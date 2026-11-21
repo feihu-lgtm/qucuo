@@ -1,4 +1,5 @@
 import { snowLeopardNote } from "../../domain/quests/snowLeopardQuest.js";
+import { buildMainStatePrompt } from "../../domain/prompt/promptRefs.js";
 
 const ATTEMPT_LABELS = {
   talk: "交谈",
@@ -79,9 +80,13 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   const pickupNote = input.pickupJudgment
     ? `\n[系统裁决：本次移动途中触发拾取事件，品质已判定为「${input.pickupJudgment.quality}」，物品分类建议为「${input.categoryLabel?.[input.pickupJudgment.category]}」。请在 output 里自然地描述玩家路上发现/捡到了什么，并在 delta.items_add 里加入这件物品，quality 字段必须精确写成"${input.pickupJudgment.quality}"，category 字段写成"${input.pickupJudgment.category}"，name 自拟一个符合当前场景和地域特色、且与品质相衬的名字（品质越高描述可以越有分量，但不要浮夸到脱离世界观）。如果场景逻辑上此刻不适合捡到东西（比如玩家正身处险境、被人盯着），也可以合理地不触发，只需在 output 里说明原因，不必强行塞入。]`
     : "";
-  const invText = (inv || []).map((item) => typeof item === "string" ? item : `${item.name}(${item.quality}${item.equipped ? "·已装备" : ""})`).join(",");
-  const visibleNpcsForAI = presence.visibleNpcsForAI || presence.visibleNpcs || [];
-  const context = `${targetNote}${groundItemNote}${modeNote}[状态] ${gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : ""}时间:${input.getTimeStr?.(time) || time} 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 房间:${room.name}${input.hasInnerMap?.(room.name) && innerRoomName ? `·${innerRoomName}` : ""} 出口:${(room.exits || []).join(",")} NPCs:${visibleNpcsForAI.map((npc) => { const carried = (npc.carriedItems || []).filter((item) => !item.stolen).map((item) => item.name).join("、"); const tier = typeof npc.levelCap === "number" ? `〔品阶:${input.quality?.[Math.max(0, Math.min(5, npc.levelCap))]}档〕` : ""; return npc.name + tier + (carried ? `〔身携:${carried}〕` : "〔身无长物〕"); }).join(",") || "无"} 物品:${(room.items || []).map((item) => item.name).join(",") || "无"} HP:${(char.hp || []).join("/")} 内功:${char.neigong ?? 0} 外功:${char.waigong ?? 0} 七维:${Object.entries(char.special || {}).map(([key, value]) => key + value).join(",")} 背包:${invText} 装备:${input.describeEquipment?.(inv) || ""} 武功:${(skills || []).map((skill) => skill.name + "Lv" + skill.level).join(",")} 因果:${dao.karma} 劫数:${dao.jie}\n[已触发事件] ${(flags || []).length ? flags.join(",") : "无"}${input.describeTodayForAI?.(varTree?.世界?.起居注, input.timeForToday)}${pickupNote}${input.destinationLock || ""}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${input.collectNote || ""}${arrivalNote}${forcedEventNote}`;
+  const stateContext = buildMainStatePrompt({
+    ...input,
+    visibleNpcsForAI: presence.visibleNpcsForAI || presence.visibleNpcs || [],
+  }, {
+    gmNote: gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : "",
+  });
+  const context = `${targetNote}${groundItemNote}${modeNote}${stateContext}${pickupNote}${input.destinationLock || ""}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${input.collectNote || ""}${arrivalNote}${forcedEventNote}`;
 
   return {
     cmd, newConvo, mainConvo, hist, budgetInstruction,

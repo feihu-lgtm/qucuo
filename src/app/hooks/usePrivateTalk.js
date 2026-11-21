@@ -12,7 +12,7 @@ import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
 import { availableKnot, canResolve, seaDialoguePrompt } from "../../domain/narrator/narratorQuest.js";
 import { narratorVars, setNarratorVars } from "../../domain/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
-import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { buildWhisperStatePrompt } from "../../domain/prompt/promptRefs.js";
 import { allFactSummaries } from "../../domain/prompt/knowledge.js";
 import { embeddingReady } from "../../domain/memory/embeddingService.js";
 import { recallWithVisibility } from "../../domain/memory/recallWithVisibility.js";
@@ -49,13 +49,10 @@ export function usePrivateTalk({
     }
 
     try {
-      const voice = narratorVoicePrompt(narrator);
-      // 背包物品是对象（{name,quality,...}），直接 inv.join(",") 会得到一串
-      // [object Object]，旁白根本读不出玩家身上有什么——这正是"玩家捡了界石、
-      // 旁白却坚称背包里只有青稞粗布"那个 bug 的根源。跟主叙事 invText 对齐，
-      // 取名字+品阶+是否装备，字符串物品也兼容。
-      const narratorInvText = inv.map(i => typeof i === "string" ? i : `${i.name}(${i.quality}${i.equipped ? "·已装备" : ""})`).join("，") || "空";
-      const worldState = `[当前世界状态，仅供你了解背景，不必主动复述] 主角:${char.name || "无名少侠"}〔${char.gender || "男"}〕 时间:${getTimeStr(time)} 房间:${room.name}${hasInnerMap(room.name) && innerRoomName ? `·${innerRoomName}` : ""}（${room.desc}） 房间里的人:${room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)).map(n => n.name).join(",") || "无"} 玩家背包:${narratorInvText}`;
+      const voice = narratorVoicePrompt(narrator, varTreeRef.current);
+      const worldState = buildWhisperStatePrompt({
+        char, time, room, inv, innerRoomName, getTimeStr,
+      }, { includeLabel: true, includeInnerRoomName: true });
 
       // ── 旁白·全知事实（本轮新增）──
       // 旁白设定上是跳出信息隔离的第四面墙外角色，普通 NPC 之间发生的事（哪怕玩家没

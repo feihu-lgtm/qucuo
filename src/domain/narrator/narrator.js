@@ -1,3 +1,5 @@
+import { renderPromptTemplate } from "../prompt/promptRefs.js";
+
 // 旁白攻略系统（黑客帝国支线）
 // 架构核心：只有一个旁白。她全程知晓游戏里发生的一切（叙事输出、玩家的所有互动），
 // 好感度不决定她"知道什么"，只决定她讲述这一切时的"文风"——
@@ -61,8 +63,10 @@ export function migrateNarratorState(old) {
 
 // 旁白的文风调制说明——同一段文字会拼进【主引擎叙事 prompt】和【私聊 prompt】，
 // 保证叙事输出和私聊用的是同一套语气规则，不是两个独立人格。
-export function narratorVoicePrompt(state) {
-  const { affection, stage } = state;
+export function narratorVoicePrompt(state, varTree) {
+  const { stage } = state;
+  const promptScope = { narrator: state, varTree: varTree || state.varTree };
+  const affection = Number(renderPromptTemplate("@好感.旁白", promptScope).text) || 0;
 
   // ── 人在海里：主叙事的旁白退回第一档（这条线的支点）──
   // 玩家花 90 点好感把她从一个声音养成一个人，然后亲手把她从"旁白"的位子上
@@ -113,10 +117,10 @@ ${TONE_BY_TIER.unmasked}`;
   // 正是那张表自己的注释警告过的"改一处漏三处"）。
   const tone = TONE_BY_TIER[affectionTier(affection).key] || TONE_BY_TIER.cold;
 
-  return `
-【旁白当前状态：好感度 ${affection}/100】
+  return renderPromptTemplate(`
+【旁白当前状态：好感度 @好感.旁白/100】
 ${tone}
-无论好感度高低，她绝不会主动透露"金手指"式的剧情/任务攻略信息，那是阶段三专属能力。`;
+无论好感度高低，她绝不会主动透露"金手指"式的剧情/任务攻略信息，那是阶段三专属能力。`, promptScope).text;
 }
 
 // ── 好感度五档：唯一一份分界表 ──

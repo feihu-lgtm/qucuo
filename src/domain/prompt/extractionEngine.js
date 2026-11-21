@@ -11,13 +11,19 @@ import { extractMvuBlock } from "./mvu.js";
 import { APPEASE_EXTRACTION_SPEC } from "./appeaseExtraction.js";
 import { apiModelField, getApiModel } from "../../core/apiModel.js";
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
+import { renderPromptTemplate } from "./promptRefs.js";
+
+function renderExtractTemplate(template, state, promptRefOptions = {}) {
+  return renderPromptTemplate(template, { ...state, promptRefOptions }).text;
+}
 // 公共字段和 MVU 路径规矩统一追加到每个提取提示，确保单/双调用保持一致。
 // memory 摘要使用玩家角色名的第三人称，供回忆与事实账本复用。
 function commonExtractTail(playerName, state = {}) {
   const name = playerName || "主角";
-  const presentNpcs = (state.room?.npcs || [])
-    .filter((npc) => npc?.name && isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc))
-    .map((npc) => npc.name);
+  const presentNpcs = renderExtractTemplate("@在场NPC", state, {
+    npcFormat: "names",
+    npcSeparator: "、",
+  });
   return `
 
 除上面那个 JSON 里的字段之外，无论本轮有无状态变化，都请在**同一个顶层 JSON 对象**里额外补上这些字段：
@@ -38,8 +44,8 @@ const EXTRACTION_SPECS = {
   LOOK: {
     system: "你是游戏状态提取器，只做结构化提取，不添加叙事里没有描述到的内容。",
     user: (narrative, s) =>
-      `当前场景：${s.room.name}，NPCs：${s.room.npcs.map(n => n.name).join("、") || "无"}，物品：${s.room.items.map(i => i.name).join("、") || "无"}
-出口固定（不能改变）：[${s.room.exits.join(",")}]
+      renderExtractTemplate(`当前场景：@room.name，NPCs：@房间.NPC名，物品：@地上物品
+出口固定（不能改变）：[@房间.出口]
 
 叙事内容：
 ${narrative}
