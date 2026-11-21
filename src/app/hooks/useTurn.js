@@ -30,6 +30,7 @@ import { burnSquare, consumeArrival, serializeSquares } from "../../domain/map/m
 import { createTurnStaleCheck } from "./useUndo.js";
 import { resolveInnerBlockedSummary, showOuterNoExitNotice } from "./blockedMovementNotice.js";
 import { classifyActCommand } from "../../core/commands.js";
+import { interleaveDuelReport } from "../../domain/combat/duelReport.js";
 
 export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
@@ -63,6 +64,10 @@ export function useTurn({
       : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading, commandId: "actRouter" });
     if (parent === _trace) _trace.awaitingSettlement = true;
     const applyLocal = (result, feature) => applyResult(featureCtxRef.current, result, { turn: _trace, feature });
+    const logDuelReportFallback = () => {
+      const rounds = opts.duelReport?.rounds;
+      if (Array.isArray(rounds) && rounds.length) addLog(interleaveDuelReport(rounds, null));
+    };
     let summary;
     try {
     const stopAutoTravel = () => {
@@ -396,7 +401,10 @@ export function useTurn({
       },
     };
     const result = await playTurn(turnCtx, cmd, opts);
-    if (result.stale) return;
+    if (result.stale) {
+      logDuelReportFallback();
+      return;
+    }
     if (!result.ok) {
       const e = result.error;
       const ec = classifyError(e);
@@ -407,6 +415,7 @@ export function useTurn({
         { t: "sys", text: `     ▸ ${ec.hint}` },
         { t: "sys", text: `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
       ]);
+      logDuelReportFallback();
     }
     consumeDuelRequest(result, { opts, isStale, isTalk, interactMode, setActiveTarget, setDuelPending, featureCtxRef, trace: _trace });
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
@@ -415,6 +424,7 @@ export function useTurn({
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);
     } catch (error) {
+      logDuelReportFallback();
       if (_trace.totalMs == null && !isStale()) turnMonitor.transition(_trace, PHASE.ERROR, String(error));
       throw error;
     } finally {

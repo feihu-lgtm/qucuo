@@ -83,3 +83,34 @@ it("keeps the key inspection's estate announcement open until its narration comm
     turnMonitor.clear();
   }
 });
+
+it.each([
+  ["failed", { ok: false, error: new Error("report failed") }],
+  ["stale", { ok: false, stale: true }],
+])("logs settled duel rows when the report turn is %s", async (_label, result) => {
+  initGameStore({
+    flags: [], inv: [], questProgress: {}, room: { name: "鱼定村", npcs: [] },
+    char: { name: "行旅" }, varTree: { 角色: {}, 世界: {} },
+  });
+  const addLog = vi.fn();
+  const featureCtxRef = { current: null };
+  const waitTimerRef = { current: null };
+  const commands = createScheduler();
+  playTurn.mockReset().mockResolvedValue(result);
+  useTurn({
+    ...gameStore.getState(), apiCfg: {}, preset: {}, convo: [], addLog,
+    featureCtxRef, waitTimerRef, turnGenerationRef: { current: 0 }, dispatchCommand: commands.dispatch,
+    captureUndo: vi.fn(),
+    pendDirRef: {}, outerDepartRef: {}, pickupJudgmentRef: {}, collectGrantedRef: {},
+    varTreeRef: { current: {} }, timeRef: { current: 1 },
+    setInput: vi.fn(), setCmdHistory: vi.fn(), setHistIdx: vi.fn(), setLoading: vi.fn(),
+    setWaitSecs: vi.fn(), noteAction: vi.fn(),
+  });
+
+  await featureCtxRef.current.act("切磋结束，写战报", [], {
+    duelReport: { rounds: [{ round: 1, text: "一招既定" }] },
+  });
+
+  const logs = addLog.mock.calls.flatMap(([entries]) => entries || []);
+  expect(logs).toContainEqual({ t: "sys", text: "  第1回合 一招既定" });
+});
