@@ -1,4 +1,5 @@
 import { buildSysBase } from "../../domain/prompt/sysBase.js";
+import { renderFieldScales, renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
 import { step as traceStep, attachInjectionSnapshot } from "../../infra/actionTrace.js";
 import { NSFW_RULES, MODE_PRIMER_MESSAGES } from "../../domain/prompt/modePrimer.js";
 import { GM_RULE } from "../../domain/prompt/enginePrompts.js";
@@ -17,7 +18,8 @@ const webAi = createWebAi();
 // 调用一次主剧情（流式/非流式），返回 { rawFull, finishReason }。流式占位日志每次调用各自管理。
 // narrativeOnly=true：提取层模式，主调用只输出散文；流式时将文本直接展示并保留在日志里。
 // d 是 act 在调用点现取的回合上下文（ref 值按调用时机读取，保证时序与原闭包一致）。
-export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
+export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
+  const traceEvents = [];
   const cmdSuffix = narrativeOnly ? "处理最新命令，直接输出叙事正文。" : "处理最新命令。纯JSON，字符串不换行。";
   // 成文铁律放在 user 块最末尾（酒馆语义里插入深度=0、贴着生成处的最强位，
   // 见 ST prompt-manager：Depth 0 = 提示末尾 = 最强）。文体规则若埋在 system 里
@@ -39,7 +41,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     d.apiCfg.targetWordCount, d.narrator, d.scenario, d.budgetInstruction,
     // 结算轮灭 lore——但牵涉具体某人的结算（送礼/拜师/赌石成交）仍要人设，
     // 否则那人只剩个名字，写出来的对白没脾气。此时保留 lore（本就是绿灯，只注入在场者）。
-    embeddingReady(d.apiCfg), (d.isSettle && !d.settleNpc) ? "" : d.npcLoreBlockWithQuest, narrativeOnly, promptScope,
+    d.embeddingEnabled, (d.isSettle && !d.settleNpc) ? "" : d.npcLoreBlockWithQuest, narrativeOnly, promptScope,
     {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
@@ -51,6 +53,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       inSeaOfMind: !!d.inSeaOfMind,
       gm: d.gm,
       playerName: d.charName || "主角", // memory摘要统一用这个称呼，不用你/我，避免人称混乱
+      activePreset: d.activePreset,
       // 物件志（批四）：只有本轮真可能发出物品才挂——移动拾取命中/战斗/创造模式。
       mayGrantItem: d.gm || d.intent.code === "COMBAT" || !!d.pickupJudgment,
       // scenario 绿灯扫描源（批三）：玩家本轮输入 + 上轮引擎回复，等同酒馆"扫描深度2"。
@@ -61,8 +64,9 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
         lastReply: [...d.convo].reverse().find(m => m.role === "assistant")?.content || "",
       },
       onGateReport: (g) => { _gateReport = g; },
-      onSnapshot: (snap) => attachInjectionSnapshot(d._trace, snap),
-      onDuelReportMissing: (paths) => traceStep(d._trace, "战报模板字段缺失", "warn", paths.join("、")),
+      onSnapshot: (snap) => traceEvents.push({ kind: "snapshot", snap }),
+      onDuelReportMissing: (paths) => traceEvents.push({ kind: "step", label: "战报模板字段缺失", level: "warn", text: paths.join("、") }),
+      onPromptRefMissing: (paths) => traceEvents.push({ kind: "step", label: "提示词引用缺失", level: "warn", text: paths.join("、") }),
     }
   );
 
@@ -89,8 +93,10 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
     if (authorsNote) authorsNote.content += (authorsNote.content ? "\n" : "") + _bodyGate.text;
   }
   if (_bodyGate.lit.length || _bodyGate.dark.length) {
-    traceStep(d._trace, "体貌", "info",
-      `🟢${_bodyGate.lit.join("、") || "无"}　⚫灭:${_bodyGate.dark.join("、") || "无"}`);
+    traceEvents.push({
+      kind: "step", label: "体貌", level: "info",
+      text: `🟢${_bodyGate.lit.join("、") || "无"}　⚫灭:${_bodyGate.dark.join("、") || "无"}`,
+    });
   }
 
   // 计算 system 总长度（仅用于 trace 展示）。
@@ -158,7 +164,7 @@ ${pers.bio || ""}
 [砍价规则] 按其性格接招：玩家说得在理便松口，胡搅蛮缠便顶回去，也可主动搭赠随身物件促成交易；不要一轮就把价谈死，留出拉扯余地。本轮不改变房间/物品/任何游戏状态，只有对白、神态与心思。
 对话用「」包裹，旁白叙述不加标记，心理用*斜体*。总字数约 ${dealWords} 字。
 
-[结算标签说明] priceMult 是对原报价 ${g.baseOffer || "?"} 两的倍率（对方肯多出→>1，让利→<1，没谈拢→1.0；系统只认 0.8~1.5，超出无效）；addItem 只能填其随身确有且愿搭的物件名，否则填 null。标签只给系统看，玩家看不到。
+[结算标签说明] priceMult 是对原报价 ${g.baseOffer || "?"} 两的倍率（范围 ${renderPromptTemplate("@尺度.谈价", {}, { trace: (paths) => traceEvents.push({ kind: "step", label: "提示词引用缺失", level: "warn", text: paths.join("、") }) }).text}）；addItem 只能填其随身确有且愿搭的物件名，否则填 null。标签只给系统看，玩家看不到。${renderFieldScales(["gambleNegotiation.*.*.mult"])}
 
 ${dealFmt}`;
     const dealHist = d.mainConvo.slice(-8).map(m => (m.role === "user" ? "[玩家] " : "[引擎] ") + m.content).join("\n");
@@ -175,7 +181,10 @@ ${dealFmt}`;
     : promptScope === "settle" ? `，已砍物件志/认知隔离/lore/远景/召回/全量schema${d.settleNpc ? `（保留MVU：牵涉${d.settleNpc}）` : "/MVU"}`
     : promptScope === "move" ? "，已砍物件志/认知隔离/复杂schema/拓扑外的世界观"
     : promptScope === "talk" ? "，已砍物件志/拓扑与装备规则" : "";
-  traceStep(d._trace, "Prompt注入", "info", `级别=${_scopeLabel}（system ${sysLength}字${_scopeWhy}）`);
+  traceEvents.push({
+    kind: "step", label: "Prompt注入", level: "info",
+    text: `级别=${_scopeLabel}（system ${sysLength}字${_scopeWhy}）`,
+  });
   // 调用模式标注：单调用/双调用是两条完全不同的 prompt 结构（前者主模型直接
   // 出JSON+MVU，后者主模型只写散文、好感度等状态判定全部转交提取层的另一
   // 个模型），排查"好感度怎么没变/怎么变得莫名其妙"时第一步就该确认走的
@@ -186,25 +195,56 @@ ${dealFmt}`;
     // 两处若不一致，这行 trace 报的模型名就会和真正发起提取的那个对不上。
     const exKey = d.isTalk ? "TALK_CASUAL" : d.intent.code;
     const exCfg = buildExtractionCfg(exKey, d.apiCfg);
-    traceStep(d._trace, "调用模式", "info",
-      `双调用（叙事/状态分离）　主叙事模型=${getApiModel(d.apiCfg) || "未设置"}　提取模型(spec=${exKey})=${getApiModel(exCfg) || "未设置"}${getApiModel(exCfg) === getApiModel(d.apiCfg) ? "（未单独配置，沿用主模型）" : ""}`);
+    traceEvents.push({
+      kind: "step", label: "调用模式", level: "info",
+      text: `双调用（叙事/状态分离）　主叙事模型=${getApiModel(d.apiCfg) || "未设置"}　提取模型(spec=${exKey})=${getApiModel(exCfg) || "未设置"}${getApiModel(exCfg) === getApiModel(d.apiCfg) ? "（未单独配置，沿用主模型）" : ""}`,
+    });
   } else {
-    traceStep(d._trace, "调用模式", "info", `单调用（叙事+状态一次性产出）　主模型=${getApiModel(d.apiCfg) || "未设置"}`);
+    traceEvents.push({
+      kind: "step", label: "调用模式", level: "info",
+      text: `单调用（叙事+状态一次性产出）　主模型=${getApiModel(d.apiCfg) || "未设置"}`,
+    });
   }
   // 世界书点灯明细：🟢亮了哪条（被什么词/哪个状态点亮）、⚫灭了哪条。排"AI 怎么不知道 X"用。
   if (_gateReport && (_gateReport.lit.length || _gateReport.dark.length)) {
-    traceStep(d._trace, "世界书·总纲", "info",
-      `🟢${_gateReport.lit.join("、") || "无"}　⚫灭:${_gateReport.dark.join("、") || "无"}`);
+    traceEvents.push({
+      kind: "step", label: "世界书·总纲", level: "info",
+      text: `🟢${_gateReport.lit.join("、") || "无"}　⚫灭:${_gateReport.dark.join("、") || "无"}`,
+    });
   }
   // 把当前激活的 Chat Completion 预设里配置的采样参数（temperature/maxTokens/
   // topP/topK/frequencyPenalty/presencePenalty）融合进这次调用的 cfg——只有预设
   // 里显式配置过（非 null）的字段才覆盖，其余沿用 apiCfg 原有的全局设置。
   // 主叙事这一路是唯一真正受"叙事风格采样参数"影响的调用点，私聊旁白/方向判定
   // /提取层等辅助调用不套用这份覆盖，避免预设改动意外影响到不相关的小任务。
-  const effectiveCfg = applyPresetOverrides(d.apiCfg, getActivePreset());
+  const effectiveCfg = applyPresetOverrides(d.apiCfg, d.effectivePreset);
+  return {
+    sysBlocks,
+    chatMessages,
+    effectiveCfg,
+    stream: effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini" && !d.duelReport,
+    intent: { code: d.intent.code, label: d.intent.label },
+    recallInfo: d.recallInfo,
+    modelOptions: { callLabel: "主叙事" },
+    traceEvents,
+  };
+}
+
+export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
+  const payload = buildMainCallPayload(extraNudge, narrativeOnly, {
+    ...d,
+    embeddingEnabled: embeddingReady(d.apiCfg),
+    activePreset: getActivePreset(),
+    effectivePreset: getActivePreset(),
+  });
+  const { sysBlocks, chatMessages, effectiveCfg, stream, intent, recallInfo, modelOptions, traceEvents } = payload;
+  for (const event of traceEvents) {
+    if (event.kind === "snapshot") attachInjectionSnapshot(d._trace, event.snap);
+    else traceStep(d._trace, event.label, event.level, event.text);
+  }
   const ai = d.ai || webAi;
   if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
-  if (effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini" && !d.duelReport) {
+  if (stream) {
     const streamLogIndex = { current: null };
     d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
     d.setLog(l => {
@@ -225,9 +265,9 @@ ${dealFmt}`;
           return copy;
         });
       },
-      intent: { code: d.intent.code, label: d.intent.label },
-      recallInfo: d.recallInfo,
-      modelOptions: { callLabel: "主叙事" },
+      intent,
+      recallInfo,
+      modelOptions,
     });
     if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
     if (narrativeOnly) {
@@ -248,9 +288,9 @@ ${dealFmt}`;
   const result = await ai.chat(chatMessages, {
     cfg: effectiveCfg,
     systemPrompt: sysBlocks,
-    intent: { code: d.intent.code, label: d.intent.label },
-    recallInfo: d.recallInfo,
-    modelOptions: { callLabel: "主叙事" },
+    intent,
+    recallInfo,
+    modelOptions,
   });
   if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
   return { rawFull: result.text, finishReason: result.finishReason };

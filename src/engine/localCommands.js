@@ -6,6 +6,8 @@ import { QUCUO_MAP } from "../domain/map/qucuoMap.js";
 import { QUCUO_QUESTS } from "../domain/quests/qucuoQuests.js";
 import { getQuestScript } from "../domain/quests/questScripts.js";
 import { bar } from "../utils/mudHelpers.js";
+import { getPresentNpcs } from "../domain/state/fields.js";
+import { giftSilver } from "../features/npc/logic.js";
 
 const ROOM_LOOK_COMMANDS = new Set(["看", "look", "l", "看看", "环顾", "环顾四周", "环视", "环视四周", "查看四周"]);
 
@@ -46,6 +48,14 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
   const command = String(text ?? "");
   const normalized = command.trim().toLowerCase();
   if (!normalized || state.isTalk) return null;
+
+  const gift = /^(?:给|送(?:给)?)\s*(.+?)\s+(\d+)\s*(?:元|两(?:银子|银两)?)$/
+    .exec(command.trim()) ?? /^给([^\d]+?)(\d+)\s*(?:元|两(?:银子|银两)?)$/.exec(command.trim());
+  if (gift) {
+    const [, name, amount] = gift;
+    const npc = getPresentNpcs(state).find((entry) => entry.name === name.trim());
+    return { kind: "result", localKind: "giftSilver", result: giftSilver(state, npc, Number(amount)) };
+  }
 
   if (normalized === "help" || normalized === "帮助") {
     if (surface === "web") {

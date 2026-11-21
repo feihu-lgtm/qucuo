@@ -1,3 +1,4 @@
+import { add, applyWrite, set, updateField } from "../../domain/state/applyWrite.js";
 import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
 import { CATALOG_INDEX, useConsumable as resolveConsumable } from "../../domain/items/catalog.js";
 import { tallyAdd } from "../memory/logic.js";
@@ -19,37 +20,28 @@ export function consumeItem(state, item) {
 
   const changes = {};
   if (result.hpDelta || result.combatBuff) {
-    changes.char = (previous) => {
-      let next = previous;
-      if (result.hpDelta) {
-        next = {
-          ...next,
-          hp: [
-            Math.min(effectiveMaxHp(next.hp[1], state.skills), next.hp[0] + result.hpDelta),
-            next.hp[1],
-          ],
-        };
-      }
-      if (result.combatBuff) {
-        next = {
-          ...next,
-          pendingCombatBuff: mergeCombatBuff(next.pendingCombatBuff, result.combatBuff),
-        };
-      }
-      return next;
-    };
+    changes.char = updateField("char", (char) => {
+      const writes = [];
+      if (result.hpDelta) writes.push(set("char.hp", [
+        Math.min(effectiveMaxHp(char.hp[1], state.skills), char.hp[0] + result.hpDelta), char.hp[1],
+      ]));
+      if (result.combatBuff) writes.push(set(
+        "char.pendingCombatBuff", mergeCombatBuff(char.pendingCombatBuff, result.combatBuff),
+      ));
+      return writes;
+    });
   }
   if (result.sixDimBuffs?.length) {
     const flags = result.sixDimBuffs.map((buff) => makeBuffFlag(buff.attr, buff.val, state.time, buff.duration));
-    changes.flags = (previous) => [...(previous || []), ...flags];
+    changes.flags = updateField("flags", (previous) => set("flags", [...(previous || []), ...flags]));
   }
-  changes.inv = (previous) => {
+  changes.inv = updateField("inv", (previous) => {
     const next = [...previous];
     const index = next.findIndex((entry) => itemNameOf(entry) === itemName);
     if (index !== -1) next.splice(index, 1);
-    return next;
-  };
-  changes.time = (time) => time + 1;
+    return set("inv", next);
+  });
+  changes.time = updateField("time", add("time", 1));
   return { changes, logs: [{ t: "item", text: `  ⊙ ${result.note}` }] };
 }
 
@@ -67,17 +59,16 @@ export function pickGroundItem(state, item, { tallyTime = state.time } = {}) {
       varTree: (previous) => {
         const next = JSON.parse(JSON.stringify(previous || {}));
         if (!next.世界) next.世界 = { 威望: 0 };
-        next.世界.起居注 = tallyAdd(next.世界.起居注, "pickGround", tallyTime);
-        return next;
+        return applyWrite({ varTree: next }, set("世界.起居注", tallyAdd(next.世界.起居注, "pickGround", tallyTime))).state.varTree;
       },
-      inv: (previous) => [...previous, groundItem],
+      inv: updateField("inv", (previous) => set("inv", [...previous, groundItem])),
       room: (previous) => {
         const items = [...(previous.items || [])];
         const index = items.findIndex(matches);
         if (index !== -1) items.splice(index, 1);
         return { ...previous, items };
       },
-      time: (time) => time + 1,
+      time: updateField("time", add("time", 1)),
     },
     logs: [{ t: "item", text: `  ✓ 你拾起「${itemName}」，收入囊中。` }],
   };

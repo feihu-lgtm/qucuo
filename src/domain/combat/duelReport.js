@@ -10,6 +10,9 @@ import {
 } from "./duelPhrases/index.js";
 import { resolveMatchupRule } from "./moveTypes.js";
 import { STATUS_EFFECTS, STATUS_GROUP } from "./statusEffects.js";
+import { renderPromptTemplate as resolveDuelReportTemplate } from "../prompt/promptRefs.js";
+
+export { resolveDuelReportTemplate };
 
 function normalizeMoveType(type) {
   return DUEL_MOVE_TYPES.includes(type) ? type : "状态";
@@ -240,30 +243,6 @@ export function buildDuelReportRounds(battleLog) {
 
 const SOLO_ROUND_TEMPLATE = "【第@round.round回合】玩家@round.result.nameA为A，@round.result.nameB为B；招式：@round.playerMove.name（@round.playerMove.type）对@round.npcMove.name（@round.npcMove.type）；招式伤害：A @round.result.damageToA、B @round.result.damageToB；持续伤害：A @round.result.statusDamageA、B @round.result.statusDamageB；疗伤：A @round.result.hpRestoreA、B @round.result.hpRestoreB；闪避：A @round.result.dodgeSuccessA、B @round.result.dodgeSuccessB；回合后气血：A @round.result.hpAfterA、B @round.result.hpAfterB；HP带：A @round.result.hpBandA、B @round.result.hpBandB；施加状态：A @round.result.statusAppliedToA、B @round.result.statusAppliedToB；印记：A @round.result.markAppliedToA、B @round.result.markAppliedToB；当前状态：A @round.result.statusSlotsAfterA、B @round.result.statusSlotsAfterB；状态日志：A @round.result.statusLogA、B @round.result.statusLogB；本轮吃亏：@round.result.worseName。";
 const TEAM_ROUND_TEMPLATE = "【第@round.round回合】团战逐次交锋的引擎结果与战后状态：@round.teamLines";
-
-function displayReportValue(value) {
-  if (value == null) return "";
-  if (Array.isArray(value)) {
-    return value.length === 2 && value.every(Number.isFinite) ? `${value[0]}/${value[1]}` : JSON.stringify(value);
-  }
-  return typeof value === "object" ? JSON.stringify(value) : String(value);
-}
-
-export function resolveDuelReportTemplate(template, data) {
-  const missingPaths = [];
-  const text = template.replace(/@([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)/g, (_, path) => {
-    let value = data;
-    for (const part of path.split(".")) {
-      if (value == null || !Object.prototype.hasOwnProperty.call(value, part)) {
-        missingPaths.push(path);
-        return "";
-      }
-      value = value[part];
-    }
-    return displayReportValue(value);
-  });
-  return { text, missingPaths: [...new Set(missingPaths)] };
-}
 
 export function renderDuelReportRounds(rounds) {
   const missingPaths = [];

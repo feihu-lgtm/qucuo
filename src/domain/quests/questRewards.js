@@ -16,6 +16,8 @@
 // 分支点（completionFlag 是数组）额外支持 onReach.byFlag：{ 具体flag: {同上结构} }，
 // 按这次真正命中的 flag 取对应的分支专属奖励，跟 base（byFlag 以外的字段）合并。
 
+import { add, set, updateField } from "../state/applyWrite.js";
+
 function mergeRewardParts(...parts) {
   const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, flags: [] };
   for (const p of parts) {
@@ -47,44 +49,26 @@ export function resolveStageRewards(stage, hitFlags = []) {
 export function applyStageRewards(rewards, { setInv, setChar, setVarTree, setFlags }, now = Date.now()) {
   if (!rewards) return;
   if (rewards.items?.length) {
-    setInv(prev => [
+    setInv(updateField("inv", (prev) => set("inv", [
       ...prev,
       ...rewards.items.map((it, i) => ({ ...it, id: it.id || `quest_reward_${now}_${i}`, equipped: false })),
-    ]);
+    ])));
   }
   if (rewards.money) {
-    setChar(c => ({ ...c, money: (c.money || 0) + rewards.money }));
+    setChar(updateField("char", add("char.money", rewards.money)));
   }
   if (Object.keys(rewards.favorability).length) {
-    setVarTree(vt => {
-      const next = { ...vt, 角色: { ...(vt.角色 || {}) } };
-      for (const [name, delta] of Object.entries(rewards.favorability)) {
-        const cur = next.角色[name]?.好感度 ?? 10;
-        next.角色[name] = { ...(next.角色[name] || {}), 好感度: Math.max(0, Math.min(100, cur + delta)) };
-      }
-      return next;
-    });
+    setVarTree(updateField("varTree", Object.entries(rewards.favorability)
+      .map(([name, delta]) => add(["角色", name, "好感度"], delta)), { defaultValue: 10 }));
   }
   if (Object.keys(rewards.favorabilitySet).length) {
-    setVarTree(vt => {
-      const next = { ...vt, 角色: { ...(vt.角色 || {}) } };
-      for (const [name, val] of Object.entries(rewards.favorabilitySet)) {
-        next.角色[name] = { ...(next.角色[name] || {}), 好感度: val };
-      }
-      return next;
-    });
+    setVarTree(updateField("varTree", Object.entries(rewards.favorabilitySet)
+      .map(([name, value]) => set(["角色", name, "好感度"], value))));
   }
   if (rewards.reputation) {
-    // 江湖威望：写进 世界.威望，遵守 mvu.js 同款限幅——单次增减 clamp 到 ±15，
-    // 最终值裁剪到 -100~100。任务义举/劣行的江湖声望结算走这里。
-    setVarTree(vt => {
-      const delta = Math.max(-15, Math.min(15, rewards.reputation));
-      const cur = vt.世界?.威望 ?? 0;
-      const nextVal = Math.max(-100, Math.min(100, cur + delta));
-      return { ...vt, 世界: { ...(vt.世界 || {}), 威望: nextVal } };
-    });
+    setVarTree(updateField("varTree", add("世界.威望", rewards.reputation)));
   }
   if (rewards.flags?.length) {
-    setFlags(f => [...new Set([...f, ...rewards.flags])]);
+    setFlags(updateField("flags", (f) => set("flags", [...new Set([...f, ...rewards.flags])])));
   }
 }
