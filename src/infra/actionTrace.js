@@ -31,6 +31,14 @@ export function fmtMs(ms) {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
 }
 
+export function fmtClock(ts) {
+  const date = new Date(ts);
+  if (!Number.isFinite(date.getTime())) return "";
+  return [date.getHours(), date.getMinutes(), date.getSeconds()]
+    .map((part) => String(part).padStart(2, "0"))
+    .join(":");
+}
+
 export function pipelineTabs(p) {
   return {
     System: Array.isArray(p.systemPrompt)
@@ -43,8 +51,9 @@ export function pipelineTabs(p) {
 }
 
 export function formatTrace(turn, { full = true } = {}) {
+  const clock = fmtClock(turn.ts);
   return [
-    `=== ${turn.id} ${turn.raw} | ${turn.phases.join(" → ")} | ${fmtMs(turn.totalMs)}${turn.commandId ? ` | ${turn.commandId} · ${turn.category}` : ""} ===`,
+    `=== ${clock ? `${clock} ` : ""}${turn.id} ${turn.raw} | ${turn.phases.join(" → ")} | ${fmtMs(turn.totalMs)}${turn.commandId ? ` | ${turn.commandId} · ${turn.category}` : ""} ===`,
     ...turn.nodes.flatMap((node) => [
       `  [${node.layer}] ${node.label}${node.model ? ` · ${node.model}` : ""}${node.detail ? `：${node.detail}` : ""}${node.durationMs != null ? ` (${fmtMs(node.durationMs)})` : ""}`,
       ...(full && node.pipeline ? Object.entries(pipelineTabs(node.pipeline)).map(([tab, content]) => `[${tab}]\n${content ?? ""}`) : []),

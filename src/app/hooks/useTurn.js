@@ -13,6 +13,7 @@ import { judgeCollect } from "../../engine/act/roundNotes.js";
 import { CATEGORY_LABEL } from "../../domain/economy/equipment.js";
 import { findTargetedRumor } from "../../domain/npc/npcEmergence.js";
 import { classifyIntent, INTENT } from "../../domain/prompt/inputIntent.js";
+import { consumeDuelRequest } from "./useDuel.js";
 import { buildDirectionJudgeRequest, getMapNode, parseDirectionJudgeResponse, QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
 import { callModel, classifyError } from "../../infra/apiConfig.js";
@@ -32,7 +33,7 @@ import { classifyActCommand } from "../../core/commands.js";
 
 export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
-  addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
+  addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, setActiveTarget, setDuelPending,
   nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
   turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
   waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
@@ -62,7 +63,7 @@ export function useTurn({
       : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading, commandId: "actRouter" });
     if (parent === _trace) _trace.awaitingSettlement = true;
     const applyLocal = (result, feature) => applyResult(featureCtxRef.current, result, { turn: _trace, feature });
-    let summary;
+    let summary, result;
     try {
     const stopAutoTravel = () => {
       if (!autoTravelRef.current) return;
@@ -337,7 +338,7 @@ export function useTurn({
         lockedDestName,
         gambleTalkCtx: gambleTalkCtx.current, recallInfo: memory.recallInfo,
         inSeaOfMind: room.name === SEA_OF_MIND.district,
-        settleNpc: opts.settleNpc, settleKind: opts.settleKind, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
+        settleNpc: opts.settleNpc, settleKind: opts.settleKind, duelReport: opts.duelReport, giftInfo: opts.giftInfo, learnInfo: opts.learnInfo, settleBeast: !!opts.settleBeast,
         _trace, addLog, setLog, isStale,
       });
     const turnCtx = {
@@ -394,7 +395,7 @@ export function useTurn({
         };
       },
     };
-    const result = await playTurn(turnCtx, cmd, opts);
+    result = await playTurn(turnCtx, cmd, opts);
     if (result.stale) return;
     if (!result.ok) {
       const e = result.error;
@@ -407,6 +408,7 @@ export function useTurn({
         { t: "sys", text: `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
       ]);
     }
+    consumeDuelRequest(result, { opts, isStale, isTalk, interactMode, setActiveTarget, setDuelPending, featureCtxRef, trace: _trace });
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
     if (isTalk) { changePendingTalks(-1); }
     else { setLoading(false); }
@@ -416,11 +418,11 @@ export function useTurn({
       if (_trace.totalMs == null && !isStale()) turnMonitor.transition(_trace, PHASE.ERROR, String(error));
       throw error;
     } finally {
-      await Promise.resolve();
+      if (opts.duelReportFallback && (!result?.ok || result.stale || isStale())) opts.duelReportFallback(); await Promise.resolve();
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
+  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, setActiveTarget, setDuelPending, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue]);
   actRef.current = act;
   const featureCtx = useMemo(() => ({
     addLog,

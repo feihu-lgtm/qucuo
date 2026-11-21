@@ -211,8 +211,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc });
 
   const { talkToNarrator } = usePrivateTalk({
-    narrator, addLog, apiCfg, convo, time, room, inv, preset, varTree, flags,
-    jotNote, char, nsfwOn, questProgress, changePendingTalks, innerRoomName,
+    narrator, addLog, apiCfg, convo, room, preset, flags,
+    jotNote, char, nsfwOn, questProgress, changePendingTalks,
     talkBusyRef, schedulerRef, setInput, timeRef, varTreeRef, setLog, setConvo,
     setVarTree, setNarrator, noteAction,
   });
@@ -244,6 +244,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const { act } = useTurn({
     loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
     addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
+    setActiveTarget, setDuelPending,
     nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
     turnGenerationRef, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
     waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,

@@ -21,6 +21,8 @@ const 会淡忘途径 = { 传闻: true, 目击: false, 告知: false, 剧本: fa
 
 // 代码写死的推演参数（可调）：
 import { random } from "../../core/rng.js";
+import { buildPrompt } from "./buildPrompt.js";
+import "./calls/sideCalls.js";
 
 export const KNOWLEDGE_PARAMS = {
   传闻默认忘却回合: 40,   // 传闻途径得知后，多少回合没被再次强化就淡忘
@@ -227,17 +229,14 @@ export function allFactSummaries(varTree, limit = 20) {
 // 返回 { system, messages, maxTokens }。cue 是这条事实的线索（id/标签/触发语境）。
 // 这是"召不回旧事时"的纯现编兜底路径。
 export function factSummaryRequest(cue) {
-  const system = "你是一个只负责生成简短设定文本的工具。用户会给你一个事件线索，你只需返回一句话（不超过30字）的中文简要描述，白话古文风格，客观陈述这件事是什么。只返回这一句话本身，不要任何解释、引号、标点装饰或多余内容。";
-  const messages = [{ role: "user", content: `事件线索：${cue}\n请用一句话简要描述这件事。` }];
-  return { system, messages, maxTokens: 120 };
+  const { system, messages, maxTokens } = buildPrompt("fact.summary", { cue });
+  return { system, messages, maxTokens };
 }
 
 // 内容层优先路径：先从向量库召回"真发生过的相关旧事"，把这些旧事**作为素材**交给 AI
 // 归纳成一句话。要求 AI 只依据素材、不得编造素材里没有的情节——保证这句描述有据可查、
 // 勾连真实剧情，而非空口现编。recallTexts 为召回到的若干旧事文本。
 export function factSummaryRequestFromRecall(cue, recallTexts) {
-  const 素材 = (recallTexts || []).map((t, i) => `${i + 1}. ${t}`).join("\n");
-  const system = "你是一个只负责归纳的工具。用户会给你一个事件线索，以及游戏中真实发生过的若干旧事片段。你只需**依据这些旧事片段**，用一句话（不超过30字）的中文、白话古文风格，概括该事件是怎么回事。严禁编造素材里没有的情节；若素材不足以说清，就只概括素材确实提到的部分。只返回这一句话本身，不要解释、引号或多余内容。";
-  const messages = [{ role: "user", content: `事件线索：${cue}\n\n相关旧事片段（真实发生过）：\n${素材}\n\n请据以上旧事，用一句话概括这件事。` }];
-  return { system, messages, maxTokens: 120 };
+  const { system, messages, maxTokens } = buildPrompt("fact.summaryFromRecall", { cue, recallTexts });
+  return { system, messages, maxTokens };
 }

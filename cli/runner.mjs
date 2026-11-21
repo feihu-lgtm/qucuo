@@ -441,6 +441,9 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         },
       }, cmd, opts);
       if (result.ok) {
+        if (result.duelRequest?.name && !isTalk && !opts.settle) {
+          emit(`AI 判定：向${result.duelRequest.name}发起切磋`);
+        }
         session.roomMap = roomMapRef.current;
         if (opts.squareOps?.length) featureCtx.applySquareOps(opts.squareOps);
         const nextState = gameStore.getState();

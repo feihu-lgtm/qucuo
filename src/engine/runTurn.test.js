@@ -9,6 +9,7 @@ import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
 import { createMockAi } from "./ports/ai.js";
 import { createExtractionState, runTurn } from "./runTurn.js";
 import { playTurn, ROLLBACK_KEYS } from "./playTurn.js";
+import { commitRound } from "./act/commitRound.js";
 
 function createPlayTurnContext(ai, commitRound) {
   const room = { name: "石阶", exits: [], npcs: [], items: [] };
@@ -57,6 +58,77 @@ function createPlayTurnContext(ai, commitRound) {
   return ctx;
 }
 
+describe("duel-report commit logging", () => {
+  it("replaces the regular output log with interleaved system and AI rows", () => {
+    const addLog = vi.fn();
+    const noop = vi.fn();
+    const refs = {
+      varTreeRef: { current: { 角色: {}, 世界: {} } },
+      roomMapRef: { current: {} },
+      gambleTalkCtx: { current: null },
+      outerDepartRef: { current: null },
+      pendDirRef: { current: null },
+      pickupJudgmentRef: { current: null },
+      pickupExtractionFailedRef: { current: false },
+      collectGrantedRef: { current: [] },
+      dayMaterialRef: { current: [] },
+      roundsSinceLastSaveRef: { current: 0 },
+      playedThisSessionRef: { current: 0 },
+    };
+    const deps = new Proxy({
+      p: { output: ["【第1回合】AI出招", "【结局】AI收招"], delta: {} },
+      duelReport: { rounds: [{ round: 1, text: "系统结算一招" }] },
+      narrativeText: "【第1回合】AI出招\n\n【结局】AI收招",
+      mvuCommands: [],
+      addLog,
+      room: { name: "鱼定村", npcs: [], items: [] },
+      char: { name: "主角", special: { 气运: 5 } },
+      apiCfg: {},
+      mapData: {},
+      map: {},
+      npcs: [],
+      items: [],
+      activeTarget: null,
+      talkTarget: null,
+      rawFull: "战报叙事",
+      _trace: null,
+      varTreeRef: refs.varTreeRef,
+      roomMapRef: refs.roomMapRef,
+      gambleTalkCtx: refs.gambleTalkCtx,
+      outerDepartRef: refs.outerDepartRef,
+      pendDirRef: refs.pendDirRef,
+      pickupJudgmentRef: refs.pickupJudgmentRef,
+      pickupExtractionFailedRef: refs.pickupExtractionFailedRef,
+      collectGrantedRef: refs.collectGrantedRef,
+      dayMaterialRef: refs.dayMaterialRef,
+      roundsSinceLastSaveRef: refs.roundsSinceLastSaveRef,
+      playedThisSessionRef: refs.playedThisSessionRef,
+      isTalk: false,
+      gm: false,
+      time: 1,
+      questProgress: {},
+      setVarTree: noop,
+      setTime: noop,
+      newConvo: [],
+    }, {
+      get(target, key) {
+        if (key in target) return target[key];
+        return String(key).startsWith("set") ? noop : undefined;
+      },
+    });
+
+    commitRound(deps);
+
+    const rows = addLog.mock.calls.flatMap(([entries]) => entries || []);
+    const systemIndex = rows.findIndex((row) => row.text === "  第1回合 系统结算一招");
+    expect(systemIndex).toBeGreaterThanOrEqual(0);
+    expect(rows[systemIndex]).toMatchObject({ t: "sys" });
+    expect(rows[systemIndex + 1]).toEqual({ t: "desc", text: "AI出招" });
+    expect(rows[systemIndex + 2]).toEqual({ t: "desc", text: "AI收招" });
+    expect(rows.some((row) => row.text === "  【第1回合】AI出招")).toBe(false);
+  });
+});
+
 describe("stale turn handling", () => {
   it("does not commit an AI response after turn invalidation", async () => {
     let releaseResponse;
@@ -83,6 +155,24 @@ describe("stale turn handling", () => {
 });
 
 describe("runTurn", () => {
+  it("normalizes and returns a duel request for an NPC present in the room", async () => {
+    const npc = { name: "才旦" };
+    const commit = vi.fn();
+    const ctx = createPlayTurnContext(
+      createMockAi(['{"output":["双方摆开架势"],"duelRequest":"才旦"}']),
+      commit,
+    );
+    ctx.state.room.npcs = [npc];
+
+    const result = await playTurn(ctx, "向才旦切磋");
+
+    expect(result).toMatchObject({ ok: true, duelRequest: npc });
+    expect(result.turn.p.duelRequest).toBe(npc);
+    expect(commit).toHaveBeenCalledWith(expect.objectContaining({
+      turn: expect.objectContaining({ p: expect.objectContaining({ duelRequest: npc }) }),
+    }));
+  });
+
   it("restores rollback keys, refs, and RNG while preserving concurrent log writes", async () => {
     const originalStore = structuredClone(gameStore.getState());
     const originalRng = getRngState();

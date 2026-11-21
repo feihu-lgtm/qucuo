@@ -83,8 +83,8 @@ describe("收复雪豹", () => {
       apply(state, giftNpc(state, leopard, item));
       expect(state.flags.includes("snow_spirit_medicine")).toBe(item === "金疮药");
     }
-    expect(giftNpc(initial(), leopard, "金疮药").changes.flags).toBeUndefined();
-    expect(giftNpc(active(), { name: "村民" }, "金疮药").changes.flags).toBeUndefined();
+    expect(giftNpc({ ...initial(), inv: ["金疮药"] }, leopard, "金疮药").changes.flags).toBeUndefined();
+    expect(giftNpc({ ...active(), inv: ["金疮药"] }, { name: "村民" }, "金疮药").changes.flags).toBeUndefined();
     expect(giftNpc(active(), null, "金疮药").logs[0].t).toBe("err");
   });
 

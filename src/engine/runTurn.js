@@ -1,6 +1,6 @@
 import { callMainOnce } from "./act/actCall.js";
 import { parseMainResponse } from "./act/parseResponse.js";
-import { callExtraction, buildExtractionCfg } from "../domain/prompt/extractionEngine.js";
+import { callExtraction, buildExtractionCfg, normalizeDuelRequest } from "../domain/prompt/extractionEngine.js";
 import { step as traceStep } from "../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../core/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
@@ -29,12 +29,10 @@ function withPresenceTrace(ctx) {
 export function createExtractionState(ctx, deps) {
   const state = ctx.state || {};
   const lockedDestName = state.lockedDestName ?? deps.lockedDestName;
-  const inv = state.inv || deps.inv || [];
   return {
     room: state.room || deps.room,
     char: state.char || deps.char,
-    inv,
-    invText: inv.map((item) => typeof item === "string" ? item : item.name).join("，") || "空",
+    inv: state.inv || deps.inv || [],
     dao: state.dao || deps.dao,
     varTree: deps.varTree,
     lockedDestName,
@@ -80,7 +78,8 @@ async function runTurnSteps(ctx, cmd, opts) {
   if (historySavings.savedChars > 0) {
     traceStep(ctx._trace, "历史压缩", "info", `${historySavings.legacyChars}→${historySavings.nowChars}字（省 ${historySavings.savedChars}，约 ${Math.round(historySavings.savedChars * 1.6)} tokens）`);
   }
-  const preparedPrompt = assemblePrompt(withPresenceTrace(ctx), cmd, opts, convo, mainConvo, hist, newConvo);
+  const onPromptRefMissing = (paths) => traceStep(ctx._trace, "提示词引用缺失", "warn", paths.join("、"));
+  const preparedPrompt = assemblePrompt(withPresenceTrace({ ...ctx, onPromptRefMissing }), cmd, opts, convo, mainConvo, hist, newConvo);
   const promptContext = { ...preparedPrompt };
   let knowledgeTurn = null;
   let recall = { recallInfo: null, recallBlock: "" };
@@ -148,7 +147,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       rawFull = rawFull.replace(/<deal>[\s\S]*?<\/deal>/gi, "").trim();
     }
     narrativeText = rawFull;
-    if (!apiCfg.streamEnabled || apiCfg.apiType === "gemini") {
+    if (!opts.duelReport && (!apiCfg.streamEnabled || apiCfg.apiType === "gemini")) {
       const lines = rawFull.split("\n").map((line) => line.trim()).filter(Boolean);
       addLog(lines.map((text) => ({ t: "desc", text: `  ${text}` })));
     }
@@ -174,6 +173,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       apiCfg,
       settleOptions,
       deps.ai,
+      onPromptRefMissing,
     ).catch((error) => {
       if (!ctx.isStale?.()) {
         addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${error.message || error}），本轮状态未更新` }]);
@@ -216,6 +216,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         throw error;
       }
       ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));
+      normalizeDuelRequest(p, createExtractionState(ctx, deps));
       narrativeText = (p.output || []).join("");
       const truncated = p._truncated || /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
       if (truncated && attempt <= MAX_AUTO_RETRY) {

@@ -61,8 +61,13 @@ const GIFT_PATTERNS = [
 ];
 
 const DUEL_PATTERNS = [
-  /(切磋|比试|过招|较量)/,
+  /(切磋|切搓|比试|比武|过招|较量)/,
 ];
+
+export function isDuelInput(rawInput) {
+  const input = (rawInput || "").trim();
+  return DUEL_PATTERNS.some((pattern) => pattern.test(input));
+}
 
 export function classifyIntent(rawInput) {
   const s = (rawInput || "").trim();
@@ -71,7 +76,7 @@ export function classifyIntent(rawInput) {
   for (const p of META_PATTERNS) if (p.test(s)) return INTENT.META_QUERY;
   for (const p of MOVE_PATTERNS) if (p.test(s)) return INTENT.MOVE;
   for (const p of LOOK_PATTERNS) if (p.test(s)) return INTENT.LOOK;
-  for (const p of DUEL_PATTERNS) if (p.test(s)) return INTENT.COMBAT;
+  if (isDuelInput(s)) return INTENT.COMBAT;
   for (const p of COMBAT_PATTERNS) if (p.test(s)) return INTENT.COMBAT;
   for (const p of EXPLORE_PATTERNS) if (p.test(s)) return INTENT.EXPLORE_ACTION;
   for (const p of GIFT_PATTERNS) if (p.test(s)) return INTENT.TALK_CASUAL;

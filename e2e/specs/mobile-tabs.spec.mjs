@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 export const viewport = { width: 390, height: 664 };
 
-export default async function mobileTabs({ page, game }) {
+export default async function mobileTabs({ page, game, ai }) {
   await game.loadSave(page, "village");
   const tabs = page.getByRole("navigation", { name: "界面栏目" });
   const left = page.getByTestId("left-panel");
@@ -81,4 +81,18 @@ export default async function mobileTabs({ page, game }) {
   assert.equal(await tabs.isVisible(), false);
   await page.locator("html").evaluate(element => element.removeAttribute("data-keyboard-open"));
   assert.equal(await tabs.isVisible(), true);
+
+  ai.next({ output: ["我整理好行囊，沿着溪边望向村口。"] });
+  await game.act(page, "我整理了一下行囊");
+  await game.waitFor(page, () => page.evaluate(async () => {
+    const { turnMonitor } = await import("/src/core/turnMonitor.js");
+    return turnMonitor.getTrees().some((turn) => turn.raw === "我整理了一下行囊" && turn.phase === "DONE");
+  }), { message: "timestamped trace turn" });
+  await page.setViewportSize({ width: 390, height: 693 });
+  await page.getByRole("button", { name: /^全流程日志/ }).click();
+  const dialog = page.getByRole("dialog", { name: "全流程日志" });
+  const summary = dialog.locator("details > summary").first();
+  await summary.waitFor({ state: "visible" });
+  assert.match(await summary.innerText(), /^\d{2}:\d{2}:\d{2} ·/);
+  await page.screenshot({ path: "/home/ubuntu/mobshots/logtime/log.png", animations: "disabled" });
 }
