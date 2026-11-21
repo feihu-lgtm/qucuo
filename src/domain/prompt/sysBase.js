@@ -123,7 +123,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       const cn = o.settleNpc || "对方";
       const { min, max, example } = AFFECTION_RULES.companion;
       const speech = o.settleBeast
-        ? `用动作、眼神、姿态（如以额抵掌、绕身而行、伏低臣服等）表明结伴之意`
+        ? `用动作、眼神、姿态（如以额抵掌、绕身而行、伏低臣服等，它不能说话）表明结伴之意`
         : `用言语与神情郑重定下同行情谊`;
       return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行。本轮必写其爽快应下、${speech}；禁写犹豫或抗拒。\n本轮必须输出 <mvu> 且为正向：${cn}属初登场伙伴，直接 _.set 好感度至 ${min}~${max} 间。\n示例：_.set('角色.${cn}.好感度', ${example});`;
     }
