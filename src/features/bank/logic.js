@@ -1,3 +1,4 @@
+import { add, applyWrite, set } from "../../domain/state/applyWrite.js";
 import { renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
 
 export function withdrawalSummary(state) {
@@ -18,7 +19,7 @@ export function deposit(state, amount) {
   if (!Number.isFinite(amount) || amount <= 0) return invalidAmountResult();
   if ((state.char.money || 0) < amount) return { logs: [] };
   const changes = {
-    char: { ...state.char, money: (state.char.money || 0) - amount },
+    char: applyWrite(state, add("char.money", -amount)).state.char,
     deposit: state.deposit + amount,
     depositedAt: state.time,
   };
@@ -38,7 +39,7 @@ export function withdraw(state) {
     changes: {
       deposit: 0,
       depositedAt: null,
-      char: { ...state.char, money: (state.char.money || 0) + total },
+      char: applyWrite(state, add("char.money", total)).state.char,
     },
     logs: [],
     settle: `在钱庄取出银两${total}两（含利息）`,
@@ -54,9 +55,9 @@ export function pledge(state, itemId, pledgeValue) {
 
   return {
     changes: {
-      inv: state.inv.filter((entry) => (typeof entry === "object" ? entry.id : entry) !== item.id),
+      inv: applyWrite(state, set("inv", state.inv.filter((entry) => (typeof entry === "object" ? entry.id : entry) !== item.id))).state.inv,
       pledgedItems: [...(state.pledgedItems || []), { item, pledgeValue }],
-      char: { ...state.char, money: (state.char.money || 0) + pledgeValue },
+      char: applyWrite(state, add("char.money", pledgeValue)).state.char,
     },
     logs: [],
     settle: `把「${item.name}」质押给当铺，得${pledgeValue}两`,
@@ -71,9 +72,9 @@ export function redeem(state, index, redeemCost) {
 
   return {
     changes: {
-      char: { ...state.char, money: state.char.money - redeemCost },
+      char: applyWrite(state, add("char.money", -redeemCost)).state.char,
       pledgedItems: state.pledgedItems.filter((_, entryIndex) => entryIndex !== index),
-      inv: [...state.inv, { ...pledged.item, equipped: false }],
+      inv: applyWrite(state, set("inv", [...state.inv, { ...pledged.item, equipped: false }])).state.inv,
     },
     logs: [],
     settle: `从当铺赎回「${pledged.item?.name}」，花费${redeemCost}两`,

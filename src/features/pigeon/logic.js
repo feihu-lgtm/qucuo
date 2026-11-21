@@ -1,3 +1,4 @@
+import { add, applyWrite, set, updateField } from "../../domain/state/applyWrite.js";
 import { random } from "../../core/rng.js";
 import { AFFECTION_RULES } from "../../domain/state/fields.js";
 import { makeItem } from "../../domain/economy/equipment.js";
@@ -69,14 +70,14 @@ export function sendPigeonLetter(state, npcName, content, opts = {}) {
     },
     changes: {
       ...(channel === "pigeon" ? {
-        char: (previous) => ({ ...previous, pigeons: Math.max(0, (previous?.pigeons || 0) - 1) }),
+        char: updateField("char", add("char.pigeons", -1)),
       } : {}),
       ...(channel === "postgift" && giftName ? {
-        inv: (previous) => {
+        inv: updateField("inv", (previous) => {
           const items = previous || [];
           const index = items.findIndex((item) => (typeof item === "object" ? item.name : item) === giftName);
-          return index === -1 ? items : [...items.slice(0, index), ...items.slice(index + 1)];
-        },
+          return set("inv", index === -1 ? items : [...items.slice(0, index), ...items.slice(index + 1)]);
+        }),
       } : {}),
       time: state.time + 1,
       varTree: (previous) => {
@@ -113,11 +114,7 @@ export function buyPigeon(state, qty, price) {
   }
   return {
     changes: {
-      char: (previous) => ({
-        ...previous,
-        money: (previous?.money || 0) - cost,
-        pigeons: (previous?.pigeons || 0) + qty,
-      }),
+      char: updateField("char", [add("char.money", -cost), add("char.pigeons", qty)]),
     },
     logs: [{ t: "item", text: `  🕊 买下 ${qty} 只信鸽（-${cost} 两），现有 ${(state.char?.pigeons || 0) + qty} 只。` }],
   };
@@ -127,11 +124,11 @@ export function collectPigeons(state, { qty, dayIdx }) {
   if ((state.flags || []).includes(`pigeon_collected_day_${dayIdx}`)) return {};
   return {
     changes: {
-      flags: (previous) => [
+      flags: updateField("flags", (previous) => set("flags", [
         `pigeon_collected_day_${dayIdx}`,
         ...(previous || []).filter((flag) => !flag.startsWith("pigeon_collected_day_")),
-      ],
-      char: (previous) => ({ ...previous, pigeons: (previous?.pigeons || 0) + qty }),
+      ])),
+      char: updateField("char", add("char.pigeons", qty)),
     },
     logs: [{ t: "item", text: `  🕊 从鸽子笼领了 ${qty} 只信鸽，现有 ${(state.char?.pigeons || 0) + qty} 只。` }],
   };
@@ -156,7 +153,8 @@ export function applyPigeonReply(state, letter, responseText) {
     : null;
   reply = reply.replace(/⟦好感\s*[+-]?\d+\s*⟧/g, "").replace(/⟦回礼[:：][^⟧]*⟧/g, "").trim();
 
-  const newAff = Math.max(0, Math.min(100, curAff + affDelta));
+  const affectionPath = ["角色", npcName, "好感度"];
+  const newAff = applyWrite(state, add(affectionPath, affDelta)).finalValue;
   const canReturnGift = channel === "postgift" && giftName;
   const doReturnGift = canReturnGift && giftBack && newAff >= 50;
   let giftItem = null;
@@ -188,18 +186,18 @@ export function applyPigeonReply(state, letter, responseText) {
     },
     changes: {
       varTree: (previous) => {
-        const chars = { ...(previous?.角色 || {}) };
-        const current = chars[npcName] || {};
+        const { state: { varTree } } = applyWrite({ varTree: previous }, set(affectionPath, newAff));
+        const chars = { ...varTree.角色 };
+        const current = chars[npcName];
         chars[npcName] = {
           ...current,
-          好感度: newAff,
           飞鸽: [...(current.飞鸽 || []), { dir: "reply", content: reply, turn: arriveTime, gift: doReturnGift ? giftBack.name : undefined }],
         };
         const 世界 = { ...(previous?.世界 || {}) };
         世界.飞鸽待回 = (世界.飞鸽待回 || []).filter((pending) => pending.id !== id);
         return registerFact({ ...previous, 角色: chars, 世界 }, fact, arriveTime);
       },
-      ...(giftItem ? { inv: (previous) => [...(previous || []), giftItem] } : {}),
+      ...(giftItem ? { inv: updateField("inv", (previous) => set("inv", [...(previous || []), giftItem])) } : {}),
     },
     logs,
     note: {

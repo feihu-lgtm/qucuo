@@ -186,7 +186,7 @@ export const FIELDS = Object.freeze({
   "varTree.角色.**": { label: "角色关系", ai: true, refs: { 角色关系: (s) => s.varTree?.角色 || {} } },
   "varTree.世界.**": { label: "世界剧情变量", ai: true },
   "varTree.主角.**": { label: "主角剧情变量", ai: true },
-  "物价": { label: "物价参考", refs: {
+  "物价": { label: "物价参考", readOnly: true, refs: {
     "物价.主食": () => SERVICE_MENUS.饭馆.find((dish) => dish.name === "青稞糌粑")?.price,
     "物价.兵器": () => priceForQuality("weapon", "白").buyPrice,
   } },
