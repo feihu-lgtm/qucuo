@@ -44,7 +44,7 @@ export async function createVertexEvalAi({ adcPath, project, location = "global"
     crypto: webcrypto, now: Date.now,
   });
   const modelId = model.includes("/") ? model : `google/${model}`;
-  let variant = 0;
+  let variant = 0; // 已知可用的最低降级档位，只在请求成功后前移，并发请求互不推进
   async function post(body) {
     const auth = await getHeaders();
     const res = await fetch(endpoint, {
@@ -56,9 +56,10 @@ export async function createVertexEvalAi({ adcPath, project, location = "global"
   return {
     async chat(messages, opts = {}) {
       const candidates = vertexFallbacks(buildVertexEvalBody(modelId, messages, opts), { logprobs, topLogprobs: opts.modelOptions?.topLogprobs });
-      for (;;) {
-        const { res, auth } = await post(candidates[Math.min(variant, candidates.length - 1)]);
-        if (res.status === 400 && variant < candidates.length - 1) { variant++; continue; }
+      for (let current = Math.min(variant, candidates.length - 1); ; ) {
+        const { res, auth } = await post(candidates[current]);
+        if (res.status === 400 && current < candidates.length - 1) { current++; continue; }
+        if (res.ok) variant = Math.max(variant, current);
         if (!res.ok) {
           const error = await vertexResponseError(res, auth.Authorization);
           const retryAfter = Number(res.headers.get("retry-after"));
