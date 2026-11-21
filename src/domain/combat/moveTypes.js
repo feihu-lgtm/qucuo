@@ -12,6 +12,8 @@
 //   类型判定影响——博弈层招式依然要声明 type 参与克制判定，只是伤害/
 //   能耗计算不再是简单的 baseDamageMultiplier 缩放。
 
+import { STATUS_EFFECTS, STATUS_GROUP } from "./statusEffects.js";
+
 export const MOVE_TYPE = {
   ATTACK: "攻击",
   DEFENSE: "防御",
@@ -32,4 +34,20 @@ export function judgeTypeMatchup(typeA, typeB) {
   if (BEATS[typeA] === typeB) return "A";
   if (BEATS[typeB] === typeA) return "B";
   return "tie"; // 理论上不会走到这里，兜底避免未定义行为
+}
+
+export function counterStatusKind(move) {
+  if (move?.type !== MOVE_TYPE.STATUS) return null;
+  if (move.doubleReflectDamage) return "reflect";
+  const statusNames = [
+    move.confuseChance ? "气乱" : null,
+    typeof move.applyStatus === "string" ? move.applyStatus : move.applyStatus?.name,
+  ].filter(Boolean);
+  return statusNames.some((name) => STATUS_EFFECTS[name]?.group === STATUS_GROUP.CONTROL)
+    ? "control"
+    : null;
+}
+
+export function isCounterStatusMove(move) {
+  return counterStatusKind(move) !== null;
 }
