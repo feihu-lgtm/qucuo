@@ -157,6 +157,8 @@ npx vitest run    # 跑测试（纯函数/数据层回归，498 条）
 GOOGLE_APPLICATION_CREDENTIALS="/你的路径/adc.json" npm run cli -- --ai vertex --model google/gemini-3.8-flash
 ```
 
+CLI 默认关闭回合记账以保持脚本 / mock 回复顺序；需要启用时添加 `--bookkeep`。
+
 Vertex 预设模型（按设置中的顺序）：
 
 1. `google/gemini-3.8-flash`（默认）

@@ -22,6 +22,7 @@ export default async function mapFit({ page }) {
       apiKey: "local-test-only",
       model: "browser-fixture",
       streamEnabled: false,
+      bookkeepEnabled: false,
     }));
     localStorage.setItem("qucuo_tutorial_seen", "1");
     const saves = await import("/src/infra/saves.js");
