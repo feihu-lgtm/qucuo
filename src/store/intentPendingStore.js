@@ -1,5 +1,8 @@
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
+import { QUCUO_MAP } from "../domain/map/qucuoMap.js";
+
+const PLACE_NAMES = Object.keys(QUCUO_MAP);
 
 // 行动识别中置信度时挂起的确认（「你是要把100两给才旦吗？」）：{ text, onConfirm, onCancel } | null
 // 以及条件步骤挂起的触发器：{ step, on, detail, status: "armed" }，
@@ -25,10 +28,15 @@ export function armIntentTriggers(steps) {
   return armed;
 }
 
-// 某类事件发生时取出并移除匹配的触发器。arrive 只在行程走完、或前提里点了目的地名时才算命中。
+// 「到达」：前提点了地名 → 只在到那儿时应验；没点地名 → 行程走完才应验。
+function arriveMatches(detail, dest, travelDone) {
+  if (dest && detail.includes(dest)) return true;
+  return travelDone && !PLACE_NAMES.some((name) => detail.includes(name));
+}
+
+// 某类事件发生时取出并移除匹配的触发器。
 export function fireIntentTriggers(on, { dest, travelDone = true } = {}) {
-  const match = (entry) => entry.on === on
-    && (on !== "arrive" || travelDone || (dest && entry.detail.includes(dest)));
+  const match = (entry) => entry.on === on && (on !== "arrive" || arriveMatches(entry.detail, dest, travelDone));
   const fired = intentTriggers().filter(match);
   if (fired.length) {
     intentPendingStore.setState({ triggers: intentTriggers().filter((entry) => !match(entry)) });

@@ -221,6 +221,10 @@ describe("conditional steps", () => {
     // 行程未完、前提也没点名目的地时，「到达」不算应验。
     expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: false })).toEqual([]);
     expect(fireIntentTriggers("arrive", { dest: "白塔", travelDone: false })).toHaveLength(1);
+    // 前提点名了别处：行程在别处走完也不算应验；没点地名：行程走完才应验。
+    armIntentTriggers([{ kind: "其他", text: "拜佛", condition: { on: "arrive", detail: "到了喇嘛庙" } }, { kind: "其他", text: "歇脚", condition: { on: "arrive", detail: "到了以后" } }]);
+    expect(fireIntentTriggers("arrive", { dest: "白塔", travelDone: true }).map((entry) => entry.step.text)).toEqual(["歇脚"]);
+    expect(fireIntentTriggers("arrive", { dest: "喇嘛庙", travelDone: true }).map((entry) => entry.step.text)).toEqual(["拜佛"]);
     armIntentTriggers([{ kind: "其他", text: "走", condition: { on: "refused", detail: "他不肯" } }]);
     expect(expireIntentTriggers()).toHaveLength(1);
     expect(intentTriggers()).toHaveLength(0);
