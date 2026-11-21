@@ -372,7 +372,7 @@ export function useTurn({
       state: { room, char, inv, dao },
       getMapNode,
       beforeRun: () => { pickupExtractionFailedRef.current = false; },
-      setCommandPhase, setVarTree,
+      setCommandPhase, setVarTree, effectiveSpecialNow,
       refs: {
         varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
         pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,

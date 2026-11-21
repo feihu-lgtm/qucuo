@@ -382,6 +382,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         _trace: trace,
         deferMonitorFinish: trace === lineTurn,
         setVarTree,
+        effectiveSpecialNow: state.char?.special || {},
         state,
         memory: {
           varTreeLatest: state.varTree,

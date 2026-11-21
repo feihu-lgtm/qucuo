@@ -75,6 +75,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
           varTree: state.varTree,
           attempt: cmd,
           time: state.time,
+          charm: turnCtx.effectiveSpecialNow?.魅力 ?? 5,
         },
       });
       if (ctx.isStale?.()) return stale();
@@ -86,7 +87,10 @@ export async function playTurn(ctx, cmd, opts = {}) {
         let settledTree = gameStore.getState().varTree;
         if (angerSignalApplied) {
           softSettleLogs = [
-            ...applyMvuCommands(state.varTree, softSettle.deltas, { time: state.time }).logs,
+            ...applyMvuCommands(state.varTree, softSettle.deltas, {
+              time: state.time,
+              charm: turnCtx.effectiveSpecialNow?.魅力 ?? 5,
+            }).logs,
             formatAngerResolutionLog(turnOpts.settleNpc),
           ];
         }

@@ -111,6 +111,28 @@ describe("playTurn background bookkeep", () => {
     expect(ctx._trace.nodes.map(({ label }) => label)).toContain("结算·软判定");
   });
 
+  it.each([[0, 22, 2], [10, 24, 4]])(
+    "applies effective charm %i to the affection gain",
+    async (charm, expectedFavor, expectedDelta) => {
+      const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
+      gameActions.setVarTreeState(varTree);
+      const ai = createMockAi(['{"choice":"奏效","probs":{"奏效":0.9,"未奏效":0.1}}']);
+      const addLog = vi.fn();
+      runTurn.mockResolvedValue({ narrativeText: "八云的神情缓和下来。" });
+
+      await playTurn(makeContext({
+        ai, apiCfg: {}, bookkeep: false, effectiveSpecialNow: { 魅力: charm },
+        commitDeps: () => ({ addLog }),
+      }), "赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
+
+      expect(gameStore.getState().varTree.角色.八云.好感度).toBe(expectedFavor);
+      expect(addLog.mock.calls.flatMap(([entries]) => entries)).toContainEqual({
+        t: "affection",
+        text: `  💗 八云 好感度 +${expectedDelta}（→ ${expectedFavor}）`,
+      });
+    },
+  );
+
   it("keeps a ref-backed setter current for the commit's functional update", async () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
     gameActions.setVarTreeState(varTree);
