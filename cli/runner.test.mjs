@@ -14,4 +14,9 @@ describe("CLI API configuration", () => {
   it("derives the protocol from an explicitly configured provider", () => {
     expect(buildCliApiConfig({ provider: "qwen" })).toMatchObject({ provider: "qwen", apiType: "qwen" });
   });
+
+  it("keeps bookkeep off for deterministic CLI runs unless explicitly enabled", () => {
+    expect(buildCliApiConfig()).toMatchObject({ bookkeepEnabled: false });
+    expect(buildCliApiConfig({ bookkeepEnabled: true })).toMatchObject({ bookkeepEnabled: true });
+  });
 });

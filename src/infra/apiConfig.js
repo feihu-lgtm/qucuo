@@ -122,6 +122,7 @@ export function defaultConfig() {
     callTokenLimits: { ...DEFAULT_CALL_TOKEN_LIMITS },
     // 提取层（叙事/状态分离模式）：大模型只输出叙事，小模型按意图提取状态变化
     extractionEnabled: false,
+    bookkeepEnabled: true,
     extractionModel: "",  // 空 = 沿用主模型；填入后所有意图共用此模型
     extractionModels: {   // 各意图可单独指定（空 = 回退到 extractionModel）
       LOOK: "", MOVE: "", TALK_CASUAL: "", EXPLORE_ACTION: "", COMBAT: "", UNKNOWN: "",

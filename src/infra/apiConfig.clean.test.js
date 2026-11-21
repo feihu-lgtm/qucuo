@@ -1,5 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { cleanJsonString } from "./apiConfig.js";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { cleanJsonString, defaultConfig, loadConfig } from "./apiConfig.js";
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("cleanJsonString", () => {
   it("字符串内的中文引号是合法内容：保留且解析成功（兽骨事故回归）", () => {
@@ -47,5 +49,15 @@ describe("cleanJsonString", () => {
   it("转义引号不被误判为字符串结束", () => {
     const raw = `{"a":"他说\\"早\\"然后走了","b":2}`;
     expect(JSON.parse(cleanJsonString(raw))).toEqual({ a: '他说"早"然后走了', b: 2 });
+  });
+});
+
+describe("bookkeep configuration", () => {
+  it("defaults on and treats saved configs without the key as enabled", () => {
+    expect(defaultConfig().bookkeepEnabled).toBe(true);
+    vi.stubGlobal("localStorage", {
+      getItem: () => JSON.stringify({ apiType: "openai" }),
+    });
+    expect(loadConfig().bookkeepEnabled).toBe(true);
   });
 });

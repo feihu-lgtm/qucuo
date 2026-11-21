@@ -52,11 +52,6 @@ const ENTRY_WHITELIST = new Set([
   "debug/debug-main.jsx",
   "debug/debug-gamble.jsx",
   "debug/debug-item.jsx",
-  // 预置模块：先入库、后续回合才接线的库文件，登记在此避免被当成死文件。
-  "domain/prompt/materials/index.js",
-  // 记账调用卡片：已登记进 prompt registry，但按设计要求暂不接入正式回合流程
-  // （bookkeep 是阶段四「记账」，待识别/结算/叙事三阶段落地后才接线），暂列白名单。
-  "domain/memory/bookkeep.js",
 ]);
 
 function walkSource(dir, out = []) {

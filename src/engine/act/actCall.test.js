@@ -155,6 +155,41 @@ describe("callMainOnce 组装黄金快照", () => {
       .not.toContain("[社交状态]");
   });
 
+  it.each([
+    ["normal", { activeTarget: "阿旺", recallBlock: "【回忆】旧事", reunionBlock: "【重逢】相见" }],
+    ["settle", { isSettle: true, settleNpc: "阿旺", reunionBlock: "【重逢】相见" }],
+  ])("adds the target ledger after the recall/reunion block in the %s prompt", async (kind, overrides) => {
+    const varTree = { 角色: { 阿旺: { 旧账: { lines: ["欠少侠一壶酒"] } } } };
+    await callMainOnce(null, false, makeDeps({
+      room: { name: "鱼定村", npcs: [{ name: "阿旺" }] },
+      varTree,
+      ...overrides,
+    }));
+    const content = callModel.mock.calls[0][2].find((message) => message.tavernBlock === "inChat").content;
+    expect(content).toContain("【和对方的旧账】");
+    expect(content).toContain("· 欠少侠一壶酒");
+    const previousBlock = kind === "normal" ? "【回忆】旧事" : "【重逢】相见";
+    expect(content.indexOf(previousBlock)).toBeLessThan(content.indexOf("【和对方的旧账】"));
+    if (kind === "normal") expect(content.indexOf("【和对方的旧账】")).toBeLessThan(content.indexOf("【重逢】相见"));
+  });
+
+  it("leaves the in-chat payload unchanged when the target has no ledger", async () => {
+    const common = {
+      activeTarget: "阿旺",
+      room: { name: "鱼定村", npcs: [{ name: "阿旺" }] },
+    };
+    await callMainOnce(null, false, makeDeps({ ...common, varTree: { 角色: { 阿旺: {} } } }));
+    const withoutLedger = callModel.mock.calls[0][2].find((message) => message.tavernBlock === "inChat").content;
+
+    callModel.mockClear();
+    await callMainOnce(null, false, makeDeps({
+      ...common,
+      varTree: { 角色: { 阿旺: { 旧账: { lines: [] } } } },
+    }));
+    const emptyLedger = callModel.mock.calls[0][2].find((message) => message.tavernBlock === "inChat").content;
+    expect(emptyLedger).toBe(withoutLedger);
+  });
+
   it("谈价·轻量档：整体换成单块 system + 近 8 条对话", async () => {
     const d = makeDeps({
       isTalk: true,

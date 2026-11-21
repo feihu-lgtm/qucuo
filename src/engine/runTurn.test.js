@@ -17,7 +17,7 @@ function createPlayTurnContext(ai, commitRound) {
   const varTree = { 角色: {}, 世界: {}, 主角: {} };
   const apiCfg = {
     apiType: "openai", model: "test-model", targetWordCount: 220, contextWindow: 20,
-    streamEnabled: false, extractionEnabled: false, callTokenLimits: {}, intentBudgets: {},
+    streamEnabled: false, extractionEnabled: false, bookkeepEnabled: false, callTokenLimits: {}, intentBudgets: {},
   };
   const trace = startTrace("play-turn-test");
   const ctx = {
