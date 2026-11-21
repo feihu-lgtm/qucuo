@@ -6,15 +6,15 @@ import { getMapNode } from "../../domain/map/qucuoMap.js";
 import { makeBuffFlag } from "../../utils/buffSystem.js";
 import { INGREDIENT_LORE } from "../../domain/economy/cooking.js";
 
+const TRANSPORT_PRICES = {
+  鱼定村: 5, 鱼定土司: 5, 喇嘛庙: 5, 白塔: 8, 后山平台: 8, 玉泉寨: 5, 大草甸: 5, 贡措海: 8,
+  天都镇: 5, 锦官城: 15, 雪山派: 12,
+};
+
 const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }] });
 const noOpResult = () => ({ logs: [] });
 const isPositiveAmount = (amount) => Number.isFinite(amount) && amount > 0;
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
-
-export const TRANSPORT_PRICES = {
-  鱼定村: 5, 鱼定土司: 5, 喇嘛庙: 5, 白塔: 8, 后山平台: 8, 玉泉寨: 5, 大草甸: 5, 贡措海: 8,
-  天都镇: 5, 锦官城: 15, 雪山派: 12,
-};
 
 export const getPriceForDest = (dest) => TRANSPORT_PRICES[dest] || 10;
 

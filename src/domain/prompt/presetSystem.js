@@ -34,7 +34,7 @@ export function makePromptEntry({ id, name, role = "system", content = "", isMar
 }
 
 // 结构化叙事约束的默认配置。所有字段都是"不启用"的空值/false，用户按需打开。
-export function defaultConstraint() {
+function defaultConstraint() {
   return {
     wordCountMin: null,      // 字数下限，null=不限制
     wordCountMax: null,      // 字数上限，null=不限制
@@ -49,7 +49,7 @@ export function defaultConstraint() {
 
 // 把结构化约束配置渲染成一段自然语言指令文字，拼进最终 prompt。只有真正配置了
 // （非默认空值）的项才会出现在生成的文字里，避免给模型看一堆"不限制"的废话。
-export function renderNarrativeConstraint(c) {
+function renderNarrativeConstraint(c) {
   if (!c) return "";
   const lines = [];
   if (c.wordCountMin != null || c.wordCountMax != null) {
@@ -179,7 +179,7 @@ export function saveAllPresets(state) {
 // 预设不会影响收藏库，反之亦然。
 const PRESET_LIBRARY_STORAGE_KEY = "wuxia_mud_preset_library";
 
-export function loadPresetLibrary() {
+function loadPresetLibrary() {
   try {
     const raw = localStorage.getItem(PRESET_LIBRARY_STORAGE_KEY);
     if (!raw) return [];
@@ -190,28 +190,12 @@ export function loadPresetLibrary() {
   }
 }
 
-export function savePresetLibrary(items) {
+function savePresetLibrary(items) {
   localStorage.setItem(PRESET_LIBRARY_STORAGE_KEY, JSON.stringify(items));
 }
 
 // 把某个预设里的一条 prompt 存入收藏库（复制一份，脱离原预设的 id 引用关系，
 // 存入库里的副本有自己独立的 id，避免以后原预设改了内容、库里的模板跟着变）。
-export function addToLibrary(promptEntry) {
-  const lib = loadPresetLibrary();
-  const copy = makePromptEntry({
-    name: promptEntry.name, role: promptEntry.role, content: promptEntry.content, isMarker: false,
-    type: promptEntry.type || "text",
-    constraint: promptEntry.constraint || null,
-  });
-  savePresetLibrary([...lib, copy]);
-  return copy;
-}
-
-export function removeFromLibrary(libId) {
-  savePresetLibrary(loadPresetLibrary().filter(x => x.id !== libId));
-}
-
-
 // 把一个预设 + 填充内容，拼装成最终的 system prompt 文本。
 // fillers: { chatHistory, charDescription, scenario } 具体内容由调用方传入
 // （chatHistory 通常不适合直接拼进 system prompt，这里主要用于 charDescription/scenario 这类）

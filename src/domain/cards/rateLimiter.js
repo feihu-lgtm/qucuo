@@ -12,7 +12,7 @@
 
 const KEY = "qucuo_scan_bucket";
 
-export const BUCKET_CAP = 5;          // 桶容量 = 额度上限
+const BUCKET_CAP = 5;          // 桶容量 = 额度上限
 export const REFILL_MS = 12000;       // 每 12 秒补 1 个 = 5 次/分钟
 
 function readBucket() {

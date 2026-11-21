@@ -13,7 +13,7 @@
 // 势力定义：每方给一个"典型在路上晃悠的人"的角色池，供 AI 拿到具体的"谁"。
 import { random } from "../../core/rng.js";
 
-export const FACTIONS = {
+const FACTIONS = {
   土司府: {
     label: "鱼定土司府",
     roamers: "巡丁、税吏、府里派出办差的仆役或马夫",
@@ -44,7 +44,7 @@ export const FACTIONS = {
 // 每个地图节点：基础遭遇概率 + 该地合理会出现的势力列表（越靠前越常见）。
 // 概率按地域调：荒野/官道高，村镇中，势力腹地低（腹地本就是自家人，新鲜感低），
 // 极境（雪顶/深洞）几乎无人。移动"进入"该节点时掷骰。
-export const NODE_ENCOUNTERS = {
+const NODE_ENCOUNTERS = {
   鱼定村:   { prob: 0.25, factions: ["土司府", "玉泉寨", "喇嘛庙", "散人"] },
   鱼定土司: { prob: 0.15, factions: ["土司府"] },
   喇嘛庙:   { prob: 0.18, factions: ["喇嘛庙", "香客"] },

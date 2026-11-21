@@ -250,7 +250,7 @@ ${GUIDE_BY_TIER[tier.key]}
 // 攻略档位同一条曲线：她越熟才越话多，而不是一上来就写小作文。
 // 保留两个逃生口：冷漠期的打断式回绝、以及宕机后的空壳应答，
 // 那两种情况本就该是一句话，篇幅要求不该把它们硬撑长。
-export function whisperWordsFor(affection, wordsCfg) {
+function whisperWordsFor(affection, wordsCfg) {
   const tier = affectionTier(affection);
   const v = Number(wordsCfg?.[tier.key]);
   return v > 0 ? Math.round(v) : tier.words;

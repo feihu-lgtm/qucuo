@@ -131,7 +131,3 @@ export const SOFT_RULES = {
     },
   },
 };
-
-export function getSoftRule(kind) {
-  return SOFT_RULES[kind] || null;
-}

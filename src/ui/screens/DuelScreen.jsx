@@ -13,6 +13,7 @@ import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { getDefaultProfile } from "../../domain/combat/personalityProfile.js";
 import { createEmptyStatusSlots, applyStatus, applyMark, dispelControlDrain } from "../../domain/combat/statusEffects.js";
 import { rollBattleLoot, atkFromWaigong } from "../../domain/npc/npcGeneration.js";
+import { mergeMoveWithEquip, tickCostPenalty } from "../../domain/combat/teamBattleEngine.js";
 import { resolveCombatBuff } from "../../utils/buffSystem.js";
 import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
 import { addDodgeStealNote, excludeDodgeStolenItems, useDuelDodgeSteal } from "./useDuelDodgeSteal.js";
@@ -25,28 +26,7 @@ export const TYPE_ICON = { [MOVE_TYPE.ATTACK]: "⚔", [MOVE_TYPE.DEFENSE]: "🛡
 // 被动装备增益），装备只补招式尚未拥有的字段——不覆盖、不叠加数值，避免
 // "神兵+强招"双倍暴力。这样一件带"内伤印"的武器，配一个本身不叠印的攻击招时，
 // 攻击招也能挂上内伤印；但配一个已经自带更高层内伤印的招时，以招式的为准。
-function mergeMoveWithEquip(move, equipEffects) {
-  if (!equipEffects || !Object.keys(equipEffects).length) return move;
-  const merged = { ...move };
-  for (const [k, v] of Object.entries(equipEffects)) {
-    if (merged[k] == null) merged[k] = v; // 只补招式没有的
-  }
-  // applyMark 需要配套的 applyMarkChance 才会触发；装备的 chance 一起带过来
-  if (equipEffects.applyMark && merged.applyMarkChance == null && equipEffects.applyMarkChance != null) {
-    merged.applyMarkChance = equipEffects.applyMarkChance;
-  }
-  return merged;
-}
-
-// 封穴耗气惩罚的回合推进：已有惩罚 turns-1、到期清除；若这回合又被施加新惩罚，取
-// 剩余回合更长/惩罚更重的那个（不无限叠加）。
-function tickCostPenalty(current, incoming) {
-  let cur = null;
-  if (current && current.turns > 1) cur = { value: current.value, turns: current.turns - 1 };
-  if (!incoming) return cur;
-  if (!cur) return { ...incoming };
-  return { value: Math.max(cur.value, incoming.value), turns: Math.max(cur.turns, incoming.turns) };
-}
+// mergeMoveWithEquip / tickCostPenalty 与 teamBattleEngine.js 共用一份实现。
 
 export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerInv, playerMoveset, playerSkills = [], zoneTheme, onFinish }) {
   // 战前餐 buff（消耗品系统第3步）：进场一次性应用。resolveCombatBuff 把 pendingCombatBuff

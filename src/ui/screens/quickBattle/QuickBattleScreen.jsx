@@ -14,7 +14,8 @@ import {
   initCombatState, pickAiMove, resolveBattleTurn,
   nextAliveIndex, isTeamWiped,
 } from "../../../domain/quickBattle/battleEngine.js";
-import { narrateTurn, hasApiKey } from "../../../domain/quickBattle/battleNarration.js";
+import { narrateTurn } from "../../../domain/quickBattle/battleNarration.js";
+import { hasApiKey } from "../../../domain/prompt/storyteller.js";
 import { explainMove, moveTypeGist } from "../../../domain/economy/itemEffectText.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
@@ -36,7 +37,6 @@ const PORTRAIT = (v) => {
 // 品阶→档位色（复用装备那套 QUALITY_COLOR）；levelCap 0-5 直接映射 QUALITY 索引
 const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "#e8e4d6";
 const tierName = (levelCap) => QUALITY[Math.max(0, Math.min(5, levelCap))] || "白";
-
 const MAX_TEAM = 6; // 每队最多 6 人（宝可梦味）
 
 const QB_CSS = `

@@ -53,8 +53,8 @@ import { MOVE_TYPE } from "./moveTypes.js";
 // 这次交锋上，不该为此付出代价。
 const IDLE_STATUS_MOVE = { id: "idle_no_defense", type: MOVE_TYPE.STATUS, name: "无暇他顾", energyCost: 0, baseDamageMultiplier: 0 };
 
-// 把装备特效叠进本回合招式（原样搬自 DuelScreen.jsx 的 mergeMoveWithEquip，
-// 逻辑完全一致：招式自带的标志位优先，装备只补招式没有的字段）。
+// 把装备特效叠进本回合招式（与 DuelScreen.jsx 共用本份实现：
+// 招式自带的标志位优先，装备只补招式没有的字段）。
 export function mergeMoveWithEquip(move, equipEffects) {
   if (!equipEffects || !Object.keys(equipEffects).length) return move;
   const merged = { ...move };
@@ -67,8 +67,8 @@ export function mergeMoveWithEquip(move, equipEffects) {
   return merged;
 }
 
-// 封穴耗气惩罚的回合推进（原样搬自 DuelScreen.jsx 的 tickCostPenalty）。
-function tickCostPenalty(current, incoming) {
+// 封穴耗气惩罚的回合推进（与 DuelScreen.jsx 共用本份实现）。
+export function tickCostPenalty(current, incoming) {
   let cur = null;
   if (current && current.turns > 1) cur = { value: current.value, turns: current.turns - 1 };
   if (!incoming) return cur;
@@ -144,7 +144,7 @@ function applyResultToUnit(unit, result, tag, move) {
 // 单次1v1结算：attacker 对 defender 使出各自选的招，返回 { attacker, defender, result }
 // （result 在 resolveTurn 结算后补齐回合末战斗状态，供战报和UI共用）。
 // 这是调度层的最小单元，2v2的每一次"谁打谁"都调用这个函数一次。
-export function resolveOneOnOne(attackerUnit, attackerMove, defenderUnit, defenderMove) {
+function resolveOneOnOne(attackerUnit, attackerMove, defenderUnit, defenderMove) {
   const sideA = unitToSide(attackerUnit, attackerMove);
   const sideB = unitToSide(defenderUnit, defenderMove);
   const result = resolveTurn(sideA, sideB);

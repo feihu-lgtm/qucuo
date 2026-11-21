@@ -15,11 +15,6 @@
 export const SIGNATURE_SLOT_KEYS = ["攻击", "防御", "状态", "回气", "疗伤"];
 
 // 取某人实际配了的槽位（按固定顺序，不受书写顺序影响）
-export function signatureSlots(sig) {
-  if (!sig || typeof sig !== "object") return [];
-  return SIGNATURE_SLOT_KEYS.filter(k => sig[k] && sig[k].name);
-}
-
 export const NPC_SIGNATURE_MOVES = {
   // ══════════ 红袍 levelCap5 ══════════
   桑杰朵杰: { // 土司·佛堂参悟·后发反打；防御是全套听桥
@@ -341,12 +336,4 @@ export const NPC_SIGNATURE_MOVES = {
   },
 };
 
-export function hasSignatureMoves(npcName) {
-  return Boolean(NPC_SIGNATURE_MOVES[npcName]);
-}
-
 // 这个NPC的招式是否不可传授（野兽）。读专属表里的 unlearnable，或NPC自身的beast/unlearnable标记。
-export function isUnlearnable(npc) {
-  const sig = NPC_SIGNATURE_MOVES[npc?.name];
-  return Boolean(npc?.unlearnable || npc?.beast || sig?.unlearnable);
-}

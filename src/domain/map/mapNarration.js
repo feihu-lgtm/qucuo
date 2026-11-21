@@ -15,7 +15,7 @@ import { getInnerRoom, visibleInnerExits } from "./innerMap.js";
 export const DIRS = { n: "北", s: "南", e: "东", w: "西", u: "上", d: "下", sw: "西南" };
 
 // 把 { 方向: 目标名 } 出口表拼成 "东·马车行　西·村口" 这样的可读串。
-export function formatExits(exitsObj) {
+function formatExits(exitsObj) {
   return Object.entries(exitsObj || {})
     .map(([d, name]) => `${DIRS[d] || d}·${name}`)
     .join("　");

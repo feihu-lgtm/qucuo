@@ -11,7 +11,7 @@
 //   10 Chat History · 11 In-Chat Injection · 12 User's Latest Message
 //   13 Post-History Instructions / Jailbreak
 
-export const TAVERN_POSITIONS = [
+const TAVERN_POSITIONS = [
   { key: "main", order: 1, label: "Main Prompt", role: "system" },
   { key: "worldInfoBefore", order: 2, label: "World Info — Before Char", role: "system" },
   { key: "charDescription", order: 3, label: "Character Description", role: "system" },
@@ -57,29 +57,10 @@ export function labelMessage(msg, key) {
 
 // 把一组已按 Tavern 顺序排好的消息批量标上位置
 // 注意：调用方必须保证消息顺序与 TAVERN_POSITIONS 一致。
-export function labelMessages(messages) {
-  return messages.map((m, i) => {
-    const pos = TAVERN_POSITIONS[i];
-    if (!pos) return m;
-    return { ...m, tavernBlock: pos.key, tavernLabel: pos.label };
-  });
-}
-
 // 按 key 查找位置元信息
 export function getPositionMeta(key) {
   return POSITION_BY_KEY[key] || null;
 }
 
 // 把 content 数组拼成一段用于旧式日志/显示的 system 文本
-export function concatSystemText(messages) {
-  return messages
-    .filter(m => m.role === "system")
-    .map(m => `[${m.tavernLabel || m.tavernBlock || "system"}]\n${m.content || ""}`)
-    .join("\n\n");
-}
-
 // 格式化单条消息用于调试输出
-export function formatTavernMessage(m, index) {
-  const pos = m.tavernBlock ? `[${m.tavernLabel || m.tavernBlock}] ` : "";
-  return `#${index + 1} ${pos}${m.role}\n${m.content || ""}`;
-}

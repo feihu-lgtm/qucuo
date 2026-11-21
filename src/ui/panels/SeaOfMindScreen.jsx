@@ -123,8 +123,4 @@ export default function SeaOfMindScreen({
 }
 
 // 供外部（MudRPG）复用的展示辅助——把安抚被拒的话转成日志行。
-export function comfortRejectLine(actionKey, gate) {
-  return describeComfortReject(actionKey, gate.reason, gate);
-}
-
 export { KNOT_BY_KEY, comfortScore };

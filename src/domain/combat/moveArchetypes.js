@@ -168,7 +168,3 @@ export function resolveArchetype(archetypeId, levelCap = 0) {
     ...mergeTiers(arch.tiers, levelCap),
   };
 }
-
-export function archetypeType(archetypeId) {
-  return MOVE_ARCHETYPES[archetypeId]?.type || null;
-}

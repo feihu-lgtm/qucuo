@@ -3,7 +3,7 @@ import { makeItemSmart } from "../../domain/items/catalog.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
-export function cardCarryToInvItems(carry, seed = "") {
+function cardCarryToInvItems(carry, seed = "") {
   const items = (carry || [])
     .map((item, index) => {
       const spec = typeof item === "string" ? { name: item } : item;

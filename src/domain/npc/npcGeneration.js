@@ -42,7 +42,7 @@ export function generateNpcAttributes({ levelCap = 2 } = {}) {
 // 自己修炼的那两个数（0-100）。这样"外功100/内功100 的玩家 ≈ 红袍 NPC"，
 // 攻击力和气血天然可比。R=20^(1/5)，外功/内功每+20 约翻 1.82 倍，0→100 共 20 倍，
 // 跟装备品质曲线完全一致。
-export const COMBAT_GROWTH = Math.pow(20, 1 / 5); // ≈1.8206，与 equipment.js 的 QUALITY_RATIO 同源
+const COMBAT_GROWTH = Math.pow(20, 1 / 5); // ≈1.8206，与 equipment.js 的 QUALITY_RATIO 同源
 
 // 攻击力 = 18 × R^(外功/20)：外功0→18 / 20→33 / 40→60 / 60→109 / 80→198 / 100→360
 export function atkFromWaigong(waigong = 0) {
@@ -249,7 +249,7 @@ export const BURDEN_MOVE_POOL = {
 
 // 根据角色声明的 burdenMoveIds（字符串数组）取出对应的博弈层招式对象。
 // 未声明或声明了不存在的id会被安全过滤掉，不会让整个moveset生成报错。
-export function resolveBurdenMoves(burdenMoveIds) {
+function resolveBurdenMoves(burdenMoveIds) {
   if (!Array.isArray(burdenMoveIds) || burdenMoveIds.length === 0) return [];
   return burdenMoveIds.map(id => BURDEN_MOVE_POOL[id]).filter(Boolean).map(m => ({ ...m }));
 }
@@ -299,7 +299,7 @@ const CARRIED_ITEM_POOL = {
 // 和路边白袍杂鱼摸出来的东西统计上没区别，"品阶对应身家"这个直觉完全落空。
 // 现在品阶档位（levelCap）设一个质量下限：档位越高，随身物品至少是那个档位的
 // 品质起步（同时数量也跟着涨），气运只决定"在下限之上能不能超常发挥"。
-export function generateNpcCarriedItems(npc, { luck = 5, count = null, levelCap = 0 } = {}) {
+function generateNpcCarriedItems(npc, { luck = 5, count = null, levelCap = 0 } = {}) {
   const cap = Math.max(0, Math.min(5, levelCap));
   const itemCount = count ?? (1 + cap + Math.floor(random() * 3));
   const items = [];

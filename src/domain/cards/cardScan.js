@@ -21,7 +21,7 @@ import {
 } from "./scanPrompts.js";
 import { groupEntriesByKeys, groupToNpcLore } from "./cardParse.js";
 
-export const DEFAULT_BATCH_SIZE = 4;
+const DEFAULT_BATCH_SIZE = 4;
 
 // 每阶段的输出 token 上限。阶段 2 一批 4 人、每人含七维与四档里程碑，
 // 实测约 900~1200 token，给 3000 留足余量；阶段 1 只出短字段但条目可能 36 条。

@@ -10,7 +10,7 @@ const COMFY_CONFIG_KEY = "wuxia_mud_comfyui_config";
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 90000;
 
-export function defaultComfyConfig() {
+function defaultComfyConfig() {
   return {
     enabled: false,
     baseUrl: "",      // 云端 ComfyUI 实例地址，例如 https://xxxx.example.com:8188

@@ -59,15 +59,6 @@ export const STATUS_EFFECTS = {
 };
 
 // 判定新施加的状态是否会替换掉已有的同组状态
-export function willReplaceStatus(currentStatus, newStatusName) {
-  if (!currentStatus) return { replace: true, previous: null };
-  const curDef = STATUS_EFFECTS[currentStatus.name];
-  const newDef = STATUS_EFFECTS[newStatusName];
-  if (!curDef || !newDef) return { replace: true, previous: currentStatus.name };
-  if (curDef.group === newDef.group) return { replace: true, previous: currentStatus.name };
-  return { replace: false, previous: null }; // 不同组，两个状态可以共存，这里指"是否覆盖同一个槽位"
-}
-
 // 战斗单位可以同时携带的状态槽位：控制类一个槽位，掉血类一个槽位，印记一个槽位。
 // 印记（mark）是本轮第三批新增的"可经营资源"——独立于控制/掉血两组，不参与它们的
 // 互斥，专门用来承载"内伤印"这类可叠层、可被引爆的暗伤。
@@ -108,10 +99,6 @@ export function applyStatus(slots, statusName) {
     ...slots,
     [slotKey]: { name: statusName, turnsElapsed: 0, damageCounter: 1 }, // damageCounter 给剧毒递增用
   };
-}
-
-export function clearStatus(slots, slotKey) {
-  return { ...slots, [slotKey]: null };
 }
 
 // 每回合结束时的状态结算：掉血、递增剧毒、自动解除判定

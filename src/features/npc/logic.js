@@ -15,10 +15,9 @@ import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/state/applyWrite.js";
 import { giftRange } from "../../domain/state/fields.js";
-import { forceAdvanceQuest } from "./questAdvancement.js";
+import { forceAdvanceQuest } from "../quest/logic.js";
 
 export { settleNpcDuel } from "./settleDuel.js";
-export { appeaseAngryNpc };
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
@@ -155,7 +154,7 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   }
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);
-    for (const [key, update] of Object.entries(advancement)) {
+    for (const [key, update] of Object.entries(advancement.changes)) {
       changes[key] = (key === "varTree" || key === "inv") && changes[key]
         ? composeUpdates(changes[key], update)
         : update;
@@ -203,8 +202,6 @@ export function tradeWithNpc(state, npc) {
   }
   return { shop: { npcName: npc.name, ...shopData } };
 }
-
-export { inviteCompanion } from "./inviteCompanion.js";
 
 export function stealFromNpc(state, npc, { now = Date.now() } = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }], kind: "blocked" };

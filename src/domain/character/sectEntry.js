@@ -22,7 +22,7 @@ export const SECT_ENTRY = {
 };
 
 // 玩家当前是不是雪山派弟子。
-export function isSectDisciple(flags) {
+function isSectDisciple(flags) {
   return (flags || []).includes(SECT_ENTRY.flag);
 }
 

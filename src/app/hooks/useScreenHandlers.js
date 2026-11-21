@@ -4,13 +4,13 @@ import { applyResult } from "../../features/run.js";
 import { consumeItem, pickGroundItem } from "../../features/items/logic.js";
 import {
   giftNpc,
-  inviteCompanion,
   learnNpcSkill as learnNpcSkillLogic,
   lookNpc,
   stealFromNpc,
   talkToNpc,
   tradeWithNpc,
 } from "../../features/npc/logic.js";
+import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
 import { toggleEquip } from "../../domain/economy/equipment.js";
 import { getPresentNpcs } from "../../domain/state/fields.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";

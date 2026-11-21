@@ -56,10 +56,6 @@ export const SAFE_HOUSE_KEYS = [
   },
 ];
 
-export const SAFE_HOUSE_KEY_BY_NAME = Object.fromEntries(
-  SAFE_HOUSE_KEYS.map(k => [k.name, k]),
-);
-
 // ── 四栋房子 ────────────────────────────────────────────────────────────
 // district/room 必须与 innerMap.js 里的据点名/房间名逐字一致。
 export const SAFE_HOUSES = [

@@ -198,17 +198,6 @@ function soloRound(entry, round, used = new Map()) {
   return { round, text: resolveDuelReportTemplate(sentence, { round: entry }).text };
 }
 
-export function selectDuelPhrase(moveType, outcome, band, round = 1) {
-  const family = ({
-    bothHit: "hit", control: "controlLanded", dot: "dot", heal: "heal",
-  })[outcome] || outcome;
-  const pool = EFFECT_POOLS[family] || EFFECT_POOLS.nothing;
-  const type = normalizeMoveType(moveType);
-  const hpBand = DUEL_HP_BANDS.includes(band) ? band : "healthy";
-  const seed = Math.max(1, Number(round) || 1);
-  return pool[hash(`${type}:${hpBand}:${seed}`) % pool.length];
-}
-
 export function formatDuelDisplayLine(entry, { round = 1 } = {}) {
   return soloRound(entry, round).text;
 }

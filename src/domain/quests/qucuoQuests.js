@@ -15,11 +15,3 @@ export const QUCUO_QUESTS = allContent("quest");
 // 能从老猎户那里学到的具体技能。技能内容直接复用 npcGeneration.js
 // 里已有的技能池，不需要另造一套。
 export const NPC_TEACHABLE_SKILLS = Object.fromEntries(contentEntries("teachableSkill"));
-
-export function findQuestById(id) {
-  return QUCUO_QUESTS.find(q => q.id === id);
-}
-
-export function findQuestByGiver(npcName) {
-  return QUCUO_QUESTS.find(q => q.giver === npcName);
-}

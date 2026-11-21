@@ -81,8 +81,6 @@ export const ZONES = {
   rooms: { x: 88, y: 86, label: "客房梯口" },
 };
 export const GUEST_GLYPHS = ["🧔", "👴", "👩", "🧕", "👲", "🥷", "👳", "🧙", "💂", "👵"];
-export const STAFF_SPOT = { cook: "stove", runner: "hall", accountant: "ledger", manager: "counter" };
-
 // ── 随机事件池 ─────────────────────────────────────────────────────────
 // 每个营业 tick 小概率触发（见引擎 EVENT_CHANCE_PER_TICK），每天最多 EVENT_MAX_PER_DAY 起。
 // options 的 effect 是声明式的，由引擎结算——AI 永远不参与数值。

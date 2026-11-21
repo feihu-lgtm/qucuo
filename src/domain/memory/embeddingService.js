@@ -83,10 +83,3 @@ export async function getEmbedding(cfg, text) {
 }
 
 // 批量取向量（入库补算历史记忆时可能用到）。逐条串行，避免瞬时并发打爆限流。
-export async function getEmbeddingsBatch(cfg, texts) {
-  const out = [];
-  for (const t of texts) {
-    out.push(await getEmbedding(cfg, t));
-  }
-  return out;
-}

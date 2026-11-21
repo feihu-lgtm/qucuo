@@ -3,7 +3,6 @@ import {
   innerMove,
   outerArrival,
   planAutoTravel,
-  shouldDispatchQueuedAutoTravel,
   shouldThrottleMovement,
 } from "./logic.js";
 
@@ -241,12 +240,6 @@ describe("inner movement logic", () => {
 });
 
 describe("auto-travel continuation", () => {
-  it("continues only when idle with queued commands", () => {
-    expect(shouldDispatchQueuedAutoTravel({ loading: false, queueCount: 1, hasQueuedCommands: true })).toBe(true);
-    expect(shouldDispatchQueuedAutoTravel({ loading: true, queueCount: 1, hasQueuedCommands: true })).toBe(false);
-    expect(shouldDispatchQueuedAutoTravel({ loading: false, queueCount: 0, hasQueuedCommands: true })).toBe(false);
-  });
-
   it("does not debounce queued auto-travel steps as rapid manual movement", () => {
     expect(shouldThrottleMovement({ forceLayer: "outer", autoTravel: false, elapsed: 50 })).toBe(true);
     expect(shouldThrottleMovement({ forceLayer: "outer", autoTravel: true, elapsed: 50 })).toBe(false);

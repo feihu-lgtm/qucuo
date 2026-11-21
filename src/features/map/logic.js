@@ -160,9 +160,6 @@ export function planAutoTravel(state, destName) {
   return { locked: false, path: findPath(state.room?.name, destName, allowed) };
 }
 
-export function shouldDispatchQueuedAutoTravel({ loading, queueCount, hasQueuedCommands }) {
-  return !loading && queueCount > 0 && hasQueuedCommands;
-}
 
 export function shouldThrottleMovement({ forceLayer, autoTravel, elapsed, threshold = 300 } = {}) {
   return Boolean(forceLayer && !autoTravel && elapsed < threshold);

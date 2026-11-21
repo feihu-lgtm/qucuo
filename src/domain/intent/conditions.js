@@ -5,7 +5,7 @@
 export const CONDITION_ON = Object.freeze({ ENCOUNTER: "encounter", ARRIVE: "arrive", REFUSED: "refused" });
 
 // 问模型的选项（固定顺序）；「其他」表示前提不在封闭集合里。
-export const CONDITION_OPTIONS = Object.freeze(["遇敌", "到达", "被拒", "其他"]);
+const CONDITION_OPTIONS = Object.freeze(["遇敌", "到达", "被拒", "其他"]);
 
 const OPTION_ON = Object.freeze({
   遇敌: CONDITION_ON.ENCOUNTER,

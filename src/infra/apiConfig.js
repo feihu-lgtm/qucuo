@@ -40,8 +40,6 @@ export const API_TYPES = {
 };
 
 // 思考档位 → 各家参数的映射由 providers.js 处理。默认 "off"：把 token 全留给正文。
-export const THINKING_MODES = ["off", "low", "medium", "high", "custom"];
-
 // 各动作类型的输出字数上限默认值。min 在 buildBudgetInstruction 里自动取 max×0.4。
 export const DEFAULT_INTENT_BUDGETS = {
   LOOK:           100,  // 查看/环顾：扫一眼，不用写一篇散文
@@ -58,10 +56,6 @@ export const DEFAULT_INTENT_BUDGETS = {
 // length 上限，故默认调大。想省钱可自行调小；想彻底不担心截断可拉到 100000。
 export const CALL_TOKEN_LIMIT_MAX = 100000;
 
-export function clampMaxTokensForType(maxTokens, cfg) {
-  const migrated = migrateProvider(cfg);
-  return clampMaxTokensForProvider(maxTokens, migrated);
-}
 export const DEFAULT_CALL_TOKEN_LIMITS = {
   narratorWhisper: 6000, // 私聊旁白（MudRPG talkToNarrator）。原写死 600，是上一轮
                          // 「9处写死抽成配置」漏网的第 10 处；带思考的模型下思考 token
@@ -274,7 +268,7 @@ function stripReasoning(text) {
 // 全局请求超时（毫秒）。默认 60 秒；可用 setRequestTimeout 调整（设置里"接口超时"配置项）。
 // 千问等较慢的接口，用户可调长，避免主叙事这种长输出频繁超时导致"移动/操作卡住"。
 let _requestTimeoutMs = 60000;
-export function setRequestTimeout(ms) {
+function setRequestTimeout(ms) {
   const v = Number(ms);
   if (Number.isFinite(v) && v >= 10000 && v <= 300000) _requestTimeoutMs = v;
 }

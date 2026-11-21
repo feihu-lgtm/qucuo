@@ -91,10 +91,6 @@ export function saveCardMeta(md5, meta) {
   _putBg(cardKey(md5), v);
 }
 
-export function loadCardMeta(md5) {
-  return _cache[cardKey(md5)] || null;
-}
-
 // ── 阶段产物 ──────────────────────────────────────────────────────────────────
 
 const stageKey = (md5, stage, batch) =>
@@ -137,17 +133,6 @@ export function completedBatches(md5) {
 }
 
 /** 汇总这张卡当前的扫描进度，供 UI 显示「已完成 X/Y」和决定要不要提示续跑 */
-export function scanProgress(md5, plannedBatches) {
-  const done = completedBatches(md5);
-  return {
-    stage1: hasStage(md5, 1),
-    stage2Done: done,
-    stage2Total: plannedBatches ?? null,
-    stage3: hasStage(md5, 3),
-    stage4: hasStage(md5, 4),
-  };
-}
-
 /** 清掉一张卡的全部扫描结果（UI 上的「忽略缓存重扫」） */
 export function clearCard(md5) {
   const prefixes = [`card:${md5}`, `scan:${md5}:`];
@@ -160,13 +145,6 @@ export function clearCard(md5) {
 }
 
 /** 列出所有扫过的卡，供「最近导入」列表 */
-export function listScannedCards() {
-  return Object.keys(_cache)
-    .filter(k => k.startsWith("card:"))
-    .map(k => ({ md5: k.slice(5), ..._cache[k] }))
-    .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
-}
-
 // ── 卡指纹 ────────────────────────────────────────────────────────────────────
 
 /**

@@ -19,7 +19,7 @@
 //   数字越小越靠前(越早注入)，末尾块 depth 最大——我们的经验是"越靠末尾=插入越强"
 //   (贴生成处，等同酒馆 Depth 0)。所以 depth 只表相对顺序，不是酒馆的绝对层数。
 
-export const INJECTION_PATHS = {
+const INJECTION_PATHS = {
   act: {
     label: "主叙事",
     desc: "行动/战斗/移动。引擎身份，发物品、管状态、守地图，完整 JSON schema。scope=full。",

@@ -10,7 +10,7 @@
 // 本模块只提供纯函数（请求构造 + 存取），实际 AI 调用与 setVarTree 由 MudRPG 编排，
 // 便于 debug.mjs 单测、也便于降级（AI 失败就不写，缺一天日总结无伤大雅）。
 
-export const MAX_DAY_SUMMARIES = 14; // 最多留最近 14 天，超出丢最老（远景垫底，够用即可）
+const MAX_DAY_SUMMARIES = 14; // 最多留最近 14 天，超出丢最老（远景垫底，够用即可）
 
 // 纯函数：构造日总结的 AI 请求（system + messages）。materialLines 为这一天攒下的
 // 小纸条文本数组（已按时间序）。要求 AI 用说书人口吻归纳成 2-4 句连贯白描，只记事实脉络。

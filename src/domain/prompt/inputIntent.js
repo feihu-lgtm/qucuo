@@ -64,7 +64,7 @@ const DUEL_PATTERNS = [
   /(切磋|切搓|比试|比武|过招|较量)/,
 ];
 
-export function isDuelInput(rawInput) {
+function isDuelInput(rawInput) {
   const input = (rawInput || "").trim();
   return DUEL_PATTERNS.some((pattern) => pattern.test(input));
 }

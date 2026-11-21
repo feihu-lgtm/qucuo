@@ -10,7 +10,7 @@
 //      MIN_SIM ≤ sim < ENTITY_BYPASS 记为 weak（进 prompt 时只给截断摘要）。
 
 export const MIN_SIM = 0.60;          // 低于此相似度直接丢弃
-export const ENTITY_BYPASS_SIM = 0.72; // 高于此相似度视为强相关，跳过实体过滤、给全文
+const ENTITY_BYPASS_SIM = 0.72; // 高于此相似度视为强相关，跳过实体过滤、给全文
 const RRF_K = 60;                     // RRF 融合常数，越大越平滑
 
 // 余弦相似度。两个向量维度必须一致，否则返回 -1（视为不相关）。
@@ -20,7 +20,7 @@ import { buildIndex, lexicalRank, lengthFactor, bypassQuota, LEXICAL_BASE } from
 const INTENT_BASE = 0.6;
 const CONTEXT_BASE = 0.4;
 
-export function cosine(a, b) {
+function cosine(a, b) {
   if (!a || !b || a.length !== b.length) return -1;
   let dot = 0, na = 0, nb = 0;
   for (let i = 0; i < a.length; i++) {

@@ -1,4 +1,4 @@
-export const MOBILE_COLUMN_KEY = "qucuo_mobile_column";
+const MOBILE_COLUMN_KEY = "qucuo_mobile_column";
 const valid = value => ["left", "center", "right"].includes(value);
 
 export function didOpenCenterContent(previous, current) {

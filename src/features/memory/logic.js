@@ -49,7 +49,7 @@ export function emptyTally() {
   return { today: {}, lifetime: {}, dayStamp: 0 };
 }
 
-export function dayOf(time) {
+function dayOf(time) {
   return Math.floor((Number(time) || 0) / DAY_TURNS);
 }
 
@@ -77,7 +77,7 @@ export function tallyToday(tally, time) {
   return dayOf(time) === cur.dayStamp ? cur.today : {};
 }
 
-export function tallyLifetime(tally) {
+function tallyLifetime(tally) {
   return { ...emptyTally(), ...(tally || {}) }.lifetime;
 }
 

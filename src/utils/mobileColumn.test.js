@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { MOBILE_COLUMN_KEY, readMobileColumn, writeMobileColumn, didOpenCenterContent } from "./mobileColumn.js";
+import { readMobileColumn, writeMobileColumn, didOpenCenterContent } from "./mobileColumn.js";
 
 describe("mobile column preferences", () => {
   it.each(["left", "center", "right"])("reads and writes %s outside game saves", column => {
@@ -7,14 +7,14 @@ describe("mobile column preferences", () => {
     expect(readMobileColumn(storage)).toBe(column);
     expect(storage.getItem).toHaveBeenCalledWith("qucuo_mobile_column");
     expect(writeMobileColumn(storage, column)).toBe(true);
-    expect(storage.setItem).toHaveBeenCalledWith(MOBILE_COLUMN_KEY, column);
+    expect(storage.setItem).toHaveBeenCalledWith("qucuo_mobile_column", column);
   });
 
   it.each([null, "", "invalid", "LEFT"])("defaults missing or invalid %s to center", value => {
     const storage = { getItem: () => value, setItem: vi.fn() };
     expect(readMobileColumn(storage)).toBe("center");
     expect(writeMobileColumn(storage, value)).toBe(true);
-    expect(storage.setItem).toHaveBeenCalledWith(MOBILE_COLUMN_KEY, "center");
+    expect(storage.setItem).toHaveBeenCalledWith("qucuo_mobile_column", "center");
   });
 
   it("tolerates blocked storage", () => {

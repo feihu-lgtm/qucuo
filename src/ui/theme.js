@@ -12,6 +12,14 @@
 // 七个地理分区，对应 qucuoMap.js 里的据点分组（仅供 zoneTheme.name 取分区
 // 名做氛围文字用；视觉本身七区统一，不再靠色相分区）：
 // 视觉本身七区统一，不再靠色相区分冷暖，仅 name 保留分区flavor文字。
+const INK = {
+  turquoise: { night: "#c8323a", day: "#a8202a" },
+  gold:      { night: "#c8663a", day: "#96431a" },
+  crimson:   { night: "#d63c3c", day: "#b01f24" },
+  pink:      { night: "#d68a8a", day: "#a8524a" },
+  green:     { night: "#c07050", day: "#8a4a2a" },
+};
+
 const ZONE_MAP = {
   鱼定村: "village", 鱼定土司: "village", 天都镇: "village", 玉泉寨: "village",
   喇嘛庙: "temple", 白塔: "temple",
@@ -80,20 +88,9 @@ export function getZoneTheme(roomName, isDayMode = false) {
 // turquoise=交互确认（即主强调色本身）；gold=重要入口，偏暖橙红；
 // crimson=警示/危险，最亮最正的朱红；pink=好感/私聊，柔和绛粉；
 // green=NPC名/对话，偏赭红棕。
-export const INK = {
-  turquoise: { night: "#c8323a", day: "#a8202a" },
-  gold:      { night: "#c8663a", day: "#96431a" },
-  crimson:   { night: "#d63c3c", day: "#b01f24" },
-  pink:      { night: "#d68a8a", day: "#a8524a" },
-  green:     { night: "#c07050", day: "#8a4a2a" },
-};
 export const ink = (name, isDayMode) => INK[name][isDayMode ? "day" : "night"];
 // 圆角阶：《长刀》线装书式的硬直角——全部归零，不再有 3/4/6/8 的圆角层级。
 export const RADIUS = { btn: 0, card: 0, modal: 0 };
-
-export function getZoneName(roomName) {
-  return ZONE_MAP[roomName] || "village";
-}
 
 // 主界面统一按钮：一种底色/文字/边框；只有「当前开启」用朱红强调。
 export function chromeBtn(theme, { active = false } = {}) {

@@ -3,17 +3,20 @@ import { BOUNTY_QUESTS } from "../../domain/quests/bountyQuests.js";
 import { advanceQuestStages, createQuestProgress, lockExclusiveSiblings } from "../../domain/quests/questEngine.js";
 import { applyStageRewards, resolveStageRewards } from "../../domain/quests/questRewards.js";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { set, updateField } from "../../domain/state/applyWrite.js";
 
 const noOpResult = () => ({ logs: [] });
 const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }] });
 
-export function forceAdvanceQuest(state, quest, targetFlag) {
-  const nextFlags = (state.flags || []).includes(targetFlag) ? state.flags : [...(state.flags || []), targetFlag];
-  let progress = state.questProgress?.[quest.id] || createQuestProgress(quest.id);
-  const gameState = { flags: nextFlags, char: state.char };
+export function forceAdvanceQuest(state, quest, targetFlag, now) {
+  const flags = state.flags || [];
+  const addedFlag = flags.includes(targetFlag) ? flags : [...flags, targetFlag];
+  let progress = state.questProgress?.[quest.id] || createQuestProgress(quest.id, now);
+  const gameState = { flags: addedFlag, char: state.char || {} };
   const pendingRewards = [];
+
   while (progress.status === "active") {
-    const result = advanceQuestStages(quest, progress, gameState);
+    const result = advanceQuestStages(quest, progress, gameState, now);
     if (!result.advanced) break;
     progress = result.progress;
     if (result.completedStage) {
@@ -22,23 +25,70 @@ export function forceAdvanceQuest(state, quest, targetFlag) {
     }
     if (result.justCompleted) break;
   }
+
   let nextProgress = { ...(state.questProgress || {}), [quest.id]: progress };
   if (progress.status === "completed") {
     nextProgress = lockExclusiveSiblings(nextProgress, QUCUO_QUESTS, quest.id);
   }
 
-  const changes = { flags: nextFlags, questProgress: nextProgress };
-  const capture = (key) => (value) => {
-    const previous = Object.hasOwn(changes, key) ? changes[key] : state[key];
-    changes[key] = typeof value === "function" ? value(previous) : value;
+  const flagUpdates = [updateField("flags", (prev) => set("flags", prev.includes(targetFlag) ? prev : [...prev, targetFlag]))];
+  const changedProgress = Object.fromEntries(
+    Object.entries(nextProgress).filter(([id, value]) => state.questProgress?.[id] !== value),
+  );
+  const changes = {
+    flags: (prev) => flagUpdates.reduce((value, update) => update(value), prev || []),
+    questProgress: (prev) => ({ ...(prev || {}), ...changedProgress }),
   };
-  for (const rewards of pendingRewards) {
-    applyStageRewards(rewards, {
-      setInv: capture("inv"),
-      setChar: capture("char"),
-      setVarTree: capture("varTree"),
-      setFlags: capture("flags"),
-    });
+  const local = {
+    inv: state.inv || [],
+    char: state.char || {},
+    varTree: state.varTree || {},
+    flags: addedFlag,
+  };
+  const varTreeUpdates = [];
+  const invUpdates = [];
+  const charUpdates = [];
+  const setters = {
+    setInv: (update) => {
+      invUpdates.push(update);
+      local.inv = typeof update === "function" ? update(local.inv) : update;
+    },
+    setChar: (update) => {
+      charUpdates.push(update);
+      local.char = typeof update === "function" ? update(local.char) : update;
+    },
+    setVarTree: (update) => {
+      varTreeUpdates.push(update);
+      local.varTree = typeof update === "function" ? update(local.varTree) : update;
+    },
+    setFlags: (update) => {
+      flagUpdates.push(update);
+      local.flags = typeof update === "function" ? update(local.flags) : update;
+    },
+  };
+
+  for (const rewards of pendingRewards) applyStageRewards(rewards, setters, now);
+  if (invUpdates.length) {
+    changes.inv = (prev) => invUpdates.reduce(
+      (value, update) => typeof update === "function" ? update(value) : update,
+      prev || [],
+    );
+  }
+  if (charUpdates.length) {
+    changes.char = (prev) => charUpdates.reduce(
+      (value, update) => typeof update === "function" ? update(value) : update,
+      prev || {},
+    );
+  }
+  changes.flags = (prev) => flagUpdates.reduce(
+    (value, update) => typeof update === "function" ? update(value) : update,
+    prev || [],
+  );
+  if (varTreeUpdates.length) {
+    changes.varTree = (prev) => varTreeUpdates.reduce(
+      (tree, update) => typeof update === "function" ? update(tree) : update,
+      prev || {},
+    );
   }
   return { changes };
 }

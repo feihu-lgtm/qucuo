@@ -106,7 +106,7 @@ export function loadPortraits() {
   }
 }
 
-export function savePortraits(portraits) {
+function savePortraits(portraits) {
   try {
     localStorage.setItem(PORTRAIT_STORAGE_KEY, JSON.stringify(portraits));
     return true;
@@ -193,7 +193,7 @@ export function getSnowLeopardForm() {
 export function setSnowLeopardForm(key) {
   try { localStorage.setItem(SL_FORM_KEY, key); } catch { /* ignore */ }
 }
-export function snowLeopardPortraitUrl(formKey) {
+function snowLeopardPortraitUrl(formKey) {
   const f = SNOW_LEOPARD_FORMS.find(x => x.key === formKey) || SNOW_LEOPARD_FORMS[2];
   return SL_BASE + f.file;
 }
@@ -274,8 +274,3 @@ export function narratorPortraitLabel(affection) {
 // 私聊模式 → 旁白；对话模式 → 优先用玩家点了"对话"的那个具体NPC（talkTarget），
 // 房间里游走人口一多，"只有一个NPC"这个旧启发式基本就失效了，所以talkTarget
 // 才是真正可靠的依据，房间只有一个NPC只作为没有talkTarget时的兜底；否则 → 主角本人（"你"）
-export function inferActivePortraitTarget(interactMode, room, talkTarget) {
-  if (interactMode === "whisper") return "旁白";
-  if (interactMode === "talk") return talkTarget || (room.npcs?.length === 1 ? room.npcs[0].name : "你");
-  return "你";
-}

@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
-  appeaseAngryNpc,
   giftNpc,
-  inviteCompanion,
   learnNpcSkill,
   stealFromNpc,
   talkToNpc,
   tradeWithNpc,
 } from "./logic.js";
+import { appeaseAngryNpc } from "./anger.js";
+import { inviteCompanion } from "./inviteCompanion.js";
 
 const angryState = (overrides = {}) => ({
   char: { money: 0, special: { 身法: 10 } },

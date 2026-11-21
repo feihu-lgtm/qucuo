@@ -16,9 +16,9 @@ describe("forceAdvanceQuest", () => {
       varTree: {},
     }, quest, "stage_done");
 
-    expect(result.changes.flags).toEqual(["stage_done", "reward_flag"]);
-    expect(result.changes.questProgress.test_quest.status).toBe("completed");
-    expect(result.changes.char.money).toBe(15);
+    expect(result.changes.flags([])).toEqual(["stage_done", "reward_flag"]);
+    expect(result.changes.questProgress({}).test_quest.status).toBe("completed");
+    expect(result.changes.char({ money: 5 }).money).toBe(15);
   });
 
   it("does not advance when the supplied flag does not match", () => {
@@ -30,8 +30,8 @@ describe("forceAdvanceQuest", () => {
       varTree: {},
     }, quest, "wrong_flag");
 
-    expect(result.changes.flags).toEqual(["wrong_flag"]);
-    expect(result.changes.questProgress.test_quest.currentStageIndex).toBe(0);
-    expect(result.changes.questProgress.test_quest.status).toBe("active");
+    expect(result.changes.flags([])).toEqual(["wrong_flag"]);
+    expect(result.changes.questProgress({}).test_quest.currentStageIndex).toBe(0);
+    expect(result.changes.questProgress({}).test_quest.status).toBe("active");
   });
 });
