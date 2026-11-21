@@ -223,8 +223,7 @@ export function resolveTurn(sideA, sideB) {
       result[`damageTo${loserTag}`] += damage;
     }
     if (winnerMove.doubleReflectDamage) {
-      const wouldBlock = calcBaseDamage(loserMove, loserSide, winnerSide)
-        * (loserMove.baseDamageMultiplier ?? 0.5);
+      const wouldBlock = calcBaseDamage(loserMove, loserSide, winnerSide);
       result[`damageTo${loserTag}`] += Math.round(wouldBlock * 2);
       result.notes.push(`${winnerMove.name}二倍反弹，力道尽数奉还`);
     }

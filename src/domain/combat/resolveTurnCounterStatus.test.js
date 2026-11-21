@@ -102,6 +102,19 @@ describe("attack and counter-status resolution", () => {
     expect(result.notes.join("")).toContain("护体反劲截住直拳");
   });
 
+  it("applies the attack multiplier only once when reflecting", () => {
+    const reflect = side("天惊诀", MOVE_TYPE.STATUS, { doubleReflectDamage: true });
+    const attack = side("一剑西来", MOVE_TYPE.ATTACK, { baseDamageMultiplier: 2.2 });
+    const counter = resolveTurn(attack, reflect);
+    const statusBeatDefense = resolveTurn(
+      reflect,
+      side("一剑西来", MOVE_TYPE.DEFENSE, { baseDamageMultiplier: 2.2 }),
+    );
+
+    expect(counter.damageToA).toBe(88);
+    expect(statusBeatDefense.damageToB).toBe(88);
+  });
+
   it("lets a faster control status cancel the attack and land its control", () => {
     const result = resolveTurn(
       side("陈尧天拳", MOVE_TYPE.ATTACK, {}, { 身法: 2 }),
