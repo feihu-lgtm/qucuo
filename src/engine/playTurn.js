@@ -4,8 +4,14 @@ import { getRngState, setRngState } from "../core/rng.js";
 import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
 import { runTurn } from "./runTurn.js";
 import { PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
-import { createWebAi } from "./ports/ai.js";
+import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { runBookkeepAfterTurn } from "./act/bookkeepTurn.js";
+import {
+  applySettledDeltas, captureSettledChanges, revertSettled, runSoftSettle,
+} from "../domain/settle/settle.js";
+import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
+import { applyMvuCommands } from "../domain/prompt/mvu.js";
+import { formatAngerResolutionLog, resolveAngerSignals } from "../domain/combat/stealSystem.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
@@ -51,6 +57,23 @@ export async function playTurn(ctx, cmd, opts = {}) {
   };
   setCommandPhase("machine");
   let snapshot;
+  let softSettleLogs = [];
+  let softSettleRevertRecords = [];
+  let softSettleApplied = false;
+  let softSettleReverted = false;
+  let invalidationListenerRegistered = false;
+  let unsubscribeInvalidation;
+  const revertSoftSettleOnce = () => {
+    if (!softSettleApplied || softSettleReverted) return;
+    softSettleReverted = true;
+    if (ctx.setVarTree) ctx.setVarTree(prev => revertSettled(prev, softSettleRevertRecords));
+    else gameActions.setVarTreeState(revertSettled(gameStore.getState().varTree, softSettleRevertRecords));
+  };
+  const unsubscribeFromInvalidation = () => {
+    const unsubscribe = unsubscribeInvalidation;
+    unsubscribeInvalidation = null;
+    if (typeof unsubscribe === "function") unsubscribe();
+  };
   try {
     snapshot = captureSnapshot(ctx.refs);
     turnMonitor.add(trace, "app", "事务快照", { kind: "snapshot" });
@@ -58,18 +81,84 @@ export async function playTurn(ctx, cmd, opts = {}) {
     turnMonitor.add(trace, "domain", "整理世界状态与叙事上下文");
     ctx.beforeRun?.();
     setCommandPhase("ai");
-    const turn = await runTurn({ ...turnCtx, _trace: trace }, cmd, opts);
-    if (turn.stale || ctx.isStale?.()) return stale();
+    const turnOpts = { ...opts };
+    if (turnOpts.settleKind === "appease" && turnOpts.settleNpc && ctx.apiCfg?.softSettleEnabled !== false) {
+      const state = gameStore.getState();
+      const softSettle = await (ctx.softSettle || runSoftSettle)({
+        ai: bindTurnAi(turnCtx.ai, trace),
+        apiCfg: turnCtx.apiCfg,
+        kind: "appease",
+        ctx: {
+          npc: turnOpts.settleNpc,
+          varTree: state.varTree,
+          attempt: cmd,
+          time: state.time,
+          charm: turnCtx.effectiveSpecialNow?.魅力 ?? 5,
+        },
+      });
+      if (ctx.isStale?.()) return stale();
+      if (softSettle && softSettle.choice !== UNKNOWN_CHOICE) {
+        const angerSignalApplied = softSettle.choice === "奏效" && softSettle.deltas?.some(
+          delta => delta.path === `角色.${turnOpts.settleNpc}.生气解除`
+            && delta.op === "set" && delta.finalValue === true,
+        );
+        let settledTree = gameStore.getState().varTree;
+        if (angerSignalApplied) {
+          softSettleLogs = [
+            ...applyMvuCommands(state.varTree, softSettle.deltas, {
+              time: state.time,
+              charm: turnCtx.effectiveSpecialNow?.魅力 ?? 5,
+            }).logs,
+            formatAngerResolutionLog(turnOpts.settleNpc),
+          ];
+        }
+        const applySoftSettle = (prev) => {
+          settledTree = applySettledDeltas(prev, softSettle.deltas);
+          if (angerSignalApplied) settledTree = resolveAngerSignals(settledTree, [turnOpts.settleNpc]);
+          const revertPaths = (softSettle.deltas || []).map(delta => delta?.path);
+          if (angerSignalApplied) {
+            revertPaths.push(`角色.${turnOpts.settleNpc}.生气状态`, `角色.${turnOpts.settleNpc}.生气解除`);
+          }
+          softSettleRevertRecords = captureSettledChanges(prev, settledTree, revertPaths);
+          return settledTree;
+        };
+        softSettleApplied = true;
+        if (ctx.setVarTree) ctx.setVarTree(applySoftSettle);
+        else gameActions.setVarTreeState(applySoftSettle(gameStore.getState().varTree));
+        if (typeof ctx.onTurnsInvalidated === "function") {
+          unsubscribeInvalidation = ctx.onTurnsInvalidated(revertSoftSettleOnce);
+          invalidationListenerRegistered = true;
+        }
+        turnOpts.softSettle = { ...softSettle, varTree: settledTree };
+        turnMonitor.add(trace, "engine", "结算·软判定", {
+          status: "pass",
+          detail: `${softSettle.choice}（${softSettle.note}）`,
+        });
+      }
+    }
+    const turn = await runTurn({ ...turnCtx, _trace: trace }, cmd, turnOpts);
+    if (turn.stale || ctx.isStale?.()) {
+      if (softSettleApplied && !invalidationListenerRegistered) {
+        withTurnContext(trace, revertSoftSettleOnce);
+      }
+      return stale();
+    }
+    unsubscribeFromInvalidation();
     setCommandPhase("commit");
     const commitDeps = ctx.commitDeps(turn) || {};
-    const committed = withTurnContext(trace, () => (ctx.commitRound || commitRound)({
-      ...commitDeps,
-      duelReport: opts.duelReport || null,
-      giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
-        ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
-      giftAlreadySettled: !!opts.giftInfo?.weight,
-      _trace: trace,
-    }));
+    const committed = withTurnContext(trace, () => {
+      const result = (ctx.commitRound || commitRound)({
+        ...commitDeps,
+        softSettle: turnOpts.softSettle || null,
+        duelReport: opts.duelReport || null,
+        giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
+          ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
+        giftAlreadySettled: !!opts.giftInfo?.weight,
+        _trace: trace,
+      });
+      if (softSettleLogs.length) (commitDeps.addLog || ctx.addLog)?.(softSettleLogs);
+      return result;
+    });
     await Promise.resolve();
     if (!ctx.deferMonitorFinish) turnMonitor.finish(trace, "行动完成");
     const bookkeep = ctx.bookkeep === false ? null : ctx.bookkeep || runBookkeepAfterTurn;
@@ -98,9 +187,17 @@ export async function playTurn(ctx, cmd, opts = {}) {
     }
     return { ok: true, turn, duelRequest: committed?.duelRequest ?? turn.p?.duelRequest };
   } catch (error) {
-    if (ctx.isStale?.()) return stale(error);
+    if (ctx.isStale?.()) {
+      if (softSettleApplied && !invalidationListenerRegistered) {
+        withTurnContext(trace, revertSoftSettleOnce);
+      }
+      return stale(error);
+    }
+    unsubscribeFromInvalidation();
     if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs));
     turnMonitor.transition(trace, PHASE.ERROR, String(error));
     return { ok: false, error };
+  } finally {
+    unsubscribeFromInvalidation();
   }
 }

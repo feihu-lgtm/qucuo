@@ -1,3 +1,4 @@
+import { upgradeLegacyDefaults } from "./presetLegacy.js";
 // 酒馆式预设系统
 // 完整兼容 SillyTavern 的 Chat Completion 预设 JSON 格式（Master 文件）。
 // 核心概念：
@@ -77,33 +78,30 @@ export function defaultPreset() {
     }),
     makePromptEntry({
       id: "genrules", name: "通用规则", role: "system",
-      content: `- 不搜索不给隐藏物品，只描述外观
+      content: `- 不搜索不给隐藏物品，只写外观
 - NPC不主动倒信息，问对才给对答案
 - 战斗诚实，弱打强必死
-- 物品的装备/卸下完全由玩家在界面上手动操作，你不需要也不能通过任何字段直接把某件物品设为"已装备"——只负责把新物品加入 items_add，装备状态玩家自己管理
-- 鼓励玩家用背包里的物品和场景/NPC互动，只要符合逻辑就应该给出合理的互动结果
-- char.neigong（内功）/char.waigong（外功）不由你直接修改——这两项现在是战斗伤害公式里的真实倍率，数值必须由玩家花"潜能"主动修炼获得，不能被叙事顺手改变。修炼、历练、顿悟等场景想奖励玩家时，改成在 delta.pot 里多给一些潜能（潜能是玩家用来修炼内外功和武学的资源），不要直接改 neigong/waigong 字段
-- char.special 七维为 0-10 的天赋值，只有极重大的奇遇、渡劫、悟道场景才允许改动，且单次不超过1点
-- NPC 名单里的〔品阶:X档〕是系统裁决的**战力分级**标记（白＜绿＜蓝＜紫＜橙＜红，越往后战力越悬殊），**只代表数值段位，与人物穿什么衣服毫无关系**——绝不要把它当成衣着设定，不要据此给角色套上对应颜色的袍服（"红档"不等于穿红袍，"白档"不等于穿白衣，衣着、装束、发式一律按该人物自身的外貌与身份设定来写，与档位无关）。但它决定叙事分量：高战力者出场，气度、谈吐、旁人敬畏、随从排面要配得上这个段位，低档杂鱼不该写得深不可测，高档人物也不该写得寒酸掉价——分量靠气场与场面烘托，不靠衣服颜色`,
+- 装备/卸下全由玩家手动操作；禁止用任何字段把物品设为已装备，新物品只写进 items_add
+- 鼓励背包物品与场景/NPC互动，合逻辑就给合理结果
+- 禁止直接改 char.neigong/char.waigong（须由玩家花潜能修炼）；修炼、历练、顿悟想奖励，改在 delta.pot 给潜能
+- char.special 七维为 0-10 天赋值，仅极重大奇遇、渡劫、悟道可改，单次不超过1点
+- NPC 的〔品阶:X档〕是战力分级（白＜绿＜蓝＜紫＜橙＜红，越后越悬殊），只代表数值段位，禁止据此给角色套对应颜色衣服（衣着、装束、发式按人物自身外貌与身份写）。它只管叙事分量：高档靠气度、谈吐、旁人敬畏与随从排面撑场面，不写寒酸；低档不写得深不可测`,
     }),
     makePromptEntry({
       id: "wenfeng", name: "文体铁律", role: "system",
       content: `白话古文，章回说书人口吻，句句主谓宾齐全，句间逻辑过渡。禁冒号破折号。
 
 【文本区分】
-对话用「」包裹，引语用""，心理用*斜体*。旁白不加标记。
-例：那猎户啐了一口，「你这后生，莫不是来找死的？」
+对话用「」，引语用""，心理用*斜体*，旁白无标记。
 例：「直娘贼！」他一掌拍在桌上，「这雪山上可没有后悔药卖。」
-例：赵老秃眯起眼，「俺在这熊山脚下过了一辈子，见过的后生没一百也有八十。」
-例：她转过身去，低声说了句，「明天别来了。」
 
 【写作铁律】
-- 每句必须推进剧情、塑造人物或营造氛围，无信息量则删
-- 只写发生了什么，不写它意味着什么。信任读者
-- 段落结尾以具体动作或台词收束，禁止抽象总结
-- 情绪通过行动或台词流露，不用五官特写标注（禁用"眼底闪过""嘴角勾起""瞳孔一缩"）
-- 比喻须新颖具体，禁用"涟漪""惊雷""潮水""投石入湖"等陈腐喻体
-- 禁止"不是X，而是Y"句式，直接说Y
+- 每句须推进剧情、塑造人物或营造氛围，废话全删
+- 只写发生了什么，不解释含义
+- 段尾用具体动作或台词收束，禁抽象总结
+- 情绪靠行动或台词表现，禁五官特写（"眼底闪过""嘴角勾起""瞳孔一缩"）
+- 比喻须新颖具体，禁"涟漪""惊雷""潮水""投石入湖"等陈腐喻体
+- 禁"不是X，而是Y"，直接说Y
 - 形容词副词不连用，单段成语不超过2个`,
     }),
     makePromptEntry({
@@ -158,7 +156,8 @@ export function loadAllPresets() {
     // activeIndex 越界兜底（比如手动改过 localStorage，或者曾经的预设被删掉导致索引错位）
     const activeIndex = (typeof parsed.activeIndex === "number" && parsed.activeIndex >= 0 && parsed.activeIndex < parsed.presets.length)
       ? parsed.activeIndex : 0;
-    return { presets: parsed.presets, activeIndex };
+    const defaults = Object.fromEntries(defaultPreset().prompts.map((entry) => [entry.id, entry.content]));
+    return { presets: parsed.presets.map((preset) => upgradeLegacyDefaults(preset, defaults)), activeIndex };
   } catch {
     return { presets: [defaultPreset()], activeIndex: 0 };
   }

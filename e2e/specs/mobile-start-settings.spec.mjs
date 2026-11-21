@@ -21,6 +21,7 @@ async function configureApi(page, save = null) {
       model: "browser-fixture",
       streamEnabled: false,
       bookkeepEnabled: false,
+      softSettleEnabled: false,
       questTriggerMode: "prompt",
       autoSaveEvery: 1,
     }));

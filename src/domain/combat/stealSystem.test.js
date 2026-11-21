@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   createAngryState,
+  formatAngerResolutionLog,
   isNpcAngry,
   recordAngerAttempt,
+  resolveAngerSignals,
   stealSuccessRate,
   tickAngryState,
 } from "./stealSystem.js";
@@ -57,5 +59,20 @@ describe("angry state attempts", () => {
     expect(isNpcAngry(varTree, "商人")).toBe(true);
     expect(isNpcAngry(varTree, "师父")).toBe(false);
     expect(isNpcAngry(varTree, "陌生人")).toBe(false);
+  });
+});
+
+describe("anger signal resolution", () => {
+  it("removes the signal and records persuasion without mutating the input tree", () => {
+    const tree = { 角色: { 商人: { 生气解除: true, 生气状态: { active: true, reason: "偷窃未遂" } } } };
+
+    const resolved = resolveAngerSignals(tree, ["商人"]);
+
+    expect(resolved.角色.商人).toEqual({ 生气状态: { active: false, resolvedBy: "persuasion" } });
+    expect(tree.角色.商人.生气解除).toBe(true);
+    expect(formatAngerResolutionLog("商人")).toEqual({
+      t: "affection",
+      text: "  ✓ 商人的怒气已经消解，这场风波算是揭过去了。",
+    });
   });
 });

@@ -1,5 +1,6 @@
 import { step as traceStep } from "../../infra/actionTrace.js";
 import { applyMvuCommands } from "../../domain/prompt/mvu.js";
+import { formatAngerResolutionLog, resolveAngerSignals } from "../../domain/combat/stealSystem.js";
 import { QUCUO_MAP, getMapNode } from "../../domain/map/qucuoMap.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { detectNewFaces, markAsSeen, updateLastSeen, markNpcAsKnown } from "../../domain/npc/npcAwareness.js";
@@ -46,6 +47,18 @@ export function commitRound(d) {
   const _knownChars = new Set(Object.keys(d.varTreeRef.current.角色 || {}));
 
   d.mvuCommands = filterGhostCommands(d.mvuCommands, systemAcceptedNames, _knownChars);
+  if (d.softSettle?.target) {
+    const npc = d.softSettle.target;
+    const systemSettled = d.mvuCommands.filter(({ path }) =>
+      path?.startsWith(`角色.${npc}.生气解除`)
+      || path?.startsWith(`角色.${npc}.生气状态`)
+      || path === `角色.${npc}.好感度`);
+    if (systemSettled.length) {
+      d.mvuCommands = d.mvuCommands.filter((command) => !systemSettled.includes(command));
+      traceStep(d._trace, "MVU裁决", "block",
+        `已由系统结算：${systemSettled.map(({ op, path }) => `${op}(${path})`).join("；")}`);
+    }
+  }
   if (d.giftSettlement) {
     const { npc } = d.giftSettlement;
     const command = d.mvuCommands.find(({ op, path, value }) =>
@@ -78,17 +91,9 @@ export function commitRound(d) {
       const resolvedNames = applied
         .filter(c => c.path.endsWith(".生气解除") && c.finalValue === true)
         .map(c => c.path.split(".")[1]);
-      let finalTree = tree;
+      const finalTree = resolveAngerSignals(tree, resolvedNames);
       if (resolvedNames.length) {
-        const nextChars = { ...finalTree.角色 };
-        for (const name of resolvedNames) {
-          if (nextChars[name]) {
-            const { 生气解除, ...rest } = nextChars[name];
-            nextChars[name] = { ...rest, 生气状态: { active: false, resolvedBy: "persuasion" } };
-          }
-        }
-        finalTree = { ...finalTree, 角色: nextChars };
-        d.addLog(resolvedNames.map(name => ({ t: "affection", text: `  ✓ ${name}的怒气已经消解，这场风波算是揭过去了。` })));
+        d.addLog(resolvedNames.map(formatAngerResolutionLog));
       }
       return finalTree;
     });

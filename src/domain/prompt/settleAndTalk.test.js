@@ -71,6 +71,31 @@ describe("拜师 learn_skill 铁律（0728 起改由 11 号位承载，不再在
   });
 });
 
+describe("软判定后的平息怒气措辞", () => {
+  const opts = {
+    playerName: "少侠",
+    settleNpc: "八云",
+    settleKind: "appease",
+    softSettle: { choice: "奏效", note: "八云消了气，好感+3" },
+  };
+
+  it("叙事模式要求按系统判定书写", () => {
+    const { phiRules } = buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", true, "settle", opts,
+    );
+    expect(phiRules).toContain("【怒气缓和】系统已判定：八云消了气，好感+3。照此写八云的反应，不得改写结果。");
+  });
+
+  it("单调用模式禁止再次输出 mvu 并省略 appease 示例", () => {
+    const { phiRules } = buildSysBase(
+      220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", false, "settle", opts,
+    );
+    expect(phiRules).toContain("本轮状态已由系统结算，不得输出 <mvu>。");
+    expect(phiRules).not.toContain("关于下面那条 <mvu>");
+    expect(phiRules).not.toContain("成功示例（不成功则不输出这两条）");
+  });
+});
+
 describe("切磋邀战结算", () => {
   const build = (narrativeOnly) => buildSysBase(
     220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", narrativeOnly, "settle",
