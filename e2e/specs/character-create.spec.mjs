@@ -11,6 +11,7 @@ export default async function characterCreate({ page, game }) {
       model: "browser-fixture",
       streamEnabled: false,
       bookkeepEnabled: false,
+      softSettleEnabled: false,
       questTriggerMode: "prompt",
       autoSaveEvery: 1,
     }));

@@ -100,3 +100,19 @@ export function resolveAngryByPersuasion(angryState) {
   if (!angryState || !angryState.active) return angryState;
   return { active: false, escalated: false, resolvedBy: "persuasion" };
 }
+
+export function resolveAngerSignals(varTree, names) {
+  if (!names?.length) return varTree;
+  const nextChars = { ...(varTree?.角色 || {}) };
+  for (const name of names) {
+    if (nextChars[name]) {
+      const { 生气解除, ...rest } = nextChars[name];
+      nextChars[name] = { ...rest, 生气状态: { active: false, resolvedBy: "persuasion" } };
+    }
+  }
+  return { ...varTree, 角色: nextChars };
+}
+
+export function formatAngerResolutionLog(name) {
+  return { t: "affection", text: `  ✓ ${name}的怒气已经消解，这场风波算是揭过去了。` };
+}

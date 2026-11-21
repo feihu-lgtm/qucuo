@@ -13,6 +13,7 @@ import { applyPresetOverrides, getActivePreset } from "../../domain/prompt/prese
 import { createWebAi } from "../ports/ai.js";
 import { buildAngryNote } from "../prompt/assemblePrompt.js";
 import { getApiModel } from "../../core/apiModel.js";
+import { formatSettleNote } from "../../domain/settle/settle.js";
 
 const webAi = createWebAi();
 
@@ -46,6 +47,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
+      softSettle: d.softSettle || null,
       duelReport: d.duelReport || null,
       snowLeopardGift: d.settleKind === "gift" && d.settleNpc === "雪豹" && !!d.snowLeopardContext,
       giftInfo: d.giftInfo || null,
@@ -122,8 +124,9 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     varTree: d.varTree,
   });
   const ledgerSuffix = ledgerBlock ? `\n\n${ledgerBlock}` : "";
+  const softSettleNote = d.softSettle ? formatSettleNote(d.softSettle) : "";
   const inChatContent = d.isSettle
-    ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? d.reunionBlock : "") + ledgerSuffix + angrySettleNote + "\n\n" + proseRule
+    ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? d.reunionBlock : "") + ledgerSuffix + angrySettleNote + softSettleNote + "\n\n" + proseRule
     : rulesPrefix + d.ctx + distantBlock + d.recallBlock + ledgerSuffix + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 

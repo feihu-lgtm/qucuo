@@ -102,6 +102,7 @@ export function buildCliApiConfig(overrides = {}) {
     maxTokens: overrides.maxTokens || 4000,
     extractionEnabled: overrides.extractionEnabled ?? false,
     bookkeepEnabled: overrides.bookkeepEnabled ?? false,
+    softSettleEnabled: overrides.softSettleEnabled ?? false,
     streamEnabled: false,
   };
   if (provider) config.provider = provider;
@@ -380,6 +381,8 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         }, { importedNpcLore: importedRegistry.getImportedNpcLore() }),
         _trace: trace,
         deferMonitorFinish: trace === lineTurn,
+        setVarTree,
+        effectiveSpecialNow: state.char?.special || {},
         state,
         memory: {
           varTreeLatest: state.varTree,
