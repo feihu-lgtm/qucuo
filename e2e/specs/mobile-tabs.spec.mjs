@@ -13,6 +13,24 @@ export default async function mobileTabs({ page, game, ai }) {
   assert.equal(await activeColumn(), "中");
   assert.equal(await input.isVisible(), true);
   assert.equal(await page.locator(".face-bar:visible").count(), 0);
+  // 44px 的输入框装在 35px 的输入栏里，底部探出约 5px，把中栏内容撑到 599px
+  // （容器 594px）。挂载后 inputRef.focus() 与 logEnd.scrollIntoView 会各自把这
+  // 段溢出滚掉，输入框底边才收回标签栏顶之上；在此之前量会量到 5px 重叠的瞬态。
+  // 先等这段溢出滚到底，再确认两帧内几何不再变化。
+  await game.waitFor(page, () => page.evaluate(() => {
+    const col = globalThis.document.querySelector(".mobile-input-bar")?.parentElement;
+    return !col || col.scrollTop >= col.scrollHeight - col.clientHeight - 1;
+  }), { message: "center column overflow scrolled to bottom" });
+  await game.waitFor(page, () => page.evaluate(() => new Promise(resolve => {
+    const read = () => [".game-input", ".mobile-tab-bar"].map(sel => {
+      const el = globalThis.document.querySelector(sel);
+      if (!el) return "absent";
+      const r = el.getBoundingClientRect();
+      return `${r.x},${r.y},${r.width},${r.height}`;
+    }).join("|");
+    const first = read();
+    globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(() => resolve(read() === first)));
+  })), { message: "settle first-frame layout before measuring" });
   const inputBox = await input.boundingBox();
   const tabBox = await tabs.boundingBox();
   const statusBox = await page.getByRole("button", { name: /^全流程日志/ }).boundingBox();
