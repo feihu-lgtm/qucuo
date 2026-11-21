@@ -20,7 +20,7 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
     if (!npc) return 0;
     if (step.kind === ACTION_KINDS.BUY) return runCommand(`交易 ${npc.name}`);
     const status = single ? await runFreeText(`向${npc.name}抱拳邀战，请他切磋一番`, { echoCommand: true }) : 0;
-    emit(`是否与「${npc.name}」正式切磋？（确认切磋）`);
+    emit(`（${npc.name}已应下邀战；正式切磋需在 web 端点「确认切磋」，CLI 暂无对战界面。）`);
     return status;
   }
 
