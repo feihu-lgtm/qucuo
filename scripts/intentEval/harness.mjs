@@ -9,6 +9,7 @@ const SLOTS = ["target", "item", "amount", "direction"];
 
 export function actionMatches(predicted, expected) {
   if (!predicted || predicted.kind !== expected.kind) return false;
+  if ("condition" in expected && predicted.condition?.on !== expected.condition) return false;
   return SLOTS.every((slot) => !(slot in expected) || predicted[slot] === expected[slot]);
 }
 
@@ -54,7 +55,7 @@ export async function runEval({
     const latencyMs = Math.round(now() - startedAt);
     return {
       id: line.id, text: line.text, category: line.category, expected: line.expected, error, errorType, latencyMs,
-      predicted: recognition.actions.map(({ kind, target, item, amount, direction, confidence }) => ({ kind, target, item, amount, direction, confidence: Number((confidence ?? 0).toFixed(4)) })),
+      predicted: recognition.actions.map(({ kind, target, item, amount, direction, condition, confidence }) => ({ kind, target, item, amount, direction, condition, confidence: Number((confidence ?? 0).toFixed(4)) })),
       compound: Number((recognition.compound ?? 0).toFixed(4)),
       confidence: Number(planConfidence(recognition).toFixed(4)),
       route: gateRecognition(recognition).route,

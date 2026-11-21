@@ -70,6 +70,7 @@ export function useTurn({
       autoTravelRef.current = false;
       const message = `  ⚠ 路上撞见生人，自动赶路就此打住（余下 ${dropped} 程未走）。要接着走，另点目的地即可。`;
       addLog([{ t: "sys", text: message, standalone: true }]);
+      intentRouterRef?.current?.fireEvent?.("encounter", {}); intentRouterRef?.current?.expireTriggers?.(_trace); // 路遇应验遇敌步；行程中断，其余触发器过期
     };
 
     if (opts.forceLayer) {
@@ -276,7 +277,7 @@ export function useTurn({
         traceStep(_trace, "路遇", "pass", `格子预埋路遇：${traceInfo.encounter.name}（${traceInfo.encounter.label}）`);
       }
       applyLocal(arrivalResult, "格子移动");
-      if (traceInfo.encounter) stopAutoTravel();
+      if (traceInfo.encounter) stopAutoTravel(); else intentRouterRef?.current?.fireEvent?.("arrive", { dest: lockedDestName, travelDone: !autoTravelRef.current });
       outerDepartRef.current = null; pendDirRef.current = null; pickupJudgmentRef.current = null;
       summary = `到达 ${lockedDestName}（格子·纯前端）`;
       prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
@@ -294,7 +295,7 @@ export function useTurn({
       luck: char.special?.气运 ?? 5,
     });
     pickupJudgmentRef.current = pickupJudgment;
-    if (encounterToDescribe) stopAutoTravel();
+    if (encounterToDescribe) stopAutoTravel(); else intentRouterRef?.current?.fireEvent?.("arrive", { dest: lockedDestName, travelDone: !autoTravelRef.current });
 
     // ── 采集裁决（系统层）──（判定在 act/roundNotes.js，副作用在此执行）
     // 玩家表达采集意图、且所采之物此刻真在地上时，由系统直接把物搬入背包、

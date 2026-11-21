@@ -13,7 +13,7 @@ describe("intentEval", () => {
   it("has ≥60 labelled Chinese lines across every category", () => {
     expect(fixtures.lines.length).toBeGreaterThanOrEqual(60);
     const categories = new Set(fixtures.lines.map((line) => line.category));
-    expect([...categories].sort()).toEqual(["ambiguous", "chitchat", "compound", "refusal", "single"]);
+    expect([...categories].sort()).toEqual(["ambiguous", "chitchat", "compound", "conditional", "refusal", "single"]);
     expect(fixtures.lines.some((line) => line.text === "我不想切磋")).toBe(true);
   });
 

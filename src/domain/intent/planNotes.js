@@ -5,10 +5,13 @@ import { ACTION_KINDS, SILVER } from "./actionKinds.js";
 
 export function planToContext(plan) {
   const view = (action) => ({ step: action.index + 1, kind: action.kind, target: action.target ?? null, item: action.item ?? null, amount: action.amount ?? null, text: action.text });
+  const viewTrigger = (action) => ({ ...view(action), on: action.condition?.on ?? null, detail: action.condition?.detail ?? null });
   return {
     valid: (plan?.valid || []).map(view),
     rejected: plan?.rejected ? { ...view(plan.rejected), reason: plan.rejected.reason } : null,
     skipped: (plan?.skipped || []).map(view),
+    triggers: (plan?.triggers || []).map(viewTrigger),
+    freeSteps: (plan?.freeSteps || []).map(view),
   };
 }
 
@@ -20,19 +23,22 @@ export function formatPlanNote(plan, state) {
   });
   if (plan.rejected) lines.push(`${plan.rejected.index + 1}. ${describeAction(plan.rejected)}（系统拒绝：${plan.rejected.reason}；写成没能做成）`);
   for (const action of plan.skipped || []) lines.push(`${action.index + 1}. ${describeAction(action)}（前一步受阻，未执行）`);
+  for (const action of plan.triggers || []) lines.push(`${action.index + 1}. ${describeAction(action)}（条件步，暂缓执行，等前提发生再触发）`);
+  for (const action of plan.freeSteps || []) lines.push(`${action.index + 1}. ${action.text}（按原话自由发挥）`);
   return `\n[行动识别·系统裁决] 本回合玩家依次：\n${lines.join("\n")}\n只叙述已核准的步骤及其直接结果，被拒或未执行的步骤不得写成已发生。\n结构化：${JSON.stringify(planToContext(plan))}`;
 }
 
 function blockedNames(plan) {
   const allowed = new Set((plan?.valid || []).map((action) => action.target).filter(Boolean));
-  const blocked = [plan?.rejected, ...(plan?.skipped || [])].map((action) => action?.target).filter(Boolean);
+  const blocked = [plan?.rejected, ...(plan?.skipped || []), ...(plan?.triggers || [])]
+    .map((action) => action?.target).filter(Boolean);
   return [...new Set(blocked)].filter((name) => !allowed.has(name) && name !== "无");
 }
 
 export function planExtractionNote(plan) {
-  if (!plan?.rejected) return "";
-  const steps = [plan.rejected, ...(plan.skipped || [])].map(describeAction).join("、");
-  return `\n[行动识别] 以下步骤已被系统拒绝或未执行，不得为其输出任何状态变化：${steps}。`;
+  const steps = [plan?.rejected, ...(plan?.skipped || []), ...(plan?.triggers || [])].filter(Boolean);
+  if (!steps.length) return "";
+  return `\n[行动识别] 以下步骤已被系统拒绝、未执行或挂起待触发，不得为其输出任何状态变化：${steps.map(describeAction).join("、")}。`;
 }
 
 // 第三段写入的确定性兜底：只出现在被拒/跳过步骤里的人物，其相关 MVU 命令一律丢弃。

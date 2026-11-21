@@ -263,7 +263,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const autoTravelTo = useAutoTravel({
     room, mapData, flags, questProgress, addLog,
     autoTravelRef, scheduler: coreScheduler,
-    act, teleportLookRef, innerRoomName, setInteractMode,
+    act, teleportLookRef, innerRoomName, setInteractMode, intentRouterRef,
   });
 
   const pigeonHandlers = commandScheduler.wrapHandlers("usePigeonHandlers", usePigeonHandlers({

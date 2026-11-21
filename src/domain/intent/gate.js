@@ -9,14 +9,15 @@ export const ROUTES = Object.freeze({ EXECUTE: "execute", CONFIRM: "confirm", FA
 const FREE_KINDS = new Set([ACTION_KINDS.TALK, ACTION_KINDS.OTHER]);
 
 export function planConfidence(recognition) {
-  const actions = recognition?.actions || [];
+  const actions = (recognition?.actions || []).filter((action) => !action.free);
   return actions.length ? Math.min(...actions.map((action) => action.confidence ?? 0)) : 0;
 }
 
 export function gateRecognition(recognition, thresholds = THRESHOLDS) {
   const actions = recognition?.actions || [];
   const confidence = planConfidence(recognition);
-  if (!actions.length || actions.some((action) => FREE_KINDS.has(action.kind))) {
+  // 带 condition 的交谈/其他是挂起的触发步，不算自由行动；free 标记的条件段只回落它自己那一句。
+  if (!actions.length || actions.some((action) => !action.free && !action.condition && FREE_KINDS.has(action.kind))) {
     return { route: ROUTES.FALLBACK, confidence, reason: "非结构化行动" };
   }
   if (confidence >= thresholds.execute) return { route: ROUTES.EXECUTE, confidence };
@@ -27,6 +28,11 @@ export function gateRecognition(recognition, thresholds = THRESHOLDS) {
 const who = (action) => (action.target && action.target !== NONE ? action.target : "对方");
 
 export function describeAction(action) {
+  if (action?.condition) return `等${action.condition.detail || "那时候"}再${describePlain(action)}`;
+  return describePlain(action);
+}
+
+function describePlain(action) {
   switch (action.kind) {
     case ACTION_KINDS.GIFT: {
       const thing = action.item === SILVER ? action.amount ? `${action.amount}两` : "银子" : action.item && action.item !== NONE ? action.item : "东西";
@@ -41,6 +47,8 @@ export function describeAction(action) {
     default: return action.text || "这么做";
   }
 }
+
+export const CONDITION_LABEL = Object.freeze({ encounter: "遇敌", arrive: "到达", refused: "被拒" });
 
 // 「你是要把100两给才旦吗？」
 export function confirmLine(actions) {

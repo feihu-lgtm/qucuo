@@ -38,8 +38,10 @@ function ruleKind(text) {
   return [hits[0][0], hits.length > 1 ? 0.8 : 0.95];
 }
 
+const COND_CLAUSE = /要是|如果|若|万一/;
+
 function actionParts(text) {
-  return text.split(SEPARATORS).map((part) => part.trim()).filter((part) => part && ruleKind(part)[0] !== "其他");
+  return text.split(SEPARATORS).map((part) => part.trim()).filter((part) => part && (ruleKind(part)[0] !== "其他" || COND_CLAUSE.test(part)));
 }
 
 export function mockRespond(prompt) {
@@ -47,7 +49,14 @@ export function mockRespond(prompt) {
   const options = parseOptions(prompt);
   if (prompt.includes("\"parts\"")) {
     const raw = text.split(SEPARATORS).map((part) => part.trim()).filter(Boolean);
-    return JSON.stringify({ parts: raw.filter((part) => ruleKind(part)[0] !== "其他") });
+    return JSON.stringify({ parts: raw.filter((part) => ruleKind(part)[0] !== "其他" || COND_CLAUSE.test(part)) });
+  }
+  if (prompt.includes("哪种情形")) {
+    const condText = between(prompt, "前提：「", "」");
+    if (/贼|匪|强盗|劫|敌|野兽|袭|埋伏|追兵|拦路|恶霸|欺负/.test(condText)) return answer("遇敌", options, 0.9);
+    if (/到|抵达|到了|走进|来到|赶回/.test(condText)) return answer("到达", options, 0.85);
+    if (/拒|不肯|不愿|不答应|回绝|赶出来/.test(condText)) return answer("被拒", options, 0.85);
+    return answer("其他", options, 0.8);
   }
   if (prompt.includes("两个或以上")) {
     const yes = !NEGATION.test(text) && actionParts(text).length >= 2;

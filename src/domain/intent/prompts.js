@@ -1,6 +1,6 @@
 // 行动识别的冻结提示词：每个问题一个模板，模板文本变动必须同步提升 PROMPT_VERSION，
 // 评测报告会记录版本号，保证不同模型/阈值的结果可比。
-export const PROMPT_VERSION = "intent-v1";
+export const PROMPT_VERSION = "intent-v2";
 
 export const SYSTEM_PROMPT = "你是武侠文字游戏的行动识别器，只做分类，不写剧情。严格只输出一行JSON，不要解释。";
 
@@ -13,6 +13,7 @@ export const TEMPLATES = Object.freeze({
   target: "问题：行动「{kind}」指向哪位在场人物？原话没点名、或点名的人不在选项里，选「无」。\n玩家原话：「{text}」\n选项：{options}\n" + PROB_TAIL,
   item: "问题：行动「{kind}」用到哪件东西？说的是钱（银子、银两、几两）选「银两」；背包里没有的选「无」。\n玩家原话：「{text}」\n选项：{options}\n" + PROB_TAIL,
   direction: "问题：玩家要往哪个方向走？原话没说方向选「无」。\n玩家原话：「{text}」\n选项：{options}\n" + PROB_TAIL,
+  cond: "问题：玩家设的前提是哪种情形？碰到山贼、劫匪、野兽、追兵这类危险算「遇敌」；走到、抵达某个地方算「到达」；刚才拜托的事被对方回绝、不肯算「被拒」；其余情形（天气、时间、心情等）算「其他」。\n前提：「{text}」\n选项：{options}\n" + PROB_TAIL,
 });
 
 export function renderPrompt(question, vars) {
