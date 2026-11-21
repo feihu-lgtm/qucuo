@@ -105,6 +105,31 @@ describe("runBookkeepAfterTurn", () => {
     expect(getLedger(tree, "雪豹").lines).toEqual(["一路同行"]);
   });
 
+  it("uses the post-commit destination room for move-turn participants", async () => {
+    seed([{ name: "乙" }]);
+    gameActions.setRoom({ name: "B", npcs: [{ name: "乙" }] });
+    const ai = createMockAi(['{"memory":"","ledger":{"甲":["离开前相遇"],"乙":["抵达后相遇"]}}']);
+    await runBookkeepAfterTurn({
+      ctx: {
+        ai,
+        apiCfg: {},
+        isTalk: false,
+        lockedDestName: "B",
+        prompt: {
+          room: { name: "A", npcs: [{ name: "甲" }] },
+          isTalk: false,
+          lockedDestName: "B",
+        },
+      },
+      turn: { narrativeText: narration },
+      opts: {},
+    });
+
+    const tree = gameStore.getState().varTree;
+    expect(getLedger(tree, "乙").lines).toEqual(["抵达后相遇"]);
+    expect(getLedger(tree, "甲").lines).toEqual([]);
+  });
+
   it("does not call AI when bookkeep is disabled", async () => {
     const ai = { chat: vi.fn() };
     await runBookkeepAfterTurn({
