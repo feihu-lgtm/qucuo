@@ -3,7 +3,7 @@ import { resetRegistryForTest } from "../prompt/registry.js";
 import { createMockAi } from "../../engine/ports/ai.js";
 import { parseJudgeAnswer, registerSettleCalls, UNKNOWN_CHOICE } from "./judge.js";
 import { SOFT_RULES } from "./softRules.js";
-import { runSoftSettle, formatSettleNote } from "./settle.js";
+import { applySettledDeltas, runSoftSettle, formatSettleNote } from "./settle.js";
 
 beforeEach(() => {
   resetRegistryForTest();
@@ -13,6 +13,27 @@ beforeEach(() => {
 const angryTree = (npc = "才旦") => ({
   角色: { [npc]: { 好感度: 20, 生气状态: { active: true, reason: "被偷了东西", turnsLeft: 3 } } },
   世界: { 威望: 0 },
+});
+
+describe("applySettledDeltas", () => {
+  it("applies vetted final values to the latest tree without dropping unrelated state", () => {
+    const latest = {
+      角色: { 才旦: { 好感度: 20, 旧账: { lines: ["少侠曾送来一壶酒"] } } },
+      世界: { 威望: 0 },
+    };
+
+    const settled = applySettledDeltas(latest, [
+      { path: "角色.才旦.好感度", finalValue: 23 },
+      { path: "世界.好感日增", finalValue: { dayStamp: 1, gained: { 才旦: 3 } } },
+    ]);
+
+    expect(settled).toEqual({
+      角色: { 才旦: { 好感度: 23, 旧账: { lines: ["少侠曾送来一壶酒"] } } },
+      世界: { 威望: 0, 好感日增: { dayStamp: 1, gained: { 才旦: 3 } } },
+    });
+    expect(latest.角色.才旦.好感度).toBe(20);
+    expect(latest.世界.好感日增).toBeUndefined();
+  });
 });
 
 describe("parseJudgeAnswer", () => {
@@ -116,6 +137,11 @@ describe("runSoftSettle", () => {
     expect(result.varTree.角色.才旦.好感度).toBe(23);
     expect(result.deltas).toContainEqual({
       path: "角色.才旦.生气解除", op: "set", value: true, finalValue: true,
+    });
+    expect(result.deltas).toContainEqual({
+      path: "世界.好感日增", op: "set",
+      value: { dayStamp: 0, gained: { 才旦: 3 } },
+      finalValue: { dayStamp: 0, gained: { 才旦: 3 } },
     });
     const gain = result.deltas.find((d) => d.path.endsWith("好感度"));
     expect(gain.op).toBe("add");

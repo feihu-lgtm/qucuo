@@ -6,7 +6,7 @@ import { runTurn } from "./runTurn.js";
 import { PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { runBookkeepAfterTurn } from "./act/bookkeepTurn.js";
-import { runSoftSettle } from "../domain/settle/settle.js";
+import { applySettledDeltas, runSoftSettle } from "../domain/settle/settle.js";
 import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
 import { applyMvuCommands } from "../domain/prompt/mvu.js";
 import { formatAngerResolutionLog, resolveAngerSignals } from "../domain/combat/stealSystem.js";
@@ -83,16 +83,20 @@ export async function playTurn(ctx, cmd, opts = {}) {
           delta => delta.path === `角色.${turnOpts.settleNpc}.生气解除`
             && delta.op === "set" && delta.finalValue === true,
         );
-        let settledTree = softSettle.varTree;
+        let settledTree = gameStore.getState().varTree;
         if (angerSignalApplied) {
-          settledTree = resolveAngerSignals(settledTree, [turnOpts.settleNpc]);
           softSettleLogs = [
             ...applyMvuCommands(state.varTree, softSettle.deltas, { time: state.time }).logs,
             formatAngerResolutionLog(turnOpts.settleNpc),
           ];
         }
-        if (ctx.setVarTree) ctx.setVarTree(() => settledTree);
-        else gameActions.setVarTreeState(settledTree);
+        const applySoftSettle = (prev) => {
+          settledTree = applySettledDeltas(prev, softSettle.deltas);
+          if (angerSignalApplied) settledTree = resolveAngerSignals(settledTree, [turnOpts.settleNpc]);
+          return settledTree;
+        };
+        if (ctx.setVarTree) ctx.setVarTree(applySoftSettle);
+        else gameActions.setVarTreeState(applySoftSettle(gameStore.getState().varTree));
         turnOpts.softSettle = { ...softSettle, varTree: settledTree };
         turnMonitor.add(trace, "engine", "结算·软判定", {
           status: "pass",

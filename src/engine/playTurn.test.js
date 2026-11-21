@@ -142,6 +142,92 @@ describe("playTurn background bookkeep", () => {
     expect(commitTree).toBe(varTreeRef.current);
   });
 
+  it("applies successful settlement deltas to the latest tree", async () => {
+    const varTree = {
+      角色: { 八云: { 好感度: 20, 生气状态: { active: true } } },
+      世界: { 威望: 0 },
+    };
+    gameActions.setVarTreeState(varTree);
+    const varTreeRef = { current: varTree };
+    const setVarTree = (next) => {
+      const value = typeof next === "function" ? next(varTreeRef.current) : next;
+      varTreeRef.current = value;
+      gameActions.setVarTreeState(value);
+    };
+    const started = Promise.withResolvers();
+    const response = Promise.withResolvers();
+    const softSettle = vi.fn(({ ctx: settleCtx }) => {
+      started.resolve(settleCtx);
+      return response.promise;
+    });
+    runTurn.mockResolvedValue({ narrativeText: "八云的神情缓和下来。" });
+    const pending = playTurn(makeContext({
+      apiCfg: {}, bookkeep: false, setVarTree, refs: { varTreeRef }, softSettle,
+      commitDeps: () => ({ setVarTree }),
+    }), "赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
+
+    const settleCtx = await started.promise;
+    expect(settleCtx.varTree).toBe(varTree);
+    const bookkeptTree = {
+      ...varTree,
+      角色: { ...varTree.角色, 八云: { ...varTree.角色.八云, 旧账: { lines: ["后台记下的旧账"] } } },
+    };
+    setVarTree(bookkeptTree);
+    const ledger = { dayStamp: 0, gained: { 八云: 3 } };
+    response.resolve({
+      choice: "奏效",
+      note: "八云消了气",
+      deltas: [
+        { path: "角色.八云.生气解除", op: "set", value: true, finalValue: true },
+        { path: "角色.八云.好感度", op: "add", value: 3, actualDelta: 3, finalValue: 23 },
+        { path: "世界.好感日增", op: "set", value: ledger, finalValue: ledger },
+      ],
+      varTree: { 角色: { 八云: { 好感度: 23, 生气解除: true, 生气状态: { active: true } } } },
+    });
+
+    await expect(pending).resolves.toMatchObject({ ok: true });
+    expect(varTreeRef.current.角色.八云).toEqual({
+      好感度: 23,
+      生气状态: { active: false, resolvedBy: "persuasion" },
+      旧账: { lines: ["后台记下的旧账"] },
+    });
+    expect(varTreeRef.current.世界.好感日增).toEqual(ledger);
+  });
+
+  it("preserves concurrent writes when appeasement does not work", async () => {
+    const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
+    gameActions.setVarTreeState(varTree);
+    const varTreeRef = { current: varTree };
+    const setVarTree = (next) => {
+      const value = typeof next === "function" ? next(varTreeRef.current) : next;
+      varTreeRef.current = value;
+      gameActions.setVarTreeState(value);
+    };
+    const started = Promise.withResolvers();
+    const response = Promise.withResolvers();
+    const softSettle = vi.fn(() => {
+      started.resolve();
+      return response.promise;
+    });
+    runTurn.mockResolvedValue({ narrativeText: "八云仍不肯原谅。" });
+    const pending = playTurn(makeContext({
+      apiCfg: {}, bookkeep: false, setVarTree, refs: { varTreeRef }, softSettle,
+      commitDeps: () => ({ setVarTree }),
+    }), "赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
+
+    await started.promise;
+    const bookkeptTree = {
+      ...varTree,
+      角色: { ...varTree.角色, 八云: { ...varTree.角色.八云, 旧账: { lines: ["后台记下的旧账"] } } },
+    };
+    setVarTree(bookkeptTree);
+    response.resolve({ choice: "未奏效", note: "仍在气头上", deltas: [], varTree });
+
+    await expect(pending).resolves.toMatchObject({ ok: true });
+    expect(varTreeRef.current).toBe(bookkeptTree);
+    expect(varTreeRef.current.角色.八云.旧账).toEqual({ lines: ["后台记下的旧账"] });
+  });
+
   it("leaves the old narrator path intact for unknown, offline, or disabled soft settlement", async () => {
     const varTree = { 角色: { 八云: { 好感度: 20, 生气状态: { active: true } } } };
     const opts = { settle: true, settleKind: "appease", settleNpc: "八云" };

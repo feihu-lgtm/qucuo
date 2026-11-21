@@ -96,15 +96,39 @@ export async function runSoftSettle({ ai, apiCfg, kind, ctx = {} } = {}) {
         if (ledgerWrite.rejected) result.rejected.push(ledgerWrite.rejected);
       }
     }
+    const previousDailyLedger = state.varTree?.世界?.好感日增;
     const vetted = vetDelta(state, command, ctx, extra);
     state = vetted.state;
     if (vetted.applied) result.deltas.push(vetted.applied);
+    const nextDailyLedger = state.varTree?.世界?.好感日增;
+    if (vetted.applied && command.op === "add"
+      && command.path.startsWith("角色.") && command.path.endsWith(".好感度")
+      && nextDailyLedger !== previousDailyLedger) {
+      result.deltas.push({
+        path: "世界.好感日增", op: "set", value: nextDailyLedger, finalValue: nextDailyLedger,
+      });
+    }
     if (vetted.rejected) result.rejected.push(vetted.rejected);
   }
   result.note = choice === UNKNOWN_CHOICE && !result.deltas.length
     ? `${target || rule.label}这轮判不了，按没有变化处理`
     : rule.note(choice, ctx, result.deltas);
   return { ...result, varTree: state.varTree };
+}
+
+function writeSettledPath(tree, [key, ...rest], value) {
+  const current = tree && typeof tree === "object" ? tree : {};
+  return {
+    ...current,
+    [key]: rest.length ? writeSettledPath(current[key], rest, value) : value,
+  };
+}
+
+export function applySettledDeltas(varTree, deltas = []) {
+  return (deltas || []).reduce((tree, delta) => {
+    if (typeof delta?.path !== "string" || !delta.path || !Object.hasOwn(delta, "finalValue")) return tree;
+    return writeSettledPath(tree, delta.path.split("."), delta.finalValue);
+  }, varTree || {});
 }
 
 // 给叙事层的一句话结算说明：主模型只照这个结果写散文，不许再编数值。
