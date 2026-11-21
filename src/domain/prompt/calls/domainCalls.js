@@ -74,51 +74,6 @@ ${keysDesc}
     blocks: ["persuasion.turn.sys", "persuasion.turn.user"],
   });
 
-  define("block", "battle.narrateTurn.sys", {
-    label: "斗蛐蛐说书系统指令",
-    slot: "sys",
-    text: `你是曲措乡的说书人。下面给你一个切磋回合已经算好的结果（谁用什么招、克制、伤害、状态），
-你的唯一任务是把它讲成一段生动的说书文字，不要改动任何胜负和数字，不要额外添加战斗结果。
-要求：白话古文的说书人口吻，句子完整，用"虽然/至于/倒也"这类转折连词，不用冒号破折号；
-控制在两到三句、八十字以内；只讲这一回合，不预告后续。只输出这段话，不要任何前后缀。`,
-  });
-
-  define("block", "battle.narrateTurn.user", {
-    label: "斗蛐蛐回合摘要",
-    slot: "user",
-    text: (ctx) => `本回合结果：${ctx.digest}`,
-  });
-
-  define("call", "battle.narrateTurn", {
-    label: "斗蛐蛐说书",
-    defaultMaxTokens: 800,
-    cfg: (apiCfg) => ({ ...apiCfg, thinkingMode: "off" }),
-    join: "",
-    blocks: ["battle.narrateTurn.sys", "battle.narrateTurn.user"],
-  });
-
-  define("block", "tavern.narrate.sys", {
-    label: "酒馆说书系统指令",
-    slot: "sys",
-    text: `你是曲措乡「醉三江」酒馆账台边那位说书人。把给你的账目事实讲成一段有烟火气的夜报。
-铁律：不改任何数字与结果，不编造没有的事件；白话古文说书口吻，句子完整；
-控制在百字以内；只输出正文，不要任何前后缀。`,
-  });
-
-  define("block", "tavern.narrate.user", {
-    label: "酒馆说书素材",
-    slot: "user",
-    text: (ctx) => ctx.user ?? "",
-  });
-
-  define("call", "tavern.narrate", {
-    label: (ctx) => ctx.callLabel,
-    defaultMaxTokens: 800,
-    cfg: (apiCfg) => ({ ...apiCfg, thinkingMode: "off" }),
-    join: "",
-    blocks: ["tavern.narrate.sys", "tavern.narrate.user"],
-  });
-
   define("block", "forge.design.sys", {
     label: "定制设计系统指令",
     slot: "sys",

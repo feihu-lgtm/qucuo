@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetRegistryForTest } from "../registry.js";
 import { createMockAi } from "../../../engine/ports/ai.js";
-import { withAI } from "../../../engine/ports/withAI.js";
+import { withAI } from "../withAI.js";
 import { buildExtractionCfg } from "../extractionEngine.js";
 import { registerDomainCalls } from "./domainCalls.js";
 
@@ -100,65 +100,6 @@ describe("domainCalls parity with legacy requests", () => {
       expect(opts.modelOptions).toEqual({
         maxTokens: apiCfg.callTokenLimits?.persuasion ?? 2000,
         callLabel: "说服（药铺掌柜）",
-      });
-    }
-  });
-
-  it("battle.narrateTurn matches legacy prompt, thinkingMode off and hardcoded 800 maxTokens", async () => {
-    const digest = "我方【才旦】使出「雪域刀」（刚类，蓝品）；敌方【山匪】使出「断魂掌」（柔类，绿品）；相克判定：我方招式克制得手；敌方受创 28 点气血";
-    const expectedSys = `你是曲措乡的说书人。下面给你一个切磋回合已经算好的结果（谁用什么招、克制、伤害、状态），
-你的唯一任务是把它讲成一段生动的说书文字，不要改动任何胜负和数字，不要额外添加战斗结果。
-要求：白话古文的说书人口吻，句子完整，用"虽然/至于/倒也"这类转折连词，不用冒号破折号；
-控制在两到三句、八十字以内；只讲这一回合，不预告后续。只输出这段话，不要任何前后缀。`;
-    const expectedUser = `本回合结果：${digest}`;
-    const apiCfg = { model: "m1", thinkingMode: "on", callTokenLimits: { inspect: 4000 } };
-
-    const onRequest = vi.fn();
-    const ai = createMockAi(["说书战报一段。"], { onRequest });
-
-    await withAI("battle.narrateTurn", { digest }, { ai, apiCfg });
-
-    const [messages, opts] = onRequest.mock.calls[0];
-    expect(opts.cfg).toEqual({ ...apiCfg, thinkingMode: "off" });
-    expect(apiCfg.thinkingMode).toBe("on");
-    expect(opts.systemPrompt).toBe(expectedSys);
-    expect(messages).toEqual([{ role: "user", content: expectedUser }]);
-    expect(opts.modelOptions).toEqual({
-      maxTokens: 800,
-      callLabel: "斗蛐蛐说书",
-    });
-  });
-
-  it("tavern.narrate matches legacy night report and event flavor calls", async () => {
-    const expectedSys = `你是曲措乡「醉三江」酒馆账台边那位说书人。把给你的账目事实讲成一段有烟火气的夜报。
-铁律：不改任何数字与结果，不编造没有的事件；白话古文说书口吻，句子完整；
-控制在百字以内；只输出正文，不要任何前后缀。`;
-    const apiCfg = { model: "m1", thinkingMode: "on", callTokenLimits: { daySummary: 3000 } };
-
-    const cases = [
-      {
-        callLabel: "酒馆夜报",
-        user: "今日账目：第5日，到客18人（成交15、流失3），营收42两，工钱10两，净入账32两，声望+2。今日事：马帮歇脚。写成一段夜报。",
-      },
-      {
-        callLabel: "酒馆事件",
-        user: "店里出了桩事：「雪夜借火」——几名茶马脚夫顶风冒雪敲门求碗热茶。用说书人口吻补一句现场描写，四十字以内，只一句。",
-      },
-    ];
-
-    for (const c of cases) {
-      const onRequest = vi.fn();
-      const ai = createMockAi(["说书夜报。"], { onRequest });
-
-      await withAI("tavern.narrate", c, { ai, apiCfg });
-
-      const [messages, opts] = onRequest.mock.calls[0];
-      expect(opts.cfg).toEqual({ ...apiCfg, thinkingMode: "off" });
-      expect(opts.systemPrompt).toBe(expectedSys);
-      expect(messages).toEqual([{ role: "user", content: c.user }]);
-      expect(opts.modelOptions).toEqual({
-        maxTokens: 800,
-        callLabel: c.callLabel,
       });
     }
   });

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { define, resetRegistryForTest } from "../../domain/prompt/registry.js";
 import { registerSideCalls } from "../../domain/prompt/calls/sideCalls.js";
 import { createMockAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../engine/ports/withAI.js";
+import { withAI } from "../../domain/prompt/withAI.js";
 import { buildDaySummaryRequest } from "../../domain/memory/daySummary.js";
 import { factSummaryRequest } from "../../domain/prompt/knowledge.js";
 import { buildOutfitRequest } from "../../domain/character/bodyProfile.js";

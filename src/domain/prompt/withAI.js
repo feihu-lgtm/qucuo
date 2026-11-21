@@ -1,5 +1,5 @@
-import { getDef } from "../../domain/prompt/registry.js";
-import { buildPrompt } from "../../domain/prompt/buildPrompt.js";
+import { getDef } from "./registry.js";
+import { buildPrompt } from "./buildPrompt.js";
 
 // 统一 AI 调用入口：拼装提示词、解析 token 上限、执行校验与兜底
 export async function withAI(

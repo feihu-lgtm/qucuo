@@ -7,12 +7,7 @@
 // ③ 攒批合并：一天的营收/客流/事件打包成**一次**调用写成夜报，
 //    绝不一件事一次调用——5 次/分钟的预算，烧得起夜报，烧不起碎碎念。
 
-import { loadConfig, hasApiCredentials } from "../../infra/apiConfig.js";
-import "../prompt/calls/domainCalls.js";
-import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../engine/ports/withAI.js";
-
-const webAi = createWebAi();
+import { loadConfig, callModel, hasApiCredentials } from "../../infra/apiConfig.js";
 
 const BUCKET_CAPACITY = 5;
 const REFILL_MS = 15000;
@@ -50,7 +45,7 @@ export function createNarrator() {
     return true;
   }
 
-  async function ask(user, callLabel) {
+  async function ask(sys, user, callLabel) {
     let cfg;
     try {
       cfg = loadConfig();
@@ -60,11 +55,11 @@ export function createNarrator() {
     try {
       // 短润色请求强制关思考（thinking 与输出共享 token 预算，是项目已知坑），
       // 否则两三句夜报会被思考吃断在半句。
-      const { text } = await withAI(
-        "tavern.narrate",
-        { user, callLabel },
-        { ai: webAi, apiCfg: cfg },
-      );
+      const noThinkCfg = { ...cfg, thinkingMode: "off" };
+      const { text } = await callModel(noThinkCfg, sys, [{ role: "user", content: user }], {
+        maxTokens: 800,
+        callLabel,
+      });
       const clean = (text || "").replace(/<thinking>[\s\S]*?<\/thinking>/g, "").trim();
       if (clean) { failStreak = 0; return clean; }
       failStreak += 1;
@@ -74,6 +69,10 @@ export function createNarrator() {
       return null; // 静默降级，调用方用模板兜底
     }
   }
+
+  const SYS = `你是曲措乡「醉三江」酒馆账台边那位说书人。把给你的账目事实讲成一段有烟火气的夜报。
+铁律：不改任何数字与结果，不编造没有的事件；白话古文说书口吻，句子完整；
+控制在百字以内；只输出正文，不要任何前后缀。`;
 
   return {
     // UI 显示"AI 夜报 开/关"用：有 key 才有得谈
@@ -93,7 +92,7 @@ export function createNarrator() {
       ].filter(Boolean).join("，");
       const events = (eventTexts || []).filter(Boolean).slice(0, 4).join("；");
       const user = `今日账目：${facts}。${events ? `今日事：${events}。` : "今日平安无事。"}写成一段夜报。`;
-      return ask(user, "酒馆夜报");
+      return ask(SYS, user, "酒馆夜报");
     },
 
     // 事件开场白（可选增强）：只在桶里 ≥2 枚时才舍得花——夜报优先。
@@ -103,7 +102,7 @@ export function createNarrator() {
       if (tokens < 2) return null;
       if (!take()) return null;
       const user = `店里出了桩事：「${eventTitle}」——${eventDesc}。用说书人口吻补一句现场描写，四十字以内，只一句。`;
-      return ask(user, "酒馆事件");
+      return ask(SYS, user, "酒馆事件");
     },
   };
 }

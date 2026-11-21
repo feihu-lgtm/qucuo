@@ -26,10 +26,7 @@
 // ============================================================================
 
 import "../prompt/calls/domainCalls.js";
-import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../engine/ports/withAI.js";
-
-const webAi = createWebAi();
+import { withAI } from "../prompt/withAI.js";
 
 // 解析 AI 返回：拆出"短对话台词" + 判定 JSON。
 function parsePersuadeReply(raw) {
@@ -77,13 +74,13 @@ export function hintsUnlockedByGuard(guard, keyCount) {
  * @param {number} guard        当前戒心值（0~100）
  * @returns {{line, hit, guardDrop, newGuard, yield, newHitKeys, unlockedHintCount}}
  */
-export async function runPersuadeTurn(p, playerSay, hitKeyIds, ownedFlags, history, apiCfg, guard = 100, wit = 5) {
+export async function runPersuadeTurn(p, playerSay, hitKeyIds, ownedFlags, history, apiCfg, guard = 100, wit = 5, ai) {
   let parsed;
   try {
     const res = await withAI(
       "persuasion.turn",
       { persuade: p, playerSay, hitKeyIds, ownedFlags, history, guard },
-      { ai: webAi, apiCfg },
+      { ai, apiCfg },
     );
     parsed = parsePersuadeReply(res.text);
   } catch (e) {

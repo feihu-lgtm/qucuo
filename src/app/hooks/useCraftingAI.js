@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { forgeDesign } from "../../domain/prompt/extractionEngine.js";
 import { NOTE_SOURCE } from "../../domain/memory/note.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../engine/ports/withAI.js";
+import { withAI } from "../../domain/prompt/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();

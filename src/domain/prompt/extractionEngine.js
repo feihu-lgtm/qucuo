@@ -7,7 +7,7 @@
 import { snowLeopardNote } from "../quests/snowLeopardQuest.js";
 import { cleanJsonString } from "../../infra/apiConfig.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../engine/ports/withAI.js";
+import { withAI } from "./withAI.js";
 import "./calls/domainCalls.js";
 import { extractMvuBlock } from "./mvu.js";
 import { apiModelField, getApiModel } from "../../core/apiModel.js";
