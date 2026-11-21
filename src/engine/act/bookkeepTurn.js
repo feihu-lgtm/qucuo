@@ -1,6 +1,7 @@
 import { formatPlanNote } from "../../domain/intent/planNotes.js";
 import { applyBookkeep, runBookkeep } from "../../domain/memory/bookkeep.js";
 import { getLedger } from "../../domain/memory/npcLedger.js";
+import { buildPresence } from "../prompt/roundNotes.js";
 import { bindTurnAi, createWebAi } from "../ports/ai.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../core/gameStore.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
@@ -18,13 +19,20 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
     if (opts.duelReport || ctx.apiCfg?.bookkeepEnabled === false || !narration.trim()) return null;
 
     const state = gameStore.getState();
-    const roomNpcs = Array.isArray(state.room?.npcs) ? state.room.npcs : [];
-    const presentNames = roomNpcs
+    const room = ctx.prompt?.room ?? state.room ?? { name: "", npcs: [] };
+    const presence = buildPresence({
+      isTalk: ctx.prompt?.isTalk ?? ctx.isTalk ?? false,
+      lockedDestName: ctx.prompt?.lockedDestName ?? ctx.lockedDestName,
+      room: { ...room, npcs: Array.isArray(room.npcs) ? room.npcs : [] },
+      innerRoomName: ctx.prompt?.innerRoomName ?? state.innerRoomName,
+      companionState: ctx.prompt?.companionState ?? state.companionState,
+    });
+    const presentNames = presence.visibleNpcsForAI
       .map((npc) => targetName(npc))
       .filter(Boolean);
     const inRoom = new Set(presentNames);
     for (const target of [
-      ctx.talkTarget ?? ctx.prompt?.talkTarget ?? ctx.prompt?.recall?.talkTarget,
+      ctx.talkTarget ?? ctx.memory?.recall?.talkTarget ?? ctx.prompt?.talkTarget ?? ctx.prompt?.recall?.talkTarget,
       ctx.activeTarget ?? ctx.prompt?.activeTarget,
     ]) {
       const name = targetName(target);

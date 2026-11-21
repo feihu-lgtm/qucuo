@@ -3,6 +3,7 @@ import { gameActions, gameStore, markGameReplaced } from "../../core/gameStore.j
 import { turnMonitor } from "../../core/turnMonitor.js";
 import { createMockAi } from "../ports/ai.js";
 import { getLedger } from "../../domain/memory/npcLedger.js";
+import { getDistrictAnchor } from "../../domain/map/innerMap.js";
 import { runBookkeepAfterTurn } from "./bookkeepTurn.js";
 
 const originalState = gameStore.getState();
@@ -68,6 +69,40 @@ describe("runBookkeepAfterTurn", () => {
     });
     expect(onRequest).toHaveBeenCalledTimes(1);
     expect(gameStore.getState().varTree.角色.路人甲).toBeUndefined();
+  });
+
+  it("uses narration presence to exclude other inner rooms and include a following companion", async () => {
+    const anchor = getDistrictAnchor("鱼定村");
+    const roomNpcs = [
+      { name: "隔壁客", innerRoom: "别处" },
+      { name: "屋内客", innerRoom: anchor },
+    ];
+    seed(roomNpcs);
+    const room = gameStore.getState().room;
+    const companionState = {
+      snowLeopard: { unlocked: true, active: true, data: { name: "雪豹" } },
+    };
+    const ai = createMockAi(['{"memory":"","ledger":{"隔壁客":["不应记账"],"屋内客":["屋内相见"],"雪豹":["一路同行"]}}']);
+    await runBookkeepAfterTurn({
+      ctx: {
+        ai,
+        apiCfg: {},
+        prompt: {
+          room,
+          isTalk: false,
+          lockedDestName: null,
+          innerRoomName: anchor,
+          companionState,
+        },
+      },
+      turn: { narrativeText: narration },
+      opts: {},
+    });
+
+    const tree = gameStore.getState().varTree;
+    expect(getLedger(tree, "隔壁客").lines).toEqual([]);
+    expect(getLedger(tree, "屋内客").lines).toEqual(["屋内相见"]);
+    expect(getLedger(tree, "雪豹").lines).toEqual(["一路同行"]);
   });
 
   it("does not call AI when bookkeep is disabled", async () => {
