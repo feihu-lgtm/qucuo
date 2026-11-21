@@ -1,5 +1,5 @@
 import "../../content/index.js";
-import { entries } from "../content/registry.js";
+import { contentEntries } from "../content/registry.js";
 // 内层据点箱庭地图（两层地图架构的第二层）
 // 对应总纲v3第十章设计。外层 QUCUO_MAP（qucuoMap.js）解决"曲措乡境内从哪
 // 到哪"，这一层解决"在某个据点内部具体待在哪个角落"。
@@ -27,7 +27,7 @@ import { entries } from "../content/registry.js";
 
 import { invHasItemNamed } from "./safeHouse.js";
 
-export const INNER_MAP = Object.fromEntries(entries("district"));
+export const INNER_MAP = Object.fromEntries(contentEntries("district"));
 
 
 // 反查：给定据点名+房间名，返回房间完整数据；不存在则返回 null

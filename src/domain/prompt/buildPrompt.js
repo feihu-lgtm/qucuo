@@ -1,4 +1,4 @@
-import { getDef, listDefs } from "./registry.js";
+import { getPromptDef, listPromptDefs } from "./registry.js";
 import { renderPromptTemplate } from "./promptRefs.js";
 
 function evalWhen(when, ctx) {
@@ -24,12 +24,12 @@ function resolveBlocks(blockIds, overrides) {
   for (const id of blockIds || []) {
     if (id.endsWith(".*")) {
       const prefix = id.slice(0, -1);
-      for (const b of listDefs("block")) {
+      for (const b of listPromptDefs("block")) {
         if (b.id.startsWith(prefix)) blocks.push(applyOverride(b, overrides));
       }
       continue;
     }
-    const base = getDef("block", id);
+    const base = getPromptDef("block", id);
     if (!base) throw new Error(`Unknown block spec: ${id}`);
     blocks.push(applyOverride(base, overrides));
   }
@@ -38,7 +38,7 @@ function resolveBlocks(blockIds, overrides) {
 
 // 按 call.blocks 声明顺序组装提示词，不做 trim 与额外拼接符注入
 export function buildPrompt(callId, ctx = {}, { overrides = {} } = {}) {
-  const call = getDef("call", callId);
+  const call = getPromptDef("call", callId);
   if (!call) throw new Error(`Unknown call spec: ${callId}`);
 
   const missingRefs = new Set();

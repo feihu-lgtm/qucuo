@@ -1,6 +1,6 @@
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
 import "../../content/index.js";
-import { get } from "../content/registry.js";
+import { getContent } from "../content/registry.js";
 
 export const SNOW_QUEST_ID = "snow_leopard_quest";
 export const SNOW_TRUSTED = "snow_leopard_trusted";
@@ -13,7 +13,7 @@ export const SNOW_SPIRITS = [
 export const snowSpiritCount = (flags = []) => SNOW_SPIRITS.filter(({ flag }) => flags.includes(flag)).length;
 export const snowQuestActive = (state) => state.questProgress?.[SNOW_QUEST_ID]?.status === "active";
 
-export const SNOW_LEOPARD_QUEST = get("quest", SNOW_QUEST_ID);
+export const SNOW_LEOPARD_QUEST = getContent("quest", SNOW_QUEST_ID);
 
 export function snowLeopardPresent(state) {
   return !!state.room?.npcs?.some((npc) => npc.name === "雪豹" && isNpcVisibleInInnerRoom(state.room.name, state.innerRoomName, npc));

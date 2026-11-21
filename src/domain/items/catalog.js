@@ -1,5 +1,5 @@
 import "../../content/index.js";
-import { get } from "../content/registry.js";
+import { getContent } from "../content/registry.js";
 import { ITEM_CATEGORY, statsForQuality, priceForQuality } from "../economy/equipment.js";
 // ============================================================================
 // 曲措乡·百物录 —— 具名物品库（catalog）
@@ -52,7 +52,7 @@ import { ITEM_CATEGORY, statsForQuality, priceForQuality } from "../economy/equi
 // 结构：{ name, category, quality, atkMul, effect?, sixDim?, desc }
 //  - category 固定 weapon；effect/sixDim 二选一（也可都无，纯靠倍率吃饭）
 //  - 白绿档基本只有倍率；蓝档偶有轻特效；紫橙红档才挂强特效或六维
-export const WEAPONS = get("itemGroup", "WEAPONS").map(id => get("item", id));
+export const WEAPONS = getContent("itemGroup", "WEAPONS").map(id => getContent("item", id));
 
 // ---------------------------------------------------------------------------
 // 二、装备·衣甲（20）
@@ -60,7 +60,7 @@ export const WEAPONS = get("itemGroup", "WEAPONS").map(id => get("item", id));
 // 护甲的特效重心天然落在"防御/反击/续航/挨打后变强"，不跟武器抢输出。
 // defMul 范围同样 1.0~1.6 横跨六品阶，乘在 ARMOR def 基准（白5→红80）上。
 // 高温放飞：几件故意玩"反常识"——越破越硬、越被打越回气、穿上像别人的味道。
-export const ARMORS = get("itemGroup", "ARMORS").map(id => get("item", id));
+export const ARMORS = getContent("itemGroup", "ARMORS").map(id => getContent("item", id));
 
 // ---------------------------------------------------------------------------
 // 三、饰品（20）
@@ -70,7 +70,7 @@ export const ARMORS = get("itemGroup", "ARMORS").map(id => get("item", id));
 // 放飞的一类。高温玩法：情感信物给气运/魅力这类"软"属性；邪门物件挂控制/封气；
 // 残念执念之物玩残血博弈；甚至几件"负重"物件——强特效配一点属性反噬，让玩家权衡。
 // atkMul 对饰品无意义（无武器基准），故饰品不写 atkMul/defMul，只写 effect/sixDim。
-export const ACCESSORIES = get("itemGroup", "ACCESSORIES").map(id => get("item", id));
+export const ACCESSORIES = getContent("itemGroup", "ACCESSORIES").map(id => getContent("item", id));
 
 // ---------------------------------------------------------------------------
 // 翡翠玉器成品（20）——赌石系统产出/金玉行雕琢的成品，词条预制（对照
@@ -78,7 +78,7 @@ export const ACCESSORIES = get("itemGroup", "ACCESSORIES").map(id => get("item",
 // 护甲玉甲重身；饰品走增益与气运。白绿档基本只倍率，蓝档起才带特效/六维。
 // jadeWare:true 标记它是"玉器成品"身份，供金玉行"选购成品/预制打造"柜台按此筛货。
 // ---------------------------------------------------------------------------
-export const JADE_WARES = get("itemGroup", "JADE_WARES").map(id => get("item", id));
+export const JADE_WARES = getContent("itemGroup", "JADE_WARES").map(id => getContent("item", id));
 
 // 四、杂货·药材食品（20）
 // ---------------------------------------------------------------------------
@@ -87,7 +87,7 @@ export const JADE_WARES = get("itemGroup", "JADE_WARES").map(id => get("item", i
 // 本轮先把即时效果占位（hpRestore/energyRestore/临时六维），战斗内外皆可用，
 // 待食物 buff 系统（交接任务4）接通后正式生效。tags 标注它在世界里的用途，
 // 供商店铺货和 AI 引用（辅料/毒药/燃料/信物类）。
-export const SUNDRIES = get("itemGroup", "SUNDRIES").map(id => get("item", id));
+export const SUNDRIES = getContent("itemGroup", "SUNDRIES").map(id => getContent("item", id));
 
 // ---------------------------------------------------------------------------
 // 五、制式量产（武器10 / 装备10 / 饰品10）—— 江湖通货
@@ -99,13 +99,13 @@ export const SUNDRIES = get("itemGroup", "SUNDRIES").map(id => get("item", id));
 // 某个门派/作坊/地域成套的制式风味，不写具体人名。standardIssue:true 标记通货身份。
 
 // —— 制式武器10（白2 绿2 蓝2 紫2 橙1 红1）——
-export const STANDARD_WEAPONS = get("itemGroup", "STANDARD_WEAPONS").map(id => get("item", id));
+export const STANDARD_WEAPONS = getContent("itemGroup", "STANDARD_WEAPONS").map(id => getContent("item", id));
 
 // —— 制式装备10（白2 绿2 蓝2 紫2 橙1 红1）——
-export const STANDARD_ARMORS = get("itemGroup", "STANDARD_ARMORS").map(id => get("item", id));
+export const STANDARD_ARMORS = getContent("itemGroup", "STANDARD_ARMORS").map(id => getContent("item", id));
 
 // —— 制式饰品10（白2 绿2 蓝2 紫2 橙1 红1）——
-export const STANDARD_ACCESSORIES = get("itemGroup", "STANDARD_ACCESSORIES").map(id => get("item", id));
+export const STANDARD_ACCESSORIES = getContent("itemGroup", "STANDARD_ACCESSORIES").map(id => getContent("item", id));
 
 // ---------------------------------------------------------------------------
 // 六、西南武林库·三十品 —— 更放飞的具名宝器
@@ -115,14 +115,14 @@ export const STANDARD_ACCESSORIES = get("itemGroup", "STANDARD_ACCESSORIES").map
 // 霜角弓接吊睛虎王+狼王、呼延雪的剑穗接雪山崖底真相……属"传世名器/私人信物"级。
 // 数值同样倍率跟公式走、特效复用武学标志位；情感信物类（马鞭/剑穗/旧锁/拓片）
 // 攻防低但六维/风味重，是"叙事分量 > 战力"的那一类。
-export const LEGENDARY = get("itemGroup", "LEGENDARY").map(id => get("item", id));
+export const LEGENDARY = getContent("itemGroup", "LEGENDARY").map(id => getContent("item", id));
 
 // ---------------------------------------------------------------------------
 // 七、通货武器补完（15把，白/绿/蓝各5）—— 填公共池低中档缺口
 // ---------------------------------------------------------------------------
 // 本批专补"缺口热力图"里武器白绿蓝偏薄的洞：各据点杂货铺/铁铺/武馆的流通货，
 // 有地域来历但不写私人故事，走 standardIssue（量产通货），入商店 floating + 掉落池。
-export const SUPPLEMENT_WEAPONS = get("itemGroup", "SUPPLEMENT_WEAPONS").map(id => get("item", id));
+export const SUPPLEMENT_WEAPONS = getContent("itemGroup", "SUPPLEMENT_WEAPONS").map(id => getContent("item", id));
 
 // ---------------------------------------------------------------------------
 // 八、五神兵（红字武器）—— 各配独立支线，激活5处闲置隐藏地点
@@ -136,7 +136,7 @@ export const SUPPLEMENT_WEAPONS = get("itemGroup", "SUPPLEMENT_WEAPONS").map(id 
 //     DuelScreen 新增消费分支（见对应文件），不是死字段
 //   beastFear → 战斗外遇怪率，接 encounter.js（本轮标记，随支线落地时接）
 // 神兵不进公共池、不进商店/掉落——只通过各自支线获得（named:true，非 standardIssue）。
-export const DIVINE_ARMS = get("itemGroup", "DIVINE_ARMS").map(id => get("item", id));
+export const DIVINE_ARMS = getContent("itemGroup", "DIVINE_ARMS").map(id => getContent("item", id));
 
 // ============================================================================
 // 核心：把 catalog 条目实例化成一个完整物品对象

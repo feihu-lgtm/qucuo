@@ -9,7 +9,7 @@
 // AI 关/失败一律返回空账，绝不抛错——记账是锦上添花，丢一轮不碍事。
 // ============================================================================
 
-import { define } from "../prompt/registry.js";
+import { definePrompt } from "../prompt/registry.js";
 import { withAI } from "../prompt/withAI.js";
 import { applyLedgerUpdate, LEDGER_LINE_MAX } from "./npcLedger.js";
 
@@ -105,7 +105,7 @@ export function parseBookkeep(text, presentNames = []) {
 }
 
 export function registerBookkeepCalls() {
-  define("block", "bookkeep.turn.sys", {
+  definePrompt("block", "bookkeep.turn.sys", {
     label: "回合记账系统指令",
     slot: "sys",
     text: () => `你是幕后记账的小账房。看完这一轮发生的事，把值得留下的客观事实落成账，只输出一个 JSON，不要解释、不要 markdown：
@@ -115,7 +115,7 @@ export function registerBookkeepCalls() {
 - 一律用"少侠"称呼玩家角色，不要用"你/我/玩家"。`,
   });
 
-  define("block", "bookkeep.turn.user", {
+  definePrompt("block", "bookkeep.turn.user", {
     label: "本轮叙事与在场人物旧账",
     slot: "user",
     text: (ctx) => {
@@ -141,7 +141,7 @@ ${ledgerBlock || "（无）"}`;
     },
   });
 
-  define("call", "bookkeep.turn", {
+  definePrompt("call", "bookkeep.turn", {
     label: "回合记账",
     tokenLimitKey: "extraction",
     defaultMaxTokens: 1200,

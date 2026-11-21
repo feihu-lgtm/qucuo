@@ -3,7 +3,7 @@ import { emptyBodyProfile } from "../domain/character/bodyProfile.js";
 import { initialNarratorState } from "../domain/narrator/narrator.js";
 import { startTrace } from "../infra/actionTrace.js";
 import { applyKnowledgeTreeDiff } from "../domain/prompt/knowledge.js";
-import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../core/gameStore.js";
+import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../store/gameStore.js";
 import { getRngState, random, setRngState, setSeed } from "../core/rng.js";
 import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
 import { createMockAi } from "./ports/ai.js";

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { joinSect } from "./logic.js";
 import { SECT_ENTRY } from "../../domain/character/sectEntry.js";
 import { applyResult } from "../run.js";
-import { gameStore, initGameStore } from "../../core/gameStore.js";
+import { gameStore, initGameStore } from "../../store/gameStore.js";
 
 const state = () => ({ char: { money: 150, neigong: 5 }, inv: [], flags: [], varTree: { 角色: { [SECT_ENTRY.master]: { 好感度: 30 } } } });
 

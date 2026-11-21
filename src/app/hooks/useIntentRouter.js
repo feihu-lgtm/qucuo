@@ -7,6 +7,7 @@ import { turnMonitor, getTurnContext } from "../../core/turnMonitor.js";
 import { applyResult } from "../../features/run.js";
 import { recognizeNpc, tradeWithNpc } from "../../features/npc/logic.js";
 import { ACTION_KINDS, KIND_COMMAND } from "../../domain/intent/actionKinds.js";
+import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { ROUTES, describeAction } from "../../domain/intent/gate.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../../features/intent/logic.js";
 import { isFreshTyped, planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../../features/intent/route.js";
@@ -14,6 +15,8 @@ import { createAiClassifier, INTENT_TRUNCATED } from "../../engine/intent/aiClas
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 
 const DIR_CMD = { 北: "n", 南: "s", 东: "e", 西: "w" };
+// 条件步「到达」匹配用的地名清单，注入 intentPendingStore（store 不反向引 domain）。
+const INTENT_PLACE_NAMES = Object.keys(QUCUO_MAP);
 
 export function useIntentRouter(routerRef, {
   apiCfg, act, addLog, featureCtxRef, dispatchCommand, handleNpcDuel, handleNpcTrade, setActiveTarget, setDuelPending, setTradingShop,
@@ -58,7 +61,7 @@ export function useIntentRouter(routerRef, {
     // 行程结束/被打断：剩余「到达」触发算应验，其余触发器过期，统一记进行动树。
     function settleTriggers({ dest } = {}) {
       const turn = getTurnContext();
-      for (const entry of fireIntentTriggers("arrive", { dest, travelDone: true })) fireTriggerStep(entry.step, turn);
+      for (const entry of fireIntentTriggers("arrive", { dest, travelDone: true, placeNames: INTENT_PLACE_NAMES })) fireTriggerStep(entry.step, turn);
       for (const entry of expireIntentTriggers()) {
         traceNode(turn, "行动识别·触发", "skip", `「${entry.detail}」未成，触发器过期：${describeAction(entry.step)}`);
       }
@@ -138,7 +141,7 @@ export function useIntentRouter(routerRef, {
     routerRef.current.fireEvent = (on, opts) => {
       const turn = getTurnContext();
       const beforeRoute = on === "arrive" && opts?.travelDone === false;
-      for (const entry of fireIntentTriggers(on, opts)) fireTriggerStep(entry.step, turn, { beforeRoute });
+      for (const entry of fireIntentTriggers(on, { placeNames: INTENT_PLACE_NAMES, ...opts })) fireTriggerStep(entry.step, turn, { beforeRoute });
     };
     routerRef.current.settleTriggers = settleTriggers;
     routerRef.current.expireTriggers = (trace) => {

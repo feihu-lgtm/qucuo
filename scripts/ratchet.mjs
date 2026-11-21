@@ -5,7 +5,13 @@ import { gzipSync } from "node:zlib";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE_PATH = resolve(REPO_ROOT, "scripts/ratchet-baseline.json");
+// 分层模型：数字小在上层（可依赖下层），大在下层（不许反向依赖上层）。
+// infra（存储/网络）与 content（生成数据）是最底层；entry/debug 是入口层。
+// 没进这张表的层会被静默跳过（importerOrder === undefined），等于守卫有洞——
+// 新目录出现时必须补进来。
 const LAYER_ORDER = {
+  entry: 0,
+  debug: 0,
   ui: 0,
   app: 1,
   store: 1,
@@ -14,6 +20,8 @@ const LAYER_ORDER = {
   domain: 3,
   core: 3,
   utils: 3,
+  infra: 4,
+  content: 4,
 };
 const IMPORT_SOURCE = /\b(?:from\s*|import\s*(?:\(\s*)?)(?:"([^"]+)"|'([^']+)'|`([^`]+)`)/g;
 const HEX_COLOR = /#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})(?![\da-f])/gi;
@@ -104,7 +112,10 @@ function resolveRelativeImport(importer, specifier, srcRoot) {
 }
 
 function layerFor(srcRoot, path) {
-  return relativePath(srcRoot, path).split("/")[0];
+  const segment = relativePath(srcRoot, path).split("/")[0];
+  // src 根目录下的文件（main.jsx 这类入口）没有目录层，归到入口层。
+  if (/\.(?:js|jsx)$/.test(segment)) return "entry";
+  return segment;
 }
 
 function countLayerImports(files, srcRoot) {

@@ -1,4 +1,4 @@
-import { define } from "../../domain/prompt/registry.js";
+import { definePrompt } from "../../domain/prompt/registry.js";
 import "../../domain/prompt/calls/sideCalls.js";
 import { buildDaySummaryRequest } from "../../domain/memory/daySummary.js";
 import { buildOutfitRequest } from "../../domain/character/bodyProfile.js";
@@ -11,19 +11,19 @@ const INSPECT_KIND_NOUN = { skill: "武学功法", item: "随身物品", pigeon:
 
 // 注册 app 层 hooks 迁入 withAI 的提示词块与调用定义
 export function registerHookCalls() {
-  define("block", "day.summary.sys", {
+  definePrompt("block", "day.summary.sys", {
     label: "日总结系统指令",
     slot: "sys",
     text: (ctx) => buildDaySummaryRequest(ctx.dayLabel, ctx.materialLines).system,
   });
 
-  define("block", "day.summary.user", {
+  definePrompt("block", "day.summary.user", {
     label: "日总结事记原料",
     slot: "user",
     text: (ctx) => buildDaySummaryRequest(ctx.dayLabel, ctx.materialLines).messages[0].content,
   });
 
-  define("call", "day.summary", {
+  definePrompt("call", "day.summary", {
     label: "日总结",
     tokenLimitKey: "daySummary",
     defaultMaxTokens: 2000,
@@ -31,19 +31,19 @@ export function registerHookCalls() {
     blocks: ["day.summary.sys", "day.summary.user"],
   });
 
-  define("block", "outfit.advice.sys", {
+  definePrompt("block", "outfit.advice.sys", {
     label: "按体貌荐装系统指令",
     slot: "sys",
     text: (ctx) => buildOutfitRequest(ctx.profile, ctx.pool).system,
   });
 
-  define("block", "outfit.advice.user", {
+  definePrompt("block", "outfit.advice.user", {
     label: "按体貌荐装体貌与货架",
     slot: "user",
     text: (ctx) => buildOutfitRequest(ctx.profile, ctx.pool).user,
   });
 
-  define("call", "outfit.advice", {
+  definePrompt("call", "outfit.advice", {
     label: "按体貌荐装",
     tokenLimitKey: "inspect",
     defaultMaxTokens: 4000,
@@ -51,7 +51,7 @@ export function registerHookCalls() {
     blocks: ["outfit.advice.sys", "outfit.advice.user"],
   });
 
-  define("block", "inspect.describe.sys", {
+  definePrompt("block", "inspect.describe.sys", {
     label: "查看端详系统指令",
     slot: "sys",
     text: (ctx) => {
@@ -63,7 +63,7 @@ export function registerHookCalls() {
     },
   });
 
-  define("block", "inspect.describe.user", {
+  definePrompt("block", "inspect.describe.user", {
     label: "查看端详对象信息",
     slot: "user",
     text: (ctx) => {
@@ -85,7 +85,7 @@ export function registerHookCalls() {
     },
   });
 
-  define("call", "inspect.describe", {
+  definePrompt("call", "inspect.describe", {
     label: "查看端详",
     tokenLimitKey: "inspect",
     defaultMaxTokens: 4000,
@@ -94,13 +94,13 @@ export function registerHookCalls() {
     blocks: ["inspect.describe.sys", "inspect.describe.user"],
   });
 
-  define("block", "crafting.appraise.sys", {
+  definePrompt("block", "crafting.appraise.sys", {
     label: "赌石相石系统指令",
     slot: "sys",
     text: `你是曲措乡这个武侠世界的说书人。玩家在天都镇玉石料场端详一块未开的赌石，请一位老师傅的口吻看皮相石。用3-5句章回说书人口吻，把下面的看皮线索演成一段相石评语（可用"雾""砂""蟒带"等行话），只说表象与吉凶暗示，绝不断言内里种水成色，绝不编造线索之外的判断。纯文本，不要JSON。`,
   });
 
-  define("block", "crafting.appraise.user", {
+  definePrompt("block", "crafting.appraise.user", {
     label: "赌石看皮线索",
     slot: "user",
     text: (ctx) => {
@@ -113,7 +113,7 @@ export function registerHookCalls() {
     },
   });
 
-  define("call", "crafting.appraise", {
+  definePrompt("call", "crafting.appraise", {
     label: "赌石相石",
     tokenLimitKey: "inspect",
     defaultMaxTokens: 4000,
@@ -121,19 +121,19 @@ export function registerHookCalls() {
     blocks: ["crafting.appraise.sys", "crafting.appraise.user"],
   });
 
-  define("block", "map.prerun.sys", {
+  definePrompt("block", "map.prerun.sys", {
     label: "地图预跑系统指令",
     slot: "sys",
     text: (ctx) => buildSquarePrompt(ctx.batch).system,
   });
 
-  define("block", "map.prerun.user", {
+  definePrompt("block", "map.prerun.user", {
     label: "地图预跑据点批次",
     slot: "user",
     text: (ctx) => buildSquarePrompt(ctx.batch).user,
   });
 
-  define("call", "map.prerun", {
+  definePrompt("call", "map.prerun", {
     label: "地图预跑",
     defaultMaxTokens: 1500,
     cfg: (apiCfg) => buildExtractionCfg("SQUARE_PRERUN", apiCfg),

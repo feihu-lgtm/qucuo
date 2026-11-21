@@ -1,4 +1,4 @@
-import { define } from "../prompt/registry.js";
+import { definePrompt } from "../prompt/registry.js";
 
 // ── 结算·软判断 ──
 // 一阶段的「选择题仲裁」：系统规则能算的都算完了，只剩一件系统算不了的事
@@ -55,19 +55,19 @@ export function parseJudgeAnswer(text, options = []) {
 }
 
 export function registerSettleCalls() {
-  define("block", "settle.judge.sys", {
+  definePrompt("block", "settle.judge.sys", {
     label: "结算仲裁系统指令",
     slot: "sys",
     text: () => SYS,
   });
 
-  define("block", "settle.judge.user", {
+  definePrompt("block", "settle.judge.user", {
     label: "结算选择题",
     slot: "user",
     text: userText,
   });
 
-  define("call", "settle.judge", {
+  definePrompt("call", "settle.judge", {
     label: (ctx) => `结算仲裁（${ctx.kindLabel || ctx.kind || "?"}）`,
     tokenLimitKey: "extraction",
     defaultMaxTokens: 512,

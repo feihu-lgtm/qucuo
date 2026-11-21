@@ -9,7 +9,7 @@ import { emptyBodyProfile } from "../../domain/character/bodyProfile.js";
 import { initialNarratorState } from "../../domain/narrator/narrator.js";
 import { defaultConfig } from "../../infra/apiConfig.js";
 import { classifyIntent } from "../../domain/prompt/inputIntent.js";
-import { gameActions } from "../../core/gameStore.js";
+import { gameActions } from "../../store/gameStore.js";
 import { createMockAi } from "../ports/ai.js";
 import { COMPANION_LORE } from "../../domain/companion/companion.js";
 import { getCompanionDescForm } from "../../domain/companion/companionForms.js";

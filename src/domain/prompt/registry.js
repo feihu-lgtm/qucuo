@@ -4,7 +4,7 @@ const TABLES = {
 };
 
 // 注册或按同 id 覆盖提示词定义（仅支持 block / call）
-export function define(kind, id, def) {
+export function definePrompt(kind, id, def) {
   const table = TABLES[kind];
   if (!table) throw new Error(`Unknown prompt registry kind: ${kind}`);
   const entry = Object.freeze({ id, ...def });
@@ -12,15 +12,15 @@ export function define(kind, id, def) {
   return entry;
 }
 
-export function getDef(kind, id) {
+export function getPromptDef(kind, id) {
   return TABLES[kind]?.get(id) || null;
 }
 
-export function listDefs(kind) {
+export function listPromptDefs(kind) {
   return [...(TABLES[kind]?.values() || [])];
 }
 
-export function resetRegistryForTest() {
+export function resetPromptRegistryForTest() {
   TABLES.block.clear();
   TABLES.call.clear();
 }

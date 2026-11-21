@@ -1,7 +1,7 @@
-import { define } from "../registry.js";
+import { definePrompt } from "../registry.js";
 
 export function registerSideCalls() {
-  define("block", "pigeon.sys", {
+  definePrompt("block", "pigeon.sys", {
     label: "飞鸽回信系统指令",
     slot: "sys",
     text: (ctx, render) => {
@@ -28,13 +28,13 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
     },
   });
 
-  define("block", "pigeon.user", {
+  definePrompt("block", "pigeon.user", {
     label: "飞鸽来信正文",
     slot: "user",
     text: (ctx) => `主角的来信：${ctx.letter?.sentContent ?? ctx.sentContent ?? ""}`,
   });
 
-  define("call", "pigeon.reply", {
+  definePrompt("call", "pigeon.reply", {
     label: "飞鸽回信",
     tokenLimitKey: "pigeonReply",
     defaultMaxTokens: 3000,
@@ -42,19 +42,19 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
     blocks: ["pigeon.sys", "pigeon.user"],
   });
 
-  define("block", "fact.summary.sys", {
+  definePrompt("block", "fact.summary.sys", {
     label: "事实摘要系统指令",
     slot: "sys",
     text: "你是一个只负责生成简短设定文本的工具。用户会给你一个事件线索，你只需返回一句话（不超过30字）的中文简要描述，白话古文风格，客观陈述这件事是什么。只返回这一句话本身，不要任何解释、引号、标点装饰或多余内容。",
   });
 
-  define("block", "fact.summary.user", {
+  definePrompt("block", "fact.summary.user", {
     label: "事实摘要线索",
     slot: "user",
     text: (ctx) => `事件线索：${ctx.cue}\n请用一句话简要描述这件事。`,
   });
 
-  define("call", "fact.summary", {
+  definePrompt("call", "fact.summary", {
     label: "事实摘要",
     tokenLimitKey: "knowledge",
     defaultMaxTokens: 120,
@@ -62,13 +62,13 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
     blocks: ["fact.summary.sys", "fact.summary.user"],
   });
 
-  define("block", "fact.summaryFromRecall.sys", {
+  definePrompt("block", "fact.summaryFromRecall.sys", {
     label: "旧事归纳系统指令",
     slot: "sys",
     text: "你是一个只负责归纳的工具。用户会给你一个事件线索，以及游戏中真实发生过的若干旧事片段。你只需**依据这些旧事片段**，用一句话（不超过30字）的中文、白话古文风格，概括该事件是怎么回事。严禁编造素材里没有的情节；若素材不足以说清，就只概括素材确实提到的部分。只返回这一句话本身，不要解释、引号或多余内容。",
   });
 
-  define("block", "fact.summaryFromRecall.user", {
+  definePrompt("block", "fact.summaryFromRecall.user", {
     label: "旧事归纳素材",
     slot: "user",
     text: (ctx) => {
@@ -77,7 +77,7 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
     },
   });
 
-  define("call", "fact.summaryFromRecall", {
+  definePrompt("call", "fact.summaryFromRecall", {
     label: "事实摘要",
     tokenLimitKey: "knowledge",
     defaultMaxTokens: 120,

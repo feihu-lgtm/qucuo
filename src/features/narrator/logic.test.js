@@ -7,7 +7,7 @@ import { SAFE_HOUSES } from "../../domain/map/safeHouse.js";
 import { SEA_OF_MIND, describeSeaGate, seaEntryHint } from "../../domain/narrator/seaOfMind.js";
 import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { applyResult } from "../run.js";
-import { gameActions } from "../../core/gameStore.js";
+import { gameActions } from "../../store/gameStore.js";
 
 const state = (vars = {}, overrides = {}) => ({
   varTree: setNarratorVars({}, vars), inv: [], flags: [],

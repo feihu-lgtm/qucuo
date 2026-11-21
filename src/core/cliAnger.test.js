@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSession } from "../../cli/runner.mjs";
-import { gameActions } from "./gameStore.js";
+import { gameActions } from "../store/gameStore.js";
 import { createMockAi } from "../engine/ports/ai.js";
 
 let tempDir;

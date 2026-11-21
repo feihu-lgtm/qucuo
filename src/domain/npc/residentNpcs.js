@@ -1,5 +1,5 @@
 import "../../content/index.js";
-import { entries } from "../content/registry.js";
+import { contentEntries } from "../content/registry.js";
 // 据点固定驻场NPC：跟 npcPool.js 的"游走/按权重随机出现"是相反的概念——
 // 这里登记的NPC只要玩家进了对应据点，就一定会出现在 room.npcs 里，不受
 // 任何权重/时间段判定影响。
@@ -31,7 +31,7 @@ import { entries } from "../content/registry.js";
 // 具名物优先用 catalog 里有主的（掉出来有来历），缺口从制式通货池补。
 // 品质不超 levelCap 对应档（白0/绿1/蓝2/紫3/橙4/红5）。
 
-export const RESIDENT_NPCS = Object.fromEntries(entries("residentGroup"));
+export const RESIDENT_NPCS = Object.fromEntries(contentEntries("residentGroup"));
 
 export function getResidentNpcs(districtName) {
   return RESIDENT_NPCS[districtName] || [];
