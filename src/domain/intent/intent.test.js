@@ -4,7 +4,7 @@ import { parseChoice, probsFromLogprobs, renderPrompt, TEMPLATES } from "./promp
 import { recognizeIntent } from "./recognizer.js";
 import { gateRecognition, ROUTES, confirmLine } from "./gate.js";
 import { validatePlan } from "./systemGate.js";
-import { formatPlanNote, planExtractionNote, filterRejectedEffects } from "./planNotes.js";
+import { formatPlanNote, planExtractionNote, filterRejectedEffects, filterPlanDelta } from "./planNotes.js";
 
 const state = {
   room: { name: "测试镇", npcs: [{ name: "才旦" }, { name: "卓玛" }] },
@@ -33,6 +33,7 @@ describe("slots", () => {
     expect(parseSilverAmount("给卓玛五十两")).toBe(50);
     expect(parseSilverAmount("两两银子")).toBe(2);
     expect(parseSilverAmount("送两个馒头")).toBeNull();
+    expect(parseSilverAmount("给才旦0.5两")).toBeNull();
   });
 
   it("builds target options from NPCs visible in the current inner room", () => {
@@ -125,5 +126,22 @@ describe("system gate", () => {
     const kept = filterRejectedEffects([{ path: "人物.才旦.好感", value: 5 }, { path: "人物.卓玛.好感", value: 5 }], plan);
     expect(kept).toEqual([{ path: "人物.才旦.好感", value: 5 }]);
     expect(planExtractionNote(validatePlan(state, [gift(10)]))).toBe("");
+  });
+
+  it("keeps stage 3 from deleting inventory the system already settled or rejected", () => {
+    const plan = validatePlan(state, [{ kind: "赠送", target: "卓玛", item: "青稞酒" }, { kind: "切磋", target: "王掌柜" }, { kind: "使用物品", item: "酥油茶" }]);
+    const p = { delta: { items_rm: ["青稞酒", { name: "酥油茶" }, "馒头"] } };
+    expect(filterPlanDelta(p, plan).delta.items_rm).toEqual(["馒头"]);
+    expect(filterPlanDelta(p, null)).toBe(p);
+  });
+
+  it("applies the same learning thresholds as the button and charges tuition in the simulation", () => {
+    const angry = { ...state, varTree: { 角色: { 才旦: { 生气状态: { active: true } } } } };
+    const learn = { kind: "拜师/学艺", target: "才旦" };
+    const plan = validatePlan(state, [learn, gift(100)]);
+    expect(plan.valid).toHaveLength(0);
+    expect(plan.rejected.reason).toBeTruthy();
+    expect(plan.skipped).toHaveLength(1);
+    expect(validatePlan(angry, [learn]).rejected.reason).toBe("才旦正在气头上，不肯传授");
   });
 });
