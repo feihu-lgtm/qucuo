@@ -12,10 +12,10 @@ export function shouldRecognize(apiCfg, cmd, opts = {}) {
     && !opts.intentPlan && !opts.intentSkip && !opts.silentCmd && !opts.settle && !opts.forceLayer && !opts.autoTravel;
 }
 
-// 玩家亲手输入的新指令（非自动寻路、非手动走图、非行动识别内部派生）：上一波条件触发器到此过期。
+// 玩家亲手输入的新指令（非自动寻路、非手动走图、非查看 NPC、非行动识别内部派生）：上一波条件触发器到此过期。
 // useTurn 进路由前总会带 schedulerManaged，不能拿它判断来源。
 export function isFreshTyped(opts = {}) {
-  return !opts.autoTravel && !opts.forceLayer && !opts.intentPlan && !opts.intentSkip && !opts.silentCmd && !opts.settle;
+  return !opts.autoTravel && !opts.forceLayer && !opts.inspect && !opts.intentPlan && !opts.intentSkip && !opts.silentCmd && !opts.settle;
 }
 
 export async function recognizeAndGate(state, cmd, { classifier, onStage, thresholds } = {}) {
