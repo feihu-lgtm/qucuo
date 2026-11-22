@@ -7,7 +7,7 @@ import { buySkill } from "./logic.js";
 
 const state = (overrides = {}) => ({
   char: { money: 500 }, skills: [], flags: [], questProgress: {},
-  varTree: { 世界: { 势力声誉: { 唐门: 200 } } },
+  varTree: { 世界: { 势力声誉: { 唐门: 0 } } },
   room: { name: "蜀南唐堡" }, innerRoomName: "千机演武坪",
   ...overrides,
 });
@@ -25,15 +25,17 @@ describe("唐堡千机演武坪", () => {
     expect(clinic).toMatchObject({ name: "试毒药庐", type: "hospital", healPerLiang: 3 });
   });
 
-  it("teaches only the open entry skill until reputation and membership exist", () => {
+  it("gates Tangmen skills by Tangmen reputation; membership-only paths need the outsider bar", () => {
     const learned = buySkill(state(), skill("寸铁点星手"));
     expect(learned.changes.skills.map((entry) => entry.id)).toEqual(["kf_tm_cuntie"]);
     expect(learned.changes.char.money).toBe(445);
-    for (const name of ["药息", "匣中静", "满天星雨", "百毒不侵体"]) {
-      const locked = buySkill(state(), skill(name));
-      expect(locked.changes, `${name} 不应凭 AI 可写的世界变量解锁`).toBeUndefined();
-      expect(locked.logs[0].text).toContain("尚不可学");
-    }
+    const at = (rep) => state({ varTree: { 世界: { 势力声誉: { 唐门: rep } } } });
+    const learnable = (rep) => SKILL_CATALOG.唐门.filter((entry) => buySkill(at(rep), entry).changes).map((entry) => entry.name);
+    expect(learnable(-1)).toEqual([]);
+    expect(learnable(14)).toEqual(["寸铁点星手"]);
+    expect(learnable(40)).toEqual(["寸铁点星手", "药息", "匣中静"]);
+    expect(learnable(80)).toEqual(SKILL_CATALOG.唐门.map((entry) => entry.name));
+    expect(buySkill(at(79), skill("满天星雨")).logs[0].text).toContain("尚不可学");
   });
 
   it("uses the same rule from the local command at the current hall only", () => {
