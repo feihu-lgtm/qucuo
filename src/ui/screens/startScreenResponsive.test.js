@@ -73,4 +73,20 @@ describe("StartScreen mobile layout", () => {
     expect(op).toContain('className="duel-move-grid"');
     expect(readFileSync(join(duelDir, "DuelLog.jsx"), "utf-8")).toContain('className="duel-log"');
   });
+
+  it("has an iOS-only block for settings that goes full-screen with a four-column home in landscape", () => {
+    const at = MOBILE_CSS.indexOf("/* iOS 专门适配：设置");
+    expect(at).toBeGreaterThan(-1);
+    const block = MOBILE_CSS.slice(at, MOBILE_CSS.indexOf("\n}\n", at));
+    expect(block).toContain("@supports (-webkit-touch-callout: none) {");
+    expect(block).toMatch(/\.settings-home-card \{\s*padding:\s*clamp\(/);
+    const landscape = block.slice(block.indexOf("@media (orientation: landscape) and (max-height: 500px) {"));
+    expect(landscape).toMatch(/\.settings-panel \{\s*width:\s*100%/);
+    expect(landscape).toMatch(/\.settings-home-grid \{\s*grid-template-columns:\s*repeat\(4,/);
+    const settings = readFileSync(join(HERE, "SettingsPanel.jsx"), "utf-8");
+    expect(settings).toContain("mobile-overlay-root settings-root");
+    expect(settings).toContain("mobile-settings-panel settings-panel");
+    expect(settings).toContain('className="settings-home-grid"');
+    expect(settings).toContain('className="settings-home-card"');
+  });
 });

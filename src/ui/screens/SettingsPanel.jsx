@@ -62,8 +62,8 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
   };
 
   return (
-    <div className="mobile-overlay-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "var(--ink-overlay)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div className="mobile-overlay-panel mobile-settings-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
+    <div className="mobile-overlay-root settings-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "var(--ink-overlay)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
+      <div className="mobile-overlay-panel mobile-settings-panel settings-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
 
         <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <span style={{ color: "var(--accent)", fontSize: "14px" }}>
@@ -74,7 +74,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
           <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
         {tab === null && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
+          <div className="settings-home-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
             {[
               ["api", "API 配置", "接口地址 · 密钥 · 模型"],
               ["preset", "📜 预设", "对话补全预设 · 编辑器"],
@@ -84,7 +84,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               ["__portraits", "立绘管理", "上传 · 更换人物立绘"],
               ["__cards", "🧾 角色入册", "游戏中 · 导入外部角色卡成江湖人物 · 快捷键 I"],
             ].filter(([id]) => id !== "__portraits" || hasApiCredentials(cfg)).map(([id, title, sub]) => (
-              <div key={id} onClick={() => {
+              <div key={id} className="settings-home-card" onClick={() => {
                 // 入册界面本身是全屏浮层，塞在设置里会套两层弹窗。
                 // 这里改成关掉设置、把浮层交给 MudRPG 开。
                 if (id === "__portraits") { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.PORTRAIT_MANAGER); return; }
