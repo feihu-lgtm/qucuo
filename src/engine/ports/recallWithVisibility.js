@@ -12,7 +12,7 @@
 //   5. 打包成契约结构返回；任何一步异常都降级返回 null（不阻断游戏）
 
 import { getEmbedding, embeddingReady, embeddingFingerprint } from "./embeddingService.js";
-import { getAllMemories } from "../../infra/memoryStore.js";
+import { getAllMemories } from "./memoryStore.js";
 import { rerank, applyRerank } from "./rerank.js";
 import { recall } from "../../domain/rules/memory/recallEngine.js";
 import { noteVisibleTo } from "../../domain/rules/memory/note.js";

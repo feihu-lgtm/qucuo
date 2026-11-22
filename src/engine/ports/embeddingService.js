@@ -10,7 +10,7 @@
 //   3. 指纹校验——换了 embedding 模型，旧向量维度/语义空间不兼容，靠 fingerprint 标记，
 //      召回时对不上就跳过那条旧记忆，而不是拿错误向量去算相似度（见 recallEngine）。
 
-import { observeAi } from "../../infra/observeAi.js";
+import { observeAi } from "./observeAi.js";
 
 // SiliconFlow 默认地址（用户不填 endpoint 时兜底）
 const DEFAULT_ENDPOINT = "https://api.siliconflow.cn/v1/embeddings";
