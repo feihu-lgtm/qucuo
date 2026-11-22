@@ -5,6 +5,7 @@ import { observeAi, observed } from "../../infra/observeAi.js";
 // ports 层对 infra/apiConfig 的唯一入口：其余 ports 文件只从本模块取这些符号，
 // 不再各自直连 infra（分层守卫按 importer 计 externalInfraImports）。
 export { callModel, callModelStream, loadConfig, hasApiCredentials, cleanJsonString };
+export { API_TYPES } from "../../infra/providers.js";
 
 export function bindTurnAi(ai, turn) {
   return {

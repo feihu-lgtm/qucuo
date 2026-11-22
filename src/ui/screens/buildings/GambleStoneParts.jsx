@@ -61,8 +61,8 @@ export function StoneVisual({ stone, closed, cutFx, doCut }) {
       {/* 开刀特效层：刀光扫过 + 尘团 + 碎末粒子（颜色随品相）+ 揭晓大字 */}
       {cutFx && (() => {
         const p = CUT_POS[cutFx.pos];
-        const [labelText, labelColor] = OUTCOME_LABEL[cutFx.result.outcome] || ["?", "#e8dfc0"];
-        const shardColor = SHARD_COLOR[cutFx.result.grade] || "#e8dfc0";
+        const [labelText, labelColor] = OUTCOME_LABEL[cutFx.result.outcome] || ["?", "var(--qb-text)"];
+        const shardColor = SHARD_COLOR[cutFx.result.grade] || "var(--qb-text)";
         return (
           <>
             <img src={S("fx_cut_light.webp")} alt="" className="gs-slash"
@@ -115,14 +115,14 @@ export function BidderFan({ bidders, cardFont, offerLabel, onSelect }) {
             <div className="gs-face gs-back">
               <div style={{ position: "absolute", left: WIN.x, top: WIN.y, width: WIN.w, height: WIN.h,
                 overflow: "hidden", borderRadius: "6% / 4%",
-                background: "radial-gradient(120% 90% at 50% 0%, #3a3020 0%, #201a12 55%, #14100b 100%)" }}>
+                background: "radial-gradient(120% 90% at 50% 0%, #3a3020 0%, #201a12 55%, var(--qb-felt) 100%)" }}>
                 <div style={{ padding: "14% 10%", height: "100%", display: "flex", flexDirection: "column",
-                  color: "#e8dfc0", boxSizing: "border-box" }}>
+                  color: "var(--qb-text)", boxSizing: "border-box" }}>
                   <div style={{ fontSize: "1.15em", color: "var(--gold-light)", letterSpacing: 2, marginBottom: "4%" }}>{b.name}</div>
                   <div style={{ fontSize: ".62em", color: "var(--parchment)", marginBottom: "7%" }}>{ROLE_BY_NAME[b.name] || ""}</div>
-                  <div style={{ fontSize: ".95em", color: "#ffd77a", marginBottom: "7%" }}>出价 {offerLabel(b)}</div>
-                  <div style={{ fontSize: ".60em", lineHeight: 1.75, color: "#cdc2a2" }}>{b.bio}</div>
-                  <div style={{ marginTop: "auto", fontSize: ".52em", color: "#8a7d5a" }}>点击卡牌 · 成交或谈判</div>
+                  <div style={{ fontSize: ".95em", color: "var(--ink-gold-soft)", marginBottom: "7%" }}>出价 {offerLabel(b)}</div>
+                  <div style={{ fontSize: ".60em", lineHeight: 1.75, color: "var(--qb-text-dim)" }}>{b.bio}</div>
+                  <div style={{ marginTop: "auto", fontSize: ".52em", color: "var(--qb-border)" }}>点击卡牌 · 成交或谈判</div>
                 </div>
               </div>
               <img src={FRAME} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
@@ -134,7 +134,7 @@ export function BidderFan({ bidders, cardFont, offerLabel, onSelect }) {
             textAlign: "center", zIndex: 5 }}>
             <img src={UI("bub_gold1.webp")} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: -1 }} />
             <div style={{ fontSize: ".72em", fontWeight: "bold", color: "#7a5320", lineHeight: 1.1, marginTop: "-9%" }}>{b.name}</div>
-            <div style={{ fontSize: ".80em", fontWeight: "bold", color: "#4a2d0a", lineHeight: 1.25 }}>{offerLabel(b)}</div>
+            <div style={{ fontSize: ".80em", fontWeight: "bold", color: "var(--ink-wood-deep)", lineHeight: 1.25 }}>{offerLabel(b)}</div>
           </div>
         </div>
       </div>
@@ -165,7 +165,7 @@ export function BidderCarousel({ bidders, carouselIdx, setCarouselIdx, touchRef,
         )}
         {/* 当前卡：立绘 + 报价 + 简介 + 操作 */}
         <div style={{ flex: "0 1 220px", maxWidth: 220, background: "rgba(26,22,16,.95)",
-          border: "1px solid #6a5d40", borderRadius: 0, padding: 12, boxShadow: "0 8px 28px rgba(0,0,0,.6)" }}>
+          border: "1px solid var(--ink-brass)", borderRadius: 0, padding: 12, boxShadow: "0 8px 28px rgba(0,0,0,.6)" }}>
           <div style={{ position: "relative", width: "100%", aspectRatio: "941/1672", maxHeight: "34vh",
             margin: "0 auto", overflow: "hidden" }}>
             <div style={{ position: "absolute", left: WIN.x, top: WIN.y, width: WIN.w, height: WIN.h, overflow: "hidden", borderRadius: "6% / 4%" }}>
@@ -175,16 +175,16 @@ export function BidderCarousel({ bidders, carouselIdx, setCarouselIdx, touchRef,
           </div>
           <div style={{ textAlign: "center", marginTop: 8 }}>
             <div style={{ color: "var(--gold-light)", fontSize: 16, letterSpacing: 2 }}>{cur.name}</div>
-            <div style={{ color: "#a08a5a", fontSize: 11 }}>{ROLE_BY_NAME[cur.name] || ""}</div>
-            <div style={{ color: "#ffd77a", fontSize: 15, margin: "6px 0" }}>出价 {offerLabel(cur)}</div>
-            <div style={{ color: "#cdc2a2", fontSize: 11, lineHeight: 1.7, maxHeight: "8vh", overflowY: "auto" }}>{cur.bio}</div>
+            <div style={{ color: "var(--ink-bronze)", fontSize: 11 }}>{ROLE_BY_NAME[cur.name] || ""}</div>
+            <div style={{ color: "var(--ink-gold-soft)", fontSize: 15, margin: "6px 0" }}>出价 {offerLabel(cur)}</div>
+            <div style={{ color: "var(--qb-text-dim)", fontSize: 11, lineHeight: 1.7, maxHeight: "8vh", overflowY: "auto" }}>{cur.bio}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-            <button onClick={() => sellTo(cur)} style={{ ...carBtn, background: "linear-gradient(180deg,#c8a860,#8a6a2a)", color: "#3a2408" }}>
+            <button onClick={() => sellTo(cur)} style={{ ...carBtn, background: "linear-gradient(180deg,var(--ink-brass-lit),#8a6a2a)", color: "#3a2408" }}>
               ✓ 接受 {offerLabel(cur)}
             </button>
             {cur.kind !== "noise" && (
-              <button onClick={() => startTalk(cur)} style={{ ...carBtn, background: "rgba(60,48,28,.9)", color: "#f0e0b0", border: "1px solid #6a5d40" }}>
+              <button onClick={() => startTalk(cur)} style={{ ...carBtn, background: "rgba(60,48,28,.9)", color: "var(--ink-cream)", border: "1px solid var(--ink-brass)" }}>
                 🗣 与{cur.name}谈价
               </button>
             )}
@@ -214,16 +214,16 @@ export function SkinModal({ changKouLabel, skinLabel, text, loading, onClose }) 
     <div style={{ position: "fixed", inset: 0, zIndex: 290, background: "rgba(5,4,2,.55)",
       display: "flex", alignItems: "center", justifyContent: "center" }}
       onClick={onClose}>
-      <div style={{ maxWidth: "min(560px, 82vw)", background: "#1e1a13", border: "1px solid #6a5d40",
+      <div style={{ maxWidth: "min(560px, 82vw)", background: "#1e1a13", border: "1px solid var(--ink-brass)",
         borderRadius: 0, padding: "22px 26px", boxShadow: "0 12px 40px rgba(0,0,0,.7)" }}
         onClick={(e) => e.stopPropagation()}>
         <div style={{ color: "var(--gold-light)", fontSize: 15, letterSpacing: 2, marginBottom: 12 }}>
           相石 · {changKouLabel} · {skinLabel}
         </div>
-        <div style={{ color: "#cdc2a2", fontSize: 13.5, lineHeight: 2, whiteSpace: "pre-wrap" }}>
+        <div style={{ color: "var(--qb-text-dim)", fontSize: 13.5, lineHeight: 2, whiteSpace: "pre-wrap" }}>
           {text || (loading ? "老师傅眯眼端详，指腹在皮壳上缓缓摩挲……" : "（相石不语）")}
         </div>
-        <div style={{ color: "#6a5d40", fontSize: 11, marginTop: 12, letterSpacing: 1 }}>
+        <div style={{ color: "var(--ink-brass)", fontSize: 11, marginTop: 12, letterSpacing: 1 }}>
           看皮只断表象，种水深浅终归要刀下见真章 · 点空白处收起
         </div>
       </div>
@@ -244,26 +244,26 @@ export function SelCardModal({ card, offerLabel, sellTo, startTalk, onClose }) {
       <div style={{ display: "flex", flexDirection: "column", gap: "2.4vh", maxWidth: "30vw" }}
         onClick={(e) => e.stopPropagation()}>
         <div style={{ color: "var(--gold-light)", fontSize: "3.2vh", letterSpacing: 3 }}>{card.name}</div>
-        <div style={{ color: "#a08a5a", fontSize: "1.7vh", marginTop: "-1.2vh" }}>{ROLE_BY_NAME[card.name] || ""}</div>
-        <div style={{ color: "#ffd77a", fontSize: "2.3vh" }}>出价 {offerLabel(card)}</div>
-        <div style={{ color: "#cdc2a2", fontSize: "1.6vh", lineHeight: 2 }}>{card.bio}</div>
-        <button onClick={() => sellTo(card)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_paper.webp")})`, color: "#4a2d0a" }}>
+        <div style={{ color: "var(--ink-bronze)", fontSize: "1.7vh", marginTop: "-1.2vh" }}>{ROLE_BY_NAME[card.name] || ""}</div>
+        <div style={{ color: "var(--ink-gold-soft)", fontSize: "2.3vh" }}>出价 {offerLabel(card)}</div>
+        <div style={{ color: "var(--qb-text-dim)", fontSize: "1.6vh", lineHeight: 2 }}>{card.bio}</div>
+        <button onClick={() => sellTo(card)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_paper.webp")})`, color: "var(--ink-wood-deep)" }}>
           ✓ 接受报价 · {offerLabel(card)}
         </button>
         {card.kind !== "noise" && (
-          <button onClick={() => startTalk(card)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_wood.webp")})`, color: "#f0e0b0", textShadow: "0 1px 2px var(--black)" }}>
+          <button onClick={() => startTalk(card)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_wood.webp")})`, color: "var(--ink-cream)", textShadow: "0 1px 2px var(--black)" }}>
             🗣 与{card.name}谈价
           </button>
         )}
-        <div style={{ color: "#6a5d40", fontSize: "1.3vh" }}>谈价走主对话（赌桌自动收起，谈妥的价回来即见）</div>
+        <div style={{ color: "var(--ink-brass)", fontSize: "1.3vh" }}>谈价走主对话（赌桌自动收起，谈妥的价回来即见）</div>
       </div>
     </div>
   );
 }
 
 export function PanelBtn({ img, kind, big, disabled, done, grade, crack, onClick, children }) {
-  const color = kind === "paper" ? "#5a3d1a" : "#f0e0b0";
-  const doneColor = done ? (crack ? "#ffb090" : grade === "chun" ? "#7dffca" : grade === "za" ? "#ffb090" : "#e8dfc0") : color;
+  const color = kind === "paper" ? "var(--ink-wood-warm)" : "var(--ink-cream)";
+  const doneColor = done ? (crack ? "var(--ink-peach)" : grade === "chun" ? "#7dffca" : grade === "za" ? "var(--ink-peach)" : "var(--qb-text)") : color;
   return (
     <div onClick={disabled ? undefined : onClick}
       style={{ position: "relative", height: 52, minWidth: big ? 160 : 120, display: "flex", alignItems: "center", justifyContent: "center",

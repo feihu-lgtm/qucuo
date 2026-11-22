@@ -1,0 +1,129 @@
+// NPC 随身物品生成（自 npcGeneration.js 拆出）：旧匿名池
+// generateNpcCarriedItems + 四池版 rollNpcCarry（role×region×levelCap 抽 catalog 真货）。
+import { random } from "../../../utils/rng.js";
+import { rollQuality, QUALITY, makeItem, ITEM_CATEGORY } from "../economy/equipment.js";
+import { makeNamedItem, CATALOG_INDEX } from "../../data/items/catalog.js";
+import { ITEM_DISTRIBUTION } from "../../data/items/distribution.js";
+import { ROLE_CARRY, levelCapToRole, regionOf } from "../../data/items/regionMap.js";
+
+// 曲措乡随身物品命名池：按品质档位分组，风格贴合藏汉边境的日常物件质感，
+// 不再是"XX的随身物件"这种毫无信息量的占位符——玩家拿到手的东西得有名字、
+// 有分类，才能真正进入装备/交易系统的价格和属性计算。
+// 每个品质档位配几个候选名字，生成时随机挑一个，同一个品质多次生成不会总是同一个名字。
+const CARRIED_ITEM_POOL = {
+  白: [
+    { name: "旧皮绳", category: ITEM_CATEGORY.MISC },
+    { name: "磨损的铜哨", category: ITEM_CATEGORY.ACCESSORY },
+    { name: "粗布腰囊", category: ITEM_CATEGORY.MISC },
+  ],
+  绿: [
+    { name: "藏纹银扣", category: ITEM_CATEGORY.ACCESSORY },
+    { name: "牛皮护腕", category: ITEM_CATEGORY.ARMOR },
+    { name: "短柄猎刀", category: ITEM_CATEGORY.WEAPON },
+  ],
+  蓝: [
+    { name: "松石耳坠", category: ITEM_CATEGORY.ACCESSORY },
+    { name: "精铁匕首", category: ITEM_CATEGORY.WEAPON },
+    { name: "熟皮护甲", category: ITEM_CATEGORY.ARMOR },
+  ],
+  紫: [
+    { name: "错银腰牌", category: ITEM_CATEGORY.ACCESSORY },
+    { name: "雪山冷锋", category: ITEM_CATEGORY.WEAPON },
+    { name: "锁子软甲", category: ITEM_CATEGORY.ARMOR },
+  ],
+  橙: [
+    { name: "活佛开光念珠", category: ITEM_CATEGORY.ACCESSORY },
+    { name: "土司家传弯刀", category: ITEM_CATEGORY.WEAPON },
+    { name: "犀角护心镜", category: ITEM_CATEGORY.ARMOR },
+  ],
+  红: [
+    { name: "古格王朝金印", category: ITEM_CATEGORY.ACCESSORY },
+    { name: "断魂雪蚕剑", category: ITEM_CATEGORY.WEAPON },
+    { name: "赤金龙纹甲", category: ITEM_CATEGORY.ARMOR },
+  ],
+};
+
+// 生成NPC随身携带的物品（供偷窃/战斗掉落系统使用），品质分布跟装备掉落用同一套
+// rollQuality，数量随机1-3件。物品名字从对应品质档位的手写候选池里随机挑选，
+// 属性/价格走 makeItem 统一计算，保证跟交易/装备系统完全接轨。
+//
+// 品阶下限：之前这里完全不看NPC自己的品质档位，纯靠玩家气运摇——一个红袍高手
+// 和路边白袍杂鱼摸出来的东西统计上没区别，"品阶对应身家"这个直觉完全落空。
+// 现在品阶档位（levelCap）设一个质量下限：档位越高，随身物品至少是那个档位的
+// 品质起步（同时数量也跟着涨），气运只决定"在下限之上能不能超常发挥"。
+function generateNpcCarriedItems(npc, { luck = 5, count = null, levelCap = 0 } = {}) {
+  const cap = Math.max(0, Math.min(5, levelCap));
+  const itemCount = count ?? (1 + cap + Math.floor(random() * 3));
+  const items = [];
+  for (let i = 0; i < itemCount; i++) {
+    const rolled = rollQuality(luck);
+    const quality = QUALITY[Math.max(QUALITY.indexOf(rolled), cap)];
+    const pool = CARRIED_ITEM_POOL[quality] || CARRIED_ITEM_POOL["白"];
+    const picked = pool[Math.floor(random() * pool.length)];
+    const item = makeItem({ name: picked.name, category: picked.category, quality });
+    items.push({ ...item, id: `${npc.id}_item_${i}`, stolen: false });
+  }
+  return items;
+}
+
+// ── 四池版随身物：rollNpcCarry ──────────────────────────────────────
+// 替代 generateNpcCarriedItems 的匿名池，改从 catalog 按 role×region×levelCap
+// 抽"真货"（贴合身份与地域），而不是"旧皮绳/错银腰牌"这类无信息占位符。
+// 掉落 = 可偷 = 所见即所得：本函数只在 NPC 没有 AI 声明的 carry 时作随机兜底，
+// 生成的这批就是打死掉的、也是能偷的同一批（沿用 ensureNpcCombatData 的接线）。
+const CAT_KEY = { WEAPON: "WEAPON", ARMOR: "ARMOR", ACCESSORY: "ACCESSORY", MISC: "MISC" };
+function catEnumOf(name) {
+  const e = CATALOG_INDEX[name];
+  if (!e) return null;
+  // equipment.ITEM_CATEGORY 的值是小写串；映射回大写枚举名做 role.cats 过滤
+  const v = String(e.category);
+  if (v.includes("weapon")) return "WEAPON";
+  if (v.includes("armor")) return "ARMOR";
+  if (v.includes("accessory")) return "ACCESSORY";
+  return "MISC";
+}
+export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
+  const cap = Math.max(0, Math.min(5, levelCap));
+  const role = npc.role || levelCapToRole(cap);
+  const style = ROLE_CARRY[role] || ROLE_CARRY["平民"];
+  const reg = region || regionOf(npc.district || npc.region || "");
+  // 候选：该地域 + 该 role 允许的类别，命中 distribution 的 catalog 货
+  const candidates = [];
+  for (const [name, tag] of Object.entries(ITEM_DISTRIBUTION)) {
+    if (!tag.regions.includes(reg)) continue;
+    const ck = catEnumOf(name);
+    if (!ck || !style.cats.includes(ck)) continue;
+    candidates.push(name);
+  }
+  // 数量：role 决定区间，levelCap 高的取偏上
+  const [lo, hi] = style.count;
+  const bias = cap >= 3 ? 1 : 0;
+  const n = Math.min(hi, lo + bias + Math.floor(random() * (hi - lo + 1)));
+  if (!candidates.length || n <= 0) {
+    // 该地域该身份没有对味候选 → 回退旧匿名池，保证不空手崩溃
+    return generateNpcCarriedItems(npc, { luck, count: Math.max(1, n), levelCap: cap });
+  }
+  const items = [];
+  const QORD = { 白: 0, 绿: 1, 蓝: 2, 紫: 3, 橙: 4, 红: 5 };
+  // 品阶窗口：以 levelCap 为中心，下限=cap-1、上限=cap+1（红/白封边）。
+  // 这样 levelCap2 的镖师主要掉绿蓝、偶尔紫，绝不会掉橙红；levelCap0 只掉白绿。
+  const floor = Math.max(0, cap - 1);
+  const ceil = Math.min(5, cap + 1);
+  let picks = candidates.filter(nm => {
+    const q = QORD[CATALOG_INDEX[nm].quality] ?? 0;
+    return q >= floor && q <= ceil;
+  });
+  if (picks.length < Math.max(1, n)) {
+    // 窗口内货不够，放宽到"不超过上限"（仍不会冒出高于 cap+1 的货）
+    picks = candidates.filter(nm => (QORD[CATALOG_INDEX[nm].quality] ?? 0) <= ceil);
+  }
+  // 无放回抽样，避免同一件重复出现
+  const bag = [...picks];
+  for (let i = 0; i < n && bag.length; i++) {
+    const idx = Math.floor(random() * bag.length);
+    const name = bag.splice(idx, 1)[0];
+    const it = makeNamedItem(name);
+    if (it) items.push({ ...it, id: `${npc.id}_ci${i}`, stolen: false });
+  }
+  return items.length ? items : generateNpcCarriedItems(npc, { luck, count: 1, levelCap: cap });
+}
