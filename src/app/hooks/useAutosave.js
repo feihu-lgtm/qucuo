@@ -7,6 +7,7 @@ import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../engine/ports/saves.js";
 import { statsForQuality } from "../../domain/rules/economy/equipment.js";
+import { migrateLegacySnapshot } from "../../domain/rules/npc/legacyContent.js";
 import { initialNarratorState, migrateNarratorState } from "../../domain/rules/narrator/narrator.js";
 import { backfillInventoryFromCatalog } from "../../domain/data/items/catalog.js";
 import { generateNpcMoveset } from "../../domain/rules/npc/npcGeneration.js";
@@ -32,7 +33,7 @@ export function restorePersuasionProgress(snap, setPersuasionProgress) {
 }
 
 export function useInitialRestore({ initialLoadSlotId }) {
-  const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId, { statsForQuality });
+  const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId, { statsForQuality, migrateSnapshot: migrateLegacySnapshot });
   if (restored?.snap?.squares) loadSquares(restored.snap.squares);
   return restored;
 }
@@ -125,6 +126,9 @@ export function useAutosave({
   // 从存档槽位读取后，整体覆盖当前状态
   const applySnapshot = useCallback((snap) => {
     const restoreSnapshot = () => {
+      // 老存档人物改名迁移（#274 后天龙教改回原作名）：手动读槽位不经过
+      // tryRestoreSnapshot，在这里补同一道迁移，回滚快照是新版数据、幂等无副作用。
+      snap = migrateLegacySnapshot(snap);
       const matchedPreset = presets.find(p => p.id === snap.preset?.id) || preset;
       const restoredRoom = isCompatibleRoomShape(snap.room) ? snap.room : matchedPreset.room;
       const roomChanged = restoredRoom.name !== useGameStore.getState().room?.name;

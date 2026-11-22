@@ -256,6 +256,10 @@ export function tryRestoreSnapshot(presets, snap, deps = {}) {
     console.warn("检测到旧版本存档结构，已自动丢弃并使用默认角色/房间数据");
     return null;
   }
+  // 老存档人物改名迁移：旧版本 NPC 换名/换 id（如天龙教改回原作名），老档里按旧名
+  // 记的角色面板、在场 NPC、roomMap、日志文本统一迁到新名。迁法由调用方注入
+  // （infra 不许反依赖 domain/rules），不传则原样放行。
+  if (deps.migrateSnapshot) snap = deps.migrateSnapshot(snap) || snap;
   // 老存档装备迁移：早期有物品（如"无主的青锋剑"）误用了 atkMul/defMul 倍率字段，
   // 但战斗/装备系统只读 atk/def 实际值——倍率字段从来没人读，导致装备了却加不到攻防。
   // 读档时统一补算：凡是有倍率但缺实际值的武器/护甲，用「品质基准 × 倍率」折出 atk/def。
