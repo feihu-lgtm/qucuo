@@ -107,7 +107,7 @@ describe("NPC gift logic", () => {
     expect(result.settleOptions).toMatchObject({
       settleNpc: "师父",
       settleKind: "gift",
-      giftInfo: { itemName: "鱼定枪", quality: "白", range: [2, 4], suggestedDelta: 3 },
+      giftInfo: { itemName: "鱼定枪", quality: "白", range: [3, 5], suggestedDelta: 4 },
     });
   });
 
@@ -173,8 +173,8 @@ describe("NPC gift logic", () => {
       itemName: "陌生物",
       quality: "紫",
       desc: "一件物事",
-      range: [9, 12],
-      suggestedDelta: 11,
+      range: [10, 13],
+      suggestedDelta: 12,
     });
   });
 });

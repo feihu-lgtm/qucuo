@@ -57,14 +57,19 @@ export const SOFT_RULES = {
     question: (ctx) => {
       const info = ctx.giftInfo || {};
       const band = info.weight ? `，按对方身家这份礼算「${info.weight.label}」` : `，品阶「${info.quality || "白"}」`;
-      return `玩家把「${info.itemName || "一件礼物"}」送给${ctx.npc}${band}。${ctx.npc}会收下吗？`;
+      const prefer = info.preferLabel ? `。他平日偏爱「${info.preferLabel}」一类物件` : "";
+      // 门槛放宽：曲措乡人情厚重，除非礼物与对方格格不入（完全不合时宜），
+      // 否则多半收下——不合心意也只是反应淡些，不轻易婉拒。
+      return `玩家把「${info.itemName || "一件礼物"}」送给${ctx.npc}${band}${prefer}。曲措乡人情厚重，当面送礼无论贵贱多生暖意，除非礼物与对方人格格不入，否则多半收下。${ctx.npc}会收下吗？`;
     },
     options: () => ["收下", "婉拒", UNKNOWN],
     deltas: (choice, ctx) => {
       if (choice !== "收下") return [];
       const info = ctx.giftInfo || {};
       const range = info.weight?.range || info.range || giftRange(info.quality);
-      const value = info.suggestedDelta ?? mid(range);
+      // 送中对方偏好的类别：好感直接取区间上沿
+      const matched = info.preferLabel && info.categoryLabel === info.preferLabel;
+      const value = matched ? range.at(-1) : (info.suggestedDelta ?? mid(range));
       return [{ path: affectionPath(ctx.npc), op: "add", value }];
     },
     note: (choice, ctx, applied) => {

@@ -74,10 +74,14 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战叙事铁律】只写玩家发出邀战、${npcName}接受邀战与双方摆开架势，写到第一招交手之前立刻停止。严禁描写任何招式交锋、回合、伤势、胜负、任一方喊停或${npcName}拒绝。切磋是否开始由玩家通过确认栏选择，本轮不得替玩家开始战斗。`;
     }
     if (o.settleKind === "gift") {
+      // 偏好暗示：回复里自然带出对方偏爱哪类物件（玩家下次就知道送什么）。
+      const preferHint = o.giftInfo?.preferLabel
+        ? ` ${o.settleNpc}平日偏爱「${o.giftInfo.preferLabel}」一类——回应对白里自然带出他对这类物件的惦记（暗示即可，禁直白报出类别名、禁清单式罗列）。`
+        : "";
       if (o.giftInfo?.weight) return giftWeight(
         "\n【赠礼反应】「@giftInfo.itemName」已由系统交付，禁重复扣除。分量：@{赠礼.分量}；反应：@{赠礼.反应}。贴合收礼人性格，不同分量禁雷同。",
-      );
-      return `\n【送礼世界观铁律】曲措乡人情厚重，当面送礼无论贵贱皆生惊喜与暖意，绝不为难、起疑或冷脸不领情。本轮唯一走向：${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，必写欣然收下、态度转暖；禁写推辞、质疑来意或婉拒。`;
+      ) + preferHint;
+      return `\n【送礼世界观铁律】曲措乡人情厚重，当面送礼无论贵贱皆生惊喜与暖意，绝不为难、起疑或冷脸不领情。本轮唯一走向：${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，必写欣然收下、态度转暖；禁写推辞、质疑来意或婉拒。` + preferHint;
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";

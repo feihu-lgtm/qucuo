@@ -2,7 +2,7 @@
 // 从 logic.js 按动作分组拆出——这组只管"东西和银子的来往"。
 import { CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
 import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
-import { computeGiftWeight } from "../../domain/rules/npc/giftWeight.js";
+import { computeGiftWeight, giftPreferenceLabel } from "../../domain/rules/npc/giftWeight.js";
 import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getCurrentStage } from "../../domain/rules/quests/questEngine.js";
@@ -42,6 +42,7 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   const giftInfo = describeGiftForPrompt(item);
   const weight = computeGiftWeight(npc, typeof item === "string" ? CATALOG_INDEX[item] || {} : item);
   giftInfo.weight = weight;
+  giftInfo.preferLabel = giftPreferenceLabel(npc);
   const inv = state.inv || [];
   let nextInv = inv;
   if (typeof item === "object" && item.id != null) {
