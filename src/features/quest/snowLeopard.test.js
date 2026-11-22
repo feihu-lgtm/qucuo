@@ -132,9 +132,9 @@ describe("收复雪豹", () => {
     for (const other of [initial(), { ...state, room: { npcs: [] } }, { ...state, innerRoomName: "猎户小屋" }]) {
       expect(filterSnowModelFlags(flags, other)).toEqual(["other_quest"]);
     }
-    const setFlags = vi.fn();
-    commitModelFlags({ ...state, p: { delta: { flags_add: flags } }, setFlags });
-    expect(setFlags.mock.calls[0][0]([])).toEqual(["snow_spirit_meat", "snow_spirit_scratch", "other_quest"]);
+    // 纯函数化后 commitModelFlags 返回 { changes: { flags } } 由 commitRound 落盘
+    const out = commitModelFlags({ ...state, p: { delta: { flags_add: flags } } });
+    expect(out.changes.flags([])).toEqual(["snow_spirit_meat", "snow_spirit_scratch", "other_quest"]);
   });
 
   it.each([0, 123])("uses the injected invitation clock %s exactly once", (now) => {

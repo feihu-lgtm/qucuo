@@ -65,8 +65,8 @@ describe("emitRoomHeader", () => {
 
   it("commitRound emits the header before the narrative", () => {
     const src = readFileSync(join(HERE, "..", "commitRound.js"), "utf-8");
-    const header = src.indexOf("emitRoomHeader(d);");
-    const narrative = src.indexOf("emitNarrative(d);");
+    const header = src.indexOf("emitRoomHeader(d)");
+    const narrative = src.indexOf("emitNarrative(");
     expect(header).toBeGreaterThan(-1);
     expect(header).toBeLessThan(narrative);
   });
