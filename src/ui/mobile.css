@@ -1079,11 +1079,12 @@
       padding: 0 !important;
     }
 
+    /* 用 100% 跟外层 inset:0 走，不用 dvh：宽屏横屏下 .game-layout 还带着字号 zoom，dvh 会被放大撑出屏。 */
     .settings-panel {
       width: 100% !important;
       max-width: none !important;
-      height: var(--mobile-viewport-height, 100dvh) !important;
-      max-height: var(--mobile-viewport-height, 100dvh) !important;
+      height: 100% !important;
+      max-height: 100% !important;
       box-sizing: border-box;
       padding:
         max(6px, env(safe-area-inset-top))
