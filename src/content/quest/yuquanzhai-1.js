@@ -294,5 +294,72 @@ export default { quest: {
       },
     ],
     rewardText: "回寨后，卓玛在夕阳下的河谷向你倾吐心意——狼曲的草场之约，记下了。",
+  },
+
+  // ── 泉6·狼曲义盟（终局拉拢主线，发布人：丹增；合稿七方终局·玉泉寨最终任务：玉泉寨没有刀兵，出的是向导、耳目与骏马）──
+  "yuquanzhai_6_langquyimeng": {
+    id: "yuquanzhai_6_langquyimeng",
+    type: "QT_TALK",
+    localOnly: true,
+    title: "泉6·狼曲义盟",
+    giver: "丹增",
+    requiresQuestCompleted: "yuquanzhai_5_gongcuohaideyueding",
+    requiresFactionRep: { 玉泉寨: 80 },
+    requiresFlagsAny: ["xueshan_truth_public", "quest_dizang_s4_liruoyou", "quest_dizang_s4_caidan", "quest_dizang_s4_liuqingyuan"],
+    description: "真相传遍曲措，土司府税卡一夜收紧，狼曲渡口风声鹤唳。丹增敲响聚寨锣——玉泉寨没有刀兵，只有骏马、认路的人，和一双双在风里练出来的眼睛。帮不帮、怎么帮，要你当着全寨的面应下来。",
+    stages: [
+      {
+        id: "s1_gather",
+        giver: null,
+        requireLocation: { district: "玉泉寨", inner: "丹增蒙古包" },
+        playerHint: "去丹增蒙古包——聚寨锣已响，寨老们在等你开口。",
+        description: "蒙古包里哈那墙上挂着那根修好的马鞭。丹增开门见山：「土司府的人昨晚封了狼曲渡口。寨里没有兵，只有马、认路的人、和看你长大的眼睛。你要我们帮——先让我们信，这一仗打完，草场能回家吗？」",
+        completionFlag: "quest_yuquan6_gather",
+      },
+      {
+        id: "s2_pledge",
+        giver: null,
+        requireLocation: { district: "玉泉寨", inner: "寨场酥油茶棚" },
+        playerHint: "去寨场酥油茶棚，听寨老们摊出各家能出的力。",
+        description: "茶棚里酥油茶滚了三遍。李若由拍板：商队驮马与账房暗线听你调遣，土司府哪天运粮、走哪条道，她的人盯着；索朗应下全寨的马掌与备用马匹；巴登阿妈备下伤药与认路的孙辈。丹增最后开口：「还差一样——你给个准话。」",
+        completionFlag: "quest_yuquan6_pledge",
+      },
+      {
+        id: "s3_decree",
+        giver: null,
+        requireLocation: { district: "玉泉寨", inner: "寨门" },
+        playerHint: "回寨门篝火旁，当着全寨的面立下草场之约。",
+        description: "寨门篝火正旺。扎西拄着那条将将好利索的腿站到你旁边，卓玛抱着酒坛立在火光边。丹增把话摊开：「牧民之盟两条路——向导、耳目、马料照给，人留在寨里不出狼曲；或者全寨青壮备鞍，跟着你出狼曲。」",
+        completionFlag: ["quest_yuquan6_normal", "quest_yuquan6_full"],
+        choices: [
+          { flag: "quest_yuquan6_normal", label: "受向导耳目之盟——牧民不离开草场", resolve: "none",
+            narration: "丹增点头：「稳妥。」阿索把一卷手绘的狼曲渡口水道图塞进你怀里——寨里的暗哨，今夜起贴着土司府的税卡布开。" },
+          { flag: "quest_yuquan6_full", label: "全寨备马相随——狼曲骑手听你号令", resolve: "none", requiresFactionRep: { 玉泉寨: 100 },
+            narration: "丹增解下哈那墙上的旧马鞭递给你：「玉泉寨没有兵，但有骑手。」卓玛翻身上马立于队首——狼曲的青壮，今夜备鞍。" },
+        ],
+        onReach: {
+          byFlag: {
+            quest_yuquan6_normal: {
+              exp: 5, money: 200,
+              factionRep: { 玉泉寨: 20, 鱼定村: 6, 黑风寨: 6, 鱼定土司府: -15 },
+              items: [
+                { name: "狼曲渡口水道图", category: "misc", quality: "紫", desc: "阿索手绘的渡口暗流与暗哨点位图——土司府的水路运粮队，摸黑就得搁浅。" },
+              ],
+              flags: ["endgame_ally_yuquan", "endgame_buff_yuquan_herder_eyes"],
+            },
+            quest_yuquan6_full: {
+              exp: 5, money: 200,
+              factionRep: { 玉泉寨: 30, 鱼定村: 6, 黑风寨: 6, 鱼定土司府: -15 },
+              items: [
+                { name: "狼曲渡口水道图", category: "misc", quality: "紫", desc: "阿索手绘的渡口暗流与暗哨点位图——土司府的水路运粮队，摸黑就得搁浅。" },
+                { name: "丹增的旧马鞭", category: "misc", quality: "橙", desc: "三十年前断过一回、你替他修好的马鞭。丹增说，鞭子认人。" },
+              ],
+              flags: ["endgame_ally_yuquan", "endgame_ally_yuquan_full", "endgame_buff_yuquan_herder_eyes"],
+            },
+          },
+        },
+      },
+    ],
+    rewardText: "聚寨锣余音未散。狼曲的草场，今晚起站在你这边。",
   }
 } };

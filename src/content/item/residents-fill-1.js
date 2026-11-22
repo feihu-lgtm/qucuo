@@ -1,0 +1,25 @@
+// 合稿·黑风寨、锦官城「三、人物」补驻场角色的随身物（武器/护甲/饰品照合稿原文）。
+const items = {
+"百炼锻铁锤": { name: "百炼锻铁锤", category: "weapon", quality: "蓝", tags: ["钝器", "锤", "黑风寨"], desc: "贡布那柄十二斤重的铁锤，既打刀剑亦破重甲。他说谁把刀口冲着玉泉寨的穷老乡，先吃这一锤。" },
+"焦边熟牛皮围裙": { name: "焦边熟牛皮围裙", category: "armor", quality: "绿", tags: ["衣甲", "黑风寨"], desc: "铁棚里穿了多年的熟牛皮围裙，边上全是火星烫出的焦痕。厚实耐劈，挡得住寻常流矢。" },
+"旧铜算盘珠手串": { name: "旧铜算盘珠手串", category: "accessory", quality: "白", sixDim: { 根骨: 1 }, tags: ["饰品", "念想", "黑风寨"], desc: "鱼定村老佃户们当年凑份子送贡布的手串，拿旧算盘的铜珠穿成，磨得发亮。" },
+"马帮短弯匕": { name: "马帮短弯匕", category: "weapon", quality: "绿", tags: ["短兵", "匕首", "黑风寨"], desc: "旺堆藏在靴筒里的短弯匕，川西马帮脚夫的老家什，出鞘极快。" },
+"双层暗袋羊皮袄": { name: "双层暗袋羊皮袄", category: "armor", quality: "绿", tags: ["衣甲", "黑风寨"], desc: "看着是赶脚伙计的旧羊皮袄，夹层里缝着细密麻绳护心，暗袋多得数不清。" },
+"三城脚夫铜腰牌": { name: "三城脚夫铜腰牌", category: "accessory", quality: "蓝", sixDim: { 智谋: 1 }, tags: ["饰品", "腰牌", "黑风寨"], desc: "玉泉、天都、锦官三地脚夫行认的铜腰牌。旺堆凭它在三城之间畅行无阻。" },
+"血锈铁链钩": { name: "血锈铁链钩", category: "weapon", quality: "蓝", tags: ["软兵", "链", "黑风寨"], desc: "彭老四腰间那截暗红生锈的铁链，一丈二尺长，头上带钩，专钩马腿与咽喉。" },
+"暗嵌铁片黑布衫": { name: "暗嵌铁片黑布衫", category: "armor", quality: "绿", tags: ["衣甲", "黑风寨"], desc: "外看是普通黑布衫，内衬薄铁片防偷袭。穿它的人自己就惯于偷袭。" },
+"沉甸甸的碎银荷包": { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", sixDim: { 气运: 1 }, tags: ["饰品", "赃银", "黑风寨"], desc: "彭老四私藏的赃银荷包，从不交公。拎在手里沉甸甸的，寨规管不到这里头。" },
+"乌木铁骨折扇": { name: "乌木铁骨折扇", category: "weapon", quality: "绿", tags: ["短兵", "扇", "锦官"], desc: "孙文墨的乌木折扇，扇骨夹铁，聊以防身。平日只拿来指点案卷。" },
+"藏青缎面师爷长衫": { name: "藏青缎面师爷长衫", category: "armor", quality: "绿", tags: ["衣甲", "锦官"], desc: "刑名师爷的藏青缎面长衫，内袋极多，善藏文书和密折。" },
+"包浆双龙核桃": { name: "包浆双龙核桃", category: "accessory", quality: "蓝", sixDim: { 智谋: 1 }, tags: ["饰品", "锦官"], desc: "孙文墨揣在袖筒里盘了二十年的一对双龙核桃，油亮发红，据说能凝神提气。" },
+"熟铜双铁尺": { name: "熟铜双铁尺", category: "weapon", quality: "蓝", tags: ["短兵", "铁尺", "锦官"], desc: "裴九江腰间那对熟铜短铁尺，磨得发亮，专破刀剑、锁拿筋脉。" },
+"巡检玄铁犀皮甲": { name: "巡检玄铁犀皮甲", category: "armor", quality: "蓝", tags: ["衣甲", "官造", "锦官"], desc: "巡检司官造的犀皮甲，内嵌玄铁片，做工精良。" },
+"巡检铜虎腰牌": { name: "巡检铜虎腰牌", category: "accessory", quality: "蓝", sixDim: { 体魄: 1 }, tags: ["饰品", "腰牌", "锦官"], desc: "锦官城北巡检司总捕头的铜虎腰牌，亮牌可震慑寻常宵小。" },
+"轻铁雁翎短刀": { name: "轻铁雁翎短刀", category: "weapon", quality: "绿", tags: ["刀", "锦官"], desc: "快班捕快的轻铁雁翎短刀，轻快顺手，便于奔袭。" },
+"藏蓝快班轻便劲装": { name: "藏蓝快班轻便劲装", category: "armor", quality: "绿", tags: ["衣甲", "锦官"], desc: "快班的藏蓝劲装，宋小乙总穿得略微松垮，跑起来倒是利落。" },
+"红绳铜铃脚环": { name: "红绳铜铃脚环", category: "accessory", quality: "白", sixDim: { 智谋: 1 }, tags: ["饰品", "传讯", "锦官"], desc: "红绳系着的铜铃脚环，其实是哑铃，暗藏传讯机关。" },
+"紫檀铜头戒尺": { name: "紫檀铜头戒尺", category: "weapon", quality: "白", tags: ["短兵", "尺", "锦官"], desc: "卷宗阁老吏沈归尘的紫檀戒尺，铜包头，专敲乱碰卷宗者的手背。" },
+"素灰加厚棉袍": { name: "素灰加厚棉袍", category: "armor", quality: "白", tags: ["衣甲", "锦官"], desc: "素灰色的加厚棉袍，沾着旧纸尘埃与松烟墨香，抵御卷宗库的阴寒。" },
+"玳瑁老花镜": { name: "玳瑁老花镜", category: "accessory", quality: "蓝", sixDim: { 智谋: 1 }, tags: ["饰品", "锦官"], desc: "磨损严重的玳瑁圆框眼镜。沈归尘戴着它鉴定古籍、契约真伪，看纸看了一辈子。" },
+};
+export default { item: items, itemGroup: { RESIDENT_FILL_GOODS: Object.keys(items) } };

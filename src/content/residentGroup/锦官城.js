@@ -201,5 +201,62 @@ export default { residentGroup: {
 细：兵备库里一把腰刀进出一文钱都要落册。他常说自己不会做官，只会
 看门，「门看好了，城里才睡得着」。`,
     },
+    // 合稿·锦官城「三、人物」原创角色补驻场。
+    {
+      name: "孙文墨", innerRoom: "都事府", id: "resident_sunwenmo", levelCap: 2,
+      brief: "都事府刑名师爷，省城户房安插在锦官城的旧派文吏",
+      personality: "圆滑世故，迷信官场资历；表面唯唯诺诺，背地里屡向省城递密折催收曲措乡税卡",
+      carry: [
+        { name: "乌木铁骨折扇", category: "weapon", quality: "绿" },
+        { name: "藏青缎面师爷长衫", category: "armor", quality: "绿" },
+        { name: "包浆双龙核桃", category: "accessory", quality: "蓝" },
+        { name: "锦官文思膏", category: "misc", quality: "绿" },
+        { name: "甜奶茶", category: "misc", quality: "白" },
+        { name: "锦官烧刀子", category: "misc", quality: "蓝" },
+        { name: "参须茶包", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "裴九江", innerRoom: "巡检校场·锦官武馆后院", id: "resident_peijiujiang", levelCap: 3,
+      brief: "锦官城北巡检司总捕头，兼管锦官武馆后院校场操练",
+      personality: "刚正务实，厌恶油滑；恨血刀部入骨，对黑风寨巴桑却存三分敬意",
+      carry: [
+        { name: "熟铜双铁尺", category: "weapon", quality: "蓝" },
+        { name: "巡检玄铁犀皮甲", category: "armor", quality: "蓝" },
+        { name: "巡检铜虎腰牌", category: "accessory", quality: "蓝" },
+        { name: "锦官烧刀子", category: "misc", quality: "蓝" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+        { name: "熊山续骨膏", category: "misc", quality: "绿" },
+        { name: "酥油茶", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "宋小乙", innerRoom: "清风茶馆", id: "resident_songxiaoyi", levelCap: 1,
+      brief: "快班年轻捕快，清风茶馆常客，跑锦官城、雅江、鱼定村一线传信",
+      personality: "热心嘴碎，贪吃好凑热闹，查案盯梢时却比猎犬还敏锐；极崇拜柳青鸢与裴九江",
+      carry: [
+        { name: "轻铁雁翎短刀", category: "weapon", quality: "绿" },
+        { name: "藏蓝快班轻便劲装", category: "armor", quality: "绿" },
+        { name: "红绳铜铃脚环", category: "accessory", quality: "白" },
+        { name: "桂花糖", category: "misc", quality: "白" },
+        { name: "甜奶茶", category: "misc", quality: "白" },
+        { name: "参须茶包", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "沈归尘", innerRoom: "刑名东厢·卷宗库房", id: "resident_shenguichen", levelCap: 2,
+      brief: "都事府卷宗阁守库老吏，六年前失踪上司的贴身书办",
+      personality: "古板执拗，过目不忘，对人冷淡却对每一页纸敬若神明",
+      carry: [
+        { name: "紫檀铜头戒尺", category: "weapon", quality: "白" },
+        { name: "素灰加厚棉袍", category: "armor", quality: "白" },
+        { name: "玳瑁老花镜", category: "accessory", quality: "蓝" },
+        { name: "锦官文思膏", category: "misc", quality: "绿" },
+        { name: "参须茶包", category: "misc", quality: "白" },
+        { name: "酥油茶", category: "misc", quality: "白" },
+        { name: "甜奶茶", category: "misc", quality: "白" },
+      ],
+    },
   ]
 } };
