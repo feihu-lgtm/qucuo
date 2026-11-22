@@ -132,6 +132,9 @@
   --lore-script: #9a8ac0;
   --lore-summary: #d8cfb0;
 
+  /* 音乐面板定色（原字面量，不随日间模式变）：未播放曲目的图标色。 */
+  --music-idle-icon: #3a4a3a;
+
   /* 百物图鉴卷轴定色（原字面量，不随日间模式变）。 */
   --codex-ink: #3a2a14;         /* 卷面正文 */
   --codex-dim: #8a6a3a;         /* 卷面次级字 */

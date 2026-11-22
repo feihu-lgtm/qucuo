@@ -32,16 +32,16 @@ export default function MusicPanel({ onClose }) {
                 style={{
                   display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                   borderRadius: 0, cursor: "pointer",
-                  background: active ? "#241211" : "var(--bg-panel)",
+                  background: active ? "var(--ink-tier-bg)" : "var(--bg-panel)",
                   border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
                   transition: "all 0.15s ease",
                 }}
               >
-                <span style={{ fontSize: "16px", color: active && state.playing ? "var(--accent)" : "#3a4a3a", flexShrink: 0 }}>
+                <span style={{ fontSize: "16px", color: active && state.playing ? "var(--accent)" : "var(--music-idle-icon)", flexShrink: 0 }}>
                   {active && state.playing ? "♫" : "♪"}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: active ? "#c8e0d8" : "var(--text-dim)", fontSize: "12.5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</div>
+                  <div style={{ color: active ? "var(--ink-tier-text)" : "var(--text-dim)", fontSize: "12.5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</div>
                   <div style={{ color: "var(--text-dim)", fontSize: "10.5px" }}>{t.artist}{t.origin ? ` · ${t.origin}` : ""}</div>
                 </div>
                 {active && state.playing && (
@@ -70,12 +70,12 @@ export default function MusicPanel({ onClose }) {
             吞掉，getState() 算了 error 却没人渲染，于是"点一下、没声音、没提示、
             ♪也不变♫"——最难查的那种坏。 */}
         {state.error && (
-          <div style={{ marginTop: 10, padding: "7px 9px", background: "#1a0e0e", border: "1px solid #4a2020", borderRadius: 0, fontSize: "10.5px", color: "#d88a7a", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 10, padding: "7px 9px", background: "var(--ink-error-bg)", border: "1px solid var(--ink-error-edge)", borderRadius: 0, fontSize: "10.5px", color: "var(--ink-error-text)", lineHeight: 1.5 }}>
             ⚠ {state.error}
           </div>
         )}
 
-        <div style={{ fontSize: "10px", color: "#3a3a2a", marginTop: 10, lineHeight: 1.5 }}>
+        <div style={{ fontSize: "10px", color: "var(--ink-faint)", marginTop: 10, lineHeight: 1.5 }}>
           音源见各曲目标注 · 外链曲目来自 archive.org，本地曲目需 public/music/ 下有对应 mp3
         </div>
       </div>
