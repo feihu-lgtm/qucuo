@@ -7,6 +7,7 @@ import { random } from "../../utils/rng.js";
 import { buildDuelReportRounds } from "../../domain/rules/combat/duelReport.js";
 import { QUEST_TYPE } from "../../domain/data/quests/questTypes.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { BOUNTY_QUESTS } from "../../domain/data/quests/bountyQuests.js";
 import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
 import { resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
 import { duelAlly } from "../../domain/rules/companion/companion.js";
@@ -246,6 +247,22 @@ export function settleNpcDuel(state, npc, {
       } else {
         logs.push({ t: "sys", text: `  任务「${quest.title}」进度：${nextCount}/${quest.requiredCount}` });
       }
+    }
+  }
+
+  if (outcome === "win") {
+    // 悬赏榜：击杀目标名（档案名或 tag 皆可）计入已接悬赏的进度，攒够回镖局领赏。
+    for (const bounty of BOUNTY_QUESTS) {
+      if (bounty.target !== npc.name && bounty.target !== npc.tag) continue;
+      const progress = state.questProgress?.[bounty.id];
+      if (!progress?.active) continue;
+      const need = bounty.requiredCount || 1;
+      const nextCount = Math.min((progress.count || 0) + 1, need);
+      addChange(changes, working, "questProgress", (prev) => ({
+        ...prev,
+        [bounty.id]: { ...prev[bounty.id], count: nextCount },
+      }));
+      logs.push({ t: "sys", text: `  悬赏「${bounty.title}」进度：${nextCount}/${need}${nextCount >= need ? "，可回镖局领赏" : ""}` });
     }
   }
 

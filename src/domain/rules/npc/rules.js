@@ -5,7 +5,7 @@ import { mapDescriptionToGenParams } from "../../data/npc/npcDescriptionMapping.
 import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../data/npc/npcPool.js";
 import { getCrowd, getRandomPassers } from "../../data/npc/randomPassers.js";
 import { injectNpcs } from "../npc/roomNpcs.js";
-import { getResidentNpcs } from "../../data/npc/residentNpcs.js";
+import { getResidentNpcs, RESIDENT_NPCS } from "../../data/npc/residentNpcs.js";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
 import { seededRand } from "../../../utils/seededRandom.js";
 import { parseQuestPlace, questPlaceDistrict } from "../quests/questPlace.js";
@@ -88,7 +88,8 @@ export const residentNpcRule = {
       // 收货人可能是游走池的人，也可能是常驻（李掌柜）；常驻的那位若被旧存档缓存在别处，
       // residentNpcs 会滤掉他，这里照样把人请到，免得镖送到了没人收
       .map((quest) => NPC_POOL.find((npc) => npc.name === quest.targetNpc)
-        || getResidentNpcs(room.name).find((npc) => npc.name === quest.targetNpc))
+        // 收货人若是常驻且住在别的据点（卓玛住玉泉寨、镖送到贡措海），只查本据点常驻永远找不到人。
+        || Object.values(RESIDENT_NPCS).flat().find((npc) => npc.name === quest.targetNpc))
       .filter(Boolean)
       .map(toRoomNpcWithCombat)
       .map((npc) => {

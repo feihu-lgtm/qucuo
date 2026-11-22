@@ -99,6 +99,7 @@ export function advanceQuestStages(quest, progress, gameState, now = Date.now())
 //   requiresKnownNpc:       string[]           —— 这些人物必须已结识（世界.已认识人物）
 //   requiresKnownNpcAny:    string[]           —— 至少结识其中一位（OR，如花支2 梵衍那或罗琦）
 //   requiresFlags:          string[]           —— flags 里必须全有（如花4 须已解锁雾隐寨）
+//   requiresFlagsMin:       { flags, min }     —— 列出的旗至少持有 min 面（官2-A 有利选项 ≥2）
 // 不涉及互斥锁（exclusiveGroup）那套逻辑，两者可以同时用在同一个任务上。
 // 声誉/威望门槛要传 varTree 才卡；没传（只做展示的调用方）时不卡。
 export function questGateReqs(quest, varTree, flags = []) {
@@ -134,6 +135,11 @@ export function questGateReqs(quest, varTree, flags = []) {
     const ok = quest.requiresFlagsAny.some((f) => (flags || []).includes(f));
     reqs.push({ key: "flagsAny", label: `已历「${quest.requiresFlagsAny.join("」或「")}」`, have: ok, ok });
   }
+  if (quest.requiresFlagsMin?.flags?.length) {
+    const have = quest.requiresFlagsMin.flags.filter((f) => (flags || []).includes(f)).length;
+    const min = quest.requiresFlagsMin.min ?? 1;
+    reqs.push({ key: "flagsMin", label: `已历「${quest.requiresFlagsMin.flags.join("」「")}」至少 ${min} 项`, have, ok: have >= min });
+  }
   return reqs;
 }
 
@@ -159,6 +165,10 @@ export function isQuestChoiceOpen(choice, { questProgress, flags, varTree, inv }
   if (choice.requiresAnyOf?.length && !choice.requiresAnyOf.some(isDone)) return false;
   if (choice.requiresFlag?.some((f) => !flags?.includes(f))) return false;
   if (choice.requiresFlagAny?.length && !choice.requiresFlagAny.some((f) => flags?.includes(f))) return false;
+  if (choice.requiresFlagsMin?.flags?.length) {
+    const have = choice.requiresFlagsMin.flags.filter((f) => flags?.includes(f)).length;
+    if (have < (choice.requiresFlagsMin.min ?? 1)) return false;
+  }
   if (choice.blockedByFlags?.some((f) => flags?.includes(f))) return false;
   if (Object.entries(choice.requiresFactionRep || {}).some(([faction, min]) => factionRepOf(varTree, faction) < min)) return false;
   if (!isChoiceOpen(choice, flags)) return false;
