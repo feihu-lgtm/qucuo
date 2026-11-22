@@ -180,20 +180,35 @@ export default { quest: {
         onReach: {
           byFlag: {
             quest_ts4_truth: {
-              money: 400, items: catalog("点钢乌木镇边矛"), reputation: 20,
+              money: 400, items: catalog("点钢乌木镇边矛"), reputation: 15,
               factionRep: { [TS]: -40, 雪山派: 15, 喇嘛庙: 15, 玉泉寨: 15, 鱼定村: 15 },
               favorability: { 格桑顿珠: 30 }, flags: ["tusi_gesang_true_heir", "flag_gesang_neutralized"],
             },
             quest_ts4_regent: {
-              money: 400, items: catalog("点钢乌木镇边矛"), reputation: 20,
+              money: 400, items: catalog("点钢乌木镇边矛"), reputation: 15,
               factionRep: { [TS]: -40, 雪山派: 15, 喇嘛庙: 15, 玉泉寨: 15, 鱼定村: 15 },
               favorability: { 格桑顿珠: 30, 梅朵: 10 }, flags: ["tusi_gesang_true_heir", "flag_gesang_neutralized", "flag_meiduo_regent"],
             },
             quest_ts4_purge: {
-              money: 1200, items: catalog("巡边行走金印"), reputation: -25,
+              money: 1200, items: catalog("巡边行走金印"), reputation: -15,
               factionRep: { [TS]: 40, 雪山派: -20, 黑风寨: -20, 玉泉寨: -20, 锦官城: -12 },
               favorability: { 桑杰朵杰: 20 },
             },
+          },
+        },
+      },
+      {
+        // 威望单次写入封顶 ±15（fields.js），合稿 +20 / -25 的余数在天亮出府时补发。
+        id: "dawn",
+        requireLocation: at("府门"),
+        playerHint: "天亮了，从府门出去，看这一夜的事在乡里传成什么样。",
+        description: "雪停了。府门外的石阶上积着一夜的脚印，早起的牧民远远望着你，交头接耳。",
+        completionFlag: ["quest_ts4_truth", "quest_ts4_regent", "quest_ts4_purge"],
+        onReach: {
+          byFlag: {
+            quest_ts4_truth: { reputation: 5 },
+            quest_ts4_regent: { reputation: 5 },
+            quest_ts4_purge: { reputation: -10 },
           },
         },
       },
