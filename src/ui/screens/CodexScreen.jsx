@@ -111,19 +111,19 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
   const itemOwnedCount = useMemo(() => CATALOG.filter(it => ownedItems.has(it.name)).length, [ownedItems]);
 
   const T = zoneTheme;
-  const paperText = isDayMode ? "#3a2a14" : "#3a2a14"; // 卷轴纸永远是深色底纹，字用深棕
-  const paperDim = "#8a6a3a";
-  const paperAccent = "#6a3a10";
+  const paperText = "var(--codex-ink)"; // 卷轴纸永远是深色底纹，字用深棕
+  const paperDim = "var(--codex-dim)";
+  const paperAccent = "var(--codex-accent)";
 
   const chipStyle = (on) => ({
     cursor: "pointer", padding: "3px 12px", fontSize: "12px", userSelect: "none",
     backgroundImage: `url(${S("ui/bar_paper.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-    color: on ? "#5a2d08" : "#9a7a4a", fontWeight: on ? "bold" : "normal", opacity: on ? 1 : 0.6,
+    color: on ? "var(--codex-chip-on)" : "var(--codex-chip-off)", fontWeight: on ? "bold" : "normal", opacity: on ? 1 : 0.6,
   });
   const tabStyle = (on) => ({
     cursor: "pointer", padding: "7px 26px", fontSize: "15px", border: "none",
     backgroundImage: `url(${S("ui/bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-    color: on ? "#f0e0b0" : "#c8a86a", textShadow: on ? "0 1px 2px var(--black)" : "none", opacity: on ? 1 : 0.55,
+    color: on ? "var(--ink-cream)" : "var(--codex-tab-off)", textShadow: on ? "0 1px 2px var(--black)" : "none", opacity: on ? 1 : 0.55,
   });
 
   return (
@@ -165,7 +165,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
             placeholder="搜名字或介绍…"
             style={{
               flex: 1, minWidth: 140, padding: "5px 10px", fontSize: 12, fontFamily: "inherit",
-              background: "rgba(255,250,235,0.6)", border: "1px solid #b3987a", borderRadius: 0, color: "#3a2a14",
+              background: "rgba(255,250,235,0.6)", border: "1px solid var(--codex-search-edge)", borderRadius: 0, color: "var(--codex-ink)",
             }}
           />
           {search && <span onClick={() => setSearch("")} style={{ cursor: "pointer", color: paperDim, fontSize: 12 }}>✕清空</span>}
@@ -206,7 +206,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
                   <button key={src} onClick={() => setSrcTab(src)}
                     style={{
                       fontSize: 12, padding: "3px 10px", borderRadius: 0, cursor: "pointer",
-                      border: `1px solid ${srcTab === src ? "#a0651a" : "rgba(120,90,50,0.35)"}`,
+                      border: `1px solid ${srcTab === src ? "var(--codex-tab-edge)" : "rgba(120,90,50,0.35)"}`,
                       background: srcTab === src ? "rgba(160,101,26,0.18)" : "transparent",
                       color: srcTab === src ? paperAccent : paperDim, fontFamily: "inherit",
                     }}>
@@ -219,7 +219,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
               </div>
               {skillGroups.map(([grp, list]) => (
                 <div key={grp}>
-                  <div style={{ fontSize: 15, color: paperAccent, margin: "16px 0 6px", letterSpacing: 1, fontWeight: "bold", borderLeft: "4px solid #a0651a", paddingLeft: 10 }}>{grp}</div>
+                  <div style={{ fontSize: 15, color: paperAccent, margin: "16px 0 6px", letterSpacing: 1, fontWeight: "bold", borderLeft: "4px solid var(--codex-tab-edge)", paddingLeft: 10 }}>{grp}</div>
                   {list.map((sk, i) => <SkillRow key={sk.id || i} sk={sk} owned={ownedSkills.has(sk.name)} paperText={paperText} paperDim={paperDim} paperAccent={paperAccent} />)}
                 </div>
               ))}
@@ -249,20 +249,20 @@ function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
     <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)", opacity: owned ? 1 : 0.92 }}>
       <div style={{ position: "relative", flexShrink: 0 }}>
         {jade && <img src={jade} alt={it.quality} style={{ width: 42, height: 42, objectFit: "contain", filter: owned ? "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" : "grayscale(0.55) opacity(0.7)" }} />}
-        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "#3a9a3a", textShadow: "0 0 2px var(--white)" }}>✓</span>}
+        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "var(--codex-owned)", textShadow: "0 0 2px var(--white)" }}>✓</span>}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, fontWeight: "bold", color: qc }}>{it.name}</span>
           <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 0, color: "var(--white)", background: qc }}>{it.quality}</span>
           <span style={{ fontSize: 10, color: paperDim }}>{CATEGORY_LABEL[it.category] || it.category}</span>
-          {statBits.length > 0 && <span style={{ fontSize: 11, color: "#a05a10" }}>{statBits.join(" · ")}</span>}
-          {effectName && <span style={{ fontSize: 11, color: "#a05a10" }}>· {effectName}</span>}
-          {owned && <span style={{ fontSize: 10, color: "#3a9a3a" }}>· 已获得</span>}
+          {statBits.length > 0 && <span style={{ fontSize: 11, color: "var(--codex-stat)" }}>{statBits.join(" · ")}</span>}
+          {effectName && <span style={{ fontSize: 11, color: "var(--codex-stat)" }}>· {effectName}</span>}
+          {owned && <span style={{ fontSize: 10, color: "var(--codex-owned)" }}>· 已获得</span>}
         </div>
-        {it.desc && <div style={{ color: "#6a5230", fontSize: 12, marginTop: 3, lineHeight: 1.7 }}>{it.desc}</div>}
-        <div style={{ fontSize: 11, marginTop: 4, color: dist.kind === "special" ? "#9a6a2a" : "#5a3a12" }}>
-          📍 <span style={{ color: dist.kind === "special" ? "#9a6a2a" : "#9a5a10" }}>{dist.text}</span>
+        {it.desc && <div style={{ color: "var(--codex-desc)", fontSize: 12, marginTop: 3, lineHeight: 1.7 }}>{it.desc}</div>}
+        <div style={{ fontSize: 11, marginTop: 4, color: dist.kind === "special" ? "var(--codex-special)" : "var(--codex-brown)" }}>
+          📍 <span style={{ color: dist.kind === "special" ? "var(--codex-special)" : "var(--codex-bonus)" }}>{dist.text}</span>
         </div>
       </div>
     </div>
@@ -287,7 +287,7 @@ function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
     <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)", opacity: owned ? 1 : 0.92 }}>
       <div style={{ position: "relative", flexShrink: 0 }}>
         {jade && <img src={jade} alt={sk.quality} style={{ width: 42, height: 42, objectFit: "contain", filter: owned ? "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" : "grayscale(0.55) opacity(0.7)" }} />}
-        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "#3a9a3a", textShadow: "0 0 2px var(--white)" }}>✓</span>}
+        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "var(--codex-owned)", textShadow: "0 0 2px var(--white)" }}>✓</span>}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -295,16 +295,16 @@ function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
           <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 0, color: "var(--white)", background: qc }}>{sk.quality}</span>
           <span style={{ fontSize: 10, color: paperDim }}>{sk.type}</span>
           {typeof sk.price === "number" && (
-            <span style={{ fontSize: 11, color: "#a05a10" }}>
+            <span style={{ fontSize: 11, color: "var(--codex-stat)" }}>
               <img src={S("ui/ingot.webp")} alt="" style={{ width: 13, verticalAlign: -2, marginRight: 2 }} />{sk.price} 两
             </span>
           )}
-          {owned && <span style={{ fontSize: 10, color: "#3a9a3a" }}>· 已习得</span>}
+          {owned && <span style={{ fontSize: 10, color: "var(--codex-owned)" }}>· 已习得</span>}
         </div>
         {bonusBits.length > 0 && (
-          <div style={{ fontSize: 11, marginTop: 3, color: "#5a3a12" }}>✦ 效果：<span style={{ color: "#9a5a10" }}>{bonusBits.join(" · ")}</span></div>
+          <div style={{ fontSize: 11, marginTop: 3, color: "var(--codex-brown)" }}>✦ 效果：<span style={{ color: "var(--codex-bonus)" }}>{bonusBits.join(" · ")}</span></div>
         )}
-        {sk.desc && <div style={{ color: "#6a5230", fontSize: 12, marginTop: 3, lineHeight: 1.7 }}>{sk.desc}</div>}
+        {sk.desc && <div style={{ color: "var(--codex-desc)", fontSize: 12, marginTop: 3, lineHeight: 1.7 }}>{sk.desc}</div>}
       </div>
     </div>
   );
