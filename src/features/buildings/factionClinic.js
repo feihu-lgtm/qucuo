@@ -3,6 +3,7 @@
 // 青城药圃：随玉真子采药义诊（耗两个时辰）+8、威望 +3。
 // 喇嘛庙山门施药棚：协助根敦诊治冻伤牧民（耗两个时辰）+5、威望 +2；声誉 ≥ 15 免费疗伤回气（合稿「喇嘛庙·七」）。
 // 喇嘛庙大殿：捐 20 两香油 +3，每七日最多 +10（合稿「喇嘛庙·七、1」加分行为 1，weekCap）。
+// 鱼定村歇马居：托鱼定大娘给寒户捐 20 两粮药，鱼定村 +5、威望 +1（合稿「鱼定村·七、7.1」加分行为 3）。
 // 唐门试毒药庐：采毒草、送修机括的日常委托（耗两个时辰）+5；声誉 ≥ 40 免诊金。
 // 各处声誉 ≤ -20 都拒诊。
 import { factionRepOf, formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
@@ -35,6 +36,13 @@ export const FACTION_CLINICS = {
     deed: "在大殿捐了20两香油",
     settle: "在喇嘛庙大殿捐了20两香油，替十八盏酥油长明灯添满了灯油",
     refuse: "知客僧合十挡在殿门前：「施主的香油钱，寺里不敢收。」",
+  },
+  inn_yiding: {
+    faction: "鱼定村", cost: 20, hours: 0, rep: 5, prestige: 1, freeRep: null, refuseRep: -20,
+    dayFlag: "yuding_alms_day_", label: "托大娘给寒户捐20两粮药", done: "今日已捐",
+    deed: "托鱼定大娘给村里寒户捐了20两粮药",
+    settle: "在歇马居把20两银子交给鱼定大娘，托她换成青稞和药，挨家送到交不起税的寒户手里",
+    refuse: "鱼定大娘把银子推回来：「你的东西，村里人不敢收。」",
   },
   hospital_tangmen: {
     faction: "唐门", cost: 0, hours: 2, rep: 5, prestige: 0, freeRep: 40, refuseRep: -20,

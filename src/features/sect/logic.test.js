@@ -4,7 +4,11 @@ import { SECT_ENTRY } from "../../domain/rules/character/sectEntry.js";
 import { applyResult } from "../run.js";
 import { gameActions, gameStore, initGameStore } from "../../store/gameStore.js";
 
-const state = () => ({ char: { money: 150, neigong: 5 }, inv: [], flags: [], varTree: { 角色: { [SECT_ENTRY.master]: { 好感度: 30 } } } });
+const state = () => ({
+  char: { money: 150, neigong: 5 }, inv: [], flags: [],
+  varTree: { 角色: { [SECT_ENTRY.master]: { 好感度: 30 } }, 世界: { 势力声誉: { [SECT_ENTRY.sect]: 40 }, 威望: 0 } },
+  questProgress: Object.fromEntries((SECT_ENTRY.quests || []).map(qid => [qid, { status: "completed" }])),
+});
 
 describe("sect logic", () => {
   it("charges tuition, grants a token and identity, marks the master known, and settles", () => {

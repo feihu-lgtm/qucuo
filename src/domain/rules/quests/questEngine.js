@@ -140,6 +140,8 @@ export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}
 
 export function isQuestGateOpen(quest, allProgress, flags, varTree) {
   const isDone = (qid) => allProgress?.[qid]?.status === "completed";
+  // 门槛只管「能不能接」：已接下的任务不因后加的前置/声誉门槛中断，只认 blockedByFlags。
+  if (allProgress?.[quest.id]) return !(quest.blockedByFlags?.length && quest.blockedByFlags.some(f => flags?.includes(f)));
   if (varTree && !questGateReqs(quest, varTree).every((r) => r.ok)) return false;
   if (quest.requiresQuestCompleted) {
     const list = Array.isArray(quest.requiresQuestCompleted) ? quest.requiresQuestCompleted : [quest.requiresQuestCompleted];
