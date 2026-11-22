@@ -58,10 +58,12 @@ export default function CharacterCreate({ onConfirm }) {
       onConfirm({ name: name.trim(), gender: finalGender, fromCard, special: undefined, starterSkillId: undefined });
       return;
     }
-    if (!portraitTouched && !bodyTouched) {
+    if (!portraitTouched) {
       const defId = defaultPortraitIdForGender(gender);
       setSelectedPortraitId(defId);
-      setBodyProfile(applyBodyPreset(emptyBodyProfile(), getPortraitPreset(defId), { includeIntimate: false }));
+      if (!bodyTouched) {
+        setBodyProfile(applyBodyPreset(emptyBodyProfile(), getPortraitPreset(defId), { includeIntimate: false }));
+      }
     }
     setStep("appearance");
   };

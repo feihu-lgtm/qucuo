@@ -12,7 +12,6 @@ import { readMobileColumn, writeMobileColumn } from "../../utils/mobileColumn.js
 import { usePromptInspector } from "./ui/usePromptInspector.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
-import { gameActions } from "../../store/gameStore.js";
 
 export function useGameUi({
   room, innerRoomName, char, inv, log, time, narrator, preset,
@@ -62,18 +61,25 @@ export function useGameUi({
   const [pigeonTarget, setPigeonTarget] = useState(null);
   const [activeNpcMenu, setActiveNpcMenu] = useState(null);
   const [activeItemMenu, setActiveItemMenu] = useState(null);
-  // 头像跟着存档走（char.portrait）；旧存档没有这个字段时才回落到浏览器里那份共用偏好。
-  const [legacyAvatar, setLegacyAvatar] = useState(() => {
-    try { return localStorage.getItem("qucuo_player_avatar") || ""; } catch { return ""; }
-  });
-  const playerAvatarCustom = char?.portrait || (char?.portrait === "" ? "" : legacyAvatar);
+  // 头像按存档分键存在浏览器里，不写进存档本身：换头像不算"开玩"、不触发自动存档，
+  // 大图也不会撑爆存档。新建角色带 avatarId，各存各的；旧存档没有 avatarId，沿用原来那份共用偏好。
+  const avatarKey = char?.avatarId ? `qucuo_player_avatar:${char.avatarId}` : "qucuo_player_avatar";
+  const [avatarRev, setAvatarRev] = useState(0);
+  const playerAvatarCustom = useMemo(() => {
+    void avatarRev;
+    let stored = "";
+    try { stored = localStorage.getItem(avatarKey) || ""; } catch { /* ignore */ }
+    return stored || (char?.avatarId ? char?.portrait || "" : "");
+  }, [avatarKey, avatarRev, char?.avatarId, char?.portrait]);
   const setPlayerAvatarCustom = useCallback((src) => {
-    gameActions.setChar((c) => ({ ...c, portrait: src || "" }));
-    if (!src) {
-      setLegacyAvatar("");
-      try { localStorage.removeItem("qucuo_player_avatar"); } catch { /* ignore */ }
+    try {
+      if (src) localStorage.setItem(avatarKey, src);
+      else localStorage.removeItem(avatarKey);
+    } catch {
+      if (src) alert("图片太大，无法存入本地存储，请换小一点的图。");
     }
-  }, []);
+    setAvatarRev((v) => v + 1);
+  }, [avatarKey]);
   const [characterPageTarget, setCharacterPageTarget] = useState(null);
   const [portraits, setPortraits] = useState(loadPortraits());
   const [slForm, setSlFormState] = useState(getSnowLeopardForm());

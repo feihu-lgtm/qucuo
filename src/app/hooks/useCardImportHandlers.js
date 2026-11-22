@@ -10,7 +10,7 @@ import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 
 export function useCardImportHandlers({
   setVarTree, setChar, setSkills, setInv, setCompanionState, addLog,
-  setPlayerAvatarCustom, featureCtxRef, schedulerRef,
+  featureCtxRef, schedulerRef,
 }) {
   const handleImportNpcs = useCallback((npcs) => applyResult(featureCtxRef.current, () => {
     const n = importedRegistry.registerImported(npcs, {});
@@ -94,11 +94,11 @@ export function useCardImportHandlers({
           next.hp = [maxHp, maxHp];
           next.moveset = deriveMovesetFromSkills(initialSkills);
         }
+        // 新角色自带头像标识：开局选的立绘记在本存档里，不去动别的存档共用的头像偏好。
+        next.avatarId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+        next.portrait = !fromCard && portraitUrl ? portraitUrl : "";
         return next;
       });
-      if (!fromCard && portraitUrl) {
-        setPlayerAvatarCustom?.(portraitUrl);
-      }
       if (fromCard) {
         const cardResult = applyCharacterCard(gameStore.getState(), fromCard, "cc_");
         applyResult(featureCtxRef.current, cardResult);
