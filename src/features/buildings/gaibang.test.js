@@ -27,13 +27,13 @@ const names = (offer) => offer.items.map((item) => item.name);
 const apply = (update, prev) => (typeof update === "function" ? update(prev) : update);
 
 describe("丐帮三星分舵", () => {
-  it("binds the branch buildings to the temple rooms and seats six residents", () => {
+  it("binds the branch buildings to the temple rooms and seats seven residents", () => {
     const buildings = getBuildingsForLocation("广汉");
     const at = (inner) => buildings.find((building) => building.id === getBuildingIdForInnerRoom("广汉", inner));
     expect(at("粥棚后耳房·分舵义坊")).toMatchObject({ type: "sectshop", shopKey: "三星分舵商坊" });
     expect(at("破庙前院·粥棚与竹坪")?.skillSet).toBe("丐帮");
     const residents = RESIDENT_NPCS.广汉.map((npc) => npc.name);
-    expect(residents).toEqual(expect.arrayContaining(["严九斤", "周小满", "胡三爷", "白婶", "多吉", "哑巴七"]));
+    expect(residents).toEqual(expect.arrayContaining(["严九斤", "周小满", "胡三爷", "白婶", "多吉", "哑巴七", "秦小鹊"]));
   });
 
   it("every shop, carry and quest item resolves in the catalog", () => {
