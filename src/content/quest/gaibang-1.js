@@ -61,7 +61,7 @@ export default { quest: {
     giverId: "resident_zhouxiaoman",
     localOnly: true,
     requiresQuestCompleted: "gaibang_1_yiwanxizhou",
-    requiresFactionRep: { faction: GB, min: 15 },
+    requiresFactionRep: { [GB]: 15 },
     description: "本该昨夜飞抵三星鸽舍的雅江报信鸽断了音讯，带着曲措逃民路线图和血刀部布防情报的察世堂弟子阿狗，失联在雅江与大草甸交界。",
     stages: [
       {
@@ -128,7 +128,7 @@ export default { quest: {
     giverId: "resident_zhouxiaoman",
     localOnly: true,
     requiresQuestCompleted: "gaibang_2_taomindejiaoyin",
-    requiresFactionRep: { faction: GB, min: 30 },
+    requiresFactionRep: { [GB]: 30 },
     description: "光凭逃民口述和一纸密报，压不倒严九斤心头三十年的救命恩情。周小满要曲措本土的硬物证，和《逃民口供簿》交叉对账。",
     stages: [
       {
@@ -206,7 +206,7 @@ export default { quest: {
     giverId: "resident_yanjiujin",
     localOnly: true,
     requiresQuestCompleted: "gaibang_3_zhangmuhedui",
-    requiresFactionRep: { faction: GB, min: 55 },
+    requiresFactionRep: { [GB]: 55 },
     description: "严九斤把玩着那张盖着桑杰朵杰私印的批条，在土地庙门槛上喝干了一整坛青稞老酒，始终不发一言。",
     stages: [
       {
@@ -265,7 +265,7 @@ export default { quest: {
     giver: "哑巴七",
     giverId: "resident_yabaqi",
     localOnly: true,
-    requiresFactionRep: { faction: GB, min: 25 },
+    requiresFactionRep: { [GB]: 25 },
     description: "十年一次的「墟界旧约」交接之期将至，近来却有来历不明的蒙面盗墓客夜里窥探古墟外围。",
     stages: [
       {
@@ -324,7 +324,7 @@ export default { quest: {
     giverId: "resident_baishen",
     localOnly: true,
     requiresQuestCompleted: "gaibang_1_yiwanxizhou",
-    requiresFactionRep: { faction: GB, min: 15 },
+    requiresFactionRep: { [GB]: 15 },
     description: "广汉连日秋雨，破庙里几个刚从高原逃下来的牧民娃染了风寒，分舵存药告急。",
     stages: [
       {
@@ -380,7 +380,7 @@ export default { quest: {
     giver: "胡三爷",
     giverId: "resident_husanye",
     localOnly: true,
-    requiresFactionRep: { faction: GB, min: 20 },
+    requiresFactionRep: { [GB]: 20 },
     description: "胡三爷跟严九斤打了个赌：找个后生把竹坪最难缠的「七根活竹桩」全敲响而不倒，严九斤就得把地窖里那坛三十年陈酿拿出来分给全舵。",
     stages: [
       {

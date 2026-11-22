@@ -1,7 +1,6 @@
 import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
 import { getCurrentStage, isQuestGateOpen } from "./questEngine.js";
-import { factionRepOf } from "../economy/factionRep.js";
 
 const list = (value) => Array.isArray(value) ? value : value ? [value] : [];
 const localQuests = QUCUO_QUESTS.filter((quest) => quest.localOnly);
@@ -19,8 +18,6 @@ export function getLocalQuestStage(quest, state) {
   if (!quest.localOnly || !isQuestGateOpen(quest, state.questProgress, state.flags, state.varTree)) return null;
   const progress = state.questProgress?.[quest.id];
   if (progress && progress.status !== "active") return null;
-  const repGate = quest.requiresFactionRep;
-  if (!progress && repGate && factionRepOf(state.varTree, repGate.faction) < repGate.min) return null;
   const stage = progress ? getCurrentStage(quest, progress) : quest.stages[0];
   if (!stage) return null;
   const { room, innerRoomName } = state;

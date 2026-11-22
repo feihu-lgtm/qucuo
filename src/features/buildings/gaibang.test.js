@@ -105,7 +105,7 @@ describe("丐帮三星分舵", () => {
     for (const quest of gated) {
       const where = quest.stages[0].requireLocation?.inner;
       const flags = [...(quest.requiresFlags || [])];
-      const low = state(quest.requiresFactionRep.min - 1, { innerRoomName: where, flags });
+      const low = state(quest.requiresFactionRep["丐帮三星分舵"] - 1, { innerRoomName: where, flags });
       expect(getLocalQuestStage(quest, low), quest.id).toBeNull();
     }
   });
