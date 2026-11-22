@@ -989,3 +989,71 @@
     }
   }
 }
+
+/* iOS 专门适配：切磋。
+   竖屏：招式区/日志按 dvh 封顶，Safari 工具栏展开时不把日志挤出屏。
+   横屏：全屏两栏——左栏出招（三列），右栏战报，顶栏横跨；各栏自己滚，整页不滚。 */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 767px) and (orientation: portrait) {
+    .duel-move-grid {
+      max-height: 30dvh !important;
+    }
+
+    .duel-log {
+      max-height: 34dvh !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    .mobile-duel-root {
+      align-items: stretch !important;
+      justify-content: stretch !important;
+      padding: 0 !important;
+    }
+
+    .mobile-duel-panel {
+      display: grid !important;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 6px 14px !important;
+      width: 100% !important;
+      max-width: none !important;
+      height: var(--mobile-viewport-height, 100dvh) !important;
+      max-height: var(--mobile-viewport-height, 100dvh) !important;
+      box-sizing: border-box;
+      padding:
+        max(6px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        max(6px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left)) !important;
+      overflow: hidden !important;
+    }
+
+    .duel-topbar {
+      grid-column: 1 / -1;
+    }
+
+    .duel-op {
+      min-height: 0;
+      overflow-y: auto;
+      padding-top: 6px !important;
+      gap: 6px !important;
+    }
+
+    .duel-move-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    .duel-move-grid > .mobile-duel-control {
+      padding: 6px 4px !important;
+    }
+
+    .duel-log {
+      min-height: 0;
+      max-height: none !important;
+      padding-top: 6px !important;
+    }
+  }
+}

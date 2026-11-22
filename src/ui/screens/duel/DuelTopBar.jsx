@@ -8,7 +8,7 @@ export default function DuelTopBar({ npc, playerHp, playerEnergy, npcHp, npcEner
   const playerHpPct = (playerHp[0] / playerHp[1]) * 100;
   const npcHpPct = (npcHp[0] / npcHp[1]) * 100;
   return (
-    <div style={styles.topBar}>
+    <div className="duel-topbar" style={styles.topBar}>
       <div style={styles.sideInfo}>
         <div style={styles.name(zoneTheme)}>你</div>
         <HpBar pct={playerHpPct} color={zoneTheme.accent} />
