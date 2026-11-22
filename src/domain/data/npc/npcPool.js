@@ -52,12 +52,8 @@ export const NPC_POOL = [
     levelCap: 2,
   },
   // ── 市井人口 ──
-  {
-    id: "pool_shuo_shu", name: "说书人陈七", brief: "走街串巷说书的",
-    personality: "满腹故事，说话爱卖关子，江湖传闻知道一半编一半，分不清",
-    routineWeights: { 锦官城: 50, 天都镇: 35, 鱼定村: 15 },
-    timeSlot: [20, 85],
-  },
+  // 说书人陈七已从游走池移除，改为天都镇「天都行脚楼」固定驻场（见 residentGroup/天都镇.js），
+  // 归属按任务文本「天都镇的说书人陈七」定据点，避免同一人在驻场表与游走池并存重复。
   {
     id: "pool_pian_zi", name: "油嘴小贩", brief: "卖杂货的行商小贩",
     personality: "嘴甜，什么都卖，什么都敢说，有时候会带点来路不明的东西",
