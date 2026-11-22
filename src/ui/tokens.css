@@ -372,6 +372,10 @@
   --mind-locked-edge: #25252a;
   --mind-missing: #6a6458;
 
+  /* 武馆屏定色（原字面量，不随日间模式变）：--skill-learned 是「✓ 已习得」，藏经阁同色可复用。 */
+  --skill-learned: #3a5a3a;
+  --wuguan-locked: #6a5a4a;
+
   /* 寺庙屏定色（原字面量，不随日间模式变）：已圆满的属性和功德不足提示。 */
   --temple-full: #4a6a4a;
   --temple-hint: #5a4a4a;
