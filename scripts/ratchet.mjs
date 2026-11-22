@@ -129,6 +129,12 @@ function countLayerImports(files, srcRoot) {
       const target = resolveRelativeImport(importer, specifier, srcRoot);
       if (!target || isTestFile(target)) continue;
       const targetLayer = layerFor(srcRoot, target);
+      // 路线甲硬红线：features 不得反向引用 engine（与 LAYER_ORDER 同层放行的 bug 区分开）
+      if (importerLayer === "features" && targetLayer === "engine") {
+        const rule = "features->engine";
+        layerViolations[rule] = (layerViolations[rule] || 0) + 1;
+        continue;
+      }
       if (targetLayer === "infra" && importerLayer !== "infra") {
         externalInfraImports[importerLayer] = (externalInfraImports[importerLayer] || 0) + 1;
         continue;
@@ -221,6 +227,7 @@ export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
       ...countColors(sourceFiles, srcRoot),
       largeFiles: countLargeFiles(allFiles, srcRoot),
       mainJsGzipBytes: bundle.value,
+      actRefCurrent: countActRefCurrent(allFiles, srcRoot),
     },
     notes: [bundle.note],
   };
@@ -231,8 +238,23 @@ export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
 // 软指标（大文件、颜色数、externalInfraImports、gzip）一律只打印不阻断——npm run stats。
 export const KNOWN_LAYER_DEBT = {};
 
+// 路线甲硬红线：React ref 已赶出 engine/act，任何 .current 读写都不许回来。
+// （\b 保证不误伤 currentStageIndex 这类数据字段。）
+function countActRefCurrent(allFiles, srcRoot) {
+  const actFiles = allFiles.filter((file) => relativePath(srcRoot, file).startsWith("engine/act/"));
+  let count = 0;
+  for (const file of actFiles) {
+    const source = stripComments(readFileSync(file, "utf8"));
+    count += (source.match(/\.current\b/g) || []).length;
+  }
+  return count;
+}
+
 export function checkLayerRedLines(metrics) {
   const failures = [];
+  if (metrics.actRefCurrent) {
+    failures.push(`engine/act .current 读写: ${metrics.actRefCurrent} 处（红线 0 容忍）`);
+  }
   for (const [rule, count] of Object.entries(metrics.layerViolations || {})) {
     const cap = KNOWN_LAYER_DEBT[rule];
     if (cap === undefined) {

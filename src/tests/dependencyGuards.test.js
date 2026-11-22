@@ -52,6 +52,7 @@ const ENTRY_WHITELIST = new Set([
   "debug/debug-main.jsx",
   "debug/debug-gamble.jsx",
   "debug/debug-item.jsx",
+  "tests/mockRef.js",
 ]);
 
 function walkSource(dir, out = []) {

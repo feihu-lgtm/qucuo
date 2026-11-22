@@ -1,4 +1,4 @@
-import { tryInnerMove } from "../../engine/act/innerMove.js";
+import { tryInnerMove } from "../../domain/rules/map/innerMove.js";
 import { makeItem, QUALITY } from "../../domain/rules/economy/equipment.js";
 import { getInnerRoom, hasInnerMap } from "../../domain/rules/map/innerMap.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";

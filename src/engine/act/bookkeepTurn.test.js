@@ -1,3 +1,4 @@
+import { mkRef, refValue, refAssign } from "../../tests/mockRef.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { gameActions, gameStore, markGameReplaced, subscribeGameReplaced } from "../../store/gameStore.js";
 import { turnMonitor } from "../../infra/turnMonitor.js";
@@ -50,10 +51,10 @@ describe("runBookkeepAfterTurn", () => {
   });
 
   it("uses the ref-backed setter supplied by the Web turn", async () => {
-    const varTreeRef = { current: gameStore.getState().varTree };
+    const varTreeRef = mkRef(gameStore.getState().varTree);
     const setVarTree = vi.fn((next) => {
-      const value = typeof next === "function" ? next(varTreeRef.current) : next;
-      varTreeRef.current = value;
+      const value = typeof next === "function" ? next(refValue(varTreeRef)) : next;
+      refAssign(varTreeRef, value);
       gameActions.setVarTreeState(value);
     });
     await runBookkeepAfterTurn({
@@ -68,7 +69,7 @@ describe("runBookkeepAfterTurn", () => {
     });
     expect(setVarTree).toHaveBeenCalledOnce();
     expect(typeof setVarTree.mock.calls[0][0]).toBe("function");
-    expect(getLedger(varTreeRef.current, "阿旺").lines).toEqual(["少侠砍伤阿旺"]);
+    expect(getLedger(refValue(varTreeRef), "阿旺").lines).toEqual(["少侠砍伤阿旺"]);
   });
 
   it("ignores ledger entries for names that are not in the room", async () => {

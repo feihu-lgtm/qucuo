@@ -8,8 +8,8 @@ import { makeSkillEntry, SKILL_CATALOG } from "../../domain/data/kungfu/qucuoKun
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
-// 入参：pickupJudgment=pickupJudgmentRef.current、collectGranted=collectGrantedRef.current、
-// pickupExtractionFailed=pickupExtractionFailedRef.current。
+// 入参：pickupJudgment/collectGranted/pickupExtractionFailed 均为 ref 的值、
+// 
 // 返回的 changes.room 是多段写回按顺序组合成的单个 updater。
 export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed }, { trace }) {
   const out = {};
