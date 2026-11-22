@@ -41,7 +41,7 @@ export default function BigMapModal({
               {view === "inner" ? "朱红为当前所在 · 点相邻房间前往" : "朱红为当前所在 · 点已探明据点自动前往 · 🔒需前置"}
             </span>
           </span>
-          <span style={{ color: "#6a4a2a", fontSize: "11px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap", minWidth: 56, flexShrink: 0 }} onClick={() => setMapBig(false)}>× 关闭</span>
+          <span role="button" style={{ color: "#6a4a2a", fontSize: "11px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap", minWidth: 56, flexShrink: 0, padding: "15px 0", margin: "-15px 0" }} onClick={() => setMapBig(false)}>× 关闭</span>
         </div>
         {view === "outer" && (() => {
           const completed = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));
