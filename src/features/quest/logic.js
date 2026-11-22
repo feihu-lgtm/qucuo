@@ -25,7 +25,7 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
   const pendingRewards = [];
 
   while (progress.status === "active") {
-    const result = advanceQuestStages(quest, progress, quest.localOnly ? { ...gameState, flags: [targetFlag] } : gameState, now);
+    const result = advanceQuestStages(quest, progress, quest.localOnly ? { ...gameState, flags: [targetFlag], choiceFlags: addedFlag } : gameState, now);
     if (!result.advanced) break;
     progress = result.progress;
     if (result.completedStage) {

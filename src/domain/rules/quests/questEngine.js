@@ -59,7 +59,10 @@ export function advanceQuestStages(quest, progress, gameState, now = Date.now())
   if (!stage) return { progress, advanced: false, justCompleted: false, completedStage: null, hitFlags: [] };
   const flags = gameState.flags || [];
   const candidateFlags = Array.isArray(stage.completionFlag) ? stage.completionFlag : [stage.completionFlag];
-  const hitFlags = candidateFlags.filter(f => flags.includes(f));
+  // 分支自带的 flag 门槛不满足时，那个分支的 flag 不算数（AI 写了也不推进）
+  const choiceFlags = gameState.choiceFlags || flags;
+  const closedChoice = (f) => stage.choices?.some((choice) => choice.flag === f && !isChoiceOpen(choice, choiceFlags));
+  const hitFlags = candidateFlags.filter(f => flags.includes(f) && !closedChoice(f));
   if (!hitFlags.length) return { progress, advanced: false, justCompleted: false, completedStage: null, hitFlags: [] };
 
   const nextIndex = (progress.currentStageIndex ?? 0) + 1;

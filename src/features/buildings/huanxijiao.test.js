@@ -5,7 +5,7 @@ import { makeNamedItem } from "../../domain/data/items/catalog.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { RESIDENT_NPCS } from "../../domain/data/npc/residentNpcs.js";
 import { getBuildingIdForInnerRoom, isInnerExitUnlocked, getInnerRoom } from "../../domain/rules/map/innerMap.js";
-import { isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
+import { advanceQuestStages, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
 import { checkFactionEntry, FACTION_ENTRIES } from "../../domain/rules/character/factionEntry.js";
 import { giftNpc } from "../npc/exchange.js";
@@ -141,6 +141,14 @@ describe("欢喜教", () => {
     };
     expect(run([], "quest_huanxijiao5_betray")).toBeNull();
     expect(run(["flag_huanxi_betray_ready", "欢喜教弟子"], "quest_huanxijiao5_betray")).toBeNull();
+    // AI 直接写出分支 flag（剧本模式走 questFlagRule）时，分支门槛同样卡住
+    const idx = xiang5.stages.findIndex((stage) => stage.choices?.some((c) => c.flag === "quest_huanxijiao5_betray"));
+    const at = { status: "active", currentStageIndex: idx };
+    const adv = (flags) => advanceQuestStages(xiang5, at, { flags, char: {} }, 1).advanced;
+    expect(adv(["quest_huanxijiao5_betray"])).toBe(false);
+    expect(adv(["flag_huanxi_betray_ready", "欢喜教弟子", "quest_huanxijiao5_betray"])).toBe(false);
+    expect(adv(["flag_huanxi_betray_ready", "欢喜教弟子", "quest_huanxijiao5_betray_member"])).toBe(true);
+    expect(adv(["quest_huanxijiao5_defend"])).toBe(true);
     const token = { ...makeNamedItem("莲纹铜牌"), id: "t1" };
     const member = run(["flag_huanxi_betray_ready", "欢喜教弟子"], "quest_huanxijiao5_betray_member", [token]);
     expect(member.varTree.世界.势力声誉.欢喜教).toBe(-70);
