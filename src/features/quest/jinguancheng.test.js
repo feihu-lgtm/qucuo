@@ -25,6 +25,8 @@ describe("锦官城官 2-A/2-B 前置门槛", () => {
   it("官 2-B 要官 2 选了 B 线 + 熊曲温泉之物 + 证物 ≥2", () => {
     expect(isQuestGateOpen(guan2b, progress, [...GUAN1_FLAGS, "quest_guan2_b"], favor(60))).toBe(false); // 缺温泉线索
     expect(isQuestGateOpen(guan2b, progress, [...GUAN1_FLAGS, "quest_guan2_b", "clue_xionggu_wenquan_zhiwu"], favor(60))).toBe(true);
+    // 旧档村 5 早已完成、拿不到新发的温泉线索旗，凭已有的猎人传人旗也能进
+    expect(isQuestGateOpen(guan2b, progress, [...GUAN1_FLAGS, "quest_guan2_b", "flag_yuding_hunter_heir"], favor(60))).toBe(true);
     // 证物只持一项也不开
     const oneEvidence = ["quest_guan1_s2", "quest_guan1_s4", "quest_guan1_s5_report", "quest_guan2_b", "clue_xionggu_wenquan_zhiwu"];
     expect(isQuestGateOpen(guan2b, progress, ["lore_dushi_anxixiang_caigou", ...oneEvidence], favor(60))).toBe(false);

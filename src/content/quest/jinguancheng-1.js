@@ -126,10 +126,11 @@ export default { quest: {
     exclusiveGroup: "锦官城归途",
     title: "官2-B·中立·压制",
     giver: "柳青鸢",
-    requiresFlags: ["quest_guan2_b", "clue_xionggu_wenquan_zhiwu"],
+    requiresFlags: ["quest_guan2_b"],
+    requiresFlagsAny: ["clue_xionggu_wenquan_zhiwu", "flag_yuding_hunter_heir"],
     blockedByFlags: ["quest_guan2a_s1"],
     requiresFlagsMin: { flags: ["lore_dushi_anxixiang_caigou", "promise_liu_qingyuan_wenquan", "quest_guan1_s3"], min: 2 },
-    description: "触发条件：持有官1任务4的安息香采购记录、任务7的水源地图底本、任务9的旧玉佩中至少两项，并完成村5衔接线索「熊曲温泉之物」，且锦官城在土司博弈中的立场尚未被主线锁定。",
+    description: "触发条件：持有官1任务4的安息香采购记录、任务7的水源地图底本、任务9的旧玉佩中至少两项，并完成村5衔接线索「熊曲温泉之物」（旧档持猎人传人身份亦可），且锦官城在土司博弈中的立场尚未被主线锁定。",
     stages: [
       {
         id: "s1_pressure",
