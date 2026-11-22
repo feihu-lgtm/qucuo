@@ -20,16 +20,16 @@
 // 走 localStorage（见 setPortrait/loadPortraits），两者在 getPortrait()
 // 里合并查询——玩家自己传的优先，没传过才落到这批硬加载的默认图。
 
-import meiduoImg from "../assets/portraits/meiduo.webp";
-import huyanxueImg from "../assets/portraits/huyanxue.webp";
-import heyuxieImg from "../assets/portraits/heyuxie.webp";
-import caidanImg from "../assets/portraits/caidan.webp";
-import liruoyouImg from "../assets/portraits/liruoyou.webp";
-import zhuomaImg from "../assets/portraits/zhuoma.webp";
-import lanjieImg from "../assets/portraits/lanjie.webp";
-import luoqiImg from "../assets/portraits/luoqi.webp";
-import gazeImg from "../assets/portraits/gaze.webp";
-import xuannuImg from "../assets/portraits/xuannu.webp";
+import meiduoImg from "../../../assets/portraits/meiduo.webp";
+import huyanxueImg from "../../../assets/portraits/huyanxue.webp";
+import heyuxieImg from "../../../assets/portraits/heyuxie.webp";
+import caidanImg from "../../../assets/portraits/caidan.webp";
+import liruoyouImg from "../../../assets/portraits/liruoyou.webp";
+import zhuomaImg from "../../../assets/portraits/zhuoma.webp";
+import lanjieImg from "../../../assets/portraits/lanjie.webp";
+import luoqiImg from "../../../assets/portraits/luoqi.webp";
+import gazeImg from "../../../assets/portraits/gaze.webp";
+import xuannuImg from "../../../assets/portraits/xuannu.webp";
 
 // key 是角色名（跟 MVU 变量树/room.npcs 里的名字对应），value 是 Vite
 // 处理过的图片 URL（构建后指向打包产物里的静态资源路径，不是 base64，

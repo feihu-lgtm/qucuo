@@ -1,4 +1,4 @@
-import { step as traceStep } from "../../infra/actionTrace.js";
+import { step as traceStep } from "../ports/actionTrace.js";
 import { hasInnerMap, resolveInnerExit, isNpcVisibleInInnerRoom, getInnerRoom, isInnerExitUnlocked, describeInnerLock } from "../../domain/rules/map/innerMap.js";
 import { describeInnerArrival } from "../../domain/rules/map/mapNarration.js";
 import { detectNewFaces } from "../../domain/rules/npc/npcAwareness.js";

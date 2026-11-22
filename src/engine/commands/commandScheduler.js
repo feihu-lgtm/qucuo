@@ -1,5 +1,5 @@
 import { CATEGORY, SYSTEM_COMMANDS, getCommand } from "../../infra/commands.js";
-import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../ports/turnMonitor.js";
 
 const WHISPER_IDS = new Set(["privateWhisper", "actWhisper"]);
 const BLOCKING_CATEGORIES = new Set([CATEGORY.LOCAL, CATEGORY.MOVE, CATEGORY.AI_TURN, CATEGORY.SYSTEM]);

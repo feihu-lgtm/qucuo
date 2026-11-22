@@ -10,7 +10,7 @@ import {
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import "../../domain/rules/prompt/calls/sideCalls.js";
-import { turnMonitor } from "../../infra/turnMonitor.js";
+import { turnMonitor } from "../../engine/ports/turnMonitor.js";
 
 const webAi = createWebAi();
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DEFAULT_VERTEX_MODEL } from "../../infra/apiModel.js";
+import { DEFAULT_VERTEX_MODEL } from "../../content/apiModel.js";
 import { chromeBtn } from "../../utils/theme.js";
 
 const VERTEX_MODELS = [

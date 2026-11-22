@@ -1,9 +1,9 @@
-// 立绘系统（领域薄壳）—— 存储与资源表已迁 src/infra/portraitStore.js；
+// 立绘系统（领域薄壳）—— 存储与资源表在同目录 portraitStore.js；
 // 本文件保留依赖 domain/narrator 好感度分档的旁白立绘两个函数，
 // 并原样转发全部存储/资源导出，调用方无需改 import。
 import { affectionTier } from "../narrator/narrator.js";
 
-export * from "../../../infra/portraitStore.js";
+export * from "./portraitStore.js";
 
 // ── 旁白立绘·好感度五档 ──
 // 资源放 public/portraits/narrator/ 下，不走 src/assets 硬加载——图片由作者自行

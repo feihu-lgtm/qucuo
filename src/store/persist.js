@@ -1,4 +1,4 @@
-import { buildSnapshot } from "../infra/saves.js";
+import { buildSnapshot } from "../engine/ports/saves.js";
 import { GAME_KEYS, gameStore } from "./gameStore.js";
 import { getRngState } from "../utils/rng.js";
 

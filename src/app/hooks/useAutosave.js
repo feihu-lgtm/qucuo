@@ -5,7 +5,7 @@ import { getRngState, setRngState } from "../../utils/rng.js";
 import { DEFAULT_PRESETS } from "../../engine/newGame.js";
 import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
-import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../infra/saves.js";
+import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../engine/ports/saves.js";
 import { statsForQuality } from "../../domain/rules/economy/equipment.js";
 import { initialNarratorState, migrateNarratorState } from "../../domain/rules/narrator/narrator.js";
 import { backfillInventoryFromCatalog } from "../../domain/data/items/catalog.js";

@@ -18,7 +18,7 @@ const PARTS = readFileSync(join(HERE, "widgets.jsx"), "utf-8");
 const NPC_RULES = readFileSync(join(HERE, "..", "..", "..", "domain", "rules", "npc", "rules.js"), "utf-8");
 const QB = readFileSync(join(HERE, "..", "quickBattle", "QuickBattleScreen.jsx"), "utf-8");
 const PORTRAITS = readFileSync(join(HERE, "../../../domain", "rules", "companion", "portraits.js"), "utf-8")
-  + readFileSync(join(HERE, "../../../infra", "portraitStore.js"), "utf-8");
+  + readFileSync(join(HERE, "../../../domain/rules/companion", "portraitStore.js"), "utf-8");
 
 describe("立绘链路不能再断", () => {
   it("选择器读 DEFAULT_PORTRAITS，不再自己拼 public 路径", () => {
