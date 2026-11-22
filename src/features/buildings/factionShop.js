@@ -88,6 +88,14 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileQualities: ["白", "绿"],
   },
+  土司军需司: {
+    faction: "鱼定土司府", idPrefix: "tusi_purchase",
+    outlets: { shop_yudingtusi: "vault" },
+    nowhere: "须到鱼定土司府西厢外院的军需司才能买土司府的军需。",
+    banned: "军需司的差役把账簿一合：「府里有令，不卖你东西。滚。」",
+    hostileClosed: {},
+    hostileQualities: ["白"],
+  },
   // 天龙军需坊（西风隘·天龙营）。玄甲军需官记账先看脸：交恶至敌对（-59~-20）只摆绿品且加价，
   // 深交到顶（rep100）七折并摆出二选一秘货——止戈玉令与陨铁血刃共用 tianlong_secret 组标记。
   天龙军需坊: {
@@ -98,6 +106,17 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileQualities: ["绿"],
     deepCoef: { rep: 100, coef: 0.7 },
+  },
+  // 百花门·百花暗阁（天都镇暖棚拐角）。合稿 6.2：交恶（-59~-20）溢价且只卖玫瑰花酿/祛瘴花茶，
+  // 毒粉/易容/兵器全拒（hostileItems 名称级白名单）；冷淡（-19~-1）原价只摆白绿基础货。
+  百花暗阁: {
+    faction: "百花门", idPrefix: "baihua_purchase",
+    outlets: { med_baihua_ange: "vault" },
+    nowhere: "须到天都镇百花楼暖棚拐角的暗阁才能买百花门的秘货。",
+    banned: "阿芷的短鞭横在门口：「暗阁不做死敌的生意——滚出东街。」",
+    hostileClosed: {},
+    hostileItems: ["玫瑰花酿", "祛瘴花茶"],
+    coldItems: ["玫瑰花酿", "祛瘴花茶", "苗银花簪刺"],
   },
 };
 

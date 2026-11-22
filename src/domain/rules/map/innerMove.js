@@ -3,6 +3,7 @@ import { hasInnerMap, resolveInnerExit, isNpcVisibleInInnerRoom, getInnerRoom, i
 import { describeInnerArrival } from "./mapNarration.js";
 import { detectNewFaces } from "../npc/npcAwareness.js";
 import { DIRS } from "../../../utils/mudHelpers.js";
+import { strongholdBan } from "../economy/strongholdGate.js";
 
 // 内层箱庭移动判定（纯判定 + trace，不写任何 React 状态）：
 // 如果当前据点有内层数据（hasInnerMap(room.name)为真）且这个方向是
@@ -33,6 +34,11 @@ export function tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, inne
     // 此前这里只做 resolveInnerExit 裸查表、完全不看 unlockCondition，
     // 于是"锁"只体现在到达描述文字里滤掉方向，玩家照样能点九宫格或打字走进去
     // ——四栋安全屋会门户大开。三处（本函数、左栏九宫格、放大地图）现已统一判定。
+    const ban = innerDest && strongholdBan(room.name, varTree);
+    if (ban && innerDest !== ban.anchor) {
+      traceStep(_trace, "内层移动", "block", `「${innerDest}」被${ban.faction}守卫截住（声誉不共戴天）`);
+      return { kind: "blocked", summary: "被守卫截回", lockedMsg: ban.intercept };
+    }
     if (innerDest) {
       const destRoom = getInnerRoom(room.name, innerDest);
       if (destRoom?.unlockCondition && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv, char })) {

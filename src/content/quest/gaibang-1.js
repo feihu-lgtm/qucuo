@@ -1,5 +1,5 @@
-// 丐帮三星分舵任务线（合稿·丐帮第 4 节）。主线 丐1~丐4 与支线 丐支1~3；丐5 是终局拉拢，等终局接线再做。
-// 势力声誉单次写入限幅 ±10，合稿里 +15~+30 的奖励按阶段拆开发；死对头的联动扣分由 factionRepDeltas 统一结算，这里不手写。
+// 丐帮三星分舵任务线（合稿·丐帮第 4 节）。主线 丐1~丐5 与支线 丐支1~3，另有拜入前的聚义堂入门小考（合稿 7.4）。
+// 死对头（天龙教）的联动扣分由 applyFactionRep 统一结算，这里不手写。
 const GB = "丐帮三星分舵";
 const at = (inner, district = "广汉") => ({ district, inner });
 const catalog = (name, count = 1) => Array.from({ length: count }, () => ({ name, fromCatalog: true }));
@@ -256,6 +256,102 @@ export default { quest: {
       },
     ],
     rewardText: "三星分舵与鱼定土司府从此翻脸。严九斤说，等曲措那边动起来，分舵的打狗棒不会缺席。",
+  },
+
+  gaibang_5_shiliudagouzhen: {
+    id: "gaibang_5_shiliudagouzhen",
+    type: "QT_TALK",
+    title: "丐5·百棒出广汉",
+    giver: "严九斤",
+    giverId: "resident_yanjiujin",
+    localOnly: true,
+    requiresQuestCompleted: "gaibang_4_jiuenyuxinzhai",
+    requiresFactionRep: { [GB]: 80 },
+    description: "曲措乡大战在即。严九斤要倾尽三星分舵精锐南下助阵，临行前却有两桩后顾之忧：伤药干粮还在锦官城，雅江到大草甸一线的眼线也没拔干净。",
+    stages: [
+      {
+        id: "council",
+        requireLocation: at("土地庙正殿·聚义堂"),
+        playerHint: "去聚义堂听严九斤和胡三爷商量南下的事。",
+        description: "严九斤把竹烟袋往供桌上一磕：「白婶托峨眉了因师太备了一批止血散和干粮，你替她去锦官城取回来；胡三带多吉清一清雅江、大草甸沿线的暗哨，你得跟着压阵。」",
+        completionFlag: "quest_gb5_council",
+      },
+      {
+        id: "supply",
+        giver: null,
+        requireLocation: at("慈济佛堂", "锦官城"),
+        playerHint: "去锦官城峨眉剑庐的慈济佛堂，取回了因师太备下的伤药干粮。",
+        description: "了因师太把一摞油纸包推到你面前：「行军止血散三百包、干粮五十石。告诉严施主，这是峨眉借的，不是送的——活着回来还。」",
+        completionFlag: "quest_gb5_supply",
+      },
+      {
+        id: "scouts",
+        giver: null,
+        requireLocation: at("草甸边缘", "大草甸"),
+        playerHint: "在大草甸边缘与胡三爷、多吉会合，拔掉血刀部埋在沿线的暗哨。",
+        description: "胡三爷拄着铁拐蹲在草坡后头，朝坡下努了努嘴：七八个血刀部的探子围着一堆没冒烟的火，正盯着官道上的车辙。",
+        completionFlag: ["quest_gb5_scouts"],
+        choices: [
+          { flag: "quest_gb5_scouts", label: "与胡三爷、多吉拔掉暗哨", resolve: "combat", combatNpc: { name: "血刀部斥候小队", levelCap: 6 } },
+        ],
+      },
+      {
+        id: "intel",
+        giver: null,
+        requireLocation: at("西厢鸽舍与察世房"),
+        playerHint: "回广汉鸽舍，看周小满汇总的各路情报。",
+        description: "周小满把一张画满炭笔记号的舆图摊在鸽笼底下：「土司府巡捕营、骑手、还有暗中从外头请来的帮手，各在哪条沟里，都在这上头了。」",
+        completionFlag: "quest_gb5_intel",
+      },
+      {
+        id: "oath",
+        requireLocation: at("土地庙正殿·聚义堂"),
+        playerHint: "回聚义堂，看严九斤点兵誓师。",
+        description: "三百名丐帮弟子和数十名返乡的曲措青壮挤满了破庙前后院。严九斤把一碗烈酒摔碎在门槛上：「打狗棒南下，不讨饭，讨债！」",
+        completionFlag: "quest_gb5_oath",
+        onReach: {
+          money: 200,
+          items: catalog("三星客卿青竹杖"),
+          factionRep: { [GB]: 35, 鱼定土司府: -11, 青城派: 7, 峨眉派: 7 },
+          flags: ["endgame_ally_gaibang", "endgame_buff_gaibang_scouts"],
+        },
+      },
+    ],
+    rewardText: "终局战获「丐帮全图斥候」增益：提前看破土司府与暗通外援的伏兵；严九斤与胡三爷率打狗阵牵制土司巡捕营与骑手。",
+  },
+
+  gaibang_join_xiaokao: {
+    id: "gaibang_join_xiaokao",
+    type: "QT_TALK",
+    title: "丐帮入门小考",
+    giver: "严九斤",
+    giverId: "resident_yanjiujin",
+    localOnly: true,
+    requiresFactionRep: { [GB]: 40 },
+    blockedByFlags: ["丐帮弟子"],
+    description: "想正式入丐帮，严九斤只考两样：端不端得起那碗入门酒，扛不扛得住胡三爷的铁拐。",
+    stages: [
+      {
+        id: "toast",
+        requireLocation: at("土地庙正殿·聚义堂"),
+        playerHint: "在聚义堂向严九斤敬一碗烈酒。",
+        description: "严九斤从酒坛堆里摸出一只缺口粗碗，倒满混着雨水的烈酒推给你：「先喝了这碗，再说别的。」",
+        completionFlag: "quest_gbj_toast",
+      },
+      {
+        id: "spar",
+        giver: null,
+        requireLocation: at("破庙前院·粥棚与竹坪"),
+        playerHint: "到竹坪接胡三爷五招，不求赢，只要不逃。",
+        description: "胡三爷拄着铁拐站上竹坪：「五招。挨打不丢人，跑了才丢人。」",
+        completionFlag: ["quest_gbj_spar"],
+        choices: [
+          { flag: "quest_gbj_spar", label: "硬接胡三爷五招不退", resolve: "none",
+            narration: "第三拐扫得你半边身子发麻，第五拐收在你鼻尖前一寸。胡三爷哼了一声：「骨头还算硬，回去找老严吧。」" },
+        ],
+      },
+    ],
+    rewardText: "入门小考已过，可到聚义堂向严九斤正式拜入丐帮三星分舵。",
   },
 
   gaibang_s1_xujiejiuyue: {

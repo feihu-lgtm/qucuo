@@ -17,8 +17,8 @@ const DebugPanel = lazy(() => import("./DebugPanel.jsx"));
 const BasementScreen = lazy(() => import("../screens/buildings/ServiceScreen.jsx").then(m => ({ default: m.BasementScreen })));
 const SeaOfMindScreen = lazy(() => import("./SeaOfMindScreen.jsx"));
 const BuildingScreens = lazy(async () => {
-  const { BUILDING_SCREENS } = await import("./buildingScreens.jsx");
-  return { default: ({ type, ctx }) => BUILDING_SCREENS[type]?.(ctx) ?? null };
+  const { renderBuildingScreen } = await import("./buildingScreens.jsx");
+  return { default: ({ type, ctx }) => renderBuildingScreen(type, ctx) };
 });
 
 function ScreenFallback({ zoneTheme }) {

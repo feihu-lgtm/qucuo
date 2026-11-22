@@ -1,7 +1,7 @@
 export default { residentGroup: {
 雾隐寨: [
     {
-      name: "龙汐月", id: "resident_longxiyue", levelCap: 22,
+      name: "龙汐月", id: "resident_longxiyue", levelCap: 4,
       brief: "五仙教现任教主（银冠圣母），二十二岁，眉目明艳如林间初绽山茶，腰间缠着一条泛冷光的银鳞细鞭",
       personality: "明快直率、爱美喜俏，说话带几分少女的娇憨与狡黠；骨子里护短且决断狠辣，面对背叛时眼神冷如毒蛇",
       carry: [
@@ -15,7 +15,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "麻九娘", id: "resident_majiuniang", levelCap: 20,
+      name: "麻九娘", id: "resident_majiuniang", levelCap: 4,
       brief: "五仙教大长老兼副教主（赤蜈派首领），四十八岁，高瘦微驼，左颊一道毒蝎蛰出的紫黑旧斑",
       personality: "阴鸷多疑、野心勃勃，极重资历权势；表面尊称龙汐月为「教主」，实则字字带刺、步步逼宫",
       carry: [
@@ -29,7 +29,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "阿萝", id: "resident_aluo", levelCap: 12,
+      name: "阿萝", id: "resident_aluo", levelCap: 2,
       brief: "百蛊药房掌柜、银冠近侍，十九岁，圆脸杏眼双螺髻，十指总沾着洗不干净的紫黑草汁",
       personality: "嘴毒心软、护主心切，对外乡人天然带三分戏弄与防备，最爱拿活虫陶罐吓唬胆小的江湖汉子",
       carry: [
@@ -43,7 +43,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "乌婆婆", id: "resident_wupopo", levelCap: 16,
+      name: "乌婆婆", id: "resident_wupopo", levelCap: 4,
       brief: "五仙教百草长老、祖灵殿守殿人，六十六岁，满头银丝盘成高髻，背上常背装满干草药的竹篓",
       personality: "沉静寡言、恪守祖训，秉持「医毒同源」的古道；对教内权争痛心却不愿动刀兵",
       carry: [
@@ -57,7 +57,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "桑七", id: "resident_sangqi", levelCap: 14,
+      name: "桑七", id: "resident_sangqi", levelCap: 2,
       brief: "赤蜈堂外事执事、麻九娘心腹，三十四岁，精壮黝黑，右耳缺了半个耳廓，眼神总像狼一样左右打量",
       personality: "贪财好利、行事狠绝，深信江湖上只有银子和拳头靠得住；对麻九娘唯命是从，暗中留了卷款跑路的后手",
       carry: [
@@ -71,7 +71,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "苏小青", id: "resident_suxiaoqing", levelCap: 6,
+      name: "苏小青", id: "resident_suxiaoqing", levelCap: 2,
       brief: "五仙教外门采药女、藤花茶棚伙计，二十二岁，清瘦麻利，笑起来左边颊上有个浅梨涡",
       personality: "朴实机灵、知恩图报，既懂川西官话又熟瘴林暗径；对教中杀伐心怀畏惧，只盼教主平平安安",
       carry: [
