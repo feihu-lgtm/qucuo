@@ -35,7 +35,7 @@ export default function SeaOfMindScreen({
       padding: "10px 16px",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ color: "#e8c86a", fontSize: 12 }}>⟡ 她蜷在沙发角落里</span>
+        <span style={{ color: "var(--mind-gold)", fontSize: 12 }}>⟡ 她蜷在沙发角落里</span>
         <span style={{ flex: 1 }} />
         {onClose && (
           <span onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: 10 }}>▾ 收起</span>
@@ -50,8 +50,8 @@ export default function SeaOfMindScreen({
           return (
             <span key={k.key} style={{
               fontSize: 10.5, padding: "2px 9px", borderRadius: 0,
-              color: done ? "var(--clay)" : isNext ? "#e8c86a" : "#4a4a44",
-              border: `1px solid ${done ? "var(--ink-accent)" : isNext ? "var(--gold-deep)" : "#25252a"}`,
+              color: done ? "var(--clay)" : isNext ? "var(--mind-gold)" : "var(--mind-locked)",
+              border: `1px solid ${done ? "var(--ink-accent)" : isNext ? "var(--gold-deep)" : "var(--mind-locked-edge)"}`,
               background: done ? "rgba(138,196,138,.08)" : "transparent",
             }}>
               {done ? "✓ " : isNext ? "◦ " : "· "}
@@ -75,14 +75,14 @@ export default function SeaOfMindScreen({
                 fontSize: 11, padding: "4px 11px", borderRadius: 0,
                 // 越级/缺物**不置灰也不禁用**——玩家该被允许试，然后从她的反应里
                 // 知道时候未到。置灰等于把机制摊开，那一段的手感就没了。
-                color: gate.ok ? "#e8d4a0" : "var(--text-dim)",
-                border: `1px solid ${gate.ok ? "#5a4a20" : "#2e2e33"}`,
+                color: gate.ok ? "var(--mind-gate-ok)" : "var(--text-dim)",
+                border: `1px solid ${gate.ok ? "var(--mind-gate-ok-edge)" : "var(--mind-gate-edge)"}`,
                 background: gate.ok ? "rgba(232,200,106,.08)" : "transparent",
               }}
             >
               {spec.label}
               {spec.needItem && !invNames.includes(spec.needItem) && (
-                <span style={{ fontSize: 9, color: "#6a6458", marginLeft: 3 }}>（缺）</span>
+                <span style={{ fontSize: 9, color: "var(--mind-missing)", marginLeft: 3 }}>（缺）</span>
               )}
             </span>
           );
@@ -95,8 +95,8 @@ export default function SeaOfMindScreen({
           onClick={onResolve}
           style={{
             marginTop: 9, padding: "7px 10px", borderRadius: 0, cursor: "pointer",
-            border: "1px solid #8a6a2a", background: "rgba(232,200,106,.13)",
-            color: "#f0d888", fontSize: 11.5, textAlign: "center",
+            border: "1px solid var(--mind-button-edge)", background: "rgba(232,200,106,.13)",
+            color: "var(--mind-button-text)", fontSize: 11.5, textAlign: "center",
           }}
         >
           ⟡ 跟她说那句她自己说不出口的话
