@@ -242,6 +242,7 @@ export const CLI_COMMANDS = [
       return ctx.featureCtx.act(`look ${npc.id}`, result.extraReplies, {
         echoCommand: true,
         displayCmd: `look ${npc.id}`,
+        intentPlanNote: `\n[系统裁决：本轮仅端详「${npc.name}」本人。只写对此人的观察——容貌装束、气色伤势、当下神态举止；此人若正与人动手，写到其架势为止，任何一方都不得再出手，也不推进、续写与玩家无关的他人事件。]`,
       });
     },
   },
