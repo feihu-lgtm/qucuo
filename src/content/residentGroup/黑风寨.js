@@ -55,6 +55,43 @@ export default { residentGroup: {
       ],
     },
     {
+      name: "彭措", id: "resident_pengcuo", levelCap: 3,
+      brief: "寨里刀口的头目，演武坪的场子归他管",
+      personality: "膀大腰圆，嗓门大心眼直，对练点到为止，最恨下黑手",
+      carry: [
+        { name: "厚背大砍刀", category: "weapon", quality: "蓝" },
+        { name: "黑风短矛", category: "weapon", quality: "绿" },
+        { name: "马帮硬皮褂", category: "armor", quality: "绿" },
+        { name: "结绳护腕串", category: "accessory", quality: "绿" },
+        { name: "黑风寨金疮药", category: "misc", quality: "绿" },
+        { name: "苞谷酒", category: "misc", quality: "白" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+      ],
+      fullBio: `彭措原是鹰曲马帮的趟子手，走镖时被管家私兵的暗算废了一条腿，
+镖局不敢得罪土司府把他辞了。他拖着伤腿上黑风寨投奔巴桑，寨里人轮流
+背他上的山。腿好后成了刀口里最稳的一个——对练从不下黑手，也不许
+别人下。演武坪的场子归他管，新人入伙第一课都是他教的：「刀先收着，
+规矩先记住。」`,
+    },
+    {
+      name: "老阿雅婶", id: "resident_ayishen", levelCap: 1,
+      brief: "寨里的伙房掌勺兼土郎中",
+      personality: "嘴碎心软，见不得人挨饿带伤，念叨寨规比巴桑还勤",
+      carry: [
+        { name: "鱼定猎刀", category: "weapon", quality: "白" },
+        { name: "百褶皮围", category: "armor", quality: "白" },
+        { name: "结绳护腕串", category: "accessory", quality: "绿" },
+        { name: "黑风寨金疮药", category: "misc", quality: "绿" },
+        { name: "黑风寨草药包", category: "misc", quality: "绿" },
+        { name: "老阿雅婶的止咳散", category: "misc", quality: "绿" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+      fullBio: `老阿雅婶的男人当年就是被牵去抵税的牦牛的主人之一，人没
+回来。她上寨那年五十一，全寨人管她叫阿雅婶。大灶归她掌勺，金疮药、
+止咳散都是她用熊山贝母和雪山枇杷叶碾的。寨规「不抢救命口粮」头一条
+就是她提议刻上去的——她说饿死过人的村子，不该再造一个。`,
+    },
+    {
       name: "嘎则", id: "resident_gaze",
       brief: "养着一只白虎的少女",
       personality: "天真直接，跟雪团寸步不离，对外人先戒备后依赖",

@@ -62,6 +62,30 @@ export const QUCUO_SHOPS = {
       { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 100 },
     ],
   },
+  // 黑风货栈（黑风寨·山寨货栈）。义匪货池：清水药与口粮随便买，
+  // 15 起上刀口货、40 起发寨里制式装备（重铠与断刃只给入伙弟兄）、80 摆镇仓的犀牛皮重甲（只此一件）。
+  黑风货栈: {
+    shopName: "黑风货栈",
+    items: [
+      { name: "苞谷酒", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "风干牦牛肉", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "黑风寨金疮药", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "黑风寨草药包", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "老阿雅婶的止咳散", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "结绳护腕串", category: ITEM_CATEGORY.ACCESSORY, quality: "绿" },
+      { name: "黑风短矛", category: ITEM_CATEGORY.WEAPON, quality: "绿" },
+      { name: "黑风寨土烧", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 15 },
+      { name: "毒蝎粉", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 15 },
+      { name: "马帮硬皮褂", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "黑风寨出征席", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "厚背大砍刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "红缨枪", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "黑风寨分发刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
+      { name: "黑风寨牛皮重铠", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 40, member: true },
+      { name: "黑风断刃", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 40, member: true },
+      { name: "犀牛皮重甲", category: ITEM_CATEGORY.ARMOR, quality: "红", minRep: 80, limitOnce: true },
+    ],
+  },
   // 锦官兵备（锦官城·都事府兵备库）。官仓货池：白货随便买，15 起摆差役
   // 制式、40 起发府里制式装备（标兵甲只发特派巡查）、80 摆御赐銮铃（只此一件）。
   锦官兵备: {
