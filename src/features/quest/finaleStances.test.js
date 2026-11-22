@@ -55,6 +55,8 @@ describe("终局结局集", () => {
     expect(out.logs.some((l) => l.text.includes("梅朵代管"))).toBe(true);
     const again = questFlagRule.run({ flags: next, questProgress: {} }, { getNow: () => 0 });
     expect(again?.logs?.some((l) => l.text.includes("结局已判定")) ?? false).toBe(false);
+    const later = questFlagRule.run({ flags: [...next, "quest_guan2a_s1"], questProgress: {} }, { getNow: () => 0 });
+    expect(later?.logs?.some((l) => l.text.includes("结局已判定")) ?? false).toBe(false);
   });
 });
 

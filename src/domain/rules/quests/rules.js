@@ -219,8 +219,9 @@ export const questFlagRule = {
       logs.push({ t: "sys", text: `  ※ 「虎胆三重门」结局已判定：${ending}` });
     }
 
-    const finaleEnding = resolveEnding(gameState, FINALE_ENDINGS);
-    if (finaleEnding && !flags.includes(`story_ending_${finaleEnding}`)) {
+    const finaleDecided = FINALE_ENDINGS.some((e) => flags.includes(`story_ending_${e.id}`));
+    const finaleEnding = finaleDecided ? null : resolveEnding(gameState, FINALE_ENDINGS);
+    if (finaleEnding) {
       const stances = resolveFinaleStances(flags);
       const added = [`story_ending_${finaleEnding}`, ...stances.map(finaleStanceFlag)];
       updates.add("flags", (previous) => [...new Set([...previous, ...added])]);
