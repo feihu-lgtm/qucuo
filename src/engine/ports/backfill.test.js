@@ -29,6 +29,27 @@ describe("backfillInBackground", () => {
     }
   });
 
+  it("waits for a streaming entry to finish before inserting", async () => {
+    let log = [...tagBackfill([{ t: "sys", text: "  事实" }], "k"), { t: "desc", text: "  ▌", streaming: true }];
+    let calls = 0;
+    const setLog = (fn) => {
+      if (++calls === 2) log = log.map((entry) => ({ ...entry, streaming: false }));
+      log = fn(log);
+    };
+    const ok = await backfillInBackground("k", { ask: async () => "描写", parse: (text) => [text], setLog, retryMs: 0 });
+    expect(ok).toBe(true);
+    expect(calls).toBe(2);
+    expect(log.map((entry) => entry.text.trim())).toEqual(["事实", "描写", "▌"]);
+  });
+
+  it("gives up if streaming never ends", async () => {
+    const log = [...tagBackfill([{ t: "sys", text: "  事实" }], "k"), { t: "desc", text: "  ▌", streaming: true }];
+    const setLog = vi.fn((fn) => fn(log));
+    const ok = await backfillInBackground("k", { ask: async () => "描写", parse: (text) => [text], setLog, retryMs: 0, maxTries: 3 });
+    expect(ok).toBe(false);
+    expect(setLog).toHaveBeenCalledTimes(3);
+  });
+
   it("makes distinct keys", () => {
     expect(newBackfillKey("duel")).toMatch(/^duel-/);
     expect(newBackfillKey()).not.toBe(newBackfillKey());
