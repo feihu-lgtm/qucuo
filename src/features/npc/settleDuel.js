@@ -9,7 +9,7 @@ import { QUEST_TYPE } from "../../domain/data/quests/questTypes.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
 import { resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
-import { activeCompanionKey } from "../../domain/rules/companion/companion.js";
+import { duelAlly } from "../../domain/rules/companion/companion.js";
 import { snowQuestActive } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
@@ -167,7 +167,7 @@ export function settleNpcDuel(state, npc, {
     }
   }
 
-  if (outcome === "win" && activeCompanionKey(state.companionState)) {
+  if (outcome === "win" && duelAlly(state.companionState, npc)) {
     addChange(changes, working, "varTree", (prev) => applyWrite(
       { varTree: markNpcKnown(prev || {}, "雪豹") }, add(["角色", "雪豹", "好感度"], TEAMWORK_GAIN),
     ).state.varTree);
