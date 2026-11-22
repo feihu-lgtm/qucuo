@@ -124,14 +124,22 @@ export const QUCUO_SHOPS = {
     ],
   },
 
-  // ── 达磨药堂 ──
+  // ── 达磨药堂（喇嘛庙势力药堂）──
+  // 货单照合稿「喇嘛庙·六、商城设计」10 件：前 4 件常规药剂无门槛，15/40/80 阶梯解锁；
+  // 千年雪莲回天丹合稿写 ≥140（一代尊宿），引擎声誉封顶 100，取 100，每局限量 3 颗。拒售规则在 factionShop.js。
   达磨药堂: {
-    shopName: "达磨药堂",
+    shopName: "达摩药堂",
     items: [
-      { name: "止血散", category: ITEM_CATEGORY.MISC, quality: "白" },
-      { name: "活血膏", category: ITEM_CATEGORY.MISC, quality: "绿" },
-      { name: "高原雪莲", category: ITEM_CATEGORY.MISC, quality: "蓝" },
-      { name: "天麻草", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "高原酥油膏", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "藏青稞健脾散", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "藏红花活血丸", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "达摩驱寒膏", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "药渍麻布僧袍", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "青竹护法短杖", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "雪莲清毒丸", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 40 },
+      { name: "老山檀香护心珠", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 40 },
+      { name: "白塔铜鎏金降魔杵", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 80 },
+      { name: "千年雪莲回天丹", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 100, limit: 3 },
     ],
   },
 
@@ -274,6 +282,7 @@ export function buildShopInventory(shopKey) {
       ...(cfg.minRep == null ? {} : { minRep: cfg.minRep }),
       ...(cfg.member ? { member: true } : {}),
       ...(cfg.limitOnce ? { limitOnce: true } : {}),
+      ...(cfg.limit ? { limit: cfg.limit } : {}),
     })),
   };
 }

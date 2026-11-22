@@ -79,6 +79,10 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
     const shopKey = buyGu[1] === "买秘珍" ? "五仙秘珍坊" : "五仙百蛊房";
     return { kind: "result", localKind: "buyWuxianItem", result: buyFactionShopItem(state, shopKey, buyGu[2]?.trim()) };
   }
+  const buyLama = /^买藏药(?:\s+(.+))?$/.exec(command.trim());
+  if (buyLama) {
+    return { kind: "result", localKind: "buyLamaItem", result: buyFactionShopItem(state, "达磨药堂", buyLama[1]?.trim()) };
+  }
   const learn = /^学武(?:\s+(.+))?$/.exec(command.trim());
   if (learn) {
     const buildingId = getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName);
@@ -132,6 +136,7 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
       { t: "sys", text: "  用/服 <丹药>  服用消耗品（回血等，探索态即时结算）" },
       { t: "sys", text: "  买暗器 [货名]  在唐门暗器铺看货或购买" },
       { t: "sys", text: "  买蛊药|买秘珍 [货名]  在雾隐寨百蛊药房/秘珍坊看货或购买" },
+      { t: "sys", text: "  买藏药 [货名]  在喇嘛庙达摩药堂看货或购买" },
       { t: "sys", text: "  学武 [武学名]  在当前武馆查看或学习武学" },
       { t: "sys", text: `  推进任务 唐1·暗巷来客 [暗查取证${surface === "cli" ? "/硬闯截货" : ""}]  推进唐门任务` },
       { t: "sys", text: "  practice <武功>  运功修炼" },

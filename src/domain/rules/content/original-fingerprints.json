@@ -3,10 +3,10 @@
   "format": "sha256(JSON.stringify(data)); orderedIds (up to 20) or their SHA-256 use id ?? name for arrays or Object.keys for objects; totalFieldCount counts object keys recursively, excluding array indices",
   "exports": {
     "QUCUO_QUESTS": {
-      "entryCount": 50,
-      "orderedIdsSha256": "753b0aea7566431aee98425e0f45dbfa1f609e8dbfdd0bb89c542cde3827629f",
-      "totalFieldCount": 1949,
-      "jsonSha256": "52a97ea5ee3690dae28369e458985d33972e698e1f15b9f67c86d7e83662b113"
+      "entryCount": 58,
+      "orderedIdsSha256": "a94c6bb85ef3ed64137fa0cfccc1facd78b7e878fa2a4030bcbfaee76ce8b22e",
+      "totalFieldCount": 2510,
+      "jsonSha256": "9278a24b135c95a78536071d2e524f1051342f5a91a9f87e4c6e3ba76e02e0b5"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -222,24 +222,25 @@
       "jsonSha256": "d0c47d92e4d5958afd876abb8512223df37399abe67606b7329a8f282a8d2245"
     },
     "CATALOG": {
-      "entryCount": 464,
-      "orderedIdsSha256": "58b1477d9678488e691c2455d8e6fd0db6dd22f93355263b9f574fcf17e57012",
-      "totalFieldCount": 3589,
-      "jsonSha256": "6f1e9cd93d8d17aa46931ebf9bb0b32342077aa5eb5ac327592a7f3380c4931a"
+      "entryCount": 502,
+      "orderedIdsSha256": "0c1785ab28c821ae3322c99e1183d2c8d13d53acba4cbfd597f42d4b028e5cd2",
+      "totalFieldCount": 3828,
+      "jsonSha256": "ffea0338318a3f64d88a821fdc0ad382826b8bdfc14095ec5a58e12cd525aa3a"
     },
     "CATALOG_INDEX": {
-      "entryCount": 464,
-      "orderedIdsSha256": "58b1477d9678488e691c2455d8e6fd0db6dd22f93355263b9f574fcf17e57012",
-      "totalFieldCount": 4053,
-      "jsonSha256": "77c334fde317b97dfb92604172c73e7007d877dc1a9689a3f07ebff94a94cc54"
+      "entryCount": 502,
+      "orderedIdsSha256": "0c1785ab28c821ae3322c99e1183d2c8d13d53acba4cbfd597f42d4b028e5cd2",
+      "totalFieldCount": 4330,
+      "jsonSha256": "0de3637905032b3bdcbaa93a079c26aaced6cd19ffc7ec3d03a3d2aa2279fce3"
     },
     "RESIDENT_NPCS": {
-      "entryCount": 14,
+      "entryCount": 15,
       "orderedIds": [
         "鱼定村",
         "鱼定土司",
         "雪山派",
         "喇嘛庙",
+        "白塔",
         "黑风寨",
         "玉泉寨",
         "天都镇",
@@ -251,8 +252,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 1881,
-      "jsonSha256": "b365bbeb75a3354c2c426866163b01ac89731f39924991ba86eb26e91c4ebe34"
+      "totalFieldCount": 1996,
+      "jsonSha256": "b79e148d605d040d75e9b98bc7bf6576049247def8641288daa51ce0d8c506b9"
     },
     "INNER_MAP": {
       "entryCount": 20,
@@ -278,8 +279,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 1415,
-      "jsonSha256": "83c46b4603cada135aa02d10481149e36a44a55717575450cf18cab18c490bc7"
+      "totalFieldCount": 1437,
+      "jsonSha256": "40b2bf69ee675b143ba938e4b3ffc7046fb699ceff2a6997465154125ef92d34"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,

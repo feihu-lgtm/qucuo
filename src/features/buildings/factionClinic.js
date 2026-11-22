@@ -1,6 +1,8 @@
 // 势力医馆的日常善举（合稿各派「声誉·加分行为」）：每游戏日一次，涨本派声誉与威望。
 // 峨眉慈济佛堂：布施 20 两救济曲措逃民 +5、威望 +2；声誉 ≥ 15 免诊金。
-// 青城药圃：随玉真子采药义诊（耗两个时辰）+8、威望 +3。两处声誉 ≤ -20 都拒诊。
+// 青城药圃：随玉真子采药义诊（耗两个时辰）+8、威望 +3。
+// 喇嘛庙山门施药棚：协助根敦诊治冻伤牧民（耗两个时辰）+5、威望 +2；声誉 ≥ 15 免费疗伤回气（合稿「喇嘛庙·七」）。
+// 各处声誉 ≤ -20 都拒诊。
 import { factionRepOf, formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 
 export const FACTION_CLINICS = {
@@ -17,6 +19,13 @@ export const FACTION_CLINICS = {
     deed: "随玉真子上山采药，替染瘴百姓义诊",
     settle: "随玉真子上后山采了一篓草药，又在药圃替雅江染瘴的百姓义诊了两个时辰",
     refuse: "玉真子把篱笆门一掩：「青城药圃不医你这样的人。」",
+  },
+  hospital_lamamiao_yizhen: {
+    faction: "喇嘛庙", cost: 0, hours: 2, rep: 5, prestige: 2, freeRep: 15, refuseRep: -20,
+    dayFlag: "lama_clinic_day_", label: "协助根敦诊治冻伤牧民（两个时辰）", done: "今日已施药",
+    deed: "协助根敦诊治冻伤牧民",
+    settle: "在山门施药棚给根敦打下手，替下山路过的冻伤牧民烧水、敷药、正骨，忙了两个时辰",
+    refuse: "根敦把药棚的布帘一放：「喇嘛庙的药，不施给你。」",
   },
 };
 
