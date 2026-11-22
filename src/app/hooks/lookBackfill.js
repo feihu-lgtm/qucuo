@@ -25,7 +25,7 @@ export function lookScene(state = {}) {
 }
 
 export function lookInBackground(cmd, {
-  addLog, setTime, setConvo, setLog,
+  addLog, setTime, setConvo, setLog, noteAction,
   getState = () => gameStore.getState(), ask = askStoryteller, canAsk = hasApiKey,
 }) {
   const state = getState();
@@ -39,6 +39,7 @@ export function lookInBackground(cmd, {
     { role: "user", content: cmd },
     { role: "assistant", content: fact },
   ]);
+  noteAction?.("action");
 
   const { sys, user } = buildLookNarrationPrompt(scene);
   return backfillInBackground(key, {

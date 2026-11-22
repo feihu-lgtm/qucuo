@@ -8,6 +8,7 @@ function harness(overrides = {}) {
   const deps = {
     addLog: vi.fn((rows) => { log = [...log, ...rows]; }),
     setTime: vi.fn(),
+    noteAction: vi.fn(),
     setConvo: vi.fn(),
     setLog: vi.fn((fn) => { log = fn(log); }),
     getState: () => state,
@@ -34,6 +35,7 @@ describe("lookInBackground", () => {
     expect(getLog()[0]).toMatchObject({ t: "cmd", text: "> 环顾四周" });
     expect(getLog()[1].text).toContain("此处是鱼定村");
     expect(deps.setTime).toHaveBeenCalledTimes(1);
+    expect(deps.noteAction).toHaveBeenCalledWith("action");
     await done;
     expect(getLog()[2].text).toContain("溪声潺潺");
   });

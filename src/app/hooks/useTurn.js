@@ -123,7 +123,7 @@ export function useTurn({
         applyLocal, stopAutoTravel, showOuterNoExitNotice,
         resolveInnerBlockedSummary, prerunSquares,
         traceStep, callModel,
-        lookInBackground: (cmd) => lookInBackground(cmd, { addLog, setTime, setConvo, setLog }),
+        lookInBackground: (cmd) => lookInBackground(cmd, { addLog, setTime, setConvo, setLog, noteAction }),
         beforeRun: () => { pickupExtractionFailedRef.current = false; },
       },
     };
