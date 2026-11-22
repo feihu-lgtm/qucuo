@@ -2,7 +2,7 @@
 // 武侠化命名，机制照抄洛克王国：控制类互斥（同一时间只能有一种控制状态），
 // 掉血类互斥（同一时间只能有一种掉血状态），两组之间不冲突（可以同时中毒又被点穴）。
 
-import { random } from "../../../infra/rng.js";
+import { random } from "../../../utils/rng.js";
 
 export const STATUS_GROUP = {
   CONTROL: "control",   // 影响能否行动

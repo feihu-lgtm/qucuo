@@ -1,4 +1,4 @@
-import { random } from "../../../infra/rng.js";
+import { random } from "../../../utils/rng.js";
 
 export function rollDodgeSteal(move, carriedItems, alreadyStolen, rng = random) {
   if (alreadyStolen || !(move?.stealOnDodge > 0)) return null;

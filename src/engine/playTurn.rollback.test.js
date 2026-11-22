@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
 import { gameActions, gameStore, initGameStore, subscribeGameReplaced } from "../store/gameStore.js";
-import { getRngState, setSeed } from "../infra/rng.js";
+import { getRngState, setSeed } from "../utils/rng.js";
 import { commitRound } from "./act/commitRound.js";
 import { runTurn } from "./runTurn.js";
 import { playTurn } from "./playTurn.js";

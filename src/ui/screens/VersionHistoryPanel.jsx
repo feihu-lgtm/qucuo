@@ -13,7 +13,7 @@
 // 显示出不一样的数字。
 // ============================================================================
 import React, { useEffect, useState } from "react";
-import { loadVersionHistory } from "../../infra/version.js";
+import { loadVersionHistory } from "../../utils/version.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 export default function VersionHistoryPanel({ onClose, accentDim = "var(--accent)" }) {

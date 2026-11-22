@@ -43,7 +43,7 @@ describe("npm 脚本引用的本地文件必须存在", () => {
 // 这条测试补上这个缺口：只要能 import 进来、且结构合法，语法就一定是对的。
 describe("version.js 语法与结构（防「测试全绿但构建坏了」）", () => {
   it("懒加载历史可用、每条含 codename/time/notes[]，且 CURRENT_VERSION 指向最新一条", async () => {
-    const { loadVersionHistory, CURRENT_VERSION } = await import("../infra/version.js");
+    const { loadVersionHistory, CURRENT_VERSION } = await import("../utils/version.js");
     const VERSION_HISTORY = await loadVersionHistory();
     expect(VERSION_HISTORY.length).toBeGreaterThan(0);
     for (const e of VERSION_HISTORY.slice(0, 20)) {

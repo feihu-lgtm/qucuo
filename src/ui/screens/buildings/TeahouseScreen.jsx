@@ -1,5 +1,5 @@
 import React from "react";
-import { random } from "../../../infra/rng.js";
+import { random } from "../../../utils/rng.js";
 import { Overlay, Header, Btn } from "./common.jsx";
 
 // 茶馆：花少量银两听掌柜说话，注入随机传闻

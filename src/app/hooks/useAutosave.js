@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createAutosaveScheduler } from "../../features/autosaveScheduler.js";
 import { snapshotFromStore } from "../../store/persist.js";
-import { setRngState } from "../../infra/rng.js";
+import { getRngState, setRngState } from "../../utils/rng.js";
 import { DEFAULT_PRESETS } from "../../engine/newGame.js";
 import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
@@ -12,7 +12,7 @@ import { backfillInventoryFromCatalog } from "../../domain/data/items/catalog.js
 import { generateNpcMoveset } from "../../domain/rules/npc/npcGeneration.js";
 import { seedKnowledge } from "../../domain/rules/prompt/knowledge.js";
 import { initCompanionState } from "../../domain/rules/companion/companion.js";
-import { CURRENT_VERSION } from "../../infra/version.js";
+import { CURRENT_VERSION } from "../../utils/version.js";
 import { getMapNode } from "../../domain/data/map/qucuoMap.js";
 import { getDistrictAnchor, getInnerRoomNames, hasInnerMap } from "../../domain/rules/map/innerMap.js";
 import { initialVarTree } from "../../domain/rules/prompt/mvu.js";
@@ -110,7 +110,7 @@ export function useAutosave({
     if (roundsSinceLastSaveRef.current <= 0) return;
     const every = Math.max(0, Number(apiCfg.autoSaveEvery ?? 5));
     if (every > 0 && roundsSinceLastSaveRef.current < every) return; // 间隔未到
-    const snapshot = buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares: serializeSquares(), roomMap: roomMapRef.current });
+    const snapshot = buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares: serializeSquares(), roomMap: roomMapRef.current, rngState: getRngState() });
     const result = autoSave(snapshot); // 同步返回（写内存必成；IDB 异步落盘、LS 尽力兜底）
     if (result.ok) {
       roundsSinceLastSaveRef.current = 0;

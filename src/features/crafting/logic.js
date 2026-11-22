@@ -1,4 +1,4 @@
-import { random } from "../../infra/rng.js";
+import { random } from "../../utils/rng.js";
 import { ITEM_CATEGORY, makeItem } from "../../domain/rules/economy/equipment.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { CHANG_KOU, JADE_TIERS } from "../../domain/rules/economy/gambleStone.js";

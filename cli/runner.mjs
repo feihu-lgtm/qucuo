@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { gameActions, GAME_KEYS, gameStore, initGameStore, subscribeGameReplaced } from "../src/store/gameStore.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "../src/engine/newGame.js";
 import { snapshotFromStore } from "../src/store/persist.js";
-import { setSeed } from "../src/infra/rng.js";
+import { setSeed } from "../src/utils/rng.js";
 import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare } from "../src/domain/rules/map/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/infra/saves.js";
 import { statsForQuality } from "../src/domain/rules/economy/equipment.js";

@@ -2,7 +2,7 @@
 // 铁律：所有数值（种水/品相/裂缝/报价/成交/委托结果）由本模块 seededRand 骰定并写死，
 // AI 只拿到结果做叙事，绝不参与裁决。对照主文档《赌石_玉器与原石设计.md》§4 职责划分。
 
-import { createRng, random } from "../../../infra/rng.js";
+import { createRng, random } from "../../../utils/rng.js";
 import { QUALITY, rollQuality } from "./equipment.js";
 import { DEAL_MULTIPLIER } from "../state/fields.js";
 

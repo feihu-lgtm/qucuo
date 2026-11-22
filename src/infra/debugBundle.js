@@ -1,11 +1,9 @@
-import { getRngState } from "./rng.js";
 import { getApiModel } from "./apiModel.js";
 import { getRecentErrors } from "./errorBuffer.js";
 import { getTraceLog } from "./actionTrace.js";
 import { loadConfig } from "./apiConfig.js";
 import { loadAutoSave } from "./saves.js";
 import { ADC_SECRET_KEY, BLOCKED_CREDENTIAL, collectConfigValues, scrubCredentialPatterns, scrubString, setScrubbedProperty } from "./textRedaction.js";
-import { CURRENT_VERSION } from "./version.js";
 
 export const MAX_DEBUG_BUNDLE_BYTES = 1.5 * 1024 * 1024;
 
@@ -138,14 +136,14 @@ export function buildDebugBundle(sources = EMPTY_SOURCES) {
   const safeSources = sources && typeof sources === "object" ? sources : EMPTY_SOURCES;
   const save = readSource(safeSources, "save", loadAutoSave, sourceErrors);
   const apiConfig = readSource(safeSources, "apiConfig", loadConfig, sourceErrors) || {};
-  const version = versionText(readSource(safeSources, "version", CURRENT_VERSION, sourceErrors));
+  const version = versionText(readSource(safeSources, "version", "", sourceErrors));
   const createdAt = readSource(safeSources, "createdAt", () => new Date().toISOString(), sourceErrors);
   const userAgent = readSource(safeSources, "userAgent", () => globalThis.navigator?.userAgent || "", sourceErrors);
   const viewport = readSource(safeSources, "viewport", () => ({
     width: globalThis.window?.innerWidth ?? null,
     height: globalThis.window?.innerHeight ?? null,
   }), sourceErrors);
-  const rngState = readSource(safeSources, "rngState", getRngState, sourceErrors);
+  const rngState = readSource(safeSources, "rngState", () => null, sourceErrors);
   const recentLog = readSource(safeSources, "recentLog", () => save?.log || [], sourceErrors);
   const conversation = readSource(safeSources, "conversation", () => save?.convo || [], sourceErrors);
   const traces = readSource(safeSources, "traces", getTraceLog, sourceErrors);

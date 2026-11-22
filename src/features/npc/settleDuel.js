@@ -3,7 +3,7 @@ import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { markNpcAsKnown as markNpcKnown } from "../../domain/rules/npc/npcAwareness.js";
 import { markCarriedLost, respawnNpc } from "../../domain/rules/npc/roomNpcs.js";
 import { duelAffGain, duelDropChance, duelPotGain, TEAMWORK_GAIN } from "../../domain/rules/combat/duelSettleMath.js";
-import { random } from "../../infra/rng.js";
+import { random } from "../../utils/rng.js";
 import { buildDuelReportRounds } from "../../domain/rules/combat/duelReport.js";
 import { QUEST_TYPE } from "../../domain/data/quests/questTypes.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";

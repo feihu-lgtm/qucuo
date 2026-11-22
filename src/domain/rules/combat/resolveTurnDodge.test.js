@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { setSeed } from "../../../infra/rng.js";
+import { setSeed } from "../../../utils/rng.js";
 import { applyDodgeResult } from "./dodgeTurn.js";
 import { resolveTurn } from "./resolveTurn.js";
 
