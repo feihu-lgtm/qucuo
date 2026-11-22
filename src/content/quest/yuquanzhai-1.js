@@ -249,7 +249,7 @@ export default { quest: {
         playerHint: "随卓玛去贡措海湖畔见梅朵，击退灭口的刺客。",
         completionFlag: "quest_yuquanzhai5_fight",
         choices: [
-          { flag: "quest_yuquanzhai5_fight", label: "护住卓玛与梅朵，击退刺客", resolve: "combat", combatNpc: { name: "管家心腹刺客", levelCap: 6 } },
+          { flag: "quest_yuquanzhai5_fight", label: "护住卓玛与梅朵，击退刺客", resolve: "combat", combatNpc: { name: "管家心腹刺客", levelCap: 5 } },
         ],
         onReach: { exp: 3 },
       },
