@@ -16,14 +16,14 @@ import { setRngState, setSeed } from "../../infra/rng.js";
 import { listCharacters, npcAffectionLabel } from "../../domain/rules/prompt/mvu.js";
 import { affectionLabel, AFFECTION_TIERS, affectionTier } from "../../domain/rules/narrator/narrator.js";
 // 预设切换/编辑器已从 UI 移除（预设 tab 现在只放注入结构），
-// PresetEditor.jsx 已删除（零引用），PresetManager 仍在使用。想接回来需重新实现。
+// PresetEditor.jsx 与 PresetManager.jsx 均已删除（零引用）。想接回来需重新实现。
 import { clearInspectCache, inspectCacheSize } from "../../infra/inspectCache.js";
 import { clearMemories, countMemories } from "../../infra/memoryStore.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import InjectionStructurePanel from "./InjectionStructurePanel.jsx";
 import IntentRecognitionToggle from "./IntentRecognitionToggle.jsx";
 import ApiProviderSettings, { ApiSettingsGroup } from "./ApiProviderSettings.jsx";
-import { chromeBtn } from "../theme.js";
+import { chromeBtn } from "../../utils/theme.js";
 
 const inputStyle = {
   width: "100%", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
@@ -283,7 +283,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
         {/* 预设 tab = 只有 Prompt 注入结构（本轮按作者要求精简）
             原来这里上下各有一块：上面是预设切换/导入酒馆JSON/导出，下面是可编辑的
             Prompt 条目列表。作者要的是"只看清楚喂了什么"，两头都拿掉了——
-            PresetEditor 已删除（零引用），PresetManager 仍在使用。 */}
+            PresetEditor 与 PresetManager 均已删除（零引用）。 */}
         {tab === "preset" && (
           <InjectionStructurePanel getLiveBlockText={getLiveBlockText} extractionEnabled={!!cfg.extractionEnabled} />
         )}

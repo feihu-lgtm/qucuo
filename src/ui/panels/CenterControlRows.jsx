@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import GroundItemStrip from "../components/GroundItemStrip.jsx";
-import { chromeBtn } from "../theme.js";
+import { chromeBtn } from "../../utils/theme.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 
 const MODES = [

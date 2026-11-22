@@ -55,13 +55,11 @@ describe("checkLayerRedLines（硬红线：跨层逆向依赖 0 容忍）", () =
     expect(checkLayerRedLines({ layerViolations: {} })).toMatchObject({ ok: true, failures: [] });
   });
 
-  it("欠账目录在上限内通过、超上限失败", () => {
-    const rule = Object.keys(KNOWN_LAYER_DEBT)[0];
-    const cap = KNOWN_LAYER_DEBT[rule];
-    expect(checkLayerRedLines({ layerViolations: { [rule]: cap } }).ok).toBe(true);
-    const over = checkLayerRedLines({ layerViolations: { [rule]: cap + 1 } });
+  it("欠账目录已清零：任何层间规则出现一条即失败（0 容忍）", () => {
+    expect(Object.keys(KNOWN_LAYER_DEBT)).toHaveLength(0);
+    const over = checkLayerRedLines({ layerViolations: { "app->ui": 1 } });
     expect(over.ok).toBe(false);
-    expect(over.failures[0]).toContain(rule);
+    expect(over.failures[0]).toContain("app->ui");
   });
 
   it("已清零的层间规则只要出现一条就失败（0 容忍）", () => {

@@ -160,7 +160,7 @@ describe("web load paths signal a game replacement", () => {
     expect(source).toMatch(/if \(!replacedRef\.current\) worldRulesRunnerRef\.current\.check\(\);/);
     expect(source).toMatch(/autosave\.runSilently\(check\)/);
     expect(source).toContain("unsubscribeReplaced();");
-    expect(read("./MudRPG.jsx")).toMatch(/useWorldRulesRunner\(\{[^}]*schedulerRef[^}]*\}\)/);
+    expect(read("../MudRPG.jsx")).toMatch(/useWorldRulesRunner\(\{[^}]*schedulerRef[^}]*\}\)/);
   });
 
   it("start-screen load and autosave restore go through initGameStore", () => {

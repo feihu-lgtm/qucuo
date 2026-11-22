@@ -15,7 +15,7 @@ import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
 import CenterControlRows from "./CenterControlRows.jsx";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { DevControls, TurnControls } from "./TopBar.jsx";
-import { chromeBtn } from "../theme.js";
+import { chromeBtn } from "../../utils/theme.js";
 import { useState, useEffect } from "react";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";

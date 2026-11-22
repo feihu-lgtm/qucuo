@@ -2,7 +2,7 @@
 // 藏式 UI，复用开始界面的雪山背景与暖金配色。名讳写入 char.name（替换原「陈狐飞」），
 // 性别写入 char.gender（后续注入每轮 user prompt）。
 import React, { useState } from "react";
-import { ZONE_THEMES } from "../theme.js";
+import { ZONE_THEMES } from "../../utils/theme.js";
 import { getPendingPlayerCard, clearPendingPlayerCard, clearPendingStarterCompanion } from "../../domain/rules/cards/importedRegistry.js";
 import { adjustSpecial, baseSpecial, drawStarterSkills, remainingSpecialPoints, randomizeSpecial } from "../../domain/rules/character/starterBuild.js";
 import StatAllocator from "./StatAllocator.jsx";

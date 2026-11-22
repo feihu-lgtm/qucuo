@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import NpcAngerLine from "./NpcAngerLine.jsx";
 import LeftPanel from "./LeftPanel.jsx";
-import { ZONE_THEMES } from "../theme.js";
+import { ZONE_THEMES } from "../../utils/theme.js";
 import { LEFT_FACE_DEFAULTS, LEFT_FACE_PREF_KEY, LEFT_MODULES } from "./left/leftFaces.js";
 import useFaces, { readFacePreferences } from "../components/faces/useFaces.js";
 

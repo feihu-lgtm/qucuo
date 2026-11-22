@@ -4,7 +4,7 @@ import { blockedNoticeText, passableExits } from "../../../domain/rules/map/bloc
 import { showNotice } from "../../../store/uiStore.js";
 import { DIRS } from "../../../utils/mudHelpers.js";
 import NineGridMap from "../../components/NineGridMap.jsx";
-import { chromeBtn } from "../../theme.js";
+import { chromeBtn } from "../../../utils/theme.js";
 
 export default function MapModule({ zoneTheme, room, innerRoomName, mapView, setMapView, mapBig, setMapBig, questProgress, mapData, loading, flags, autoTravelTo, setInteractMode, act, inv, char }) {
   return (

@@ -139,7 +139,7 @@ describe("public 资源必须走 BASE_URL（防 Pages 子路径下 404）", () =
 //   踩两次说明靠记性不行，得让它自动失败。）
 describe("Hook deps 不许引用后面才定义的量（TDZ 守卫）", () => {
   it.each([
-    "src/app/MudRPG.jsx",
+    "src/MudRPG.jsx",
     "src/app/hooks/useAutosave.js",
     "src/app/hooks/useDaySummary.js",
     "src/app/hooks/usePrivateTalk.js",
@@ -190,7 +190,7 @@ describe("Hook deps 不许引用后面才定义的量（TDZ 守卫）", () => {
 });
 
 it("MudRPG app-hook arguments are declared before each hook call", () => {
-  const source = readFileSync("src/app/MudRPG.jsx", "utf-8");
+  const source = readFileSync("src/MudRPG.jsx", "utf-8");
   const lines = source.split("\n");
   const declarations = new Map();
   const lineAt = (offset) => source.slice(0, offset).split("\n").length;
@@ -301,7 +301,7 @@ describe("layout and overlay ctx inputs match their source shapes", () => {
 
   it("every ctx field reference exists in the hook or assembly input shape", () => {
     const builder = readFileSync("src/app/contextBuilders.js", "utf-8");
-    const mud = readFileSync("src/app/MudRPG.jsx", "utf-8");
+    const mud = readFileSync("src/MudRPG.jsx", "utf-8");
     const failures = [];
     const inputShapes = [
       ["ui", "src/app/hooks/useGameUi.js", "useGameUi"],

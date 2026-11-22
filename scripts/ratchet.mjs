@@ -227,9 +227,9 @@ export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
 }
 
 // ── 硬红线（0 容忍，违者直接 fail）────────────────────────────────
-// 已清零的跨层反向依赖一律不许再出现；唯一现存欠账是 app->ui，写成硬上限只减不增。
+// 已清零的跨层反向依赖一律不许再出现（全库 0 容忍）。
 // 软指标（大文件、颜色数、externalInfraImports、gzip）一律只打印不阻断——npm run stats。
-export const KNOWN_LAYER_DEBT = { "app->ui": 16 };
+export const KNOWN_LAYER_DEBT = {};
 
 export function checkLayerRedLines(metrics) {
   const failures = [];

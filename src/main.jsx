@@ -3,7 +3,7 @@ import "./ui/tokens.css";
 import "./ui/mobile.css";
 import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
-import MudRPG from "./app/MudRPG.jsx";
+import MudRPG from "./MudRPG.jsx";
 import StartScreen from "./ui/screens/StartScreen.jsx";
 import ErrorBoundary from "./ui/components/ErrorBoundary.jsx";
 import { loadAutoSave, init as initSaves } from "./infra/saves.js";
@@ -11,7 +11,7 @@ import { loadConfig } from "./infra/apiConfig.js";
 import { installErrorBuffer } from "./infra/errorBuffer.js";
 import { recordError } from "./infra/errorBuffer.js";
 import * as importedRegistry from "./domain/rules/cards/importedRegistry.js";
-import { getZoneTheme } from "./ui/theme.js";
+import { getZoneTheme } from "./utils/theme.js";
 
 loadDefaultContent();
 

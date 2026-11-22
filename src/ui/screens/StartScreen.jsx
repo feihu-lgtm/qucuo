@@ -4,7 +4,7 @@
 // 而是一张氛围背景图 + 克制的排版留白，让文字和印章式按钮自己撑起质感
 
 import React, { useState, useEffect } from "react";
-import { ZONE_THEMES } from "../theme.js";
+import { ZONE_THEMES } from "../../utils/theme.js";
 import { listSlots, loadAutoSave } from "../../infra/saves.js";
 import { registerVisit } from "../../infra/visitorCount.js";
 import BugReportModal from "./BugReportModal.jsx";

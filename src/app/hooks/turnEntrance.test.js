@@ -81,7 +81,7 @@ it("keeps inline gameplay mutations out of overlay and host components", () => {
   const fixture = '<Screen onFinish={() => { if (won) ctx.setChar(update); gameActions.setInv(items); }} />';
   expect(directMutations(fixture)).toEqual(["setChar", "setInv"]);
   expect(directMutations('<Screen onSave={() => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))} />')).toEqual([]);
-  for (const path of ["../../ui/panels/GlobalOverlays.jsx", "../OverlayHost.jsx"]) {
+  for (const path of ["../../ui/panels/GlobalOverlays.jsx", "../../ui/OverlayHost.jsx"]) {
     expect(directMutations(readFileSync(new URL(path, import.meta.url), "utf8")), path).toEqual([]);
   }
 });

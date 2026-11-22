@@ -1,15 +1,15 @@
 import { lazy, Suspense } from "react";
-import BodyProfilePanel from "../ui/screens/BodyProfilePanel.jsx";
+import BodyProfilePanel from "./screens/BodyProfilePanel.jsx";
 import { emptyBodyProfile } from "../domain/rules/character/bodyProfile.js";
-import MusicPanel from "../ui/screens/MusicPanel.jsx";
-import HomesteadPanel from "../ui/screens/buildings/HomesteadPanel.jsx";
+import MusicPanel from "./screens/MusicPanel.jsx";
+import HomesteadPanel from "./screens/buildings/HomesteadPanel.jsx";
 import { getHomestead } from "../domain/rules/map/homestead.js";
-import GlobalOverlays from "../ui/panels/GlobalOverlays.jsx";
-import CharacterCreate from "../ui/screens/CharacterCreate.jsx";
-import OpeningSequence from "../ui/screens/OpeningSequence.jsx";
+import GlobalOverlays from "./panels/GlobalOverlays.jsx";
+import CharacterCreate from "./screens/CharacterCreate.jsx";
+import OpeningSequence from "./screens/OpeningSequence.jsx";
 import { OVERLAY, closeOverlay, openOverlay } from "../store/uiStore.js";
 
-const SettingsPanel = lazy(() => import("../ui/screens/SettingsPanel.jsx"));
+const SettingsPanel = lazy(() => import("./screens/SettingsPanel.jsx"));
 
 export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
   const closeSettings = () => {

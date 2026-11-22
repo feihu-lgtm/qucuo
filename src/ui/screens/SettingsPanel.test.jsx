@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import SettingsPanel from "./SettingsPanel.jsx";
-import { ZONE_THEMES } from "../theme.js";
+import { ZONE_THEMES } from "../../utils/theme.js";
 
 const render = (cfg, initialTab, props = {}) => renderToStaticMarkup(createElement(SettingsPanel, {
   cfg, initialTab, font: "pixel", setFont: () => {}, zoneTheme: ZONE_THEMES.village, ...props,

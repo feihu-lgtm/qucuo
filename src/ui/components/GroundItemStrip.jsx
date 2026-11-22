@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { chromeBtn } from "../theme.js";
+import { chromeBtn } from "../../utils/theme.js";
 
 export default function GroundItemStrip({ items = [], theme, onPickUp }) {
   const [expanded, setExpanded] = useState(false);

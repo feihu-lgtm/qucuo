@@ -3,7 +3,7 @@
 // 从 InnScreen.jsx 抽出：原来寄生在"客栈屏"里的这三件被 16 个建筑屏 + 任务日志
 // 复用，业务屏不该兼当共享库。新建筑屏要用就直接从这里 import。
 import { useOverlayCloseGuard } from "../../../utils/overlayClose.js";
-import { RADIUS } from "../../theme.js";
+import { RADIUS } from "../../../utils/theme.js";
 
 // ── 共用子组件 ──
 export function Overlay({ children, onClose, zoneTheme, inline }) {
