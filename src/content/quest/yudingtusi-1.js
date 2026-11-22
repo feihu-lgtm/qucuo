@@ -350,6 +350,7 @@ export default { quest: {
       {
         id: "open",
         requireLocation: FINALE_ROOM,
+        giver: null,
         playerHint: "到议事厅，与桑杰朵杰当面摊牌。",
         description: "议事厅烛火通明，桑杰朵杰端坐虎皮椅上，身后只剩一半护卫。格桑顿珠的骑手在府门外勒马不动。桑杰朵杰慢慢放下酒碗：「格桑也不站在我这边了。好，那就看看你们凑了多少人来。」",
         completionFlag: "quest_ts5_open",
@@ -357,6 +358,7 @@ export default { quest: {
       {
         id: "miasma",
         requireLocation: FINALE_ROOM,
+        giver: null,
         playerHint: "五仙教若未站到你这边，土司私兵带着毒蛊冲进来；有百花门解毒能轻松些。",
         description: "厅外忽然腾起一股紫雾。",
         completionFlag: ["quest_ts5_miasma_clear", "quest_ts5_miasma", "quest_ts5_miasma_cured"],
@@ -372,6 +374,7 @@ export default { quest: {
       {
         id: "ambush",
         requireLocation: FINALE_ROOM,
+        giver: null,
         playerHint: "管家陆福生的毒弩伏兵藏在梁上；唐门站到你这边就没有伏兵。",
         description: "陆福生缩到柱后，抬手一挥。",
         completionFlag: ["quest_ts5_ambush_none", "quest_ts5_ambush", "quest_ts5_ambush_spotted"],
@@ -387,6 +390,7 @@ export default { quest: {
       {
         id: "guard",
         requireLocation: FINALE_ROOM,
+        giver: null,
         playerHint: "中院亲兵护着桑杰朵杰；各家援军能削弱他们，鱼定村的暗道能绕开他们。",
         description: "中院亲兵举盾围成一圈，把桑杰朵杰护在中间。",
         completionFlag: ["quest_ts5_guard", "quest_ts5_guard_gaibang", "quest_ts5_guard_heifeng", "quest_ts5_guard_tangmen",
@@ -410,6 +414,7 @@ export default { quest: {
       {
         id: "boss",
         requireLocation: FINALE_ROOM,
+        giver: null,
         playerHint: "与桑杰朵杰决战。",
         description: "桑杰朵杰终于站起来，解下锦袍搭在椅背上：「这把椅子，我坐了三十年。想要，自己来拿。」",
         completionFlag: "quest_ts5_boss",
@@ -420,6 +425,7 @@ export default { quest: {
       {
         id: "aftermath",
         requireLocation: FINALE_ROOM,
+        giver: null,
         playerHint: "桑杰朵杰倒下了，议事厅里等你定曲措乡往后怎么办。",
         description: "虎皮椅空了。梅朵站在厅口，格桑顿珠把长矛插在地上，满厅的人都在看你。",
         completionFlag: ["quest_ts5_regent", "quest_ts5_settle"],

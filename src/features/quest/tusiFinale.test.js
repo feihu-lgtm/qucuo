@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { isQuestChoiceOpen } from "../../domain/rules/quests/questEngine.js";
+import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 import { resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
 import { TUSI_FINALE_FLAGS } from "../../content/quest/yudingtusi-1.js";
 
@@ -28,6 +29,14 @@ describe("府5·斗地主", () => {
     expect(finale.requiresFlags).toEqual(["flag_gesang_neutralized"]);
     expect(finale.localOnly).toBe(true);
     for (const s of finale.stages) expect(s.requireLocation, s.id).toEqual({ district: "鱼定土司", inner: "议事厅" });
+  });
+
+  it("议事厅里没有发布人也能接，府4 没完成或格桑没按兵不动就接不到", () => {
+    const state = (questProgress, flags) => ({ room: { name: "鱼定土司", npcs: [] }, innerRoomName: "议事厅", questProgress, flags, varTree: {} });
+    const done = { yudingtusi_4_gushu_wenxin: { status: "completed" } };
+    expect(getLocalQuestStage(finale, state(done, ["flag_gesang_neutralized"]))?.id).toBe("open");
+    expect(getLocalQuestStage(finale, state(done, []))).toBeNull();
+    expect(getLocalQuestStage(finale, state({}, ["flag_gesang_neutralized"]))).toBeNull();
   });
 
   it("最后一战是桑杰朵杰，档位 5", () => {
