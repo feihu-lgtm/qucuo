@@ -57,6 +57,34 @@ describe("bootstrapArgonConfig", () => {
     expect(url).toContain("argon-config.json");
   });
 
+  it("托管只写 provider:custom 不写 apiType → 存为 openai 协议而非 anthropic", async () => {
+    // 契约：defaultConfig 的出厂 apiType("anthropic") 不许顶掉托管 provider——
+    // 先 migrateProvider 托管 json 再合并，保证 provider/apiType 一致。
+    const store = stubStore();
+    stubFetchOk({ provider: "custom", endpoint: HOSTED.endpoint, apiKey: "sk-hosted", model: "m" });
+    await bootstrapArgonConfig();
+    const saved = JSON.parse(store[CONFIG_KEY]);
+    expect(saved.provider).toBe("custom");
+    expect(saved.apiType).toBe("openai");
+  });
+
+  it("fetch 挂起超时 → 静默返回、不卡启动、不写配置", async () => {
+    // 契约：请求永不 resolve 时 3.5s 后自动放弃，bootstrap 照常结束。
+    vi.useFakeTimers();
+    try {
+      const store = stubStore();
+      vi.stubGlobal("fetch", vi.fn((_url, init) => new Promise((_resolve, reject) => {
+        init.signal.addEventListener("abort", () => reject(new Error("aborted")));
+      })));
+      const p = bootstrapArgonConfig();
+      await vi.advanceTimersByTimeAsync(4000);
+      await p;
+      expect(store[CONFIG_KEY]).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("玩家已有配置 → 托管配置绝不覆盖", async () => {
     // 契约：CONFIG_KEY 已存在时连字段都不碰。
     const mine = JSON.stringify({ apiKey: "sk-mine", endpoint: "https://me.example/v1" });
