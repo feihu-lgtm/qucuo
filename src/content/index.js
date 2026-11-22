@@ -61,10 +61,11 @@ import emei from "./quest/emei-1.js";
 import emei2 from "./quest/emei-2.js";
 import gaibang from "./quest/gaibang-1.js";
 import xueshan from "./quest/xueshan-1.js";
+import qingcheng from "./quest/qingcheng-1.js";
 import pack52 from "./item/xueshan-1.js";
 
 export const DEFAULT_CONTENT_PACKS = [
-  quest0, quest1, quest2, quest3, quest4, quest5, quest6, quest7, quest8, tangmen, wuxianjiao, emei, emei2, gaibang, xueshan,
+  quest0, quest1, quest2, quest3, quest4, quest5, quest6, quest7, quest8, tangmen, wuxianjiao, emei, emei2, gaibang, xueshan, qingcheng,
   pack5, pack6, pack7, pack8, pack9, pack10, pack11, pack12, pack13, pack14,
   pack15, pack16, pack17, pack18, pack19, pack20, pack21, pack22, pack23,
   pack24, pack25, pack26, pack27, pack28, pack29, pack30, pack31, pack32,

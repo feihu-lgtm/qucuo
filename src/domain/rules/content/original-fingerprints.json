@@ -3,10 +3,10 @@
   "format": "sha256(JSON.stringify(data)); orderedIds (up to 20) or their SHA-256 use id ?? name for arrays or Object.keys for objects; totalFieldCount counts object keys recursively, excluding array indices",
   "exports": {
     "QUCUO_QUESTS": {
-      "entryCount": 66,
-      "orderedIdsSha256": "24998aa8ee071797a751dd134676297f65376439342cdeb5f72a8c658fced8ad",
-      "totalFieldCount": 3153,
-      "jsonSha256": "9a269896826ea2a65664740128999efb5a9e155f7f7f88a6710e0e44bd0f489e"
+      "entryCount": 69,
+      "orderedIdsSha256": "88e4cc08e59e05824faf38eb3f6914110947c4941c286b5955820e4df3b790b5",
+      "totalFieldCount": 3317,
+      "jsonSha256": "91e89db8b323e6362e4767102fd5b81ae743c1b6dbb011c5b054c8c2e7e3c4f9"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
