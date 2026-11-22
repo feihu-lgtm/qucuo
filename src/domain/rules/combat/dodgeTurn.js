@@ -1,4 +1,4 @@
-import { random } from "../../../infra/rng.js";
+import { random } from "../../../utils/rng.js";
 
 export function applyDodgeResult(result, defender, defenderTag, attacker, attackerTag, markSources = {}) {
   const chance = defender.move.dodgeChance ?? 0;

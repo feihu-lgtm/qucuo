@@ -12,7 +12,7 @@
 import { chromeBtn } from "../../utils/theme.js";
 import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
-import { CURRENT_VERSION } from "../../infra/version.js";
+import { CURRENT_VERSION } from "../../utils/version.js";
 import { getState as getMusicState, subscribe as subscribeMusic } from "../../infra/musicPlayer.js";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
 import TurnStatusPill from "../components/TurnStatusPill.jsx";

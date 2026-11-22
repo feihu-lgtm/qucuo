@@ -11,7 +11,7 @@
 // AI 只负责把这个已定的势力过路人写得具体生动。AI 不决定概率、不决定势力。
 
 // 势力定义：每方给一个"典型在路上晃悠的人"的角色池，供 AI 拿到具体的"谁"。
-import { random } from "../../../infra/rng.js";
+import { random } from "../../../utils/rng.js";
 
 const FACTIONS = {
   土司府: {

@@ -1,6 +1,8 @@
 import React from "react";
 import { buildDebugBundle, downloadDebugBundle } from "../../infra/debugBundle.js";
 import { recordError } from "../../infra/errorBuffer.js";
+import { getRngState } from "../../utils/rng.js";
+import { CURRENT_VERSION } from "../../utils/version.js";
 
 // 通用错误边界。任何被它包住的子组件在 render / 生命周期里抛错，
 // 不再让整个 React 树白屏/黑屏，而是就地显示一段可读的错误信息 + 组件堆栈，
@@ -33,7 +35,7 @@ export default class ErrorBoundary extends React.Component {
 
   handleDownloadDebugBundle = () => {
     try {
-      downloadDebugBundle(buildDebugBundle());
+      downloadDebugBundle(buildDebugBundle({ version: CURRENT_VERSION, rngState: getRngState }));
     } catch (error) {
       recordError(error, { source: "ErrorBoundary.debugBundle" });
     }

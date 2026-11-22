@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSnapshot } from "../infra/saves.js";
 import { GAME_KEYS, gameActions, gameStore, initGameStore } from "./gameStore.js";
 import { snapshotFromStore } from "./persist.js";
-import { setRngState } from "../infra/rng.js";
+import { getRngState, setRngState } from "../utils/rng.js";
 
 afterEach(() => {
   initGameStore({});
@@ -70,7 +70,7 @@ describe("game store", () => {
     setRngState(0);
 
     const snapshot = snapshotFromStore(extra);
-    expect(snapshot).toEqual(buildSnapshot({ ...values, ...extra }));
+    expect(snapshot).toEqual(buildSnapshot({ ...values, ...extra, rngState: getRngState() }));
     expect(snapshot.rngState).toBe(0);
   });
 });

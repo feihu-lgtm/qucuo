@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getRngState, setRngState, setSeed } from "../../../infra/rng.js";
+import { getRngState, setRngState, setSeed } from "../../../utils/rng.js";
 import { makeBuffFlag } from "../../../utils/buffSystem.js";
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
 import { clearImported, getImportedNpc, registerImported } from "../cards/importedRegistry.js";

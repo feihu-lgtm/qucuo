@@ -12,7 +12,7 @@ const EXTRACTION_INTENT_LABELS = [
   ["UNKNOWN",        "未知意图（兜底）"],
 ];
 import { listSlots, saveToSlot, loadSlot, deleteSlot, renameSlot, clearAutoSave, autoSave, exportSave, importSave } from "../../infra/saves.js";
-import { setRngState, setSeed } from "../../infra/rng.js";
+import { setRngState, setSeed } from "../../utils/rng.js";
 import { listCharacters, npcAffectionLabel } from "../../domain/rules/prompt/mvu.js";
 import { affectionLabel, AFFECTION_TIERS, affectionTier } from "../../domain/rules/narrator/narrator.js";
 // 预设切换/编辑器已从 UI 移除（预设 tab 现在只放注入结构），

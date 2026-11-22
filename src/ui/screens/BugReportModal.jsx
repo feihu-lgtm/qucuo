@@ -10,10 +10,11 @@
 import React, { useMemo, useState } from "react";
 import { downloadDebugBundle, getDebugBundleDownloadSize, redact } from "../../infra/debugBundle.js";
 import { submitBugReport } from "../../infra/bugReport.js";
-import { CURRENT_VERSION } from "../../infra/version.js";
+import { CURRENT_VERSION } from "../../utils/version.js";
+import { getRngState } from "../../utils/rng.js";
 import { buildModalDebugBundle, getSelectedBugReportTurns } from "./bugReportDebugBundle.js";
 
-const EMPTY_DEBUG_SOURCES = Object.freeze({});
+const EMPTY_DEBUG_SOURCES = Object.freeze({ version: CURRENT_VERSION, rngState: getRngState });
 
 function downloadFailedReport(report, apiConfig) {
   const date = new Date();

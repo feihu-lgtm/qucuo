@@ -1,4 +1,4 @@
-import { getRngState, setRngState } from "../infra/rng.js";
+import { getRngState, setRngState } from "../utils/rng.js";
 import { loadSquares, serializeSquares } from "../domain/rules/map/mapSquares.js";
 import { PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
 import { createWebAi } from "./ports/ai.js";

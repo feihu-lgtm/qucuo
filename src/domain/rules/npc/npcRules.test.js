@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getRngState, setRngState, setSeed } from "../../../infra/rng.js";
+import { getRngState, setRngState, setSeed } from "../../../utils/rng.js";
 import { createWorldRules } from "../../../engine/worldRules.js";
 import { getResidentNpcs } from "../../data/npc/residentNpcs.js";
 import { getScheduledNpcs } from "../../data/npc/npcPool.js";

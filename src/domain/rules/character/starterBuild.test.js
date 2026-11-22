@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRng } from "../../../infra/rng.js";
+import { createRng } from "../../../utils/rng.js";
 import { resolveTurn } from "../combat/resolveTurn.js";
 import { hpFromNeigong } from "../npc/npcGeneration.js";
 import {

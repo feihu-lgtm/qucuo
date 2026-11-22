@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { random } from "../../../infra/rng.js";
+import { random } from "../../../utils/rng.js";
 import { useOverlayCloseGuard } from "../../../utils/overlayClose.js";
 import {
   getHomestead, loadWineCellar, saveWineCellar,

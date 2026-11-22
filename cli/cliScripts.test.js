@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { exportSave } from "../src/infra/saves.js";
 import { loadSquares, serializeSquares } from "../src/domain/rules/map/mapSquares.js";
 import { createSession as rawCreateSession, runScript as rawRunScript } from "./runner.mjs";
-import { getRngState, random, setSeed } from "../src/infra/rng.js";
+import { getRngState, random, setSeed } from "../src/utils/rng.js";
 import { createMockAi, createRecordingAi, createReplayAi } from "../src/engine/ports/ai.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
