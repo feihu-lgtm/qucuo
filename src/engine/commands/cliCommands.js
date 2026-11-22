@@ -87,7 +87,7 @@ export const CLI_COMMANDS = [
   },
   {
     id: "cliNarratorCompanion",
-    match: /^安抚\s+(.+)$/,
+    match: /^安抚 (.*)$/,
     parse: (m) => ({ method: m[1].trim() }),
     execute: (ctx, { method }) => ctx.applyFeature(comfort(ctx.state, method)),
   },
@@ -105,7 +105,7 @@ export const CLI_COMMANDS = [
   },
   {
     id: "cliNarratorCompanion",
-    match: /^换队友\s+(.+)$/,
+    match: /^换队友 (.*)$/,
     parse: (m) => ({ key: m[1].trim() }),
     execute: (ctx, { key }) => ctx.applyFeature(switchCompanion(ctx.state, key === "none" ? null : key)),
   },
