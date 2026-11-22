@@ -104,6 +104,7 @@ export function playLocalQuestStage(state, quest, choiceLabel, now) {
   const choice = stage.choices?.find((entry) => entry.label === choiceLabel);
   if (stage.choices && !choice) return error(`可选：${stage.choices.filter((entry) => entry.resolve === "none").map((entry) => entry.label).join(" / ")}`);
   if (choice && choice.resolve !== "none") return error("此分支须在任务面板中开启战斗，不能直接结算。");
+  if (choice?.requiresMoney && (state.char?.money ?? 0) < choice.requiresMoney) return error(`银两不足，「${choice.label}」要${choice.requiresMoney}两。`);
   return {
     ...forceAdvanceQuest(state, quest, choice?.flag ?? stage.completionFlag, now),
     logs: [{ t: "quest", text: choice?.narration ?? stage.description }],

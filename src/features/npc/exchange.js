@@ -12,6 +12,8 @@ import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { giftRange } from "../../domain/rules/state/fields.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
+import { soupKitchenRepGain } from "../../domain/rules/economy/soupKitchen.js";
+import { applyFactionRep } from "../../domain/rules/economy/factionRep.js";
 
 function composeUpdates(first, second) {
   return (prev) => {
@@ -111,11 +113,18 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
   if ((state.char?.money ?? 0) < amount) return { logs: [{ t: "err", text: "  随身银两不足，未送出。" }] };
   const angry = isNpcAngry(state.varTree, npc.name);
   const itemName = `${amount}两银子`;
+  const alms = soupKitchenRepGain(state, npc, amount);
   return {
     changes: {
       char: updateField("char", add("char.money", -amount)),
-      varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }),
+      varTree: (prev) => {
+        const tree = recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now });
+        if (!alms) return tree;
+        return applyFactionRep(tree, { [alms.faction]: alms.delta });
+      },
+      ...(alms ? { flags: alms.flags } : {}),
     },
+    ...(alms ? { logs: [{ t: "affection", text: `  ✦ 银子进了粥锅，${alms.faction}声誉 +${alms.delta}` }] } : {}),
     settle: `将${itemName}赠予${npc.name}`,
     settleOptions: {
       settleNpc: npc.name,

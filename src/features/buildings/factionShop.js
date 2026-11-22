@@ -56,6 +56,14 @@ const FACTION_SHOPS = {
     hostileClosed: { vault: "秘珍坊的暗门紧闭，廊下灯笼全灭。" },
     hostileQualities: [],
   },
+  三星分舵商坊: {
+    faction: "丐帮三星分舵", idPrefix: "gaibang_purchase",
+    outlets: { sectshop_gaibang: "vault" },
+    nowhere: "须到广汉破庙粥棚后耳房的分舵义坊才能买丐帮的货。",
+    banned: "白婶拎起大汤勺：「分舵不做你的生意，走吧。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿", "蓝"],
+  },
 };
 
 export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];
