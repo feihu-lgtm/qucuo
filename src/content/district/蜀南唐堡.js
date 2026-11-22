@@ -28,6 +28,7 @@ export default { district: {
         desc: `　　依着崖壁搭起的一片吊脚工坊，住的都是唐门雇来的外姓匠人。炉火映红了半边竹林，打铁声和药臼捣毒声昼夜不歇。
 　　外姓人进不了正堂，手艺却是唐门的半条命。`,
         exits: { w: "吊桥暗渠口" },
+        buildingId: "hospital_tangmen",
       },
     },
   }
