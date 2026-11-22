@@ -141,6 +141,23 @@
   --ink-wood-mid: #2c2015;
   --ink-wood-shade: #20170f;
   --ink-wood-warm: #5a3d1a;
+
+  /* 掉落卡定色（原字面量，不随日间模式变）：切磋=暖金绛红，偷窃/偷师=冷翠墨青。 */
+  --loot-text: #e2d6b4;              /* 描述正文 */
+  --loot-foot: #c2b288;              /* 底注 */
+  --loot-stat-label: #b0a078;        /* 属性名 */
+  --loot-skill-hint: #9ad8c8;        /* 武学提示 */
+  --loot-duel-bg-1: #3a1c12;
+  --loot-duel-bg-2: #2a1210;
+  --loot-duel-bg-3: #1e0e0a;
+  --loot-duel-banner: #8a5a1a;
+  --loot-duel-banner-text: #2a1608;
+  --loot-steal-bg-1: #10241f;
+  --loot-steal-bg-2: #0c1c18;
+  --loot-steal-bg-3: #081210;
+  --loot-steal-banner: #2a5a4a;
+  --loot-steal-banner-hi: #5dcaa5;
+  --loot-steal-banner-text: #06231c;
   --dur-fast: 120ms;
   --dur: 180ms;
   --dx: 0px;
