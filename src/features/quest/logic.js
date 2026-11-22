@@ -106,6 +106,10 @@ export function playLocalQuestStage(state, quest, choiceLabel, now) {
   if (choice && !isQuestChoiceOpen(choice, state)) return error(`「${choice.label}」的条件还不满足。`);
   if (choice && choice.resolve !== "none") return error("此分支须在任务面板中开启战斗，不能直接结算。");
   if (choice?.requiresMoney && (state.char?.money ?? 0) < choice.requiresMoney) return error(`银两不足，「${choice.label}」要${choice.requiresMoney}两。`);
+  const special = Object.entries(choice?.requiresSpecialAny || {});
+  if (special.length && !special.some(([key, min]) => (state.char?.special?.[key] || 0) >= min)) {
+    return error(`此分支须${special.map(([key, min]) => `${key} ≥ ${min}`).join("或")}。`);
+  }
   return {
     ...forceAdvanceQuest(state, quest, choice?.flag ?? stage.completionFlag, now),
     logs: [{ t: "quest", text: choice?.narration ?? stage.description }],

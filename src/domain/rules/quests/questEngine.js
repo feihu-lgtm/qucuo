@@ -5,6 +5,7 @@
 
 import { QUEST_TYPE } from "../../data/quests/questTypes.js";
 import { factionRepOf } from "../economy/factionRep.js";
+import { isNpcKnown } from "../npc/npcAwareness.js";
 
 // 一个任务实例的完整结构（数据由预设/剧情作者手写，不是运行时生成）：
 // {
@@ -92,6 +93,7 @@ export function advanceQuestStages(quest, progress, gameState, now = Date.now())
 //   requiresFactionRep:     { [势力]: number }    —— 各势力声誉 ≥ 门槛
 //   requiresPrestige:       number             —— 全局威望（世界.威望）≥ 门槛
 //   requiresFavor:          { [人物]: number }    —— 人物好感（角色.<人物>.好感度，缺省 10）≥ 门槛
+//   requiresKnownNpc:       string[]           —— 这些人物必须已结识（世界.已认识人物）
 // 不涉及互斥锁（exclusiveGroup）那套逻辑，两者可以同时用在同一个任务上。
 // 声誉/威望门槛要传 varTree 才卡；没传（只做展示的调用方）时不卡。
 export function questGateReqs(quest, varTree) {
@@ -106,6 +108,10 @@ export function questGateReqs(quest, varTree) {
   if (quest.requiresPrestige != null) {
     const have = Number(varTree?.世界?.威望) || 0;
     reqs.push({ key: "prestige", label: `威望 ≥ ${quest.requiresPrestige}`, have, ok: have >= quest.requiresPrestige });
+  }
+  for (const name of quest.requiresKnownNpc || []) {
+    const ok = isNpcKnown(varTree || {}, name);
+    reqs.push({ key: `known:${name}`, label: `已结识${name}`, have: ok, ok });
   }
   return reqs;
 }

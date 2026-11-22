@@ -23,7 +23,7 @@ import { makeNamedItem } from "../../data/items/catalog.js";
 import { applyFactionRep } from "../economy/factionRep.js";
 
 function mergeRewardParts(...parts) {
-  const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, factionRep: {}, flags: [] };
+  const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, factionRep: {}, quietFactionRep: {}, consumeItems: [], flags: [] };
   for (const p of parts) {
     if (!p) continue;
     if (p.items) out.items.push(...p.items);
@@ -36,6 +36,10 @@ function mergeRewardParts(...parts) {
     for (const [faction, delta] of Object.entries(p.factionRep || {})) {
       out.factionRep[faction] = (out.factionRep[faction] || 0) + delta;
     }
+    for (const [faction, delta] of Object.entries(p.quietFactionRep || {})) {
+      out.quietFactionRep[faction] = (out.quietFactionRep[faction] || 0) + delta;
+    }
+    if (p.consumeItems) out.consumeItems.push(...p.consumeItems);
     if (p.flags) out.flags.push(...p.flags);
   }
   return out;
@@ -57,6 +61,12 @@ export function resolveStageRewards(stage, hitFlags = []) {
 export function stageRewardPatches(rewards, now = Date.now()) {
   if (!rewards) return [];
   const patches = [];
+  if (rewards.consumeItems?.length) {
+    patches.push(merge("inv", (prev) => rewards.consumeItems.reduce((inv, name) => {
+      const index = inv.findIndex((item) => item?.name === name);
+      return index < 0 ? inv : [...inv.slice(0, index), ...inv.slice(index + 1)];
+    }, prev)));
+  }
   if (rewards.items?.length) {
     patches.push(merge("inv", (prev) => [
       ...prev,
@@ -84,6 +94,10 @@ export function stageRewardPatches(rewards, now = Date.now()) {
   }
   if (Object.values(rewards.factionRep || {}).some(Boolean)) {
     patches.push(merge("varTree", (tree) => applyFactionRep(tree, rewards.factionRep, { step: Infinity })));
+  }
+  // 暗中出手（合稿 stealth）：只动本家，不牵连对头。
+  if (Object.values(rewards.quietFactionRep || {}).some(Boolean)) {
+    patches.push(merge("varTree", (tree) => applyFactionRep(tree, rewards.quietFactionRep, { step: Infinity, ripple: false })));
   }
   if (rewards.flags?.length) {
     patches.push(merge("flags", (f) => [...new Set([...f, ...rewards.flags])]));

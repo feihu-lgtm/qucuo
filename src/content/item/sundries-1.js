@@ -284,6 +284,17 @@ const items = {
 "玄清太极佩": { name:"玄清太极佩", category:"accessory", quality:"紫", tags:["饰品","道门","峨眉"], effect:{ energyRestore: 2 }, sixDim:{悟性:1}, desc:"虚白道姑按十二庄卦象刻的青玉佩，佩之行气周天更顺，每战回气更快。" },
 "冷月拂柳剑": { name:"冷月拂柳剑", category:"weapon", quality:"橙", tags:["武器","剑","镇派","峨眉"], effect:{ ignoreDefenseRatio: 0.35 }, sixDim:{身法:2,悟性:1}, desc:"剑庐密藏的百炼细剑，剑脊薄如柳叶却韧而不折，只此一柄，唯本门心腹方能请出。" },
 "峨眉青玉弟子令": { name:"峨眉青玉弟子令", category:"misc", quality:"绿", tags:["信物","门派","峨眉"], desc:"峨眉剑庐正式弟子的青玉令牌，一面刻普贤，一面刻太极。" },
+"《清心普善咒》入门手抄": { name:"《清心普善咒》入门手抄", category:"misc", quality:"蓝", tags:["抄本","佛门","峨眉"], desc:"了因师太亲手誊的半卷咒文，页边批着她给城里郎中讲经时的小注。" },
+"玄清艾草囊": { name:"玄清艾草囊", category:"accessory", quality:"蓝", tags:["饰品","道门","峨眉"], sixDim:{体魄:1,根骨:1}, desc:"虚白道姑缝的青布艾囊，塞满玄清道院后山的陈艾，佩在腰间压得住心浮气躁。" },
+"旧玉镇纸": { name:"旧玉镇纸", category:"accessory", quality:"绿", tags:["饰品","峨眉"], sixDim:{悟性:1}, desc:"陈九家传的一方青白玉镇纸，压了他八十七天的经纸，边角磨得圆润。" },
+"雪松劲枝": { name:"雪松劲枝", category:"misc", quality:"白", tags:["任务","峨眉"], desc:"顶峰老白猿随手掰断的一截雪松枝，断口新鲜，韧得能弯成半圆不折。" },
+"白猿劲松护腕": { name:"白猿劲松护腕", category:"armor", quality:"蓝", defMul: 1.15, tags:["护具","护腕","峨眉"], sixDim:{身法:1}, desc:"司徒瑛拿雪松劲枝削片、牛皮缠裹的一副护腕，挡拳格刃都震不麻手。" },
+"淬毒假峨眉刺": { name:"淬毒假峨眉刺", category:"misc", quality:"绿", tags:["任务","证物","峨眉"], desc:"一支刻着峨眉云纹的仿制峨眉刺，刺尖暗开血槽，槽里残着发蓝的寒毒。" },
+"唐伯渊私账副本": { name:"唐伯渊私账副本", category:"misc", quality:"蓝", tags:["任务","证物","唐门"], desc:"唐三少连夜誊出的半本暗账，记着唐伯渊背着唐老太私接的黑活和往来毒商。" },
+"冷月玄铁": { name:"冷月玄铁", category:"misc", quality:"蓝", tags:["矿料","锻造"], desc:"一块泛着冷白光的玄铁锭，敲之声如磬，是打细刃短兵的上料。" },
+"玄尘亲笔密函": { name:"玄尘亲笔密函", category:"misc", quality:"蓝", tags:["任务","书信","峨眉"], desc:"玄尘师太写给何雨谢的信，火漆上压着峨眉剑庐的莲纹印。" },
+"半支青铜旧簪": { name:"半支青铜旧簪", category:"misc", quality:"蓝", tags:["任务","信物","雪山派"], desc:"何雨谢收了三十年的半支青铜素簪，断口与玄尘案头那半支正好对上。" },
+"合璧青铜古簪": { name:"合璧青铜古簪", category:"accessory", quality:"紫", tags:["饰品","信物","峨眉","雪山派"], effect:{ immuneControl: true }, sixDim:{根骨:1}, desc:"岷江古渡断开的两半青铜素簪，三十年后在金顶重新合上，佩之心神不为外力所夺。" },
 "青城玄门竹牌": { name:"青城玄门竹牌", category:"misc", quality:"绿", tags:["信物","门派","青城"], desc:"青城派正式弟子的竹制腰牌，正面烙「青城天下幽」，背面刻着拜入那日的干支。" },
 // ── 丐帮三星分舵（广汉）：分舵吃食、任务物件 ──
 "广汉大锅盔": { name: "广汉大锅盔", category: "misc", quality: "白", tags: ["食品", "主食", "广汉"], consumable: { hpRestore: 0.1 }, desc: "烤得焦黄酥脆的死面饼，咬着费牙却极顶饿，是川北赶路人的硬通货。" },
@@ -299,6 +310,14 @@ const items = {
 "残纹竹板": { name: "残纹竹板", category: "misc", quality: "蓝", tags: ["信物", "三星", "丐帮"], desc: "哑巴七亲手交给你的半块竹板，刻着半枚云雷纹。拿着它走老槐树后的石径，雾里的人不会对你拔剑。" },
 "青铜鸟羽饰": { name: "青铜鸟羽饰", category: "misc", quality: "紫", tags: ["青铜器", "三星", "任务"], desc: "从盗墓贼手里夺回的青铜鸟羽，羽尖缺了一角，绿锈下透着铜光。这是古墟里的东西，该还回去。" },
 "叫化鸡秘方": { name: "叫化鸡秘方", category: "misc", quality: "绿", tags: ["食谱", "丐帮"], desc: "白婶写在半张草纸上的叫化鸡做法：荷叶要两层，黄泥要沱江的，火要先猛后文。最后一行写着「别告诉胡三」。" },
+"西域止血散": { name:"西域止血散", category:"misc", quality:"绿", tags:["药材","疗伤","天龙教"], consumable:{ hpRestore: 0.12 }, desc:"军需坊常备的止血药粉，铁锈味比药味重。血刀部的人也用这个——他们说止血要快，味儿难不难闻是活下来才想的事。" },
+"胡杨炭火酒": { name:"胡杨炭火酒", category:"misc", quality:"绿", tags:["酒","西域","天龙教"], consumable:{ energyRestore: 3 }, desc:"胡杨炭温过三遍的烈酒，喝下去一线火从喉咙烧到胃里。守夜的玄甲兵靠它熬西风隘的长夜——不许多喝，多了第二天刀拿不稳。" },
+"西域雪莲清毒丸": { name:"西域雪莲清毒丸", category:"misc", quality:"紫", tags:["丹药","解毒","天龙教"], consumable:{ dispelAll: true, hpRestore: 0.15 }, desc:"雪莲子配西谷草药炼的清毒丸，入喉一凉，毒气顺着毛孔往外散。贺兰昭一年只炼两炉，军需坊摆出来的每一颗都要记名。" },
+"药囊": { name:"药囊", category:"misc", quality:"绿", tags:["医具"], desc:"贺兰昭腰间那只旧药囊，革面磨得发亮，里头按格子分装着十几味药。她说药比人守信用——放在哪一格，就治哪一种病。" },
+"八部天龙经": { name:"八部天龙经", category:"misc", quality:"红", tags:["经卷","镇教","天龙教","剧情核心"], desc:"天龙教镇教经卷，八部八层，层层相扣。安世衡在石室里抄的就是它——抄一遍要一个月，他抄了八年。" },
+"手抄止戈经": { name:"手抄止戈经", category:"misc", quality:"白", tags:["经卷","白衣旧部"], desc:"一卷抄得极工整的止戈经，字迹瘦硬，末尾「止戈」两个字下笔比别处都重。是断崖石室里那位老人抄的。" },
+"血刀通行木牌": { name:"血刀通行木牌", category:"misc", quality:"绿", tags:["令牌","血刀","天龙教"], desc:"血刀部发的通行木牌，牌面一道刀刻的深槽。哨卡见了这槽便不拦——血刀部认牌不认人。" },
+"天龙弟子令": { name:"天龙弟子令", category:"misc", quality:"绿", tags:["令牌","天龙教"], desc:"天龙教正式弟子的令牌，玄铁所铸，正面一条蟠龙，背面一道刀刻的深槽。点将台上发下来的东西，丢了比丢命丢人。" },
 };
 
 export default { item: items, itemGroup: { SUNDRIES: Object.keys(items) } };
