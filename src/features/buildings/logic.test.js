@@ -150,6 +150,15 @@ describe("building feature logic", () => {
     expect(travelByCarriage(state({ char: { ...state().char, money: 1 } }), "喇嘛庙", 5)).toEqual({ logs: [] });
   });
 
+  it("honors destination gates even if an old save has explored the node", () => {
+    const explored = state({ mapData: { 蜀南唐堡: { x: 3, y: 1 }, 黑风寨: { x: 0, y: 0 } } });
+    expect(travelByCarriage(explored, "蜀南唐堡", 10).changes).toBeUndefined();
+    expect(travelByCarriage({ ...explored, flags: ["tangmen_invited"] }, "蜀南唐堡", 10).changes?.room.name).toBe("蜀南唐堡");
+    expect(travelByCarriage(explored, "黑风寨", 10).changes).toBeUndefined();
+    const questProgress = { heifengzhai_2_meimeidexiaoxi: { status: "completed" } };
+    expect(travelByCarriage({ ...explored, questProgress }, "黑风寨", 10).changes?.room.name).toBe("黑风寨");
+  });
+
   it("restores cached NPCs and items on carriage arrival", () => {
     const cached = {
       npcs: [{ id: "merchant", name: "杂货商人" }],

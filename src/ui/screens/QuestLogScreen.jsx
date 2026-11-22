@@ -34,7 +34,7 @@ export function QuestList({ questProgress, flags = [], zoneTheme }) {
                 </div>
                 {q.id === SNOW_QUEST_ID && <div style={{ color: "var(--text-dim)", fontSize: 11 }}><div>{stage?.title} · {snowSpiritCount(flags)}/5</div>{SNOW_SPIRITS.map(({ flag, label }) => <div key={flag}>{flags.includes(flag) ? "✓" : "○"} {label}</div>)}</div>}
                 {q.giver && <div style={{ color: "var(--text-dim)", fontSize: 10.5, marginBottom: 4 }}>委托人：{q.giver}</div>}
-                {stage && <div style={{ color: "var(--quest-stage-desc)", fontSize: 11.5, lineHeight: 1.6 }}>{stage.description}</div>}
+                {stage && <div style={{ color: "var(--quest-stage-desc)", fontSize: 11.5, lineHeight: 1.6 }}>{stage.playerHint ?? stage.description}</div>}
               </div>
             );
           })}

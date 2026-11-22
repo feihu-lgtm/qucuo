@@ -5,11 +5,14 @@ import { resolveStageRewards, stageRewardPatches } from "../../domain/rules/ques
 import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { set, updateField } from "../../domain/rules/state/applyWrite.js";
+import { getLocalQuestStage, isLocalQuestStageFlag } from "../../domain/rules/quests/localStages.js";
 
 const noOpResult = () => ({ logs: [] });
 const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }] });
 
 export function forceAdvanceQuest(state, quest, targetFlag, now) {
+  const stage = quest.localOnly && getLocalQuestStage(quest, state);
+  if (quest.localOnly && !isLocalQuestStageFlag(stage, targetFlag)) return { changes: {} };
   const flags = state.flags || [];
   const addedFlag = flags.includes(targetFlag) ? flags : [...flags, targetFlag];
   let progress = state.questProgress?.[quest.id] || createQuestProgress(quest.id, now);
@@ -17,7 +20,7 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
   const pendingRewards = [];
 
   while (progress.status === "active") {
-    const result = advanceQuestStages(quest, progress, gameState, now);
+    const result = advanceQuestStages(quest, progress, quest.localOnly ? { ...gameState, flags: [targetFlag] } : gameState, now);
     if (!result.advanced) break;
     progress = result.progress;
     if (result.completedStage) {
@@ -92,6 +95,19 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
     );
   }
   return { changes };
+}
+
+export function playLocalQuestStage(state, quest, choiceLabel, now) {
+  const stage = getLocalQuestStage(quest, state);
+  const error = (text) => ({ logs: [{ t: "sys", text }] });
+  if (!stage) return error("此处没有可推进的任务阶段，或尚未满足门槛。");
+  const choice = stage.choices?.find((entry) => entry.label === choiceLabel);
+  if (stage.choices && !choice) return error(`可选：${stage.choices.filter((entry) => entry.resolve === "none").map((entry) => entry.label).join(" / ")}`);
+  if (choice && choice.resolve !== "none") return error("此分支须在任务面板中开启战斗，不能直接结算。");
+  return {
+    ...forceAdvanceQuest(state, quest, choice?.flag ?? stage.completionFlag, now),
+    logs: [{ t: "quest", text: choice?.narration ?? stage.description }],
+  };
 }
 
 export function acceptEscort(state, questRef) {

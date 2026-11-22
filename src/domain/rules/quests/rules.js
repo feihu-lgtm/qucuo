@@ -128,7 +128,7 @@ export const questFlagRule = {
     const flags = state.flags || [];
     const questProgress = state.questProgress || {};
     const gameState = { flags, char: state.char || {} };
-    const stageQuests = QUCUO_QUESTS.filter((quest) => quest.stages?.length);
+    const stageQuests = QUCUO_QUESTS.filter((quest) => quest.stages?.length && !quest.localOnly);
     let next = { ...questProgress };
     let changed = false;
     const justCompletedIds = [];

@@ -1,9 +1,10 @@
 import { useCallback } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
-import { forceAdvanceQuest as forceAdvanceQuestFeature } from "../../features/quest/logic.js";
-import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
+import { forceAdvanceQuest as forceAdvanceQuestFeature, playLocalQuestStage } from "../../features/quest/logic.js";
+import { buildQuestFoe } from "../../features/quest/combatChoice.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 
 export function settlePersuasion({ setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog }, { questId, flag }, result) {
   return applyResult(null, () => {
@@ -36,10 +37,21 @@ export function runQuestChoice(ctx, entry, choice) {
 async function resolveQuestChoice({
   act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
   setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
-}, entry, choice) {
-  captureUndo();
+  featureCtxRef,
+}, entry, pickedChoice) {
   const { quest, stage } = entry;
-  if (apiCfg.questTriggerMode === "script") {
+  let choice = pickedChoice;
+  if (quest.localOnly) {
+    const state = gameStore.getState();
+    choice = getLocalQuestStage(quest, state)?.choices?.find((entry) => entry.flag === pickedChoice.flag);
+    if (!choice) return;
+    if (choice.resolve !== "combat") {
+      captureUndo();
+      return applyResult(featureCtxRef.current, playLocalQuestStage(state, quest, choice.label));
+    }
+  }
+  captureUndo();
+  if (!quest.localOnly && apiCfg.questTriggerMode === "script") {
     act(`（关于「${quest.title}」）我选择：${choice.label}`);
     return;
   }
@@ -48,15 +60,7 @@ async function resolveQuestChoice({
   if (resolve === "combat" && choice.combatNpc) {
     addLog([{ t: "cmd", text: `> ❢ ${quest.title}：${choice.label}` }]);
     setPendingQuestBranch({ questId: quest.id, flag: choice.flag, mode: "combat" });
-    const foe = ensureNpcCombatData({
-      id: `questfoe_${choice.flag}_${Date.now()}`,
-      name: choice.combatNpc.name,
-      levelCap: choice.combatNpc.levelCap ?? 1,
-      tag: choice.combatNpc.tag,
-      hostile: true,
-      questBranchFlag: choice.flag,
-    }, { levelCap: choice.combatNpc.levelCap ?? 1 });
-    setDuelingNpc(foe);
+    setDuelingNpc(buildQuestFoe(choice));
     return;
   }
 
@@ -95,6 +99,10 @@ export function useQuestPanel({
 
   const triggerQuestFromPanel = useCallback((entry) => applyResult(featureCtxRef.current, async () => {
     const { quest, stage, isNewlyGiven } = entry;
+    if (quest.localOnly) {
+      captureUndo();
+      return applyResult(featureCtxRef.current, playLocalQuestStage(gameStore.getState(), quest));
+    }
     if (apiCfg.questTriggerMode === "script") {
       const line = isNewlyGiven
         ? `我想找${quest.giver}问问「${quest.title}」这件事`
@@ -109,14 +117,14 @@ export function useQuestPanel({
       { t: "sys", text: `  〔详情可查任务面板〕` },
     ]);
     await act(`❢ ${quest.title}`, [], { forcedEvent: stage.description, forcedEventNpc: quest.giver, keepUndo: true });
-  }, { feature: "quest.trigger" }), [act, apiCfg, forceAdvanceQuest, addLog, featureCtxRef]);
+  }, { feature: "quest.trigger" }), [act, apiCfg, forceAdvanceQuest, addLog, captureUndo, featureCtxRef]);
 
   const triggerQuestChoice = useCallback((entry, choice) => runQuestChoice({
     act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
-    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
+    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest, featureCtxRef,
   }, entry, choice), [
     act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
-    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
+    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest, featureCtxRef,
   ]);
 
   const savePersuasionProgress = useCallback((key, progress) => applyResult(featureCtxRef.current, () => {
