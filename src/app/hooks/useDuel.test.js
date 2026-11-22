@@ -67,7 +67,7 @@ describe("AI duel request consumption", () => {
     const setVarTree = vi.fn();
     const options = makeOptions({
       recognize: undefined,
-      featureCtxRef: { current: { setVarTree } },
+      featureCtxRef: { current: { setVarTree, gameActions } },
     });
     expect(consumeDuelRequest({ ok: true, duelRequest: npc }, options)).toBe(true);
     expect(setVarTree).toHaveBeenCalledWith(expect.any(Function));
@@ -105,7 +105,7 @@ describe("duel battle report", () => {
     try {
       const addLog = vi.fn();
       const act = vi.fn();
-      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog } };
+      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } };
       const handlers = {};
       function Harness() {
         Object.assign(handlers, useDuel({
@@ -150,7 +150,7 @@ describe("duel battle report", () => {
         options.duelReportFallback();
         return Promise.resolve(reportResult);
       });
-      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog } };
+      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } };
       const handlers = {};
       function Harness() {
         Object.assign(handlers, useDuel({

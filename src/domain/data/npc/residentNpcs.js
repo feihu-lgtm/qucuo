@@ -1,4 +1,4 @@
-import "../../../content/index.js";
+import "../../rules/content/loadDefaultContent.js";
 import { contentEntries } from "../../rules/content/registry.js";
 // 据点固定驻场NPC：跟 npcPool.js 的"游走/按权重随机出现"是相反的概念——
 // 这里登记的NPC只要玩家进了对应据点，就一定会出现在 room.npcs 里，不受

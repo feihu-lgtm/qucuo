@@ -1,10 +1,11 @@
-import { gameActions } from "../store/gameStore.js";
 import { registerFact } from "../domain/rules/prompt/knowledge.js";
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
 
-function actionForKey(key) {
+// 状态写入口由调用方经 ctx.gameActions 注入（features 不反依赖 store，同
+// intentPendingStore 的参数注入约定）。
+function actionForKey(ctx, key) {
   const actionName = `set${key[0].toUpperCase()}${key.slice(1)}`;
-  return gameActions[actionName];
+  return ctx?.gameActions?.[actionName];
 }
 
 export function applyResult(ctx, result, { turn = getTurnContext(), feature, background = false } = {}) {
@@ -43,7 +44,7 @@ function writeResult(ctx, result, trace) {
       continue;
     }
 
-    const action = actionForKey(key);
+    const action = actionForKey(ctx, key);
     if (!action) throw new Error(`Unknown game state key: ${key}`);
     action(value);
   }

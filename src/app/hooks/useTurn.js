@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { gameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 import { snapshotIntentPending } from "../../store/intentPendingStore.js";
 import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
@@ -117,6 +117,7 @@ export function useTurn({
         setPendingQuestBranch, setConvo, setLog, jotNote, noteAction,
         changePendingTalks, setCommandPhase, onTurnsInvalidated,
         getGameState: () => gameStore.getState(),
+        gameActions, subscribeGameReplaced,
         applyLocal, stopAutoTravel, showOuterNoExitNotice,
         resolveInnerBlockedSummary, prerunSquares,
         traceStep, callModel,
@@ -169,6 +170,7 @@ export function useTurn({
   const featureCtx = useMemo(() => ({
     addLog,
     jotNote,
+    gameActions,
     setVarTree,
     act,
     applySquareOps: (ops) => {
@@ -177,7 +179,7 @@ export function useTurn({
         else if (op === "burn") burnSquare(key);
       }
     },
-  }), [addLog, jotNote, setVarTree, act]);
+  }), [addLog, jotNote, gameActions, setVarTree, act]);
   featureCtxRef.current = featureCtx;
 
   return { act };

@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getRngState, setRngState, setSeed } from "../../infra/rng.js";
-import { createWorldRules } from "../../engine/worldRules.js";
-import { getResidentNpcs } from "../../domain/data/npc/residentNpcs.js";
-import { getScheduledNpcs } from "../../domain/data/npc/npcPool.js";
-import { travelByCarriage } from "../buildings/logic.js";
+import { getRngState, setRngState, setSeed } from "../../../infra/rng.js";
+import { createWorldRules } from "../../../engine/worldRules.js";
+import { getResidentNpcs } from "../../data/npc/residentNpcs.js";
+import { getScheduledNpcs } from "../../data/npc/npcPool.js";
+import { travelByCarriage } from "../../../features/buildings/logic.js";
 import { timeAdvanceRule } from "../time/rules.js";
 import { residentNpcRule } from "./rules.js";
 

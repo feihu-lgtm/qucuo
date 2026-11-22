@@ -1,11 +1,11 @@
-import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
-import { NNPC_STAGE } from "../../domain/rules/narrator/narrator.js";
-import { SEA_OF_MIND, buildXuannuScene, shouldTriggerXuannu } from "../../domain/rules/narrator/seaOfMind.js";
-import { SCENE_PORTAL_OPEN, SCENE_RETURN, SCENE_TOKYO, SCENE_VILLA } from "../../domain/rules/narrator/narratorQuest.js";
-import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
-import { SAFE_HOUSES } from "../../domain/rules/map/safeHouse.js";
-import { narratorVars, setNarratorVars } from "../../domain/rules/prompt/mvu.js";
-import { unlockAsuka } from "../../domain/rules/companion/companion.js";
+import { NOTE_SOURCE, VIA } from "../memory/note.js";
+import { NNPC_STAGE } from "../narrator/narrator.js";
+import { SEA_OF_MIND, buildXuannuScene, shouldTriggerXuannu } from "../narrator/seaOfMind.js";
+import { SCENE_PORTAL_OPEN, SCENE_RETURN, SCENE_TOKYO, SCENE_VILLA } from "../narrator/narratorQuest.js";
+import { QUCUO_MAP } from "../../data/map/qucuoMap.js";
+import { SAFE_HOUSES } from "../map/safeHouse.js";
+import { narratorVars, setNarratorVars } from "../prompt/mvu.js";
+import { unlockAsuka } from "../companion/companion.js";
 
 export const xuannuTriggerRule = {
   id: "narrator.xuannu-trigger",

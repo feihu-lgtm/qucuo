@@ -68,7 +68,7 @@ describe("narrator logic", () => {
     expect(result.changes.room.name).toBe(SEA_OF_MIND.district);
     expect(result.changes.narrator(s.narrator).stage).toBe(NNPC_STAGE.SPIRIT);
     let tree;
-    expect(() => applyResult({ setVarTree: fn => { tree = fn(s.varTree); } }, result)).not.toThrow();
+    expect(() => applyResult({ gameActions, setVarTree: fn => { tree = fn(s.varTree); } }, result)).not.toThrow();
     expect(narratorVars(tree).seaVisited).toBe(true);
     for (const key of Object.keys(result.changes).filter(k => k !== "varTree")) {
       expect(gameActions[`set${key[0].toUpperCase()}${key.slice(1)}`]).toBeTypeOf("function");

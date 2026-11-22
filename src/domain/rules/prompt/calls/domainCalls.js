@@ -1,10 +1,8 @@
 import { definePrompt } from "../registry.js";
 import { registerSettleCalls } from "../../settle/judge.js";
 
-// 结算层入口（本批只注册+导出，回合流程尚未接线）：软判断选择题走 settle.judge，
-// 结果落账见 domain/settle/settle.js。
+// 结算层入口：软判断选择题走 settle.judge，结果落账见 domain/settle/settle.js。
 export { formatSettleNote } from "../../settle/settle.js";
-export { runSoftSettle } from "../../../../engine/ports/softSettle.js";
 
 // ── 铸剑坊/铁匠铺 定制设计：词条全集白名单（combat/resolveTurn.js 真正读取的字段） ──
 const FORGE_EFFECT_WHITELIST = `

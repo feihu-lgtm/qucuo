@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../store/gameStore.js";
+import { GAME_KEYS, gameActions, gameStore, initGameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 import { commitRound } from "../../engine/act/commitRound.js";
 import { createMockAi } from "../../engine/ports/ai.js";
 import { playTurn } from "../../engine/playTurn.js";
@@ -101,13 +101,12 @@ function makeSoftSettleContext(controller, varTreeRef, ai, isStale) {
   const setVarTree = refBackedSetter(varTreeRef);
   return {
     apiCfg: {}, ai, bookkeep: false, setVarTree, refs: { varTreeRef }, isStale,
-    onTurnsInvalidated: controller.onTurnsInvalidated,
-    commitDeps: () => ({ setVarTree }),
+    onTurnsInvalidated: controller.onTurnsInvalidated, commitDeps: () => ({ setVarTree }),
+    getGameState: () => gameStore.getState(), gameActions, subscribeGameReplaced,
   };
 }
 
-describe("undo controller", () => {
-  it("keeps the real pickup undo point when a queued duplicate is a no-op", () => {
+describe("undo controller", () => { it("keeps the real pickup undo point when a queued duplicate is a no-op", () => {
     const item = { id: "ground-stone", name: "石子" };
     const before = { room: { items: [item] }, inv: [], time: 6, varTree: {} };
     const restoreStore = freshStore(before);
@@ -121,7 +120,7 @@ describe("undo controller", () => {
       let handlers;
       function Harness() {
         handlers = useScreenHandlers({
-          featureCtxRef: { current: { setVarTree: gameActions.setVarTreeState, addLog } },
+          featureCtxRef: { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } },
           timeRef: { current: 6 },
           captureUndo,
         });
@@ -203,6 +202,7 @@ describe("undo controller", () => {
       harness.controller.captureUndo();
       applyResult({
         setVarTree: gameActions.setVarTreeState,
+        gameActions,
         act: (_cmd, _replies, opts) => {
           settleOptions.push(opts);
           if (!opts.keepUndo) harness.controller.captureUndo();
@@ -251,7 +251,7 @@ describe("undo controller", () => {
 
       harness.controller.captureUndo();
       roomMapRef.current.鱼定村 = { items: ["在地物"], npcs: ["在场人"] };
-      applyResult({}, travelByCarriage(gameStore.getState(), "喇嘛庙", 10, { roomMap: roomMapRef.current }));
+      applyResult({ gameActions }, travelByCarriage(gameStore.getState(), "喇嘛庙", 10, { roomMap: roomMapRef.current }));
       expect(gameStore.getState().room.name).toBe("喇嘛庙");
       expect(gameStore.getState().char.money).toBe(90);
 

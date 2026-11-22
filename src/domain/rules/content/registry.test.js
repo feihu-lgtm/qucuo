@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { allContent, contentEntries, defineContent, getContent, loadContent } from "./registry.js";
-import { loadDefaultContent } from "../../../content/index.js";
+import { loadDefaultContent } from "./loadDefaultContent.js";
 
 describe("content registry", () => {
   it("defines and retrieves the original definition, including functions", () => {

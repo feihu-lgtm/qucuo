@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { gameActions, gameStore, markGameReplaced } from "../../store/gameStore.js";
+import { gameActions, gameStore, markGameReplaced, subscribeGameReplaced } from "../../store/gameStore.js";
 import { turnMonitor } from "../../infra/turnMonitor.js";
 import { createMockAi } from "../ports/ai.js";
 import { getLedger } from "../../domain/rules/memory/npcLedger.js";
@@ -17,8 +17,19 @@ function seed(roomNpcs = [{ name: "阿旺" }]) {
   });
 }
 
+const storeAccess = () => ({
+  getGameState: () => gameStore.getState(),
+  gameActions,
+  subscribeGameReplaced,
+});
+
 const call = (overrides = {}) => runBookkeepAfterTurn({
-  ctx: { ai: createMockAi(['{"memory":"x","ledger":{"阿旺":["少侠砍伤阿旺"]}}']), apiCfg: {}, ...overrides.ctx },
+  ctx: {
+    ai: createMockAi(['{"memory":"x","ledger":{"阿旺":["少侠砍伤阿旺"]}}']),
+    apiCfg: {},
+    ...storeAccess(),
+    ...overrides.ctx,
+  },
   turn: { narrativeText: narration, ...overrides.turn },
   opts: { ...overrides.opts },
   trace: overrides.trace,
@@ -49,6 +60,7 @@ describe("runBookkeepAfterTurn", () => {
       ctx: {
         ai: createMockAi(['{"memory":"x","ledger":{"阿旺":["少侠砍伤阿旺"]}}']),
         apiCfg: {},
+        ...storeAccess(),
         setVarTree,
       },
       turn: { narrativeText: narration },
@@ -63,7 +75,7 @@ describe("runBookkeepAfterTurn", () => {
     const onRequest = vi.fn();
     const ai = createMockAi(['{"memory":"","ledger":{"路人甲":["少侠帮过路人甲"]}}'], { onRequest });
     await runBookkeepAfterTurn({
-      ctx: { ai, apiCfg: {} },
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
       turn: { narrativeText: narration },
       opts: {},
     });
@@ -87,6 +99,7 @@ describe("runBookkeepAfterTurn", () => {
       ctx: {
         ai,
         apiCfg: {},
+        ...storeAccess(),
         prompt: {
           room,
           isTalk: false,
@@ -113,6 +126,7 @@ describe("runBookkeepAfterTurn", () => {
       ctx: {
         ai,
         apiCfg: {},
+        ...storeAccess(),
         isTalk: false,
         lockedDestName: "B",
         prompt: {
@@ -143,7 +157,7 @@ describe("runBookkeepAfterTurn", () => {
   it("does not call AI for duel reports", async () => {
     const ai = { chat: vi.fn() };
     await runBookkeepAfterTurn({
-      ctx: { ai, apiCfg: {} },
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
       turn: { narrativeText: narration },
       opts: { duelReport: { rounds: [] } },
     });
@@ -154,7 +168,7 @@ describe("runBookkeepAfterTurn", () => {
     const before = gameStore.getState().varTree;
     const ai = { chat: vi.fn(async () => { throw new Error("offline"); }) };
     await expect(runBookkeepAfterTurn({
-      ctx: { ai, apiCfg: {} },
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
       turn: { narrativeText: narration },
       opts: {},
     })).resolves.toBeTruthy();
@@ -172,7 +186,7 @@ describe("runBookkeepAfterTurn", () => {
       }),
     };
     await runBookkeepAfterTurn({
-      ctx: { ai, apiCfg: {} },
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
       turn: { narrativeText: narration },
       opts: {},
     });
@@ -193,6 +207,7 @@ describe("runBookkeepAfterTurn", () => {
       ctx: {
         ai: { chat: vi.fn(() => { signalStarted(); return response; }) },
         apiCfg: {},
+        ...storeAccess(),
         isStale: () => stale,
         setVarTree,
       },
@@ -225,6 +240,7 @@ describe("runBookkeepAfterTurn", () => {
       ctx: {
         ai: { chat: vi.fn(() => { signalStarted(); return response; }) },
         apiCfg: {},
+        ...storeAccess(),
         setVarTree: vi.fn((next) => gameActions.setVarTreeState(next)),
       },
       turn: { narrativeText: narration },
@@ -248,12 +264,12 @@ describe("runBookkeepAfterTurn", () => {
     const ai = { chat: vi.fn() };
     gameStore.setState({ room: { name: "空房", npcs: [] } });
     await runBookkeepAfterTurn({
-      ctx: { ai, apiCfg: {}, talkTarget: "阿旺" },
+      ctx: { ai, apiCfg: {}, talkTarget: "阿旺", ...storeAccess() },
       turn: { narrativeText: narration },
       opts: {},
     });
     await runBookkeepAfterTurn({
-      ctx: { ai, apiCfg: {} },
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
       turn: { narrativeText: " \n " },
       opts: {},
     });

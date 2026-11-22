@@ -1,13 +1,13 @@
-import { random } from "../../infra/rng.js";
-import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
-import { mapDescriptionToGenParams } from "../../domain/data/npc/npcDescriptionMapping.js";
-import { NPC_POOL, toRoomNpc } from "../../domain/data/npc/npcPool.js";
-import { RESIDENT_NPCS } from "../../domain/data/npc/residentNpcs.js";
-import { tickAngryState } from "../../domain/rules/combat/stealSystem.js";
-import { makeItem } from "../../domain/rules/economy/equipment.js";
-import { makeItemSmart } from "../../domain/data/items/catalog.js";
-import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
-import { cleanExpiredBuffs } from "../../utils/buffSystem.js";
+import { random } from "../../../infra/rng.js";
+import { ensureNpcCombatData } from "../npc/npcGeneration.js";
+import { mapDescriptionToGenParams } from "../../data/npc/npcDescriptionMapping.js";
+import { NPC_POOL, toRoomNpc } from "../../data/npc/npcPool.js";
+import { RESIDENT_NPCS } from "../../data/npc/residentNpcs.js";
+import { tickAngryState } from "../combat/stealSystem.js";
+import { makeItem } from "../economy/equipment.js";
+import { makeItemSmart } from "../../data/items/catalog.js";
+import { hasInnerMap, isNpcVisibleInInnerRoom } from "../map/innerMap.js";
+import { cleanExpiredBuffs } from "../../../utils/buffSystem.js";
 import { buildRoomNpcWithCombat } from "../npc/rules.js";
 
 const QUALITIES = ["白", "绿", "蓝", "紫", "橙", "红"];

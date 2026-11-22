@@ -31,6 +31,7 @@ export function createTurnContext({ plan, env }) {
     addLog, setLog, setVarTree, setRoom, setGambleNegotiation, setInv,
     setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
     setPendingQuestBranch, setConvo, setCommandPhase, onTurnsInvalidated,
+    getGameState, gameActions, subscribeGameReplaced,
   } = io;
   const {
     isTalk, isSettle, intent, movingDir, lockedDestName,
@@ -89,6 +90,7 @@ export function createTurnContext({ plan, env }) {
     getMapNode,
     beforeRun: io.beforeRun,
     setCommandPhase, setVarTree, effectiveSpecialNow, onTurnsInvalidated,
+    getGameState, gameActions, subscribeGameReplaced,
     refs: {
       varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
       pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,

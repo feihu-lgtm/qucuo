@@ -5,7 +5,6 @@ import { runBookkeep } from "../ports/bookkeep.js";
 import { getLedger } from "../../domain/rules/memory/npcLedger.js";
 import { buildPresence } from "../prompt/roundNotes.js";
 import { bindTurnAi, createWebAi } from "../ports/ai.js";
-import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 
 function targetName(target) {
@@ -20,7 +19,7 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
     const narration = typeof turn.narrativeText === "string" ? turn.narrativeText : "";
     if (opts.duelReport || ctx.apiCfg?.bookkeepEnabled === false || !narration.trim()) return null;
 
-    const state = gameStore.getState();
+    const state = ctx.getGameState();
     const room = state.room ?? ctx.prompt?.room ?? { name: "", npcs: [] };
     const presence = buildPresence({
       isTalk: ctx.isTalk ?? ctx.prompt?.isTalk ?? false,
@@ -48,7 +47,7 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
       background: true,
       parentId: trace?.id,
     });
-    unsubscribeGameReplaced = subscribeGameReplaced(() => { gameReplaced = true; });
+    unsubscribeGameReplaced = ctx.subscribeGameReplaced?.(() => { gameReplaced = true; }) ?? null;
     turnMonitor.add(bookkeepTrace, "engine", "记账准备", { status: "pass", detail: `${names.join("、")}在场` });
 
     const intentPlan = turn.intentPlan ?? ctx.intentPlan ?? opts.intentPlan;
@@ -75,8 +74,8 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
 
     if (result?.ledger && Object.keys(result.ledger).length) {
       // memory will replace p.memory when narration goes prose-only.
-      const time = gameStore.getState().time;
-      const setVarTree = typeof ctx.setVarTree === "function" ? ctx.setVarTree : gameActions.setVarTreeState;
+      const time = ctx.getGameState().time;
+      const setVarTree = typeof ctx.setVarTree === "function" ? ctx.setVarTree : ctx.gameActions?.setVarTreeState;
       setVarTree((prev) => applyPatches({ varTree: prev }, bookkeepToPatches(prev, result, time)).state.varTree);
     }
     const updated = Object.keys(result?.ledger || {}).length > 0;

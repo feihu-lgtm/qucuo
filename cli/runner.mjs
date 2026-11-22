@@ -2,12 +2,13 @@ import { snowLeopardRule } from "../src/features/quest/snowLeopard.js";
 import { readFile, writeFile } from "node:fs/promises";
 import { isDeepStrictEqual } from "node:util";
 import { resolve } from "node:path";
-import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../src/store/gameStore.js";
+import { gameActions, GAME_KEYS, gameStore, initGameStore, subscribeGameReplaced } from "../src/store/gameStore.js";
 import { buildInitialGameState, DEFAULT_PRESETS } from "../src/engine/newGame.js";
 import { snapshotFromStore } from "../src/store/persist.js";
 import { setSeed } from "../src/infra/rng.js";
 import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare } from "../src/domain/rules/map/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/infra/saves.js";
+import { statsForQuality } from "../src/domain/rules/economy/equipment.js";
 import { getTimeStr } from "../src/utils/mudHelpers.js";
 import { defaultConfig, migrateProvider, providerApiType, PROVIDERS } from "../src/infra/apiConfig.js";
 import { classifyIntent } from "../src/domain/rules/prompt/inputIntent.js";
@@ -21,7 +22,7 @@ import { playTurn } from "../src/engine/playTurn.js";
 import { createPromptContext } from "../src/engine/prompt/index.js";
 import { createWorldRules } from "../src/engine/worldRules.js";
 import { parseLocalCommand } from "../src/engine/localCommands.js";
-import { derivedMovesetRule } from "../src/features/skills/rules.js";
+import { derivedMovesetRule } from "../src/domain/rules/skills/rules.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,
@@ -30,14 +31,14 @@ import {
   estateStartRule,
   escortArrivalRule,
   questFlagRule,
-} from "../src/features/quest/rules.js";
+} from "../src/domain/rules/quests/rules.js";
 import {
   finishTokyoReturn,
   portalOpenedRule,
   scheduleTokyoReturnRule,
   villaArrivalRule,
   xuannuTriggerRule,
-} from "../src/features/narrator/rules.js";
+} from "../src/domain/rules/narrator/rules.js";
 import { applyResult } from "../src/features/run.js";
 import { createCliIntentRouter } from "./intentRoute.mjs";
 import {
@@ -45,9 +46,9 @@ import {
   recordPigeonNpcLocations,
 } from "../src/features/pigeon/logic.js";
 import * as importedRegistry from "../src/domain/rules/cards/importedRegistry.js";
-import { timeAdvanceRule } from "../src/features/time/rules.js";
-import { residentNpcRule } from "../src/features/npc/rules.js";
-import { innerGroundItemsRule } from "../src/features/map/rules.js";
+import { timeAdvanceRule } from "../src/domain/rules/time/rules.js";
+import { residentNpcRule } from "../src/domain/rules/npc/rules.js";
+import { innerGroundItemsRule } from "../src/domain/rules/map/rules.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -173,6 +174,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
   const featureCtx = {
     addLog: (lines) => gameActions.setLog((previous) => [...(previous || []), ...lines]),
     jotNote: () => {},
+    gameActions,
     setVarTree: gameActions.setVarTreeState,
     applySquareOps: (ops) => {
       for (const { op, key, day } of ops) {
@@ -326,6 +328,9 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         _trace: trace,
         deferMonitorFinish: trace === lineTurn,
         setVarTree,
+        getGameState: () => gameStore.getState(),
+        gameActions,
+        subscribeGameReplaced,
         effectiveSpecialNow: state.char?.special || {},
         state,
         memory: {
@@ -462,7 +467,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       if (!file) throw new Error(":load requires a file path");
       const data = JSON.parse(await readFile(resolve(cwd, file), "utf8"));
       const snapshot = data?.kind === "qucuo-save-export" ? data.snapshot : data;
-      const restored = tryRestoreSnapshot(DEFAULT_PRESETS, snapshot);
+      const restored = tryRestoreSnapshot(DEFAULT_PRESETS, snapshot, { statsForQuality });
       if (restored) {
         session.roomMap = snapshot?.roomMap || {};
         loadSquares(snapshot?.squares || {});

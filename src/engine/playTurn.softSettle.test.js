@@ -31,6 +31,7 @@ describe("playTurn soft settle kinds", () => {
       const ctx = {
         apiCfg: { bookkeepEnabled: false }, ai: { chat: vi.fn() },
         commitDeps: () => ({}), bookkeep: false, softSettle,
+        getGameState: () => gameStore.getState(), gameActions,
         setVarTree, refs: { varTreeRef },
         _trace: turnMonitor.start("测试行动"),
       };

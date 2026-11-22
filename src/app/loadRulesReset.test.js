@@ -4,8 +4,8 @@ import { gameActions, gameStore, initGameStore, markGameReplaced, subscribeGameR
 import { createAutosaveScheduler } from "../features/autosaveScheduler.js";
 import { createWorldRules } from "../engine/worldRules.js";
 import { applyResult } from "../features/run.js";
-import { derivedMovesetRule } from "../features/skills/rules.js";
-import { timeAdvanceRule } from "../features/time/rules.js";
+import { derivedMovesetRule } from "../domain/rules/skills/rules.js";
+import { timeAdvanceRule } from "../domain/rules/time/rules.js";
 
 // 回归：网页读一个更早时间的存档时，time.advance 曾把读档造成的时间跳变当成过了一回合，
 // 存档里 NPC 的愤怒回合被多扣一次（issue #3）。整局替换必须清掉世界规则的依赖历史。
@@ -27,7 +27,7 @@ function connectRunner(rules = [timeAdvanceRule]) {
   let replaced = false;
   const inner = createWorldRules(rules, {
     getState: gameStore.getState,
-    applyResult: (result) => applyResult({ setVarTree: gameActions.setVarTreeState, addLog: () => {} }, result),
+    applyResult: (result) => applyResult({ setVarTree: gameActions.setVarTreeState, addLog: () => {}, gameActions }, result),
   });
   disconnect = subscribeGameReplaced(() => {
     inner.reset();
