@@ -16,6 +16,8 @@ import { add, applyWrite, set, updateField } from "../../domain/rules/state/appl
 import { forceAdvanceQuest } from "../quest/logic.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
+// 一场切磋占用的游戏时间（time 一格 = 一小时），由系统直接加，不经过 AI
+export const DUEL_HOURS = 1;
 
 function addChange(changes, state, key, update) {
   const previous = changes[key];
@@ -246,6 +248,8 @@ export function settleNpcDuel(state, npc, {
       logs.push({ t: "item", text: `  ⚔ 战利品：取得「${item.name}」（${item.quality}）` });
     }
   }
+
+  if (outcome) addChange(changes, working, "time", updateField("time", add("time", DUEL_HOURS)));
 
   const recap = recapBattleLog(battleLog);
   const outcomeText = outcome === "win"

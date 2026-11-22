@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MOVE_TYPE } from "../../domain/rules/combat/moveTypes.js";
 import { learnNpcSkill, settleNpcDuel } from "./logic.js";
+import { DUEL_HOURS } from "./settleDuel.js";
 
 const npc = {
   name: "师父",
@@ -72,6 +73,12 @@ describe("NPC duel report settlement", () => {
     });
     expect(result.logs[0]).toMatchObject({ t: "sys", text: "　── 与师父切磋 ──" });
     expect(result.logs.some(({ text }) => text?.includes("第1回合"))).toBe(false);
+    expect(result.changes.time(0)).toBe(DUEL_HOURS);
+  });
+
+  it("does not advance time when the duel has no outcome", () => {
+    const result = settleNpcDuel(makeState(), { name: "师父", levelCap: 1 }, { outcome: null, battleLog: [] });
+    expect(result.changes.time).toBeUndefined();
   });
 
   it("settles 60 nothing-versus-nothing rounds after phrase pools exhaust", () => {
