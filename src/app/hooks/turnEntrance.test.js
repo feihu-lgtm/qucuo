@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
 
 const hooks = {
   useScreenHandlers: "handleNpcLook handleNpcTalk handleNpcGift handleInviteCompanion handleConsumeItem handleCollectGround handleNpcTrade handleNpcLearnSkill handleNpcSteal giftToCharacter handleToggleEquip claimMilestone",
-  useBuildingHandlers: "handleBuyTangmenItem handleBuildingInn handleBuildingHeal handleClinicService handleChaojing handleBuySkill handleGamble handleTravel handleServiceOrder handleCook handlePray handleReadBook handleBuyBook handleDeposit handleWithdraw handlePledge handleRedeem handleAcceptEscort handleAcceptBounty handleClaimBounty handleGambleSettle handleForgeCommission handleJadeCraft handleListenRumor handleJoinSect handleAuctionWin",
+  useBuildingHandlers: "handleBuyTangmenItem handleBuildingInn handleBuildingHeal handleClinicService handleChaojing handleBuySkill handleGamble handleTravel handleServiceOrder handleCook handlePray handleReadBook handleBuyBook handleDeposit handleWithdraw handlePledge handleRedeem handleAcceptEscort handleAcceptBounty handleClaimBounty handleGambleSettle handleForgeCommission handleJadeCraft handleListenRumor handleJoinSect handleLeaveSect handleAuctionWin",
   useProgressionHandlers: "confessToNarrator meditate trainNeigong trainWaigong breakthroughSkill",
   usePlayerActionHandlers: "handleComfort handleSwitchCompanion handleResolveTrauma enterSeaOfMind leaveSeaOfMind",
   usePigeonHandlers: "pigeonDelayShichen applyPigeonResult sendPigeonLetter buyPigeon handleCollectPigeons handlePostSend",

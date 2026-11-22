@@ -30,7 +30,12 @@ describe("inner movement logic", () => {
       innerRoomName: "歇马居",
       time: 7,
       varTree: expect.any(Function),
+      convo: [
+        { role: "user", content: "走 东" },
+        { role: "assistant", content: expect.stringContaining("来到鱼定村·歇马居。") },
+      ],
     });
+    expect(result.changes.convo[1].content).toContain("村里的客栈");
     expect(result.logs).toContainEqual({ t: "cmd", text: "> 走 东" });
     expect(result.logs).toContainEqual({ t: "room", text: "    鱼定村·歇马居" });
     expect(result.logs.some((entry) => entry.text.includes("村里的客栈"))).toBe(true);

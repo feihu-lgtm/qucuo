@@ -30,7 +30,7 @@ import {
   redeem as redeemFeature,
   withdraw as withdrawFeature,
 } from "../../features/bank/logic.js";
-import { joinSect } from "../../features/sect/logic.js";
+import { joinSect, leaveSect } from "../../features/sect/logic.js";
 import { auctionWin } from "../../features/auction/logic.js";
 import { buyFactionShopItem } from "../../features/buildings/factionShop.js";
 import { doClinicService } from "../../features/buildings/factionClinic.js";
@@ -212,6 +212,13 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     applyResult(featureCtxRef.current, result);
   }, { feature: "building.joinSect" }), [captureUndo]);
 
+  const handleLeaveSect = useCallback((sectName) => applyResult(featureCtxRef.current, () => {
+    captureUndo();
+    const result = leaveSect(gameStore.getState(), sectName);
+    if (result.changes) setActiveBuilding(null);
+    applyResult(featureCtxRef.current, result);
+  }, { feature: "building.leaveSect" }), [captureUndo]);
+
   const handleAuctionWin = useCallback((finalPrice) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, auctionWin(gameStore.getState(), finalPrice));
@@ -243,6 +250,7 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     handleJadeCraft,
     handleListenRumor,
     handleJoinSect,
+    handleLeaveSect,
     handleAuctionWin,
   };
 }

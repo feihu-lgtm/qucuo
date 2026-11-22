@@ -5,6 +5,7 @@ import { giftNpc, giftSilver, learnNpcSkill, stealFromNpc } from "../npc/logic.j
 import { appeaseAngryNpc } from "../npc/anger.js";
 import { inviteCompanion } from "../npc/inviteCompanion.js";
 import { consumeItem, pickGroundItem } from "../items/logic.js";
+import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 
 export function findStepNpc(state, step) {
   return visibleNpcs(state).find((npc) => npc.name === step.target) || null;
@@ -15,7 +16,7 @@ function findInvItem(state, name) {
 }
 
 function findGroundItem(state, name) {
-  return (state.room?.items || []).find((entry) => itemNameOf(entry) === name) || null;
+  return getGroundItems(state).find((entry) => itemNameOf(entry) === name) || null;
 }
 
 // 立即结算类步骤（送礼/学艺/用物品/偷窃/邀同行/平息/拾取/装备）；切磋、购买、移动需要交互或走路，由调用方在叙事后接上原有入口。

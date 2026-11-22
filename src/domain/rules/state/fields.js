@@ -1,4 +1,5 @@
-import { hasInnerMap, isNpcVisibleInInnerRoom } from "../map/innerMap.js";
+import { getInnerRoom, hasInnerMap, isNpcVisibleInInnerRoom, visibleInnerExits } from "../map/innerMap.js";
+import { DIRS } from "../map/mapNarration.js";
 import { getTimeStr } from "../../../utils/mudHelpers.js";
 import { allFactSummaries } from "../prompt/knowledgeRoot.js";
 
@@ -44,6 +45,20 @@ function formatRoomName(scope) {
     ? `${name}·${scope.innerRoomName}` : name;
 }
 
+// 此处的描写：人在内层房间时给这间房自己的描写和四周出口（内层出口经
+// visibleInnerExits 过滤未解锁的暗房）；不在内层或据点没有内层地图时给 room.desc。
+// 此前主叙事只拿到「喇嘛庙·藏经阁」这个名字，房间描写一句没有，AI 只能现编。
+function formatRoomDesc(scope, desc, fallback) {
+  const name = scope.room?.name;
+  const hasMap = scope.hasInnerMap ?? hasInnerMap;
+  const inner = !scope.promptRefOptions?.outerRoomOnly && scope.innerRoomName && hasMap(name)
+    ? getInnerRoom(name, scope.innerRoomName) : null;
+  if (!inner) return desc || fallback || "";
+  const exits = Object.entries(visibleInnerExits(name, scope.innerRoomName, scope))
+    .map(([dir, room]) => `${DIRS[dir] || dir}·${room}`).join("　");
+  return `${inner.desc || ""}${exits ? `（四周：${exits}）` : ""}`;
+}
+
 function npcAttrs(scope) {
   const characters = scope.varTree?.角色;
   return characters && Object.hasOwn(characters, scope.npcName) ? characters[scope.npcName] : undefined;
@@ -51,6 +66,7 @@ function npcAttrs(scope) {
 
 import { priceForQuality, QUALITY } from "../economy/equipment.js";
 import { SERVICE_MENUS } from "../../data/buildings/menuData.js";
+import { getGroundItems } from "../map/groundScope.js";
 
 const signed = (value) => value > 0 ? "+" + value : String(value);
 export const formatRange = ([min, max]) => `${signed(min)}~${signed(max)}`;
@@ -142,7 +158,7 @@ export const FIELDS = Object.freeze({
     scale: "24时间单位为一天，按系统议定的行动耗时推进，不从叙事另加时间。",
     refs: { 时间: (s, time) => time === undefined ? undefined : s.getTimeStr ? s.getTimeStr(time) || time : getTimeStr(time) } },
   "room.name": { label: "房间名", refs: { "房间.名": formatRoomName } },
-  "room.desc": { label: "房间描述", default: "" },
+  "room.desc": { label: "房间描述", default: "", refs: { "房间.描写": formatRoomDesc } },
   "room.exits": { label: "出口", default: [], refs: {
     "房间.出口": (_s, exits, fallback) => (exits || fallback).join(","),
     "房间.出口示例": (_s, exits, fallback) => (exits || fallback).map((exit) => `"${exit}"`).join(","),
@@ -154,7 +170,8 @@ export const FIELDS = Object.freeze({
     在场NPC: formatNpcs,
   } },
   "room.items": { label: "地上物品", default: [], refs: {
-    地上物品: (s, items, fallback) => (items || fallback).map((item) => item.name)
+    地上物品: (s, items, fallback) => (s.room ? getGroundItems({ room: s.room, innerRoomName: s.innerRoomName }) : (items || fallback))
+      .map((item) => (typeof item === "string" ? item : item.name))
       .join(s.promptRefOptions?.itemSeparator ?? ",") || "无",
   } },
   innerRoomName: { label: "内层位置", default: "" },

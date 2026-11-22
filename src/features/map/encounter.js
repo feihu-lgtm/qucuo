@@ -4,6 +4,7 @@ import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { detectCollectPickup, allCollected } from "../../domain/rules/quests/collect.js";
 import { getCurrentStage } from "../../domain/rules/quests/questEngine.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
@@ -34,9 +35,9 @@ export function rollMovementEvents({
   return { pickupJudgment, encounterToDescribe };
 }
 
-export function judgeCollect({ isTalk, cmd, room, questProgress, inv }) {
+export function judgeCollect({ isTalk, cmd, room, innerRoomName, questProgress, inv }) {
   if (isTalk) return null;
-  const hit = detectCollectPickup(cmd, room.name, room.items, {
+  const hit = detectCollectPickup(cmd, room.name, getGroundItems({ room, innerRoomName }), {
     questProgress, quests: QUCUO_QUESTS, getCurrentStage, inv,
   });
   if (!hit) return null;

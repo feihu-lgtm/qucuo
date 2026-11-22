@@ -14,6 +14,7 @@ import { getKeyItemState, initKeyItemTracking, transferKeyItem } from "../quests
 import { resolveStageRewards, stageRewardPatches } from "../quests/questRewards.js";
 import { commitPatches } from "../state/applyPatches.js";
 import { makeTusiRobe, ownedSafeHouseKeys } from "../map/safeHouse.js";
+import { questPlaceDistrict } from "./questPlace.js";
 
 const applyUpdate = (previous, update) => (
   typeof update === "function" ? update(previous) : update
@@ -107,7 +108,7 @@ export const escortArrivalRule = {
     if (!state.room?.name) return null;
     const activeEscort = ESCORT_QUESTS.find((quest) => (
       state.questProgress?.[quest.id]?.active
-      && quest.targetLocation === state.room.name
+      && questPlaceDistrict(quest.targetLocation) === state.room.name
       && !(state.flags || []).includes(`quest_done_${quest.id}`)
     ));
     if (!activeEscort) return null;

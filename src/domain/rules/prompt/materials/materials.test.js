@@ -46,8 +46,9 @@ const base = () => ({
       { name: "卓玛", id: "npc_zhuoma", levelCap: 2, brief: "游方行医的女子", innerRoom: "才旦家" },
     ],
     items: [
-      { name: "半袋青稞", category: "misc", quality: "白", desc: "袋口松松扎着，散出炒过的谷香" },
-      "一把生锈的镰刀",
+      { name: "半袋青稞", category: "misc", quality: "白", desc: "袋口松松扎着，散出炒过的谷香", innerRoom: "才旦家" },
+      { name: "一把生锈的镰刀", id: "一把生锈的镰刀", innerRoom: "才旦家" },
+      { name: "村口的界石碎块", innerRoom: "村口" },
     ],
   },
   innerRoomName: "才旦家",
@@ -148,6 +149,7 @@ describe("材料库", () => {
     expect(block).toContain("雪莲（我，杂物·蓝档，崖上采的，花瓣还凝着霜）");
     expect(block).toContain("半袋青稞（地上，杂物·白档");
     expect(block).toContain("一把生锈的镰刀（地上，杂物）");
+    expect(block).not.toContain("村口的界石碎块"); // 别的内层房间的地上物不出现
     expect(block).not.toMatch(/\d+两|atk|def/); // 不许有数值
   });
 
@@ -160,10 +162,11 @@ describe("材料库", () => {
     expect(items(s)).toBe("");
   });
 
-  it("venue 用据点·内层名并保留房间描述原文", () => {
+  it("venue 用据点·内层名，描写取这间内层房间自己的", () => {
     const block = venue(base());
     expect(block).toContain("【场地】鱼定村·才旦家");
-    expect(block).toContain("村口立着一块褪色的界石");
+    expect(block).toContain("才旦家的小院");
+    expect(block).not.toContain("村口立着一块褪色的界石");
     expect(venue({})).toBe("");
     const noInner = { ...base(), innerRoomName: "" };
     expect(venue(noInner)).toContain("【场地】鱼定村");
