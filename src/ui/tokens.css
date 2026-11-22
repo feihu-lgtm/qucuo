@@ -89,6 +89,12 @@
   --qb-move-button-text: #1a140c;
   --qb-move-disabled-bg: #333;
   --qb-move-disabled-text: #777;
+  --qb-start-top: #8a6a2a;
+  --qb-start-bottom: #5a4418;
+  --qb-start-text: #f5e8c0;
+  --qb-pick-hint: #a89878;
+  --qb-switch-text: #cfe0ee;
+  --qb-switch-edge: #4a6a84;
   --qb-felt: #14100b;     /* 深底（候选卡/立绘底） */
 
   /* 百物图鉴卷轴定色（原字面量，不随日间模式变）。 */
