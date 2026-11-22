@@ -1,3 +1,7 @@
+// 欢喜教香线对外的稳定 flag（锦官城·柳青鸢线等对接用，见合稿·欢喜教 4）：
+//   香4 凭据去向：flag_huanxi_fan_trust（伏杀焚证）/ flag_huanxi_luoqi_plan（嫁祸陆福生）/ flag_huanxi_guanfu_tongqi（拓印交官府）
+//   香3/香5 背叛线：flag_huanxi_betray_ready（递投名状）→ flag_huanxi_betray_done（里应外合）
+//   香6 终局（欢喜教终局 互斥组）：ending_huanxi_guanjia / ending_huanxi_fanyanna / ending_huanxi_luoqi_ally
 export default { quest: {
 "huanxijiao_1_xiangzhongyi": {
     id: "huanxijiao_1_xiangzhongyi",
@@ -12,7 +16,24 @@ export default { quest: {
         description: "李掌柜压低声音指路——去天都行脚楼要「地字号房」（隔壁就是天都香行后墙）。入夜后后墙传来极轻的杵臼声，持续约一个时辰，香气子时最浓。推开后窗可见天都香行后院有白衣身影在月下碾药。",
         playerHint: "李掌柜给了线索——去天都行脚楼要地字号房，夜里留意天都香行后墙的动静。",
         completionFlag: "quest_huanxijiao1_s1",
-        onReach: { exp: 1, money: 80, items: [{ name: "安神檀香", fromCatalog: true }, { name: "安神檀香", fromCatalog: true }], quietFactionRep: { 欢喜教: 12 }, favorability: { "李掌柜": 10 }, flags: ["lore_baixiangzhai_yebanchusheng"] },
+        onReach: { exp: 1, favorability: { "李掌柜": 10 }, flags: ["lore_baixiangzhai_yebanchusheng"] },
+      },
+      {
+        id: "s2_report",
+        description: "把夜里所见带回天都香行说给李掌柜听时，竹帘掀起，圣女罗琦端着一杯淡香清茶缓步现身，笑问你打算怎么把这事说出去。",
+        playerHint: "回天都香行，决定是稳妥压下，还是当众戳穿敲一笔竹杠。",
+        completionFlag: ["quest_huanxijiao1_quiet", "quest_huanxijiao1_extort"],
+        choices: [
+          { flag: "quest_huanxijiao1_quiet", label: "如实相告、稳妥压下", resolve: "none" },
+          { flag: "quest_huanxijiao1_extort", label: "当众戳穿、借机敲竹杠", resolve: "none" },
+        ],
+        onReach: {
+          items: [{ name: "安神檀香", fromCatalog: true }, { name: "安神檀香", fromCatalog: true }],
+          byFlag: {
+            quest_huanxijiao1_quiet: { money: 80, quietFactionRep: { 欢喜教: 12 } },
+            quest_huanxijiao1_extort: { money: 140, quietFactionRep: { 欢喜教: 6 }, flags: ["huanxi_xiang1_extorted"] },
+          },
+        },
       },
     ],
     rewardText: "获得线索「天都香行的夜半杵声」与「每月初五比武招贤」。",
@@ -38,7 +59,29 @@ export default { quest: {
         description: "第三场后罗琦端茶示意，压低声音说明茶是为了压一压内堂更浓的香，不是下药。入内堂后罗琦开门见山：最近比武总有人混进来，不是冲品香，是冲天都香行的香料账本，需要帮手。",
         playerHint: "打到第三场后罗琦请茶，跟她进内堂听她要说什么。",
         completionFlag: "quest_huanxijiao2_s2",
-        onReach: { exp: 2, money: 120, items: [{ name: "欢喜堂通行木牌", fromCatalog: true }], quietFactionRep: { 欢喜教: 15 }, favorability: { "罗琦": 10 } },
+        onReach: { exp: 2, favorability: { "罗琦": 10 } },
+      },
+      {
+        id: "s3_heart",
+        description: "试心一关：罗琦领你入欢喜堂正殿，初见教主梵衍那。老人抽着水烟问你：「这世道最贵的，是银子、性命，还是体面？」",
+        playerHint: "在欢喜堂正殿回答梵衍那的问话。",
+        completionFlag: ["quest_huanxijiao2_ambition", "quest_huanxijiao2_protect", "quest_huanxijiao2_watch"],
+        choices: [
+          { flag: "quest_huanxijiao2_ambition", label: "强者开路，野心最贵", resolve: "none" },
+          { flag: "quest_huanxijiao2_protect", label: "护住身边人，安稳活命", resolve: "none" },
+          { flag: "quest_huanxijiao2_watch", label: "冷眼看戏，拿钱办事", resolve: "none" },
+        ],
+        onReach: {
+          money: 120,
+          items: [{ name: "欢喜堂通行木牌", fromCatalog: true }],
+          quietFactionRep: { 欢喜教: 15 },
+          flags: ["huanxijiao_xiang2_passed"],
+          byFlag: {
+            quest_huanxijiao2_ambition: { favorability: { "梵衍那": 10 } },
+            quest_huanxijiao2_protect: { favorability: { "罗琦": 10 } },
+            quest_huanxijiao2_watch: { favorability: { "梵衍那": 5, "罗琦": 5 } },
+          },
+        },
       },
     ],
     rewardText: "罗琦初步信任。识破冒充者额外好感+10，且后续管家情报更早解锁。",
@@ -54,10 +97,18 @@ export default { quest: {
     stages: [
       {
         id: "s1_buy",
-        description: "天下商行掌柜核对清单，托带一句话给罗琦「去年的陈皮我找到了」；李掌柜提醒「都事跟管家不是一路人，但也不是她的朋友」；回程大草甸遭遇野狼，赶马人阿旺路过帮忙，透露罗琦给的脚钱比别家高——「命值多少钱，她就给多少钱。」",
-        playerHint: "去锦官城天下商行按清单采买香料，带话回给罗琦。",
-        completionFlag: "quest_huanxijiao_dive1_s1",
+        description: "天下商行备齐了大半，唯独缺一味调安魂香的紫背龙涎草——全天都镇只有东街百花楼的兰姐存着几捆，她不收欢喜教的银子，要么替她去大草甸采三株雪毒参以物易物，要么喝下她一杯微毒花茶再接她三招。天下商行掌柜核对清单，托带一句话给罗琦「去年的陈皮我找到了」；李掌柜提醒「都事跟管家不是一路人，但也不是她的朋友」；回程大草甸遭遇野狼，赶马人阿旺路过帮忙，透露罗琦给的脚钱比别家高——「命值多少钱，她就给多少钱。」",
+        playerHint: "去锦官城天下商行按清单采买香料；缺的那味紫背龙涎草只有东街百花楼的兰姐有。",
+        completionFlag: ["quest_huanxijiao_dive1_barter", "quest_huanxijiao_dive1_spar"],
+        choices: [
+          { flag: "quest_huanxijiao_dive1_barter", label: "替兰姐采三株雪毒参以物易物", resolve: "none" },
+          { flag: "quest_huanxijiao_dive1_spar", label: "饮下兰姐的花茶，硬接她三招", resolve: "none" },
+        ],
         onReach: {
+          byFlag: {
+            quest_huanxijiao_dive1_barter: { quietFactionRep: { 百花门: 5 } },
+            quest_huanxijiao_dive1_spar: { quietFactionRep: { 百花门: 8 }, favorability: { "罗琦": 8 } },
+          },
           exp: 2,
           money: 100,
           quietFactionRep: { 欢喜教: 12 },
@@ -100,9 +151,17 @@ export default { quest: {
       {
         id: "s1_ceremony",
         description: "三节仪式：念名（梵语念出去年死去的三个供养人名字，「去者已去，来者还来」）；供香（弟子撒的不是欢喜丹，是普通檀香粉，代表「自己今年做过的好事」，坏事写在纸背面年底一起烧）；摸顶（教主对每个弟子说一句话，唯独不给罗琦摸顶——「我是要替他管事的人，摸顶是给需要被庇护的人。他说我不需要庇护」，语气里有骄傲也有不易察觉的失落）。",
-        playerHint: "参加欢喜教的供养仪式，看清它到底是什么。",
-        completionFlag: "quest_huanxijiao_dive3_s1",
-        onReach: { exp: 2, money: 120, factionRep: { 欢喜教: 14, 锦官城: -4 }, favorability: { "罗琦": 15, "梵衍那": 10 }, items: [{ name: "旧檀香粉", category: "misc", quality: "白", desc: "纸面空白，背面没写字。收着，等明年。" }] },
+        playerHint: "参加欢喜教的供养仪式；仪式尾声有个交不出供奉的绸缎商发疯拔刀，制住他后决定怎么处置。",
+        completionFlag: ["quest_huanxijiao_dive3_debt", "quest_huanxijiao_dive3_mercy"],
+        choices: [
+          { flag: "quest_huanxijiao_dive3_debt", label: "依教规交老何扣押逼债", resolve: "none" },
+          { flag: "quest_huanxijiao_dive3_mercy", label: "劝罗琦发减瘾方放他回家", resolve: "none" },
+        ],
+        onReach: { exp: 2, money: 120, factionRep: { 欢喜教: 14, 锦官城: -4 }, favorability: { "罗琦": 15, "梵衍那": 10 },
+          byFlag: {
+            quest_huanxijiao_dive3_debt: { money: 80, reputation: -5, favorability: { "梵衍那": 8 } },
+            quest_huanxijiao_dive3_mercy: { reputation: 5, favorability: { "罗琦": 12 }, flags: ["lore_tusi_dijia_jiaqiang"] },
+          }, items: [{ name: "旧檀香粉", category: "misc", quality: "白", desc: "纸面空白，背面没写字。收着，等明年。" }] },
       },
     ],
     rewardText: "",
@@ -174,7 +233,27 @@ export default { quest: {
         playerHint: "另一条线索在兰姐手上——她要你先跑趟大草甸取燕羊胎。",
         completionFlag: "quest_huanxijiao3_s2",
         collect: { item: "燕羊胎", at: "大草甸·草甸深处", quality: "绿", hint: "与兰姐线同一辅料，若已采过则此步自动跳过" },
-        onReach: { exp: 3, money: 180, items: [{ name: "迷香解毒囊", fromCatalog: true }, { name: "陆福生的密谕", fromCatalog: true }], quietFactionRep: { 欢喜教: 18 }, favorability: { "兰姐": 20, "罗琦": 15 }, flags: ["unlock_jinguancheng_anxian"] },
+        onReach: { exp: 3, favorability: { "兰姐": 20, "罗琦": 15 }, flags: ["unlock_jinguancheng_anxian"] },
+      },
+      {
+        id: "s3_verdict",
+        description: "你在品香雅座设局诱蛇，探子夜半潜入晒香天井偷紫檀匣，被你与桑杰联手擒获，搜出陆福生的亲笔密谕：「查清天竺老头手里攥着多少土司府管事的把柄，若留不得，便借官府之手除了。」这人怎么处置？",
+        playerHint: "决定探子的下场：放回去警告、就地灭口，还是暗中放走向陆福生递投名状。",
+        completionFlag: ["quest_huanxijiao3_warn", "quest_huanxijiao3_kill", "quest_huanxijiao3_betray"],
+        choices: [
+          { flag: "quest_huanxijiao3_warn", label: "交罗琦喂下忘忧散，剥光扔回鱼定村外", resolve: "none" },
+          { flag: "quest_huanxijiao3_kill", label: "依老何与教主之意就地灭口", resolve: "none" },
+          { flag: "quest_huanxijiao3_betray", label: "暗中放走探子，向陆福生递投名状", resolve: "none" },
+        ],
+        onReach: {
+          money: 180,
+          items: [{ name: "迷香解毒囊", fromCatalog: true }, { name: "陆福生的密谕", fromCatalog: true }],
+          byFlag: {
+            quest_huanxijiao3_warn: { quietFactionRep: { 欢喜教: 18 }, favorability: { "罗琦": 10 }, flags: ["flag_huanxi_warn_guanjia"] },
+            quest_huanxijiao3_kill: { quietFactionRep: { 欢喜教: 18 }, reputation: -8, favorability: { "梵衍那": 12 }, flags: ["flag_huanxi_kill_spy"] },
+            quest_huanxijiao3_betray: { quietFactionRep: { 鱼定土司府: 12, 欢喜教: 5 }, flags: ["flag_huanxi_betray_ready"] },
+          },
+        },
       },
     ],
     rewardText: "开启锦官城暗线入口。罗琦看信后态度从「避让管家」转为「可以利用他的恐惧」。",
@@ -194,7 +273,27 @@ export default { quest: {
         playerHint: "去锦官城找那个老兵退伍汉,问出罗琦和都事之间的旧事。",
         completionFlag: "quest_huanxijiao4_s1",
         at: "锦官城·暗巷入口",
-        onReach: { exp: 4, money: 240, items: [{ name: "染血的香行凭据（抄本）", fromCatalog: true }], factionRep: { 欢喜教: 20, 锦官城: -6 }, favorability: { "老兵退伍汉": 30 }, flags: ["lore_dushi_maodun_lichang"] },
+        onReach: { exp: 4, favorability: { "老兵退伍汉": 30 }, flags: ["lore_dushi_maodun_lichang"] },
+      },
+      {
+        id: "s2_evidence",
+        description: "老兵手里握着半张当年失踪官差留下的「天都香行入货凭据」，上面同时盖着土司府管家的私印。梵衍那密令你今夜让他永远闭嘴；罗琦在廊下拦住你，脸色苍白：「若再杀朝廷的人，锦官城的铁骑会踏平天都镇。」",
+        playerHint: "决定那张入货凭据的去向。",
+        completionFlag: ["quest_huanxijiao4_silence", "quest_huanxijiao4_deflect", "quest_huanxijiao4_share"],
+        choices: [
+          { flag: "quest_huanxijiao4_silence", label: "依梵衍那令伏杀老兵、焚毁凭据", resolve: "none" },
+          { flag: "quest_huanxijiao4_deflect", label: "依罗琦计迷昏老兵，调包字样嫁祸陆福生", resolve: "none" },
+          { flag: "quest_huanxijiao4_share", label: "暗中拓印真凭据交给柳青鸢", resolve: "none" },
+        ],
+        onReach: {
+          money: 240,
+          items: [{ name: "染血的香行凭据（抄本）", fromCatalog: true }],
+          byFlag: {
+            quest_huanxijiao4_silence: { factionRep: { 欢喜教: 22, 锦官城: -15 }, reputation: -10, favorability: { "柳青鸢": -20 }, flags: ["flag_huanxi_fan_trust"] },
+            quest_huanxijiao4_deflect: { factionRep: { 欢喜教: 20, 锦官城: -6 }, favorability: { "罗琦": 15 }, flags: ["flag_huanxi_luoqi_plan"] },
+            quest_huanxijiao4_share: { quietFactionRep: { 锦官城: 18, 欢喜教: 10 }, favorability: { "柳青鸢": 15 }, flags: ["flag_huanxi_guanfu_tongqi"] },
+          },
+        },
       },
     ],
     rewardText: "带回情报后罗琦沉默良久：「他不是来杀我们的」——语气比害怕更复杂，像内疚，因为她不想欠都事人情但已经欠了。",
@@ -212,20 +311,87 @@ export default { quest: {
         id: "s1_triage",
         description: "三重压力并行处理：劝住梵衍那不要武力驱逐（他已召集弟子准备动手，罗琦拼命拦阻，一动手欢喜教就从暗中博弈变成公开对抗，正中管家下怀）；处理管家手下马差役（武力威慑，或亮出管家密信施压——马差役认出笔迹脸色骤变）；回应兰姐的条件（百花楼在天都镇地位独立，以后针对天都镇商业的查封需经五家商号联名同意）。",
         playerHint: "管家突袭天都香行——拦住梵衍那别动手，先稳住乱局。",
-        completionFlag: "quest_huanxijiao5_s1",
+        completionFlag: ["quest_huanxijiao5_defend", "quest_huanxijiao5_betray_member", "quest_huanxijiao5_betray"],
         at: "天都镇·天都香行",
         isCgMoment: true,
+        choices: [
+          { flag: "quest_huanxijiao5_defend", label: "死守晒香天井，护住内院老弱", resolve: "none" },
+          { flag: "quest_huanxijiao5_betray_member", label: "里应外合打开后门（背叛门墙）", resolve: "none", requiresFlags: ["flag_huanxi_betray_ready", "欢喜教弟子"] },
+          { flag: "quest_huanxijiao5_betray", label: "里应外合打开后门", resolve: "none", requiresFlags: ["flag_huanxi_betray_ready"], blockedByFlags: ["欢喜教弟子"] },
+        ],
         onReach: {
           exp: 5,
-          money: 300,
-          items: [{ name: "土司私兵夜袭令牌", fromCatalog: true }, { name: "极品金创香膏", fromCatalog: true }, { name: "极品金创香膏", fromCatalog: true }, { name: "极品金创香膏", fromCatalog: true }],
-          factionRep: { 欢喜教: 25, 鱼定土司府: -15 },
-          favorability: { "罗琦": 25, "兰姐": 15 },
-          flags: ["faction_tiandu_merchants_independent"],
+          byFlag: {
+            quest_huanxijiao5_defend: {
+              money: 300,
+              items: [{ name: "土司私兵夜袭令牌", fromCatalog: true }, { name: "极品金创香膏", fromCatalog: true }, { name: "极品金创香膏", fromCatalog: true }, { name: "极品金创香膏", fromCatalog: true }],
+              factionRep: { 欢喜教: 25, 鱼定土司府: -15 },
+              favorability: { "罗琦": 25, "兰姐": 15 },
+              flags: ["faction_tiandu_merchants_independent"],
+            },
+            quest_huanxijiao5_betray_member: { factionRep: { 鱼定土司府: 25 }, factionRepSet: { 欢喜教: -70 }, expelFrom: "欢喜教", flags: ["flag_huanxi_betray_done"] },
+            quest_huanxijiao5_betray: { factionRep: { 鱼定土司府: 25 }, quietFactionRep: { 欢喜教: -60 }, flags: ["flag_huanxi_betray_done"] },
+          },
         },
       },
     ],
     rewardText: "成功劝住梵衍那；用密信逼退马差役，管家两日后亲自到天都镇「澄清误会」但态度虚伪行动上退让；接受兰姐条件则天都镇商会成为独立势力因子；拒绝也不恼，「你欠我一个人情，以后还」。",
+  },
+"huanxijiao_6a_bangguanjia": {
+    id: "huanxijiao_6a_bangguanjia",
+    type: "QT_CHAIN",
+    title: "欢喜教·任务六·决战前夜（帮管家）",
+    giver: null,
+    exclusiveGroup: "欢喜教终局",
+    description: "突袭次夜，西市暗巷里陆福生的密使递来最后一张纸条：把梵衍那的头颅和《供养人名册》送去土司府，陆管家许你万两白银与天都镇香道总管之位。",
+    requiresQuestCompleted: "huanxijiao_5_guanjiadetuxi",
+    stages: [
+      {
+        id: "s1_purge",
+        description: "你配合陆福生的私兵清剿欢喜堂，逼得梵衍那走投无路，罗琦携少数弟子遁走不知所踪。欢喜教的暗香作坊从此归了土司府。",
+        playerHint: "到天都香行，配合陆福生清剿欢喜堂。",
+        completionFlag: "quest_huanxijiao6a_s1",
+        at: "天都镇·天都香行",
+        isCgMoment: true,
+        onReach: {
+          money: 800,
+          reputation: -20,
+          items: [{ name: "黑铜金刚杵", fromCatalog: true }],
+          factionRep: { 鱼定土司府: 35 },
+          factionRepSet: { 欢喜教: -100 },
+          expelFrom: "欢喜教",
+          flags: ["ending_huanxi_guanjia"],
+        },
+      },
+    ],
+    rewardText: "欢喜教残部沦为土司府驱使的暗毒鹰犬，终局时转为土司一方的毒烟阵。",
+  },
+"huanxijiao_6b_bangfanyanna": {
+    id: "huanxijiao_6b_bangfanyanna",
+    type: "QT_CHAIN",
+    title: "欢喜教·任务六·决战前夜（帮梵衍那）",
+    giver: "梵衍那",
+    exclusiveGroup: "欢喜教终局",
+    description: "梵衍那在伽罗秘龛摊开天竺舆图：曲措乡即将大乱，他要趁土司与各方火并时榨干供养人最后一笔钱，卷款南逃缅甸，重回复国旧路。",
+    requiresQuestCompleted: "huanxijiao_5_guanjiadetuxi",
+    requiresFactionRep: { 欢喜教: 80 },
+    blockedByFlags: ["flag_huanxi_betray_done"],
+    stages: [
+      {
+        id: "s1_escort",
+        description: "你压下罗琦的反对，老何含泪助阵，替梵衍那扫平退路，护着七口银箱出了天都镇。临行前他把镇派心法的口诀低声说给你听，然后率旧部南去，再不回头。",
+        playerHint: "替梵衍那扫平退路，护送银箱出天都镇。",
+        completionFlag: "quest_huanxijiao6b_s1",
+        isCgMoment: true,
+        onReach: {
+          money: 500,
+          factionRep: { 欢喜教: 35, 锦官城: -11 },
+          favorability: { "梵衍那": 20, "老何": 10 },
+          flags: ["ending_huanxi_fanyanna"],
+        },
+      },
+    ],
+    rewardText: "欢喜教彻底退出曲措：终局时梵衍那放出一场不辨敌我的迷香大雾后率旧部南去，既不帮土司，也不替玩家死战。",
   },
 "huanxijiao_6_juezhanqianye": {
     id: "huanxijiao_6_juezhanqianye",
@@ -236,6 +402,8 @@ export default { quest: {
     playerHint: "到天都香行后院,见证梵衍那的交代。",
     requiresQuestCompleted: "huanxijiao_5_guanjiadetuxi",
     requiresFactionRep: { 欢喜教: 80 },
+    blockedByFlags: ["flag_huanxi_betray_done"],
+    exclusiveGroup: "欢喜教终局",
     stages: [
       {
         id: "s1_succession",

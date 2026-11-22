@@ -1,6 +1,6 @@
 import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import { BOUNTY_QUESTS } from "../../domain/data/quests/bountyQuests.js";
-import { advanceQuestStages, createQuestProgress, isQuestGateOpen, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
+import { advanceQuestStages, createQuestProgress, getCurrentStage, isChoiceOpen, isQuestGateOpen, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
 import { resolveStageRewards, stageRewardPatches } from "../../domain/rules/quests/questRewards.js";
 import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
@@ -15,6 +15,9 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
   if (quest.localOnly && !isLocalQuestStageFlag(stage, targetFlag)) return { changes: {} };
   if (!quest.localOnly && !state.questProgress?.[quest.id]
     && !isQuestGateOpen(quest, state.questProgress, state.flags, state.varTree)) return { changes: {} };
+  const progressNow = state.questProgress?.[quest.id];
+  const choice = (progressNow ? getCurrentStage(quest, progressNow) : quest.stages?.[0])?.choices?.find((entry) => entry.flag === targetFlag);
+  if (choice && !isChoiceOpen(choice, state.flags)) return { changes: {} };
   const flags = state.flags || [];
   const addedFlag = flags.includes(targetFlag) ? flags : [...flags, targetFlag];
   let progress = state.questProgress?.[quest.id] || createQuestProgress(quest.id, now);

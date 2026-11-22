@@ -29,7 +29,7 @@ export const FACTION_ENTRIES = {
     sect: "欢喜教", master: "梵衍那", buildingId: "sect_entry_huanxi",
     minRep: 40, repBonus: 20, flag: "欢喜教弟子", anyPrestige: true,
     token: "莲纹铜牌", gifts: [],
-    trial: { flag: "quest_huanxijiao2_s2", label: "通过「香2·比武招贤」", hint: "先过罗琦的比武招贤，在内堂听完她的托付。" },
+    trial: { flag: "huanxijiao_xiang2_passed", label: "通过「香2·比武招贤」", hint: "先过罗琦的比武招贤，在内堂听完她的托付。" },
     intro: "偏厅香案上只摆一尊铜钵与三柱无烟红香。向旧神像敬香、饮下罗琦亲斟的坛城茶，便算入了内院门墙。",
     joinLabel: "敬香饮茶，拜入欢喜教",
   },
