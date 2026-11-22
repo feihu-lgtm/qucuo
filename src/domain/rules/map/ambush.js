@@ -192,8 +192,8 @@ const toAmbushResult = (hit) => hit && { logs: [{ t: "err", text: `  ${hit.text}
 export const factionAmbushRule = {
   id: "map.faction-ambush",
   deps: (state) => [state.room?.name],
-  run(state) {
-    if (!state.room?.name) return null;
+  run(state, { firstRun } = {}) {
+    if (firstRun || !state.room?.name) return null;
     return toAmbushResult(pickAmbusher(state));
   },
 };
@@ -201,8 +201,8 @@ export const factionAmbushRule = {
 export const factionRoomAmbushRule = {
   id: "map.faction-room-ambush",
   deps: (state) => [state.room?.name, state.innerRoomName],
-  run(state) {
-    if (!state.room?.name || !state.innerRoomName) return null;
+  run(state, { firstRun } = {}) {
+    if (firstRun || !state.room?.name || !state.innerRoomName) return null;
     return toAmbushResult(pickRoomAmbusher(state));
   },
 };
