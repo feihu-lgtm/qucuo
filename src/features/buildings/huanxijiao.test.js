@@ -41,6 +41,20 @@ describe("欢喜教", () => {
     expect(isInnerExitUnlocked(room("莲花廊").unlockCondition, { flags: ["欢喜教弟子"] })).toBe(true);
   });
 
+  it("opens 伽罗旧神殿 after 香2 and keeps 欢喜堂库房 in 莲花廊 for disciples or rep ≥ 40", () => {
+    const buildings = getBuildingsForLocation("天都镇");
+    const at = (inner) => buildings.find((building) => building.id === getBuildingIdForInnerRoom("天都镇", inner));
+    const room = (name) => getInnerRoom("天都镇", name);
+    expect(at("伽罗旧神殿")).toMatchObject({ id: "temple_huanxifo", type: "temple", karmaPerPray: 10 });
+    expect(room("欢喜堂").exits.e).toBe("伽罗旧神殿");
+    expect(room("伽罗旧神殿").exits.w).toBe("欢喜堂");
+    expect(isInnerExitUnlocked(room("伽罗旧神殿").unlockCondition, { questProgress: done("huanxijiao_1_xiangzhongyi") })).toBe(false);
+    expect(isInnerExitUnlocked(room("伽罗旧神殿").unlockCondition, { questProgress: done("huanxijiao_2_biwuzhaoxian") })).toBe(true);
+    expect(at("莲花廊")).toMatchObject({ id: "chest_xianghangkufang", type: "chest", house: "欢喜堂库房", emptyStock: true });
+    expect(isInnerExitUnlocked(room("莲花廊").unlockCondition, { varTree: rep(39) })).toBe(false);
+    expect(isInnerExitUnlocked(room("莲花廊").unlockCondition, { flags: ["欢喜教弟子"], varTree: rep(10) })).toBe(true);
+  });
+
   it("opens 调香药房/莲花廊 for trusted outsiders via 欢喜教 reputation", () => {
     const room = (name) => getInnerRoom("天都镇", name);
     // 调香药房：香1 完成，或欢喜教声誉 ≥15（门槛照合稿，不高于 100）

@@ -289,6 +289,14 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "设于欢喜堂偏厅的拜师香案，案上只摆一尊铜钵与三柱无烟红香。过得了圣女的眼、敬得起教主的茶，方能领一块「莲纹铜牌」，自此算入了欢喜教内院门墙。",
     },
     {
+      id: "temple_huanxifo", name: "伽罗旧神殿", type: BUILDING_TYPE.TEMPLE, karmaPerPray: 10,
+      desc: "欢喜堂正殿主龛，供奉着梵衍那从天竺一路背来的黑铜旧神。罗琦私下说这不过是教主小时候拜惯了的家神，可在酥油灯影里静坐一炷香，倒真能平复几分心头躁火。",
+    },
+    {
+      id: "chest_xianghangkufang", name: "欢喜堂库房", type: BUILDING_TYPE.CHEST, house: "欢喜堂库房", emptyStock: true,
+      desc: "后院角门边的干燥木屋，终年飘着辛辣的防虫樟脑味，专供内院弟子存放私物与换洗行囊。",
+    },
+    {
       id: "smithy_tiandu", name: "孟记铁铺", type: BUILDING_TYPE.SMITHY, shopKey: "孟记铁铺", craft: "forge",
       desc: "孟老汉开的铁匠铺，炉火熊熊，武器护甲现货齐全，也接拿料定制的活计。",
     },

@@ -109,15 +109,23 @@ export default { district: {
       欢喜堂: {
         x: 4, y: 0,
         desc: "由旧仓库改建的暗沉佛堂，不设窗棂，仅点十二盏酥油长明灯，正中供着一尊半人高的黑铜天竺旧神像。偏厅设坛城香案，梵衍那在此收徒。",
-        exits: { w: "香行内堂", s: "莲花廊", n: "伽罗秘龛" },
+        exits: { w: "香行内堂", s: "莲花廊", n: "伽罗秘龛", e: "伽罗旧神殿" },
         buildingId: "sect_entry_huanxi",
         residentNpcName: "梵衍那",
+        unlockCondition: { type: "questCompleted", questId: "huanxijiao_2_biwuzhaoxian" },
+      },
+      伽罗旧神殿: {
+        x: 5, y: 0,
+        desc: "欢喜堂正殿主龛，供奉着梵衍那从天竺一路背来的黑铜旧神。酥油灯影摇曳，在这里静坐一炷香，倒真能平复几分心头躁火。",
+        exits: { w: "欢喜堂" },
+        buildingId: "temple_huanxifo",
         unlockCondition: { type: "questCompleted", questId: "huanxijiao_2_biwuzhaoxian" },
       },
       莲花廊: {
         x: 4, y: 1,
         desc: "青瓦连廊下晾着粗布工装与几把擦得雪亮的短弯刀，院角老槐树下摆着石桌茶壶，偶尔能听见大理调子的小曲和玉泉牧歌混在一处。",
         exits: { n: "欢喜堂" },
+        buildingId: "chest_xianghangkufang",
         residentNpcName: "桑杰",
         unlockCondition: { type: "any", of: [
           { type: "flag", flag: "欢喜教弟子" },
