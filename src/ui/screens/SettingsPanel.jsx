@@ -1,7 +1,7 @@
 import { OVERLAY, closeOverlay, openOverlay } from "../../store/uiStore.js";
 import React, { useState } from "react";
 import { isMusicEnabled, setMusicEnabled, getState as getMusicState, setVolume as setMusicVolume, subscribe as subscribeMusic, toggleMusic, TRACKS } from "../../infra/musicPlayer.js";
-import { API_TYPES, testConnection, classifyError, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, hasApiCredentials, importVertexCredential, isDefaultEndpoint, migrateProvider, providerApiType, PROVIDERS } from "../../infra/apiConfig.js";
+import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, hasApiCredentials, importVertexCredential, isDefaultEndpoint, migrateProvider, providerApiType, PROVIDERS } from "../../infra/apiConfig.js"; import { classifyError } from "../../utils/apiErrors.js";
 import { getApiModel } from "../../core/apiModel.js";
 const EXTRACTION_INTENT_LABELS = [
   ["LOOK",           "查看 / 环顾"],
@@ -17,8 +17,8 @@ import { listCharacters, npcAffectionLabel } from "../../domain/prompt/mvu.js";
 import { affectionLabel, AFFECTION_TIERS, affectionTier } from "../../domain/narrator/narrator.js";
 // 预设切换/编辑器已从 UI 移除（预设 tab 现在只放注入结构），
 // PresetEditor.jsx 已删除（零引用），PresetManager 仍在使用。想接回来需重新实现。
-import { clearInspectCache, inspectCacheSize } from "../../domain/prompt/inspectCache.js";
-import { clearMemories, countMemories } from "../../domain/memory/memoryStore.js";
+import { clearInspectCache, inspectCacheSize } from "../../infra/inspectCache.js";
+import { clearMemories, countMemories } from "../../infra/memoryStore.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import InjectionStructurePanel from "./InjectionStructurePanel.jsx";
 import IntentRecognitionToggle from "./IntentRecognitionToggle.jsx";

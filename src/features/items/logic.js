@@ -1,7 +1,7 @@
 import { add, applyWrite, set, updateField } from "../../domain/state/applyWrite.js";
 import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
 import { CATALOG_INDEX, useConsumable as resolveConsumable } from "../../domain/items/catalog.js";
-import { tallyAdd } from "../memory/logic.js";
+import { tallyAdd } from "../../domain/memory/tally.js";
 import { makeBuffFlag, mergeCombatBuff } from "../../utils/buffSystem.js";
 
 function itemNameOf(item) {

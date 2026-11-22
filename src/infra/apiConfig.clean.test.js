@@ -1,5 +1,6 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { cleanJsonString, defaultConfig, loadConfig } from "./apiConfig.js";
+import { defaultConfig, loadConfig } from "./apiConfig.js";
+import { cleanJsonString } from "../utils/jsonClean.js";
 
 afterEach(() => vi.unstubAllGlobals());
 

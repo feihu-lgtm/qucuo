@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { cleanJsonString } from "../../infra/apiConfig.js";
+import { cleanJsonString } from "../../utils/jsonClean.js";
 import { bodyProfileFilled } from "../../domain/character/bodyProfile.js";
 import { CATALOG_INDEX, CATALOG, makeCatalogItem } from "../../domain/items/catalog.js";
 import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL } from "../../domain/economy/equipment.js";

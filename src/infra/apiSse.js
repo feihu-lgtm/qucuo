@@ -23,3 +23,14 @@ export async function readSSE(res, onEvent) {
   // 某些中转站（尤其假流式）最后一段不补换行，若不 flush 就会丢掉尾部内容，造成"莫名截断"。
   if (buf) buf.split("\n").forEach(handleLine);
 }
+
+// 剥离思考内容：把 <think>/<thinking> 块（含被截断未闭合的尾巴）从文本里去掉，
+// 防止模型把思考过程漏进正文。对齐姬侠传/墨染两家的响应端处理。
+export function stripReasoning(text) {
+  if (!text) return text;
+  let t = text.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "").replace(/<think>[\s\S]*?<\/think>/gi, "");
+  // 未闭合的思考起始标签：从它开始到结尾一并丢弃
+  const m = t.match(/<think(?:ing)?>[\s\S]*$/i);
+  if (m) t = t.slice(0, m.index);
+  return t.trim();
+}
