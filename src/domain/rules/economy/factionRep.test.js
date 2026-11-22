@@ -70,6 +70,14 @@ describe("faction reputation ripple", () => {
     expect(factionRepDeltas({ 黑风寨: 10, 鱼定土司府: -5 })).toEqual({ 黑风寨: 10, 鱼定土司府: -5 });
   });
 
+  it("charges foes only for the gain that actually lands under the cap", () => {
+    expect(factionRepDeltas({ 青城派: 5 }, tree({ 青城派: 98 }))).toEqual({ 青城派: 5, 天龙教: -1, 唐门: -1 });
+    expect(factionRepDeltas({ 青城派: 5 }, tree({ 青城派: 100 }))).toEqual({ 青城派: 5 });
+    const rewards = resolveStageRewards({ onReach: { factionRep: { 唐门: 6 } } });
+    const { state } = applyPatches({ varTree: tree({ 唐门: 100, 青城派: 0 }) }, stageRewardPatches(rewards));
+    expect(state.varTree.世界.势力声誉).toMatchObject({ 唐门: 100, 青城派: 0 });
+  });
+
   it("applies the ripple through quest reward patches", () => {
     const rewards = resolveStageRewards({ onReach: { factionRep: { 唐门: 6 } } });
     const { state } = applyPatches({ varTree: tree({}) }, stageRewardPatches(rewards));

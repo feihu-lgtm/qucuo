@@ -153,7 +153,7 @@ export function settleNpcDuel(state, npc, {
   if (sparRep?.poison) {
     logs.push({ t: "sys", text: `  ${npc.name}瞥了眼身上的毒伤：「赢是赢了，${sparRep.faction}不认这一场。」` });
   } else if (sparRep?.delta) {
-    const repDeltas = factionRepDeltas({ [sparRep.faction]: sparRep.delta });
+    const repDeltas = factionRepDeltas({ [sparRep.faction]: sparRep.delta }, working.varTree);
     for (const [faction, delta] of Object.entries(repDeltas)) {
       addChange(changes, working, "varTree", (prev) => applyWrite(
         { varTree: prev || {} }, add(["世界", "势力声誉", faction], delta),
