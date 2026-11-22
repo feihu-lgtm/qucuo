@@ -62,10 +62,8 @@ export function enterContest(state, contestId, dayIdx) {
   if (!isContestOpen(contest, hourOf(state))) return err(`${contest.title}未开场，候着时辰再来。`);
 
   const { score, win } = contestResult(state.char, contest);
-  const changes = {
-    flags: [...flags, flag],
-    time: (state.time || 0) + 1,
-  };
+  // 时辰由结算段统一 +1（settleInBackground），这里不再重复推时间。
+  const changes = { flags: [...flags, flag] };
   const logs = [{
     t: "sys",
     text: `  【跑马大会·${contest.title}】你拿了 ${score} 分，魁首${contest.champion.name} ${contest.champion.score} 分${win ? "——夺魁！" : "。"}`,
@@ -94,7 +92,6 @@ export function placeBet(state, contestId, bettorName, bet, dayIdx) {
   const { winner, win, payout } = resolveBet(contest, bettorName, bet);
   const changes = {
     flags: [...flags, flag],
-    time: (state.time || 0) + 1,
     char: { ...state.char, money: (state.char.money || 0) - bet + payout },
   };
   const logs = [{

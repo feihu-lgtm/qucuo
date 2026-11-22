@@ -51,7 +51,7 @@ export default { quest: {
         completionFlag: "paoma_wubi_win",
         onReach: {
           exp: 3, reputation: 10, money: 80, favorability: { "梅朵": 5 }, factionRep: { 鱼定土司府: 5 },
-          items: [{ name: "土司府仪卫戟", category: "weapon", quality: "橙", desc: "跑马大会开场，土司府三十骑手方阵统一擎的仪卫长戟，戟缨染成一色的赭红。中看，也中用——格桑顿珠治军严，这批戟的锋刃是真开过的，方阵一动，气势先压人半头。" }],
+          items: [{ name: "土司府仪卫戟", fromCatalog: true }],
         },
       },
     ],

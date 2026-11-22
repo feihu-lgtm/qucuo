@@ -25,7 +25,8 @@ describe("跑马大会·参赛", () => {
     const r = enterContest(state, "saima");
     const flags = applyChange(state, "flags", r.changes.flags);
     expect(flags).toContain(contestFlag("saima", "enter", day));
-    expect(r.changes.time).toBe(state.time + 1);
+    // 时辰由结算段统一推，feature 不再自带 time 增量
+    expect(r.changes.time).toBeUndefined();
     expect(enterContest({ ...state, flags }, "saima").changes).toBeUndefined();
   });
 
