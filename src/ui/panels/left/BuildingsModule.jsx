@@ -15,7 +15,7 @@ export default function BuildingsModule({ zoneTheme, room, innerRoomName, active
   return <div>
     <div style={{ color: zoneTheme.accentDim, fontSize: "10.5px", marginBottom: 5 }}>此地建筑</div>
     {list.map(b => <div key={b.id} style={{ marginBottom: 3 }}>
-      <button type="button" onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : b)} style={chromeBtn(zoneTheme, { active: activeBuilding?.id === b.id })}>{b.name}</button>
+      <button type="button" onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : { ...b, district: room.name })} style={chromeBtn(zoneTheme, { active: activeBuilding?.id === b.id })}>{b.name}</button>
       <span style={{ color: zoneTheme.textDim, fontSize: "10.5px", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
     </div>)}
   </div>;
