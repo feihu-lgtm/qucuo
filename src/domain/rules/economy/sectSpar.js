@@ -15,7 +15,8 @@ const SECT_SPARS = [
   },
 ];
 
-const isNpc = (unit, npc) => !!unit && (unit.id === npc.id || unit.name === npc.name);
+// 组队单位 id 取 npc.id || npc.name（teamUnits），玩家恒为 "player"，按 id 认人，不怕重名。
+const isNpc = (unit, npc) => !!unit && unit.id === (npc.id || npc.name);
 
 // 单挑战报里对手恒为 B；组队战报按出手方记 A，对手先出手时毒落在 statusAppliedToA。
 function poisonedNpc(row, npc) {
