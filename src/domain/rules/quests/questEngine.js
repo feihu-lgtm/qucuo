@@ -59,7 +59,10 @@ export function advanceQuestStages(quest, progress, gameState, now = Date.now())
   if (!stage) return { progress, advanced: false, justCompleted: false, completedStage: null, hitFlags: [] };
   const flags = gameState.flags || [];
   const candidateFlags = Array.isArray(stage.completionFlag) ? stage.completionFlag : [stage.completionFlag];
-  const hitFlags = candidateFlags.filter(f => flags.includes(f));
+  // 分支自带的 flag 门槛不满足时，那个分支的 flag 不算数（AI 写了也不推进）
+  const choiceFlags = gameState.choiceFlags || flags;
+  const closedChoice = (f) => stage.choices?.some((choice) => choice.flag === f && !isChoiceOpen(choice, choiceFlags));
+  const hitFlags = candidateFlags.filter(f => flags.includes(f) && !closedChoice(f));
   if (!hitFlags.length) return { progress, advanced: false, justCompleted: false, completedStage: null, hitFlags: [] };
 
   const nextIndex = (progress.currentStageIndex ?? 0) + 1;
@@ -134,6 +137,13 @@ export function questGateReqs(quest, varTree, flags = []) {
   return reqs;
 }
 
+// 分支（stage.choices）的 flag 门槛：requiresFlags 全有、blockedByFlags 一个都没有才可选。
+export function isChoiceOpen(choice, flags = []) {
+  if (choice?.requiresFlags?.some((flag) => !(flags || []).includes(flag))) return false;
+  if (choice?.blockedByFlags?.some((flag) => (flags || []).includes(flag))) return false;
+  return true;
+}
+
 // 分支选项的门槛（字段全部可选）：requiresQuestCompleted / requiresAnyOf 同任务门槛；
 // requiresFlag: string[] 全部持有；requiresFlagAny: string[] 至少持有一面（如花5 铁证或和解后盾二选一）；
 // requiresFactionRep: { [势力]: number }；
@@ -150,6 +160,7 @@ export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}
   if (choice.requiresFlagAny?.length && !choice.requiresFlagAny.some((f) => flags?.includes(f))) return false;
   if (choice.blockedByFlags?.some((f) => flags?.includes(f))) return false;
   if (Object.entries(choice.requiresFactionRep || {}).some(([faction, min]) => factionRepOf(varTree, faction) < min)) return false;
+  if (!isChoiceOpen(choice, flags)) return false;
   if (Object.entries(choice.requiresFavor || {}).some(([npc, min]) => Number(varTree?.角色?.[npc]?.好感度 ?? 10) < min)) return false;
   return true;
 }

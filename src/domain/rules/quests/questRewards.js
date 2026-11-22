@@ -21,9 +21,10 @@ import { add, set } from "../state/applyWrite.js";
 import { merge } from "../state/applyPatches.js";
 import { makeNamedItem } from "../../data/items/catalog.js";
 import { applyFactionRep } from "../economy/factionRep.js";
+import { SECT_MEMBER_FLAGS, defectedFlag, sectTokenOf } from "../character/factionEntry.js";
 
 function mergeRewardParts(...parts) {
-  const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, factionRep: {}, quietFactionRep: {}, consumeItems: [], flags: [] };
+  const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, factionRep: {}, quietFactionRep: {}, factionRepSet: {}, expelFrom: [], consumeItems: [], flags: [] };
   for (const p of parts) {
     if (!p) continue;
     if (p.items) out.items.push(...p.items);
@@ -39,6 +40,8 @@ function mergeRewardParts(...parts) {
     for (const [faction, delta] of Object.entries(p.quietFactionRep || {})) {
       out.quietFactionRep[faction] = (out.quietFactionRep[faction] || 0) + delta;
     }
+    if (p.factionRepSet) Object.assign(out.factionRepSet, p.factionRepSet);
+    if (p.expelFrom) out.expelFrom.push(p.expelFrom);
     if (p.consumeItems) out.consumeItems.push(...p.consumeItems);
     if (p.flags) out.flags.push(...p.flags);
   }
@@ -98,7 +101,28 @@ export function stageRewardPatches(rewards, now = Date.now()) {
   // 暗中出手（合稿 stealth）：只动本家，不牵连对头。
   if (Object.values(rewards.quietFactionRep || {}).some(Boolean)) {
     patches.push(merge("varTree", (tree) => applyFactionRep(tree, rewards.quietFactionRep, { step: Infinity, ripple: false })));
+  }  // 声誉直接重置（合稿「背叛重置为 -70」「跌至不共戴天」这类），在增减之后写，最终值以它为准。
+  if (Object.keys(rewards.factionRepSet || {}).length) {
+    patches.push(merge("varTree", (tree) => ({
+      ...tree,
+      世界: {
+        ...tree?.世界,
+        势力声誉: {
+          ...tree?.世界?.势力声誉,
+          ...Object.fromEntries(Object.entries(rewards.factionRepSet).map(([faction, value]) => [faction, Math.max(-100, Math.min(100, value))])),
+        },
+      },
+    })));
   }
+  // 任务里背叛本门：是本门弟子才逐出（摘弟子身份、记叛出、收信物），不是弟子不动。
+  for (const sect of rewards.expelFrom || []) {
+    const member = SECT_MEMBER_FLAGS[sect];
+    patches.push(merge("flags", (flags) => (flags.includes(member)
+      ? [...flags.filter((flag) => flag !== member && flag !== defectedFlag(sect)), defectedFlag(sect)]
+      : flags)));
+    patches.push(merge("inv", (inv) => inv.filter((item) => (typeof item === "string" ? item : item?.name) !== sectTokenOf(sect))));
+  }
+
   if (rewards.flags?.length) {
     patches.push(merge("flags", (f) => [...new Set([...f, ...rewards.flags])]));
   }

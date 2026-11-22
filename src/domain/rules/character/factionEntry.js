@@ -1,4 +1,4 @@
-// 拜入门派（合稿各派「拜入与叛出规则」）：本派声誉 ≥ minRep、威望 ≥ minPrestige（缺省 0）、过本派试炼（trial 可空）、未拜他派。
+// 拜入门派（合稿各派「拜入与叛出规则」）：本派声誉 ≥ minRep、威望 ≥ minPrestige（缺省 0；anyPrestige 的邪派不查）、过本派试炼（trial 可空）、未拜他派。
 // 入门立加本派声誉 repBonus，发信物 token 与 gifts。雪山派走 sectEntry.js 的老流程。
 import { factionRepOf } from "../economy/factionRep.js";
 import { SECT_ENTRY } from "./sectEntry.js";
@@ -34,6 +34,14 @@ export const FACTION_ENTRIES = {
     },
     intro: "听竹轩正厅案上供着青玉弟子令与一卷《峨眉清规》。玄尘师太问你三句心性话，答得出，便收。",
     joinLabel: "问心受戒，拜入峨眉派",
+  },
+  欢喜教: {
+    sect: "欢喜教", master: "梵衍那", buildingId: "sect_entry_huanxi",
+    minRep: 40, repBonus: 20, flag: "欢喜教弟子", anyPrestige: true,
+    token: "莲纹铜牌", gifts: [],
+    trial: { flag: "huanxijiao_xiang2_passed", quest: "huanxijiao_2_biwuzhaoxian", label: "通过「香2·比武招贤」", hint: "先过罗琦的比武招贤，在内堂听完她的托付。" },
+    intro: "偏厅香案上只摆一尊铜钵与三柱无烟红香。向旧神像敬香、饮下罗琦亲斟的坛城茶，便算入了内院门墙。",
+    joinLabel: "敬香饮茶，拜入欢喜教",
   },
   黑风寨: {
     sect: "黑风寨", master: "巴桑", buildingId: "sect_entry_heifeng",
@@ -134,7 +142,7 @@ export function checkFactionEntry(entry, { varTree, flags = [], char, questProgr
   const questsOk = (entry.quests || []).every((qid) => questProgress?.[qid]?.status === "completed");
   const reqs = [
     { key: "rep", label: `${entry.sect}声誉 ≥ ${entry.minRep}（门墙之交）`, have: rep, ok: rep >= entry.minRep },
-    { key: "prestige", label: minPrestige === 0 ? "威望 ≥ 0（不收恶名昭彰之徒）" : `威望 ≥ ${minPrestige}（心魔蒙目者不收）`, have: prestige, ok: prestige >= minPrestige },
+    ...(entry.anyPrestige ? [] : [{ key: "prestige", label: minPrestige === 0 ? "威望 ≥ 0（不收恶名昭彰之徒）" : `威望 ≥ ${minPrestige}（心魔蒙目者不收）`, have: prestige, ok: prestige >= minPrestige }]),
     ...(entry.quests?.length ? [{ key: "quests", label: entry.questsLabel || "完成本派引荐任务", have: `${questsDone}/${entry.quests.length}`, ok: questsOk }] : []),
     ...(entry.trial ? [{ key: "trial", label: entry.trial.label, have: trialOk ? "已过" : "未过", ok: trialOk }] : []),
     ...(riteNeeded ? [{ key: "rite", label: entry.maleRite.label, have: riteOk ? "已成" : "未成", ok: riteOk }] : []),
