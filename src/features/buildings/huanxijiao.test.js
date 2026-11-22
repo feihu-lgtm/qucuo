@@ -41,6 +41,17 @@ describe("欢喜教", () => {
     expect(isInnerExitUnlocked(room("莲花廊").unlockCondition, { flags: ["欢喜教弟子"] })).toBe(true);
   });
 
+  it("香2：擂台在香行前厅真打一场，正殿问话要进欢喜堂，请过茶就开门", async () => {
+    const { QUCUO_QUESTS } = await import("../../domain/data/quests/qucuoQuests.js");
+    const [s1, , s3] = QUCUO_QUESTS.find((quest) => quest.id === "huanxijiao_2_biwuzhaoxian").stages;
+    expect(s1.requireLocation).toEqual({ district: "天都镇", inner: "天都香行" });
+    expect(s1.choices).toEqual([expect.objectContaining({ flag: s1.completionFlag, resolve: "combat" })]);
+    expect(s3.requireLocation).toEqual({ district: "天都镇", inner: "欢喜堂" });
+    const hall = getInnerRoom("天都镇", "欢喜堂").unlockCondition;
+    expect(isInnerExitUnlocked(hall, { flags: ["quest_huanxijiao2_s1"] })).toBe(false);
+    expect(isInnerExitUnlocked(hall, { flags: ["quest_huanxijiao2_s2"] })).toBe(true);
+  });
+
   it("opens 伽罗旧神殿 after 香2 and keeps 欢喜堂库房 in 莲花廊 for disciples or rep ≥ 40", () => {
     const buildings = getBuildingsForLocation("天都镇");
     const at = (inner) => buildings.find((building) => building.id === getBuildingIdForInnerRoom("天都镇", inner));

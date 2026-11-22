@@ -112,7 +112,11 @@ export default { district: {
         exits: { w: "香行内堂", s: "莲花廊", n: "伽罗秘龛", e: "伽罗旧神殿" },
         buildingId: "sect_entry_huanxi",
         residentNpcName: "梵衍那",
-        unlockCondition: { type: "questCompleted", questId: "huanxijiao_2_biwuzhaoxian" },
+        // 香2 第三步罗琦领人进正殿见梵衍那，所以请过茶（s2）就开门。
+        unlockCondition: { type: "any", of: [
+          { type: "questCompleted", questId: "huanxijiao_2_biwuzhaoxian" },
+          { type: "flag", flag: "quest_huanxijiao2_s2" },
+        ] },
       },
       伽罗旧神殿: {
         x: 5, y: 0,

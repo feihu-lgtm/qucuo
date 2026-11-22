@@ -51,7 +51,11 @@ export default { quest: {
         id: "s1_tournament",
         description: "天都香行前院搭擂台，管家手下一个姓马的差役也在人群中抱着胳膊观望。参赛者各色人等，其中一个「专程来品香」的愣头侠客其实是真心来的，另有一个冒充者用土司府巡捕营擒拿手打斗，可被识破。连胜三场（或识破冒充者替代一场战斗）。",
         playerHint: "去天都香行前院的擂台参赛，留意人群里的差役。",
+        requireLocation: { district: "天都镇", inner: "天都香行" },
         completionFlag: "quest_huanxijiao2_s1",
+        choices: [
+          { flag: "quest_huanxijiao2_s1", label: "上擂台比武", resolve: "combat", combatNpc: { name: "擂台冒充者", levelCap: 2 } },
+        ],
         onReach: { exp: 2 },
       },
       {
@@ -65,6 +69,7 @@ export default { quest: {
         id: "s3_heart",
         description: "试心一关：罗琦领你入欢喜堂正殿，初见教主梵衍那。老人抽着水烟问你：「这世道最贵的，是银子、性命，还是体面？」",
         playerHint: "在欢喜堂正殿回答梵衍那的问话。",
+        requireLocation: { district: "天都镇", inner: "欢喜堂" },
         completionFlag: ["quest_huanxijiao2_ambition", "quest_huanxijiao2_protect", "quest_huanxijiao2_watch"],
         choices: [
           { flag: "quest_huanxijiao2_ambition", label: "强者开路，野心最贵", resolve: "none" },
