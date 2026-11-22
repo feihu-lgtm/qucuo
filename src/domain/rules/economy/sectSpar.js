@@ -39,6 +39,18 @@ const SECT_SPARS = [
     daily: 2,
     dailyCap: 39,
   },
+  {
+    faction: "三星派",
+    npcs: [
+      { id: "resident_qingtong_jia", name: "青铜面人·甲" },
+      { id: "resident_qingtong_yi", name: "青铜面人·乙" },
+      { id: "resident_qingtong_bing", name: "青铜面人·丙" },
+    ],
+    flag: "sanxing_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
   // 天龙教：在点将台/磨刀坪堂堂正正赢教中好手，涨天龙教声誉（合稿「比武服众 +8」）。
   {
     faction: "天龙教",

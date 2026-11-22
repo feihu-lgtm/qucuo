@@ -95,6 +95,27 @@ export const BUILDINGS_BY_LOCATION = {
       id: "inn_gaibang_xiedian", name: "荒庙草铺", type: BUILDING_TYPE.INN, innPrice: 10,
       desc: "东厢房里铺满晒干的新稻草，窗纸糊着泛黄的旧告示，夜里漏风却胜在干净安全。严九斤说出门在外讲究个落脚舒心，连血刀贼都不敢摸到这儿来。",
     },
+    // ── 广汉·三星派古蜀青铜神树墟（合稿·三星派 2.3；授面坛等拜入接线后再开） ──
+    {
+      id: "sanxing_tree_altar", name: "青铜神树台", type: BUILDING_TYPE.TEMPLE, karmaPerPray: 10,
+      desc: "三丈青铜神树下的夯土祭台，九枝九鸟在雾里若隐若现。在这里焚香静坐，听铜枝里的风声一层层沉下去，偶有所悟。",
+    },
+    {
+      id: "sanxing_sword_pit", name: "碎铜剑坪", type: BUILDING_TYPE.WUGUAN, skillSet: "三星",
+      desc: "祭祀坑底踩得发亮的碎铜坪，满地是断裂的古剑与面具碎片。三名青铜面人轮流守坪，外人要学古墟剑法，先得在这里过他们一剑。",
+    },
+    {
+      id: "sanxing_sect_shop", name: "古墟秘藏阁", type: BUILDING_TYPE.SECTSHOP, shopKey: "三星秘藏",
+      desc: "祭祀坑西侧凿进土崖的石室，架上摆着樊枯新铸的铜剑、古麻衣袍和墟中秘药。姜泠管账，外客凭交情才能看到里面几层。",
+    },
+    {
+      id: "sanxing_bronze_forge", name: "赤炉铸铜坊", type: BUILDING_TYPE.FORGE,
+      desc: "地窖深处一座常年不熄的赤炉，樊枯在这里补神树铜枝，也替信得过的人浇铸兵刃。炉壁烤得发红，站近了眉毛都要卷。",
+    },
+    {
+      id: "sanxing_stele_pavilion", name: "古蜀碑廊", type: BUILDING_TYPE.LIBRARY,
+      desc: "一条刻满古蜀图符的石廊，纵目人面、鱼凫与神鸟层层叠叠。三星派弟子在这里拓碑读谱，外客得了门人点头才能进来看。",
+    },
     {
       id: "sect_gaibang_entry", name: "三星分舵·聚义堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "丐帮三星分舵",
       desc: "破庙正殿改成的分舵议事处，供桌上不烧高香只摆烈酒。想入丐帮不看家世高低，只看你敢不敢端起严九斤那碗混着雨水与江湖气的入门酒。",

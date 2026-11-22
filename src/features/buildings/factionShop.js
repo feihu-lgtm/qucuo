@@ -98,6 +98,14 @@ const FACTION_SHOPS = {
     hostileItems: ["雪山姜枣干粮", "寒岭冻伤膏"],
     coldItems: ["雪山姜枣干粮", "寒岭冻伤膏", "雪松木剑"],
   },
+  三星秘藏: {
+    faction: "三星派", idPrefix: "sanxing_purchase",
+    outlets: { sanxing_sect_shop: "vault" },
+    nowhere: "须到广汉祭祀坑西石室的古墟秘藏阁才能买三星派的货。",
+    banned: "姜泠把铜镜扣在案上：「古墟不与你做买卖。」",
+    hostileClosed: {},
+    hostileQualities: ["绿"],
+  },
   土司军需司: {
     faction: "鱼定土司府", idPrefix: "tusi_purchase",
     outlets: { shop_yudingtusi: "vault" },
