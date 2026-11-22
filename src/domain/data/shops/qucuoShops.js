@@ -79,7 +79,6 @@ export const QUCUO_SHOPS = {
       { name: "百年雪水青稞陈酿", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 100, limitOnce: true },
     ],
   },
-||||||| 5aad94f
   // 鱼定土司府·土司府军需司（合稿·土司府 6.2）。合稿镇边虎纹玉佩门槛 140，声誉上限 100，收到 100。
   土司军需司: {
     shopName: "土司府军需司",
