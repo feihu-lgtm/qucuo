@@ -1,4 +1,5 @@
 import { registerFact } from "../domain/rules/prompt/knowledge.js";
+import { canBackfillSettle } from "../domain/rules/settle/settleBrief.js";
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
 
 // 状态写入口由调用方经 ctx.gameActions 注入（features 不反依赖 store，同
@@ -57,7 +58,9 @@ function writeResult(ctx, result, trace) {
   }
   if (result.settle) {
     const settleOptions = result.settleOptions || {};
-    if (ctx.act) {
+    if (ctx.settleInBackground && canBackfillSettle(settleOptions)) {
+      ctx.settleInBackground(result.settle, settleOptions);
+    } else if (ctx.act) {
       const join = trace.phase === PHASE.MACHINE;
       withTurnContext(join ? trace : undefined, () =>
         ctx.act(result.settle, [], { ...settleOptions, settle: settleOptions.settle ?? true, keepUndo: true }));
