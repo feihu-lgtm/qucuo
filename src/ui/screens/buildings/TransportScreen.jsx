@@ -83,7 +83,7 @@ export default function TransportScreen({
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, padding: "8px 10px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
               <div>
                 <div style={{ color: "var(--gold)", fontSize: 12 }}>🕊 信鸽 <span style={{ color: "var(--ink-text-dim)" }}>（现有 {pigeons} 只）</span></div>
-                <div style={{ color: "#6a6a5a", fontSize: 10 }}>买了才能在野外随处飞鸽传书（快·只送信）；每寄一封耗一只</div>
+                <div style={{ color: "var(--ink-moss)", fontSize: 10 }}>买了才能在野外随处飞鸽传书（快·只送信）；每寄一封耗一只</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ color: "var(--gold-bright)", fontSize: 11 }}>{PIGEON_PRICE} 两/只</span>
@@ -110,7 +110,7 @@ export default function TransportScreen({
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <span style={{ color: "var(--ink-text-dim)", fontSize: 11, width: 40 }}>附礼</span>
                   <select value={gift} onChange={e => setGift(e.target.value)}
-                    style={{ flex: 1, background: "var(--bg-ink)", color: gift ? "var(--gold)" : "#6a6a5a", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", fontSize: 12, fontFamily: "inherit" }}>
+                    style={{ flex: 1, background: "var(--bg-ink)", color: gift ? "var(--gold)" : "var(--ink-moss)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", fontSize: 12, fontFamily: "inherit" }}>
                     <option value="">（不附礼 · 只寄信）</option>
                     {invNames.map((n, i) => <option key={n + i} value={n}>{n}</option>)}
                   </select>
@@ -127,7 +127,7 @@ export default function TransportScreen({
           </>
         )}
 
-        <div style={{ color: "#4a4a4a", fontSize: 10, marginTop: 12 }}>{building.desc}</div>
+        <div style={{ color: "var(--building-desc)", fontSize: 10, marginTop: 12 }}>{building.desc}</div>
       </div>
     </Overlay>
   );

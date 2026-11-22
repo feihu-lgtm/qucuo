@@ -354,6 +354,7 @@
   --building-disabled-bg: #1a1a1a;
   --building-disabled-edge: #2a2a2a;
   --building-disabled-text: #4a4a4a;
+  --building-desc: #4a4a4a;
   --building-panel-bg: #14161f;
 
   /* 起居注定色（原字面量，不随日间模式变）：accent/panel 是区域主题缺值时的缺省色，routine 是只记数的日常举动。 */
