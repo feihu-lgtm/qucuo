@@ -45,18 +45,20 @@ export function duelFactLogs(rounds, key, outcomeText) {
   ], key);
 }
 
-// 给 AI 的数据：只列事实，要求每回合一两句、结局一句，输出 JSON
-export function buildDuelNarrationPrompt(rounds, { outcomeText = "", place = "" } = {}) {
+// 给 AI 的数据：只列事实，要求每回合一两句、结局一段（交代收势作结），输出 JSON
+export function buildDuelNarrationPrompt(rounds, { outcomeText = "", place = "", aftermath = "" } = {}) {
   const list = Array.isArray(rounds) ? rounds : [];
   const sys = `你是曲措乡的说书人。下面是一场切磋已经由系统算好的逐回合结果。
-你的任务是给每回合各写一到两句描写（每回合不超过四十字），再给整场写一句结局（不超过三十字）。
+你的任务是给每回合各写一到两句描写（每回合不超过四十字），再给整场写一段结局（不超过八十字），交代双方如何收势作结、场面落回日常。
 铁律：招式名、谁伤了谁、伤多少、谁中了什么状态，一律照抄给定事实，不改判、不补造回合、不写数字以外的新战果；
 兵器和招式的样子要贴着招式名写，拳法就写拳，不要换成刀剑；白话古文的说书人口吻，句子完整，不用冒号破折号。
-只输出一个 JSON 对象，不要任何前后缀：{"rounds":["第1回合的描写", …共${list.length}条],"ending":"结局一句"}`;
+${aftermath ? "末尾另附「收尾」梗概：结局段把它写成完整的收尾描写，交代这件事怎么作结、主角怎么回归，梗概里的事实照抄不另造。" : ""}
+只输出一个 JSON 对象，不要任何前后缀：{"rounds":["第1回合的描写", …共${list.length}条],"ending":"结局一段"}`;
   const user = [
     place ? `地点：${place}` : "",
     ...list.map((round) => duelFactLine(round)),
     `结局：${outcomeText || "未分胜负"}`,
+    aftermath ? `收尾：${aftermath}` : "",
   ].filter(Boolean).join("\n");
   return { sys, user };
 }
