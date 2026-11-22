@@ -156,6 +156,8 @@ export const TIANLONG_BABU = getContent("itemGroup", "TIANLONG_BABU").map(id => 
 // 青城派青4/青5/青支任务物与奖励（named）
 export const QINGCHENG_QUEST = getContent("itemGroup", "QINGCHENG_QUEST").map(id => getContent("item", id));
 export const RESIDENT_FILL_GOODS = getContent("itemGroup", "RESIDENT_FILL_GOODS").map(id => getContent("item", id));
+// 跑马大会具名物（named，跑马集市铺货 + 比武彩头仪卫戟）
+export const PAOMA_GOODS = getContent("itemGroup", "PAOMA_GOODS").map(id => getContent("item", id));
 
 // ============================================================================
 // 核心：把 catalog 条目实例化成一个完整物品对象
@@ -225,6 +227,7 @@ export const CATALOG = [
   ...YUQUAN_GOODS,         // 玉泉寨具名物（named，茶马货栈+NPC随身物+任务物共用条目）
   ...TUSI_GOODS,           // 鱼定土司府具名物（军需司货池+土司府人物随身物）
   ...TANGMEN_GOODS,        // 唐门具名物（named，门人随身物+拜入信物+任务物共用条目）
+  ...PAOMA_GOODS,          // 跑马大会具名物（named，集市铺货+仪卫戟彩头共用条目）
   ...BAIHUA_GOODS,         // 百花门天都镇具名物（named，商店+NPC随身物共用条目）
   ...TIANLONG_BABU,        // 天龙八部护法具名物（named，护法随身物+支线奖励）
   ...QINGCHENG_QUEST,      // 青城派任务物与奖励（named）

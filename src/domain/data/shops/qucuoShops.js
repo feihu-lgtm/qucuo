@@ -3,6 +3,23 @@ import { makeItem, ITEM_CATEGORY } from "../../rules/economy/equipment.js";
 // 所有固定商店货品清单。key 对应 qucuoBuildings.js 的 shopKey 字段。
 // 货品价格由 makeItem → priceForQuality 统一计算，卖出 = 买价 / 2。
 export const QUCUO_SHOPS = {
+  // 跑马大会外围集市（总纲 v3 4.1）：锦官商号/土特产/小礼物/食品/药品，
+  // 摊型收成一家商行货架，不设声誉门槛。
+  跑马集市: {
+    shopName: "跑马集市",
+    items: [
+      { name: "烤羊腿", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "青稞酒", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "牦牛皮护腕", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "金疮药", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "鎏银发簪", category: ITEM_CATEGORY.ACCESSORY, quality: "绿" },
+      { name: "绣纹荷包", category: ITEM_CATEGORY.ACCESSORY, quality: "绿" },
+      { name: "风干牦牛肉", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "安神香囊", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝" },
+      { name: "锦官琉璃珠", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝" },
+      { name: "雪山当归", category: ITEM_CATEGORY.MISC, quality: "蓝" },
+    ],
+  },
   唐门暗器: {
     shopName: "唐门暗器铺",
     items: [
