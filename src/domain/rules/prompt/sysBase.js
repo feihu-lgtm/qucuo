@@ -142,8 +142,10 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     }
     if (o.settleKind === "gift") {
       if (o.giftInfo?.weight) return giftWeight(
-        "\n仅给收礼人写一条 _.add 好感，整数区间 @赠礼.好感范围；允许0且礼貌无态度变化可省。禁写其他 MVU。",
-      );
+        "\n仅给收礼人写一条 _.add 好感，整数区间 @赠礼.好感范围；收下必写区间内的正向增量，禁省略、禁为零。"
+      ) + (o.giftInfo?.preferLabel && o.giftInfo?.categoryLabel === o.giftInfo.preferLabel
+        ? "礼物正是对方偏好的类别，好感取区间上沿。"
+        : "") + "禁写其他 MVU。";
     }
     return "";
   }

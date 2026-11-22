@@ -118,6 +118,8 @@ describe("softRules mapping tables", () => {
     expect(giftPreferenceLabel({ name: "老孙", brief: "老孙饭馆的掌柜" })).toBe("杂物");
     expect(giftPreferenceLabel({ name: "卓玛", title: "雪山派剑客" })).toBe("武器");
     expect(giftPreferenceLabel({ name: "路人甲" })).toBeNull();
+    // 职业先于泛称谓：厨娘出身的大娘爱食材杂物，不是首饰
+    expect(giftPreferenceLabel({ name: "鱼定大娘", brief: "村里的厨娘，热心肠" })).toBe("杂物");
   });
 
   it("companion_invite: 应允 → 直接 set 高初始好感", () => {
