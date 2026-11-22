@@ -43,4 +43,3 @@ describe("房间级地上物记下自己在哪间房", () => {
     expect(items.find((item) => item.name === "霜天月").innerRoom).toBe("雪山崖底");
   });
 });
-

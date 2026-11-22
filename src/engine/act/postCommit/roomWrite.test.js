@@ -115,4 +115,3 @@ describe("writeRoom 原地互动只改写本房间的地上物", () => {
     expect(next.items[1].innerRoom).toBe("峰道入口");
   });
 });
-
