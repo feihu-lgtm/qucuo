@@ -141,10 +141,6 @@ function isReserved(name) {
   return reservedNames.has(name);
 }
 
-export function hasRandomPassers(locationName) {
-  return !!NODE_PASSERS[locationName];
-}
-
 // 给定节点名 + 游戏时间 → 今天在此的随机过路人（纯函数，同日同地结果一致）
 export function getRandomPassers(locationName, time) {
   const cfg = NODE_PASSERS[locationName];
