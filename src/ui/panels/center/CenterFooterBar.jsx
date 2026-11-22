@@ -8,6 +8,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
   const questProgress = useGameStore(s => s.questProgress);
   const flags = useGameStore(s => s.flags);
   const varTree = useGameStore(s => s.varTree);
+  const inv = useGameStore(s => s.inv);
   const {
     isMobile, mobileColumn, zoneTheme, loading, pendingTalks, waitSecs,
     availableQuestsHere, nsfwOn, setNsfwOn, justMeditated,
@@ -82,7 +83,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
             <span key={entry.quest.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <span style={{ color: "var(--text)", fontSize: "10.5px" }}>{entry.quest.title}：</span>
               {entry.stage.choices
-                .filter(choice => isQuestChoiceOpen(choice, { questProgress, flags, varTree }))
+                .filter(choice => isQuestChoiceOpen(choice, { questProgress, flags, varTree, inv }))
                 .map(choice => {
                   const icon = choice.resolve === "combat" ? "⚔ " : choice.resolve === "talk" ? "💬 " : "";
                   return (
