@@ -73,7 +73,7 @@ export const MOVE_RULES = [
 
   // ── 控制与干扰 ──
   { key: "applyStatus", when: (m) => m.applyStatus, label: "附异状", text: (m) => `${m.statusChance != null && m.statusChance < 1 ? `${pct(m.statusChance)} 几率` : ""}命中施加「${typeof m.applyStatus === "string" ? m.applyStatus : m.applyStatus.name}」状态` },
-  { key: "confuseChance", when: (m) => m.confuseChance, label: "致乱", text: (m) => `${pct(m.confuseChance)} 几率令对方陷入气乱（出招有一半几率打偏，每回合 25% 自行平复）` },
+  { key: "confuseChance", when: (m) => m.confuseChance, label: "致乱", text: (m) => `${pct(m.confuseChance)} 几率令对方陷入气乱（控制类异状，每回合 25% 自行平复）` },
   { key: "energyDiffDamage", when: (m) => m.energyDiffDamage, label: "打能量差", text: () => "按双方当前气力差值造成额外伤害（对方越虚越疼）" },
   { key: "enemyCostPenalty", when: (m) => m.enemyCostPenalty, label: "封穴耗气", text: (m) => `扰乱对方气机，其后 ${m.enemyCostPenalty.turns ?? 1} 回合出招多耗 ${m.enemyCostPenalty.value ?? 1} 气力` },
   { key: "freezeEnergyRecovery", when: (m) => m.freezeEnergyRecovery, label: "封气", text: () => "冻住对方下一回合的回气（无法调息）" },
