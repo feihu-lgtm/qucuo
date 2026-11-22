@@ -82,6 +82,12 @@ export function stageRewardPatches(rewards, now = Date.now()) {
   if (rewards.money) {
     patches.push(add("char.money", rewards.money));
   }
+  if (rewards.exp) {
+    patches.push(add("exp", rewards.exp));
+  }
+  if (rewards.pot) {
+    patches.push(add("pot", rewards.pot));
+  }
   for (const [name, delta] of Object.entries(rewards.favorability)) {
     patches.push({ ...add(["角色", name, "好感度"], delta), options: { defaultValue: 10 } });
   }

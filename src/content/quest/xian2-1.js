@@ -131,10 +131,14 @@ export default { quest: {
         description: "玩家把一路拼凑的碎片串起来答：前任经师是为销毁地契而死，并非意外身亡。老人沉默良久，点头：「答得对——他临走前在我这儿坐了一夜，说那东西要是公之于众，曲措乡要翻天；要是埋了，又对不起死人。他选了第三条路，把自己赔进去了。」二选一：答对得证词+灵药；答错只得灵药被婉拒。",
         playerHint: "答得出三十年前贡措海畔的事，老人才肯说实话。",
         completionFlag: ["quest_xian2_10_s2_right", "quest_xian2_10_s2_wrong"],
+        choices: [
+          { flag: "quest_xian2_10_s2_right", label: "答出前任经师为销毁地契而死", resolve: "none", narration: "你把一路拼凑的碎片串起来答出：前任经师是为销毁地契而死，并非意外身亡。老人沉默良久，点头：「答得对——他临走前在我这儿坐了一夜，说那东西要是公之于众，曲措乡要翻天；要是埋了，又对不起死人。他选了第三条路，把自己赔进去了。」" },
+          { flag: "quest_xian2_10_s2_wrong", label: "答不上来", resolve: "none", narration: "你支吾半晌答不周全。老人摆摆手不再追问，只把一包自配伤药推过来：「回去吧，等你真知道了再来。」" },
+        ],
         requireLocation: { district: "贡措海", inner: "湖畔" },
         onReach: {
           exp: 3,
-          items: [{ name: "雪山疗伤灵药", category: "misc", quality: "蓝", tags: ["药品", "疗伤"], desc: "隐士自配的伤药，内服外敷皆可。" }],
+          items: [{ name: "雪山疗伤灵药", category: "misc", quality: "蓝", tags: ["药品", "疗伤"], consumable: { hpRestore: 0.15 }, desc: "隐士自配的伤药，内服外敷皆可。" }],
           byFlag: {
             quest_xian2_10_s2_right: { flags: ["xian2_witness_testimony"] },
             quest_xian2_10_s2_wrong: { flags: ["xian2_hermit_declined"] },
