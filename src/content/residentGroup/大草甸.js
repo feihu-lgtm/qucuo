@@ -13,6 +13,8 @@ export default { residentGroup: {
         { name: "黑风寨土烧", category: "misc", quality: "绿" },
         { name: "金疮药", category: "misc", quality: "白" },
         { name: "风干牦牛肉", category: "misc", quality: "白" },
+        // 门主也是血刀恶徒——缴信物同上门徒。
+        { name: "血刀信物", category: "misc", quality: "绿" },
       ],
     },
     {
@@ -27,6 +29,9 @@ export default { residentGroup: {
         { name: "黑风寨土烧", category: "misc", quality: "绿" },
         { name: "止血散", category: "misc", quality: "白" },
         { name: "青稞饼", category: "misc", quality: "白" },
+        // 合稿「丐帮 7.1」：击杀血刀部恶徒可缴信物——门徒 carry 是写死的，
+        // 不走 ROLE_TROPHY 兜底，信物要明写进随身物才掉得出来。
+        { name: "血刀信物", category: "misc", quality: "绿" },
       ],
     },
     {
@@ -42,6 +47,9 @@ export default { residentGroup: {
         { name: "黑风寨土烧", category: "misc", quality: "绿" },
         { name: "止血散", category: "misc", quality: "白" },
         { name: "青稞饼", category: "misc", quality: "白" },
+        // 合稿「丐帮 7.1」：击杀血刀部恶徒可缴信物——门徒 carry 是写死的，
+        // 不走 ROLE_TROPHY 兜底，信物要明写进随身物才掉得出来。
+        { name: "血刀信物", category: "misc", quality: "绿" },
       ],
     },
     {
@@ -56,6 +64,9 @@ export default { residentGroup: {
         { name: "黑风寨土烧", category: "misc", quality: "绿" },
         { name: "止血散", category: "misc", quality: "白" },
         { name: "青稞饼", category: "misc", quality: "白" },
+        // 合稿「丐帮 7.1」：击杀血刀部恶徒可缴信物——门徒 carry 是写死的，
+        // 不走 ROLE_TROPHY 兜底，信物要明写进随身物才掉得出来。
+        { name: "血刀信物", category: "misc", quality: "绿" },
       ],
     },
     {
