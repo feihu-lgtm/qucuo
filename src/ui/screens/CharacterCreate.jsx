@@ -75,8 +75,8 @@ export default function CharacterCreate({ onConfirm }) {
     <div className="character-create-root" style={styles.container}>
       <div style={styles.vignette} />
       <div className="character-create-card" style={styles.card}>
-        <div style={styles.title}>初入江湖</div>
-        <div style={styles.sub}>—— 报上名号，方好行走曲措乡 ——</div>
+        <div className="character-create-title" style={styles.title}>初入江湖</div>
+        <div className="character-create-sub" style={styles.sub}>—— 报上名号，方好行走曲措乡 ——</div>
 
         {pending && (
           <div style={styles.cardBox}>
@@ -240,7 +240,7 @@ const styles = {
     fontFamily: "inherit", cursor: "pointer",
   },
   confirm: {
-    marginTop: 14, textAlign: "center",
+    width: "100%", border: "none", marginTop: 14, textAlign: "center",
     background: `linear-gradient(180deg, ${theme.accent}, #8a6a2a)`,
     color: "#1a140c", fontSize: "16px", fontWeight: "bold",
     letterSpacing: "3px", padding: "13px 0", borderRadius: 0,
