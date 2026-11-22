@@ -4,6 +4,16 @@ import { factionRepOf } from "../economy/factionRep.js";
 import { SECT_ENTRY } from "./sectEntry.js";
 
 export const FACTION_ENTRIES = {
+  五仙教: {
+    sect: "五仙教", master: "龙汐月", buildingId: "sect_entry_wuxian",
+    minRep: 40, repBonus: 20, flag: "五仙教弟子",
+    token: "银蛇弟子牌", gifts: ["清瘴丸", "蛇药粉"],
+    quests: ["wuxianjiao_1_zilanwenjing", "wuxianjiao_2_dudianyiying"],
+    questsLabel: "完成「蛊1·紫岚问径」与「蛊2·毒典疑影」",
+    trial: null,
+    intro: "五仙灵坛前银铃低垂。龙汐月隔着面纱看你：「入我五仙，先饮一盏引蛊酒——受得住，才是自己人。」",
+    joinLabel: "饮下引蛊酒，拜入五仙教",
+  },
   青城派: {
     sect: "青城派", master: "一清道长", buildingId: "sect_entry_yajiang",
     minRep: 40, repBonus: 20, flag: "青城派弟子",
@@ -43,16 +53,19 @@ export const sectMasterOf = (sect) => (sect === SECT_ENTRY.sect ? SECT_ENTRY.mas
 export const factionEntryForBuilding = (buildingId) =>
   Object.values(FACTION_ENTRIES).find((entry) => entry.buildingId === buildingId) || null;
 
-export function checkFactionEntry(entry, { varTree, flags = [], char } = {}) {
+export function checkFactionEntry(entry, { varTree, flags = [], char, questProgress = {} } = {}) {
   const rep = factionRepOf(varTree, entry.sect);
   const prestige = Number(varTree?.世界?.威望) || 0;
   const other = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== entry.sect && flags.includes(flag));
   const trialOk = !entry.trial || flags.includes(entry.trial.flag);
   const riteNeeded = !!entry.maleRite && (char?.gender || "男") === "男";
   const riteOk = !riteNeeded || flags.includes(entry.maleRite.flag);
+  const questsDone = (entry.quests || []).filter((qid) => questProgress?.[qid]?.status === "completed").length;
+  const questsOk = (entry.quests || []).every((qid) => questProgress?.[qid]?.status === "completed");
   const reqs = [
     { key: "rep", label: `${entry.sect}声誉 ≥ ${entry.minRep}（门墙之交）`, have: rep, ok: rep >= entry.minRep },
     { key: "prestige", label: "威望 ≥ 0（不收恶名昭彰之徒）", have: prestige, ok: prestige >= 0 },
+    ...(entry.quests?.length ? [{ key: "quests", label: entry.questsLabel || "完成本派引荐任务", have: `${questsDone}/${entry.quests.length}`, ok: questsOk }] : []),
     ...(entry.trial ? [{ key: "trial", label: entry.trial.label, have: trialOk ? "已过" : "未过", ok: trialOk }] : []),
     ...(riteNeeded ? [{ key: "rite", label: entry.maleRite.label, have: riteOk ? "已成" : "未成", ok: riteOk }] : []),
     { key: "single", label: "未拜入他派", have: other ? other[0] : "无", ok: !other },
