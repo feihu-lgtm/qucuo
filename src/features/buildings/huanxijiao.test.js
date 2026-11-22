@@ -41,6 +41,17 @@ describe("欢喜教", () => {
     expect(isInnerExitUnlocked(room("莲花廊").unlockCondition, { flags: ["欢喜教弟子"] })).toBe(true);
   });
 
+  it("opens 调香药房/莲花廊 for trusted outsiders via 欢喜教 reputation", () => {
+    const room = (name) => getInnerRoom("天都镇", name);
+    // 调香药房：香1 完成，或欢喜教声誉 ≥15（门槛照合稿，不高于 100）
+    expect(isInnerExitUnlocked(room("调香药房").unlockCondition, { questProgress: done("huanxijiao_1_xiangzhongyi") })).toBe(true);
+    expect(isInnerExitUnlocked(room("调香药房").unlockCondition, { varTree: rep(14) })).toBe(false);
+    expect(isInnerExitUnlocked(room("调香药房").unlockCondition, { varTree: rep(15) })).toBe(true);
+    // 莲花廊：欢喜教弟子，或欢喜教声誉 ≥40
+    expect(isInnerExitUnlocked(room("莲花廊").unlockCondition, { varTree: rep(39) })).toBe(false);
+    expect(isInnerExitUnlocked(room("莲花廊").unlockCondition, { varTree: rep(40) })).toBe(true);
+  });
+
   it("every shop, quest and entry item resolves in the catalog", () => {
     const shopItems = factionShopOffer("天都香行", rep(100), "vault", ["欢喜教弟子"]).items.map((item) => item.name);
     expect(shopItems).toHaveLength(12);

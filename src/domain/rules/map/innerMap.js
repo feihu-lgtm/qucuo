@@ -196,6 +196,13 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv
     const val = unlockCondition.stat === "waigong" ? char?.waigong : char?.neigong;
     return (val || 0) >= unlockCondition.threshold;
   }
+  // 声誉锁：读 varTree.世界.势力声誉[faction]（调用方把整个 state/scope 袋
+  // 透传时 varTree 已在其中）。拿不到声誉来源时按 0 处理——门外客依旧进不去，
+  // 已开条件不受影响。
+  if (unlockCondition.type === "rep") {
+    const rep = varTree?.世界?.势力声誉?.[unlockCondition.faction] ?? 0;
+    return rep >= unlockCondition.min;
+  }
   return true;
 }
 

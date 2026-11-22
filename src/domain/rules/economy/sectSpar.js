@@ -104,6 +104,25 @@ const SECT_SPARS = [
     daily: 2,
     dailyCap: 39,
   },
+  // 峨眉派：剑庐白猿台与门中弟子切磋，涨峨眉声誉（设计稿「两派弟子常互相串门切磋」同例）。
+  {
+    faction: "峨眉派",
+    npcs: [{ id: "resident_zhaowei", name: "照微" }, { id: "resident_xubai", name: "虚白" },
+      { id: "resident_situying", name: "司徒瑛" }],
+    flag: "emei_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
+  // 欢喜教：香行后院「比武招贤」一脉，向罗琦及内院好手递帖切磋，涨欢喜教声誉（合稿「比武招贤」机制）。
+  {
+    faction: "欢喜教",
+    npcs: [{ id: "resident_luoqi", name: "罗琦" }, { id: "resident_sangjie_neiyuan", name: "桑杰" }],
+    flag: "huanxi_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
 ];
 
 // 组队单位 id 取 npc.id || npc.name（teamUnits），玩家恒为 "player"，按 id 认人，不怕重名。
