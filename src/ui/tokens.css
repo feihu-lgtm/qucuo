@@ -88,6 +88,10 @@
   --quest-negative-text: #8a6a6a;
   --quest-missed-desc: #6a5a5a;
 
+  /* 身体档案面板定色（原字面量，不随日间模式变）：未填字段和 NSFW 开关文字。 */
+  --body-empty: #4a4a3a;
+  --body-nsfw: #c85a6a;
+
   /* 创角页定色（原字面量，不随日间模式变）：--create-dark 用于下拉选项底色和开始按钮文字。 */
   --create-button-bottom: #8a6a2a;
   --create-dark: #1a140c;
@@ -216,6 +220,11 @@
   --tutorial-time: #c0a86a;
   --tutorial-title: #f0e0c0;
 
+  /* 镖局屏定色（原字面量，不随日间模式变）：进行中镖单卡片和接镖提示。 */
+  --escort-card-bg: #14120a;
+  --escort-detail: #7a6a4a;
+  --escort-hint: #6a8a6a;
+
   /* 设置面板定色（原字面量，不随日间模式变） */
   --ink-overlay: rgba(4,4,10,0.92);
   --ink-divider: #1a1d2e;
@@ -257,6 +266,14 @@
   --error-stack: #a08080;
   --error-text: #e0c0c0;
   --error-title: #e08080;
+
+  /* 右栏人物页属性模块定色（原字面量，不随日间模式变）：内功/外功的进度条、数值和功法标签。 */
+  --attr-neigong-edge: #1d2d3a;
+  --attr-neigong-tag: #8ab4d4;
+  --attr-value: #888;
+  --attr-waigong-bar: #d85a30;
+  --attr-waigong-edge: #3a2a1d;
+  --attr-waigong-tag: #d88a5a;
 
   /* 主界面底栏定色：等待、任务提示和交谈输入框。 */
   --footer-slow-bg: #3a2a12;
@@ -332,6 +349,11 @@
   --building-disabled-text: #4a4a4a;
   --building-panel-bg: #14161f;
 
+  /* 起居注定色（原字面量，不随日间模式变）：accent/panel 是区域主题缺值时的缺省色，routine 是只记数的日常举动。 */
+  --qijuzhu-accent: #c4a86a;
+  --qijuzhu-panel: #12141c;
+  --qijuzhu-routine: #6a8a6a;
+
   /* 识海定色（原字面量，不随日间模式变）。 */
   --mind-button-edge: #8a6a2a;
   --mind-button-text: #f0d888;
@@ -342,6 +364,10 @@
   --mind-locked: #4a4a44;
   --mind-locked-edge: #25252a;
   --mind-missing: #6a6458;
+
+  /* 交易屏定色（原字面量，不随日间模式变）：买得起的商品描边和关闭按钮文字。 */
+  --trading-buy-edge: #1a3a3a;
+  --trading-close: #8a8a8a;
 
   /* 建筑服务屏定色（原字面量，不随日间模式变）。 */
   --service-card-edge: #4a3a2a;
