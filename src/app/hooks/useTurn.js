@@ -29,7 +29,7 @@ import { playTurn } from "../../engine/playTurn.js";
 import { burnSquare, consumeArrival, serializeSquares } from "../../domain/rules/map/mapSquares.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 import { resolveInnerBlockedSummary, showOuterNoExitNotice } from "./blockedMovementNotice.js";
-import { classifyActCommand } from "../../core/commands.js";
+import { classifyActCommand } from "../../engine/commands/index.js";
 
 export function useTurn({
   loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
