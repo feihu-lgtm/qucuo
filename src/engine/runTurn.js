@@ -12,8 +12,36 @@ import { getApiModel } from "../content/apiModel.js";
 import { filterPlanDelta, filterRejectedEffects, planExtractionNote } from "../domain/rules/intent/planNotes.js";
 import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
 import { UNKNOWN_CHOICE } from "../domain/rules/settle/judge.js";
+import { classifyError } from "../utils/apiErrors.js";
 
 const MAX_AUTO_RETRY = 2;
+
+function assertNonEmpty(rawFull) {
+  if (String(rawFull ?? "").trim()) return;
+  const err = new Error("接口返回了空内容（模型没有输出任何文字）");
+  err.code = "empty";
+  throw err;
+}
+
+const RATE_LIMIT_BACKOFF_MS = 2000;
+const RATE_LIMIT_MAX_WAIT_MS = 30000;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function retryVerdict(error, attempt) {
+  if (attempt > MAX_AUTO_RETRY) return { retry: false, why: "重试用尽仍失败" };
+  const ec = classifyError(error);
+  if (ec.retryable === false) return { retry: false, why: `${ec.title}，重试无用，不自动重试` };
+  if (ec.kind !== "rateLimit") return { retry: true, delayMs: 0 };
+  const hinted = error?.retryAfterMs == null ? NaN : Number(error.retryAfterMs);
+  const delayMs = Number.isFinite(hinted) && hinted >= 0 ? hinted : RATE_LIMIT_BACKOFF_MS * 2 ** (attempt - 1);
+  if (delayMs > RATE_LIMIT_MAX_WAIT_MS) return { retry: false, why: `接口要求等 ${Math.ceil(delayMs / 1000)} 秒，超过自动重试上限，不自动重试` };
+  return { retry: true, delayMs };
+}
+
+function retryNotice(error, verdict, attempt) {
+  if (!verdict.delayMs) return `  ⚠ 接口中断（${error.message || error}），正在自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…`;
+  return `  ⏳ 接口限流（${error.message || error}），${Math.ceil(verdict.delayMs / 1000)} 秒后自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…`;
+}
 
 function withPresenceTrace(ctx) {
   if (!ctx.prompt?.buildPresence) return ctx;
@@ -140,6 +168,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       try {
         const result = await callMainOnce(null, true, callDeps());
         if (ctx.isStale?.()) return { stale: true };
+        assertNonEmpty(result.rawFull);
         rawFull = result.rawFull;
         mainFinishReason = result.finishReason;
         trace("AI调用", "pass", attempt > 1
@@ -148,12 +177,17 @@ async function runTurnSteps(ctx, cmd, opts) {
         break;
       } catch (error) {
         if (ctx.isStale?.()) return { stale: true };
-        if (attempt <= MAX_AUTO_RETRY) {
-          addLog([{ t: "sys", text: `  ⚠ 接口中断（${error.message || error}），正在自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…` }]);
+        const verdict = retryVerdict(error, attempt);
+        if (verdict.retry) {
+          addLog([{ t: "sys", text: retryNotice(error, verdict, attempt) }]);
           trace("AI调用", "fail", `主叙事第${attempt}次失败：${error.message || error}，重试`);
+          if (verdict.delayMs) {
+            await (ctx.sleep || sleep)(verdict.delayMs);
+            if (ctx.isStale?.()) return { stale: true };
+          }
           continue;
         }
-        trace("AI调用", "fail", `主叙事重试用尽仍失败：${error.message || error}`);
+        trace("AI调用", "fail", `主叙事${verdict.why}：${error.message || error}`);
         throw error;
       }
     }
@@ -228,6 +262,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       try {
         const result = await callMainOnce(nudge, false, callDeps());
         if (ctx.isStale?.()) return { stale: true };
+        assertNonEmpty(result.rawFull);
         rawFull = result.rawFull;
         finishReason = result.finishReason;
         trace("AI调用", "pass", attempt > 1
@@ -235,12 +270,17 @@ async function runTurnSteps(ctx, cmd, opts) {
           : `一次成功（单调用·主模型=${getApiModel(apiCfg) || "未设置"}）`);
       } catch (error) {
         if (ctx.isStale?.()) return { stale: true };
-        if (attempt <= MAX_AUTO_RETRY) {
-          addLog([{ t: "sys", text: `  ⚠ 接口中断（${error.message || error}），正在自动重试（第 ${attempt}/${MAX_AUTO_RETRY} 次）…` }]);
+        const verdict = retryVerdict(error, attempt);
+        if (verdict.retry) {
+          addLog([{ t: "sys", text: retryNotice(error, verdict, attempt) }]);
           trace("AI调用", "fail", `第${attempt}次失败：${error.message || error}，重试`);
+          if (verdict.delayMs) {
+            await (ctx.sleep || sleep)(verdict.delayMs);
+            if (ctx.isStale?.()) return { stale: true };
+          }
           continue;
         }
-        trace("AI调用", "fail", `重试用尽仍失败：${error.message || error}`);
+        trace("AI调用", "fail", `${verdict.why}：${error.message || error}`);
         throw error;
       }
       ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));

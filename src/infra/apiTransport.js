@@ -4,6 +4,7 @@ import { observeAi } from "./observeAi.js";
 import { readSSE, stripReasoning } from "./apiSse.js";
 import { getStoredVertexHeaders } from "./vertexCredentials.js";
 import { getApiModel } from "./apiModel.js";
+import { parseRetryAfter } from "./retryAfter.js";
 import {
   API_TYPES, applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
   clampMaxTokensForProvider, DEFAULT_CALL_TOKEN_LIMITS, migrateProvider,
@@ -53,8 +54,29 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = _requestTimeoutMs
 }
 
 
+function httpFailure(res, label, requestUrl, vendorMessage) {
+  const err = new Error(`${label} HTTP ${res.status}：${vendorMessage}`);
+  err.httpStatus = res.status;
+  err.vendorMessage = String(vendorMessage);
+  err.requestUrl = requestUrl || res.url;
+  const retryAfterMs = parseRetryAfter(res.headers?.get?.("retry-after"));
+  if (retryAfterMs != null) err.retryAfterMs = retryAfterMs;
+  return err;
+}
+
+async function rejectNonStream(res, label, requestUrl = "") {
+  if (!res.ok || /text\/html/i.test(res.headers.get("content-type") || "")) await readJsonOrThrow(res, label, requestUrl);
+}
+
 async function readJsonOrThrow(res, label, requestUrl = "") {
   const bodyText = await res.text();
+  if (res.ok && !bodyText.trim()) {
+    const err = new Error(`${label}：接口返回了空响应（HTTP ${res.status}）`);
+    err.code = "empty";
+    err.httpStatus = res.status;
+    err.requestUrl = requestUrl || res.url;
+    throw err;
+  }
   const head = bodyText.trimStart().slice(0, 1);
   const looksHtml = head === "<" || /text\/html/i.test(res.headers.get("content-type") || "");
   if (looksHtml) {
@@ -70,24 +92,19 @@ async function readJsonOrThrow(res, label, requestUrl = "") {
     // 供 classifyError 按 401/429/5xx 归类。原始 error message 也保留。
     if (!res.ok) {
       const apiMsg = json?.error?.message || json?.message || bodyText.slice(0, 120);
-      const err = new Error(`${label} HTTP ${res.status}：${apiMsg}`);
-      err.httpStatus = res.status;
-      err.vendorMessage = String(apiMsg);
-      err.requestUrl = requestUrl || res.url;
-      throw err;
+      throw httpFailure(res, label, requestUrl, apiMsg);
     }
     return json;
   } catch (e) {
     if (e.httpStatus) throw e; // 上面主动抛的带码错误，直接透传
     if (!res.ok) {
-      const vendorMessage = bodyText.slice(0, 120) || e.message;
-      const err = new Error(`${label} HTTP ${res.status}：${vendorMessage}`);
-      err.httpStatus = res.status;
-      err.vendorMessage = vendorMessage;
-      err.requestUrl = requestUrl || res.url;
-      throw err;
+      throw httpFailure(res, label, requestUrl, bodyText.trim() ? bodyText.slice(0, 120) : "响应体为空");
     }
-    throw new Error(`${label}：接口返回的内容无法解析（HTTP ${res.status}）。返回开头是「${bodyText.slice(0, 60)}」——请检查设置里的接口地址与密钥。`);
+    const err = new Error(`${label}：接口返回的内容无法解析（HTTP ${res.status}）。返回开头是「${bodyText.slice(0, 60)}」——请检查设置里的接口地址和接口类型。`);
+    err.code = "unparsable";
+    err.httpStatus = res.status;
+    err.requestUrl = requestUrl || res.url;
+    throw err;
   }
 }
 
@@ -304,10 +321,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
         },
         body: JSON.stringify(abody),
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        throw new Error(errData?.error?.message || `Anthropic API HTTP ${res.status}`);
-      }
+      await rejectNonStream(res, "Anthropic 流式调用", url);
       await readSSE(res, (eventData) => {
         if (eventData.type === "content_block_delta" && eventData.delta?.text) {
           full += eventData.delta.text;
@@ -323,10 +337,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
 
     } else if (isOpenAICompatible(cfg.apiType)) {
       const res = await fetchOpenAI(cfg, systemPrompt, messages, opts, true);
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        throw new Error(errData?.error?.message || `OpenAI 兼容 API HTTP ${res.status}`);
-      }
+      await rejectNonStream(res, "OpenAI 兼容流式调用");
       await readSSE(res, (eventData) => {
         const delta = eventData.choices?.[0]?.delta?.content || "";
         if (delta) { full += delta; onChunk(delta, full); }

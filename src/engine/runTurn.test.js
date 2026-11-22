@@ -328,4 +328,63 @@ describe("runTurn", () => {
     expect(result.p.delta.pot).toBe(3);
     expect(result.mvuCommands).toHaveLength(1);
   });
+
+  it.each([
+    [404, 1],
+    [401, 1],
+    [500, 3],
+  ])("HTTP %i 主叙事调用 %i 次后放弃，整轮回滚", async (status, calls) => {
+    const error = Object.assign(new Error(`OpenAI 兼容调用 HTTP ${status}：响应体为空`), { httpStatus: status });
+    const ai = { chat: vi.fn(async () => { throw error; }) };
+    const committed = vi.fn();
+    const result = await playTurn(createPlayTurnContext(ai, committed), "探索石阶");
+    expect(result).toMatchObject({ ok: false, error });
+    expect(ai.chat).toHaveBeenCalledTimes(calls);
+    expect(committed).not.toHaveBeenCalled();
+  });
+
+  it("429 按 Retry-After 等待，没有就指数退避，再重试", async () => {
+    const limited = (retryAfterMs) => Object.assign(new Error("OpenAI 兼容调用 HTTP 429：Rate limit reached"), { httpStatus: 429, retryAfterMs });
+    const ai = { chat: vi.fn()
+      .mockRejectedValueOnce(limited(5000))
+      .mockRejectedValueOnce(limited(undefined))
+      .mockResolvedValueOnce({ text: '{"output":["石阶旁的草叶轻轻摇动。"],"delta":{}}', finishReason: "stop" }) };
+    const ctx = createPlayTurnContext(ai, vi.fn());
+    ctx.sleep = vi.fn(async () => {});
+    const result = await playTurn(ctx, "探索石阶");
+    expect(result.ok).toBe(true);
+    expect(ai.chat).toHaveBeenCalledTimes(3);
+    expect(ctx.sleep.mock.calls).toEqual([[5000], [4000]]);
+  });
+
+  it("429 要求等待超过 30 秒时不白重试", async () => {
+    const error = Object.assign(new Error("HTTP 429：Rate limit reached"), { httpStatus: 429, retryAfterMs: 60000 });
+    const ai = { chat: vi.fn(async () => { throw error; }) };
+    const ctx = createPlayTurnContext(ai, vi.fn());
+    ctx.sleep = vi.fn(async () => {});
+    await expect(playTurn(ctx, "探索石阶")).resolves.toMatchObject({ ok: false, error });
+    expect(ai.chat).toHaveBeenCalledTimes(1);
+    expect(ctx.sleep).not.toHaveBeenCalled();
+  });
+
+  it("429 重试用尽仍失败就整轮回滚", async () => {
+    const error = Object.assign(new Error("HTTP 429：Rate limit reached"), { httpStatus: 429 });
+    const ai = { chat: vi.fn(async () => { throw error; }) };
+    const committed = vi.fn();
+    const ctx = createPlayTurnContext(ai, committed);
+    ctx.sleep = vi.fn(async () => {});
+    await expect(playTurn(ctx, "探索石阶")).resolves.toMatchObject({ ok: false, error });
+    expect(ai.chat).toHaveBeenCalledTimes(3);
+    expect(committed).not.toHaveBeenCalled();
+  });
+
+  it("空内容按空响应重试", async () => {
+    const ai = createMockAi(["", '{"output":["石阶旁的草叶轻轻摇动。"],"delta":{}}']);
+    const chat = vi.spyOn(ai, "chat");
+    const committed = vi.fn();
+    const result = await playTurn(createPlayTurnContext(ai, committed), "探索石阶");
+    expect(result.ok).toBe(true);
+    expect(chat).toHaveBeenCalledTimes(2);
+    expect(committed).toHaveBeenCalledTimes(1);
+  });
 });
