@@ -6,6 +6,7 @@ export default { district: {
         x: 0, y: 0,
         desc: "半山孤立的古塔遗迹入口，塔身斑驳，藏传佛教的机关痕迹隐约可见。",
         exits: { n: "塔身檐廊", s: "白塔地宫" },
+        residentNpcName: "罗布桑",
       },
       塔身檐廊: {
         x: 0, y: -1,

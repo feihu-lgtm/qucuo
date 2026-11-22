@@ -4,6 +4,8 @@ export default { quest: {
     type: "QT_TALK",
     title: "官1·凤隐于青（信任的积累）",
     giver: "柳青鸢",
+    requiresFactionRep: { 锦官城: 0 },
+    requiresPrestige: -19,
     description: "锦官城都事柳青鸢，姓柳名青鸢，锦官城人背后叫她「柳娘子」。她的上司六年前在曲措乡失踪，生不见人死不见尸——上司是第一个让她穿男装考吏部试的人，那年她十九岁。她极美，却永远穿大一号官袍，袖口挽两圈，领口扣到最上面一颗。",
     stages: [
       {
@@ -11,28 +13,28 @@ export default { quest: {
         description: "在协助调查一桩镖师遇害案的过程中，柳青鸢亲自出面坦言案中一味安息香是她定的、是给天都镇罗琦的，且透露死者曾替她运过药材、替她挡过一次管家手下的误伤。她告知死者临死前托人送来的镖箱里不是药材，是一封指认凶手的信，她压着没发，「时机不对，让她等」。",
         playerHint: "帮柳青鸢查镖师遇害案，看她愿意透露多少。",
         completionFlag: "quest_guan1_s1",
-        onReach: { exp: 2, favorability: { "柳青鸢": 15 }, flags: ["lore_dushi_anxixiang_caigou"] },
+        onReach: { exp: 2, favorability: { "柳青鸢": 15 }, factionRep: { 锦官城: 5 }, flags: ["lore_dushi_anxixiang_caigou"] },
       },
       {
         id: "s2_second_case",
         description: "在一桩地契摹本的调查中，柳青鸢认出摹本底图是六年前她调阅、标注给上司出巡看熊曲上游水源的地图，墨点是她亲手标的，上司的腰牌后来在温泉边被人捡到过但人不在。她首次向玩家暴露「我一直想去那个温泉自己看一眼，我没去，是怕到了那里发现什么都没有」，托玩家日后去熊山温泉替她看一眼、回来告诉她他最后在什么地方。",
         playerHint: "查那张地契摹本，它跟柳青鸢六年前的旧事有关。",
         completionFlag: "quest_guan1_s2",
-        onReach: { exp: 3, favorability: { "柳青鸢": 20 }, flags: ["promise_liu_qingyuan_wenquan"] },
+        onReach: { exp: 3, favorability: { "柳青鸢": 20 }, factionRep: { 锦官城: 5 }, flags: ["promise_liu_qingyuan_wenquan"] },
       },
       {
         id: "s3_third_case",
         description: "老兵退伍汉透露六年前官邸起火那晚，柳青鸢冲进去不是为抢玉佩，是为抢上司桌上烧了一半的手记，出来时左手袖子着火自己拍灭，左手至今有疤（形似烧焦的花）——解释了她写字时左手总拢在袖中的习惯。玩家按老兵策略归还一枚寄存玉佩，柳青鸢收下后首次向玩家透露「上司把家世压在腰带上」，把玉佩戴进领口，六年来第一次收别人的东西。",
         playerHint: "从老兵口中问出六年前官邸起火那晚的真相。",
         completionFlag: "quest_guan1_s3",
-        onReach: { exp: 3, favorability: { "柳青鸢": 25, "老兵退伍汉": 20 }, items: [{ name: "旧玉佩", category: "accessory", quality: "绿", desc: "柳青鸢六年来第一次收下的东西，后续她会回赠一卷补充卷宗。" }] },
+        onReach: { exp: 3, favorability: { "柳青鸢": 25, "老兵退伍汉": 20 }, factionRep: { 锦官城: 5 }, items: [{ name: "旧玉佩", category: "accessory", quality: "绿", desc: "柳青鸢六年来第一次收下的东西，后续她会回赠一卷补充卷宗。" }] },
       },
       {
         id: "s4_fourth_case",
         description: "求药对象是柳青鸢本人——六年前官邸火灾横梁砸断腰椎的旧伤，每年入秋发作，她硬扛不肯歇息。达摩药堂师父透露一段与柳青鸢有关的旧往事——几年前有僧人在锦官城被混混讹诈，都事亲自解围：「她记错了。那年我不是因为不生气才不还口，我是看到她站在巷子口，觉得有人会替我出头。」",
         playerHint: "柳青鸢的旧伤发作了，去达摩药堂替她求药。",
         completionFlag: "quest_guan1_s4",
-        onReach: { exp: 3, favorability: { "柳青鸢": 20, "老兵退伍汉": 25, "达摩药堂师父": 20 } },
+        onReach: { exp: 3, favorability: { "柳青鸢": 20, "老兵退伍汉": 25, "达摩药堂师父": 20 }, factionRep: { 锦官城: 5 } },
       },
       {
         id: "s5_fifth_case",
@@ -46,6 +48,8 @@ export default { quest: {
         onReach: {
           exp: 3,
           favorability: { "柳青鸢": 25 },
+          factionRep: { 锦官城: 5 },
+          flags: ["guan_cases_cleared"],
           byFlag: {
             quest_guan1_s5_expose: { items: [{ name: "柳青鸢的手制咸菜", category: "misc", quality: "白", desc: "都事私宴上少见的家常手艺。" }] },
             quest_guan1_s5_report: { flags: ["lore_liu_qingyuan_archives_xueshanpai"] },
@@ -62,6 +66,7 @@ export default { quest: {
     giver: "柳青鸢",
     description: "柳青鸢第一次正式打开书房请玩家入内，墙角挂着旧青布长衫，桌上压着熊曲上游温泉的手绘地图。土司递话威胁「再不表态视为官府放弃介入」，上级也给了最后期限。她说：「我卡在公务和私情之间，卡了六年……你帮我选。不是替我做官——是替我还一笔人情。」",
     requiresQuestCompleted: "jinguancheng_guan1_xinren",
+    requiresFactionRep: { 锦官城: 0 },
     stages: [
       {
         id: "s1_choice",
@@ -76,6 +81,7 @@ export default { quest: {
         onReach: {
           exp: 5,
           favorabilitySet: { "柳青鸢": 100 },
+          factionRep: { 锦官城: 10 },
           items: [{ name: "柳青鸢的手绘地图", category: "misc", quality: "紫", desc: "熊山/贡措海探索揭示隐藏标注点，触发她回忆性独白。" }],
         },
       },
@@ -99,6 +105,7 @@ export default { quest: {
         isCgMoment: true,
         onReach: {
           exp: 5,
+          factionRep: { 锦官城: 15 },
           items: [
             { name: "柳青鸢的青布长衫", category: "armor", quality: "橙", desc: "以后不用还。" },
             { name: "都事卷宗", category: "misc", quality: "橙", desc: "土司府灰色收入明细，终局对峙的核心筹码。" },
@@ -125,6 +132,7 @@ export default { quest: {
         isCgMoment: true,
         onReach: {
           exp: 5,
+          factionRep: { 锦官城: 10 },
           items: [
             { name: "柳青鸢的中立承诺书", category: "misc", quality: "蓝", desc: "土司府对峙阶段可用。" },
             { name: "青鸢私印印信纸", category: "misc", quality: "蓝", desc: "交罗琦解锁情报通道。" },

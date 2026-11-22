@@ -6,6 +6,7 @@ import { getBuildingsForLocation } from "../../domain/data/buildings/qucuoBuildi
 import { hasInnerMap, getDistrictAnchor } from "../../domain/rules/map/innerMap.js";
 import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
 import { activeCompanion, COMPANION_LORE } from "../../domain/rules/companion/companion.js";
+import { formatCompanionBodyBlock } from "../../domain/rules/character/bodyPresets.js";
 import { getAllResidentNpcLore } from "../../domain/data/npc/residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../../domain/rules/prompt/worldbook.js";
 import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../domain/rules/npc/npcAwareness.js";
@@ -201,6 +202,7 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
     const form = companionForms[activeComp.key] || "human";
     companionLore = `\n\n【${activeComp.label}·随行伙伴在场设定】${lore.base}`;
     companionLore += form === "human" ? lore.human : lore.beast;
+    if (form === "human") companionLore += formatCompanionBodyBlock(activeComp.key, { nsfw: !!nsfwOn });
     if (form === "human" && nsfwOn && lore.nsfw) companionLore += lore.nsfw;
   }
   const roomNpcNamesForQuest = room.npcs.map(n => n.name);

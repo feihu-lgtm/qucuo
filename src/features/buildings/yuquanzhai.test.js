@@ -79,7 +79,7 @@ describe("玉泉寨", () => {
     const flags2 = apply(second.changes.flags, flags1);
     // 两坛见底才撤柜。
     expect(names(factionShopOffer("玉泉货栈", rep(100), "outer", flags2))).not.toContain("百年雪水青稞陈酿");
-    expect(buyFactionShopItem({ ...shop, flags: flags2 }, "玉泉货栈", "百年雪水青稞陈酿", 3).logs[0].text).toContain("已经卖给你了");
+    expect(buyFactionShopItem({ ...shop, flags: flags2 }, "玉泉货栈", "百年雪水青稞陈酿", 3).logs[0].text).toContain("已经卖完了");
     // Même après un passage de flags dans le Set-dedup de stageRewardPatches,
     // les deux marques d'achat survivent (suffixe #n) : pas de 3e caddie.
     const deduped = [...new Set([...flags2, "quest_yuquanzhai5_spare"])];

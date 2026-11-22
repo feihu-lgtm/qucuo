@@ -110,6 +110,12 @@ const items = {
 "察世轻行履": { name: "察世轻行履", category: "armor", quality: "蓝", defMul: 1.25, sixDim: { 身法: 2 }, desc: "千层底草麻混编的赶路鞋，鞋底暗垫牛皮，走一天山路脚底不起泡。" },
 "八袋青竹护心甲": { name: "八袋青竹护心甲", category: "armor", quality: "紫", defMul: 1.5, desc: "表面看只是件半旧的青布坎肩，内里密编了桐油炙过的细竹片与熟牛筋，轻若无物，却能硬扛血刀劈斩。" },
 "熟铜绑腿": { name: "熟铜绑腿", category: "armor", quality: "蓝", defMul: 1.25, sixDim: { 身法: 1 }, desc: "胡三爷私藏的一副熟铜片绑腿，他断腿前最后一次护粮穿的就是这副。「老子用不上了，你腿还在。」" },
+// ── 三星派（广汉古蜀青铜神树墟）──
+"粗布护心藤甲": { name: "粗布护心藤甲", category: "armor", quality: "绿", defMul: 1.15, desc: "墟内弟子日常穿的麻藤软甲，透风耐潮，胸口嵌了一片打薄的熟铜片。" },
+"墨麻轻行衣": { name: "墨麻轻行衣", category: "armor", quality: "蓝", defMul: 1.2, sixDim: { 身法: 2 }, desc: "以古蜀黑麻染浆制成的劲装，衣摆利落不挂树枝，穿它走夜路连雾气都沾不上身。" },
+"玄麻祭天袍": { name: "玄麻祭天袍", category: "armor", quality: "紫", defMul: 1.4, desc: "百年古麻里暗织细密青铜丝线，看着像件朴素旧袍，刀剑砍上去却只留一道白印。" },
+"火浣石棉围裙": { name: "火浣石棉围裙", category: "armor", quality: "蓝", defMul: 1.25, desc: "樊枯在炉边系了几十年的围裙，久浸药汁与矿灰，极耐火毒与利刃。" },
+"青麻听风衫": { name: "青麻听风衫", category: "armor", quality: "绿", defMul: 1.1, sixDim: { 身法: 1 }, desc: "姜泠在墟外走动穿的青麻常服，耐露水，轻便耐磨。" },
 "驼绒防风氅": { name:"驼绒防风氅", category:"armor", quality:"绿", defMul: 1.1, tags:["护甲","西域","天龙教"], desc:"双层驼绒织的厚氅，领口缝一圈毛。西风隘的风能钻进骨头缝，披着它走夜路的人才不觉得是被风推着走。" },
 "素白僧衣": { name:"素白僧衣", category:"armor", quality:"绿", defMul: 1.0, sixDim:{ 气运: 1 }, tags:["护甲","僧衣","白衣旧部"], desc:"天王旧部的素白僧衣，洗得发旧但干净。断崖石室里那个老人身上就是这件——白衣不是孝，是旧部给天王留的体面。" },
 "青灰斗篷": { name:"青灰斗篷", category:"armor", quality:"绿", defMul: 1.05, tags:["护甲","医者"], desc:"贺兰昭常披的青灰斗篷，下摆常年沾着药渍。西谷的人说远远看见这抹青灰翻过山梁，就知道谁家又有人病了。" },
