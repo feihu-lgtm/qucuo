@@ -38,7 +38,7 @@
     "domain/tavernSim/simEngine.js": 417,
     "infra/apiConfig.js": 783,
     "tests/docsTree.test.js": 449,
-    "ui/panels/CenterPanel.jsx": 538,
+    "ui/panels/CenterPanel.jsx": 542,
     "ui/screens/CardImportScreen.jsx": 1522,
     "ui/screens/DuelScreen.jsx": 756,
     "ui/screens/SettingsPanel.jsx": 1061,
@@ -51,5 +51,5 @@
     "ui/screens/quickBattle/QuickBattleScreen.jsx": 774,
     "ui/screens/tavernSim/TavernSimScreen.jsx": 502
   },
-  "mainJsGzipBytes": 687717
+  "mainJsGzipBytes": 688041
 }
