@@ -61,6 +61,14 @@ describe("合稿补建的内层房间", () => {
     expect(isInnerExitUnlocked(lock, { varTree: rep("唐门", 14) })).toBe(false);
   });
 
+  it("卷宗库房：锦官城声誉 ≥40 或接了锦官支3", () => {
+    const lock = getInnerRoom("锦官城", "刑名东厢·卷宗库房").unlockCondition;
+    expect(isInnerExitUnlocked(lock, { varTree: rep("锦官城", 39) })).toBe(false);
+    expect(isInnerExitUnlocked(lock, { varTree: rep("锦官城", 40) })).toBe(true);
+    expect(isInnerExitUnlocked(lock, { questProgress: active("jinguancheng_zhi3_hongmotuming") })).toBe(true);
+    expect(Object.values(visibleInnerExits("锦官城", "都事府", {}))).not.toContain("刑名东厢·卷宗库房");
+  });
+
   it("锁着的房间不出现在出口里，解锁后出现", () => {
     expect(Object.values(visibleInnerExits("锦官城", "都事府", {}))).not.toContain("府衙花厅·青鸢书房");
     expect(Object.values(visibleInnerExits("锦官城", "都事府", { varTree: rep("锦官城", 15) }))).toContain("府衙花厅·青鸢书房");

@@ -148,8 +148,9 @@ export function isChoiceOpen(choice, flags = []) {
 // requiresFlag: string[] 全部持有；requiresFlagAny: string[] 至少持有一面（如花5 铁证或和解后盾二选一）；
 // requiresFactionRep: { [势力]: number }；
 // requiresFavor: { [人物]: number }（角色.<人物>.好感度，缺省 10）；
-// blockedByFlags: string[] 持有任意一个即不可选。
-export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}) {
+// blockedByFlags: string[] 持有任意一个即不可选；
+// requiresItems: string[] 背包里全部要有（同名写几次就要几件；传 state.inv 才卡）。
+export function isQuestChoiceOpen(choice, { questProgress, flags, varTree, inv } = {}) {
   const isDone = (qid) => questProgress?.[qid]?.status === "completed";
   if (choice.requiresQuestCompleted) {
     const need = Array.isArray(choice.requiresQuestCompleted) ? choice.requiresQuestCompleted : [choice.requiresQuestCompleted];
@@ -162,6 +163,11 @@ export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}
   if (Object.entries(choice.requiresFactionRep || {}).some(([faction, min]) => factionRepOf(varTree, faction) < min)) return false;
   if (!isChoiceOpen(choice, flags)) return false;
   if (Object.entries(choice.requiresFavor || {}).some(([npc, min]) => Number(varTree?.角色?.[npc]?.好感度 ?? 10) < min)) return false;
+  if (inv && choice.requiresItems?.length) {
+    const need = {};
+    for (const name of choice.requiresItems) need[name] = (need[name] || 0) + 1;
+    if (Object.entries(need).some(([name, n]) => inv.filter((item) => item?.name === name).length < n)) return false;
+  }
   return true;
 }
 

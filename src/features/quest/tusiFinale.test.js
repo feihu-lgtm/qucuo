@@ -88,6 +88,7 @@ describe("府5·斗地主", () => {
 
   it("血刀部敌援：青城剑约钉住不来，峨眉倾巢压到档位 2，峨眉/五仙/丐帮斥候降到 3", () => {
     expect(open("xuedao", [F.qingchengPledge])).toContain("quest_ts5_xuedao_held");
+    for (const f of [F.qingchengAlly, F.qingchengFull]) expect(open("xuedao", [f]), f).toContain("quest_ts5_xuedao_held");
     expect(open("xuedao", [F.emeiFull])).toContain("quest_ts5_xuedao_suppressed");
     for (const f of [F.emeiAlly, F.wuxianAlly, F.gaibangScouts]) expect(open("xuedao", [f]), f).toContain("quest_ts5_xuedao_weak");
     for (const f of [F.wuxianPoisonTusi, F.tangmenAlly, F.baihuaAlly]) expect(open("xuedao", [f]), f).toEqual(["quest_ts5_xuedao"]);
