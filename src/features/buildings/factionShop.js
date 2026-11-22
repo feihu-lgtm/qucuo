@@ -14,6 +14,7 @@ import { selectEffectiveStats } from "../stats/logic.js";
 // deepCoef 可再压一层深交折扣：rep 到档直接用它的价（如天龙军需坊 rep100 → 0.7）。
 // 额外两个可选门槛：closedBelowRep 声誉未到的铺面直接闭门（如秘珍坊）；coldItems 冷淡（-19~-1）只摆这几味清水货；
 // hostileItems 则把交恶档按名字限货（不写就走 hostileQualities 品阶过滤）。
+// limit: n 的货每局限卖 n 件。
 const FACTION_SHOPS = {
   唐门暗器: {
     faction: "唐门", idPrefix: "tangmen_purchase",
@@ -59,6 +60,16 @@ const FACTION_SHOPS = {
     hostileClosed: { vault: "秘珍坊的暗门紧闭，廊下灯笼全灭。" },
     hostileQualities: [],
   },
+  // 喇嘛庙达摩药堂（合稿「喇嘛庙·六、3」）：交恶（-59~-20）加价两成、只留前 3 味保命药，≤-60 拒售。
+  达磨药堂: {
+    faction: "喇嘛庙", idPrefix: "lama_purchase",
+    outlets: { medicine_lama: "outer" },
+    nowhere: "须到喇嘛庙达摩药堂才能买藏药。",
+    banned: "山门护法僧横杵拦路：「施主与喇嘛庙结怨太深，请下山。」",
+    hostileClosed: {},
+    hostileQualities: [],
+    hostileItems: ["高原酥油膏", "藏青稞健脾散", "藏红花活血丸"],
+  },
   // 玉泉茶马货栈（玉泉寨）：对外的茶马铺面，交恶至敌对（-59~-20）只摆白品日用并加价，
   // 冷淡（-19~-1）只剩炒面粪饼；深交折扣走 factionRepCoef 通用档（rep80 → 0.75，近似合稿 140→0.7）。
   玉泉货栈: {
@@ -97,6 +108,16 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileItems: ["雪山姜枣干粮", "寒岭冻伤膏"],
     coldItems: ["雪山姜枣干粮", "寒岭冻伤膏", "雪松木剑"],
+  },
+  // 锦官兵备（锦官城·都事府兵备库）：官仓明码标价认册不认人；
+  // 交恶只摆白绿并加价两成，特派巡查的制式装备与御赐銮铃不外卖。
+  锦官兵备: {
+    faction: "锦官城", idPrefix: "guan_purchase",
+    outlets: { sectshop_guan: "vault" },
+    nowhere: "须到锦官城城东营房的都事府兵备库才能买官仓的货。",
+    banned: "班头侯敢把册子一合：「库里的东西，不卖给你。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿"],
   },
   三星秘藏: {
     faction: "三星派", idPrefix: "sanxing_purchase",
@@ -143,7 +164,18 @@ export const factionShopOutlet = (shopKey, buildingId) => FACTION_SHOPS[shopKey]
 
 const boughtFlag = (shopKey, name) => `shop_bought:${shopKey}:${name}`;
 // limitOnce: true 按货名记已购；字符串则整组货共用一条标记（二选一秘货组）。
-const limitKey = (item) => (item.limitOnce === true ? item.name : item.limitOnce);
+const limitKey = (item) => (typeof item.limitOnce === "string" ? item.limitOnce : item.name);
+const stockLimit = (item) => item.limit ?? (item.limitOnce ? 1 : Infinity);
+const boughtCount = (flags, shopKey, item) => {
+  const base = boughtFlag(shopKey, limitKey(item));
+  return flags.filter((flag) => flag === base || flag.startsWith(`${base}#`)).length;
+};
+const soldOut = (flags, shopKey, item) => boughtCount(flags, shopKey, item) >= stockLimit(item);
+const nextBoughtFlag = (flags, shopKey, item) => {
+  const count = boughtCount(flags, shopKey, item);
+  return count ? `${boughtFlag(shopKey, limitKey(item))}#${count + 1}` : boughtFlag(shopKey, limitKey(item));
+};
+const hostileStock = (shop, item) => shop.hostileItems ? shop.hostileItems.includes(item.name) : shop.hostileQualities.includes(item.quality);
 
 export function factionShopOffer(shopKey, varTree, outlet, flags = []) {
   const shop = FACTION_SHOPS[shopKey];
@@ -157,14 +189,14 @@ export function factionShopOffer(shopKey, varTree, outlet, flags = []) {
   const cold = !hostile && rep < 0 && shop.coldItems;
   const items = buildShopInventory(shopKey).items
     .filter((item) => (!item.member || flags.includes(SECT_MEMBER_FLAGS[shop.faction]))
-      && (!item.limitOnce || !flags.includes(boughtFlag(shopKey, limitKey(item)))))
+      && !soldOut(flags, shopKey, item))
     .map((item) => ({
       ...(makeNamedItem(item.name) ?? item),
       ...(item.minRep == null ? {} : { minRep: item.minRep }),
       ...(item.limitOnce ? { limitOnce: item.limitOnce } : {}),
+      ...(item.limit ? { limit: item.limit } : {}),
     }))
-    .filter((item) => rep >= (item.minRep ?? -Infinity)
-      && (!hostile || (shop.hostileItems ? shop.hostileItems.includes(item.name) : shop.hostileQualities.includes(item.quality)))
+    .filter((item) => rep >= (item.minRep ?? -Infinity) && (!hostile || hostileStock(shop, item))
       && (!cold || cold.includes(item.name)));
   const coef = hostile ? 1.2
     : (shop.deepCoef && rep >= shop.deepCoef.rep ? shop.deepCoef.coef : factionRepCoef(rep));
@@ -183,7 +215,8 @@ export function buyFactionShopItem(state, shopKey, itemName, now = Date.now()) {
   const item = offer.items.find((entry) => entry.name === itemName);
   if (!item) {
     const hidden = buildShopInventory(shopKey).items.find((entry) => entry.name === itemName);
-    if (hidden?.limitOnce && (state.flags || []).includes(boughtFlag(shopKey, limitKey(hidden)))) {
+    if (hidden && soldOut(state.flags || [], shopKey, hidden)) {
+      if (hidden.limit) return message(`「${hidden.name}」限量${hidden.limit}件，已经卖完了。`);
       return message(hidden.limitOnce === true ? `「${hidden.name}」只此一件，已经卖给你了。` : `「${hidden.name}」这条线上的秘货只出一件，你已经挑过了。`);
     }
     if (hidden?.member && !(state.flags || []).includes(SECT_MEMBER_FLAGS[shop.faction])) return message(`「${hidden.name}」只授${shop.faction}本门弟子。`);
@@ -204,7 +237,7 @@ export function buyFactionShopItem(state, shopKey, itemName, now = Date.now()) {
         while (inv.some((entry) => entry?.id === `${shop.idPrefix}_${now}_${index}`)) index++;
         return [...inv, { ...item, buyPrice: price, id: `${shop.idPrefix}_${now}_${index}`, equipped: false }];
       },
-      ...(item.limitOnce ? { flags: (flags = []) => [...flags, boughtFlag(shopKey, limitKey(item))] } : {}),
+      ...(item.limitOnce || item.limit ? { flags: (flags = []) => [...flags, nextBoughtFlag(flags, shopKey, item)] } : {}),
     },
     logs: [{ t: "item", text: `购得「${item.name}」，花费${price}两。` }],
     note: { text: `购得「${item.name}」，花${price}两。`, source: NOTE_SOURCE.DUMB },
