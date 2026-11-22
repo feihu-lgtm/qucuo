@@ -8,7 +8,8 @@ import { tryInnerMove } from "../../domain/rules/map/innerMove.js";
 import { buildingClosedReason } from "../../domain/rules/economy/strongholdGate.js";
 import { skillUnlockStatus } from "../../domain/rules/economy/skillUnlock.js";
 import { isQuestChoiceOpen, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
-import { resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
+import { resolveStageRewards, stageRewardPatches } from "../../domain/rules/quests/questRewards.js";
+import { applyPatches } from "../../domain/rules/state/applyPatches.js";
 import { playLocalQuestStage } from "../quest/logic.js";
 import { buySkill } from "./skills.js";
 
@@ -83,14 +84,12 @@ describe("鱼定土司府·终局补完", () => {
     for (const name of ["点钢乌木镇边矛", "巡边行走金印"]) expect(makeNamedItem(name)?.quality, name).toBe("紫");
   });
 
-  it("pays the 合稿 prestige totals across the ambush and dawn stages without exceeding the ±15 cap per write", () => {
-    const [, ambush, dawn] = q4().stages;
-    for (const [flag, total] of [["quest_ts4_truth", 20], ["quest_ts4_regent", 20], ["quest_ts4_purge", -25]]) {
-      const parts = [resolveStageRewards(ambush, [flag]).reputation, resolveStageRewards(dawn, [flag]).reputation];
-      expect(parts.every((v) => Math.abs(v) <= 15), flag).toBe(true);
-      expect(parts[0] + parts[1], flag).toBe(total);
+  it("lands the 府4 prestige at the 合稿 value in one write, past the AI ±15 cap", () => {
+    const ambush = q4().stages[1];
+    for (const [flag, delta] of [["quest_ts4_truth", 20], ["quest_ts4_regent", 20], ["quest_ts4_purge", -25]]) {
+      const { state } = applyPatches({ varTree: { 世界: { 威望: 10 } }, flags: [], inv: [], char: { money: 0 } }, stageRewardPatches(resolveStageRewards(ambush, [flag])));
+      expect(state.varTree.世界.威望, flag).toBe(10 + delta);
     }
-    expect(dawn.requireLocation).toMatchObject({ district: "鱼定土司", inner: "府门" });
   });
 
   it("refuses to sell manor skills by typed command once the manor is closed to the player", () => {
