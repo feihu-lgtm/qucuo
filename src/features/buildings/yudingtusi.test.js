@@ -48,7 +48,7 @@ describe("鱼定土司府", () => {
     const rewardNames = rewardItems.map((text) => text.slice(8, text.indexOf('","')));
     expect(shopItems).toHaveLength(10);
     for (const name of [...shopItems, ...carry, ...rewardNames]) expect(makeNamedItem(name), name).toBeTruthy();
-    expect(tusiQuests()).toHaveLength(6);
+    expect(tusiQuests()).toHaveLength(7);
   });
 
   it("prices and gates the 军需司 by 土司府 reputation, top tier at 100", () => {
@@ -76,7 +76,7 @@ describe("鱼定土司府", () => {
     expect(buySkill(state(14), skill("镇边矛势")).changes).toBeUndefined();
     expect(buySkill(state(15), skill("镇边矛势")).changes?.skills).toBeTruthy();
     expect(buySkill(state(79), skill("印山镇岳掌")).changes).toBeUndefined();
-    expect(buySkill(state(80), skill("印山镇岳掌")).changes?.skills).toBeTruthy();
+    expect(buySkill(state(80, { varTree: { ...rep(80), 角色: { 桑杰朵杰: { 好感度: 45 } } } }), skill("印山镇岳掌")).changes?.skills).toBeTruthy();
   });
 
   it("raises 土司府 rep once a day for tribute silver handed to 陆福生, foes pay half", () => {
