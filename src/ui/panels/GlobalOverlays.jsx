@@ -21,7 +21,7 @@ import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { listCharacters } from "../../domain/rules/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { getPipelineEntries, getTraceLog } from "../../engine/ports/actionTrace.js";
-import { activeCompanion, isCompanionUnlockedByName } from "../../domain/rules/companion/companion.js";
+import { duelAlly, isCompanionUnlockedByName } from "../../domain/rules/companion/companion.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import NpcActionMenu from "../components/NpcActionMenu.jsx";
 import ItemActionMenu from "../components/ItemActionMenu.jsx";
@@ -214,14 +214,14 @@ export default function GlobalOverlays({
     }},
     { show: duelingNpc, render: () => (
       <ErrorBoundary label="切磋界面" onReset={resetDuel}>
-      {activeCompanion(companionState)?.data ? (
-        // 有队友出战：2v2团战（玩家+队友 vs 当前对手）。
+      {duelAlly(companionState, duelingNpc) ? (
+        // 有队友出战：2v2团战（玩家+队友 vs 当前对手）；对手就是这位队友时走下面的 1v1。
         // 【改成读通用出战位】此前写死 companionState.snowLeopard.data，
         // 明日香入队后带的是她、这里却仍取雪豹（雪豹此时 active=false、data 可能还在），
         // 结果会出现"带着明日香却是雪豹上场"。单槽互斥，activeCompanion 保证只有一个。
         <TeamDuelScreen
           enemies={[duelingNpc]}
-          leopardData={activeCompanion(companionState).data}
+          leopardData={duelAlly(companionState, duelingNpc).data}
           playerChar={{ ...char, special: effectiveSpecialNow }}
           pendingCombatBuff={char.pendingCombatBuff}
           playerInv={inv}

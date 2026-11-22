@@ -353,6 +353,14 @@ export function activeCompanion(companionState) {
   return { key: k, label: meta.label, beast: meta.beast, ...companionState[k] };
 }
 
+// 切磋时并肩上场的队友：对手正是出战伙伴本人（偷它被抓、跟它切磋）时打 1v1，不拉它进 2v2。
+export function duelAlly(companionState, foe) {
+  const comp = activeCompanion(companionState);
+  if (!comp?.data) return null;
+  if (foe && (foe.name === comp.label || foe.name === comp.data.name || (foe.id && foe.id === comp.data.id))) return null;
+  return comp;
+}
+
 // 已解锁的候选（供 UI 列出可切换的队友）。返回 {key,label,beast}，形状同 COMPANION_SLOTS。
 export function unlockedCompanions(companionState) {
   return allCompanionKeys(companionState)

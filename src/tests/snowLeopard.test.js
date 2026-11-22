@@ -198,3 +198,30 @@ describe("收复雪豹", () => {
     expect(result.p.delta.flags_add).toEqual(["snow_spirit_meat"]);
   });
 });
+
+describe("和出战伙伴本人打是 1v1", () => {
+  it("duelAlly 对手是出战伙伴时不拉它并肩，对别人照旧 2v2", async () => {
+    const { duelAlly, unlockSnowLeopard } = await import("../domain/rules/companion/companion.js");
+    const companionState = unlockSnowLeopard({});
+    const data = companionState.snowLeopard.data;
+    expect(duelAlly(companionState, { name: "拦路山贼" })?.key).toBe("snowLeopard");
+    expect(duelAlly(companionState, { name: "雪豹" })).toBeNull();
+    expect(duelAlly(companionState, { ...data, brief: "x" })).toBeNull();
+    expect(duelAlly({}, { name: "拦路山贼" })).toBeNull();
+  });
+
+  it("赢了出战伙伴本人不算并肩破敌", async () => {
+    const { unlockSnowLeopard } = await import("../domain/rules/companion/companion.js");
+    const state = { ...initial(), companionState: unlockSnowLeopard({}) };
+    const self = settleNpcDuel(state, { ...state.companionState.snowLeopard.data }, { outcome: "win", rng: () => 1 });
+    expect((self.logs || []).some((l) => l.text.includes("并肩破敌"))).toBe(false);
+    const other = settleNpcDuel(state, { name: "拦路山贼", levelCap: 1 }, { outcome: "win", rng: () => 1 });
+    expect((other.logs || []).some((l) => l.text.includes("并肩破敌"))).toBe(true);
+  });
+
+  it("切磋界面按 duelAlly 选 2v2 还是 1v1", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(new URL("../ui/panels/GlobalOverlays.jsx", import.meta.url), "utf8");
+    expect(src).toContain("duelAlly(companionState, duelingNpc) ? (");
+  });
+});
