@@ -148,7 +148,6 @@ export function factionShopOffer(shopKey, varTree, outlet, flags = []) {
   const cold = !hostile && rep < 0 && shop.coldItems;
   const items = buildShopInventory(shopKey).items
     .filter((item) => (!item.member || flags.includes(SECT_MEMBER_FLAGS[shop.faction]))
-<<<<<<< HEAD
       && (!item.limitOnce || !boughtOut(flags, shopKey, item)))
     .map((item) => ({
       ...(makeNamedItem(item.name) ?? item),
