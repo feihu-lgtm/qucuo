@@ -18,6 +18,7 @@
 
 import { add, set } from "../state/applyWrite.js";
 import { merge } from "../state/applyPatches.js";
+import { makeNamedItem } from "../../data/items/catalog.js";
 
 function mergeRewardParts(...parts) {
   const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, flags: [] };
@@ -54,7 +55,10 @@ export function stageRewardPatches(rewards, now = Date.now()) {
   if (rewards.items?.length) {
     patches.push(merge("inv", (prev) => [
       ...prev,
-      ...rewards.items.map((it, i) => ({ ...it, id: it.id || `quest_reward_${now}_${i}`, equipped: false })),
+      ...rewards.items.map((it, i) => ({
+        ...(it.fromCatalog ? makeNamedItem(it.name) : it),
+        id: it.id || `quest_reward_${now}_${i}`, equipped: false,
+      })),
     ]));
   }
   if (rewards.money) {

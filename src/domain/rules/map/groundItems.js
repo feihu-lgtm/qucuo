@@ -27,6 +27,9 @@ const GROUND_ITEMS_DISTRICT_LEGACY = {
     { name: "檐角铜风铃", category: "misc", quality: "白", desc: "阶前落着一枚檐角坠下的铜风铃，舌歪了，摇起来闷闷的，鎏金的穗子还缠着半截红绳。" },
     { name: "磨亮的铜钥匙", category: "misc", quality: "白", desc: "门槛石缝里卡着一把磨得发亮的铜钥匙，齿磨秃了大半，不知开的是哪扇早已换锁的门。" },
   ],
+  "鱼定土司·护卫厅": [
+    { id: "tangmen_evidence_poison_arrow", name: "土司府制式毒箭残簇", category: "misc", quality: "白", desc: "卸下的旧靶背面嵌着一枚折断的三棱箭簇。尾部是巡捕营的制式刻痕，槽里还留着一点乌青。" },
+  ],
   "喇嘛庙·山门": [
     { name: "转经廊铜把手", category: "misc", quality: "绿", desc: "转经廊尽头一只铜把手被无数手掌磨得锃亮，底座松了斜倚在墙边，想是换下来待修的旧件。" },
     { name: "一把干柏枝", category: "misc", quality: "白", desc: "供桌脚旁散着一把干柏枝，叶已脆得一碰就碎，是煨桑剩下没烧尽的，还留着一点苦香。" },

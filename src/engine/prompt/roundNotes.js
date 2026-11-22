@@ -23,7 +23,7 @@ export function buildQuestStageNote({ questProgress, flags, char, room, inv, pen
   const describeFlag = (f) => Array.isArray(f) ? f.map(x => `"${x}"`).join("/或") + "（按玩家实际选择的分支，只加其中一个）" : `"${f}"`;
   const noteLines = [];
   for (const quest of QUCUO_QUESTS) {
-    if (!quest.stages?.length || quest.id === "snow_leopard_quest") continue;
+    if (!quest.stages?.length || quest.localOnly || quest.id === "snow_leopard_quest") continue;
     const prog = questProgress[quest.id];
     if (prog?.status === "locked_by_exclusive" || prog?.status === "completed") continue;
     if (!isQuestGateOpen(quest, questProgress, flags)) continue;

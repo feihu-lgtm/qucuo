@@ -3,6 +3,8 @@ import { GROUND_ITEMS_INNER } from "../map/groundItems.js";
 import { makeItemSmart } from "../../data/items/catalog.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
+const itemKey = (item) => typeof item === "string" ? item : item.name;
+const matches = (item, spec) => spec.id ? item?.id === spec.id : itemKey(item) === spec.name;
 
 export const innerGroundItemsRule = {
   id: "map.inner-ground-items",
@@ -13,22 +15,17 @@ export const innerGroundItemsRule = {
     const specs = innerKey ? GROUND_ITEMS_INNER[innerKey] || [] : [];
     if (!specs.length) return null;
 
-    const haveGround = new Set((state.room.items || [])
-      .map((item) => (typeof item === "string" ? item : item.name)));
-    const haveInventory = new Set((state.inv || [])
-      .map((item) => (typeof item === "string" ? item : item.name)));
     const items = specs
-      .filter((spec) => !haveGround.has(spec.name) && !haveInventory.has(spec.name))
-      .map((spec) => makeGameItem(spec));
+      .filter((spec) => !(state.room.items || []).some((item) => matches(item, spec))
+        && !(state.inv || []).some((item) => matches(item, spec)))
+      .map((spec) => ({ spec, item: spec.id ? { ...makeGameItem(spec), id: spec.id } : makeGameItem(spec) }));
     if (!items.length) return null;
 
     return {
       changes: {
         room: (previous) => {
           const currentItems = previous.items || [];
-          const names = new Set(currentItems
-            .map((item) => (typeof item === "string" ? item : item.name)));
-          const toAdd = items.filter((item) => !names.has(item.name));
+          const toAdd = items.filter(({ spec }) => !currentItems.some((entry) => matches(entry, spec))).map(({ item }) => item);
           return toAdd.length ? { ...previous, items: [...currentItems, ...toAdd] } : previous;
         },
       },

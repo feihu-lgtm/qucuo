@@ -8,6 +8,7 @@
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
+import { TANGMEN_SHOP } from "../../features/buildings/tangmenShop.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import TradingScreen from "../screens/TradingScreen.jsx";
 import InnScreen from "../screens/buildings/InnScreen.jsx";
@@ -57,7 +58,9 @@ function shopScreen(c) {
       headerContent={c.building.craft ? c.tabs("mobile-trading-tabs-header") : null}
       playerWit={c.effectiveSpecialNow?.智谋 ?? 5}
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onInspect={c.inspectItem}
-      onBuy={(item) => c.runCommand("shopBuy", () => { if (isKarma) { if ((c.dao.karma||0)<item.buyPrice) return; c.captureUndo(); c.setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((c.char.money||0)<item.buyPrice) return; c.captureUndo(); c.setChar(ch=>({...ch,money:ch.money-item.buyPrice})); if (shopData.karmaLoss) c.setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } c.setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); c.addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); c.jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); })}
+      onBuy={c.building.shopKey === TANGMEN_SHOP
+        ? (item) => c.handleBuyTangmenItem(item.name)
+        : (item) => c.runCommand("shopBuy", () => { if (isKarma) { if ((c.dao.karma||0)<item.buyPrice) return; c.captureUndo(); c.setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((c.char.money||0)<item.buyPrice) return; c.captureUndo(); c.setChar(ch=>({...ch,money:ch.money-item.buyPrice})); if (shopData.karmaLoss) c.setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } c.setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); c.addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); c.jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); })}
       onSell={(item) => c.runCommand("shopSell", () => { if (item.equipped||isKarma) return; c.captureUndo(); c.setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id)); c.setChar(ch=>({...ch,money:(ch.money||0)+item.sellPrice})); c.addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); c.jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
     />
   );

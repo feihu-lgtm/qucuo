@@ -8,6 +8,10 @@ import { getQuestScript } from "../domain/data/quests/questScripts.js";
 import { bar } from "../utils/mudHelpers.js";
 import { getPresentNpcs } from "../domain/rules/state/fields.js";
 import { giftSilver } from "../features/npc/logic.js";
+import { buyTangmenItem } from "../features/buildings/tangmenShop.js";
+import { pickGroundItem } from "../features/items/logic.js";
+import { autoFightQuestChoice } from "../features/quest/combatChoice.js";
+import { playLocalQuestStage } from "../features/quest/logic.js";
 
 const ROOM_LOOK_COMMANDS = new Set(["看", "look", "l", "看看", "环顾", "环顾四周", "环视", "环视四周", "查看四周"]);
 
@@ -54,6 +58,27 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
   const normalized = command.trim().toLowerCase();
   if (!normalized || state.isTalk) return null;
 
+  if (/^拾取\s+土司府制式毒箭残簇$/.test(normalized)) {
+    const evidence = state.room?.items?.find((item) => item?.id === "tangmen_evidence_poison_arrow");
+    const result = evidence
+      ? pickGroundItem(state, evidence)
+      : { logs: [{ t: "sys", text: "此处没有毒箭残簇。" }] };
+    return { kind: "result", localKind: "pickGroundItem", result };
+  }
+  const buyWeapon = /^买暗器(?:\s+(.+))?$/.exec(command.trim());
+  if (buyWeapon) {
+    return { kind: "result", localKind: "buyTangmenItem", result: buyTangmenItem(state, buyWeapon[1]?.trim()) };
+  }
+  const questMatch = /^推进任务\s+(\S+)(?:\s+(.+))?$/.exec(command.trim());
+  if (questMatch) {
+    const quest = QUCUO_QUESTS.find((entry) => entry.localOnly && (entry.id === questMatch[1] || entry.title === questMatch[1]));
+    if (quest) {
+      const label = questMatch[2]?.trim();
+      const fight = surface === "cli" && autoFightQuestChoice(state, quest, label);
+      return { kind: "result", localKind: "playLocalQuestStage", result: fight || playLocalQuestStage(state, quest, label) };
+    }
+  }
+
   const gift = /^(?:给|送(?:给)?)\s*(.+?)\s+(\d+)\s*(?:元|两(?:银子|银两)?)$/
     .exec(command.trim()) ?? /^给([^\d]+?)(\d+)\s*(?:元|两(?:银子|银两)?)$/.exec(command.trim());
   if (gift) {
@@ -81,6 +106,8 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
       { t: "sys", text: "  wear/wield <物品>  穿/持" },
       { t: "sys", text: "  eat/drink <物品>  吃喝" },
       { t: "sys", text: "  用/服 <丹药>  服用消耗品（回血等，探索态即时结算）" },
+      { t: "sys", text: "  买暗器 [货名]  在唐门暗器铺看货或购买" },
+      { t: "sys", text: `  推进任务 唐1·暗巷来客 [暗查取证${surface === "cli" ? "/硬闯截货" : ""}]  推进唐门任务` },
       { t: "sys", text: "  practice <武功>  运功修炼" },
       { t: "sys", text: "  ◈行动/◎对话/◆私聊旁白 三态切换：行动消耗回合，对话与私聊不消耗回合" },
       { t: "sys", text: "  对话模式下只能和房间里的人说话，不能移动或战斗" },

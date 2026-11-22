@@ -3,11 +3,13 @@ import { filterSnowModelFlags } from "../../domain/rules/quests/snowLeopardQuest
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { set, updateField } from "../../domain/rules/state/applyWrite.js";
+import { isLocalQuestFlag } from "../../domain/rules/quests/localStages.js";
 
 export function commitModelFlags({ p, room, innerRoomName, questProgress, pendingQuestBranch }) {
   if (p.delta?.flags_add) {
     const npcs = (room?.npcs || []).filter((npc) => isNpcVisibleInInnerRoom(room?.name, innerRoomName, npc));
-    p.delta.flags_add = filterSnowModelFlags(p.delta.flags_add, { room: { ...room, npcs }, innerRoomName, questProgress });
+    p.delta.flags_add = filterSnowModelFlags(p.delta.flags_add, { room: { ...room, npcs }, innerRoomName, questProgress })
+      .filter((flag) => !isLocalQuestFlag(flag));
   }
   if (!p.delta?.flags_add?.length) return null;
 

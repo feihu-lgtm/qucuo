@@ -32,8 +32,15 @@ import {
 } from "../../features/bank/logic.js";
 import { joinSect } from "../../features/sect/logic.js";
 import { auctionWin } from "../../features/auction/logic.js";
+import { buyTangmenItem } from "../../features/buildings/tangmenShop.js";
 
 export function useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo }) {
+  const handleBuyTangmenItem = useCallback((name) => applyResult(featureCtxRef.current, () => {
+    const result = buyTangmenItem(gameStore.getState(), name);
+    if (result.changes) captureUndo();
+    applyResult(featureCtxRef.current, result);
+  }, { feature: "building.buyTangmenItem" }), [captureUndo, featureCtxRef]);
+
   const handleBuildingInn = useCallback((cost, roomType) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     const result = restAtInn(gameStore.getState(), {
@@ -198,6 +205,7 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
   }, { feature: "building.auctionWin" }), [captureUndo]);
 
   return {
+    handleBuyTangmenItem,
     handleBuildingInn,
     handleBuildingHeal,
     handleBuySkill,

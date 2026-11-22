@@ -150,6 +150,7 @@ export const QUCUO_MAP = {
     x: 3, y: 1,
     desc: "锦官城南门外竹径尽头。漫山翠竹深处矗立着青砖铁瓦的森严堡垒，护城暗渠水声幽咽，檐角铜铃无风自响，是唐门的总舵，步步皆藏机括杀机。",
     exits: { n: "锦官城" },
+    unlockCondition: { type: "flag", flag: "tangmen_invited" },
   },
 };
 
@@ -236,4 +237,3 @@ export function parseDirectionJudgeResponse(rawText) {
   if (!t || t === "none") return null;
   return VALID_DIR_CODES.includes(t) ? t : null;
 }
-

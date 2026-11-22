@@ -56,14 +56,14 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
             <span
               key={entry.quest.id}
               onClick={() => questPanel.triggerQuestFromPanel(entry)}
-              title={entry.stage.description}
+              title={entry.stage.playerHint ?? entry.stage.description}
               style={{
                 cursor: "pointer", color: "#c8663a", padding: "2px 10px",
                 border: "1px solid var(--gold-deep)", borderRadius: 0, fontSize: "10.5px",
                 background: "#1a1408", whiteSpace: "nowrap",
               }}
             >
-              ❢ {entry.quest.title}{entry.quest.giver ? `（${entry.quest.giver}）` : ""}
+              ❢ {entry.quest.title}{entry.stage.giver !== null && entry.quest.giver ? `（${entry.quest.giver}）` : ""}
             </span>
           ))}
         </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_PRESETS } from "../../engine/newGame.js";
 import { canBypassExclusive, getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 import { getZoneTheme, ink } from "../../utils/theme.js";
 import { loadConfig } from "../../engine/ports/ai.js";
 import { isNpcVisibleInInnerRoom as isVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
@@ -105,6 +106,11 @@ export function useGameUi({
     for (const quest of QUCUO_QUESTS) {
       if (!quest.stages?.length) continue;
       const prog = questProgress[quest.id];
+      if (quest.localOnly) {
+        const stage = getLocalQuestStage(quest, { room, innerRoomName, char, inv, flags, questProgress });
+        if (stage) result.push({ quest, stage, isNewlyGiven: !prog });
+        continue;
+      }
       if (prog?.status === "locked_by_exclusive" || prog?.status === "completed") continue;
       if (!isQuestGateOpen(quest, questProgress, flags)) continue;
       if (quest.id === "hidden_all_collect_line" && !canBypassExclusive({ char, flags })) continue;
@@ -124,7 +130,7 @@ export function useGameUi({
       result.push({ quest, stage, isNewlyGiven });
     }
     return result;
-  }, [room, questProgress, flags, char, innerRoomName]);
+  }, [room, questProgress, flags, char, inv, innerRoomName]);
 
   const liveNpcMenu = activeNpcMenu
     ? (room.npcs.find(n => n.name === activeNpcMenu.name) || activeNpcMenu)

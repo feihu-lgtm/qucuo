@@ -3,10 +3,10 @@
   "format": "sha256(JSON.stringify(data)); orderedIds (up to 20) or their SHA-256 use id ?? name for arrays or Object.keys for objects; totalFieldCount counts object keys recursively, excluding array indices",
   "exports": {
     "QUCUO_QUESTS": {
-      "entryCount": 47,
-      "orderedIdsSha256": "abd6f53c7ea39503e1d3a4435eb81a941c8731e92ff4ca0eeb38e6ef418bb16c",
-      "totalFieldCount": 1700,
-      "jsonSha256": "95ff47bfeda2fff99d00e9877352bffcbb050f97e696c69301569ab518e5c65b"
+      "entryCount": 48,
+      "orderedIdsSha256": "32bcaedcb556b1ae375334063ffccd3b7696396b1951de7f406d32b14de23679",
+      "totalFieldCount": 1778,
+      "jsonSha256": "aa09d5c6176d6b3e592576c211bc68955a033dd2da5bf9375fdb813115069394"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -276,8 +276,8 @@
         "锦官城",
         "蜀南唐堡"
       ],
-      "totalFieldCount": 1235,
-      "jsonSha256": "700f0ee692bad7d5cab19a2e1ac6f8e83e500fb30cffabed7c417deab4357f9a"
+      "totalFieldCount": 1249,
+      "jsonSha256": "81f7ce90e5515d325f2b2ba8795b680d110745faaa887ad84345e0dabb41a25e"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,
