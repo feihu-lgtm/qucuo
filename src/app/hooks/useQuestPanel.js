@@ -5,6 +5,7 @@ import { forceAdvanceQuest as forceAdvanceQuestFeature, playLocalQuestStage } fr
 import { buildQuestFoe } from "../../features/quest/combatChoice.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
+import { isQuestChoiceOpen } from "../../domain/rules/quests/questEngine.js";
 
 export function settlePersuasion({ setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog }, { questId, flag }, result) {
   return applyResult(null, () => {
@@ -44,7 +45,7 @@ async function resolveQuestChoice({
   if (quest.localOnly) {
     const state = gameStore.getState();
     choice = getLocalQuestStage(quest, state)?.choices?.find((entry) => entry.flag === pickedChoice.flag);
-    if (!choice) return;
+    if (!choice || !isQuestChoiceOpen(choice, state)) return;
     if (choice.resolve !== "combat") {
       captureUndo();
       return applyResult(featureCtxRef.current, playLocalQuestStage(state, quest, choice.label));
