@@ -332,6 +332,18 @@ describe("callModel HTTP 错误分类", () => {
     expect(ec).toMatchObject({ kind: "endpoint", retryable: false });
   });
 
+  it("流式接口返回 200 网页时报地址错误，不当空响应重试", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>login</html>", { status: 200, headers: { "Content-Type": "text/html" } })));
+    const { ec } = await failure(() => callModelStream(cfg, "sys", [{ role: "user", content: "hi" }], () => {}));
+    expect(ec).toMatchObject({ kind: "endpoint", retryable: false });
+  });
+
+  it("200 非 JSON 内容归为无法解析", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("oops", { status: 200, headers: { "Content-Type": "application/json" } })));
+    const { ec } = await failure(() => callModel(cfg, "sys", [{ role: "user", content: "hi" }]));
+    expect(ec).toMatchObject({ kind: "unparsable", retryable: true });
+  });
+
   it("429 读出 Retry-After", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response('{"error":{"message":"Rate limit reached"}}', { status: 429, headers: { "Retry-After": "7" } })));
     const { error, ec } = await failure(() => callModel(cfg, "sys", [{ role: "user", content: "hi" }]));

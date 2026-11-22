@@ -30,6 +30,17 @@ describe("classifyError", () => {
     expect(ec.retryable).toBe(retryable);
   });
 
+  it("HTTP 码优先于报错文字里的超时、网页字样", () => {
+    expect(classifyError(http(400, "HTTP 400：max_tokens 超过 8192 上限"))).toMatchObject({ kind: "parameter", retryable: false });
+    const gateway = Object.assign(new Error("接口返回的是网页而不是数据（HTTP 502）"), { code: "html", httpStatus: 502 });
+    expect(classifyError(gateway)).toMatchObject({ kind: "server", retryable: true });
+  });
+
+  it("200 但内容无法解析时重试，不当成密钥错误", () => {
+    const err = Object.assign(new Error("接口返回的内容无法解析（HTTP 200）。返回开头是「oops」——请检查设置里的接口地址和接口类型。"), { code: "unparsable", httpStatus: 200 });
+    expect(classifyError(err)).toMatchObject({ kind: "unparsable", retryable: true });
+  });
+
   it("429 余额不足不重试，普通限流重试", () => {
     expect(classifyError(http(429, "HTTP 429：You exceeded your current quota, check your billing"))).toMatchObject({ kind: "quota", retryable: false });
     expect(classifyError(http(429, "HTTP 429：Rate limit reached"))).toMatchObject({ kind: "rateLimit", retryable: true });

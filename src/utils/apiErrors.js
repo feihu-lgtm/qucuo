@@ -81,15 +81,18 @@ export function classifyError(err, options = {}) {
     return { kind: connection.kind, connection };
   }
 
-  if (code === "timeout" || has("超过", "timeout", "timed out")) {
-    return { kind: "timeout", icon: "⏱", title: "接口超时", detail: msg, hint: "网络慢或模型太忙。可稍等重试，或在设置里换个更快的模型/中转站。", retryable: true };
-  }
-  if (code === "html" || has("网页而不是数据", "<!DOCTYPE", "<html")) {
+  const timeout = { kind: "timeout", icon: "⏱", title: "接口超时", detail: msg, hint: "网络慢或模型太忙。可稍等重试，或在设置里换个更快的模型/中转站。", retryable: true };
+  if (code === "timeout") return timeout;
+  const status = httpStatusOf(err);
+  if ((code === "html" || has("网页而不是数据", "<!DOCTYPE", "<html")) && !(status >= 500)) {
     return { kind: "endpoint", icon: "🧭", title: "接口地址可能填错", detail: msg, hint: "接口返回的是网页不是数据。检查设置里的接口地址是否完整、类型是否选对。", retryable: false };
   }
-  const status = httpStatusOf(err);
   const byStatus = status && httpError(status, msg);
   if (byStatus) return byStatus;
+  if (has("超过", "timeout", "timed out")) return timeout;
+  if (code === "unparsable") {
+    return { kind: "unparsable", icon: "🧭", title: "接口返回内容无法解析", detail: msg, hint: "接口返回的不是标准数据。多为中转站临时故障；反复出现请检查设置里的接口地址是否完整、类型是否选对。", retryable: true };
+  }
   if (code === "empty") {
     return { kind: "empty", icon: "∅", title: "接口返回空响应", detail: msg, hint: "连上了接口，但它没返回任何内容。多为中转站故障；反复出现请换中转站，或检查模型名是否被该接口支持。", retryable: true };
   }

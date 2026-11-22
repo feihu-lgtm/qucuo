@@ -71,6 +71,10 @@ function httpFailure(res, label, requestUrl, vendorMessage) {
   return err;
 }
 
+async function rejectNonStream(res, label, requestUrl = "") {
+  if (!res.ok || /text\/html/i.test(res.headers.get("content-type") || "")) await readJsonOrThrow(res, label, requestUrl);
+}
+
 async function readJsonOrThrow(res, label, requestUrl = "") {
   const bodyText = await res.text();
   if (res.ok && !bodyText.trim()) {
@@ -103,7 +107,11 @@ async function readJsonOrThrow(res, label, requestUrl = "") {
     if (!res.ok) {
       throw httpFailure(res, label, requestUrl, bodyText.trim() ? bodyText.slice(0, 120) : "响应体为空");
     }
-    throw new Error(`${label}：接口返回的内容无法解析（HTTP ${res.status}）。返回开头是「${bodyText.slice(0, 60)}」——请检查设置里的接口地址与密钥。`);
+    const err = new Error(`${label}：接口返回的内容无法解析（HTTP ${res.status}）。返回开头是「${bodyText.slice(0, 60)}」——请检查设置里的接口地址和接口类型。`);
+    err.code = "unparsable";
+    err.httpStatus = res.status;
+    err.requestUrl = requestUrl || res.url;
+    throw err;
   }
 }
 
@@ -320,7 +328,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
         },
         body: JSON.stringify(abody),
       });
-      if (!res.ok) await readJsonOrThrow(res, "Anthropic 流式调用", url);
+      await rejectNonStream(res, "Anthropic 流式调用", url);
       await readSSE(res, (eventData) => {
         if (eventData.type === "content_block_delta" && eventData.delta?.text) {
           full += eventData.delta.text;
@@ -336,7 +344,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
 
     } else if (isOpenAICompatible(cfg.apiType)) {
       const res = await fetchOpenAI(cfg, systemPrompt, messages, opts, true);
-      if (!res.ok) await readJsonOrThrow(res, "OpenAI 兼容流式调用");
+      await rejectNonStream(res, "OpenAI 兼容流式调用");
       await readSSE(res, (eventData) => {
         const delta = eventData.choices?.[0]?.delta?.content || "";
         if (delta) { full += delta; onChunk(delta, full); }
