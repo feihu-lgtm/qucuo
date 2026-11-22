@@ -6,7 +6,7 @@ import { Overlay, Header, Btn } from "./common.jsx";
 
 const SKILL_TYPE_LABEL = { 招式: "招", 内功: "内", 轻功: "轻" };
 
-export default function WuguanScreen({ building, char, skills, flags, questProgress, zoneTheme, onClose, inline, onBuySkill }) {
+export default function WuguanScreen({ building, char, skills, flags, questProgress, varTree, zoneTheme, onClose, inline, onBuySkill }) {
   const skillSet = building.skillSet || "";
   const catalog = SKILL_CATALOG[skillSet] || [];
   const money = char.money || 0;
@@ -22,7 +22,7 @@ export default function WuguanScreen({ building, char, skills, flags, questProgr
           ? <div style={{ color: "var(--ink-text-dim)" }}>此武馆暂无秘籍可购。</div>
           : catalog.map(item => {
               const owned = hasSkill(skills, item.id);
-              const unlock = skillUnlockStatus({ flags, questProgress }, item);
+              const unlock = skillUnlockStatus({ flags, questProgress, varTree }, item);
               return (
                 <div key={item.id} style={{ marginBottom: 12, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>

@@ -102,7 +102,7 @@ export const BUILDING_SCREENS = {
   [BUILDING_TYPE.INN]: innScreen,
   [BUILDING_TYPE.HOSPITAL]: innScreen,
   [BUILDING_TYPE.WUGUAN]: (c) => (
-    <WuguanScreen building={c.building} char={c.char} skills={c.skills} flags={c.flags} questProgress={c.questProgress} zoneTheme={c.zoneTheme} inline
+    <WuguanScreen building={c.building} char={c.char} skills={c.skills} flags={c.flags} questProgress={c.questProgress} varTree={c.varTree} zoneTheme={c.zoneTheme} inline
       onClose={c.closeBuilding} onBuySkill={c.handleBuySkill} />
   ),
   [BUILDING_TYPE.GAMBLING]: (c) => (
