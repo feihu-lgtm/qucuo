@@ -131,8 +131,8 @@ export const BUILDING_SCREENS = {
       onEnterBasement={c.openBasement} />
   ),
   [BUILDING_TYPE.TEMPLE]: (c) => (
-    <TempleScreen building={c.building} char={c.char} dao={c.dao} zoneTheme={c.zoneTheme} inline
-      onClose={c.closeBuilding} onPray={c.handlePray} />
+    <TempleScreen building={c.building} char={c.char} dao={c.dao} varTree={c.varTree} flags={c.flags} time={c.time}
+      zoneTheme={c.zoneTheme} inline onClose={c.closeBuilding} onPray={c.handlePray} onClinic={c.handleClinicService} />
   ),
   [BUILDING_TYPE.LIBRARY]: (c) => (
     <LibraryScreen building={c.building} char={c.char} skills={c.skills} flags={c.flags} time={c.time} zoneTheme={c.zoneTheme} inline

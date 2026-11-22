@@ -110,3 +110,34 @@ describe("护法禅院武学", () => {
     expect(skillUnlockStatus(state(100), skill("不动明王禅")).ok).toBe(true);
   });
 });
+
+describe("大殿捐香油", () => {
+  const HALL = "temple_lama";
+  const hall = (value, extra = {}) => ({ ...at("大殿", value), time: 24, char: { money: 100 }, ...extra });
+  const give = (state) => {
+    const result = doClinicService(state, HALL);
+    if (!result.changes) return { state, result };
+    return {
+      result,
+      state: { ...state, char: result.changes.char, flags: result.changes.flags(state.flags), varTree: result.changes.varTree(state.varTree) },
+    };
+  };
+
+  it("sits in 大殿 and costs 20 两 for 喇嘛庙 +3, once a day", () => {
+    expect(building("大殿")).toMatchObject({ id: HALL, type: "temple" });
+    const { state, result } = give(hall(0));
+    expect(state.char.money).toBe(80);
+    expect(state.varTree.世界.势力声誉.喇嘛庙).toBe(3);
+    expect(result.settle).toBeTruthy();
+    expect(doClinicService(state, HALL).changes).toBeUndefined();
+  });
+
+  it("caps the gain at +10 per seven days, refuses the hostile", () => {
+    let state = hall(0);
+    for (let day = 1; day <= 5; day++) state = give({ ...state, time: day * 24 }).state;
+    expect(state.varTree.世界.势力声誉.喇嘛庙).toBe(10);
+    expect(state.char.money).toBe(20);
+    expect(give({ ...state, time: 7 * 24 + 1 }).state.varTree.世界.势力声誉.喇嘛庙).toBe(13);
+    expect(doClinicService(hall(-20), HALL).changes).toBeUndefined();
+  });
+});
