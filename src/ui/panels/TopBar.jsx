@@ -162,6 +162,13 @@ export default function TopBar({
         {!autoSaveError && lastAutoSave && (
           <span style={{ color: "#3a4a3a", fontSize: "9.5px", transition: "opacity 0.3s" }}>● 已保存</span>
         )}
+        {/* 桌面版右上角同 iOS：全流程日志入口 + 回合状态灯 */}
+        {!isMobile && (
+          <>
+            <span className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)} style={topBtn()}>日志</span>
+            <TurnStatusPill theme={zoneTheme} docked />
+          </>
+        )}
         </div>
       </div>
 

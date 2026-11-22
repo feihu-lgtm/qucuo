@@ -106,9 +106,15 @@ describe("extracted right-panel modules", () => {
     expect(JIANGHU_ENTRIES.map(entry => entry.overlay)).toEqual([
       OVERLAY.QUEST_LOG, OVERLAY.CHARACTER_PAGE, OVERLAY.LORE, OVERLAY.QIJUZHU,
     ]);
-    const html = render(JianghuModule);
+    const html = render(JianghuModule, { isMobile: true });
     expect(html.match(/<button/g)).toHaveLength(4);
     for (const entry of JIANGHU_ENTRIES) expect(html).toContain(entry.label);
+  });
+
+  it("desktop renders the four in-place dials instead of overlay buttons", () => {
+    const html = render(JianghuModule);
+    for (const entry of JIANGHU_ENTRIES) expect(html).toContain(entry.label);
+    expect(html.match(/<button/g) ?? []).toHaveLength(0);
   });
 });
 
