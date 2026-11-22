@@ -1,5 +1,5 @@
 import React from "react";
-import { Overlay, Header, Btn } from "./buildings/InnScreen.jsx";
+import { Overlay, Header, Btn } from "./buildings/common.jsx";
 import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
 import { SNOW_QUEST_ID, SNOW_SPIRITS, snowSpiritCount } from "../../domain/quests/snowLeopardQuest.js";
 import { getCurrentStage } from "../../domain/quests/questEngine.js";

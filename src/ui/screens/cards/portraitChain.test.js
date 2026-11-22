@@ -14,7 +14,7 @@ import { fitSize, dataUrlBytes, fmtBytes, isCustomPortrait } from "./portraitCom
 // 三条全是"不报错、只是没图"，所以都得盯源码。
 const HERE = dirname(fileURLToPath(import.meta.url));
 const NPC = readFileSync(join(HERE, "ReviewNpc.jsx"), "utf-8");
-const PARTS = readFileSync(join(HERE, "ReviewParts.jsx"), "utf-8");
+const PARTS = readFileSync(join(HERE, "widgets.jsx"), "utf-8");
 const NPC_RULES = readFileSync(join(HERE, "..", "..", "..", "features", "npc", "rules.js"), "utf-8");
 const QB = readFileSync(join(HERE, "..", "quickBattle", "QuickBattleScreen.jsx"), "utf-8");
 const PORTRAITS = readFileSync(join(HERE, "../../../domain", "companion", "portraits.js"), "utf-8");
@@ -26,7 +26,7 @@ describe("立绘链路不能再断", () => {
       .not.toMatch(/const PORTRAITS = \[\s*"caidan\.webp"/);
   });
 
-  it("ReviewParts 不再导出那个指错目录的 PORTRAIT", () => {
+  it("widgets 不再导出那个指错目录的 PORTRAIT", () => {
     expect(PARTS, "PORTRAIT 拼的是 public/portraits/，那十张不在那儿")
       .not.toMatch(/^export const PORTRAIT = /m);
   });

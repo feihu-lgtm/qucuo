@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Overlay, Header, Btn } from "./InnScreen.jsx";
+import { Overlay, Header, Btn } from "./common.jsx";
 import {
   AUCTION_CONFIG, AUCTION_LOT, AUCTION_PHASE,
   initAuction, openAuction, playerBid, abandonAuction, nextBidAmount,

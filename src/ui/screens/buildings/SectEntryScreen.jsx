@@ -1,5 +1,5 @@
 import React from "react";
-import { Overlay, Header, Btn } from "./InnScreen.jsx";
+import { Overlay, Header, Btn } from "./common.jsx";
 import { SECT_ENTRY, checkSectEntry } from "../../../domain/character/sectEntry.js";
 
 // 拜师堂——雪山派入门。挂在内堂（何雨谢坐镇处）。

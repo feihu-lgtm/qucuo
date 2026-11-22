@@ -45,8 +45,8 @@ describe("TradingScreen 的货币名必须可传参（不许写死）", () => {
   });
 });
 
-describe("CenterPanel 把功德单位与只出不进传下去", () => {
-  const src = readFileSync("src/ui/panels/CenterPanel.jsx", "utf-8");
+describe("商店屏渲染层把功德单位与只出不进传下去", () => {
+  const src = readFileSync("src/ui/panels/buildingScreens.jsx", "utf-8");
 
   it("按 isKarma 传货币名与单位", () => {
     expect(src).toMatch(/currencyName=\{isKarma \? "功德" : "银两"\}/);
@@ -58,7 +58,7 @@ describe("CenterPanel 把功德单位与只出不进传下去", () => {
   });
 
   it("playerMoney 与扣款用同一种货币（数值侧本来就是对的，别改坏）", () => {
-    expect(src).toMatch(/playerMoney=\{isKarma \? \(dao\.karma \|\| 0\) : \(char\.money \|\| 0\)\}/);
-    expect(src).toMatch(/if \(isKarma\) \{ if \(\(dao\.karma\|\|0\)<item\.buyPrice\) return; captureUndo\(\); setDao/);
+    expect(src).toMatch(/playerMoney=\{isKarma \? \(c\.dao\.karma \|\| 0\) : \(c\.char\.money \|\| 0\)\}/);
+    expect(src).toMatch(/if \(isKarma\) \{ if \(\(c\.dao\.karma\|\|0\)<item\.buyPrice\) return; c\.captureUndo\(\); c\.setDao/);
   });
 });

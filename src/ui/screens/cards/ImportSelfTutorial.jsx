@@ -6,7 +6,7 @@
 // 看过一次记进 localStorage，之后不再自动弹；标题栏留一个「教程」随时可重看。
 
 import React from "react";
-import { S } from "./ReviewParts.jsx";
+import { S } from "./widgets.jsx";
 
 export const IMPORT_SELF_TUTORIAL_KEY = "qucuo_import_self_tutorial_seen";
 

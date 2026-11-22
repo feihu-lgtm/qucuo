@@ -1,6 +1,6 @@
 import { effectBrief } from "../../../domain/economy/itemEffectText.js";
 import React, { useState } from "react";
-import { Overlay, Header, Btn } from "./InnScreen.jsx";
+import { Overlay, Header, Btn } from "./common.jsx";
 
 // 铁匠铺/铸剑坊：拿料定制。玩家填【材料/类别/要求】三栏 → 点"求个方案"→ 小模型出 3 个候选
 // 成品(名字/类别/词条/描述) → 三选一 → 选定才扣定金下单 → 约24时辰后自动送货入袋。

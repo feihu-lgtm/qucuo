@@ -24,27 +24,9 @@ import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops
 import LogEntry from "../components/LogEntry.jsx";
 import TradingScreen from "../screens/TradingScreen.jsx";
 import DebugPanel from "./DebugPanel.jsx";
-import InnScreen from "../screens/buildings/InnScreen.jsx";
-import WuguanScreen from "../screens/buildings/WuguanScreen.jsx";
-import GamblingScreen from "../screens/buildings/GamblingScreen.jsx";
-import PigeonCoopScreen from "../screens/buildings/PigeonCoopScreen.jsx";
-import TransportScreen from "../screens/buildings/TransportScreen.jsx";
-import ServiceScreen, { BasementScreen } from "../screens/buildings/ServiceScreen.jsx";
-import TempleScreen from "../screens/buildings/TempleScreen.jsx";
-import LibraryScreen from "../screens/buildings/LibraryScreen.jsx";
-import BankScreen from "../screens/buildings/BankScreen.jsx";
-import PawnScreen from "../screens/buildings/PawnScreen.jsx";
-import EscortScreen from "../screens/buildings/EscortScreen.jsx";
-import BountyScreen from "../screens/buildings/BountyScreen.jsx";
-import ForgeScreen from "../screens/buildings/ForgeScreen.jsx";
-import JadeShopScreen from "../screens/buildings/JadeShopScreen.jsx";
-import GambleStoneScreen from "../screens/buildings/GambleStoneScreen.jsx";
-import TeahouseScreen from "../screens/buildings/TeahouseScreen.jsx";
-import SectEntryScreen from "../screens/buildings/SectEntryScreen.jsx";
+import { BasementScreen } from "../screens/buildings/ServiceScreen.jsx";
 import SeaOfMindScreen from "./SeaOfMindScreen.jsx";
-import AuctionScreen from "../screens/buildings/AuctionScreen.jsx";
-import CookingScreen from "../screens/buildings/CookingScreen.jsx";
-import ChestScreen from "../screens/buildings/ChestScreen.jsx";
+import { BUILDING_SCREENS } from "./buildingScreens.jsx";
 import { getBuildingInstanceKey } from "./buildingInstanceKey.js";
 
 function isNarrativePlaceholder(entry) {
@@ -215,142 +197,31 @@ export default function CenterPanel({
                 </div>
               )}
               {isMobile && activeBuilding?.craft && craftTab !== "shop" && tabs("mobile-trading-tabs-building")}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.INN && (
-                <InnScreen building={activeBuilding} char={char} time={time} zoneTheme={zoneTheme} inline
-                  onClose={() => setActiveBuilding(null)} onRest={handleBuildingInn} onHeal={handleBuildingHeal} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.HOSPITAL && (
-                <InnScreen building={activeBuilding} char={char} time={time} zoneTheme={zoneTheme} inline
-                  onClose={() => setActiveBuilding(null)} onRest={handleBuildingInn} onHeal={handleBuildingHeal} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.WUGUAN && (
-                <WuguanScreen building={activeBuilding} char={char} skills={skills} zoneTheme={zoneTheme} inline
-                  onClose={() => setActiveBuilding(null)} onBuySkill={handleBuySkill} />
-              )}
-              {activeBuilding && (activeBuilding.type === BUILDING_TYPE.SHOP || activeBuilding.type === BUILDING_TYPE.SMITHY || activeBuilding.type === BUILDING_TYPE.ANTIQUE || activeBuilding.type === BUILDING_TYPE.MEDICINE || activeBuilding.type === BUILDING_TYPE.CLOTH || activeBuilding.type === BUILDING_TYPE.GROCERY || activeBuilding.type === BUILDING_TYPE.BLACKMARKET || activeBuilding.type === BUILDING_TYPE.SECTSHOP) && (() => {
-                const shopData = rollShopStock(activeBuilding.shopKey, time) || buildShopInventory(activeBuilding.shopKey);
-                if (!shopData) return null;
-                const isKarma = shopData.currency === "karma";
-                const trading = (
-                  <TradingScreen inline queueCount={queueCount} shopName={shopData.shopName} shopItems={shopData.items}
-                    playerInv={inv} playerMoney={isKarma ? (dao.karma || 0) : (char.money || 0)}
-                    currencyName={isKarma ? "功德" : "银两"} currencyUnit={isKarma ? "点" : "两"} canSell={!isKarma}
-                    headerContent={activeBuilding.craft ? tabs("mobile-trading-tabs-header") : null}
-                    playerWit={effectiveSpecialNow?.智谋 ?? 5}
-                    zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onInspect={inspectItem}
-                    onBuy={(item) => runCommand("shopBuy", () => { if (isKarma) { if ((dao.karma||0)<item.buyPrice) return; captureUndo(); setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((char.money||0)<item.buyPrice) return; captureUndo(); setChar(c=>({...c,money:c.money-item.buyPrice})); if (shopData.karmaLoss) setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); })}
-                    onSell={(item) => runCommand("shopSell", () => { if (item.equipped||isKarma) return; captureUndo(); setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id)); setChar(c=>({...c,money:(c.money||0)+item.sellPrice})); addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
-                  />
-                );
-                // 不带定制的铺子：只渲染现货商店（绝大多数）。
-                if (!activeBuilding.craft) return trading;
-                // 带定制的铺子（孟记铁铺=forge / 玉器轩=jade）：现货/定制 页签切换。
-                return (
-                  <>
-                    {tabs("mobile-trading-tabs-desktop")}
-                    {craftTab === "shop" ? trading : (isJade
-                      ? <JadeShopScreen building={{ ...activeBuilding, flags }} char={char} inv={inv} time={time} inline
-                          zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onDesign={handleJadeDesign} onCraft={handleJadeCraft} />
-                      : <ForgeScreen building={activeBuilding} char={char} time={time} flags={flags} inline
-                          zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCommission={handleForgeCommission} onDesign={handleForgeDesign} />)}
-                  </>
-                );
+              {/* 屏路由：BUILDING_TYPE → 屏渲染函数，全表见 buildingScreens.jsx。
+                 地室（BasementScreen）不走表——它由 BASEMENT overlay 控制，与建筑类型无映射。 */}
+              {(() => {
+                if (!activeBuilding) return null;
+                if (showBasement && (activeBuilding.type === BUILDING_TYPE.RESTAURANT || activeBuilding.type === BUILDING_TYPE.THEATER)) return null;
+                const renderScreen = BUILDING_SCREENS[activeBuilding.type];
+                return renderScreen && renderScreen({
+                  building: activeBuilding, char, time, zoneTheme, inv, skills, flags, questProgress,
+                  dao, mapData, room, innerRoomName, varTree, queueCount, effectiveSpecialNow,
+                  craftTab, tabs, isJade, runCommand, captureUndo, setDao, setChar, setInv, addLog, jotNote,
+                  inspectItem, setGambleStoneMinimized, gambleNegotiation,
+                  deposit, depositedAt, pledgedItems,
+                  sectMasterAffection,
+                  closeBuilding: () => setActiveBuilding(null),
+                  openBasement: () => openOverlay(OVERLAY.BASEMENT),
+                  handleBuildingInn, handleBuildingHeal, handleBuySkill,
+                  handleAcceptEscort, handleGamble, handleCollectPigeons, buyPigeon, handlePostSend, handleTravel,
+                  handleServiceOrder, handlePray, handleReadBook, handleBuyBook,
+                  handleDeposit, handleWithdraw, handlePledge, handleRedeem,
+                  handleAcceptBounty, handleClaimBounty,
+                  handleForgeCommission, handleForgeDesign, handleJadeDesign, handleJadeCraft,
+                  handleGambleTalk, handleGambleSettle, handleGambleInspect,
+                  handleListenRumor, handleJoinSect, handleAuctionWin, handleCook,
+                });
               })()}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.ESCORT && !activeBuilding.shopKey && (
-                <EscortScreen building={activeBuilding} char={char} flags={flags} questProgress={questProgress}
-                  currentRoom={room.name} zoneTheme={zoneTheme} inline onClose={() => setActiveBuilding(null)}
-                  onAcceptEscort={handleAcceptEscort} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.ESCORT && activeBuilding.shopKey && (() => {
-                const shopData = rollShopStock(activeBuilding.shopKey, time) || buildShopInventory(activeBuilding.shopKey);
-                return shopData ? (
-                  <TradingScreen inline queueCount={queueCount} shopName={shopData.shopName} shopItems={shopData.items}
-                    playerInv={inv} playerMoney={char.money||0} playerWit={effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={inspectItem}
-                    onClose={() => setActiveBuilding(null)}
-                    onBuy={(item)=>runCommand("shopBuy",()=>{if((char.money||0)<item.buyPrice)return;captureUndo();setChar(c=>({...c,money:c.money-item.buyPrice}));setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]);addLog([{t:"item",text:`  购得「${item.name}」，花费${item.buyPrice}两。`}]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB });})}
-                    onSell={(item)=>runCommand("shopSell",()=>{if(item.equipped)return;captureUndo();setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id));setChar(c=>({...c,money:(c.money||0)+item.sellPrice}));addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB });})}
-                  />
-                ) : null;
-              })()}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.GAMBLING && (
-                <GamblingScreen building={activeBuilding} char={char} flags={flags} time={time} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onGamble={handleGamble} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.PIGEON_COOP && (
-                <PigeonCoopScreen building={activeBuilding} char={char} flags={flags} time={time} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCollect={handleCollectPigeons} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.TRANSPORT && (
-                <TransportScreen building={activeBuilding} char={char} mapData={mapData} currentRoom={room.name} inline
-                  inv={inv} metNpcs={varTree.世界?.曾经出现人物 || []} onBuyPigeon={buyPigeon} onSendLetter={handlePostSend}
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onTravel={handleTravel} />
-              )}
-              {activeBuilding && (activeBuilding.type === BUILDING_TYPE.RESTAURANT || activeBuilding.type === BUILDING_TYPE.THEATER) && !showBasement && (
-                <ServiceScreen building={activeBuilding} char={char} time={time} flags={flags} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onOrder={handleServiceOrder}
-                  onEnterBasement={() => openOverlay(OVERLAY.BASEMENT)} />
-              )}
-              {showBasement && (
-                <BasementScreen char={char} time={time} zoneTheme={zoneTheme} inline
-                  onClose={() => closeOverlay(OVERLAY.BASEMENT)} onOrder={handleServiceOrder} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.TEMPLE && (
-                <TempleScreen building={activeBuilding} char={char} dao={dao} zoneTheme={zoneTheme} inline
-                  onClose={() => setActiveBuilding(null)} onPray={handlePray} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.LIBRARY && (
-                <LibraryScreen building={activeBuilding} char={char} skills={skills} zoneTheme={zoneTheme} inline
-                  onClose={() => setActiveBuilding(null)} onReadBook={handleReadBook} onBuyBook={handleBuyBook} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.BANK && (
-                <BankScreen building={activeBuilding} char={char} time={time} deposit={deposit} depositedAt={depositedAt} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onDeposit={handleDeposit} onWithdraw={handleWithdraw} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.PAWN && (
-                <PawnScreen building={activeBuilding} char={char} inv={inv} pledgedItems={pledgedItems} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onPledge={handlePledge} onRedeem={handleRedeem} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.BOUNTY && (
-                <BountyScreen building={activeBuilding} flags={flags} questProgress={questProgress} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onAcceptBounty={handleAcceptBounty} onClaimBounty={handleClaimBounty} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.FORGE && (
-                <ForgeScreen building={activeBuilding} char={char} time={time} flags={flags} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCommission={handleForgeCommission} onDesign={handleForgeDesign} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.JEWELRY && (
-                <JadeShopScreen building={{ ...activeBuilding, flags }} char={char} inv={inv} time={time} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onDesign={handleJadeDesign} onCraft={handleJadeCraft} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.GAMBLESTONE && (
-                <GambleStoneScreen building={activeBuilding} char={char} time={time}
-                  onMinimizeChange={setGambleStoneMinimized}
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)}
-                  roomNpcs={(room.npcs || []).filter(n => (n.gambleBidder || n.name === "兰姐" || n.name === "温掌柜") && isNpcVisibleInInnerRoom(room.name, innerRoomName, n))}
-                  negotiation={gambleNegotiation}
-                  onTalk={handleGambleTalk} onSettle={handleGambleSettle} onInspect={handleGambleInspect} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.TEAHOUSE && (
-                <TeahouseScreen building={activeBuilding} char={char} flags={flags} time={time} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onListenRumor={handleListenRumor} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.SECT_ENTRY && (
-                <SectEntryScreen building={activeBuilding} char={char} flags={flags} inline
-                  narratorAffection={sectMasterAffection}
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onJoinSect={handleJoinSect} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.AUCTION && (
-                <AuctionScreen building={activeBuilding} char={char} inv={inv} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onWin={handleAuctionWin} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.KITCHEN && (
-                <CookingScreen building={activeBuilding} char={char} inv={inv} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} onCook={handleCook} />
-              )}
-              {activeBuilding && activeBuilding.type === BUILDING_TYPE.CHEST && (
-                <ChestScreen building={activeBuilding} inv={inv} setInv={setInv} inline
-                  zoneTheme={zoneTheme} onClose={() => setActiveBuilding(null)} />
-              )}
               {tradingShop && (
                 <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
                   playerInv={inv} playerMoney={char.money || 0} playerWit={effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={inspectItem}

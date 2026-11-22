@@ -15,7 +15,7 @@ import { CATALOG } from "../../domain/items/catalog.js";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
 const NPC = readFileSync(join(HERE, "cards", "ReviewNpc.jsx"), "utf-8");
-const PARTS = readFileSync(join(HERE, "cards", "ReviewParts.jsx"), "utf-8");
+const PARTS = readFileSync(join(HERE, "cards", "widgets.jsx"), "utf-8");
 
 describe("随身物选择器必须能选到整本百物录", () => {
   it("百物录规模够大，值得筛而不是硬截", () => {

@@ -12,7 +12,7 @@ import React, { useState, useMemo, useRef } from "react";
 import {
   S, TIERS, SEVEN, JadeTier, StatRow, SevenDim, Src, TextField,
   Section, Note, Pills, Step, selStyle,
-} from "./ReviewParts.jsx";
+} from "./widgets.jsx";
 import { normalizePlacement } from "../../../domain/cards/importedRegistry.js";
 import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose, LORE_MAX } from "../../../domain/cards/scanPrompts.js";
 import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "../../../domain/cards/placementPlan.js";

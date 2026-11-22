@@ -2,7 +2,7 @@
 // ============================================================================
 // 三段流程：拖卡（empty）→ 归类与勾选（parsed/scanning）→ 过目定稿（review）。
 // 审改那一段按「导入映射表」的顺序覆盖全字段，NPC 与玩家各一套，拆到
-// ReviewNpc.jsx / ReviewPlayer.jsx；共用零件在 ReviewParts.jsx。
+// ReviewNpc.jsx / ReviewPlayer.jsx；共用零件在 cards/widgets.jsx。
 //
 // 【AI 扫描是按钮不是关卡】免费反代 5 次/分钟、随时 429。解析阶段（纯代码）就已经
 // 把所有必填字段填满了，玩家手改也能完成入册。外部服务挂了不该让人连导入都做不了。
@@ -16,7 +16,7 @@ import { callModel } from "../../infra/apiConfig.js";
 import {
   S, TIERS, KIND_META, BODY_PUBLIC, BODY_PRIVATE, TERM_MONO,
   Bar, JadeTier, Src, Stat, Note, Btn, Pills, Terminal, barFrame,
-} from "./cards/ReviewParts.jsx";
+} from "./cards/widgets.jsx";
 import { sanitizeMoves, TIER_NEIGONG, parseJsonLoose, buildStage3 } from "../../domain/cards/scanPrompts.js";
 import { normalizePlacement } from "../../domain/cards/importedRegistry.js";
 import {
