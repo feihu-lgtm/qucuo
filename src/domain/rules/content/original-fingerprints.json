@@ -3,10 +3,10 @@
   "format": "sha256(JSON.stringify(data)); orderedIds (up to 20) or their SHA-256 use id ?? name for arrays or Object.keys for objects; totalFieldCount counts object keys recursively, excluding array indices",
   "exports": {
     "QUCUO_QUESTS": {
-      "entryCount": 49,
-      "orderedIdsSha256": "f3cac286729a85c94b94c2261358d57595a270cda6da3d6451a09143ed5fcb3e",
-      "totalFieldCount": 1867,
-      "jsonSha256": "7610de2d76d6a470e4acb9f13ded79a8eb8f67d696c2a6a226d5c047f4ad82cc"
+      "entryCount": 50,
+      "orderedIdsSha256": "753b0aea7566431aee98425e0f45dbfa1f609e8dbfdd0bb89c542cde3827629f",
+      "totalFieldCount": 1946,
+      "jsonSha256": "0278313567650fc5d237b8c05aa44d976a48303696e6c8e21f2eec3b5b748297"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -278,8 +278,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 1403,
-      "jsonSha256": "6c41ab1217d1ecbfab3d2f33a0728136307a9909b3d4454531cb203a1e919de7"
+      "totalFieldCount": 1411,
+      "jsonSha256": "3e668e4ae37b6a4e9092580918b3f856422c6adb1bf121736e4ed748cd63826e"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,

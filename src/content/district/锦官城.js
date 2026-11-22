@@ -99,6 +99,7 @@ export default { district: {
         desc: "供白衣观音的偏殿，苦药香常年不散，长凳上挤满候诊的城西苦力与曲措流民，医尼低头分药。",
         exits: { e: "听竹轩" },
         buildingId: "hospital_emei_fotang",
+        residentNpcName: "了因师太",
       },
       抄经堂: {
         x: 0, y: 3,
@@ -199,8 +200,13 @@ export default { district: {
       锦华戏楼: {
         x: -3, y: 0,
         desc: "锦官城的戏楼，也兼营餐饮。",
-        exits: { e: "锦官镖局" },
+        exits: { e: "锦官镖局", w: "城西破庙" },
         buildingId: "theater_jingguan",
+      },
+      城西破庙: {
+        x: -4, y: 0,
+        desc: "西城门外一座塌了半边的土地庙，神像断了手，供桌下堆着湿稻草，墙根留着车辙和带泥的药篓印子。",
+        exits: { e: "锦华戏楼" },
       },
       醉仙楼: {
         x: 2, y: 1,
