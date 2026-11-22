@@ -52,6 +52,18 @@ describe("resident NPC world rule", () => {
     expect(names.filter((n) => n === "李掌柜")).toHaveLength(1);
   });
 
+  it("relocated resident leaves her old district cache behind", () => {
+    setSeed(42);
+    const roomMapRef = { current: { 锦官城: { npcs: [{ name: "唐老太" }] } } };
+    const tangbao = { ...makeState(), room: { name: "蜀南唐堡", npcs: [] } };
+    const atTangbao = residentNpcRule.run(tangbao, { importedRegistry, roomMapRef });
+    expect(atTangbao.changes.room(tangbao.room).npcs.map((npc) => npc.name)).toContain("唐老太");
+
+    const jinguan = { ...makeState(), room: { name: "锦官城", npcs: [{ name: "唐老太" }] } };
+    const atJinguan = residentNpcRule.run(jinguan, { importedRegistry, roomMapRef: { current: {} } });
+    expect(atJinguan.changes.room(jinguan.room).npcs.map((npc) => npc.name)).not.toContain("唐老太");
+  });
+
   it("injects scheduled and fixed residents with combat data", () => {
     setSeed(42);
     const residents = getResidents();
