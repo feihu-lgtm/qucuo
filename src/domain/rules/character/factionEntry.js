@@ -1,4 +1,4 @@
-// 拜入门派（合稿各派「拜入与叛出规则」）：本派声誉 ≥ minRep、威望 ≥ 0、过本派试炼（trial 可空）、未拜他派。
+// 拜入门派（合稿各派「拜入与叛出规则」）：本派声誉 ≥ minRep、威望 ≥ minPrestige（缺省 0）、过本派试炼（trial 可空）、未拜他派。
 // 入门立加本派声誉 repBonus，发信物 token 与 gifts。雪山派走 sectEntry.js 的老流程。
 import { factionRepOf } from "../economy/factionRep.js";
 import { SECT_ENTRY } from "./sectEntry.js";
@@ -63,6 +63,16 @@ export const FACTION_ENTRIES = {
     intro: "供桌上不烧高香，只摆一坛烈酒。严九斤说，入丐帮不看家世，只看你端不端得起这碗混着雨水的入门酒。",
     joinLabel: "端起入门酒，拜入丐帮三星分舵",
   },
+  三星派: {
+    sect: "三星派", master: "纵目者", buildingId: "sanxing_mask_hall",
+    minRep: 40, repBonus: 20, flag: "三星派弟子", minPrestige: -60,
+    token: "青铜纵目令", gifts: [],
+    quests: ["sanxingpai_2_sanmianjianzhen"],
+    questsLabel: "完成「星2·三面试剑」",
+    trial: null,
+    intro: "石案上码着一排未开眼的青铜面具，艾草炭火噼啪作响。入墟为徒，先亲手磨亮自己的面具，再向神树递三记问心剑——树顶那双纵目会替你看清自己。",
+    joinLabel: "磨亮面具、递三记问心剑，拜入三星派",
+  },
 };
 
 export const SECT_MEMBER_FLAGS = {
@@ -84,6 +94,7 @@ export const factionEntryForBuilding = (buildingId) =>
 export function checkFactionEntry(entry, { varTree, flags = [], char, questProgress = {} } = {}) {
   const rep = factionRepOf(varTree, entry.sect);
   const prestige = Number(varTree?.世界?.威望) || 0;
+  const minPrestige = entry.minPrestige ?? 0;
   const other = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== entry.sect && flags.includes(flag));
   const trialOk = !entry.trial || flags.includes(entry.trial.flag);
   const riteNeeded = !!entry.maleRite && (char?.gender || "男") === "男";
@@ -92,7 +103,7 @@ export function checkFactionEntry(entry, { varTree, flags = [], char, questProgr
   const questsOk = (entry.quests || []).every((qid) => questProgress?.[qid]?.status === "completed");
   const reqs = [
     { key: "rep", label: `${entry.sect}声誉 ≥ ${entry.minRep}（门墙之交）`, have: rep, ok: rep >= entry.minRep },
-    { key: "prestige", label: "威望 ≥ 0（不收恶名昭彰之徒）", have: prestige, ok: prestige >= 0 },
+    { key: "prestige", label: minPrestige === 0 ? "威望 ≥ 0（不收恶名昭彰之徒）" : `威望 ≥ ${minPrestige}（心魔蒙目者不收）`, have: prestige, ok: prestige >= minPrestige },
     ...(entry.quests?.length ? [{ key: "quests", label: entry.questsLabel || "完成本派引荐任务", have: `${questsDone}/${entry.quests.length}`, ok: questsOk }] : []),
     ...(entry.trial ? [{ key: "trial", label: entry.trial.label, have: trialOk ? "已过" : "未过", ok: trialOk }] : []),
     ...(riteNeeded ? [{ key: "rite", label: entry.maleRite.label, have: riteOk ? "已成" : "未成", ok: riteOk }] : []),
