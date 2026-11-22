@@ -115,7 +115,8 @@ describe("青城药圃义诊", () => {
     expect(getBuildingIdForInnerRoom("雅江", "药圃")).toBe(YAOPU);
     const state = yaopu(95);
     const result = doClinicService(state, YAOPU);
-    expect(result.changes.time).toBe(32);
+    expect(result.changes.time).toBe(31);
+    expect(result.settle).toBeTruthy();
     expect(result.changes.char).toBeUndefined();
     const tree = result.changes.varTree(state.varTree);
     expect(tree.世界.势力声誉).toMatchObject({ 青城派: 100, 天龙教: -3, 唐门: -3 });

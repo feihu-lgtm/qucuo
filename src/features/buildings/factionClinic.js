@@ -51,7 +51,8 @@ export function doClinicService(state, buildingId) {
   return {
     changes: {
       ...(clinic.cost ? { char: { ...state.char, money: state.char.money - clinic.cost } } : {}),
-      ...(clinic.hours ? { time: (state.time || 0) + clinic.hours } : {}),
+      // 结算回合自身会再走 1 个时辰，这里只补余下的。
+      ...(clinic.hours > 1 ? { time: (state.time || 0) + clinic.hours - 1 } : {}),
       flags: (flags = []) => [...flags.filter((f) => !f.startsWith(clinic.dayFlag)), flag],
       varTree: (prev) => {
         const next = grantFactionRep(prev, gain).varTree;
