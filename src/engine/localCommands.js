@@ -44,6 +44,11 @@ function questScriptLines(command) {
   ];
 }
 
+export function isRoomLookCommand(text) {
+  const command = String(text ?? "");
+  return ROOM_LOOK_COMMANDS.has(command.trim().toLowerCase()) || isBareLook(command);
+}
+
 export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
   const command = String(text ?? "");
   const normalized = command.trim().toLowerCase();
@@ -148,7 +153,7 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
 
   // 房间预成文本只给裸 look（环顾四周）：带目标的端详（look <id>/看 <人>/打量 …）
   // 也归 LOOK 意图，但必须放行到端详路径，不能吃房间缓存
-  const isRoomLook = ROOM_LOOK_COMMANDS.has(normalized) || isBareLook(command);
+  const isRoomLook = isRoomLookCommand(command);
   if (isRoomLook && QUCUO_MAP[state.room?.name]) {
     const lookText = getLookText(state.room.name, Math.floor(state.time / 24));
     if (!lookText) return null;

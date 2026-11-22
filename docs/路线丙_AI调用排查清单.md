@@ -47,7 +47,7 @@
 | 打字自由行动、对话、赌坊谈价 | `useGameUi.js`、`useCraftingAI.js` `handleGambleTalk` | 必须等 | 正文就是结果 |
 | 任务选项 / 强制推进任务 | `useQuestPanel.js`（`forcedEvent`） | 必须等 | 剧情节点，提取要据正文结账 |
 | 查看 NPC（`look`） | `useScreenHandlers.js` `handleNpcLook` | 待定 | 可先出系统卡片（名字、境界、装备），外貌描写后台补；但「看」本身就是要读描写 |
-| 到达/传送后「环顾四周」 | `useAutoTravel.js` | 待定 | 有缓存时已走本地；无缓存要 AI 写房间。刷级路线上可考虑先出地名和出口 |
+| 到达/传送后「环顾四周」 | `useAutoTravel.js` / `resolveIntent.js` | 已改 | 有缓存走本地；无缓存先落地名、出口、在场人物，房间描写后台补（`app/hooks/lookBackfill.js`） |
 
 ## 二、已经不占回合的调用（不用动）
 

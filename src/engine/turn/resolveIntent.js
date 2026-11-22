@@ -13,7 +13,7 @@ import { parseDir } from "../../utils/mudHelpers.js";
 import { QUCUO_MAP, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "../../domain/data/map/qucuoMap.js";
 import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
 import { serializeSquares } from "../../domain/rules/map/mapSquares.js";
-import { parseLocalCommand } from "../localCommands.js";
+import { isRoomLookCommand, parseLocalCommand } from "../localCommands.js";
 import { resolveOuterLock } from "../act/outerMove.js";
 import { judgeCollect } from "../act/roundNotes.js";
 import {
@@ -34,7 +34,7 @@ export async function resolveIntent(cmd, env) {
     addLog, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs, waitTimerRef,
     setInv, setRoom, noteAction, getGameState, applyLocal, stopAutoTravel,
     showOuterNoExitNotice, resolveInnerBlockedSummary, prerunSquares,
-    traceStep, callModel,
+    traceStep, callModel, lookInBackground,
   } = env.io;
   const clearWait = () => {
     setLoading(false);
@@ -77,6 +77,17 @@ export async function resolveIntent(cmd, env) {
       }
     }
     return { proceed: false };
+  }
+
+  // 无缓存的裸环顾：地名/出口/在场人物系统已知，先落事实行，房间描写后台补写，不占回合。
+  if (!isTalk && !gm && lookInBackground && isRoomLookCommand(cmd)) {
+    turnMonitor.activate(_trace);
+    setInput("");
+    setCmdHistory(p => [cmd, ...p].slice(0, 50));
+    setHistIdx(-1);
+    lookInBackground(cmd);
+    traceStep(_trace, "查看", "pass", "无缓存：事实行先落，描写后台补写");
+    return { proceed: false, summary: "查看（后台补写）" };
   }
 
   // 元问题（help/怎么玩/你是谁/卡住了等，regex 精确命中的那几种写法）本地直接
