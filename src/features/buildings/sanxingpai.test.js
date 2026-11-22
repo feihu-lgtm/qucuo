@@ -12,6 +12,8 @@ import { sectSparRepGain } from "../../domain/rules/economy/sectSpar.js";
 import { buildRoomNpcWithCombat } from "../../domain/rules/npc/rules.js";
 import { buySkill } from "./logic.js";
 import { factionShopOffer } from "./factionShop.js";
+import { FACTION_ENTRIES, checkFactionEntry, factionEntryForBuilding } from "../../domain/rules/character/factionEntry.js";
+import { joinSect } from "../sect/logic.js";
 
 const SX = "三星派";
 const rep = (value) => ({ 世界: { 势力声誉: { [SX]: value } } });
@@ -129,5 +131,40 @@ describe("三星派", () => {
     }
     const opener = quests.find((quest) => quest.id === "sanxingpai_1_xujiejiuyue");
     expect(getLocalQuestStage(opener, state(0, { innerRoomName: "鸭子河畔" }))?.id).toBe("stele");
+  });
+});
+
+describe("三星派授面坛拜入", () => {
+  const entry = FACTION_ENTRIES.三星派;
+  const star2 = { sanxingpai_2_sanmianjianzhen: { status: "completed" } };
+  const hall = { innerRoomName: "神树台西侧·授面坛", flags: ["sanxing_trial_passed"], questProgress: star2 };
+  const withPrestige = (value, prestige) => ({ 世界: { 势力声誉: { [SX]: value }, 威望: prestige } });
+
+  it("seats 授面坛 west of the tree, opened by the 星2 flag", () => {
+    expect(factionEntryForBuilding(getBuildingIdForInnerRoom("广汉", "神树台西侧·授面坛"))).toBe(entry);
+    expect(getInnerRoom("广汉", "神树台西侧·授面坛")?.unlockCondition).toEqual({ type: "flag", flag: "sanxing_trial_passed" });
+    expect(getInnerRoom("广汉", "青铜神树下")?.exits.w).toBe("神树台西侧·授面坛");
+  });
+
+  it("needs rep 40, 星2 done, 威望 ≥ -60 and no other sect", () => {
+    const check = (value, opts = {}) => checkFactionEntry(entry, { varTree: rep(value), questProgress: star2, flags: [], ...opts });
+    expect(check(40).eligible).toBe(true);
+    expect(check(39).missing).toEqual(["rep"]);
+    expect(check(40, { questProgress: {} }).missing).toEqual(["quests"]);
+    expect(check(40, { varTree: withPrestige(40, -60) }).eligible).toBe(true);
+    expect(check(40, { varTree: withPrestige(40, -61) }).missing).toEqual(["prestige"]);
+    expect(check(40, { flags: ["丐帮弟子"] }).missing).toEqual(["single"]);
+  });
+
+  it("joins with +20 rep and the 青铜纵目令, opening the member path for 纵目剑法", () => {
+    expect(makeNamedItem("青铜纵目令")?.name).toBe("青铜纵目令");
+    const result = joinSect(state(40, hall));
+    const flags = result.changes.flags(hall.flags);
+    expect(flags).toContain("三星派弟子");
+    expect(result.changes.varTree(rep(40)).世界.势力声誉[SX]).toBe(60);
+    expect(result.changes.inv([]).map((item) => item.name)).toContain("青铜纵目令");
+    const skill = SKILL_CATALOG.三星.find((item) => item.name === "纵目剑法");
+    expect(!!buySkill(state(40, { flags }), skill).changes?.skills).toBe(true);
+    expect(!!buySkill(state(40), skill).changes?.skills).toBe(false);
   });
 });

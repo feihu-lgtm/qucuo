@@ -26,7 +26,7 @@ export default { district: {
         x: 0, y: -2,
         desc: `　　一棵三丈高的青铜树立在坑心，九枝九鸟，枝杈交错得毫无规律。树身绿锈厚得像树皮，敲一下，声音要过很久才散。
 　　树下站着几个戴青铜面具的人，一动不动。他们不说话，你走近，其中一个把手按在了剑柄上。神树最顶端坐着一个人，面具是金色的，纵目凸出三寸。他闭着眼。`,
-        exits: { s: "三星堆遗址", n: "金乌暗室·归墟秘井" },
+        exits: { s: "三星堆遗址", n: "金乌暗室·归墟秘井", w: "神树台西侧·授面坛" },
         unlockCondition: { type: "flag", flag: "sanxing_trial_passed" },
         buildingId: "sanxing_tree_altar",
       },
@@ -61,6 +61,14 @@ export default { district: {
         exits: { w: "铸铜地窖·赤炉窟" },
         unlockCondition: { type: "flag", flag: "sanxing_trial_passed" },
         buildingId: "sanxing_stele_pavilion",
+      },
+      "神树台西侧·授面坛": {
+        x: -1, y: -2,
+        desc: `　　神树西侧垒起一方夯土矮坛，石案上码着一排还没开眼的青铜面具，刻刀横在一旁。一盆艾草炭火终年不灭，烟熏得面具坯胎泛出一层暗金。
+　　坛前地上有三道浅浅的剑痕，是历代入墟弟子向神树递问心剑时留下的。`,
+        exits: { e: "青铜神树下" },
+        unlockCondition: { type: "flag", flag: "sanxing_trial_passed" },
+        buildingId: "sanxing_mask_hall",
       },
       "金乌暗室·归墟秘井": {
         x: 0, y: -3,

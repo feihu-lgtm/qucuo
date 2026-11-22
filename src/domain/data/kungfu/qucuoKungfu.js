@@ -722,7 +722,7 @@ export const SKILL_CATALOG = {
 
   // ── 三星派：古蜀剑派，不设铺面不收束脩，武学只从面具试炼来 ──
   // 三星派七门（合稿·三星派第五节）。旧四门保留原 id 与效果，补上价钱和门槛。
-  // 声誉上限 100：金乌破妄剑外客门槛由合稿 140 收到 100；正式拜入接线前 member 条目只能走 guestRep。
+  // 声誉上限 100：金乌破妄剑外客门槛由合稿 140 收到 100；member 条目本门弟子走 rep，外客走 guestRep。
   三星: [
     {
       id: "kf_sanxing_tingfeng", name: "听风铜剑", type: SKILL_TYPE.MOVE, quality: "绿", price: 85,

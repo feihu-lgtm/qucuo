@@ -95,7 +95,7 @@ export const BUILDINGS_BY_LOCATION = {
       id: "inn_gaibang_xiedian", name: "荒庙草铺", type: BUILDING_TYPE.INN, innPrice: 10,
       desc: "东厢房里铺满晒干的新稻草，窗纸糊着泛黄的旧告示，夜里漏风却胜在干净安全。严九斤说出门在外讲究个落脚舒心，连血刀贼都不敢摸到这儿来。",
     },
-    // ── 广汉·三星派古蜀青铜神树墟（合稿·三星派 2.3；授面坛等拜入接线后再开） ──
+    // ── 广汉·三星派古蜀青铜神树墟（合稿·三星派 2.3） ──
     {
       id: "sanxing_tree_altar", name: "青铜神树台", type: BUILDING_TYPE.TEMPLE, karmaPerPray: 10,
       desc: "三丈青铜神树下的夯土祭台，九枝九鸟在雾里若隐若现。在这里焚香静坐，听铜枝里的风声一层层沉下去，偶有所悟。",
@@ -115,6 +115,10 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "sanxing_stele_pavilion", name: "古蜀碑廊", type: BUILDING_TYPE.LIBRARY,
       desc: "一条刻满古蜀图符的石廊，纵目人面、鱼凫与神鸟层层叠叠。三星派弟子在这里拓碑读谱，外客得了门人点头才能进来看。",
+    },
+    {
+      id: "sanxing_mask_hall", name: "授面坛", type: BUILDING_TYPE.SECT_ENTRY, sect: "三星派",
+      desc: "石案上整齐码着未开眼的青铜面具与刻刀，旁侧燃着一盆艾草炭火。凡愿入墟为徒者，须亲手磨亮自己的面具，再向神树递上三记问心剑。",
     },
     {
       id: "sect_gaibang_entry", name: "三星分舵·聚义堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "丐帮三星分舵",
