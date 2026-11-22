@@ -38,6 +38,17 @@ describe("唐堡内库", () => {
     expect(tangmenShopOffer(rep(-60), "outer").closed).toBeTruthy();
   });
 
+  it("stocks the 合稿 secret goods behind 唐门 rep 40 / 80 with their catalog effects", () => {
+    expect(names(tangmenShopOffer(rep(0), "vault"))).toContain("铁莲子");
+    expect(names(tangmenShopOffer(rep(39), "vault"))).not.toContain("淬竹袖箭");
+    expect(names(tangmenShopOffer(rep(40), "vault"))).toEqual(expect.arrayContaining(["淬竹袖箭", "蚕丝防毒衣"]));
+    expect(names(tangmenShopOffer(rep(40), "vault"))).not.toContain("冰魄解蛊散");
+    const offer = tangmenShopOffer(rep(80), "vault");
+    expect(offer.items.find((item) => item.name === "淬竹袖箭")).toMatchObject({ category: "weapon", effect: { forceFirst: true } });
+    expect(offer.items.find((item) => item.name === "冰魄解蛊散")).toMatchObject({ consumable: { dispelAll: true } });
+    expect(names(tangmenShopOffer(rep(-20), "outer"))).toContain("铁莲子");
+  });
+
   it("lets the CLI buy at the vault through the shared rule", () => {
     const result = parseLocalCommand("买暗器 蛇药", vault(0), { surface: "cli" }).result;
     expect(result.logs[0].text).toContain("购得「蛇药」");

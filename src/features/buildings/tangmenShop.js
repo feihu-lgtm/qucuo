@@ -1,3 +1,4 @@
+import { makeNamedItem } from "../../domain/data/items/catalog.js";
 import { buildShopInventory } from "../../domain/data/shops/qucuoShops.js";
 import { discountedBuyPrice } from "../../domain/rules/economy/equipment.js";
 import { factionRepCoef, factionRepOf } from "../../domain/rules/economy/factionRep.js";
@@ -24,6 +25,7 @@ export function tangmenShopOffer(varTree, outlet) {
   if (rep <= -20 && outlet === "vault") return { closed: "内库铁门紧闭，守库子弟说你如今不便进来。", items: [], coef: 1 };
   const hostile = rep <= -20;
   const items = buildShopInventory(TANGMEN_SHOP).items
+    .map((item) => ({ ...(makeNamedItem(item.name) ?? item), ...(item.minRep == null ? {} : { minRep: item.minRep }) }))
     .filter((item) => rep >= (item.minRep ?? -Infinity) && (!hostile || item.quality === "绿"));
   return { items, coef: hostile ? 1.2 : factionRepCoef(rep) };
 }
