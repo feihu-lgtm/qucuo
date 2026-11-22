@@ -12,6 +12,7 @@ export default { quest: {
     giver: "兰姐",
     requiresQuestCompleted: "baihuamen_3_shixinyudu",
     requiresFactionRep: { [BH]: 80 },
+    blockedByFlags: ["baihua_huapu_chuming"],
     description: "兰姐让小蝉关了前厅的门，从妆奁底层取出一枚银梅令：「素梅牌是外花谱的客，银梅令是内花谱的人。收了它，楼里的暗桩认你调遣。」",
     stages: [
       {
@@ -37,6 +38,7 @@ export default { quest: {
     giver: "兰姐",
     requiresQuestCompleted: ["baihuamen_rank_yinmeiling", "baihuamen_4_wuxianjiuan"],
     requiresFactionRep: { [BH]: 100 },
+    blockedByFlags: ["baihua_huapu_chuming"],
     description: "雾隐旧案了结之后，兰姐在百花楼摆了一桌苗家酸汤：「昆明阁的门，十年没给外人开过。今天开给你。」",
     stages: [
       {

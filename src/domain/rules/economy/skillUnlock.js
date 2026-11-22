@@ -43,6 +43,14 @@ export function skillUnlockStatus(state, skill) {
   return { ok: true };
 }
 
+// 武学定价：skill.discount = { flag, rate }，持有 flag 时按 rate 折价（如雪2 拔毒线《温泉纳气》半价）。
+export function skillPrice(state, skill) {
+  const price = skill?.price;
+  const d = skill?.discount;
+  if (!Number.isFinite(price) || !d?.flag || !(state?.flags || []).includes(d.flag)) return price;
+  return Math.round(price * d.rate);
+}
+
 // 叛出/逐出后保留已学火候，但本门高阶武学不再突破。skill 是玩家身上的招式，unlock 从武学表按 id/名字认回。
 export function isSkillBreakthroughLocked(state, skill, catalog = []) {
   const unlock = skill?.unlock || catalog.find((entry) => entry.id === skill?.id || entry.name === skill?.name)?.unlock;

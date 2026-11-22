@@ -1,7 +1,7 @@
 import React from "react";
 import { SKILL_CATALOG, hasSkill } from "../../../domain/data/kungfu/qucuoKungfu.js";
 import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
-import { skillUnlockStatus } from "../../../domain/rules/economy/skillUnlock.js";
+import { skillPrice, skillUnlockStatus } from "../../../domain/rules/economy/skillUnlock.js";
 import { Overlay, Header, Btn } from "./common.jsx";
 
 const SKILL_TYPE_LABEL = { 招式: "招", 内功: "内", 轻功: "轻" };
@@ -33,7 +33,7 @@ export default function WuguanScreen({ building, char, skills, flags, questProgr
                       </span>
                     </span>
                     <span style={{ color: item.insight ? "var(--ink-info)" : "var(--gold-bright)", fontSize: 12 }}>
-                      {item.insight ? `参悟 · ${item.insight.label}≥${item.insight.threshold}` : `${item.price} 两`}
+                      {item.insight ? `参悟 · ${item.insight.label}≥${item.insight.threshold}` : `${skillPrice({ flags }, item)} 两`}
                     </span>
                   </div>
                   <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 8 }}>{item.desc}</div>

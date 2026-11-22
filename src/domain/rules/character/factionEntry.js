@@ -10,7 +10,12 @@ export const FACTION_ENTRIES = {
     token: "银蛇弟子牌", gifts: ["清瘴丸", "蛇药粉"],
     quests: ["wuxianjiao_1_zilanwenjing", "wuxianjiao_2_dudianyiying"],
     questsLabel: "完成「蛊1·紫岚问径」与「蛊2·毒典疑影」",
-    trial: null,
+    // 合稿 7.4：饮掺麻痹散的苗家米酒，气血/内力稳住不倒，或备解毒药硬扛（硬扛会喝掉一份）。
+    trial: {
+      vitals: { hpRatio: 0.6, neigong: 8 }, itemTag: "解毒",
+      label: "饮引蛊酒稳住不倒（气血 ≥ 六成或内功 ≥ 8，或身上带解毒药）",
+      hint: "引蛊酒里掺了麻痹散。把气血养到六成以上、内功练到 8，或者揣一份解毒药再来。",
+    },
     intro: "五仙灵坛前银铃低垂。龙汐月隔着面纱看你：「入我五仙，先饮一盏引蛊酒——受得住，才是自己人。」",
     joinLabel: "饮下引蛊酒，拜入五仙教",
   },
@@ -128,14 +133,24 @@ export const sectMasterOf = (sect) => (sect === SECT_ENTRY.sect ? SECT_ENTRY.mas
 export const factionEntryForBuilding = (buildingId) =>
   Object.values(FACTION_ENTRIES).find((entry) => entry.buildingId === buildingId) || null;
 
-export function checkFactionEntry(entry, { varTree, flags = [], char, questProgress = {} } = {}) {
+// 体魄试炼（trial.vitals）：气血比例或内功达标即过；都不够时身上有 itemTag 药也能硬扛，返回要喝掉的那件。
+function vitalsTrial(trial, char, inv = []) {
+  const [hp = 0, maxHp = 0] = char?.hp || [];
+  const body = (maxHp > 0 && hp >= maxHp * trial.vitals.hpRatio) || (char?.neigong ?? 0) >= trial.vitals.neigong;
+  if (body) return { ok: true, item: null };
+  const item = trial.itemTag ? inv.find((it) => it?.tags?.includes(trial.itemTag)) : null;
+  return { ok: !!item, item: item || null };
+}
+
+export function checkFactionEntry(entry, { varTree, flags = [], char, questProgress = {}, inv = [] } = {}) {
   const rep = factionRepOf(varTree, entry.sect);
   const prestige = Number(varTree?.世界?.威望) || 0;
   const minPrestige = entry.minPrestige ?? 0;
   const other = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== entry.sect && flags.includes(flag));
   // 试炼 flag 后补的任务（老存档已完成任务但没拿到 flag）按任务完成算过。
-  const trialOk = !entry.trial || flags.includes(entry.trial.flag)
-    || (!!entry.trial.quest && questProgress?.[entry.trial.quest]?.status === "completed");
+  const vitals = entry.trial?.vitals ? vitalsTrial(entry.trial, char, inv) : null;
+  const trialOk = !entry.trial || (vitals ? vitals.ok : flags.includes(entry.trial.flag)
+    || (!!entry.trial.quest && questProgress?.[entry.trial.quest]?.status === "completed"));
   const riteNeeded = !!entry.maleRite && (char?.gender || "男") === "男";
   const riteOk = !riteNeeded || flags.includes(entry.maleRite.flag);
   const questsDone = (entry.quests || []).filter((qid) => questProgress?.[qid]?.status === "completed").length;
@@ -150,5 +165,5 @@ export function checkFactionEntry(entry, { varTree, flags = [], char, questProgr
     ...(hasDefected(flags, entry.sect) ? [{ key: "defected", label: "未曾叛出本派", have: "曾叛出", ok: false }] : []),
   ];
   const already = flags.includes(entry.flag);
-  return { already, rep, reqs, eligible: !already && reqs.every((r) => r.ok), missing: reqs.filter((r) => !r.ok).map((r) => r.key) };
+  return { already, rep, reqs, eligible: !already && reqs.every((r) => r.ok), missing: reqs.filter((r) => !r.ok).map((r) => r.key), trialItem: vitals?.item || null };
 }

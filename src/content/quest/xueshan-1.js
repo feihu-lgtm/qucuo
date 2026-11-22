@@ -103,7 +103,7 @@ export default { quest: {
           items: [{ name: "雪山灵芝膏", fromCatalog: true }, { name: "雪山灵芝膏", fromCatalog: true }],
           byFlag: {
             quest_xs2_lama: { consumeItems: ["达摩驱寒膏"], factionRep: { 喇嘛庙: 12 }, flags: ["xueshan_lama_icebreak"] },
-            quest_xs2_hanyu: { favorability: { "玄女": 20 }, flags: ["xueshan_heyuxie_cold_purged"] },
+            quest_xs2_hanyu: { favorability: { "玄女": 20 }, flags: ["xueshan_heyuxie_cold_purged", "endgame_xueshan_heyuxie_full"] },
           },
         },
       },

@@ -292,7 +292,9 @@ export default { quest: {
             quest_bh4_betray: {
               money: 600,
               quietFactionRep: { 百花门: -70, 五仙教: 35 },
-              flags: ["bh4_betrayed"],
+              // 合稿 7.4 花谱除名：收回素梅牌/银梅令；记作叛出百花门，百花高阶武学不得再学、再突破。
+              consumeItems: ["素梅牌", "银梅令"],
+              flags: ["bh4_betrayed", "baihua_huapu_chuming", "叛出:百花门"],
             },
           },
         },
