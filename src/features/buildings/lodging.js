@@ -21,6 +21,13 @@ export function restAtInn(state, { cost, roomType, buildingName }) {
   };
 }
 
+// 医馆报价按有效气血上限（含内功被动）算，界面和结算共用。
+export function hospitalQuote(state, healPerLiang = 3) {
+  const maxHp = effectiveMaxHp(state.char.hp[1], state.skills);
+  const missing = Math.max(0, maxHp - state.char.hp[0]);
+  return { maxHp, missing, cost: Math.ceil(missing / healPerLiang) };
+}
+
 export function healAtHospital(state, { cost, healAmt, buildingName }) {
   if (!isPositiveAmount(cost) || !isPositiveAmount(healAmt)) return invalidAmountResult();
   if ((state.char.money || 0) < cost) return noOpResult();

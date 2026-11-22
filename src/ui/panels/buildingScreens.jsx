@@ -90,7 +90,7 @@ function escortScreen(c) {
 
 function innScreen(c) {
   return (
-    <InnScreen building={c.building} char={c.char} time={c.time} zoneTheme={c.zoneTheme} inline
+    <InnScreen building={c.building} char={c.char} skills={c.skills} time={c.time} zoneTheme={c.zoneTheme} inline
       onClose={c.closeBuilding} onRest={c.handleBuildingInn} onHeal={c.handleBuildingHeal} />
   );
 }

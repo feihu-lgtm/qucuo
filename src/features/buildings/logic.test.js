@@ -6,6 +6,7 @@ import {
   cookMeal,
   gamble,
   healAtHospital,
+  hospitalQuote,
   listenToRumor,
   orderService,
   pray,
@@ -47,6 +48,15 @@ describe("building feature logic", () => {
   it("rests, heals, and advances 23 time units", () => {
     expect(restAtInn(state(), { cost: 10, roomType: "普通客房", buildingName: "歇马居" }).changes.time).toBe(31);
     expect(healAtHospital(state(), { cost: 10, healAmt: 50, buildingName: "医馆" }).changes.char.hp).toEqual([70, 100]);
+  });
+
+  it("quotes hospital care up to the effective max HP including passive bonuses", () => {
+    const skills = [{ id: "neigong", passiveBonus: { maxHp: 20 } }];
+    const injured = state({ char: { ...state().char, hp: [100, 100] }, skills });
+    expect(hospitalQuote(injured, 3)).toEqual({ maxHp: 120, missing: 20, cost: 7 });
+    const { missing, cost } = hospitalQuote(injured, 3);
+    expect(healAtHospital(injured, { cost, healAmt: missing, buildingName: "医馆" }).changes.char.hp).toEqual([120, 100]);
+    expect(hospitalQuote(state({ char: { ...state().char, hp: [130, 100] }, skills }), 3)).toEqual({ maxHp: 120, missing: 0, cost: 0 });
   });
 
   it("refuses invalid or unaffordable inn and hospital amounts", () => {

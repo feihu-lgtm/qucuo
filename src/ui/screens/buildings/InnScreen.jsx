@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
+import { hospitalQuote } from "../../../features/buildings/logic.js";
 
 // 客栈：花银两住宿，气血回满，时间推进24单位（一天）
-// healOnly=true 时作为医馆使用：不推时间，按 healPerLiang 换算回血
-export default function InnScreen({ building, char, time, zoneTheme, onClose, onRest, onHeal, inline }) {
+// 医馆（type=hospital）：按 healPerLiang 换算回血，回到含内功被动的有效气血上限
+export default function InnScreen({ building, char, skills, time, zoneTheme, onClose, onRest, onHeal, inline }) {
   const [choice, setChoice] = useState(null); // null | "普通" | "上等"
 
   const isHospital = building.type === "hospital";
@@ -13,11 +14,10 @@ export default function InnScreen({ building, char, time, zoneTheme, onClose, on
   const [healAmount, setHealAmount] = useState(30);
 
   const hp = char.hp[0];
-  const maxHp = char.hp[1];
   const money = char.money || 0;
+  const { maxHp, missing, cost } = hospitalQuote({ char, skills }, healPerLiang);
 
   if (isHospital) {
-    const cost = Math.ceil((maxHp - hp) / healPerLiang);
     return (
       <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
         <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
@@ -28,8 +28,8 @@ export default function InnScreen({ building, char, time, zoneTheme, onClose, on
           </div>
           <div style={{ color: "var(--ink-text)", marginBottom: 8 }}>回满需花 {cost} 两</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Btn label={`回满（${cost}两）`} disabled={money < cost || hp >= maxHp}
-              zoneTheme={zoneTheme} onClick={() => onHeal(cost, maxHp - hp, "解毒治疗")} />
+            <Btn label={`回满（${cost}两）`} disabled={money < cost || missing <= 0}
+              zoneTheme={zoneTheme} onClick={() => onHeal(cost, missing, "解毒治疗")} />
             <Btn label="关闭" zoneTheme={zoneTheme} secondary onClick={onClose} />
           </div>
         </div>
