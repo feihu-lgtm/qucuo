@@ -26,6 +26,9 @@ function turnHasStateWrites({ ctx, turn, opts }) {
   if (Array.isArray(turn?.mvuCommands) && turn.mvuCommands.length) return true;
   const p = turn?.p;
   if (!p || typeof p !== "object") return true; // 形态不明按有变动处理，照常记账
+  // 提取层自己判了"值得记"（许下承诺、结下人情之类只活在正文里、不进任何字段）——
+  // 提取规格允许纯琐事省略 memory，故非空 memory 即照常记账，空才允许短路。
+  if (typeof p.memory === "string" && p.memory.trim()) return true;
   return Object.keys(p).some((key) => !NARRATION_ONLY_P_KEYS.has(key));
 }
 

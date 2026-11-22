@@ -277,15 +277,15 @@ describe("runBookkeepAfterTurn", () => {
   });
 
   it("does not call the bookkeeping model on a pure-chat turn with no state writes", async () => {
-    // 契约：提取产物只有叙事键（output/memory/choices/respondedNpcs/_truncated）、
-    // 无 mvu/deal/plan/结算时，本回合无变动，记账调用整体短路（null + ai.chat 零调用）。
+    // 契约：提取产物只有叙事键、memory 为空、无 mvu/deal/plan/结算时，本回合无变动，
+    // 记账调用整体短路（null + ai.chat 零调用）。
     const ai = { chat: vi.fn() };
     const result = await runBookkeepAfterTurn({
       ctx: { ai, apiCfg: {}, ...storeAccess() },
       turn: {
         narrativeText: "两人隔着火炉闲聊了半个时辰。",
         p: {
-          output: ["两人隔着火炉闲聊了半个时辰。"], memory: "与阿旺闲聊",
+          output: ["两人隔着火炉闲聊了半个时辰。"], memory: "",
           choices: [], respondedNpcs: ["阿旺"],
         },
       },
@@ -307,6 +307,21 @@ describe("runBookkeepAfterTurn", () => {
       opts: {},
     });
     expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["打了招呼"]);
+  });
+
+  it("still books when extraction wrote a memory line on an otherwise narration-only turn", async () => {
+    // 口头承诺/结人情只活在正文、不进任何字段——提取层判"值得记"给出 memory 时
+    // 照常记账，承诺不漏账。
+    const ai = createMockAi(['{"memory":"","ledger":{"阿旺":["少侠应承明日替他送刀"]}}']);
+    await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: {
+        narrativeText: "少侠应了阿旺一句，明日替他跑一趟。",
+        p: { output: ["少侠应了阿旺一句，明日替他跑一趟。"], memory: "少侠应承明日替阿旺送刀", respondedNpcs: ["阿旺"] },
+      },
+      opts: {},
+    });
+    expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["少侠应承明日替他送刀"]);
   });
 
   it("still books settle turns whose extraction produced narration-only fields", async () => {
