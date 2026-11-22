@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
 import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
 import { SAFE_HOUSES } from "../map/safeHouse.js";
+import { questPlaceDistrict } from "./questPlace.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,
@@ -74,7 +75,7 @@ describe("quest trigger world rules", () => {
   it("announces an escort destination only for an active escort", () => {
     const quest = ESCORT_QUESTS[0];
     const state = {
-      room: { name: quest.targetLocation },
+      room: { name: questPlaceDistrict(quest.targetLocation) },
       questProgress: { [quest.id]: { active: true } },
       flags: [],
     };

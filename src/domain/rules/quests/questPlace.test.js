@@ -28,3 +28,25 @@ describe("任务地点写法：据点·内层房间", () => {
     expect(problems).toEqual([]);
   });
 });
+
+describe("人物刷新也要落到内层", () => {
+  it("有内层地图的据点，每个驻场人物都落在真实存在的内层房间", async () => {
+    const { RESIDENT_NPCS } = await import("../../data/npc/residentNpcs.js");
+    const { getInnerRoom, getResidentRoomForNpc, hasInnerMap } = await import("../map/innerMap.js");
+    const problems = [];
+    for (const [district, list] of Object.entries(RESIDENT_NPCS)) {
+      if (!hasInnerMap(district)) continue;
+      for (const npc of list) {
+        const home = getResidentRoomForNpc(district, npc.name);
+        if (!home) problems.push(`${district}·${npc.name}：没有内层落点`);
+        else if (!getInnerRoom(district, home)) problems.push(`${district}·${npc.name}：房间「${home}」不存在`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it("护送任务的收货地点写到内层", async () => {
+    const { ESCORT_QUESTS } = await import("../../data/quests/escortQuests.js");
+    expect(ESCORT_QUESTS.map((q) => questPlaceProblem(q.targetLocation)).filter(Boolean)).toEqual([]);
+  });
+});

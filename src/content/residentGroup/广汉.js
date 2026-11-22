@@ -2,7 +2,7 @@ export default { residentGroup: {
 广汉: [
     // ── 三星派（青铜神树下·不收徒不设铺面）──
     {
-      name: "纵目者", id: "resident_zongmuzhe", levelCap: 5,
+      name: "纵目者", innerRoom: "青铜神树下", id: "resident_zongmuzhe", levelCap: 5,
       brief: "青铜神树最顶端坐着的人，面具是金色的",
       personality: "不动，也不说话；你靠近三步，他睁眼。睁眼之后仍然不说话",
       carry: [
@@ -16,7 +16,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "青铜面人·甲", id: "resident_qingtong_jia", levelCap: 3,
+      name: "青铜面人·甲", innerRoom: "三星堆遗址", id: "resident_qingtong_jia", levelCap: 3,
       brief: "戴青铜面具的三星派弟子，不说话只以剑应答",
       personality: "摘了面具谁也不认识谁；败了就走，面具留在地上，里头是空的",
       carry: [
@@ -30,7 +30,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "青铜面人·乙", id: "resident_qingtong_yi", levelCap: 3,
+      name: "青铜面人·乙", innerRoom: "三星堆遗址", id: "resident_qingtong_yi", levelCap: 3,
       brief: "戴青铜面具的三星派弟子，不说话只以剑应答",
       personality: "摘了面具谁也不认识谁；败了就走，面具留在地上，里头是空的",
       carry: [
@@ -44,7 +44,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "青铜面人·丙", id: "resident_qingtong_bing", levelCap: 3,
+      name: "青铜面人·丙", innerRoom: "三星堆遗址", id: "resident_qingtong_bing", levelCap: 3,
       brief: "戴青铜面具的三星派弟子，不说话只以剑应答",
       personality: "摘了面具谁也不认识谁；败了就走，面具留在地上，里头是空的",
       carry: [

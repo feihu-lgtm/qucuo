@@ -13,6 +13,7 @@ import {
   tradeWithNpc,
 } from "./logic.js";
 import { inviteCompanion } from "./inviteCompanion.js";
+import { questPlaceDistrict } from "../../domain/rules/quests/questPlace.js";
 
 const makeState = (overrides = {}) => ({
   char: { money: 0, special: {} },
@@ -58,7 +59,7 @@ describe("NPC conversation logic", () => {
   it("completes an active escort with deterministic state changes", () => {
     const escort = ESCORT_QUESTS[0];
     const result = talkToNpc(makeState({
-      room: { name: escort.targetLocation, npcs: [] },
+      room: { name: questPlaceDistrict(escort.targetLocation), npcs: [] },
       questProgress: { [escort.id]: { active: true } },
     }), { name: escort.targetNpc });
 

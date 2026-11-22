@@ -30,7 +30,7 @@ function promptState() {
     room: {
       name: "鱼定村", desc: "村中喧闹", exits: ["n", "s"], items: [{ name: "石子" }],
       npcs: [
-        { name: "才旦", innerRoom: "村口", levelCap: 2, carriedItems: [{ name: "猎刀" }] },
+        { name: "货郎阿吉", innerRoom: "村口", levelCap: 2, carriedItems: [{ name: "猎刀" }] },
         { name: "老猎户", innerRoom: "别处" },
       ],
     },
@@ -38,7 +38,7 @@ function promptState() {
     quality: ["白", "绿", "蓝", "紫", "橙", "红"],
     describeEquipment: () => "佩刀",
     describeTodayForAI: () => "\n[今日起居] 打坐1次",
-    varTree: { 角色: { 才旦: { 好感度: 37, 态度: "爽朗" } } },
+    varTree: { 角色: { 货郎阿吉: { 好感度: 37, 态度: "爽朗" } } },
   };
 }
 
@@ -48,9 +48,9 @@ describe("prompt reference resolver", () => {
     expect(resolveRef(state, "room.name")).toBe("鱼定村");
     expect(resolveRef(state, "char.hp")).toEqual([70, 100]);
     expect(resolveRef(state, "主角.名")).toBe("少侠");
-    expect(resolveRef(state, "varTree.角色.才旦.好感度")).toBe(37);
-    expect(resolveRef(state, "角色.才旦.好感度")).toBe(37);
-    expect(renderPromptTemplate("@气血 / @varTree.角色.才旦.好感度", state).text).toBe("70/100 / 37");
+    expect(resolveRef(state, "varTree.角色.货郎阿吉.好感度")).toBe(37);
+    expect(resolveRef(state, "角色.货郎阿吉.好感度")).toBe(37);
+    expect(renderPromptTemplate("@气血 / @varTree.角色.货郎阿吉.好感度", state).text).toBe("70/100 / 37");
   });
 
   it("preserves ASCII combat refs before Han suffixes and does not reparse resolved text", () => {
@@ -128,7 +128,7 @@ describe("declared numeric scales", () => {
   it("keeps the pigeon affection scale while whisper dropped the hidden marker", () => {
     expect(buildPrompt("pigeon.reply", {
       state: promptState(),
-      letter: { npcName: "才旦" },
+      letter: { npcName: "货郎阿吉" },
       preset: {},
     }).system).toContain(resolveRef({}, "尺度.飞鸽"));
     // 私语尺度已搬进 narrator_affinity 软结算的判题，旁白私聊提示词不再挂隐藏好感标记
@@ -139,25 +139,25 @@ describe("declared numeric scales", () => {
 describe("shared state prompt templates", () => {
   it("full engine state header carries the inner room description and exits", () => {
     expect(buildMainStatePrompt(promptState())).toBe(
-      "[状态] 时间:第1日·卯初·06:00 主角:少侠〔女〕 房间:鱼定村·村口 出口:n,s NPCs:才旦〔品阶:蓝档〕〔身携:猎刀〕\n此处:村口立着一块褪色的界石，写着'曲措乡'三个字。熊曲、鹰曲、狼曲三条溪流在此交汇，水声潺潺。（四周：东·歇马居　南·鱼定商号　北·老孙饭馆　西·杂货铺摊位）\n地上物品:石子 HP:70/100 内功:3 外功:4 七维:根骨5,悟性6 背包:刀(蓝·已装备),草药 装备:佩刀 武功:野球拳Lv2 因果:4 劫数:9\n[已触发事件] 旗\n[今日起居] 打坐1次",
+      "[状态] 时间:第1日·卯初·06:00 主角:少侠〔女〕 房间:鱼定村·村口 出口:n,s NPCs:货郎阿吉〔品阶:蓝档〕〔身携:猎刀〕\n此处:村口立着一块褪色的界石，写着'曲措乡'三个字。熊曲、鹰曲、狼曲三条溪流在此交汇，水声潺潺。（四周：东·歇马居　南·鱼定商号　北·老孙饭馆　西·杂货铺摊位）\n地上物品:石子 HP:70/100 内功:3 外功:4 七维:根骨5,悟性6 背包:刀(蓝·已装备),草药 装备:佩刀 武功:野球拳Lv2 因果:4 劫数:9\n[已触发事件] 旗\n[今日起居] 打坐1次",
     );
   });
 
   it("private-talk header uses the inner room description and filters inner-room NPCs", () => {
     expect(buildWhisperStatePrompt(promptState())).toBe(
-      "[当前世界状态，仅供你了解背景，不必主动复述] 主角:少侠〔女〕 时间:第1日·卯初·06:00 房间:鱼定村·村口（村口立着一块褪色的界石，写着'曲措乡'三个字。熊曲、鹰曲、狼曲三条溪流在此交汇，水声潺潺。（四周：东·歇马居　南·鱼定商号　北·老孙饭馆　西·杂货铺摊位）） 房间里的人:才旦 玩家背包:刀(蓝·已装备)，草药",
+      "[当前世界状态，仅供你了解背景，不必主动复述] 主角:少侠〔女〕 时间:第1日·卯初·06:00 房间:鱼定村·村口（村口立着一块褪色的界石，写着'曲措乡'三个字。熊曲、鹰曲、狼曲三条溪流在此交汇，水声潺潺。（四周：东·歇马居　南·鱼定商号　北·老孙饭馆　西·杂货铺摊位）） 房间里的人:货郎阿吉 玩家背包:刀(蓝·已装备)，草药",
     );
   });
 
   it("preserves the whisper preview except for the intended NPC visibility filter", () => {
     expect(buildWhisperStatePrompt(promptState(), { preview: true })).toBe(
-      "主角:少侠〔女〕 时间:第1日·卯初·06:00 房间:鱼定村（村中喧闹） 房间里的人:才旦 玩家背包:刀(蓝·已装备)，草药",
+      "主角:少侠〔女〕 时间:第1日·卯初·06:00 房间:鱼定村（村中喧闹） 房间里的人:货郎阿吉 玩家背包:刀(蓝·已装备)，草药",
     );
   });
 
   it("preserves the full prompt preview with only visible NPCs", () => {
     expect(buildMainStatePrompt(promptState(), { preview: true })).toBe(
-      "时间:第1日·卯初·06:00 主角:少侠〔女〕 房间:鱼定村 出口:n,s NPCs:才旦 HP:70/100 内功:3 外功:4 背包:刀，草药",
+      "时间:第1日·卯初·06:00 主角:少侠〔女〕 房间:鱼定村 出口:n,s NPCs:货郎阿吉 HP:70/100 内功:3 外功:4 背包:刀，草药",
     );
   });
 
@@ -192,11 +192,11 @@ describe("model-bound state refs", () => {
   });
 
   it.each([
-    ["LOOK", '当前场景：鱼定村，NPCs：才旦、老猎户，物品：石子\n出口固定（不能改变）：[n,s]'],
+    ["LOOK", '当前场景：鱼定村，NPCs：货郎阿吉、老猎户，物品：石子\n出口固定（不能改变）：[n,s]'],
     ["EXPLORE_ACTION", "当前场景：鱼定村，背包：刀，草药"],
     ["COMBAT", "当前状态：HP=70/100，背包：刀，草药"],
-    ["UNKNOWN", '当前状态：场景=鱼定村，HP=70/100，背包=刀，草药，NPC 关系={"才旦":{"好感度":37,"态度":"爽朗"}}，随身银两=73两'],
-    ["TALK_CASUAL", '当前 NPC 关系：{"才旦":{"好感度":37,"态度":"爽朗"}}\n在场人物与其随身之物：\n· 才旦〔身携:猎刀〕\n· 老猎户〔身无长物〕\n玩家背包：刀，草药'],
+    ["UNKNOWN", '当前状态：场景=鱼定村，HP=70/100，背包=刀，草药，NPC 关系={"货郎阿吉":{"好感度":37,"态度":"爽朗"}}，随身银两=73两'],
+    ["TALK_CASUAL", '当前 NPC 关系：{"货郎阿吉":{"好感度":37,"态度":"爽朗"}}\n在场人物与其随身之物：\n· 货郎阿吉〔身携:猎刀〕\n· 老猎户〔身无长物〕\n玩家背包：刀，草药'],
     ["MOVE", "玩家到达新地点：山门（由系统固定，不能修改）\n固定出口：[w]（不能修改）"],
   ])("%s preserves its state prefix and duel visibility constraint", async (intent, header) => {
     const chat = vi.fn(async () => ({ text: "{}" }));
@@ -206,7 +206,7 @@ describe("model-bound state refs", () => {
     }, {}, null, { chat }, trace);
     const [{ content }] = chat.mock.calls[0][0];
     expect(content).toContain(header + "\n\n叙事内容：\n这里有 @missing 和 @背包");
-    expect(content).toContain("本轮在场 NPC 仅限：才旦。");
+    expect(content).toContain("本轮在场 NPC 仅限：货郎阿吉。");
     expect(trace).not.toHaveBeenCalled();
   });
 });

@@ -118,7 +118,7 @@ export function commitRound(d) {
     varTree: d.refGet("varTreeRef"), time: d.time,
     systemAcceptedNames: postCtx.systemAcceptedNames, luck: postCtx.luck,
   }));
-  applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck })); // 涌现·实体化
+  applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck, innerRoomName: d.innerRoomName })); // 涌现·实体化
   applyPostResult(d, writeRoom({    // 房间写回（锁定目的地/固定地图/兜底）
     isTalk: d.isTalk, lockedDestName: d.lockedDestName, p: d.p, room: d.room, innerRoomName: d.innerRoomName,
     roomMap: _roomMap, outerDepart: d.refGet("outerDepartRef"),

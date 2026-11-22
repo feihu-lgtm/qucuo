@@ -7,6 +7,7 @@ import { injectNpcs } from "../npc/roomNpcs.js";
 import { getResidentNpcs } from "../../data/npc/residentNpcs.js";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
 import { seededRand } from "../../../utils/seededRandom.js";
+import { parseQuestPlace, questPlaceDistrict } from "../quests/questPlace.js";
 
 const NPC_FIELDS = [
   "levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable",
@@ -76,7 +77,7 @@ export const residentNpcRule = {
     const activeEscortTargets = ESCORT_QUESTS
       .filter((quest) => (
         questProgress[quest.id]?.active
-        && quest.targetLocation === room.name
+        && questPlaceDistrict(quest.targetLocation) === room.name
         && !flags.includes(`quest_done_${quest.id}`)
       ))
       // 收货人可能是游走池的人，也可能是常驻（李掌柜）；常驻的那位若被旧存档缓存在别处，
@@ -84,7 +85,13 @@ export const residentNpcRule = {
       .map((quest) => NPC_POOL.find((npc) => npc.name === quest.targetNpc)
         || getResidentNpcs(room.name).find((npc) => npc.name === quest.targetNpc))
       .filter(Boolean)
-      .map(toRoomNpcWithCombat);
+      .map(toRoomNpcWithCombat)
+      .map((npc) => {
+        // 收货人站在护送目的地写明的那间内层房间（驻场的人按其驻场绑定）
+        const quest = ESCORT_QUESTS.find((q) => q.targetNpc === npc.name && questPlaceDistrict(q.targetLocation) === room.name);
+        const inner = quest && parseQuestPlace(quest.targetLocation)?.inner;
+        return inner ? { ...npc, innerRoom: inner } : npc;
+      });
     const hourNow = ((time % 24) + 24) % 24;
     const gambleBidders = hasInnerMap(room.name) && getInnerRoomNames(room.name).includes("玉石料场")
       ? [

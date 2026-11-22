@@ -100,7 +100,7 @@ describe("软判定后的平息怒气措辞", () => {
 describe("切磋邀战结算", () => {
   const build = (narrativeOnly) => buildSysBase(
     220, { stage: "NORMAL", affection: 20 }, "x", null, false, "", narrativeOnly, "settle",
-    { playerName: "少侠", settleNpc: { name: "才旦" }, settleKind: "duel_invite" },
+    { playerName: "少侠", settleNpc: { name: "货郎阿吉" }, settleKind: "duel_invite" },
   );
 
   it("叙事只到接受邀战、摆开架势，明确在第一招前停止", () => {
@@ -123,7 +123,7 @@ describe("切磋邀战结算", () => {
   it("dual-call extraction returns a no-op without calling the model", async () => {
     const ai = { chat: vi.fn() };
     await expect(callExtraction("COMBAT", "邀战", { char: {} }, {}, {
-      settleKind: "duel_invite", settleNpc: { name: "才旦" },
+      settleKind: "duel_invite", settleNpc: { name: "货郎阿吉" },
     }, ai)).resolves.toEqual({ p: {}, mvuCommands: [] });
     expect(ai.chat).not.toHaveBeenCalled();
   });
@@ -151,14 +151,14 @@ describe("AI duelRequest", () => {
   });
 
   it("keeps only room-visible NPCs from either string or object form", () => {
-    const presentNpc = { name: "才旦", innerRoom: "村口广场" };
+    const presentNpc = { name: "货郎阿吉", innerRoom: "村口广场" };
     const absentNpc = { name: "老猎户" };
     const state = {
       room: { name: "鱼定村", npcs: [presentNpc, absentNpc] },
       innerRoomName: "村口广场",
     };
-    expect(normalizeExtractedFields({ duelRequest: "才旦" }, state).duelRequest).toBe(presentNpc);
-    expect(normalizeExtractedFields({ duelRequest: { name: "才旦" } }, state).duelRequest).toBe(presentNpc);
+    expect(normalizeExtractedFields({ duelRequest: "货郎阿吉" }, state).duelRequest).toBe(presentNpc);
+    expect(normalizeExtractedFields({ duelRequest: { name: "货郎阿吉" } }, state).duelRequest).toBe(presentNpc);
     expect(normalizeExtractedFields({ duelRequest: "老猎户" }, state)).not.toHaveProperty("duelRequest");
     expect(normalizeExtractedFields({ duelRequest: "无此人" }, state)).not.toHaveProperty("duelRequest");
   });
