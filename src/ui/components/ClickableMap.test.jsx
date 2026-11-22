@@ -19,6 +19,13 @@ const NODES = [
   { name: "雅江", x: 1, y: 0, explored: true, reachable: true, dir: "e", links: ["鱼定村"] },
 ];
 
+// 近邻与远邻共线：远邻排在数组后面时，其命中条若后画会盖住整段近连线。
+const COLLINEAR = [
+  { name: "鱼定村", x: 0, y: 0, explored: true, current: true, links: [] },
+  { name: "喇嘛庙", x: 1, y: 0, explored: true, reachable: true, dir: "e", links: [] },
+  { name: "顶峰", x: 3, y: 0, explored: true, reachable: true, dir: "e", links: [] },
+];
+
 function flatten(node) {
   if (!node || typeof node !== "object") return [];
   if (Array.isArray(node)) return node.flatMap(flatten);
@@ -41,6 +48,14 @@ describe("ClickableMap route edges", () => {
     expect(lines).toHaveLength(1);
     lines[0].props.onClick({});
     expect(onGo).toHaveBeenCalledWith("e", "雅江", undefined);
+  });
+
+  it("paints nearer destinations' hit strips last so they win overlapping hit tests", () => {
+    const tree = ClickableMap({ nodes: COLLINEAR, onGo: vi.fn(), accent: "#a00", loading: false });
+    const lines = flatten(tree).filter(n => n.type === "line" && n.props.pointerEvents === "stroke");
+    // SVG 后画者命中最上层：喇嘛庙（近）必须在顶峰（远）之后
+    expect(lines.map(l => l.key)).toEqual(["go-hit-e-顶峰", "go-hit-e-喇嘛庙"]);
+    lines[1].props.onClick({});
   });
 });
 

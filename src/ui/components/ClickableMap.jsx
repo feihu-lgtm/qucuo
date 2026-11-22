@@ -113,8 +113,13 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
             <line key={`go-${n.dir}-${n.name || n.dest}`} x1={px(cur.x)} y1={py(cur.y)} x2={px(n.x)} y2={py(n.y)}
               stroke={n.locked ? "#8a6a3a" : accent} strokeWidth={2} strokeDasharray={n.explored ? "none" : "6,5"} opacity={0.6} pointerEvents="none" />
           ))}
-          {/* 连线的隐形加粗命中条：点目的地时落点常在连线上，把这段线也算作该节点的命中面 */}
-          {!loading && cur && nodes.filter(n => n.reachable || n.locked).map(n => (
+          {/* 连线的隐形加粗命中条：点目的地时落点常在连线上，把这段线也算作该节点的命中面。
+              按线长倒序绘制——短线最后画：两条线在共扇区重叠时 SVG 命中最上层，
+              让近处目的地赢（否则远处的长连线会盖住整段近连线）。 */}
+          {!loading && cur && nodes.filter(n => n.reachable || n.locked)
+            .slice()
+            .sort((a, b) => ((b.x - cur.x) ** 2 + (b.y - cur.y) ** 2) - ((a.x - cur.x) ** 2 + (a.y - cur.y) ** 2))
+            .map(n => (
             <line key={`go-hit-${n.dir}-${n.name || n.dest}`} x1={px(cur.x)} y1={py(cur.y)} x2={px(n.x)} y2={py(n.y)}
               stroke="rgba(0,0,0,0)" strokeWidth={36} pointerEvents="stroke" data-map-node-hit-target=""
               style={{ cursor: "pointer" }}
