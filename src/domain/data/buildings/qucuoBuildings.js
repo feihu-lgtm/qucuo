@@ -51,6 +51,12 @@ export const BUILDING_TYPE_LABEL = {
 // shopKey：对应 qucuoShops.js 里的 QUCUO_SHOPS 键名
 // skillSet：对应 qucuoKungfu.js 里的 SKILL_CATALOG 键名
 export const BUILDINGS_BY_LOCATION = {
+  蜀南唐堡: [
+    {
+      id: "wuguan_tangmen", name: "千机演武坪", type: BUILDING_TYPE.WUGUAN, skillSet: "唐门",
+      desc: "满地机关暗桩与会转身的铁皮假人，练的不是堂堂正正的招架，是在别人眨眼的半息里把暗器送进缝隙的本事。",
+    },
+  ],
   // ── 鱼定村（7 种，枢纽村） ──
   鱼定村: [
     {

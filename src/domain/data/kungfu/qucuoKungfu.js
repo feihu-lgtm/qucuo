@@ -327,25 +327,36 @@ export const SKILL_CATALOG = {
   // ── 唐门：暗器与毒药，家族制不收外姓，但暗器卖给所有人 ──
   唐门: [
     {
+      id: "kf_tm_cuntie", name: "寸铁点星手", type: SKILL_TYPE.MOVE, quality: "绿", price: 55,
+      moveType: "攻击",
+      lowHpBonus: 0.25,
+      unlock: { rep: 0, member: false, note: "无需拜入，唐门声誉 ≥ 0（演武坪可学）" },
+      desc: "唐门最不起眼的入门暗器手法，铁莲子、铜钱甚至半枚碎瓷片都能脱手打穴。唐三少说这门功夫不图好看，只图「对手以为你手里空着的时候，他已经少了一口气」。",
+    },
+    {
       id: "kf_rec_yaoxi", name: "药息", type: SKILL_TYPE.MOVE, quality: "蓝", price: 145,
       moveType: "状态",
       energyRestore: 7, immuneControl: true,
+      unlock: { rep: 15, member: false, note: "无需拜入，唐门声誉 ≥ 15" },
       desc: "唐门以毒淬体的副产物：运起药息，体表渗出一层微苦的薄汗，人也跟着清醒。旁人的迷香定身之类，到了这层汗跟前就矮了三分。唐老太一边喝茶一边说「这不算功夫，是习惯」。",
     },
     {
       id: "kf_rec_xiazhong", name: "匣中静", type: SKILL_TYPE.MOVE, quality: "紫", price: 215,
       moveType: "状态",
       energyRestore: 9, nextAttackBonus: 0.35,
+      unlock: { rep: 40, member: false, note: "需正式拜入唐门，或唐门声誉 ≥ 40" },
       desc: "开匣之前的那一息。十二格暗器都在手边，你不看它们，只调匀呼吸——手一稳，出去的东西才准。唐三少说店里最贵的不是暗器，是这一息。",
     },
     { id: "kf_tangmen_anqi", name: "满天星雨", type: SKILL_TYPE.MOVE, quality: "蓝", price: 150,
       moveType: "攻击",
       ignoreDefenseRatio: 0.35, applyMark: { name: "内伤", stacks: 1, max: 5 },
+      unlock: { rep: 40, member: true, guestRep: 80, note: "需正式拜入唐门且声誉 ≥ 40（或声誉 ≥ 80）" },
       desc: "唐门暗器总诀。袖中同时飞出七枚铁蒺藜，走七条不同弧线，封死对手三个闪避方向。不是快，是密。练到极处一袖出三十六枚，如星雨覆面，无处可躲。" },
     { id: "kf_tangmen_du", name: "百毒不侵体", type: SKILL_TYPE.NEIGONG, quality: "蓝", price: 130,
       moveType: "防御",
       desc: "唐门弟子自幼以毒淬体，小剂量百毒日日服，练出一副抗毒的筋骨。运功时体表渗出一层薄汗，带微苦药气——毒物近身先被这层汗化去三分。不是解毒，是毒到了跟前就矮了三分。",
-      passiveBonus: { maxHp: 15 } },
+      passiveBonus: { maxHp: 15 },
+      unlock: { rep: 40, member: true, guestRep: 80, note: "需正式拜入唐门且声誉 ≥ 40（外客须声誉 ≥ 80 方可求教）" } },
   ],
 
   // ── 血刀门：邪派，以杀养刀。不外传，只从厉天行身上掉 ──

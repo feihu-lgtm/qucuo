@@ -1,11 +1,12 @@
 import React from "react";
 import { SKILL_CATALOG, hasSkill } from "../../../domain/data/kungfu/qucuoKungfu.js";
 import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
+import { skillUnlockStatus } from "../../../domain/rules/economy/skillUnlock.js";
 import { Overlay, Header, Btn } from "./common.jsx";
 
 const SKILL_TYPE_LABEL = { 招式: "招", 内功: "内", 轻功: "轻" };
 
-export default function WuguanScreen({ building, char, skills, zoneTheme, onClose, inline, onBuySkill }) {
+export default function WuguanScreen({ building, char, skills, flags, questProgress, zoneTheme, onClose, inline, onBuySkill }) {
   const skillSet = building.skillSet || "";
   const catalog = SKILL_CATALOG[skillSet] || [];
   const money = char.money || 0;
@@ -21,6 +22,7 @@ export default function WuguanScreen({ building, char, skills, zoneTheme, onClos
           ? <div style={{ color: "var(--ink-text-dim)" }}>此武馆暂无秘籍可购。</div>
           : catalog.map(item => {
               const owned = hasSkill(skills, item.id);
+              const unlock = skillUnlockStatus({ flags, questProgress }, item);
               return (
                 <div key={item.id} style={{ marginBottom: 12, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
@@ -37,6 +39,8 @@ export default function WuguanScreen({ building, char, skills, zoneTheme, onClos
                   <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 8 }}>{item.desc}</div>
                   {owned
                     ? <span style={{ color: "#3a5a3a", fontSize: 11 }}>✓ 已习得</span>
+                    : !unlock.ok
+                      ? <span style={{ color: "#6a5a4a", fontSize: 11 }}>尚不可学：{unlock.reason}</span>
                     : item.insight
                       ? (() => {
                         // 参悟类：不花钱，看门槛。够不到就明说还差多少——
