@@ -191,7 +191,7 @@ export default function TopBar({
                 AV_BASE + "preset1.webp", AV_BASE + "preset2.webp", AV_BASE + "preset3.webp",
                 AV_BASE + "preset4.webp", AV_BASE + "preset5.webp"].map((src, i) => (
                 <div key={i}
-                  onClick={() => { setPlayerAvatarCustom(src); try { localStorage.setItem("qucuo_player_avatar", src); } catch { /* ignore */ } closeOverlay(OVERLAY.AVATAR_PICKER); }}
+                  onClick={() => { setPlayerAvatarCustom(src); closeOverlay(OVERLAY.AVATAR_PICKER); }}
                   style={{ aspectRatio: "2/3", borderRadius: 0, overflow: "hidden", cursor: "pointer", border: playerAvatarCustom === src ? "2px solid var(--accent)" : "1px solid var(--border)", background: "var(--bg-panel)" }}
                 >
                   <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -210,14 +210,13 @@ export default function TopBar({
                     reader.onload = () => {
                       const dataUrl = reader.result;
                       setPlayerAvatarCustom(dataUrl);
-                      try { localStorage.setItem("qucuo_player_avatar", dataUrl); } catch { alert("图片太大，无法存入本地存储，请换小一点的图。"); }
                       closeOverlay(OVERLAY.AVATAR_PICKER);
                     };
                     reader.readAsDataURL(file);
                   }} />
               </label>
               {playerAvatarCustom && (
-                <span onClick={() => { setPlayerAvatarCustom(""); try { localStorage.removeItem("qucuo_player_avatar"); } catch { /* ignore */ } closeOverlay(OVERLAY.AVATAR_PICKER); }}
+                <span onClick={() => { setPlayerAvatarCustom(""); closeOverlay(OVERLAY.AVATAR_PICKER); }}
                   style={{ cursor: "pointer", fontSize: "11.5px", color: "#c47070", padding: "6px 12px", border: "1px solid #3a1a1a", borderRadius: 0 }}>
                   恢复默认（按性别）
                 </span>

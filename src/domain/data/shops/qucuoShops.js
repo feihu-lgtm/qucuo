@@ -62,6 +62,40 @@ export const QUCUO_SHOPS = {
       { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 100 },
     ],
   },
+  // 三星派·古墟秘藏阁（合稿·三星派 6.2）。声誉 < 15 不摆货；声誉上限 100，合稿 ≥140 的镇阁剑收到 100、限购一次。
+  三星秘藏: {
+    shopName: "古墟秘藏阁",
+    items: [
+      { name: "绿锈青铜剑", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "粗布护心藤甲", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "古蜀艾草宁神香", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 15 },
+      { name: "听风柳叶铜剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "墨麻轻行衣", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 40 },
+      { name: "青铜纵目护符", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 40 },
+      { name: "归墟凝神丹", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 40 },
+      { name: "古铜重剑", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 40 },
+      { name: "玄麻祭天袍", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 80 },
+      { name: "神鸟金纹剑", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100, limitOnce: true },
+    ],
+  },
+  // 玉泉茶马货栈（玉泉寨·茶马古道中转站，合稿·玉泉寨 六）。白品日用人人有，
+  // 声誉 15/40/80 摆好物，rep100 深交出百年雪水青稞陈酿（合稿写限购两坛，引擎只支持买一次撤柜，先按 limitOnce）。
+  玉泉货栈: {
+    shopName: "玉泉茶马货栈",
+    items: [
+      { name: "狼曲酥油炒面", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "牦牛粪饼", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "羊皮护腿", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "绿松石铜戒", category: ITEM_CATEGORY.ACCESSORY, quality: "白" },
+      { name: "牧羊短刀", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "草原驯马长鞭", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "雪羊皮软甲", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "巴登跌打接骨膏", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 40 },
+      { name: "索朗精锻牧刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
+      { name: "狼牙护心铜镜", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 80 },
+      { name: "百年雪水青稞陈酿", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 100, limitOnce: true },
+    ],
+  },
   // 鱼定土司府·土司府军需司（合稿·土司府 6.2）。合稿镇边虎纹玉佩门槛 140，声誉上限 100，收到 100。
   土司军需司: {
     shopName: "土司府军需司",

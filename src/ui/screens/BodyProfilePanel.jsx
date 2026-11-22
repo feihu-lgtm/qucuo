@@ -6,9 +6,12 @@
 // ============================================================================
 import React, { useState } from "react";
 import {
-  BODY_FIELDS, PUBLIC_FIELDS, INTIMATE_FIELDS, BODY_LAYER,
+  PUBLIC_FIELDS, INTIMATE_FIELDS, BODY_LAYER,
   emptyBodyProfile, bodyProfileFilled, previewText, maskText,
 } from "../../domain/rules/character/bodyProfile.js";
+import {
+  ALL_BODY_PRESETS, BODY_TAG_POOL, applyBodyPreset, appendBodyTag,
+} from "../../domain/rules/character/bodyPresets.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 export default function BodyProfilePanel({
@@ -17,6 +20,7 @@ export default function BodyProfilePanel({
   const closeGuard = useOverlayCloseGuard(onClose);
   const [editing, setEditing] = useState(null);      // 当前展开成输入框的 key
   const [showIntimate, setShowIntimate] = useState(false); // 私密层是否揭码
+  const [showPresets, setShowPresets] = useState(false);   // 体貌库模板折叠态
   const p = profile || emptyBodyProfile();
   const filled = bodyProfileFilled(p);
 
@@ -59,12 +63,36 @@ export default function BodyProfilePanel({
           <div style={{ marginTop: 5 }}>
             <div style={{ fontSize: "10px", color: textDim, marginBottom: 3 }}>{f.def}</div>
             <textarea
+              className="body-profile-textarea"
               autoFocus
               value={val}
               placeholder={f.hint || "写你想让 AI 记住的样子，一两句就够"}
               onChange={e => onChange({ ...p, [f.key]: e.target.value })}
               style={{ ...inputStyle, minHeight: 54 }}
             />
+            {(BODY_TAG_POOL[f.key] || []).length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 5 }}>
+                {BODY_TAG_POOL[f.key].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => onChange({ ...p, [f.key]: appendBodyTag(val, tag) })}
+                    style={{
+                      background: "var(--bg-panel)",
+                      border: `1px solid color-mix(in srgb, ${border} 55%, transparent)`,
+                      borderRadius: 0,
+                      color: textDim,
+                      fontSize: "10px",
+                      padding: "2px 6px",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    + {tag}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -75,6 +103,7 @@ export default function BodyProfilePanel({
 
   return (
     <div
+      className="mobile-overlay-root body-profile-root"
       style={{
         position: "fixed", inset: 0, background: "rgba(4,4,10,0.92)", zIndex: 220,
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -83,6 +112,7 @@ export default function BodyProfilePanel({
       onClick={closeGuard.onClick}
     >
       <div
+        className="body-profile-panel"
         onClick={e => e.stopPropagation()}
         style={{
           background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0, padding: 18,
@@ -98,6 +128,69 @@ export default function BodyProfilePanel({
         <div style={{ fontSize: "10.5px", color: textDim, lineHeight: 1.7, marginBottom: 10 }}>
           写在这里的样子，动作描写、贴身互动与旁白私聊都会照着写，不会每轮换一副身板。
           点条目展开编辑，留空的栏目一个字都不会发出去。
+        </div>
+
+        {/* 体貌库预设 */}
+        <div style={{
+          border: `1px solid color-mix(in srgb, ${border} 45%, transparent)`,
+          padding: "7px 10px", marginBottom: 12,
+        }}>
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={showPresets}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowPresets(v => !v); } }}
+            onClick={() => setShowPresets(v => !v)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
+          >
+            <span style={{ fontSize: "11px", color: accent }}>体貌库预设（{ALL_BODY_PRESETS.length} 套成年模板：8 立绘 + 6 江湖）</span>
+            <span style={{ fontSize: "10px", color: textDim }}>{showPresets ? "收起" : "展开挑选"}</span>
+          </div>
+          {showPresets && (
+            <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+              <div style={{ fontSize: "10px", color: "var(--text-dim)", lineHeight: 1.5 }}>
+                默认仅填入公开层 7 项；开启 ■ 模式并揭开私密层后可一键填入完整 12 项。
+              </div>
+              {ALL_BODY_PRESETS.map((preset) => (
+                <div
+                  key={preset.id}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                    borderTop: `1px solid color-mix(in srgb, ${border} 18%, transparent)`, paddingTop: 6,
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: "11.5px", color: "var(--text)" }}>{preset.name}</div>
+                    <div style={{ fontSize: "10px", color: textDim }}>{preset.tag}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => onChange(applyBodyPreset(p, preset, { includeIntimate: false }))}
+                      style={{
+                        background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0,
+                        color: accent, fontSize: "10px", padding: "3px 8px", cursor: "pointer", fontFamily: "inherit",
+                      }}
+                    >
+                      套公开层
+                    </button>
+                    {nsfwOn && showIntimate && (
+                      <button
+                        type="button"
+                        onClick={() => onChange(applyBodyPreset(p, preset, { includeIntimate: true }))}
+                        style={{
+                          background: "var(--bg-panel)", border: "1px solid var(--body-nsfw)", borderRadius: 0,
+                          color: "var(--body-nsfw)", fontSize: "10px", padding: "3px 8px", cursor: "pointer", fontFamily: "inherit",
+                        }}
+                      >
+                        含私密层
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 公开层 */}

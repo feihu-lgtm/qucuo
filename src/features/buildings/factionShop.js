@@ -59,6 +59,17 @@ const FACTION_SHOPS = {
     hostileClosed: { vault: "秘珍坊的暗门紧闭，廊下灯笼全灭。" },
     hostileQualities: [],
   },
+  // 玉泉茶马货栈（玉泉寨）：对外的茶马铺面，交恶至敌对（-59~-20）只摆白品日用并加价，
+  // 冷淡（-19~-1）只剩炒面粪饼；深交折扣走 factionRepCoef 通用档（rep80 → 0.75，近似合稿 140→0.7）。
+  玉泉货栈: {
+    faction: "玉泉寨", idPrefix: "yuquan_purchase",
+    outlets: { shop_yuquan: "outer" },
+    nowhere: "须到玉泉寨的茶马货栈才能买寨里的货。",
+    banned: "掌柜把茶砖往货架里一推：「玉泉寨不做死敌的生意。」",
+    hostileClosed: {},
+    hostileQualities: ["白"],
+    coldItems: ["狼曲酥油炒面", "牦牛粪饼"],
+  },
   三星分舵商坊: {
     faction: "丐帮三星分舵", idPrefix: "gaibang_purchase",
     outlets: { sectshop_gaibang: "vault" },
@@ -86,6 +97,14 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileItems: ["雪山姜枣干粮", "寒岭冻伤膏"],
     coldItems: ["雪山姜枣干粮", "寒岭冻伤膏", "雪松木剑"],
+  },
+  三星秘藏: {
+    faction: "三星派", idPrefix: "sanxing_purchase",
+    outlets: { sanxing_sect_shop: "vault" },
+    nowhere: "须到广汉祭祀坑西石室的古墟秘藏阁才能买三星派的货。",
+    banned: "姜泠把铜镜扣在案上：「古墟不与你做买卖。」",
+    hostileClosed: {},
+    hostileQualities: ["绿"],
   },
   土司军需司: {
     faction: "鱼定土司府", idPrefix: "tusi_purchase",

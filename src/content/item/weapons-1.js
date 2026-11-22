@@ -105,6 +105,13 @@ const items = {
 "晒干青竹棍": { name: "晒干青竹棍", category: "weapon", quality: "白", atkMul: 1.1, desc: "三星镇外砍来晒透的老竹，不及精铁锋利，胜在顺手韧长，新手练棒正好。" },
 "鹊尾竹节棍": { name: "鹊尾竹节棍", category: "weapon", quality: "蓝", atkMul: 1.25, effect: { lowHpBonus: 0.15 }, desc: "九节紫竹棍，棍梢系着一撮染红的喜鹊尾羽。秦小鹊说棍子要轻才甩得开，打不过就跑，跑之前先敲对方一记脑门。" },
 "铁头打狗棒": { name: "铁头打狗棒", category: "weapon", quality: "蓝", atkMul: 1.3, desc: "选用五年老青竹，两端套上精铁箍，抽人带风、架刀不断，是四袋以上弟子的标配。" },
+// ── 三星派（广汉古蜀青铜神树墟）──
+"绿锈青铜剑": { name: "绿锈青铜剑", category: "weapon", quality: "绿", atkMul: 1.15, desc: "刃口微钝却极沉手的古法青铜直剑，砸在铁刀上嗡嗡震手，新人练重剑最合用。" },
+"听风柳叶铜剑": { name: "听风柳叶铜剑", category: "weapon", quality: "蓝", atkMul: 1.25, sixDim: { 身法: 1 }, desc: "姜泠同款轻剑，剑身薄如柳叶且刻有导风细槽，出剑时比寻常钢剑更静。" },
+"古铜重剑": { name: "古铜重剑", category: "weapon", quality: "紫", atkMul: 1.4, sixDim: { 体魄: 1 }, desc: "樊枯亲手在赤炉里浇铸的宽刃青铜剑，分量压手，一记劈砸能硬生生震开对手架势。" },
+"神鸟金纹剑": { name: "神鸟金纹剑", category: "weapon", quality: "橙", atkMul: 1.55, sixDim: { 悟性: 1 }, desc: "仿照神树金乌铸就的镇阁古剑，剑脊嵌着失传的错金神鸟纹，出鞘自带一股破妄清鸣。" },
+"赤炉铸铜锤": { name: "赤炉铸铜锤", category: "weapon", quality: "紫", atkMul: 1.4, desc: "樊枯掌炉用的短柄八棱重铜锤，既可锻剑亦可碎甲，锤面坑坑洼洼全是六十年的火候。" },
+"柳叶青铜剑": { name: "柳叶青铜剑", category: "weapon", quality: "蓝", atkMul: 1.25, desc: "姜泠随身的轻薄铜剑，剑身刻有细密风纹，挥起来几乎不出声。" },
 "西域弯刀": { name:"西域弯刀", category:"weapon", quality:"绿", atkMul: 1.1, tags:["武器","西域","天龙教"], desc:"西域商路带来的弯刀，刀身微弧利于骑上劈削。玄甲老卒人手一把——不精良，但顺手，断了也不心疼。" },
 "护法铜杖": { name:"护法铜杖", category:"weapon", quality:"绿", atkMul: 1.05, tags:["武器","禅杖"], desc:"白衣旧部护法用的熟铜杖，杖头四个铜环早被摩挲得发亮。旧部说它不是兵器，是「拿来拦住拳头的东西」。" },
 "柳叶小刀": { name:"柳叶小刀", category:"weapon", quality:"绿", atkMul: 1.0, tags:["武器","医具"], desc:"贺兰昭药箱里垫底的柳叶小刀，刃薄如纸，原本是割肉剔腐的医具——她拿它剜过腐肉，也拿它吓退过两个抢药的。" },

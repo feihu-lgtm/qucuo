@@ -95,6 +95,27 @@ export const BUILDINGS_BY_LOCATION = {
       id: "inn_gaibang_xiedian", name: "荒庙草铺", type: BUILDING_TYPE.INN, innPrice: 10,
       desc: "东厢房里铺满晒干的新稻草，窗纸糊着泛黄的旧告示，夜里漏风却胜在干净安全。严九斤说出门在外讲究个落脚舒心，连血刀贼都不敢摸到这儿来。",
     },
+    // ── 广汉·三星派古蜀青铜神树墟（合稿·三星派 2.3；授面坛等拜入接线后再开） ──
+    {
+      id: "sanxing_tree_altar", name: "青铜神树台", type: BUILDING_TYPE.TEMPLE, karmaPerPray: 10,
+      desc: "三丈青铜神树下的夯土祭台，九枝九鸟在雾里若隐若现。在这里焚香静坐，听铜枝里的风声一层层沉下去，偶有所悟。",
+    },
+    {
+      id: "sanxing_sword_pit", name: "碎铜剑坪", type: BUILDING_TYPE.WUGUAN, skillSet: "三星",
+      desc: "祭祀坑底踩得发亮的碎铜坪，满地是断裂的古剑与面具碎片。三名青铜面人轮流守坪，外人要学古墟剑法，先得在这里过他们一剑。",
+    },
+    {
+      id: "sanxing_sect_shop", name: "古墟秘藏阁", type: BUILDING_TYPE.SECTSHOP, shopKey: "三星秘藏",
+      desc: "祭祀坑西侧凿进土崖的石室，架上摆着樊枯新铸的铜剑、古麻衣袍和墟中秘药。姜泠管账，外客凭交情才能看到里面几层。",
+    },
+    {
+      id: "sanxing_bronze_forge", name: "赤炉铸铜坊", type: BUILDING_TYPE.FORGE,
+      desc: "地窖深处一座常年不熄的赤炉，樊枯在这里补神树铜枝，也替信得过的人浇铸兵刃。炉壁烤得发红，站近了眉毛都要卷。",
+    },
+    {
+      id: "sanxing_stele_pavilion", name: "古蜀碑廊", type: BUILDING_TYPE.LIBRARY,
+      desc: "一条刻满古蜀图符的石廊，纵目人面、鱼凫与神鸟层层叠叠。三星派弟子在这里拓碑读谱，外客得了门人点头才能进来看。",
+    },
     {
       id: "sect_gaibang_entry", name: "三星分舵·聚义堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "丐帮三星分舵",
       desc: "破庙正殿改成的分舵议事处，供桌上不烧高香只摆烈酒。想入丐帮不看家世高低，只看你敢不敢端起严九斤那碗混着雨水与江湖气的入门酒。",
@@ -284,6 +305,26 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "wuguan_yuquan", name: "玉泉练武场", type: BUILDING_TYPE.WUGUAN, skillSet: "玉泉",
       desc: "玉泉寨猎人和牧民自发组的练武场，藏地摔跤和步法为主，平时也传外人。",
+    },
+    {
+      id: "forge_yuquan", name: "寨门铁作棚", type: BUILDING_TYPE.FORGE,
+      desc: "索朗的露天铁作棚，打马掌、修牧刀，炉火常年不熄。",
+    },
+    {
+      id: "hospital_yuquan", name: "巴登草药棚", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
+      desc: "巴登阿妈的草药棚，跌打接骨膏远近闻名，声誉够的常客看病不收钱。",
+    },
+    {
+      id: "teahouse_yuquan", name: "寨场酥油茶棚", type: BUILDING_TYPE.TEAHOUSE,
+      desc: "寨场边的酥油茶棚，茶马古道的行商歇脚处，消息比酥油茶还热乎。",
+    },
+    {
+      id: "kitchen_yuquan", name: "狼曲篝火灶台", type: BUILDING_TYPE.KITCHEN,
+      desc: "狼曲河边的公共篝火灶台，牧民共用的炊事地。",
+    },
+    {
+      id: "shop_yuquan", name: "玉泉茶马货栈", type: BUILDING_TYPE.SHOP, shopKey: "玉泉货栈",
+      desc: "茶马古道上的中转货栈，茶砖皮货青稞酒，价钱看你在寨里的名声。",
     },
   ],
 
