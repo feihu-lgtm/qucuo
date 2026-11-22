@@ -17,6 +17,10 @@ export const SECT_ENTRY = {
   minAffection: 30,   // 何雨谢对玩家的好感度
   minNeigong: 5,      // 内功底子
   tuition: 100,       // 束脩（两）
+  minRep: 40,         // 合稿 7.4：雪山派声誉 ≥ 40（门墙之交）方可拜入
+  minPrestige: 0,     // 合稿 7.4：全局威望 ≥ 0，不收声名狼藉之徒
+  quests: ["xueshan_1_shuangjie_wenmen", "xueshan_2_hanji_tang"], // 合稿 7.4：须先过雪1、雪2
+  repBonus: 20,       // 合稿 7.1：正式拜入立加雪山派声誉 +20
   keyName: "雪山派令牌钥匙",
   flag: "雪山派弟子",  // 入门后写进 flags，供世界书/任务/叙事判断身份
 };
@@ -28,9 +32,26 @@ function isSectDisciple(flags) {
 
 // 逐条检查入门资格，返回每一条的达成情况——UI 要把"差在哪"逐条摊开给玩家看，
 // 只回一个 false 玩家不知道该去补什么。
-export function checkSectEntry({ affection = 0, neigong = 0, money = 0, flags = [], otherSect = null } = {}) {
+export function checkSectEntry({ affection = 0, neigong = 0, money = 0, flags = [], otherSect = null, rep = 0, prestige = 0, questProgress = {} } = {}) {
   const already = isSectDisciple(flags);
   const reqs = [
+    {
+      key: "rep",
+      label: `${SECT_ENTRY.sect}声誉 ≥ ${SECT_ENTRY.minRep}（门墙之交）`,
+      have: rep, need: SECT_ENTRY.minRep, ok: rep >= SECT_ENTRY.minRep,
+    },
+    {
+      key: "prestige",
+      label: `威望 ≥ ${SECT_ENTRY.minPrestige}（不收声名狼藉之徒）`,
+      have: prestige, need: SECT_ENTRY.minPrestige, ok: prestige >= SECT_ENTRY.minPrestige,
+    },
+    {
+      key: "quests",
+      label: "完成「雪1·霜阶问门」与「雪2·寒疾一碗汤」",
+      have: (SECT_ENTRY.quests || []).filter((qid) => questProgress?.[qid]?.status === "completed").length,
+      need: (SECT_ENTRY.quests || []).length,
+      ok: (SECT_ENTRY.quests || []).every((qid) => questProgress?.[qid]?.status === "completed"),
+    },
     {
       key: "affection",
       label: `${SECT_ENTRY.master}的认可（好感度 ≥ ${SECT_ENTRY.minAffection}）`,

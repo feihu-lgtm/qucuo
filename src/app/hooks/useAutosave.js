@@ -20,6 +20,7 @@ import {
   rollSkeleton, parseSquareBatch, applySquareBatch,
   pendingNodes, serializeSquares, loadSquares,
 } from "../../domain/rules/map/mapSquares.js";
+import { roadNameGuard } from "../../domain/rules/map/encounter.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
@@ -190,11 +191,12 @@ export function useAutosave({
     (async () => {
       try {
         const luck = char.special?.气运 ?? 5;
+        const isTaken = roadNameGuard({ varTree: gameStore.getState().varTree, time });
         for (let i = 0; i < pending.length; i += 3) {
           const skeletons = {};
           const batch = pending.slice(i, i + 3).map(name => {
             const node = getMapNode(name);
-            const sk = rollSkeleton(name, luck);
+            const sk = rollSkeleton(name, luck, { isTaken });
             skeletons[name] = sk;
             return { name, base: node.desc, exits: Object.keys(node.exits).join(","), item: sk.item, encounter: sk.encounter };
           });

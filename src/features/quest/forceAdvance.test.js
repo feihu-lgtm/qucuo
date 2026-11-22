@@ -44,7 +44,7 @@ describe("playLocalQuestStage · requiresMoney 门槛", () => {
       completionFlag: ["paid", "fought"],
       choices: [
         { flag: "paid", label: "垫银了税", resolve: "none", requiresMoney: 30 },
-        { flag: "fought", label: "动手赶差", resolve: "combat", combatNpc: { name: "差役", levelCap: 6 } },
+        { flag: "fought", label: "动手赶差", resolve: "combat", combatNpc: { name: "差役", levelCap: 3 } },
       ],
       onReach: { money: 5 },
     }],

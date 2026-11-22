@@ -3,7 +3,7 @@ import { SECT_ENTRY, checkSectEntry } from "../../domain/rules/character/sectEnt
 import { makeItem } from "../../domain/rules/economy/equipment.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
-import { formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
+import { factionRepOf, formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 import {
@@ -45,6 +45,8 @@ export function joinSect(state) {
   const status = checkSectEntry({
     affection: state.varTree.角色?.[SECT_ENTRY.master]?.好感度 ?? 0,
     neigong: state.char.neigong ?? 0, money: state.char.money ?? 0, flags: state.flags, otherSect,
+    rep: factionRepOf(state.varTree, SECT_ENTRY.sect), prestige: Number(state.varTree?.世界?.威望) || 0,
+    questProgress: state.questProgress,
   });
   if (!status.eligible) return { logs: [{ t: "sys", text: "  你还不够格拜入雪山派。" }] };
   const token = makeItemSmart({
@@ -56,10 +58,10 @@ export function joinSect(state) {
       char: updateField("char", add("char.money", -SECT_ENTRY.tuition)),
       inv: updateField("inv", (inv) => set("inv", [...inv, token])),
       flags: updateField("flags", (flags) => set("flags", flags.includes(SECT_ENTRY.flag) ? flags : [...flags, SECT_ENTRY.flag])),
-      varTree: prev => markNpcAsKnown(prev, SECT_ENTRY.master),
+      varTree: prev => markNpcAsKnown(grantFactionRep(prev, { [SECT_ENTRY.sect]: SECT_ENTRY.repBonus }).varTree, SECT_ENTRY.master),
     },
     logs: [
-      { t: "sys", text: `  （奉上束脩银${SECT_ENTRY.tuition}两，得雪山派弟子令牌 · 内堂之后的弟子别院已开）` },
+      { t: "sys", text: `  （奉上束脩银${SECT_ENTRY.tuition}两，得雪山派弟子令牌 · 内堂之后的弟子别院已开，${formatRepChanges(grantFactionRep(state.varTree, { [SECT_ENTRY.sect]: SECT_ENTRY.repBonus }).applied)}）` },
       { t: "loot", text: `✦ 得「${SECT_ENTRY.keyName}」`, item: token, source: "sect" },
     ],
     note: { text: `拜入雪山派，${SECT_ENTRY.master}收下束脩，授弟子令牌。`, owner: [{ name: SECT_ENTRY.master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE },

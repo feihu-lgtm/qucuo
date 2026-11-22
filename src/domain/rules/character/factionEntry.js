@@ -48,6 +48,14 @@ export const FACTION_ENTRIES = {
     intro: "岩洞里只有一块青石板摊着狼曲地形图，没有虎皮大椅。巴桑听你说完，指了指壁上的寨规：「不抢救命口粮，不伤妇孺，不碰玉泉寨的人。入伙容易，守这三条难——守得住，再谈入伙。」",
     joinLabel: "对寨规起誓，入伙黑风寨",
   },
+  唐门: {
+    sect: "唐门", master: "唐老太", buildingId: "sect_entry_tangmen",
+    minRep: 40, repBonus: 20, flag: "唐门弟子",
+    token: "玄竹弟子令", gifts: [],
+    trial: null,
+    intro: "宗祠门前横着一块磨凹了的入堂石。唐老太拄着竹杖站在石后，笑眯眯地说：跪下，滴血，立誓；从今往后唐家的规矩就是你的规矩。",
+    joinLabel: "入堂石前立血誓，拜入唐门",
+  },
   天龙教: {
     sect: "天龙教", master: "石重岳", buildingId: "sect_entry_tianlong",
     minRep: 40, repBonus: 20, flag: "天龙教弟子",

@@ -19,17 +19,20 @@ export const SKILL_CATALOG = {
       id: "kf_rec_muge", name: "牧歌调息", type: SKILL_TYPE.MOVE, quality: "绿", price: 55,
       moveType: "状态",
       energyRestore: 6,
+      unlock: { faction: "玉泉寨", rep: 0, member: false, note: "玉泉寨声誉 ≥ 0（非敌对即可在练武场求学）" },
       desc: "放牦牛的人在坡上哼的调子，没词，只有起伏。哼到第三遍呼吸自己就跟上了拍子，胸口那口憋着的气顺下去。阿索说这不是功夫，是「人跟着牛走久了，走出来的」。",
     },
     {
       id: "kf_rec_langqu", name: "狼曲饮雪", type: SKILL_TYPE.MOVE, quality: "蓝", price: 120,
       moveType: "状态",
       energyRestore: 7, hpRestore: 0.08,
+      unlock: { faction: "玉泉寨", rep: 0, member: false, note: "玉泉寨声誉 ≥ 0" },
       desc: "掬一捧狼曲上游的雪含在嘴里，不嚼不咽，让它自己化。凉气顺喉管一路沉到丹田，化开的时候整个人激灵一下。牧民冬天赶远路全靠这一口。",
     },
     {
       id: "kf_liuyun", name: "流云步法", type: SKILL_TYPE.QINGGONG, quality: "绿", price: 45,
       moveType: "状态",
+      unlock: { faction: "玉泉寨", rep: 0, member: false, note: "玉泉寨声誉 ≥ 0" },
       desc: "藏地牧民代代相传的步伐心诀，身随意转，如云散无形。修习后身法加强，与对手同类招式对撞时更易占得先手。",
       passiveBonus: { speedBonus: 1 },
     },
@@ -37,13 +40,37 @@ export const SKILL_CATALOG = {
       id: "kf_daishuai", name: "摔跌术", type: SKILL_TYPE.MOVE, quality: "绿", price: 35,
       moveType: "状态",
       applyStatus: "麻穴", statusChance: 0.4,
+      unlock: { faction: "玉泉寨", rep: 15, member: false, note: "玉泉寨声誉 ≥ 15（练武场才肯教真摔法）" },
       desc: "借力打力，将对手的气势引入虚处——看似平淡，实则以巧破力，是玉泉寨人相互切磋最常用的手段。",
     },
     {
       id: "kf_jiangong", name: "坚桩功", type: SKILL_TYPE.MOVE, quality: "白", price: 20,
       moveType: "防御",
       ignoreDefensePartialImmune: 0.3,
+      unlock: { faction: "玉泉寨", rep: 15, member: false, note: "玉泉寨声誉 ≥ 15" },
       desc: "扎实的站桩功夫，招式简单但根基牢固，练到纯熟能以守代攻。初学者的不二之选。",
+    },
+    // 合稿·玉泉寨 武学三档：rep40 套马索魂手、rep80 长生天吐纳诀/搏狼鞭法（声誉封顶 100，原 140 档压回 80）。
+    {
+      id: "kf_yuquan_taoma", name: "套马索魂手", type: SKILL_TYPE.MOVE, quality: "蓝", price: 130,
+      moveType: "攻击",
+      applyStatus: "麻穴", statusChance: 0.45,
+      unlock: { faction: "玉泉寨", rep: 40, member: false, note: "玉泉寨声誉 ≥ 40（丹增点头才传）" },
+      desc: "驯马人的套索手，索影一抖缠住对手脚踝——套马的东西用在人身上，套上就跑不脱。",
+    },
+    {
+      id: "kf_yuquan_changshengtian", name: "长生天吐纳诀", type: SKILL_TYPE.NEIGONG, quality: "紫", price: 180,
+      moveType: "状态",
+      passiveBonus: { maxHp: 28 }, energyRestore: 6, hpRestore: 0.1,
+      unlock: { faction: "玉泉寨", rep: 80, member: false, note: "玉泉寨声誉 ≥ 80（视作狼曲义亲候选）" },
+      desc: "牧民对长生天的吐纳法，一呼一吸学草原的风——绵长、不绝。练成后气血如草根般自己往回长。",
+    },
+    {
+      id: "kf_yuquan_bolang", name: "搏狼鞭法", type: SKILL_TYPE.MOVE, quality: "紫", price: 180,
+      moveType: "攻击",
+      forceCrit: 1.55, lowHpBonus: 0.35,
+      unlock: { faction: "玉泉寨", rep: 80, member: false, note: "玉泉寨声誉 ≥ 80" },
+      desc: "狼曲河谷猎户的保命鞭法，专等自己血气最弱、狼扑上来那一刻反手一鞭——越险越狠。",
     },
   ],
 
@@ -365,7 +392,7 @@ export const SKILL_CATALOG = {
     },
   ],
 
-  // ── 唐门：暗器与毒药，家族制不收外姓，但暗器卖给所有人 ──
+  // ── 唐门：暗器与毒药，暗器卖给所有人；宗祠入堂石立誓可正式拜入 ──
   唐门: [
     {
       id: "kf_tm_cuntie", name: "寸铁点星手", type: SKILL_TYPE.MOVE, quality: "绿", price: 55,
@@ -398,6 +425,27 @@ export const SKILL_CATALOG = {
       desc: "唐门弟子自幼以毒淬体，小剂量百毒日日服，练出一副抗毒的筋骨。运功时体表渗出一层薄汗，带微苦药气——毒物近身先被这层汗化去三分。不是解毒，是毒到了跟前就矮了三分。",
       passiveBonus: { maxHp: 15 },
       unlock: { faction: "唐门", rep: 40, member: true, guestRep: 80, note: "需正式拜入唐门且声誉 ≥ 40（外客须声誉 ≥ 80 方可求教）" } },
+    {
+      id: "kf_tm_fuguang", name: "浮光掠竹步", type: SKILL_TYPE.QINGGONG, quality: "蓝", price: 130,
+      moveType: "状态",
+      passiveBonus: { speedBonus: 1 },
+      unlock: { faction: "唐门", rep: 15, member: false, note: "唐门声誉 ≥ 15" },
+      desc: "蜀南竹海里踩着暗桩练出的诡谲身法，步幅极碎，忽左忽右，专挑对手视野盲区落脚。练成后衣摆贴腿不扬尘，连吊桥上的九枚警铃都震不响。",
+    },
+    {
+      id: "kf_tm_cuogu", name: "千机错骨针", type: SKILL_TYPE.MOVE, quality: "橙", price: 420,
+      moveType: "攻击",
+      applyStatus: "剧毒", statusChance: 0.5, ignoreDefenseRatio: 0.2,
+      unlock: { faction: "唐门", rep: 80, member: true, note: "需正式拜入唐门且声誉 ≥ 80" },
+      desc: "内堂秘传的重手毒针，专打周身关节筋膜。针入皮肉不流血，只觉半边身子渐如灌铅，三息之后气力大减。唐老太严令此针只准对付死敌，绝不许用来欺压市井。",
+    },
+    {
+      id: "kf_tm_tianluo", name: "天罗绣影针", type: SKILL_TYPE.MOVE, quality: "红", price: 680,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.65 }, ignoreDefenseRatio: 0.45, applyStatus: "剧毒", statusChance: 0.4,
+      unlock: { faction: "唐门", rep: 100, member: true, quest: ["tangmen_5_jiaguichujian"], note: "需正式拜入唐门、完成「唐5·家法断机」且唐门声誉 ≥ 100" },
+      desc: "唐老太压箱底的镇派绝学。寻常一根三寸银绣针，在七十岁老手捻动下竟如穿花织锦，针尾牵着肉眼难辨的冰蚕细丝，一去一回皆有后手——外人只道她是在纳鞋底，等看见针影，胸口已缝好了三道血线。",
+    },
   ],
 
   // ── 五仙教：苗疆蛊毒，软鞭淬毒与虫养之术，于听虫演武坪授徒 ──
@@ -450,6 +498,59 @@ export const SKILL_CATALOG = {
       passiveBonus: { maxHp: 30, speedBonus: 1 },
       unlock: { faction: "五仙教", member: true, guestRep: 80, quest: ["wuxianjiao_5_yingguandingtan"], note: "需正式拜入五仙教且声誉 ≥ 80，并完成主线《蛊5·银冠定坛》得传毒典正解" },
       desc: "《五仙毒典》上下卷合一的镇派内功，万蛊听令、百毒不侵。老教主当年凭它在昆明城外一人压服三派围攻——练成者气血如蛊潮生生不息，毒物入身反成滋养。",
+    },
+  ],
+
+  // ── 鱼定村：茶马灶火与熊山猎手的实用防身路数（合稿「鱼定村·五」）。不可拜入，只按鱼定村声誉与前置任务学 ──
+  鱼定: [
+    {
+      id: "kf_yuding_biandan", name: "茶马挑担棍", type: SKILL_TYPE.MOVE, quality: "白", price: 25,
+      moveType: "攻击",
+      lowHpBonus: 0.2,
+      unlock: { faction: "鱼定村", rep: 0, note: "鱼定村声誉 ≥ 0（晒谷演武场公开可学）" },
+      desc: "雅江到鱼定滩的脚夫挑着百斤砖茶走山路，遇上恶狗山贼全靠手里这根桑木扁担。没那么多花哨起手，人越累、路越窄，横扫出去那一下越狠——保住担子就保住了全家一年的口粮。",
+    },
+    {
+      id: "kf_yuding_zaohuo", name: "灶火调息", type: SKILL_TYPE.MOVE, quality: "绿", price: 45,
+      moveType: "状态",
+      energyRestore: 5, hpRestore: 0.06,
+      unlock: { faction: "鱼定村", rep: 0, note: "鱼定村声誉 ≥ 0（晒谷演武场公开可学）" },
+      desc: "老孙守在滚烫羊汤锅前二十年磨出的换气法子：灶烟呛人的时候把气沉到脐下，等锅盖一掀再顺着热气吐匀。老孙说练武跟熬汤一样，火太急容易糊底，气顺了才经得起熬。",
+    },
+    {
+      id: "kf_yuding_bozhu", name: "算盘拨珠手", type: SKILL_TYPE.MOVE, quality: "绿", price: 65,
+      moveType: "防御",
+      onCounterSuccessEnergyGain: 3, onCounterSuccessDamageRatio: 0.25,
+      unlock: { faction: "鱼定村", rep: 15, note: "鱼定村声誉 ≥ 15（颇具善缘）" },
+      desc: "才旦拿算盘教出来的巧劲：来势再凶，先拿两指像拨下珠似的轻轻一搭一滑，把对方的蛮力撇歪半寸，顺手再还一记快戳。她说这叫「进出平账」——谁打了你，当场就得把本利拨回来。",
+    },
+    {
+      id: "kf_yuding_zhagen", name: "界石扎根功", type: SKILL_TYPE.NEIGONG, quality: "绿", price: 75,
+      moveType: "防御",
+      passiveBonus: { maxHp: 14 },
+      unlock: { faction: "鱼定村", rep: 15, note: "鱼定村声誉 ≥ 15（颇具善缘，泽仁村长点拨）" },
+      desc: "当年全村汉子替老土司修水渠、抬青石界碑时练出来的笨内功。双脚抓地如老树盘根，不求轻灵飘逸，只求被人推一把、踹一脚时脊梁骨纹丝不动。",
+    },
+    {
+      id: "kf_yuding_xunzong", name: "踏雪寻踪步", type: SKILL_TYPE.QINGGONG, quality: "蓝", price: 110,
+      moveType: "状态",
+      passiveBonus: { speedBonus: 1 },
+      unlock: { faction: "鱼定村", rep: 40, quest: ["yudingcun_side1_yushan_chuhuan"], note: "鱼定村声誉 ≥ 40，并完成支线《村支1·熊山除患》" },
+      desc: "老猎户桑登在熊山积雪里踩了四十年的步子。脚尖先探虚实，脚跟不落死力，踩在半尺厚的雪壳上只留浅浅一印。学会了这步法，跑山道比寻常江湖客快出半个身位。",
+    },
+    {
+      id: "kf_yuding_bopi", name: "熊山剔骨刀", type: SKILL_TYPE.MOVE, quality: "蓝", price: 150,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.45 },
+      unlock: { faction: "鱼定村", rep: 40, quest: ["yudingcun_side1_yushan_chuhuan"], note: "鱼定村声誉 ≥ 40，并完成支线《村支1·熊山除患》" },
+      desc: "老猎户剥熊皮、卸羊骨的刀法，绝不跟硬骨头死磕，专挑筋膜缝隙往里递。桑登从不叫它武功，只说「牲口和恶人都一样，找准了软处，一刀就省力」。",
+    },
+    {
+      id: "kf_yuding_fuxi", name: "熊山伏息术", type: SKILL_TYPE.MOVE, quality: "紫", price: 210,
+      moveType: "防御",
+      immuneControl: true, energyRestore: 6,
+      unlock: { faction: "鱼定村", rep: 80, quest: ["village5_laolieshu_chuanren"], note: "鱼定村声誉 ≥ 80，并完成《村5·老猎户的传人》得桑登亲传" },
+      desc: "老猎户压箱底的雪窝绝活。大雪夜埋伏猛兽时，把心跳压得像冻住的溪水，寒风吹不乱、虎啸震不慌，任对手点穴缠丝也锁不住这口潜气，反倒能借对方招老的空档喘回满胸真元。",
     },
   ],
 
@@ -666,27 +767,54 @@ export const SKILL_CATALOG = {
   ],
 
   // ── 三星派：古蜀剑派，不设铺面不收束脩，武学只从面具试炼来 ──
+  // 三星派七门（合稿·三星派第五节）。旧四门保留原 id 与效果，补上价钱和门槛。
+  // 声誉上限 100：金乌破妄剑外客门槛由合稿 140 收到 100；正式拜入接线前 member 条目只能走 guestRep。
   三星: [
     {
-      id: "kf_rec_guixu", name: "归墟坐忘", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+      id: "kf_sanxing_tingfeng", name: "听风铜剑", type: SKILL_TYPE.MOVE, quality: "绿", price: 85,
+      moveType: "攻击",
+      nextAttackBonus: 0.15,
+      unlock: { faction: "三星派", rep: 15, note: "三星派声誉 ≥ 15（无需正式拜入）" },
+      desc: "墟外听风人姜泠常使的入门剑路。鸭子河畔雾大看不清人，便先听风擦过芦苇的响动再递剑。不求一剑封喉，只求上一剑试出虚实，下一剑稳稳落在空门上。",
+    },
+    {
+      id: "kf_rec_guixu", name: "归墟坐忘", type: SKILL_TYPE.MOVE, quality: "橙", price: 160,
       moveType: "状态",
       energyRestore: 12,
+      unlock: { faction: "三星派", rep: 15, quest: ["sanxingpai_2_sanmianjianzhen"], note: "三星派声誉 ≥ 15 且通过「星2·三面试剑」" },
       desc: "纵目者那一式的皮毛。闭眼，把自己当成一件被放回坑里的青铜器——三千年没人动过，也就三千年没耗过。睁眼时气是满的。",
     },
     {
-      id: "kf_rec_neishi", name: "纵目内视", type: SKILL_TYPE.MOVE, quality: "紫", price: 0,
-      moveType: "状态",
-      energyRestore: 7, hpRestore: 0.12, immuneControl: true,
-      desc: "戴上面具之后视野窄了，反而看得见自己身体里的事——哪条经堵着，哪处旧伤没长好，一目了然。看见了，也就理顺了。青铜面人不说话，他们就这么互相教。",
+      id: "kf_sanxing_xuantong", name: "玄铜镇岳势", type: SKILL_TYPE.MOVE, quality: "蓝", price: 150,
+      moveType: "防御",
+      immuneControl: true, onCounterSuccessDamageRatio: 0.35,
+      unlock: { faction: "三星派", rep: 40, note: "三星派声誉 ≥ 40" },
+      desc: "青铜面人·甲与丙守坪时最爱用的重剑架势。双足钉死夯土，宽背铜剑横在胸前如门板，任你百般巧劲刺来，先吃住你七分力道，再顺着铜脊沉沉反震回去。",
     },
-    { id: "kf_sanxing_jian", name: "纵目剑法", type: SKILL_TYPE.MOVE, quality: "紫", price: 0,
-      moveType: "攻击",
-      ignoreDefense: true,
-      desc: "剑走直线，不拐弯。三星堆青铜面具的眼睛是凸出来的，看人不看表面，看穿。剑也一样：不刺你格挡的地方，刺你格挡之后的地方。一剑出去你挡了，但剑尖已经在你身后。三千年前的剑法本没有名字，后人叫它纵目——纵目所见，皆是要害。" },
-    { id: "kf_sanxing_bu", name: "神树步", type: SKILL_TYPE.QINGGONG, quality: "紫", price: 0,
+    { id: "kf_sanxing_bu", name: "神树步", type: SKILL_TYPE.QINGGONG, quality: "紫", price: 210,
       moveType: "状态",
+      unlock: { faction: "三星派", rep: 40, note: "三星派声誉 ≥ 40" },
       desc: "三星堆青铜神树九枝九鸟，枝杈交错毫无规律。步法脱胎于此，走位如攀树，每一步都踩在你判断不到的枝杈上。不是快，是无规律——你预判他往左，他往上了；你预判他落地，他还在半空拐了个弯。",
       passiveBonus: { speedBonus: 2 } },
+    {
+      id: "kf_rec_neishi", name: "纵目内视", type: SKILL_TYPE.MOVE, quality: "紫", price: 220,
+      moveType: "状态",
+      energyRestore: 7, hpRestore: 0.12, immuneControl: true,
+      unlock: { faction: "三星派", rep: 40, member: true, guestRep: 80, note: "正式拜入三星派且声誉 ≥ 40（外客须声誉 ≥ 80）" },
+      desc: "戴上面具之后视野窄了，反而看得见自己身体里的事——哪条经堵着，哪处旧伤没长好，一目了然。看见了，也就理顺了。青铜面人不说话，他们就这么互相教。",
+    },
+    { id: "kf_sanxing_jian", name: "纵目剑法", type: SKILL_TYPE.MOVE, quality: "紫", price: 280,
+      moveType: "攻击",
+      ignoreDefense: true,
+      unlock: { faction: "三星派", rep: 40, member: true, guestRep: 80, note: "正式拜入三星派且声誉 ≥ 40（外客须声誉 ≥ 80）" },
+      desc: "剑走直线，不拐弯。三星堆青铜面具的眼睛是凸出来的，看人不看表面，看穿。剑也一样：不刺你格挡的地方，刺你格挡之后的地方。一剑出去你挡了，但剑尖已经在你身后。三千年前的剑法本没有名字，后人叫它纵目——纵目所见，皆是要害。" },
+    {
+      id: "kf_sanxing_jinwupowang", name: "金乌破妄剑", type: SKILL_TYPE.MOVE, quality: "橙", price: 520,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.8 }, ignoreDefenseRatio: 0.45,
+      unlock: { faction: "三星派", rep: 80, member: true, guestRep: 100, quest: ["sanxingpai_3_tongyinxuanji"], note: "通过「星3·失窃的朱砂铜印」，且正式拜入三星派、声誉 ≥ 80（外客须声誉满 100）" },
+      desc: "纵目者枯坐青铜神树之巅三十年所悟的镇派绝剑。一剑挥落如金乌破开鸭子河千重阴雾，专斩世间一切护体假势与虚妄心障——剑光过后，真假自明，强弱立判。",
+    },
   ],
 
   // ── 百花门：毒蛊耗血、控场祛毒、灵动反制（合稿·百花门五）。百花门无拜师堂，

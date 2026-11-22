@@ -13,6 +13,8 @@ import { usePromptInspector } from "./ui/usePromptInspector.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 
+const AVATAR_GENDER_DEFAULT = "__gender_default__";
+
 export function useGameUi({
   room, innerRoomName, char, inv, log, time, narrator, preset,
   flags, questProgress, varTree, varTreeRef,
@@ -61,9 +63,28 @@ export function useGameUi({
   const [pigeonTarget, setPigeonTarget] = useState(null);
   const [activeNpcMenu, setActiveNpcMenu] = useState(null);
   const [activeItemMenu, setActiveItemMenu] = useState(null);
-  const [playerAvatarCustom, setPlayerAvatarCustom] = useState(() => {
-    try { return localStorage.getItem("qucuo_player_avatar") || ""; } catch { return ""; }
-  });
+  // 头像按存档分键存在浏览器里，不写进存档本身：换头像不算"开玩"、不触发自动存档，
+  // 大图也不会撑爆存档。新建角色带 avatarId，各存各的；旧存档没有 avatarId，沿用原来那份共用偏好。
+  const avatarKey = char?.avatarId ? `qucuo_player_avatar:${char.avatarId}` : "qucuo_player_avatar";
+  const [avatarRev, setAvatarRev] = useState(0);
+  const playerAvatarCustom = useMemo(() => {
+    void avatarRev;
+    let stored = "";
+    try { stored = localStorage.getItem(avatarKey) || ""; } catch { /* ignore */ }
+    // 「恢复默认（按性别）」记成 AVATAR_GENDER_DEFAULT：不再回落到开局立绘，直接按性别默认图显示。
+    if (stored === AVATAR_GENDER_DEFAULT) return "";
+    return stored || (char?.avatarId ? char?.portrait || "" : "");
+  }, [avatarKey, avatarRev, char?.avatarId, char?.portrait]);
+  const setPlayerAvatarCustom = useCallback((src) => {
+    try {
+      if (src) localStorage.setItem(avatarKey, src);
+      else if (char?.avatarId) localStorage.setItem(avatarKey, AVATAR_GENDER_DEFAULT);
+      else localStorage.removeItem(avatarKey);
+    } catch {
+      if (src) alert("图片太大，无法存入本地存储，请换小一点的图。");
+    }
+    setAvatarRev((v) => v + 1);
+  }, [avatarKey, char?.avatarId]);
   const [characterPageTarget, setCharacterPageTarget] = useState(null);
   const [portraits, setPortraits] = useState(loadPortraits());
   const [slForm, setSlFormState] = useState(getSnowLeopardForm());
@@ -114,7 +135,7 @@ export function useGameUi({
         continue;
       }
       if (prog?.status === "locked_by_exclusive" || prog?.status === "completed") continue;
-      if (!isQuestGateOpen(quest, questProgress, flags)) continue;
+      if (!isQuestGateOpen(quest, questProgress, flags, varTree)) continue;
       if (quest.id === "hidden_all_collect_line" && !canBypassExclusive({ char, flags })) continue;
       const isNewlyGiven = !prog;
       const stage = isNewlyGiven ? quest.stages[0] : (prog.status === "active" ? getCurrentStage(quest, prog) : null);

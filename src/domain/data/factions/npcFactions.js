@@ -27,6 +27,8 @@ const MEMBERS = {
   [F.LAMA]: ["resident_lama_abbot", "resident_yaotang_shifu", "pool_you_seng"],
   [F.YUQUAN]: ["resident_danzeng", "resident_liruoyou", "resident_zhaxi", "resident_zhuoma", "pool_mu_tong", "pool_bidder_liruoyou"],
   [F.HEIFENG]: ["resident_basang", "resident_zhuoyang", "resident_gaze", "resident_pengcuo", "resident_ayishen", "pool_bidder_heifeng"],
+  [F.YUQUAN]: ["resident_danzeng", "resident_liruoyou", "resident_zhaxi", "resident_zhuoma", "resident_aso", "resident_badeng", "resident_suolang", "pool_mu_tong", "pool_bidder_liruoyou"],
+  [F.HEIFENG]: ["resident_basang", "resident_zhuoyang", "resident_gaze", "pool_bidder_heifeng"],
   [F.BAIHUA]: ["pool_lanjie"],
   [F.HUANXI]: ["resident_fanyanna", "resident_luoqi", "resident_laohe", "resident_ayabuddhist", "resident_sangjie_neiyuan", "resident_lizhanggui"],
   [F.GUAN]: ["resident_liuqingyuan", "pool_bidder_chaiyi", "pool_lao_bing"],
@@ -50,7 +52,7 @@ export function getBuiltinNpcId(npc) {
 }
 
 export function getNpcFaction(npc) {
-  if (npc?.randomPasser != null && !npc.imported && typeof npc.faction === "string" && npc.faction !== "散人") return npc.faction;
+  if ((npc?.randomPasser != null || npc?.roadPasser) && !npc.imported && typeof npc.faction === "string" && npc.faction !== "散人") return npc.faction;
   return NPC_FACTION.get(getBuiltinNpcId(npc)) ?? null;
 }
 

@@ -1,0 +1,25 @@
+// 唐门具名物（合稿「唐门·三、六、四」）：门人随身物、拜入信物、内库限购匣与唐2～唐5、唐支任务物。
+const items = {
+"玄竹弟子令": { name: "玄竹弟子令", category: "misc", quality: "绿", tags: ["信物", "门派", "唐门"], desc: "唐门正式弟子的玄竹令牌，背面针刻入堂那日的干支，宗祠入堂石前立过血誓才领得到。" },
+"七星绣针匣": { name: "七星绣针匣", category: "weapon", quality: "橙", tags: ["暗器", "唐门"], desc: "仿唐老太旧匣所铸的乌金机关针匣，一按机钮七枚淬寒银针呈北斗错落齐发。" },
+"鎏金机关折扇": { name: "鎏金机关折扇", category: "weapon", quality: "紫", tags: ["扇", "暗器", "唐门"], desc: "唐伯渊的折扇，扇骨暗藏十二枚淬毒牛毛针，合扇可点穴。" },
+"杭绸软银护心袍": { name: "杭绸软银护心袍", category: "armor", quality: "紫", tags: ["衣甲", "唐门"], desc: "内衬百炼银丝网的杭绸圆领袍，兼顾体面与防护。" },
+"翡翠毒液扳指": { name: "翡翠毒液扳指", category: "accessory", quality: "紫", sixDim: { 智谋: 2 }, tags: ["饰品", "唐门"], desc: "内空藏有烈性麻药的翡翠扳指，暗算时一弹即散。" },
+"机括子母弩": { name: "机括子母弩", category: "weapon", quality: "蓝", tags: ["弩", "暗器", "唐门"], desc: "唐听竹亲手改制的轻便手弩，上弦极快。" },
+"牛皮防溅工匠围裙": { name: "牛皮防溅工匠围裙", category: "armor", quality: "蓝", tags: ["衣甲", "唐门"], desc: "耐火星与强酸毒液腐蚀的厚牛皮围裙。" },
+"黄铜游标尺佩": { name: "黄铜游标尺佩", category: "accessory", quality: "绿", sixDim: { 智谋: 1 }, tags: ["饰品", "唐门"], desc: "随身量机簧寸分的黄铜尺，也能当飞镖甩。" },
+"乌铁毒药杖": { name: "乌铁毒药杖", category: "weapon", quality: "紫", tags: ["杖", "唐门"], desc: "杖头中空可喷迷烟，杖身重逾二十斤。" },
+"灰葛长老道袍": { name: "灰葛长老道袍", category: "armor", quality: "蓝", tags: ["衣甲", "唐门"], desc: "常年浸药熏制的灰葛长袍，百虫不近。" },
+"青铜宗祠钥匙串": { name: "青铜宗祠钥匙串", category: "accessory", quality: "蓝", sixDim: { 智谋: 1, 根骨: 1 }, tags: ["饰品", "唐门"], desc: "挂着七把机关铜钥，步履间叮当作响。" },
+"淬火锻铁锤": { name: "淬火锻铁锤", category: "weapon", quality: "蓝", tags: ["锤", "唐门"], desc: "平日打暗器胚胎的锻锤，急时抡起力逾千斤。" },
+"厚麂皮护胸甲": { name: "厚麂皮护胸甲", category: "armor", quality: "绿", tags: ["衣甲", "唐门"], desc: "挡炉火火星与崩裂铁屑的厚麂皮护胸。" },
+"缺角炭笔木牌": { name: "缺角炭笔木牌", category: "accessory", quality: "白", sixDim: { 悟性: 1 }, tags: ["饰品", "唐门"], desc: "磨得发亮的杉木写字板，背刻外姓工坊暗记。" },
+"三十年前褪墨旧账抄本": { name: "三十年前褪墨旧账抄本", category: "misc", quality: "蓝", tags: ["证物", "唐门", "任务"], desc: "宗谱铁室旧账的抄本：曲措土司府账房陆福生亲笔按印，购走「褪墨青浆」三瓶；近五年唐伯渊又私批五瓶给同一买主。" },
+"鎏金机关折扇（仿品）": { name: "鎏金机关折扇（仿品）", category: "weapon", quality: "蓝", tags: ["扇", "唐门"], desc: "唐伯渊拿来封口的仿制折扇，扇骨也藏着几枚牛毛针。" },
+"玄竹密令": { name: "玄竹密令", category: "misc", quality: "蓝", tags: ["信物", "唐门", "任务"], desc: "唐老太亲授的玄竹密令，持令者可代唐堡行事。" },
+"紫铜蛊盒": { name: "紫铜蛊盒", category: "misc", quality: "紫", tags: ["证物", "唐门", "五仙教", "任务"], desc: "唐伯渊与麻九娘交割用的紫铜蛊盒，盒盖压着两人的私章。" },
+"破甲连弩信物": { name: "破甲连弩信物", category: "misc", quality: "橙", tags: ["信物", "唐门", "终局"], desc: "唐老太亲手交付的连弩机括，凭它可召唐门破甲连弩队入曲措助阵。" },
+"三转青霜散": { name: "三转青霜散", category: "misc", quality: "蓝", tags: ["药材", "解毒", "唐门"], consumable: { dispel: true }, desc: "唐老太配的解药，专解三十年前停用的「倒钩青针」之毒。" },
+"青城与唐门停战书简": { name: "青城与唐门停战书简", category: "misc", quality: "蓝", tags: ["信物", "唐门", "青城派"], desc: "唐老太与玉真子各押一印的书简，两派三百年积怨总算松了一扣。" },
+};
+export default { item: items, itemGroup: { TANGMEN_GOODS: Object.keys(items) } };

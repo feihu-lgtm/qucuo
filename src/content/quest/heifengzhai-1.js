@@ -135,9 +135,24 @@ export default { quest: {
         id: "s1_prepare",
         description: "巴桑两手准备——老弱撤后山岩洞，青壮在狼曲河谷设伏。玩家两个选择：协助布置绊马索火油陷阱；或去锦官城拖延亡命徒出发（若已完成官2-A或官2-B，柳青鸢默许，冷笑一句「管家的胆子比他的俸禄涨得快」，给一份城门值守换岗时间表）。",
         playerHint: "帮巴桑备战——布置陷阱，或去锦官城拖住亡命徒。",
-        completionFlag: "quest_heifengzhai4_s1",
+        completionFlag: ["quest_heifengzhai4_s1", "quest_heifengzhai4_s1b"],
         at: "黑风寨·寨后岩洞",
-        onReach: { exp: 3 },
+        choices: [
+          { flag: "quest_heifengzhai4_s1", label: "协助布置绊马索、火油陷阱", resolve: "none" },
+          { flag: "quest_heifengzhai4_s1b", label: "去锦官城拖延亡命徒出发（需先过官2）", resolve: "none",
+            requiresAnyOf: ["jinguancheng_guan2a_toukao", "jinguancheng_guan2b_zhongli"],
+            narration: "柳青鸢听完默许，冷笑一句「管家的胆子比他的俸禄涨得快」，给了你一份城门值守换岗时间表——亡命徒要在城里多蹲一夜。" },
+        ],
+        onReach: {
+          exp: 3,
+          byFlag: {
+            quest_heifengzhai4_s1b: {
+              favorability: { "柳青鸢": 10 },
+              items: [{ name: "城门值守换岗时间表", category: "misc", quality: "绿", desc: "柳青鸢给的值守换岗表，能让雇佣兵在锦官城多耗一夜。" }],
+              flags: ["heifeng4_delay_guan2"],
+            },
+          },
+        },
       },
       {
         id: "s2_ambush",
