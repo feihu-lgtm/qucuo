@@ -16,18 +16,9 @@ export default { quest: {
         completionFlag: ["quest_tian1_hard", "quest_tian1_cold"],
         choices: [
           { flag: "quest_tian1_hard", label: "硬骨——税不交给拦路的死人", resolve: "combat", combatNpc: { name: "血刀哨头·初七", id: "resident_xuedao_chuqi", levelCap: 4 } },
-          { flag: "quest_tian1_cold", label: "冷眼——掏银子买条道", resolve: "none", narration: "你数出银两搁在刀口下。红袍刀客掂了掂分量，侧身让出道来：识相。西风隘的路，直走往西。" },
+          { flag: "quest_tian1_cold", label: "冷眼——替刀客把牧民轰下道", resolve: "none", narration: "你冷眼按住那对牧民老小的牦牛缰，替刀客把人撵下了草甸。厉天行在灯影后笑出了声：识相。西风隘的路，直走往西。" },
         ],
-      },
-      {
-        id: "route",
-        giver: null,
-        requireLocation: { district: "大草甸" },
-        playerHint: "哨卡让开了西去的路——穿过大草甸，西风隘的天龙营就在尽头。",
-        description: "隘口亮起了连营的火。无论方才用的是刀口还是银子开的路，天龙教那道玄甲栅门，如今朝你开着。",
-        completionFlag: "quest_tian1_done",
         onReach: {
-          flags: ["tianlong_invited"],
           byFlag: {
             quest_tian1_hard: {
               money: 60,
@@ -48,6 +39,17 @@ export default { quest: {
               ],
             },
           },
+        },
+      },
+      {
+        id: "route",
+        giver: null,
+        requireLocation: { district: "大草甸" },
+        playerHint: "哨卡让开了西去的路——穿过大草甸，西风隘的天龙营就在尽头。",
+        description: "隘口亮起了连营的火。无论方才用的是刀口还是冷眼开的路，天龙教那道玄甲栅门，如今朝你开着。",
+        completionFlag: "quest_tian1_done",
+        onReach: {
+          flags: ["tianlong_invited"],
         },
       },
     ],
