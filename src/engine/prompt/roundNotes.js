@@ -30,7 +30,15 @@ export function buildQuestStageNote({ questProgress, flags, char, room, inv, pen
     if (quest.id === "hidden_all_collect_line" && !canBypassExclusive({ char, flags })) continue;
     if (prog?.status === "active") {
       const stage = getCurrentStage(quest, prog);
-      if (stage) noteLines.push(`《${quest.title}》当前阶段：${stage.description}——叙事推进到此处后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
+      if (stage) {
+        // 有 choices 的阶段，flag 由系统发（玩家在任务面板点选/打赢/说服），
+        // AI 代吐会绕过真实战斗或分支——只给场景，明确别吐 flag。
+        if (stage.choices?.length) {
+          noteLines.push(`《${quest.title}》当前阶段：${stage.description}——这一步的推进由玩家在任务面板抉择（${stage.choices.map(c => c.label).join("／")}），叙事最多写到撞见此景，不要替玩家抉择，也不要在 flags_add 里加这一阶段的 flag`);
+        } else {
+          noteLines.push(`《${quest.title}》当前阶段：${stage.description}——叙事推进到此处后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
+        }
+      }
     } else if (quest.giver && room.npcs.some(n => n.name === quest.giver)) {
       noteLines.push(`${quest.giver}可引出《${quest.title}》——若玩家与其互动触及此事，在 flags_add 加入${describeFlag(quest.stages[0].completionFlag)}`);
     }
