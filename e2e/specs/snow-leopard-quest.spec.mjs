@@ -20,11 +20,14 @@ async function loadOpeningSave(page, flags) {
   await page.locator(".game-input").waitFor({ state: "visible" });
 }
 
+// 桌面版江湖栏是四个转盘（#232），任务转盘右上角「⇱」打开完整任务面板。
+const openQuestLog = page => page.locator('section[aria-label="江湖"]').getByTitle("展开完整面板").first().click();
+
 export default async function snowLeopardQuest({ page, ai, game }) {
   mkdirSync(artifacts, { recursive: true });
   await game.loadSave(page, "village");
   await loadOpeningSave(page, []);
-  await page.getByRole("button", { name: "任务", exact: true }).click();
+  await openQuestLog(page);
   const content = page.locator(".mobile-overlay-content");
   await content.getByText("收复雪豹", { exact: true }).waitFor();
   assert.equal(await content.locator("span").first().textContent(), "收复雪豹");
@@ -45,7 +48,7 @@ export default async function snowLeopardQuest({ page, ai, game }) {
     const state = gameStore.getState();
     return state.companionState.snowLeopard.unlocked && state.questProgress.snow_leopard_quest.status === "completed";
   }), { message: "leopard companion and completed quest" });
-  await page.getByRole("button", { name: "任务", exact: true }).click();
+  await openQuestLog(page);
   await content.getByText("✓ 收复雪豹", { exact: true }).waitFor();
   await page.screenshot({ path: `${artifacts}/snow-leopard-completed.png`, fullPage: true, animations: "disabled" });
   assert.deepEqual(game.consoleErrors, []);

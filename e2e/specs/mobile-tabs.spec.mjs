@@ -58,7 +58,7 @@ export default async function mobileTabs({ page, game, ai }) {
   await page.waitForTimeout(550);
   await left.locator('[data-module="buildings"]').getByRole("button").first().click();
   await game.waitFor(page, async () => (await activeColumn()) === "中", { message: "building opens center column" });
-  assert.equal(await page.getByText(/现有信鸽.*每日可领/).isVisible(), true);
+  await page.getByText(/现有信鸽.*每日可领/).waitFor({ state: "visible" });
   await page.getByText("关闭", { exact: true }).click();
   await choose("左");
   assert.equal(await activeColumn(), "左 2/2");

@@ -5,6 +5,12 @@ export default async function queueRollback({ page, ai, game }) {
   if (missingNpcs.length) throw new Error(`Missing 鱼定村 residents ${missingNpcs.join(", ")}; found ${before.npcs.join(", ")}`);
   if (before.silver < 10000) throw new Error(`Expected ample silver in village save; found ${before.silver}`);
 
+  // 才旦住在内层「才旦家」（#182），送礼要人在同屋。
+  await page.evaluate(async () => {
+    const { gameStore } = await import("/src/store/gameStore.js");
+    gameStore.setState({ innerRoomName: "才旦家" });
+  });
+
   const held = ai.hold();
   await game.act(page, "我拾起一片落叶，仔细辨认上面的纹路。");
   await game.waitFor(page, () => Boolean(held.request), { timeout: 10000, message: "held main AI request" });
