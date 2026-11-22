@@ -122,6 +122,12 @@ export const BUILDINGS_BY_LOCATION = {
       id: "pigeon_yudingtusi", name: "官驿鸽棚", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 1,
       desc: "府门檐下的鸽棚，养着往锦官城、雅江递公文的官鸽，鸽爪上的铜环刻着土司府的云雷纹。",
     },
+    {
+      id: "chest_yudingtusi", name: "客卿偏仓", type: BUILDING_TYPE.CHEST, house: "鱼定土司府客卿偏仓", emptyStock: true,
+      faction: "鱼定土司府", minRep: 40,
+      repLocked: "看库的老差役把钥匙往怀里一揣：「偏仓只给府里的客卿用。等你在土司府说得上话（声誉 ≥ 40）再来。」",
+      desc: "库房一角隔出来的杉木库箱，箱盖烙着土司府的云雷徽记，供受聘客卿与巡边差官暂存行囊军械。",
+    },
   ],
   // ── 鱼定村（7 种，枢纽村） ──
   鱼定村: [

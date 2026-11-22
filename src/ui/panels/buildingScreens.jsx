@@ -6,10 +6,12 @@
 // 新建筑只需在本表登记一行。行为与原先逐分支一致（含 ESCORT.shopKey、
 // craft 现货/定制页签这类同类型多屏的分支）。
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
+import { chromeBtn } from "../../utils/theme.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import { factionShopOffer, factionShopOutlet, isFactionShop } from "../../features/buildings/factionShop.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { buildingClosedReason } from "../../domain/rules/economy/strongholdGate.js";
 import TradingScreen from "../screens/TradingScreen.jsx";
 import { factionShopCoef } from "../../domain/rules/economy/factionRep.js";
 import InnScreen from "../screens/buildings/InnScreen.jsx";
@@ -196,4 +198,20 @@ for (const type of [
   BUILDING_TYPE.CLOTH, BUILDING_TYPE.GROCERY, BUILDING_TYPE.BLACKMARKET, BUILDING_TYPE.SECTSHOP,
 ]) {
   BUILDING_SCREENS[type] = shopScreen;
+}
+
+function ClosedBuilding({ c, text }) {
+  return (
+    <div style={{ padding: 12, color: "var(--text)", fontSize: "12px" }}>
+      <div style={{ color: c.zoneTheme?.accent, marginBottom: 6 }}>{c.building.name}</div>
+      <div style={{ marginBottom: 10 }}>{text}</div>
+      <button type="button" onClick={c.closeBuilding} style={chromeBtn(c.zoneTheme || {})}>离开</button>
+    </div>
+  );
+}
+
+export function renderBuildingScreen(type, c) {
+  const closed = buildingClosedReason(c.building, c.building?.district ?? c.room?.name, c.varTree);
+  if (closed) return <ClosedBuilding c={c} text={closed} />;
+  return BUILDING_SCREENS[type]?.(c) ?? null;
 }
