@@ -5,7 +5,7 @@ import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
 import { computeGiftWeight, giftPreferenceLabel } from "../../domain/rules/npc/giftWeight.js";
 import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
-import { getCurrentStage } from "../../domain/rules/quests/questEngine.js";
+import { getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
 import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
@@ -59,8 +59,10 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   for (const quest of QUCUO_QUESTS) {
     if (!quest.stages?.length) continue;
     const progress = state.questProgress?.[quest.id];
-    if (progress?.status !== "active") continue;
-    const stage = getCurrentStage(quest, progress);
+    // 没有发布人的任务（山3·上山）第一步就是交东西：还没「接」也算数，交到人手上即开启并推进。
+    const unstartedHandIn = !progress && !quest.giver && isQuestGateOpen(quest, state.questProgress, state.flags, state.varTree);
+    if (progress?.status !== "active" && !unstartedHandIn) continue;
+    const stage = progress ? getCurrentStage(quest, progress) : quest.stages[0];
     const delivery = stage?.deliver;
     if (!delivery) continue;
     const toMatches = delivery.to === npc.name;
