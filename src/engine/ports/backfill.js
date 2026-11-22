@@ -18,23 +18,28 @@ function streamingAfterFacts(log, key) {
   return start >= 0 && log.slice(start).some((entry) => entry?.streaming);
 }
 
+// 等流式行写完再按 key 插回；等满仍在流式就放弃，返回 false。
+export async function insertWhenIdle(key, lines, { setLog, retryMs = 500, maxTries = 1200 }) {
+  for (let tries = 0; tries < maxTries; tries++) {
+    let deferred = false;
+    setLog((log) => {
+      if (streamingAfterFacts(log, key)) { deferred = true; return log; }
+      return insertBackfill(log, key, lines);
+    });
+    if (!deferred) return true;
+    await wait(retryMs);
+  }
+  return false;
+}
+
 // ask(): Promise<string|null>；parse(text) → { [slot]: 描写 } | 数组 | null
-export async function backfillInBackground(key, { ask, parse, setLog, canAsk = () => true, retryMs = 500, maxTries = 1200 }) {
+export async function backfillInBackground(key, { ask, parse, setLog, canAsk = () => true, retryMs, maxTries }) {
   try {
     if (!canAsk()) return false;
     const text = await ask();
     const lines = text ? parse(text) : null;
     if (!lines) return false;
-    for (let tries = 0; tries < maxTries; tries++) {
-      let deferred = false;
-      setLog((log) => {
-        if (streamingAfterFacts(log, key)) { deferred = true; return log; }
-        return insertBackfill(log, key, lines);
-      });
-      if (!deferred) return true;
-      await wait(retryMs);
-    }
-    return false;
+    return await insertWhenIdle(key, lines, { setLog, retryMs, maxTries });
   } catch {
     return false;
   }

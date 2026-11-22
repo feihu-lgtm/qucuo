@@ -164,6 +164,18 @@ describe("narrateDuelInBackground", () => {
     expect(applied(setLog)[1].fillProse).toBe(true);
   });
 
+  it("waits for a live stream before inserting phrase-pool lines", async () => {
+    let log = [...factLog, { t: "desc", text: "  ▌", streaming: true }];
+    let calls = 0;
+    const setLog = (fn) => {
+      if (++calls === 2) log = log.map((entry) => ({ ...entry, streaming: false }));
+      log = fn(log);
+    };
+    await expect(narrateDuelInBackground("k", rounds, {}, { canAsk: () => false, setLog, retryMs: 0 })).resolves.toBe("phrase");
+    expect(calls).toBe(2);
+    expect(log.map((entry) => entry.text)).toEqual(["  第1回合", "  你一拳直捣中宫，老孙侧身没能卸开", "  结局 胜", "  ▌"]);
+  });
+
   it("prefers AI prose when it parses", async () => {
     const setLog = vi.fn();
     const ask = async () => JSON.stringify({ rounds: ["拳风呼呼"], ending: "老孙认输" });
