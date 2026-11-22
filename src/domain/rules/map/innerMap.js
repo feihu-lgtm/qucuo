@@ -100,9 +100,10 @@ export function getInnerRoomNames(districtName) {
 // 本来就不该有闲人随机溜达进去。四栋安全屋全在这 11 间里，一并解决。
 // 注意这不影响**常驻NPC**：驻场人有 residentNpcName 绑定房间，走的是另一条路，
 // 该在锁房里的（比如别院里的人）照旧在。
+// privateHome 标的是别人家（大娘家、才旦家这类）：不上锁，玩家能进，但闲人不该天天坐在里头。
 export function getPublicInnerRoomNames(districtName) {
   const rooms = INNER_MAP[districtName]?.rooms || {};
-  return Object.keys(rooms).filter(n => !rooms[n].unlockCondition);
+  return Object.keys(rooms).filter(n => !rooms[n].unlockCondition && !rooms[n].privateHome);
 }
 
 // 检查某据点内某房间的某方向是否有效出口，返回目的房间名或 null。
