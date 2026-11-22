@@ -39,7 +39,7 @@ export default { quest: {
         onReach: {
           byFlag: {
             quest_ts1_iron: { factionRep: { [TS]: 18, 鱼定村: -12 }, money: 30, items: catalog("土司府云雷铜牌"), favorability: { 白玛次仁: 15 } },
-            quest_ts1_pay: { factionRep: { [TS]: 10, 鱼定村: 8, 玉泉寨: 5 }, money: -50, items: catalog("土司府云雷铜牌"), reputation: 3 },
+            quest_ts1_pay: { factionRep: { [TS]: 10, 鱼定村: 8, 玉泉寨: 5 }, money: -50, items: [...catalog("土司府云雷铜牌"), ...catalog("双份税单抄本")], flags: ["flag_tusi_tax_discrepancy"], reputation: 3 },
             quest_ts1_protect: { factionRep: { [TS]: -20, 鱼定村: 18, 玉泉寨: 12, 黑风寨: 6 }, favorability: { 白玛次仁: -20, 梅朵: 10 }, reputation: 5 },
           },
         },
@@ -83,8 +83,8 @@ export default { quest: {
         onReach: {
           byFlag: {
             quest_ts2_join: { factionRep: { [TS]: 25, 天龙教: 12, 青城派: -8 }, money: 80 },
-            quest_ts2_evidence: { factionRep: { [TS]: 12 }, favorability: { 格桑顿珠: 20 }, items: catalog("藏红花活血膏", 2) },
-            quest_ts2_burn: { factionRep: { [TS]: -35, 天龙教: -20, 黑风寨: 25, 玉泉寨: 10, 青城派: 10 }, reputation: 8 },
+            quest_ts2_evidence: { factionRep: { [TS]: 12 }, favorability: { 格桑顿珠: 20 }, items: [...catalog("藏红花活血膏", 2), ...catalog("唐门退墨药水"), ...catalog("血刀暗粮密信"), ...catalog("唐伯渊货单")] },
+            quest_ts2_burn: { factionRep: { [TS]: -35, 天龙教: -20, 黑风寨: 25, 玉泉寨: 10, 青城派: 10 }, reputation: 8, items: [...catalog("血刀断刃"), ...catalog("唐伯渊货单")] },
           },
         },
       },
@@ -136,8 +136,8 @@ export default { quest: {
         onReach: {
           flags: ["tusi_secret_room"],
           byFlag: {
-            quest_ts3_copy: { factionRep: { 鱼定村: 15, 玉泉寨: 15, 锦官城: 10 }, favorability: { 洛桑平措: 15 } },
-            quest_ts3_present: { factionRep: { [TS]: -40, 鱼定村: 20, 玉泉寨: 20 }, favorability: { 桑杰朵杰: 10, 梅朵: 15 }, reputation: 5 },
+            quest_ts3_copy: { factionRep: { 鱼定村: 15, 玉泉寨: 15, 锦官城: 10 }, favorability: { 洛桑平措: 15 }, flags: ["flag_fake_deed_proved"], items: [...catalog("三十年原始地契拓本"), ...catalog("半角血书")] },
+            quest_ts3_present: { factionRep: { [TS]: -40, 鱼定村: 20, 玉泉寨: 20 }, favorability: { 桑杰朵杰: 10, 梅朵: 15 }, reputation: 5, flags: ["flag_fake_deed_proved"], items: catalog("三十年原始地契拓本") },
             quest_ts3_burn: { factionRep: { [TS]: 35, 鱼定村: -20 }, money: 120, items: catalog("镇边虎纹玉佩") },
           },
         },
