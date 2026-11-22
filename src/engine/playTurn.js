@@ -1,19 +1,12 @@
-import { commitRound } from "./act/commitRound.js";
 import { gameActions, gameStore } from "../store/gameStore.js";
 import { getRngState, setRngState } from "../core/rng.js";
 import { loadSquares, serializeSquares } from "../domain/rules/map/mapSquares.js";
-import { runTurn } from "./runTurn.js";
 import { PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
-import { bindTurnAi, createWebAi } from "./ports/ai.js";
-import { runBookkeepAfterTurn } from "./act/bookkeepTurn.js";
-import {
-  applySettledDeltas, captureSettledChanges, revertSettled,
-} from "../domain/rules/settle/settle.js";
-import { runSoftSettle } from "./ports/softSettle.js";
-import { UNKNOWN_CHOICE } from "../domain/rules/settle/judge.js";
-import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
-import { applyMvuCommands } from "../domain/rules/prompt/mvu.js";
-import { formatAngerResolutionLog, resolveAngerSignals } from "../domain/rules/combat/stealSystem.js";
+import { createWebAi } from "./ports/ai.js";
+import { createPhaseSetter } from "./turn/phaseSetter.js";
+import { settleTurn } from "./turn/settleTurn.js";
+import { narrateTurn } from "./turn/narrateTurn.js";
+import { finalizeTurn } from "./turn/finalizeTurn.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
@@ -45,165 +38,54 @@ function restoreSnapshot(snapshot, refs = {}) {
   for (const [key, ref] of Object.entries(refs)) ref.current = snapshot.refs[key];
 }
 
+// 回合编排器：事务快照 → settleTurn（软结算）→ narrateTurn（主叙事+提取）
+// → finalizeTurn（落盘+记账），任一环节过期/抛错走统一回滚或丢弃路径。
 export async function playTurn(ctx, cmd, opts = {}) {
   const trace = ctx._trace || turnMonitor.start(cmd, { source: "engine", commandId: "turnCommit" });
   const turnCtx = { ...ctx, ai: ctx.ai || createWebAi() };
-  const setCommandPhase = (phase) => {
-    ctx.setCommandPhase?.(phase, trace);
-    const next = { machine: PHASE.MACHINE, ai: PHASE.AI_WAIT, commit: PHASE.COMMIT }[phase];
-    if (trace.phase !== next) turnMonitor.transition(trace, next);
-  };
+  const setPhase = createPhaseSetter(ctx, trace);
   const stale = (error) => {
     turnMonitor.transition(trace, PHASE.DISCARDED, "收到过期结果");
     return { ok: false, stale: true, ...(error && { error }) };
   };
-  setCommandPhase("machine");
+  setPhase("machine");
   let snapshot;
-  let softSettleLogs = [];
-  let softSettleRevertRecords = [];
-  let softSettleApplied = false;
-  let softSettleReverted = false;
-  let invalidationListenerRegistered = false;
-  let unsubscribeInvalidation;
-  const revertSoftSettleOnce = () => {
-    if (!softSettleApplied || softSettleReverted) return;
-    softSettleReverted = true;
-    if (ctx.setVarTree) ctx.setVarTree(prev => revertSettled(prev, softSettleRevertRecords));
-    else gameActions.setVarTreeState(revertSettled(gameStore.getState().varTree, softSettleRevertRecords));
-  };
-  const unsubscribeFromInvalidation = () => {
-    const unsubscribe = unsubscribeInvalidation;
-    unsubscribeInvalidation = null;
-    if (typeof unsubscribe === "function") unsubscribe();
-  };
+  let soft;
+  const getGameState = () => gameStore.getState();
+  const setVarTreeState = (tree) => gameActions.setVarTreeState(tree);
   try {
     snapshot = captureSnapshot(ctx.refs);
     turnMonitor.add(trace, "app", "事务快照", { kind: "snapshot" });
     turnMonitor.add(trace, "feature", "engine.runTurn");
     turnMonitor.add(trace, "domain", "整理世界状态与叙事上下文");
     ctx.beforeRun?.();
-    setCommandPhase("ai");
+    setPhase("ai");
     const turnOpts = { ...opts };
-    // 软结算入口：四种 settle 动作的结果（消气与否、收礼与否、答应同行与否、收徒与否）
-    // 先由结算段小模型裁决，叙事只照裁决写正文；AI 不再在 <mvu> 里顺手定这些结果。
-    if (SOFT_SETTLE_KINDS.has(turnOpts.settleKind) && turnOpts.settleNpc && ctx.apiCfg?.softSettleEnabled !== false) {
-      const state = gameStore.getState();
-      const softSettle = await (ctx.softSettle || runSoftSettle)({
-        ai: bindTurnAi(turnCtx.ai, trace),
-        apiCfg: turnCtx.apiCfg,
-        kind: turnOpts.settleKind,
-        ctx: {
-          npc: turnOpts.settleNpc,
-          varTree: state.varTree,
-          attempt: turnOpts.attempt || cmd,
-          time: state.time,
-          charm: turnCtx.effectiveSpecialNow?.魅力 ?? 5,
-          giftInfo: turnOpts.giftInfo,
-          learnInfo: turnOpts.learnInfo,
-        },
-      });
-      if (ctx.isStale?.()) return stale();
-      if (softSettle && softSettle.choice !== UNKNOWN_CHOICE) {
-        const angerSignalApplied = turnOpts.settleKind === "appease" && softSettle.choice === "奏效" && softSettle.deltas?.some(
-          delta => delta.path === `角色.${turnOpts.settleNpc}.生气解除`
-            && delta.op === "set" && delta.finalValue === true,
-        );
-        let settledTree = gameStore.getState().varTree;
-        if (angerSignalApplied) {
-          softSettleLogs = [
-            ...applyMvuCommands(state.varTree, softSettle.deltas, {
-              time: state.time,
-              charm: turnCtx.effectiveSpecialNow?.魅力 ?? 5,
-            }).logs,
-            formatAngerResolutionLog(turnOpts.settleNpc),
-          ];
-        }
-        const applySoftSettle = (prev) => {
-          settledTree = applySettledDeltas(prev, softSettle.deltas);
-          if (angerSignalApplied) settledTree = resolveAngerSignals(settledTree, [turnOpts.settleNpc]);
-          const revertPaths = (softSettle.deltas || []).map(delta => delta?.path);
-          if (angerSignalApplied) {
-            revertPaths.push(`角色.${turnOpts.settleNpc}.生气状态`, `角色.${turnOpts.settleNpc}.生气解除`);
-          }
-          softSettleRevertRecords = captureSettledChanges(prev, settledTree, revertPaths);
-          return settledTree;
-        };
-        softSettleApplied = true;
-        if (ctx.setVarTree) ctx.setVarTree(applySoftSettle);
-        else gameActions.setVarTreeState(applySoftSettle(gameStore.getState().varTree));
-        if (typeof ctx.onTurnsInvalidated === "function") {
-          unsubscribeInvalidation = ctx.onTurnsInvalidated(revertSoftSettleOnce);
-          invalidationListenerRegistered = true;
-        }
-        turnOpts.softSettle = { ...softSettle, varTree: settledTree };
-        turnMonitor.add(trace, "engine", "结算·软判定", {
-          status: "pass",
-          detail: `${softSettle.choice}（${softSettle.note}）`,
-        });
-      }
-    }
-    const turn = await runTurn({ ...turnCtx, _trace: trace }, cmd, turnOpts);
-    if (turn.stale || ctx.isStale?.()) {
-      if (softSettleApplied && !invalidationListenerRegistered) {
-        withTurnContext(trace, revertSoftSettleOnce);
+    soft = await settleTurn({ ctx: turnCtx, ai: turnCtx.ai, trace, turnOpts, cmd, getGameState, setVarTreeState });
+    if (soft.stale) return stale();
+    const narrated = await narrateTurn(turnCtx, trace, cmd, turnOpts);
+    if (narrated.stale) {
+      if (soft.applied && !soft.listenerRegistered) {
+        withTurnContext(trace, soft.revertOnce);
       }
       return stale();
     }
-    unsubscribeFromInvalidation();
-    setCommandPhase("commit");
-    const commitDeps = ctx.commitDeps(turn) || {};
-    const committed = withTurnContext(trace, () => {
-      const result = (ctx.commitRound || commitRound)({
-        ...commitDeps,
-        softSettle: turnOpts.softSettle || null,
-        duelReport: opts.duelReport || null,
-        giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
-          ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
-        giftAlreadySettled: !!opts.giftInfo?.weight,
-        _trace: trace,
-      });
-      if (softSettleLogs.length) (commitDeps.addLog || ctx.addLog)?.(softSettleLogs);
-      return result;
+    soft.unsubscribeInvalidation();
+    return await finalizeTurn({
+      ctx: turnCtx, trace, turn: narrated.turn, turnOpts, soft, opts, setPhase,
     });
-    await Promise.resolve();
-    if (!ctx.deferMonitorFinish) turnMonitor.finish(trace, "行动完成");
-    const bookkeep = ctx.bookkeep === false ? null : ctx.bookkeep || runBookkeepAfterTurn;
-    const bookkeepCtx = {
-      ...turnCtx,
-      setVarTree: commitDeps.setVarTree || ctx.setVarTree,
-    };
-    const recordBookkeepError = (error) => {
-      const detail = error?.message || String(error);
-      const backgroundTrace = turnMonitor.start("回合记账", {
-        source: "background",
-        background: true,
-        parentId: trace.id,
-      });
-      turnMonitor.add(backgroundTrace, "engine", "记账失败", { kind: "bookkeep", status: "fail", detail });
-      turnMonitor.transition(backgroundTrace, PHASE.ERROR, detail);
-    };
-    if (bookkeep) {
-      try {
-        Promise.resolve(bookkeep({ ctx: bookkeepCtx, turn, opts, trace })).catch((error) => {
-          recordBookkeepError(error);
-        });
-      } catch (error) {
-        recordBookkeepError(error);
-      }
-    }
-    return { ok: true, turn, duelRequest: committed?.duelRequest ?? turn.p?.duelRequest };
   } catch (error) {
     if (ctx.isStale?.()) {
-      if (softSettleApplied && !invalidationListenerRegistered) {
-        withTurnContext(trace, revertSoftSettleOnce);
+      if (soft?.applied && !soft.listenerRegistered) {
+        withTurnContext(trace, soft.revertOnce);
       }
       return stale(error);
     }
-    unsubscribeFromInvalidation();
+    soft?.unsubscribeInvalidation();
     if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs));
     turnMonitor.transition(trace, PHASE.ERROR, String(error));
     return { ok: false, error };
   } finally {
-    unsubscribeFromInvalidation();
+    soft?.unsubscribeInvalidation();
   }
 }

@@ -64,6 +64,8 @@ it("keeps the key inspection's estate announcement open until its narration comm
   try {
     const { inspectItem } = useAiInspect({ char, addLog: vi.fn(), setFlags: gameActions.setFlags });
     await inspectItem("item", "溪边小屋钥匙");
+    // 四段式拆分后 act 抵达 playTurn 多了几跳微任务，先排空再断言（行为不变，只是晚几拍）。
+    await new Promise(r => setTimeout(r, 0));
     expect(gameStore.getState().flags).toContain("tutorial_estate_announced");
     expect(playTurn).toHaveBeenCalledOnce();
     expect(playTurn.mock.calls[0][0].onTurnsInvalidated).toBe(onTurnsInvalidated);

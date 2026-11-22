@@ -18,6 +18,14 @@ export function intentTriggers() {
   return intentPendingStore.getState().triggers;
 }
 
+// 回合 ctx 显式携带的挂起态快照：{ pending, triggers }。
+// 调用方把它放进 TurnContext 明传，代替各段自行探入 store 的隐式读取；
+// store 本体仍是 IntentConfirmBar/useIntentRouter/CLI 的响应式来源。
+export function snapshotIntentPending() {
+  const { pending, triggers } = intentPendingStore.getState();
+  return { pending, triggers };
+}
+
 // 计划结算后把条件步挂起；返回挂起的条目（含 on 的便捷键）。
 export function armIntentTriggers(steps) {
   const armed = (steps || []).map((step) => ({ step, on: step.condition?.on, detail: step.condition?.detail || "", status: "armed" }));
