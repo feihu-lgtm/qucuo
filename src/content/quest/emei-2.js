@@ -319,6 +319,7 @@ export default { quest: {
   emei_4_jianchujinding: {
     id: "emei_4_jianchujinding",
     type: "QT_TALK",
+    localOnly: true,
     title: "峨4·剑出金顶",
     giver: "玄尘师太",
     requiresQuestCompleted: "emei_3_minjiangjiuyue",
