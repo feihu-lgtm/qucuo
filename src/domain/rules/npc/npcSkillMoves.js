@@ -2,6 +2,16 @@
 // 阶段只调数值不改骨架；玩家的切磋招式池 deriveMovesetFromSkills 也在这里。
 import { MOVE_TYPE } from "../combat/moveTypes.js";
 import { MOVE_POOL } from "./npcMovesets.js";
+import { SKILL_CATALOG } from "../../data/kungfu/qucuoKungfu.js";
+
+// 武馆和各家势力武学按 id 认回目录定义：学会时的记录（makeSkillEntry）只存 id/名字/阶段，
+// 特效键在目录里，派生招式时从这里补，老存档里已学的武学也一并生效。
+let catalogById = null;
+const catalogEntry = (id) => {
+  if (!id) return null;
+  catalogById ??= new Map(Object.values(SKILL_CATALOG).flat().map((entry) => [entry.id, entry]));
+  return catalogById.get(id) || null;
+};
 
 // 武学 <-> 招式：一一对应，不是循环分配。
 // 每门武学从学会那一刻起就固定绑定一个招式类型（攻击/防御/状态），
@@ -58,7 +68,11 @@ export function deriveMoveFromSkill(skill) {
   // 这里按白名单抄——白名单就是 itemEffectText 那份唯一词典的键 + 它的参数键，
   // 保证「能抄过去的 = 能显示出来的 = 战斗认得的」三者同一套。
   const carried = {};
-  for (const k of SKILL_EFFECT_KEYS) if (skill[k] !== undefined) carried[k] = skill[k];
+  const def = catalogEntry(skill.id);
+  for (const k of SKILL_EFFECT_KEYS) {
+    const value = skill[k] !== undefined ? skill[k] : def?.[k];
+    if (value !== undefined) carried[k] = value;
+  }
 
   const base = {
     id: `skill_move_${skill.name}`,
@@ -83,8 +97,8 @@ export function deriveMoveFromSkill(skill) {
   // （曾经就是这么冲掉的，测试当场逮住）。手写优先，没写才按阶段推。
   return {
     ...base,
-    confuseChance: skill.confuseChance ?? Math.min(0.7, 0.3 * power),
-    energyRestore: skill.energyRestore ?? (moveType === MOVE_TYPE.STATUS && skill.name.includes("回气") ? Math.round(4 * power) : undefined),
+    confuseChance: carried.confuseChance ?? Math.min(0.7, 0.3 * power),
+    energyRestore: carried.energyRestore ?? (moveType === MOVE_TYPE.STATUS && skill.name.includes("回气") ? Math.round(4 * power) : undefined),
   };
 }
 
