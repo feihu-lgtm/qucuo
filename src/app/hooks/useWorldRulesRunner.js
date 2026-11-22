@@ -92,7 +92,11 @@ export function useWorldRulesRunner({
           dispatchCommand("worldRules", () => {
             if (result.roomMap) roomMapRef.current = result.roomMap;
             applyResult(featureCtxRef.current, result);
-            if (result.forcedDuelNpc) setForcedDuelNpc(result.forcedDuelNpc);
+            if (result.forcedDuelNpc) {
+              // 伏击开战先掐断自动寻路，不然打完还会接着往下跑剩下的路段。
+              schedulerRef?.current?.clearRouteQueue?.();
+              setForcedDuelNpc(result.forcedDuelNpc);
+            }
           });
         },
       });
