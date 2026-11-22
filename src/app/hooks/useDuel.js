@@ -4,8 +4,9 @@ import { applyResult } from "../../features/run.js";
 import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
 import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
-import { buildDuelNarrationPrompt, duelFactLogs, duelNarrationSlots, parseDuelNarration } from "../../domain/rules/combat/duelBrief.js";
+import { buildDuelNarrationPrompt, duelFactLogs, duelNarrationSlots, parseDuelNarration, phraseNarration } from "../../domain/rules/combat/duelBrief.js";
 import { backfillInBackground, newBackfillKey } from "../../engine/ports/backfill.js";
+import { insertBackfill } from "../../domain/rules/log/backfill.js";
 import { askStoryteller, hasApiKey } from "../../engine/ports/storyteller.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 
@@ -37,17 +38,23 @@ export async function openDuelAfterNarration({ addLog, setDuelPending, isStale }
 }
 
 // 后台补写描写：不占回合、不排队，玩家可以接着打下一场。
-export function narrateDuelInBackground(key, rounds, { outcomeText, place }, {
+// 没配 API 或 AI 失败时用短语池拼句兜底；返回 "ai" / "phrase" / false。
+export async function narrateDuelInBackground(key, rounds, { outcomeText, place }, {
   ask = askStoryteller, canAsk = hasApiKey, setLog = gameActions.setLog,
 } = {}) {
   const { sys, user } = buildDuelNarrationPrompt(rounds, { outcomeText, place });
   const roundCount = Array.isArray(rounds) ? rounds.length : 0;
-  return backfillInBackground(key, {
+  const viaAi = await backfillInBackground(key, {
     canAsk,
     setLog,
     ask: () => ask(sys, user, { callLabel: "切磋战报", maxTokens: 900 }),
     parse: (text) => duelNarrationSlots(parseDuelNarration(text, roundCount)),
   });
+  if (viaAi) return "ai";
+  const lines = duelNarrationSlots(phraseNarration(rounds));
+  if (!lines) return false;
+  setLog((log) => insertBackfill(log, key, lines));
+  return "phrase";
 }
 
 export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc }) {
