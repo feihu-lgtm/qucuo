@@ -93,7 +93,11 @@ const ROLE_TROPHY = {
 
 export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
   const cap = Math.max(0, Math.min(5, levelCap));
-  const role = npc.role || levelCapToRole(cap);
+  // 路上偶遇的游民只有 brief 文案没有 role 字段（信物身份从文案里认），
+  // 常驻/任务 NPC 走 npc.role，再没有就用 levelCap 兜底成通用身份。
+  const role = npc.role
+    || Object.keys(ROLE_TROPHY).find((r) => npc.brief?.includes(r))
+    || levelCapToRole(cap);
   const style = ROLE_CARRY[role] || ROLE_CARRY["平民"];
   const reg = region || regionOf(npc.district || npc.region || "");
   // 候选：该地域 + 该 role 允许的类别，命中 distribution 的 catalog 货

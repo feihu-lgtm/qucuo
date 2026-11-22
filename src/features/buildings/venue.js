@@ -6,7 +6,8 @@ import { makeBuffFlag } from "../../utils/buffSystem.js";
 import { INGREDIENT_LORE } from "../../domain/rules/economy/cooking.js";
 import { invalidAmountResult, noOpResult, isPositiveAmount } from "./helpers.js";
 import { grantFactionRep } from "../../domain/rules/economy/factionRep.js";
-import { add, applyWrite } from "../../domain/rules/state/applyWrite.js";
+import { add, applyWrite, set } from "../../domain/rules/state/applyWrite.js";
+import { isNpcKnown, INITIAL_FAVORABILITY } from "../../domain/rules/npc/npcAwareness.js";
 
 // 烹饪分赠（合稿「丐帮·七、7.1」加分行为 4）：在破庙大灶亲手烹饪分赠流民、
 // 请严九斤品鉴，丐帮三星分舵 +4，严九斤/白婶好感微增。菜不分出去自己吃就无此收益。
@@ -54,7 +55,11 @@ export function cookMeal(state, { materials, technique, cookware, freestyle, dis
     changes.varTree = (prev) => {
       let next = grantFactionRep(prev, { [shareRule.faction]: shareRule.rep }).varTree;
       for (const [npcName, favor] of Object.entries(shareRule.favors || {})) {
-        next = applyWrite({ varTree: next }, add(["角色", npcName, "好感度"], favor)).state.varTree;
+        // 没照过面的人先按初始好感起底再加，免得 2 点顶掉见面时的 10 点底分。
+        const write = isNpcKnown(next, npcName)
+          ? add(["角色", npcName, "好感度"], favor)
+          : set(["角色", npcName, "好感度"], INITIAL_FAVORABILITY + favor);
+        next = applyWrite({ varTree: next }, write).state.varTree;
       }
       return next;
     };
