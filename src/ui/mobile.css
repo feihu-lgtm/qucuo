@@ -1057,3 +1057,55 @@
     }
   }
 }
+
+/* iOS 专门适配：设置。
+   竖屏：首页卡片按 dvh 收紧，SE 也一屏放下七张卡。
+   横屏：全屏铺满（宽于 767 的机型原本是居中小窗，背后游戏露出来），首页卡片排四列、两行放下；各子页在全屏里滚。 */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 767px) and (orientation: portrait) {
+    .settings-home-grid {
+      gap: clamp(8px, 1.6dvh, 12px) !important;
+    }
+
+    .settings-home-card {
+      padding: clamp(10px, 2.4dvh, 20px) 12px !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    .settings-root {
+      align-items: stretch !important;
+      justify-content: stretch !important;
+      padding: 0 !important;
+    }
+
+    .settings-panel {
+      width: 100% !important;
+      max-width: none !important;
+      height: var(--mobile-viewport-height, 100dvh) !important;
+      max-height: var(--mobile-viewport-height, 100dvh) !important;
+      box-sizing: border-box;
+      padding:
+        max(6px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left)) !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .settings-panel .mobile-overlay-header {
+      margin-bottom: 6px !important;
+    }
+
+    .settings-home-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      gap: 8px !important;
+    }
+
+    .settings-home-card {
+      padding: 10px 8px !important;
+    }
+  }
+}
