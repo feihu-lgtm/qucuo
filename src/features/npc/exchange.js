@@ -92,7 +92,7 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   if (herb) {
     changes.varTree = composeUpdates(changes.varTree, (prev) => applyFactionRep(prev, { [herb.faction]: herb.delta }, { ripple: false }));
     changes.flags = changes.flags ? composeUpdates(changes.flags, herb.flags) : herb.flags;
-    logs.push({ t: "affection", text: `  ✦ 阿雅把药材收进调香药房，${herb.faction}声誉 +${herb.delta}` });
+    logs.push({ t: "affection", text: `  ✦ ${herb.text}，${herb.faction}声誉 +${herb.delta}` });
   }
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);

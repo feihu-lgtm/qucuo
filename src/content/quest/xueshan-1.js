@@ -89,12 +89,22 @@ export default { quest: {
         requireLocation: { district: "雪山派", inner: "内堂" },
         playerHint: "去内堂向何雨谢回话。",
         description: "药碗搁在炭炉边，何雨谢披着素狐裘慢慢坐直：「小青说你脚步比雪还轻……雪山派记下了。」她亲手给你盛了一碗姜枣雪莲汤，推到面前。",
-        completionFlag: "quest_xs2_report",
+        completionFlag: ["quest_xs2_lama", "quest_xs2_hanyu"],
+        choices: [
+          { flag: "quest_xs2_lama", label: "照喇嘛庙达摩药堂的温补方调理", resolve: "none", requiresItems: ["达摩驱寒膏"],
+            narration: "你把达摩药堂求来的驱寒膏化进姜枣汤里。何雨谢喝了半碗，咳声慢慢稀了，她盯着药膏封蜡上的藏文看了很久：「庙里那位……还记得我。」" },
+          { flag: "quest_xs2_hanyu", label: "请玄女以寒攻寒拔毒", resolve: "none",
+            narration: "玄女在温泉畔护法，你按她的指点把寒玉髓引渡进何雨谢经脉。半炷香后师母额上冒出白霜，又一寸寸化成热汗——三十年的寒毒拔去了大半。" },
+        ],
         onReach: {
           money: 150,
           favorability: { "何雨谢": 15, "呼延雪": 15 },
           factionRep: { 雪山派: 20 },
           items: [{ name: "雪山灵芝膏", fromCatalog: true }, { name: "雪山灵芝膏", fromCatalog: true }],
+          byFlag: {
+            quest_xs2_lama: { consumeItems: ["达摩驱寒膏"], factionRep: { 喇嘛庙: 12 }, flags: ["xueshan_lama_icebreak"] },
+            quest_xs2_hanyu: { favorability: { "玄女": 20 }, flags: ["xueshan_heyuxie_cold_purged"] },
+          },
         },
       },
     ],
