@@ -9,8 +9,14 @@ export function newBackfillKey(prefix = "fill") {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// 主叙事流式输出时按下标改写占位行（actCall），此时插行会把它挤错位，等流式结束再插。
-const isStreaming = (log) => Array.isArray(log) && log.some((entry) => entry?.streaming);
+// 事实行之后有流式占位行（actCall / 私聊按下标改写它）时插行会把它挤错位，先等它写完。
+// 只看事实行之后：更早的 streaming 行是存档里残留的死行，不会再被改写。
+// 等满 maxTries 仍在流式，当它已经死了，照插。
+function streamingAfterFacts(log, key) {
+  if (!Array.isArray(log)) return false;
+  const start = log.findIndex((entry) => entry?.fillKey === key);
+  return start >= 0 && log.slice(start).some((entry) => entry?.streaming);
+}
 
 // ask(): Promise<string|null>；parse(text) → { [slot]: 描写 } | 数组 | null
 export async function backfillInBackground(key, { ask, parse, setLog, canAsk = () => true, retryMs = 500, maxTries = 240 }) {
@@ -22,13 +28,14 @@ export async function backfillInBackground(key, { ask, parse, setLog, canAsk = (
     for (let tries = 0; tries < maxTries; tries++) {
       let deferred = false;
       setLog((log) => {
-        if (isStreaming(log)) { deferred = true; return log; }
+        if (streamingAfterFacts(log, key)) { deferred = true; return log; }
         return insertBackfill(log, key, lines);
       });
       if (!deferred) return true;
       await wait(retryMs);
     }
-    return false;
+    setLog((log) => insertBackfill(log, key, lines));
+    return true;
   } catch {
     return false;
   }
