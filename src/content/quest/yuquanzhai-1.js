@@ -50,7 +50,7 @@ export default { quest: {
       {
         id: "s2_return",
         giver: null,
-        requireLocation: { district: "玉泉寨" },
+        requireLocation: { district: "玉泉寨", inner: "寨口牧场" },
         description: "牵牛回寨路上，牦牛用角顶了你的手——「它不是顶你，它是在认人。」阿索掰半块存了两年的、母亲留下的最后一块糌粑分给你。",
         playerHint: "把白牦牛牵回玉泉寨还给阿索。",
         completionFlag: "quest_yuquanzhai1_done",
@@ -74,7 +74,7 @@ export default { quest: {
       {
         id: "s1_confront",
         giver: null,
-        requireLocation: { district: "天都镇" },
+        requireLocation: { district: "天都镇", inner: "镇口" },
         description: "持李若由的核对单到鱼定村对完账，再去天都镇镇口堵住赫连铸——他怀里揣着盖土司管家私章的「皮毛抽成条」。银子夺回来了，怎么处置，赫连铸盯着你的手看。",
         playerHint: "去鱼定村核对账目，再到天都镇找赫连铸对质，夺回被扣的货银与私章条。",
         completionFlag: ["quest_yuquanzhai2_open", "quest_yuquanzhai2_settle"],
@@ -108,7 +108,7 @@ export default { quest: {
       {
         id: "s2_return",
         giver: null,
-        requireLocation: { district: "玉泉寨" },
+        requireLocation: { district: "玉泉寨", inner: "玉泉小栈" },
         description: "回玉泉小栈复命。李若由在账本末页添了一行小字：「某月某日，外乡人为我出过头。」她给你续上茶：「银子记你账上是玩笑——往后打尖，多添一碟风干牛肉不算钱。」",
         playerHint: "回玉泉小栈向李若由复命。",
         completionFlag: "quest_yuquanzhai2_done",
@@ -150,7 +150,7 @@ export default { quest: {
       {
         id: "s2_return",
         giver: null,
-        requireLocation: { district: "玉泉寨" },
+        requireLocation: { district: "玉泉寨", inner: "丹增蒙古包" },
         description: "丹增摩挲断马蹄铁良久，第一次带你走进枯柳暗窖——窖里的藏粮和账本摊开在油灯下：「玉泉寨老了，可公道还没老。」他把藏粮与翻案之望，正式托给了你。",
         playerHint: "把铜筹与断马蹄铁带回玉泉寨交给丹增。",
         completionFlag: "quest_yuquanzhai3_done",

@@ -10,6 +10,18 @@ import { getAllResidentNpcLore } from "../../domain/data/npc/residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../../domain/rules/prompt/worldbook.js";
 import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../domain/rules/npc/npcAwareness.js";
 
+const atStagePlace = (stage, room, innerRoomName) => {
+  const rl = stage?.requireLocation;
+  if (!rl) return true;
+  if (rl.district && room?.name !== rl.district) return false;
+  if (rl.inner && innerRoomName !== rl.inner) return false;
+  return true;
+};
+const placeLabel = (stage) => {
+  const rl = stage?.requireLocation || {};
+  return rl.inner ? `${rl.district}/${rl.inner}` : (rl.district || "指定地点");
+};
+
 // 多阶段任务链（虎胆三重门等）：告诉AI当前哪些任务阶段可以推进/开启，
 // 以及对应要在 delta.flags_add 里吐出的 flag 字符串——AI 只管在叙事到位
 // 时触发这个 flag，阶段推进/互斥锁定/结局判定全部由系统状态机接管
@@ -30,7 +42,12 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
     if (quest.id === "hidden_all_collect_line" && !canBypassExclusive({ char, flags })) continue;
     if (prog?.status === "active") {
       const stage = getCurrentStage(quest, prog);
-      if (stage) {
+      if (stage && !atStagePlace(stage, room, innerRoomName)) {
+        // 地点门：玩家没到这一步指定的地点/房内，不给 AI 这一步的 flag——
+        // 否则在别处置问 NPC 都可能让叙事白捡完成（questFlagRule 只看 flag）。
+        noteLines.push(`《${quest.title}》下一步要在${placeLabel(stage)}完成——当前不在其地，不要在 flags_add 加这一阶段的 flag`);
+      }
+      if (stage && atStagePlace(stage, room, innerRoomName)) {
         // 有 choices 的阶段，flag 由系统发（玩家在任务面板点选/打赢/说服），
         // AI 代吐会绕过真实战斗或分支——只给场景，明确别吐 flag。
         // 例外：questTriggerMode=script 时抉择本来就走叙事（点选只是发一句对白，
@@ -43,8 +60,25 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
           noteLines.push(`《${quest.title}》当前阶段：${stage.description}——叙事推进到此处后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
         }
       }
-    } else if (quest.giver && room.npcs.some(n => n.name === quest.giver)) {
-      noteLines.push(`${quest.giver}可引出《${quest.title}》——若玩家与其互动触及此事，在 flags_add 加入${describeFlag(quest.stages[0].completionFlag)}`);
+    } else {
+      // 未开始的任务：只在第一阶段真正可达的地方提示——stage.giver===null 的
+      // 阶段靠 requireLocation 落地（李若由的任务在天都镇镇口对质，不在小栈），
+      // 其余照旧要 giver 在场。
+      const first = quest.stages[0];
+      const needsGiver = first.giver !== null && quest.giver;
+      const anchored = !!first.requireLocation;
+      const flagWorthy = (Array.isArray(first.completionFlag) ? first.completionFlag.length : !!first.completionFlag) || first.choices?.length;
+      // 无地点锚点又无 giver 的全局任务不在此提示（旧口径：giver 在场才提示）
+      const giverHere = !needsGiver || room.npcs.some(n => n.name === quest.giver);
+      if (flagWorthy && (anchored || needsGiver) && atStagePlace(first, room, innerRoomName) && giverHere) {
+        if (first.choices?.length && questTriggerMode !== "script") {
+          noteLines.push(`《${quest.title}》在此可开启——这一步的推进由玩家在任务面板抉择，叙事最多写到撞见此景，不要在 flags_add 加这一阶段的 flag`);
+        } else {
+          noteLines.push(needsGiver
+            ? `${quest.giver}可引出《${quest.title}》——若玩家与其互动触及此事，在 flags_add 加入${describeFlag(first.completionFlag)}`
+            : `《${quest.title}》在此地可开启——玩家触及此事时，在 flags_add 加入${describeFlag(first.completionFlag)}`);
+        }
+      }
     }
   }
   let note = noteLines.length ? `\n[任务阶段] ${noteLines.join("；")}。` : "";
