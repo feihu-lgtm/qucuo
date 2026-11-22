@@ -13,6 +13,8 @@ import { add, applyWrite, set, updateField } from "../../domain/rules/state/appl
 import { giftRange } from "../../domain/rules/state/fields.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
 import { soupKitchenRepGain } from "../../domain/rules/economy/soupKitchen.js";
+import { factionTurnInOf } from "../../domain/rules/economy/factionTurnIn.js";
+import { isNpcKnown, INITIAL_FAVORABILITY } from "../../domain/rules/npc/npcAwareness.js";
 import { herbDonationRepGain } from "../../domain/rules/economy/herbDonation.js";
 import { applyFactionRep } from "../../domain/rules/economy/factionRep.js";
 
@@ -93,6 +95,27 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     changes.varTree = composeUpdates(changes.varTree, (prev) => applyFactionRep(prev, { [herb.faction]: herb.delta }, { ripple: false }));
     changes.flags = changes.flags ? composeUpdates(changes.flags, herb.flags) : herb.flags;
     logs.push({ t: "affection", text: `  ✦ ${herb.text}，${herb.faction}声誉 +${herb.delta}` });
+  }
+  // 势力信物交还：血刀信物/流亡凭证/蜜蜡残珠这类交到指定人物手上，涨本派声誉（死对头扣分走联动）。
+  const turnIn = factionTurnInOf(npc, itemName);
+  if (turnIn) {
+    changes.varTree = composeUpdates(changes.varTree, (prev) => {
+      // 联动扣分只挂本派那笔；extra 的友派加分按合稿面值给，不二次联动。
+      let next = applyFactionRep(prev, { [turnIn.faction]: turnIn.rep });
+      if (turnIn.extra && Object.keys(turnIn.extra).length) {
+        next = applyFactionRep(next, turnIn.extra, { ripple: false });
+      }
+      // favor 是合稿「大幅拉升好感」，写在实际收物人的档案名下（npc.name，
+      // 比如嘉措的档案名是「喇嘛庙住持」）；没照过面的先按初始分起底再加。
+      if (turnIn.favor) {
+        const write = isNpcKnown(next, npc.name)
+          ? add(["角色", npc.name, "好感度"], turnIn.favor)
+          : set(["角色", npc.name, "好感度"], INITIAL_FAVORABILITY + turnIn.favor);
+        next = applyWrite({ varTree: next }, write).state.varTree;
+      }
+      return next;
+    });
+    logs.push({ t: "affection", text: `  ✦ ${turnIn.log}（${turnIn.faction}声誉 +${turnIn.rep}）` });
   }
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);

@@ -38,5 +38,6 @@ const items = {
 "天竺沉香念珠": { name: "天竺沉香念珠", category: "accessory", quality: "蓝", sixDim: { 智谋: 1, 气运: 1 }, tags: ["饰品", "佛珠", "任务"], desc: "天竺沉香木串成的念珠，香气沉郁，珠孔里还残着鎏金油灯的灯烟。" },
 "秘制雪山羊汤锅": { name: "秘制雪山羊汤锅", category: "misc", quality: "蓝", tags: ["药膳", "喇嘛庙"], consumable: { hpRestore: 1, sixDimTemp: { 体魄: 1 } }, desc: "丹巴地窖里炖了一夜的雪山药膳羊汤，一锅下肚气血全满，浑身热得能顶风走雪。" },
 "丹巴祖传厨刀": { name: "丹巴祖传厨刀", category: "weapon", quality: "绿", tags: ["刀", "喇嘛庙", "任务"], desc: "丹巴落发前从老家带来的厨刀，刀背刻着一个模糊的「丹」字。" },
+"蜜蜡残珠": { name: "蜜蜡残珠", category: "misc", quality: "蓝", tags: ["佛珠", "喇嘛庙", "信物"], desc: "一颗老蜜蜡念珠，蜡色沉得像封了蜜的琥珀，孔道边缘磨得圆润——是嘉措那串百八老蜜蜡念珠掉了三十年的那颗。" },
 };
 export default { item: items, itemGroup: { LAMA_GOODS: Object.keys(items) } };

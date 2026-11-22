@@ -18,7 +18,7 @@ export function isNpcKnown(varTree, npcName) {
 // 只要 AI 这轮没顺手写好感度字段，右侧面板就不会显示任何数值（不是"0"，
 // 是整行不渲染），看起来像是"认识了但没反应"的bug。这里在标记为"已认识"
 // 的同一时刻，顺手给一个系统裁决的初始好感度，不再等AI恩赐。
-const INITIAL_FAVORABILITY = 10;
+export const INITIAL_FAVORABILITY = 10;
 
 export function markNpcAsKnown(varTree, npcName) {
   const known = varTree.世界?.已认识人物 || [];
