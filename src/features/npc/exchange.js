@@ -38,13 +38,19 @@ export function describeGiftForPrompt(item) {
 }
 
 // 进行中任务前面阶段发到手的道具（田契残页、密函这类），没对上当前阶段的 deliver 就不能当普通礼物送掉，
-// 否则物品被扣、任务却不推进。fromCatalog 的是铁莲子这类普通货，照常能送。
+// 否则物品被扣、任务却不推进。fromCatalog 的是铁莲子这类普通货，照常能送——除非后面阶段点名要它。
+const stageNeedsItem = (stage, itemName) => stage.requiresItems?.includes(itemName)
+  || stage.onReach?.consumeItems?.includes(itemName)
+  || stage.choices?.some((choice) => choice.requiresItems?.includes(itemName));
+
 function questPropHolder(state, itemName) {
   for (const quest of QUCUO_QUESTS) {
     const progress = state.questProgress?.[quest.id];
     if (progress?.status !== "active" || !quest.stages?.length) continue;
-    const reached = quest.stages.slice(0, progress.currentStageIndex ?? 0);
+    const index = progress.currentStageIndex ?? 0;
+    const reached = quest.stages.slice(0, index);
     if (reached.some((stage) => (stage.onReach?.items || []).some((entry) => entry?.name === itemName && !entry.fromCatalog))) return quest;
+    if (quest.stages.slice(index).some((stage) => stageNeedsItem(stage, itemName))) return quest;
   }
   return null;
 }

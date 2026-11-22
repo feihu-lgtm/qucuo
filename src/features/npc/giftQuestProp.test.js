@@ -30,6 +30,15 @@ describe("送礼不吞任务道具", () => {
     expect(result.changes.inv).toEqual([]);
   });
 
+  it("后面阶段 requiresItems 点名要的普通货也不能送（峨3 的玄尘亲笔密函）", () => {
+    const letter = { id: "m1", name: "玄尘亲笔密函" };
+    const result = giftNpc({
+      inv: [letter], flags: [], varTree: {},
+      questProgress: { emei_3_minjiangjiuyue: { status: "active", currentStageIndex: 2 } },
+    }, { name: "何雨谢" }, letter, 0);
+    expect(result.changes).toBeUndefined();
+  });
+
   it("对上当前阶段 deliver 的照常交付并推进", () => {
     const tooth = { id: "t1", name: "虎王的牙筋" };
     const result = giftNpc({
