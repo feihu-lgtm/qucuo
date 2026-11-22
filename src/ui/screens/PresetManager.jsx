@@ -2,9 +2,9 @@ import React, { useState, useRef } from "react";
 import {
   loadAllPresets, saveAllPresets, defaultPreset, makePromptEntry,
   importFromTavernFormat, exportToTavernFormat, MARKER_IDS,
-} from "../../domain/prompt/presetSystem.js";
+} from "../../domain/rules/prompt/presetSystem.js";
 
-export { getActivePreset } from "../../domain/prompt/presetSystem.js";
+export { getActivePreset } from "../../domain/rules/prompt/presetSystem.js";
 
 const rowStyle = {
   display: "flex", alignItems: "center", gap: 8, padding: "6px 8px",

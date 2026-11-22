@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ZONE_THEMES } from "../../theme.js";
-import { NNPC_STAGE } from "../../../domain/narrator/narrator.js";
+import { NNPC_STAGE } from "../../../domain/rules/narrator/narrator.js";
 import ProfileModule from "./ProfileModule.jsx";
 import EquipmentBonusModule from "./EquipmentBonusModule.jsx";
 import AttributesModule from "./AttributesModule.jsx";

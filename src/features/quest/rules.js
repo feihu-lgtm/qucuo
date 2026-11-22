@@ -1,6 +1,6 @@
-import { alreadySatisfiedCollectStages, pendingGroundItems } from "../../domain/quests/collect.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
+import { alreadySatisfiedCollectStages, pendingGroundItems } from "../../domain/rules/quests/collect.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import {
   advanceQuestStages,
   canBypassExclusive,
@@ -8,11 +8,11 @@ import {
   getCurrentStage,
   isQuestGateOpen,
   lockExclusiveSiblings,
-} from "../../domain/quests/questEngine.js";
-import { resolveEnding } from "../../domain/quests/endingResolver.js";
-import { getKeyItemState, initKeyItemTracking, transferKeyItem } from "../../domain/quests/itemTracking.js";
-import { applyStageRewards, resolveStageRewards } from "../../domain/quests/questRewards.js";
-import { makeTusiRobe, ownedSafeHouseKeys } from "../../domain/map/safeHouse.js";
+} from "../../domain/rules/quests/questEngine.js";
+import { resolveEnding } from "../../domain/rules/quests/endingResolver.js";
+import { getKeyItemState, initKeyItemTracking, transferKeyItem } from "../../domain/rules/quests/itemTracking.js";
+import { applyStageRewards, resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
+import { makeTusiRobe, ownedSafeHouseKeys } from "../../domain/rules/map/safeHouse.js";
 
 const applyUpdate = (previous, update) => (
   typeof update === "function" ? update(previous) : update

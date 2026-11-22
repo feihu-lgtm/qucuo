@@ -1,10 +1,10 @@
-import { isNpcAngry } from "../../domain/combat/stealSystem.js";
+import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 import { appeaseAngryNpc } from "./anger.js";
-import { companionKeyByName, unlockImportedCompanion, unlockPearl, unlockSnowLeopard } from "../../domain/companion/companion.js";
-import { markNpcAsKnown as markNpcKnown } from "../../domain/npc/npcAwareness.js";
-import { removeNpc } from "../../domain/npc/roomNpcs.js";
-import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_INVITED } from "../../domain/quests/snowLeopardQuest.js";
-import { createQuestProgress } from "../../domain/quests/questEngine.js";
+import { companionKeyByName, unlockImportedCompanion, unlockPearl, unlockSnowLeopard } from "../../domain/rules/companion/companion.js";
+import { markNpcAsKnown as markNpcKnown } from "../../domain/rules/npc/npcAwareness.js";
+import { removeNpc } from "../../domain/rules/npc/roomNpcs.js";
+import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_INVITED } from "../../domain/rules/quests/snowLeopardQuest.js";
+import { createQuestProgress } from "../../domain/rules/quests/questEngine.js";
 
 export function inviteCompanion(state, npc, ctx = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };

@@ -1,5 +1,5 @@
 globalThis.structuredClone = globalThis.structuredClone || (v => JSON.parse(JSON.stringify(v)));
-const R = await import("../src/domain/cards/importedRegistry.js");
+const R = await import("../src/domain/rules/cards/importedRegistry.js");
 await R.init();
 
 R.registerImported([

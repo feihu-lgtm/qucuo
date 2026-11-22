@@ -1,5 +1,5 @@
-import { add, applyWrite, set } from "../../domain/state/applyWrite.js";
-import { renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
+import { add, applyWrite, set } from "../../domain/rules/state/applyWrite.js";
+import { renderPromptTemplate } from "../../domain/rules/prompt/promptRefs.js";
 
 export function withdrawalSummary(state) {
   const elapsed = state.depositedAt != null

@@ -1,5 +1,5 @@
-import { snowLeopardNote } from "../../domain/quests/snowLeopardQuest.js";
-import { buildMainStatePrompt, renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
+import { snowLeopardNote } from "../../domain/rules/quests/snowLeopardQuest.js";
+import { buildMainStatePrompt, renderPromptTemplate } from "../../domain/rules/prompt/promptRefs.js";
 
 const ATTEMPT_LABELS = {
   talk: "交谈",

@@ -5,7 +5,7 @@
 // 送人/卖掉需要"指定房间里的人"——本面板内嵌一个房间NPC选择器（picker）。
 // 一切结算仍走父组件传进来的确定性 handler，本组件只负责选择与转交，不自行改状态。
 import React, { useState } from "react";
-import { QUCUO_SHOPS } from "../../domain/shops/qucuoShops.js";
+import { QUCUO_SHOPS } from "../../domain/data/shops/qucuoShops.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 export default function ItemActionMenu({

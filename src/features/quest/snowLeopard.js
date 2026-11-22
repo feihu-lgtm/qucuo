@@ -1,7 +1,7 @@
-import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_SPIRITS, snowQuestActive, snowSpiritCount, snowLeopardPresent } from "../../domain/quests/snowLeopardQuest.js";
-import { createQuestProgress } from "../../domain/quests/questEngine.js";
+import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_SPIRITS, snowQuestActive, snowSpiritCount, snowLeopardPresent } from "../../domain/rules/quests/snowLeopardQuest.js";
+import { createQuestProgress } from "../../domain/rules/quests/questEngine.js";
 import { selectEffectiveStats } from "../stats/logic.js";
-import { CATALOG_INDEX } from "../../domain/items/catalog.js";
+import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
 
 export const snowLeopardRule = {
   id: "quest.snow-leopard",

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { emptyBodyProfile } from "../../domain/character/bodyProfile.js";
-import { defaultPreset } from "../../domain/prompt/presetSystem.js";
+import { emptyBodyProfile } from "../../domain/rules/character/bodyProfile.js";
+import { defaultPreset } from "../../domain/rules/prompt/presetSystem.js";
 import { buildMainCallPayload } from "./actCall.js";
 
 const scenarios = [

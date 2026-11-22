@@ -1,10 +1,10 @@
-import { definePrompt } from "../../domain/prompt/registry.js";
-import "../../domain/prompt/calls/sideCalls.js";
-import { buildDaySummaryRequest } from "../../domain/memory/daySummary.js";
-import { buildOutfitRequest } from "../../domain/character/bodyProfile.js";
-import { effectBrief } from "../../domain/economy/itemEffectText.js";
-import { buildSquarePrompt } from "../../domain/map/mapSquares.js";
-import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
+import { definePrompt } from "../../domain/rules/prompt/registry.js";
+import "../../domain/rules/prompt/calls/sideCalls.js";
+import { buildDaySummaryRequest } from "../../domain/rules/memory/daySummary.js";
+import { buildOutfitRequest } from "../../domain/rules/character/bodyProfile.js";
+import { effectBrief } from "../../domain/rules/economy/itemEffectText.js";
+import { buildSquarePrompt } from "../../domain/rules/map/mapSquares.js";
+import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
 
 const INSPECT_KIND_LABEL = { skill: "武学", item: "物品", pigeon: "信鸽" };
 const INSPECT_KIND_NOUN = { skill: "武学功法", item: "随身物品", pigeon: "信鸽（用于飞鸽传书的鸟）" };

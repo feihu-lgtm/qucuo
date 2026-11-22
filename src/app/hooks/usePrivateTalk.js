@@ -1,29 +1,29 @@
 import { useCallback } from "react";
-import { snowLeopardHint } from "../../domain/quests/snowLeopardQuest.js";
+import { snowLeopardHint } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { callModel, callModelStream } from "../../infra/apiConfig.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 import {
   NNPC_STAGE, isInSea, gateWhisperTopics, gateQuestTopic,
-} from "../../domain/narrator/narrator.js";
-import { gateBodyProfile } from "../../domain/character/bodyProfile.js";
-import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
-import { availableKnot, canResolve } from "../../domain/narrator/narratorQuest.js";
-import { narratorVars, setNarratorVars } from "../../domain/prompt/mvu.js";
-import { buildWhisperStatePrompt, formatFactSummariesForPrompt } from "../../domain/prompt/promptRefs.js";
-import { WHISPER_AFFECTION_RULES } from "../../domain/state/fields.js";
-import { allFactSummaries } from "../../domain/prompt/knowledge.js";
-import { embeddingReady } from "../../domain/memory/embeddingService.js";
-import { recallWithVisibility } from "../../domain/memory/recallWithVisibility.js";
-import { gateScenario } from "../../domain/prompt/worldbook.js";
-import { describeTallyForWhisper } from "../../domain/memory/tally.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+} from "../../domain/rules/narrator/narrator.js";
+import { gateBodyProfile } from "../../domain/rules/character/bodyProfile.js";
+import { SEA_OF_MIND } from "../../domain/rules/narrator/seaOfMind.js";
+import { availableKnot, canResolve } from "../../domain/rules/narrator/narratorQuest.js";
+import { narratorVars, setNarratorVars } from "../../domain/rules/prompt/mvu.js";
+import { buildWhisperStatePrompt, formatFactSummariesForPrompt } from "../../domain/rules/prompt/promptRefs.js";
+import { WHISPER_AFFECTION_RULES } from "../../domain/rules/state/fields.js";
+import { allFactSummaries } from "../../domain/rules/prompt/knowledge.js";
+import { embeddingReady } from "../../domain/rules/memory/embeddingService.js";
+import { recallWithVisibility } from "../../domain/rules/memory/recallWithVisibility.js";
+import { gateScenario } from "../../domain/rules/prompt/worldbook.js";
+import { describeTallyForWhisper } from "../../domain/rules/memory/tally.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { gameStore } from "../../store/gameStore.js";
-import { buildPrivateTalkPayload } from "../../domain/prompt/privateTalkPayload.js";
+import { buildPrivateTalkPayload } from "../../domain/rules/prompt/privateTalkPayload.js";
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
-import { applySettledDeltas, runSoftSettle } from "../../domain/settle/settle.js";
-import { UNKNOWN_CHOICE } from "../../domain/settle/judge.js";
+import { applySettledDeltas, runSoftSettle } from "../../domain/rules/settle/settle.js";
+import { UNKNOWN_CHOICE } from "../../domain/rules/settle/judge.js";
 
 export function usePrivateTalk({
   narrator, addLog, apiCfg, convo, room, preset, flags,

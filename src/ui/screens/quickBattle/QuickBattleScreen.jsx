@@ -8,18 +8,18 @@
 // 没 key 就用系统自带 notes，功能完全不缺。
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { QUALITY, QUALITY_COLOR } from "../../../domain/economy/equipment.js";
-import { getAllBattleCandidates, buildBattleFighter } from "../../../domain/quickBattle/battlePool.js";
+import { QUALITY, QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
+import { getAllBattleCandidates, buildBattleFighter } from "../../../domain/data/quickBattle/battlePool.js";
 import {
   initCombatState, pickAiMove, resolveBattleTurn,
   nextAliveIndex, isTeamWiped,
-} from "../../../domain/quickBattle/battleEngine.js";
-import { narrateTurn } from "../../../domain/quickBattle/battleNarration.js";
-import { hasApiKey } from "../../../domain/prompt/storyteller.js";
-import { explainMove, moveTypeGist } from "../../../domain/economy/itemEffectText.js";
+} from "../../../domain/rules/quickBattle/battleEngine.js";
+import { narrateTurn } from "../../../domain/rules/quickBattle/battleNarration.js";
+import { hasApiKey } from "../../../domain/rules/prompt/storyteller.js";
+import { explainMove, moveTypeGist } from "../../../domain/rules/economy/itemEffectText.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
-import { resolveCardPortrait } from "../../../domain/companion/portraits.js";
+import { resolveCardPortrait } from "../../../domain/rules/companion/portraits.js";
 const S = (f) => `${BASE}stones/${f}`;
 const UI = (f) => `${BASE}stones/ui/${f}`;
 // 【为什么不能直接拼】这个函数原本只服务内置八人（public/bidders/full/ 下是

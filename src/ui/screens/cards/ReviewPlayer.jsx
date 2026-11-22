@@ -16,13 +16,13 @@ import {
   BODY_PUBLIC, BODY_PRIVATE, TIERS, StatRow, SevenDim, Src, TextField,
   Section, Note, Pills, selStyle,
 } from "./widgets.jsx";
-import { TIER_NEIGONG, parseJsonLoose, buildStage3 } from "../../../domain/cards/scanPrompts.js";
-import { hpFromNeigong } from "../../../domain/npc/npcGeneration.js";
+import { TIER_NEIGONG, parseJsonLoose, buildStage3 } from "../../../domain/rules/cards/scanPrompts.js";
+import { hpFromNeigong } from "../../../domain/rules/npc/npcGeneration.js";
 import { CarryPicker } from "./ReviewNpc.jsx";
 import { callModel } from "../../../infra/apiConfig.js";
-import { acquire } from "../../../domain/cards/rateLimiter.js";
-import { buildSkillPlan, sanitizeSkillPlan, tierFromNeigong, SKILL_PLAN_MAX_TOKENS } from "../../../domain/cards/skillPlan.js";
-import { buildCarryPlan, sanitizeCarryPlan, CARRY_PLAN_MAX_TOKENS } from "../../../domain/cards/carryPlan.js";
+import { acquire } from "../../../domain/rules/cards/rateLimiter.js";
+import { buildSkillPlan, sanitizeSkillPlan, tierFromNeigong, SKILL_PLAN_MAX_TOKENS } from "../../../domain/rules/cards/skillPlan.js";
+import { buildCarryPlan, sanitizeCarryPlan, CARRY_PLAN_MAX_TOKENS } from "../../../domain/rules/cards/carryPlan.js";
 
 // 主角武学编辑器：一门武学 = 名字 + 路数（攻击/防御/状态）+ 品阶 + active + 一句描述。
 // 【为什么主角用「武学」而不是 NPC 那套 5 槽招式】主角的战斗招式由武学(skills)派生

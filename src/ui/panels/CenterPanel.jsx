@@ -13,14 +13,14 @@
 import TurnStatusPill from "../components/TurnStatusPill.jsx";
 import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
 import CenterControlRows from "./CenterControlRows.jsx";
-import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { DevControls, TurnControls } from "./TopBar.jsx";
 import { chromeBtn } from "../theme.js";
 import { useState, useEffect } from "react";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
-import { BUILDING_TYPE } from "../../domain/buildings/qucuoBuildings.js";
-import { NOTE_SOURCE } from "../../domain/memory/note.js";
-import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
+import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
+import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
+import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import LogEntry from "../components/LogEntry.jsx";
 import TradingScreen from "../screens/TradingScreen.jsx";
 import DebugPanel from "./DebugPanel.jsx";

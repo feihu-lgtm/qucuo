@@ -1,12 +1,12 @@
-import { ITEM_CATEGORY, CATEGORY_LABEL, getEquipped } from "../domain/economy/equipment.js";
+import { ITEM_CATEGORY, CATEGORY_LABEL, getEquipped } from "../domain/rules/economy/equipment.js";
 import { selectEffectiveStats } from "../features/stats/logic.js";
-import { getLookText } from "../domain/map/mapSquares.js";
-import { classifyIntent } from "../domain/prompt/inputIntent.js";
-import { QUCUO_MAP } from "../domain/map/qucuoMap.js";
-import { QUCUO_QUESTS } from "../domain/quests/qucuoQuests.js";
-import { getQuestScript } from "../domain/quests/questScripts.js";
+import { getLookText } from "../domain/rules/map/mapSquares.js";
+import { classifyIntent } from "../domain/rules/prompt/inputIntent.js";
+import { QUCUO_MAP } from "../domain/data/map/qucuoMap.js";
+import { QUCUO_QUESTS } from "../domain/data/quests/qucuoQuests.js";
+import { getQuestScript } from "../domain/data/quests/questScripts.js";
 import { bar } from "../utils/mudHelpers.js";
-import { getPresentNpcs } from "../domain/state/fields.js";
+import { getPresentNpcs } from "../domain/rules/state/fields.js";
 import { giftSilver } from "../features/npc/logic.js";
 
 const ROOM_LOOK_COMMANDS = new Set(["看", "look", "l", "看看", "环顾", "环顾四周", "环视", "环视四周", "查看四周"]);

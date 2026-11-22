@@ -2,8 +2,8 @@ import { useCallback } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { forceAdvanceQuest as forceAdvanceQuestFeature } from "../../features/quest/logic.js";
-import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 
 export function settlePersuasion({ setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog }, { questId, flag }, result) {
   return applyResult(null, () => {

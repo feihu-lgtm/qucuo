@@ -1,4 +1,4 @@
-import { hasInnerMap } from "../../../domain/map/innerMap.js";
+import { hasInnerMap } from "../../../domain/rules/map/innerMap.js";
 import { getTimeStr } from "../../../utils/mudHelpers.js";
 
 export default function LocationModule({ zoneTheme, room, innerRoomName, time }) {

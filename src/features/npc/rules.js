@@ -1,11 +1,11 @@
-import { isCompanionUnlockedByName, companionKeyByName } from "../../domain/companion/companion.js";
-import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../../domain/map/innerMap.js";
-import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
-import { mapDescriptionToGenParams } from "../../domain/npc/npcDescriptionMapping.js";
-import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../domain/npc/npcPool.js";
-import { injectNpcs } from "../../domain/npc/roomNpcs.js";
-import { getResidentNpcs } from "../../domain/npc/residentNpcs.js";
-import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
+import { isCompanionUnlockedByName, companionKeyByName } from "../../domain/rules/companion/companion.js";
+import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../../domain/rules/map/innerMap.js";
+import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
+import { mapDescriptionToGenParams } from "../../domain/data/npc/npcDescriptionMapping.js";
+import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../domain/data/npc/npcPool.js";
+import { injectNpcs } from "../../domain/rules/npc/roomNpcs.js";
+import { getResidentNpcs } from "../../domain/data/npc/residentNpcs.js";
+import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import { seededRand } from "../../utils/seededRandom.js";
 
 const NPC_FIELDS = [

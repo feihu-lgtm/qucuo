@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
-import { TALLY_KINDS, DAY_TURNS, tallyToday, describeLifetime, tallyTotals } from "../../domain/memory/tally.js";
-import { NNPC_STAGE } from "../../domain/narrator/narrator.js";
+import { TALLY_KINDS, DAY_TURNS, tallyToday, describeLifetime, tallyTotals } from "../../domain/rules/memory/tally.js";
+import { NNPC_STAGE } from "../../domain/rules/narrator/narrator.js";
 
 // 起居注：逐日记录起居言动。
 // ============================================================================

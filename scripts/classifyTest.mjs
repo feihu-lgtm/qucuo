@@ -2,11 +2,11 @@ const _ls = new Map();
 globalThis.localStorage = { getItem: k => (_ls.has(k) ? _ls.get(k) : null), setItem: (k,v) => _ls.set(k,String(v)), removeItem: k => _ls.delete(k) };
 globalThis.structuredClone = globalThis.structuredClone || (v => JSON.parse(JSON.stringify(v)));
 const { readFileSync } = await import("fs");
-const { parseCharacterCard } = await import("../src/domain/cards/cardParse.js");
-const { runClassify, peopleAfterClassify } = await import("../src/domain/cards/cardScan.js");
-const { buildStage1 } = await import("../src/domain/cards/scanPrompts.js");
-const store = await import("../src/domain/cards/scanStore.js");
-const { resetBucket } = await import("../src/domain/cards/rateLimiter.js");
+const { parseCharacterCard } = await import("../src/domain/rules/cards/cardParse.js");
+const { runClassify, peopleAfterClassify } = await import("../src/domain/rules/cards/cardScan.js");
+const { buildStage1 } = await import("../src/domain/rules/cards/scanPrompts.js");
+const store = await import("../src/domain/infra/scanStore.js");
+const { resetBucket } = await import("../src/domain/rules/cards/rateLimiter.js");
 await store.init();
 
 const cards = {

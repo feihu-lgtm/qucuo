@@ -1,5 +1,5 @@
 import React from "react";
-import { SPECIAL_KEYS } from "../../domain/character/starterBuild.js";
+import { SPECIAL_KEYS } from "../../domain/rules/character/starterBuild.js";
 
 export default function StatAllocator({ special, remaining, onAdjust, onRandomize, onContinue, theme }) {
   const buttonStyle = {

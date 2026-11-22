@@ -1,6 +1,6 @@
-import { formatPlanNote } from "../../domain/intent/planNotes.js";
-import { applyBookkeep, runBookkeep } from "../../domain/memory/bookkeep.js";
-import { getLedger } from "../../domain/memory/npcLedger.js";
+import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
+import { applyBookkeep, runBookkeep } from "../../domain/rules/memory/bookkeep.js";
+import { getLedger } from "../../domain/rules/memory/npcLedger.js";
 import { buildPresence } from "../prompt/roundNotes.js";
 import { bindTurnAi, createWebAi } from "../ports/ai.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";

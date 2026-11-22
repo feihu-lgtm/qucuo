@@ -13,8 +13,8 @@ const EXTRACTION_INTENT_LABELS = [
 ];
 import { listSlots, saveToSlot, loadSlot, deleteSlot, renameSlot, clearAutoSave, autoSave, exportSave, importSave } from "../../infra/saves.js";
 import { setRngState, setSeed } from "../../core/rng.js";
-import { listCharacters, npcAffectionLabel } from "../../domain/prompt/mvu.js";
-import { affectionLabel, AFFECTION_TIERS, affectionTier } from "../../domain/narrator/narrator.js";
+import { listCharacters, npcAffectionLabel } from "../../domain/rules/prompt/mvu.js";
+import { affectionLabel, AFFECTION_TIERS, affectionTier } from "../../domain/rules/narrator/narrator.js";
 // 预设切换/编辑器已从 UI 移除（预设 tab 现在只放注入结构），
 // PresetEditor.jsx 已删除（零引用），PresetManager 仍在使用。想接回来需重新实现。
 import { clearInspectCache, inspectCacheSize } from "../../infra/inspectCache.js";

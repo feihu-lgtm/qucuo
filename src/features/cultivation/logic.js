@@ -1,6 +1,6 @@
-import { set, updateField } from "../../domain/state/applyWrite.js";
-import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
-import { hpFromNeigong } from "../../domain/npc/npcGeneration.js";
+import { set, updateField } from "../../domain/rules/state/applyWrite.js";
+import { effectiveMaxHp } from "../../domain/data/kungfu/qucuoKungfu.js";
+import { hpFromNeigong } from "../../domain/rules/npc/npcGeneration.js";
 import { STAGES, STAGE_UP_COST } from "../../utils/mudHelpers.js";
 
 export const trainCost = (value) => 4 + Math.floor((value ?? 0) / 10);

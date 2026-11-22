@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MOVE_TYPE } from "../../domain/combat/moveTypes.js";
+import { MOVE_TYPE } from "../../domain/rules/combat/moveTypes.js";
 import { learnNpcSkill, settleNpcDuel } from "./logic.js";
 
 const npc = {

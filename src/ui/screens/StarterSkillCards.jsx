@@ -1,7 +1,7 @@
 import React from "react";
-import { deriveMoveFromSkill } from "../../domain/npc/npcGeneration.js";
-import { explainMove, moveTypeGist, passiveBonusBrief } from "../../domain/economy/itemEffectText.js";
-import { SKILL_TYPE } from "../../domain/kungfu/qucuoKungfu.js";
+import { deriveMoveFromSkill } from "../../domain/rules/npc/npcGeneration.js";
+import { explainMove, moveTypeGist, passiveBonusBrief } from "../../domain/rules/economy/itemEffectText.js";
+import { SKILL_TYPE } from "../../domain/data/kungfu/qucuoKungfu.js";
 
 function typeLabel(skill) {
   return skill.type === SKILL_TYPE.MOVE ? `招式·${skill.moveType}` : skill.type;

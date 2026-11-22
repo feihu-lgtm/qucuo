@@ -1,4 +1,4 @@
-import { getHomestead } from "../../domain/map/homestead.js";
+import { getHomestead } from "../../domain/rules/map/homestead.js";
 import FacePanel from "../components/FacePanel.jsx";
 import { VersionHistoryButton } from "./TopBar.jsx";
 import LocationModule from "./left/LocationModule.jsx";

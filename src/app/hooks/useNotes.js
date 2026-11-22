@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
-import { NOTE_SOURCE, writeNote } from "../../domain/memory/note.js";
-import { tallyAdd } from "../../domain/memory/tally.js";
-import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
+import { NOTE_SOURCE, writeNote } from "../../domain/rules/memory/note.js";
+import { tallyAdd } from "../../domain/rules/memory/tally.js";
+import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 
 export function useNotes({ apiCfg, time, room, varTreeRef, timeRef, setVarTree }) {
   const noteEnvRef = useRef({});

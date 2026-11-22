@@ -1,26 +1,26 @@
 import { step as traceStep } from "../../infra/actionTrace.js";
-import { applyMvuCommands } from "../../domain/prompt/mvu.js";
-import { formatAngerResolutionLog, resolveAngerSignals } from "../../domain/combat/stealSystem.js";
-import { QUCUO_MAP, getMapNode } from "../../domain/map/qucuoMap.js";
-import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
-import { detectNewFaces, markAsSeen, updateLastSeen, markNpcAsKnown } from "../../domain/npc/npcAwareness.js";
-import { recordRumoredNpcs, clearRumor } from "../../domain/npc/npcEmergence.js";
-import { mapDescriptionToGenParams } from "../../domain/npc/npcDescriptionMapping.js";
-import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
+import { applyMvuCommands } from "../../domain/rules/prompt/mvu.js";
+import { formatAngerResolutionLog, resolveAngerSignals } from "../../domain/rules/combat/stealSystem.js";
+import { QUCUO_MAP, getMapNode } from "../../domain/data/map/qucuoMap.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { detectNewFaces, markAsSeen, updateLastSeen, markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
+import { recordRumoredNpcs, clearRumor } from "../../domain/rules/npc/npcEmergence.js";
+import { mapDescriptionToGenParams } from "../../domain/data/npc/npcDescriptionMapping.js";
+import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 // 在场名单的唯一写入口（见 roomNpcs.js 顶部注释）
-import { patchCombatData, materializeNpc } from "../../domain/npc/roomNpcs.js";
-import { getAllResidentNpcNames } from "../../domain/npc/residentNpcs.js";
-import { getImportedResidentNames } from "../../domain/cards/importedRegistry.js";
-import { COMPANION_SLOTS } from "../../domain/companion/companionSlots.js";
+import { patchCombatData, materializeNpc } from "../../domain/rules/npc/roomNpcs.js";
+import { getAllResidentNpcNames } from "../../domain/data/npc/residentNpcs.js";
+import { getImportedResidentNames } from "../../domain/rules/cards/importedRegistry.js";
+import { COMPANION_SLOTS } from "../../domain/rules/companion/companionSlots.js";
 
-import { embeddingReady } from "../../domain/memory/embeddingService.js";
-import { writeNote, NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
-import { applyKnowledgeTreeDiff, registerFact } from "../../domain/prompt/knowledge.js";
-import { settleNegotiation as gambleSettleNegotiation } from "../../domain/economy/gambleStone.js";
+import { embeddingReady } from "../../domain/rules/memory/embeddingService.js";
+import { writeNote, NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
+import { applyKnowledgeTreeDiff, registerFact } from "../../domain/rules/prompt/knowledge.js";
+import { settleNegotiation as gambleSettleNegotiation } from "../../domain/rules/economy/gambleStone.js";
 import { commitProposalWrites } from "./commitProposalWrites.js";
 import { DIR_DXY } from "../../utils/mudHelpers.js";
 import { filterGhostCommands, findScriptOverride } from "./commitHelpers.js";
-import { interleaveDuelReport } from "../../domain/combat/duelReport.js";
+import { interleaveDuelReport } from "../../domain/rules/combat/duelReport.js";
 
 // 两阶段 pipeline 的提交段：把本轮解析结果（d.p / d.mvuCommands / d.dealResult）
 // 写回世界状态；提交失败由 playTurn 还原事务快照。

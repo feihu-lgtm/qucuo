@@ -1,11 +1,11 @@
-import { add, applyWrite, set, updateField } from "../../domain/state/applyWrite.js";
+import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { random } from "../../core/rng.js";
-import { AFFECTION_RULES } from "../../domain/state/fields.js";
-import { makeItem } from "../../domain/economy/equipment.js";
-import { registerFact } from "../../domain/prompt/knowledge.js";
-import { makeItemSmart } from "../../domain/items/catalog.js";
-import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
-import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
+import { AFFECTION_RULES } from "../../domain/rules/state/fields.js";
+import { makeItem } from "../../domain/rules/economy/equipment.js";
+import { registerFact } from "../../domain/rules/prompt/knowledge.js";
+import { makeItemSmart } from "../../domain/data/items/catalog.js";
+import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
+import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 

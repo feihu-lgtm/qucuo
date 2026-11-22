@@ -14,12 +14,12 @@ vi.mock("../../infra/apiConfig.js", async (importOriginal) => {
 import { callModel } from "../../infra/apiConfig.js";
 import { callMainOnce } from "./actCall.js";
 import { startTrace } from "../../infra/actionTrace.js";
-import { initialNarratorState } from "../../domain/narrator/narrator.js";
-import { emptyBodyProfile } from "../../domain/character/bodyProfile.js";
+import { initialNarratorState } from "../../domain/rules/narrator/narrator.js";
+import { emptyBodyProfile } from "../../domain/rules/character/bodyProfile.js";
 import { deposit } from "../../features/bank/logic.js";
 import { applyResult } from "../../features/run.js";
-import { defaultPreset } from "../../domain/prompt/presetSystem.js";
-import { LEGACY_DEFAULT_CONTENT } from "../../domain/prompt/presetLegacy.js";
+import { defaultPreset } from "../../domain/rules/prompt/presetSystem.js";
+import { LEGACY_DEFAULT_CONTENT } from "../../domain/rules/prompt/presetLegacy.js";
 
 const legacySnapshotPreset = {
   ...defaultPreset(),

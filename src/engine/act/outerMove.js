@@ -1,6 +1,6 @@
 import { step as traceStep } from "../../infra/actionTrace.js";
-import { QUCUO_MAP, getMapNode, resolveExit, isNodeUnlocked } from "../../domain/map/qucuoMap.js";
-import { hasInnerMap, getDistrictAnchor } from "../../domain/map/innerMap.js";
+import { QUCUO_MAP, getMapNode, resolveExit, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
+import { hasInnerMap, getDistrictAnchor } from "../../domain/rules/map/innerMap.js";
 import { DIRS } from "../../utils/mudHelpers.js";
 
 // 外层大地图移动裁决（纯判定 + trace，不写任何 React 状态）：

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
-import { duelDropChance } from "../../domain/combat/duelSettleMath.js";
+import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
+import { duelDropChance } from "../../domain/rules/combat/duelSettleMath.js";
 
 // 这一套钉的是「切磋赢了不掉东西」那个 bug 的链路。
 //
@@ -129,7 +129,7 @@ describe("掉落池非空之后，掷骰这一步本来就是好的", () => {
 // 历史证据：STEAL_CONFIG.stealMoveChance 的注释写着从 0.5 调到 0.25 是因为
 // "玩家体感偷不到东西"——当时把症状当概率问题调了参数，病根其实在固化回填这一环。
 // 这组测试就是防止以后又去动那个参数而想不到池子。
-import { attemptSteal, pickStealOutcome, stealSuccessRate, STEAL_CONFIG } from "../../domain/combat/stealSystem.js";
+import { attemptSteal, pickStealOutcome, stealSuccessRate, STEAL_CONFIG } from "../../domain/rules/combat/stealSystem.js";
 
 describe("偷窃：确实掷骰，且吃的是同一个 carriedItems 池", () => {
   it("池子空 → 每次成功都被迫转成偷招（这就是当时的症状）", () => {
@@ -238,14 +238,14 @@ describe("驻场设定要补给已在名单里的人", () => {
 
 describe("回到那句台词：池子补上之后就不该再出现了", () => {
   it("才旦在 residentNpcs 里确实配了随身物（作者说的「每个人身上都放了物品」）", async () => {
-    const { getResidentNpcs } = await import("../../domain/npc/residentNpcs.js");
+    const { getResidentNpcs } = await import("../../domain/data/npc/residentNpcs.js");
     const caidan = getResidentNpcs("鱼定村").find(n => n.name === "才旦");
     expect(caidan).toBeTruthy();
     expect(caidan.carry.length).toBeGreaterThan(0);
   });
 
   it("配了 carry 的驻场，固化后 carriedItems 就是那几件（不走随机兜底）", async () => {
-    const { getResidentNpcs } = await import("../../domain/npc/residentNpcs.js");
+    const { getResidentNpcs } = await import("../../domain/data/npc/residentNpcs.js");
     const caidan = getResidentNpcs("鱼定村").find(n => n.name === "才旦");
     const fixed = ensureNpcCombatData({ ...caidan }, { luck: 5, levelCap: caidan.levelCap ?? 1 });
     expect(fixed.carriedItems.map(i => i.name)).toEqual(caidan.carry.map(i => i.name));
@@ -263,9 +263,9 @@ describe("回到那句台词：池子补上之后就不该再出现了", () => {
 //
 // 前几轮我修的三处（原地互动分支丢数据、驻场按名字跳过、UI 持旧快照）都是真问题，
 // 但都不是这一处；它们各自遮住了一部分症状，让根因更难被看见。
-import { toRoomNpc, NPC_POOL } from "../../domain/npc/npcPool.js";
-import { mapDescriptionToGenParams } from "../../domain/npc/npcDescriptionMapping.js";
-import { getResidentNpcs } from "../../domain/npc/residentNpcs.js";
+import { toRoomNpc, NPC_POOL } from "../../domain/data/npc/npcPool.js";
+import { mapDescriptionToGenParams } from "../../domain/data/npc/npcDescriptionMapping.js";
+import { getResidentNpcs } from "../../domain/data/npc/residentNpcs.js";
 
 // 复刻 MudRPG 的 toRoomNpcWithCombat（含白名单补回）
 const asRoomNpc = (poolNpc) => {

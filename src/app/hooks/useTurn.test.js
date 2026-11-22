@@ -22,7 +22,7 @@ vi.mock("../../engine/playTurn.js", async (importOriginal) => ({
   ...await importOriginal(),
   playTurn: vi.fn(),
 }));
-vi.mock("../../domain/prompt/inspectCache.js", () => ({
+vi.mock("../../infra/inspectCache.js", () => ({
   getCachedInspect: () => ({ text: "旧钥匙上系着褪色的红绳。" }),
   setCachedInspect: vi.fn(),
 }));

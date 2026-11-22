@@ -1,5 +1,5 @@
 import { bar } from "../../../utils/mudHelpers.js";
-import { NNPC_STAGE, affectionLabel } from "../../../domain/narrator/narrator.js";
+import { NNPC_STAGE, affectionLabel } from "../../../domain/rules/narrator/narrator.js";
 
 export default function NarratorModule({ zoneTheme, narrator, confessToNarrator }) {
   return (

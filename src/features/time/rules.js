@@ -1,12 +1,12 @@
 import { random } from "../../core/rng.js";
-import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
-import { mapDescriptionToGenParams } from "../../domain/npc/npcDescriptionMapping.js";
-import { NPC_POOL, toRoomNpc } from "../../domain/npc/npcPool.js";
-import { RESIDENT_NPCS } from "../../domain/npc/residentNpcs.js";
-import { tickAngryState } from "../../domain/combat/stealSystem.js";
-import { makeItem } from "../../domain/economy/equipment.js";
-import { makeItemSmart } from "../../domain/items/catalog.js";
-import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
+import { mapDescriptionToGenParams } from "../../domain/data/npc/npcDescriptionMapping.js";
+import { NPC_POOL, toRoomNpc } from "../../domain/data/npc/npcPool.js";
+import { RESIDENT_NPCS } from "../../domain/data/npc/residentNpcs.js";
+import { tickAngryState } from "../../domain/rules/combat/stealSystem.js";
+import { makeItem } from "../../domain/rules/economy/equipment.js";
+import { makeItemSmart } from "../../domain/data/items/catalog.js";
+import { hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { cleanExpiredBuffs } from "../../utils/buffSystem.js";
 import { buildRoomNpcWithCombat } from "../npc/rules.js";
 

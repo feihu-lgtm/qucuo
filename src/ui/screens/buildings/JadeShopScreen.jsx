@@ -1,7 +1,7 @@
-import { effectBrief } from "../../../domain/economy/itemEffectText.js";
+import { effectBrief } from "../../../domain/rules/economy/itemEffectText.js";
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
-import { JADE_WARES } from "../../../domain/items/catalog.js";
+import { JADE_WARES } from "../../../domain/data/items/catalog.js";
 
 // 金玉行：一个 building 两柜台，都消耗背包里的玉料(赌石"据为己有"收来的、带 jadeSpec 的物品)。
 // ① 选购成品柜：列 20 种玉器成品(词条预制)，选一块玉料 + 选一件成品 → 打造。

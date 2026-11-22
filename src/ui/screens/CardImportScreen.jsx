@@ -8,23 +8,23 @@
 // 把所有必填字段填满了，玩家手改也能完成入册。外部服务挂了不该让人连导入都做不了。
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { parseCharacterCard } from "../../domain/cards/cardParse.js";
-import { planScan, runScan, runClassify, peopleAfterClassify } from "../../domain/cards/cardScan.js";
+import { parseCharacterCard } from "../../domain/rules/cards/cardParse.js";
+import { planScan, runScan, runClassify, peopleAfterClassify } from "../../domain/rules/cards/cardScan.js";
 import * as scanStore from "../../infra/scanStore.js";
-import { bucketStatus, acquire } from "../../domain/cards/rateLimiter.js";
+import { bucketStatus, acquire } from "../../domain/rules/cards/rateLimiter.js";
 import { callModel } from "../../infra/apiConfig.js";
 import {
   S, TIERS, KIND_META, BODY_PUBLIC, BODY_PRIVATE, TERM_MONO,
   Bar, JadeTier, Src, Stat, Note, Btn, Pills, Terminal, barFrame,
 } from "./cards/widgets.jsx";
-import { sanitizeMoves, TIER_NEIGONG, parseJsonLoose, buildStage3 } from "../../domain/cards/scanPrompts.js";
-import { normalizePlacement } from "../../domain/cards/importedRegistry.js";
+import { sanitizeMoves, TIER_NEIGONG, parseJsonLoose, buildStage3 } from "../../domain/rules/cards/scanPrompts.js";
+import { normalizePlacement } from "../../domain/rules/cards/importedRegistry.js";
 import {
   buildPlacementPlan, sanitizePlacementPlan, PLAN_BATCH, PLANNABLE_DISTRICTS,
   PLAN_MAX_TOKENS,
-} from "../../domain/cards/placementPlan.js";
-import { buildCarryPlan, sanitizeCarryPlan, CARRY_PLAN_MAX_TOKENS } from "../../domain/cards/carryPlan.js";
-import { movesToSkills } from "../../domain/cards/skillPlan.js";
+} from "../../domain/rules/cards/placementPlan.js";
+import { buildCarryPlan, sanitizeCarryPlan, CARRY_PLAN_MAX_TOKENS } from "../../domain/rules/cards/carryPlan.js";
+import { movesToSkills } from "../../domain/rules/cards/skillPlan.js";
 import ReviewNpc from "./cards/ReviewNpc.jsx";
 import ReviewPlayer from "./cards/ReviewPlayer.jsx";
 import ImportSelfTutorial, { IMPORT_SELF_TUTORIAL_KEY } from "./cards/ImportSelfTutorial.jsx";

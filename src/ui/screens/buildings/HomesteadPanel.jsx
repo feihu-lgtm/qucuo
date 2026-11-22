@@ -4,7 +4,7 @@ import { useOverlayCloseGuard } from "../../../utils/overlayClose.js";
 import {
   getHomestead, loadWineCellar, saveWineCellar,
   loadGarden, saveGarden, RECIPES, WINE_RECIPES, PLANT_SLOTS,
-} from "../../../domain/map/homestead.js";
+} from "../../../domain/rules/map/homestead.js";
 
 const btnStyle = {
   cursor: "pointer", color: "#c8323a", padding: "5px 12px", background: "#161510",

@@ -18,11 +18,11 @@ import {
   ACTION_VIEWS, blocksForAction, KIND_META, CONSTRAINT_FIELDS,
   STATIC_TEXT_KEYS, schemaKeyFor,
   giftSettleLawExample, giftNarrativeLawExample,
-} from "../../domain/prompt/injectionBlocks.js";
-import * as ENGINE from "../../domain/prompt/enginePrompts.js";
-import { buildExtractionSpecExample } from "../../domain/prompt/extractionEngine.js";
+} from "../../domain/rules/prompt/injectionBlocks.js";
+import * as ENGINE from "../../domain/rules/prompt/enginePrompts.js";
+import { buildExtractionSpecExample } from "../../domain/rules/prompt/extractionEngine.js";
 import { getTraceLog } from "../../infra/actionTrace.js";
-import { getPositionMeta } from "../../domain/prompt/tavernMapping.js";
+import { getPositionMeta } from "../../domain/rules/prompt/tavernMapping.js";
 
 export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled }) {
   const [viewMode, setViewMode] = useState("tavern"); // "tavern" = 13 位置 / "action" = 动作分类

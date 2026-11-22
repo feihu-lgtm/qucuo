@@ -4,7 +4,7 @@ import {
   TECHNIQUES, TECHNIQUE_IDS, COOKWARE, COOKWARE_BY_ID, DEFAULT_COOKWARE_ID,
   matchRecipe, canUseTechnique, computeDish, genericDishEffect,
   ownedCookware, availableMaterials, INGREDIENT_LORE, reconcileCookingSlots,
-} from "../../../domain/economy/cooking.js";
+} from "../../../domain/rules/economy/cooking.js";
 
 // 烹饪台：六格槽位（料×4 + 技法×1 + 炊具×1）。UI 素材沿用赌石那套精美木质/纸面
 // 贴图（public/stones/ui/），backgroundSize "100% 100%" 拉伸铺满（与 GambleStoneScreen

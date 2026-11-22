@@ -8,7 +8,7 @@ import {
   leaveSeaOfMind as leaveSeaOfMindLogic,
 } from "../../features/narrator/logic.js";
 import { switchCompanion } from "../../features/companion/logic.js";
-import { SEA_OF_MIND } from "../../domain/narrator/seaOfMind.js";
+import { SEA_OF_MIND } from "../../domain/rules/narrator/seaOfMind.js";
 
 export function usePlayerActionHandlers({ featureCtxRef, noteAction, setInnerRoomName, seaReturnRef, captureUndo }) {
   const handleComfort = useCallback((actionKey) => applyResult(featureCtxRef.current, () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { judgeCollect, rollMovementEvents } from "./encounter.js";
 
 describe("movement encounter logic", () => {

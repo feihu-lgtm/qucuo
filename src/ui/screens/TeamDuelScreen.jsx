@@ -13,10 +13,10 @@
 // ============================================================================
 
 import React, { useState, useRef, useEffect } from "react";
-import { MOVE_TYPE } from "../../domain/combat/moveTypes.js";
-import { runTeamTurn, decideUnitMove, decideUnitTarget, checkBattleOver } from "../../domain/combat/teamBattleEngine.js";
-import { buildPlayerUnit, buildLeopardUnit, buildEnemyUnit } from "../../domain/combat/teamUnits.js";
-import { rollBattleLoot } from "../../domain/npc/npcGeneration.js";
+import { MOVE_TYPE } from "../../domain/rules/combat/moveTypes.js";
+import { runTeamTurn, decideUnitMove, decideUnitTarget, checkBattleOver } from "../../domain/rules/combat/teamBattleEngine.js";
+import { buildPlayerUnit, buildLeopardUnit, buildEnemyUnit } from "../../domain/rules/combat/teamUnits.js";
+import { rollBattleLoot } from "../../domain/rules/npc/npcGeneration.js";
 import { resolveCombatBuff } from "../../utils/buffSystem.js";
 import { HpBar, EnergyDots, MoveButton, MoveInspect, TYPE_ICON } from "./DuelScreen.jsx";
 import { addTeamDodgeStealNotes, excludeDodgeStolenItems, useDuelDodgeSteal } from "./useDuelDodgeSteal.js";

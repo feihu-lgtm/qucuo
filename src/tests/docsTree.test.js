@@ -412,8 +412,8 @@ describe("layout and overlay ctx inputs match their source shapes", () => {
       }
     }
 
-    const portraitImports = builder.match(/import\s*\{([^}]+)\}\s*from "\.\.\/domain\/companion\/portraits\.js"/)?.[1] || "";
-    const portraitExports = readFileSync("src/domain/companion/portraits.js", "utf-8") + readFileSync("src/infra/portraitStore.js", "utf-8"); // 薄壳+转发目标
+    const portraitImports = builder.match(/import\s*\{([^}]+)\}\s*from "\.\.\/domain\/rules\/companion\/portraits\.js"/)?.[1] || "";
+    const portraitExports = readFileSync("src/domain/rules/companion/portraits.js", "utf-8") + readFileSync("src/infra/portraitStore.js", "utf-8"); // 薄壳+转发目标
     const layoutStart = builder.indexOf("export function buildLayoutCtx");
     const layoutKeys = new Set(objectKeys(builder.slice(layoutStart), "return {"));
     for (const name of ["setSnowLeopardForm", "setPearlForm"]) {

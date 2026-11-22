@@ -1,18 +1,18 @@
 import { commitRound } from "./act/commitRound.js";
 import { gameActions, gameStore } from "../store/gameStore.js";
 import { getRngState, setRngState } from "../core/rng.js";
-import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
+import { loadSquares, serializeSquares } from "../domain/rules/map/mapSquares.js";
 import { runTurn } from "./runTurn.js";
 import { PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { runBookkeepAfterTurn } from "./act/bookkeepTurn.js";
 import {
   applySettledDeltas, captureSettledChanges, revertSettled, runSoftSettle,
-} from "../domain/settle/settle.js";
-import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
-import { SOFT_SETTLE_KINDS } from "../domain/settle/softRules.js";
-import { applyMvuCommands } from "../domain/prompt/mvu.js";
-import { formatAngerResolutionLog, resolveAngerSignals } from "../domain/combat/stealSystem.js";
+} from "../domain/rules/settle/settle.js";
+import { UNKNOWN_CHOICE } from "../domain/rules/settle/judge.js";
+import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
+import { applyMvuCommands } from "../domain/rules/prompt/mvu.js";
+import { formatAngerResolutionLog, resolveAngerSignals } from "../domain/rules/combat/stealSystem.js";
 
 export const ROLLBACK_KEYS = [
   "room", "char", "dao", "skills", "inv", "exp", "pot", "flags",
