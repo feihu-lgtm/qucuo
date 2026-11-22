@@ -1128,3 +1128,16 @@
     bottom: calc(12px + env(safe-area-inset-bottom) / var(--ui-scale, 1)) !important;
   }
 }
+
+/* 大地图在触屏上不能双指缩放，只能靠右上角的 ＋/－/⤢：
+   按钮放大到 36px，透明外扩 4px，每个可点区 44×44 且互不重叠。 */
+@media (pointer: coarse) {
+  .map-zoom-controls { gap: 8px !important; }
+  .map-zoom-btn {
+    position: relative;
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 34px !important;
+  }
+  .map-zoom-btn::after { content: ""; position: absolute; inset: -4px; }
+}
