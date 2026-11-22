@@ -5,6 +5,7 @@ const protectedPrefixes = Object.entries(FIELDS).filter(([, field]) => field.ai 
   .map(([path]) => path.split(".").slice(0, -1));
 const patterns = Object.entries(FIELDS).filter(([path]) => path.includes("*"))
   .map(([path, field]) => [path.split("."), field]);
+const factionRepParent = statePath(FIELD.factionRep).slice(0, -1);
 const clamp = (value, min = -Infinity, max = Infinity) => Math.max(min, Math.min(max, value));
 
 export const set = (path, value) => ({ op: "set", path, value });
@@ -62,6 +63,9 @@ export function applyWrite(state, { op, path, value }, options = {}) {
 
   const field = (parts.length === id.split(".").length && Object.hasOwn(FIELDS, id) ? FIELDS[id] : null)
     ?? patterns.find(([pattern]) => pathMatches(pattern, parts))?.[1];
+  if (mvu && field !== FIELDS[FIELD.factionRep] && isPrefix(parts, factionRepParent)) {
+    return reject(`"${path}" 会整块覆盖势力声誉，只能逐个写 世界.势力声誉.<势力>`);
+  }
   if (!field || field.readOnly || (mvu && field.ai !== true)) {
     return reject(`字段未声明或不可写：${id}`);
   }
@@ -80,6 +84,10 @@ export function applyWrite(state, { op, path, value }, options = {}) {
     return reject("气血必须是两个有限数字");
   }
   const before = readPath(state, parts);
+  if (op === "set" && mvu && field === FIELDS[FIELD.factionRep]) {
+    const base = typeof before === "number" ? before : field.default;
+    value = clamp(value, base - field.maxDelta, base + field.maxDelta);
+  }
   let actualDelta;
   if (op === "add") {
     actualDelta = value;

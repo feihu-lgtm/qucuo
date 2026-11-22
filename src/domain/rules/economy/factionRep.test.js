@@ -34,4 +34,12 @@ describe("faction reputation", () => {
     const { tree: next } = applyMvuCommands(tree({}), [{ op: "add", path: "世界.势力声誉.玉泉寨", value: 30 }]);
     expect(next.世界.势力声誉.玉泉寨).toBe(10);
   });
+
+  it("keeps AI set within ±10 and refuses overwriting the whole table", () => {
+    const { tree: next } = applyMvuCommands(tree({ 玉泉寨: 5, 黑风寨: 20 }), [
+      { op: "set", path: "世界.势力声誉.玉泉寨", value: 90 },
+      { op: "set", path: "世界.势力声誉", value: 0 },
+    ]);
+    expect(next.世界.势力声誉).toEqual({ 玉泉寨: 15, 黑风寨: 20 });
+  });
 });
