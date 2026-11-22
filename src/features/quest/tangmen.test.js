@@ -94,7 +94,7 @@ describe("唐1·暗巷来客", () => {
       const state = intercept();
       state.char = {
         ...state.char, hp: [900, 900], waigong: 200, special: { 智谋: 10, 身法: 100 },
-        moveset: [{ name: "试招", type: MOVE_TYPE.ATTACK, baseDamageMultiplier: 100, cost: 0 }],
+        moveset: [{ name: "试招", type: MOVE_TYPE.ATTACK, baseDamageMultiplier: 3, cost: 0 }],
       };
       const fought = advance(state, "硬闯截货");
       expect(fought.flags).toContain("quest_tang1_fight");
