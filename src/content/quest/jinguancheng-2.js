@@ -114,7 +114,7 @@ export default { quest: {
         onReach: {
           money: 180,
           items: [{ name: "三十年前鱼鳞复原图", category: "misc", quality: "紫", desc: "沈归尘照副册重绘的田界图，终局质证桑杰朵杰的核心证物。" }],
-          factionRep: { 锦官城: 20, 丐帮三星分舵: 12, 鱼定土司府: -6 },
+          factionRep: { 锦官城: 20, 鱼定土司府: -6 },
           byFlag: {
             quest_jgzhi3_public: { factionRep: { 鱼定村: 15, 丐帮三星分舵: 12 } },
             quest_jgzhi3_blackmail: { money: 400, factionRep: { 锦官城: -5 }, favorability: { "沈归尘": -20 } },
