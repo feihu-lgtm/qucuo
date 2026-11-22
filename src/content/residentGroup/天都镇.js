@@ -184,5 +184,62 @@ export default { residentGroup: {
 欢喜教的第一条线头由他放出去：看中的人，他会压低声音指一条路——去行脚楼要
 地字号房，夜里听听隔壁后墙的动静。`,
     },
+    // ── 百花门（东街百花楼，合稿·人物档案） ──
+    {
+      name: "阿芷", id: "resident_azhi", levelCap: 14,
+      brief: "百花门二当家，地窖蛊房司蛊",
+      personality: "冷硬警觉、恩怨分明，对兰姐死忠；亲妹死于麻九娘追兵，凡事以保住楼里姐妹活命为第一铁律。",
+      carry: [
+        { name: "乌骨淬毒短鞭", category: "weapon", quality: "蓝" },
+        { name: "靛布紧身劲装", category: "armor", quality: "绿" },
+        { name: "黑陶金蚕坠", category: "accessory", quality: "紫" },
+        { name: "蛇药粉", category: "misc", quality: "绿" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+        { name: "金疮药", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "苏折柳", id: "resident_suzheliu", levelCap: 8,
+      brief: "百花楼账房先生，听风雅阁主事，精于易容与仿墨验契",
+      personality: "温文惫懒、嘴毒心细、嫉恶如仇；被土司府逼得家破人亡的蜀南落魄书生，誓要用账本和假脸替底层人算真账。",
+      carry: [
+        { name: "点墨铁骨扇", category: "weapon", quality: "蓝" },
+        { name: "青布双层儒衫", category: "armor", quality: "绿" },
+        { name: "百面易容匣", category: "accessory", quality: "紫" },
+        { name: "参须茶包", category: "misc", quality: "白" },
+        { name: "玫瑰花酿", category: "misc", quality: "白" },
+        { name: "天竺粗香饼", category: "misc", quality: "白" },
+        { name: "薄荷醒神叶", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "花婆", id: "resident_huapo", levelCap: 10,
+      brief: "百花暖棚老花匠，花医静室坐堂毒医",
+      personality: "絮叨慈祥、外粗内细、医毒同源；最恨拿毒蛊欺凌无辜，见人受伤总忍不住边骂边往嘴里塞苦药。",
+      carry: [
+        { name: "缺口药铲", category: "weapon", quality: "绿" },
+        { name: "蜡染厚棉衲", category: "armor", quality: "绿" },
+        { name: "紫泥百草壶", category: "accessory", quality: "紫" },
+        { name: "祛瘴花茶", category: "misc", quality: "绿" },
+        { name: "蛇药粉", category: "misc", quality: "绿" },
+        { name: "雪山接骨膏", category: "misc", quality: "蓝" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "小蝉", id: "resident_xiaochan", levelCap: 4,
+      brief: "百花前厅歌女，彩雀暗檐传讯手，玉泉寨逃民遗孤",
+      personality: "机灵嘴甜、爱凑热闹却极守口风，记性过目不忘；一心守住百花楼这个收留自己的家。",
+      carry: [
+        { name: "双股铜花簪", category: "weapon", quality: "白" },
+        { name: "鹅黄夹棉短袄", category: "armor", quality: "白" },
+        { name: "竹编彩雀哨", category: "accessory", quality: "绿" },
+        { name: "玫瑰花酿", category: "misc", quality: "白" },
+        { name: "桂花糖", category: "misc", quality: "白" },
+        { name: "松子糖", category: "misc", quality: "白" },
+        { name: "酥油茶", category: "misc", quality: "白" },
+      ],
+    },
   ]
 } };
