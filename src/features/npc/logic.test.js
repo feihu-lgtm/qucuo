@@ -81,6 +81,16 @@ describe("NPC duel report settlement", () => {
     expect(result.changes.time).toBeUndefined();
   });
 
+  it("counts a duel win toward an active bounty on the target", () => {
+    const state = makeState({ questProgress: { bounty_daluma: { active: true, count: 0 } } });
+    const result = settleNpcDuel(state, { name: "大路马", levelCap: 1 }, {
+      outcome: "win",
+      battleLog: [{ round: 1, playerMove: { name: "掌法", type: MOVE_TYPE.ATTACK }, npcMove: { name: "刀法", type: MOVE_TYPE.ATTACK }, result: { damageToA: 2, damageToB: 5, worseName: "大路马" } }],
+    });
+    expect(result.changes.questProgress(state.questProgress).bounty_daluma).toEqual({ active: true, count: 1 });
+    expect(result.logs.some(({ text }) => text?.includes("悬赏「缉拿大路马」进度：1/1"))).toBe(true);
+  });
+
   it("settles 60 nothing-versus-nothing rounds after phrase pools exhaust", () => {
     const battleLog = Array.from({ length: 60 }, (_, index) => ({
       round: index + 1,
