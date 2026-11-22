@@ -334,6 +334,14 @@ const items = {
 "土司私兵夜袭令牌": { name: "土司私兵夜袭令牌", category: "misc", quality: "蓝", tags: ["证据", "任务", "欢喜"], desc: "从夜袭天都香行的私兵头目腰间夺下的铜令牌，背面是鱼定土司府中院的编号。" },
 "圣女素银莲簪": { name: "圣女素银莲簪", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 悟性: 1 }, tags: ["饰品", "信物", "欢喜"], desc: "罗琦接过教权那夜拔下的素银莲簪，交到你手里时只说了一句：「替我记着今天。」" },
 "莲纹铜牌": { name: "莲纹铜牌", category: "misc", quality: "绿", tags: ["信物", "欢喜"], desc: "欢喜教内院弟子的铜牌，正面一朵莲花，背面刻着坛城纹。凭它可出入莲花廊。" },
+"西域止血散": { name:"西域止血散", category:"misc", quality:"绿", tags:["药材","疗伤","天龙教"], consumable:{ hpRestore: 0.12 }, desc:"军需坊常备的止血药粉，铁锈味比药味重。血刀部的人也用这个——他们说止血要快，味儿难不难闻是活下来才想的事。" },
+"胡杨炭火酒": { name:"胡杨炭火酒", category:"misc", quality:"绿", tags:["酒","西域","天龙教"], consumable:{ energyRestore: 3 }, desc:"胡杨炭温过三遍的烈酒，喝下去一线火从喉咙烧到胃里。守夜的玄甲兵靠它熬西风隘的长夜——不许多喝，多了第二天刀拿不稳。" },
+"西域雪莲清毒丸": { name:"西域雪莲清毒丸", category:"misc", quality:"紫", tags:["丹药","解毒","天龙教"], consumable:{ dispelAll: true, hpRestore: 0.15 }, desc:"雪莲子配西谷草药炼的清毒丸，入喉一凉，毒气顺着毛孔往外散。贺兰昭一年只炼两炉，军需坊摆出来的每一颗都要记名。" },
+"药囊": { name:"药囊", category:"misc", quality:"绿", tags:["医具"], desc:"贺兰昭腰间那只旧药囊，革面磨得发亮，里头按格子分装着十几味药。她说药比人守信用——放在哪一格，就治哪一种病。" },
+"八部天龙经": { name:"八部天龙经", category:"misc", quality:"红", tags:["经卷","镇教","天龙教","剧情核心"], desc:"天龙教镇教经卷，八部八层，层层相扣。安世衡在石室里抄的就是它——抄一遍要一个月，他抄了八年。" },
+"手抄止戈经": { name:"手抄止戈经", category:"misc", quality:"白", tags:["经卷","白衣旧部"], desc:"一卷抄得极工整的止戈经，字迹瘦硬，末尾「止戈」两个字下笔比别处都重。是断崖石室里那位老人抄的。" },
+"血刀通行木牌": { name:"血刀通行木牌", category:"misc", quality:"绿", tags:["令牌","血刀","天龙教"], desc:"血刀部发的通行木牌，牌面一道刀刻的深槽。哨卡见了这槽便不拦——血刀部认牌不认人。" },
+"天龙弟子令": { name:"天龙弟子令", category:"misc", quality:"绿", tags:["令牌","天龙教"], desc:"天龙教正式弟子的令牌，玄铁所铸，正面一条蟠龙，背面一道刀刻的深槽。点将台上发下来的东西，丢了比丢命丢人。" },
 };
 
 export default { item: items, itemGroup: { SUNDRIES: Object.keys(items) } };

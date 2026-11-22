@@ -33,6 +33,14 @@ export const FACTION_ENTRIES = {
     intro: "偏厅香案上只摆一尊铜钵与三柱无烟红香。向旧神像敬香、饮下罗琦亲斟的坛城茶，便算入了内院门墙。",
     joinLabel: "敬香饮茶，拜入欢喜教",
   },
+  天龙教: {
+    sect: "天龙教", master: "石重岳", buildingId: "sect_entry_tianlong",
+    minRep: 40, repBonus: 20, flag: "天龙教弟子",
+    token: "天龙弟子令", gifts: ["西域弯刀", "驼绒防风氅"],
+    trial: { flag: "tianlong_spar_first", label: "点将台试炼：堂堂正正胜过石重岳或血刀部教头一场", hint: "去玄甲校场或大草甸磨刀坪，堂堂正正胜过石重岳、厉天行或血刀教头一场，不许用毒。" },
+    intro: "黑石点将台上牛皮大鼓裂了口，台下插着一圈断刀。石重岳收人不看出身，只看拳头与办差——接得住三招，牌子拿走。",
+    joinLabel: "登台试三招，拜入天龙教",
+  },
 };
 
 export const SECT_MEMBER_FLAGS = {
