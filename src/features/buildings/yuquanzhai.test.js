@@ -45,7 +45,7 @@ describe("玉泉寨", () => {
     const carry = RESIDENT_NPCS.玉泉寨.flatMap((npc) => (npc.carry || []).map((entry) => entry.name));
     const questNames = ["风干牦牛肉", "小牧童的口哨"];
     for (const name of [...shopItems, ...carry, ...questNames]) expect(makeNamedItem(name), name).toBeTruthy();
-    expect(QUCUO_QUESTS.filter((quest) => quest.id.startsWith("yuquanzhai_")).length).toBe(5);
+    expect(QUCUO_QUESTS.filter((quest) => quest.id.startsWith("yuquanzhai_")).length).toBe(6);
   });
 
   it("prices and gates 玉泉货栈 by 玉泉寨 reputation; hostile only sells 白品", () => {
