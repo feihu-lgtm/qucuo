@@ -10,7 +10,7 @@ const btnStyle = {
   cursor: "pointer", color: "var(--ink-accent)", padding: "5px 12px", background: "var(--bg-ink)",
   border: "1px solid var(--ink-border)", borderRadius: 0, fontSize: "11.5px", display: "inline-block",
 };
-const dimBtn = { ...btnStyle, color: "var(--ink-text-dim)", borderColor: "#1a1a2a" };
+const dimBtn = { ...btnStyle, color: "var(--ink-text-dim)", borderColor: "var(--homestead-dim-edge)" };
 
 export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, zoneTheme, onClose, addLog, dispatchCommand }) {
   const closeGuard = useOverlayCloseGuard(onClose);
@@ -42,7 +42,7 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, z
                   onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ink-accent)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-border)"; }}
                 >
-                  <div style={{ fontSize: "14px", marginBottom: 4 }}>{f.icon} <span style={{ color: "#c8e0d8", fontSize: "12px" }}>{f.name}</span></div>
+                  <div style={{ fontSize: "14px", marginBottom: 4 }}>{f.icon} <span style={{ color: "var(--ink-tier-text)", fontSize: "12px" }}>{f.name}</span></div>
                   <div style={{ fontSize: "10px", color: "var(--ink-text-dim)", lineHeight: 1.4 }}>{f.desc}</div>
                 </div>
               ))}
@@ -89,7 +89,7 @@ function CookingFeature({ inv, setInv, char, setChar, addLog, runCommand }) {
         return (
           <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--bg-slate)", opacity: ok ? 1 : 0.4 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "12px", color: ok ? "#c8e0d8" : "var(--ink-text-dim)" }}>{r.result}</div>
+              <div style={{ fontSize: "12px", color: ok ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>{r.result}</div>
               <div style={{ fontSize: "10px", color: "var(--ink-text-dim)" }}>需：{r.ingredients.join(" + ")} → {r.buff}（{r.duration}回合）</div>
             </div>
             <span onClick={ok ? () => cook(r) : undefined} style={ok ? btnStyle : dimBtn}>烹饪</span>
@@ -140,7 +140,7 @@ function WineFeature({ roomName, inv, setInv, addLog, runCommand }) {
             const remain = Math.max(0, Math.ceil((c.readyAt - now) / 60000));
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--bg-slate)" }}>
-                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "#c8e0d8" : "var(--ink-text-dim)" }}>
+                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>
                   🍶 {c.result} {ready ? "· 已成" : `· 还需${remain}分钟`}
                 </span>
                 <span onClick={ready ? () => collect(i) : undefined} style={ready ? btnStyle : dimBtn}>{ready ? "取酒" : "等待"}</span>
@@ -155,7 +155,7 @@ function WineFeature({ roomName, inv, setInv, addLog, runCommand }) {
         return (
           <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--bg-slate)", opacity: ok ? 1 : 0.4 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "12px", color: ok ? "#c8e0d8" : "var(--ink-text-dim)" }}>{r.result}</div>
+              <div style={{ fontSize: "12px", color: ok ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>{r.result}</div>
               <div style={{ fontSize: "10px", color: "var(--ink-text-dim)" }}>需：{r.ingredients.join(" + ")} · 窖藏{r.ageTime}分钟 → {r.buff}</div>
             </div>
             <span onClick={ok ? () => brew(r) : undefined} style={ok ? btnStyle : dimBtn}>封坛</span>
@@ -198,7 +198,7 @@ function GardenFeature({ roomName, inv, setInv, addLog, runCommand }) {
             const remain = Math.max(0, Math.ceil((g.readyAt - now) / 60000));
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--bg-slate)" }}>
-                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "#c8e0d8" : "var(--ink-text-dim)" }}>
+                <span style={{ flex: 1, fontSize: "11.5px", color: ready ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>
                   🌱 {g.yield} {ready ? "· 熟了" : `· 还需${remain}分钟`}
                 </span>
                 <span onClick={ready ? () => harvest(i) : undefined} style={ready ? btnStyle : dimBtn}>{ready ? "收" : "等"}</span>
@@ -215,7 +215,7 @@ function GardenFeature({ roomName, inv, setInv, addLog, runCommand }) {
         return (
           <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--bg-slate)", opacity: ok ? 1 : 0.4 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "12px", color: ok ? "#c8e0d8" : "var(--ink-text-dim)" }}>{s.yield}</div>
+              <div style={{ fontSize: "12px", color: ok ? "var(--ink-tier-text)" : "var(--ink-text-dim)" }}>{s.yield}</div>
               <div style={{ fontSize: "10px", color: "var(--ink-text-dim)" }}>{s.growTime}分钟熟 · {s.note}</div>
             </div>
             <span onClick={ok ? () => plant(s) : undefined} style={ok ? btnStyle : dimBtn}>{planted ? "已种" : "种"}</span>

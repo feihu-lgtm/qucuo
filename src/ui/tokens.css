@@ -373,6 +373,9 @@
   --trading-buy-edge: #1a3a3a;
   --trading-close: #8a8a8a;
 
+  /* 家园面板定色（原字面量，不随日间模式变）：不可操作按钮的描边。 */
+  --homestead-dim-edge: #1a1a2a;
+
   /* 建筑服务屏定色（原字面量，不随日间模式变）。 */
   --service-card-edge: #4a3a2a;
   --service-dismiss: #6a4a3a;
