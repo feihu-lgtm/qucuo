@@ -30,11 +30,11 @@ export function QuestList({ questProgress, flags = [], zoneTheme }) {
               <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-panel)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                   <span style={{ color: "var(--text)", fontSize: 13 }}>{q.title}</span>
-                  <span style={{ color: "#6a8aaa", fontSize: 11 }}>{idx}/{q.stages.length}</span>
+                  <span style={{ color: "var(--quest-stage-count)", fontSize: 11 }}>{idx}/{q.stages.length}</span>
                 </div>
                 {q.id === SNOW_QUEST_ID && <div style={{ color: "var(--text-dim)", fontSize: 11 }}><div>{stage?.title} · {snowSpiritCount(flags)}/5</div>{SNOW_SPIRITS.map(({ flag, label }) => <div key={flag}>{flags.includes(flag) ? "✓" : "○"} {label}</div>)}</div>}
                 {q.giver && <div style={{ color: "var(--text-dim)", fontSize: 10.5, marginBottom: 4 }}>委托人：{q.giver}</div>}
-                {stage && <div style={{ color: "#a89a6a", fontSize: 11.5, lineHeight: 1.6 }}>{stage.playerHint ?? stage.description}</div>}
+                {stage && <div style={{ color: "var(--quest-stage-desc)", fontSize: 11.5, lineHeight: 1.6 }}>{stage.playerHint ?? stage.description}</div>}
               </div>
             );
           })}
@@ -47,9 +47,9 @@ export function QuestList({ questProgress, flags = [], zoneTheme }) {
           {completed.map(q => {
             const negative = questProgress[q.id]?.outcome === "negative";
             return (
-              <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: negative ? "#140a0a" : "#0a140a", borderRadius: 0, border: `1px solid ${negative ? "#4a2a2a" : "var(--accent)"}` }}>
-                <div style={{ color: negative ? "#aa6a6a" : "#6aaa6a", fontSize: 12, marginBottom: 3 }}>{negative ? "✗" : "✓"} {q.title}</div>
-                {q.rewardText && <div style={{ color: negative ? "#8a6a6a" : "#7a8a6a", fontSize: 10.5, lineHeight: 1.5 }}>{q.rewardText}</div>}
+              <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: negative ? "var(--quest-negative-bg)" : "var(--quest-success-bg)", borderRadius: 0, border: `1px solid ${negative ? "var(--quest-negative-edge)" : "var(--accent)"}` }}>
+                <div style={{ color: negative ? "var(--quest-negative-title)" : "var(--ink-leaf)", fontSize: 12, marginBottom: 3 }}>{negative ? "✗" : "✓"} {q.title}</div>
+                {q.rewardText && <div style={{ color: negative ? "var(--quest-negative-text)" : "var(--quest-success-text)", fontSize: 10.5, lineHeight: 1.5 }}>{q.rewardText}</div>}
               </div>
             );
           })}
@@ -60,9 +60,9 @@ export function QuestList({ questProgress, flags = [], zoneTheme }) {
         <div>
           <div style={{ color: zoneTheme.accentDim, fontSize: 11, marginBottom: 8 }}>已错过（{locked.length}）</div>
           {locked.map(q => (
-            <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: "#140a0a", borderRadius: 0, border: "1px solid #4a2a2a" }}>
-              <div style={{ color: "#8a6a6a", fontSize: 12 }}>{q.title}</div>
-              <div style={{ color: "#6a5a5a", fontSize: 10.5 }}>因其他抉择而不再可行。</div>
+            <div key={q.id} style={{ marginBottom: 8, padding: "8px 10px", background: "var(--quest-negative-bg)", borderRadius: 0, border: "1px solid var(--quest-negative-edge)" }}>
+              <div style={{ color: "var(--quest-negative-text)", fontSize: 12 }}>{q.title}</div>
+              <div style={{ color: "var(--quest-missed-desc)", fontSize: 10.5 }}>因其他抉择而不再可行。</div>
             </div>
           ))}
         </div>

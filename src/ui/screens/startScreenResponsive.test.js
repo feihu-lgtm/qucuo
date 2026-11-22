@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCREEN = readFileSync(join(HERE, "StartScreen.jsx"), "utf-8");
+const STYLES = readFileSync(join(HERE, "startScreenStyles.js"), "utf-8");
 const MOBILE_CSS = readFileSync(join(HERE, "..", "mobile.css"), "utf-8");
 
 describe("StartScreen mobile layout", () => {
@@ -20,8 +21,8 @@ describe("StartScreen mobile layout", () => {
     expect(footerRule).toMatch(/position:\s*static\s*!important/);
     expect(footerRule).toMatch(/margin-top:\s*auto/);
     expect(SCREEN).toContain('className="start-screen-footer"');
-    expect(SCREEN).toContain('minHeight: "100dvh"');
-    expect(SCREEN).toContain('maxHeight: "min(70dvh, calc(100dvh - 32px))"');
+    expect(STYLES).toContain('minHeight: "100dvh"');
+    expect(STYLES).toContain('maxHeight: "min(70dvh, calc(100dvh - 32px))"');
   });
 
   it("has an iOS-only block that fits the start screen on one screen in portrait and landscape", () => {

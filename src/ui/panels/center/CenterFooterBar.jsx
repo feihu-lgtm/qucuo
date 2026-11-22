@@ -21,9 +21,9 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
         <div style={{
           display: "flex", alignItems: "center", gap: 8, padding: "5px 14px",
           borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0,
-          background: waitSecs >= 30 ? "#3a1a1a" : waitSecs >= 12 ? "#3a2a12" : "var(--bg-panel)",
+          background: waitSecs >= 30 ? "var(--footer-stalled-bg)" : waitSecs >= 12 ? "var(--footer-slow-bg)" : "var(--bg-panel)",
           fontSize: "11.5px",
-          color: waitSecs >= 30 ? "#e08a6a" : waitSecs >= 12 ? "var(--warn)" : zoneTheme.textDim,
+          color: waitSecs >= 30 ? "var(--footer-stalled-text)" : waitSecs >= 12 ? "var(--warn)" : zoneTheme.textDim,
         }}>
           <span>{waitSecs >= 30 ? "🐢" : "⏳"}</span>
           <span>
@@ -35,11 +35,11 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
       )}
 
       {availableQuestsHere.some(e => e.stage.playerHint) && (
-        <div style={{ padding: "6px 14px", borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, background: "#0c0f14" }}>
+        <div style={{ padding: "6px 14px", borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, background: "var(--footer-hint-bg)" }}>
           {availableQuestsHere.filter(e => e.stage.playerHint).map(entry => (
             <div key={entry.quest.id} style={{ display: "flex", alignItems: "baseline", gap: 6, fontSize: "10.5px", lineHeight: 1.6 }}>
-              <span style={{ color: "#6a90c0", flexShrink: 0 }}>💡 {entry.quest.title}</span>
-              <span style={{ color: "#8a94a8" }}>{entry.stage.playerHint}</span>
+              <span style={{ color: "var(--footer-hint-title)", flexShrink: 0 }}>💡 {entry.quest.title}</span>
+              <span style={{ color: "var(--footer-hint-text)" }}>{entry.stage.playerHint}</span>
             </div>
           ))}
         </div>
@@ -49,7 +49,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
         <div style={{
           display: "flex", alignItems: "center", gap: 8, padding: "6px 14px",
           borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
-          background: "#141008",
+          background: "var(--footer-progress-bg)",
         }}>
           <span style={{ color: "var(--ember)", fontSize: "11px", flexShrink: 0 }}>❢ 此处可推进</span>
           {availableQuestsHere.filter(e => !e.stage.choices?.length).map(entry => (
@@ -58,9 +58,9 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
               onClick={() => questPanel.triggerQuestFromPanel(entry)}
               title={entry.stage.playerHint ?? entry.stage.description}
               style={{
-                cursor: "pointer", color: "#c8663a", padding: "2px 10px",
+                cursor: "pointer", color: "var(--ember)", padding: "2px 10px",
                 border: "1px solid var(--gold-deep)", borderRadius: 0, fontSize: "10.5px",
-                background: "#1a1408", whiteSpace: "nowrap",
+                background: "var(--footer-progress-button)", whiteSpace: "nowrap",
               }}
             >
               ❢ {entry.quest.title}{entry.stage.giver !== null && entry.quest.giver ? `（${entry.quest.giver}）` : ""}
@@ -73,7 +73,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
         <div style={{
           display: "flex", alignItems: "center", gap: 8, padding: "6px 14px",
           borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
-          background: "#0e1410",
+          background: "var(--footer-choice-bg)",
         }}>
           <span style={{ color: "var(--clay)", fontSize: "11px", flexShrink: 0 }}>◈ 行动抉择</span>
           {availableQuestsHere.filter(e => e.stage.choices?.length).map(entry => (
@@ -97,9 +97,9 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
                       onClick={() => questPanel.triggerQuestChoice(entry, choice)}
                       title={choice.resolve === "combat" ? "会进入切磋，打赢才算数" : choice.resolve === "talk" ? "会进入对话，说赢才算数" : ""}
                       style={{
-                        cursor: "pointer", color: "#c07050", padding: "2px 10px",
+                        cursor: "pointer", color: "var(--clay)", padding: "2px 10px",
                         border: "1px solid var(--accent)", borderRadius: 0, fontSize: "10.5px",
-                        background: "#241211", whiteSpace: "nowrap",
+                        background: "var(--ink-tier-bg)", whiteSpace: "nowrap",
                       }}
                     >
                       {icon}{choice.label}
@@ -135,7 +135,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
 
       {!isMobile && <TurnStatusPill theme={zoneTheme} />}
       <div className="mobile-input-bar" style={{
-        borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid var(--gold-deep)" : `1px solid ${zoneTheme.border}`,
+        borderTop: interactMode === "whisper" ? "1px solid var(--footer-whisper-edge)" : interactMode === "talk" ? "1px solid var(--footer-talk-edge)" : interactMode === "pigeon" ? "1px solid var(--gold-deep)" : `1px solid ${zoneTheme.border}`,
         background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
         padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
       }}>

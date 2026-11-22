@@ -127,7 +127,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
       <div style={sx.battleTop}>
         <TextBtn onClick={onQuit}>← 认输退出</TextBtn>
         <div style={{ fontSize: 13, color: "var(--parchment)", letterSpacing: 2 }}>第 {battle.round} 回合</div>
-        <div style={{ fontSize: 11, color: apiOn ? "#6aa06a" : "var(--qb-border)" }}>
+        <div style={{ fontSize: 11, color: apiOn ? "var(--qb-api-on)" : "var(--qb-border)" }}>
           {apiOn ? "◆ 说书战报已启用" : "◇ 装 key 可解锁说书战报"}
         </div>
       </div>
@@ -138,7 +138,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
           hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toMe } : null} />
         <div className="qb-vs" style={sx.arenaVs}>
           <img src={UI("burst.webp")} alt="" style={{ width: 64, opacity: 0.7 }} />
-          <div style={{ fontSize: 22, color: "#e0526a", fontWeight: "bold", letterSpacing: 2 }}>斗</div>
+          <div style={{ fontSize: 22, color: "var(--qb-versus)", fontWeight: "bold", letterSpacing: 2 }}>斗</div>
         </div>
         <FighterPanel fighter={foe} side="foe" team={battle.foeTeam} curIdx={battle.foeIdx}
           hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toFoe } : null} />
@@ -162,8 +162,8 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
             </div>
             {/* AI 说书（有则另起一行，润色不覆盖系统文字；斜体+左边框区分） */}
             {l.narration && (
-              <div style={{ fontSize: 13.5, color: "#e8d5a8", lineHeight: 1.9, marginTop: 6, paddingLeft: 10,
-                borderLeft: "2px solid #6a5d40", fontStyle: "italic" }}>
+              <div style={{ fontSize: 13.5, color: "var(--qb-narrative)", lineHeight: 1.9, marginTop: 6, paddingLeft: 10,
+                borderLeft: "2px solid var(--ink-brass)", fontStyle: "italic" }}>
                 <span style={{ fontStyle: "normal", fontSize: 10, color: "var(--qb-border)", marginRight: 6 }}>说书</span>
                 {l.narration}
               </div>
@@ -255,7 +255,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
           {showDmg && (
             <div key={hit.key} className="qb-dmg" style={{
               position: "absolute", top: 4, left: "50%", transform: "translateX(-50%)",
-              fontSize: 24, fontWeight: "bold", color: "#ff6a5a",
+              fontSize: 24, fontWeight: "bold", color: "var(--qb-damage)",
               textShadow: "0 2px 6px var(--black), 0 0 12px rgba(255,60,50,.7)", pointerEvents: "none", zIndex: 5,
             }}>−{hit.dmg}</div>
           )}
@@ -265,8 +265,8 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
           <div style={{ fontSize: 10, color: tierColor(fighter.levelCap) }}>{tierName(fighter.levelCap)}品</div>
           {/* 血槽 */}
           <div style={{ marginTop: 6 }}>
-            <Bar ratio={hpRatio} color="#c8483a" bg="#3a1a16" label={`气血 ${cs.hp[0]}/${cs.hp[1]}`} rtl={side === "foe"} />
-            <Bar ratio={enRatio} color="var(--ink-warn)" bg="#2a2010" label={`气力 ${cs.energy[0]}/10`} rtl={side === "foe"} thin />
+            <Bar ratio={hpRatio} color="var(--qb-hp)" bg="var(--qb-hp-track)" label={`气血 ${cs.hp[0]}/${cs.hp[1]}`} rtl={side === "foe"} />
+            <Bar ratio={enRatio} color="var(--ink-warn)" bg="var(--qb-energy-track)" label={`气力 ${cs.energy[0]}/10`} rtl={side === "foe"} thin />
           </div>
           {/* 状态标记 */}
           <div style={{ display: "flex", gap: 4, marginTop: 4, justifyContent: side === "ally" ? "flex-start" : "flex-end" }}>
@@ -304,7 +304,7 @@ function Bar({ ratio, color, bg, label, rtl, thin }) {
 }
 
 function StatusChip({ name }) {
-  return <span style={{ fontSize: 9, padding: "1px 5px", background: "rgba(180,80,80,.3)", border: "1px solid #a05050", borderRadius: 0, color: "#e0b0b0" }}>{name}</span>;
+  return <span style={{ fontSize: 9, padding: "1px 5px", background: "rgba(180,80,80,.3)", border: "1px solid var(--qb-status-edge)", borderRadius: 0, color: "var(--qb-status-text)" }}>{name}</span>;
 }
 
 function MoveButton({ move, usable, reason, onClick }) {
@@ -329,10 +329,10 @@ function MoveButton({ move, usable, reason, onClick }) {
         >
           <div style={{ fontSize: 14, color: "var(--qb-text)", fontWeight: "bold" }}>{move.name}</div>
           <div style={{ fontSize: 10, color: qc, marginTop: 2 }}>{move.type} · {move.quality}品 · 耗气{move.energyCost}</div>
-          <div style={{ fontSize: 9.5, color: "#b0a480", marginTop: 3, lineHeight: 1.35, overflow: "hidden",
+          <div style={{ fontSize: 9.5, color: "var(--qb-move-summary)", marginTop: 3, lineHeight: 1.35, overflow: "hidden",
             display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{mainLine}</div>
           {reason
-            ? <div style={{ fontSize: 9.5, color: "#c8483a", marginTop: "auto" }}>{reason}</div>
+            ? <div style={{ fontSize: 9.5, color: "var(--qb-move-blocked)", marginTop: "auto" }}>{reason}</div>
             : <div style={{ fontSize: 9, color: "var(--qb-edge)", marginTop: "auto" }}>点击看详情 →</div>}
         </button>}
         {flipped && <div
@@ -344,7 +344,7 @@ function MoveButton({ move, usable, reason, onClick }) {
           </div>
           <div style={{ fontSize: 8.5, color: "var(--qb-border)", marginBottom: 4, lineHeight: 1.4 }}>{gist}</div>
           {lines.map((l, i) => (
-            <div key={i} style={{ fontSize: 9.5, color: l.warn ? "#d88" : "var(--qb-text-dim)", lineHeight: 1.5, marginBottom: 2 }}>
+            <div key={i} style={{ fontSize: 9.5, color: l.warn ? "var(--qb-move-warn)" : "var(--qb-text-dim)", lineHeight: 1.5, marginBottom: 2 }}>
               · {l.text}
             </div>
           ))}
@@ -352,7 +352,7 @@ function MoveButton({ move, usable, reason, onClick }) {
             <button onClick={() => usable && onClick()} disabled={!usable}
               style={{ flex: 1, padding: "5px 0", fontSize: 11, fontWeight: "bold", borderRadius: 0,
                 border: "none", cursor: usable ? "pointer" : "not-allowed",
-                background: usable ? qc : "#333", color: usable ? "#1a140c" : "#777" }}>
+                background: usable ? qc : "var(--qb-move-disabled-bg)", color: usable ? "var(--qb-move-button-text)" : "var(--qb-move-disabled-text)" }}>
               {usable ? "⚔ 出招" : (reason || "不可用")}
             </button>
             <button onClick={() => setFlipped(false)}

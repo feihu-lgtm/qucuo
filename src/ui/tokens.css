@@ -57,12 +57,38 @@
   --black: #000;
   --white: #fff;
 
+  /* 任务列表定色（右栏和日志共用）。 */
+  --quest-stage-count: #6a8aaa;
+  --quest-stage-desc: #a89a6a;
+  --quest-success-bg: #0a140a;
+  --quest-success-text: #7a8a6a;
+  --quest-negative-bg: #140a0a;
+  --quest-negative-edge: #4a2a2a;
+  --quest-negative-title: #aa6a6a;
+  --quest-negative-text: #8a6a6a;
+  --quest-missed-desc: #6a5a5a;
+
   /* 斗蛐蛐·快速战役定色：原硬编码字面量本身即定色，拆屏时收敛为语义变量。 */
   --qb-border: #8a7d5a;   /* 描边/次要提示 */
   --qb-foe: #d47a6a;      /* 敌方主色/负向标记 */
   --qb-text: #e8dfc0;     /* 主文本 */
   --qb-text-dim: #cdc2a2; /* 次级文本/战报正文 */
   --qb-edge: #6a5f4a;     /* 弱化标记（无伤/占位） */
+  --qb-api-on: #6aa06a;
+  --qb-versus: #e0526a;
+  --qb-narrative: #e8d5a8;
+  --qb-damage: #ff6a5a;
+  --qb-hp: #c8483a;
+  --qb-hp-track: #3a1a16;
+  --qb-energy-track: #2a2010;
+  --qb-status-edge: #a05050;
+  --qb-status-text: #e0b0b0;
+  --qb-move-summary: #b0a480;
+  --qb-move-blocked: var(--qb-hp);
+  --qb-move-warn: #d88;
+  --qb-move-button-text: #1a140c;
+  --qb-move-disabled-bg: #333;
+  --qb-move-disabled-text: #777;
   --qb-felt: #14100b;     /* 深底（候选卡/立绘底） */
 
   /* 墨拓定色（不随 data-theme="day" 切换）：原硬编码字面量本身就是定色——
@@ -104,6 +130,19 @@
   --ink-edge-gold: #3a2d1d;
   --ink-edge-red: #3a1d1d;
 
+  /* 主界面底栏定色：等待、任务提示和交谈输入框。 */
+  --footer-slow-bg: #3a2a12;
+  --footer-stalled-bg: #3a1a1a;
+  --footer-stalled-text: #e08a6a;
+  --footer-hint-bg: #0c0f14;
+  --footer-hint-title: #6a90c0;
+  --footer-hint-text: #8a94a8;
+  --footer-progress-bg: #141008;
+  --footer-progress-button: #1a1408;
+  --footer-choice-bg: #0e1410;
+  --footer-whisper-edge: #4a2a4a;
+  --footer-talk-edge: #1a3a1a;
+
   /* ── 建筑屏/客栈屏定色（随主题不变的装饰色）── */
   --ink-amber: #e0913a;
   --ink-brass: #6a5d40;
@@ -141,6 +180,23 @@
   --ink-wood-mid: #2c2015;
   --ink-wood-shade: #20170f;
   --ink-wood-warm: #5a3d1a;
+
+  /* 掉落卡定色（原字面量，不随日间模式变）：切磋=暖金绛红，偷窃/偷师=冷翠墨青。 */
+  --loot-text: #e2d6b4;              /* 描述正文 */
+  --loot-foot: #c2b288;              /* 底注 */
+  --loot-stat-label: #b0a078;        /* 属性名 */
+  --loot-skill-hint: #9ad8c8;        /* 武学提示 */
+  --loot-duel-bg-1: #3a1c12;
+  --loot-duel-bg-2: #2a1210;
+  --loot-duel-bg-3: #1e0e0a;
+  --loot-duel-banner: #8a5a1a;
+  --loot-duel-banner-text: #2a1608;
+  --loot-steal-bg-1: #10241f;
+  --loot-steal-bg-2: #0c1c18;
+  --loot-steal-bg-3: #081210;
+  --loot-steal-banner: #2a5a4a;
+  --loot-steal-banner-hi: #5dcaa5;
+  --loot-steal-banner-text: #06231c;
   --dur-fast: 120ms;
   --dur: 180ms;
   --dx: 0px;
