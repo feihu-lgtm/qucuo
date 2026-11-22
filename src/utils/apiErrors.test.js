@@ -44,6 +44,7 @@ describe("classifyError", () => {
   it("429 余额不足不重试，普通限流重试", () => {
     expect(classifyError(http(429, "HTTP 429：You exceeded your current quota, check your billing"))).toMatchObject({ kind: "quota", retryable: false });
     expect(classifyError(http(429, "HTTP 429：Rate limit reached"))).toMatchObject({ kind: "rateLimit", retryable: true });
+    expect(classifyError(http(429, "HTTP 429：Quota exceeded for quota metric 'Generate Content API requests per minute'"))).toMatchObject({ kind: "rateLimit", retryable: true });
   });
 
   it("从报错文字里读 HTTP 码，也认 status 字段", () => {

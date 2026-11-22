@@ -63,7 +63,9 @@ function httpError(status, msg) {
   if (status === 404) return out("endpoint", "🧭", "接口地址或模型名不对（HTTP 404）", "接口找不到这个地址或模型。检查设置里的接口地址是否完整、类型是否选对，模型名是否拼写正确。", false);
   if (status === 408) return out("timeout", "⏱", "接口超时（HTTP 408）", "网络慢或模型太忙。可稍等重试，或在设置里换个更快的模型/中转站。", true);
   if (status === 429) {
-    if (/insufficient|quota|billing|balance|余额|欠费|额度/i.test(msg)) return out("quota", "💳", "余额/额度不足（HTTP 429）", "账户余额或额度用完了，重试也不会好。去服务商充值/提额，或在设置里换个账号。", false);
+    const exhausted = /insufficient|billing|balance|余额|欠费/i.test(msg)
+      || (/quota|额度/i.test(msg) && !/per.?minute|per.?second|rate|retry|每分钟|稍后/i.test(msg));
+    if (exhausted) return out("quota", "💳", "余额/额度不足（HTTP 429）", "账户余额或额度用完了，重试也不会好。去服务商充值/提额，或在设置里换个账号。", false);
     return out("rateLimit", "⏳", "接口限流（HTTP 429）", "请求太密被限流。已按接口要求等待并自动重试过；仍失败就稍等一会儿再试。", true);
   }
   if (status >= 500) return out("server", "🛠", `服务端出错（HTTP ${status}）`, "对方服务器临时故障或过载，稍后重试。", true);
