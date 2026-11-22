@@ -120,6 +120,13 @@ export const QUCUO_SHOPS = {
   // ── 鱼定商号（鱼定村势力商号，周铭章掌柜）──
   // 货单照合稿「鱼定村·六、6.1」12 件：原有 6 件无门槛，新增 6 件按 15/40/80 阶梯；
   // 三曲通商路引合稿写 ≥140，引擎声誉封顶 100，取 100，限购 1 件。拒售规则在 factionShop.js。
+  西头药铺: {
+    shopName: "西头药铺",
+    items: [
+      { name: "金疮药", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "止血散", category: ITEM_CATEGORY.MISC, quality: "白" },
+    ],
+  },
   鱼定商号: {
     shopName: "鱼定商号",
     items: [

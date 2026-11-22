@@ -115,6 +115,7 @@ export default { district: {
         x: -2, y: 0,
         desc: "管家小舅子开的药材铺子，药柜锁得比别家都严实。",
         exits: { e: "杂货铺摊位" },
+        buildingId: "med_xitou",
       },
       猎户小屋: {
         privateHome: true,

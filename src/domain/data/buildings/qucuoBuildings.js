@@ -131,6 +131,10 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "村口老槐树下支着几间竹编鸽笼，看笼的老汉每日清晨放三只信鸽出来，任由往来客商领去，图的是曲措乡这条邮路越走越熟。",
     },
     {
+      id: "med_xitou", name: "西头药铺", type: BUILDING_TYPE.MEDICINE, shopKey: "西头药铺",
+      desc: "管家小舅子开的药材铺子，药柜锁得比别家都严实，金疮药、止血散倒是常年有货，价钱比别处贵一截。",
+    },
+    {
       id: "wuguan_shaiguchang", name: "晒谷演武场", type: BUILDING_TYPE.WUGUAN, skillSet: "鱼定",
       desc: "村长院后侧一片压得死实的夯土晒谷场，秋收晒青稞，平日里老猎户和护镖老卒就在这儿指点村中后生练些护身实招。",
     },
