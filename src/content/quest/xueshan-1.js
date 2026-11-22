@@ -27,7 +27,7 @@ export default { quest: {
         completionFlag: ["quest_xs1_pay", "quest_xs1_fight"],
         choices: [
           { flag: "quest_xs1_pay", label: "守戒绕道·垫银了税", resolve: "none", requiresMoney: 30, narration: "你想起陆寒枝「别惹事」的嘱咐，掏出三十两碎银按他们的规矩「完税」，差役掂着银子放行。脚夫老汉抹着汗直念叨：使不得，回山一定让沈司库把钱补给你。" },
-          { flag: "quest_xs1_fight", label: "硬护脚夫·动手赶差", resolve: "combat", combatNpc: { name: "鱼定土司府差役", levelCap: 6 } },
+          { flag: "quest_xs1_fight", label: "硬护脚夫·动手赶差", resolve: "combat", combatNpc: { name: "鱼定土司府差役", levelCap: 3 } },
         ],
         onReach: {
           byFlag: {

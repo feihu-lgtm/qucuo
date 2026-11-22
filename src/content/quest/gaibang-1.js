@@ -292,7 +292,7 @@ export default { quest: {
         description: "胡三爷拄着铁拐蹲在草坡后头，朝坡下努了努嘴：七八个血刀部的探子围着一堆没冒烟的火，正盯着官道上的车辙。",
         completionFlag: ["quest_gb5_scouts"],
         choices: [
-          { flag: "quest_gb5_scouts", label: "与胡三爷、多吉拔掉暗哨", resolve: "combat", combatNpc: { name: "血刀部斥候小队", levelCap: 6 } },
+          { flag: "quest_gb5_scouts", label: "与胡三爷、多吉拔掉暗哨", resolve: "combat", combatNpc: { name: "血刀部斥候小队", levelCap: 3 } },
         ],
       },
       {
