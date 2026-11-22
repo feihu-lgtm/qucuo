@@ -80,10 +80,10 @@ const LOOT_CSS = `
   .loot-eff{ display:flex; flex-wrap:wrap; justify-content:center; gap:5px; margin-top:9px; }
   .loot-eff-tag{ font-size:10px; padding:2px 8px; letter-spacing:.08em; border:1px solid var(--qc);
     color:var(--qc-hi); background:rgba(0,0,0,.34); clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%); text-shadow:0 1px 1px rgba(0,0,0,.7); }
-  .loot-desc{ margin-top:11px; padding:8px 11px; font-size:12px; line-height:1.92; color:#e2d6b4; text-align:center;
+  .loot-desc{ margin-top:11px; padding:8px 11px; font-size:12px; line-height:1.92; color:var(--loot-text); text-align:center;
     font-family:var(--font-body); letter-spacing:.03em;
     background:rgba(0,0,0,.26); border-left:3px solid var(--qc); }
-  .loot-foot{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px 14px; margin-top:11px; font-size:11px; color:#c2b288; }
+  .loot-foot{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px 14px; margin-top:11px; font-size:11px; color:var(--loot-foot); }
   .loot-foot img{ width:13px; height:13px; vertical-align:-2px; image-rendering:pixelated; }
   .loot-named{ color:var(--qc-hi); letter-spacing:.14em; font-size:10px; font-weight:700; }
   .loot-spark{ position:absolute; width:4px; height:4px; background:var(--qc-hi); z-index:3; pointer-events:none;
@@ -112,12 +112,12 @@ export default function LootCard({ entry }) {
 
   // 切磋=暖金绛红（刀口余烬），偷窃/偷师=冷翠墨青（月黑风高）。
   const T = isDuel
-    ? { bg: "linear-gradient(160deg,#3a1c12 0%,#2a1210 45%,#1e0e0a 100%)",
-        banner: "linear-gradient(90deg,#8a5a1a,var(--gold))", bannerText: "#2a1608",
+    ? { bg: "linear-gradient(160deg,var(--loot-duel-bg-1) 0%,var(--loot-duel-bg-2) 45%,var(--loot-duel-bg-3) 100%)",
+        banner: "linear-gradient(90deg,var(--loot-duel-banner),var(--gold))", bannerText: "var(--loot-duel-banner-text)",
         label: "戰利品", sub: entry.fromNpc ? `擊敗 ${entry.fromNpc} 所獲` : "切磋所得",
         img: "loot_duel.webp", inset: "6% 12%", plate: "rgba(20,8,4,.66)" }
-    : { bg: "linear-gradient(160deg,#10241f 0%,#0c1c18 45%,#081210 100%)",
-        banner: "linear-gradient(90deg,#2a5a4a,#5dcaa5)", bannerText: "#06231c",
+    : { bg: "linear-gradient(160deg,var(--loot-steal-bg-1) 0%,var(--loot-steal-bg-2) 45%,var(--loot-steal-bg-3) 100%)",
+        banner: "linear-gradient(90deg,var(--loot-steal-banner),var(--loot-steal-banner-hi))", bannerText: "var(--loot-steal-banner-text)",
         label: isSkill ? "偷師得手" : "妙手空空",
         sub: entry.fromNpc ? (isSkill ? `窺得 ${entry.fromNpc} 的招式` : `自 ${entry.fromNpc} 處順來`) : (isSkill ? "窺得一式絕學" : "神不知鬼不覺"),
         img: "loot_steal.webp", inset: "6% 19%", plate: "rgba(6,18,15,.66)" };
@@ -159,7 +159,7 @@ export default function LootCard({ entry }) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
               <span className={`loot-name ${hi ? "loot-shimmer" : ""}`} style={{ color: hi ? undefined : qc }}>{showName}</span>
               <span className="loot-chip" style={{ background: qc }}>{q}</span>
-              <span className="loot-chip" style={{ background: "rgba(255,255,255,.15)", color: "#e2d6b4" }}>{typeChip}</span>
+              <span className="loot-chip" style={{ background: "rgba(255,255,255,.15)", color: "var(--loot-text)" }}>{typeChip}</span>
             </div>
 
             <div className="loot-rule" />
@@ -167,7 +167,7 @@ export default function LootCard({ entry }) {
             {statBits.length > 0 && (
               <div className="loot-stats">
                 {statBits.map(([k, v]) => (
-                  <span className="loot-stat" key={k} style={{ color: "#b0a078" }}>{k}<b>{v}</b></span>
+                  <span className="loot-stat" key={k} style={{ color: "var(--loot-stat-label)" }}>{k}<b>{v}</b></span>
                 ))}
               </div>
             )}
@@ -183,7 +183,7 @@ export default function LootCard({ entry }) {
 
             <div className="loot-foot">
               {isSkill ? (
-                <span style={{ color: "#9ad8c8", letterSpacing: ".06em" }}>🤫 偷師所得 · 學即完整，無需修煉</span>
+                <span style={{ color: "var(--loot-skill-hint)", letterSpacing: ".06em" }}>🤫 偷師所得 · 學即完整，無需修煉</span>
               ) : (
                 <>
                   <span><img src={UI("ingot.webp")} alt="" /> 買 {item.buyPrice ?? "—"} 兩</span>
@@ -201,7 +201,7 @@ export default function LootCard({ entry }) {
 
 function lighten(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
-  if (!m) return "#ffffff";
+  if (!m) return "var(--white)";
   const n = parseInt(m[1], 16);
   const f = (c) => Math.min(255, c + 72);
   const r = f((n >> 16) & 255), g = f((n >> 8) & 255), b = f(n & 255);
