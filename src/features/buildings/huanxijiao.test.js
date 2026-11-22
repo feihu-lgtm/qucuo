@@ -85,6 +85,8 @@ describe("欢喜教", () => {
     const entry = FACTION_ENTRIES[HX];
     const hall = { innerRoomName: "欢喜堂", varTree: rep(40, -50) };
     expect(checkFactionEntry(entry, { varTree: rep(40, -50), flags: [] }).missing).toEqual(["trial"]);
+    const legacy = { huanxijiao_2_biwuzhaoxian: { status: "completed" } };
+    expect(checkFactionEntry(entry, { varTree: rep(40, -50), flags: [], questProgress: legacy }).eligible).toBe(true);
     const joined = joinSect(state(40, { ...hall, flags: ["huanxijiao_xiang2_passed"] }), 1);
     expect(apply(joined.changes.flags, ["huanxijiao_xiang2_passed"])).toContain("欢喜教弟子");
     expect(apply(joined.changes.varTree, hall.varTree).世界.势力声誉[HX]).toBe(60);
