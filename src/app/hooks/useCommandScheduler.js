@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createScheduler } from "../../core/commandScheduler.js";
-import { COMMANDS, HOOK_COMMANDS } from "../../core/commands.js";
+import { COMMANDS } from "../../core/commands.js";
+import { HOOK_COMMANDS } from "../../engine/commands/index.js";
 
 export function useCommandScheduler({ addLog, setQueueCount }) {
   const addLogRef = useRef(addLog);

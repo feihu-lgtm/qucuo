@@ -8,21 +8,19 @@ import { snapshotFromStore } from "../src/store/persist.js";
 import { setSeed } from "../src/core/rng.js";
 import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare } from "../src/domain/rules/map/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/infra/saves.js";
-import { getTimeStr, parseDir } from "../src/utils/mudHelpers.js";
-import { resolveExit } from "../src/domain/data/map/qucuoMap.js";
+import { getTimeStr } from "../src/utils/mudHelpers.js";
 import { defaultConfig, migrateProvider, providerApiType, PROVIDERS } from "../src/infra/apiConfig.js";
 import { classifyIntent } from "../src/domain/rules/prompt/inputIntent.js";
 import { emptyBodyProfile } from "../src/domain/rules/character/bodyProfile.js";
 import { getActivePreset } from "../src/domain/rules/prompt/presetSystem.js";
-import { getCommand } from "../src/core/commands.js";
 import { decide } from "../src/core/commandScheduler.js";
+import { classifyCliCommand, dispatchCommand } from "../src/engine/commands/index.js";
 import { formatTrace } from "../src/infra/actionTrace.js";
 import { formatTurnStatus, getTurnContext, PHASE, turnMonitor, withTurnContext } from "../src/core/turnMonitor.js";
 import { playTurn } from "../src/engine/playTurn.js";
 import { createPromptContext } from "../src/engine/prompt/index.js";
 import { createWorldRules } from "../src/engine/worldRules.js";
 import { parseLocalCommand } from "../src/engine/localCommands.js";
-import { pickGroundItem, consumeItem } from "../src/features/items/logic.js";
 import { derivedMovesetRule } from "../src/features/skills/rules.js";
 import {
   alreadySatisfiedCollectRule,
@@ -42,39 +40,14 @@ import {
 } from "../src/features/narrator/rules.js";
 import { applyResult } from "../src/features/run.js";
 import { createCliIntentRouter } from "./intentRoute.mjs";
-import { comfort, resolveTrauma, confessToNarrator } from "../src/features/narrator/logic.js";
-import { switchCompanion } from "../src/features/companion/logic.js";
-import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../src/features/cultivation/logic.js";
-import { deposit, withdraw, pledge, redeem } from "../src/features/bank/logic.js";
-import { innerMove, outerArrival } from "../src/features/map/logic.js";
-import {
-  giftNpc,
-  learnNpcSkill,
-  lookNpc,
-  stealFromNpc,
-  talkToNpc,
-  tradeWithNpc,
-} from "../src/features/npc/logic.js";
-import { inviteCompanion } from "../src/features/npc/inviteCompanion.js";
 import {
   processPigeons,
   recordPigeonNpcLocations,
-  sendPigeonLetter,
 } from "../src/features/pigeon/logic.js";
-import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../src/domain/rules/map/innerMap.js";
 import * as importedRegistry from "../src/domain/rules/cards/importedRegistry.js";
 import { timeAdvanceRule } from "../src/features/time/rules.js";
 import { residentNpcRule } from "../src/features/npc/rules.js";
 import { innerGroundItemsRule } from "../src/features/map/rules.js";
-import {
-  buyBook,
-  getPriceForDest,
-  pray,
-  restAtInn,
-  travelByCarriage,
-} from "../src/features/buildings/logic.js";
-import { LIBRARY_BOOKS_JINGGUAN } from "../src/domain/data/buildings/libraryData.js";
-import { getBuildingsForLocation, BUILDING_TYPE } from "../src/domain/data/buildings/qucuoBuildings.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 
@@ -176,36 +149,7 @@ function actionForKey(key) {
   return gameActions[actionName];
 }
 
-function parsePositiveInteger(value) {
-  if (!/^[1-9]\d*$/.test(value)) return null;
-  const parsed = Number(value);
-  return Number.isSafeInteger(parsed) ? parsed : null;
-}
-
-export function classifyCliCommand(line) {
-  const text = String(line).trim();
-  const id = text.startsWith(":") ? "cliSystem"
-    : /^(?:用|服|捡)\s/.test(text) ? "cliItemUse"
-      : /^坐车\s/.test(text) ? "cliCarriage"
-        : /^(?:走|去)\s/.test(text) ? "cliMovement"
-          : /^(?:住店|求医)$/.test(text) ? "cliInn"
-            : /^买书\s/.test(text) ? "cliBook"
-              : text === "祈福" ? "cliPrayer"
-                : /(?:飞鸽|寄信)/.test(text) ? "cliPigeon"
-                  : /^(?:安抚|收束创伤|向旁白告白|换队友)/.test(text) ? "cliNarratorCompanion"
-                    : /^(?:看|查看)\s/.test(text) ? "cliNpcLook"
-                      : /^送\s/.test(text) ? "cliNpcGift"
-                        : /^交易\s/.test(text) ? "cliNpcTrade"
-                          : /^偷\s/.test(text) ? "cliNpcSteal"
-                            : /^邀请\s/.test(text) ? "cliNpcInvite"
-                              : /^(?:对话|说话)\s/.test(text) ? "cliNpcTalk"
-                                : /^学艺\s/.test(text) ? "cliNpcLearn"
-                                  : /^(?:打坐|修炼|突破)/.test(text) ? "cliMeditateTrain"
-                                    : /^(?:存钱|取钱|当|赎)/.test(text) ? "cliBankPawn"
-                                      : /^:?(?:help|帮助|背包|状态|看地图)/i.test(text) ? "cliLookHelp"
-                                        : "cliRunner";
-  return getCommand(id);
-}
+export { classifyCliCommand };
 
 export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, ai, apiCfg: apiCfgOverrides, getNow = () => Date.now() } = {}) {
   const emit = typeof out === "function" ? out : (text) => out.write(`${text}\n`);
@@ -585,286 +529,20 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       if (result.logs?.length) emit(result.logs.map((entry) => entry.text).join("\n"));
       return status;
     }
-    const useMatch = line.match(/^(?:用|服)\s+(.+)$/);
-    if (useMatch) {
-      const itemName = useMatch[1].trim();
-      const item = (state.inv || []).find((entry) => (
-        (typeof entry === "object" ? entry?.name : entry) === itemName
-      ));
-      if (!item) return await applyFeature({ logs: [{ t: "sys", text: `  背包里没有「${itemName}」。` }] });
-      return await applyFeature(consumeItem(state, item));
-    }
-    const pickMatch = line.match(/^捡\s+(.+)$/);
-    if (pickMatch) {
-      const itemName = pickMatch[1].trim();
-      const item = (state.room.items || []).find((entry) => (
-        (typeof entry === "object" ? entry?.name : entry) === itemName
-      ));
-      if (!item) return await applyFeature({ logs: [{ t: "sys", text: `  地上没有「${itemName}」。` }] });
-      const status = await applyFeature(pickGroundItem(state, item));
-      const room = gameStore.getState().room;
-      session.roomMap[room.name] = { items: [...room.items], npcs: [...room.npcs] };
-      return status;
-    }
-    const visibleNpcs = (state.room?.npcs || []).filter((npc) => (
-      isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, npc)
-    ));
-    const currentNpcNames = new Set((state.room?.npcs || []).map((npc) => npc.name));
-    const pigeonTargets = [...new Set([
-      ...visibleNpcs.map((npc) => npc.name),
-      ...(state.varTree?.世界?.曾经出现人物 || []).filter((name) => !currentNpcNames.has(name)),
-    ])].filter(Boolean).sort((a, b) => b.length - a.length);
-    const missingNpc = (name) => applyFeature({
-      logs: [{ t: "err", text: `  此处没有 ${name}。` }],
+    const dispatched = await dispatchCommand(line, {
+      state,
+      emit,
+      session,
+      getNow,
+      getState: () => gameStore.getState(),
+      featureCtx,
+      applyFeature,
+      applyResult: (result) => applyResult(featureCtx, result),
+      runFreeText,
+      pendingTurn: () => pendingTurn,
+      setInnerRoomName: gameActions.setInnerRoomName,
     });
-    if (line === ":help narrator") {
-      emit("安抚 <verbal|food|medication|hug|kiss> · 收束创伤 · 向旁白告白 · 换队友 <snowLeopard|asuka|none>");
-      return 0;
-    }
-    if (line.startsWith("安抚 ")) return await applyFeature(comfort(state, line.slice(3).trim()));
-    if (line === "收束创伤") return await applyFeature(resolveTrauma(state));
-    if (line === "向旁白告白") return await applyFeature(confessToNarrator(state));
-    if (line.startsWith("换队友 ")) {
-      const key = line.slice(4).trim();
-      return await applyFeature(switchCompanion(state, key === "none" ? null : key));
-    }
-    if (line === "住店") {
-      const inn = getBuildingsForLocation(state.room.name).find((building) => building.type === BUILDING_TYPE.INN);
-      if (!inn) return await applyFeature({ logs: [{ t: "err", text: "  此处没有客栈。" }] });
-      return await applyFeature(restAtInn(state, {
-        cost: inn.innPrice || 10,
-        roomType: "普通客房",
-        buildingName: inn.name,
-      }));
-    }
-    const carriageMatch = /^坐车\s+(.+)$/.exec(line);
-    if (carriageMatch) {
-      const hasCarriage = getBuildingsForLocation(state.room?.name)
-        .some((building) => building.type === BUILDING_TYPE.TRANSPORT);
-      if (!hasCarriage) return await applyFeature({ logs: [{ t: "err", text: "  此处没有驿站。" }] });
-      const destName = carriageMatch[1];
-      const roomMap = {
-        ...session.roomMap,
-        ...(state.room?.name ? {
-          [state.room.name]: {
-            items: [...(state.room.items || [])],
-            npcs: [...(state.room.npcs || [])],
-          },
-        } : {}),
-      };
-      const result = travelByCarriage(state, destName, getPriceForDest(destName), { roomMap });
-      if (result.changes?.room && state.room?.name) {
-        session.roomMap[state.room.name] = roomMap[state.room.name];
-      }
-      const status = await applyFeature(result);
-      if (result.changes?.room) {
-        gameActions.setInnerRoomName(hasInnerMap(destName) ? getDistrictAnchor(destName) : null);
-      }
-      return status;
-    }
-    const bookMatch = /^买书\s+(.+)$/.exec(line);
-    if (bookMatch) {
-      const bookshop = getBuildingsForLocation(state.room?.name)
-        .some((building) => building.type === BUILDING_TYPE.LIBRARY && building.id?.includes("jingguan"));
-      if (!bookshop) return await applyFeature({ logs: [{ t: "err", text: "  此处没有书肆。" }] });
-      const book = LIBRARY_BOOKS_JINGGUAN
-        .find((entry) => entry.name === bookMatch[1] || entry.name.replace(/[《》]/g, "") === bookMatch[1]);
-      return await applyFeature(book
-        ? buyBook(state, book)
-        : { logs: [{ t: "err", text: `  没有这本书：${bookMatch[1]}` }] });
-    }
-    if (line === "祈福") {
-      const temple = getBuildingsForLocation(state.room?.name)
-        .find((building) => building.type === BUILDING_TYPE.TEMPLE);
-      if (!temple) return await applyFeature({ logs: [{ t: "err", text: "  此处没有寺庙。" }] });
-      return await applyFeature(pray(state, temple.karmaPerPray || 10));
-    }
-    const movementMatch = /^(走|去)\s+(.+)$/.exec(line);
-    if (movementMatch) {
-      const isWalk = movementMatch[1] === "走";
-      const result = innerMove(state, {
-        target: movementMatch[2],
-        command: line,
-        targetKind: movementMatch[1] === "去" ? "room" : "direction",
-        forceLayer: isWalk ? null : "inner",
-      });
-      if (result) {
-        return await applyFeature(result);
-      }
-      if (isWalk) {
-        const direction = parseDir(movementMatch[2]);
-        const destName = direction ? resolveExit(state.room?.name, direction) : null;
-        if (destName) {
-          const arrival = outerArrival(state, {
-            direction,
-            destName,
-            roomMap: session.roomMap,
-            squares: serializeSquares(),
-            command: line,
-          });
-          if (arrival?.cached) {
-            featureCtx.addLog([{ t: "cmd", text: `> ${line}` }]);
-            const status = await applyFeature(arrival);
-            gameActions.setInnerRoomName(hasInnerMap(destName) ? getDistrictAnchor(destName) : null);
-            return status;
-          }
-          if (arrival) return runFreeText(line, { squareOps: arrival.squareOps });
-        }
-      }
-    }
-
-    const pigeonMatch = /^飞鸽(?:\s+(.+))?$/.exec(line);
-    if (pigeonMatch) {
-      const tail = (pigeonMatch[1] || "").trim();
-      const npcName = pigeonTargets.find((name) => tail === name || tail.startsWith(`${name} `));
-      if (!npcName) {
-        return await applyFeature(tail
-          ? { logs: [{ t: "sys", text: "  此人未在曾遇名册中，无法飞鸽传书。" }] }
-          : sendPigeonLetter(state, null, ""));
-      }
-      return await applyFeature(sendPigeonLetter(
-        state,
-        npcName,
-        tail.slice(npcName.length).trim(),
-      ));
-    }
-
-    const lookMatch = /^看\s+(.+)$/.exec(line);
-    if (lookMatch) {
-      const npc = visibleNpcs.find((entry) => entry?.name === lookMatch[1]);
-      if (!npc) return await missingNpc(lookMatch[1]);
-      const result = lookNpc(state, npc);
-      applyResult(featureCtx, result);
-      return await featureCtx.act(`look ${npc.id}`, result.extraReplies, {
-        echoCommand: true,
-        displayCmd: `look ${npc.id}`,
-      });
-    }
-
-    const giftCommand = /^送\s+(.+)$/.exec(line);
-    if (giftCommand) {
-      const tail = giftCommand[1];
-      const npc = [...visibleNpcs]
-        .sort((a, b) => (b?.name?.length || 0) - (a?.name?.length || 0))
-        .find((entry) => tail.endsWith(` ${entry.name}`));
-      if (!npc) {
-        const fallbackName = tail.split(/\s+/).at(-1);
-        return await missingNpc(fallbackName);
-      }
-      const itemName = tail.slice(0, -(npc.name.length)).trim();
-      const item = (state.inv || []).find((entry) => (
-        (typeof entry === "string" ? entry : entry?.name) === itemName
-      ));
-      return await applyFeature(giftNpc(state, npc, item || null));
-    }
-
-    const tradeMatch = /^交易\s+(.+)$/.exec(line);
-    if (tradeMatch) {
-      const npc = visibleNpcs.find((entry) => entry?.name === tradeMatch[1]);
-      if (!npc) return await missingNpc(tradeMatch[1]);
-      const result = tradeWithNpc(state, npc);
-      if (result.shop) {
-        emit(`${result.shop.shopName || `${npc.name}的铺子`}已开张。`);
-        return 0;
-      }
-      return await applyFeature(result);
-    }
-
-    const stealMatch = /^偷\s+(.+)$/.exec(line);
-    if (stealMatch) {
-      const npc = visibleNpcs.find((entry) => entry?.name === stealMatch[1]);
-      if (!npc) return await missingNpc(stealMatch[1]);
-      return await applyFeature(stealFromNpc(state, npc));
-    }
-
-    const inviteMatch = /^邀\s+(.+)$/.exec(line);
-    if (inviteMatch) {
-      const npc = visibleNpcs.find((entry) => entry?.name === inviteMatch[1]);
-      if (!npc) return await missingNpc(inviteMatch[1]);
-      return await applyFeature(inviteCompanion(state, npc, { getNow }));
-    }
-
-    const talkCommand = /^交谈\s+(.+)$/.exec(line);
-    if (talkCommand) {
-      const tail = talkCommand[1];
-      const npc = [...visibleNpcs]
-        .sort((a, b) => (b?.name?.length || 0) - (a?.name?.length || 0))
-        .find((entry) => tail.startsWith(`${entry.name} `));
-      if (!npc) {
-        const fallbackName = tail.split(/\s+/)[0];
-        return await missingNpc(fallbackName);
-      }
-      const utterance = tail.slice(npc.name.length).trim();
-      const result = talkToNpc(state, npc);
-      applyResult(featureCtx, result);
-      if (result.completedEscort || npc.cannotSpeak) return await pendingTurn;
-      return await runFreeText(utterance, {
-        isTalk: true,
-        activeTarget: npc.name,
-        talkTarget: npc.name,
-      });
-    }
-
-    const learnNpcMatch = /^拜师\s+(.+)$/.exec(line);
-    if (learnNpcMatch) {
-      const npc = visibleNpcs.find((entry) => entry?.name === learnNpcMatch[1]);
-      if (!npc) {
-        return await applyFeature({
-          logs: [{ t: "err", text: `  此处没有 ${learnNpcMatch[1]}。` }],
-        });
-      }
-      return await applyFeature(learnNpcSkill(state, npc));
-    }
-
-    if (line === "打坐") {
-      return await applyFeature(meditate(state));
-    }
-    if (line === "练内功") {
-      return await applyFeature(trainNeigong(state));
-    }
-    if (line === "练外功") {
-      return await applyFeature(trainWaigong(state));
-    }
-
-    const skillMatch = /^修炼\s+(.+)$/.exec(line);
-    if (skillMatch) {
-      return await applyFeature(breakthroughSkill(state, skillMatch[1]));
-    }
-
-    const depositMatch = /^存钱\s+(\S+)$/.exec(line);
-    if (depositMatch) {
-      const amount = parsePositiveInteger(depositMatch[1]);
-      return await applyFeature(amount === null
-        ? { logs: [{ t: "err", text: "  数额无效" }] }
-        : deposit(state, amount));
-    }
-    if (line === "取钱") {
-      return await applyFeature(withdraw(state));
-    }
-
-    const pledgeMatch = /^质押\s+(.+)\s+(\S+)$/.exec(line);
-    if (pledgeMatch) {
-      const pledgeValue = parsePositiveInteger(pledgeMatch[2]);
-      if (pledgeValue === null) {
-        return await applyFeature({ logs: [{ t: "err", text: "  数额无效" }] });
-      }
-      const item = (state.inv || []).find((entry) => typeof entry === "object" && entry?.name === pledgeMatch[1]);
-      return await applyFeature(pledge(state, item?.id, pledgeValue));
-    }
-    const redeemMatch = /^赎回\s+(\S+)\s+(\S+)$/.exec(line);
-    if (redeemMatch) {
-      const index = parsePositiveInteger(redeemMatch[1]);
-      const redeemCost = parsePositiveInteger(redeemMatch[2]);
-      if (index === null || redeemCost === null) {
-        return await applyFeature({ logs: [{ t: "err", text: "  数额无效" }] });
-      }
-      return await applyFeature(redeem(state, index - 1, redeemCost));
-    }
-
-    if (line.startsWith(":")) {
-      emit(`暂不支持：${line}（PR C 起接入）`);
-      return 0;
-    }
+    if (dispatched !== undefined) return dispatched;
     const routed = await intentRouter?.(line);
     if (routed != null) return routed;
     return runFreeText(line);

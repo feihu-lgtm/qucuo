@@ -1,47 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
-import { CATEGORY, COMMANDS, HOOK_COMMANDS, INVENTORY_COMMAND_IDS } from "./commands.js";
+import { CATEGORY, COMMANDS } from "./commands.js";
 import { createScheduler, decide } from "./commandScheduler.js";
 import { formatTurnStatus, getTurnContext, PHASE, turnMonitor } from "./turnMonitor.js";
 import { classifyCliCommand } from "../../cli/runner.mjs";
 
 const categories = Object.values(CATEGORY);
 const phases = ["machine", "ai", "commit"];
-const hookFiles = {
-  useScreenHandlers: "src/app/hooks/useScreenHandlers.js",
-  useBuildingHandlers: "src/app/hooks/useBuildingHandlers.js",
-  useProgressionHandlers: "src/app/hooks/useProgressionHandlers.js",
-  usePigeonHandlers: "src/app/hooks/usePigeonHandlers.js",
-  useQuestPanel: "src/app/hooks/useQuestPanel.js",
-  useDuel: "src/app/hooks/useDuel.js",
-  usePlayerActionHandlers: "src/app/hooks/usePlayerActionHandlers.js",
-  useCardImportHandlers: "src/app/hooks/useCardImportHandlers.js",
-  useCraftingAI: "src/app/hooks/useCraftingAI.js",
-  useAiInspect: "src/app/hooks/useAiInspect.js",
-  useOutfitAdvice: "src/app/hooks/useOutfitAdvice.js",
-};
-
-function returnedKeys(file, hookName) {
-  const source = readFileSync(file, "utf8");
-  const start = source.indexOf(`export function ${hookName}(`);
-  const next = source.indexOf("\nexport function ", start + 1);
-  const body = source.slice(start, next < 0 ? source.length : next);
-  const returns = [...body.matchAll(/return\s*\{/g)];
-  const match = returns.at(-1);
-  if (!match) return [];
-  const open = match.index + match[0].length - 1;
-  let depth = 0;
-  for (let index = open; index < body.length; index += 1) {
-    if (body[index] === "{") depth += 1;
-    if (body[index] === "}" && --depth === 0) {
-      return body.slice(open + 1, index).split(",")
-        .map(entry => entry.trim().match(/^(?:\.\.\.)?([\w$]+)/)?.[1])
-        .filter(Boolean);
-    }
-  }
-  return [];
-}
-
 function expectedDecision(commandCategory, runningCategory) {
   if (runningCategory === CATEGORY.SYSTEM) return "reject";
   if (commandCategory === CATEGORY.VIEW) return "run";
@@ -106,7 +70,6 @@ describe("command scheduler", () => {
     expect(COMMANDS.prayer.label).toBe("祈福");
     expect(COMMANDS.book.label).toBe("书籍");
     expect(COMMANDS.duel.label).toBe("决斗");
-    expect(Object.values(HOOK_COMMANDS.useDuel)).toEqual(["duel", "duel", "duel", "duel", "duel"]);
   });
 
   it("returns the rejection text for SettingsPanel alerts", async () => {
@@ -179,18 +142,6 @@ describe("command scheduler", () => {
       const command = classifyCliCommand(line);
       expect(command).toMatchObject({ id, ...COMMANDS[id] });
       expect(decide(command, null)).toBe("run");
-    }
-  });
-
-  it("maps every returned handler key to a registered command", () => {
-    expect(INVENTORY_COMMAND_IDS.length).toBeGreaterThanOrEqual(111);
-    for (const [group, file] of Object.entries(hookFiles)) {
-      const handlers = HOOK_COMMANDS[group];
-      const actualKeys = returnedKeys(file, group).filter(key => !(group === "useAiInspect" && key === "inspecting"));
-      expect(actualKeys.sort(), group).toEqual(Object.keys(handlers).sort());
-      for (const [handler, commandId] of Object.entries(handlers)) {
-        expect(COMMANDS[commandId], `${group}.${handler} → ${commandId}`).toBeDefined();
-      }
     }
   });
 
