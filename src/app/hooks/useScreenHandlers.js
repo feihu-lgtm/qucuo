@@ -25,6 +25,8 @@ export function useScreenHandlers({
     const result = lookNpc(gameStore.getState(), npc);
     applyResult(featureCtxRef.current, result);
     setActiveTarget(npc.name);
+    const ctx = featureCtxRef.current;
+    if (ctx?.lookNpcInBackground) { ctx.lookNpcInBackground(npc, result.extraReplies || []); return; }
     act("look " + npc.id, result.extraReplies || [], { keepUndo: true, inspect: true });
   }, { feature: "npc.lookNpc" }), [act, captureUndo]);
 

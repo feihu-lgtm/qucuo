@@ -18,6 +18,7 @@ import { resolveIntent } from "../../engine/turn/resolveIntent.js";
 import { createTurnContext } from "../../engine/turn/turnContext.js";
 import { settleInBackground } from "./settleBackfill.js";
 import { lookInBackground } from "./lookBackfill.js";
+import { lookNpcInBackground } from "./npcLookBackfill.js";
 
 // 回合入口的 React 胶水：组 env → resolveIntent（识别/裁决）→ createTurnContext
 // → playTurn（settleTurn → narrateTurn → finalizeTurn）→ setState。
@@ -178,6 +179,9 @@ export function useTurn({
     act,
     settleInBackground: (cmd, opts) => settleInBackground(cmd, opts, {
       addLog, setTime, setConvo, setVarTree, setLog, jotNote, noteAction,
+    }),
+    lookNpcInBackground: (npc, extraReplies) => lookNpcInBackground(npc, extraReplies, {
+      addLog, setTime, setConvo, setLog, noteAction,
     }),
     applySquareOps: (ops) => {
       for (const { op, key, day } of ops) {
