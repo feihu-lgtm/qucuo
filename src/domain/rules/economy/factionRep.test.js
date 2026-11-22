@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { factionOfDistrict, factionRepLabel, factionShopCoef, listFactionRep } from "./factionRep.js";
+import { factionOfDistrict, factionRepDeltas, factionRepLabel, factionShopCoef, listFactionRep } from "./factionRep.js";
 import { resolveStageRewards, stageRewardPatches } from "../quests/questRewards.js";
 import { applyPatches } from "../state/applyPatches.js";
 import { applyMvuCommands } from "../prompt/mvu.js";
@@ -52,5 +52,27 @@ describe("faction reputation", () => {
     ]);
     expect(next.世界.势力声誉).toEqual({ 玉泉寨: 20, 黑风寨: 20 });
     expect(rejected.map((entry) => entry.path)).toEqual(["世界.势力声誉.黑风寨.备注"]);
+  });
+});
+
+describe("faction reputation ripple", () => {
+  it("costs each foe half of a gain, rounded up", () => {
+    expect(factionRepDeltas({ 青城派: 5 })).toEqual({ 青城派: 5, 天龙教: -3, 唐门: -3 });
+    expect(factionRepDeltas({ 天龙教: 2 })).toEqual({ 天龙教: 2, 青城派: -1, 峨眉派: -1, 丐帮三星分舵: -1 });
+  });
+
+  it("does not ripple losses or factions without foes", () => {
+    expect(factionRepDeltas({ 青城派: -4 })).toEqual({ 青城派: -4 });
+    expect(factionRepDeltas({ 鱼定村: 10 })).toEqual({ 鱼定村: 10 });
+  });
+
+  it("keeps an explicitly written foe delta instead of stacking the ripple", () => {
+    expect(factionRepDeltas({ 黑风寨: 10, 鱼定土司府: -5 })).toEqual({ 黑风寨: 10, 鱼定土司府: -5 });
+  });
+
+  it("applies the ripple through quest reward patches", () => {
+    const rewards = resolveStageRewards({ onReach: { factionRep: { 唐门: 6 } } });
+    const { state } = applyPatches({ varTree: tree({}) }, stageRewardPatches(rewards));
+    expect(state.varTree.世界.势力声誉).toMatchObject({ 唐门: 6, 青城派: -3 });
   });
 });

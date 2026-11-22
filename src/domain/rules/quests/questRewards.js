@@ -20,6 +20,7 @@
 import { add, set } from "../state/applyWrite.js";
 import { merge } from "../state/applyPatches.js";
 import { makeNamedItem } from "../../data/items/catalog.js";
+import { factionRepDeltas } from "../economy/factionRep.js";
 
 function mergeRewardParts(...parts) {
   const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, factionRep: {}, flags: [] };
@@ -77,7 +78,7 @@ export function stageRewardPatches(rewards, now = Date.now()) {
   if (rewards.reputation) {
     patches.push(add("世界.威望", rewards.reputation));
   }
-  for (const [faction, delta] of Object.entries(rewards.factionRep || {})) {
+  for (const [faction, delta] of Object.entries(factionRepDeltas(rewards.factionRep))) {
     if (delta) patches.push(add(["世界", "势力声誉", faction], delta));
   }
   if (rewards.flags?.length) {

@@ -29,6 +29,25 @@ export function factionShopCoef(varTree, district) {
   return faction ? tierOf(factionRepOf(varTree, faction)).coef : 1;
 }
 
+// 声誉联动：帮了一家（声誉上涨），它的死对头（FACTIONS.foes）各扣上涨量的一半（向上取整）。
+// 只在涨时联动，掉声誉不连带；explicit 里已写明的势力按写明的算，不再叠加联动。
+// 返回 { 势力: 增量 }，供任务奖励、切磋等各处统一落盘。
+export function factionRepDeltas(deltas, explicit = deltas) {
+  const out = {};
+  for (const [faction, delta] of Object.entries(deltas || {})) {
+    if (delta) out[faction] = (out[faction] || 0) + delta;
+  }
+  for (const [faction, delta] of Object.entries(deltas || {})) {
+    if (!(delta > 0)) continue;
+    const foes = FACTIONS.find((entry) => entry.name === faction)?.foes || [];
+    for (const foe of foes) {
+      if (Object.prototype.hasOwnProperty.call(explicit || {}, foe)) continue;
+      out[foe] = (out[foe] || 0) - Math.ceil(delta / 2);
+    }
+  }
+  return out;
+}
+
 // 已结识（声誉非零）的势力，按总纲表的顺序
 export function listFactionRep(varTree) {
   return FACTIONS.map(({ name }) => ({ name, value: factionRepOf(varTree, name) }))
