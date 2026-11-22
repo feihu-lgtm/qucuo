@@ -9,6 +9,7 @@ const REG = readFileSync(join(HERE, "..", "domain", "rules", "cards", "importedR
 const NPC_RULES = readFileSync(join(HERE, "..", "domain", "rules", "npc", "rules.js"), "utf-8");
 const OVL = readFileSync(join(HERE, "..", "ui", "panels", "GlobalOverlays.jsx"), "utf-8");
 const SCREEN = readFileSync(join(HERE, "..", "ui", "screens", "CardImportScreen.jsx"), "utf-8");
+const REVIEW = readFileSync(join(HERE, "..", "ui", "screens", "cards", "ReviewPane.jsx"), "utf-8");
 
 // 【为什么要守这几条】三条都是"不报错、只是什么都没发生"：
 //   · 落册后 room.npcs 不重算：registerImported 改的是模块级 let，React 依赖系统
@@ -62,9 +63,9 @@ describe("入册的三个落地回调都要接到底", () => {
 
 describe("勾选式加入", () => {
   it("默认全勾、有全选钮、按勾选数落册", () => {
-    expect(SCREEN).toContain("new Set(result.npcs.map((_, i) => i))");
-    expect(SCREEN).toContain("toggleAll");
-    expect(SCREEN).toContain("onFinish(pickedNpcs)");
+    expect(REVIEW).toContain("new Set(result.npcs.map((_, i) => i))");
+    expect(REVIEW).toContain("toggleAll");
+    expect(REVIEW).toContain("onFinish(pickedNpcs)");
   });
 
   it("finish 接收名单参数（+可选开局同行名），不传名单则按全部（老行为不破）", () => {
@@ -74,6 +75,6 @@ describe("勾选式加入", () => {
   });
 
   it("勾掉的人不算进「会真的出现」", () => {
-    expect(SCREEN).toContain("pickedNpcs.filter(x => normalizePlacement(x.placement).mode");
+    expect(REVIEW).toContain("pickedNpcs.filter(x => normalizePlacement(x.placement).mode");
   });
 });

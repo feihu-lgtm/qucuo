@@ -434,3 +434,20 @@ export function Terminal({ lines, height = 132, onExpand }) {
     </div>
   );
 }
+
+// 带 hover 高亮 + 过渡的可点小控件。入册新加的几处（选主角、批量按钮）统一用它——
+// 项目其余按钮多是静态内联样式，这里给交互加一层反馈：hover 时提亮描边并上浮 1px，
+// 选中(on)时描边与字都用高亮色。手感顺一点。
+export function TapSpan({ on, onClick, title, children, baseStyle, hi = "var(--warn)" }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <span onClick={onClick} title={title}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        cursor: "pointer", userSelect: "none", transition: "all .14s ease",
+        ...baseStyle,
+        ...(on ? { borderColor: hi, color: hi, background: "rgba(212,168,83,.14)" } : {}),
+        ...(hov && !on ? { borderColor: hi, color: "var(--paper)", transform: "translateY(-1px)" } : {}),
+      }}>{children}</span>
+  );
+}

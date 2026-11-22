@@ -14,7 +14,8 @@ import { CATALOG } from "../../domain/data/items/catalog.js";
 // CSS 在 node 里没法真渲染，所以退一步盯住源码里的关键指纹。
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
-const NPC = readFileSync(join(HERE, "cards", "ReviewNpc.jsx"), "utf-8");
+const REVIEW = readFileSync(join(HERE, "cards", "ReviewPane.jsx"), "utf-8");
+const NPC = readFileSync(join(HERE, "cards", "CarryPicker.jsx"), "utf-8");
 const PARTS = readFileSync(join(HERE, "cards", "widgets.jsx"), "utf-8");
 
 describe("随身物选择器必须能选到整本百物录", () => {
@@ -49,12 +50,12 @@ describe("随身物选择器必须能选到整本百物录", () => {
 
 describe("审改页分栏与日志区", () => {
   it("左右是 4:6，且两栏都带 minWidth 0", () => {
-    const left = SCREEN.split("\n").find(l => l.includes("flex: 4") && l.includes("borderRight"));
+    const left = REVIEW.split("\n").find(l => l.includes("flex: 4") && l.includes("borderRight"));
     expect(left, "没找到左栏容器，指纹可能变了，请同步这条守卫").toBeTruthy();
     // flex 子项默认 min-width:auto，长人名会把栏撑破比例
     expect(left, "左栏缺 minWidth 0，长内容会撑破 4:6").toContain("minWidth: 0");
 
-    const right = SCREEN.split("\n").find(l => l.includes("flex: 6") && l.includes("flexDirection"));
+    const right = REVIEW.split("\n").find(l => l.includes("flex: 6") && l.includes("flexDirection"));
     expect(right, "没找到右栏容器").toBeTruthy();
     expect(right).toContain("minWidth: 0");
   });
@@ -67,7 +68,7 @@ describe("审改页分栏与日志区", () => {
 
   it("运行日志用视口比例给高度，不用定值", () => {
     // 定值（原来是 118）在矮窗口下会把上方的人物名单挤没，拉长更要用 vh
-    expect(SCREEN).toMatch(/<Terminal[^>]*height="min\(\d+vh,\s*\d+px\)"/);
+    expect(REVIEW).toMatch(/<Terminal[^>]*height="min\(\d+vh,\s*\d+px\)"/);
   });
 });
 
@@ -95,7 +96,7 @@ describe("横条素材必须走 9-slice，不能整幅强拉", () => {
 
   it("顶栏与底栏也走 barFrame", () => {
     // 这两条原来各自写死 backgroundSize 100% 100%
-    const bars = SCREEN.match(/barFrame\(S\("ui\/bar_(paper|paper2)\.webp"\)\)/g) || [];
+    const bars = (SCREEN + REVIEW).match(/barFrame\(S\("ui\/bar_(paper|paper2)\.webp"\)\)/g) || [];
     expect(bars.length, "顶栏与底栏应各有一处 barFrame").toBeGreaterThanOrEqual(2);
   });
 
@@ -118,13 +119,13 @@ describe("横条素材必须走 9-slice，不能整幅强拉", () => {
 describe("左栏名单居中与落脚状态一致", () => {
   it("用 margin auto 0 居中，不用 justifyContent center", () => {
     // justifyContent center 在内容超出容器时会把顶部裁掉且滚不到
-    expect(SCREEN).toContain('margin: "auto 0"');
+    expect(REVIEW).toContain('margin: "auto 0"');
   });
 
   it("名单里的落脚标记走 normalizePlacement", () => {
     // 不归一化的话：游走但零权重会显示「游·0处」，而右侧 Pills 显示「不落地」，
     // 同一个人两处说法相反
-    expect(SCREEN).toContain("const pl = normalizePlacement(n.placement)");
-    expect(SCREEN).toMatch(/import \{ normalizePlacement \} from "..\/..\/domain\/rules\/cards\/importedRegistry\.js"/);
+    expect(REVIEW).toContain("const pl = normalizePlacement(n.placement)");
+    expect(REVIEW).toMatch(/import \{ normalizePlacement \} from "..\/..\/..\/domain\/rules\/cards\/importedRegistry\.js"/);
   });
 });
