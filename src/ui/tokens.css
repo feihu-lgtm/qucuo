@@ -63,6 +63,21 @@
   --qb-text: #e8dfc0;     /* 主文本 */
   --qb-text-dim: #cdc2a2; /* 次级文本/战报正文 */
   --qb-edge: #6a5f4a;     /* 弱化标记（无伤/占位） */
+  --qb-api-on: #6aa06a;
+  --qb-versus: #e0526a;
+  --qb-narrative: #e8d5a8;
+  --qb-damage: #ff6a5a;
+  --qb-hp: #c8483a;
+  --qb-hp-track: #3a1a16;
+  --qb-energy-track: #2a2010;
+  --qb-status-edge: #a05050;
+  --qb-status-text: #e0b0b0;
+  --qb-move-summary: #b0a480;
+  --qb-move-blocked: var(--qb-hp);
+  --qb-move-warn: #d88;
+  --qb-move-button-text: #1a140c;
+  --qb-move-disabled-bg: #333;
+  --qb-move-disabled-text: #777;
   --qb-felt: #14100b;     /* 深底（候选卡/立绘底） */
 
   /* 墨拓定色（不随 data-theme="day" 切换）：原硬编码字面量本身就是定色——
