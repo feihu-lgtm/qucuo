@@ -786,6 +786,13 @@
 .status-light-busy > span { animation: statusLightPulse 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .status-light-busy > span { animation: none; } }
 
+/* 移动端叙事区收窄侧 padding，文本更宽（类 Devin iOS 近满宽排版） */
+@media (max-width: 767px) {
+  [data-testid="narrative-log"] {
+    padding: 14px 10px !important;
+  }
+}
+
 /* 键盘弹出时：页面布局原地不动，只把输入栏抬到键盘上缘（TauriTavern 式局部补偿，
    避免整屏 fixed 定位被 iOS 推到可视区域外导致黑屏） */
 @media (max-width: 767px) {
@@ -794,18 +801,25 @@
   }
 
   /* 只抬升指令输入框聚焦时的输入栏：设置等弹层内的输入框聚焦不抬，
-     否则 fixed 栏会盖住弹层内容 */
+     否则 fixed 栏会盖住弹层内容。抬升态做成悬浮宽卡片（类 Devin iOS），
+     左右留边圆角，浮在键盘上缘 */
   html[data-input-lift] .mobile-input-bar {
     position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: var(--mobile-keyboard-height, 0px) !important;
+    left: 10px !important;
+    right: 10px !important;
+    /* 用可视视口坐标从顶部钉位置：iOS 上 fixed bottom 的基准不可靠 */
+    top: calc(var(--mobile-viewport-offset, 0px) + var(--mobile-viewport-height, 100dvh) - 60px) !important;
     z-index: 400;
     background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.45);
+    min-height: 52px !important;
+    padding: 10px 14px !important;
   }
 
   /* 输入栏抬升后，滚动对齐把最新叙事停在抬升栏上方，不被键盘遮住 */
   html[data-input-lift] [data-testid="narrative-log"] {
-    scroll-padding-bottom: calc(var(--mobile-keyboard-height, 0px) + 48px);
+    scroll-padding-bottom: calc(var(--mobile-keyboard-height, 0px) + 68px);
   }
 }

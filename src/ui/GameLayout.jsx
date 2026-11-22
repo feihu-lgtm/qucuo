@@ -99,7 +99,7 @@ export default function GameLayout({ layout }) {
           innerHeight: layoutHeight,
         }),
       );
-      document.documentElement.toggleAttribute("data-input-lift", open && commandFocused && keyboardHeight > 0);
+      document.documentElement.toggleAttribute("data-input-lift", open && commandFocused);
       if (open && !wasOpen) requestAnimationFrame(() => logEnd?.current?.scrollIntoView?.({ block: "end" }));
     };
     updateHeight();
