@@ -29,13 +29,13 @@ export default { district: {
         unlockCondition: { type: "flag", flag: "sanxing_trial_passed" },
         buildingId: "sanxing_tree_altar",
       },
-      // ── 三星派古蜀青铜神树墟（合稿·三星派 2.2；外人凭青铜引路牌下坑，过了三面试剑才进深处）──
+      // ── 三星派古蜀青铜神树墟（合稿·三星派 2.2；外人过了星1 才能下坑，过了三面试剑才进深处）──
       "祭祀坑·碎铜坪": {
         x: 1, y: -1,
         desc: `　　坑底一片夯得发亮的空地，满地是断成几截的古剑和裂开的面具。三个戴青铜面具的人站成品字，谁也不先开口。
 　　坑壁上嵌着一排排铜铃，风一过，叮叮当当响成一片，像有人在土里数数。`,
         exits: { w: "三星堆遗址", e: "祭祀坑西石室·古墟秘藏阁", n: "铸铜地窖·赤炉窟" },
-        unlockCondition: { type: "item", itemName: "青铜引路牌" },
+        unlockCondition: { type: "flag", flag: "sanxing_pit_pass" },
         buildingId: "sanxing_sword_pit",
       },
       "祭祀坑西石室·古墟秘藏阁": {
@@ -66,7 +66,7 @@ export default { district: {
         desc: `　　神树底座的暗门后面是一口干涸的古井，井壁一圈圈刻着金乌。井底不见水，只有一块磨得发亮的圆台，正好放得下一面太阳神鸟。
 　　站在井边说话，回声要绕三圈才回来，最后一声像是另一个人在答。`,
         exits: { s: "青铜神树下" },
-        unlockCondition: { type: "item", itemName: "太阳神鸟残片" },
+        unlockCondition: { type: "flag", flag: "quest_sxs3_return" },
       },
       // ── 丐帮三星分舵（合稿·丐帮 2.2；破庙前镇烟火，后墟肃杀）──
       三星镇西口集市: {

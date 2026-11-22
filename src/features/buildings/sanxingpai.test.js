@@ -37,15 +37,18 @@ describe("三星派", () => {
     expect(isNpcVisibleInInnerRoom("广汉", "鸭子河畔", fanku)).toBe(false);
   });
 
-  it("opens the pit with the 星1 token and the depths after 星2", () => {
+  it("opens the pit after 星1 and the depths after 星2 by flag, so selling the tokens locks nothing", () => {
     const lock = (room) => getInnerRoom("广汉", room).unlockCondition;
-    expect(isInnerExitUnlocked(lock("祭祀坑·碎铜坪"), { inv: [] })).toBe(false);
-    expect(isInnerExitUnlocked(lock("祭祀坑·碎铜坪"), { inv: [{ name: "青铜引路牌" }] })).toBe(true);
+    expect(isInnerExitUnlocked(lock("祭祀坑·碎铜坪"), { flags: [], inv: [{ name: "青铜引路牌" }] })).toBe(false);
+    expect(isInnerExitUnlocked(lock("祭祀坑·碎铜坪"), { flags: ["sanxing_pit_pass"], inv: [] })).toBe(true);
+    const opener = quests.find((quest) => quest.id === "sanxingpai_1_xujiejiuyue").stages.at(-1);
+    expect(opener.onReach.flags).toContain("sanxing_pit_pass");
     for (const room of ["铸铜地窖·赤炉窟", "古蜀石刻廊", "青铜神树下"]) {
       expect(isInnerExitUnlocked(lock(room), { flags: [] }), room).toBe(false);
       expect(isInnerExitUnlocked(lock(room), { flags: ["sanxing_trial_passed"] }), room).toBe(true);
     }
-    expect(isInnerExitUnlocked(lock("金乌暗室·归墟秘井"), { inv: [{ name: "太阳神鸟残片" }] })).toBe(true);
+    expect(isInnerExitUnlocked(lock("金乌暗室·归墟秘井"), { flags: [], inv: [{ name: "太阳神鸟残片" }] })).toBe(false);
+    expect(isInnerExitUnlocked(lock("金乌暗室·归墟秘井"), { flags: ["quest_sxs3_return"], inv: [] })).toBe(true);
     const finale = quests.find((quest) => quest.id === "sanxingpai_2_sanmianjianzhen").stages.at(-1);
     expect(finale.completionFlag).toBe("sanxing_trial_passed");
   });

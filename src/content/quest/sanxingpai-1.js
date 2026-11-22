@@ -44,7 +44,7 @@ export default { quest: {
         onReach: {
           money: 120,
           items: catalog("青铜引路牌"),
-          flags: ["sanxingdui_found"],
+          flags: ["sanxingdui_found", "sanxing_pit_pass"],
           factionRep: { [SX]: 15, [GB]: 5 },
           favorability: { 姜泠: 10 },
           byFlag: {
