@@ -200,7 +200,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "苏折柳", id: "resident_suzheliu", levelCap: 2,
+      name: "苏折柳", id: "resident_suzheliu", levelCap: 3,
       brief: "百花楼账房先生，听风雅阁主事，精于易容与仿墨验契",
       personality: "温文惫懒、嘴毒心细、嫉恶如仇；被土司府逼得家破人亡的蜀南落魄书生，誓要用账本和假脸替底层人算真账。",
       carry: [
