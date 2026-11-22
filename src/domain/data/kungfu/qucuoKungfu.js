@@ -501,7 +501,7 @@ export const SKILL_CATALOG = {
       id: "kf_yuding_fuxi", name: "熊山伏息术", type: SKILL_TYPE.MOVE, quality: "紫", price: 210,
       moveType: "防御",
       immuneControl: true, energyRestore: 6,
-      unlock: { faction: "鱼定村", rep: 80, quest: ["village5_laolieshu_chuanren"], flag: "flag_yuding_hunter_heir", note: "鱼定村声誉 ≥ 80，并在《村5·老猎户的传人》守山规（分支A）得桑登亲传" },
+      unlock: { faction: "鱼定村", rep: 80, quest: ["village5_laolieshu_chuanren"], note: "鱼定村声誉 ≥ 80，并完成《村5·老猎户的传人》得桑登亲传" },
       desc: "老猎户压箱底的雪窝绝活。大雪夜埋伏猛兽时，把心跳压得像冻住的溪水，寒风吹不乱、虎啸震不慌，任对手点穴缠丝也锁不住这口潜气，反倒能借对方招老的空档喘回满胸真元。",
     },
   ],

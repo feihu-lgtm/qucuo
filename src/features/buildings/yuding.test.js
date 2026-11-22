@@ -85,7 +85,8 @@ describe("晒谷演武场武学", () => {
     expect(skillUnlockStatus(state(15), skill("界石扎根功")).ok).toBe(true);
     expect(skillUnlockStatus(state(40), skill("熊山剔骨刀")).ok).toBe(false);
     expect(skillUnlockStatus(state(40, ["yudingcun_side1_yushan_chuhuan"]), skill("踏雪寻踪步")).ok).toBe(true);
-    expect(skillUnlockStatus(state(80, ["village5_laolieshu_chuanren"]), skill("熊山伏息术")).ok).toBe(false);
-    expect(skillUnlockStatus(state(80, ["village5_laolieshu_chuanren"], ["flag_yuding_hunter_heir"]), skill("熊山伏息术")).ok).toBe(true);
+    expect(skillUnlockStatus(state(79, ["village5_laolieshu_chuanren"]), skill("熊山伏息术")).ok).toBe(false);
+    expect(skillUnlockStatus(state(80), skill("熊山伏息术")).ok).toBe(false);
+    expect(skillUnlockStatus(state(80, ["village5_laolieshu_chuanren"]), skill("熊山伏息术")).ok).toBe(true);
   });
 });

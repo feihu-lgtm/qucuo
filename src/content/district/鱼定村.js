@@ -141,7 +141,7 @@ export default { district: {
         x: -3, y: 1,
         desc: "挪开村长府西墙角那口常年空置的大青稞缸，底下是一道潮冷的石阶，暗窖油灯下并排封存着三十年前的鱼鳞真账、老界石原拓，以及全村偷偷攒下的救急粮药。",
         exits: { e: "村长府" },
-        unlockCondition: { type: "flag", flag: "flag_yuding_deed_clue" },
+        unlockCondition: { type: "anyFlag", flags: ["flag_yuding_deed_clue", "quest_village2_s3_a", "quest_village2_s3_b"] },
       },
       铁匠铺: {
         x: 2, y: -1,

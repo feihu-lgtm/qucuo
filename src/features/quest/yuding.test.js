@@ -64,5 +64,6 @@ describe("鱼定村任务线", () => {
     const lock = getInnerRoom("鱼定村", "界石旧窖").unlockCondition;
     expect(isInnerExitUnlocked(lock, { flags: [] })).toBe(false);
     expect(isInnerExitUnlocked(lock, { flags: ["flag_yuding_deed_clue"] })).toBe(true);
+    expect(isInnerExitUnlocked(lock, { flags: ["quest_village2_s3_a"] })).toBe(true);
   });
 });
