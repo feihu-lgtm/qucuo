@@ -114,6 +114,11 @@ describe("欢喜教", () => {
     expect(open("huanxijiao_3_guanjiadetanzi", 25, done("huanxijiao_2_biwuzhaoxian"))).toBe(false);
     expect(open("huanxijiao_3_guanjiadetanzi", 25, done("huanxijiao_2_biwuzhaoxian", "huanxijiao_dive_1_caimaixiangliao"))).toBe(true);
     expect(open("huanxijiao_6_juezhanqianye", 79, done("huanxijiao_5_guanjiadetuxi"))).toBe(false);
+    const xiang2 = quest("huanxijiao_2_biwuzhaoxian");
+    const low = state(9, { questProgress: done("huanxijiao_1_xiangzhongyi") });
+    expect(forceAdvanceQuest(low, xiang2, xiang2.stages[0].completionFlag, 1).changes).toEqual({});
+    const ok = state(10, { questProgress: done("huanxijiao_1_xiangzhongyi") });
+    expect(forceAdvanceQuest(ok, xiang2, xiang2.stages[0].completionFlag, 1).changes.questProgress).toBeTruthy();
     for (const entry of QUCUO_QUESTS.filter((q) => q.id.startsWith("huanxijiao_") && q.requiresFactionRep)) {
       expect(entry.requiresFactionRep[HX]).toBeLessThanOrEqual(100);
     }

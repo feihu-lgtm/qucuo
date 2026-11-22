@@ -1,6 +1,6 @@
 import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import { BOUNTY_QUESTS } from "../../domain/data/quests/bountyQuests.js";
-import { advanceQuestStages, createQuestProgress, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
+import { advanceQuestStages, createQuestProgress, isQuestGateOpen, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
 import { resolveStageRewards, stageRewardPatches } from "../../domain/rules/quests/questRewards.js";
 import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
@@ -13,6 +13,8 @@ const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }
 export function forceAdvanceQuest(state, quest, targetFlag, now) {
   const stage = quest.localOnly && getLocalQuestStage(quest, state);
   if (quest.localOnly && !isLocalQuestStageFlag(stage, targetFlag)) return { changes: {} };
+  if (!quest.localOnly && !state.questProgress?.[quest.id]
+    && !isQuestGateOpen(quest, state.questProgress, state.flags, state.varTree)) return { changes: {} };
   const flags = state.flags || [];
   const addedFlag = flags.includes(targetFlag) ? flags : [...flags, targetFlag];
   let progress = state.questProgress?.[quest.id] || createQuestProgress(quest.id, now);
