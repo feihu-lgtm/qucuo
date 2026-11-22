@@ -91,8 +91,21 @@ export default { district: {
       锻簪坊: {
         x: -1, y: 4,
         desc: "竹篱最深处的半间黑瓦炉棚，风箱拉得沉稳，铁砧旁码着数十支形似银簪的精铁冷器，淬火槽冒着细白的汽。",
-        exits: { n: "听竹轩" },
+        exits: { n: "听竹轩", w: "练剑坪" },
         buildingId: "sectshop_emei",
+        residentNpcName: "簪娘",
+      },
+      练剑坪: {
+        x: -2, y: 4,
+        desc: "剑庐后院一方青石坪，石面被剑尖点出密密麻麻的白痕，西头一座矮土台，老辈人叫它白猿台。",
+        exits: { e: "锻簪坊", w: "白猿台" },
+        residentNpcName: "照微",
+      },
+      白猿台: {
+        x: -3, y: 4,
+        desc: "练剑坪西头的矮土台，台边一棵歪脖子老松，树皮被拳掌拍得发亮。",
+        exits: { e: "练剑坪" },
+        residentNpcName: "司徒瑛",
       },
       慈济佛堂: {
         x: -2, y: 3,
@@ -106,6 +119,7 @@ export default { district: {
         desc: "临窗一排长案沾满墨痕，半壁收佛经医案，半壁藏道书与蜀西江湖杂录。男弟子入门前须在此静心抄经三日。",
         exits: { w: "听竹轩" },
         buildingId: "library_emei_jingge",
+        residentNpcName: "陈九",
       },
       官府告示栏: {
         x: -1, y: 1,
@@ -122,8 +136,13 @@ export default { district: {
       杏林医馆: {
         x: 0, y: 2,
         desc: "锦官城的医馆。",
-        exits: { n: "清风茶馆" },
+        exits: { n: "清风茶馆", e: "城南贫民棚" },
         buildingId: "hospital_jingguan",
+      },
+      城南贫民棚: {
+        x: 1, y: 2,
+        desc: "城南墙根下一片油毡竹棚，挤着曲措南下的流民，棚口一口老井，井沿结着青黑的苔。",
+        exits: { w: "杏林医馆" },
       },
       聚宝当铺: {
         x: 1, y: -1,
