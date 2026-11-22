@@ -107,6 +107,6 @@ export const sx = {
     borderRadius: 0, color: "var(--qb-switch-text)", fontSize: 13, cursor: "pointer" },
   switchBtnSmall: { padding: "4px 10px", background: "rgba(40,60,80,.5)", border: "1px solid var(--qb-switch-edge)",
     borderRadius: 0, color: "var(--qb-switch-text)", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" },
-  dmgTag: (c) => ({ padding: "1px 7px", borderRadius: 0, background: `${c}22`, border: `1px solid ${c}`,
+  dmgTag: (c) => ({ padding: "1px 7px", borderRadius: 0, background: `color-mix(in srgb, ${c} 13%, transparent)`, border: `1px solid ${c}`,
     color: c, fontWeight: "bold", fontSize: 11 }),
 };

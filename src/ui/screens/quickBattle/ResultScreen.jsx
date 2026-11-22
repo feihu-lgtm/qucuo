@@ -34,7 +34,7 @@ export default function ResultScreen({ battle, onAgain, onExit }) {
 function ResultCol({ title, names, color, empty }) {
   return (
     <div style={{ minWidth: 130 }}>
-      <div style={{ fontSize: 13, color, letterSpacing: 2, marginBottom: 8, borderBottom: `1px solid ${color}44`, paddingBottom: 4 }}>{title}</div>
+      <div style={{ fontSize: 13, color, letterSpacing: 2, marginBottom: 8, borderBottom: `1px solid color-mix(in srgb, ${color} 27%, transparent)`, paddingBottom: 4 }}>{title}</div>
       {names.length === 0 ? (
         <div style={{ fontSize: 12, color: "var(--qb-edge)" }}>{empty}</div>
       ) : names.map((n, i) => (
