@@ -1,6 +1,5 @@
 import { upgradeLegacyDefaults } from "./presetLegacy.js";
-// 酒馆式预设系统
-// 完整兼容 SillyTavern 的 Chat Completion 预设 JSON 格式（Master 文件）。
+// 酒馆式预设系统（结构沿用 SillyTavern 的 Chat Completion 预设；编辑器和导入导出已下线）
 // 核心概念：
 // - prompts：素材库，每条独立的 prompt 片段（id/name/role/content/isMarker）
 // - order：这次实际要用哪些、按什么顺序（数组顺序即插入顺序），每项 {id, enabled}
@@ -8,16 +7,6 @@ import { upgradeLegacyDefaults } from "./presetLegacy.js";
 // （这和酒馆的行为完全一致：prompts 是仓库，order 才是"这次用哪些"的清单）。
 
 const PRESET_STORAGE_KEY = "wuxia_mud_presets";
-
-// 系统保留的占位符 identifier，对应酒馆的 marker:true 条目。
-// 我们的引擎里能对应上的：chatHistory（历史对话）、charDescription/scenario（剧本设定）。
-// 其余占位符（worldInfoBefore/After、personaDescription、dialogueExamples 等）
-// 我们目前没有对应概念，导入时会保留条目但拼装时留空跳过，不报错。
-export const MARKER_IDS = new Set([
-  "main", "nsfw", "jailbreak", "enhanceDefinitions",
-  "worldInfoBefore", "worldInfoAfter", "charDescription", "charPersonality",
-  "scenario", "personaDescription", "dialogueExamples", "chatHistory",
-]);
 
 // 我们引擎能实际填充内容的占位符
 const FILLABLE_MARKERS = new Set(["chatHistory", "charDescription", "scenario"]);
@@ -164,34 +153,6 @@ export function getActivePreset() {
   return presets[activeIndex] || defaultPreset();
 }
 
-export function saveAllPresets(state) {
-  localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(state));
-}
-
-// ── 收藏/模板库（本轮新增）──
-// 独立于任何单个预设的全局片段库：把常用的 prompt 片段（比如"哈八股禁词表"这种
-// 反复要用的通用规则）存起来，可以一键拖/插进任意预设的激活链或库存区，不用每次
-// 重新打字。存储上跟"预设"完全分离（不属于 presets 数组里的任何一份），删掉某个
-// 预设不会影响收藏库，反之亦然。
-const PRESET_LIBRARY_STORAGE_KEY = "wuxia_mud_preset_library";
-
-function loadPresetLibrary() {
-  try {
-    const raw = localStorage.getItem(PRESET_LIBRARY_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function savePresetLibrary(items) {
-  localStorage.setItem(PRESET_LIBRARY_STORAGE_KEY, JSON.stringify(items));
-}
-
-// 把某个预设里的一条 prompt 存入收藏库（复制一份，脱离原预设的 id 引用关系，
-// 存入库里的副本有自己独立的 id，避免以后原预设改了内容、库里的模板跟着变）。
 // 把一个预设 + 填充内容，拼装成最终的 system prompt 文本。
 // fillers: { chatHistory, charDescription, scenario } 具体内容由调用方传入
 // （chatHistory 通常不适合直接拼进 system prompt，这里主要用于 charDescription/scenario 这类）
@@ -217,110 +178,4 @@ export function assemblePrompt(preset, fillers = {}) {
     if (p.content && p.content.trim()) parts.push(p.content);
   }
   return parts.join("\n\n");
-}
-
-// ── 导入/导出酒馆格式 ──
-
-// 从酒馆 Chat Completion 预设 JSON（Master 文件）转换成我们的内部结构
-export function importFromTavernFormat(json, presetName) {
-  const rawPrompts = json.prompts || [];
-  const rawOrderWrapper = (json.prompt_order && json.prompt_order[0]) || { order: [] };
-  const rawOrder = rawOrderWrapper.order || [];
-
-  const prompts = rawPrompts.map(p => makePromptEntry({
-    id: p.identifier,
-    name: p.name || p.identifier,
-    role: p.role || "system",
-    content: p.content || "",
-    // 是否是"系统占位符"只看 marker 字段本身，不能再用 MARKER_IDS.has(identifier)
-    // 做兜底判断——真实酒馆预设里，有些普通自定义文本条目会复用 main/jailbreak/
-    // enhanceDefinitions/nsfw 这类习惯性 identifier 名字，marker 字段却明确是
-    // false（说明创作者就是把它当普通内容条目写的），如果仍按 identifier 名字
-    // 兜底判定为占位符，会把这些本该可编辑的真实文字内容，误判成"运行时自动填充、
-    // 不能手动编辑"的系统槽位，导致它们的内容彻底不见了。只有当 p.marker 明确为
-    // true，或者压根没有 marker 字段（老格式兼容）时才退回按 identifier 判断。
-    isMarker: typeof p.marker === "boolean" ? p.marker : MARKER_IDS.has(p.identifier),
-  }));
-
-  // ── 顺序/启用状态来源（本轮修复严重 bug）──
-  // 酒馆导出文件存在两种常见形态：
-  //   A) 标准形态：prompt_order[0].order 是非空数组，每项 {identifier, enabled}
-  //      按数组顺序 = 真实顺序，enabled 以这里为准（这是我们原来唯一支持的形态）。
-  //   B) 变体形态（很多真实预设文件是这样，比如角色卡/预设合集导出）：
-  //      prompt_order[0].order 是空数组，顺序信息根本不在这里，而是 prompts
-  //      数组本身的物理顺序就是顺序，每条 prompt 自带的 enabled 字段才是真实
-  //      的启用状态。
-  // 之前的实现只认形态 A，遇到形态 B 时 rawOrder 为空，"兜底"逻辑会把 *所有*
-  // 条目不分青红皂白全部塞进 order 且强制 enabled:false——相当于导入即把整个
-  // 预设的开关状态清空重置，完全无视了每条 prompt 本来就带着的真实 enabled 值，
-  // 导致导入一份本来有十几条正常开启的预设后，界面上会显示"全部关闭"，这是
-  // 一个会让预设实质不可用的严重错误。
-  // 判断依据很简单：rawOrder 有内容就走形态 A；rawOrder 为空且 prompts 非空
-  // 就走形态 B，直接用 prompts 数组顺序 + 各自的 p.enabled 字段。
-  const promptIds = new Set(prompts.map(p => p.id));
-  let order;
-  if (rawOrder.length > 0) {
-    // 形态 A：标准酒馆格式，order 数组决定真实的顺序和启用状态
-    order = rawOrder
-      .filter(o => promptIds.has(o.identifier))
-      .map(o => ({ id: o.identifier, enabled: !!o.enabled }));
-    // 少数条目可能没出现在 order 里（理论上不应该，但做个兜底），追加到末尾且禁用——
-    // 这条兜底只在"确实走了标准 order 流程、只是个别条目遗漏"时才合理触发。
-    for (const p of prompts) {
-      if (!order.some(o => o.id === p.id)) order.push({ id: p.id, enabled: false });
-    }
-  } else {
-    // 形态 B：order 为空，改用 prompts 数组的物理顺序作为真实顺序，
-    // 并尊重每条 prompt 自带的 enabled 字段。
-    // 缺失时的默认值取 false（未启用）而不是 true——酒馆里普遍的实际习惯是：
-    // 显式写 enabled:true/false 的条目，状态就以这个值为准；完全没写这个字段的，
-    // 通常是"添加了但从没勾选启用过"的草稿/备用片段，语义上更接近"未启用"，
-    // 而不是"忘了写、其实想开启"。误判成 true 的后果尤其严重：会让制作者本来
-    // 精心关闭、留作备选的大段内容（比如多个互斥的"文风（选一）"候选项之一）
-    // 意外全部生效，叠加出制作者完全没设计过的组合效果。
-    order = rawPrompts.map(p => ({
-      id: p.identifier,
-      enabled: p.enabled === true,
-    }));
-  }
-
-  return {
-    name: presetName || "导入的预设",
-    prompts,
-    order,
-    temperature: typeof json.temperature === "number" ? json.temperature : null,
-    maxTokens: typeof json.openai_max_tokens === "number" ? json.openai_max_tokens : null,
-    topP: typeof json.top_p === "number" ? json.top_p : null,
-    topK: typeof json.top_k === "number" ? json.top_k : null,
-    frequencyPenalty: typeof json.frequency_penalty === "number" ? json.frequency_penalty : null,
-    presencePenalty: typeof json.presence_penalty === "number" ? json.presence_penalty : null,
-  };
-}
-
-// 导出成酒馆兼容的 JSON 结构（可以再导入回酒馆，或者分享给别人）
-export function exportToTavernFormat(preset) {
-  const out = {
-    temperature: preset.temperature ?? 1,
-    openai_max_tokens: preset.maxTokens ?? 1200,
-    openai_max_context: 200000,
-    prompts: preset.prompts.map(p => ({
-      identifier: p.id,
-      name: p.name,
-      role: p.role,
-      content: p.content,
-      marker: p.isMarker,
-      enabled: true,
-    })),
-    prompt_order: [{
-      character_id: 100001,
-      order: preset.order.map(o => ({ identifier: o.id, enabled: o.enabled })),
-    }],
-  };
-  // 只有明确配置过（非 null）才写出，避免给不需要这些字段的导入方（比如没有这些
-  // 概念的老版本工具）塞进多余字段。
-  if (preset.topP != null) out.top_p = preset.topP;
-  if (preset.topK != null) out.top_k = preset.topK;
-  if (preset.frequencyPenalty != null) out.frequency_penalty = preset.frequencyPenalty;
-  if (preset.presencePenalty != null) out.presence_penalty = preset.presencePenalty;
-  return out;
 }

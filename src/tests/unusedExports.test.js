@@ -12,9 +12,6 @@ const EXPORT = /export\s+(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z
 
 const KEEP = {
   "domain/rules/economy/gambleStone.js:rollCommission": "赌石「委托做装备」，按设计稿写好、尚未接到界面",
-  "domain/rules/prompt/presetSystem.js:saveAllPresets": "预设编辑器遗留：界面已下线，是否恢复待定",
-  "domain/rules/prompt/presetSystem.js:importFromTavernFormat": "预设编辑器遗留：酒馆预设导入，是否恢复待定",
-  "domain/rules/prompt/presetSystem.js:exportToTavernFormat": "预设编辑器遗留：酒馆预设导出，是否恢复待定",
 };
 
 function listFiles(dir) {
