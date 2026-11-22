@@ -1,6 +1,6 @@
 import { hasInnerMap, isNpcVisibleInInnerRoom } from "../map/innerMap.js";
 import { getTimeStr } from "../../../utils/mudHelpers.js";
-import { allFactSummaries } from "../prompt/knowledge.js";
+import { allFactSummaries } from "../prompt/knowledgeRoot.js";
 
 export function formatFactSummariesForPrompt(facts) {
   return facts.map((fact) => `· （${getTimeStr(fact.诞生回合 || 0)}）${fact.摘要}${fact.标签 ? `〔${fact.标签}〕` : ""}`).join("\n");
