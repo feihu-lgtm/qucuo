@@ -19,6 +19,12 @@ describe("唐堡千机演武坪", () => {
     expect(getBuildingsForLocation("蜀南唐堡").find((building) => building.id === id)?.skillSet).toBe("唐门");
   });
 
+  it("puts the poison clinic in the outsider workshop", () => {
+    const id = getBuildingIdForInnerRoom("蜀南唐堡", "外姓竹坞");
+    const clinic = getBuildingsForLocation("蜀南唐堡").find((building) => building.id === id);
+    expect(clinic).toMatchObject({ name: "试毒药庐", type: "hospital", healPerLiang: 3 });
+  });
+
   it("teaches only the open entry skill until reputation and membership exist", () => {
     const learned = buySkill(state(), skill("寸铁点星手"));
     expect(learned.changes.skills.map((entry) => entry.id)).toEqual(["kf_tm_cuntie"]);
