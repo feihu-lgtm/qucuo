@@ -44,12 +44,11 @@ export default { district: {
         exits: { w: "内堂" },
         residentNpcName: "玄女",
         buildingId: "hospital_xueshan_wenquan",
-        unlockCondition: { type: "flag", flag: "xueshan_wenquan_unlocked" },
       },
       寒玉旧剑阁: {
-        x: -1, y: -3,
+        x: 0, y: -4,
         desc: "凿在内堂后崖深处的暗石密阁，寒气砭骨，寒玉石案上封存着三十年前呼延大侠的断剑残锋、与老土司及青霞子论剑的旧谱，以及半封未寄出的绝笔书信。",
-        exits: { e: "弟子别院" },
+        exits: { s: "弟子别院" },
         buildingId: "library_xueshan",
         unlockCondition: { type: "flag", flag: "xueshan_sword_pavilion_unlocked" },
       },
@@ -58,7 +57,7 @@ export default { district: {
         desc: `　　内堂后一处独立小院，青砖围墙围出四方一块天，一道月洞门开在南边。门楣上挂着雪山派的令牌锁，正式弟子才开得。
 　　院当中一株老梅，冬日开满白花，落在木桩上像积了层薄雪。墙根堆着几根练功木桩，桩身全是刀劈剑削的旧痕，深的地方能塞进两根手指。老梅树下一圈花坛，格桑花和雪莲幼苗混着种，长势各半。
 　　正房三间，东厢是卧房，西厢是书房。`,
-        exits: { s: "内堂", e: "东厢卧房", w: "西厢书房" },
+        exits: { s: "内堂", e: "东厢卧房", w: "西厢书房", n: "寒玉旧剑阁" },
         unlockCondition: { type: "item", itemName: "雪山派令牌钥匙" },
       },
       东厢卧房: {
