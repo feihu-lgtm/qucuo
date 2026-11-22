@@ -35,6 +35,19 @@ export const FACTION_ENTRIES = {
     intro: "听竹轩正厅案上供着青玉弟子令与一卷《峨眉清规》。玄尘师太问你三句心性话，答得出，便收。",
     joinLabel: "问心受戒，拜入峨眉派",
   },
+  黑风寨: {
+    sect: "黑风寨", master: "巴桑", buildingId: "sect_entry_heifeng",
+    minRep: 40, repBonus: 20, flag: "黑风寨入伙",
+    token: "黑风令", gifts: ["黑风寨分发刀", "结绳护腕串"],
+    trial: {
+      flag: "heifeng_proven",
+      quest: "heifengzhai_3_5_jieyao",
+      label: "投名状：替寨里办成一件实事（山3.5·劫药）",
+      hint: "巴桑只收真替寨里出过力的人——先帮他把老人们的药办下来。",
+    },
+    intro: "岩洞里只有一块青石板摊着狼曲地形图，没有虎皮大椅。巴桑听你说完，指了指壁上的寨规：「不抢救命口粮，不伤妇孺，不碰玉泉寨的人。入伙容易，守这三条难——守得住，再谈入伙。」",
+    joinLabel: "对寨规起誓，入伙黑风寨",
+  },
   锦官城: {
     sect: "锦官城", master: "柳青鸢", buildingId: "sect_entry_guan",
     // 成员旗用专属「锦官城当差」：title_jinguancheng_tequai_xuncha 是官2-A 落的头衔，
