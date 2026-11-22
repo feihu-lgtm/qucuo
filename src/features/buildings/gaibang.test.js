@@ -9,6 +9,8 @@ import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 import { giftSilver } from "../npc/exchange.js";
 import { playLocalQuestStage } from "../quest/logic.js";
 import { buySkill } from "./logic.js";
+import { buildRoomNpcWithCombat } from "../../domain/rules/npc/rules.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { buyFactionShopItem, factionShopOffer } from "./factionShop.js";
 
 const GB = "丐帮三星分舵";
@@ -48,7 +50,7 @@ describe("丐帮三星分舵", () => {
     expect(factionShopOffer("三星分舵商坊", rep(15), "vault")).toMatchObject({ coef: 0.92 });
     expect(names(factionShopOffer("三星分舵商坊", rep(15), "vault"))).toContain("铁头打狗棒");
     expect(names(factionShopOffer("三星分舵商坊", rep(80), "vault"))).not.toContain("八袋青竹护心甲");
-    expect(names(factionShopOffer("三星分舵商坊", rep(140), "vault"))).toContain("八袋青竹护心甲");
+    expect(names(factionShopOffer("三星分舵商坊", rep(100), "vault"))).toContain("八袋青竹护心甲");
     const hostile = factionShopOffer("三星分舵商坊", rep(-20), "vault");
     expect(hostile.coef).toBe(1.2);
     expect(hostile.items.every((item) => ["白", "绿", "蓝"].includes(item.quality) && item.minRep == null)).toBe(true);
@@ -106,5 +108,11 @@ describe("丐帮三星分舵", () => {
       const low = state(quest.requiresFactionRep.min - 1, { innerRoomName: where, flags });
       expect(getLocalQuestStage(quest, low), quest.id).toBeNull();
     }
+  });
+
+  it("keeps each branch resident in its own inner room once spawned", () => {
+    const baishen = buildRoomNpcWithCombat(RESIDENT_NPCS.广汉.find((npc) => npc.name === "白婶"));
+    expect(isNpcVisibleInInnerRoom("广汉", "破庙前院·粥棚与竹坪", baishen)).toBe(true);
+    expect(isNpcVisibleInInnerRoom("广汉", "鸭子河畔", baishen)).toBe(false);
   });
 });

@@ -86,7 +86,7 @@ export default { district: {
         desc: `　　破庙后墙外一棵三人合抱的老槐树下，立着半截刻满云雷纹的残碑。
 　　碑后终年雾气不散，偶有枯叶落地，便仿佛惊动了雾里某双金色的眼睛。`,
         exits: { s: "三星镇西口集市", ne: "三星堆遗址" },
-        unlockCondition: { type: "item", itemName: "残纹竹板" },
+        unlockCondition: { type: "flag", flag: "quest_gbs1_return" },
       },
     },
   }
