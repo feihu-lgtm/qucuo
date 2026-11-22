@@ -14,7 +14,7 @@
 // vite.config.pages.js 的 base）。本地 mp3 原来写成 "/music/zood.mp3" 这种绝对
 // 路径，线上会解析成 https://<user>.github.io/music/zood.mp3 —— 掉出仓库路径，
 // 必 404。项目里其余 public 资源（stones/ portraits/ 开场图）一直都走 BASE_URL，
-// 只有音乐漏了。docsTree.test.js 本来有一条守卫专门防这个，但它的正则
+// 只有音乐漏了。repoGuards.test.js 本来有一条守卫专门防这个，但它的正则
 // `\/[A-Za-z0-9_-]+\.mp3` 不含斜杠，只抓得住顶层文件、抓不住带子目录的
 // "/music/zood.mp3"，所以漏网了（那条正则这次一并修好）。
 const BASE = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/";

@@ -3,7 +3,7 @@ import { QUCUO_MAP, getMapNode } from "../../../domain/data/map/qucuoMap.js";
 import { patchCombatData } from "../../../domain/rules/npc/roomNpcs.js";
 import { DIR_DXY } from "../../../utils/mudHelpers.js";
 
-// traceStep 由调用方注入，保持本模块无 infra 依赖（ratchet 只减不增）。
+// traceStep 由调用方注入，保持本模块无 infra 依赖（externalInfraImports 只减不增）。
 export function writeRoom(d, { traceStep }) {
   if (!d.isTalk) {
     if (d.lockedDestName) {

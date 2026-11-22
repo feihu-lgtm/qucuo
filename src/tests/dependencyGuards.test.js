@@ -10,7 +10,7 @@ import { join, relative, resolve } from "node:path";
 // 之后就一直是手动跑的状态，而这几轮真正栽的几次（onImportWorld 静默短路、
 // portrait 与 neigong 被白名单剥掉）它本来有机会提前报出来。
 //
-// 【为什么不直接加进 npm run verify】docsTree.test.js 里有一条守卫钉着「verify
+// 【为什么不直接加进 npm run verify】repoGuards.test.js 里有一条守卫钉着「verify
 // 跑的就是 CI 那两步」（vitest + pages build），往那条命令里塞东西会撞它。
 // 从 vitest 里调用等效：verify 的第一步就是 vitest，于是它们照样进了 CI。
 //

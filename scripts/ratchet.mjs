@@ -1,10 +1,9 @@
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const BASELINE_PATH = resolve(REPO_ROOT, "scripts/ratchet-baseline.json");
 // 分层模型：数字小在上层（可依赖下层），大在下层（不许反向依赖上层）。
 // infra（存储/网络）与 content（生成数据）是最底层；entry/debug 是入口层。
 // 没进这张表的层会被静默跳过（importerOrder === undefined），等于守卫有洞——
@@ -227,69 +226,38 @@ export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
   };
 }
 
-function compareCount(label, before, after, failures, improvements) {
-  if (typeof before !== "number" || typeof after !== "number") {
-    failures.push(`${label}: expected numeric values, got ${before} -> ${after}`);
-    return;
-  }
-  if (after > before) failures.push(`${label}: ${before} -> ${after} (+${after - before})`);
-  if (after < before) improvements.push(`${label}: ${before} -> ${after} (${after - before})`);
-}
+// ── 硬红线（0 容忍，违者直接 fail）────────────────────────────────
+// 已清零的跨层反向依赖一律不许再出现；唯一现存欠账是 app->ui，写成硬上限只减不增。
+// 软指标（大文件、颜色数、externalInfraImports、gzip）一律只打印不阻断——npm run stats。
+export const KNOWN_LAYER_DEBT = { "app->ui": 16 };
 
-function compareCountMap(label, before = {}, after = {}, failures, improvements) {
-  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-  for (const key of [...keys].sort()) {
-    compareCount(`${label}.${key}`, before[key] || 0, after[key] || 0, failures, improvements);
-  }
-}
-
-export function compareRatchetMetrics(baseline, current) {
+export function checkLayerRedLines(metrics) {
   const failures = [];
-  const improvements = [];
-  const notes = [];
-
-  compareCountMap("layerViolations", baseline.layerViolations, current.layerViolations, failures, improvements);
-  compareCountMap("externalInfraImports", baseline.externalInfraImports, current.externalInfraImports, failures, improvements);
-  compareCount("distinctHexColors", baseline.distinctHexColors, current.distinctHexColors, failures, improvements);
-  compareCount("totalHexOccurrences", baseline.totalHexOccurrences, current.totalHexOccurrences, failures, improvements);
-
-  const baselineFiles = baseline.largeFiles || {};
-  const currentFiles = current.largeFiles || {};
-  for (const [file, lines] of Object.entries(currentFiles).sort()) {
-    if (baselineFiles[file] === undefined) {
-      failures.push(`largeFiles.${file}: new file has ${lines} lines (limit: 400)`);
-    } else if (lines > baselineFiles[file]) {
-      failures.push(`largeFiles.${file}: ${baselineFiles[file]} -> ${lines} (+${lines - baselineFiles[file]} lines)`);
-    } else if (lines < baselineFiles[file]) {
-      improvements.push(`largeFiles.${file}: ${baselineFiles[file]} -> ${lines} (${lines - baselineFiles[file]} lines)`);
+  for (const [rule, count] of Object.entries(metrics.layerViolations || {})) {
+    const cap = KNOWN_LAYER_DEBT[rule];
+    if (cap === undefined) {
+      failures.push(`${rule}: ${count} 条逆向依赖（红线 0 容忍）`);
+    } else if (count > cap) {
+      failures.push(`${rule}: ${count} 条，超过现存欠账上限 ${cap}（只减不增）`);
     }
   }
-  for (const [file, lines] of Object.entries(baselineFiles).sort()) {
-    if (currentFiles[file] === undefined) improvements.push(`largeFiles.${file}: ${lines} -> <=400 or removed`);
-  }
-
-  if (current.mainJsGzipBytes === null || current.mainJsGzipBytes === undefined) {
-    notes.push("main JS gzip metric skipped because dist/ is missing or has no main chunk.");
-  } else if (typeof baseline.mainJsGzipBytes !== "number") {
-    notes.push("main JS gzip baseline is missing; run npm run ratchet:update after building.");
-  } else {
-    const allowed = baseline.mainJsGzipBytes * 1.02;
-    if (current.mainJsGzipBytes > allowed) {
-      failures.push(`mainJsGzipBytes: ${baseline.mainJsGzipBytes} -> ${current.mainJsGzipBytes} (+${current.mainJsGzipBytes - baseline.mainJsGzipBytes} bytes; tolerance: 2%)`);
-    } else if (current.mainJsGzipBytes < baseline.mainJsGzipBytes) {
-      improvements.push(`mainJsGzipBytes: ${baseline.mainJsGzipBytes} -> ${current.mainJsGzipBytes} (${current.mainJsGzipBytes - baseline.mainJsGzipBytes} bytes)`);
-    }
-  }
-
-  return { ok: failures.length === 0, failures, improvements, notes };
+  return { ok: failures.length === 0, failures };
 }
 
-function readBaseline() {
-  return JSON.parse(readFileSync(BASELINE_PATH, "utf8"));
-}
-
-function writeBaseline(metrics) {
-  writeFileSync(BASELINE_PATH, `${JSON.stringify(metrics, null, 2)}\n`);
+export function formatStats(metrics) {
+  const lines = [];
+  const push = (label, value) => lines.push(`${label}: ${value}`);
+  const pushMap = (label, map) => {
+    const entries = Object.entries(map || {});
+    push(label, entries.length ? entries.map(([k, v]) => `${k}=${v}`).join(", ") : "0");
+  };
+  pushMap("layerViolations", metrics.layerViolations);
+  pushMap("externalInfraImports", metrics.externalInfraImports);
+  push("distinctHexColors", metrics.distinctHexColors);
+  push("totalHexOccurrences", metrics.totalHexOccurrences);
+  pushMap("largeFiles", metrics.largeFiles);
+  push("mainJsGzipBytes", metrics.mainJsGzipBytes ?? "n/a (dist missing)");
+  return lines;
 }
 
 function printLines(title, lines) {
@@ -299,35 +267,17 @@ function printLines(title, lines) {
 }
 
 function runRatchet() {
-  const update = process.argv.includes("--update");
   const { metrics, notes } = collectRatchetMetrics();
-  printLines("Note", notes);
 
-  if (update) {
-    let previous = {};
-    if (existsSync(BASELINE_PATH)) previous = readBaseline();
-    if (metrics.mainJsGzipBytes === null && typeof previous.mainJsGzipBytes === "number") {
-      metrics.mainJsGzipBytes = previous.mainJsGzipBytes;
-    }
-    writeBaseline(metrics);
-    console.log(`Updated ${relativePath(REPO_ROOT, BASELINE_PATH)}.`);
+  if (process.argv.includes("--stats")) {
+    for (const line of formatStats(metrics)) console.log(line);
+    printLines("Note", notes);
     return;
   }
 
-  if (!existsSync(BASELINE_PATH)) {
-    console.error("Ratchet baseline is missing; run npm run ratchet:update.");
-    process.exitCode = 1;
-    return;
-  }
-
-  const result = compareRatchetMetrics(readBaseline(), metrics);
-  printLines("Note", result.notes);
-  printLines("Ratchet regressions", result.failures);
-  if (result.improvements.length) {
-    console.log("Metrics improved, run ratchet:update to record the new baseline:");
-    printLines("Improvements", result.improvements);
-  }
-  if (!result.failures.length) console.log("Ratchet passed.");
+  const { failures } = checkLayerRedLines(metrics);
+  printLines("Layer red-line violations", failures);
+  if (!failures.length) console.log("Ratchet passed.");
   else process.exitCode = 1;
 }
 

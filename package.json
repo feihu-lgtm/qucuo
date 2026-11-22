@@ -8,9 +8,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "verify:fast": "eslint \"src/**/*.{js,jsx}\" \"cli/**/*.{js,jsx,mjs,cjs}\" \"e2e/**/*.mjs\" && vitest run",
     "verify": "eslint \"src/**/*.{js,jsx}\" \"cli/**/*.{js,jsx,mjs,cjs}\" \"e2e/**/*.mjs\" && vitest run && vite build --config vite.config.pages.js",
     "ratchet": "node scripts/ratchet.mjs",
-    "ratchet:update": "node scripts/ratchet.mjs --update",
+    "stats": "node scripts/ratchet.mjs --stats",
+    "tree": "node scripts/tree.mjs",
     "cli": "node cli/qucuo.mjs",
     "e2e": "node e2e/run.mjs",
     "dev:qa": "node e2e/harness/server.mjs"
