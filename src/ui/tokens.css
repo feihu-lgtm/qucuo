@@ -258,6 +258,14 @@
   --error-text: #e0c0c0;
   --error-title: #e08080;
 
+  /* 右栏人物页属性模块定色（原字面量，不随日间模式变）：内功/外功的进度条、数值和功法标签。 */
+  --attr-neigong-edge: #1d2d3a;
+  --attr-neigong-tag: #8ab4d4;
+  --attr-value: #888;
+  --attr-waigong-bar: #d85a30;
+  --attr-waigong-edge: #3a2a1d;
+  --attr-waigong-tag: #d88a5a;
+
   /* 主界面底栏定色：等待、任务提示和交谈输入框。 */
   --footer-slow-bg: #3a2a12;
   --footer-stalled-bg: #3a1a1a;
