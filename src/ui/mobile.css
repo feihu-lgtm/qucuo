@@ -685,6 +685,108 @@
   }
 }
 
+/* iOS 专门适配：首页一屏放下标题、菜单和页脚，不用滚动。
+   -webkit-touch-callout 只有 iOS/iPadOS 的 WebKit 认，安卓和桌面不受影响。
+   高度全部按 dvh 算，Safari 工具栏收起展开时跟着变；放不下时 root 仍可滚动兜底。 */
+@supports (-webkit-touch-callout: none) {
+  /* 竖屏：按 iPhone SE 在 Safari 里约 548px 的可视高度留余量 */
+  @media (max-width: 768px) and (orientation: portrait) {
+    .start-screen-content {
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(20px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(20px, env(safe-area-inset-left)) !important;
+    }
+
+    .start-screen-title {
+      margin-bottom: clamp(12px, 3dvh, 40px) !important;
+    }
+
+    .start-screen-title-image {
+      width: min(460px, 72vw) !important;
+      max-height: 18dvh;
+      margin-bottom: 6px !important;
+      object-fit: contain;
+      object-position: left center;
+    }
+
+    .start-screen-menu-item {
+      padding: clamp(6px, 1.5dvh, 14px) 14px !important;
+      gap: 3px !important;
+    }
+
+    .start-screen-menu-item > span:first-child {
+      line-height: 1.25;
+    }
+
+    .start-screen-menu-item > span:last-child {
+      line-height: 1.3;
+    }
+
+    .start-screen-footer {
+      padding-top: 10px;
+    }
+  }
+
+  /* 横屏手机：高度只剩三百多像素，改成左边标题和页脚、右边菜单 */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .start-screen-content {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) min(300px, 45vw);
+      grid-template-rows: 1fr auto;
+      column-gap: 24px;
+      min-height: 100dvh !important;
+      padding:
+        max(10px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left)) !important;
+    }
+
+    .start-screen-title {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: center;
+      margin-bottom: 0 !important;
+    }
+
+    .start-screen-title-image {
+      width: min(380px, 100%) !important;
+      max-height: 35dvh;
+      object-fit: contain;
+      object-position: left center;
+    }
+
+    .start-screen-menu {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: center;
+      width: 100% !important;
+    }
+
+    .start-screen-menu-item {
+      padding: clamp(5px, 1.6dvh, 10px) 12px !important;
+      gap: 2px !important;
+    }
+
+    .start-screen-menu-item > span:first-child {
+      line-height: 1.25;
+    }
+
+    .start-screen-menu-item > span:last-child {
+      line-height: 1.3;
+    }
+
+    .start-screen-footer {
+      grid-column: 1;
+      grid-row: 2;
+      margin-top: 0;
+      padding-top: 8px;
+    }
+  }
+}
+
 @media (max-width: 768px), (max-height: 700px) {
   .character-create-root {
     overflow-x: hidden !important;

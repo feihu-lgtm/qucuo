@@ -23,4 +23,20 @@ describe("StartScreen mobile layout", () => {
     expect(SCREEN).toContain('minHeight: "100dvh"');
     expect(SCREEN).toContain('maxHeight: "min(70dvh, calc(100dvh - 32px))"');
   });
+
+  it("has an iOS-only block that fits the start screen on one screen in portrait and landscape", () => {
+    const ios = MOBILE_CSS.indexOf("@supports (-webkit-touch-callout: none) {");
+    expect(ios).toBeGreaterThan(-1);
+    const block = MOBILE_CSS.slice(ios);
+    const portrait = block.indexOf("@media (max-width: 768px) and (orientation: portrait) {");
+    const landscape = block.indexOf("@media (orientation: landscape) and (max-height: 500px) {");
+    expect(portrait).toBeGreaterThan(-1);
+    expect(landscape).toBeGreaterThan(portrait);
+    const portraitRules = block.slice(portrait, landscape);
+    expect(portraitRules).toMatch(/max-height:\s*18dvh/);
+    expect(portraitRules).toMatch(/padding:\s*clamp\(6px,\s*1\.5dvh,\s*14px\)/);
+    const landscapeRules = block.slice(landscape);
+    expect(landscapeRules).toMatch(/display:\s*grid\s*!important/);
+    expect(landscapeRules).toMatch(/grid-row:\s*1 \/ span 2/);
+  });
 });
