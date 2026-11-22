@@ -125,7 +125,7 @@ export default function GameLayout({ layout }) {
   return (
     <div
       className="game-layout"
-      style={{ display: "flex", flexDirection: "column", height: `${100 / ui.uiScale}vh`, width: `${100 / ui.uiScale}vw`, zoom: ui.uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
+      style={{ "--ui-scale": ui.uiScale, display: "flex", flexDirection: "column", height: `${100 / ui.uiScale}vh`, width: `${100 / ui.uiScale}vw`, zoom: ui.uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
     >
       <TopBar
         isMobile={isMobile} mobileTopMenu={ui.mobileTopMenu} setMobileTopMenu={ui.setMobileTopMenu}
