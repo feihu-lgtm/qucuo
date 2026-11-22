@@ -279,6 +279,7 @@ export default { quest: {
         id: "s2_evidence",
         description: "老兵手里握着半张当年失踪官差留下的「天都香行入货凭据」，上面同时盖着土司府管家的私印。梵衍那密令你今夜让他永远闭嘴；罗琦在廊下拦住你，脸色苍白：「若再杀朝廷的人，锦官城的铁骑会踏平天都镇。」",
         playerHint: "决定那张入货凭据的去向。",
+        at: "锦官城·暗巷入口",
         completionFlag: ["quest_huanxijiao4_silence", "quest_huanxijiao4_deflect", "quest_huanxijiao4_share"],
         choices: [
           { flag: "quest_huanxijiao4_silence", label: "依梵衍那令伏杀老兵、焚毁凭据", resolve: "none" },
