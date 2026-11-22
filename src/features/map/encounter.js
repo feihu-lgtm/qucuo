@@ -15,6 +15,7 @@ export function rollMovementEvents({
   targetedRumor,
   luck = 5,
   random = Math.random,
+  isTaken,
 }) {
   let pickupJudgment = null;
   if (!isTalk && movingDir && random() < 0.35) {
@@ -30,7 +31,7 @@ export function rollMovementEvents({
 
   let encounterToDescribe = null;
   if (!isTalk && movingDir && lockedDestName && !targetedRumor) {
-    encounterToDescribe = rollEncounter(lockedDestName, luck);
+    encounterToDescribe = rollEncounter(lockedDestName, luck, { isTaken });
   }
   return { pickupJudgment, encounterToDescribe };
 }

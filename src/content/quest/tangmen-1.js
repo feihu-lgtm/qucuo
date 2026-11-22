@@ -33,7 +33,7 @@ export default { quest: {
         completionFlag: ["quest_tang1_stealth", "quest_tang1_fight"],
         choices: [
           { flag: "quest_tang1_stealth", label: "暗查取证", resolve: "none", narration: "你等押车人转身牵骡，把箱底私戳和「陆记」抄入袖中的纸上。车照常出了南门，没人发觉。" },
-          { flag: "quest_tang1_fight", label: "硬闯截货", resolve: "combat", combatNpc: { name: "蒙面押车头领", levelCap: 8 } },
+          { flag: "quest_tang1_fight", label: "硬闯截货", resolve: "combat", combatNpc: { name: "蒙面押车头领", levelCap: 4 } },
         ],
         onReach: {
           items: [{ name: "茶砖货单抄录", category: "misc", quality: "白", desc: "抄有唐堡二房私戳，收货人写作「陆记」。" }],

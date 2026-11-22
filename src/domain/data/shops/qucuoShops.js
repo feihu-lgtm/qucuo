@@ -17,6 +17,7 @@ export const QUCUO_SHOPS = {
       { name: "淬竹袖箭", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 40 },
       { name: "蚕丝防毒衣", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 40 },
       { name: "冰魄解蛊散", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 80 },
+      { name: "七星绣针匣", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100, limitOnce: true },
     ],
   },
   // 五仙百蛊房（雾隐寨·百蛊药房）。苗疆药房货池，声誉门槛照合稿 6.1：
@@ -170,7 +171,16 @@ export const QUCUO_SHOPS = {
     ],
   },
 
-  // ── 鱼定商号 ──
+  // ── 鱼定商号（鱼定村势力商号，周铭章掌柜）──
+  // 货单照合稿「鱼定村·六、6.1」12 件：原有 6 件无门槛，新增 6 件按 15/40/80 阶梯；
+  // 三曲通商路引合稿写 ≥140，引擎声誉封顶 100，取 100，限购 1 件。拒售规则在 factionShop.js。
+  西头药铺: {
+    shopName: "西头药铺",
+    items: [
+      { name: "金疮药", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "止血散", category: ITEM_CATEGORY.MISC, quality: "白" },
+    ],
+  },
   鱼定商号: {
     shopName: "鱼定商号",
     items: [
@@ -180,6 +190,12 @@ export const QUCUO_SHOPS = {
       { name: "精铁短刀", category: ITEM_CATEGORY.WEAPON, quality: "绿" },
       { name: "牛皮软甲", category: ITEM_CATEGORY.ARMOR, quality: "绿" },
       { name: "青金石吊坠", category: ITEM_CATEGORY.ACCESSORY, quality: "绿" },
+      { name: "三曲炒面干粮袋", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 15 },
+      { name: "雅江细盐包", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 15 },
+      { name: "熊山猎手短刃", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
+      { name: "藏银避瘴符", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 40 },
+      { name: "熊山活血药膏", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 80 },
+      { name: "三曲通商路引", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 100, limitOnce: true },
     ],
   },
 
@@ -363,6 +379,7 @@ export function buildShopInventory(shopKey) {
     karmaLoss: shop.karmaLoss || 0,
     items: shop.items.map(cfg => ({
       ...makeItem({ name: cfg.name, category: cfg.category, quality: cfg.quality }),
+      ...(CATALOG_INDEX[cfg.name]?.consumable ? { consumable: CATALOG_INDEX[cfg.name].consumable } : {}),
       ...(cfg.minRep == null ? {} : { minRep: cfg.minRep }),
       ...(cfg.member ? { member: true } : {}),
       ...(cfg.limitOnce ? { limitOnce: cfg.limitOnce } : {}),

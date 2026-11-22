@@ -85,6 +85,10 @@ const ROLES = {
     { role: "血刀部游骑", level: [2, 2], culture: "tibetan", gender: "男", personality: "天龙教血刀部的游骑，刀不离身，见人先看对方是不是软柿子" },
     { role: "营里伙夫", level: [0, 1], culture: "han", gender: "男", personality: "天龙营里烧火做饭的，被抓来的，嘴上骂教主，手上不敢停" },
   ],
+  三星派: [
+    { role: "古墟守碑人", level: [1, 2], culture: "han", gender: "男", personality: "守着广汉古墟的三星派门人，话少，问起地底下的事就岔开" },
+    { role: "拓碑弟子", level: [0, 1], culture: "han", personality: "背着拓包和纸卷，满手墨灰，见了青铜残片眼睛就发亮" },
+  ],
   散人: [
     { role: "流民", level: [0, 0], personality: "逃荒来的，只想找口饭吃，对谁都提防" },
     { role: "独行游侠", level: [1, 2], personality: "无门无派，仗剑独行，最不把旁人当回事" },
@@ -109,7 +113,7 @@ const NODE_PASSERS = {
   黑风寨: { count: [1, 3], factions: [["黑风寨", 4], ["散人", 1]] },
   贡措海: { count: [1, 3], factions: [["玉泉寨", 2], ["散人", 2]] },
   雅江: { count: [2, 4], factions: [["青城派", 4], ["唐门", 1], ["散人", 2]] },
-  广汉: { count: [2, 4], factions: [["丐帮三星分舵", 4], ["锦官城", 1], ["散人", 2]] },
+  广汉: { count: [2, 4], factions: [["丐帮三星分舵", 4], ["三星派", 1], ["锦官城", 1], ["散人", 2]] },
   锦官城: { count: [2, 4], factions: [["锦官城", 3], ["峨眉派", 2], ["唐门", 1], ["散人", 2]] },
   天龙营: { count: [1, 3], factions: [["天龙教", 5], ["散人", 1]] },
   雾隐寨: { count: [1, 3], factions: [["五仙教", 4], ["百花门", 1], ["散人", 1]] },
@@ -181,6 +185,31 @@ function passersAt(locationName, dayIdx, used, isTaken) {
   return out;
 }
 
+// ── 移动途中的路遇：与过路人共用势力权重、身份池和姓名库 ──
+export const passerFactionsAt = (locationName) => NODE_PASSERS[locationName]?.factions || null;
+export const passerRolesOf = (faction) => ROLES[faction] || ROLES.散人;
+
+// 给定势力造一个路上撞见的具名人（rng 由调用方给；isTaken 撞名就重抽，抽不开返回 null）
+export function makeRoadPasser(faction, rng, isTaken = () => false) {
+  const role = pick(passerRolesOf(faction), rng);
+  const gender = role.gender || (rng() < 0.5 ? "男" : "女");
+  const culture = role.culture || pick(["han", "han", "tibetan"], rng);
+  let name = makeName(culture, gender, rng);
+  for (let tries = 0; tries < 30 && (isReserved(name) || isTaken(name)); tries++) name = makeName(culture, gender, rng);
+  if (isReserved(name) || isTaken(name)) return null;
+  const [minLv, maxLv] = role.level;
+  const label = faction === "散人" ? "无门无派的" : `${faction}的`;
+  return {
+    name,
+    brief: role.gender ? `${label}${role.role}` : `${label}${role.role}（${gender}）`,
+    role: role.role,
+    personality: role.personality,
+    faction,
+    gender,
+    levelCap: minLv + Math.floor(rng() * (maxLv - minLv + 1)),
+  };
+}
+
 // 给定节点名 + 游戏时间 → 今天在此的随机过路人（纯函数，同日同地、同一组 reserved 结果一致）
 export function getRandomPassers(locationName, time, reserved = new Set()) {
   if (!NODE_PASSERS[locationName]) return [];
@@ -192,6 +221,15 @@ export function getRandomPassers(locationName, time, reserved = new Set()) {
     if (node === locationName) return list;
   }
   return [];
+}
+
+// 今天全图过路人的名字：路遇起名要避开，免得和某地正站着的过路人撞名
+export function getTodaysPasserNames(time, reserved = new Set()) {
+  const dayIdx = Math.floor(time / 24);
+  const used = new Set();
+  const isTaken = (name) => used.has(name) || isReserved(name) || reserved.has(name);
+  for (const node of Object.keys(NODE_PASSERS)) passersAt(node, dayIdx, used, isTaken);
+  return used;
 }
 
 // ── 不具名群众（路人甲乙丙）：只是此地的人气，不能对话、不记好感 ──

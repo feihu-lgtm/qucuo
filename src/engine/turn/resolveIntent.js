@@ -21,6 +21,7 @@ import {
   outerArrival as outerArrivalLogic,
 } from "../../features/map/logic.js";
 import { rollMovementEvents } from "../../features/map/encounter.js";
+import { roadNameGuard } from "../../domain/rules/map/encounter.js";
 import { turnMonitor, withTurnContext } from "../ports/turnMonitor.js";
 import { getGroundItems, removeGroundItems } from "../../domain/rules/map/groundScope.js";
 
@@ -243,6 +244,7 @@ export async function resolveIntent(cmd, env) {
     lockedDestName,
     targetedRumor,
     luck: char.special?.气运 ?? 5,
+    isTaken: roadNameGuard({ varTree: varTreeRef.current, time, extraNames: (room?.npcs || []).map((npc) => npc.name) }),
   });
   pickupJudgmentRef.current = pickupJudgment;
   if (encounterToDescribe) stopAutoTravel(encounterToDescribe);
