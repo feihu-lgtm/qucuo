@@ -124,8 +124,11 @@ export default { residentGroup: {
       carry: [
         { name: "主簿铜镇纸", category: "weapon", quality: "白" },
         { name: "旧羊毛长袍", category: "armor", quality: "白" },
+        { name: "土司府云雷铜牌", category: "accessory", quality: "绿" },
         { name: "官造青稞干粮", category: "misc", quality: "白" },
         { name: "青稞酒", category: "misc", quality: "白" },
+        { name: "手抓羊肉", category: "misc", quality: "绿" },
+        { name: "马帮干粮包", category: "misc", quality: "白" },
       ],
       fullBio: `合稿·土司府人物：档册文书房主簿，掌着鱼定一带三十年的税册、户籍与地契抄本。
 他是府里少数知道「三十年前那张地契」底细的人之一——老土司桑杰大侠出事前，
@@ -143,6 +146,8 @@ export default { residentGroup: {
         { name: "土司府云雷铜牌", category: "accessory", quality: "绿" },
         { name: "官造青稞干粮", category: "misc", quality: "白" },
         { name: "藏红花活血膏", category: "misc", quality: "蓝" },
+        { name: "熊山续骨膏", category: "misc", quality: "绿" },
+        { name: "青稞酒", category: "misc", quality: "白" },
       ],
       fullBio: `合稿·土司府人物：巡捕营副统领，统着巡捕营二十人里最能打的一伍。
 格桑顿珠讲究不欺负老弱，白玛次仁却觉得「差事办成才是本事」，催粮、拿人都冲在最前。
