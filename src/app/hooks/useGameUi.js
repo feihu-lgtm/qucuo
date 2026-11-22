@@ -11,6 +11,7 @@ import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { readMobileColumn, writeMobileColumn } from "../../utils/mobileColumn.js";
 import { usePromptInspector } from "./ui/usePromptInspector.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
+import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 
 export function useGameUi({
   room, innerRoomName, char, inv, log, time, narrator, preset,
@@ -121,7 +122,7 @@ export function useGameUi({
       const giverNpc = quest.giver ? room.npcs?.find(n => n.name === quest.giver) : null;
       const here = quest.giver
         ? !!(giverNpc && isVisibleInInnerRoom(room.name, innerRoomName, giverNpc))
-        : stage.at === room.name;
+        : isAtQuestPlace(stage.at, room.name, innerRoomName);
       if (!here) continue;
       if (stage.requireLocation) {
         const rl = stage.requireLocation;

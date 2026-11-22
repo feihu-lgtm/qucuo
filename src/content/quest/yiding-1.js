@@ -86,7 +86,7 @@ export default { quest: {
         description: "夜探界石，挖出油布包里前任村长记的私账——土司府对外宣称每年收牲口税两成，实际收四成，多出的三成进了管家私库。最后几页笔迹慌乱：「土司不知情……界石若是倒了，鱼定村也就散了——不是界石倒，是我倒。我不能倒。还有人看着。」",
         playerHint: "趁夜去村口界石基座下，把埋着的东西挖出来。",
         completionFlag: "quest_village2_s2",
-        collect: { item: "油布包", at: "鱼定村", quality: "白", hint: "村口界石基座松动的石缝下埋着，需趁夜挖出" },
+        collect: { item: "油布包", at: "鱼定村·村口", quality: "白", hint: "村口界石基座松动的石缝下埋着，需趁夜挖出" },
         onReach: { exp: 2 },
       },
       {

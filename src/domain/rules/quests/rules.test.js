@@ -16,7 +16,7 @@ function getFishVillageCollectStage() {
   for (const quest of QUCUO_QUESTS) {
     for (const [index, stage] of (quest.stages || []).entries()) {
       const collect = Array.isArray(stage.collect) ? stage.collect : [stage.collect];
-      const entry = collect.find((item) => item?.at === "鱼定村");
+      const entry = collect.find((item) => item?.at?.startsWith("鱼定村·"));
       if (entry) return { quest, index, entry };
     }
   }

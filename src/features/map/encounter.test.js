@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { judgeCollect, rollMovementEvents } from "./encounter.js";
+import { parseQuestPlace } from "../../domain/rules/quests/questPlace.js";
 
 describe("movement encounter logic", () => {
   it("skips pickup and encounter outside an eligible move", () => {
@@ -49,7 +50,9 @@ describe("movement encounter logic", () => {
     const result = judgeCollect({
       isTalk: false,
       cmd: `挖取${collect.item}`,
-      room: { name: collect.at, items: [collect.item] },
+      // 任务地点写到内层：「据点·房间」，玩家站在那间房里
+      room: { name: parseQuestPlace(collect.at).district, items: [{ name: collect.item, innerRoom: parseQuestPlace(collect.at).inner }] },
+      innerRoomName: parseQuestPlace(collect.at).inner,
       questProgress: { [quest.id]: { status: "active", currentStageIndex: stageIndex } },
       inv: [],
     });
