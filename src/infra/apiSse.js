@@ -12,7 +12,15 @@ export async function readSSE(res, onEvent) {
     try { onEvent(JSON.parse(dataStr)); } catch { /* 跳过无法解析的单条事件，不影响后续流 */ }
   };
   while (true) {
-    const { done, value } = await reader.read();
+    let chunk;
+    try {
+      chunk = await reader.read();
+    } catch (e) {
+      const err = new Error(`流式传输中途断开：${e?.message || e}`);
+      err.code = "network";
+      throw err;
+    }
+    const { done, value } = chunk;
     if (done) break;
     buf += decoder.decode(value, { stream: true });
     const lines = buf.split("\n");

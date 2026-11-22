@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { API_TYPES, callModel, defaultConfig, listModels, testConnection } from "./apiConfig.js";
+import { API_TYPES, callModel, callModelStream, defaultConfig, listModels, testConnection } from "./apiConfig.js";
 import { classifyError } from "../utils/apiErrors.js";
 import { buildVertexEndpoint, vertexReasoningEffort } from "./vertexAdc.js";
 import {
@@ -307,5 +307,46 @@ describe("connection test error summaries", () => {
     expect(await classifyFailure()).toMatchObject({
       code: "HTML", cause: "地址填成了网页", fix: "检查接口地址",
     });
+  });
+});
+
+describe("callModel HTTP 错误分类", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const cfg = { ...configFor(PROVIDERS.custom), endpoint: "https://relay.example/v1/chat/completions", streamEnabled: false };
+  const failure = async (run) => {
+    try { await run(); } catch (error) { return { error, ec: classifyError(error) }; }
+    throw new Error("Expected the call to fail");
+  };
+
+  it("空响应体的 404 提示检查地址和模型名，不说是格式异常", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
+    const { error, ec } = await failure(() => callModel(cfg, "sys", [{ role: "user", content: "hi" }]));
+    expect(error.httpStatus).toBe(404);
+    expect(error.message).not.toContain("Unexpected end of JSON input");
+    expect(ec).toMatchObject({ kind: "endpoint", retryable: false });
+  });
+
+  it("流式调用的 404 也带上 HTTP 码", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
+    const { ec } = await failure(() => callModelStream(cfg, "sys", [{ role: "user", content: "hi" }], () => {}));
+    expect(ec).toMatchObject({ kind: "endpoint", retryable: false });
+  });
+
+  it("200 空响应体归为空响应", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 200 })));
+    const { ec } = await failure(() => callModel(cfg, "sys", [{ role: "user", content: "hi" }]));
+    expect(ec).toMatchObject({ kind: "empty", retryable: true });
+  });
+
+  it("流式传输中途断开归为网络错误", async () => {
+    const body = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"半"}}]}\n'));
+        controller.error(new TypeError("network error"));
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } })));
+    const { ec } = await failure(() => callModelStream(cfg, "sys", [{ role: "user", content: "hi" }], () => {}));
+    expect(ec).toMatchObject({ kind: "network", retryable: true });
   });
 });

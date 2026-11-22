@@ -153,7 +153,9 @@ export function useTurn({
         { t: "err", text: `  ${ec.icon} ${ec.title}` },
         { t: "err", text: `     ${ec.detail}` },
         { t: "sys", text: `     ▸ ${ec.hint}` },
-        { t: "sys", text: `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
+        { t: "sys", text: ec.retryable === false
+          ? `     （本轮状态已整体回滚，未留下半提交脏数据；改好设置后再试）`
+          : `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
       ]);
     }
     consumeDuelRequest(result, { opts, isStale, isTalk, interactMode, setActiveTarget, setDuelPending, featureCtxRef, trace: _trace });

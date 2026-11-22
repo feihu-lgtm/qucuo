@@ -328,4 +328,28 @@ describe("runTurn", () => {
     expect(result.p.delta.pot).toBe(3);
     expect(result.mvuCommands).toHaveLength(1);
   });
+
+  it.each([
+    [404, 1],
+    [401, 1],
+    [500, 3],
+  ])("HTTP %i 主叙事调用 %i 次后放弃，整轮回滚", async (status, calls) => {
+    const error = Object.assign(new Error(`OpenAI 兼容调用 HTTP ${status}：响应体为空`), { httpStatus: status });
+    const ai = { chat: vi.fn(async () => { throw error; }) };
+    const committed = vi.fn();
+    const result = await playTurn(createPlayTurnContext(ai, committed), "探索石阶");
+    expect(result).toMatchObject({ ok: false, error });
+    expect(ai.chat).toHaveBeenCalledTimes(calls);
+    expect(committed).not.toHaveBeenCalled();
+  });
+
+  it("空内容按空响应重试", async () => {
+    const ai = createMockAi(["", '{"output":["石阶旁的草叶轻轻摇动。"],"delta":{}}']);
+    const chat = vi.spyOn(ai, "chat");
+    const committed = vi.fn();
+    const result = await playTurn(createPlayTurnContext(ai, committed), "探索石阶");
+    expect(result.ok).toBe(true);
+    expect(chat).toHaveBeenCalledTimes(2);
+    expect(committed).toHaveBeenCalledTimes(1);
+  });
 });

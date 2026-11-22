@@ -55,6 +55,13 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = _requestTimeoutMs
 
 async function readJsonOrThrow(res, label, requestUrl = "") {
   const bodyText = await res.text();
+  if (res.ok && !bodyText.trim()) {
+    const err = new Error(`${label}：接口返回了空响应（HTTP ${res.status}）`);
+    err.code = "empty";
+    err.httpStatus = res.status;
+    err.requestUrl = requestUrl || res.url;
+    throw err;
+  }
   const head = bodyText.trimStart().slice(0, 1);
   const looksHtml = head === "<" || /text\/html/i.test(res.headers.get("content-type") || "");
   if (looksHtml) {
@@ -80,7 +87,7 @@ async function readJsonOrThrow(res, label, requestUrl = "") {
   } catch (e) {
     if (e.httpStatus) throw e; // 上面主动抛的带码错误，直接透传
     if (!res.ok) {
-      const vendorMessage = bodyText.slice(0, 120) || e.message;
+      const vendorMessage = bodyText.trim() ? bodyText.slice(0, 120) : "响应体为空";
       const err = new Error(`${label} HTTP ${res.status}：${vendorMessage}`);
       err.httpStatus = res.status;
       err.vendorMessage = vendorMessage;
@@ -304,10 +311,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
         },
         body: JSON.stringify(abody),
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        throw new Error(errData?.error?.message || `Anthropic API HTTP ${res.status}`);
-      }
+      if (!res.ok) await readJsonOrThrow(res, "Anthropic 流式调用", url);
       await readSSE(res, (eventData) => {
         if (eventData.type === "content_block_delta" && eventData.delta?.text) {
           full += eventData.delta.text;
@@ -323,10 +327,7 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
 
     } else if (isOpenAICompatible(cfg.apiType)) {
       const res = await fetchOpenAI(cfg, systemPrompt, messages, opts, true);
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        throw new Error(errData?.error?.message || `OpenAI 兼容 API HTTP ${res.status}`);
-      }
+      if (!res.ok) await readJsonOrThrow(res, "OpenAI 兼容流式调用");
       await readSSE(res, (eventData) => {
         const delta = eventData.choices?.[0]?.delta?.content || "";
         if (delta) { full += delta; onChunk(delta, full); }
