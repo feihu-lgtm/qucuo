@@ -12,7 +12,7 @@ import {
 import { makeNamedItem } from "../../domain/data/items/catalog.js";
 
 function joinFactionSect(state, entry, now = Date.now()) {
-  const status = checkFactionEntry(entry, { varTree: state.varTree, flags: state.flags, char: state.char, questProgress: state.questProgress });
+  const status = checkFactionEntry(entry, { varTree: state.varTree, flags: state.flags, char: state.char, questProgress: state.questProgress, inv: state.inv, skills: state.skills });
   if (!status.eligible) return { logs: [{ t: "sys", text: `  你还不够格拜入${entry.sect}。` }] };
   const items = [entry.token, ...entry.gifts]
     .map((name, i) => ({ ...makeNamedItem(name), id: `sect_join_${now}_${i}`, equipped: false }));
@@ -20,11 +20,12 @@ function joinFactionSect(state, entry, now = Date.now()) {
   const { applied } = grantFactionRep(state.varTree, { [sect]: entry.repBonus });
   return {
     changes: {
-      inv: (inv = []) => [...inv, ...items],
+      inv: (inv = []) => [...inv.filter((it) => it !== status.trialItem), ...items],
       flags: (flags = []) => (flags.includes(entry.flag) ? flags : [...flags, entry.flag]),
       varTree: (prev) => markNpcAsKnown(grantFactionRep(prev, { [sect]: entry.repBonus }).varTree, master),
     },
     logs: [
+      ...(status.trialItem ? [{ t: "sys", text: `  （你含下一份${status.trialItem.name}，硬扛下了那碗酒）` }] : []),
       { t: "sys", text: `  （${master}收你入${sect}门下，${formatRepChanges(applied)}）` },
       ...items.map((item) => ({ t: "loot", text: `✦ 得「${item.name}」`, item, source: "sect" })),
     ],

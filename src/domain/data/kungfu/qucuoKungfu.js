@@ -88,6 +88,7 @@ export const SKILL_CATALOG = {
       moveType: "状态",
       energyRestore: 7, hpRestore: 0.14,
       unlock: { faction: "雪山派", rep: 40, member: false, note: "雪山派声誉 ≥ 40（门墙之交）" },
+      discount: { flag: "xueshan_heyuxie_cold_purged", rate: 0.5 }, // 合稿雪2 分支B：拔毒线半价
       desc: "后山温泉水温烫手，泡到肩膀，任热气从毛孔往里钻。何雨谢定的规矩是一炷香就得起来——「再泡下去补的是懒，不是气。」",
     },
     {
