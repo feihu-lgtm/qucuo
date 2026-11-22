@@ -96,7 +96,7 @@ export function useTurn({
     if (!opts.keepUndo) captureUndo(_trace);
 
     const env = {
-      cmd, opts, extraReplies, interactMode, apiCfg, gm, _trace,
+      cmd, opts, extraReplies, interactMode, apiCfg, gm, _trace, isStale,
       pending: snapshotIntentPending(),
       state: {
         room, char, inv, skills, dao, exp, pot, flags, mapData, time, convo,

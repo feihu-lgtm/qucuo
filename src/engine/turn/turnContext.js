@@ -18,8 +18,8 @@ export { createPhaseSetter } from "./phaseSetter.js";
 export function createTurnContext({ plan, env }) {
   const { state, refs, io, opts } = env;
   const {
-    room, char, inv, skills, dao, flags, mapData, time, gm, preset, narrator,
-    apiCfg, convo, nsfwOn, activeTarget, talkTarget, companionState,
+    room, char, inv, skills, dao, flags, mapData, time, preset, narrator,
+    convo, nsfwOn, activeTarget, talkTarget, companionState,
     questProgress, pendingQuestBranch, innerRoomName, effectiveSpecialNow,
   } = state;
   const {
@@ -36,7 +36,8 @@ export function createTurnContext({ plan, env }) {
     isTalk, isSettle, intent, movingDir, lockedDestName,
     destinationLock, collectNote, activeGroundItemForTurn,
   } = plan;
-  const { isStale, _trace } = env;
+  // apiCfg/gm/isStale 挂在 env 顶层（hook 注入），不进 state。
+  const { isStale, _trace, apiCfg, gm } = env;
 
   // 本回合开始时的 varTree，逻辑读取走 ref 以包含已发生的同步写入。
   const preActVarTree = varTreeRef.current;
