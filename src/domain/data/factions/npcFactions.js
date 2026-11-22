@@ -50,6 +50,7 @@ export function getBuiltinNpcId(npc) {
 }
 
 export function getNpcFaction(npc) {
+  if (npc?.randomPasser != null && !npc.imported && typeof npc.faction === "string" && npc.faction !== "散人") return npc.faction;
   return NPC_FACTION.get(getBuiltinNpcId(npc)) ?? null;
 }
 

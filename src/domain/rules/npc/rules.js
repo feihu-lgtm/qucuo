@@ -3,6 +3,7 @@ import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../map/
 import { ensureNpcCombatData } from "../npc/npcGeneration.js";
 import { mapDescriptionToGenParams } from "../../data/npc/npcDescriptionMapping.js";
 import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../data/npc/npcPool.js";
+import { getRandomPassers } from "../../data/npc/randomPassers.js";
 import { injectNpcs } from "../npc/roomNpcs.js";
 import { getResidentNpcs } from "../../data/npc/residentNpcs.js";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
@@ -13,7 +14,7 @@ const NPC_FIELDS = [
   "levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable",
   "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder",
   "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop",
-  "portrait", "neigong", "waigong", "imported", "hostile",
+  "portrait", "neigong", "waigong", "imported", "hostile", "faction", "gender", "randomPasser",
 ];
 
 export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5 } = {}) {
@@ -66,6 +67,10 @@ export const residentNpcRule = {
     });
 
     const poolNpcs = getScheduledNpcs(room.name, time).map(toRoomNpcWithCombat);
+    const passers = getRandomPassers(room.name, time).map(toRoomNpcWithCombat);
+    // 随机过路人只待当天：名单里不是今天刷的那批一律清掉
+    const isStalePasser = (npc) => npc?.randomPasser != null && npc.randomPasser !== dayIdx;
+    const hasStalePassers = (room.npcs || []).some(isStalePasser);
     const companionJoined = (name) => {
       const key = companionKeyByName(name);
       return !!(key && companionState?.[key]?.unlocked);
@@ -119,8 +124,8 @@ export const residentNpcRule = {
     )
       .filter((npc) => !isCompanionUnlockedByName(companionState, npc.name))
       .map(toRoomNpcWithCombat);
-    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs];
-    if (!toInject.length && !staleNames.size) return null;
+    const toInject = [...poolNpcs, ...passers, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs];
+    if (!toInject.length && !staleNames.size && !hasStalePassers) return null;
 
     if (hasInnerMap(room.name)) {
       const rooms = getPublicInnerRoomNames(room.name);
@@ -145,7 +150,7 @@ export const residentNpcRule = {
       changes: {
         room: (previous) => ({
           ...previous,
-          npcs: injectNpcs((previous.npcs || []).filter((npc) => npc.imported || !staleNames.has(npc.name)), toInject),
+          npcs: injectNpcs((previous.npcs || []).filter((npc) => !isStalePasser(npc) && (npc.imported || !staleNames.has(npc.name))), toInject),
         }),
       },
     };
