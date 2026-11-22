@@ -10,6 +10,7 @@ import { skillUnlockStatus } from "../../domain/rules/economy/skillUnlock.js";
 import { isQuestChoiceOpen, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
 import { playLocalQuestStage } from "../quest/logic.js";
+import { buySkill } from "./skills.js";
 
 const TS = "鱼定土司府";
 const tree = (rep, favor = {}) => ({
@@ -80,6 +81,24 @@ describe("鱼定土司府·终局补完", () => {
     expect(purge.money).toBe(1200);
     expect(run("quest_ts4_regent").flags).toContain("flag_meiduo_regent");
     for (const name of ["点钢乌木镇边矛", "巡边行走金印"]) expect(makeNamedItem(name)?.quality, name).toBe("紫");
+  });
+
+  it("pays the 合稿 prestige totals across the ambush and dawn stages without exceeding the ±15 cap per write", () => {
+    const [, ambush, dawn] = q4().stages;
+    for (const [flag, total] of [["quest_ts4_truth", 20], ["quest_ts4_regent", 20], ["quest_ts4_purge", -25]]) {
+      const parts = [resolveStageRewards(ambush, [flag]).reputation, resolveStageRewards(dawn, [flag]).reputation];
+      expect(parts.every((v) => Math.abs(v) <= 15), flag).toBe(true);
+      expect(parts[0] + parts[1], flag).toBe(total);
+    }
+    expect(dawn.requireLocation).toMatchObject({ district: "鱼定土司", inner: "府门" });
+  });
+
+  it("refuses to sell manor skills by typed command once the manor is closed to the player", () => {
+    const state = { room: { name: "鱼定土司" }, innerRoomName: "护卫厅", flags: ["tusi_gesang_true_heir"], varTree: tree(-60), skills: [], char: { money: 9999 } };
+    const result = buySkill(state, skill("雪域不动诀"));
+    expect(result.changes).toBeUndefined();
+    expect(result.logs[0].text).toContain("不伺候你");
+    expect(buySkill({ ...state, varTree: tree(-59) }, skill("雪域不动诀")).changes?.skills).toHaveLength(1);
   });
 
   it("refuses a gated branch even when typed directly", () => {
