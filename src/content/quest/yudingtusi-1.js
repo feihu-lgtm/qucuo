@@ -38,6 +38,9 @@ export const TUSI_FINALE_FLAGS = {
   gaibangFull: { flag: "endgame_ally_gaibang_full", faction: "丐帮", effect: null },
   lamaAlly: { flag: "lama_endgame_ally", faction: "喇嘛庙", effect: null },
   xueshanLone: { flag: "xueshan_endgame_lone", faction: "雪山派", effect: null },
+  xueshanHeyuxieFull: { flag: "endgame_xueshan_heyuxie_full", faction: "雪山派", effect: "雪2 拔毒：何雨谢寒毒大幅根除，雪山派终局战力 +1 档（随雪山结盟时亲兵再降一档）" },
+  baihuaNeutral: { flag: "bh5_neutral", faction: "百花门", effect: "退银守中，不接土司府招安，终局不反噬" },
+  baihuaPersuaded: { flag: "finale_neutral_baihua", faction: "百花门", effect: "说服中立，不接土司府招安，终局不反噬" },
 };
 const F = Object.fromEntries(Object.entries(TUSI_FINALE_FLAGS).map(([k, v]) => [k, v.flag]));
 const FINALE_ROOM = at("议事厅");
@@ -415,13 +418,27 @@ export default { quest: {
         ],
       },
       {
+        id: "baihua",
+        requireLocation: FINALE_ROOM,
+        giver: null,
+        playerHint: "冷落或交恶百花门，它会接受土司府招安，以迷烟毒阵反噬；拉拢或说服中立就没有这一阵。",
+        description: "厅后帘幕一阵晃动，飘出一缕甜得发腻的花香。",
+        completionFlag: ["quest_ts5_baihua_none", "quest_ts5_baihua"],
+        choices: [
+          { flag: "quest_ts5_baihua_none", label: "百花楼没有来人", resolve: "none", requiresFlagAny: [F.baihuaAlly, F.baihuaNeutral, F.baihuaPersuaded],
+            narration: "花香散了，帘后空无一人。百花楼这一夜没有替土司府出手。" },
+          { flag: "quest_ts5_baihua", label: "冲破百花楼的迷烟毒阵", resolve: "combat", blockedByFlags: [F.baihuaAlly, F.baihuaNeutral, F.baihuaPersuaded],
+            combatNpc: { name: "百花楼迷烟毒阵", levelCap: 4 } },
+        ],
+      },
+      {
         id: "guard",
         requireLocation: FINALE_ROOM,
         giver: null,
         playerHint: "中院亲兵护着桑杰朵杰；各家援军能削弱他们，鱼定村的暗道能绕开他们。",
         description: "中院亲兵举盾围成一圈，把桑杰朵杰护在中间。",
         completionFlag: ["quest_ts5_guard", "quest_ts5_guard_gaibang", "quest_ts5_guard_heifeng", "quest_ts5_guard_tangmen",
-          "quest_ts5_guard_xueshan", "quest_ts5_guard_emei", "quest_ts5_guard_baihua", "quest_ts5_guard_yuding", "quest_ts5_guard_huanxi", "quest_ts5_guard_longwang"],
+          "quest_ts5_guard_xueshan", "quest_ts5_guard_xueshan_full", "quest_ts5_guard_emei", "quest_ts5_guard_baihua", "quest_ts5_guard_yuding", "quest_ts5_guard_huanxi", "quest_ts5_guard_longwang"],
         choices: [
           { flag: "quest_ts5_guard", label: "正面冲破中院亲兵", resolve: "combat", combatNpc: { name: "土司府中院亲兵", levelCap: 4 } },
           { flag: "quest_ts5_guard_gaibang", label: "丐帮打狗阵牵住巡捕营与骑手", resolve: "combat", requiresFlag: [F.gaibangAlly],
@@ -432,6 +449,8 @@ export default { quest: {
             combatNpc: { name: "土司府中院亲兵", levelCap: 3 } },
           { flag: "quest_ts5_guard_xueshan", label: "雪山剑阵压阵，亲兵军心大乱", resolve: "combat", requiresFlag: [F.xueshanAlly],
             combatNpc: { name: "土司府中院亲兵", levelCap: 3 } },
+          { flag: "quest_ts5_guard_xueshan_full", label: "何雨谢寒毒已除，亲自领雪山剑阵压阵", resolve: "combat", requiresFlag: [F.xueshanAlly, F.xueshanHeyuxieFull],
+            combatNpc: { name: "土司府中院亲兵", levelCap: 2 } },
           { flag: "quest_ts5_guard_emei", label: "峨眉回风剑阵破开亲兵阵脚", resolve: "combat", requiresFlag: [F.emeiAlly],
             combatNpc: { name: "土司府中院亲兵", levelCap: 3 } },
           { flag: "quest_ts5_guard_baihua", label: "百花软筋散已下，半数亲兵手脚发软", resolve: "combat", requiresFlag: [F.baihuaAlly],

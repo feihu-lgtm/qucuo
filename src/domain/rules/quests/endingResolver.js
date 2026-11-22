@@ -35,6 +35,16 @@ const HUDAN_ENDINGS = [
   },
 ];
 
+const won = (gs) => gs.flags?.includes("tusi_finale_won");
+
+// 府5 战后结局集：龙王黑旗 > 官府投靠的新税网 > 梅朵代管 > 格桑暂守（合稿土司府、天龙教、锦官城各节）。
+export const FINALE_ENDINGS = [
+  { id: "黑旗入曲措", priority: 0, condition: (gs) => won(gs) && gs.flags.includes("tusi_black_flag_rule") },
+  { id: "落入新税网", priority: 1, condition: (gs) => won(gs) && gs.flags.includes("quest_guan2a_s1") },
+  { id: "梅朵代管", priority: 2, condition: (gs) => won(gs) && gs.flags.includes("tusi_meiduo_regency") },
+  { id: "格桑暂守", priority: 3, condition: (gs) => won(gs) && gs.flags.includes("quest_ts5_settle") },
+];
+
 export function resolveEnding(gameState, endings = HUDAN_ENDINGS) {
   const sorted = [...endings].sort((a, b) => a.priority - b.priority);
   for (const e of sorted) {

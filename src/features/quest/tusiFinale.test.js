@@ -73,7 +73,7 @@ describe("府5·斗地主", () => {
   });
 
   it("各家援军按合稿削弱亲兵，鱼定村走暗渡奇袭", () => {
-    const all = [F.gaibangAlly, F.heifengRaid, F.tangmenAlly, F.xueshanAlly, F.emeiAlly, F.baihuaAlly, F.yudingAlly, F.huanxiLuoqi, F.tianlongLongwang];
+    const all = [F.gaibangAlly, F.heifengRaid, F.tangmenAlly, F.xueshanAlly, F.xueshanHeyuxieFull, F.emeiAlly, F.baihuaAlly, F.yudingAlly, F.huanxiLuoqi, F.tianlongLongwang];
     expect(open("guard", all)).toEqual(stage("guard").completionFlag);
     const caps = Object.fromEntries(stage("guard").choices.map((c) => [c.flag, c.combatNpc?.levelCap ?? null]));
     expect(caps).toMatchObject({ quest_ts5_guard: 4, quest_ts5_guard_emei: 3, quest_ts5_guard_baihua: 2, quest_ts5_guard_yuding: null, quest_ts5_guard_huanxi: null });

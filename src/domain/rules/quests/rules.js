@@ -9,7 +9,8 @@ import {
   isQuestGateOpen,
   lockExclusiveSiblings,
 } from "../quests/questEngine.js";
-import { resolveEnding } from "../quests/endingResolver.js";
+import { FINALE_ENDINGS, resolveEnding } from "../quests/endingResolver.js";
+import { STANCE_LABEL, finaleStanceFlag, resolveFinaleStances } from "../quests/finaleStances.js";
 import { getKeyItemState, initKeyItemTracking, transferKeyItem } from "../quests/itemTracking.js";
 import { resolveStageRewards, stageRewardPatches } from "../quests/questRewards.js";
 import { commitPatches } from "../state/applyPatches.js";
@@ -216,6 +217,18 @@ export const questFlagRule = {
     if (ending && !flags.includes(`story_ending_${ending}`)) {
       updates.add("flags", (previous) => [...new Set([...previous, `story_ending_${ending}`])]);
       logs.push({ t: "sys", text: `  ※ 「虎胆三重门」结局已判定：${ending}` });
+    }
+
+    const finaleDecided = FINALE_ENDINGS.some((e) => flags.includes(`story_ending_${e.id}`));
+    const finaleEnding = finaleDecided ? null : resolveEnding(gameState, FINALE_ENDINGS);
+    if (finaleEnding) {
+      const stances = resolveFinaleStances(flags);
+      const added = [`story_ending_${finaleEnding}`, ...stances.map(finaleStanceFlag)];
+      updates.add("flags", (previous) => [...new Set([...previous, ...added])]);
+      logs.push({ t: "sys", text: `  ※ 「斗地主」终局结局已判定：${finaleEnding}` });
+      for (const s of stances) {
+        logs.push({ t: "sys", text: `  · ${s.faction}：${STANCE_LABEL[s.stance]}${s.handled ? "" : `（未处理，${s.note}）`}` });
+      }
     }
 
     const changes = updates.changes();
