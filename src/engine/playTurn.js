@@ -3,6 +3,8 @@ import { loadSquares, serializeSquares } from "../domain/rules/map/mapSquares.js
 import { PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
 import { createWebAi } from "./ports/ai.js";
 import { createPhaseSetter } from "./turn/phaseSetter.js";
+import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
+import { runRecall } from "./act/memoryLayer.js";
 import { settleTurn } from "./turn/settleTurn.js";
 import { narrateTurn } from "./turn/narrateTurn.js";
 import { finalizeTurn } from "./turn/finalizeTurn.js";
@@ -61,9 +63,26 @@ export async function playTurn(ctx, cmd, opts = {}) {
     ctx.beforeRun?.();
     setPhase("ai");
     const turnOpts = { ...opts };
+    // 软结算需要调小模型时，提前并发启动只读记忆召回，避免两段网络往返串行叠加；
+    // 全程降级安全（catch 兜底空结果），过期或回滚时不会留下未处理拒绝，也不改写任何状态。
+    const willSoftSettle = SOFT_SETTLE_KINDS.has(turnOpts.settleKind)
+      && !!turnOpts.settleNpc
+      && turnCtx.apiCfg?.softSettleEnabled !== false;
+    let narrateCtx = turnCtx;
+    if (willSoftSettle && turnCtx.memory?.recall) {
+      const lastAiText = [...(turnCtx.convo || [])].reverse().find((m) => m.role === "assistant")?.content
+        || turnCtx.memory.recall.lastAiText
+        || "";
+      const prefetchedRecall = runRecall({
+        ...turnCtx.memory.recall,
+        lastAiText,
+        varTreeLatest: turnCtx.memory.varTreeLatest || getGameState().varTree,
+      }).catch(() => ({ recallInfo: null, recallBlock: "" }));
+      narrateCtx = { ...turnCtx, _prefetchedRecall: prefetchedRecall };
+    }
     soft = await settleTurn({ ctx: turnCtx, ai: turnCtx.ai, trace, turnOpts, cmd, getGameState, setVarTreeState });
     if (soft.stale) return stale();
-    const narrated = await narrateTurn(turnCtx, trace, cmd, turnOpts);
+    const narrated = await narrateTurn(narrateCtx, trace, cmd, turnOpts);
     if (narrated.stale) {
       if (soft.applied && !soft.listenerRegistered) {
         withTurnContext(trace, soft.revertOnce);

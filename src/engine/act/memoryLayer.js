@@ -20,29 +20,39 @@ export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, time, apiC
   let kTree = evo.varTree;
   // 按需补摘要（最多 2 条/回合，失败静默——摘要非关键，不阻断游戏）
   // 内容层优先从向量库召回真旧事据以归纳；召不回才让 AI 现编兜底。
-  for (const fid of evo.待补摘要.slice(0, 2)) {
-    try {
-      // 1) 先拿事实名当查询词，去现成向量库召回相关的真旧事
-      let recallTexts = [];
-      if (embeddingReady(apiCfg)) {
-        const rc = await recallWithVisibility({
-          cfg: apiCfg, queryText: fid, contextText: "",
-          focusEntities: [], unlockedFlags: flags, topK: 3,
+  const pendingFids = evo.待补摘要.slice(0, 2);
+  if (pendingFids.length) {
+    const settled = await Promise.all(pendingFids.map(async (fid) => {
+      try {
+        // 1) 先拿事实名当查询词，去现成向量库召回相关的真旧事
+        let recallTexts = [];
+        if (embeddingReady(apiCfg)) {
+          const rc = await recallWithVisibility({
+            cfg: apiCfg, queryText: fid, contextText: "",
+            focusEntities: [], unlockedFlags: flags, topK: 3,
+          });
+          recallTexts = (rc?.visible || []).map(v => v.text).filter(Boolean);
+        }
+        // 2) 有命中→据素材归纳（有据不瞎编）；无命中→纯现编兜底
+        const req = recallTexts.length
+          ? factSummaryRequestFromRecall(fid, recallTexts)
+          : factSummaryRequest(fid);
+        const r = await ai.chat(req.messages, {
+          cfg: apiCfg,
+          systemPrompt: req.system,
+          modelOptions: { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens, callLabel: "事实摘要" },
         });
-        recallTexts = (rc?.visible || []).map(v => v.text).filter(Boolean);
+        const line = (r.text || "").trim().split("\n")[0].slice(0, 40);
+        return { fid, line };
+      } catch (_) {
+        /* 补词失败就留空，下回合再试 */
+        return { fid, line: "" };
       }
-      // 2) 有命中→据素材归纳（有据不瞎编）；无命中→纯现编兜底
-      const req = recallTexts.length
-        ? factSummaryRequestFromRecall(fid, recallTexts)
-        : factSummaryRequest(fid);
-      const r = await ai.chat(req.messages, {
-        cfg: apiCfg,
-        systemPrompt: req.system,
-        modelOptions: { maxTokens: apiCfg.callTokenLimits?.knowledge ?? req.maxTokens, callLabel: "事实摘要" },
-      });
-      const line = (r.text || "").trim().split("\n")[0].slice(0, 40);
+    }));
+    // 按原始顺序确定性写回 kTree，避免并发乱序
+    for (const { fid, line } of settled) {
       if (line) kTree = setFactSummary(kTree, fid, line);
-    } catch (_) { /* 补词失败就留空，下回合再试 */ }
+    }
   }
   return { infoDomainBlock: buildInfoDomainBlock(kTree, roomNpcNames), kTree };
 }
