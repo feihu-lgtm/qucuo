@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createAutosaveScheduler } from "../../features/autosaveScheduler.js";
 import { snapshotFromStore } from "../../store/persist.js";
 import { getRngState, setRngState } from "../../utils/rng.js";
@@ -33,9 +33,14 @@ export function restorePersuasionProgress(snap, setPersuasionProgress) {
 }
 
 export function useInitialRestore({ initialLoadSlotId }) {
-  const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId, { statsForQuality, migrateSnapshot: migrateLegacySnapshot });
-  if (restored?.snap?.squares) loadSquares(restored.snap.squares);
-  return restored;
+  // 必须 useMemo 一次算好：钩子体每次渲染都会执行，裸跑的话每次渲染都会
+  // 重读存档、重调 loadSquares——把 consumeArrival 已消费的一次性格子
+  // （拾取/路遇）重置回未消费，回访还能再拿一遍。
+  return useMemo(() => {
+    const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId, { statsForQuality, migrateSnapshot: migrateLegacySnapshot });
+    if (restored?.snap?.squares) loadSquares(restored.snap.squares);
+    return restored;
+  }, [initialLoadSlotId]);
 }
 
 export function useAutosave({
