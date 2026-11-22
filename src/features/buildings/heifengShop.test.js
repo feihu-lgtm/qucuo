@@ -78,6 +78,13 @@ describe("入伙黑风寨", () => {
     expect(checkFactionEntry(FACTION_ENTRIES.黑风寨, { varTree: rep(40), flags: [...trial, "青城派弟子"] }).missing).toEqual(["single"]);
   });
 
+  it("counts the trial as passed for old saves that finished 劫药 before the flag existed", () => {
+    // 老存档里任务已完成但 heifeng_proven 还没写进 flags——按任务完成度放行。
+    const questProgress = { heifengzhai_3_5_jieyao: { status: "completed" } };
+    expect(checkFactionEntry(FACTION_ENTRIES.黑风寨, { varTree: rep(40), flags: [], questProgress }).eligible).toBe(true);
+    expect(checkFactionEntry(FACTION_ENTRIES.黑风寨, { varTree: rep(40), flags: [], questProgress: { heifengzhai_3_5_jieyao: { status: "active" } } }).missing).toEqual(["trial"]);
+  });
+
   it("joins at 聚义岩洞: +20 rep, token and gifts, member flag", () => {
     const result = joinSect(at("寨后岩洞", 45, trial));
     expect(result.changes.flags(trial)).toContain("黑风寨入伙");

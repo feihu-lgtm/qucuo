@@ -31,6 +31,7 @@ export const FACTION_ENTRIES = {
     token: "黑风令", gifts: ["黑风寨分发刀", "结绳护腕串"],
     trial: {
       flag: "heifeng_proven",
+      quest: "heifengzhai_3_5_jieyao",
       label: "投名状：替寨里办成一件实事（山3.5·劫药）",
       hint: "巴桑只收真替寨里出过力的人——先帮他把老人们的药办下来。",
     },
@@ -55,11 +56,13 @@ export const sectMasterOf = (sect) => (sect === SECT_ENTRY.sect ? SECT_ENTRY.mas
 export const factionEntryForBuilding = (buildingId) =>
   Object.values(FACTION_ENTRIES).find((entry) => entry.buildingId === buildingId) || null;
 
-export function checkFactionEntry(entry, { varTree, flags = [], char } = {}) {
+export function checkFactionEntry(entry, { varTree, flags = [], char, questProgress } = {}) {
   const rep = factionRepOf(varTree, entry.sect);
   const prestige = Number(varTree?.世界?.威望) || 0;
   const other = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== entry.sect && flags.includes(flag));
-  const trialOk = !entry.trial || flags.includes(entry.trial.flag);
+  // 试炼 flag 后补的任务（老存档已完成任务但没拿到 flag）按任务完成算过。
+  const trialOk = !entry.trial || flags.includes(entry.trial.flag)
+    || (!!entry.trial.quest && questProgress?.[entry.trial.quest]?.status === "completed");
   const riteNeeded = !!entry.maleRite && (char?.gender || "男") === "男";
   const riteOk = !riteNeeded || flags.includes(entry.maleRite.flag);
   const reqs = [
