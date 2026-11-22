@@ -57,4 +57,3 @@ export function cleanJsonString(str) {
   str = str.replace(/,\s*([}\]])/g, "$1");
   return str;
 }
-

@@ -81,4 +81,3 @@ export function classifyError(err, options = {}) {
   }
   return { kind: "unknown", icon: "⚠", title: "出错了", detail: msg, hint: "可重试一次；反复出现请把这条错误发给作者。" };
 }
-
