@@ -16,6 +16,13 @@ export const FACTION_CLINICS = {
     settle: "在慈济佛堂布施20两，替了因师太添了几副药、几升米，救济城外的曲措逃民",
     refuse: "了因师太合掌：「施主与峨眉结怨太深，佛堂不便接诊。」",
   },
+  hospital_yuquan: {
+    faction: "玉泉寨", cost: 0, hours: 2, rep: 6, prestige: 2, freeRep: 15, refuseRep: -20,
+    dayFlag: "yuquan_clinic_day_", label: "帮巴登阿妈晒药捣药（两个时辰）", done: "今日已帮过工",
+    deed: "帮巴登阿妈在草药棚晒药、捣药两个时辰",
+    settle: "在巴登草药棚晒了两时辰药草、捣了一臼藏红花，巴登阿妈往你手里塞了一小包跌打膏",
+    refuse: "巴登阿妈把药棚门帘一撂：「你这样的人，喝了我的药要出事。」",
+  },
   hospital_qingcheng_yaopu: {
     faction: "青城派", cost: 0, hours: 2, rep: 8, prestige: 3, freeRep: null, refuseRep: -20,
     dayFlag: "qingcheng_clinic_day_", label: "随玉真子采药义诊（两个时辰）", done: "今日已义诊",

@@ -145,6 +145,7 @@ export const LAMA_GOODS = getContent("itemGroup", "LAMA_GOODS").map(id => getCon
 export const YUDING_GOODS = getContent("itemGroup", "YUDING_GOODS").map(id => getContent("item", id));
 // 雪山派具名物（同第一批具名物层级，named；门派商坊靠 minRep 门槛）
 export const XUESHAN_GOODS = getContent("itemGroup", "XUESHAN_GOODS").map(id => getContent("item", id));
+export const YUQUAN_GOODS = getContent("itemGroup", "YUQUAN_GOODS").map(id => getContent("item", id));
 // 鱼定土司府军需司货池与土司府人物随身物（named；商店铺货靠 minRep 门槛）
 export const TUSI_GOODS = getContent("itemGroup", "TUSI_GOODS").map(id => getContent("item", id));
 export const TANGMEN_GOODS = getContent("itemGroup", "TANGMEN_GOODS").map(id => getContent("item", id));
@@ -216,6 +217,7 @@ export const CATALOG = [
   ...LAMA_GOODS,           // 喇嘛庙具名物（named，达摩药堂货池+常驻随身物+任务奖励）
   ...YUDING_GOODS,         // 鱼定村具名物（named，鱼定商号声誉货+周铭章随身物+任务奖励）
   ...XUESHAN_GOODS,        // 雪山派具名物（named，门派商坊+NPC随身物+任务物共用条目）
+  ...YUQUAN_GOODS,         // 玉泉寨具名物（named，茶马货栈+NPC随身物+任务物共用条目）
   ...TUSI_GOODS,           // 鱼定土司府具名物（军需司货池+土司府人物随身物）
   ...TANGMEN_GOODS,        // 唐门具名物（named，门人随身物+拜入信物+任务物共用条目）
   ...BAIHUA_GOODS,         // 百花门天都镇具名物（named，商店+NPC随身物共用条目）

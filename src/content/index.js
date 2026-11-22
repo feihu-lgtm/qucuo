@@ -52,6 +52,7 @@ import pack55 from "./item/tusi-1.js";
 import lamaItems from "./item/lama-1.js";
 import pack56 from "./item/baihua-1.js";
 import yudingItems from "./item/yuding-1.js";
+import pack57 from "./item/yuquan-1.js";
 
 import quest0 from "./quest/tutorial-1.js";
 import quest1 from "./quest/tiger-1.js";
@@ -83,5 +84,5 @@ export const DEFAULT_CONTENT_PACKS = [
   pack24, pack25, pack26, pack27, pack28, pack29, pack30, pack31, pack32,
   pack33, pack34, pack35, pack36, pack37, pack38, pack39, pack40, pack41,
   pack42, pack43, pack44, pack45, pack46, pack47, pack48, pack49, pack50, pack51,
-  pack52, pack53, pack54, pack55, pack56, tangmenItems, yudingItems, lamaItems,
+  pack52, pack53, pack54, pack55, pack56, tangmenItems, yudingItems, pack57, lamaItems,
 ];

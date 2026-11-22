@@ -84,7 +84,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setPendingQuestBranch,
     setActivePersuasion, activeBuilding, setActiveBuilding, setGambleNegotiation,
     setBuildingPanelMinimized, setJustMeditated, tradingShop, setTradingShop,
-    inputRef, logEnd, composingRef,
+    setPlayerAvatarCustom, inputRef, logEnd, composingRef,
   } = ui;
   useGameStartupBindings({
     room, prevRoomNameRef, restoredInnerRef, setInnerRoomName, companionState,
@@ -307,7 +307,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   const cardImportHandlers = commandScheduler.wrapHandlers("useCardImportHandlers", useCardImportHandlers({
     setVarTree, setChar, setSkills, setInv, setCompanionState, addLog,
-    featureCtxRef, schedulerRef,
+    setPlayerAvatarCustom, featureCtxRef, schedulerRef,
   }));
 
   // ── 心灵之海 · 玄女点破 ──

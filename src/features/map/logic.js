@@ -223,6 +223,7 @@ export function outerArrival(state, { direction, destName, roomMap, squares, com
       name: encounter.name,
       id: encounter.id,
       brief: encounter.brief,
+      ...(encounter.faction ? { faction: encounter.faction, roadPasser: true } : {}),
       levelCap: Math.max(0, QUALITY.indexOf(encounter.tier || "白")),
     }, { luck: state.char?.special?.气运 ?? 5 }));
     if (encounter.line) logs.push({ t: "desc", text: `  ${encounter.line}` });

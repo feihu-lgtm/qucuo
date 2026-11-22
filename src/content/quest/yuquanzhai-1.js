@@ -1,43 +1,64 @@
 export default { quest: {
+// 泉1·小牧童的牦牛（合稿·玉泉寨 任务线 泉1）：阿索的白牦牛被土司府差役当「欠税抵押」牵走。
+// A 硬气出手赶差役：玉泉寨+15/黑风寨+3/鱼定村+3/土司府-5、40两、风干牦牛肉×2、小牧童的口哨；
+// B 30两赎回：玉泉寨+10/黑风寨+2、谢仪20两（净亏10两）、风干牦牛肉、口哨。
 "yuquanzhai_1_mumutongdemaoniu": {
     id: "yuquanzhai_1_mumutongdemaoniu",
     type: "QT_RESCUE",
     title: "玉泉寨·任务一·小牧童的牦牛",
     giver: "小牧童阿索",
-    description: "阿索母亲留下的白牦牛（牛角系褪色红布条）跑丢，往大草甸方向去，他追到一半见狼粪还是软的不敢再追。",
+    localOnly: true,
+    requiresFactionRep: { 玉泉寨: 0 },
+    description: "阿索母亲留下的白牦牛（牛角系褪色红布条）被土司府管家陆福生的差役当「虎胆抵税」的抵押牵走，往大草甸方向去了，他追到一半见狼粪还是软的不敢再追。",
     stages: [
       {
-        id: "s1_plea",
-        description: "阿索蹲在寨边草甸口抹眼泪——他家那头白牦牛走失两天了，最后瞧见它是在大草甸浅沟，那儿有野狼出没，他不敢去找。听说玩家肯帮忙，他解下牦牛脖子上的旧铜铃塞过来：「它认得这个铃声，你到浅沟摇一摇，它就敢出来。」",
-        playerHint: "阿索的牦牛在大草甸走失两天了——听他把话说完，答应替他去找。",
-        completionFlag: "quest_yuquanzhai1_s1",
-        onReach: { favorability: { "小牧童阿索": 10 } },
+        id: "s1_rescue",
+        giver: null,
+        requireLocation: { district: "大草甸" },
+        description: "大草甸浅沟里，两个差役正把白牦牛往寨外牵，牛角上的褪色红布条被风吹得贴在牛脸上。差役说这叫抵税，牵走就是规矩——牦牛在挣扎，阿索在远处哨声都吹哑了。",
+        playerHint: "阿索的牦牛被土司府差役往大草甸外牵，去浅沟拦住他们——动手赶人，或者掏30两赎回。",
+        completionFlag: ["quest_yuquanzhai1_fight", "quest_yuquanzhai1_pay"],
+        choices: [
+          { flag: "quest_yuquanzhai1_fight", label: "硬气——替牧民赶走差役", resolve: "combat", combatNpc: { name: "土司府差役", levelCap: 3 } },
+          { flag: "quest_yuquanzhai1_pay", label: "花三十两把牛赎回", resolve: "none", requiresMoney: 30,
+            narration: "你数出三十两拍在差役手心。差役掂了掂，把牛缰绳丢还给你：「算这户今年运气好。」" },
+        ],
+        onReach: {
+          byFlag: {
+            quest_yuquanzhai1_fight: {
+              exp: 1, money: 40, reputation: 6,
+              favorability: { "小牧童阿索": 30 },
+              factionRep: { 玉泉寨: 15, 黑风寨: 3, 鱼定村: 3, 鱼定土司府: -5 },
+              items: [
+                { name: "风干牦牛肉", category: "misc", quality: "白" },
+                { name: "风干牦牛肉", category: "misc", quality: "白" },
+                { name: "小牧童的口哨", category: "misc", quality: "白" },
+              ],
+            },
+            quest_yuquanzhai1_pay: {
+              exp: 1, money: -10, reputation: 3,
+              favorability: { "小牧童阿索": 30 },
+              factionRep: { 玉泉寨: 10, 黑风寨: 2 },
+              items: [
+                { name: "风干牦牛肉", category: "misc", quality: "白" },
+                { name: "小牧童的口哨", category: "misc", quality: "白" },
+              ],
+            },
+          },
+        },
       },
       {
-        id: "s2_rescue",
-        // requireLocation：这一步必须玩家真的走到大草甸浅沟才展开战斗，
-        // 不能在寨里听完阿索的话就地开打。判定见 useGameUi.js 的
-        // availableQuestsHere——requireLocation 命中时入口只看地点。
-        description: "大草甸浅沟里，白牦牛被几头野狼围在当中——角抵着地，嘴里还挂着嚼了一半的草。玩家一摇铜铃，牦牛抬头往外挣，野狼却先扑了上来。",
-        playerHint: "到大草甸浅沟找到被野狼围住的白牦牛，摇铃引它，再赶走野狼。",
-        requireLocation: { district: "大草甸" },
-        completionFlag: "quest_yuquanzhai1_s2",
+        id: "s2_return",
+        giver: null,
+        requireLocation: { district: "玉泉寨" },
+        description: "牵牛回寨路上，牦牛用角顶了你的手——「它不是顶你，它是在认人。」阿索掰半块存了两年的、母亲留下的最后一块糌粑分给你。",
+        playerHint: "把白牦牛牵回玉泉寨还给阿索。",
+        completionFlag: "quest_yuquanzhai1_done",
         isCgMoment: true,
-        choices: [
-          {
-            flag: "quest_yuquanzhai1_s2",
-            label: "摇铃引牦牛，动手赶散野狼",
-            resolve: "combat",
-            combatNpc: { name: "围困牦牛的野狼", levelCap: 1, tag: "熊山野兽", hostile: true, beast: true, cannotSpeak: true },
-            // aftermath：打赢后由结算段把它交给叙事段，写成战斗之后的收尾段落
-            //（牦牛认人、牵牛回寨、阿索分糌粑），见 useDuel.js duelFinishHandler。
-            aftermath: "赶散野狼后，白牦牛拿角顶了顶玩家的手——它不是顶人，是在认人。玩家摇着铜铃把它牵回寨子，阿索迎出来，掰了半块存了两年的、母亲留下的最后一块糌粑分给玩家。",
-          },
-        ],
-        onReach: { exp: 1, favorability: { "小牧童阿索": 20 }, reputation: 6, factionRep: { 玉泉寨: 5 } },
+        onReach: { exp: 1 },
       },
     ],
-    rewardText: "此后阿索见玩家会主动挥赶牛鞭致意。",
+    rewardText: "此后阿索见玩家会主动挥赶牛鞭致意，吹起那支骨哨。",
   },
 "yuquanzhai_2_liruoyoudeshangduizhang": {
     id: "yuquanzhai_2_liruoyoudeshangduizhang",

@@ -1,0 +1,25 @@
+// 玉泉寨势力物品：茶马货栈货池 + 驻地人物随身（合稿·玉泉寨 六/七）。
+const items = {
+"牧羊短刀": { name: "牧羊短刀", category: "weapon", quality: "白", atkMul: 1.1, desc: "牧民腰间的短刀，割毛皮、割肉干、割羊毛绳都用它。刀柄磨得油亮，刀鞘是阿妈缝的皮套。" },
+"牛毛编织抛石索": { name: "牛毛编织抛石索", category: "weapon", quality: "白", atkMul: 1.05, desc: "牦牛毛捻成三股编的抛石索，牧童人手一条。甩圆了放出去，石子能砸晕三十步外的田鼠——阿索用它赶过狼。" },
+"重打马掌锻铁锤": { name: "重打马掌锻铁锤", category: "weapon", quality: "白", atkMul: 1.15, desc: "索朗打马掌用的短柄锻锤，锤头一面包钢一面平铁。打铁时是工具，抡到人身上就是兵器。" },
+"精铁尖头采药镐": { name: "精铁尖头采药镐", category: "weapon", quality: "白", atkMul: 1.1, desc: "巴登阿妈上山采药的短镐，尖头能刨开冻土挖虫草。镐柄上缠着布条，布条浸过二十年的药汁。" },
+"草原驯马长鞭": { name: "草原驯马长鞭", category: "weapon", quality: "绿", atkMul: 1.15, desc: "生牛皮编的长鞭，鞭梢浸过酥油。驯马人一挥能打响三丈外的空气，甩到人身上是一道见血的棱。" },
+"索朗精锻牧刀": { name: "索朗精锻牧刀", category: "weapon", quality: "蓝", atkMul: 1.3, sixDim: { 体魄: 1 }, desc: "索朗用寨外陨铁料打了一冬的牧刀，刀背留着锤纹如河流走向。他说好刀不砍人——砍柴剁骨三十年不卷刃。" },
+"补丁小羊皮坎肩": { name: "补丁小羊皮坎肩", category: "armor", quality: "白", defMul: 1.05, desc: "阿索的小羊皮坎肩，肘部补了两块深色皮子。牧童穿着它在草甸上滚了一整个夏天，羊膻味洗不掉。" },
+"羊皮护腿": { name: "羊皮护腿", category: "armor", quality: "白", defMul: 1.05, desc: "带毛羊皮缝的护腿，裹住小腿防荆棘和马踢。玉泉寨牧民秋冬的标配，越穿越贴合自己的腿型。" },
+"药香熏纹厚氆氇袍": { name: "药香熏纹厚氆氇袍", category: "armor", quality: "绿", defMul: 1.15, desc: "巴登阿妈的厚氆氇袍，下摆熏着藏红花和艾绒的暗纹。靠近的人先闻到药香，再看见袍子袖口磨出的毛边。" },
+"防火厚牛皮围裙甲": { name: "防火厚牛皮围裙甲", category: "armor", quality: "绿", defMul: 1.15, desc: "铁匠的厚牛皮围裙，火星溅上去只留白点。索朗围了它十五年，前胸的皮子被锤子敲出了铠甲的硬度。" },
+"雪羊皮软甲": { name: "雪羊皮软甲", category: "armor", quality: "绿", defMul: 1.2, desc: "雪山阴面的羊皮硝制七遍，轻软如绵却能卸掉棍棒的劲。狼曲河谷的猎人拿它抵过黑熊的掌风。" },
+"绿松石护身小珠": { name: "绿松石护身小珠", category: "accessory", quality: "白", sixDim: { 体魄: 1 }, desc: "阿索阿妈给他串的绿松石小珠，穿在红绳上挂在颈窝。牧民说绿松石能挡「路上的坏眼睛」。" },
+"绿松石铜戒": { name: "绿松石铜戒", category: "accessory", quality: "白", sixDim: { 身法: 1 }, desc: "寨口匠人嵌绿松石的铜戒，石面有天生的铁线纹。茶马古道上的人认这个纹样——狼曲河谷的手工。" },
+"黑铁狼牙吊坠": { name: "黑铁狼牙吊坠", category: "accessory", quality: "绿", sixDim: { 根骨: 1, 体魄: 1 }, desc: "索朗用锻铁废料夹着一颗真狼牙做的吊坠。铁是黑的，牙是黄的，他说是「铁要硬，牙要留着狠」。" },
+"藏红花活血香囊": { name: "藏红花活血香囊", category: "accessory", quality: "绿", sixDim: { 体魄: 1 }, desc: "藏红花、川芎、甘松缝进绸袋，挂在腰间随走随散。巴登阿妈说这香能活血——闻久了手脚确实暖。" },
+"狼筋护腕": { name: "狼筋护腕", category: "accessory", quality: "绿", sixDim: { 身法: 1, 根骨: 1 }, desc: "风干的狼腿筋编成护腕，缠三匝打结。猎户说狼筋韧得扯不断，戴着它摔交时手腕不怕反折。" },
+"狼牙护心铜镜": { name: "狼牙护心铜镜", category: "accessory", quality: "紫", effect: { ignoreDefensePartialImmune: 0.2 }, desc: "祖上传下的护心铜镜，镜缘嵌一圈狼牙。牧民出征前戴在心口——挡没挡过刀不知道，戴它的人回回都回来了。" },
+"狼曲酥油炒面": { name: "狼曲酥油炒面", category: "misc", quality: "白", tags: ["干粮", "食品"], consumable: { hpRestore: 0.06 }, desc: "青稞炒面拌酥油和奶渣，攥一把顶半天饿。狼曲河谷行路人的标准干粮，越嚼越香。" },
+"巴登跌打接骨膏": { name: "巴登跌打接骨膏", category: "misc", quality: "绿", tags: ["药材", "疗伤"], consumable: { hpRestore: 0.12 }, desc: "巴登阿妈的跌打接骨膏，黑色膏体带着雪蜜的甜气。牧民摔下马敷三天就能走，配方只在药棚的陶罐里。" },
+"小牧童的口哨": { name: "小牧童的口哨", category: "misc", quality: "白", tags: ["信物", "剧情"], desc: "阿索用牦牛骨磨的小口哨，吹起来又尖又亮，草甸上二里外都听得见。他说以后有事先吹哨，牦牛会帮你叫人。" },
+"百年雪水青稞陈酿": { name: "百年雪水青稞陈酿", category: "misc", quality: "橙", tags: ["典藏", "药酒"], consumable: { hpRestore: 0.3, sixDimTemp: { 体魄: 1 } }, desc: "丹增家地窖封了百年的雪水青稞酒，坛口蜡封没动过。开坛时酒香能把整个蒙古包腌透——玉泉寨最值钱的东西不是马，是这几坛。" },
+};
+export default { item: items, itemGroup: { YUQUAN_GOODS: Object.keys(items) } };
