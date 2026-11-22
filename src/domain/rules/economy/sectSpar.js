@@ -55,6 +55,15 @@ const SECT_SPARS = [
     daily: 2,
     dailyCap: 39,
   },
+  // 丐帮三星分舵：破庙竹坪与舵中好手堂堂正正切磋，涨丐帮声誉（合稿「丐帮·七、7.1」加分行为）。
+  {
+    faction: "丐帮三星分舵",
+    npcs: [{ id: "resident_husanye", name: "胡三爷" }, { id: "resident_qinxiaoque", name: "秦小鹊" }],
+    flag: "gaibang_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
   {
     faction: "三星派",
     npcs: [

@@ -3,7 +3,6 @@ import { getInnerRoom, isInnerExitUnlocked, visibleInnerExits } from "./innerMap
 
 const ADDED = [
   ["黑风寨", "狼曲暗道·旧契藏窟", "寨后岩洞"],
-  ["雅江", "伏龙观·离堆听水亭", "伏龙观"],
   ["锦官城", "玄清道院", "抄经堂"],
   ["锦官城", "府衙花厅·青鸢书房", "都事府"],
   ["锦官城", "书房暗格·青囊密档室", "府衙花厅·青鸢书房"],

@@ -15,15 +15,9 @@ export default { district: {
       伏龙观: {
         x: 0, y: -2,
         desc: "建在离堆顶上，供奉李冰父子。山门对联——「深淘滩低作堰六字旨千秋，凿离堆穿二江万代收其利」。三进院落，最后一进悬在崖边，推窗即是奔腾岷江，江风灌进来时整座楼微微摇晃。",
-        exits: { s: "宝瓶口", n: "伏龙观·离堆听水亭" },
+        exits: { s: "宝瓶口" },
         buildingId: "temple_yajiang",
         residentNpcName: "老道士",
-      },
-      "伏龙观·离堆听水亭": {
-        x: 0, y: -3,
-        desc: "藏在伏龙观断崖背面的三尺石亭，正对离堆劈江分水的激流漩涡，站在这里不用看，光听水声就能摸清气脉流转。",
-        exits: { s: "伏龙观" },
-        unlockCondition: { type: "questCompleted", questId: "qingcheng_side3_taijiechen" },
       },
       安澜索桥: {
         x: 1, y: -1,
