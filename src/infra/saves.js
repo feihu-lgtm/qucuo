@@ -181,12 +181,6 @@ export function deleteSlot(id) {
   setSlotsIndex(getSlotsIndex().filter(s => s.id !== id));
 }
 
-export function renameSlot(id, label) {
-  const index = getSlotsIndex().slice();
-  const entry = index.find(s => s.id === id);
-  if (entry) { entry.label = label; setSlotsIndex(index); }
-}
-
 // ── 存档落盘导出 / 导入 ──
 // 导出：把一个 snapshot 包成带标记的 JSON 文本，供 UI 下载成 .json 文件。
 export function exportSave(snapshot, label) {

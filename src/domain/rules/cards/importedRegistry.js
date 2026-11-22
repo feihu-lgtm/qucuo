@@ -302,10 +302,6 @@ export function registerImportedWorld(items, meta = {}) {
   return items.length;
 }
 
-export function listImported() {
-  return _registry.chars.slice();
-}
-
 export function removeImported(name) {
   _registry.chars = _registry.chars.filter(c => c.name !== name);
   persist();

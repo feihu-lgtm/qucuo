@@ -86,7 +86,3 @@ export function estimateMs(n) {
   return Math.max(0, firstWait) + (need - 1) * REFILL_MS;
 }
 
-/** 调试/测试用：把桶重置成满 */
-export function resetBucket() {
-  writeBucket({ tokens: BUCKET_CAP, at: Date.now() });
-}
