@@ -93,10 +93,14 @@ export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];
 export const factionShopOutlet = (shopKey, buildingId) => FACTION_SHOPS[shopKey]?.outlets[buildingId] || null;
 
 const boughtFlag = (shopKey, name) => `shop_bought:${shopKey}:${name}`;
-// 同款 flag 每买一件追加一次，按出现次数计已购量；limitOnce:true 视作 1。
+// limitOnce:true 视作 1 件，N 视作 N 件。买过第 n 件（n>1）追加 `flag#n` 后缀标记——
+// 每次的标记都不同，即使 flags 列表被 questRewards 的 Set 去重也不会塌成一条。
 const limitOf = (limitOnce) => (limitOnce === true ? 1 : Number(limitOnce) || 1);
-const boughtOut = (flags, shopKey, item) =>
-  (flags || []).filter((flag) => flag === boughtFlag(shopKey, item.name)).length >= limitOf(item.limitOnce);
+const boughtCount = (flags, shopKey, name) => {
+  const base = boughtFlag(shopKey, name);
+  return (flags || []).filter((flag) => flag === base || flag.startsWith(`${base}#`)).length;
+};
+const boughtOut = (flags, shopKey, item) => boughtCount(flags, shopKey, item.name) >= limitOf(item.limitOnce);
 
 export function factionShopOffer(shopKey, varTree, outlet, flags = []) {
   const shop = FACTION_SHOPS[shopKey];
@@ -153,7 +157,11 @@ export function buyFactionShopItem(state, shopKey, itemName, now = Date.now()) {
         while (inv.some((entry) => entry?.id === `${shop.idPrefix}_${now}_${index}`)) index++;
         return [...inv, { ...item, buyPrice: price, id: `${shop.idPrefix}_${now}_${index}`, equipped: false }];
       },
-      ...(item.limitOnce ? { flags: (flags = []) => [...flags, boughtFlag(shopKey, item.name)] } : {}),
+      ...(item.limitOnce ? { flags: (flags = []) => {
+        const base = boughtFlag(shopKey, item.name);
+        const n = boughtCount(flags, shopKey, item.name);
+        return [...flags, n === 0 ? base : `${base}#${n}`];
+      } } : {}),
     },
     logs: [{ t: "item", text: `购得「${item.name}」，花费${price}两。` }],
     note: { text: `购得「${item.name}」，花${price}两。`, source: NOTE_SOURCE.DUMB },

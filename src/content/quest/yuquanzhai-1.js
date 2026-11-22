@@ -73,6 +73,8 @@ export default { quest: {
     stages: [
       {
         id: "s1_confront",
+        giver: null,
+        requireLocation: { district: "天都镇" },
         description: "持李若由的核对单到鱼定村对完账，再去天都镇镇口堵住赫连铸——他怀里揣着盖土司管家私章的「皮毛抽成条」。银子夺回来了，怎么处置，赫连铸盯着你的手看。",
         playerHint: "去鱼定村核对账目，再到天都镇找赫连铸对质，夺回被扣的货银与私章条。",
         completionFlag: ["quest_yuquanzhai2_open", "quest_yuquanzhai2_settle"],
@@ -87,7 +89,7 @@ export default { quest: {
             quest_yuquanzhai2_open: {
               exp: 2, money: 120, reputation: 6,
               favorability: { "李若由": 30 },
-              factionRep: { 玉泉寨: 20, 鱼定村: 6, 黑风寨: 4, 土司府: -8 },
+              factionRep: { 玉泉寨: 20, 鱼定村: 6, 黑风寨: 4, 鱼定土司府: -8 },
               items: [
                 { name: "李记商队通行牌", category: "accessory", quality: "白" },
                 { name: "账房私章抽成条", category: "misc", quality: "白" },
@@ -97,7 +99,7 @@ export default { quest: {
             quest_yuquanzhai2_settle: {
               exp: 2, money: 160, reputation: 3,
               favorability: { "李若由": 10 },
-              factionRep: { 玉泉寨: 12, 鱼定村: 2, 土司府: -2 },
+              factionRep: { 玉泉寨: 12, 鱼定村: 2, 鱼定土司府: -2 },
               items: [{ name: "李记商队通行牌", category: "accessory", quality: "白" }],
             },
           },
@@ -106,6 +108,7 @@ export default { quest: {
       {
         id: "s2_return",
         giver: null,
+        requireLocation: { district: "玉泉寨" },
         description: "回玉泉小栈复命。李若由在账本末页添了一行小字：「某月某日，外乡人为我出过头。」她给你续上茶：「银子记你账上是玩笑——往后打尖，多添一碟风干牛肉不算钱。」",
         playerHint: "回玉泉小栈向李若由复命。",
         completionFlag: "quest_yuquanzhai2_done",
@@ -128,6 +131,7 @@ export default { quest: {
       {
         id: "s1_recovery",
         giver: null,
+        requireLocation: { district: "大草甸" },
         description: "大草甸深处石洼，风化枯骨与碎鞍皮下，半枚锈铜筹和半截马蹄铁还埋着。独眼狼王的腥风就在几十步外——斩了它了却丹增三十二年心魔，或者使轻功声东击西取了东西就走。",
         playerHint: "去大草甸深处石洼寻回曲措旧铜筹与断马蹄铁——可斩狼王，也可智取。",
         completionFlag: ["quest_yuquanzhai3_wolf", "quest_yuquanzhai3_sneak"],
@@ -146,6 +150,7 @@ export default { quest: {
       {
         id: "s2_return",
         giver: null,
+        requireLocation: { district: "玉泉寨" },
         description: "丹增摩挲断马蹄铁良久，第一次带你走进枯柳暗窖——窖里的藏粮和账本摊开在油灯下：「玉泉寨老了，可公道还没老。」他把藏粮与翻案之望，正式托给了你。",
         playerHint: "把铜筹与断马蹄铁带回玉泉寨交给丹增。",
         completionFlag: "quest_yuquanzhai3_done",
@@ -153,7 +158,7 @@ export default { quest: {
         onReach: {
           exp: 2, money: 150, reputation: 6,
           favorability: { "丹增": 30 },
-          factionRep: { 玉泉寨: 25, 黑风寨: 5, 鱼定村: 5, 土司府: -10 },
+          factionRep: { 玉泉寨: 25, 黑风寨: 5, 鱼定村: 5, 鱼定土司府: -10 },
           items: [
             { name: "曲措旧铜筹", category: "misc", quality: "蓝" },
             { name: "狼筋护腕", category: "accessory", quality: "绿" },
@@ -179,6 +184,7 @@ export default { quest: {
       {
         id: "s1_brew",
         giver: null,
+        requireLocation: { district: "大草甸" },
         description: "狼曲上游泉眼，卓玛挽袖收水，巡捕一脚踹翻空坛：「私酿？交税。」她攥鞭的手背青筋都起来了——并肩赶人，或者你挺身挡在她身前把那几双眼睛瞪回去。傍晚篝火边，她把新温的青稞酒斟满推到你面前。",
         playerHint: "陪卓玛去狼曲上游取水收青稞，赶走砸坛索贿的巡捕。",
         completionFlag: "quest_yuquanzhai4_patrol",
@@ -190,6 +196,7 @@ export default { quest: {
       {
         id: "s2_promise",
         giver: null,
+        requireLocation: { district: "大草甸" },
         description: "篝火毕剥。她说十四岁那年哥哥去土司府讨公道再没回来，她在府门前磕下三个誓头，把沾血马鞭藏进嫁妆箱底。「这壶青稞酒你喝不完，剩下的得还我——别多想，是怕你喝太快，转头就忘了回玉泉寨还酒。」",
         playerHint: "接下卓玛的半壶青稞酒——还酒之约，接还是不接。",
         completionFlag: ["quest_yuquanzhai4_romance", "quest_yuquanzhai4_friend"],
@@ -205,14 +212,14 @@ export default { quest: {
             quest_yuquanzhai4_romance: {
               exp: 2, money: 80, reputation: 5,
               favorability: { "卓玛": 20 },
-              factionRep: { 玉泉寨: 20, 黑风寨: 4, 土司府: -6 },
+              factionRep: { 玉泉寨: 20, 黑风寨: 4, 鱼定土司府: -6 },
               items: [{ name: "半壶狼曲青稞酒", category: "misc", quality: "蓝" }],
               flags: ["zhuoma_romance_line", "promise_zhuoma_huanjiu"],
             },
             quest_yuquanzhai4_friend: {
               exp: 2, money: 80, reputation: 5,
               favorability: { "卓玛": 10 },
-              factionRep: { 玉泉寨: 20, 黑风寨: 4, 土司府: -6 },
+              factionRep: { 玉泉寨: 20, 黑风寨: 4, 鱼定土司府: -6 },
               items: [{ name: "半壶狼曲青稞酒", category: "misc", quality: "蓝" }],
               flags: ["zhuoma_friend_line"],
             },
@@ -237,6 +244,7 @@ export default { quest: {
       {
         id: "s1_lake",
         giver: null,
+        requireLocation: { district: "贡措海" },
         description: "贡措海湖畔，梅朵撇开护卫单骑而来。两名少女隔着七年血仇摊牌：她含泪递出陆福生私改玉泉草场税簿的抄录副页。交接之际，尾随的管家心腹刺客现身灭口——护住她们！",
         playerHint: "随卓玛去贡措海湖畔见梅朵，击退灭口的刺客。",
         completionFlag: "quest_yuquanzhai5_fight",
@@ -248,6 +256,7 @@ export default { quest: {
       {
         id: "s2_aftermath",
         giver: null,
+        requireLocation: { district: "贡措海" },
         description: "刺客倒地，湖畔风冷。受伤落网的暗探瘫在碎石滩上求一条活路——放他回府传假信能保梅朵清白；斩了永绝后患，副页直接交丹增公开。梅朵回府前与卓玛立下无声之约：「若有一日曲措换了规矩，狼曲的草场，我亲手还给你们。」",
         playerHint: "处置落网的暗探：放走保梅朵，或斩杀公开副页。",
         completionFlag: ["quest_yuquanzhai5_spare", "quest_yuquanzhai5_kill"],
@@ -273,7 +282,7 @@ export default { quest: {
             quest_yuquanzhai5_kill: {
               exp: 3, money: 200, reputation: 8,
               favorability: { "卓玛": 25 },
-              factionRep: { 玉泉寨: 40, 鱼定村: 6, 黑风寨: 6, 土司府: -20 },
+              factionRep: { 玉泉寨: 40, 鱼定村: 6, 黑风寨: 6, 鱼定土司府: -20 },
               items: [
                 { name: "玉泉草场税簿副页", category: "misc", quality: "紫" },
                 { name: "卓玛的藏银松石扣", category: "accessory", quality: "紫" },

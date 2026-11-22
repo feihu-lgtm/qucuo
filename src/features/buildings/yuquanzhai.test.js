@@ -80,6 +80,10 @@ describe("玉泉寨", () => {
     // 两坛见底才撤柜。
     expect(names(factionShopOffer("玉泉货栈", rep(100), "outer", flags2))).not.toContain("百年雪水青稞陈酿");
     expect(buyFactionShopItem({ ...shop, flags: flags2 }, "玉泉货栈", "百年雪水青稞陈酿", 3).logs[0].text).toContain("已经卖给你了");
+    // Même après un passage de flags dans le Set-dedup de stageRewardPatches,
+    // les deux marques d'achat survivent (suffixe #n) : pas de 3e caddie.
+    const deduped = [...new Set([...flags2, "quest_yuquanzhai5_spare"])];
+    expect(names(factionShopOffer("玉泉货栈", rep(100), "outer", deduped))).not.toContain("百年雪水青稞陈酿");
   });
 
   it("gates 玉泉 skills by reputation across the 0/15/40/80 ladder", () => {
@@ -147,11 +151,11 @@ describe("玉泉寨", () => {
     expect(isQuestGateOpen(q, {}, [], rep(9))).toBe(false);
     const open = resolveStageRewards(q.stages[0], ["quest_yuquanzhai2_open"]);
     expect(open.money).toBe(120);
-    expect(open.factionRep).toMatchObject({ 玉泉寨: 20, 鱼定村: 6, 黑风寨: 4, 土司府: -8 });
+    expect(open.factionRep).toMatchObject({ 玉泉寨: 20, 鱼定村: 6, 黑风寨: 4, 鱼定土司府: -8 });
     expect(open.items.map((item) => item.name)).toEqual(["李记商队通行牌", "账房私章抽成条"]);
     const settle = resolveStageRewards(q.stages[0], ["quest_yuquanzhai2_settle"]);
     expect(settle.money).toBe(160);
-    expect(settle.factionRep).toMatchObject({ 玉泉寨: 12, 鱼定村: 2, 土司府: -2 });
+    expect(settle.factionRep).toMatchObject({ 玉泉寨: 12, 鱼定村: 2, 鱼定土司府: -2 });
   });
 
   it("泉3 needs 泉2 + rep 25, opens 枯柳暗窖, and marks the wolf-kill prequal", () => {
@@ -166,7 +170,7 @@ describe("玉泉寨", () => {
     expect(wolf.factionRep).toMatchObject({ 玉泉寨: 5 });
     const ret = resolveStageRewards(q.stages[1], ["quest_yuquanzhai3_done"]);
     expect(ret.flags).toContain("yuquan_kuliu_unlocked");
-    expect(ret.factionRep).toMatchObject({ 玉泉寨: 25, 黑风寨: 5, 土司府: -10 });
+    expect(ret.factionRep).toMatchObject({ 玉泉寨: 25, 黑风寨: 5, 鱼定土司府: -10 });
     expect(ret.items.map((item) => item.name)).toEqual(["曲措旧铜筹", "狼筋护腕"]);
   });
 
@@ -191,10 +195,10 @@ describe("玉泉寨", () => {
     expect(isQuestGateOpen(q, done("yuquanzhai_4_zhuomadeqingkejiu"), [], rep(55))).toBe(false);
     const spare = resolveStageRewards(q.stages[1], ["quest_yuquanzhai5_spare"]);
     expect(spare.factionRep).toMatchObject({ 玉泉寨: 30, 鱼定村: 6, 黑风寨: 6 });
-    expect(spare.factionRep.土司府).toBeUndefined();
+    expect(spare.factionRep.鱼定土司府).toBeUndefined();
     expect(spare.favorability).toMatchObject({ 卓玛: 25, 梅朵: 15 });
     const kill = resolveStageRewards(q.stages[1], ["quest_yuquanzhai5_kill"]);
-    expect(kill.factionRep).toMatchObject({ 玉泉寨: 40, 土司府: -20 });
+    expect(kill.factionRep).toMatchObject({ 玉泉寨: 40, 鱼定土司府: -20 });
     expect(kill.items.map((item) => item.name)).toContain("卓玛的藏银松石扣");
   });
 });
