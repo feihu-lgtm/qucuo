@@ -9,8 +9,15 @@ function defaultResponse(record) {
     const names = [...prompt.matchAll(/据点：([^｜\n]+)/g)].map((match) => match[1].trim());
     return names.map((name) => ({ name, desc: "风过山口，溪声沿石阶缓缓流去。", lookText: "远山连绵，村道在溪边转向。" }));
   }
+  if (record.kind === "extraction") return {};
   const narration = "风过鱼定村，溪声在石阶间潺潺回响。";
-  return { output: [narration], reply: narration };
+  return record.narrativeOnly ? narration : { output: [narration] };
+}
+
+// 和真实模型对齐：提取层模式下主叙事只回散文正文，用例给的 { output } 按行摊成散文。
+function shapeFor(record, response) {
+  if (record.narrativeOnly && Array.isArray(response?.output) && !response.choices) return response.output.join("\n");
+  return response;
 }
 
 function payloadFor(response) {
@@ -84,10 +91,11 @@ export async function installMockAi(page, { responses } = {}) {
       body = {};
     }
     const prompt = (body.messages || []).map((message) => message.content || "").join("\n");
-    const kind = prompt.includes("地图预跑员") ? "prerun" : "main";
+    const kind = prompt.includes("地图预跑员") ? "prerun" : prompt.includes("游戏状态提取器") ? "extraction" : "main";
     const record = {
       id: requests.length + 1,
       kind,
+      narrativeOnly: kind === "main" && /直接续写正文|直接输出叙事(散文)?正文/.test(prompt),
       url: request.url(),
       body,
       startedAt: Date.now(),
@@ -119,7 +127,7 @@ export async function installMockAi(page, { responses } = {}) {
     if (override === undefined && queued >= 0) override = nextResponses.splice(queued, 1)[0].response;
     if (override === undefined && responseList.length) override = responseList.shift();
     if (override === undefined && responseMap[kind] !== undefined) override = responseMap[kind];
-    const response = override === undefined ? await defaultFn(record) : override;
+    const response = shapeFor(record, override === undefined ? await defaultFn(record) : override);
     record.response = response;
     record.done = true;
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(payloadFor(response)) });
