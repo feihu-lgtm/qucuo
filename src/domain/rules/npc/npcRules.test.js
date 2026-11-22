@@ -39,6 +39,19 @@ function getResidents() {
 }
 
 describe("resident NPC world rule", () => {
+  it("escort target that is a resident still shows up when an old save cached him elsewhere", () => {
+    setSeed(42);
+    const state = {
+      ...makeState(),
+      room: { name: "天都镇", npcs: [] },
+      questProgress: { eq_lizhang_tiandu: { active: true } },
+    };
+    const roomMapRef = { current: { 锦官城: { npcs: [{ name: "李掌柜" }] } } };
+    const result = residentNpcRule.run(state, { importedRegistry, roomMapRef });
+    const names = result.changes.room(state.room).npcs.map((npc) => npc.name);
+    expect(names.filter((n) => n === "李掌柜")).toHaveLength(1);
+  });
+
   it("injects scheduled and fixed residents with combat data", () => {
     setSeed(42);
     const residents = getResidents();
