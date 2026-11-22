@@ -1,5 +1,5 @@
 // 三星派任务线（合稿·三星派第 4 节）。主线 星1~星3 与支线 星支1~3；星4 旧客、星5 金乌破妄是终局线，等终局接线再做。
-// 势力声誉单次写入限幅 ±10，合稿里 +15~+25 的奖励按阶段拆开发；联动扣分由 applyFactionRep 统一结算，这里不手写。
+// 声誉奖励按合稿原值写在收尾阶段；联动扣分由 applyFactionRep 统一结算，这里不手写。
 const SX = "三星派";
 const GB = "丐帮三星分舵";
 const at = (inner, district = "广汉") => ({ district, inner });
@@ -13,7 +13,7 @@ export default { quest: {
     giver: "姜泠",
     giverId: "resident_jiangling",
     localOnly: true,
-    requiresFactionRep: { faction: SX, min: -19 },
+    requiresFactionRep: { [SX]: -19 },
     description: "鸭子河界碑林这几夜总有人打着火把拓碑、撬铜铃，姜泠说是天都镇的香队夹带出来的人。三星派守墟不出墟，她想借一个外人的手把这条线掐断。",
     stages: [
       {
@@ -27,7 +27,7 @@ export default { quest: {
           { flag: "quest_sx1_sneak", label: "缴了家伙", resolve: "none",
             narration: "你摸到火把照不到的一侧，一脚踢翻墨桶，顺手把撬棍和拓纸全抢了过来。几个人摸黑跑了，头目跑得最慢，被你按在了界碑底下。" },
         ],
-        onReach: { items: catalog("香队夹带路条"), factionRep: { [SX]: 5 } },
+        onReach: { items: catalog("香队夹带路条") },
       },
       {
         id: "judge",
@@ -45,10 +45,11 @@ export default { quest: {
           money: 120,
           items: catalog("青铜引路牌"),
           flags: ["sanxingdui_found"],
+          factionRep: { [SX]: 15, [GB]: 5 },
           favorability: { 姜泠: 10 },
           byFlag: {
-            quest_sx1_trial: { factionRep: { [SX]: 10, [GB]: 5 }, favorability: { 周小满: 10 } },
-            quest_sx1_kill: { factionRep: { [SX]: 5 }, reputation: -3 },
+            quest_sx1_trial: { factionRep: { [GB]: 8 }, favorability: { 周小满: 10 } },
+            quest_sx1_kill: { reputation: -3, favorability: { 樊枯: 10 } },
           },
         },
       },
@@ -64,7 +65,7 @@ export default { quest: {
     giverId: "resident_jiangling",
     localOnly: true,
     requiresQuestCompleted: "sanxingpai_1_xujiejiuyue",
-    requiresFactionRep: { faction: SX, min: 15 },
+    requiresFactionRep: { [SX]: 15 },
     description: "古墟深处只认剑。三名青铜面人轮流守着碎铜坪，外人要往里走，得在三面之前各过一剑。",
     stages: [
       {
@@ -76,7 +77,6 @@ export default { quest: {
         choices: [
           { flag: "quest_sx2_jia", label: "接甲的重剑", resolve: "combat", combatNpc: { name: "守坪青铜面人", levelCap: 3 } },
         ],
-        onReach: { factionRep: { [SX]: 5 } },
       },
       {
         id: "second",
@@ -89,7 +89,6 @@ export default { quest: {
           { flag: "quest_sx2_yi_listen", label: "闭眼听剑", resolve: "none",
             narration: "你闭上眼，铜铃声里有一声和别的不一样。你侧身半步，乙的剑尖擦着你的衣襟过去，停在了半空。他收剑，退了一步。" },
         ],
-        onReach: { factionRep: { [SX]: 5 } },
       },
       {
         id: "third",
@@ -99,7 +98,7 @@ export default { quest: {
         completionFlag: "sanxing_trial_passed",
         onReach: {
           money: 200,
-          factionRep: { [SX]: 10 },
+          factionRep: { [SX]: 20 },
           favorability: { 姜泠: 10, 樊枯: 5 },
         },
       },
@@ -115,7 +114,7 @@ export default { quest: {
     giverId: "resident_fanku",
     localOnly: true,
     requiresQuestCompleted: "sanxingpai_2_sanmianjianzhen",
-    requiresFactionRep: { faction: SX, min: 40 },
+    requiresFactionRep: { [SX]: 40 },
     description: "赤炉窟少了一罐古蜀朱砂铜泥。樊枯说这东西盖在纸上三十年不褪，偏偏最近锦官城冒出好几张「老地契」，印泥里闪着铜星。",
     stages: [
       {
@@ -132,7 +131,6 @@ export default { quest: {
         playerHint: "去天都镇香行内堂查那批「香料」的去处。",
         description: "香行账房翻出一页夹带货单，收货人写着锦官城都事府一位姓柳的书办。",
         completionFlag: "quest_sx3_incense",
-        onReach: { factionRep: { [SX]: 5 } },
       },
       {
         id: "deed",
@@ -168,12 +166,12 @@ export default { quest: {
         onReach: {
           money: 350,
           items: catalog("古蜀真伪验印镜"),
-          factionRep: { [SX]: 10 },
+          factionRep: { [SX]: 25 },
           favorability: { 樊枯: 15 },
           byFlag: {
-            quest_sx3_official: { reputation: 5, factionRep: { 鱼定土司府: -10 } },
-            quest_sx3_gaibang: { factionRep: { [GB]: 8, 鱼定土司府: -5 }, favorability: { 周小满: 10 } },
-            quest_sx3_keep: { factionRep: { [SX]: 5 } },
+            quest_sx3_official: { reputation: 5, factionRep: { 锦官城: 12, 鱼定土司府: -10 }, favorability: { 樊枯: -5 } },
+            quest_sx3_gaibang: { factionRep: { [SX]: 10, [GB]: 8, 鱼定土司府: -8 }, favorability: { 周小满: 10 } },
+            quest_sx3_keep: { factionRep: { [SX]: 10 } },
           },
         },
       },
@@ -189,7 +187,7 @@ export default { quest: {
     giverId: "resident_jiangling",
     localOnly: true,
     requiresQuestCompleted: "sanxingpai_1_xujiejiuyue",
-    requiresFactionRep: { faction: SX, min: 15 },
+    requiresFactionRep: { [SX]: 15 },
     description: "阴雨夜里，总有人把油纸药包放在鸭子河界碑下，接济逃荒过河的牧民。这几天药包被镇上的泼皮截了，拿去卖钱。",
     stages: [
       {
@@ -203,7 +201,6 @@ export default { quest: {
           { flag: "quest_sxs1_rescue", label: "先救流民", resolve: "none",
             narration: "你脱下外衣裹住老牧民，背到河湾的淘沙架子下生了火。泼皮看你顾不上他们，揣着药包溜了一半，剩下的扔在地上。" },
         ],
-        onReach: { factionRep: { [SX]: 3 } },
       },
       {
         id: "credit",
@@ -222,8 +219,8 @@ export default { quest: {
           items: catalog("古蜀驱寒药包", 3),
           favorability: { 姜泠: 10 },
           byFlag: {
-            quest_sxs1_sanxing: { factionRep: { [SX]: 7, [GB]: 8 } },
-            quest_sxs1_gaibang: { factionRep: { [SX]: 7, [GB]: 10 }, reputation: 5 },
+            quest_sxs1_sanxing: { factionRep: { [SX]: 12, [GB]: 8 } },
+            quest_sxs1_gaibang: { factionRep: { [SX]: 10, [GB]: 10 }, reputation: 5 },
           },
         },
       },
@@ -247,7 +244,6 @@ export default { quest: {
         playerHint: "替樊枯拉一夜风箱，把炉温稳住。",
         description: "樊枯把风箱拉杆塞给你：「火不能断。你拉，我看着。」",
         completionFlag: "quest_sxs2_bellows",
-        onReach: { factionRep: { [SX]: 2 } },
       },
       {
         id: "charcoal",
@@ -263,7 +259,7 @@ export default { quest: {
         ],
         onReach: {
           money: 150,
-          factionRep: { [SX]: 10 },
+          factionRep: { [SX]: 12 },
           byFlag: {
             quest_sxs2_common: { items: catalog("古蜀艾草宁神香", 2) },
             quest_sxs2_cold: { money: -60, items: catalog("赤炉青铜护腕"), favorability: { 樊枯: 20 } },
@@ -281,7 +277,7 @@ export default { quest: {
     giver: "姜泠",
     giverId: "resident_jiangling",
     localOnly: true,
-    requiresFactionRep: { faction: SX, min: 30 },
+    requiresFactionRep: { [SX]: 30 },
     description: "神树底座的暗室要一面太阳神鸟才能打开。那面金箔盘三十年前碎成了三片，流落在外。",
     stages: [
       {
@@ -321,8 +317,8 @@ export default { quest: {
         ],
         onReach: {
           byFlag: {
-            quest_sxs3_return: { money: 220, items: [...catalog("太阳神鸟残片"), ...catalog("神鸟金箔佩")], factionRep: { [SX]: 10 }, favorability: { 樊枯: 10, 姜泠: 10 } },
-            quest_sxs3_sell: { money: 800, factionRep: { [SX]: -10 }, favorabilitySet: { 樊枯: 0, 姜泠: 0 }, flags: ["sanxing_shenniao_sold"] },
+            quest_sxs3_return: { money: 220, items: [...catalog("太阳神鸟残片"), ...catalog("神鸟金箔佩")], factionRep: { [SX]: 18 }, favorability: { 樊枯: 10, 姜泠: 10 } },
+            quest_sxs3_sell: { money: 800, factionRep: { [SX]: -45 }, favorabilitySet: { 樊枯: 0, 姜泠: 0 }, flags: ["sanxing_shenniao_sold"] },
           },
         },
       },

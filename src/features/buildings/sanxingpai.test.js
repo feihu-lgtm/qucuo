@@ -6,6 +6,8 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { RESIDENT_NPCS } from "../../domain/data/npc/residentNpcs.js";
 import { getBuildingIdForInnerRoom, getInnerRoom, isInnerExitUnlocked, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
+import { resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
+import { applyFactionRep } from "../../domain/rules/economy/factionRep.js";
 import { sectSparRepGain } from "../../domain/rules/economy/sectSpar.js";
 import { buildRoomNpcWithCombat } from "../../domain/rules/npc/rules.js";
 import { buySkill } from "./logic.js";
@@ -93,12 +95,24 @@ describe("三星派", () => {
     expect(sectSparRepGain(state(0, { flags: first.flags, time: 60 }), jia, { outcome: "win" })?.delta).toBe(2);
   });
 
+  it("pays quest rewards at the full 合稿 value, including the -45 for selling the sun-bird", () => {
+    const weld = quests.find((quest) => quest.id === "sanxingpai_side_3_shenniaocanye").stages.at(-1);
+    const repAfter = (flag) => {
+      const { factionRep } = resolveStageRewards(weld, [flag]);
+      return applyFactionRep(rep(50), factionRep, { step: Infinity }).世界.势力声誉[SX];
+    };
+    expect(repAfter("quest_sxs3_return")).toBe(68);
+    expect(repAfter("quest_sxs3_sell")).toBe(5);
+    const trial = quests.find((quest) => quest.id === "sanxingpai_2_sanmianjianzhen").stages.at(-1);
+    expect(resolveStageRewards(trial).factionRep).toEqual({ [SX]: 20 });
+  });
+
   it("keeps the reputation-gated quests closed until 三星派 rep is high enough", () => {
     const gated = quests.filter((quest) => quest.requiresFactionRep);
     expect(gated.length).toBeGreaterThan(0);
     for (const quest of gated) {
       const where = quest.stages[0].requireLocation;
-      const low = state(quest.requiresFactionRep.min - 1, { innerRoomName: where?.inner, room: { name: where?.district, npcs: [] } });
+      const low = state(quest.requiresFactionRep["三星派"] - 1, { innerRoomName: where?.inner, room: { name: where?.district, npcs: [] } });
       expect(getLocalQuestStage(quest, low), quest.id).toBeNull();
     }
     const opener = quests.find((quest) => quest.id === "sanxingpai_1_xujiejiuyue");
