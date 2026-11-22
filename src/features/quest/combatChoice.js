@@ -3,7 +3,7 @@ import { buildEnemyUnit, buildPlayerUnit } from "../../domain/rules/combat/teamU
 import { MOVE_TYPE } from "../../domain/rules/combat/moveTypes.js";
 import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
-import { resolveCombatBuff } from "../../utils/buffSystem.js";
+import { applyBuffsToSpecial, resolveCombatBuff } from "../../utils/buffSystem.js";
 import { settleNpcDuel } from "../npc/settleDuel.js";
 
 export function buildQuestFoe(choice, now = Date.now()) {
@@ -23,7 +23,8 @@ export function autoFightQuestChoice(state, quest, label, now = Date.now()) {
   }
   const npc = buildQuestFoe(choice, now);
   const combatBuff = resolveCombatBuff(char.pendingCombatBuff);
-  let allies = [buildPlayerUnit({ playerChar: char, playerInv: inv, playerMoveset: char.moveset, combatBuff, playerSkills: skills })];
+  const playerChar = { ...char, special: applyBuffsToSpecial(char.special, state.flags, state.time) };
+  let allies = [buildPlayerUnit({ playerChar, playerInv: inv, playerMoveset: char.moveset, combatBuff, playerSkills: skills })];
   let enemies = [buildEnemyUnit(npc)];
   const battleLog = [];
   let outcome;

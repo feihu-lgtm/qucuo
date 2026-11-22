@@ -104,6 +104,29 @@ describe("唐1·暗巷来客", () => {
     }
   });
 
+  it("applies active food attributes to CLI combat without changing base stats", () => {
+    const saved = getRngState();
+    try {
+      const state = intercept();
+      state.char = {
+        ...state.char, hp: [900, 900], waigong: 15, special: { 身法: 1 },
+        moveset: [{ name: "试招", type: MOVE_TYPE.ATTACK, baseDamageMultiplier: 2, cost: 0 }],
+      };
+      const fight = (overrides) => {
+        setSeed(42);
+        return parseLocalCommand(`推进任务 ${id} 硬闯截货`, { ...state, ...overrides }, { surface: "cli" }).result;
+      };
+      const active = fight({ flags: [...state.flags, "buff_身法+9_untilturn_5"] });
+      const expired = fight({ flags: [...state.flags, "buff_身法+9_untilturn_0"] });
+      expect(active.reportRounds).toEqual(fight({ char: { ...state.char, special: { 身法: 10 } } }).reportRounds);
+      expect(expired.reportRounds).toEqual(fight({}).reportRounds);
+      expect(active.reportRounds).not.toEqual(expired.reportRounds);
+      expect(apply(state, active).char.special.身法).toBe(1);
+    } finally {
+      setRngState(saved);
+    }
+  });
+
   it("rejects model-suggested stage and access flags", () => {
     const state = purchased();
     const p = { delta: { flags_add: ["quest_tang1_meeting", "tangmen_invited", "unrelated"] } };
