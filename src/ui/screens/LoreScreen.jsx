@@ -105,7 +105,7 @@ function FactCard({ fact, time, fmtTurn, accent, border, bgPanel, textDim }) {
             return (
               <span key={name} title={`${途径说明[途] || 途}｜${fmtTurn(info.得知回合 || 0)}得知${会淡忘 ? `｜再过约 ${Math.max(0, 剩余)} 回合若无人再提便淡忘` : "｜记牢不忘"}`}
                 style={{ fontSize: 11, padding: "2px 8px", borderRadius: 0, background: "rgba(255,255,255,0.02)",
-                  border: `1px solid ${途径色[途] || border}55`, color: "var(--text)", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  border: `1px solid color-mix(in srgb, ${途径色[途] || border} 33%, transparent)`, color: "var(--text)", display: "inline-flex", alignItems: "center", gap: 5 }}>
                 <span>{name}</span>
                 <span style={{ fontSize: 9, color: 途径色[途] || textDim }}>{途}</span>
                 {会淡忘 && <span style={{ fontSize: 9, color: 剩余 <= 10 ? "#c08a6a" : textDim }}>◷{Math.max(0, 剩余)}</span>}
