@@ -145,6 +145,7 @@ export const QUCUO_MAP = {
     x: 2, y: 1,
     desc: "天都镇以东、雅江以南的滇蜀秘道上。终年不散的紫岚毒雾缠绕着千仞青崖，吊脚木楼悬于藤桥之上，暗香与虫鸣混在湿热的山风里，是五仙教的北坛。",
     exits: { n: "雅江", w: "天都镇" },
+    unlockCondition: { type: "flag", flag: "wuxian_invited" },
   },
   蜀南唐堡: {
     x: 3, y: 1,

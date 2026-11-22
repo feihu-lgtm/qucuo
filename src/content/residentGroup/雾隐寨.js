@@ -1,0 +1,88 @@
+export default { residentGroup: {
+雾隐寨: [
+    {
+      name: "龙汐月", id: "resident_longxiyue", levelCap: 22,
+      brief: "五仙教现任教主（银冠圣母），二十二岁，眉目明艳如林间初绽山茶，腰间缠着一条泛冷光的银鳞细鞭",
+      personality: "明快直率、爱美喜俏，说话带几分少女的娇憨与狡黠；骨子里护短且决断狠辣，面对背叛时眼神冷如毒蛇",
+      carry: [
+        { name: "银鳞缠丝鞭", category: "weapon", quality: "紫" },
+        { name: "黛青蜀锦银缕裙", category: "armor", quality: "紫" },
+        { name: "圣母五灵银冠", category: "accessory", quality: "橙" },
+        { name: "五灵避毒珠", category: "accessory", quality: "紫" },
+        { name: "金蚕解厄丹", category: "misc", quality: "橙" },
+        { name: "化瘴清露", category: "misc", quality: "蓝" },
+        { name: "清瘴丸", category: "misc", quality: "绿" },
+      ],
+    },
+    {
+      name: "麻九娘", id: "resident_majiuniang", levelCap: 20,
+      brief: "五仙教大长老兼副教主（赤蜈派首领），四十八岁，高瘦微驼，左颊一道毒蝎蛰出的紫黑旧斑",
+      personality: "阴鸷多疑、野心勃勃，极重资历权势；表面尊称龙汐月为「教主」，实则字字带刺、步步逼宫",
+      carry: [
+        { name: "血蜈倒刺钩", category: "weapon", quality: "紫" },
+        { name: "赤纹毒蚕袍", category: "armor", quality: "紫" },
+        { name: "赤蜈玄铁扳指", category: "accessory", quality: "紫" },
+        { name: "赤蜈软鞭", category: "weapon", quality: "紫" },
+        { name: "五步断肠散", category: "misc", quality: "蓝" },
+        { name: "蛇药粉", category: "misc", quality: "绿" },
+        { name: "金蚕解厄丹", category: "misc", quality: "橙" },
+      ],
+    },
+    {
+      name: "阿萝", id: "resident_aluo", levelCap: 12,
+      brief: "百蛊药房掌柜、银冠近侍，十九岁，圆脸杏眼双螺髻，十指总沾着洗不干净的紫黑草汁",
+      personality: "嘴毒心软、护主心切，对外乡人天然带三分戏弄与防备，最爱拿活虫陶罐吓唬胆小的江湖汉子",
+      carry: [
+        { name: "碧竹吹箭筒", category: "weapon", quality: "蓝" },
+        { name: "靛蓝百草围裙甲", category: "armor", quality: "绿" },
+        { name: "银蟾鸣露坠", category: "accessory", quality: "蓝" },
+        { name: "碧竹吹箭", category: "weapon", quality: "绿" },
+        { name: "清瘴丸", category: "misc", quality: "绿" },
+        { name: "蛇药粉", category: "misc", quality: "绿" },
+        { name: "化瘴清露", category: "misc", quality: "蓝" },
+      ],
+    },
+    {
+      name: "乌婆婆", id: "resident_wupopo", levelCap: 16,
+      brief: "五仙教百草长老、祖灵殿守殿人，六十六岁，满头银丝盘成高髻，背上常背装满干草药的竹篓",
+      personality: "沉静寡言、恪守祖训，秉持「医毒同源」的古道；对教内权争痛心却不愿动刀兵",
+      carry: [
+        { name: "乌木药杵杖", category: "weapon", quality: "蓝" },
+        { name: "麻布晒药旧衫", category: "armor", quality: "蓝" },
+        { name: "百草老玉佩", category: "accessory", quality: "紫" },
+        { name: "化瘴清露", category: "misc", quality: "蓝" },
+        { name: "蛇药粉", category: "misc", quality: "绿" },
+        { name: "清瘴丸", category: "misc", quality: "绿" },
+        { name: "金蚕解厄丹", category: "misc", quality: "橙" },
+      ],
+    },
+    {
+      name: "桑七", id: "resident_sangqi", levelCap: 14,
+      brief: "赤蜈堂外事执事、麻九娘心腹，三十四岁，精壮黝黑，右耳缺了半个耳廓，眼神总像狼一样左右打量",
+      personality: "贪财好利、行事狠绝，深信江湖上只有银子和拳头靠得住；对麻九娘唯命是从，暗中留了卷款跑路的后手",
+      carry: [
+        { name: "饮瘴苗刀", category: "weapon", quality: "蓝" },
+        { name: "马帮犀皮护胸", category: "armor", quality: "蓝" },
+        { name: "赤蜈铜牌", category: "accessory", quality: "绿" },
+        { name: "五步断肠散", category: "misc", quality: "蓝" },
+        { name: "碧竹吹箭", category: "weapon", quality: "绿" },
+        { name: "蛇药粉", category: "misc", quality: "绿" },
+        { name: "清瘴丸", category: "misc", quality: "绿" },
+      ],
+    },
+    {
+      name: "苏小青", id: "resident_suxiaoqing", levelCap: 6,
+      brief: "五仙教外门采药女、藤花茶棚伙计，二十二岁，清瘦麻利，笑起来左边颊上有个浅梨涡",
+      personality: "朴实机灵、知恩图报，既懂川西官话又熟瘴林暗径；对教中杀伐心怀畏惧，只盼教主平平安安",
+      carry: [
+        { name: "月牙小药锄", category: "weapon", quality: "白" },
+        { name: "厚麻防蛇行山服", category: "armor", quality: "白" },
+        { name: "雄黄平安荷包", category: "accessory", quality: "绿" },
+        { name: "清瘴丸", category: "misc", quality: "绿" },
+        { name: "蛇药粉", category: "misc", quality: "绿" },
+        { name: "化瘴清露", category: "misc", quality: "蓝" },
+        { name: "防瘴紫苏囊", category: "accessory", quality: "绿" },
+      ],
+    },
+  ]
+} };

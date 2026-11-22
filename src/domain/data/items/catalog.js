@@ -137,6 +137,8 @@ export const SUPPLEMENT_WEAPONS = getContent("itemGroup", "SUPPLEMENT_WEAPONS").
 //   beastFear → 战斗外遇怪率，接 encounter.js（本轮标记，随支线落地时接）
 // 神兵不进公共池、不进商店/掉落——只通过各自支线获得（named:true，非 standardIssue）。
 export const DIVINE_ARMS = getContent("itemGroup", "DIVINE_ARMS").map(id => getContent("item", id));
+// 五仙教雾隐寨具名物（同第一批具名物层级，named；商店铺货靠 minRep 门槛，不走公共池另控）
+export const WUXIAN_GOODS = getContent("itemGroup", "WUXIAN_GOODS").map(id => getContent("item", id));
 
 // ============================================================================
 // 核心：把 catalog 条目实例化成一个完整物品对象
@@ -199,6 +201,7 @@ export const CATALOG = [
   ...SUPPLEMENT_WEAPONS,   // 15把通货武器（standardIssue，进公共池）
   ...DIVINE_ARMS,          // 5把神兵（named，只走支线，不进公共池）
   ...JADE_WARES,           // 20件翡翠玉器成品（jadeWare，金玉行选购/预制打造）
+  ...WUXIAN_GOODS,         // 五仙教雾隐寨具名物（named，商店+NPC随身物共用条目）
 ];
 
 // name → 条目，供"按名取物"（任务发放具名物品、商店铺货、AI 引用时反查数值）
