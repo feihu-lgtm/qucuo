@@ -18,7 +18,9 @@ import { runTeamTurn, decideUnitMove, decideUnitTarget, checkBattleOver } from "
 import { buildPlayerUnit, buildLeopardUnit, buildEnemyUnit } from "../../domain/rules/combat/teamUnits.js";
 import { rollBattleLoot } from "../../domain/rules/npc/npcGeneration.js";
 import { resolveCombatBuff } from "../../utils/buffSystem.js";
-import { HpBar, EnergyDots, MoveButton, MoveInspect, TYPE_ICON } from "./DuelScreen.jsx";
+import { MoveButton, MoveInspect, TYPE_ICON } from "./DuelScreen.jsx";
+import TeamUnitCard from "./duel/TeamUnitCard.jsx";
+import { styles } from "./duel/teamDuelStyles.js";
 import { addTeamDodgeStealNotes, excludeDodgeStolenItems, useDuelDodgeSteal } from "./useDuelDodgeSteal.js";
 export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendingCombatBuff, playerInv, playerMoveset, zoneTheme, onFinish , playerSkills = []}) {
   // 战前餐 buff：跟 DuelScreen 同一套进场应用（waigong/气血上限进玩家单位装配，
@@ -203,13 +205,13 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
         <div style={styles.teamsRow}>
           <div style={styles.teamCol}>
             {allyUnits.map(u => (
-              <UnitCard key={u.id} unit={u} color={u.id === "player" ? zoneTheme.accent : "var(--violet)"} zoneTheme={zoneTheme} />
+              <TeamUnitCard key={u.id} unit={u} color={u.id === "player" ? zoneTheme.accent : "var(--violet)"} zoneTheme={zoneTheme} />
             ))}
           </div>
           <div style={styles.vsCol(zoneTheme)}>第{round}回合</div>
           <div style={styles.teamCol}>
             {enemyUnits.map(u => (
-              <UnitCard key={u.id} unit={u} color="var(--red-soft)" zoneTheme={zoneTheme} right />
+              <TeamUnitCard key={u.id} unit={u} color="var(--red-soft)" zoneTheme={zoneTheme} right />
             ))}
           </div>
         </div>
@@ -376,60 +378,3 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
     </div>
   );
 }
-
-// 单个战斗单位的状态卡：名字 + 血条 + 能量点（倒下后整体置灰）
-function UnitCard({ unit, color, zoneTheme, right }) {
-  const pct = unit.hp[1] > 0 ? (unit.hp[0] / unit.hp[1]) * 100 : 0;
-  return (
-    <div style={{ opacity: unit.alive ? 1 : 0.38, marginBottom: 6, textAlign: right ? "right" : "left" }}>
-      <div style={{ fontSize: "11.5px", color: zoneTheme.text, marginBottom: 3 }}>
-        {unit.name}{!unit.alive && <span style={{ fontSize: "9.5px", color: zoneTheme.textDim }}>（倒下）</span>}
-      </div>
-      <HpBar pct={pct} color={color} />
-      <div style={{ fontSize: "9.5px", color: zoneTheme.textDim, marginTop: 2 }}>{unit.hp[0]}/{unit.hp[1]}</div>
-      <EnergyDots value={unit.energy[0]} color={color} right={right} />
-    </div>
-  );
-}
-
-const styles = {
-  overlay: {
-    position: "fixed", inset: 0, background: "rgba(4,4,10,0.85)",
-    zIndex: 450, display: "flex", alignItems: "center", justifyContent: "center",
-  },
-  container: {
-    width: 560, maxWidth: "94vw", maxHeight: "92vh", borderRadius: 0, padding: 16,
-    display: "flex", flexDirection: "column", gap: 12, overflowY: "auto",
-  },
-  teamsRow: { display: "flex", alignItems: "flex-start", gap: 12 },
-  teamCol: { flex: 1, minWidth: 0 },
-  vsCol: (t) => ({
-    fontSize: "10px", color: t.accent, border: `1px solid ${t.accent}`,
-    borderRadius: 0, padding: "3px 8px", flexShrink: 0, whiteSpace: "nowrap", marginTop: 18,
-  }),
-  opSection: { display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 },
-  sectionLabel: (t) => ({ fontSize: "12px", color: t.accent, letterSpacing: "1px" }),
-  moveGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: "26vh", overflowY: "auto" },
-  targetRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  warnLine: { textAlign: "center", color: "var(--red-soft)", fontSize: "11px", padding: "4px 0" },
-  hintLine: (t) => ({ fontSize: "11px", color: t.textDim, textAlign: "center", marginBottom: 6 }),
-  enemyStripLabel: (t) => ({ fontSize: "10.5px", color: t.textDim, marginTop: 4 }),
-  enemyStrip: { display: "flex", flexWrap: "wrap", gap: 6 },
-  enemyChip: (t, revealed) => ({
-    fontSize: "11px", padding: "4px 8px", borderRadius: 0,
-    border: `1px dashed ${revealed ? t.accentDim : "rgba(255,255,255,0.15)"}`,
-    color: revealed ? t.text : t.textDim,
-    cursor: revealed ? "pointer" : "default",
-    background: revealed ? "rgba(255,255,255,0.04)" : "transparent",
-  }),
-  logSection: {
-    borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10,
-    maxHeight: "30vh", overflowY: "auto", fontFamily: "inherit",
-  },
-  logHint: (t) => ({ fontSize: "12px", color: t.textDim, textAlign: "center", padding: "16px 0" }),
-  continueRow: { textAlign: "center", marginTop: 6 },
-  continueBtn: (t) => ({
-    cursor: "pointer", display: "inline-block", padding: "8px 24px",
-    color: t.accent, border: `1px solid ${t.accent}`, borderRadius: 0, fontSize: "12px",
-  }),
-};
