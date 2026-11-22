@@ -82,6 +82,10 @@ export async function settleTurn({ ctx, ai, trace, turnOpts, cmd, getGameState, 
     ctl.revertRecords = captureSettledChanges(prev, settledTree, revertPaths);
     return settledTree;
   };
+  // 送礼好感增加值要显示给玩家：把结算 note（"收下了…，好感+N"）落日志。
+  if (turnOpts.settleKind === "gift" && softSettle.note) {
+    ctl.logs = [...(ctl.logs || []), { t: "affection", text: `  ${softSettle.note}` }];
+  }
   ctl.applied = true;
   if (ctx.setVarTree) ctx.setVarTree(applySoftSettle);
   else setVarTreeState(applySoftSettle(getGameState().varTree));

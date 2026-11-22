@@ -88,12 +88,12 @@ it("passes the band and its reaction to both narration and extraction", async ()
     const { phiRules } = buildSysBase(200, {}, "", "", false, "", narrativeOnly, "settle", settleOptions);
     expect(phiRules).toContain("分量：薄礼");
     expect(phiRules).toContain("礼貌致谢");
-    if (!narrativeOnly) expect(phiRules).toContain("0~+1");
+    if (!narrativeOnly) expect(phiRules).toContain("1~+2");
   }
   const chat = vi.fn(async () => ({ text: "{}" }));
   await callExtraction("UNKNOWN", "对方道谢。", state, {}, settleOptions, { chat });
   expect(chat.mock.calls[0][0][0].content).toContain("分量：薄礼");
-  expect(chat.mock.calls[0][0][0].content).toContain("0~+1");
+  expect(chat.mock.calls[0][0][0].content).toContain("1~+2");
   expect(chat.mock.calls[0][0][0].content).not.toContain("@赠礼");
 });
 
@@ -114,7 +114,7 @@ it.each([0, 11])("clamps the gift and preserves the daily cap (already gained %s
     ],
   });
   commitRound(deps);
-  expect(state.varTree.角色[chieftain.name].好感度).toBe(gained ? 61 : 65);
+  expect(state.varTree.角色[chieftain.name].好感度).toBe(gained ? 61 : 66);
   expect(state.varTree.角色[beggar.name]?.好感度).toBeUndefined();
   expect(state.char.money).toBe(30);
   expect(state.inv).toEqual(["药丸", "药丸"]);

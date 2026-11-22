@@ -3,6 +3,7 @@ import { resetPromptRegistryForTest } from "../prompt/registry.js";
 import { createMockAi } from "../../../engine/ports/ai.js";
 import { parseJudgeAnswer, registerSettleCalls, UNKNOWN_CHOICE } from "./judge.js";
 import { SOFT_RULES } from "./softRules.js";
+import { giftPreferenceLabel } from "../npc/giftWeight.js";
 import { settledToPatches, formatSettleNote } from "./settle.js";
 import { applyPatches } from "../state/applyPatches.js";
 
@@ -93,9 +94,32 @@ describe("softRules mapping tables", () => {
     ]);
     const plain = { npc: "才旦", giftInfo: { itemName: "铜风铃", quality: "绿" } };
     expect(SOFT_RULES.gift.deltas("收下", plain)).toEqual([
-      { path: "角色.才旦.好感度", op: "add", value: 5 },
+      { path: "角色.才旦.好感度", op: "add", value: 6 },
     ]);
     expect(SOFT_RULES.gift.deltas("婉拒", ctx)).toEqual([]);
+  });
+
+  it("gift: 送中对方偏好类别 → 好感取区间上沿", () => {
+    const ctx = {
+      npc: "才旦",
+      giftInfo: { itemName: "猎刀", categoryLabel: "武器", preferLabel: "武器", weight: { label: "厚礼", range: [3, 5] } },
+    };
+    expect(SOFT_RULES.gift.deltas("收下", ctx)).toEqual([
+      { path: "角色.才旦.好感度", op: "add", value: 5 },
+    ]);
+    // 类别对不上偏好：照常用 suggestedDelta/中值
+    const other = { npc: "才旦", giftInfo: { itemName: "玉镯", categoryLabel: "饰品", preferLabel: "武器", weight: { label: "厚礼", range: [3, 5] } } };
+    expect(SOFT_RULES.gift.deltas("收下", other)).toEqual([
+      { path: "角色.才旦.好感度", op: "add", value: 4 },
+    ]);
+  });
+
+  it("giftPreferenceLabel: 按称谓/简介猜偏好类别", () => {
+    expect(giftPreferenceLabel({ name: "老孙", brief: "老孙饭馆的掌柜" })).toBe("杂物");
+    expect(giftPreferenceLabel({ name: "卓玛", title: "雪山派剑客" })).toBe("武器");
+    expect(giftPreferenceLabel({ name: "路人甲" })).toBeNull();
+    // 职业先于泛称谓：厨娘出身的大娘爱食材杂物，不是首饰
+    expect(giftPreferenceLabel({ name: "鱼定大娘", brief: "村里的厨娘，热心肠" })).toBe("杂物");
   });
 
   it("companion_invite: 应允 → 直接 set 高初始好感", () => {

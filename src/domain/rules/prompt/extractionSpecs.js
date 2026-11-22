@@ -111,17 +111,18 @@ export const EXTRACTION_SPECS = {
 叙事内容：
 @narrative
 
-只允许对收礼者 _.add 一次好感，整数范围 @赠礼.好感范围。若允许零且态度未变，可省略。礼物已扣除，不重复写入物品或银两变动。
-输出 JSON：{"mvu":"_.add('角色.${npcName}.好感度', ${example});"}`, {}, settleOpts);
+只允许对收礼者 _.add 一次好感，整数范围 @赠礼.好感范围；收下必写区间内正向增量，不得省略或为零。礼物已扣除，不重复写入物品或银两变动。
+输出 JSON：{"mvu":"_.add('角色.${npcName}.好感度', ${example});"}`, {}, settleOpts)
+          + (info.preferLabel ? ` ${settleOpts.settleNpc}平日偏爱「${info.preferLabel}」一类物件；若这份礼正是该类，好感取区间上沿。` : "");
       }
       const [lo, hi] = info.range || giftRange(info.quality);
       const suggested = info.suggestedDelta ?? Math.round((lo + hi) / 2);
-      return `${settleOpts?.settleNpc || "对方"}刚收到玩家赠送的礼物：${info.itemName ? `「${info.itemName}」` : "一件物品"}，品阶【${info.quality || "白"}】${info.categoryLabel ? `，类别「${info.categoryLabel}」` : ""}${info.desc ? `。物件描述：${info.desc}` : ""}
+      return `${settleOpts?.settleNpc || "对方"}刚收到玩家赠送的礼物：${info.itemName ? `「${info.itemName}」` : "一件物品"}，品阶【${info.quality || "白"}】${info.categoryLabel ? `，类别「${info.categoryLabel}」` : ""}${info.desc ? `。物件描述：${info.desc}` : ""}${info.preferLabel ? `。对方平日偏爱「${info.preferLabel}」一类物件` : ""}
 
 叙事内容：
 ${narrative}
 
-【铁律】不管叙事写得含蓄还是热络，送礼这一轮${settleOpts?.settleNpc || "对方"}对玩家的好感度只能上升、不得为0或负数——按品阶与来历，建议幅度 +${lo}~+${hi}（贵重取上沿，寻常取下沿）。物品交换写进 delta（礼物已由系统扣除，不需重复处理 items_rm）。
+【铁律】不管叙事写得含蓄还是热络，送礼这一轮${settleOpts?.settleNpc || "对方"}对玩家的好感度只能上升、不得为0或负数——按品阶与来历，建议幅度 +${lo}~+${hi}（贵重取上沿，寻常取下沿${info.preferLabel && info.categoryLabel === info.preferLabel ? "；这份礼正是他偏好的类别，取上沿" : ""}）。物品交换写进 delta（礼物已由系统扣除，不需重复处理 items_rm）。
 输出 JSON（mvu 字段必须是一条正向 _.add 好感度指令）：
 {"mvu":"_.add('角色.${settleOpts?.settleNpc || "XXX"}.好感度', ${suggested});\n","delta":{"items_add":[],"flags_add":[]}}`;
     },

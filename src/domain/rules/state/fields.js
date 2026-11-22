@@ -81,11 +81,11 @@ export const FIELD = Object.freeze({
   flags: "flags",
 });
 
-const ordinaryGift = [2, 4];
+const ordinaryGift = [3, 5];
 const affectionRules = {
   mvu: { maxDelta: 15, daily: 12 },
   firstMeeting: [0, 20],
-  gift: { 白: ordinaryGift, 绿: [4, 6], 蓝: [6, 9], 紫: [9, 12], 橙: [11, 14], 红: [13, 15] },
+  gift: { 白: ordinaryGift, 绿: [5, 7], 蓝: [7, 10], 紫: [10, 13], 橙: [12, 15], 红: [14, 15] },
   learn: { ordinary: [2, 4, 3], master: [4, 8, 6] },
   companion: { min: 40, max: 55, floor: 30, example: 45 },
   appease: [0, 5],
@@ -108,10 +108,10 @@ export const GIFT_WEIGHT = {
     wealthy: weaponPrice,
   },
   bands: [
-    { ratio: 0, label: "薄礼", range: [0, 1], reaction: "礼貌致谢，不必惊喜，也不必拉近关系" },
-    { ratio: 1, label: "寻常", range: [1, 3], reaction: "自然领情，略显亲切" },
-    { ratio: 2, label: "厚礼", range: [3, 5], reaction: "明显动容，具体说出这份礼对自己为何有用" },
-    { ratio: 5, label: "重金", range: [5, 8], reaction: "郑重承情，表现出礼物非同寻常，但不凭空许诺回报" },
+    { ratio: 0, label: "薄礼", range: [1, 2], reaction: "礼貌致谢，礼轻情意重，仍记一份心意" },
+    { ratio: 0.5, label: "寻常", range: [2, 4], reaction: "自然领情，略显亲切" },
+    { ratio: 1.5, label: "厚礼", range: [4, 6], reaction: "明显动容，具体说出这份礼对自己为何有用" },
+    { ratio: 4, label: "重金", range: [6, 9], reaction: "郑重承情，表现出礼物非同寻常，但不凭空许诺回报" },
   ],
 };
 export const AFFECTION_RULES = affectionRules;
