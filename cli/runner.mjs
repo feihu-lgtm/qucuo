@@ -348,8 +348,16 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
         },
         commitDeps: (turn) => {
           pickupExtractionFailedRef.current = turn.pickupExtractionFailed;
+          // ref 读写出入口与 turnContext 同契约：engine/act 只经 refGet/refSet 碰 ref。
+          const refs = {
+            varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,
+            pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef,
+            roundsSinceLastSaveRef, playedThisSessionRef,
+          };
           return {
             ...turn,
+            refGet: (name) => refs[name]?.current,
+            refSet: (name, value) => { refs[name].current = value; },
             isTalk,
             gm: false,
             lockedDestName: null,
