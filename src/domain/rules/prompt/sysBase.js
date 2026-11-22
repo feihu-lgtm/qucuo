@@ -19,7 +19,7 @@ function buildDuelReportRules(duelReport, narrativeOnly, onMissingPaths) {
   const segmentShape = narrativeOnly
     ? "散文必须恰好分成N+1个段落，每段首句以对应标记开头"
     : "顶层 output 数组必须恰好有N+1项，每项以对应标记开头";
-  return `\n【切磋战报逐回合规矩】本场系统已结算${rounds.length}回合。${segmentShape}：依次为${rounds.map((round) => `「【第${round.round}回合】」`).join("、") || "无回合段"}，最后一段为「【结局】」。每回合段只能写该回合给定的招式、伤害与状态，不得补造、调换、合并回合或改动任何数值；结局段只写本场结果。\nHP带字段中 healthy=健旺（≥60%），写得如无事发生；hurt=受创（25%–<60%），写出明显震荡；nearDown=将倒（<25%），写成眼看就要倒下。只按受伤一方自己的回合后HP带叙述，玩家与 NPC 一视同仁。\n系统给定战况如下，只能据此叙述：\n${battleData || "本场没有逐回合记录。"}\n`;
+  return `\n【切磋战报逐回合规矩】本场系统已结算${rounds.length}回合。${segmentShape}：依次为${rounds.map((round) => `「【第${round.round}回合】」`).join("、") || "无回合段"}，最后一段为「【结局】」。每回合段只写该回合给定的招式、伤害与状态，禁补造、调换、合并回合或改数值；结局段只写本场结果。\nHP带：healthy=健旺（≥60%，写得如无事发生）；hurt=受创（25%–<60%，写出明显震荡）；nearDown=将倒（<25%，写成眼看要倒）。只按受伤方自己的回合后HP带叙述，玩家与NPC一视同仁。\n系统给定战况如下，只能据此叙述：\n${battleData || "本场没有逐回合记录。"}\n`;
 }
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
@@ -63,7 +63,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   // "什么情况"这种系统元问题应该只有一两句话，"拔剑迎战"这种战斗场面应该完整展开，
   // 不该用同一个固定字数套所有输入。传了就用动态版本，不传（比如旧调用点或测试场景）
   // 就退回原来的全局固定字数，保证向后兼容。
-  const lenNote = budgetInstruction || `本轮 output 数组里所有行拼起来，总字数应控制在约 ${targetWordCount} 字左右（允许±15%浮动），不要明显少写，也不要为了凑数硬拖长。根据这个总字数目标，自行决定要写几行、每行写多长。`;
+  const lenNote = budgetInstruction || `本轮 output 各行合计约 ${targetWordCount} 字（±15%浮动），勿明显少写、勿凑数硬拖；据此自定行数与行长。`;
 
   // ── settleKind 专属铁律（本轮抽成独立函数）──────────────────────────
   // 之前"送礼铁律"是直接堆在下面那个巨型模板字符串里的三元表达式，每加一个新的
@@ -87,12 +87,12 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       if (o.giftInfo?.weight) return giftWeight(
         "\n【赠礼反应】「@giftInfo.itemName」已由系统交付，禁重复扣除。分量：@{赠礼.分量}；反应：@{赠礼.反应}。贴合收礼人性格，不同分量禁雷同。",
       );
-      return `\n【送礼世界观铁律】曲措乡人情厚重，当面送礼无论贵贱皆生惊喜与暖意，绝不为难、起疑或冷脸不领情。本轮唯一走向：${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，必写其欣然收下、态度转暖；禁写推辞、质疑来意或婉拒不受。`;
+      return `\n【送礼世界观铁律】曲措乡人情厚重，当面送礼无论贵贱皆生惊喜与暖意，绝不为难、起疑或冷脸不领情。本轮唯一走向：${o.settleNpc}面对${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}${o.giftInfo?.desc ? `（${o.giftInfo.desc}）` : ""}，必写欣然收下、态度转暖；禁写推辞、质疑来意或婉拒。`;
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
       const speech = o.settleBeast
-        ? `它不通人言（cannotSpeak），全程不出人言，情感全靠动作、眼神、姿态传达（如以额抵掌、绕身而行、伏低臣服等，用符合它兽类身份的方式）`
+        ? `它不通人言（cannotSpeak），情感全靠动作、眼神、姿态传达（以额抵掌、绕身而行、伏低臣服等合其兽类身份的方式）`
         : `能正常开口说话，用言语与神情表达结伴之意`;
       return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行，非临时起意。本轮唯一走向：必写其毫不保留、爽快应下并定下同行情谊，${speech}；禁写犹豫、观望、抗拒或需再三哄劝。`;
     }
@@ -100,7 +100,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授并结师徒名分（好感门槛、束脩、招式均由系统结算完毕，为既成事实）。本轮唯一走向：必写其郑重传授功夫、态度较前更亲近；禁写勉强、敷衍、留一手或临时反悔。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
     }
     if (o.settleKind === "appease") {
-      return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，本轮为新缓和尝试。结合此前方式，判断当前言行是否真诚、得体且切中要害：有效才写怒气消解，无效则保持不满，禁把和解写成既成事实。`
+      return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，本轮为新缓和尝试。结合此前方式，判断言行是否真诚、得体且切中要害：有效才写怒气消解，无效保持不满，禁把和解写成既成事实。`
         + (o.giftInfo?.weight ? giftWeight("本次赠礼分量：@{赠礼.分量}。分量不等于已经消气。") : "");
     }
     return "";
@@ -117,23 +117,23 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     if (o.settleKind === "gift") {
       if (o.giftInfo?.weight) return buildSettleNarrativeNote(o);
       const range = o.giftInfo?.range ?? giftRange(o.giftInfo?.quality);
-      return `\n【送礼世界观铁律】曲措乡人情厚重，当面送礼无论贵贱皆生惊喜与暖意，绝不冷脸拒情。本轮${o.settleNpc}收下${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}，观感只能变好，禁不变或变差。\n礼物信息：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}，描述：${o.giftInfo?.desc || "无特别来历，寻常物件"}。\n本轮必须输出 <mvu> 且为正向增量：依品阶与来历在${formatRange(range)}内取值（贵重/用心取上沿，寻常取下沿），禁为 0 或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? Math.round((range[0] + range[1]) / 2)});`;
+      return `\n【送礼世界观铁律】曲措乡人情厚重，当面送礼无论贵贱皆生惊喜与暖意，绝不冷脸拒情。本轮${o.settleNpc}收下${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}，观感只能变好，禁不变或变差。\n礼物信息：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}，描述：${o.giftInfo?.desc || "寻常物件"}。\n本轮必须输出 <mvu> 且为正向增量：依品阶来历在${formatRange(range)}内取值（贵重/用心取上沿，寻常取下沿），禁为0或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? Math.round((range[0] + range[1]) / 2)});`;
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
       const { min, max, example } = AFFECTION_RULES.companion;
       const speech = o.settleBeast
-        ? `用动作、眼神、姿态（如以额抵掌、绕身而行、伏低臣服等，它不能说话）表明结伴之意`
+        ? `用动作、眼神、姿态（如以额抵掌、伏低臣服）表明结伴之意——它不能说话`
         : `用言语与神情郑重定下同行情谊`;
       return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行。本轮必写其爽快应下、${speech}；禁写犹豫或抗拒。\n本轮必须输出 <mvu> 且为正向：${cn}属初登场伙伴，直接 _.set 好感度至 ${min}~${max} 间。\n示例：_.set('角色.${cn}.好感度', ${example});`;
     }
     if (o.settleKind === "learn_skill") {
       const master = !!o.learnInfo?.isMaster;
       const [min, max, example] = learnRange(master);
-      return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授（好感门槛、束脩、招式均由系统结算完毕，为既成事实）；本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。对玩家观感只能变好，禁不变或变差。\n本轮必须输出 <mvu> 且为正向增量：在${formatRange([min, max])}内取值（${master ? "所授是压箱底的绝学，情分重，可取上沿" : "所授是通用功夫，取下沿即可"}），禁为 0 或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${example});`;
+      return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授（门槛、束脩、招式均已由系统结算为既成事实）；本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。对玩家观感只能变好，禁不变或变差。\n本轮必须输出 <mvu> 且为正向增量：在${formatRange([min, max])}内取值（${master ? "绝学情分重，取上沿" : "通用功夫，取下沿"}），禁为0或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${example});`;
     }
     if (o.settleKind === "appease") {
-      return `\n【怒气缓和状态裁决】仅当本轮行为确实缓和${o.settleNpc}，才输出 <mvu>：必写生气解除，观感确有变化时可选附好感度增量 N（${AFFECTION_RULES.appease.join("~")} 整数）。未奏效禁设生气解除且不输出 <mvu>；除此之外禁写任何 MVU 变更。\n成功示例（未奏效不输出）：\n_.set('角色.${o.settleNpc}.生气解除', true);\n_.add('角色.${o.settleNpc}.好感度', 3);`;
+      return `\n【怒气缓和状态裁决】仅当本轮行为确实缓和${o.settleNpc}，才输出 <mvu>：必写生气解除，观感确有变化时可附好感度增量 N（${AFFECTION_RULES.appease.join("~")} 整数）。未奏效禁设生气解除且不输出 <mvu>；除此之外禁写任何 MVU 变更。\n成功示例（未奏效不输出）：\n_.set('角色.${o.settleNpc}.生气解除', true);\n_.add('角色.${o.settleNpc}.好感度', 3);`;
     }
     return "";
   }
@@ -157,7 +157,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   // 蓝灯段（地理概要/地图铁律/好感度规则）常驻；专项段（拓扑路线/契诃夫之枪/路途遭遇/
   // 装备掉落）只在玩家或上轮回复提到、或该 scope 确需时才亮。opts.gateCtx 不传则不裁剪。
   const gated = opts.gateCtx
-    ? gateScenario(scenario, { ...opts.gateCtx, scope })
+    ? gateScenario(scenario, { ...opts.gateCtx, scope, wantMvu: wantMvu && !narrativeOnly })
     : { text: scenario, lit: [], dark: [] };
   if (opts.onGateReport) opts.onGateReport(gated);
   // 13 位置拆分：scenario / charDescription 由各自的独立块承载，这里不再填进预设占位符，避免重复。
@@ -169,35 +169,35 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     : isSettle
       ? `回复纯JSON，字符串不换行。状态已结算，只写生动正文，禁改状态或重复结算奖励/物品/银两${opts.snowLeopardGift ? "：" : "，禁输出 room/char/dao/delta："}
 {"output":["行1","行2"],"memory":"≤50字客观事实"}
-${opts.snowLeopardGift ? '唯一例外：收复雪豹任务进行中且雪豹在场，本次赠礼若为肉，可输出 "delta":{"flags_add":["snow_spirit_meat"]}；非肉则拒吃并讲个短笑话，不加flag。delta只允许flags_add，且只允许snow_spirit_meat，不得输出其他flag或状态。不要输出 room / char / dao。\n' : ""}memory：≤50字纯客观事实，玩家称"${playerName}"，禁"你/我/玩家"；琐事省略。${wantMvu ? `
+${opts.snowLeopardGift ? '唯一例外：收复雪豹任务进行中且雪豹在场，本次赠礼若为肉，可输出 "delta":{"flags_add":["snow_spirit_meat"]}；非肉则拒吃并讲个短笑话，不加flag。delta只允许flags_add，且只允许snow_spirit_meat，不得输出其他flag或状态。不要输出 room / char / dao。\n' : ""}memory：≤50字纯客观事实，玩家称"${playerName}"，禁"你/我/玩家"，琐事省略。${wantMvu ? `
 JSON后另起一行附 <mvu> 块（禁入JSON内），见上文规则。` : ""}`
       : scope === "move"
         ? `回复纯JSON，字符串不换行。移动到达：只写叙事、场景与在场人物，不发物品、不改复杂状态：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
 carry：仅NPC首登场写${CARRY_COUNT.min}-${CARRY_COUNT.max}件可见随身物，叙事须写外观。
-memory（可选）：≤50字纯客观事实，记到达地与途中要事；玩家称"${playerName}"，禁"你/我/玩家"；寻常赶路省略。
-mentionedNewNpcs：提全新具名人物时加["名"]。`
+memory（可选）：≤50字纯客观事实记到达地与途中要事，玩家称"${playerName}"，禁"你/我/玩家"，寻常赶路省略。
+mentionedNewNpcs：仅提全新具名人物时加["名"]。`
         : `回复纯JSON，字符串不换行：
 {"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}],"items":[{"name":"名","id":"id"}]},"char":{"hp":[60,100],"neigong":5,"waigong":8,"special":{"根骨":5,"悟性":6,"体魄":5,"魅力":5,"智谋":5,"身法":5,"气运":5}},"dao":{"karma":0,"jie":0,"sign":"天象","rumor":["事"]},"delta":{"items_add":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}],"items_rm":[],"skill_up":{},"exp":0,"pot":0,"flags_add":[]}}
 items_add：剧情道具/杂物可用纯字符串；武器/护甲/饰品用对象。
-carry：仅NPC首登场写${CARRY_COUNT.min}-${CARRY_COUNT.max}件可见随身物（常人多白/绿档），叙事须写外观并提及；后续不写。
+carry：仅NPC首登场写${CARRY_COUNT.min}-${CARRY_COUNT.max}件可见随身物（常人多白/绿档），叙事须写外观，后续不写。
 NPC加tag：仅路途泛用清剿目标（猛兽/山贼等，按地域说明填）可选；具名人物不加。
-mentionedNewNpcs（顶层）：仅提全新具名人物时加["名"]，否则省略或留空。
+mentionedNewNpcs（顶层）：仅提全新具名人物时加["名"]。
 ${scope === "full" && !opts.duelReport ? 'duelRequest（顶层）：仅玩家向在场NPC提切磋且对方应允开架时填"NPC名"；拒绝/躲避/仅谈打斗须省略。\n' : ""}emergedNpcName与emergedNpcDescription（顶层）：仅收到"人物涌现"指令且本轮登场时加（后者一句话定性、无数值），其余禁写。
-memory（顶层可选）：≤50字纯客观事实，记可公开关键事件（写清人名地名，忌含糊指代）；玩家称"${playerName}"，禁"你/我/玩家"；禁情绪/心理/评述/私密；琐事省略。${wantMvu ? `
+memory（顶层可选）：≤50字纯客观事实记可公开关键事件（写清人名地名），玩家称"${playerName}"，禁"你/我/玩家"，禁情绪/心理/评述/私密，琐事省略。${wantMvu ? `
 
 JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> 块（禁入JSON），见上文规则。` : ""}`;
 
   // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
   // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
   const messages = [
-    makeBlock("main", `${ENGINE_IDENTITY}\n\n篇幅要求：${lenNote}\n${narratorVoicePrompt(narratorState, opts.onPromptRefMissing)}`),
+    makeBlock("main", `${ENGINE_IDENTITY}\n\n${lenNote.startsWith("篇幅要求：") ? lenNote : `篇幅要求：${lenNote}`}\n${narratorVoicePrompt(narratorState, opts.onPromptRefMissing)}`),
     makeBlock("worldInfoBefore", `${presetContent}${npcLoreBlock || ""}`),
-    makeBlock("charDescription", `玩家角色：${playerName}。系统会维护气血、内外功、物品等状态；你只需叙事，不要擅自修改状态。`),
-    makeBlock("charPersonality", `旁白/说书人的语气由「Main Prompt」中的声线控制，保持统一。`),
+    makeBlock("charDescription", `玩家角色：${playerName}。气血、内外功、物品等状态由系统维护，你只叙事，不擅自改状态。`),
+    makeBlock("charPersonality", `旁白语气由「Main Prompt」声线控制，保持统一。`),
     makeBlock("scenario", gated.text),
     makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantTalkItemRule ? `${buildTalkItemRule(narrativeOnly)}\n` : ""}${inSeaOfMind ? `${buildSeaOfMindRule()}\n\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
-    makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是这个世界的说书人/Gamemaster。`),
+    makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是说书人/Gamemaster。`),
     makeBlock("authorsNote", ""),
     makeBlock("exampleStart", "<START>"),
   ];
@@ -214,7 +214,7 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
   // 也跟酒馆的 PHI 不同：ST 的 Post-History Instructions 是 system/user 角色，靠位置
   // 靠后取优先级，本就不是 prefill。
   const phiRules = [
-    scope === "full" && !opts.duelReport ? "\n【战斗叙事边界】任何战斗的招式交锋与胜负结果均由系统战斗结算，叙事不得自行描写。" : "",
+    scope === "full" && !opts.duelReport ? "\n【战斗叙事边界】战斗的招式交锋与胜负均由系统结算，叙事不得自行描写。" : "",
     buildDuelReportRules(opts.duelReport, narrativeOnly, opts.onDuelReportMissing),
     narrativeOnly ? buildSettleNarrativeNote(opts) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuNote(opts) : "",

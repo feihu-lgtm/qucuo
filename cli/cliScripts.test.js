@@ -298,7 +298,7 @@ describe("CLI scripts", () => {
 
     expect(failures, output.join("\n")).toBe(0);
     expect(JSON.stringify(recorded.map(({ request }) => request)))
-      .toContain("[交互目标] 玩家选定了「商人」作为本轮唯一的互动对象");
+      .toContain("[交互目标] 玩家选定了「商人」作为本轮唯一互动对象");
   });
 
   it("restores :state and the seeded RNG sequence after a malformed CLI turn", async () => {

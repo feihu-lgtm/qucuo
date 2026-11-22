@@ -64,6 +64,11 @@ export function matchNpcLore(npcLore, ctx = {}) {
 // scopes —— 状态通道：这些 scope 下无条件点灯（如移动轮必给拓扑，战斗轮必给掉落规则）
 // head   —— 用于从 scenario 文本里认出这一段（段落起首匹配）
 const SCENARIO_ENTRIES = [
+  // 去重通道：dedupIfMvu 的段在 MVU 说明书在场时熄灯（好感度规矩两边写一份是重复，
+  // 由 MVU 那份统一承载）；MVU 缺席（散文档）时照常保留。
+  // stockRe 是出厂默认段的指纹：只去重与 MVU 说明书重复的默认写法；
+  // 剧本自定义的好感度规则（不同刻度/条件）不含这些措辞，照常点亮。
+  { head: /^好感度维护规则/, dedupIfMvu: true, stockRe: /初次登场|不报数字|微调/, scopes: [], keys: [] },
   { head: /^拓扑连通关系/, scopes: ["move"],
     keys: ["鱼定村", "鱼定土司", "喇嘛庙", "白塔", "后山平台", "雪山派", "山洞", "顶峰",
            "天都镇", "大草甸", "玉泉寨", "贡措海", "锦官城", "怎么走", "路线", "在哪", "去哪"] },
@@ -91,9 +96,16 @@ export function gateScenario(scenario, ctx = {}) {
     const head = b.trimStart();
     const e = SCENARIO_ENTRIES.find((x) => x.head.test(head));
     if (!e) return true;                                   // 🔵 蓝灯：常驻
+    const name = head.slice(0, head.indexOf("\n") > 0 ? head.indexOf("\n") : 10).replace(/[（(：:].*$/, "");
+    if (e.dedupIfMvu) {                                    // MVU 在场时去重熄灯
+      if (!e.stockRe || e.stockRe.test(b)) {
+        if (ctx.wantMvu) { dark.push(name); return false; }
+        lit.push(`${name}⟨留⟩`); return true;
+      }
+      lit.push(`${name}⟨自定义保留⟩`); return true;        // 自定义规则非重复，常驻
+    }
     const byScope = (e.scopes || []).includes(ctx.scope);  // 状态通道
     const hitKey = (e.keys || []).find((k) => scanText.includes(k)); // 关键词通道
-    const name = head.slice(0, head.indexOf("\n") > 0 ? head.indexOf("\n") : 10).replace(/[（(：:].*$/, "");
     if (byScope || hitKey) { lit.push(`${name}${hitKey ? `⟨词:${hitKey}⟩` : "⟨态⟩"}`); return true; }
     dark.push(name);
     return false;
@@ -122,13 +134,13 @@ export function buildNpcLoreBlock(matched) {
   const mentioned = people.filter(m => m.reason !== "在场");
   let out = "";
   if (present.length) {
-    out += `\n\n【此刻在场人物设定】（这些人真的站在这个场景里，此刻正对着玩家）\n${present.map(m => m.entry.trim()).join("\n")}`;
+    out += `\n\n【此刻在场人物设定】（真站在这个场景里，正对着玩家）\n${present.map(m => m.entry.trim()).join("\n")}`;
   }
   if (mentioned.length) {
-    out += `\n\n【仅被提及、并不在场的人物设定】（这些人只是被聊到、被提起，此刻并不在这个场景里——你可以在对话/心理活动里自然提到他们，但绝不能让他们凭空出现在这个场景、开口说话或有任何实际登场的动作，除非玩家真的移动到他们所在之处）\n${mentioned.map(m => m.entry.trim()).join("\n")}`;
+    out += `\n\n【仅被提及、并不在场的人物设定】（只是被聊到、被提起，此刻不在这个场景——可在对话/心理里自然提到，但绝不能让他们凭空出现、开口说话或实际登场，除非玩家真的移动到他们所在之处）\n${mentioned.map(m => m.entry.trim()).join("\n")}`;
   }
   if (world.length) {
-    out += `\n\n【相关地理与势力】（这些是本轮提到的地点、门派、规矩或物件，**不是人**，不会说话也不会登场。写到它们时按这份设定写，不要另编）\n${world.map(m => m.entry.trim()).join("\n")}`;
+    out += `\n\n【相关地理与势力】（本轮提到的地点、门派、规矩或物件，**不是人**，不会说话也不会登场；写到时按这份设定，不要另编）\n${world.map(m => m.entry.trim()).join("\n")}`;
   }
   return out;
 }

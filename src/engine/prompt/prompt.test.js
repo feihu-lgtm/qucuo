@@ -34,7 +34,7 @@ describe("pure prompt builders", () => {
       intent: classifyIntent("查看地上的石头"),
     });
     const assembled = assemblePrompt({ prompt }, "查看地上的石头", {}, state.convo, state.convo, "", state.convo);
-    const note = "玩家本轮的行动涉及地上的「界石」（仍在地上，尚未拾取）。叙事须围绕玩家对这件东西的举动展开；除非玩家明确说要拾取或拿走，它仍留在原处，不得写成已入囊。";
+    const note = "玩家本轮行动涉及地上的「界石」（仍在地上，尚未拾取）。叙事围绕玩家对它的举动展开；除非玩家明确说要拾取或拿走，它仍留在原处，不得写成已入囊。";
     expect(assembled.ctx).toContain(`[涉及物品] ${note}`);
 
     const withoutItem = assemblePrompt({

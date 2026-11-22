@@ -24,7 +24,7 @@ describe("angry NPC prompt note", () => {
     expect(note).toContain("此前已尝试：送礼「青稞饼」、交易");
     expect(note).toContain("在场生气角色");
     expect(note).toContain("道歉/辩解/示好/赠礼");
-    expect(note).toContain("奏效则在 output 中体现怒气缓和");
+    expect(note).toContain("奏效则在 output 体现怒气缓和");
   });
 
   const MVU_TAIL = "奏效则在 <mvu> 写 _.set('角色.<该角色>.生气解除', true)";

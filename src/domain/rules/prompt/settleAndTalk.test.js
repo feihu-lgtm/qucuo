@@ -22,13 +22,13 @@ describe("scope 物品规范挂载", () => {
     const t = wia("talk", false);
     expect(t).not.toContain("曲措乡物件志");
     expect(t).toContain("对话轮的物品规范");
-    expect(t).toContain("写进 delta");
+    expect(t).toContain("才写 delta");
   });
   it("talk 双调用：同样挂对话规范，但改成散文措辞不提 delta", () => {
     const t = wia("talk", true);
     expect(t).toContain("对话轮的物品规范");
     expect(t).not.toContain("写进 delta");
-    expect(t).toContain("后续记账完全照这段正文来");
+    expect(t).toContain("后续记账完全照正文来");
   });
   it("move/settle 都不挂对话规范", () => {
     expect(wia("move", false)).not.toContain("对话轮的物品规范");
@@ -141,7 +141,7 @@ describe("AI duelRequest", () => {
     );
     expect(phiBlock.content).toContain('duelRequest（顶层）：仅玩家向在场NPC提切磋且对方应允开架时填"NPC名"');
     expect(phiBlock.content).toContain("拒绝/躲避/仅谈打斗须省略");
-    expect(phiRules).toContain("任何战斗的招式交锋与胜负结果均由系统战斗结算");
+    expect(phiRules).toContain("战斗的招式交锋与胜负均由系统结算");
   });
 
   it("duel-report prompt permits the requested report without opening another duel", () => {
@@ -188,10 +188,10 @@ describe("AI duelRequest", () => {
     expect(phiRules).toContain("恰好有N+1项");
     expect(phiRules).toContain("【第1回合】");
     expect(phiRules).toContain("【结局】");
-    expect(phiRules).toContain("健旺（≥60%）");
-    expect(phiRules).toContain("受创（25%–<60%）");
-    expect(phiRules).toContain("将倒（<25%）");
-    expect(phiRules).toContain("玩家与 NPC 一视同仁");
+    expect(phiRules).toContain("健旺（≥60%");
+    expect(phiRules).toContain("受创（25%–<60%");
+    expect(phiRules).toContain("将倒（<25%");
+    expect(phiRules).toContain("玩家与NPC一视同仁");
     expect(phiRules).toContain("回合后气血：A 60/60、B 57/60");
     expect(phiRules).toContain("HP带：A healthy、B healthy");
     expect(phiRules).toContain("当前状态：A {}、B {\"control\":{\"name\":\"麻穴\",\"duration\":2}}");
@@ -202,7 +202,7 @@ describe("AI duelRequest", () => {
       { hasNpc: true, duelReport },
     );
     expect(dual.phiRules).toContain("恰好分成N+1个段落");
-    expect(dual.phiRules).toContain("受创（25%–<60%）");
+    expect(dual.phiRules).toContain("受创（25%–<60%");
   });
 
   it("duel-report missing paths reach the prompt trace callback", () => {
@@ -220,7 +220,7 @@ describe("AI duelRequest", () => {
   it("dual-call extraction prompt includes the accepted-spar rule", () => {
     const example = buildExtractionSpecExample("UNKNOWN");
     expect(example).toContain('"duelRequest"');
-    expect(example).toContain("NPC 拒绝或躲避");
+    expect(example).toContain("拒绝或躲避");
   });
 
   it("keeps only room-visible NPCs from either string or object form", () => {
@@ -260,7 +260,7 @@ describe("结算专属提取 spec 的路由", () => {
   it("拜师预览命中 LEARN_SKILL，且铁律要求正向好感", () => {
     const t = buildExtractionSpecExample("UNKNOWN", "learn_skill");
     expect(t).toContain("专门处理拜师学艺场景");
-    expect(t).toContain("只能上升、不得为 0 或负数");
+    expect(t).toContain("只能上升、不得为0或负数");
     expect(t).toContain("_.add('角色.雪豹.好感度'");
   });
 });
