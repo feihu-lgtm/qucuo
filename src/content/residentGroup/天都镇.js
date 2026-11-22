@@ -241,5 +241,24 @@ export default { residentGroup: {
         { name: "酥油茶", category: "misc", quality: "白" },
       ],
     },
+    {
+      name: "说书人陈七", innerRoom: "天都行脚楼", id: "resident_chenqi", levelCap: 1,
+      brief: "天都行脚楼驻场说书人",
+      personality: "满腹故事，说话爱卖关子，江湖传闻知道一半编一半，分不清",
+      fullBio: `陈七，天都镇行脚楼的说书人，四十开外，一把旧折扇、半块醒木，一张嘴能把雪山飞狐说成隔壁王二。
+早年跟着马帮跑遍川西，锦官城的官面、黑风寨的刀口、百花楼的帐底，都听过一耳朵——
+所以他的段子里总掺着些真货，只是他自己也分不清哪句是听来的、哪句是编的，
+说到要紧处总爱卖个关子，把醒木一拍："欲知后事——添茶钱，再叙。"
+镇上人拿他当茶余饭后的乐子，有心人却从他半真半假的段子里，听出过不该有人知道的门道来。`,
+      carry: [
+        { name: "裁纸小刀", category: "weapon", quality: "白" },
+        { name: "说书人旧布衫", category: "armor", quality: "白" },
+        { name: "铜钱串", category: "accessory", quality: "白" },
+        { name: "旧折扇", category: "misc", quality: "白" },
+        { name: "半块醒木", category: "misc", quality: "白" },
+        { name: "誊抄的话本残页", category: "misc", quality: "绿" },
+        { name: "粗陶茶碗", category: "misc", quality: "白" },
+      ],
+    },
   ]
 } };
