@@ -305,7 +305,7 @@ export default { quest: {
           favorability: { "老猎户": 50 },
           items: [{ name: "熊山手绘地图", category: "misc", quality: "绿", desc: "老猎户年轻时走过的路，标注着温泉的位置。" }, ...c("熊山密道羊皮图"), ...c("老猎户的狼牙护符")],
           factionRep: { 鱼定村: 25, 玉泉寨: 5, 雪山派: 5, 鱼定土司府: 0 },
-          flags: ["unlock_xiongshan_wenquan", "skill_trap_learned", "flag_yuding_hunter_heir"],
+          flags: ["unlock_xiongshan_wenquan", "skill_trap_learned", "flag_yuding_hunter_heir", "clue_xionggu_wenquan_zhiwu"],
         },
       },
     ],

@@ -95,6 +95,10 @@ export default { quest: {
     exclusiveGroup: "锦官城归途",
     title: "官2-A·投靠·还恩",
     giver: "柳青鸢",
+    requiresFlags: ["quest_guan2_a"],
+    blockedByFlags: ["quest_guan2b_s1"],
+    requiresFlagsMin: { flags: ["quest_guan1_s1", "quest_guan1_s3", "quest_guan1_s4", "quest_guan1_s5_expose"], min: 2 },
+    requiresFavor: { "柳青鸢": 50 },
     description: "触发条件：官1五个任务中至少两项选择了对柳青鸢有利的方向，且累积好感≥50。柳青鸢将上司所赠的青布长衫交给玩家：「以后不用还。」",
     stages: [
       {
@@ -122,6 +126,9 @@ export default { quest: {
     exclusiveGroup: "锦官城归途",
     title: "官2-B·中立·压制",
     giver: "柳青鸢",
+    requiresFlags: ["quest_guan2_b", "clue_xionggu_wenquan_zhiwu"],
+    blockedByFlags: ["quest_guan2a_s1"],
+    requiresFlagsMin: { flags: ["lore_dushi_anxixiang_caigou", "promise_liu_qingyuan_wenquan", "quest_guan1_s3"], min: 2 },
     description: "触发条件：持有官1任务4的安息香采购记录、任务7的水源地图底本、任务9的旧玉佩中至少两项，并完成村5衔接线索「熊曲温泉之物」，且锦官城在土司博弈中的立场尚未被主线锁定。",
     stages: [
       {
