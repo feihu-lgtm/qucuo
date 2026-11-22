@@ -507,7 +507,7 @@ export const SKILL_CATALOG = {
   ],
 
   // ── 血刀门：邪派，以杀养刀。不外传，只从厉天行身上掉 ──
-  // ── 鱼定土司府·巡捕营校场（合稿·土司府第 5 节）。不可拜入，全部按土司府声誉解锁；印山镇岳掌合稿另要桑杰朵杰好感 45，好感门槛暂未接线。 ──
+  // ── 鱼定土司府·巡捕营校场（合稿·土司府第 5 节）。不可拜入，全部按土司府声誉解锁；雪域不动诀可由府4格桑顿珠真传、印山镇岳掌另要桑杰朵杰好感 45 或府4清营真传。 ──
   土司: [
     {
       id: "kf_tusi_xunshan", name: "巡山铁步", type: SKILL_TYPE.QINGGONG, quality: "绿", price: 60,
@@ -542,14 +542,14 @@ export const SKILL_CATALOG = {
       moveType: "防御",
       immuneControl: true,
       passiveBonus: { maxHp: 28 },
-      unlock: { faction: "鱼定土司府", rep: 40, member: false, note: "鱼定土司府声誉 ≥ 40（门墙之交）" },
+      unlock: { faction: "鱼定土司府", rep: 40, member: false, bypassFlag: "tusi_gesang_true_heir", note: "鱼定土司府声誉 ≥ 40（门墙之交），或府4格桑顿珠真传" },
       desc: "三十年前老土司桑杰大侠融合藏地密息与中原内功所创的护体心法。气行周天如雪峰盘踞，任狂风扑面岿然不动；只是如今府里懂它本意的人，满打满算不过两个。",
     },
     {
       id: "kf_tusi_yinshan", name: "印山镇岳掌", type: SKILL_TYPE.MOVE, quality: "橙", price: 480,
       moveType: "攻击",
       forceCrit: { multiplier: 1.75 }, nextAttackBonus: 0.35,
-      unlock: { faction: "鱼定土司府", rep: 80, member: false, note: "鱼定土司府声誉 ≥ 80（股肱心腹）" },
+      unlock: { faction: "鱼定土司府", rep: 80, member: false, favor: { npc: "桑杰朵杰", min: 45 }, bypassFlag: "quest_ts4_purge", note: "鱼定土司府声誉 ≥ 80（股肱心腹）且桑杰朵杰好感 ≥ 45，或府4清营后桑杰朵杰亲授" },
       desc: "桑杰朵杰不轻易示人的世家绝学。出掌前看不出半分杀气，落下来却似一方千斤官印从天压顶，外绵内沉、劲透脏腑。三十年前雪山崖底，老土司正是以此掌接下了呼延大侠的剑。",
     },
   ],

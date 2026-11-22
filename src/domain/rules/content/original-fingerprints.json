@@ -3,10 +3,10 @@
   "format": "sha256(JSON.stringify(data)); orderedIds (up to 20) or their SHA-256 use id ?? name for arrays or Object.keys for objects; totalFieldCount counts object keys recursively, excluding array indices",
   "exports": {
     "QUCUO_QUESTS": {
-      "entryCount": 66,
-      "orderedIdsSha256": "35a16a664b7c0821cbbe1f2035774e19c98e5a9a97b5245727b781e6a7549b14",
-      "totalFieldCount": 3121,
-      "jsonSha256": "9281488ed85d2443da51384a54f1be416c5ba2885a8c3ab87190b5f046012b6c"
+      "entryCount": 67,
+      "orderedIdsSha256": "e573b7f2c2eedf3e86f234b1e460c373b8f6ceed2dc1bf811af9859fd88cb776",
+      "totalFieldCount": 3218,
+      "jsonSha256": "9ae23939d1e2c2320e162923e536d1be444e53c74c795e32edfe955b051843ed"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -159,16 +159,16 @@
       "jsonSha256": "d0c47d92e4d5958afd876abb8512223df37399abe67606b7329a8f282a8d2245"
     },
     "CATALOG": {
-      "entryCount": 541,
-      "orderedIdsSha256": "60d47cc18d76b6c6aa68339df3eeb1e8ce5ffcce21abc524893486a647b0baf8",
-      "totalFieldCount": 4063,
-      "jsonSha256": "e7758fbb5dc1731ad418328347c8c4a88bb680aecacfbb1630276a373f0b19c4"
+      "entryCount": 543,
+      "orderedIdsSha256": "96af413ac08f1ad6b3c9d6bf77a7ff44a76be5a6d0003b88f099a355b0274e7b",
+      "totalFieldCount": 4076,
+      "jsonSha256": "3abbabc8e8e132b8981175b1b25848c9130bab5758d47c99ac1c2a7791805429"
     },
     "CATALOG_INDEX": {
-      "entryCount": 541,
-      "orderedIdsSha256": "60d47cc18d76b6c6aa68339df3eeb1e8ce5ffcce21abc524893486a647b0baf8",
-      "totalFieldCount": 4604,
-      "jsonSha256": "671ff21a796f166a03d5cad1286d4f2946b9554ae3406afa8b15e684da7d0495"
+      "entryCount": 543,
+      "orderedIdsSha256": "96af413ac08f1ad6b3c9d6bf77a7ff44a76be5a6d0003b88f099a355b0274e7b",
+      "totalFieldCount": 4619,
+      "jsonSha256": "0dc01c30f30b9735156427376b5cfb8c7ab4cad65aa0b77de17a4053c30e7882"
     },
     "RESIDENT_NPCS": {
       "entryCount": 14,
@@ -215,8 +215,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 1546,
-      "jsonSha256": "52faa1c4416a3d0543b021ff9b94bb7ff675115094bb6c1d24381e7e6c408566"
+      "totalFieldCount": 1547,
+      "jsonSha256": "93600b509962264c1aa83605cda1cb74835b2be044c6d6e1a25782aacb9a5a41"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,

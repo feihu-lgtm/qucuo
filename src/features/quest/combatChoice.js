@@ -5,6 +5,7 @@ import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 import { applyBuffsToSpecial, resolveCombatBuff } from "../../utils/buffSystem.js";
 import { settleNpcDuel } from "../npc/settleDuel.js";
+import { isQuestChoiceOpen } from "../../domain/rules/quests/questEngine.js";
 
 export function buildQuestFoe(choice, now = Date.now()) {
   const { levelCap = 1 } = choice.combatNpc;
@@ -18,6 +19,7 @@ export function buildQuestFoe(choice, now = Date.now()) {
 export function autoFightQuestChoice(state, quest, label, now = Date.now()) {
   const choice = getLocalQuestStage(quest, state)?.choices?.find((entry) => entry.label === label);
   if (choice?.resolve !== "combat" || !choice.combatNpc) return null;
+  if (!isQuestChoiceOpen(choice, state)) return { logs: [{ t: "sys", text: `「${choice.label}」的条件还不满足。` }] };
   const { char, inv, skills } = state;
   if (!(char?.hp?.[0] > 0) || !char.moveset?.length) {
     return { logs: [{ t: "sys", text: "须有可用招式和气血才能截货。" }] };

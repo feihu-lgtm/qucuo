@@ -1,5 +1,7 @@
 // 武学门槛（合稿附录三 unlock）。声誉读 世界.势力声誉.<unlock.faction>（AI 单回合每势力最多 ±10）。
 // member 条目：本门弟子（SECT_MEMBER_FLAGS）达到 rep 即可，外客只能走 guestRep。
+// favor：{ npc, min } 另要某人好感（角色.<npc>.好感度，缺省 10）达标。
+// bypassFlag：持有这个 flag（任务真传）就跳过声誉与好感门槛。
 import { SECT_MEMBER_FLAGS, hasDefected } from "../character/factionEntry.js";
 import { factionRepOf } from "./factionRep.js";
 
@@ -21,10 +23,18 @@ function repOk(state, unlock) {
   return rep >= (unlock.rep || 0);
 }
 
+function favorOk(state, favor) {
+  if (!favor) return true;
+  const have = Number(state.varTree?.角色?.[favor.npc]?.好感度 ?? 10);
+  return have >= favor.min;
+}
+
 export function skillUnlockStatus(state, skill) {
   const unlock = skill?.unlock;
   if (!unlock) return { ok: true };
-  if (!repOk(state, unlock)) return { ok: false, reason: unlock.note };
+  const bypass = !!unlock.bypassFlag && (state.flags || []).includes(unlock.bypassFlag);
+  if (!bypass && !repOk(state, unlock)) return { ok: false, reason: unlock.note };
+  if (!bypass && !favorOk(state, unlock.favor)) return { ok: false, reason: unlock.note };
   if (unlock.prestige != null && (Number(state.varTree?.世界?.威望) || 0) < unlock.prestige) return { ok: false, reason: unlock.note };
   if (unlock.flag && !(state.flags || []).includes(unlock.flag)) return { ok: false, reason: unlock.note };
   if (unlock.quest?.some((id) => state.questProgress?.[id]?.status !== "completed")) {
