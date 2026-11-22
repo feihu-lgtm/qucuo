@@ -9,18 +9,7 @@ import { gateScenario } from "./worldbook.js";
 import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL, buildTalkItemRule } from "./enginePrompts.js";
 import { buildSeaOfMindRule } from "../narrator/seaOfMind.js";
 import { makeBlock } from "./tavernMapping.js";
-import { renderDuelReportRounds } from "../combat/duelReport.js";
 
-function buildDuelReportRules(duelReport, narrativeOnly, onMissingPaths) {
-  if (!duelReport) return "";
-  const rounds = Array.isArray(duelReport.rounds) ? duelReport.rounds : [];
-  const { text: battleData, missingPaths } = renderDuelReportRounds(rounds);
-  if (missingPaths.length) onMissingPaths?.(missingPaths);
-  const segmentShape = narrativeOnly
-    ? "散文必须恰好分成N+1个段落，每段首句以对应标记开头"
-    : "顶层 output 数组必须恰好有N+1项，每项以对应标记开头";
-  return `\n【切磋战报逐回合规矩】本场系统已结算${rounds.length}回合。${segmentShape}：依次为${rounds.map((round) => `「【第${round.round}回合】」`).join("、") || "无回合段"}，最后一段为「【结局】」。每回合段只写该回合给定的招式、伤害与状态，禁补造、调换、合并回合或改数值；结局段只写本场结果。\nHP带：healthy=健旺（≥60%，写得如无事发生）；hurt=受创（25%–<60%，写出明显震荡）；nearDown=将倒（<25%，写成眼看要倒）。只按受伤方自己的回合后HP带叙述，玩家与NPC一视同仁。\n系统给定战况如下，只能据此叙述：\n${battleData || "本场没有逐回合记录。"}\n`;
-}
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
 // 返回 SillyTavern 13 位置风格的 system 消息数组，每条带 tavernBlock/tavernLabel。
@@ -183,7 +172,7 @@ items_add：剧情道具/杂物可用纯字符串；武器/护甲/饰品用对�
 carry：仅NPC首登场写${CARRY_COUNT.min}-${CARRY_COUNT.max}件可见随身物（常人多白/绿档），叙事须写外观，后续不写。
 NPC加tag：仅路途泛用清剿目标（猛兽/山贼等，按地域说明填）可选；具名人物不加。
 mentionedNewNpcs（顶层）：仅提全新具名人物时加["名"]。
-${scope === "full" && !opts.duelReport ? 'duelRequest（顶层）：仅玩家向在场NPC提切磋且对方应允开架时填"NPC名"；拒绝/躲避/仅谈打斗须省略。\n' : ""}emergedNpcName与emergedNpcDescription（顶层）：仅收到"人物涌现"指令且本轮登场时加（后者一句话定性、无数值），其余禁写。
+${scope === "full" ? 'duelRequest（顶层）：仅玩家向在场NPC提切磋且对方应允开架时填"NPC名"；拒绝/躲避/仅谈打斗须省略。\n' : ""}emergedNpcName与emergedNpcDescription（顶层）：仅收到"人物涌现"指令且本轮登场时加（后者一句话定性、无数值），其余禁写。
 memory（顶层可选）：≤50字纯客观事实记可公开关键事件（写清人名地名），玩家称"${playerName}"，禁"你/我/玩家"，禁情绪/心理/评述/私密，琐事省略。${wantMvu ? `
 
 JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> 块（禁入JSON），见上文规则。` : ""}`;
@@ -214,8 +203,7 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
   // 也跟酒馆的 PHI 不同：ST 的 Post-History Instructions 是 system/user 角色，靠位置
   // 靠后取优先级，本就不是 prefill。
   const phiRules = [
-    scope === "full" && !opts.duelReport ? "\n【战斗叙事边界】战斗的招式交锋与胜负均由系统结算，叙事不得自行描写。" : "",
-    buildDuelReportRules(opts.duelReport, narrativeOnly, opts.onDuelReportMissing),
+    scope === "full" ? "\n【战斗叙事边界】战斗的招式交锋与胜负均由系统结算，叙事不得自行描写。" : "",
     narrativeOnly ? buildSettleNarrativeNote(opts) : "",
     (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuNote(opts) : "",
     (!narrativeOnly && isSettle && wantMvu && !opts.softSettle

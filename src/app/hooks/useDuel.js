@@ -15,7 +15,7 @@ export function consumeDuelRequest(result, {
   const npc = result?.duelRequest;
   if (!result?.ok || result.stale || (typeof isStale === "function" && isStale())
     || isTalk || interactMode === "talk" || interactMode === "whisper"
-    || opts.settle || opts.settleKind === "duel_invite" || opts.duelReport || !npc?.name) return false;
+    || opts.settle || opts.settleKind === "duel_invite" || !npc?.name) return false;
   if (recognize) recognize(npc);
   else applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc), { turn: trace, feature: "npc.duel" });
   setActiveTarget(npc.name);

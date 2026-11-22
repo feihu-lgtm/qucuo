@@ -21,7 +21,7 @@ function turnHasStateWrites({ ctx, turn, opts }) {
   // 系统已结算的回合（卖东西/送礼/平息等）提取被跳过、p 只剩叙事键，
   // 但账本必须落账——settle 全族标志都按有变动处理。
   if (opts?.settle || ctx?.isSettle || opts?.settleKind || opts?.learnInfo || opts?.settleBeast
-    || opts?.giftInfo?.weight || opts?.duelReport) return true;
+    || opts?.giftInfo?.weight) return true;
   if (turn?.intentPlan || ctx?.intentPlan || turn?.dealResult) return true;
   if (Array.isArray(turn?.mvuCommands) && turn.mvuCommands.length) return true;
   const p = turn?.p;
@@ -38,7 +38,7 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
   let gameReplaced = false;
   try {
     const narration = typeof turn.narrativeText === "string" ? turn.narrativeText : "";
-    if (opts.duelReport || ctx.apiCfg?.bookkeepEnabled === false || !narration.trim()) return null;
+    if (ctx.apiCfg?.bookkeepEnabled === false || !narration.trim()) return null;
     // 纯对话/无变动回合短路：不发起多余的记账小模型调用。
     if (!turnHasStateWrites({ ctx, turn, opts })) return null;
 

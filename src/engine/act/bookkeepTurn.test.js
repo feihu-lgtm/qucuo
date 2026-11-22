@@ -154,16 +154,6 @@ describe("runBookkeepAfterTurn", () => {
     expect(ai.chat).not.toHaveBeenCalled();
   });
 
-  it("does not call AI for duel reports", async () => {
-    const ai = { chat: vi.fn() };
-    await runBookkeepAfterTurn({
-      ctx: { ai, apiCfg: {}, ...storeAccess() },
-      turn: { narrativeText: narration },
-      opts: { duelReport: { rounds: [] } },
-    });
-    expect(ai.chat).not.toHaveBeenCalled();
-  });
-
   it("swallows AI errors without changing varTree", async () => {
     const before = gameStore.getState().varTree;
     const ai = { chat: vi.fn(async () => { throw new Error("offline"); }) };

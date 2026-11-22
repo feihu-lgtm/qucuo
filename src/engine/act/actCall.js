@@ -48,7 +48,6 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
       softSettle: d.softSettle || null,
-      duelReport: d.duelReport || null,
       snowLeopardGift: d.settleKind === "gift" && d.settleNpc === "雪豹" && !!d.snowLeopardContext,
       giftInfo: d.giftInfo || null,
       settleBeast: !!d.settleBeast,
@@ -68,7 +67,6 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
       },
       onGateReport: (g) => { _gateReport = g; },
       onSnapshot: (snap) => traceEvents.push({ kind: "snapshot", snap }),
-      onDuelReportMissing: (paths) => traceEvents.push({ kind: "step", label: "战报模板字段缺失", level: "warn", text: paths.join("、") }),
       onPromptRefMissing: (paths) => traceEvents.push({ kind: "step", label: "提示词引用缺失", level: "warn", text: paths.join("、") }),
     }
   );
@@ -232,7 +230,7 @@ ${dealFmt}`;
     sysBlocks,
     chatMessages,
     effectiveCfg,
-    stream: effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini" && !d.duelReport,
+    stream: effectiveCfg.streamEnabled && effectiveCfg.apiType !== "gemini",
     intent: { code: d.intent.code, label: d.intent.label },
     recallInfo: d.recallInfo,
     modelOptions: { callLabel: "主叙事" },
