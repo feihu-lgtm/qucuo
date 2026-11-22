@@ -25,31 +25,64 @@ export const AMBUSH_SQUADS = [
     // 拿叛出旗另开一道门，不改 DEFECT_REP 既定数值。
     traitorFlag: defectedFlag("唐门"),
   },
+  {
+    faction: "欢喜教",
+    // 合稿·欢喜教：声誉 ≤ -60「踏入天都香行前厅即触发老何率内院弟子持械截杀」——按房间判定，踏入必中。
+    at: { district: "天都镇", inner: "天都香行" },
+    member: {
+      name: "欢喜教内院弟子",
+      levelCap: 2,
+      brief: "老何手下的内院弟子，粗布短褂，腰插擦得雪亮的短弯刀，袖里藏着迷香。",
+      faction: "欢喜教",
+      tag: "huanxi_guard",
+    },
+    approach: "柜台后的算盘声戛然而止——老何从竹帘后踱出，一挥手，几名内院弟子拔出短弯刀围了上来：「香行不做你的生意，命留下！」",
+    chance: 1,
+  },
 ];
+
+const isHostile = (state, squad) => factionRepOf(state.varTree, squad.faction) <= -60
+  || Boolean(squad.traitorFlag && (state.flags || []).includes(squad.traitorFlag));
+
+// 伏击者不进 room.npcs，开打前先把 combat 数据补齐（moveset/战力/随身物），
+// 不然决斗屏拿空招式集，回合全被挡。
+const ambushOf = (squad) => ({ npc: ensureNpcCombatData({ ...squad.member }), text: squad.approach });
 
 // 纯判定便于测试：rng 可注入；命中返回伏击成员 NPC 或 null。
 export function pickAmbusher(state, rng = seededRand(Math.floor((state.time || 0) / 24), state.room?.name || "")) {
   for (const squad of AMBUSH_SQUADS) {
-    const hostile = factionRepOf(state.varTree, squad.faction) <= -60
-      || (squad.traitorFlag && (state.flags || []).includes(squad.traitorFlag));
-    if (!hostile) continue;
-    // 伏击者不进 room.npcs，开打前先把 combat 数据补齐（moveset/战力/随身物），
-    // 不然决斗屏拿空招式集，回合全被挡。
-    if (rng() < squad.chance) return { npc: ensureNpcCombatData({ ...squad.member }), text: squad.approach };
+    if (squad.at || !isHostile(state, squad)) continue;
+    if (rng() < squad.chance) return ambushOf(squad);
   }
   return null;
 }
+
+// 带 at 的登记项只在踏进指定内层房间时判定（不随大地图移动掷骰）。
+export function pickRoomAmbusher(state, rng = seededRand(Math.floor((state.time || 0) / 24), `${state.room?.name || ""}/${state.innerRoomName || ""}`)) {
+  for (const squad of AMBUSH_SQUADS) {
+    if (!squad.at || squad.at.district !== state.room?.name || squad.at.inner !== state.innerRoomName) continue;
+    if (!isHostile(state, squad)) continue;
+    if (rng() < squad.chance) return ambushOf(squad);
+  }
+  return null;
+}
+
+const toAmbushResult = (hit) => hit && { logs: [{ t: "err", text: `  ${hit.text}` }], forcedDuelNpc: hit.npc };
 
 export const factionAmbushRule = {
   id: "map.faction-ambush",
   deps: (state) => [state.room?.name],
   run(state) {
     if (!state.room?.name) return null;
-    const hit = pickAmbusher(state);
-    if (!hit) return null;
-    return {
-      logs: [{ t: "err", text: `  ${hit.text}` }],
-      forcedDuelNpc: hit.npc,
-    };
+    return toAmbushResult(pickAmbusher(state));
+  },
+};
+
+export const factionRoomAmbushRule = {
+  id: "map.faction-room-ambush",
+  deps: (state) => [state.room?.name, state.innerRoomName],
+  run(state) {
+    if (!state.room?.name || !state.innerRoomName) return null;
+    return toAmbushResult(pickRoomAmbusher(state));
   },
 };
