@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createTurnStaleCheck } from "./useUndo.js";
-import { consumeDuelRequest, openDuelAfterNarration, useDuel } from "./useDuel.js";
+import { consumeDuelRequest, narrateDuelInBackground, openDuelAfterNarration, useDuel } from "./useDuel.js";
 import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../store/gameStore.js";
 
 function freshStore(overrides) {
@@ -12,37 +12,26 @@ function freshStore(overrides) {
   return () => initGameStore(original);
 }
 
-describe("duel narration rollback", () => {
-  it("uses the duel invitation settle without allowing the fight to start", async () => {
+describe("duel invitation", () => {
+  it("writes one short system line and opens the confirmation without an AI turn", async () => {
     const npc = { name: "才旦" };
-    const act = vi.fn().mockResolvedValue(undefined);
+    const addLog = vi.fn();
     const setDuelPending = vi.fn();
-    await expect(openDuelAfterNarration({
-      act,
-      setDuelPending,
-      isStale: () => false,
-    }, npc)).resolves.toBe(true);
-    expect(act).toHaveBeenCalledWith("向才旦抱拳邀战，请他切磋一番", [], {
-      keepUndo: true, intentSkip: true, settle: true, settleKind: "duel_invite", settleNpc: npc,
-    });
+    await expect(openDuelAfterNarration({ addLog, setDuelPending, isStale: () => false }, npc)).resolves.toBe(true);
+    const [[entries]] = addLog.mock.calls;
+    expect(entries).toHaveLength(1);
+    expect(entries[0].t).toBe("sys");
+    expect(entries[0].text).toContain("才旦");
+    expect(entries[0].text.trim().length).toBeLessThanOrEqual(50);
     expect(setDuelPending).toHaveBeenCalledWith(npc);
   });
 
-  it("does not open the duel banner when rollback invalidates the response", async () => {
-    let releaseNarration;
-    const narration = new Promise((resolve) => { releaseNarration = resolve; });
+  it("does not open the duel banner when rollback invalidates the turn", async () => {
     const turnGenerationRef = { current: 0 };
     const isStale = createTurnStaleCheck(turnGenerationRef);
-    const setDuelPending = vi.fn();
-    const pending = openDuelAfterNarration({
-      act: () => narration,
-      setDuelPending,
-      isStale,
-    }, { name: "守门人" });
-
     turnGenerationRef.current += 1;
-    releaseNarration();
-    await expect(pending).resolves.toBe(false);
+    const setDuelPending = vi.fn();
+    await expect(openDuelAfterNarration({ addLog: vi.fn(), setDuelPending, isStale }, { name: "守门人" })).resolves.toBe(false);
     expect(setDuelPending).not.toHaveBeenCalled();
   });
 });
@@ -93,87 +82,68 @@ describe("AI duel request consumption", () => {
 });
 
 describe("duel battle report", () => {
-  it("requests the settled report through a duelReport turn", () => {
+  function setup(narrator) {
     const npc = { name: "才旦", levelCap: 1 };
     const restoreStore = freshStore({
       room: { name: "鱼定村", npcs: [npc], items: [] },
       char: { name: "测试主角", hp: [10, 10], special: { 气运: 5 } },
       varTree: { 角色: {}, 世界: {} },
-      pot: 0, inv: [], skills: [], flags: [], questProgress: {}, time: 1,
+      pot: 0, inv: [], skills: [], flags: [], questProgress: {}, time: 1, log: [],
     });
-    vi.useFakeTimers();
-    try {
-      const addLog = vi.fn();
-      const act = vi.fn();
-      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } };
-      const handlers = {};
-      function Harness() {
-        Object.assign(handlers, useDuel({
-          act, addLog, duelPending: null, featureCtxRef,
-          setActiveTarget: vi.fn(), setDuelPending: vi.fn(), setDuelingNpc: vi.fn(),
-          duelingNpc: npc, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
-          aiSummarizeFact: vi.fn(), setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
-          turnGenerationRef: { current: 0 },
-        }));
-        return null;
-      }
-      renderToStaticMarkup(createElement(Harness));
-
-      handlers.duelFinishHandler("win", null, [], null, [], null, []);
-      vi.runOnlyPendingTimers();
-
-      expect(act).toHaveBeenCalledWith(expect.stringContaining("连贯的整场战报"), [], expect.objectContaining({
-        silentCmd: true, preserveHp: true, keepUndo: true, duelReport: { rounds: [] },
-        duelReportFallback: expect.any(Function),
+    const addLog = vi.fn((entries) => gameActions.setLog((log) => [...(log || []), ...entries]));
+    const act = vi.fn();
+    const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } };
+    const handlers = {};
+    function Harness() {
+      Object.assign(handlers, useDuel({
+        act, addLog, duelPending: null, featureCtxRef,
+        setActiveTarget: vi.fn(), setDuelPending: vi.fn(), setDuelingNpc: vi.fn(),
+        duelingNpc: npc, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
+        aiSummarizeFact: vi.fn(), setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
+        turnGenerationRef: { current: 0 }, narrator,
       }));
+      return null;
+    }
+    renderToStaticMarkup(createElement(Harness));
+    return { handlers, act, addLog, restoreStore };
+  }
+
+  it("logs the system fact lines at once and never starts an AI turn", () => {
+    const { handlers, act, addLog, restoreStore } = setup({ canAsk: () => false });
+    try {
+      handlers.duelFinishHandler("win", null, [{ round: 1, teamText: "一招既定" }], null, [], null, []);
+      expect(act).not.toHaveBeenCalled();
+      const logs = addLog.mock.calls.flatMap(([entries]) => entries || []);
+      expect(logs).toContainEqual(expect.objectContaining({ t: "sys", text: expect.stringContaining("第1回合") }));
+      expect(logs).toContainEqual(expect.objectContaining({ t: "sys", duelEnd: true }));
     } finally {
-      vi.useRealTimers();
       restoreStore();
     }
   });
 
-  it.each([
-    ["failed", { ok: false, error: new Error("report failed") }],
-    ["stale", { ok: true, stale: true }],
-  ])("logs settled system rows when the report turn is %s", async (_label, reportResult) => {
-    const npc = { name: "才旦", levelCap: 1 };
-    const restoreStore = freshStore({
-      room: { name: "鱼定村", npcs: [npc], items: [] },
-      char: { name: "测试主角", hp: [10, 10], special: { 气运: 5 } },
-      varTree: { 角色: {}, 世界: {} },
-      pot: 0, inv: [], skills: [], flags: [], questProgress: {}, time: 1,
-    });
-    vi.useFakeTimers();
+  it("inserts the AI lines under their system rows when the narration arrives", async () => {
+    let release;
+    const ask = vi.fn(() => new Promise((resolve) => { release = resolve; }));
+    const { handlers, restoreStore } = setup({ canAsk: () => true, ask });
     try {
-      const addLog = vi.fn();
-      const act = vi.fn((_prompt, _args, options) => {
-        options.duelReportFallback();
-        return Promise.resolve(reportResult);
-      });
-      const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } };
-      const handlers = {};
-      function Harness() {
-        Object.assign(handlers, useDuel({
-          act, addLog, duelPending: null, featureCtxRef,
-          setActiveTarget: vi.fn(), setDuelPending: vi.fn(), setDuelingNpc: vi.fn(),
-          duelingNpc: npc, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
-          aiSummarizeFact: vi.fn(), setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
-          turnGenerationRef: { current: 0 },
-        }));
-        return null;
-      }
-      renderToStaticMarkup(createElement(Harness));
-
       handlers.duelFinishHandler("win", null, [{ round: 1, teamText: "一招既定" }], null, [], null, []);
-      await vi.runOnlyPendingTimersAsync();
-
-      const logs = addLog.mock.calls.flatMap(([entries]) => entries || []);
-      expect(logs).toContainEqual(expect.objectContaining({
-        t: "sys", text: expect.stringContaining("第1回合"),
-      }));
+      gameActions.setLog((log) => [...log, { t: "cmd", text: "> 下一场" }]);
+      release('{"rounds":["拳风扑面，才旦侧身不及。"],"ending":"才旦抱拳认输。"}');
+      await vi.waitFor(() => expect(gameStore.getState().log.some((entry) => entry.duelProse)).toBe(true));
+      const texts = gameStore.getState().log.map((entry) => entry.text.trim());
+      const round = texts.findIndex((text) => text.startsWith("第1回合"));
+      expect(texts[round + 1]).toBe("拳风扑面，才旦侧身不及。");
+      expect(texts.indexOf("才旦抱拳认输。")).toBeLessThan(texts.indexOf("> 下一场"));
     } finally {
-      vi.useRealTimers();
       restoreStore();
     }
+  });
+});
+
+describe("narrateDuelInBackground", () => {
+  it("leaves the log alone when the AI fails", async () => {
+    const setLog = vi.fn();
+    await expect(narrateDuelInBackground("k", [], { outcomeText: "胜" }, { canAsk: () => true, ask: async () => null, setLog })).resolves.toBe(false);
+    expect(setLog).not.toHaveBeenCalled();
   });
 });
