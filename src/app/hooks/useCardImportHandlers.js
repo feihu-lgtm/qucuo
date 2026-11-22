@@ -10,7 +10,7 @@ import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 
 export function useCardImportHandlers({
   setVarTree, setChar, setSkills, setInv, setCompanionState, addLog,
-  featureCtxRef, schedulerRef,
+  setPlayerAvatarCustom, featureCtxRef, schedulerRef,
 }) {
   const handleImportNpcs = useCallback((npcs) => applyResult(featureCtxRef.current, () => {
     const n = importedRegistry.registerImported(npcs, {});
@@ -69,7 +69,7 @@ export function useCardImportHandlers({
     if (n) addLog([{ t: "sys", text: `  ${n} 条地理与规矩已入册，提到时自会浮现。` }]);
   }, { feature: "cards.importWorld" }), [addLog]);
 
-  const handleCreateCharacter = ({ name, gender, fromCard, special, starterSkillId }) => applyResult(featureCtxRef.current, () => {
+  const handleCreateCharacter = ({ name, gender, fromCard, special, starterSkillId, bodyProfile, portraitUrl }) => applyResult(featureCtxRef.current, () => {
     const starterSkill = !fromCard && STARTER_SKILLS.find((skill) => skill.id === starterSkillId);
     const initialSkills = starterSkill ? [{
       ...starterSkill, level: 1, exp: 0, maxExp: 100, stage: "入门",
@@ -89,12 +89,17 @@ export function useCardImportHandlers({
           next.hp = [maxHp, maxHp];
         } else if (special && initialSkills) {
           next.special = { ...special };
+          if (bodyProfile) next.bodyProfile = { ...(c.bodyProfile || {}), ...bodyProfile };
           const maxHp = hpFromNeigong(next.neigong ?? 5, special.体魄);
           next.hp = [maxHp, maxHp];
           next.moveset = deriveMovesetFromSkills(initialSkills);
         }
         return next;
       });
+      if (!fromCard && portraitUrl) {
+        setPlayerAvatarCustom?.(portraitUrl);
+        try { localStorage.setItem("qucuo_player_avatar", portraitUrl); } catch { /* ignore */ }
+      }
       if (fromCard) {
         const cardResult = applyCharacterCard(gameStore.getState(), fromCard, "cc_");
         applyResult(featureCtxRef.current, cardResult);
