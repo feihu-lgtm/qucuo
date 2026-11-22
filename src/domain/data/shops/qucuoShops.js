@@ -86,6 +86,25 @@ export const QUCUO_SHOPS = {
       { name: "御赐銮铃", category: ITEM_CATEGORY.ACCESSORY, quality: "红", minRep: 80, member: true, limitOnce: true },
     ],
   },
+  // 天龙军需坊（天龙营）。minRep 按天龙教声誉过滤——军需官记账先看脸，声名抵银子。
+  // 深交秘货（rep100，合稿写 140、引擎声誉封顶 100）在止戈玉令与陨铁血刃之间二选一，
+  // 两条终局路线各得其一——limitOnce 共用同一组标记，买走一件另一件也撤柜。
+  天龙军需坊: {
+    shopName: "天龙军需坊",
+    items: [
+      { name: "西域止血散", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "胡杨炭火酒", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "西域弯刀", category: ITEM_CATEGORY.WEAPON, quality: "绿" },
+      { name: "驼绒防风氅", category: ITEM_CATEGORY.ARMOR, quality: "绿" },
+      { name: "狼牙骨哨", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 15 },
+      { name: "血槽铁刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "西域雪莲清毒丸", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 40 },
+      { name: "玄甲护心镜", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 40 },
+      { name: "龙纹赤铜战甲", category: ITEM_CATEGORY.ARMOR, quality: "橙", minRep: 80 },
+      { name: "止戈玉令", category: ITEM_CATEGORY.ACCESSORY, quality: "橙", minRep: 100, limitOnce: "tianlong_secret" },
+      { name: "陨铁血刃", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100, limitOnce: "tianlong_secret" },
+    ],
+  },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。
@@ -320,7 +339,7 @@ export function buildShopInventory(shopKey) {
       ...makeItem({ name: cfg.name, category: cfg.category, quality: cfg.quality }),
       ...(cfg.minRep == null ? {} : { minRep: cfg.minRep }),
       ...(cfg.member ? { member: true } : {}),
-      ...(cfg.limitOnce ? { limitOnce: true } : {}),
+      ...(cfg.limitOnce ? { limitOnce: cfg.limitOnce } : {}),
     })),
   };
 }

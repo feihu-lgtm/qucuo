@@ -41,6 +41,14 @@ export const FACTION_ENTRIES = {
     intro: "都事府值房里算盘声没停，柳青鸢抬眼看了你一眼又低回去：「公事公办。想在我手底下当差，先让我看看你办事的样子。」",
     joinLabel: "投效都事府，当差锦官城",
   },
+  天龙教: {
+    sect: "天龙教", master: "石重岳", buildingId: "sect_entry_tianlong",
+    minRep: 40, repBonus: 20, flag: "天龙教弟子",
+    token: "天龙弟子令", gifts: ["西域弯刀", "驼绒防风氅"],
+    trial: { flag: "tianlong_spar_first", label: "点将台试炼：堂堂正正胜过石重岳或血刀部教头一场", hint: "去玄甲校场或大草甸磨刀坪，堂堂正正胜过石重岳、厉天行或血刀教头一场，不许用毒。" },
+    intro: "黑石点将台上牛皮大鼓裂了口，台下插着一圈断刀。石重岳收人不看出身，只看拳头与办差——接得住三招，牌子拿走。",
+    joinLabel: "登台试三招，拜入天龙教",
+  },
 };
 
 export const SECT_MEMBER_FLAGS = {
