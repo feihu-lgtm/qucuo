@@ -275,4 +275,80 @@ describe("runBookkeepAfterTurn", () => {
     });
     expect(ai.chat).not.toHaveBeenCalled();
   });
+
+  it("does not call the bookkeeping model on a pure-chat turn with no state writes", async () => {
+    // 契约：提取产物只有叙事键、memory 为空、无 mvu/deal/plan/结算时，本回合无变动，
+    // 记账调用整体短路（null + ai.chat 零调用）。
+    const ai = { chat: vi.fn() };
+    const result = await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: {
+        narrativeText: "两人隔着火炉闲聊了半个时辰。",
+        p: {
+          output: ["两人隔着火炉闲聊了半个时辰。"], memory: "",
+          choices: [], respondedNpcs: ["阿旺"],
+        },
+      },
+      opts: {},
+    });
+    expect(result).toBeNull();
+    expect(ai.chat).not.toHaveBeenCalled();
+  });
+
+  it("still books turns that carry any non-narration extraction field", async () => {
+    // 任一非白名单键（如 delta/char/emergedNpcName）出现即视为有变动，照常记账。
+    const ai = createMockAi(['{"memory":"","ledger":{"阿旺":["打了招呼"]}}']);
+    await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: {
+        narrativeText: narration,
+        p: { output: ["少侠冲阿旺挥了挥手。"], delta: { "角色.阿旺.好感度": 1 } },
+      },
+      opts: {},
+    });
+    expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["打了招呼"]);
+  });
+
+  it("still books when extraction wrote a memory line on an otherwise narration-only turn", async () => {
+    // 口头承诺/结人情只活在正文、不进任何字段——提取层判"值得记"给出 memory 时
+    // 照常记账，承诺不漏账。
+    const ai = createMockAi(['{"memory":"","ledger":{"阿旺":["少侠应承明日替他送刀"]}}']);
+    await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: {
+        narrativeText: "少侠应了阿旺一句，明日替他跑一趟。",
+        p: { output: ["少侠应了阿旺一句，明日替他跑一趟。"], memory: "少侠应承明日替阿旺送刀", respondedNpcs: ["阿旺"] },
+      },
+      opts: {},
+    });
+    expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["少侠应承明日替他送刀"]);
+  });
+
+  it("still books settle turns whose extraction produced narration-only fields", async () => {
+    // 已结算回合（如卖玉）提取被跳过、p 只剩 output/memory——settle 标志按有变动处理，
+    // 买卖必须落账，不得被纯叙事短路。
+    const ai = createMockAi(['{"memory":"","ledger":{"阿旺":["买走玉佩"]}}']);
+    await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: { narrativeText: "少侠把玉佩递过去，阿旺付了八十两。", p: { output: ["……"], memory: "卖出玉佩" } },
+      opts: { settle: true, settleKind: "sale" },
+    });
+    expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["买走玉佩"]);
+  });
+
+  it("still books turns driven by a settle plan or mvu commands", async () => {
+    const ai = createMockAi(['{"memory":"","ledger":{"阿旺":["收钱办事"]}}']);
+    await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess(), intentPlan: { kind: "gift" } },
+      turn: { narrativeText: narration, p: { output: ["收下银子"] } },
+      opts: {},
+    });
+    const ai2 = createMockAi(['{"memory":"","ledger":{"阿旺":["刀光一闪"]}}']);
+    await runBookkeepAfterTurn({
+      ctx: { ai: ai2, apiCfg: {}, ...storeAccess() },
+      turn: { narrativeText: narration, p: { output: ["出刀"] }, mvuCommands: [["add", "x", 1]] },
+      opts: {},
+    });
+    expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["收钱办事", "刀光一闪"]);
+  });
 });

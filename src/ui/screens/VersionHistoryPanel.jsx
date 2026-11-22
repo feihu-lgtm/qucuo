@@ -12,12 +12,20 @@
 // 时区打开游戏，看到的版本时间戳都是一致的东八区时间，不会因为本地时区不同而
 // 显示出不一样的数字。
 // ============================================================================
-import React from "react";
-import { VERSION_HISTORY } from "../../infra/version.js";
+import React, { useEffect, useState } from "react";
+import { loadVersionHistory } from "../../infra/version.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 export default function VersionHistoryPanel({ onClose, accentDim = "var(--accent)" }) {
   const closeGuard = useOverlayCloseGuard(onClose);
+  // 485KB 的完整历史不进主包：弹窗点开才动态 import。
+  const [history, setHistory] = useState(null);
+  useEffect(() => {
+    let live = true;
+    loadVersionHistory().then((entries) => { if (live) setHistory(entries); });
+    return () => { live = false; };
+  }, []);
+  const VERSION_HISTORY = history || [];
   return (
     <div className="mobile-overlay-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div className="mobile-overlay-panel version-history-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 420, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", fontSize: "12px", color: "var(--text)" }} onClick={e => e.stopPropagation()}>

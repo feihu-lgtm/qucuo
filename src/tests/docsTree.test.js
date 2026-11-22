@@ -80,24 +80,17 @@ describe("docs/文件树.md 与真实文件系统对得上", () => {
 // 所以测试全绿、构建是坏的，推上去才发现。
 // 这条测试补上这个缺口：只要能 import 进来、且结构合法，语法就一定是对的。
 describe("version.js 语法与结构（防「测试全绿但构建坏了」）", () => {
-  it("能被解析并导入", async () => {
-    const m = await import("../infra/version.js");
-    expect(Array.isArray(m.VERSION_HISTORY)).toBe(true);
-    expect(m.VERSION_HISTORY.length).toBeGreaterThan(0);
-  });
-
-  it("每条都有 codename / time / notes[]", async () => {
-    const { VERSION_HISTORY } = await import("../infra/version.js");
+  it("懒加载历史可用、每条含 codename/time/notes[]，且 CURRENT_VERSION 指向最新一条", async () => {
+    const { loadVersionHistory, CURRENT_VERSION } = await import("../infra/version.js");
+    const VERSION_HISTORY = await loadVersionHistory();
+    expect(VERSION_HISTORY.length).toBeGreaterThan(0);
     for (const e of VERSION_HISTORY.slice(0, 20)) {
       expect(typeof e.codename).toBe("string");
       expect(typeof e.time).toBe("string");
       expect(Array.isArray(e.notes)).toBe(true);
     }
-  });
-
-  it("CURRENT_VERSION 指向最新一条", async () => {
-    const { VERSION_HISTORY, CURRENT_VERSION } = await import("../infra/version.js");
-    expect(CURRENT_VERSION).toBe(VERSION_HISTORY[0]);
+    expect(CURRENT_VERSION.codename).toBe(VERSION_HISTORY[0].codename);
+    expect(CURRENT_VERSION.time).toBe(VERSION_HISTORY[0].time);
   });
 });
 

@@ -11,6 +11,27 @@ function targetName(target) {
   return typeof target === "string" ? target : target?.name;
 }
 
+// 纯叙事键：提取产物 p 只有这些键时，本回合没有任何数值/关系/物品/事件变动。
+// respondedNpcs 是闲聊常规字段（"对话即认识"由 commitRound 的 talkKnow 处理，
+// 记账层只当叙事元数据）；判据取"只放白名单内的键"而非"没有黑名单键"——提取层
+// 以后加新字段时默认仍记账，宁可多记一次也不漏账。
+const NARRATION_ONLY_P_KEYS = new Set(["output", "memory", "choices", "respondedNpcs", "_truncated"]);
+
+function turnHasStateWrites({ ctx, turn, opts }) {
+  // 系统已结算的回合（卖东西/送礼/平息等）提取被跳过、p 只剩叙事键，
+  // 但账本必须落账——settle 全族标志都按有变动处理。
+  if (opts?.settle || ctx?.isSettle || opts?.settleKind || opts?.learnInfo || opts?.settleBeast
+    || opts?.giftInfo?.weight || opts?.duelReport) return true;
+  if (turn?.intentPlan || ctx?.intentPlan || turn?.dealResult) return true;
+  if (Array.isArray(turn?.mvuCommands) && turn.mvuCommands.length) return true;
+  const p = turn?.p;
+  if (!p || typeof p !== "object") return true; // 形态不明按有变动处理，照常记账
+  // 提取层自己判了"值得记"（许下承诺、结下人情之类只活在正文里、不进任何字段）——
+  // 提取规格允许纯琐事省略 memory，故非空 memory 即照常记账，空才允许短路。
+  if (typeof p.memory === "string" && p.memory.trim()) return true;
+  return Object.keys(p).some((key) => !NARRATION_ONLY_P_KEYS.has(key));
+}
+
 export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, trace } = {}) {
   let bookkeepTrace = null;
   let unsubscribeGameReplaced = null;
@@ -18,6 +39,8 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
   try {
     const narration = typeof turn.narrativeText === "string" ? turn.narrativeText : "";
     if (opts.duelReport || ctx.apiCfg?.bookkeepEnabled === false || !narration.trim()) return null;
+    // 纯对话/无变动回合短路：不发起多余的记账小模型调用。
+    if (!turnHasStateWrites({ ctx, turn, opts })) return null;
 
     const state = ctx.getGameState();
     const room = state.room ?? ctx.prompt?.room ?? { name: "", npcs: [] };
