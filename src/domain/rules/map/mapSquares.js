@@ -71,10 +71,12 @@ export function parseSquareBatch(text) {
 // 小模型没给出物件名时，从百物录按品质+类别挑一件真东西顶上，告别"X品路遇之物"
 // 这种垃圾占位名。品质+类别命中不了就逐级放宽（只按类别/只按品质），全空才退通用名。
 // 给到真名字后，消费侧 makeGameItem 走具名优先，能吃到 catalog 专属数值与特效。
+const notQuestItem = (e) => !e.tags?.includes("任务");
+
 function pickCatalogName(quality, category) {
-  let pool = filterCatalog({ quality, category });
-  if (!pool.length) pool = filterCatalog({ category });
-  if (!pool.length) pool = filterCatalog({ quality });
+  let pool = filterCatalog({ quality, category }).filter(notQuestItem);
+  if (!pool.length) pool = filterCatalog({ category }).filter(notQuestItem);
+  if (!pool.length) pool = filterCatalog({ quality }).filter(notQuestItem);
   if (!pool.length) return { name: `${quality === "白" ? "" : quality}品物件`, desc: "路上拾得的物件。" };
   const e = pool[Math.floor(random() * pool.length)];
   return { name: e.name, desc: e.desc || "" };
