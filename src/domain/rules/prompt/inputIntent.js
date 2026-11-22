@@ -40,8 +40,12 @@ const MOVE_PATTERNS = [
   /^(往|向|朝|去|走向|前往)\s*(东|南|西|北|上|下)(边|面|方|方向|走|去|行|面前)?[，,。.！!？?]*$/,
 ];
 
-const LOOK_PATTERNS = [
+const BARE_LOOK_PATTERNS = [
   /^(look|l|看看|环顾|环顾四周|环视|环视四周|查看四周|看看四周|这里有什么|此地有什么|四处看看|四下打量|打量四周)[，,。.！!？?]*$/,
+];
+
+const LOOK_PATTERNS = [
+  ...BARE_LOOK_PATTERNS,
   // 带目标的端详：look <id> / 看 <人> / 打量 <人> / 端详 <人> 也是"查看"，
   // 不应落进 UNKNOWN 走全量上下文让模型自由续写他人事件
   /^(look|l)\s+\S+[，,。.！!？?]*$/,
@@ -49,6 +53,13 @@ const LOOK_PATTERNS = [
   /^(看|看看)\s+\S+[，,。.！!？?]*$/,
   /^(打量|端详|观察|细看|查看)\s*\S+[，,。.！!？?]*$/,
 ];
+
+// 仅"环顾房间"的裸 look（无目标）——cachedLook 房间预成文本只认这种，
+// 带目标的端详要放行到端详路径，不能吃房间缓存
+export function isBareLook(rawInput) {
+  const s = (rawInput || "").trim();
+  return !!s && BARE_LOOK_PATTERNS.some((p) => p.test(s));
+}
 
 const COMBAT_PATTERNS = [
   /(攻击|砍|杀|打|战斗|拔剑|出招|对战|挑战|决斗)/,

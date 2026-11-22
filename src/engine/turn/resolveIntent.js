@@ -223,13 +223,6 @@ export async function resolveIntent(cmd, env) {
   }
   if (arrivalResult) applyLocal(arrivalResult, "格子移动");
 
-  // LOOK 轮只写"看见什么"：有人正在动手或场上有进行中的事时，模型爱把
-  // 查看当成新的一回合续写打斗/事件。这里钉死：本轮只描述被看对象的现状，
-  // 谁都不再出手、不推进任何进行中的事。
-  if (!isTalk && intent.code === "LOOK") {
-    collectNote += `\n[系统裁决：本轮仅是查看/端详，只描述被看对象此刻的所见现状（场景则写眼前所见，目标则写其容貌装束、气色伤势、当下举止）。任何人都不出手、不推进或续写进行中的打斗与事件，除认出在场人物外无其他状态变化。]`;
-  }
-
   const targetedRumor = findTargetedRumor(varTreeRef.current, cmd);
 
   const { pickupJudgment, encounterToDescribe } = rollMovementEvents({
@@ -258,6 +251,13 @@ export async function resolveIntent(cmd, env) {
     collectGrantedRef.current = [collectHit.item];
     addLog([{ t: "item", text: `  ✓ 你采得「${collectHit.item}」，收入背包。` }]);
     collectNote = collectHit.note;
+  }
+
+  // LOOK 轮只写"看见什么"：有人正在动手或场上有进行中的事时，模型爱把
+  // 查看当成新的一回合续写打斗/事件。这里钉死：本轮只描述被看对象的现状，
+  // 谁都不再出手、不推进任何进行中的事。
+  if (!isTalk && intent.code === "LOOK") {
+    collectNote += `\n[系统裁决：本轮仅是查看/端详，只描述被看对象此刻的所见现状（场景则写眼前所见，目标则写其容貌装束、气色伤势、当下举止）。任何人都不出手、不推进或续写进行中的打斗与事件，除认出在场人物外无其他状态变化。]`;
   }
 
   const activeGroundItemForTurn = env.state.activeGroundItem
