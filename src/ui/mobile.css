@@ -807,7 +807,8 @@
     position: fixed !important;
     left: 10px !important;
     right: 10px !important;
-    bottom: calc(var(--mobile-keyboard-height, 0px) + 8px) !important;
+    /* 用可视视口坐标从顶部钉位置：iOS 上 fixed bottom 的基准不可靠 */
+    top: calc(var(--mobile-viewport-offset, 0px) + var(--mobile-viewport-height, 100dvh) - 60px) !important;
     z-index: 400;
     background: var(--bg-panel);
     border: 1px solid var(--border);
@@ -819,6 +820,6 @@
 
   /* 输入栏抬升后，滚动对齐把最新叙事停在抬升栏上方，不被键盘遮住 */
   html[data-input-lift] [data-testid="narrative-log"] {
-    scroll-padding-bottom: calc(var(--mobile-keyboard-height, 0px) + 48px);
+    scroll-padding-bottom: calc(var(--mobile-keyboard-height, 0px) + 68px);
   }
 }
