@@ -21,6 +21,15 @@ describe("送礼不吞任务道具", () => {
     expect(giftNpc(state(2, "completed"), { name: "了因师太" }, deed, 0).changes.inv).toEqual([]);
   });
 
+  it("任务奖励里的普通货（fromCatalog）照常能送", () => {
+    const lotus = { id: "l1", name: "铁莲子" };
+    const result = giftNpc({
+      inv: [lotus], flags: [], varTree: {},
+      questProgress: { tangmen_3_zhulintingfeng: { status: "active", currentStageIndex: 99 } },
+    }, { name: "了因师太" }, lotus, 0);
+    expect(result.changes.inv).toEqual([]);
+  });
+
   it("对上当前阶段 deliver 的照常交付并推进", () => {
     const tooth = { id: "t1", name: "虎王的牙筋" };
     const result = giftNpc({
