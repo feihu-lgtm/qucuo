@@ -61,6 +61,30 @@ export const QUCUO_SHOPS = {
       { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 100 },
     ],
   },
+  // 黑风货栈（黑风寨·山寨货栈）。义匪货池：清水药与口粮随便买，
+  // 15 起上刀口货、40 起发寨里制式装备（重铠与断刃只给入伙弟兄）、80 摆镇仓的犀牛皮重甲（只此一件）。
+  黑风货栈: {
+    shopName: "黑风货栈",
+    items: [
+      { name: "苞谷酒", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "风干牦牛肉", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "黑风寨金疮药", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "黑风寨草药包", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "老阿雅婶的止咳散", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "结绳护腕串", category: ITEM_CATEGORY.ACCESSORY, quality: "绿" },
+      { name: "黑风短矛", category: ITEM_CATEGORY.WEAPON, quality: "绿" },
+      { name: "黑风寨土烧", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 15 },
+      { name: "毒蝎粉", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 15 },
+      { name: "马帮硬皮褂", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "黑风寨出征席", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "厚背大砍刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "红缨枪", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "黑风寨分发刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
+      { name: "黑风寨牛皮重铠", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 40, member: true },
+      { name: "黑风断刃", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 40, member: true },
+      { name: "犀牛皮重甲", category: ITEM_CATEGORY.ARMOR, quality: "红", minRep: 80, limitOnce: true },
+    ],
+  },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。

@@ -76,6 +76,16 @@ const FACTION_SHOPS = {
     hostileItems: ["雪山姜枣干粮", "寒岭冻伤膏"],
     coldItems: ["雪山姜枣干粮", "寒岭冻伤膏", "雪松木剑"],
   },
+  // 黑风货栈（黑风寨·山寨货栈）：进得了寨门已是自己人，货栈平常就开门；
+  // 交恶只摆白绿并加价两成，重铠与断刃只发给入伙弟兄，犀牛皮重甲只此一件。
+  黑风货栈: {
+    faction: "黑风寨", idPrefix: "heifeng_purchase",
+    outlets: { sectshop_heifeng: "vault" },
+    nowhere: "须到黑风寨的山寨货栈才能买黑风寨的货。",
+    banned: "守仓汉子把门一横：「巴桑哥说了，仇家一根针也不卖。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿"],
+  },
 };
 
 export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];

@@ -20,6 +20,7 @@ export default { quest: {
         isCgMoment: true,
         onReach: {
           exp: 2,
+          factionRep: { 黑风寨: 3 },
           items: [{ name: "黑风寨木牌", category: "accessory", quality: "白", desc: "桃木牌，刻狼头印记，背面刻「说话算话」四字。" }],
           flags: ["rumor_heifengzhai_guiju"],
           byFlag: { quest_heifengzhai1_c: { favorability: { "巴桑": 10 } } },
@@ -69,7 +70,7 @@ export default { quest: {
         at: "黑风寨·寨后岩洞",
         deliver: { item: "半块银锁片", to: "巴桑" },
         isCgMoment: true,
-        onReach: { exp: 3, favorability: { "巴桑": 20 }, flags: ["lore_heifengzhai_zhenxiang"] },
+        onReach: { exp: 3, favorability: { "巴桑": 20 }, factionRep: { 黑风寨: 5 }, flags: ["lore_heifengzhai_zhenxiang"] },
       },
     ],
     rewardText: "巴桑把银锁片还给玩家：「下次卓央问，就说我看到了。」",
@@ -81,6 +82,7 @@ export default { quest: {
     giver: null,
     description: "巴桑不在寨里，老人煎的药反复熬得没味——寨中几个骨伤、肺病、烟熏坏眼的老人急需药材，但土司府在熊山口设卡后药材成了管控物资，卖给山贼要追责。巴桑一个人在岩洞坐了很久，第二天带人直奔鱼定村西头药铺——管家小舅子开的、专做管控药材生意的铺子。",
     requiresQuestCompleted: "heifengzhai_3_shangshan",
+    requiresFactionRep: { 黑风寨: 0 },
     stages: [
       {
         id: "s1_negotiate",
@@ -112,6 +114,8 @@ export default { quest: {
         onReach: {
           exp: 3,
           favorability: { "巴桑": 25 },
+          factionRep: { 黑风寨: 5 },
+          flags: ["heifeng_proven"],
           items: [{ name: "土司府管控药铺的走私线索", category: "misc", quality: "绿", desc: "若已获管家密信可互相印证增强证据链。" }],
         },
       },
@@ -125,6 +129,7 @@ export default { quest: {
     giver: null,
     description: "管家得知黑风寨劫了自己小舅子的药铺，震怒——不是为了损失，是等于打了他私人的脸。他瞒着土司私雇约十五人锦官城亡命徒，准备趁夜不留活口摸上黑风寨。消息被天都镇兰姐截获，她派人给巴桑递话。",
     requiresQuestCompleted: "heifengzhai_3_5_jieyao",
+    requiresFactionRep: { 黑风寨: 0 },
     stages: [
       {
         id: "s1_prepare",
@@ -144,6 +149,7 @@ export default { quest: {
         onReach: {
           exp: 4,
           favorability: { "巴桑": 25 },
+          factionRep: { 黑风寨: 5 },
           items: [{ name: "锦官城佣兵刀", category: "weapon", quality: "蓝", desc: "刀柄刻「孟记铁铺」——与丹增马鞭同一家铁铺的用料，曲措乡的世界一致性细节。" }],
           flags: ["evidence_guanjia_private_army"],
         },
@@ -158,6 +164,7 @@ export default { quest: {
     giver: null,
     description: "巴桑请玩家进岩洞，多了一口旧木箱——十年税册，不是偷的，是黑风寨截下土司府往锦官城送的年税车队所得。册子记录十年戍边税明细：三成进管家私库，五成留土司府账面，只两成象征性上缴锦官城，锦官城从未核对过。",
     requiresQuestCompleted: "heifengzhai_4_guanjiadetongjiling",
+    requiresFactionRep: { 黑风寨: 0 },
     stages: [
       {
         id: "s1_taxbook",
