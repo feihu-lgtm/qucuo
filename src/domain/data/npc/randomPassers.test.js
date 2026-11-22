@@ -82,6 +82,24 @@ describe("random passers", () => {
     expect(same[0].randomPasser).toBeUndefined();
   });
 
+  it("drops today's passers that a redraw replaced", () => {
+    const base = {
+      char: { special: { 气运: 5 } }, companionState: {}, flags: [], importedVer: 0, questProgress: {}, time: 9,
+    };
+    const first = residentNpcRule.run({ ...base, room: { name: "雅江", npcs: [] } }, { importedRegistry })
+      .changes.room({ name: "雅江", npcs: [] }).npcs;
+    const taken = first.find((npc) => npc.randomPasser === 0).name;
+    const withCard = {
+      getImportedForDistrict: () => [],
+      getImportedResidentNames: () => [taken],
+    };
+    const room = { name: "雅江", npcs: first };
+    const npcs = residentNpcRule.run({ ...base, room }, { importedRegistry: withCard }).changes.room(room).npcs;
+    const roster = new Set(getRandomPassers("雅江", 9, new Set([taken])).map((p) => p.name));
+    expect(npcs.filter((npc) => npc.randomPasser === 0).map((npc) => npc.name).sort()).toEqual([...roster].sort());
+    expect(npcs.some((npc) => npc.name === taken)).toBe(false);
+  });
+
   it("keeps today's roster stable after the player gets to know a passer", () => {
     const base = {
       char: { special: { 气运: 5 } }, companionState: {}, flags: [], importedVer: 0, questProgress: {}, time: 9,

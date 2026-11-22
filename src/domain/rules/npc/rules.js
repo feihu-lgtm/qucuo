@@ -120,26 +120,27 @@ export const residentNpcRule = {
     )
       .filter((npc) => !isCompanionUnlockedByName(companionState, npc.name))
       .map(toRoomNpcWithCombat);
-    // 随机过路人只待当天：名单里不是今天刷的那批一律清掉。
-    // 名字避开玩家认识的人和导入角色卡；今天已经刷出来的那批（本地或别处缓存里）不算撞名，保证同日重进结果不变。
-    const isStalePasser = (npc) => npc?.randomPasser != null && npc.randomPasser !== dayIdx;
-    const hasStalePassers = (room.npcs || []).some(isStalePasser);
+    // 名字避开玩家认识的人和导入角色卡；认识的人里，今天已经刷出来的那批（本地或别处缓存里）不算撞名，保证同日重进结果不变。
     const todaysPassers = new Set([room.npcs || [], ...Object.values(roomMapRef?.current || {}).map((cached) => cached?.npcs || [])]
       .flat()
       .filter((npc) => npc?.randomPasser === dayIdx)
       .map((npc) => npc.name));
     const varTree = state.varTree || {};
     const passerReserved = new Set([
-      ...(varTree.世界?.已认识人物 || []),
-      ...Object.keys(varTree.角色 || {}),
+      ...[...(varTree.世界?.已认识人物 || []), ...Object.keys(varTree.角色 || {})]
+        .filter((name) => !todaysPassers.has(name)),
       ...importedRegistry.getImportedResidentNames(),
       ...importedNpcs.map((npc) => npc.name),
-    ].filter((name) => !todaysPassers.has(name)));
+    ]);
     const passers = getRandomPassers(room.name, time, passerReserved)
       .map((passer) => {
         const existing = existingByName.get(passer.name);
         return buildRoomNpcWithCombat(passer, { existingNpc: existing?.randomPasser === dayIdx ? existing : undefined, luck });
       });
+    // 不在今天这份名单里的过路人一律清掉：隔天的，或名额被新导入角色卡顶替、重抽后换下的
+    const rosterNames = new Set(passers.map((npc) => npc.name));
+    const isStalePasser = (npc) => npc?.randomPasser != null && (npc.randomPasser !== dayIdx || !rosterNames.has(npc.name));
+    const hasStalePassers = (room.npcs || []).some(isStalePasser);
     const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...passers];
     if (!toInject.length && !staleNames.size && !hasStalePassers) return null;
 
