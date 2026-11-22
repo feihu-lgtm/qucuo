@@ -6,6 +6,7 @@ import { bar } from "../../utils/mudHelpers.js";
 import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import { recordNpcAttempt } from "./anger.js";
 import { add, updateField } from "../../domain/rules/state/applyWrite.js";
+import { questPlaceDistrict } from "../../domain/rules/quests/questPlace.js";
 
 export function recognizeNpc(_state, npc) {
   if (!npc?.name) return {};
@@ -37,7 +38,7 @@ export function talkToNpc(state, npc, { now = Date.now() } = {}) {
   const activeEscort = ESCORT_QUESTS.find((quest) => (
     state.questProgress?.[quest.id]?.active
     && quest.targetNpc === npc.name
-    && quest.targetLocation === roomName
+    && questPlaceDistrict(quest.targetLocation) === roomName
     && !flags.includes(`quest_done_${quest.id}`)
   ));
   if (activeEscort) {

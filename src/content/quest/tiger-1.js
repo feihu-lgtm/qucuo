@@ -26,7 +26,7 @@ export default { quest: {
         description: "采雪莲时遇到守塔僧团把守地宫机关，需要帮他们修好机关才肯放行——不是刁难，是白塔地宫的机关年久失修，僧团人手不够，玩家的援手换来的是雪莲和一份香火情。",
         playerHint: "熊山雪莲长在白塔往高处的石缝，守塔僧团那关得想办法过。",
         completionFlag: "quest_heyx_s3",
-        collect: { item: "熊山雪莲", at: "白塔", quality: "绿", hint: "白塔往雪山高处的石缝间，守塔僧团把守的地宫机关一带" },
+        collect: { item: "熊山雪莲", at: "白塔·白塔地宫", quality: "绿", hint: "白塔往雪山高处的石缝间，守塔僧团把守的地宫机关一带" },
         onReach: { exp: 2 },
       },
       {
@@ -118,7 +118,7 @@ export default { quest: {
         description: "取回大草甸的燕羊胎（辅料一）。取回后兰姐透露一点百花门的来历——她不是自愿来曲措乡的，是被人从昆明赶出来的。",
         playerHint: "兰姐要的辅料燕羊胎，在大草甸深处，去取。",
         completionFlag: "quest_lanjie_s3",
-        collect: { item: "燕羊胎", at: "大草甸", quality: "绿", hint: "大草甸深处母羊难产遗下的胎膜，辅料一" },
+        collect: { item: "燕羊胎", at: "大草甸·草甸深处", quality: "绿", hint: "大草甸深处母羊难产遗下的胎膜，辅料一" },
         onReach: { exp: 2, favorability: { "兰姐": 5 } },
       },
       {
@@ -126,7 +126,7 @@ export default { quest: {
         description: "取回白塔地宫的守宫砂（辅料二，呼应任务16「盗亦有道」）。兰姐说起她的蛊术师父死前留下的一句话：「百花引炼成之日，就是你能回去的那天。」",
         playerHint: "第二味辅料守宫砂在白塔地宫石壁夹缝，去取。",
         completionFlag: "quest_lanjie_s4",
-        collect: { item: "守宫砂", at: "白塔", quality: "蓝", hint: "白塔地宫石壁夹缝中养出的守宫，辅料二" },
+        collect: { item: "守宫砂", at: "白塔·白塔地宫", quality: "蓝", hint: "白塔地宫石壁夹缝中养出的守宫，辅料二" },
         onReach: { exp: 2, favorability: { "兰姐": 5 } },
       },
       {
@@ -134,7 +134,7 @@ export default { quest: {
         description: "取回贡措海的水晶砂（辅料三）。三味辅料渐渐凑齐，兰姐的神色也一点点松动，像是那道紧绷了很多年的墙正在被一点点凿开。",
         playerHint: "第三味辅料水晶砂在贡措海湖畔浅滩，去取。",
         completionFlag: "quest_lanjie_s5",
-        collect: { item: "水晶砂", at: "贡措海", quality: "绿", hint: "贡措海湖畔浅滩淘洗出的细砂，辅料三" },
+        collect: { item: "水晶砂", at: "贡措海·湖畔", quality: "绿", hint: "贡措海湖畔浅滩淘洗出的细砂，辅料三" },
         onReach: { exp: 2, favorability: { "兰姐": 5 } },
       },
       {
@@ -162,7 +162,7 @@ export default { quest: {
         description: "夜闯土司府，把虎胆偷出来——土司本人战力不高，但管家会挡在前面，这是一场需要谨慎的夜袭，不是硬碰硬。",
         playerHint: "夜里潜入鱼定土司府，把那颗虎胆偷回来——当心管家。",
         completionFlag: "quest_allin_s2",
-        at: "鱼定土司",
+        at: "鱼定土司·库房",
         onReach: { exp: 3 },
       },
       {
@@ -170,7 +170,7 @@ export default { quest: {
         description: "梅朵发现是玩家偷的，但她没有声张，只说了一句：「下次来，走正门，我请你喝茶。」她不在乎那颗胆，她在乎的是父亲连这种东西都要抢牧民的。",
         playerHint: "偷完别急着走，看看梅朵的反应。",
         completionFlag: "quest_allin_s3",
-        at: "鱼定土司",
+        at: "鱼定土司·库房",
         onReach: { exp: 2, favorability: { "梅朵": 15 } },
       },
       {
@@ -178,7 +178,7 @@ export default { quest: {
         description: "把偷回来的虎胆送到百花楼，兰姐问已经干了的虎胆还能不能用，答案是泡在百花引里三天就能复效。三天后蛊成，兰姐没有给自己用——她把百花引送给玩家：「我已经不想回昆明了。这东西给你。」",
         playerHint: "把偷回的虎胆送去天都镇百花楼交给兰姐。",
         completionFlag: "quest_allin_s4",
-        at: "天都镇",
+        at: "天都镇·百花楼",
         onReach: { exp: 3, items: [{ name: "百花引", category: "misc", quality: "紫", desc: "兰姐亲手炼成，没有留给自己。" }] },
       },
       {
@@ -186,7 +186,7 @@ export default { quest: {
         description: "带百花引回雪山派——何雨谢已经病得起不了身，不认识百花引是什么，只知道这不是虎胆。正向：把兰姐教的方法告诉呼延雪，用百花引当药引配合虎胆残效为她拔毒，效果慢一点，但不需要控制任何人；黑化：直接用百花引控制她。",
         playerHint: "带着百花引回雪山派——救人可用作药引，也可用来控制她，你自己定。",
         completionFlag: "quest_allin_s5",
-        at: "雪山派",
+        at: "雪山派·内堂",
         isCgMoment: true,
         onReach: { exp: 4 },
       },

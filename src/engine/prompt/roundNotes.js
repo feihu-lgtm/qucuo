@@ -38,7 +38,7 @@ export function buildQuestStageNote({ questProgress, flags, char, room, inv, pen
   let note = noteLines.length ? `\n[任务阶段] ${noteLines.join("；")}。` : "";
   // 本据点地上有哪些采集物在等着采（系统已注入到 room.items），提示 AI 心里有数：
   // 玩家若想采，直接顺势叙述（真正的入袋/推进由系统裁决，不劳 AI 动 items_add）。
-  const cLines = collectPromptLines(room.name, { questProgress, quests: QUCUO_QUESTS, getCurrentStage, inv });
+  const cLines = collectPromptLines(room.name, { questProgress, quests: QUCUO_QUESTS, getCurrentStage, inv, innerRoomName });
   if (cLines.length) note += `\n[可采集] ${cLines.join("；")}。玩家表达采集意图时顺势叙述采集过程即可，系统自动结算入袋，不要写"采不到"。`;
   if (pendingQuestBranch?.mode === "talk" && pendingQuestBranch.goal) {
     note += `\n[说服判定] 玩家正试图通过言辞达成：${pendingQuestBranch.goal}。这是真正的言语交锋，不是走过场——评估这句话是否切中要害、有理有据、气势压得住对方。确实说动/驳倒对方时，在 flags_add 加入「${pendingQuestBranch.flag}」并让对方让步；玩家只是空喊、被驳倒或理亏，让对方继续刁难，不吐这个 flag，玩家可再想说辞。`;

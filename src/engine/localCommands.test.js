@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { loadSquares } from "../domain/rules/map/mapSquares.js";
 import { parseLocalCommand } from "./localCommands.js";
+import { getDistrictAnchor, getInnerRoomNames } from "../domain/rules/map/innerMap.js";
 
 const state = (overrides = {}) => ({
   room: { name: "鱼定村" },
@@ -59,6 +60,15 @@ describe("parseLocalCommand", () => {
       { t: "cmd", text: "> 看" },
       { t: "desc", text: "  村口的石阶旁长着青苔。" },
     ]);
+  });
+
+  it("does not serve the outer-district cached look inside a non-anchor inner room", () => {
+    loadSquares({ 鱼定村: { day: 0, lookText: "村口的石阶旁长着青苔。" } });
+    const anchor = getDistrictAnchor("鱼定村");
+    const other = getInnerRoomNames("鱼定村").find((n) => n !== anchor);
+    expect(other).toBeTruthy();
+    expect(parseLocalCommand("看", state({ innerRoomName: other }), { surface: "cli" })).toBeNull();
+    expect(parseLocalCommand("看", state({ innerRoomName: anchor }), { surface: "cli" }).localKind).toBe("cachedLook");
   });
 
   it("returns fixed quest-script output and declines non-local commands", () => {

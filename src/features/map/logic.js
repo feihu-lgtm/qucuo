@@ -120,10 +120,20 @@ export function innerMove(state, dirOrRoom) {
     };
   }
 
+  // 内层移动不经 AI，但必须进对话上下文：此前只写日志不写 convo，AI 的历史里
+  // 玩家一直站在进门那间房，从大殿走进藏经阁它完全不知道，下一轮照旧按大殿写。
+  // 写法与外层到达一致：玩家原话 + 系统给出的到达事实（地名、描写、四周、远处）。
+  const arrivalFact = [`来到${state.room.name}·${decision.innerDest}。`,
+    ...decision.arrivalLines.map((line) => String(line.text || "").trim()).filter(Boolean)].join(" ");
   return {
     changes: {
       innerRoomName: decision.innerDest,
       time: state.time + 1,
+      convo: [
+        ...(state.convo || []),
+        { role: "user", content: command },
+        { role: "assistant", content: arrivalFact.slice(0, 500) },
+      ],
       varTree: (prev) => {
         const current = prev || {};
         const seen = decision.newFaces.length

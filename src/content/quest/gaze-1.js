@@ -12,7 +12,7 @@ export default { quest: {
         description: "玩家施以援手撬开兽夹，她快速撕下自己袖口布条给虎包扎，手法熟练。用额头碰虎鼻尖，藏语轻声说了句话，才转向玩家：「它叫雪团。我是嘎则。你认识巴桑吗？他是我哥。」她不知怎么道谢，解下虎脖子上的旧铃铛塞给玩家：「雪团说这个给你。它不会说话，我替它说了。」",
         playerHint: "有只白虎被兽夹困住，救不救它你自己决定。",
         completionFlag: "quest_gaze1_s1",
-        at: "狼曲河谷",
+        at: "玉泉寨·狼曲河谷",
         isCgMoment: true,
         onReach: { exp: 2, favorability: { "嘎则": 25 }, reputation: 8, items: [{ name: "虎铃", category: "accessory", quality: "白", desc: "铃舌歪了响声闷闷的，其实雪团什么都没说，是嘎则觉得雪团应该谢谢你。" }] },
       },
@@ -58,7 +58,7 @@ export default { quest: {
         description: "若玩家坐下，她解下手腕上白虎乳牙系在玩家手腕上，低头辫子垂下挡脸看不清表情。系完抬头，眼眶红但没哭，指指乳牙又指指雪团的嘴——这枚是雪团小时候换下的牙，现在给你了。把玩家袖子拉下盖住乳牙。",
         playerHint: "嘎则想跟你多待一会——坐或不坐，随你。",
         completionFlag: "quest_gaze3_s1",
-        at: "黑风寨",
+        at: "黑风寨·后山草坡",
         onReach: { exp: 2 },
       },
       {
@@ -66,7 +66,7 @@ export default { quest: {
         description: "她靠在玩家肩上闭眼：「阿雅婶说，山下的人走了就不回来。但是我说你不一样。」睁开一只眼偷看反应，又闭上：「你要是真的不回来，我就让雪团去找你。雪团认得你的气味——你上次在寨子里吃饭掉了半块糌粑，它闻过了。」玩家若承诺归来她点头不再说话；若沉默她也点头，幅度更小：「也行。那你把雪团记住——它比人好记。」",
         playerHint: "听嘎则把她的心里话说完。",
         completionFlag: "quest_gaze3_s2",
-        at: "黑风寨",
+        at: "黑风寨·后山草坡",
         isCgMoment: true,
         onReach: {
           exp: 3,

@@ -1,7 +1,7 @@
 export default { residentGroup: {
 鱼定村: [
     {
-      name: "才旦", id: "resident_caidan", levelCap: 1,
+      name: "才旦", innerRoom: "才旦家", id: "resident_caidan", levelCap: 1,
       brief: "村长之女，账算得滴水不漏",
       personality: "工于心计说话不留破绽，卸下防备才露出年纪相符的脆弱",
       carry: [
@@ -15,7 +15,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "老孙", id: "resident_laosun", levelCap: 1,
+      name: "老孙", innerRoom: "老孙饭馆", id: "resident_laosun", levelCap: 1,
       brief: "老孙饭馆的掌柜",
       personality: "实在憨厚，藏着当年被岳父嫌弃的心结，嘴上不饶人心里认账",
       carry: [
@@ -43,7 +43,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "大公鸡", id: "resident_dagongji", levelCap: 1,
+      name: "大公鸡", innerRoom: "村口", id: "resident_dagongji", levelCap: 1,
       beast: true, respawn: true, cannotSpeak: true,
       brief: "村口一只油亮好斗的大公鸡",
       personality: "扑棱着翅膀满地乱窜，见人就啄，偏偏又打不过就跑、跑两步又回头挑衅",
@@ -58,7 +58,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "雪豹", id: "resident_snow_leopard", levelCap: 2,
+      name: "雪豹", innerRoom: "村口", id: "resident_snow_leopard", levelCap: 2,
       beast: true, cannotSpeak: true, companionCandidate: true,
       brief: "无主的雪白灵兽，前爪有旧伤，只认有灵之人，长卧村口青石",
       personality: "不惧生人也不主动亲近，只是静静看着，仿佛在等一个自己认准的人",
@@ -78,7 +78,7 @@ export default { residentGroup: {
 性情见随行伙伴设定，此处不表。）`,
     },
     {
-      name: "珍珠", id: "resident_pearl", levelCap: 2,
+      name: "珍珠", innerRoom: "村口", id: "resident_pearl", levelCap: 2,
       beast: true, cannotSpeak: true, companionCandidate: true, affectionable: true,
       brief: "村口一匹通体雪白的小白马，睫毛长长，丰神俊朗，此刻正低着头专心啃草",
       personality: "志不在驰骋，平生最爱干饭与躺平，看着惫懒，认主后却忠心无二、脚力惊人",

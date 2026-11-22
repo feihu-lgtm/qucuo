@@ -118,9 +118,9 @@ export function commitRound(d) {
     varTree: d.refGet("varTreeRef"), time: d.time,
     systemAcceptedNames: postCtx.systemAcceptedNames, luck: postCtx.luck,
   }));
-  applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck })); // 涌现·实体化
+  applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck, innerRoomName: d.innerRoomName })); // 涌现·实体化
   applyPostResult(d, writeRoom({    // 房间写回（锁定目的地/固定地图/兜底）
-    isTalk: d.isTalk, lockedDestName: d.lockedDestName, p: d.p, room: d.room,
+    isTalk: d.isTalk, lockedDestName: d.lockedDestName, p: d.p, room: d.room, innerRoomName: d.innerRoomName,
     roomMap: _roomMap, outerDepart: d.refGet("outerDepartRef"),
     mapData: d.mapData, pendDir: d.refGet("pendDirRef"), freshNpcData: d.freshNpcData,
   }, { traceStep: (...args) => traceStep(d._trace, ...args) }));
@@ -129,6 +129,7 @@ export function commitRound(d) {
     preserveHp: d.preserveHp, gm: d.gm,
     pickupJudgment: d.refGet("pickupJudgmentRef"), collectGranted: d.refGet("collectGrantedRef"),
     pickupExtractionFailed: d.refGet("pickupExtractionFailedRef"),
+    innerRoomName: d.innerRoomName,
   }, { trace: (...args) => traceStep(d._trace, ...args) }));
   applyPostResult(d, commitModelFlags({  // flags_add 过滤落盘（原 commitProposalWrites 尾部内嵌）
     p: d.p, room: d.room, innerRoomName: d.innerRoomName,

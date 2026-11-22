@@ -4,6 +4,7 @@
 import { QUCUO_MAP, getMapNode } from "../../../domain/data/map/qucuoMap.js";
 import { patchCombatData } from "../../../domain/rules/npc/roomNpcs.js";
 import { DIR_DXY } from "../../../utils/mudHelpers.js";
+import { mergeGroundItems } from "../../../domain/rules/map/groundScope.js";
 
 // 移动落地的地名标题「— 地名 —」。
 // 它要排在本轮叙事正文之前，所以由 commitRound 在 emitNarrative 之前单独调用，不放在 writeRoom 里。
@@ -29,7 +30,7 @@ export function emitRoomHeader(ctx) {
 // traceStep 由调用方注入，保持本模块无 infra 依赖（externalInfraImports 只减不增）。
 // 入参：roomMap=roomMapRef、outerDepart=outerDepartRef、pendDir=pendDirRef 的值、
 // freshNpcData=fixateNpcs 的 dWrites。
-export function writeRoom({ isTalk, lockedDestName, p, room, roomMap, outerDepart, mapData, pendDir, freshNpcData }, { traceStep }) {
+export function writeRoom({ isTalk, lockedDestName, p, room, innerRoomName, roomMap, outerDepart, mapData, pendDir, freshNpcData }, { traceStep }) {
   if (isTalk) return null;
   const out = { refWrites: { pendDirRef: null } };
   if (lockedDestName) {
@@ -38,13 +39,18 @@ export function writeRoom({ isTalk, lockedDestName, p, room, roomMap, outerDepar
     // 不负责去哪里"。
     const destNode = getMapNode(lockedDestName);
     const cached = roomMap[lockedDestName];
+    // 首次到访无缓存时才会用 AI 报的名单；但 AI 常把刚离开那间屋里的人写成「跟着你来了」，
+    // 驻场人物因此被带离本据点、从此在别处落户（npc.residents 又因他被缓存在别处而不再请回）。
+    // 跟随只走同伴系统与追杀规则，这里把出发房间里的人一律剔掉。
+    const leftBehind = new Set((room.npcs || []).map((npc) => npc.name));
+    const arrivalNpcs = ((p.room && p.room.npcs) || []).filter((npc) => !leftBehind.has(npc?.name));
     const finalDesc = (p.room && p.room.desc) ? p.room.desc : destNode.desc;
     out.changes = {
       room: {
         name: lockedDestName,
         desc: finalDesc,
         exits: Object.keys(destNode.exits),
-        npcs: (cached && cached.npcs) || (p.room && p.room.npcs) || [],
+        npcs: (cached && cached.npcs) || arrivalNpcs,
         items: (cached && cached.items) || (p.room && p.room.items) || [],
       },
     };
@@ -67,7 +73,13 @@ export function writeRoom({ isTalk, lockedDestName, p, room, roomMap, outerDepar
     // 刚固化出来的战斗数据回填给名单里对应的人——名单不动、数据补齐。
     // 少了这一步，切磋掉落池恒为空（见 fixateNpcs 的注释）。
     out.changes = {
-      room: (r) => ({ ...r, ...p.room, name: room.name, exits: Object.keys(node.exits), npcs: patchCombatData(r.npcs, freshNpcData) }),
+      // 地上物同理：AI 只看得到本房间的地上物，它报回的名单只能改写本房间那一份，
+      // 别的内层房间的东西原样保留（见 groundScope.mergeGroundItems）。
+      room: (r) => ({
+        ...r, ...p.room, name: room.name, exits: Object.keys(node.exits),
+        npcs: patchCombatData(r.npcs, freshNpcData),
+        items: mergeGroundItems(r.items, p.room.items, room.name, innerRoomName),
+      }),
     };
   } else if (p.room) {
     // 兜底：房间不在固定地图里（理论上不应该出现，只有 AI 未遵守系统裁决时才会
