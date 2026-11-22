@@ -21,7 +21,7 @@ export const FACTION = {
 
 const F = FACTION;
 const MEMBERS = {
-  [F.TUSI]: ["resident_meiduo", "resident_sangjieduojie", "resident_luofusheng", "resident_gesangdunzhu"],
+  [F.TUSI]: ["resident_meiduo", "resident_sangjieduojie", "resident_luofusheng", "resident_gesangdunzhu", "resident_luosangpingcuo", "resident_baimaciren"],
   [F.YUDING]: ["resident_caidan", "resident_laosun", "resident_yudingdaniang", "pool_da_niang", "pool_bidder_caidan"],
   [F.XUESHAN]: ["resident_huyanxue", "resident_xuannu", "resident_heyuxie", "pool_bidder_xueshan"],
   [F.LAMA]: ["resident_lama_abbot", "resident_yaotang_shifu", "pool_you_seng"],
