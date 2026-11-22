@@ -267,3 +267,38 @@ export function applyThinkingAnthropic(body, cfg, maxTokens) {
     delete body.top_k;
   }
 }
+
+export const API_TYPES = {
+  ANTHROPIC: "anthropic",
+  OPENAI: "openai",
+  GEMINI: "gemini",
+  VERTEX: "vertex",
+  QWEN: "qwen", // 通义千问（阿里百炼）——协议完全 OpenAI 兼容，内部走 OPENAI 同一套逻辑，
+                // 只是预设好 base_url，用户填 key + 模型名（如 qwen3.5-plus-2026-04-20）即可。
+};
+
+// 各类 LLM 调用的输出 token 上限（max_tokens）。这些原来散在代码里写死，
+// 现在集中成命名项、全部可在设置里调，范围 0–100000。默认值按"够用又不
+// 被思考模型的思考 token 吃穿正文"来定——原来的 120/200/500 这种小值在
+// 带思考的模型（如 gemini-3/Gemini2.5）上会被思考吃光额度、正文半句就撞
+// length 上限，故默认调大。想省钱可自行调小；想彻底不担心截断可拉到 100000。
+export const CALL_TOKEN_LIMIT_MAX = 100000;
+
+export const DEFAULT_CALL_TOKEN_LIMITS = {
+  narratorWhisper: 6000, // 私聊旁白（MudRPG talkToNarrator）。原写死 600，是上一轮
+                         // 「9处写死抽成配置」漏网的第 10 处；带思考的模型下思考 token
+                         // 与正文共用额度，600 被吃穿后正文半句就撞 length 截断。
+  pigeonReply:    3000,  // 飞鸽回信书信体（MudRPG 飞鸽回信）
+  inspect:        4000,  // 查看物品/武学介绍（MudRPG inspect 缓存）
+  persuasion:     2000,  // 说服台词（persuasion.js）
+  extraction:     2000,  // 意图/方位抽取（extractionEngine.js）
+  knowledge:      2000,  // 事实抽取（knowledge.js）
+  daySummary:     2000,  // 日总结（大纸条）后台归纳（memory/daySummary.js）
+  direction:       200,  // 方位单字判定（qucuoMap.js，本只答一个字，默认给小但可调大）
+  connectionTest:  200,  // 连接测试 ping（apiConfig/debugConsole，思考模型下 50 会返空，故默认给 200）
+};
+
+// Anthropic 官方没有公开的模型列表接口，返回一份已知模型的静态清单
+export const ANTHROPIC_KNOWN_MODELS = [
+  "claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5-20251001", "claude-fable-5",
+];

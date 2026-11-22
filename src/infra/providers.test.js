@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { API_TYPES, callModel, classifyError, defaultConfig, listModels, testConnection } from "./apiConfig.js";
+import { API_TYPES, callModel, defaultConfig, listModels, testConnection } from "./apiConfig.js";
+import { classifyError } from "../utils/apiErrors.js";
 import { buildVertexEndpoint, vertexReasoningEffort } from "./vertexAdc.js";
 import {
   isDefaultEndpoint, migrateProvider, providerApiType, PROVIDERS,

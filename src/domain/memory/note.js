@@ -19,7 +19,7 @@
 // 每个 owner 项：{ name, via }，via ∈ 亲历/目击/传闻（供 AI 判口吻 + 信息隔离）。
 
 import { getEmbedding, embeddingReady, embeddingFingerprint } from "./embeddingService.js";
-import { addMemory, getAllMemories } from "./memoryStore.js";
+import { addMemory, getAllMemories } from "../../infra/memoryStore.js";
 
 export const VIA = { FIRSTHAND: "亲历", WITNESS: "目击", HEARSAY: "传闻" };
 export const NOTE_SOURCE = {

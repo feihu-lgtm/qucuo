@@ -3,7 +3,6 @@
     "app->ui": 16,
     "content->domain": 1,
     "domain->engine": 1,
-    "domain->features": 1,
     "engine->store": 2,
     "features->store": 1,
     "infra->core": 6,
@@ -13,11 +12,11 @@
     "app": 11,
     "core": 1,
     "debug": 1,
-    "domain": 3,
-    "engine": 7,
+    "domain": 5,
+    "engine": 6,
     "entry": 4,
     "store": 1,
-    "ui": 23
+    "ui": 27
   },
   "distinctHexColors": 399,
   "totalHexOccurrences": 1396,
@@ -36,7 +35,6 @@
     "domain/npc/npcGeneration.js": 587,
     "domain/strongholdWiring.test.js": 488,
     "domain/tavernSim/simEngine.js": 417,
-    "infra/apiConfig.js": 783,
     "tests/docsTree.test.js": 449,
     "ui/panels/CenterPanel.jsx": 542,
     "ui/screens/CardImportScreen.jsx": 1522,
@@ -51,5 +49,5 @@
     "ui/screens/quickBattle/QuickBattleScreen.jsx": 774,
     "ui/screens/tavernSim/TavernSimScreen.jsx": 502
   },
-  "mainJsGzipBytes": 688041
+  "mainJsGzipBytes": 687917
 }

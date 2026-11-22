@@ -11,7 +11,7 @@
 // 可能挂掉的外部服务上。所以 UI 上这是一个按钮，不是一道关。
 
 import { acquire, estimateMs, bucketStatus } from "./rateLimiter.js";
-import * as store from "./scanStore.js";
+import * as store from "../../infra/scanStore.js";
 import {
   buildStage1, buildStage2, buildStage3, buildStage4,
   parseJsonLoose, sanitizeSpecial, sanitizeLevelCap, sanitizeAffection,

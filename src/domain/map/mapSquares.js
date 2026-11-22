@@ -2,7 +2,7 @@ import { random } from "../../core/rng.js";
 import { QUCUO_MAP } from "./qucuoMap.js";
 import { rollEncounter } from "./encounter.js";
 import { rollQuality, ITEM_CATEGORY } from "../economy/equipment.js";
-import { cleanJsonString } from "../../infra/apiConfig.js";
+import { cleanJsonString } from "../../utils/jsonClean.js";
 import { filterCatalog } from "../items/catalog.js";
 
 // 地图格子系统（扫雷式预埋）

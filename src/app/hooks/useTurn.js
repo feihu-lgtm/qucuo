@@ -16,7 +16,7 @@ import { classifyIntent, INTENT } from "../../domain/prompt/inputIntent.js";
 import { consumeDuelRequest } from "./useDuel.js";
 import { buildDirectionJudgeRequest, getMapNode, parseDirectionJudgeResponse, QUCUO_MAP } from "../../domain/map/qucuoMap.js";
 import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
-import { callModel, classifyError } from "../../infra/apiConfig.js";
+import { callModel } from "../../infra/apiConfig.js"; import { classifyError } from "../../utils/apiErrors.js";
 import { step as traceStep } from "../../infra/actionTrace.js";
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../core/turnMonitor.js";
 import { createPromptContext } from "../../engine/prompt/index.js";

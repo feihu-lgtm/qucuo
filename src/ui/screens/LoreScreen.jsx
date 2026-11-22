@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getAllMemories } from "../../domain/memory/memoryStore.js";
+import { getAllMemories } from "../../infra/memoryStore.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 // 见闻录：把两套记忆系统可视化——玩家可打开查看。

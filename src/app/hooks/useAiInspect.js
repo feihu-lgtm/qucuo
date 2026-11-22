@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getCachedInspect, setCachedInspect } from "../../domain/prompt/inspectCache.js";
+import { getCachedInspect, setCachedInspect } from "../../infra/inspectCache.js";
 import { NOTE_SOURCE } from "../../domain/memory/note.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";

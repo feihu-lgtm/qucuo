@@ -5,7 +5,7 @@
 // 聊天只需要好感度。按意图精确提问可以大幅提升提取准确率（token 少、任务聚焦）。
 
 import { snowLeopardNote } from "../quests/snowLeopardQuest.js";
-import { cleanJsonString } from "../../infra/apiConfig.js";
+import { cleanJsonString } from "../../utils/jsonClean.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "./withAI.js";
 import "./calls/domainCalls.js";

@@ -10,7 +10,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { parseCharacterCard } from "../../domain/cards/cardParse.js";
 import { planScan, runScan, runClassify, peopleAfterClassify } from "../../domain/cards/cardScan.js";
-import * as scanStore from "../../domain/cards/scanStore.js";
+import * as scanStore from "../../infra/scanStore.js";
 import { bucketStatus, acquire } from "../../domain/cards/rateLimiter.js";
 import { callModel } from "../../infra/apiConfig.js";
 import {

@@ -1,0 +1,242 @@
+// 立绘系统
+// 管理对话场景中出现的立绘图片（旁白/主角/场景内任意角色），
+// 独立于游戏状态存储（图片本身是 base64，体积较大，单独存一个 key，
+// 避免把自动存档搞得很臃肿）。
+//
+// 数据结构：{ [角色名]: base64DataUrl }，"旁白" 和 "你" 是两个特殊的固定键，
+// 其余键是任意 NPC 姓名（跟 MVU 变量树里的角色名对应即可）。
+//
+// 建议图片比例 9:16（竖版立绘），但不强制校验，只在 UI 上给出比例参考框。
+
+// ── 默认立绘：硬加载（本轮改造，替代此前的 fetch+localStorage 预置方案）──
+// 之前的做法是把图片放在 public/ 目录，组件挂载时异步 fetch 转 base64 再
+// 写进 localStorage——这套方案有个先天的时序问题：图片要等一次网络请求
+// （哪怕是同源静态资源）才能用上，且首次启动之后这批数据混进了
+// localStorage，跟玩家自己上传的立绘存在同一个 key 下，边界处理复杂。
+//
+// 现在改成标准的 Vite 静态 import：图片文件放进 src/assets/portraits/，
+// 构建时作为模块依赖直接打包进产物，组件渲染时立刻可用，不需要任何
+// 异步初始化、不占用 localStorage 一个字节。玩家自定义上传的立绘依然
+// 走 localStorage（见 setPortrait/loadPortraits），两者在 getPortrait()
+// 里合并查询——玩家自己传的优先，没传过才落到这批硬加载的默认图。
+
+import meiduoImg from "../assets/portraits/meiduo.webp";
+import huyanxueImg from "../assets/portraits/huyanxue.webp";
+import heyuxieImg from "../assets/portraits/heyuxie.webp";
+import caidanImg from "../assets/portraits/caidan.webp";
+import liruoyouImg from "../assets/portraits/liruoyou.webp";
+import zhuomaImg from "../assets/portraits/zhuoma.webp";
+import lanjieImg from "../assets/portraits/lanjie.webp";
+import luoqiImg from "../assets/portraits/luoqi.webp";
+import gazeImg from "../assets/portraits/gaze.webp";
+import xuannuImg from "../assets/portraits/xuannu.webp";
+
+// key 是角色名（跟 MVU 变量树/room.npcs 里的名字对应），value 是 Vite
+// 处理过的图片 URL（构建后指向打包产物里的静态资源路径，不是 base64，
+// 但对调用方而言用法完全一样——直接当 <img src={...}> 用）。
+export const DEFAULT_PORTRAITS = {
+  梅朵: meiduoImg,
+  呼延雪: huyanxueImg,
+  何雨谢: heyuxieImg,
+  才旦: caidanImg,
+  李若由: liruoyouImg,
+  卓玛: zhuomaImg,
+  兰姐: lanjieImg,
+  罗琦: luoqiImg,
+  嘎则: gazeImg,
+  玄女: xuannuImg,
+};
+
+// 文件名 → 打包 URL。
+// 【为什么要这张表】入册审改界面此前把立绘存成英文文件名（"caidan.webp"），再由
+// ReviewParts 的 PORTRAIT() 拼成 `${BASE}portraits/caidan.webp`——而这十张图根本
+// 不在 public/portraits/ 下（那里只有 narrator/pearl/player/snowleopard 四个子目录），
+// 它们在 src/assets/portraits/ 走 Vite import。于是十张全 404，而 PortraitPicker
+// 的 onError 又把破图 display:none 掉，表现成"立绘那一节只有一个不设按钮"。
+// 跟开场图、本地音乐那两次是同一个模式：硬拼路径 + onError 兜底 = 静默失效。
+// 留着这张表是为了让存量数据（英文文件名）还能解析出来。
+export const PORTRAIT_BY_FILE = {
+  "meiduo.webp": meiduoImg,
+  "huyanxue.webp": huyanxueImg,
+  "heyuxie.webp": heyuxieImg,
+  "caidan.webp": caidanImg,
+  "liruoyou.webp": liruoyouImg,
+  "zhuoma.webp": zhuomaImg,
+  "lanjie.webp": lanjieImg,
+  "luoqi.webp": luoqiImg,
+  "gaze.webp": gazeImg,
+  "xuannu.webp": xuannuImg,
+};
+
+/**
+ * 把一个 portrait 字段值解析成能直接当 img src 用的东西。
+ *
+ * 认三种形态：
+ *   data: / blob:     玩家上传或从卡里取的图，自包含，直接用
+ *   中文角色名        内置那十张，查 DEFAULT_PORTRAITS
+ *   英文文件名        存量数据，查 PORTRAIT_BY_FILE
+ *
+ * 【为什么内置图存键名而不是存 URL】DEFAULT_PORTRAITS 的值是 Vite 打包产物的
+ * 路径，带 content hash（形如 caidan-a1b2c3.webp）。把它存进存档或入册库，下次
+ * 构建 hash 一变就 404。存键名、读时查表，才跨版本稳定。
+ *
+ * 【为什么认不出就返回空串】认不出的值以前会被拼成一个不存在的路径，配上 onError
+ * 静默隐藏——错误就此消失，只留下"图没显示"。返回空串让调用方明确知道没有图可显示。
+ *
+ * 【与 resolvePortrait 的分工】那个是 (uploadedPortraits, name) 两参数，按**角色名**
+ * 去玩家上传库与内置库里找，供 LeftPanel／PortraitManager 渲染对话立绘用。这个是
+ * 单参数，解析的是**入册库里 portrait 字段存的那个值本身**——它可能是键名也可能是
+ * 一整条 dataURL。两者不是一回事，别合并。
+ */
+export function resolveCardPortrait(v) {
+  if (!v || typeof v !== "string") return "";
+  if (/^(data:|blob:)/.test(v)) return v;
+  return DEFAULT_PORTRAITS[v] || PORTRAIT_BY_FILE[v] || "";
+}
+
+const PORTRAIT_STORAGE_KEY = "wuxia_mud_portraits";
+
+export function loadPortraits() {
+  try {
+    const raw = localStorage.getItem(PORTRAIT_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePortraits(portraits) {
+  try {
+    localStorage.setItem(PORTRAIT_STORAGE_KEY, JSON.stringify(portraits));
+    return true;
+  } catch (e) {
+    console.error("立绘保存失败，可能是 localStorage 容量已满", e);
+    return false;
+  }
+}
+
+export function setPortrait(name, dataUrl) {
+  const all = loadPortraits();
+  all[name] = dataUrl;
+  return savePortraits(all);
+}
+
+export function removePortrait(name) {
+  const all = loadPortraits();
+  delete all[name];
+  return savePortraits(all);
+}
+
+// 查询顺序：玩家自己上传过的（localStorage）优先 > 硬加载的默认图
+// （DEFAULT_PORTRAITS，构建时静态打包）> 都没有则 null。
+// 这个优先级顺序保证玩家如果不满意默认立绘、自己传了张新的，能立刻
+// 覆盖生效，不会被硬加载的默认图挡住。
+export function getPortrait(name) {
+  const uploaded = loadPortraits();
+  if (uploaded[name]) return uploaded[name];
+  return DEFAULT_PORTRAITS[name] || null;
+}
+
+// 从「已在 state 里的玩家上传立绘」+「内置默认立绘」两处解析出该显示哪张。
+// 玩家自己传的优先，没传过才落到内置那批。
+//
+// 【为什么要有这个函数、而不是各处直接写 portraits[name]】
+// 曾经有过一次半途而废的重构：默认立绘从"异步写进 localStorage"改成"静态 import
+// 打包"，初始化那个 useEffect 被删掉了，但**读取侧一直没接上**——LeftPanel 与
+// PortraitManager 读的都是 portraits[name]（只含玩家上传的那份 state），
+// DEFAULT_PORTRAITS 除了注释里被提起之外无人读取，getPortrait() 虽然写好了却
+// 从未被调用。结果内置的九张立绘（梅朵/呼延雪/何雨谢/才旦/李若由/卓玛/兰姐/
+// 罗琦/嘎则）全都打进了产物、却一张都没显示过。
+// 收敛成这一个函数，两处读取共用，以后再加内置立绘只改一处、不会再漏。
+//
+// 注意与 getPortrait() 的分工：getPortrait() 自己去读 localStorage（供非 React
+// 场景用），这个函数接收已有的 state 对象（供组件渲染用，跟着 state 走、可响应更新）。
+export function resolvePortrait(uploadedPortraits, name) {
+  if (!name) return null;
+  return uploadedPortraits?.[name] || DEFAULT_PORTRAITS[name] || null;
+}
+
+// 这个角色有没有内置立绘（UI 上区分"内置"与"玩家自传"用）。
+export function hasBuiltinPortrait(name) {
+  return !!DEFAULT_PORTRAITS[name];
+}
+
+export function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── 雪豹立绘·三形态（本轮新增）──
+// 伙伴雪豹有三张官方立绘：两张人形（前世羁绊的人形相）+ 一张雪豹真身。
+// 资源放在 public/portraits/snowleopard/ 下——刻意不走 src/assets 硬加载：
+// 图片由作者自行投放，构建不该依赖文件是否存在；缺失时界面上给占位提示，
+// 不影响构建与游戏运行（跟 public/portraits/player/ 玩家头像同一套思路）。
+const SL_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/snowleopard/";
+export const SNOW_LEOPARD_FORMS = [
+  { key: "form1", label: "人形·立雪", file: "form1.webp" },
+  { key: "form2", label: "人形·倚剑", file: "form2.webp" },
+  { key: "beast", label: "雪豹真身", file: "beast.webp" },
+];
+const SL_FORM_KEY = "qucuo_snowleopard_form";
+// 默认"雪豹真身"——村里见到的是野兽形态的她；人形两相留给玩家自行切换
+export function getSnowLeopardForm() {
+  try {
+    const v = localStorage.getItem(SL_FORM_KEY);
+    return SNOW_LEOPARD_FORMS.some(f => f.key === v) ? v : "beast";
+  } catch { return "beast"; }
+}
+export function setSnowLeopardForm(key) {
+  try { localStorage.setItem(SL_FORM_KEY, key); } catch { /* ignore */ }
+}
+function snowLeopardPortraitUrl(formKey) {
+  const f = SNOW_LEOPARD_FORMS.find(x => x.key === formKey) || SNOW_LEOPARD_FORMS[2];
+  return SL_BASE + f.file;
+}
+
+// ── 珍珠立绘·双形态 ──
+// 伙伴珍珠有两张官方立绘：人形（比基尼+轻纱·马耳马尾姑娘）+ 马形（通体雪白小白马）。
+// 资源放在 public/portraits/pearl/ 下，同雪豹一套思路。
+const PEARL_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/pearl/";
+export const PEARL_FORMS = [
+  { key: "form1", label: "人形·珍珠", file: "form1.webp" },
+  { key: "beast", label: "马形·珍珠", file: "beast.webp" },
+];
+const PEARL_FORM_KEY = "qucuo_pearl_form";
+export function getPearlForm() {
+  try {
+    const v = localStorage.getItem(PEARL_FORM_KEY);
+    return PEARL_FORMS.some(f => f.key === v) ? v : "beast";
+  } catch { return "beast"; }
+}
+export function setPearlForm(key) {
+  try { localStorage.setItem(PEARL_FORM_KEY, key); } catch { /* ignore */ }
+}
+export function pearlPortraitUrl(formKey) {
+  const f = PEARL_FORMS.find(x => x.key === formKey) || PEARL_FORMS[1];
+  return PEARL_BASE + f.file;
+}
+
+// 通用：按伙伴 key 取形态列表 / 当前形态 / 立绘 URL / setter
+export function getCompanionForms(key) {
+  if (key === "snowLeopard") return SNOW_LEOPARD_FORMS;
+  if (key === "pearl") return PEARL_FORMS;
+  return null;
+}
+export function getCompanionForm(key) {
+  if (key === "snowLeopard") return getSnowLeopardForm();
+  if (key === "pearl") return getPearlForm();
+  return "beast";
+}
+export function setCompanionForm(key, formKey) {
+  if (key === "snowLeopard") setSnowLeopardForm(formKey);
+  else if (key === "pearl") setPearlForm(formKey);
+}
+export function companionPortraitUrl(key, formKey) {
+  if (key === "snowLeopard") return snowLeopardPortraitUrl(formKey);
+  if (key === "pearl") return pearlPortraitUrl(formKey);
+  return null;
+}
