@@ -62,6 +62,7 @@ import quest3 from "./quest/heifengzhai-1.js";
 import quest4 from "./quest/gaze-1.js";
 import quest5 from "./quest/huanxijiao-1.js";
 import quest6 from "./quest/jinguancheng-1.js";
+import jinguancheng2 from "./quest/jinguancheng-2.js";
 import quest7 from "./quest/yuquanzhai-1.js";
 import quest8 from "./quest/divine-arms-1.js";
 import tangmen from "./quest/tangmen-1.js";
@@ -91,7 +92,7 @@ import paomadahui from "./quest/paomadahui-1.js";
 import tusiline from "./quest/tusi-line-1.js";
 
 export const DEFAULT_CONTENT_PACKS = [
-  quest0, quest1, quest2, quest3, quest4, quest5, quest6, quest7, quest8, tangmen, wuxianjiao, emei, emei2, gaibang, xueshan, qingcheng, qingcheng2, tianlong, tianlong2, tianlong3, yudingtusi, baihuamen, tangmen2, yudingcun, sanxingpai, lamamiao, baihuamen2, wuxianjiao2, paomadahui, tusiline,
+  quest0, quest1, quest2, quest3, quest4, quest5, quest6, jinguancheng2, quest7, quest8, tangmen, wuxianjiao, emei, emei2, gaibang, xueshan, qingcheng, qingcheng2, tianlong, tianlong2, tianlong3, yudingtusi, baihuamen, tangmen2, yudingcun, sanxingpai, lamamiao, baihuamen2, wuxianjiao2, paomadahui, tusiline,
   pack5, pack6, pack7, pack8, pack9, pack10, pack11, pack12, pack13, pack14,
   pack15, pack16, pack17, pack18, pack19, pack20, pack21, pack22, pack23,
   pack24, pack25, pack26, pack27, pack28, pack29, pack30, pack31, pack32,
