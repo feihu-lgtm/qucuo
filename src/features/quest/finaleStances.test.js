@@ -87,3 +87,14 @@ describe("府5 百花门反噬", () => {
     for (const f of ["finale_baihua_joined", "bh5_neutral", "finale_neutral_baihua"]) expect(open([f])).toEqual(["quest_ts5_baihua_none"]);
   });
 });
+
+describe("府5 雪山派何雨谢拔毒", () => {
+  const stage = quest("yudingtusi_5_dou_dizhu").stages.find((s) => s.id === "guard");
+  const open = (flags) => stage.choices.filter((c) => isQuestChoiceOpen(c, { flags, varTree: {} })).map((c) => c.flag);
+  it("雪山结盟且拔毒，亲兵再降一档到 2；只拔毒不结盟不生效", () => {
+    expect(open(["xueshan_endgame_ally", "endgame_xueshan_heyuxie_full"])).toContain("quest_ts5_guard_xueshan_full");
+    expect(stage.choices.find((c) => c.flag === "quest_ts5_guard_xueshan_full").combatNpc.levelCap).toBe(2);
+    expect(open(["endgame_xueshan_heyuxie_full"])).not.toContain("quest_ts5_guard_xueshan_full");
+    expect(open(["xueshan_endgame_ally"])).not.toContain("quest_ts5_guard_xueshan_full");
+  });
+});
