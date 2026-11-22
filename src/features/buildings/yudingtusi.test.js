@@ -48,7 +48,7 @@ describe("鱼定土司府", () => {
     const rewardNames = rewardItems.map((text) => text.slice(8, text.indexOf('","')));
     expect(shopItems).toHaveLength(10);
     for (const name of [...shopItems, ...carry, ...rewardNames]) expect(makeNamedItem(name), name).toBeTruthy();
-    expect(tusiQuests()).toHaveLength(7);
+    expect(tusiQuests()).toHaveLength(8);
   });
 
   it("prices and gates the 军需司 by 土司府 reputation, top tier at 100", () => {
