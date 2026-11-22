@@ -59,8 +59,9 @@ export const HOSTILE_CLOSURES = [
   },
   {
     faction: "锦官城",
-    buildings: ["transport_jingguan"],
-    closed: "驿丞对着海捕文书瞧了你两眼，把簿子一合：「官驿不载在逃之人。」",
+    // 合稿「城北府衙/军需库/锦官驿站全面拒客」：府衙即都事府值房，军需库即城东营房的都事府兵备库。
+    buildings: ["sect_entry_guan", "sectshop_guan", "transport_jingguan"],
+    closed: "门子对着海捕文书瞧了你两眼，把门一掩：「官府的门，不对在逃之人开。」",
   },
   {
     faction: "青城派",
