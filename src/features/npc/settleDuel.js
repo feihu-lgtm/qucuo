@@ -171,9 +171,10 @@ export function settleNpcDuel(state, npc, {
   let sparRep = sectSparRepGain(working, npc, { outcome, battleLog });
   if (sparRep && pendingQuestBranch?.mode === "combat" && !sparRep.poison) {
     const grantsFirstWin = (sparRep.flags || []).some((f) => f.endsWith("_first") && !working.flags.includes(f));
-    // 任务战只发首胜试炼旗与声誉：不带当日切磋档，免得吃掉玩家今天应得的日常声誉
+    // 任务战只发首胜试炼旗与声誉：剥掉本规则新加的当日切磋档（不动身上已有的其他日旗），
+    // 免得吃掉玩家今天应得的日常声誉
     sparRep = grantsFirstWin
-      ? { ...sparRep, flags: sparRep.flags.filter((f) => !/_day_\d+$/.test(f)) }
+      ? { ...sparRep, flags: sparRep.flags.filter((f) => !(/_day_\d+$/.test(f) && !working.flags.includes(f))) }
       : null;
   }
   if (sparRep?.poison) {
