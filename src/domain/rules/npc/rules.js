@@ -3,6 +3,7 @@ import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../map/
 import { ensureNpcCombatData } from "../npc/npcGeneration.js";
 import { mapDescriptionToGenParams } from "../../data/npc/npcDescriptionMapping.js";
 import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../data/npc/npcPool.js";
+import { getCrowd, getRandomPassers } from "../../data/npc/randomPassers.js";
 import { injectNpcs } from "../npc/roomNpcs.js";
 import { getResidentNpcs } from "../../data/npc/residentNpcs.js";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
@@ -13,7 +14,7 @@ const NPC_FIELDS = [
   "levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable",
   "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder",
   "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop",
-  "portrait", "neigong", "waigong", "imported", "hostile",
+  "portrait", "neigong", "waigong", "imported", "hostile", "faction", "gender", "randomPasser",
 ];
 
 export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5 } = {}) {
@@ -57,8 +58,11 @@ export const residentNpcRule = {
           .filter((npc) => RELOCATED_RESIDENTS[npc.name] !== roomName)
           .map((npc) => npc.name)),
     );
+    // 常驻写了 goneFlags（被处决、囚禁等），任一 flag 已立就不再出现，旧缓存里的也清掉
+    const isGoneResident = (npc) => (npc.goneFlags || []).some((flag) => flags.includes(flag));
+    const goneResidentNames = new Set(getResidentNpcs(room.name).filter(isGoneResident).map((npc) => npc.name));
     const staleNames = new Set((room.npcs || [])
-      .filter((npc) => !npc.imported && RELOCATED_RESIDENTS[npc.name] === room.name)
+      .filter((npc) => !npc.imported && (RELOCATED_RESIDENTS[npc.name] === room.name || goneResidentNames.has(npc.name)))
       .map((npc) => npc.name));
     const toRoomNpcWithCombat = (poolNpc) => buildRoomNpcWithCombat(poolNpc, {
       existingNpc: existingByName.get(poolNpc.name),
@@ -72,6 +76,7 @@ export const residentNpcRule = {
     };
     const residentNpcs = getResidentNpcs(room.name)
       .filter((npc) => !(npc.companionCandidate && companionJoined(npc.name)))
+      .filter((npc) => !isGoneResident(npc))
       .filter((npc) => currentNpcNames.has(npc.name) || !cachedNpcNames.has(npc.name))
       .map(toRoomNpcWithCombat);
     const activeEscortTargets = ESCORT_QUESTS
@@ -119,8 +124,37 @@ export const residentNpcRule = {
     )
       .filter((npc) => !isCompanionUnlockedByName(companionState, npc.name))
       .map(toRoomNpcWithCombat);
-    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs];
-    if (!toInject.length && !staleNames.size) return null;
+    // 名字避开玩家认识的人和导入角色卡；认识的人里，今天已经刷出来的那批（本地或别处缓存里）不算撞名，保证同日重进结果不变。
+    const todaysPassers = new Set([room.npcs || [], ...Object.values(roomMapRef?.current || {}).map((cached) => cached?.npcs || [])]
+      .flat()
+      .filter((npc) => npc?.randomPasser === dayIdx)
+      .map((npc) => npc.name));
+    const varTree = state.varTree || {};
+    const passerReserved = new Set([
+      ...[...(varTree.世界?.已认识人物 || []), ...Object.keys(varTree.角色 || {})]
+        .filter((name) => !todaysPassers.has(name)),
+      ...importedRegistry.getImportedResidentNames(),
+      ...importedNpcs.map((npc) => npc.name),
+    ]);
+    const passers = getRandomPassers(room.name, time, passerReserved)
+      .map((passer) => {
+        const existing = existingByName.get(passer.name);
+        return buildRoomNpcWithCombat(passer, { existingNpc: existing?.randomPasser === dayIdx ? existing : undefined, luck });
+      });
+    // 不在今天这份名单里的过路人一律清掉：隔天的，或名额被新导入角色卡顶替、重抽后换下的
+    const rosterNames = new Set(passers.map((npc) => npc.name));
+    const isStalePasser = (npc) => npc?.randomPasser != null && (npc.randomPasser !== dayIdx || !rosterNames.has(npc.name));
+    const hasStalePassers = (room.npcs || []).some(isStalePasser);
+    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...passers];
+    // 不具名群众：按天固定，有内层地图的分散到各公共房间
+    const crowdRooms = hasInnerMap(room.name) ? getPublicInnerRoomNames(room.name) : [];
+    const crowd = getCrowd(room.name, time).map((label) => {
+      if (!crowdRooms.length) return { label };
+      const rng = seededRand(dayIdx, `crowd|${room.name}|${label}`);
+      return { label, innerRoom: crowdRooms[Math.floor(rng() * crowdRooms.length)] };
+    });
+    const crowdChanged = JSON.stringify(room.crowd || []) !== JSON.stringify(crowd);
+    if (!toInject.length && !staleNames.size && !hasStalePassers && !crowdChanged) return null;
 
     if (hasInnerMap(room.name)) {
       const rooms = getPublicInnerRoomNames(room.name);
@@ -145,7 +179,8 @@ export const residentNpcRule = {
       changes: {
         room: (previous) => ({
           ...previous,
-          npcs: injectNpcs((previous.npcs || []).filter((npc) => npc.imported || !staleNames.has(npc.name)), toInject),
+          npcs: injectNpcs((previous.npcs || []).filter((npc) => !isStalePasser(npc) && (npc.imported || !staleNames.has(npc.name))), toInject),
+          crowd,
         }),
       },
     };

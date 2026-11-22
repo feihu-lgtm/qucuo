@@ -2,6 +2,7 @@
 // 峨眉慈济佛堂：布施 20 两救济曲措逃民 +5、威望 +2；声誉 ≥ 15 免诊金。
 // 青城药圃：随玉真子采药义诊（耗两个时辰）+8、威望 +3。
 // 鱼定村歇马居：托鱼定大娘给寒户捐 20 两粮药，鱼定村 +5、威望 +1（合稿「鱼定村·七、7.1」加分行为 3）。
+// 唐门试毒药庐：采毒草、送修机括的日常委托（耗两个时辰）+5；声誉 ≥ 40 免诊金。
 // 各处声誉 ≤ -20 都拒诊。
 import { factionRepOf, formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 
@@ -26,6 +27,13 @@ export const FACTION_CLINICS = {
     deed: "托鱼定大娘给村里寒户捐了20两粮药",
     settle: "在歇马居把20两银子交给鱼定大娘，托她换成青稞和药，挨家送到交不起税的寒户手里",
     refuse: "鱼定大娘把银子推回来：「你的东西，村里人不敢收。」",
+  },
+  hospital_tangmen: {
+    faction: "唐门", cost: 0, hours: 2, rep: 5, prestige: 0, freeRep: 40, refuseRep: -20,
+    dayFlag: "tangmen_errand_day_", label: "接药庐日常委托（两个时辰）", done: "今日已交差",
+    deed: "替药庐采川南毒草、送修机括",
+    settle: "接了试毒药庐的日常委托，进竹海采回一篓川南毒草，又把两具崩了簧的机括送去外姓竹坞修好",
+    refuse: "药庐的伙计把门帘一放：「唐家的药，不给仇家用。」",
   },
 };
 

@@ -17,6 +17,7 @@ export const QUCUO_SHOPS = {
       { name: "淬竹袖箭", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 40 },
       { name: "蚕丝防毒衣", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 40 },
       { name: "冰魄解蛊散", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 80 },
+      { name: "七星绣针匣", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100, limitOnce: true },
     ],
   },
   // 五仙百蛊房（雾隐寨·百蛊药房）。苗疆药房货池，声誉门槛照合稿 6.1：
