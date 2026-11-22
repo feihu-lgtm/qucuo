@@ -4,6 +4,7 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../domain/rules/quests/questEngine.js";
 import { getBuildingsForLocation } from "../../domain/data/buildings/qucuoBuildings.js";
 import { hasInnerMap, getDistrictAnchor } from "../../domain/rules/map/innerMap.js";
+import { roadEncounterFor } from "../../domain/data/encounters/roadEncounters.js";
 import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
 import { activeCompanion, COMPANION_LORE } from "../../domain/rules/companion/companion.js";
 import { formatCompanionBodyBlock } from "../../domain/rules/character/bodyPresets.js";
@@ -107,7 +108,7 @@ export function buildForcedEventNote(forcedEvent, forcedEventNpc, targetWordCoun
 
 // 入场叙事：跨据点抵达新地点时，让本轮叙事先给一段"立此存照"的场景开场——
 // 交代此地的地貌气候、建筑、在场之人、地上显眼之物，再承接玩家这一步的后续。
-export function buildArrivalNote({ isTalk, movingDir, lockedDestName, outerDepart }) {
+export function buildArrivalNote({ isTalk, movingDir, lockedDestName, outerDepart, room }) {
   if (isTalk || !movingDir || !lockedDestName) return "";
   const bld = getBuildingsForLocation(lockedDestName).map(b => b.name).join("、");
   const destAnchor = hasInnerMap(lockedDestName) ? getDistrictAnchor(lockedDestName) : null;
@@ -118,7 +119,14 @@ export function buildArrivalNote({ isTalk, movingDir, lockedDestName, outerDepar
   const transitNote = (dep && dep.fromInner)
     ? `玩家此前身处「${dep.fromDistrict}·${dep.fromInner}」，出发时先自内层行至本地门户「${dep.fromAnchor}」方才离境。开头用一两句自然交代这段折返归位（不必冗长），再承接下面的抵达。`
     : "";
-  return `\n[入场叙事] 玩家刚抵达「${lockedDestName}」${destAnchor ? `，落脚在此地门户「${destAnchor}」` : ""}。${transitNote}请在 output 开头先给一段落地的场景速写：此地地貌气候、${bld ? `可见的建筑（如${bld}等）、` : ""}此刻在场的人物、地上有无显眼之物，让玩家一眼看清"到了什么地方、有谁、有什么"，再自然承接玩家这一步的动作。用说书人白话古文一段道来，不要罗列清单。`;
+  // 路途遭遇池：出发据点→目的据点命中遭遇表就注入条目清单，AI 至多挑一条
+  // 演绎（也可不遇）。野兽入战挂 tag（清剿类任务按 tag 统计），山贼类遭遇
+  // 态度由玩家与该势力的声誉定。
+  const segment = roadEncounterFor(dep?.fromDistrict || room?.name, lockedDestName);
+  const encounterNote = segment
+    ? `\n[路途遭遇池] 此段路途为「${segment.name}」，可随机触发遭遇（至多挑一条，也可不遇，由叙事节奏与紧张度决定）：${segment.pool.map((e) => `「${e.name}」(${e.hint}${e.tag ? `，入战挂 tag「${e.tag}」` : ""})`).join("、")}。遭遇写进正文即可，不影响最终抵达的据点身份。`
+    : "";
+  return `\n[入场叙事] 玩家刚抵达「${lockedDestName}」${destAnchor ? `，落脚在此地门户「${destAnchor}」` : ""}。${transitNote}请在 output 开头先给一段落地的场景速写：此地地貌气候、${bld ? `可见的建筑（如${bld}等）、` : ""}此刻在场的人物、地上有无显眼之物，让玩家一眼看清"到了什么地方、有谁、有什么"，再自然承接玩家这一步的动作。用说书人白话古文一段道来，不要罗列清单。${encounterNote}`;
 }
 
 // 在场名单（纯计算 + trace）：喂给 AI 的 NPC 名单必须按当前内层房间过滤——
