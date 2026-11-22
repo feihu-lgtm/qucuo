@@ -52,7 +52,8 @@ async function resolveQuestChoice({
     }
   }
   captureUndo();
-  if (!quest.localOnly && apiCfg.questTriggerMode === "script") {
+  // 战斗分支在剧本模式下也真打，不交给叙事代判输赢。
+  if (!quest.localOnly && apiCfg.questTriggerMode === "script" && !(choice.resolve === "combat" && choice.combatNpc)) {
     act(`（关于「${quest.title}」）我选择：${choice.label}`);
     return;
   }

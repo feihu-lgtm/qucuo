@@ -19,6 +19,8 @@ const atStagePlace = (stage, room, innerRoomName) => {
   if (rl.inner && innerRoomName !== rl.inner) return false;
   return true;
 };
+// 全是战斗分支的阶段：剧本模式下也由面板开打、打赢才推进，不给 AI 吐 flag。
+const allCombat = (stage) => stage.choices.every((choice) => choice.resolve === "combat" && choice.combatNpc);
 const placeLabel = (stage) => {
   const rl = stage?.requireLocation || {};
   return rl.inner ? `${rl.district}/${rl.inner}` : (rl.district || "指定地点");
@@ -54,7 +56,7 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
         // AI 代吐会绕过真实战斗或分支——只给场景，明确别吐 flag。
         // 例外：questTriggerMode=script 时抉择本来就走叙事（点选只是发一句对白，
         // 推进完全靠 AI 吐 flag），这条提示仍是唯一的推进路径，照旧给。
-        if (stage.choices?.length && questTriggerMode !== "script") {
+        if (stage.choices?.length && (questTriggerMode !== "script" || allCombat(stage))) {
           noteLines.push(`《${quest.title}》当前阶段：${stage.description}——这一步的推进由玩家在任务面板抉择（${stage.choices.map(c => c.label).join("／")}），叙事最多写到撞见此景，不要替玩家抉择，也不要在 flags_add 里加这一阶段的 flag`);
         } else if (stage.choices?.length) {
           noteLines.push(`《${quest.title}》当前阶段：${stage.description}——玩家抉择后，在 flags_add 加入${describeFlag(stage.completionFlag)}`);
@@ -73,7 +75,7 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
       // 无地点锚点又无 giver 的全局任务不在此提示（旧口径：giver 在场才提示）
       const giverHere = !needsGiver || room.npcs.some(n => n.name === quest.giver);
       if (flagWorthy && (anchored || needsGiver) && atStagePlace(first, room, innerRoomName) && giverHere) {
-        if (first.choices?.length && questTriggerMode !== "script") {
+        if (first.choices?.length && (questTriggerMode !== "script" || allCombat(first))) {
           noteLines.push(`《${quest.title}》在此可开启——这一步的推进由玩家在任务面板抉择，叙事最多写到撞见此景，不要在 flags_add 加这一阶段的 flag`);
         } else {
           noteLines.push(needsGiver

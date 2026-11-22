@@ -112,10 +112,10 @@ export default { district: {
         exits: { w: "香行内堂", s: "莲花廊", n: "伽罗秘龛", e: "伽罗旧神殿" },
         buildingId: "sect_entry_huanxi",
         residentNpcName: "梵衍那",
-        // 香2 第三步罗琦领人进正殿见梵衍那，所以请过茶（s2）就开门。
+        // 比武招贤：连胜三场后切磋胜了罗琦，欢喜堂大门就敞开（香2 试心一关在此见梵衍那）。
         unlockCondition: { type: "any", of: [
           { type: "questCompleted", questId: "huanxijiao_2_biwuzhaoxian" },
-          { type: "flag", flag: "quest_huanxijiao2_s2" },
+          { type: "flag", flag: "quest_huanxijiao2_luoqi" },
         ] },
       },
       伽罗旧神殿: {
