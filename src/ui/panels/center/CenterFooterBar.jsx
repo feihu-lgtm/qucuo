@@ -1,10 +1,12 @@
 import CenterControlRows from "../CenterControlRows.jsx";
 import { useGameStore } from "../../../store/gameStore.js";
+import { isChoiceOpen } from "../../../domain/rules/quests/questEngine.js";
 
 export default function CenterFooterBar({ ui, turn, handlers }) {
   const room = useGameStore(s => s.room);
   const innerRoomName = useGameStore(s => s.innerRoomName);
   const questProgress = useGameStore(s => s.questProgress);
+  const flags = useGameStore(s => s.flags);
   const {
     isMobile, mobileColumn, zoneTheme, loading, pendingTalks, waitSecs,
     availableQuestsHere, nsfwOn, setNsfwOn, justMeditated,
@@ -86,7 +88,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
                     if (!need.every(isDone)) return false;
                   }
                   if (choice.requiresAnyOf?.length && !choice.requiresAnyOf.some(isDone)) return false;
-                  return true;
+                  return isChoiceOpen(choice, flags);
                 })
                 .map(choice => {
                   const icon = choice.resolve === "combat" ? "⚔ " : choice.resolve === "talk" ? "💬 " : "";

@@ -333,6 +333,7 @@ const items = {
 "染血的香行凭据（抄本）": { name: "染血的香行凭据（抄本）", category: "misc", quality: "紫", tags: ["证据", "任务", "欢喜"], desc: "六年前失踪官差留下的天都香行入货凭据抄本，角上同时盖着土司府管家的私印。" },
 "土司私兵夜袭令牌": { name: "土司私兵夜袭令牌", category: "misc", quality: "蓝", tags: ["证据", "任务", "欢喜"], desc: "从夜袭天都香行的私兵头目腰间夺下的铜令牌，背面是鱼定土司府中院的编号。" },
 "圣女素银莲簪": { name: "圣女素银莲簪", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 悟性: 1 }, tags: ["饰品", "信物", "欢喜"], desc: "罗琦接过教权那夜拔下的素银莲簪，交到你手里时只说了一句：「替我记着今天。」" },
+"黑铜金刚杵": { name: "黑铜金刚杵", category: "weapon", quality: "紫", atkMul: 1.4, tags: ["武器", "法器", "欢喜"], effect: { ignoreDefenseRatio: 0.2 }, desc: "梵衍那从天竺背来的黑铜旧神像手中那柄金刚杵，血洗欢喜堂那夜落进了你手里。" },
 "莲纹铜牌": { name: "莲纹铜牌", category: "misc", quality: "绿", tags: ["信物", "欢喜"], desc: "欢喜教内院弟子的铜牌，正面一朵莲花，背面刻着坛城纹。凭它可出入莲花廊。" },
 "西域止血散": { name:"西域止血散", category:"misc", quality:"绿", tags:["药材","疗伤","天龙教"], consumable:{ hpRestore: 0.12 }, desc:"军需坊常备的止血药粉，铁锈味比药味重。血刀部的人也用这个——他们说止血要快，味儿难不难闻是活下来才想的事。" },
 "胡杨炭火酒": { name:"胡杨炭火酒", category:"misc", quality:"绿", tags:["酒","西域","天龙教"], consumable:{ energyRestore: 3 }, desc:"胡杨炭温过三遍的烈酒，喝下去一线火从喉咙烧到胃里。守夜的玄甲兵靠它熬西风隘的长夜——不许多喝，多了第二天刀拿不稳。" },

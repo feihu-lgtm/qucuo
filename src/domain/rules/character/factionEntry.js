@@ -29,7 +29,7 @@ export const FACTION_ENTRIES = {
     sect: "欢喜教", master: "梵衍那", buildingId: "sect_entry_huanxi",
     minRep: 40, repBonus: 20, flag: "欢喜教弟子", anyPrestige: true,
     token: "莲纹铜牌", gifts: [],
-    trial: { flag: "quest_huanxijiao2_s2", label: "通过「香2·比武招贤」", hint: "先过罗琦的比武招贤，在内堂听完她的托付。" },
+    trial: { flag: "huanxijiao_xiang2_passed", quest: "huanxijiao_2_biwuzhaoxian", label: "通过「香2·比武招贤」", hint: "先过罗琦的比武招贤，在内堂听完她的托付。" },
     intro: "偏厅香案上只摆一尊铜钵与三柱无烟红香。向旧神像敬香、饮下罗琦亲斟的坛城茶，便算入了内院门墙。",
     joinLabel: "敬香饮茶，拜入欢喜教",
   },
@@ -59,11 +59,13 @@ export const sectMasterOf = (sect) => (sect === SECT_ENTRY.sect ? SECT_ENTRY.mas
 export const factionEntryForBuilding = (buildingId) =>
   Object.values(FACTION_ENTRIES).find((entry) => entry.buildingId === buildingId) || null;
 
-export function checkFactionEntry(entry, { varTree, flags = [], char } = {}) {
+export function checkFactionEntry(entry, { varTree, flags = [], char, questProgress = {} } = {}) {
   const rep = factionRepOf(varTree, entry.sect);
   const prestige = Number(varTree?.世界?.威望) || 0;
   const other = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== entry.sect && flags.includes(flag));
-  const trialOk = !entry.trial || flags.includes(entry.trial.flag);
+  // trial.quest：旧存档早已做完该任务、却没有后加的 trial flag，按任务已完成也算过
+  const trialOk = !entry.trial || flags.includes(entry.trial.flag)
+    || (!!entry.trial.quest && questProgress?.[entry.trial.quest]?.status === "completed");
   const riteNeeded = !!entry.maleRite && (char?.gender || "男") === "男";
   const riteOk = !riteNeeded || flags.includes(entry.maleRite.flag);
   const reqs = [

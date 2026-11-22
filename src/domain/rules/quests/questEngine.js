@@ -111,6 +111,13 @@ export function questGateReqs(quest, varTree) {
   return reqs;
 }
 
+// 分支（stage.choices）的 flag 门槛：requiresFlags 全有、blockedByFlags 一个都没有才可选。
+export function isChoiceOpen(choice, flags = []) {
+  if (choice?.requiresFlags?.some((flag) => !(flags || []).includes(flag))) return false;
+  if (choice?.blockedByFlags?.some((flag) => (flags || []).includes(flag))) return false;
+  return true;
+}
+
 export function isQuestGateOpen(quest, allProgress, flags, varTree) {
   const isDone = (qid) => allProgress?.[qid]?.status === "completed";
   if (varTree && !questGateReqs(quest, varTree).every((r) => r.ok)) return false;

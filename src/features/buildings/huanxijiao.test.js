@@ -85,11 +85,13 @@ describe("欢喜教", () => {
     const entry = FACTION_ENTRIES[HX];
     const hall = { innerRoomName: "欢喜堂", varTree: rep(40, -50) };
     expect(checkFactionEntry(entry, { varTree: rep(40, -50), flags: [] }).missing).toEqual(["trial"]);
-    const joined = joinSect(state(40, { ...hall, flags: ["quest_huanxijiao2_s2"] }), 1);
-    expect(apply(joined.changes.flags, ["quest_huanxijiao2_s2"])).toContain("欢喜教弟子");
+    const legacy = { huanxijiao_2_biwuzhaoxian: { status: "completed" } };
+    expect(checkFactionEntry(entry, { varTree: rep(40, -50), flags: [], questProgress: legacy }).eligible).toBe(true);
+    const joined = joinSect(state(40, { ...hall, flags: ["huanxijiao_xiang2_passed"] }), 1);
+    expect(apply(joined.changes.flags, ["huanxijiao_xiang2_passed"])).toContain("欢喜教弟子");
     expect(apply(joined.changes.varTree, hall.varTree).世界.势力声誉[HX]).toBe(60);
     expect(apply(joined.changes.inv, []).map((item) => item.name)).toEqual(["莲纹铜牌"]);
-    expect(checkFactionEntry(entry, { varTree: rep(40), flags: ["quest_huanxijiao2_s2", "峨眉派弟子"] }).missing).toEqual(["single"]);
+    expect(checkFactionEntry(entry, { varTree: rep(40), flags: ["huanxijiao_xiang2_passed", "峨眉派弟子"] }).missing).toEqual(["single"]);
   });
 
   it("raises 欢喜教 rep once a day for herbs given to 阿雅, without touching 锦官城", () => {
@@ -123,10 +125,42 @@ describe("欢喜教", () => {
       expect(entry.requiresFactionRep[HX]).toBeLessThanOrEqual(100);
     }
     const s1 = quest("huanxijiao_1_xiangzhongyi").stages[0];
-    const s0 = state(0, { questProgress: { huanxijiao_1_xiangzhongyi: { status: "active", currentStageIndex: 0 } } });
-    const out = applyChanges(s0, forceAdvanceQuest(s0, quest("huanxijiao_1_xiangzhongyi"), s1.completionFlag, 1).changes);
+    const s0 = state(0, { flags: [s1.completionFlag], questProgress: { huanxijiao_1_xiangzhongyi: { status: "active", currentStageIndex: 1 } } });
+    const out = applyChanges(s0, forceAdvanceQuest(s0, quest("huanxijiao_1_xiangzhongyi"), "quest_huanxijiao1_quiet", 1).changes);
     expect(out.varTree.世界.势力声誉).toEqual({ [HX]: 12 });
     expect(out.char.money).toBe(580);
     expect(out.inv.map((item) => item.name)).toEqual(["安神檀香", "安神檀香"]);
+  });
+
+  it("settles 香 branches: rewards per choice, betrayal gated by flag and expels members", () => {
+    const xiang5 = quest("huanxijiao_5_guanjiadetuxi");
+    const run = (flags, flag, inv = []) => {
+      const s0 = state(60, { flags, inv, questProgress: { ...done("huanxijiao_3_guanjiadetanzi", "huanxijiao_4_jinguanchengdeanxian") } });
+      const result = forceAdvanceQuest(s0, xiang5, flag, 1);
+      return Object.keys(result.changes).length ? applyChanges(s0, result.changes) : null;
+    };
+    expect(run([], "quest_huanxijiao5_betray")).toBeNull();
+    expect(run(["flag_huanxi_betray_ready", "欢喜教弟子"], "quest_huanxijiao5_betray")).toBeNull();
+    const token = { ...makeNamedItem("莲纹铜牌"), id: "t1" };
+    const member = run(["flag_huanxi_betray_ready", "欢喜教弟子"], "quest_huanxijiao5_betray_member", [token]);
+    expect(member.varTree.世界.势力声誉.欢喜教).toBe(-70);
+    expect(member.flags).toContain("叛出:欢喜教");
+    expect(member.flags).not.toContain("欢喜教弟子");
+    expect(member.inv.map((item) => item.name)).not.toContain("莲纹铜牌");
+    const guest = run(["flag_huanxi_betray_ready"], "quest_huanxijiao5_betray");
+    expect(guest.varTree.世界.势力声誉.欢喜教).toBe(0);
+    const defend = run([], "quest_huanxijiao5_defend");
+    expect(defend.varTree.世界.势力声誉).toMatchObject({ 欢喜教: 85, 鱼定土司府: -15 });
+    expect(defend.char.money).toBe(800);
+    const after = { ...done("huanxijiao_5_guanjiadetuxi") };
+    expect(isQuestGateOpen(quest("huanxijiao_6_juezhanqianye"), after, ["flag_huanxi_betray_done"], rep(90))).toBe(false);
+    expect(isQuestGateOpen(quest("huanxijiao_6a_bangguanjia"), after, ["flag_huanxi_betray_done"], rep(-70))).toBe(true);
+    const finals = QUCUO_QUESTS.filter((entry) => entry.exclusiveGroup === "欢喜教终局");
+    expect(finals).toHaveLength(3);
+    const owners = { ending_huanxi_guanjia: "huanxijiao_6a_bangguanjia", ending_huanxi_fanyanna: "huanxijiao_6b_bangfanyanna", ending_huanxi_luoqi_ally: "huanxijiao_6_juezhanqianye" };
+    for (const [ending, owner] of Object.entries(owners)) {
+      const open = finals.filter((entry) => entry.id !== owner && isQuestGateOpen(entry, after, [ending], rep(90)));
+      expect(open).toHaveLength(0);
+    }
   });
 });
