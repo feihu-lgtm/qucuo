@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildDuelNarrationPrompt, duelFactLine, duelFactLogs, insertDuelNarration, parseDuelNarration } from "./duelBrief.js";
+import { buildDuelNarrationPrompt, duelFactLine, duelFactLogs, duelNarrationSlots, parseDuelNarration } from "./duelBrief.js";
+import { insertBackfill } from "../log/backfill.js";
 
 const round = {
   round: 1,
@@ -37,8 +38,8 @@ describe("duel narration", () => {
 
   it("inserts prose right under its system row and skips a rolled-back duel", () => {
     const log = [{ t: "cmd", text: "> 切磋" }, ...duelFactLogs([round], "k1", "你胜"), { t: "cmd", text: "> 下一场" }];
-    const next = insertDuelNarration(log, "k1", { rounds: ["拳到。"], ending: "老孙认输。" });
+    const next = insertBackfill(log, "k1", duelNarrationSlots({ rounds: ["拳到。"], ending: "老孙认输。" }));
     expect(next.map((entry) => entry.text.trim())).toEqual(["> 切磋", "第1回合 野球拳对回气，老孙−92", "拳到。", "结局 你胜", "老孙认输。", "> 下一场"]);
-    expect(insertDuelNarration(log, "gone", { rounds: ["x"], ending: "y" })).toBe(log);
+    expect(insertBackfill(log, "gone", duelNarrationSlots({ rounds: ["x"], ending: "y" }))).toBe(log);
   });
 });
