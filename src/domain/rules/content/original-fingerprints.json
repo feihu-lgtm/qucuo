@@ -5,8 +5,8 @@
     "QUCUO_QUESTS": {
       "entryCount": 66,
       "orderedIdsSha256": "24998aa8ee071797a751dd134676297f65376439342cdeb5f72a8c658fced8ad",
-      "totalFieldCount": 3153,
-      "jsonSha256": "9a269896826ea2a65664740128999efb5a9e155f7f7f88a6710e0e44bd0f489e"
+      "totalFieldCount": 3247,
+      "jsonSha256": "857fd79dcb70b157e470d35f2d8fac25b5e756abedaa5eec5161263d8edce8a2"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -62,10 +62,10 @@
       "jsonSha256": "5d6a5c6bcffad3e6399e321424576adf50abd8e9e36a1e72f9aa553fd7018273"
     },
     "SUNDRIES": {
-      "entryCount": 296,
-      "orderedIdsSha256": "99b83624063d9cb73d82d0a95cd2447a29639209dfde8e39e762c422ce2f9ac9",
-      "totalFieldCount": 2273,
-      "jsonSha256": "b1c890fd6001402f8d0f8fda5b21c816f7bfe3d35a3a4f5a9bf8c7b0e324642c"
+      "entryCount": 319,
+      "orderedIdsSha256": "fafb420750a2ab3de7da5ccd3a8a2c38d946f56a6e159840cc50b15d6fa285dd",
+      "totalFieldCount": 2432,
+      "jsonSha256": "4c220835048a4422cf792e7a057b8c6aaa7fa0c8c97de1830029ba38c553e423"
     },
     "STANDARD_WEAPONS": {
       "entryCount": 10,
@@ -159,16 +159,16 @@
       "jsonSha256": "d0c47d92e4d5958afd876abb8512223df37399abe67606b7329a8f282a8d2245"
     },
     "CATALOG": {
-      "entryCount": 538,
-      "orderedIdsSha256": "0c08217feb58f8a7a26cf6cdb7c1fcc067778cb61024d624ada7411492977411",
-      "totalFieldCount": 4051,
-      "jsonSha256": "3bf238504346695153c1545d05835e1adf5bcb894a75192325b54bd6c8d47810"
+      "entryCount": 561,
+      "orderedIdsSha256": "f6e1082299e2df70efb4a46d999efbef3d7f0eb2eb9042449f0d0c2b2bf996bc",
+      "totalFieldCount": 4210,
+      "jsonSha256": "a16c518b9ae100263e9675ed797fa0bc19275f1a2441fb3222d69548aa0ead0d"
     },
     "CATALOG_INDEX": {
-      "entryCount": 538,
-      "orderedIdsSha256": "0c08217feb58f8a7a26cf6cdb7c1fcc067778cb61024d624ada7411492977411",
-      "totalFieldCount": 4589,
-      "jsonSha256": "d23a1d968c98cc0e225c7c478545c753c00046c089469fbae80c96177b74cf9d"
+      "entryCount": 561,
+      "orderedIdsSha256": "f6e1082299e2df70efb4a46d999efbef3d7f0eb2eb9042449f0d0c2b2bf996bc",
+      "totalFieldCount": 4771,
+      "jsonSha256": "c63909579375d6c211ba4946803f63e6c13a1df45381ee5ea9067d5a5e6e4022"
     },
     "RESIDENT_NPCS": {
       "entryCount": 14,
@@ -215,8 +215,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 1550,
-      "jsonSha256": "55b2bf49435edbb3ebcb8d93be16e1be9861dcd30eed24afb81b50fdaf06a99c"
+      "totalFieldCount": 1601,
+      "jsonSha256": "5d68745218b57a1149d6855f48dc33646eff4039b7b9cdf67fda6806413737f7"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,
