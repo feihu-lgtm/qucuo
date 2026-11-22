@@ -17,6 +17,11 @@ export const FACTION_ENTRIES = {
     minRep: 40, repBonus: 20, flag: "峨眉派弟子",
     token: "峨眉青玉弟子令", gifts: ["素铁峨眉刺", "青布道袍"],
     trial: null,
+    maleRite: {
+      flag: "emei_chaojing_done",
+      label: "男弟子入门礼：抄经堂静心抄经三日",
+      hint: "去听竹轩东边的抄经堂，分三日各静心抄一回经。",
+    },
     intro: "听竹轩正厅案上供着青玉弟子令与一卷《峨眉清规》。玄尘师太问你三句心性话，答得出，便收。",
     joinLabel: "问心受戒，拜入峨眉派",
   },
@@ -30,15 +35,18 @@ export const SECT_MEMBER_FLAGS = {
 export const factionEntryForBuilding = (buildingId) =>
   Object.values(FACTION_ENTRIES).find((entry) => entry.buildingId === buildingId) || null;
 
-export function checkFactionEntry(entry, { varTree, flags = [] } = {}) {
+export function checkFactionEntry(entry, { varTree, flags = [], char } = {}) {
   const rep = factionRepOf(varTree, entry.sect);
   const prestige = Number(varTree?.世界?.威望) || 0;
   const other = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== entry.sect && flags.includes(flag));
   const trialOk = !entry.trial || flags.includes(entry.trial.flag);
+  const riteNeeded = !!entry.maleRite && (char?.gender || "男") === "男";
+  const riteOk = !riteNeeded || flags.includes(entry.maleRite.flag);
   const reqs = [
     { key: "rep", label: `${entry.sect}声誉 ≥ ${entry.minRep}（门墙之交）`, have: rep, ok: rep >= entry.minRep },
     { key: "prestige", label: "威望 ≥ 0（不收恶名昭彰之徒）", have: prestige, ok: prestige >= 0 },
     ...(entry.trial ? [{ key: "trial", label: entry.trial.label, have: trialOk ? "已过" : "未过", ok: trialOk }] : []),
+    ...(riteNeeded ? [{ key: "rite", label: entry.maleRite.label, have: riteOk ? "已成" : "未成", ok: riteOk }] : []),
     { key: "single", label: "未拜入他派", have: other ? other[0] : "无", ok: !other },
   ];
   const already = flags.includes(entry.flag);

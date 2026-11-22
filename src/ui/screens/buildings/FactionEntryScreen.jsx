@@ -7,11 +7,12 @@ const hintOf = (entry, key) => ({
   prestige: "· 江湖上名声太坏，正道名门不收。",
   trial: `· 还没过试炼。${entry.trial?.hint ?? ""}`,
   single: "· 你已在别派门下，一人不拜两师。",
+  rite: `· 入门礼未成。${entry.maleRite?.hint ?? ""}`,
 })[key];
 
 // 势力拜师堂（青城、峨眉…）。结算在 features/sect/logic.js joinSect，AI 只写叙事。
-export default function FactionEntryScreen({ entry, building, flags, varTree, zoneTheme, onClose, inline, onJoinSect }) {
-  const status = checkFactionEntry(entry, { varTree, flags });
+export default function FactionEntryScreen({ entry, building, char, flags, varTree, zoneTheme, onClose, inline, onJoinSect }) {
+  const status = checkFactionEntry(entry, { varTree, flags, char });
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building?.name || entry.sect} zoneTheme={zoneTheme} onClose={onClose} />

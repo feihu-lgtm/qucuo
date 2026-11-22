@@ -229,6 +229,10 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "了因师太坐镇的济世医堂，药炉终日不熄，连城中老郎中也常来讨教针法。",
     },
     {
+      id: "library_emei_jingge", name: "抄经堂·藏经阁", type: BUILDING_TYPE.LIBRARY,
+      desc: "临窗一排长案沾满墨痕，半壁收佛经医案，半壁藏道书与蜀西江湖杂录。",
+    },
+    {
       id: "wuguan_emei", name: "峨眉剑庐", type: BUILDING_TYPE.WUGUAN, skillSet: "峨眉",
       desc: "锦官城南三进小院，院中一株老银杏。正堂供普贤菩萨，剑架靠墙十几柄剑擦得锃亮。尼姑和道姑坐一张桌上喝茶——峨眉佛道双修，不拘形迹。男弟子入门先抄三个月经，「心不静，剑不稳」。",
     },

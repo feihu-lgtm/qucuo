@@ -19,7 +19,7 @@ export const HOOK_ENTRIES = [
   { id: "carriage", hooks: { useBuildingHandlers: ["handleTravel"] } },
   { id: "homeCooking", hooks: { useBuildingHandlers: ["handleCook"] } },
   { id: "prayer", hooks: { useBuildingHandlers: ["handlePray"] } },
-  { id: "book", hooks: { useBuildingHandlers: ["handleReadBook", "handleBuyBook"] } },
+  { id: "book", hooks: { useBuildingHandlers: ["handleReadBook", "handleBuyBook", "handleChaojing"] } },
   { id: "bank", hooks: { useBuildingHandlers: ["handleDeposit", "handleWithdraw", "handlePledge", "handleRedeem"] } },
   {
     id: "questChoice",

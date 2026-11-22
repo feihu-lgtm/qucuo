@@ -13,7 +13,7 @@ const SHOP = "峨眉坊";
 const rep = (value, extra = {}) => ({ 世界: { 势力声誉: { 峨眉派: value }, ...extra } });
 const names = (value, flags) => factionShopOffer(SHOP, rep(value), "vault", flags).items.map((item) => item.name);
 const at = (innerRoomName, value, flags = []) => ({
-  char: { money: 3000, special: { 智谋: 5 } },
+  char: { money: 3000, gender: "女", special: { 智谋: 5 } },
   room: { name: "锦官城" }, innerRoomName,
   inv: [], skills: [], flags, questProgress: {}, varTree: rep(value), time: 1,
 });
@@ -48,9 +48,9 @@ describe("峨眉剑庐 · 内院", () => {
 describe("拜入峨眉派", () => {
   it("needs rep 40, prestige ≥ 0 and no other sect", () => {
     const entry = FACTION_ENTRIES.峨眉派;
-    expect(checkFactionEntry(entry, { varTree: rep(40), flags: [] }).eligible).toBe(true);
-    expect(checkFactionEntry(entry, { varTree: rep(40), flags: ["青城派弟子"] }).missing).toEqual(["single"]);
-    expect(checkFactionEntry(entry, { varTree: rep(40, { 威望: -5 }), flags: [] }).missing).toEqual(["prestige"]);
+    expect(checkFactionEntry(entry, { varTree: rep(40), flags: [], char: { gender: "女" } }).eligible).toBe(true);
+    expect(checkFactionEntry(entry, { varTree: rep(40), flags: ["青城派弟子"], char: { gender: "女" } }).missing).toEqual(["single"]);
+    expect(checkFactionEntry(entry, { varTree: rep(40, { 威望: -5 }), flags: [], char: { gender: "女" } }).missing).toEqual(["prestige"]);
   });
 
   it("joins at 听竹轩 with +20 rep and the 弟子令", () => {

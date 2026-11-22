@@ -34,6 +34,7 @@ import { joinSect } from "../../features/sect/logic.js";
 import { auctionWin } from "../../features/auction/logic.js";
 import { buyFactionShopItem } from "../../features/buildings/factionShop.js";
 import { doClinicService } from "../../features/buildings/factionClinic.js";
+import { doChaojing } from "../../features/sect/chaojing.js";
 
 export function useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo }) {
   const handleBuyTangmenItem = useCallback((name, shopKey = "唐门暗器") => applyResult(featureCtxRef.current, () => {
@@ -66,6 +67,11 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     captureUndo();
     applyResult(featureCtxRef.current, doClinicService(gameStore.getState(), activeBuilding?.id));
   }, { feature: "building.clinicService" }), [activeBuilding, captureUndo]);
+
+  const handleChaojing = useCallback(() => applyResult(featureCtxRef.current, () => {
+    captureUndo();
+    applyResult(featureCtxRef.current, doChaojing(gameStore.getState()));
+  }, { feature: "building.chaojing" }), [captureUndo]);
 
   const handleBuySkill = useCallback((catalogItem) => applyResult(featureCtxRef.current, () => {
     captureUndo();
@@ -216,6 +222,7 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     handleBuildingInn,
     handleBuildingHeal,
     handleClinicService,
+    handleChaojing,
     handleBuySkill,
     handleGamble,
     handleTravel,

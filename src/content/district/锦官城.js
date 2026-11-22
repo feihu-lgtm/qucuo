@@ -85,7 +85,7 @@ export default { district: {
       听竹轩: {
         x: -1, y: 3,
         desc: "剑庐中轴正厅改的拜师堂，廊下修竹半亩，案上供着青玉弟子令与一卷翻旧了的《峨眉清规》。",
-        exits: { n: "峨眉剑庐", s: "锻簪坊", w: "慈济佛堂" },
+        exits: { n: "峨眉剑庐", s: "锻簪坊", w: "慈济佛堂", e: "抄经堂" },
         buildingId: "sect_entry_emei",
       },
       锻簪坊: {
@@ -99,6 +99,12 @@ export default { district: {
         desc: "供白衣观音的偏殿，苦药香常年不散，长凳上挤满候诊的城西苦力与曲措流民，医尼低头分药。",
         exits: { e: "听竹轩" },
         buildingId: "hospital_emei_fotang",
+      },
+      抄经堂: {
+        x: 0, y: 3,
+        desc: "临窗一排长案沾满墨痕，半壁收佛经医案，半壁藏道书与蜀西江湖杂录。男弟子入门前须在此静心抄经三日。",
+        exits: { w: "听竹轩" },
+        buildingId: "library_emei_jingge",
       },
       官府告示栏: {
         x: -1, y: 1,

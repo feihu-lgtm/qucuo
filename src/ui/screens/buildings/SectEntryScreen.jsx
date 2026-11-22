@@ -10,7 +10,7 @@ import { FACTION_ENTRIES, SECT_MEMBER_FLAGS } from "../../../domain/rules/charac
 export default function SectEntryScreen({ building, char, narratorAffection, flags, varTree, zoneTheme, onClose, inline, onJoinSect }) {
   const entry = FACTION_ENTRIES[building?.sect];
   if (entry) {
-    return <FactionEntryScreen entry={entry} building={building} flags={flags} varTree={varTree} inline
+    return <FactionEntryScreen entry={entry} building={building} char={char} flags={flags} varTree={varTree} inline
       zoneTheme={zoneTheme} onClose={onClose} onJoinSect={onJoinSect} />;
   }
   const status = checkSectEntry({
