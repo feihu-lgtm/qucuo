@@ -1,16 +1,30 @@
-// 调香药房捐药（合稿·欢喜教 7.1 加分行为 3）：把药材送给阿雅，涨欢喜教声誉，每游戏日只算第一次。
-// 绿品 +4、蓝品 +6、紫品及以上 +8；白品不算珍稀。
-export const HERB_DONATION = { npcId: "resident_ayabuddhist", faction: "欢喜教", flag: "huanxi_herb_day_", tag: "药材" };
+// 送药涨声誉（合稿各派 7.1 日常加分行为）：把珍稀药材（五仙教还收蜀锦、布料）送给指定驻场人物，
+// 涨该派声誉，每派每游戏日只算第一次；白品不算珍稀。
+// 欢喜教·阿雅 +4/+6/+8；雪山派·呼延雪/何雨谢 +5/+6/+8；百花门·花婆 +4/+6/+8；五仙教·龙汐月/乌婆婆 +3/+5/+8。
+const HERB_DONATIONS = [
+  { npcIds: ["resident_ayabuddhist"], faction: "欢喜教", flag: "huanxi_herb_day_", tags: ["药材"],
+    gain: { 绿: 4, 蓝: 6, 紫: 8, 橙: 8, 红: 8 }, text: "阿雅把药材收进调香药房" },
+  { npcIds: ["resident_huyanxue", "resident_heyuxie"], faction: "雪山派", flag: "xueshan_herb_day_", tags: ["药材"],
+    gain: { 绿: 5, 蓝: 6, 紫: 8, 橙: 8, 红: 8 }, text: "药材收进了雪山灶房的药柜" },
+  { npcIds: ["resident_huapo"], faction: "百花门", flag: "baihua_herb_day_", tags: ["药材"],
+    gain: { 绿: 4, 蓝: 6, 紫: 8, 橙: 8, 红: 8 }, text: "花婆把药草摊进暖棚的竹筛" },
+  { npcIds: ["resident_longxiyue", "resident_wupopo"], faction: "五仙教", flag: "wuxian_herb_day_", tags: ["药材", "布料", "锦缎"],
+    gain: { 绿: 3, 蓝: 5, 紫: 8, 橙: 8, 红: 8 }, text: "东西收进了五仙祖灵殿的樟木箱" },
+];
 
-const GAIN = { 绿: 4, 蓝: 6, 紫: 8, 橙: 8, 红: 8 };
+const donationFor = (npc) => npc && HERB_DONATIONS.find((d) =>
+  d.npcIds.some((id) => npc.id === id || npc.id === `pool_${id}`));
 
-// 返回 null 表示与捐药无关或今天已捐过；否则 { faction, delta, flags }。
+// 返回 null 表示与送药无关或今天已送过；否则 { faction, delta, flags, text }。
 export function herbDonationRepGain(state, npc, item) {
-  if (!npc || !(npc.id === HERB_DONATION.npcId || npc.id === `pool_${HERB_DONATION.npcId}`)) return null;
-  if (!item?.tags?.includes(HERB_DONATION.tag)) return null;
-  const delta = GAIN[item.quality];
+  const donation = donationFor(npc);
+  if (!donation || !item?.tags?.some((tag) => donation.tags.includes(tag))) return null;
+  const delta = donation.gain[item.quality];
   if (!delta) return null;
-  const dayFlag = `${HERB_DONATION.flag}${Math.floor((state.time || 0) / 24)}`;
+  const dayFlag = `${donation.flag}${Math.floor((state.time || 0) / 24)}`;
   if ((state.flags || []).includes(dayFlag)) return null;
-  return { faction: HERB_DONATION.faction, delta, flags: (prev = []) => [...prev.filter((flag) => !flag.startsWith(HERB_DONATION.flag)), dayFlag] };
+  return {
+    faction: donation.faction, delta, text: donation.text,
+    flags: (prev = []) => [...prev.filter((flag) => !flag.startsWith(donation.flag)), dayFlag],
+  };
 }
