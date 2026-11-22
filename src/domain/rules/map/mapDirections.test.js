@@ -174,15 +174,20 @@ describe("坐标与方向必须自洽（画出来的图不能跟走出来的路�
 // 于是两座乡外大城插在乡的版图中间、雅江正卡在天都镇头顶上。
 // 出乡的门户该在版图边缘，不该在肚子里——空格子不等于合适的位置。
 describe("乡外据点必须在曲措乡版图之外", () => {
-  const OUTSIDE = ["雅江", "锦官城", "广汉"]; // 乡外：一座中转大城 + 成都 + 广汉
+  const OUTSIDE = ["雅江", "锦官城", "广汉", "雾隐寨", "蜀南唐堡"]; // 乡东：中转大城 + 成都 + 广汉 + 五仙教北坛 + 唐门总舵
+  const OUTSIDE_WEST = ["天龙营"]; // 乡西：西域天龙教
   const FARAWAY = new Set(["第三新东京市", "心灵之海"]); // 非常规拓扑，不参与版图计算
 
   it("曲措乡本身的据点都在乡外三城以西", () => {
     const inside = Object.entries(QUCUO_MAP)
-      .filter(([n, d]) => !OUTSIDE.includes(n) && !FARAWAY.has(n) && Number.isFinite(d.x));
+      .filter(([n, d]) => !OUTSIDE.includes(n) && !OUTSIDE_WEST.includes(n) && !FARAWAY.has(n) && Number.isFinite(d.x));
     const maxInsideX = Math.max(...inside.map(([, d]) => d.x));
+    const minInsideX = Math.min(...inside.map(([, d]) => d.x));
     for (const n of OUTSIDE) {
       expect(QUCUO_MAP[n].x, `「${n}」是乡外据点，却没越过乡界(x=${maxInsideX})`).toBeGreaterThan(maxInsideX);
+    }
+    for (const n of OUTSIDE_WEST) {
+      expect(QUCUO_MAP[n].x, `「${n}」是乡西外据点，却没越过乡界(x=${minInsideX})`).toBeLessThan(minInsideX);
     }
   });
 
