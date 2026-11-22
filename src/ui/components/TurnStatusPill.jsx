@@ -3,7 +3,7 @@ import { PHASE, formatTurnStatus, turnMonitor } from "../../engine/ports/turnMon
 import { OVERLAY, openOverlay, useOverlay } from "../../store/uiStore.js";
 import { chromeBtn } from "../../utils/theme.js";
 
-export default function TurnStatusPill({ theme, mobile }) {
+export default function TurnStatusPill({ theme, mobile, docked }) {
   const snapshot = useSyncExternalStore(turnMonitor.subscribe, turnMonitor.getSnapshot);
   const active = useOverlay(OVERLAY.TRACE);
   const [now, setNow] = useState(Date.now);
@@ -30,8 +30,9 @@ export default function TurnStatusPill({ theme, mobile }) {
     );
   }
   return (
-    <div className={mobile ? undefined : "turn-status-float"} style={mobile
+    <div className={mobile || docked ? undefined : "turn-status-float"} style={mobile
       ? { display: "flex", justifyContent: "flex-end", padding: "3px 10px", flexShrink: 0 }
+      : docked ? { display: "flex" }
       : { position: "fixed", right: 12, bottom: 12, zIndex: 40 }}>
       <button type="button" title={label} aria-label={`全流程日志：${label}`}
         onClick={() => openOverlay(OVERLAY.TRACE)}

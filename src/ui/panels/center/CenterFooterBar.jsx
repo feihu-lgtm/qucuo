@@ -1,4 +1,3 @@
-import TurnStatusPill from "../../components/TurnStatusPill.jsx";
 import CenterControlRows from "../CenterControlRows.jsx";
 import { useGameStore } from "../../../store/gameStore.js";
 
@@ -133,7 +132,6 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
         })()}
       </CenterControlRows>
 
-      {!isMobile && <TurnStatusPill theme={zoneTheme} />}
       <div className="mobile-input-bar" style={{
         borderTop: interactMode === "whisper" ? "1px solid var(--footer-whisper-edge)" : interactMode === "talk" ? "1px solid var(--footer-talk-edge)" : interactMode === "pigeon" ? "1px solid var(--gold-deep)" : `1px solid ${zoneTheme.border}`,
         background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
