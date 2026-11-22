@@ -19,6 +19,32 @@ export const QUCUO_SHOPS = {
       { name: "冰魄解蛊散", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 80 },
     ],
   },
+  // 五仙百蛊房（雾隐寨·百蛊药房）。苗疆药房货池，声誉门槛照合稿 6.1：
+  // 蓝品 15 起、紫品 40 起、五灵避毒珠 80；溢价/拒售规则在 features/buildings/wuxianShop.js。
+  五仙百蛊房: {
+    shopName: "五仙百蛊房",
+    items: [
+      { name: "清瘴丸", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "碧竹吹箭", category: ITEM_CATEGORY.WEAPON, quality: "绿" },
+      { name: "蛇药粉", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "五步断肠散", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "靛蓝百草衫", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 15 },
+      { name: "银铃护腕", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 15 },
+      { name: "化瘴清露", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "赤蜈软鞭", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 40 },
+      { name: "紫岚织锦甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 40 },
+      { name: "五灵避毒珠", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 80 },
+    ],
+  },
+  // 五仙秘珍坊（雾隐寨·百蛊湿廊内）。门派商坊限量秘货，照合稿 6.2：
+  // 金蚕解厄丹需声誉 ≥80 且非敌对；银鳞圣母鞭需 ≥100（声誉上限，一代尊宿；合稿写 140，引擎声誉封顶 100）。
+  五仙秘珍坊: {
+    shopName: "五仙秘珍坊",
+    items: [
+      { name: "金蚕解厄丹", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 80 },
+      { name: "银鳞圣母鞭", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100 },
+    ],
+  },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。

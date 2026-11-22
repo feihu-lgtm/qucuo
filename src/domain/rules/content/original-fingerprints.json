@@ -3,10 +3,10 @@
   "format": "sha256(JSON.stringify(data)); orderedIds (up to 20) or their SHA-256 use id ?? name for arrays or Object.keys for objects; totalFieldCount counts object keys recursively, excluding array indices",
   "exports": {
     "QUCUO_QUESTS": {
-      "entryCount": 48,
-      "orderedIdsSha256": "32bcaedcb556b1ae375334063ffccd3b7696396b1951de7f406d32b14de23679",
-      "totalFieldCount": 1791,
-      "jsonSha256": "dd83f585efefc594471adee04e6eb032ee7025e094bf76057e48803b53122e00"
+      "entryCount": 49,
+      "orderedIdsSha256": "f3cac286729a85c94b94c2261358d57595a270cda6da3d6451a09143ed5fcb3e",
+      "totalFieldCount": 1867,
+      "jsonSha256": "7610de2d76d6a470e4acb9f13ded79a8eb8f67d696c2a6a226d5c047f4ad82cc"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -222,19 +222,19 @@
       "jsonSha256": "d0c47d92e4d5958afd876abb8512223df37399abe67606b7329a8f282a8d2245"
     },
     "CATALOG": {
-      "entryCount": 432,
-      "orderedIdsSha256": "4176d232e80d94b16fba6da7a434de6d805e015516d364be20fbb8d57c5f036c",
-      "totalFieldCount": 3394,
-      "jsonSha256": "c86008b0b134723c0bc29032ba92052941ce8bbf9ea53d0d98b48de7b44310d6"
+      "entryCount": 464,
+      "orderedIdsSha256": "58b1477d9678488e691c2455d8e6fd0db6dd22f93355263b9f574fcf17e57012",
+      "totalFieldCount": 3589,
+      "jsonSha256": "6f1e9cd93d8d17aa46931ebf9bb0b32342077aa5eb5ac327592a7f3380c4931a"
     },
     "CATALOG_INDEX": {
-      "entryCount": 432,
-      "orderedIdsSha256": "4176d232e80d94b16fba6da7a434de6d805e015516d364be20fbb8d57c5f036c",
-      "totalFieldCount": 3826,
-      "jsonSha256": "0415c1783093254ffcb6c807cd13be443cf8e489f80d6690d241f1783913628f"
+      "entryCount": 464,
+      "orderedIdsSha256": "58b1477d9678488e691c2455d8e6fd0db6dd22f93355263b9f574fcf17e57012",
+      "totalFieldCount": 4053,
+      "jsonSha256": "77c334fde317b97dfb92604172c73e7007d877dc1a9689a3f07ebff94a94cc54"
     },
     "RESIDENT_NPCS": {
-      "entryCount": 13,
+      "entryCount": 14,
       "orderedIds": [
         "鱼定村",
         "鱼定土司",
@@ -248,13 +248,14 @@
         "锦官城",
         "顶峰",
         "大草甸",
-        "蜀南唐堡"
+        "蜀南唐堡",
+        "雾隐寨"
       ],
-      "totalFieldCount": 1718,
-      "jsonSha256": "c924ee5bf657c8bd815ad1e10822b9f6958c3680ed4015d419a24c97fa845f22"
+      "totalFieldCount": 1881,
+      "jsonSha256": "ed663eddb4576ca4e7a20ca1778246fa26adea001f23370abe31bbb7650d0266"
     },
     "INNER_MAP": {
-      "entryCount": 19,
+      "entryCount": 20,
       "orderedIds": [
         "鱼定村",
         "第三新东京市",
@@ -274,10 +275,11 @@
         "雅江",
         "广汉",
         "锦官城",
-        "蜀南唐堡"
+        "蜀南唐堡",
+        "雾隐寨"
       ],
-      "totalFieldCount": 1303,
-      "jsonSha256": "aee40010481fda0a9a1fa2d05e901ab0e1380e806d4c32655407ca004f8c433c"
+      "totalFieldCount": 1403,
+      "jsonSha256": "6c41ab1217d1ecbfab3d2f33a0728136307a9909b3d4454531cb203a1e919de7"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,
