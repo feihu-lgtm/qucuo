@@ -88,13 +88,17 @@ async function runTurnSteps(ctx, cmd, opts) {
   let knowledgeTurn = null;
   let recall = { recallInfo: null, recallBlock: "" };
   if (ctx.memory) {
-    knowledgeTurn = await runKnowledgeTurn({ ...ctx.memory, ai });
-    if (ctx.isStale?.()) return { stale: true };
-    recall = await runRecall({
+    // 知识推演仅更新信息域，不增删 角色 键；与只读向量召回互相独立，可并行执行。
+    // 若 playTurn 在软结算阶段已提前发起只读召回，这里直接复用其 Promise。
+    const recallPromise = ctx._prefetchedRecall || runRecall({
       ...ctx.memory.recall,
       lastAiText: preparedPrompt.lastAiText || ctx.memory.recall.lastAiText,
-      varTreeLatest: knowledgeTurn.kTree,
+      varTreeLatest: ctx.memory.varTreeLatest,
     });
+    [knowledgeTurn, recall] = await Promise.all([
+      runKnowledgeTurn({ ...ctx.memory, ai }),
+      recallPromise,
+    ]);
     if (ctx.isStale?.()) return { stale: true };
   }
   const memoryDeps = {
