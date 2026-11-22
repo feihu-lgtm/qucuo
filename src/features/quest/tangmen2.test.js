@@ -8,6 +8,7 @@ import { parseLocalCommand } from "../../engine/localCommands.js";
 import { doClinicService } from "../buildings/factionClinic.js";
 import { tangmenShopOffer } from "../buildings/tangmenShop.js";
 import { joinSect, leaveSect } from "../sect/logic.js";
+import { residentNpcRule } from "../../domain/rules/npc/rules.js";
 
 const find = (id) => QUCUO_QUESTS.find((entry) => entry.id === id);
 const apply = (state, result) => ({ ...state, ...Object.fromEntries(Object.entries(result.changes || {}).map(
@@ -78,6 +79,37 @@ describe("唐门任务线（唐2～唐5、唐支1～3）", () => {
     expect(s.char.money).toBe(200);
     expect(s.varTree.世界.势力声誉).toMatchObject({ 唐门: 35, 鱼定村: 10, 锦官城: 8 });
     expect(s.flags).toContain("flag_tangmen_ink_proof");
+  });
+
+  it("唐支1 appeal settles at 唐仲衡's room without 陈默 beside you", () => {
+    const id = "tangmen_s1_yajiangtieyin";
+    const chenmo = getResidentNpcs("蜀南唐堡").find((npc) => npc.name === "陈默");
+    const start = base({ 唐门: 15 }, { flags: ["tangmen_invited"], questProgress: done("tangmen_1_anxianglaike") });
+    let s = advance(at(start, "外姓竹坞", "蜀南唐堡", [{ ...chenmo, id: `pool_${chenmo.id}` }]), id);
+    expect(s.flags).toContain("quest_tangs1_proof");
+    s = advance(at(s, "宗谱机密楼"), id, "找唐仲衡按宗规申诉");
+    expect(s.questProgress[id].status).toBe("completed");
+    expect(s.flags).toContain("quest_tangs1_a");
+  });
+
+  it("唐4 disposing of the gu box needs it in hand and takes it away", () => {
+    const box = find("tangmen_4_wuxianhuohuan").stages.find((stage) => stage.id === "s3_box");
+    expect(box.requiresItems).toEqual(["紫铜蛊盒"]);
+    expect(box.onReach.consumeItems).toEqual(["紫铜蛊盒"]);
+  });
+
+  it("唐伯渊 is gone from 唐堡 once either verdict is passed", () => {
+    const registry = { getImportedForDistrict: () => [], getImportedResidentNames: () => [] };
+    const names = (flags, npcs = []) => {
+      const state = { char: { special: { 气运: 5 } }, companionState: {}, flags, importedVer: 0, questProgress: {}, room: { name: "蜀南唐堡", npcs }, time: 6 };
+      const result = residentNpcRule.run(state, { importedRegistry: registry });
+      return result ? result.changes.room(state.room).npcs.map((npc) => npc.name) : npcs.map((npc) => npc.name);
+    };
+    expect(names([])).toContain("唐伯渊");
+    for (const flag of ["quest_tang5_a", "quest_tang5_b"]) {
+      expect(names([flag])).not.toContain("唐伯渊");
+      expect(names([flag], [{ name: "唐伯渊", id: "pool_resident_tangboyuan" }])).not.toContain("唐伯渊");
+    }
   });
 
   it("every reward item resolves in the catalog", () => {

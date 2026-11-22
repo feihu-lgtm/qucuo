@@ -233,6 +233,8 @@ export default { quest: {
       },
       {
         id: "s2_settle",
+        giver: null,
+        requireLocation: { district: "蜀南唐堡" },
         playerHint: "拿胚模找唐仲衡按宗规申诉，还是直接找那几个本家子弟教训一顿，你定。",
         description: "陈默把木牌翻过来，上面只写了两个字：公道。",
         completionFlag: ["quest_tangs1_a", "quest_tangs1_b"],
