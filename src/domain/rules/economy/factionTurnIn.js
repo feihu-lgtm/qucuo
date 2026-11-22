@@ -17,23 +17,17 @@ export const FACTION_TURNINS = [
   },
   {
     items: ["蜜蜡残珠"], npc: "嘉措", faction: "喇嘛庙", rep: 10,
-    extra: {}, favor: { 嘉措: 10 },
+    extra: {}, favor: 10,
     log: "嘉措拈起那颗蜜蜡残珠，对着自己缺了一颗的旧念珠比了比，三十年的缺口对得上——老住持合掌良久没说话。",
   },
-  {
-    items: ["雪莲幼苗", "寒泉雪莲"], npc: "根敦", faction: "喇嘛庙", rep: 6,
-    extra: {},
-    log: "根敦把药材摊在药堂柜上验了成色，按平价折了银两给你，转头吩咐小喇嘛拿去捣药。",
-  },
+  // 平价售药不走送礼：雪莲卖给达磨药堂收银+声誉，走 factionShop 的 sellRep（合稿「售予药堂」原义）。
 ];
 
 // 返回交还条目；不匹配（物件不对、人不对）返回 null。
+// 常驻 NPC 的档案名是职位（「喇嘛庙住持」「药堂医僧」），法号只写在 brief 里，
+// 所以 npc 一栏按 档案名 OR brief 里的法号 认人。
 export function factionTurnInOf(npc, itemName) {
   if (!npc || !itemName) return null;
-  return FACTION_TURNINS.find((entry) => entry.items.includes(itemName) && entry.npc === npc.name) || null;
-}
-
-// 按条目算声誉增量：主派 rep + 合稿明写的盟友追加；死对头扣分交给 grantFactionRep 联动。
-export function factionTurnInGain(entry) {
-  return { [entry.faction]: entry.rep, ...(entry.extra || {}) };
+  return FACTION_TURNINS.find((entry) => entry.items.includes(itemName)
+    && (entry.npc === npc.name || npc.brief?.includes(entry.npc))) || null;
 }

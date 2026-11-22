@@ -71,6 +71,8 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileQualities: [],
     hostileItems: ["高原酥油膏", "藏青稞健脾散", "藏红花活血丸"],
+    // 合稿「喇嘛庙·七、2」加分行为 2：旅途中采得的雪莲平价售予药堂 +6（+5~8 取中值）。
+    sellRep: { items: ["雪莲幼苗", "寒泉雪莲"], rep: 6 },
   },
   // 玉泉茶马货栈（玉泉寨）：对外的茶马铺面，交恶至敌对（-59~-20）只摆白品日用并加价，
   // 冷淡（-19~-1）只剩炒面粪饼；深交折扣走 factionRepCoef 通用档（rep80 → 0.75，近似合稿 140→0.7）。
@@ -274,5 +276,25 @@ export function buyFactionShopItem(state, shopKey, itemName, now = Date.now()) {
       ...(crossed > 0 ? [{ t: "affection", text: `  ✦ 掌柜的在账上记了你的大名——${shop.faction}声誉 +${spendBonus.rep * crossed}（大额往来）` }] : []),
     ],
     note: { text: `购得「${item.name}」，花${price}两。`, source: NOTE_SOURCE.DUMB },
+  };
+}
+
+// 卖出给势力商店：药堂这类「平价收药材换声誉」的铺面（shop.sellRep）。
+export function sellFactionShopItem(state, shopKey, item) {
+  const shop = FACTION_SHOPS[shopKey];
+  const price = item.sellPrice ?? 0;
+  const rep = shop?.sellRep?.items.includes(item.name)
+    ? { faction: shop.faction, rep: shop.sellRep.rep } : null;
+  return {
+    changes: {
+      inv: (inv = []) => inv.filter((entry) => (typeof entry === "object" ? entry.id : entry) !== item.id),
+      char: (char) => ({ ...char, money: (char.money || 0) + price }),
+      ...(rep ? { varTree: (prev) => grantFactionRep(prev, { [rep.faction]: rep.rep }).varTree } : {}),
+    },
+    logs: [
+      { t: "item", text: `  卖出「${item.name}」，得${price}两。` },
+      ...(rep ? [{ t: "affection", text: `  ✦ 掌柜的按平价收了药材，往功德册上记了一笔——${rep.faction}声誉 +${rep.rep}` }] : []),
+    ],
+    note: { text: `卖出「${item.name}」，得银${price}两。`, source: NOTE_SOURCE.DUMB },
   };
 }
