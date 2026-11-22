@@ -34,7 +34,7 @@ export function buildAngryNote(varTree, names = [], { mvu = false } = {}) {
       : "此前暂无求和记录";
     return `${name}(${angry.reason}，剩${angry.turnsLeft}回合平息期限，${history})`;
   });
-  return `\n[社交状态] 在场生气角色：${summaries.join("、")}。结合此前尝试方式，判断玩家本轮行为（道歉/辩解/示好/赠礼等）是否得体、切中要害并真正缓和对方：奏效则在 output 中体现怒气缓和；敷衍或不得体则表现为依然不满。${mvu ? "奏效则在 <mvu> 写 _.set('角色.<该角色>.生气解除', true)，可 _.add('角色.<该角色>.好感度', N) 回补（N≤5）；未奏效禁设生气解除。" : ""}`;
+  return `\n[社交状态] 在场生气角色：${summaries.join("、")}。结合此前尝试方式，判断玩家本轮行为（道歉/辩解/示好/赠礼等）是否得体、切中要害并真正缓和对方：奏效则在 output 体现怒气缓和，敷衍或不得体则依然不满。${mvu ? "奏效则在 <mvu> 写 _.set('角色.<该角色>.生气解除', true)，可 _.add('角色.<该角色>.好感度', N) 回补（N≤5）；未奏效禁设生气解除。" : ""}`;
 }
 
 export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo) {
@@ -50,20 +50,20 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   const angryNote = buildAngryNote(varTree, (room?.npcs || []).map((npc) => npc.name), { mvu: !apiCfg.extractionEnabled });
   const render = (template) => renderPromptTemplate(template, input, { trace: ctx.onPromptRefMissing }).text;
   const targetNote = activeTarget
-    ? render(`[交互目标] 玩家选定了「@activeTarget」作为本轮唯一的互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文的核心——其他在场 NPC 若与该互动无关、或不宜抢戏，本轮不必出场、不必插话。除非玩家输入本身需要多人在场（比如当众宣布什么事），否则 room.npcs 只保留「@activeTarget」和直接相关者即可。\n`)
+    ? render(`[交互目标] 玩家选定了「@activeTarget」作为本轮唯一互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文核心——与该互动无关的在场 NPC 本轮不必出场、不必插话；除非玩家输入本身需要多人在场（如当众宣布），否则 room.npcs 只保留「@activeTarget」和直接相关者。\n`)
     : "";
   const groundItemNote = activeGroundItem
-    ? render("[涉及物品] 玩家本轮的行动涉及地上的「@activeGroundItem」（仍在地上，尚未拾取）。叙事须围绕玩家对这件东西的举动展开；除非玩家明确说要拾取或拿走，它仍留在原处，不得写成已入囊。\n")
+    ? render("[涉及物品] 玩家本轮行动涉及地上的「@activeGroundItem」（仍在地上，尚未拾取）。叙事围绕玩家对它的举动展开；除非玩家明确说要拾取或拿走，它仍留在原处，不得写成已入囊。\n")
     : "";
-  const talkNoStateRule = "[交互模式] 对话模式：玩家此刻只是在和当前房间里的 NPC 说话，不是在下达行动指令。无论玩家输入什么，都只应该触发对话回应，绝不能移动房间、不能战斗、不能改变 room/char/装备/背包等任何状态";
+  const talkNoStateRule = "[交互模式] 对话模式：玩家只是在和当前房间的 NPC 说话，不是下达行动指令。无论输入什么，只触发对话回应，绝不能移动房间、战斗、改变 room/char/装备/背包等任何状态";
   const modeNote = isTalk
     ? (apiCfg.extractionEnabled
       ? `${talkNoStateRule}。只写这一轮的对白、神态与心思。 `
-      : `${talkNoStateRule}，room 字段留空或原样返回，delta 各项留空。此外，请在顶层 JSON 里加一个字段 "respondedNpcs":["名字"]，列出本轮正文里【真正开口跟玩家对话/直接回应了玩家】的 NPC 名字（只列真的说了话或有来有往互动的人；只是被提到、路过、在场却没搭理玩家的，不要列入）。没有人开口回应就返回空数组 []。 `)
+      : `${talkNoStateRule}，room 字段留空或原样返回，delta 各项留空。另在顶层 JSON 加 "respondedNpcs":["名字"]，列出本轮正文里【真正开口回应玩家】的 NPC 名（只被提到、路过、在场没搭理的不算）；无人开口就返回 []。 `)
     : "";
   const targetedRumor = input.findTargetedRumor?.(varTree, cmd);
   const emergenceNote = targetedRumor
-    ? `\n[人物涌现] 玩家这句话明确指向了此前提到过的人物"${targetedRumor.name}"（提及语境：${targetedRumor.context}）。如果当前场景逻辑上合理让这个人物真正登场（比如玩家确实去了他可能所在的地方，或者当前情境足以让他出现），请在 room.npcs 里加入他（{"name":"${targetedRumor.name}","id":"（自拟英文id）","brief":"≤15字简介"}），同时在返回的顶层JSON里额外加两个字段：{"emergedNpcName":"${targetedRumor.name}","emergedNpcDescription":"一句话描述这个人的身份和性格特征，比如'磨坊学徒，性格憨厚老实'"}——这段描述只需要定性，不要给出任何数值。如果场景逻辑上此刻不适合这个人登场，就不要强行加入，正常按原计划描述即可。`
+    ? `\n[人物涌现] 玩家这句话明确指向了此前提到过的人物"${targetedRumor.name}"（提及语境：${targetedRumor.context}）。如果当前场景逻辑上合理让这个人物真正登场（玩家确实去了他所在之处，或情境足以让他出现），在 room.npcs 加入他（{"name":"${targetedRumor.name}","id":"（自拟英文id）","brief":"≤15字简介"}），并在顶层JSON额外加两个字段：{"emergedNpcName":"${targetedRumor.name}","emergedNpcDescription":"一句话定性其身份性格，如'磨坊学徒，憨厚老实'，不给数值"}。场景不适合登场就不强行加入，正常描述。`
     : "";
   const presence = input.buildPresence
     ? input.buildPresence({ _trace: ctx._trace, isTalk, lockedDestName, room, innerRoomName, companionState })
@@ -79,7 +79,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     ? input.buildEncounterNote?.(input.encounter, lockedDestName) || ""
     : "";
   const pickupNote = input.pickupJudgment
-    ? `\n[系统裁决：本次移动途中触发拾取事件，品质已判定为「${input.pickupJudgment.quality}」，物品分类建议为「${input.categoryLabel?.[input.pickupJudgment.category]}」。请在 output 里自然地描述玩家路上发现/捡到了什么，并在 delta.items_add 里加入这件物品，quality 字段必须精确写成"${input.pickupJudgment.quality}"，category 字段写成"${input.pickupJudgment.category}"，name 自拟一个符合当前场景和地域特色、且与品质相衬的名字（品质越高描述可以越有分量，但不要浮夸到脱离世界观）。如果场景逻辑上此刻不适合捡到东西（比如玩家正身处险境、被人盯着），也可以合理地不触发，只需在 output 里说明原因，不必强行塞入。]`
+    ? `\n[系统裁决：本次移动途中触发拾取事件，品质已判为「${input.pickupJudgment.quality}」，物品分类建议「${input.categoryLabel?.[input.pickupJudgment.category]}」。请在 output 自然描述玩家路上发现/捡到了什么，并在 delta.items_add 加入这件物品：quality 精确写"${input.pickupJudgment.quality}"，category 写"${input.pickupJudgment.category}"，name 自拟一个符合场景与地域特色、与品质相衬的名字（品质越高越有分量，但不要浮夸到脱离世界观）。若场景此刻不适合捡（身处险境、被人盯着），可以合理地不触发，只在 output 说明原因，不必强塞。]`
     : "";
   const stateContext = buildMainStatePrompt({
     ...input,

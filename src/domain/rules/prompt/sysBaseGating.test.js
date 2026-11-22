@@ -117,6 +117,17 @@ describe("budgetInstruction 与 scenario 蓝绿灯", () => {
     expect(sysBlocks.find(b => b.tavernBlock === "scenario").content).toBe(gated.text);
   });
 
+  it("dedupIfMvu：MVU 在场时熄掉重复的好感度规则段，散文档保留", () => {
+    // 契约：scenario 的「好感度维护规则」段与 MVU 说明书重复——MVU 在场（单调用）时熄灯，
+    // 散文档（无 MVU）照常保留，保证约束至少有一处承载。
+    const scenario = "世界观头部。\n\n好感度维护规则\n- 寻常聊天 +1。\n\n拓扑连通关系\n鱼定村北通天都镇。";
+    const build = (narrativeOnly) => buildSysBase(220, NARRATOR, scenario, null, false, "", narrativeOnly, "full",
+      { playerName: "少侠", hasNpc: true, gateCtx: { cmd: "" } });
+    const scen = (r) => r.sysBlocks.find(b => b.tavernBlock === "scenario").content;
+    expect(scen(build(false))).not.toContain("好感度维护规则");
+    expect(scen(build(true))).toContain("好感度维护规则");
+  });
+
   it("不传 gateCtx 时 scenario 原文直进（lit/dark 为空）", () => {
     // 契约：无 gateCtx → 不裁剪（lit/dark 皆空、原文直进），但仍回报给面板。
     const onGateReport = vi.fn();

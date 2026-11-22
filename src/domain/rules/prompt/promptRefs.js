@@ -28,7 +28,7 @@ export function renderFieldScales(paths, scope = {}, trace) {
     const field = FIELDS[path];
     return field?.scale ? [`- ${field.label}：${renderPromptTemplate(field.scale, scope, { trace }).text}`] : [];
   });
-  return lines.length ? "\n【本轮可写字段的尺度（以本轮专用规则为准）】\n" + lines.join("\n") : "";
+  return lines.length ? "\n【本轮可写字段的尺度】\n" + lines.join("\n") : "";
 }
 
 const PLAYER = "主角:@主角.名〔@主角.性别〕";

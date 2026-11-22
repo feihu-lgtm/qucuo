@@ -92,18 +92,18 @@ export function classifyIntent(rawInput) {
 export function buildBudgetInstruction(intent, rawInput, fallbackWordCount, budgetOverrides) {
   if (intent.code !== "UNKNOWN" && intent.wordBudget) {
     if (intent.code === "META_QUERY") {
-      return `篇幅要求：这句输入判定为「${intent.label}」，只用1-2句话简短说明或婉拒，字数控制在10-30字以内。绝对不能在简短回应之后接着写场景描写、NPC反应等正文内容——回应完这1-2句，本轮 output 到此为止。`;
+      return `篇幅要求：这句输入判定为「${intent.label}」，只用1-2句简短说明或婉拒（10-30字），绝不能在其后续写场景描写、NPC反应等正文——回应完本轮 output 到此为止。`;
     }
     const hi = (budgetOverrides && budgetOverrides[intent.code] != null)
       ? budgetOverrides[intent.code]
       : intent.wordBudget[1];
     const lo = Math.round(hi * 0.4);
-    return `篇幅要求：这句输入判定为「${intent.label}」，本轮 output 总字数应控制在约${lo}-${hi}字（允许±15%浮动），不要为了凑数硬拖长，也不要因为内容简单就完全不写细节。`;
+    return `篇幅要求：这句输入判定为「${intent.label}」，本轮 output 总字数约${lo}-${hi}字（±15%浮动），勿凑数硬拖，勿因内容简单就完全不写细节。`;
   }
 
-  return `篇幅要求：这句输入的性质无法用规则预判，请你自行判断后再决定篇幅：
-- 只有玩家明确在问游戏系统本身（规则、玩法、"这是什么游戏"之类跳出游戏世界的元问题）时，才用1-2句简短说明，不展开叙事，字数控制在30字以内；含义不明的短词、口头禅、外文（如「bro」「嗯」「hi」）一律当作角色当场说出口或做出的举动来写，在场的人（尤其玩家选定的互动对象）要有反应，不得用"不接闲话"之类的话婉拒
-- 如果是游戏世界内的日常动作（移动、查看、闲聊），控制在100-250字
-- 如果是明显有戏剧张力的行动（战斗、关键抉择、触发重要事件），可以展开到${fallbackWordCount}字左右
-默认情况下，宁可写短，不要因为拿不准就默认往长了写。`;
+  return `篇幅要求：这句输入的性质无法预判，自行判断后决定篇幅：
+- 玩家明确在问游戏系统本身（规则、玩法、跳出游戏世界的元问题）时，只用1-2句简短说明（≤30字），不展开叙事；含义不明的短词、口头禅、外文（如「bro」「嗯」「hi」）一律当作角色当场说出口或做出的举动来写，在场的人（尤其玩家选定的互动对象）要有反应，不得用"不接闲话"之类婉拒
+- 游戏世界内的日常动作（移动、查看、闲聊）：100-250字
+- 明显有戏剧张力的行动（战斗、关键抉择、触发重要事件）：可展开到${fallbackWordCount}字左右
+默认宁短勿长，不要拿不准就往长了写。`;
 }

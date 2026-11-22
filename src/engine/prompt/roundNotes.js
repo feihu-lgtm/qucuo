@@ -39,9 +39,9 @@ export function buildQuestStageNote({ questProgress, flags, char, room, inv, pen
   // 本据点地上有哪些采集物在等着采（系统已注入到 room.items），提示 AI 心里有数：
   // 玩家若想采，直接顺势叙述（真正的入袋/推进由系统裁决，不劳 AI 动 items_add）。
   const cLines = collectPromptLines(room.name, { questProgress, quests: QUCUO_QUESTS, getCurrentStage, inv });
-  if (cLines.length) note += `\n[可采集] ${cLines.join("；")}。玩家表达采集意图时顺势叙述采集过程即可，系统会自动结算入袋，你不要写"采不到"。`;
+  if (cLines.length) note += `\n[可采集] ${cLines.join("；")}。玩家表达采集意图时顺势叙述采集过程即可，系统自动结算入袋，不要写"采不到"。`;
   if (pendingQuestBranch?.mode === "talk" && pendingQuestBranch.goal) {
-    note += `\n[说服判定] 玩家正试图通过言辞达成：${pendingQuestBranch.goal}。这是一场真正的言语交锋，不是走过场——评估玩家这句话是否切中要害、有理有据、气势压得住对方。若确实说动/驳倒了对方，在 flags_add 加入「${pendingQuestBranch.flag}」并让对方让步；若玩家只是空喊、被驳倒或理亏，让对方继续刁难，不要吐这个 flag，玩家可以再想说辞。`;
+    note += `\n[说服判定] 玩家正试图通过言辞达成：${pendingQuestBranch.goal}。这是真正的言语交锋，不是走过场——评估这句话是否切中要害、有理有据、气势压得住对方。确实说动/驳倒对方时，在 flags_add 加入「${pendingQuestBranch.flag}」并让对方让步；玩家只是空喊、被驳倒或理亏，让对方继续刁难，不吐这个 flag，玩家可再想说辞。`;
   }
   return note + snowLeopardNote({ questProgress, flags, room: { ...room, npcs: visibleNpcs ?? room.npcs }, convo, settleNpc, cmd, innerRoomName });
 }
@@ -55,7 +55,7 @@ export function buildQuestStageNote({ questProgress, flags, char, room, inv, pen
 // flags_add 里重复结算任何奖励或状态】，避免双重发奖。
 export function buildForcedEventNote(forcedEvent, forcedEventNpc, targetWordCount) {
   if (!forcedEvent) return "";
-  return `\n[本步已定情节] 这一回合确定发生了下面这件事，请把它自然演绎进 output 正文（这是剧情/任务节点，篇幅给足，约 ${targetWordCount} 字，允许±15%浮动，有场景、有对话、有起伏，不要草草几句带过）：${forcedEvent}${forcedEventNpc ? `（关键人物：${forcedEventNpc}）` : ""}。严格要求：只写这一件事，不要引入这件事之外的情节、不要让其他角色突然登场、不要铺垫别的伏笔；结果已定，不可改写、不可让它"没发生"或变成别的事。这件事的奖励与状态变化已由系统结算完毕，你【不要】在 delta / items_add / flags_add 里重复结算任何奖励或状态，只管把它写成生动的正文。`;
+  return `\n[本步已定情节] 这一回合确定发生了下面这件事，请把它自然演绎进 output 正文（剧情/任务节点，篇幅给足，约 ${targetWordCount} 字，允许±15%浮动，有场景、有对话、有起伏，不要草草带过）：${forcedEvent}${forcedEventNpc ? `（关键人物：${forcedEventNpc}）` : ""}。严格要求：只写这一件事，不引入别的情节、不让其他角色突然登场、不铺垫别的伏笔；结果已定，不可改写、不可让它"没发生"或变成别的事。奖励与状态变化已由系统结算，【不要】在 delta / items_add / flags_add 里重复结算任何奖励或状态，只管写成生动正文。`;
 }
 
 // 入场叙事：跨据点抵达新地点时，让本轮叙事先给一段"立此存照"的场景开场——
@@ -69,9 +69,9 @@ export function buildArrivalNote({ isTalk, movingDir, lockedDestName, outerDepar
   // 归至本区门户（锚点），再离开本据点"，最后落到目标据点的锚点房间——不要让
   // 人物凭空从塔顶瞬移到别的据点。
   const transitNote = (dep && dep.fromInner)
-    ? `玩家此前身处「${dep.fromDistrict}·${dep.fromInner}」，出发时先自内层一路行至本地门户「${dep.fromAnchor}」，方才离境。请在开头用一两句自然交代这段折返归位（不必冗长），再承接下面的抵达。`
+    ? `玩家此前身处「${dep.fromDistrict}·${dep.fromInner}」，出发时先自内层行至本地门户「${dep.fromAnchor}」方才离境。开头用一两句自然交代这段折返归位（不必冗长），再承接下面的抵达。`
     : "";
-  return `\n[入场叙事] 玩家刚抵达「${lockedDestName}」${destAnchor ? `，落脚在此地门户「${destAnchor}」` : ""}。${transitNote}请在 output 开头先给一段落地的场景速写：此地的地貌气候、${bld ? `可见的建筑（如${bld}等）、` : ""}此刻在场的人物、地上有无显眼之物，让玩家一眼看清"到了什么地方、有谁、有什么"，再自然承接玩家这一步的动作。用说书人白话古文一段道来，不要罗列成清单。`;
+  return `\n[入场叙事] 玩家刚抵达「${lockedDestName}」${destAnchor ? `，落脚在此地门户「${destAnchor}」` : ""}。${transitNote}请在 output 开头先给一段落地的场景速写：此地地貌气候、${bld ? `可见的建筑（如${bld}等）、` : ""}此刻在场的人物、地上有无显眼之物，让玩家一眼看清"到了什么地方、有谁、有什么"，再自然承接玩家这一步的动作。用说书人白话古文一段道来，不要罗列清单。`;
 }
 
 // 在场名单（纯计算 + trace）：喂给 AI 的 NPC 名单必须按当前内层房间过滤——
@@ -172,7 +172,7 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
     }
   }
   const questStatusBlock = questStatusLines.length
-    ? `\n\n【在场人物与玩家的任务关系】（据此调整台词语气，已完成的该表达感谢/推进后续，进行中的该关心进度而非从头重复交代）\n${questStatusLines.join("\n")}`
+    ? `\n\n【在场人物与玩家的任务关系】（据此调整台词语气：完成的表达感谢/推进后续，进行中的关心进度而非从头重复交代）\n${questStatusLines.join("\n")}`
     : "";
   const reunionBlock = buildReunionBlock(
     detectReunions(varTree, room.npcs, time, REUNION_GAP_THRESHOLD)
