@@ -8,8 +8,7 @@ const CONFIG_KEY = "wuxia_mud_api_config";
 const HOSTED = {
   provider: "custom",
   apiType: "openai",
-  endpoint: "https://argonmeow.online/v1/chat/completions",
-  apiKey: "sk-hosted",
+  endpoint: "https://argonmeow.online/api/qucuo/v1/chat/completions",
   model: "gemini-3.8-flash",
 };
 
@@ -41,13 +40,13 @@ beforeEach(() => {
 describe("bootstrapArgonConfig", () => {
   it("拉到托管配置且玩家无存档 → 经 defaultConfig 合并写入 CONFIG_KEY", async () => {
     // 契约：托管 json 生效后，loadConfig 读到 endpoint/apiKey/model，
-    // 且出厂默认值（targetWordCount 等）仍在。
-    const store = stubStore();
+    // apiKey 来自主站登录态 meow_key；出厂默认值（targetWordCount 等）仍在。
+    const store = stubStore({ meow_key: "meow-123" });
     stubFetchOk(HOSTED);
     await bootstrapArgonConfig();
     expect(store[CONFIG_KEY]).toBeTruthy();
     const saved = JSON.parse(store[CONFIG_KEY]);
-    expect(saved.apiKey).toBe("sk-hosted");
+    expect(saved.apiKey).toBe("meow-123");
     expect(saved.endpoint).toBe(HOSTED.endpoint);
     expect(saved.model).toBe("gemini-3.8-flash");
     expect(saved.targetWordCount).toBe(900);
@@ -119,13 +118,13 @@ describe("bootstrapArgonConfig", () => {
     expect(store[CONFIG_KEY]).toBeUndefined();
   });
 
-  it("缺 apiKey / endpoint → 不写", async () => {
-    // 契约：半份配置不许落盘——缺关键字段视为部署方没配好。
+  it("缺 endpoint 或 model → 不写", async () => {
+    // 契约：半份配置不许落盘——缺关键字段视为部署方没配好；apiKey 不在硬条件里。
     const store = stubStore();
     stubFetchOk({ provider: "custom", apiType: "openai", model: "m" });
     await bootstrapArgonConfig();
     expect(store[CONFIG_KEY]).toBeUndefined();
-    stubFetchOk({ ...HOSTED, apiKey: "  " });
+    stubFetchOk({ provider: "custom", apiType: "openai", endpoint: HOSTED.endpoint });
     await bootstrapArgonConfig();
     expect(store[CONFIG_KEY]).toBeUndefined();
   });
