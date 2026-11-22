@@ -37,9 +37,15 @@ describe("duel narration", () => {
     expect(user).toContain("收尾：赶走野狼后牵牛回寨");
   });
 
+  it("asks for a one-line fact summary only when requested", () => {
+    expect(buildDuelNarrationPrompt([round], {}).sys).not.toContain('"summary"');
+    expect(buildDuelNarrationPrompt([round], { summary: true }).sys).toContain('"summary"');
+    expect(parseDuelNarration('{"rounds":["一"],"ending":"完","summary":" 你与老孙切磋得胜 "}', 1).summary).toBe("你与老孙切磋得胜");
+  });
+
   it("parses fenced JSON and trims to the round count", () => {
     const parsed = parseDuelNarration('```json\n{"rounds":["一","二","三"],"ending":"完"}\n```', 2);
-    expect(parsed).toEqual({ rounds: ["一", "二"], ending: "完" });
+    expect(parsed).toEqual({ rounds: ["一", "二"], ending: "完", summary: "" });
     expect(parseDuelNarration("不是 JSON", 1)).toBeNull();
   });
 

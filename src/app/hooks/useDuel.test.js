@@ -92,19 +92,20 @@ describe("duel battle report", () => {
     const addLog = vi.fn((entries) => gameActions.setLog((log) => [...(log || []), ...entries]));
     const act = vi.fn();
     const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } };
+    const aiSummarizeFact = vi.fn();
     const handlers = {};
     function Harness() {
       Object.assign(handlers, useDuel({
         act, addLog, duelPending: null, featureCtxRef,
         setActiveTarget: vi.fn(), setDuelPending: vi.fn(), setDuelingNpc: vi.fn(),
         duelingNpc: npc, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
-        aiSummarizeFact: vi.fn(), setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
+        aiSummarizeFact, setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
         turnGenerationRef: { current: 0 }, narrator,
       }));
       return null;
     }
     renderToStaticMarkup(createElement(Harness));
-    return { handlers, act, addLog, restoreStore };
+    return { handlers, act, addLog, restoreStore, aiSummarizeFact };
   }
 
   it("logs the system fact lines at once and never starts an AI turn", () => {
@@ -115,6 +116,21 @@ describe("duel battle report", () => {
       const logs = addLog.mock.calls.flatMap(([entries]) => entries || []);
       expect(logs).toContainEqual(expect.objectContaining({ t: "sys", text: expect.stringContaining("第1回合") }));
       expect(logs).toContainEqual(expect.objectContaining({ t: "sys", fillSlot: "end" }));
+    } finally {
+      restoreStore();
+    }
+  });
+
+  it("asks for the fact summary inside the battle report instead of a separate call", async () => {
+    const ask = vi.fn(async () => '{"rounds":["拳风扑面。"],"ending":"才旦认输。","summary":"你与才旦切磋得胜"}');
+    const { handlers, restoreStore, aiSummarizeFact } = setup({ canAsk: () => true, ask });
+    try {
+      handlers.duelFinishHandler("win", null, [{ round: 1, teamText: "一招既定" }], null, [], null, []);
+      await vi.waitFor(() => expect(ask).toHaveBeenCalledTimes(1));
+      expect(ask.mock.calls[0][0]).toContain('"summary"');
+      expect(aiSummarizeFact).not.toHaveBeenCalled();
+      await vi.waitFor(() => expect(gameStore.getState().log.some((entry) => entry.fillProse)).toBe(true));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     } finally {
       restoreStore();
     }
@@ -174,6 +190,20 @@ describe("narrateDuelInBackground", () => {
     await expect(narrateDuelInBackground("k", rounds, {}, { canAsk: () => false, setLog, retryMs: 0 })).resolves.toBe("phrase");
     expect(calls).toBe(2);
     expect(log.map((entry) => entry.text)).toEqual(["  第1回合", "  你一拳直捣中宫，老孙侧身没能卸开", "  结局 胜", "  ▌"]);
+  });
+
+  it("saves the fact summary from the same reply", async () => {
+    const setLog = vi.fn();
+    const saveSummary = vi.fn();
+    const ask = async () => '{"rounds":["拳来脚往。"],"ending":"收势。","summary":"你与老孙切磋得胜"}';
+    await expect(narrateDuelInBackground("k", rounds, { factId: "f1" }, { canAsk: () => true, ask, setLog, saveSummary })).resolves.toBe("ai");
+    expect(saveSummary).toHaveBeenCalledWith("f1", "你与老孙切磋得胜");
+  });
+
+  it("keeps the structured summary when the report fails", async () => {
+    const saveSummary = vi.fn();
+    await narrateDuelInBackground("k", rounds, { factId: "f1" }, { canAsk: () => true, ask: async () => null, setLog: vi.fn(), saveSummary, retryMs: 0 });
+    expect(saveSummary).not.toHaveBeenCalled();
   });
 
   it("prefers AI prose when it parses", async () => {

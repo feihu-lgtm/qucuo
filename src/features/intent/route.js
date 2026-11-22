@@ -9,7 +9,7 @@ import { turnMonitor } from "../../infra/turnMonitor.js";
 export function shouldRecognize(apiCfg, cmd, opts = {}) {
   const text = String(cmd || "").trim();
   return !!apiCfg?.intentRecognitionEnabled && text.length > 1 && !parseDir(text)
-    && !opts.intentPlan && !opts.intentSkip && !opts.silentCmd && !opts.settle && !opts.forceLayer && !opts.autoTravel;
+    && !opts.forcedEvent && !opts.intentPlan && !opts.intentSkip && !opts.silentCmd && !opts.settle && !opts.forceLayer && !opts.autoTravel;
 }
 
 // 玩家亲手输入的新指令（非自动寻路、非手动走图、非查看 NPC、非行动识别内部派生）：上一波条件触发器到此过期。
