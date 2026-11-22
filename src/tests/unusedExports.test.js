@@ -10,9 +10,7 @@ const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ROOTS = [SRC, resolve(SRC, "..", "cli")];
 const EXPORT = /export\s+(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/g;
 
-const KEEP = {
-  "domain/rules/economy/gambleStone.js:rollCommission": "赌石「委托做装备」，按设计稿写好、尚未接到界面",
-};
+const KEEP = {};
 
 function listFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

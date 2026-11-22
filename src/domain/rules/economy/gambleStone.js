@@ -3,7 +3,7 @@
 // AI 只拿到结果做叙事，绝不参与裁决。对照主文档《赌石_玉器与原石设计.md》§4 职责划分。
 
 import { createRng, random } from "../../../utils/rng.js";
-import { QUALITY, rollQuality } from "./equipment.js";
+import { QUALITY } from "./equipment.js";
 import { DEAL_MULTIPLIER } from "../state/fields.js";
 
 // ---------- 基础：可复现随机（出生固化用） ----------
@@ -257,17 +257,6 @@ export function settleNegotiation(bidder, aiResponse, carryItems = []) {
     if (found) addItem = found;
   }
   return { narrative: aiResponse?.narrative || "", finalOffer, addItem, mult };
-}
-
-// ---------- 委托做装备（30 被偷 / 10 失败 / 60 成功，接主文档 §2.4/§3） ----------
-export function rollCommission(stone, luck, feePaid, feeThreshold = 200) {
-  const roll = random();
-  if (roll < 0.30) return { result: "stolen", item: null };   // 料被偷
-  if (roll < 0.40) return { result: "failed", item: null };   // 料废了
-  // 成功：有效 luck' = 气运 + 品质档加成 + floor(手工费/阈值)
-  const qIdx = QUALITY.indexOf(stone.quality);
-  const effLuck = Math.max(0, Math.min(10, luck + qIdx + Math.floor(feePaid / feeThreshold)));
-  return { result: "success", quality: rollQuality(effLuck) };
 }
 
 // ---------- 供前端渲染：某料位露哪张肉图 ----------
