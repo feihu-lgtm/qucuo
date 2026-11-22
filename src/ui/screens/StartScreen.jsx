@@ -52,9 +52,10 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
       always: hasAnySave,
     },
     { key: "quickbattle", label: "斗蛐蛐", sub: "快速切磋 · 自选阵容", action: onQuickBattle, always: true },
-    { key: "tavernsim", label: "酒馆经营", sub: "开间醉三江 · 看店自转 · 日进斗金", action: onTavernSim, always: true },
+    // 酒馆经营（醉三江）和角色入册暂时从首页关掉：hidden 只是不渲染，功能代码都在，删掉 hidden 即恢复。
+    { key: "tavernsim", label: "酒馆经营", sub: "开间醉三江 · 看店自转 · 日进斗金", action: onTavernSim, always: true, hidden: true },
     // 入册放在开局之前：导入的卡要当主角，只能在角色还没创建的时候用。
-    { key: "cards", label: "角色入册", sub: "游戏中用 · 导入外部角色卡成江湖人物", action: onOpenCardImport, always: true },
+    { key: "cards", label: "角色入册", sub: "游戏中用 · 导入外部角色卡成江湖人物", action: onOpenCardImport, always: true, hidden: true },
     { key: "settings", label: "设置", sub: "API · 显示 · 存档管理", action: onOpenSettings, always: true },
     { key: "exit", label: "退出", sub: "合上此卷", action: onExit, always: true },
   ];
@@ -154,7 +155,7 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
       </div>
 
       <nav className="start-screen-menu" style={styles.menu}>
-        {menuItems.map((item) => {
+        {menuItems.filter((item) => !item.hidden).map((item) => {
           const disabled = !item.always;
           return (
             <button
