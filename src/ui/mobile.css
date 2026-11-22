@@ -925,3 +925,67 @@
     scroll-padding-bottom: calc(var(--mobile-keyboard-height, 0px) + 68px);
   }
 }
+
+/* iOS 专门适配：创角三步（名号、七维、武功）。
+   竖屏：卡片高度按 dvh 封顶，Safari 工具栏展开时底部按钮不被盖住。
+   横屏：卡片放宽、标题缩小、副标题收起，七维排四列，一屏放下；放不下时 root 仍可滚动。 */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 767px) and (orientation: portrait) {
+    .character-create-root {
+      min-height: 100dvh;
+    }
+
+    .character-create-card {
+      max-height: none;
+    }
+
+    .character-create-sub {
+      margin-bottom: clamp(12px, 3dvh, 30px) !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    .character-create-root {
+      align-items: center !important;
+      padding:
+        max(8px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left)) !important;
+    }
+
+    .character-create-card {
+      width: min(720px, 100%) !important;
+      max-height: none;
+      padding: 10px 20px !important;
+    }
+
+    .character-create-title {
+      font-size: 18px !important;
+      letter-spacing: 4px !important;
+      margin-bottom: 6px !important;
+    }
+
+    .character-create-sub {
+      display: none;
+    }
+
+    .character-create-card label {
+      margin-bottom: 8px !important;
+    }
+
+    .character-create-stat-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+
+    .starter-skill-card-list > button {
+      min-height: 0 !important;
+    }
+
+    .character-create-card > button {
+      margin-top: 6px !important;
+      padding-top: 7px !important;
+      padding-bottom: 7px !important;
+    }
+  }
+}

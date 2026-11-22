@@ -39,4 +39,18 @@ describe("StartScreen mobile layout", () => {
     expect(landscapeRules).toMatch(/display:\s*grid\s*!important/);
     expect(landscapeRules).toMatch(/grid-row:\s*1 \/ span 2/);
   });
+
+  it("has an iOS-only block for character creation that fits landscape on one screen", () => {
+    const at = MOBILE_CSS.indexOf("/* iOS 专门适配：创角三步");
+    expect(at).toBeGreaterThan(-1);
+    const block = MOBILE_CSS.slice(at, MOBILE_CSS.indexOf("\n}\n", at));
+    expect(block).toContain("@supports (-webkit-touch-callout: none) {");
+    expect(block).toMatch(/\.character-create-root \{\s*min-height:\s*100dvh/);
+    const landscape = block.slice(block.indexOf("@media (orientation: landscape) and (max-height: 500px) {"));
+    expect(landscape).toMatch(/grid-template-columns:\s*repeat\(4,/);
+    expect(landscape).toMatch(/\.character-create-sub \{\s*display:\s*none/);
+    const create = readFileSync(join(HERE, "CharacterCreate.jsx"), "utf-8");
+    expect(create).toContain('className="character-create-title"');
+    expect(create).toContain('className="character-create-sub"');
+  });
 });

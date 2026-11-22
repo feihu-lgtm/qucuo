@@ -253,11 +253,11 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   const ai = d.ai || webAi;
   if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
   if (stream) {
-    const streamLogIndex = { current: null };
+    let streamLogIndex = null;
     d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
     d.setLog(l => {
       if (d.isStale?.()) return l;
-      streamLogIndex.current = l.length - 1;
+      streamLogIndex = l.length - 1;
       return l;
     });
     const { text, finishReason } = await ai.chat(chatMessages, {
@@ -266,10 +266,10 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       stream: true,
       onChunk: (_delta, fullSoFar) => {
         d.setLog(l => {
-          if (d.isStale?.() || streamLogIndex.current == null) return l;
+          if (d.isStale?.() || streamLogIndex == null) return l;
           const copy = [...l];
           // 叙事模式：直接展示散文文本；JSON模式：只看最后200字（避免长 JSON 刷屏）
-          copy[streamLogIndex.current] = { t: "desc", text: "  " + (narrativeOnly ? fullSoFar : fullSoFar.slice(-200)) + " ▌", streaming: true };
+          copy[streamLogIndex] = { t: "desc", text: "  " + (narrativeOnly ? fullSoFar : fullSoFar.slice(-200)) + " ▌", streaming: true };
           return copy;
         });
       },
@@ -282,14 +282,14 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       // 叙事模式：把流式条目转为永久日志项（而不是移除它）。谈价 <deal> 标签仅供系统，显示时剥掉。
       const shown = text.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
       d.setLog(l => {
-        if (d.isStale?.() || streamLogIndex.current == null) return l;
+        if (d.isStale?.() || streamLogIndex == null) return l;
         const copy = [...l];
-        copy[streamLogIndex.current] = { t: "desc", text: "  " + shown, streaming: false, streamed: true };
+        copy[streamLogIndex] = { t: "desc", text: "  " + shown, streaming: false, streamed: true };
         return copy;
       });
     } else {
       // JSON 模式：移除占位条目（正式 output 会在解析后追加）
-      d.setLog(l => (d.isStale?.() || streamLogIndex.current == null ? l : l.filter((_, i) => i !== streamLogIndex.current)));
+      d.setLog(l => (d.isStale?.() || streamLogIndex == null ? l : l.filter((_, i) => i !== streamLogIndex)));
     }
     return { rawFull: text, finishReason };
   }

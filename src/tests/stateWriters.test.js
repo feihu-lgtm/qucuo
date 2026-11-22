@@ -1,4 +1,5 @@
 import { expect, it, vi } from "vitest";
+import { refAccessors } from "./mockRef.js";
 import { commitRound } from "../engine/act/commitRound.js";
 import { parseLocalCommand } from "../engine/localCommands.js";
 import { computeGiftWeight } from "../domain/rules/npc/giftWeight.js";
@@ -30,7 +31,7 @@ function makeDeps(state, proposals, overrides) {
     varTreeRef: { current: state.varTree }, roomMapRef: { current: {} },
     gambleTalkCtx: { current: null }, pendDirRef: { current: null }, outerDepartRef: { current: null },
     pickupJudgmentRef: { current: null }, pickupExtractionFailedRef: { current: false },
-    collectGrantedRef: { current: [] }, roundsSinceLastSaveRef: { current: 0 }, playedThisSessionRef: { current: false },
+    collectGrantedRef: { current: [] }, dayMaterialRef: { current: [] }, roundsSinceLastSaveRef: { current: 0 }, playedThisSessionRef: { current: false },
     mvuCommands: [], addLog: (rows) => logs.push(...rows),
     ...overrides,
   }, {
@@ -41,6 +42,7 @@ function makeDeps(state, proposals, overrides) {
       return (value) => { state[path] = typeof value === "function" ? value(state[path]) : value; };
     },
   });
+  Object.assign(deps, refAccessors(deps));
   return { deps, logs };
 }
 

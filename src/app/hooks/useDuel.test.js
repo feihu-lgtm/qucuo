@@ -114,7 +114,7 @@ describe("duel battle report", () => {
       expect(act).not.toHaveBeenCalled();
       const logs = addLog.mock.calls.flatMap(([entries]) => entries || []);
       expect(logs).toContainEqual(expect.objectContaining({ t: "sys", text: expect.stringContaining("第1回合") }));
-      expect(logs).toContainEqual(expect.objectContaining({ t: "sys", duelEnd: true }));
+      expect(logs).toContainEqual(expect.objectContaining({ t: "sys", fillSlot: "end" }));
     } finally {
       restoreStore();
     }
@@ -128,7 +128,7 @@ describe("duel battle report", () => {
       handlers.duelFinishHandler("win", null, [{ round: 1, teamText: "一招既定" }], null, [], null, []);
       gameActions.setLog((log) => [...log, { t: "cmd", text: "> 下一场" }]);
       release('{"rounds":["拳风扑面，才旦侧身不及。"],"ending":"才旦抱拳认输。"}');
-      await vi.waitFor(() => expect(gameStore.getState().log.some((entry) => entry.duelProse)).toBe(true));
+      await vi.waitFor(() => expect(gameStore.getState().log.some((entry) => entry.fillProse)).toBe(true));
       const texts = gameStore.getState().log.map((entry) => entry.text.trim());
       const round = texts.findIndex((text) => text.startsWith("第1回合"));
       expect(texts[round + 1]).toBe("拳风扑面，才旦侧身不及。");
@@ -141,7 +141,7 @@ describe("duel battle report", () => {
 
 describe("narrateDuelInBackground", () => {
   const rounds = [{ round: 1, text: "你一拳直捣中宫，老孙侧身没能卸开" }];
-  const factLog = [{ t: "sys", text: "  第1回合", duelKey: "k", duelRound: 0 }, { t: "sys", text: "  结局 胜", duelKey: "k", duelEnd: true }];
+  const factLog = [{ t: "sys", text: "  第1回合", fillKey: "k", fillSlot: 0 }, { t: "sys", text: "  结局 胜", fillKey: "k", fillSlot: "end" }];
   const applied = (setLog) => setLog.mock.calls[0][0](factLog);
 
   it("leaves the log alone when the AI fails and no phrase text exists", async () => {
@@ -161,7 +161,7 @@ describe("narrateDuelInBackground", () => {
   it("falls back to phrase-pool lines when the AI call throws", async () => {
     const setLog = vi.fn();
     await expect(narrateDuelInBackground("k", rounds, {}, { canAsk: () => true, ask: async () => { throw new Error("down"); }, setLog })).resolves.toBe("phrase");
-    expect(applied(setLog)[1].duelProse).toBe(true);
+    expect(applied(setLog)[1].fillProse).toBe(true);
   });
 
   it("prefers AI prose when it parses", async () => {

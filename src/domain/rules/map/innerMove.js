@@ -1,8 +1,8 @@
-import { step as traceStep } from "../ports/actionTrace.js";
-import { hasInnerMap, resolveInnerExit, isNpcVisibleInInnerRoom, getInnerRoom, isInnerExitUnlocked, describeInnerLock } from "../../domain/rules/map/innerMap.js";
-import { describeInnerArrival } from "../../domain/rules/map/mapNarration.js";
-import { detectNewFaces } from "../../domain/rules/npc/npcAwareness.js";
-import { DIRS } from "../../utils/mudHelpers.js";
+import { step as traceStep } from "../../../infra/actionTrace.js";
+import { hasInnerMap, resolveInnerExit, isNpcVisibleInInnerRoom, getInnerRoom, isInnerExitUnlocked, describeInnerLock } from "./innerMap.js";
+import { describeInnerArrival } from "./mapNarration.js";
+import { detectNewFaces } from "../npc/npcAwareness.js";
+import { DIRS } from "../../../utils/mudHelpers.js";
 
 // 内层箱庭移动判定（纯判定 + trace，不写任何 React 状态）：
 // 如果当前据点有内层数据（hasInnerMap(room.name)为真）且这个方向是

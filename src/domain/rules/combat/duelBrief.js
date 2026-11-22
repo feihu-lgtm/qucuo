@@ -3,7 +3,9 @@
 // 系统那一行只写算死的事实：招式名、伤害、状态，不写任何描写，所以不会出现
 // 「打的是拳、写成双刀」这种出戏。描写交给 AI 在后台补写：系统行先落日志、
 // 玩家立刻可以继续行动（刷级不用等），AI 写完再按 duelKey 原位插到对应的
-// 系统行下面；AI 没配或失败时改用短语池拼句兜底；期间玩家回滚就只留系统行。
+// 系统行下面；AI 没配或失败时改用短语池拼句兜底；期间玩家回滚就只留系统行。插回走 log/backfill.js 公共件。
+
+import { tagBackfill } from "../log/backfill.js";
 
 const sideName = (round, tag) => round?.result?.[`name${tag}`] || (tag === "A" ? "你" : "对手");
 const moveName = (round, tag) => (tag === "A" ? round?.playerMove?.name : round?.npcMove?.name)
@@ -33,12 +35,14 @@ export function duelFactLine(round) {
   return `第${n}回合 ${head}，${facts.length ? facts.join("，") : "未分高下"}`;
 }
 
+export const DUEL_END_SLOT = "end";
+
 export function duelFactLogs(rounds, key, outcomeText) {
   const list = Array.isArray(rounds) ? rounds : [];
-  return [
-    ...list.map((round, index) => ({ t: "sys", text: `  ${duelFactLine(round)}`, duelKey: key, duelRound: index })),
-    { t: "sys", text: `  结局 ${outcomeText || "切磋作罢"}`, duelKey: key, duelEnd: true },
-  ];
+  return tagBackfill([
+    ...list.map((round) => ({ t: "sys", text: `  ${duelFactLine(round)}` })),
+    { t: "sys", text: `  结局 ${outcomeText || "切磋作罢"}`, fillSlot: DUEL_END_SLOT },
+  ], key);
 }
 
 // 给 AI 的数据：只列事实，要求每回合一两句、结局一句，输出 JSON
@@ -81,15 +85,8 @@ export function phraseNarration(rounds) {
   return lines.some(Boolean) ? { rounds: lines, ending: "" } : null;
 }
 
-// 把描写原位插到对应系统行下面；找不到这场（已回滚）就原样返回
-export function insertDuelNarration(log, key, narration) {
-  if (!Array.isArray(log) || !narration || !log.some((entry) => entry?.duelKey === key)) return log;
-  const next = [];
-  for (const entry of log) {
-    next.push(entry);
-    if (entry?.duelKey !== key) continue;
-    const line = entry.duelEnd ? narration.ending : narration.rounds?.[entry.duelRound];
-    if (line) next.push({ t: "desc", text: `  ${line}`, duelKey: key, duelProse: true });
-  }
-  return next;
+// 解析结果转成 backfill 的 slot → 描写：回合按下标，结局用 DUEL_END_SLOT
+export function duelNarrationSlots(narration) {
+  if (!narration) return null;
+  return { ...(narration.rounds || []), [DUEL_END_SLOT]: narration.ending };
 }

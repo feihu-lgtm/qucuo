@@ -1,6 +1,7 @@
 // commitRound 的写入契约测试——为「事务提交 + postCommit 处理器」拆分钉死现状。
 // 每个 it 注释第一行就是该行为契约；只断言现状，不改实现。
 
+import { mkRef, refAccessors, refValue } from "../../tests/mockRef.js";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 
@@ -26,11 +27,11 @@ function makeDeps(state, proposals = {}, overrides = {}) {
     p: proposals,
     apiCfg: {}, mapData: {}, rawFull: "叙事原文", narrativeText: "叙事原文",
     newConvo: [], convo: [], questProgress: {}, time: 25,
-    varTreeRef: { current: state.varTree }, roomMapRef: { current: {} },
-    gambleTalkCtx: { current: null }, pendDirRef: { current: null }, outerDepartRef: { current: null },
-    pickupJudgmentRef: { current: null }, pickupExtractionFailedRef: { current: false },
-    collectGrantedRef: { current: [] }, dayMaterialRef: { current: [] },
-    roundsSinceLastSaveRef: { current: 0 }, playedThisSessionRef: { current: false },
+    varTreeRef: mkRef(state.varTree), roomMapRef: mkRef({}),
+    gambleTalkCtx: mkRef(null), pendDirRef: mkRef(null), outerDepartRef: mkRef(null),
+    pickupJudgmentRef: mkRef(null), pickupExtractionFailedRef: mkRef(false),
+    collectGrantedRef: mkRef([]), dayMaterialRef: mkRef([]),
+    roundsSinceLastSaveRef: mkRef(0), playedThisSessionRef: mkRef(false),
     mvuCommands: [], addLog: (rows) => logs.push(...rows),
     ...overrides,
   }, {
@@ -49,6 +50,7 @@ function makeDeps(state, proposals = {}, overrides = {}) {
       return (value) => { state[path] = typeof value === "function" ? value(state[path]) : value; };
     },
   });
+  Object.assign(deps, refAccessors(deps));
   return { deps, logs };
 }
 
@@ -169,11 +171,11 @@ describe("dealResult / 移动契约", () => {
     const ctx = { baseOffer: 100, cash: Infinity, carry: [], stoneId: "s1", bidderName: "商人" };
     const { deps, logs } = makeDeps(state, {}, {
       dealResult: { priceMult: 99 }, // 越界 → clamp 到 1.5
-      gambleTalkCtx: { current: ctx },
+      gambleTalkCtx: mkRef(ctx),
     });
     commitRound(deps);
     expect(state.gambleNegotiation.s1.商人).toBe(150);
-    expect(deps.gambleTalkCtx.current).toBeNull();
+    expect(refValue(deps.gambleTalkCtx)).toBeNull();
     expect(logs.some(l => l.t === "affection" && l.text.includes("谈妥了"))).toBe(true);
   });
 
@@ -190,7 +192,7 @@ describe("dealResult / 移动契约", () => {
     const { deps, logs } = makeDeps(state,
       { room: { name: "别处的名字", desc: "AI 写的场景", npcs: [], items: [] } },
       { lockedDestName: "鱼定土司",
-        roomMapRef: { current: { 鱼定土司: { npcs: [{ name: "管家" }], items: [{ name: "凳子" }] } } } });
+        roomMapRef: mkRef({ 鱼定土司: { npcs: [{ name: "管家" }], items: [{ name: "凳子" }] } }) });
     commitRound(deps);
     expect(state.room.name).toBe("鱼定土司");
     expect(state.room.exits).toEqual(["e"]);
@@ -218,7 +220,7 @@ describe("memory / 已知人物 / 收尾契约", () => {
     state.room.npcs = [{ name: "侠客" }];
     const { deps } = makeDeps(state, { memory: "少侠在村口救了一只猫" });
     commitRound(deps);
-    expect(deps.dayMaterialRef.current).toEqual([{ turn: 25, text: "少侠在村口救了一只猫" }]);
+    expect(deps.refGet("dayMaterialRef")).toEqual([{ turn: 25, text: "少侠在村口救了一只猫" }]);
     const facts = state.varTree.世界.知识领域.事实;
     expect(facts["turn_25_侠客"]).toBeDefined();
     expect(facts["turn_25_侠客"].标签).toBe("见闻");
@@ -260,7 +262,7 @@ describe("memory / 已知人物 / 收尾契约", () => {
     const state = baseState();
     const { deps } = makeDeps(state, {});
     commitRound(deps);
-    expect(deps.dayMaterialRef.current).toEqual([]);
+    expect(deps.refGet("dayMaterialRef")).toEqual([]);
     expect(state.varTree.世界.知识领域).toBeUndefined();
     expect(writeNote).not.toHaveBeenCalled();
   });
@@ -272,8 +274,8 @@ describe("memory / 已知人物 / 收尾契约", () => {
     expect(state.time).toBe(26);
     expect(state.convo).toHaveLength(1);
     expect(state.convo[0]).toMatchObject({ role: "assistant", memory: "一笔账", turn: 25 });
-    expect(deps.roundsSinceLastSaveRef.current).toBe(1);
-    expect(deps.playedThisSessionRef.current).toBe(true);
+    expect(deps.refGet("roundsSinceLastSaveRef")).toBe(1);
+    expect(deps.refGet("playedThisSessionRef")).toBe(true);
   });
 
   it("isTalk 回合 time 不前进", () => {

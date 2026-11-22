@@ -3,7 +3,7 @@ import { SAFE_HOUSES, SAFE_HOUSE_KEYS, invHasItemNamed, isSafeHouseOpen, ownedSa
 import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
 import { QUEST_TYPE } from "../../data/quests/questTypes.js";
 import { getInnerRoom, visibleInnerExits, isInnerExitUnlocked, getInnerRoomNames } from "./innerMap.js";
-import { tryInnerMove } from "../../../engine/act/innerMove.js";
+import { tryInnerMove } from "./innerMove.js";
 
 // 这套测试钉的是「没钥匙就是进不去」。背景：unlockCondition 字段在 innerMap.js
 // 里躺了很久但从没被真正用过（它自己的注释都写着"本轮鱼定村切片没有隐藏房间用到

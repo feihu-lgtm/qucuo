@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { snowLeopardRule } from "./snowLeopard.js";
-import { questFlagRule } from "../../domain/rules/quests/rules.js";
-import { giftNpc, settleNpcDuel } from "../npc/logic.js";
-import { inviteCompanion } from "../npc/inviteCompanion.js";
-import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_SPIRITS, snowLeopardNote, snowLeopardHint, filterSnowModelFlags } from "../../domain/rules/quests/snowLeopardQuest.js";
-import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
-import { commitModelFlags } from "../../engine/act/commitFlags.js";
-import { createWorldRules } from "../../engine/worldRules.js";
-import { buildQuestStageNote } from "../../engine/prompt/roundNotes.js";
-import { callExtraction } from "../../engine/ports/extraction.js";
-import { createExtractionState } from "../../engine/runTurn.js";
-import { assemblePrompt } from "../../engine/prompt/assemblePrompt.js";
+import { snowLeopardRule } from "../features/quest/snowLeopard.js";
+import { questFlagRule } from "../domain/rules/quests/rules.js";
+import { giftNpc, settleNpcDuel } from "../features/npc/logic.js";
+import { inviteCompanion } from "../features/npc/inviteCompanion.js";
+import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_SPIRITS, snowLeopardNote, snowLeopardHint, filterSnowModelFlags } from "../domain/rules/quests/snowLeopardQuest.js";
+import { QUCUO_QUESTS } from "../domain/data/quests/qucuoQuests.js";
+import { commitModelFlags } from "../engine/act/commitFlags.js";
+import { createWorldRules } from "../engine/worldRules.js";
+import { buildQuestStageNote } from "../engine/prompt/roundNotes.js";
+import { callExtraction } from "../engine/ports/extraction.js";
+import { createExtractionState } from "../engine/runTurn.js";
+import { assemblePrompt } from "../engine/prompt/assemblePrompt.js";
 
 const leopard = { name: "雪豹", beast: true, companionCandidate: true };
 const initial = () => ({ char: { special: { 体魄: 5, 魅力: 5 }, hp: [100, 100] }, room: { name: "鱼定村", npcs: [leopard] }, inv: [], skills: [], flags: [], questProgress: {}, varTree: {}, time: 1 });

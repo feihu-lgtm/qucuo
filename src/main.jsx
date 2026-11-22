@@ -3,7 +3,6 @@ import "./ui/tokens.css";
 import "./ui/mobile.css";
 import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
-import MudRPG from "./MudRPG.jsx";
 import StartScreen from "./ui/screens/StartScreen.jsx";
 import ErrorBoundary from "./ui/components/ErrorBoundary.jsx";
 import { loadAutoSave, init as initSaves } from "./infra/saves.js";
@@ -16,6 +15,9 @@ import { getZoneTheme } from "./utils/theme.js";
 
 loadDefaultContent();
 
+// 游戏主体单独成块：开始界面先出，空闲时预取，点「开始」时通常已下载好。
+const loadMudRPG = () => import("./MudRPG.jsx");
+const MudRPG = lazy(loadMudRPG);
 const QuickBattleScreen = lazy(() => import("./ui/screens/quickBattle/QuickBattleScreen.jsx"));
 const TavernSimScreen = lazy(() => import("./ui/screens/tavernSim/TavernSimScreen.jsx"));
 const CardImportScreen = lazy(() => import("./ui/screens/CardImportScreen.jsx"));
@@ -78,6 +80,13 @@ function App() {
     splash.classList.add("is-hidden");
     const timer = window.setTimeout(() => splash.remove(), 180);
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const idle = window.requestIdleCallback || ((cb) => window.setTimeout(cb, 1200));
+    const cancel = window.cancelIdleCallback || window.clearTimeout;
+    const handle = idle(() => { loadMudRPG().catch(() => {}); });
+    return () => cancel(handle);
   }, []);
 
   // 行为变更（本轮）：不再"有自动存档就跳过开始界面、直接续上缓存"。每次打开/刷新

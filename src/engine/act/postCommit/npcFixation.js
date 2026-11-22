@@ -1,6 +1,6 @@
 // ── 在场名单固化：幽灵过滤、战斗数据固化、新面孔/重逢登记（原 commitRound 内嵌块）──
 // 路线甲纯函数化：返回 { logs, changes, dWrites } 由 commitRound 统一落盘；
-// varTree 改显式入参（原先读 varTreeRef.current）。
+// varTree 改显式入参（原先读 varTreeRef 的值）。
 import { isNpcVisibleInInnerRoom } from "../../../domain/rules/map/innerMap.js";
 import { detectNewFaces, markAsSeen, updateLastSeen } from "../../../domain/rules/npc/npcAwareness.js";
 import { mapDescriptionToGenParams } from "../../../domain/data/npc/npcDescriptionMapping.js";
