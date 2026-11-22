@@ -19,5 +19,8 @@ const items = {
 "全村粮药契凭": { name: "全村粮药契凭", category: "misc", quality: "紫", tags: ["信物", "鱼定村", "任务"], desc: "全村户主按了手印的粮药契凭，终局之时凭它开鱼定村的地窖。" },
 "广汉细棉布": { name: "广汉细棉布", category: "misc", quality: "绿", tags: ["布料", "任务"], desc: "广汉织坊的细棉布，丐帮周小满托人捎来的谢礼。" },
 "大娘秘制酥油茶壶": { name: "大娘秘制酥油茶壶", category: "misc", quality: "绿", tags: ["食品", "鱼定村", "任务"], consumable: { hpRestore: 0.3, energyRestore: 3 }, desc: "鱼定大娘雪夜塞给你的铜壶，酥油茶一路都是烫的。" },
+"黑檀铜嘴旱烟杆": { name: "黑檀铜嘴旱烟杆", category: "weapon", quality: "绿", tags: ["短兵", "鱼定村"], desc: "泽仁村长不离手的半杆旱烟杆，烟锅沉手，近身能磕开短刀。" },
+"旧羊皮毡袍": { name: "旧羊皮毡袍", category: "armor", quality: "绿", tags: ["衣甲", "鱼定村"], desc: "洗得泛灰的旧羊皮袍，挡风耐刮，内衬缝着暗兜。" },
+"老土司赐村正铜印": { name: "老土司赐村正铜印", category: "accessory", quality: "紫", sixDim: { 智谋: 2, 魅力: 1 }, tags: ["信物", "鱼定村"], desc: "三十年前桑杰大侠亲授泽仁的村正铜印，印背刻着「三曲永安」。" },
 };
 export default { item: items, itemGroup: { YUDING_GOODS: Object.keys(items) } };

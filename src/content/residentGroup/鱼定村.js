@@ -15,6 +15,20 @@ export default { residentGroup: {
       ],
     },
     {
+      name: "泽仁", id: "resident_zeren", levelCap: 3,
+      brief: "鱼定村老村长，才旦之父，五十八岁，干瘦微驼，古铜色额头横着修水渠砸出的白疤，穿泛灰的旧羊皮袍，右手攥着半杆黑檀旱烟杆；三十年前老土司立界石的亲历者",
+      personality: "外懦内韧：在土司差役面前赔笑弯腰比谁都快，背地里却把老土司留下的真账册捂了整整三十年；怕流血、怕连累乡邻，真被逼到绝境时骨头比青石还硬。口吻：「年轻人，刀出鞘只需一眨眼，可收进鞘里要拿一村人的命去填……」",
+      carry: [
+        { name: "黑檀铜嘴旱烟杆", category: "weapon", quality: "绿" },
+        { name: "旧羊皮毡袍", category: "armor", quality: "绿" },
+        { name: "老土司赐村正铜印", category: "accessory", quality: "紫" },
+        { name: "旧界石泥拓", category: "misc", quality: "绿" },
+        { name: "青稞酒", category: "misc", quality: "白" },
+        { name: "酥油炒面", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
       name: "才旦", id: "resident_caidan", levelCap: 1,
       brief: "村长之女，鱼定村实际的账房，二十二岁，瓜子脸被高原风吹出健康的红晕，两条乌亮长辫用红绳扎得极紧，蓝布藏袍袖口总蹭着算盘木油；账算得滴水不漏",
       personality: "工于心计说话不留破绽，卸下防备才露出年纪相符的脆弱",

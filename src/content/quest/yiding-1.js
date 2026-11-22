@@ -1,9 +1,11 @@
+const c = (name, count = 1) => Array.from({ length: count }, () => ({ name, fromCatalog: true }));
 export default { quest: {
 "village1_lubujianbuping": {
     id: "village1_lubujianbuping",
     type: "QT_TALK",
     title: "村1·路见不平",
     giver: "老猎户",
+    requiresFactionRep: { 鱼定村: -19 },
     description: "熊山口不太平，土司府管家带人设卡查验货税，实为拦路抽水，过路牧民商贩敢怒不敢言。「外乡来的？正好，有件事老朽不便出面，你或许能帮上忙。」",
     stages: [
       {
@@ -48,9 +50,9 @@ export default { quest: {
         onReach: {
           exp: 2,
           byFlag: {
-            quest_village1_s2_a: { favorability: { "阿旺": 30 }, reputation: 10, factionRep: { 鱼定村: 5 } },
-            quest_village1_s2_b: { favorability: { "阿旺": 20 }, reputation: 6, factionRep: { 鱼定村: 3 } },
-            quest_village1_s2_c: { favorability: { "阿旺": 5 } },
+            quest_village1_s2_a: { favorability: { "阿旺": 30 }, reputation: 10, money: 30, items: c("酥油炒面", 2), factionRep: { 鱼定村: 15, 玉泉寨: 5, 鱼定土司府: -5 }, flags: ["flag_yuding_defied_patrol"] },
+            quest_village1_s2_b: { favorability: { "阿旺": 20 }, reputation: 6, items: c("酥油炒面", 2), factionRep: { 鱼定村: 10, 玉泉寨: 3, 鱼定土司府: 0 } },
+            quest_village1_s2_c: { favorability: { "阿旺": 5 }, factionRep: { 鱼定村: -5 } },
           },
         },
       },
@@ -72,6 +74,7 @@ export default { quest: {
     giver: "才旦",
     description: "才旦告诉你，村口界石下面埋着一样东西——她小时候亲眼看见前任村长（她阿爸）半夜把一包东西塞进界石底座，死前只留一句话：「界石若是倒了，鱼定村也就散了。」管家最近在界石附近转悠，才旦怀疑他在找那包东西。",
     requiresQuestCompleted: "village1_lubujianbuping",
+    requiresFactionRep: { 鱼定村: 10 },
     stages: [
       {
         id: "s1_zhagba",
@@ -103,20 +106,21 @@ export default { quest: {
         onReach: {
           exp: 3,
           byFlag: {
-            quest_village2_s3_a: { favorability: { "才旦": 60 }, items: [{ name: "旧账册", category: "misc", quality: "蓝", desc: "前任村长的私账，面对管家的谈判筹码。" }] },
-            quest_village2_s3_b: { favorability: { "才旦": 40 }, items: [{ name: "旧账册", category: "misc", quality: "蓝", desc: "前任村长的私账，面对管家的谈判筹码。" }], flags: ["promise_village2_side_with_yudingcun"] },
+            quest_village2_s3_a: { favorability: { "才旦": 60 }, money: 50, items: [{ name: "旧账册", category: "misc", quality: "蓝", desc: "前任村长的私账，面对管家的谈判筹码。" }, ...c("旧界石泥拓")], factionRep: { 鱼定村: 20, 玉泉寨: 4, 鱼定土司府: 0 }, flags: ["flag_yuding_deed_clue"] },
+            quest_village2_s3_b: { favorability: { "才旦": 40 }, money: 50, items: [{ name: "旧账册", category: "misc", quality: "蓝", desc: "前任村长的私账，面对管家的谈判筹码。" }, ...c("旧界石泥拓")], factionRep: { 鱼定村: 20, 玉泉寨: 4, 鱼定土司府: 0 }, flags: ["promise_village2_side_with_yudingcun", "flag_yuding_deed_clue"] },
             quest_village2_s3_c: { favorabilitySet: { "才旦": 0 } },
           },
         },
       },
     ],
-    rewardText: "A/B线获得关键物品「旧账册」，作为后续面对管家的谈判筹码；C线才旦好感归零，不再接她的任何任务。",
+    rewardText: "A/B线得 50 两、「旧账册」与「旧界石泥拓」，鱼定村声誉 +20、玉泉寨 +4，村长府西墙的「界石旧窖」从此对你敞开，作为后续面对管家的谈判筹码；C线才旦好感归零，不再接她的任何任务。",
   },
 "village3_zanghan_hunshi": {
     id: "village3_zanghan_hunshi",
     type: "QT_TALK",
     title: "村3·藏汉两姓的婚事",
     giver: "鱼定大娘",
+    requiresFactionRep: { 鱼定村: 15 },
     description: "鱼定大娘的儿子小孙（汉）与张商人的女儿卓嘎（藏）私定终身，两边父亲都不同意。鱼定大娘逢人念叨：「熊曲、鹰曲、狼曲，三条水都流进一条曲水。水都不分家，人分什么家。」",
     stages: [
       {
@@ -198,18 +202,21 @@ export default { quest: {
         onReach: {
           exp: 2,
           favorability: { "鱼定大娘": 40, "老孙": 30, "张商人": 30 },
-          items: [{ name: "红线", category: "accessory", quality: "白", desc: "熊曲、鹰曲、狼曲，三条水都流进一条曲水。水都不分家。" }],
+          money: 40,
+          items: [{ name: "红线", category: "accessory", quality: "白", desc: "熊曲、鹰曲、狼曲，三条水都流进一条曲水。水都不分家。" }, ...c("老孙喜酒", 2), ...c("大娘红糖炒面", 3)],
+          factionRep: { 鱼定村: 20, 玉泉寨: 10, 鱼定土司府: 0 },
           flags: ["perk_laosun_free_meal"],
         },
       },
     ],
-    rewardText: "获得物品「红线」（饰品·白），之后在鱼定村歇马居住宿老孙会主动送免费便饭。",
+    rewardText: "得 40 两、「红线」（饰品·白）、老孙喜酒×2、大娘红糖炒面×3，鱼定村声誉 +20、玉泉寨 +10；之后在鱼定村歇马居住宿老孙会主动送免费便饭。",
   },
 "village4_zahuoshangren_jinhuonan": {
     id: "village4_zahuoshangren_jinhuonan",
     type: "QT_DELIVERY",
     title: "村4·杂货商人的进货难",
     giver: "杂货商人",
+    requiresFactionRep: { 鱼定村: 15 },
     description: "锦官城货郎两个月没来送货，杂货商人自己去进货又被管家在熊山口设卡拦下，一担杂货抽三成。他给了一张进货清单，愿按货价四成付跑腿费。",
     stages: [
       {
@@ -252,10 +259,17 @@ export default { quest: {
             },
           },
         ],
-        onReach: { exp: 2, money: 40, favorability: { "杂货商人": 40 }, flags: ["perk_zahuo_discount"] },
+        onReach: {
+          exp: 2, favorability: { "杂货商人": 40 }, flags: ["perk_zahuo_discount"],
+          byFlag: {
+            quest_village4_s3_a: { money: 60, items: [...c("雅江细盐包", 2), ...c("暗记草条")], factionRep: { 鱼定村: 20, 玉泉寨: 4, 天龙教: -6, 青城派: 5, 唐门: 0, 鱼定土司府: 0 } },
+            quest_village4_s3_b: { money: 35, items: c("雅江细盐包"), factionRep: { 鱼定村: 15, 玉泉寨: 3, 鱼定土司府: 0 } },
+            quest_village4_s3_c: { money: 60, items: [...c("雅江细盐包", 2), ...c("暗记草条")], factionRep: { 鱼定村: 20, 玉泉寨: 4, 青城派: 5, 天龙教: 0, 唐门: 0, 鱼定土司府: 0 } },
+          },
+        },
       },
     ],
-    rewardText: "跑腿费（货价四成结算），杂货摊对玩家永久八折。",
+    rewardText: "硬闯或谈判得 60 两、雅江细盐包×2、暗记草条，鱼定村声誉 +20；绕路得 35 两、细盐包×1，鱼定村 +15。杂货摊对玩家永久八折。",
   },
 "village5_laolieshu_chuanren": {
     id: "village5_laolieshu_chuanren",
@@ -263,7 +277,8 @@ export default { quest: {
     title: "村5·老猎户的传人",
     giver: "老猎户",
     description: "老猎户年老体衰，攒下一套看地形、认兽迹、下陷阱的本事，没有儿子，收过一个徒弟后来去了锦官城给都事当随从再没回村——「这套本事要传下去，传给谁不重要，传下去才重要。」",
-    requiresQuestCompleted: "village1_lubujianbuping",
+    requiresQuestCompleted: ["village1_lubujianbuping", "yudingcun_side1_yushan_chuhuan"],
+    requiresFactionRep: { 鱼定村: 40 },
     stages: [
       {
         id: "s1_learn",
@@ -288,12 +303,13 @@ export default { quest: {
         onReach: {
           exp: 3,
           favorability: { "老猎户": 50 },
-          items: [{ name: "熊山手绘地图", category: "misc", quality: "绿", desc: "老猎户年轻时走过的路，标注着温泉的位置。" }],
-          flags: ["unlock_xiongshan_wenquan", "skill_trap_learned"],
+          items: [{ name: "熊山手绘地图", category: "misc", quality: "绿", desc: "老猎户年轻时走过的路，标注着温泉的位置。" }, ...c("熊山密道羊皮图"), ...c("老猎户的狼牙护符")],
+          factionRep: { 鱼定村: 25, 玉泉寨: 5, 雪山派: 5, 鱼定土司府: 0 },
+          flags: ["unlock_xiongshan_wenquan", "skill_trap_learned", "flag_yuding_hunter_heir"],
         },
       },
     ],
-    rewardText: "学会技能「陷阱术」，获得「熊山手绘地图」，解锁熊山隐藏地点「温泉」（吊睛虎王刷新点）。",
+    rewardText: "学会技能「陷阱术」，获得「熊山手绘地图」「熊山密道羊皮图」「老猎户的狼牙护符」，鱼定村声誉 +25、玉泉寨 +5、雪山派 +5，晒谷演武场可学《熊山伏息术》（还需鱼定村声誉 ≥ 80），解锁熊山隐藏地点「温泉」（吊睛虎王刷新点）。",
   },
 "village6_jieshichongli": {
     id: "village6_jieshichongli",
@@ -301,8 +317,8 @@ export default { quest: {
     title: "村6·界石重立",
     giver: "才旦",
     description: "才旦发现界石底座开始松动——可能是管家设卡时动了地基。她要重立界石，且要把村里帮过忙的人的名字刻上去：「界石是鱼定村的人立的，也该鱼定村的人重立。」",
-    requiresQuestCompleted: "village2_jieshixiajiu",
-    requiresAnyOf: ["village3_zanghan_hunshi", "village4_zahuoshangren_jinhuonan"],
+    requiresQuestCompleted: ["village2_jieshixiajiu", "village3_zanghan_hunshi", "village4_zahuoshangren_jinhuonan", "village5_laolieshu_chuanren"],
+    requiresFactionRep: { 鱼定村: 60 },
     blockedByFlags: ["quest_village2_s3_c"],
     stages: [
       {
@@ -335,12 +351,13 @@ export default { quest: {
           favorabilitySet: { "才旦": 100 },
           favorability: { "老猎户": 20, "鱼定大娘": 20, "杂货商人": 20, "老孙": 20, "张商人": 20 },
           reputation: 12,
-          factionRep: { 鱼定村: 10 },
-          items: [{ name: "界石下的土", category: "accessory", quality: "白", desc: "不是武功，不是财物。是有人在这地方站过。" }],
-          flags: ["caidan_elected_village_head"],
+          money: 120,
+          factionRep: { 鱼定村: 35, 玉泉寨: 7, 鱼定土司府: -15, 锦官城: 5, 欢喜教: 0 },
+          items: [{ name: "界石下的土", category: "accessory", quality: "白", desc: "不是武功，不是财物。是有人在这地方站过。" }, ...c("三曲老界石护身拓"), ...c("全村粮药契凭")],
+          flags: ["caidan_elected_village_head", "flag_endgame_ally_yuding"],
         },
       },
     ],
-    rewardText: "才旦好感锁定100，鱼定村所有参与NPC好感各+20，获得物品「界石下的土」，鱼定村声望+1，才旦被村民推举为下一任村长。",
+    rewardText: "才旦好感锁定100，鱼定村所有参与NPC好感各+20，得 120 两与「界石下的土」「三曲老界石护身拓」「全村粮药契凭」，鱼定村声誉 +35、玉泉寨 +7、锦官城 +5、鱼定土司府 -15，才旦被村民推举为下一任村长。",
   }
 } };
