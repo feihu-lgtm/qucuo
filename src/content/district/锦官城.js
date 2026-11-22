@@ -117,9 +117,14 @@ export default { district: {
       抄经堂: {
         x: 0, y: 3,
         desc: "临窗一排长案沾满墨痕，半壁收佛经医案，半壁藏道书与蜀西江湖杂录。男弟子入门前须在此静心抄经三日。",
-        exits: { w: "听竹轩", s: "金顶静室·藏剑阁" },
+        exits: { w: "听竹轩", s: "金顶静室·藏剑阁", e: "玄清道院" },
         buildingId: "library_emei_jingge",
         residentNpcName: "陈九",
+      },
+      玄清道院: {
+        x: 1, y: 3,
+        desc: "绕过月洞门便换了气象，院中种着两株老银杏，青砖地上用白灰画着十二庄站桩方位，空气里混着淡檀香与晒干的陈艾味。",
+        exits: { w: "抄经堂" },
       },
       "金顶静室·藏剑阁": {
         x: 0, y: 4,
@@ -189,17 +194,45 @@ export default { district: {
       都事府: {
         x: 2, y: -1,
         desc: "都事柳青鸢的府邸，锦官城任务线核心场景，老兵退伍汉作为随从常驻此处伺候。前院值房收投效当差的帖子，公事公办。",
-        exits: { w: "天下商行", s: "醉仙楼" },
+        exits: { w: "天下商行", s: "醉仙楼", e: "府衙花厅·青鸢书房" },
         buildingId: "sect_entry_guan",
         residentNpcName: "柳青鸢",
+      },
+      "府衙花厅·青鸢书房": {
+        x: 4, y: -1,
+        desc: "窗外几竿瘦竹映在素色窗纸上，案头摆着一只未放出的月白河灯与半碟冷掉的椒盐酥，书架最顶层压着几封落款「望贵府查收附件」的复写信稿。",
+        exits: { w: "都事府", n: "书房暗格·青囊密档室" },
+        unlockCondition: { type: "any", of: [
+          { type: "factionRep", faction: "锦官城", min: 15 },
+          { type: "questStarted", questId: "jinguancheng_guan1_xinren" },
+        ] },
+      },
+      "书房暗格·青囊密档室": {
+        x: 4, y: -2,
+        desc: "拨动书架后那只无字的青铜镇纸，木壁无声滑开，逼仄石室里只亮着一盏豆大油灯，墙上用红线密密麻麻连起了曲措乡、白塔、天都香行与六年前一桩失踪案的全部线索。",
+        exits: { s: "府衙花厅·青鸢书房" },
+        unlockCondition: { type: "all", of: [
+          { type: "questCompleted", questId: "jinguancheng_guan1_xinren" },
+          { type: "favor", npc: "柳青鸢", min: 60 },
+          { type: "factionRep", faction: "锦官城", min: 40 },
+        ] },
       },
       唐门暗巷: {
         x: 1, y: -2,
         desc: `　　暗巷再往里，光就没了。尽头一扇黑漆门，门上没有招牌，只钉着一枚铜钱大的暗器当门钉——三棱，带血槽。
 　　推门进去是唐门的外围铺面。柜台后头架子上分格摆着暗器与瓶罐，标签都是手写的，字很小。这里暗器、毒药、解药都卖，不赊账，也不问你买去做什么。`,
-        exits: { s: "暗巷入口", e: "城隍庙旧墙" },
+        exits: { s: "暗巷入口", e: "城隍庙旧墙", ne: "暗巷隔间·验货室" },
         buildingId: "tangmen_shop",
         residentNpcName: "唐三少",
+      },
+      "暗巷隔间·验货室": {
+        x: 2, y: -3,
+        desc: "柜台后暗门推开是间无窗砖室，墙角堆着标有“茶砖”字样的黑木箱，箱缝里隐约渗出苗疆紫烟草的腥香。",
+        exits: { sw: "唐门暗巷" },
+        unlockCondition: { type: "any", of: [
+          { type: "factionRep", faction: "唐门", min: 15 },
+          { type: "questStarted", questId: "tangmen_1_anxianglaike" },
+        ] },
       },
       城隍庙旧墙: {
         x: 2, y: -2,
@@ -255,9 +288,21 @@ export default { district: {
       城东营房: {
         x: 4, y: 0,
         desc: "城东一溜青砖营房，都事府的差役在此歇脚操练，檐下挂着梆子与水火棍。后墙库房归班头侯敢看管——制式兵备与罚没物件都在册子上。",
-        exits: { w: "马行" },
+        exits: { w: "马行", s: "北衙地底·铁栅暗牢" },
         buildingId: "sectshop_guan",
         residentNpcName: "侯敢",
+      },
+      "北衙地底·铁栅暗牢": {
+        x: 4, y: 1,
+        desc: "湿冷的青砖甬道向下盘旋十二级，尽头是三间玄铁铸栏的死囚室，油灯晃动间能听见水滴砸在铁镣上的脆响，专关不能见光的江湖要犯与敌派细作。",
+        exits: { n: "城东营房" },
+        unlockCondition: { type: "all", of: [
+          { type: "factionRep", faction: "锦官城", min: 40 },
+          { type: "any", of: [
+            { type: "questStarted", questId: "jinguancheng_zhi2_tianduanxian" },
+            { type: "questStarted", questId: "jinguancheng_guan2_guitu" },
+          ] },
+        ] },
       },
     },
   }

@@ -6,7 +6,7 @@ import { DIRS } from "../../../utils/mudHelpers.js";
 import NineGridMap from "../../components/NineGridMap.jsx";
 import { chromeBtn } from "../../../utils/theme.js";
 
-export default function MapModule({ zoneTheme, room, innerRoomName, mapView, setMapView, mapBig, setMapBig, questProgress, mapData, loading, flags, autoTravelTo, setInteractMode, act, inv, char }) {
+export default function MapModule({ zoneTheme, room, innerRoomName, mapView, setMapView, mapBig, setMapBig, questProgress, mapData, loading, flags, autoTravelTo, setInteractMode, act, inv, char, varTree }) {
   // 没有内景的据点（乡外新节点）只能看外图，否则内图视图下连「外/内」切换都没有
   const view = hasInnerMap(room.name) ? mapView : "outer";
   return (
@@ -48,8 +48,8 @@ export default function MapModule({ zoneTheme, room, innerRoomName, mapView, set
         if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>此地无内景可绘。</div>;
         const curRoom = innerRoomName || getDistrictAnchor(room.name);
         // 上锁的房间不出现在九宫格里（此前这里直接读裸 exits，锁着的安全屋照样是可点格子）
-        const curExits = (curRoom && visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char })) || {};
-        const passableExitByDir = passableExits(curExits, { layer: "inner", districtName: room.name, questProgress, flags, inv, char });
+        const curExits = (curRoom && visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char, varTree })) || {};
+        const passableExitByDir = passableExits(curExits, { layer: "inner", districtName: room.name, questProgress, flags, inv, char, varTree });
         const rawExits = getInnerRoom(room.name, curRoom)?.exits || {};
         const DIRS8 = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
         const cells = {};

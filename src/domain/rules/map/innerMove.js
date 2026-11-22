@@ -41,7 +41,7 @@ export function tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, inne
     }
     if (innerDest) {
       const destRoom = getInnerRoom(room.name, innerDest);
-      if (destRoom?.unlockCondition && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv, char })) {
+      if (destRoom?.unlockCondition && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv, char, varTree })) {
         traceStep(_trace, "内层移动", "block", `「${innerDest}」上锁（${describeInnerLock(destRoom.unlockCondition)}）`);
         return { kind: "blocked", summary: "门锁着", lockedMsg: describeInnerLock(destRoom.unlockCondition) };
       }
