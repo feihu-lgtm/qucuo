@@ -12,9 +12,17 @@ export default { district: {
         x: 0, y: -1,
         desc: `　　八扇乌木雕花屏风围出一间森严厅堂，正中供着唐家历代先人的牌位。
 　　临窗一张紫檀椅，老太太坐在上面慢条斯理地纳鞋底，脚边竹篓里插满细如牛毛的精钢绣针。她抬头冲你笑了笑，手里的针没停。`,
-        exits: { s: "吊桥暗渠口" },
+        exits: { s: "吊桥暗渠口", e: "唐堡内库" },
         unlockCondition: { type: "flag", flag: "tangmen_invited" },
         residentNpcName: "唐老太",
+      },
+      唐堡内库: {
+        x: 1, y: -1,
+        desc: `　　正堂东侧一间石砌货房，门是两寸厚的铁皮包木，门闩上挂着一把没有锁眼的机关锁。
+　　架上的瓷瓶都贴着朱砂小签，签上只写编号不写名字——唐家人自己认得，外人拿错了也不会有人提醒。`,
+        exits: { w: "竹影正堂" },
+        unlockCondition: { type: "flag", flag: "tangmen_invited" },
+        buildingId: "sectshop_tangmen",
       },
       千机演武坪: {
         x: -1, y: 0,

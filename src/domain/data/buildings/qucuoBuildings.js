@@ -57,6 +57,10 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "满地机关暗桩与会转身的铁皮假人，练的不是堂堂正正的招架，是在别人眨眼的半息里把暗器送进缝隙的本事。",
     },
     {
+      id: "sectshop_tangmen", name: "唐堡内库", type: BUILDING_TYPE.SECTSHOP, shopKey: "唐门暗器",
+      desc: "不对生客开放的石砌货房，凡本门弟子与信重客卿凭令牌入内，方能取到暗巷铺面绝不外摆的精巧机弩与高阶解毒秘药。",
+    },
+    {
       id: "hospital_tangmen", name: "试毒药庐", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
       desc: "既是练毒的灶，也是救命的堂；世上最狠的毒往往和最灵的解药同出一炉，只要出得起银子，断气前总能拉回来半口。",
     },

@@ -14,6 +14,7 @@ const TIERS = [
 const tierOf = (value) => TIERS.find((tier) => (Number(value) || 0) >= tier.min);
 
 export const factionRepLabel = (value) => tierOf(value).label;
+export const factionRepCoef = (value) => tierOf(value).coef;
 
 export function factionRepOf(varTree, faction) {
   return Number(varTree?.世界?.势力声誉?.[faction]) || 0;
