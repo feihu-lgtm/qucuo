@@ -92,14 +92,14 @@ export default { district: {
       晒香天井: {
         x: 3, y: 1,
         desc: "青石板天井摆满数十只竹匾，晾晒着暗红的藏红花与碾碎的草根。影壁后一块青砖小校场四周种满高竹，内院弟子入夜便在此演练天竺转手与迷香身法。",
-        exits: { n: "香行内堂", w: "调香药房" },
+        exits: { n: "香行内堂", s: "调香药房" },
         buildingId: "wuguan_huanxitang",
         residentNpcName: "老何",
       },
       调香药房: {
-        x: 2, y: 1,
+        x: 3, y: 2,
         desc: "满屋都是石臼、铜蒸馏甑与贴着天竺文标签的琉璃瓶，甜腻的药气里藏着一丝极淡的苦杏仁味，案头摊着未晒干的香泥。阿雅收各地送来的珍稀药材。",
-        exits: { e: "晒香天井" },
+        exits: { n: "晒香天井" },
         residentNpcName: "阿雅",
         unlockCondition: { type: "questCompleted", questId: "huanxijiao_1_xiangzhongyi" },
       },
