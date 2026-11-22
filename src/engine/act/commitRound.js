@@ -107,7 +107,9 @@ export function commitRound(d) {
     luck: d.char.special?.气运 ?? 5,
   };
   applyPostResult(d, settleDeal({ dealResult: d.dealResult, gambleTalkCtx: d.gambleTalkCtx })); // 赌石谈价结算
-  emitRoomHeader(d);                // 移动落地的地名标题，排在正文之前
+  applyPostResult(d, emitRoomHeader({ // 移动落地的地名标题，排在正文之前
+    isTalk: d.isTalk, lockedDestName: d.lockedDestName, p: d.p, room: d.room,
+  }));
   applyPostResult(d, emitNarrative({ p: d.p, questProgress: d.questProgress })); // 台本覆盖/切磋战报/正文/截断提示
   applyPostResult(d, recordRumors({ p: d.p, narrativeText: d.narrativeText })); // 涌现·传闻登记
   applyPostResult(d, fixateNpcs({    // 在场名单幽灵过滤+战斗数据固化+新面孔/重逢
@@ -116,7 +118,11 @@ export function commitRound(d) {
     systemAcceptedNames: postCtx.systemAcceptedNames, luck: postCtx.luck,
   }));
   applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck })); // 涌现·实体化
-  writeRoom(d, { traceStep });      // 房间写回（锁定目的地/固定地图/兜底）
+  applyPostResult(d, writeRoom({    // 房间写回（锁定目的地/固定地图/兜底）
+    isTalk: d.isTalk, lockedDestName: d.lockedDestName, p: d.p, room: d.room,
+    roomMap: d.roomMapRef.current, outerDepart: d.outerDepartRef.current,
+    mapData: d.mapData, pendDir: d.pendDirRef.current, freshNpcData: d.freshNpcData,
+  }, { traceStep: (...args) => traceStep(d._trace, ...args) }));
   applyPostResult(d, commitProposalWrites({ // AI 提议落盘：char/dao/物品/经验/潜能/技能
     p: d.p, isTalk: d.isTalk, giftAlreadySettled: d.giftAlreadySettled,
     preserveHp: d.preserveHp, gm: d.gm,

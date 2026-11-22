@@ -6,6 +6,19 @@
 export function applyPostResult(d, out) {
   if (!out) return;
   if (out.logs) d.addLog(out.logs);
+  // insertLogs：要插在日志流中间（如地名标题排在本轮 cmd 回显之后、正文之前）；
+  // 无 setLog 时退化为追加
+  if (out.insertLogs) {
+    if (d.setLog) {
+      d.setLog((prev) => {
+        const revIdx = [...prev].reverse().findIndex((e) => e?.t === "cmd");
+        const at = revIdx < 0 ? prev.length : prev.length - revIdx;
+        return [...prev.slice(0, at), ...out.insertLogs, ...prev.slice(at)];
+      });
+    } else {
+      d.addLog(out.insertLogs);
+    }
+  }
   if (out.delayedLogs) setTimeout(() => d.addLog(out.delayedLogs), out.delayMs ?? 0);
   if (out.changes) {
     const setters = {

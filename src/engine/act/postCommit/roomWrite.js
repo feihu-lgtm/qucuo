@@ -1,4 +1,6 @@
 // ── 房间写回：锁定目的地/固定地图/兜底三支（原 commitRound 内嵌块）──
+// 路线甲纯函数化：writeRoom/roomHeader 返回结果描述，由 commitRound 经
+// applyPostResult 统一落盘；ref 改显式入参 + refWrites。
 import { QUCUO_MAP, getMapNode } from "../../../domain/data/map/qucuoMap.js";
 import { patchCombatData } from "../../../domain/rules/npc/roomNpcs.js";
 import { DIR_DXY } from "../../../utils/mudHelpers.js";
@@ -8,91 +10,87 @@ import { DIR_DXY } from "../../../utils/mudHelpers.js";
 // 判定条件与 writeRoom 的两条移动分支一一对应：锁定目的地；或不在固定地图里、AI 报了新地名。
 // 条目类型必须是 "room"：NarrativeLogFeed 靠它把标题单列，LogEntry 靠它居中并加破折号。
 // （e8f6f57 拆模块时这里被误写成 "d.room"，标题因此退化成普通正文、落在叙事卡片末尾。）
-export function roomHeaderName(d) {
-  if (d.isTalk) return null;
-  if (d.lockedDestName) return d.lockedDestName;
-  if (d.p.room && !QUCUO_MAP[d.room.name] && d.p.room.name && d.p.room.name !== d.room.name) return d.p.room.name;
+export function roomHeaderName({ isTalk, lockedDestName, p, room }) {
+  if (isTalk) return null;
+  if (lockedDestName) return lockedDestName;
+  if (p.room && !QUCUO_MAP[room.name] && p.room.name && p.room.name !== room.name) return p.room.name;
   return null;
 }
 
-export function emitRoomHeader(d) {
-  const name = roomHeaderName(d);
-  if (!name) return;
-  const header = [{ t: "room", text: "" }, { t: "room", text: `    ${name}` }, { t: "room", text: "" }];
-  // 双调用模式下叙事在 runTurn 阶段就先于 commitRound 落日志了——这里必须插到
-  // 本轮命令回显（cmd）之后、本轮其余条目之前，addLog 追加只会落在正文后面。
-  if (d.setLog) {
-    d.setLog((prev) => {
-      const revIdx = [...prev].reverse().findIndex((e) => e?.t === "cmd");
-      const at = revIdx < 0 ? prev.length : prev.length - revIdx;
-      return [...prev.slice(0, at), ...header, ...prev.slice(at)];
-    });
-  } else {
-    d.addLog(header);
-  }
+// 返回 { insertLogs }：双调用模式下叙事在 runTurn 阶段就先于 commitRound 落日志了——
+// 这里必须由 applyPostResult 插到本轮命令回显（cmd）之后、本轮其余条目之前，
+// addLog 追加只会落在正文后面。
+export function emitRoomHeader(ctx) {
+  const name = roomHeaderName(ctx);
+  if (!name) return null;
+  return { insertLogs: [{ t: "room", text: "" }, { t: "room", text: `    ${name}` }, { t: "room", text: "" }] };
 }
 
 // traceStep 由调用方注入，保持本模块无 infra 依赖（externalInfraImports 只减不增）。
-export function writeRoom(d, { traceStep }) {
-  if (!d.isTalk) {
-    if (d.lockedDestName) {
-      // 系统裁决：目的地、出口列表强制来自固定地图，不信任 AI 返回的 d.room.name/exits，
-      // 只采用 AI 给出的 desc（场景描述文本）——这是本轮改造的核心："AI 只负责怎么形容，
-      // 不负责去哪里"。
-      const destNode = getMapNode(d.lockedDestName);
-      const cached = d.roomMapRef.current[d.lockedDestName];
-      const finalDesc = (d.p.room && d.p.room.desc) ? d.p.room.desc : destNode.desc;
-      d.setRoom({
-        name: d.lockedDestName,
+// 入参：roomMap=roomMapRef.current、outerDepart=outerDepartRef.current、pendDir=pendDirRef.current、
+// freshNpcData=fixateNpcs 的 dWrites。
+export function writeRoom({ isTalk, lockedDestName, p, room, roomMap, outerDepart, mapData, pendDir, freshNpcData }, { traceStep }) {
+  if (isTalk) return null;
+  const out = { refWrites: { pendDirRef: null } };
+  if (lockedDestName) {
+    // 系统裁决：目的地、出口列表强制来自固定地图，不信任 AI 返回的 room.name/exits，
+    // 只采用 AI 给出的 desc（场景描述文本）——这是本轮改造的核心："AI 只负责怎么形容，
+    // 不负责去哪里"。
+    const destNode = getMapNode(lockedDestName);
+    const cached = roomMap[lockedDestName];
+    const finalDesc = (p.room && p.room.desc) ? p.room.desc : destNode.desc;
+    out.changes = {
+      room: {
+        name: lockedDestName,
         desc: finalDesc,
         exits: Object.keys(destNode.exits),
-        npcs: (cached && cached.npcs) || (d.p.room && d.p.room.npcs) || [],
-        items: (cached && cached.items) || (d.p.room && d.p.room.items) || [],
-      });
-      traceStep(d._trace, "状态写回", "pass", `room.name → ${d.lockedDestName}（移动完成）${d.outerDepartRef.current?.fromInner ? `，内层落点自动归为新据点锚点` : ""}`);
-      d.outerDepartRef.current = null;
-      if (!d.mapData[d.lockedDestName]) {
-        d.setMapData(m => ({ ...m, [d.lockedDestName]: { x: destNode.x, y: destNode.y } }));
-      }
-    } else if (d.p.room && QUCUO_MAP[d.room.name]) {
-      // 当前在固定地图范围内，且这次没有触发移动（比如原地互动/战斗），
-      // 只允许 AI 更新 desc/items，name/exits/npcs 依然锁定为系统已有状态。
-      // npcs 不能信任 AI 这次返回的名单——AI 每个回合都会重新交一份"它认为
-      // 在场的人"的完整列表，如果直接铺盖过去，等于每次非移动动作都让AI
-      // 重新发明一次在场人物，这正是"此地的人一会好几个一会都走光"的乱动
-      // 根因。在场人物只应通过明确渠道变化：每日游走人口刷新（见下方
-      // useEffect）、人物涌现（emergedNpcName，就发生在这行之前）、或玩家
-      // 自己的动作——不该被这句话顺手覆盖。
-      const node = QUCUO_MAP[d.room.name];
-      // npcs 仍以系统既有名单 r.npcs 为准（不信 AI 这轮报的在场名单），但要把上面
-      // 刚固化出来的战斗数据回填给名单里对应的人——名单不动、数据补齐。
-      // 少了这一步，切磋掉落池恒为空（见上方 freshNpcData 处的注释）。
-      d.setRoom(r => ({
-        ...r, ...d.p.room, name: d.room.name, exits: Object.keys(node.exits),
-        npcs: patchCombatData(r.npcs, d.freshNpcData),
-      }));
-    } else if (d.p.room) {
-      // 兜底：房间不在固定地图里（理论上不应该出现，只有 AI 未遵守系统裁决时才会
-      // 落入这条路径）。这次修复已经从源头堵住了主要诱因——之前"向北走"这类带
-      // 前缀词的移动指令会被 parseDir 误判为"非移动"，导致本该走上面 d.lockedDestName
-      // 强锁分支的请求错误地流落到这里，AI 因此有机会自由发挥编出不在地图里的
-      // 过渡地名（比如"熊曲山谷"）。parseDir 修好之后，只要玩家的移动意图能被正确
-      // 识别，就不会再落入这条分支；这里维持原有的兜底自由生成逻辑，不额外强行拉回
-      // 固定地图，避免打断正在进行的、AI已经开始编排的野生场景剧情。
-      const moved = d.p.room.name && d.p.room.name !== d.room.name;
-      if (moved) {
-        const cached = d.roomMapRef.current[d.p.room.name];
-        if (cached) d.setRoom(r => ({ ...r, ...d.p.room, items: cached.items, npcs: cached.npcs }));
-        else d.setRoom(r => ({ ...r, ...d.p.room }));
-        if (d.pendDirRef.current && !d.mapData[d.p.room.name]) {
-          const dirKey = d.pendDirRef.current, [dx, dy] = DIR_DXY[dirKey] || [0, 0];
-          const cur = d.mapData[d.room.name] || { x: 0, y: 0 };
-          d.setMapData(m => ({ ...m, [d.p.room.name]: { x: cur.x + dx, y: cur.y + dy } }));
-        }
-      } else {
-        d.setRoom(r => ({ ...r, ...d.p.room }));
-      }
+        npcs: (cached && cached.npcs) || (p.room && p.room.npcs) || [],
+        items: (cached && cached.items) || (p.room && p.room.items) || [],
+      },
+    };
+    if (!mapData[lockedDestName]) {
+      out.changes.mapData = (m) => ({ ...m, [lockedDestName]: { x: destNode.x, y: destNode.y } });
     }
-    d.pendDirRef.current = null;
+    out.refWrites.outerDepartRef = null;
+    out.effects = [() => traceStep("状态写回", "pass", `room.name → ${lockedDestName}（移动完成）${outerDepart?.fromInner ? `，内层落点自动归为新据点锚点` : ""}`)];
+  } else if (p.room && QUCUO_MAP[room.name]) {
+    // 当前在固定地图范围内，且这次没有触发移动（比如原地互动/战斗），
+    // 只允许 AI 更新 desc/items，name/exits/npcs 依然锁定为系统已有状态。
+    // npcs 不能信任 AI 这次返回的名单——AI 每个回合都会重新交一份"它认为
+    // 在场的人"的完整列表，如果直接铺盖过去，等于每次非移动动作都让AI
+    // 重新发明一次在场人物，这正是"此地的人一会好几个一会都走光"的乱动
+    // 根因。在场人物只应通过明确渠道变化：每日游走人口刷新（见下方
+    // useEffect）、人物涌现（emergedNpcName，就发生在这行之前）、或玩家
+    // 自己的动作——不该被这句话顺手覆盖。
+    const node = QUCUO_MAP[room.name];
+    // npcs 仍以系统既有名单 r.npcs 为准（不信 AI 这轮报的在场名单），但要把上面
+    // 刚固化出来的战斗数据回填给名单里对应的人——名单不动、数据补齐。
+    // 少了这一步，切磋掉落池恒为空（见 fixateNpcs 的注释）。
+    out.changes = {
+      room: (r) => ({ ...r, ...p.room, name: room.name, exits: Object.keys(node.exits), npcs: patchCombatData(r.npcs, freshNpcData) }),
+    };
+  } else if (p.room) {
+    // 兜底：房间不在固定地图里（理论上不应该出现，只有 AI 未遵守系统裁决时才会
+    // 落入这条路径）。这次修复已经从源头堵住了主要诱因——之前"向北走"这类带
+    // 前缀词的移动指令会被 parseDir 误判为"非移动"，导致本该走上面 lockedDestName
+    // 强锁分支的请求错误地流落到这里，AI 因此有机会自由发挥编出不在地图里的
+    // 过渡地名（比如"熊曲山谷"）。parseDir 修好之后，只要玩家的移动意图能被正确
+    // 识别，就不会再落入这条分支；这里维持原有的兜底自由生成逻辑，不额外强行拉回
+    // 固定地图，避免打断正在进行的、AI已经开始编排的野生场景剧情。
+    const moved = p.room.name && p.room.name !== room.name;
+    if (moved) {
+      const cached = roomMap[p.room.name];
+      out.changes = {
+        room: cached ? (r) => ({ ...r, ...p.room, items: cached.items, npcs: cached.npcs }) : (r) => ({ ...r, ...p.room }),
+      };
+      if (pendDir && !mapData[p.room.name]) {
+        const [dx, dy] = DIR_DXY[pendDir] || [0, 0];
+        const cur = mapData[room.name] || { x: 0, y: 0 };
+        out.changes.mapData = (m) => ({ ...m, [p.room.name]: { x: cur.x + dx, y: cur.y + dy } });
+      }
+    } else {
+      out.changes = { room: (r) => ({ ...r, ...p.room }) };
+    }
   }
+  return out;
 }
