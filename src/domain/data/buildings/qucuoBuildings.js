@@ -490,6 +490,14 @@ export const BUILDINGS_BY_LOCATION = {
       id: "chest_shuwang", name: "蜀王庄·库房", type: BUILDING_TYPE.CHEST, house: "蜀王庄",
       desc: "后院书房那只紫檀小匣，虽空却精致。匣底也压着一份食材家底。",
     },
+    {
+      id: "sect_entry_guan", name: "都事府值房", type: BUILDING_TYPE.SECT_ENTRY, sect: "锦官城",
+      desc: "都事府前院值房，案上一摞待批的卷宗和一盏没喝完的菊花茶。想投效当差的都在这儿回话——柳青鸢的规矩是公事公办，先办事，再谈名分。",
+    },
+    {
+      id: "sectshop_guan", name: "都事府兵备库", type: BUILDING_TYPE.SECTSHOP, shopKey: "锦官兵备",
+      desc: "城东营房后墙一溜库房，制式腰刀、皂隶衣、罚没来路的物件码得整整齐齐，班头侯敢按着登记册发卖——官仓的货，比市集便宜，但要讲资格。",
+    },
   ],
 
   // ── 贡措海（1 种，令狐冲墓） ──

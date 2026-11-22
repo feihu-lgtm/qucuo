@@ -35,6 +35,22 @@ export const FACTION_ENTRIES = {
     intro: "听竹轩正厅案上供着青玉弟子令与一卷《峨眉清规》。玄尘师太问你三句心性话，答得出，便收。",
     joinLabel: "问心受戒，拜入峨眉派",
   },
+  锦官城: {
+    sect: "锦官城", master: "柳青鸢", buildingId: "sect_entry_guan",
+    // 成员旗用专属「锦官城当差」：title_jinguancheng_tequai_xuncha 是官2-A 落的头衔，
+    // 任务奖励不经过 checkFactionEntry——若复用做成员旗，别派弟子/叛出者完成任务
+    // 会绕过单人一派与门墙永闭拿到成员待遇。
+    minRep: 40, repBonus: 20, flag: "锦官城当差",
+    token: "巡捕营腰牌", gifts: ["锦官制式软甲", "锦官烧刀子"],
+    trial: {
+      flag: "guan_cases_cleared",
+      quest: "jinguancheng_guan1_xinren",
+      label: "当差的本钱：替都事府办妥五桩案子（官1·信任的积累）",
+      hint: "柳青鸢不收没办过差的人——先帮她把手里那五桩案子了结。",
+    },
+    intro: "都事府值房里算盘声没停，柳青鸢抬眼看了你一眼又低回去：「公事公办。想在我手底下当差，先让我看看你办事的样子。」",
+    joinLabel: "投效都事府，当差锦官城",
+  },
   唐门: {
     sect: "唐门", master: "唐老太", buildingId: "sect_entry_tangmen",
     minRep: 40, repBonus: 20, flag: "唐门弟子",
@@ -96,7 +112,9 @@ export function checkFactionEntry(entry, { varTree, flags = [], char, questProgr
   const prestige = Number(varTree?.世界?.威望) || 0;
   const minPrestige = entry.minPrestige ?? 0;
   const other = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== entry.sect && flags.includes(flag));
-  const trialOk = !entry.trial || flags.includes(entry.trial.flag);
+  // 试炼 flag 后补的任务（老存档已完成任务但没拿到 flag）按任务完成算过。
+  const trialOk = !entry.trial || flags.includes(entry.trial.flag)
+    || (!!entry.trial.quest && questProgress?.[entry.trial.quest]?.status === "completed");
   const riteNeeded = !!entry.maleRite && (char?.gender || "男") === "男";
   const riteOk = !riteNeeded || flags.includes(entry.maleRite.flag);
   const questsDone = (entry.quests || []).filter((qid) => questProgress?.[qid]?.status === "completed").length;

@@ -109,6 +109,16 @@ const FACTION_SHOPS = {
     hostileItems: ["雪山姜枣干粮", "寒岭冻伤膏"],
     coldItems: ["雪山姜枣干粮", "寒岭冻伤膏", "雪松木剑"],
   },
+  // 锦官兵备（锦官城·都事府兵备库）：官仓明码标价认册不认人；
+  // 交恶只摆白绿并加价两成，特派巡查的制式装备与御赐銮铃不外卖。
+  锦官兵备: {
+    faction: "锦官城", idPrefix: "guan_purchase",
+    outlets: { sectshop_guan: "vault" },
+    nowhere: "须到锦官城城东营房的都事府兵备库才能买官仓的货。",
+    banned: "班头侯敢把册子一合：「库里的东西，不卖给你。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿"],
+  },
   三星秘藏: {
     faction: "三星派", idPrefix: "sanxing_purchase",
     outlets: { sanxing_sect_shop: "vault" },

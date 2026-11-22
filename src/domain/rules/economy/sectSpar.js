@@ -40,6 +40,14 @@ const SECT_SPARS = [
     dailyCap: 39,
   },
   {
+    faction: "锦官城",
+    npcs: [{ id: "resident_hougan", name: "侯敢" }, { id: "resident_liuqingyuan", name: "柳青鸢" }],
+    flag: "guan_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
+  {
     faction: "三星派",
     npcs: [
       { id: "resident_qingtong_jia", name: "青铜面人·甲" },
