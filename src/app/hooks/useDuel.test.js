@@ -114,7 +114,7 @@ describe("duel battle report", () => {
       expect(act).not.toHaveBeenCalled();
       const logs = addLog.mock.calls.flatMap(([entries]) => entries || []);
       expect(logs).toContainEqual(expect.objectContaining({ t: "sys", text: expect.stringContaining("第1回合") }));
-      expect(logs).toContainEqual(expect.objectContaining({ t: "sys", duelEnd: true }));
+      expect(logs).toContainEqual(expect.objectContaining({ t: "sys", fillSlot: "end" }));
     } finally {
       restoreStore();
     }
@@ -128,7 +128,7 @@ describe("duel battle report", () => {
       handlers.duelFinishHandler("win", null, [{ round: 1, teamText: "一招既定" }], null, [], null, []);
       gameActions.setLog((log) => [...log, { t: "cmd", text: "> 下一场" }]);
       release('{"rounds":["拳风扑面，才旦侧身不及。"],"ending":"才旦抱拳认输。"}');
-      await vi.waitFor(() => expect(gameStore.getState().log.some((entry) => entry.duelProse)).toBe(true));
+      await vi.waitFor(() => expect(gameStore.getState().log.some((entry) => entry.fillProse)).toBe(true));
       const texts = gameStore.getState().log.map((entry) => entry.text.trim());
       const round = texts.findIndex((text) => text.startsWith("第1回合"));
       expect(texts[round + 1]).toBe("拳风扑面，才旦侧身不及。");
