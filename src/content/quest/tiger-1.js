@@ -57,8 +57,8 @@ export default { quest: {
       },
       {
         id: "s2_find_zhaxi",
-        description: "进熊山找到扎西，他被熊拍伤了腿，困在一处岩洞里，脸色发白却还死死攥着那把旧猎叉不撒手，像是怕一松手这趟就白来了。",
-        playerHint: "扎西进熊山三天没回，去熊山找他。",
+        description: "赶回寨子才知道，扎西被熊拍伤了腿，自己拖着伤腿摸回了家——他躺在自家炕上脸色发白，手里却还死死攥着那把旧猎叉不撒手，像是怕一松手这趟就白来了。",
+        playerHint: "扎西进熊山三天没回——回玉泉寨，去扎西/卓玛家看看人回没回来。",
         completionFlag: "quest_zhaxi_s2",
         onReach: { exp: 1 },
       },
