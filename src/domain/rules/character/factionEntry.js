@@ -1,4 +1,4 @@
-// 拜入门派（合稿各派「拜入与叛出规则」）：本派声誉 ≥ minRep、威望 ≥ 0（anyPrestige 的邪派不查）、过本派试炼（trial 可空）、未拜他派。
+// 拜入门派（合稿各派「拜入与叛出规则」）：本派声誉 ≥ minRep、威望 ≥ minPrestige（缺省 0；anyPrestige 的邪派不查）、过本派试炼（trial 可空）、未拜他派。
 // 入门立加本派声誉 repBonus，发信物 token 与 gifts。雪山派走 sectEntry.js 的老流程。
 import { factionRepOf } from "../economy/factionRep.js";
 import { SECT_ENTRY } from "./sectEntry.js";
@@ -43,6 +43,22 @@ export const FACTION_ENTRIES = {
     intro: "偏厅香案上只摆一尊铜钵与三柱无烟红香。向旧神像敬香、饮下罗琦亲斟的坛城茶，便算入了内院门墙。",
     joinLabel: "敬香饮茶，拜入欢喜教",
   },
+  锦官城: {
+    sect: "锦官城", master: "柳青鸢", buildingId: "sect_entry_guan",
+    // 成员旗用专属「锦官城当差」：title_jinguancheng_tequai_xuncha 是官2-A 落的头衔，
+    // 任务奖励不经过 checkFactionEntry——若复用做成员旗，别派弟子/叛出者完成任务
+    // 会绕过单人一派与门墙永闭拿到成员待遇。
+    minRep: 40, repBonus: 20, flag: "锦官城当差",
+    token: "巡捕营腰牌", gifts: ["锦官制式软甲", "锦官烧刀子"],
+    trial: {
+      flag: "guan_cases_cleared",
+      quest: "jinguancheng_guan1_xinren",
+      label: "当差的本钱：替都事府办妥五桩案子（官1·信任的积累）",
+      hint: "柳青鸢不收没办过差的人——先帮她把手里那五桩案子了结。",
+    },
+    intro: "都事府值房里算盘声没停，柳青鸢抬眼看了你一眼又低回去：「公事公办。想在我手底下当差，先让我看看你办事的样子。」",
+    joinLabel: "投效都事府，当差锦官城",
+  },
   唐门: {
     sect: "唐门", master: "唐老太", buildingId: "sect_entry_tangmen",
     minRep: 40, repBonus: 20, flag: "唐门弟子",
@@ -71,6 +87,16 @@ export const FACTION_ENTRIES = {
     intro: "供桌上不烧高香，只摆一坛烈酒。严九斤说，入丐帮不看家世，只看你端不端得起这碗混着雨水的入门酒。",
     joinLabel: "端起入门酒，拜入丐帮三星分舵",
   },
+  三星派: {
+    sect: "三星派", master: "纵目者", buildingId: "sanxing_mask_hall",
+    minRep: 40, repBonus: 20, flag: "三星派弟子", minPrestige: -60,
+    token: "青铜纵目令", gifts: [],
+    quests: ["sanxingpai_2_sanmianjianzhen"],
+    questsLabel: "完成「星2·三面试剑」",
+    trial: null,
+    intro: "石案上码着一排未开眼的青铜面具，艾草炭火噼啪作响。入墟为徒，先亲手磨亮自己的面具，再向神树递三记问心剑——树顶那双纵目会替你看清自己。",
+    joinLabel: "磨亮面具、递三记问心剑，拜入三星派",
+  },
 };
 
 export const SECT_MEMBER_FLAGS = {
@@ -92,8 +118,9 @@ export const factionEntryForBuilding = (buildingId) =>
 export function checkFactionEntry(entry, { varTree, flags = [], char, questProgress = {} } = {}) {
   const rep = factionRepOf(varTree, entry.sect);
   const prestige = Number(varTree?.世界?.威望) || 0;
+  const minPrestige = entry.minPrestige ?? 0;
   const other = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== entry.sect && flags.includes(flag));
-  // trial.quest：旧存档早已做完该任务、却没有后加的 trial flag，按任务已完成也算过
+  // 试炼 flag 后补的任务（老存档已完成任务但没拿到 flag）按任务完成算过。
   const trialOk = !entry.trial || flags.includes(entry.trial.flag)
     || (!!entry.trial.quest && questProgress?.[entry.trial.quest]?.status === "completed");
   const riteNeeded = !!entry.maleRite && (char?.gender || "男") === "男";
@@ -102,7 +129,7 @@ export function checkFactionEntry(entry, { varTree, flags = [], char, questProgr
   const questsOk = (entry.quests || []).every((qid) => questProgress?.[qid]?.status === "completed");
   const reqs = [
     { key: "rep", label: `${entry.sect}声誉 ≥ ${entry.minRep}（门墙之交）`, have: rep, ok: rep >= entry.minRep },
-    ...(entry.anyPrestige ? [] : [{ key: "prestige", label: "威望 ≥ 0（不收恶名昭彰之徒）", have: prestige, ok: prestige >= 0 }]),
+    ...(entry.anyPrestige ? [] : [{ key: "prestige", label: minPrestige === 0 ? "威望 ≥ 0（不收恶名昭彰之徒）" : `威望 ≥ ${minPrestige}（心魔蒙目者不收）`, have: prestige, ok: prestige >= minPrestige }]),
     ...(entry.quests?.length ? [{ key: "quests", label: entry.questsLabel || "完成本派引荐任务", have: `${questsDone}/${entry.quests.length}`, ok: questsOk }] : []),
     ...(entry.trial ? [{ key: "trial", label: entry.trial.label, have: trialOk ? "已过" : "未过", ok: trialOk }] : []),
     ...(riteNeeded ? [{ key: "rite", label: entry.maleRite.label, have: riteOk ? "已成" : "未成", ok: riteOk }] : []),

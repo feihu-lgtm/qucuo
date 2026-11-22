@@ -62,6 +62,31 @@ export const QUCUO_SHOPS = {
       { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 100 },
     ],
   },
+  // 锦官兵备（锦官城·都事府兵备库）。官仓货池：白货随便买，15 起摆差役
+  // 制式、40 起发府里制式装备（标兵甲只发特派巡查）、80 摆御赐銮铃（只此一件）。
+  锦官兵备: {
+    shopName: "都事府兵备库",
+    items: [
+      { name: "锦官城官袍", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "乡勇木棓", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "乡勇布甲", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "锦官巡街棍", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "镖师护腕", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "锦官文思膏", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "锦官城红烧牦牛肉", category: ITEM_CATEGORY.MISC, quality: "蓝" },
+      { name: "巡捕营皂隶衣", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "巡捕营制式腰刀", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "锦官烧刀子", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "锦官精铁剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "紫铜护心镜", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "锦官制式软甲", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 40 },
+      { name: "锦官坊标兵剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
+      { name: "锦官验讫牙牌", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 40 },
+      { name: "锦官续命丹", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 40 },
+      { name: "锦官坊标兵甲", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 40, member: true },
+      { name: "御赐銮铃", category: ITEM_CATEGORY.ACCESSORY, quality: "红", minRep: 80, member: true, limitOnce: true },
+    ],
+  },
   // 三星派·古墟秘藏阁（合稿·三星派 6.2）。声誉 < 15 不摆货；声誉上限 100，合稿 ≥140 的镇阁剑收到 100、限购一次。
   三星秘藏: {
     shopName: "古墟秘藏阁",
@@ -225,14 +250,22 @@ export const QUCUO_SHOPS = {
     ],
   },
 
-  // ── 达磨药堂 ──
+  // ── 达磨药堂（喇嘛庙势力药堂）──
+  // 货单照合稿「喇嘛庙·六、商城设计」10 件：前 4 件常规药剂无门槛，15/40/80 阶梯解锁；
+  // 千年雪莲回天丹合稿写 ≥140（一代尊宿），引擎声誉封顶 100，取 100，每局限量 3 颗。拒售规则在 factionShop.js。
   达磨药堂: {
-    shopName: "达磨药堂",
+    shopName: "达摩药堂",
     items: [
-      { name: "止血散", category: ITEM_CATEGORY.MISC, quality: "白" },
-      { name: "活血膏", category: ITEM_CATEGORY.MISC, quality: "绿" },
-      { name: "高原雪莲", category: ITEM_CATEGORY.MISC, quality: "蓝" },
-      { name: "天麻草", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "高原酥油膏", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "藏青稞健脾散", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "藏红花活血丸", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "达摩驱寒膏", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "药渍麻布僧袍", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "青竹护法短杖", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "雪莲清毒丸", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 40 },
+      { name: "老山檀香护心珠", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 40 },
+      { name: "白塔铜鎏金降魔杵", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 80 },
+      { name: "千年雪莲回天丹", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 100, limit: 3 },
     ],
   },
 
@@ -408,6 +441,7 @@ export function buildShopInventory(shopKey) {
       ...(cfg.minRep == null ? {} : { minRep: cfg.minRep }),
       ...(cfg.member ? { member: true } : {}),
       ...(cfg.limitOnce ? { limitOnce: cfg.limitOnce } : {}),
+      ...(cfg.limit ? { limit: cfg.limit } : {}),
     })),
   };
 }

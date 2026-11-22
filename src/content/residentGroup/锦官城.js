@@ -183,5 +183,23 @@ export default { residentGroup: {
 中立）。若被说服保持中立，官府不再浑水摸鱼；若选中立线，柳青鸢会
 推动终局之后任命梅朵代管曲措乡。`,
     },
+    {
+      name: "侯敢", id: "resident_hougan", levelCap: 3,
+      brief: "都事府差役班头，城东营房的管事",
+      personality: "大嗓门，讲规矩不讲情面；发卖官仓货只认册子不认人，护短是真护短",
+      carry: [
+        { name: "巡捕营制式腰刀", category: "weapon", quality: "绿" },
+        { name: "锦官巡街棍", category: "weapon", quality: "白" },
+        { name: "巡捕营皂隶衣", category: "armor", quality: "绿" },
+        { name: "巡捕营腰牌", category: "accessory", quality: "绿" },
+        { name: "锦官烧刀子", category: "misc", quality: "蓝" },
+        { name: "金疮药", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+      fullBio: `侯敢原是北边军镇退下来的老卒，左腿挨过一记马刀，落了点瘸。
+编入锦官城差役班后一路做到班头——柳青鸢用他，就因为他记账比打人还
+细：兵备库里一把腰刀进出一文钱都要落册。他常说自己不会做官，只会
+看门，「门看好了，城里才睡得着」。`,
+    },
   ]
 } };

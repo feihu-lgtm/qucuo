@@ -97,9 +97,11 @@ export function advanceQuestStages(quest, progress, gameState, now = Date.now())
 //   requiresPrestige:       number             —— 全局威望（世界.威望）≥ 门槛
 //   requiresFavor:          { [人物]: number }    —— 人物好感（角色.<人物>.好感度，缺省 10）≥ 门槛
 //   requiresKnownNpc:       string[]           —— 这些人物必须已结识（世界.已认识人物）
+//   requiresKnownNpcAny:    string[]           —— 至少结识其中一位（OR，如花支2 梵衍那或罗琦）
+//   requiresFlags:          string[]           —— flags 里必须全有（如花4 须已解锁雾隐寨）
 // 不涉及互斥锁（exclusiveGroup）那套逻辑，两者可以同时用在同一个任务上。
 // 声誉/威望门槛要传 varTree 才卡；没传（只做展示的调用方）时不卡。
-export function questGateReqs(quest, varTree) {
+export function questGateReqs(quest, varTree, flags = []) {
   const reqs = Object.entries(quest.requiresFactionRep || {}).map(([faction, min]) => {
     const have = factionRepOf(varTree, faction);
     return { key: `rep:${faction}`, label: `${faction}声誉 ≥ ${min}`, have, ok: have >= min };
@@ -120,6 +122,14 @@ export function questGateReqs(quest, varTree) {
     const ok = isNpcKnown(varTree || {}, name);
     reqs.push({ key: `known:${name}`, label: `已结识${name}`, have: ok, ok });
   }
+  if (quest.requiresKnownNpcAny?.length) {
+    const ok = quest.requiresKnownNpcAny.some((name) => isNpcKnown(varTree || {}, name));
+    reqs.push({ key: "knownAny", label: `已结识${quest.requiresKnownNpcAny.join("或")}`, have: ok, ok });
+  }
+  for (const f of quest.requiresFlags || []) {
+    const ok = (flags || []).includes(f);
+    reqs.push({ key: `flag:${f}`, label: `经历「${f}」`, have: ok, ok });
+  }
   return reqs;
 }
 
@@ -131,7 +141,8 @@ export function isChoiceOpen(choice, flags = []) {
 }
 
 // 分支选项的门槛（字段全部可选）：requiresQuestCompleted / requiresAnyOf 同任务门槛；
-// requiresFlag: string[] 全部持有；requiresFactionRep: { [势力]: number }；
+// requiresFlag: string[] 全部持有；requiresFlagAny: string[] 至少持有一面（如花5 铁证或和解后盾二选一）；
+// requiresFactionRep: { [势力]: number }；
 // requiresFavor: { [人物]: number }（角色.<人物>.好感度，缺省 10）；
 // blockedByFlags: string[] 持有任意一个即不可选。
 export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}) {
@@ -142,6 +153,7 @@ export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}
   }
   if (choice.requiresAnyOf?.length && !choice.requiresAnyOf.some(isDone)) return false;
   if (choice.requiresFlag?.some((f) => !flags?.includes(f))) return false;
+  if (choice.requiresFlagAny?.length && !choice.requiresFlagAny.some((f) => flags?.includes(f))) return false;
   if (choice.blockedByFlags?.some((f) => flags?.includes(f))) return false;
   if (Object.entries(choice.requiresFactionRep || {}).some(([faction, min]) => factionRepOf(varTree, faction) < min)) return false;
   if (!isChoiceOpen(choice, flags)) return false;
@@ -153,7 +165,7 @@ export function isQuestGateOpen(quest, allProgress, flags, varTree) {
   const isDone = (qid) => allProgress?.[qid]?.status === "completed";
   // 门槛只管「能不能接」：已接下的任务不因后加的前置/声誉门槛中断，只认 blockedByFlags。
   if (allProgress?.[quest.id]) return !(quest.blockedByFlags?.length && quest.blockedByFlags.some(f => flags?.includes(f)));
-  if (varTree && !questGateReqs(quest, varTree).every((r) => r.ok)) return false;
+  if (varTree && !questGateReqs(quest, varTree, flags).every((r) => r.ok)) return false;
   if (quest.requiresQuestCompleted) {
     const list = Array.isArray(quest.requiresQuestCompleted) ? quest.requiresQuestCompleted : [quest.requiresQuestCompleted];
     if (!list.every(isDone)) return false;

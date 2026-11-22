@@ -354,6 +354,8 @@ export default { quest: {
         ],
         onReach: {
           money: 600,
+          // 合稿：雪5 完成授称号「雪岭剑盟」（rep140 客卿长老档引擎封顶 100 后合入）
+          flags: ["title_xueshan_jianmeng"],
           factionRep: { 雪山派: 30 },
           byFlag: {
             quest_x5_full: { flags: ["xueshan_endgame_ally"], factionRep: { 鱼定土司府: -15, 鱼定村: 10, 玉泉寨: 10, 喇嘛庙: 6, 峨眉派: 6, 青城派: 6 } },

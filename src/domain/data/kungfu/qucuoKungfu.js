@@ -173,6 +173,27 @@ export const SKILL_CATALOG = {
       desc: "行云流水般的步法，能在混战中灵活穿插，身形难以捉摸，是走南闯北的江湖人惯用的入门轻功。",
       passiveBonus: { speedBonus: 1 },
     },
+    {
+      id: "kf_guan_yanxing", name: "雁行缉拿棍", type: SKILL_TYPE.MOVE, quality: "蓝", price: 115,
+      moveType: "攻击",
+      applyStatus: "麻穴", statusChance: 0.3,
+      unlock: { faction: "锦官城", rep: 15, member: false, note: "锦官城声誉 ≥ 15（差役把式）" },
+      desc: "都事府差役巡街缉凶的棍法，棍走雁行斜插——不取要害，专打持刀的手腕与膝盖，拿人为主、伤人为辅。班头侯敢教这门时说：「打躺下容易，捆回去才算完。」",
+    },
+    {
+      id: "kf_guan_fuhu", name: "六扇门缚虎手", type: SKILL_TYPE.MOVE, quality: "紫", price: 250,
+      moveType: "攻击",
+      ignoreDefenseRatio: 0.2, applyStatus: "麻穴", statusChance: 0.3,
+      unlock: { faction: "锦官城", rep: 40, member: false, note: "锦官城声誉 ≥ 40（门墙之交）" },
+      desc: "官衙缉拿凶犯的擒拿散手，讲究一手锁腕一手压肩，三招之内叫对方兵刃脱手、跪地就缚。练到深处连成名凶徒也挣不脱，故名缚虎。",
+    },
+    {
+      id: "kf_guan_qingyuan", name: "青鸢回风", type: SKILL_TYPE.MOVE, quality: "橙", price: 450,
+      moveType: "攻击",
+      highHpBonus: 0.15, applyMark: { name: "内伤", stacks: 2, max: 5 },
+      unlock: { faction: "锦官城", rep: 80, member: true, guestRep: 100, note: "需投效都事府且声誉 ≥ 80（外客须声誉 ≥ 100 一代尊宿方可求教）" },
+      desc: "柳青鸢压箱底的剑式，青鸢点水、回风折柳——出手时不显山露水，收剑时内伤已埋进对方筋骨。她只授给府里当差且信得过的人。",
+    },
   ],
 
   // ── 令狐冲墓·独孤九剑：非售卖，仅通过贡措海令狐冲墓参悟获得 ──
@@ -445,6 +466,61 @@ export const SKILL_CATALOG = {
       forceCrit: { multiplier: 1.65 }, ignoreDefenseRatio: 0.45, applyStatus: "剧毒", statusChance: 0.4,
       unlock: { faction: "唐门", rep: 100, member: true, quest: ["tangmen_5_jiaguichujian"], note: "需正式拜入唐门、完成「唐5·家法断机」且唐门声誉 ≥ 100" },
       desc: "唐老太压箱底的镇派绝学。寻常一根三寸银绣针，在七十岁老手捻动下竟如穿花织锦，针尾牵着肉眼难辨的冰蚕细丝，一去一回皆有后手——外人只道她是在纳鞋底，等看见针影，胸口已缝好了三道血线。",
+    },
+  ],
+
+  // ── 喇嘛庙：不收俗家弟子，护法禅院按喇嘛庙声誉与主线进度传授（合稿「喇嘛庙·五」）──
+  // armorBreak 落为 ignoreDefenseRatio；合稿里引擎不消费的字段（bonusVsEvil/perTurnHpRestore/damageReduction/reflectDamageRatio/coldResist）未落；
+  // 不动明王禅合稿写 ≥140，引擎声誉封顶 100，取 100；「≥80 且寺4完美心结」的替代路径走任务另授。
+  喇嘛庙: [
+    {
+      id: "kf_lama_zhuantong", name: "转经调息", type: SKILL_TYPE.MOVE, quality: "绿", price: 60,
+      moveType: "状态",
+      energyRestore: 6, hpRestore: 0.06,
+      unlock: { faction: "喇嘛庙", rep: 0, member: false, note: "无门槛（喇嘛庙声誉 ≥ 0 即可在护法禅院请教）" },
+      desc: "顺着大殿外一排铜经筒走一圈，左手拨筒、右手垂膝，每转三下换一口深气。洛桑说这门功夫最妙的地方在于「腿脚不停，喘气却先平了」，走一整天雪坡也不犯头晕。",
+    },
+    {
+      id: "kf_lama_jingangzhang", name: "大雪金刚掌", type: SKILL_TYPE.MOVE, quality: "绿", price: 75,
+      moveType: "攻击",
+      ignoreDefenseRatio: 0.2,
+      unlock: { faction: "喇嘛庙", rep: 15, member: false, note: "喇嘛庙声誉 ≥ 15（颇具善缘）" },
+      desc: "雪域古刹流传最广的护院掌法，出手不求花哨，专讲究像屋檐积雪突然滑落那般沉实一砸。丹巴拿它拍松柴火，根敦拿它震散病人淤血，打在恶徒胸口则是闷雷一声。",
+    },
+    {
+      id: "kf_lama_zhongming", name: "听钟·无畏", type: SKILL_TYPE.MOVE, quality: "蓝", price: 160,
+      moveType: "防御",
+      onCounterSuccessEnergyGain: 4, onCounterSuccessDamageRatio: 0.35, immuneControl: true,
+      unlock: { faction: "喇嘛庙", rep: 15, member: false, quest: ["lamamiao_2_canjuanjiuhui"], note: "喇嘛庙声誉 ≥ 15，且完成主线「寺2·残卷与旧灰」" },
+      desc: "与雪山「听雪」、青城「听桥」隐隐相通的一路守势。白塔古钟三十年未响，罗布桑却仍日日对着空钟练耳力——任你刀剑风声乱成一团，心中只认那一记嗡鸣，稳住下盘便顺势震回。",
+    },
+    {
+      id: "kf_lama_xunshanbu", name: "雪岭苦行步", type: SKILL_TYPE.QINGGONG, quality: "蓝", price: 130,
+      moveType: "状态",
+      passiveBonus: { speedBonus: 1 },
+      unlock: { faction: "喇嘛庙", rep: 40, member: false, note: "喇嘛庙声誉 ≥ 40（门墙之交）" },
+      desc: "行脚僧常年在齐膝大雪里化缘磨出来的步法。不靠腾挪轻飘，胜在脚底发力稳如岩羊，深雪冰面如履平地，疾行百里而不散一口丹田热气。",
+    },
+    {
+      id: "kf_lama_suyoudeng", name: "酥油长明诀", type: SKILL_TYPE.NEIGONG, quality: "蓝", price: 150,
+      moveType: "防御",
+      passiveBonus: { maxHp: 22 },
+      unlock: { faction: "喇嘛庙", rep: 40, member: false, note: "喇嘛庙声誉 ≥ 40（门墙之交）" },
+      desc: "达摩药堂一脉相传的养元内功，运息如殿前酥油灯芯，火苗不大、却熬得住漫长寒夜。根敦常拿它替自己和重病之人吊命，修成后气血浑厚，最耐持久苦战与寒毒侵蚀。",
+    },
+    {
+      id: "kf_lama_fumo", name: "降魔杵法", type: SKILL_TYPE.MOVE, quality: "紫", price: 280,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.55 },
+      unlock: { faction: "喇嘛庙", rep: 80, member: false, quest: ["lamamiao_3_xuenihongzhua"], note: "喇嘛庙声誉 ≥ 80（股肱心腹），且完成主线「寺3·雪泥鸿爪」" },
+      desc: "白塔守塔僧团秘传的刚猛杀招，原本专配重杵使出，徒手运劲亦可化掌为杵、自上而下雷霆镇压。罗布桑说：「平日低眉是慈悲，可恶鬼上了山门，总得有人举起这根铁疙瘩。」",
+    },
+    {
+      id: "kf_lama_budongxin", name: "不动明王禅", type: SKILL_TYPE.NEIGONG, quality: "橙", price: 480,
+      moveType: "防御",
+      passiveBonus: { maxHp: 45 },
+      unlock: { faction: "喇嘛庙", rep: 100, member: false, note: "喇嘛庙声誉 ≥ 140（一代尊宿，引擎封顶取 100）；或声誉 ≥ 80 且触发「寺4·地宫问心」完美心结解开" },
+      desc: "喇嘛庙三百年镇寺绝学，源自前任经师强巴留于白塔地宫的密传禅功。修至深处，任敌劲如雪崩压顶，周身气墙巍然如金刚石雕，非但不受惑乱控制，反将沛然佛力倒震敌手心脉。",
     },
   ],
 
@@ -776,7 +852,7 @@ export const SKILL_CATALOG = {
 
   // ── 三星派：古蜀剑派，不设铺面不收束脩，武学只从面具试炼来 ──
   // 三星派七门（合稿·三星派第五节）。旧四门保留原 id 与效果，补上价钱和门槛。
-  // 声誉上限 100：金乌破妄剑外客门槛由合稿 140 收到 100；正式拜入接线前 member 条目只能走 guestRep。
+  // 声誉上限 100：金乌破妄剑外客门槛由合稿 140 收到 100；member 条目本门弟子走 rep，外客走 guestRep。
   三星: [
     {
       id: "kf_sanxing_tingfeng", name: "听风铜剑", type: SKILL_TYPE.MOVE, quality: "绿", price: 85,
@@ -820,7 +896,7 @@ export const SKILL_CATALOG = {
       id: "kf_sanxing_jinwupowang", name: "金乌破妄剑", type: SKILL_TYPE.MOVE, quality: "橙", price: 520,
       moveType: "攻击",
       forceCrit: { multiplier: 1.8 }, ignoreDefenseRatio: 0.45,
-      unlock: { faction: "三星派", rep: 80, member: true, guestRep: 100, quest: ["sanxingpai_3_tongyinxuanji"], note: "通过「星3·失窃的朱砂铜印」，且正式拜入三星派、声誉 ≥ 80（外客须声誉满 100）" },
+      unlock: { faction: "三星派", rep: 80, member: true, guestRep: 100, quest: ["sanxingpai_4_sanshinianjiushi"], note: "通过「星4·三十年前的旧客」，且正式拜入三星派、声誉 ≥ 80（外客须声誉满 100）" },
       desc: "纵目者枯坐青铜神树之巅三十年所悟的镇派绝剑。一剑挥落如金乌破开鸭子河千重阴雾，专斩世间一切护体假势与虚妄心障——剑光过后，真假自明，强弱立判。",
     },
   ],

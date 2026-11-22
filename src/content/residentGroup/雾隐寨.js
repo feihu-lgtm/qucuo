@@ -16,6 +16,7 @@ export default { residentGroup: {
     },
     {
       name: "麻九娘", id: "resident_majiuniang", levelCap: 4,
+      goneFlags: ["quest_wx5_crown", "quest_wx5_crown_full"],
       brief: "五仙教大长老兼副教主（赤蜈派首领），四十八岁，高瘦微驼，左颊一道毒蝎蛰出的紫黑旧斑",
       personality: "阴鸷多疑、野心勃勃，极重资历权势；表面尊称龙汐月为「教主」，实则字字带刺、步步逼宫",
       carry: [

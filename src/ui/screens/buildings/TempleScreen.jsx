@@ -1,15 +1,19 @@
 import React from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
+import { clinicCare, clinicDoneToday, clinicOf, clinicWeekFull } from "../../../features/buildings/factionClinic.js";
 
 const SEVEN_DIMS = ["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"];
 
 // 大殿：花 karma 拜佛，随机七维属性 +1（上限10）
-export default function TempleScreen({ building, char, dao, zoneTheme, onClose, inline, onPray }) {
+export default function TempleScreen({ building, char, dao, varTree, flags, time, zoneTheme, onClose, inline, onPray, onClinic }) {
   const karma = dao?.karma ?? 0;
   const karmaPerPray = building.karmaPerPray || 10;
   const special = char.special || {};
 
   const available = SEVEN_DIMS.filter(d => (special[d] ?? 0) < 10);
+  const offering = clinicOf(building.id);
+  const offeringRefused = offering && clinicCare(varTree, building.id) === "refuse";
+  const offeringDone = offering && (clinicDoneToday(building.id, { flags, time }) || clinicWeekFull(building.id, { flags, time }));
 
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
@@ -41,6 +45,15 @@ export default function TempleScreen({ building, char, dao, zoneTheme, onClose, 
         }
         {karma < karmaPerPray && available.length > 0 && (
           <div style={{ color: "var(--temple-hint)", fontSize: 10, marginTop: 8 }}>功德不足，多做善事积功德。</div>
+        )}
+        {offering && (
+          <div style={{ marginTop: 14 }}>
+            {offeringRefused
+              ? <div style={{ color: "var(--temple-hint)", fontSize: 11 }}>{offering.refuse}</div>
+              : <Btn label={offeringDone ? offering.done : offering.label}
+                disabled={offeringDone || (char.money ?? 0) < offering.cost}
+                zoneTheme={zoneTheme} onClick={onClinic} />}
+          </div>
         )}
       </div>
     </Overlay>
