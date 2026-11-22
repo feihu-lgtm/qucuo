@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getInnerRoom, isInnerExitUnlocked, visibleInnerExits } from "./innerMap.js";
+import { tryInnerMove } from "./innerMove.js";
 
 const ADDED = [
   ["黑风寨", "狼曲暗道·旧契藏窟", "寨后岩洞"],
@@ -64,5 +65,15 @@ describe("合稿补建的内层房间", () => {
     expect(Object.values(visibleInnerExits("锦官城", "都事府", {}))).not.toContain("府衙花厅·青鸢书房");
     expect(Object.values(visibleInnerExits("锦官城", "都事府", { varTree: rep("锦官城", 15) }))).toContain("府衙花厅·青鸢书房");
     expect(Object.values(visibleInnerExits("锦官城", "抄经堂", {}))).toContain("玄清道院");
+  });
+
+  it("走到都事府时，到达描述的四周出口按声誉列出青鸢书房", () => {
+    const move = (varTree) => tryInnerMove({
+      movingDir: "e", room: { name: "锦官城", npcs: [] }, innerRoomName: "天下商行",
+      flags: [], varTree, questProgress: {}, inv: [], char: {},
+    });
+    const text = (r) => r.arrivalLines.map((l) => l.text).join("\n");
+    expect(text(move({}))).not.toContain("府衙花厅·青鸢书房");
+    expect(text(move(rep("锦官城", 15)))).toContain("府衙花厅·青鸢书房");
   });
 });

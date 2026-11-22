@@ -58,7 +58,7 @@ export function tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, inne
         summary: `内层移动到 ${room.name}·${innerDest}`,
         innerDest,
         fromRoom: innerRoomName,
-        arrivalLines: describeInnerArrival(room.name, innerRoomName, innerDest, movingDir, { flags }),
+        arrivalLines: describeInnerArrival(room.name, innerRoomName, innerDest, movingDir, { flags, questProgress, inv, char, varTree }),
         newFaces: newFaces.map(n => n.name),
         arrivedNames: arrivedNpcs.map(n => n.name),
       };
