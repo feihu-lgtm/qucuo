@@ -30,6 +30,7 @@ export const HOOK_ENTRIES = [
     },
   },
   { id: "gambleTalk", hooks: { useBuildingHandlers: ["handleGambleSettle"], useCraftingAI: ["handleGambleTalk"] } },
+  { id: "festival", hooks: { useBuildingHandlers: ["handleFestivalEnter", "handleFestivalBet", "handleFestivalInvite", "handleFestivalNight", "handleFestivalWubi", "handleFestivalMidnight"] } },
   { id: "typedAction", hooks: { useBuildingHandlers: ["handleListenRumor"] } },
   {
     id: "rightPanelSkills",

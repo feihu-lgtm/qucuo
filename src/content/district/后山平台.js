@@ -9,11 +9,13 @@ export default { district: {
       },
       跑马场: {
         x: 0, y: -1,
+        buildingId: "festival_paoma",
         desc: "每年在此举办跑马会，比武/射箭/集市均在此。",
         exits: { s: "平台入口", e: "集市外围" },
       },
       集市外围: {
         x: 1, y: -1,
+        buildingId: "market_paoma",
         desc: "跑马大会集市摊位区，锦官商号/土特产/小礼物等摊位林立。",
         exits: { w: "跑马场" },
       },

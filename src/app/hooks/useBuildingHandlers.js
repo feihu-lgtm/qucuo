@@ -35,8 +35,18 @@ import { auctionWin } from "../../features/auction/logic.js";
 import { buyFactionShopItem, sellFactionShopItem } from "../../features/buildings/factionShop.js";
 import { doClinicService } from "../../features/buildings/factionClinic.js";
 import { doChaojing } from "../../features/sect/chaojing.js";
+import {
+  enterContest as festivalEnterContest,
+  placeBet as festivalPlaceBet,
+  inviteCompanion as festivalInvite,
+  nightTogether as festivalNight,
+  resolveMidnightYield,
+} from "../../features/festival/logic.js";
+import { FESTIVAL_CONTESTS, MIDNIGHT_FLAG, contestFlag } from "../../domain/data/festival/festivalData.js";
+import { isContestOpen } from "../../domain/rules/festival/rules.js";
+import { buildQuestFoe } from "../../features/quest/combatChoice.js";
 
-export function useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo }) {
+export function useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo, setPendingQuestBranch, setDuelingNpc }) {
   const handleBuyTangmenItem = useCallback((name, shopKey = "唐门暗器") => applyResult(featureCtxRef.current, () => {
     const result = buyFactionShopItem(gameStore.getState(), shopKey, name);
     if (result.changes) captureUndo();
@@ -229,7 +239,80 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     applyResult(featureCtxRef.current, auctionWin(gameStore.getState(), finalPrice));
   }, { feature: "building.auctionWin" }), [captureUndo]);
 
+  const handleFestivalEnter = useCallback((contestId) => applyResult(featureCtxRef.current, () => {
+    const result = festivalEnterContest(gameStore.getState(), contestId);
+    if (result.changes) captureUndo();
+    applyResult(featureCtxRef.current, result);
+  }, { feature: "festival.enter" }), [captureUndo]);
+
+  const handleFestivalBet = useCallback((contestId, bettorName, bet) => applyResult(featureCtxRef.current, () => {
+    const result = festivalPlaceBet(gameStore.getState(), contestId, bettorName, bet);
+    if (result.changes) captureUndo();
+    applyResult(featureCtxRef.current, result);
+  }, { feature: "festival.bet" }), [captureUndo]);
+
+  const handleFestivalInvite = useCallback((name) => applyResult(featureCtxRef.current, () => {
+    const result = festivalInvite(gameStore.getState(), name);
+    if (result.changes) captureUndo();
+    applyResult(featureCtxRef.current, result);
+  }, { feature: "festival.invite" }), [captureUndo]);
+
+  const handleFestivalNight = useCallback((name) => applyResult(featureCtxRef.current, () => {
+    const result = festivalNight(gameStore.getState(), name);
+    if (result.changes) captureUndo();
+    applyResult(featureCtxRef.current, result);
+  }, { feature: "festival.night" }), [captureUndo]);
+
+  // 比武擂台：走任务 pendingQuestBranch + 切磋链路，打赢 settleNpcDuel 自动发奖。
+  const handleFestivalWubi = useCallback(() => applyResult(featureCtxRef.current, () => {
+    const state = gameStore.getState();
+    const contest = FESTIVAL_CONTESTS.wubi;
+    const day = Math.floor((state.time || 0) / 24);
+    const flag = contestFlag("wubi", "enter", day);
+    if (!isContestOpen(contest, (state.time || 0) % 24)) {
+      applyResult(featureCtxRef.current, { logs: [{ t: "err", text: "  比武未开场，傍黑（十七至二十时）再来。" }] });
+      return;
+    }
+    if ((state.flags || []).includes(flag)) {
+      applyResult(featureCtxRef.current, { logs: [{ t: "err", text: "  今日已上过擂，明日再来。" }] });
+      return;
+    }
+    captureUndo();
+    applyResult(featureCtxRef.current, {
+      changes: { flags: [...(state.flags || []), flag] },
+      logs: [{ t: "cmd", text: "> ❢ 跑马大会·擂台夺彩：上擂台" }, { t: "sys", text: "  【比武】你翻身上了擂台，骑技教头抱拳候着。" }],
+    });
+    setPendingQuestBranch({ questId: "paoma_wubi", flag: contest.questFlag, mode: "combat", title: "跑马大会·擂台夺彩", aftermath: contest.aftermath });
+    setDuelingNpc(buildQuestFoe({ flag: contest.questFlag, combatNpc: contest.combatNpc }));
+  }, { feature: "festival.wubi" }), [captureUndo, setPendingQuestBranch, setDuelingNpc]);
+
+  // 子夜之变：避让直接结算 yield 分支；出手走战斗分支（旗子先落，输赢都只来一回）。
+  const handleFestivalMidnight = useCallback((event, choice) => applyResult(featureCtxRef.current, () => {
+    const state = gameStore.getState();
+    if ((state.flags || []).includes(MIDNIGHT_FLAG) || state.questProgress?.paoma_ziye?.status === "completed") {
+      applyResult(featureCtxRef.current, { logs: [{ t: "err", text: "  变故已经了过。" }] });
+      return;
+    }
+    captureUndo();
+    if (choice.kind === "yield") {
+      applyResult(featureCtxRef.current, resolveMidnightYield(state));
+      return;
+    }
+    applyResult(featureCtxRef.current, {
+      changes: { flags: [...(state.flags || []), MIDNIGHT_FLAG] },
+      logs: [{ t: "cmd", text: `> ❢ 跑马大会·${event.title}：${choice.label}` }],
+    });
+    setPendingQuestBranch({ questId: "paoma_ziye", flag: choice.flag, mode: "combat", title: `跑马大会·${event.title}`, aftermath: choice.aftermath });
+    setDuelingNpc(buildQuestFoe({ flag: choice.flag, combatNpc: choice.combatNpc }));
+  }, { feature: "festival.midnight" }), [captureUndo, setPendingQuestBranch, setDuelingNpc]);
+
   return {
+    handleFestivalEnter,
+    handleFestivalBet,
+    handleFestivalInvite,
+    handleFestivalNight,
+    handleFestivalWubi,
+    handleFestivalMidnight,
     handleBuyTangmenItem,
     handleSellFactionItem,
     handleBuildingInn,

@@ -299,6 +299,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   const buildingHandlers = commandScheduler.wrapHandlers("useBuildingHandlers", useBuildingHandlers({
     activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo,
+    setPendingQuestBranch, setDuelingNpc,
   }));
 
   const craftingAI = commandScheduler.wrapHandlers("useCraftingAI", useCraftingAI({
