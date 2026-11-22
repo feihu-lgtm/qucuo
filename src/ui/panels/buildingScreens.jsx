@@ -84,13 +84,19 @@ function escortScreen(c) {
     );
   }
   const shopData = rollShopStock(c.building.shopKey, c.time) || buildShopInventory(c.building.shopKey);
+  // 镖局都有 shopKey（卖防身器），护镖任务板同样要展示——商店屏下方叠镖单。
   return shopData ? (
-    <TradingScreen inline queueCount={c.queueCount} shopName={shopData.shopName} shopItems={shopData.items}
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, overflowY: "auto", maxHeight: "100%" }}>
+      <TradingScreen inline queueCount={c.queueCount} shopName={shopData.shopName} shopItems={shopData.items}
       playerInv={c.inv} playerMoney={c.char.money||0} playerWit={c.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShopCoef(c.varTree, c.building.district ?? c.room?.name)} zoneTheme={c.zoneTheme} onInspect={c.inspectItem}
       onClose={c.closeBuilding}
       onBuy={(item)=>c.runCommand("shopBuy",()=>{if((c.char.money||0)<item.buyPrice)return;c.captureUndo();c.setChar(ch=>({...ch,money:ch.money-item.buyPrice}));c.setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]);c.addLog([{t:"item",text:`  购得「${item.name}」，花费${item.buyPrice}两。`}]); c.jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB });})}
       onSell={(item)=>c.runCommand("shopSell",()=>{if(item.equipped)return;c.captureUndo();c.setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id));c.setChar(ch=>({...ch,money:(ch.money||0)+item.sellPrice}));c.addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); c.jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB });})}
     />
+      <EscortScreen building={c.building} char={c.char} flags={c.flags} questProgress={c.questProgress}
+        currentRoom={c.room.name} zoneTheme={c.zoneTheme} inline onClose={c.closeBuilding}
+        time={c.time} onAcceptEscort={c.handleAcceptEscort} />
+    </div>
   ) : null;
 }
 

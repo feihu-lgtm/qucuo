@@ -48,6 +48,7 @@ export function talkToNpc(state, npc, { now = Date.now() } = {}) {
     const doneFlag = activeEscort.daily
       ? `${activeEscort.daily}${Math.floor((state.time || 0) / 24)}`
       : `quest_done_${activeEscort.id}`;
+    const recordTalk = result.changes.varTree;
     result.changes = {
       ...result.changes,
       questProgress: (prev) => ({ ...prev, [activeEscort.id]: { active: false } }),
@@ -56,7 +57,7 @@ export function talkToNpc(state, npc, { now = Date.now() } = {}) {
       pot: (prev) => prev + 10,
       varTree: (prev) => {
         // 保留上面 recordNpcAttempt 的搭话记录，再叠势力声誉（走死对头联动）。
-        let next = result.changes.varTree(prev);
+        let next = typeof recordTalk === "function" ? recordTalk(prev) : prev;
         if (activeEscort.factionRep) next = grantFactionRep(next, activeEscort.factionRep).varTree;
         return next;
       },
