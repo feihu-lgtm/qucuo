@@ -13,6 +13,7 @@ import { rollBattleLoot, atkFromWaigong } from "../../../domain/rules/npc/npcGen
 import { mergeMoveWithEquip, tickCostPenalty } from "../../../domain/rules/combat/teamBattleEngine.js";
 import { resolveCombatBuff } from "../../../utils/buffSystem.js";
 import { effectiveMaxHp } from "../../../domain/data/kungfu/qucuoKungfu.js";
+import { listBattleItems, consumablePseudoMove } from "./battleItems.js";
 import { addDodgeStealNote, excludeDodgeStolenItems, useDuelDodgeSteal } from "../useDuelDodgeSteal.js";
 
 // 把装备特效叠进本回合招式。原则：招式自带的标志位优先（玩家主动选的招 >
@@ -102,25 +103,7 @@ export function useDuelBattle({ npc, playerChar, pendingCombatBuff, playerInv, p
   const [npcMovesetLocal, setNpcMovesetLocal] = useState(() => (npc.moveset || []).map(m => ({ ...m })));
   const moveset = playerMovesetLocal;
 
-  // 战斗内可用的消耗品：只列即时救命类（A档）——回血/回气/解异常/假死保命。
-  // 临时六维、战前餐这类作用于时间线的 buff（B档）在战斗外吃更合理，战斗内不列出，
-  // 免得玩家在这里嗑一颗只在"下一场"才生效的战前餐、白白浪费一个回合。
-  // usedItems 里已经嗑过的份数要从可用数量里扣掉（同名药可能背包有多件）。
-  const isBattleUsableConsumable = (c) =>
-    !!c && (c.hpRestore || c.energyRestore || c.dispel || c.dispelAll || c.rebirthOnce);
-  const battleItems = (() => {
-    const counts = {};
-    for (const it of (playerInv || [])) {
-      if (it && typeof it === "object" && isBattleUsableConsumable(it.consumable)) {
-        counts[it.name] = counts[it.name] || { item: it, total: 0 };
-        counts[it.name].total += 1;
-      }
-    }
-    for (const name of usedItems) {
-      if (counts[name]) counts[name].total -= 1;
-    }
-    return Object.values(counts).filter(x => x.total > 0);
-  })();
+  const battleItems = listBattleItems(playerInv, usedItems);
 
   const [error, setError] = useState(null);
 
@@ -352,21 +335,7 @@ export function useDuelBattle({ npc, playerChar, pendingCombatBuff, playerInv, p
   //   hpRestore（比例回血）/ energyRestore（回气）/ 解异常（dispelSelf）/ 假死保命（armRebirth）。
   const handleUseItem = (invItem) => {
     if (phase !== "select") return;
-    const c = invItem.consumable || {};
-    const pseudoMove = {
-      id: `__consume_${invItem.name}`,
-      name: `服「${invItem.name}」`,
-      type: MOVE_TYPE.STATUS, fromItem: true,
-      energyCost: 0,
-      baseDamageMultiplier: 0,
-    };
-    if (c.hpRestore) pseudoMove.hpRestore = c.hpRestore;
-    if (c.energyRestore) pseudoMove.energyRestore = c.energyRestore;
-    // 解异常：药品用 dispel:true 或 dispelAll:true 标记，统一走招式的 dispelSelf 通道，
-    // 清掉自身控制/掉血类状态（不解印记，跟运功自解同语义）。
-    if (c.dispel || c.dispelAll) pseudoMove.dispelSelf = true;
-    // 假死保命：不是即时数值，标一个开关，结算里 _armRebirth 备好本场续命一次。
-    const armRebirth = !!c.rebirthOnce;
+    const { pseudoMove, armRebirth } = consumablePseudoMove(invItem);
     handleSelectMove(pseudoMove, { name: invItem.name, _armRebirth: armRebirth });
   };
 
