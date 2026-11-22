@@ -171,7 +171,7 @@ export const BUILDING_SCREENS = {
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onListenRumor={c.handleListenRumor} />
   ),
   [BUILDING_TYPE.SECT_ENTRY]: (c) => (
-    <SectEntryScreen building={c.building} char={c.char} flags={c.flags} varTree={c.varTree} inline
+    <SectEntryScreen building={c.building} char={c.char} flags={c.flags} varTree={c.varTree} questProgress={c.questProgress} inline
       narratorAffection={c.sectMasterAffection}
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onJoinSect={c.handleJoinSect} onLeaveSect={c.handleLeaveSect} />
   ),

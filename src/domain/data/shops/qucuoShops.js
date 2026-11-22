@@ -61,6 +61,31 @@ export const QUCUO_SHOPS = {
       { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 100 },
     ],
   },
+  // 锦官兵备（锦官城·都事府兵备库）。官仓货池：白货随便买，15 起摆差役
+  // 制式、40 起发府里制式装备（标兵甲只发特派巡查）、80 摆御赐銮铃（只此一件）。
+  锦官兵备: {
+    shopName: "都事府兵备库",
+    items: [
+      { name: "锦官城官袍", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "乡勇木棓", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "乡勇布甲", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "锦官巡街棍", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "镖师护腕", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "锦官文思膏", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "锦官城红烧牦牛肉", category: ITEM_CATEGORY.MISC, quality: "蓝" },
+      { name: "巡捕营皂隶衣", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "巡捕营制式腰刀", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "锦官烧刀子", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "锦官精铁剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "紫铜护心镜", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "锦官制式软甲", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 40 },
+      { name: "锦官坊标兵剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
+      { name: "锦官验讫牙牌", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 40 },
+      { name: "锦官续命丹", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 40 },
+      { name: "锦官坊标兵甲", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 40, member: true },
+      { name: "御赐銮铃", category: ITEM_CATEGORY.ACCESSORY, quality: "红", minRep: 80, member: true, limitOnce: true },
+    ],
+  },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。

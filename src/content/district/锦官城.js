@@ -163,8 +163,9 @@ export default { district: {
       },
       都事府: {
         x: 2, y: -1,
-        desc: "都事柳青鸢的府邸，锦官城任务线核心场景，老兵退伍汉作为随从常驻此处伺候。",
+        desc: "都事柳青鸢的府邸，锦官城任务线核心场景，老兵退伍汉作为随从常驻此处伺候。前院值房收投效当差的帖子，公事公办。",
         exits: { w: "天下商行", s: "醉仙楼" },
+        buildingId: "sect_entry_guan",
         residentNpcName: "柳青鸢",
       },
       唐门暗巷: {
@@ -223,8 +224,15 @@ export default { district: {
       马行: {
         x: 3, y: 0,
         desc: "备着脚力和驾车人，可直接抵达已探索的其他据点。",
-        exits: { w: "锦官大车店" },
+        exits: { w: "锦官大车店", e: "城东营房" },
         buildingId: "transport_jingguan",
+      },
+      城东营房: {
+        x: 4, y: 0,
+        desc: "城东一溜青砖营房，都事府的差役在此歇脚操练，檐下挂着梆子与水火棍。后墙库房归班头侯敢看管——制式兵备与罚没物件都在册子上。",
+        exits: { w: "马行" },
+        buildingId: "sectshop_guan",
+        residentNpcName: "侯敢",
       },
     },
   }
