@@ -50,6 +50,15 @@ describe("三星派", () => {
     expect(finale.completionFlag).toBe("sanxing_trial_passed");
   });
 
+  it("lets the pit trial and the sun-bird weld play out where 姜泠 is not standing", () => {
+    const trial = quests.find((quest) => quest.id === "sanxingpai_2_sanmianjianzhen");
+    const opened = { flags: ["sanxing_pit_pass"], questProgress: { sanxingpai_1_xujiejiuyue: { status: "completed" } } };
+    expect(getLocalQuestStage(trial, state(15, { ...opened, innerRoomName: "祭祀坑·碎铜坪" }))?.id).toBe("first");
+    const sunbird = quests.find((quest) => quest.id === "sanxingpai_side_3_shenniaocanye");
+    const atWeld = { questProgress: { [sunbird.id]: { status: "active", currentStageIndex: 2 } }, innerRoomName: "铸铜地窖·赤炉窟" };
+    expect(getLocalQuestStage(sunbird, state(30, atWeld))?.id).toBe("weld");
+  });
+
   it("every shop, carry and quest item resolves in the catalog", () => {
     const shopItems = names(factionShopOffer("三星秘藏", rep(100), "vault"));
     const carry = ["樊枯", "姜泠"].flatMap((who) => RESIDENT_NPCS.广汉.find((npc) => npc.name === who).carry.map((entry) => entry.name));

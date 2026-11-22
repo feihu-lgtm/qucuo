@@ -70,6 +70,7 @@ export default { quest: {
     stages: [
       {
         id: "first",
+        giver: null,
         requireLocation: at("祭祀坑·碎铜坪"),
         playerHint: "在碎铜坪接青铜面人·甲的重剑。",
         description: "青铜面人·甲把宽背铜剑横在胸前，脚下的夯土被踩出两道深坑。他不出招，只等你来。",
@@ -80,6 +81,7 @@ export default { quest: {
       },
       {
         id: "second",
+        giver: null,
         requireLocation: at("祭祀坑·碎铜坪"),
         playerHint: "接青铜面人·乙的快剑：以快打快，或站定不动听他出剑。",
         description: "乙的剑快得只剩一道绿光，坑壁的铜铃被剑风带得乱响。",
@@ -92,6 +94,7 @@ export default { quest: {
       },
       {
         id: "third",
+        giver: null,
         requireLocation: at("祭祀坑·碎铜坪"),
         playerHint: "最后一面：青铜面人·丙不拔剑，只问你一句话。",
         description: "丙没有拔剑。他指着满地断剑和碎面具，用古蜀话问了一句，姜泠在旁边翻译：「你下坑来，是要带走什么？」",
@@ -305,6 +308,7 @@ export default { quest: {
       },
       {
         id: "weld",
+        giver: null,
         requireLocation: at("铸铜地窖·赤炉窟"),
         playerHint: "把三片残片带给樊枯焊合，再决定交还古墟，还是私自拿去变卖。",
         description: "樊枯用最细的金丝把三片焊在一起，十二道光芒转成一圈，四只神鸟首尾相衔。他把神鸟放在你掌心：「交给古墟，暗室为你开；拿去卖，三星派从此不认你。」",
