@@ -57,8 +57,11 @@ export const residentNpcRule = {
           .filter((npc) => RELOCATED_RESIDENTS[npc.name] !== roomName)
           .map((npc) => npc.name)),
     );
+    // 常驻写了 goneFlags（被处决、囚禁等），任一 flag 已立就不再出现，旧缓存里的也清掉
+    const isGoneResident = (npc) => (npc.goneFlags || []).some((flag) => flags.includes(flag));
+    const goneResidentNames = new Set(getResidentNpcs(room.name).filter(isGoneResident).map((npc) => npc.name));
     const staleNames = new Set((room.npcs || [])
-      .filter((npc) => !npc.imported && RELOCATED_RESIDENTS[npc.name] === room.name)
+      .filter((npc) => !npc.imported && (RELOCATED_RESIDENTS[npc.name] === room.name || goneResidentNames.has(npc.name)))
       .map((npc) => npc.name));
     const toRoomNpcWithCombat = (poolNpc) => buildRoomNpcWithCombat(poolNpc, {
       existingNpc: existingByName.get(poolNpc.name),
@@ -72,6 +75,7 @@ export const residentNpcRule = {
     };
     const residentNpcs = getResidentNpcs(room.name)
       .filter((npc) => !(npc.companionCandidate && companionJoined(npc.name)))
+      .filter((npc) => !isGoneResident(npc))
       .filter((npc) => currentNpcNames.has(npc.name) || !cachedNpcNames.has(npc.name))
       .map(toRoomNpcWithCombat);
     const activeEscortTargets = ESCORT_QUESTS

@@ -16,6 +16,7 @@ export default { residentGroup: {
     },
     {
       name: "唐伯渊", innerRoom: "吊桥暗渠口", id: "resident_tangboyuan", levelCap: 4,
+      goneFlags: ["quest_tang5_a", "quest_tang5_b"],
       brief: "唐门二房掌事，四十五岁，掌唐堡对外暗器出货",
       personality: "笑脸迎人、圆滑周到，背地里精于算计；看不起外姓工匠，一心想撇开唐老太另立门户",
       carry: [
