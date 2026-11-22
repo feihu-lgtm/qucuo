@@ -5,7 +5,9 @@ import { FACTION_ENTRIES, checkFactionEntry } from "../../domain/rules/character
 import { skillUnlockStatus } from "../../domain/rules/economy/skillUnlock.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { joinSect } from "../sect/logic.js";
+import { FOTANG, donateAlms } from "./emeiFotang.js";
 import { buyFactionShopItem, factionShopOffer } from "./factionShop.js";
+import { healAtHospital } from "./lodging.js";
 
 const SHOP = "峨眉坊";
 const rep = (value, extra = {}) => ({ 世界: { 势力声誉: { 峨眉派: value }, ...extra } });
@@ -72,5 +74,29 @@ describe("峨眉武学按声誉解锁", () => {
     expect(skillUnlockStatus(state(60, ["峨眉派弟子"]), skill("兰花拂穴手")).ok).toBe(true);
     expect(skillUnlockStatus(state(80, [], { 威望: 19 }), skill("佛光普照")).ok).toBe(false);
     expect(skillUnlockStatus(state(80, [], { 威望: 20 }), skill("佛光普照")).ok).toBe(true);
+  });
+});
+
+describe("慈济佛堂", () => {
+  const fotang = (value, extra = {}) => ({ ...at("慈济佛堂", value), time: 50, char: { money: 100, hp: [10, 100] }, ...extra });
+
+  it("alms: once a day, 20 两 for 峨眉 +5 and 威望 +2", () => {
+    const state = fotang(10);
+    const result = donateAlms(state);
+    expect(result.changes.char.money).toBe(80);
+    const tree = result.changes.varTree(state.varTree);
+    expect(tree.世界.势力声誉.峨眉派).toBe(15);
+    expect(tree.世界.威望).toBe(2);
+    const flags = result.changes.flags(["emei_alms_day_1"]);
+    expect(flags).toEqual(["emei_alms_day_2"]);
+    expect(donateAlms({ ...state, flags }).changes).toBeUndefined();
+    expect(donateAlms({ ...state, flags, time: 72 }).changes).toBeTruthy();
+  });
+
+  it("treats free from rep 15 and refuses at -20", () => {
+    const heal = (value) => healAtHospital(fotang(value), { cost: 30, healAmt: 90, buildingName: "慈济佛堂", buildingId: FOTANG.id });
+    expect(heal(15).changes.char.money).toBe(100);
+    expect(heal(14).changes.char.money).toBe(70);
+    expect(heal(-20).changes).toBeUndefined();
   });
 });

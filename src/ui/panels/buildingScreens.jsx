@@ -94,8 +94,8 @@ function escortScreen(c) {
 
 function innScreen(c) {
   return (
-    <InnScreen building={c.building} char={c.char} skills={c.skills} time={c.time} zoneTheme={c.zoneTheme} inline
-      onClose={c.closeBuilding} onRest={c.handleBuildingInn} onHeal={c.handleBuildingHeal} />
+    <InnScreen building={c.building} char={c.char} skills={c.skills} time={c.time} varTree={c.varTree} flags={c.flags} zoneTheme={c.zoneTheme} inline
+      onClose={c.closeBuilding} onRest={c.handleBuildingInn} onHeal={c.handleBuildingHeal} onDonate={c.handleDonateAlms} />
   );
 }
 
