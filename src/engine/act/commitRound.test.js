@@ -162,7 +162,7 @@ describe("MVU 裁决契约", () => {
   });
 });
 
-describe("dealResult / duelReport / 移动契约", () => {
+describe("dealResult / 移动契约", () => {
   it("dealResult + gambleTalkCtx：报价 clamp 到 [0.8,1.5] 写入 gambleNegotiation，ctx 即清", () => {
     // 契约：settleNegotiation 的 finalOffer = min(round(baseOffer*mult), cash)，写 [stoneId][bidderName]。
     const state = baseState();
@@ -182,18 +182,6 @@ describe("dealResult / duelReport / 移动契约", () => {
     const { deps } = makeDeps(state, {}, { dealResult: { priceMult: 2 } });
     commitRound(deps);
     expect(state.gambleNegotiation).toEqual({}); // 无 ctx 不写入
-  });
-
-  it("duelReport.rounds 存在时：日志走 interleaveDuelReport（回合行 + 叙事段），不走普通 output 分支", () => {
-    const state = baseState();
-    const { deps, logs } = makeDeps(state,
-      { output: ["旁白甲", "旁白乙"] },
-      { duelReport: { rounds: [{ round: 1, text: "你一剑刺出" }] } });
-    commitRound(deps);
-    expect(logs[0]).toEqual({ t: "sys", text: "  第1回合 你一剑刺出" });
-    expect(logs.some(l => l.t === "desc" && l.text.includes("旁白"))).toBe(true);
-    // 普通分支会给 output 每行加 "  " 前缀；duel 分支的 desc 是原始拼接文本，不逐行加前缀
-    expect(logs.some(l => l.text === "  旁白甲")).toBe(false);
   });
 
   it("lockedDestName：房间名/出口锁死为地图数据，desc 用 AI 的，npcs/items 用缓存", () => {

@@ -13,7 +13,6 @@ export async function finalizeTurn({ ctx, trace, turn, turnOpts, soft, opts, set
     const result = (ctx.commitRound || commitRound)({
       ...commitDeps,
       softSettle: turnOpts.softSettle || null,
-      duelReport: opts.duelReport || null,
       giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
         ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
       giftAlreadySettled: !!opts.giftInfo?.weight,

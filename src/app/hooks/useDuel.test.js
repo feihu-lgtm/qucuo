@@ -69,7 +69,6 @@ describe("AI duel request consumption", () => {
       [{ ok: true, duelRequest: npc }, makeOptions({ isStale: () => true })],
       [{ ok: true, duelRequest: npc }, makeOptions({ opts: { settle: true } })],
       [{ ok: true, duelRequest: npc }, makeOptions({ opts: { settleKind: "duel_invite" } })],
-      [{ ok: true, duelRequest: npc }, makeOptions({ opts: { duelReport: true } })],
       [{ ok: false, duelRequest: npc }, makeOptions()],
     ];
     for (const [result, options] of ignored) {
