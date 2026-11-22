@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Overlay, Header, Btn } from "./InnScreen.jsx";
+import { Overlay, Header, Btn } from "./common.jsx";
 import { QUALITY_COLOR } from "../../../domain/economy/equipment.js";
 import { FREE_BOOKS, LIBRARY_BOOKS_JINGGUAN } from "../../../domain/buildings/libraryData.js";
 

@@ -13,7 +13,10 @@
 //
 // 弹层可见性读 uiStore，游戏数据与业务回调经 props 下传。切磋界面额外包了一层
 // ErrorBoundary——战斗引擎报错时不该把整局游戏拖崩，能退回房间重来。
-import { lazy, Suspense, useCallback } from "react";
+//
+// 结构：下面 entries 是一张有序条目表，每行 = {show, render}。新增浮层只需
+// 在表尾登记一行；数组顺序即 DOM 顺序（与原条件分支的书写顺序一致）。
+import { Fragment, lazy, Suspense, useCallback } from "react";
 import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
 import { listCharacters } from "../../domain/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
@@ -73,180 +76,175 @@ export default function GlobalOverlays({
     try { localStorage.setItem("qucuo_tutorial_seen", "1"); } catch { /* ignore */ }
   }, []);
 
-  return (
-    <>
-      {showTutorial && <TutorialOverlay onClose={closeTutorial} />}
-
-      {showVersionHistory && (
-        <VersionHistoryPanel onClose={() => closeOverlay(OVERLAY.VERSION_HISTORY)} accentDim={zoneTheme.accentDim} />
-      )}
-
-      {showCardImport && (
-        <Suspense fallback={<div role="status" aria-live="polite">载入中</div>}>
-        <CardImportScreen
-          onClose={() => closeOverlay(OVERLAY.CARD_IMPORT)}
-          apiCfg={apiCfg}
-          playerName={char.name}
+  // 有序浮层条目表：{show, render}，顺序即原条件分支的书写顺序。
+  const entries = [
+    { show: showTutorial, render: () => <TutorialOverlay onClose={closeTutorial} /> },
+    { show: showVersionHistory, render: () => (
+      <VersionHistoryPanel onClose={() => closeOverlay(OVERLAY.VERSION_HISTORY)} accentDim={zoneTheme.accentDim} />
+    )},
+    { show: showCardImport, render: () => (
+      <Suspense fallback={<div role="status" aria-live="polite">载入中</div>}>
+      <CardImportScreen
+        onClose={() => closeOverlay(OVERLAY.CARD_IMPORT)}
+        apiCfg={apiCfg}
+        playerName={char.name}
+        zoneTheme={zoneTheme}
+        onImportNpcs={onImportNpcs}
+        onImportPlayer={onImportPlayer}
+        onImportWorld={onImportWorld}
+        currentDistrict={room.name}
+      />
+      </Suspense>
+    )},
+    { show: showCharacterPage, render: () => (
+      <CharacterPage
+        varTree={varTree}
+        claimedMilestones={claimedMilestones}
+        onClaimMilestone={claimMilestone}
+        onGift={giftToCharacter}
+        initialSelected={characterPageTarget}
+        onClose={() => { closeOverlay(OVERLAY.CHARACTER_PAGE); setCharacterPageTarget(null); }}
+      />
+    )},
+    { show: showQuestLog, render: () => (
+      <QuestLogScreen
+        questProgress={questProgress} flags={flags}
+        zoneTheme={zoneTheme}
+        onClose={() => closeOverlay(OVERLAY.QUEST_LOG)}
+      />
+    )},
+    { show: showLore, render: () => (
+      <LoreScreen
+        varTree={varTree}
+        time={time}
+        turnToStr={getTimeStr}
+        zoneTheme={zoneTheme}
+        onClose={() => closeOverlay(OVERLAY.LORE)}
+      />
+    )},
+    { show: showQijuzhu, render: () => (
+      <QijuzhuScreen
+        varTree={varTree}
+        time={time}
+        narratorStage={narratorStage}
+        zoneTheme={zoneTheme}
+        onClose={() => closeOverlay(OVERLAY.QIJUZHU)}
+      />
+    )},
+    { show: showPortraitManager, render: () => (
+      <PortraitManager
+        portraits={portraits}
+        onChange={setPortraits}
+        knownNames={["旁白", "你", ...listCharacters(varTree).map(c => c.name), ...room.npcs.map(n => n.name)]}
+        onClose={() => closeOverlay(OVERLAY.PORTRAIT_MANAGER)}
+      />
+    )},
+    { show: showTrace, render: () => (
+      <TraceViewer theme={zoneTheme} onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />
+    )},
+    { show: showCodex, render: () => (
+      <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />
+    )},
+    { show: showBugReport, render: () => (
+      <BugReportModal
+        isDayMode={isDayMode}
+        turns={buildBugReportTurns()}
+        pipelineData={getPipelineEntries()}
+        actionTrees={getTraceLog()}
+        debugSources={debugSources}
+        getGameState={() => ({
+          room: room.name, inner: innerRoomName, time,
+          hp: char.hp, money: char.money,
+          flags, questProgress,
+          invNames: inv.map(i => typeof i === "string" ? i : i.name),
+          skillNames: skills.map(s => s.name),
+        })}
+        onClose={() => closeOverlay(OVERLAY.BUG_REPORT)}
+      />
+    )},
+    { show: activeNpcMenu, render: () => (
+      <NpcActionMenu
+        npc={activeNpcMenu}
+        zoneTheme={zoneTheme}
+        inv={inv}
+        onClose={() => setActiveNpcMenu(null)}
+        onLook={handleNpcLook}
+        onTalk={handleNpcTalk}
+        onGift={handleNpcGift}
+        onDuel={handleNpcDuel}
+        onSteal={handleNpcSteal}
+        onLearnSkill={handleNpcLearnSkill}
+        onTrade={handleNpcTrade}
+        onInviteCompanion={handleInviteCompanion}
+        flags={flags} companionUnlocked={isCompanionUnlockedByName(companionState, activeNpcMenu.name)}
+      />
+    )},
+    { show: activeItemMenu, render: () => (
+      <ItemActionMenu
+        item={activeItemMenu.item}
+        mode={activeItemMenu.mode}
+        canConsume={activeItemMenu.canConsume}
+        roomNpcs={(room.npcs || []).filter((npc) => isNpcVisibleInInnerRoom(room.name, innerRoomName, npc))}
+        zoneTheme={zoneTheme}
+        onClose={() => setActiveItemMenu(null)}
+        onInspect={(it) => inspectItem("item", typeof it === "object" ? it.name : it, null, typeof it === "object" ? it : null, { worldLook: true })}
+        onConsume={handleConsumeItem}
+        onGive={(npc, it) => handleNpcGift(npc, it)}
+        onSell={(npc) => handleNpcTrade(npc)}
+        onCollect={handleCollectGround}
+        onEquip={handleToggleEquip}
+      />
+    )},
+    { show: activePersuasion, render: () => {
+      const pkey = `${activePersuasion.questId}|${activePersuasion.flag}`;
+      return (
+      <PersuasionScreen
+        persuade={activePersuasion.persuade}
+        apiCfg={apiCfg}
+        ownedFlags={flags}
+        playerMoney={char.money || 0}
+        playerIdentities={[]}
+        playerSpecial={effectiveSpecialNow}
+        zoneTheme={zoneTheme}
+        savedProgress={persuasionProgress[pkey] || null}
+        onProgress={(prog) => savePersuasionProgress(pkey, prog)}
+        onFinish={(result) => finishPersuasion(activePersuasion, result)}
+      />
+      );
+    }},
+    { show: duelingNpc, render: () => (
+      <ErrorBoundary label="切磋界面" onReset={resetDuel}>
+      {activeCompanion(companionState)?.data ? (
+        // 有队友出战：2v2团战（玩家+队友 vs 当前对手）。
+        // 【改成读通用出战位】此前写死 companionState.snowLeopard.data，
+        // 明日香入队后带的是她、这里却仍取雪豹（雪豹此时 active=false、data 可能还在），
+        // 结果会出现"带着明日香却是雪豹上场"。单槽互斥，activeCompanion 保证只有一个。
+        <TeamDuelScreen
+          enemies={[duelingNpc]}
+          leopardData={activeCompanion(companionState).data}
+          playerChar={{ ...char, special: effectiveSpecialNow }}
+          pendingCombatBuff={char.pendingCombatBuff}
+          playerInv={inv}
+          playerMoveset={char.moveset}
+          playerSkills={skills}
           zoneTheme={zoneTheme}
-          onImportNpcs={onImportNpcs}
-          onImportPlayer={onImportPlayer}
-          onImportWorld={onImportWorld}
-          currentDistrict={room.name}
+          onFinish={duelFinishHandler}
         />
-        </Suspense>
-      )}
-
-      {showCharacterPage && (
-        <CharacterPage
-          varTree={varTree}
-          claimedMilestones={claimedMilestones}
-          onClaimMilestone={claimMilestone}
-          onGift={giftToCharacter}
-          initialSelected={characterPageTarget}
-          onClose={() => { closeOverlay(OVERLAY.CHARACTER_PAGE); setCharacterPageTarget(null); }}
-        />
-      )}
-
-      {showQuestLog && (
-        <QuestLogScreen
-          questProgress={questProgress} flags={flags}
+      ) : (
+        <DuelScreen
+          npc={duelingNpc}
+          playerChar={{ ...char, special: effectiveSpecialNow }}
+          pendingCombatBuff={char.pendingCombatBuff}
+          playerInv={inv}
+          playerMoveset={char.moveset}
+          playerSkills={skills}
           zoneTheme={zoneTheme}
-          onClose={() => closeOverlay(OVERLAY.QUEST_LOG)}
+          onFinish={duelFinishHandler}
         />
       )}
+      </ErrorBoundary>
+    )},
+  ];
 
-      {showLore && (
-        <LoreScreen
-          varTree={varTree}
-          time={time}
-          turnToStr={getTimeStr}
-          zoneTheme={zoneTheme}
-          onClose={() => closeOverlay(OVERLAY.LORE)}
-        />
-      )}
-
-      {showQijuzhu && (
-        <QijuzhuScreen
-          varTree={varTree}
-          time={time}
-          narratorStage={narratorStage}
-          zoneTheme={zoneTheme}
-          onClose={() => closeOverlay(OVERLAY.QIJUZHU)}
-        />
-      )}
-
-      {showPortraitManager && (
-        <PortraitManager
-          portraits={portraits}
-          onChange={setPortraits}
-          knownNames={["旁白", "你", ...listCharacters(varTree).map(c => c.name), ...room.npcs.map(n => n.name)]}
-          onClose={() => closeOverlay(OVERLAY.PORTRAIT_MANAGER)}
-        />
-      )}
-
-      {showTrace && <TraceViewer theme={zoneTheme} onClose={() => closeOverlay(OVERLAY.TRACE)} onReport={() => openOverlay(OVERLAY.BUG_REPORT)} />}
-      {showCodex && <CodexScreen zoneTheme={zoneTheme} isDayMode={isDayMode} inv={inv} skills={skills} onClose={() => closeOverlay(OVERLAY.CODEX)} />}
-      {showBugReport && (
-        <BugReportModal
-          isDayMode={isDayMode}
-          turns={buildBugReportTurns()}
-          pipelineData={getPipelineEntries()}
-          actionTrees={getTraceLog()}
-          debugSources={debugSources}
-          getGameState={() => ({
-            room: room.name, inner: innerRoomName, time,
-            hp: char.hp, money: char.money,
-            flags, questProgress,
-            invNames: inv.map(i => typeof i === "string" ? i : i.name),
-            skillNames: skills.map(s => s.name),
-          })}
-          onClose={() => closeOverlay(OVERLAY.BUG_REPORT)}
-        />
-      )}
-      {activeNpcMenu && (
-        <NpcActionMenu
-          npc={activeNpcMenu}
-          zoneTheme={zoneTheme}
-          inv={inv}
-          onClose={() => setActiveNpcMenu(null)}
-          onLook={handleNpcLook}
-          onTalk={handleNpcTalk}
-          onGift={handleNpcGift}
-          onDuel={handleNpcDuel}
-          onSteal={handleNpcSteal}
-          onLearnSkill={handleNpcLearnSkill}
-          onTrade={handleNpcTrade}
-          onInviteCompanion={handleInviteCompanion}
-          flags={flags} companionUnlocked={isCompanionUnlockedByName(companionState, activeNpcMenu.name)}
-        />
-      )}
-      {activeItemMenu && (
-        <ItemActionMenu
-          item={activeItemMenu.item}
-          mode={activeItemMenu.mode}
-          canConsume={activeItemMenu.canConsume}
-          roomNpcs={(room.npcs || []).filter((npc) => isNpcVisibleInInnerRoom(room.name, innerRoomName, npc))}
-          zoneTheme={zoneTheme}
-          onClose={() => setActiveItemMenu(null)}
-          onInspect={(it) => inspectItem("item", typeof it === "object" ? it.name : it, null, typeof it === "object" ? it : null, { worldLook: true })}
-          onConsume={handleConsumeItem}
-          onGive={(npc, it) => handleNpcGift(npc, it)}
-          onSell={(npc) => handleNpcTrade(npc)}
-          onCollect={handleCollectGround}
-          onEquip={handleToggleEquip}
-        />
-      )}
-      {activePersuasion && (() => {
-        const pkey = `${activePersuasion.questId}|${activePersuasion.flag}`;
-        return (
-        <PersuasionScreen
-          persuade={activePersuasion.persuade}
-          apiCfg={apiCfg}
-          ownedFlags={flags}
-          playerMoney={char.money || 0}
-          playerIdentities={[]}
-          playerSpecial={effectiveSpecialNow}
-          zoneTheme={zoneTheme}
-          savedProgress={persuasionProgress[pkey] || null}
-          onProgress={(prog) => savePersuasionProgress(pkey, prog)}
-          onFinish={(result) => finishPersuasion(activePersuasion, result)}
-        />
-        );
-      })()}
-      {duelingNpc && (() => {
-        return (
-        <ErrorBoundary label="切磋界面" onReset={resetDuel}>
-        {activeCompanion(companionState)?.data ? (
-          // 有队友出战：2v2团战（玩家+队友 vs 当前对手）。
-          // 【改成读通用出战位】此前写死 companionState.snowLeopard.data，
-          // 明日香入队后带的是她、这里却仍取雪豹（雪豹此时 active=false、data 可能还在），
-          // 结果会出现"带着明日香却是雪豹上场"。单槽互斥，activeCompanion 保证只有一个。
-          <TeamDuelScreen
-            enemies={[duelingNpc]}
-            leopardData={activeCompanion(companionState).data}
-            playerChar={{ ...char, special: effectiveSpecialNow }}
-            pendingCombatBuff={char.pendingCombatBuff}
-            playerInv={inv}
-            playerMoveset={char.moveset}
-            playerSkills={skills}
-            zoneTheme={zoneTheme}
-            onFinish={duelFinishHandler}
-          />
-        ) : (
-          <DuelScreen
-            npc={duelingNpc}
-            playerChar={{ ...char, special: effectiveSpecialNow }}
-            pendingCombatBuff={char.pendingCombatBuff}
-            playerInv={inv}
-            playerMoveset={char.moveset}
-            playerSkills={skills}
-            zoneTheme={zoneTheme}
-            onFinish={duelFinishHandler}
-          />
-        )}
-        </ErrorBoundary>
-        );
-      })()}
-    </>
-  );
+  return <>{entries.map((e, i) => e.show && <Fragment key={i}>{e.render()}</Fragment>)}</>;
 }

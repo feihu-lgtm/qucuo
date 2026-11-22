@@ -1,6 +1,6 @@
 import React from "react";
 import { random } from "../../../core/rng.js";
-import { Overlay, Header, Btn } from "./InnScreen.jsx";
+import { Overlay, Header, Btn } from "./common.jsx";
 
 // 茶馆：花少量银两听掌柜说话，注入随机传闻
 const RUMORS = [

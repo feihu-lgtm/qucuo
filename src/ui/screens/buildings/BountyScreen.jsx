@@ -1,5 +1,5 @@
 import React from "react";
-import { Overlay, Header, Btn } from "./InnScreen.jsx";
+import { Overlay, Header, Btn } from "./common.jsx";
 import { BOUNTY_QUESTS } from "../../../domain/quests/bountyQuests.js";
 export { BOUNTY_QUESTS } from "../../../domain/quests/bountyQuests.js";
 

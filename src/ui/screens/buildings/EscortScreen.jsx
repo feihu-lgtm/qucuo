@@ -1,5 +1,5 @@
 import React from "react";
-import { Overlay, Header, Btn } from "./InnScreen.jsx";
+import { Overlay, Header, Btn } from "./common.jsx";
 import { ESCORT_QUESTS } from "../../../domain/quests/escortQuests.js";
 export { ESCORT_QUESTS } from "../../../domain/quests/escortQuests.js";
 

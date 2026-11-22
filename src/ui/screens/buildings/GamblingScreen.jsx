@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { makeItem, ITEM_CATEGORY, rollQuality } from "../../../domain/economy/equipment.js";
-import { Overlay, Header, Btn } from "./InnScreen.jsx";
+import { Overlay, Header, Btn } from "./common.jsx";
 
 // 赌坊：每日一次，押注银两，按气运值决定输赢；或固定押100两抽物品
 export default function GamblingScreen({ building, char, flags, time, zoneTheme, onClose, inline, onGamble }) {

@@ -15,7 +15,7 @@ import React, { useState } from "react";
 import {
   BODY_PUBLIC, BODY_PRIVATE, TIERS, StatRow, SevenDim, Src, TextField,
   Section, Note, Pills, selStyle,
-} from "./ReviewParts.jsx";
+} from "./widgets.jsx";
 import { TIER_NEIGONG, parseJsonLoose, buildStage3 } from "../../../domain/cards/scanPrompts.js";
 import { hpFromNeigong } from "../../../domain/npc/npcGeneration.js";
 import { CarryPicker } from "./ReviewNpc.jsx";
