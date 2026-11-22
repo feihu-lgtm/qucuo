@@ -62,7 +62,10 @@ function httpError(status, msg) {
   if (status === 401 || status === 403) return out("auth", "🔑", `密钥/鉴权有误（HTTP ${status}）`, "到设置里核对 API 密钥是否填对、有没有多余空格、是否过期，以及账号有没有这个模型的权限。", false);
   if (status === 404) return out("endpoint", "🧭", "接口地址或模型名不对（HTTP 404）", "接口找不到这个地址或模型。检查设置里的接口地址是否完整、类型是否选对，模型名是否拼写正确。", false);
   if (status === 408) return out("timeout", "⏱", "接口超时（HTTP 408）", "网络慢或模型太忙。可稍等重试，或在设置里换个更快的模型/中转站。", true);
-  if (status === 429) return out("quota", "💳", "额度/限流（HTTP 429）", "触发限流或余额不足。等一会儿再试，或去服务商充值/提额。", false);
+  if (status === 429) {
+    if (/insufficient|quota|billing|balance|余额|欠费|额度/i.test(msg)) return out("quota", "💳", "余额/额度不足（HTTP 429）", "账户余额或额度用完了，重试也不会好。去服务商充值/提额，或在设置里换个账号。", false);
+    return out("rateLimit", "⏳", "接口限流（HTTP 429）", "请求太密被限流。已按接口要求等待并自动重试过；仍失败就稍等一会儿再试。", true);
+  }
   if (status >= 500) return out("server", "🛠", `服务端出错（HTTP ${status}）`, "对方服务器临时故障或过载，稍后重试。", true);
   if (status >= 400) return out("request", "🚫", `请求被接口拒绝（HTTP ${status}）`, "检查设置里的接口地址、模型名和请求参数。", false);
   return null;
@@ -96,7 +99,10 @@ export function classifyError(err, options = {}) {
   if (has("invalid api key", "authentication", "unauthorized", "密钥", "api key")) {
     return { kind: "auth", icon: "🔑", title: "密钥/鉴权有误", detail: msg, hint: "到设置里核对 API 密钥是否填对、有没有多余空格、是否过期。", retryable: false };
   }
-  if (has("rate limit", "quota", "insufficient", "余额", "额度", "billing", "exceeded")) {
+  if (has("rate limit", "Too Many Requests")) {
+    return { kind: "rateLimit", icon: "⏳", title: "接口限流", detail: msg, hint: "请求太密被限流。稍等一会儿再试。", retryable: true };
+  }
+  if (has("quota", "insufficient", "余额", "额度", "billing", "exceeded")) {
     return { kind: "quota", icon: "💳", title: "额度/限流", detail: msg, hint: "触发限流或余额不足。等一会儿再试，或去服务商充值/提额。", retryable: false };
   }
   if (has("无法解析", "HTML")) {

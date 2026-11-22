@@ -53,6 +53,24 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = _requestTimeoutMs
 }
 
 
+export function parseRetryAfter(value, now = Date.now()) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (/^\d+(\.\d+)?$/.test(text)) return Math.round(Number(text) * 1000);
+  const at = Date.parse(text);
+  return Number.isNaN(at) ? null : Math.max(0, at - now);
+}
+
+function httpFailure(res, label, requestUrl, vendorMessage) {
+  const err = new Error(`${label} HTTP ${res.status}：${vendorMessage}`);
+  err.httpStatus = res.status;
+  err.vendorMessage = String(vendorMessage);
+  err.requestUrl = requestUrl || res.url;
+  const retryAfterMs = parseRetryAfter(res.headers?.get?.("retry-after"));
+  if (retryAfterMs != null) err.retryAfterMs = retryAfterMs;
+  return err;
+}
+
 async function readJsonOrThrow(res, label, requestUrl = "") {
   const bodyText = await res.text();
   if (res.ok && !bodyText.trim()) {
@@ -77,22 +95,13 @@ async function readJsonOrThrow(res, label, requestUrl = "") {
     // 供 classifyError 按 401/429/5xx 归类。原始 error message 也保留。
     if (!res.ok) {
       const apiMsg = json?.error?.message || json?.message || bodyText.slice(0, 120);
-      const err = new Error(`${label} HTTP ${res.status}：${apiMsg}`);
-      err.httpStatus = res.status;
-      err.vendorMessage = String(apiMsg);
-      err.requestUrl = requestUrl || res.url;
-      throw err;
+      throw httpFailure(res, label, requestUrl, apiMsg);
     }
     return json;
   } catch (e) {
     if (e.httpStatus) throw e; // 上面主动抛的带码错误，直接透传
     if (!res.ok) {
-      const vendorMessage = bodyText.trim() ? bodyText.slice(0, 120) : "响应体为空";
-      const err = new Error(`${label} HTTP ${res.status}：${vendorMessage}`);
-      err.httpStatus = res.status;
-      err.vendorMessage = vendorMessage;
-      err.requestUrl = requestUrl || res.url;
-      throw err;
+      throw httpFailure(res, label, requestUrl, bodyText.trim() ? bodyText.slice(0, 120) : "响应体为空");
     }
     throw new Error(`${label}：接口返回的内容无法解析（HTTP ${res.status}）。返回开头是「${bodyText.slice(0, 60)}」——请检查设置里的接口地址与密钥。`);
   }

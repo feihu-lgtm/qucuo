@@ -332,6 +332,13 @@ describe("callModel HTTP 错误分类", () => {
     expect(ec).toMatchObject({ kind: "endpoint", retryable: false });
   });
 
+  it("429 读出 Retry-After", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response('{"error":{"message":"Rate limit reached"}}', { status: 429, headers: { "Retry-After": "7" } })));
+    const { error, ec } = await failure(() => callModel(cfg, "sys", [{ role: "user", content: "hi" }]));
+    expect(error.retryAfterMs).toBe(7000);
+    expect(ec).toMatchObject({ kind: "rateLimit", retryable: true });
+  });
+
   it("200 空响应体归为空响应", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 200 })));
     const { ec } = await failure(() => callModel(cfg, "sys", [{ role: "user", content: "hi" }]));

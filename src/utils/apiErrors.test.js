@@ -19,7 +19,7 @@ describe("classifyError", () => {
     [405, "request", false],
     [408, "timeout", true],
     [422, "request", false],
-    [429, "quota", false],
+    [429, "rateLimit", true],
     [500, "server", true],
     [502, "server", true],
     [503, "server", true],
@@ -28,6 +28,11 @@ describe("classifyError", () => {
     expect(ec.kind).toBe(kind);
     expect(ec.title).toContain(String(status));
     expect(ec.retryable).toBe(retryable);
+  });
+
+  it("429 余额不足不重试，普通限流重试", () => {
+    expect(classifyError(http(429, "HTTP 429：You exceeded your current quota, check your billing"))).toMatchObject({ kind: "quota", retryable: false });
+    expect(classifyError(http(429, "HTTP 429：Rate limit reached"))).toMatchObject({ kind: "rateLimit", retryable: true });
   });
 
   it("从报错文字里读 HTTP 码，也认 status 字段", () => {
