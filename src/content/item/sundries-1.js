@@ -263,6 +263,17 @@ const items = {
 "淬竹袖箭": { name:"淬竹袖箭", category:"weapon", quality:"紫", tags:["武器","暗器","机括","唐门"], effect:{ forceFirst: true, applyStatus: { name: "淬毒", chance: 0.3 } }, desc:"唐听竹改制的机括袖箭，以十年老斑竹作筒、寒铁作簧，藏于袖中不露形迹，发箭悄无声息。" },
 "蚕丝防毒衣": { name:"蚕丝防毒衣", category:"armor", quality:"紫", defMul: 1.35, tags:["护甲","蜀锦","防毒","唐门"], effect:{ ignoreDefensePartialImmune: 0.3 }, desc:"以蜀锦夹层浸过药汁织就的贴身软甲，既防细针暗刺，也能阻隔大半迷烟与蚀骨毒粉。" },
 "冰魄解蛊散": { name:"冰魄解蛊散", category:"misc", quality:"紫", tags:["药散","解毒","解蛊","唐门"], consumable:{ dispelAll: true, hpRestore: 0.2 }, desc:"针对苗疆恶蛊与西域寒毒特制的冰凉雪粉，服下周身一寒，蛊毒寒毒一并化去。" },
+"青城柏香符": { name:"青城柏香符", category:"misc", quality:"白", tags:["符箓","安神","青城"], consumable:{ energyRestore: 2 }, desc:"沾着三清殿陈年柏烟的黄表纸符，燃之可定神安魂。" },
+"三清松风铁剑": { name:"三清松风铁剑", category:"weapon", quality:"绿", tags:["武器","剑","青城"], sixDim:{身法:1}, desc:"剑坪弟子人手一柄的制式长剑，剑身刻两道松针血槽，轻重趁手不挑人。" },
+"山阴清瘴丹": { name:"山阴清瘴丹", category:"misc", quality:"绿", tags:["丹药","解毒","青城"], consumable:{ dispel: true }, desc:"玉真子拿药圃草药搓的苦味药丸，专治川西山岚瘴气与寻常蛇虫之毒。" },
+"青城松纹剑": { name:"青城松纹剑", category:"weapon", quality:"蓝", tags:["武器","剑","青城"], effect:{ ignoreDefenseRatio: 0.15 }, sixDim:{身法:1}, desc:"精钢反复折叠锻打的道门佩剑，挥劈间隐有松风清鸣，与松风剑法极为契合。" },
+"伏龙水雾道袍": { name:"伏龙水雾道袍", category:"armor", quality:"蓝", defMul: 1.2, tags:["护甲","道袍","青城"], sixDim:{根骨:1}, desc:"在伏龙观水雾里晒足七七四十九日的厚锦道衣，湿而不重、能卸去两成暗劲。" },
+"玉真青囊针盒": { name:"玉真青囊针盒", category:"accessory", quality:"蓝", tags:["饰品","医","青城"], effect:{ energyRestore: 1 }, sixDim:{身法:1}, desc:"巴掌大的青铜小盒，佩在腰间，行气时内息回得快些，出手也先人一步。" },
+"紫阳清心散": { name:"紫阳清心散", category:"misc", quality:"紫", tags:["丹药","内息","青城"], consumable:{ energyRestore: 4, dispelAll: true }, desc:"采晨露配紫阳内火收汁的门派秘药，服下立回大量内息并驱散阴寒内伤。" },
+"听松玄铁剑": { name:"听松玄铁剑", category:"weapon", quality:"紫", tags:["武器","剑","青城"], effect:{ ignoreDefenseRatio: 0.25 }, sixDim:{根骨:1,身法:1}, desc:"仿松鹤道长佩剑打造的玄铁重锋剑，剑脊厚实，格挡反击时不易震手。" },
+"三清鹤羽道衣": { name:"三清鹤羽道衣", category:"armor", quality:"紫", defMul: 1.3, tags:["护甲","道袍","防毒","青城"], effect:{ ignoreDefensePartialImmune: 0.3 }, sixDim:{根骨:2}, desc:"门中执事长老所着法衣，衣襟暗绣八卦镇水纹，护身之外兼能抗毒。" },
+"离堆镇水玉佩": { name:"离堆镇水玉佩", category:"accessory", quality:"橙", tags:["饰品","玉","镇派","青城"], effect:{ energyRestore: 2, onCounterSuccessDamageRatio: 0.3 }, sixDim:{悟性:1,根骨:1}, desc:"以离堆江心青玉雕琢的镇山珍宝，佩戴后防御反击威力大增、每回合微幅滋养内息。三清玄阁只此一件，只授本门心腹。" },
+"青城玄门竹牌": { name:"青城玄门竹牌", category:"misc", quality:"绿", tags:["信物","门派","青城"], desc:"青城派正式弟子的竹制腰牌，正面烙「青城天下幽」，背面刻着拜入那日的干支。" },
 };
 
 export default { item: items, itemGroup: { SUNDRIES: Object.keys(items) } };

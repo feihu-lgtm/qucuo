@@ -74,9 +74,15 @@ export default { district: {
       三清殿: {
         x: -2, y: 2,
         desc: "青城派正殿。殿前一座石坪，是弟子们站桩的地方。殿内供着三清像，香炉里青烟不断。一清道长常年在此闭目打坐，白眉长及颧骨。",
-        exits: { n: "青城山山门", s: "剑坪", w: "药圃" },
+        exits: { n: "青城山山门", s: "剑坪", w: "药圃", e: "三清玄阁" },
         buildingId: "wuguan_yajiang",
         residentNpcName: "一清道长",
+      },
+      三清玄阁: {
+        x: -1, y: 2,
+        desc: "三清殿偏庑改的门内库房，樟木架上一层层码着符纸、丹丸和佩剑。持堂道人兼管账目，卖不卖、卖哪一层，只看你在青城山的名声。",
+        exits: { w: "三清殿" },
+        buildingId: "sectshop_yajiang",
       },
       剑坪: {
         x: -2, y: 3,
