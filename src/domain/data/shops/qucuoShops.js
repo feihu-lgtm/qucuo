@@ -34,6 +34,7 @@ export const QUCUO_SHOPS = {
       { name: "紫阳清心散", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 40 },
       { name: "听松玄铁剑", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 40 },
       { name: "三清鹤羽道衣", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 80 },
+      { name: "离堆镇水玉佩", category: ITEM_CATEGORY.ACCESSORY, quality: "橙", minRep: 100, member: true, limitOnce: true },
     ],
   },
   雅纸铺: {
@@ -230,6 +231,8 @@ export function buildShopInventory(shopKey) {
     items: shop.items.map(cfg => ({
       ...makeItem({ name: cfg.name, category: cfg.category, quality: cfg.quality }),
       ...(cfg.minRep == null ? {} : { minRep: cfg.minRep }),
+      ...(cfg.member ? { member: true } : {}),
+      ...(cfg.limitOnce ? { limitOnce: true } : {}),
     })),
   };
 }

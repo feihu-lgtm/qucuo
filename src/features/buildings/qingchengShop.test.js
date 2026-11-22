@@ -33,6 +33,19 @@ describe("青城商坊 · 三清玄阁", () => {
     expect(factionShopOffer(SHOP, rep(80), "vault").coef).toBe(0.75);
   });
 
+  it("keeps the one 离堆镇水玉佩 for disciples at rep 100", () => {
+    const jade = "离堆镇水玉佩";
+    expect(names(100)).not.toContain(jade);
+    expect(factionShopOffer(SHOP, rep(99), "vault", ["青城派弟子"]).items.map((i) => i.name)).not.toContain(jade);
+    expect(factionShopOffer(SHOP, rep(100), "vault", ["青城派弟子"]).items.map((i) => i.name)).toContain(jade);
+    const disciple = at("三清玄阁", 100, ["青城派弟子"]);
+    const bought = buyFactionShopItem(disciple, SHOP, jade, 1);
+    const flags = bought.changes.flags(disciple.flags);
+    expect(bought.changes.inv([])[0]).toMatchObject({ name: jade, quality: "橙" });
+    expect(buyFactionShopItem({ ...disciple, flags }, SHOP, jade).changes).toBeUndefined();
+    expect(buyFactionShopItem(at("三清玄阁", 100), SHOP, jade).logs[0].text).toContain("本门弟子");
+  });
+
   it("sells only 柏香符 and 清瘴丹 below 0, marks them up at -20 and refuses at -60", () => {
     expect(names(-5)).toEqual(["青城柏香符", "山阴清瘴丹"]);
     expect(factionShopOffer(SHOP, rep(-5), "vault").coef).toBe(1);

@@ -53,7 +53,7 @@ function shopScreen(c) {
   if (!shopData) return null;
   const isKarma = shopData.currency === "karma";
   const factionShop = isFactionShop(c.building.shopKey)
-    ? factionShopOffer(c.building.shopKey, c.varTree, factionShopOutlet(c.building.shopKey, c.building.id)) : null;
+    ? factionShopOffer(c.building.shopKey, c.varTree, factionShopOutlet(c.building.shopKey, c.building.id), c.flags) : null;
   const trading = (
     <TradingScreen inline queueCount={c.queueCount}
       shopName={factionShop ? `${c.building.name}${factionShop.closed ? `（${factionShop.closed}）` : ""}` : shopData.shopName}
