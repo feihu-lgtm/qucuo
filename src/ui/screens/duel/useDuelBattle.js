@@ -264,8 +264,9 @@ export function useDuelBattle({ npc, playerChar, pendingCombatBuff, playerInv, p
       setPlayerLastCounter(result.counterSuccessA);
       setNpcLastCounter(result.counterSuccessB);
       // 施加成功记忆（供下回合 afterStatusBonus 趁中招追击）
-      setPlayerLastStatusApplied(result.statusSuccessA);
-      setNpcLastStatusApplied(result.statusSuccessB);
+      // 对方免控时没真中招，不给趁中招追击。
+      setPlayerLastStatusApplied(result.statusSuccessA && !npcImmune);
+      setNpcLastStatusApplied(result.statusSuccessB && !playerImmune);
       // 连续应对层数（counterStacksGrowth）：本回合成功则累加，中断则清零
       setPlayerCounterStacks(result.counterSuccessA ? playerCounterStacks + 1 : 0);
       setNpcCounterStacks(result.counterSuccessB ? npcCounterStacks + 1 : 0);

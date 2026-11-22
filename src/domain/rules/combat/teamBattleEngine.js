@@ -104,7 +104,7 @@ function applyResultToUnit(unit, result, tag, move) {
   const newEnergy = Math.max(0, Math.min(unit.energy[1] ?? 10, unit.energy[0] + deltaEnergy));
 
   let newStatus = unit.statusSlots;
-  const immune = !!(unit.equipEffects?.immuneControl || move?.immuneControl);
+  const immune = !!(unit.equipEffects?.immuneControl || move?.immuneControl); // 装备或本回合所出免控武学
   const statusApplied = result[`statusAppliedTo${tag}`];
   if (statusApplied && !immune) newStatus = applyStatus(newStatus, statusApplied);
   const markApplied = result[`markAppliedTo${tag}`];
@@ -152,6 +152,10 @@ function resolveOneOnOne(attackerUnit, attackerMove, defenderUnit, defenderMove)
 
   let newAttacker = applyResultToUnit(attackerUnit, result, "A", attackerMove);
   let newDefender = applyResultToUnit(defenderUnit, result, "B", defenderMove);
+  // 对方免控时没真中招，不给趁中招追击。
+  const immuneOf = (unit, move) => !!(unit.equipEffects?.immuneControl || move?.immuneControl);
+  if (immuneOf(defenderUnit, defenderMove)) newAttacker = { ...newAttacker, lastStatusApplied: false };
+  if (immuneOf(attackerUnit, attackerMove)) newDefender = { ...newDefender, lastStatusApplied: false };
 
   // 回合末状态跳动伤害（applyEndOfTurnStatus 需要 hp[1] 算比例掉血），跟
   // DuelScreen.jsx 的处理顺序一致：先应用本回合伤害，再跑一次状态跳动。
