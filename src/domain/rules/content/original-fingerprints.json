@@ -127,8 +127,8 @@
     "SUNDRIES": {
       "entryCount": 261,
       "orderedIdsSha256": "d1aed20f5d2c1c291697195ac8f8b9709fbfba9d0221e74b19c1bcfb1ba3b663",
-      "totalFieldCount": 2034,
-      "jsonSha256": "64dd2ce14c782b205cb41106d4fe0e5e5308d715c56d14e5dfb6963c74ba09a4"
+      "totalFieldCount": 2035,
+      "jsonSha256": "01ea55d2bb6bef087379444a7896770465d0aa28c51069fdf93aaac9ab49a094"
     },
     "STANDARD_WEAPONS": {
       "entryCount": 10,
@@ -224,14 +224,14 @@
     "CATALOG": {
       "entryCount": 421,
       "orderedIdsSha256": "22152627e34b8873623a69cdef0aa73be038e53327ec601d64d31702b88edd6a",
-      "totalFieldCount": 3307,
-      "jsonSha256": "571aaaf1ce5669fbc1ff92ae9398055e96879b25d2f40e25ad208de2d7a37171"
+      "totalFieldCount": 3308,
+      "jsonSha256": "b97a5190842a421a02b05752a87af56343780a3ca25f941d42e708ed794c2b85"
     },
     "CATALOG_INDEX": {
       "entryCount": 421,
       "orderedIdsSha256": "22152627e34b8873623a69cdef0aa73be038e53327ec601d64d31702b88edd6a",
-      "totalFieldCount": 3728,
-      "jsonSha256": "6f1b1a99f9923da39a8fa7912af3c2444219eac3244bb93e2a2cc467ef349f59"
+      "totalFieldCount": 3729,
+      "jsonSha256": "9af40d8f89b0ea93e7f6404f8ea2837518d3d37751dce16513c665accd1b80ea"
     },
     "RESIDENT_NPCS": {
       "entryCount": 13,

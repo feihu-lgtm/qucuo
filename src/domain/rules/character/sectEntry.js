@@ -28,7 +28,7 @@ function isSectDisciple(flags) {
 
 // 逐条检查入门资格，返回每一条的达成情况——UI 要把"差在哪"逐条摊开给玩家看，
 // 只回一个 false 玩家不知道该去补什么。
-export function checkSectEntry({ affection = 0, neigong = 0, money = 0, flags = [] } = {}) {
+export function checkSectEntry({ affection = 0, neigong = 0, money = 0, flags = [], otherSect = null } = {}) {
   const already = isSectDisciple(flags);
   const reqs = [
     {
@@ -45,6 +45,11 @@ export function checkSectEntry({ affection = 0, neigong = 0, money = 0, flags = 
       key: "tuition",
       label: `束脩（银 ${SECT_ENTRY.tuition} 两）`,
       have: money, need: SECT_ENTRY.tuition, ok: money >= SECT_ENTRY.tuition,
+    },
+    {
+      key: "single",
+      label: "未拜入他派",
+      have: otherSect || "无", need: "无", ok: !otherSect,
     },
   ];
   return {

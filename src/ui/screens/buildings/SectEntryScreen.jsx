@@ -2,6 +2,7 @@ import React from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
 import { SECT_ENTRY, checkSectEntry } from "../../../domain/rules/character/sectEntry.js";
 import QingchengEntryScreen from "./QingchengEntryScreen.jsx";
+import { SECT_MEMBER_FLAGS } from "../../../domain/rules/character/qingchengEntry.js";
 
 // 拜师堂——雪山派入门。挂在内堂（何雨谢坐镇处）。
 // 结算全在系统这边做完（扣束脩、发令牌、写身份 flag），AI 只负责把这件既成事实
@@ -16,6 +17,7 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
     neigong: char.neigong ?? 0,
     money: char.money ?? 0,
     flags,
+    otherSect: Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== SECT_ENTRY.sect && (flags || []).includes(flag))?.[0] ?? null,
   });
 
   return (
@@ -63,6 +65,7 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
                   {status.missing.includes("affection") && <div>· 她还不够信你。多来往走动，让她看见你是什么样的人。</div>}
                   {status.missing.includes("neigong") && <div>· 底子还太薄。打坐运功，把内功练上去再来。</div>}
                   {status.missing.includes("tuition") && <div>· 束脩还差着。银两凑够了再来不迟。</div>}
+                  {status.missing.includes("single") && <div>· 你已在别派门下，一人不拜两师。</div>}
                 </div>
               </>
             )}

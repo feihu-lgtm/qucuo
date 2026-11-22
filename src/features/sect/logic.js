@@ -5,7 +5,7 @@ import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
-import { QINGCHENG_ENTRY, checkQingchengEntry } from "../../domain/rules/character/qingchengEntry.js";
+import { QINGCHENG_ENTRY, SECT_MEMBER_FLAGS, checkQingchengEntry } from "../../domain/rules/character/qingchengEntry.js";
 import { makeNamedItem } from "../../domain/data/items/catalog.js";
 
 function joinQingcheng(state, now = Date.now()) {
@@ -38,10 +38,10 @@ function joinQingcheng(state, now = Date.now()) {
 
 export function joinSect(state) {
   if (getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName) === QINGCHENG_ENTRY.buildingId) return joinQingcheng(state);
-  if ((state.flags || []).includes(QINGCHENG_ENTRY.flag)) return { logs: [{ t: "sys", text: "  你已是青城派弟子，不能再拜入雪山派。" }] };
+  const otherSect = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== SECT_ENTRY.sect && (state.flags || []).includes(flag))?.[0] ?? null;
   const status = checkSectEntry({
     affection: state.varTree.角色?.[SECT_ENTRY.master]?.好感度 ?? 0,
-    neigong: state.char.neigong ?? 0, money: state.char.money ?? 0, flags: state.flags,
+    neigong: state.char.neigong ?? 0, money: state.char.money ?? 0, flags: state.flags, otherSect,
   });
   if (!status.eligible) return { logs: [{ t: "sys", text: "  你还不够格拜入雪山派。" }] };
   const token = makeItemSmart({
