@@ -14,6 +14,12 @@ describe("var() 颜色加透明度", () => {
     }
   });
 
+  it("赌石切石结果字的光晕不再给 var() 直接拼后缀", () => {
+    const source = readFileSync("src/ui/screens/buildings/GambleStoneParts.jsx", "utf-8");
+    expect(source).toContain("color-mix(in srgb, ${labelColor} 53%, transparent)");
+    expect(source).not.toMatch(/\$\{labelColor\}[0-9a-f]{2}\b/);
+  });
+
   it("结算列下划线和见闻录途径标签不再给 var() 直接拼后缀", () => {
     for (const file of ["src/ui/screens/quickBattle/ResultScreen.jsx", "src/ui/screens/LoreScreen.jsx"]) {
       const source = readFileSync(file, "utf-8");

@@ -162,8 +162,8 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
     return (
       <div className="mobile-gamble-minimized" onClick={restoreTable}
         style={{ position: "fixed", bottom: 16, right: 16, zIndex: 200, cursor: "pointer",
-          background: "#23201b", border: "1px solid #6a5d40", borderRadius: 0, padding: "8px 14px",
-          color: "#f0d090", fontSize: 13, boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
+          background: "var(--gamble-toast-bg)", border: "1px solid var(--ink-brass)", borderRadius: 0, padding: "8px 14px",
+          color: "var(--gold-light)", fontSize: 13, boxShadow: "0 4px 16px rgba(0,0,0,.5)" }}>
         ⬒ 赌桌（{SKINS[stone.skin].label}）· 点击展开
       </div>
     );
@@ -174,18 +174,18 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   const cardFont = "calc(min(100vw, 100vh*1672/941) * 0.011)"; // 背面文字随舞台缩放
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "#0a0806", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "var(--gamble-bg)", overflow: "hidden" }}>
       <style>{GS_CSS}</style>
 
       {/* 顶栏 */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 44, zIndex: 260,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 18px", background: "linear-gradient(180deg,#14120e 60%,transparent)" }}>
+        padding: "0 18px", background: "linear-gradient(180deg,var(--gamble-top) 60%,transparent)" }}>
         <div style={{ color: "var(--gold-light)", fontSize: 15 }}>玉石料场 · 赌桌
-          <span style={{ color: "#6a5d40", fontSize: 12, marginLeft: 8 }}>
+          <span style={{ color: "var(--ink-brass)", fontSize: 12, marginLeft: 8 }}>
             {changKouLabel} · {skinLabel} · 已开{opened}刀{opened >= 1 ? "（悬停卡牌看行情，点卡成交或谈价）" : (bought ? "（点石头或下方按钮开刀）" : `（此料买价 ${stone?.price || 0} 两，落第一刀即买下切开）`)}
           </span>
-          {buyWarn && <span style={{ color: "#d4756a", fontSize: 12, marginLeft: 10 }}>{buyWarn}</span>}
+          {buyWarn && <span style={{ color: "var(--ink-rose)", fontSize: 12, marginLeft: 10 }}>{buyWarn}</span>}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={minimizeTable} style={topBtn}>最小化 ▬</button>
@@ -236,7 +236,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
 
       {/* 底部操作条：三刀 + 快捷卖最高 + 据为己有 */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 74, zIndex: 250,
-        background: "linear-gradient(0deg,#1a1712 70%,transparent)",
+        background: "linear-gradient(0deg,var(--gamble-bottom) 70%,transparent)",
         display: "flex", alignItems: "center", gap: 12, justifyContent: "center", padding: "0 16px" }}>
         <PanelBtn img={UI("bar_wood.webp")} kind="wood" disabled={!stone || closed} onClick={doSkinRead}>
           {skinLoading ? "相石中…" : "相石 · 看皮"}

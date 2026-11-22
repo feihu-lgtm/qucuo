@@ -133,6 +133,23 @@
   --codex-bonus: #9a5a10;       /* 武学效果 */
   --codex-special: #9a6a2a;     /* 特殊来源 */
 
+  /* 赌石屏定色（原字面量，不随日间模式变）：--gamble-jade 是「春」色碎片和「涨」字。 */
+  --gamble-bg: #0a0806;
+  --gamble-bottom: #1a1712;
+  --gamble-button-edge: #4a443a;
+  --gamble-button-text: #c9bfa8;
+  --gamble-felt-mid: #201a12;
+  --gamble-felt-top: #3a3020;
+  --gamble-jade: #7dffca;
+  --gamble-loss: #e8a050;
+  --gamble-panel: #1e1a13;
+  --gamble-sell-bottom: #8a6a2a;
+  --gamble-sell-text: #3a2408;
+  --gamble-tag-text: #7a5320;
+  --gamble-toast-bg: #23201b;
+  --gamble-top: #14120e;
+  --gamble-za: #b07a4a;
+
   /* 小地图定色（原字面量，不随日间模式变）：--map-locked 兼作标题框描边。 */
   --map-locked: #8a6a3a;
   --map-node-bg: #f2efe4;

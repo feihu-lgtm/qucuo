@@ -108,14 +108,14 @@ export const SHARDS = Array.from({ length: 12 }, (_, i) => {
   return { dx: `${Math.round(Math.cos(a) * r)}%`, dy: `${Math.round(Math.sin(a) * r * 0.8 - 30)}%` };
 });
 // 品相 → 碎末颜色（纯青绿 / 白米灰 / 杂褐）
-export const SHARD_COLOR = { chun: "#7dffca", bai: "#e8dfc0", za: "#b07a4a" };
+export const SHARD_COLOR = { chun: "var(--gamble-jade)", bai: "var(--qb-text)", za: "var(--gamble-za)" };
 // 揭晓大字（outcome → 字/色）
-export const OUTCOME_LABEL = { 涨: ["涨", "#7dffca"], 平: ["平", "#e8dfc0"], 垮: ["垮", "#e8a050"], 裂: ["裂!", "#ff6a5a"] };
+export const OUTCOME_LABEL = { 涨: ["涨", "var(--gamble-jade)"], 平: ["平", "var(--qb-text)"], 垮: ["垮", "var(--gamble-loss)"], 裂: ["裂!", "var(--qb-damage)"] };
 // 刀口方位 → 刀光角度
 export const SLASH_ROT = { top: "rotate(-24deg)", mid: "rotate(4deg)", bot: "rotate(21deg)" };
 
-export const topBtn = { background: "none", border: "1px solid #4a443a", color: "#c9bfa8", borderRadius: 0, padding: "4px 12px", cursor: "pointer", fontSize: 12 };
-export const carArrow = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "1px solid #6a5d40",
+export const topBtn = { background: "none", border: "1px solid var(--gamble-button-edge)", color: "var(--gamble-button-text)", borderRadius: 0, padding: "4px 12px", cursor: "pointer", fontSize: 12 };
+export const carArrow = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "1px solid var(--ink-brass)",
   background: "rgba(20,16,11,.9)", color: "var(--gold-light)", fontSize: 22, lineHeight: 1, cursor: "pointer", userSelect: "none" };
 export const carBtn = { width: "100%", padding: "10px 0", border: "none", borderRadius: 0, fontSize: 14, fontWeight: "bold", cursor: "pointer" };
 export const actBtn = { position: "relative", height: "6.4vh", minWidth: "24vh", border: "none", cursor: "pointer",
