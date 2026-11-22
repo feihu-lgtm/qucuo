@@ -10,6 +10,7 @@ import { selectEffectiveStats } from "../stats/logic.js";
 // 势力商店：货池按该势力声誉定货色和价钱。
 // ≤-60 拒售；-59~-20 只卖 hostileQualities 品阶、加价两成（hostileClosed 的铺面直接闭门）；
 // 其余按势力声誉折扣，minRep 未到的货不摆出来；member 货只卖本门弟子，limitOnce 货买过一次即撤柜（记在 flags）。
+// 额外两个可选门槛：closedBelowRep 声誉未到的铺面直接闭门（如秘珍坊）；coldItems 冷淡（-19~-1）只摆这几味清水货。
 const FACTION_SHOPS = {
   唐门暗器: {
     faction: "唐门", idPrefix: "tangmen_purchase",
@@ -27,6 +28,26 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileQualities: ["白", "绿"],
   },
+  // 五仙教两家铺面共用五仙教声誉：百蛊房平常有门有脸，秘珍坊要声誉 ≥40 才开门（合稿 6.2）；
+  // 交恶未至死敌（-59~-20）照 hostileQualities 摆白绿并加价，冷淡（-19~-1）只摆 coldItems 两味清水药。
+  五仙百蛊房: {
+    faction: "五仙教", idPrefix: "wuxian_purchase",
+    outlets: { medicine_wuxian: "outer" },
+    nowhere: "须到雾隐寨百蛊药房才能买五仙教的蛊药。",
+    banned: "阿萝把陶罐往柜台上一磕：「五仙教的药，不卖仇人。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿"],
+    coldItems: ["清瘴丸", "蛇药粉"],
+  },
+  五仙秘珍坊: {
+    faction: "五仙教", idPrefix: "wuxian_purchase",
+    outlets: { sectshop_wuxian: "vault" },
+    nowhere: "须到雾隐寨百蛊湿廊尽头的秘珍坊才能买五仙教的秘货。",
+    banned: "守廊弟子收刀入鞘：「秘珍坊不做死敌的生意。」",
+    closedBelowRep: { rep: 40, text: "秘珍坊的暗门纹丝不动——你在五仙教的名声还不够进这间门。" },
+    hostileClosed: { vault: "秘珍坊的暗门紧闭，廊下灯笼全灭。" },
+    hostileQualities: [],
+  },
 };
 
 export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];
@@ -42,6 +63,8 @@ export function factionShopOffer(shopKey, varTree, outlet, flags = []) {
   if (rep <= -60) return closed(shop.banned);
   const hostile = rep <= -20;
   if (hostile && shop.hostileClosed[outlet]) return closed(shop.hostileClosed[outlet]);
+  if (!hostile && shop.closedBelowRep && rep < shop.closedBelowRep.rep) return closed(shop.closedBelowRep.text);
+  const cold = !hostile && rep < 0 && shop.coldItems;
   const items = buildShopInventory(shopKey).items
     .filter((item) => (!item.member || flags.includes(SECT_MEMBER_FLAGS[shop.faction]))
       && (!item.limitOnce || !flags.includes(boughtFlag(shopKey, item.name))))
@@ -50,7 +73,8 @@ export function factionShopOffer(shopKey, varTree, outlet, flags = []) {
       ...(item.minRep == null ? {} : { minRep: item.minRep }),
       ...(item.limitOnce ? { limitOnce: true } : {}),
     }))
-    .filter((item) => rep >= (item.minRep ?? -Infinity) && (!hostile || shop.hostileQualities.includes(item.quality)));
+    .filter((item) => rep >= (item.minRep ?? -Infinity) && (!hostile || shop.hostileQualities.includes(item.quality))
+      && (!cold || cold.includes(item.name)));
   return { items, coef: hostile ? 1.2 : factionRepCoef(rep) };
 }
 
