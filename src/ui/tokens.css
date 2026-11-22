@@ -152,6 +152,15 @@
   --ink-edge-gold: #3a2d1d;
   --ink-edge-red: #3a1d1d;
 
+  /* 出错拦截页定色（原字面量，不随日间模式变）。 */
+  --error-button-edge: #6a4a4a;
+  --error-edge: #4a2a2a;
+  --error-hint: #888;
+  --error-message: #f0a0a0;
+  --error-stack: #a08080;
+  --error-text: #e0c0c0;
+  --error-title: #e08080;
+
   /* 主界面底栏定色：等待、任务提示和交谈输入框。 */
   --footer-slow-bg: #3a2a12;
   --footer-stalled-bg: #3a1a1a;
