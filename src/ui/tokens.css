@@ -91,6 +91,22 @@
   --qb-move-disabled-text: #777;
   --qb-felt: #14100b;     /* 深底（候选卡/立绘底） */
 
+  /* 百物图鉴卷轴定色（原字面量，不随日间模式变）。 */
+  --codex-ink: #3a2a14;         /* 卷面正文 */
+  --codex-dim: #8a6a3a;         /* 卷面次级字 */
+  --codex-accent: #6a3a10;      /* 标题/计数强调 */
+  --codex-brown: #5a3a12;       /* 条目说明行 */
+  --codex-desc: #6a5230;        /* 条目描述 */
+  --codex-chip-on: #5a2d08;     /* 筛选签·选中 */
+  --codex-chip-off: #9a7a4a;    /* 筛选签·未选 */
+  --codex-tab-off: #c8a86a;     /* 木牌页签·未选 */
+  --codex-tab-edge: #a0651a;    /* 来源页签描边/分组竖线 */
+  --codex-search-edge: #b3987a; /* 搜索框描边 */
+  --codex-owned: #3a9a3a;       /* 已获得/已习得 */
+  --codex-stat: #a05a10;        /* 数值/特效名 */
+  --codex-bonus: #9a5a10;       /* 武学效果 */
+  --codex-special: #9a6a2a;     /* 特殊来源 */
+
   /* 墨拓定色（不随 data-theme="day" 切换）：原硬编码字面量本身就是定色——
      它们与随主题切换的 --text/--bg 等值相同但语义不同，日间模式下不能跟着变。 */
   --ink-text: #e8e4d6;
