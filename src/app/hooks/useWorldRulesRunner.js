@@ -1,5 +1,5 @@
 import { snowLeopardRule } from "../../features/quest/snowLeopard.js";
-import { factionAmbushRule } from "../../domain/rules/map/ambush.js";
+import { factionAmbushRule, factionRoomAmbushRule } from "../../domain/rules/map/ambush.js";
 import { useEffect, useRef, useState } from "react";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";
 import { timeAdvanceRule } from "../../domain/rules/time/rules.js";
@@ -65,6 +65,7 @@ export function useWorldRulesRunner({
         questFlagRule,
         snowLeopardRule,
         factionAmbushRule,
+        factionRoomAmbushRule,
         estateStartRule,
         estateAnnouncementRule,
         estateProgressRule,
