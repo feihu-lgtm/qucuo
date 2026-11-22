@@ -39,13 +39,13 @@ const REP_MAX = 100;
 const REP_STEP = 10;
 const clampRep = (value) => Math.max(REP_MIN, Math.min(REP_MAX, value));
 
-export function factionRepDeltas(deltas, varTree = {}, { step = REP_STEP } = {}) {
+export function factionRepDeltas(deltas, varTree = {}, { step = REP_STEP, ripple = true } = {}) {
   const out = {};
   for (const [faction, delta] of Object.entries(deltas || {})) {
     if (delta) out[faction] = (out[faction] || 0) + delta;
   }
   for (const [faction, delta] of Object.entries(deltas || {})) {
-    if (!(delta > 0)) continue;
+    if (!ripple || !(delta > 0)) continue;
     const before = factionRepOf(varTree, faction);
     const gain = clampRep(before + Math.min(delta, step)) - before;
     if (!(gain > 0)) continue;
@@ -59,8 +59,8 @@ export function factionRepDeltas(deltas, varTree = {}, { step = REP_STEP } = {})
 }
 
 // 把一组势力声誉增量（含联动）写进 varTree，返回新的 varTree。
-export function applyFactionRep(varTree, deltas, { step = REP_STEP } = {}) {
-  const changes = factionRepDeltas(deltas, varTree || {}, { step });
+export function applyFactionRep(varTree, deltas, { step = REP_STEP, ripple = true } = {}) {
+  const changes = factionRepDeltas(deltas, varTree || {}, { step, ripple });
   const reps = { ...(varTree?.世界?.势力声誉 || {}) };
   for (const [faction, delta] of Object.entries(changes)) {
     const capped = Math.max(-step, Math.min(step, delta));
