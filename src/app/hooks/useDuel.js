@@ -9,6 +9,7 @@ import { buildDuelNarrationPrompt, duelFactLogs, duelNarrationSlots, parseDuelNa
 import { backfillInBackground, insertWhenIdle, newBackfillKey } from "../../engine/ports/backfill.js";
 import { askStoryteller, hasApiKey } from "../../engine/ports/storyteller.js";
 import { createTurnStaleCheck } from "./useUndo.js";
+import { setFactSummary } from "../../domain/rules/prompt/knowledge.js";
 
 export function consumeDuelRequest(result, {
   opts = {}, isStale, isTalk, interactMode, recognize,
@@ -39,19 +40,30 @@ export async function openDuelAfterNarration({ addLog, setDuelPending, isStale }
 
 // 后台补写描写：不占回合、不排队，玩家可以接着打下一场。
 // 没配 API 或 AI 失败时用短语池拼句兜底；返回 "ai" / "phrase" / false。
-export async function narrateDuelInBackground(key, rounds, { outcomeText, place, aftermath }, {
+// factId 给了就让战报同一次调用顺带写事实摘要（替代单独一次「事实摘要」调用）；
+// 战报失败或被回滚作废时不写，事实保留注册时的结构化兜底摘要。
+export async function narrateDuelInBackground(key, rounds, { outcomeText, place, aftermath, factId }, {
   ask = askStoryteller, canAsk = hasApiKey, setLog = gameActions.setLog, retryMs,
+  saveSummary = (id, text) => gameActions.setVarTreeState((prev) => setFactSummary(prev, id, text)),
 } = {}) {
-  const { sys, user } = buildDuelNarrationPrompt(rounds, { outcomeText, place, aftermath });
+  const { sys, user } = buildDuelNarrationPrompt(rounds, { outcomeText, place, aftermath, summary: !!factId });
   const roundCount = Array.isArray(rounds) ? rounds.length : 0;
+  let summary = "";
   const viaAi = await backfillInBackground(key, {
     canAsk,
     setLog,
     ask: () => ask(sys, user, { callLabel: "切磋战报", maxTokens: 900 }),
-    parse: (text) => duelNarrationSlots(parseDuelNarration(text, roundCount)),
+    parse: (text) => {
+      const narration = parseDuelNarration(text, roundCount);
+      summary = narration?.summary || "";
+      return duelNarrationSlots(narration);
+    },
     retryMs,
   });
-  if (viaAi) return "ai";
+  if (viaAi) {
+    if (factId && summary) saveSummary(factId, summary);
+    return "ai";
+  }
   const lines = duelNarrationSlots(phraseNarration(rounds));
   if (!lines) return false;
   return (await insertWhenIdle(key, lines, { setLog, retryMs })) && "phrase";
@@ -129,7 +141,7 @@ export function useDuel({
     noteAction("duel");
     setDuelingNpc(null);
     applyResult(featureCtxRef.current, result);
-    if (result.factId) aiSummarizeFact(result.factId, result.cue);
+    if (result.factId && !finishedNpc) aiSummarizeFact(result.factId, result.cue);
     if (finishedNpc) {
       // 系统事实行立刻落日志；描写在后台补，不走 act，玩家不用等。
       const key = newBackfillKey("duel");
@@ -139,11 +151,16 @@ export function useDuel({
       //（小牧童：牦牛认人、牵牛回寨、阿索分糌粑）。
       narrateDuelInBackground(key, result.reportRounds, {
         outcomeText: result.outcomeText,
+        factId: result.factId,
         place: gameStore.getState().room?.name,
         aftermath: questBranch && outcome === "win"
           ? questBranch.aftermath || `这场打斗是「${questBranch.title}」的一环，写清这件事如何作结、主角如何回归。`
           : "",
-      }, narrator);
+      }, {
+        ...narrator,
+        // 走绑定版 setVarTree，让 varTreeRef 同步，免得下次写 varTree 用旧引用把摘要冲掉
+        saveSummary: (id, text) => featureCtxRef.current.setVarTree((prev) => setFactSummary(prev, id, text)),
+      });
       jotNote({
         text: result.recapNote,
         owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }],
