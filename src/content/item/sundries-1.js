@@ -334,6 +334,7 @@ const items = {
 "手抄止戈经": { name:"手抄止戈经", category:"misc", quality:"白", tags:["经卷","白衣旧部"], desc:"一卷抄得极工整的止戈经，字迹瘦硬，末尾「止戈」两个字下笔比别处都重。是断崖石室里那位老人抄的。" },
 "血刀通行木牌": { name:"血刀通行木牌", category:"misc", quality:"绿", tags:["令牌","血刀","天龙教"], desc:"血刀部发的通行木牌，牌面一道刀刻的深槽。哨卡见了这槽便不拦——血刀部认牌不认人。" },
 "天龙弟子令": { name:"天龙弟子令", category:"misc", quality:"绿", tags:["令牌","天龙教"], desc:"天龙教正式弟子的令牌，玄铁所铸，正面一条蟠龙，背面一道刀刻的深槽。点将台上发下来的东西，丢了比丢命丢人。" },
+"金顶剑谕": { name:"金顶剑谕", category:"misc", quality:"紫", tags:["令牌","峨眉派"], desc:"玄尘师太亲授的金顶剑谕，素绢金纹，一卷在手如峨眉亲临。凭此可调剑庐倾巢之援。" },
 };
 
 export default { item: items, itemGroup: { SUNDRIES: Object.keys(items) } };

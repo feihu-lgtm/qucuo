@@ -314,4 +314,75 @@ export default { quest: {
     ],
     rewardText: "素影银簪刺替峨眉正了名。",
   },
+
+  // ── 峨4·剑出金顶（终局拉拢主线，发布人：玄尘师太；合稿 四.4）──
+  emei_4_jianchujinding: {
+    id: "emei_4_jianchujinding",
+    type: "QT_TALK",
+    title: "峨4·剑出金顶",
+    giver: "玄尘师太",
+    requiresQuestCompleted: "emei_3_minjiangjiuyue",
+    requiresFactionRep: { 峨眉派: 80 },
+    requiresPrestige: 20,
+    requiresFlagsAny: ["xueshan_qingcheng_emei_bond", "xueshan_truth_public", "flag_emei_tang_ledger"],
+    blockedByFlags: ["天龙教弟子"],
+    description: "曲措乡战云密布。你持信物赴听竹轩正式请山——玄尘师太召集佛道两脉长老议事：「请峨眉下山，须过三问：问侠心、问武力、问苍生。」",
+    stages: [
+      {
+        id: "ask",
+        giver: "玄尘师太",
+        requireLocation: { district: "锦官城", inner: "听竹轩" },
+        playerHint: "去听竹轩向玄尘师太正式请山。",
+        description: "听竹轩里佛前长明灯不灭。玄尘师太听完你的来意，召齐了因、虚白、照微、铁莲四位议事：「峨眉在锦官城立派，守的是清修不是世道——你要请剑出山，得先过我这三问。」",
+        completionFlag: "quest_emei4_ask",
+      },
+      {
+        id: "battle",
+        giver: "照微",
+        requireLocation: { district: "锦官城", inner: "练剑坪" },
+        playerHint: "上练剑坪，破照微与铁莲的剑枪合击阵。",
+        description: "青石坪上，照微的剑走回风拂柳，铁莲的枪走降魔六合，一柔一刚织成密不透风的合击阵。「破得开，峨眉的剑才肯听你说话。」",
+        completionFlag: ["quest_emei4_battle"],
+        choices: [
+          { flag: "quest_emei4_battle", label: "堂堂正正破阵", resolve: "combat", combatNpc: { name: "剑枪合击阵·照微与铁莲和尚", levelCap: 4 } },
+        ],
+      },
+      {
+        id: "ciren",
+        giver: "了因师太",
+        requireLocation: { district: "锦官城", inner: "慈济佛堂" },
+        playerHint: "去慈济佛堂，把曲措流民册与求援书摆给了因师太看。",
+        description: "了因师太捻着佛珠听完，看了你半晌：「峨眉若出山，刀剑先到，苦难后到——你拿什么担保山下无辜？」你把雪山求援书与流民册一页页摊在佛案上，立下护全百姓的诺。",
+        completionFlag: "quest_emei4_ciren",
+      },
+      {
+        id: "decree",
+        giver: "玄尘师太",
+        requireLocation: { district: "锦官城", inner: "金顶静室·藏剑阁" },
+        playerHint: "回藏剑阁——玄尘师太要当众取下壁龛的素雪古剑。",
+        description: "藏剑阁内，玄尘师太取下壁龛悬了半生的素雪古剑，声若钟磬：「三问已过。峨眉剑庐，今日入局曲措。」",
+        completionFlag: ["quest_emei4_normal", "quest_emei4_full"],
+        choices: [
+          { flag: "quest_emei4_normal", label: "受常规结盟·剑庐精锐进驻", resolve: "none", narration: "照微率十二名剑庐精锐与四名慈济医尼随你进驻曲措前线——回风剑阵破敌、慈济施药减损，都已安排妥当。" },
+          { flag: "quest_emei4_full", label: "倾巢相助·受金顶剑谕", resolve: "none", requiresFactionRep: { 峨眉派: 140 }, narration: "玄尘师太将一轴金顶剑谕按进你掌心：照微、虚白道姑、铁莲和尚、司徒瑛四位高手齐赴曲措——天龙教血刀部援军与沿途毒阵，自有峨眉替你压下。" },
+        ],
+        onReach: {
+          byFlag: {
+            quest_emei4_normal: {
+              money: 500,
+              factionRep: { 峨眉派: 30, 青城派: 6, 丐帮三星分舵: 6, 天龙教: -15 },
+              flags: ["ally_emei_joined"],
+            },
+            quest_emei4_full: {
+              money: 500,
+              factionRep: { 峨眉派: 30, 青城派: 6, 丐帮三星分舵: 6, 天龙教: -15 },
+              flags: ["ally_emei_joined", "ally_emei_full"],
+              items: [{ name: "金顶剑谕", fromCatalog: true }],
+            },
+          },
+        },
+      },
+    ],
+    rewardText: "金顶剑已出鞘。",
+  },
 } };
