@@ -9,6 +9,7 @@ import { bar } from "../utils/mudHelpers.js";
 import { getPresentNpcs } from "../domain/rules/state/fields.js";
 import { giftSilver } from "../features/npc/logic.js";
 import { buyTangmenItem } from "../features/buildings/tangmenShop.js";
+import { buyFactionShopItem } from "../features/buildings/factionShop.js";
 import { buySkill } from "../features/buildings/logic.js";
 import { BUILDING_TYPE, getBuildingsForLocation } from "../domain/data/buildings/qucuoBuildings.js";
 import { getBuildingIdForInnerRoom } from "../domain/rules/map/innerMap.js";
@@ -73,6 +74,11 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
   if (buyWeapon) {
     return { kind: "result", localKind: "buyTangmenItem", result: buyTangmenItem(state, buyWeapon[1]?.trim()) };
   }
+  const buyGu = /^(买蛊药|买秘珍)(?:\s+(.+))?$/.exec(command.trim());
+  if (buyGu) {
+    const shopKey = buyGu[1] === "买秘珍" ? "五仙秘珍坊" : "五仙百蛊房";
+    return { kind: "result", localKind: "buyWuxianItem", result: buyFactionShopItem(state, shopKey, buyGu[2]?.trim()) };
+  }
   const learn = /^学武(?:\s+(.+))?$/.exec(command.trim());
   if (learn) {
     const buildingId = getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName);
@@ -125,6 +131,7 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
       { t: "sys", text: "  eat/drink <物品>  吃喝" },
       { t: "sys", text: "  用/服 <丹药>  服用消耗品（回血等，探索态即时结算）" },
       { t: "sys", text: "  买暗器 [货名]  在唐门暗器铺看货或购买" },
+      { t: "sys", text: "  买蛊药|买秘珍 [货名]  在雾隐寨百蛊药房/秘珍坊看货或购买" },
       { t: "sys", text: "  学武 [武学名]  在当前武馆查看或学习武学" },
       { t: "sys", text: `  推进任务 唐1·暗巷来客 [暗查取证${surface === "cli" ? "/硬闯截货" : ""}]  推进唐门任务` },
       { t: "sys", text: "  practice <武功>  运功修炼" },
