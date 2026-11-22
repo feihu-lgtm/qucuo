@@ -15,6 +15,7 @@ import { writeMemoryNote } from "./postCommit/memoryNote.js";
 import { registerMemoryFact } from "./postCommit/memoryFact.js";
 import { markTalkAcquaintance } from "./postCommit/talkKnow.js";
 import { appendConvo } from "./postCommit/convoAppend.js";
+import { applyPostResult } from "./postCommit/applyPostResult.js";
 
 // 两阶段 pipeline 的提交段：把本轮解析结果（d.p / d.mvuCommands / d.dealResult）
 // 写回世界状态；提交失败由 playTurn 还原事务快照。
@@ -98,31 +99,26 @@ export function commitRound(d) {
   }
 
   // ── postCommit 处理器链：与拆分前同序执行 ──
-  // 纯函数化处理器的统一落盘口：处理器只回 { logs | delayedLogs, changes }，
-  // 由这里统一 addLog/调度，处理器内不再直接碰 d.addLog / d.setX。
-  const applyPostResult = (out) => {
-    if (!out) return;
-    if (out.logs) d.addLog(out.logs);
-    if (out.delayedLogs) setTimeout(() => d.addLog(out.delayedLogs), out.delayMs ?? 0);
-  };
+  // 纯函数化处理器（返回 { logs | delayedLogs, changes, refWrites }）统一经
+  // applyPostResult 落盘；未改造的仍收整个 d。
   const postCtx = {
     systemAcceptedNames,
     luck: d.char.special?.气运 ?? 5,
   };
-  settleDeal(d);                    // 赌石谈价结算
+  applyPostResult(d, settleDeal({ dealResult: d.dealResult, gambleTalkCtx: d.gambleTalkCtx })); // 赌石谈价结算
   emitRoomHeader(d);                // 移动落地的地名标题，排在正文之前
-  applyPostResult(emitNarrative({ p: d.p, questProgress: d.questProgress })); // 台本覆盖/切磋战报/正文/截断提示
-  recordRumors(d);                  // 涌现·传闻登记
+  applyPostResult(d, emitNarrative({ p: d.p, questProgress: d.questProgress })); // 台本覆盖/切磋战报/正文/截断提示
+  applyPostResult(d, recordRumors({ p: d.p, narrativeText: d.narrativeText })); // 涌现·传闻登记
   fixateNpcs(d, postCtx);           // 在场名单幽灵过滤+战斗数据固化+新面孔/重逢
-  materializeEmergence(d, postCtx); // 涌现·实体化
+  applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck })); // 涌现·实体化
   writeRoom(d, { traceStep });      // 房间写回（锁定目的地/固定地图/兜底）
   commitProposalWrites(d, (...args) => traceStep(d._trace, ...args));
-  applyPostResult(emitChoices({ choices: d.p.choices })); // 选项延时浮现
+  applyPostResult(d, emitChoices({ choices: d.p.choices })); // 选项延时浮现
   if (!d.isTalk) d.setTime(t => t + 1);
   writeMemoryNote(d);               // 小纸条·向量写入
   registerMemoryFact(d);            // memory → 可传播事实账本
-  markTalkAcquaintance(d);          // 对话即认识
-  appendConvo(d);                   // convo 条目追加 memory/turn
+  applyPostResult(d, markTalkAcquaintance({ isTalk: d.isTalk, talkTarget: d.talkTarget, room: d.room, p: d.p })); // 对话即认识
+  applyPostResult(d, appendConvo({ newConvo: d.newConvo, rawFull: d.rawFull, p: d.p, time: d.time })); // convo 条目追加 memory/turn
 
   // 回合完成登记：驱动"每 N 回合自动存档"。出错回滚的轮次不计数——
   // 状态没变，存了也是重复盘。

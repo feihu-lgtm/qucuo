@@ -3,6 +3,7 @@ import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { makeItem, QUALITY } from "../../domain/rules/economy/equipment.js";
 import { makeSkillEntry, SKILL_CATALOG } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { commitModelFlags } from "./commitFlags.js";
+import { applyPostResult } from "./postCommit/applyPostResult.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
@@ -115,5 +116,8 @@ export function commitProposalWrites(d, trace) {
       })])));
     }
   }
-  commitModelFlags(d);
+  applyPostResult(d, commitModelFlags({
+    p: d.p, room: d.room, innerRoomName: d.innerRoomName,
+    questProgress: d.questProgress, pendingQuestBranch: d.pendingQuestBranch,
+  }));
 }
