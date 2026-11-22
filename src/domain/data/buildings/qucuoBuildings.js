@@ -65,7 +65,7 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "既是练毒的灶，也是救命的堂；世上最狠的毒往往和最灵的解药同出一炉，只要出得起银子，断气前总能拉回来半口。",
     },
   ],
-  // ── 广汉·丐帮三星分舵（合稿·丐帮 2.3；拜师堂等拜入接线后再开） ──
+  // ── 广汉·丐帮三星分舵（合稿·丐帮 2.3）+ 广汉镇中立驿站（合稿·丐帮修订建议 2） ──
   广汉: [
     {
       id: "teahouse_gaibang_chashi", name: "察世茶棚", type: BUILDING_TYPE.TEAHOUSE,
@@ -90,6 +90,14 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "inn_gaibang_xiedian", name: "荒庙草铺", type: BUILDING_TYPE.INN, innPrice: 10,
       desc: "东厢房里铺满晒干的新稻草，窗纸糊着泛黄的旧告示，夜里漏风却胜在干净安全。严九斤说出门在外讲究个落脚舒心，连血刀贼都不敢摸到这儿来。",
+    },
+    {
+      id: "sect_gaibang_entry", name: "三星分舵·聚义堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "丐帮三星分舵",
+      desc: "破庙正殿改成的分舵议事处，供桌上不烧高香只摆烈酒。想入丐帮不看家世高低，只看你敢不敢端起严九斤那碗混着雨水与江湖气的入门酒。",
+    },
+    {
+      id: "transport_guanghan", name: "广汉镇驿站", type: BUILDING_TYPE.TRANSPORT,
+      desc: "镇口客栈旁拴着几匹川马，驾车的老把式不问来路。花银两可直接抵达已探索的其他据点，省得从川西尽头一步步走回去。",
     },
   ],
   // ── 鱼定村（7 种，枢纽村） ──

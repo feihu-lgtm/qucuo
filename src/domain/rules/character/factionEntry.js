@@ -33,6 +33,18 @@ export const FACTION_ENTRIES = {
     intro: "黑石点将台上牛皮大鼓裂了口，台下插着一圈断刀。石重岳收人不看出身，只看拳头与办差——接得住三招，牌子拿走。",
     joinLabel: "登台试三招，拜入天龙教",
   },
+  丐帮三星分舵: {
+    sect: "丐帮三星分舵", master: "严九斤", buildingId: "sect_gaibang_entry",
+    minRep: 40, repBonus: 20, flag: "丐帮弟子",
+    token: "三星青竹袋", gifts: [],
+    trial: {
+      flag: "quest_gbj_spar",
+      label: "聚义堂入门小考：敬严九斤一碗烈酒，竹坪接胡三爷五招不退",
+      hint: "去聚义堂向严九斤敬酒，再到竹坪接胡三爷五招，不求胜，只要不逃。",
+    },
+    intro: "供桌上不烧高香，只摆一坛烈酒。严九斤说，入丐帮不看家世，只看你端不端得起这碗混着雨水的入门酒。",
+    joinLabel: "端起入门酒，拜入丐帮三星分舵",
+  },
 };
 
 export const SECT_MEMBER_FLAGS = {
