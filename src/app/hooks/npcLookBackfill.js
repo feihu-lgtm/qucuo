@@ -8,7 +8,7 @@ import { backfillInBackground, newBackfillKey } from "../../engine/ports/backfil
 import { askStoryteller, hasApiKey } from "../../engine/ports/storyteller.js";
 
 export function lookNpcInBackground(npc, extraReplies = [], {
-  addLog, setTime, setConvo, setLog,
+  addLog, setTime, setConvo, setLog, noteAction,
   getState = () => gameStore.getState(), ask = askStoryteller, canAsk = hasApiKey,
 }) {
   const state = getState();
@@ -23,6 +23,7 @@ export function lookNpcInBackground(npc, extraReplies = [], {
     { role: "user", content: cmd },
     { role: "assistant", content: card.map((row) => row.text.trim()).join("；") },
   ]);
+  noteAction?.("action");
 
   const { sys, user } = buildNpcLookPrompt(npc, { place: state.room?.name || "" });
   return backfillInBackground(key, {

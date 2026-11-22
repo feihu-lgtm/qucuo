@@ -9,6 +9,7 @@ function harness(overrides = {}) {
   const deps = {
     addLog: vi.fn((rows) => { log = [...log, ...rows]; }),
     setTime: vi.fn(),
+    noteAction: vi.fn(),
     setConvo: vi.fn(),
     setLog: vi.fn((fn) => { log = fn(log); }),
     getState: () => ({ room: { name: "鱼定村" } }),
@@ -25,6 +26,7 @@ describe("lookNpcInBackground", () => {
     const done = lookNpcInBackground(npc, [stat], deps);
     expect(getLog().map(r => r.text)).toEqual(["> 看 才旦", "  才旦：村长之女", "  装束：鱼定猎刀", stat.text]);
     expect(deps.setTime).toHaveBeenCalledTimes(1);
+    expect(deps.noteAction).toHaveBeenCalledWith("action");
     await done;
     expect(getLog()[4].text).toContain("眉眼含笑");
   });

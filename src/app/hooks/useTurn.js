@@ -179,7 +179,7 @@ export function useTurn({
       addLog, setTime, setConvo, setVarTree, setLog, jotNote, noteAction,
     }),
     lookNpcInBackground: (npc, extraReplies) => lookNpcInBackground(npc, extraReplies, {
-      addLog, setTime, setConvo, setLog,
+      addLog, setTime, setConvo, setLog, noteAction,
     }),
     applySquareOps: (ops) => {
       for (const { op, key, day } of ops) {
