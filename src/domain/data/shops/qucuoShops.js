@@ -61,6 +61,22 @@ export const QUCUO_SHOPS = {
       { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 100 },
     ],
   },
+  // 鱼定土司府·土司府军需司（合稿·土司府 6.2）。合稿镇边虎纹玉佩门槛 140，声誉上限 100，收到 100。
+  土司军需司: {
+    shopName: "土司府军需司",
+    items: [
+      { name: "巡捕制式短矛", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "牦牛皮护胸", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "官造青稞干粮", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "边军铁柄马刀", category: ITEM_CATEGORY.WEAPON, quality: "绿" },
+      { name: "巡边牛皮镶铁甲", category: ITEM_CATEGORY.ARMOR, quality: "绿" },
+      { name: "土司府云雷铜牌", category: ITEM_CATEGORY.ACCESSORY, quality: "绿", minRep: 15 },
+      { name: "藏红花活血膏", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "精钢乌木长矛", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
+      { name: "黑铁札片重甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 80 },
+      { name: "镇边虎纹玉佩", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 100 },
+    ],
+  },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。

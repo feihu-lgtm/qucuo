@@ -76,6 +76,14 @@ const FACTION_SHOPS = {
     hostileItems: ["雪山姜枣干粮", "寒岭冻伤膏"],
     coldItems: ["雪山姜枣干粮", "寒岭冻伤膏", "雪松木剑"],
   },
+  土司军需司: {
+    faction: "鱼定土司府", idPrefix: "tusi_purchase",
+    outlets: { shop_yudingtusi: "vault" },
+    nowhere: "须到鱼定土司府西厢外院的军需司才能买土司府的军需。",
+    banned: "军需司的差役把账簿一合：「府里有令，不卖你东西。滚。」",
+    hostileClosed: {},
+    hostileQualities: ["白"],
+  },
 };
 
 export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];
