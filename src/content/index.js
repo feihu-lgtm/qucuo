@@ -66,6 +66,7 @@ import quest8 from "./quest/divine-arms-1.js";
 import tangmen from "./quest/tangmen-1.js";
 import tangmen2 from "./quest/tangmen-2.js";
 import tangmenItems from "./item/tangmen-1.js";
+import residentsFillItems from "./item/residents-fill-1.js";
 import wuxianjiao from "./quest/wuxianjiao-1.js";
 import emei from "./quest/emei-1.js";
 import emei2 from "./quest/emei-2.js";
@@ -85,5 +86,5 @@ export const DEFAULT_CONTENT_PACKS = [
   pack24, pack25, pack26, pack27, pack28, pack29, pack30, pack31, pack32,
   pack33, pack34, pack35, pack36, pack37, pack38, pack39, pack40, pack41,
   pack42, pack43, pack44, pack45, pack46, pack47, pack48, pack49, pack50, pack51,
-  pack52, pack53, pack54, pack55, pack56, tangmenItems, yudingItems, pack57, lamaItems,
+  pack52, pack53, pack54, pack55, pack56, tangmenItems, residentsFillItems, yudingItems, pack57, lamaItems,
 ];
