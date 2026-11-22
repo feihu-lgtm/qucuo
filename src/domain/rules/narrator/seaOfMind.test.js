@@ -137,9 +137,19 @@ describe("MVU 世界.旁白 读写", () => {
   // 用全等会让每次扩字段都误报一次失败。
   it("新档带齐开海链路要用的字段", () => {
     const keys = Object.keys(narratorVars(initialVarTree()));
-    for (const k of ["metXuannu", "questStage", "seaUnlocked", "seaVisited"]) {
+    for (const k of ["metXuannu", "questStage", "seaUnlocked", "seaVisited",
+      "villaEntered", "portalOpened", "tokyoVisited", "asukaFree"]) {
       expect(keys, `缺 ${k}`).toContain(k);
     }
+  });
+  it("setNarratorVars 经 applyPatches 收口：老存档缺 世界/旁白 两支也补默认并合入", () => {
+    const t = setNarratorVars({}, { portalOpened: true, questStage: 5 });
+    // 钉住的行为契约：merge 补丁先补 initialNarratorVars 默认再叠加 patch，
+    // 老存档无 世界 支时 威望 默认 0、旁白 默认全量初始值。
+    expect(t.世界.威望).toBe(0);
+    expect(t.世界.旁白.portalOpened).toBe(true);
+    expect(t.世界.旁白.questStage).toBe(5);
+    expect(t.世界.旁白.asukaFree).toBe(false);
   });
   it("setNarratorVars 不就地改原对象", () => {
     const t = initialVarTree();
