@@ -9,6 +9,7 @@ import { loadSquares, serializeSquares } from "../domain/rules/map/mapSquares.js
 import { createMockAi } from "./ports/ai.js";
 import { createExtractionState, runTurn } from "./runTurn.js";
 import { playTurn, ROLLBACK_KEYS } from "./playTurn.js";
+import { refAccessors } from "../tests/mockRef.js";
 import { commitRound } from "./act/commitRound.js";
 
 function createPlayTurnContext(ai, commitRound) {
@@ -82,6 +83,7 @@ describe("soft-settled appease MVU protection", () => {
         return String(key).startsWith("set") ? noop : undefined;
       },
     });
+    Object.assign(deps, refAccessors(deps));
 
     commitRound(deps);
 

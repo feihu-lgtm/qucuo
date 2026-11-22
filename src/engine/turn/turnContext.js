@@ -106,6 +106,9 @@ export function createTurnContext({ plan, env }) {
         pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo: turnResult.newConvo,
         questProgress, char, preserveHp: opts.preserveHp,
         _trace, addLog,
+        // ref 读写走具名出入口：engine/act 内部不再出现 .current，ref 本体留在本层。
+        refGet: (name) => refs[name]?.current,
+        refSet: (name, value) => { refs[name].current = value; },
         setVarTree, setRoom, setGambleNegotiation, setInv, setChar, setDao, setExp, setPot,
         setSkills, setFlags: io.setFlags, setMapData, setTime, setPendingQuestBranch, setConvo,
         varTreeRef, roomMapRef, gambleTalkCtx, outerDepartRef, pendDirRef,

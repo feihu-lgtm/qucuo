@@ -27,7 +27,7 @@ export function emitRoomHeader(ctx) {
 }
 
 // traceStep 由调用方注入，保持本模块无 infra 依赖（externalInfraImports 只减不增）。
-// 入参：roomMap=roomMapRef.current、outerDepart=outerDepartRef.current、pendDir=pendDirRef.current、
+// 入参：roomMap=roomMapRef、outerDepart=outerDepartRef、pendDir=pendDirRef 的值、
 // freshNpcData=fixateNpcs 的 dWrites。
 export function writeRoom({ isTalk, lockedDestName, p, room, roomMap, outerDepart, mapData, pendDir, freshNpcData }, { traceStep }) {
   if (isTalk) return null;

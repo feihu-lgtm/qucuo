@@ -7,7 +7,7 @@ export function settleDeal({ dealResult, gambleTalkCtx }) {
   // 若这轮在谈价语境、且 AI 回了 <deal> 标签：系统 clamp 倍率 + 校验赠物，
   // 把调整后报价写进 gambleNegotiation[stoneId][bidderName]，赌桌读它更新报价、按新价结算。
   // 数值全由系统裁决（settleNegotiation clamp[0.8,1.5]），AI 越权无效。
-  const ctx = gambleTalkCtx.current;
+  const ctx = gambleTalkCtx;
   const out = {};
   if (dealResult && ctx) {
     const baseOffer = ctx.baseOffer || 0;

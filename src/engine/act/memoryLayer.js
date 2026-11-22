@@ -11,7 +11,7 @@ import { createWebAi } from "../ports/ai.js";
 // 【信息域】硬约束块注入主剧情，让 NPC 言行严格符合各自知情状态。
 // 请求段无副作用：返回 { infoDomainBlock, kTree }，由 act 统一 setVarTree 提交
 // （本回合状态的一部分，失败会随整体回滚）。
-// 注意：必须读 act 传来的最新 varTree（varTreeRef.current）：哪怕 act 是旧闭包
+// 注意：必须读 act 传来的最新 varTree（varTreeRef 的值）：哪怕 act 是旧闭包
 // （切磋结算后 setTimeout 调来的），evolveKnowledge 也基于最新状态推演——否则
 // 推演结果整体覆盖写回时会把刚进账的认识/好感度更新冲掉（"交情已加但仍显示
 // 尚未认识"bug 的根源，见 varTreeRef 注释）。
