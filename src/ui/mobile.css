@@ -794,14 +794,20 @@
   }
 
   /* 只抬升指令输入框聚焦时的输入栏：设置等弹层内的输入框聚焦不抬，
-     否则 fixed 栏会盖住弹层内容 */
+     否则 fixed 栏会盖住弹层内容。抬升态做成悬浮宽卡片（类 Devin iOS），
+     左右留边圆角，浮在键盘上缘 */
   html[data-input-lift] .mobile-input-bar {
     position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: var(--mobile-keyboard-height, 0px) !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: calc(var(--mobile-keyboard-height, 0px) + 8px) !important;
     z-index: 400;
     background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.45);
+    min-height: 52px !important;
+    padding: 10px 14px !important;
   }
 
   /* 输入栏抬升后，滚动对齐把最新叙事停在抬升栏上方，不被键盘遮住 */
