@@ -1,7 +1,8 @@
 import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import { BOUNTY_QUESTS } from "../../domain/data/quests/bountyQuests.js";
 import { advanceQuestStages, createQuestProgress, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
-import { applyStageRewards, resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
+import { resolveStageRewards, stageRewardPatches } from "../../domain/rules/quests/questRewards.js";
+import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { set, updateField } from "../../domain/rules/state/applyWrite.js";
 
@@ -67,7 +68,7 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
     },
   };
 
-  for (const rewards of pendingRewards) applyStageRewards(rewards, setters, now);
+  for (const rewards of pendingRewards) commitPatches(setters, stageRewardPatches(rewards, now));
   if (invUpdates.length) {
     changes.inv = (prev) => invUpdates.reduce(
       (value, update) => typeof update === "function" ? update(value) : update,

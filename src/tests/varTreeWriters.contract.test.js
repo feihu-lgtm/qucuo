@@ -1,13 +1,24 @@
-// varTree 六个写入器的契约测试——为后续「收口成 applyPatches 入口」钉死现状行为。
+// varTree 六个写入器的契约测试——写入已收口 applyPatches，此处把旧 API
+// 适配成「生成器 → applyPatches/commitPatches」，断言现状行为不变。
 // 每个 it 注释第一行就是该行为契约；只断言现状，不改实现。
 
 import { describe, expect, it } from "vitest";
 import { applyWrite, set, add } from "../domain/rules/state/applyWrite.js";
+import { applyPatches, commitPatches } from "../domain/rules/state/applyPatches.js";
 import { applyMvuCommands } from "../domain/rules/prompt/mvu.js";
-import { applySettledDeltas } from "../domain/rules/settle/settle.js";
-import { applyLedgerUpdate, LEDGER_LINE_MAX, LEDGER_MAX_LINES } from "../domain/rules/memory/npcLedger.js";
-import { applyBookkeep } from "../domain/rules/memory/bookkeep.js";
-import { applyStageRewards } from "../domain/rules/quests/questRewards.js";
+import { settledToPatches } from "../domain/rules/settle/settle.js";
+import { ledgerToPatches, LEDGER_LINE_MAX, LEDGER_MAX_LINES } from "../domain/rules/memory/npcLedger.js";
+import { bookkeepToPatches } from "../domain/rules/memory/bookkeep.js";
+import { stageRewardPatches } from "../domain/rules/quests/questRewards.js";
+
+const applySettledDeltas = (tree, deltas) =>
+  applyPatches({ varTree: tree }, settledToPatches(deltas)).state.varTree;
+const applyLedgerUpdate = (tree, name, lines, turn) =>
+  applyPatches({ varTree: tree }, ledgerToPatches(tree, name, lines, turn)).state.varTree;
+const applyBookkeep = (tree, result, turn) =>
+  applyPatches({ varTree: tree }, bookkeepToPatches(tree, result, turn)).state.varTree;
+const applyStageRewards = (rewards, setters, now) =>
+  commitPatches(setters, stageRewardPatches(rewards, now));
 
 const tree = (chars = {}, world = {}) => ({ 角色: chars, 世界: world });
 const state = (varTree) => ({ varTree });
@@ -121,7 +132,7 @@ describe("applyMvuCommands：指令队列 → {tree, applied, rejected, logs}", 
   });
 });
 
-describe("applySettledDeltas：软结算 deltas → 新 varTree", () => {
+describe("settledToPatches+applyPatches：软结算 deltas → 新 varTree", () => {
   it("按 {path, finalValue} 形态写入，自动建中间层，不动兄弟键", () => {
     // 契约：等价 patch = 每条 { path, finalValue } 的 set。
     const vt = tree({ 侠客: { 好感度: 60 } });
@@ -150,7 +161,7 @@ describe("applySettledDeltas：软结算 deltas → 新 varTree", () => {
   });
 });
 
-describe("applyLedgerUpdate：往 角色.<名>.旧账 追加新账", () => {
+describe("ledgerToPatches+applyPatches：往 角色.<名>.旧账 追加新账", () => {
   it("等价 patch：set(角色.<名>.旧账, {lines, updatedTurn})；去重/去空/截 40 字/只留最新 5 条", () => {
     const t = applyLedgerUpdate(tree(), "侠客", ["  欠少侠一顿酒  ", "x".repeat(50), "欠少侠一顿酒"], 7);
     expect(t.角色.侠客.旧账).toEqual({ lines: ["欠少侠一顿酒", "x".repeat(LEDGER_LINE_MAX)], updatedTurn: 7 });
@@ -178,7 +189,7 @@ describe("applyLedgerUpdate：往 角色.<名>.旧账 追加新账", () => {
   });
 });
 
-describe("applyBookkeep：记账结果 → 各人物旧账追加", () => {
+describe("bookkeepToPatches+applyPatches：记账结果 → 各人物旧账追加", () => {
   it("只消费 result.ledger；memory 不落库；每人等价一条 applyLedgerUpdate", () => {
     const t = applyBookkeep(tree({}), {
       memory: "这句不该出现在 varTree",
@@ -197,7 +208,7 @@ describe("applyBookkeep：记账结果 → 各人物旧账追加", () => {
   });
 });
 
-describe("applyStageRewards：任务 stage 奖励 → setInv/setChar/setVarTree/setFlags", () => {
+describe("stageRewardPatches+commitPatches：任务 stage 奖励 → setInv/setChar/setVarTree/setFlags", () => {
   function harness(base) {
     const s = { ...base };
     const calls = {};
@@ -219,8 +230,8 @@ describe("applyStageRewards：任务 stage 奖励 → setInv/setChar/setVarTree/
   });
 
   it("现状怪癖：rewards 缺 favorability/favorabilitySet 键时直接 TypeError（须走 mergeRewardParts 全形态）", () => {
-    // 契约：applyStageRewards 不是防御式的——它假定输入来自 resolveStageRewards/mergeRewardParts，
-    // 裸传 { items:[...] } 会在第 60 行 Object.keys(undefined) 抛 TypeError。
+    // 契约：stageRewardPatches 不是防御式的——它假定输入来自 resolveStageRewards/mergeRewardParts，
+    // 裸传 { items:[...] } 会在 favorability 条目化时抛 TypeError（生成期抛，无半提交）。
     const { setters } = harness(base());
     expect(() => applyStageRewards({ items: [{ name: "玉佩" }] }, setters)).toThrow(TypeError);
   });

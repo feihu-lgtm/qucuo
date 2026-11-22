@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { getLedger, applyLedgerUpdate, LEDGER_MAX_LINES, LEDGER_LINE_MAX } from "./npcLedger.js";
+import { getLedger, ledgerToPatches, LEDGER_MAX_LINES, LEDGER_LINE_MAX } from "./npcLedger.js";
+import { applyPatches } from "../state/applyPatches.js";
+
+const applyLedgerUpdate = (tree, name, lines, turn) =>
+  applyPatches({ varTree: tree }, ledgerToPatches(tree, name, lines, turn)).state.varTree;
 
 describe("npcLedger 人物旧账", () => {
   it("旧存档没有旧账字段也能读（空账本）", () => {

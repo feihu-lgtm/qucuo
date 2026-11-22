@@ -5,8 +5,9 @@
 // 幂等撤销；引擎层不直接 import store，gameStore 读写经注入的 accessors 传入。
 
 import {
-  applySettledDeltas, captureSettledChanges, revertSettled,
+  settledToPatches, captureSettledChanges, revertSettled,
 } from "../../domain/rules/settle/settle.js";
+import { applyPatches } from "../../domain/rules/state/applyPatches.js";
 import { UNKNOWN_CHOICE } from "../../domain/rules/settle/judge.js";
 import { SOFT_SETTLE_KINDS } from "../../domain/rules/settle/softRules.js";
 import { applyMvuCommands } from "../../domain/rules/prompt/mvu.js";
@@ -72,7 +73,7 @@ export async function settleTurn({ ctx, ai, trace, turnOpts, cmd, getGameState, 
     ];
   }
   const applySoftSettle = (prev) => {
-    settledTree = applySettledDeltas(prev, softSettle.deltas);
+    settledTree = applyPatches({ varTree: prev }, settledToPatches(softSettle.deltas)).state.varTree;
     if (angerSignalApplied) settledTree = resolveAngerSignals(settledTree, [turnOpts.settleNpc]);
     const revertPaths = (softSettle.deltas || []).map(delta => delta?.path);
     if (angerSignalApplied) {

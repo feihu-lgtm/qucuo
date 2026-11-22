@@ -11,7 +11,8 @@ import {
 } from "../../domain/rules/quests/questEngine.js";
 import { resolveEnding } from "../../domain/rules/quests/endingResolver.js";
 import { getKeyItemState, initKeyItemTracking, transferKeyItem } from "../../domain/rules/quests/itemTracking.js";
-import { applyStageRewards, resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
+import { resolveStageRewards, stageRewardPatches } from "../../domain/rules/quests/questRewards.js";
+import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 import { makeTusiRobe, ownedSafeHouseKeys } from "../../domain/rules/map/safeHouse.js";
 
 const applyUpdate = (previous, update) => (
@@ -76,7 +77,7 @@ function forceAdvanceCollectQuest(state, quest, targetFlag, now) {
   updates.add("questProgress", (previous) => ({ ...previous, ...Object.fromEntries(
     Object.entries(nextProgress).filter(([id, value]) => state.questProgress?.[id] !== value),
   ) }));
-  for (const rewards of pendingRewards) applyStageRewards(rewards, updates.setters, now);
+  for (const rewards of pendingRewards) commitPatches(updates.setters, stageRewardPatches(rewards, now));
   return updates.changes();
 }
 
@@ -180,7 +181,7 @@ export const questFlagRule = {
 
     const updates = createUpdateCollector(state);
     if (changed) updates.add("questProgress", next);
-    for (const rewards of pendingRewards) applyStageRewards(rewards, updates.setters, now);
+    for (const rewards of pendingRewards) commitPatches(updates.setters, stageRewardPatches(rewards, now));
 
     if (justCompletedIds.length) {
       updates.add("varTree", (previous) => {

@@ -22,7 +22,8 @@ import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { gameStore } from "../../store/gameStore.js";
 import { buildPrivateTalkPayload } from "../../domain/rules/prompt/privateTalkPayload.js";
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
-import { applySettledDeltas } from "../../domain/rules/settle/settle.js";
+import { settledToPatches } from "../../domain/rules/settle/settle.js";
+import { applyPatches } from "../../domain/rules/state/applyPatches.js";
 import { runSoftSettle } from "../../engine/ports/softSettle.js";
 import { UNKNOWN_CHOICE } from "../../domain/rules/settle/judge.js";
 
@@ -280,7 +281,7 @@ export function usePrivateTalk({
             addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
           }
           const treeDeltas = (soft.deltas || []).filter((d) => !d.path.startsWith("narrator."));
-          if (treeDeltas.length) setVarTree((prev) => applySettledDeltas(prev, treeDeltas));
+          if (treeDeltas.length) setVarTree((prev) => applyPatches({ varTree: prev }, settledToPatches(treeDeltas)).state.varTree);
           traceStep(_wt, "结算·软判定", "pass", `旁白观感=${soft.choice}（${soft.note}）`);
         } else {
           affDelta = 0; // 判不了就不替她表态

@@ -5,12 +5,12 @@
 //   1. memory：≤50字客观事实摘要（沿用主叙事 prompt 里 memory 字段的同一套规矩），
 //      返回值里带着，交既有小纸条/事实管线去存，本模块不落库。
 //   2. ledger：在场 NPC 的旧账新条目，每人每轮至多一句，经 applyBookkeep
-//      写进 varTree.角色[name].旧账（npcLedger.js）。
+//      写进 varTree.角色[name].旧账（npcLedger.js 产 patch，applyPatches 统一提交）。
 // AI 关/失败一律返回空账，绝不抛错——记账是锦上添花，丢一轮不碍事。
 // ============================================================================
 
 import { definePrompt } from "../prompt/registry.js";
-import { applyLedgerUpdate, LEDGER_LINE_MAX } from "./npcLedger.js";
+import { ledgerToPatches, LEDGER_LINE_MAX } from "./npcLedger.js";
 
 export const MEMORY_MAX = 50;
 
@@ -156,17 +156,15 @@ registerBookkeepCalls();
 // runBookkeep 已上移到 engine/ports/bookkeep.js。
 
 /**
- * 把记账结果里的各人物新账写进 varTree（旧账追加见 npcLedger.js）。
+ * 把记账结果里的各人物新账收成 Patch[]（每人一条旧账 merge patch，
+ * 合并规则见 npcLedger.js），调用方统一经 applyPatches 提交。
  * memory 摘要只随 result 返回、不在这里落库，交既有小纸条管线去存。
- * @param {object} varTree
+ * @param {object} varTree     当前树（只读，用于合并既有账目）
  * @param {{memory: string, ledger: Object<string,string[]>}} result
  * @param {number} turn
- * @returns {object} 新 varTree
+ * @returns {object[]} Patch[]
  */
-export function applyBookkeep(varTree, result, turn) {
-  let next = varTree ?? {};
-  for (const [name, lines] of Object.entries(result?.ledger || {})) {
-    next = applyLedgerUpdate(next, name, lines, turn);
-  }
-  return next;
+export function bookkeepToPatches(varTree, result, turn) {
+  return Object.entries(result?.ledger || {})
+    .flatMap(([name, lines]) => ledgerToPatches(varTree, name, lines, turn));
 }

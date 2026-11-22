@@ -3,7 +3,11 @@ import { resetPromptRegistryForTest } from "../prompt/registry.js";
 import { createMockAi } from "../../../engine/ports/ai.js";
 import { parseJudgeAnswer, registerSettleCalls, UNKNOWN_CHOICE } from "./judge.js";
 import { SOFT_RULES } from "./softRules.js";
-import { applySettledDeltas, formatSettleNote } from "./settle.js";
+import { settledToPatches, formatSettleNote } from "./settle.js";
+import { applyPatches } from "../state/applyPatches.js";
+
+const applySettledDeltas = (tree, deltas) =>
+  applyPatches({ varTree: tree }, settledToPatches(deltas)).state.varTree;
 import { runSoftSettle } from "../../../engine/ports/softSettle.js";
 
 beforeEach(() => {
@@ -16,7 +20,7 @@ const angryTree = (npc = "才旦") => ({
   世界: { 威望: 0 },
 });
 
-describe("applySettledDeltas", () => {
+describe("settledToPatches + applyPatches", () => {
   it("applies vetted final values to the latest tree without dropping unrelated state", () => {
     const latest = {
       角色: { 才旦: { 好感度: 20, 旧账: { lines: ["少侠曾送来一壶酒"] } } },

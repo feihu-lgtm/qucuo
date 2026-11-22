@@ -16,7 +16,8 @@
 // 分支点（completionFlag 是数组）额外支持 onReach.byFlag：{ 具体flag: {同上结构} }，
 // 按这次真正命中的 flag 取对应的分支专属奖励，跟 base（byFlag 以外的字段）合并。
 
-import { add, set, updateField } from "../state/applyWrite.js";
+import { add, set } from "../state/applyWrite.js";
+import { merge } from "../state/applyPatches.js";
 
 function mergeRewardParts(...parts) {
   const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, flags: [] };
@@ -44,31 +45,32 @@ export function resolveStageRewards(stage, hitFlags = []) {
   return mergeRewardParts(base, ...branchParts);
 }
 
-// 把 resolveStageRewards 的结果真正落地成游戏状态变化。
-// setters: { setInv, setChar, setVarTree, setFlags } —— 全部是 MudRPG.jsx 里已有的 setState。
-export function applyStageRewards(rewards, { setInv, setChar, setVarTree, setFlags }, now = Date.now()) {
-  if (!rewards) return;
+// 把 resolveStageRewards 的结果收成 Patch[]，调用方统一经
+// commitPatches(setters, patches) 分片提交（写入口只剩 applyPatches）。
+// 每条 patch 与拆前 applyStageRewards 的写入逐条对应。
+export function stageRewardPatches(rewards, now = Date.now()) {
+  if (!rewards) return [];
+  const patches = [];
   if (rewards.items?.length) {
-    setInv(updateField("inv", (prev) => set("inv", [
+    patches.push(merge("inv", (prev) => [
       ...prev,
       ...rewards.items.map((it, i) => ({ ...it, id: it.id || `quest_reward_${now}_${i}`, equipped: false })),
-    ])));
+    ]));
   }
   if (rewards.money) {
-    setChar(updateField("char", add("char.money", rewards.money)));
+    patches.push(add("char.money", rewards.money));
   }
-  if (Object.keys(rewards.favorability).length) {
-    setVarTree(updateField("varTree", Object.entries(rewards.favorability)
-      .map(([name, delta]) => add(["角色", name, "好感度"], delta)), { defaultValue: 10 }));
+  for (const [name, delta] of Object.entries(rewards.favorability)) {
+    patches.push({ ...add(["角色", name, "好感度"], delta), options: { defaultValue: 10 } });
   }
-  if (Object.keys(rewards.favorabilitySet).length) {
-    setVarTree(updateField("varTree", Object.entries(rewards.favorabilitySet)
-      .map(([name, value]) => set(["角色", name, "好感度"], value))));
+  for (const [name, value] of Object.entries(rewards.favorabilitySet)) {
+    patches.push(set(["角色", name, "好感度"], value));
   }
   if (rewards.reputation) {
-    setVarTree(updateField("varTree", add("世界.威望", rewards.reputation)));
+    patches.push(add("世界.威望", rewards.reputation));
   }
   if (rewards.flags?.length) {
-    setFlags(updateField("flags", (f) => set("flags", [...new Set([...f, ...rewards.flags])])));
+    patches.push(merge("flags", (f) => [...new Set([...f, ...rewards.flags])]));
   }
+  return patches;
 }
