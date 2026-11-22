@@ -111,6 +111,12 @@ const items = {
 "神鸟金纹剑": { name: "神鸟金纹剑", category: "weapon", quality: "橙", atkMul: 1.55, sixDim: { 悟性: 1 }, desc: "仿照神树金乌铸就的镇阁古剑，剑脊嵌着失传的错金神鸟纹，出鞘自带一股破妄清鸣。" },
 "赤炉铸铜锤": { name: "赤炉铸铜锤", category: "weapon", quality: "紫", atkMul: 1.4, desc: "樊枯掌炉用的短柄八棱重铜锤，既可锻剑亦可碎甲，锤面坑坑洼洼全是六十年的火候。" },
 "柳叶青铜剑": { name: "柳叶青铜剑", category: "weapon", quality: "蓝", atkMul: 1.25, desc: "姜泠随身的轻薄铜剑，剑身刻有细密风纹，挥起来几乎不出声。" },
+"西域弯刀": { name:"西域弯刀", category:"weapon", quality:"绿", atkMul: 1.1, tags:["武器","西域","天龙教"], desc:"西域商路带来的弯刀，刀身微弧利于骑上劈削。玄甲老卒人手一把——不精良，但顺手，断了也不心疼。" },
+"护法铜杖": { name:"护法铜杖", category:"weapon", quality:"绿", atkMul: 1.05, tags:["武器","禅杖"], desc:"白衣旧部护法用的熟铜杖，杖头四个铜环早被摩挲得发亮。旧部说它不是兵器，是「拿来拦住拳头的东西」。" },
+"柳叶小刀": { name:"柳叶小刀", category:"weapon", quality:"绿", atkMul: 1.0, tags:["武器","医具"], desc:"贺兰昭药箱里垫底的柳叶小刀，刃薄如纸，原本是割肉剔腐的医具——她拿它剜过腐肉，也拿它吓退过两个抢药的。" },
+"血槽铁刀": { name:"血槽铁刀", category:"weapon", quality:"蓝", atkMul: 1.25, tags:["武器","血刀","天龙教"], effect:{ applyStatus: { name: "裂伤", chance: 0.3 } }, desc:"血刀部军械，刀背开一道深槽，槽里常年擦不干净的暗红。被它划开的伤口流血格外凶——磨刀坪的人说那槽不是放血的，是「存血的」。" },
+"玄铁重刀": { name:"玄铁重刀", category:"weapon", quality:"橙", atkMul: 1.45, sixDim:{ 体魄: 2 }, tags:["武器","玄铁","天龙教"], desc:"石重岳的佩刀，玄铁所铸，重得寻常人双手都抬不平。刀身无饰，只在刀根刻一个「岳」字——他说刀上刻龙太吵，刻个名字，死了好认尸。" },
+"陨铁血刃": { name:"陨铁血刃", category:"weapon", quality:"橙", atkMul: 1.5, tags:["武器","陨铁","血刀","天龙教"], effect:{ applyStatus: { name: "裂伤", chance: 0.4 } }, desc:"西域陨铁锻的长刀，刀身天成的水纹里掺着暗红。磨刀坪的老卒说那是陨铁里带的血色——不是染的，是铁自己长出来的。" },
 };
 
 export default { item: items, itemGroup: { WEAPONS: Object.keys(items) } };

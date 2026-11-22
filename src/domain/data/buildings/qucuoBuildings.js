@@ -113,6 +113,29 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "一条刻满古蜀图符的石廊，纵目人面、鱼凫与神鸟层层叠叠。三星派弟子在这里拓碑读谱，外客得了门人点头才能进来看。",
     },
   ],
+  // ── 鱼定土司府（合稿·土司府 2.2；客卿偏仓要接家园存取，暂不开） ──
+  鱼定土司: [
+    {
+      id: "bounty_yudingtusi", name: "土司府缉捕榜", type: BUILDING_TYPE.BOUNTY,
+      desc: "府门前厅一侧的乌木告示板，贴满了盖着土司云雷铜印的海捕文书：抗税刁民、劫道马匪、走私盐贩，赏银写得明明白白。",
+    },
+    {
+      id: "wuguan_yudingtusi", name: "巡捕营校场", type: BUILDING_TYPE.WUGUAN, skillSet: "土司",
+      desc: "护卫厅外夯得发亮的黄土校场，兵器架上插着制式短矛和铁柄马刀。格桑顿珠的规矩：交得起学费的，不问来路都能学两手。",
+    },
+    {
+      id: "shop_yudingtusi", name: "土司府军需司", type: BUILDING_TYPE.SECTSHOP, shopKey: "土司军需司",
+      desc: "西厢外院的军需库房，柜台后的差役拨着算盘，给巡捕营发军粮、卖铠甲。外客照价，府里信得过的人能打折。",
+    },
+    {
+      id: "library_yudingtusi", name: "档册文书房", type: BUILDING_TYPE.LIBRARY,
+      desc: "议事厅东侧的长屋，架上堆满鱼定一带的税册、地契抄本和户籍账。主簿洛桑平措记性极好，哪年哪户欠了几升青稞都背得出来。",
+    },
+    {
+      id: "pigeon_yudingtusi", name: "官驿鸽棚", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 1,
+      desc: "府门檐下的鸽棚，养着往锦官城、雅江递公文的官鸽，鸽爪上的铜环刻着土司府的云雷纹。",
+    },
+  ],
   // ── 鱼定村（7 种，枢纽村） ──
   鱼定村: [
     {
@@ -466,6 +489,44 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "kitchen_wuxian", name: "酸汤竹灶", type: BUILDING_TYPE.KITCHEN,
       desc: "用湿泥糊成的苗家地灶，吊锅里常年咕嘟着红亮酸汤，墙上挂满腊肉、山椒与野菌。寨里人说，进了毒瘴谷要想不烂肠子，每天得吃三口滚烫酸辣。",
+    },
+  ],
+  // ── 大草甸：血刀磨刀坪挂在已有的血刀营地内层房间 ──
+  大草甸: [
+    {
+      id: "wuguan_xuedao", name: "血刀磨刀坪", type: BUILDING_TYPE.WUGUAN, skillSet: "血刀",
+      desc: "营地正中一片踩得发亮的磨刀坪，刀口磨出火星，血腥味混着铁屑味。血刀部的路数不问出身，想学先把手伸出来让刀认一认。",
+    },
+  ],
+  // ── 天龙营（西风隘）：玄甲军与白衣旧部隔谷对峙的连营 ──
+  天龙营: [
+    {
+      id: "sect_entry_tianlong", name: "天龙点将台", type: BUILDING_TYPE.SECT_ENTRY, sect: "天龙教",
+      desc: "黑石高台，牛皮大鼓裂了口。台下插着一圈断刀——接不住三招的，刀留下，人下山。石重岳在此收人，只看拳头与办差。",
+    },
+    {
+      id: "wuguan_tianlong", name: "西风演武场", type: BUILDING_TYPE.WUGUAN, skillSet: "天龙",
+      desc: "玄甲军操练的夯土大坪，号子声压过风声。外来的拳师想挣一声服气，先得上坪里走几招。",
+    },
+    {
+      id: "sectshop_tianlong", name: "天龙军需坊", type: BUILDING_TYPE.SECTSHOP, shopKey: "天龙军需坊",
+      desc: "半敞的皮顶货棚，弯刀皮甲止血散一应俱全。军需官记账先看你脸——在天龙教挣的声名，在这里直接抵银子。",
+    },
+    {
+      id: "forge_xifeng", name: "西域铁砧炉", type: BUILDING_TYPE.FORGE,
+      desc: "依岩壁砌的两座炭炉，火色不熄。砧上打的不是农具——弯刀、马镫、玄甲的铆片。",
+    },
+    {
+      id: "hospital_xigu", name: "西谷草药棚", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
+      desc: "白衣旧部的药庐，檐下挂满晾着的草药，苦味顺谷口往外飘。贺兰昭的火候比军营规矩还硬。",
+    },
+    {
+      id: "inn_xifeng", name: "风沙客帐", type: BUILDING_TYPE.INN, innPrice: 25,
+      desc: "避风坡上几顶驼毛毡帐，火塘边常备酽茶烤饼，专收过路商旅与说不上来路的人。",
+    },
+    {
+      id: "library_tianlong", name: "止戈经帐", type: BUILDING_TYPE.LIBRARY,
+      desc: "安静得不像军营的经帐，毡壁上挂着褪色的白帆，案上摊着写满经文的羊皮卷。",
     },
   ],
 };

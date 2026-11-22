@@ -238,7 +238,7 @@ export const SKILL_CATALOG = {
     },
     {
       id: "kf_ziyang", name: "紫阳神功", type: SKILL_TYPE.NEIGONG, quality: "紫", price: 200,
-      unlock: { faction: "青城派", rep: 80, member: true, guestRep: 140, note: "需拜入青城派且声誉 ≥ 80（非门人需声誉 ≥ 140 一代尊宿方可破例抄录）" },
+      unlock: { faction: "青城派", rep: 80, member: true, note: "需拜入青城派且声誉 ≥ 80（青城派开门收徒后方可求教）" },
       moveType: "防御",
       desc: "青城派镇山内功，取紫阳真人丹道之意。气沉丹田后不外放，只在周身经脉里反复淬炼，久之皮肉筋骨皆如浸过药水。练成者不显山不露水，挨打时才看得出分别——同样一剑，别人见血，他只留一道白痕。练岔了会浑身发烫三日不退。",
       passiveBonus: { maxHp: 35 },
@@ -507,27 +507,116 @@ export const SKILL_CATALOG = {
   ],
 
   // ── 血刀门：邪派，以杀养刀。不外传，只从厉天行身上掉 ──
+  // ── 鱼定土司府·巡捕营校场（合稿·土司府第 5 节）。不可拜入，全部按土司府声誉解锁；印山镇岳掌合稿另要桑杰朵杰好感 45，好感门槛暂未接线。 ──
+  土司: [
+    {
+      id: "kf_tusi_xunshan", name: "巡山铁步", type: SKILL_TYPE.QINGGONG, quality: "绿", price: 60,
+      moveType: "状态",
+      passiveBonus: { speedBonus: 1, maxHp: 6 },
+      unlock: { faction: "鱼定土司府", rep: 0, member: false, note: "鱼定土司府声誉 ≥ 0 即可在巡捕营校场购习" },
+      desc: "巡捕营骑手下马巡岭练出来的硬步子，踩雪不滑、踏石不晃。格桑顿珠常骂新兵：「轻功不是用来飘给姑娘看的，是背着四十斤甲还能抢占高坡的！」",
+    },
+    {
+      id: "kf_tusi_duanqi", name: "校场整肃", type: SKILL_TYPE.MOVE, quality: "绿", price: 65,
+      moveType: "状态",
+      energyRestore: 6, hpRestore: 0.06,
+      unlock: { faction: "鱼定土司府", rep: 0, member: false, note: "鱼定土司府声誉 ≥ 0 即可购习" },
+      desc: "巡捕营寅时点卯后的站桩调息法。腰板挺得像门前的旗杆，气沉下去，不乱喘也不露怯——站久了，连站在衙门口讨公道的百姓都先矮了三分气势。",
+    },
+    {
+      id: "kf_tusi_maozhen", name: "镇边矛势", type: SKILL_TYPE.MOVE, quality: "蓝", price: 150,
+      moveType: "攻击",
+      nextAttackBonus: 0.25, lowHpBonus: 0.15,
+      unlock: { faction: "鱼定土司府", rep: 15, member: false, note: "鱼定土司府声誉 ≥ 15（颇具善缘）" },
+      desc: "格桑顿珠压箱底的军阵长兵路数，化繁为简，就三下：压、扎、挑。不跟江湖人比花巧，专破单打独斗的游击散招，一杆矛捅出去像一堵移动的墙。",
+    },
+    {
+      id: "kf_tusi_tiebian", name: "敕令铁鞭", type: SKILL_TYPE.MOVE, quality: "紫", price: 260,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.55 },
+      unlock: { faction: "鱼定土司府", rep: 40, member: false, note: "鱼定土司府声誉 ≥ 40（门墙之交）" },
+      desc: "土司府执法重技，原本配的是沉铁马鞭与硬木算筹。抽出去带着破风的尖啸，打的不是要害，打的是「不守规矩」那口气——挨上一鞭，半边身子都发麻。",
+    },
+    {
+      id: "kf_tusi_budong", name: "雪域不动诀", type: SKILL_TYPE.NEIGONG, quality: "紫", price: 280,
+      moveType: "防御",
+      immuneControl: true,
+      passiveBonus: { maxHp: 28 },
+      unlock: { faction: "鱼定土司府", rep: 40, member: false, note: "鱼定土司府声誉 ≥ 40（门墙之交）" },
+      desc: "三十年前老土司桑杰大侠融合藏地密息与中原内功所创的护体心法。气行周天如雪峰盘踞，任狂风扑面岿然不动；只是如今府里懂它本意的人，满打满算不过两个。",
+    },
+    {
+      id: "kf_tusi_yinshan", name: "印山镇岳掌", type: SKILL_TYPE.MOVE, quality: "橙", price: 480,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.75 }, nextAttackBonus: 0.35,
+      unlock: { faction: "鱼定土司府", rep: 80, member: false, note: "鱼定土司府声誉 ≥ 80（股肱心腹）" },
+      desc: "桑杰朵杰不轻易示人的世家绝学。出掌前看不出半分杀气，落下来却似一方千斤官印从天压顶，外绵内沉、劲透脏腑。三十年前雪山崖底，老土司正是以此掌接下了呼延大侠的剑。",
+    },
+  ],
+  // ── 血刀部：天龙教血刀部磨刀坪传功。想往深学，先在天龙教把声名挣出来 ──
   血刀: [
     {
-      id: "kf_rec_chuoxue", name: "啜血还气", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+      id: "kf_rec_chuoxue", name: "啜血还气", type: SKILL_TYPE.MOVE, quality: "橙", price: 80,
       moveType: "状态",
       energyRestore: 12,
       desc: "血刀门的路子：把干在指缝里的血痂抠下来吃了。气回得极快，快到不像人该有的速度。厉天行说这没什么讲究，「你饿了会吃饭，我这就是吃饭」。",
+      unlock: { faction: "天龙教", rep: 0, member: false, note: "非敌对即可在磨刀坪学" },
     },
     {
-      id: "kf_rec_daoxiu", name: "刀锈入喉", type: SKILL_TYPE.MOVE, quality: "紫", price: 0,
+      id: "kf_rec_daoxiu", name: "刀锈入喉", type: SKILL_TYPE.MOVE, quality: "紫", price: 180,
       moveType: "状态",
       energyRestore: 8, forceCrit: { multiplier: 1.35 },
       desc: "舔一下刀背。铁锈味混着别人的血腥味压在舌根，恶心，但眼睛会红。红了之后下一刀的分量不一样——这门功夫从不解释为什么。",
+      unlock: { faction: "天龙教", rep: 15, member: false, note: "天龙教声誉 ≥ 15（厉天行另眼相看者亦可求教）" },
     },
-    { id: "kf_xuedao", name: "血刀大法", type: SKILL_TYPE.MOVE, quality: "橙", price: 0,
+    { id: "kf_xuedao", name: "血刀大法", type: SKILL_TYPE.MOVE, quality: "橙", price: 480,
       // hpRestore 是招式层已经跑通的字段（resolveTurn 里按最大气血比例结算），
       // 设计稿原写的 lifesteal（按实际伤害比例吸血）全项目没有接线，写了也不生效，
       // 所以这里落在 hpRestore 上——"砍中就回一口"的观感一样，但它是真的会回血。
       hpRestore: 0.06,
       moveType: "攻击",
       desc: "以血养刀，以杀证道。每一刀劈出都带着铁锈般的血腥气，砍中对手时刀身会吸——不是吸肉，是吸气。被砍中的人伤口愈合极慢，而持刀者面色红润。练到极处，一刀下去，对手瘦一圈，你胖一圈。",
-      passiveBonus: { maxHp: 10 } },
+      passiveBonus: { maxHp: 10 },
+      unlock: { faction: "天龙教", rep: 80, member: true, note: "需拜入天龙教且声誉 ≥ 80（门人秘传，外客不可求教）" } },
+  ],
+
+  // ── 天龙教本部：西风演武场。玄甲军的拳、旧部的印、教主的劲，各挣各的声名 ──
+  天龙: [
+    {
+      id: "kf_tl_xifengbu", name: "西风踏沙步", type: SKILL_TYPE.QINGGONG, quality: "绿", price: 85,
+      moveType: "状态",
+      passiveBonus: { speedBonus: 1 },
+      desc: "西风隘的孩子五岁就学这个：沙地上一错步，人借着风势滑出去半丈。石重岳说这不是轻功，是「不给风添麻烦」。",
+      unlock: { faction: "天龙教", rep: 0, member: false, note: "非敌对即可在西风演武场学" },
+    },
+    {
+      id: "kf_tl_shahuang", name: "沙暴震岳拳", type: SKILL_TYPE.MOVE, quality: "蓝", price: 160,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.35 },
+      desc: "玄甲军的正拳。出拳不快，像沙暴先压过来再砸下来——架住的觉得手麻，没架住的觉得地晃。",
+      unlock: { faction: "天龙教", rep: 15, member: false, note: "天龙教声誉 ≥ 15" },
+    },
+    {
+      id: "kf_tl_zhigezhang", name: "止戈印", type: SKILL_TYPE.MOVE, quality: "紫", price: 280,
+      moveType: "防御",
+      energyRestore: 6,
+      desc: "白衣旧部传下来的手印：掌心朝外一推，来势在掌前硬生生顿住——不是挡，是让对方自己停下来。天王说止戈为武，旧部说那是天王一个人的武。",
+      unlock: { faction: "天龙教", rep: 40, member: false, note: "天龙教声誉 ≥ 40（止戈经帐与天王旧部认可）" },
+    },
+    {
+      id: "kf_tl_longyuan", name: "龙渊霸世劲", type: SKILL_TYPE.MOVE, quality: "橙", price: 520,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.5 },
+      desc: "石重岳压箱底的劲。劲发时人不像在打人，像整条西风隘压下来——盔甲、横练、招架，全都不作数，只作数一件事：你站不站得住。",
+      unlock: { faction: "天龙教", rep: 80, member: true, note: "需拜入天龙教且声誉 ≥ 80（门人秘传，外客不可求教）" },
+    },
+    {
+      id: "kf_tl_babujing", name: "八部天龙经", type: SKILL_TYPE.NEIGONG, quality: "红", price: 980,
+      moveType: "防御",
+      passiveBonus: { maxHp: 70 },
+      desc: "天龙教镇教内功，只此一册，在断崖石室的老天王手里。八层关隘层层相扣，练到深处气脉自行周天——教里传说，练成它的人才能真正统合玄甲与白衣两脉。",
+      unlock: { faction: "天龙教", rep: 100, member: true, note: "需拜入天龙教且声誉 ≥ 100（镇教经卷，还须天5 之局了结后由安世衡亲传）" },
+    },
   ],
 
   // ── 三星派：古蜀剑派，不设铺面不收束脩，武学只从面具试炼来 ──
