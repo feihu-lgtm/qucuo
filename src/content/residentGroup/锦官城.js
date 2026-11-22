@@ -217,7 +217,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "裴九江", innerRoom: "锦官武馆", id: "resident_peijiujiang", levelCap: 3,
+      name: "裴九江", innerRoom: "巡检校场·锦官武馆后院", id: "resident_peijiujiang", levelCap: 3,
       brief: "锦官城北巡检司总捕头，兼管锦官武馆后院校场操练",
       personality: "刚正务实，厌恶油滑；恨血刀部入骨，对黑风寨巴桑却存三分敬意",
       carry: [
@@ -245,7 +245,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "沈归尘", innerRoom: "都事府", id: "resident_shenguichen", levelCap: 2,
+      name: "沈归尘", innerRoom: "刑名东厢·卷宗库房", id: "resident_shenguichen", levelCap: 2,
       brief: "都事府卷宗阁守库老吏，六年前失踪上司的贴身书办",
       personality: "古板执拗，过目不忘，对人冷淡却对每一页纸敬若神明",
       carry: [

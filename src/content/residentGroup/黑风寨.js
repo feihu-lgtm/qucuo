@@ -109,7 +109,7 @@ export default { residentGroup: {
     },
     // 合稿·黑风寨「三、人物」原创角色补驻场。
     {
-      name: "贡布", innerRoom: "寨内公共区", id: "resident_gongbu", levelCap: 3,
+      name: "贡布", innerRoom: "打铁坡与药棚", id: "resident_gongbu", levelCap: 3,
       brief: "黑风寨二当家兼铁匠，原鱼定村老佃户，右腿被陆福生打瘸",
       personality: "厚道直爽，嘴硬心软，护着寨里老弱；最恨彭老四那伙不守寨规的亡命徒",
       carry: [
