@@ -40,6 +40,20 @@ function appendQuestAdvancement(state, changes, quest, flag, now) {
   }
 }
 
+// 连胜类战斗分支（choice.streakFrom 指向连胜起点阶段）：输一场，连胜作废，
+// 任务退回起点阶段，期间各阶段的 completionFlag 一并收回，免得引擎又顺着 flag 推回去。
+function breakQuestStreak(state, changes, logs, branch) {
+  const quest = QUCUO_QUESTS.find((entry) => entry.id === branch.questId);
+  const choice = quest?.stages?.flatMap((stage) => stage.choices || []).find((entry) => entry.flag === branch.flag);
+  const from = choice?.streakFrom ? quest.stages.findIndex((stage) => stage.id === choice.streakFrom) : -1;
+  const progress = state.questProgress?.[quest?.id];
+  if (from < 0 || progress?.status !== "active" || (progress.currentStageIndex ?? 0) <= from) return;
+  const dropped = quest.stages.slice(from, progress.currentStageIndex).flatMap((stage) => [].concat(stage.completionFlag));
+  addChange(changes, state, "flags", (flags) => (flags || []).filter((flag) => !dropped.includes(flag)));
+  addChange(changes, state, "questProgress", (all) => ({ ...all, [quest.id]: { ...all[quest.id], currentStageIndex: from } }));
+  logs.push({ t: "sys", text: `  连胜断了，「${quest.title}」得从头再打起。` });
+}
+
 function invHasNamedItem(inv, name) {
   return (inv || []).some((item) => (typeof item === "string" ? item : item?.name) === name);
 }
@@ -109,6 +123,7 @@ export function settleNpcDuel(state, npc, {
       }
     } else {
       logs.push({ t: "sys", text: `  你没能打赢——这条路没走通，可换个法子再试。` });
+      breakQuestStreak(working, changes, logs, pendingQuestBranch);
     }
   }
 

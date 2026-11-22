@@ -41,6 +41,24 @@ describe("欢喜教", () => {
     expect(isInnerExitUnlocked(room("莲花廊").unlockCondition, { flags: ["欢喜教弟子"] })).toBe(true);
   });
 
+  it("香2：前厅擂台连打三场、内堂请茶后切磋罗琦，胜了才开欢喜堂，正殿问话要进欢喜堂", async () => {
+    const { QUCUO_QUESTS } = await import("../../domain/data/quests/qucuoQuests.js");
+    const stages = QUCUO_QUESTS.find((quest) => quest.id === "huanxijiao_2_biwuzhaoxian").stages;
+    const where = (id) => stages.find((stage) => stage.id === id).requireLocation?.inner;
+    expect(stages.map((stage) => stage.id)).toEqual(["s1_tournament", "s1_bout2", "s1_bout3", "s2_tea", "s2_spar", "s3_heart"]);
+    for (const id of ["s1_tournament", "s1_bout2", "s1_bout3"]) expect(where(id)).toBe("天都香行");
+    for (const id of ["s2_tea", "s2_spar"]) expect(where(id)).toBe("香行内堂");
+    expect(where("s3_heart")).toBe("欢喜堂");
+    for (const stage of stages.filter((entry) => ["s1_tournament", "s1_bout2", "s1_bout3", "s2_spar"].includes(entry.id))) {
+      expect(stage.choices).toEqual([expect.objectContaining({ flag: stage.completionFlag, resolve: "combat" })]);
+    }
+    expect(stages[0].choices[0].combatNpc.hostile).toBe(false);
+    expect(stages.find((stage) => stage.id === "s2_spar").choices[0].combatNpc.hostile).toBe(false);
+    const hall = getInnerRoom("天都镇", "欢喜堂").unlockCondition;
+    expect(isInnerExitUnlocked(hall, { flags: ["quest_huanxijiao2_s2"] })).toBe(false);
+    expect(isInnerExitUnlocked(hall, { flags: ["quest_huanxijiao2_luoqi"] })).toBe(true);
+  });
+
   it("opens 伽罗旧神殿 after 香2 and keeps 欢喜堂库房 in 莲花廊 for disciples or rep ≥ 40", () => {
     const buildings = getBuildingsForLocation("天都镇");
     const at = (inner) => buildings.find((building) => building.id === getBuildingIdForInnerRoom("天都镇", inner));

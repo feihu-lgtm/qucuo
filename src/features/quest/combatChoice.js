@@ -12,7 +12,7 @@ export function buildQuestFoe(choice, now = Date.now()) {
   return ensureNpcCombatData({
     ...choice.combatNpc,
     id: `questfoe_${choice.flag}_${now}`,
-    levelCap, hostile: true, questBranchFlag: choice.flag,
+    levelCap, hostile: choice.combatNpc.hostile !== false, questBranchFlag: choice.flag,
   }, { levelCap });
 }
 
