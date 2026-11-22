@@ -8,11 +8,12 @@ const npc = {
     { name: "鱼定猎刀", category: "weapon" },
     { name: "青稞饼", category: "misc" },
     { name: "护佑结", category: "accessory", stolen: true },
+    { name: "熊皮坎肩", category: "armor", dropped: true },
   ],
 };
 
 describe("npcLookCard", () => {
-  it("只列来历和没被偷走的装束，不列杂物", () => {
+  it("只列来历和没被偷走、没在切磋中掉落的装束，不列杂物", () => {
     expect(npcGear(npc)).toEqual(["鱼定猎刀"]);
     expect(npcLookCard(npc).map(r => r.text)).toEqual(["  才旦：村长之女", "  装束：鱼定猎刀"]);
   });

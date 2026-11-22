@@ -5,7 +5,7 @@ const GEAR = new Set([ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.A
 
 export function npcGear(npc) {
   return (npc?.carriedItems || [])
-    .filter((item) => item?.name && !item.stolen && GEAR.has(item.category))
+    .filter((item) => item?.name && !item.stolen && !item.dropped && GEAR.has(item.category))
     .map((item) => item.name);
 }
 
