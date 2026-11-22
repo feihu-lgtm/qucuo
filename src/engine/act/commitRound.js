@@ -3,6 +3,7 @@ import { applyMvuCommands } from "../../domain/rules/prompt/mvu.js";
 import { formatAngerResolutionLog, resolveAngerSignals } from "../../domain/rules/combat/stealSystem.js";
 import { applyKnowledgeTreeDiff } from "../../domain/rules/prompt/knowledge.js";
 import { commitProposalWrites } from "./commitProposalWrites.js";
+import { commitModelFlags } from "./commitFlags.js";
 import { filterGhostCommands } from "./commitHelpers.js";
 import { settleDeal } from "./postCommit/dealSettle.js";
 import { emitNarrative } from "./postCommit/narrative.js";
@@ -116,7 +117,16 @@ export function commitRound(d) {
   }));
   applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck })); // 涌现·实体化
   writeRoom(d, { traceStep });      // 房间写回（锁定目的地/固定地图/兜底）
-  commitProposalWrites(d, (...args) => traceStep(d._trace, ...args));
+  applyPostResult(d, commitProposalWrites({ // AI 提议落盘：char/dao/物品/经验/潜能/技能
+    p: d.p, isTalk: d.isTalk, giftAlreadySettled: d.giftAlreadySettled,
+    preserveHp: d.preserveHp, gm: d.gm,
+    pickupJudgment: d.pickupJudgmentRef.current, collectGranted: d.collectGrantedRef.current,
+    pickupExtractionFailed: d.pickupExtractionFailedRef.current,
+  }, { trace: (...args) => traceStep(d._trace, ...args) }));
+  applyPostResult(d, commitModelFlags({  // flags_add 过滤落盘（原 commitProposalWrites 尾部内嵌）
+    p: d.p, room: d.room, innerRoomName: d.innerRoomName,
+    questProgress: d.questProgress, pendingQuestBranch: d.pendingQuestBranch,
+  }));
   applyPostResult(d, emitChoices({ choices: d.p.choices })); // 选项延时浮现
   if (!d.isTalk) d.setTime(t => t + 1);
   applyPostResult(d, writeMemoryNote({ // 小纸条·向量写入
