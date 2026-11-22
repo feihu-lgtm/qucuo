@@ -3,13 +3,14 @@ import { Overlay, Header, Btn } from "./common.jsx";
 import { ESCORT_QUESTS } from "../../../domain/data/quests/escortQuests.js";
 export { ESCORT_QUESTS } from "../../../domain/data/quests/escortQuests.js";
 
-export default function EscortScreen({ building, char, flags, questProgress, currentRoom, zoneTheme, onClose, inline, onAcceptEscort }) {
+export default function EscortScreen({ building, char, flags, questProgress, currentRoom, zoneTheme, onClose, inline, onAcceptEscort, time }) {
   const money = char.money || 0;
 
   // 过滤：只显示从当前据点出发的任务，且未接取也未完成的
   const available = ESCORT_QUESTS.filter(q => {
     if (q.fromLocations && !q.fromLocations.includes(currentRoom)) return false;
-    if (flags.includes(`quest_done_${q.id}`)) return false;
+    const doneFlag = q.daily ? `${q.daily}${Math.floor((time || 0) / 24)}` : `quest_done_${q.id}`;
+    if (flags.includes(doneFlag)) return false;
     if (questProgress[q.id]?.active) return false;
     return true;
   });

@@ -131,11 +131,13 @@ export function playLocalQuestStage(state, quest, choiceLabel, now) {
   };
 }
 
+const escortDoneFlag = (quest, time) => (quest.daily ? `${quest.daily}${Math.floor((time || 0) / 24)}` : `quest_done_${quest.id}`);
+
 export function acceptEscort(state, questRef) {
   const quest = ESCORT_QUESTS.find((entry) => entry.id === questRef?.id);
   if (!quest) return noOpResult();
   if (quest.fromLocations && !quest.fromLocations.includes(state.room?.name)) return noOpResult();
-  if ((state.flags || []).includes(`quest_done_${quest.id}`) || state.questProgress?.[quest.id]?.active) {
+  if ((state.flags || []).includes(escortDoneFlag(quest, state.time)) || state.questProgress?.[quest.id]?.active) {
     return noOpResult();
   }
 
