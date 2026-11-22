@@ -3,9 +3,13 @@
 import { makeSkillEntry } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { skillUnlockStatus } from "../../domain/rules/economy/skillUnlock.js";
 import { invalidAmountResult, noOpResult } from "./helpers.js";
+import { strongholdBan } from "../../domain/rules/economy/strongholdGate.js";
 
 export function buySkill(state, catalogItem) {
   if (!catalogItem?.id || (state.skills || []).some((skill) => skill.id === catalogItem.id)) return noOpResult();
+
+  const ban = strongholdBan(state.room?.name, state.varTree);
+  if (ban) return { logs: [{ t: "sys", text: `  ${ban.closed}` }] };
 
   const unlock = skillUnlockStatus(state, catalogItem);
   if (!unlock.ok) return { logs: [{ t: "sys", text: `  「${catalogItem.name}」尚不可学：${unlock.reason}` }] };

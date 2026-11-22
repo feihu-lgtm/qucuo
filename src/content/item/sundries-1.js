@@ -297,8 +297,11 @@ const items = {
 "合璧青铜古簪": { name:"合璧青铜古簪", category:"accessory", quality:"紫", tags:["饰品","信物","峨眉","雪山派"], effect:{ immuneControl: true }, sixDim:{根骨:1}, desc:"岷江古渡断开的两半青铜素簪，三十年后在金顶重新合上，佩之心神不为外力所夺。" },
 "青城玄门竹牌": { name:"青城玄门竹牌", category:"misc", quality:"绿", tags:["信物","门派","青城"], desc:"青城派正式弟子的竹制腰牌，正面烙「青城天下幽」，背面刻着拜入那日的干支。" },
 // ── 丐帮三星分舵（广汉）：分舵吃食、任务物件 ──
+"三星青竹袋": { name:"三星青竹袋", category:"misc", quality:"绿", tags:["信物","门派","丐帮"], desc:"丐帮三星分舵正式弟子的青竹布袋，记名一袋起步。系在腰间，川西的叫花子见了都会喊一声「自家兄弟」。" },
+"三星客卿青竹杖": { name:"三星客卿青竹杖", category:"misc", quality:"橙", tags:["信物","丐帮","终局"], desc:"严九斤摔碗誓师那夜亲手削的青竹杖，杖头缠着三道红绳。持杖者是三星分舵的客卿，打狗阵听你号令。" },
 "广汉大锅盔": { name: "广汉大锅盔", category: "misc", quality: "白", tags: ["食品", "主食", "广汉"], consumable: { hpRestore: 0.1 }, desc: "烤得焦黄酥脆的死面饼，咬着费牙却极顶饿，是川北赶路人的硬通货。" },
 "广汉干粮": { name: "广汉干粮", category: "misc", quality: "白", tags: ["食品", "干粮", "广汉"], consumable: { hpRestore: 0.08 }, desc: "白婶用糙米和炒面捏的干粮团，一包三个，揣在怀里走三天都不坏。" },
+"莲花落竹板": { name: "莲花落竹板", category: "misc", quality: "绿", tags: ["乐器", "丐帮", "杂货"], desc: "两片磨得发红的毛竹板，一敲就是一段莲花落。三星镇集上的人听见这声，就知道秦小鹊又来讨酒钱了。" },
 "叫化土鸡": { name: "叫化土鸡", category: "misc", quality: "绿", tags: ["食品", "荤菜", "广汉"], consumable: { hpRestore: 0.15 }, desc: "破庙大灶边拿黄泥裹着煨出来的土鸡，敲开泥壳，油香能飘出半条街。" },
 "三星叫化鸡": { name: "三星叫化鸡", category: "misc", quality: "蓝", tags: ["食品", "荤菜", "广汉", "送礼"], consumable: { hpRestore: 0.25, sixDimTemp: { 体魄: 1 } }, desc: "白婶拿荷叶裹、沱江黄泥封，在破庙大灶里焖出的拿手绝活。吃了大补气血，送给严九斤这样的江湖豪客最涨交情。" },
 "驱寒老姜酒": { name: "驱寒老姜酒", category: "misc", quality: "绿", tags: ["酒", "驱寒"], consumable: { energyRestore: 3 }, desc: "烈性川北烧酒泡老姜，喝一口从嗓子眼辣到脚底，驱寒气，也回真气。" },

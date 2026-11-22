@@ -131,7 +131,7 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
       },
       ...(alms ? { flags: alms.flags } : {}),
     },
-    ...(alms ? { logs: [{ t: "affection", text: `  ✦ 银子进了粥锅，${alms.faction}声誉 +${alms.delta}` }] } : {}),
+    ...(alms ? { logs: [{ t: "affection", text: `  ✦ ${alms.log}，${alms.faction}声誉 +${alms.delta}` }] } : {}),
     settle: `将${itemName}赠予${npc.name}`,
     settleOptions: {
       settleNpc: npc.name,

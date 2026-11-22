@@ -13,7 +13,7 @@ const QUAL_COLOR = { 白: "var(--ink-text)", 绿: "var(--ink-leaf)", 蓝: "var(-
 export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, onClose }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const house = building?.house || building?.name || "库房";
-  const [chest, setChest] = useState(() => loadChest(house));
+  const [chest, setChest] = useState(() => loadChest(house, { prefill: !building?.emptyStock }));
   const persist = (items) => { setChest(items); saveChest(house, items); };
 
   const nameOf = (it) => (typeof it === "string" ? it : it?.name) || "未知物件";

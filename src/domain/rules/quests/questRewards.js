@@ -10,8 +10,8 @@
 //   money: 40,                                          // 银两增减
 //   exp: 3,                                             // 阅历（设计文档里的"阅历+N"）
 //   pot: 0,                                             // 潜能
-//   reputation: 10,                                     // 江湖威望增减（世界.威望，-100~100，单次自动限幅±15）
-//   factionRep: { "鱼定村": 5 },                         // 势力声誉增减（世界.势力声誉.<势力>，-100~100，单次限幅±10）
+//   reputation: 10,                                     // 江湖威望增减（世界.威望，-100~100，按原值落盘，不吃 AI ±15 限幅）
+//   factionRep: { "鱼定村": 5 },                         // 势力声誉增减（世界.势力声誉.<势力>，-100~100，按原值落盘）
 //   flags: ["promise_..."],                             // 额外记录的flag（承诺/势力声望等）
 // }
 // 分支点（completionFlag 是数组）额外支持 onReach.byFlag：{ 具体flag: {同上结构} }，
@@ -89,7 +89,11 @@ export function stageRewardPatches(rewards, now = Date.now()) {
     patches.push(set(["角色", name, "好感度"], value));
   }
   if (rewards.reputation) {
-    patches.push(add("世界.威望", rewards.reputation));
+    // 与 factionRep 同理：任务奖励按合稿原值一次落盘，不吃 AI 写入的单次 ±15 限幅。
+    patches.push(merge("varTree", (tree) => {
+      const prestige = Math.max(-100, Math.min(100, (Number(tree?.世界?.威望) || 0) + rewards.reputation));
+      return { ...tree, 世界: { ...tree?.世界, 威望: prestige } };
+    }));
   }
   if (Object.values(rewards.factionRep || {}).some(Boolean)) {
     patches.push(merge("varTree", (tree) => applyFactionRep(tree, rewards.factionRep, { step: Infinity })));

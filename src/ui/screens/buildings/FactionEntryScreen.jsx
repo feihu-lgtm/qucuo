@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
 import { checkFactionEntry } from "../../../domain/rules/character/factionEntry.js";
-import { useGameStore } from "../../../store/gameStore.js";
 
 const hintOf = (entry, key) => ({
   rep: `· ${entry.sect}上下还不够信你。多替门里办事，把声誉攒到门墙之交。`,
@@ -26,8 +25,7 @@ export function LeaveSectButton({ sect, onLeaveSect, zoneTheme }) {
 }
 
 // 势力拜师堂（青城、峨眉…）。结算在 features/sect/logic.js joinSect，AI 只写叙事。
-export default function FactionEntryScreen({ entry, building, char, flags, varTree, zoneTheme, onClose, inline, onJoinSect, onLeaveSect }) {
-  const questProgress = useGameStore((s) => s.questProgress);
+export default function FactionEntryScreen({ entry, building, char, flags, varTree, questProgress, zoneTheme, onClose, inline, onJoinSect, onLeaveSect }) {
   const status = checkFactionEntry(entry, { varTree, flags, char, questProgress });
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
