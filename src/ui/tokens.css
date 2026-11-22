@@ -102,6 +102,15 @@
   --qb-switch-edge: #4a6a84;
   --qb-felt: #14100b;     /* 深底（候选卡/立绘底） */
 
+  /* 见闻录定色（原字面量，不随日间模式变）：--lore-gold 是「告知」和缺省强调色，--lore-amber 是「传闻」和将淡忘倒计时。 */
+  --lore-amber: #c08a6a;
+  --lore-gold: #c4a86a;
+  --lore-note-text: #d0c8ac;
+  --lore-panel: #12141c;
+  --lore-private: #c08ac0;
+  --lore-script: #9a8ac0;
+  --lore-summary: #d8cfb0;
+
   /* 百物图鉴卷轴定色（原字面量，不随日间模式变）。 */
   --codex-ink: #3a2a14;         /* 卷面正文 */
   --codex-dim: #8a6a3a;         /* 卷面次级字 */
