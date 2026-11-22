@@ -21,4 +21,10 @@ describe("var() 颜色加透明度", () => {
       expect(source).not.toMatch(/\$\{(?:color|途径色\[途\] \|\| border)\}[0-9a-f]{2}`/);
     }
   });
+
+  it("问题上报弹窗的对话分隔线不再给 var() 直接拼后缀", () => {
+    const source = readFileSync("src/ui/screens/BugReportModal.jsx", "utf-8");
+    expect(source).toContain("color-mix(in srgb, ${C.border} 33%, transparent)");
+    expect(source).not.toMatch(/\$\{C\.border\}[0-9a-f]{2}`/);
+  });
 });
