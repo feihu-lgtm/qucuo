@@ -170,6 +170,7 @@ export default { quest: {
           exp: 5,
           favorabilitySet: { "巴桑": 100 },
           reputation: 15,
+          factionRep: { 黑风寨: 10, 鱼定土司府: -5 },
           items: [{ name: "土司府十年戍边税税册", category: "misc", quality: "橙", desc: "十年冤枉税明细，可交才旦/柳青鸢/梅朵三方任一，不互斥。" }],
           flags: ["endgame_buff_heifengzhai_raid_supply_lines"],
         },

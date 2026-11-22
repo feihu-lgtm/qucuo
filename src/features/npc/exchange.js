@@ -132,5 +132,5 @@ export function tradeWithNpc(state, npc) {
   if (!shopData) {
     return { logs: [{ t: "sys", text: `  ${npc.name}摆摆手，「小店暂无货可卖。」` }] };
   }
-  return { shop: { npcName: npc.name, ...shopData } };
+  return { shop: { npcName: npc.name, district: state.room?.name, ...shopData } };
 }

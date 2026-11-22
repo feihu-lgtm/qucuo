@@ -7,7 +7,7 @@ import React from "react";
 import { QUALITY_COLOR, discountedBuyPrice } from "../../domain/rules/economy/equipment.js";
 import { chromeBtn } from "../../utils/theme.js";
 
-export default function TradingScreen({ shopName, shopItems, playerInv, playerMoney, playerWit = 5, onBuy, onSell, onClose, zoneTheme, inline, onInspect, queueCount = 0,
+export default function TradingScreen({ shopName, shopItems, playerInv, playerMoney, playerWit = 5, repCoef = 1, onBuy, onSell, onClose, zoneTheme, inline, onInspect, queueCount = 0,
   headerContent,
   // 货币名。雪山派门派商坊用功德（QUCUO_SHOPS 里 currency:"karma"），调用方
   // 传进来的 playerMoney 与各件的 buyPrice 都是功德值——但此前本组件五处
@@ -86,7 +86,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
             <div style={{ fontSize: 11, color: zoneTheme.accentDim, marginBottom: 8 }}>商店货品</div>
             {shopItems.map((item, i) => {
               // 智谋折扣：显示折后价，实付也是折后价。折扣时把原价划掉、标出省了多少。
-              const payPrice = discountedBuyPrice(item.buyPrice, playerWit);
+              const payPrice = Math.max(1, Math.ceil(discountedBuyPrice(item.buyPrice, playerWit) * repCoef));
               const discounted = payPrice < item.buyPrice;
               const canAfford = (playerMoney || 0) >= payPrice;
               return (

@@ -5,6 +5,7 @@ const protectedPrefixes = Object.entries(FIELDS).filter(([, field]) => field.ai 
   .map(([path]) => path.split(".").slice(0, -1));
 const patterns = Object.entries(FIELDS).filter(([path]) => path.includes("*"))
   .map(([path, field]) => [path.split("."), field]);
+const factionRepParent = statePath(FIELD.factionRep).slice(0, -1);
 const clamp = (value, min = -Infinity, max = Infinity) => Math.max(min, Math.min(max, value));
 
 export const set = (path, value) => ({ op: "set", path, value });
@@ -62,6 +63,10 @@ export function applyWrite(state, { op, path, value }, options = {}) {
 
   const field = (parts.length === id.split(".").length && Object.hasOwn(FIELDS, id) ? FIELDS[id] : null)
     ?? patterns.find(([pattern]) => pathMatches(pattern, parts))?.[1];
+  if (mvu && field !== FIELDS[FIELD.factionRep]
+    && (isPrefix(parts, factionRepParent) || isPrefix(factionRepParent, parts))) {
+    return reject(`"${path}" 会整块覆盖势力声誉，只能逐个写 世界.势力声誉.<势力>`);
+  }
   if (!field || field.readOnly || (mvu && field.ai !== true)) {
     return reject(`字段未声明或不可写：${id}`);
   }
@@ -94,6 +99,13 @@ export function applyWrite(state, { op, path, value }, options = {}) {
     if (typeof base !== "number") return reject(`${field.label} 不能做数值加减`);
     value = base + actualDelta;
     if (!Number.isFinite(value)) return reject(`${field.label}必须是有限数字`);
+  }
+  if (mvu && field === FIELDS[FIELD.factionRep]) {
+    // 一回合内多条指令合计也不超过 ±maxDelta，以回合开始时的值为基准。
+    const start = readPath(options.turnBase ?? state, parts);
+    const base = typeof start === "number" ? start : field.default;
+    value = clamp(value, base - field.maxDelta, base + field.maxDelta);
+    if (op === "add") actualDelta = value - (typeof before === "number" ? before : field.default);
   }
   let finalValue = typeof value === "number" ? clamp(value, bounds.min, bounds.max) : value;
   if (id === FIELD.hp && Array.isArray(finalValue)) {

@@ -183,6 +183,7 @@ describe("NPC trade and companion invitation logic", () => {
       npcName: "杂货商人",
       shopName: "鱼定村杂货铺",
     });
+    expect(tradeWithNpc({ ...makeState(), room: { name: "黑风寨" } }, { name: "杂货商人" }).shop.district).toBe("黑风寨");
   });
 
   it("refuses missing NPCs and NPCs without a shop", () => {
