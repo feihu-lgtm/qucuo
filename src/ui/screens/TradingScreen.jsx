@@ -18,6 +18,8 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
   // 但界面此前照样渲染整个"我的物品/卖出"半边，还把售价标成功德单位——
   // 玩家点了没反应，看着像坏了。整半边隐掉，并把可买区铺满。
   canSell = true,
+  // 可选底栏内容（如镖局的护镖任务板）：嵌在交易面板内部，移动端 fixed 全屏下也可见。
+  footer,
 }) {
   const sellableItems = playerInv.filter(i => typeof i === "object" && i.sellPrice > 0);
 
@@ -118,6 +120,11 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
           </div>
         </div>
 
+        {footer && (
+          <div style={{ borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, maxHeight: "45%", overflowY: "auto" }}>
+            {footer}
+          </div>
+        )}
         <div style={{ padding: "10px 16px", borderTop: `1px solid ${zoneTheme.border}`, textAlign: "center", flexShrink: 0 }}>
           <span className="mobile-touch-target" onClick={onClose} style={{ fontSize: 12, color: "var(--trading-close)", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 0 }}>关闭</span>
         </div>
