@@ -104,6 +104,17 @@
   --ink-edge-gold: #3a2d1d;
   --ink-edge-red: #3a1d1d;
 
+  /* 任务列表定色（右栏和日志共用）。 */
+  --quest-stage-count: #6a8aaa;
+  --quest-stage-desc: #a89a6a;
+  --quest-success-bg: #0a140a;
+  --quest-success-text: #7a8a6a;
+  --quest-negative-bg: #140a0a;
+  --quest-negative-edge: #4a2a2a;
+  --quest-negative-title: #aa6a6a;
+  --quest-negative-text: #8a6a6a;
+  --quest-missed-desc: #6a5a5a;
+
   /* ── 建筑屏/客栈屏定色（随主题不变的装饰色）── */
   --ink-amber: #e0913a;
   --ink-brass: #6a5d40;
