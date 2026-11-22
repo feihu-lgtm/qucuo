@@ -28,5 +28,13 @@ const items = {
 "双股铜花簪": { name: "双股铜花簪", category: "weapon", quality: "白", tags: ["簪", "百花门"], desc: "看着是廉价彩珠簪子，拔下来尖得很。小蝉攒了三个月工钱买的——「歌女也得有件趁手的」。" },
 "鹅黄夹棉短袄": { name: "鹅黄夹棉短袄", category: "armor", quality: "白", tags: ["衣甲", "百花门"], desc: "鹅黄色对襟夹棉短袄，针脚细密，袖口暗缝了一层软革护腕，是小蝉过冬兼防身的宝贝。" },
 "竹编彩雀哨": { name: "竹编彩雀哨", category: "accessory", quality: "绿", sixDim: { 气运: 1 }, tags: ["饰品", "百花门"], desc: "细竹篾编的小哨子，吹出长短不同的调子，天都镇外围的耳目彩雀听见就会循声而来。" },
+"素梅牌": { name: "素梅牌", category: "accessory", quality: "蓝", sixDim: { 气运: 1 }, tags: ["信物", "百花门"], desc: "素银打的一小枝梅花，是兰姐贴身的旧物，也是百花楼内院的通行信物——见牌如见她。" },
+"半枚教主青银令": { name: "半枚教主青银令", category: "misc", quality: "紫", tags: ["信物", "百花门"], desc: "青银所铸的半枚令牌，断口处一朵五瓣银花。兰姐的半枚；另外半枚，在雾隐寨那位年轻教主手里。" },
+"麻九娘三方毒账": { name: "麻九娘三方毒账", category: "misc", quality: "橙", tags: ["证物", "百花门"], desc: "赤皮账簿，记着麻九娘与唐门唐伯渊、土司府管家陆福生的每一笔毒蛊买卖。拿出来，三家都睡不安稳。" },
+"百花奇兵令": { name: "百花奇兵令", category: "misc", quality: "紫", tags: ["信物", "百花门"], desc: "终局调兵令。凭此可令苏折柳易容潜入土司营房投放百花软筋散，瘫痪土司私兵半数战力。" },
+"百花净毒露": { name: "百花净毒露", category: "misc", quality: "紫", tags: ["药", "百花门"], desc: "花婆亲手封坛的净毒露，内服可解瘴毒，外敷能破毒阵。终局恶战前每人分得一盏。" },
+"天竺安神香": { name: "天竺安神香", category: "misc", quality: "绿", tags: ["香", "欢喜教"], desc: "梵衍那赠的天竺曼陀罗奇香，燃起来一缕甜凉，安神定惊，闻着确实有那么点西域古意。" },
+"驯化信雀哨": { name: "驯化信雀哨", category: "accessory", quality: "绿", sixDim: { 气运: 1 }, tags: ["饰品", "百花门"], desc: "绿背彩雀认得的调子。野外吹一声，附近的耳目彩雀会飞来给你领路。" },
+"青稞炒面": { name: "青稞炒面", category: "food", quality: "白", tags: ["干粮"], desc: "卓玛硬塞来的一袋新炒青稞面，热水一冲就是一顿热乎饭。" },
 };
 export default { item: items, itemGroup: { BAIHUA_GOODS: Object.keys(items) } };
