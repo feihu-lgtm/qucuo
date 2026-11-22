@@ -43,6 +43,14 @@ export const FACTION_ENTRIES = {
     intro: "偏厅香案上只摆一尊铜钵与三柱无烟红香。向旧神像敬香、饮下罗琦亲斟的坛城茶，便算入了内院门墙。",
     joinLabel: "敬香饮茶，拜入欢喜教",
   },
+  唐门: {
+    sect: "唐门", master: "唐老太", buildingId: "sect_entry_tangmen",
+    minRep: 40, repBonus: 20, flag: "唐门弟子",
+    token: "玄竹弟子令", gifts: [],
+    trial: null,
+    intro: "宗祠门前横着一块磨凹了的入堂石。唐老太拄着竹杖站在石后，笑眯眯地说：跪下，滴血，立誓；从今往后唐家的规矩就是你的规矩。",
+    joinLabel: "入堂石前立血誓，拜入唐门",
+  },
   天龙教: {
     sect: "天龙教", master: "石重岳", buildingId: "sect_entry_tianlong",
     minRep: 40, repBonus: 20, flag: "天龙教弟子",

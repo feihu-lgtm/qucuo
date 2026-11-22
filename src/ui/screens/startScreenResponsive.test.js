@@ -89,4 +89,21 @@ describe("StartScreen mobile layout", () => {
     expect(settings).toContain('className="settings-home-grid"');
     expect(settings).toContain('className="settings-home-card"');
   });
+
+  it("has iOS rules for the 8-portrait appearance step and body profile panel with 16px no-zoom inputs", () => {
+    const createAt = MOBILE_CSS.indexOf("/* iOS 专门适配：创角三步");
+    const createBlock = MOBILE_CSS.slice(createAt, MOBILE_CSS.indexOf("\n}\n", createAt));
+    expect(createBlock).toContain(".character-create-appearance-layout");
+    expect(createBlock).toContain(".character-create-body-input");
+    expect(createBlock).toMatch(/\.character-create-body-input \{\s*font-size:\s*16px/);
+
+    const bodyAt = MOBILE_CSS.indexOf("/* iOS 专门适配：体貌档案面板");
+    expect(bodyAt).toBeGreaterThan(-1);
+    const bodyBlock = MOBILE_CSS.slice(bodyAt);
+    expect(bodyBlock).toContain("@supports (-webkit-touch-callout: none) {");
+    expect(bodyBlock).toContain(".body-profile-panel");
+    expect(bodyBlock).toMatch(/\.body-profile-textarea \{\s*font-size:\s*16px/);
+    expect(readFileSync(join(HERE, "BodyProfilePanel.jsx"), "utf-8")).toContain("body-profile-panel");
+    expect(readFileSync(join(HERE, "PortraitBodyStep.jsx"), "utf-8")).toContain("character-create-appearance-layout");
+  });
 });

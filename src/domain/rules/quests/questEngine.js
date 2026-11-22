@@ -132,7 +132,8 @@ export function isChoiceOpen(choice, flags = []) {
 
 // 分支选项的门槛（字段全部可选）：requiresQuestCompleted / requiresAnyOf 同任务门槛；
 // requiresFlag: string[] 全部持有；requiresFactionRep: { [势力]: number }；
-// requiresFavor: { [人物]: number }（角色.<人物>.好感度，缺省 10）。
+// requiresFavor: { [人物]: number }（角色.<人物>.好感度，缺省 10）；
+// blockedByFlags: string[] 持有任意一个即不可选。
 export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}) {
   const isDone = (qid) => questProgress?.[qid]?.status === "completed";
   if (choice.requiresQuestCompleted) {
@@ -141,6 +142,7 @@ export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}
   }
   if (choice.requiresAnyOf?.length && !choice.requiresAnyOf.some(isDone)) return false;
   if (choice.requiresFlag?.some((f) => !flags?.includes(f))) return false;
+  if (choice.blockedByFlags?.some((f) => flags?.includes(f))) return false;
   if (Object.entries(choice.requiresFactionRep || {}).some(([faction, min]) => factionRepOf(varTree, faction) < min)) return false;
   if (!isChoiceOpen(choice, flags)) return false;
   if (Object.entries(choice.requiresFavor || {}).some(([npc, min]) => Number(varTree?.角色?.[npc]?.好感度 ?? 10) < min)) return false;
@@ -149,6 +151,8 @@ export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}
 
 export function isQuestGateOpen(quest, allProgress, flags, varTree) {
   const isDone = (qid) => allProgress?.[qid]?.status === "completed";
+  // 门槛只管「能不能接」：已接下的任务不因后加的前置/声誉门槛中断，只认 blockedByFlags。
+  if (allProgress?.[quest.id]) return !(quest.blockedByFlags?.length && quest.blockedByFlags.some(f => flags?.includes(f)));
   if (varTree && !questGateReqs(quest, varTree).every((r) => r.ok)) return false;
   if (quest.requiresQuestCompleted) {
     const list = Array.isArray(quest.requiresQuestCompleted) ? quest.requiresQuestCompleted : [quest.requiresQuestCompleted];

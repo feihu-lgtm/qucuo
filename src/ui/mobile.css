@@ -926,27 +926,81 @@
   }
 }
 
-/* iOS 专门适配：创角三步（名号、七维、武功）。
+@media (min-width: 768px) {
+  .character-create-appearance-layout {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+@media (max-width: 767px) {
+  .character-create-appearance-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .character-create-card--wide {
+    width: min(94vw, 520px) !important;
+    padding: 16px 14px !important;
+  }
+}
+
+/* iOS 专门适配：创角三步（名号、立绘体貌、七维、武功）。
    竖屏：卡片高度按 dvh 封顶，Safari 工具栏展开时底部按钮不被盖住。
-   横屏：卡片放宽、标题缩小、副标题收起，七维排四列，一屏放下；放不下时 root 仍可滚动。 */
+   横屏：卡片放宽、标题缩小、副标题收起，七维排四列、立绘与体貌两栏并排，一屏放下；放不下时 root 仍可滚动。 */
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 767px) and (orientation: portrait) {
     .character-create-root {
       min-height: 100dvh;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+      align-items: flex-start !important;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(10px, env(safe-area-inset-right))
+        max(16px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left)) !important;
     }
 
     .character-create-card {
       max-height: none;
+      margin: auto 0;
     }
 
     .character-create-sub {
       margin-bottom: clamp(12px, 3dvh, 30px) !important;
+    }
+
+    .character-create-portrait-grid {
+      gap: 6px !important;
+    }
+
+    .character-create-body-scroll {
+      max-height: 30dvh !important;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .character-create-mode-tabs > button {
+      min-height: 36px;
+    }
+
+    .character-create-body-input {
+      font-size: 16px !important;
+    }
+
+    .character-create-step-actions > button {
+      min-height: 44px;
     }
   }
 
   @media (orientation: landscape) and (max-height: 500px) {
     .character-create-root {
       align-items: center !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
       padding:
         max(8px, env(safe-area-inset-top))
         max(16px, env(safe-area-inset-right))
@@ -972,6 +1026,35 @@
 
     .character-create-card label {
       margin-bottom: 8px !important;
+    }
+
+    .character-create-appearance-layout {
+      display: grid !important;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 12px !important;
+      align-items: start;
+    }
+
+    .character-create-portrait-grid {
+      gap: 5px !important;
+    }
+
+    .character-create-body-scroll {
+      max-height: 44dvh !important;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .character-create-body-input {
+      font-size: 16px !important;
+    }
+
+    .character-create-step-actions {
+      margin-top: 8px !important;
+    }
+
+    .character-create-step-actions > button {
+      padding-top: 7px !important;
+      padding-bottom: 7px !important;
     }
 
     .character-create-stat-grid {
@@ -1142,4 +1225,33 @@
     line-height: 34px !important;
   }
   .map-zoom-btn::after { content: ""; position: absolute; inset: -4px; }
+}
+
+/* iOS 专门适配：体貌档案面板（含预设库与快捷词条）。
+   留出刘海与底部安全区，输入框统一 16px 避免 iOS Safari 聚焦放大页面。 */
+@supports (-webkit-touch-callout: none) {
+  .body-profile-root {
+    padding:
+      max(8px, env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left)) !important;
+    box-sizing: border-box;
+  }
+
+  .body-profile-panel {
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .body-profile-textarea {
+    font-size: 16px !important;
+  }
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    .body-profile-panel {
+      width: min(720px, 96vw) !important;
+      padding: 12px 16px !important;
+    }
+  }
 }

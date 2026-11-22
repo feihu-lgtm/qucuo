@@ -1,0 +1,332 @@
+// 三星派任务线（合稿·三星派第 4 节）。主线 星1~星3 与支线 星支1~3；星4 旧客、星5 金乌破妄是终局线，等终局接线再做。
+// 声誉奖励按合稿原值写在收尾阶段；联动扣分由 applyFactionRep 统一结算，这里不手写。
+const SX = "三星派";
+const GB = "丐帮三星分舵";
+const at = (inner, district = "广汉") => ({ district, inner });
+const catalog = (name, count = 1) => Array.from({ length: count }, () => ({ name, fromCatalog: true }));
+
+export default { quest: {
+  sanxingpai_1_xujiejiuyue: {
+    id: "sanxingpai_1_xujiejiuyue",
+    type: "QT_TALK",
+    title: "星1·墟界旧约",
+    giver: "姜泠",
+    giverId: "resident_jiangling",
+    localOnly: true,
+    requiresFactionRep: { [SX]: -19 },
+    description: "鸭子河界碑林这几夜总有人打着火把拓碑、撬铜铃，姜泠说是天都镇的香队夹带出来的人。三星派守墟不出墟，她想借一个外人的手把这条线掐断。",
+    stages: [
+      {
+        id: "stele",
+        requireLocation: at("鸭子河畔"),
+        playerHint: "夜里守在鸭子河界碑林，拿下拓碑贼：动手，或趁他们拓碑时缴了家伙。",
+        description: "雾里亮起三支火把，几个人蹲在界碑前，一个拿墨刷碑，一个撬碑顶的铜铃，嘴里念叨着天都镇的价钱。",
+        completionFlag: ["quest_sx1_fight", "quest_sx1_sneak"],
+        choices: [
+          { flag: "quest_sx1_fight", label: "拿下拓碑贼", resolve: "combat", combatNpc: { name: "拓碑贼头目", levelCap: 2 } },
+          { flag: "quest_sx1_sneak", label: "缴了家伙", resolve: "none",
+            narration: "你摸到火把照不到的一侧，一脚踢翻墨桶，顺手把撬棍和拓纸全抢了过来。几个人摸黑跑了，头目跑得最慢，被你按在了界碑底下。" },
+        ],
+        onReach: { items: catalog("香队夹带路条") },
+      },
+      {
+        id: "judge",
+        requireLocation: at("鸭子河畔"),
+        playerHint: "处置拓碑贼头目：交给姜泠和丐帮一起审，或当场了结。",
+        description: "头目被捆在界碑上，姜泠从雾里走出来，拿铜镜照了照他的脸。不远处的竹板声响了三下，丐帮的人也到了。",
+        completionFlag: ["quest_sx1_trial", "quest_sx1_kill"],
+        choices: [
+          { flag: "quest_sx1_trial", label: "交给两家共审", resolve: "none",
+            narration: "姜泠和周小满一人问一句，头目把天都镇黑市掮客的名号全吐了出来。周小满在册子上记了一笔，冲姜泠点了点头。" },
+          { flag: "quest_sx1_kill", label: "当场了结", resolve: "none",
+            narration: "你一刀下去，界碑前安静了。姜泠看了很久，只说了一句：「古墟的规矩是不让外人的血落在碑上。」" },
+        ],
+        onReach: {
+          money: 120,
+          items: catalog("青铜引路牌"),
+          flags: ["sanxingdui_found", "sanxing_pit_pass"],
+          factionRep: { [SX]: 15, [GB]: 5 },
+          favorability: { 姜泠: 10 },
+          byFlag: {
+            quest_sx1_trial: { factionRep: { [GB]: 8 }, favorability: { 周小满: 10 } },
+            quest_sx1_kill: { reputation: -3, favorability: { 樊枯: 10 } },
+          },
+        },
+      },
+    ],
+    rewardText: "姜泠把一枚青铜引路牌放进你手里：「拿着它下祭祀坑，三面人只会拦你试剑，不会拔剑。」",
+  },
+
+  sanxingpai_2_sanmianjianzhen: {
+    id: "sanxingpai_2_sanmianjianzhen",
+    type: "QT_TALK",
+    title: "星2·三面试剑",
+    giver: "姜泠",
+    giverId: "resident_jiangling",
+    localOnly: true,
+    requiresQuestCompleted: "sanxingpai_1_xujiejiuyue",
+    requiresFactionRep: { [SX]: 15 },
+    description: "古墟深处只认剑。三名青铜面人轮流守着碎铜坪，外人要往里走，得在三面之前各过一剑。",
+    stages: [
+      {
+        id: "first",
+        giver: null,
+        requireLocation: at("祭祀坑·碎铜坪"),
+        playerHint: "在碎铜坪接青铜面人·甲的重剑。",
+        description: "青铜面人·甲把宽背铜剑横在胸前，脚下的夯土被踩出两道深坑。他不出招，只等你来。",
+        completionFlag: "quest_sx2_jia",
+        choices: [
+          { flag: "quest_sx2_jia", label: "接甲的重剑", resolve: "combat", combatNpc: { name: "守坪青铜面人", levelCap: 3 } },
+        ],
+      },
+      {
+        id: "second",
+        giver: null,
+        requireLocation: at("祭祀坑·碎铜坪"),
+        playerHint: "接青铜面人·乙的快剑：以快打快，或站定不动听他出剑。",
+        description: "乙的剑快得只剩一道绿光，坑壁的铜铃被剑风带得乱响。",
+        completionFlag: ["quest_sx2_yi_fight", "quest_sx2_yi_listen"],
+        choices: [
+          { flag: "quest_sx2_yi_fight", label: "以快打快", resolve: "combat", combatNpc: { name: "快剑青铜面人", levelCap: 3 } },
+          { flag: "quest_sx2_yi_listen", label: "闭眼听剑", resolve: "none",
+            narration: "你闭上眼，铜铃声里有一声和别的不一样。你侧身半步，乙的剑尖擦着你的衣襟过去，停在了半空。他收剑，退了一步。" },
+        ],
+      },
+      {
+        id: "third",
+        giver: null,
+        requireLocation: at("祭祀坑·碎铜坪"),
+        playerHint: "最后一面：青铜面人·丙不拔剑，只问你一句话。",
+        description: "丙没有拔剑。他指着满地断剑和碎面具，用古蜀话问了一句，姜泠在旁边翻译：「你下坑来，是要带走什么？」",
+        completionFlag: "sanxing_trial_passed",
+        onReach: {
+          money: 200,
+          factionRep: { [SX]: 20 },
+          favorability: { 姜泠: 10, 樊枯: 5 },
+        },
+      },
+    ],
+    rewardText: "三面人让开了路。往下是樊枯的赤炉窟和古蜀石刻廊，神树台的雾也为你散开了一些。",
+  },
+
+  sanxingpai_3_tongyinxuanji: {
+    id: "sanxingpai_3_tongyinxuanji",
+    type: "QT_TALK",
+    title: "星3·失窃的朱砂铜印",
+    giver: "樊枯",
+    giverId: "resident_fanku",
+    localOnly: true,
+    requiresQuestCompleted: "sanxingpai_2_sanmianjianzhen",
+    requiresFactionRep: { [SX]: 40 },
+    description: "赤炉窟少了一罐古蜀朱砂铜泥。樊枯说这东西盖在纸上三十年不褪，偏偏最近锦官城冒出好几张「老地契」，印泥里闪着铜星。",
+    stages: [
+      {
+        id: "brief",
+        requireLocation: at("铸铜地窖·赤炉窟"),
+        playerHint: "在赤炉窟听樊枯说铜印泥的去向。",
+        description: "樊枯把空罐子往炉台上一墩：「拿走它的人，是从天都镇的香路出去的。你先去香行问。」",
+        completionFlag: "quest_sx3_brief",
+      },
+      {
+        id: "incense",
+        giver: null,
+        requireLocation: at("香行内堂", "天都镇"),
+        playerHint: "去天都镇香行内堂查那批「香料」的去处。",
+        description: "香行账房翻出一页夹带货单，收货人写着锦官城都事府一位姓柳的书办。",
+        completionFlag: "quest_sx3_incense",
+      },
+      {
+        id: "deed",
+        giver: null,
+        requireLocation: at("都事府", "锦官城"),
+        playerHint: "在锦官城都事府弄到一张伪造地契：花钱买下，或趁夜去档房偷。",
+        description: "柳青鸢的书案上压着一叠新契，每张都盖着鱼定土司府的私印，印泥带着铜星。",
+        completionFlag: ["quest_sx3_buy", "quest_sx3_steal"],
+        choices: [
+          { flag: "quest_sx3_buy", label: "花一百两买一张", resolve: "none", requiresMoney: 100,
+            narration: "柳青鸢掂了掂银子，抽出最底下一张递给你：「这张的地已经卖过三回了，你拿去垫桌脚吧。」" },
+          { flag: "quest_sx3_steal", label: "夜入档房", resolve: "combat", combatNpc: { name: "都事府护院", levelCap: 4 } },
+        ],
+        onReach: {
+          items: catalog("伪造地契样本"),
+          byFlag: { quest_sx3_buy: { money: -100 } },
+        },
+      },
+      {
+        id: "verdict",
+        requireLocation: at("铸铜地窖·赤炉窟"),
+        playerHint: "把地契带回赤炉窟让樊枯验印，再决定把铁证交给谁：官府、丐帮，或留在古墟。",
+        description: "樊枯从地窖深处翻出一面古铜镜，镜光一照，地契上的印泥亮成一片星点。「就是我的泥。」他把镜子塞给你，「证据是你的，交给谁你定。」",
+        completionFlag: ["quest_sx3_official", "quest_sx3_gaibang", "quest_sx3_keep"],
+        choices: [
+          { flag: "quest_sx3_official", label: "交给锦官城官府", resolve: "none",
+            narration: "你把地契和铜镜一同交到都事府堂上。主簿脸色变了几变，当场封了柳青鸢的书案。鱼定土司府的人第二天就到广汉来打听你的名字。" },
+          { flag: "quest_sx3_gaibang", label: "交给丐帮周小满", resolve: "none",
+            narration: "周小满把地契抄进逃民册，原件夹进油布筒，当夜鸽子就飞了。他说这张纸够土司府在川西喝一壶。" },
+          { flag: "quest_sx3_keep", label: "留在古墟", resolve: "none",
+            narration: "樊枯点点头，把地契塞进炉边的铜匣。「古墟的东西，古墟自己讨回来。」" },
+        ],
+        onReach: {
+          money: 350,
+          items: catalog("古蜀真伪验印镜"),
+          factionRep: { [SX]: 25 },
+          favorability: { 樊枯: 15 },
+          byFlag: {
+            quest_sx3_official: { reputation: 5, factionRep: { 锦官城: 12, 鱼定土司府: -10 }, favorability: { 樊枯: -5 } },
+            quest_sx3_gaibang: { factionRep: { [SX]: 10, [GB]: 8, 鱼定土司府: -8 }, favorability: { 周小满: 10 } },
+            quest_sx3_keep: { factionRep: { [SX]: 10 } },
+          },
+        },
+      },
+    ],
+    rewardText: "樊枯说你是三十年来第一个替古墟讨回东西的外人。",
+  },
+
+  sanxingpai_side_1_xuwaijiuyao: {
+    id: "sanxingpai_side_1_xuwaijiuyao",
+    type: "QT_TALK",
+    title: "星支1·界石边的药包",
+    giver: "姜泠",
+    giverId: "resident_jiangling",
+    localOnly: true,
+    requiresQuestCompleted: "sanxingpai_1_xujiejiuyue",
+    requiresFactionRep: { [SX]: 15 },
+    description: "阴雨夜里，总有人把油纸药包放在鸭子河界碑下，接济逃荒过河的牧民。这几天药包被镇上的泼皮截了，拿去卖钱。",
+    stages: [
+      {
+        id: "drive",
+        requireLocation: at("鸭子河畔"),
+        playerHint: "在界碑边赶走截药的泼皮，或先把冻倒的流民背去避风。",
+        description: "两个泼皮蹲在界碑后分药包，碑下躺着一个冻得发紫的老牧民。",
+        completionFlag: ["quest_sxs1_fight", "quest_sxs1_rescue"],
+        choices: [
+          { flag: "quest_sxs1_fight", label: "赶走泼皮", resolve: "combat", combatNpc: { name: "截药泼皮", levelCap: 1 } },
+          { flag: "quest_sxs1_rescue", label: "先救流民", resolve: "none",
+            narration: "你脱下外衣裹住老牧民，背到河湾的淘沙架子下生了火。泼皮看你顾不上他们，揣着药包溜了一半，剩下的扔在地上。" },
+        ],
+      },
+      {
+        id: "credit",
+        requireLocation: at("鸭子河畔"),
+        playerHint: "药包这事记在谁名下：明说是三星派送的，或默默托丐帮发下去。",
+        description: "姜泠把剩下的药包重新包好：「往年都是悄悄放。你说，这回要不要让他们知道是谁送的？」",
+        completionFlag: ["quest_sxs1_sanxing", "quest_sxs1_gaibang"],
+        choices: [
+          { flag: "quest_sxs1_sanxing", label: "记在三星名下", resolve: "none",
+            narration: "第二天河边传开了：鸭子河底下那伙戴面具的，原来一直在救人。镇上有人往界碑下放了一碗供饭。" },
+          { flag: "quest_sxs1_gaibang", label: "托丐帮发下去", resolve: "none",
+            narration: "你把药包交给破庙的白婶，一碗粥配一包药，谁也没问是从哪来的。姜泠在雾里看着，难得笑了一下。" },
+        ],
+        onReach: {
+          money: 80,
+          items: catalog("古蜀驱寒药包", 3),
+          favorability: { 姜泠: 10 },
+          byFlag: {
+            quest_sxs1_sanxing: { factionRep: { [SX]: 12, [GB]: 8 } },
+            quest_sxs1_gaibang: { factionRep: { [SX]: 10, [GB]: 10 }, reputation: 5 },
+          },
+        },
+      },
+    ],
+    rewardText: "界碑下的药包又放回去了，这回没人再敢截。",
+  },
+
+  sanxingpai_side_2_chiluhuo: {
+    id: "sanxingpai_side_2_chiluhuo",
+    type: "QT_TALK",
+    title: "星支2·赤炉缺炭",
+    giver: "樊枯",
+    giverId: "resident_fanku",
+    localOnly: true,
+    requiresQuestCompleted: "sanxingpai_2_sanmianjianzhen",
+    description: "神树的一根铜枝裂了，樊枯要重新浇铸，偏偏赤炉的炭快烧完了。普通炭火候不够，雪山上的寒木炭才压得住古铜。",
+    stages: [
+      {
+        id: "bellows",
+        requireLocation: at("铸铜地窖·赤炉窟"),
+        playerHint: "替樊枯拉一夜风箱，把炉温稳住。",
+        description: "樊枯把风箱拉杆塞给你：「火不能断。你拉，我看着。」",
+        completionFlag: "quest_sxs2_bellows",
+      },
+      {
+        id: "charcoal",
+        requireLocation: at("铸铜地窖·赤炉窟"),
+        playerHint: "给赤炉添炭：用镇上的普通炭凑合，或花六十两托人从雪山捎寒木炭。",
+        description: "炉里最后一层炭烧成了白灰，铜水还没化透。樊枯盯着炉口，等你拿主意。",
+        completionFlag: ["quest_sxs2_common", "quest_sxs2_cold"],
+        choices: [
+          { flag: "quest_sxs2_common", label: "用普通炭", resolve: "none",
+            narration: "普通炭烧得急，铜枝浇是浇上了，接缝处留了一道发黑的纹。樊枯摸了摸，没说话。" },
+          { flag: "quest_sxs2_cold", label: "花六十两买寒木炭", resolve: "none", requiresMoney: 60,
+            narration: "寒木炭一进炉，火色从红变成了青白。铜枝接得严丝合缝，樊枯用剩下的铜水顺手给你浇了一副护腕。" },
+        ],
+        onReach: {
+          money: 150,
+          factionRep: { [SX]: 12 },
+          byFlag: {
+            quest_sxs2_common: { items: catalog("古蜀艾草宁神香", 2) },
+            quest_sxs2_cold: { money: -60, items: catalog("赤炉青铜护腕"), favorability: { 樊枯: 20 } },
+          },
+        },
+      },
+    ],
+    rewardText: "神树的铜枝补上了，夜里风过，九枝的声音又齐了。",
+  },
+
+  sanxingpai_side_3_shenniaocanye: {
+    id: "sanxingpai_side_3_shenniaocanye",
+    type: "QT_TALK",
+    title: "星支3·太阳神鸟残片",
+    giver: "姜泠",
+    giverId: "resident_jiangling",
+    localOnly: true,
+    requiresFactionRep: { [SX]: 30 },
+    description: "神树底座的暗室要一面太阳神鸟才能打开。那面金箔盘三十年前碎成了三片，流落在外。",
+    stages: [
+      {
+        id: "jade",
+        giver: null,
+        requireLocation: at("玉器轩", "天都镇"),
+        playerHint: "在天都镇玉器轩找到第一片：花八十两赎回，或从盗墓掮客手里抢回来。",
+        description: "玉器轩的柜台里摆着一片薄薄的金箔，掌柜说是「西域来的旧货」，开价八十两。旁边一个掮客也盯上了它。",
+        completionFlag: ["quest_sxs3_buy", "quest_sxs3_fight"],
+        choices: [
+          { flag: "quest_sxs3_buy", label: "花八十两赎回", resolve: "none", requiresMoney: 80,
+            narration: "掌柜把金箔包进红纸里递给你，掮客在门口骂了一声走了。" },
+          { flag: "quest_sxs3_fight", label: "抢在掮客前头", resolve: "combat", combatNpc: { name: "盗墓掮客", levelCap: 3 } },
+        ],
+        onReach: { byFlag: { quest_sxs3_buy: { money: -80 } } },
+      },
+      {
+        id: "beggar",
+        giver: null,
+        requireLocation: at("土地庙正殿·聚义堂"),
+        playerHint: "去破庙聚义堂问严九斤要第二片。",
+        description: "严九斤从烟袋锅底抠出一片金箔：「三十年前一个戴面具的托我保管的，说总有人来拿。」第三片他也知道下落——在哑巴七的竹板夹层里。",
+        completionFlag: "quest_sxs3_beggar",
+        onReach: { favorability: { 严九斤: 5 } },
+      },
+      {
+        id: "weld",
+        giver: null,
+        requireLocation: at("铸铜地窖·赤炉窟"),
+        playerHint: "把三片残片带给樊枯焊合，再决定交还古墟，还是私自拿去变卖。",
+        description: "樊枯用最细的金丝把三片焊在一起，十二道光芒转成一圈，四只神鸟首尾相衔。他把神鸟放在你掌心：「交给古墟，暗室为你开；拿去卖，三星派从此不认你。」",
+        completionFlag: ["quest_sxs3_return", "quest_sxs3_sell"],
+        choices: [
+          { flag: "quest_sxs3_return", label: "交还古墟", resolve: "none",
+            narration: "你把神鸟放回樊枯手里。他摇摇头又推回来：「钥匙得在走那条路的人身上。」剩下的一缕金箔，他压进铜框给你做了块佩。" },
+          { flag: "quest_sxs3_sell", label: "私自变卖", resolve: "none",
+            narration: "你把神鸟揣进怀里走出地窖。身后赤炉的锤声停了，青铜面人站在坑口，一动不动地看着你离开。" },
+        ],
+        onReach: {
+          byFlag: {
+            quest_sxs3_return: { money: 220, items: [...catalog("太阳神鸟残片"), ...catalog("神鸟金箔佩")], factionRep: { [SX]: 18 }, favorability: { 樊枯: 10, 姜泠: 10 } },
+            quest_sxs3_sell: { money: 800, factionRep: { [SX]: -45 }, favorabilitySet: { 樊枯: 0, 姜泠: 0 }, flags: ["sanxing_shenniao_sold"] },
+          },
+        },
+      },
+    ],
+    rewardText: "神树底座的暗门，只认那面太阳神鸟。",
+  },
+} };

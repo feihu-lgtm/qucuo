@@ -41,7 +41,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "陆寒枝", id: "resident_luhanzhi", levelCap: 16,
+      name: "陆寒枝", id: "resident_luhanzhi", levelCap: 4,
       brief: "雪山派大师兄、练功堂教习，三十六岁，方脸浓眉，右颊一道寒冰石划出的浅白旧痕",
       personality: "古板严苛、外硬内苦，把「保住雪山最后十几个弟子的命」视作唯一职责；一旦确证大义与师门血仇，比谁都敢拔剑赴死",
       carry: [
@@ -55,7 +55,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "沈既白", id: "resident_shenjibai", levelCap: 12,
+      name: "沈既白", id: "resident_shenjibai", levelCap: 3,
       brief: "雪山派三弟子、门派商坊司库兼外务采买，二十七岁，皮肤浅麦色，腰间挂着黄铜算盘和记账皮囊",
       personality: "热忱坦荡、脚踏实地，深谙柴米油盐与底层疾苦；对师母极孝，却咽不下山下百姓受剥削这口气",
       carry: [
@@ -69,7 +69,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "齐照野", id: "resident_qizhaoye", levelCap: 18,
+      name: "齐照野", id: "resident_qizhaoye", levelCap: 5,
       brief: "雪山派守阁老剑奴，六十四岁，佝偻着半边身子，左袖空荡荡折在腰带里",
       personality: "沉默倔强、执念深重，为没能随老掌门共赴顶峰愧疚三十年；提及剑道时老眼陡然亮如寒星",
       carry: [
@@ -80,6 +80,48 @@ export default { residentGroup: {
         { name: "雪山姜枣干粮", category: "misc", quality: "白" },
         { name: "寒岭冻伤膏", category: "misc", quality: "绿" },
         { name: "雪莲清心丸", category: "misc", quality: "蓝" },
+      ],
+    },
+    {
+      name: "穆怀青", id: "resident_muhuaiqing", levelCap: 4,
+      brief: "雪山派二师兄、巡山领队，三十二岁，身形高瘦，嗓音压得极低像怕惊着雪",
+      personality: "沉稳寡言，外冷内细，巡山十年的习惯让他永远在听风里的动静；嘴上不饶人，手上从不亏待师弟妹",
+      carry: [
+        { name: "寒铁细剑", category: "weapon", quality: "蓝" },
+        { name: "雪狐绒护肩", category: "armor", quality: "紫" },
+        { name: "听雪素玉佩", category: "accessory", quality: "紫" },
+        { name: "寒铁护腕", category: "accessory", quality: "绿" },
+        { name: "雪山灵芝膏", category: "misc", quality: "蓝" },
+        { name: "雪山姜枣干粮", category: "misc", quality: "白" },
+        { name: "寒岭冻伤膏", category: "misc", quality: "绿" },
+      ],
+    },
+    {
+      name: "关晚棠", id: "resident_guanwantang", levelCap: 3,
+      brief: "雪山派三师姐、书房掌事，二十六岁，袖口常年沾着墨，笑起来眼弯成月牙",
+      personality: "爽利热心，记性极好，谁欠了束脩谁借走了剑谱她都记得清清楚楚；嘴上数落人，笔下替人兜底",
+      carry: [
+        { name: "折雪短剑", category: "weapon", quality: "绿" },
+        { name: "雪山素棉袍", category: "armor", quality: "绿" },
+        { name: "寒铁护腕", category: "accessory", quality: "绿" },
+        { name: "雪莲清心丸", category: "misc", quality: "蓝" },
+        { name: "雪山炒面干粮", category: "misc", quality: "白" },
+        { name: "寒岭冻伤膏", category: "misc", quality: "绿" },
+        { name: "松子糖", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "石墩儿", id: "resident_shiduner", levelCap: 1,
+      brief: "雪山派年纪最小的小师弟，十五岁，圆脸厚嘴唇，负责客舍跑腿与扫阶",
+      personality: "实心眼，力气大，见谁都叫师兄师姐；怕大师兄的戒尺，最馋山下带回来的松子糖",
+      carry: [
+        { name: "雪松木剑", category: "weapon", quality: "白" },
+        { name: "雪山素棉袍", category: "armor", quality: "绿" },
+        { name: "黄铜雪纹算盘坠", category: "accessory", quality: "绿" },
+        { name: "雪山炒面干粮", category: "misc", quality: "白" },
+        { name: "雪山姜枣干粮", category: "misc", quality: "白" },
+        { name: "寒岭冻伤膏", category: "misc", quality: "绿" },
+        { name: "松子糖", category: "misc", quality: "白" },
       ],
     },
     {

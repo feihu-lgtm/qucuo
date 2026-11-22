@@ -1,8 +1,36 @@
 export default { residentGroup: {
 鱼定村: [
     {
+      name: "周铭章", id: "resident_zhoumingzhang", levelCap: 2,
+      brief: "鱼定商号大掌柜，四十六岁，中等身材略显清癯，穿锦官城裁制的暗纹绸缎长衫，十指白净无茧；村内顺时求安派的代表，与土司府陆管家暗有茶马分利",
+      personality: "圆滑世故、利己怯乱、重商轻义；见人先拱手带三分温和笑意，眼底算盘打得比霜还冷，既帮陆管家游说村民换签新契，又忌惮锦官城设卡抢生意。口吻：「咱们做买卖的，和气才生财嘛。」",
+      carry: [
+        { name: "铁骨湘妃折扇", category: "weapon", quality: "绿" },
+        { name: "蜀锦暗纹夹袍", category: "armor", quality: "蓝" },
+        { name: "冰种翡翠扳指", category: "accessory", quality: "蓝" },
+        { name: "雅江细盐包", category: "misc", quality: "绿" },
+        { name: "三曲炒面干粮袋", category: "misc", quality: "绿" },
+        { name: "酥油炒面", category: "misc", quality: "白" },
+        { name: "青稞酒", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "泽仁", id: "resident_zeren", levelCap: 3,
+      brief: "鱼定村老村长，才旦之父，五十八岁，干瘦微驼，古铜色额头横着修水渠砸出的白疤，穿泛灰的旧羊皮袍，右手攥着半杆黑檀旱烟杆；三十年前老土司立界石的亲历者",
+      personality: "外懦内韧：在土司差役面前赔笑弯腰比谁都快，背地里却把老土司留下的真账册捂了整整三十年；怕流血、怕连累乡邻，真被逼到绝境时骨头比青石还硬。口吻：「年轻人，刀出鞘只需一眨眼，可收进鞘里要拿一村人的命去填……」",
+      carry: [
+        { name: "黑檀铜嘴旱烟杆", category: "weapon", quality: "绿" },
+        { name: "旧羊皮毡袍", category: "armor", quality: "绿" },
+        { name: "老土司赐村正铜印", category: "accessory", quality: "紫" },
+        { name: "旧界石泥拓", category: "misc", quality: "绿" },
+        { name: "青稞酒", category: "misc", quality: "白" },
+        { name: "酥油炒面", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
       name: "才旦", innerRoom: "才旦家", id: "resident_caidan", levelCap: 1,
-      brief: "村长之女，账算得滴水不漏",
+      brief: "村长之女，鱼定村实际的账房，二十二岁，瓜子脸被高原风吹出健康的红晕，两条乌亮长辫用红绳扎得极紧，蓝布藏袍袖口总蹭着算盘木油；账算得滴水不漏",
       personality: "工于心计说话不留破绽，卸下防备才露出年纪相符的脆弱",
       carry: [
         { name: "鱼定猎刀", category: "weapon", quality: "白" },
@@ -16,7 +44,7 @@ export default { residentGroup: {
     },
     {
       name: "老孙", innerRoom: "老孙饭馆", id: "resident_laosun", levelCap: 1,
-      brief: "老孙饭馆的掌柜",
+      brief: "老孙饭馆的掌柜，汉人移民二代，五十一岁，宽肩厚背微微发福，满脸灶火烤出的红光，蒲扇大手虎口结着颠勺与早年走镖留下的厚茧",
       personality: "实在憨厚，藏着当年被岳父嫌弃的心结，嘴上不饶人心里认账",
       carry: [
         { name: "市集杀猪刀", category: "weapon", quality: "白" },
@@ -30,7 +58,7 @@ export default { residentGroup: {
     },
     {
       name: "鱼定大娘", id: "resident_yudingdaniang", levelCap: 1,
-      brief: "村里的厨娘，热心肠，谁上山都塞一包炒面",
+      brief: "村里的厨娘兼媒婆，四十九岁，圆脸红润，灰白发髻插一根磨秃的粗银簪，腰间拴着两个鼓囊囊的炒面布袋；热心肠，谁上山都塞一包炒面，是曲措乡底层的活地图",
       personality: "爽利豪快爱张罗，主张藏汉不分家（「水都不分家，人分什么家」），儿子小孙与张商人之女私定终身，正为两家老人不点头发愁",
       carry: [
         { name: "熊山柴斧", category: "weapon", quality: "白" },

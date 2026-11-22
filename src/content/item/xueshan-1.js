@@ -27,5 +27,17 @@ const items = {
 "寒铁护腕": { name: "寒铁护腕", category: "accessory", quality: "绿", sixDim: { 体魄: 1 }, tags: ["饰品", "雪山派"], desc: "寒铁片铆在皮衬上的小护腕，挡剑挡不了几下，胜在便宜结实。沈既白库房里常备的走货。" },
 "寒泉雪莲": { name: "寒泉雪莲", category: "misc", quality: "绿", tags: ["药材", "雪山派", "任务"], consumable: { hpRestore: 0.1 }, desc: "山洞深处寒泉边上生的雪莲，花瓣冰得像玉。沈既白说霜灾年里，一株能换半袋糙米。" },
 "雪山灵芝膏": { name: "雪山灵芝膏", category: "misc", quality: "蓝", tags: ["药膏", "疗伤", "雪山派"], consumable: { hpRestore: 0.2 }, desc: "雪线灵芝配山蜜熬成的厚膏，温补驱寒，是雪山派调理内伤的常备药。" },
+// ── 雪3/雪4/雪5/雪支2/雪支3 任务物与奖励 ──
+"峨眉青玉佩": { name: "峨眉青玉佩", category: "accessory", quality: "紫", sixDim: { 悟性: 2 }, tags: ["信物", "任务", "雪山派", "峨眉派"], desc: "三十年前玄尘师太赠予何雨谢的旧信物，青玉边缘有一道极细的剑痕。齐照野说，持此佩上峨眉剑庐，守门弟子不敢拦。" },
+"青城论剑旧证": { name: "青城论剑旧证", category: "misc", quality: "蓝", tags: ["任务", "信物", "雪山派", "青城派"], desc: "青霞子亲笔手书：当年老土司桑杰大侠曾密函青城，直言「曲措地契生变，恐有家贼勾结外人」。纸已泛黄，字迹仍峻。" },
+"清心冰露": { name: "清心冰露", category: "misc", quality: "紫", tags: ["丹药", "峨眉派", "任务"], consumable: { hpRestore: 0.35, dispel: true }, desc: "玄尘师太赠下的峨眉秘药，冰露入喉先寒后暖，寒毒沉疴皆缓三分。何雨谢服了半盏，三十年头一回睡了个整觉。" },
+"血刻地契残角": { name: "血刻地契残角", category: "misc", quality: "紫", tags: ["任务", "证物", "雪山派"], desc: "呼延大侠遗骸旁寻获的地契残角，边角以血刻下两行小字——当年绝顶之上，两位大侠是遭奸人挑拨误斗，而非蓄意残杀。" },
+"血刀过境腰牌": { name: "血刀过境腰牌", category: "misc", quality: "蓝", tags: ["任务", "证物", "天龙教"], desc: "从血刀部探子身上搜出的过境腰牌，背面烙着鱼定土司府的私印——草甸的刀客，拿着土司府的路引。" },
+"雪猿灵桃": { name: "雪猿灵桃", category: "misc", quality: "蓝", tags: ["灵果", "雪山派"], consumable: { hpRestore: 0.15, energyRestore: 4 }, desc: "老白猿守着的雪线野桃，离枝三日仍带寒香。咬一口先是冰牙，咽下去气血内力一起回暖。" },
+"冰蚕护腕": { name: "冰蚕护腕", category: "accessory", quality: "蓝", sixDim: { 体魄: 1, 根骨: 1 }, tags: ["饰品", "雪山派"], desc: "玄女拆了自己一缕冰蚕素绫给你缠的护腕，凉而不冰，刀剑擦过去先滑开半分。" },
+"玄冰陨铁": { name: "玄冰陨铁", category: "misc", quality: "紫", tags: ["任务", "材料", "雪山派"], desc: "齐照野珍藏三十年的陨铁，入怀不暖，对着光看里面像封着一小段冻住的星河。" },
+"冰心炭": { name: "冰心炭", category: "misc", quality: "绿", tags: ["任务", "材料", "雪山派"], desc: "山洞极寒石髓处采的奇炭，摸上去烫手，丢进雪里却不融。锻剑铺的老话说，寒冰淬火，非此炭不可。" },
+"呼延旧玉扳指": { name: "呼延旧玉扳指", category: "accessory", quality: "紫", sixDim: { 体魄: 2, 悟性: 1 }, tags: ["饰品", "信物", "雪山派"], desc: "呼延大侠生前挽弓佩剑的旧扳指，玉色被摩挲得温润。何雨谢把它交给你时说：「他的东西，该跟着活人下山。」" },
+"雪岭剑主令": { name: "雪岭剑主令", category: "accessory", quality: "紫", sixDim: { 根骨: 2, 气运: 1 }, tags: ["信物", "雪山派"], desc: "霜天月奉留雪山镇山那日，何雨谢亲授的客卿令。持令如携雪山半剑，山下人见了要掂量掂量。" },
 };
 export default { item: items, itemGroup: { XUESHAN_GOODS: Object.keys(items) } };
