@@ -104,7 +104,7 @@ function applyResultToUnit(unit, result, tag, move) {
   const newEnergy = Math.max(0, Math.min(unit.energy[1] ?? 10, unit.energy[0] + deltaEnergy));
 
   let newStatus = unit.statusSlots;
-  const immune = !!unit.equipEffects?.immuneControl;
+  const immune = !!(unit.equipEffects?.immuneControl || move?.immuneControl);
   const statusApplied = result[`statusAppliedTo${tag}`];
   if (statusApplied && !immune) newStatus = applyStatus(newStatus, statusApplied);
   const markApplied = result[`markAppliedTo${tag}`];

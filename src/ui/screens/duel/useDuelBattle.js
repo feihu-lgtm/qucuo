@@ -180,8 +180,9 @@ export function useDuelBattle({ npc, playerChar, pendingCombatBuff, playerInv, p
       let newPlayerStatus = playerStatus;
       let newNpcStatus = npcStatus;
       // 免控（不动明王杵 immuneControl）：装备此特效者，控制/掉血/印记类状态施加全部无效
-      const playerImmune = !!playerEquipEffects?.immuneControl;
-      const npcImmune = !!npcEquipEffects?.immuneControl;
+      // 学会的免控武学（冰心掌、药息）出手这一回合同样免控。
+      const playerImmune = !!(playerEquipEffects?.immuneControl || playerMoveEquipped.immuneControl);
+      const npcImmune = !!(npcEquipEffects?.immuneControl || npcMoveEquipped.immuneControl);
       if (result.statusAppliedToA && !playerImmune) newPlayerStatus = applyStatus(playerStatus, result.statusAppliedToA);
       if (result.statusAppliedToB && !npcImmune) newNpcStatus = applyStatus(npcStatus, result.statusAppliedToB);
       // ── 印记（第三批）：叠印 / 被引爆清空 / 运功自解 ──

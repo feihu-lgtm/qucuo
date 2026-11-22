@@ -51,7 +51,7 @@ export const SKILL_EFFECT_KEYS = [
   "onCounterSuccessDamageRatio", "onCounterSuccessEnergyGain", "doubleReflectDamage",
   "immuneControl", "ignoreDefensePartialImmune", "rebirthOnce",
   "hpRestore", "energyRestore", "selfSacrifice", "allInDamage",
-  "nextAttackBonus", "lowEnemyEnergyBonus",
+  "nextAttackBonus", "lowEnemyEnergyBonus", "dispelSelf",
 ];
 
 export function deriveMoveFromSkill(skill) {
