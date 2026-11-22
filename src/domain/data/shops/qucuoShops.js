@@ -62,7 +62,7 @@ export const QUCUO_SHOPS = {
     ],
   },
   // 玉泉茶马货栈（玉泉寨·茶马古道中转站，合稿·玉泉寨 六）。白品日用人人有，
-  // 声誉 15/40/80 摆好物，rep100 深交出百年雪水青稞陈酿（合稿限购两坛：limitOnce: 2）。
+  // 声誉 15/40/80 摆好物，rep100 深交出百年雪水青稞陈酿（合稿写限购两坛，引擎只支持买一次撤柜，先按 limitOnce）。
   玉泉货栈: {
     shopName: "玉泉茶马货栈",
     items: [
@@ -76,7 +76,42 @@ export const QUCUO_SHOPS = {
       { name: "巴登跌打接骨膏", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 40 },
       { name: "索朗精锻牧刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
       { name: "狼牙护心铜镜", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 80 },
-      { name: "百年雪水青稞陈酿", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 100, limitOnce: 2 },
+      { name: "百年雪水青稞陈酿", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 100, limitOnce: true },
+    ],
+  },
+  // 鱼定土司府·土司府军需司（合稿·土司府 6.2）。合稿镇边虎纹玉佩门槛 140，声誉上限 100，收到 100。
+  土司军需司: {
+    shopName: "土司府军需司",
+    items: [
+      { name: "巡捕制式短矛", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "牦牛皮护胸", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "官造青稞干粮", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "边军铁柄马刀", category: ITEM_CATEGORY.WEAPON, quality: "绿" },
+      { name: "巡边牛皮镶铁甲", category: ITEM_CATEGORY.ARMOR, quality: "绿" },
+      { name: "土司府云雷铜牌", category: ITEM_CATEGORY.ACCESSORY, quality: "绿", minRep: 15 },
+      { name: "藏红花活血膏", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "精钢乌木长矛", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
+      { name: "黑铁札片重甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 80 },
+      { name: "镇边虎纹玉佩", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 100 },
+    ],
+  },
+  // 天龙军需坊（天龙营）。minRep 按天龙教声誉过滤——军需官记账先看脸，声名抵银子。
+  // 深交秘货（rep100，合稿写 140、引擎声誉封顶 100）在止戈玉令与陨铁血刃之间二选一，
+  // 两条终局路线各得其一——limitOnce 共用同一组标记，买走一件另一件也撤柜。
+  天龙军需坊: {
+    shopName: "天龙军需坊",
+    items: [
+      { name: "西域止血散", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "胡杨炭火酒", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "西域弯刀", category: ITEM_CATEGORY.WEAPON, quality: "绿" },
+      { name: "驼绒防风氅", category: ITEM_CATEGORY.ARMOR, quality: "绿" },
+      { name: "狼牙骨哨", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 15 },
+      { name: "血槽铁刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "西域雪莲清毒丸", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 40 },
+      { name: "玄甲护心镜", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 40 },
+      { name: "龙纹赤铜战甲", category: ITEM_CATEGORY.ARMOR, quality: "橙", minRep: 80 },
+      { name: "止戈玉令", category: ITEM_CATEGORY.ACCESSORY, quality: "橙", minRep: 100, limitOnce: "tianlong_secret" },
+      { name: "陨铁血刃", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100, limitOnce: "tianlong_secret" },
     ],
   },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
@@ -283,6 +318,23 @@ export const QUCUO_SHOPS = {
     ],
   },
 
+  // 百花暗阁（天都镇·百花暖棚拐角，掌柜花婆）。合稿 6.1 货单十件：
+  // minRep 0/15/40/80/100（合稿写 140，引擎声誉封顶 100）。「百花净毒露」在册，不重复建物。
+  百花暗阁: {
+    shopName: "百花暗阁",
+    items: [
+      { name: "玫瑰花酿", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "祛瘴花茶", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "苗银花簪刺", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 0 },
+      { name: "百草解瘴散", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "苗疆软皮护腕", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 15 },
+      { name: "百花软筋粉", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 40 },
+      { name: "素银易容粉盒", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 40 },
+      { name: "金丝软银鞭", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 80 },
+      { name: "百花净毒露", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 80 },
+      { name: "金蚕母蛊囊", category: ITEM_CATEGORY.ACCESSORY, quality: "橙", minRep: 100, limitOnce: true },
+    ],
+  },
   // ── 门派商坊（雪山派）。功德货币改银两，照合稿 §8.1 统一「银两+势力声誉折扣/门槛」；
   // 货单照合稿 6.2 十件：白绿无门槛、蓝品 15、紫品 40、千年冰魄莲 80、霜纹寒玉剑 100（合稿 140，引擎封顶 100）。
   门派商坊: {

@@ -109,12 +109,18 @@ const items = {
 "磨损藏银火镰": { name: "磨损藏银火镰", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 气运: 2 }, desc: "三十年前老土司桑杰大侠随手赠给落难少年的防身火镰，银面磨得发亮，刻着残缺的鱼定纹。严九斤一直贴身带着。" },
 "铜框单边镜": { name: "铜框单边镜", category: "accessory", quality: "蓝", sixDim: { 智谋: 2 }, desc: "广汉老匠人配的铜框水晶单边镜，缺了一条腿。周小满靠它夜读小字，辨认伪契上的墨迹。" },
 "红绳铜哨": { name: "红绳铜哨", category: "accessory", quality: "绿", sixDim: { 魅力: 1 }, desc: "拴着红绳的铜哨，一吹便能召集方圆三里内的分舵弟子结阵。胡三爷吹它从来不用第二声。" },
+"响铃铜钱串": { name: "响铃铜钱串", category: "accessory", quality: "绿", sixDim: { 魅力: 1, 气运: 1 }, desc: "一串磨亮的乾元通宝穿在红绳上，中间吊颗小铜铃，走一步响一声。秦小鹊从来不数里头有几枚，输光了就解一枚下来押。" },
 "缺齿黄杨算盘": { name: "缺齿黄杨算盘", category: "accessory", quality: "蓝", sixDim: { 智谋: 2 }, desc: "白婶亡夫留下的黄杨算盘，缺了两颗珠子，却比谁的都算得快。" },
 "断耳牦牛角坠": { name: "断耳牦牛角坠", category: "accessory", quality: "绿", sixDim: { 体魄: 1 }, desc: "多吉逃离玉泉寨前，从老牧场捡来的半截牦牛角，磨成了坠子。他说等打回去，要把家里两头白牦牛牵回来。" },
 "青铜小铃": { name: "青铜小铃", category: "accessory", quality: "紫", sixDim: { 悟性: 2, 气运: 1 }, desc: "百年前三星派赠给历代守约人的信物。摇起来没有声音——只有走进古墟的雾里，它才会响。" },
 "铜铃竹哨": { name: "铜铃竹哨", category: "accessory", quality: "绿", sixDim: { 身法: 1 }, desc: "察世堂外围探子常用的小哨，佩在腰间身法微增，野外遇险吹响能惊走埋伏的人。" },
 "紫皮闷倒驴葫芦": { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫", effect: { energyRestore: 1 }, sixDim: { 体魄: 1 }, desc: "严九斤托老皮匠缝的紫皮酒葫芦，装的是能闷倒一头驴的烧酒。佩着它，每回合都像抿了一口。" },
 "八袋长老令": { name: "八袋长老令", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 智谋: 1 }, desc: "严九斤亲手交给你的八袋长老竹令，背面刻着「三星分舵」。拿着它在川西任何一个叫花子面前亮一亮，都有人替你传话。" },
+"狼牙骨哨": { name:"狼牙骨哨", category:"accessory", quality:"蓝", sixDim:{ 身法: 1 }, tags:["饰品","哨子","天龙教"], desc:"狼牙磨成的骨哨，吹起来声音尖得像风钻谷口。哨卡上靠它传讯——一声是来人，两声是来人带了刀。" },
+"银针包": { name:"银针包", category:"accessory", quality:"蓝", sixDim:{ 身法: 1 }, tags:["饰品","医具"], desc:"羊皮缝的小包，里头一排银针按长短排着。贺兰昭的针走穴快过走药——她下针时病人总觉得先好了半分。" },
+"天龙教主令": { name:"天龙教主令", category:"accessory", quality:"紫", sixDim:{ 魅力: 2 }, tags:["饰品","令牌","天龙教"], desc:"蟠龙纹玄铁令，教主亲发的随身信物。持此令者在天龙教营地通行无阻——玄甲兵见令先低头，再抬头看你的脸。" },
+"旧天王印": { name:"旧天王印", category:"accessory", quality:"紫", sixDim:{ 气运: 1, 魅力: 1 }, tags:["饰品","印信","白衣旧部"], desc:"安世衡当年用的旧印，白玉质，印面「止戈」二字磨得发圆。如今它只是一方石头——旧部看见它还是会站直。" },
+"止戈玉令": { name:"止戈玉令", category:"accessory", quality:"橙", sixDim:{ 气运: 2, 魅力: 1 }, tags:["饰品","令牌","白衣旧部","秘货"], desc:"天王一脉的玉令，白玉上只刻「止戈」二字。持令的人不是来打仗的——旧部认它，认的是那个抄经抄了半辈子的老人。" },
 };
 
 export default { item: items, itemGroup: { ACCESSORIES: Object.keys(items) } };

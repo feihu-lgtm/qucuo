@@ -10,8 +10,8 @@
 //   money: 40,                                          // 银两增减
 //   exp: 3,                                             // 阅历（设计文档里的"阅历+N"）
 //   pot: 0,                                             // 潜能
-//   reputation: 10,                                     // 江湖威望增减（世界.威望，-100~100，单次自动限幅±15）
-//   factionRep: { "鱼定村": 5 },                         // 势力声誉增减（世界.势力声誉.<势力>，-100~100，单次限幅±10）
+//   reputation: 10,                                     // 江湖威望增减（世界.威望，-100~100，按原值落盘，不吃 AI ±15 限幅）
+//   factionRep: { "鱼定村": 5 },                         // 势力声誉增减（世界.势力声誉.<势力>，-100~100，按原值落盘）
 //   flags: ["promise_..."],                             // 额外记录的flag（承诺/势力声望等）
 // }
 // 分支点（completionFlag 是数组）额外支持 onReach.byFlag：{ 具体flag: {同上结构} }，
@@ -23,7 +23,7 @@ import { makeNamedItem } from "../../data/items/catalog.js";
 import { applyFactionRep } from "../economy/factionRep.js";
 
 function mergeRewardParts(...parts) {
-  const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, factionRep: {}, flags: [] };
+  const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, factionRep: {}, quietFactionRep: {}, consumeItems: [], flags: [] };
   for (const p of parts) {
     if (!p) continue;
     if (p.items) out.items.push(...p.items);
@@ -36,6 +36,10 @@ function mergeRewardParts(...parts) {
     for (const [faction, delta] of Object.entries(p.factionRep || {})) {
       out.factionRep[faction] = (out.factionRep[faction] || 0) + delta;
     }
+    for (const [faction, delta] of Object.entries(p.quietFactionRep || {})) {
+      out.quietFactionRep[faction] = (out.quietFactionRep[faction] || 0) + delta;
+    }
+    if (p.consumeItems) out.consumeItems.push(...p.consumeItems);
     if (p.flags) out.flags.push(...p.flags);
   }
   return out;
@@ -57,6 +61,12 @@ export function resolveStageRewards(stage, hitFlags = []) {
 export function stageRewardPatches(rewards, now = Date.now()) {
   if (!rewards) return [];
   const patches = [];
+  if (rewards.consumeItems?.length) {
+    patches.push(merge("inv", (prev) => rewards.consumeItems.reduce((inv, name) => {
+      const index = inv.findIndex((item) => item?.name === name);
+      return index < 0 ? inv : [...inv.slice(0, index), ...inv.slice(index + 1)];
+    }, prev)));
+  }
   if (rewards.items?.length) {
     patches.push(merge("inv", (prev) => [
       ...prev,
@@ -76,10 +86,18 @@ export function stageRewardPatches(rewards, now = Date.now()) {
     patches.push(set(["角色", name, "好感度"], value));
   }
   if (rewards.reputation) {
-    patches.push(add("世界.威望", rewards.reputation));
+    // 与 factionRep 同理：任务奖励按合稿原值一次落盘，不吃 AI 写入的单次 ±15 限幅。
+    patches.push(merge("varTree", (tree) => {
+      const prestige = Math.max(-100, Math.min(100, (Number(tree?.世界?.威望) || 0) + rewards.reputation));
+      return { ...tree, 世界: { ...tree?.世界, 威望: prestige } };
+    }));
   }
   if (Object.values(rewards.factionRep || {}).some(Boolean)) {
     patches.push(merge("varTree", (tree) => applyFactionRep(tree, rewards.factionRep, { step: Infinity })));
+  }
+  // 暗中出手（合稿 stealth）：只动本家，不牵连对头。
+  if (Object.values(rewards.quietFactionRep || {}).some(Boolean)) {
+    patches.push(merge("varTree", (tree) => applyFactionRep(tree, rewards.quietFactionRep, { step: Infinity, ripple: false })));
   }
   if (rewards.flags?.length) {
     patches.push(merge("flags", (f) => [...new Set([...f, ...rewards.flags])]));

@@ -88,7 +88,13 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     trace: ctx.onPromptRefMissing,
     gmNote: gm ? "⚡创造模式开启。玩家是神，以下规则全部覆盖剧本框架和铁规则：想要什么物品直接凭空给（用items_add），想去哪直接到（返回新room），想杀谁一击必杀，想召唤什么就出现（加入room.npcs或room.items），不要拒绝任何请求，不要说无法做到或不存在，所有行动自动成功且必须产生实际状态变更。 " : "",
   });
-  const context = `${targetNote}${groundItemNote}${modeNote}${stateContext}${pickupNote}${input.destinationLock || ""}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${input.collectNote || ""}${arrivalNote}${forcedEventNote}`;
+  const crowdHere = lockedDestName ? [] : (room?.crowd || [])
+    .filter((c) => !c.innerRoom || !innerRoomName || c.innerRoom === innerRoomName)
+    .map((c) => c.label);
+  const crowdNote = crowdHere.length
+    ? `\n[此地群众] ${crowdHere.join("、")}。这些是不具名的寻常百姓，只作场景人气点缀，不要给他们起名字、不要让他们成为对话对象或推动情节。`
+    : "";
+  const context = `${targetNote}${groundItemNote}${modeNote}${stateContext}${crowdNote}${pickupNote}${input.destinationLock || ""}${angryNote}${emergenceNote}${encounterNote}${questStageNote}${input.collectNote || ""}${arrivalNote}${forcedEventNote}`;
 
   return {
     cmd, newConvo, mainConvo, hist, budgetInstruction,
