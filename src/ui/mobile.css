@@ -786,13 +786,19 @@
 .status-light-busy > span { animation: statusLightPulse 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .status-light-busy > span { animation: none; } }
 
-/* 键盘弹出时：整个界面钉在可见区域内，顶栏信号灯与最新叙事始终可见 */
+/* 键盘弹出时：页面布局原地不动，只把输入栏抬到键盘上缘（TauriTavern 式局部补偿，
+   避免整屏 fixed 定位被 iOS 推到可视区域外导致黑屏） */
 @media (max-width: 767px) {
   html[data-keyboard-open] .game-layout {
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: var(--mobile-viewport-offset, 0px);
-    height: var(--mobile-viewport-height, 100vh) !important;
+    height: 100dvh !important;
+  }
+
+  html[data-keyboard-open] .mobile-input-bar {
+    position: fixed !important;
+    left: env(safe-area-inset-left) !important;
+    right: env(safe-area-inset-right) !important;
+    bottom: var(--mobile-keyboard-height, 0px) !important;
+    z-index: 400;
+    background: var(--bg-panel);
   }
 }

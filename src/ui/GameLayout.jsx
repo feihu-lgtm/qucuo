@@ -78,8 +78,13 @@ export default function GameLayout({ layout }) {
       // iOS Safari can shrink innerHeight on scroll while the keyboard is still open.
       if (!inputFocused || window.innerHeight > layoutHeight) layoutHeight = window.innerHeight;
       const height = viewport?.height || window.innerHeight;
+      const offsetTop = viewport?.offsetTop || 0;
+      // 键盘遮住的布局视口底部高度：以键盘弹出前的 innerHeight（layoutHeight）为基准，
+      // 不能用 window.innerHeight——iOS 键盘开着时它会被缩到和 visualViewport 同高。
+      const keyboardHeight = Math.max(0, Math.round(layoutHeight - offsetTop - height));
       document.documentElement.style.setProperty("--mobile-viewport-height", `${Math.round(height)}px`);
-      document.documentElement.style.setProperty("--mobile-viewport-offset", `${Math.round(viewport?.offsetTop || 0)}px`);
+      document.documentElement.style.setProperty("--mobile-viewport-offset", `${Math.round(offsetTop)}px`);
+      document.documentElement.style.setProperty("--mobile-keyboard-height", `${keyboardHeight}px`);
       const wasOpen = document.documentElement.hasAttribute("data-keyboard-open");
       const open = document.documentElement.toggleAttribute(
         "data-keyboard-open",
@@ -107,6 +112,7 @@ export default function GameLayout({ layout }) {
       document.documentElement.removeAttribute("data-keyboard-open");
       document.documentElement.style.removeProperty("--mobile-viewport-height");
       document.documentElement.style.removeProperty("--mobile-viewport-offset");
+      document.documentElement.style.removeProperty("--mobile-keyboard-height");
     };
   }, [isMobile, logEnd]);
 
