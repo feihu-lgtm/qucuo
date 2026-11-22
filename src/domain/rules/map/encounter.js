@@ -66,13 +66,16 @@ function pickWeighted(entries, rng) {
 
 // 路遇起名要避开的名字：玩家认识的人、角色表里的人、今天全图的过路人、眼前已在的人
 export function roadNameGuard({ varTree, time = 0, extraNames = [] } = {}) {
-  const taken = new Set([
+  const known = new Set([
     ...(varTree?.世界?.已认识人物 || []),
     ...Object.keys(varTree?.角色 || {}),
-    ...getTodaysPasserNames(time),
     ...extraNames,
   ]);
-  return (name) => taken.has(name);
+  // 地点名单撞上熟人会重抽，两种抽法的名字都避开
+  const taken = new Set([...known, ...getTodaysPasserNames(time), ...getTodaysPasserNames(time, known)]);
+  const guard = (name) => taken.has(name);
+  guard.claim = (name) => taken.add(name);
+  return guard;
 }
 
 // 掷骰：给定要进入的节点名与气运，判定本次是否触发遭遇、遇到哪一方、撞见的是谁。
@@ -83,11 +86,9 @@ export function rollEncounter(destNodeName, luck = 5, { isTaken } = {}) {
   const p = Math.min(0.6, (NODE_PROB[destNodeName] ?? DEFAULT_PROB) + luckBonus);
   if (random() >= p) return null;
   const factionKey = pickWeighted(passerFactionsAt(destNodeName) || DEFAULT_FACTIONS, random);
-  return {
-    factionKey,
-    faction: factionProfile(factionKey),
-    passer: makeRoadPasser(factionKey, random, isTaken),
-  };
+  const passer = makeRoadPasser(factionKey, random, isTaken);
+  if (passer) isTaken?.claim?.(passer.name); // 同一个守卫连掷多次（每日预跑）时不重名
+  return { factionKey, faction: factionProfile(factionKey), passer };
 }
 
 // 把一次遭遇拼成注入主剧情请求的提示块。守铁律 + Kenshi 取向都写进指令里。

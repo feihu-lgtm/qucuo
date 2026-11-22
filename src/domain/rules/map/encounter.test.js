@@ -33,7 +33,7 @@ describe("路遇接 16 家势力与过路人池", () => {
         seen.add(en.factionKey);
       }
     }
-    for (const faction of ["天龙教", "五仙教", "唐门", "丐帮三星分舵", "青城派", "峨眉派", "欢喜教", "百花门", "黑风寨"]) {
+    for (const faction of ["三星派", "天龙教", "五仙教", "唐门", "丐帮三星分舵", "青城派", "峨眉派", "欢喜教", "百花门", "黑风寨"]) {
       expect(seen.has(faction), faction).toBe(true);
     }
   });
@@ -59,7 +59,21 @@ describe("路遇接 16 家势力与过路人池", () => {
     const todays = getTodaysPasserNames(30);
     expect(todays.size).toBeGreaterThan(0);
     for (const name of todays) expect(guard(name)).toBe(true);
-    for (const en of rollMany("大草甸", 200, { isTaken: guard })) expect(guard(en.passer.name)).toBe(false);
+    const before = new Set([...todays, "甲", "乙", "丙"]);
+    for (const en of rollMany("大草甸", 200, { isTaken: guard })) {
+      expect(before.has(en.passer.name)).toBe(false);
+      expect(guard(en.passer.name)).toBe(true); // 用过即占
+    }
+  });
+
+  it("同一个守卫连掷不重名，熟人逼出的重抽名也避开", () => {
+    const known = new Set();
+    for (let t = 0; t < 24 * 20; t += 24) for (const name of getTodaysPasserNames(t)) if (known.size < 40) known.add(name);
+    const varTree = { 世界: { 已认识人物: [...known] } };
+    const guard = roadNameGuard({ varTree, time: 0 });
+    for (const name of getTodaysPasserNames(0, known)) expect(guard(name)).toBe(true);
+    const names = rollMany("大草甸", 300, { isTaken: guard }).map((en) => en.passer?.name).filter(Boolean);
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it("提示块把系统定的名字交给 AI 照抄", () => {

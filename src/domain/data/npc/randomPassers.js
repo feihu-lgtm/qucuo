@@ -85,6 +85,10 @@ const ROLES = {
     { role: "血刀部游骑", level: [2, 2], culture: "tibetan", gender: "男", personality: "天龙教血刀部的游骑，刀不离身，见人先看对方是不是软柿子" },
     { role: "营里伙夫", level: [0, 1], culture: "han", gender: "男", personality: "天龙营里烧火做饭的，被抓来的，嘴上骂教主，手上不敢停" },
   ],
+  三星派: [
+    { role: "古墟守碑人", level: [1, 2], culture: "han", gender: "男", personality: "守着广汉古墟的三星派门人，话少，问起地底下的事就岔开" },
+    { role: "拓碑弟子", level: [0, 1], culture: "han", personality: "背着拓包和纸卷，满手墨灰，见了青铜残片眼睛就发亮" },
+  ],
   散人: [
     { role: "流民", level: [0, 0], personality: "逃荒来的，只想找口饭吃，对谁都提防" },
     { role: "独行游侠", level: [1, 2], personality: "无门无派，仗剑独行，最不把旁人当回事" },
@@ -109,7 +113,7 @@ const NODE_PASSERS = {
   黑风寨: { count: [1, 3], factions: [["黑风寨", 4], ["散人", 1]] },
   贡措海: { count: [1, 3], factions: [["玉泉寨", 2], ["散人", 2]] },
   雅江: { count: [2, 4], factions: [["青城派", 4], ["唐门", 1], ["散人", 2]] },
-  广汉: { count: [2, 4], factions: [["丐帮三星分舵", 4], ["锦官城", 1], ["散人", 2]] },
+  广汉: { count: [2, 4], factions: [["丐帮三星分舵", 4], ["三星派", 1], ["锦官城", 1], ["散人", 2]] },
   锦官城: { count: [2, 4], factions: [["锦官城", 3], ["峨眉派", 2], ["唐门", 1], ["散人", 2]] },
   天龙营: { count: [1, 3], factions: [["天龙教", 5], ["散人", 1]] },
   雾隐寨: { count: [1, 3], factions: [["五仙教", 4], ["百花门", 1], ["散人", 1]] },
@@ -220,10 +224,10 @@ export function getRandomPassers(locationName, time, reserved = new Set()) {
 }
 
 // 今天全图过路人的名字：路遇起名要避开，免得和某地正站着的过路人撞名
-export function getTodaysPasserNames(time) {
+export function getTodaysPasserNames(time, reserved = new Set()) {
   const dayIdx = Math.floor(time / 24);
   const used = new Set();
-  const isTaken = (name) => used.has(name) || isReserved(name);
+  const isTaken = (name) => used.has(name) || isReserved(name) || reserved.has(name);
   for (const node of Object.keys(NODE_PASSERS)) passersAt(node, dayIdx, used, isTaken);
   return used;
 }
