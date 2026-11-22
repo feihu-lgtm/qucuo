@@ -155,6 +155,7 @@ export default { quest: {
         ],
         onReach: {
           money: 120,
+          flags: ["bh_forge_evidence"],
           factionRep: { 百花门: 15 },
           items: [
             { name: "退墨矾水化验录", fromCatalog: true },
