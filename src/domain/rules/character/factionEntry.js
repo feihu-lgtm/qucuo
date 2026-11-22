@@ -32,6 +32,14 @@ export const SECT_MEMBER_FLAGS = {
   ...Object.fromEntries(Object.values(FACTION_ENTRIES).map((entry) => [entry.sect, entry.flag])),
 };
 
+// 叛出 / 逐出（合稿「拜入与叛出规则」）：本派声誉重置，门墙永闭，本门高阶武学不再突破。
+export const DEFECT_REP = { defect: -40, expel: -70 };
+export const defectedFlag = (sect) => `叛出:${sect}`;
+export const hasDefected = (flags, sect) => (flags || []).includes(defectedFlag(sect));
+export const currentSectOf = (flags = []) => Object.entries(SECT_MEMBER_FLAGS).find(([, flag]) => (flags || []).includes(flag))?.[0] ?? null;
+export const sectTokenOf = (sect) => (sect === SECT_ENTRY.sect ? SECT_ENTRY.keyName : FACTION_ENTRIES[sect]?.token);
+export const sectMasterOf = (sect) => (sect === SECT_ENTRY.sect ? SECT_ENTRY.master : FACTION_ENTRIES[sect]?.master);
+
 export const factionEntryForBuilding = (buildingId) =>
   Object.values(FACTION_ENTRIES).find((entry) => entry.buildingId === buildingId) || null;
 
@@ -48,6 +56,7 @@ export function checkFactionEntry(entry, { varTree, flags = [], char } = {}) {
     ...(entry.trial ? [{ key: "trial", label: entry.trial.label, have: trialOk ? "已过" : "未过", ok: trialOk }] : []),
     ...(riteNeeded ? [{ key: "rite", label: entry.maleRite.label, have: riteOk ? "已成" : "未成", ok: riteOk }] : []),
     { key: "single", label: "未拜入他派", have: other ? other[0] : "无", ok: !other },
+    ...(hasDefected(flags, entry.sect) ? [{ key: "defected", label: "未曾叛出本派", have: "曾叛出", ok: false }] : []),
   ];
   const already = flags.includes(entry.flag);
   return { already, rep, reqs, eligible: !already && reqs.every((r) => r.ok), missing: reqs.filter((r) => !r.ok).map((r) => r.key) };
