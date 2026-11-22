@@ -5,39 +5,40 @@ import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
-import { QINGCHENG_ENTRY, SECT_MEMBER_FLAGS, checkQingchengEntry } from "../../domain/rules/character/qingchengEntry.js";
+import { SECT_MEMBER_FLAGS, checkFactionEntry, factionEntryForBuilding } from "../../domain/rules/character/factionEntry.js";
 import { makeNamedItem } from "../../domain/data/items/catalog.js";
 
-function joinQingcheng(state, now = Date.now()) {
-  const status = checkQingchengEntry({ varTree: state.varTree, flags: state.flags });
-  if (!status.eligible) return { logs: [{ t: "sys", text: "  你还不够格拜入青城派。" }] };
-  const items = [QINGCHENG_ENTRY.token, ...QINGCHENG_ENTRY.gifts]
-    .map((name, i) => ({ ...makeNamedItem(name), id: `qingcheng_join_${now}_${i}`, equipped: false }));
-  const rep = Math.min(100, status.rep + QINGCHENG_ENTRY.repBonus);
-  const master = QINGCHENG_ENTRY.master;
+function joinFactionSect(state, entry, now = Date.now()) {
+  const status = checkFactionEntry(entry, { varTree: state.varTree, flags: state.flags });
+  if (!status.eligible) return { logs: [{ t: "sys", text: `  你还不够格拜入${entry.sect}。` }] };
+  const items = [entry.token, ...entry.gifts]
+    .map((name, i) => ({ ...makeNamedItem(name), id: `sect_join_${now}_${i}`, equipped: false }));
+  const rep = Math.min(100, status.rep + entry.repBonus);
+  const { master, sect } = entry;
   return {
     changes: {
       inv: (inv = []) => [...inv, ...items],
-      flags: (flags = []) => (flags.includes(QINGCHENG_ENTRY.flag) ? flags : [...flags, QINGCHENG_ENTRY.flag]),
+      flags: (flags = []) => (flags.includes(entry.flag) ? flags : [...flags, entry.flag]),
       varTree: (prev) => markNpcAsKnown({
-        ...prev, 世界: { ...prev?.世界, 势力声誉: { ...prev?.世界?.势力声誉, 青城派: rep } },
+        ...prev, 世界: { ...prev?.世界, 势力声誉: { ...prev?.世界?.势力声誉, [sect]: rep } },
       }, master),
     },
     logs: [
-      { t: "sys", text: `  （${master}收你入青城门下，青城派声誉 +${rep - status.rep}）` },
+      { t: "sys", text: `  （${master}收你入${sect}门下，${sect}声誉 +${rep - status.rep}）` },
       ...items.map((item) => ({ t: "loot", text: `✦ 得「${item.name}」`, item, source: "sect" })),
     ],
-    note: { text: `拜入青城派，${master}授青城玄门竹牌。`, owner: [{ name: master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE },
-    settle: `在青城山山门前明志试心，经${master}点头，正式拜入青城派，领了青城玄门竹牌、三清松风铁剑与青城道袍`,
+    note: { text: `拜入${sect}，${master}授${entry.token}。`, owner: [{ name: master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE },
+    settle: `经${master}点头，正式拜入${sect}，领了${items.map((item) => item.name).join("、")}`,
     settleOptions: {
       settleNpc: master, settleKind: "learn_skill",
-      learnInfo: { isMaster: true, moveBrief: "青城派门规与弟子身份", totalPrice: 0, beast: false },
+      learnInfo: { isMaster: true, moveBrief: `${sect}门规与弟子身份`, totalPrice: 0, beast: false },
     },
   };
 }
 
 export function joinSect(state) {
-  if (getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName) === QINGCHENG_ENTRY.buildingId) return joinQingcheng(state);
+  const entry = factionEntryForBuilding(getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName));
+  if (entry) return joinFactionSect(state, entry);
   const otherSect = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== SECT_ENTRY.sect && (state.flags || []).includes(flag))?.[0] ?? null;
   const status = checkSectEntry({
     affection: state.varTree.角色?.[SECT_ENTRY.master]?.好感度 ?? 0,

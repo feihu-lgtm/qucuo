@@ -37,6 +37,21 @@ export const QUCUO_SHOPS = {
       { name: "离堆镇水玉佩", category: ITEM_CATEGORY.ACCESSORY, quality: "橙", minRep: 100, member: true, limitOnce: true },
     ],
   },
+  峨眉坊: {
+    shopName: "峨眉坊",
+    items: [
+      { name: "素铁峨眉刺", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 0 },
+      { name: "白蜡护法枪", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 0 },
+      { name: "青布道袍", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: -19 },
+      { name: "清心避瘴散", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: -59 },
+      { name: "净莲木鱼坠", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 15 },
+      { name: "流云剑穗袍", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 15 },
+      { name: "金顶净心露", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 40 },
+      { name: "素影银簪刺", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 40 },
+      { name: "玄清太极佩", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 80 },
+      { name: "冷月拂柳剑", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100, member: true, limitOnce: true },
+    ],
+  },
   雅纸铺: {
     shopName: "雅纸铺",
     items: [
