@@ -129,7 +129,7 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     applyResult(featureCtxRef.current, orderService(gameStore.getState(), item, karmaChange));
   }, { feature: "building.serviceOrder" }), [captureUndo]);
 
-  const handleCook = useCallback(({ materials, technique, cookware, freestyle, dish }) => applyResult(featureCtxRef.current, () => {
+  const handleCook = useCallback(({ materials, technique, cookware, freestyle, dish, share }) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     applyResult(featureCtxRef.current, cookMeal(gameStore.getState(), {
       materials,
@@ -138,6 +138,8 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
       freestyle,
       dish,
       buildingName: activeBuilding?.name,
+      buildingId: activeBuilding?.id,
+      share,
     }));
   }, { feature: "building.cook" }), [activeBuilding, captureUndo]);
 

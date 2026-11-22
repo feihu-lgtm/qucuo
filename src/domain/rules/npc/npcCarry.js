@@ -82,6 +82,15 @@ function catEnumOf(name) {
   if (v.includes("accessory")) return "ACCESSORY";
   return "MISC";
 }
+// 身份必带物件（合稿「丐帮·七、7.1」加分行为的信物来源）：该身份的游民身上
+// 必定有这件东西，切磋/击杀掉落、偷窃都能拿到，交给对应人物换势力声誉。
+const ROLE_TROPHY = {
+  血刀部游骑: "血刀信物",
+  巡丁: "流亡凭证",
+  税吏: "流亡凭证",
+  差役: "流亡凭证",
+};
+
 export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
   const cap = Math.max(0, Math.min(5, levelCap));
   const role = npc.role || levelCapToRole(cap);
@@ -124,6 +133,11 @@ export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
     const name = bag.splice(idx, 1)[0];
     const it = makeNamedItem(name);
     if (it) items.push({ ...it, id: `${npc.id}_ci${i}`, stolen: false });
+  }
+  const trophy = ROLE_TROPHY[role];
+  if (trophy && !items.some((it) => it.name === trophy)) {
+    const it = makeNamedItem(trophy);
+    if (it) items.push({ ...it, id: `${npc.id}_trophy`, stolen: false });
   }
   return items.length ? items : generateNpcCarriedItems(npc, { luck, count: 1, levelCap: cap });
 }

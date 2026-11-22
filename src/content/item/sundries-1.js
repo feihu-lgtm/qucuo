@@ -360,6 +360,8 @@ const items = {
 "血刀通行木牌": { name:"血刀通行木牌", category:"misc", quality:"绿", tags:["令牌","血刀","天龙教"], desc:"血刀部发的通行木牌，牌面一道刀刻的深槽。哨卡见了这槽便不拦——血刀部认牌不认人。" },
 "天龙弟子令": { name:"天龙弟子令", category:"misc", quality:"绿", tags:["令牌","天龙教"], desc:"天龙教正式弟子的令牌，玄铁所铸，正面一条蟠龙，背面一道刀刻的深槽。点将台上发下来的东西，丢了比丢命丢人。" },
 "金顶剑谕": { name:"金顶剑谕", category:"misc", quality:"紫", tags:["令牌","峨眉派"], desc:"玄尘师太亲授的金顶剑谕，素绢金纹，一卷在手如峨眉亲临。凭此可调剑庐倾巢之援。" },
+"血刀信物": { name:"血刀信物", category:"misc", quality:"绿", tags:["信物","丐帮","血刀"], desc:"从血刀部恶徒身上缴下的血色铁符，符背刻着受袭村子的名字。交到察世茶棚，丐帮自有章程。" },
+"流亡凭证": { name:"流亡凭证", category:"misc", quality:"绿", tags:["凭证","丐帮","流民"], desc:"一张按了手印的粗麻纸，写着被土司差役逼得背井离乡的乡民名姓与来路。差役搜走备查的证物，如今落回你手。" },
 };
 
 export default { item: items, itemGroup: { SUNDRIES: Object.keys(items) } };
