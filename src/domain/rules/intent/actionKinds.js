@@ -4,6 +4,7 @@
 // 装备/卸下=menuEquip；其他=原有自由行动 typedAction。
 // 槽位选项一律从实时世界状态生成；数量（银两）由系统从玩家原文解析，不交给模型。
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
+import { getGroundItems } from "../map/groundScope.js";
 
 export const ACTION_KINDS = Object.freeze({
   GIFT: "赠送",
@@ -86,12 +87,12 @@ export function slotOptions(state, kind, slot) {
   if (slot === "item") {
     // 拾取的对象是地上的东西；装备候选含地上物（复合指令先捡后穿）；其余物品槽都从背包出。
     if (kind === ACTION_KINDS.PICKUP) {
-      return [...new Set((state?.room?.items || []).map(itemNameOf).filter(Boolean)), NONE];
+      return [...new Set(getGroundItems(state || {}).map(itemNameOf).filter(Boolean)), NONE];
     }
     const items = [...inventoryCounts(state).keys()];
     // 「先捡起来再装备」这类复合指令里，装备目标此刻还在地上；候选把地上物一并放出，由闸门按步校验到位。
     if (kind === ACTION_KINDS.EQUIP) {
-      const ground = (state?.room?.items || []).map(itemNameOf).filter(Boolean);
+      const ground = getGroundItems(state || {}).map(itemNameOf).filter(Boolean);
       return [...new Set([...items, ...ground]), NONE];
     }
     return kind === ACTION_KINDS.GIFT ? [SILVER, ...items, NONE] : [...items, NONE];

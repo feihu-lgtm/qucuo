@@ -137,15 +137,15 @@ describe("declared numeric scales", () => {
 });
 
 describe("shared state prompt templates", () => {
-  it("preserves the full engine state header", () => {
+  it("full engine state header carries the inner room description and exits", () => {
     expect(buildMainStatePrompt(promptState())).toBe(
-      "[状态] 时间:第1日·卯初·06:00 主角:少侠〔女〕 房间:鱼定村·村口 出口:n,s NPCs:才旦〔品阶:蓝档〕〔身携:猎刀〕 物品:石子 HP:70/100 内功:3 外功:4 七维:根骨5,悟性6 背包:刀(蓝·已装备),草药 装备:佩刀 武功:野球拳Lv2 因果:4 劫数:9\n[已触发事件] 旗\n[今日起居] 打坐1次",
+      "[状态] 时间:第1日·卯初·06:00 主角:少侠〔女〕 房间:鱼定村·村口 出口:n,s NPCs:才旦〔品阶:蓝档〕〔身携:猎刀〕\n此处:村口立着一块褪色的界石，写着'曲措乡'三个字。熊曲、鹰曲、狼曲三条溪流在此交汇，水声潺潺。（四周：东·歇马居　南·鱼定商号　北·老孙饭馆　西·杂货铺摊位）\n地上物品:石子 HP:70/100 内功:3 外功:4 七维:根骨5,悟性6 背包:刀(蓝·已装备),草药 装备:佩刀 武功:野球拳Lv2 因果:4 劫数:9\n[已触发事件] 旗\n[今日起居] 打坐1次",
     );
   });
 
-  it("preserves the private-talk header and filters inner-room NPCs", () => {
+  it("private-talk header uses the inner room description and filters inner-room NPCs", () => {
     expect(buildWhisperStatePrompt(promptState())).toBe(
-      "[当前世界状态，仅供你了解背景，不必主动复述] 主角:少侠〔女〕 时间:第1日·卯初·06:00 房间:鱼定村·村口（村中喧闹） 房间里的人:才旦 玩家背包:刀(蓝·已装备)，草药",
+      "[当前世界状态，仅供你了解背景，不必主动复述] 主角:少侠〔女〕 时间:第1日·卯初·06:00 房间:鱼定村·村口（村口立着一块褪色的界石，写着'曲措乡'三个字。熊曲、鹰曲、狼曲三条溪流在此交汇，水声潺潺。（四周：东·歇马居　南·鱼定商号　北·老孙饭馆　西·杂货铺摊位）） 房间里的人:才旦 玩家背包:刀(蓝·已装备)，草药",
     );
   });
 
