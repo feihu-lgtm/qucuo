@@ -4,7 +4,8 @@ import { applyResult } from "../../features/run.js";
 import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
 import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
-import { buildDuelNarrationPrompt, duelFactLogs, insertDuelNarration, parseDuelNarration } from "../../domain/rules/combat/duelBrief.js";
+import { buildDuelNarrationPrompt, duelFactLogs, duelNarrationSlots, parseDuelNarration } from "../../domain/rules/combat/duelBrief.js";
+import { backfillInBackground, newBackfillKey } from "../../engine/ports/backfill.js";
 import { askStoryteller, hasApiKey } from "../../engine/ports/storyteller.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 
@@ -36,16 +37,17 @@ export async function openDuelAfterNarration({ addLog, setDuelPending, isStale }
 }
 
 // 后台补写描写：不占回合、不排队，玩家可以接着打下一场。
-export async function narrateDuelInBackground(key, rounds, { outcomeText, place }, {
+export function narrateDuelInBackground(key, rounds, { outcomeText, place }, {
   ask = askStoryteller, canAsk = hasApiKey, setLog = gameActions.setLog,
 } = {}) {
-  if (!canAsk()) return false;
   const { sys, user } = buildDuelNarrationPrompt(rounds, { outcomeText, place });
-  const text = await ask(sys, user, { callLabel: "切磋战报", maxTokens: 900 });
-  const narration = parseDuelNarration(text, Array.isArray(rounds) ? rounds.length : 0);
-  if (!narration) return false;
-  setLog((log) => insertDuelNarration(log, key, narration));
-  return true;
+  const roundCount = Array.isArray(rounds) ? rounds.length : 0;
+  return backfillInBackground(key, {
+    canAsk,
+    setLog,
+    ask: () => ask(sys, user, { callLabel: "切磋战报", maxTokens: 900 }),
+    parse: (text) => duelNarrationSlots(parseDuelNarration(text, roundCount)),
+  });
 }
 
 export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc }) {
@@ -105,11 +107,11 @@ export function useDuel({
     if (result.factId) aiSummarizeFact(result.factId, result.cue);
     if (finishedNpc) {
       // 系统事实行立刻落日志；描写在后台补，不走 act，玩家不用等。
-      const key = `duel-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const key = newBackfillKey("duel");
       addLog(duelFactLogs(result.reportRounds, key, result.outcomeText));
       narrateDuelInBackground(key, result.reportRounds, {
         outcomeText: result.outcomeText, place: gameStore.getState().room?.name,
-      }, narrator).catch(() => {});
+      }, narrator);
       jotNote({
         text: result.recapNote,
         owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }],
