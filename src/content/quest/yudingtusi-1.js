@@ -1,9 +1,33 @@
 // 鱼定土司府任务线（合稿·土司府第 4 节）。土司府不可拜入，玩家是编外客卿：主线 府1~府3 与支线 府支1~3；
-// 府4「旧刃问心」牵着雪山派三十年宿怨和终局，等终局接线再做。门槛按 #237 顶层写法，全部 ≤ 100。
+// 府4「旧刃问心」牵着雪山派三十年宿怨；府5「斗地主」是终局决战，读各家终局 flag。门槛按 #237 顶层写法，全部 ≤ 100。
 // 奖励照合稿原值；土司府涨声誉时黑风寨、玉泉寨、雪山派的联动扣分由 factionRepDeltas 统一结算，这里不手写。
 const TS = "鱼定土司府";
 const at = (inner, district = "鱼定土司") => ({ district, inner });
 const catalog = (name, count = 1) => Array.from({ length: count }, () => ({ name, fromCatalog: true }));
+
+// 府5 读各家终局 flag 的映射表。各家 flag 名不统一（flag_*/endgame_*/*_endgame_*/finale_*/ally_*_confirmed），
+// 这里只读不改名。effect 只抄各家章节合稿明写的终局效果；合稿没写效果或效果已被府4前置覆盖的，effect 为 null，府5 不接。
+export const TUSI_FINALE_FLAGS = {
+  gesangNeutralized: { flag: "flag_gesang_neutralized", faction: TS, effect: "格桑顿珠率八成巡捕营按兵不动，桑杰朵杰失去半数防线（府5 前置）" },
+  meiduoRegent: { flag: "flag_meiduo_regent", faction: TS, effect: "战后推举梅朵代管" },
+  meiduoBacked: { flag: "endgame_meiduo_succession_backed", faction: "锦官城", effect: "锦官城官府支持梅朵继位/代管" },
+  yudingAlly: { flag: "flag_endgame_ally_yuding", faction: "鱼定村", effect: "情报封锁+后勤粮药+暗渡奇袭路线" },
+  xueshanAlly: { flag: "xueshan_endgame_ally", faction: "雪山派", effect: "雪山剑阵正面拖住桑杰朵杰，大幅震慑土司府护卫军心" },
+  baihuaAlly: { flag: "finale_baihua_joined", faction: "百花门", effect: "粮仓水源下软筋散、放瘴截断骑手，瓦解土司府半数私兵；百花门能解毒" },
+  gaibangAlly: { flag: "endgame_ally_gaibang", faction: "丐帮", effect: "打狗阵牵制巡捕营与骑手" },
+  gaibangScouts: { flag: "endgame_buff_gaibang_scouts", faction: "丐帮", effect: "全图斥候，提前洞悉伏兵" },
+  heifengRaid: { flag: "endgame_buff_heifengzhai_raid_supply_lines", faction: "黑风寨", effect: "袭扰土司府粮道，后勤支援延迟两回合" },
+  tangmenAlly: { flag: "ally_tangmen_confirmed", faction: "唐门", effect: "破甲连弩削减精兵三成护甲，取消管家毒弩伏击" },
+  tusiCrossbowExposed: { flag: "quest_tss2_hand", faction: TS, effect: "府支2 把暗弩交给格桑顿珠，削弱终局土司府暗器伏兵" },
+  wuxianAlly: { flag: "endgame_ally_wuxian", faction: "五仙教", effect: "银冠线：解瘴清风香与软筋麻蛊破毒阵；麻九娘未能卖蛊，战阵无紫瘴" },
+  wuxianFull: { flag: "endgame_ally_wuxian_full", faction: "五仙教", effect: null },
+  wuxianPoisonTusi: { flag: "endgame_wuxian_poison_tusi", faction: "五仙教", effect: "赤蜈线：土司私兵全员淬毒、战阵弥漫紫瘴（放任不管同样如此）" },
+  gaibangFull: { flag: "endgame_ally_gaibang_full", faction: "丐帮", effect: null },
+  lamaAlly: { flag: "lama_endgame_ally", faction: "喇嘛庙", effect: null },
+  xueshanLone: { flag: "xueshan_endgame_lone", faction: "雪山派", effect: null },
+};
+const F = Object.fromEntries(Object.entries(TUSI_FINALE_FLAGS).map(([k, v]) => [k, v.flag]));
+const FINALE_ROOM = at("议事厅");
 
 export default { quest: {
   yudingtusi_1_xunshan_cuiliang: {
@@ -310,5 +334,114 @@ export default { quest: {
       },
     ],
     rewardText: "两袋青稞的去向，梅朵很快就会知道。",
+  },
+
+  yudingtusi_5_dou_dizhu: {
+    id: "yudingtusi_5_dou_dizhu",
+    type: "QT_TALK",
+    title: "府5·斗地主",
+    giver: "格桑顿珠",
+    giverId: "resident_gesangdunzhu",
+    localOnly: true,
+    requiresQuestCompleted: "yudingtusi_4_gushu_wenxin",
+    requiresFlags: [F.gesangNeutralized],
+    description: "巡捕营奉命守门、按兵不动。三十年的旧账，今夜在议事厅当着桑杰朵杰的面算清。",
+    stages: [
+      {
+        id: "open",
+        requireLocation: FINALE_ROOM,
+        giver: null,
+        playerHint: "到议事厅，与桑杰朵杰当面摊牌。",
+        description: "议事厅烛火通明，桑杰朵杰端坐虎皮椅上，身后只剩一半护卫。格桑顿珠的骑手在府门外勒马不动。桑杰朵杰慢慢放下酒碗：「格桑也不站在我这边了。好，那就看看你们凑了多少人来。」",
+        completionFlag: "quest_ts5_open",
+      },
+      {
+        id: "miasma",
+        requireLocation: FINALE_ROOM,
+        giver: null,
+        playerHint: "五仙教若未站到你这边，土司私兵带着毒蛊冲进来；有百花门解毒能轻松些。",
+        description: "厅外忽然腾起一股紫雾。",
+        completionFlag: ["quest_ts5_miasma_clear", "quest_ts5_miasma", "quest_ts5_miasma_cured"],
+        choices: [
+          { flag: "quest_ts5_miasma_clear", label: "银冠毒使放解瘴清风香，紫瘴散尽", resolve: "none", requiresFlag: [F.wuxianAlly],
+            narration: "龙汐月的毒使在檐下点起解瘴清风香，紫雾还没漫过门槛就散了，几个淬毒私兵被软筋麻蛊放倒在台阶上。" },
+          { flag: "quest_ts5_miasma", label: "冒着紫瘴迎击淬毒私兵", resolve: "combat", blockedByFlags: [F.wuxianAlly],
+            combatNpc: { name: "淬毒土司私兵", levelCap: 5 } },
+          { flag: "quest_ts5_miasma_cured", label: "服百花门解药，迎击淬毒私兵", resolve: "combat", blockedByFlags: [F.wuxianAlly],
+            requiresFlag: [F.baihuaAlly], combatNpc: { name: "淬毒土司私兵", levelCap: 3 } },
+        ],
+      },
+      {
+        id: "ambush",
+        requireLocation: FINALE_ROOM,
+        giver: null,
+        playerHint: "管家陆福生的毒弩伏兵藏在梁上；唐门站到你这边就没有伏兵。",
+        description: "陆福生缩到柱后，抬手一挥。",
+        completionFlag: ["quest_ts5_ambush_none", "quest_ts5_ambush", "quest_ts5_ambush_spotted"],
+        choices: [
+          { flag: "quest_ts5_ambush_none", label: "唐门断了毒弩，梁上无人", resolve: "none", requiresFlag: [F.tangmenAlly],
+            narration: "陆福生挥了三次手，梁上没有一支弩箭落下来。唐门早就断了他的货，伏兵连机括都没装上。" },
+          { flag: "quest_ts5_ambush", label: "迎击千机毒弩伏兵", resolve: "combat", blockedByFlags: [F.tangmenAlly],
+            combatNpc: { name: "千机毒弩伏兵", levelCap: 4 } },
+          { flag: "quest_ts5_ambush_spotted", label: "伏兵早被看破，先拔弩手", resolve: "combat", blockedByFlags: [F.tangmenAlly],
+            requiresFlagAny: [F.gaibangScouts, F.tusiCrossbowExposed], combatNpc: { name: "千机毒弩伏兵", levelCap: 3 } },
+        ],
+      },
+      {
+        id: "guard",
+        requireLocation: FINALE_ROOM,
+        giver: null,
+        playerHint: "中院亲兵护着桑杰朵杰；各家援军能削弱他们，鱼定村的暗道能绕开他们。",
+        description: "中院亲兵举盾围成一圈，把桑杰朵杰护在中间。",
+        completionFlag: ["quest_ts5_guard", "quest_ts5_guard_gaibang", "quest_ts5_guard_heifeng", "quest_ts5_guard_tangmen",
+          "quest_ts5_guard_xueshan", "quest_ts5_guard_baihua", "quest_ts5_guard_yuding"],
+        choices: [
+          { flag: "quest_ts5_guard", label: "正面冲破中院亲兵", resolve: "combat", combatNpc: { name: "土司府中院亲兵", levelCap: 4 } },
+          { flag: "quest_ts5_guard_gaibang", label: "丐帮打狗阵牵住巡捕营与骑手", resolve: "combat", requiresFlag: [F.gaibangAlly],
+            combatNpc: { name: "土司府中院亲兵", levelCap: 3 } },
+          { flag: "quest_ts5_guard_heifeng", label: "黑风寨断了粮道，亲兵等不来后援", resolve: "combat", requiresFlag: [F.heifengRaid],
+            combatNpc: { name: "土司府中院亲兵", levelCap: 3 } },
+          { flag: "quest_ts5_guard_tangmen", label: "唐门破甲连弩先射穿亲兵护甲", resolve: "combat", requiresFlag: [F.tangmenAlly],
+            combatNpc: { name: "土司府中院亲兵", levelCap: 3 } },
+          { flag: "quest_ts5_guard_xueshan", label: "雪山剑阵压阵，亲兵军心大乱", resolve: "combat", requiresFlag: [F.xueshanAlly],
+            combatNpc: { name: "土司府中院亲兵", levelCap: 3 } },
+          { flag: "quest_ts5_guard_baihua", label: "百花软筋散已下，半数亲兵手脚发软", resolve: "combat", requiresFlag: [F.baihuaAlly],
+            combatNpc: { name: "土司府中院亲兵", levelCap: 2 } },
+          { flag: "quest_ts5_guard_yuding", label: "随鱼定村猎户走暗渡奇袭路线绕过中院", resolve: "none", requiresFlag: [F.yudingAlly],
+            narration: "鱼定村的人领你从后墙的旧水道摸进来，亲兵还朝着正门列阵，你已经站到了桑杰朵杰身后。" },
+        ],
+      },
+      {
+        id: "boss",
+        requireLocation: FINALE_ROOM,
+        giver: null,
+        playerHint: "与桑杰朵杰决战。",
+        description: "桑杰朵杰终于站起来，解下锦袍搭在椅背上：「这把椅子，我坐了三十年。想要，自己来拿。」",
+        completionFlag: "quest_ts5_boss",
+        choices: [
+          { flag: "quest_ts5_boss", label: "与桑杰朵杰决战", resolve: "combat", combatNpc: { name: "桑杰朵杰", levelCap: 5 } },
+        ],
+      },
+      {
+        id: "aftermath",
+        requireLocation: FINALE_ROOM,
+        giver: null,
+        playerHint: "桑杰朵杰倒下了，议事厅里等你定曲措乡往后怎么办。",
+        description: "虎皮椅空了。梅朵站在厅口，格桑顿珠把长矛插在地上，满厅的人都在看你。",
+        completionFlag: ["quest_ts5_regent", "quest_ts5_settle"],
+        choices: [
+          { flag: "quest_ts5_regent", label: "推举梅朵代管曲措乡，重丈田界", resolve: "none", requiresFlagAny: [F.meiduoRegent, F.meiduoBacked],
+            narration: "梅朵接过土司印信，第一道令就是把三十年前的地契全部摊在议事厅，请各村头人来重新丈量田界。" },
+          { flag: "quest_ts5_settle", label: "收缴印信，交格桑顿珠暂守土司府", resolve: "none",
+            narration: "你把土司印信交到格桑顿珠手里。他接过来，没说话，只把印信揣进了怀里。" },
+        ],
+        onReach: {
+          flags: ["tusi_finale_won"],
+          byFlag: {
+            quest_ts5_regent: { flags: ["tusi_meiduo_regency"] },
+          },
+        },
+      },
+    ],
   },
 } };
