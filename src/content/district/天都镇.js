@@ -87,6 +87,7 @@ export default { district: {
         x: 4, y: 0,
         desc: "欢喜教暗面据点，欢喜教任务线核心场景，老何/阿雅/桑杰三名内院弟子常在此处。",
         exits: { w: "香行内堂" },
+        buildingId: "sect_entry_huanxi",
         unlockCondition: { type: "questCompleted", questId: "huanxijiao_1_xiangzhongyi" },
       },
       百花楼: {

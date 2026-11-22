@@ -15,6 +15,7 @@ import { BUILDING_TYPE, getBuildingsForLocation } from "../domain/data/buildings
 import { getBuildingIdForInnerRoom } from "../domain/rules/map/innerMap.js";
 import { SKILL_CATALOG } from "../domain/data/kungfu/qucuoKungfu.js";
 import { pickGroundItem } from "../features/items/logic.js";
+import { joinSect, leaveSect } from "../features/sect/logic.js";
 import { autoFightQuestChoice } from "../features/quest/combatChoice.js";
 import { playLocalQuestStage } from "../features/quest/logic.js";
 
@@ -93,6 +94,24 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
         : { logs: [{ t: "sys", text: `  ${hall.name}可学：${catalog.map((entry) => entry.name).join("、")}。` }] };
     return { kind: "result", localKind: "buySkill", result };
   }
+  if (/^拜入(?:\s+(.+))?$/.test(command.trim())) {
+    const buildingId = getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName);
+    const hall = getBuildingsForLocation(state.room?.name)
+      .find((building) => building.id === buildingId && building.type === BUILDING_TYPE.SECT_ENTRY);
+    const result = !hall
+      ? { logs: [{ t: "sys", text: "  此处不是拜师堂，无法行拜入之礼。" }] }
+      : joinSect(state, hall.sect || "雪山派");
+    return { kind: "result", localKind: "joinSect", result };
+  }
+  if (/^(?:退派|叛出)(?:\s+(.+))?$/.test(command.trim())) {
+    const buildingId = getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName);
+    const hall = getBuildingsForLocation(state.room?.name)
+      .find((building) => building.id === buildingId && building.type === BUILDING_TYPE.SECT_ENTRY);
+    const result = !hall
+      ? { logs: [{ t: "sys", text: "  须在本门拜师堂当面交还信物退派。" }] }
+      : leaveSect(state, hall.sect || "雪山派");
+    return { kind: "result", localKind: "leaveSect", result };
+  }
   const questMatch = /^推进任务\s+(\S+)(?:\s+(.+))?$/.exec(command.trim());
   if (questMatch) {
     const quest = QUCUO_QUESTS.find((entry) => entry.localOnly && (entry.id === questMatch[1] || entry.title === questMatch[1]));
@@ -133,6 +152,7 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
       { t: "sys", text: "  买暗器 [货名]  在唐门暗器铺看货或购买" },
       { t: "sys", text: "  买蛊药|买秘珍 [货名]  在雾隐寨百蛊药房/秘珍坊看货或购买" },
       { t: "sys", text: "  学武 [武学名]  在当前武馆查看或学习武学" },
+      { t: "sys", text: "  拜入 / 退派    在当前门派拜师堂拜入或退派" },
       { t: "sys", text: `  推进任务 唐1·暗巷来客 [暗查取证${surface === "cli" ? "/硬闯截货" : ""}]  推进唐门任务` },
       { t: "sys", text: "  practice <武功>  运功修炼" },
       { t: "sys", text: "  ◈行动/◎对话/◆私聊旁白 三态切换：行动消耗回合，对话与私聊不消耗回合" },

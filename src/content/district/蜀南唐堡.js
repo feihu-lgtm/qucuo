@@ -14,6 +14,7 @@ export default { district: {
 　　临窗一张紫檀椅，老太太坐在上面慢条斯理地纳鞋底，脚边竹篓里插满细如牛毛的精钢绣针。她抬头冲你笑了笑，手里的针没停。`,
         exits: { s: "吊桥暗渠口", e: "唐堡内库" },
         unlockCondition: { type: "flag", flag: "tangmen_invited" },
+        buildingId: "sect_entry_tangmen",
         residentNpcName: "唐老太",
       },
       唐堡内库: {

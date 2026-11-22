@@ -154,4 +154,21 @@ describe("cultivation logic", () => {
       logs: [{ t: "err", text: "  潜能不足，三脚猫拳法突破小成需12点潜能（现有11）" }],
     });
   });
+
+  it("blocks breakthrough of high-tier sect skills after defection while keeping low-tier skills open", () => {
+    const locked = breakthroughSkill(makeState({
+      pot: 30,
+      flags: ["叛出:青城派"],
+      skills: [{ id: "kf_ziyang", name: "紫阳神功", stage: "入门" }],
+    }), "kf_ziyang");
+    expect(locked.changes).toBeUndefined();
+    expect(locked.logs[0].text).toContain("叛出青城派");
+
+    const allowed = breakthroughSkill(makeState({
+      pot: 30,
+      flags: ["叛出:青城派"],
+      skills: [{ id: "kf_qingchengjian", name: "青城剑法", stage: "入门" }],
+    }), "kf_qingchengjian");
+    expect(allowed.changes.skills[0].stage).toBe("小成");
+  });
 });

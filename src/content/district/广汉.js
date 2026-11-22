@@ -26,6 +26,7 @@ export default { district: {
         desc: `　　一棵三丈高的青铜树立在坑心，九枝九鸟，枝杈交错得毫无规律。树身绿锈厚得像树皮，敲一下，声音要过很久才散。
 　　树下站着几个戴青铜面具的人，一动不动。他们不说话，你走近，其中一个把手按在了剑柄上。神树最顶端坐着一个人，面具是金色的，纵目凸出三寸。他闭着眼。`,
         exits: { s: "三星堆遗址" },
+        buildingId: "sect_entry_sanxing",
         unlockCondition: { type: "item", itemName: "青铜纵目面具" },
       },
     },

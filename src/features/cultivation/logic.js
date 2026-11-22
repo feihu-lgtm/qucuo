@@ -1,5 +1,6 @@
 import { set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { effectiveMaxHp } from "../../domain/data/kungfu/qucuoKungfu.js";
+import { isSkillBreakthroughLocked } from "../../domain/rules/economy/skillUnlock.js";
 import { hpFromNeigong } from "../../domain/rules/npc/npcGeneration.js";
 import { STAGES, STAGE_UP_COST } from "../../utils/mudHelpers.js";
 
@@ -113,6 +114,13 @@ export function breakthroughSkill(state, skillRef) {
   const skill = skills[index];
   if (skill.fixed) {
     return { logs: [{ t: "sys", text: `  ${skill.name}是授业绝学，学即完整，无需修炼。` }] };
+  }
+
+  const lock = isSkillBreakthroughLocked(state, skill);
+  if (lock.locked) {
+    return {
+      logs: [{ t: "sys", text: `  你已叛出${lock.faction}，「${skill.name}」的后续高重法门已被锁死，只能保留现有火候。` }],
+    };
   }
 
   const currentStageIndex = STAGES.indexOf(skill.stage);

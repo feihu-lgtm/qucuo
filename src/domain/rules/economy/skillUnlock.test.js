@@ -17,9 +17,23 @@ describe("skillUnlockStatus", () => {
     expect(learnable(40)).toEqual(expect.arrayContaining(["离堆分水息", "听桥·分水"]));
   });
 
-  it("keeps membership-only skills locked until joining exists", () => {
+  it("keeps membership-only skills locked for non-members and unlocks them for formal disciples", () => {
     expect(learnable(100)).not.toContain("一字电剑");
     expect(learnable(100)).not.toContain("紫阳神功");
+
+    const memberState = { flags: ["青城派弟子"], questProgress: {}, varTree: { 世界: { 势力声誉: { 青城派: 80 } } } };
+    expect(skillUnlockStatus(memberState, SKILL_CATALOG.青城.find((skill) => skill.name === "一字电剑")).ok).toBe(true);
+    expect(skillUnlockStatus(memberState, SKILL_CATALOG.青城.find((skill) => skill.name === "紫阳神功")).ok).toBe(true);
+
+    const tangMember = { flags: ["唐门弟子"], questProgress: {}, varTree: { 世界: { 势力声誉: { 唐门: 40 } } } };
+    expect(skillUnlockStatus(tangMember, SKILL_CATALOG.唐门.find((skill) => skill.name === "满天星雨")).ok).toBe(true);
+
+    const emeiMember = { flags: ["峨眉派弟子"], questProgress: {}, varTree: { 世界: { 威望: 20, 势力声誉: { 峨眉派: 80 } } } };
+    expect(skillUnlockStatus(emeiMember, SKILL_CATALOG.峨眉.find((skill) => skill.name === "回风拂柳剑")).ok).toBe(true);
+    expect(skillUnlockStatus(emeiMember, SKILL_CATALOG.峨眉.find((skill) => skill.name === "佛光普照")).ok).toBe(true);
+    expect(skillUnlockStatus({
+      ...emeiMember, varTree: { 世界: { 威望: 10, 势力声誉: { 峨眉派: 80 } } },
+    }, SKILL_CATALOG.峨眉.find((skill) => skill.name === "佛光普照")).ok).toBe(false);
   });
 
   it("only counts the skill's own faction", () => {

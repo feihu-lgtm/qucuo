@@ -64,6 +64,10 @@ export const BUILDINGS_BY_LOCATION = {
       id: "hospital_tangmen", name: "试毒药庐", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
       desc: "既是练毒的灶，也是救命的堂；世上最狠的毒往往和最灵的解药同出一炉，只要出得起银子，断气前总能拉回来半口。",
     },
+    {
+      id: "sect_entry_tangmen", name: "宗祠·入堂石", type: BUILDING_TYPE.SECT_ENTRY, sect: "唐门",
+      desc: "竹影正堂先人牌位前一方墨石。唐门声誉够门墙之交，向唐老太行礼立誓，便可正式拜入唐门，领玄竹弟子令。",
+    },
   ],
   // ── 鱼定村（7 种，枢纽村） ──
   鱼定村: [
@@ -172,6 +176,10 @@ export const BUILDINGS_BY_LOCATION = {
       id: "chest_shanbie", name: "山间别墅·库房", type: BUILDING_TYPE.CHEST, house: "山间别墅",
       desc: "二楼主卧那只大衣柜，空得很，正好放东西。柜底也备着一套食材家底。",
     },
+    {
+      id: "sect_entry_huanxi", name: "坛城香案", type: BUILDING_TYPE.SECT_ENTRY, sect: "欢喜教",
+      desc: "欢喜堂深处供奉旧神像的香案，三柱无烟红香长燃。过比武招贤、声誉够门墙之交，可在此敬香入欢喜教内院。",
+    },
   ],
 
   // ── 玉泉寨（2 种，水路要道） ──
@@ -197,7 +205,7 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "雪山派弟子才能进的商坊，货物以门派专属为主，不收银两，只认功德。",
     },
     {
-      id: "sectentry_xueshan", name: "拜师堂", type: BUILDING_TYPE.SECT_ENTRY,
+      id: "sectentry_xueshan", name: "拜师堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "雪山派",
       desc: "内堂正中，何雨谢坐镇处。掌门不在山上这些年，收不收徒都是她一句话。入了门便是雪山派弟子，领一枚令牌——那令牌也是弟子别院的钥匙。",
     },
     {
@@ -219,6 +227,10 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "wuguan_emei", name: "峨眉剑庐", type: BUILDING_TYPE.WUGUAN, skillSet: "峨眉",
       desc: "锦官城南三进小院，院中一株老银杏。正堂供普贤菩萨，剑架靠墙十几柄剑擦得锃亮。尼姑和道姑坐一张桌上喝茶——峨眉佛道双修，不拘形迹。男弟子入门先抄三个月经，「心不静，剑不稳」。",
+    },
+    {
+      id: "sect_entry_emei", name: "听竹轩·拜师堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "峨眉派",
+      desc: "峨眉剑庐南进静室，竹影拂窗，案上檀香长燃。玄尘师太在此问心授牌，峨眉声誉够格且身家清白者可正式拜入。",
     },
     {
       id: "inn_jingguan", name: "锦官大车店", type: BUILDING_TYPE.INN, innPrice: 20,
@@ -386,6 +398,14 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "kitchen_wuxian", name: "酸汤竹灶", type: BUILDING_TYPE.KITCHEN,
       desc: "用湿泥糊成的苗家地灶，吊锅里常年咕嘟着红亮酸汤，墙上挂满腊肉、山椒与野菌。寨里人说，进了毒瘴谷要想不烂肠子，每天得吃三口滚烫酸辣。",
+    },
+  ],
+
+  // ── 广汉（1 种，三星堆古墟） ──
+  广汉: [
+    {
+      id: "sect_entry_sanxing", name: "授面坛", type: BUILDING_TYPE.SECT_ENTRY, sect: "三星派",
+      desc: "青铜神树下的古蜀石坛，纵目者静坐树冠之上。三星派声誉够门墙之交、未堕极恶者，可在此行开面问心礼拜入。",
     },
   ],
 };

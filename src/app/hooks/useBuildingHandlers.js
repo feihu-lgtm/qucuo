@@ -30,7 +30,7 @@ import {
   redeem as redeemFeature,
   withdraw as withdrawFeature,
 } from "../../features/bank/logic.js";
-import { joinSect } from "../../features/sect/logic.js";
+import { joinSect, leaveSect } from "../../features/sect/logic.js";
 import { auctionWin } from "../../features/auction/logic.js";
 import { buyFactionShopItem } from "../../features/buildings/factionShop.js";
 
@@ -192,12 +192,19 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     applyResult(featureCtxRef.current, listenToRumor(gameStore.getState(), rumor, cost));
   }, { feature: "building.listenRumor" }), [captureUndo]);
 
-  const handleJoinSect = useCallback(() => applyResult(featureCtxRef.current, () => {
+  const handleJoinSect = useCallback((sectName) => applyResult(featureCtxRef.current, () => {
     captureUndo();
-    const result = joinSect(gameStore.getState());
+    const result = joinSect(gameStore.getState(), sectName);
     if (result.changes) setActiveBuilding(null);
     applyResult(featureCtxRef.current, result);
   }, { feature: "building.joinSect" }), [captureUndo]);
+
+  const handleLeaveSect = useCallback((sectName) => applyResult(featureCtxRef.current, () => {
+    captureUndo();
+    const result = leaveSect(gameStore.getState(), sectName);
+    if (result.changes) setActiveBuilding(null);
+    applyResult(featureCtxRef.current, result);
+  }, { feature: "building.leaveSect" }), [captureUndo]);
 
   const handleAuctionWin = useCallback((finalPrice) => applyResult(featureCtxRef.current, () => {
     captureUndo();
@@ -228,6 +235,7 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     handleJadeCraft,
     handleListenRumor,
     handleJoinSect,
+    handleLeaveSect,
     handleAuctionWin,
   };
 }

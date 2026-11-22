@@ -1,69 +1,163 @@
 import { add, set, updateField } from "../../domain/rules/state/applyWrite.js";
-import { SECT_ENTRY, checkSectEntry } from "../../domain/rules/character/sectEntry.js";
+import {
+  NON_JOINABLE_FACTIONS,
+  checkSectEntry,
+  computeDefectRep,
+  defectedFlag,
+  getPlayerSect,
+  getSectEntry,
+  isPlayerInSect,
+} from "../../domain/rules/character/sectEntry.js";
+import { factionRepOf } from "../../domain/rules/economy/factionRep.js";
+import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { makeItem } from "../../domain/rules/economy/equipment.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
-import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
-import { QINGCHENG_ENTRY, SECT_MEMBER_FLAGS, checkQingchengEntry } from "../../domain/rules/character/qingchengEntry.js";
-import { makeNamedItem } from "../../domain/data/items/catalog.js";
 
-function joinQingcheng(state, now = Date.now()) {
-  const status = checkQingchengEntry({ varTree: state.varTree, flags: state.flags });
-  if (!status.eligible) return { logs: [{ t: "sys", text: "  你还不够格拜入青城派。" }] };
-  const items = [QINGCHENG_ENTRY.token, ...QINGCHENG_ENTRY.gifts]
-    .map((name, i) => ({ ...makeNamedItem(name), id: `qingcheng_join_${now}_${i}`, equipped: false }));
-  const rep = Math.min(100, status.rep + QINGCHENG_ENTRY.repBonus);
-  const master = QINGCHENG_ENTRY.master;
+function itemName(item) {
+  return typeof item === "string" ? item : item?.name;
+}
+
+function resolveTargetSect(state, sectName) {
+  if (sectName) return sectName;
+  const buildingId = getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName);
+  const byRoom = buildingId ? getSectEntry(buildingId) : null;
+  return byRoom ? byRoom.sect : "雪山派";
+}
+
+function buildJoinSettle(state, entry, status) {
+  const base = status.usesLegacyPath && entry.legacyJoinAction ? entry.legacyJoinAction : entry.joinAction;
+  const extras = [];
+  if (entry.maleCeremonyNote && state.char?.gender === "男") {
+    extras.push(entry.maleCeremonyNote);
+  }
+  const prestige = Number(state.varTree?.世界?.威望) || 0;
+  if (entry.highPrestigeNote && entry.highPrestigeThreshold != null && prestige >= entry.highPrestigeThreshold) {
+    extras.push(entry.highPrestigeNote);
+  }
+  return extras.length ? `${base}；${extras.join("；")}` : base;
+}
+
+export function joinSect(state, sectName) {
+  const target = resolveTargetSect(state, sectName);
+  if (NON_JOINABLE_FACTIONS.includes(target)) {
+    return { logs: [{ t: "sys", text: `  ${target}不设拜师堂，不占主门派名额，可通过声誉线成为客卿。` }] };
+  }
+  const entry = getSectEntry(target);
+  if (!entry) return { logs: [{ t: "sys", text: "  此势力不设拜师入门。" }] };
+  const status = checkSectEntry(state, entry.sect);
+  if (!status.eligible) {
+    if (status.currentSect && status.currentSect !== entry.sect) {
+      return { logs: [{ t: "sys", text: `  你已隶属${status.currentSect}，须先退派方可拜入${entry.sect}。` }] };
+    }
+    if (status.defected) {
+      return { logs: [{ t: "sys", text: `  你曾叛出${entry.sect}，门墙永闭，不再收留。` }] };
+    }
+    return { logs: [{ t: "sys", text: `  你还不够格拜入${entry.sect}。` }] };
+  }
+
+  const token = makeItemSmart({
+    name: entry.keyName,
+    category: entry.keyCategory || "misc",
+    quality: entry.keyQuality || "绿",
+    desc: entry.keyDesc,
+  }, makeItem);
+
+  const existingNames = new Set((state.inv || []).map(itemName));
+  const grantedBonus = (entry.bonusItems || [])
+    .filter((spec) => !existingNames.has(spec.name))
+    .map((spec) => makeItemSmart(spec, makeItem));
+  const granted = [token, ...grantedBonus];
+
+  const currentRep = factionRepOf(state.varTree, entry.sect);
+  const nextRep = currentRep + (entry.repBonus || 20);
+  const applyRep = updateField("varTree", set(["世界", "势力声誉", entry.sect], nextRep));
+
+  const changes = {
+    inv: updateField("inv", (inv) => set("inv", [...inv, ...granted])),
+    flags: updateField("flags", (flags) => set("flags", flags.includes(entry.flag) ? flags : [...flags, entry.flag])),
+    varTree: (prev) => applyRep(markNpcAsKnown(prev, entry.master)),
+  };
+  if (status.tuitionDue > 0) {
+    changes.char = updateField("char", add("char.money", -status.tuitionDue));
+  }
+
+  const summaryParts = [];
+  if (status.tuitionDue > 0) summaryParts.push(`奉上束脩银${status.tuitionDue}两`);
+  summaryParts.push(`正式拜入${entry.sect}，声誉 +${entry.repBonus || 20}`);
+  if (entry.sect === "雪山派") summaryParts.push("内堂之后的弟子别院已开");
+
+  const logs = [
+    { t: "sys", text: `  （${summaryParts.join(" · ")}）` },
+    ...granted.map((item) => ({ t: "loot", text: `✦ 得「${item.name}」`, item, source: "sect" })),
+  ];
+
+  const noteText = status.tuitionDue > 0
+    ? `拜入${entry.sect}，${entry.master}收下束脩，授${entry.keyName}。`
+    : `拜入${entry.sect}，${entry.master}授${entry.keyName}，正式列入本门。`;
+
   return {
-    changes: {
-      inv: (inv = []) => [...inv, ...items],
-      flags: (flags = []) => (flags.includes(QINGCHENG_ENTRY.flag) ? flags : [...flags, QINGCHENG_ENTRY.flag]),
-      varTree: (prev) => markNpcAsKnown({
-        ...prev, 世界: { ...prev?.世界, 势力声誉: { ...prev?.世界?.势力声誉, 青城派: rep } },
-      }, master),
-    },
-    logs: [
-      { t: "sys", text: `  （${master}收你入青城门下，青城派声誉 +${rep - status.rep}）` },
-      ...items.map((item) => ({ t: "loot", text: `✦ 得「${item.name}」`, item, source: "sect" })),
-    ],
-    note: { text: `拜入青城派，${master}授青城玄门竹牌。`, owner: [{ name: master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE },
-    settle: `在青城山山门前明志试心，经${master}点头，正式拜入青城派，领了青城玄门竹牌、三清松风铁剑与青城道袍`,
+    changes,
+    logs,
+    note: { text: noteText, owner: [{ name: entry.master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE },
+    settle: buildJoinSettle(state, entry, status),
     settleOptions: {
-      settleNpc: master, settleKind: "learn_skill",
-      learnInfo: { isMaster: true, moveBrief: "青城派门规与弟子身份", totalPrice: 0, beast: false },
+      settleNpc: entry.master,
+      settleKind: "learn_skill",
+      learnInfo: {
+        isMaster: true,
+        moveBrief: entry.moveBrief,
+        totalPrice: status.tuitionDue,
+        beast: false,
+      },
     },
   };
 }
 
-export function joinSect(state) {
-  if (getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName) === QINGCHENG_ENTRY.buildingId) return joinQingcheng(state);
-  const otherSect = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== SECT_ENTRY.sect && (state.flags || []).includes(flag))?.[0] ?? null;
-  const status = checkSectEntry({
-    affection: state.varTree.角色?.[SECT_ENTRY.master]?.好感度 ?? 0,
-    neigong: state.char.neigong ?? 0, money: state.char.money ?? 0, flags: state.flags, otherSect,
-  });
-  if (!status.eligible) return { logs: [{ t: "sys", text: "  你还不够格拜入雪山派。" }] };
-  const token = makeItemSmart({
-    name: SECT_ENTRY.keyName, category: "misc", quality: "绿",
-    desc: "雪山派正式弟子的令牌，青铜铸就，正面一座雪峰，背面刻着一个小小的「贰」。兼作弟子别院的门锁钥匙。",
-  }, makeItem);
+export function leaveSect(state, sectName, { mode = "defect" } = {}) {
+  const targetSect = sectName || getPlayerSect(state.flags);
+  const entry = targetSect ? getSectEntry(targetSect) : null;
+  if (!entry || !isPlayerInSect(state.flags, entry.sect)) {
+    return { logs: [{ t: "sys", text: "  你当前并非本门正式弟子，无派可退。" }] };
+  }
+
+  const expel = mode === "expel";
+  const currentRep = factionRepOf(state.varTree, entry.sect);
+  const nextRep = computeDefectRep(currentRep, mode);
+  const mark = defectedFlag(entry.sect);
+  const applyRep = updateField("varTree", set(["世界", "势力声誉", entry.sect], nextRep));
+
+  const verb = expel ? "逐出" : "叛出";
+  const logs = [
+    {
+      t: "sys",
+      text: `  （${verb}${entry.sect} · ${entry.sect}声誉重置为 ${nextRep} · 收回「${entry.keyName}」 · 已学招式保留但高阶武学突破已锁死）`,
+    },
+  ];
+
   return {
     changes: {
-      char: updateField("char", add("char.money", -SECT_ENTRY.tuition)),
-      inv: updateField("inv", (inv) => set("inv", [...inv, token])),
-      flags: updateField("flags", (flags) => set("flags", flags.includes(SECT_ENTRY.flag) ? flags : [...flags, SECT_ENTRY.flag])),
-      varTree: prev => markNpcAsKnown(prev, SECT_ENTRY.master),
+      inv: updateField("inv", (inv) => set("inv", (inv || []).filter((item) => itemName(item) !== entry.keyName))),
+      flags: updateField("flags", (flags) => {
+        const stripped = (flags || []).filter((flag) => flag !== entry.flag);
+        return set("flags", stripped.includes(mark) ? stripped : [...stripped, mark]);
+      }),
+      varTree: (prev) => applyRep(markNpcAsKnown(prev, entry.master)),
     },
-    logs: [
-      { t: "sys", text: `  （奉上束脩银${SECT_ENTRY.tuition}两，得雪山派弟子令牌 · 内堂之后的弟子别院已开）` },
-      { t: "loot", text: `✦ 得「${SECT_ENTRY.keyName}」`, item: token, source: "sect" },
-    ],
-    note: { text: `拜入雪山派，${SECT_ENTRY.master}收下束脩，授弟子令牌。`, owner: [{ name: SECT_ENTRY.master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE },
-    settle: `向${SECT_ENTRY.master}奉上束脩，正式拜入雪山派门下，接过那枚刻着「贰」字的弟子令牌`,
+    logs,
+    note: {
+      text: expel
+        ? `因犯门规被${entry.master}逐出${entry.sect}，收回${entry.keyName}。`
+        : `向${entry.master}交还${entry.keyName}，主动退出${entry.sect}。`,
+      owner: [{ name: entry.master, via: VIA.FIRSTHAND }],
+      source: NOTE_SOURCE.NARRATIVE,
+    },
+    settle: expel
+      ? `因触犯门规被${entry.master}当场收回${entry.keyName}，革出${entry.sect}门墙`
+      : `向${entry.master}缴还${entry.keyName}，正式退出${entry.sect}门墙`,
     settleOptions: {
-      settleNpc: SECT_ENTRY.master, settleKind: "learn_skill",
-      learnInfo: { isMaster: true, moveBrief: "雪山派门规与弟子身份", totalPrice: SECT_ENTRY.tuition, beast: false },
+      settleNpc: entry.master,
     },
   };
 }
