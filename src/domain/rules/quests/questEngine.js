@@ -122,7 +122,8 @@ export function questGateReqs(quest, varTree) {
 
 // 分支选项的门槛（字段全部可选）：requiresQuestCompleted / requiresAnyOf 同任务门槛；
 // requiresFlag: string[] 全部持有；requiresFactionRep: { [势力]: number }；
-// requiresFavor: { [人物]: number }（角色.<人物>.好感度，缺省 10）。
+// requiresFavor: { [人物]: number }（角色.<人物>.好感度，缺省 10）；
+// blockedByFlags: string[] 持有任意一个即不可选。
 export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}) {
   const isDone = (qid) => questProgress?.[qid]?.status === "completed";
   if (choice.requiresQuestCompleted) {
@@ -131,6 +132,7 @@ export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}
   }
   if (choice.requiresAnyOf?.length && !choice.requiresAnyOf.some(isDone)) return false;
   if (choice.requiresFlag?.some((f) => !flags?.includes(f))) return false;
+  if (choice.blockedByFlags?.some((f) => flags?.includes(f))) return false;
   if (Object.entries(choice.requiresFactionRep || {}).some(([faction, min]) => factionRepOf(varTree, faction) < min)) return false;
   if (Object.entries(choice.requiresFavor || {}).some(([npc, min]) => Number(varTree?.角色?.[npc]?.好感度 ?? 10) < min)) return false;
   return true;
