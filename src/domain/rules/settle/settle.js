@@ -1,5 +1,8 @@
-// 软结算的纯函数部分：deltas 应用/快照/回滚与结算提示格式化。
-// AI 调用（runSoftSettle）已上移到 engine/ports/softSettle.js。
+// 软结算的纯函数部分：deltas → patches 生成、快照/回滚与结算提示格式化。
+// AI 调用（runSoftSettle）已上移到 engine/ports/softSettle.js；
+// 写入统一走 domain/rules/state/applyPatches.js。
+
+import { merge } from "../state/applyPatches.js";
 
 function writeSettledPath(tree, [key, ...rest], value) {
   const current = tree && typeof tree === "object" ? tree : {};
@@ -9,11 +12,12 @@ function writeSettledPath(tree, [key, ...rest], value) {
   };
 }
 
-export function applySettledDeltas(varTree, deltas = []) {
-  return (deltas || []).reduce((tree, delta) => {
-    if (typeof delta?.path !== "string" || !delta.path || !Object.hasOwn(delta, "finalValue")) return tree;
-    return writeSettledPath(tree, delta.path.split("."), delta.finalValue);
-  }, varTree || {});
+// deltas → Patch[]：每条 { path, finalValue } 转成一条 varTree 下的 merge patch。
+// 跳过缺 path/finalValue 的畸形项（原 applySettledDeltas 的同款过滤）。
+export function settledToPatches(deltas = []) {
+  return (deltas || [])
+    .filter((delta) => typeof delta?.path === "string" && delta.path && Object.hasOwn(delta, "finalValue"))
+    .map((delta) => merge(`varTree.${delta.path}`, delta.finalValue));
 }
 
 function readSettledPath(tree, path) {

@@ -13,7 +13,7 @@
 // 直接 varTree.世界.旁白.seaUnlocked 会炸；读的地方一律走 narratorVars() 兜底。
 import { emptyTally } from "../memory/tally.js";
 import { AFFECTION_RULES, FIELD, FIELDS } from "../state/fields.js";
-import { applyWrite } from "../state/applyWrite.js";
+import { applyPatches } from "../state/applyPatches.js";
 export { isProtectedMvuPath } from "../state/applyWrite.js";
 
 export function initialNarratorVars() {
@@ -103,20 +103,14 @@ export function extractMvuBlock(rawText) {
 
 const MAX_SINGLE_ADD = AFFECTION_RULES.mvu.maxDelta;
 
+// AI 产出的 mvu 指令本身就是 Patch[]；本函数只是 applyPatches(source:'mvu')
+// 的门面：入树前深拷贝、返回形适配 {tree, applied, rejected, logs}。
 export function applyMvuCommands(varTree, commands, opts = {}) {
-  let state = { varTree: JSON.parse(JSON.stringify(varTree)) };
-  const applied = [], rejected = [], logs = [];
-  for (const command of commands) {
-    const result = applyWrite(state, command, { ...opts, source: "mvu" });
-    if (result.reason) {
-      rejected.push({ ...command, reason: result.reason });
-      continue;
-    }
-    state = result.state;
-    applied.push({ ...command, finalValue: result.finalValue,
-      ...(result.actualDelta == null ? {} : { actualDelta: result.actualDelta }) });
-    logs.push(...result.logs);
-  }
+  const { state, applied, rejected, logs } = applyPatches(
+    { varTree: JSON.parse(JSON.stringify(varTree)) },
+    commands,
+    { ...opts, source: "mvu" },
+  );
   return { tree: state.varTree, applied, rejected, logs };
 }
 

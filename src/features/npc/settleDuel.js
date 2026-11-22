@@ -8,7 +8,7 @@ import { buildDuelReportRounds } from "../../domain/rules/combat/duelReport.js";
 import { QUEST_TYPE } from "../../domain/data/quests/questTypes.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
-import { applyStageRewards, resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
+import { resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
 import { activeCompanionKey } from "../../domain/rules/companion/companion.js";
 import { snowQuestActive } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";

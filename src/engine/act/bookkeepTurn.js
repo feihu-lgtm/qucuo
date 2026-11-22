@@ -1,5 +1,6 @@
 import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
-import { applyBookkeep } from "../../domain/rules/memory/bookkeep.js";
+import { bookkeepToPatches } from "../../domain/rules/memory/bookkeep.js";
+import { applyPatches } from "../../domain/rules/state/applyPatches.js";
 import { runBookkeep } from "../ports/bookkeep.js";
 import { getLedger } from "../../domain/rules/memory/npcLedger.js";
 import { buildPresence } from "../prompt/roundNotes.js";
@@ -76,7 +77,7 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
       // memory will replace p.memory when narration goes prose-only.
       const time = gameStore.getState().time;
       const setVarTree = typeof ctx.setVarTree === "function" ? ctx.setVarTree : gameActions.setVarTreeState;
-      setVarTree((prev) => applyBookkeep(prev, result, time));
+      setVarTree((prev) => applyPatches({ varTree: prev }, bookkeepToPatches(prev, result, time)).state.varTree);
     }
     const updated = Object.keys(result?.ledger || {}).length > 0;
     turnMonitor.add(bookkeepTrace, "engine", "记账完成", {

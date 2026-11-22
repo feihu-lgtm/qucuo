@@ -1,6 +1,6 @@
 import { AFFECTION_RULES, FIELD, FIELDS, readPath, statePath } from "./fields.js";
 
-const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+export const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 const protectedPrefixes = Object.entries(FIELDS).filter(([, field]) => field.ai === false)
   .map(([path]) => path.split(".").slice(0, -1));
 const patterns = Object.entries(FIELDS).filter(([path]) => path.includes("*"))
@@ -21,7 +21,7 @@ export function isProtectedMvuPath(path) {
   return protectedPrefixes.some((prefix) => isPrefix(prefix, parts) || isPrefix(parts, prefix));
 }
 
-function writePath(node, [key, ...rest], value) {
+export function writePath(node, [key, ...rest], value) {
   const child = rest.length ? writePath(node?.[key], rest, value) : value;
   if (!Array.isArray(node)) return { ...(node && typeof node === "object" ? node : {}), [key]: child };
   const copy = node.slice();

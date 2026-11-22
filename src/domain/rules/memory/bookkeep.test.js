@@ -3,12 +3,13 @@ import { createMockAi } from "../../../engine/ports/ai.js";
 import { buildPrompt } from "../prompt/buildPrompt.js";
 import {
   parseBookkeep,
-  applyBookkeep,
+  bookkeepToPatches,
   registerBookkeepCalls,
   MEMORY_MAX,
 } from "./bookkeep.js";
 import { runBookkeep } from "../../../engine/ports/bookkeep.js";
 import { getLedger } from "./npcLedger.js";
+import { applyPatches } from "../state/applyPatches.js";
 
 const PRESENT = ["才旦", "八云"];
 
@@ -88,11 +89,11 @@ describe("runBookkeep 记账调用", () => {
   });
 });
 
-describe("applyBookkeep 落账", () => {
+describe("bookkeepToPatches 落账", () => {
   it("把各人新账写进 varTree 旧账，memory 不落库", () => {
     const tree = { 角色: { 才旦: { 好感度: 30 } } };
     const result = { memory: "少侠归还了猎刀。", ledger: { 才旦: ["少侠归还了才旦的猎刀"], 八云: ["少侠向八云赔罪"] } };
-    const next = applyBookkeep(tree, result, 12);
+    const next = applyPatches({ varTree: tree }, bookkeepToPatches(tree, result, 12)).state.varTree;
     expect(getLedger(next, "才旦").lines).toEqual(["少侠归还了才旦的猎刀"]);
     expect(getLedger(next, "八云").lines).toEqual(["少侠向八云赔罪"]);
     expect(next.角色.才旦.好感度).toBe(30);
@@ -102,8 +103,8 @@ describe("applyBookkeep 落账", () => {
 
   it("空账不动树", () => {
     const tree = { 角色: {} };
-    expect(applyBookkeep(tree, { memory: "事", ledger: {} }, 1)).toBe(tree);
-    expect(applyBookkeep(tree, null, 1)).toBe(tree);
+    expect(applyPatches({ varTree: tree }, bookkeepToPatches(tree, { memory: "事", ledger: {} }, 1)).state.varTree).toBe(tree);
+    expect(applyPatches({ varTree: tree }, bookkeepToPatches(tree, null, 1)).state.varTree).toBe(tree);
   });
 });
 

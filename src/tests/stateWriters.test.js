@@ -11,7 +11,8 @@ import { meditate, trainNeigong } from "../features/cultivation/logic.js";
 import { consumeItem, pickGroundItem } from "../features/items/logic.js";
 import { giftNpc, settleNpcDuel } from "../features/npc/logic.js";
 import { applyPigeonReply, buyPigeon, collectPigeons, sendPigeonLetter } from "../features/pigeon/logic.js";
-import { applyStageRewards } from "../domain/rules/quests/questRewards.js";
+import { stageRewardPatches } from "../domain/rules/quests/questRewards.js";
+import { commitPatches } from "../domain/rules/state/applyPatches.js";
 
 function applyChanges(state, result) {
   const next = { ...state };
@@ -309,10 +310,10 @@ it("keeps the letter preview's affection and logs even if the next state has cha
 it("keeps quest rewards, absolute resets, default affection and silent writes", () => {
   const state = baseState();
   const { deps, logs } = makeDeps(state);
-  applyStageRewards({
+  commitPatches(deps, stageRewardPatches({
     items: [{ name: "玉佩" }], money: 4, flags: ["new", "old"], reputation: 20,
     favorability: { 侠客: 3 }, favorabilitySet: { 师父: 0 },
-  }, deps, 25);
+  }, 25));
   expect({ inv: state.inv, flags: state.flags, money: state.char.money, tree: state.varTree, logs }).toEqual({
     inv: ["药丸", "药丸", { name: "玉佩", id: "quest_reward_25_0", equipped: false }],
     flags: ["old", "new"], money: 34,

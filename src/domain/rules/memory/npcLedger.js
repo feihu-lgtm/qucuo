@@ -7,6 +7,8 @@
 // 纯函数、不可变更新，旧存档没有该字段也能正常读写。
 // ============================================================================
 
+import { merge } from "../state/applyPatches.js";
+
 export const LEDGER_MAX_LINES = 5; // 每人最多留 5 条，旧的先滚
 export const LEDGER_LINE_MAX = 40; // 每条最多 40 字
 
@@ -29,18 +31,17 @@ export function getLedger(varTree, name) {
 }
 
 /**
- * 往某 NPC 的旧账追加账目。去重、去空、每条截到 40 字、全账只留最新 5 条。
- * 返回新 varTree，不改原对象；该 NPC 在 varTree.角色 里还没建档时会建出来。
- * @param {object} varTree
+ * 往某 NPC 的旧账追加账目的 Patch 生成器：去重、去空、每条截到 40 字、
+ * 全账只留最新 5 条，产出一条 merge patch（写入统一走 applyPatches）。
+ * 该 NPC 在 varTree.角色 里还没建档时，merge 会自动建出来。
+ * @param {object} varTree      当前树（只读，用于合并既有账目）
  * @param {string} name
  * @param {string[]} newLines  本轮新记的账目（可空）
  * @param {number} turn        当前回合数
- * @returns {object} 新 varTree
+ * @returns {object[]} Patch[]
  */
-export function applyLedgerUpdate(varTree, name, newLines, turn) {
+export function ledgerToPatches(varTree, name, newLines, turn) {
   const base = varTree ?? {};
-  const chars = base.角色 ?? {};
-  const npc = chars[name] ?? {};
   const existing = getLedger(base, name).lines;
   const incoming = (Array.isArray(newLines) ? newLines : [])
     .map((l) => (typeof l === "string" ? l.trim() : ""))
@@ -51,14 +52,5 @@ export function applyLedgerUpdate(varTree, name, newLines, turn) {
     if (!merged.includes(line)) merged.push(line);
   }
   const lines = merged.slice(-LEDGER_MAX_LINES);
-  return {
-    ...base,
-    角色: {
-      ...chars,
-      [name]: {
-        ...npc,
-        旧账: { lines, updatedTurn: turn },
-      },
-    },
-  };
+  return [merge(["varTree", "角色", name, "旧账"], { lines, updatedTurn: turn })];
 }
