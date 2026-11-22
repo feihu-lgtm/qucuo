@@ -1,77 +1,69 @@
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import TopBar from "./panels/TopBar.jsx";
 import { LeftPanel, CenterPanel, RightPanel, MobileTabBar, usePanelFaces } from "./panels/gamePanels.js";
-import ClickableMap from "./components/ClickableMap.jsx";
-import ZoomableMap from "./components/ZoomableMap.jsx";
 import NoticeToast from "./components/NoticeToast.jsx";
-import { QUCUO_MAP, isNodeUnlocked } from "../domain/data/map/qucuoMap.js";
-import {
-  hasInnerMap, getDistrictAnchor, getInnerRoom, visibleInnerExits,
-  getInnerRoomNames, isInnerExitUnlocked,
-} from "../domain/rules/map/innerMap.js";
-import { DIRS } from "../utils/mudHelpers.js";
-import { MAP_UI } from "./mapUi.js";
 import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";
 import { didOpenCenterContent } from "../utils/mobileColumn.js";
 import { OVERLAY, useOverlay } from "../store/uiStore.js";
+import { gameActions, useGameStore } from "../store/gameStore.js";
+
+const BigMapModal = lazy(() => import("./components/BigMapModal.jsx"));
 
 export default function GameLayout({ layout }) {
   const {
-    overlayHost, uiScale, zoneTheme, isMobile, mobileColumn, setMobileColumn,
-    rollbackBlocked, stopRunning, dispatchCommand,
-    mobileTopMenu, setMobileTopMenu,
-    isDayMode, setIsDayMode, uiGold, uiTurquoise, uiCrimson, uiPink,
-    setSettingsInitialTab, autoSaveError, lastAutoSave, playerAvatarCustom,
-    setPlayerAvatarCustom, AV_BASE, genderAvatar, S, room, innerRoomName,
-    time, varTree, char, setChar, peoplePanel, setPeoplePanel, activeBuilding,
-    setActiveBuilding, setActiveItemMenu, setActiveNpcMenu, setCharacterPageTarget,
-    setPigeonTarget, setInteractMode, inputRef, addLog, pigeonTarget, portraits,
-    portraitTarget, setPortraitTarget, interactMode, activeTarget, setActiveTarget,
-    activeGroundItem, setActiveGroundItem,
-    talkTarget, setTalkTarget,
-    playerAvatar, slImgErr, setSlImgErr, slForm, setSnowLeopardForm,
-    setSlFormState, pearlForm, setPearlForm, setPearlFormState, pearlImgErr,
-    setPearlImgErr, narrator, narratorImgErr, setNarratorImgErr, companionState,
-    mapView, setMapView, mapBig, setMapBig, mapData, questProgress, flags, inv,
-    inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind, loading, act,
-    autoTravelTo, uiGreen, setLoading, rollbackOneStep, captureUndo, gm,
-    setGm, pot, setPot, exp, setExp, dao, setDao, setVarTree, setNarrator,
-    setMapData, setRoom, setInnerRoomName, teleportLookRef, setSkills, duelPending, confirmDuel,
-    cancelDuel, tradingShop, setTradingShop, buildingPanelMinimized,
-    setBuildingPanelMinimized, handleBuildingInn, handleBuildingHeal, skills,
-    handleBuySkill, effectiveSpecialNow, inspectItem, jotNote, handleAcceptEscort, handleCollectGround,
-    handleGamble, handleCollectPigeons, buyPigeon, handlePostSend, handleTravel,
-    handleServiceOrder, handlePray, handleReadBook, handleBuyBook, deposit,
-    depositedAt, handleDeposit, handleWithdraw, pledgedItems, handlePledge,
-    handleRedeem, handleAcceptBounty, handleClaimBounty, handleForgeCommission,
-    handleForgeDesign, handleJadeDesign, handleJadeCraft, gambleNegotiation,
-    handleGambleTalk, handleGambleSettle, handleGambleInspect, handleListenRumor,
-    handleJoinSect, handleAuctionWin, handleCook, seaTraumaActive, narratorVarsNow,
-    invNames, handleComfort, handleResolveTrauma, sectMasterAffection, log,
-    clr, collapsedGroups, setCollapsedGroups, queueCount, pendingTalks, inspecting,
-    logEnd, waitSecs, availableQuestsHere, triggerQuestFromPanel,
-    triggerQuestChoice, nsfwOn, setNsfwOn, meditate, justMeditated,
-    pigeonDelayShichen, input, setInput, composingRef, onKey, handleSwitchCompanion,
-    trainNeigong, trainWaigong, trainCost, activeBuffs, breakthroughSkill,
-    confessToNarrator, setInv, mapBigCloseGuard,
+    overlayHost, addLog, jotNote, activeBuffs, setVarTree,
+    setSnowLeopardForm, setPearlForm, trainCost,
+    ui, autosave, derived, turn, handlers,
   } = layout;
+  const {
+    questPanel, pigeonHandlers, duelHandlers, screenHandlers,
+    buildingHandlers, craftingAI, playerActionHandlers, progressionHandlers, aiInspect,
+  } = handlers;
+
+  const room = useGameStore(s => s.room);
+  const innerRoomName = useGameStore(s => s.innerRoomName);
+  const time = useGameStore(s => s.time);
+  const varTree = useGameStore(s => s.varTree);
+  const char = useGameStore(s => s.char);
+  const narrator = useGameStore(s => s.narrator);
+  const companionState = useGameStore(s => s.companionState);
+  const mapData = useGameStore(s => s.mapData);
+  const questProgress = useGameStore(s => s.questProgress);
+  const flags = useGameStore(s => s.flags);
+  const inv = useGameStore(s => s.inv);
+  const pot = useGameStore(s => s.pot);
+  const exp = useGameStore(s => s.exp);
+  const dao = useGameStore(s => s.dao);
+  const skills = useGameStore(s => s.skills);
+  const deposit = useGameStore(s => s.deposit);
+  const depositedAt = useGameStore(s => s.depositedAt);
+  const pledgedItems = useGameStore(s => s.pledgedItems);
+  const log = useGameStore(s => s.log);
+
+  const {
+    setChar, setPot, setExp, setDao, setNarrator,
+    setMapData, setRoom, setInnerRoomName, setSkills, setInv,
+  } = gameActions;
+
   const { leftFaces, rightFaces } = usePanelFaces();
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const showBasement = useOverlay(OVERLAY.BASEMENT);
   const previousCenterContent = useRef(null);
   const narrativeView = useRef({ visible: false, log: null });
 
+  const { isMobile, mobileColumn, setMobileColumn, zoneTheme, logEnd } = ui;
+
   useEffect(() => {
     const content = {
-      building: activeBuilding?.id, trade: tradingShop, duel: duelPending,
-      interaction: interactMode !== "action" ? `${interactMode}:${pigeonTarget || talkTarget || ""}` : null,
-      trauma: seaTraumaActive, debug: showDebug, basement: showBasement,
+      building: ui.activeBuilding?.id, trade: ui.tradingShop, duel: ui.duelPending,
+      interaction: ui.interactMode !== "action" ? `${ui.interactMode}:${ui.pigeonTarget || ui.talkTarget || ""}` : null,
+      trauma: derived.seaTraumaActive, debug: showDebug, basement: showBasement,
     };
     const opened = didOpenCenterContent(previousCenterContent.current, content);
     previousCenterContent.current = content;
     if (isMobile && opened) setMobileColumn("center");
-  }, [isMobile, activeBuilding?.id, tradingShop, duelPending, interactMode, pigeonTarget,
-    talkTarget, seaTraumaActive, showDebug, showBasement, setMobileColumn]);
+  }, [isMobile, ui.activeBuilding?.id, ui.tradingShop, ui.duelPending, ui.interactMode, ui.pigeonTarget,
+    ui.talkTarget, derived.seaTraumaActive, showDebug, showBasement, setMobileColumn]);
 
   useEffect(() => {
     const previous = narrativeView.current;
@@ -127,17 +119,18 @@ export default function GameLayout({ layout }) {
   return (
     <div
       className="game-layout"
-      style={{ display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
+      style={{ display: "flex", flexDirection: "column", height: `${100 / ui.uiScale}vh`, width: `${100 / ui.uiScale}vw`, zoom: ui.uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
     >
       <TopBar
-        isMobile={isMobile} mobileTopMenu={mobileTopMenu} setMobileTopMenu={setMobileTopMenu}
-        zoneTheme={zoneTheme} isDayMode={isDayMode} setIsDayMode={setIsDayMode}
-        setSettingsInitialTab={setSettingsInitialTab}
-        dispatchCommand={dispatchCommand}
-        autoSaveError={autoSaveError} lastAutoSave={lastAutoSave}
-        playerAvatarCustom={playerAvatarCustom} setPlayerAvatarCustom={setPlayerAvatarCustom}
-        AV_BASE={AV_BASE} genderAvatar={genderAvatar}
-        turnControls={{ loading, stopRunning, rollbackBlocked, rollbackOneStep }} gm={gm} setGm={setGm} addLog={addLog}
+        isMobile={isMobile} mobileTopMenu={ui.mobileTopMenu} setMobileTopMenu={ui.setMobileTopMenu}
+        zoneTheme={zoneTheme} isDayMode={ui.isDayMode} setIsDayMode={ui.setIsDayMode}
+        setSettingsInitialTab={ui.setSettingsInitialTab}
+        dispatchCommand={turn.dispatchCommand}
+        autoSaveError={autosave.autoSaveError} lastAutoSave={autosave.lastAutoSave}
+        playerAvatarCustom={ui.playerAvatarCustom} setPlayerAvatarCustom={ui.setPlayerAvatarCustom}
+        AV_BASE={ui.AV_BASE} genderAvatar={ui.genderAvatar}
+        turnControls={{ loading: ui.loading, stopRunning: turn.stopRunning, rollbackBlocked: turn.rollbackBlocked, rollbackOneStep: turn.rollbackOneStep }}
+        gm={ui.gm} setGm={ui.setGm} addLog={addLog}
       />
 
       {overlayHost}
@@ -145,96 +138,98 @@ export default function GameLayout({ layout }) {
       <div className="mobile-game-columns" style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", minHeight: 0 }}>
         <LeftPanel
           isMobile={isMobile} mobileColumn={mobileColumn} faces={leftFaces}
-          zoneTheme={zoneTheme} S={S}
+          zoneTheme={zoneTheme} S={ui.S}
           room={room} innerRoomName={innerRoomName} time={time}
           varTree={varTree} char={char}
-          peoplePanel={peoplePanel} setPeoplePanel={setPeoplePanel}
-          activeBuilding={activeBuilding} setActiveBuilding={setActiveBuilding}
-          setActiveNpcMenu={setActiveNpcMenu}
-          setCharacterPageTarget={setCharacterPageTarget}
-          setPigeonTarget={setPigeonTarget} setInteractMode={setInteractMode} inputRef={inputRef} addLog={addLog}
-          pigeonTarget={pigeonTarget}
-          mapView={mapView} setMapView={setMapView} mapBig={mapBig} setMapBig={setMapBig}
+          peoplePanel={ui.peoplePanel} setPeoplePanel={ui.setPeoplePanel}
+          activeBuilding={ui.activeBuilding} setActiveBuilding={ui.setActiveBuilding}
+          setActiveNpcMenu={ui.setActiveNpcMenu}
+          setCharacterPageTarget={ui.setCharacterPageTarget}
+          setPigeonTarget={ui.setPigeonTarget} setInteractMode={ui.setInteractMode} inputRef={ui.inputRef} addLog={addLog}
+          pigeonTarget={ui.pigeonTarget}
+          mapView={ui.mapView} setMapView={ui.setMapView} mapBig={ui.mapBig} setMapBig={ui.setMapBig}
           mapData={mapData} questProgress={questProgress} flags={flags} inv={inv}
-          inSeaOfMind={inSeaOfMind} seaGate={seaGate} enterSeaOfMind={enterSeaOfMind} leaveSeaOfMind={leaveSeaOfMind}
-          loading={loading} act={act} autoTravelTo={autoTravelTo}
-          uiGreen={uiGreen} uiPink={uiPink}
+          inSeaOfMind={derived.inSeaOfMind} seaGate={derived.seaGate}
+          enterSeaOfMind={playerActionHandlers.enterSeaOfMind} leaveSeaOfMind={playerActionHandlers.leaveSeaOfMind}
+          loading={ui.loading} act={turn.act} autoTravelTo={turn.autoTravelTo}
+          uiGreen={ui.uiGreen} uiPink={ui.uiPink}
         />
 
         <CenterPanel
           isMobile={isMobile} mobileColumn={mobileColumn}
-          zoneTheme={zoneTheme} S={S}
-          loading={loading} addLog={addLog}
-          rollbackOneStep={rollbackOneStep} captureUndo={captureUndo}
-          rollbackBlocked={rollbackBlocked} stopRunning={stopRunning} dispatchCommand={dispatchCommand}
-          gm={gm} setGm={setGm}
+          zoneTheme={zoneTheme} S={ui.S}
+          loading={ui.loading} addLog={addLog}
+          rollbackOneStep={turn.rollbackOneStep} captureUndo={turn.captureUndo}
+          rollbackBlocked={turn.rollbackBlocked} stopRunning={turn.stopRunning} dispatchCommand={turn.dispatchCommand}
+          gm={ui.gm} setGm={ui.setGm}
           char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
           dao={dao} setDao={setDao}
           varTree={varTree} setVarTree={setVarTree} narrator={narrator} setNarrator={setNarrator}
           room={room} innerRoomName={innerRoomName}
           mapData={mapData} setMapData={setMapData} setRoom={setRoom} setInnerRoomName={setInnerRoomName}
-          setInteractMode={setInteractMode} act={act} teleportLookRef={teleportLookRef}
+          setInteractMode={ui.setInteractMode} act={turn.act} teleportLookRef={turn.teleportLookRef}
           setSkills={setSkills} setInv={setInv}
-          duelPending={duelPending} confirmDuel={confirmDuel} cancelDuel={cancelDuel}
-          activeBuilding={activeBuilding} setActiveBuilding={setActiveBuilding}
-          tradingShop={tradingShop} setTradingShop={setTradingShop}
-          buildingPanelMinimized={buildingPanelMinimized} setBuildingPanelMinimized={setBuildingPanelMinimized}
-          handleBuildingInn={handleBuildingInn} handleBuildingHeal={handleBuildingHeal}
-          skills={skills} handleBuySkill={handleBuySkill}
-          time={time} inv={inv} effectiveSpecialNow={effectiveSpecialNow}
-          inspectItem={inspectItem} jotNote={jotNote} handleCollectGround={handleCollectGround}
+          duelPending={ui.duelPending} confirmDuel={duelHandlers.confirmDuel} cancelDuel={duelHandlers.cancelDuel}
+          activeBuilding={ui.activeBuilding} setActiveBuilding={ui.setActiveBuilding}
+          tradingShop={ui.tradingShop} setTradingShop={ui.setTradingShop}
+          buildingPanelMinimized={ui.buildingPanelMinimized} setBuildingPanelMinimized={ui.setBuildingPanelMinimized}
+          handleBuildingInn={buildingHandlers.handleBuildingInn} handleBuildingHeal={buildingHandlers.handleBuildingHeal}
+          skills={skills} handleBuySkill={buildingHandlers.handleBuySkill}
+          time={time} inv={inv} effectiveSpecialNow={turn.effectiveSpecialNow}
+          inspectItem={aiInspect.inspectItem} jotNote={jotNote} handleCollectGround={screenHandlers.handleCollectGround}
           flags={flags} questProgress={questProgress}
-          handleAcceptEscort={handleAcceptEscort} handleGamble={handleGamble}
-          handleCollectPigeons={handleCollectPigeons} buyPigeon={buyPigeon}
-          handlePostSend={handlePostSend} handleTravel={handleTravel}
-          handleServiceOrder={handleServiceOrder}
-          handlePray={handlePray} handleReadBook={handleReadBook} handleBuyBook={handleBuyBook}
-          deposit={deposit} depositedAt={depositedAt} handleDeposit={handleDeposit} handleWithdraw={handleWithdraw}
-          pledgedItems={pledgedItems} handlePledge={handlePledge} handleRedeem={handleRedeem}
-          handleAcceptBounty={handleAcceptBounty} handleClaimBounty={handleClaimBounty}
-          handleForgeCommission={handleForgeCommission} handleForgeDesign={handleForgeDesign}
-          handleJadeDesign={handleJadeDesign} handleJadeCraft={handleJadeCraft}
-          gambleNegotiation={gambleNegotiation} handleGambleTalk={handleGambleTalk}
-          handleGambleSettle={handleGambleSettle} handleGambleInspect={handleGambleInspect}
-          handleListenRumor={handleListenRumor}
-          handleJoinSect={handleJoinSect} handleAuctionWin={handleAuctionWin}
-          handleCook={handleCook}
-          seaTraumaActive={seaTraumaActive}
-          narratorVarsNow={narratorVarsNow}
-          invNames={invNames}
-          handleComfort={handleComfort} handleResolveTrauma={handleResolveTrauma}
-          sectMasterAffection={sectMasterAffection}
-          log={log} isDayMode={isDayMode} clr={clr}
-          collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
-          queueCount={queueCount} pendingTalks={pendingTalks} inspecting={inspecting}
-          logEnd={logEnd} waitSecs={waitSecs}
-          availableQuestsHere={availableQuestsHere}
-          triggerQuestFromPanel={triggerQuestFromPanel} triggerQuestChoice={triggerQuestChoice}
-          uiGreen={uiGreen} uiPink={uiPink} uiCrimson={uiCrimson}
-          nsfwOn={nsfwOn} setNsfwOn={setNsfwOn}
-          meditate={meditate} justMeditated={justMeditated}
-          interactMode={interactMode} activeTarget={activeTarget} setActiveTarget={setActiveTarget}
-          activeGroundItem={activeGroundItem} setActiveGroundItem={setActiveGroundItem}
-          setTalkTarget={setTalkTarget}
-          pigeonTarget={pigeonTarget} setPigeonTarget={setPigeonTarget} pigeonDelayShichen={pigeonDelayShichen}
-          input={input} setInput={setInput} inputRef={inputRef} onKey={onKey} composingRef={composingRef}
+          handleAcceptEscort={buildingHandlers.handleAcceptEscort} handleGamble={buildingHandlers.handleGamble}
+          handleCollectPigeons={pigeonHandlers.handleCollectPigeons} buyPigeon={pigeonHandlers.buyPigeon}
+          handlePostSend={pigeonHandlers.handlePostSend} handleTravel={buildingHandlers.handleTravel}
+          handleServiceOrder={buildingHandlers.handleServiceOrder}
+          handlePray={buildingHandlers.handlePray} handleReadBook={buildingHandlers.handleReadBook} handleBuyBook={buildingHandlers.handleBuyBook}
+          deposit={deposit} depositedAt={depositedAt} handleDeposit={buildingHandlers.handleDeposit} handleWithdraw={buildingHandlers.handleWithdraw}
+          pledgedItems={pledgedItems} handlePledge={buildingHandlers.handlePledge} handleRedeem={buildingHandlers.handleRedeem}
+          handleAcceptBounty={buildingHandlers.handleAcceptBounty} handleClaimBounty={buildingHandlers.handleClaimBounty}
+          handleForgeCommission={buildingHandlers.handleForgeCommission} handleForgeDesign={craftingAI.handleForgeDesign}
+          handleJadeDesign={craftingAI.handleJadeDesign} handleJadeCraft={buildingHandlers.handleJadeCraft}
+          gambleNegotiation={ui.gambleNegotiation} handleGambleTalk={craftingAI.handleGambleTalk}
+          handleGambleSettle={buildingHandlers.handleGambleSettle} handleGambleInspect={buildingHandlers.handleGambleInspect}
+          handleListenRumor={buildingHandlers.handleListenRumor}
+          handleJoinSect={buildingHandlers.handleJoinSect} handleAuctionWin={buildingHandlers.handleAuctionWin}
+          handleCook={buildingHandlers.handleCook}
+          seaTraumaActive={derived.seaTraumaActive}
+          narratorVarsNow={derived.narratorVarsNow}
+          invNames={derived.invNames}
+          handleComfort={playerActionHandlers.handleComfort} handleResolveTrauma={playerActionHandlers.handleResolveTrauma}
+          sectMasterAffection={derived.sectMasterAffection}
+          log={log} isDayMode={ui.isDayMode} clr={ui.clr}
+          collapsedGroups={ui.collapsedGroups} setCollapsedGroups={ui.setCollapsedGroups}
+          queueCount={ui.queueCount} pendingTalks={ui.pendingTalks} inspecting={aiInspect.inspecting}
+          logEnd={logEnd} waitSecs={ui.waitSecs}
+          availableQuestsHere={ui.availableQuestsHere}
+          triggerQuestFromPanel={questPanel.triggerQuestFromPanel} triggerQuestChoice={questPanel.triggerQuestChoice}
+          uiGreen={ui.uiGreen} uiPink={ui.uiPink} uiCrimson={ui.uiCrimson}
+          nsfwOn={ui.nsfwOn} setNsfwOn={ui.setNsfwOn}
+          meditate={progressionHandlers.meditate} justMeditated={ui.justMeditated}
+          interactMode={ui.interactMode} activeTarget={ui.activeTarget} setActiveTarget={ui.setActiveTarget}
+          activeGroundItem={ui.activeGroundItem} setActiveGroundItem={ui.setActiveGroundItem}
+          setTalkTarget={ui.setTalkTarget}
+          pigeonTarget={ui.pigeonTarget} setPigeonTarget={ui.setPigeonTarget} pigeonDelayShichen={pigeonHandlers.pigeonDelayShichen}
+          input={ui.input} setInput={ui.setInput} inputRef={ui.inputRef} onKey={turn.onKey} composingRef={ui.composingRef}
         />
 
         <RightPanel
           isMobile={isMobile} mobileColumn={mobileColumn} faces={rightFaces}
-          zoneTheme={zoneTheme} S={S}
+          zoneTheme={zoneTheme} S={ui.S}
           char={char} inv={inv} skills={skills} exp={exp} pot={pot}
-          playerAvatar={playerAvatar}
-          companionState={companionState} onSwitchCompanion={handleSwitchCompanion} slForm={slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={setSlFormState} slImgErr={slImgErr} setSlImgErr={setSlImgErr}
-          pearlForm={pearlForm} setPearlForm={setPearlForm} setPearlFormState={setPearlFormState} pearlImgErr={pearlImgErr} setPearlImgErr={setPearlImgErr}
-          trainNeigong={trainNeigong} trainWaigong={trainWaigong} trainCost={trainCost}
-          effectiveSpecialNow={effectiveSpecialNow} activeBuffs={activeBuffs}
+          playerAvatar={ui.playerAvatar}
+          companionState={companionState} onSwitchCompanion={playerActionHandlers.handleSwitchCompanion}
+          slForm={ui.slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={ui.setSlFormState} slImgErr={ui.slImgErr} setSlImgErr={ui.setSlImgErr}
+          pearlForm={ui.pearlForm} setPearlForm={setPearlForm} setPearlFormState={ui.setPearlFormState} pearlImgErr={ui.pearlImgErr} setPearlImgErr={ui.setPearlImgErr}
+          trainNeigong={progressionHandlers.trainNeigong} trainWaigong={progressionHandlers.trainWaigong} trainCost={trainCost}
+          effectiveSpecialNow={turn.effectiveSpecialNow} activeBuffs={activeBuffs}
           varTree={varTree}
-          setActiveNpcMenu={setActiveNpcMenu}
-          setSkills={setSkills} inspectItem={inspectItem} inspecting={inspecting}
-          breakthroughSkill={breakthroughSkill}
-          setActiveItemMenu={setActiveItemMenu}
-          narrator={narrator} confessToNarrator={confessToNarrator}
+          setActiveNpcMenu={ui.setActiveNpcMenu}
+          setSkills={setSkills} inspectItem={aiInspect.inspectItem} inspecting={aiInspect.inspecting}
+          breakthroughSkill={progressionHandlers.breakthroughSkill}
+          setActiveItemMenu={ui.setActiveItemMenu}
+          narrator={narrator} confessToNarrator={progressionHandlers.confessToNarrator}
           setInv={setInv}
         />
       </div>
@@ -242,69 +237,20 @@ export default function GameLayout({ layout }) {
       {isMobile && <MobileTabBar theme={zoneTheme} column={mobileColumn} onSelect={setMobileColumn}
         leftFaces={leftFaces} rightFaces={rightFaces} />}
 
-      {mapBig && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={mapBigCloseGuard.onMouseDown} onClick={mapBigCloseGuard.onClick}>
-        <div style={{
-          background: `url("${MAP_UI.scroll}") center/100% 100% no-repeat`,
-          borderRadius: 0, minWidth: 300, width: "70vw", maxWidth: 980, maxHeight: "86vh", overflowY: "auto",
-          padding: "14% 11% 9% 11%", boxSizing: "border-box",
-        }} onClick={e => e.stopPropagation()}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span style={{ color: "#4a3520", fontSize: "13px", fontWeight: "bold" }}>{mapView === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"} <span style={{ color: "#7a6448", fontSize: "10px", fontWeight: "normal" }}>{mapView === "inner" ? "朱红为当前所在 · 点相邻房间前往" : "朱红为当前所在 · 点已探明据点自动前往 · 🔒需前置"}</span></span>
-            <span style={{ color: "#6a4a2a", fontSize: "11px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap", minWidth: 56, flexShrink: 0 }} onClick={() => setMapBig(false)}>× 关闭</span>
-          </div>
-          {mapView === "outer" && (() => {
-            const completed = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));
-            const exitByDir = QUCUO_MAP[room.name]?.exits || {};
-            const reachableDests = new Set(Object.values(exitByDir));
-            const explored = new Set(Object.keys(mapData || {}));
-            explored.add(room.name);
-            const nodes = Object.entries(QUCUO_MAP)
-              .filter(([name]) => explored.has(name))
-              .map(([name, node]) => {
-                const dirTo = Object.entries(exitByDir).find(([, d]) => d === name)?.[0] || null;
-                const unlocked = isNodeUnlocked(name, { completedQuests: completed, flags });
-                return {
-                  name, x: node.x, y: node.y, explored: true,
-                  current: name === room.name,
-                  links: Object.values(node.exits || {}).filter(d => explored.has(d)),
-                  reachable: name !== room.name && unlocked,
-                  locked: reachableDests.has(name) && !unlocked,
-                  dir: dirTo, dest: name,
-                };
-              });
-            const go = (dir, dest, locked) => {
-              if (loading) return;
-              setMapBig(false);
-              if (locked) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "outer" }); return; }
-              if (dest && mapData[dest] && dest !== room.name) { autoTravelTo(dest); return; }
-              if (dir) { setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "outer" }); }
-            };
-            return <ClickableMap nodes={nodes} onGo={go} accent={zoneTheme.accent} loading={loading} maxHeight="66vh" />;
-          })()}
-          {mapView === "inner" && (() => {
-            if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim }}>此地无内景可绘。</div>;
-            const curRoom = innerRoomName || getDistrictAnchor(room.name);
-            const curExits = visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char });
-            const adjacent = new Set(Object.values(curExits));
-            const nodes = getInnerRoomNames(room.name).filter((rn) => {
-              const rr = getInnerRoom(room.name, rn);
-              return !rr?.unlockCondition || rr.unlockCondition.type === "stat" || isInnerExitUnlocked(rr.unlockCondition, { questProgress, flags, inv, char });
-            }).map((rn) => {
-              const r = getInnerRoom(room.name, rn) || {};
-              const dirTo = Object.entries(curExits).find(([, d]) => d === rn)?.[0] || null;
-              return {
-                name: rn, x: r.x ?? 0, y: r.y ?? 0, explored: true,
-                current: rn === curRoom,
-                links: Object.values(r.exits || {}).filter(d => typeof d === "string"),
-                reachable: adjacent.has(rn),
-                dir: dirTo, dest: rn,
-              };
-            });
-            const go = (dir) => { if (!loading && dir) { setMapBig(false); setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); } };
-            return <ClickableMap nodes={nodes} onGo={go} accent="var(--clay)" loading={loading} maxHeight="66vh" />;
-          })()}
-        </div>
-      </div>}
+      {ui.mapBig && (
+        <Suspense fallback={null}>
+          <BigMapModal
+            mapView={ui.mapView}
+            setMapBig={ui.setMapBig}
+            mapBigCloseGuard={ui.mapBigCloseGuard}
+            zoneTheme={zoneTheme}
+            loading={ui.loading}
+            setInteractMode={ui.setInteractMode}
+            act={turn.act}
+            autoTravelTo={turn.autoTravelTo}
+          />
+        </Suspense>
+      )}
 
       <NoticeToast zoneTheme={zoneTheme} />
 
