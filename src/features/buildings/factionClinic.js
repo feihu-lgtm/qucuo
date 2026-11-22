@@ -44,13 +44,6 @@ export const FACTION_CLINICS = {
     settle: "在喇嘛庙大殿捐了20两香油，替十八盏酥油长明灯添满了灯油",
     refuse: "知客僧合十挡在殿门前：「施主的香油钱，寺里不敢收。」",
   },
-  inn_gaibang_xiedian: {
-    faction: "丐帮三星分舵", cost: 20, hours: 0, rep: 4, prestige: 1, freeRep: null, refuseRep: -20,
-    dayFlag: "gaibang_alms_day_", label: "托白婶给粥棚捐20两粮米", done: "今日已捐",
-    deed: "托白婶给破庙粥棚捐了20两粮米",
-    settle: "在荒庙草铺把20两银子塞给白婶，托她换成糙米腌肉，明日粥棚多支一口大锅",
-    refuse: "白婶把银袋推了回来：「你的银子，粥棚不敢收。」",
-  },
   inn_yiding: {
     faction: "鱼定村", cost: 20, hours: 0, rep: 5, prestige: 1, freeRep: null, refuseRep: -20,
     dayFlag: "yuding_alms_day_", label: "托大娘给寒户捐20两粮药", done: "今日已捐",
