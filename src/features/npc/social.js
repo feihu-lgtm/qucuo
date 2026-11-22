@@ -7,6 +7,7 @@ import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import { recordNpcAttempt } from "./anger.js";
 import { add, updateField } from "../../domain/rules/state/applyWrite.js";
 import { questPlaceDistrict } from "../../domain/rules/quests/questPlace.js";
+import { grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 
 export function recognizeNpc(_state, npc) {
   if (!npc?.name) return {};
@@ -39,20 +40,33 @@ export function talkToNpc(state, npc, { now = Date.now() } = {}) {
     state.questProgress?.[quest.id]?.active
     && quest.targetNpc === npc.name
     && questPlaceDistrict(quest.targetLocation) === roomName
-    && !flags.includes(`quest_done_${quest.id}`)
+    && !flags.includes(quest.daily
+      ? `${quest.daily}${Math.floor((state.time || 0) / 24)}`
+      : `quest_done_${quest.id}`)
   ));
   if (activeEscort) {
-    const doneFlag = `quest_done_${activeEscort.id}`;
+    const doneFlag = activeEscort.daily
+      ? `${activeEscort.daily}${Math.floor((state.time || 0) / 24)}`
+      : `quest_done_${activeEscort.id}`;
     result.changes = {
       ...result.changes,
       questProgress: (prev) => ({ ...prev, [activeEscort.id]: { active: false } }),
       flags: (prev) => [...prev, doneFlag],
       char: updateField("char", add("char.money", activeEscort.reward)),
       pot: (prev) => prev + 10,
+      varTree: (prev) => {
+        // 保留上面 recordNpcAttempt 的搭话记录，再叠势力声誉（走死对头联动）。
+        let next = result.changes.varTree(prev);
+        if (activeEscort.factionRep) next = grantFactionRep(next, activeEscort.factionRep).varTree;
+        return next;
+      },
     };
     result.logs = [
       { t: "sys", text: `  你找到了${npc.name}，交出货物，护镖任务「${activeEscort.title}」圆满完成！` },
       { t: "item", text: `  💰 报酬：${activeEscort.reward} 两 · 潜能 +10` },
+      ...(activeEscort.factionRep
+        ? Object.entries(activeEscort.factionRep).map(([faction, rep]) => ({ t: "affection", text: `  ✦ ${faction}声誉 +${rep}` }))
+        : []),
     ];
     result.completedEscort = true;
     return result;

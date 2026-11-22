@@ -80,7 +80,7 @@ function escortScreen(c) {
     return (
       <EscortScreen building={c.building} char={c.char} flags={c.flags} questProgress={c.questProgress}
         currentRoom={c.room.name} zoneTheme={c.zoneTheme} inline onClose={c.closeBuilding}
-        onAcceptEscort={c.handleAcceptEscort} />
+        time={c.time} onAcceptEscort={c.handleAcceptEscort} />
     );
   }
   const shopData = rollShopStock(c.building.shopKey, c.time) || buildShopInventory(c.building.shopKey);
