@@ -169,9 +169,12 @@ export function settleNpcDuel(state, npc, {
   // 但胜的是门派切磋榜上的试剑对手时，首胜旗与首胜声誉照发——拜师试炼认的是
   // 「堂堂正正胜过此人」，不认入口；从任务选项赢下青玄的玩家不该卡在山门。
   let sparRep = sectSparRepGain(working, npc, { outcome, battleLog });
-  if (sparRep && pendingQuestBranch?.mode === "combat") {
+  if (sparRep && pendingQuestBranch?.mode === "combat" && !sparRep.poison) {
     const grantsFirstWin = (sparRep.flags || []).some((f) => f.endsWith("_first") && !working.flags.includes(f));
-    if (!grantsFirstWin) sparRep = null;
+    // 任务战只发首胜试炼旗与声誉：不带当日切磋档，免得吃掉玩家今天应得的日常声誉
+    sparRep = grantsFirstWin
+      ? { ...sparRep, flags: sparRep.flags.filter((f) => !/_day_\d+$/.test(f)) }
+      : null;
   }
   if (sparRep?.poison) {
     logs.push({ t: "sys", text: `  ${npc.name}瞥了眼身上的毒伤：「赢是赢了，${sparRep.faction}不认这一场。」` });
