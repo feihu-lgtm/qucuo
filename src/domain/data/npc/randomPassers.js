@@ -1,11 +1,15 @@
-// 随机过路人：每个地图节点每天按种子刷 2-4 个有名有姓、有势力归属的人（山洞、顶峰这类极境 0-1 个）。
+// 随机过路人：每个地图节点每天按种子刷一批有名有姓、有势力归属的人；据点里驻场的人加过路人至少凑够 MIN_PRESENT 个具名人物
+// （山洞、顶峰这类小地方不凑）。另有一层不具名的群众（getCrowd），只给叙事做背景，不进人物名单、不计数。
 // 同一天同一节点结果固定（seededRand），第二天换一批；旧的一批由 npc.residents 规则清掉。
 // 守「契诃夫之枪」：人人扛一面已有势力的旗（或明说是散人），身份和归属都给 AI 写进叙事，
 // 不刷无名无姓的装饰路人。名字避开驻场和游走池里的人，免得好感度串到别人身上。
 
 import { seededRand } from "../../../utils/seededRandom.js";
 import { NPC_POOL } from "./npcPool.js";
-import { getAllResidentNpcNames } from "./residentNpcs.js";
+import { getAllResidentNpcNames, getResidentNpcs } from "./residentNpcs.js";
+
+const MIN_PRESENT = 15;
+const SMALL_PLACES = new Set(["山洞", "顶峰"]);
 
 const HAN_SURNAMES = ["王", "李", "张", "刘", "陈", "杨", "赵", "周", "吴", "徐", "孙", "马", "胡", "郭", "何", "高", "郑", "梁", "宋", "谢", "韩", "冯", "邓", "曹", "彭", "曾", "肖", "田", "蒋", "袁"];
 const HAN_MALE = ["大山", "长贵", "守义", "文远", "铁柱", "德福", "有才", "明远", "子安", "春生", "石头", "世昌", "永年", "三娃", "满仓", "茂林", "广财", "金水"];
@@ -147,7 +151,10 @@ function passersAt(locationName, dayIdx, used, isTaken) {
   const cfg = NODE_PASSERS[locationName];
   const rng = seededRand(dayIdx, `passers|${locationName}`);
   const [lo, hi] = cfg.count;
-  const count = lo + Math.floor(rng() * (hi - lo + 1));
+  const rolled = lo + Math.floor(rng() * (hi - lo + 1));
+  const count = SMALL_PLACES.has(locationName)
+    ? rolled
+    : Math.max(rolled, MIN_PRESENT - getResidentNpcs(locationName).length);
   const out = [];
   for (let i = 0; i < count; i++) {
     const faction = pickWeighted(cfg.factions, rng);
@@ -155,7 +162,7 @@ function passersAt(locationName, dayIdx, used, isTaken) {
     const gender = role.gender || (rng() < 0.5 ? "男" : "女");
     const culture = role.culture || pick(["han", "han", "tibetan"], rng);
     let name = makeName(culture, gender, rng);
-    for (let tries = 0; tries < 8 && isTaken(name); tries++) name = makeName(culture, gender, rng);
+    for (let tries = 0; tries < 30 && isTaken(name); tries++) name = makeName(culture, gender, rng);
     if (isTaken(name)) continue;
     used.add(name);
     const [minLv, maxLv] = role.level;
@@ -185,4 +192,21 @@ export function getRandomPassers(locationName, time, reserved = new Set()) {
     if (node === locationName) return list;
   }
   return [];
+}
+
+// ── 不具名群众（路人甲乙丙）：只是此地的人气，不能对话、不记好感 ──
+const CROWD_TIBETAN = ["背水的藏家妇人", "转经的老阿妈", "放羊的半大孩子", "赶牦牛的汉子", "晒青稞的女人", "拴马的马帮伙计", "捻羊毛线的老汉", "追着狗跑的娃娃", "磕长头路过的朝圣者", "蹲在墙根晒太阳的老人"];
+const CROWD_HAN = ["挑担的货郎", "茶棚里打盹的老汉", "追着狗跑的孩童", "河边洗衣的妇人", "吆喝的菜贩", "抬轿的轿夫", "看热闹的闲汉", "摆卦摊的瞎子", "牵驴赶路的脚夫", "倚门嗑瓜子的妇人"];
+const CROWD_MIAO = ["织布的苗家阿婆", "背竹篓的少女", "吹芦笙的后生", "溪边捣衣的妇人", "晒药草的老人", "光脚追鸡的娃娃"];
+const HAN_PLACES = new Set(["天都镇", "雅江", "广汉", "锦官城", "蜀南唐堡"]);
+
+export function getCrowd(locationName, time) {
+  if (!NODE_PASSERS[locationName]) return [];
+  const rng = seededRand(Math.floor(time / 24), `crowd|${locationName}`);
+  const pool = locationName === "雾隐寨" ? CROWD_MIAO : HAN_PLACES.has(locationName) ? CROWD_HAN : CROWD_TIBETAN;
+  const count = SMALL_PLACES.has(locationName) ? Math.floor(rng() * 2) : 3 + Math.floor(rng() * 4);
+  const left = [...pool];
+  const out = [];
+  for (let i = 0; i < count && left.length; i++) out.push(left.splice(Math.floor(rng() * left.length), 1)[0]);
+  return out;
 }

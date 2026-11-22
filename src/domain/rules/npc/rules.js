@@ -3,7 +3,7 @@ import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../map/
 import { ensureNpcCombatData } from "../npc/npcGeneration.js";
 import { mapDescriptionToGenParams } from "../../data/npc/npcDescriptionMapping.js";
 import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../data/npc/npcPool.js";
-import { getRandomPassers } from "../../data/npc/randomPassers.js";
+import { getCrowd, getRandomPassers } from "../../data/npc/randomPassers.js";
 import { injectNpcs } from "../npc/roomNpcs.js";
 import { getResidentNpcs } from "../../data/npc/residentNpcs.js";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
@@ -142,7 +142,15 @@ export const residentNpcRule = {
     const isStalePasser = (npc) => npc?.randomPasser != null && (npc.randomPasser !== dayIdx || !rosterNames.has(npc.name));
     const hasStalePassers = (room.npcs || []).some(isStalePasser);
     const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...passers];
-    if (!toInject.length && !staleNames.size && !hasStalePassers) return null;
+    // 不具名群众：按天固定，有内层地图的分散到各公共房间
+    const crowdRooms = hasInnerMap(room.name) ? getPublicInnerRoomNames(room.name) : [];
+    const crowd = getCrowd(room.name, time).map((label) => {
+      if (!crowdRooms.length) return { label };
+      const rng = seededRand(dayIdx, `crowd|${room.name}|${label}`);
+      return { label, innerRoom: crowdRooms[Math.floor(rng() * crowdRooms.length)] };
+    });
+    const crowdChanged = JSON.stringify(room.crowd || []) !== JSON.stringify(crowd);
+    if (!toInject.length && !staleNames.size && !hasStalePassers && !crowdChanged) return null;
 
     if (hasInnerMap(room.name)) {
       const rooms = getPublicInnerRoomNames(room.name);
@@ -168,6 +176,7 @@ export const residentNpcRule = {
         room: (previous) => ({
           ...previous,
           npcs: injectNpcs((previous.npcs || []).filter((npc) => !isStalePasser(npc) && (npc.imported || !staleNames.has(npc.name))), toInject),
+          crowd,
         }),
       },
     };

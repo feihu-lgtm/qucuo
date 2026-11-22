@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { getRandomPassers } from "./randomPassers.js";
+import { getCrowd, getRandomPassers } from "./randomPassers.js";
 import { NPC_POOL } from "./npcPool.js";
-import { getAllResidentNpcNames } from "./residentNpcs.js";
+import { getAllResidentNpcNames, getResidentNpcs } from "./residentNpcs.js";
 import { QUCUO_MAP } from "../map/qucuoMap.js";
 import { FACTIONS } from "../map/factions.js";
 import { getNpcFaction } from "../factions/npcFactions.js";
@@ -16,7 +16,13 @@ describe("random passers", () => {
     const reserved = new Set([...getAllResidentNpcNames(), ...NPC_POOL.map((npc) => npc.name)]);
     for (const node of NODES) {
       const week = Array.from({ length: 7 }, (_, day) => getRandomPassers(node, day * 24 + 9));
-      expect(week.flat().length, node).toBeGreaterThan(0);
+      const small = ["山洞", "顶峰"].includes(node);
+      for (let day = 0; day < 7; day++) {
+        if (!small) expect(getResidentNpcs(node).length + week[day].length, node).toBeGreaterThanOrEqual(15);
+        const crowd = getCrowd(node, day * 24 + 9);
+        expect(new Set(crowd).size).toBe(crowd.length);
+        if (!small) expect(crowd.length, node).toBeGreaterThanOrEqual(3);
+      }
       expect(getRandomPassers(node, 9 + 5)).toEqual(week[0]);
       for (const passer of week.flat()) {
         expect(FACTION_NAMES.has(passer.faction), passer.faction).toBe(true);
@@ -38,6 +44,10 @@ describe("random passers", () => {
     const passers0 = npcs0.filter((npc) => npc.randomPasser === 0);
     expect(passers0.length).toBeGreaterThan(0);
     expect(passers0.every((npc) => npc.moveset && npc.combatStats && npc.brief && npc.innerRoom)).toBe(true);
+    const crowd0 = residentNpcRule.run(day0, { importedRegistry }).changes.room(day0.room).crowd;
+    expect(crowd0.map((c) => c.label)).toEqual(getCrowd("雅江", 9));
+    expect(crowd0.every((c) => c.innerRoom)).toBe(true);
+    expect(npcs0.some((npc) => crowd0.some((c) => c.label === npc.name))).toBe(false);
     const sect = passers0.find((npc) => npc.faction !== "散人");
     if (sect) expect(getNpcFaction(sect)).toBe(sect.faction);
     const day1 = state(24 + 9, npcs0);
