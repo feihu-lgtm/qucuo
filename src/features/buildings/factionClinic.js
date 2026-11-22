@@ -1,6 +1,7 @@
 // 势力医馆的日常善举（合稿各派「声誉·加分行为」）：每游戏日一次，涨本派声誉与威望。
 // 峨眉慈济佛堂：布施 20 两救济曲措逃民 +5、威望 +2；声誉 ≥ 15 免诊金。
-// 青城药圃：随玉真子采药义诊（耗两个时辰）+8、威望 +3。两处声誉 ≤ -20 都拒诊。
+// 青城药圃：随玉真子采药义诊（耗两个时辰）+8、威望 +3。
+// 唐门试毒药庐：采毒草、送修机括的日常委托（耗两个时辰）+5；声誉 ≥ 40 免诊金。三处声誉 ≤ -20 都拒诊。
 import { factionRepOf, formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 
 export const FACTION_CLINICS = {
@@ -17,6 +18,13 @@ export const FACTION_CLINICS = {
     deed: "随玉真子上山采药，替染瘴百姓义诊",
     settle: "随玉真子上后山采了一篓草药，又在药圃替雅江染瘴的百姓义诊了两个时辰",
     refuse: "玉真子把篱笆门一掩：「青城药圃不医你这样的人。」",
+  },
+  hospital_tangmen: {
+    faction: "唐门", cost: 0, hours: 2, rep: 5, prestige: 0, freeRep: 40, refuseRep: -20,
+    dayFlag: "tangmen_errand_day_", label: "接药庐日常委托（两个时辰）", done: "今日已交差",
+    deed: "替药庐采川南毒草、送修机括",
+    settle: "接了试毒药庐的日常委托，进竹海采回一篓川南毒草，又把两具崩了簧的机括送去外姓竹坞修好",
+    refuse: "药庐的伙计把门帘一放：「唐家的药，不给仇家用。」",
   },
 };
 
