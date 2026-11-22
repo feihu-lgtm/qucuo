@@ -26,8 +26,8 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
   const selecting = b.phase === "select";
 
   return (
-    <div className="mobile-duel-root" style={styles.overlay}>
-      <div className="mobile-duel-panel" style={{ ...styles.container, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}` }}>
+    <div className="mobile-duel-root duel-solo-root" style={styles.overlay}>
+      <div className="mobile-duel-panel duel-solo-panel" style={{ ...styles.container, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}` }}>
 
         {/* ── 血/气条（保留）：双方对峙状态 ── */}
         <DuelTopBar

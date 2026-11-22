@@ -992,7 +992,7 @@
 
 /* iOS 专门适配：切磋。
    竖屏：招式区/日志按 dvh 封顶，Safari 工具栏展开时不把日志挤出屏。
-   横屏：全屏两栏——左栏出招（三列），右栏战报，顶栏横跨；各栏自己滚，整页不滚。 */
+   横屏（只限单挑 DuelScreen；团战 TeamDuelScreen 结构不同，保持原样可滚）：全屏两栏——左栏出招（三列），右栏战报，顶栏横跨；各栏自己滚，整页不滚。 */
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 767px) and (orientation: portrait) {
     .duel-move-grid {
@@ -1005,13 +1005,13 @@
   }
 
   @media (orientation: landscape) and (max-height: 500px) {
-    .mobile-duel-root {
+    .duel-solo-root {
       align-items: stretch !important;
       justify-content: stretch !important;
       padding: 0 !important;
     }
 
-    .mobile-duel-panel {
+    .duel-solo-panel {
       display: grid !important;
       grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
       grid-template-rows: auto minmax(0, 1fr);

@@ -61,7 +61,9 @@ describe("StartScreen mobile layout", () => {
     expect(block).toContain("@supports (-webkit-touch-callout: none) {");
     expect(block).toMatch(/\.duel-move-grid \{\s*max-height:\s*30dvh/);
     const landscape = block.slice(block.indexOf("@media (orientation: landscape) and (max-height: 500px) {"));
-    expect(landscape).toMatch(/\.mobile-duel-panel \{\s*display:\s*grid/);
+    expect(landscape).toMatch(/\.duel-solo-panel \{\s*display:\s*grid/);
+    expect(landscape, "团战面板结构不同，不能被套进两栏网格").not.toMatch(/\.mobile-duel-panel \{/);
+    expect(readFileSync(join(HERE, "DuelScreen.jsx"), "utf-8")).toContain("mobile-duel-panel duel-solo-panel");
     expect(landscape).toMatch(/\.duel-topbar \{\s*grid-column:\s*1 \/ -1/);
     const duelDir = join(HERE, "duel");
     expect(readFileSync(join(duelDir, "DuelTopBar.jsx"), "utf-8")).toContain('className="duel-topbar"');
