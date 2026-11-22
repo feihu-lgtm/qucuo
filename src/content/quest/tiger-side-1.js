@@ -8,6 +8,9 @@ export default { quest: {
     type: "QT_COLLECT",
     title: "白塔地宫的分赃规矩",
     giver: null,
+    // 白塔地宫 unlockCondition 锁在 white_pagoda_crypt_clue 上（喇嘛庙/神兵线写入），
+    // 玩家没拿到地宫线索本就进不去——任务门槛同理要求，可达性检查也认这重关系。
+    requiresFlags: ["white_pagoda_crypt_clue"],
     description: "为兰姐收集「白塔地宫守宫砂」辅料期间，玩家在白塔地宫里与一名同样在寻宝的盗墓贼狭路相逢——机关在前，两人索性临时组队。",
     stages: [
       {
