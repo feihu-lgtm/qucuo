@@ -104,6 +104,19 @@
   --ink-edge-gold: #3a2d1d;
   --ink-edge-red: #3a1d1d;
 
+  /* 主界面底栏定色：等待、任务提示和交谈输入框。 */
+  --footer-slow-bg: #3a2a12;
+  --footer-stalled-bg: #3a1a1a;
+  --footer-stalled-text: #e08a6a;
+  --footer-hint-bg: #0c0f14;
+  --footer-hint-title: #6a90c0;
+  --footer-hint-text: #8a94a8;
+  --footer-progress-bg: #141008;
+  --footer-progress-button: #1a1408;
+  --footer-choice-bg: #0e1410;
+  --footer-whisper-edge: #4a2a4a;
+  --footer-talk-edge: #1a3a1a;
+
   /* ── 建筑屏/客栈屏定色（随主题不变的装饰色）── */
   --ink-amber: #e0913a;
   --ink-brass: #6a5d40;
