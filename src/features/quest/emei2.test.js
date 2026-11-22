@@ -106,6 +106,8 @@ describe("峨3·岷江旧簪", () => {
     let s = advance(start(), id);
     expect(names(s)).toEqual(expect.arrayContaining(["金顶净心露", "玄尘亲笔密函"]));
     s = win(at(s, "雅江", "西城门"), id, "quest_emei3_ambush");
+    const drank = { ...s, inv: s.inv.filter((entry) => entry.name !== "金顶净心露") };
+    expect(getLocalQuestStage(quest, at(drank, "雪山派", "内堂"))).toBeNull();
     s = advance(at(s, "雪山派", "内堂"), id);
     expect(names(s)).toEqual(["半支青铜旧簪"]);
     s = advance(at(s, "锦官城", "峨眉剑庐", [xuanchen]), id);

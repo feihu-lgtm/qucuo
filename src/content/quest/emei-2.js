@@ -129,6 +129,7 @@ export default { quest: {
         playerHint: "到雪山派内堂，把密函和净心露亲手交给何雨谢。",
         description: "何雨谢见信落泪：当年不是绝情不回信，是崖底惨变后身中寒毒，不得不封山自保。她把另一半旧簪和一封手书托你带回锦官城。",
         completionFlag: "quest_emei3_deliver",
+        requiresItems: ["金顶净心露", "玄尘亲笔密函"],
         onReach: { consumeItems: ["金顶净心露", "玄尘亲笔密函"], items: [item("半支青铜旧簪")] },
       },
       {
@@ -137,6 +138,7 @@ export default { quest: {
         playerHint: "回峨眉剑庐，把半支旧簪交给玄尘师太。",
         description: "两半青铜簪在灯下合上，严丝合缝。玄尘师太三十年的心结，就这么解开了。",
         completionFlag: "quest_emei3_return",
+        requiresItems: ["半支青铜旧簪"],
         onReach: {
           consumeItems: ["半支青铜旧簪"],
           money: 260,
@@ -236,6 +238,7 @@ export default { quest: {
         choices: [
           { flag: "quest_emeisub2_spar", label: "与司徒瑛切磋", resolve: "combat", combatNpc: { name: "司徒瑛", levelCap: 2 } },
         ],
+        requiresItems: ["雪松劲枝"],
         onReach: {
           consumeItems: ["雪松劲枝"],
           money: 120,
@@ -299,6 +302,7 @@ export default { quest: {
         playerHint: "把冷月玄铁带回锻簪坊，帮簪娘连夜重锻。",
         description: "风箱拉了一夜，天亮时铁砧上躺着一对清正无毒的素影银簪刺。",
         completionFlag: "quest_emeisub3_forge",
+        requiresItems: ["冷月玄铁"],
         onReach: {
           consumeItems: ["冷月玄铁", "淬毒假峨眉刺"],
           money: 180,

@@ -27,6 +27,7 @@ export function getLocalQuestStage(quest, state) {
     npc.name === quest.giver && !npc.imported
     && (!quest.giverId || npc.id === quest.giverId || npc.id === `pool_${quest.giverId}`)
     && isNpcVisibleInInnerRoom(room.name, innerRoomName, npc))) return null;
+  if (stage.requiresItems?.some((name) => !state.inv?.some((item) => item?.name === name))) return null;
   const requirement = stage.requiresShopSpendOrItem;
   if (requirement && !(state.char?.shopSpend?.[requirement.shopKey] >= requirement.amount)
     && !state.inv?.some((item) => item?.id === requirement.itemId)) return null;
