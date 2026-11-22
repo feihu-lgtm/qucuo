@@ -33,7 +33,7 @@ import {
 import { joinSect } from "../../features/sect/logic.js";
 import { auctionWin } from "../../features/auction/logic.js";
 import { buyFactionShopItem } from "../../features/buildings/factionShop.js";
-import { donateAlms } from "../../features/buildings/emeiFotang.js";
+import { doClinicService } from "../../features/buildings/factionClinic.js";
 
 export function useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo }) {
   const handleBuyTangmenItem = useCallback((name, shopKey = "唐门暗器") => applyResult(featureCtxRef.current, () => {
@@ -62,10 +62,10 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     }));
   }, { feature: "building.healAtHospital" }), [activeBuilding, captureUndo]);
 
-  const handleDonateAlms = useCallback(() => applyResult(featureCtxRef.current, () => {
+  const handleClinicService = useCallback(() => applyResult(featureCtxRef.current, () => {
     captureUndo();
-    applyResult(featureCtxRef.current, donateAlms(gameStore.getState()));
-  }, { feature: "building.donateAlms" }), [captureUndo]);
+    applyResult(featureCtxRef.current, doClinicService(gameStore.getState(), activeBuilding?.id));
+  }, { feature: "building.clinicService" }), [activeBuilding, captureUndo]);
 
   const handleBuySkill = useCallback((catalogItem) => applyResult(featureCtxRef.current, () => {
     captureUndo();
@@ -215,7 +215,7 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     handleBuyTangmenItem,
     handleBuildingInn,
     handleBuildingHeal,
-    handleDonateAlms,
+    handleClinicService,
     handleBuySkill,
     handleGamble,
     handleTravel,
