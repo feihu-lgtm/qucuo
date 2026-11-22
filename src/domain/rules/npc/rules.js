@@ -33,7 +33,7 @@ export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5 } = {}) 
 }
 
 // 迁过据点的常驻 → 原据点。旧存档还把人缓存在原据点：进新据点照样请到，回原据点把人清掉
-const RELOCATED_RESIDENTS = { 唐老太: "锦官城" };
+const RELOCATED_RESIDENTS = { 唐老太: "锦官城", 说书人陈七: "天都镇" };
 
 export const residentNpcRule = {
   id: "npc.residents",
