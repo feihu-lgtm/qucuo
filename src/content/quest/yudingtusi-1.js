@@ -146,6 +146,61 @@ export default { quest: {
     rewardText: "旧契的事了结了一半。桑杰朵杰书房后那道窄门，你如今知道怎么进了。",
   },
 
+  yudingtusi_4_gushu_wenxin: {
+    id: "yudingtusi_4_gushu_wenxin",
+    type: "QT_TALK",
+    title: "府4·旧刃问心",
+    giver: "格桑顿珠",
+    giverId: "resident_gesangdunzhu",
+    localOnly: true,
+    requiresQuestCompleted: "yudingtusi_3_jiuqi_canyin",
+    requiresFavor: { 格桑顿珠: 40 },
+    description: "大战前夜，风雪漫天。格桑顿珠托人传话：巡捕营的矛头究竟朝外还是朝内，今夜得有个交代。",
+    stages: [
+      {
+        id: "summon",
+        requireLocation: at("护卫厅"),
+        playerHint: "到护卫厅赴格桑顿珠的约，把三十年前的旧事摊开。",
+        description: "格桑顿珠独自擦着长矛，火盆里的牛粪饼噼啪作响：「老土司死在雪山崖底那天，我就在山下。你手里那张残契，给我看看。」",
+        completionFlag: "quest_ts4_summon",
+      },
+      {
+        id: "ambush",
+        requireLocation: at("护卫厅"),
+        playerHint: "白玛次仁带弓弩手围了校场：并肩击退他，或替桑杰朵杰拿下格桑顿珠。",
+        description: "校场四角亮起火把，白玛次仁奉陆福生密令率弓弩手围了上来：「格桑顿珠勾结外人、图谋不轨，拿下！」格桑顿珠把矛横在身前，看了你一眼。",
+        completionFlag: ["quest_ts4_truth", "quest_ts4_regent", "quest_ts4_purge"],
+        choices: [
+          { flag: "quest_ts4_truth", label: "并肩击退白玛次仁", resolve: "combat", combatNpc: { name: "白玛次仁", levelCap: 4 } },
+          { flag: "quest_ts4_regent", label: "击退白玛次仁·推举梅朵代管", resolve: "combat", requiresFavor: { 梅朵: 60 },
+            combatNpc: { name: "白玛次仁", levelCap: 4 } },
+          { flag: "quest_ts4_purge", label: "铁腕清营·拿下格桑顿珠", resolve: "combat",
+            requiresFlag: ["quest_ts3_burn"], requiresFactionRep: { [TS]: 80 }, combatNpc: { name: "格桑顿珠", levelCap: 5 } },
+        ],
+        onReach: {
+          byFlag: {
+            quest_ts4_truth: {
+              money: 400, items: catalog("点钢乌木镇边矛"), reputation: 20,
+              factionRep: { [TS]: -40, 雪山派: 15, 喇嘛庙: 15, 玉泉寨: 15, 鱼定村: 15 },
+              favorability: { 格桑顿珠: 30 }, flags: ["tusi_gesang_true_heir", "flag_gesang_neutralized"],
+            },
+            quest_ts4_regent: {
+              money: 400, items: catalog("点钢乌木镇边矛"), reputation: 20,
+              factionRep: { [TS]: -40, 雪山派: 15, 喇嘛庙: 15, 玉泉寨: 15, 鱼定村: 15 },
+              favorability: { 格桑顿珠: 30, 梅朵: 10 }, flags: ["tusi_gesang_true_heir", "flag_gesang_neutralized", "flag_meiduo_regent"],
+            },
+            quest_ts4_purge: {
+              money: 1200, items: catalog("巡边行走金印"), reputation: -25,
+              factionRep: { [TS]: 40, 雪山派: -20, 黑风寨: -20, 玉泉寨: -20, 锦官城: -12 },
+              favorability: { 桑杰朵杰: 20 },
+            },
+          },
+        },
+      },
+    ],
+    rewardText: "雪夜校场的火盆熄了。巡捕营的矛头朝哪儿，终局那天自见分晓。",
+  },
+
   yudingtusi_side1_paoma_yishi: {
     id: "yudingtusi_side1_paoma_yishi",
     type: "QT_TALK",

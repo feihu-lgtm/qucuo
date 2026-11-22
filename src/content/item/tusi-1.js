@@ -13,6 +13,8 @@ const items = {
 "主簿铜镇纸": { name: "主簿铜镇纸", category: "weapon", quality: "白", tags: ["杂兵", "土司府"], desc: "洛桑平措压账册用的铜镇纸，一尺来长，沉甸甸的。真急了抡起来，也能把人砸个包。" },
 "旧羊毛长袍": { name: "旧羊毛长袍", category: "armor", quality: "白", tags: ["衣甲", "土司府"], desc: "洗得发白的羊毛长袍，袖口磨出了毛边，袖里还总揣着半截炭笔。" },
 "旧地契残页": { name: "旧地契残页", category: "misc", quality: "蓝", tags: ["任务", "土司府"], desc: "三十年前的地契原件，被火燎去一角，落款的朱印缺了半边。纸背有老土司桑杰大侠亲笔的一行小字。" },
+"点钢乌木镇边矛": { name: "点钢乌木镇边矛", category: "weapon", quality: "紫", tags: ["长兵", "矛", "土司府"], desc: "格桑顿珠的副矛，乌木杆上缠着褪色的红绸，矛头点钢是老土司当年亲手淬的。他把矛递给你时说：「这杆矛从今往后只朝外。」" },
+"巡边行走金印": { name: "巡边行走金印", category: "accessory", quality: "紫", sixDim: { 体魄: 1, 智谋: 2 }, tags: ["信物", "土司府"], desc: "桑杰朵杰亲手系在你腰间的鎏金小印，刻着「巡边行走」四字。持此印者，曲措三曲的关卡与寨门都得先放行、后问话。" },
 "军械暗弩": { name: "军械暗弩", category: "misc", quality: "蓝", tags: ["任务", "土司府"], desc: "从马匪身上缴来的连发暗弩，机括精巧得不像山贼能造的东西，弩臂内侧有一个被锉掉的标记。" },
 };
 export default { item: items, itemGroup: { TUSI_GOODS: Object.keys(items) } };

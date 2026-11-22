@@ -142,5 +142,19 @@ export default { residentGroup: {
         { name: "驱寒老姜酒", category: "misc", quality: "绿" },
       ],
     },
+    {
+      name: "秦小鹊", innerRoom: "三星镇西口集市", id: "resident_qinxiaoque", levelCap: 3,
+      brief: "丐帮四袋弟子，锦官城汉家姑娘，十九岁，高马尾系红绳，腰挂酒葫芦与一副莲花落竹板",
+      personality: "洒脱爽利、爱笑爱闹，说走就走、拿得起放得下；嫌锦官城绣楼里的规矩闷，偷跑出来跟着叫花子走江湖。好酒好赌却从不赖账，输了也笑；见不得恃强凌弱，打抱不平时比谁都快，打不过就拉人一起跑",
+      carry: [
+        { name: "鹊尾竹节棍", category: "weapon", quality: "蓝" },
+        { name: "桃红补丁短袄", category: "armor", quality: "绿" },
+        { name: "响铃铜钱串", category: "accessory", quality: "绿" },
+        { name: "莲花落竹板", category: "misc", quality: "绿" },
+        { name: "驱寒老姜酒", category: "misc", quality: "绿" },
+        { name: "广汉干粮", category: "misc", quality: "白" },
+        { name: "广汉大锅盔", category: "misc", quality: "白" },
+      ],
+    },
   ]
 } };

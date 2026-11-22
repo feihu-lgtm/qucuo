@@ -308,6 +308,23 @@ export const QUCUO_SHOPS = {
     ],
   },
 
+  // 百花暗阁（天都镇·百花暖棚拐角，掌柜花婆）。合稿 6.1 货单十件：
+  // minRep 0/15/40/80/100（合稿写 140，引擎声誉封顶 100）。「百花净毒露」在册，不重复建物。
+  百花暗阁: {
+    shopName: "百花暗阁",
+    items: [
+      { name: "玫瑰花酿", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "祛瘴花茶", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "苗银花簪刺", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 0 },
+      { name: "百草解瘴散", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "苗疆软皮护腕", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 15 },
+      { name: "百花软筋粉", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 40 },
+      { name: "素银易容粉盒", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 40 },
+      { name: "金丝软银鞭", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 80 },
+      { name: "百花净毒露", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 80 },
+      { name: "金蚕母蛊囊", category: ITEM_CATEGORY.ACCESSORY, quality: "橙", minRep: 100, limitOnce: true },
+    ],
+  },
   // ── 门派商坊（雪山派）。功德货币改银两，照合稿 §8.1 统一「银两+势力声誉折扣/门槛」；
   // 货单照合稿 6.2 十件：白绿无门槛、蓝品 15、紫品 40、千年冰魄莲 80、霜纹寒玉剑 100（合稿 140，引擎封顶 100）。
   门派商坊: {

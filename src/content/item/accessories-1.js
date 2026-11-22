@@ -109,6 +109,7 @@ const items = {
 "磨损藏银火镰": { name: "磨损藏银火镰", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 气运: 2 }, desc: "三十年前老土司桑杰大侠随手赠给落难少年的防身火镰，银面磨得发亮，刻着残缺的鱼定纹。严九斤一直贴身带着。" },
 "铜框单边镜": { name: "铜框单边镜", category: "accessory", quality: "蓝", sixDim: { 智谋: 2 }, desc: "广汉老匠人配的铜框水晶单边镜，缺了一条腿。周小满靠它夜读小字，辨认伪契上的墨迹。" },
 "红绳铜哨": { name: "红绳铜哨", category: "accessory", quality: "绿", sixDim: { 魅力: 1 }, desc: "拴着红绳的铜哨，一吹便能召集方圆三里内的分舵弟子结阵。胡三爷吹它从来不用第二声。" },
+"响铃铜钱串": { name: "响铃铜钱串", category: "accessory", quality: "绿", sixDim: { 魅力: 1, 气运: 1 }, desc: "一串磨亮的乾元通宝穿在红绳上，中间吊颗小铜铃，走一步响一声。秦小鹊从来不数里头有几枚，输光了就解一枚下来押。" },
 "缺齿黄杨算盘": { name: "缺齿黄杨算盘", category: "accessory", quality: "蓝", sixDim: { 智谋: 2 }, desc: "白婶亡夫留下的黄杨算盘，缺了两颗珠子，却比谁的都算得快。" },
 "断耳牦牛角坠": { name: "断耳牦牛角坠", category: "accessory", quality: "绿", sixDim: { 体魄: 1 }, desc: "多吉逃离玉泉寨前，从老牧场捡来的半截牦牛角，磨成了坠子。他说等打回去，要把家里两头白牦牛牵回来。" },
 "青铜小铃": { name: "青铜小铃", category: "accessory", quality: "紫", sixDim: { 悟性: 2, 气运: 1 }, desc: "百年前三星派赠给历代守约人的信物。摇起来没有声音——只有走进古墟的雾里，它才会响。" },
