@@ -795,8 +795,8 @@
 
   html[data-keyboard-open] .mobile-input-bar {
     position: fixed !important;
-    left: env(safe-area-inset-left) !important;
-    right: env(safe-area-inset-right) !important;
+    left: 0 !important;
+    right: 0 !important;
     bottom: var(--mobile-keyboard-height, 0px) !important;
     z-index: 400;
     background: var(--bg-panel);
