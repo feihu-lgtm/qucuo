@@ -78,11 +78,6 @@ export function unlockSnowLeopard(companionState) {
   };
 }
 
-export function setSnowLeopardActive(companionState, active) {
-  if (!companionState?.snowLeopard?.unlocked) return companionState; // 未解锁不能设置出战
-  return { ...companionState, snowLeopard: { ...companionState.snowLeopard, active: !!active } };
-}
-
 // 供 MudRPG.jsx 判断"这场切磋要不要带雪豹"：已解锁 + 当前设为出战 + 雪豹自己没有
 // 在别的地方处于"倒地不能战"的持久状态（目前不做持久伤势，每场战斗独立结算，
 // 雪豹的hp只在单场战斗内变化，不带伤跨场——跟玩家角色的hp在切磋外自然恢复
@@ -147,10 +142,6 @@ export function unlockPearl(companionState) {
     if (s.key !== "pearl" && next[s.key]) next[s.key] = { ...next[s.key], active: false };
   }
   return next;
-}
-
-export function isPearlAvailable(companionState) {
-  return !!(companionState?.pearl?.unlocked && companionState?.pearl?.active && companionState?.pearl?.data);
 }
 
 // ── 熊猫「墨团」入队（雅江熊猫谷·山灵）─────────────────────────────────
