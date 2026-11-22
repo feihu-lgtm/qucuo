@@ -187,7 +187,7 @@ export default { quest: {
         description: "第一关文斗问心，第三关在寒石阵中静守不动明王印三息；第二关，罗布桑提杵立在石阶尽头：「接我十招。」",
         completionFlag: "quest_lama4_trial",
         choices: [
-          { flag: "quest_lama4_trial", label: "与守塔僧团过招", resolve: "combat", combatNpc: { name: "白塔守塔护法僧", levelCap: 9 } },
+          { flag: "quest_lama4_trial", label: "与守塔僧团过招", resolve: "combat", combatNpc: { name: "白塔守塔护法僧", levelCap: 4 } },
         ],
       },
       {
@@ -249,7 +249,7 @@ export default { quest: {
         description: "塔阶上伏着陆福生的心腹与蒙面毒弩手。罗布桑横杵挡在住持身前：「施主，死守塔阶！」",
         completionFlag: "quest_lama5_ambush",
         choices: [
-          { flag: "quest_lama5_ambush", label: "死守塔阶", resolve: "combat", combatNpc: { name: "陆福生心腹毒弩手", levelCap: 12 } },
+          { flag: "quest_lama5_ambush", label: "死守塔阶", resolve: "combat", combatNpc: { name: "陆福生心腹毒弩手", levelCap: 5 } },
         ],
       },
       {
@@ -298,7 +298,7 @@ export default { quest: {
         description: "药篓装满返程时，你撞见两名血刀门徒正在抢玉泉寨老牧民的药马。",
         completionFlag: ["quest_lamay1_fight", "quest_lamay1_evade"],
         choices: [
-          { flag: "quest_lamay1_fight", label: "挺身击退血刀门徒", resolve: "combat", combatNpc: { name: "血刀门徒", levelCap: 7 } },
+          { flag: "quest_lamay1_fight", label: "挺身击退血刀门徒", resolve: "combat", combatNpc: { name: "血刀门徒", levelCap: 3 } },
           { flag: "quest_lamay1_evade", label: "智取避战救人", resolve: "none", narration: "你把一包药粉扬进风里，喊了声「雪崩」。两个血刀门徒抬头的工夫，老牧民已经牵着药马钻进了山坳。" },
         ],
         onReach: {
