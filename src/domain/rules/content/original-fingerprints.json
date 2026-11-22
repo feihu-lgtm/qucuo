@@ -125,10 +125,10 @@
       "jsonSha256": "5d6a5c6bcffad3e6399e321424576adf50abd8e9e36a1e72f9aa553fd7018273"
     },
     "SUNDRIES": {
-      "entryCount": 246,
-      "orderedIdsSha256": "add9d7b273970491871daabeae332ebfe5664e354a1913f81cf2504589d33f33",
-      "totalFieldCount": 1909,
-      "jsonSha256": "69504575cf4e95024284ab5b5baf17ceeca6b44b6c0e6a3151e3ed8d049cbb55"
+      "entryCount": 250,
+      "orderedIdsSha256": "7f6f14a1619730f239b623f8610e081cad8fa9b961f3b52be5a2fb9121f4ad44",
+      "totalFieldCount": 1944,
+      "jsonSha256": "4ffa551484ed4fe00eb0b1a7f65fa4683aa4c1803680c22f08d81c2bbb488d89"
     },
     "STANDARD_WEAPONS": {
       "entryCount": 10,
@@ -222,16 +222,16 @@
       "jsonSha256": "d0c47d92e4d5958afd876abb8512223df37399abe67606b7329a8f282a8d2245"
     },
     "CATALOG": {
-      "entryCount": 406,
-      "orderedIdsSha256": "71f554cd25fa9ee4b8912c86237d2bfab480aa7b7bf24328166230250293877f",
-      "totalFieldCount": 3182,
-      "jsonSha256": "29336c4f66891f7102107b378e402e022f1ada5f2338fde5cc32d736425bc452"
+      "entryCount": 410,
+      "orderedIdsSha256": "4fcf4e380e23b350a23b1a11a15c08600ed328c0babdefc6a2e549bfb99eba56",
+      "totalFieldCount": 3217,
+      "jsonSha256": "6e0b824ded7262e8e939f4b858c0d6118694b4812f74761cb2a0d2cc2a0bb764"
     },
     "CATALOG_INDEX": {
-      "entryCount": 406,
-      "orderedIdsSha256": "71f554cd25fa9ee4b8912c86237d2bfab480aa7b7bf24328166230250293877f",
-      "totalFieldCount": 3588,
-      "jsonSha256": "20dddc8c758844978839d99ce0ff8816d7f7789d5616e79a5a04f3fc77db1227"
+      "entryCount": 410,
+      "orderedIdsSha256": "4fcf4e380e23b350a23b1a11a15c08600ed328c0babdefc6a2e549bfb99eba56",
+      "totalFieldCount": 3627,
+      "jsonSha256": "6f5a2b3b9a7bce85a4e7ad0800095d8bf40dfb6596c2907ecc44417e5ed9b794"
     },
     "RESIDENT_NPCS": {
       "entryCount": 13,

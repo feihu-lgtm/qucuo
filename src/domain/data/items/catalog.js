@@ -392,7 +392,7 @@ export function useConsumable(consumable, char) {
   // ④ 战前餐 combatBuff（作用于下一场战斗）
   if (c.combatBuff && typeof c.combatBuff === "object") {
     combatBuff = { ...c.combatBuff };
-    noteBits.push("一餐入腹，只待临阵，气力自不同往日");
+    noteBits.push(c.combatBuffNote || "一餐入腹，只待临阵，气力自不同往日");
   }
 
   // ── C 档降级（消耗品系统第4步：砍/降级重机制，不为个别药新增系统）──

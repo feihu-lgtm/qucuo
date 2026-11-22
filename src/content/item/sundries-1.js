@@ -258,7 +258,11 @@ const items = {
 "青城道袍": { name:"青城道袍", category:"armor", quality:"蓝", tags:["护具","道袍","门派"], effect:{ immuneControl: true }, sixDim:{悟性:1}, desc:"三清殿道士的常服，靛青粗布，交领右衽，袖口收得极窄——青城派讲究袖不带风，免得剑意被袖子带偏。下摆有一圈竹叶暗纹。" },
 "青城练气服": { name:"青城练气服", category:"armor", quality:"绿", tags:["护具","门派"], sixDim:{根骨:1}, desc:"剑坪上练剑的弟子穿的短打，比道袍利索，洗得发白。松鹤道长说穿这个摔了不心疼——「道袍摔破了要自己缝，缝一晚上，比摔疼。」" },
 "离堆水则牌": { name:"离堆水则牌", category:"accessory", quality:"蓝", tags:["饰品","治水","雅江"], effect:{ energyRestore: 1 }, sixDim:{智谋:1}, desc:"宝瓶口水则石的拓片刻成的小木牌，上面是「深淘滩、低作堰」六个字。雅江人下水前都摸一摸——不是求平安，是提醒自己水有水的道理。" },
-"青城符箓袋": { name:"青城符箓袋", category:"accessory", quality:"绿", tags:["饰品","符箓","门派"], sixDim:{气运:1}, desc:"竹青宣写的符折成三角，装在靛蓝布袋里。玉真子说符本身不灵——「灵的是写符那半个时辰你什么都没想。」" }
+"青城符箓袋": { name:"青城符箓袋", category:"accessory", quality:"绿", tags:["饰品","符箓","门派"], sixDim:{气运:1}, desc:"竹青宣写的符折成三角，装在靛蓝布袋里。玉真子说符本身不灵——「灵的是写符那半个时辰你什么都没想。」" },
+"铁莲子": { name:"铁莲子", category:"misc", quality:"绿", tags:["暗器","铁器","唐门"], consumable:{ combatBuff:{ waigong: 4 }, combatBuffNote:"一袋铁莲子扣进指缝，只等临阵脱手" }, desc:"淬火坊边角料打出的实心黑铁珠，一袋十二枚，虽不带毒，砸在脑门上照样开瓢。" },
+"淬竹袖箭": { name:"淬竹袖箭", category:"weapon", quality:"紫", tags:["武器","暗器","机括","唐门"], effect:{ forceFirst: true, applyStatus: { name: "淬毒", chance: 0.3 } }, desc:"唐听竹改制的机括袖箭，以十年老斑竹作筒、寒铁作簧，藏于袖中不露形迹，发箭悄无声息。" },
+"蚕丝防毒衣": { name:"蚕丝防毒衣", category:"armor", quality:"紫", defMul: 1.35, tags:["护甲","蜀锦","防毒","唐门"], effect:{ ignoreDefensePartialImmune: 0.3 }, desc:"以蜀锦夹层浸过药汁织就的贴身软甲，既防细针暗刺，也能阻隔大半迷烟与蚀骨毒粉。" },
+"冰魄解蛊散": { name:"冰魄解蛊散", category:"misc", quality:"紫", tags:["药散","解毒","解蛊","唐门"], consumable:{ dispelAll: true, hpRestore: 0.2 }, desc:"针对苗疆恶蛊与西域寒毒特制的冰凉雪粉，服下周身一寒，蛊毒寒毒一并化去。" },
 };
 
 export default { item: items, itemGroup: { SUNDRIES: Object.keys(items) } };

@@ -135,6 +135,7 @@ export function resolveTurn(sideA, sideB) {
     markAppliedToA: null, markAppliedToB: null,            // 本回合给对方叠的印记 {name, stacks, max}
     markDetonatedOnA: 0, markDetonatedOnB: 0,              // 本回合引爆了对方多少层印记（>0 时 DuelScreen 负责清空对方 mark 槽）
     dispelSelfA: false, dispelSelfB: false,                // 本回合我方是否驱散了自身控制/掉血状态
+    dispelMarksA: false, dispelMarksB: false,              // 本回合我方是否连印记一并清掉（dispelAll 类药物）
     hpRestoreA: 0, hpRestoreB: 0,                           // 疗伤：本回合各自回复的气血量（由 DuelScreen 落到 hp 上，不超上限）
     notes: [],
   };
@@ -333,6 +334,15 @@ export function resolveTurn(sideA, sideB) {
   if (sideB.move.hpRestore && (sideB.move.fromItem || (!result.interruptedB && !result.cancelledB))) {
     result.hpRestoreB = Math.round((sideB.hp?.[1] ?? 100) * sideB.move.hpRestore);
     result.notes.push(`${sideB.move.name}运转真气自疗，气血回复`);
+  }
+
+  // 运功自解 / 服解毒药：同疗伤，药物必定生效，招式被打断或截断则不解。
+  for (const tag of ["A", "B"]) {
+    const side = tag === "A" ? sideA : sideB;
+    if (side.move.dispelSelf && (side.move.fromItem || (!result[`interrupted${tag}`] && !result[`cancelled${tag}`]))) {
+      result[`dispelSelf${tag}`] = true;
+      if (side.move.dispelMarks) result[`dispelMarks${tag}`] = true;
+    }
   }
 
   // 蓄势：把 nextAttackBonus 记成"给下回合的威力加成"（真正生效，不再只是文字）

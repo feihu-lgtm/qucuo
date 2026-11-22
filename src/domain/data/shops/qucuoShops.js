@@ -13,6 +13,10 @@ export const QUCUO_SHOPS = {
       { name: "熊胆解毒丸", category: ITEM_CATEGORY.MISC, quality: "蓝" },
       { name: "假死药", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
       { name: "百花净毒露", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 15 },
+      { name: "铁莲子", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "淬竹袖箭", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 40 },
+      { name: "蚕丝防毒衣", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 40 },
+      { name: "冰魄解蛊散", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 80 },
     ],
   },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
