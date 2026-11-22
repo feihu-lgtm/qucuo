@@ -165,6 +165,15 @@
   --footer-whisper-edge: #4a2a4a;
   --footer-talk-edge: #1a3a1a;
 
+  /* ── 新手教程浮层定色 ── */
+  --tutorial-dim: #b0a080;
+  --tutorial-map: #a0b8c0;
+  --tutorial-move: #9ac0a0;
+  --tutorial-note: #9a9080;
+  --tutorial-nsfw: #c85a6a;
+  --tutorial-time: #c0a86a;
+  --tutorial-title: #f0e0c0;
+
   /* ── 建筑屏/客栈屏定色（随主题不变的装饰色）── */
   --forge-hint: #4a4a4a;
   --ink-amber: #e0913a;
