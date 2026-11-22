@@ -107,7 +107,7 @@ export function useGameUi({
       if (!quest.stages?.length) continue;
       const prog = questProgress[quest.id];
       if (quest.localOnly) {
-        const stage = getLocalQuestStage(quest, { room, innerRoomName, char, inv, flags, questProgress });
+        const stage = getLocalQuestStage(quest, { room, innerRoomName, char, inv, flags, questProgress, varTree });
         if (stage) result.push({ quest, stage, isNewlyGiven: !prog });
         continue;
       }
@@ -130,7 +130,7 @@ export function useGameUi({
       result.push({ quest, stage, isNewlyGiven });
     }
     return result;
-  }, [room, questProgress, flags, char, inv, innerRoomName]);
+  }, [room, questProgress, flags, char, inv, innerRoomName, varTree]);
 
   const liveNpcMenu = activeNpcMenu
     ? (room.npcs.find(n => n.name === activeNpcMenu.name) || activeNpcMenu)

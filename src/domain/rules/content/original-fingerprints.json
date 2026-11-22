@@ -3,10 +3,10 @@
   "format": "sha256(JSON.stringify(data)); orderedIds (up to 20) or their SHA-256 use id ?? name for arrays or Object.keys for objects; totalFieldCount counts object keys recursively, excluding array indices",
   "exports": {
     "QUCUO_QUESTS": {
-      "entryCount": 58,
-      "orderedIdsSha256": "a94c6bb85ef3ed64137fa0cfccc1facd78b7e878fa2a4030bcbfaee76ce8b22e",
-      "totalFieldCount": 2510,
-      "jsonSha256": "9278a24b135c95a78536071d2e524f1051342f5a91a9f87e4c6e3ba76e02e0b5"
+      "entryCount": 65,
+      "orderedIdsSha256": "a0424dc3c8d0064c029f9296d1cde1a3009b065b513c3d8bbf0f6e1ea8f673f2",
+      "totalFieldCount": 3092,
+      "jsonSha256": "76f1c95e28e4ffcc240c169452ec4c1cfce2e37f93a404f36db91d89942c4cb3"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -17,85 +17,22 @@
       "jsonSha256": "1246e5adb73c9e57cc637a944abd8e9481ec30388b6e8fcf1d40162c132df9f3"
     },
     "WEAPONS": {
-      "entryCount": 20,
-      "orderedIds": [
-        "霜牙",
-        "狼骨匕",
-        "折柳",
-        "牧云",
-        "雪鸮翎",
-        "断念",
-        "狼曲旧猎叉",
-        "百花刺",
-        "梵铃杵",
-        "熊山猎刀",
-        "青鸢",
-        "孟记铁锤",
-        "大草甸套索",
-        "雪山松纹剑",
-        "贡措冰晶",
-        "黑风断刃",
-        "金珠算盘",
-        "藏银护手钩",
-        "古藤杖",
-        "霜角"
-      ],
-      "totalFieldCount": 159,
-      "jsonSha256": "7188a2f7067b329d0b998777e009bbc889cc815a9ecc983e8d886fb6b8afca5e"
+      "entryCount": 28,
+      "orderedIdsSha256": "820bd46cc3eb7d1fa3cd00eea609588af416a90f0887e3cfe0488996dc63154b",
+      "totalFieldCount": 207,
+      "jsonSha256": "c99131118aa62a94a3851a43416d90d8e5d80bece78017e775a862de0241c16a"
     },
     "ARMORS": {
-      "entryCount": 20,
-      "orderedIds": [
-        "青布长衫",
-        "雪豹裘",
-        "氆氇藏袍",
-        "百香纱衣",
-        "熊皮坎肩",
-        "锦官制式软甲",
-        "百褶皮围",
-        "欢喜法衣",
-        "狼裘大氅",
-        "丹增旧骑装",
-        "百花楼绸衣",
-        "鱼定粗布短打",
-        "雪山练功服",
-        "守塔僧袍",
-        "锦官城官袍",
-        "马帮油布斗篷",
-        "喇嘛庙绛红袈裟",
-        "格桑花染布衣",
-        "孟记皮护腕",
-        "猞猁皮帽"
-      ],
-      "totalFieldCount": 149,
-      "jsonSha256": "1490bb2fc33c897550363798b289011526e0ada0f480de18530cb1d6f8ac5e70"
+      "entryCount": 30,
+      "orderedIdsSha256": "51bb605ad3bddbec24754232b0af0f4ecab7270b90c33a1c031ad7cd6b35e8c2",
+      "totalFieldCount": 203,
+      "jsonSha256": "2cb72fb37f4e1d61fd0f4fd14b8922626beaf22983e12985e355718b8d502c0d"
     },
     "ACCESSORIES": {
-      "entryCount": 20,
-      "orderedIds": [
-        "旧护身符",
-        "虎乳牙",
-        "红线",
-        "界石下的土",
-        "半块银锁片",
-        "青鸢私印",
-        "狼曲石子",
-        "百花引残香囊",
-        "旧铜镜",
-        "熊山手绘地图",
-        "达摩药堂念珠",
-        "铃铛",
-        "玉器轩断簪",
-        "守宫砂",
-        "燕羊胎石",
-        "青铜鸢",
-        "藏银耳坠",
-        "鸡足山贝叶经残片",
-        "黑风寨木牌",
-        "老兵烟斗"
-      ],
-      "totalFieldCount": 144,
-      "jsonSha256": "bdde9d07102b6afb92552fdb5028c8a83fef995fda2d9cffb81ea6200443caca"
+      "entryCount": 29,
+      "orderedIdsSha256": "1ce754f3952ae819a4fc2c48db0856751c4937f87529a1ec697bc62a103b599e",
+      "totalFieldCount": 203,
+      "jsonSha256": "5941ecdfe8be7716c0c01dad57be513be35745fb5c121769ac8f447eb4b27ccc"
     },
     "JADE_WARES": {
       "entryCount": 20,
@@ -125,10 +62,10 @@
       "jsonSha256": "5d6a5c6bcffad3e6399e321424576adf50abd8e9e36a1e72f9aa553fd7018273"
     },
     "SUNDRIES": {
-      "entryCount": 272,
-      "orderedIdsSha256": "1b8d983e4f64ef3ac115619ce178fbff779e22543d055ab2e7cc6098a1d7c35a",
-      "totalFieldCount": 2121,
-      "jsonSha256": "f0fcb7285ae2ddd24279468fa9c1b8ee5c7328a5e3b32ffb1dcdb1ebad4b4eb1"
+      "entryCount": 285,
+      "orderedIdsSha256": "b45ec6b8832c050c998726c235cca652a279ebbba6f0a9ea453e1ba720c083d1",
+      "totalFieldCount": 2206,
+      "jsonSha256": "046248564edfac4e8504b1a040bed039141df165bf28d0b36f130914edc5eb81"
     },
     "STANDARD_WEAPONS": {
       "entryCount": 10,
@@ -222,16 +159,16 @@
       "jsonSha256": "d0c47d92e4d5958afd876abb8512223df37399abe67606b7329a8f282a8d2245"
     },
     "CATALOG": {
-      "entryCount": 502,
-      "orderedIdsSha256": "0c1785ab28c821ae3322c99e1183d2c8d13d53acba4cbfd597f42d4b028e5cd2",
-      "totalFieldCount": 3828,
-      "jsonSha256": "ffea0338318a3f64d88a821fdc0ad382826b8bdfc14095ec5a58e12cd525aa3a"
+      "entryCount": 542,
+      "orderedIdsSha256": "cd333fcbd944012b03920ddd995a6b57871476aa8be868d28dded1d57aa1db72",
+      "totalFieldCount": 4074,
+      "jsonSha256": "1452d2fbdc98d44bb9a2a0f94cbb013107a43df6d69611216c4a4dea87676637"
     },
     "CATALOG_INDEX": {
-      "entryCount": 502,
-      "orderedIdsSha256": "0c1785ab28c821ae3322c99e1183d2c8d13d53acba4cbfd597f42d4b028e5cd2",
-      "totalFieldCount": 4330,
-      "jsonSha256": "0de3637905032b3bdcbaa93a079c26aaced6cd19ffc7ec3d03a3d2aa2279fce3"
+      "entryCount": 542,
+      "orderedIdsSha256": "cd333fcbd944012b03920ddd995a6b57871476aa8be868d28dded1d57aa1db72",
+      "totalFieldCount": 4616,
+      "jsonSha256": "ae6d5a48aba58002c18f2cbad46b73adcec43e84244145982c900874d71a502a"
     },
     "RESIDENT_NPCS": {
       "entryCount": 15,
@@ -252,8 +189,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 1996,
-      "jsonSha256": "b79e148d605d040d75e9b98bc7bf6576049247def8641288daa51ce0d8c506b9"
+      "totalFieldCount": 2164,
+      "jsonSha256": "723ef02a7eabd07b5f022e8bd0e17925f682ca7a74bdd3695f62416d2fba935c"
     },
     "INNER_MAP": {
       "entryCount": 20,
@@ -279,8 +216,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 1437,
-      "jsonSha256": "40b2bf69ee675b143ba938e4b3ffc7046fb699ceff2a6997465154125ef92d34"
+      "totalFieldCount": 1514,
+      "jsonSha256": "28fb915dd9fa43ad77c5b5b3f2bf5026dc0f06b1c38752a67433244132c8c000"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,

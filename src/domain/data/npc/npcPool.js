@@ -300,5 +300,6 @@ export function toRoomNpc(poolNpc) {
     brief: poolNpc.brief,
     isPoolNpc: true,
     carriedItems: [],
+    ...(poolNpc.innerRoom ? { innerRoom: poolNpc.innerRoom } : {}),
   };
 }

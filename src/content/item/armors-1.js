@@ -97,7 +97,18 @@ const items = {
     name: "猞猁皮帽", category: "armor", quality: "绿", defMul: 1.15,
     sixDim: { 气运: 1, 魅力: 1 },
     desc: "大草甸猞猁皮缝制，耳位留两个毛球。阿索冬天戴，毛球在风里一颤一颤，牦牛看了都多嚼两口草——不是喜欢，是觉得像另外两头小牦牛。",
-  }
+  },
+// ── 丐帮三星分舵（广汉） ──
+"八袋百衲衫": { name: "八袋百衲衫", category: "armor", quality: "紫", defMul: 1.4, desc: "八只补丁口袋缝在一件百衲衫上，暗缝牛筋麻布，抗劈砍，还能藏两只酒袋。严九斤穿了十年，洗得发灰。" },
+"察世青布短打": { name: "察世青布短打", category: "armor", quality: "蓝", defMul: 1.25, desc: "察世堂弟子的青布短打，里外缝满暗袋，藏得下三封密信和一支炭笔。" },
+"盐帮旧皮背心": { name: "盐帮旧皮背心", category: "armor", quality: "蓝", defMul: 1.3, desc: "胡三爷早年护盐船时留下的厚牛皮护胸，刀痕一道压着一道，最深的那道是他断腿那晚留的。" },
+"靛蓝油布围裙": { name: "靛蓝油布围裙", category: "armor", quality: "绿", defMul: 1.15, desc: "防油防火的靛蓝围裙，夹层缝着几块防身竹片。白婶说灶台边比江湖上危险。" },
+"补丁羊皮坎肩": { name: "补丁羊皮坎肩", category: "armor", quality: "白", defMul: 1.05, desc: "多吉从玉泉寨穿出来的羊皮坎肩，到广汉时已经补满了丐帮的粗麻布，分不清哪块是原来的。" },
+"旧油枯蓑衣": { name: "旧油枯蓑衣", category: "armor", quality: "蓝", defMul: 1.3, desc: "一件发黑的老蓑衣，常年挡风避雨，棕丝密得寻常暗器透不过。哑巴七坐在老槐树下时就披着它。" },
+"粗麻百衲衣": { name: "粗麻百衲衣", category: "armor", quality: "绿", defMul: 1.2, desc: "破庙妇人们拿厚麻布一层叠一层衲出的短衫，穿着不体面，挡风耐割比寻常绸缎强得多。" },
+"察世轻行履": { name: "察世轻行履", category: "armor", quality: "蓝", defMul: 1.25, sixDim: { 身法: 2 }, desc: "千层底草麻混编的赶路鞋，鞋底暗垫牛皮，走一天山路脚底不起泡。" },
+"八袋青竹护心甲": { name: "八袋青竹护心甲", category: "armor", quality: "紫", defMul: 1.5, desc: "表面看只是件半旧的青布坎肩，内里密编了桐油炙过的细竹片与熟牛筋，轻若无物，却能硬扛血刀劈斩。" },
+"熟铜绑腿": { name: "熟铜绑腿", category: "armor", quality: "蓝", defMul: 1.25, sixDim: { 身法: 1 }, desc: "胡三爷私藏的一副熟铜片绑腿，他断腿前最后一次护粮穿的就是这副。「老子用不上了，你腿还在。」" },
 };
 
 export default { item: items, itemGroup: { ARMORS: Object.keys(items) } };

@@ -65,6 +65,33 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "既是练毒的灶，也是救命的堂；世上最狠的毒往往和最灵的解药同出一炉，只要出得起银子，断气前总能拉回来半口。",
     },
   ],
+  // ── 广汉·丐帮三星分舵（合稿·丐帮 2.3；拜师堂等拜入接线后再开） ──
+  广汉: [
+    {
+      id: "teahouse_gaibang_chashi", name: "察世茶棚", type: BUILDING_TYPE.TEAHOUSE,
+      desc: "镇口老槐树下搭的一顶破油布棚，粗瓷大碗盛着三分茶叶七分沫的川北老荫茶。茶不值两文钱，但花点碎银聊上几句，雅江到雪山的马蹄声都能听个七七八八。",
+    },
+    {
+      id: "wuguan_gaibang_zhuping", name: "破庙竹坪", type: BUILDING_TYPE.WUGUAN, skillSet: "丐帮",
+      desc: "庙前一块踩得比石板还硬的黄土坪，立着几排缺口累累的青竹桩。铁拐胡三天天拄着铁拐在坪边骂人，说叫花子的功夫不在好看，只在挨了打还能把对方绊个狗吃屎。",
+    },
+    {
+      id: "sectshop_gaibang", name: "分舵义坊", type: BUILDING_TYPE.SECTSHOP, shopKey: "三星分舵商坊",
+      desc: "藏在粥棚后耳房里的门派杂货柜，由白婶拿把缺齿铁算盘守着。卖的都是叫花子走南闯北攒下的实在物件，外客按规矩给钱，自己人凭交情能折。",
+    },
+    {
+      id: "pigeon_gaibang", name: "三星鸽舍", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 1,
+      desc: "搭在西厢房梁上的三层竹笼，养着川西飞得最稳的灰背山鸽。鸽爪上的小竹筒跑过雪山风雪，也穿过血刀部的刀林。",
+    },
+    {
+      id: "kitchen_gaibang_zhoupeng", name: "破庙大灶", type: BUILDING_TYPE.KITCHEN,
+      desc: "三口生铁大锅连灶而砌，常年飘着糙米粥与叫化土鸡的焦泥香。白婶嘴上嫌你费柴，真要借灶台炖锅肉汤，她反手就往你手里塞一把干花椒。",
+    },
+    {
+      id: "inn_gaibang_xiedian", name: "荒庙草铺", type: BUILDING_TYPE.INN, innPrice: 10,
+      desc: "东厢房里铺满晒干的新稻草，窗纸糊着泛黄的旧告示，夜里漏风却胜在干净安全。严九斤说出门在外讲究个落脚舒心，连血刀贼都不敢摸到这儿来。",
+    },
+  ],
   // ── 鱼定村（7 种，枢纽村） ──
   鱼定村: [
     {

@@ -94,7 +94,16 @@ const items = {
     name: "霜角", category: "weapon", quality: "橙", atkMul: 1.6,
     effect: { forceFirst: true, detonateMark: { perStackRatio: 0.4 } }, sixDim: { 身法: 2 },
     desc: "吊睛虎王骨长错位增生的一块硬骨，形如角。虎王撞断过一棵松树，骨裂愈合后多长这块，从此别的虎再不敢进那片松林——势不可挡，专破暗伤。",
-  }
+  },
+// ── 丐帮三星分舵（广汉）：分舵人物随身兵器与分舵义坊货 ──
+"老油青竹棒": { name: "老油青竹棒", category: "weapon", quality: "紫", atkMul: 1.4, effect: { lowHpBonus: 0.2 }, desc: "三十年老竹以桐油反复浸炙，沉重韧滑，严九斤拄了半辈子。棒头磨得发亮，打在人身上不见血，骨头里却要疼上三天。" },
+"铁算盘尺": { name: "铁算盘尺", category: "weapon", quality: "蓝", atkMul: 1.25, desc: "精铁包边的长尺，一头刻着刻度，一头嵌着七颗算珠。周小满白天拿它拨账，夜里拿它点穴格挡。" },
+"乌铁独脚拐": { name: "乌铁独脚拐", category: "weapon", quality: "紫", atkMul: 1.45, effect: { lowHpBonus: 0.15 }, desc: "碗口粗的枣木拐，头上包着乌铁，重逾二十八斤。胡三爷断腿之后拿它当腿，也拿它破甲。" },
+"铁柄大汤勺": { name: "铁柄大汤勺", category: "weapon", quality: "绿", atkMul: 1.15, desc: "厚铁打的大汤勺，白婶抡起来虎虎生风，曾一勺拍晕过偷米贼。勺沿上还挂着半粒米。" },
+"牧羊青竹棍": { name: "牧羊青竹棍", category: "weapon", quality: "白", atkMul: 1.05, desc: "一头缠着旧牛皮绳的青竹棍，多吉从玉泉寨一路拄到广汉，放牧赶羊用它，如今打狗练棒也用它。" },
+"残纹青竹板": { name: "残纹青竹板", category: "weapon", quality: "蓝", atkMul: 1.2, effect: { applyStatus: { name: "气乱", chance: 0.2 } }, desc: "两片老竹刻着半枚三星云雷纹，哑巴七拿来敲节拍。笃笃三声敲在耳边，对手的心神便乱了半拍。" },
+"晒干青竹棍": { name: "晒干青竹棍", category: "weapon", quality: "白", atkMul: 1.1, desc: "三星镇外砍来晒透的老竹，不及精铁锋利，胜在顺手韧长，新手练棒正好。" },
+"铁头打狗棒": { name: "铁头打狗棒", category: "weapon", quality: "蓝", atkMul: 1.3, desc: "选用五年老青竹，两端套上精铁箍，抽人带风、架刀不断，是四袋以上弟子的标配。" },
 };
 
 export default { item: items, itemGroup: { WEAPONS: Object.keys(items) } };
