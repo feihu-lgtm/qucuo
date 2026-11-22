@@ -140,9 +140,34 @@ describe("duel battle report", () => {
 });
 
 describe("narrateDuelInBackground", () => {
-  it("leaves the log alone when the AI fails", async () => {
+  const rounds = [{ round: 1, text: "你一拳直捣中宫，老孙侧身没能卸开" }];
+  const factLog = [{ t: "sys", text: "  第1回合", duelKey: "k", duelRound: 0 }, { t: "sys", text: "  结局 胜", duelKey: "k", duelEnd: true }];
+  const applied = (setLog) => setLog.mock.calls[0][0](factLog);
+
+  it("leaves the log alone when the AI fails and no phrase text exists", async () => {
     const setLog = vi.fn();
     await expect(narrateDuelInBackground("k", [], { outcomeText: "胜" }, { canAsk: () => true, ask: async () => null, setLog })).resolves.toBe(false);
     expect(setLog).not.toHaveBeenCalled();
+  });
+
+  it("falls back to phrase-pool lines without an API key", async () => {
+    const setLog = vi.fn();
+    const ask = vi.fn();
+    await expect(narrateDuelInBackground("k", rounds, { outcomeText: "胜" }, { canAsk: () => false, ask, setLog })).resolves.toBe("phrase");
+    expect(ask).not.toHaveBeenCalled();
+    expect(applied(setLog).map((entry) => entry.text)).toEqual(["  第1回合", "  你一拳直捣中宫，老孙侧身没能卸开", "  结局 胜"]);
+  });
+
+  it("falls back to phrase-pool lines when the AI call throws", async () => {
+    const setLog = vi.fn();
+    await expect(narrateDuelInBackground("k", rounds, {}, { canAsk: () => true, ask: async () => { throw new Error("down"); }, setLog })).resolves.toBe("phrase");
+    expect(applied(setLog)[1].duelProse).toBe(true);
+  });
+
+  it("prefers AI prose when it parses", async () => {
+    const setLog = vi.fn();
+    const ask = async () => JSON.stringify({ rounds: ["拳风呼呼"], ending: "老孙认输" });
+    await expect(narrateDuelInBackground("k", rounds, {}, { canAsk: () => true, ask, setLog })).resolves.toBe("ai");
+    expect(applied(setLog).map((entry) => entry.text)).toEqual(["  第1回合", "  拳风呼呼", "  结局 胜", "  老孙认输"]);
   });
 });

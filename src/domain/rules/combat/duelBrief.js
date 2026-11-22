@@ -3,7 +3,7 @@
 // 系统那一行只写算死的事实：招式名、伤害、状态，不写任何描写，所以不会出现
 // 「打的是拳、写成双刀」这种出戏。描写交给 AI 在后台补写：系统行先落日志、
 // 玩家立刻可以继续行动（刷级不用等），AI 写完再按 duelKey 原位插到对应的
-// 系统行下面；AI 没配、失败、或期间玩家回滚，就只留系统行。
+// 系统行下面；AI 没配或失败时改用短语池拼句兜底；期间玩家回滚就只留系统行。
 
 const sideName = (round, tag) => round?.result?.[`name${tag}`] || (tag === "A" ? "你" : "对手");
 const moveName = (round, tag) => (tag === "A" ? round?.playerMove?.name : round?.npcMove?.name)
@@ -73,6 +73,12 @@ export function parseDuelNarration(text, roundCount) {
   const ending = typeof data?.ending === "string" ? data.ending.trim() : "";
   if (!rounds.some(Boolean) && !ending) return null;
   return { rounds: rounds.slice(0, Math.max(0, Number(roundCount) || 0)), ending };
+}
+
+// 无 API 或 AI 失败时的兜底描写：用短语池按招式拼好的句子（buildDuelReportRounds 的 text）
+export function phraseNarration(rounds) {
+  const lines = (Array.isArray(rounds) ? rounds : []).map((round) => String(round?.text ?? "").trim());
+  return lines.some(Boolean) ? { rounds: lines, ending: "" } : null;
 }
 
 // 把描写原位插到对应系统行下面；找不到这场（已回滚）就原样返回
