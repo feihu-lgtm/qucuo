@@ -178,7 +178,7 @@ export async function resolveIntent(cmd, env) {
     return { proceed: false, summary };
   }
   if (innerResult) {
-    const summary = resolveInnerBlockedSummary(innerResult, movingDir, room.name, innerRoomName, { questProgress, flags, inv, char });
+    const summary = resolveInnerBlockedSummary(innerResult, movingDir, room.name, innerRoomName, { questProgress, flags, inv, char, varTree: varTreeRef.current });
     // 上锁的门要说清是缺哪把钥匙（lockedMsg），别跟"这个方向没路"混为一谈——
     // 玩家看见门却被告知"没有去处"会以为是 bug。
     applyLocal(innerResult, "内层移动");

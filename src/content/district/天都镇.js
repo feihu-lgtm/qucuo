@@ -101,7 +101,10 @@ export default { district: {
         desc: "满屋都是石臼、铜蒸馏甑与贴着天竺文标签的琉璃瓶，甜腻的药气里藏着一丝极淡的苦杏仁味，案头摊着未晒干的香泥。阿雅收各地送来的珍稀药材。",
         exits: { n: "晒香天井" },
         residentNpcName: "阿雅",
-        unlockCondition: { type: "questCompleted", questId: "huanxijiao_1_xiangzhongyi" },
+        unlockCondition: { type: "any", of: [
+          { type: "questCompleted", questId: "huanxijiao_1_xiangzhongyi" },
+          { type: "rep", faction: "欢喜教", min: 15 },
+        ] },
       },
       欢喜堂: {
         x: 4, y: 0,
@@ -116,7 +119,10 @@ export default { district: {
         desc: "青瓦连廊下晾着粗布工装与几把擦得雪亮的短弯刀，院角老槐树下摆着石桌茶壶，偶尔能听见大理调子的小曲和玉泉牧歌混在一处。",
         exits: { n: "欢喜堂" },
         residentNpcName: "桑杰",
-        unlockCondition: { type: "flag", flag: "欢喜教弟子" },
+        unlockCondition: { type: "any", of: [
+          { type: "flag", flag: "欢喜教弟子" },
+          { type: "rep", faction: "欢喜教", min: 40 },
+        ] },
       },
       伽罗秘龛: {
         x: 4, y: -1,
