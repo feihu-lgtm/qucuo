@@ -13,21 +13,29 @@
 import TurnStatusPill from "../components/TurnStatusPill.jsx";
 import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
 import CenterControlRows from "./CenterControlRows.jsx";
-import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { DevControls, TurnControls } from "./TopBar.jsx";
 import { chromeBtn } from "../../utils/theme.js";
-import { useState, useEffect } from "react";
-import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
-import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import LogEntry from "../components/LogEntry.jsx";
-import TradingScreen from "../screens/TradingScreen.jsx";
-import DebugPanel from "./DebugPanel.jsx";
-import { BasementScreen } from "../screens/buildings/ServiceScreen.jsx";
-import SeaOfMindScreen from "./SeaOfMindScreen.jsx";
-import { BUILDING_SCREENS } from "./buildingScreens.jsx";
 import { getBuildingInstanceKey } from "./buildingInstanceKey.js";
+
+// 按需加载：建筑/交易/地室/调试/心海等二级屏不进首屏主包，首次展开才下载。
+// 建筑屏路由表（buildingScreens.jsx）整个延后——表内登记的全部建筑屏随之出主包。
+const TradingScreen = lazy(() => import("../screens/TradingScreen.jsx"));
+const DebugPanel = lazy(() => import("./DebugPanel.jsx"));
+const BasementScreen = lazy(() => import("../screens/buildings/ServiceScreen.jsx").then(m => ({ default: m.BasementScreen })));
+const SeaOfMindScreen = lazy(() => import("./SeaOfMindScreen.jsx"));
+const BuildingScreens = lazy(async () => {
+  const { BUILDING_SCREENS } = await import("./buildingScreens.jsx");
+  return { default: ({ type, ctx }) => BUILDING_SCREENS[type]?.(ctx) ?? null };
+});
+
+function ScreenFallback({ zoneTheme }) {
+  return <div style={{ padding: "12px 16px", fontSize: 11.5, color: zoneTheme.textDim }}>载入中…</div>;
+}
 
 function isNarrativePlaceholder(entry) {
   if (!entry.streaming) return false;
@@ -118,6 +126,7 @@ export default function CenterPanel({
           </div>
 
           {showDebug && (
+            <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
             <DebugPanel
               isMobile={isMobile} zoneTheme={zoneTheme}
               char={char} setChar={setChar}
@@ -131,14 +140,17 @@ export default function CenterPanel({
               teleportLookRef={teleportLookRef}
               setSkills={setSkills} setInv={setInv}
             />
+            </Suspense>
           )}
 
           {/* ── 心灵之海·创伤安抚面板：只在她创伤发作时出现 ── */}
           {seaTraumaActive && (
+            <Suspense fallback={null}>
             <SeaOfMindScreen
               narratorVars={narratorVarsNow} invNames={invNames} zoneTheme={zoneTheme}
               onComfort={handleComfort} onResolve={handleResolveTrauma}
             />
+            </Suspense>
           )}
 
           <IntentConfirmBar zoneTheme={zoneTheme} />{/* ── 切磋确认：邀战叙事跑完后点确认才开打 ── */}
@@ -202,8 +214,7 @@ export default function CenterPanel({
               {(() => {
                 if (!activeBuilding) return null;
                 if (showBasement && (activeBuilding.type === BUILDING_TYPE.RESTAURANT || activeBuilding.type === BUILDING_TYPE.THEATER)) return null;
-                const renderScreen = BUILDING_SCREENS[activeBuilding.type];
-                return renderScreen && renderScreen({
+                const ctx = {
                   building: activeBuilding, char, time, zoneTheme, inv, skills, flags, questProgress,
                   dao, mapData, room, innerRoomName, varTree, queueCount, effectiveSpecialNow,
                   craftTab, tabs, isJade, runCommand, captureUndo, setDao, setChar, setInv, addLog, jotNote,
@@ -220,19 +231,28 @@ export default function CenterPanel({
                   handleForgeCommission, handleForgeDesign, handleJadeDesign, handleJadeCraft,
                   handleGambleTalk, handleGambleSettle, handleGambleInspect,
                   handleListenRumor, handleJoinSect, handleAuctionWin, handleCook,
-                });
+                };
+                return (
+                  <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+                    <BuildingScreens type={activeBuilding.type} ctx={ctx} />
+                  </Suspense>
+                );
               })()}
               {showBasement && (
+                <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
                 <BasementScreen char={char} time={time} zoneTheme={zoneTheme} inline
                   onClose={() => closeOverlay(OVERLAY.BASEMENT)} onOrder={handleServiceOrder} />
+                </Suspense>
               )}
               {tradingShop && (
+                <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
                 <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
                   playerInv={inv} playerMoney={char.money || 0} playerWit={effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={inspectItem}
                   onClose={() => setTradingShop(null)}
                   onBuy={(item) => runCommand("shopBuy", () => { if ((char.money || 0) < item.buyPrice) return; captureUndo(); setChar(c => ({ ...c, money: c.money - item.buyPrice })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); addLog([{ t: "item", text: `  你花费${item.buyPrice}两，购得「${item.name}」。` }]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
                   onSell={(item) => runCommand("shopSell", () => { if (item.equipped) return; captureUndo(); setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + item.sellPrice })); addLog([{ t: "item", text: `  你卖出「${item.name}」，得银两${item.sellPrice}两。` }]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
                 />
+                </Suspense>
               )}
             </div>
           )}
