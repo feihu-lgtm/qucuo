@@ -56,6 +56,7 @@ export default { district: {
         x: -1, y: -2,
         desc: "存放贵重物什的库房，门上挂着一把沉甸甸的铜锁，虎胆三重门\"夜闯偷虎胆\"场景发生地。",
         exits: { e: "议事厅" },
+        buildingId: "chest_yudingtusi",
       },
       桑杰朵杰书房: {
         x: 0, y: -3,

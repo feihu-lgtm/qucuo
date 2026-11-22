@@ -178,13 +178,13 @@ export function homesteadHouseOf(roomName) {
   return FEATURES_BY_ROOM[roomName]?.house || (HOMESTEAD_FEATURES[roomName] ? roomName : null);
 }
 
-export function loadChest(roomName) {
+export function loadChest(roomName, { prefill = true } = {}) {
   roomName = homesteadHouseOf(roomName) || roomName;
   try {
     const raw = localStorage.getItem(`qucuo_chest_${roomName}`);
-    // 键不存在（null）= 这只库房从没被开过 → 预填一套家底。
+    // 键不存在（null）= 这只库房从没被开过 → 预填一套家底（势力寄存箱 prefill=false 不预填）。
     // 注意区分 null（从没存过）与 "[]"（玩家主动清空过）：清空过的不再补货。
-    if (raw === null) return defaultChestStock();
+    if (raw === null) return prefill ? defaultChestStock() : [];
     return JSON.parse(raw || "[]");
   } catch { return []; }
 }

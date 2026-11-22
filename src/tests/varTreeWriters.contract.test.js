@@ -252,10 +252,10 @@ describe("stageRewardPatches+commitPatches：任务 stage 奖励 → setInv/setC
     expect(s2.varTree.角色.侠客.好感度).toBe(100);
   });
 
-  it("reputation → 世界.威望 增减（带 maxDelta 限幅）；flags → 并集去重", () => {
+  it("reputation → 世界.威望 按原值增减（不吃 AI 单次限幅，clamp -100~100）；flags → 并集去重", () => {
     const { s, setters } = harness(base());
     applyStageRewards({ reputation: 50, flags: ["new", "old", "new"], favorability: {}, favorabilitySet: {} }, setters);
-    expect(s.varTree.世界.威望).toBe(15); // 单次 ±15 限幅（非 mvu 也吃 maxDelta）
+    expect(s.varTree.世界.威望).toBe(50);
     expect(s.flags).toEqual(["old", "new"]);
   });
 

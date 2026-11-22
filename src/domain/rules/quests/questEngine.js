@@ -92,6 +92,7 @@ export function advanceQuestStages(quest, progress, gameState, now = Date.now())
 //                                                （比如村2走了C分支，村6就再也开不了）
 //   requiresFactionRep:     { [势力]: number }    —— 各势力声誉 ≥ 门槛
 //   requiresPrestige:       number             —— 全局威望（世界.威望）≥ 门槛
+//   requiresFavor:          { [人物]: number }    —— 人物好感（角色.<人物>.好感度，缺省 10）≥ 门槛
 //   requiresKnownNpc:       string[]           —— 这些人物必须已结识（世界.已认识人物）
 // 不涉及互斥锁（exclusiveGroup）那套逻辑，两者可以同时用在同一个任务上。
 // 声誉/威望门槛要传 varTree 才卡；没传（只做展示的调用方）时不卡。
@@ -100,6 +101,10 @@ export function questGateReqs(quest, varTree) {
     const have = factionRepOf(varTree, faction);
     return { key: `rep:${faction}`, label: `${faction}声誉 ≥ ${min}`, have, ok: have >= min };
   });
+  for (const [npc, min] of Object.entries(quest.requiresFavor || {})) {
+    const have = Number(varTree?.角色?.[npc]?.好感度 ?? 10);
+    reqs.push({ key: `favor:${npc}`, label: `${npc}好感 ≥ ${min}`, have, ok: have >= min });
+  }
   if (quest.requiresPrestige != null) {
     const have = Number(varTree?.世界?.威望) || 0;
     reqs.push({ key: "prestige", label: `威望 ≥ ${quest.requiresPrestige}`, have, ok: have >= quest.requiresPrestige });
@@ -113,6 +118,22 @@ export function questGateReqs(quest, varTree) {
     reqs.push({ key: `known:${name}`, label: `已结识${name}`, have: ok, ok });
   }
   return reqs;
+}
+
+// 分支选项的门槛（字段全部可选）：requiresQuestCompleted / requiresAnyOf 同任务门槛；
+// requiresFlag: string[] 全部持有；requiresFactionRep: { [势力]: number }；
+// requiresFavor: { [人物]: number }（角色.<人物>.好感度，缺省 10）。
+export function isQuestChoiceOpen(choice, { questProgress, flags, varTree } = {}) {
+  const isDone = (qid) => questProgress?.[qid]?.status === "completed";
+  if (choice.requiresQuestCompleted) {
+    const need = Array.isArray(choice.requiresQuestCompleted) ? choice.requiresQuestCompleted : [choice.requiresQuestCompleted];
+    if (!need.every(isDone)) return false;
+  }
+  if (choice.requiresAnyOf?.length && !choice.requiresAnyOf.some(isDone)) return false;
+  if (choice.requiresFlag?.some((f) => !flags?.includes(f))) return false;
+  if (Object.entries(choice.requiresFactionRep || {}).some(([faction, min]) => factionRepOf(varTree, faction) < min)) return false;
+  if (Object.entries(choice.requiresFavor || {}).some(([npc, min]) => Number(varTree?.角色?.[npc]?.好感度 ?? 10) < min)) return false;
+  return true;
 }
 
 export function isQuestGateOpen(quest, allProgress, flags, varTree) {

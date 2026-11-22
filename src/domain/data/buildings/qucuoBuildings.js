@@ -126,6 +126,12 @@ export const BUILDINGS_BY_LOCATION = {
       id: "pigeon_yudingtusi", name: "官驿鸽棚", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 1,
       desc: "府门檐下的鸽棚，养着往锦官城、雅江递公文的官鸽，鸽爪上的铜环刻着土司府的云雷纹。",
     },
+    {
+      id: "chest_yudingtusi", name: "客卿偏仓", type: BUILDING_TYPE.CHEST, house: "鱼定土司府客卿偏仓", emptyStock: true,
+      faction: "鱼定土司府", minRep: 40,
+      repLocked: "看库的老差役把钥匙往怀里一揣：「偏仓只给府里的客卿用。等你在土司府说得上话（声誉 ≥ 40）再来。」",
+      desc: "库房一角隔出来的杉木库箱，箱盖烙着土司府的云雷徽记，供受聘客卿与巡边差官暂存行囊军械。",
+    },
   ],
   // ── 鱼定村（7 种，枢纽村） ──
   鱼定村: [
@@ -233,6 +239,31 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "chest_shanbie", name: "山间别墅·库房", type: BUILDING_TYPE.CHEST, house: "山间别墅",
       desc: "二楼主卧那只大衣柜，空得很，正好放东西。柜底也备着一套食材家底。",
+    },
+    // ── 百花门（东街百花楼，合稿·建筑列表 2.2） ──
+    {
+      id: "rest_baihualou", name: "百花楼·前厅酒肆", type: BUILDING_TYPE.RESTAURANT, menuKey: "饭馆",
+      desc: "东街最热闹的销金窟，一碗玫瑰酿配半碟卤山鸡，既能暖胃解乏，也能听见半个天都镇醉汉吐出来的真话。",
+    },
+    {
+      id: "tea_baihua_tingfeng", name: "听风雅阁", type: BUILDING_TYPE.TEAHOUSE,
+      desc: "二楼垂着细竹帘的清静茶座，茶水比别处贵上三倍，买的却不是茶叶，而是大草甸商队、土司府官差与雾隐寨毒使的最新动向。",
+    },
+    {
+      id: "med_baihua_ange", name: "百花暗阁", type: BUILDING_TYPE.MEDICINE, shopKey: "百花暗阁",
+      desc: "藏在暖棚拐角的一间无匾药铺，货架上摆着祛瘴花露、苗银细针与做旧药水，掌柜花婆只认银子与熟面孔，不问来客买毒给谁吃。",
+    },
+    {
+      id: "hosp_baihua_qudu", name: "花医静室", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
+      desc: "暖棚东侧的净室，燃着驱虫艾草，花婆坐堂施针拔毒；伤重或中了奇毒的江湖客在此调理片刻便能立见起色。",
+    },
+    {
+      id: "wuguan_baihua_huapeng", name: "百花暖棚·传艺地", type: BUILDING_TYPE.WUGUAN, skillSet: "百花",
+      desc: "毒花丛里辟出的一方青石空地，白日里看像是姑娘们晒药的院子，入夜后兰姐与阿芷会在此指点楼中记名客卿淬毒、使鞭与穿花步法。",
+    },
+    {
+      id: "pigeon_baihua_caique", name: "彩雀暗檐", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 1,
+      desc: "屋脊阴面搭着一排刷了桐油的竹笼，养着几十只滇南驯化的绿背彩雀，每日可免费领走一只传书，比官驿快马更难被截杀。",
     },
   ],
 
