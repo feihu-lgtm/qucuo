@@ -40,7 +40,46 @@ export default { district: {
       寨口牧场: {
         x: 1, y: 1,
         desc: "小牧童阿索常在此处放牧，紧邻寨门。",
-        exits: { w: "寨门" },
+        exits: { w: "寨门", e: "寨门铁作棚" },
+        residentNpcName: "小牧童阿索",
+      },
+      寨门铁作棚: {
+        x: 2, y: 1,
+        desc: "寨门口的露天铁作棚，索朗在这里给全寨打马掌、打牧刀。",
+        exits: { w: "寨口牧场" },
+        buildingId: "forge_yuquan",
+        residentNpcName: "索朗",
+      },
+      巴登草药棚: {
+        x: -2, y: 2,
+        desc: "巴登阿妈的草药棚，棚檐下挂着一排晾晒的药草，空气里全是藏红花和艾绒味。",
+        exits: { e: "丹增蒙古包" },
+        buildingId: "hospital_yuquan",
+        residentNpcName: "巴登阿妈",
+      },
+      寨场酥油茶棚: {
+        x: 0, y: 3,
+        desc: "寨场边的酥油茶棚，牧民放完牧都爱来喝一碗热的。",
+        exits: { n: "玉泉小栈", w: "狼曲篝火灶台" },
+        buildingId: "teahouse_yuquan",
+      },
+      狼曲篝火灶台: {
+        x: -1, y: 3,
+        desc: "狼曲河边的公共篝火灶台，谁家炖了肉都往这儿凑。",
+        exits: { e: "寨场酥油茶棚", n: "丹增蒙古包" },
+        buildingId: "kitchen_yuquan",
+      },
+      玉泉茶马货栈: {
+        x: 2, y: 2,
+        desc: "茶马古道上的中转货栈，柜台后摞着茶砖、皮货和青稞酒坛。",
+        exits: { w: "玉泉练武场" },
+        buildingId: "shop_yuquan",
+      },
+      枯柳暗窖: {
+        x: 1, y: 0,
+        desc: "枯柳树根下的暗窖，黑风寨藏赃的地方——肉干、毛皮和小袋银子都码在里头。",
+        exits: { w: "狼曲河谷" },
+        unlockCondition: { type: "flag", flag: "yuquan_kuliu_unlocked" },
       },
     },
   }

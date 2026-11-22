@@ -45,6 +45,7 @@ import pack48 from "./district/蜀南唐堡.js";
 import pack49 from "./residentGroup/雾隐寨.js";
 import pack50 from "./district/雾隐寨.js";
 import pack51 from "./item/wuxian-1.js";
+import pack53 from "./item/yuquan-1.js";
 
 import quest0 from "./quest/tutorial-1.js";
 import quest1 from "./quest/tiger-1.js";
@@ -68,5 +69,6 @@ export const DEFAULT_CONTENT_PACKS = [
   pack15, pack16, pack17, pack18, pack19, pack20, pack21, pack22, pack23,
   pack24, pack25, pack26, pack27, pack28, pack29, pack30, pack31, pack32,
   pack33, pack34, pack35, pack36, pack37, pack38, pack39, pack40, pack41,
-  pack42, pack43, pack44, pack45, pack46, pack47, pack48, pack49, pack50, pack51, pack52,
+  pack42, pack43, pack44, pack45, pack46, pack47, pack48, pack49, pack50, pack51,
+  pack52, pack53,
 ];

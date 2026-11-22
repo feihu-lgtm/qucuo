@@ -61,6 +61,24 @@ export const QUCUO_SHOPS = {
       { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 100 },
     ],
   },
+  // 玉泉茶马货栈（玉泉寨·茶马古道中转站，合稿·玉泉寨 六）。白品日用人人有，
+  // 声誉 15/40/80 摆好物，rep100 深交出百年雪水青稞陈酿（合稿写限购两坛，引擎只支持买一次撤柜，先按 limitOnce）。
+  玉泉货栈: {
+    shopName: "玉泉茶马货栈",
+    items: [
+      { name: "狼曲酥油炒面", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "牦牛粪饼", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "羊皮护腿", category: ITEM_CATEGORY.ARMOR, quality: "白" },
+      { name: "绿松石铜戒", category: ITEM_CATEGORY.ACCESSORY, quality: "白" },
+      { name: "牧羊短刀", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "草原驯马长鞭", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "雪羊皮软甲", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "巴登跌打接骨膏", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 40 },
+      { name: "索朗精锻牧刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
+      { name: "狼牙护心铜镜", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 80 },
+      { name: "百年雪水青稞陈酿", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 100, limitOnce: true },
+    ],
+  },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。
