@@ -59,7 +59,7 @@ function walkSource(dir, out = []) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
     if (statSync(p).isDirectory()) walkSource(p, out);
-    else if (/\.jsx?$/.test(name) && !/\.test\./.test(name)) out.push(p);
+    else if (/\.(?:js|jsx|mjs|cjs)$/.test(name) && !/\.test\./.test(name)) out.push(p);
   }
   return out;
 }
@@ -95,14 +95,16 @@ describe("src 下没有零入度的死文件", () => {
 
   it("import 图零入度且不在入口白名单 → 报出来", () => {
     const files = walkSource(SRC_DIR).map((f) => resolve(f));
+    const srcFiles = new Set(files);
+    const importers = [...files, ...walkSource("cli").map((f) => resolve(f))];
     const rel = (f) => relative(resolve(SRC_DIR), f);
-    const deps = new Map(files.map((f) => [f, new Set()]));
-    for (const f of files) {
+    const deps = new Map(importers.map((f) => [f, new Set()]));
+    for (const f of importers) {
       for (const path of localImports(readFileSync(f, "utf-8"))) {
         let p = join(f, "..", path);
-        if (!/\.(js|jsx)$/.test(p)) p += ".js";
+        if (!/\.(?:js|jsx|mjs|cjs)$/.test(p)) p += ".js";
         const r = resolve(p);
-        if (files.includes(r)) deps.get(f).add(r);
+        if (srcFiles.has(r)) deps.get(f).add(r);
       }
     }
 
