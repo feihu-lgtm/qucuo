@@ -57,6 +57,11 @@
   --black: #000;
   --white: #fff;
 
+  /* 调试面板定色（原字面量，不随日间模式变）。 */
+  --debug-close: #e0806a;
+  --debug-close-edge: #5a3a2a;
+  --debug-text: #9a9482;
+
   /* 任务列表定色（右栏和日志共用）。 */
   --quest-stage-count: #6a8aaa;
   --quest-stage-desc: #a89a6a;
