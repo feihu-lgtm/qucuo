@@ -38,9 +38,9 @@ export default function WuguanScreen({ building, char, skills, flags, questProgr
                   </div>
                   <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 8 }}>{item.desc}</div>
                   {owned
-                    ? <span style={{ color: "#3a5a3a", fontSize: 11 }}>✓ 已习得</span>
+                    ? <span style={{ color: "var(--skill-learned)", fontSize: 11 }}>✓ 已习得</span>
                     : !unlock.ok
-                      ? <span style={{ color: "#6a5a4a", fontSize: 11 }}>尚不可学：{unlock.reason}</span>
+                      ? <span style={{ color: "var(--wuguan-locked)", fontSize: 11 }}>尚不可学：{unlock.reason}</span>
                     : item.insight
                       ? (() => {
                         // 参悟类：不花钱，看门槛。够不到就明说还差多少——
@@ -50,7 +50,7 @@ export default function WuguanScreen({ building, char, skills, flags, questProgr
                         const ok = cur >= item.insight.threshold;
                         return ok
                           ? <Btn label="参悟" zoneTheme={zoneTheme} onClick={() => onBuySkill(item)} />
-                          : <span style={{ color: "#6a5a4a", fontSize: 11 }}>
+                          : <span style={{ color: "var(--wuguan-locked)", fontSize: 11 }}>
                               壁上剑痕看得见，看不懂——{item.insight.label} {cur}/{item.insight.threshold}
                             </span>;
                       })()
