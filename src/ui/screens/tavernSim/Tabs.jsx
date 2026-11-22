@@ -152,7 +152,7 @@ export function LedgerTab({ sim, zoneTheme }) {
           <div style={{ color: "var(--ink-warn)", fontSize: 12, marginBottom: 3 }}>第 {r.day} 日</div>
           <div style={{ color: "var(--ink-text-dim)", fontSize: 11 }}>
             客 {r.guests}（成 {r.served} / 失 {r.lost}）· 营收 {r.revenue} · 工钱 {r.wages}
-            {r.bookLoss > 0 ? ` · 损耗 ${r.bookLoss}` : ""} · <span style={{ color: r.net >= 0 ? "var(--ink-fern)" : "#a45a5a" }}>净 {r.net}</span>
+            {r.bookLoss > 0 ? ` · 损耗 ${r.bookLoss}` : ""} · <span style={{ color: r.net >= 0 ? "var(--ink-fern)" : "var(--tavern-loss)" }}>净 {r.net}</span>
             {r.creditGain > 0 ? ` · 回款 ${r.creditGain}` : ""}
           </div>
           {sim.nightReports[r.day] && (

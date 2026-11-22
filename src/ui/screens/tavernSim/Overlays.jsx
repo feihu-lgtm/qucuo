@@ -17,9 +17,9 @@ export function LogPanel({ log, zoneTheme }) {
       {log.slice(-60).map((l, i) => (
         <div key={i} style={{
           fontSize: 12, lineHeight: 1.8,
-          color: l.kind === "gold" ? "var(--ink-warn)" : l.kind === "event" ? "#b08ad4" : "var(--ink-text-dim)",
+          color: l.kind === "gold" ? "var(--ink-warn)" : l.kind === "event" ? "var(--tavern-event)" : "var(--ink-text-dim)",
         }}>
-          <span style={{ color: "#4a4a3a", fontSize: 10 }}>[{l.day}日·{TICK_LABELS[l.tick]}] </span>
+          <span style={{ color: "var(--tavern-log-time)", fontSize: 10 }}>[{l.day}日·{TICK_LABELS[l.tick]}] </span>
           {l.text}
         </div>
       ))}
@@ -34,7 +34,7 @@ export function EventModal({ sim, zoneTheme, onResolve }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(4,4,10,0.8)", zIndex: 60,
       display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`,
+      <div style={{ background: zoneTheme.panelBg || "var(--building-panel-bg)", border: `1px solid ${zoneTheme.border}`,
         borderRadius: 0, width: 400, maxWidth: "92vw", padding: 18 }}>
         <div style={{ color: "var(--ink-warn)", fontSize: 14, marginBottom: 8 }}>⚠ {ev.title}</div>
         <div style={{ color: "var(--ink-text)", fontSize: 12, lineHeight: 1.8, marginBottom: 14 }}>{ev.desc}</div>
