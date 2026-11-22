@@ -3,7 +3,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const SCREEN = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "QuickBattleScreen.jsx"), "utf-8");
+// 锚点跟代码走：拆屏后 CSS 在 qbShared.js（QB_CSS），类名在 PickScreen/BattleScreen。
+const DIR = dirname(fileURLToPath(import.meta.url));
+const SCREEN = ["QuickBattleScreen.jsx", "qbShared.js", "PickScreen.jsx", "BattleScreen.jsx"]
+  .map(f => readFileSync(join(DIR, f), "utf-8")).join("\n");
 
 describe("Quick Battle mobile candidate grid", () => {
   it("sizes rows to card content at every width and keeps mobile cards tappable", () => {
