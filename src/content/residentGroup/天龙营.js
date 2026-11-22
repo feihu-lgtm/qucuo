@@ -30,6 +30,7 @@ export default { residentGroup: {
     },
     {
       name: "贺兰昭", id: "resident_helanzhao", levelCap: 3,
+      goneFlags: ["quest_tian3_b"],
       brief: "天龙教女医官，西谷药庐主事，天王旧部里人缘最好的一个",
       personality: "手上是药，眼里是人；谁身上有伤她都管，管完才问你站哪一边",
       carry: [

@@ -79,9 +79,9 @@ describe("拜入天龙教", () => {
 });
 
 describe("天龙教武学声誉解锁", () => {
-  const learnable = (value, flags = []) => Object.values(SKILL_CATALOG)
+  const learnable = (value, flags = [], questProgress = {}) => Object.values(SKILL_CATALOG)
     .flat()
-    .filter((skill) => skillUnlockStatus({ varTree: rep(value), flags }, skill).ok)
+    .filter((skill) => skillUnlockStatus({ varTree: rep(value), flags, questProgress }, skill).ok)
     .map((skill) => skill.name);
 
   it("梯度 0/15/40 开门面，80/100 只认门内弟子", () => {
@@ -90,6 +90,9 @@ describe("天龙教武学声誉解锁", () => {
     expect(learnable(40)).toContain("止戈印");
     expect(learnable(100)).not.toContain("龙渊霸世劲");
     expect(learnable(100)).not.toContain("八部天龙经");
-    expect(learnable(100, [SECT_MEMBER_FLAGS.天龙教])).toEqual(expect.arrayContaining(["龙渊霸世劲", "血刀大法", "八部天龙经"]));
+    expect(learnable(100, [SECT_MEMBER_FLAGS.天龙教])).toEqual(expect.arrayContaining(["龙渊霸世劲", "血刀大法"]));
+    expect(learnable(100, [SECT_MEMBER_FLAGS.天龙教])).not.toContain("八部天龙经");
+    const tianwangDone = { tianlong_5_baiqizhige: { status: "completed" } };
+    expect(learnable(100, [SECT_MEMBER_FLAGS.天龙教], tianwangDone)).toContain("八部天龙经");
   });
 });

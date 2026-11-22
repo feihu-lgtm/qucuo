@@ -73,7 +73,7 @@ describe("府5·斗地主", () => {
   });
 
   it("各家援军按合稿削弱亲兵，鱼定村走暗渡奇袭", () => {
-    const all = [F.gaibangAlly, F.heifengRaid, F.tangmenAlly, F.xueshanAlly, F.emeiAlly, F.baihuaAlly, F.yudingAlly, F.huanxiLuoqi];
+    const all = [F.gaibangAlly, F.heifengRaid, F.tangmenAlly, F.xueshanAlly, F.emeiAlly, F.baihuaAlly, F.yudingAlly, F.huanxiLuoqi, F.tianlongLongwang];
     expect(open("guard", all)).toEqual(stage("guard").completionFlag);
     const caps = Object.fromEntries(stage("guard").choices.map((c) => [c.flag, c.combatNpc?.levelCap ?? null]));
     expect(caps).toMatchObject({ quest_ts5_guard: 4, quest_ts5_guard_emei: 3, quest_ts5_guard_baihua: 2, quest_ts5_guard_yuding: null, quest_ts5_guard_huanxi: null });
@@ -92,7 +92,23 @@ describe("府5·斗地主", () => {
     for (const f of [F.emeiAlly, F.wuxianAlly, F.gaibangScouts]) expect(open("xuedao", [f]), f).toContain("quest_ts5_xuedao_weak");
     for (const f of [F.wuxianPoisonTusi, F.tangmenAlly, F.baihuaAlly]) expect(open("xuedao", [f]), f).toEqual(["quest_ts5_xuedao"]);
     const caps = Object.fromEntries(stage("xuedao").choices.map((c) => [c.flag, c.combatNpc?.levelCap ?? null]));
-    expect(caps).toEqual({ quest_ts5_xuedao: 4, quest_ts5_xuedao_weak: 3, quest_ts5_xuedao_suppressed: 2, quest_ts5_xuedao_held: null });
+    expect(caps).toEqual({ quest_ts5_xuedao: 4, quest_ts5_xuedao_weak: 3, quest_ts5_xuedao_suppressed: 2, quest_ts5_xuedao_held: null,
+      quest_ts5_xuedao_disbanded: null, quest_ts5_xuedao_turned: null });
+  });
+
+  it("天龙教：天王线解散血刀部不用打，龙王线血刀部随黑旗攻府、铁骑冲散亲兵、战后黑旗入曲措", () => {
+    expect(open("xuedao", [F.tianlongTianwang])).toContain("quest_ts5_xuedao_disbanded");
+    expect(open("xuedao", [F.tianlongLongwang])).toContain("quest_ts5_xuedao_turned");
+    expect(open("guard", [F.tianlongLongwang])).toContain("quest_ts5_guard_longwang");
+    expect(open("guard", [F.tianlongTianwang])).toEqual(["quest_ts5_guard"]);
+    expect(open("aftermath", [F.tianlongLongwang, F.meiduoRegent])).toEqual(["quest_ts5_blackflag"]);
+    expect(open("aftermath", [F.tianlongTianwang, F.meiduoRegent])).toEqual(["quest_ts5_regent", "quest_ts5_settle"]);
+    expect(resolveStageRewards(stage("aftermath"), ["quest_ts5_blackflag"]).flags).toEqual(expect.arrayContaining(["tusi_finale_won", "tusi_black_flag_rule"]));
+  });
+
+  it("玉泉寨断南线补给，血刀部降到档位 3；向导耳目与全寨备马合稿没写对战局的效果，不接", () => {
+    expect(open("xuedao", [F.yuquanAlly])).toContain("quest_ts5_xuedao_weak");
+    for (const f of [F.yuquanEyes, F.yuquanFull]) expect(open("xuedao", [f]), f).toEqual(["quest_ts5_xuedao"]);
   });
 
   it("梅朵代管要府4推举或锦官城支持继位，结局都记终局胜利", () => {
