@@ -20,6 +20,8 @@
 //   quality —— 采到物的品质（默认「白」）；hint —— 给 AI 的取物方式提示（进 prompt）。
 // ============================================================================
 
+import { isAtQuestPlace, parseQuestPlace, questPlaceDistrict } from "./questPlace.js";
+
 // 把 collect 归一成数组，空则返回 []
 function normalizeCollect(collect) {
   if (!collect) return [];
@@ -72,12 +74,14 @@ export function pendingGroundItems(roomName, ctx) {
     if (!prog || prog.status !== "active") continue;
     const stage = getCurrentStage(quest, prog);
     for (const c of normalizeCollect(stage && stage.collect)) {
-      if (c.at !== roomName) continue;
+      if (questPlaceDistrict(c.at) !== roomName) continue;
       if (invHasItem(inv, c.item)) continue; // 已采过：不再刷新到地上
       if (groundHasItem(roomItems, c.item)) continue; // 地上已有：别重复
       if (seen.has(c.item)) continue;
       seen.add(c.item);
-      out.push({ name: c.item, id: `collect_${c.item}` });
+      // 采集物放在任务地点写明的那间内层房间（见 questPlace.js）
+      const inner = parseQuestPlace(c.at)?.inner;
+      out.push({ name: c.item, id: `collect_${c.item}`, ...(inner ? { innerRoom: inner } : {}) });
     }
   }
   return out;
@@ -102,7 +106,7 @@ export function detectCollectPickup(cmd, roomName, roomItems, ctx) {
     if (!prog || prog.status !== "active") continue;
     const stage = getCurrentStage(quest, prog);
     for (const c of normalizeCollect(stage && stage.collect)) {
-      if (c.at !== roomName) continue;
+      if (questPlaceDistrict(c.at) !== roomName) continue;
       if (invHasItem(inv, c.item)) continue;
       if (!groundHasItem(roomItems, c.item)) continue;
       candidates.push({ quest, stage, item: c.item });
@@ -146,14 +150,14 @@ export function alreadySatisfiedCollectStages(ctx) {
 
 // 给 prompt 用：当前据点有哪些采集物在地上等着采（附取物提示），供 AI 叙述参考。
 export function collectPromptLines(roomName, ctx) {
-  const { questProgress, quests, getCurrentStage, inv } = ctx;
+  const { questProgress, quests, getCurrentStage, inv, innerRoomName } = ctx;
   const lines = [];
   for (const quest of quests) {
     const prog = questProgress[quest.id];
     if (!prog || prog.status !== "active") continue;
     const stage = getCurrentStage(quest, prog);
     for (const c of normalizeCollect(stage && stage.collect)) {
-      if (c.at !== roomName) continue;
+      if (!isAtQuestPlace(c.at, roomName, innerRoomName)) continue;
       if (invHasItem(inv, c.item)) continue;
       const way = c.hint ? `（${c.hint}）` : "";
       lines.push(`此处可采集《${quest.title}》所需的「${c.item}」${way}`);

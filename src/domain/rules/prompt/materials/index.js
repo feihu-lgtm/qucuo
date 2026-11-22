@@ -13,10 +13,11 @@
 // 远景复用 memory/daySummary.js 的 buildDistantViewBlock。
 
 import { CATEGORY_LABEL, QUALITY } from "../../economy/equipment.js";
-import { hasInnerMap } from "../../map/innerMap.js";
+import { getInnerRoom, hasInnerMap } from "../../map/innerMap.js";
 import { getPresentNpcs } from "../../state/fields.js";
 import { buildDistantViewBlock } from "../../memory/daySummary.js";
 import { isNpcKnown } from "../../npc/npcAwareness.js";
+import { getGroundItems } from "../../map/groundScope.js";
 
 const INNER = (snap) => snap.innerRoom ?? snap.innerRoomName ?? "";
 const cut = (text, n) => {
@@ -131,7 +132,7 @@ export function items(snap) {
   if (theirs.length) groups.push(`对方身上：\n${theirs.join("\n")}`);
   const mine = (snap.inv || []).map((i) => itemLine(i, "我")).filter(Boolean);
   if (mine.length) groups.push(`我身上：\n${mine.join("\n")}`);
-  const ground = (snap.room?.items || []).map((i) => itemLine(i, "地上")).filter(Boolean);
+  const ground = getGroundItems({ room: snap.room, innerRoomName: INNER(snap) }).map((i) => itemLine(i, "地上")).filter(Boolean);
   if (ground.length) groups.push(`地上：\n${ground.join("\n")}`);
   return groups.length ? `【双方物品】\n${groups.join("\n")}` : "";
 }
@@ -142,7 +143,8 @@ export function venue(snap) {
   if (!room?.name) return "";
   const inner = INNER(snap);
   const place = hasInnerMap(room.name) && inner ? `${room.name}·${inner}` : room.name;
-  return `【场地】${place}${room.desc ? `\n${room.desc}` : ""}`;
+  const desc = (hasInnerMap(room.name) && inner && getInnerRoom(room.name, inner)?.desc) || room.desc;
+  return `【场地】${place}${desc ? `\n${desc}` : ""}`;
 }
 
 // ── 和对方的旧账：varTree.角色[名].旧账 { lines, updatedTurn }，防御性读取 ──

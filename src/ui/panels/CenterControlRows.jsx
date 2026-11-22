@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import GroundItemStrip from "../components/GroundItemStrip.jsx";
 import { chromeBtn } from "../../utils/theme.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 
 const MODES = [
   ["action", "行动", "◈ 行动"],
@@ -19,7 +20,7 @@ export default function CenterControlRows({
   const [openMenu, setOpenMenu] = useState(initialOpenMenu);
   const rootRef = useRef(null);
   const visibleNpcs = (room?.npcs || []).filter(npc => isNpcVisibleInInnerRoom(room?.name, innerRoomName, npc));
-  const groundItems = room?.items || [];
+  const groundItems = getGroundItems({ room, innerRoomName });
   const showPeople = interactMode !== "pigeon" && visibleNpcs.length > 0;
   const peopleDisabled = interactMode === "whisper";
   const selectedMode = MODES.find(([id]) => id === interactMode)?.[1] || "行动";

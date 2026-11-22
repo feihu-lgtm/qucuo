@@ -90,3 +90,28 @@ describe("emitRoomHeader", () => {
     expect(src).not.toMatch(/t:\s*"d\./);
   });
 });
+
+describe("writeRoom 首次到访不把出发房间的人带过来", () => {
+  it("AI 写某人跟来，系统不采纳；新出现的路人照常保留", () => {
+    const out = writeRoom({
+      isTalk: false, lockedDestName: FIXED, roomMap: {}, outerDepart: null, mapData: {}, pendDir: null, freshNpcData: new Map(),
+      room: { name: "出发地", npcs: [{ name: "老孙" }] },
+      p: { room: { name: FIXED, npcs: [{ name: "老孙" }, { name: "路人甲" }] } },
+    }, { traceStep: () => {} });
+    expect(out.changes.room.npcs.map((n) => n.name)).toEqual(["路人甲"]);
+  });
+});
+
+describe("writeRoom 原地互动只改写本房间的地上物", () => {
+  it("AI 报的地上物名单不会抹掉别的内层房间的东西", () => {
+    const district = Object.keys(QUCUO_MAP).find((name) => name === "顶峰");
+    const out = writeRoom({
+      isTalk: false, lockedDestName: null, roomMap: {}, outerDepart: null, mapData: {}, pendDir: null, freshNpcData: new Map(),
+      room: { name: district, npcs: [] }, innerRoomName: "峰道入口",
+      p: { room: { desc: "风雪", items: [{ name: "冻硬的旧经幡" }] } },
+    }, { traceStep: () => {} });
+    const next = out.changes.room({ name: district, npcs: [], items: [{ name: "霜天月", innerRoom: "雪山崖底" }] });
+    expect(next.items.map((item) => item.name)).toEqual(["霜天月", "冻硬的旧经幡"]);
+    expect(next.items[1].innerRoom).toBe("峰道入口");
+  });
+});

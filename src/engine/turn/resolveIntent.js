@@ -22,6 +22,7 @@ import {
 } from "../../features/map/logic.js";
 import { rollMovementEvents } from "../../features/map/encounter.js";
 import { turnMonitor, withTurnContext } from "../ports/turnMonitor.js";
+import { getGroundItems, removeGroundItems } from "../../domain/rules/map/groundScope.js";
 
 export async function resolveIntent(cmd, env) {
   const { opts, extraReplies, interactMode, apiCfg, gm, _trace } = env;
@@ -253,11 +254,11 @@ export async function resolveIntent(cmd, env) {
   // alreadySatisfiedCollectRule 接管（采齐才推进）。
   let collectNote = "";
   collectGrantedRef.current = [];
-  const collectHit = judgeCollect({ isTalk, cmd, room, questProgress, inv });
+  const collectHit = judgeCollect({ isTalk, cmd, room, innerRoomName, questProgress, inv });
   if (collectHit) {
     withTurnContext(_trace, () => {
       setInv(v => [...v, collectHit.gained]);
-      setRoom(r => ({ ...r, items: (r.items || []).filter(i => (typeof i === "string" ? i : i.name) !== collectHit.item) }));
+      setRoom(r => ({ ...r, items: removeGroundItems(r.items, [collectHit.item], r.name, innerRoomName) }));
     });
     collectGrantedRef.current = [collectHit.item];
     addLog([{ t: "item", text: `  ✓ 你采得「${collectHit.item}」，收入背包。` }]);
@@ -273,7 +274,7 @@ export async function resolveIntent(cmd, env) {
 
   const activeGroundItemForTurn = env.state.activeGroundItem
     && collectHit?.item !== env.state.activeGroundItem
-    && (room.items || []).some(item => (typeof item === "string" ? item : item?.name) === env.state.activeGroundItem)
+    && getGroundItems({ room, innerRoomName }).some(item => (typeof item === "string" ? item : item?.name) === env.state.activeGroundItem)
     ? env.state.activeGroundItem
     : null;
 

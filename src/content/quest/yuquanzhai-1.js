@@ -47,9 +47,9 @@ export default { quest: {
         playerHint: "凑齐三样材料：熊山野山羊筋、天都镇孟记铁铺铜箍、鱼定村杂货商的桐油。",
         completionFlag: "quest_yuquanzhai3_s1",
         collect: [
-          { item: "熊山野山羊筋", at: "熊山口", quality: "白", hint: "草甸边缘猎得野山羊，抽其后腿筋" },
-          { item: "孟记铁铺铜箍圈", at: "天都镇", quality: "白", hint: "天都镇孟记铁铺现打" },
-          { item: "桐油", at: "鱼定村", quality: "白", hint: "向鱼定村杂货商赵掌柜讨" },
+          { item: "熊山野山羊筋", at: "大草甸·熊山口", quality: "白", hint: "草甸边缘猎得野山羊，抽其后腿筋" },
+          { item: "孟记铁铺铜箍圈", at: "天都镇·孟记铁铺", quality: "白", hint: "天都镇孟记铁铺现打" },
+          { item: "桐油", at: "鱼定村·杂货铺摊位", quality: "白", hint: "向鱼定村杂货商赵掌柜讨" },
         ],
         onReach: { exp: 2 },
       },

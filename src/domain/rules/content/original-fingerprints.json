@@ -6,7 +6,7 @@
       "entryCount": 65,
       "orderedIdsSha256": "a0424dc3c8d0064c029f9296d1cde1a3009b065b513c3d8bbf0f6e1ea8f673f2",
       "totalFieldCount": 3092,
-      "jsonSha256": "76f1c95e28e4ffcc240c169452ec4c1cfce2e37f93a404f36db91d89942c4cb3"
+      "jsonSha256": "754883d2c410f7a3e4a6335df33f115564dccb8f418c46f6cf41f62fafab9eaf"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -189,8 +189,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 2164,
-      "jsonSha256": "723ef02a7eabd07b5f022e8bd0e17925f682ca7a74bdd3695f62416d2fba935c"
+      "totalFieldCount": 2189,
+      "jsonSha256": "e02a16d8b44c6e4a09282334215ade92df1e6148c50fa3bc74123ce013dd4974"
     },
     "INNER_MAP": {
       "entryCount": 20,

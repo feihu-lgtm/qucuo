@@ -34,10 +34,10 @@ export function renderFieldScales(paths, scope = {}, trace) {
 const PLAYER = "主角:@主角.名〔@主角.性别〕";
 const LOCATION = "时间:@时间 " + PLAYER + " 房间:@房间.名 出口:@房间.出口 NPCs:@在场NPC";
 const VITALS = "HP:@气血 内功:@内功 外功:@外功";
-const MAIN_STATE_TEMPLATE = LOCATION + " 物品:@地上物品 " + VITALS +
+const MAIN_STATE_TEMPLATE = LOCATION + "\n此处:@房间.描写\n地上物品:@地上物品 " + VITALS +
   " 七维:@特殊属性 背包:@背包 装备:@装备 武功:@武学 因果:@道德 劫数:@劫数\n[已触发事件] @标记@今日起居";
 const PREVIEW_STATE_TEMPLATE = LOCATION + " " + VITALS + " 背包:@背包";
-const WHISPER_STATE_TEMPLATE = PLAYER + " 时间:@时间 房间:@房间.名（@room.desc） 房间里的人:@在场NPC 玩家背包:@背包";
+const WHISPER_STATE_TEMPLATE = PLAYER + " 时间:@时间 房间:@房间.名（@房间.描写） 房间里的人:@在场NPC 玩家背包:@背包";
 
 export function buildMainStatePrompt(scope, { gmNote = "", preview = false, trace } = {}) {
   const promptRefOptions = preview

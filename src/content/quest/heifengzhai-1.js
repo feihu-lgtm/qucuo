@@ -11,7 +11,7 @@ export default { quest: {
         description: "三种应对：A.交钱过路——疤脸汉子收钱后给一块桃木牌，「以后走这条路，亮牌就不收第二次」；B.交手——点到为止，打完扔木牌，「不错，但下次别逞能」；C.亮出玉泉寨相关信物（若已完成扎西线或丹增马鞭任务）——他把收的过路费倒还一半，「自己人，早说」。",
         playerHint: "狼曲河谷遇上黑风寨的人拦路——交钱、动手、或亮出玉泉寨的交情。",
         completionFlag: ["quest_heifengzhai1_a", "quest_heifengzhai1_b", "quest_heifengzhai1_c"],
-        at: "狼曲河谷",
+        at: "玉泉寨·狼曲河谷",
         choices: [
           { flag: "quest_heifengzhai1_a", label: "交钱过路", resolve: "none" },
           { flag: "quest_heifengzhai1_b", label: "交手，点到为止", resolve: "combat", combatNpc: { name: "疤脸汉子", levelCap: 2, tag: "heifengzhai_kuangdao", hostile: true } },
@@ -66,7 +66,7 @@ export default { quest: {
         description: "山坳里的木寨寨门不关，老人晒草药、妇人纳鞋底——不像匪窝，像村子。巴桑在寨后岩洞（无虎皮大椅，只一块青石板摊着狼曲地形图）见玩家，接过银锁片看了很久塞进怀里：「她让你带来的？」不等回答便转开话题，讲起十年前「戍边税」从未用于戍边、牦牛被牵抵税、阿爸气倒半年后死的往事——「我爹咽气前说，穷归穷，别学他们那样。」岩壁上刻着木炭字寨规——不抢救命口粮、不伤妇孺、不碰玉泉寨的人，「不是写给你看的，是写给新来的人看的」。",
         playerHint: "上黑风寨去见巴桑，把银锁片交给他。",
         completionFlag: "quest_heifengzhai3_s1",
-        at: "黑风寨",
+        at: "黑风寨·寨后岩洞",
         deliver: { item: "半块银锁片", to: "巴桑" },
         isCgMoment: true,
         onReach: { exp: 3, favorability: { "巴桑": 20 }, flags: ["lore_heifengzhai_zhenxiang"] },
@@ -87,7 +87,7 @@ export default { quest: {
         description: "巴桑把刀横在柜台上不动手：「你卖药，我买，按市价加一成……我不砸你的铺子，也不动你的人。我就站门口，让你的客人不敢进门。」掌柜满头大汗又不敢报官。玩家可协助谈判或直接帮忙搬药，最终以正常价买到雪山续断（治骨伤）、枇杷膏（清肺）、决明子（敷眼）。巴桑临走多留一块碎银：「茶钱。刚才刀搁你桌上，吓着你了。这不是赔礼——是让你记住，我们来买药，你卖药，公平交易。」",
         playerHint: "巴桑在药铺跟掌柜僵着——听他要什么，看你帮谁。",
         completionFlag: "quest_heifengzhai35_s1",
-        at: "鱼定村",
+        at: "鱼定村·西头药铺",
         choices: [
           {
             flag: "quest_heifengzhai35_s1",
@@ -131,7 +131,7 @@ export default { quest: {
         description: "巴桑两手准备——老弱撤后山岩洞，青壮在狼曲河谷设伏。玩家两个选择：协助布置绊马索火油陷阱；或去锦官城拖延亡命徒出发（若已完成官2-A或官2-B，柳青鸢默许，冷笑一句「管家的胆子比他的俸禄涨得快」，给一份城门值守换岗时间表）。",
         playerHint: "帮巴桑备战——布置陷阱，或去锦官城拖住亡命徒。",
         completionFlag: "quest_heifengzhai4_s1",
-        at: "黑风寨",
+        at: "黑风寨·寨后岩洞",
         onReach: { exp: 3 },
       },
       {
@@ -139,7 +139,7 @@ export default { quest: {
         description: "若拖延成功，巴桑以逸待劳，亡命徒摸黑进谷折了大半，剩下的被堵在隘口——巴桑不杀俘，收兵器放归：「回去告诉管家，下次自己来。」若寨中老弱无伤亡，巴桑赠玩家缴获的佣兵头子佩刀：「官府的人雇山贼杀山贼。这把刀，你留着当个笑话看。」",
         playerHint: "回狼曲河谷,看这场伏击的结果。",
         completionFlag: "quest_heifengzhai4_s2",
-        at: "狼曲河谷",
+        at: "玉泉寨·狼曲河谷",
         isCgMoment: true,
         onReach: {
           exp: 4,
@@ -164,7 +164,7 @@ export default { quest: {
         description: "「我爹那年被牵走的两头牦牛，记在第三册第四十二页……他气不过，是因为差役牵牛时把他推倒在地，周围站满了人，没人敢扶。」巴桑交出税册，不为报仇：「给谁看，你定。才旦要重立界石，她需要知道村里人当年交了多少冤枉税；柳都事在查土司府的账，这税册能帮她补上最后一块拼图；梅朵想改土司府的规矩，她得先知道她爹的规矩有多烂。」三选不互斥，唯一要求——「给他们看了之后，不必提我的名字……我爹的名字也在册子上。提册子，就是提他了。」",
         playerHint: "巴桑要跟你交底了，坐下听他把旧账说完。",
         completionFlag: "quest_heifengzhai5_s1",
-        at: "黑风寨",
+        at: "黑风寨·寨后岩洞",
         isCgMoment: true,
         onReach: {
           exp: 5,

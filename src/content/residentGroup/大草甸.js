@@ -16,7 +16,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "血刀门徒·初七", id: "resident_xuedao_chuqi", levelCap: 2,
+      name: "血刀门徒·初七", innerRoom: "血刀营地", id: "resident_xuedao_chuqi", levelCap: 2,
       brief: "血刀门徒，没有名字只有编号",
       personality: "不说话，只看你带没带兵器；带了就笑，不带也笑",
       carry: [
@@ -30,7 +30,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "血刀门徒·十三", id: "resident_xuedao_shisan", levelCap: 2,
+      name: "血刀门徒·十三", innerRoom: "血刀营地", id: "resident_xuedao_shisan", levelCap: 2,
       brief: "血刀门徒，没有名字只有编号",
       personality: "不说话，只看你带没带兵器；带了就笑，不带也笑",
       carry: [
@@ -44,7 +44,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "血刀门徒·廿三", id: "resident_xuedao_niansan", levelCap: 2,
+      name: "血刀门徒·廿三", innerRoom: "血刀营地", id: "resident_xuedao_niansan", levelCap: 2,
       brief: "血刀门徒，没有名字只有编号",
       personality: "不说话，只看你带没带兵器；带了就笑，不带也笑",
       carry: [

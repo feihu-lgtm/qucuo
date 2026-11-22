@@ -5,13 +5,14 @@ import { add, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { makeItem, QUALITY } from "../../domain/rules/economy/equipment.js";
 import { makeSkillEntry, SKILL_CATALOG } from "../../domain/data/kungfu/qucuoKungfu.js";
+import { placeGroundItems, removeGroundItems } from "../../domain/rules/map/groundScope.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
 // 入参：pickupJudgment/collectGranted/pickupExtractionFailed 均为 ref 的值、
 // 
 // 返回的 changes.room 是多段写回按顺序组合成的单个 updater。
-export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed }, { trace }) {
+export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed, innerRoomName }, { trace }) {
   const out = {};
   const changes = {};
   const roomWrites = [];
@@ -68,7 +69,7 @@ export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp
       const addedNames = newItems.map(i => typeof i === "string" ? i : i.name);
       grantedThisTurnNames = addedNames;
       changes.inv = updateField("inv", (inv) => set("inv", [...inv, ...newItems]));
-      roomWrites.push((r) => ({ ...r, items: r.items.filter(i => !addedNames.includes(i.name) && !addedNames.includes(i)) }));
+      roomWrites.push((r) => ({ ...r, items: removeGroundItems(r.items, addedNames, r.name, innerRoomName) }));
     }
     // 拾取判定后处理，分两种情况：
     // (A) 提取成功但没产出拾取物（judgment 未消费、且提取没失败）→ 叙事判断此刻不宜捡
@@ -109,7 +110,7 @@ export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp
         const base = prevInv ? prevInv(inv) : inv;
         return updateField("inv", (i) => set("inv", i.filter((item) => !names.includes(typeof item === "string" ? item : item.name))))(base);
       };
-      roomWrites.push((r) => ({ ...r, items: [...r.items, ...names.map(n => ({ name: n, id: n }))] }));
+      roomWrites.push((r) => ({ ...r, items: placeGroundItems(r.items, names.map(n => ({ name: n, id: n })), r.name, innerRoomName) }));
     }
     if (p.delta.exp) changes.exp = updateField("exp", add("exp", p.delta.exp));
     if (p.delta.pot) changes.pot = updateField("pot", add("pot", p.delta.pot));

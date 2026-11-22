@@ -43,13 +43,27 @@ export function getInnerRoom(districtName, roomName) {
 // NPC"——只有明确绑定了某个房间的NPC，才需要按"玩家是否站在那个房间"
 // 过滤；没有绑定的NPC（游走NPC池那批、或者剧情临时加入的NPC）在整个
 // 据点范围内都可能出现，不受内层房间切换影响。
+// 驻场人物的内层落点：房间上的 residentNpcName 绑定优先（一间房只能绑一个人），
+// 其次读驻场数据里的 innerRoom（同一间房住好几个人时用，比如峨眉剑庐的弟子们）。
+// 两处都没写的驻场人物会落到锚点——数据校验测试要求有内层地图的据点必须写清。
+let residentHomes = null;
+function residentHome(districtName, npcName) {
+  if (!residentHomes) {
+    residentHomes = new Map();
+    for (const [district, list] of contentEntries("residentGroup")) {
+      for (const npc of list || []) if (npc?.innerRoom) residentHomes.set(`${district}|${npc.name}`, npc.innerRoom);
+    }
+  }
+  return residentHomes.get(`${districtName}|${npcName}`) || null;
+}
+
 export function getResidentRoomForNpc(districtName, npcName) {
   const district = INNER_MAP[districtName];
   if (!district) return null;
   for (const [roomName, roomData] of Object.entries(district.rooms)) {
     if (roomData.residentNpcName === npcName) return roomName;
   }
-  return null;
+  return residentHome(districtName, npcName);
 }
 
 // 返回某据点的锚点房间名；据点没有内层数据则返回 null（调用方应据此判断

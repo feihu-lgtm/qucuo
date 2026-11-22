@@ -58,7 +58,7 @@ export default { quest: {
         description: "进入贡措海密室。室内一具枯骨（桑杰大侠）面对石壁坐着——不是躺着，是坐着。石壁上插着一把刀，刀尖没入石中三寸，三十年没被潮气腐蚀。假地契散落骨旁，墨迹已被湖水泡得模糊。",
         playerHint: "进贡措海密室,看那具面壁而坐的枯骨。",
         completionFlag: "quest_dizang_s1",
-        at: "贡措海密室",
+        at: "贡措海·贡措海密室",
         onReach: { exp: 2, flags: ["gongcuohai_secret_room_unlocked"] },
       },
       {
@@ -66,7 +66,7 @@ export default { quest: {
         description: "拔刀时触发枯骨残念——不是桑杰大侠本人，是他死前最后一念：「我本意是撕了这张纸……他不信。刀给你。纸给百姓。我的名，不重要。」梅朵若好感≥60且在场，会沉默很久说：「原来爷爷不是他们说的那样。」",
         playerHint: "拔出石中刀,听桑杰大侠最后一念。",
         completionFlag: "quest_dizang_s2",
-        at: "贡措海密室",
+        at: "贡措海·贡措海密室",
         onReach: { exp: 3 },
       },
       {
@@ -74,7 +74,7 @@ export default { quest: {
         description: "旧账/税册/密信三者之一与假地契放在一起对比——假地契上的印章跟桑杰朵杰如今仍在用的土司印是同一枚。这意味着现任土司不仅知道假地契，三十年来一直继续用。若持有村2才旦的旧账册，账册私账数额和地契上多划走的草场面积正好对得上。",
         playerHint: "把手里的物证跟假地契比对,看出那枚印章的名堂。",
         completionFlag: "quest_dizang_s3",
-        at: "贡措海密室",
+        at: "贡措海·贡措海密室",
         onReach: { exp: 3 },
       },
       {
@@ -82,7 +82,7 @@ export default { quest: {
         description: "去向决定——将假地契和物证交给李若由（公开真相）、才旦（鱼定村存档备查）、或柳青鸢（官府正式立案），三种选择各自影响终局势力和相关角色好感。刀「地藏」自行留用。",
         playerHint: "假地契物证的去向——交给李若由、才旦、还是柳青鸢,你定。",
         completionFlag: ["quest_dizang_s4_liruoyou", "quest_dizang_s4_caidan", "quest_dizang_s4_liuqingyuan"],
-        at: "贡措海密室",
+        at: "贡措海·贡措海密室",
         choices: [
           { flag: "quest_dizang_s4_liruoyou", label: "交给李若由——公开真相", resolve: "none" },
           { flag: "quest_dizang_s4_caidan", label: "交给才旦——鱼定村存档备查", resolve: "none" },
@@ -130,7 +130,7 @@ export default { quest: {
         description: "进入白塔地宫。守塔僧团首领挡住入口：「经师说过，要进地宫，先过我们这关。」三场连续切磋——第一场单个守塔僧（绿档，考基本功），第二场两个守塔僧夹击（蓝档，考走位判断），第三场守塔僧首领（紫档，考应对技时机）。三场之间可休息回气，战败可重挑不锁死。",
         playerHint: "进白塔地宫,守塔僧团要你先过三场切磋。",
         completionFlag: "quest_budong_s2",
-        at: "白塔地宫",
+        at: "白塔·白塔地宫",
         onReach: { exp: 3 },
       },
       {
@@ -138,7 +138,7 @@ export default { quest: {
         description: "通过战斗后，首领让路：「你打赢了。但经师真正要问的不是拳头。」地宫最深处石台上放着旧经和杵。经卷上是前任经师留给后来者的三问：「你知道我为什么去贡措海？你如果是我，会不会去？你如果是我师弟（住持），这些年会不会开口？」玩家回答，记为三个flag，住持后续在西厢僧舍会有不同反应。",
         playerHint: "打赢之后,去地宫最深处看经师真正要问的东西。",
         completionFlag: "quest_budong_s3",
-        at: "白塔地宫",
+        at: "白塔·白塔地宫",
         onReach: { exp: 3, flags: ["crypt_q1_why", "crypt_q2_would_go", "crypt_q3_would_speak"] },
       },
       {
@@ -146,7 +146,7 @@ export default { quest: {
         description: "取得「不动明王杵」。首领补充：「经师说——这东西杵一下地，能镇住三秒。不是镇敌人，是镇自己。修不动明王法的人，先要自己不动。」",
         playerHint: "取走不动明王杵。",
         completionFlag: "quest_budong_s4",
-        at: "白塔地宫",
+        at: "白塔·白塔地宫",
         onReach: {
           exp: 5,
           items: [{ name: "不动明王杵", category: "weapon", quality: "红" }],
@@ -213,7 +213,7 @@ export default { quest: {
         description: "在喇嘛庙素斋吃饭时——若已与至少三个喇嘛庙相关NPC（行脚僧、达摩药堂师父、住持，三选二）有过深度对话（触发过各自的好感度事件或任务），素斋伙计压低声音：「师父们不让我提……但你要是真想找点不一样的，后厨拐角有个暗门。别跟住持说是我讲的。」",
         playerHint: "在喇嘛庙多与几位僧人深谈,才能撞见那条暗道。",
         completionFlag: "quest_niepanyin_s1",
-        at: "素斋",
+        at: "喇嘛庙·素斋",
         onReach: { exp: 2, flags: ["unlocked_lama_basement"] },
       },
       {
@@ -221,7 +221,7 @@ export default { quest: {
         description: "进入荤食地下室。不是佛堂——是灶台、案板、几口炖着肉的陶锅。墙上贴着前任经师手写字条：「吃肉的和尚也是和尚。念经归念经，五脏庙也要供。」最里面木架上一个灰扑扑的长木匣，刻梵文「涅槃」二字。",
         playerHint: "进那间荤食地下室,看清和尚们藏的是什么。",
         completionFlag: "quest_niepanyin_s2",
-        at: "荤食地下室",
+        at: "喇嘛庙·荤食地下室",
         onReach: { exp: 2 },
       },
       {
@@ -229,7 +229,7 @@ export default { quest: {
         description: "打开木匣。里面是一根暗红长香和一张旧贝叶，贝叶记着香的来历和使用规则，背面前任经师补了一句：「我燃过一次。见到我师父了。他还是那么瘦。他说'你来找我干什么，你的经还没念完，我的经也还没念完。回去'。我就醒了。后来再没敢燃第二次。」玩家可选是否当场燃香（第一次）——若燃，触发一段幻觉叙事，看到好感度最高的角色之一的幻影，说一句符合该角色设定的话（参照 characterMilestones 关键词，AI 不编造新设定）。",
         playerHint: "打开木匣,读那张贝叶上香的来历。",
         completionFlag: "quest_niepanyin_s3",
-        at: "荤食地下室",
+        at: "喇嘛庙·荤食地下室",
         isCgMoment: true,
         onReach: { exp: 3 },
       },
@@ -238,7 +238,7 @@ export default { quest: {
         description: "住持次日在大殿找到玩家。他已知道有人进了地下室：「那根香的味道我闻了三十年。师兄去贡措海之前，燃过一次。他没告诉我他见到了谁。我问他，他说'见到了一个不用怕的人'。」住持给玩家选择：带走香，或留在庙里。两种选择都不锁死后续使用，只决定香的存放位置。",
         playerHint: "次日到大殿见住持,听他把那根香的往事说完。",
         completionFlag: "quest_niepanyin_s4",
-        at: "大殿",
+        at: "喇嘛庙·大殿",
         onReach: {
           exp: 5,
           items: [{ name: "涅槃引", category: "weapon", quality: "红" }],

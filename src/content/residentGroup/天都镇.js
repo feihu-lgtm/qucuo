@@ -53,7 +53,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "梵衍那", id: "resident_fanyanna", levelCap: 3,
+      name: "梵衍那", innerRoom: "香行内堂", id: "resident_fanyanna", levelCap: 3,
       brief: "欢喜教教主，天竺流亡王子",
       personality: "六十余岁，温和慈祥，会五种语言，念念不忘攒钱回乡",
       carry: [
@@ -121,7 +121,7 @@ export default { residentGroup: {
 "深入了解"任务 + 四选一结局分支），与梅朵、呼延雪等同级别对待。`,
     },
     {
-      name: "老何", id: "resident_laohe", levelCap: 2,
+      name: "老何", innerRoom: "香行内堂", id: "resident_laohe", levelCap: 2,
       brief: "欢喜教内院弟子，大理摆渡人出身",
       personality: "沉默寡言，把梵衍那当再生父母，说话实诚",
       carry: [
@@ -135,7 +135,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "阿雅", id: "resident_ayabuddhist", levelCap: 1,
+      name: "阿雅", innerRoom: "香行内堂", id: "resident_ayabuddhist", levelCap: 1,
       brief: "欢喜教内院弟子，缅甸出身",
       personality: "机灵懂事，念着梵衍那的赎身之恩，对罗琦亲近",
       carry: [
@@ -149,7 +149,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "桑杰", id: "resident_sangjie_neiyuan", levelCap: 1,
+      name: "桑杰", innerRoom: "香行内堂", id: "resident_sangjie_neiyuan", levelCap: 1,
       brief: "欢喜教内院弟子，玉泉寨出身",
       personality: "曾被诬陷打成半死，念着梵衍那的救命之恩，沉默中带着感激",
       carry: [

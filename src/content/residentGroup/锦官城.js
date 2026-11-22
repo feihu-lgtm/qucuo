@@ -34,7 +34,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "照微", id: "resident_zhaowei", levelCap: 4,
+      name: "照微", innerRoom: "峨眉剑庐", id: "resident_zhaowei", levelCap: 4,
       brief: "峨眉大弟子，二十岁，貌美温柔，剑比谁都狠",
       personality: "笑着跟你说话的时候剑已经出鞘了；她自己也不觉得这有什么不对——「师父说过，先客气的人先死」",
       carry: [
@@ -48,7 +48,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "虚白道姑", id: "resident_xubai", levelCap: 4,
+      name: "虚白道姑", innerRoom: "峨眉剑庐", id: "resident_xubai", levelCap: 4,
       brief: "峨眉道门那一半的当家，站十二庄站到第九庄用了二十二年",
       personality: "慢，说话慢做事慢，被催了也慢；跟玄尘师太共事三十年没红过脸，也没真同意过她一件事",
       carry: [
@@ -62,7 +62,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "了因师太", id: "resident_liaoyin", levelCap: 3,
+      name: "了因师太", innerRoom: "峨眉剑庐", id: "resident_liaoyin", levelCap: 3,
       brief: "佛堂管事，教清心普善咒，城里郎中也来听",
       personality: "话密心软，谁受伤都先骂一顿再包扎；从不收郎中的学费——「你们治的人比我多」",
       carry: [
@@ -76,7 +76,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "铁莲和尚", id: "resident_tielian", levelCap: 3,
+      name: "铁莲和尚", innerRoom: "峨眉剑庐", id: "resident_tielian", levelCap: 3,
       brief: "峨眉枪传人，剑庐里唯一的男僧，抄了三个月经才准碰兵器",
       personality: "闷，一天说不了十句话，说的多半是「让开」；枪杆磨得发亮，握处一层包浆",
       carry: [
@@ -90,7 +90,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "司徒瑛", id: "resident_situying", levelCap: 2,
+      name: "司徒瑛", innerRoom: "峨眉剑庐", id: "resident_situying", levelCap: 2,
       brief: "自称白猿祖师司徒玄空的后人，练通臂拳",
       personality: "跳脱，坐不住，说话手舞足蹈；那个「后人」的身份谁也没查证过，她自己讲了三个版本",
       carry: [
@@ -104,7 +104,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "净莲", id: "resident_jinglian", levelCap: 2,
+      name: "净莲", innerRoom: "峨眉剑庐", id: "resident_jinglian", levelCap: 2,
       brief: "知客尼，管进出登记和茶水",
       personality: "客气得滴水不漏，谁来都是那套话；记性极好，你三个月前说过什么她能一字不差复述",
       carry: [
@@ -118,7 +118,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "簪娘", id: "resident_zanniang", levelCap: 2,
+      name: "簪娘", innerRoom: "峨眉剑庐", id: "resident_zanniang", levelCap: 2,
       brief: "在剑庐后院打峨眉刺的老妇，峨眉刺形似发簪，她真拿它当簪子卖",
       personality: "耳朵背嘴不饶人，一边锉钢一边骂；给女弟子打的刺都比制式的短半寸——「插头上得好看」",
       carry: [
@@ -132,7 +132,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "陈九", id: "resident_chenjiu", levelCap: 0,
+      name: "陈九", innerRoom: "峨眉剑庐", id: "resident_chenjiu", levelCap: 0,
       brief: "抄经抄到第八十七天的男弟子，还没摸过剑",
       personality: "苦着脸抄，抄错一个字要重来一页；见人就问「还有几天」，问了八十七回",
       carry: [

@@ -1,6 +1,7 @@
 import { ITEM_CATEGORY, CATEGORY_LABEL, getEquipped } from "../domain/rules/economy/equipment.js";
 import { selectEffectiveStats } from "../features/stats/logic.js";
 import { getLookText } from "../domain/rules/map/mapSquares.js";
+import { hasInnerMap, getDistrictAnchor } from "../domain/rules/map/innerMap.js";
 import { isBareLook } from "../domain/rules/prompt/inputIntent.js";
 import { QUCUO_MAP } from "../domain/data/map/qucuoMap.js";
 import { QUCUO_QUESTS } from "../domain/data/quests/qucuoQuests.js";
@@ -212,7 +213,11 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
   // 房间预成文本只给裸 look（环顾四周）：带目标的端详（look <id>/看 <人>/打量 …）
   // 也归 LOOK 意图，但必须放行到端详路径，不能吃房间缓存
   const isRoomLook = isRoomLookCommand(command);
-  if (isRoomLook && QUCUO_MAP[state.room?.name]) {
+  // 格子预成文本是按外层据点写的，只代表锚点房间；人在内层其他房间时
+  // 必须放行到 lookInBackground，按内层房间取景，否则会念出外层的景致。
+  const atOuterView = !state.innerRoomName || !hasInnerMap(state.room?.name)
+    || state.innerRoomName === getDistrictAnchor(state.room?.name);
+  if (isRoomLook && QUCUO_MAP[state.room?.name] && atOuterView) {
     const lookText = getLookText(state.room.name, Math.floor(state.time / 24));
     if (!lookText) return null;
     return {

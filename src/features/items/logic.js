@@ -3,6 +3,7 @@ import { effectiveMaxHp } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { CATALOG_INDEX, useConsumable as resolveConsumable } from "../../domain/data/items/catalog.js";
 import { tallyAdd } from "../../domain/rules/memory/tally.js";
 import { makeBuffFlag, mergeCombatBuff } from "../../utils/buffSystem.js";
+import { isGroundItemHere } from "../../domain/rules/map/groundScope.js";
 
 function itemNameOf(item) {
   return typeof item === "object" ? item?.name : item;
@@ -52,7 +53,8 @@ export function pickGroundItem(state, item, { tallyTime = state.time } = {}) {
       ? typeof entry === "object" && entry?.id === item.id
       : itemNameOf(entry) === itemName
   );
-  const groundItem = (state.room.items || []).find(matches);
+  const here = (entry) => isGroundItemHere(state.room?.name, state.innerRoomName, entry);
+  const groundItem = (state.room.items || []).find((entry) => here(entry) && matches(entry));
   if (groundItem === undefined) return {};
   return {
     changes: {
@@ -64,7 +66,7 @@ export function pickGroundItem(state, item, { tallyTime = state.time } = {}) {
       inv: updateField("inv", (previous) => set("inv", [...previous, groundItem])),
       room: (previous) => {
         const items = [...(previous.items || [])];
-        const index = items.findIndex(matches);
+        const index = items.findIndex((entry) => here(entry) && matches(entry));
         if (index !== -1) items.splice(index, 1);
         return { ...previous, items };
       },

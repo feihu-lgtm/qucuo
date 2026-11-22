@@ -44,7 +44,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "卓玛", id: "resident_zhuoma", levelCap: 2,
+      name: "卓玛", innerRoom: "扎西/卓玛家", id: "resident_zhuoma", levelCap: 2,
       brief: "扎西之女，梳单马尾",
       personality: "直爽大方却不轻易求人，对外来人先戒备后交心",
       carry: [
