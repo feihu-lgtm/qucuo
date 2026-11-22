@@ -1132,6 +1132,8 @@
 /* 大地图在触屏上不能双指缩放，只能靠右上角的 ＋/－/⤢：
    按钮放大到 36px，透明外扩 4px，每个可点区 44×44 且互不重叠。 */
 @media (pointer: coarse) {
+  /* 三个按钮连同外扩共 6+3×38+2×8+4=140px，矮地图也要装得下，否则 ⤢ 被裁掉 */
+  [data-testid="clickable-map"] { min-height: 140px !important; }
   .map-zoom-controls { gap: 8px !important; }
   .map-zoom-btn {
     position: relative;
