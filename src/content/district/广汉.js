@@ -27,7 +27,7 @@ export default { district: {
         desc: `　　一棵三丈高的青铜树立在坑心，九枝九鸟，枝杈交错得毫无规律。树身绿锈厚得像树皮，敲一下，声音要过很久才散。
 　　树下站着几个戴青铜面具的人，一动不动。他们不说话，你走近，其中一个把手按在了剑柄上。神树最顶端坐着一个人，面具是金色的，纵目凸出三寸。他闭着眼。`,
         exits: { s: "三星堆遗址", n: "金乌暗室·归墟秘井", w: "神树台西侧·授面坛" },
-        unlockCondition: { type: "flag", flag: "sanxing_trial_passed" },
+        unlockCondition: { type: "any", of: [{ type: "flag", flag: "sanxing_trial_passed" }, { type: "item", itemName: "青铜纵目令" }] },
         buildingId: "sanxing_tree_altar",
       },
       // ── 三星派古蜀青铜神树墟（合稿·三星派 2.2；外人过了星1 才能下坑，过了三面试剑才进深处）──
@@ -36,7 +36,7 @@ export default { district: {
         desc: `　　坑底一片夯得发亮的空地，满地是断成几截的古剑和裂开的面具。三个戴青铜面具的人站成品字，谁也不先开口。
 　　坑壁上嵌着一排排铜铃，风一过，叮叮当当响成一片，像有人在土里数数。`,
         exits: { w: "三星堆遗址", e: "祭祀坑西石室·古墟秘藏阁", n: "铸铜地窖·赤炉窟" },
-        unlockCondition: { type: "flag", flag: "sanxing_pit_pass" },
+        unlockCondition: { type: "any", of: [{ type: "flag", flag: "sanxing_pit_pass" }, { type: "item", itemName: "青铜纵目令" }] },
         buildingId: "sanxing_sword_pit",
       },
       "祭祀坑西石室·古墟秘藏阁": {
@@ -50,8 +50,8 @@ export default { district: {
         x: 1, y: -2,
         desc: `　　石阶往下走二十几级，热浪扑面而来。一座赤炉占了半个地窖，炉口吐着红光，墙上挂满铜锤、钳子和断了的神树铜枝。
 　　樊枯赤着胳膊坐在炉边，锤子一下一下敲，节奏几十年没变过。`,
-        exits: { s: "祭祀坑·碎铜坪", e: "古蜀石刻廊" },
-        unlockCondition: { type: "flag", flag: "sanxing_trial_passed" },
+        exits: { s: "祭祀坑·碎铜坪", e: "古蜀石刻廊", n: "铸铜地窖·青铜地窖库" },
+        unlockCondition: { type: "any", of: [{ type: "flag", flag: "sanxing_trial_passed" }, { type: "item", itemName: "青铜纵目令" }] },
         buildingId: "sanxing_bronze_forge",
       },
       古蜀石刻廊: {
@@ -59,7 +59,7 @@ export default { district: {
         desc: `　　一条阴凉的石廊，两壁刻满纵目人面、鱼凫和展翅的神鸟。有些图符被人拓过，墨痕还新；有些已经风化，只剩一道浅浅的凹痕。
 　　廊尽头的一块石碑上刻着三行古字，三星派弟子说那是剑谱，外人看了只当是鸟。`,
         exits: { w: "铸铜地窖·赤炉窟" },
-        unlockCondition: { type: "flag", flag: "sanxing_trial_passed" },
+        unlockCondition: { type: "any", of: [{ type: "flag", flag: "sanxing_trial_passed" }, { type: "item", itemName: "青铜纵目令" }] },
         buildingId: "sanxing_stele_pavilion",
       },
       "神树台西侧·授面坛": {
@@ -67,8 +67,17 @@ export default { district: {
         desc: `　　神树西侧垒起一方夯土矮坛，石案上码着一排还没开眼的青铜面具，刻刀横在一旁。一盆艾草炭火终年不灭，烟熏得面具坯胎泛出一层暗金。
 　　坛前地上有三道浅浅的剑痕，是历代入墟弟子向神树递问心剑时留下的。`,
         exits: { e: "青铜神树下" },
-        unlockCondition: { type: "flag", flag: "sanxing_trial_passed" },
+        unlockCondition: { type: "any", of: [{ type: "flag", flag: "sanxing_trial_passed" }, { type: "item", itemName: "青铜纵目令" }] },
         buildingId: "sanxing_mask_hall",
+      },
+      // 青铜地窖库只认弟子信物（合稿·三星派 4「拜入奖励」）：缴还令牌即进不去。
+      "铸铜地窖·青铜地窖库": {
+        x: 1, y: -3,
+        desc: `　　赤炉窟背后一道窄门，门上嵌着神鸟衔环的青铜锁。里头凉得出奇，石壁里砌着几口厚重的青铜大箱，箱盖上各刻一张纵目人面。
+　　守门的青铜面人看了一眼你腰间的令牌，侧身让开了路。`,
+        exits: { s: "铸铜地窖·赤炉窟" },
+        unlockCondition: { type: "item", itemName: "青铜纵目令" },
+        buildingId: "sanxing_vault_chest",
       },
       "金乌暗室·归墟秘井": {
         x: 0, y: -3,

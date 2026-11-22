@@ -766,7 +766,7 @@ export const SKILL_CATALOG = {
       id: "kf_sanxing_jinwupowang", name: "金乌破妄剑", type: SKILL_TYPE.MOVE, quality: "橙", price: 520,
       moveType: "攻击",
       forceCrit: { multiplier: 1.8 }, ignoreDefenseRatio: 0.45,
-      unlock: { faction: "三星派", rep: 80, member: true, guestRep: 100, quest: ["sanxingpai_3_tongyinxuanji"], note: "通过「星3·失窃的朱砂铜印」，且正式拜入三星派、声誉 ≥ 80（外客须声誉满 100）" },
+      unlock: { faction: "三星派", rep: 80, member: true, guestRep: 100, quest: ["sanxingpai_4_sanshinianjiushi"], note: "通过「星4·三十年前的旧客」，且正式拜入三星派、声誉 ≥ 80（外客须声誉满 100）" },
       desc: "纵目者枯坐青铜神树之巅三十年所悟的镇派绝剑。一剑挥落如金乌破开鸭子河千重阴雾，专斩世间一切护体假势与虚妄心障——剑光过后，真假自明，强弱立判。",
     },
   ],
