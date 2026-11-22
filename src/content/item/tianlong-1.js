@@ -1,4 +1,4 @@
-// 天龙八部护法的随身物（夜叉、阿修罗、迦楼罗、乾达婆、紧那罗、摩呼罗迦）
+// 天龙八部护法的随身物（夜叉、阿修罗、迦楼罗、乾达婆、紧那罗、摩呼罗迦），以及天2～天5 的证物与奖励
 const items = {
 "夜叉双钩": { name: "夜叉双钩", category: "weapon", quality: "橙", atkMul: 1.4, sixDim: { 身法: 2 }, tags: ["武器", "双钩", "天龙教"], effect: { applyStatus: { name: "裂伤", chance: 0.3 } }, desc: "姬无双的一对乌钢短钩，钩背开着倒刺。她说钩子比刀好用：刀只会砍，钩子能把人想藏的东西一起勾出来。" },
 "玄纱罗刹衣": { name: "玄纱罗刹衣", category: "armor", quality: "紫", defMul: 1.3, sixDim: { 身法: 1 }, tags: ["护甲", "夜叉部", "天龙教"], desc: "两层玄纱缝的贴身软衣，里层夹着细铁丝网。夜里穿上，人站在灯影外就看不清了。" },
@@ -21,5 +21,11 @@ const items = {
 "蟒皮软甲": { name: "蟒皮软甲", category: "armor", quality: "紫", defMul: 1.3, tags: ["护甲", "天龙教"], desc: "整张蟒皮鞣成的软甲，鳞片还在。刀砍上去会滑开，罗蛇君说这是他养的第一条蛇。" },
 "蛇眼石扳指": { name: "蛇眼石扳指", category: "accessory", quality: "蓝", sixDim: { 根骨: 1 }, tags: ["饰品", "天龙教"], desc: "黄褐色的蛇眼石磨的扳指，石心一道竖纹，像蛇的瞳孔。" },
 "摩呼罗迦蛇毒": { name: "摩呼罗迦蛇毒", category: "misc", quality: "蓝", tags: ["毒药", "天龙教"], desc: "一只封了蜡的小陶瓶，里头是乌鞘蛇的毒涎。罗蛇君说这毒不急，三天后才发作。" },
+"陆福生私通粮单副本": { name: "陆福生私通粮单副本", category: "misc", quality: "蓝", tags: ["任务", "证物", "天龙教"], desc: "你在荒坡上就着月光抄下的粮账：土司府管家陆福生按月给天龙营送青稞，落款是他的私印。" },
+"寒毒方略": { name: "寒毒方略", category: "misc", quality: "蓝", tags: ["任务", "医书", "天龙教"], desc: "厉苍天在石室里亲手抄的解毒方略，写明锁脉散的来路与药引。" },
+"黑金密使符": { name: "黑金密使符", category: "accessory", quality: "紫", sixDim: { 身法: 2 }, tags: ["信物", "天龙教"], desc: "龙王亲赐的黑金符牌，持符者可在天龙营各帐通行无阻。" },
+"曲措布防全图": { name: "曲措布防全图", category: "misc", quality: "蓝", tags: ["任务", "天龙教"], desc: "从丐帮哨队身上缴来的曲措乡布防图，各村哨卡、渡口、粮仓都标得清清楚楚。" },
+"曲措田亩原契抄录": { name: "曲措田亩原契抄录", category: "misc", quality: "紫", tags: ["任务", "证物", "土司府"], desc: "三十年前老土司桑杰托付天王的田亩原契抄录残卷，与土司府那份伪契一对，真假立判。" },
+"黑金副帅甲": { name: "黑金副帅甲", category: "armor", quality: "橙", defMul: 1.5, sixDim: { 体魄: 2 }, tags: ["护甲", "衣甲", "天龙教"], desc: "龙王麾下副帅的黑金玄甲，甲叶内侧刻着一条盘龙。" },
 };
 export default { item: items, itemGroup: { TIANLONG_BABU: Object.keys(items) } };
