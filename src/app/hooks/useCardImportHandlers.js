@@ -59,7 +59,8 @@ export function useCardImportHandlers({
     addLog([
       { t: "sys", text: `  已按卡改写自身：体貌填了 ${filled}/7 项，七维已录${sk ? `，带 ${sk} 门武学` : ""}${carried ? `，${carried} 件随身物已入包` : ""}。` },
       ...(filled < 7 ? [{ t: "sys", text: "  余下几项去右栏「◈ 体貌」自己补，私密层那五项只能手填。" }] : []),
-      ...(opening?.rewritten ? [{ t: "narr", text: opening.rewritten }] : []),
+      // 开场改写是叙事正文（desc），不是旁白角色（narrator）；原先写成 "narr"，颜色表和正文样式都认不出
+      ...(opening?.rewritten ? [{ t: "desc", text: `  ${opening.rewritten}` }] : []),
     ]);
   }, { feature: "cards.importPlayer" }), [setChar, setSkills, setInv, addLog]);
 
