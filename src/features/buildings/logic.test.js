@@ -117,6 +117,7 @@ describe("building feature logic", () => {
     const dish = { name: "松茸汤", hpDelta: 12, buffs: [] };
     expect(cookMeal(state(), { materials: ["熊山松茸"], dish }).changes.inv).toEqual([]);
     expect(cookMeal(state({ inv: [] }), { materials: ["熊山松茸"], dish }).changes.char.hp).toEqual([32, 100]);
+    expect(cookMeal(state(), { materials: ["熊山松茸"], dish, buildingName: "灶房" }).settleOptions.settleFact).toBe("在灶房用熊山松茸下厨，做出一道「松茸汤」，趁热吃了");
     expect(cookMeal(state(), { materials: [], dish })).toEqual({ logs: [] });
     expect(cookMeal(state(), { materials: ["熊山松茸"], dish: null })).toEqual({ logs: [] });
     expect(cookMeal(state(), { materials: ["熊山松茸", "熊山松茸"], dish }).changes.char.hp).toEqual([32, 100]);

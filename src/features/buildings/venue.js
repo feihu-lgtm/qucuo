@@ -61,7 +61,8 @@ export function cookMeal(state, { materials, technique, cookware, freestyle, dis
   const settle = freestyle
     ? `在${place}生火下厨。手边的料是：${ingredients}；${techniqueClause}，${cookwareClause}。这几样本无成法，全凭灶上灵机——请你给这道菜起个贴切的名字（不超过七字，要见料性、见手法），并就其色香味与来由写一两句说书人风味的白话古文小总结，收在具体动作或滋味上，禁冒号破折号。玩家随即趁热吃了。`
     : `在${place}生火下厨。手边的料是：${ingredients}；${techniqueClause}，${cookwareClause}。这一番炮制，做出一道「${dish.name}」。请就这道菜的色香味与来由写一两句说书人风味的白话古文小总结，收在具体动作或滋味上，禁冒号破折号。玩家随即趁热吃了。`;
-  return { changes, logs, settle };
+  const settleFact = `在${place}用${materials.join("、")}下厨，${freestyle ? "妙手偶得一道菜" : `做出一道「${dish.name}」`}，趁热吃了`;
+  return { changes, logs, settle, settleOptions: { settleFact } };
 }
 
 const SEVEN_DIMS = ["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"];
