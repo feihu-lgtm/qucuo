@@ -1,10 +1,11 @@
 import { useCallback, useEffect } from "react";
-import { gameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
 import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
-import { interleaveDuelReport } from "../../domain/rules/combat/duelReport.js";
+import { buildDuelNarrationPrompt, duelFactLogs, insertDuelNarration, parseDuelNarration } from "../../domain/rules/combat/duelBrief.js";
+import { askStoryteller, hasApiKey } from "../../engine/ports/storyteller.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 
 export function consumeDuelRequest(result, {
@@ -22,12 +23,28 @@ export function consumeDuelRequest(result, {
   return true;
 }
 
-export async function openDuelAfterNarration({ act, setDuelPending, isStale }, npc) {
-  await act(`向${npc.name}抱拳邀战，请他切磋一番`, [], {
-    keepUndo: true, intentSkip: true, settle: true, settleKind: "duel_invite", settleNpc: npc,
-  });
+// 邀战只出一行系统提示（三五十字），不再整轮请 AI 写，点完立刻弹出切磋确认。
+export function duelInviteLine(npc) {
+  return `  你向${npc.name}抱拳邀战。${npc.name}略一打量，点头应下，拉开了架势。`;
+}
+
+export async function openDuelAfterNarration({ addLog, setDuelPending, isStale }, npc) {
+  addLog([{ t: "sys", text: duelInviteLine(npc) }]);
   if (isStale()) return false;
   setDuelPending(npc);
+  return true;
+}
+
+// 后台补写描写：不占回合、不排队，玩家可以接着打下一场。
+export async function narrateDuelInBackground(key, rounds, { outcomeText, place }, {
+  ask = askStoryteller, canAsk = hasApiKey, setLog = gameActions.setLog,
+} = {}) {
+  if (!canAsk()) return false;
+  const { sys, user } = buildDuelNarrationPrompt(rounds, { outcomeText, place });
+  const text = await ask(sys, user, { callLabel: "切磋战报", maxTokens: 900 });
+  const narration = parseDuelNarration(text, Array.isArray(rounds) ? rounds.length : 0);
+  if (!narration) return false;
+  setLog((log) => insertDuelNarration(log, key, narration));
   return true;
 }
 
@@ -43,15 +60,15 @@ export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNp
 export function useDuel({
   act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
   duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
-  captureUndo, turnGenerationRef,
+  captureUndo, turnGenerationRef, narrator,
 }) {
   const handleNpcDuel = useCallback((npc) => applyResult(featureCtxRef.current, async () => {
     const isStale = createTurnStaleCheck(turnGenerationRef);
     captureUndo();
     applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name);
-    await openDuelAfterNarration({ act, setDuelPending, isStale }, npc);
-  }, { feature: "npc.duel" }), [act, captureUndo, featureCtxRef, setActiveTarget, setDuelPending, turnGenerationRef]);
+    await openDuelAfterNarration({ addLog, setDuelPending, isStale }, npc);
+  }, { feature: "npc.duel" }), [addLog, captureUndo, featureCtxRef, setActiveTarget, setDuelPending, turnGenerationRef]);
 
   const confirmDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
     if (!duelPending) return;
@@ -87,24 +104,19 @@ export function useDuel({
     applyResult(featureCtxRef.current, result);
     if (result.factId) aiSummarizeFact(result.factId, result.cue);
     if (finishedNpc) {
-      const reportFallback = () => {
-        const fallback = interleaveDuelReport(result.reportRounds, null);
-        if (fallback.length) addLog(fallback);
-      };
-      setTimeout(async () => {
-        try {
-          await act(`切磋结束。经过：${result.recap || "双方试探几招，未及深入"}。结果：${result.outcomeText}。请把每回合的既定战况写成连贯的整场战报，点出关键招式和胜负经过，说书人口吻、一气呵成。并且务必在本轮 JSON 里输出 memory 字段（不超过50字客观事实），把这场切磋记成一条往事：与谁在何处切磋、用了哪几招、谁胜谁负、有无夺得战利品——供日后回想与旁人提起。`, [], { silentCmd: true, preserveHp: true, keepUndo: true, duelReport: { rounds: result.reportRounds }, duelReportFallback: reportFallback });
-        } catch {
-          return;
-        }
-      }, 0);
+      // 系统事实行立刻落日志；描写在后台补，不走 act，玩家不用等。
+      const key = `duel-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      addLog(duelFactLogs(result.reportRounds, key, result.outcomeText));
+      narrateDuelInBackground(key, result.reportRounds, {
+        outcomeText: result.outcomeText, place: gameStore.getState().room?.name,
+      }, narrator).catch(() => {});
       jotNote({
         text: result.recapNote,
         owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }],
         source: NOTE_SOURCE.DUMB,
       });
     }
-  }, { feature: "duel.finish" }), [duelingNpc, pendingQuestBranch, noteAction, act, addLog, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch, featureCtxRef]);
+  }, { feature: "duel.finish" }), [duelingNpc, pendingQuestBranch, noteAction, addLog, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch, featureCtxRef, narrator]);
 
   const resetDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
     setDuelingNpc(null);
