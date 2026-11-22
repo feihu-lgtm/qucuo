@@ -20,6 +20,12 @@ describe("var() 颜色加透明度", () => {
     expect(source).not.toMatch(/\$\{labelColor\}[0-9a-f]{2}\b/);
   });
 
+  it("身体档案字段分隔线不再给 var() 直接拼后缀", () => {
+    const source = readFileSync("src/ui/screens/BodyProfilePanel.jsx", "utf-8");
+    expect(source).toContain("color-mix(in srgb, ${border} 13%, transparent)");
+    expect(source).not.toMatch(/\$\{border\}[0-9a-f]{2}`/);
+  });
+
   it("结算列下划线和见闻录途径标签不再给 var() 直接拼后缀", () => {
     for (const file of ["src/ui/screens/quickBattle/ResultScreen.jsx", "src/ui/screens/LoreScreen.jsx"]) {
       const source = readFileSync(file, "utf-8");

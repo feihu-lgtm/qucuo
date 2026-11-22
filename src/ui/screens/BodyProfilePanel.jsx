@@ -23,7 +23,7 @@ export default function BodyProfilePanel({
   const th = zoneTheme || {};
   const border = th.border || "var(--border)";
   const accent = th.accent || "var(--accent)";
-  const textDim = th.textDim || "#6a7a72";
+  const textDim = th.textDim || "var(--ink-sage)";
 
   const inputStyle = {
     width: "100%", background: "var(--bg-panel)", border: `1px solid ${border}`, borderRadius: 0,
@@ -38,7 +38,7 @@ export default function BodyProfilePanel({
     const isEditing = editing === f.key;
 
     return (
-      <div key={f.key} style={{ borderBottom: `1px solid ${border}22`, padding: "5px 0" }}>
+      <div key={f.key} style={{ borderBottom: `1px solid color-mix(in srgb, ${border} 13%, transparent)`, padding: "5px 0" }}>
         <div
           onClick={() => { if (!hidden) setEditing(isEditing ? null : f.key); }}
           style={{ display: "flex", alignItems: "baseline", gap: 8, cursor: hidden ? "default" : "pointer" }}
@@ -46,10 +46,10 @@ export default function BodyProfilePanel({
           <span style={{ width: 60, flexShrink: 0, fontSize: "11px", color: val ? accent : textDim }}>
             {f.label}
           </span>
-          <span style={{ flex: 1, fontSize: "11.5px", color: val ? "var(--text)" : "#4a4a3a", minWidth: 0 }}>
+          <span style={{ flex: 1, fontSize: "11.5px", color: val ? "var(--text)" : "var(--body-empty)", minWidth: 0 }}>
             {hidden ? (val ? maskText(val) : "—")
               : isEditing ? ""
-              : (previewText(val) || <span style={{ color: "#4a4a3a" }}>未填</span>)}
+              : (previewText(val) || <span style={{ color: "var(--body-empty)" }}>未填</span>)}
           </span>
           {!hidden && (
             <span style={{ fontSize: "10px", color: textDim, flexShrink: 0 }}>{isEditing ? "收起" : "编辑"}</span>
@@ -111,7 +111,7 @@ export default function BodyProfilePanel({
 
         {/* 私密层 */}
         <div style={{ marginTop: 14, display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ fontSize: "11px", color: nsfwOn ? "#c85a6a" : textDim }}>
+          <span style={{ fontSize: "11px", color: nsfwOn ? "var(--body-nsfw)" : textDim }}>
             私密层 <span style={{ color: textDim, fontSize: "10px" }}>· 已填 {filled.intimate}/{INTIMATE_FIELDS.length}</span>
           </span>
           <span
@@ -149,7 +149,7 @@ export default function BodyProfilePanel({
           </span>
 
           {recommendState?.error && (
-            <div style={{ fontSize: "11px", color: "#c46060", marginTop: 8 }}>{recommendState.error}</div>
+            <div style={{ fontSize: "11px", color: "var(--ink-danger)", marginTop: 8 }}>{recommendState.error}</div>
           )}
 
           {picks.length > 0 && (

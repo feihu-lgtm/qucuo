@@ -88,6 +88,10 @@
   --quest-negative-text: #8a6a6a;
   --quest-missed-desc: #6a5a5a;
 
+  /* 身体档案面板定色（原字面量，不随日间模式变）：未填字段和 NSFW 开关文字。 */
+  --body-empty: #4a4a3a;
+  --body-nsfw: #c85a6a;
+
   /* 创角页定色（原字面量，不随日间模式变）：--create-dark 用于下拉选项底色和开始按钮文字。 */
   --create-button-bottom: #8a6a2a;
   --create-dark: #1a140c;
