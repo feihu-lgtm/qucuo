@@ -365,7 +365,7 @@ export const SKILL_CATALOG = {
     },
   ],
 
-  // ── 唐门：暗器与毒药，家族制不收外姓，但暗器卖给所有人 ──
+  // ── 唐门：暗器与毒药，暗器卖给所有人；宗祠入堂石立誓可正式拜入 ──
   唐门: [
     {
       id: "kf_tm_cuntie", name: "寸铁点星手", type: SKILL_TYPE.MOVE, quality: "绿", price: 55,
@@ -398,6 +398,27 @@ export const SKILL_CATALOG = {
       desc: "唐门弟子自幼以毒淬体，小剂量百毒日日服，练出一副抗毒的筋骨。运功时体表渗出一层薄汗，带微苦药气——毒物近身先被这层汗化去三分。不是解毒，是毒到了跟前就矮了三分。",
       passiveBonus: { maxHp: 15 },
       unlock: { faction: "唐门", rep: 40, member: true, guestRep: 80, note: "需正式拜入唐门且声誉 ≥ 40（外客须声誉 ≥ 80 方可求教）" } },
+    {
+      id: "kf_tm_fuguang", name: "浮光掠竹步", type: SKILL_TYPE.QINGGONG, quality: "蓝", price: 130,
+      moveType: "状态",
+      passiveBonus: { speedBonus: 1 },
+      unlock: { faction: "唐门", rep: 15, member: false, note: "唐门声誉 ≥ 15" },
+      desc: "蜀南竹海里踩着暗桩练出的诡谲身法，步幅极碎，忽左忽右，专挑对手视野盲区落脚。练成后衣摆贴腿不扬尘，连吊桥上的九枚警铃都震不响。",
+    },
+    {
+      id: "kf_tm_cuogu", name: "千机错骨针", type: SKILL_TYPE.MOVE, quality: "橙", price: 420,
+      moveType: "攻击",
+      applyStatus: "剧毒", statusChance: 0.5, ignoreDefenseRatio: 0.2,
+      unlock: { faction: "唐门", rep: 80, member: true, note: "需正式拜入唐门且声誉 ≥ 80" },
+      desc: "内堂秘传的重手毒针，专打周身关节筋膜。针入皮肉不流血，只觉半边身子渐如灌铅，三息之后气力大减。唐老太严令此针只准对付死敌，绝不许用来欺压市井。",
+    },
+    {
+      id: "kf_tm_tianluo", name: "天罗绣影针", type: SKILL_TYPE.MOVE, quality: "红", price: 680,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.65 }, ignoreDefenseRatio: 0.45, applyStatus: "剧毒", statusChance: 0.4,
+      unlock: { faction: "唐门", rep: 100, member: true, quest: ["tangmen_5_jiaguichujian"], note: "需正式拜入唐门、完成「唐5·家法断机」且唐门声誉 ≥ 100" },
+      desc: "唐老太压箱底的镇派绝学。寻常一根三寸银绣针，在七十岁老手捻动下竟如穿花织锦，针尾牵着肉眼难辨的冰蚕细丝，一去一回皆有后手——外人只道她是在纳鞋底，等看见针影，胸口已缝好了三道血线。",
+    },
   ],
 
   // ── 喇嘛庙：不收俗家弟子，护法禅院按喇嘛庙声誉与主线进度传授（合稿「喇嘛庙·五」）──

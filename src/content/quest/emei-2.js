@@ -119,7 +119,7 @@ export default { quest: {
         description: "古道两侧树影里飞出弩箭——唐门暗弩手和血刀门徒合伙截信，背后是土司管家陆福生的银子。青城护谷弟子闻声赶来援手。",
         completionFlag: "quest_emei3_ambush",
         choices: [
-          { flag: "quest_emei3_ambush", label: "击退截信伏兵", resolve: "combat", combatNpc: { name: "唐门暗弩手", levelCap: 6 } },
+          { flag: "quest_emei3_ambush", label: "击退截信伏兵", resolve: "combat", combatNpc: { name: "唐门暗弩手", levelCap: 3 } },
         ],
       },
       {

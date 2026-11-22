@@ -6,6 +6,7 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { RESIDENT_NPCS } from "../../domain/data/npc/residentNpcs.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
+import { isQuestChoiceOpen } from "../../domain/rules/quests/questEngine.js";
 import { giftSilver } from "../npc/exchange.js";
 import { playLocalQuestStage } from "../quest/logic.js";
 import { buySkill } from "./logic.js";
@@ -180,11 +181,42 @@ describe("丐5·百棒出广汉", () => {
     expect(getLocalQuestStage(quest, hall(80, done))?.id).toBe("council");
   });
 
+  const oathState = (value, flags = [], duoji = 10) => state(value, {
+    innerRoomName: "土地庙正殿·聚义堂", flags,
+    varTree: { ...rep(value), 角色: { 多吉: { 好感度: duoji } } },
+    questProgress: { ...done, [quest.id]: { questId: quest.id, status: "active", progress: 0, currentStageIndex: 4 } },
+  });
+  const oathLabels = (s) => quest.stages[4].choices.filter((c) => isQuestChoiceOpen(c, s)).map((c) => c.label);
+
   it("pays the 合稿 oath reward in one go and sets the endgame ally flags", () => {
     const oath = quest.stages.find((stage) => stage.id === "oath").onReach;
     expect(oath).toMatchObject({ money: 200, factionRep: { [GB]: 35, 鱼定土司府: -11, 青城派: 7, 峨眉派: 7 } });
     expect(oath.flags).toEqual(["endgame_ally_gaibang", "endgame_buff_gaibang_scouts"]);
     expect(makeNamedItem("三星客卿青竹杖")?.name).toBe("三星客卿青竹杖");
+    expect(makeNamedItem("七袋掌棒使铁令")?.name).toBe("七袋掌棒使铁令");
     expect(quest.stages.find((stage) => stage.id === "scouts").choices[0]).toMatchObject({ resolve: "combat" });
+  });
+
+  it("gives guests the 青竹杖 and promotes members to 七袋掌棒使", () => {
+    expect(oathLabels(oathState(80))).toEqual(["受青竹杖·常规结盟"]);
+    expect(oathLabels(oathState(80, ["丐帮弟子"]))).toEqual(["晋七袋掌棒使·常规结盟"]);
+    const guest = playLocalQuestStage(oathState(80), quest, "受青竹杖·常规结盟", 5);
+    expect(guest.changes.inv([]).map((item) => item.name)).toEqual(["三星客卿青竹杖"]);
+    const member = playLocalQuestStage(oathState(80, ["丐帮弟子"]), quest, "晋七袋掌棒使·常规结盟", 5);
+    expect(member.changes.inv([]).map((item) => item.name)).toEqual(["七袋掌棒使铁令"]);
+    expect(apply(member.changes.flags, ["丐帮弟子"])).toEqual(expect.arrayContaining(["丐帮七袋掌棒使", "endgame_ally_gaibang"]));
+  });
+
+  it("opens 倾巢相助 only at 丐帮 rep 100 with 多吉 favor ≥ 60", () => {
+    expect(oathLabels(oathState(99, [], 60))).not.toContain("倾巢相助·受青竹杖");
+    expect(oathLabels(oathState(100, [], 59))).not.toContain("倾巢相助·受青竹杖");
+    expect(oathLabels(oathState(100, [], 60))).toContain("倾巢相助·受青竹杖");
+    expect(oathLabels(oathState(100, ["丐帮弟子"], 60))).toEqual(["晋七袋掌棒使·常规结盟", "倾巢相助·晋七袋掌棒使"]);
+    expect(playLocalQuestStage(oathState(100, [], 59), quest, "倾巢相助·受青竹杖", 5).changes).toBeUndefined();
+    const full = playLocalQuestStage(oathState(100, ["丐帮弟子"], 60), quest, "倾巢相助·晋七袋掌棒使", 5);
+    expect(apply(full.changes.flags, ["丐帮弟子"])).toEqual(expect.arrayContaining([
+      "丐帮七袋掌棒使", "endgame_ally_gaibang_full", "gaibang_epilogue_yiyue_zhoupeng",
+    ]));
+    expect(apply(full.changes.questProgress, {})[quest.id].status).toBe("completed");
   });
 });
