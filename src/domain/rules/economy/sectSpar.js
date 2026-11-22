@@ -15,14 +15,24 @@ const SECT_SPARS = [
   },
 ];
 
-const usedPoison = (battleLog) => (battleLog || []).some((row) => POISON.has(row?.result?.statusAppliedToB));
+const isNpc = (unit, npc) => !!unit && (unit.id === npc.id || unit.name === npc.name);
+
+// 单挑战报里对手恒为 B；组队战报按出手方记 A，对手先出手时毒落在 statusAppliedToA。
+function poisonedNpc(row, npc) {
+  const result = row?.result || {};
+  const onNpc = row?.actor && isNpc(row.actor, npc) ? result.statusAppliedToA : result.statusAppliedToB;
+  if (row?.actor && !isNpc(row.actor, npc) && !isNpc(row.target, npc)) return false;
+  return POISON.has(onNpc);
+}
+
+const usedPoison = (battleLog, npc) => (battleLog || []).some((row) => poisonedNpc(row, npc));
 
 // 返回 null 表示与门派声誉无关；poison 表示用毒取胜不算数；delta>0 时 flags 为写回后的完整 flags。
 export function sectSparRepGain(state, npc, { outcome, battleLog } = {}) {
   if (outcome !== "win" || !npc) return null;
   const rule = SECT_SPARS.find((entry) => entry.npcs.some((who) => who.id === npc.id || who.name === npc.name));
   if (!rule) return null;
-  if (usedPoison(battleLog)) return { faction: rule.faction, delta: 0, poison: true };
+  if (usedPoison(battleLog, npc)) return { faction: rule.faction, delta: 0, poison: true };
   const flags = state.flags || [];
   const dayFlag = `${rule.flag}_day_${Math.floor((state.time || 0) / 24)}`;
   const firstFlag = `${rule.flag}_first`;

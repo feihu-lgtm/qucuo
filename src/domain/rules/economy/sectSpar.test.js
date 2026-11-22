@@ -29,6 +29,10 @@ describe("sectSparRepGain", () => {
     expect(sectSparRepGain(state(), { name: "护谷弟子" }, { outcome: "win" })).toBeNull();
     const poisoned = [{ round: 1, result: { statusAppliedToB: "淬毒" } }];
     expect(sectSparRepGain(state(), songhe, { outcome: "win", battleLog: poisoned })).toEqual({ faction: "青城派", delta: 0, poison: true });
+    const teamPoisoned = [{ round: 1, actor: { id: "resident_songhe", name: "松鹤道长" }, target: { id: "leopard", name: "雪豹" }, result: { statusAppliedToA: "剧毒" } }];
+    expect(sectSparRepGain(state(), songhe, { outcome: "win", battleLog: teamPoisoned }).poison).toBe(true);
+    const poisonOnPlayer = [{ round: 1, actor: { id: "resident_songhe", name: "松鹤道长" }, target: { id: "player", name: "少侠" }, result: { statusAppliedToB: "淬毒" } }];
+    expect(sectSparRepGain(state(), songhe, { outcome: "win", battleLog: poisonOnPlayer }).delta).toBe(5);
   });
 
   it("settleNpcDuel writes the faction reputation and the sparring flags", () => {
