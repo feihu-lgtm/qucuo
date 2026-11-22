@@ -34,6 +34,12 @@ export default { quest: {
           { flag: "quest_qc1_fight", label: "动手教训", resolve: "combat", combatNpc: { name: "码头一霸盘老七", levelCap: 5 } },
           { flag: "quest_qc1_talk", label: "抬名头压人", resolve: "none", narration: "你把松鹤道长的货单拍在箱子上，把「青城」两个字一笔一划念给他听。盘老七掂了掂腰带，到底让开了路——雅江城里敢明着跟青城叫板的，还没有第二个。" },
         ],
+        onReach: {
+          byFlag: {
+            quest_qc1_fight: { reputation: 4 },
+            quest_qc1_talk: { favorability: { 松鹤道长: 10 } },
+          },
+        },
       },
       {
         id: "report",
@@ -45,10 +51,6 @@ export default { quest: {
           money: 60,
           items: Array.from({ length: 2 }, () => ({ name: "青城老酒", fromCatalog: true })),
           factionRep: { 青城派: 15 },
-          byFlag: {
-            quest_qc1_fight: { reputation: 4 },
-            quest_qc1_talk: { favorability: { 松鹤道长: 10 } },
-          },
         },
       },
     ],
@@ -83,6 +85,12 @@ export default { quest: {
           { flag: "quest_qc2_expose", label: "当众拆穿", resolve: "combat", combatNpc: { name: "冒名卖药人", levelCap: 4 }, narration: "你伸手点了点他袍子的针脚——青城道袍领口收三褶，他身上这件收了五褶。「青城弟子，没你这么穿衣服的。」" },
           { flag: "quest_qc2_trace", label: "放线钓背后人", resolve: "none", narration: "你压住火气，买了他两丸丹跟他称兄道弟。他拍着胸脯说丹药是「上家」按方子配的，上家在西城门的骡马棚交货。" },
         ],
+        onReach: {
+          byFlag: {
+            quest_qc2_expose: { reputation: 6, flags: ["qc2_imposter_publicly_shamed"] },
+            quest_qc2_trace: { favorability: { 玉真子: 12 }, flags: ["qc2_supply_line_found"] },
+          },
+        },
       },
       {
         id: "report",
@@ -93,10 +101,6 @@ export default { quest: {
         onReach: {
           money: 80,
           factionRep: { 青城派: 20 },
-          byFlag: {
-            quest_qc2_expose: { reputation: 6, flags: ["qc2_imposter_publicly_shamed"] },
-            quest_qc2_trace: { favorability: { 玉真子: 12 }, flags: ["qc2_supply_line_found"] },
-          },
         },
       },
     ],
