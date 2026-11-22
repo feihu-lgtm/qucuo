@@ -105,7 +105,7 @@ describe("duel battle report", () => {
       return null;
     }
     renderToStaticMarkup(createElement(Harness));
-    return { handlers, act, addLog, restoreStore, aiSummarizeFact };
+    return { handlers, act, addLog, restoreStore, aiSummarizeFact, featureCtxRef };
   }
 
   it("logs the system fact lines at once and never starts an AI turn", () => {
@@ -123,14 +123,16 @@ describe("duel battle report", () => {
 
   it("asks for the fact summary inside the battle report instead of a separate call", async () => {
     const ask = vi.fn(async () => '{"rounds":["拳风扑面。"],"ending":"才旦认输。","summary":"你与才旦切磋得胜"}');
-    const { handlers, restoreStore, aiSummarizeFact } = setup({ canAsk: () => true, ask });
+    const { handlers, restoreStore, aiSummarizeFact, featureCtxRef } = setup({ canAsk: () => true, ask });
+    const setVarTree = vi.fn(featureCtxRef.current.setVarTree);
+    featureCtxRef.current.setVarTree = setVarTree;
     try {
       handlers.duelFinishHandler("win", null, [{ round: 1, teamText: "一招既定" }], null, [], null, []);
       await vi.waitFor(() => expect(ask).toHaveBeenCalledTimes(1));
       expect(ask.mock.calls[0][0]).toContain('"summary"');
       expect(aiSummarizeFact).not.toHaveBeenCalled();
       await vi.waitFor(() => expect(gameStore.getState().log.some((entry) => entry.fillProse)).toBe(true));
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.waitFor(() => expect(setVarTree).toHaveBeenCalled());
     } finally {
       restoreStore();
     }

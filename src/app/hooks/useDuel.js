@@ -156,7 +156,11 @@ export function useDuel({
         aftermath: questBranch && outcome === "win"
           ? questBranch.aftermath || `这场打斗是「${questBranch.title}」的一环，写清这件事如何作结、主角如何回归。`
           : "",
-      }, narrator);
+      }, {
+        ...narrator,
+        // 走绑定版 setVarTree，让 varTreeRef 同步，免得下次写 varTree 用旧引用把摘要冲掉
+        saveSummary: (id, text) => featureCtxRef.current.setVarTree((prev) => setFactSummary(prev, id, text)),
+      });
       jotNote({
         text: result.recapNote,
         owner: [{ name: finishedNpc.name, via: VIA.FIRSTHAND }],
