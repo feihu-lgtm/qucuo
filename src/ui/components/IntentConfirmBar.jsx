@@ -1,6 +1,6 @@
 // 行动识别确认条：与切磋确认条同一位置、同一形态；「是」按识别结果执行，「不是」按原话走自由行动。
 import { useIntentPending } from "../../store/intentPendingStore.js";
-import { chromeBtn } from "../theme.js";
+import { chromeBtn } from "../../utils/theme.js";
 
 export default function IntentConfirmBar({ zoneTheme }) {
   const pending = useIntentPending();

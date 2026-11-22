@@ -1,6 +1,6 @@
 import { getHomestead } from "../../../domain/rules/map/homestead.js";
 import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
-import { chromeBtn } from "../../theme.js";
+import { chromeBtn } from "../../../utils/theme.js";
 
 export default function HomesteadModule({ zoneTheme, innerRoomName }) {
   const home = innerRoomName ? getHomestead(innerRoomName) : null;

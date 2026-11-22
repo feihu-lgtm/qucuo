@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import FacePanel from "../FacePanel.jsx";
 import useFaces from "./useFaces.js";
-import { ZONE_THEMES } from "../../theme.js";
+import { ZONE_THEMES } from "../../../utils/theme.js";
 import { addFace, removeFace, validateFacePreferences } from "./facePreferences.js";
 
 const defaults = { faces: [

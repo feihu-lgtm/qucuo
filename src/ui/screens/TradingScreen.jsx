@@ -5,7 +5,7 @@
 
 import React from "react";
 import { QUALITY_COLOR, discountedBuyPrice } from "../../domain/rules/economy/equipment.js";
-import { chromeBtn } from "../theme.js";
+import { chromeBtn } from "../../utils/theme.js";
 
 export default function TradingScreen({ shopName, shopItems, playerInv, playerMoney, playerWit = 5, onBuy, onSell, onClose, zoneTheme, inline, onInspect, queueCount = 0,
   headerContent,

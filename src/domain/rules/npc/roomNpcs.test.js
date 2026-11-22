@@ -185,7 +185,7 @@ describe("涌现 / 移除 / 重生", () => {
 import { readFileSync } from "node:fs";
 
 describe("不许绕过 roomNpcs 直接改名单", () => {
-  const FILES = ["src/app/MudRPG.jsx", "src/engine/act/commitRound.js"];
+  const FILES = ["src/MudRPG.jsx", "src/engine/act/commitRound.js"];
 
   it.each(FILES)("%s 里没有裸 npcs: r.npcs.map/filter", (f) => {
     const src = readFileSync(f, "utf-8");

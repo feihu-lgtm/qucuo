@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ZONE_THEMES } from "../../theme.js";
+import { ZONE_THEMES } from "../../../utils/theme.js";
 import { NNPC_STAGE } from "../../../domain/rules/narrator/narrator.js";
 import ProfileModule from "./ProfileModule.jsx";
 import EquipmentBonusModule from "./EquipmentBonusModule.jsx";

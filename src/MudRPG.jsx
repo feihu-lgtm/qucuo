@@ -1,42 +1,42 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import {
   OVERLAY, openOverlay, useOverlay,
-} from "../store/uiStore.js";
-import OverlayHost from "./OverlayHost.jsx";
-import GameLayout from "./GameLayout.jsx";
-import { useAutosave } from "./hooks/useAutosave.js";
-import { useUndo } from "./hooks/useUndo.js";
-import { useCommandScheduler } from "./hooks/useCommandScheduler.js";
-import { useDaySummary } from "./hooks/useDaySummary.js";
-import { usePrivateTalk } from "./hooks/usePrivateTalk.js";
-import { useOutfitAdvice } from "./hooks/useOutfitAdvice.js";
-import { useAiInspect } from "./hooks/useAiInspect.js";
-import { useTurn } from "./hooks/useTurn.js";
-import { useQuestPanel } from "./hooks/useQuestPanel.js";
-import { useDuel, useForcedDuelNpc } from "./hooks/useDuel.js";
-import { usePigeonReplies } from "./hooks/usePigeonReplies.js";
-import { usePigeonHandlers } from "./hooks/usePigeonHandlers.js";
-import { useAutoTravel } from "./hooks/useAutoTravel.js";
-import { useCraftingAI } from "./hooks/useCraftingAI.js";
-import { useScreenHandlers } from "./hooks/useScreenHandlers.js";
-import { useIntentRouter } from "./hooks/useIntentRouter.js";
-import { useCardImportHandlers } from "./hooks/useCardImportHandlers.js";
-import { useBuildingHandlers } from "./hooks/useBuildingHandlers.js";
-import { useProgressionHandlers } from "./hooks/useProgressionHandlers.js";
-import { usePlayerActionHandlers } from "./hooks/usePlayerActionHandlers.js";
-import { useGameUi, usePresetImport, createInputKeyHandler } from "./hooks/useGameUi.js";
-import { useGameStoreBindings } from "./hooks/useGameStoreBindings.js";
-import { useNotes } from "./hooks/useNotes.js";
+} from "./store/uiStore.js";
+import OverlayHost from "./ui/OverlayHost.jsx";
+import GameLayout from "./ui/GameLayout.jsx";
+import { useAutosave } from "./app/hooks/useAutosave.js";
+import { useUndo } from "./app/hooks/useUndo.js";
+import { useCommandScheduler } from "./app/hooks/useCommandScheduler.js";
+import { useDaySummary } from "./app/hooks/useDaySummary.js";
+import { usePrivateTalk } from "./app/hooks/usePrivateTalk.js";
+import { useOutfitAdvice } from "./app/hooks/useOutfitAdvice.js";
+import { useAiInspect } from "./app/hooks/useAiInspect.js";
+import { useTurn } from "./app/hooks/useTurn.js";
+import { useQuestPanel } from "./app/hooks/useQuestPanel.js";
+import { useDuel, useForcedDuelNpc } from "./app/hooks/useDuel.js";
+import { usePigeonReplies } from "./app/hooks/usePigeonReplies.js";
+import { usePigeonHandlers } from "./app/hooks/usePigeonHandlers.js";
+import { useAutoTravel } from "./app/hooks/useAutoTravel.js";
+import { useCraftingAI } from "./app/hooks/useCraftingAI.js";
+import { useScreenHandlers } from "./app/hooks/useScreenHandlers.js";
+import { useIntentRouter } from "./app/hooks/useIntentRouter.js";
+import { useCardImportHandlers } from "./app/hooks/useCardImportHandlers.js";
+import { useBuildingHandlers } from "./app/hooks/useBuildingHandlers.js";
+import { useProgressionHandlers } from "./app/hooks/useProgressionHandlers.js";
+import { usePlayerActionHandlers } from "./app/hooks/usePlayerActionHandlers.js";
+import { useGameUi, usePresetImport, createInputKeyHandler } from "./app/hooks/useGameUi.js";
+import { useGameStoreBindings } from "./app/hooks/useGameStoreBindings.js";
+import { useNotes } from "./app/hooks/useNotes.js";
 import {
   useGameStartup, useGameStartupBindings, useGameStartupOpeningFaces,
   useGameStartupRegistry, useGameStartupShortcut,
-} from "./hooks/useGameStartup.js";
-import { buildLayoutCtx, buildOverlayCtx } from "./contextBuilders.js";
-import { useWorldRulesRunner } from "./hooks/useWorldRulesRunner.js";
-import { DEFAULT_PRESETS } from "../engine/newGame.js";
-import { selectEffectiveStats } from "../features/stats/logic.js";
-import { hasApiCredentials, saveConfig } from "../infra/apiConfig.js";
-import { chromeBtn } from "../ui/theme.js";
+} from "./app/hooks/useGameStartup.js";
+import { buildLayoutCtx, buildOverlayCtx } from "./app/contextBuilders.js";
+import { useWorldRulesRunner } from "./app/hooks/useWorldRulesRunner.js";
+import { DEFAULT_PRESETS } from "./engine/newGame.js";
+import { selectEffectiveStats } from "./features/stats/logic.js";
+import { hasApiCredentials, saveConfig } from "./infra/apiConfig.js";
+import { chromeBtn } from "./utils/theme.js";
 
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false, onReturnToStart } = {}) {
   const bootedForSettingsRef = useRef(initialOpenSettings);

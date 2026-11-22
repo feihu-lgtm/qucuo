@@ -2,7 +2,7 @@ import { useState, useSyncExternalStore } from "react";
 import { turnMonitor } from "../../infra/turnMonitor.js";
 import { fmtClock, fmtMs, formatTrace, pipelineTabs } from "../../infra/actionTrace.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
-import { chromeBtn } from "../theme.js";
+import { chromeBtn } from "../../utils/theme.js";
 
 const LAYER = { ui: "入口", app: "应用", feature: "功能", domain: "规则判定", engine: "引擎", rules: "世界规则", result: "结果" };
 

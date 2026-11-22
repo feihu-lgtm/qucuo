@@ -1,4 +1,4 @@
-import { chromeBtn } from "../../theme.js";
+import { chromeBtn } from "../../../utils/theme.js";
 import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
 
 export const JIANGHU_ENTRIES = [

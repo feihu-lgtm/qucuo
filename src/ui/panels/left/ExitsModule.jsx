@@ -1,5 +1,5 @@
 import { DIRS } from "../../../utils/mudHelpers.js";
-import { chromeBtn } from "../../theme.js";
+import { chromeBtn } from "../../../utils/theme.js";
 
 export default function ExitsModule({ zoneTheme, room, inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind }) {
  return (

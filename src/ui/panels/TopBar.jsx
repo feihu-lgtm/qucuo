@@ -9,7 +9,7 @@
 //
 // 顶栏按钮的统一规格 topBtn() 内聚在本文件（只依赖 zoneTheme.border，
 // 别处不再需要）；遮罩点击关闭的 useOverlayCloseGuard 同样内聚。
-import { chromeBtn } from "../theme.js";
+import { chromeBtn } from "../../utils/theme.js";
 import React, { useState, useEffect } from "react";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../../infra/version.js";

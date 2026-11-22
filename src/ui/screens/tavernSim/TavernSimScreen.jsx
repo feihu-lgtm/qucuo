@@ -5,7 +5,7 @@
 // AI 叙事走 simNarrator.js 的令牌桶，失败静默落回模板文本。
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { getZoneTheme } from "../../theme.js";
+import { getZoneTheme } from "../../../utils/theme.js";
 import {
   TICK_LABELS, MENU, STOCK_INFO, STOCK_BATCH, STAFF_ROLES,
   SEAT_COORDS, ZONES, LEVEL_UP, EVENTS, PRICE_MULT_MIN, PRICE_MULT_MAX,

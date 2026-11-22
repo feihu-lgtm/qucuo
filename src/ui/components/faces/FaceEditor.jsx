@@ -1,4 +1,4 @@
-import { chromeBtn } from "../../theme.js";
+import { chromeBtn } from "../../../utils/theme.js";
 
 export default function FaceEditor({ faces, theme }) {
   const { preferences, face, availableModules, minFaces, maxFaces } = faces;

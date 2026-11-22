@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { chromeBtn } from "../theme.js";
+import { chromeBtn } from "../../utils/theme.js";
 import FaceContent from "./faces/FaceContent.jsx";
 import FaceEditor from "./faces/FaceEditor.jsx";
 import useFaceNavigation from "./faces/useFaceNavigation.js";

@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import MobileTabBar from "./MobileTabBar.jsx";
-import { ZONE_THEMES } from "../theme.js";
+import { ZONE_THEMES } from "../../utils/theme.js";
 
 describe("mobile column tabs", () => {
   it("labels both face controllers with one-based indices and accessible names", () => {
