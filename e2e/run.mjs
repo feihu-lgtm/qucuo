@@ -37,6 +37,8 @@ try {
     });
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("requestfailed", (request) => {
+      // 换页/重载时浏览器会掐掉还在路上的模块请求（ERR_ABORTED），那是导航本身，不是页面报错。
+      if (request.failure()?.errorText === "net::ERR_ABORTED") return;
       errors.push(`Request failed: ${request.url()} (${request.failure()?.errorText || "unknown"})`);
     });
     try {

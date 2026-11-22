@@ -91,7 +91,10 @@ export async function installMockAi(page, { responses } = {}) {
       body = {};
     }
     const prompt = (body.messages || []).map((message) => message.content || "").join("\n");
-    const kind = prompt.includes("地图预跑员") ? "prerun" : prompt.includes("游戏状态提取器") ? "extraction" : "main";
+    const kind = prompt.includes("地图预跑员") ? "prerun"
+      : prompt.includes("游戏状态提取器") ? "extraction"
+        : prompt.includes("行动识别器") ? "intent"
+          : "main";
     const record = {
       id: requests.length + 1,
       kind,

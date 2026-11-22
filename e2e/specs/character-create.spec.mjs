@@ -22,6 +22,7 @@ export default async function characterCreate({ page, game }) {
   await page.getByText("新建角色", { exact: true }).click();
   await page.getByText("少侠名讳", { exact: true }).waitFor();
   await page.locator(".character-create-card input").first().fill("QA少侠");
+  await page.getByRole("button", { name: "下一步：选立绘与体貌 ▸" }).click();
   await page.getByRole("button", { name: "下一步：分配七维 ▸" }).click();
   const continueButton = page.getByRole("button", { name: "选好了 ▸" });
   await page.getByText("七维分配 · 尚余 20 点", { exact: true }).waitFor();
@@ -42,7 +43,11 @@ export default async function characterCreate({ page, game }) {
   const tabs = page.getByRole("navigation", { name: "界面栏目" });
   await tabs.getByRole("button", { name: /^右/ }).click();
   const right = page.getByTestId("right-panel");
-  await right.getByText("武学", { exact: true }).click();
+  // 右栏「任务」单独成面后（#163），武学排在第三面，要翻过去。
+  const current = right.locator('[aria-current="true"]');
+  for (let turn = 0; turn < 8 && (await current.innerText()) !== "武学"; turn++) {
+    await right.getByRole("button", { name: "下一面" }).first().click();
+  }
   await right.getByText(skillName).waitFor();
   if (game.consoleErrors.some((error) => !error.startsWith("Request failed:"))) {
     throw new Error(game.consoleErrors.filter((error) => !error.startsWith("Request failed:")).join("\n"));

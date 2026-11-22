@@ -58,7 +58,12 @@ export default async function mapFit({ page }) {
   await assertExploredNodesFit();
   const close = page.getByText("× 关闭", { exact: true });
   assert.equal(await close.evaluate(element => globalThis.getComputedStyle(element).whiteSpace), "nowrap");
-  assert.ok((await close.boundingBox()).height < 20);
+  // 点击区靠上下 padding 放大到 45px（#223），这里只量文字本身是否一行放下。
+  assert.ok(await close.evaluate(element => {
+    const range = element.ownerDocument.createRange();
+    range.selectNodeContents(element);
+    return range.getBoundingClientRect().height < 20;
+  }));
   const reset = map.getByRole("button", { name: "重置地图视图" });
   const resetBounds = await reset.boundingBox();
   assert.ok(resetBounds.y + resetBounds.height <= mapBounds.y + mapBounds.height);
