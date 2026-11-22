@@ -1,4 +1,5 @@
 import { createElement } from "react";
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ZONE_THEMES } from "../../../utils/theme.js";
@@ -107,5 +108,12 @@ describe("extracted right-panel modules", () => {
     const html = render(JianghuModule);
     expect(html.match(/<button/g)).toHaveLength(4);
     for (const entry of JIANGHU_ENTRIES) expect(html).toContain(entry.label);
+  });
+});
+
+describe("RightPanel header", () => {
+  it("keeps a 任务 button in the right column header, visible on every face", () => {
+    const src = readFileSync(new URL("../RightPanel.jsx", import.meta.url), "utf8");
+    expect(src).toMatch(/onClick=\{\(\) => openOverlay\(OVERLAY\.QUEST_LOG\)\}>任务<\/button>/);
   });
 });
