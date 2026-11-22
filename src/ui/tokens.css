@@ -327,6 +327,14 @@
   --mind-locked-edge: #25252a;
   --mind-missing: #6a6458;
 
+  /* 建筑服务屏定色（原字面量，不随日间模式变）。 */
+  --service-card-edge: #4a3a2a;
+  --service-dismiss: #6a4a3a;
+  --service-hint: #6a8a6a;
+  --service-item-desc: #7a6a5a;
+  --service-item-name: #e8c068;
+  --service-note: #8a5a3a;
+
   /* 掉落卡定色（原字面量，不随日间模式变）：切磋=暖金绛红，偷窃/偷师=冷翠墨青。 */
   --loot-text: #e2d6b4;              /* 描述正文 */
   --loot-foot: #c2b288;              /* 底注 */
