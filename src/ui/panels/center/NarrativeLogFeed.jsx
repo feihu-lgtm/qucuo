@@ -1,4 +1,5 @@
 import LogEntry from "../../components/LogEntry.jsx";
+import { LOG_T } from "../../../domain/rules/log/logTypes.js";
 import { useGameStore } from "../../../store/gameStore.js";
 
 function isNarrativePlaceholder(entry) {
@@ -25,11 +26,11 @@ export default function NarrativeLogFeed({
   const groups = [];
   let current = null;
   for (const entry of log) {
-    const isStandaloneSys = entry.t === "room" || entry.standalone;
+    const isStandaloneSys = entry.t === LOG_T.ROOM || entry.standalone;
     if (isStandaloneSys) {
       if (current) { groups.push(current); current = null; }
       groups.push({ standalone: entry });
-    } else if (entry.t === "cmd") {
+    } else if (entry.t === LOG_T.CMD) {
       if (current) groups.push(current);
       current = { cmd: entry, replies: [] };
     } else {
@@ -41,12 +42,12 @@ export default function NarrativeLogFeed({
 
   let lastCommandIndex = -1;
   for (let i = log.length - 1; i >= 0; i -= 1) {
-    if (log[i].t === "cmd") { lastCommandIndex = i; break; }
+    if (log[i].t === LOG_T.CMD) { lastCommandIndex = i; break; }
   }
   const lastCommand = lastCommandIndex >= 0 ? log[lastCommandIndex] : null;
   const currentReplies = lastCommandIndex >= 0 ? log.slice(lastCommandIndex + 1) : [];
   const hasNarrative = currentReplies.some(entry =>
-    (entry.t === "desc" || entry.t === "narrator") &&
+    (entry.t === LOG_T.DESC || entry.t === LOG_T.NARRATOR) &&
     (!entry.streaming || !isNarrativePlaceholder(entry)));
   const showSkeleton = (loading || pendingTalks > 0 || inspecting) && !hasNarrative;
   if (showSkeleton) {

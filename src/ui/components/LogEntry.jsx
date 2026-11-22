@@ -1,5 +1,6 @@
 import React from "react";
 import LootCard from "./LootCard.jsx";
+import { LOG_T } from "../../domain/rules/log/logTypes.js";
 
 // 参照酒馆预设的视觉层级：叙述是底色，对话高亮跳出，心理*斜体*
 //
@@ -43,7 +44,7 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
   // 得物卡（切磋掉落/偷窃成功/偷师得手）：整条换成像素卡渲染，不走纯文本。
   // 偷招传的是 entry.skill（无 item），偷物传 entry.item——两者都要放行，
   // 否则偷师得手会漏卡、退化成一行纯文本（此前正是这个 bug）。
-  if (entry.t === "loot" && (entry.item || entry.skill)) {
+  if (entry.t === LOG_T.LOOT && (entry.item || entry.skill)) {
     return (
       <div className="log-entry">
         <LootCard entry={entry} />
@@ -51,7 +52,7 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
     );
   }
   const text = entry.text || "";
-  const isDesc = entry.t === "desc";
+  const isDesc = entry.t === LOG_T.DESC;
 
   return (
     <div
@@ -59,14 +60,14 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
       style={{
         whiteSpace: "pre-wrap", wordBreak: "break-all", color,
         lineHeight: "var(--lh-narrative)",
-        marginBottom: entry.t === "room" ? 8 : 4,
-        fontWeight: entry.t === "room" ? "bold" : "normal",
+        marginBottom: entry.t === LOG_T.ROOM ? 8 : 4,
+        fontWeight: entry.t === LOG_T.ROOM ? "bold" : "normal",
         textIndent: isDesc ? "2em" : "0",
-        ...(entry.t === "room" ? { textAlign: "center", fontSize: "0.9em", letterSpacing: "0.2em", opacity: 0.85 } : {}),
+        ...(entry.t === LOG_T.ROOM ? { textAlign: "center", fontSize: "0.9em", letterSpacing: "0.2em", opacity: 0.85 } : {}),
       }}
     >
       <span style={{ cursor: entry.action ? "pointer" : undefined }} onClick={entry.action ? () => onAction(entry.action) : undefined}>
-        {isDesc ? renderMixed(text, color, isDayMode) : entry.t === "room" && text.trim() ? `— ${text.trim()} —` : text}
+        {isDesc ? renderMixed(text, color, isDayMode) : entry.t === LOG_T.ROOM && text.trim() ? `— ${text.trim()} —` : text}
       </span>
     </div>
   );
