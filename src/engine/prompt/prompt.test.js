@@ -154,6 +154,20 @@ describe("pure prompt builders", () => {
     expect(buildArrivalNote({ ...args, isTalk: true })).toBe("");
     expect(buildArrivalNote({})).toBe("");
   });
+
+  it("injects the road encounter pool for known routes, both directions", () => {
+    const move = { isTalk: false, movingDir: "north" };
+    const there = buildArrivalNote({ ...move, lockedDestName: "大草甸", room: { name: "鱼定村" } });
+    expect(there).toContain("熊山口");
+    expect(there).toContain("吊睛虎王");
+    const back = buildArrivalNote({ ...move, lockedDestName: "鱼定村", room: { name: "大草甸" } });
+    expect(back).toContain("熊山口");
+    const langqu = buildArrivalNote({ ...move, lockedDestName: "玉泉寨", room: { name: "大草甸" } });
+    expect(langqu).toContain("狼曲河谷");
+    expect(langqu).toContain("黑风寨山贼");
+    const other = buildArrivalNote({ ...move, lockedDestName: "锦官城", room: { name: "天都镇" } });
+    expect(other).not.toContain("路途遭遇池");
+  });
 });
 
 it("assembles byte-identical complete prompts through web and CLI wiring, including lore and reunions", async () => {
