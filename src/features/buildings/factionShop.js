@@ -67,6 +67,15 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileQualities: ["白", "绿", "蓝"],
   },
+  // 鱼定商号（合稿「鱼定村·六、6.2」）：交恶（-59~-20）加价两成、只卖白品基础货，≤-60 拒售。
+  鱼定商号: {
+    faction: "鱼定村", idPrefix: "yuding_purchase",
+    outlets: { shop_yiding: "outer" },
+    nowhere: "须到鱼定村的鱼定商号才能买商号的货。",
+    banned: "周铭章拱手赔笑，伙计却已把门板上了：「小号今日不做您的生意。」",
+    hostileClosed: {},
+    hostileQualities: ["白"],
+  },
   // 雪山派·门派商坊：隐世门派，货池平常（白绿蓝紫橙按 minRep 阶梯）。
   // 交恶（-59~-20）溢价两成且只留基础干粮姜茶（hostileItems）；冷淡（-19~-1）原价只摆白品杂货。
   门派商坊: {

@@ -114,7 +114,7 @@ export function useGameUi({
         continue;
       }
       if (prog?.status === "locked_by_exclusive" || prog?.status === "completed") continue;
-      if (!isQuestGateOpen(quest, questProgress, flags)) continue;
+      if (!isQuestGateOpen(quest, questProgress, flags, varTree)) continue;
       if (quest.id === "hidden_all_collect_line" && !canBypassExclusive({ char, flags })) continue;
       const isNewlyGiven = !prog;
       const stage = isNewlyGiven ? quest.stages[0] : (prog.status === "active" ? getCurrentStage(quest, prog) : null);
