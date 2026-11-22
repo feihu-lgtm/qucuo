@@ -47,8 +47,8 @@ export function Scene({ sim, night, zoneTheme }) {
         <div key={`t${i}`} style={{
           position: "absolute", left: `${c.x + 1}%`, top: `${c.y + 7}%`,
           width: 34, height: 22, borderRadius: 0,
-          background: "linear-gradient(180deg, #4a3620 0%, #3a2a18 100%)",
-          border: "1px solid #5a4630", boxShadow: "0 2px 4px rgba(0,0,0,0.5)",
+          background: "linear-gradient(180deg, var(--tavern-table-top) 0%, var(--tavern-table-bottom) 100%)",
+          border: "1px solid var(--tavern-table-edge)", boxShadow: "0 2px 4px rgba(0,0,0,0.5)",
         }} />
       ))}
 
@@ -82,7 +82,7 @@ export function Scene({ sim, night, zoneTheme }) {
 
       {/* 门口与招牌 */}
       <div style={{ position: "absolute", left: `${ZONES.door.x - 1}%`, top: `${ZONES.door.y - 2}%`, fontSize: 26, opacity: 0.85 }}>🚪</div>
-      <div style={{ position: "absolute", left: `${ZONES.door.x}%`, top: `${ZONES.door.y + 8}%`, fontSize: 12, color: "#b09a6a", letterSpacing: 2 }}>
+      <div style={{ position: "absolute", left: `${ZONES.door.x}%`, top: `${ZONES.door.y + 8}%`, fontSize: 12, color: "var(--tavern-door-label)", letterSpacing: 2 }}>
         — 醉三江 —
       </div>
       {/* 昼夜罩 */}
