@@ -121,7 +121,7 @@ export default { district: {
       铸剑坊: {
         x: -2, y: 2,
         desc: "打造武器的铸剑坊，可委托订制。",
-        exits: { n: "金玉行", e: "锦官城百香斋" },
+        exits: { n: "金玉行" },
         buildingId: "forge_jingguan",
       },
       文渊书肆: {
@@ -193,17 +193,6 @@ export default { district: {
         desc: "备着脚力和驾车人，可直接抵达已探索的其他据点。",
         exits: { w: "锦官大车店" },
         buildingId: "transport_jingguan",
-      },
-      // 注意：这个建筑id在qucuoBuildings.js里注册的name也叫"百香斋"，
-      // 跟天都镇欢喜教据点"百香斋"完全撞名——两者是两个毫不相干的地方
-      // （这里是锦官城一家普通的粮油铺子，天都镇那个是欢喜教明面据点），
-      // 纯粹是建筑数据里的命名巧合，不是同一个场景，未来维护者需注意
-      // 区分，不要因为同名而误连两处剧情。
-      锦官城百香斋: {
-        x: 1, y: 2,
-        desc: "锦官城一家寻常的粮油铺子，跟天都镇欢喜教据点同名，纯属巧合。",
-        exits: { w: "铸剑坊" },
-        buildingId: "grocery_jingguan",
       },
     },
   }

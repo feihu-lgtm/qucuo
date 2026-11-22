@@ -56,7 +56,7 @@ export const SHOP_PROFILE = {
   锦官镖局:   { region: "官城", shopTypes: ["成衣皮货", "铁铺"], tier: "高" },
   云锦成衣铺: { region: "官城", shopTypes: ["成衣皮货"], tier: "高" },
   金玉行:     { region: "官城", shopTypes: ["金玉", "当铺古玩"], tier: "高" },
-  百香斋:     { region: "官城", shopTypes: ["药堂", "香料", "粮食铺"], tier: "高" }, // 香料点心+药
+  天都香行:   { region: "市镇", shopTypes: ["药堂", "香料", "粮食铺"], tier: "高" }, // 香料点心+药
   // 雪山派（门派·中阶）——门派坊全包
   门派商坊:   { region: "门派", shopTypes: ["铁铺", "成衣皮货", "药堂", "粮食铺", "当铺古玩"], tier: "中" },
 };

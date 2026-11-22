@@ -156,9 +156,9 @@ export const QUCUO_SHOPS = {
     ],
   },
 
-  // ── 百香斋（礼品/杂货） ──
-  百香斋: {
-    shopName: "百香斋",
+  // ── 天都香行（欢喜教明面铺子·礼品/杂货） ──
+  天都香行: {
+    shopName: "天都香行",
     items: [
       { name: "沉香小饼", category: ITEM_CATEGORY.MISC, quality: "绿" },
       { name: "藏香束", category: ITEM_CATEGORY.MISC, quality: "白" },
