@@ -10,7 +10,8 @@ import { selectEffectiveStats } from "../stats/logic.js";
 // 势力商店：货池按该势力声誉定货色和价钱。
 // ≤-60 拒售；-59~-20 只卖 hostileQualities 品阶、加价两成（hostileClosed 的铺面直接闭门）；
 // 其余按势力声誉折扣，minRep 未到的货不摆出来；member 货只卖本门弟子，limitOnce 货买过一次即撤柜（记在 flags）。
-// 额外两个可选门槛：closedBelowRep 声誉未到的铺面直接闭门（如秘珍坊）；coldItems 冷淡（-19~-1）只摆这几味清水货。
+// 额外两个可选门槛：closedBelowRep 声誉未到的铺面直接闭门（如秘珍坊）；coldItems 冷淡（-19~-1）只摆这几味清水货；
+// hostileItems 则把交恶档按名字限货（不写就走 hostileQualities 品阶过滤）。
 const FACTION_SHOPS = {
   唐门暗器: {
     faction: "唐门", idPrefix: "tangmen_purchase",
@@ -73,6 +74,17 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileQualities: ["白"],
   },
+  // 雪山派·门派商坊：隐世门派，货池平常（白绿蓝紫橙按 minRep 阶梯）。
+  // 交恶（-59~-20）溢价两成且只留基础干粮姜茶（hostileItems）；冷淡（-19~-1）原价只摆白品杂货。
+  门派商坊: {
+    faction: "雪山派", idPrefix: "xueshan_purchase",
+    outlets: { sectshop_xueshan: "outer" },
+    nowhere: "须到雪山派门派商坊才能买雪山的山货。",
+    banned: "沈既白把柜台一合：「商坊不做你的生意，请下山。」",
+    hostileClosed: {},
+    hostileItems: ["雪山姜枣干粮", "寒岭冻伤膏"],
+    coldItems: ["雪山姜枣干粮", "寒岭冻伤膏", "雪松木剑"],
+  },
 };
 
 export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];
@@ -98,7 +110,8 @@ export function factionShopOffer(shopKey, varTree, outlet, flags = []) {
       ...(item.minRep == null ? {} : { minRep: item.minRep }),
       ...(item.limitOnce ? { limitOnce: true } : {}),
     }))
-    .filter((item) => rep >= (item.minRep ?? -Infinity) && (!hostile || shop.hostileQualities.includes(item.quality))
+    .filter((item) => rep >= (item.minRep ?? -Infinity)
+      && (!hostile || (shop.hostileItems ? shop.hostileItems.includes(item.name) : shop.hostileQualities.includes(item.quality)))
       && (!cold || cold.includes(item.name)));
   return { items, coef: hostile ? 1.2 : factionRepCoef(rep) };
 }

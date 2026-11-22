@@ -59,7 +59,8 @@ async function resolveQuestChoice({
 
   if (resolve === "combat" && choice.combatNpc) {
     addLog([{ t: "cmd", text: `> ❢ ${quest.title}：${choice.label}` }]);
-    setPendingQuestBranch({ questId: quest.id, flag: choice.flag, mode: "combat" });
+    // aftermath：打赢后叙事段要写的收尾（怎么作结、怎么回归），见 useDuel.duelFinishHandler
+    setPendingQuestBranch({ questId: quest.id, flag: choice.flag, mode: "combat", title: quest.title, aftermath: choice.aftermath });
     setDuelingNpc(buildQuestFoe(choice));
     return;
   }

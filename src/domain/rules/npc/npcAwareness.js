@@ -42,6 +42,26 @@ export function markNpcAsKnown(varTree, npcName) {
   };
 }
 
+// 端详过人物是一个数组（存在 varTree.世界.端详过人物），跟"已认识"分开记：
+// 认识可以是搭话、被认出等造成的，端详必须是玩家真的点过"细看"。切磋按钮
+// 用这张表挡"上来就打"——没端详过的人先端详，才能开打（见 useDuel.js）。
+export function isNpcLooked(varTree, npcName) {
+  const looked = varTree.世界?.端详过人物 || [];
+  return looked.includes(npcName);
+}
+
+export function markNpcAsLooked(varTree, npcName) {
+  const looked = varTree.世界?.端详过人物 || [];
+  if (looked.includes(npcName)) return varTree;
+  return {
+    ...varTree,
+    世界: {
+      ...varTree.世界,
+      端详过人物: [...looked, npcName],
+    },
+  };
+}
+
 // 检测一批NPC里，哪些是"系统之前从没见过、这是第一次出现在任何房间里"的新面孔。
 // 用一个独立的"曾经出现过"清单（跟"已认识"是两回事：出现过≠认识）来判断，
 // 避免同一个人反复进出同一个房间时，每次都被误判成"新人物出现"。

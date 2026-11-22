@@ -7,12 +7,34 @@ export default { quest: {
     description: "阿索母亲留下的白牦牛（牛角系褪色红布条）跑丢，往大草甸方向去，他追到一半见狼粪还是软的不敢再追。",
     stages: [
       {
-        id: "s1_rescue",
-        description: "玩家在大草甸浅沟找到被野狼围困的白牦牛，击退野狼后牦牛用角顶了玩家的手——「它不是顶你，它是在认人。」牵牛回寨路上阿索掰半块存了两年的、母亲留下的最后一块糌粑分给玩家。",
-        playerHint: "阿索的牦牛在大草甸走失，去找到它、赶走围着它的野狼。",
+        id: "s1_plea",
+        description: "阿索蹲在寨边草甸口抹眼泪——他家那头白牦牛走失两天了，最后瞧见它是在大草甸浅沟，那儿有野狼出没，他不敢去找。听说玩家肯帮忙，他解下牦牛脖子上的旧铜铃塞过来：「它认得这个铃声，你到浅沟摇一摇，它就敢出来。」",
+        playerHint: "阿索的牦牛在大草甸走失两天了——听他把话说完，答应替他去找。",
         completionFlag: "quest_yuquanzhai1_s1",
+        onReach: { favorability: { "小牧童阿索": 10 } },
+      },
+      {
+        id: "s2_rescue",
+        // requireLocation：这一步必须玩家真的走到大草甸浅沟才展开战斗，
+        // 不能在寨里听完阿索的话就地开打。判定见 useGameUi.js 的
+        // availableQuestsHere——requireLocation 命中时入口只看地点。
+        description: "大草甸浅沟里，白牦牛被几头野狼围在当中——角抵着地，嘴里还挂着嚼了一半的草。玩家一摇铜铃，牦牛抬头往外挣，野狼却先扑了上来。",
+        playerHint: "到大草甸浅沟找到被野狼围住的白牦牛，摇铃引它，再赶走野狼。",
+        requireLocation: { district: "大草甸" },
+        completionFlag: "quest_yuquanzhai1_s2",
         isCgMoment: true,
-        onReach: { exp: 1, favorability: { "小牧童阿索": 30 }, reputation: 6, factionRep: { 玉泉寨: 5 } },
+        choices: [
+          {
+            flag: "quest_yuquanzhai1_s2",
+            label: "摇铃引牦牛，动手赶散野狼",
+            resolve: "combat",
+            combatNpc: { name: "围困牦牛的野狼", levelCap: 1, tag: "熊山野兽", hostile: true, beast: true, cannotSpeak: true },
+            // aftermath：打赢后由结算段把它交给叙事段，写成战斗之后的收尾段落
+            //（牦牛认人、牵牛回寨、阿索分糌粑），见 useDuel.js duelFinishHandler。
+            aftermath: "赶散野狼后，白牦牛拿角顶了顶玩家的手——它不是顶人，是在认人。玩家摇着铜铃把它牵回寨子，阿索迎出来，掰了半块存了两年的、母亲留下的最后一块糌粑分给玩家。",
+          },
+        ],
+        onReach: { exp: 1, favorability: { "小牧童阿索": 20 }, reputation: 6, factionRep: { 玉泉寨: 5 } },
       },
     ],
     rewardText: "此后阿索见玩家会主动挥赶牛鞭致意。",

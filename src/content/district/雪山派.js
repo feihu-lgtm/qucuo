@@ -4,20 +4,29 @@ export default { district: {
     rooms: {
       山门: {
         x: 0, y: 0,
-        desc: "深山隐世的武学门派入口，门内清幽，弟子往来皆是练武修行的痕迹。",
-        exits: { n: "雪山练功堂" },
+        desc: "两株被雪压弯的古松夹着一座青石牌坊，风化的石碑上刻着「尘事止此」四字，三十六级冻石阶常年覆着扫不尽的薄霜。守阁老剑奴齐照野平日在此扫雪看炉。",
+        exits: { n: "雪山练功堂", e: "雪山客舍" },
+        residentNpcName: "齐照野",
+      },
+      雪山客舍: {
+        x: 1, y: 0,
+        desc: "贴着山门东侧砌出的四间避风石舍，炕底连着地龙火道，被褥带着松针晒过的干爽气。",
+        exits: { w: "山门" },
+        buildingId: "inn_xueshan",
       },
       雪山练功堂: {
         x: 0, y: -1,
         desc: "门派日常练功之地，兵器架、桩靶一应俱全。",
         exits: { s: "山门", w: "门派商坊", n: "内堂" },
         buildingId: "wuguan_xueshan",
+        residentNpcName: "陆寒枝",
       },
       门派商坊: {
         x: -1, y: -1,
-        desc: "门派对外经营的商坊，出售寻常武学入门物件。",
+        desc: "倚着背风暖壁搭出的石木矮轩，木架上整整齐齐码着风干雪莲、寒铁长剑与素陶药瓶，炭盆里终年埋着未熄的松木灰。",
         exits: { e: "雪山练功堂" },
         buildingId: "sectshop_xueshan",
+        residentNpcName: "沈既白",
       },
       内堂: {
         x: 0, y: -2,
@@ -34,13 +43,21 @@ export default { district: {
 近来常有个白衣女子在此，不知是哪一辈的师姐，也没人说得清她是几时来的。`,
         exits: { w: "内堂" },
         residentNpcName: "玄女",
+        buildingId: "hospital_xueshan_wenquan",
+      },
+      寒玉旧剑阁: {
+        x: 0, y: -4,
+        desc: "凿在内堂后崖深处的暗石密阁，寒气砭骨，寒玉石案上封存着三十年前呼延大侠的断剑残锋、与老土司及青霞子论剑的旧谱，以及半封未寄出的绝笔书信。",
+        exits: { s: "弟子别院" },
+        buildingId: "library_xueshan",
+        unlockCondition: { type: "flag", flag: "xueshan_sword_pavilion_unlocked" },
       },
       弟子别院: {
         x: 0, y: -3,
         desc: `　　内堂后一处独立小院，青砖围墙围出四方一块天，一道月洞门开在南边。门楣上挂着雪山派的令牌锁，正式弟子才开得。
 　　院当中一株老梅，冬日开满白花，落在木桩上像积了层薄雪。墙根堆着几根练功木桩，桩身全是刀劈剑削的旧痕，深的地方能塞进两根手指。老梅树下一圈花坛，格桑花和雪莲幼苗混着种，长势各半。
 　　正房三间，东厢是卧房，西厢是书房。`,
-        exits: { s: "内堂", e: "东厢卧房", w: "西厢书房" },
+        exits: { s: "内堂", e: "东厢卧房", w: "西厢书房", n: "寒玉旧剑阁" },
         unlockCondition: { type: "item", itemName: "雪山派令牌钥匙" },
       },
       东厢卧房: {

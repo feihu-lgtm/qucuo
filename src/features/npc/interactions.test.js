@@ -45,6 +45,7 @@ describe("NPC look and recognition logic", () => {
     const updated = result.changes.varTree(latest);
     expect(updated.世界.本日移动次数).toBe(1);
     expect(updated.世界.已认识人物).toEqual(["师父"]);
+    expect(updated.世界.端详过人物).toEqual(["师父"]);
     expect(recognizeNpc(state, { name: "师父" }).changes.varTree(latest).世界.已认识人物).toEqual(["师父"]);
   });
 
