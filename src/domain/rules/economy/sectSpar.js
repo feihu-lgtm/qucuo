@@ -21,10 +21,32 @@ const SECT_SPARS = [
     daily: 2,
     dailyCap: 39,
   },
+  // 玉泉寨：在练武场与寨中好手堂堂正正切磋，涨玉泉寨声誉（合稿「声誉·加分行为」比武一档）。
+  {
+    faction: "玉泉寨",
+    npcs: [{ id: "resident_danzeng", name: "丹增" }, { id: "resident_suolang", name: "索朗" },
+      { id: "resident_zhuoma", name: "卓玛" }],
+    flag: "yuquan_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
   {
     faction: "雪山派",
     npcs: [{ id: "resident_luhanzhi", name: "陆寒枝" }, { id: "resident_shenjibai", name: "沈既白" }],
     flag: "xueshan_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
+  {
+    faction: "三星派",
+    npcs: [
+      { id: "resident_qingtong_jia", name: "青铜面人·甲" },
+      { id: "resident_qingtong_yi", name: "青铜面人·乙" },
+      { id: "resident_qingtong_bing", name: "青铜面人·丙" },
+    ],
+    flag: "sanxing_spar",
     first: 5,
     daily: 2,
     dailyCap: 39,

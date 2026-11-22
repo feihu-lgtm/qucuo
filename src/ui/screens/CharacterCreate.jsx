@@ -7,6 +7,14 @@ import { getPendingPlayerCard, clearPendingPlayerCard, clearPendingStarterCompan
 import { adjustSpecial, baseSpecial, drawStarterSkills, remainingSpecialPoints, randomizeSpecial } from "../../domain/rules/character/starterBuild.js";
 import StatAllocator from "./StatAllocator.jsx";
 import StarterSkillCards from "./StarterSkillCards.jsx";
+import PortraitBodyStep from "./PortraitBodyStep.jsx";
+import { emptyBodyProfile } from "../../domain/rules/character/bodyProfile.js";
+import {
+  applyBodyPreset,
+  defaultPortraitIdForGender,
+  getPortraitPreset,
+  portraitPresetUrl,
+} from "../../domain/rules/character/bodyPresets.js";
 
 const theme = ZONE_THEMES.village;
 const BASE = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.BASE_URL) || "/";
@@ -26,6 +34,14 @@ export default function CharacterCreate({ onConfirm }) {
   const [gender, setGender] = useState("男");
   const [customGender, setCustomGender] = useState("");
   const [step, setStep] = useState("identity");
+  const [selectedPortraitId, setSelectedPortraitId] = useState("male");
+  const [portraitTouched, setPortraitTouched] = useState(false);
+  // 手改体貌或从预设库套用也算动过，回头改名字时不能把草稿冲掉。
+  const [bodyTouched, setBodyTouched] = useState(false);
+  const handleBodyChange = (next) => { setBodyTouched(true); setBodyProfile(next); };
+  const [bodyProfile, setBodyProfile] = useState(() =>
+    applyBodyPreset(emptyBodyProfile(), getPortraitPreset("male"), { includeIntimate: false }),
+  );
   const [special, setSpecial] = useState(baseSpecial);
   const [starterChoices, setStarterChoices] = useState([]);
   const [starterSkillId, setStarterSkillId] = useState(null);
@@ -42,6 +58,23 @@ export default function CharacterCreate({ onConfirm }) {
       onConfirm({ name: name.trim(), gender: finalGender, fromCard, special: undefined, starterSkillId: undefined });
       return;
     }
+    if (!portraitTouched) {
+      const defId = defaultPortraitIdForGender(gender);
+      setSelectedPortraitId(defId);
+      if (!bodyTouched) {
+        setBodyProfile(applyBodyPreset(emptyBodyProfile(), getPortraitPreset(defId), { includeIntimate: false }));
+      }
+    }
+    setStep("appearance");
+  };
+
+  const handleSelectPortrait = (preset, { includeIntimate = false } = {}) => {
+    setPortraitTouched(true);
+    setSelectedPortraitId(preset.id);
+    setBodyProfile((prev) => applyBodyPreset(prev, preset, { includeIntimate }));
+  };
+
+  const continueToStats = () => {
     setStep("stats");
   };
 
@@ -61,7 +94,16 @@ export default function CharacterCreate({ onConfirm }) {
 
   const confirmBuild = () => {
     if (!starterSkillId) return;
-    onConfirm({ name: name.trim(), gender: finalGender, fromCard: null, special, starterSkillId });
+    const portrait = getPortraitPreset(selectedPortraitId);
+    onConfirm({
+      name: name.trim(),
+      gender: finalGender,
+      fromCard: null,
+      special,
+      starterSkillId,
+      bodyProfile,
+      portraitUrl: portraitPresetUrl(portrait, BASE),
+    });
   };
 
   const pubFilled = pending
@@ -74,7 +116,10 @@ export default function CharacterCreate({ onConfirm }) {
   return (
     <div className="character-create-root" style={styles.container}>
       <div style={styles.vignette} />
-      <div className="character-create-card" style={styles.card}>
+      <div
+        className={`character-create-card${step === "appearance" ? " character-create-card--wide" : ""}`}
+        style={{ ...styles.card, ...(step === "appearance" ? styles.cardWide : null) }}
+      >
         <div className="character-create-title" style={styles.title}>初入江湖</div>
         <div className="character-create-sub" style={styles.sub}>—— 报上名号，方好行走曲措乡 ——</div>
 
@@ -152,9 +197,22 @@ export default function CharacterCreate({ onConfirm }) {
               disabled={!canConfirm}
               style={{ ...styles.confirm, opacity: canConfirm ? 1 : 0.4, cursor: canConfirm ? "pointer" : "not-allowed" }}
             >
-              {useCard && pending ? "踏入曲措乡 ▸" : "下一步：分配七维 ▸"}
+              {useCard && pending ? "踏入曲措乡 ▸" : "下一步：选立绘与体貌 ▸"}
             </button>
           </>
+        )}
+
+        {step === "appearance" && (
+          <PortraitBodyStep
+            base={BASE}
+            selectedPortraitId={selectedPortraitId}
+            bodyProfile={bodyProfile}
+            onSelectPortrait={handleSelectPortrait}
+            onBodyChange={handleBodyChange}
+            onBack={() => setStep("identity")}
+            onContinue={continueToStats}
+            theme={theme}
+          />
         )}
 
         {step === "stats" && (
@@ -205,6 +263,10 @@ const styles = {
     padding: "36px 40px",
     boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
     backdropFilter: "blur(3px)",
+  },
+  cardWide: {
+    width: "min(680px, 92vw)",
+    padding: "24px 28px",
   },
   title: {
     color: "var(--create-title)", fontSize: "26px", fontWeight: "bold",

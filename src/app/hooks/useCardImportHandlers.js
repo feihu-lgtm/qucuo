@@ -69,7 +69,7 @@ export function useCardImportHandlers({
     if (n) addLog([{ t: "sys", text: `  ${n} 条地理与规矩已入册，提到时自会浮现。` }]);
   }, { feature: "cards.importWorld" }), [addLog]);
 
-  const handleCreateCharacter = ({ name, gender, fromCard, special, starterSkillId }) => applyResult(featureCtxRef.current, () => {
+  const handleCreateCharacter = ({ name, gender, fromCard, special, starterSkillId, bodyProfile, portraitUrl }) => applyResult(featureCtxRef.current, () => {
     const starterSkill = !fromCard && STARTER_SKILLS.find((skill) => skill.id === starterSkillId);
     const initialSkills = starterSkill ? [{
       ...starterSkill, level: 1, exp: 0, maxExp: 100, stage: "入门",
@@ -89,10 +89,14 @@ export function useCardImportHandlers({
           next.hp = [maxHp, maxHp];
         } else if (special && initialSkills) {
           next.special = { ...special };
+          if (bodyProfile) next.bodyProfile = { ...(c.bodyProfile || {}), ...bodyProfile };
           const maxHp = hpFromNeigong(next.neigong ?? 5, special.体魄);
           next.hp = [maxHp, maxHp];
           next.moveset = deriveMovesetFromSkills(initialSkills);
         }
+        // 新角色自带头像标识：开局选的立绘记在本存档里，不去动别的存档共用的头像偏好。
+        next.avatarId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+        next.portrait = !fromCard && portraitUrl ? portraitUrl : "";
         return next;
       });
       if (fromCard) {
