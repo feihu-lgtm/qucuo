@@ -80,11 +80,13 @@ export default { district: {
         residentNpcName: "杂货商人",
       },
       才旦家: {
+        privateHome: true,
         x: 0, y: -2,
         desc: "才旦家的小院，屋里堆着几本泛黄的旧账册，是这家人平日不太愿意提起的地方。",
         exits: { s: "老孙饭馆" },
       },
       村长府: {
+        privateHome: true,
         x: -2, y: 1,
         desc: "前村长的旧宅，如今冷清了不少，堂屋里还挂着几件遗物没舍得挪动。",
         exits: { e: "村口·广场" },
@@ -113,12 +115,14 @@ export default { district: {
         exits: { e: "杂货铺摊位" },
       },
       猎户小屋: {
+        privateHome: true,
         x: -1, y: 2,
         desc: "靠近熊山方向的一间木屋，屋外挂着风干的兽皮和陷阱工具，老猎户常年住在此处。",
         exits: { n: "村口·广场" },
         residentNpcName: "老猎户",
       },
       大娘家: {
+        privateHome: true,
         x: 1, y: 1,
         desc: "鱼定大娘的家，屋前常年支着一口熬糌粑的大锅，是全村消息最灵通的地方之一。",
         exits: { n: "歇马居" },

@@ -256,6 +256,15 @@ describe("游走NPC的落点只能是公共房间", () => {
     expect(getInnerRoomNames("鱼定村")).toContain("溪边小屋"); // 全集里还在，只是不当落点
   });
 
+  it("鱼定村别人家（大娘家、才旦家、村长府、猎户小屋）不当游走NPC落点", () => {
+    const pub = getPublicInnerRoomNames("鱼定村");
+    for (const home of ["大娘家", "才旦家", "村长府", "猎户小屋"]) {
+      expect(pub).not.toContain(home);
+      expect(getInnerRoomNames("鱼定村")).toContain(home);
+    }
+    expect(pub).toContain("老孙饭馆");
+  });
+
   it("公共房间不为空——排除得太狠会让游走NPC无处可去", () => {
     for (const d of Object.keys(INNER_MAP)) {
       expect(getPublicInnerRoomNames(d).length, `「${d}」把房间全排除了，游走NPC无处落脚`).toBeGreaterThan(0);
