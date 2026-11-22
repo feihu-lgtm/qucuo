@@ -357,6 +357,10 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "青城派正殿。入门先站桩——站在宝瓶口江边，水没脚踝，站半日。站住了才教剑。",
     },
     {
+      id: "hospital_qingcheng_yaopu", name: "青城药圃", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
+      desc: "玉真子坐镇的后山草药庐，给药不给方子。雅江的郎中求不来的药，在这里一帖帖配好。",
+    },
+    {
       id: "sectshop_yajiang", name: "三清玄阁", type: BUILDING_TYPE.SECTSHOP, shopKey: "青城商坊",
       desc: "设在三清殿偏庑的门内库房，由持堂道人兼管账目，只认青城声誉与门中功劳，寻常银两买不走里头的紫阳丹与松纹剑。",
     },

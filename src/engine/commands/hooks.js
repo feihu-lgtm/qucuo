@@ -13,7 +13,7 @@ export const HOOK_ENTRIES = [
   { id: "characterGift", hooks: { useScreenHandlers: ["giftToCharacter"] } },
   { id: "menuEquip", hooks: { useScreenHandlers: ["handleToggleEquip"] } },
   { id: "milestoneClaim", hooks: { useScreenHandlers: ["claimMilestone"] } },
-  { id: "inn", hooks: { useBuildingHandlers: ["handleBuildingInn", "handleBuildingHeal", "handleDonateAlms"] } },
+  { id: "inn", hooks: { useBuildingHandlers: ["handleBuildingInn", "handleBuildingHeal", "handleClinicService"] } },
   { id: "generalShop", hooks: { useBuildingHandlers: ["handleGamble", "handleServiceOrder", "handleForgeCommission", "handleJadeCraft", "handleAuctionWin"] } },
   { id: "shopBuy", hooks: { useBuildingHandlers: ["handleBuyTangmenItem"] } },
   { id: "carriage", hooks: { useBuildingHandlers: ["handleTravel"] } },

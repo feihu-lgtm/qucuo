@@ -103,6 +103,7 @@ export default { district: {
         x: -3, y: 2,
         desc: "三清殿西一片药田，玉真子管着。各种草药如数家珍，雅江的郎中来求药，他总是给药不给方子——「方子给你你也认不准药，还是来拿药吧。」",
         exits: { e: "三清殿", s: "练功堂" },
+        buildingId: "hospital_qingcheng_yaopu",
         residentNpcName: "玉真子",
       },
     },

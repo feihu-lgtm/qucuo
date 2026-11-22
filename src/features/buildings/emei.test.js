@@ -5,7 +5,7 @@ import { FACTION_ENTRIES, checkFactionEntry } from "../../domain/rules/character
 import { skillUnlockStatus } from "../../domain/rules/economy/skillUnlock.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { joinSect } from "../sect/logic.js";
-import { FOTANG, donateAlms } from "./emeiFotang.js";
+import { doClinicService } from "./factionClinic.js";
 import { buyFactionShopItem, factionShopOffer } from "./factionShop.js";
 import { healAtHospital } from "./lodging.js";
 
@@ -77,26 +77,53 @@ describe("峨眉武学按声誉解锁", () => {
   });
 });
 
+const FOTANG = "hospital_emei_fotang";
+
 describe("慈济佛堂", () => {
   const fotang = (value, extra = {}) => ({ ...at("慈济佛堂", value), time: 50, char: { money: 100, hp: [10, 100] }, ...extra });
 
   it("alms: once a day, 20 两 for 峨眉 +5 and 威望 +2", () => {
     const state = fotang(10);
-    const result = donateAlms(state);
+    const result = doClinicService(state, FOTANG);
     expect(result.changes.char.money).toBe(80);
     const tree = result.changes.varTree(state.varTree);
     expect(tree.世界.势力声誉.峨眉派).toBe(15);
     expect(tree.世界.威望).toBe(2);
     const flags = result.changes.flags(["emei_alms_day_1"]);
     expect(flags).toEqual(["emei_alms_day_2"]);
-    expect(donateAlms({ ...state, flags }).changes).toBeUndefined();
-    expect(donateAlms({ ...state, flags, time: 72 }).changes).toBeTruthy();
+    expect(doClinicService({ ...state, flags }, FOTANG).changes).toBeUndefined();
+    expect(doClinicService({ ...state, flags, time: 72 }, FOTANG).changes).toBeTruthy();
   });
 
   it("treats free from rep 15 and refuses at -20", () => {
-    const heal = (value) => healAtHospital(fotang(value), { cost: 30, healAmt: 90, buildingName: "慈济佛堂", buildingId: FOTANG.id });
+    const heal = (value) => healAtHospital(fotang(value), { cost: 30, healAmt: 90, buildingName: "慈济佛堂", buildingId: FOTANG });
     expect(heal(15).changes.char.money).toBe(100);
     expect(heal(14).changes.char.money).toBe(70);
     expect(heal(-20).changes).toBeUndefined();
+  });
+});
+
+describe("青城药圃义诊", () => {
+  const YAOPU = "hospital_qingcheng_yaopu";
+  const yaopu = (value) => ({
+    char: { money: 0, hp: [10, 100] }, room: { name: "雅江" }, innerRoomName: "药圃",
+    flags: [], time: 30, varTree: { 世界: { 势力声誉: { 青城派: value }, 威望: 99 } },
+  });
+
+  it("药圃 is 玉真子's clinic; 义诊 costs two hours for 青城 +8, 威望 +3 (capped 100)", () => {
+    expect(getBuildingIdForInnerRoom("雅江", "药圃")).toBe(YAOPU);
+    const state = yaopu(95);
+    const result = doClinicService(state, YAOPU);
+    expect(result.changes.time).toBe(32);
+    expect(result.changes.char).toBeUndefined();
+    const tree = result.changes.varTree(state.varTree);
+    expect(tree.世界.势力声誉.青城派).toBe(100);
+    expect(tree.世界.威望).toBe(100);
+  });
+
+  it("refuses the hostile and charges normal fees otherwise", () => {
+    expect(doClinicService(yaopu(-20), YAOPU).changes).toBeUndefined();
+    const heal = healAtHospital({ ...yaopu(50), char: { money: 50, hp: [10, 100] } }, { cost: 30, healAmt: 90, buildingName: "青城药圃", buildingId: YAOPU });
+    expect(heal.changes.char.money).toBe(20);
   });
 });
