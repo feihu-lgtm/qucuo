@@ -285,7 +285,7 @@
       env(safe-area-inset-bottom)
       env(safe-area-inset-left);
     overflow-y: auto !important;
-    background: var(--bg-panel);
+    background: var(--bg-panel) !important;
     display: flex;
     flex-direction: column;
     overscroll-behavior: contain;

@@ -32,7 +32,7 @@ import {
 } from "../../features/bank/logic.js";
 import { joinSect, leaveSect } from "../../features/sect/logic.js";
 import { auctionWin } from "../../features/auction/logic.js";
-import { buyFactionShopItem } from "../../features/buildings/factionShop.js";
+import { buyFactionShopItem, sellFactionShopItem } from "../../features/buildings/factionShop.js";
 import { doClinicService } from "../../features/buildings/factionClinic.js";
 import { doChaojing } from "../../features/sect/chaojing.js";
 
@@ -42,6 +42,11 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
     if (result.changes) captureUndo();
     applyResult(featureCtxRef.current, result);
   }, { feature: "building.buyTangmenItem" }), [captureUndo, featureCtxRef]);
+
+  const handleSellFactionItem = useCallback((item, shopKey) => applyResult(featureCtxRef.current, () => {
+    captureUndo();
+    applyResult(featureCtxRef.current, sellFactionShopItem(gameStore.getState(), shopKey, item));
+  }, { feature: "building.sellFactionItem" }), [captureUndo, featureCtxRef]);
 
   const handleBuildingInn = useCallback((cost, roomType) => applyResult(featureCtxRef.current, () => {
     captureUndo();
@@ -226,6 +231,7 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, feature
 
   return {
     handleBuyTangmenItem,
+    handleSellFactionItem,
     handleBuildingInn,
     handleBuildingHeal,
     handleClinicService,

@@ -1,7 +1,7 @@
 import { makeNamedItem } from "../../domain/data/items/catalog.js";
 import { buildShopInventory } from "../../domain/data/shops/qucuoShops.js";
 import { discountedBuyPrice } from "../../domain/rules/economy/equipment.js";
-import { factionRepCoef, factionRepOf } from "../../domain/rules/economy/factionRep.js";
+import { factionRepCoef, factionRepOf, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { SECT_MEMBER_FLAGS } from "../../domain/rules/character/factionEntry.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
@@ -23,6 +23,8 @@ const FACTION_SHOPS = {
     banned: "唐门已把你记上黑账，哪处铺面都不卖你东西。",
     hostileClosed: { vault: "内库铁门紧闭，守库子弟说你如今不便进来。" },
     hostileQualities: ["绿"],
+    // 合稿「唐门·七、1」加分行为 1：暗器铺/唐堡内库累计大额消费，每满 300 两 +3，上限 3 次。
+    spendBonus: { per: 300, rep: 3, times: 3 },
   },
   青城商坊: {
     faction: "青城派", idPrefix: "qingcheng_purchase",
@@ -69,6 +71,8 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileQualities: [],
     hostileItems: ["高原酥油膏", "藏青稞健脾散", "藏红花活血丸"],
+    // 合稿「喇嘛庙·七、2」加分行为 2：旅途中采得的雪莲平价售予药堂 +6（+5~8 取中值）。
+    sellRep: { items: ["雪莲幼苗", "寒泉雪莲"], rep: 6 },
   },
   // 玉泉茶马货栈（玉泉寨）：对外的茶马铺面，交恶至敌对（-59~-20）只摆白品日用并加价，
   // 冷淡（-19~-1）只剩炒面粪饼；深交折扣走 factionRepCoef 通用档（rep80 → 0.75，近似合稿 140→0.7）。
@@ -244,6 +248,14 @@ export function buyFactionShopItem(state, shopKey, itemName, now = Date.now()) {
   }
   const price = payPrice(item.buyPrice, selectEffectiveStats(state).effectiveSpecialNow.智谋 ?? 5, offer.coef);
   if ((state.char?.money ?? 0) < price) return message("银两不足。");
+  // 消费里程碑（合稿·唐门「声誉·加分行为」：每满300两 +3，上限3次）。
+  // 挂在 char.shopSpend 上，跨次累计，里程碑用 crossed 数差值结算。
+  const spendBonus = shop.spendBonus;
+  const oldSpend = state.char?.shopSpend?.[shopKey] ?? 0;
+  const newSpend = oldSpend + price;
+  const crossed = spendBonus
+    ? Math.min(Math.floor(newSpend / spendBonus.per), spendBonus.times) - Math.min(Math.floor(oldSpend / spendBonus.per), spendBonus.times)
+    : 0;
   return {
     changes: {
       char: (char) => ({
@@ -251,6 +263,7 @@ export function buyFactionShopItem(state, shopKey, itemName, now = Date.now()) {
         money: char.money - price,
         shopSpend: { ...char.shopSpend, [shopKey]: (char.shopSpend?.[shopKey] ?? 0) + price },
       }),
+      ...(crossed > 0 ? { varTree: (prev) => grantFactionRep(prev, { [shop.faction]: spendBonus.rep * crossed }).varTree } : {}),
       inv: (inv = []) => {
         let index = inv.length;
         while (inv.some((entry) => entry?.id === `${shop.idPrefix}_${now}_${index}`)) index++;
@@ -258,7 +271,30 @@ export function buyFactionShopItem(state, shopKey, itemName, now = Date.now()) {
       },
       ...(item.limitOnce || item.limit ? { flags: (flags = []) => [...flags, nextBoughtFlag(flags, shopKey, item)] } : {}),
     },
-    logs: [{ t: "item", text: `购得「${item.name}」，花费${price}两。` }],
+    logs: [
+      { t: "item", text: `购得「${item.name}」，花费${price}两。` },
+      ...(crossed > 0 ? [{ t: "affection", text: `  ✦ 掌柜的在账上记了你的大名——${shop.faction}声誉 +${spendBonus.rep * crossed}（大额往来）` }] : []),
+    ],
     note: { text: `购得「${item.name}」，花${price}两。`, source: NOTE_SOURCE.DUMB },
+  };
+}
+
+// 卖出给势力商店：药堂这类「平价收药材换声誉」的铺面（shop.sellRep）。
+export function sellFactionShopItem(state, shopKey, item) {
+  const shop = FACTION_SHOPS[shopKey];
+  const price = item.sellPrice ?? 0;
+  const rep = shop?.sellRep?.items.includes(item.name)
+    ? { faction: shop.faction, rep: shop.sellRep.rep } : null;
+  return {
+    changes: {
+      inv: (inv = []) => inv.filter((entry) => (typeof entry === "object" ? entry.id : entry) !== item.id),
+      char: (char) => ({ ...char, money: (char.money || 0) + price }),
+      ...(rep ? { varTree: (prev) => grantFactionRep(prev, { [rep.faction]: rep.rep }).varTree } : {}),
+    },
+    logs: [
+      { t: "item", text: `  卖出「${item.name}」，得${price}两。` },
+      ...(rep ? [{ t: "affection", text: `  ✦ 掌柜的按平价收了药材，往功德册上记了一笔——${rep.faction}声誉 +${rep.rep}` }] : []),
+    ],
+    note: { text: `卖出「${item.name}」，得银${price}两。`, source: NOTE_SOURCE.DUMB },
   };
 }
