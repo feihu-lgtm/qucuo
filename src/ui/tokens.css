@@ -127,6 +127,15 @@
   --ink-bg: #0a0a09;
   --ink-bg-panel: #111110;
 
+  /* 新手教程浮层定色（原字面量，不随日间模式变）。 */
+  --tutorial-dim: #b0a080;
+  --tutorial-map: #a0b8c0;
+  --tutorial-move: #9ac0a0;
+  --tutorial-note: #9a9080;
+  --tutorial-nsfw: #c85a6a;
+  --tutorial-time: #c0a86a;
+  --tutorial-title: #f0e0c0;
+
   /* 设置面板定色（原字面量，不随日间模式变） */
   --ink-overlay: rgba(4,4,10,0.92);
   --ink-divider: #1a1d2e;
