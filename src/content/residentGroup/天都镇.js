@@ -186,7 +186,7 @@ export default { residentGroup: {
     },
     // ── 百花门（东街百花楼，合稿·人物档案） ──
     {
-      name: "阿芷", id: "resident_azhi", levelCap: 14,
+      name: "阿芷", id: "resident_azhi", levelCap: 4,
       brief: "百花门二当家，地窖蛊房司蛊",
       personality: "冷硬警觉、恩怨分明，对兰姐死忠；亲妹死于麻九娘追兵，凡事以保住楼里姐妹活命为第一铁律。",
       carry: [
@@ -200,7 +200,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "苏折柳", id: "resident_suzheliu", levelCap: 8,
+      name: "苏折柳", id: "resident_suzheliu", levelCap: 2,
       brief: "百花楼账房先生，听风雅阁主事，精于易容与仿墨验契",
       personality: "温文惫懒、嘴毒心细、嫉恶如仇；被土司府逼得家破人亡的蜀南落魄书生，誓要用账本和假脸替底层人算真账。",
       carry: [
@@ -214,7 +214,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "花婆", id: "resident_huapo", levelCap: 10,
+      name: "花婆", id: "resident_huapo", levelCap: 3,
       brief: "百花暖棚老花匠，花医静室坐堂毒医",
       personality: "絮叨慈祥、外粗内细、医毒同源；最恨拿毒蛊欺凌无辜，见人受伤总忍不住边骂边往嘴里塞苦药。",
       carry: [
@@ -228,7 +228,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "小蝉", id: "resident_xiaochan", levelCap: 4,
+      name: "小蝉", id: "resident_xiaochan", levelCap: 1,
       brief: "百花前厅歌女，彩雀暗檐传讯手，玉泉寨逃民遗孤",
       personality: "机灵嘴甜、爱凑热闹却极守口风，记性过目不忘；一心守住百花楼这个收留自己的家。",
       carry: [

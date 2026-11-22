@@ -20,7 +20,7 @@ export default { quest: {
         description: "乌木方桌翻了两张，玫瑰酿淌了一地。赫连铸拎着酒坛口出秽语，他身后一个南客趁乱往坛里弹入一撮无色药粉。小蝉攥着托盘退到台角，圆脸煞白。",
         completionFlag: ["quest_bh1_subdue", "quest_bh1_disarm"],
         choices: [
-          { flag: "quest_bh1_subdue", label: "直接打断赫连铸腿脚", resolve: "combat", combatNpc: { name: "赫连铸与南客", levelCap: 8 } },
+          { flag: "quest_bh1_subdue", label: "直接打断赫连铸腿脚", resolve: "combat", combatNpc: { name: "赫连铸与南客", levelCap: 4 } },
           { flag: "quest_bh1_disarm", label: "只缴械驱离·留活口细查", resolve: "none", narration: "你不拔刀，只借势卸了赫连铸的腕子把人轰出门，反手扣住那个弹药粉的南客——他咬破齿间毒囊，当场毙命。花婆赶来验尸，认出是滇南五仙教手法的「三步醉」。" },
         ],
         onReach: {
@@ -80,7 +80,7 @@ export default { quest: {
         completionFlag: ["quest_bh2_disguise", "quest_bh2_raid"],
         choices: [
           { flag: "quest_bh2_disguise", label: "回听风雅阁易容·智取密信", resolve: "none", narration: "苏折柳一盏茶功夫把你画成土司府跑腿小吏。你大摇大摆上前递了句切口，毒使不疑有他，密信残片与瘴药到手，零伤亡撤离。" },
-          { flag: "quest_bh2_raid", label: "夜袭毒棚·强攻夺信", resolve: "combat", combatNpc: { name: "苗疆毒使与便衣差役", levelCap: 10 } },
+          { flag: "quest_bh2_raid", label: "夜袭毒棚·强攻夺信", resolve: "combat", combatNpc: { name: "苗疆毒使与便衣差役", levelCap: 5 } },
         ],
         onReach: {
           byFlag: {
@@ -139,7 +139,7 @@ export default { quest: {
         completionFlag: ["quest_bhs1_sneak", "quest_bhs1_fight"],
         choices: [
           { flag: "quest_bhs1_sneak", label: "顺手牵羊·不声不响取走", resolve: "none", narration: "你混入脚夫堆里打了个转，褡裢里的瓷瓶与半张试笔草纸已进了你的袖子，马夫还在跟守城卒插科打诨。" },
-          { flag: "quest_bhs1_fight", label: "拦路硬夺·缴货走人", resolve: "combat", combatNpc: { name: "陆府马夫与护卫", levelCap: 9 } },
+          { flag: "quest_bhs1_fight", label: "拦路硬夺·缴货走人", resolve: "combat", combatNpc: { name: "陆府马夫与护卫", levelCap: 4 } },
         ],
       },
       {
