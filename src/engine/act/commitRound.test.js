@@ -37,6 +37,14 @@ function makeDeps(state, proposals = {}, overrides = {}) {
     get(target, key) {
       if (key in target) return target[key];
       if (typeof key !== "string" || !key.startsWith("set")) return undefined;
+      // setLog 在生产里是日志数组的 React setter；测试里落到同一个 logs 数组上
+      if (key === "setLog") {
+        return (value) => {
+          const next = typeof value === "function" ? value(logs) : value;
+          logs.length = 0;
+          logs.push(...next);
+        };
+      }
       const path = key[3].toLowerCase() + key.slice(4);
       return (value) => { state[path] = typeof value === "function" ? value(state[path]) : value; };
     },

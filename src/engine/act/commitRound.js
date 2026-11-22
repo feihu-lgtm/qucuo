@@ -9,7 +9,7 @@ import { emitNarrative } from "./postCommit/narrative.js";
 import { recordRumors } from "./postCommit/rumors.js";
 import { fixateNpcs } from "./postCommit/npcFixation.js";
 import { materializeEmergence } from "./postCommit/emergence.js";
-import { writeRoom } from "./postCommit/roomWrite.js";
+import { emitRoomHeader, writeRoom } from "./postCommit/roomWrite.js";
 import { emitChoices } from "./postCommit/choices.js";
 import { writeMemoryNote } from "./postCommit/memoryNote.js";
 import { registerMemoryFact } from "./postCommit/memoryFact.js";
@@ -103,6 +103,7 @@ export function commitRound(d) {
     luck: d.char.special?.气运 ?? 5,
   };
   settleDeal(d);                    // 赌石谈价结算
+  emitRoomHeader(d);                // 移动落地的地名标题，排在正文之前
   emitNarrative(d);                 // 台本覆盖/切磋战报/正文/截断提示
   recordRumors(d);                  // 涌现·传闻登记
   fixateNpcs(d, postCtx);           // 在场名单幽灵过滤+战斗数据固化+新面孔/重逢
