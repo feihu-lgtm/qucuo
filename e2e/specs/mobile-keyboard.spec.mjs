@@ -11,10 +11,19 @@ export default async function mobileKeyboard({ page, game }) {
   const originalInput = await input.elementHandle();
 
   // iOS first reports the keyboard via visualViewport.resize.
-  await page.evaluate(() => {
+  const restoreViewport = await page.evaluateHandle(() => {
     const viewport = globalThis.visualViewport;
+    const viewportHeight = Object.getOwnPropertyDescriptor(viewport, "height");
+    const innerHeight = Object.getOwnPropertyDescriptor(globalThis, "innerHeight");
     Object.defineProperty(viewport, "height", { configurable: true, value: 524 });
     viewport.dispatchEvent(new globalThis.Event("resize"));
+    return () => {
+      if (viewportHeight) Object.defineProperty(viewport, "height", viewportHeight);
+      else delete viewport.height;
+      if (innerHeight) Object.defineProperty(globalThis, "innerHeight", innerHeight);
+      else delete globalThis.innerHeight;
+      viewport.dispatchEvent(new globalThis.Event("resize"));
+    };
   });
   await tabs.waitFor({ state: "hidden" });
 
@@ -33,10 +42,7 @@ export default async function mobileKeyboard({ page, game }) {
     assert.equal(await originalInput.evaluate(element => element === element.ownerDocument.activeElement), true);
   }
 
-  await page.evaluate(() => {
-    delete globalThis.visualViewport.height;
-    delete globalThis.innerHeight;
-    globalThis.visualViewport.dispatchEvent(new globalThis.Event("resize"));
-  });
+  await restoreViewport.evaluate(restore => restore());
+  assert.equal(await page.evaluate(() => globalThis.innerHeight), viewport.height);
   await tabs.waitFor({ state: "visible" });
 }
