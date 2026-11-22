@@ -278,6 +278,12 @@
   --ink-wood-shade: #20170f;
   --ink-wood-warm: #5a3d1a;
 
+  /* 建筑屏共用外壳和按钮定色（原字面量，不随日间模式变）：--building-panel-bg 是区域主题缺 panelBg 时的底色。 */
+  --building-disabled-bg: #1a1a1a;
+  --building-disabled-edge: #2a2a2a;
+  --building-disabled-text: #4a4a4a;
+  --building-panel-bg: #14161f;
+
   /* 识海定色（原字面量，不随日间模式变）。 */
   --mind-button-edge: #8a6a2a;
   --mind-button-text: #f0d888;

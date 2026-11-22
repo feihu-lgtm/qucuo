@@ -14,7 +14,7 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   if (inline) {
     return (
-      <div className="mobile-building-content" style={{ borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", height: "100%", overflowY: "auto" }}>
+      <div className="mobile-building-content" style={{ borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "var(--building-panel-bg)", height: "100%", overflowY: "auto" }}>
         {children}
       </div>
     );
@@ -30,10 +30,10 @@ export function Overlay({ children, onClose, zoneTheme, inline }) {
       <div
         className="mobile-overlay-panel mobile-building-panel"
         style={isMobile
-          ? { background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`,
+          ? { background: zoneTheme.panelBg || "var(--building-panel-bg)", border: `1px solid ${zoneTheme.border}`,
               borderRadius: `${RADIUS.modal}px ${RADIUS.modal}px 0 0`, width: "100%", maxWidth: "100vw", maxHeight: "92vh",
               overflowY: "auto", WebkitOverflowScrolling: "touch" }
-          : { background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`,
+          : { background: zoneTheme.panelBg || "var(--building-panel-bg)", border: `1px solid ${zoneTheme.border}`,
               borderRadius: RADIUS.modal, width: 440, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto" }}
         onClick={e => e.stopPropagation()}
       >
@@ -53,7 +53,7 @@ export function Header({ name, zoneTheme, onClose }) {
       // 里的第一个元素，会跟着内容一起被滚出视野——关闭按钮消失，只能回滚一格
       // 或者刷新页面才能退出。position:sticky + top:0 让它始终钉在这层滚动区域
       // 顶部，不管滚多远都看得见、点得到。zIndex 避免被下面滚上来的内容盖住。
-      position: "sticky", top: 0, zIndex: 1, background: zoneTheme.panelBg || "#14161f",
+      position: "sticky", top: 0, zIndex: 1, background: zoneTheme.panelBg || "var(--building-panel-bg)",
     }}>
       <span style={{ fontSize: 14, color: zoneTheme.text || "var(--ink-text)" }}>{name}</span>
       <span
@@ -74,9 +74,9 @@ export function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
       onClick={disabled ? undefined : onClick}
       style={{
         fontSize: 12, padding: "5px 14px", borderRadius: RADIUS.btn, cursor: disabled ? "not-allowed" : "pointer",
-        color: disabled ? "#4a4a4a" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
-        background: disabled ? "#1a1a1a" : secondary ? "transparent" : zoneTheme.accent,
-        border: `1px solid ${disabled ? "#2a2a2a" : secondary ? zoneTheme.border : zoneTheme.accent}`,
+        color: disabled ? "var(--building-disabled-text)" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
+        background: disabled ? "var(--building-disabled-bg)" : secondary ? "transparent" : zoneTheme.accent,
+        border: `1px solid ${disabled ? "var(--building-disabled-edge)" : secondary ? zoneTheme.border : zoneTheme.accent}`,
         opacity: disabled ? 0.5 : 1,
         userSelect: "none",
         display: "inline-block",
