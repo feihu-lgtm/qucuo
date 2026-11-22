@@ -172,7 +172,7 @@ export const BUILDING_SCREENS = {
   ),
   [BUILDING_TYPE.SECT_ENTRY]: (c) => (
     <SectEntryScreen building={c.building} char={c.char} flags={c.flags} varTree={c.varTree} inline
-      narratorAffection={c.sectMasterAffection}
+      narratorAffection={c.sectMasterAffection} questProgress={c.questProgress}
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onJoinSect={c.handleJoinSect} onLeaveSect={c.handleLeaveSect} />
   ),
   [BUILDING_TYPE.AUCTION]: (c) => (
