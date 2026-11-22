@@ -18,7 +18,17 @@ export function applyPostResult(d, out) {
   }
   if (out.refWrites) {
     for (const [key, value] of Object.entries(out.refWrites)) {
-      if (d[key]) d[key].current = value;
+      if (!d[key]) continue;
+      if (typeof value === "function") {
+        const next = value(d[key].current);
+        if (next !== undefined) d[key].current = next; // 返回 undefined 视为原地改（如 push）
+      } else {
+        d[key].current = value;
+      }
     }
   }
+  // dWrites：处理器间隐式传值的显式化——写回 d 自身（如 freshNpcData 供后续处理器读）
+  if (out.dWrites) Object.assign(d, out.dWrites);
+  // effects：异步副作用（如小纸条向量写入），由落盘口统一触发
+  if (out.effects) out.effects.forEach((fn) => fn());
 }

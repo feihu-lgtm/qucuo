@@ -109,14 +109,24 @@ export function commitRound(d) {
   emitRoomHeader(d);                // 移动落地的地名标题，排在正文之前
   applyPostResult(d, emitNarrative({ p: d.p, questProgress: d.questProgress })); // 台本覆盖/切磋战报/正文/截断提示
   applyPostResult(d, recordRumors({ p: d.p, narrativeText: d.narrativeText })); // 涌现·传闻登记
-  fixateNpcs(d, postCtx);           // 在场名单幽灵过滤+战斗数据固化+新面孔/重逢
+  applyPostResult(d, fixateNpcs({    // 在场名单幽灵过滤+战斗数据固化+新面孔/重逢
+    p: d.p, room: d.room, innerRoomName: d.innerRoomName, narrativeText: d.narrativeText,
+    varTree: d.varTreeRef.current, time: d.time,
+    systemAcceptedNames: postCtx.systemAcceptedNames, luck: postCtx.luck,
+  }));
   applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck })); // 涌现·实体化
   writeRoom(d, { traceStep });      // 房间写回（锁定目的地/固定地图/兜底）
   commitProposalWrites(d, (...args) => traceStep(d._trace, ...args));
   applyPostResult(d, emitChoices({ choices: d.p.choices })); // 选项延时浮现
   if (!d.isTalk) d.setTime(t => t + 1);
-  writeMemoryNote(d);               // 小纸条·向量写入
-  registerMemoryFact(d);            // memory → 可传播事实账本
+  applyPostResult(d, writeMemoryNote({ // 小纸条·向量写入
+    p: d.p, apiCfg: d.apiCfg, room: d.room, activeTarget: d.activeTarget,
+    isTalk: d.isTalk, talkTarget: d.talkTarget, time: d.time, varTree: d.varTreeRef.current,
+  }));
+  applyPostResult(d, registerMemoryFact({ // memory → 可传播事实账本
+    p: d.p, room: d.room, activeTarget: d.activeTarget,
+    isTalk: d.isTalk, talkTarget: d.talkTarget, time: d.time,
+  }));
   applyPostResult(d, markTalkAcquaintance({ isTalk: d.isTalk, talkTarget: d.talkTarget, room: d.room, p: d.p })); // 对话即认识
   applyPostResult(d, appendConvo({ newConvo: d.newConvo, rawFull: d.rawFull, p: d.p, time: d.time })); // convo 条目追加 memory/turn
 
