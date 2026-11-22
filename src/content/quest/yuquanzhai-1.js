@@ -13,6 +13,7 @@ export default { quest: {
     stages: [
       {
         id: "s1_rescue",
+        giver: null,
         requireLocation: { district: "大草甸" },
         description: "大草甸浅沟里，两个差役正把白牦牛往寨外牵，牛角上的褪色红布条被风吹得贴在牛脸上。差役说这叫抵税，牵走就是规矩——牦牛在挣扎，阿索在远处哨声都吹哑了。",
         playerHint: "阿索的牦牛被土司府差役往大草甸外牵，去浅沟拦住他们——动手赶人，或者掏30两赎回。",
@@ -27,7 +28,7 @@ export default { quest: {
             quest_yuquanzhai1_fight: {
               exp: 1, money: 40, reputation: 6,
               favorability: { "小牧童阿索": 30 },
-              factionRep: { 玉泉寨: 15, 黑风寨: 3, 鱼定村: 3, 土司府: -5 },
+              factionRep: { 玉泉寨: 15, 黑风寨: 3, 鱼定村: 3, 鱼定土司府: -5 },
               items: [
                 { name: "风干牦牛肉", category: "misc", quality: "白" },
                 { name: "风干牦牛肉", category: "misc", quality: "白" },

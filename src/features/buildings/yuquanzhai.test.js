@@ -121,7 +121,7 @@ describe("玉泉寨", () => {
     expect(isQuestGateOpen(quest, {}, [], rep(-1))).toBe(false);
     const stage = quest.stages[0];
     const fight = resolveStageRewards(stage, ["quest_yuquanzhai1_fight"]);
-    expect(fight.factionRep).toMatchObject({ 玉泉寨: 15, 黑风寨: 3, 鱼定村: 3, 土司府: -5 });
+    expect(fight.factionRep).toMatchObject({ 玉泉寨: 15, 黑风寨: 3, 鱼定村: 3, 鱼定土司府: -5 });
     expect(fight.items.map((item) => item.name)).toContain("小牧童的口哨");
     const pay = resolveStageRewards(stage, ["quest_yuquanzhai1_pay"]);
     expect(pay.money).toBe(-10);
