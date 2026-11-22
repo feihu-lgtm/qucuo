@@ -114,11 +114,8 @@ const MAX_SINGLE_ADD = AFFECTION_RULES.mvu.maxDelta;
 // AI 产出的 mvu 指令本身就是 Patch[]；本函数只是 applyPatches(source:'mvu')
 // 的门面：入树前深拷贝、返回形适配 {tree, applied, rejected, logs}。
 export function applyMvuCommands(varTree, commands, opts = {}) {
-  const { state, applied, rejected, logs } = applyPatches(
-    { varTree: JSON.parse(JSON.stringify(varTree)) },
-    commands,
-    { ...opts, source: "mvu" },
-  );
+  const turnBase = { varTree: JSON.parse(JSON.stringify(varTree)) };
+  const { state, applied, rejected, logs } = applyPatches(turnBase, commands, { ...opts, source: "mvu", turnBase });
   return { tree: state.varTree, applied, rejected, logs };
 }
 

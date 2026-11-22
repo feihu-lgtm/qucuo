@@ -42,4 +42,15 @@ describe("faction reputation", () => {
     ]);
     expect(next.世界.势力声誉).toEqual({ 玉泉寨: 15, 黑风寨: 20 });
   });
+
+  it("caps the whole AI turn at ±10 per faction and keeps nested writes off the table", () => {
+    const { tree: next, rejected } = applyMvuCommands(tree({ 玉泉寨: 10, 黑风寨: 20 }), [
+      { op: "add", path: "世界.势力声誉.玉泉寨", value: 10 },
+      { op: "add", path: "世界.势力声誉.玉泉寨", value: 10 },
+      { op: "set", path: "世界.势力声誉.玉泉寨", value: 60 },
+      { op: "set", path: "世界.势力声誉.黑风寨.备注", value: "x" },
+    ]);
+    expect(next.世界.势力声誉).toEqual({ 玉泉寨: 20, 黑风寨: 20 });
+    expect(rejected.map((entry) => entry.path)).toEqual(["世界.势力声誉.黑风寨.备注"]);
+  });
 });

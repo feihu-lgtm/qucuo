@@ -63,7 +63,8 @@ export function applyWrite(state, { op, path, value }, options = {}) {
 
   const field = (parts.length === id.split(".").length && Object.hasOwn(FIELDS, id) ? FIELDS[id] : null)
     ?? patterns.find(([pattern]) => pathMatches(pattern, parts))?.[1];
-  if (mvu && field !== FIELDS[FIELD.factionRep] && isPrefix(parts, factionRepParent)) {
+  if (mvu && field !== FIELDS[FIELD.factionRep]
+    && (isPrefix(parts, factionRepParent) || isPrefix(factionRepParent, parts))) {
     return reject(`"${path}" 会整块覆盖势力声誉，只能逐个写 世界.势力声誉.<势力>`);
   }
   if (!field || field.readOnly || (mvu && field.ai !== true)) {
@@ -84,10 +85,6 @@ export function applyWrite(state, { op, path, value }, options = {}) {
     return reject("气血必须是两个有限数字");
   }
   const before = readPath(state, parts);
-  if (op === "set" && mvu && field === FIELDS[FIELD.factionRep]) {
-    const base = typeof before === "number" ? before : field.default;
-    value = clamp(value, base - field.maxDelta, base + field.maxDelta);
-  }
   let actualDelta;
   if (op === "add") {
     actualDelta = value;
@@ -102,6 +99,13 @@ export function applyWrite(state, { op, path, value }, options = {}) {
     if (typeof base !== "number") return reject(`${field.label} 不能做数值加减`);
     value = base + actualDelta;
     if (!Number.isFinite(value)) return reject(`${field.label}必须是有限数字`);
+  }
+  if (mvu && field === FIELDS[FIELD.factionRep]) {
+    // 一回合内多条指令合计也不超过 ±maxDelta，以回合开始时的值为基准。
+    const start = readPath(options.turnBase ?? state, parts);
+    const base = typeof start === "number" ? start : field.default;
+    value = clamp(value, base - field.maxDelta, base + field.maxDelta);
+    if (op === "add") actualDelta = value - (typeof before === "number" ? before : field.default);
   }
   let finalValue = typeof value === "number" ? clamp(value, bounds.min, bounds.max) : value;
   if (id === FIELD.hp && Array.isArray(finalValue)) {
