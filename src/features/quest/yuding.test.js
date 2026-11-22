@@ -35,6 +35,8 @@ describe("鱼定村任务线", () => {
     const pre6 = done("village2_jieshixiajiu", "village3_zanghan_hunshi", "village4_zahuoshangren_jinhuonan", "village5_laolieshu_chuanren");
     expect(isQuestGateOpen(v6, pre6, [], rep(59))).toBe(false);
     expect(isQuestGateOpen(v6, pre6, [], rep(60))).toBe(true);
+    const active = { village5_laolieshu_chuanren: { status: "active" }, village1_lubujianbuping: { status: "completed" } };
+    expect(isQuestGateOpen(v5, active, [], rep(0))).toBe(true);
   });
 
   it("pays 合稿 branch rewards", () => {
