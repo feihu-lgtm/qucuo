@@ -159,11 +159,23 @@ describe("settleKind 铁律的其余分支", () => {
   it("companion_invite 双调用：必写爽快应下；兽类伙伴不说人话", () => {
     // 契约：叙事侧铁律把结伴写成既成事实，beast 标志决定能不能开口。
     const { phiRules } = mk("settle", true, {
-      settleNpc: "雪豹", settleKind: "companion_invite", settleBeast: true,
+      settleNpc: "墨团", settleKind: "companion_invite", settleBeast: true,
     });
     expect(phiRules).toContain("伙伴入队铁律");
     expect(phiRules).toContain("cannotSpeak");
     expect(phiRules).toContain("禁写犹豫、观望、抗拒");
+  });
+
+  it("companion_invite：雪豹、珍珠认主即化为 18 岁以上成年女子，能说话", () => {
+    for (const dual of [true, false]) {
+      for (const settleNpc of ["雪豹", "珍珠"]) {
+        const { phiRules } = mk("settle", dual, { settleNpc, settleKind: "companion_invite", settleBeast: true });
+        expect(phiRules).toContain("化为人形");
+        expect(phiRules).toContain("年满十八岁以上的成年女子");
+        expect(phiRules).toContain("绝不写成未成年");
+        expect(phiRules).not.toContain("cannotSpeak");
+      }
+    }
   });
 
   it("companion_invite 单调用：直接 _.set 初始好感，不是 _.add", () => {
