@@ -13,6 +13,7 @@ import { add, applyWrite, set, updateField } from "../../domain/rules/state/appl
 import { giftRange } from "../../domain/rules/state/fields.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
 import { soupKitchenRepGain } from "../../domain/rules/economy/soupKitchen.js";
+import { factionTurnInOf, factionTurnInGain } from "../../domain/rules/economy/factionTurnIn.js";
 import { herbDonationRepGain } from "../../domain/rules/economy/herbDonation.js";
 import { applyFactionRep } from "../../domain/rules/economy/factionRep.js";
 
@@ -93,6 +94,18 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     changes.varTree = composeUpdates(changes.varTree, (prev) => applyFactionRep(prev, { [herb.faction]: herb.delta }, { ripple: false }));
     changes.flags = changes.flags ? composeUpdates(changes.flags, herb.flags) : herb.flags;
     logs.push({ t: "affection", text: `  ✦ 阿雅把药材收进调香药房，${herb.faction}声誉 +${herb.delta}` });
+  }
+  // 势力信物交还：血刀信物/流亡凭证/蜜蜡残珠这类交到指定人物手上，涨本派声誉（死对头扣分走联动）。
+  const turnIn = factionTurnInOf(npc, itemName);
+  if (turnIn) {
+    changes.varTree = composeUpdates(changes.varTree, (prev) => {
+      let next = applyFactionRep(prev, factionTurnInGain(turnIn));
+      for (const [npcName, favor] of Object.entries(turnIn.favor || {})) {
+        next = applyWrite({ varTree: next }, add(["角色", npcName, "好感度"], favor)).state.varTree;
+      }
+      return next;
+    });
+    logs.push({ t: "affection", text: `  ✦ ${turnIn.log}（${turnIn.faction}声誉 +${turnIn.rep}）` });
   }
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);
