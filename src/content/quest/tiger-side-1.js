@@ -23,6 +23,7 @@ export default { quest: {
         description: "分赃的时候到了。盗墓贼斜眼看着守宫砂：「这玩意儿一人一半，还是……」二选一：A.按江湖规矩平分——队友爽快交出守宫砂份额，临别抱拳「下次地宫里再见，算我欠你一顿酒」；B.见财起意黑吃黑——狭小石室里一场搏杀，胜者独吞全部。",
         playerHint: "宝物到手，怎么分由你定。",
         completionFlag: ["quest_tigerside16_s2_fair", "quest_tigerside16_s2_greedy"],
+        requireLocation: { district: "白塔", inner: "白塔地宫" },
         onReach: {
           exp: 3,
           items: [{ name: "白塔地宫守宫砂", category: "misc", quality: "蓝", tags: ["辅料", "虎胆", "任务"], desc: "百花门主线三样辅料之一，兰姐炼蛊要用。" }],
@@ -48,7 +49,7 @@ export default { quest: {
         description: "喇嘛庙山门外不远处，残破的偏殿里坐着个抱琴的灰衣人，琴音疏淡如水。见玩家驻足，他头也不抬：「听得懂就进来，听不懂就走。」玩家以剑招合他的琴音节拍——剑随音走，节奏若合上，琴音便添了一分暖意。",
         playerHint: "山门外破庙里有琴声，以剑招合琴音节拍试试。",
         completionFlag: "quest_tigerside17_s1",
-        at: "喇嘛庙·山门",
+        requireLocation: { district: "喇嘛庙", inner: "山门" },
         onReach: { exp: 2 },
       },
       {
@@ -56,6 +57,7 @@ export default { quest: {
         description: "曲终，琴师微微颔首，起身随手演示了一招剑气外放的秘技——剑未至而气先行。他重新坐下拨了拨琴弦，随口道：「这曲子，是故人教我的。此地故人不少。」说完便闭目养神，不再言语。",
         playerHint: "琴师有话要说，听他教完这招。",
         completionFlag: "quest_tigerside17_s2",
+        requireLocation: { district: "喇嘛庙", inner: "山门" },
         isCgMoment: true,
         onReach: { exp: 3, pot: 3, flags: ["tigerside_lama_oldfriend_hint"] },
       },
@@ -83,6 +85,7 @@ export default { quest: {
         description: "夜半，店家摸进房来搜包袱，玩家暴起反制，三两下把人按在桌上。店家吓得魂不附体全盘托出。搜他的暗柜：多年劫掠的财物之外，还有几件失踪商队的遗物——天都镇的地下秩序，远不止百花门一家。",
         playerHint: "店家夜里要来搜身——将计就计反制他。",
         completionFlag: "quest_tigerside18_s2",
+        requireLocation: { district: "天都镇", inner: "天都行脚楼" },
         onReach: { exp: 3, money: 40, flags: ["tigerside_underworld_hint"], items: [{ name: "失踪商队遗物", category: "misc", quality: "蓝", tags: ["物证", "伏笔", "任务"], desc: "黑店老板暗柜里的旧物，刻着某失踪商队的徽记——天都镇的水，比看上去深得多。" }] },
       },
     ],
@@ -110,6 +113,7 @@ export default { quest: {
         description: "零零碎碎的闲谈拼凑出兰姐身世的更多细节：她的师父是怎么死的，她离乡的具体缘由，半枚青银令背后的恩怨。玩家卸了易容回报兰姐，她听完沉默片刻：「你肯费这份心思，我记下了。」",
         playerHint: "把听到的碎片拼起来，回去见兰姐。",
         completionFlag: "quest_tigerside19_s2",
+        requireLocation: { district: "天都镇", inner: "百花楼" },
         onReach: { exp: 3, favorability: { "兰姐": 3 }, flags: ["tigerside_lanjie_past_detail"] },
       },
     ],
@@ -128,7 +132,7 @@ export default { quest: {
         description: "镇口，一个精瘦的汉子拦住玩家，递来一封火漆密信和定金：「送锦官城，亲手交给我师父——就说是清理门户用的，别多看。」玩家接了信上路，行至半路，林子里窜出两个持刀杀手，刀刀要命——灭口来的。",
         playerHint: "有人托你送信去锦官城，半路不太平。",
         completionFlag: "quest_tigerside20_s1",
-        at: "天都镇·镇口",
+        requireLocation: { district: "天都镇", inner: "镇口" },
         onReach: { exp: 2 },
       },
       {
@@ -136,6 +140,7 @@ export default { quest: {
         description: "反杀刺客后拆开密信：哪有什么清理门户，通篇是天都镇地下势力分赃不均的旧账——师兄是要借师父的手除掉知情人。二选一：A.把信原样送给师父，得清理门户的信任与酬劳；B.回头找师兄摊牌，拿信换一笔高额封口费。",
         playerHint: "密信内容已见，交师父还是卖回给师兄，你选。",
         completionFlag: ["quest_tigerside20_s2_honor", "quest_tigerside20_s2_hush"],
+        requireLocation: { district: "锦官城", inner: "官道" },
         onReach: {
           exp: 3,
           byFlag: {
