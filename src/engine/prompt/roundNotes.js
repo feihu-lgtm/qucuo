@@ -145,14 +145,14 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
   );
   // 随行伙伴（雪豹/珍珠…灵兽类）的二形态人设：伙伴不在 visibleNpcs（走 visibleNpcsForAI
   // 单独随行），worldbook 的 matchNpcLore 匹配不到它，人设从不注入 prompt——这里单独补。
-  // 用哪套描述（兽形/人形）由玩家在外貌选择器里挑（getCompanionDescForm），选中的那套
+  // 用哪套描述（兽形/人形）由玩家在外貌选择器里挑（getCompanionDescForm，入队后默认人形），选中的那套
   // 连同身份底色一起注入；■模式且选了人形、且该伙伴有私密性情条目，才追加那段。
   // 明日香这类本就是在场人物的伙伴不登记 COMPANION_LORE，走常规 NPC 人设，此处跳过。
   let companionLore = "";
   const activeComp = activeCompanion(companionState);
   if (activeComp && COMPANION_LORE[activeComp.key]) {
     const lore = COMPANION_LORE[activeComp.key];
-    const form = companionForms[activeComp.key] || "beast";
+    const form = companionForms[activeComp.key] || "human";
     companionLore = `\n\n【${activeComp.label}·随行伙伴在场设定】${lore.base}`;
     companionLore += form === "human" ? lore.human : lore.beast;
     if (form === "human" && nsfwOn && lore.nsfw) companionLore += lore.nsfw;

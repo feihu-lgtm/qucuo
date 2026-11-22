@@ -1,6 +1,7 @@
 import { APPEASE_EXTRACTION_SPEC } from "./appeaseExtraction.js";
 import { renderFieldScales, renderPromptTemplate } from "./promptRefs.js";
 import { AFFECTION_RULES, FIELD, giftRange, learnRange } from "../state/fields.js";
+import { ADULT_HUMAN_FORM, isHumanFormCompanion } from "../companion/companionSlots.js";
 
 // 公共字段和 MVU 路径规矩统一追加到每个提取提示，确保单/双调用保持一致。
 // memory 摘要使用玩家角色名的第三人称，供回忆与事实账本复用。
@@ -130,13 +131,16 @@ ${narrative}
   // 不用 _.add 微调而是直接 _.set 一个较高的初始好感度。跟 GIFT
   // 一样不做"读心"式判断，直接钉死结论。settleOpts 由调用方在命中
   // settleKind:"companion_invite" 时传入（见 MudRPG.jsx handleInviteCompanion）。
-  // settleBeast 区分兽类/人类伙伴：兽类不通人言（cannotSpeak），人类正常说话。
+  // settleBeast 区分兽类/人类伙伴：兽类不通人言（cannotSpeak），人类正常说话；
+  // 雪豹、珍珠这类 humanForm 伙伴认主即化为人形成年女子，能说话。
   COMPANION_INVITE: {
     scaleFields: [FIELD.affection],
     system: "你是游戏状态提取器，专门处理伙伴入队场景的好感度结算——伙伴刚接受邀请结为同行，好感度应直接给一个较高的初始值，不做\"读心\"式判断。",
     user: (narrative, s, settleOpts) => {
       const npcName = settleOpts?.settleNpc || "伙伴";
-      const speech = settleOpts?.settleBeast
+      const speech = isHumanFormCompanion(npcName)
+        ? `她认主这一刻化为人形（${ADULT_HUMAN_FORM}），化形后能开口说话。`
+        : settleOpts?.settleBeast
         ? "它不通人言（cannotSpeak），情感全靠动作、眼神、姿态传达。"
         : "它能正常开口说话。";
       return `${npcName}刚接受了玩家的邀请，正式结为同行伙伴——玩家郑重相邀、对方欣然应下，${npcName}就此定下同行情谊。${speech}

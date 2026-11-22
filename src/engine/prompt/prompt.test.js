@@ -66,14 +66,14 @@ describe("pure prompt builders", () => {
     expect(createPromptContext({ ...state, describeEquipment: customBuilder }).describeEquipment).toBe(customBuilder);
   });
 
-  it("uses beast as the unset or unavailable appearance fallback for all lore companions", () => {
+  it("uses human as the unset or unavailable appearance fallback for all lore companions", () => {
     const state = fixture();
     const keys = Object.keys(COMPANION_LORE);
     for (const getItem of [() => null, () => { throw new Error("unavailable"); }]) {
       vi.stubGlobal("localStorage", { getItem });
       try {
         for (const key of keys) {
-          expect(getCompanionDescForm(key)).toBe("beast");
+          expect(getCompanionDescForm(key)).toBe("human");
           const args = {
             ...state, cmd: "", visibleNpcs: [],
             companionState: { [key]: { unlocked: true, active: true, data: { name: key } } },

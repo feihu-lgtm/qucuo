@@ -9,6 +9,7 @@ import { gateScenario } from "./worldbook.js";
 import { ENGINE_IDENTITY, ISOLATION, MAP_LAW, CATALOG_TAIL, buildTalkItemRule } from "./enginePrompts.js";
 import { buildSeaOfMindRule } from "../narrator/seaOfMind.js";
 import { makeBlock } from "./tavernMapping.js";
+import { ADULT_HUMAN_FORM, isHumanFormCompanion } from "../companion/companionSlots.js";
 
 
 // narrativeOnly=true：提取层模式下主调用只输出散文，去掉 JSON 格式要求和 MVU 指令。
@@ -80,7 +81,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
-      const speech = o.settleBeast
+      const speech = isHumanFormCompanion(o.settleNpc)
+        ? `认主这一刻褪去兽身、化为人形（${ADULT_HUMAN_FORM}），化形后能开口说话，用言语与神情表达结伴之意`
+        : o.settleBeast
         ? `它不通人言（cannotSpeak），情感全靠动作、眼神、姿态传达（以额抵掌、绕身而行、伏低臣服等合其兽类身份的方式）`
         : `能正常开口说话，用言语与神情表达结伴之意`;
       return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行，非临时起意。本轮唯一走向：必写其毫不保留、爽快应下并定下同行情谊，${speech}；禁写犹豫、观望、抗拒或需再三哄劝。`;
@@ -111,7 +114,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
       const { min, max, example } = AFFECTION_RULES.companion;
-      const speech = o.settleBeast
+      const speech = isHumanFormCompanion(o.settleNpc)
+        ? `当场化为人形（${ADULT_HUMAN_FORM}），开口用言语与神情郑重定下同行情谊`
+        : o.settleBeast
         ? `用动作、眼神、姿态（如以额抵掌、伏低臣服）表明结伴之意——它不能说话`
         : `用言语与神情郑重定下同行情谊`;
       return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行。本轮必写其爽快应下、${speech}；禁写犹豫或抗拒。\n本轮必须输出 <mvu> 且为正向：${cn}属初登场伙伴，直接 _.set 好感度至 ${min}~${max} 间。\n示例：_.set('角色.${cn}.好感度', ${example});`;

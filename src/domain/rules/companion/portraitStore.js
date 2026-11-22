@@ -186,8 +186,8 @@ const SL_FORM_KEY = "qucuo_snowleopard_form";
 export function getSnowLeopardForm() {
   try {
     const v = localStorage.getItem(SL_FORM_KEY);
-    return SNOW_LEOPARD_FORMS.some(f => f.key === v) ? v : "beast";
-  } catch { return "beast"; }
+    return SNOW_LEOPARD_FORMS.some(f => f.key === v) ? v : "form1";
+  } catch { return "form1"; }
 }
 export function setSnowLeopardForm(key) {
   try { localStorage.setItem(SL_FORM_KEY, key); } catch { /* ignore */ }
@@ -209,8 +209,8 @@ const PEARL_FORM_KEY = "qucuo_pearl_form";
 export function getPearlForm() {
   try {
     const v = localStorage.getItem(PEARL_FORM_KEY);
-    return PEARL_FORMS.some(f => f.key === v) ? v : "beast";
-  } catch { return "beast"; }
+    return PEARL_FORMS.some(f => f.key === v) ? v : "form1";
+  } catch { return "form1"; }
 }
 export function setPearlForm(key) {
   try { localStorage.setItem(PEARL_FORM_KEY, key); } catch { /* ignore */ }

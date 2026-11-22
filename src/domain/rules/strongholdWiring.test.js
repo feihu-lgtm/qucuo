@@ -299,6 +299,11 @@ describe("BUG1 形态：右栏选什么，发给AI的就是什么（曾经是两
     });
     try {
     for (const key of ["snowLeopard", "pearl"]) {
+      expect(COMPANION_LORE[key].human).toContain("年满十八岁以上的成年女子");
+      expect(COMPANION_LORE[key].human).toContain("能开口说人话");
+      expect(COMPANION_LORE[key].base).not.toContain("不通人言");
+      expect(getCompanionDescForm(key), `${key} 入队后默认应是人形`).toBe("human");
+      expect(getCompanionForm(key)).toBe("form1");
       setCompanionForm(key, "beast");
       expect(getCompanionDescForm(key)).toBe("beast");
       setCompanionForm(key, "form1");
