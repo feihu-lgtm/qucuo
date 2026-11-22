@@ -31,7 +31,7 @@ export default function CharacterPage({ varTree, claimedMilestones, onClaimMiles
         </div>
 
         {characters.length === 0 && (
-          <div style={{ color: "#3a3830", textAlign: "center", padding: "40px 0" }}>尚未结识任何人，先去游戏里闯闯吧</div>
+          <div style={{ color: "var(--ink-dim-deep)", textAlign: "center", padding: "40px 0" }}>尚未结识任何人，先去游戏里闯闯吧</div>
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
@@ -115,10 +115,10 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
               送礼
             </div>
 
-            <div style={{ borderTop: "1px solid #1a1d2e", paddingTop: 12 }}>
+            <div style={{ borderTop: "1px solid var(--ink-divider)", paddingTop: 12 }}>
               <div style={{ fontSize: "11px", color: "var(--good)", marginBottom: 8 }}>专属任务</div>
               {allMilestones.length === 0 && (
-                <div style={{ color: "#3a3830", fontSize: "11px" }}>此人暂无专属任务</div>
+                <div style={{ color: "var(--ink-dim-deep)", fontSize: "11px" }}>此人暂无专属任务</div>
               )}
               {allMilestones.map(m => {
                 const key = `${name}:${m.threshold}`;
@@ -131,11 +131,11 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
                       display: "flex", justifyContent: "space-between", alignItems: "center",
                       padding: "8px 10px", marginBottom: 6, borderRadius: 0,
                       background: unlocked && !claimed ? "rgba(240,192,96,0.1)" : "var(--bg-panel)",
-                      border: `1px solid ${unlocked && !claimed ? "var(--gold-deep)" : "#1a1d2e"}`,
+                      border: `1px solid ${unlocked && !claimed ? "var(--gold-deep)" : "var(--ink-divider)"}`,
                     }}
                   >
                     <div>
-                      <div style={{ color: unlocked ? "var(--text)" : "#4a4a4a" }}>
+                      <div style={{ color: unlocked ? "var(--text)" : "var(--building-disabled-text)" }}>
                         好感度{m.threshold} · {m.title}
                       </div>
                       <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>{m.brief}</div>
@@ -151,7 +151,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
                         style={{ fontSize: "10.5px", color: "var(--ember)", cursor: "pointer", border: "1px solid var(--gold-deep)", borderRadius: 0, padding: "3px 8px", whiteSpace: "nowrap" }}
                       >领取</span>
                     ) : (
-                      <span style={{ fontSize: "10.5px", color: "#3a3830", whiteSpace: "nowrap" }}>未解锁</span>
+                      <span style={{ fontSize: "10.5px", color: "var(--ink-dim-deep)", whiteSpace: "nowrap" }}>未解锁</span>
                     )}
                   </div>
                 );
