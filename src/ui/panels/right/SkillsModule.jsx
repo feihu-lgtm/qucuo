@@ -58,8 +58,8 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
               {mType && <span title={`${mType}类武学`} style={{ fontSize: "9px", color: "var(--bg-deep)", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700, flexShrink: 0 }}>{TYPE_SHORT[mType] || "?"}</span>}
               <span
                 onClick={() => {
-                  const opening = openSkill !== s.name;
-                  setOpenSkill(opening ? s.name : null);
+                  const opening = openSkill !== i;
+                  setOpenSkill(opening ? i : null);
                   if (opening) inspectItem("skill", s.name, s.fixed ? `${q}品·完整招式` : `${q}品·${s.stage}`, null, { worldLook: true });
                 }}
                 style={{ cursor: inspecting === s.name ? "wait" : "pointer", color: qc, fontWeight: s.active ? "bold" : "normal", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === s.name ? 0.6 : 1 }}
@@ -76,7 +76,7 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
               const eff = moveEffectBrief(mv);
               return eff ? <div style={{ paddingLeft: 18, fontSize: "9.5px", color: s.active ? "var(--clay)" : "#4a5a4a" }}>{eff}</div> : null;
             })()}
-            {openSkill === s.name && (() => {
+            {openSkill === i && (() => {
               const d = skillDetail(s, mv);
               return (
                 <div style={{ margin: "3px 0 4px 18px", padding: "5px 7px", border: `1px solid ${zoneTheme.border}`, background: zoneTheme.bgPanel, fontSize: "10px", lineHeight: 1.7 }}>
@@ -91,7 +91,7 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
               );
             })()}
             {s.fixed
-              ? (openSkill !== s.name && s.move?.desc ? <div style={{ paddingLeft: 18 }}>
+              ? (openSkill !== i && s.move?.desc ? <div style={{ paddingLeft: 18 }}>
                   <div style={{ fontSize: "10px", color: zoneTheme.textDim, marginTop: 2, lineHeight: 1.65 }}>{s.move.desc}</div>
                 </div> : null)
               : (() => {

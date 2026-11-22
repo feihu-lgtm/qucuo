@@ -22,6 +22,13 @@ export function skillDetail(skill, move) {
     ["品阶", `${skill.quality || def?.quality || "白"}品`],
     ["火候", skill.fixed ? "完整招式（学即圆满）" : (skill.stage || "入门")],
   ];
+  // 内功、轻功不进出招栏，只有被动加成，不报招式数值以免误导。
+  const passiveOnly = type === "内功" || type === "轻功";
+  const passive = passiveBonusBrief(skill.passiveBonus || def?.passiveBonus);
+  if (passiveOnly) {
+    if (passive) rows.push(["被动", passive]);
+    return { desc: skill.desc || def?.desc || "", rows: rows.map(([label, value]) => ({ label, value })), effects: [] };
+  }
   const mul = move?.baseDamageMultiplier;
   if (typeof mul === "number" && mul > 0) {
     rows.push(type === "防御"
@@ -33,7 +40,6 @@ export function skillDetail(skill, move) {
   if (move?.hpRestore) rows.push(["回血", pct(move.hpRestore)]);
   if (move?.energyRestore) rows.push(["回气", `${move.energyRestore} 点`]);
   if (typeof move?.confuseChance === "number" && type === "状态") rows.push(["扰乱几率", pct(move.confuseChance)]);
-  const passive = passiveBonusBrief(skill.passiveBonus || def?.passiveBonus);
   if (passive) rows.push(["被动", passive]);
   return {
     desc: skill.move?.desc || skill.desc || def?.desc || "",

@@ -31,3 +31,15 @@ describe("skillDetail", () => {
     expect(d.rows.find((r) => r.label === "火候").value).toContain("完整招式");
   });
 });
+
+describe("skillDetail passive arts", () => {
+  it.each(["铁头功", "驴打滚"])("%s shows only its passive, no move cost or effects", async (name) => {
+    const { STARTER_SKILLS } = await import("../../data/kungfu/starterKungfu.js");
+    const def = STARTER_SKILLS.find((s) => s.name === name);
+    const skill = { ...def, stage: "入门" };
+    const d = skillDetail(skill, deriveMoveFromSkill(skill));
+    expect(d.rows.map((r) => r.label)).not.toContain("耗气");
+    expect(d.rows.map((r) => r.label)).toContain("被动");
+    expect(d.effects).toEqual([]);
+  });
+});
