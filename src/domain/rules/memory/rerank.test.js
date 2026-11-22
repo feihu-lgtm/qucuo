@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { resolveRerankUrl, rerank, applyRerank } from "./rerank.js";
-import { getEmbedding } from "./embeddingService.js";
+import { resolveRerankUrl, rerank, applyRerank } from "../../../engine/ports/rerank.js";
+import { getEmbedding } from "../../../engine/ports/embeddingService.js";
 import { PHASE, turnMonitor } from "../../../core/turnMonitor.js";
 
 // 精排是可选的第四步：粗排（intent/context/词法三路 RRF）拿到十几条大致相关的，

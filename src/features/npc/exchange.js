@@ -1,16 +1,16 @@
 // NPC 财物往来：赠礼 / 送银 / 交易。
 // 从 logic.js 按动作分组拆出——这组只管"东西和银子的来往"。
-import { CATEGORY_LABEL } from "../../domain/economy/equipment.js";
-import { CATALOG_INDEX } from "../../domain/items/catalog.js";
-import { computeGiftWeight } from "../../domain/npc/giftWeight.js";
-import { isNpcAngry } from "../../domain/combat/stealSystem.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { getCurrentStage } from "../../domain/quests/questEngine.js";
+import { CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
+import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
+import { computeGiftWeight } from "../../domain/rules/npc/giftWeight.js";
+import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { getCurrentStage } from "../../domain/rules/quests/questEngine.js";
 import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
-import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
+import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
-import { add, applyWrite, set, updateField } from "../../domain/state/applyWrite.js";
-import { giftRange } from "../../domain/state/fields.js";
+import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
+import { giftRange } from "../../domain/rules/state/fields.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
 
 function composeUpdates(first, second) {

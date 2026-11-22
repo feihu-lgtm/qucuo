@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { forgeDesign } from "../../domain/rules/prompt/extractionEngine.js";
+import { forgeDesign } from "../../engine/ports/extraction.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../domain/rules/prompt/withAI.js";
+import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();

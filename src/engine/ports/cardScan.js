@@ -10,7 +10,7 @@
 // 字段，玩家手改也能完成导入。免费反代随时会 429 或超时，不能让主流程卡在一个
 // 可能挂掉的外部服务上。所以 UI 上这是一个按钮，不是一道关。
 
-import { acquire, estimateMs, bucketStatus } from "./rateLimiter.js";
+import { acquire, estimateMs, bucketStatus } from "../../domain/rules/cards/rateLimiter.js";
 import * as store from "../../infra/scanStore.js";
 import {
   buildStage1, buildStage2, buildStage3, buildStage4,
@@ -18,8 +18,8 @@ import {
   sanitizeMilestones, sanitizeBrief, sanitizeGongfu, sanitizeMoves, sanitizeLore,
   BODY_PUBLIC_KEYS, BODY_PRIVATE_KEYS,
   FALLBACK_SPECIAL, FALLBACK_LEVEL_CAP, FALLBACK_MILESTONES, SLOT_DEFAULT_ARCHETYPE, MOVE_SLOTS,
-} from "./scanPrompts.js";
-import { groupEntriesByKeys, groupToNpcLore } from "./cardParse.js";
+} from "../../domain/rules/cards/scanPrompts.js";
+import { groupEntriesByKeys, groupToNpcLore } from "../../domain/rules/cards/cardParse.js";
 
 const DEFAULT_BATCH_SIZE = 4;
 

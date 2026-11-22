@@ -2,7 +2,7 @@
 // 斗蛐蛐战报（quickBattle/battleNarration）与酒馆夜报（tavernSim/simNarrator）共用本份；
 // 两边的铁律一致：AI 只润色不改判，没 key/请求失败一律返回 null，由调用方静默落回模板文本。
 
-import { loadConfig, callModel, hasApiCredentials } from "../../../infra/apiConfig.js";
+import { loadConfig, callModel, hasApiCredentials } from "./ai.js";
 
 // 当前配置里有没有可用的 key。判断从宽：有凭证即认为可用，
 // 真正能不能通只有发出去才知道，失败自然走降级。

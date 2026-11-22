@@ -3,7 +3,8 @@ import { resetPromptRegistryForTest } from "../prompt/registry.js";
 import { createMockAi } from "../../../engine/ports/ai.js";
 import { parseJudgeAnswer, registerSettleCalls, UNKNOWN_CHOICE } from "./judge.js";
 import { SOFT_RULES } from "./softRules.js";
-import { applySettledDeltas, runSoftSettle, formatSettleNote } from "./settle.js";
+import { applySettledDeltas, formatSettleNote } from "./settle.js";
+import { runSoftSettle } from "../../../engine/ports/softSettle.js";
 
 beforeEach(() => {
   resetPromptRegistryForTest();

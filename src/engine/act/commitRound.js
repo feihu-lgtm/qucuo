@@ -13,8 +13,9 @@ import { getAllResidentNpcNames } from "../../domain/data/npc/residentNpcs.js";
 import { getImportedResidentNames } from "../../domain/rules/cards/importedRegistry.js";
 import { COMPANION_SLOTS } from "../../domain/rules/companion/companionSlots.js";
 
-import { embeddingReady } from "../../domain/rules/memory/embeddingService.js";
-import { writeNote, NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
+import { embeddingReady } from "../ports/embeddingService.js";
+import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
+import { writeNote } from "../ports/noteMemory.js";
 import { applyKnowledgeTreeDiff, registerFact } from "../../domain/rules/prompt/knowledge.js";
 import { settleNegotiation as gambleSettleNegotiation } from "../../domain/rules/economy/gambleStone.js";
 import { commitProposalWrites } from "./commitProposalWrites.js";

@@ -14,7 +14,7 @@ import { loadConfig, callModel, hasApiCredentials, API_TYPES } from "../infra/ap
 import { describeInnerArrival } from "../domain/rules/map/mapNarration.js";
 import { resolveInnerExit } from "../domain/rules/map/innerMap.js";
 import { extractMvuBlock, applyMvuCommands, initialVarTree } from "../domain/rules/prompt/mvu.js";
-import { callExtraction } from "../domain/rules/prompt/extractionEngine.js";
+import { callExtraction } from "../engine/ports/extraction.js";
 
 const redact = (k) => (k ? `***${String(k).slice(-4)}` : "(空)");
 const describeCredentials = cfg => cfg.apiType === API_TYPES.VERTEX ? "ADC 已导入" : `key ${redact(cfg.apiKey)}`;

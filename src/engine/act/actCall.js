@@ -7,7 +7,7 @@ import { gateBodyProfile } from "../../domain/rules/character/bodyProfile.js";
 import { labelMessage, makeBlock } from "../../domain/rules/prompt/tavernMapping.js";
 import { buildDistantViewBlock } from "../../domain/rules/memory/daySummary.js";
 import { targetLedger } from "../../domain/rules/prompt/materials/index.js";
-import { embeddingReady } from "../../domain/rules/memory/embeddingService.js";
+import { embeddingReady } from "../ports/embeddingService.js";
 import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
 import { applyPresetOverrides, getActivePreset } from "../../domain/rules/prompt/presetSystem.js";
 import { createWebAi } from "../ports/ai.js";

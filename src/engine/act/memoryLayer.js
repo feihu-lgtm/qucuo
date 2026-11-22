@@ -1,7 +1,7 @@
 import { evolveKnowledge, buildInfoDomainBlock, factSummaryRequest, factSummaryRequestFromRecall, setFactSummary } from "../../domain/rules/prompt/knowledge.js";
-import { recallWithVisibility } from "../../domain/rules/memory/recallWithVisibility.js";
-import { embeddingReady } from "../../domain/rules/memory/embeddingService.js";
-import { reembedStaleNotes } from "../../domain/rules/memory/note.js";
+import { recallWithVisibility } from "../ports/recallWithVisibility.js";
+import { embeddingReady } from "../ports/embeddingService.js";
+import { reembedStaleNotes } from "../ports/noteMemory.js";
 import { createWebAi } from "../ports/ai.js";
 
 // 信息领域·知识系统（代码驱动）：每回合由代码确定性推演"谁知道什么"——

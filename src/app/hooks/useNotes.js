@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
-import { NOTE_SOURCE, writeNote } from "../../domain/rules/memory/note.js";
+import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
+import { writeNote } from "../../engine/ports/noteMemory.js";
 import { tallyAdd } from "../../domain/rules/memory/tally.js";
 import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 

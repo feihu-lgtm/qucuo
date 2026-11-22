@@ -5,7 +5,7 @@ import { CATALOG_INDEX, CATALOG, makeCatalogItem } from "../../domain/data/items
 import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
 import { effectBrief } from "../../domain/rules/economy/itemEffectText.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../domain/rules/prompt/withAI.js";
+import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();

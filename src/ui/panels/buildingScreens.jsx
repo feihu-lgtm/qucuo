@@ -5,10 +5,10 @@
 // 它的渲染函数（入参 ctx 是 CenterPanel 打包好的共享 props 袋）。
 // 新建筑只需在本表登记一行。行为与原先逐分支一致（含 ESCORT.shopKey、
 // craft 现货/定制页签这类同类型多屏的分支）。
-import { BUILDING_TYPE } from "../../domain/buildings/qucuoBuildings.js";
-import { NOTE_SOURCE } from "../../domain/memory/note.js";
-import { buildShopInventory, rollShopStock } from "../../domain/shops/qucuoShops.js";
-import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
+import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
+import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import TradingScreen from "../screens/TradingScreen.jsx";
 import InnScreen from "../screens/buildings/InnScreen.jsx";
 import WuguanScreen from "../screens/buildings/WuguanScreen.jsx";

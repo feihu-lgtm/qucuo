@@ -18,8 +18,6 @@
 //   owner 多人       → 在场者共同目击，相关时浮现（visibility=private，但知情人多个）
 // 每个 owner 项：{ name, via }，via ∈ 亲历/目击/传闻（供 AI 判口吻 + 信息隔离）。
 
-import { getEmbedding, embeddingReady, embeddingFingerprint } from "./embeddingService.js";
-import { addMemory, getAllMemories } from "../../infra/memoryStore.js";
 
 export const VIA = { FIRSTHAND: "亲历", WITNESS: "目击", HEARSAY: "传闻" };
 export const NOTE_SOURCE = {
@@ -81,7 +79,6 @@ function extractEntities(text, knownNames = [], ownerList = []) {
   return Array.from(new Set([...hitInText, ...ownerNames]));
 }
 
-let _seq = 0;
 
 // 纯函数：拼一条小纸条记录（不含 embedding/fingerprint，便于 debug.mjs 单测）。
 // text 为空返回 null。owner/ownerTier/visibility/entities/place/source 都在这里定死。
@@ -115,36 +112,7 @@ export function buildNoteRecord({
   };
 }
 
-// 异步副作用：embedding + 入库。这是「写小纸条」的统一入口。
-// fire-and-forget 语义（调用方不必 await）：没开 embedding / 取不到向量 / 库写失败
-// 一律静默返回 null，绝不阻断主流程，也不纳入回合回滚（只在成功路径调）。
-export async function writeNote({
-  cfg,
-  text,
-  turn = 0,
-  owner = [],
-  place = null,
-  source = NOTE_SOURCE.NARRATIVE,
-  knownNames = [],
-}) {
-  if (!embeddingReady(cfg)) return null;
-  const base = buildNoteRecord({ text, turn, owner, place, source, knownNames, seq: _seq++ });
-  if (!base) return null;
-  try {
-    const vec = await getEmbedding(cfg, base.text);
-    if (!vec) return null; // 取不到向量就不入库（宁可不存，也不存没向量的死记录）
-    const record = {
-      ...base,
-      embedding: Array.from(vec), // Float32Array → 普通数组，才能进 IndexedDB
-      fingerprint: embeddingFingerprint(cfg),
-    };
-    await addMemory(record);
-    return record;
-  } catch (err) {
-    console.warn("[note] 小纸条入库失败（静默跳过）：", err.message || err);
-    return null;
-  }
-}
+// writeNote / reembedStaleNotes 已上移到 engine/ports/noteMemory.js。
 
 // ── 召回前对账：指纹漂移自愈 ──────────────────────────────────────────────────
 // 我们的小纸条自带向量、无单独清单，故不存在参考项目那种「孤儿/缺失」二分。
@@ -156,25 +124,4 @@ export async function writeNote({
 // 纯函数：从一批记录里挑出「有文本、但指纹与当前不符」的（可 debug.mjs 单测）。
 export function findStaleNotes(notes, fingerprint) {
   return (notes || []).filter(n => n && n.text && n.fingerprint !== fingerprint);
-}
-
-// 有界重嵌：每次最多重算 maxPerRun 条指纹过期的纸条（后台自愈，不阻断游戏）。
-// fire-and-forget 调用；没开 embedding、无过期条、失败一律静默返回已处理数。
-export async function reembedStaleNotes({ cfg, maxPerRun = 3 }) {
-  if (!embeddingReady(cfg)) return 0;
-  try {
-    const fp = embeddingFingerprint(cfg);
-    const all = await getAllMemories();
-    const stale = findStaleNotes(all, fp).slice(0, maxPerRun);
-    let n = 0;
-    for (const rec of stale) {
-      const vec = await getEmbedding(cfg, rec.text);
-      if (!vec) continue;
-      await addMemory({ ...rec, embedding: Array.from(vec), fingerprint: fp }); // 同 id 覆盖
-      n++;
-    }
-    return n;
-  } catch {
-    return 0;
-  }
 }

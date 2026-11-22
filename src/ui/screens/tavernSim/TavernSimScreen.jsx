@@ -15,8 +15,8 @@ import {
   hireGuard, fireGuard, upgradeLevel, resolveEvent, getDailyCandidates,
   appendLog, setNightReport,
 } from "../../../domain/rules/tavernSim/simEngine.js";
-import { createNarrator } from "../../../domain/rules/tavernSim/simNarrator.js";
-import { hasApiKey } from "../../../domain/rules/prompt/storyteller.js";
+import { createNarrator } from "../../../engine/ports/simNarrator.js";
+import { hasApiKey } from "../../../engine/ports/storyteller.js";
 
 const SAVE_KEY = "qucuo_tavern_sim_v1";
 const LEVEL_NAMES = ["破落小馆", "热闹酒肆", "闻名三江"];

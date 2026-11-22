@@ -15,7 +15,7 @@
 // endpoint/key。收益是召回精度，而我们粗排刚补完词法路、基线已经不差。
 // 所以默认关，跟 extractionEnabled 一个待遇——想要精度的人自己开。
 
-import { observeAi } from "../../../core/observeAi.js";
+import { observeAi } from "../../core/observeAi.js";
 
 const DEFAULT_MODEL = "BAAI/bge-reranker-v2-m3";
 const DEFAULT_TIMEOUT = 12000;

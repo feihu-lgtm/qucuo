@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { buildSysBase } from "./sysBase.js";
-import { buildExtractionSpecExample, callExtraction, normalizeExtractedFields, SETTLE_KIND_SPECS } from "./extractionEngine.js";
+import { buildExtractionSpecExample, normalizeExtractedFields, SETTLE_KIND_SPECS } from "./extractionEngine.js";
+import { callExtraction } from "../../../engine/ports/extraction.js";
 import { classifyIntent, INTENT } from "./inputIntent.js";
 
 function wia(scope, narrativeOnly, opts = {}) {

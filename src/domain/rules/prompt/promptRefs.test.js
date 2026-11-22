@@ -8,7 +8,7 @@ import {
 } from "./promptRefs.js";
 import { buildPrompt } from "./buildPrompt.js";
 import "./calls/sideCalls.js";
-import { callExtraction } from "./extractionEngine.js";
+import { callExtraction } from "../../../engine/ports/extraction.js";
 import { AFFECTION_RULES, FIELD, FIELDS, WHISPER_AFFECTION_RULES } from "../state/fields.js";
 import { buildNarratorWhisperContext } from "../narrator/narrator.js";
 import { buildSysBase } from "./sysBase.js";

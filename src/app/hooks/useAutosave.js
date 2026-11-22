@@ -20,7 +20,7 @@ import {
   pendingNodes, serializeSquares, loadSquares,
 } from "../../domain/rules/map/mapSquares.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../domain/rules/prompt/withAI.js";
+import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();

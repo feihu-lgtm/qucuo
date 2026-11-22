@@ -7,8 +7,9 @@ import { PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { runBookkeepAfterTurn } from "./act/bookkeepTurn.js";
 import {
-  applySettledDeltas, captureSettledChanges, revertSettled, runSoftSettle,
+  applySettledDeltas, captureSettledChanges, revertSettled,
 } from "../domain/rules/settle/settle.js";
+import { runSoftSettle } from "./ports/softSettle.js";
 import { UNKNOWN_CHOICE } from "../domain/rules/settle/judge.js";
 import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
 import { applyMvuCommands } from "../domain/rules/prompt/mvu.js";

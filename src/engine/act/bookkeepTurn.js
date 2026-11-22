@@ -1,5 +1,6 @@
 import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
-import { applyBookkeep, runBookkeep } from "../../domain/rules/memory/bookkeep.js";
+import { applyBookkeep } from "../../domain/rules/memory/bookkeep.js";
+import { runBookkeep } from "../ports/bookkeep.js";
 import { getLedger } from "../../domain/rules/memory/npcLedger.js";
 import { buildPresence } from "../prompt/roundNotes.js";
 import { bindTurnAi, createWebAi } from "../ports/ai.js";

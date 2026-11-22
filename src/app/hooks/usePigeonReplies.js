@@ -8,7 +8,7 @@ import {
   recordPigeonNpcLocations,
 } from "../../features/pigeon/logic.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../domain/rules/prompt/withAI.js";
+import { withAI } from "../../engine/ports/withAI.js";
 import "../../domain/rules/prompt/calls/sideCalls.js";
 import { turnMonitor } from "../../core/turnMonitor.js";
 

@@ -7,7 +7,7 @@
 // ③ 攒批合并：一天的营收/客流/事件打包成**一次**调用写成夜报，
 //    绝不一件事一次调用——5 次/分钟的预算，烧得起夜报，烧不起碎碎念。
 
-import { hasApiKey, askStoryteller } from "../prompt/storyteller.js";
+import { hasApiKey, askStoryteller } from "./storyteller.js";
 
 const BUCKET_CAPACITY = 5;
 const REFILL_MS = 15000;

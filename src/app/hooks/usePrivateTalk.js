@@ -13,8 +13,8 @@ import { narratorVars, setNarratorVars } from "../../domain/rules/prompt/mvu.js"
 import { buildWhisperStatePrompt, formatFactSummariesForPrompt } from "../../domain/rules/prompt/promptRefs.js";
 import { WHISPER_AFFECTION_RULES } from "../../domain/rules/state/fields.js";
 import { allFactSummaries } from "../../domain/rules/prompt/knowledge.js";
-import { embeddingReady } from "../../domain/rules/memory/embeddingService.js";
-import { recallWithVisibility } from "../../domain/rules/memory/recallWithVisibility.js";
+import { embeddingReady } from "../../engine/ports/embeddingService.js";
+import { recallWithVisibility } from "../../engine/ports/recallWithVisibility.js";
 import { gateScenario } from "../../domain/rules/prompt/worldbook.js";
 import { describeTallyForWhisper } from "../../domain/rules/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
@@ -22,7 +22,8 @@ import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { gameStore } from "../../store/gameStore.js";
 import { buildPrivateTalkPayload } from "../../domain/rules/prompt/privateTalkPayload.js";
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
-import { applySettledDeltas, runSoftSettle } from "../../domain/rules/settle/settle.js";
+import { applySettledDeltas } from "../../domain/rules/settle/settle.js";
+import { runSoftSettle } from "../../engine/ports/softSettle.js";
 import { UNKNOWN_CHOICE } from "../../domain/rules/settle/judge.js";
 
 export function usePrivateTalk({

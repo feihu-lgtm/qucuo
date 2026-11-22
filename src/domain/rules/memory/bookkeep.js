@@ -10,7 +10,6 @@
 // ============================================================================
 
 import { definePrompt } from "../prompt/registry.js";
-import { withAI } from "../prompt/withAI.js";
 import { applyLedgerUpdate, LEDGER_LINE_MAX } from "./npcLedger.js";
 
 export const MEMORY_MAX = 50;
@@ -154,20 +153,7 @@ ${ledgerBlock || "（无）"}`;
 
 registerBookkeepCalls();
 
-/**
- * 跑一轮记账。AI 关/调用失败/回复不可用时都返回 { memory:"", ledger:{} }。
- * @param {{ai: object, apiCfg: object, ctx: {narration: string, settleSummary: string, presentNames: string[], ledgers: Object<string,string[]>, turn: number}}} args
- * @returns {Promise<{memory: string, ledger: Object<string,string[]>}>}
- */
-export async function runBookkeep({ ai, apiCfg, ctx }) {
-  try {
-    const res = await withAI("bookkeep.turn", ctx || {}, { ai, apiCfg, throwOnError: false });
-    if (!res?.ok || !res.data) return { memory: "", ledger: {} };
-    return res.data;
-  } catch {
-    return { memory: "", ledger: {} };
-  }
-}
+// runBookkeep 已上移到 engine/ports/bookkeep.js。
 
 /**
  * 把记账结果里的各人物新账写进 varTree（旧账追加见 npcLedger.js）。

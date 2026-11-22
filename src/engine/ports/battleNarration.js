@@ -7,7 +7,7 @@
 // 退回系统自带的 notes 短句，绝不因为战报生成失败而中断战斗——战斗本身
 // 一秒都不依赖网络。
 
-import { hasApiKey, askStoryteller } from "../prompt/storyteller.js";
+import { hasApiKey, askStoryteller } from "./storyteller.js";
 
 // 把一回合的结构化结果拼成给 AI 的输入摘要（纯数据，AI 不改判、只润色）。
 function buildTurnDigest(myFighter, foeFighter, myMove, foeMove, result) {

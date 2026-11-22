@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NNPC_STAGE } from "../narrator/narrator.js";
-import { callExtraction } from "./extractionEngine.js";
+import { callExtraction } from "../../../engine/ports/extraction.js";
 import { EXTRACTION_SPECS } from "./extractionSpecs.js";
 import { factSummaryRequest, factSummaryRequestFromRecall } from "./knowledge.js";
 import { buildPrompt } from "./buildPrompt.js";

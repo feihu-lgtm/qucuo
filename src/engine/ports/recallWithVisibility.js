@@ -14,8 +14,8 @@
 import { getEmbedding, embeddingReady, embeddingFingerprint } from "./embeddingService.js";
 import { getAllMemories } from "../../infra/memoryStore.js";
 import { rerank, applyRerank } from "./rerank.js";
-import { recall } from "./recallEngine.js";
-import { noteVisibleTo } from "./note.js";
+import { recall } from "../../domain/rules/memory/recallEngine.js";
+import { noteVisibleTo } from "../../domain/rules/memory/note.js";
 
 export async function recallWithVisibility({
   cfg,

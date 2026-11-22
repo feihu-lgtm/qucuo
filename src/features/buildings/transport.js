@@ -1,6 +1,6 @@
 // 车马行：目的地定价 / 乘马车出行。
 // 从 logic.js 按动作分组拆出。
-import { getMapNode } from "../../domain/map/qucuoMap.js";
+import { getMapNode } from "../../domain/data/map/qucuoMap.js";
 import { invalidAmountResult, noOpResult, isPositiveAmount } from "./helpers.js";
 
 const TRANSPORT_PRICES = {

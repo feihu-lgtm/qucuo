@@ -4,7 +4,7 @@ import { parseLocalCommand } from "../engine/localCommands.js";
 import { computeGiftWeight } from "../domain/rules/npc/giftWeight.js";
 import { NPC_POOL, toRoomNpc } from "../domain/data/npc/npcPool.js";
 import { getResidentNpcs } from "../domain/data/npc/residentNpcs.js";
-import { callExtraction } from "../domain/rules/prompt/extractionEngine.js";
+import { callExtraction } from "../engine/ports/extraction.js";
 import { buildSysBase } from "../domain/rules/prompt/sysBase.js";
 import { deposit, pledge, redeem, withdraw } from "../features/bank/logic.js";
 import { meditate, trainNeigong } from "../features/cultivation/logic.js";

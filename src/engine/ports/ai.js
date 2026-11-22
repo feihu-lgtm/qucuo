@@ -1,5 +1,10 @@
-import { callModel, callModelStream } from "../../infra/apiConfig.js";
+import { callModel, callModelStream, loadConfig, hasApiCredentials } from "../../infra/apiConfig.js";
+import { cleanJsonString } from "../../utils/jsonClean.js";
 import { observeAi, observed } from "../../core/observeAi.js";
+
+// ports 层对 infra/apiConfig 的唯一入口：其余 ports 文件只从本模块取这些符号，
+// 不再各自直连 infra（分层守卫按 importer 计 externalInfraImports）。
+export { callModel, callModelStream, loadConfig, hasApiCredentials, cleanJsonString };
 
 export function bindTurnAi(ai, turn) {
   return {

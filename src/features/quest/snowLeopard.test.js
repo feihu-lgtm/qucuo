@@ -8,7 +8,7 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { commitModelFlags } from "../../engine/act/commitFlags.js";
 import { createWorldRules } from "../../engine/worldRules.js";
 import { buildQuestStageNote } from "../../engine/prompt/roundNotes.js";
-import { callExtraction } from "../../domain/rules/prompt/extractionEngine.js";
+import { callExtraction } from "../../engine/ports/extraction.js";
 import { createExtractionState } from "../../engine/runTurn.js";
 import { assemblePrompt } from "../../engine/prompt/assemblePrompt.js";
 

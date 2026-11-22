@@ -3,11 +3,11 @@ import { createMockAi } from "../../../engine/ports/ai.js";
 import { buildPrompt } from "../prompt/buildPrompt.js";
 import {
   parseBookkeep,
-  runBookkeep,
   applyBookkeep,
   registerBookkeepCalls,
   MEMORY_MAX,
 } from "./bookkeep.js";
+import { runBookkeep } from "../../../engine/ports/bookkeep.js";
 import { getLedger } from "./npcLedger.js";
 
 const PRESENT = ["才旦", "八云"];

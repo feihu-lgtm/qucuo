@@ -3,9 +3,9 @@ globalThis.localStorage = { getItem: k => (_ls.has(k) ? _ls.get(k) : null), setI
 globalThis.structuredClone = globalThis.structuredClone || (v => JSON.parse(JSON.stringify(v)));
 const { readFileSync } = await import("fs");
 const { parseCharacterCard } = await import("../src/domain/rules/cards/cardParse.js");
-const { runClassify, peopleAfterClassify } = await import("../src/domain/rules/cards/cardScan.js");
+const { runClassify, peopleAfterClassify } = await import("../src/engine/ports/cardScan.js");
 const { buildStage1 } = await import("../src/domain/rules/cards/scanPrompts.js");
-const store = await import("../src/domain/infra/scanStore.js");
+const store = await import("../src/infra/scanStore.js");
 const { resetBucket } = await import("../src/domain/rules/cards/rateLimiter.js");
 await store.init();
 
