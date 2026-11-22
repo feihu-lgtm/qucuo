@@ -26,6 +26,7 @@ import { contentEntries } from "../content/registry.js";
 // isInnerExitUnlocked()，复用与外层 unlockCondition 相同的判定语义。
 
 import { invHasItemNamed } from "./safeHouse.js";
+import { factionRepOf } from "../economy/factionRep.js";
 
 export const INNER_MAP = Object.fromEntries(contentEntries("district"));
 
@@ -133,13 +134,13 @@ export function resolveInnerExit(districtName, roomName, dir) {
 // 返回某房间当前实际"可见"的出口方向列表（过滤掉未解锁的隐藏房间方向）。
 // questProgress/flags 由调用方（MudRPG.jsx）传入当前游戏状态。
 // stat 类型的房间不过滤——它们在地图上始终可见（按钮可点），由移动判定拦截。
-export function visibleInnerExits(districtName, roomName, { questProgress, flags, inv, char } = {}) {
+export function visibleInnerExits(districtName, roomName, { questProgress, flags, inv, char, varTree } = {}) {
   const room = getInnerRoom(districtName, roomName);
   if (!room) return {};
   const result = {};
   for (const [dir, destName] of Object.entries(room.exits)) {
     const destRoom = getInnerRoom(districtName, destName);
-    if (destRoom?.unlockCondition && destRoom.unlockCondition.type !== "stat" && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv, char })) {
+    if (destRoom?.unlockCondition && destRoom.unlockCondition.type !== "stat" && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv, char, varTree })) {
       continue; // 未解锁的隐藏房间：根本不出现在出口列表里
     }
     result[dir] = destName;
@@ -153,7 +154,7 @@ export function visibleInnerExits(districtName, roomName, { questProgress, flags
 // 判定语义保持完全一致，将来 resolveExit 补判定时可以共用同一个函数。
 // 本轮鱼定村切片没有隐藏房间用到这个函数，先按总纲10.3节的约定写好，
 // 供后续白塔地宫/贡措海密室等据点接入时直接复用。
-export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv, char } = {}) {
+export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv, char, varTree } = {}) {
   if (!unlockCondition) return true;
   if (unlockCondition.type === "questCompleted") {
     return questProgress?.[unlockCondition.questId]?.status === "completed";
@@ -163,7 +164,22 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv
   }
   // 多把钥匙任一即开（如三星派内墟：过了试炼，或持青铜纵目令）。
   if (unlockCondition.type === "any") {
-    return (unlockCondition.of || []).some((cond) => isInnerExitUnlocked(cond, { questProgress, flags, inv, char }));
+    return (unlockCondition.of || []).some((cond) => isInnerExitUnlocked(cond, { questProgress, flags, inv, char, varTree }));
+  }
+  if (unlockCondition.type === "all") {
+    return (unlockCondition.of || []).every((cond) => isInnerExitUnlocked(cond, { questProgress, flags, inv, char, varTree }));
+  }
+  // 接取过即算（进行中或已完成），合稿写「持有任务」「推进到」「触发后」的门用这个。
+  if (unlockCondition.type === "questStarted") {
+    const status = questProgress?.[unlockCondition.questId]?.status;
+    return status === "active" || status === "completed";
+  }
+  if (unlockCondition.type === "factionRep") {
+    return factionRepOf(varTree, unlockCondition.faction) >= unlockCondition.min;
+  }
+  // 好感缺省 10，与按好感解锁武学（skillUnlock.js）同口径。
+  if (unlockCondition.type === "favor") {
+    return Number(varTree?.角色?.[unlockCondition.npc]?.好感度 ?? 10) >= unlockCondition.min;
   }
   if (unlockCondition.type === "anyFlag") {
     return (unlockCondition.flags || []).some(f => (flags || []).includes(f));
@@ -189,7 +205,7 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv
 export function describeInnerLock(unlockCondition) {
   if (!unlockCondition) return "";
   if (unlockCondition.type === "item") return `门锁着，你没有「${unlockCondition.itemName}」。`;
-  if (unlockCondition.type === "flag" || unlockCondition.type === "any") return "门锁着，此刻还进不去。";
+  if (["flag", "any", "all", "questStarted", "factionRep", "favor"].includes(unlockCondition.type)) return "门锁着，此刻还进不去。";
   if (unlockCondition.type === "questCompleted") return "门锁着，似乎还有事没了结。";
   if (unlockCondition.type === "stat") {
     const label = unlockCondition.stat === "waigong" ? "外功" : "内功";

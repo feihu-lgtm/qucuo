@@ -52,9 +52,18 @@ export default { district: {
       寨后岩洞: {
         x: 0, y: -2,
         desc: "巴桑见玩家的地方，只一块青石板摊着狼曲地形图，山3.5/山4/山5均在此发生。",
-        exits: { s: "寨内公共区" },
+        exits: { s: "寨内公共区", n: "狼曲暗道·旧契藏窟" },
         buildingId: "sect_entry_heifeng",
         residentNpcName: "巴桑",
+      },
+      "狼曲暗道·旧契藏窟": {
+        x: 0, y: -3,
+        desc: "寨后岩洞最深处被柴垛与松动青石板遮蔽的夹缝密室，内藏十年前被逼上山各户的血账名录、几纸三十年前老土司真印地契残片，以及一条直通狼曲上游悬崖的绝境逃生暗道。",
+        exits: { s: "寨后岩洞" },
+        unlockCondition: { type: "any", of: [
+          { type: "all", of: [{ type: "factionRep", faction: "黑风寨", min: 40 }, { type: "questCompleted", questId: "heifengzhai_3_shangshan" }] },
+          { type: "questStarted", questId: "heifengzhai_5_langyanjiuzhang" },
+        ] },
       },
     },
   }
