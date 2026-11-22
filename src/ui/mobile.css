@@ -793,12 +793,19 @@
     height: 100dvh !important;
   }
 
-  html[data-keyboard-open] .mobile-input-bar {
+  /* 只抬升指令输入框聚焦时的输入栏：设置等弹层内的输入框聚焦不抬，
+     否则 fixed 栏会盖住弹层内容 */
+  html[data-input-lift] .mobile-input-bar {
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
     bottom: var(--mobile-keyboard-height, 0px) !important;
     z-index: 400;
     background: var(--bg-panel);
+  }
+
+  /* 输入栏抬升后，滚动对齐把最新叙事停在抬升栏上方，不被键盘遮住 */
+  html[data-input-lift] [data-testid="narrative-log"] {
+    scroll-padding-bottom: calc(var(--mobile-keyboard-height, 0px) + 48px);
   }
 }

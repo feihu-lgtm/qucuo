@@ -79,9 +79,13 @@ export default function GameLayout({ layout }) {
       if (!inputFocused || window.innerHeight > layoutHeight) layoutHeight = window.innerHeight;
       const height = viewport?.height || window.innerHeight;
       const offsetTop = viewport?.offsetTop || 0;
-      // 键盘遮住的布局视口底部高度：以键盘弹出前的 innerHeight（layoutHeight）为基准，
-      // 不能用 window.innerHeight——iOS 键盘开着时它会被缩到和 visualViewport 同高。
-      const keyboardHeight = Math.max(0, Math.round(layoutHeight - offsetTop - height));
+      // 键盘遮住的布局视口底部高度 = innerHeight - offsetTop - vv.height。
+      // 必须用当前 innerHeight 而非 layoutHeight：Android resizes-content 下
+      // innerHeight 已随键盘收缩（此时 covered=0，不需要抬升）；iOS 键盘开着
+      // innerHeight 收缩时也同理自然归零。
+      const keyboardHeight = Math.max(0, Math.round(window.innerHeight - offsetTop - height));
+      // 只在游戏指令输入框聚焦时才抬升输入栏，避免设置弹层里的输入框触发
+      const commandFocused = document.activeElement?.closest?.(".mobile-input-bar") != null;
       document.documentElement.style.setProperty("--mobile-viewport-height", `${Math.round(height)}px`);
       document.documentElement.style.setProperty("--mobile-viewport-offset", `${Math.round(offsetTop)}px`);
       document.documentElement.style.setProperty("--mobile-keyboard-height", `${keyboardHeight}px`);
@@ -95,6 +99,7 @@ export default function GameLayout({ layout }) {
           innerHeight: layoutHeight,
         }),
       );
+      document.documentElement.toggleAttribute("data-input-lift", open && commandFocused && keyboardHeight > 0);
       if (open && !wasOpen) requestAnimationFrame(() => logEnd?.current?.scrollIntoView?.({ block: "end" }));
     };
     updateHeight();
@@ -110,6 +115,7 @@ export default function GameLayout({ layout }) {
       document.removeEventListener("focusin", updateHeight);
       document.removeEventListener("focusout", updateHeight);
       document.documentElement.removeAttribute("data-keyboard-open");
+      document.documentElement.removeAttribute("data-input-lift");
       document.documentElement.style.removeProperty("--mobile-viewport-height");
       document.documentElement.style.removeProperty("--mobile-viewport-offset");
       document.documentElement.style.removeProperty("--mobile-keyboard-height");
