@@ -209,7 +209,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
   const nego = (stone && negotiation[stone.id]) || {};
   const priced = useMemo(
     () => (stone && stone.slots.filter((s) => s.opened).length >= 1 && !closed ? rollBidders(stone, luck) : []),
-    [stone, closed, luck, tick] // eslint-disable-line react-hooks/exhaustive-deps
+    [stone, closed, luck, tick]
   );
   const bidders = priced
     .map((p) => {

@@ -3,13 +3,14 @@
 // 视觉上延续 theme.js 的水墨留白美学——不用大量图片元素堆砌，
 // 而是一张氛围背景图 + 克制的排版留白，让文字和印章式按钮自己撑起质感
 
-import React, { useState, useEffect } from "react";
+import React, { lazy, Suspense, useState, useEffect } from "react";
 import { ZONE_THEMES } from "../../utils/theme.js";
 import { listSlots, loadAutoSave } from "../../infra/saves.js";
 import { registerVisit } from "../../infra/visitorCount.js";
-import BugReportModal from "./BugReportModal.jsx";
-import VersionHistoryPanel from "./VersionHistoryPanel.jsx";
 import { CURRENT_VERSION } from "../../infra/version.js";
+
+const BugReportModal = lazy(() => import("./BugReportModal.jsx"));
+const VersionHistoryPanel = lazy(() => import("./VersionHistoryPanel.jsx"));
 
 const theme = ZONE_THEMES.village; // 开场定调：鱼定村的暖黄烟火气
 
@@ -200,16 +201,20 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
       </div>
 
       {showBugReport && (
-        <BugReportModal
-          turns={[]}
-          pipelineData={null}
-          getGameState={() => null}
-          onClose={() => setShowBugReport(false)}
-        />
+        <Suspense fallback={null}>
+          <BugReportModal
+            turns={[]}
+            pipelineData={null}
+            getGameState={() => null}
+            onClose={() => setShowBugReport(false)}
+          />
+        </Suspense>
       )}
 
       {showVersionHistory && (
-        <VersionHistoryPanel onClose={() => setShowVersionHistory(false)} accentDim={theme.accentDim} />
+        <Suspense fallback={null}>
+          <VersionHistoryPanel onClose={() => setShowVersionHistory(false)} accentDim={theme.accentDim} />
+        </Suspense>
       )}
     </div>
   );

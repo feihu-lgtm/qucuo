@@ -44,11 +44,19 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
   }
 
   if (ctx.showCharCreate) {
-    return <CharacterCreate onConfirm={ctx.handleCreateCharacter} />;
+    return (
+      <Suspense fallback={null}>
+        <CharacterCreate onConfirm={ctx.handleCreateCharacter} />
+      </Suspense>
+    );
   }
 
   if (ctx.showOpening) {
-    return <OpeningSequence onFinish={ctx.handleOpeningFinish} playerName={ctx.char.name} />;
+    return (
+      <Suspense fallback={null}>
+        <OpeningSequence onFinish={ctx.handleOpeningFinish} playerName={ctx.char.name} />
+      </Suspense>
+    );
   }
 
   return (
@@ -94,15 +102,17 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
         </Suspense>
       )}
       {ctx.showBody && (
-        <BodyProfilePanel
-          profile={ctx.char.bodyProfile || emptyBodyProfile()}
-          onChange={ctx.handleBodyProfileChange}
-          onClose={() => closeOverlay(OVERLAY.BODY)}
-          zoneTheme={ctx.zoneTheme}
-          nsfwOn={ctx.nsfwOn}
-          onRecommend={ctx.recommendOutfit}
-          recommendState={ctx.outfitState}
-        />
+        <Suspense fallback={null}>
+          <BodyProfilePanel
+            profile={ctx.char.bodyProfile || emptyBodyProfile()}
+            onChange={ctx.handleBodyProfileChange}
+            onClose={() => closeOverlay(OVERLAY.BODY)}
+            zoneTheme={ctx.zoneTheme}
+            nsfwOn={ctx.nsfwOn}
+            onRecommend={ctx.recommendOutfit}
+            recommendState={ctx.outfitState}
+          />
+        </Suspense>
       )}
     </>
   );

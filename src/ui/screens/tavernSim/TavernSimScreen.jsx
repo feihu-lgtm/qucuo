@@ -62,7 +62,7 @@ export default function TavernSimScreen({ onExit }) {
     narrator.requestEventFlavor(ev.title, ev.desc).then(text => {
       if (text) setSim(s => appendLog(s, "event", `【说书】${text}`));
     });
-  }, [sim.pendingEvent?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sim.pendingEvent?.id]);
 
   // ── 跨天检测：日结发生后，攒批请 AI 写夜报；失败就留着引擎的模板夜报
   const prevDayRef = useRef(sim.day);
@@ -79,10 +79,10 @@ export default function TavernSimScreen({ onExit }) {
       if (!text) return;
       setSim(s => appendLog(setNightReport(s, settledDay, text), "gold", `【说书夜报】${text}`));
     });
-  }, [sim.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sim.day]);
 
   const doAct = (fn) => setSim(s => fn(s));
-  const candidates = useMemo(() => getDailyCandidates(sim), [sim.day, sim.seed, sim.heroDay]); // eslint-disable-line react-hooks/exhaustive-deps
+  const candidates = useMemo(() => getDailyCandidates(sim), [sim.day, sim.seed, sim.heroDay]);
   const night = sim.tick >= 6;
 
   return (
