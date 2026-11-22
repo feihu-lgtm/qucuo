@@ -5,23 +5,21 @@
     "domain->engine": 1,
     "engine->store": 2,
     "features->store": 1,
-    "infra->core": 6,
     "infra->domain": 2
   },
   "externalInfraImports": {
-    "app": 11,
-    "core": 1,
-    "debug": 1,
-    "domain": 1,
-    "engine": 9,
+    "app": 19,
+    "debug": 2,
+    "domain": 19,
+    "engine": 28,
     "entry": 4,
-    "store": 1,
-    "ui": 27
+    "features": 8,
+    "store": 2,
+    "ui": 35
   },
   "distinctHexColors": 399,
   "totalHexOccurrences": 1396,
   "largeFiles": {
-    "core/cliScripts.test.js": 460,
     "domain/data/items/catalog.js": 451,
     "domain/data/kungfu/qucuoKungfu.js": 480,
     "domain/rules/cards/cardParse.js": 761,

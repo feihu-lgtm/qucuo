@@ -18,7 +18,7 @@
 //     解锁门槛（复用现有"生气状态期间不可偷"这条锁），身法/敏捷进成功率
 //     公式，好感也仍计入成功率（两项独立相加，见 stealSystem.js）。
 
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { makeLearnedMoveSkill } from "../../data/kungfu/qucuoKungfu.js";
 import { canLearnSkillFrom, describeLearnSkillGate, teachPrice, teachDiscountFactor } from "../quests/learnSkill.js";
 import { attemptSteal, pickStealOutcome, createAngryState, STEAL_CONFIG } from "../combat/stealSystem.js";

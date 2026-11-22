@@ -1,4 +1,4 @@
-// 行动识别的封闭行动集合与槽位规格。名称对齐 src/core/commands.js 里现有的本地命令：
+// 行动识别的封闭行动集合与槽位规格。名称对齐 src/infra/commands.js 里现有的本地命令：
 // 赠送=npcGift、购买=npcTrade、切磋=duel、拜师/学艺=npcLearnSkill、邀同行=companionInvite、
 // 偷窃=npcSteal、平息/道歉=npcAppease、移动=mapMovement、交谈=npcTalk、使用物品/拾取=itemUseCollect、
 // 装备/卸下=menuEquip；其他=原有自由行动 typedAction。

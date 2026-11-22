@@ -1,5 +1,5 @@
 import { useState, useSyncExternalStore } from "react";
-import { turnMonitor } from "../../core/turnMonitor.js";
+import { turnMonitor } from "../../infra/turnMonitor.js";
 import { fmtClock, fmtMs, formatTrace, pipelineTabs } from "../../infra/actionTrace.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { chromeBtn } from "../theme.js";

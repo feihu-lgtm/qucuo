@@ -1,5 +1,5 @@
-import { getRngState } from "../core/rng.js";
-import { getApiModel } from "../core/apiModel.js";
+import { getRngState } from "./rng.js";
+import { getApiModel } from "./apiModel.js";
 import { getRecentErrors } from "./errorBuffer.js";
 import { getTraceLog } from "./actionTrace.js";
 import { loadConfig } from "./apiConfig.js";

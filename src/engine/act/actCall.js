@@ -12,7 +12,7 @@ import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.j
 import { applyPresetOverrides, getActivePreset } from "../../domain/rules/prompt/presetSystem.js";
 import { createWebAi } from "../ports/ai.js";
 import { buildAngryNote } from "../prompt/assemblePrompt.js";
-import { getApiModel } from "../../core/apiModel.js";
+import { getApiModel } from "../../infra/apiModel.js";
 import { formatSettleNote } from "../../domain/rules/settle/settle.js";
 
 const webAi = createWebAi();

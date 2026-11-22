@@ -7,7 +7,7 @@
 // UI 层直接整个塞进 localStorage 存档）。随机性全部从 (state.seed, day, tick, salt)
 // 派生——同一存档同一天同一时段重进游戏，世界长得一模一样，F5 刷不了事件。
 
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { seededRand, weightedSample } from "../../../utils/seededRandom.js";
 import {
   TICKS_PER_DAY, LAST_OPEN_TICK, MENU, STOCK_INFO, STOCK_BATCH,

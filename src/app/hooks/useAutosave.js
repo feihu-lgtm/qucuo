@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createAutosaveScheduler } from "../../core/autosaveScheduler.js";
+import { createAutosaveScheduler } from "../../features/autosaveScheduler.js";
 import { snapshotFromStore } from "../../store/persist.js";
-import { setRngState } from "../../core/rng.js";
-import { DEFAULT_PRESETS } from "../../core/newGame.js";
+import { setRngState } from "../../infra/rng.js";
+import { DEFAULT_PRESETS } from "../../engine/newGame.js";
 import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../infra/saves.js";

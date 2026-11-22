@@ -4,7 +4,7 @@
 
 import { commitRound } from "../act/commitRound.js";
 import { runBookkeepAfterTurn } from "../act/bookkeepTurn.js";
-import { PHASE, turnMonitor, withTurnContext } from "../../core/turnMonitor.js";
+import { PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
 
 export async function finalizeTurn({ ctx, trace, turn, turnOpts, soft, opts, setPhase }) {
   setPhase("commit");

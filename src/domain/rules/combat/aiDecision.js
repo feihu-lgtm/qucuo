@@ -2,7 +2,7 @@
 // 每回合真正选招式的地方：纯本地计算，不调用任何API，读取 personalityProfile.js
 // 生成好的权重表，按权重加权随机选类型，再按 riskAppetite 决定敢不敢用高品质技能。
 
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { MOVE_TYPE } from "./moveTypes.js";
 
 function weightedRandomPick(weights) {

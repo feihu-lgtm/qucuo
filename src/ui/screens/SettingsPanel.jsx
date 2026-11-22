@@ -2,7 +2,7 @@ import { OVERLAY, closeOverlay, openOverlay } from "../../store/uiStore.js";
 import React, { useState } from "react";
 import { isMusicEnabled, setMusicEnabled, getState as getMusicState, setVolume as setMusicVolume, subscribe as subscribeMusic, toggleMusic, TRACKS } from "../../infra/musicPlayer.js";
 import { API_TYPES, testConnection, listModels, wordCountToMaxTokens, DEFAULT_INTENT_BUDGETS, DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX, listConfigProfiles, saveConfigProfile, loadConfigProfile, deleteConfigProfile, exportConfigProfiles, importConfigProfiles, hasApiCredentials, importVertexCredential, isDefaultEndpoint, migrateProvider, providerApiType, PROVIDERS } from "../../infra/apiConfig.js"; import { classifyError } from "../../utils/apiErrors.js";
-import { getApiModel } from "../../core/apiModel.js";
+import { getApiModel } from "../../infra/apiModel.js";
 const EXTRACTION_INTENT_LABELS = [
   ["LOOK",           "查看 / 环顾"],
   ["MOVE",           "移动"],
@@ -12,7 +12,7 @@ const EXTRACTION_INTENT_LABELS = [
   ["UNKNOWN",        "未知意图（兜底）"],
 ];
 import { listSlots, saveToSlot, loadSlot, deleteSlot, renameSlot, clearAutoSave, autoSave, exportSave, importSave } from "../../infra/saves.js";
-import { setRngState, setSeed } from "../../core/rng.js";
+import { setRngState, setSeed } from "../../infra/rng.js";
 import { listCharacters, npcAffectionLabel } from "../../domain/rules/prompt/mvu.js";
 import { affectionLabel, AFFECTION_TIERS, affectionTier } from "../../domain/rules/narrator/narrator.js";
 // 预设切换/编辑器已从 UI 移除（预设 tab 现在只放注入结构），

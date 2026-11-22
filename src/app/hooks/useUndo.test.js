@@ -12,7 +12,7 @@ import { applyResult } from "../../features/run.js";
 import { runQuestChoice, settlePersuasion } from "./useQuestPanel.js";
 import { restorePersuasionProgress } from "./useAutosave.js";
 import { createTurnStaleCheck, createUndoController } from "./useUndo.js";
-import { turnMonitor } from "../../core/turnMonitor.js";
+import { turnMonitor } from "../../infra/turnMonitor.js";
 import { useScreenHandlers } from "./useScreenHandlers.js";
 
 vi.mock("../../engine/act/commitRound.js", () => ({ commitRound: vi.fn() }));

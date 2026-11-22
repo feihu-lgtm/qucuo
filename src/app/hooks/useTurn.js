@@ -7,7 +7,7 @@ import { shouldThrottleMovement } from "../../features/map/logic.js";
 import { consumeDuelRequest } from "./useDuel.js";
 import { callModel } from "../../infra/apiConfig.js"; import { classifyError } from "../../utils/apiErrors.js";
 import { step as traceStep } from "../../infra/actionTrace.js";
-import { getTurnContext, PHASE, turnMonitor } from "../../core/turnMonitor.js";
+import { getTurnContext, PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 import { burnSquare, consumeArrival } from "../../domain/rules/map/mapSquares.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 import { resolveInnerBlockedSummary, showOuterNoExitNotice } from "./blockedMovementNotice.js";

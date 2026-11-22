@@ -2,7 +2,7 @@
 // 条目形态 {id, match, parse, execute}；hook 侧条目只带 {id, hooks} 无 match/execute。
 // match 可为正则或函数（函数收到整行文本）；parse 把匹配结果转成参数；
 // execute(ctx, args) 返回退出码，返回 PASS 表示未消费、继续尝试后续条目。
-import { getCommand } from "../../core/commands.js";
+import { getCommand } from "../../infra/commands.js";
 import { CLI_COMMANDS, PASS } from "./cliCommands.js";
 import { HOOK_ENTRIES, buildHookCommands } from "./hooks.js";
 
@@ -61,5 +61,5 @@ export function classifyActCommand({
   return "typedAction";
 }
 
-// Web 侧 hook → 命令 id 映射，从注册表生成（结构同旧 core/commands.js 字面量）。
+// Web 侧 hook → 命令 id 映射，从注册表生成（结构同旧 infra/commands.js 字面量）。
 export const HOOK_COMMANDS = buildHookCommands(COMMAND_REGISTRY);

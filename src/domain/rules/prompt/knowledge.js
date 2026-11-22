@@ -20,7 +20,7 @@ const KROOT = "知识领域";
 const 会淡忘途径 = { 传闻: true, 目击: false, 告知: false, 剧本: false };
 
 // 代码写死的推演参数（可调）：
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { buildPrompt } from "./buildPrompt.js";
 import "./calls/sideCalls.js";
 

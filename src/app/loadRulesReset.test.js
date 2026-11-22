@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { gameActions, gameStore, initGameStore, markGameReplaced, subscribeGameReplaced } from "../store/gameStore.js";
-import { createAutosaveScheduler } from "../core/autosaveScheduler.js";
+import { createAutosaveScheduler } from "../features/autosaveScheduler.js";
 import { createWorldRules } from "../engine/worldRules.js";
 import { applyResult } from "../features/run.js";
 import { derivedMovesetRule } from "../features/skills/rules.js";

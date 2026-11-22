@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DEFAULT_PRESETS } from "../../core/newGame.js";
+import { DEFAULT_PRESETS } from "../../engine/newGame.js";
 import { canBypassExclusive, getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getZoneTheme, ink } from "../../ui/theme.js";

@@ -106,7 +106,7 @@ export default async function mobileTabs({ page, game, ai }) {
   ai.next({ output: ["我整理好行囊，沿着溪边望向村口。"] });
   await game.act(page, "我整理了一下行囊");
   await game.waitFor(page, () => page.evaluate(async () => {
-    const { turnMonitor } = await import("/src/core/turnMonitor.js");
+    const { turnMonitor } = await import("/src/infra/turnMonitor.js");
     return turnMonitor.getTrees().some((turn) => turn.raw === "我整理了一下行囊" && turn.phase === "DONE");
   }), { message: "timestamped trace turn" });
   await page.setViewportSize({ width: 390, height: 693 });

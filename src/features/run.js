@@ -1,6 +1,6 @@
 import { gameActions } from "../store/gameStore.js";
 import { registerFact } from "../domain/rules/prompt/knowledge.js";
-import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
 
 function actionForKey(key) {
   const actionName = `set${key[0].toUpperCase()}${key.slice(1)}`;

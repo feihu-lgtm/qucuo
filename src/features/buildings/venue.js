@@ -1,6 +1,6 @@
 // 场所消费：点单上菜 / 下厨做饭 / 佛前祈祷。
 // 从 logic.js 按动作分组拆出——这组是"在建筑里消费一项服务"。
-import { random } from "../../core/rng.js";
+import { random } from "../../infra/rng.js";
 import { effectiveMaxHp } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { makeBuffFlag } from "../../utils/buffSystem.js";
 import { INGREDIENT_LORE } from "../../domain/rules/economy/cooking.js";

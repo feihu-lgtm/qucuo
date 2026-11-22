@@ -1,4 +1,4 @@
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { STARTER_SKILLS } from "../../data/kungfu/starterKungfu.js";
 
 export const SPECIAL_KEYS = ["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"];

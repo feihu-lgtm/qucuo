@@ -9,7 +9,7 @@
 // pendingAtkBonus/costPenalty 传入，结果里通过 counterSuccess*/pendingAtkBonusTo*/
 // costPenaltyTo*/freezeEnergyTo*/defenseBroken* 传出，由 DuelScreen 存进下一回合。
 
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { MOVE_TYPE, resolveMatchupRule } from "./moveTypes.js";
 import { resolveDefenseBlock } from "./resolveDefenseBlock.js";
 import { applyDodgeResult } from "./dodgeTurn.js";

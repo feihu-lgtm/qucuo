@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest";
-import { createScheduler } from "../../core/commandScheduler.js";
+import { createScheduler } from "../../engine/commands/commandScheduler.js";
 import { gameActions, gameStore, initGameStore } from "../../store/gameStore.js";
-import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
+import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 import { playTurn } from "../../engine/playTurn.js";
 import { bindTurnAi } from "../../engine/ports/ai.js";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";

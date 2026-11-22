@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { resolveRerankUrl, rerank, applyRerank } from "../../../engine/ports/rerank.js";
 import { getEmbedding } from "../../../engine/ports/embeddingService.js";
-import { PHASE, turnMonitor } from "../../../core/turnMonitor.js";
+import { PHASE, turnMonitor } from "../../../infra/turnMonitor.js";
 
 // 精排是可选的第四步：粗排（intent/context/词法三路 RRF）拿到十几条大致相关的，
 // cross-encoder 把 (查询,候选) 成对喂进模型直接出相关度。它贵但准，只用在粗排之后。

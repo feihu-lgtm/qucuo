@@ -3,9 +3,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const coreDir = resolve(dirname(fileURLToPath(import.meta.url)));
-const engineDir = resolve(coreDir, "../engine");
-const featuresDir = resolve(coreDir, "../features");
+const srcDir = resolve(dirname(fileURLToPath(import.meta.url)));
+const infraDir = resolve(srcDir, "infra");
+const engineDir = resolve(srcDir, "engine");
+const featuresDir = resolve(srcDir, "features");
 const promptDir = resolve(engineDir, "prompt");
 
 function listJavaScriptFiles(dir) {
@@ -16,14 +17,16 @@ function listJavaScriptFiles(dir) {
   });
 }
 
-it("keeps React and non-vanilla Zustand imports out of core", () => {
-  const violations = listJavaScriptFiles(coreDir).flatMap((file) => {
-    const source = readFileSync(file, "utf8");
-    const imports = [...source.matchAll(/\bfrom\s*["']([^"']+)["']/g)].map((match) => match[1]);
-    return imports
-      .filter((specifier) => specifier === "react" || (specifier.startsWith("zustand") && specifier !== "zustand/vanilla"))
-      .map((specifier) => `${relative(coreDir, file)}: ${specifier}`);
-  });
+it("keeps React and non-vanilla Zustand imports out of infra, engine, and feature modules", () => {
+  const violations = [infraDir, engineDir, featuresDir].flatMap((dir) =>
+    listJavaScriptFiles(dir).flatMap((file) => {
+      const source = readFileSync(file, "utf8");
+      const imports = [...source.matchAll(/\bfrom\s*["']([^"']+)["']/g)].map((match) => match[1]);
+      return imports
+        .filter((specifier) => specifier === "react" || (specifier.startsWith("zustand") && specifier !== "zustand/vanilla"))
+        .map((specifier) => `${relative(dir, file)}: ${specifier}`);
+    }),
+  );
 
   expect(violations).toEqual([]);
 });
@@ -43,14 +46,14 @@ it("keeps React and browser globals out of feature modules", () => {
   expect(violations).toEqual([]);
 });
 
-it("keeps the UI overlay store out of core, engine, and feature modules", () => {
-  const violations = [coreDir, engineDir, featuresDir].flatMap((dir) =>
+it("keeps the UI overlay store out of infra, engine, and feature modules", () => {
+  const violations = [infraDir, engineDir, featuresDir].flatMap((dir) =>
     listJavaScriptFiles(dir).flatMap((file) => {
       const source = readFileSync(file, "utf8");
       const imports = [...source.matchAll(/\bfrom\s*["']([^"']+)["']/g)].map((match) => match[1]);
       return imports
         .filter((specifier) => specifier.includes("uiStore"))
-        .map((specifier) => `${relative(coreDir, file)}: ${specifier}`);
+        .map((specifier) => `${relative(dir, file)}: ${specifier}`);
     }),
   );
 

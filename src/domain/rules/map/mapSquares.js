@@ -1,4 +1,4 @@
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { QUCUO_MAP } from "../../data/map/qucuoMap.js";
 import { rollEncounter } from "./encounter.js";
 import { rollQuality, ITEM_CATEGORY } from "../economy/equipment.js";

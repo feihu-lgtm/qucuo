@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createSession } from "../../cli/runner.mjs";
-import { gameActions } from "../store/gameStore.js";
-import { createMockAi } from "../engine/ports/ai.js";
+import { createSession } from "./runner.mjs";
+import { gameActions } from "../src/store/gameStore.js";
+import { createMockAi } from "../src/engine/ports/ai.js";
 
 let tempDir;
 

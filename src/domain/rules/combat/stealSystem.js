@@ -9,7 +9,7 @@
 // 2026-07 扩展：偷窃现在不只偷物品，也能偷招（偷师）——判定用同一套成功率和
 // 惩罚，只是成功之后，从"偷到手的到底是物品还是招式"这一步开始分叉。
 
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 
 export const STEAL_CONFIG = {
   baseRate: 0.45,       // 好感度为0时的基础成功率（原0.2太低，叠加偷物分叉后体感像坏了）

@@ -1,4 +1,4 @@
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 
 export function rollStatusApply(move) {
   if (move.confuseChance && random() < move.confuseChance) return "气乱";
