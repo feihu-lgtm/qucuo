@@ -64,6 +64,10 @@ export const BUILDINGS_BY_LOCATION = {
       id: "hospital_tangmen", name: "试毒药庐", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
       desc: "既是练毒的灶，也是救命的堂；世上最狠的毒往往和最灵的解药同出一炉，只要出得起银子，断气前总能拉回来半口。",
     },
+    {
+      id: "sect_entry_tangmen", name: "宗祠·入堂石", type: BUILDING_TYPE.SECT_ENTRY, sect: "唐门",
+      desc: "唐家宗祠门前的入堂石，向唐老太行礼立誓、滴血入槽，便领一块玄竹弟子令。",
+    },
   ],
   // ── 广汉·丐帮三星分舵（合稿·丐帮 2.3）+ 广汉镇中立驿站（合稿·丐帮修订建议 2） ──
   广汉: [
@@ -166,6 +170,14 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "pigeon_coop_yiding", name: "鸽子笼", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 3,
       desc: "村口老槐树下支着几间竹编鸽笼，看笼的老汉每日清晨放三只信鸽出来，任由往来客商领去，图的是曲措乡这条邮路越走越熟。",
+    },
+    {
+      id: "med_xitou", name: "西头药铺", type: BUILDING_TYPE.MEDICINE, shopKey: "西头药铺",
+      desc: "管家小舅子开的药材铺子，药柜锁得比别家都严实，金疮药、止血散倒是常年有货，价钱比别处贵一截。",
+    },
+    {
+      id: "wuguan_shaiguchang", name: "晒谷演武场", type: BUILDING_TYPE.WUGUAN, skillSet: "鱼定",
+      desc: "村长院后侧一片压得死实的夯土晒谷场，秋收晒青稞，平日里老猎户和护镖老卒就在这儿指点村中后生练些护身实招。",
     },
     {
       id: "forge_yiding", name: "铁匠铺", type: BUILDING_TYPE.FORGE,

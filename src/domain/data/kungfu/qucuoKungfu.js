@@ -392,7 +392,7 @@ export const SKILL_CATALOG = {
     },
   ],
 
-  // ── 唐门：暗器与毒药，家族制不收外姓，但暗器卖给所有人 ──
+  // ── 唐门：暗器与毒药，暗器卖给所有人；宗祠入堂石立誓可正式拜入 ──
   唐门: [
     {
       id: "kf_tm_cuntie", name: "寸铁点星手", type: SKILL_TYPE.MOVE, quality: "绿", price: 55,
@@ -425,6 +425,27 @@ export const SKILL_CATALOG = {
       desc: "唐门弟子自幼以毒淬体，小剂量百毒日日服，练出一副抗毒的筋骨。运功时体表渗出一层薄汗，带微苦药气——毒物近身先被这层汗化去三分。不是解毒，是毒到了跟前就矮了三分。",
       passiveBonus: { maxHp: 15 },
       unlock: { faction: "唐门", rep: 40, member: true, guestRep: 80, note: "需正式拜入唐门且声誉 ≥ 40（外客须声誉 ≥ 80 方可求教）" } },
+    {
+      id: "kf_tm_fuguang", name: "浮光掠竹步", type: SKILL_TYPE.QINGGONG, quality: "蓝", price: 130,
+      moveType: "状态",
+      passiveBonus: { speedBonus: 1 },
+      unlock: { faction: "唐门", rep: 15, member: false, note: "唐门声誉 ≥ 15" },
+      desc: "蜀南竹海里踩着暗桩练出的诡谲身法，步幅极碎，忽左忽右，专挑对手视野盲区落脚。练成后衣摆贴腿不扬尘，连吊桥上的九枚警铃都震不响。",
+    },
+    {
+      id: "kf_tm_cuogu", name: "千机错骨针", type: SKILL_TYPE.MOVE, quality: "橙", price: 420,
+      moveType: "攻击",
+      applyStatus: "剧毒", statusChance: 0.5, ignoreDefenseRatio: 0.2,
+      unlock: { faction: "唐门", rep: 80, member: true, note: "需正式拜入唐门且声誉 ≥ 80" },
+      desc: "内堂秘传的重手毒针，专打周身关节筋膜。针入皮肉不流血，只觉半边身子渐如灌铅，三息之后气力大减。唐老太严令此针只准对付死敌，绝不许用来欺压市井。",
+    },
+    {
+      id: "kf_tm_tianluo", name: "天罗绣影针", type: SKILL_TYPE.MOVE, quality: "红", price: 680,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.65 }, ignoreDefenseRatio: 0.45, applyStatus: "剧毒", statusChance: 0.4,
+      unlock: { faction: "唐门", rep: 100, member: true, quest: ["tangmen_5_jiaguichujian"], note: "需正式拜入唐门、完成「唐5·家法断机」且唐门声誉 ≥ 100" },
+      desc: "唐老太压箱底的镇派绝学。寻常一根三寸银绣针，在七十岁老手捻动下竟如穿花织锦，针尾牵着肉眼难辨的冰蚕细丝，一去一回皆有后手——外人只道她是在纳鞋底，等看见针影，胸口已缝好了三道血线。",
+    },
   ],
 
   // ── 五仙教：苗疆蛊毒，软鞭淬毒与虫养之术，于听虫演武坪授徒 ──
@@ -477,6 +498,59 @@ export const SKILL_CATALOG = {
       passiveBonus: { maxHp: 30, speedBonus: 1 },
       unlock: { faction: "五仙教", member: true, guestRep: 80, quest: ["wuxianjiao_5_yingguandingtan"], note: "需正式拜入五仙教且声誉 ≥ 80，并完成主线《蛊5·银冠定坛》得传毒典正解" },
       desc: "《五仙毒典》上下卷合一的镇派内功，万蛊听令、百毒不侵。老教主当年凭它在昆明城外一人压服三派围攻——练成者气血如蛊潮生生不息，毒物入身反成滋养。",
+    },
+  ],
+
+  // ── 鱼定村：茶马灶火与熊山猎手的实用防身路数（合稿「鱼定村·五」）。不可拜入，只按鱼定村声誉与前置任务学 ──
+  鱼定: [
+    {
+      id: "kf_yuding_biandan", name: "茶马挑担棍", type: SKILL_TYPE.MOVE, quality: "白", price: 25,
+      moveType: "攻击",
+      lowHpBonus: 0.2,
+      unlock: { faction: "鱼定村", rep: 0, note: "鱼定村声誉 ≥ 0（晒谷演武场公开可学）" },
+      desc: "雅江到鱼定滩的脚夫挑着百斤砖茶走山路，遇上恶狗山贼全靠手里这根桑木扁担。没那么多花哨起手，人越累、路越窄，横扫出去那一下越狠——保住担子就保住了全家一年的口粮。",
+    },
+    {
+      id: "kf_yuding_zaohuo", name: "灶火调息", type: SKILL_TYPE.MOVE, quality: "绿", price: 45,
+      moveType: "状态",
+      energyRestore: 5, hpRestore: 0.06,
+      unlock: { faction: "鱼定村", rep: 0, note: "鱼定村声誉 ≥ 0（晒谷演武场公开可学）" },
+      desc: "老孙守在滚烫羊汤锅前二十年磨出的换气法子：灶烟呛人的时候把气沉到脐下，等锅盖一掀再顺着热气吐匀。老孙说练武跟熬汤一样，火太急容易糊底，气顺了才经得起熬。",
+    },
+    {
+      id: "kf_yuding_bozhu", name: "算盘拨珠手", type: SKILL_TYPE.MOVE, quality: "绿", price: 65,
+      moveType: "防御",
+      onCounterSuccessEnergyGain: 3, onCounterSuccessDamageRatio: 0.25,
+      unlock: { faction: "鱼定村", rep: 15, note: "鱼定村声誉 ≥ 15（颇具善缘）" },
+      desc: "才旦拿算盘教出来的巧劲：来势再凶，先拿两指像拨下珠似的轻轻一搭一滑，把对方的蛮力撇歪半寸，顺手再还一记快戳。她说这叫「进出平账」——谁打了你，当场就得把本利拨回来。",
+    },
+    {
+      id: "kf_yuding_zhagen", name: "界石扎根功", type: SKILL_TYPE.NEIGONG, quality: "绿", price: 75,
+      moveType: "防御",
+      passiveBonus: { maxHp: 14 },
+      unlock: { faction: "鱼定村", rep: 15, note: "鱼定村声誉 ≥ 15（颇具善缘，泽仁村长点拨）" },
+      desc: "当年全村汉子替老土司修水渠、抬青石界碑时练出来的笨内功。双脚抓地如老树盘根，不求轻灵飘逸，只求被人推一把、踹一脚时脊梁骨纹丝不动。",
+    },
+    {
+      id: "kf_yuding_xunzong", name: "踏雪寻踪步", type: SKILL_TYPE.QINGGONG, quality: "蓝", price: 110,
+      moveType: "状态",
+      passiveBonus: { speedBonus: 1 },
+      unlock: { faction: "鱼定村", rep: 40, quest: ["yudingcun_side1_yushan_chuhuan"], note: "鱼定村声誉 ≥ 40，并完成支线《村支1·熊山除患》" },
+      desc: "老猎户桑登在熊山积雪里踩了四十年的步子。脚尖先探虚实，脚跟不落死力，踩在半尺厚的雪壳上只留浅浅一印。学会了这步法，跑山道比寻常江湖客快出半个身位。",
+    },
+    {
+      id: "kf_yuding_bopi", name: "熊山剔骨刀", type: SKILL_TYPE.MOVE, quality: "蓝", price: 150,
+      moveType: "攻击",
+      forceCrit: { multiplier: 1.45 },
+      unlock: { faction: "鱼定村", rep: 40, quest: ["yudingcun_side1_yushan_chuhuan"], note: "鱼定村声誉 ≥ 40，并完成支线《村支1·熊山除患》" },
+      desc: "老猎户剥熊皮、卸羊骨的刀法，绝不跟硬骨头死磕，专挑筋膜缝隙往里递。桑登从不叫它武功，只说「牲口和恶人都一样，找准了软处，一刀就省力」。",
+    },
+    {
+      id: "kf_yuding_fuxi", name: "熊山伏息术", type: SKILL_TYPE.MOVE, quality: "紫", price: 210,
+      moveType: "防御",
+      immuneControl: true, energyRestore: 6,
+      unlock: { faction: "鱼定村", rep: 80, quest: ["village5_laolieshu_chuanren"], note: "鱼定村声誉 ≥ 80，并完成《村5·老猎户的传人》得桑登亲传" },
+      desc: "老猎户压箱底的雪窝绝活。大雪夜埋伏猛兽时，把心跳压得像冻住的溪水，寒风吹不乱、虎啸震不慌，任对手点穴缠丝也锁不住这口潜气，反倒能借对方招老的空档喘回满胸真元。",
     },
   ],
 

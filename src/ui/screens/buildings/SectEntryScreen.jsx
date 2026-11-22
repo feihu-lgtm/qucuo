@@ -3,6 +3,7 @@ import { Overlay, Header, Btn } from "./common.jsx";
 import { SECT_ENTRY, checkSectEntry } from "../../../domain/rules/character/sectEntry.js";
 import FactionEntryScreen, { LeaveSectButton } from "./FactionEntryScreen.jsx";
 import { FACTION_ENTRIES, SECT_MEMBER_FLAGS } from "../../../domain/rules/character/factionEntry.js";
+import { factionRepOf } from "../../../domain/rules/economy/factionRep.js";
 
 // 拜师堂——雪山派入门。挂在内堂（何雨谢坐镇处）。
 // 结算全在系统这边做完（扣束脩、发令牌、写身份 flag），AI 只负责把这件既成事实
@@ -19,6 +20,8 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
     money: char.money ?? 0,
     flags,
     otherSect: Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== SECT_ENTRY.sect && (flags || []).includes(flag))?.[0] ?? null,
+    rep: factionRepOf(varTree, SECT_ENTRY.sect), prestige: Number(varTree?.世界?.威望) || 0,
+    questProgress,
   });
 
   return (

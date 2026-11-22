@@ -41,7 +41,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "陆寒枝", id: "resident_luhanzhi", levelCap: 16,
+      name: "陆寒枝", id: "resident_luhanzhi", levelCap: 4,
       brief: "雪山派大师兄、练功堂教习，三十六岁，方脸浓眉，右颊一道寒冰石划出的浅白旧痕",
       personality: "古板严苛、外硬内苦，把「保住雪山最后十几个弟子的命」视作唯一职责；一旦确证大义与师门血仇，比谁都敢拔剑赴死",
       carry: [
@@ -55,7 +55,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "沈既白", id: "resident_shenjibai", levelCap: 12,
+      name: "沈既白", id: "resident_shenjibai", levelCap: 3,
       brief: "雪山派三弟子、门派商坊司库兼外务采买，二十七岁，皮肤浅麦色，腰间挂着黄铜算盘和记账皮囊",
       personality: "热忱坦荡、脚踏实地，深谙柴米油盐与底层疾苦；对师母极孝，却咽不下山下百姓受剥削这口气",
       carry: [
@@ -69,7 +69,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "齐照野", id: "resident_qizhaoye", levelCap: 18,
+      name: "齐照野", id: "resident_qizhaoye", levelCap: 5,
       brief: "雪山派守阁老剑奴，六十四岁，佝偻着半边身子，左袖空荡荡折在腰带里",
       personality: "沉默倔强、执念深重，为没能随老掌门共赴顶峰愧疚三十年；提及剑道时老眼陡然亮如寒星",
       carry: [

@@ -4,6 +4,16 @@ const GB = "丐帮三星分舵";
 const at = (inner, district = "广汉") => ({ district, inner });
 const catalog = (name, count = 1) => Array.from({ length: count }, () => ({ name, fromCatalog: true }));
 
+// 丐5 誓师分支：已拜入者升阶七袋掌棒使；倾巢相助合稿门槛 140 收到声誉上限 100。
+const MEMBER = "丐帮弟子";
+const OATH_ALLY = ["quest_gb5_oath", "quest_gb5_oath_rank"];
+const OATH_FULL = ["quest_gb5_full", "quest_gb5_full_rank"];
+const FULL_GATE = { requiresFactionRep: { [GB]: 100 }, requiresFavor: { 多吉: 60 } };
+const FULL_FLAGS = ["endgame_ally_gaibang_full", "gaibang_epilogue_yiyue_zhoupeng"];
+const GUEST_REWARD = { items: catalog("三星客卿青竹杖") };
+const RANK_REWARD = { items: catalog("七袋掌棒使铁令"), flags: ["丐帮七袋掌棒使"] };
+const FULL_NARRATION = "多吉站上供桌唱起玉泉牧歌，院里返乡的牧民一个接一个跟着唱。严九斤把裂山伏虎掌的架子一摆：「桑杰朵杰那一刀，到时候老叫花替你接。」";
+
 export default { quest: {
   gaibang_1_yiwanxizhou: {
     id: "gaibang_1_yiwanxizhou",
@@ -292,7 +302,7 @@ export default { quest: {
         description: "胡三爷拄着铁拐蹲在草坡后头，朝坡下努了努嘴：七八个血刀部的探子围着一堆没冒烟的火，正盯着官道上的车辙。",
         completionFlag: ["quest_gb5_scouts"],
         choices: [
-          { flag: "quest_gb5_scouts", label: "与胡三爷、多吉拔掉暗哨", resolve: "combat", combatNpc: { name: "血刀部斥候小队", levelCap: 6 } },
+          { flag: "quest_gb5_scouts", label: "与胡三爷、多吉拔掉暗哨", resolve: "combat", combatNpc: { name: "血刀部斥候小队", levelCap: 3 } },
         ],
       },
       {
@@ -308,16 +318,31 @@ export default { quest: {
         requireLocation: at("土地庙正殿·聚义堂"),
         playerHint: "回聚义堂，看严九斤点兵誓师。",
         description: "三百名丐帮弟子和数十名返乡的曲措青壮挤满了破庙前后院。严九斤把一碗烈酒摔碎在门槛上：「打狗棒南下，不讨饭，讨债！」",
-        completionFlag: "quest_gb5_oath",
+        completionFlag: [...OATH_ALLY, ...OATH_FULL],
+        choices: [
+          { flag: "quest_gb5_oath", label: "受青竹杖·常规结盟", resolve: "none", blockedByFlags: [MEMBER],
+            narration: "严九斤把一根缠了三道红绳的青竹杖塞进你手里：「客卿持杖，打狗阵听你号令。」" },
+          { flag: "quest_gb5_oath_rank", label: "晋七袋掌棒使·常规结盟", resolve: "none", requiresFlag: [MEMBER],
+            narration: "严九斤当众给你腰间再系上三只布袋，凑满七袋：「从今往后，你就是三星分舵的掌棒使。」" },
+          { flag: "quest_gb5_full", label: "倾巢相助·受青竹杖", resolve: "none", blockedByFlags: [MEMBER], ...FULL_GATE,
+            narration: FULL_NARRATION },
+          { flag: "quest_gb5_full_rank", label: "倾巢相助·晋七袋掌棒使", resolve: "none", requiresFlag: [MEMBER], ...FULL_GATE,
+            narration: FULL_NARRATION },
+        ],
         onReach: {
           money: 200,
-          items: catalog("三星客卿青竹杖"),
           factionRep: { [GB]: 35, 鱼定土司府: -11, 青城派: 7, 峨眉派: 7 },
           flags: ["endgame_ally_gaibang", "endgame_buff_gaibang_scouts"],
+          byFlag: {
+            quest_gb5_oath: GUEST_REWARD,
+            quest_gb5_oath_rank: RANK_REWARD,
+            quest_gb5_full: { ...GUEST_REWARD, flags: FULL_FLAGS },
+            quest_gb5_full_rank: { ...RANK_REWARD, flags: [...RANK_REWARD.flags, ...FULL_FLAGS] },
+          },
         },
       },
     ],
-    rewardText: "终局战获「丐帮全图斥候」增益：提前看破土司府与暗通外援的伏兵；严九斤与胡三爷率打狗阵牵制土司巡捕营与骑手。",
+    rewardText: "终局战获「丐帮全图斥候」增益：提前看破土司府与暗通外援的伏兵；严九斤与胡三爷率打狗阵牵制土司巡捕营与骑手。已拜入则晋升七袋掌棒使；丐帮声誉 ≥100 且多吉好感 ≥60 可选倾巢相助：多吉领返乡牧民瓦解半数土司乡勇，严九斤亲临主战场替你硬接桑杰朵杰一记杀招，战后分舵在鱼定村设义学粥棚。",
   },
 
   gaibang_join_xiaokao: {
