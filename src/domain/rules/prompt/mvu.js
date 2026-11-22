@@ -13,7 +13,7 @@
 // 直接 varTree.世界.旁白.seaUnlocked 会炸；读的地方一律走 narratorVars() 兜底。
 import { emptyTally } from "../memory/tally.js";
 import { AFFECTION_RULES, FIELD, FIELDS } from "../state/fields.js";
-import { applyPatches } from "../state/applyPatches.js";
+import { applyPatches, merge } from "../state/applyPatches.js";
 export { isProtectedMvuPath } from "../state/applyWrite.js";
 
 export function initialNarratorVars() {
@@ -22,6 +22,9 @@ export function initialNarratorVars() {
     metXuannu: false,     // 是否已被玄女点破过（防止引导重复播）
     seaVisited: false,    // 是否已经进过一次心灵之海
     villaEntered: false,  // 是否已进过白色别墅（阶段2 手工剧情只播一次）
+    portalOpened: false,  // 阶段5：传送门是否已开
+    tokyoVisited: false,  // 阶段6：是否已回过第三新东京市
+    asukaFree: false,     // 阶段7：明日香是否已脱身入队
     questStage: 0,        // 个人线阶段，0=未开始
     // ── 创伤线（narratorQuest.js）──
     // comfort 是唯一真值，defenseLevel 由它纯函数派生、不另存一份
@@ -38,11 +41,15 @@ export function narratorVars(varTree) {
 }
 
 // 写入 世界.旁白 的若干字段，返回新的 varTree（不就地改）。
+// 收口进 applyPatches：世界.* 是系统裁决域，走 merge（可信深写，不经字段声明表）。
 export function setNarratorVars(varTree, patch) {
-  const next = JSON.parse(JSON.stringify(varTree || {}));
-  if (!next.世界) next.世界 = { 威望: 0 };
-  next.世界.旁白 = { ...initialNarratorVars(), ...(next.世界.旁白 || {}), ...patch };
-  return next;
+  return applyPatches({ varTree: varTree || {} }, [
+    merge("varTree.世界", (prev) => ({
+      威望: 0,
+      ...(prev || {}),
+      旁白: { ...initialNarratorVars(), ...(prev?.旁白 || {}), ...patch },
+    })),
+  ]).state.varTree;
 }
 
 export function initialVarTree() {
