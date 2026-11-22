@@ -12,6 +12,9 @@ import { buySkill } from "./logic.js";
 import { buildRoomNpcWithCombat } from "../../domain/rules/npc/rules.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { buyFactionShopItem, factionShopOffer } from "./factionShop.js";
+import { FACTION_ENTRIES, checkFactionEntry, factionEntryForBuilding } from "../../domain/rules/character/factionEntry.js";
+import { skillUnlockStatus } from "../../domain/rules/economy/skillUnlock.js";
+import { joinSect } from "../sect/logic.js";
 
 const GB = "丐帮三星分舵";
 const rep = (value) => ({ 世界: { 势力声誉: { [GB]: value } } });
@@ -40,7 +43,7 @@ describe("丐帮三星分舵", () => {
     const rewardItems = JSON.stringify(quests).match(/"name":"[^"]+","fromCatalog":true/g) || [];
     const rewardNames = rewardItems.map((text) => text.slice(8, text.indexOf('","')));
     for (const name of [...shopItems, ...carry, ...rewardNames]) expect(makeNamedItem(name), name).toBeTruthy();
-    expect(quests.length).toBe(7);
+    expect(quests.length).toBe(9);
   });
 
   it("prices and gates the branch shop by 丐帮 reputation", () => {
@@ -114,5 +117,74 @@ describe("丐帮三星分舵", () => {
     const baishen = buildRoomNpcWithCombat(RESIDENT_NPCS.广汉.find((npc) => npc.name === "白婶"));
     expect(isNpcVisibleInInnerRoom("广汉", "破庙前院·粥棚与竹坪", baishen)).toBe(true);
     expect(isNpcVisibleInInnerRoom("广汉", "鸭子河畔", baishen)).toBe(false);
+  });
+});
+
+describe("拜入丐帮三星分舵", () => {
+  const entry = FACTION_ENTRIES[GB];
+  const hall = { innerRoomName: "土地庙正殿·聚义堂" };
+  const xiaokao = QUCUO_QUESTS.find((quest) => quest.id === "gaibang_join_xiaokao");
+
+  it("binds the 聚义堂 entry hall and the 广汉镇 transport", () => {
+    const buildings = getBuildingsForLocation("广汉");
+    const byInner = (inner) => buildings.find((building) => building.id === getBuildingIdForInnerRoom("广汉", inner));
+    expect(byInner("土地庙正殿·聚义堂")).toMatchObject({ type: "sect_entry", sect: GB });
+    expect(byInner("广汉镇")).toMatchObject({ id: "transport_guanghan", type: "transport" });
+    expect(factionEntryForBuilding("sect_gaibang_entry")).toBe(entry);
+  });
+
+  it("needs rep 40, prestige ≥ 0, the 入门小考 and no other sect", () => {
+    const check = (value, flags, extra = {}) => checkFactionEntry(entry, {
+      varTree: { 世界: { 势力声誉: { [GB]: value }, ...extra } }, flags, char: { gender: "男" },
+    }).missing;
+    expect(check(40, ["quest_gbj_spar"])).toEqual([]);
+    expect(check(40, [])).toEqual(["trial"]);
+    expect(check(39, ["quest_gbj_spar"])).toEqual(["rep"]);
+    expect(check(40, ["quest_gbj_spar"], { 威望: -1 })).toEqual(["prestige"]);
+    expect(check(40, ["quest_gbj_spar", "峨眉派弟子"])).toEqual(["single"]);
+  });
+
+  it("runs the 小考: toast 严九斤 in the hall, then take 胡三爷's five blows at 竹坪", () => {
+    expect(getLocalQuestStage(xiaokao, state(39, hall))).toBeNull();
+    const toast = playLocalQuestStage(state(40, hall), xiaokao, undefined, 1);
+    const progress = apply(toast.changes.questProgress, {});
+    const flags = apply(toast.changes.flags, []);
+    expect(flags).toContain("quest_gbj_toast");
+    const yard = state(40, { innerRoomName: "破庙前院·粥棚与竹坪", questProgress: progress, flags });
+    expect(getLocalQuestStage(xiaokao, yard)?.id).toBe("spar");
+    const spar = playLocalQuestStage(yard, xiaokao, "硬接胡三爷五招不退", 2);
+    expect(apply(spar.changes.flags, flags)).toContain("quest_gbj_spar");
+    expect(getLocalQuestStage(xiaokao, state(40, { ...hall, flags: ["丐帮弟子"] }))).toBeNull();
+  });
+
+  it("joins with +20 rep, the 三星青竹袋 and the member gate for 缠丝打犬棒", () => {
+    const result = joinSect(state(40, { ...hall, flags: ["quest_gbj_spar"] }));
+    const flags = result.changes.flags([]);
+    expect(flags).toContain("丐帮弟子");
+    expect(result.changes.varTree(rep(40)).世界.势力声誉[GB]).toBe(60);
+    expect(result.changes.inv([]).map((item) => item.name)).toContain("三星青竹袋");
+    const skill = SKILL_CATALOG.丐帮.find((entry) => entry.name === "缠丝打犬棒");
+    expect(skillUnlockStatus({ varTree: rep(40), flags }, skill).ok).toBe(true);
+    expect(skillUnlockStatus({ varTree: rep(40), flags: [] }, skill).ok).toBe(false);
+  });
+});
+
+describe("丐5·百棒出广汉", () => {
+  const quest = QUCUO_QUESTS.find((entry) => entry.id === "gaibang_5_shiliudagouzhen");
+  const done = { gaibang_4_jiuenyuxinzhai: { status: "completed" } };
+
+  it("opens only after 丐4 with 丐帮 rep ≥ 80", () => {
+    const hall = (value, questProgress) => state(value, { innerRoomName: "土地庙正殿·聚义堂", questProgress });
+    expect(getLocalQuestStage(quest, hall(80, {}))).toBeNull();
+    expect(getLocalQuestStage(quest, hall(79, done))).toBeNull();
+    expect(getLocalQuestStage(quest, hall(80, done))?.id).toBe("council");
+  });
+
+  it("pays the 合稿 oath reward in one go and sets the endgame ally flags", () => {
+    const oath = quest.stages.find((stage) => stage.id === "oath").onReach;
+    expect(oath).toMatchObject({ money: 200, factionRep: { [GB]: 35, 鱼定土司府: -11, 青城派: 7, 峨眉派: 7 } });
+    expect(oath.flags).toEqual(["endgame_ally_gaibang", "endgame_buff_gaibang_scouts"]);
+    expect(makeNamedItem("三星客卿青竹杖")?.name).toBe("三星客卿青竹杖");
+    expect(quest.stages.find((stage) => stage.id === "scouts").choices[0]).toMatchObject({ resolve: "combat" });
   });
 });
