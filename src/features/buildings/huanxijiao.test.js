@@ -155,5 +155,10 @@ describe("欢喜教", () => {
     expect(isQuestGateOpen(quest("huanxijiao_6a_bangguanjia"), after, ["flag_huanxi_betray_done"], rep(-70))).toBe(true);
     const finals = QUCUO_QUESTS.filter((entry) => entry.exclusiveGroup === "欢喜教终局");
     expect(finals).toHaveLength(3);
+    const owners = { ending_huanxi_guanjia: "huanxijiao_6a_bangguanjia", ending_huanxi_fanyanna: "huanxijiao_6b_bangfanyanna", ending_huanxi_luoqi_ally: "huanxijiao_6_juezhanqianye" };
+    for (const [ending, owner] of Object.entries(owners)) {
+      const open = finals.filter((entry) => entry.id !== owner && isQuestGateOpen(entry, after, [ending], rep(90)));
+      expect(open).toHaveLength(0);
+    }
   });
 });

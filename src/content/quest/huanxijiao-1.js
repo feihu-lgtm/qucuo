@@ -344,6 +344,7 @@ export default { quest: {
     title: "欢喜教·任务六·决战前夜（帮管家）",
     giver: null,
     exclusiveGroup: "欢喜教终局",
+    blockedByFlags: ["ending_huanxi_fanyanna", "ending_huanxi_luoqi_ally"],
     description: "突袭次夜，西市暗巷里陆福生的密使递来最后一张纸条：把梵衍那的头颅和《供养人名册》送去土司府，陆管家许你万两白银与天都镇香道总管之位。",
     requiresQuestCompleted: "huanxijiao_5_guanjiadetuxi",
     stages: [
@@ -376,7 +377,7 @@ export default { quest: {
     description: "梵衍那在伽罗秘龛摊开天竺舆图：曲措乡即将大乱，他要趁土司与各方火并时榨干供养人最后一笔钱，卷款南逃缅甸，重回复国旧路。",
     requiresQuestCompleted: "huanxijiao_5_guanjiadetuxi",
     requiresFactionRep: { 欢喜教: 80 },
-    blockedByFlags: ["flag_huanxi_betray_done"],
+    blockedByFlags: ["flag_huanxi_betray_done", "ending_huanxi_guanjia", "ending_huanxi_luoqi_ally"],
     stages: [
       {
         id: "s1_escort",
@@ -403,7 +404,7 @@ export default { quest: {
     playerHint: "到天都香行后院,见证梵衍那的交代。",
     requiresQuestCompleted: "huanxijiao_5_guanjiadetuxi",
     requiresFactionRep: { 欢喜教: 80 },
-    blockedByFlags: ["flag_huanxi_betray_done"],
+    blockedByFlags: ["flag_huanxi_betray_done", "ending_huanxi_guanjia", "ending_huanxi_fanyanna"],
     exclusiveGroup: "欢喜教终局",
     stages: [
       {
