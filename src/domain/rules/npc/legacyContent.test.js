@@ -82,6 +82,29 @@ describe("migrateLegacySnapshot", () => {
     expect(s.varTree.角色["厉苍龙"]).toEqual({ 好感: 9, 已细看: true });
   });
 
+  it("数值冲突取大者：好感日增/回合戳同一人往保守合", () => {
+    const snap = baseSnap();
+    snap.varTree.好感日增 = { gained: { 石重岳: 4, 厉苍龙: 2, 厉天行: 1 } };
+    const s = migrateLegacySnapshot(snap);
+    expect(s.varTree.好感日增.gained).toEqual({ 厉苍龙: 4, 厉天行: 1 });
+  });
+
+  it("标量冲突新名优先：旧键后到新值不被旧值盖掉", () => {
+    const snap = { varTree: { 角色: { 厉苍龙: "新档记录", 石重岳: "旧档记录" } } };
+    const s = migrateLegacySnapshot(snap);
+    expect(s.varTree.角色["厉苍龙"]).toBe("新档记录");
+  });
+
+  it("导入人物卡保留自己的 name/id，只迁卡内引用旧名的文本", () => {
+    const snap = baseSnap();
+    snap.room.npcs.push({ name: "石重岳", id: "imported_石重岳", imported: true, desc: "石重岳的徒弟。" });
+    const s = migrateLegacySnapshot(snap);
+    const card = s.room.npcs.find(n => n.imported);
+    expect(card.name).toBe("石重岳");
+    expect(card.id).toBe("imported_石重岳");
+    expect(card.desc).toBe("厉苍龙的徒弟。");
+  });
+
   it("玩家自己取的名字不动", () => {
     const s = migrateLegacySnapshot(baseSnap());
     expect(s.char.name).toBe("石重岳");

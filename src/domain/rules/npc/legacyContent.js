@@ -28,6 +28,16 @@ function migrateValue(v) {
   if (typeof v === "string") return renameText(v);
   if (Array.isArray(v)) return v.map(migrateValue);
   if (v && typeof v === "object") {
+    // 导入人物卡（玩家自己导的角色）不是游戏内 NPC：name/id 原样保留，
+    // 卡还在 importedRegistry 单独册子里，迁名会让它和注册表里的本尊分身。
+    // 其余字段照常迁——卡里引用了游戏内旧名的文本（如「石重岳的徒弟」）仍要改。
+    if (v.imported === true) {
+      const out = {};
+      for (const [k, val] of Object.entries(v)) {
+        out[k] = (k === "name" || k === "id") ? val : migrateValue(val);
+      }
+      return out;
+    }
     const out = {};
     for (const [k, val] of Object.entries(v)) {
       const nk = ALL_RENAMES[k] ?? k;
@@ -35,10 +45,19 @@ function migrateValue(v) {
       // 老存档里新旧名并存（同名人物两边各有一条记录）时以新名为准，
       // 另一边的条目只补缺失字段，不丢数据。两个方向都要兜：旧键先到、
       // 新键后到（新键覆盖旧键值但保留旧键独有字段），或新键先到、旧键后到。
-      if (nk in out
-        && mv && typeof mv === "object" && !Array.isArray(mv)
-        && out[nk] && typeof out[nk] === "object" && !Array.isArray(out[nk])) {
-        out[nk] = nk === k ? { ...out[nk], ...mv } : { ...mv, ...out[nk] };
+      if (nk in out) {
+        const cur = out[nk];
+        if (mv && typeof mv === "object" && !Array.isArray(mv)
+          && cur && typeof cur === "object" && !Array.isArray(cur)) {
+          out[nk] = nk === k ? { ...cur, ...mv } : { ...mv, ...cur };
+        } else if (typeof mv === "number" && typeof cur === "number") {
+          // 数值冲突（好感日增计数、回合戳之类）：取大者——同一人的计数往保守合。
+          out[nk] = Math.max(mv, cur);
+        } else {
+          // 其余标量冲突一律新名条目优先：新键后到（nk===k）mv 即新值；
+          // 旧键后到（nk!==k）保留已在的 cur（新值），旧值弃之。
+          out[nk] = nk === k ? mv : cur;
+        }
       } else {
         out[nk] = mv;
       }
