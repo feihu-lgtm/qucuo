@@ -14,7 +14,7 @@ import { applyMvuCommands } from "../../domain/rules/prompt/mvu.js";
 import { formatAngerResolutionLog, resolveAngerSignals } from "../../domain/rules/combat/stealSystem.js";
 import { runSoftSettle } from "../ports/softSettle.js";
 import { bindTurnAi } from "../ports/ai.js";
-import { turnMonitor } from "../../infra/turnMonitor.js";
+import { turnMonitor } from "../ports/turnMonitor.js";
 
 export async function settleTurn({ ctx, ai, trace, turnOpts, cmd, getGameState, setVarTreeState }) {
   const ctl = {

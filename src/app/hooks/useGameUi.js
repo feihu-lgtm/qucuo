@@ -3,7 +3,7 @@ import { DEFAULT_PRESETS } from "../../engine/newGame.js";
 import { canBypassExclusive, getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getZoneTheme, ink } from "../../utils/theme.js";
-import { loadConfig } from "../../infra/apiConfig.js";
+import { loadConfig } from "../../engine/ports/ai.js";
 import { getActivePreset } from "../../domain/rules/prompt/presetSystem.js";
 import { describeCatalogForAI } from "../../domain/data/items/catalog.js";
 import { buildBudgetInstruction, INTENT } from "../../domain/rules/prompt/inputIntent.js";

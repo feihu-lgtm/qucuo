@@ -22,7 +22,7 @@ import { hpFromNeigong, atkFromWaigong } from "../../../domain/rules/npc/npcGene
 import { statsForQuality } from "../../../domain/rules/economy/equipment.js";
 import { effectBrief, MOVE_RULES, PARAM_KEYS, EFFECT_CN } from "../../../domain/rules/economy/itemEffectText.js";
 import { CATALOG } from "../../../domain/data/items/catalog.js";
-import { callModel } from "../../../infra/apiConfig.js";
+import { callModel } from "../../../engine/ports/ai.js";
 import { DISTRICTS } from "../../../domain/rules/cards/reviewRules.js";
 import { hasInnerMap, getPublicInnerRoomNames } from "../../../domain/rules/map/innerMap.js";
 import { DEFAULT_PORTRAITS, resolveCardPortrait } from "../../../domain/rules/companion/portraits.js";

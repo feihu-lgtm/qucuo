@@ -20,7 +20,7 @@ import { Fragment, lazy, Suspense, useCallback } from "react";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { listCharacters } from "../../domain/rules/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
-import { getPipelineEntries, getTraceLog } from "../../infra/actionTrace.js";
+import { getPipelineEntries, getTraceLog } from "../../engine/ports/actionTrace.js";
 import { activeCompanion, isCompanionUnlockedByName } from "../../domain/rules/companion/companion.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import NpcActionMenu from "../components/NpcActionMenu.jsx";

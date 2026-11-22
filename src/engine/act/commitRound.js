@@ -1,4 +1,4 @@
-import { step as traceStep } from "../../infra/actionTrace.js";
+import { step as traceStep } from "../ports/actionTrace.js";
 import { applyMvuCommands } from "../../domain/rules/prompt/mvu.js";
 import { formatAngerResolutionLog, resolveAngerSignals } from "../../domain/rules/combat/stealSystem.js";
 import { applyKnowledgeTreeDiff } from "../../domain/rules/prompt/knowledge.js";

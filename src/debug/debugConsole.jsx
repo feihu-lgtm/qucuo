@@ -9,8 +9,8 @@
 //   （localStorage，loadConfig 读取）；没配就提示去游戏里配，key 只显后 4 位。
 
 import React, { useState } from "react";
-import { getApiModel } from "../infra/apiModel.js";
-import { loadConfig, callModel, hasApiCredentials, API_TYPES } from "../infra/apiConfig.js";
+import { getApiModel } from "../content/apiModel.js";
+import { loadConfig, callModel, hasApiCredentials, API_TYPES } from "../engine/ports/ai.js";
 import { describeInnerArrival } from "../domain/rules/map/mapNarration.js";
 import { resolveInnerExit } from "../domain/rules/map/innerMap.js";
 import { extractMvuBlock, applyMvuCommands, initialVarTree } from "../domain/rules/prompt/mvu.js";

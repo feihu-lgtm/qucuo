@@ -1,5 +1,5 @@
 import { registerFact } from "../domain/rules/prompt/knowledge.js";
-import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../engine/ports/turnMonitor.js";
 
 // 状态写入口由调用方经 ctx.gameActions 注入（features 不反依赖 store，同
 // intentPendingStore 的参数注入约定）。

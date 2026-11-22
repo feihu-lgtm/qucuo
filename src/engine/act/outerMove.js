@@ -1,4 +1,4 @@
-import { step as traceStep } from "../../infra/actionTrace.js";
+import { step as traceStep } from "../ports/actionTrace.js";
 import { QUCUO_MAP, getMapNode, resolveExit, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
 import { hasInnerMap, getDistrictAnchor } from "../../domain/rules/map/innerMap.js";
 import { DIRS } from "../../utils/mudHelpers.js";

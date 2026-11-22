@@ -1,6 +1,6 @@
 import { getRngState, setRngState } from "../utils/rng.js";
 import { loadSquares, serializeSquares } from "../domain/rules/map/mapSquares.js";
-import { PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
+import { PHASE, turnMonitor, withTurnContext } from "./ports/turnMonitor.js";
 import { createWebAi } from "./ports/ai.js";
 import { createPhaseSetter } from "./turn/phaseSetter.js";
 import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
