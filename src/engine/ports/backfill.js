@@ -11,7 +11,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 事实行之后有流式占位行（actCall / 私聊按下标改写它）时插行会把它挤错位，先等它写完。
 // 只看事实行之后：更早的 streaming 行是存档里残留的死行，不会再被改写。
-// 等满 maxTries 仍在流式，当它已经死了，照插。
+// 等满 maxTries 仍在流式就放弃、只留事实行：照插会挤错还活着的流式下标。
 function streamingAfterFacts(log, key) {
   if (!Array.isArray(log)) return false;
   const start = log.findIndex((entry) => entry?.fillKey === key);
@@ -19,7 +19,7 @@ function streamingAfterFacts(log, key) {
 }
 
 // ask(): Promise<string|null>；parse(text) → { [slot]: 描写 } | 数组 | null
-export async function backfillInBackground(key, { ask, parse, setLog, canAsk = () => true, retryMs = 500, maxTries = 240 }) {
+export async function backfillInBackground(key, { ask, parse, setLog, canAsk = () => true, retryMs = 500, maxTries = 1200 }) {
   try {
     if (!canAsk()) return false;
     const text = await ask();
@@ -34,8 +34,7 @@ export async function backfillInBackground(key, { ask, parse, setLog, canAsk = (
       if (!deferred) return true;
       await wait(retryMs);
     }
-    setLog((log) => insertBackfill(log, key, lines));
-    return true;
+    return false;
   } catch {
     return false;
   }

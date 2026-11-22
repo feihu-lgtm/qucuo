@@ -42,13 +42,13 @@ describe("backfillInBackground", () => {
     expect(log.map((entry) => entry.text.trim())).toEqual(["事实", "描写", "▌"]);
   });
 
-  it("inserts anyway once retries run out", async () => {
+  it("gives up, keeping only the facts, if the stream outlasts the retries", async () => {
     let log = [...tagBackfill([{ t: "sys", text: "  事实" }], "k"), { t: "desc", text: "  ▌", streaming: true }];
     const setLog = vi.fn((fn) => { log = fn(log); });
     const ok = await backfillInBackground("k", { ask: async () => "描写", parse: (text) => [text], setLog, retryMs: 0, maxTries: 3 });
-    expect(ok).toBe(true);
-    expect(setLog).toHaveBeenCalledTimes(4);
-    expect(log.map((entry) => entry.text.trim())).toEqual(["事实", "描写", "▌"]);
+    expect(ok).toBe(false);
+    expect(setLog).toHaveBeenCalledTimes(3);
+    expect(log.map((entry) => entry.text.trim())).toEqual(["事实", "▌"]);
   });
 
   it("ignores stale streaming rows before the fact lines", async () => {
