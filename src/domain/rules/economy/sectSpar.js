@@ -29,6 +29,18 @@ const SECT_SPARS = [
     daily: 2,
     dailyCap: 39,
   },
+  {
+    faction: "三星派",
+    npcs: [
+      { id: "resident_qingtong_jia", name: "青铜面人·甲" },
+      { id: "resident_qingtong_yi", name: "青铜面人·乙" },
+      { id: "resident_qingtong_bing", name: "青铜面人·丙" },
+    ],
+    flag: "sanxing_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
 ];
 
 // 组队单位 id 取 npc.id || npc.name（teamUnits），玩家恒为 "player"，按 id 认人，不怕重名。

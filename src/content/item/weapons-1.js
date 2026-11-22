@@ -104,6 +104,13 @@ const items = {
 "残纹青竹板": { name: "残纹青竹板", category: "weapon", quality: "蓝", atkMul: 1.2, effect: { applyStatus: { name: "气乱", chance: 0.2 } }, desc: "两片老竹刻着半枚三星云雷纹，哑巴七拿来敲节拍。笃笃三声敲在耳边，对手的心神便乱了半拍。" },
 "晒干青竹棍": { name: "晒干青竹棍", category: "weapon", quality: "白", atkMul: 1.1, desc: "三星镇外砍来晒透的老竹，不及精铁锋利，胜在顺手韧长，新手练棒正好。" },
 "铁头打狗棒": { name: "铁头打狗棒", category: "weapon", quality: "蓝", atkMul: 1.3, desc: "选用五年老青竹，两端套上精铁箍，抽人带风、架刀不断，是四袋以上弟子的标配。" },
+// ── 三星派（广汉古蜀青铜神树墟）──
+"绿锈青铜剑": { name: "绿锈青铜剑", category: "weapon", quality: "绿", atkMul: 1.15, desc: "刃口微钝却极沉手的古法青铜直剑，砸在铁刀上嗡嗡震手，新人练重剑最合用。" },
+"听风柳叶铜剑": { name: "听风柳叶铜剑", category: "weapon", quality: "蓝", atkMul: 1.25, sixDim: { 身法: 1 }, desc: "姜泠同款轻剑，剑身薄如柳叶且刻有导风细槽，出剑时比寻常钢剑更静。" },
+"古铜重剑": { name: "古铜重剑", category: "weapon", quality: "紫", atkMul: 1.4, sixDim: { 体魄: 1 }, desc: "樊枯亲手在赤炉里浇铸的宽刃青铜剑，分量压手，一记劈砸能硬生生震开对手架势。" },
+"神鸟金纹剑": { name: "神鸟金纹剑", category: "weapon", quality: "橙", atkMul: 1.55, sixDim: { 悟性: 1 }, desc: "仿照神树金乌铸就的镇阁古剑，剑脊嵌着失传的错金神鸟纹，出鞘自带一股破妄清鸣。" },
+"赤炉铸铜锤": { name: "赤炉铸铜锤", category: "weapon", quality: "紫", atkMul: 1.4, desc: "樊枯掌炉用的短柄八棱重铜锤，既可锻剑亦可碎甲，锤面坑坑洼洼全是六十年的火候。" },
+"柳叶青铜剑": { name: "柳叶青铜剑", category: "weapon", quality: "蓝", atkMul: 1.25, desc: "姜泠随身的轻薄铜剑，剑身刻有细密风纹，挥起来几乎不出声。" },
 };
 
 export default { item: items, itemGroup: { WEAPONS: Object.keys(items) } };

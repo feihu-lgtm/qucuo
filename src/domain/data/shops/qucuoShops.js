@@ -61,6 +61,22 @@ export const QUCUO_SHOPS = {
       { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 100 },
     ],
   },
+  // 三星派·古墟秘藏阁（合稿·三星派 6.2）。声誉 < 15 不摆货；声誉上限 100，合稿 ≥140 的镇阁剑收到 100、限购一次。
+  三星秘藏: {
+    shopName: "古墟秘藏阁",
+    items: [
+      { name: "绿锈青铜剑", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 15 },
+      { name: "粗布护心藤甲", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 15 },
+      { name: "古蜀艾草宁神香", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 15 },
+      { name: "听风柳叶铜剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "墨麻轻行衣", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 40 },
+      { name: "青铜纵目护符", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 40 },
+      { name: "归墟凝神丹", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 40 },
+      { name: "古铜重剑", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 40 },
+      { name: "玄麻祭天袍", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 80 },
+      { name: "神鸟金纹剑", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100, limitOnce: true },
+    ],
+  },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。

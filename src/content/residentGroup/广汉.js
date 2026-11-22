@@ -59,6 +59,34 @@ export default { residentGroup: {
     },
     // ── 丐帮三星分舵（破庙一带；合稿·丐帮第 3 节）──
     {
+      name: "樊枯", innerRoom: "铸铜地窖·赤炉窟", id: "resident_fanku", levelCap: 4,
+      brief: "三星派赤炉长老，守墟派，赤着胳膊守了六十年铸铜炉，满手烫疤",
+      personality: "寡言固执、手艺至上；认定古墟的东西一件也不能流出去，对外人冷，对肯替神树出力的人却舍得掏家底",
+      carry: [
+        { name: "赤炉铸铜锤", category: "weapon", quality: "紫" },
+        { name: "火浣石棉围裙", category: "armor", quality: "蓝" },
+        { name: "古蜀赤铜火印", category: "accessory", quality: "紫" },
+        { name: "青铜残片", category: "misc", quality: "绿" },
+        { name: "古蜀艾草宁神香", category: "misc", quality: "绿" },
+        { name: "河滩碎陶片", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "姜泠", innerRoom: "鸭子河畔", id: "resident_jiangling", levelCap: 3,
+      brief: "三星派墟外听风人、古墟秘藏阁管事，常年在鸭子河界碑一带走动，腰挂一面小铜镜",
+      personality: "机敏清冷、心思细；主张三星派该和外面打交道，常替古墟和丐帮之间传话，看人先听脚步声",
+      carry: [
+        { name: "柳叶青铜剑", category: "weapon", quality: "蓝" },
+        { name: "青麻听风衫", category: "armor", quality: "绿" },
+        { name: "太阳神鸟小铜镜", category: "accessory", quality: "蓝" },
+        { name: "古蜀驱寒药包", category: "misc", quality: "绿" },
+        { name: "古蜀艾草宁神香", category: "misc", quality: "绿" },
+        { name: "河滩碎陶片", category: "misc", quality: "白" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
       name: "严九斤", innerRoom: "土地庙正殿·聚义堂", id: "resident_yanjiujin", levelCap: 4,
       brief: "丐帮八袋长老、三星分舵主，花白乱发，左手缺半截小指，腰挂紫皮葫芦",
       personality: "外粗内细、豪爽护短，把恩义看得比命重；平时醉眼惺忪，认准了是非便寸步不让。三十年前受老土司桑杰一饭一裘之恩，至今不信其子会害民",

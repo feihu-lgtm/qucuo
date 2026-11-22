@@ -115,6 +115,12 @@ const items = {
 "铜铃竹哨": { name: "铜铃竹哨", category: "accessory", quality: "绿", sixDim: { 身法: 1 }, desc: "察世堂外围探子常用的小哨，佩在腰间身法微增，野外遇险吹响能惊走埋伏的人。" },
 "紫皮闷倒驴葫芦": { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫", effect: { energyRestore: 1 }, sixDim: { 体魄: 1 }, desc: "严九斤托老皮匠缝的紫皮酒葫芦，装的是能闷倒一头驴的烧酒。佩着它，每回合都像抿了一口。" },
 "八袋长老令": { name: "八袋长老令", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 智谋: 1 }, desc: "严九斤亲手交给你的八袋长老竹令，背面刻着「三星分舵」。拿着它在川西任何一个叫花子面前亮一亮，都有人替你传话。" },
+// ── 三星派（广汉古蜀青铜神树墟）──
+"青铜纵目护符": { name: "青铜纵目护符", category: "accessory", quality: "蓝", sixDim: { 悟性: 1 }, effect: { immuneControl: true }, desc: "缩微浇铸的青铜小面具吊坠，佩在胸前令人头脑清明，不易中迷香与心神控制。" },
+"赤炉青铜护腕": { name: "赤炉青铜护腕", category: "accessory", quality: "蓝", sixDim: { 体魄: 1, 根骨: 1 }, desc: "樊枯拿修补神树铜枝的余料替你浇的一副护腕，火候极纯，铜色泛着金红。" },
+"神鸟金箔佩": { name: "神鸟金箔佩", category: "accessory", quality: "紫", sixDim: { 悟性: 1, 气运: 1 }, desc: "拼合太阳神鸟残片时剩下的一缕金箔，樊枯把它压进铜框做成佩饰。十二道光芒绕着四只神鸟，挂在身上暖烘烘的。" },
+"古蜀赤铜火印": { name: "古蜀赤铜火印", category: "accessory", quality: "紫", sixDim: { 体魄: 1 }, desc: "三星派掌炉长老的信物，赤铜方印上刻着古蜀火纹，握在手里总是温的。" },
+"太阳神鸟小铜镜": { name: "太阳神鸟小铜镜", category: "accessory", quality: "蓝", sixDim: { 身法: 1 }, desc: "巴掌大的铜镜，背面铸着太阳神鸟。姜泠拿它反光探路，也是三星派对外走动的凭证。" },
 };
 
 export default { item: items, itemGroup: { ACCESSORIES: Object.keys(items) } };
