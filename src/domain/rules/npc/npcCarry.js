@@ -82,9 +82,26 @@ function catEnumOf(name) {
   if (v.includes("accessory")) return "ACCESSORY";
   return "MISC";
 }
+// 身份必带物件（合稿「丐帮·七、7.1」加分行为的信物来源）：该身份的游民身上
+// 必定有这件东西，切磋/击杀掉落、偷窃都能拿到，交给对应人物换势力声誉。
+const ROLE_TROPHY = {
+  // faction：只有这个势力的该身份才带凭证——锦官城差役不带土司府的流亡凭证。
+  血刀部游骑: { item: "血刀信物", faction: "天龙教" },
+  巡丁: { item: "流亡凭证", faction: "土司府" },
+  税吏: { item: "流亡凭证", faction: "土司府" },
+  差役: { item: "流亡凭证", faction: "土司府" },
+};
+
 export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
   const cap = Math.max(0, Math.min(5, levelCap));
-  const role = npc.role || levelCapToRole(cap);
+  // 路上偶遇的游民只有 brief 文案没有 role 字段（信物身份从文案里认），
+  // 常驻/任务 NPC 走 npc.role，再没有就用 levelCap 兜底成通用身份。
+  const role = npc.role
+    || Object.keys(ROLE_TROPHY).find((r) => npc.brief?.includes(r))
+    || levelCapToRole(cap);
+  const trophySpec = ROLE_TROPHY[role];
+  const factionText = `${npc.faction || ""}${npc.brief || ""}`;
+  const trophy = trophySpec && factionText.includes(trophySpec.faction) ? trophySpec.item : undefined;
   const style = ROLE_CARRY[role] || ROLE_CARRY["平民"];
   const reg = region || regionOf(npc.district || npc.region || "");
   // 候选：该地域 + 该 role 允许的类别，命中 distribution 的 catalog 货
@@ -100,8 +117,13 @@ export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
   const bias = cap >= 3 ? 1 : 0;
   const n = Math.min(hi, lo + bias + Math.floor(random() * (hi - lo + 1)));
   if (!candidates.length || n <= 0) {
-    // 该地域该身份没有对味候选 → 回退旧匿名池，保证不空手崩溃
-    return generateNpcCarriedItems(npc, { luck, count: Math.max(1, n), levelCap: cap });
+    // 该地域该身份没有对味候选 → 回退旧匿名池，保证不空手崩溃；信物照挂。
+    const fallback = generateNpcCarriedItems(npc, { luck, count: Math.max(1, n), levelCap: cap });
+    if (trophy && !fallback.some((it) => it.name === trophy)) {
+      const it = makeNamedItem(trophy);
+      if (it) return [...fallback, { ...it, id: `${npc.id}_trophy`, stolen: false }];
+    }
+    return fallback;
   }
   const items = [];
   const QORD = { 白: 0, 绿: 1, 蓝: 2, 紫: 3, 橙: 4, 红: 5 };
@@ -125,5 +147,10 @@ export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
     const it = makeNamedItem(name);
     if (it) items.push({ ...it, id: `${npc.id}_ci${i}`, stolen: false });
   }
-  return items.length ? items : generateNpcCarriedItems(npc, { luck, count: 1, levelCap: cap });
+  const result = items.length ? items : generateNpcCarriedItems(npc, { luck, count: 1, levelCap: cap });
+  if (trophy && !result.some((it) => it.name === trophy)) {
+    const it = makeNamedItem(trophy);
+    if (it) result.push({ ...it, id: `${npc.id}_trophy`, stolen: false });
+  }
+  return result;
 }
