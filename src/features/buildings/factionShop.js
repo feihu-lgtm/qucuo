@@ -118,6 +118,16 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileQualities: ["白", "绿"],
   },
+  // 黑风货栈（黑风寨·山寨货栈）：进得了寨门已是自己人，货栈平常就开门；
+  // 交恶只摆白绿并加价两成，重铠与断刃只发给入伙弟兄，犀牛皮重甲只此一件。
+  黑风货栈: {
+    faction: "黑风寨", idPrefix: "heifeng_purchase",
+    outlets: { sectshop_heifeng: "vault" },
+    nowhere: "须到黑风寨的山寨货栈才能买黑风寨的货。",
+    banned: "守仓汉子把门一横：「巴桑哥说了，仇家一根针也不卖。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿"],
+  },
   // 锦官兵备（锦官城·都事府兵备库）：官仓明码标价认册不认人；
   // 交恶只摆白绿并加价两成，特派巡查的制式装备与御赐銮铃不外卖。
   锦官兵备: {

@@ -4,6 +4,7 @@ import {
   consumeArrival, getLookText, burnSquare, resetForDay,
   serializeSquares, loadSquares,
 } from "./mapSquares.js";
+import { CATALOG_INDEX } from "../../data/items/catalog.js";
 
 const skeletons = {
   天都镇: { item: { quality: "紫", category: "misc" }, encounter: { factionKey: "玉泉寨", label: "玉泉寨", roamers: "押货的商队伙计" } },
@@ -34,6 +35,15 @@ describe("mapSquares", () => {
     const arr = parseSquareBatch("```json\n" + aiReply + "\n```");
     expect(arr.length).toBe(2);
     expect(arr[0].itemName).toBe("深紫色兽骨");
+  });
+
+  it("AI 没给物件名时，补名不挑任务证物", () => {
+    for (let i = 0; i < 300; i++) {
+      resetForDay();
+      applySquareBatch(1, [{ name: "天都镇", desc: "街市。" }], skeletons);
+      const { item } = consumeArrival("天都镇", 1);
+      expect(CATALOG_INDEX[item.name]?.tags || [], item.name).not.toContain("任务");
+    }
   });
 
   it("合并：系统骨架 + AI 命名", () => {

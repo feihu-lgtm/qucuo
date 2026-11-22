@@ -10,11 +10,21 @@ import { getLocalQuestStage, isLocalQuestStageFlag } from "../../domain/rules/qu
 const noOpResult = () => ({ logs: [] });
 const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }] });
 
+const flagList = (value) => (Array.isArray(value) ? value : value ? [value] : []);
+
 export function forceAdvanceQuest(state, quest, targetFlag, now) {
   const stage = quest.localOnly && getLocalQuestStage(quest, state);
   if (quest.localOnly && !isLocalQuestStageFlag(stage, targetFlag)) return { changes: {} };
-  if (!quest.localOnly && !state.questProgress?.[quest.id]
-    && !isQuestGateOpen(quest, state.questProgress, state.flags, state.varTree)) return { changes: {} };
+  if (!quest.localOnly) {
+    // 兜底校验：门槛（前置任务/声誉/威望，经 varTree）没过、任务已完结、
+    // 或目标 flag 不属于当前阶段的 completionFlag 一律拒收——不然提前塞进
+    // 靠后阶段的 flag 会留在 flags 里，轮到那步时被白捡完成。
+    if (!isQuestGateOpen(quest, state.questProgress, state.flags, state.varTree)) return { changes: {} };
+    const prog = state.questProgress?.[quest.id];
+    if (prog && prog.status !== "active") return { changes: {} };
+    const cur = prog ? getCurrentStage(quest, prog) : quest.stages?.[0];
+    if (!flagList(cur?.completionFlag).includes(targetFlag)) return { changes: {} };
+  }
   const progressNow = state.questProgress?.[quest.id];
   const choice = (progressNow ? getCurrentStage(quest, progressNow) : quest.stages?.[0])?.choices?.find((entry) => entry.flag === targetFlag);
   if (choice && !isChoiceOpen(choice, state.flags)) return { changes: {} };

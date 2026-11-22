@@ -43,6 +43,19 @@ export const FACTION_ENTRIES = {
     intro: "偏厅香案上只摆一尊铜钵与三柱无烟红香。向旧神像敬香、饮下罗琦亲斟的坛城茶，便算入了内院门墙。",
     joinLabel: "敬香饮茶，拜入欢喜教",
   },
+  黑风寨: {
+    sect: "黑风寨", master: "巴桑", buildingId: "sect_entry_heifeng",
+    minRep: 40, repBonus: 20, flag: "黑风寨入伙",
+    token: "黑风令", gifts: ["黑风寨分发刀", "结绳护腕串"],
+    trial: {
+      flag: "heifeng_proven",
+      quest: "heifengzhai_3_5_jieyao",
+      label: "投名状：替寨里办成一件实事（山3.5·劫药）",
+      hint: "巴桑只收真替寨里出过力的人——先帮他把老人们的药办下来。",
+    },
+    intro: "岩洞里只有一块青石板摊着狼曲地形图，没有虎皮大椅。巴桑听你说完，指了指壁上的寨规：「不抢救命口粮，不伤妇孺，不碰玉泉寨的人。入伙容易，守这三条难——守得住，再谈入伙。」",
+    joinLabel: "对寨规起誓，入伙黑风寨",
+  },
   锦官城: {
     sect: "锦官城", master: "柳青鸢", buildingId: "sect_entry_guan",
     // 成员旗用专属「锦官城当差」：title_jinguancheng_tequai_xuncha 是官2-A 落的头衔，
@@ -68,11 +81,11 @@ export const FACTION_ENTRIES = {
     joinLabel: "入堂石前立血誓，拜入唐门",
   },
   天龙教: {
-    sect: "天龙教", master: "石重岳", buildingId: "sect_entry_tianlong",
+    sect: "天龙教", master: "厉苍龙", buildingId: "sect_entry_tianlong",
     minRep: 40, repBonus: 20, flag: "天龙教弟子",
     token: "天龙弟子令", gifts: ["西域弯刀", "驼绒防风氅"],
-    trial: { flag: "tianlong_spar_first", label: "点将台试炼：堂堂正正胜过石重岳或血刀部教头一场", hint: "去玄甲校场或大草甸磨刀坪，堂堂正正胜过石重岳、厉天行或血刀教头一场，不许用毒。" },
-    intro: "黑石点将台上牛皮大鼓裂了口，台下插着一圈断刀。石重岳收人不看出身，只看拳头与办差——接得住三招，牌子拿走。",
+    trial: { flag: "tianlong_spar_first", label: "点将台试炼：堂堂正正胜过厉苍龙或血刀部教头一场", hint: "去玄甲校场或大草甸磨刀坪，堂堂正正胜过厉苍龙、厉天行或血刀教头一场，不许用毒。" },
+    intro: "黑石点将台上牛皮大鼓裂了口，台下插着一圈断刀。厉苍龙收人不看出身，只看拳头与办差——接得住三招，牌子拿走。",
     joinLabel: "登台试三招，拜入天龙教",
   },
   丐帮三星分舵: {

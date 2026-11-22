@@ -130,6 +130,10 @@ export function questGateReqs(quest, varTree, flags = []) {
     const ok = (flags || []).includes(f);
     reqs.push({ key: `flag:${f}`, label: `经历「${f}」`, have: ok, ok });
   }
+  if (quest.requiresFlagsAny?.length) {
+    const ok = quest.requiresFlagsAny.some((f) => (flags || []).includes(f));
+    reqs.push({ key: "flagsAny", label: `已历「${quest.requiresFlagsAny.join("」或「")}」`, have: ok, ok });
+  }
   return reqs;
 }
 
