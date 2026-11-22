@@ -308,6 +308,7 @@ export function buildShopInventory(shopKey) {
     karmaLoss: shop.karmaLoss || 0,
     items: shop.items.map(cfg => ({
       ...makeItem({ name: cfg.name, category: cfg.category, quality: cfg.quality }),
+      ...(CATALOG_INDEX[cfg.name]?.consumable ? { consumable: CATALOG_INDEX[cfg.name].consumable } : {}),
       ...(cfg.minRep == null ? {} : { minRep: cfg.minRep }),
       ...(cfg.member ? { member: true } : {}),
       ...(cfg.limitOnce ? { limitOnce: true } : {}),

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildShopInventory } from "../../domain/data/shops/qucuoShops.js";
 import { getBuildingsForLocation } from "../../domain/data/buildings/qucuoBuildings.js";
 import { SKILL_CATALOG } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { getResidentNpcs } from "../../domain/data/npc/residentNpcs.js";
@@ -30,6 +31,12 @@ describe("鱼定村 · 驻地", () => {
     expect(getResidentRoomForNpc("鱼定村", "老孙")).toBe("老孙饭馆");
     expect(getResidentRoomForNpc("鱼定村", "泽仁")).toBe("村长府");
     expect(getResidentRoomForNpc("鱼定村", "周铭章")).toBe("鱼定商号");
+  });
+});
+
+describe("西头药铺", () => {
+  it("sells medicines that heal in battle", () => {
+    for (const item of buildShopInventory("西头药铺").items) expect(item.consumable?.hpRestore, item.name).toBeGreaterThan(0);
   });
 });
 
