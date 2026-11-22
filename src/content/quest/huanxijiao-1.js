@@ -54,7 +54,7 @@ export default { quest: {
         requireLocation: { district: "天都镇", inner: "天都香行" },
         completionFlag: "quest_huanxijiao2_s1",
         choices: [
-          { flag: "quest_huanxijiao2_s1", label: "擂台第一场：对「专程来品香」的愣头侠客", resolve: "combat", combatNpc: { name: "愣头侠客", levelCap: 1 } },
+          { flag: "quest_huanxijiao2_s1", label: "擂台第一场：对「专程来品香」的愣头侠客", resolve: "combat", combatNpc: { name: "愣头侠客", levelCap: 1, hostile: false } },
         ],
         onReach: { exp: 2 },
       },
@@ -65,7 +65,7 @@ export default { quest: {
         requireLocation: { district: "天都镇", inner: "天都香行" },
         completionFlag: "quest_huanxijiao2_bout2",
         choices: [
-          { flag: "quest_huanxijiao2_bout2", label: "擂台第二场：对使擒拿手的冒充者", resolve: "combat", combatNpc: { name: "擂台冒充者", levelCap: 2 } },
+          { flag: "quest_huanxijiao2_bout2", label: "擂台第二场：对使擒拿手的冒充者", resolve: "combat", streakFrom: "s1_tournament", combatNpc: { name: "擂台冒充者", levelCap: 2 } },
         ],
       },
       {
@@ -75,7 +75,7 @@ export default { quest: {
         requireLocation: { district: "天都镇", inner: "天都香行" },
         completionFlag: "quest_huanxijiao2_bout3",
         choices: [
-          { flag: "quest_huanxijiao2_bout3", label: "擂台第三场：对外乡刀客", resolve: "combat", combatNpc: { name: "外乡刀客", levelCap: 2 } },
+          { flag: "quest_huanxijiao2_bout3", label: "擂台第三场：对外乡刀客", resolve: "combat", streakFrom: "s1_tournament", combatNpc: { name: "外乡刀客", levelCap: 2 } },
         ],
       },
       {
@@ -93,7 +93,7 @@ export default { quest: {
         requireLocation: { district: "天都镇", inner: "香行内堂" },
         completionFlag: "quest_huanxijiao2_luoqi",
         choices: [
-          { flag: "quest_huanxijiao2_luoqi", label: "与罗琦切磋", resolve: "combat", combatNpc: { name: "罗琦", id: "resident_luoqi", levelCap: 4 } },
+          { flag: "quest_huanxijiao2_luoqi", label: "与罗琦切磋", resolve: "combat", combatNpc: { name: "罗琦", id: "resident_luoqi", levelCap: 4, hostile: false } },
         ],
       },
       {

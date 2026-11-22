@@ -52,6 +52,8 @@ describe("欢喜教", () => {
     for (const stage of stages.filter((entry) => ["s1_tournament", "s1_bout2", "s1_bout3", "s2_spar"].includes(entry.id))) {
       expect(stage.choices).toEqual([expect.objectContaining({ flag: stage.completionFlag, resolve: "combat" })]);
     }
+    expect(stages[0].choices[0].combatNpc.hostile).toBe(false);
+    expect(stages.find((stage) => stage.id === "s2_spar").choices[0].combatNpc.hostile).toBe(false);
     const hall = getInnerRoom("天都镇", "欢喜堂").unlockCondition;
     expect(isInnerExitUnlocked(hall, { flags: ["quest_huanxijiao2_s2"] })).toBe(false);
     expect(isInnerExitUnlocked(hall, { flags: ["quest_huanxijiao2_luoqi"] })).toBe(true);

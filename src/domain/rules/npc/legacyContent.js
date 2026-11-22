@@ -1,3 +1,5 @@
+import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
+
 // 历史版本人物改名迁移表：同一个 NPC 在旧版本里叫别的名字/用别的 id 时，
 // 老存档里按旧名/旧 id 记下的数据（角色面板键、在场 NPC、roomMap、日志文本等）
 // 读档时统一迁到新名，老档不断档。
@@ -75,5 +77,23 @@ export function migrateLegacySnapshot(snap) {
   if (!snap || typeof snap !== "object") return snap;
   const migrated = migrateValue(snap);
   if (migrated.char && snap.char && snap.char.name != null) migrated.char.name = snap.char.name;
-  return migrated;
+  return realignQuestStages(migrated);
+}
+
+// 中间插了新阶段的任务（香2 比武招贤由 3 步扩成 6 步）：老档存的阶段序号对不上新阶段表，
+// 按已持有的 flag 重新定位到第一个还没过的阶段。新档的序号本来就等于这个位置，原样不变。
+export const LEGACY_RESTAGED_QUESTS = ["huanxijiao_2_biwuzhaoxian"];
+
+function realignQuestStages(snap) {
+  const flags = snap.flags || [];
+  let questProgress = snap.questProgress;
+  for (const id of LEGACY_RESTAGED_QUESTS) {
+    const progress = questProgress?.[id];
+    const quest = QUCUO_QUESTS.find((entry) => entry.id === id);
+    if (progress?.status !== "active" || !quest?.stages?.length) continue;
+    const index = quest.stages.findIndex((stage) => ![].concat(stage.completionFlag).some((flag) => flags.includes(flag)));
+    if (index < 0 || index === progress.currentStageIndex) continue;
+    questProgress = { ...questProgress, [id]: { ...progress, currentStageIndex: index } };
+  }
+  return questProgress === snap.questProgress ? snap : { ...snap, questProgress };
 }
