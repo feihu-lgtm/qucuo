@@ -15,10 +15,7 @@ export default function GameLayout({ layout }) {
     setSnowLeopardForm, setPearlForm, trainCost,
     ui, autosave, derived, turn, handlers,
   } = layout;
-  const {
-    questPanel, pigeonHandlers, duelHandlers, screenHandlers,
-    buildingHandlers, craftingAI, playerActionHandlers, progressionHandlers, aiInspect,
-  } = handlers;
+  const { playerActionHandlers, progressionHandlers, aiInspect } = handlers;
 
   const room = useGameStore(s => s.room);
   const innerRoomName = useGameStore(s => s.innerRoomName);
@@ -33,17 +30,10 @@ export default function GameLayout({ layout }) {
   const inv = useGameStore(s => s.inv);
   const pot = useGameStore(s => s.pot);
   const exp = useGameStore(s => s.exp);
-  const dao = useGameStore(s => s.dao);
   const skills = useGameStore(s => s.skills);
-  const deposit = useGameStore(s => s.deposit);
-  const depositedAt = useGameStore(s => s.depositedAt);
-  const pledgedItems = useGameStore(s => s.pledgedItems);
   const log = useGameStore(s => s.log);
 
-  const {
-    setChar, setPot, setExp, setDao, setNarrator,
-    setMapData, setRoom, setInnerRoomName, setSkills, setInv,
-  } = gameActions;
+  const { setSkills, setInv } = gameActions;
 
   const { leftFaces, rightFaces } = usePanelFaces();
   const showDebug = useOverlay(OVERLAY.DEBUG);
@@ -155,64 +145,7 @@ export default function GameLayout({ layout }) {
           uiGreen={ui.uiGreen} uiPink={ui.uiPink}
         />
 
-        <CenterPanel
-          isMobile={isMobile} mobileColumn={mobileColumn}
-          zoneTheme={zoneTheme} S={ui.S}
-          loading={ui.loading} addLog={addLog}
-          rollbackOneStep={turn.rollbackOneStep} captureUndo={turn.captureUndo}
-          rollbackBlocked={turn.rollbackBlocked} stopRunning={turn.stopRunning} dispatchCommand={turn.dispatchCommand}
-          gm={ui.gm} setGm={ui.setGm}
-          char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
-          dao={dao} setDao={setDao}
-          varTree={varTree} setVarTree={setVarTree} narrator={narrator} setNarrator={setNarrator}
-          room={room} innerRoomName={innerRoomName}
-          mapData={mapData} setMapData={setMapData} setRoom={setRoom} setInnerRoomName={setInnerRoomName}
-          setInteractMode={ui.setInteractMode} act={turn.act} teleportLookRef={turn.teleportLookRef}
-          setSkills={setSkills} setInv={setInv}
-          duelPending={ui.duelPending} confirmDuel={duelHandlers.confirmDuel} cancelDuel={duelHandlers.cancelDuel}
-          activeBuilding={ui.activeBuilding} setActiveBuilding={ui.setActiveBuilding}
-          tradingShop={ui.tradingShop} setTradingShop={ui.setTradingShop}
-          buildingPanelMinimized={ui.buildingPanelMinimized} setBuildingPanelMinimized={ui.setBuildingPanelMinimized}
-          handleBuildingInn={buildingHandlers.handleBuildingInn} handleBuildingHeal={buildingHandlers.handleBuildingHeal}
-          skills={skills} handleBuySkill={buildingHandlers.handleBuySkill}
-          time={time} inv={inv} effectiveSpecialNow={turn.effectiveSpecialNow}
-          inspectItem={aiInspect.inspectItem} jotNote={jotNote} handleCollectGround={screenHandlers.handleCollectGround}
-          flags={flags} questProgress={questProgress}
-          handleAcceptEscort={buildingHandlers.handleAcceptEscort} handleGamble={buildingHandlers.handleGamble}
-          handleCollectPigeons={pigeonHandlers.handleCollectPigeons} buyPigeon={pigeonHandlers.buyPigeon}
-          handlePostSend={pigeonHandlers.handlePostSend} handleTravel={buildingHandlers.handleTravel}
-          handleServiceOrder={buildingHandlers.handleServiceOrder}
-          handlePray={buildingHandlers.handlePray} handleReadBook={buildingHandlers.handleReadBook} handleBuyBook={buildingHandlers.handleBuyBook}
-          deposit={deposit} depositedAt={depositedAt} handleDeposit={buildingHandlers.handleDeposit} handleWithdraw={buildingHandlers.handleWithdraw}
-          pledgedItems={pledgedItems} handlePledge={buildingHandlers.handlePledge} handleRedeem={buildingHandlers.handleRedeem}
-          handleAcceptBounty={buildingHandlers.handleAcceptBounty} handleClaimBounty={buildingHandlers.handleClaimBounty}
-          handleForgeCommission={buildingHandlers.handleForgeCommission} handleForgeDesign={craftingAI.handleForgeDesign}
-          handleJadeDesign={craftingAI.handleJadeDesign} handleJadeCraft={buildingHandlers.handleJadeCraft}
-          gambleNegotiation={ui.gambleNegotiation} handleGambleTalk={craftingAI.handleGambleTalk}
-          handleGambleSettle={buildingHandlers.handleGambleSettle} handleGambleInspect={buildingHandlers.handleGambleInspect}
-          handleListenRumor={buildingHandlers.handleListenRumor}
-          handleJoinSect={buildingHandlers.handleJoinSect} handleAuctionWin={buildingHandlers.handleAuctionWin}
-          handleCook={buildingHandlers.handleCook}
-          seaTraumaActive={derived.seaTraumaActive}
-          narratorVarsNow={derived.narratorVarsNow}
-          invNames={derived.invNames}
-          handleComfort={playerActionHandlers.handleComfort} handleResolveTrauma={playerActionHandlers.handleResolveTrauma}
-          sectMasterAffection={derived.sectMasterAffection}
-          log={log} isDayMode={ui.isDayMode} clr={ui.clr}
-          collapsedGroups={ui.collapsedGroups} setCollapsedGroups={ui.setCollapsedGroups}
-          queueCount={ui.queueCount} pendingTalks={ui.pendingTalks} inspecting={aiInspect.inspecting}
-          logEnd={logEnd} waitSecs={ui.waitSecs}
-          availableQuestsHere={ui.availableQuestsHere}
-          triggerQuestFromPanel={questPanel.triggerQuestFromPanel} triggerQuestChoice={questPanel.triggerQuestChoice}
-          uiGreen={ui.uiGreen} uiPink={ui.uiPink} uiCrimson={ui.uiCrimson}
-          nsfwOn={ui.nsfwOn} setNsfwOn={ui.setNsfwOn}
-          meditate={progressionHandlers.meditate} justMeditated={ui.justMeditated}
-          interactMode={ui.interactMode} activeTarget={ui.activeTarget} setActiveTarget={ui.setActiveTarget}
-          activeGroundItem={ui.activeGroundItem} setActiveGroundItem={ui.setActiveGroundItem}
-          setTalkTarget={ui.setTalkTarget}
-          pigeonTarget={ui.pigeonTarget} setPigeonTarget={ui.setPigeonTarget} pigeonDelayShichen={pigeonHandlers.pigeonDelayShichen}
-          input={ui.input} setInput={ui.setInput} inputRef={ui.inputRef} onKey={turn.onKey} composingRef={ui.composingRef}
-        />
+        <CenterPanel ui={ui} derived={derived} turn={turn} handlers={handlers} addLog={addLog} jotNote={jotNote} setVarTree={setVarTree} />
 
         <RightPanel
           isMobile={isMobile} mobileColumn={mobileColumn} faces={rightFaces}
