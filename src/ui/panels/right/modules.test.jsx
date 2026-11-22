@@ -13,8 +13,10 @@ import EquipmentModule from "./EquipmentModule.jsx";
 import InventoryModule from "./InventoryModule.jsx";
 import NarratorModule from "./NarratorModule.jsx";
 import FaceEditor from "../../components/faces/FaceEditor.jsx";
-import { RIGHT_FACE_DEFAULTS, RIGHT_MODULES } from "./rightFaces.js";
+import { RIGHT_FACE_DEFAULTS, RIGHT_MODULES, QUEST_FACE_MIGRATION_KEY, addQuestFace, migrateRightFaces } from "./rightFaces.js";
 import JianghuModule, { JIANGHU_ENTRIES } from "./JianghuModule.jsx";
+import QuestModule from "./QuestModule.jsx";
+import { QUCUO_QUESTS } from "../../../domain/data/quests/qucuoQuests.js";
 import { OVERLAY } from "../../../store/uiStore.js";
 import { validateFacePreferences } from "../../components/faces/facePreferences.js";
 
@@ -81,12 +83,12 @@ describe("extracted right-panel modules", () => {
     expect(render(NarratorModule, { narrator: { stage: NNPC_STAGE.CRASHED } })).toContain("信号已断开");
   });
 
-  it("offers all ten modules in the current-face editor, including unchecked conditional modules", () => {
+  it("offers all eleven modules in the current-face editor, including unchecked conditional modules", () => {
     const html = renderToStaticMarkup(createElement(FaceEditor, {
       faces: { preferences: RIGHT_FACE_DEFAULTS, face: RIGHT_FACE_DEFAULTS.faces[0],
         availableModules: RIGHT_MODULES, minFaces: 1, maxFaces: 6 }, theme: ZONE_THEMES.village,
     }));
-    expect(html.match(/type="checkbox"/g)).toHaveLength(10);
+    expect(html.match(/type="checkbox"/g)).toHaveLength(11);
     expect(html).toContain("恢复默认");
     expect(html).toContain("上移侠客资料");
     expect(html).toContain("队伍");
@@ -94,7 +96,7 @@ describe("extracted right-panel modules", () => {
   });
 
   it("adds Jianghu for new layouts without changing legacy saved layouts", () => {
-    expect(RIGHT_FACE_DEFAULTS.faces).toHaveLength(5);
+    expect(RIGHT_FACE_DEFAULTS.faces).toHaveLength(6);
     expect(RIGHT_FACE_DEFAULTS.faces.at(-1).modules).toEqual(["jianghu"]);
     const legacy = { faces: RIGHT_FACE_DEFAULTS.faces.slice(0, 4), currentIndex: 2 };
     expect(validateFacePreferences(legacy, RIGHT_FACE_DEFAULTS, { availableModules: RIGHT_MODULES })).toEqual(legacy);
@@ -107,5 +109,36 @@ describe("extracted right-panel modules", () => {
     const html = render(JianghuModule);
     expect(html.match(/<button/g)).toHaveLength(4);
     for (const entry of JIANGHU_ENTRIES) expect(html).toContain(entry.label);
+  });
+});
+
+describe("任务 face", () => {
+  it("sits right after 人物 in the default right faces", () => {
+    expect(RIGHT_FACE_DEFAULTS.faces.slice(0, 3).map(face => face.name)).toEqual(["人物", "任务", "武学"]);
+    expect(RIGHT_FACE_DEFAULTS.faces[1].modules).toEqual(["quest"]);
+  });
+
+  it("renders active quests from the store inline", () => {
+    const quest = QUCUO_QUESTS.find(q => q.stages?.length);
+    const html = render(QuestModule, { questProgress: { [quest.id]: { status: "active", currentStageIndex: 0 } }, flags: [] });
+    expect(html).toContain("进行中（1）");
+    expect(html).toContain(quest.title);
+    expect(html).not.toContain("关闭");
+  });
+
+  it("inserts 任务 into a saved layout once, after the first face, keeping the selected face", () => {
+    const legacy = { faces: RIGHT_FACE_DEFAULTS.faces.filter(face => face.id !== "quest"), currentIndex: 2 };
+    const next = addQuestFace(legacy);
+    expect(next.faces.map(face => face.id)).toEqual(["character", "quest", "martial", "belongings", "bonds", "jianghu"]);
+    expect(next.faces[next.currentIndex].id).toBe(legacy.faces[2].id);
+    expect(addQuestFace(next)).toBe(next);
+    const full = { faces: Array.from({ length: 6 }, (_, i) => ({ id: `f${i}`, name: `面${i}`, modules: [] })), currentIndex: 0 };
+    expect(addQuestFace(full)).toBe(full);
+
+    const store = new Map();
+    const storage = { getItem: key => store.get(key) ?? null, setItem: (key, value) => store.set(key, value) };
+    expect(migrateRightFaces(legacy, storage).faces).toHaveLength(6);
+    expect(store.get(QUEST_FACE_MIGRATION_KEY)).toBe("1");
+    expect(migrateRightFaces(legacy, storage)).toBe(legacy);
   });
 });

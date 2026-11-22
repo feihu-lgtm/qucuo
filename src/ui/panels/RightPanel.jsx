@@ -11,11 +11,13 @@ import EquipmentModule from "./right/EquipmentModule.jsx";
 import InventoryModule from "./right/InventoryModule.jsx";
 import NarratorModule from "./right/NarratorModule.jsx";
 import JianghuModule from "./right/JianghuModule.jsx";
+import QuestModule from "./right/QuestModule.jsx";
 
 const MODULES = {
   profile: ProfileModule, equipmentBonus: EquipmentBonusModule, attributes: AttributesModule,
   team: TeamModule, skills: SkillsModule, combatMoves: CombatMovesModule,
   equipment: EquipmentModule, inventory: InventoryModule, narrator: NarratorModule, jianghu: JianghuModule,
+  quest: QuestModule,
 };
 
 const isKeyboardBlocked = () => uiStore.getState().overlays.length > 0;

@@ -19,9 +19,12 @@ export function writeFacePreferences(storage, storageKey, preferences) {
 }
 
 export default function useFaces(storageKey, defaults, options) {
-  const { availableModules, editable = true, minFaces = 1, maxFaces = 6, enableKeyboard = false } = options;
+  const { availableModules, editable = true, minFaces = 1, maxFaces = 6, enableKeyboard = false, migrate } = options;
   const [preferences, setPreferences] = useState(() => {
-    try { return readFacePreferences(window.localStorage, storageKey, defaults, options); }
+    try {
+      const stored = readFacePreferences(window.localStorage, storageKey, defaults, options);
+      return migrate ? migrate(stored, window.localStorage) : stored;
+    }
     catch { return cloneDefaults(defaults); }
   });
   const [direction, setDirection] = useState(1);
