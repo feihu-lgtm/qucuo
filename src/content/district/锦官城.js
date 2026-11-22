@@ -226,6 +226,10 @@ export default { district: {
         x: 3, y: -3,
         desc: "顶天立地的樟木架挤满泛黄册籍，樟脑丸与陈年霉墨的气味扑鼻而来，角落那张旧案桌上堆着从三十年前积灰至今的边地鱼鳞图册。",
         exits: { sw: "都事府" },
+        unlockCondition: { type: "any", of: [
+          { type: "factionRep", faction: "锦官城", min: 40 },
+          { type: "questStarted", questId: "jinguancheng_zhi3_hongmotuming" },
+        ] },
       },
       唐门暗巷: {
         x: 1, y: -2,
