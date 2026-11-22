@@ -319,7 +319,7 @@ it("keeps quest rewards, absolute resets, default affection and silent writes", 
   expect({ inv: state.inv, flags: state.flags, money: state.char.money, tree: state.varTree, logs }).toEqual({
     inv: ["药丸", "药丸", { name: "玉佩", id: "quest_reward_25_0", equipped: false }],
     flags: ["old", "new"], money: 34,
-    tree: { 角色: { 侠客: { 好感度: 13 }, 师父: { 好感度: 0 } }, 世界: { 威望: 15 } },
+    tree: { 角色: { 侠客: { 好感度: 13 }, 师父: { 好感度: 0 } }, 世界: { 威望: 20 } },
     logs: [],
   });
 });

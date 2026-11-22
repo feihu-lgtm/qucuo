@@ -1,6 +1,6 @@
 import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import { BOUNTY_QUESTS } from "../../domain/data/quests/bountyQuests.js";
-import { advanceQuestStages, createQuestProgress, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
+import { advanceQuestStages, createQuestProgress, isQuestChoiceOpen, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
 import { resolveStageRewards, stageRewardPatches } from "../../domain/rules/quests/questRewards.js";
 import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
@@ -103,6 +103,7 @@ export function playLocalQuestStage(state, quest, choiceLabel, now) {
   if (!stage) return error("此处没有可推进的任务阶段，或尚未满足门槛。");
   const choice = stage.choices?.find((entry) => entry.label === choiceLabel);
   if (stage.choices && !choice) return error(`可选：${stage.choices.filter((entry) => entry.resolve === "none").map((entry) => entry.label).join(" / ")}`);
+  if (choice && !isQuestChoiceOpen(choice, state)) return error(`「${choice.label}」的条件还不满足。`);
   if (choice && choice.resolve !== "none") return error("此分支须在任务面板中开启战斗，不能直接结算。");
   if (choice?.requiresMoney && (state.char?.money ?? 0) < choice.requiresMoney) return error(`银两不足，「${choice.label}」要${choice.requiresMoney}两。`);
   const special = Object.entries(choice?.requiresSpecialAny || {});

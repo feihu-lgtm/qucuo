@@ -103,6 +103,7 @@ const items = {
 "牧羊青竹棍": { name: "牧羊青竹棍", category: "weapon", quality: "白", atkMul: 1.05, desc: "一头缠着旧牛皮绳的青竹棍，多吉从玉泉寨一路拄到广汉，放牧赶羊用它，如今打狗练棒也用它。" },
 "残纹青竹板": { name: "残纹青竹板", category: "weapon", quality: "蓝", atkMul: 1.2, effect: { applyStatus: { name: "气乱", chance: 0.2 } }, desc: "两片老竹刻着半枚三星云雷纹，哑巴七拿来敲节拍。笃笃三声敲在耳边，对手的心神便乱了半拍。" },
 "晒干青竹棍": { name: "晒干青竹棍", category: "weapon", quality: "白", atkMul: 1.1, desc: "三星镇外砍来晒透的老竹，不及精铁锋利，胜在顺手韧长，新手练棒正好。" },
+"鹊尾竹节棍": { name: "鹊尾竹节棍", category: "weapon", quality: "蓝", atkMul: 1.25, effect: { lowHpBonus: 0.15 }, desc: "九节紫竹棍，棍梢系着一撮染红的喜鹊尾羽。秦小鹊说棍子要轻才甩得开，打不过就跑，跑之前先敲对方一记脑门。" },
 "铁头打狗棒": { name: "铁头打狗棒", category: "weapon", quality: "蓝", atkMul: 1.3, desc: "选用五年老青竹，两端套上精铁箍，抽人带风、架刀不断，是四袋以上弟子的标配。" },
 "西域弯刀": { name:"西域弯刀", category:"weapon", quality:"绿", atkMul: 1.1, tags:["武器","西域","天龙教"], desc:"西域商路带来的弯刀，刀身微弧利于骑上劈削。玄甲老卒人手一把——不精良，但顺手，断了也不心疼。" },
 "护法铜杖": { name:"护法铜杖", category:"weapon", quality:"绿", atkMul: 1.05, tags:["武器","禅杖"], desc:"白衣旧部护法用的熟铜杖，杖头四个铜环早被摩挲得发亮。旧部说它不是兵器，是「拿来拦住拳头的东西」。" },

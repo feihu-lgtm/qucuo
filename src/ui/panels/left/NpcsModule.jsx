@@ -7,6 +7,7 @@ import NpcAngerLine from "../NpcAngerLine.jsx";
 export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, peoplePanel, setPeoplePanel, char, setActiveNpcMenu, setCharacterPageTarget, addLog, setPigeonTarget, setInteractMode, inputRef, pigeonTarget, uiGreen, uiPink }) {
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const present = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
+  const crowd = (room.crowd || []).filter(c => !c.innerRoom || !innerRoomName || c.innerRoom === innerRoomName).map(c => c.label);
   const everSeen = varTree.世界?.曾经出现人物 || [];
   const presentNames = new Set(room.npcs.map(n => n.name));
   const absent = everSeen.filter(nm => !presentNames.has(nm));
@@ -66,6 +67,9 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, pe
               </div>
             );
           })}</div>)}
+      {peoplePanel.present && crowd.length > 0 && (
+        <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 8, paddingLeft: 16 }}>路人：{crowd.join("、")}</div>
+      )}
       {absent.length > 0 && (
         <div style={{ paddingTop: 6, borderTop: `1px solid ${zoneTheme.border}` }}>
           {header("曾遇 · 不在场", absent.length, "absent", "var(--text)")}
