@@ -18,8 +18,7 @@ export default function BigMapModal({
   const flags = useGameStore(s => s.flags);
   const inv = useGameStore(s => s.inv);
   const char = useGameStore(s => s.char);
-  const repMap = useGameStore(s => s.varTree?.世界?.势力声誉);
-  const repOf = (f) => repMap?.[f] ?? 0;
+  const varTree = useGameStore(s => s.varTree);
   const view = hasInnerMap(room.name) ? mapView : "outer";
 
   return (
@@ -77,11 +76,11 @@ export default function BigMapModal({
         {view === "inner" && (() => {
           if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim }}>此地无内景可绘。</div>;
           const curRoom = innerRoomName || getDistrictAnchor(room.name);
-          const curExits = visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char, repOf });
+          const curExits = visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char, varTree });
           const adjacent = new Set(Object.values(curExits));
           const nodes = getInnerRoomNames(room.name).filter((rn) => {
             const rr = getInnerRoom(room.name, rn);
-            return !rr?.unlockCondition || rr.unlockCondition.type === "stat" || isInnerExitUnlocked(rr.unlockCondition, { questProgress, flags, inv, char, repOf });
+            return !rr?.unlockCondition || rr.unlockCondition.type === "stat" || isInnerExitUnlocked(rr.unlockCondition, { questProgress, flags, inv, char, varTree });
           }).map((rn) => {
             const r = getInnerRoom(room.name, rn) || {};
             const dirTo = Object.entries(curExits).find(([, d]) => d === rn)?.[0] || null;

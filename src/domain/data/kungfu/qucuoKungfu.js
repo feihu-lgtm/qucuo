@@ -892,7 +892,7 @@ export const SKILL_CATALOG = {
       moveType: "防御",
       passiveBonus: { maxHp: 70 },
       desc: "天龙教镇教内功，只此一册，在断崖石室的老天王手里。八层关隘层层相扣，练到深处气脉自行周天——教里传说，练成它的人才能真正统合玄甲与白衣两脉。",
-      unlock: { faction: "天龙教", rep: 100, member: true, note: "需拜入天龙教且声誉 ≥ 100（镇教经卷，还须天5 之局了结后由厉苍天亲传）" },
+      unlock: { faction: "天龙教", rep: 100, member: true, quest: ["tianlong_5_baiqizhige"], note: "需拜入天龙教且声誉 ≥ 100（镇教经卷，还须天5 之局了结后由厉苍天亲传）" },
     },
   ],
 

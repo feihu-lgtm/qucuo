@@ -153,6 +153,8 @@ export const TANGMEN_GOODS = getContent("itemGroup", "TANGMEN_GOODS").map(id => 
 export const BAIHUA_GOODS = getContent("itemGroup", "BAIHUA_GOODS").map(id => getContent("item", id));
 // 天龙八部护法随身物（named，夜叉/阿修罗等护法随身物与任务奖励共用条目）
 export const TIANLONG_BABU = getContent("itemGroup", "TIANLONG_BABU").map(id => getContent("item", id));
+// 青城派青4/青5/青支任务物与奖励（named）
+export const QINGCHENG_QUEST = getContent("itemGroup", "QINGCHENG_QUEST").map(id => getContent("item", id));
 export const RESIDENT_FILL_GOODS = getContent("itemGroup", "RESIDENT_FILL_GOODS").map(id => getContent("item", id));
 
 // ============================================================================
@@ -225,6 +227,7 @@ export const CATALOG = [
   ...TANGMEN_GOODS,        // 唐门具名物（named，门人随身物+拜入信物+任务物共用条目）
   ...BAIHUA_GOODS,         // 百花门天都镇具名物（named，商店+NPC随身物共用条目）
   ...TIANLONG_BABU,        // 天龙八部护法具名物（named，护法随身物+支线奖励）
+  ...QINGCHENG_QUEST,      // 青城派任务物与奖励（named）
   ...RESIDENT_FILL_GOODS,    // 合稿补驻场人物（黑风寨、锦官城）的随身物
 ];
 
