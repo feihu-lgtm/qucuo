@@ -316,7 +316,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
             )}
             {!isVertex && modelList && modelList.length > 0 && modelPickerTarget === null && (
               <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--ink-text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
                   <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
                   {/* 之前这个列表没有任何关闭方式：选了模型也不会自动收起，
                       也没有×按钮，列表会一直挂着退不掉。补齐两条退出路径。 */}
@@ -529,7 +529,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                   )}
                   {modelList && modelList.length > 0 && modelPickerTarget === "extractionModel" && (
                     <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--ink-text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
                         <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
                         <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "var(--text-dim)", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
                       </div>
@@ -580,7 +580,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                           )}
                           {modelList && modelList.length > 0 && modelPickerTarget === key && (
                             <div style={{ marginTop: 4, marginLeft: 128, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--ink-text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
                                 <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "静态清单" : `共 ${modelList.length} 个，点击选用`}</span>
                                 <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "var(--text-dim)", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
                               </div>

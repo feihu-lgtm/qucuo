@@ -55,6 +55,20 @@
   --blue: #6aa0d4;
   --black: #000;
   --white: #fff;
+
+  /* 墨拓定色（不随 data-theme="day" 切换）：原硬编码字面量本身就是定色——
+     它们与随主题切换的 --text/--bg 等值相同但语义不同，日间模式下不能跟着变。 */
+  --ink-text: #e8e4d6;
+  --ink-text-dim: #8f8a7c;
+  --ink-muted: #8a8270;
+  --ink-warn: #d4a853;
+  --ink-info: #8ac8b8;
+  --ink-accent: #c8323a;
+  --ink-accent-dim: #8a4a48;
+  --ink-border: #4a453c;
+  --ink-good: #5a8a5a;
+  --ink-bg: #0a0a09;
+  --ink-bg-panel: #111110;
   --dur-fast: 120ms;
   --dur: 180ms;
   --dx: 0px;

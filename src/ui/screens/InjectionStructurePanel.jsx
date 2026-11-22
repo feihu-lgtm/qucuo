@@ -172,7 +172,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             style={{
               cursor: "pointer", padding: "2px 10px", borderRadius: 0, fontSize: 11,
               background: mode === m ? "#241211" : "transparent",
-              color: mode === m ? "var(--clay)" : "var(--text-dim)",
+              color: mode === m ? "var(--clay)" : "var(--ink-text-dim)",
               border: `1px solid ${mode === m ? "var(--accent)" : "var(--border)"}`,
             }}>
             {label}

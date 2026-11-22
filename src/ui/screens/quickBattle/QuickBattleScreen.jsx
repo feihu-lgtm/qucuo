@@ -35,7 +35,7 @@ const PORTRAIT = (v) => {
 };
 
 // 品阶→档位色（复用装备那套 QUALITY_COLOR）；levelCap 0-5 直接映射 QUALITY 索引
-const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "var(--text)";
+const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "var(--ink-text)";
 const tierName = (levelCap) => QUALITY[Math.max(0, Math.min(5, levelCap))] || "白";
 const MAX_TEAM = 6; // 每队最多 6 人（宝可梦味）
 
@@ -581,7 +581,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
           {/* 血槽 */}
           <div style={{ marginTop: 6 }}>
             <Bar ratio={hpRatio} color="#c8483a" bg="#3a1a16" label={`气血 ${cs.hp[0]}/${cs.hp[1]}`} rtl={side === "foe"} />
-            <Bar ratio={enRatio} color="var(--warn)" bg="#2a2010" label={`气力 ${cs.energy[0]}/10`} rtl={side === "foe"} thin />
+            <Bar ratio={enRatio} color="var(--ink-warn)" bg="#2a2010" label={`气力 ${cs.energy[0]}/10`} rtl={side === "foe"} thin />
           </div>
           {/* 状态标记 */}
           <div style={{ display: "flex", gap: 4, marginTop: 4, justifyContent: side === "ally" ? "flex-start" : "flex-end" }}>
@@ -623,7 +623,7 @@ function StatusChip({ name }) {
 }
 
 function MoveButton({ move, usable, reason, onClick }) {
-  const qc = QUALITY_COLOR[move.quality] || "var(--text)";
+  const qc = QUALITY_COLOR[move.quality] || "var(--ink-text)";
   const lines = explainMove(move);
   const gist = moveTypeGist(move);
   const [flipped, setFlipped] = useState(false);
@@ -698,7 +698,7 @@ function ResultScreen({ battle, onAgain, onExit }) {
       <div style={{ display: "flex", gap: 40, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
         <ResultCol title="我方存活" names={survivors.map(f => f.name)} color="var(--blue)" empty="无人生还" />
         <ResultCol title="我方阵亡" names={fallen.map(f => f.name)} color="#8a7d5a" empty="全员无恙" />
-        <ResultCol title="斩获敌方" names={foeFallen.map(f => f.name)} color="var(--warn)" empty="未伤敌分毫" />
+        <ResultCol title="斩获敌方" names={foeFallen.map(f => f.name)} color="var(--ink-warn)" empty="未伤敌分毫" />
       </div>
       <div style={{ display: "flex", gap: 16 }}>
         <button onClick={onAgain} style={sx.startBtn}>再来一场</button>

@@ -20,13 +20,13 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "var(--text-dim)", fontSize: 11, marginBottom: 12 }}>
+        <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 12 }}>
           {building.desc}
         </div>
 
         {active.length > 0 && (
           <div style={{ marginBottom: 14 }}>
-            <div style={{ color: "var(--warn)", fontSize: 11, marginBottom: 6 }}>进行中的护镖任务：</div>
+            <div style={{ color: "var(--ink-warn)", fontSize: 11, marginBottom: 6 }}>进行中的护镖任务：</div>
             {active.map(q => {
               const prog = questProgress[q.id];
               return (
@@ -49,7 +49,7 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
         </div>
 
         {available.length === 0 && (
-          <div style={{ color: "var(--text-dim)", fontSize: 12 }}>
+          <div style={{ color: "var(--ink-text-dim)", fontSize: 12 }}>
             {active.length > 0 ? "先完成手头的护镖任务吧。" : "暂无从本地出发的护镖任务。"}
           </div>
         )}
@@ -57,10 +57,10 @@ export default function EscortScreen({ building, char, flags, questProgress, cur
         {available.map(q => (
           <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ color: "var(--text)", fontSize: 13 }}>{q.title}</span>
+              <span style={{ color: "var(--ink-text)", fontSize: 13 }}>{q.title}</span>
               <span style={{ color: "#4a8a4a", fontSize: 12 }}>报酬 {q.reward} 两</span>
             </div>
-            <div style={{ color: "var(--text-dim)", fontSize: 11, marginBottom: 4 }}>{q.desc}</div>
+            <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 4 }}>{q.desc}</div>
             <div style={{ color: "#6a8a6a", fontSize: 10, marginBottom: 8 }}>
               → 前往 {q.targetLocation} · 找 {q.targetNpc} 完成交货
             </div>

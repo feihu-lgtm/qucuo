@@ -15,16 +15,16 @@ export default function TempleScreen({ building, char, dao, zoneTheme, onClose, 
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "var(--text-dim)", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: 11 }}>
           功德 {karma} · 每次拜佛消耗 {karmaPerPray} 功德
         </div>
-        <div style={{ color: "var(--text-dim)", fontSize: 12, marginBottom: 12 }}>
+        <div style={{ color: "var(--ink-text-dim)", fontSize: 12, marginBottom: 12 }}>
           {building.desc}
         </div>
-        <div style={{ color: "var(--text)", fontSize: 11, marginBottom: 8 }}>七维当前值：</div>
+        <div style={{ color: "var(--ink-text)", fontSize: 11, marginBottom: 8 }}>七维当前值：</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 12px", fontSize: 12, marginBottom: 14 }}>
           {SEVEN_DIMS.map(d => (
-            <div key={d} style={{ color: (special[d] ?? 0) >= 10 ? "#4a6a4a" : "var(--text)" }}>
+            <div key={d} style={{ color: (special[d] ?? 0) >= 10 ? "#4a6a4a" : "var(--ink-text)" }}>
               {d} <span style={{ color: "#888" }}>{special[d] ?? 0}</span>
               {(special[d] ?? 0) >= 10 && <span style={{ color: "#4a6a4a", fontSize: 10 }}> 已满</span>}
             </div>

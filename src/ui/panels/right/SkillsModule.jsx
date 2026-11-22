@@ -92,7 +92,7 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
                             title={afford ? `潜心修炼：花${cost}潜能，${s.stage}→${nextStage}（现有潜能${pot}）` : `潜能不足，突破${nextStage}需${cost}点（现有${pot}）`}
                             style={{
                               cursor: afford ? "pointer" : "not-allowed", fontSize: "10px", padding: "1px 7px", borderRadius: 0,
-                              color: afford ? "var(--violet)" : "var(--text-dim)",
+                              color: afford ? "var(--violet)" : "var(--ink-text-dim)",
                               background: afford ? zoneTheme.bgPanel : "transparent",
                               border: `1px solid ${afford ? "#4a3a5a" : zoneTheme.border}`, userSelect: "none",
                             }}

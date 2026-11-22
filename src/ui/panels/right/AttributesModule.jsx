@@ -37,7 +37,7 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
             return (
               <div key={k} title={buffed ? `基础${v}，药力/buff生效中` : undefined}>
                 {k}
-                <span style={{ color: buffed ? "var(--clay)" : "var(--text)" }}>{buffed ? eff : v}</span>
+                <span style={{ color: buffed ? "var(--clay)" : "var(--ink-text)" }}>{buffed ? eff : v}</span>
                 {buffed && <span style={{ color: "var(--text-dim)", fontSize: "9.5px" }}> ({v}+{eff - v})</span>}
               </div>
             );

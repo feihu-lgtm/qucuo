@@ -41,7 +41,7 @@ export default function CharacterPage({ varTree, claimedMilestones, onClaimMiles
             return (
               <div
                 key={name}
-                style={{ ...cardStyle, borderColor: milestone ? "var(--ember)" : "var(--border)" }}
+                style={{ ...cardStyle, borderColor: milestone ? "var(--ember)" : "var(--ink-border)" }}
                 onClick={() => setSelected(name)}
               >
                 <div style={{ color: "var(--text)", fontSize: "13px", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>

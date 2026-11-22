@@ -243,7 +243,7 @@ export default function PresetManager({ state, onStateChange }) {
                 )}
               </div>
               {isEditing && (
-                <div style={{ padding: "8px 12px", background: "var(--bg-panel)", borderBottom: "1px solid var(--bg-slate)" }}>
+                <div style={{ padding: "8px 12px", background: "var(--ink-bg-panel)", borderBottom: "1px solid var(--bg-slate)" }}>
                   {p.isMarker ? (
                     <div style={{ fontSize: "11px", color: "var(--text-dim)" }}>
                       这是系统占位符，代表引擎运行时会自动填充的内容

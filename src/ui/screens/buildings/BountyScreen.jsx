@@ -17,7 +17,7 @@ export default function BountyScreen({ building, flags, questProgress, zoneTheme
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name="官府告示栏" zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "var(--text-dim)", fontSize: 11, marginBottom: 12 }}>
+        <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 12 }}>
           官府发布的悬赏任务，完成后来此领赏。赏金丰厚，功德亦有增益。
         </div>
 
@@ -25,7 +25,7 @@ export default function BountyScreen({ building, flags, questProgress, zoneTheme
           <div style={{ marginBottom: 14 }}>
             <div style={{ color: "#4a8a4a", fontSize: 11, marginBottom: 6 }}>可领取赏金：</div>
             {claimable.map(q => (
-              <div key={q.id} style={{ padding: "8px 10px", background: "#0a140a", borderRadius: 0, border: "1px solid var(--accent)", marginBottom: 6 }}>
+              <div key={q.id} style={{ padding: "8px 10px", background: "#0a140a", borderRadius: 0, border: "1px solid var(--ink-accent)", marginBottom: 6 }}>
                 <div style={{ color: "#6aaa6a", fontSize: 12 }}>{q.title} · {q.reward} 两 · +{q.karmaBonus} 功德</div>
                 <Btn label="领取赏金" zoneTheme={zoneTheme} onClick={() => onClaimBounty(q)} />
               </div>
@@ -39,7 +39,7 @@ export default function BountyScreen({ building, flags, questProgress, zoneTheme
           const need = q.requiredCount || 1;
           return (
             <div key={q.id} style={{ padding: "8px 10px", background: "#12140a", borderRadius: 0, border: "1px solid #3a3a1a", marginBottom: 8 }}>
-              <div style={{ color: "var(--warn)", fontSize: 12 }}>{q.title}</div>
+              <div style={{ color: "var(--ink-warn)", fontSize: 12 }}>{q.title}</div>
               <div style={{ color: "#7a6a4a", fontSize: 11 }}>进度：{cur}/{need}</div>
             </div>
           );
@@ -51,10 +51,10 @@ export default function BountyScreen({ building, flags, questProgress, zoneTheme
         {available.map(q => (
           <div key={q.id} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ color: "var(--text)", fontSize: 13 }}>{q.title}</span>
+              <span style={{ color: "var(--ink-text)", fontSize: 13 }}>{q.title}</span>
               <span style={{ color: "#4a8a4a", fontSize: 12 }}>{q.reward} 两 +{q.karmaBonus}功德</span>
             </div>
-            <div style={{ color: "var(--text-dim)", fontSize: 11, marginBottom: 8 }}>{q.desc}</div>
+            <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 8 }}>{q.desc}</div>
             <Btn label="接受" zoneTheme={zoneTheme} onClick={() => onAcceptBounty(q)} />
           </div>
         ))}

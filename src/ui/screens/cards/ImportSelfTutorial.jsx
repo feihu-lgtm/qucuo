@@ -63,7 +63,7 @@ export default function ImportSelfTutorial({ accent = "#d4a853", onClose }) {
                 }}>{s.ic}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, color: "var(--paper)", marginBottom: 2 }}>{s.t}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.7 }}>{s.d}</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-muted)", lineHeight: 1.7 }}>{s.d}</div>
                 </div>
               </div>
             ))}
@@ -71,7 +71,7 @@ export default function ImportSelfTutorial({ accent = "#d4a853", onClose }) {
         </div>
 
         <div style={{ padding: "12px 18px", borderTop: `1px solid ${accent}22`, display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ flex: 1, fontSize: 10, color: "var(--text-dim)" }}>随时可在标题栏「教程」重看这一页。</span>
+          <span style={{ flex: 1, fontSize: 10, color: "var(--ink-text-dim)" }}>随时可在标题栏「教程」重看这一页。</span>
           <span onClick={onClose}
             style={{
               cursor: "pointer", userSelect: "none", fontSize: 13, padding: "7px 20px", borderRadius: 0,

@@ -100,7 +100,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                       style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                     >{item.name}</span>
                     {discounted && <span style={{ color: "var(--text-dim)", marginLeft: 6, textDecoration: "line-through" }}>{item.buyPrice}</span>}
-                    <span style={{ color: discounted ? "var(--clay)" : "var(--text-dim)", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
+                    <span style={{ color: discounted ? "var(--clay)" : "var(--ink-text-dim)", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
                   </div>
                   <span className="mobile-touch-target"
                     onClick={() => canAfford && onBuy({ ...item, buyPrice: payPrice })}

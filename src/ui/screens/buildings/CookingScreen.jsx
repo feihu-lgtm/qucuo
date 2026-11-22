@@ -12,7 +12,7 @@ import {
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const UI = (f) => `${BASE}stones/ui/${f}`;
 
-const QUAL_COLOR = { 白: "var(--text)", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "var(--violet)", 橙: "#e0913a", 红: "#d4756a" };
+const QUAL_COLOR = { 白: "var(--ink-text)", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "var(--violet)", 橙: "#e0913a", 红: "#d4756a" };
 
 // 灶膛火苗 + 蒸汽 + 成功/失败反馈的 CSS（组件内注入，命名空间 ck- 防串味）
 const CK_CSS = `
@@ -205,7 +205,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                   backgroundImage: `url(${UI(sel ? "bar_paper.webp" : "bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
                   color: sel ? "#4a2d0a" : "#d8c8a0", fontSize: 12, fontWeight: "bold",
                   textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px var(--black)" }}>
-                <span style={{ color: sel ? "#8a5a1a" : (QUAL_COLOR[cw.quality] || "var(--text)"), marginRight: 5, fontSize: 11 }}>●</span>
+                <span style={{ color: sel ? "#8a5a1a" : (QUAL_COLOR[cw.quality] || "var(--ink-text)"), marginRight: 5, fontSize: 11 }}>●</span>
                 {cw.name}{cw.canSteam ? " ♨" : ""}
               </div>
             );

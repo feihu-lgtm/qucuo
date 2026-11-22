@@ -109,13 +109,13 @@ function MoveEditor({ moves, levelCap, onChange, why, source }) {
         return (
           <div key={slot} style={{ marginBottom: 7, padding: "7px 9px", borderRadius: 0, background: "rgba(0,0,0,.22)", border: "1px solid var(--bg-card)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
-              <span style={{ width: 30, fontSize: 11, color: "var(--warn)", flexShrink: 0 }}>{slot}</span>
+              <span style={{ width: 30, fontSize: 11, color: "var(--ink-warn)", flexShrink: 0 }}>{slot}</span>
               <input value={m.name || ""} placeholder={`${arch}（未起名）`}
                 onChange={e => setSlot(slot, { name: e.target.value.slice(0, 10) })}
                 style={{ ...selStyle, flex: 1, textAlign: "center" }} />
               {/* 回气槽固定走「回气」原型，不给选——它是能量枯竭时的保底招 */}
               {slot === "回气" ? (
-                <span style={{ width: 86, textAlign: "center", fontSize: 11, color: "var(--text-dim)" }}>回气</span>
+                <span style={{ width: 86, textAlign: "center", fontSize: 11, color: "var(--ink-text-dim)" }}>回气</span>
               ) : (
                 <select value={arch} onChange={e => setSlot(slot, { archetype: e.target.value })}
                   style={{ ...selStyle, width: 86 }}>
@@ -126,22 +126,22 @@ function MoveEditor({ moves, levelCap, onChange, why, source }) {
               )}
               <span onClick={() => setOpen(isOpen ? null : slot)}
                 title="看这一档解出来的实际效果"
-                style={{ cursor: "pointer", fontSize: 10, color: "var(--info)", flexShrink: 0 }}>
+                style={{ cursor: "pointer", fontSize: 10, color: "var(--ink-info)", flexShrink: 0 }}>
                 {isOpen ? "收起" : "数值"}
               </span>
             </div>
             <input value={m.desc || ""} placeholder="一句话写这招看起来什么样（会注入给说书人）"
               onChange={e => setSlot(slot, { desc: e.target.value.slice(0, 60) })}
-              style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "var(--text)" }} />
+              style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "var(--ink-text)" }} />
             {isOpen && (
-              <div style={{ marginTop: 6, padding: "6px 8px", background: "var(--bg-ink)", border: "1px solid var(--border)", borderRadius: 0 }}>
+              <div style={{ marginTop: 6, padding: "6px 8px", background: "var(--bg-ink)", border: "1px solid var(--ink-border)", borderRadius: 0 }}>
                 <div style={{ fontSize: 9.5, color: "#5a6a6a", marginBottom: 4, fontFamily: "ui-monospace,Menlo,Consolas,monospace" }}>
                   {arch} × {TIERS[levelCap]?.label}档 → 类型 {type}
                 </div>
                 {Object.entries(resolved).filter(([k]) => k !== "type").map(([k, v]) => (
                   <div key={k} style={{ display: "flex", fontSize: 10, color: "#9a9a8a", lineHeight: 1.6 }}>
                     <span style={{ width: 108, color: "#6a7a7a", flexShrink: 0 }}>{EFFECT_LABEL[k] || k}</span>
-                    <span style={{ color: "var(--info)" }}>{fmtEffectValue(v)}</span>
+                    <span style={{ color: "var(--ink-info)" }}>{fmtEffectValue(v)}</span>
                   </div>
                 ))}
                 <div style={{ fontSize: 9.5, color: "#5a6a6a", marginTop: 5 }}>
@@ -157,13 +157,13 @@ function MoveEditor({ moves, levelCap, onChange, why, source }) {
         {!moves?.["疗伤"] ? (
           <span onClick={() => setSlot("疗伤", { archetype: "疗伤", name: "", desc: "" })}
             title="第五招，只有会运功回血的人才配"
-            style={{ cursor: "pointer", fontSize: 10.5, color: "var(--muted)" }}>＋ 加一个疗伤招</span>
+            style={{ cursor: "pointer", fontSize: 10.5, color: "var(--ink-muted)" }}>＋ 加一个疗伤招</span>
         ) : (
           <span onClick={() => { const n = { ...moves }; delete n["疗伤"]; onChange(n); }}
-            style={{ cursor: "pointer", fontSize: 10.5, color: "var(--muted)" }}>− 去掉疗伤招</span>
+            style={{ cursor: "pointer", fontSize: 10.5, color: "var(--ink-muted)" }}>− 去掉疗伤招</span>
         )}
         <span style={{ flex: 1 }} />
-        {why ? <span style={{ fontSize: 10, color: "var(--text-dim)", fontStyle: "italic" }}>据「{why}」</span> : null}
+        {why ? <span style={{ fontSize: 10, color: "var(--ink-text-dim)", fontStyle: "italic" }}>据「{why}」</span> : null}
         <Src source={source} />
       </div>
     </div>
@@ -307,7 +307,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
     <div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 7, minHeight: 22 }}>
         {!carry.length && (
-          <span style={{ fontSize: 10.5, color: "var(--text-dim)" }}>
+          <span style={{ fontSize: 10.5, color: "var(--ink-text-dim)" }}>
             未指定 · 运行时按 {TIERS[levelCap]?.label}档 从四池随机抽
           </span>
         )}
@@ -320,7 +320,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
               style={{
                 display: "inline-flex", alignItems: "center", gap: 5,
                 fontSize: 10.5, padding: "3px 4px 3px 8px", borderRadius: 0,
-                border: `1px solid ${open ? "var(--warn)" : custom ? "#6a8a70" : "#4a4028"}`,
+                border: `1px solid ${open ? "var(--ink-warn)" : custom ? "#6a8a70" : "#4a4028"}`,
                 background: custom ? "rgba(120,180,130,.10)" : "rgba(212,168,83,.10)", color: "var(--paper)",
               }}>
               <span onClick={() => setDetailItem(open ? null : c)} title="点看详情"
@@ -354,7 +354,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 {{ weapon: "兵器", armor: "护具", accessory: "饰物", misc: "杂物" }[category] || category} · {quality}档
               </span>
               <span style={{ flex: 1 }} />
-              <span onClick={() => setDetailItem(null)} style={{ cursor: "pointer", fontSize: 10, color: "var(--text-dim)" }}>收起</span>
+              <span onClick={() => setDetailItem(null)} style={{ cursor: "pointer", fontSize: 10, color: "var(--ink-text-dim)" }}>收起</span>
             </div>
 
             {/* 伤害 / 防御 */}
@@ -363,7 +363,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 <div style={{ fontSize: 10.5, color: "#d89050" }}>
                   攻击力 <span style={{ color: "#e8b070", fontWeight: 700 }}>{atk}</span>
                   {custom && category === "weapon" && (
-                    <span style={{ marginLeft: 6, color: "var(--text-dim)", fontSize: 9.5 }}>
+                    <span style={{ marginLeft: 6, color: "var(--ink-text-dim)", fontSize: 9.5 }}>
                       倍率
                       <input type="number" step={0.05} min={1} max={1.6}
                         value={detailItem.atkMul ?? 1}
@@ -377,7 +377,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 <div style={{ fontSize: 10.5, color: "#6a9ac4" }}>
                   防御力 <span style={{ color: "#8ab8e0", fontWeight: 700 }}>{def}</span>
                   {custom && category === "armor" && (
-                    <span style={{ marginLeft: 6, color: "var(--text-dim)", fontSize: 9.5 }}>
+                    <span style={{ marginLeft: 6, color: "var(--ink-text-dim)", fontSize: 9.5 }}>
                       倍率
                       <input type="number" step={0.05} min={1} max={1.6}
                         value={detailItem.defMul ?? 1}
@@ -395,9 +395,9 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 value={detailItem.desc || ""}
                 placeholder="写它什么样、什么手感或什么来历"
                 onChange={e => patchItem(nameOf(detailItem), { desc: e.target.value.slice(0, 200) })}
-                style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 8px", color: "var(--text)", fontSize: 10.5, lineHeight: 1.7, resize: "vertical", fontFamily: "inherit" }} />
+                style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 8px", color: "var(--ink-text)", fontSize: 10.5, lineHeight: 1.7, resize: "vertical", fontFamily: "inherit" }} />
             ) : (
-              <div style={{ fontSize: 10.5, color: "var(--text)", lineHeight: 1.6 }}>
+              <div style={{ fontSize: 10.5, color: "var(--ink-text)", lineHeight: 1.6 }}>
                 {desc || "在册物品，运行时按名字查百物录补全数值与词条。"}
               </div>
             )}
@@ -405,7 +405,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
             {/* 攻击特效：自造物可勾选，在册物只读列出 */}
             {custom ? (
               <div style={{ marginTop: 6 }}>
-                <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 4 }}>攻击特效 · 点一下加上/去掉</div>
+                <div style={{ fontSize: 10, color: "var(--ink-muted)", marginBottom: 4 }}>攻击特效 · 点一下加上/去掉</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                   {ITEM_EFFECT_CHOICES.map(choice => {
                     const on = effectHas(detailItem, choice.key);
@@ -453,7 +453,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
           style={{
             cursor: "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 0, whiteSpace: "nowrap",
             border: `1px solid ${forging ? "var(--green-soft)" : "var(--border-deep)"}`,
-            color: forging ? "var(--green-soft)" : "var(--muted)",
+            color: forging ? "var(--green-soft)" : "var(--ink-muted)",
           }}>⚒ 新造一件</span>
       </div>
 
@@ -479,7 +479,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
             </select>
           </div>
 
-          <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 3 }}>
+          <div style={{ fontSize: 10, color: "var(--ink-muted)", marginBottom: 3 }}>
             六维加成 · 点数字改，0 就是不加（百物录里 139 件带这个，多是 +1 到 +2）
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
@@ -509,7 +509,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 const mul = draft.atkMul ?? 1;
                 return (
                   <label style={{ flex: 1 }}>
-                    <span style={{ display: "block", fontSize: 10, color: "var(--muted)", marginBottom: 3 }}>
+                    <span style={{ display: "block", fontSize: 10, color: "var(--ink-muted)", marginBottom: 3 }}>
                       攻击力 {Math.round(base * mul)} · 倍率 {mul.toFixed(2)}
                     </span>
                     <input type="range" min={1} max={1.6} step={0.05} value={mul}
@@ -523,7 +523,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 const mul = draft.defMul ?? 1;
                 return (
                   <label style={{ flex: 1 }}>
-                    <span style={{ display: "block", fontSize: 10, color: "var(--muted)", marginBottom: 3 }}>
+                    <span style={{ display: "block", fontSize: 10, color: "var(--ink-muted)", marginBottom: 3 }}>
                       防御力 {Math.round(base * mul)} · 倍率 {mul.toFixed(2)}
                     </span>
                     <input type="range" min={1} max={1.6} step={0.05} value={mul}
@@ -536,7 +536,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
           )}
 
           {/* 攻击特效：跟详情面板同一份可勾选清单 */}
-          <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 3 }}>攻击特效 · 点一下加上/去掉</div>
+          <div style={{ fontSize: 10, color: "var(--ink-muted)", marginBottom: 3 }}>攻击特效 · 点一下加上/去掉</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
             {ITEM_EFFECT_CHOICES.map(choice => {
               const on = effectHas(draft, choice.key);
@@ -564,13 +564,13 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-            <span style={{ fontSize: 10, color: "var(--muted)", flex: 1 }}>描述</span>
+            <span style={{ fontSize: 10, color: "var(--ink-muted)", flex: 1 }}>描述</span>
             {apiCfg && (
               <span onClick={askAiDesc}
                 title={draft.name ? "让 AI 照名字与品阶写两三句" : "先起个名"}
                 style={{
                   cursor: draft.name && !aiBusy ? "pointer" : "default", fontSize: 10,
-                  color: draft.name && !aiBusy ? "var(--info)" : "#4a5450",
+                  color: draft.name && !aiBusy ? "var(--ink-info)" : "#4a5450",
                 }}>{aiBusy ? "写着…" : "✎ 让 AI 写"}</span>
             )}
           </div>
@@ -580,11 +580,11 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
             style={{ ...selStyle, width: "100%", textAlign: "left", resize: "vertical", lineHeight: 1.7 }} />
 
           <div style={{ display: "flex", gap: 6, marginTop: 7, alignItems: "center" }}>
-            <span style={{ fontSize: 10, color: "var(--text-dim)", flex: 1 }}>
+            <span style={{ fontSize: 10, color: "var(--ink-text-dim)", flex: 1 }}>
               造出来的东西只属于这个人，不进百物录
             </span>
             <span onClick={() => { setDraft(blankDraft()); }}
-              style={{ cursor: "pointer", fontSize: 10.5, color: "var(--text-dim)" }}>清空</span>
+              style={{ cursor: "pointer", fontSize: 10.5, color: "var(--ink-text-dim)" }}>清空</span>
             <span
               onClick={() => {
                 const nm = (draft.name || "").trim();
@@ -597,7 +597,7 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 cursor: draft.name.trim() ? "pointer" : "default", fontSize: 11,
                 padding: "4px 12px", borderRadius: 0, fontWeight: 700,
                 color: draft.name.trim() ? "var(--bg-deep)" : "#5a5448",
-                background: draft.name.trim() ? "linear-gradient(180deg,#a0c890,var(--good))" : "rgba(0,0,0,.3)",
+                background: draft.name.trim() ? "linear-gradient(180deg,#a0c890,var(--ink-good))" : "rgba(0,0,0,.3)",
                 border: `1px solid ${draft.name.trim() ? "#a0c890" : "var(--border-deep)"}`,
               }}>⚒ 造好，收进他身上</span>
           </div>
@@ -608,20 +608,20 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
           玩家没法知道自己看的是全部还是一角 */}
       <div style={{
         display: "flex", alignItems: "center", gap: 6, padding: "3px 8px",
-        fontSize: 9.5, color: "var(--text-dim)", background: "rgba(0,0,0,.3)",
+        fontSize: 9.5, color: "var(--ink-text-dim)", background: "rgba(0,0,0,.3)",
         border: "1px solid var(--bg-card)", borderBottom: "none", borderRadius: 0,
       }}>
         <span>百物录 {CATALOG.length} 件</span>
         {list.length !== CATALOG.length && <span style={{ color: "#a89870" }}>· 当前 {list.length} 件</span>}
         <span style={{ flex: 1 }} />
-        {carry.length ? <span style={{ color: "var(--warn)" }}>已选 {carry.length}</span> : null}
+        {carry.length ? <span style={{ color: "var(--ink-warn)" }}>已选 {carry.length}</span> : null}
       </div>
 
       <div style={{
         maxHeight: "min(38vh, 380px)", overflowY: "auto",
         border: "1px solid var(--bg-card)", borderRadius: "0 0 3px 3px", background: "rgba(0,0,0,.22)",
       }}>
-        {!list.length && <div style={{ padding: 8, fontSize: 10.5, color: "var(--text-dim)" }}>没有匹配的物件</div>}
+        {!list.length && <div style={{ padding: 8, fontSize: 10.5, color: "var(--ink-text-dim)" }}>没有匹配的物件</div>}
         {list.map(e => {
           const on = has(e.name);
           const tier = TIERS.find(t => t.label === e.quality);
@@ -634,9 +634,9 @@ export function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 background: on ? "rgba(212,168,83,.10)" : "transparent",
                 borderBottom: "1px solid #1e1a12",
               }}>
-              <span style={{ color: on ? "var(--warn)" : "#4a4436", width: 10 }}>{on ? "◉" : "○"}</span>
+              <span style={{ color: on ? "var(--ink-warn)" : "#4a4436", width: 10 }}>{on ? "◉" : "○"}</span>
               <span style={{ color: tier?.color || "#a89870", width: 14 }}>{e.quality || "—"}</span>
-              <span style={{ color: "var(--text)", flex: 1 }}>{e.name}</span>
+              <span style={{ color: "var(--ink-text)", flex: 1 }}>{e.name}</span>
               <span style={{ color: "#5a5448", fontSize: 9.5 }}>{e.category}</span>
             </div>
           );
@@ -659,10 +659,10 @@ function RawEntryCompare({ raw }) {
       <div onClick={() => setOpen(o => !o)}
         style={{
           cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-          fontSize: 10.5, color: "var(--muted)", userSelect: "none",
+          fontSize: 10.5, color: "var(--ink-muted)", userSelect: "none",
           padding: "3px 0", borderTop: "1px solid var(--bg-card)",
         }}>
-        <span style={{ color: "var(--text-dim)", width: 10 }}>{open ? "▾" : "▸"}</span>
+        <span style={{ color: "var(--ink-text-dim)", width: 10 }}>{open ? "▾" : "▸"}</span>
         <span>对照原卡正文</span>
         <span style={{ color: "#5a5448" }}>{n} 字</span>
         <span style={{
@@ -727,7 +727,7 @@ function PortraitPicker({ value, onChange, cardImage, npcName }) {
 
   const thumb = (on) => ({
     width: 46, height: 46, objectFit: "cover", borderRadius: 0, cursor: "pointer",
-    border: `1px solid ${on ? "var(--warn)" : "var(--bg-card)"}`,
+    border: `1px solid ${on ? "var(--ink-warn)" : "var(--bg-card)"}`,
     filter: on ? "none" : "grayscale(.5) brightness(.8)",
   });
 
@@ -737,8 +737,8 @@ function PortraitPicker({ value, onChange, cardImage, npcName }) {
         <span onClick={() => { onChange(""); setInfo(null); setErr(""); }}
           style={{
             cursor: "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 0,
-            border: `1px solid ${!value ? "var(--warn)" : "var(--border-deep)"}`,
-            color: !value ? "var(--warn)" : "var(--muted)",
+            border: `1px solid ${!value ? "var(--ink-warn)" : "var(--border-deep)"}`,
+            color: !value ? "var(--ink-warn)" : "var(--ink-muted)",
           }}>不设</span>
 
         {/* 卡自带的图。酒馆卡的 PNG 本身就是立绘，角色卡数据藏在它的 tEXt chunk 里，
@@ -760,7 +760,7 @@ function PortraitPicker({ value, onChange, cardImage, npcName }) {
           title="选一张本地图片，压成 webp 存下来"
           style={{
             cursor: busy ? "wait" : "pointer", fontSize: 10.5, padding: "4px 10px", borderRadius: 0,
-            border: "1px solid var(--border-deep)", color: "var(--muted)",
+            border: "1px solid var(--border-deep)", color: "var(--ink-muted)",
           }}>
           {busy === "上传" ? "压缩中…" : "上传一张"}
         </span>
@@ -783,7 +783,7 @@ function PortraitPicker({ value, onChange, cardImage, npcName }) {
               objectFit: "cover", objectPosition: "top center",
               borderRadius: 0, border: "1px solid #4a4028",
             }} />
-          <div style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.8 }}>
+          <div style={{ fontSize: 10, color: "var(--ink-muted)", lineHeight: 1.8 }}>
             {custom ? "已存进入册库，跟着这个角色一起落册。" : `内置立绘 · ${value}`}
             {info && (
               <>
@@ -793,7 +793,7 @@ function PortraitPicker({ value, onChange, cardImage, npcName }) {
                   {info.from.bytes ? ` ${fmtBytes(info.from.bytes)}` : ""}
                   {" → "}{info.w}×{info.h} {fmtBytes(info.bytes)}
                 </span>
-                {!info.scaled && <span style={{ color: "var(--text-dim)" }}>（原图已在框内，未放大）</span>}
+                {!info.scaled && <span style={{ color: "var(--ink-text-dim)" }}>（原图已在框内，未放大）</span>}
               </>
             )}
           </div>
@@ -801,7 +801,7 @@ function PortraitPicker({ value, onChange, cardImage, npcName }) {
       )}
       {err ? <Note tone="bad">{err}</Note> : null}
 
-      <div style={{ fontSize: 10, color: "var(--text-dim)", marginBottom: 4 }}>或用内置的十张</div>
+      <div style={{ fontSize: 10, color: "var(--ink-text-dim)", marginBottom: 4 }}>或用内置的十张</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {BUILTIN_PORTRAITS.map(name => (
           <img key={name} src={DEFAULT_PORTRAITS[name]} alt={name} title={name}
@@ -888,14 +888,14 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
       {pl.mode === "resident" && (
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <label style={{ flex: 1 }}>
-            <span style={{ display: "block", fontSize: 10.5, color: "var(--muted)", marginBottom: 3 }}>据点</span>
+            <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3 }}>据点</span>
             <select value={pl.district || ""} onChange={e => set({ district: e.target.value || null, innerRoom: null })} style={selStyle}>
               <option value="" style={{ background: "var(--bg-deep)" }}>（未选，等同不落地）</option>
               {DISTRICTS.map(d => <option key={d} value={d} style={{ background: "var(--bg-deep)" }}>{d}</option>)}
             </select>
           </label>
           <label style={{ flex: 1 }}>
-            <span style={{ display: "block", fontSize: 10.5, color: "var(--muted)", marginBottom: 3 }}>
+            <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3 }}>
               常在哪间{rooms.length ? "" : "（无内层）"}
             </span>
             <select value={pl.innerRoom || ""} disabled={!rooms.length}
@@ -908,7 +908,7 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
       )}
       {pl.mode === "wander" && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 4 }}>出现在哪些据点 · 点一下加二十五，满了归零</div>
+          <div style={{ fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 4 }}>出现在哪些据点 · 点一下加二十五，满了归零</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
             {DISTRICTS.map(d => {
               const w = pl.weights?.[d] || 0;
@@ -923,12 +923,12 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
                     cursor: "pointer", fontSize: 10.5, padding: "3px 8px", borderRadius: 0,
                     border: `1px solid ${w > 0 ? accent : "var(--bg-card)"}`,
                     background: w > 0 ? `rgba(212,168,83,${0.06 + w / 500})` : "transparent",
-                    color: w > 0 ? "var(--paper)" : "var(--text-dim)",
+                    color: w > 0 ? "var(--paper)" : "var(--ink-text-dim)",
                   }}>{d}{w > 0 ? ` ${w}` : ""}</span>
               );
             })}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-muted)" }}>
             <span>时辰</span>
             <input type="number" min={0} max={23} value={pl.timeSlot[0]}
               onChange={e => set({ timeSlot: [Number(e.target.value), pl.timeSlot[1]] })}
@@ -937,7 +937,7 @@ function Placement({ value, onChange, accent, npc, apiCfg, why, rejected, onPlan
             <input type="number" min={0} max={23} value={pl.timeSlot[1]}
               onChange={e => set({ timeSlot: [pl.timeSlot[0], Number(e.target.value)] })}
               style={{ ...selStyle, width: 52 }} />
-            <span style={{ fontSize: 10, color: "var(--text-dim)" }}>（0-23 时，跨夜请分两次入册）</span>
+            <span style={{ fontSize: 10, color: "var(--ink-text-dim)" }}>（0-23 时，跨夜请分两次入册）</span>
           </div>
         </div>
       )}
@@ -987,7 +987,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
       <div style={{ display: "flex", gap: 14 }}>
         <div style={{ flexShrink: 0, textAlign: "center" }}>
           <JadeTier value={cap} size={54} withSelect onChange={v => onPatch({ levelCap: v })} />
-          <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 5 }}>
+          <div style={{ fontSize: 10, color: "var(--ink-muted)", marginTop: 5 }}>
             品阶<Src source={n.source} why={n.levelCapWhy} />
           </div>
         </div>
@@ -1016,7 +1016,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
         {n.entryFromAi
           ? <Src source="ai" why="按本作格式重写过" />
           : <Src source="fallback" />}
-        <span style={{ fontSize: 10, color: (n.entry || "").length > LORE_MAX ? "#d89080" : "var(--muted)", marginLeft: 6 }}>
+        <span style={{ fontSize: 10, color: (n.entry || "").length > LORE_MAX ? "#d89080" : "var(--ink-muted)", marginLeft: 6 }}>
           {(n.entry || "").length}/{LORE_MAX} 字
         </span>
       </>}>
@@ -1062,7 +1062,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
             <textarea rows={2} value={(m.text || []).join("\n")}
               placeholder="领取这段剧情时玩家会读到的正文，一行一句。留空则领取后无内容"
               onChange={e => onPatch({ milestones: n.milestones.map((x, j) => j === mi ? { ...x, text: e.target.value.split("\n").map(t => t.trim()).filter(Boolean) } : x) })}
-              style={{ ...selStyle, textAlign: "left", fontSize: 10.5, lineHeight: 1.7, color: "var(--text)", resize: "vertical" }} />
+              style={{ ...selStyle, textAlign: "left", fontSize: 10.5, lineHeight: 1.7, color: "var(--ink-text)", resize: "vertical" }} />
           </div>
         ))}
         <Note tone="info">这两段是玩家在「人物关系」页手动领取时读到的固定剧情，本作原有角色全是手写的。AI 给的是草稿，值得你自己润一遍。</Note>
@@ -1089,10 +1089,10 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
           onChange={v => onPatch({ neigong: v })} />
         <StatRow label="外功" value={waigong} max={100} step={1} width={30}
           onChange={v => onPatch({ waigong: v })} />
-        <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 4, lineHeight: 1.7 }}>
+        <div style={{ fontSize: 10, color: "var(--ink-text-dim)", marginTop: 4, lineHeight: 1.7 }}>
           {TIERS[cap]?.label}档的基准是 {TIER_NEIGONG[cap]}。
-          气血由内功与体魄算出：<span style={{ color: "var(--warn)" }}>{maxHp}</span>
-          {atk != null ? <>；出手威力由外功算出：<span style={{ color: "var(--warn)" }}>{atk}</span></> : null}
+          气血由内功与体魄算出：<span style={{ color: "var(--ink-warn)" }}>{maxHp}</span>
+          {atk != null ? <>；出手威力由外功算出：<span style={{ color: "var(--ink-warn)" }}>{atk}</span></> : null}
           。这两项跟着上面走，不单独设。
         </div>
       </Section>

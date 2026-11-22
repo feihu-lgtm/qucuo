@@ -8,7 +8,7 @@ import { loadChest, saveChest } from "../../../domain/rules/map/homestead.js";
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const UI = (f) => `${BASE}stones/ui/${f}`;
 
-const QUAL_COLOR = { 白: "var(--text)", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "var(--violet)", 橙: "#e0913a", 红: "#d4756a" };
+const QUAL_COLOR = { 白: "var(--ink-text)", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "var(--violet)", 橙: "#e0913a", 红: "#d4756a" };
 
 export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, onClose }) {
   const closeGuard = useOverlayCloseGuard(onClose);
@@ -40,7 +40,7 @@ export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, 
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", marginBottom: 5,
         backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }}>
-        {q && <span style={{ color: QUAL_COLOR[q] || "var(--text)", fontSize: 10 }}>●</span>}
+        {q && <span style={{ color: QUAL_COLOR[q] || "var(--ink-text)", fontSize: 10 }}>●</span>}
         <span style={{ flex: 1, color: "#f0e0b8", fontSize: 12.5, textShadow: "0 1px 2px var(--black)" }}>{nameOf(it)}</span>
         <span onClick={() => (side === "chest" ? retrieveItem(idx) : storeItem(idx))}
           style={{ cursor: "pointer", padding: "3px 12px", fontSize: 11, fontWeight: "bold",
