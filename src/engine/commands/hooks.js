@@ -15,7 +15,7 @@ export const HOOK_ENTRIES = [
   { id: "milestoneClaim", hooks: { useScreenHandlers: ["claimMilestone"] } },
   { id: "inn", hooks: { useBuildingHandlers: ["handleBuildingInn", "handleBuildingHeal", "handleClinicService"] } },
   { id: "generalShop", hooks: { useBuildingHandlers: ["handleGamble", "handleServiceOrder", "handleForgeCommission", "handleJadeCraft", "handleAuctionWin"] } },
-  { id: "shopBuy", hooks: { useBuildingHandlers: ["handleBuyTangmenItem"] } },
+  { id: "shopBuy", hooks: { useBuildingHandlers: ["handleBuyTangmenItem", "handleBuyTianlongItem"] } },
   { id: "carriage", hooks: { useBuildingHandlers: ["handleTravel"] } },
   { id: "homeCooking", hooks: { useBuildingHandlers: ["handleCook"] } },
   { id: "prayer", hooks: { useBuildingHandlers: ["handlePray"] } },
