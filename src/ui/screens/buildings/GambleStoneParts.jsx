@@ -81,7 +81,7 @@ export function StoneVisual({ stone, closed, cutFx, doCut }) {
               style={{ position: "absolute", left: "50%", top: "8%",
                 fontSize: "calc(min(100vw, 100vh*1672/941) * 0.052)", fontWeight: "bold",
                 color: labelColor, letterSpacing: 6,
-                textShadow: `0 0 18px ${labelColor}88, 0 3px 8px var(--black)` }}>
+                textShadow: `0 0 18px color-mix(in srgb, ${labelColor} 53%, transparent), 0 3px 8px var(--black)` }}>
               {labelText}
             </div>
           </>
@@ -115,7 +115,7 @@ export function BidderFan({ bidders, cardFont, offerLabel, onSelect }) {
             <div className="gs-face gs-back">
               <div style={{ position: "absolute", left: WIN.x, top: WIN.y, width: WIN.w, height: WIN.h,
                 overflow: "hidden", borderRadius: "6% / 4%",
-                background: "radial-gradient(120% 90% at 50% 0%, #3a3020 0%, #201a12 55%, var(--qb-felt) 100%)" }}>
+                background: "radial-gradient(120% 90% at 50% 0%, var(--gamble-felt-top) 0%, var(--gamble-felt-mid) 55%, var(--qb-felt) 100%)" }}>
                 <div style={{ padding: "14% 10%", height: "100%", display: "flex", flexDirection: "column",
                   color: "var(--qb-text)", boxSizing: "border-box" }}>
                   <div style={{ fontSize: "1.15em", color: "var(--gold-light)", letterSpacing: 2, marginBottom: "4%" }}>{b.name}</div>
@@ -133,7 +133,7 @@ export function BidderFan({ bidders, cardFont, offerLabel, onSelect }) {
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             textAlign: "center", zIndex: 5 }}>
             <img src={UI("bub_gold1.webp")} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: -1 }} />
-            <div style={{ fontSize: ".72em", fontWeight: "bold", color: "#7a5320", lineHeight: 1.1, marginTop: "-9%" }}>{b.name}</div>
+            <div style={{ fontSize: ".72em", fontWeight: "bold", color: "var(--gamble-tag-text)", lineHeight: 1.1, marginTop: "-9%" }}>{b.name}</div>
             <div style={{ fontSize: ".80em", fontWeight: "bold", color: "var(--ink-wood-deep)", lineHeight: 1.25 }}>{offerLabel(b)}</div>
           </div>
         </div>
@@ -180,7 +180,7 @@ export function BidderCarousel({ bidders, carouselIdx, setCarouselIdx, touchRef,
             <div style={{ color: "var(--qb-text-dim)", fontSize: 11, lineHeight: 1.7, maxHeight: "8vh", overflowY: "auto" }}>{cur.bio}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-            <button onClick={() => sellTo(cur)} style={{ ...carBtn, background: "linear-gradient(180deg,var(--ink-brass-lit),#8a6a2a)", color: "#3a2408" }}>
+            <button onClick={() => sellTo(cur)} style={{ ...carBtn, background: "linear-gradient(180deg,var(--ink-brass-lit),var(--gamble-sell-bottom))", color: "var(--gamble-sell-text)" }}>
               ✓ 接受 {offerLabel(cur)}
             </button>
             {cur.kind !== "noise" && (
@@ -214,7 +214,7 @@ export function SkinModal({ changKouLabel, skinLabel, text, loading, onClose }) 
     <div style={{ position: "fixed", inset: 0, zIndex: 290, background: "rgba(5,4,2,.55)",
       display: "flex", alignItems: "center", justifyContent: "center" }}
       onClick={onClose}>
-      <div style={{ maxWidth: "min(560px, 82vw)", background: "#1e1a13", border: "1px solid var(--ink-brass)",
+      <div style={{ maxWidth: "min(560px, 82vw)", background: "var(--gamble-panel)", border: "1px solid var(--ink-brass)",
         borderRadius: 0, padding: "22px 26px", boxShadow: "0 12px 40px rgba(0,0,0,.7)" }}
         onClick={(e) => e.stopPropagation()}>
         <div style={{ color: "var(--gold-light)", fontSize: 15, letterSpacing: 2, marginBottom: 12 }}>
@@ -263,7 +263,7 @@ export function SelCardModal({ card, offerLabel, sellTo, startTalk, onClose }) {
 
 export function PanelBtn({ img, kind, big, disabled, done, grade, crack, onClick, children }) {
   const color = kind === "paper" ? "var(--ink-wood-warm)" : "var(--ink-cream)";
-  const doneColor = done ? (crack ? "var(--ink-peach)" : grade === "chun" ? "#7dffca" : grade === "za" ? "var(--ink-peach)" : "var(--qb-text)") : color;
+  const doneColor = done ? (crack ? "var(--ink-peach)" : grade === "chun" ? "var(--gamble-jade)" : grade === "za" ? "var(--ink-peach)" : "var(--qb-text)") : color;
   return (
     <div onClick={disabled ? undefined : onClick}
       style={{ position: "relative", height: 52, minWidth: big ? 160 : 120, display: "flex", alignItems: "center", justifyContent: "center",
