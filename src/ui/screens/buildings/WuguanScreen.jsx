@@ -56,7 +56,7 @@ export default function WuguanScreen({ building, char, skills, flags, questProgr
                       })()
                       : <Btn
                         label="购买"
-                        disabled={money < item.price}
+                        disabled={money < skillPrice({ flags }, item)}
                         zoneTheme={zoneTheme}
                         onClick={() => onBuySkill(item)}
                       />
