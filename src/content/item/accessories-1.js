@@ -115,8 +115,6 @@ const items = {
 "铜铃竹哨": { name: "铜铃竹哨", category: "accessory", quality: "绿", sixDim: { 身法: 1 }, desc: "察世堂外围探子常用的小哨，佩在腰间身法微增，野外遇险吹响能惊走埋伏的人。" },
 "紫皮闷倒驴葫芦": { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫", effect: { energyRestore: 1 }, sixDim: { 体魄: 1 }, desc: "严九斤托老皮匠缝的紫皮酒葫芦，装的是能闷倒一头驴的烧酒。佩着它，每回合都像抿了一口。" },
 "八袋长老令": { name: "八袋长老令", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 智谋: 1 }, desc: "严九斤亲手交给你的八袋长老竹令，背面刻着「三星分舵」。拿着它在川西任何一个叫花子面前亮一亮，都有人替你传话。" },
-  }
-  },
 "狼牙骨哨": { name:"狼牙骨哨", category:"accessory", quality:"蓝", sixDim:{ 身法: 1 }, tags:["饰品","哨子","天龙教"], desc:"狼牙磨成的骨哨，吹起来声音尖得像风钻谷口。哨卡上靠它传讯——一声是来人，两声是来人带了刀。" },
 "银针包": { name:"银针包", category:"accessory", quality:"蓝", sixDim:{ 身法: 1 }, tags:["饰品","医具"], desc:"羊皮缝的小包，里头一排银针按长短排着。贺兰昭的针走穴快过走药——她下针时病人总觉得先好了半分。" },
 "天龙教主令": { name:"天龙教主令", category:"accessory", quality:"紫", sixDim:{ 魅力: 2 }, tags:["饰品","令牌","天龙教"], desc:"蟠龙纹玄铁令，教主亲发的随身信物。持此令者在天龙教营地通行无阻——玄甲兵见令先低头，再抬头看你的脸。" },

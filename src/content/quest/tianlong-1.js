@@ -41,6 +41,7 @@ export default { quest: {
             quest_tian1_cold: {
               money: 120,
               reputation: -10,
+              favorability: { 厉天行: 10 },
               factionRep: { 天龙教: 15, 玉泉寨: -15, 鱼定村: -10 },
               items: [
                 { name: "血刀通行木牌", category: "misc", quality: "绿", desc: "血刀部发的通行木牌，牌面一道刀刻的深槽，哨卡见了便不拦。" },

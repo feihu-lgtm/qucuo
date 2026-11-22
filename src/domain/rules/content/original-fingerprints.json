@@ -3,10 +3,10 @@
   "format": "sha256(JSON.stringify(data)); orderedIds (up to 20) or their SHA-256 use id ?? name for arrays or Object.keys for objects; totalFieldCount counts object keys recursively, excluding array indices",
   "exports": {
     "QUCUO_QUESTS": {
-      "entryCount": 60,
-      "orderedIdsSha256": "2d0a91ce3ac2f2c87a25d125f1c637b1a0b42a3de06d2fb7e9d7a228b3ee438a",
-      "totalFieldCount": 2759,
-      "jsonSha256": "96d1fc8dfb58ec6ddb4d245d26e1736c4538faf7ce45fbeaa923bff0f05d8161"
+      "entryCount": 61,
+      "orderedIdsSha256": "8c9806cb8314b93bf40b72e035fe061c7357a0f40c310fe098e87a8fe95331c3",
+      "totalFieldCount": 2827,
+      "jsonSha256": "a791cb085e50747ca19deda705fa08de1a9bd1292add67bbcb7c5b5b2a054812"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -17,22 +17,22 @@
       "jsonSha256": "1246e5adb73c9e57cc637a944abd8e9481ec30388b6e8fcf1d40162c132df9f3"
     },
     "WEAPONS": {
-      "entryCount": 28,
-      "orderedIdsSha256": "820bd46cc3eb7d1fa3cd00eea609588af416a90f0887e3cfe0488996dc63154b",
-      "totalFieldCount": 207,
-      "jsonSha256": "c99131118aa62a94a3851a43416d90d8e5d80bece78017e775a862de0241c16a"
+      "entryCount": 34,
+      "orderedIdsSha256": "adcb5bdda725cd56b5698fdc6a1c3fbb21a887d7a47c8cf9be9062d3a88fd32e",
+      "totalFieldCount": 253,
+      "jsonSha256": "7a7ecb7a4706b24a14f7df9401cd63db7e0c6bf09d6feec6505c0dbff75861b0"
     },
     "ARMORS": {
-      "entryCount": 30,
-      "orderedIdsSha256": "51bb605ad3bddbec24754232b0af0f4ecab7270b90c33a1c031ad7cd6b35e8c2",
-      "totalFieldCount": 203,
-      "jsonSha256": "2cb72fb37f4e1d61fd0f4fd14b8922626beaf22983e12985e355718b8d502c0d"
+      "entryCount": 35,
+      "orderedIdsSha256": "2077abcd81df31cbc3b87177e5f3d1da50494a740da35f038b1d4579a421aa0a",
+      "totalFieldCount": 239,
+      "jsonSha256": "c805b13a83ad2639023f8c66edcd870c9e1073851f7347677d33812d6dccd0ff"
     },
     "ACCESSORIES": {
-      "entryCount": 29,
-      "orderedIdsSha256": "1ce754f3952ae819a4fc2c48db0856751c4937f87529a1ec697bc62a103b599e",
-      "totalFieldCount": 203,
-      "jsonSha256": "5941ecdfe8be7716c0c01dad57be513be35745fb5c121769ac8f447eb4b27ccc"
+      "entryCount": 34,
+      "orderedIdsSha256": "35feec428a4ac18570b92b7329bedefcedb10c124bfbaffb82f4f48da2de9f67",
+      "totalFieldCount": 240,
+      "jsonSha256": "9f36bb22ba1202c984c3ca77031964ab090902571322ef711eaf9a75ba102ec4"
     },
     "JADE_WARES": {
       "entryCount": 20,
@@ -62,10 +62,10 @@
       "jsonSha256": "5d6a5c6bcffad3e6399e321424576adf50abd8e9e36a1e72f9aa553fd7018273"
     },
     "SUNDRIES": {
-      "entryCount": 285,
-      "orderedIdsSha256": "b45ec6b8832c050c998726c235cca652a279ebbba6f0a9ea453e1ba720c083d1",
-      "totalFieldCount": 2206,
-      "jsonSha256": "046248564edfac4e8504b1a040bed039141df165bf28d0b36f130914edc5eb81"
+      "entryCount": 293,
+      "orderedIdsSha256": "d017361ebdde0085f0e9d344e566901a01595d1595afbc9e23a193fdaa7ffad6",
+      "totalFieldCount": 2253,
+      "jsonSha256": "7a000b3b43de104015f964789e02fbcc12a111d567be4d9ca07c4ff5f79adf46"
     },
     "STANDARD_WEAPONS": {
       "entryCount": 10,
@@ -159,19 +159,19 @@
       "jsonSha256": "d0c47d92e4d5958afd876abb8512223df37399abe67606b7329a8f282a8d2245"
     },
     "CATALOG": {
-      "entryCount": 527,
-      "orderedIdsSha256": "cfbd767a24f0cf1717204b514370383edf4c5ea46726efd2ce6c65295f9c255f",
-      "totalFieldCount": 3984,
-      "jsonSha256": "99d60d0f8bbe4aa9927f3ab548d49092dcf38b066447f07c71441325ee13ce26"
+      "entryCount": 551,
+      "orderedIdsSha256": "60e45bd6bf5bb2d5e1da0aa7af1d3bc31c191d3cb3d898ae632f20a4f72e0de3",
+      "totalFieldCount": 4150,
+      "jsonSha256": "1123b4825252c366af42fd845e821c3a1b857bc79f551298bac4f9a1fe822fee"
     },
     "CATALOG_INDEX": {
-      "entryCount": 527,
-      "orderedIdsSha256": "cfbd767a24f0cf1717204b514370383edf4c5ea46726efd2ce6c65295f9c255f",
-      "totalFieldCount": 4511,
-      "jsonSha256": "d6b5e549a03f932594547368fbf93d1f2fba1f6ebc505a09e8629e95f8c7ee1d"
+      "entryCount": 551,
+      "orderedIdsSha256": "60e45bd6bf5bb2d5e1da0aa7af1d3bc31c191d3cb3d898ae632f20a4f72e0de3",
+      "totalFieldCount": 4701,
+      "jsonSha256": "08c2871c0748290d15d2e45c313766a59f9a9792a079c6d0d99356010ef65503"
     },
     "RESIDENT_NPCS": {
-      "entryCount": 14,
+      "entryCount": 15,
       "orderedIds": [
         "鱼定村",
         "鱼定土司",
@@ -186,37 +186,17 @@
         "顶峰",
         "大草甸",
         "蜀南唐堡",
-        "雾隐寨"
+        "雾隐寨",
+        "天龙营"
       ],
-      "totalFieldCount": 2155,
-      "jsonSha256": "cbbb6c088d8ba703cadc0cff3bbf7a52a79dc6ab7f7f3b8b230d1734e24a9ff5"
+      "totalFieldCount": 2237,
+      "jsonSha256": "1b352e466c6c517b4038cdbfba11b73eb51923293fe84d0e428afc4cb26e5ecf"
     },
     "INNER_MAP": {
-      "entryCount": 20,
-      "orderedIds": [
-        "鱼定村",
-        "第三新东京市",
-        "心灵之海",
-        "鱼定土司",
-        "喇嘛庙",
-        "白塔",
-        "后山平台",
-        "雪山派",
-        "山洞",
-        "顶峰",
-        "天都镇",
-        "玉泉寨",
-        "贡措海",
-        "大草甸",
-        "黑风寨",
-        "雅江",
-        "广汉",
-        "锦官城",
-        "蜀南唐堡",
-        "雾隐寨"
-      ],
-      "totalFieldCount": 1515,
-      "jsonSha256": "8217043ada7baf32716c22883b8f7f3ddc8b8ebc3ce7050ce92f0c2315041d4b"
+      "entryCount": 21,
+      "orderedIdsSha256": "5907e2633dff354fd290d61d39487453c5500410dd6badd4bd5f7af9676c1747",
+      "totalFieldCount": 1616,
+      "jsonSha256": "96670c071fcab0abbe6e1e01cd47f0165d9fd333d0b937c01980e029a802e463"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,
