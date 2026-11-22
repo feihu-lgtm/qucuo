@@ -70,13 +70,13 @@ export default { district: {
         unlockCondition: { type: "any", of: [{ type: "flag", flag: "sanxing_trial_passed" }, { type: "item", itemName: "青铜纵目令" }] },
         buildingId: "sanxing_mask_hall",
       },
-      // 青铜地窖库只认弟子信物（合稿·三星派 4「拜入奖励」）：缴还令牌即进不去。
+      // 青铜地窖库只认弟子信物或弟子身份（合稿·三星派 4「拜入奖励」）：令牌存进箱里也回得来，叛出被逐两样一并收走。
       "铸铜地窖·青铜地窖库": {
         x: 1, y: -3,
         desc: `　　赤炉窟背后一道窄门，门上嵌着神鸟衔环的青铜锁。里头凉得出奇，石壁里砌着几口厚重的青铜大箱，箱盖上各刻一张纵目人面。
 　　守门的青铜面人看了一眼你腰间的令牌，侧身让开了路。`,
         exits: { s: "铸铜地窖·赤炉窟" },
-        unlockCondition: { type: "item", itemName: "青铜纵目令" },
+        unlockCondition: { type: "any", of: [{ type: "item", itemName: "青铜纵目令" }, { type: "flag", flag: "三星派弟子" }] },
         buildingId: "sanxing_vault_chest",
       },
       "金乌暗室·归墟秘井": {
@@ -84,7 +84,8 @@ export default { district: {
         desc: `　　神树底座的暗门后面是一口干涸的古井，井壁一圈圈刻着金乌。井底不见水，只有一块磨得发亮的圆台，正好放得下一面太阳神鸟。
 　　站在井边说话，回声要绕三圈才回来，最后一声像是另一个人在答。`,
         exits: { s: "青铜神树下" },
-        unlockCondition: { type: "flag", flag: "quest_sxs3_return" },
+        // 交还神鸟后常开；星4 纵目者亲自引人下井受「纵目问心」，私吞神鸟的人也能走完星4。
+        unlockCondition: { type: "anyFlag", flags: ["quest_sxs3_return", "quest_sx4_summon"] },
       },
       // ── 丐帮三星分舵（合稿·丐帮 2.2；破庙前镇烟火，后墟肃杀）──
       三星镇西口集市: {

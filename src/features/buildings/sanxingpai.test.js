@@ -183,7 +183,8 @@ describe("三星派收尾", () => {
       expect(isInnerExitUnlocked(lock(room), { flags: [], inv: TOKEN }), room).toBe(true);
       expect(isInnerExitUnlocked(lock(room), { flags: [], inv: [] }), room).toBe(false);
     }
-    expect(isInnerExitUnlocked(lock("铸铜地窖·青铜地窖库"), { flags: ["sanxing_trial_passed", "三星派弟子"], inv: [] })).toBe(false);
+    expect(isInnerExitUnlocked(lock("铸铜地窖·青铜地窖库"), { flags: ["sanxing_trial_passed"], inv: [] })).toBe(false);
+    expect(isInnerExitUnlocked(lock("铸铜地窖·青铜地窖库"), { flags: ["三星派弟子"], inv: [] })).toBe(true);
     expect(isInnerExitUnlocked(lock("金乌暗室·归墟秘井"), { flags: [], inv: TOKEN })).toBe(false);
   });
 
@@ -197,6 +198,12 @@ describe("三星派收尾", () => {
     const vault = getBuildingsForLocation("广汉").find((building) => building.id === getBuildingIdForInnerRoom("广汉", "铸铜地窖·青铜地窖库"));
     expect(vault).toMatchObject({ id: "sanxing_vault_chest", type: "chest", house: "三星派青铜地窖库", emptyStock: true });
     expect(getInnerRoom("广汉", "铸铜地窖·赤炉窟").exits.n).toBe("铸铜地窖·青铜地窖库");
+  });
+
+  it("opens the 归墟秘井 for the 星4 mirror trial even if the sun-bird was sold", () => {
+    expect(isInnerExitUnlocked(lock("金乌暗室·归墟秘井"), { flags: ["sanxing_shenniao_sold"], inv: [] })).toBe(false);
+    expect(isInnerExitUnlocked(lock("金乌暗室·归墟秘井"), { flags: ["sanxing_shenniao_sold", "quest_sx4_summon"], inv: [] })).toBe(true);
+    expect(quest("sanxingpai_4_sanshinianjiushi").stages[0].completionFlag).toBe("quest_sx4_summon");
   });
 
   it("opens 星4 after 星3, rep 65 and the 雪山/土司 old-truth thread", () => {
