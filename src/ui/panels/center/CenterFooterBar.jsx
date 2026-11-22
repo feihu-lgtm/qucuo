@@ -157,6 +157,23 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
           }
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: zoneTheme.text, fontFamily: "inherit", fontSize: "13px" }}
         />
+        {/* 发送按钮：和回车同一个提交入口。手机上按回车不顺手，这里给一个看得见的按钮。
+            pointerdown 时 preventDefault，点按钮不让输入框失焦，iOS 键盘不会收起。 */}
+        <button
+          type="button"
+          className="game-send-button mobile-touch-target"
+          disabled={!input.trim()}
+          onPointerDown={(e) => e.preventDefault()}
+          onClick={() => turn.onKey.submit?.()}
+          aria-label={interactMode === "pigeon" ? "放飞信鸽" : "发送"}
+          style={{
+            flexShrink: 0, minWidth: 52, minHeight: 32, padding: "4px 12px",
+            border: `1px solid ${input.trim() ? zoneTheme.accent : zoneTheme.border}`, borderRadius: 0,
+            background: "transparent", color: input.trim() ? zoneTheme.accent : zoneTheme.textDim,
+            fontFamily: "inherit", fontSize: "13px", letterSpacing: "2px",
+            cursor: input.trim() ? "pointer" : "default", opacity: input.trim() ? 1 : 0.5,
+          }}
+        >{interactMode === "pigeon" ? "放飞" : "发送"}</button>
       </div>
     </>
   );
