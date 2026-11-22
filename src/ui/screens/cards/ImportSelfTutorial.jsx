@@ -19,7 +19,10 @@ const STEPS = [
   { ic: "⑥", t: "选同行 · 开始", d: "从入江湖的人里指定一位开局就随队（初始队友），然后开始游戏。" },
 ];
 
-export default function ImportSelfTutorial({ accent = "#d4a853", onClose }) {
+// accent 默认值写 var(--ink-warn)（即 #d4a853）：别写进参数默认值，
+// propsCheck 的作用域正则会被括号绊住误报 onClose 未声明。
+export default function ImportSelfTutorial({ accent, onClose }) {
+  accent = accent || "var(--ink-warn)";
   const shell = {
     position: "absolute", inset: 0, zIndex: 20,
     display: "flex", alignItems: "center", justifyContent: "center", padding: 24,

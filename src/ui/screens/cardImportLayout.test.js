@@ -14,7 +14,10 @@ import { CATALOG } from "../../domain/data/items/catalog.js";
 // CSS 在 node 里没法真渲染，所以退一步盯住源码里的关键指纹。
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
-const REVIEW = readFileSync(join(HERE, "cards", "ReviewPane.jsx"), "utf-8");
+// 拆屏后审改页分三个文件：ReviewPane（状态+分派）、ReviewWizard（开局向导）、
+// ReviewRoster（常规 4:6 分栏）。锚点跟代码走，拼起来查。
+const REVIEW = ["ReviewPane.jsx", "ReviewWizard.jsx", "ReviewRoster.jsx"]
+  .map(f => readFileSync(join(HERE, "cards", f), "utf-8")).join("\n");
 const NPC = readFileSync(join(HERE, "cards", "CarryPicker.jsx"), "utf-8");
 const PARTS = readFileSync(join(HERE, "cards", "widgets.jsx"), "utf-8");
 
