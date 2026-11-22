@@ -24,11 +24,15 @@ function DialCard({ zoneTheme, title, overlay, items, renderItem, emptyText }) {
         <span style={{ flex: 1 }} />
         {n > 0 && <span style={{ color: zoneTheme.textDim, fontSize: 10 }}>{(i % n) + 1}/{n}</span>}
         {overlay && (
-          <span title="展开完整面板" onClick={() => openOverlay(overlay)}
+          <span title="展开完整面板" role="button" tabIndex={0}
+            onClick={() => openOverlay(overlay)}
+            onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openOverlay(overlay); } }}
             style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: 11, lineHeight: 1 }}>⇱</span>
         )}
       </div>
-      <div onClick={() => n > 1 && setI(v => (v + 1) % n)}
+      <div role={n > 1 ? "button" : undefined} tabIndex={n > 1 ? 0 : undefined}
+        onClick={() => n > 1 && setI(v => (v + 1) % n)}
+        onKeyDown={e => { if (n > 1 && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setI(v => (v + 1) % n); } }}
         style={{ cursor: n > 1 ? "pointer" : "default", marginTop: 4, minHeight: 26 }}
         title={n > 1 ? "点一下转到下一条" : undefined}>
         {cur ? renderItem(cur, i % n) : <div style={{ color: zoneTheme.textDim, fontSize: 10.5, padding: "2px 0" }}>{emptyText}</div>}
