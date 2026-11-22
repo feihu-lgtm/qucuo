@@ -65,6 +65,31 @@ export default { quest: {
     rewardText: "佛道两脉都记下了你这位局外清眼。",
   },
 
+  // 藏剑阁引荐（合稿·峨眉 2.2 / 峨2 分支 C 注）：峨2 走 A/B 的，峨眉声誉到 40 后由照微推开竹屏暗门。
+  emei_cangjian_yinjian: {
+    id: "emei_cangjian_yinjian",
+    type: "QT_TALK",
+    title: "峨眉·照微引荐藏剑阁",
+    giver: "照微",
+    giverId: "resident_zhaowei",
+    localOnly: true,
+    requiresQuestCompleted: "emei_2_fodaoshilian",
+    requiresFactionRep: { 峨眉派: 40 },
+    blockedByFlags: ["flag_emei_cangjian_open"],
+    description: "照微收剑入鞘：「师太说，你如今进得去那扇竹屏了。」",
+    stages: [
+      {
+        id: "yinjian",
+        requireLocation: { district: "锦官城", inner: "练剑坪" },
+        playerHint: "到练剑坪找照微，请她引你去抄经堂后的竹屏暗门。",
+        description: "照微领你穿过抄经堂，推开后墙一扇竹屏暗门——金顶静室·藏剑阁就在门后。",
+        completionFlag: "quest_emei_cangjian_yinjian",
+        onReach: { flags: ["flag_emei_cangjian_open"] },
+      },
+    ],
+    rewardText: "开放隐藏房间「金顶静室·藏剑阁」。",
+  },
+
   emei_3_minjiangjiuyue: {
     id: "emei_3_minjiangjiuyue",
     type: "QT_TALK",
@@ -79,8 +104,9 @@ export default { quest: {
     stages: [
       {
         id: "letter",
-        requireLocation: { district: "锦官城", inner: "峨眉剑庐" },
-        playerHint: "在峨眉剑庐听玄尘师太说岷江旧事，接下密函和金顶净心露。",
+        giver: null,
+        requireLocation: { district: "锦官城", inner: "金顶静室·藏剑阁" },
+        playerHint: "在金顶静室·藏剑阁听玄尘师太说岷江旧事，接下密函和金顶净心露。",
         description: "玄尘师太默然良久，把一瓶佛堂秘熬的金顶净心露和一封亲笔密函推到你面前：「替我送去雪山派，交到何雨谢手里。」",
         completionFlag: "quest_emei3_letter",
         onReach: { items: [item("金顶净心露"), item("玄尘亲笔密函")] },

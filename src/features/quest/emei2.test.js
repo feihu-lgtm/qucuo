@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getResidentNpcs } from "../../domain/data/npc/residentNpcs.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
+import { getInnerRoom, isInnerExitUnlocked } from "../../domain/rules/map/innerMap.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
 import { settleNpcDuel } from "../npc/settleDuel.js";
 
@@ -64,6 +65,28 @@ describe("峨2·佛道之辩", () => {
   });
 });
 
+describe("藏剑阁", () => {
+  const room = getInnerRoom("锦官城", "金顶静室·藏剑阁");
+  const quest = find("emei_cangjian_yinjian");
+  const zhaowei = resident("锦官城", "照微");
+  const s = (value, flags = []) => at(base({ 峨眉派: value }, {
+    questProgress: { emei_2_fodaoshilian: { status: "completed" } }, flags,
+  }), "锦官城", "练剑坪", [zhaowei]);
+
+  it("stays locked until 峨2 branch C or 照微's introduction sets the flag", () => {
+    expect(room.exits.n).toBe("抄经堂");
+    expect(isInnerExitUnlocked(room.unlockCondition, { flags: [] })).toBe(false);
+    expect(isInnerExitUnlocked(room.unlockCondition, { flags: ["flag_emei_cangjian_open"] })).toBe(true);
+  });
+
+  it("照微 introduces A/B players once 峨眉 rep reaches 40", () => {
+    expect(getLocalQuestStage(quest, s(39))).toBeNull();
+    expect(getLocalQuestStage(quest, s(40, ["flag_emei_cangjian_open"]))).toBeNull();
+    const next = advance(s(40), "emei_cangjian_yinjian");
+    expect(next.flags).toContain("flag_emei_cangjian_open");
+  });
+});
+
 describe("峨3·岷江旧簪", () => {
   const id = "emei_3_minjiangjiuyue";
   const quest = find(id);
@@ -71,7 +94,8 @@ describe("峨3·岷江旧簪", () => {
   const start = (known = ["何雨谢"]) => at(base({ 峨眉派: 40 }, {
     questProgress: { emei_2_fodaoshilian: { status: "completed" } },
     varTree: { 世界: { 势力声誉: { 峨眉派: 40 }, 已认识人物: known } },
-  }), "锦官城", "峨眉剑庐", [xuanchen]);
+    flags: ["flag_emei_cangjian_open"],
+  }), "锦官城", "金顶静室·藏剑阁", [xuanchen]);
 
   it("needs to have met 何雨谢", () => {
     expect(getLocalQuestStage(quest, start())?.id).toBe("letter");

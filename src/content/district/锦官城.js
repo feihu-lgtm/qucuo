@@ -117,9 +117,15 @@ export default { district: {
       抄经堂: {
         x: 0, y: 3,
         desc: "临窗一排长案沾满墨痕，半壁收佛经医案，半壁藏道书与蜀西江湖杂录。男弟子入门前须在此静心抄经三日。",
-        exits: { w: "听竹轩" },
+        exits: { w: "听竹轩", s: "金顶静室·藏剑阁" },
         buildingId: "library_emei_jingge",
         residentNpcName: "陈九",
+      },
+      "金顶静室·藏剑阁": {
+        x: 0, y: 4,
+        desc: "竹屏暗门后是一间极素净的禅房，案头只供半支断掉的青铜发簪与一卷手抄佛道合参，壁龛内悬着三柄包着素麻布的古剑，静得能听见自己心跳。",
+        exits: { n: "抄经堂" },
+        unlockCondition: { type: "flag", flag: "flag_emei_cangjian_open" },
       },
       官府告示栏: {
         x: -1, y: 1,
