@@ -61,6 +61,27 @@ describe("applyResult", () => {
     expect(act).toHaveBeenCalledWith("委托失败", [], { settle: false, keepUndo: true });
   });
 
+  it("settles system-decided results in the background when the port is available", () => {
+    const act = vi.fn();
+    const settleInBackground = vi.fn();
+
+    applyResult({ act, settleInBackground }, { settle: "在钱庄取出银两30两", settleOptions: { settleNpc: "钱掌柜" } });
+
+    expect(settleInBackground).toHaveBeenCalledWith("在钱庄取出银两30两", { settleNpc: "钱掌柜" });
+    expect(act).not.toHaveBeenCalled();
+  });
+
+  it("keeps soft settlements and suppressed settlements on the act turn", () => {
+    const act = vi.fn();
+    const settleInBackground = vi.fn();
+
+    applyResult({ act, settleInBackground }, { settle: "赠礼", settleOptions: { settleNpc: "师父", settleKind: "gift" } });
+    applyResult({ act, settleInBackground }, { settle: "委托失败", settleOptions: { settle: false } });
+
+    expect(settleInBackground).not.toHaveBeenCalled();
+    expect(act).toHaveBeenCalledTimes(2);
+  });
+
   it("forwards square operations to the optional context port", () => {
     const applySquareOps = vi.fn();
     const squareOps = [{ op: "consume", key: "雅江", day: 0 }];
