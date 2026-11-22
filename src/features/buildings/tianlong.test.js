@@ -63,13 +63,13 @@ describe("拜入天龙教", () => {
     expect(checkFactionEntry(entry, { varTree: rep(40), flags: ["tianlong_spar_first", "峨眉派弟子"], char: {} }).missing).toContain("single");
   });
 
-  it("joinSect 在点将台发天龙教弟子 flag + 弟子令 + 声誉 +20，结算指向石重岳", () => {
+  it("joinSect 在点将台发天龙教弟子 flag + 弟子令 + 声誉 +20，结算指向厉苍龙", () => {
     const state = at("天龙点将台", 40, ["tianlong_spar_first"]);
     const result = join(state);
     expect(result.changes.flags([])).toContain("天龙教弟子");
     const tree = result.changes.varTree(state.varTree);
     expect(tree.世界.势力声誉.天龙教).toBe(60);
-    expect(result.settleOptions?.settleNpc).toBe("石重岳");
+    expect(result.settleOptions?.settleNpc).toBe("厉苍龙");
   });
 
   it("rep 不够时 joinSect 只回提示不改状态", () => {

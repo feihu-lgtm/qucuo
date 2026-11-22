@@ -763,7 +763,7 @@ export const SKILL_CATALOG = {
       id: "kf_tl_xifengbu", name: "西风踏沙步", type: SKILL_TYPE.QINGGONG, quality: "绿", price: 85,
       moveType: "状态",
       passiveBonus: { speedBonus: 1 },
-      desc: "西风隘的孩子五岁就学这个：沙地上一错步，人借着风势滑出去半丈。石重岳说这不是轻功，是「不给风添麻烦」。",
+      desc: "西风隘的孩子五岁就学这个：沙地上一错步，人借着风势滑出去半丈。厉苍龙说这不是轻功，是「不给风添麻烦」。",
       unlock: { faction: "天龙教", rep: 0, member: false, note: "非敌对即可在西风演武场学" },
     },
     {
@@ -784,7 +784,7 @@ export const SKILL_CATALOG = {
       id: "kf_tl_longyuan", name: "龙渊霸世劲", type: SKILL_TYPE.MOVE, quality: "橙", price: 520,
       moveType: "攻击",
       forceCrit: { multiplier: 1.5 },
-      desc: "石重岳压箱底的劲。劲发时人不像在打人，像整条西风隘压下来——盔甲、横练、招架，全都不作数，只作数一件事：你站不站得住。",
+      desc: "厉苍龙压箱底的劲。劲发时人不像在打人，像整条西风隘压下来——盔甲、横练、招架，全都不作数，只作数一件事：你站不站得住。",
       unlock: { faction: "天龙教", rep: 80, member: true, note: "需拜入天龙教且声誉 ≥ 80（门人秘传，外客不可求教）" },
     },
     {
@@ -792,7 +792,7 @@ export const SKILL_CATALOG = {
       moveType: "防御",
       passiveBonus: { maxHp: 70 },
       desc: "天龙教镇教内功，只此一册，在断崖石室的老天王手里。八层关隘层层相扣，练到深处气脉自行周天——教里传说，练成它的人才能真正统合玄甲与白衣两脉。",
-      unlock: { faction: "天龙教", rep: 100, member: true, note: "需拜入天龙教且声誉 ≥ 100（镇教经卷，还须天5 之局了结后由安世衡亲传）" },
+      unlock: { faction: "天龙教", rep: 100, member: true, note: "需拜入天龙教且声誉 ≥ 100（镇教经卷，还须天5 之局了结后由厉苍天亲传）" },
     },
   ],
 
