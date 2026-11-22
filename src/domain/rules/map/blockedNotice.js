@@ -2,7 +2,7 @@ import { DIRS } from "../../../utils/mudHelpers.js";
 import { getDistrictAnchor, getInnerRoom, isInnerExitUnlocked, visibleInnerExits } from "./innerMap.js";
 import { isNodeUnlocked } from "../../data/map/qucuoMap.js";
 
-export function passableExits(exitsObj, { layer, districtName, questProgress, flags, inv, char } = {}) {
+export function passableExits(exitsObj, { layer, districtName, questProgress, flags, inv, char, varTree, repOf } = {}) {
   const completedQuests = new Set(Object.entries(questProgress || {})
     .filter(([, progress]) => progress?.status === "completed" || progress?.done)
     .map(([id]) => id));
@@ -10,7 +10,7 @@ export function passableExits(exitsObj, { layer, districtName, questProgress, fl
     if (layer === "outer") return isNodeUnlocked(dest, { completedQuests, flags });
     if (layer === "inner") {
       const unlockCondition = getInnerRoom(districtName, dest)?.unlockCondition;
-      return !unlockCondition || isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv, char });
+      return !unlockCondition || isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv, char, varTree, repOf });
     }
     return true;
   }));

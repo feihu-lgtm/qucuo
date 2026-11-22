@@ -133,13 +133,13 @@ export function resolveInnerExit(districtName, roomName, dir) {
 // 返回某房间当前实际"可见"的出口方向列表（过滤掉未解锁的隐藏房间方向）。
 // questProgress/flags 由调用方（MudRPG.jsx）传入当前游戏状态。
 // stat 类型的房间不过滤——它们在地图上始终可见（按钮可点），由移动判定拦截。
-export function visibleInnerExits(districtName, roomName, { questProgress, flags, inv, char } = {}) {
+export function visibleInnerExits(districtName, roomName, { questProgress, flags, inv, char, varTree, repOf } = {}) {
   const room = getInnerRoom(districtName, roomName);
   if (!room) return {};
   const result = {};
   for (const [dir, destName] of Object.entries(room.exits)) {
     const destRoom = getInnerRoom(districtName, destName);
-    if (destRoom?.unlockCondition && destRoom.unlockCondition.type !== "stat" && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv, char })) {
+    if (destRoom?.unlockCondition && destRoom.unlockCondition.type !== "stat" && !isInnerExitUnlocked(destRoom.unlockCondition, { questProgress, flags, inv, char, varTree, repOf })) {
       continue; // 未解锁的隐藏房间：根本不出现在出口列表里
     }
     result[dir] = destName;
@@ -153,7 +153,7 @@ export function visibleInnerExits(districtName, roomName, { questProgress, flags
 // 判定语义保持完全一致，将来 resolveExit 补判定时可以共用同一个函数。
 // 本轮鱼定村切片没有隐藏房间用到这个函数，先按总纲10.3节的约定写好，
 // 供后续白塔地宫/贡措海密室等据点接入时直接复用。
-export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv, char } = {}) {
+export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv, char, varTree, repOf } = {}) {
   if (!unlockCondition) return true;
   if (unlockCondition.type === "questCompleted") {
     return questProgress?.[unlockCondition.questId]?.status === "completed";
@@ -163,7 +163,7 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv
   }
   // 多把钥匙任一即开（如三星派内墟：过了试炼，或持青铜纵目令）。
   if (unlockCondition.type === "any") {
-    return (unlockCondition.of || []).some((cond) => isInnerExitUnlocked(cond, { questProgress, flags, inv, char }));
+    return (unlockCondition.of || []).some((cond) => isInnerExitUnlocked(cond, { questProgress, flags, inv, char, varTree, repOf }));
   }
   if (unlockCondition.type === "anyFlag") {
     return (unlockCondition.flags || []).some(f => (flags || []).includes(f));
@@ -179,6 +179,14 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv
   if (unlockCondition.type === "stat") {
     const val = unlockCondition.stat === "waigong" ? char?.waigong : char?.neigong;
     return (val || 0) >= unlockCondition.threshold;
+  }
+  // 声誉锁：优先用调用方注入的 repOf，否则直接读 varTree.世界.势力声誉
+  // （调用方把整个 state/scope 袋透传时 varTree 已在其中）。拿不到声誉来源时
+  // 按 0 处理——门外客依旧进不去，已开条件不受影响。
+  if (unlockCondition.type === "rep") {
+    const rep = repOf ? repOf(unlockCondition.faction)
+      : (varTree?.世界?.势力声誉?.[unlockCondition.faction] ?? 0);
+    return rep >= unlockCondition.min;
   }
   return true;
 }

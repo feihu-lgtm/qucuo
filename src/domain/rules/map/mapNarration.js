@@ -27,10 +27,10 @@ function formatExits(exitsObj) {
 //   toRoom       移动后所在内层房间
 //   dir          移动方向键（n/s/e/w/…）
 //   flags        当前剧情 flag 列表，用于隐藏尚未解锁的暗房间出口
-export function describeInnerArrival(districtName, fromRoom, toRoom, dir, { flags = [] } = {}) {
+export function describeInnerArrival(districtName, fromRoom, toRoom, dir, { flags = [], varTree } = {}) {
   const dest = getInnerRoom(districtName, toRoom);
   // 四周：目标房间当前"可见"的内层出口（visibleInnerExits 会滤掉未解锁的暗房间）。
-  const innerStr = formatExits(visibleInnerExits(districtName, toRoom, { flags }));
+  const innerStr = formatExits(visibleInnerExits(districtName, toRoom, { flags, varTree }));
   // 远处：本据点在外层大地图上通往乡境其他据点的出口。
   const outerStr = formatExits(QUCUO_MAP[districtName]?.exits);
 
