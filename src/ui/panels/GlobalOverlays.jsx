@@ -23,23 +23,23 @@ import { getTimeStr } from "../../utils/mudHelpers.js";
 import { getPipelineEntries, getTraceLog } from "../../infra/actionTrace.js";
 import { activeCompanion, isCompanionUnlockedByName } from "../../domain/rules/companion/companion.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
-import TutorialOverlay from "../screens/TutorialOverlay.jsx";
-import VersionHistoryPanel from "../screens/VersionHistoryPanel.jsx";
-import CharacterPage from "../screens/CharacterPage.jsx";
-import QuestLogScreen from "../screens/QuestLogScreen.jsx";
-import LoreScreen from "../screens/LoreScreen.jsx";
-import QijuzhuScreen from "../screens/QijuzhuScreen.jsx";
-import PortraitManager from "../screens/PortraitManager.jsx";
-import TraceViewer from "../screens/TraceViewer.jsx";
-import CodexScreen from "../screens/CodexScreen.jsx";
-import BugReportModal from "../screens/BugReportModal.jsx";
 import NpcActionMenu from "../components/NpcActionMenu.jsx";
 import ItemActionMenu from "../components/ItemActionMenu.jsx";
-import PersuasionScreen from "../screens/PersuasionScreen.jsx";
-import DuelScreen from "../screens/DuelScreen.jsx";
-import TeamDuelScreen from "../screens/TeamDuelScreen.jsx";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
 
+const TutorialOverlay = lazy(() => import("../screens/TutorialOverlay.jsx"));
+const VersionHistoryPanel = lazy(() => import("../screens/VersionHistoryPanel.jsx"));
+const CharacterPage = lazy(() => import("../screens/CharacterPage.jsx"));
+const QuestLogScreen = lazy(() => import("../screens/QuestLogScreen.jsx"));
+const LoreScreen = lazy(() => import("../screens/LoreScreen.jsx"));
+const QijuzhuScreen = lazy(() => import("../screens/QijuzhuScreen.jsx"));
+const PortraitManager = lazy(() => import("../screens/PortraitManager.jsx"));
+const TraceViewer = lazy(() => import("../screens/TraceViewer.jsx"));
+const CodexScreen = lazy(() => import("../screens/CodexScreen.jsx"));
+const BugReportModal = lazy(() => import("../screens/BugReportModal.jsx"));
+const PersuasionScreen = lazy(() => import("../screens/PersuasionScreen.jsx"));
+const DuelScreen = lazy(() => import("../screens/DuelScreen.jsx"));
+const TeamDuelScreen = lazy(() => import("../screens/TeamDuelScreen.jsx"));
 const CardImportScreen = lazy(() => import("../screens/CardImportScreen.jsx"));
 
 export default function GlobalOverlays({
@@ -246,5 +246,9 @@ export default function GlobalOverlays({
     )},
   ];
 
-  return <>{entries.map((e, i) => e.show && <Fragment key={i}>{e.render()}</Fragment>)}</>;
+  return (
+    <Suspense fallback={<div role="status" aria-live="polite">载入中</div>}>
+      {entries.map((e, i) => e.show && <Fragment key={i}>{e.render()}</Fragment>)}
+    </Suspense>
+  );
 }

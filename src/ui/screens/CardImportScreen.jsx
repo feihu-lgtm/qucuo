@@ -955,7 +955,6 @@ function ReviewPane({
     if (!autoPlace || autoRanRef.current || !result.npcs.length) return;
     autoRanRef.current = true;
     planAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPlace]);
 
   // 卡里被本作丢弃的东西，列给玩家看一眼，别让它们悄悄消失

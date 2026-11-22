@@ -33,7 +33,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
   // 每当进度变化，写回外部持久化（供存档 + 再次打开时续接）。
   useEffect(() => {
     onProgress?.({ guard, hitKeys, turns, done });
-  }, [guard, hitKeys, turns, done]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [guard, hitKeys, turns, done]);
 
   const t = zoneTheme || {};
   const accent = t.accent || "#c8a860";
