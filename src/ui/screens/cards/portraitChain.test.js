@@ -16,7 +16,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const NPC = readFileSync(join(HERE, "PortraitPicker.jsx"), "utf-8");
 const PARTS = readFileSync(join(HERE, "widgets.jsx"), "utf-8");
 const NPC_RULES = readFileSync(join(HERE, "..", "..", "..", "domain", "rules", "npc", "rules.js"), "utf-8");
-const QB = readFileSync(join(HERE, "..", "quickBattle", "QuickBattleScreen.jsx"), "utf-8");
+// 拆屏后 PORTRAIT 收进 quickBattle/qbShared.js（锚点跟代码走）
+const QB = readFileSync(join(HERE, "..", "quickBattle", "qbShared.js"), "utf-8");
 const PORTRAITS = readFileSync(join(HERE, "../../../domain", "rules", "companion", "portraits.js"), "utf-8")
   + readFileSync(join(HERE, "../../../domain/rules/companion", "portraitStore.js"), "utf-8");
 
