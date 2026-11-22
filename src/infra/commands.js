@@ -55,6 +55,7 @@ const inventoryCommands = [
   ["companionUi", CATEGORY.VIEW, "同伴面板显示"],
   ["homePanelUi", CATEGORY.VIEW, "家园面板选择"],
   ["homeCooking", CATEGORY.LOCAL, "家园烹饪"],
+  ["festival", CATEGORY.LOCAL, "跑马大会"],
   ["homeWine", CATEGORY.LOCAL, "酿酒与收酒"],
   ["homeGarden", CATEGORY.LOCAL, "种植与收获"],
   ["homeLeisure", CATEGORY.LOCAL, "家园鸽舍与休憩"],

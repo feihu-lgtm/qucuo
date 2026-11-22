@@ -34,6 +34,7 @@ import SectEntryScreen from "../screens/buildings/SectEntryScreen.jsx";
 import AuctionScreen from "../screens/buildings/AuctionScreen.jsx";
 import CookingScreen from "../screens/buildings/CookingScreen.jsx";
 import ChestScreen from "../screens/buildings/ChestScreen.jsx";
+import FestivalScreen from "../screens/buildings/FestivalScreen.jsx";
 
 // 既卖现货又接定制的铺子（SHOP 族 + craft 字段）：现货/定制页签切换。
 function shopWithCraftScreen(c, shopData, trading) {
@@ -104,6 +105,12 @@ function innScreen(c) {
 }
 
 export const BUILDING_SCREENS = {
+  [BUILDING_TYPE.FESTIVAL]: (c) => (
+    <FestivalScreen building={c.building} char={c.char} flags={c.flags} time={c.time} varTree={c.varTree} questProgress={c.questProgress} inline
+      zoneTheme={c.zoneTheme} onClose={c.closeBuilding}
+      onEnter={c.handleFestivalEnter} onBet={c.handleFestivalBet} onInvite={c.handleFestivalInvite}
+      onNight={c.handleFestivalNight} onWubi={c.handleFestivalWubi} onMidnight={c.handleFestivalMidnight} />
+  ),
   [BUILDING_TYPE.INN]: innScreen,
   [BUILDING_TYPE.HOSPITAL]: innScreen,
   [BUILDING_TYPE.WUGUAN]: (c) => (
