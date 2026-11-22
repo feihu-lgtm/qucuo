@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
-import { getPriceForDest } from "../../../features/buildings/logic.js";
+import { canTravelByCarriage, getPriceForDest } from "../../../features/buildings/logic.js";
 
 // 驿站（原「马车行」）：车马传送 + 邮传（买鸽子 / 寄信 / 送礼+信）合一。
 // 车马：花银两直接传送到已探索据点，不触发随机遭遇。
@@ -9,12 +9,13 @@ import { getPriceForDest } from "../../../features/buildings/logic.js";
 const PIGEON_PRICE = 12; // 一只信鸽的价钱
 
 export default function TransportScreen({
-  building, char, mapData, currentRoom, zoneTheme, onClose, inline, onTravel,
+  building, char, mapData, currentRoom, flags, questProgress, zoneTheme, onClose, inline, onTravel,
   inv = [], metNpcs = [], onBuyPigeon, onSendLetter,
 }) {
   const money = char.money || 0;
   const pigeons = char.pigeons || 0;
-  const explored = Object.keys(mapData).filter(name => name !== currentRoom);
+  const destinations = Object.keys(mapData).filter(name =>
+    name !== currentRoom && canTravelByCarriage({ mapData, flags, questProgress }, name));
 
   const [tab, setTab] = useState("post"); // 'ride' 车马 | 'post' 邮传
   const [recipient, setRecipient] = useState(metNpcs[0] || "");
@@ -60,8 +61,8 @@ export default function TransportScreen({
         {tab === "ride" && (
           <>
             <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 10 }}>选择目的地（不经过随机遭遇，直接抵达）：</div>
-            {explored.length === 0 && <div style={{ color: "var(--ink-text-dim)" }}>尚未探索其他据点。</div>}
-            {explored.map(dest => {
+            {destinations.length === 0 && <div style={{ color: "var(--ink-text-dim)" }}>没有可乘车前往的据点。</div>}
+            {destinations.map(dest => {
               const price = getPriceForDest(dest);
               return (
                 <div key={dest} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "8px 10px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>

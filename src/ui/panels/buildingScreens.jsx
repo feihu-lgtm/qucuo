@@ -111,6 +111,7 @@ export const BUILDING_SCREENS = {
   ),
   [BUILDING_TYPE.TRANSPORT]: (c) => (
     <TransportScreen building={c.building} char={c.char} mapData={c.mapData} currentRoom={c.room.name} inline
+      flags={c.flags} questProgress={c.questProgress}
       inv={c.inv} metNpcs={c.varTree.世界?.曾经出现人物 || []} onBuyPigeon={c.buyPigeon} onSendLetter={c.handlePostSend}
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onTravel={c.handleTravel} />
   ),
