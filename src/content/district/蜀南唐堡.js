@@ -21,6 +21,7 @@ export default { district: {
         desc: `　　青砖地面布满细密的滑槽与旋转木桩，墙上钉着千疮百孔的铁皮靶人。
 　　竹风过处，常听见机簧绷断的脆响，接着是一声闷哼——又有子弟没躲开。`,
         exits: { e: "吊桥暗渠口" },
+        buildingId: "wuguan_tangmen",
       },
       外姓竹坞: {
         x: 1, y: 0,

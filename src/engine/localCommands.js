@@ -9,6 +9,10 @@ import { bar } from "../utils/mudHelpers.js";
 import { getPresentNpcs } from "../domain/rules/state/fields.js";
 import { giftSilver } from "../features/npc/logic.js";
 import { buyTangmenItem } from "../features/buildings/tangmenShop.js";
+import { buySkill } from "../features/buildings/logic.js";
+import { BUILDING_TYPE, getBuildingsForLocation } from "../domain/data/buildings/qucuoBuildings.js";
+import { getBuildingIdForInnerRoom } from "../domain/rules/map/innerMap.js";
+import { SKILL_CATALOG } from "../domain/data/kungfu/qucuoKungfu.js";
 import { pickGroundItem } from "../features/items/logic.js";
 import { autoFightQuestChoice } from "../features/quest/combatChoice.js";
 import { playLocalQuestStage } from "../features/quest/logic.js";
@@ -69,6 +73,20 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
   if (buyWeapon) {
     return { kind: "result", localKind: "buyTangmenItem", result: buyTangmenItem(state, buyWeapon[1]?.trim()) };
   }
+  const learn = /^学武(?:\s+(.+))?$/.exec(command.trim());
+  if (learn) {
+    const buildingId = getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName);
+    const hall = getBuildingsForLocation(state.room?.name)
+      .find((building) => building.id === buildingId && building.type === BUILDING_TYPE.WUGUAN);
+    const catalog = SKILL_CATALOG[hall?.skillSet] || [];
+    const skill = catalog.find((entry) => entry.name === learn[1]?.trim());
+    const result = !hall
+      ? { logs: [{ t: "sys", text: "  此处没有武馆。" }] }
+      : skill
+        ? buySkill(state, skill)
+        : { logs: [{ t: "sys", text: `  ${hall.name}可学：${catalog.map((entry) => entry.name).join("、")}。` }] };
+    return { kind: "result", localKind: "buySkill", result };
+  }
   const questMatch = /^推进任务\s+(\S+)(?:\s+(.+))?$/.exec(command.trim());
   if (questMatch) {
     const quest = QUCUO_QUESTS.find((entry) => entry.localOnly && (entry.id === questMatch[1] || entry.title === questMatch[1]));
@@ -107,6 +125,7 @@ export function parseLocalCommand(text, state = {}, { surface = "web" } = {}) {
       { t: "sys", text: "  eat/drink <物品>  吃喝" },
       { t: "sys", text: "  用/服 <丹药>  服用消耗品（回血等，探索态即时结算）" },
       { t: "sys", text: "  买暗器 [货名]  在唐门暗器铺看货或购买" },
+      { t: "sys", text: "  学武 [武学名]  在当前武馆查看或学习武学" },
       { t: "sys", text: `  推进任务 唐1·暗巷来客 [暗查取证${surface === "cli" ? "/硬闯截货" : ""}]  推进唐门任务` },
       { t: "sys", text: "  practice <武功>  运功修炼" },
       { t: "sys", text: "  ◈行动/◎对话/◆私聊旁白 三态切换：行动消耗回合，对话与私聊不消耗回合" },
