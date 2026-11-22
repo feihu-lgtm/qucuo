@@ -1,4 +1,5 @@
 import FacePanel from "../components/FacePanel.jsx";
+import { uiStore } from "../../store/uiStore.js";
 import { unlockedCompanions } from "../../domain/rules/companion/companion.js";
 import ProfileModule from "./right/ProfileModule.jsx";
 import EquipmentBonusModule from "./right/EquipmentBonusModule.jsx";
@@ -10,13 +11,13 @@ import EquipmentModule from "./right/EquipmentModule.jsx";
 import InventoryModule from "./right/InventoryModule.jsx";
 import NarratorModule from "./right/NarratorModule.jsx";
 import JianghuModule from "./right/JianghuModule.jsx";
-import { chromeBtn } from "../../utils/theme.js";
-import { uiStore, OVERLAY, openOverlay } from "../../store/uiStore.js";
+import QuestModule from "./right/QuestModule.jsx";
 
 const MODULES = {
   profile: ProfileModule, equipmentBonus: EquipmentBonusModule, attributes: AttributesModule,
   team: TeamModule, skills: SkillsModule, combatMoves: CombatMovesModule,
   equipment: EquipmentModule, inventory: InventoryModule, narrator: NarratorModule, jianghu: JianghuModule,
+  quest: QuestModule,
 };
 
 const isKeyboardBlocked = () => uiStore.getState().overlays.length > 0;
@@ -36,11 +37,7 @@ export default function RightPanel(props) {
     <div data-testid="right-panel" style={isMobile
       ? { ...S.panel, flex: 1, minHeight: 0, borderRight: "none", display: mobileColumn === "right" ? "flex" : "none" }
       : { flex: 30, ...S.panel, borderRight: "none", minHeight: 0 }}>
-      <div style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        侠客
-        <button type="button" title="查看任务进度" style={{ ...chromeBtn(zoneTheme), fontFamily: "inherit" }}
-          onClick={() => openOverlay(OVERLAY.QUEST_LOG)}>任务</button>
-      </div>
+      <div style={S.label}>侠客</div>
       <FacePanel faces={faces} theme={zoneTheme} label="侠客" isMobile={isMobile}
         renderModule={renderModule} isModuleVisible={isModuleVisible} isKeyboardBlocked={isKeyboardBlocked} />
     </div>

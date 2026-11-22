@@ -165,6 +165,7 @@ export default function GameLayout({ layout }) {
 
         <RightPanel
           isMobile={isMobile} mobileColumn={mobileColumn} faces={rightFaces}
+          questProgress={questProgress} flags={flags}
           zoneTheme={zoneTheme} S={ui.S}
           char={char} inv={inv} skills={skills} exp={exp} pot={pot}
           playerAvatar={ui.playerAvatar}
