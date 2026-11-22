@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getRngState, setRngState, setSeed } from "../../core/rng.js";
+import { getRngState, setRngState, setSeed } from "../../infra/rng.js";
 import {
   buySkill,
   buyBook,

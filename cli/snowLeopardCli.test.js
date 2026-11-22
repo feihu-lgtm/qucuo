@@ -2,18 +2,18 @@ import { afterEach, expect, it } from "vitest";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createSession } from "../../cli/runner.mjs";
-import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports/ai.js";
-import { QUCUO_QUESTS } from "../domain/data/quests/qucuoQuests.js";
-import { gameStore } from "../store/gameStore.js";
+import { createSession } from "./runner.mjs";
+import { createMockAi, createRecordingAi, createReplayAi } from "../src/engine/ports/ai.js";
+import { QUCUO_QUESTS } from "../src/domain/data/quests/qucuoQuests.js";
+import { gameStore } from "../src/store/gameStore.js";
 
 let directory;
 afterEach(() => { if (directory) rmSync(directory, { recursive: true, force: true }); });
 
 it("records and replays the seeded opening leopard quest without a second unlock", async () => {
   directory = mkdtempSync(join(tmpdir(), "snow-leopard-cli-"));
-  const script = readFileSync(new URL("../../tests/cli/snow-leopard-quest.txt", import.meta.url), "utf8");
-  const replies = JSON.parse(readFileSync(new URL("../../tests/cli/snow-leopard-quest-replies.json", import.meta.url), "utf8"));
+  const script = readFileSync(new URL("../tests/cli/snow-leopard-quest.txt", import.meta.url), "utf8");
+  const replies = JSON.parse(readFileSync(new URL("../tests/cli/snow-leopard-quest-replies.json", import.meta.url), "utf8"));
   const recorded = [];
   const ai = createRecordingAi(createMockAi(replies), (entry) => recorded.push(entry));
   for (const backend of [ai, createReplayAi(recorded)]) {

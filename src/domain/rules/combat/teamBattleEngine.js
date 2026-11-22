@@ -41,7 +41,7 @@
 //   5. 全部单位行动完毕后，返回本回合的完整战报（供UI渲染）。
 // ============================================================================
 
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { resolveTurn, applyEndOfTurnStatus } from "./resolveTurn.js";
 import { finalizeDuelRound } from "./finalizeDuelRound.js";
 import { applyStatus, applyMark, dispelControlDrain } from "./statusEffects.js";

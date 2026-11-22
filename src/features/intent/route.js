@@ -4,7 +4,7 @@ import { gateRecognition, confirmLine, ROUTES } from "../../domain/rules/intent/
 import { validatePlan } from "../../domain/rules/intent/systemGate.js";
 import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
 import { parseDir } from "../../utils/mudHelpers.js";
-import { turnMonitor } from "../../core/turnMonitor.js";
+import { turnMonitor } from "../../infra/turnMonitor.js";
 
 export function shouldRecognize(apiCfg, cmd, opts = {}) {
   const text = String(cmd || "").trim();

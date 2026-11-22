@@ -7,7 +7,7 @@ const spirits = ["吃好了", "挠痒痒", "对村里有恩", "力气够大", "�
 
 async function loadOpeningSave(page, flags) {
   await page.evaluate(async (savedFlags) => {
-    const { buildInitialGameState } = await import("/src/core/newGame.js");
+    const { buildInitialGameState } = await import("/src/engine/newGame.js");
     const { importSave } = await import("/src/infra/saves.js");
     const snapshot = { ...buildInitialGameState(null, 42), savedAt: Date.now(), version: 1, rngState: 42, flags: savedFlags, claimedMilestones: [] };
     importSave(JSON.stringify({ kind: "qucuo-save-export", label: savedFlags.length ? "QA trusted leopard" : "QA opening leopard", snapshot }));

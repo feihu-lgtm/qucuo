@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { PHASE, formatTurnStatus, turnMonitor } from "../../core/turnMonitor.js";
+import { PHASE, formatTurnStatus, turnMonitor } from "../../infra/turnMonitor.js";
 import { OVERLAY, openOverlay, useOverlay } from "../../store/uiStore.js";
 import { chromeBtn } from "../theme.js";
 

@@ -8,7 +8,7 @@
 // 数值计算（伤害、克制、成功率），如果每次都让AI自由发挥，同一个NPC今天有这四个
 // 技能明天变成另外四个，战斗和偷窃系统就没有稳定的地基可用。
 
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { rollQuality, QUALITY, makeItem, ITEM_CATEGORY } from "../economy/equipment.js";
 import { makeItemSmart, makeNamedItem, CATALOG_INDEX } from "../../data/items/catalog.js";
 import { ITEM_DISTRIBUTION } from "../../data/items/distribution.js";

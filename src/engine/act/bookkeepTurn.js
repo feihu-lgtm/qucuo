@@ -6,7 +6,7 @@ import { getLedger } from "../../domain/rules/memory/npcLedger.js";
 import { buildPresence } from "../prompt/roundNotes.js";
 import { bindTurnAi, createWebAi } from "../ports/ai.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
-import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
+import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 
 function targetName(target) {
   return typeof target === "string" ? target : target?.name;

@@ -33,7 +33,7 @@ import {
 } from "./hooks/useGameStartup.js";
 import { buildLayoutCtx, buildOverlayCtx } from "./contextBuilders.js";
 import { useWorldRulesRunner } from "./hooks/useWorldRulesRunner.js";
-import { DEFAULT_PRESETS } from "../core/newGame.js";
+import { DEFAULT_PRESETS } from "../engine/newGame.js";
 import { selectEffectiveStats } from "../features/stats/logic.js";
 import { hasApiCredentials, saveConfig } from "../infra/apiConfig.js";
 import { chromeBtn } from "../ui/theme.js";

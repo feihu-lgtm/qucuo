@@ -2,7 +2,7 @@
 // 单独成文件是因为 playTurn（含 CLI 路径）只需要它，不能拖进 turnContext.js 的
 // 前端资源依赖（portraits 的 .webp 在 node 下无法加载）。
 
-import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
+import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 
 export function createPhaseSetter(ctx, trace) {
   return (phase) => {

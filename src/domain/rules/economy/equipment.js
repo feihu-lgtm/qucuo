@@ -1,4 +1,4 @@
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import { computePassiveBonus } from "../../data/kungfu/qucuoKungfu.js";
 // 装备与物品系统
 // 三大分类（武器/护甲/饰品）各自不限数量存放在背包里，

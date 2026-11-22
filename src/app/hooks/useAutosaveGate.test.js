@@ -17,7 +17,7 @@ vi.mock("../../infra/saves.js", async (importOriginal) => ({
   autoSave: vi.fn(() => ({ ok: true })),
   buildSnapshot: vi.fn(() => ({ fake: "snapshot" })),
 }));
-vi.mock("../../core/autosaveScheduler.js", () => ({
+vi.mock("../../features/autosaveScheduler.js", () => ({
   createAutosaveScheduler: vi.fn((cfg) => {
     capturedSchedulerCfg = cfg;
     return {

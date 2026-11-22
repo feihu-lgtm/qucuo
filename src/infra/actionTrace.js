@@ -1,4 +1,4 @@
-import { getTurnContext, turnMonitor } from "../core/turnMonitor.js";
+import { getTurnContext, turnMonitor } from "./turnMonitor.js";
 
 export const getTraceLog = turnMonitor.getTrees;
 export function getPipelineEntries() {

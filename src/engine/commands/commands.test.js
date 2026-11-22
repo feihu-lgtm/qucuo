@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { COMMANDS, INVENTORY_COMMAND_IDS } from "../../core/commands.js";
+import { COMMANDS, INVENTORY_COMMAND_IDS } from "../../infra/commands.js";
 import {
   COMMAND_REGISTRY, HOOK_COMMANDS, classifyActCommand, classifyCliCommand,
 } from "./index.js";
 
 // 契约：HOOK_COMMANDS 由注册表的 hooks 字段生成，handler→命令 id 映射与各
-// hook 文件实际返回的键一一对应（由 core/commandScheduler.test.js 迁入，
+// hook 文件实际返回的键一一对应（由 engine/commands/commandScheduler.test.js 迁入，
 // 原用例只改了 import 来源，断言不变）。
 const hookFiles = {
   useScreenHandlers: "src/app/hooks/useScreenHandlers.js",
@@ -81,7 +81,7 @@ describe("命令注册表", () => {
     }
   });
 
-  it("classifyActCommand 按输入形态归类（从 core/commands.js 迁入）", () => {
+  it("classifyActCommand 按输入形态归类（从 infra/commands.js 迁入）", () => {
     // 契约：autoTravel>whisper>方向/move>talk>settle>localCommand>typedAction 的顺序不变。
     expect(classifyActCommand({ rawCmd: "随便", opts: { autoTravel: true } })).toBe("autoTravel");
     expect(classifyActCommand({ rawCmd: "随便", interactMode: "whisper" })).toBe("actWhisper");

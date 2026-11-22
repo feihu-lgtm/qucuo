@@ -1,7 +1,7 @@
 import { webcrypto } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { bindTurnAi, createWebAi } from "../engine/ports/ai.js";
-import { turnMonitor } from "../core/turnMonitor.js";
+import { turnMonitor } from "./turnMonitor.js";
 import { buildExtractionCfg } from "../domain/rules/prompt/extractionEngine.js";
 import { hasApiKey as tavernHasCredentials } from "../engine/ports/storyteller.js";
 import { hasApiKey as battleHasCredentials } from "../engine/ports/storyteller.js";

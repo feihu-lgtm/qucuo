@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { random } from "../../../core/rng.js";
+import { random } from "../../../infra/rng.js";
 import {
   CHANG_KOU, SKINS, JADE_TIERS, GRADE,
   birthStone, cutSlot, appraiseStone,

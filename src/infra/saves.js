@@ -11,7 +11,7 @@
 // 关页兜底：IDB 异步写关页来不及落盘，故 autoSave 顺带尽力同步写一份 LS；init 取 IDB 与 LS 较新者。
 
 import { statsForQuality } from "../domain/rules/economy/equipment.js";
-import { getRngState } from "../core/rng.js";
+import { getRngState } from "./rng.js";
 
 const AUTOSAVE_KEY = "wuxia_mud_autosave";       // 旧 localStorage 键（迁移/降级用）
 const SLOTS_INDEX_KEY = "wuxia_mud_save_slots";

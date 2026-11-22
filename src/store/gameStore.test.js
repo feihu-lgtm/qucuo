@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSnapshot } from "../infra/saves.js";
 import { GAME_KEYS, gameActions, gameStore, initGameStore } from "./gameStore.js";
 import { snapshotFromStore } from "./persist.js";
-import { setRngState } from "../core/rng.js";
+import { setRngState } from "../infra/rng.js";
 
 afterEach(() => {
   initGameStore({});

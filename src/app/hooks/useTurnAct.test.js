@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { gameStore, initGameStore } from "../../store/gameStore.js";
-import { turnMonitor } from "../../core/turnMonitor.js";
+import { turnMonitor } from "../../infra/turnMonitor.js";
 import { playTurn } from "../../engine/playTurn.js";
 import { loadSquares } from "../../domain/rules/map/mapSquares.js";
 import { useTurn } from "./useTurn.js";

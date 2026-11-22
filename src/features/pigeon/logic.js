@@ -1,5 +1,5 @@
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
-import { random } from "../../core/rng.js";
+import { random } from "../../infra/rng.js";
 import { AFFECTION_RULES } from "../../domain/rules/state/fields.js";
 import { makeItem } from "../../domain/rules/economy/equipment.js";
 import { registerFact } from "../../domain/rules/prompt/knowledge.js";

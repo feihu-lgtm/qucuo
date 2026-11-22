@@ -1,9 +1,9 @@
 // AI 统一调用传输层：各供应商协议的请求装配、超时、流式与非流式收发。
 // 配置存储/迁移在 apiConfig.js；本文件只管「把请求发出去、把响应收回来」。
-import { observeAi } from "../core/observeAi.js";
+import { observeAi } from "./observeAi.js";
 import { readSSE, stripReasoning } from "./apiSse.js";
 import { getStoredVertexHeaders } from "./vertexCredentials.js";
-import { getApiModel } from "../core/apiModel.js";
+import { getApiModel } from "./apiModel.js";
 import {
   API_TYPES, applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
   clampMaxTokensForProvider, DEFAULT_CALL_TOKEN_LIMITS, migrateProvider,

@@ -9,7 +9,7 @@ import { initialVarTree } from "../domain/rules/prompt/mvu.js";
 import { seedKnowledge } from "../domain/rules/prompt/knowledge.js";
 import { initCompanionState } from "../domain/rules/companion/companionState.js";
 import { CURRENT_VERSION } from "../infra/version.js";
-import { setRngState, setSeed } from "./rng.js";
+import { setRngState, setSeed } from "../infra/rng.js";
 
 export const DEFAULT_PRESETS = [QUCUO_PRESET];
 

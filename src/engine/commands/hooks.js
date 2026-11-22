@@ -1,5 +1,5 @@
 // Web 侧 hook → 命令 id 映射，作为注册表条目并入 COMMAND_REGISTRY：
-// 每条 {id, hooks:{组名:[handler 名]}}，HOOK_COMMANDS 由此生成（旧 core/commands.js
+// 每条 {id, hooks:{组名:[handler 名]}}，HOOK_COMMANDS 由此生成（旧 infra/commands.js
 // 字面量的一对一搬运，handler→id 映射完全不变）。
 export const HOOK_ENTRIES = [
   { id: "npcLook", hooks: { useScreenHandlers: ["handleNpcLook"] } },

@@ -6,7 +6,7 @@
 // 每个意图类型的提取范围不同——look 只需要场景刷新，战斗需要 HP/掉落，
 // 聊天只需要好感度。按意图精确提问可以大幅提升提取准确率（token 少、任务聚焦）。
 
-import { apiModelField, getApiModel } from "../../../core/apiModel.js";
+import { apiModelField, getApiModel } from "../../../infra/apiModel.js";
 import { EXTRACTION_SPECS, renderExtractionSpec } from "./extractionSpecs.js";
 import { getPresentNpcs } from "./promptRefs.js";
 

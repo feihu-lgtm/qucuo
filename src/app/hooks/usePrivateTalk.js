@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { snowLeopardHint } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { callModel, callModelStream } from "../../infra/apiConfig.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
-import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
+import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 import {
   NNPC_STAGE, isInSea, gateWhisperTopics, gateQuestTopic,
 } from "../../domain/rules/narrator/narrator.js";

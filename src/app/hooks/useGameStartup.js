@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useInitialRestore } from "./useAutosave.js";
-import { buildInitialGameState } from "../../core/newGame.js";
+import { buildInitialGameState } from "../../engine/newGame.js";
 import { initGameStore } from "../../store/gameStore.js";
 import { OVERLAY, initializeUiOverlays, toggleOverlay } from "../../store/uiStore.js";
 import { attachImportedRegistry } from "../../domain/data/character/characterMilestones.js";

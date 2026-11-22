@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { gameActions, gameStore, markGameReplaced } from "../../store/gameStore.js";
-import { turnMonitor } from "../../core/turnMonitor.js";
+import { turnMonitor } from "../../infra/turnMonitor.js";
 import { createMockAi } from "../ports/ai.js";
 import { getLedger } from "../../domain/rules/memory/npcLedger.js";
 import { getDistrictAnchor } from "../../domain/rules/map/innerMap.js";

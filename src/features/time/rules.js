@@ -1,4 +1,4 @@
-import { random } from "../../core/rng.js";
+import { random } from "../../infra/rng.js";
 import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 import { mapDescriptionToGenParams } from "../../domain/data/npc/npcDescriptionMapping.js";
 import { NPC_POOL, toRoomNpc } from "../../domain/data/npc/npcPool.js";

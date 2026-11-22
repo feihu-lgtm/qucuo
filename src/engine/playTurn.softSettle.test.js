@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PHASE, turnMonitor } from "../core/turnMonitor.js";
+import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
 import { gameActions, gameStore } from "../store/gameStore.js";
 import { runTurn } from "./runTurn.js";
 import { playTurn } from "./playTurn.js";
