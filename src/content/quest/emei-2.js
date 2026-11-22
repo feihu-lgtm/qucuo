@@ -364,7 +364,7 @@ export default { quest: {
         completionFlag: ["quest_emei4_normal", "quest_emei4_full"],
         choices: [
           { flag: "quest_emei4_normal", label: "受常规结盟·剑庐精锐进驻", resolve: "none", narration: "照微率十二名剑庐精锐与四名慈济医尼随你进驻曲措前线——回风剑阵破敌、慈济施药减损，都已安排妥当。" },
-          { flag: "quest_emei4_full", label: "倾巢相助·受金顶剑谕", resolve: "none", requiresFactionRep: { 峨眉派: 140 }, narration: "玄尘师太将一轴金顶剑谕按进你掌心：照微、虚白道姑、铁莲和尚、司徒瑛四位高手齐赴曲措——天龙教血刀部援军与沿途毒阵，自有峨眉替你压下。" },
+          { flag: "quest_emei4_full", label: "倾巢相助·受金顶剑谕", resolve: "none", requiresFactionRep: { 峨眉派: 100 }, narration: "玄尘师太将一轴金顶剑谕按进你掌心：照微、虚白道姑、铁莲和尚、司徒瑛四位高手齐赴曲措——天龙教血刀部援军与沿途毒阵，自有峨眉替你压下。" },
         ],
         onReach: {
           byFlag: {
