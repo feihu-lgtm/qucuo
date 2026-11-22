@@ -62,16 +62,19 @@ describe("府5·斗地主", () => {
     expect(open("miasma", [F.wuxianAlly])).toEqual(["quest_ts5_miasma_clear"]);
     expect(open("miasma", [F.wuxianPoisonTusi])).toEqual(["quest_ts5_miasma"]);
     expect(open("miasma", [F.baihuaAlly])).toContain("quest_ts5_miasma_cured");
+    expect(open("miasma", [F.emeiFull])).toContain("quest_ts5_miasma_cured");
+    expect(open("miasma", [F.emeiAlly])).toEqual(["quest_ts5_miasma"]);
+    expect(open("ambush", [F.emeiFull])).toContain("quest_ts5_ambush_spotted");
     expect(open("ambush", [F.tangmenAlly])).toEqual(["quest_ts5_ambush_none"]);
     expect(open("ambush", [F.gaibangScouts])).toContain("quest_ts5_ambush_spotted");
     expect(open("ambush", [F.tusiCrossbowExposed])).toContain("quest_ts5_ambush_spotted");
   });
 
   it("各家援军按合稿削弱亲兵，鱼定村走暗渡奇袭", () => {
-    const all = [F.gaibangAlly, F.heifengRaid, F.tangmenAlly, F.xueshanAlly, F.baihuaAlly, F.yudingAlly];
+    const all = [F.gaibangAlly, F.heifengRaid, F.tangmenAlly, F.xueshanAlly, F.emeiAlly, F.baihuaAlly, F.yudingAlly];
     expect(open("guard", all)).toEqual(stage("guard").completionFlag);
     const caps = Object.fromEntries(stage("guard").choices.map((c) => [c.flag, c.combatNpc?.levelCap ?? null]));
-    expect(caps).toMatchObject({ quest_ts5_guard: 4, quest_ts5_guard_baihua: 2, quest_ts5_guard_yuding: null });
+    expect(caps).toMatchObject({ quest_ts5_guard: 4, quest_ts5_guard_emei: 3, quest_ts5_guard_baihua: 2, quest_ts5_guard_yuding: null });
   });
 
   it("梅朵代管要府4推举或锦官城支持继位，结局都记终局胜利", () => {
