@@ -285,6 +285,20 @@ const items = {
 "冷月拂柳剑": { name:"冷月拂柳剑", category:"weapon", quality:"橙", tags:["武器","剑","镇派","峨眉"], effect:{ ignoreDefenseRatio: 0.35 }, sixDim:{身法:2,悟性:1}, desc:"剑庐密藏的百炼细剑，剑脊薄如柳叶却韧而不折，只此一柄，唯本门心腹方能请出。" },
 "峨眉青玉弟子令": { name:"峨眉青玉弟子令", category:"misc", quality:"绿", tags:["信物","门派","峨眉"], desc:"峨眉剑庐正式弟子的青玉令牌，一面刻普贤，一面刻太极。" },
 "青城玄门竹牌": { name:"青城玄门竹牌", category:"misc", quality:"绿", tags:["信物","门派","青城"], desc:"青城派正式弟子的竹制腰牌，正面烙「青城天下幽」，背面刻着拜入那日的干支。" },
+// ── 丐帮三星分舵（广汉）：分舵吃食、任务物件 ──
+"广汉大锅盔": { name: "广汉大锅盔", category: "misc", quality: "白", tags: ["食品", "主食", "广汉"], consumable: { hpRestore: 0.1 }, desc: "烤得焦黄酥脆的死面饼，咬着费牙却极顶饿，是川北赶路人的硬通货。" },
+"广汉干粮": { name: "广汉干粮", category: "misc", quality: "白", tags: ["食品", "干粮", "广汉"], consumable: { hpRestore: 0.08 }, desc: "白婶用糙米和炒面捏的干粮团，一包三个，揣在怀里走三天都不坏。" },
+"叫化土鸡": { name: "叫化土鸡", category: "misc", quality: "绿", tags: ["食品", "荤菜", "广汉"], consumable: { hpRestore: 0.15 }, desc: "破庙大灶边拿黄泥裹着煨出来的土鸡，敲开泥壳，油香能飘出半条街。" },
+"三星叫化鸡": { name: "三星叫化鸡", category: "misc", quality: "蓝", tags: ["食品", "荤菜", "广汉", "送礼"], consumable: { hpRestore: 0.25, sixDimTemp: { 体魄: 1 } }, desc: "白婶拿荷叶裹、沱江黄泥封，在破庙大灶里焖出的拿手绝活。吃了大补气血，送给严九斤这样的江湖豪客最涨交情。" },
+"驱寒老姜酒": { name: "驱寒老姜酒", category: "misc", quality: "绿", tags: ["酒", "驱寒"], consumable: { energyRestore: 3 }, desc: "烈性川北烧酒泡老姜，喝一口从嗓子眼辣到脚底，驱寒气，也回真气。" },
+"跌打酒": { name: "跌打酒", category: "misc", quality: "绿", tags: ["酒", "药酒", "疗伤"], consumable: { hpRestore: 0.15 }, desc: "分舵自泡的跌打药酒，红花、三七、川芎泡在烧酒里，擦在伤处火辣辣的。" },
+"三十年青稞陈酿": { name: "三十年青稞陈酿", category: "misc", quality: "紫", tags: ["酒", "送礼"], consumable: { energyRestore: 6, hpRestore: 0.1 }, desc: "严九斤埋在地窖里三十年的青稞老酒，开坛那夜全舵篝火通明。拿去送人是重礼，自己喝能回满一口真气。" },
+"古墟清心散": { name: "古墟清心散", category: "misc", quality: "蓝", tags: ["药散", "解毒", "三星"], consumable: { dispelAll: true, energyRestore: 2 }, desc: "青铜面人回赠的千年古方药粉，闻着有股青铜锈味。服下心神一清，身上的毒与乱一并化开。" },
+"川西行路图（残）": { name: "川西行路图（残）", category: "misc", quality: "绿", tags: ["地图", "情报", "丐帮"], desc: "察世堂弟子阿狗拼死带回的油布行路图，标着血刀部在大草甸的几处暗哨，一角浸了血，看不清了。" },
+"对账铁证抄本": { name: "对账铁证抄本", category: "misc", quality: "蓝", tags: ["证据", "账册", "丐帮"], desc: "周小满把《逃民口供簿》与鱼定村、玉泉寨的田契抄本逐户对上的账册，末页夹着一张盖土司私印的批条。" },
+"残纹竹板": { name: "残纹竹板", category: "misc", quality: "蓝", tags: ["信物", "三星", "丐帮"], desc: "哑巴七亲手交给你的半块竹板，刻着半枚云雷纹。拿着它走老槐树后的石径，雾里的人不会对你拔剑。" },
+"青铜鸟羽饰": { name: "青铜鸟羽饰", category: "misc", quality: "紫", tags: ["青铜器", "三星", "任务"], desc: "从盗墓贼手里夺回的青铜鸟羽，羽尖缺了一角，绿锈下透着铜光。这是古墟里的东西，该还回去。" },
+"叫化鸡秘方": { name: "叫化鸡秘方", category: "misc", quality: "绿", tags: ["食谱", "丐帮"], desc: "白婶写在半张草纸上的叫化鸡做法：荷叶要两层，黄泥要沱江的，火要先猛后文。最后一行写着「别告诉胡三」。" },
 };
 
 export default { item: items, itemGroup: { SUNDRIES: Object.keys(items) } };

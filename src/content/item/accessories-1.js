@@ -104,7 +104,17 @@ const items = {
     name: "老兵烟斗", category: "accessory", quality: "白",
     effect: { lowHpBonus: 0.1 },
     desc: "老兵退伍汉用了十几年的烟斗，斗钵磕掉一小块瓷。他说是战场上磕的——趴地上装死，烟斗硌着胸口，敌人走过去他才敢翻身。烟斗还在，敌人不在了。命悬一线时，反而稳。",
-  }
+  },
+// ── 丐帮三星分舵（广汉） ──
+"磨损藏银火镰": { name: "磨损藏银火镰", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 气运: 2 }, desc: "三十年前老土司桑杰大侠随手赠给落难少年的防身火镰，银面磨得发亮，刻着残缺的鱼定纹。严九斤一直贴身带着。" },
+"铜框单边镜": { name: "铜框单边镜", category: "accessory", quality: "蓝", sixDim: { 智谋: 2 }, desc: "广汉老匠人配的铜框水晶单边镜，缺了一条腿。周小满靠它夜读小字，辨认伪契上的墨迹。" },
+"红绳铜哨": { name: "红绳铜哨", category: "accessory", quality: "绿", sixDim: { 魅力: 1 }, desc: "拴着红绳的铜哨，一吹便能召集方圆三里内的分舵弟子结阵。胡三爷吹它从来不用第二声。" },
+"缺齿黄杨算盘": { name: "缺齿黄杨算盘", category: "accessory", quality: "蓝", sixDim: { 智谋: 2 }, desc: "白婶亡夫留下的黄杨算盘，缺了两颗珠子，却比谁的都算得快。" },
+"断耳牦牛角坠": { name: "断耳牦牛角坠", category: "accessory", quality: "绿", sixDim: { 体魄: 1 }, desc: "多吉逃离玉泉寨前，从老牧场捡来的半截牦牛角，磨成了坠子。他说等打回去，要把家里两头白牦牛牵回来。" },
+"青铜小铃": { name: "青铜小铃", category: "accessory", quality: "紫", sixDim: { 悟性: 2, 气运: 1 }, desc: "百年前三星派赠给历代守约人的信物。摇起来没有声音——只有走进古墟的雾里，它才会响。" },
+"铜铃竹哨": { name: "铜铃竹哨", category: "accessory", quality: "绿", sixDim: { 身法: 1 }, desc: "察世堂外围探子常用的小哨，佩在腰间身法微增，野外遇险吹响能惊走埋伏的人。" },
+"紫皮闷倒驴葫芦": { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫", effect: { energyRestore: 1 }, sixDim: { 体魄: 1 }, desc: "严九斤托老皮匠缝的紫皮酒葫芦，装的是能闷倒一头驴的烧酒。佩着它，每回合都像抿了一口。" },
+"八袋长老令": { name: "八袋长老令", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 智谋: 1 }, desc: "严九斤亲手交给你的八袋长老竹令，背面刻着「三星分舵」。拿着它在川西任何一个叫花子面前亮一亮，都有人替你传话。" },
 };
 
 export default { item: items, itemGroup: { ACCESSORIES: Object.keys(items) } };

@@ -45,6 +45,22 @@ export const QUCUO_SHOPS = {
       { name: "银鳞圣母鞭", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100 },
     ],
   },
+  // 丐帮三星分舵·分舵义坊（合稿·丐帮 6.2）。minRep 未到不摆；member 货要拜入，外客按 guestRep。
+  三星分舵商坊: {
+    shopName: "分舵义坊",
+    items: [
+      { name: "广汉大锅盔", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "晒干青竹棍", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "粗麻百衲衣", category: ITEM_CATEGORY.ARMOR, quality: "绿" },
+      { name: "驱寒老姜酒", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "铜铃竹哨", category: ITEM_CATEGORY.ACCESSORY, quality: "绿", minRep: 15 },
+      { name: "铁头打狗棒", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "察世轻行履", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 40 },
+      { name: "三星叫化鸡", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 40 },
+      { name: "紫皮闷倒驴葫芦", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 80 },
+      { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 140 },
+    ],
+  },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。
