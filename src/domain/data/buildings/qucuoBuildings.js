@@ -131,6 +131,10 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "村口老槐树下支着几间竹编鸽笼，看笼的老汉每日清晨放三只信鸽出来，任由往来客商领去，图的是曲措乡这条邮路越走越熟。",
     },
     {
+      id: "wuguan_shaiguchang", name: "晒谷演武场", type: BUILDING_TYPE.WUGUAN, skillSet: "鱼定",
+      desc: "村长院后侧一片压得死实的夯土晒谷场，秋收晒青稞，平日里老猎户和护镖老卒就在这儿指点村中后生练些护身实招。",
+    },
+    {
       id: "forge_yiding", name: "铁匠铺", type: BUILDING_TYPE.FORGE,
       desc: "村东头一间冒着黑烟的铁匠铺，老铁匠祖上三代打铁，寻常农具兵器都能打，也接客人拿料定制的活计。",
     },

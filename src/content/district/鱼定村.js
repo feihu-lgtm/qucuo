@@ -59,6 +59,7 @@ export default { district: {
         desc: "村里唯一的正经商号，日常货品都能在此置办。",
         exits: { n: "村口", s: "赌坊", w: "村口·广场" },
         buildingId: "shop_yiding",
+        residentNpcName: "周铭章",
       },
       老孙饭馆: {
         x: 0, y: -1,
@@ -89,7 +90,7 @@ export default { district: {
         privateHome: true,
         x: -2, y: 1,
         desc: "前村长的旧宅，如今冷清了不少，堂屋里还挂着几件遗物没舍得挪动。",
-        exits: { e: "村口·广场" },
+        exits: { e: "村口·广场", w: "界石旧窖", s: "晒谷演武场" },
       },
       护镖站: {
         x: 1, y: -1,
@@ -118,7 +119,7 @@ export default { district: {
         privateHome: true,
         x: -1, y: 2,
         desc: "靠近熊山方向的一间木屋，屋外挂着风干的兽皮和陷阱工具，老猎户常年住在此处。",
-        exits: { n: "村口·广场" },
+        exits: { n: "村口·广场", w: "晒谷演武场" },
         residentNpcName: "老猎户",
       },
       大娘家: {
@@ -127,6 +128,18 @@ export default { district: {
         desc: "鱼定大娘的家，屋前常年支着一口熬糌粑的大锅，是全村消息最灵通的地方之一。",
         exits: { n: "歇马居" },
         residentNpcName: "鱼定大娘",
+      },
+      晒谷演武场: {
+        x: -2, y: 2,
+        desc: "村长院后侧一片压得死实的夯土晒谷场，秋收晒青稞，平日里老猎户和护镖老卒就在这儿指点村中后生练些护身实招。",
+        exits: { n: "村长府", e: "猎户小屋" },
+        buildingId: "wuguan_shaiguchang",
+      },
+      界石旧窖: {
+        x: -3, y: 1,
+        desc: "挪开村长府西墙角那口常年空置的大青稞缸，底下是一道潮冷的石阶，暗窖油灯下并排封存着三十年前的鱼鳞真账、老界石原拓，以及全村偷偷攒下的救急粮药。",
+        exits: { e: "村长府" },
+        unlockCondition: { type: "flag", flag: "flag_yuding_deed_clue" },
       },
       铁匠铺: {
         x: 2, y: -1,

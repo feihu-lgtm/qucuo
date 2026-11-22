@@ -1,6 +1,8 @@
 // 势力医馆的日常善举（合稿各派「声誉·加分行为」）：每游戏日一次，涨本派声誉与威望。
 // 峨眉慈济佛堂：布施 20 两救济曲措逃民 +5、威望 +2；声誉 ≥ 15 免诊金。
-// 青城药圃：随玉真子采药义诊（耗两个时辰）+8、威望 +3。两处声誉 ≤ -20 都拒诊。
+// 青城药圃：随玉真子采药义诊（耗两个时辰）+8、威望 +3。
+// 鱼定村歇马居：托鱼定大娘给寒户捐 20 两粮药，鱼定村 +5、威望 +1（合稿「鱼定村·七、7.1」加分行为 3）。
+// 各处声誉 ≤ -20 都拒诊。
 import { factionRepOf, formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 
 export const FACTION_CLINICS = {
@@ -17,6 +19,13 @@ export const FACTION_CLINICS = {
     deed: "随玉真子上山采药，替染瘴百姓义诊",
     settle: "随玉真子上后山采了一篓草药，又在药圃替雅江染瘴的百姓义诊了两个时辰",
     refuse: "玉真子把篱笆门一掩：「青城药圃不医你这样的人。」",
+  },
+  inn_yiding: {
+    faction: "鱼定村", cost: 20, hours: 0, rep: 5, prestige: 1, freeRep: null, refuseRep: -20,
+    dayFlag: "yuding_alms_day_", label: "托大娘给寒户捐20两粮药", done: "今日已捐",
+    deed: "托鱼定大娘给村里寒户捐了20两粮药",
+    settle: "在歇马居把20两银子交给鱼定大娘，托她换成青稞和药，挨家送到交不起税的寒户手里",
+    refuse: "鱼定大娘把银子推回来：「你的东西，村里人不敢收。」",
   },
 };
 

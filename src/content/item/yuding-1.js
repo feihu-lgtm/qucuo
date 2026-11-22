@@ -1,0 +1,23 @@
+// 鱼定村（鱼定商号声誉货 + 周铭章随身物 + 鱼定村任务奖励）具名物，照全势力合稿「鱼定村」篇。
+const items = {
+"三曲炒面干粮袋": { name: "三曲炒面干粮袋", category: "misc", quality: "绿", tags: ["食品", "鱼定村"], consumable: { hpRestore: 0.25, energyRestore: 2 }, desc: "鱼定大娘监制的酥油红糖炒面，揣在怀里随时果腹，能快速恢复气血体力。" },
+"雅江细盐包": { name: "雅江细盐包", category: "misc", quality: "绿", tags: ["调料", "货物", "鱼定村"], desc: "雪白细腻的官道好盐，既可作上等烹饪辅料，在玉泉寨牧民眼里更是硬通货。" },
+"熊山猎手短刃": { name: "熊山猎手短刃", category: "weapon", quality: "蓝", tags: ["刀", "鱼定村"], desc: "依老猎户图样特制的弯腹猎刀，刀身开血槽，配《熊山剔骨刀》极为趁手。" },
+"藏银避瘴符": { name: "藏银避瘴符", category: "accessory", quality: "蓝", sixDim: { 根骨: 2 }, tags: ["饰品", "避瘴", "鱼定村"], desc: "刻着古藏文平安咒的厚实银牌，内填高原防瘴干草，可显著减免毒瘴侵蚀。" },
+"熊山活血药膏": { name: "熊山活血药膏", category: "misc", quality: "紫", tags: ["药材", "鱼定村"], consumable: { hpRestore: 0.5, dispel: true }, desc: "村中老辈秘传的雪莲熊油膏，战后外敷或急用可大幅拔寒回血。" },
+"三曲通商路引": { name: "三曲通商路引", category: "accessory", quality: "紫", sixDim: { 魅力: 2, 气运: 1 }, tags: ["信物", "鱼定村"], desc: "泽仁村长与周铭章联合签押的鱼定村最高客卿路引，沿途商旅见了都要高看一眼。" },
+"铁骨湘妃折扇": { name: "铁骨湘妃折扇", category: "weapon", quality: "绿", tags: ["扇", "鱼定村"], desc: "周铭章的折扇，扇骨藏精铁，平素装儒雅，急时格挡。" },
+"蜀锦暗纹夹袍": { name: "蜀锦暗纹夹袍", category: "armor", quality: "蓝", tags: ["衣甲", "鱼定村"], desc: "锦官城云锦成衣铺出品的暗纹夹袍，料子极韧。" },
+"冰种翡翠扳指": { name: "冰种翡翠扳指", category: "accessory", quality: "蓝", sixDim: { 智谋: 2 }, tags: ["饰品", "鱼定村"], desc: "陆福生当年赏给周铭章的「通商信物」，不离右手大拇指。" },
+"老孙喜酒": { name: "老孙喜酒", category: "misc", quality: "绿", tags: ["酒", "鱼定村", "任务"], consumable: { energyRestore: 3, sixDimTemp: { 魅力: 1 } }, desc: "老孙为两姓结亲埋下的青稞喜酒，坛口还系着红绳。" },
+"大娘红糖炒面": { name: "大娘红糖炒面", category: "misc", quality: "白", tags: ["食品", "鱼定村", "任务"], consumable: { hpRestore: 0.2 }, desc: "鱼定大娘加了核桃仁和红糖的细炒面，香得能把人从雪窝里勾出来。" },
+"旧界石泥拓": { name: "旧界石泥拓", category: "misc", quality: "绿", tags: ["证物", "鱼定村", "任务"], desc: "从村西河滩老界碑上拓下的泥拓，「三曲」两个字刻痕犹深，底座有新撬的印子。" },
+"暗记草条": { name: "暗记草条", category: "misc", quality: "绿", tags: ["线索", "鱼定村", "任务"], desc: "盐包夹层里翻出的草条，血刀部的暗记写给「鱼定府陆爷」。" },
+"熊山密道羊皮图": { name: "熊山密道羊皮图", category: "misc", quality: "蓝", tags: ["地图", "鱼定村", "任务"], desc: "老猎户用油布裹了三层的熊山猎径图，绕开土司府骑兵正面封锁的路全在上面。" },
+"老猎户的狼牙护符": { name: "老猎户的狼牙护符", category: "accessory", quality: "蓝", sixDim: { 身法: 1, 体魄: 1 }, tags: ["饰品", "鱼定村", "任务"], desc: "老猎户年轻时猎的头狼獠牙，穿在旧皮绳上，传给认下的传人。" },
+"三曲老界石护身拓": { name: "三曲老界石护身拓", category: "accessory", quality: "紫", sixDim: { 体魄: 2, 根骨: 1 }, tags: ["饰品", "鱼定村", "任务"], desc: "重立界石那天拓下的「三曲永安」，叠成小方缝进贴身布袋，全村人的名字都在背面。" },
+"全村粮药契凭": { name: "全村粮药契凭", category: "misc", quality: "紫", tags: ["信物", "鱼定村", "任务"], desc: "全村户主按了手印的粮药契凭，终局之时凭它开鱼定村的地窖。" },
+"广汉细棉布": { name: "广汉细棉布", category: "misc", quality: "绿", tags: ["布料", "任务"], desc: "广汉织坊的细棉布，丐帮周小满托人捎来的谢礼。" },
+"大娘秘制酥油茶壶": { name: "大娘秘制酥油茶壶", category: "misc", quality: "绿", tags: ["食品", "鱼定村", "任务"], consumable: { hpRestore: 0.3, energyRestore: 3 }, desc: "鱼定大娘雪夜塞给你的铜壶，酥油茶一路都是烫的。" },
+};
+export default { item: items, itemGroup: { YUDING_GOODS: Object.keys(items) } };
