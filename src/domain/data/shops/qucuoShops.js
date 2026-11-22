@@ -62,7 +62,7 @@ export const QUCUO_SHOPS = {
     ],
   },
   // 玉泉茶马货栈（玉泉寨·茶马古道中转站，合稿·玉泉寨 六）。白品日用人人有，
-  // 声誉 15/40/80 摆好物，rep100 深交出百年雪水青稞陈酿（合稿写限购两坛，引擎只支持买一次撤柜，先按 limitOnce）。
+  // 声誉 15/40/80 摆好物，rep100 深交出百年雪水青稞陈酿（合稿限购两坛：limitOnce: 2）。
   玉泉货栈: {
     shopName: "玉泉茶马货栈",
     items: [
@@ -76,7 +76,7 @@ export const QUCUO_SHOPS = {
       { name: "巴登跌打接骨膏", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: 40 },
       { name: "索朗精锻牧刀", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 40 },
       { name: "狼牙护心铜镜", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 80 },
-      { name: "百年雪水青稞陈酿", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 100, limitOnce: true },
+      { name: "百年雪水青稞陈酿", category: ITEM_CATEGORY.MISC, quality: "橙", minRep: 100, limitOnce: 2 },
     ],
   },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
@@ -313,7 +313,7 @@ export function buildShopInventory(shopKey) {
       ...makeItem({ name: cfg.name, category: cfg.category, quality: cfg.quality }),
       ...(cfg.minRep == null ? {} : { minRep: cfg.minRep }),
       ...(cfg.member ? { member: true } : {}),
-      ...(cfg.limitOnce ? { limitOnce: true } : {}),
+      ...(cfg.limitOnce ? { limitOnce: cfg.limitOnce } : {}),
     })),
   };
 }

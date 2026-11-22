@@ -68,13 +68,18 @@ describe("玉泉寨", () => {
     expect(factionShopOffer("玉泉货栈", rep(0), null).closed).toContain("茶马货栈");
   });
 
-  it("buys the百年陈酿 once, then it撤柜", () => {
-    const bought = buyFactionShopItem(state(100, { innerRoomName: "玉泉茶马货栈" }), "玉泉货栈", "百年雪水青稞陈酿", 1);
-    expect(bought.logs?.[0]?.text).toBeTruthy();
-    const flags = apply(bought.changes.flags, []);
-    expect(flags).toContain("shop_bought:玉泉货栈:百年雪水青稞陈酿");
-    const again = factionShopOffer("玉泉货栈", rep(100), "outer", flags);
-    expect(names(again)).not.toContain("百年雪水青稞陈酿");
+  it("buys the百年陈酿 twice（合稿限购两坛）, then it撤柜", () => {
+    const shop = state(100, { innerRoomName: "玉泉茶马货栈" });
+    const first = buyFactionShopItem(shop, "玉泉货栈", "百年雪水青稞陈酿", 1);
+    const flags1 = apply(first.changes.flags, []);
+    expect(flags1).toContain("shop_bought:玉泉货栈:百年雪水青稞陈酿");
+    // 第一坛买完还摆着。
+    expect(names(factionShopOffer("玉泉货栈", rep(100), "outer", flags1))).toContain("百年雪水青稞陈酿");
+    const second = buyFactionShopItem({ ...shop, flags: flags1 }, "玉泉货栈", "百年雪水青稞陈酿", 2);
+    const flags2 = apply(second.changes.flags, flags1);
+    // 两坛见底才撤柜。
+    expect(names(factionShopOffer("玉泉货栈", rep(100), "outer", flags2))).not.toContain("百年雪水青稞陈酿");
+    expect(buyFactionShopItem({ ...shop, flags: flags2 }, "玉泉货栈", "百年雪水青稞陈酿", 3).logs[0].text).toContain("已经卖给你了");
   });
 
   it("gates 玉泉 skills by reputation across the 0/15/40/80 ladder", () => {
@@ -129,5 +134,67 @@ describe("玉泉寨", () => {
     // 钱不够不让走赎回分支。
     const broke = playLocalQuestStage(state(0, { char: { money: 0 }, room: { name: "大草甸", npcs: [{ name: "小牧童阿索" }] }, innerRoomName: null }), quest, "花三十两把牛赎回");
     expect(broke.logs[0].text).toContain("30两");
+  });
+
+  const quest = (id) => QUCUO_QUESTS.find((entry) => entry.id === id);
+  const done = (id) => ({ [id]: { status: "completed" } });
+
+  it("泉2 opens at rep ≥10, and its two branches pay the 合稿 rewards", () => {
+    const q = quest("yuquanzhai_2_liruoyoudeshangduizhang");
+    expect(q.giver).toBe("李若由");
+    expect(q.requiresFactionRep).toEqual({ 玉泉寨: 10 });
+    expect(isQuestGateOpen(q, {}, [], rep(10))).toBe(true);
+    expect(isQuestGateOpen(q, {}, [], rep(9))).toBe(false);
+    const open = resolveStageRewards(q.stages[0], ["quest_yuquanzhai2_open"]);
+    expect(open.money).toBe(120);
+    expect(open.factionRep).toMatchObject({ 玉泉寨: 20, 鱼定村: 6, 黑风寨: 4, 土司府: -8 });
+    expect(open.items.map((item) => item.name)).toEqual(["李记商队通行牌", "账房私章抽成条"]);
+    const settle = resolveStageRewards(q.stages[0], ["quest_yuquanzhai2_settle"]);
+    expect(settle.money).toBe(160);
+    expect(settle.factionRep).toMatchObject({ 玉泉寨: 12, 鱼定村: 2, 土司府: -2 });
+  });
+
+  it("泉3 needs 泉2 + rep 25, opens 枯柳暗窖, and marks the wolf-kill prequal", () => {
+    const q = quest("yuquanzhai_3_danzengdemabian");
+    expect(q.giver).toBe("丹增");
+    const progress = { ...done("yuquanzhai_2_liruoyoudeshangduizhang") };
+    expect(isQuestGateOpen(q, progress, [], rep(25))).toBe(true);
+    expect(isQuestGateOpen(q, {}, [], rep(25))).toBe(false);
+    expect(isQuestGateOpen(q, progress, [], rep(24))).toBe(false);
+    const wolf = resolveStageRewards(q.stages[0], ["quest_yuquanzhai3_wolf"]);
+    expect(wolf.flags).toContain("yuquan_bolang_prequal");
+    expect(wolf.factionRep).toMatchObject({ 玉泉寨: 5 });
+    const ret = resolveStageRewards(q.stages[1], ["quest_yuquanzhai3_done"]);
+    expect(ret.flags).toContain("yuquan_kuliu_unlocked");
+    expect(ret.factionRep).toMatchObject({ 玉泉寨: 25, 黑风寨: 5, 土司府: -10 });
+    expect(ret.items.map((item) => item.name)).toEqual(["曲措旧铜筹", "狼筋护腕"]);
+  });
+
+  it("泉4 needs zhaxi_line + 泉1 + rep 30, and its promise branch feeds the romance line", () => {
+    const q = quest("yuquanzhai_4_zhuomadeqingkejiu");
+    expect(q.giver).toBe("卓玛");
+    const progress = { ...done("zhaxi_line"), ...done("yuquanzhai_1_mumutongdemaoniu") };
+    expect(isQuestGateOpen(q, progress, [], rep(30))).toBe(true);
+    expect(isQuestGateOpen(q, done("zhaxi_line"), [], rep(30))).toBe(false);
+    const romance = resolveStageRewards(q.stages[1], ["quest_yuquanzhai4_romance"]);
+    expect(romance.favorability).toMatchObject({ 卓玛: 20 });
+    expect(romance.flags).toContain("zhuoma_romance_line");
+    const friend = resolveStageRewards(q.stages[1], ["quest_yuquanzhai4_friend"]);
+    expect(friend.favorability).toMatchObject({ 卓玛: 10 });
+    expect(friend.flags).toContain("zhuoma_friend_line");
+  });
+
+  it("泉5 needs 泉3 + 泉4 + rep 55, and spares or kills the dark scout per 合稿", () => {
+    const q = quest("yuquanzhai_5_gongcuohaideyueding");
+    const progress = { ...done("yuquanzhai_4_zhuomadeqingkejiu"), ...done("yuquanzhai_3_danzengdemabian") };
+    expect(isQuestGateOpen(q, progress, [], rep(55))).toBe(true);
+    expect(isQuestGateOpen(q, done("yuquanzhai_4_zhuomadeqingkejiu"), [], rep(55))).toBe(false);
+    const spare = resolveStageRewards(q.stages[1], ["quest_yuquanzhai5_spare"]);
+    expect(spare.factionRep).toMatchObject({ 玉泉寨: 30, 鱼定村: 6, 黑风寨: 6 });
+    expect(spare.factionRep.土司府).toBeUndefined();
+    expect(spare.favorability).toMatchObject({ 卓玛: 25, 梅朵: 15 });
+    const kill = resolveStageRewards(q.stages[1], ["quest_yuquanzhai5_kill"]);
+    expect(kill.factionRep).toMatchObject({ 玉泉寨: 40, 土司府: -20 });
+    expect(kill.items.map((item) => item.name)).toContain("卓玛的藏银松石扣");
   });
 });

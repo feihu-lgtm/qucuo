@@ -9,7 +9,7 @@ import { selectEffectiveStats } from "../stats/logic.js";
 
 // 势力商店：货池按该势力声誉定货色和价钱。
 // ≤-60 拒售；-59~-20 只卖 hostileQualities 品阶、加价两成（hostileClosed 的铺面直接闭门）；
-// 其余按势力声誉折扣，minRep 未到的货不摆出来；member 货只卖本门弟子，limitOnce 货买过一次即撤柜（记在 flags）。
+// 其余按势力声誉折扣，minRep 未到的货不摆出来；member 货只卖本门弟子，limitOnce 货限购撤柜（记在 flags；limitOnce:true 限 1 件，limitOnce:N 限 N 件）。
 // 额外两个可选门槛：closedBelowRep 声誉未到的铺面直接闭门（如秘珍坊）；coldItems 冷淡（-19~-1）只摆这几味清水货；
 // hostileItems 则把交恶档按名字限货（不写就走 hostileQualities 品阶过滤）。
 const FACTION_SHOPS = {
@@ -93,6 +93,10 @@ export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];
 export const factionShopOutlet = (shopKey, buildingId) => FACTION_SHOPS[shopKey]?.outlets[buildingId] || null;
 
 const boughtFlag = (shopKey, name) => `shop_bought:${shopKey}:${name}`;
+// 同款 flag 每买一件追加一次，按出现次数计已购量；limitOnce:true 视作 1。
+const limitOf = (limitOnce) => (limitOnce === true ? 1 : Number(limitOnce) || 1);
+const boughtOut = (flags, shopKey, item) =>
+  (flags || []).filter((flag) => flag === boughtFlag(shopKey, item.name)).length >= limitOf(item.limitOnce);
 
 export function factionShopOffer(shopKey, varTree, outlet, flags = []) {
   const shop = FACTION_SHOPS[shopKey];
@@ -106,11 +110,11 @@ export function factionShopOffer(shopKey, varTree, outlet, flags = []) {
   const cold = !hostile && rep < 0 && shop.coldItems;
   const items = buildShopInventory(shopKey).items
     .filter((item) => (!item.member || flags.includes(SECT_MEMBER_FLAGS[shop.faction]))
-      && (!item.limitOnce || !flags.includes(boughtFlag(shopKey, item.name))))
+      && (!item.limitOnce || !boughtOut(flags, shopKey, item)))
     .map((item) => ({
       ...(makeNamedItem(item.name) ?? item),
       ...(item.minRep == null ? {} : { minRep: item.minRep }),
-      ...(item.limitOnce ? { limitOnce: true } : {}),
+      ...(item.limitOnce ? { limitOnce: item.limitOnce } : {}),
     }))
     .filter((item) => rep >= (item.minRep ?? -Infinity)
       && (!hostile || (shop.hostileItems ? shop.hostileItems.includes(item.name) : shop.hostileQualities.includes(item.quality)))
@@ -130,7 +134,7 @@ export function buyFactionShopItem(state, shopKey, itemName, now = Date.now()) {
   const item = offer.items.find((entry) => entry.name === itemName);
   if (!item) {
     const hidden = buildShopInventory(shopKey).items.find((entry) => entry.name === itemName);
-    if (hidden?.limitOnce && (state.flags || []).includes(boughtFlag(shopKey, hidden.name))) return message(`「${hidden.name}」只此一件，已经卖给你了。`);
+    if (hidden?.limitOnce && boughtOut(state.flags, shopKey, hidden)) return message(`「${hidden.name}」只此${limitOf(hidden.limitOnce) > 1 ? `${limitOf(hidden.limitOnce)}件` : "一件"}，已经卖给你了。`);
     if (hidden?.member && !(state.flags || []).includes(SECT_MEMBER_FLAGS[shop.faction])) return message(`「${hidden.name}」只授${shop.faction}本门弟子。`);
     if (hidden) return message(`「${hidden.name}」不对你摆出来：${shop.faction}声誉还不够。`);
     return message(`在售：${offer.items.map((entry) => entry.name).join("、")}。`);
