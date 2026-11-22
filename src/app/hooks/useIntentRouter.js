@@ -6,9 +6,9 @@ import { setIntentPending, armIntentTriggers, fireIntentTriggers, expireIntentTr
 import { turnMonitor, getTurnContext } from "../../core/turnMonitor.js";
 import { applyResult } from "../../features/run.js";
 import { recognizeNpc, tradeWithNpc } from "../../features/npc/logic.js";
-import { ACTION_KINDS, KIND_COMMAND } from "../../domain/intent/actionKinds.js";
-import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
-import { ROUTES, describeAction } from "../../domain/intent/gate.js";
+import { ACTION_KINDS, KIND_COMMAND } from "../../domain/rules/intent/actionKinds.js";
+import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
+import { ROUTES, describeAction } from "../../domain/rules/intent/gate.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../../features/intent/logic.js";
 import { isFreshTyped, planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../../features/intent/route.js";
 import { createAiClassifier, INTENT_TRUNCATED } from "../../engine/intent/aiClassifier.js";

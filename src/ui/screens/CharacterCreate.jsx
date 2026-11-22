@@ -3,8 +3,8 @@
 // 性别写入 char.gender（后续注入每轮 user prompt）。
 import React, { useState } from "react";
 import { ZONE_THEMES } from "../theme.js";
-import { getPendingPlayerCard, clearPendingPlayerCard, clearPendingStarterCompanion } from "../../domain/cards/importedRegistry.js";
-import { adjustSpecial, baseSpecial, drawStarterSkills, remainingSpecialPoints, randomizeSpecial } from "../../domain/character/starterBuild.js";
+import { getPendingPlayerCard, clearPendingPlayerCard, clearPendingStarterCompanion } from "../../domain/rules/cards/importedRegistry.js";
+import { adjustSpecial, baseSpecial, drawStarterSkills, remainingSpecialPoints, randomizeSpecial } from "../../domain/rules/character/starterBuild.js";
 import StatAllocator from "./StatAllocator.jsx";
 import StarterSkillCards from "./StarterSkillCards.jsx";
 

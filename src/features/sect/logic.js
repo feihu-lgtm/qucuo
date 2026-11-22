@@ -1,9 +1,9 @@
-import { add, set, updateField } from "../../domain/state/applyWrite.js";
-import { SECT_ENTRY, checkSectEntry } from "../../domain/character/sectEntry.js";
-import { makeItem } from "../../domain/economy/equipment.js";
-import { makeItemSmart } from "../../domain/items/catalog.js";
-import { markNpcAsKnown } from "../../domain/npc/npcAwareness.js";
-import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+import { add, set, updateField } from "../../domain/rules/state/applyWrite.js";
+import { SECT_ENTRY, checkSectEntry } from "../../domain/rules/character/sectEntry.js";
+import { makeItem } from "../../domain/rules/economy/equipment.js";
+import { makeItemSmart } from "../../domain/data/items/catalog.js";
+import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
+import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 
 export function joinSect(state) {
   const status = checkSectEntry({

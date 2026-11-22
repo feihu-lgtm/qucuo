@@ -1,9 +1,9 @@
-import { narratorVars, setNarratorVars } from "../../domain/prompt/mvu.js";
-import { NNPC_STAGE } from "../../domain/narrator/narrator.js";
-import { COMFORT_ACTIONS, SCENE_ARRIVE, SCENE_RESOLVE, canComfort, describeComfortReject, comfortResponse, defenseLevelOf, availableKnot, canResolve } from "../../domain/narrator/narratorQuest.js";
-import { SEA_OF_MIND, canEnterSea, describeSeaGate, seaEntryHint } from "../../domain/narrator/seaOfMind.js";
-import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
-import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+import { narratorVars, setNarratorVars } from "../../domain/rules/prompt/mvu.js";
+import { NNPC_STAGE } from "../../domain/rules/narrator/narrator.js";
+import { COMFORT_ACTIONS, SCENE_ARRIVE, SCENE_RESOLVE, canComfort, describeComfortReject, comfortResponse, defenseLevelOf, availableKnot, canResolve } from "../../domain/rules/narrator/narratorQuest.js";
+import { SEA_OF_MIND, canEnterSea, describeSeaGate, seaEntryHint } from "../../domain/rules/narrator/seaOfMind.js";
+import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
+import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 
 export function comfort(state, actionKey) {
   const v = narratorVars(state.varTree);

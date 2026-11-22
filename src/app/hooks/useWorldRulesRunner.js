@@ -22,7 +22,7 @@ import {
   xuannuTriggerRule,
 } from "../../features/narrator/rules.js";
 import { applyResult } from "../../features/run.js";
-import * as importedRegistry from "../../domain/cards/importedRegistry.js";
+import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 
 export function useWorldRulesRunner({

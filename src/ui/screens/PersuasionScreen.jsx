@@ -5,7 +5,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { runPersuadeTurn, hintsUnlockedByGuard } from "../../domain/quests/persuasion.js";
+import { hintsUnlockedByGuard } from "../../domain/rules/quests/persuasion.js";
+import { runPersuadeTurn } from "../../engine/ports/persuasion.js";
 
 const webAi = createWebAi();
 

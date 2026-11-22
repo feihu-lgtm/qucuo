@@ -1,5 +1,5 @@
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { getQuestScript } from "../../domain/quests/questScripts.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { getQuestScript } from "../../domain/data/quests/questScripts.js";
 
 // 好感度反幽灵过滤：AI 若对一个"既不在系统在场名单、也不在已知角色表"里的
 // 名字开好感度（开局旁白顺口报的假村民就是这样），把这条 MVU 指令丢掉——

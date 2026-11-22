@@ -1,7 +1,7 @@
 // CLI 端的行动识别（--intent 开启）：与 web 共用 src/domain/intent + src/features/intent，
 // 中置信度时打印确认句，下一行输入「是/不是」作答。
-import { ACTION_KINDS } from "../src/domain/intent/actionKinds.js";
-import { ROUTES, describeAction } from "../src/domain/intent/gate.js";
+import { ACTION_KINDS } from "../src/domain/rules/intent/actionKinds.js";
+import { ROUTES, describeAction } from "../src/domain/rules/intent/gate.js";
 import { armIntentTriggers, expireIntentTriggers } from "../src/store/intentPendingStore.js";
 import { createAiClassifier, INTENT_TRUNCATED } from "../src/engine/intent/aiClassifier.js";
 import { bindTurnAi } from "../src/engine/ports/ai.js";

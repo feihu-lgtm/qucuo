@@ -1,5 +1,5 @@
 import { gameActions } from "../store/gameStore.js";
-import { registerFact } from "../domain/prompt/knowledge.js";
+import { registerFact } from "../domain/rules/prompt/knowledge.js";
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../core/turnMonitor.js";
 
 function actionForKey(key) {

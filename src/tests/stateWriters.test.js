@@ -1,17 +1,17 @@
 import { expect, it, vi } from "vitest";
 import { commitRound } from "../engine/act/commitRound.js";
 import { parseLocalCommand } from "../engine/localCommands.js";
-import { computeGiftWeight } from "../domain/npc/giftWeight.js";
-import { NPC_POOL, toRoomNpc } from "../domain/npc/npcPool.js";
-import { getResidentNpcs } from "../domain/npc/residentNpcs.js";
-import { callExtraction } from "../domain/prompt/extractionEngine.js";
-import { buildSysBase } from "../domain/prompt/sysBase.js";
+import { computeGiftWeight } from "../domain/rules/npc/giftWeight.js";
+import { NPC_POOL, toRoomNpc } from "../domain/data/npc/npcPool.js";
+import { getResidentNpcs } from "../domain/data/npc/residentNpcs.js";
+import { callExtraction } from "../engine/ports/extraction.js";
+import { buildSysBase } from "../domain/rules/prompt/sysBase.js";
 import { deposit, pledge, redeem, withdraw } from "../features/bank/logic.js";
 import { meditate, trainNeigong } from "../features/cultivation/logic.js";
 import { consumeItem, pickGroundItem } from "../features/items/logic.js";
 import { giftNpc, settleNpcDuel } from "../features/npc/logic.js";
 import { applyPigeonReply, buyPigeon, collectPigeons, sendPigeonLetter } from "../features/pigeon/logic.js";
-import { applyStageRewards } from "../domain/quests/questRewards.js";
+import { applyStageRewards } from "../domain/rules/quests/questRewards.js";
 
 function applyChanges(state, result) {
   const next = { ...state };

@@ -1,16 +1,17 @@
 import { callMainOnce } from "./act/actCall.js";
 import { parseMainResponse } from "./act/parseResponse.js";
-import { callExtraction, buildExtractionCfg, normalizeDuelRequest } from "../domain/prompt/extractionEngine.js";
+import { buildExtractionCfg, normalizeDuelRequest } from "../domain/rules/prompt/extractionEngine.js";
+import { callExtraction } from "./ports/extraction.js";
 import { step as traceStep } from "../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../core/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
-import { buildHistBlock, histBlockSavings } from "../domain/memory/histWindow.js";
+import { buildHistBlock, histBlockSavings } from "../domain/rules/memory/histWindow.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 import { getApiModel } from "../core/apiModel.js";
-import { filterPlanDelta, filterRejectedEffects, planExtractionNote } from "../domain/intent/planNotes.js";
-import { SOFT_SETTLE_KINDS } from "../domain/settle/softRules.js";
-import { UNKNOWN_CHOICE } from "../domain/settle/judge.js";
+import { filterPlanDelta, filterRejectedEffects, planExtractionNote } from "../domain/rules/intent/planNotes.js";
+import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
+import { UNKNOWN_CHOICE } from "../domain/rules/settle/judge.js";
 
 const MAX_AUTO_RETRY = 2;
 

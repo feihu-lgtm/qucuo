@@ -1,6 +1,6 @@
 // 住店与疗伤：客栈安睡 / 医馆回血。
 // 从 logic.js 按动作分组拆出。
-import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
+import { effectiveMaxHp } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { invalidAmountResult, noOpResult, isPositiveAmount } from "./helpers.js";
 
 export function restAtInn(state, { cost, roomType, buildingName }) {

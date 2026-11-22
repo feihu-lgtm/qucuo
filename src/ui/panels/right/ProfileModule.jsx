@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { bar } from "../../../utils/mudHelpers.js";
-import { getCompanionForms, companionPortraitUrl } from "../../../domain/companion/portraits.js";
-import { activeCompanion, COMPANION_LORE, COMPANION_DESC_FORMS } from "../../../domain/companion/companion.js";
-import { getCompanionDescForm, setCompanionDescForm } from "../../../domain/companion/companionForms.js";
-import { bodyProfileFilled } from "../../../domain/character/bodyProfile.js";
+import { getCompanionForms, companionPortraitUrl } from "../../../domain/rules/companion/portraits.js";
+import { activeCompanion, COMPANION_LORE, COMPANION_DESC_FORMS } from "../../../domain/rules/companion/companion.js";
+import { getCompanionDescForm, setCompanionDescForm } from "../../../domain/rules/companion/companionForms.js";
+import { bodyProfileFilled } from "../../../domain/rules/character/bodyProfile.js";
 import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
 
 export default function ProfileModule({ zoneTheme, char, exp, pot, playerAvatar, companionState, slForm, setSnowLeopardForm, setSlFormState, slImgErr, setSlImgErr, pearlForm, setPearlForm, setPearlFormState, pearlImgErr, setPearlImgErr, inspectItem, inspecting }) {

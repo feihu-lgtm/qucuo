@@ -1,5 +1,5 @@
-import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, toggleEquip } from "../../../domain/economy/equipment.js";
-import { statLabel, effectBrief } from "../../../domain/economy/itemEffectText.js";
+import { QUALITY_COLOR, ITEM_CATEGORY, CATEGORY_LABEL, toggleEquip } from "../../../domain/rules/economy/equipment.js";
+import { statLabel, effectBrief } from "../../../domain/rules/economy/itemEffectText.js";
 
 export default function EquipmentModule({ zoneTheme, inv, setInv }) {
   return (

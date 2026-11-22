@@ -1,5 +1,5 @@
-import { markNpcAsKnown } from "../../domain/npc/npcAwareness.js";
-import { recordAngerAttempt } from "../../domain/combat/stealSystem.js";
+import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
+import { recordAngerAttempt } from "../../domain/rules/combat/stealSystem.js";
 
 export function recordNpcAttempt(varTree, npcName, attempt) {
   const known = markNpcAsKnown(varTree || {}, npcName);

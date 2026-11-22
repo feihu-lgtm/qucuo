@@ -1,8 +1,8 @@
 // web 与 CLI 共用的识别+闸门编排（不含 UI）：返回 { route, recognition, plan, confirm } 供各端执行。
-import { recognizeIntent } from "../../domain/intent/recognizer.js";
-import { gateRecognition, confirmLine, ROUTES } from "../../domain/intent/gate.js";
-import { validatePlan } from "../../domain/intent/systemGate.js";
-import { formatPlanNote } from "../../domain/intent/planNotes.js";
+import { recognizeIntent } from "../../domain/rules/intent/recognizer.js";
+import { gateRecognition, confirmLine, ROUTES } from "../../domain/rules/intent/gate.js";
+import { validatePlan } from "../../domain/rules/intent/systemGate.js";
+import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
 import { parseDir } from "../../utils/mudHelpers.js";
 import { turnMonitor } from "../../core/turnMonitor.js";
 

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CATALOG } from "../../domain/items/catalog.js";
+import { CATALOG } from "../../domain/data/items/catalog.js";
 
 // 【为什么要源码级守卫】这三条都是「不报错、不崩溃，只是玩家看不到东西」那一类：
 //   · 随身物选择器曾把 406 件的百物录静默截断到 60 件。不搜名字就永远翻不到后面
@@ -125,6 +125,6 @@ describe("左栏名单居中与落脚状态一致", () => {
     // 不归一化的话：游走但零权重会显示「游·0处」，而右侧 Pills 显示「不落地」，
     // 同一个人两处说法相反
     expect(SCREEN).toContain("const pl = normalizePlacement(n.placement)");
-    expect(SCREEN).toMatch(/import \{ normalizePlacement \} from "..\/..\/domain\/cards\/importedRegistry\.js"/);
+    expect(SCREEN).toMatch(/import \{ normalizePlacement \} from "..\/..\/domain\/rules\/cards\/importedRegistry\.js"/);
   });
 });

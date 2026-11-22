@@ -1,14 +1,14 @@
-import { snowLeopardNote } from "../../domain/quests/snowLeopardQuest.js";
-import { collectPromptLines } from "../../domain/quests/collect.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../domain/quests/questEngine.js";
-import { getBuildingsForLocation } from "../../domain/buildings/qucuoBuildings.js";
-import { hasInnerMap, getDistrictAnchor } from "../../domain/map/innerMap.js";
-import { getPresentNpcs } from "../../domain/prompt/promptRefs.js";
-import { activeCompanion, COMPANION_LORE } from "../../domain/companion/companion.js";
-import { getAllResidentNpcLore } from "../../domain/npc/residentNpcs.js";
-import { matchNpcLore, buildNpcLoreBlock } from "../../domain/prompt/worldbook.js";
-import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../domain/npc/npcAwareness.js";
+import { snowLeopardNote } from "../../domain/rules/quests/snowLeopardQuest.js";
+import { collectPromptLines } from "../../domain/rules/quests/collect.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../domain/rules/quests/questEngine.js";
+import { getBuildingsForLocation } from "../../domain/data/buildings/qucuoBuildings.js";
+import { hasInnerMap, getDistrictAnchor } from "../../domain/rules/map/innerMap.js";
+import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
+import { activeCompanion, COMPANION_LORE } from "../../domain/rules/companion/companion.js";
+import { getAllResidentNpcLore } from "../../domain/data/npc/residentNpcs.js";
+import { matchNpcLore, buildNpcLoreBlock } from "../../domain/rules/prompt/worldbook.js";
+import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../domain/rules/npc/npcAwareness.js";
 
 // 多阶段任务链（虎胆三重门等）：告诉AI当前哪些任务阶段可以推进/开启，
 // 以及对应要在 delta.flags_add 里吐出的 flag 字符串——AI 只管在叙事到位

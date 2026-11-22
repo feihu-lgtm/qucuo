@@ -1,6 +1,6 @@
 // 学艺：武馆购秘籍 / 墓壁参悟。
 // 从 logic.js 按动作分组拆出。
-import { makeSkillEntry } from "../../domain/kungfu/qucuoKungfu.js";
+import { makeSkillEntry } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { invalidAmountResult, noOpResult } from "./helpers.js";
 
 export function buySkill(state, catalogItem) {

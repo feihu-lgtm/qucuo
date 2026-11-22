@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
-import { appendDaySummary } from "../../domain/memory/daySummary.js";
-import { describeDayForSummary } from "../../domain/memory/tally.js";
-import { setFactSummary } from "../../domain/prompt/knowledge.js";
-import { resetForDay } from "../../domain/map/mapSquares.js";
+import { appendDaySummary } from "../../domain/rules/memory/daySummary.js";
+import { describeDayForSummary } from "../../domain/rules/memory/tally.js";
+import { setFactSummary } from "../../domain/rules/prompt/knowledge.js";
+import { resetForDay } from "../../domain/rules/map/mapSquares.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../domain/prompt/withAI.js";
+import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();

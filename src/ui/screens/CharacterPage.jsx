@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { listCharacters, npcAffectionLabel } from "../../domain/prompt/mvu.js";
-import { getAvailableMilestone, getAllMilestonesForChar } from "../../domain/character/characterMilestones.js";
+import { listCharacters, npcAffectionLabel } from "../../domain/rules/prompt/mvu.js";
+import { getAvailableMilestone, getAllMilestonesForChar } from "../../domain/data/character/characterMilestones.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 const cardStyle = {

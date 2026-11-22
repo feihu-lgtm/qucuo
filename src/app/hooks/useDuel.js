@@ -2,9 +2,9 @@ import { useCallback, useEffect } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
-import { ensureNpcCombatData } from "../../domain/npc/npcGeneration.js";
-import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
-import { interleaveDuelReport } from "../../domain/combat/duelReport.js";
+import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
+import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
+import { interleaveDuelReport } from "../../domain/rules/combat/duelReport.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 
 export function consumeDuelRequest(result, {

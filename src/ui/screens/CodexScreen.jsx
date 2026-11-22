@@ -10,12 +10,12 @@
 // 无图标素材问题的解法就在这：不做图标墙，用品阶玉石 + 品阶色 + 排版撑质感。
 
 import React, { useState, useMemo, useEffect } from "react";
-import { CATALOG } from "../../domain/items/catalog.js";
-import { CATEGORY_LABEL, QUALITY, QUALITY_COLOR } from "../../domain/economy/equipment.js";
-import { moveCodexBySource, groupMoves, moveCodexStats, MOVE_SOURCE } from "../../domain/kungfu/moveCodex.js";
-import { ITEM_DISTRIBUTION, isPoolable } from "../../domain/items/distribution.js";
-import { DISTRICT_REGION } from "../../domain/items/regionMap.js";
-import { moveEffectBrief, passiveBonusBrief } from "../../domain/economy/itemEffectText.js";
+import { CATALOG } from "../../domain/data/items/catalog.js";
+import { CATEGORY_LABEL, QUALITY, QUALITY_COLOR } from "../../domain/rules/economy/equipment.js";
+import { moveCodexBySource, groupMoves, moveCodexStats, MOVE_SOURCE } from "../../domain/data/kungfu/moveCodex.js";
+import { ITEM_DISTRIBUTION, isPoolable } from "../../domain/data/items/distribution.js";
+import { DISTRICT_REGION } from "../../domain/data/items/regionMap.js";
+import { moveEffectBrief, passiveBonusBrief } from "../../domain/rules/economy/itemEffectText.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";

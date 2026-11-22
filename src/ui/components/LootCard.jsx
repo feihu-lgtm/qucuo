@@ -1,6 +1,6 @@
-import { effectBrief } from "../../domain/economy/itemEffectText.js";
+import { effectBrief } from "../../domain/rules/economy/itemEffectText.js";
 import React from "react";
-import { QUALITY_COLOR, CATEGORY_LABEL } from "../../domain/economy/equipment.js";
+import { QUALITY_COLOR, CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
 
 // 切磋掉落 / 偷窃成功 / 偷师得手 三种"所得卡"——像素藏地武侠风，复用同一套
 // 卡框与排版。底图 loot_duel.webp（暖金·交叉双刀+金刚杵+莲花+余烬）/

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createWorldRules } from "../../engine/worldRules.js";
-import { deriveMovesetFromSkills } from "../../domain/npc/npcGeneration.js";
+import { deriveMovesetFromSkills } from "../../domain/rules/npc/npcGeneration.js";
 import { derivedMovesetRule } from "./rules.js";
 
 describe("derived moveset world rule", () => {

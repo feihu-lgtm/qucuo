@@ -1,7 +1,7 @@
-import { add, set, updateField } from "../../domain/state/applyWrite.js";
-import { makeItemSmart } from "../../domain/items/catalog.js";
-import { makeItem, QUALITY } from "../../domain/economy/equipment.js";
-import { makeSkillEntry, SKILL_CATALOG } from "../../domain/kungfu/qucuoKungfu.js";
+import { add, set, updateField } from "../../domain/rules/state/applyWrite.js";
+import { makeItemSmart } from "../../domain/data/items/catalog.js";
+import { makeItem, QUALITY } from "../../domain/rules/economy/equipment.js";
+import { makeSkillEntry, SKILL_CATALOG } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { commitModelFlags } from "./commitFlags.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);

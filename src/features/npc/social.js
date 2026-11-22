@@ -1,11 +1,11 @@
 // NPC 社交动作：认出 / 端详 / 搭话。
 // 从 logic.js 按动作分组拆出——这组只管"靠近与认识"，不涉及财物或学艺。
-import { QUALITY } from "../../domain/economy/equipment.js";
-import { markNpcAsKnown as markNpcKnown } from "../../domain/npc/npcAwareness.js";
+import { QUALITY } from "../../domain/rules/economy/equipment.js";
+import { markNpcAsKnown as markNpcKnown } from "../../domain/rules/npc/npcAwareness.js";
 import { bar } from "../../utils/mudHelpers.js";
-import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
+import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import { recordNpcAttempt } from "./anger.js";
-import { add, updateField } from "../../domain/state/applyWrite.js";
+import { add, updateField } from "../../domain/rules/state/applyWrite.js";
 
 export function recognizeNpc(_state, npc) {
   if (!npc?.name) return {};

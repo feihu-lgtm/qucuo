@@ -1,7 +1,7 @@
-import { filterSnowModelFlags } from "../../domain/quests/snowLeopardQuest.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
-import { set, updateField } from "../../domain/state/applyWrite.js";
+import { filterSnowModelFlags } from "../../domain/rules/quests/snowLeopardQuest.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { set, updateField } from "../../domain/rules/state/applyWrite.js";
 
 export function commitModelFlags(d) {
   if (d.p.delta?.flags_add) {

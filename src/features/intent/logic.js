@@ -1,6 +1,6 @@
 // 行动识别通过系统闸门后，每个原子步骤落到现有功能逻辑上（与点按钮走同一套实现）。
 // 单步行动保留原功能的结算叙事；复合行动去掉逐步结算，由一次合并叙事统一描写。
-import { ACTION_KINDS, SILVER, UNEQUIP_RE, itemNameOf, visibleNpcs } from "../../domain/intent/actionKinds.js";
+import { ACTION_KINDS, SILVER, UNEQUIP_RE, itemNameOf, visibleNpcs } from "../../domain/rules/intent/actionKinds.js";
 import { giftNpc, giftSilver, learnNpcSkill, stealFromNpc } from "../npc/logic.js";
 import { appeaseAngryNpc } from "../npc/anger.js";
 import { inviteCompanion } from "../npc/inviteCompanion.js";

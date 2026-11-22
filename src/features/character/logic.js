@@ -1,5 +1,5 @@
-import { ITEM_CATEGORY, makeItem, QUALITY } from "../../domain/economy/equipment.js";
-import { makeItemSmart } from "../../domain/items/catalog.js";
+import { ITEM_CATEGORY, makeItem, QUALITY } from "../../domain/rules/economy/equipment.js";
+import { makeItemSmart } from "../../domain/data/items/catalog.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 

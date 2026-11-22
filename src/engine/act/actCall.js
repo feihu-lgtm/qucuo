@@ -1,19 +1,19 @@
-import { buildSysBase } from "../../domain/prompt/sysBase.js";
-import { renderFieldScales, renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
+import { buildSysBase } from "../../domain/rules/prompt/sysBase.js";
+import { renderFieldScales, renderPromptTemplate } from "../../domain/rules/prompt/promptRefs.js";
 import { step as traceStep, attachInjectionSnapshot } from "../../infra/actionTrace.js";
-import { NSFW_RULES, MODE_PRIMER_MESSAGES } from "../../domain/prompt/modePrimer.js";
-import { GM_RULE } from "../../domain/prompt/enginePrompts.js";
-import { gateBodyProfile } from "../../domain/character/bodyProfile.js";
-import { labelMessage, makeBlock } from "../../domain/prompt/tavernMapping.js";
-import { buildDistantViewBlock } from "../../domain/memory/daySummary.js";
-import { targetLedger } from "../../domain/prompt/materials/index.js";
-import { embeddingReady } from "../../domain/memory/embeddingService.js";
-import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
-import { applyPresetOverrides, getActivePreset } from "../../domain/prompt/presetSystem.js";
+import { NSFW_RULES, MODE_PRIMER_MESSAGES } from "../../domain/rules/prompt/modePrimer.js";
+import { GM_RULE } from "../../domain/rules/prompt/enginePrompts.js";
+import { gateBodyProfile } from "../../domain/rules/character/bodyProfile.js";
+import { labelMessage, makeBlock } from "../../domain/rules/prompt/tavernMapping.js";
+import { buildDistantViewBlock } from "../../domain/rules/memory/daySummary.js";
+import { targetLedger } from "../../domain/rules/prompt/materials/index.js";
+import { embeddingReady } from "../ports/embeddingService.js";
+import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
+import { applyPresetOverrides, getActivePreset } from "../../domain/rules/prompt/presetSystem.js";
 import { createWebAi } from "../ports/ai.js";
 import { buildAngryNote } from "../prompt/assemblePrompt.js";
 import { getApiModel } from "../../core/apiModel.js";
-import { formatSettleNote } from "../../domain/settle/settle.js";
+import { formatSettleNote } from "../../domain/rules/settle/settle.js";
 
 const webAi = createWebAi();
 

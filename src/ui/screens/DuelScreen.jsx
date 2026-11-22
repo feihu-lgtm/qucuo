@@ -4,18 +4,18 @@
 // 只是复用"血条在哪、技能在哪、回合提示在哪"这套久经考验的信息层级。
 
 import React, { useState, useRef, useEffect } from "react";
-import { QUALITY_COLOR, computeEquippedStats, effectiveSpecial, mergeItemEffects } from "../../domain/economy/equipment.js";
-import { MOVE_TYPE } from "../../domain/combat/moveTypes.js";
-import { resolveTurn, applyEndOfTurnStatus } from "../../domain/combat/resolveTurn.js";
-import { finalizeDuelRound } from "../../domain/combat/finalizeDuelRound.js";
-import { decideNpcMove } from "../../domain/combat/aiDecision.js";
+import { QUALITY_COLOR, computeEquippedStats, effectiveSpecial, mergeItemEffects } from "../../domain/rules/economy/equipment.js";
+import { MOVE_TYPE } from "../../domain/rules/combat/moveTypes.js";
+import { resolveTurn, applyEndOfTurnStatus } from "../../domain/rules/combat/resolveTurn.js";
+import { finalizeDuelRound } from "../../domain/rules/combat/finalizeDuelRound.js";
+import { decideNpcMove } from "../../domain/rules/combat/aiDecision.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
-import { getDefaultProfile } from "../../domain/combat/personalityProfile.js";
-import { createEmptyStatusSlots, applyStatus, applyMark, dispelControlDrain } from "../../domain/combat/statusEffects.js";
-import { rollBattleLoot, atkFromWaigong } from "../../domain/npc/npcGeneration.js";
-import { mergeMoveWithEquip, tickCostPenalty } from "../../domain/combat/teamBattleEngine.js";
+import { getDefaultProfile } from "../../domain/rules/combat/personalityProfile.js";
+import { createEmptyStatusSlots, applyStatus, applyMark, dispelControlDrain } from "../../domain/rules/combat/statusEffects.js";
+import { rollBattleLoot, atkFromWaigong } from "../../domain/rules/npc/npcGeneration.js";
+import { mergeMoveWithEquip, tickCostPenalty } from "../../domain/rules/combat/teamBattleEngine.js";
 import { resolveCombatBuff } from "../../utils/buffSystem.js";
-import { effectiveMaxHp } from "../../domain/kungfu/qucuoKungfu.js";
+import { effectiveMaxHp } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { addDodgeStealNote, excludeDodgeStolenItems, useDuelDodgeSteal } from "./useDuelDodgeSteal.js";
 
 // TYPE_ICON / HpBar / EnergyDots / MoveButton / MoveInspect 同时导出给

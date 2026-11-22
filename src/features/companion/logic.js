@@ -1,4 +1,4 @@
-import { setActiveCompanion } from "../../domain/companion/companion.js";
+import { setActiveCompanion } from "../../domain/rules/companion/companion.js";
 
 export function switchCompanion(state, key) {
   const label = key ? (key === "asuka" ? "明日香" : "雪豹") : null;

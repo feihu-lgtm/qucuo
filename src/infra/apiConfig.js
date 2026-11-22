@@ -1,7 +1,7 @@
 // API 配置：localStorage 存储、迁移、多套 profile，以及对外统一导出口。
 // 供应商表/协议适配在 providers.js；请求收发在 apiTransport.js；
 // 错误分类在 utils/apiErrors.js；JSON 清洗在 utils/jsonClean.js。
-import { DEFAULT_WHISPER_WORDS } from "../domain/narrator/narrator.js";
+import { DEFAULT_WHISPER_WORDS } from "../domain/rules/narrator/narrator.js";
 import { hasVertexCredential } from "./vertexCredentials.js";
 import {
   API_TYPES, DEFAULT_CALL_TOKEN_LIMITS, migrateProvider, PROVIDERS,

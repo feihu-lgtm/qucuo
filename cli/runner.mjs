@@ -6,14 +6,14 @@ import { gameActions, GAME_KEYS, gameStore, initGameStore } from "../src/store/g
 import { buildInitialGameState, DEFAULT_PRESETS } from "../src/core/newGame.js";
 import { snapshotFromStore } from "../src/store/persist.js";
 import { setSeed } from "../src/core/rng.js";
-import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare } from "../src/domain/map/mapSquares.js";
+import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare } from "../src/domain/rules/map/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/infra/saves.js";
 import { getTimeStr, parseDir } from "../src/utils/mudHelpers.js";
-import { resolveExit } from "../src/domain/map/qucuoMap.js";
+import { resolveExit } from "../src/domain/data/map/qucuoMap.js";
 import { defaultConfig, migrateProvider, providerApiType, PROVIDERS } from "../src/infra/apiConfig.js";
-import { classifyIntent } from "../src/domain/prompt/inputIntent.js";
-import { emptyBodyProfile } from "../src/domain/character/bodyProfile.js";
-import { getActivePreset } from "../src/domain/prompt/presetSystem.js";
+import { classifyIntent } from "../src/domain/rules/prompt/inputIntent.js";
+import { emptyBodyProfile } from "../src/domain/rules/character/bodyProfile.js";
+import { getActivePreset } from "../src/domain/rules/prompt/presetSystem.js";
 import { getCommand } from "../src/core/commands.js";
 import { decide } from "../src/core/commandScheduler.js";
 import { formatTrace } from "../src/infra/actionTrace.js";
@@ -61,8 +61,8 @@ import {
   recordPigeonNpcLocations,
   sendPigeonLetter,
 } from "../src/features/pigeon/logic.js";
-import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../src/domain/map/innerMap.js";
-import * as importedRegistry from "../src/domain/cards/importedRegistry.js";
+import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../src/domain/rules/map/innerMap.js";
+import * as importedRegistry from "../src/domain/rules/cards/importedRegistry.js";
 import { timeAdvanceRule } from "../src/features/time/rules.js";
 import { residentNpcRule } from "../src/features/npc/rules.js";
 import { innerGroundItemsRule } from "../src/features/map/rules.js";
@@ -73,8 +73,8 @@ import {
   restAtInn,
   travelByCarriage,
 } from "../src/features/buildings/logic.js";
-import { LIBRARY_BOOKS_JINGGUAN } from "../src/domain/buildings/libraryData.js";
-import { getBuildingsForLocation, BUILDING_TYPE } from "../src/domain/buildings/qucuoBuildings.js";
+import { LIBRARY_BOOKS_JINGGUAN } from "../src/domain/data/buildings/libraryData.js";
+import { getBuildingsForLocation, BUILDING_TYPE } from "../src/domain/data/buildings/qucuoBuildings.js";
 
 const defaultOutput = (text) => process.stdout.write(`${text}\n`);
 

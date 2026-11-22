@@ -1,5 +1,5 @@
-import { npcAffectionLabel } from "../../../domain/prompt/mvu.js";
-import { unlockedCompanions, activeCompanionKey } from "../../../domain/companion/companion.js";
+import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
+import { unlockedCompanions, activeCompanionKey } from "../../../domain/rules/companion/companion.js";
 
 export default function TeamModule({ zoneTheme, companionState, varTree, onSwitchCompanion, setActiveNpcMenu }) {
   if (!unlockedCompanions(companionState).length) return null;

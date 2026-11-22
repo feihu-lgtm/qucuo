@@ -2,10 +2,10 @@ import { useCallback } from "react";
 import { gameStore, markGameReplaced } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { applyCharacterCard } from "../../features/character/logic.js";
-import * as importedRegistry from "../../domain/cards/importedRegistry.js";
-import { deriveMovesetFromSkills, hpFromNeigong } from "../../domain/npc/npcGeneration.js";
-import { STARTER_SKILLS } from "../../domain/kungfu/starterKungfu.js";
-import { unlockImportedCompanion } from "../../domain/companion/companion.js";
+import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
+import { deriveMovesetFromSkills, hpFromNeigong } from "../../domain/rules/npc/npcGeneration.js";
+import { STARTER_SKILLS } from "../../domain/data/kungfu/starterKungfu.js";
+import { unlockImportedCompanion } from "../../domain/rules/companion/companion.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 
 export function useCardImportHandlers({

@@ -1,6 +1,6 @@
-import { hasInnerMap, getDistrictAnchor, getInnerRoom, visibleInnerExits } from "../../../domain/map/innerMap.js";
-import { QUCUO_MAP } from "../../../domain/map/qucuoMap.js";
-import { blockedNoticeText, passableExits } from "../../../domain/map/blockedNotice.js";
+import { hasInnerMap, getDistrictAnchor, getInnerRoom, visibleInnerExits } from "../../../domain/rules/map/innerMap.js";
+import { QUCUO_MAP } from "../../../domain/data/map/qucuoMap.js";
+import { blockedNoticeText, passableExits } from "../../../domain/rules/map/blockedNotice.js";
 import { showNotice } from "../../../store/uiStore.js";
 import { DIRS } from "../../../utils/mudHelpers.js";
 import NineGridMap from "../../components/NineGridMap.jsx";

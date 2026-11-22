@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { joinSect } from "./logic.js";
-import { SECT_ENTRY } from "../../domain/character/sectEntry.js";
+import { SECT_ENTRY } from "../../domain/rules/character/sectEntry.js";
 import { applyResult } from "../run.js";
 import { gameStore, initGameStore } from "../../store/gameStore.js";
 

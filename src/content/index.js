@@ -1,4 +1,4 @@
-import { loadContent } from "../domain/content/registry.js";
+import { loadContent } from "../domain/rules/content/registry.js";
 import pack5 from "./teachableSkill/teachableSkill-1.js";
 import pack6 from "./item/weapons-1.js";
 import pack7 from "./item/armors-1.js";

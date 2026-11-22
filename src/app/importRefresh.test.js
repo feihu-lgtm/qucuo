@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MUD = readFileSync(join(HERE, "MudRPG.jsx"), "utf-8");
 const WORLD_RULES = readFileSync(join(HERE, "hooks", "useWorldRulesRunner.js"), "utf-8");
-const REG = readFileSync(join(HERE, "..", "domain", "cards", "importedRegistry.js"), "utf-8");
+const REG = readFileSync(join(HERE, "..", "domain", "rules", "cards", "importedRegistry.js"), "utf-8");
 const NPC_RULES = readFileSync(join(HERE, "..", "features", "npc", "rules.js"), "utf-8");
 const OVL = readFileSync(join(HERE, "..", "ui", "panels", "GlobalOverlays.jsx"), "utf-8");
 const SCREEN = readFileSync(join(HERE, "..", "ui", "screens", "CardImportScreen.jsx"), "utf-8");

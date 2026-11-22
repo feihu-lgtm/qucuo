@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_PRESETS } from "../../core/newGame.js";
-import { canBypassExclusive, getCurrentStage, isQuestGateOpen } from "../../domain/quests/questEngine.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
+import { canBypassExclusive, getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getZoneTheme, ink } from "../../ui/theme.js";
 import { loadConfig } from "../../infra/apiConfig.js";
 import { getActivePreset } from "../../ui/screens/PresetManager.jsx";
-import { describeCatalogForAI } from "../../domain/items/catalog.js";
-import { buildBudgetInstruction, INTENT } from "../../domain/prompt/inputIntent.js";
-import { buildNarratorWhisperContext, gateQuestTopic, narratorVoicePrompt, narratorWhisperLengthNote } from "../../domain/narrator/narrator.js";
-import { gateBodyProfile } from "../../domain/character/bodyProfile.js";
-import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "../../domain/prompt/worldbook.js";
-import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
-import { isNpcVisibleInInnerRoom as isVisibleInInnerRoom } from "../../domain/map/innerMap.js";
-import { loadPortraits, getSnowLeopardForm, getPearlForm } from "../../domain/companion/portraits.js";
-import * as importedRegistry from "../../domain/cards/importedRegistry.js";
+import { describeCatalogForAI } from "../../domain/data/items/catalog.js";
+import { buildBudgetInstruction, INTENT } from "../../domain/rules/prompt/inputIntent.js";
+import { buildNarratorWhisperContext, gateQuestTopic, narratorVoicePrompt, narratorWhisperLengthNote } from "../../domain/rules/narrator/narrator.js";
+import { gateBodyProfile } from "../../domain/rules/character/bodyProfile.js";
+import { matchNpcLore, buildNpcLoreBlock, gateScenario } from "../../domain/rules/prompt/worldbook.js";
+import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
+import { isNpcVisibleInInnerRoom as isVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { loadPortraits, getSnowLeopardForm, getPearlForm } from "../../domain/rules/companion/portraits.js";
+import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { readMobileColumn, writeMobileColumn } from "../../utils/mobileColumn.js";
-import { buildMainStatePrompt, buildWhisperStatePrompt, getPresentNpcs, renderPromptTemplate } from "../../domain/prompt/promptRefs.js";
+import { buildMainStatePrompt, buildWhisperStatePrompt, getPresentNpcs, renderPromptTemplate } from "../../domain/rules/prompt/promptRefs.js";
 import { gameStore } from "../../store/gameStore.js";
 
 export function useGameUi({

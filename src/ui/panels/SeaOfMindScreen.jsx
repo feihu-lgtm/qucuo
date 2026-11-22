@@ -3,7 +3,7 @@ import {
   COMFORT_ACTIONS, KNOTS, KNOT_BY_KEY,
   defenseLevelOf, comfortScore, canComfort, describeComfortReject,
   availableKnot, canResolve,
-} from "../../domain/narrator/narratorQuest.js";
+} from "../../domain/rules/narrator/narratorQuest.js";
 
 // 心灵之海 · 创伤安抚面板
 // ============================================================================

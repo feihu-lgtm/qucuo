@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCachedInspect, setCachedInspect } from "../../infra/inspectCache.js";
-import { NOTE_SOURCE } from "../../domain/memory/note.js";
+import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../core/turnMonitor.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../domain/prompt/withAI.js";
+import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();
