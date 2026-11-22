@@ -51,6 +51,14 @@ export const FACTION_ENTRIES = {
     intro: "都事府值房里算盘声没停，柳青鸢抬眼看了你一眼又低回去：「公事公办。想在我手底下当差，先让我看看你办事的样子。」",
     joinLabel: "投效都事府，当差锦官城",
   },
+  唐门: {
+    sect: "唐门", master: "唐老太", buildingId: "sect_entry_tangmen",
+    minRep: 40, repBonus: 20, flag: "唐门弟子",
+    token: "玄竹弟子令", gifts: [],
+    trial: null,
+    intro: "宗祠门前横着一块磨凹了的入堂石。唐老太拄着竹杖站在石后，笑眯眯地说：跪下，滴血，立誓；从今往后唐家的规矩就是你的规矩。",
+    joinLabel: "入堂石前立血誓，拜入唐门",
+  },
   天龙教: {
     sect: "天龙教", master: "石重岳", buildingId: "sect_entry_tianlong",
     minRep: 40, repBonus: 20, flag: "天龙教弟子",

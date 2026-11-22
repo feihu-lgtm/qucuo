@@ -25,7 +25,7 @@ export default { quest: {
         description: "破庙里两个乔装车夫正往稻草堆里摸，要灭口躲在神像后的丐帮弟子。见你进门，两人抽出腰间短刀。",
         completionFlag: "quest_emei1_fight",
         choices: [
-          { flag: "quest_emei1_fight", label: "击退眼线", resolve: "combat", combatNpc: { name: "天龙教外围眼线", levelCap: 7 } },
+          { flag: "quest_emei1_fight", label: "击退眼线", resolve: "combat", combatNpc: { name: "天龙教外围眼线", levelCap: 3 } },
         ],
         onReach: {
           items: [{ name: "曲措旧田契残页", category: "misc", quality: "绿", desc: "半张从老牧民贴身毡片里取出的田契，带着退墨药水的异味。" }],

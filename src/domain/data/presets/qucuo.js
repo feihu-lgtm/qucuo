@@ -53,8 +53,8 @@ export const QUCUO_PRESET = {
   外貌锚点：晒得健康的小麦色皮肤，和土司府里其他养尊处优的人形成反差（她总往跑马场跑，不爱待在深闺）；腰间挂着一块土司府的令牌，是她不情不愿却不得不佩戴的身份标记，说话时手指常无意识地去摩挲令牌边缘；笑起来眼睛弯成一条缝，露出一口白牙；穿藏袍时习惯把袖子高高挽起，不管天气冷暖，露出小臂上骑马磨出的薄茧`,
     },
     {
-      name: "老猎户", aliases: ["猎户", "老猎人"],
-      entry: `- 鱼定村口的老猎户：熟悉熊山地形，知道虎胆的传闻和用途。
+      name: "老猎户", aliases: ["猎户", "老猎人", "桑登"],
+      entry: `- 鱼定村口的老猎户（本名桑登）：熟悉熊山地形，知道虎胆的传闻和用途；只认山规和手里那把刀，厌恶土司府把熊山猎场圈成私产。
   外貌锚点：常年进山被风霜刻出的皱纹，手掌粗糙如枯树皮；腰间常年挂着一把磨得发亮的短刀和一卷兽皮绳；说话时习惯眯眼望向熊山的方向，像是在辨认山势；冬天呼出的白气比旁人更浓，是常年在雪地里守猎养出的粗重呼吸`,
     },
     {
@@ -121,7 +121,7 @@ export const QUCUO_PRESET = {
     // 掉落/偷窃只出这里的东西。老猎户的短刀和兽皮绳直接对应他人设里的外貌锚点。
     npcs: [
       { name: "老猎户", id: "hunter", brief: "熟悉熊山地形", carry: [{ name: "磨亮的短刀", category: "weapon", quality: "绿" }, { name: "兽皮绳", category: "misc", quality: "白" }] },
-      { name: "杂货商人", id: "merchant", brief: "支着摊子卖些杂货", carry: [{ name: "杂货担子", category: "misc", quality: "白" }, { name: "粗布钱袋", category: "misc", quality: "白" }] },
+      { name: "杂货商人", id: "merchant", brief: "支着摊子卖些杂货，本名冯四，常年从雅江赊货进村", carry: [{ name: "杂货担子", category: "misc", quality: "白" }, { name: "粗布钱袋", category: "misc", quality: "白" }] },
     ],
     items: [
       { name: "界石", id: "boundary_stone" },

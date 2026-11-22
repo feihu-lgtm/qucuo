@@ -1,7 +1,7 @@
 export default { residentGroup: {
 天龙营: [
     {
-      name: "石重岳", id: "resident_shizhongyue", levelCap: 8,
+      name: "石重岳", id: "resident_shizhongyue", levelCap: 5,
       brief: "天龙教现任教主，「龙王」，五十岁，玄甲从不离身",
       personality: "枭雄做派，惜力如金；收人只看两样——拳头够不够硬，办差够不够稳",
       carry: [
@@ -15,7 +15,7 @@ export default { residentGroup: {
       ],
     },
     {
-      name: "安世衡", id: "resident_anshiheng", levelCap: 8,
+      name: "安世衡", id: "resident_anshiheng", levelCap: 5,
       brief: "被废的天王，白衣旧部之主，软禁断崖石室抄经",
       personality: "说话极慢，像每个字都要先在心里放一放；止戈经倒背如流，唯独不提当年让位那一夜",
       carry: [
