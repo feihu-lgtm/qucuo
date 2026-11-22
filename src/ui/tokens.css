@@ -202,6 +202,11 @@
   --tavern-wood-top-dark: #1a1410;
   --tavern-zone-label: #8a7a5a;
 
+  /* 悬赏屏定色（原字面量，不随日间模式变）：进行中悬赏卡片。 */
+  --bounty-card-bg: #12140a;
+  --bounty-card-edge: #3a3a1a;
+  --bounty-progress: #7a6a4a;
+
   /* 新手教程浮层定色（原字面量，不随日间模式变）。 */
   --tutorial-dim: #b0a080;
   --tutorial-map: #a0b8c0;
