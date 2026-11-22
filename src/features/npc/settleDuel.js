@@ -14,6 +14,7 @@ import { snowQuestActive } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
+import { sectSparRepGain } from "../../domain/rules/economy/sectSpar.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 一场切磋占用的游戏时间（time 一格 = 一小时），由系统直接加，不经过 AI
@@ -145,6 +146,17 @@ export function settleNpcDuel(state, npc, {
       { varTree: markNpcKnown(prev || {}, npc.name) }, add(["角色", npc.name, "好感度"], affGain),
     ).state.varTree);
     logs.push({ t: "affection", text: `  💗 与${npc.name}切磋一场，交情 +${affGain}` });
+  }
+
+  const sparRep = sectSparRepGain(working, npc, { outcome, battleLog });
+  if (sparRep?.poison) {
+    logs.push({ t: "sys", text: `  ${npc.name}瞥了眼身上的毒伤：「赢是赢了，${sparRep.faction}不认这一场。」` });
+  } else if (sparRep?.delta) {
+    addChange(changes, working, "varTree", (prev) => applyWrite(
+      { varTree: prev || {} }, add(["世界", "势力声誉", sparRep.faction], sparRep.delta),
+    ).state.varTree);
+    addChange(changes, working, "flags", updateField("flags", set("flags", sparRep.flags)));
+    logs.push({ t: "affection", text: `  ✦ 堂堂正正赢了${npc.name}，${sparRep.faction}声誉 +${sparRep.delta}` });
   }
 
   if (outcome === "win" && activeCompanionKey(state.companionState)) {
