@@ -53,6 +53,14 @@ describe("鱼定土司府·终局补完", () => {
     expect(skillUnlockStatus(st(-40, {}, ["tusi_gesang_true_heir"]), skill("雪域不动诀")).ok).toBe(true);
   });
 
+  it("keeps every 土司府 quest fight within the 白~红 tier range", () => {
+    const caps = QUCUO_QUESTS.filter((q) => q.id.startsWith("yudingtusi_"))
+      .flatMap((q) => q.stages.flatMap((s) => s.choices || []))
+      .filter((c) => c.combatNpc).map((c) => c.combatNpc.levelCap);
+    expect(caps.length).toBeGreaterThan(0);
+    for (const cap of caps) expect(cap).toBeGreaterThanOrEqual(0), expect(cap).toBeLessThanOrEqual(5);
+  });
+
   it("opens 府4 after 府3 with 格桑顿珠 favor 40", () => {
     const done = { yudingtusi_3_jiuqi_canyin: { status: "completed" } };
     expect(isQuestGateOpen(q4(), done, [], tree(0, { 格桑顿珠: 39 }))).toBe(false);

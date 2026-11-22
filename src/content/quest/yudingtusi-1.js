@@ -171,11 +171,11 @@ export default { quest: {
         description: "校场四角亮起火把，白玛次仁奉陆福生密令率弓弩手围了上来：「格桑顿珠勾结外人、图谋不轨，拿下！」格桑顿珠把矛横在身前，看了你一眼。",
         completionFlag: ["quest_ts4_truth", "quest_ts4_regent", "quest_ts4_purge"],
         choices: [
-          { flag: "quest_ts4_truth", label: "并肩击退白玛次仁", resolve: "combat", combatNpc: { name: "白玛次仁", levelCap: 9 } },
+          { flag: "quest_ts4_truth", label: "并肩击退白玛次仁", resolve: "combat", combatNpc: { name: "白玛次仁", levelCap: 4 } },
           { flag: "quest_ts4_regent", label: "击退白玛次仁·推举梅朵代管", resolve: "combat", requiresFavor: { 梅朵: 60 },
-            combatNpc: { name: "白玛次仁", levelCap: 9 } },
+            combatNpc: { name: "白玛次仁", levelCap: 4 } },
           { flag: "quest_ts4_purge", label: "铁腕清营·拿下格桑顿珠", resolve: "combat",
-            requiresFlag: ["quest_ts3_burn"], requiresFactionRep: { [TS]: 80 }, combatNpc: { name: "格桑顿珠", levelCap: 10 } },
+            requiresFlag: ["quest_ts3_burn"], requiresFactionRep: { [TS]: 80 }, combatNpc: { name: "格桑顿珠", levelCap: 5 } },
         ],
         onReach: {
           byFlag: {
