@@ -38,6 +38,8 @@ export const TUSI_FINALE_FLAGS = {
   gaibangFull: { flag: "endgame_ally_gaibang_full", faction: "丐帮", effect: null },
   lamaAlly: { flag: "lama_endgame_ally", faction: "喇嘛庙", effect: null },
   xueshanLone: { flag: "xueshan_endgame_lone", faction: "雪山派", effect: null },
+  baihuaNeutral: { flag: "bh5_neutral", faction: "百花门", effect: "退银守中，不接土司府招安，终局不反噬" },
+  baihuaPersuaded: { flag: "finale_neutral_baihua", faction: "百花门", effect: "说服中立，不接土司府招安，终局不反噬" },
 };
 const F = Object.fromEntries(Object.entries(TUSI_FINALE_FLAGS).map(([k, v]) => [k, v.flag]));
 const FINALE_ROOM = at("议事厅");
@@ -412,6 +414,20 @@ export default { quest: {
             narration: "香气淡了下去，只是议事厅平日的熏香。" },
           { flag: "quest_ts5_smoke", label: "冲散暗香作坊的毒烟阵", resolve: "combat", requiresFlag: [F.huanxiGuanjia],
             combatNpc: { name: "暗香作坊毒烟阵", levelCap: 4 } },
+        ],
+      },
+      {
+        id: "baihua",
+        requireLocation: FINALE_ROOM,
+        giver: null,
+        playerHint: "冷落或交恶百花门，它会接受土司府招安，以迷烟毒阵反噬；拉拢或说服中立就没有这一阵。",
+        description: "厅后帘幕一阵晃动，飘出一缕甜得发腻的花香。",
+        completionFlag: ["quest_ts5_baihua_none", "quest_ts5_baihua"],
+        choices: [
+          { flag: "quest_ts5_baihua_none", label: "百花楼没有来人", resolve: "none", requiresFlagAny: [F.baihuaAlly, F.baihuaNeutral, F.baihuaPersuaded],
+            narration: "花香散了，帘后空无一人。百花楼这一夜没有替土司府出手。" },
+          { flag: "quest_ts5_baihua", label: "冲破百花楼的迷烟毒阵", resolve: "combat", blockedByFlags: [F.baihuaAlly, F.baihuaNeutral, F.baihuaPersuaded],
+            combatNpc: { name: "百花楼迷烟毒阵", levelCap: 4 } },
         ],
       },
       {
