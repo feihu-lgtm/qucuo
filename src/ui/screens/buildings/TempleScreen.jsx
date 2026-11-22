@@ -24,14 +24,14 @@ export default function TempleScreen({ building, char, dao, zoneTheme, onClose, 
         <div style={{ color: "var(--ink-text)", fontSize: 11, marginBottom: 8 }}>七维当前值：</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 12px", fontSize: 12, marginBottom: 14 }}>
           {SEVEN_DIMS.map(d => (
-            <div key={d} style={{ color: (special[d] ?? 0) >= 10 ? "#4a6a4a" : "var(--ink-text)" }}>
-              {d} <span style={{ color: "#888" }}>{special[d] ?? 0}</span>
-              {(special[d] ?? 0) >= 10 && <span style={{ color: "#4a6a4a", fontSize: 10 }}> 已满</span>}
+            <div key={d} style={{ color: (special[d] ?? 0) >= 10 ? "var(--temple-full)" : "var(--ink-text)" }}>
+              {d} <span style={{ color: "var(--attr-value)" }}>{special[d] ?? 0}</span>
+              {(special[d] ?? 0) >= 10 && <span style={{ color: "var(--temple-full)", fontSize: 10 }}> 已满</span>}
             </div>
           ))}
         </div>
         {available.length === 0
-          ? <div style={{ color: "#4a6a4a", fontSize: 12 }}>七维皆已圆满，无需再求佛。</div>
+          ? <div style={{ color: "var(--temple-full)", fontSize: 12 }}>七维皆已圆满，无需再求佛。</div>
           : <Btn
             label={`拜佛（消耗 ${karmaPerPray} 功德）`}
             disabled={karma < karmaPerPray}
@@ -40,7 +40,7 @@ export default function TempleScreen({ building, char, dao, zoneTheme, onClose, 
           />
         }
         {karma < karmaPerPray && available.length > 0 && (
-          <div style={{ color: "#5a4a4a", fontSize: 10, marginTop: 8 }}>功德不足，多做善事积功德。</div>
+          <div style={{ color: "var(--temple-hint)", fontSize: 10, marginTop: 8 }}>功德不足，多做善事积功德。</div>
         )}
       </div>
     </Overlay>
