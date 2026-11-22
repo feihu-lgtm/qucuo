@@ -45,4 +45,53 @@ describe("random passers", () => {
     expect(npcs1.some((npc) => npc.randomPasser === 0)).toBe(false);
     expect(npcs1.some((npc) => npc.randomPasser === 1)).toBe(true);
   });
+
+  it("never reuses a name the player already knows or an imported card uses", () => {
+    const today = getRandomPassers("雅江", 9);
+    const taken = today[0].name;
+    expect(getRandomPassers("雅江", 9, new Set([taken])).some((p) => p.name === taken)).toBe(false);
+    const all = Object.keys(QUCUO_MAP).flatMap((node) => getRandomPassers(node, 9).map((p) => p.name));
+    expect(new Set(all).size).toBe(all.length);
+  });
+
+  it("rebuilds today's passer instead of keeping yesterday's namesake, and lets imported cards win", () => {
+    const name = getRandomPassers("雅江", 24 + 9)[0].name;
+    const yesterday = {
+      name, randomPasser: 0, faction: "唐门", brief: "昨天的人", innerRoom: "旧处",
+      moveset: [], carriedItems: [], special: {}, combatStats: {},
+    };
+    const state = {
+      char: { special: { 气运: 5 } }, companionState: {}, flags: [], importedVer: 0, questProgress: {},
+      room: { name: "雅江", npcs: [yesterday] }, time: 24 + 9,
+    };
+    const npcs = residentNpcRule.run(state, { importedRegistry }).changes.room(state.room).npcs;
+    const rebuilt = npcs.filter((npc) => npc.name === name);
+    expect(rebuilt).toHaveLength(1);
+    expect(rebuilt[0].randomPasser).toBe(1);
+    expect(rebuilt[0].brief).not.toBe("昨天的人");
+
+    const withCard = {
+      getImportedForDistrict: () => [{ name, brief: "导入的角色卡", imported: true }],
+      getImportedResidentNames: () => [name],
+    };
+    const fresh = { ...state, room: { name: "雅江", npcs: [] } };
+    const npcs2 = residentNpcRule.run(fresh, { importedRegistry: withCard }).changes.room(fresh.room).npcs;
+    const same = npcs2.filter((npc) => npc.name === name);
+    expect(same).toHaveLength(1);
+    expect(same[0].imported).toBe(true);
+    expect(same[0].randomPasser).toBeUndefined();
+  });
+
+  it("keeps today's roster stable after the player gets to know a passer", () => {
+    const base = {
+      char: { special: { 气运: 5 } }, companionState: {}, flags: [], importedVer: 0, questProgress: {}, time: 9,
+    };
+    const first = residentNpcRule.run({ ...base, room: { name: "雅江", npcs: [] } }, { importedRegistry })
+      .changes.room({ name: "雅江", npcs: [] }).npcs;
+    const met = first.find((npc) => npc.randomPasser === 0).name;
+    const again = { ...base, varTree: { 世界: { 已认识人物: [met] }, 角色: { [met]: { 好感度: 10 } } }, room: { name: "雅江", npcs: first } };
+    const npcs = residentNpcRule.run(again, { importedRegistry })?.changes.room(again.room).npcs ?? first;
+    expect(npcs.filter((npc) => npc.randomPasser === 0).map((npc) => npc.name))
+      .toEqual(first.filter((npc) => npc.randomPasser === 0).map((npc) => npc.name));
+  });
 });

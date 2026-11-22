@@ -67,10 +67,6 @@ export const residentNpcRule = {
     });
 
     const poolNpcs = getScheduledNpcs(room.name, time).map(toRoomNpcWithCombat);
-    const passers = getRandomPassers(room.name, time).map(toRoomNpcWithCombat);
-    // 随机过路人只待当天：名单里不是今天刷的那批一律清掉
-    const isStalePasser = (npc) => npc?.randomPasser != null && npc.randomPasser !== dayIdx;
-    const hasStalePassers = (room.npcs || []).some(isStalePasser);
     const companionJoined = (name) => {
       const key = companionKeyByName(name);
       return !!(key && companionState?.[key]?.unlocked);
@@ -124,7 +120,27 @@ export const residentNpcRule = {
     )
       .filter((npc) => !isCompanionUnlockedByName(companionState, npc.name))
       .map(toRoomNpcWithCombat);
-    const toInject = [...poolNpcs, ...passers, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs];
+    // 随机过路人只待当天：名单里不是今天刷的那批一律清掉。
+    // 名字避开玩家认识的人和导入角色卡；今天已经刷出来的那批（本地或别处缓存里）不算撞名，保证同日重进结果不变。
+    const isStalePasser = (npc) => npc?.randomPasser != null && npc.randomPasser !== dayIdx;
+    const hasStalePassers = (room.npcs || []).some(isStalePasser);
+    const todaysPassers = new Set([room.npcs || [], ...Object.values(roomMapRef?.current || {}).map((cached) => cached?.npcs || [])]
+      .flat()
+      .filter((npc) => npc?.randomPasser === dayIdx)
+      .map((npc) => npc.name));
+    const varTree = state.varTree || {};
+    const passerReserved = new Set([
+      ...(varTree.世界?.已认识人物 || []),
+      ...Object.keys(varTree.角色 || {}),
+      ...importedRegistry.getImportedResidentNames(),
+      ...importedNpcs.map((npc) => npc.name),
+    ].filter((name) => !todaysPassers.has(name)));
+    const passers = getRandomPassers(room.name, time, passerReserved)
+      .map((passer) => {
+        const existing = existingByName.get(passer.name);
+        return buildRoomNpcWithCombat(passer, { existingNpc: existing?.randomPasser === dayIdx ? existing : undefined, luck });
+      });
+    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...passers];
     if (!toInject.length && !staleNames.size && !hasStalePassers) return null;
 
     if (hasInnerMap(room.name)) {

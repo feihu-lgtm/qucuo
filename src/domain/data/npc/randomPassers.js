@@ -141,15 +141,13 @@ function isReserved(name) {
   return reservedNames.has(name);
 }
 
-// 给定节点名 + 游戏时间 → 今天在此的随机过路人（纯函数，同日同地结果一致）
-export function getRandomPassers(locationName, time) {
+// 一天的全图名单一起排，同一天各节点不重名；reserved 是调用方要避开的名字
+// （玩家认识的人、导入角色卡），名字撞上就重抽，免得好感度、认识记录串到别人身上。
+function passersAt(locationName, dayIdx, used, isTaken) {
   const cfg = NODE_PASSERS[locationName];
-  if (!cfg) return [];
-  const dayIdx = Math.floor(time / 24);
   const rng = seededRand(dayIdx, `passers|${locationName}`);
   const [lo, hi] = cfg.count;
   const count = lo + Math.floor(rng() * (hi - lo + 1));
-  const used = new Set();
   const out = [];
   for (let i = 0; i < count; i++) {
     const faction = pickWeighted(cfg.factions, rng);
@@ -157,8 +155,8 @@ export function getRandomPassers(locationName, time) {
     const gender = role.gender || (rng() < 0.5 ? "男" : "女");
     const culture = role.culture || pick(["han", "han", "tibetan"], rng);
     let name = makeName(culture, gender, rng);
-    for (let tries = 0; tries < 8 && (used.has(name) || isReserved(name)); tries++) name = makeName(culture, gender, rng);
-    if (used.has(name) || isReserved(name)) continue;
+    for (let tries = 0; tries < 8 && isTaken(name); tries++) name = makeName(culture, gender, rng);
+    if (isTaken(name)) continue;
     used.add(name);
     const [minLv, maxLv] = role.level;
     const label = faction === "散人" ? "无门无派的" : `${faction}的`;
@@ -174,4 +172,17 @@ export function getRandomPassers(locationName, time) {
     });
   }
   return out;
+}
+
+// 给定节点名 + 游戏时间 → 今天在此的随机过路人（纯函数，同日同地、同一组 reserved 结果一致）
+export function getRandomPassers(locationName, time, reserved = new Set()) {
+  if (!NODE_PASSERS[locationName]) return [];
+  const dayIdx = Math.floor(time / 24);
+  const used = new Set();
+  const isTaken = (name) => used.has(name) || isReserved(name) || reserved.has(name);
+  for (const node of Object.keys(NODE_PASSERS)) {
+    const list = passersAt(node, dayIdx, used, isTaken);
+    if (node === locationName) return list;
+  }
+  return [];
 }
