@@ -11,6 +11,7 @@
 //   exp: 3,                                             // 阅历（设计文档里的"阅历+N"）
 //   pot: 0,                                             // 潜能
 //   reputation: 10,                                     // 江湖威望增减（世界.威望，-100~100，单次自动限幅±15）
+//   factionRep: { "鱼定村": 5 },                         // 势力声誉增减（世界.势力声誉.<势力>，-100~100，单次限幅±10）
 //   flags: ["promise_..."],                             // 额外记录的flag（承诺/势力声望等）
 // }
 // 分支点（completionFlag 是数组）额外支持 onReach.byFlag：{ 具体flag: {同上结构} }，
@@ -21,7 +22,7 @@ import { merge } from "../state/applyPatches.js";
 import { makeNamedItem } from "../../data/items/catalog.js";
 
 function mergeRewardParts(...parts) {
-  const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, flags: [] };
+  const out = { items: [], favorability: {}, favorabilitySet: {}, money: 0, exp: 0, pot: 0, reputation: 0, factionRep: {}, flags: [] };
   for (const p of parts) {
     if (!p) continue;
     if (p.items) out.items.push(...p.items);
@@ -31,6 +32,9 @@ function mergeRewardParts(...parts) {
     if (p.exp) out.exp += p.exp;
     if (p.pot) out.pot += p.pot;
     if (p.reputation) out.reputation += p.reputation;
+    for (const [faction, delta] of Object.entries(p.factionRep || {})) {
+      out.factionRep[faction] = (out.factionRep[faction] || 0) + delta;
+    }
     if (p.flags) out.flags.push(...p.flags);
   }
   return out;
@@ -72,6 +76,9 @@ export function stageRewardPatches(rewards, now = Date.now()) {
   }
   if (rewards.reputation) {
     patches.push(add("世界.威望", rewards.reputation));
+  }
+  for (const [faction, delta] of Object.entries(rewards.factionRep || {})) {
+    if (delta) patches.push(add(["世界", "势力声誉", faction], delta));
   }
   if (rewards.flags?.length) {
     patches.push(merge("flags", (f) => [...new Set([...f, ...rewards.flags])]));

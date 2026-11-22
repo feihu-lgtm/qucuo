@@ -12,7 +12,7 @@ export default { quest: {
         playerHint: "阿索的牦牛在大草甸走失，去找到它、赶走围着它的野狼。",
         completionFlag: "quest_yuquanzhai1_s1",
         isCgMoment: true,
-        onReach: { exp: 1, favorability: { "小牧童阿索": 30 }, reputation: 6 },
+        onReach: { exp: 1, favorability: { "小牧童阿索": 30 }, reputation: 6, factionRep: { 玉泉寨: 5 } },
       },
     ],
     rewardText: "此后阿索见玩家会主动挥赶牛鞭致意。",

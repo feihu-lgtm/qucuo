@@ -251,6 +251,7 @@ export default { quest: {
           exp: 6,
           favorabilitySet: { "罗琦": 100 },
           reputation: 12,
+          factionRep: { 欢喜教: 10 },
           items: [{ name: "空白通关文书", category: "misc", quality: "橙", desc: "盖印但收件人空白，都事给欢喜教留的一条后路。主线终局可用作撤离/转移关键人物的凭证。" }],
           flags: ["ending_seed_huanxijiao_transformed"],
         },

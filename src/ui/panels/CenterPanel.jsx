@@ -1,5 +1,6 @@
 // 中栏（江湖）——三栏布局的正中一栏，游戏的主视野。
 import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
+import { factionShopCoef } from "../../domain/rules/economy/factionRep.js";
 import { DevControls, TurnControls } from "./TopBar.jsx";
 import { chromeBtn } from "../../utils/theme.js";
 import { useState, useEffect, lazy, Suspense } from "react";
@@ -196,7 +197,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           {tradingShop && (
             <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
               <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
-                playerInv={inv} playerMoney={char.money || 0} playerWit={turn.effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={aiInspect.inspectItem}
+                playerInv={inv} playerMoney={char.money || 0} playerWit={turn.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShopCoef(varTree, room?.name)} zoneTheme={zoneTheme} onInspect={aiInspect.inspectItem}
                 onClose={() => setTradingShop(null)}
                 onBuy={(item) => runCommand("shopBuy", () => { if ((char.money || 0) < item.buyPrice) return; turn.captureUndo(); setChar(c => ({ ...c, money: c.money - item.buyPrice })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); addLog([{ t: "item", text: `  你花费${item.buyPrice}两，购得「${item.name}」。` }]); jotNote({ text: `购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
                 onSell={(item) => runCommand("shopSell", () => { if (item.equipped) return; turn.captureUndo(); setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + item.sellPrice })); addLog([{ t: "item", text: `  你卖出「${item.name}」，得银两${item.sellPrice}两。` }]); jotNote({ text: `卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); })}

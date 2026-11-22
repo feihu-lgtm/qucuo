@@ -48,8 +48,8 @@ export default { quest: {
         onReach: {
           exp: 2,
           byFlag: {
-            quest_village1_s2_a: { favorability: { "阿旺": 30 }, reputation: 10 },
-            quest_village1_s2_b: { favorability: { "阿旺": 20 }, reputation: 6 },
+            quest_village1_s2_a: { favorability: { "阿旺": 30 }, reputation: 10, factionRep: { 鱼定村: 5 } },
+            quest_village1_s2_b: { favorability: { "阿旺": 20 }, reputation: 6, factionRep: { 鱼定村: 3 } },
             quest_village1_s2_c: { favorability: { "阿旺": 5 } },
           },
         },
@@ -335,8 +335,9 @@ export default { quest: {
           favorabilitySet: { "才旦": 100 },
           favorability: { "老猎户": 20, "鱼定大娘": 20, "杂货商人": 20, "老孙": 20, "张商人": 20 },
           reputation: 12,
+          factionRep: { 鱼定村: 10 },
           items: [{ name: "界石下的土", category: "accessory", quality: "白", desc: "不是武功，不是财物。是有人在这地方站过。" }],
-          flags: ["faction_yudingcun_reputation+1", "caidan_elected_village_head"],
+          flags: ["caidan_elected_village_head"],
         },
       },
     ],

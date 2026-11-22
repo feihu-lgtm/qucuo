@@ -1,5 +1,8 @@
 import { chromeBtn } from "../../../utils/theme.js";
 import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
+import { useGameStore } from "../../../store/gameStore.js";
+import { reputationLabel } from "../../../domain/rules/prompt/mvu.js";
+import { listFactionRep } from "../../../domain/rules/economy/factionRep.js";
 
 export const JIANGHU_ENTRIES = [
   { label: "任务", overlay: OVERLAY.QUEST_LOG },
@@ -9,6 +12,9 @@ export const JIANGHU_ENTRIES = [
 ];
 
 export default function JianghuModule({ zoneTheme }) {
+  const varTree = useGameStore(s => s.varTree);
+  const fame = varTree?.世界?.威望 ?? 0;
+  const factions = listFactionRep(varTree);
   return (
     <section aria-label="江湖" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
       {JIANGHU_ENTRIES.map(entry => (
@@ -16,6 +22,11 @@ export default function JianghuModule({ zoneTheme }) {
           style={{ ...chromeBtn(zoneTheme), fontFamily: "inherit" }}
           onClick={() => openOverlay(entry.overlay)}>{entry.label}</button>
       ))}
+      <div aria-label="声誉" title="威望是全江湖的总名声；势力声誉到「友善」起，在该势力据点买东西打折"
+        style={{ width: "100%", fontSize: 11, color: zoneTheme?.textDim, lineHeight: 1.7 }}>
+        威望 {fame}（{reputationLabel(fame)}）
+        {factions.map(({ name, value, label }) => <span key={name}> · {name} {label} {value}</span>)}
+      </div>
     </section>
   );
 }
