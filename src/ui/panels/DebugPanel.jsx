@@ -34,20 +34,20 @@ export default function DebugPanel({
   const [dbgItemQualF, setDbgItemQualF] = useState("全部");
   const [dbgPickedItem, setDbgPickedItem] = useState("");
 
-  const inp = { background: "var(--bg-panel)", border: "1px solid #2a2d3a", color: "var(--text)", borderRadius: 0, padding: "2px 5px", fontSize: 11 };
+  const inp = { background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 5px", fontSize: 11 };
   const lbl = { color: "var(--accent)", flexShrink: 0 };
 
   return (
     <div style={isMobile
       ? { position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 260, padding: "10px 14px",
-          borderTop: `1px solid ${zoneTheme.border}`, background: "rgba(12,14,20,.98)", fontSize: 11, color: "#9a9482",
+          borderTop: `1px solid ${zoneTheme.border}`, background: "rgba(12,14,20,.98)", fontSize: 11, color: "var(--debug-text)",
           display: "flex", flexDirection: "column", gap: 8, maxHeight: "70vh", overflowY: "auto", overflowX: "auto",
           WebkitOverflowScrolling: "touch", boxShadow: "0 -8px 30px rgba(0,0,0,.7)" }
-      : { flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: 11, color: "#9a9482", display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
+      : { flexShrink: 0, padding: "10px 14px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(110,198,198,0.05)", fontSize: 11, color: "var(--debug-text)", display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
       <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between",
-        margin: "-10px -14px 4px", padding: "6px 14px", background: "rgba(16,18,26,.96)", borderBottom: "1px solid #2a2d3a" }}>
+        margin: "-10px -14px 4px", padding: "6px 14px", background: "rgba(16,18,26,.96)", borderBottom: "1px solid var(--ink-edge-quest)" }}>
         <span style={{ color: "var(--accent)", fontSize: 12, fontWeight: "bold" }}>🛠 调试面板</span>
-        <span onClick={() => closeOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", color: "#e0806a", fontSize: 13, padding: "2px 12px", border: "1px solid #5a3a2a", borderRadius: 0 }}>✕ 关闭</span>
+        <span onClick={() => closeOverlay(OVERLAY.DEBUG)} style={{ cursor: "pointer", color: "var(--debug-close)", fontSize: 13, padding: "2px 12px", border: "1px solid var(--debug-close-edge)", borderRadius: 0 }}>✕ 关闭</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 40, ...lbl }}>金钱</span>
@@ -80,7 +80,7 @@ export default function DebugPanel({
             <span style={{ fontSize: 10 }}>{dim}</span>
             <input type="number" value={char.special?.[dim] ?? 5}
               onChange={e => setChar(c => ({ ...c, special: { ...(c.special || {}), [dim]: parseInt(e.target.value) || 0 } }))}
-              style={{ width: 42, background: "var(--bg-panel)", border: "1px solid #2a2d3a", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+              style={{ width: 42, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
           </span>
         ))}
       </div>
@@ -88,19 +88,19 @@ export default function DebugPanel({
         <span style={{ fontSize: 10 }}>潜能</span>
         <input type="number" value={pot ?? 0}
           onChange={e => setPot(parseInt(e.target.value) || 0)}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid #2a2d3a", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
         <span style={{ fontSize: 10, marginLeft: 6 }}>阅历</span>
         <input type="number" value={exp ?? 0}
           onChange={e => setExp(parseInt(e.target.value) || 0)}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid #2a2d3a", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
         <span style={{ fontSize: 10, marginLeft: 6 }}>因果</span>
         <input type="number" value={dao.karma ?? 0}
           onChange={e => setDao(d => ({ ...d, karma: parseInt(e.target.value) || 0 }))}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid #2a2d3a", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
         <span style={{ fontSize: 10, marginLeft: 6 }}>劫数</span>
         <input type="number" value={dao.jie ?? 0}
           onChange={e => setDao(d => ({ ...d, jie: parseInt(e.target.value) || 0 }))}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid #2a2d3a", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 40, ...lbl }}>威望</span>
@@ -172,7 +172,7 @@ export default function DebugPanel({
             teleportLookRef.current = { dist: dbgDist, inner: inner2 };
           }
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgDist ? "var(--accent)" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgDist ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}>传送</span>
+          style={{ cursor: "pointer", fontSize: 10, color: dbgDist ? "var(--accent)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgDist ? "var(--accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}>传送</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <span style={{ width: 40, ...lbl }}>增加武学</span>
@@ -210,7 +210,7 @@ export default function DebugPanel({
           setSkills(sk => [...sk, entry]);
           addLog([{ t: "sys", text: `  [调试] 习得并运功「${found.name}」（${found.quality}·${found.type}）` }]);
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedSkill ? "var(--clay)" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgPickedSkill ? "var(--ink-accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedSkill ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgPickedSkill ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
         >增加并装备</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -242,7 +242,7 @@ export default function DebugPanel({
           addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[item.category] || item.category}）` }]);
           setDbgPickedItem("");
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedItem ? "var(--clay)" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgPickedItem ? "var(--ink-accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedItem ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgPickedItem ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
         >增加</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -264,7 +264,7 @@ export default function DebugPanel({
           addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[dbgItemCat] || dbgItemCat}）` }]);
           setDbgItemName("");
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgItemName.trim() ? "var(--clay)" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgItemName.trim() ? "var(--ink-accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: 10, color: dbgItemName.trim() ? "var(--clay)" : "var(--ink-dim-deep)", padding: "2px 8px", border: `1px solid ${dbgItemName.trim() ? "var(--ink-accent)" : "var(--ink-divider)"}`, borderRadius: 0, userSelect: "none" }}
         >增加</span>
       </div>
     </div>
