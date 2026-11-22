@@ -33,9 +33,20 @@ describe("唐堡千机演武坪", () => {
     const learnable = (rep) => SKILL_CATALOG.唐门.filter((entry) => buySkill(at(rep), entry).changes).map((entry) => entry.name);
     expect(learnable(-1)).toEqual([]);
     expect(learnable(14)).toEqual(["寸铁点星手"]);
-    expect(learnable(40)).toEqual(["寸铁点星手", "药息", "匣中静"]);
-    expect(learnable(80)).toEqual(SKILL_CATALOG.唐门.map((entry) => entry.name));
+    expect(learnable(40)).toEqual(["寸铁点星手", "药息", "匣中静", "浮光掠竹步"]);
+    expect(learnable(80)).toEqual(["寸铁点星手", "药息", "匣中静", "满天星雨", "百毒不侵体", "浮光掠竹步"]);
     expect(buySkill(at(79), skill("满天星雨")).logs[0].text).toContain("尚不可学");
+  });
+
+  it("keeps the inner-hall needles for sworn disciples; the house ultimate also needs 唐5", () => {
+    const member = (rep, questProgress = {}) => state({ flags: ["唐门弟子"], questProgress, varTree: { 世界: { 势力声誉: { 唐门: rep } } } });
+    expect(buySkill(member(79), skill("千机错骨针")).changes).toBeUndefined();
+    expect(buySkill(member(80), skill("千机错骨针")).changes.skills[0].id).toBe("kf_tm_cuogu");
+    expect(buySkill(state({ varTree: { 世界: { 势力声誉: { 唐门: 100 } } } }), skill("千机错骨针")).changes).toBeUndefined();
+    expect(buySkill(member(100), skill("天罗绣影针")).changes).toBeUndefined();
+    const done = { tangmen_5_jiaguichujian: { status: "completed" } };
+    expect(buySkill({ ...member(100, done), char: { money: 1000 } }, skill("天罗绣影针")).changes.skills[0].id).toBe("kf_tm_tianluo");
+    expect(skill("天罗绣影针").unlock.rep).toBeLessThanOrEqual(100);
   });
 
   it("uses the same rule from the local command at the current hall only", () => {

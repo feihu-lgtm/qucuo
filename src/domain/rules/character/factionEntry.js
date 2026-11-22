@@ -25,6 +25,14 @@ export const FACTION_ENTRIES = {
     intro: "听竹轩正厅案上供着青玉弟子令与一卷《峨眉清规》。玄尘师太问你三句心性话，答得出，便收。",
     joinLabel: "问心受戒，拜入峨眉派",
   },
+  唐门: {
+    sect: "唐门", master: "唐老太", buildingId: "sect_entry_tangmen",
+    minRep: 40, repBonus: 20, flag: "唐门弟子",
+    token: "玄竹弟子令", gifts: [],
+    trial: null,
+    intro: "宗祠门前横着一块磨凹了的入堂石。唐老太拄着竹杖站在石后，笑眯眯地说：跪下，滴血，立誓；从今往后唐家的规矩就是你的规矩。",
+    joinLabel: "入堂石前立血誓，拜入唐门",
+  },
 };
 
 export const SECT_MEMBER_FLAGS = {

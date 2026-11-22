@@ -64,6 +64,10 @@ export const BUILDINGS_BY_LOCATION = {
       id: "hospital_tangmen", name: "试毒药庐", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
       desc: "既是练毒的灶，也是救命的堂；世上最狠的毒往往和最灵的解药同出一炉，只要出得起银子，断气前总能拉回来半口。",
     },
+    {
+      id: "sect_entry_tangmen", name: "宗祠·入堂石", type: BUILDING_TYPE.SECT_ENTRY, sect: "唐门",
+      desc: "唐家宗祠门前的入堂石，向唐老太行礼立誓、滴血入槽，便领一块玄竹弟子令。",
+    },
   ],
   // ── 广汉·丐帮三星分舵（合稿·丐帮 2.3；拜师堂等拜入接线后再开） ──
   广汉: [

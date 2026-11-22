@@ -141,6 +141,7 @@ export const DIVINE_ARMS = getContent("itemGroup", "DIVINE_ARMS").map(id => getC
 export const WUXIAN_GOODS = getContent("itemGroup", "WUXIAN_GOODS").map(id => getContent("item", id));
 // 雪山派具名物（同第一批具名物层级，named；门派商坊靠 minRep 门槛）
 export const XUESHAN_GOODS = getContent("itemGroup", "XUESHAN_GOODS").map(id => getContent("item", id));
+export const TANGMEN_GOODS = getContent("itemGroup", "TANGMEN_GOODS").map(id => getContent("item", id));
 
 // ============================================================================
 // 核心：把 catalog 条目实例化成一个完整物品对象
@@ -205,6 +206,7 @@ export const CATALOG = [
   ...JADE_WARES,           // 20件翡翠玉器成品（jadeWare，金玉行选购/预制打造）
   ...WUXIAN_GOODS,         // 五仙教雾隐寨具名物（named，商店+NPC随身物共用条目）
   ...XUESHAN_GOODS,        // 雪山派具名物（named，门派商坊+NPC随身物+任务物共用条目）
+  ...TANGMEN_GOODS,        // 唐门具名物（named，门人随身物+拜入信物+任务物共用条目）
 ];
 
 // name → 条目，供"按名取物"（任务发放具名物品、商店铺货、AI 引用时反查数值）
