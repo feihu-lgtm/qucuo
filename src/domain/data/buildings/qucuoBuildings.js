@@ -131,6 +131,10 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "天都镇最大的客栈，二层小楼，楼下卖酒，商贩走卒在此歇脚打听消息。",
     },
     {
+      id: "grocery_tiandu", name: "天都香行", type: BUILDING_TYPE.GROCERY, shopKey: "天都香行",
+      desc: "欢喜教的明面铺子，专卖香料和点心，作为礼物送给NPC时好感加成比普通物品高。",
+    },
+    {
       id: "smithy_tiandu", name: "孟记铁铺", type: BUILDING_TYPE.SMITHY, shopKey: "孟记铁铺", craft: "forge",
       desc: "孟老汉开的铁匠铺，炉火熊熊，武器护甲现货齐全，也接拿料定制的活计。",
     },
@@ -253,10 +257,6 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "library_jingguan", name: "文渊书肆", type: BUILDING_TYPE.LIBRARY,
       desc: "武学秘籍和见闻录都能买到，见闻录注入世界知识，秘籍直接入skills。",
-    },
-    {
-      id: "grocery_jingguan", name: "百香斋", type: BUILDING_TYPE.GROCERY, shopKey: "百香斋",
-      desc: "专卖香料和点心，作为礼物送给NPC时好感加成比普通物品高。",
     },
     {
       id: "jewelry_jingguan", name: "金玉行", type: BUILDING_TYPE.JEWELRY, shopKey: "金玉行",
