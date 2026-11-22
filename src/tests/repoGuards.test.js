@@ -2,18 +2,12 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 
-// 文件树文档的自动守卫。
-// 【为什么值得写一条测试来管文档】
-// 0728 全量对账发现 docs/文件树.md 漏了 52 个文件——而且不只是新加的：
-// quickBattle/ 整个目录、combat/ 三个文件、TeamDuelScreen、CodexScreen、
-// 全部调试与可观测组件都漏着，另有一处幽灵条目（memory-recall.js 早改名了）。
-// 文档漂移是悄无声息的：没人会因为漏登记而报错，但下一个人（包括以后的我）
-// 就会照着不全的树去找代码，或者重复造一个已经存在的东西——
-// memory/activityLog.js 与 memory/tally.js 功能重叠，正是这么来的。
-// 所以钉一条：新增源文件必须登记进文件树；文件树也不许留已删除文件的幽灵条目。
+// 仓库级杂项守卫（原 docsTree.test.js；手写文件树门禁已删，改由 `npm run tree` 实时打印）。
+// 剩下的都是「构建与常规测试都抓不到」的断链类检查：
+// npm 脚本指向不存在的文件、version.js 语法、CI 与 verify 分叉、public 资源
+// 绝对路径、Hook deps 的 TDZ 引用、app hook 参数先声明后用、ctx 字段形状。
 
 const SRC = "src";
-const DOC = "docs/文件树.md";
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -24,33 +18,7 @@ function walk(dir, out = []) {
   return out;
 }
 
-describe("docs/文件树.md 与真实文件系统对得上", () => {
-  const doc = readFileSync(DOC, "utf-8");
-  const files = walk(SRC);
-
-  it("每个源文件都登记在册", () => {
-    const missing = files.filter(f => !doc.includes(f.split("/").pop()));
-    expect(missing, `以下文件未登记进 ${DOC}：\n  ${missing.join("\n  ")}`).toEqual([]);
-  });
-
-  it("没有幽灵条目（文档提到但已不存在的文件）", () => {
-    const names = new Set(files.map(f => f.split("/").pop()));
-    const ghosts = [...new Set(
-      (doc.match(/[A-Za-z][A-Za-z0-9_.\-]*\.jsx?\b/g) || [])
-        .filter(m => !names.has(m) && !m.startsWith("vite") && !m.startsWith("eslint")),
-    )];
-    expect(ghosts, `文档提到但已不存在：${ghosts.join(", ")}`).toEqual([]);
-  });
-
-  it("scripts/ 下的开发工具也要登记（它们不进产物，但漏登记同样会被重复造）", () => {
-    // 【为什么补这条】propsCheck.mjs 写完之后一直没进文件树——上一轮想登记 propsFlow
-    // 时才发现整个 scripts 段落都不存在。工具不在树上，下一个人不知道它存在，
-    // 于是要么重复造一个，要么继续手工做它本该自动做的事。
-    const tools = readdirSync("scripts").filter(n => /\.(mjs|sh|py)$/.test(n));
-    const missing = tools.filter(n => !doc.includes(n));
-    expect(missing, `以下开发工具未登记进 ${DOC}：\n  ${missing.join("\n  ")}`).toEqual([]);
-  });
-
+describe("npm 脚本引用的本地文件必须存在", () => {
   it("package.json 里 npm 脚本引用的本地文件必须存在", () => {
     // 【为什么补这条】"debug": "node tools/debug.mjs" 指向的 tools/ 目录压根不存在，
     // npm run debug 必然失败——而这事没有任何地方会报出来，直到有人去跑它。
@@ -64,12 +32,6 @@ describe("docs/文件树.md 与真实文件系统对得上", () => {
       }
     }
     expect(bad, `npm 脚本指向了不存在的文件：\n  ${bad.join("\n  ")}`).toEqual([]);
-  });
-
-  it("文档里声明的文件数与实际一致（防统计行过期）", () => {
-    const m = doc.match(/(\d+)\s*个\s*js\/jsx\s*文件/);
-    expect(m, "文档里应有一行声明文件总数").toBeTruthy();
-    expect(Number(m[1]), `声明 ${m[1]} 个，实际 ${files.length} 个`).toBe(files.length);
   });
 });
 

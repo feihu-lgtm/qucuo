@@ -1,14 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareRatchetMetrics, extractImportSpecifiers } from "./ratchet.mjs";
-
-const baseline = {
-  layerViolations: { "app->ui": 2 },
-  externalInfraImports: { app: 3 },
-  distinctHexColors: 20,
-  totalHexOccurrences: 100,
-  largeFiles: { "app/MudRPG.jsx": 500 },
-  mainJsGzipBytes: 1000,
-};
+import { checkLayerRedLines, extractImportSpecifiers, formatStats, KNOWN_LAYER_DEBT } from "./ratchet.mjs";
 
 describe("extractImportSpecifiers", () => {
   it("ignores line and block comments without treating comment markers in strings as comments", () => {
@@ -59,72 +50,39 @@ describe("extractImportSpecifiers", () => {
   });
 });
 
-describe("compareRatchetMetrics", () => {
-  it("passes when metrics are unchanged", () => {
-    expect(compareRatchetMetrics(baseline, structuredClone(baseline))).toMatchObject({
-      ok: true,
-      failures: [],
-      improvements: [],
-    });
+describe("checkLayerRedLines（硬红线：跨层逆向依赖 0 容忍）", () => {
+  it("没有逆向依赖时通过", () => {
+    expect(checkLayerRedLines({ layerViolations: {} })).toMatchObject({ ok: true, failures: [] });
   });
 
-  it("reports increases by metric and rule", () => {
-    const result = compareRatchetMetrics(baseline, {
-      ...baseline,
-      layerViolations: { "app->ui": 3 },
-      distinctHexColors: 21,
-      totalHexOccurrences: 101,
-      largeFiles: { "app/MudRPG.jsx": 501 },
-      mainJsGzipBytes: 1030,
-    });
+  it("欠账目录在上限内通过、超上限失败", () => {
+    const rule = Object.keys(KNOWN_LAYER_DEBT)[0];
+    const cap = KNOWN_LAYER_DEBT[rule];
+    expect(checkLayerRedLines({ layerViolations: { [rule]: cap } }).ok).toBe(true);
+    const over = checkLayerRedLines({ layerViolations: { [rule]: cap + 1 } });
+    expect(over.ok).toBe(false);
+    expect(over.failures[0]).toContain(rule);
+  });
 
+  it("已清零的层间规则只要出现一条就失败（0 容忍）", () => {
+    const result = checkLayerRedLines({ layerViolations: { "infra->core": 1, "domain->engine": 2 } });
     expect(result.ok).toBe(false);
-    expect(result.failures).toEqual(expect.arrayContaining([
-      "layerViolations.app->ui: 2 -> 3 (+1)",
-      "distinctHexColors: 20 -> 21 (+1)",
-      "totalHexOccurrences: 100 -> 101 (+1)",
-      "largeFiles.app/MudRPG.jsx: 500 -> 501 (+1 lines)",
-      expect.stringContaining("mainJsGzipBytes: 1000 -> 1030"),
-    ]));
+    expect(result.failures).toHaveLength(2);
   });
+});
 
-  it("treats decreases as improvements without failing", () => {
-    const result = compareRatchetMetrics(baseline, {
-      ...baseline,
-      layerViolations: {},
-      externalInfraImports: { app: 2 },
-      distinctHexColors: 19,
-      totalHexOccurrences: 90,
-      largeFiles: { "app/MudRPG.jsx": 490 },
-      mainJsGzipBytes: 900,
+describe("formatStats（软指标只打印不阻断）", () => {
+  it("打印全部指标行且不含通过/失败判定", () => {
+    const lines = formatStats({
+      layerViolations: { "app->ui": 16 },
+      externalInfraImports: { app: 19 },
+      distinctHexColors: 399,
+      totalHexOccurrences: 1396,
+      largeFiles: { "ui/x.jsx": 500 },
+      mainJsGzipBytes: 1000,
     });
-
-    expect(result.ok).toBe(true);
-    expect(result.failures).toEqual([]);
-    expect(result.improvements.length).toBeGreaterThan(0);
-  });
-
-  it("rejects a new file over 400 lines", () => {
-    const result = compareRatchetMetrics(baseline, {
-      ...baseline,
-      largeFiles: { ...baseline.largeFiles, "features/newFile.js": 401 },
-    });
-
-    expect(result.failures).toContain("largeFiles.features/newFile.js: new file has 401 lines (limit: 400)");
-  });
-
-  it("allows the 2% bundle tolerance and rejects growth beyond it", () => {
-    const withinTolerance = compareRatchetMetrics(baseline, { ...baseline, mainJsGzipBytes: 1020 });
-    const aboveTolerance = compareRatchetMetrics(baseline, { ...baseline, mainJsGzipBytes: 1021 });
-
-    expect(withinTolerance.ok).toBe(true);
-    expect(aboveTolerance.failures[0]).toContain("mainJsGzipBytes: 1000 -> 1021");
-  });
-
-  it("skips bundle comparison when dist is absent", () => {
-    const result = compareRatchetMetrics(baseline, { ...baseline, mainJsGzipBytes: null });
-
-    expect(result.ok).toBe(true);
-    expect(result.notes).toContain("main JS gzip metric skipped because dist/ is missing or has no main chunk.");
+    expect(lines.join("\n")).toContain("app->ui=16");
+    expect(lines.join("\n")).toContain("distinctHexColors: 399");
+    expect(lines.join("\n")).toContain("ui/x.jsx=500");
   });
 });

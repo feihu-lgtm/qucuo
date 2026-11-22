@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkLayerRedLines, collectRatchetMetrics } from "../scripts/ratchet.mjs";
 
 const srcDir = resolve(dirname(fileURLToPath(import.meta.url)));
 const infraDir = resolve(srcDir, "infra");
@@ -69,4 +70,12 @@ it("keeps prompt builders free of UI imports and nondeterministic globals", () =
       return [...source.matchAll(forbidden)].map((match) => `${relative(promptDir, file)}: ${match[0]}`);
     });
   expect(violations).toEqual([]);
+});
+
+// 跨层红线（0 容忍）——与 `npm run ratchet` 同一份实现，scan 逻辑在 scripts/ratchet.mjs。
+// 已清零的逆向依赖一律不许再出现；`app->ui` 现存 16 条欠账写死上限、只减不增。
+// 软指标（大文件/颜色/infra 引用数/gzip）不在这里管，`npm run stats` 按需看。
+it("keeps cross-layer reverse dependencies at zero (KNOWN_LAYER_DEBT cap only)", () => {
+  const { metrics } = collectRatchetMetrics();
+  expect(checkLayerRedLines(metrics).failures).toEqual([]);
 });
