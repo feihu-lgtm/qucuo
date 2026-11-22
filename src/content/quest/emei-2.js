@@ -331,7 +331,7 @@ export default { quest: {
     stages: [
       {
         id: "ask",
-        giver: "玄尘师太",
+        giver: null,
         requireLocation: { district: "锦官城", inner: "听竹轩" },
         playerHint: "去听竹轩向玄尘师太正式请山。",
         description: "听竹轩里佛前长明灯不灭。玄尘师太听完你的来意，召齐了因、虚白、照微、铁莲四位议事：「峨眉在锦官城立派，守的是清修不是世道——你要请剑出山，得先过我这三问。」",
@@ -339,7 +339,7 @@ export default { quest: {
       },
       {
         id: "battle",
-        giver: "照微",
+        giver: null,
         requireLocation: { district: "锦官城", inner: "练剑坪" },
         playerHint: "上练剑坪，破照微与铁莲的剑枪合击阵。",
         description: "青石坪上，照微的剑走回风拂柳，铁莲的枪走降魔六合，一柔一刚织成密不透风的合击阵。「破得开，峨眉的剑才肯听你说话。」",
@@ -350,7 +350,7 @@ export default { quest: {
       },
       {
         id: "ciren",
-        giver: "了因师太",
+        giver: null,
         requireLocation: { district: "锦官城", inner: "慈济佛堂" },
         playerHint: "去慈济佛堂，把曲措流民册与求援书摆给了因师太看。",
         description: "了因师太捻着佛珠听完，看了你半晌：「峨眉若出山，刀剑先到，苦难后到——你拿什么担保山下无辜？」你把雪山求援书与流民册一页页摊在佛案上，立下护全百姓的诺。",
@@ -358,7 +358,7 @@ export default { quest: {
       },
       {
         id: "decree",
-        giver: "玄尘师太",
+        giver: null,
         requireLocation: { district: "锦官城", inner: "金顶静室·藏剑阁" },
         playerHint: "回藏剑阁——玄尘师太要当众取下壁龛的素雪古剑。",
         description: "藏剑阁内，玄尘师太取下壁龛悬了半生的素雪古剑，声若钟磬：「三问已过。峨眉剑庐，今日入局曲措。」",
