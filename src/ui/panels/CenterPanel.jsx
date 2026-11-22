@@ -145,7 +145,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
           style={{
             flex: 1, minHeight: 0, height: "100%", overflowY: "auto",
             borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)",
-            display: buildingPanelMinimized ? "none" : undefined,
+            display: buildingPanelMinimized ? "none" : "flex", flexDirection: "column",
             visibility: buildingPanelMinimized ? "hidden" : undefined,
             pointerEvents: buildingPanelMinimized ? "none" : undefined,
           }}
