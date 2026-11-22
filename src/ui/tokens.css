@@ -156,6 +156,17 @@
   --ink-bg: #0a0a09;
   --ink-bg-panel: #111110;
 
+  /* 酒馆模拟定色（原字面量，不随日间模式变）。 */
+  --tavern-disabled-bg: #1a1a1a;
+  --tavern-disabled-edge: #2a2a2a;
+  --tavern-disabled-text: #4a4a4a;
+  --tavern-page-bg: #0a0c12;
+  --tavern-steam: #9a9a8a;
+  --tavern-wood-bottom-dark: #17100c;
+  --tavern-wood-top: #2a2018;
+  --tavern-wood-top-dark: #1a1410;
+  --tavern-zone-label: #8a7a5a;
+
   /* 新手教程浮层定色（原字面量，不随日间模式变）。 */
   --tutorial-dim: #b0a080;
   --tutorial-map: #a0b8c0;

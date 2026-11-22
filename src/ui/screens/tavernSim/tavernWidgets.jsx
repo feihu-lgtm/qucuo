@@ -10,9 +10,9 @@ export function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
     <span onClick={disabled ? undefined : onClick}
       style={{
         fontSize: 12, padding: "4px 12px", borderRadius: 0, cursor: disabled ? "not-allowed" : "pointer",
-        color: disabled ? "#4a4a4a" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
-        background: disabled ? "#1a1a1a" : secondary ? "transparent" : zoneTheme.accent,
-        border: `1px solid ${disabled ? "#2a2a2a" : secondary ? zoneTheme.border : zoneTheme.accent}`,
+        color: disabled ? "var(--tavern-disabled-text)" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
+        background: disabled ? "var(--tavern-disabled-bg)" : secondary ? "transparent" : zoneTheme.accent,
+        border: `1px solid ${disabled ? "var(--tavern-disabled-edge)" : secondary ? zoneTheme.border : zoneTheme.accent}`,
         opacity: disabled ? 0.5 : 1, userSelect: "none", whiteSpace: "nowrap",
       }}>{label}</span>
   );
@@ -24,7 +24,7 @@ export function SectionTitle({ children, zoneTheme }) {
 
 // ── 样式 ─────────────────────────────────────────────────────────────
 export const S = {
-  page: (t) => ({ height: "100vh", display: "flex", flexDirection: "column", background: t.bg || "#0a0c12", fontFamily: "inherit" }),
+  page: (t) => ({ height: "100vh", display: "flex", flexDirection: "column", background: t.bg || "var(--tavern-page-bg)", fontFamily: "inherit" }),
   topbar: (t) => ({ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: `1px solid ${t.border}`, flexWrap: "wrap" }),
   chip: (t) => ({ color: "var(--ink-text)", fontSize: 12, border: `1px solid ${t.border}`, borderRadius: 0, padding: "3px 8px", background: "rgba(255,255,255,0.02)" }),
   mainRow: { flex: 1, display: "flex", minHeight: 0, flexWrap: "wrap" },
@@ -32,11 +32,11 @@ export const S = {
   scene: (night) => ({
     position: "relative", width: "100%", height: "100%", minHeight: 300, borderRadius: 0, overflow: "hidden",
     background: night
-      ? "repeating-linear-gradient(90deg, var(--ink-wood-dark) 0px, var(--ink-wood-dark) 46px, var(--ink-wood-shade) 46px, var(--ink-wood-shade) 48px), linear-gradient(180deg, #1a1410 0%, var(--ink-wood-dark) 55%, #17100c 100%)"
-      : "repeating-linear-gradient(90deg, var(--ink-wood) 0px, var(--ink-wood) 46px, var(--ink-wood-mid) 46px, var(--ink-wood-mid) 48px), linear-gradient(180deg, #2a2018 0%, var(--ink-wood) 55%, var(--ink-wood-dark) 100%)",
+      ? "repeating-linear-gradient(90deg, var(--ink-wood-dark) 0px, var(--ink-wood-dark) 46px, var(--ink-wood-shade) 46px, var(--ink-wood-shade) 48px), linear-gradient(180deg, var(--tavern-wood-top-dark) 0%, var(--ink-wood-dark) 55%, var(--tavern-wood-bottom-dark) 100%)"
+      : "repeating-linear-gradient(90deg, var(--ink-wood) 0px, var(--ink-wood) 46px, var(--ink-wood-mid) 46px, var(--ink-wood-mid) 48px), linear-gradient(180deg, var(--tavern-wood-top) 0%, var(--ink-wood) 55%, var(--ink-wood-dark) 100%)",
     border: "1px solid var(--ink-wood-line)",
   }),
-  zoneLabel: { fontSize: 10, color: "#8a7a5a", letterSpacing: 2, marginTop: 1 },
+  zoneLabel: { fontSize: 10, color: "var(--tavern-zone-label)", letterSpacing: 2, marginTop: 1 },
   side: (t) => ({ flex: "1 1 38%", minWidth: 280, display: "flex", flexDirection: "column", minHeight: 0 }),
   tabRow: (t) => ({ display: "flex", borderBottom: `1px solid ${t.border}` }),
   tab: (t, active) => ({
@@ -67,7 +67,7 @@ export const CSS_KEYFRAMES = `
 .ts-runner { position: absolute; font-size: 20px; animation: tsRoam 18s linear infinite; } @media(max-width:767px){.ts-main-row{flex-direction:column;flex-wrap:nowrap;overflow:hidden}.ts-scene-wrap{flex:0 0 32vh!important;min-width:0!important;min-height:0!important;padding:8px!important;border-right:0!important}.ts-scene-wrap>div{min-height:0!important}.ts-side{flex:1 1 0!important;min-width:0!important;min-height:0!important}.ts-log-panel{position:relative;flex:0 0 130px!important;max-height:130px}}
 @keyframes tsSteam { 0% { transform: translateY(0); opacity: 0.5; } 100% { transform: translateY(-14px); opacity: 0; } }
 .ts-steam { position: absolute; left: 50%; top: -6px; }
-.ts-steam i { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: #9a9a8a; margin: 0 2px; animation: tsSteam 1.8s ease-out infinite; }
+.ts-steam i { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: var(--tavern-steam); margin: 0 2px; animation: tsSteam 1.8s ease-out infinite; }
 .ts-steam i:nth-child(2) { animation-delay: 0.6s; }
 .ts-steam i:nth-child(3) { animation-delay: 1.2s; }
 `;
