@@ -108,6 +108,8 @@ export function resolveBattleTurn(myFighter, foeFighter, myMove, foeMove) {
   if (result.markDetonatedOnB > 0) newFoeStatus = { ...newFoeStatus, mark: null };
   if (result.dispelSelfA) newMyStatus = dispelControlDrain(newMyStatus);
   if (result.dispelSelfB) newFoeStatus = dispelControlDrain(newFoeStatus);
+  if (result.dispelMarksA) newMyStatus = { ...newMyStatus, mark: null };
+  if (result.dispelMarksB) newFoeStatus = { ...newFoeStatus, mark: null };
 
   // ── 回合末状态 tick（掉血/递增剧毒/自动解除）──
   const endTick = applyEndOfTurnStatus(

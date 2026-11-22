@@ -24,10 +24,16 @@ describe("dispelSelf", () => {
     const poisoned = applyStatus({}, "淬毒");
     const result = resolveTurn(side(antidote, poisoned), side(strike));
     expect(result.dispelSelfA).toBe(true);
+    expect(result.dispelMarksA).toBe(false);
     const slots = dispelControlDrain(poisoned);
     expect(slots.drain).toBeNull();
     const tick = applyEndOfTurnStatus({ statusSlots: slots, hp: [80, 100] }, { statusSlots: {}, hp: [100, 100] });
     expect(tick.statusDamageA).toBe(0);
+  });
+
+  it("a full-cleanse antidote also clears marks", () => {
+    const result = resolveTurn(side({ ...antidote, dispelMarks: true }), side(strike));
+    expect(result).toMatchObject({ dispelSelfA: true, dispelMarksA: true });
   });
 
   it("a cleansing move works unless an attack interrupts it", () => {

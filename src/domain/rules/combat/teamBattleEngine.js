@@ -111,6 +111,7 @@ function applyResultToUnit(unit, result, tag, move) {
   if (markApplied && !immune) newStatus = applyMark(newStatus, markApplied.name, markApplied.stacks, markApplied.max);
   if ((result[`markDetonatedOn${tag}`] || 0) > 0) newStatus = { ...newStatus, mark: null };
   if (result[`dispelSelf${tag}`]) newStatus = dispelControlDrain(newStatus);
+  if (result[`dispelMarks${tag}`]) newStatus = { ...newStatus, mark: null };
 
   // 永久成长/降耗：写回本地 movesetLocal 拷贝（调用方持有 unit.movesetLocal 数组）
   let movesetLocal = unit.movesetLocal;

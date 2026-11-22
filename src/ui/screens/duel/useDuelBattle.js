@@ -194,6 +194,8 @@ export function useDuelBattle({ npc, playerChar, pendingCombatBuff, playerInv, p
       // 运功自解：dispelSelf 清掉自身控制/掉血状态（不动印记）
       if (result.dispelSelfA) newPlayerStatus = dispelControlDrain(newPlayerStatus);
       if (result.dispelSelfB) newNpcStatus = dispelControlDrain(newNpcStatus);
+      if (result.dispelMarksA) newPlayerStatus = { ...newPlayerStatus, mark: null };
+      if (result.dispelMarksB) newNpcStatus = { ...newNpcStatus, mark: null };
 
       // 关键修复：applyEndOfTurnStatus 内部要用 hp[1]（最大血量）计算状态掉血比例
       // （比如"损失1/8最大气血"），之前这里只传了 statusSlots，完全没传 hp，

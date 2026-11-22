@@ -35,8 +35,10 @@ export function consumablePseudoMove(invItem) {
   if (c.hpRestore) pseudoMove.hpRestore = c.hpRestore;
   if (c.energyRestore) pseudoMove.energyRestore = c.energyRestore;
   // 解异常：药品用 dispel:true 或 dispelAll:true 标记，统一走招式的 dispelSelf 通道，
-  // 清掉自身控制/掉血类状态（不解印记，跟运功自解同语义）。
+  // 清掉自身控制/掉血类状态。
   if (c.dispel || c.dispelAll) pseudoMove.dispelSelf = true;
+  // dispelAll 是全解：连印记一起清掉。
+  if (c.dispelAll) pseudoMove.dispelMarks = true;
   // 假死保命：不是即时数值，标一个开关，结算里 _armRebirth 备好本场续命一次。
   const armRebirth = !!c.rebirthOnce;
   return { pseudoMove, armRebirth };
