@@ -137,7 +137,7 @@ export default { quest: {
       },
       {
         id: "s2_choice",
-        description: "反杀刺客后拆开密信：哪有什么清理门户，通篇是天都镇地下势力分赃不均的旧账——师兄是要借师父的手除掉知情人。二选一：A.把信原样送给师父，得清理门户的信任与酬劳；B.回头找师兄摊牌，拿信换一笔高额封口费。",
+        description: "反杀刺客后拆开密信：哪有什么清理门户，通篇是天都镇地下势力分赃不均的旧账——师兄是要借师父的手除掉知情人。就在官道上做个了断：A.把信原样送交师父（得清理门户的信任与酬劳）；B.回头找师兄摊牌换高额封口费。收货场景由叙事随后补写，旗在此刻落定。",
         playerHint: "密信内容已见，交师父还是卖回给师兄，你选。",
         completionFlag: ["quest_tigerside20_s2_honor", "quest_tigerside20_s2_hush"],
         requireLocation: { district: "锦官城", inner: "官道" },
