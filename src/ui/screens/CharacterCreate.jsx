@@ -36,6 +36,9 @@ export default function CharacterCreate({ onConfirm }) {
   const [step, setStep] = useState("identity");
   const [selectedPortraitId, setSelectedPortraitId] = useState("male");
   const [portraitTouched, setPortraitTouched] = useState(false);
+  // 手改体貌或从预设库套用也算动过，回头改名字时不能把草稿冲掉。
+  const [bodyTouched, setBodyTouched] = useState(false);
+  const handleBodyChange = (next) => { setBodyTouched(true); setBodyProfile(next); };
   const [bodyProfile, setBodyProfile] = useState(() =>
     applyBodyPreset(emptyBodyProfile(), getPortraitPreset("male"), { includeIntimate: false }),
   );
@@ -55,7 +58,7 @@ export default function CharacterCreate({ onConfirm }) {
       onConfirm({ name: name.trim(), gender: finalGender, fromCard, special: undefined, starterSkillId: undefined });
       return;
     }
-    if (!portraitTouched) {
+    if (!portraitTouched && !bodyTouched) {
       const defId = defaultPortraitIdForGender(gender);
       setSelectedPortraitId(defId);
       setBodyProfile(applyBodyPreset(emptyBodyProfile(), getPortraitPreset(defId), { includeIntimate: false }));
@@ -203,7 +206,7 @@ export default function CharacterCreate({ onConfirm }) {
             selectedPortraitId={selectedPortraitId}
             bodyProfile={bodyProfile}
             onSelectPortrait={handleSelectPortrait}
-            onBodyChange={setBodyProfile}
+            onBodyChange={handleBodyChange}
             onBack={() => setStep("identity")}
             onContinue={continueToStats}
             theme={theme}

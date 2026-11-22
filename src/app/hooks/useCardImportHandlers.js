@@ -98,7 +98,6 @@ export function useCardImportHandlers({
       });
       if (!fromCard && portraitUrl) {
         setPlayerAvatarCustom?.(portraitUrl);
-        try { localStorage.setItem("qucuo_player_avatar", portraitUrl); } catch { /* ignore */ }
       }
       if (fromCard) {
         const cardResult = applyCharacterCard(gameStore.getState(), fromCard, "cc_");

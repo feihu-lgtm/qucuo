@@ -136,6 +136,10 @@ export default function BodyProfilePanel({
           padding: "7px 10px", marginBottom: 12,
         }}>
           <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={showPresets}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowPresets(v => !v); } }}
             onClick={() => setShowPresets(v => !v)}
             style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
           >

@@ -56,13 +56,10 @@ export default function PortraitBodyStep({
     onBodyChange(applyBodyPreset(bodyProfile, preset, { includeIntimate }));
   };
 
-  const toggleIncludeIntimate = () => {
-    const next = !includeIntimate;
-    setIncludeIntimate(next);
-    if (next) {
-      const source = ALL_BODY_PRESETS.find((item) => item.name === activePresetName) || selectedPortrait;
-      onBodyChange(applyBodyPreset(bodyProfile, source, { includeIntimate: true }));
-    }
+  // 只切开关：之后切立绘或套预设时才连带填私密层，不回头覆盖已改的公开层。
+  const toggleIncludeIntimate = () => setIncludeIntimate((v) => !v);
+  const onKeyActivate = (fn) => (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); }
   };
 
   const renderFieldRow = (field) => {
@@ -79,6 +76,10 @@ export default function PortraitBodyStep({
         }}
       >
         <div
+          role={hidden ? undefined : "button"}
+          tabIndex={hidden ? undefined : 0}
+          aria-expanded={hidden ? undefined : isEditing}
+          onKeyDown={hidden ? undefined : onKeyActivate(() => setEditingKey(isEditing ? null : field.key))}
           onClick={() => { if (!hidden) setEditingKey(isEditing ? null : field.key); }}
           style={{ display: "flex", alignItems: "baseline", gap: 8, cursor: hidden ? "default" : "pointer" }}
         >
@@ -203,6 +204,10 @@ export default function PortraitBodyStep({
           </div>
 
           <div
+            role="switch"
+            tabIndex={0}
+            aria-checked={includeIntimate}
+            onKeyDown={onKeyActivate(toggleIncludeIntimate)}
             onClick={toggleIncludeIntimate}
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",

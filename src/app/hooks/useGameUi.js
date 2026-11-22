@@ -12,6 +12,7 @@ import { readMobileColumn, writeMobileColumn } from "../../utils/mobileColumn.js
 import { usePromptInspector } from "./ui/usePromptInspector.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
+import { gameActions } from "../../store/gameStore.js";
 
 export function useGameUi({
   room, innerRoomName, char, inv, log, time, narrator, preset,
@@ -61,9 +62,18 @@ export function useGameUi({
   const [pigeonTarget, setPigeonTarget] = useState(null);
   const [activeNpcMenu, setActiveNpcMenu] = useState(null);
   const [activeItemMenu, setActiveItemMenu] = useState(null);
-  const [playerAvatarCustom, setPlayerAvatarCustom] = useState(() => {
+  // 头像跟着存档走（char.portrait）；旧存档没有这个字段时才回落到浏览器里那份共用偏好。
+  const [legacyAvatar, setLegacyAvatar] = useState(() => {
     try { return localStorage.getItem("qucuo_player_avatar") || ""; } catch { return ""; }
   });
+  const playerAvatarCustom = char?.portrait || (char?.portrait === "" ? "" : legacyAvatar);
+  const setPlayerAvatarCustom = useCallback((src) => {
+    gameActions.setChar((c) => ({ ...c, portrait: src || "" }));
+    if (!src) {
+      setLegacyAvatar("");
+      try { localStorage.removeItem("qucuo_player_avatar"); } catch { /* ignore */ }
+    }
+  }, []);
   const [characterPageTarget, setCharacterPageTarget] = useState(null);
   const [portraits, setPortraits] = useState(loadPortraits());
   const [slForm, setSlFormState] = useState(getSnowLeopardForm());
