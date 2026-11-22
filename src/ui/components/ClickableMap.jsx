@@ -107,11 +107,11 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
             const d = byName[dest]; if (!d || !n.explored || !d.explored) return null;
             const diag = n.x !== d.x && n.y !== d.y;
             return <line key={`${n.name}-${dest}`.split("").sort().join("")} x1={px(n.x)} y1={py(n.y)} x2={px(d.x)} y2={py(d.y)}
-              stroke="#7a6448" strokeWidth={2.5} strokeDasharray={diag ? "6,4" : "none"} opacity={0.75} pointerEvents="none" />;
+              stroke="var(--map-path)" strokeWidth={2.5} strokeDasharray={diag ? "6,4" : "none"} opacity={0.75} pointerEvents="none" />;
           }).filter(Boolean))}
           {cur && nodes.filter(n => n.reachable || n.locked).map(n => (
             <line key={`go-${n.dir}-${n.name || n.dest}`} x1={px(cur.x)} y1={py(cur.y)} x2={px(n.x)} y2={py(n.y)}
-              stroke={n.locked ? "#8a6a3a" : accent} strokeWidth={2} strokeDasharray={n.explored ? "none" : "6,5"} opacity={0.6} pointerEvents="none" />
+              stroke={n.locked ? "var(--map-locked)" : accent} strokeWidth={2} strokeDasharray={n.explored ? "none" : "6,5"} opacity={0.6} pointerEvents="none" />
           ))}
           {/* 连线的隐形加粗命中条：点目的地时落点常在连线上，把这段线也算作该节点的命中面。
               按线长倒序绘制——短线最后画：两条线在共扇区重叠时 SVG 命中最上层，
@@ -139,7 +139,7 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
             const pw = labelLen(n) * fs + 28;
             const ph = fs + 24;
             const hitArea = makeNodeHitArea(cx, cy, pw, ph);
-            const edge = n.current || (hov && clickable) ? accent : "#26221c";
+            const edge = n.current || (hov && clickable) ? accent : "var(--map-node-edge)";
             const onClickNode = (e) => {
               // 拖动过就不触发点击（避免拖完误跳转）
               if (suppressClickRef.current) {
@@ -157,15 +157,15 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
                   style={{ filter: hov && clickable ? "brightness(1.25)" : "none" }} />
               )}
               {!n.explored ? (
-                <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={hov ? "var(--parchment)" : "#7a7a68"} fontSize="20" fontWeight="bold" style={{ pointerEvents: "none", textShadow: "0 1px 2px var(--black)" }}>?</text>
+                <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={hov ? "var(--parchment)" : "var(--map-unknown)"} fontSize="20" fontWeight="bold" style={{ pointerEvents: "none", textShadow: "0 1px 2px var(--black)" }}>?</text>
               ) : (
                 <g style={{ pointerEvents: "none" }}>
                   <g style={{ animation: n.current ? "cmPulse 2.4s ease-in-out infinite" : "none" }}>
-                    <rect x={cx - pw / 2} y={cy - ph / 2} width={pw} height={ph} fill="#f2efe4" stroke={edge} strokeWidth={2} />
+                    <rect x={cx - pw / 2} y={cy - ph / 2} width={pw} height={ph} fill="var(--map-node-bg)" stroke={edge} strokeWidth={2} />
                     <rect x={cx - pw / 2 + 3} y={cy - ph / 2 + 3} width={pw - 6} height={ph - 6} fill="none" stroke={edge} strokeWidth={1} />
                   </g>
                   <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
-                    fill={n.current ? accent : "#201d18"} fontSize={fs} fontFamily="inherit" fontWeight="bold">{label}</text>
+                    fill={n.current ? accent : "var(--map-node-text)"} fontSize={fs} fontFamily="inherit" fontWeight="bold">{label}</text>
                 </g>
               )}
               {n.locked && <text x={cx + pw / 2 - 8} y={cy - ph / 2 + 12} textAnchor="middle" fontSize="12" style={{ pointerEvents: "none" }}>🔒</text>}
@@ -179,6 +179,6 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
 
 const cmZoomBtn = {
   cursor: "pointer", width: 22, height: 22, lineHeight: "20px", textAlign: "center",
-  fontSize: "15px", color: "#4a3520", background: "rgba(240,232,210,0.85)",
-  border: "1px solid #8a6a3a", borderRadius: 0, userSelect: "none", display: "block", fontWeight: "bold",
+  fontSize: "15px", color: "var(--map-title-text)", background: "rgba(240,232,210,0.85)",
+  border: "1px solid var(--map-locked)", borderRadius: 0, userSelect: "none", display: "block", fontWeight: "bold",
 };
