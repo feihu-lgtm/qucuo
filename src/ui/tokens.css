@@ -216,6 +216,11 @@
   --tutorial-time: #c0a86a;
   --tutorial-title: #f0e0c0;
 
+  /* 镖局屏定色（原字面量，不随日间模式变）：进行中镖单卡片和接镖提示。 */
+  --escort-card-bg: #14120a;
+  --escort-detail: #7a6a4a;
+  --escort-hint: #6a8a6a;
+
   /* 设置面板定色（原字面量，不随日间模式变） */
   --ink-overlay: rgba(4,4,10,0.92);
   --ink-divider: #1a1d2e;
