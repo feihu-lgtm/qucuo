@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
 import { hospitalQuote } from "../../../features/buildings/logic.js";
+import { clinicCare, clinicDoneToday, clinicOf } from "../../../features/buildings/factionClinic.js";
 
 // 客栈：花银两住宿，气血回满，时间推进24单位（一天）
 // 医馆（type=hospital）：按 healPerLiang 换算回血，回到含内功被动的有效气血上限
-export default function InnScreen({ building, char, skills, time, zoneTheme, onClose, onRest, onHeal, inline }) {
+export default function InnScreen({ building, char, skills, time, varTree, flags, zoneTheme, onClose, onRest, onHeal, onClinic, inline }) {
   const [choice, setChoice] = useState(null); // null | "普通" | "上等"
 
   const isHospital = building.type === "hospital";
@@ -18,6 +19,10 @@ export default function InnScreen({ building, char, skills, time, zoneTheme, onC
   const { maxHp, missing, cost } = hospitalQuote({ char, skills }, healPerLiang);
 
   if (isHospital) {
+    const care = clinicCare(varTree, building.id);
+    const price = care === "free" ? 0 : cost;
+    const clinic = clinicOf(building.id);
+    const clinicDone = clinicDoneToday(building.id, { flags, time });
     return (
       <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
         <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
@@ -26,10 +31,19 @@ export default function InnScreen({ building, char, skills, time, zoneTheme, onC
           <div style={{ color: "var(--ink-text-dim)", marginBottom: 12 }}>
             气血 {hp}/{maxHp} · 银两 {money} 两 · 每两回 {healPerLiang} 点气血
           </div>
-          <div style={{ color: "var(--ink-text)", marginBottom: 8 }}>回满需花 {cost} 两</div>
+          <div style={{ color: "var(--ink-text)", marginBottom: 8 }}>
+            {care === "refuse" ? clinic.refuse
+              : care === "free" ? `与${clinic.faction}善缘深厚，免收诊金` : `回满需花 ${cost} 两`}
+          </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Btn label={`回满（${cost}两）`} disabled={money < cost || missing <= 0}
-              zoneTheme={zoneTheme} onClick={() => onHeal(cost, missing, "解毒治疗")} />
+            {care !== "refuse" && (
+              <Btn label={care === "free" ? "免费诊治" : `回满（${cost}两）`} disabled={money < price || missing <= 0}
+                zoneTheme={zoneTheme} onClick={() => onHeal(price, missing, "解毒治疗")} />
+            )}
+            {clinic && care !== "refuse" && (
+              <Btn label={clinicDone ? clinic.done : clinic.label} disabled={clinicDone || money < clinic.cost}
+                zoneTheme={zoneTheme} onClick={onClinic} />
+            )}
             <Btn label="关闭" zoneTheme={zoneTheme} secondary onClick={onClose} />
           </div>
         </div>

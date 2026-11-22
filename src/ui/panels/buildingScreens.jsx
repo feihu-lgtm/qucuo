@@ -94,8 +94,8 @@ function escortScreen(c) {
 
 function innScreen(c) {
   return (
-    <InnScreen building={c.building} char={c.char} skills={c.skills} time={c.time} zoneTheme={c.zoneTheme} inline
-      onClose={c.closeBuilding} onRest={c.handleBuildingInn} onHeal={c.handleBuildingHeal} />
+    <InnScreen building={c.building} char={c.char} skills={c.skills} time={c.time} varTree={c.varTree} flags={c.flags} zoneTheme={c.zoneTheme} inline
+      onClose={c.closeBuilding} onRest={c.handleBuildingInn} onHeal={c.handleBuildingHeal} onClinic={c.handleClinicService} />
   );
 }
 
@@ -135,8 +135,8 @@ export const BUILDING_SCREENS = {
       onClose={c.closeBuilding} onPray={c.handlePray} />
   ),
   [BUILDING_TYPE.LIBRARY]: (c) => (
-    <LibraryScreen building={c.building} char={c.char} skills={c.skills} zoneTheme={c.zoneTheme} inline
-      onClose={c.closeBuilding} onReadBook={c.handleReadBook} onBuyBook={c.handleBuyBook} />
+    <LibraryScreen building={c.building} char={c.char} skills={c.skills} flags={c.flags} time={c.time} zoneTheme={c.zoneTheme} inline
+      onClose={c.closeBuilding} onReadBook={c.handleReadBook} onBuyBook={c.handleBuyBook} onChaojing={c.handleChaojing} />
   ),
   [BUILDING_TYPE.BANK]: (c) => (
     <BankScreen building={c.building} char={c.char} time={c.time} deposit={c.deposit} depositedAt={c.depositedAt} inline

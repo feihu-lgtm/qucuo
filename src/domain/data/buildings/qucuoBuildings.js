@@ -217,6 +217,22 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "暗巷尽头一扇黑漆门，门上没招牌，只钉着一枚三棱带血槽的暗器当门钉。门后是唐门的外围铺面：暗器、毒药、解药都卖，不赊账，不问用途。",
     },
     {
+      id: "sect_entry_emei", name: "听竹轩·拜师堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "峨眉派",
+      desc: "设在剑庐中轴正厅的入门堂口，案上供着青玉弟子令与一卷《峨眉清规》。",
+    },
+    {
+      id: "sectshop_emei", name: "剑庐库房·锻簪坊", type: BUILDING_TYPE.SECTSHOP, shopKey: "峨眉坊",
+      desc: "后院铁棚与库房合设的门派商坊，由簪娘与知客尼共同打理。",
+    },
+    {
+      id: "hospital_emei_fotang", name: "慈济佛堂·施药棚", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
+      desc: "了因师太坐镇的济世医堂，药炉终日不熄，连城中老郎中也常来讨教针法。",
+    },
+    {
+      id: "library_emei_jingge", name: "抄经堂·藏经阁", type: BUILDING_TYPE.LIBRARY,
+      desc: "临窗一排长案沾满墨痕，半壁收佛经医案，半壁藏道书与蜀西江湖杂录。",
+    },
+    {
       id: "wuguan_emei", name: "峨眉剑庐", type: BUILDING_TYPE.WUGUAN, skillSet: "峨眉",
       desc: "锦官城南三进小院，院中一株老银杏。正堂供普贤菩萨，剑架靠墙十几柄剑擦得锃亮。尼姑和道姑坐一张桌上喝茶——峨眉佛道双修，不拘形迹。男弟子入门先抄三个月经，「心不静，剑不稳」。",
     },
@@ -343,6 +359,10 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "wuguan_yajiang", name: "青城派·三清殿", type: BUILDING_TYPE.WUGUAN, skillSet: "青城",
       desc: "青城派正殿。入门先站桩——站在宝瓶口江边，水没脚踝，站半日。站住了才教剑。",
+    },
+    {
+      id: "hospital_qingcheng_yaopu", name: "青城药圃", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
+      desc: "玉真子坐镇的后山草药庐，给药不给方子。雅江的郎中求不来的药，在这里一帖帖配好。",
     },
     {
       id: "sectshop_yajiang", name: "三清玄阁", type: BUILDING_TYPE.SECTSHOP, shopKey: "青城商坊",
