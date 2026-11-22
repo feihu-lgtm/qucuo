@@ -53,4 +53,23 @@ describe("StartScreen mobile layout", () => {
     expect(create).toContain('className="character-create-title"');
     expect(create).toContain('className="character-create-sub"');
   });
+
+  it("has an iOS-only block for duel that goes two-column full-screen in landscape", () => {
+    const at = MOBILE_CSS.indexOf("/* iOS 专门适配：切磋");
+    expect(at).toBeGreaterThan(-1);
+    const block = MOBILE_CSS.slice(at, MOBILE_CSS.indexOf("\n}\n", at));
+    expect(block).toContain("@supports (-webkit-touch-callout: none) {");
+    expect(block).toMatch(/\.duel-move-grid \{\s*max-height:\s*30dvh/);
+    const landscape = block.slice(block.indexOf("@media (orientation: landscape) and (max-height: 500px) {"));
+    expect(landscape).toMatch(/\.duel-solo-panel \{\s*display:\s*grid/);
+    expect(landscape, "团战面板结构不同，不能被套进两栏网格").not.toMatch(/\.mobile-duel-panel \{/);
+    expect(readFileSync(join(HERE, "DuelScreen.jsx"), "utf-8")).toContain("mobile-duel-panel duel-solo-panel");
+    expect(landscape).toMatch(/\.duel-topbar \{\s*grid-column:\s*1 \/ -1/);
+    const duelDir = join(HERE, "duel");
+    expect(readFileSync(join(duelDir, "DuelTopBar.jsx"), "utf-8")).toContain('className="duel-topbar"');
+    const op = readFileSync(join(duelDir, "DuelOpPanel.jsx"), "utf-8");
+    expect(op).toContain('className="duel-op"');
+    expect(op).toContain('className="duel-move-grid"');
+    expect(readFileSync(join(duelDir, "DuelLog.jsx"), "utf-8")).toContain('className="duel-log"');
+  });
 });

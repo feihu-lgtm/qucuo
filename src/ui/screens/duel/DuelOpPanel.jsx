@@ -14,7 +14,7 @@ export default function DuelOpPanel({
   onContinue, onClose,
 }) {
   return (
-    <div style={styles.opSection}>
+    <div className="duel-op" style={styles.opSection}>
       <div style={styles.sectionLabel(zoneTheme)}>
         {selecting ? "◆ 请出招" : outcome ? (outcome === "win" ? "◆ 切磋已分胜负" : "◆ 你落败了") : "◆ 结算中"}
       </div>
@@ -34,7 +34,7 @@ export default function DuelOpPanel({
               ].filter(Boolean).join("，")}
             </div>
           ) : null}
-          <div style={styles.moveGrid}>
+          <div className="duel-move-grid" style={styles.moveGrid}>
             {moveset.map((move, i) => {
               const blockedByRepeat = move.type === MOVE_TYPE.DEFENSE && playerDefenseBroken;
               return (

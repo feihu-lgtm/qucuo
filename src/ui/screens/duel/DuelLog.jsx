@@ -9,7 +9,7 @@ export default function DuelLog({ battleLog, npc, zoneTheme }) {
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; }, [battleLog.length]);
 
   return (
-    <div style={styles.logSection} ref={logRef}>
+    <div className="duel-log" style={styles.logSection} ref={logRef}>
       {battleLog.length === 0 && <div style={styles.logHint(zoneTheme)}>——两人拉开架势，静待第一招——</div>}
       {battleLog.map((e, i) => (
         <MudRoundLog key={i} entry={e} npcName={npc.name} zoneTheme={zoneTheme} />
