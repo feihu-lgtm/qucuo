@@ -72,7 +72,11 @@ export default function GameLayout({ layout }) {
 
   useEffect(() => {
     const viewport = window.visualViewport;
+    let layoutHeight = window.innerHeight;
     const updateHeight = () => {
+      const inputFocused = document.activeElement?.matches?.("input, textarea") ?? false;
+      // iOS Safari can shrink innerHeight on scroll while the keyboard is still open.
+      if (!inputFocused || window.innerHeight > layoutHeight) layoutHeight = window.innerHeight;
       const height = viewport?.height || window.innerHeight;
       document.documentElement.style.setProperty("--mobile-viewport-height", `${Math.round(height)}px`);
       document.documentElement.style.setProperty("--mobile-viewport-offset", `${Math.round(viewport?.offsetTop || 0)}px`);
@@ -81,9 +85,9 @@ export default function GameLayout({ layout }) {
         "data-keyboard-open",
         isMobileKeyboardOpen({
           isMobile,
-          isInputFocused: document.activeElement?.matches?.("input, textarea") ?? false,
+          isInputFocused: inputFocused,
           viewportHeight: viewport?.height,
-          innerHeight: window.innerHeight,
+          innerHeight: layoutHeight,
         }),
       );
       if (open && !wasOpen) requestAnimationFrame(() => logEnd?.current?.scrollIntoView?.({ block: "end" }));
