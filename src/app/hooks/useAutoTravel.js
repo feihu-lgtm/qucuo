@@ -24,13 +24,18 @@ export function routeRooms(startName, path) {
 }
 
 export function enqueueAutoTravelLegs(path, { scheduler, actRef, autoTravelRef, onTravelEnd, roomNameRef, expectedRooms }) {
-  path.map(d => DIRS[d] || d).forEach((w, i) => scheduler.enqueue("autoTravel", async () => {
+  path.map(d => DIRS[d] || d).forEach((w, i) => scheduler.enqueue("autoTravel", async (entry) => {
+    // 调度上下文（turnMonitor 的 synchronousTurn）只在本函数的同步前缀里存在：
+    // 等闭包落地的 await 一挂起，act 就接不回本程 trace（会另起一棵游离的 trace 树）。
+    // 调度器把 entry 传进来，本程 trace 先抓住、await 之后以 opts.turn 传回 act。
+    const legTrace = entry?.trace;
     try {
       await waitForActRoom(roomNameRef, expectedRooms?.[i]);
       return await actRef.current(w, [], {
         forceLayer: "outer",
         autoTravel: true,
         schedulerManaged: true,
+        turn: legTrace,
       });
     } finally {
       if (!scheduler.queue.some(entry => entry.meta.routeQueue)) {
