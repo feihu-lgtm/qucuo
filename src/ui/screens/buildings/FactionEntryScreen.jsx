@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
 import { checkFactionEntry } from "../../../domain/rules/character/factionEntry.js";
 
@@ -8,17 +8,34 @@ const hintOf = (entry, key) => ({
   trial: `· 还没过试炼。${entry.trial?.hint ?? ""}`,
   single: "· 你已在别派门下，一人不拜两师。",
   rite: `· 入门礼未成。${entry.maleRite?.hint ?? ""}`,
+  defected: `· 你叛出过${entry.sect}，门墙永闭。`,
 })[key];
 
+// 叛出本派：点两下才生效，防误触。
+export function LeaveSectButton({ sect, onLeaveSect, zoneTheme }) {
+  const [armed, setArmed] = useState(false);
+  if (!onLeaveSect) return null;
+  return (
+    <div style={{ marginTop: 14 }}>
+      <Btn label={armed ? `确认叛出${sect}（声誉重置 -40，门墙永闭）` : `叛出${sect}`}
+        onClick={() => (armed ? onLeaveSect(sect) : setArmed(true))} zoneTheme={zoneTheme} />
+      {armed && <div style={{ color: zoneTheme.textDim, fontSize: 11, marginTop: 6 }}>交还信物，已学招式保留，本门高阶武学从此不再突破。</div>}
+    </div>
+  );
+}
+
 // 势力拜师堂（青城、峨眉…）。结算在 features/sect/logic.js joinSect，AI 只写叙事。
-export default function FactionEntryScreen({ entry, building, char, flags, varTree, zoneTheme, onClose, inline, onJoinSect }) {
+export default function FactionEntryScreen({ entry, building, char, flags, varTree, zoneTheme, onClose, inline, onJoinSect, onLeaveSect }) {
   const status = checkFactionEntry(entry, { varTree, flags, char });
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building?.name || entry.sect} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: "14px 16px", fontSize: 12.5, lineHeight: 1.9, color: zoneTheme.text }}>
         {status.already ? (
-          <div style={{ color: "var(--clay)" }}>你已是{entry.sect}门下弟子，{entry.token}随身收好。</div>
+          <>
+            <div style={{ color: "var(--clay)" }}>你已是{entry.sect}门下弟子，{entry.token}随身收好。</div>
+            <LeaveSectButton sect={entry.sect} onLeaveSect={onLeaveSect} zoneTheme={zoneTheme} />
+          </>
         ) : (
           <>
             <div style={{ color: zoneTheme.textDim, marginBottom: 12 }}>{entry.intro}</div>

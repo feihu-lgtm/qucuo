@@ -24,7 +24,7 @@ export const HOOK_ENTRIES = [
   {
     id: "questChoice",
     hooks: {
-      useBuildingHandlers: ["handleAcceptEscort", "handleAcceptBounty", "handleClaimBounty", "handleJoinSect"],
+      useBuildingHandlers: ["handleAcceptEscort", "handleAcceptBounty", "handleClaimBounty", "handleJoinSect", "handleLeaveSect"],
       useQuestPanel: ["forceAdvanceQuest", "triggerQuestFromPanel", "triggerQuestChoice"],
     },
   },
