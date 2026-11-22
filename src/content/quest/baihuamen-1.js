@@ -182,7 +182,7 @@ export default { quest: {
     stages: [
       {
         id: "diag",
-        giver: "花婆",
+        giver: null,
         requireLocation: { district: "天都镇", inner: "花医静室" },
         playerHint: "去花医静室看看兰姐——花婆在等她醒。",
         description: "花婆按着兰姐腕脉，眉头拧成疙瘩：「寻常药石压不住母蛊噬心。上策是熊山虎王之胆，一拔了之；虎胆若已另有所属，只能取雪山雪参心露配喇嘛庙佛手清心丸，替她续三年命。」",
@@ -208,7 +208,7 @@ export default { quest: {
       },
       {
         id: "confess",
-        giver: "兰姐",
+        giver: null,
         requireLocation: { district: "天都镇", inner: "花医静室" },
         playerHint: "兰姐醒了，去花医静室听她把这十年的账说清。",
         description: "兰姐靠着引枕，把《五仙毒典》残页的来历、十年前昆明血案、麻九娘如何构陷她逐出苗疆，一字一句说完，末了摘下贴身的素梅牌塞进你手里：「往后这楼里，没有你不能去的地方。」",
@@ -235,7 +235,7 @@ export default { quest: {
     stages: [
       {
         id: "token",
-        giver: "兰姐",
+        giver: null,
         requireLocation: { district: "天都镇", inner: "百花暖棚" },
         playerHint: "去百花暖棚听兰姐交代雾隐寨一行。",
         description: "「青银令是我教主信物的半枚，另一半在她手里。」兰姐替你拢了拢衣襟，「见到她，先把令亮出来，再看她眼睛——要是她先问起昆明，那就是自己人。」",
@@ -379,7 +379,7 @@ export default { quest: {
       },
       {
         id: "brew",
-        giver: "花婆",
+        giver: null,
         requireLocation: { district: "天都镇", inner: "百花暖棚" },
         playerHint: "找花婆领回礼用的百花解瘴露。",
         description: "花婆掀开地窖封坛，给你装了小小一坛：「就这一坛，多了没有——让那老小子闻闻什么叫正经药香。」",
@@ -435,7 +435,7 @@ export default { quest: {
     stages: [
       {
         id: "search",
-        giver: "小蝉",
+        giver: null,
         requireLocation: { district: "大草甸" },
         playerHint: "沿大草甸南侧草丛循着鸟鸣找彩雀。",
         description: "岩缝里一团绿影扑簌簌发抖——彩雀左翼被流箭擦伤，脚筒还死死绑着一封染血家书与一小包碎银。",
@@ -461,7 +461,7 @@ export default { quest: {
       },
       {
         id: "return",
-        giver: "小蝉",
+        giver: null,
         requireLocation: { district: "天都镇", inner: "百花楼" },
         playerHint: "回百花楼，把卓玛捎的回礼带给小蝉。",
         description: "卓玛收下家书与盐钱，硬塞给你一袋新炒的青稞面。小蝉抱着伤愈的彩雀转圈，连声道谢。",
