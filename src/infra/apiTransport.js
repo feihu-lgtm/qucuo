@@ -4,6 +4,7 @@ import { observeAi } from "./observeAi.js";
 import { readSSE, stripReasoning } from "./apiSse.js";
 import { getStoredVertexHeaders } from "./vertexCredentials.js";
 import { getApiModel } from "./apiModel.js";
+import { parseRetryAfter } from "./retryAfter.js";
 import {
   API_TYPES, applyThinkingAnthropic, applyThinkingGemini, applyThinkingOpenAI,
   clampMaxTokensForProvider, DEFAULT_CALL_TOKEN_LIMITS, migrateProvider,
@@ -52,14 +53,6 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = _requestTimeoutMs
   }
 }
 
-
-export function parseRetryAfter(value, now = Date.now()) {
-  const text = String(value ?? "").trim();
-  if (!text) return null;
-  if (/^\d+(\.\d+)?$/.test(text)) return Math.round(Number(text) * 1000);
-  const at = Date.parse(text);
-  return Number.isNaN(at) ? null : Math.max(0, at - now);
-}
 
 function httpFailure(res, label, requestUrl, vendorMessage) {
   const err = new Error(`${label} HTTP ${res.status}：${vendorMessage}`);

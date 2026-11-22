@@ -104,7 +104,7 @@ describe("Vertex ADC", () => {
     const ai = createWebAi({ getVertexHeaders: async () => ({ Authorization: "Bearer test-token" }) });
     const cfg = { ...defaultConfig(), provider: "vertex", apiType: API_TYPES.VERTEX, vertexProject: "test-project" };
     const opts = { cfg, systemPrompt: "叙述" };
-    await expect(ai.chat([], opts)).rejects.toThrow(new Error("Vertex AI HTTP 404：" + "x".repeat(199) + "…"));
+    await expect(ai.chat([], opts)).rejects.toMatchObject({ message: "Vertex AI HTTP 404：" + "x".repeat(199) + "…", httpStatus: 404 });
     await expect(ai.chat([], opts)).rejects.toThrow(/^Vertex AI HTTP 502$/);
   });
 

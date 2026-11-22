@@ -1,4 +1,4 @@
-import { callModel, callModelStream, loadConfig, hasApiCredentials } from "./apiConfig.js";
+import { callModel, callModelStream, loadConfig, hasApiCredentials, parseRetryAfter } from "./apiConfig.js";
 import { cleanJsonString } from "../../utils/jsonClean.js";
 import { observeAi, observed } from "./observeAi.js";
 
@@ -83,7 +83,10 @@ export function createHttpAi({ baseUrl, apiKey, model }) {
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         const message = String(body?.error?.message || `AI request failed (HTTP ${response.status})`);
-        throw Object.assign(new Error(apiKey ? message.split(apiKey).join("[redacted]") : message), { status: response.status });
+        const retryAfterMs = parseRetryAfter(response.headers?.get?.("retry-after"));
+        throw Object.assign(new Error(apiKey ? message.split(apiKey).join("[redacted]") : message), {
+          status: response.status, httpStatus: response.status, requestUrl: endpoint, ...(retryAfterMs != null ? { retryAfterMs } : {}),
+        });
       }
       const body = await response.json();
       const text = body.choices?.[0]?.message?.content;

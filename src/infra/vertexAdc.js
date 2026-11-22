@@ -1,3 +1,4 @@
+import { parseRetryAfter } from "./retryAfter.js";
 import { BLOCKED_CREDENTIAL, scrubCredentialPatterns } from "./textRedaction.js";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -90,7 +91,11 @@ function vertexError(prefix, parts, credentials) {
 export async function vertexResponseError(response, authorization) {
   const data = await response.json().catch(() => null);
   const message = (Array.isArray(data) ? data[0] : data)?.error?.message;
-  return vertexError(`Vertex AI HTTP ${response.status}`, [message], [authorization?.replace(/^Bearer\s+/i, "")]);
+  const err = vertexError(`Vertex AI HTTP ${response.status}`, [message], [authorization?.replace(/^Bearer\s+/i, "")]);
+  err.httpStatus = response.status;
+  const retryAfterMs = parseRetryAfter(response.headers?.get?.("retry-after"));
+  if (retryAfterMs != null) err.retryAfterMs = retryAfterMs;
+  return err;
 }
 
 export function createVertexAuth(adc, { fetch, crypto, now }) {
