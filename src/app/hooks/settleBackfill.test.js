@@ -42,6 +42,13 @@ describe("settleInBackground", () => {
     expect(h.get().log.at(-1)).toMatchObject({ t: "desc", text: "  掌柜拨了拨算盘，把银票递过来。", fillProse: true });
   });
 
+  it("结果另给了事实句就用它", () => {
+    const h = harness({ canAsk: () => false });
+    settleInBackground("在灶房生火下厨。这一番炮制，做出一道「松茸汤」。请写一两句。", { settleFact: "在灶房用松茸下厨，做出一道「松茸汤」，趁热吃了" }, h.deps);
+    expect(h.get().log.at(-1).text).toBe("> 在灶房用松茸下厨，做出一道「松茸汤」，趁热吃了");
+    expect(h.get().convo.at(-1).memory).toBe("在灶房用松茸下厨，做出一道「松茸汤」，趁热吃了");
+  });
+
   it("没配 API 时只留事实行", async () => {
     const h = harness({ canAsk: () => false });
     await expect(settleInBackground("住下上房，花费5两", {}, h.deps)).resolves.toBe(false);

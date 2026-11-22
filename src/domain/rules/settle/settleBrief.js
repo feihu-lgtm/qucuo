@@ -5,7 +5,7 @@ export function canBackfillSettle(opts = {}) {
   return !opts.settleKind && opts.settle !== false;
 }
 
-// 只取首句：结算文本尾部常带叙事指令（"请让…说道""只描写…"），不是事实。
+// 只取首句：结算文本尾部常带叙事指令（"请让…说道""只描写…"），不是事实。首句不够的由 settleOptions.settleFact 给出。
 export function settleFactText(cmd) {
   const text = String(cmd || "").trim();
   return text.split(/[。！？]/).map((part) => part.trim()).filter(Boolean)[0] || text;

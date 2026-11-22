@@ -15,7 +15,7 @@ export function settleInBackground(cmd, opts = {}, {
   getState = () => gameStore.getState(), ask = askStoryteller, canAsk = hasApiKey,
 }) {
   const state = getState();
-  const fact = settleFactText(cmd);
+  const fact = opts.settleFact || settleFactText(cmd);
   const npc = opts.settleNpc || null;
   const room = state.room || {};
   const time = state.time;
