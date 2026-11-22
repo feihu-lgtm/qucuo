@@ -22,12 +22,12 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
   const sellableItems = playerInv.filter(i => typeof i === "object" && i.sellPrice > 0);
 
   const outer = inline
-    ? { borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "#14161f", height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }
+    ? { borderTop: `1px solid ${zoneTheme.border}`, background: zoneTheme.panelBg || "var(--building-panel-bg)", height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }
     : { position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" };
 
   const inner = inline
     ? { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }
-    : { width: "min(720px, 92vw)", maxHeight: "82vh", display: "flex", flexDirection: "column", background: zoneTheme.panelBg || "#14161f", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, boxShadow: "0 8px 40px rgba(0,0,0,0.6)" };
+    : { width: "min(720px, 92vw)", maxHeight: "82vh", display: "flex", flexDirection: "column", background: zoneTheme.panelBg || "var(--building-panel-bg)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, boxShadow: "0 8px 40px rgba(0,0,0,0.6)" };
 
   return (
     <div className="mobile-trading-root" style={outer}>
@@ -72,7 +72,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                     fontSize: 11, padding: "2px 10px", borderRadius: 0,
                     cursor: item.equipped ? "not-allowed" : "pointer",
                     color: item.equipped ? "var(--text-dim)" : "var(--warn)",
-                    border: `1px solid ${item.equipped ? "#2a2a2a" : "var(--gold-deep)"}`,
+                    border: `1px solid ${item.equipped ? "var(--building-disabled-edge)" : "var(--gold-deep)"}`,
                   }}
                   title={item.equipped ? "已装备的物品需先卸下才能卖出" : "卖出"}
                 >卖出</span>
@@ -108,7 +108,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                       fontSize: 11, padding: "2px 10px", borderRadius: 0,
                       cursor: canAfford ? "pointer" : "not-allowed",
                       color: canAfford ? "var(--accent)" : "var(--text-dim)",
-                      border: `1px solid ${canAfford ? "#1a3a3a" : "#2a2a2a"}`,
+                      border: `1px solid ${canAfford ? "var(--trading-buy-edge)" : "var(--building-disabled-edge)"}`,
                     }}
                     title={canAfford ? "购买" : `${currencyName}不足`}
                   >购买</span>
@@ -119,7 +119,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
         </div>
 
         <div style={{ padding: "10px 16px", borderTop: `1px solid ${zoneTheme.border}`, textAlign: "center", flexShrink: 0 }}>
-          <span className="mobile-touch-target" onClick={onClose} style={{ fontSize: 12, color: "#8a8a8a", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 0 }}>关闭</span>
+          <span className="mobile-touch-target" onClick={onClose} style={{ fontSize: 12, color: "var(--trading-close)", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 0 }}>关闭</span>
         </div>
       </div>
     </div>
