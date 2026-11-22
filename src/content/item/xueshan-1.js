@@ -26,5 +26,6 @@ const items = {
 "雪山炒面干粮": { name: "雪山炒面干粮", category: "misc", quality: "白", tags: ["干粮", "雪山派"], consumable: { hpRestore: 0.05 }, desc: "青稞炒熟磨面拌了酥油，一撮一撮抓着吃，揣在怀里半个月不坏。雪山上出远门的标配。" },
 "寒铁护腕": { name: "寒铁护腕", category: "accessory", quality: "绿", sixDim: { 体魄: 1 }, tags: ["饰品", "雪山派"], desc: "寒铁片铆在皮衬上的小护腕，挡剑挡不了几下，胜在便宜结实。沈既白库房里常备的走货。" },
 "寒泉雪莲": { name: "寒泉雪莲", category: "misc", quality: "绿", tags: ["药材", "雪山派", "任务"], consumable: { hpRestore: 0.1 }, desc: "山洞深处寒泉边上生的雪莲，花瓣冰得像玉。沈既白说霜灾年里，一株能换半袋糙米。" },
+"雪山灵芝膏": { name: "雪山灵芝膏", category: "misc", quality: "蓝", tags: ["药膏", "疗伤", "雪山派"], consumable: { hpRestore: 0.2 }, desc: "雪线灵芝配山蜜熬成的厚膏，温补驱寒，是雪山派调理内伤的常备药。" },
 };
 export default { item: items, itemGroup: { XUESHAN_GOODS: Object.keys(items) } };

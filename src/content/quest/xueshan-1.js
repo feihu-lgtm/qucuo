@@ -6,6 +6,7 @@ export default { quest: {
     giver: "陆寒枝",
     giverId: "resident_luhanzhi",
     localOnly: true,
+    requiresFactionRep: { 雪山派: 0 },
     description: "初上雪山牌坊，大师兄陆寒枝横剑拦在「尘事止此」碑下：外客若非求学切磋，即刻下山。正僵持间，司库沈既白匆匆来报——从鱼定村雇脚夫送上山的半车盐巴草药，在白塔山道被土司府巡捕卡住了。",
     stages: [
       {
@@ -25,13 +26,13 @@ export default { quest: {
         description: "两名土司府差役拦着鱼定村脚夫的骡车，张口就是新立的「雪岭过境税」。林子里还有恶狼在嗅着麻袋打转。",
         completionFlag: ["quest_xs1_pay", "quest_xs1_fight"],
         choices: [
-          { flag: "quest_xs1_pay", label: "垫银了税", resolve: "none", minMoney: 30, narration: "你掏出三十两碎银按他们的规矩「完税」，差役掂着银子放行。脚夫老汉抹着汗直念叨：使不得，回山一定让沈司库把钱补给你。" },
-          { flag: "quest_xs1_fight", label: "动手赶差", resolve: "combat", combatNpc: { name: "鱼定土司府差役", levelCap: 6 } },
+          { flag: "quest_xs1_pay", label: "守戒绕道·垫银了税", resolve: "none", minMoney: 30, narration: "你想起陆寒枝「别惹事」的嘱咐，掏出三十两碎银按他们的规矩「完税」，差役掂着银子放行。脚夫老汉抹着汗直念叨：使不得，回山一定让沈司库把钱补给你。" },
+          { flag: "quest_xs1_fight", label: "硬护脚夫·动手赶差", resolve: "combat", combatNpc: { name: "鱼定土司府差役", levelCap: 6 } },
         ],
         onReach: {
           byFlag: {
-            quest_xs1_pay: { money: -30, factionRep: { 鱼定土司府: 2 } },
-            quest_xs1_fight: { factionRep: { 鱼定土司府: -5, 雪山派: 5 } },
+            quest_xs1_pay: { money: -30, flags: ["xueshan_q1_kept_rule"], favorability: { "陆寒枝": 15, "沈既白": -5 }, factionRep: { 雪山派: 20 } },
+            quest_xs1_fight: { flags: ["xueshan_q1_helped_villager"], favorability: { "沈既白": 15, "陆寒枝": -5 }, factionRep: { 雪山派: 15, 鱼定村: 10, 鱼定土司府: -5 } },
           },
         },
       },
@@ -43,10 +44,8 @@ export default { quest: {
         description: "粮车进了练功堂，陆寒枝听完来龙去脉，抱剑沉默半晌：「……尘事止此碑没拦你，是山门欠你一个人情。」沈既白已经把热姜茶端了过来。",
         completionFlag: "quest_xs1_report",
         onReach: {
-          money: 60,
-          favorability: { "陆寒枝": 15, "沈既白": 15 },
-          factionRep: { 雪山派: 10 },
-          items: [{ name: "雪山姜枣干粮", fromCatalog: true }, { name: "寒岭冻伤膏", fromCatalog: true }],
+          money: 80,
+          items: [{ name: "雪山姜枣干粮", fromCatalog: true }, { name: "雪山姜枣干粮", fromCatalog: true }],
         },
       },
     ],
@@ -59,6 +58,8 @@ export default { quest: {
     giver: "呼延雪",
     giverId: "resident_huyanxue",
     localOnly: true,
+    requiresQuestCompleted: "xueshan_1_shuangjie_wenmen",
+    requiresFactionRep: { 雪山派: 15 },
     description: "呼延雪在内堂外拦下你，声音压得很低：师母的寒疾又重了，往常煎药要配的寒泉雪莲用完了。她求你悄悄跑一趟山洞深处采几株回来——别让大师兄知道是师母的病又犯了。",
     stages: [
       {
@@ -90,10 +91,10 @@ export default { quest: {
         description: "药碗搁在炭炉边，何雨谢披着素狐裘慢慢坐直：「小青说你脚步比雪还轻……雪山派记下了。」她亲手给你盛了一碗姜枣雪莲汤，推到面前。",
         completionFlag: "quest_xs2_report",
         onReach: {
-          money: 80,
-          favorability: { "何雨谢": 15 },
-          factionRep: { 雪山派: 10 },
-          items: [{ name: "雪莲清心丸", fromCatalog: true }, { name: "雪山炒面干粮", fromCatalog: true }, { name: "雪山炒面干粮", fromCatalog: true }],
+          money: 150,
+          favorability: { "何雨谢": 15, "呼延雪": 15 },
+          factionRep: { 雪山派: 20 },
+          items: [{ name: "雪山灵芝膏", fromCatalog: true }, { name: "雪山灵芝膏", fromCatalog: true }],
         },
       },
     ],
@@ -106,6 +107,7 @@ export default { quest: {
     giver: "沈既白",
     giverId: "resident_shenjibai",
     localOnly: true,
+    requiresFactionRep: { 雪山派: 5 },
     description: "沈既白在商坊柜台后愁眉不展：今年霜灾重，商坊存粮见底，山下鱼定村又因土司加征秋税米价飞涨。他备了一份采买单——要你随他下山跑一趟粮。",
     stages: [
       {
@@ -126,12 +128,12 @@ export default { quest: {
         completionFlag: ["quest_xsz1_secret", "quest_xsz1_tax"],
         choices: [
           { flag: "quest_xsz1_secret", label: "走暗道·分粮三成给玉泉寨", resolve: "none", narration: "你们踩着溪谷乱石把粮背上山，绕开税卡，又按沈既白的意思分出三成糙米送去玉泉寨。" },
-          { flag: "quest_xsz1_tax", label: "走大路·照章纳税运全粮", resolve: "combat", combatNpc: { name: "设卡索贿的差役", levelCap: 6 }, narration: "你本想照章纳税，差役却把税率随口翻了一倍。陆寒枝说过的「别惹事」三个字在耳边响——但剑比道理先出了鞘，这「税」你们一文也没交。" },
+          { flag: "quest_xsz1_tax", label: "走大路·照章纳税运全粮", resolve: "none", minMoney: 60, narration: "你们按章程缴了六十两过卡「雪岭税」。差役验完税票懒洋洋挥手放行，糙米一粒不少全数运上了山。" },
         ],
         onReach: {
           byFlag: {
-            quest_xsz1_secret: { factionRep: { 雪山派: 10, 鱼定村: 5, 玉泉寨: 5 }, favorability: { "沈既白": 15 } },
-            quest_xsz1_tax: { factionRep: { 雪山派: 10, 鱼定土司府: -3 }, favorability: { "陆寒枝": 10, "沈既白": -5 } },
+            quest_xsz1_secret: { factionRep: { 雪山派: 10, 鱼定村: 10, 玉泉寨: 8, 鱼定土司府: -6 }, favorability: { "沈既白": 15 } },
+            quest_xsz1_tax: { money: -60, factionRep: { 雪山派: 12, 鱼定土司府: 5 }, favorability: { "陆寒枝": 10, "沈既白": -5 } },
           },
         },
       },
