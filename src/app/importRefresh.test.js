@@ -9,7 +9,10 @@ const REG = readFileSync(join(HERE, "..", "domain", "rules", "cards", "importedR
 const NPC_RULES = readFileSync(join(HERE, "..", "domain", "rules", "npc", "rules.js"), "utf-8");
 const OVL = readFileSync(join(HERE, "..", "ui", "panels", "GlobalOverlays.jsx"), "utf-8");
 const SCREEN = readFileSync(join(HERE, "..", "ui", "screens", "CardImportScreen.jsx"), "utf-8");
-const REVIEW = readFileSync(join(HERE, "..", "ui", "screens", "cards", "ReviewPane.jsx"), "utf-8");
+// 拆屏后审改页分三个文件：ReviewPane（状态+分派）、ReviewWizard（开局向导）、
+// ReviewRoster（常规 4:6 分栏）。锚点跟代码走，拼起来查。
+const REVIEW = ["ReviewPane.jsx", "ReviewWizard.jsx", "ReviewRoster.jsx"]
+  .map(f => readFileSync(join(HERE, "..", "ui", "screens", "cards", f), "utf-8")).join("\n");
 
 // 【为什么要守这几条】三条都是"不报错、只是什么都没发生"：
 //   · 落册后 room.npcs 不重算：registerImported 改的是模块级 let，React 依赖系统
