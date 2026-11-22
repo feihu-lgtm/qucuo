@@ -13,7 +13,7 @@ export default function CombatMovesModule({ zoneTheme, char, inspectItem, inspec
         const origin = m.learnedFromMaster ? "授" : "基础";
         return (
           <div key={i} style={{ marginBottom: 3, fontSize: "11px", display: "flex", alignItems: "center", gap: 5, opacity: 0.92, paddingLeft: 6 }}>
-            <span style={{ fontSize: "9px", color: "#1a1206", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700 }}>{TYPE_SHORT[m.type] || "?"}</span>
+            <span style={{ fontSize: "9px", color: "var(--bg-deep)", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700 }}>{TYPE_SHORT[m.type] || "?"}</span>
             <span
               onClick={() => inspectItem("skill", m.name, `${q}品·临阵招式（${origin}）`, null, { worldLook: true })}
               style={{ cursor: inspecting === m.name ? "wait" : "pointer", color: qc, textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === m.name ? 0.6 : 1 }}

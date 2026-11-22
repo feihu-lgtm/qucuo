@@ -22,23 +22,23 @@ export default function PawnScreen({ building, char, inv, pledgedItems, zoneThem
         ))}
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ color: "#8f8a7c", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "var(--text-dim)", marginBottom: 12, fontSize: 11 }}>
           银两 {money} 两 · 质押价 = 卖价 × 0.8，赎金 = 质押价 × 1.1
         </div>
 
         {tab === "pledge" && (
           pawnable.length === 0
-            ? <div style={{ color: "#8f8a7c" }}>背包里没有可质押的物品。</div>
+            ? <div style={{ color: "var(--text-dim)" }}>背包里没有可质押的物品。</div>
             : pawnable.map(item => {
               const pledgeValue = Math.floor(item.sellPrice * 0.8);
               return (
-                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "8px 10px", background: "#161510", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "8px 10px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
                   <div>
-                    <span style={{ color: QUALITY_COLOR[item.quality] || "#e8e4d6", fontSize: 12 }}>{item.name}</span>
-                    <span style={{ color: "#8f8a7c", fontSize: 10, marginLeft: 6 }}>({item.quality})</span>
+                    <span style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", fontSize: 12 }}>{item.name}</span>
+                    <span style={{ color: "var(--text-dim)", fontSize: 10, marginLeft: 6 }}>({item.quality})</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#e8c468", fontSize: 11 }}>+{pledgeValue} 两</span>
+                    <span style={{ color: "var(--gold-bright)", fontSize: 11 }}>+{pledgeValue} 两</span>
                     <Btn label="质押" zoneTheme={zoneTheme} onClick={() => onPledge(item, pledgeValue)} />
                   </div>
                 </div>
@@ -48,14 +48,14 @@ export default function PawnScreen({ building, char, inv, pledgedItems, zoneThem
 
         {tab === "redeem" && (
           pledgedItems.length === 0
-            ? <div style={{ color: "#8f8a7c" }}>没有质押中的物品。</div>
+            ? <div style={{ color: "var(--text-dim)" }}>没有质押中的物品。</div>
             : pledgedItems.map((p, i) => {
               const redeemCost = Math.floor(p.pledgeValue * 1.1);
               return (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "8px 10px", background: "#161510", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "8px 10px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
                   <div>
-                    <span style={{ color: QUALITY_COLOR[p.item?.quality] || "#e8e4d6", fontSize: 12 }}>{p.item?.name}</span>
-                    <span style={{ color: "#8f8a7c", fontSize: 10, marginLeft: 6 }}>质押了 {p.pledgeValue} 两</span>
+                    <span style={{ color: QUALITY_COLOR[p.item?.quality] || "var(--text)", fontSize: 12 }}>{p.item?.name}</span>
+                    <span style={{ color: "var(--text-dim)", fontSize: 10, marginLeft: 6 }}>质押了 {p.pledgeValue} 两</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ color: "#e0526a", fontSize: 11 }}>-{redeemCost} 两</span>

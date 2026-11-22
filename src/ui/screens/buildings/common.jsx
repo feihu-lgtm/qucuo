@@ -55,7 +55,7 @@ export function Header({ name, zoneTheme, onClose }) {
       // 顶部，不管滚多远都看得见、点得到。zIndex 避免被下面滚上来的内容盖住。
       position: "sticky", top: 0, zIndex: 1, background: zoneTheme.panelBg || "#14161f",
     }}>
-      <span style={{ fontSize: 14, color: zoneTheme.text || "#e8e4d6" }}>{name}</span>
+      <span style={{ fontSize: 14, color: zoneTheme.text || "var(--text)" }}>{name}</span>
       <span
         className="mobile-overlay-close"
         onClick={onClose}

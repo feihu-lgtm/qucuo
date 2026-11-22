@@ -15,26 +15,26 @@ export default function WuguanScreen({ building, char, skills, zoneTheme, onClos
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
 
       <div style={{ padding: 16 }}>
-        <div style={{ color: "#8f8a7c", marginBottom: 12, fontSize: 11 }}>银两 {money} 两</div>
+        <div style={{ color: "var(--text-dim)", marginBottom: 12, fontSize: 11 }}>银两 {money} 两</div>
 
         {catalog.length === 0
-          ? <div style={{ color: "#8f8a7c" }}>此武馆暂无秘籍可购。</div>
+          ? <div style={{ color: "var(--text-dim)" }}>此武馆暂无秘籍可购。</div>
           : catalog.map(item => {
               const owned = hasSkill(skills, item.id);
               return (
-                <div key={item.id} style={{ marginBottom: 12, padding: "10px 12px", background: "#161510", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
+                <div key={item.id} style={{ marginBottom: 12, padding: "10px 12px", background: "var(--bg-ink)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <span style={{ color: QUALITY_COLOR[item.quality] || "#e8e4d6", fontSize: 13 }}>
+                    <span style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", fontSize: 13 }}>
                       {item.name}
-                      <span style={{ color: "#8f8a7c", fontSize: 10, marginLeft: 6 }}>
+                      <span style={{ color: "var(--text-dim)", fontSize: 10, marginLeft: 6 }}>
                         {SKILL_TYPE_LABEL[item.type] || item.type}·{item.quality}·{item.moveType}
                       </span>
                     </span>
-                    <span style={{ color: item.insight ? "#8ac8b8" : "#e8c468", fontSize: 12 }}>
+                    <span style={{ color: item.insight ? "var(--info)" : "var(--gold-bright)", fontSize: 12 }}>
                       {item.insight ? `参悟 · ${item.insight.label}≥${item.insight.threshold}` : `${item.price} 两`}
                     </span>
                   </div>
-                  <div style={{ color: "#8f8a7c", fontSize: 11, marginBottom: 8 }}>{item.desc}</div>
+                  <div style={{ color: "var(--text-dim)", fontSize: 11, marginBottom: 8 }}>{item.desc}</div>
                   {owned
                     ? <span style={{ color: "#3a5a3a", fontSize: 11 }}>✓ 已习得</span>
                     : item.insight

@@ -8,7 +8,7 @@ export { getActivePreset } from "../../domain/rules/prompt/presetSystem.js";
 
 const rowStyle = {
   display: "flex", alignItems: "center", gap: 8, padding: "6px 8px",
-  borderBottom: "1px solid #14161e", cursor: "grab",
+  borderBottom: "1px solid var(--bg-slate)", cursor: "grab",
 };
 const btnStyle = {
   cursor: "pointer", color: "var(--accent)", padding: "4px 10px", background: "var(--bg-panel)",
@@ -97,10 +97,10 @@ export function PresetToolbar({ state, onStateChange }) {
         </select>
         <span style={btnStyle} onClick={handleNewPreset}>+ 新建</span>
         <span style={btnStyle} onClick={handleDuplicate}>另存为</span>
-        <span style={{ ...btnStyle, color: "#c45044" }} onClick={handleDelete}>删除</span>
+        <span style={{ ...btnStyle, color: "var(--red-soft)" }} onClick={handleDelete}>删除</span>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
-        <span style={{ ...btnStyle, borderColor: "#3a5a3a", color: "#c07050" }} onClick={handleImportClick}>📥 导入酒馆 JSON 预设</span>
+        <span style={{ ...btnStyle, borderColor: "#3a5a3a", color: "var(--clay)" }} onClick={handleImportClick}>📥 导入酒馆 JSON 预设</span>
         <span style={btnStyle} onClick={handleExport}>📤 导出当前预设</span>
         <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }} onChange={handleFileChange} />
       </div>
@@ -239,11 +239,11 @@ export default function PresetManager({ state, onStateChange }) {
                   <span style={{ fontSize: "9.5px", color: "#4a4a4a", marginLeft: 6 }}>{p.role}</span>
                 </span>
                 {!p.isMarker && (
-                  <span onClick={() => deleteEntry(o.id)} style={{ color: "#c45044", fontSize: "10px", cursor: "pointer" }}>删除</span>
+                  <span onClick={() => deleteEntry(o.id)} style={{ color: "var(--red-soft)", fontSize: "10px", cursor: "pointer" }}>删除</span>
                 )}
               </div>
               {isEditing && (
-                <div style={{ padding: "8px 12px", background: "var(--bg-panel)", borderBottom: "1px solid #14161e" }}>
+                <div style={{ padding: "8px 12px", background: "var(--bg-panel)", borderBottom: "1px solid var(--bg-slate)" }}>
                   {p.isMarker ? (
                     <div style={{ fontSize: "11px", color: "var(--text-dim)" }}>
                       这是系统占位符，代表引擎运行时会自动填充的内容

@@ -9,7 +9,7 @@ export default function InventoryModule({ zoneTheme, inv, setActiveItemMenu }) {
         const isObj = typeof it === "object";
         const name = isObj ? it.name : it;
         const quality = isObj ? (it.quality || "白") : null;
-        const color = isObj ? (QUALITY_COLOR[quality] || "#c4a040") : "#c4a040";
+        const color = isObj ? (QUALITY_COLOR[quality] || "var(--gold)") : "var(--gold)";
         const canConsume = !!((isObj && it.consumable) || CATALOG_INDEX[name]?.consumable);
         return (
           <div

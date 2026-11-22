@@ -6,7 +6,7 @@ import { makeItem, ITEM_CATEGORY, toggleEquip } from "../domain/rules/economy/eq
 import { makeItemSmart } from "../domain/data/items/catalog.js";
 const makeGameItem = (s) => makeItemSmart(s, makeItem);
 
-const theme = { bg: "#1a1710", bgPanel: "#221e16", border: "#4a443a", accent: "#f0d090", accentDim: "#a08a5a", textDim: "#7a7060" };
+const theme = { bg: "#1a1710", bgPanel: "#221e16", border: "#4a443a", accent: "var(--gold-light)", accentDim: "#a08a5a", textDim: "#7a7060" };
 
 function Bench() {
   const [inv, setInv] = useState(() => [

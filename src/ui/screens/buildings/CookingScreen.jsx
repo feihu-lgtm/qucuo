@@ -12,7 +12,7 @@ import {
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const UI = (f) => `${BASE}stones/ui/${f}`;
 
-const QUAL_COLOR = { 白: "#e8e4d6", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "#b48adf", 橙: "#e0913a", 红: "#d4756a" };
+const QUAL_COLOR = { 白: "var(--text)", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "var(--violet)", 橙: "#e0913a", 红: "#d4756a" };
 
 // 灶膛火苗 + 蒸汽 + 成功/失败反馈的 CSS（组件内注入，命名空间 ck- 防串味）
 const CK_CSS = `
@@ -136,7 +136,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
       <div className="mobile-overlay-header" style={{ position: "relative", margin: "14px 16px 0", padding: "10px 18px",
         backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ color: "#f5e2b8", fontSize: 15, fontWeight: "bold", letterSpacing: 3, textShadow: "0 1px 2px #000" }}>
+        <span style={{ color: "#f5e2b8", fontSize: 15, fontWeight: "bold", letterSpacing: 3, textShadow: "0 1px 2px var(--black)" }}>
           🔥 烹饪台 <span style={{ color: "#c8a860", fontSize: 11.5, fontWeight: "normal", letterSpacing: 1, marginLeft: 6 }}>{building?.name || "灶房"}</span>
         </span>
         <span className="mobile-overlay-close" onClick={onClose} title="关闭" style={{ cursor: "pointer", width: 26, height: 26, flexShrink: 0,
@@ -157,7 +157,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                 padding: "8% 6%", boxSizing: "border-box", textAlign: "center" }}>
               <span style={{ position: "absolute", top: "6%", left: "10%", fontSize: 9.5, color: "#8a7040", letterSpacing: 1 }}>料{i + 1}</span>
               {s
-                ? <span style={{ color: "#f5e2b8", fontSize: 12.5, fontWeight: "bold", lineHeight: 1.35, textShadow: "0 1px 2px #000" }}>{s}</span>
+                ? <span style={{ color: "#f5e2b8", fontSize: 12.5, fontWeight: "bold", lineHeight: 1.35, textShadow: "0 1px 2px var(--black)" }}>{s}</span>
                 : <span style={{ color: "#5a4a30", fontSize: 11 }}>空</span>}
             </div>
           ))}
@@ -185,7 +185,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                 style={{ position: "relative", cursor: "pointer", padding: "7px 16px", minWidth: 58, textAlign: "center",
                   backgroundImage: `url(${UI(sel ? "bar_paper.webp" : "bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
                   color: sel ? "#4a2d0a" : "#d8c8a0", fontSize: 13, fontWeight: "bold", letterSpacing: 2,
-                  opacity: usable ? 1 : 0.45, textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px #000" }}>
+                  opacity: usable ? 1 : 0.45, textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px var(--black)" }}>
                 {t.icon} {tid}
                 {!usable && <span style={{ position: "absolute", top: -5, right: -3, fontSize: 9, color: "#e0913a" }}>需蒸笼</span>}
               </div>
@@ -204,8 +204,8 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                 style={{ flexShrink: 0, cursor: "pointer", padding: "7px 14px", textAlign: "center",
                   backgroundImage: `url(${UI(sel ? "bar_paper.webp" : "bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
                   color: sel ? "#4a2d0a" : "#d8c8a0", fontSize: 12, fontWeight: "bold",
-                  textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px #000" }}>
-                <span style={{ color: sel ? "#8a5a1a" : (QUAL_COLOR[cw.quality] || "#e8e4d6"), marginRight: 5, fontSize: 11 }}>●</span>
+                  textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px var(--black)" }}>
+                <span style={{ color: sel ? "#8a5a1a" : (QUAL_COLOR[cw.quality] || "var(--text)"), marginRight: 5, fontSize: 11 }}>●</span>
                 {cw.name}{cw.canSteam ? " ♨" : ""}
               </div>
             );
@@ -268,7 +268,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
             className="ck-chip"
             style={{ cursor: "pointer", padding: "11px 22px", display: "flex", alignItems: "center",
               backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-              color: "#d8c8a0", fontSize: 12.5, letterSpacing: 2, textShadow: "0 1px 2px #000" }}>
+              color: "#d8c8a0", fontSize: 12.5, letterSpacing: 2, textShadow: "0 1px 2px var(--black)" }}>
             清空
           </div>
         </div>
@@ -292,7 +292,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                     style={{ cursor: usable ? "pointer" : "default", padding: "6px 13px",
                       backgroundImage: `url(${UI(left > 0 ? "bub_wood1.webp" : "bub_stone.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
                       color: left > 0 ? "#e8d5b0" : "#6a5a40", fontSize: 12, opacity: left > 0 ? 1 : 0.5,
-                      textShadow: "0 1px 2px #000" }}>
+                      textShadow: "0 1px 2px var(--black)" }}>
                       {m.name} <span style={{ color: "#c8a860", fontSize: 10.5 }}>×{left}</span>
                     </div>
                 );

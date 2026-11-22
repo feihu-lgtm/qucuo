@@ -6,12 +6,12 @@ export default function NarratorModule({ zoneTheme, narrator, confessToNarrator 
     <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8 }}>
       <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>旁白</div>
       {narrator.stage === NNPC_STAGE.CRASHED ? (
-        <div style={{ fontSize: "11.5px", color: "#c45044" }}>信号已断开</div>
+        <div style={{ fontSize: "11.5px", color: "var(--red-soft)" }}>信号已断开</div>
       ) : narrator.confessed ? (
-        <div style={{ fontSize: "11.5px", color: "#c8663a" }}>已告白 · 记忆碎片 {narrator.memoryFragments}/8</div>
+        <div style={{ fontSize: "11.5px", color: "var(--ember)" }}>已告白 · 记忆碎片 {narrator.memoryFragments}/8</div>
       ) : (
         <>
-          <div style={{ fontSize: "11.5px", color: "#d68a8a" }}>{affectionLabel(narrator.affection)}</div>
+          <div style={{ fontSize: "11.5px", color: "var(--pink)" }}>{affectionLabel(narrator.affection)}</div>
           <div style={{ fontSize: "11.5px" }}>{bar(narrator.affection, 100, 8)} {narrator.affection}/100</div>
           {narrator.affection >= 100 && (
             <div

@@ -145,7 +145,7 @@ export default function CenterPanel({
           {duelPending && (
             <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ color: "var(--text)", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
-              <span onClick={confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "#111110", background: "#c45044", border: "1px solid #c45044" }}>确认切磋</span>
+              <span onClick={confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>确认切磋</span>
               <span onClick={cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid #2a2d3a" }}>算了</span>
             </div>
           )}
@@ -371,7 +371,7 @@ export default function CenterPanel({
                 )}
               </div>
             )}
-            {pendingTalks > 0 && <div style={{ color: "#d68a8a", animation: "pulse 1.2s ease-in-out infinite" }}>  {pendingTalks} 条对话处理中...</div>}
+            {pendingTalks > 0 && <div style={{ color: "var(--pink)", animation: "pulse 1.2s ease-in-out infinite" }}>  {pendingTalks} 条对话处理中...</div>}
             {inspecting && (
               <div style={{ color: zoneTheme.accentDim, padding: "6px 0", display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>▌</span>
@@ -426,7 +426,7 @@ export default function CenterPanel({
               borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
               background: "#141008",
             }}>
-              <span style={{ color: "#c8663a", fontSize: "11px", flexShrink: 0 }}>❢ 此处可推进</span>
+              <span style={{ color: "var(--ember)", fontSize: "11px", flexShrink: 0 }}>❢ 此处可推进</span>
               {availableQuestsHere.filter(e => !e.stage.choices?.length).map(entry => (
                 <span
                   key={entry.quest.id}
@@ -434,7 +434,7 @@ export default function CenterPanel({
                   title={entry.stage.description}
                   style={{
                     cursor: "pointer", color: "#c8663a", padding: "2px 10px",
-                    border: "1px solid #4a3a1a", borderRadius: 0, fontSize: "10.5px",
+                    border: "1px solid var(--gold-deep)", borderRadius: 0, fontSize: "10.5px",
                     background: "#1a1408", whiteSpace: "nowrap",
                   }}
                 >
@@ -451,7 +451,7 @@ export default function CenterPanel({
               borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
               background: "#0e1410",
             }}>
-              <span style={{ color: "#c07050", fontSize: "11px", flexShrink: 0 }}>◈ 行动抉择</span>
+              <span style={{ color: "var(--clay)", fontSize: "11px", flexShrink: 0 }}>◈ 行动抉择</span>
               {availableQuestsHere.filter(e => e.stage.choices?.length).map(entry => (
                 <span key={entry.quest.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                   <span style={{ color: "var(--text)", fontSize: "10.5px" }}>{entry.quest.title}：</span>
@@ -505,7 +505,7 @@ export default function CenterPanel({
               const { delay, loc } = pigeonDelayShichen(pigeonTarget);
               return (
                 <div style={{ padding: "6px 16px 0", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, fontSize: "11px" }}>
-                  <span style={{ color: "#c4a040" }}>🕊 飞鸽传书 · 致「{pigeonTarget}」</span>
+                  <span style={{ color: "var(--gold)" }}>🕊 飞鸽传书 · 致「{pigeonTarget}」</span>
                   <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>信往{loc}，约 {delay} 时辰后有回音</span>
                   <span style={{ flex: 1 }} />
                   <span className="mobile-touch-target" onClick={() => { setPigeonTarget(null); setInteractMode("action"); }} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "10px" }}>× 取消</span>
@@ -514,12 +514,12 @@ export default function CenterPanel({
             })()}
           </CenterControlRows>
           {!isMobile && <TurnStatusPill theme={zoneTheme} />}<div className="mobile-input-bar" style={{
-            borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid #4a3a1a" : `1px solid ${zoneTheme.border}`,
+            borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid var(--gold-deep)" : `1px solid ${zoneTheme.border}`,
             background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
             padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
           }}>
             <span style={{
-              color: interactMode === "whisper" ? "#d68a8a" : interactMode === "talk" ? "#c07050" : interactMode === "pigeon" ? "#c4a040" : zoneTheme.accent,
+              color: interactMode === "whisper" ? "var(--pink)" : interactMode === "talk" ? "var(--clay)" : interactMode === "pigeon" ? "var(--gold)" : zoneTheme.accent,
               flexShrink: 0, fontSize: "13px",
             }}>{interactMode === "pigeon" ? "🕊" : "▸"}</span>
             <input

@@ -41,7 +41,7 @@ export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--
         if (key === "center") {
           return (
             <div key="center" className="mobile-mini-map-cell" style={cellStyle({}, MAP_UI.current)}>
-              <span style={{ color: "#fff", fontWeight: "bold", fontSize: fontMain, textShadow: "0 1px 3px rgba(0,0,0,0.85)" }}>{short(centerLabel) || "我"}</span>
+              <span style={{ color: "var(--white)", fontWeight: "bold", fontSize: fontMain, textShadow: "0 1px 3px rgba(0,0,0,0.85)" }}>{short(centerLabel) || "我"}</span>
             </div>
           );
         }
@@ -65,7 +65,7 @@ export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--
             <div key={key} className="mobile-mini-map-cell" onClick={() => clickable && onGo(key)}
               onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
               style={cellStyle({ cursor: clickable ? "pointer" : "default", opacity: hov ? 1 : 0.82, filter: hov ? "brightness(1.25)" : "none" }, MAP_UI.fog)}>
-              <span style={{ color: hov ? "#c0a060" : "#6a6a58", fontSize: big ? 18 : 14, fontWeight: "bold", textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>?</span>
+              <span style={{ color: hov ? "var(--parchment)" : "#6a6a58", fontSize: big ? 18 : 14, fontWeight: "bold", textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>?</span>
             </div>
           );
         }

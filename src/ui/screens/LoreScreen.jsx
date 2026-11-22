@@ -8,7 +8,7 @@ import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 //
 // props: varTree（读账本）、time（当前回合，算淡忘倒计时）、turnToStr（回合→"第X日·时辰"）、zoneTheme、onClose
 
-const 途径色 = { 亲历: "#c07050", 目击: "var(--accent)", 告知: "#c4a86a", 传闻: "#c08a6a", 剧本: "#9a8ac0" };
+const 途径色 = { 亲历: "var(--clay)", 目击: "var(--accent)", 告知: "#c4a86a", 传闻: "#c08a6a", 剧本: "#9a8ac0" };
 const 途径说明 = { 亲历: "亲身经历", 目击: "当场看见", 告知: "有人明说", 传闻: "道听途说", 剧本: "夙来知晓" };
 
 export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, onClose }) {
@@ -131,7 +131,7 @@ function NoteCard({ note, fmtTurn, accent, border, bgPanel, textDim }) {
     <div style={{ background: bgPanel, border: `1px solid ${border}`, borderRadius: 0, padding: "10px 14px", marginBottom: 8 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
         <span style={{ fontSize: 10.5, color: accent }}>{fmtTurn(note.turn || 0)}</span>
-        <span style={{ fontSize: 9.5, padding: "0 6px", borderRadius: 0, border: `1px solid ${border}`, color: priv ? "#c08ac0" : "#c07050" }}>
+        <span style={{ fontSize: 9.5, padding: "0 6px", borderRadius: 0, border: `1px solid ${border}`, color: priv ? "#c08ac0" : "var(--clay)" }}>
           {priv ? "私己心事" : "公开见闻"}
         </span>
         {note.requiredFlag && <span style={{ fontSize: 9, color: textDim }}>🔒需机缘</span>}

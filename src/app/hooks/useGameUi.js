@@ -142,7 +142,7 @@ export function useGameUi({
   const genderAvatar = { "男": AV_BASE + "male.webp", "女": AV_BASE + "female.webp" };
   const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.webp");
   const zoneTheme = getZoneTheme(room.name, isDayMode);
-  const clrNight = { sys: "var(--good)", cmd: "var(--warn)", desc: "var(--text)", room: "var(--accent)", item: "#c4a040", stat: "#8ab4d4", skill: "#b48adf", err: "#c45044", choice: "#6aaa8a", narrator: "#d68a8a", crash: "#c45044", confess: "#c8663a", affection: "#f0a0c0", quest: "#c8663a" };
+  const clrNight = { sys: "var(--good)", cmd: "var(--warn)", desc: "var(--text)", room: "var(--accent)", item: "var(--gold)", stat: "#8ab4d4", skill: "var(--violet)", err: "var(--red-soft)", choice: "#6aaa8a", narrator: "var(--pink)", crash: "var(--red-soft)", confess: "var(--ember)", affection: "#f0a0c0", quest: "var(--ember)" };
   const clrDay = { sys: "var(--good)", cmd: "var(--warn)", desc: "#3d3626", room: "#1e5a6a", item: "#7a5410", stat: "var(--info)", skill: "#5a3a7a", err: "var(--accent)", choice: "#2e6a4a", narrator: "#8a2a6a", crash: "var(--accent)", confess: "#8a5a0a", affection: "#a0305a", quest: "#8a5a0a" };
   const clr = isDayMode ? clrDay : clrNight;
   const uiPink = ink("pink", isDayMode);

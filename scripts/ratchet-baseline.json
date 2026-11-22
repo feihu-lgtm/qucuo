@@ -12,8 +12,8 @@
     "store": 2,
     "ui": 35
   },
-  "distinctHexColors": 399,
-  "totalHexOccurrences": 1396,
+  "distinctHexColors": 376,
+  "totalHexOccurrences": 812,
   "largeFiles": {
     "domain/data/items/catalog.js": 451,
     "domain/data/kungfu/qucuoKungfu.js": 480,
@@ -41,5 +41,5 @@
     "ui/screens/quickBattle/QuickBattleScreen.jsx": 774,
     "ui/screens/tavernSim/TavernSimScreen.jsx": 502
   },
-  "mainJsGzipBytes": 694772
+  "mainJsGzipBytes": 695159
 }

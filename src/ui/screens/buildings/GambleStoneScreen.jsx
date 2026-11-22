@@ -297,7 +297,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 44, zIndex: 260,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 18px", background: "linear-gradient(180deg,#14120e 60%,transparent)" }}>
-        <div style={{ color: "#f0d090", fontSize: 15 }}>玉石料场 · 赌桌
+        <div style={{ color: "var(--gold-light)", fontSize: 15 }}>玉石料场 · 赌桌
           <span style={{ color: "#6a5d40", fontSize: 12, marginLeft: 8 }}>
             {changKouLabel} · {skinLabel} · 已开{opened}刀{opened >= 1 ? "（悬停卡牌看行情，点卡成交或谈价）" : (bought ? "（点石头或下方按钮开刀）" : `（此料买价 ${stone?.price || 0} 两，落第一刀即买下切开）`)}
           </span>
@@ -383,7 +383,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
                     style={{ position: "absolute", left: "50%", top: "8%",
                       fontSize: "calc(min(100vw, 100vh*1672/941) * 0.052)", fontWeight: "bold",
                       color: labelColor, letterSpacing: 6,
-                      textShadow: `0 0 18px ${labelColor}88, 0 3px 8px #000` }}>
+                      textShadow: `0 0 18px ${labelColor}88, 0 3px 8px var(--black)` }}>
                     {labelText}
                   </div>
                 </>
@@ -418,8 +418,8 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
                       background: "radial-gradient(120% 90% at 50% 0%, #3a3020 0%, #201a12 55%, #14100b 100%)" }}>
                       <div style={{ padding: "14% 10%", height: "100%", display: "flex", flexDirection: "column",
                         color: "#e8dfc0", boxSizing: "border-box" }}>
-                        <div style={{ fontSize: "1.15em", color: "#f0d090", letterSpacing: 2, marginBottom: "4%" }}>{b.name}</div>
-                        <div style={{ fontSize: ".62em", color: "#c0a060", marginBottom: "7%" }}>{ROLE_BY_NAME[b.name] || ""}</div>
+                        <div style={{ fontSize: "1.15em", color: "var(--gold-light)", letterSpacing: 2, marginBottom: "4%" }}>{b.name}</div>
+                        <div style={{ fontSize: ".62em", color: "var(--parchment)", marginBottom: "7%" }}>{ROLE_BY_NAME[b.name] || ""}</div>
                         <div style={{ fontSize: ".95em", color: "#ffd77a", marginBottom: "7%" }}>出价 {offerLabel(b)}</div>
                         <div style={{ fontSize: ".60em", lineHeight: 1.75, color: "#cdc2a2" }}>{b.bio}</div>
                         <div style={{ marginTop: "auto", fontSize: ".52em", color: "#8a7d5a" }}>点击卡牌 · 成交或谈判</div>
@@ -456,7 +456,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
               touchRef.current.active = false;
               if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); // 左滑下一张、右滑上一张
             }}>
-            <div style={{ color: "#c0a060", fontSize: 12, marginBottom: 6, letterSpacing: 1 }}>
+            <div style={{ color: "var(--parchment)", fontSize: 12, marginBottom: 6, letterSpacing: 1 }}>
               买家 {carouselIdx + 1} / {bidders.length} · 左右滑动看下一位
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", justifyContent: "center" }}>
@@ -474,7 +474,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
                   <img src={FRAME} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
                 </div>
                 <div style={{ textAlign: "center", marginTop: 8 }}>
-                  <div style={{ color: "#f0d090", fontSize: 16, letterSpacing: 2 }}>{cur.name}</div>
+                  <div style={{ color: "var(--gold-light)", fontSize: 16, letterSpacing: 2 }}>{cur.name}</div>
                   <div style={{ color: "#a08a5a", fontSize: 11 }}>{ROLE_BY_NAME[cur.name] || ""}</div>
                   <div style={{ color: "#ffd77a", fontSize: 15, margin: "6px 0" }}>出价 {offerLabel(cur)}</div>
                   <div style={{ color: "#cdc2a2", fontSize: 11, lineHeight: 1.7, maxHeight: "8vh", overflowY: "auto" }}>{cur.bio}</div>
@@ -500,7 +500,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
                 {bidders.map((_, i) => (
                   <div key={i} onClick={() => setCarouselIdx(i)}
                     style={{ width: 8, height: 8, borderRadius: "50%", cursor: "pointer",
-                      background: i === carouselIdx ? "#f0d090" : "rgba(255,255,255,.25)" }} />
+                      background: i === carouselIdx ? "var(--gold-light)" : "rgba(255,255,255,.25)" }} />
                 ))}
               </div>
             )}
@@ -516,7 +516,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
           <div style={{ maxWidth: "min(560px, 82vw)", background: "#1e1a13", border: "1px solid #6a5d40",
             borderRadius: 0, padding: "22px 26px", boxShadow: "0 12px 40px rgba(0,0,0,.7)" }}
             onClick={(e) => e.stopPropagation()}>
-            <div style={{ color: "#f0d090", fontSize: 15, letterSpacing: 2, marginBottom: 12 }}>
+            <div style={{ color: "var(--gold-light)", fontSize: 15, letterSpacing: 2, marginBottom: 12 }}>
               相石 · {changKouLabel} · {skinLabel}
             </div>
             <div style={{ color: "#cdc2a2", fontSize: 13.5, lineHeight: 2, whiteSpace: "pre-wrap" }}>
@@ -540,7 +540,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "2.4vh", maxWidth: "30vw" }}
             onClick={(e) => e.stopPropagation()}>
-            <div style={{ color: "#f0d090", fontSize: "3.2vh", letterSpacing: 3 }}>{selCard.name}</div>
+            <div style={{ color: "var(--gold-light)", fontSize: "3.2vh", letterSpacing: 3 }}>{selCard.name}</div>
             <div style={{ color: "#a08a5a", fontSize: "1.7vh", marginTop: "-1.2vh" }}>{ROLE_BY_NAME[selCard.name] || ""}</div>
             <div style={{ color: "#ffd77a", fontSize: "2.3vh" }}>出价 {offerLabel(selCard)}</div>
             <div style={{ color: "#cdc2a2", fontSize: "1.6vh", lineHeight: 2 }}>{selCard.bio}</div>
@@ -548,7 +548,7 @@ export default function GambleStoneScreen({ building, char, time, zoneTheme, onC
               ✓ 接受报价 · {offerLabel(selCard)}
             </button>
             {selCard.kind !== "noise" && (
-              <button onClick={() => startTalk(selCard)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_wood.webp")})`, color: "#f0e0b0", textShadow: "0 1px 2px #000" }}>
+              <button onClick={() => startTalk(selCard)} style={{ ...actBtn, backgroundImage: `url(${UI("bar_wood.webp")})`, color: "#f0e0b0", textShadow: "0 1px 2px var(--black)" }}>
                 🗣 与{selCard.name}谈价
               </button>
             )}
@@ -599,7 +599,7 @@ function PanelBtn({ img, kind, big, disabled, done, grade, crack, onClick, child
     <div onClick={disabled ? undefined : onClick}
       style={{ position: "relative", height: 52, minWidth: big ? 160 : 120, display: "flex", alignItems: "center", justifyContent: "center",
         cursor: disabled ? "default" : "pointer", color: doneColor, fontSize: 13, fontWeight: "bold",
-        textShadow: kind === "paper" ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px #000",
+        textShadow: kind === "paper" ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px var(--black)",
         backgroundImage: `url(${img})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         filter: done ? "brightness(.8)" : "none", padding: "0 20px",
         transition: "transform .12s, filter .12s", opacity: disabled && !done ? 0.5 : 1 }}
@@ -612,7 +612,7 @@ function PanelBtn({ img, kind, big, disabled, done, grade, crack, onClick, child
 
 const topBtn = { background: "none", border: "1px solid #4a443a", color: "#c9bfa8", borderRadius: 0, padding: "4px 12px", cursor: "pointer", fontSize: 12 };
 const carArrow = { flexShrink: 0, width: 38, height: 38, borderRadius: "50%", border: "1px solid #6a5d40",
-  background: "rgba(20,16,11,.9)", color: "#f0d090", fontSize: 22, lineHeight: 1, cursor: "pointer", userSelect: "none" };
+  background: "rgba(20,16,11,.9)", color: "var(--gold-light)", fontSize: 22, lineHeight: 1, cursor: "pointer", userSelect: "none" };
 const carBtn = { width: "100%", padding: "10px 0", border: "none", borderRadius: 0, fontSize: 14, fontWeight: "bold", cursor: "pointer" };
 const actBtn = { position: "relative", height: "6.4vh", minWidth: "24vh", border: "none", cursor: "pointer",
   background: "transparent", display: "flex", alignItems: "center", justifyContent: "center",

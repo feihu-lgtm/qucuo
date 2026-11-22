@@ -20,7 +20,7 @@ export const S = (p) => `${BASE}stones/${p}`;
 // levelCap 0-5 → 玉色文件名与档位标签
 export const TIERS = [
   { key: "bai", label: "白", jade: "jade_1_bai_chun.webp", color: "#d8d4c8" },
-  { key: "lv", label: "绿", jade: "jade_2_lv_chun.webp", color: "#8ab070" },
+  { key: "lv", label: "绿", jade: "jade_2_lv_chun.webp", color: "var(--green-soft)" },
   { key: "lan", label: "蓝", jade: "jade_3_lan_chun.webp", color: "#6a9ac4" },
   { key: "zi", label: "紫", jade: "jade_4_zi_chun.webp", color: "#a078c0" },
   { key: "cheng", label: "橙", jade: "jade_5_cheng_chun.webp", color: "#d89050" },
@@ -28,14 +28,14 @@ export const TIERS = [
 ];
 
 export const KIND_META = {
-  person: { label: "人物", icon: "👤", color: "#d4a853" },
+  person: { label: "人物", icon: "👤", color: "var(--warn)" },
   faction: { label: "势力", icon: "⚔", color: "#c07850" },
   place: { label: "地方", icon: "⛰", color: "#7a9a70" },
   rule: { label: "规矩", icon: "⚖", color: "#8a8ab0" },
   item: { label: "物件", icon: "◈", color: "#b09060" },
   player: { label: "我自己", icon: "☯", color: "#c8a0c0" },
   meta: { label: "框架", icon: "⚙", color: "#5a6a70" },
-  unknown: { label: "待定", icon: "?", color: "#8a8270" },
+  unknown: { label: "待定", icon: "?", color: "var(--muted)" },
   drop: { label: "弃用", icon: "✕", color: "#4a4a44" },
 };
 
@@ -53,8 +53,8 @@ export const BODY_PRIVATE = [
 
 export const selStyle = {
   boxSizing: "border-box", width: "100%", background: "rgba(0,0,0,.4)",
-  border: "1px solid #3a3428", borderRadius: 0, padding: "5px 7px",
-  color: "#e8dcc0", fontSize: 11.5, outline: "none", fontFamily: "inherit",
+  border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 7px",
+  color: "var(--paper)", fontSize: 11.5, outline: "none", fontFamily: "inherit",
   textAlign: "center", textAlignLast: "center",
 };
 
@@ -125,7 +125,7 @@ export function JadeTier({ value, onChange, size = 30, title, withSelect = false
         filter: "drop-shadow(0 1px 2px rgba(0,0,0,.6))",
       }}
     >
-      <span style={{ fontSize: size * 0.36, fontWeight: 700, color: "#1a1206", textShadow: `0 0 3px ${t.color}` }}>
+      <span style={{ fontSize: size * 0.36, fontWeight: 700, color: "var(--bg-deep)", textShadow: `0 0 3px ${t.color}` }}>
         {t.label}
       </span>
     </span>
@@ -149,7 +149,7 @@ export function JadeTier({ value, onChange, size = 30, title, withSelect = false
             cursor: "pointer", fontFamily: "inherit", textShadow: "0 1px 2px rgba(0,0,0,.9)",
           }}>
           {TIERS.map((x, i) => (
-            <option key={x.key} value={i} style={{ background: "#1a1206", color: x.color }}>
+            <option key={x.key} value={i} style={{ background: "var(--bg-deep)", color: x.color }}>
               {i}·{x.label}档
             </option>
           ))}
@@ -170,7 +170,7 @@ export function Step({ children, onClick, disabled }) {
         backgroundImage: `url('${S("ui/btn_blank.webp")}')`,
         backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         cursor: disabled ? "default" : "pointer",
-        color: disabled ? "#4a4436" : "#e8dcc0", fontSize: 11, lineHeight: 1,
+        color: disabled ? "#4a4436" : "var(--paper)", fontSize: 11, lineHeight: 1,
         opacity: disabled ? .35 : 1,
       }}>{children}</span>
   );
@@ -203,7 +203,7 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
       >
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.max(0, Math.min(100, pct))}%`,
-          background: "linear-gradient(90deg, #8a6a2a, #d4a853)", opacity: 0.85,
+          background: "linear-gradient(90deg, #8a6a2a, var(--warn))", opacity: 0.85,
         }} />
       </div>
       {onChange ? (
@@ -216,14 +216,14 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
             }}
             style={{
               width: max > 10 ? 32 : 26, textAlign: "center", background: "rgba(0,0,0,.4)",
-              border: "1px solid #3a3428", borderRadius: 0, padding: "2px 0",
-              color: "#d4a853", fontSize: 11.5, outline: "none", fontFamily: "inherit",
+              border: "1px solid var(--border-deep)", borderRadius: 0, padding: "2px 0",
+              color: "var(--warn)", fontSize: 11.5, outline: "none", fontFamily: "inherit",
             }} />
           <Step onClick={() => set(value + step)} disabled={value >= max}>＋</Step>
-          {unit ? <span style={{ fontSize: 9.5, color: "#8f8a7c" }}>{unit}</span> : null}
+          {unit ? <span style={{ fontSize: 9.5, color: "var(--text-dim)" }}>{unit}</span> : null}
         </span>
       ) : (
-        <span style={{ width: 26, textAlign: "right", fontSize: 11, color: "#d4a853", flexShrink: 0 }}>{value}</span>
+        <span style={{ width: 26, textAlign: "right", fontSize: 11, color: "var(--warn)", flexShrink: 0 }}>{value}</span>
       )}
     </div>
   );
@@ -236,7 +236,7 @@ export function SevenDim({ special, onChange, why }) {
         <StatRow key={k} label={k} value={special?.[k] ?? 5} max={10}
           onChange={onChange ? (v => onChange({ ...special, [k]: v })) : null} />
       ))}
-      {why && <div style={{ fontSize: 10, color: "#8f8a7c", marginTop: 4, fontStyle: "italic" }}>据「{why}」</div>}
+      {why && <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 4, fontStyle: "italic" }}>据「{why}」</div>}
     </div>
   );
 }
@@ -246,7 +246,7 @@ export function SevenDim({ special, onChange, why }) {
 export function Src({ source, why }) {
   if (source === "fallback") {
     return <span title="AI 没抽出来，这是默认值"
-      style={{ fontSize: 9, color: "#8f8a7c", border: "1px solid #3a3428", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>默认</span>;
+      style={{ fontSize: 9, color: "var(--text-dim)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>默认</span>;
   }
   if (source === "manual") {
     return <span title="只能你自己填，不从卡里抽"
@@ -271,15 +271,15 @@ export function TextField({ label, value, onChange, placeholder, rows = 1, max, 
   const centered = align || (rows > 1 ? "left" : "center");
   const common = {
     width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)",
-    border: "1px solid #3a3428", borderRadius: 0, padding: "5px 8px",
-    color: "#e8dcc0", fontSize: 11.5, outline: "none", resize: "vertical",
+    border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 8px",
+    color: "var(--paper)", fontSize: 11.5, outline: "none", resize: "vertical",
     textAlign: centered,
     fontFamily: mono ? "ui-monospace,Menlo,Consolas,monospace" : "inherit",
   };
   return (
     <label style={{ display: "block", marginBottom: 7 }}>
       {label != null && (
-        <span style={{ display: "block", fontSize: 10.5, color: "#8a8270", marginBottom: 3, textAlign: centered === "center" ? "center" : "left" }}>
+        <span style={{ display: "block", fontSize: 10.5, color: "var(--muted)", marginBottom: 3, textAlign: centered === "center" ? "center" : "left" }}>
           {label}{max ? <span style={{ color: "#5a5448" }}> ≤{max}字</span> : null}
         </span>
       )}
@@ -296,16 +296,16 @@ export function TextField({ label, value, onChange, placeholder, rows = 1, max, 
 
 export function Stat({ label, v }) {
   return (
-    <div style={{ display: "flex", fontSize: 11, marginBottom: 4, color: "#8a8270" }}>
+    <div style={{ display: "flex", fontSize: 11, marginBottom: 4, color: "var(--muted)" }}>
       <span style={{ width: 84, flexShrink: 0 }}>{label}</span>
-      <span style={{ color: "#e8e4d6" }}>{v}</span>
+      <span style={{ color: "var(--text)" }}>{v}</span>
     </div>
   );
 }
 
 export function Section({ title, children, dim }) {
   return (
-    <div style={{ marginTop: 12, borderTop: "1px solid #2a2419", paddingTop: 9, opacity: dim ? .55 : 1 }}>
+    <div style={{ marginTop: 12, borderTop: "1px solid var(--bg-card)", paddingTop: 9, opacity: dim ? .55 : 1 }}>
       <div style={{ fontSize: 11, color: "#d8c8a0", letterSpacing: 1, marginBottom: 7 }}>{title}</div>
       {children}
     </div>
@@ -331,9 +331,9 @@ export function Btn({ children, onClick, tone = "dim", disabled, title }) {
       style={{
         cursor: disabled ? "not-allowed" : "pointer", userSelect: "none",
         fontSize: 12, padding: "6px 16px", borderRadius: 0, whiteSpace: "nowrap",
-        color: main ? "#1a1206" : warn ? "#c0a870" : "#a89870",
+        color: main ? "var(--bg-deep)" : warn ? "#c0a870" : "#a89870",
         background: main ? "linear-gradient(180deg,#e0b860,#8a6a2a)" : "rgba(0,0,0,.3)",
-        border: `1px solid ${main ? "#e0b860" : warn ? "#5a4a28" : "#3a3428"}`,
+        border: `1px solid ${main ? "#e0b860" : warn ? "#5a4a28" : "var(--border-deep)"}`,
         opacity: disabled ? .4 : 1,
         fontWeight: main ? 700 : 400, letterSpacing: main ? 1 : 0,
       }}>{children}</span>
@@ -342,7 +342,7 @@ export function Btn({ children, onClick, tone = "dim", disabled, title }) {
 
 // 小号切换按钮组（主角/NPC、性别这类二三选一）
 // 单个 pill 抽成带 hover 的子组件。
-// 【为什么改配色】未选中态原来是暗灰字(#8a8270)+暗边(#3a3428)+透明底，在深色面板
+// 【为什么改配色】未选中态原来是暗灰字(var(--muted))+暗边(var(--border-deep))+透明底，在深色面板
 // 上看着就像「禁用的灰按钮」——实测有玩家因此以为落脚的驻场/游走钮点不了、只能靠
 // AI 荐位。现在未选中也用亮米字+可见描边+微深底，明确「这是能点的」；hover 再镀
 // 一层金边并提亮，选中态才是实心金。
@@ -361,7 +361,7 @@ function Pill({ label, on, onClick, title, accent }) {
   );
 }
 
-export function Pills({ options, value, onChange, accent = "#d4a853" }) {
+export function Pills({ options, value, onChange, accent = "var(--warn)" }) {
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
       {options.map(o => {
@@ -380,8 +380,8 @@ export function Pills({ options, value, onChange, accent = "#d4a853" }) {
 
 export const TERM_MONO = "ui-monospace,Menlo,Consolas,monospace";
 const TERM_TONE = {
-  start: { mark: "▸", color: "#8ac8b8" },
-  done: { mark: "✓", color: "#8ab070" },
+  start: { mark: "▸", color: "var(--info)" },
+  done: { mark: "✓", color: "var(--green-soft)" },
   fail: { mark: "✕", color: "#c08870" },
   retry: { mark: "↻", color: "#c0a870" },
   wait: { mark: "⧗", color: "#7a8a90" },
@@ -389,8 +389,8 @@ const TERM_TONE = {
 };
 
 /**
- * 终端样式的运行日志。视觉照 TraceViewer 来（#161510 底、#9a9a8a 字、
- * #8ac8b8 高亮、等宽、pre-wrap），因为两处要看的是同一类东西：带时序的机器动作。
+ * 终端样式的运行日志。视觉照 TraceViewer 来（var(--bg-ink) 底、#9a9a8a 字、
+ * var(--info) 高亮、等宽、pre-wrap），因为两处要看的是同一类东西：带时序的机器动作。
  * 【为什么不用一行「实调 N 次」】那只有结果没有过程。5 次/分钟的额度下，玩家
  * 最需要看见的是"现在卡在哪、为什么等、哪一批降级了"。
  */
@@ -401,17 +401,17 @@ export function Terminal({ lines, height = 132, onExpand }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [lines.length]);
   return (
-    <div style={{ borderTop: "1px solid #4a453c", background: "#161510" }}>
+    <div style={{ borderTop: "1px solid var(--border)", background: "var(--bg-ink)" }}>
       <div style={{
         display: "flex", alignItems: "center", gap: 6, padding: "3px 8px",
         borderBottom: "1px solid #141a1a", fontFamily: TERM_MONO, fontSize: 9,
         color: "#5a6a6a", letterSpacing: 1,
       }}>
-        <span style={{ color: "#8ac8b8" }}>●</span>
+        <span style={{ color: "var(--info)" }}>●</span>
         <span>入册运行日志</span>
         <span style={{ flex: 1 }} />
         <span>{lines.length} 行</span>
-        {onExpand && <span onClick={onExpand} title="放大看" style={{ cursor: "pointer", color: "#8ac8b8" }}>⤢</span>}
+        {onExpand && <span onClick={onExpand} title="放大看" style={{ cursor: "pointer", color: "var(--info)" }}>⤢</span>}
       </div>
       <div ref={boxRef} style={{
         height, overflowY: "auto", padding: "5px 8px",

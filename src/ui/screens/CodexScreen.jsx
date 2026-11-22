@@ -123,7 +123,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
   const tabStyle = (on) => ({
     cursor: "pointer", padding: "7px 26px", fontSize: "15px", border: "none",
     backgroundImage: `url(${S("ui/bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-    color: on ? "#f0e0b0" : "#c8a86a", textShadow: on ? "0 1px 2px #000" : "none", opacity: on ? 1 : 0.55,
+    color: on ? "#f0e0b0" : "#c8a86a", textShadow: on ? "0 1px 2px var(--black)" : "none", opacity: on ? 1 : 0.55,
   });
 
   return (
@@ -249,12 +249,12 @@ function ItemRow({ it, owned, paperText, paperDim, paperAccent }) {
     <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)", opacity: owned ? 1 : 0.92 }}>
       <div style={{ position: "relative", flexShrink: 0 }}>
         {jade && <img src={jade} alt={it.quality} style={{ width: 42, height: 42, objectFit: "contain", filter: owned ? "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" : "grayscale(0.55) opacity(0.7)" }} />}
-        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "#3a9a3a", textShadow: "0 0 2px #fff" }}>✓</span>}
+        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "#3a9a3a", textShadow: "0 0 2px var(--white)" }}>✓</span>}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, fontWeight: "bold", color: qc }}>{it.name}</span>
-          <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 0, color: "#fff", background: qc }}>{it.quality}</span>
+          <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 0, color: "var(--white)", background: qc }}>{it.quality}</span>
           <span style={{ fontSize: 10, color: paperDim }}>{CATEGORY_LABEL[it.category] || it.category}</span>
           {statBits.length > 0 && <span style={{ fontSize: 11, color: "#a05a10" }}>{statBits.join(" · ")}</span>}
           {effectName && <span style={{ fontSize: 11, color: "#a05a10" }}>· {effectName}</span>}
@@ -287,12 +287,12 @@ function SkillRow({ sk, owned, paperText, paperDim, paperAccent }) {
     <div style={{ display: "flex", gap: 12, padding: "11px 8px", alignItems: "center", borderBottom: "1px solid rgba(120,90,50,0.22)", opacity: owned ? 1 : 0.92 }}>
       <div style={{ position: "relative", flexShrink: 0 }}>
         {jade && <img src={jade} alt={sk.quality} style={{ width: 42, height: 42, objectFit: "contain", filter: owned ? "drop-shadow(0 2px 3px rgba(0,0,0,0.3))" : "grayscale(0.55) opacity(0.7)" }} />}
-        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "#3a9a3a", textShadow: "0 0 2px #fff" }}>✓</span>}
+        {owned && <span style={{ position: "absolute", right: -3, bottom: -2, fontSize: 13, color: "#3a9a3a", textShadow: "0 0 2px var(--white)" }}>✓</span>}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, fontWeight: "bold", color: qc }}>{sk.name}</span>
-          <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 0, color: "#fff", background: qc }}>{sk.quality}</span>
+          <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 0, color: "var(--white)", background: qc }}>{sk.quality}</span>
           <span style={{ fontSize: 10, color: paperDim }}>{sk.type}</span>
           {typeof sk.price === "number" && (
             <span style={{ fontSize: 11, color: "#a05a10" }}>

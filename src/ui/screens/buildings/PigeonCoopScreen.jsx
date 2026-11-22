@@ -14,12 +14,12 @@ export default function PigeonCoopScreen({ building, char, flags, time, zoneThem
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: 13 }}>{building.desc}</p>
-        <div style={{ color: "#8f8a7c", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "var(--text-dim)", marginBottom: 12, fontSize: 11 }}>
           🕊 现有信鸽 {pigeons} 只 · 每日可领 {dailyQty} 只（不花银两）
         </div>
 
         {alreadyCollected && (
-          <div style={{ color: "#c45044", marginBottom: 12, fontSize: 12 }}>今日已领过，明日再来。</div>
+          <div style={{ color: "var(--red-soft)", marginBottom: 12, fontSize: 12 }}>今日已领过，明日再来。</div>
         )}
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

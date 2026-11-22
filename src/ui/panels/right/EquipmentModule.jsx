@@ -34,7 +34,7 @@ export default function EquipmentModule({ zoneTheme, inv, setInv }) {
                     {item.equipped ? "▶" : "○"} {item.name} <span style={{ fontSize: "9.5px" }}>({item.quality}{stat ? `·${stat}` : ""})</span>
                   </div>
                   {eff && (
-                    <div style={{ fontSize: "9.5px", paddingLeft: 14, color: item.equipped ? "#c07050" : "#4a5a4a" }}>{eff}</div>
+                    <div style={{ fontSize: "9.5px", paddingLeft: 14, color: item.equipped ? "var(--clay)" : "#4a5a4a" }}>{eff}</div>
                   )}
                 </div>
               );

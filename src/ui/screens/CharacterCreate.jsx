@@ -227,14 +227,14 @@ const styles = {
   },
   input: {
     width: "100%", boxSizing: "border-box",
-    background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "#4a3a1a"}`,
+    background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "var(--gold-deep)"}`,
     borderRadius: 0, padding: "10px 14px",
     color: "#f0e8d8", fontSize: "15px", outline: "none",
     fontFamily: "inherit",
   },
   select: {
     width: "100%", boxSizing: "border-box",
-    background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "#4a3a1a"}`,
+    background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "var(--gold-deep)"}`,
     borderRadius: 0, padding: "10px 14px",
     color: "#f0e8d8", fontSize: "15px", outline: "none",
     fontFamily: "inherit", cursor: "pointer",

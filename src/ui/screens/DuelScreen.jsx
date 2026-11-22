@@ -429,9 +429,9 @@ export default function DuelScreen({ npc, playerChar, pendingCombatBuff, playerI
           <div style={styles.vsBadge(zoneTheme)}>第{round}回合</div>
           <div style={{ ...styles.sideInfo, textAlign: "right" }}>
             <div style={styles.name(zoneTheme)}>{npc.name}</div>
-            <HpBar pct={npcHpPct} color="#c45044" />
+            <HpBar pct={npcHpPct} color="var(--red-soft)" />
             <div style={styles.hpText}>{npcHp[0]}/{npcHp[1]}</div>
-            <EnergyDots value={npcEnergy[0]} color="#c45044" right />
+            <EnergyDots value={npcEnergy[0]} color="var(--red-soft)" right />
           </div>
         </div>
 
@@ -615,7 +615,7 @@ function MudRoundLog({ entry, npcName, zoneTheme }) {
       {(result.damageToB > 0 || result.damageToA > 0) && (
         <div style={{ fontSize: "12px", marginTop: 2 }}>
           {result.damageToB > 0 && <span style={{ color: "#e08b6f" }}>{npcName}受创 {result.damageToB}　</span>}
-          {result.damageToA > 0 && <span style={{ color: "#c45044" }}>你受创 {result.damageToA}</span>}
+          {result.damageToA > 0 && <span style={{ color: "var(--red-soft)" }}>你受创 {result.damageToA}</span>}
         </div>
       )}
       {[...result.statusLogA, ...result.statusLogB].map((l, i) => (
@@ -707,7 +707,7 @@ const styles = {
   opSection: { display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 },
   sectionLabel: (t) => ({ fontSize: "12px", color: t.accent, letterSpacing: "1px" }),
   moveGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: "30vh", overflowY: "auto" },
-  warnLine: { textAlign: "center", color: "#c45044", fontSize: "11px", padding: "4px 0" },
+  warnLine: { textAlign: "center", color: "var(--red-soft)", fontSize: "11px", padding: "4px 0" },
   hintLine: (t) => ({ fontSize: "11px", color: t.textDim, textAlign: "center" }),
   // 战斗内道具栏
   itemBarRow: { marginTop: 6 },

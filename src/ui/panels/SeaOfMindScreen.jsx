@@ -50,8 +50,8 @@ export default function SeaOfMindScreen({
           return (
             <span key={k.key} style={{
               fontSize: 10.5, padding: "2px 9px", borderRadius: 0,
-              color: done ? "#c07050" : isNext ? "#e8c86a" : "#4a4a44",
-              border: `1px solid ${done ? "var(--accent)" : isNext ? "#4a3a1a" : "#25252a"}`,
+              color: done ? "var(--clay)" : isNext ? "#e8c86a" : "#4a4a44",
+              border: `1px solid ${done ? "var(--accent)" : isNext ? "var(--gold-deep)" : "#25252a"}`,
               background: done ? "rgba(138,196,138,.08)" : "transparent",
             }}>
               {done ? "✓ " : isNext ? "◦ " : "· "}

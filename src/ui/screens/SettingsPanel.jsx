@@ -312,11 +312,11 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               </span>
             </div></>}
             {!isVertex && modelStatus === "error" && modelPickerTarget === null && (
-              <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
+              <div style={{ fontSize: "10.5px", color: "var(--red-soft)", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
             )}
             {!isVertex && modelList && modelList.length > 0 && modelPickerTarget === null && (
               <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid #14161e" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
                   <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
                   {/* 之前这个列表没有任何关闭方式：选了模型也不会自动收起，
                       也没有×按钮，列表会一直挂着退不掉。补齐两条退出路径。 */}
@@ -330,14 +330,14 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                       padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
                       color: m === cfg.model ? "var(--accent)" : "var(--text-dim)",
                       background: m === cfg.model ? "#1a2a2a" : "transparent",
-                      borderBottom: "1px solid #14161e",
+                      borderBottom: "1px solid var(--bg-slate)",
                     }}
                   >{m}{m === cfg.model && " ◂"}</div>
                 ))}
               </div>
             )}
             {!isVertex && modelList && modelList.length === 0 && (
-              <div style={{ fontSize: "10.5px", color: "#c4a040", marginTop: 3 }}>接口未返回任何模型，请手动填写模型名称</div>
+              <div style={{ fontSize: "10.5px", color: "var(--gold)", marginTop: 3 }}>接口未返回任何模型，请手动填写模型名称</div>
             )}
 
             <ApiSettingsGroup title="篇幅与超时" expanded={apiGroups.length} zoneTheme={zoneTheme}
@@ -525,11 +525,11 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                     </span>
                   </div>
                   {modelStatus === "error" && modelPickerTarget === "extractionModel" && (
-                    <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
+                    <div style={{ fontSize: "10.5px", color: "var(--red-soft)", marginTop: 3 }}>✗ 检测失败：{modelErr}</div>
                   )}
                   {modelList && modelList.length > 0 && modelPickerTarget === "extractionModel" && (
                     <div style={{ marginTop: 6, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid #14161e" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
                         <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "Anthropic 官方无公开模型列表接口，以下是已知模型的静态清单" : `共 ${modelList.length} 个模型，点击选用`}</span>
                         <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "var(--text-dim)", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
                       </div>
@@ -541,7 +541,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                             padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
                             color: m === cfg.extractionModel ? "var(--accent)" : "var(--text-dim)",
                             background: m === cfg.extractionModel ? "#1a2a2a" : "transparent",
-                            borderBottom: "1px solid #14161e",
+                            borderBottom: "1px solid var(--bg-slate)",
                           }}
                         >{m}{m === cfg.extractionModel && " ◂"}</div>
                       ))}
@@ -576,11 +576,11 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                             </span>
                           </div>
                           {modelStatus === "error" && modelPickerTarget === key && (
-                            <div style={{ fontSize: "10.5px", color: "#c45044", marginTop: 3, marginLeft: 128 }}>✗ 检测失败：{modelErr}</div>
+                            <div style={{ fontSize: "10.5px", color: "var(--red-soft)", marginTop: 3, marginLeft: 128 }}>✗ 检测失败：{modelErr}</div>
                           )}
                           {modelList && modelList.length > 0 && modelPickerTarget === key && (
                             <div style={{ marginTop: 4, marginLeft: 128, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid #14161e" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", fontSize: "10px", color: "var(--text-dim)", borderBottom: "1px solid var(--bg-slate)" }}>
                                 <span>{cfg.apiType === API_TYPES.ANTHROPIC ? "静态清单" : `共 ${modelList.length} 个，点击选用`}</span>
                                 <span onClick={() => setModelList(null)} style={{ cursor: "pointer", color: "var(--text-dim)", flexShrink: 0, marginLeft: 8 }}>✕ 收起</span>
                               </div>
@@ -595,7 +595,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                                     padding: "5px 8px", cursor: "pointer", fontSize: "11.5px",
                                     color: m === cur ? "var(--accent)" : "var(--text-dim)",
                                     background: m === cur ? "#1a2a2a" : "transparent",
-                                    borderBottom: "1px solid #14161e",
+                                    borderBottom: "1px solid var(--bg-slate)",
                                   }}
                                 >{m}{m === cur && " ◂"}</div>
                               ))}
@@ -643,7 +643,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               <span>流式输出（边生成边显示，不用等一整段返回完）</span>
             </div>
             {cfg.apiType === API_TYPES.GEMINI && (
-              <div style={{ fontSize: "10.5px", color: "#c4a040", marginTop: -6, marginBottom: 6 }}>
+              <div style={{ fontSize: "10.5px", color: "var(--gold)", marginTop: -6, marginBottom: 6 }}>
                 Gemini 暂不支持流式输出，切到 Anthropic 或 OpenAI 兼容类型后可用。
               </div>
             )}
@@ -975,7 +975,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
               <div style={labelStyle}>存档槽位（{slots.length}）</div>
               {slots.length === 0 && <div style={{ color: "#3a3830" }}>暂无手动存档</div>}
               {slots.map(s => (
-                <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #14161e" }}>
+                <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--bg-slate)" }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ color: "var(--text)" }}>{s.label}</div>
                     <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>{s.presetName} · {new Date(s.savedAt).toLocaleString()}</div>
@@ -985,7 +985,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                     const snap = loadSlot(s.id);
                     if (snap) downloadText(`曲措乡-${s.label}-${ts()}.json`, exportSave(snap, s.label));
                   }}>导出</span>
-                  <span style={{ ...btnStyle, padding: "3px 8px", color: "#c45044" }} onClick={() => handleDeleteSlot(s.id)}>删除</span>
+                  <span style={{ ...btnStyle, padding: "3px 8px", color: "var(--red-soft)" }} onClick={() => handleDeleteSlot(s.id)}>删除</span>
                 </div>
               ))}
             </div>
@@ -1003,7 +1003,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 除非改了描述生成规则想强制刷新，否则不需要清空。
               </div>
               <span
-                style={{ ...btnStyle, color: "#c4a040", borderColor: "#3a2d1d" }}
+                style={{ ...btnStyle, color: "var(--gold)", borderColor: "#3a2d1d" }}
                 onClick={() => {
                   if (window.confirm("确定清空「查看武学/物品」的缓存文本？下次查看时会重新调用 LLM 生成。")) {
                     clearInspectCache();
@@ -1015,7 +1015,7 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
 
             <div style={{ ...sectionStyle }}>
               <span
-                style={{ ...btnStyle, color: "#c45044", borderColor: "#3a1d1d" }}
+                style={{ ...btnStyle, color: "var(--red-soft)", borderColor: "#3a1d1d" }}
                 onClick={() => runCommandWithAlert("newGame", () => {
                   if (window.confirm("确定要清空自动存档、从头开始吗？此操作不可撤销（手动存档槽位不受影响）。")) {
                     clearAutoSave();

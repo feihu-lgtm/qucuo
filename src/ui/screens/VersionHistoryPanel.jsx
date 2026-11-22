@@ -26,8 +26,8 @@ export default function VersionHistoryPanel({ onClose, accentDim = "var(--accent
           <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
         {VERSION_HISTORY.map((v, i) => (
-          <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < VERSION_HISTORY.length - 1 ? "1px solid #14161e" : "none" }}>
-            <div style={{ color: i === 0 ? "#d68a8a" : "var(--text)", fontSize: "12.5px" }}>「{v.codename}」{i === 0 && <span style={{ color: accentDim, fontSize: "10px" }}> · 当前版本</span>}</div>
+          <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < VERSION_HISTORY.length - 1 ? "1px solid var(--bg-slate)" : "none" }}>
+            <div style={{ color: i === 0 ? "var(--pink)" : "var(--text)", fontSize: "12.5px" }}>「{v.codename}」{i === 0 && <span style={{ color: accentDim, fontSize: "10px" }}> · 当前版本</span>}</div>
             <div style={{ color: "var(--text-dim)", fontSize: "10.5px", marginBottom: 4 }}>{v.time}</div>
             {/* notes 两种写法都认：数组=一行一条逐行列出（长条目请写数组）；
                 字符串=老写法，整段显示。数组里以 ①②③ 或 一、二、开头的行
