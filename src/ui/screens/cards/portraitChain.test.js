@@ -13,7 +13,7 @@ import { fitSize, dataUrlBytes, fmtBytes, isCustomPortrait } from "./portraitCom
 //      importedRegistry 里 o.portrait = c.portrait 传不到运行时。
 // 三条全是"不报错、只是没图"，所以都得盯源码。
 const HERE = dirname(fileURLToPath(import.meta.url));
-const NPC = readFileSync(join(HERE, "ReviewNpc.jsx"), "utf-8");
+const NPC = readFileSync(join(HERE, "PortraitPicker.jsx"), "utf-8");
 const PARTS = readFileSync(join(HERE, "widgets.jsx"), "utf-8");
 const NPC_RULES = readFileSync(join(HERE, "..", "..", "..", "domain", "rules", "npc", "rules.js"), "utf-8");
 const QB = readFileSync(join(HERE, "..", "quickBattle", "QuickBattleScreen.jsx"), "utf-8");

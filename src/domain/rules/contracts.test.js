@@ -106,7 +106,7 @@ describe("立绘两张索引表必须一一对应", () => {
 
 describe("落脚三态：数据层与界面标签必须同键", () => {
   it("PLACEMENT_MODES 每一项都有界面标签与说明", () => {
-    const src = read("..", "..", "ui", "screens", "cards", "ReviewNpc.jsx");
+    const src = read("..", "..", "ui", "screens", "cards", "reviewShared.js");
     for (const mode of PLACEMENT_MODES) {
       expect(src.includes(`${mode}:`), `PLACEMENT_LABEL/HINT 缺 ${mode}——界面上会显示 undefined`).toBe(true);
     }

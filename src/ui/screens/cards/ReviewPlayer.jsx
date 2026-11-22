@@ -18,7 +18,7 @@ import {
 } from "./widgets.jsx";
 import { TIER_NEIGONG, parseJsonLoose, buildStage3 } from "../../../domain/rules/cards/scanPrompts.js";
 import { hpFromNeigong } from "../../../domain/rules/npc/npcGeneration.js";
-import { CarryPicker } from "./ReviewNpc.jsx";
+import CarryPicker from "./CarryPicker.jsx";
 import { callModel } from "../../../engine/ports/ai.js";
 import { acquire } from "../../../domain/rules/cards/rateLimiter.js";
 import { buildSkillPlan, sanitizeSkillPlan, tierFromNeigong, SKILL_PLAN_MAX_TOKENS } from "../../../domain/rules/cards/skillPlan.js";
