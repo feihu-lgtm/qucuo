@@ -29,7 +29,7 @@ const MEMBERS = {
   [F.HEIFENG]: ["resident_basang", "resident_zhuoyang", "resident_gaze", "pool_bidder_heifeng"],
   [F.BAIHUA]: ["pool_lanjie"],
   [F.HUANXI]: ["resident_fanyanna", "resident_luoqi", "resident_laohe", "resident_ayabuddhist", "resident_sangjie_neiyuan", "resident_lizhanggui"],
-  [F.GUAN]: ["resident_liuqingyuan", "pool_bidder_chaiyi", "pool_lao_bing"],
+  [F.GUAN]: ["resident_liuqingyuan", "resident_hougan", "pool_bidder_chaiyi", "pool_lao_bing"],
   [F.QINGCHENG]: ["resident_yiqing", "resident_qingxiazi", "resident_chitang", "resident_qingxuan", "resident_songhe", "resident_yuzhenzi", "resident_laodaoshi", "resident_huguidizi"],
   [F.EMEI]: ["resident_xuanchen", "resident_zhaowei", "resident_xubai", "resident_liaoyin", "resident_tielian", "resident_situying", "resident_jinglian", "resident_zanniang", "resident_chenjiu"],
   [F.TANGMEN]: ["resident_tanglaotai", "resident_tangsanshao"],

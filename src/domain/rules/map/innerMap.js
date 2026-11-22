@@ -161,6 +161,10 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv
   if (unlockCondition.type === "flag") {
     return (flags || []).includes(unlockCondition.flag);
   }
+  // 多把钥匙任一即开（如三星派内墟：过了试炼，或持青铜纵目令）。
+  if (unlockCondition.type === "any") {
+    return (unlockCondition.of || []).some((cond) => isInnerExitUnlocked(cond, { questProgress, flags, inv, char }));
+  }
   if (unlockCondition.type === "anyFlag") {
     return (unlockCondition.flags || []).some(f => (flags || []).includes(f));
   }
@@ -185,7 +189,7 @@ export function isInnerExitUnlocked(unlockCondition, { questProgress, flags, inv
 export function describeInnerLock(unlockCondition) {
   if (!unlockCondition) return "";
   if (unlockCondition.type === "item") return `门锁着，你没有「${unlockCondition.itemName}」。`;
-  if (unlockCondition.type === "flag") return "门锁着，此刻还进不去。";
+  if (unlockCondition.type === "flag" || unlockCondition.type === "any") return "门锁着，此刻还进不去。";
   if (unlockCondition.type === "questCompleted") return "门锁着，似乎还有事没了结。";
   if (unlockCondition.type === "stat") {
     const label = unlockCondition.stat === "waigong" ? "外功" : "内功";

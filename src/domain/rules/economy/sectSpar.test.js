@@ -47,4 +47,13 @@ describe("sectSparRepGain", () => {
     expect(next.flags).toEqual(["qingcheng_spar_first", "qingcheng_spar_day_1"]);
     expect(duel.logs.map((row) => row.text)).toContain("  ✦ 堂堂正正赢了松鹤道长，青城派声誉 +5");
   });
+
+  it("sparring with Tangmen disciples on the 千机演武坪 raises 唐门 reputation", () => {
+    const tingzhu = { id: "resident_tangtingzhu", name: "唐听竹" };
+    expect(sectSparRepGain(state(), tingzhu, { outcome: "win" })).toEqual({
+      faction: "唐门", delta: 5, flags: ["tangmen_spar_first", "tangmen_spar_day_1"],
+    });
+    expect(sectSparRepGain(state(), { name: "唐仲衡" }, { outcome: "win" }).faction).toBe("唐门");
+    expect(sectSparRepGain(state(), { name: "唐伯渊" }, { outcome: "win" })).toBeNull();
+  });
 });
