@@ -1,10 +1,13 @@
 import CenterControlRows from "../CenterControlRows.jsx";
 import { useGameStore } from "../../../store/gameStore.js";
+import { isQuestChoiceOpen } from "../../../domain/rules/quests/questEngine.js";
 
 export default function CenterFooterBar({ ui, turn, handlers }) {
   const room = useGameStore(s => s.room);
   const innerRoomName = useGameStore(s => s.innerRoomName);
   const questProgress = useGameStore(s => s.questProgress);
+  const flags = useGameStore(s => s.flags);
+  const varTree = useGameStore(s => s.varTree);
   const {
     isMobile, mobileColumn, zoneTheme, loading, pendingTalks, waitSecs,
     availableQuestsHere, nsfwOn, setNsfwOn, justMeditated,
@@ -79,15 +82,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
             <span key={entry.quest.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <span style={{ color: "var(--text)", fontSize: "10.5px" }}>{entry.quest.title}：</span>
               {entry.stage.choices
-                .filter(choice => {
-                  const isDone = (qid) => questProgress[qid]?.status === "completed";
-                  if (choice.requiresQuestCompleted) {
-                    const need = Array.isArray(choice.requiresQuestCompleted) ? choice.requiresQuestCompleted : [choice.requiresQuestCompleted];
-                    if (!need.every(isDone)) return false;
-                  }
-                  if (choice.requiresAnyOf?.length && !choice.requiresAnyOf.some(isDone)) return false;
-                  return true;
-                })
+                .filter(choice => isQuestChoiceOpen(choice, { questProgress, flags, varTree }))
                 .map(choice => {
                   const icon = choice.resolve === "combat" ? "⚔ " : choice.resolve === "talk" ? "💬 " : "";
                   return (

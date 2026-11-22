@@ -105,10 +105,16 @@ const items = {
 "靛蓝油布围裙": { name: "靛蓝油布围裙", category: "armor", quality: "绿", defMul: 1.15, desc: "防油防火的靛蓝围裙，夹层缝着几块防身竹片。白婶说灶台边比江湖上危险。" },
 "补丁羊皮坎肩": { name: "补丁羊皮坎肩", category: "armor", quality: "白", defMul: 1.05, desc: "多吉从玉泉寨穿出来的羊皮坎肩，到广汉时已经补满了丐帮的粗麻布，分不清哪块是原来的。" },
 "旧油枯蓑衣": { name: "旧油枯蓑衣", category: "armor", quality: "蓝", defMul: 1.3, desc: "一件发黑的老蓑衣，常年挡风避雨，棕丝密得寻常暗器透不过。哑巴七坐在老槐树下时就披着它。" },
+"桃红补丁短袄": { name: "桃红补丁短袄", category: "armor", quality: "绿", defMul: 1.15, desc: "褪了色的桃红短袄，肘弯膝头打着五六块各色补丁，里衬却缝了一层牛筋麻布。穿的人自己说：叫花子也得穿得喜庆些。" },
 "粗麻百衲衣": { name: "粗麻百衲衣", category: "armor", quality: "绿", defMul: 1.2, desc: "破庙妇人们拿厚麻布一层叠一层衲出的短衫，穿着不体面，挡风耐割比寻常绸缎强得多。" },
 "察世轻行履": { name: "察世轻行履", category: "armor", quality: "蓝", defMul: 1.25, sixDim: { 身法: 2 }, desc: "千层底草麻混编的赶路鞋，鞋底暗垫牛皮，走一天山路脚底不起泡。" },
 "八袋青竹护心甲": { name: "八袋青竹护心甲", category: "armor", quality: "紫", defMul: 1.5, desc: "表面看只是件半旧的青布坎肩，内里密编了桐油炙过的细竹片与熟牛筋，轻若无物，却能硬扛血刀劈斩。" },
 "熟铜绑腿": { name: "熟铜绑腿", category: "armor", quality: "蓝", defMul: 1.25, sixDim: { 身法: 1 }, desc: "胡三爷私藏的一副熟铜片绑腿，他断腿前最后一次护粮穿的就是这副。「老子用不上了，你腿还在。」" },
+"驼绒防风氅": { name:"驼绒防风氅", category:"armor", quality:"绿", defMul: 1.1, tags:["护甲","西域","天龙教"], desc:"双层驼绒织的厚氅，领口缝一圈毛。西风隘的风能钻进骨头缝，披着它走夜路的人才不觉得是被风推着走。" },
+"素白僧衣": { name:"素白僧衣", category:"armor", quality:"绿", defMul: 1.0, sixDim:{ 气运: 1 }, tags:["护甲","僧衣","白衣旧部"], desc:"天王旧部的素白僧衣，洗得发旧但干净。断崖石室里那个老人身上就是这件——白衣不是孝，是旧部给天王留的体面。" },
+"青灰斗篷": { name:"青灰斗篷", category:"armor", quality:"绿", defMul: 1.05, tags:["护甲","医者"], desc:"贺兰昭常披的青灰斗篷，下摆常年沾着药渍。西谷的人说远远看见这抹青灰翻过山梁，就知道谁家又有人病了。" },
+"玄甲护心镜": { name:"玄甲护心镜", category:"armor", quality:"紫", defMul: 1.35, sixDim:{ 体魄: 1 }, tags:["护甲","玄甲","天龙教"], desc:"玄甲军制式护心镜，熟铜锻出盘龙浅纹。军需官说这东西救过的命比医官多——「医官救伤，它救命。」" },
+"龙纹赤铜战甲": { name:"龙纹赤铜战甲", category:"armor", quality:"橙", defMul: 1.5, sixDim:{ 体魄: 2 }, tags:["护甲","玄甲","天龙教","秘货"], desc:"赤铜叠片缀成的战甲，甲缘錾出蟠龙衔珠纹，是龙王亲军才有的制式。整副甲的分量压在肩上，像有人把手搭在那儿——替你稳住。" },
 };
 
 export default { item: items, itemGroup: { ARMORS: Object.keys(items) } };

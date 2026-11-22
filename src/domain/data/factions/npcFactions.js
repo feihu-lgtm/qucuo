@@ -21,7 +21,7 @@ export const FACTION = {
 
 const F = FACTION;
 const MEMBERS = {
-  [F.TUSI]: ["resident_meiduo", "resident_sangjieduojie", "resident_luofusheng", "resident_gesangdunzhu"],
+  [F.TUSI]: ["resident_meiduo", "resident_sangjieduojie", "resident_luofusheng", "resident_gesangdunzhu", "resident_luosangpingcuo", "resident_baimaciren"],
   [F.YUDING]: ["resident_caidan", "resident_laosun", "resident_yudingdaniang", "pool_da_niang", "pool_bidder_caidan"],
   [F.XUESHAN]: ["resident_huyanxue", "resident_xuannu", "resident_heyuxie", "pool_bidder_xueshan"],
   [F.LAMA]: ["resident_lama_abbot", "resident_yaotang_shifu", "pool_you_seng"],
@@ -33,7 +33,7 @@ const MEMBERS = {
   [F.QINGCHENG]: ["resident_yiqing", "resident_qingxiazi", "resident_chitang", "resident_qingxuan", "resident_songhe", "resident_yuzhenzi", "resident_laodaoshi", "resident_huguidizi"],
   [F.EMEI]: ["resident_xuanchen", "resident_zhaowei", "resident_xubai", "resident_liaoyin", "resident_tielian", "resident_situying", "resident_jinglian", "resident_zanniang", "resident_chenjiu"],
   [F.TANGMEN]: ["resident_tanglaotai", "resident_tangsanshao"],
-  [F.TIANLONG]: ["resident_litianxing", "resident_xuedao_chuqi", "resident_xuedao_shisan", "resident_xuedao_niansan"],
+  [F.TIANLONG]: ["resident_litianxing", "resident_xuedao_chuqi", "resident_xuedao_shisan", "resident_xuedao_niansan", "resident_shizhongyue", "resident_anshiheng", "resident_helanzhao"],
   [F.SANXING]: ["resident_zongmuzhe", "resident_qingtong_jia", "resident_qingtong_yi", "resident_qingtong_bing"],
 };
 
@@ -50,6 +50,7 @@ export function getBuiltinNpcId(npc) {
 }
 
 export function getNpcFaction(npc) {
+  if (npc?.randomPasser != null && !npc.imported && typeof npc.faction === "string" && npc.faction !== "散人") return npc.faction;
   return NPC_FACTION.get(getBuiltinNpcId(npc)) ?? null;
 }
 

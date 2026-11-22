@@ -103,7 +103,14 @@ const items = {
 "牧羊青竹棍": { name: "牧羊青竹棍", category: "weapon", quality: "白", atkMul: 1.05, desc: "一头缠着旧牛皮绳的青竹棍，多吉从玉泉寨一路拄到广汉，放牧赶羊用它，如今打狗练棒也用它。" },
 "残纹青竹板": { name: "残纹青竹板", category: "weapon", quality: "蓝", atkMul: 1.2, effect: { applyStatus: { name: "气乱", chance: 0.2 } }, desc: "两片老竹刻着半枚三星云雷纹，哑巴七拿来敲节拍。笃笃三声敲在耳边，对手的心神便乱了半拍。" },
 "晒干青竹棍": { name: "晒干青竹棍", category: "weapon", quality: "白", atkMul: 1.1, desc: "三星镇外砍来晒透的老竹，不及精铁锋利，胜在顺手韧长，新手练棒正好。" },
+"鹊尾竹节棍": { name: "鹊尾竹节棍", category: "weapon", quality: "蓝", atkMul: 1.25, effect: { lowHpBonus: 0.15 }, desc: "九节紫竹棍，棍梢系着一撮染红的喜鹊尾羽。秦小鹊说棍子要轻才甩得开，打不过就跑，跑之前先敲对方一记脑门。" },
 "铁头打狗棒": { name: "铁头打狗棒", category: "weapon", quality: "蓝", atkMul: 1.3, desc: "选用五年老青竹，两端套上精铁箍，抽人带风、架刀不断，是四袋以上弟子的标配。" },
+"西域弯刀": { name:"西域弯刀", category:"weapon", quality:"绿", atkMul: 1.1, tags:["武器","西域","天龙教"], desc:"西域商路带来的弯刀，刀身微弧利于骑上劈削。玄甲老卒人手一把——不精良，但顺手，断了也不心疼。" },
+"护法铜杖": { name:"护法铜杖", category:"weapon", quality:"绿", atkMul: 1.05, tags:["武器","禅杖"], desc:"白衣旧部护法用的熟铜杖，杖头四个铜环早被摩挲得发亮。旧部说它不是兵器，是「拿来拦住拳头的东西」。" },
+"柳叶小刀": { name:"柳叶小刀", category:"weapon", quality:"绿", atkMul: 1.0, tags:["武器","医具"], desc:"贺兰昭药箱里垫底的柳叶小刀，刃薄如纸，原本是割肉剔腐的医具——她拿它剜过腐肉，也拿它吓退过两个抢药的。" },
+"血槽铁刀": { name:"血槽铁刀", category:"weapon", quality:"蓝", atkMul: 1.25, tags:["武器","血刀","天龙教"], effect:{ applyStatus: { name: "裂伤", chance: 0.3 } }, desc:"血刀部军械，刀背开一道深槽，槽里常年擦不干净的暗红。被它划开的伤口流血格外凶——磨刀坪的人说那槽不是放血的，是「存血的」。" },
+"玄铁重刀": { name:"玄铁重刀", category:"weapon", quality:"橙", atkMul: 1.45, sixDim:{ 体魄: 2 }, tags:["武器","玄铁","天龙教"], desc:"石重岳的佩刀，玄铁所铸，重得寻常人双手都抬不平。刀身无饰，只在刀根刻一个「岳」字——他说刀上刻龙太吵，刻个名字，死了好认尸。" },
+"陨铁血刃": { name:"陨铁血刃", category:"weapon", quality:"橙", atkMul: 1.5, tags:["武器","陨铁","血刀","天龙教"], effect:{ applyStatus: { name: "裂伤", chance: 0.4 } }, desc:"西域陨铁锻的长刀，刀身天成的水纹里掺着暗红。磨刀坪的老卒说那是陨铁里带的血色——不是染的，是铁自己长出来的。" },
 };
 
 export default { item: items, itemGroup: { WEAPONS: Object.keys(items) } };

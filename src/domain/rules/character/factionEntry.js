@@ -4,6 +4,16 @@ import { factionRepOf } from "../economy/factionRep.js";
 import { SECT_ENTRY } from "./sectEntry.js";
 
 export const FACTION_ENTRIES = {
+  五仙教: {
+    sect: "五仙教", master: "龙汐月", buildingId: "sect_entry_wuxian",
+    minRep: 40, repBonus: 20, flag: "五仙教弟子",
+    token: "银蛇弟子牌", gifts: ["清瘴丸", "蛇药粉"],
+    quests: ["wuxianjiao_1_zilanwenjing", "wuxianjiao_2_dudianyiying"],
+    questsLabel: "完成「蛊1·紫岚问径」与「蛊2·毒典疑影」",
+    trial: null,
+    intro: "五仙灵坛前银铃低垂。龙汐月隔着面纱看你：「入我五仙，先饮一盏引蛊酒——受得住，才是自己人。」",
+    joinLabel: "饮下引蛊酒，拜入五仙教",
+  },
   青城派: {
     sect: "青城派", master: "一清道长", buildingId: "sect_entry_yajiang",
     minRep: 40, repBonus: 20, flag: "青城派弟子",
@@ -25,6 +35,26 @@ export const FACTION_ENTRIES = {
     intro: "听竹轩正厅案上供着青玉弟子令与一卷《峨眉清规》。玄尘师太问你三句心性话，答得出，便收。",
     joinLabel: "问心受戒，拜入峨眉派",
   },
+  天龙教: {
+    sect: "天龙教", master: "石重岳", buildingId: "sect_entry_tianlong",
+    minRep: 40, repBonus: 20, flag: "天龙教弟子",
+    token: "天龙弟子令", gifts: ["西域弯刀", "驼绒防风氅"],
+    trial: { flag: "tianlong_spar_first", label: "点将台试炼：堂堂正正胜过石重岳或血刀部教头一场", hint: "去玄甲校场或大草甸磨刀坪，堂堂正正胜过石重岳、厉天行或血刀教头一场，不许用毒。" },
+    intro: "黑石点将台上牛皮大鼓裂了口，台下插着一圈断刀。石重岳收人不看出身，只看拳头与办差——接得住三招，牌子拿走。",
+    joinLabel: "登台试三招，拜入天龙教",
+  },
+  丐帮三星分舵: {
+    sect: "丐帮三星分舵", master: "严九斤", buildingId: "sect_gaibang_entry",
+    minRep: 40, repBonus: 20, flag: "丐帮弟子",
+    token: "三星青竹袋", gifts: [],
+    trial: {
+      flag: "quest_gbj_spar",
+      label: "聚义堂入门小考：敬严九斤一碗烈酒，竹坪接胡三爷五招不退",
+      hint: "去聚义堂向严九斤敬酒，再到竹坪接胡三爷五招，不求胜，只要不逃。",
+    },
+    intro: "供桌上不烧高香，只摆一坛烈酒。严九斤说，入丐帮不看家世，只看你端不端得起这碗混着雨水的入门酒。",
+    joinLabel: "端起入门酒，拜入丐帮三星分舵",
+  },
 };
 
 export const SECT_MEMBER_FLAGS = {
@@ -43,16 +73,19 @@ export const sectMasterOf = (sect) => (sect === SECT_ENTRY.sect ? SECT_ENTRY.mas
 export const factionEntryForBuilding = (buildingId) =>
   Object.values(FACTION_ENTRIES).find((entry) => entry.buildingId === buildingId) || null;
 
-export function checkFactionEntry(entry, { varTree, flags = [], char } = {}) {
+export function checkFactionEntry(entry, { varTree, flags = [], char, questProgress = {} } = {}) {
   const rep = factionRepOf(varTree, entry.sect);
   const prestige = Number(varTree?.世界?.威望) || 0;
   const other = Object.entries(SECT_MEMBER_FLAGS).find(([sect, flag]) => sect !== entry.sect && flags.includes(flag));
   const trialOk = !entry.trial || flags.includes(entry.trial.flag);
   const riteNeeded = !!entry.maleRite && (char?.gender || "男") === "男";
   const riteOk = !riteNeeded || flags.includes(entry.maleRite.flag);
+  const questsDone = (entry.quests || []).filter((qid) => questProgress?.[qid]?.status === "completed").length;
+  const questsOk = (entry.quests || []).every((qid) => questProgress?.[qid]?.status === "completed");
   const reqs = [
     { key: "rep", label: `${entry.sect}声誉 ≥ ${entry.minRep}（门墙之交）`, have: rep, ok: rep >= entry.minRep },
     { key: "prestige", label: "威望 ≥ 0（不收恶名昭彰之徒）", have: prestige, ok: prestige >= 0 },
+    ...(entry.quests?.length ? [{ key: "quests", label: entry.questsLabel || "完成本派引荐任务", have: `${questsDone}/${entry.quests.length}`, ok: questsOk }] : []),
     ...(entry.trial ? [{ key: "trial", label: entry.trial.label, have: trialOk ? "已过" : "未过", ok: trialOk }] : []),
     ...(riteNeeded ? [{ key: "rite", label: entry.maleRite.label, have: riteOk ? "已成" : "未成", ok: riteOk }] : []),
     { key: "single", label: "未拜入他派", have: other ? other[0] : "无", ok: !other },
