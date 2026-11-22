@@ -277,14 +277,17 @@ describe("runBookkeepAfterTurn", () => {
   });
 
   it("does not call the bookkeeping model on a pure-chat turn with no state writes", async () => {
-    // 契约：提取产物只有叙事键（output/memory/choices/_truncated）、无 mvu/deal/plan/结算时，
-    // 本回合无变动，记账调用整体短路（returns null、ai.chat 零调用）。
+    // 契约：提取产物只有叙事键（output/memory/choices/respondedNpcs/_truncated）、
+    // 无 mvu/deal/plan/结算时，本回合无变动，记账调用整体短路（null + ai.chat 零调用）。
     const ai = { chat: vi.fn() };
     const result = await runBookkeepAfterTurn({
       ctx: { ai, apiCfg: {}, ...storeAccess() },
       turn: {
         narrativeText: "两人隔着火炉闲聊了半个时辰。",
-        p: { output: ["两人隔着火炉闲聊了半个时辰。"], memory: "与阿旺闲聊", choices: [] },
+        p: {
+          output: ["两人隔着火炉闲聊了半个时辰。"], memory: "与阿旺闲聊",
+          choices: [], respondedNpcs: ["阿旺"],
+        },
       },
       opts: {},
     });
@@ -304,6 +307,18 @@ describe("runBookkeepAfterTurn", () => {
       opts: {},
     });
     expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["打了招呼"]);
+  });
+
+  it("still books settle turns whose extraction produced narration-only fields", async () => {
+    // 已结算回合（如卖玉）提取被跳过、p 只剩 output/memory——settle 标志按有变动处理，
+    // 买卖必须落账，不得被纯叙事短路。
+    const ai = createMockAi(['{"memory":"","ledger":{"阿旺":["买走玉佩"]}}']);
+    await runBookkeepAfterTurn({
+      ctx: { ai, apiCfg: {}, ...storeAccess() },
+      turn: { narrativeText: "少侠把玉佩递过去，阿旺付了八十两。", p: { output: ["……"], memory: "卖出玉佩" } },
+      opts: { settle: true, settleKind: "sale" },
+    });
+    expect(getLedger(gameStore.getState().varTree, "阿旺").lines).toEqual(["买走玉佩"]);
   });
 
   it("still books turns driven by a settle plan or mvu commands", async () => {

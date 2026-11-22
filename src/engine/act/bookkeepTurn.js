@@ -12,12 +12,16 @@ function targetName(target) {
 }
 
 // 纯叙事键：提取产物 p 只有这些键时，本回合没有任何数值/关系/物品/事件变动。
-// 判据取"只放白名单内的键"而非"没有黑名单键"——提取层以后加新字段时默认仍记账，
-// 宁可多记一次也不漏账（省的是确实无变动的那次小模型调用）。
-const NARRATION_ONLY_P_KEYS = new Set(["output", "memory", "choices", "_truncated"]);
+// respondedNpcs 是闲聊常规字段（"对话即认识"由 commitRound 的 talkKnow 处理，
+// 记账层只当叙事元数据）；判据取"只放白名单内的键"而非"没有黑名单键"——提取层
+// 以后加新字段时默认仍记账，宁可多记一次也不漏账。
+const NARRATION_ONLY_P_KEYS = new Set(["output", "memory", "choices", "respondedNpcs", "_truncated"]);
 
 function turnHasStateWrites({ ctx, turn, opts }) {
-  if (opts?.duelReport || opts?.settleKind || opts?.giftInfo?.weight) return true;
+  // 系统已结算的回合（卖东西/送礼/平息等）提取被跳过、p 只剩叙事键，
+  // 但账本必须落账——settle 全族标志都按有变动处理。
+  if (opts?.settle || ctx?.isSettle || opts?.settleKind || opts?.learnInfo || opts?.settleBeast
+    || opts?.giftInfo?.weight || opts?.duelReport) return true;
   if (turn?.intentPlan || ctx?.intentPlan || turn?.dealResult) return true;
   if (Array.isArray(turn?.mvuCommands) && turn.mvuCommands.length) return true;
   const p = turn?.p;
