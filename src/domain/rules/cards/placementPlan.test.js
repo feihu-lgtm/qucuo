@@ -33,8 +33,8 @@ describe("buildPlacementPlan 请求构造", () => {
     expect(user).toContain("3 人");
   });
 
-  it("可规划据点是 16 个，批量上限为 6", () => {
-    expect(PLANNABLE_DISTRICTS.length).toBe(16);
+  it("可规划据点是 19 个，批量上限为 6", () => {
+    expect(PLANNABLE_DISTRICTS.length).toBe(19);
     expect(PLAN_BATCH).toBe(6);
   });
 });
