@@ -32,9 +32,10 @@ function retryVerdict(error, attempt) {
   const ec = classifyError(error);
   if (ec.retryable === false) return { retry: false, why: `${ec.title}，重试无用，不自动重试` };
   if (ec.kind !== "rateLimit") return { retry: true, delayMs: 0 };
-  const hinted = Number(error?.retryAfterMs);
+  const hinted = error?.retryAfterMs == null ? NaN : Number(error.retryAfterMs);
   const delayMs = Number.isFinite(hinted) && hinted >= 0 ? hinted : RATE_LIMIT_BACKOFF_MS * 2 ** (attempt - 1);
-  return { retry: true, delayMs: Math.min(delayMs, RATE_LIMIT_MAX_WAIT_MS) };
+  if (delayMs > RATE_LIMIT_MAX_WAIT_MS) return { retry: false, why: `接口要求等 ${Math.ceil(delayMs / 1000)} 秒，超过自动重试上限，不自动重试` };
+  return { retry: true, delayMs };
 }
 
 function retryNotice(error, verdict, attempt) {

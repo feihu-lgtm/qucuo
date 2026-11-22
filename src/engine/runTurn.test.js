@@ -357,6 +357,16 @@ describe("runTurn", () => {
     expect(ctx.sleep.mock.calls).toEqual([[5000], [4000]]);
   });
 
+  it("429 要求等待超过 30 秒时不白重试", async () => {
+    const error = Object.assign(new Error("HTTP 429：Rate limit reached"), { httpStatus: 429, retryAfterMs: 60000 });
+    const ai = { chat: vi.fn(async () => { throw error; }) };
+    const ctx = createPlayTurnContext(ai, vi.fn());
+    ctx.sleep = vi.fn(async () => {});
+    await expect(playTurn(ctx, "探索石阶")).resolves.toMatchObject({ ok: false, error });
+    expect(ai.chat).toHaveBeenCalledTimes(1);
+    expect(ctx.sleep).not.toHaveBeenCalled();
+  });
+
   it("429 重试用尽仍失败就整轮回滚", async () => {
     const error = Object.assign(new Error("HTTP 429：Rate limit reached"), { httpStatus: 429 });
     const ai = { chat: vi.fn(async () => { throw error; }) };
