@@ -66,7 +66,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
   const box = {
     background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0,
     padding: "8px 10px", marginTop: 6, fontSize: 11, lineHeight: 1.75,
-    color: "#9a9484", whiteSpace: "pre-wrap", wordBreak: "break-word",
+    color: "var(--inject-body)", whiteSpace: "pre-wrap", wordBreak: "break-word",
     maxHeight: 260, overflowY: "auto", fontFamily: "inherit",
   };
 
@@ -90,7 +90,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
     return (
       <div>
         {meta && (
-          <div style={{ fontSize: 10, color: "#5a7a6a", marginBottom: 8, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 10, color: "var(--inject-note)", marginBottom: 8, lineHeight: 1.6 }}>
             scope={meta.scope ?? "?"} · {meta.narrativeOnly ? "双调用主叙事" : "单调用"}
             {meta.isSettle ? " · settle" : ""}{meta.settleKind ? ` · ${meta.settleKind}` : ""}
             {"　"}want[隔离={meta.wantIsolation ? 1 : 0}/物件志={meta.wantCatalog ? 1 : 0}/MVU={meta.wantMvu ? 1 : 0}]
@@ -104,11 +104,11 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             return (
               <div key={i} style={{ border: "1px solid var(--border)", borderRadius: 0, padding: "6px 8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 9, color: isSys ? "#7a9ab8" : "var(--text-dim)" }}>#{Math.floor(m.order)}</span>
-                  <span style={{ fontSize: 11, color: isSys ? "var(--text)" : "#a8a898", fontWeight: "bold" }}>{label}</span>
+                  <span style={{ fontSize: 9, color: isSys ? "var(--inject-sys-order)" : "var(--text-dim)" }}>#{Math.floor(m.order)}</span>
+                  <span style={{ fontSize: 11, color: isSys ? "var(--text)" : "var(--inject-user-label)", fontWeight: "bold" }}>{label}</span>
                   <span style={{ fontSize: 9, color: "var(--text-dim)" }}>{m.role} · {len} 字</span>
                 </div>
-                <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 9.5, lineHeight: 1.45, color: "#9a9484", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: "5px 7px", maxHeight: 140, overflowY: "auto" }}>{m.content || "（空）"}</pre>
+                <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 9.5, lineHeight: 1.45, color: "var(--inject-body)", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: "5px 7px", maxHeight: 140, overflowY: "auto" }}>{m.content || "（空）"}</pre>
               </div>
             );
           })}
@@ -127,7 +127,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             onClick={() => { setViewMode(m); setOpenBlock(null); }}
             style={{
               cursor: "pointer", padding: "2px 10px", borderRadius: 0, fontSize: 11,
-              background: viewMode === m ? "#241211" : "transparent",
+              background: viewMode === m ? "var(--inject-tab-on)" : "transparent",
               color: viewMode === m ? "var(--text)" : "var(--text-dim)",
               border: `1px solid ${viewMode === m ? "var(--accent)" : "var(--border)"}`,
             }}>
@@ -138,9 +138,9 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
 
       {viewMode === "action" && (
         <>
-          <div style={{ fontSize: 11, color: "#7a7460", lineHeight: 1.7, marginBottom: 8 }}>
+          <div style={{ fontSize: 11, color: "var(--inject-hint)", lineHeight: 1.7, marginBottom: 8 }}>
             这一轮到底喂了 AI 什么，按动作分类逐块列在这里。点条目展开看
-            <b style={{ color: "#9a9484" }}>真正的原文</b>
+            <b style={{ color: "var(--inject-body)" }}>真正的原文</b>
             ——静态块与 buildSysBase 共用同一份常量，不是另抄的一份。只读。
           </div>
 
@@ -151,7 +151,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             onClick={() => { setActionId(v.id); setOpenBlock(null); }}
             style={{
               cursor: "pointer", padding: "3px 10px", borderRadius: 0, fontSize: 11.5,
-              background: actionId === v.id ? "#241211" : "transparent",
+              background: actionId === v.id ? "var(--inject-tab-on)" : "transparent",
               color: actionId === v.id ? "var(--text)" : "var(--text-dim)",
               border: `1px solid ${actionId === v.id ? "var(--accent)" : "var(--border)"}`,
             }}>
@@ -171,22 +171,22 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             onClick={() => { setMode(m); setOpenBlock(null); }}
             style={{
               cursor: "pointer", padding: "2px 10px", borderRadius: 0, fontSize: 11,
-              background: mode === m ? "#241211" : "transparent",
+              background: mode === m ? "var(--inject-tab-on)" : "transparent",
               color: mode === m ? "var(--clay)" : "var(--ink-text-dim)",
               border: `1px solid ${mode === m ? "var(--accent)" : "var(--border)"}`,
             }}>
             {label}
           </span>
         ))}
-        <span style={{ fontSize: 10, color: "#4a4a3a" }}>
+        <span style={{ fontSize: 10, color: "var(--inject-faint)" }}>
           （设置里实际生效：{extractionEnabled ? "双调用" : "单调用"}{mode !== (extractionEnabled ? "dual" : "single") ? "　—　当前只是切换查看，不影响实际生效的模式" : ""}）
         </span>
       </div>
 
-      <div style={{ fontSize: 11, color: "#7a7460", marginBottom: 6, lineHeight: 1.65 }}>
+      <div style={{ fontSize: 11, color: "var(--inject-hint)", marginBottom: 6, lineHeight: 1.65 }}>
         {view.note}
         <span style={{ color: "var(--text-dim)" }}>
-          {"　"}scope=<b style={{ color: "#8a9a8a" }}>{view.scope}</b>
+          {"　"}scope=<b style={{ color: "var(--inject-scope)" }}>{view.scope}</b>
           {view.intent ? `　intent=${view.intent}` : ""}
           {"　"}{litCount}/{blocks.length} 块亮灯
         </span>
@@ -207,7 +207,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             : "动态块默认显示字段模板，点这里抓当前这一局的真实内容"}
         </span>
       </div>
-      {liveErr && <div style={{ fontSize: 10.5, color: "#c08a5a", marginBottom: 8 }}>{liveErr}</div>}
+      {liveErr && <div style={{ fontSize: 10.5, color: "var(--inject-off)", marginBottom: 8 }}>{liveErr}</div>}
 
       {/* 图例 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8, fontSize: 10 }}>
@@ -217,43 +217,43 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             {m.label}
           </span>
         ))}
-        <span style={{ color: "#4a4a3a" }}>⚫ = 本动作下灭灯（不注入）</span>
+        <span style={{ color: "var(--inject-faint)" }}>⚫ = 本动作下灭灯（不注入）</span>
       </div>
 
       {/* 逐块 */}
       {blocks.map((b) => {
-        const meta = KIND_META[b.kind] || { label: b.kind, color: "#666" };
+        const meta = KIND_META[b.kind] || { label: b.kind, color: "var(--inject-kind-fallback)" };
         const open = openBlock === b.id;
         const text = staticTextOf(b);
         const liveText = live[b.id];
         return (
           <div key={b.id} style={{
             border: `1px solid ${open ? "var(--accent)" : "var(--border)"}`, borderRadius: 0,
-            marginBottom: 4, opacity: b.lit ? 1 : 0.5, background: open ? "#0e1118" : "transparent",
+            marginBottom: 4, opacity: b.lit ? 1 : 0.5, background: open ? "var(--inject-open-bg)" : "transparent",
           }}>
             <div
               onClick={() => setOpenBlock(open ? null : b.id)}
               style={{ cursor: "pointer", padding: "6px 9px", display: "flex", alignItems: "center", gap: 7 }}
             >
-              <span style={{ color: "#4a4a3a", fontSize: 10, width: 18, flexShrink: 0 }}>{open ? "▼" : "▶"}</span>
-              <span style={{ width: 8, height: 8, borderRadius: 0, background: b.lit ? meta.color : "#3a3a3a", flexShrink: 0 }} />
+              <span style={{ color: "var(--inject-faint)", fontSize: 10, width: 18, flexShrink: 0 }}>{open ? "▼" : "▶"}</span>
+              <span style={{ width: 8, height: 8, borderRadius: 0, background: b.lit ? meta.color : "var(--inject-unlit)", flexShrink: 0 }} />
               <span style={{ flex: 1, fontSize: 12, color: b.lit ? "var(--text)" : "var(--text-dim)", minWidth: 0 }}>
                 {b.name}
                 {!b.lit && <span style={{ color: "var(--text-dim)", fontSize: 10 }}>　⚫灭</span>}
               </span>
-              <span style={{ fontSize: 9.5, color: "#4a4a3a", flexShrink: 0 }}>{meta.label}　#{b.depth}</span>
+              <span style={{ fontSize: 9.5, color: "var(--inject-faint)", flexShrink: 0 }}>{meta.label}　#{b.depth}</span>
             </div>
 
             {open && (
               <div style={{ padding: "0 9px 9px 34px" }}>
                 {!b.lit && b.off && (
-                  <div style={{ fontSize: 10.5, color: "#c08a5a", marginBottom: 4 }}>本动作下不注入：{b.off}</div>
+                  <div style={{ fontSize: 10.5, color: "var(--inject-off)", marginBottom: 4 }}>本动作下不注入：{b.off}</div>
                 )}
                 <div style={{ fontSize: 10.5, color: "var(--text-dim)", lineHeight: 1.7 }}>{b.summary}</div>
 
                 {/* 文体铁律展开成字段级 */}
                 {b.id === "preset_wenfeng" && (
-                  <div style={{ ...box, color: "#7a8a9a" }}>
+                  <div style={{ ...box, color: "var(--inject-user-text)" }}>
                     {CONSTRAINT_FIELDS.map(f => `${f.label}（${f.type}）— ${f.desc}`).join("\n")}
                   </div>
                 )}
@@ -265,7 +265,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                   </>
                 ) : text != null ? (
                   <>
-                    <div style={{ fontSize: 10, color: "#5a7a5a", marginTop: 6 }}>
+                    <div style={{ fontSize: 10, color: "var(--inject-ok)", marginTop: 6 }}>
                       原文（与 buildSysBase 共用同一份常量）· {text.length} 字
                     </div>
                     <div style={box}>{text}</div>

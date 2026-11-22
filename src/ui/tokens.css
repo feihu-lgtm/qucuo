@@ -165,6 +165,22 @@
   --footer-whisper-edge: #4a2a4a;
   --footer-talk-edge: #1a3a1a;
 
+  /* ── 设置页·注入结构面板定色 ── */
+  --inject-body: #9a9484;
+  --inject-faint: #4a4a3a;
+  --inject-hint: #7a7460;
+  --inject-kind-fallback: #666;
+  --inject-note: #5a7a6a;
+  --inject-off: #c08a5a;
+  --inject-ok: #5a7a5a;
+  --inject-open-bg: #0e1118;
+  --inject-scope: #8a9a8a;
+  --inject-sys-order: #7a9ab8;
+  --inject-tab-on: #241211;
+  --inject-unlit: #3a3a3a;
+  --inject-user-label: #a8a898;
+  --inject-user-text: #7a8a9a;
+
   /* ── 建筑屏/客栈屏定色（随主题不变的装饰色）── */
   --ink-amber: #e0913a;
   --ink-brass: #6a5d40;
