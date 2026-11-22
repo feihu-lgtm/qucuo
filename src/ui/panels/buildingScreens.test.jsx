@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { BUILDING_SCREENS } from "./buildingScreens.jsx";
-import { BUILDING_TYPE } from "../../domain/buildings/qucuoBuildings.js";
+import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import TradingScreen from "../screens/TradingScreen.jsx";
 import EscortScreen from "../screens/buildings/EscortScreen.jsx";
 import ForgeScreen from "../screens/buildings/ForgeScreen.jsx";
 import JadeShopScreen from "../screens/buildings/JadeShopScreen.jsx";
 
-vi.mock("../../domain/shops/qucuoShops.js", () => ({
+vi.mock("../../domain/data/shops/qucuoShops.js", () => ({
   rollShopStock: vi.fn(() => null),
   buildShopInventory: vi.fn(() => ({ shopName: "测试商铺", items: [], currency: "money" })),
 }));
