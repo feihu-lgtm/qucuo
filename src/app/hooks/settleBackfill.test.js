@@ -27,7 +27,7 @@ describe("settleInBackground", () => {
     const pending = settleInBackground("在钱庄取出银两30两（含利息）", {}, h.deps);
 
     const before = h.get();
-    expect(before.log.at(-1)).toMatchObject({ t: "sys", text: "  在钱庄取出银两30两（含利息）", fillSlot: 0 });
+    expect(before.log.at(-1)).toMatchObject({ t: "cmd", text: "> 在钱庄取出银两30两（含利息）", fillSlot: 0 });
     expect(before.time).toBe(11);
     expect(before.convo).toEqual([
       { role: "user", content: "在钱庄取出银两30两（含利息）" },
@@ -46,7 +46,7 @@ describe("settleInBackground", () => {
     const h = harness({ canAsk: () => false });
     await expect(settleInBackground("住下上房，花费5两", {}, h.deps)).resolves.toBe(false);
     expect(h.ask).not.toHaveBeenCalled();
-    expect(h.get().log.at(-1).text).toBe("  住下上房，花费5两");
+    expect(h.get().log.at(-1).text).toBe("> 住下上房，花费5两");
     expect(h.get().time).toBe(11);
   });
 
