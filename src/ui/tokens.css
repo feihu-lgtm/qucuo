@@ -57,6 +57,21 @@
   --black: #000;
   --white: #fff;
 
+  /* 问题上报弹窗定色（原字面量，不随日间模式变）：-dark/-light 分别是夜间和日间分支。 */
+  --bug-accent-light: #8a5a12;
+  --bug-button-off-light: #d8cdb8;
+  --bug-button-text-dark: #1a140c;
+  --bug-dim-dark: #7a7060;
+  --bug-dim-light: #8a7358;
+  --bug-edge-dark: #3a3242;
+  --bug-edge-light: #b3987a;
+  --bug-error: #e0526a;
+  --bug-input-dark: #0d0b12;
+  --bug-ok: #4a9a4a;
+  --bug-panel-dark: #141019;
+  --bug-text-light: #3a2a14;
+  --bug-warn: #c08a5a;
+
   /* 调试面板定色（原字面量，不随日间模式变）。 */
   --debug-close: #e0806a;
   --debug-close-edge: #5a3a2a;

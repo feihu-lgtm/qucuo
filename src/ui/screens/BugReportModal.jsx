@@ -69,12 +69,12 @@ export default function BugReportModal({
   const dark = !isDayMode;
   const C = {
     overlay: "rgba(8,6,3,0.82)",
-    panel: dark ? "#141019" : "var(--bg-panel)",
-    border: dark ? "#3a3242" : "#b3987a",
-    text: dark ? "var(--text)" : "#3a2a14",
-    dim: dark ? "#7a7060" : "#8a7358",
-    accent: dark ? "var(--warn)" : "#8a5a12",
-    inputBg: dark ? "#0d0b12" : "var(--bg-panel)",
+    panel: dark ? "var(--bug-panel-dark)" : "var(--bg-panel)",
+    border: dark ? "var(--bug-edge-dark)" : "var(--bug-edge-light)",
+    text: dark ? "var(--text)" : "var(--bug-text-light)",
+    dim: dark ? "var(--bug-dim-dark)" : "var(--bug-dim-light)",
+    accent: dark ? "var(--warn)" : "var(--bug-accent-light)",
+    inputBg: dark ? "var(--bug-input-dark)" : "var(--bg-panel)",
   };
 
   const submit = async () => {
@@ -133,10 +133,10 @@ export default function BugReportModal({
 
         {result?.ok ? (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
-            <div style={{ fontSize: 15, color: "#4a9a4a", marginBottom: 8 }}>✓ 已收到，多谢！</div>
+            <div style={{ fontSize: 15, color: "var(--bug-ok)", marginBottom: 8 }}>✓ 已收到，多谢！</div>
             <div style={{ fontSize: 12, color: C.dim, marginBottom: result.pipelineWarning ? 6 : 18 }}>你的反馈已送达开发者，会尽快看到。</div>
             {result.pipelineWarning && (
-              <div style={{ fontSize: 11, color: "#c08a5a", marginBottom: 18 }}>{result.pipelineWarning}</div>
+              <div style={{ fontSize: 11, color: "var(--bug-warn)", marginBottom: 18 }}>{result.pipelineWarning}</div>
             )}
             <span onClick={onClose} style={{ cursor: "pointer", padding: "6px 20px", border: `1px solid ${C.border}`, borderRadius: 0, color: C.text }}>关闭</span>
           </div>
@@ -166,7 +166,7 @@ export default function BugReportModal({
                 </div>
                 <div style={{ maxHeight: 180, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 0, padding: 4 }}>
                   {turns.map((t, i) => (
-                    <div key={i} style={{ borderBottom: i < turns.length - 1 ? `1px solid ${C.border}55` : "none", padding: "3px 2px" }}>
+                    <div key={i} style={{ borderBottom: i < turns.length - 1 ? `1px solid color-mix(in srgb, ${C.border} 33%, transparent)` : "none", padding: "3px 2px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <input type="checkbox" checked={selectedTurns.has(i)} onChange={() => toggleTurn(i)} style={{ flexShrink: 0 }} />
                         <span onClick={() => toggleTurn(i)} style={{ flex: 1, cursor: "pointer", fontSize: 11.5, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.label}</span>
@@ -214,7 +214,7 @@ export default function BugReportModal({
             </label>
 
             {result && !result.ok && (
-              <div style={{ fontSize: 11.5, color: "#e0526a", marginBottom: 10, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 11.5, color: "var(--bug-error)", marginBottom: 10, lineHeight: 1.6 }}>
                 提交失败：{result.error}
                 {failedReport && (
                   <button type="button" onClick={() => {
@@ -234,8 +234,8 @@ export default function BugReportModal({
                 style={{
                   cursor: agreed && !sending ? "pointer" : "not-allowed",
                   padding: "6px 20px", borderRadius: 0, fontSize: 13, fontWeight: "bold",
-                  background: agreed && !sending ? C.accent : (dark ? "var(--border)" : "#d8cdb8"),
-                  color: agreed && !sending ? (dark ? "#1a140c" : "var(--white)") : C.dim,
+                  background: agreed && !sending ? C.accent : (dark ? "var(--border)" : "var(--bug-button-off-light)"),
+                  color: agreed && !sending ? (dark ? "var(--bug-button-text-dark)" : "var(--white)") : C.dim,
                   border: "none",
                 }}
               >{sending ? "上传中…" : "提交"}</span>
