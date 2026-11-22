@@ -149,7 +149,8 @@ export function settleNpcDuel(state, npc, {
     logs.push({ t: "affection", text: `  💗 与${npc.name}切磋一场，交情 +${affGain}` });
   }
 
-  const sparRep = sectSparRepGain(working, npc, { outcome, battleLog });
+  // 任务带动的切磋战不算日常切磋档：战报只有文本不带毒伤，也不该吃掉当日刷声誉额度。
+  const sparRep = pendingQuestBranch?.mode === "combat" ? null : sectSparRepGain(working, npc, { outcome, battleLog });
   if (sparRep?.poison) {
     logs.push({ t: "sys", text: `  ${npc.name}瞥了眼身上的毒伤：「赢是赢了，${sparRep.faction}不认这一场。」` });
   } else if (sparRep?.delta) {
