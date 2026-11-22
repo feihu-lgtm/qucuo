@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getRngState, setRngState, setSeed } from "../../infra/rng.js";
-import { makeBuffFlag } from "../../utils/buffSystem.js";
-import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
-import { clearImported, getImportedNpc, registerImported } from "../../domain/rules/cards/importedRegistry.js";
+import { getRngState, setRngState, setSeed } from "../../../infra/rng.js";
+import { makeBuffFlag } from "../../../utils/buffSystem.js";
+import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
+import { clearImported, getImportedNpc, registerImported } from "../cards/importedRegistry.js";
 import { timeAdvanceRule } from "./rules.js";
 
 let previousRngState;

@@ -1,8 +1,8 @@
 import { snowLeopardRule } from "../../features/quest/snowLeopard.js";
 import { useEffect, useRef, useState } from "react";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";
-import { timeAdvanceRule } from "../../features/time/rules.js";
-import { residentNpcRule } from "../../features/npc/rules.js";
+import { timeAdvanceRule } from "../../domain/rules/time/rules.js";
+import { residentNpcRule } from "../../domain/rules/npc/rules.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,
@@ -11,16 +11,16 @@ import {
   estateStartRule,
   escortArrivalRule,
   questFlagRule,
-} from "../../features/quest/rules.js";
-import { innerGroundItemsRule } from "../../features/map/rules.js";
-import { derivedMovesetRule } from "../../features/skills/rules.js";
+} from "../../domain/rules/quests/rules.js";
+import { innerGroundItemsRule } from "../../domain/rules/map/rules.js";
+import { derivedMovesetRule } from "../../domain/rules/skills/rules.js";
 import {
   finishTokyoReturn,
   portalOpenedRule,
   scheduleTokyoReturnRule,
   villaArrivalRule,
   xuannuTriggerRule,
-} from "../../features/narrator/rules.js";
+} from "../../domain/rules/narrator/rules.js";
 import { applyResult } from "../../features/run.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";

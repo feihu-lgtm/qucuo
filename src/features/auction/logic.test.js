@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { auctionWin } from "./logic.js";
 import { AUCTION_LOT } from "../../domain/rules/economy/auction.js";
 import { applyResult } from "../run.js";
-import { gameStore, initGameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore, initGameStore } from "../../store/gameStore.js";
 
 describe("auction logic", () => {
   it("charges the final price, grants the lot and records the purchase before settling", () => {
@@ -11,7 +11,7 @@ describe("auction logic", () => {
     const calls = [];
     const act = vi.fn(() => calls.push("settle"));
     initGameStore(s);
-    applyResult({ act, addLog: () => calls.push("logs"), jotNote: () => calls.push("note") }, result);
+    applyResult({ act, gameActions, addLog: () => calls.push("logs"), jotNote: () => calls.push("note") }, result);
     expect(gameStore.getState().char.money).toBe(100);
     expect(gameStore.getState().inv).toEqual([result.logs[1].item]);
     expect(result.logs[1].item).toMatchObject({ name: AUCTION_LOT.name, category: AUCTION_LOT.category, quality: AUCTION_LOT.quality });

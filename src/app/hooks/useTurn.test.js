@@ -5,7 +5,7 @@ import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 import { playTurn } from "../../engine/playTurn.js";
 import { bindTurnAi } from "../../engine/ports/ai.js";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";
-import { estateAnnouncementRule } from "../../features/quest/rules.js";
+import { estateAnnouncementRule } from "../../domain/rules/quests/rules.js";
 import { applyResult } from "../../features/run.js";
 import { useAiInspect } from "./useAiInspect.js";
 import { useTurn } from "./useTurn.js";
@@ -56,6 +56,7 @@ it("keeps the key inspection's estate announcement open until its narration comm
   const runner = createWorldRules([estateAnnouncementRule], {
     getState: gameStore.getState,
     applyResult: result => applyResult({
+      gameActions,
       act: (...args) => { narration = featureCtxRef.current.act(...args); },
     }, result),
   });

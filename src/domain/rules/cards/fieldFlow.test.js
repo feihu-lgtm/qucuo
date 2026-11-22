@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REG = readFileSync(join(HERE, "importedRegistry.js"), "utf-8");
 const POOL = readFileSync(join(HERE, "..", "..", "data", "npc", "npcPool.js"), "utf-8");
-const NPC_RULES = readFileSync(join(HERE, "..", "..", "..", "features", "npc", "rules.js"), "utf-8");
+const NPC_RULES = readFileSync(join(HERE, "..", "..", "..", "domain", "rules", "npc", "rules.js"), "utf-8");
 
 /** toPoolLike 产出的字段：对象字面量里的 `k:` 与后续的 `o.k =` */
 function poolLikeFields() {
@@ -71,7 +71,7 @@ describe("入册角色的字段必须能活着到达 room.npcs", () => {
     expect(lost,
       `以下字段会在 toRoomNpcWithCombat 转换时被静默剥掉（不报错、只是那项设置没用）：\n`
       + `  ${lost.join("、")}\n`
-      + `修法：加进 src/features/npc/rules.js 的字段白名单。`
+      + `修法：加进 src/domain/rules/npc/rules.js 的字段白名单。`
     ).toEqual([]);
   });
 

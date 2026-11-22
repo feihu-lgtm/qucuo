@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { joinSect } from "./logic.js";
 import { SECT_ENTRY } from "../../domain/rules/character/sectEntry.js";
 import { applyResult } from "../run.js";
-import { gameStore, initGameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore, initGameStore } from "../../store/gameStore.js";
 
 const state = () => ({ char: { money: 150, neigong: 5 }, inv: [], flags: [], varTree: { 角色: { [SECT_ENTRY.master]: { 好感度: 30 } } } });
 
@@ -15,7 +15,7 @@ describe("sect logic", () => {
     const jotNote = vi.fn();
     let tree;
     initGameStore(s);
-    applyResult({ act, jotNote, setVarTree: fn => { tree = fn(s.varTree); } }, result);
+    applyResult({ act, jotNote, gameActions, setVarTree: fn => { tree = fn(s.varTree); } }, result);
     expect(gameStore.getState()).toMatchObject({ char: { money: 50, neigong: 5 }, flags: [SECT_ENTRY.flag] });
     expect(gameStore.getState().inv).toEqual([result.logs[1].item]);
     expect(result.logs[1].item).toMatchObject({ name: SECT_ENTRY.keyName, quality: "绿", category: "misc" });

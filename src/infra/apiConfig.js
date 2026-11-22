@@ -1,7 +1,6 @@
 // API 配置：localStorage 存储、迁移、多套 profile，以及对外统一导出口。
 // 供应商表/协议适配在 providers.js；请求收发在 apiTransport.js；
 // 错误分类在 utils/apiErrors.js；JSON 清洗在 utils/jsonClean.js。
-import { DEFAULT_WHISPER_WORDS } from "../domain/rules/narrator/narrator.js";
 import { hasVertexCredential } from "./vertexCredentials.js";
 import {
   API_TYPES, DEFAULT_CALL_TOKEN_LIMITS, migrateProvider, PROVIDERS,
@@ -58,7 +57,8 @@ export function defaultConfig() {
     // 篇幅指令都没有，模型没有长度目标就按聊天默认长度走、每次只回几十字。
     // 分档而不是给一个固定值：冷淡期的她本就没什么话，篇幅跟着好感度一起解锁，
     // 与文风、攻略档位同一条曲线。分界线见 narrator.js 的 AFFECTION_TIERS。
-    narratorWhisperWords: { ...DEFAULT_WHISPER_WORDS },
+    // 空对象=未自定义；缺省档位数由 domain 侧（narrator.js AFFECTION_TIERS）在读取处逐键垫底。
+    narratorWhisperWords: {},
     // 旁白专属世界书：只注入私聊通道的自定义设定，玩家在「旁白」tab 里自由编辑。
     // 只进私聊、不进主叙事——主叙事的世界观走预设/scenario 那一套，这里写的是
     // "只有她自己知道的事"（她的来历、她对玩家的私下看法、想让她记住的梗）。
@@ -130,7 +130,7 @@ export function loadConfig() {
     // 丢掉新增项，故按 默认 <- 存档 的顺序逐键补全，确保九项/五项始终齐全。
     merged.callTokenLimits = { ...DEFAULT_CALL_TOKEN_LIMITS, ...(saved.callTokenLimits || {}) };
     merged.intentBudgets = { ...DEFAULT_INTENT_BUDGETS, ...(saved.intentBudgets || {}) };
-    merged.narratorWhisperWords = { ...DEFAULT_WHISPER_WORDS, ...(saved.narratorWhisperWords || {}) };
+    if (saved.narratorWhisperWords) merged.narratorWhisperWords = saved.narratorWhisperWords;
     // 迁移：剧情类两档（战斗/事件行动）由旧出厂值 700/500 上调到 900 线。
     // 只把\"恰好等于旧默认\"的值顶上来（几乎必是没手动改过的），用户特意调过的别值不动。
     if (merged.intentBudgets.COMBAT === 700) merged.intentBudgets.COMBAT = 900;

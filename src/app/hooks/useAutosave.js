@@ -6,6 +6,7 @@ import { DEFAULT_PRESETS } from "../../engine/newGame.js";
 import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../infra/saves.js";
+import { statsForQuality } from "../../domain/rules/economy/equipment.js";
 import { initialNarratorState, migrateNarratorState } from "../../domain/rules/narrator/narrator.js";
 import { backfillInventoryFromCatalog } from "../../domain/data/items/catalog.js";
 import { generateNpcMoveset } from "../../domain/rules/npc/npcGeneration.js";
@@ -30,7 +31,7 @@ export function restorePersuasionProgress(snap, setPersuasionProgress) {
 }
 
 export function useInitialRestore({ initialLoadSlotId }) {
-  const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId);
+  const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId, { statsForQuality });
   if (restored?.snap?.squares) loadSquares(restored.snap.squares);
   return restored;
 }

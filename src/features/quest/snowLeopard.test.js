@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { snowLeopardRule } from "./snowLeopard.js";
-import { questFlagRule } from "./rules.js";
+import { questFlagRule } from "../../domain/rules/quests/rules.js";
 import { giftNpc, settleNpcDuel } from "../npc/logic.js";
 import { inviteCompanion } from "../npc/inviteCompanion.js";
 import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_SPIRITS, snowLeopardNote, snowLeopardHint, filterSnowModelFlags } from "../../domain/rules/quests/snowLeopardQuest.js";

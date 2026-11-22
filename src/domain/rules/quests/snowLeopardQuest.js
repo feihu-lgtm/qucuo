@@ -1,5 +1,5 @@
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
-import "../../../content/index.js";
+import "../content/loadDefaultContent.js";
 import { getContent } from "../content/registry.js";
 
 export const SNOW_QUEST_ID = "snow_leopard_quest";

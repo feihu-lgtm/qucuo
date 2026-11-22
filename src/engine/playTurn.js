@@ -1,4 +1,3 @@
-import { gameActions, gameStore } from "../store/gameStore.js";
 import { getRngState, setRngState } from "../infra/rng.js";
 import { loadSquares, serializeSquares } from "../domain/rules/map/mapSquares.js";
 import { PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
@@ -17,8 +16,8 @@ function setterForKey(key) {
   return key === "varTree" ? "setVarTreeState" : `set${key[0].toUpperCase()}${key.slice(1)}`;
 }
 
-function captureSnapshot(refs = {}) {
-  const state = gameStore.getState();
+function captureSnapshot(refs = {}, getGameState) {
+  const state = getGameState();
   return {
     state: Object.fromEntries(ROLLBACK_KEYS.map((key) => [key, state[key]])),
     rngState: getRngState(),
@@ -27,10 +26,10 @@ function captureSnapshot(refs = {}) {
   };
 }
 
-function restoreSnapshot(snapshot, refs = {}) {
+function restoreSnapshot(snapshot, refs = {}, getGameState, actions) {
   for (const key of ROLLBACK_KEYS) {
-    if (gameStore.getState()[key] !== snapshot.state[key]) {
-      gameActions[setterForKey(key)](snapshot.state[key]);
+    if (getGameState()[key] !== snapshot.state[key]) {
+      actions[setterForKey(key)](snapshot.state[key]);
     }
   }
   setRngState(snapshot.rngState);
@@ -51,10 +50,11 @@ export async function playTurn(ctx, cmd, opts = {}) {
   setPhase("machine");
   let snapshot;
   let soft;
-  const getGameState = () => gameStore.getState();
-  const setVarTreeState = (tree) => gameActions.setVarTreeState(tree);
+  const getGameState = ctx.getGameState;
+  const gameActions = ctx.gameActions;
+  const setVarTreeState = (tree) => ctx.gameActions.setVarTreeState(tree);
   try {
-    snapshot = captureSnapshot(ctx.refs);
+    snapshot = captureSnapshot(ctx.refs, getGameState);
     turnMonitor.add(trace, "app", "事务快照", { kind: "snapshot" });
     turnMonitor.add(trace, "feature", "engine.runTurn");
     turnMonitor.add(trace, "domain", "整理世界状态与叙事上下文");
@@ -82,7 +82,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
       return stale(error);
     }
     soft?.unsubscribeInvalidation();
-    if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs));
+    if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs, getGameState, gameActions));
     turnMonitor.transition(trace, PHASE.ERROR, String(error));
     return { ok: false, error };
   } finally {

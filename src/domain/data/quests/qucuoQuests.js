@@ -1,4 +1,4 @@
-import "../../../content/index.js";
+import "../../rules/content/loadDefaultContent.js";
 import { allContent, contentEntries } from "../../rules/content/registry.js";
 // 曲措乡剧情任务定义
 // 这里是手写的任务数据，跟角色小传绑在一起维护，翻译自

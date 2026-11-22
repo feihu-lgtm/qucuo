@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
-import { gameActions, gameStore } from "../store/gameStore.js";
+import { gameActions, gameStore, subscribeGameReplaced } from "../store/gameStore.js";
 import { commitRound } from "./act/commitRound.js";
 import { runTurn } from "./runTurn.js";
 import { playTurn } from "./playTurn.js";
@@ -14,6 +14,9 @@ function makeContext(overrides = {}) {
     apiCfg: { bookkeepEnabled: true },
     ai: { chat: vi.fn() },
     commitDeps: () => ({}),
+    getGameState: () => gameStore.getState(),
+    gameActions,
+    subscribeGameReplaced,
     _trace: turnMonitor.start("测试行动"),
     ...overrides,
   };

@@ -1,4 +1,4 @@
-import "../../../content/index.js";
+import "../content/loadDefaultContent.js";
 import { contentEntries } from "../content/registry.js";
 // 内层据点箱庭地图（两层地图架构的第二层）
 // 对应总纲v3第十章设计。外层 QUCUO_MAP（qucuoMap.js）解决"曲措乡境内从哪

@@ -1,19 +1,14 @@
 {
   "layerViolations": {
-    "app->ui": 16,
-    "content->domain": 1,
-    "domain->engine": 1,
-    "engine->store": 2,
-    "features->store": 1,
-    "infra->domain": 2
+    "app->ui": 16
   },
   "externalInfraImports": {
     "app": 19,
     "debug": 2,
-    "domain": 19,
+    "domain": 20,
     "engine": 28,
     "entry": 4,
-    "features": 8,
+    "features": 7,
     "store": 2,
     "ui": 35
   },
@@ -46,5 +41,5 @@
     "ui/screens/quickBattle/QuickBattleScreen.jsx": 774,
     "ui/screens/tavernSim/TavernSimScreen.jsx": 502
   },
-  "mainJsGzipBytes": 694408
+  "mainJsGzipBytes": 694772
 }

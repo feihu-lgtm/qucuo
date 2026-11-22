@@ -1,12 +1,12 @@
-import { isCompanionUnlockedByName, companionKeyByName } from "../../domain/rules/companion/companion.js";
-import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../../domain/rules/map/innerMap.js";
-import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
-import { mapDescriptionToGenParams } from "../../domain/data/npc/npcDescriptionMapping.js";
-import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../domain/data/npc/npcPool.js";
-import { injectNpcs } from "../../domain/rules/npc/roomNpcs.js";
-import { getResidentNpcs } from "../../domain/data/npc/residentNpcs.js";
-import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
-import { seededRand } from "../../utils/seededRandom.js";
+import { isCompanionUnlockedByName, companionKeyByName } from "../companion/companion.js";
+import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../map/innerMap.js";
+import { ensureNpcCombatData } from "../npc/npcGeneration.js";
+import { mapDescriptionToGenParams } from "../../data/npc/npcDescriptionMapping.js";
+import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../data/npc/npcPool.js";
+import { injectNpcs } from "../npc/roomNpcs.js";
+import { getResidentNpcs } from "../../data/npc/residentNpcs.js";
+import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
+import { seededRand } from "../../../utils/seededRandom.js";
 
 const NPC_FIELDS = [
   "levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable",

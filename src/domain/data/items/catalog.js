@@ -1,4 +1,4 @@
-import "../../../content/index.js";
+import "../../rules/content/loadDefaultContent.js";
 import { getContent } from "../../rules/content/registry.js";
 import { ITEM_CATEGORY, statsForQuality, priceForQuality } from "../../rules/economy/equipment.js";
 // ============================================================================

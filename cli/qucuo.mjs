@@ -1,4 +1,4 @@
-import { loadDefaultContent } from "../src/content/index.js";
+import { loadDefaultContent } from "../src/domain/rules/content/loadDefaultContent.js";
 import { access, appendFile, readFile, writeFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { stdin, stdout } from "node:process";

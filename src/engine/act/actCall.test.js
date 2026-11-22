@@ -12,6 +12,7 @@ vi.mock("../../infra/apiConfig.js", async (importOriginal) => {
 });
 
 import { callModel } from "../../infra/apiConfig.js";
+import { gameActions } from "../../store/gameStore.js";
 import { callMainOnce } from "./actCall.js";
 import { startTrace } from "../../infra/actionTrace.js";
 import { initialNarratorState } from "../../domain/rules/narrator/narrator.js";
@@ -92,7 +93,7 @@ describe("callMainOnce 组装黄金快照", () => {
 
   it("passes completed bank deposit facts to the settlement model without relying on state context", async () => {
     const act = vi.fn();
-    applyResult({ act }, deposit({ char: { money: 100 }, deposit: 20, time: 6 }, 50));
+    applyResult({ act, gameActions }, deposit({ char: { money: 100 }, deposit: 20, time: 6 }, 50));
     const [cmd, , options] = act.mock.calls[0];
     await callMainOnce(null, false, makeDeps({ cmd, isSettle: options.settle, ctx: "" }));
     const messages = JSON.stringify(callModel.mock.calls[0].slice(1));

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { NNPC_STAGE } from "../../domain/rules/narrator/narrator.js";
-import { SEA_OF_MIND } from "../../domain/rules/narrator/seaOfMind.js";
+import { NNPC_STAGE } from "../narrator/narrator.js";
+import { SEA_OF_MIND } from "../narrator/seaOfMind.js";
 import {
   portalOpenedRule,
   scheduleTokyoReturnRule,

@@ -10,7 +10,6 @@
 // 迁移：init 时 IDB 若空，从旧 localStorage 键迁入；旧 localStorage 存档保留不删作安全兜底。
 // 关页兜底：IDB 异步写关页来不及落盘，故 autoSave 顺带尽力同步写一份 LS；init 取 IDB 与 LS 较新者。
 
-import { statsForQuality } from "../domain/rules/economy/equipment.js";
 import { getRngState } from "./rng.js";
 
 const AUTOSAVE_KEY = "wuxia_mud_autosave";       // 旧 localStorage 键（迁移/降级用）
@@ -242,20 +241,22 @@ export function isCompatibleRoomShape(room) {
 /**
  * @returns {{ snap: object, preset: object } | null}
  */
-export function tryRestoreSave(presets, loadSlotId) {
+export function tryRestoreSave(presets, loadSlotId, deps = {}) {
   let snap = null;
   if (loadSlotId === "auto" || loadSlotId === undefined || loadSlotId === null) {
     snap = loadAutoSave();
   } else {
     snap = loadSlot(loadSlotId);
   }
-  return tryRestoreSnapshot(presets, snap);
+  return tryRestoreSnapshot(presets, snap, deps);
 }
 
 /**
  * @returns {{ snap: object, preset: object } | null}
  */
-export function tryRestoreSnapshot(presets, snap) {
+export function tryRestoreSnapshot(presets, snap, deps = {}) {
+  // statsForQuality 由调用方注入（infra 不许反依赖 domain/rules）。
+  const statsForQuality = deps.statsForQuality;
   if (!snap) return null;
   const matchedPreset = presets.find(p => p.id === snap.preset?.id);
   if (!matchedPreset) return null;
@@ -271,6 +272,7 @@ export function tryRestoreSnapshot(presets, snap) {
     snap.inv = snap.inv.map(it => {
       if (!it || typeof it !== "object") return it;
       const fixed = { ...it };
+      if (!statsForQuality) return fixed;
       if (fixed.atkMul != null && fixed.atk == null && fixed.category === "weapon") {
         const base = statsForQuality("weapon", fixed.quality);
         if (base.atk != null) fixed.atk = Math.round(base.atk * fixed.atkMul);

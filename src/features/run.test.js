@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { gameStore, initGameStore } from "../store/gameStore.js";
+import { gameActions, gameStore, initGameStore } from "../store/gameStore.js";
 import { applyResult } from "./run.js";
 
 describe("applyResult", () => {
@@ -82,7 +82,7 @@ describe("applyResult", () => {
   ])("routes changes.%s through its gameActions setter", (key, value) => {
     initGameStore({ flags: [], inv: [], char: {}, questProgress: {}, room: {}, time: 1, convo: [] });
 
-    applyResult({}, { changes: { [key]: value } });
+    applyResult({ gameActions }, { changes: { [key]: value } });
 
     expect(gameStore.getState()[key]).toEqual(value);
   });
@@ -91,7 +91,7 @@ describe("applyResult", () => {
   it("throws on an unregistered state key", () => {
     initGameStore({});
 
-    expect(() => applyResult({}, { changes: { notAStateKey: 1 } }))
+    expect(() => applyResult({ gameActions }, { changes: { notAStateKey: 1 } }))
       .toThrow("Unknown game state key: notAStateKey");
   });
 
@@ -99,7 +99,7 @@ describe("applyResult", () => {
   it("requires ctx.setVarTree for varTree changes", () => {
     initGameStore({});
 
-    expect(() => applyResult({}, { changes: { varTree: {} } }))
+    expect(() => applyResult({ gameActions }, { changes: { varTree: {} } }))
       .toThrow("Feature result changes.varTree requires ctx.setVarTree");
   });
 
