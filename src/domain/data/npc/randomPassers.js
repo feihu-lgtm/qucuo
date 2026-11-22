@@ -181,6 +181,31 @@ function passersAt(locationName, dayIdx, used, isTaken) {
   return out;
 }
 
+// ── 移动途中的路遇：与过路人共用势力权重、身份池和姓名库 ──
+export const passerFactionsAt = (locationName) => NODE_PASSERS[locationName]?.factions || null;
+export const passerRolesOf = (faction) => ROLES[faction] || ROLES.散人;
+
+// 给定势力造一个路上撞见的具名人（rng 由调用方给；isTaken 撞名就重抽，抽不开返回 null）
+export function makeRoadPasser(faction, rng, isTaken = () => false) {
+  const role = pick(passerRolesOf(faction), rng);
+  const gender = role.gender || (rng() < 0.5 ? "男" : "女");
+  const culture = role.culture || pick(["han", "han", "tibetan"], rng);
+  let name = makeName(culture, gender, rng);
+  for (let tries = 0; tries < 30 && (isReserved(name) || isTaken(name)); tries++) name = makeName(culture, gender, rng);
+  if (isReserved(name) || isTaken(name)) return null;
+  const [minLv, maxLv] = role.level;
+  const label = faction === "散人" ? "无门无派的" : `${faction}的`;
+  return {
+    name,
+    brief: role.gender ? `${label}${role.role}` : `${label}${role.role}（${gender}）`,
+    role: role.role,
+    personality: role.personality,
+    faction,
+    gender,
+    levelCap: minLv + Math.floor(rng() * (maxLv - minLv + 1)),
+  };
+}
+
 // 给定节点名 + 游戏时间 → 今天在此的随机过路人（纯函数，同日同地、同一组 reserved 结果一致）
 export function getRandomPassers(locationName, time, reserved = new Set()) {
   if (!NODE_PASSERS[locationName]) return [];
@@ -192,6 +217,15 @@ export function getRandomPassers(locationName, time, reserved = new Set()) {
     if (node === locationName) return list;
   }
   return [];
+}
+
+// 今天全图过路人的名字：路遇起名要避开，免得和某地正站着的过路人撞名
+export function getTodaysPasserNames(time) {
+  const dayIdx = Math.floor(time / 24);
+  const used = new Set();
+  const isTaken = (name) => used.has(name) || isReserved(name);
+  for (const node of Object.keys(NODE_PASSERS)) passersAt(node, dayIdx, used, isTaken);
+  return used;
 }
 
 // ── 不具名群众（路人甲乙丙）：只是此地的人气，不能对话、不记好感 ──

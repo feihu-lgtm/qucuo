@@ -25,15 +25,15 @@ let squares = {};
 const PICKUP_CHANCE = 0.35; // 与主流程移动拾取基础几率一致
 
 // 系统掷骰：这个格子埋不埋拾取（品质/分类）、埋不埋路遇（势力）。AI 只管写作。
-export function rollSkeleton(nodeName, luck = 5) {
+export function rollSkeleton(nodeName, luck = 5, { isTaken } = {}) {
   let item = null;
   if (random() < PICKUP_CHANCE) {
     const quality = rollQuality(luck);
     const category = [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY, ITEM_CATEGORY.MISC][Math.floor(random() * 4)];
     item = { quality, category };
   }
-  const en = rollEncounter(nodeName, luck);
-  const encounter = en ? { factionKey: en.factionKey, label: en.faction.label, roamers: en.faction.roamers } : null;
+  const en = rollEncounter(nodeName, luck, { isTaken });
+  const encounter = en ? { factionKey: en.factionKey, label: en.faction.label, roamers: en.faction.roamers, passer: en.passer || null } : null;
   return { item, encounter };
 }
 
@@ -49,7 +49,9 @@ export function buildSquarePrompt(batch) {
   const user = batch.map(b => {
     const lines = [`据点：${b.name}｜底本：${b.base}｜出口：${b.exits}`];
     lines.push(b.item ? `埋有物件：品质「${b.item.quality}」、分类「${b.item.category}」` : `埋有物件：无`);
-    lines.push(b.encounter ? `埋有路遇：势力【${b.encounter.label}】（可能的身份：${b.encounter.roamers}）` : `埋有路遇：无`);
+    lines.push(!b.encounter ? `埋有路遇：无`
+      : b.encounter.passer ? `埋有路遇：势力【${b.encounter.label}】，人已定：${b.encounter.passer.name}（${b.encounter.passer.brief}，${b.encounter.passer.personality}）——encounterName 照抄此名`
+        : `埋有路遇：势力【${b.encounter.label}】（可能的身份：${b.encounter.roamers}）`);
     return lines.join("\n");
   }).join("\n\n");
   return { system, user };
@@ -101,12 +103,14 @@ export function applySquareBatch(day, parsed, skeletons) {
       };
     }
     let encounter = null;
-    if (sk.encounter && (p.encounterName || "").trim()) {
+    const fixed = sk.encounter?.passer;
+    if (sk.encounter && (fixed || (p.encounterName || "").trim())) {
       encounter = {
-        name: p.encounterName.trim(),
+        name: fixed?.name || p.encounterName.trim(),
         id: `roamer_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        brief: (p.encounterBrief || "").trim().slice(0, 20) || sk.encounter.label,
-        tier: ["白", "绿", "蓝", "紫"].includes(p.encounterTier) ? p.encounterTier : "白",
+        brief: fixed?.brief || (p.encounterBrief || "").trim().slice(0, 20) || sk.encounter.label,
+        tier: fixed ? ["白", "绿", "蓝", "紫"][fixed.levelCap] || "白" : ["白", "绿", "蓝", "紫"].includes(p.encounterTier) ? p.encounterTier : "白",
+        faction: sk.encounter.factionKey,
         label: sk.encounter.label,
         line: (p.encounterLine || "").trim(),
       };
