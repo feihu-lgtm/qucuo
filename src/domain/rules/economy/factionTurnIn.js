@@ -24,10 +24,10 @@ export const FACTION_TURNINS = [
 ];
 
 // 返回交还条目；不匹配（物件不对、人不对）返回 null。
-// 常驻 NPC 的档案名是职位（「喇嘛庙住持」「药堂医僧」），法号只写在 brief 里，
-// 所以 npc 一栏按 档案名 OR brief 里的法号 认人。
+// 常驻 NPC 的档案名是职位（「喇嘛庙住持」），法号只写在 brief 里（「法号嘉措」）——
+// 认人按 档案名 OR brief 里的「法号X」字样，免得别的僧侣传记里提一嘴住持也误收。
 export function factionTurnInOf(npc, itemName) {
   if (!npc || !itemName) return null;
   return FACTION_TURNINS.find((entry) => entry.items.includes(itemName)
-    && (entry.npc === npc.name || npc.brief?.includes(entry.npc))) || null;
+    && (entry.npc === npc.name || npc.brief?.includes(`法号${entry.npc}`))) || null;
 }
