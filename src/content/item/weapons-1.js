@@ -103,6 +103,7 @@ const items = {
 "牧羊青竹棍": { name: "牧羊青竹棍", category: "weapon", quality: "白", atkMul: 1.05, desc: "一头缠着旧牛皮绳的青竹棍，多吉从玉泉寨一路拄到广汉，放牧赶羊用它，如今打狗练棒也用它。" },
 "残纹青竹板": { name: "残纹青竹板", category: "weapon", quality: "蓝", atkMul: 1.2, effect: { applyStatus: { name: "气乱", chance: 0.2 } }, desc: "两片老竹刻着半枚三星云雷纹，哑巴七拿来敲节拍。笃笃三声敲在耳边，对手的心神便乱了半拍。" },
 "晒干青竹棍": { name: "晒干青竹棍", category: "weapon", quality: "白", atkMul: 1.1, desc: "三星镇外砍来晒透的老竹，不及精铁锋利，胜在顺手韧长，新手练棒正好。" },
+"鹊尾竹节棍": { name: "鹊尾竹节棍", category: "weapon", quality: "蓝", atkMul: 1.25, effect: { lowHpBonus: 0.15 }, desc: "九节紫竹棍，棍梢系着一撮染红的喜鹊尾羽。秦小鹊说棍子要轻才甩得开，打不过就跑，跑之前先敲对方一记脑门。" },
 "铁头打狗棒": { name: "铁头打狗棒", category: "weapon", quality: "蓝", atkMul: 1.3, desc: "选用五年老青竹，两端套上精铁箍，抽人带风、架刀不断，是四袋以上弟子的标配。" },
 // ── 三星派（广汉古蜀青铜神树墟）──
 "绿锈青铜剑": { name: "绿锈青铜剑", category: "weapon", quality: "绿", atkMul: 1.15, desc: "刃口微钝却极沉手的古法青铜直剑，砸在铁刀上嗡嗡震手，新人练重剑最合用。" },
