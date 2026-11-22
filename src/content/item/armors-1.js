@@ -109,6 +109,11 @@ const items = {
 "察世轻行履": { name: "察世轻行履", category: "armor", quality: "蓝", defMul: 1.25, sixDim: { 身法: 2 }, desc: "千层底草麻混编的赶路鞋，鞋底暗垫牛皮，走一天山路脚底不起泡。" },
 "八袋青竹护心甲": { name: "八袋青竹护心甲", category: "armor", quality: "紫", defMul: 1.5, desc: "表面看只是件半旧的青布坎肩，内里密编了桐油炙过的细竹片与熟牛筋，轻若无物，却能硬扛血刀劈斩。" },
 "熟铜绑腿": { name: "熟铜绑腿", category: "armor", quality: "蓝", defMul: 1.25, sixDim: { 身法: 1 }, desc: "胡三爷私藏的一副熟铜片绑腿，他断腿前最后一次护粮穿的就是这副。「老子用不上了，你腿还在。」" },
+"驼绒防风氅": { name:"驼绒防风氅", category:"armor", quality:"绿", defMul: 1.1, tags:["护甲","西域","天龙教"], desc:"双层驼绒织的厚氅，领口缝一圈毛。西风隘的风能钻进骨头缝，披着它走夜路的人才不觉得是被风推着走。" },
+"素白僧衣": { name:"素白僧衣", category:"armor", quality:"绿", defMul: 1.0, sixDim:{ 气运: 1 }, tags:["护甲","僧衣","白衣旧部"], desc:"天王旧部的素白僧衣，洗得发旧但干净。断崖石室里那个老人身上就是这件——白衣不是孝，是旧部给天王留的体面。" },
+"青灰斗篷": { name:"青灰斗篷", category:"armor", quality:"绿", defMul: 1.05, tags:["护甲","医者"], desc:"贺兰昭常披的青灰斗篷，下摆常年沾着药渍。西谷的人说远远看见这抹青灰翻过山梁，就知道谁家又有人病了。" },
+"玄甲护心镜": { name:"玄甲护心镜", category:"armor", quality:"紫", defMul: 1.35, sixDim:{ 体魄: 1 }, tags:["护甲","玄甲","天龙教"], desc:"玄甲军制式护心镜，熟铜锻出盘龙浅纹。军需官说这东西救过的命比医官多——「医官救伤，它救命。」" },
+"龙纹赤铜战甲": { name:"龙纹赤铜战甲", category:"armor", quality:"橙", defMul: 1.5, sixDim:{ 体魄: 2 }, tags:["护甲","玄甲","天龙教","秘货"], desc:"赤铜叠片缀成的战甲，甲缘錾出蟠龙衔珠纹，是龙王亲军才有的制式。整副甲的分量压在肩上，像有人把手搭在那儿——替你稳住。" },
 };
 
 export default { item: items, itemGroup: { ARMORS: Object.keys(items) } };

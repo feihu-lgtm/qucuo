@@ -140,6 +140,8 @@ export const QUCUO_MAP = {
     x: -2, y: 1,
     desc: "大草甸往西走出乡界的西风隘口。罡风撕扯着漫山黑金旌旗，乱石隘口外立起连绵皮帐与高耸石台，西域来的天龙教在此扎营，铁骑与白衣旧部隔谷对峙。",
     exits: { e: "大草甸" },
+    // 过血刀哨卡（天1·草甸血税 任一结局）或持血刀通行木牌方知西路可进
+    unlockCondition: { type: "anyFlag", flags: ["tianlong_invited", "tianlong_pass_token"] },
   },
   雾隐寨: {
     x: 2, y: 1,
@@ -199,6 +201,7 @@ export function isNodeUnlocked(nodeName, { completedQuests = new Set(), flags = 
   const c = node.unlockCondition;
   if (c.type === "questCompleted") return completedQuests.has ? completedQuests.has(c.questId) : (completedQuests || []).includes?.(c.questId);
   if (c.type === "flag") return (flags || []).includes(c.flag);
+  if (c.type === "anyFlag") return (c.flags || []).some((flag) => (flags || []).includes(flag));
   return true;
 }
 
