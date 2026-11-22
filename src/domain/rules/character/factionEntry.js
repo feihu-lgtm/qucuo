@@ -27,7 +27,10 @@ export const FACTION_ENTRIES = {
   },
   锦官城: {
     sect: "锦官城", master: "柳青鸢", buildingId: "sect_entry_guan",
-    minRep: 40, repBonus: 20, flag: "title_jinguancheng_tequai_xuncha",
+    // 成员旗用专属「锦官城当差」：title_jinguancheng_tequai_xuncha 是官2-A 落的头衔，
+    // 任务奖励不经过 checkFactionEntry——若复用做成员旗，别派弟子/叛出者完成任务
+    // 会绕过单人一派与门墙永闭拿到成员待遇。
+    minRep: 40, repBonus: 20, flag: "锦官城当差",
     token: "巡捕营腰牌", gifts: ["锦官制式软甲", "锦官烧刀子"],
     trial: {
       flag: "guan_cases_cleared",

@@ -1,10 +1,10 @@
 {
   "exports": {
     "QUCUO_QUESTS": {
-      "entryCount": 57,
-      "orderedIdsSha256": "af2f5caf4b116298b71029c3ea9b2a15964428169ccdc4161ec74d695a04f060",
-      "totalFieldCount": 2553,
-      "jsonSha256": "2bdc71923af66e9f7b4decedecb5cfd00b120a485d43a5463f186bb833e47a61"
+      "entryCount": 60,
+      "orderedIdsSha256": "2d0a91ce3ac2f2c87a25d125f1c637b1a0b42a3de06d2fb7e9d7a228b3ee438a",
+      "totalFieldCount": 2781,
+      "jsonSha256": "810ac2cb508ebceb986b9e2161c2e974a453faf888caffe8ad988a6cd2686a5a"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
@@ -157,16 +157,16 @@
       "jsonSha256": "d0c47d92e4d5958afd876abb8512223df37399abe67606b7329a8f282a8d2245"
     },
     "CATALOG": {
-      "entryCount": 504,
-      "orderedIdsSha256": "732a79936a7650b5d4e014b6abcb4743eb9de7872d23ae8b3fe75d57a3163c82",
-      "totalFieldCount": 3835,
-      "jsonSha256": "48699243924dacd221cc5d8fef30f835752d14f29d2f9497d408dc0453f494d1"
+      "entryCount": 527,
+      "orderedIdsSha256": "cfbd767a24f0cf1717204b514370383edf4c5ea46726efd2ce6c65295f9c255f",
+      "totalFieldCount": 3984,
+      "jsonSha256": "99d60d0f8bbe4aa9927f3ab548d49092dcf38b066447f07c71441325ee13ce26"
     },
     "CATALOG_INDEX": {
-      "entryCount": 504,
-      "orderedIdsSha256": "732a79936a7650b5d4e014b6abcb4743eb9de7872d23ae8b3fe75d57a3163c82",
-      "totalFieldCount": 4339,
-      "jsonSha256": "d9bb24ae4870dbc55f362c4fda84751dcee7ac06cf7cba8b72fa355cdf3e9de5"
+      "entryCount": 527,
+      "orderedIdsSha256": "cfbd767a24f0cf1717204b514370383edf4c5ea46726efd2ce6c65295f9c255f",
+      "totalFieldCount": 4511,
+      "jsonSha256": "d6b5e549a03f932594547368fbf93d1f2fba1f6ebc505a09e8629e95f8c7ee1d"
     },
     "RESIDENT_NPCS": {
       "entryCount": 14,
@@ -186,8 +186,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 2102,
-      "jsonSha256": "c7e3b0c66b0cda4b4f039285c27c34d0cc73446dc40473d30214a506182264fc"
+      "totalFieldCount": 2183,
+      "jsonSha256": "1854fc488c3db384d3d8d002e8bfdcdf9046d26d6df39d9e688195fda6826b0e"
     },
     "INNER_MAP": {
       "entryCount": 20,
@@ -213,8 +213,8 @@
         "蜀南唐堡",
         "雾隐寨"
       ],
-      "totalFieldCount": 1502,
-      "jsonSha256": "b62dac54b91de0d12e8aefddc945a7ea5cf944bf6056217510daf7bc4fb927d2"
+      "totalFieldCount": 1525,
+      "jsonSha256": "deaebe469e3b42aa6ea66e9f5c955a9d56f16eb8112f86833849a7abd7695532"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,

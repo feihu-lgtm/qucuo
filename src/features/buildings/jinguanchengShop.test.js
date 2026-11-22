@@ -33,7 +33,7 @@ describe("锦官兵备 · 都事府兵备库", () => {
     expect(names(40)).toContain("锦官制式软甲");
     expect(names(40)).toContain("锦官续命丹");
     expect(names(79)).not.toContain("御赐銮铃");
-    expect(names(80, ["title_jinguancheng_tequai_xuncha"])).toContain("御赐銮铃");
+    expect(names(80, ["锦官城当差"])).toContain("御赐銮铃");
     expect(factionShopOffer(SHOP, rep(15), "vault").coef).toBe(0.92);
     expect(factionShopOffer(SHOP, rep(80), "vault").coef).toBe(0.75);
   });
@@ -41,14 +41,14 @@ describe("锦官兵备 · 都事府兵备库", () => {
   it("sells 标兵甲 and 御赐銮铃 only to 特派巡查 members", () => {
     expect(names(100)).not.toContain("锦官坊标兵甲");
     expect(names(100)).not.toContain("御赐銮铃");
-    expect(names(100, ["title_jinguancheng_tequai_xuncha"])).toEqual(
+    expect(names(100, ["锦官城当差"])).toEqual(
       expect.arrayContaining(["锦官坊标兵甲", "御赐銮铃"]),
     );
   });
 
   it("sells the one 御赐銮铃 only once", () => {
-    expect(names(100, ["title_jinguancheng_tequai_xuncha"])).toContain("御赐銮铃");
-    expect(names(100, ["title_jinguancheng_tequai_xuncha", "shop_bought:锦官兵备:御赐銮铃"])).not.toContain("御赐銮铃");
+    expect(names(100, ["锦官城当差"])).toContain("御赐銮铃");
+    expect(names(100, ["锦官城当差", "shop_bought:锦官兵备:御赐銮铃"])).not.toContain("御赐銮铃");
   });
 
   it("marks up 白绿 goods at -20 and refuses at -60", () => {
@@ -78,8 +78,7 @@ describe("投效都事府", () => {
     expect(checkFactionEntry(FACTION_ENTRIES.锦官城, { varTree: rep(40), flags: [] }).missing).toEqual(["trial"]);
     expect(checkFactionEntry(FACTION_ENTRIES.锦官城, { varTree: rep(40, { 威望: -1 }), flags: trial }).missing).toEqual(["prestige"]);
     expect(checkFactionEntry(FACTION_ENTRIES.锦官城, { varTree: rep(40), flags: [...trial, "青城派弟子"] }).missing).toEqual(["single"]);
-    // 官2-A 走完已是特派巡查
-    expect(checkFactionEntry(FACTION_ENTRIES.锦官城, { varTree: rep(40), flags: ["title_jinguancheng_tequai_xuncha"] }).already).toBe(true);
+    expect(checkFactionEntry(FACTION_ENTRIES.锦官城, { varTree: rep(40), flags: ["锦官城当差"] }).already).toBe(true);
   });
 
   it("counts the trial as passed for old saves that finished 官1 before the flag existed", () => {
@@ -88,20 +87,31 @@ describe("投效都事府", () => {
     expect(checkFactionEntry(FACTION_ENTRIES.锦官城, { varTree: rep(40), flags: [], questProgress: { jinguancheng_guan1_xinren: { status: "active" } } }).missing).toEqual(["trial"]);
   });
 
-  it("joins at 都事府值房: +20 rep, 腰牌与官袍, 特派巡查 flag", () => {
+  it("joins at 都事府值房: +20 rep, 腰牌与官袍, 当差 flag", () => {
     const result = joinSect(at("都事府", 45, trial));
-    expect(result.changes.flags(trial)).toContain("title_jinguancheng_tequai_xuncha");
+    expect(result.changes.flags(trial)).toContain("锦官城当差");
     expect(result.changes.varTree(rep(45)).世界.势力声誉.锦官城).toBe(65);
     expect(result.changes.inv([]).map((item) => item.name)).toEqual(["巡捕营腰牌", "锦官制式软甲", "锦官烧刀子"]);
     expect(joinSect(at("都事府", 30, trial)).changes).toBeUndefined();
   });
 
-  it("opens 青鸢回风 to 特派巡查 at rep 80, outsiders at rep 100", () => {
+  it("opens 青鸢回风 to 当差 members at rep 80, outsiders at rep 100", () => {
     const sword = SKILL_CATALOG.锦官.find((m) => m.id === "kf_guan_qingyuan");
     const state = (value, flags) => ({ varTree: rep(value), flags });
     expect(skillUnlockStatus(state(80, []), sword).ok).toBe(false);
-    expect(skillUnlockStatus(state(79, ["title_jinguancheng_tequai_xuncha"]), sword).ok).toBe(false);
-    expect(skillUnlockStatus(state(80, ["title_jinguancheng_tequai_xuncha"]), sword).ok).toBe(true);
+    expect(skillUnlockStatus(state(79, ["锦官城当差"]), sword).ok).toBe(false);
+    expect(skillUnlockStatus(state(80, ["锦官城当差"]), sword).ok).toBe(true);
     expect(skillUnlockStatus(state(100, []), sword).ok).toBe(true);
+  });
+
+  it("treats the 特派巡查 title alone as a title, not membership", () => {
+    // 官2-A 的头衔旗不经过投效门槛：只持证不当差——member 限售/顶招/入伙判定都不认它。
+    const title = ["title_jinguancheng_tequai_xuncha", "guan_cases_cleared"];
+    expect(names(100, title)).not.toContain("锦官坊标兵甲");
+    const sword = SKILL_CATALOG.锦官.find((m) => m.id === "kf_guan_qingyuan");
+    expect(skillUnlockStatus({ varTree: rep(80), flags: title }, sword).ok).toBe(false);
+    const status = checkFactionEntry(FACTION_ENTRIES.锦官城, { varTree: rep(40), flags: title });
+    expect(status.already).toBe(false);
+    expect(status.eligible).toBe(true);
   });
 });
