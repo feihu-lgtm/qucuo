@@ -17,7 +17,7 @@ export default { quest: {
         completionFlag: ["quest_wx1_peace", "quest_wx1_fight"],
         choices: [
           { flag: "quest_wx1_peace", label: "理证息争", resolve: "none", narration: "你蹲下查看商马尸体——毒发症状是「赤蜈腐骨散」，可苏小青药篓里只有治蛇伤的草药。峨眉弟子盯着你挑出的疑点半晌，收剑退回锦官城：「若真是有人嫁祸，此事还要查。」" },
-          { flag: "quest_wx1_fight", label: "拔刀硬护", resolve: "combat", combatNpc: { name: "峨眉剑庐巡山弟子", levelCap: 7 } },
+          { flag: "quest_wx1_fight", label: "拔刀硬护", resolve: "combat", combatNpc: { name: "峨眉剑庐巡山弟子", levelCap: 3 } },
         ],
         onReach: {
           flags: ["wuxian_invited"],

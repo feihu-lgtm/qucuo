@@ -13,6 +13,7 @@ export default { district: {
         desc: "贴着山门东侧砌出的四间避风石舍，炕底连着地龙火道，被褥带着松针晒过的干爽气。",
         exits: { w: "山门" },
         buildingId: "inn_xueshan",
+        residentNpcName: "石墩儿",
       },
       雪山练功堂: {
         x: 0, y: -1,
@@ -58,6 +59,7 @@ export default { district: {
 　　院当中一株老梅，冬日开满白花，落在木桩上像积了层薄雪。墙根堆着几根练功木桩，桩身全是刀劈剑削的旧痕，深的地方能塞进两根手指。老梅树下一圈花坛，格桑花和雪莲幼苗混着种，长势各半。
 　　正房三间，东厢是卧房，西厢是书房。`,
         exits: { s: "内堂", e: "东厢卧房", w: "西厢书房", n: "寒玉旧剑阁" },
+        residentNpcName: "穆怀青",
         unlockCondition: { type: "item", itemName: "雪山派令牌钥匙" },
       },
       东厢卧房: {
@@ -74,6 +76,7 @@ export default { district: {
 　　窗下另有一张琴桌，桌上一张七弦琴，弦断了三根，剩下四根还绷着。没人修，也没人说要修。屋角一方小灶，灶膛松柴常年不熄——何雨谢偶尔在此给弟子炖雪鸡汤。`,
         exits: { e: "弟子别院" },
         buildingId: "kitchen_bieyuan",
+        residentNpcName: "关晚棠",
         unlockCondition: { type: "item", itemName: "雪山派令牌钥匙" },
       },
       呼延雪居所: {
