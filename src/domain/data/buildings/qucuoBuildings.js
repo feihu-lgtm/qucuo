@@ -65,7 +65,7 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "既是练毒的灶，也是救命的堂；世上最狠的毒往往和最灵的解药同出一炉，只要出得起银子，断气前总能拉回来半口。",
     },
   ],
-  // ── 广汉·丐帮三星分舵（合稿·丐帮 2.3；拜师堂等拜入接线后再开） ──
+  // ── 广汉·丐帮三星分舵（合稿·丐帮 2.3）+ 广汉镇中立驿站（合稿·丐帮修订建议 2） ──
   广汉: [
     {
       id: "teahouse_gaibang_chashi", name: "察世茶棚", type: BUILDING_TYPE.TEAHOUSE,
@@ -90,6 +90,43 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "inn_gaibang_xiedian", name: "荒庙草铺", type: BUILDING_TYPE.INN, innPrice: 10,
       desc: "东厢房里铺满晒干的新稻草，窗纸糊着泛黄的旧告示，夜里漏风却胜在干净安全。严九斤说出门在外讲究个落脚舒心，连血刀贼都不敢摸到这儿来。",
+    },
+    {
+      id: "sect_gaibang_entry", name: "三星分舵·聚义堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "丐帮三星分舵",
+      desc: "破庙正殿改成的分舵议事处，供桌上不烧高香只摆烈酒。想入丐帮不看家世高低，只看你敢不敢端起严九斤那碗混着雨水与江湖气的入门酒。",
+    },
+    {
+      id: "transport_guanghan", name: "广汉镇驿站", type: BUILDING_TYPE.TRANSPORT,
+      desc: "镇口客栈旁拴着几匹川马，驾车的老把式不问来路。花银两可直接抵达已探索的其他据点，省得从川西尽头一步步走回去。",
+    },
+  ],
+  // ── 鱼定土司府（合稿·土司府 2.2；客卿偏仓要接家园存取，暂不开） ──
+  鱼定土司: [
+    {
+      id: "bounty_yudingtusi", name: "土司府缉捕榜", type: BUILDING_TYPE.BOUNTY,
+      desc: "府门前厅一侧的乌木告示板，贴满了盖着土司云雷铜印的海捕文书：抗税刁民、劫道马匪、走私盐贩，赏银写得明明白白。",
+    },
+    {
+      id: "wuguan_yudingtusi", name: "巡捕营校场", type: BUILDING_TYPE.WUGUAN, skillSet: "土司",
+      desc: "护卫厅外夯得发亮的黄土校场，兵器架上插着制式短矛和铁柄马刀。格桑顿珠的规矩：交得起学费的，不问来路都能学两手。",
+    },
+    {
+      id: "shop_yudingtusi", name: "土司府军需司", type: BUILDING_TYPE.SECTSHOP, shopKey: "土司军需司",
+      desc: "西厢外院的军需库房，柜台后的差役拨着算盘，给巡捕营发军粮、卖铠甲。外客照价，府里信得过的人能打折。",
+    },
+    {
+      id: "library_yudingtusi", name: "档册文书房", type: BUILDING_TYPE.LIBRARY,
+      desc: "议事厅东侧的长屋，架上堆满鱼定一带的税册、地契抄本和户籍账。主簿洛桑平措记性极好，哪年哪户欠了几升青稞都背得出来。",
+    },
+    {
+      id: "pigeon_yudingtusi", name: "官驿鸽棚", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 1,
+      desc: "府门檐下的鸽棚，养着往锦官城、雅江递公文的官鸽，鸽爪上的铜环刻着土司府的云雷纹。",
+    },
+    {
+      id: "chest_yudingtusi", name: "客卿偏仓", type: BUILDING_TYPE.CHEST, house: "鱼定土司府客卿偏仓", emptyStock: true,
+      faction: "鱼定土司府", minRep: 40,
+      repLocked: "看库的老差役把钥匙往怀里一揣：「偏仓只给府里的客卿用。等你在土司府说得上话（声誉 ≥ 40）再来。」",
+      desc: "库房一角隔出来的杉木库箱，箱盖烙着土司府的云雷徽记，供受聘客卿与巡边差官暂存行囊军械。",
     },
   ],
   // ── 鱼定村（7 种，枢纽村） ──
@@ -198,6 +235,31 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "chest_shanbie", name: "山间别墅·库房", type: BUILDING_TYPE.CHEST, house: "山间别墅",
       desc: "二楼主卧那只大衣柜，空得很，正好放东西。柜底也备着一套食材家底。",
+    },
+    // ── 百花门（东街百花楼，合稿·建筑列表 2.2） ──
+    {
+      id: "rest_baihualou", name: "百花楼·前厅酒肆", type: BUILDING_TYPE.RESTAURANT, menuKey: "饭馆",
+      desc: "东街最热闹的销金窟，一碗玫瑰酿配半碟卤山鸡，既能暖胃解乏，也能听见半个天都镇醉汉吐出来的真话。",
+    },
+    {
+      id: "tea_baihua_tingfeng", name: "听风雅阁", type: BUILDING_TYPE.TEAHOUSE,
+      desc: "二楼垂着细竹帘的清静茶座，茶水比别处贵上三倍，买的却不是茶叶，而是大草甸商队、土司府官差与雾隐寨毒使的最新动向。",
+    },
+    {
+      id: "med_baihua_ange", name: "百花暗阁", type: BUILDING_TYPE.MEDICINE, shopKey: "百花暗阁",
+      desc: "藏在暖棚拐角的一间无匾药铺，货架上摆着祛瘴花露、苗银细针与做旧药水，掌柜花婆只认银子与熟面孔，不问来客买毒给谁吃。",
+    },
+    {
+      id: "hosp_baihua_qudu", name: "花医静室", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
+      desc: "暖棚东侧的净室，燃着驱虫艾草，花婆坐堂施针拔毒；伤重或中了奇毒的江湖客在此调理片刻便能立见起色。",
+    },
+    {
+      id: "wuguan_baihua_huapeng", name: "百花暖棚·传艺地", type: BUILDING_TYPE.WUGUAN, skillSet: "百花",
+      desc: "毒花丛里辟出的一方青石空地，白日里看像是姑娘们晒药的院子，入夜后兰姐与阿芷会在此指点楼中记名客卿淬毒、使鞭与穿花步法。",
+    },
+    {
+      id: "pigeon_baihua_caique", name: "彩雀暗檐", type: BUILDING_TYPE.PIGEON_COOP, dailyPigeons: 1,
+      desc: "屋脊阴面搭着一排刷了桐油的竹笼，养着几十只滇南驯化的绿背彩雀，每日可免费领走一只传书，比官驿快马更难被截杀。",
     },
   ],
 
