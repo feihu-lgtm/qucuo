@@ -17,7 +17,19 @@ export function roomHeaderName(d) {
 
 export function emitRoomHeader(d) {
   const name = roomHeaderName(d);
-  if (name) d.addLog([{ t: "room", text: "" }, { t: "room", text: `    ${name}` }, { t: "room", text: "" }]);
+  if (!name) return;
+  const header = [{ t: "room", text: "" }, { t: "room", text: `    ${name}` }, { t: "room", text: "" }];
+  // 双调用模式下叙事在 runTurn 阶段就先于 commitRound 落日志了——这里必须插到
+  // 本轮命令回显（cmd）之后、本轮其余条目之前，addLog 追加只会落在正文后面。
+  if (d.setLog) {
+    d.setLog((prev) => {
+      const revIdx = [...prev].reverse().findIndex((e) => e?.t === "cmd");
+      const at = revIdx < 0 ? prev.length : prev.length - revIdx;
+      return [...prev.slice(0, at), ...header, ...prev.slice(at)];
+    });
+  } else {
+    d.addLog(header);
+  }
 }
 
 // traceStep 由调用方注入，保持本模块无 infra 依赖（externalInfraImports 只减不增）。

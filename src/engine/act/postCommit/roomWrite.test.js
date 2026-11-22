@@ -49,6 +49,20 @@ describe("emitRoomHeader", () => {
     expect(logs).toEqual([]);
   });
 
+  it("with setLog, the header inserts after the cmd echo even when prose was logged first", () => {
+    // 双调用模式：runTurn 在 commitRound 之前就把正文 addLog 了——标题必须插入，
+    // 追加只会落在正文后面（Devin Review 抓到的排序 bug 回归）。
+    const { d, logs } = ctx({
+      lockedDestName: "喇嘛庙",
+      setLog: (fn) => { const next = fn(logs); logs.length = 0; logs.push(...next); },
+    });
+    logs.push({ t: "cmd", text: "> 北" }, { t: "desc", text: "  旁白正文" });
+    emitRoomHeader(d);
+    const headerIdx = logs.findIndex((l) => l.t === "room" && l.text.includes("喇嘛庙"));
+    expect(headerIdx).toBeGreaterThan(0);
+    expect(headerIdx).toBeLessThan(logs.findIndex((l) => l.text.includes("旁白正文")));
+  });
+
   it("commitRound emits the header before the narrative", () => {
     const src = readFileSync(join(HERE, "..", "commitRound.js"), "utf-8");
     const header = src.indexOf("emitRoomHeader(d);");
