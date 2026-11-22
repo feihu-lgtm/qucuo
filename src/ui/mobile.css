@@ -786,6 +786,13 @@
 .status-light-busy > span { animation: statusLightPulse 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .status-light-busy > span { animation: none; } }
 
+/* 移动端叙事区收窄侧 padding，文本更宽（类 Devin iOS 近满宽排版） */
+@media (max-width: 767px) {
+  [data-testid="narrative-log"] {
+    padding: 14px 10px !important;
+  }
+}
+
 /* 键盘弹出时：页面布局原地不动，只把输入栏抬到键盘上缘（TauriTavern 式局部补偿，
    避免整屏 fixed 定位被 iOS 推到可视区域外导致黑屏） */
 @media (max-width: 767px) {
