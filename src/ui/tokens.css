@@ -68,6 +68,12 @@
   --quest-negative-text: #8a6a6a;
   --quest-missed-desc: #6a5a5a;
 
+  /* 创角页定色（原字面量，不随日间模式变）：--create-dark 用于下拉选项底色和开始按钮文字。 */
+  --create-button-bottom: #8a6a2a;
+  --create-dark: #1a140c;
+  --create-input-text: #f0e8d8;
+  --create-title: #f0e0c0;
+
   /* 斗蛐蛐·快速战役定色：原硬编码字面量本身即定色，拆屏时收敛为语义变量。 */
   --qb-border: #8a7d5a;   /* 描边/次要提示 */
   --qb-foe: #d47a6a;      /* 敌方主色/负向标记 */

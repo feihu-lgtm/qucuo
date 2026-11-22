@@ -82,7 +82,7 @@ export default function CharacterCreate({ onConfirm }) {
           <div style={styles.cardBox}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <span style={{ fontSize: 15 }}>🧾</span>
-              <span style={{ color: "#f0e0c0", fontSize: 13, flex: 1 }}>
+              <span style={{ color: "var(--create-title)", fontSize: 13, flex: 1 }}>
                 有一张入册待用的角色卡
               </span>
               <span
@@ -129,7 +129,7 @@ export default function CharacterCreate({ onConfirm }) {
               <span style={styles.fieldLabel}>性别</span>
               <select value={gender} onChange={(e) => setGender(e.target.value)} style={styles.select}>
                 {GENDERS.map((g) => (
-                  <option key={g.value} value={g.value} style={{ background: "#1a140c" }}>{g.label}</option>
+                  <option key={g.value} value={g.value} style={{ background: "var(--create-dark)" }}>{g.label}</option>
                 ))}
               </select>
             </label>
@@ -207,7 +207,7 @@ const styles = {
     backdropFilter: "blur(3px)",
   },
   title: {
-    color: "#f0e0c0", fontSize: "26px", fontWeight: "bold",
+    color: "var(--create-title)", fontSize: "26px", fontWeight: "bold",
     textAlign: "center", letterSpacing: "6px", marginBottom: 8,
     textShadow: "0 2px 10px rgba(0,0,0,0.7)",
   },
@@ -222,27 +222,27 @@ const styles = {
   },
   field: { display: "block", marginBottom: 20 },
   fieldLabel: {
-    display: "block", color: "#d8c8a0", fontSize: "13px",
+    display: "block", color: "var(--ink-tan)", fontSize: "13px",
     letterSpacing: "2px", marginBottom: 8,
   },
   input: {
     width: "100%", boxSizing: "border-box",
     background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "var(--gold-deep)"}`,
     borderRadius: 0, padding: "10px 14px",
-    color: "#f0e8d8", fontSize: "15px", outline: "none",
+    color: "var(--create-input-text)", fontSize: "15px", outline: "none",
     fontFamily: "inherit",
   },
   select: {
     width: "100%", boxSizing: "border-box",
     background: "rgba(0,0,0,0.4)", border: `1px solid ${theme.border || "var(--gold-deep)"}`,
     borderRadius: 0, padding: "10px 14px",
-    color: "#f0e8d8", fontSize: "15px", outline: "none",
+    color: "var(--create-input-text)", fontSize: "15px", outline: "none",
     fontFamily: "inherit", cursor: "pointer",
   },
   confirm: {
     width: "100%", border: "none", marginTop: 14, textAlign: "center",
-    background: `linear-gradient(180deg, ${theme.accent}, #8a6a2a)`,
-    color: "#1a140c", fontSize: "16px", fontWeight: "bold",
+    background: `linear-gradient(180deg, ${theme.accent}, var(--create-button-bottom))`,
+    color: "var(--create-dark)", fontSize: "16px", fontWeight: "bold",
     letterSpacing: "3px", padding: "13px 0", borderRadius: 0,
     userSelect: "none", transition: "opacity 0.2s",
   },
