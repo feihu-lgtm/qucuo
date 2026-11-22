@@ -27,7 +27,7 @@ function joinFactionSect(state, entry, now = Date.now()) {
     logs: [
       ...(status.trialItem ? [{ t: "sys", text: `  （你含下一份${status.trialItem.name}，硬扛下了那碗酒）` }] : []),
       { t: "sys", text: `  （${master}收你入${sect}门下，${formatRepChanges(applied)}）` },
-      ...items.map((item) => ({ t: "loot", text: `✦ 得「${item.name}」`, item, source: "sect" })),
+      ...items.map((item) => ({ t: "loot", text: `✦ 得「${item.name}」`, item, source: "sect", fromNpc: master })),
     ],
     note: { text: `拜入${sect}，${master}授${entry.token}。`, owner: [{ name: master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE },
     settle: `经${master}点头，正式拜入${sect}，领了${items.map((item) => item.name).join("、")}`,
@@ -63,7 +63,7 @@ export function joinSect(state) {
     },
     logs: [
       { t: "sys", text: `  （奉上束脩银${SECT_ENTRY.tuition}两，得雪山派弟子令牌 · 内堂之后的弟子别院已开，${formatRepChanges(grantFactionRep(state.varTree, { [SECT_ENTRY.sect]: SECT_ENTRY.repBonus }).applied)}）` },
-      { t: "loot", text: `✦ 得「${SECT_ENTRY.keyName}」`, item: token, source: "sect" },
+      { t: "loot", text: `✦ 得「${SECT_ENTRY.keyName}」`, item: token, source: "sect", fromNpc: SECT_ENTRY.master },
     ],
     note: { text: `拜入雪山派，${SECT_ENTRY.master}收下束脩，授弟子令牌。`, owner: [{ name: SECT_ENTRY.master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE },
     settle: `向${SECT_ENTRY.master}奉上束脩，正式拜入雪山派门下，接过那枚刻着「贰」字的弟子令牌`,

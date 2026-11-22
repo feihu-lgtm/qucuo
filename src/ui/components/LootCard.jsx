@@ -18,7 +18,7 @@ import { QUALITY_COLOR, CATEGORY_LABEL } from "../../domain/rules/economy/equipm
 // 在中心一块"顶底羽化"的暗背板上，描述再长也不裁切、不滚动，撑高时背板顶底以
 // 18px 透明渐变柔和过渡，不硬切边框。
 //
-// entry 结构（物品）：{ t:"loot", item, source:"duel"|"steal", fromNpc, text }
+// entry 结构（物品）：{ t:"loot", item, source:"duel"|"steal"|"sect"|"auction", fromNpc, text }
 //   item 须为 makeGameItem 产出的完整对象（atk/def/effect/sixDim/desc/价格齐全）。
 // entry 结构（技能）：{ t:"loot", skill:{name,quality,moveType}, desc, source:"steal", fromNpc }
 //   偷师得手时发，无 item；展示招式名/品阶/类型/描述，不展示攻防与买卖价。
@@ -93,6 +93,13 @@ const LOOT_CSS = `
 
 const HI_QUALITY = new Set(["紫", "橙", "红"]);
 
+// 暖金卡框不止切磋掉落在用：拜师授物、拍卖拍得各配各的抬头。
+const DUEL_FRAME_TEXT = {
+  duel: (npc) => ({ icon: "⚔", label: "戰利品", sub: npc ? `擊敗 ${npc} 所獲` : "切磋所得" }),
+  sect: (npc) => ({ icon: "✦", label: "師門所授", sub: npc ? `${npc} 親授` : "拜師所得" }),
+  auction: () => ({ icon: "✦", label: "拍品到手", sub: "一槌定音" }),
+};
+
 export default function LootCard({ entry }) {
   const isSkill = !!entry.skill;
   const item = entry.item || {};
@@ -114,7 +121,7 @@ export default function LootCard({ entry }) {
   const T = isDuel
     ? { bg: "linear-gradient(160deg,var(--loot-duel-bg-1) 0%,var(--loot-duel-bg-2) 45%,var(--loot-duel-bg-3) 100%)",
         banner: "linear-gradient(90deg,var(--loot-duel-banner),var(--gold))", bannerText: "var(--loot-duel-banner-text)",
-        label: "戰利品", sub: entry.fromNpc ? `擊敗 ${entry.fromNpc} 所獲` : "切磋所得",
+        ...(DUEL_FRAME_TEXT[entry.source] || DUEL_FRAME_TEXT.duel)(entry.fromNpc),
         img: "loot_duel.webp", inset: "6% 12%", plate: "rgba(20,8,4,.66)" }
     : { bg: "linear-gradient(160deg,var(--loot-steal-bg-1) 0%,var(--loot-steal-bg-2) 45%,var(--loot-steal-bg-3) 100%)",
         banner: "linear-gradient(90deg,var(--loot-steal-banner),var(--loot-steal-banner-hi))", bannerText: "var(--loot-steal-banner-text)",
@@ -151,7 +158,7 @@ export default function LootCard({ entry }) {
           )}
           <div className="loot-body" style={{ margin: T.inset }}>
             <div className="loot-banner" style={{ background: T.banner, color: T.bannerText }}>
-              <span style={{ fontSize: 13 }}>{isDuel ? "⚔" : "🤫"}</span>
+              <span style={{ fontSize: 13 }}>{isDuel ? T.icon : "🤫"}</span>
               <span>{T.label}</span>
               <span style={{ opacity: .78, letterSpacing: ".08em", fontWeight: 400 }}>· {T.sub}</span>
             </div>
