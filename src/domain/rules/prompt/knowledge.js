@@ -14,32 +14,23 @@
 //
 // 数据落在 varTree.世界.知识领域，随存档持久化。全部纯函数，返回新 varTree。
 
-const KROOT = "知识领域";
-
 // 途径 → 是否会随时间淡忘。亲历/剧本/被明确告知的，记牢；道听途说的，会忘。
 const 会淡忘途径 = { 传闻: true, 目击: false, 告知: false, 剧本: false };
 
 // 代码写死的推演参数（可调）：
 import { random } from "../../../utils/rng.js";
 import { buildPrompt } from "./buildPrompt.js";
+import { allFactSummaries, ensureRoot, KROOT, writeRoot } from "./knowledgeRoot.js";
 import "./calls/sideCalls.js";
+
+// allFactSummaries 已搬到 knowledgeRoot.js（见该文件开头），这里转出，旧引用不用改。
+export { allFactSummaries };
 
 const KNOWLEDGE_PARAMS = {
   传闻默认忘却回合: 40,   // 传闻途径得知后，多少回合没被再次强化就淡忘
   同框传播概率: 0.35,     // 同一场景里，知情者每回合把某事实传给未知者的概率
   单事实同框最多传播: 1,  // 一个事实一回合最多新扩散给几个人，防止一轮全知道
 };
-
-function ensureRoot(varTree) {
-  const 世界 = varTree.世界 || {};
-  const 领域 = 世界[KROOT] || { 事实: {} };
-  if (!领域.事实) 领域.事实 = {};
-  return 领域;
-}
-
-function writeRoot(varTree, 领域) {
-  return { ...varTree, 世界: { ...(varTree.世界 || {}), [KROOT]: 领域 } };
-}
 
 // 登记一条事实（剧本基底或运行时新增都走这里）。已存在则不覆盖（幂等）。
 // fact: { id, 摘要?, 忘却回合数?, 标签?, 知晓者?: [{name, 途径}] }
@@ -196,14 +187,6 @@ export function buildInfoDomainBlock(varTree, roomNpcNames = []) {
 // 普通 NPC 走 buildInfoDomainBlock（受限于在场+知情），旁白走这个（全量、无门槛）。
 // 只排除"待补摘要"（摘要还是空串）的事实，那些本来就没内容可给。
 // limit 控制最多带几条，太长的账本只取最近发生的若干条，避免 prompt 无限膨胀。
-export function allFactSummaries(varTree, limit = 20) {
-  const 领域 = ensureRoot(varTree);
-  const facts = Object.values(领域.事实)
-    .filter(f => f.摘要)
-    .sort((a, b) => (b.诞生回合 || 0) - (a.诞生回合 || 0))
-    .slice(0, limit);
-  return facts.map(f => ({ id: f.id, 摘要: f.摘要, 标签: f.标签, 诞生回合: f.诞生回合 }));
-}
 
 // 为"待补摘要"的事实，构造问 AI 要一句话描述的子请求（外层拿去调 callModel）。
 // 返回 { system, messages, maxTokens }。cue 是这条事实的线索（id/标签/触发语境）。
