@@ -21,6 +21,14 @@ describe("bank logic", () => {
     });
   });
 
+  it("tells the settlement narrator the deposit is already booked (no term/rate re-ask)", () => {
+    // Issue #3 回归：存款已到账后掌柜仍问存期利率——settle 文本必须明示已入账并禁止再问。
+    const { settle } = deposit(makeState(), 50);
+    expect(settle).toContain("已从随身银两扣除并入账");
+    expect(settle).toContain("不得再询问存期、利率或要求确认存款");
+    expect(settle).toContain("不得重复扣款或入账");
+  });
+
   it("does not deposit more than the available money", () => {
     expect(deposit(makeState({ char: { money: 20 } }), 50)).toEqual({ logs: [] });
   });

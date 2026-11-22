@@ -158,7 +158,7 @@ export function createScheduler({ onReject = () => {}, onQueue = () => {}, onCha
     let value;
     executionStack.push(record);
     try {
-      value = withTurnContext(entry.trace, entry.fn);
+      value = withTurnContext(entry.trace, () => entry.fn(entry));
     } catch (error) {
       executionStack.pop();
       active.delete(record.token);
