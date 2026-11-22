@@ -32,11 +32,11 @@ import {
 } from "../../features/bank/logic.js";
 import { joinSect } from "../../features/sect/logic.js";
 import { auctionWin } from "../../features/auction/logic.js";
-import { buyTangmenItem } from "../../features/buildings/tangmenShop.js";
+import { buyFactionShopItem } from "../../features/buildings/factionShop.js";
 
 export function useBuildingHandlers({ activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo }) {
-  const handleBuyTangmenItem = useCallback((name) => applyResult(featureCtxRef.current, () => {
-    const result = buyTangmenItem(gameStore.getState(), name);
+  const handleBuyTangmenItem = useCallback((name, shopKey = "唐门暗器") => applyResult(featureCtxRef.current, () => {
+    const result = buyFactionShopItem(gameStore.getState(), shopKey, name);
     if (result.changes) captureUndo();
     applyResult(featureCtxRef.current, result);
   }, { feature: "building.buyTangmenItem" }), [captureUndo, featureCtxRef]);

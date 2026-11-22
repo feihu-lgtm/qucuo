@@ -125,10 +125,10 @@
       "jsonSha256": "5d6a5c6bcffad3e6399e321424576adf50abd8e9e36a1e72f9aa553fd7018273"
     },
     "SUNDRIES": {
-      "entryCount": 250,
-      "orderedIdsSha256": "7f6f14a1619730f239b623f8610e081cad8fa9b961f3b52be5a2fb9121f4ad44",
-      "totalFieldCount": 1944,
-      "jsonSha256": "4ffa551484ed4fe00eb0b1a7f65fa4683aa4c1803680c22f08d81c2bbb488d89"
+      "entryCount": 260,
+      "orderedIdsSha256": "c72c481c73006557b4cb0b7086959bf4475aebf7ffb69c2479e427174915fde7",
+      "totalFieldCount": 2024,
+      "jsonSha256": "57f7a35057aa338c90761ee625c8729a90cb3b6bfccda36a3d3b761ebdc320c0"
     },
     "STANDARD_WEAPONS": {
       "entryCount": 10,
@@ -222,16 +222,16 @@
       "jsonSha256": "d0c47d92e4d5958afd876abb8512223df37399abe67606b7329a8f282a8d2245"
     },
     "CATALOG": {
-      "entryCount": 410,
-      "orderedIdsSha256": "4fcf4e380e23b350a23b1a11a15c08600ed328c0babdefc6a2e549bfb99eba56",
-      "totalFieldCount": 3217,
-      "jsonSha256": "6e0b824ded7262e8e939f4b858c0d6118694b4812f74761cb2a0d2cc2a0bb764"
+      "entryCount": 420,
+      "orderedIdsSha256": "629b592d854950ef9146ab7c3491a7fa36bda1773c3f6842df73653a47344e40",
+      "totalFieldCount": 3297,
+      "jsonSha256": "cdc097c93feca79ff486b6cd890c7d53d5cc76b8a13eb98ff1a38bc1529b7670"
     },
     "CATALOG_INDEX": {
-      "entryCount": 410,
-      "orderedIdsSha256": "4fcf4e380e23b350a23b1a11a15c08600ed328c0babdefc6a2e549bfb99eba56",
-      "totalFieldCount": 3627,
-      "jsonSha256": "6f5a2b3b9a7bce85a4e7ad0800095d8bf40dfb6596c2907ecc44417e5ed9b794"
+      "entryCount": 420,
+      "orderedIdsSha256": "629b592d854950ef9146ab7c3491a7fa36bda1773c3f6842df73653a47344e40",
+      "totalFieldCount": 3717,
+      "jsonSha256": "084279c20b8db2e3559e89e1b1cdf247443a1ed6a29ef1140cdff3f5fd0a10da"
     },
     "RESIDENT_NPCS": {
       "entryCount": 13,
@@ -276,8 +276,8 @@
         "锦官城",
         "蜀南唐堡"
       ],
-      "totalFieldCount": 1262,
-      "jsonSha256": "9c1242cd7dc18e8df18e0bfd34a63c5f921b86c8b84c743efa880836d349d62c"
+      "totalFieldCount": 1270,
+      "jsonSha256": "f5476734fdf7b8e47e57fbfbd7caaa16914dc2c4cd36d6e1903ce45923b42fa1"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,

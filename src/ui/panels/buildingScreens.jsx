@@ -8,7 +8,7 @@
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
-import { TANGMEN_SHOP, tangmenOutletOf, tangmenShopOffer } from "../../features/buildings/tangmenShop.js";
+import { factionShopOffer, factionShopOutlet, isFactionShop } from "../../features/buildings/factionShop.js";
 import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import TradingScreen from "../screens/TradingScreen.jsx";
 import { factionShopCoef } from "../../domain/rules/economy/factionRep.js";
@@ -52,18 +52,19 @@ function shopScreen(c) {
   const shopData = rollShopStock(c.building.shopKey, c.time) || buildShopInventory(c.building.shopKey);
   if (!shopData) return null;
   const isKarma = shopData.currency === "karma";
-  const tangmen = c.building.shopKey === TANGMEN_SHOP ? tangmenShopOffer(c.varTree, tangmenOutletOf(c.building.id)) : null;
+  const factionShop = isFactionShop(c.building.shopKey)
+    ? factionShopOffer(c.building.shopKey, c.varTree, factionShopOutlet(c.building.shopKey, c.building.id)) : null;
   const trading = (
     <TradingScreen inline queueCount={c.queueCount}
-      shopName={tangmen ? `${c.building.name}${tangmen.closed ? `（${tangmen.closed}）` : ""}` : shopData.shopName}
-      shopItems={tangmen ? tangmen.items : shopData.items}
+      shopName={factionShop ? `${c.building.name}${factionShop.closed ? `（${factionShop.closed}）` : ""}` : shopData.shopName}
+      shopItems={factionShop ? factionShop.items : shopData.items}
       playerInv={c.inv} playerMoney={isKarma ? (c.dao.karma || 0) : (c.char.money || 0)}
       currencyName={isKarma ? "功德" : "银两"} currencyUnit={isKarma ? "点" : "两"} canSell={!isKarma}
       headerContent={c.building.craft ? c.tabs("mobile-trading-tabs-header") : null}
-      playerWit={c.effectiveSpecialNow?.智谋 ?? 5} repCoef={tangmen ? tangmen.coef : isKarma ? 1 : factionShopCoef(c.varTree, c.building.district ?? c.room?.name)}
+      playerWit={c.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShop ? factionShop.coef : isKarma ? 1 : factionShopCoef(c.varTree, c.building.district ?? c.room?.name)}
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onInspect={c.inspectItem}
-      onBuy={tangmen
-        ? (item) => c.handleBuyTangmenItem(item.name)
+      onBuy={factionShop
+        ? (item) => c.handleBuyTangmenItem(item.name, c.building.shopKey)
         : (item) => c.runCommand("shopBuy", () => { if (isKarma) { if ((c.dao.karma||0)<item.buyPrice) return; c.captureUndo(); c.setDao(d=>({...d,karma:d.karma-item.buyPrice})); } else { if ((c.char.money||0)<item.buyPrice) return; c.captureUndo(); c.setChar(ch=>({...ch,money:ch.money-item.buyPrice})); if (shopData.karmaLoss) c.setDao(d=>({...d,karma:(d.karma||0)-shopData.karmaLoss})); } c.setInv(prev=>[...prev,{...item,id:`${item.name}_${Date.now()}`,equipped:false}]); c.addLog([{t:"item",text:`  购得「${item.name}」（${item.quality}），花费${item.buyPrice}${isKarma?"功德":"两"}。`}]); c.jotNote({ text:`购得「${item.name}」，花${item.buyPrice}${isKarma?"功德":"两"}。`, source: NOTE_SOURCE.DUMB }); })}
       onSell={(item) => c.runCommand("shopSell", () => { if (item.equipped||isKarma) return; c.captureUndo(); c.setInv(prev=>prev.filter(i=>(typeof i==="object"?i.id:i)!==item.id)); c.setChar(ch=>({...ch,money:(ch.money||0)+item.sellPrice})); c.addLog([{t:"item",text:`  卖出「${item.name}」，得${item.sellPrice}两。`}]); c.jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
     />
@@ -170,7 +171,7 @@ export const BUILDING_SCREENS = {
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onListenRumor={c.handleListenRumor} />
   ),
   [BUILDING_TYPE.SECT_ENTRY]: (c) => (
-    <SectEntryScreen building={c.building} char={c.char} flags={c.flags} inline
+    <SectEntryScreen building={c.building} char={c.char} flags={c.flags} varTree={c.varTree} inline
       narratorAffection={c.sectMasterAffection}
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} onJoinSect={c.handleJoinSect} />
   ),

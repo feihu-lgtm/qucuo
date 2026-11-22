@@ -22,6 +22,20 @@ export const QUCUO_SHOPS = {
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，
   // 但这张货池表里没有这个键——玩家进雅纸铺是一间空店。
   // 货品按设计稿第十节：竹青宣 + 竹编器 + 日用，另配青城道门装备（三清殿在这座城）。
+  青城商坊: {
+    shopName: "青城商坊",
+    items: [
+      { name: "青城柏香符", category: ITEM_CATEGORY.MISC, quality: "白", minRep: -59 },
+      { name: "三清松风铁剑", category: ITEM_CATEGORY.WEAPON, quality: "绿", minRep: 0 },
+      { name: "山阴清瘴丹", category: ITEM_CATEGORY.MISC, quality: "绿", minRep: -59 },
+      { name: "青城松纹剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "伏龙水雾道袍", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 15 },
+      { name: "玉真青囊针盒", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝", minRep: 15 },
+      { name: "紫阳清心散", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 40 },
+      { name: "听松玄铁剑", category: ITEM_CATEGORY.WEAPON, quality: "紫", minRep: 40 },
+      { name: "三清鹤羽道衣", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 80 },
+    ],
+  },
   雅纸铺: {
     shopName: "雅纸铺",
     items: [

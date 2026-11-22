@@ -1,5 +1,6 @@
 // 武学门槛（合稿附录三 unlock）。声誉读 世界.势力声誉.<unlock.faction>（AI 单回合每势力最多 ±10）。
-// 拜入尚未接入：member 条目只能走 guestRep（外客门槛），没有 guestRep 的一律锁住。
+// member 条目：本门弟子（SECT_MEMBER_FLAGS）达到 rep 即可，外客只能走 guestRep。
+import { SECT_MEMBER_FLAGS } from "../character/qingchengEntry.js";
 import { factionRepOf } from "./factionRep.js";
 
 function repOk(state, unlock) {
@@ -7,7 +8,10 @@ function repOk(state, unlock) {
   if (!needsRep) return true;
   if (!unlock.faction) return false;
   const rep = factionRepOf(state.varTree, unlock.faction);
-  if (unlock.member) return unlock.guestRep != null && rep >= unlock.guestRep;
+  if (unlock.member) {
+    const isMember = (state.flags || []).includes(SECT_MEMBER_FLAGS[unlock.faction]);
+    return (isMember && rep >= (unlock.rep || 0)) || (unlock.guestRep != null && rep >= unlock.guestRep);
+  }
   return rep >= (unlock.rep || 0);
 }
 
