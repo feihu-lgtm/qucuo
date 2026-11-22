@@ -10,7 +10,7 @@ import { QUCUO_SHOPS } from "../../data/shops/qucuoShops.js";
 import { ITEM_DISTRIBUTION } from "../../data/items/distribution.js";
 import { GROUND_ITEMS_INNER } from "../map/groundItems.js";
 import { QUCUO_PRESET } from "../../data/presets/qucuo.js";
-import { getDistrictAnchor, getInnerRoom, INNER_MAP, getResidentRoomForNpc, hasInnerMap } from "../map/innerMap.js";
+import { getDistrictAnchor, getInnerRoom, INNER_MAP, getResidentRoomForNpc, hasInnerMap, isInnerExitUnlocked } from "../map/innerMap.js";
 
 const list = (v) => (Array.isArray(v) ? v : v ? [v] : []);
 const nameOf = (it) => (typeof it === "string" ? it : it?.name);
@@ -27,11 +27,25 @@ function walk(dir, out = []) {
 // 规则代码里出现的字符串字面量：拜入、切磋、送礼、建筑等由代码写入的 flag / 发放的物品。
 // 只扫规则代码，不扫内容数据与物品定义，免得「读 flag 的地方」被当成写入方。
 const LOGIC_DIRS = ["domain/rules/", "features/", "engine/", "app/"];
+// flag 另要求「写入位」：紧跟在 includes( / has( / === 后面的字面量只是在读，不算有人写。
+const READ_BEFORE = /(?:\.includes\(|\.has\(|hasFlag\(|[!=]==)\s*$/;
+function codeLiteralUses(text) {
+  const all = new Set();
+  const written = new Set();
+  for (const m of text.matchAll(/["'`]([^"'`\n${}]{1,40})["'`]/g)) {
+    all.add(m[1]);
+    if (!READ_BEFORE.test(text.slice(Math.max(0, m.index - 16), m.index))) written.add(m[1]);
+  }
+  return { all, written };
+}
 const codeLiterals = new Set();
+const codeFlagWrites = new Set();
 for (const file of walk(SRC)) {
   const rel = path.relative(SRC, file).split(path.sep).join("/");
   if (!LOGIC_DIRS.some((d) => rel.startsWith(d))) continue;
-  for (const m of fs.readFileSync(file, "utf8").matchAll(/["'`]([^"'`\n${}]{1,40})["'`]/g)) codeLiterals.add(m[1]);
+  const { all, written } = codeLiteralUses(fs.readFileSync(file, "utf8"));
+  all.forEach((l) => codeLiterals.add(l));
+  written.forEach((l) => codeFlagWrites.add(l));
 }
 
 const stagesOf = (q) => q.stages || [];
@@ -71,7 +85,7 @@ const deliverable = (n) => [...itemSources].some((src) => src && (src.includes(n
 for (const npc of [...NPC_POOL, ...(QUCUO_PRESET.room.npcs || [])]) for (const it of npc.carry || []) itemSources.add(nameOf(it));
 
 // —— flag 写入 ——
-const flagWriters = new Set(codeLiterals);
+const flagWriters = new Set(codeFlagWrites);
 for (const q of QUCUO_QUESTS) for (const s of stagesOf(q)) {
   list(s.completionFlag).forEach((f) => flagWriters.add(f));
   choicesOf(s).forEach((c) => c.flag && flagWriters.add(c.flag));
@@ -81,6 +95,40 @@ for (const q of QUCUO_QUESTS) for (const s of stagesOf(q)) {
 const REP_MAX = 100;
 const PRESTIGE_MAX = 100;
 const FAVOR_MAX = 100;
+
+function acceptRoomsOf(q) {
+  const first = stagesOf(q)[0];
+  const rl = first?.requireLocation;
+  if (rl?.district && rl.inner) return [{ district: rl.district, room: rl.inner }];
+  if (q.giver && first && first.giver !== null) return homes.get(q.giver) || [];
+  return [];
+}
+const QUEST_BY_ID = new Map(QUCUO_QUESTS.map((q) => [q.id, q]));
+const flagsWrittenBy = (q) => stagesOf(q).flatMap((s) => [
+  ...list(s.completionFlag), ...choicesOf(s).map((c) => c.flag).filter(Boolean), ...rewardsOf(s).flatMap((r) => list(r.flags)),
+]);
+// 刚好踩线满足任务门槛的玩家：前置任务（逐级往上）都做完了，它们写的 flag 都在身上
+function gateStateOf(q) {
+  const done = new Set();
+  const visit = (id) => {
+    if (done.has(id) || !QUEST_BY_ID.has(id)) return;
+    done.add(id);
+    const p = QUEST_BY_ID.get(id);
+    [...list(p.requiresQuestCompleted), ...list(p.requiresAnyOf)].forEach(visit);
+  };
+  [...list(q.requiresQuestCompleted), ...list(q.requiresAnyOf)].forEach(visit);
+  const favor = { ...q.requiresFavor, ...q.requiresFavorability };
+  return {
+    questProgress: Object.fromEntries([...done].map((id) => [id, { status: "completed" }])),
+    flags: [...list(q.requiresFlags), ...list(q.requiresFlagsAny), ...[...done].flatMap((id) => flagsWrittenBy(QUEST_BY_ID.get(id)))],
+    inv: [],
+    char: {},
+    varTree: {
+      世界: { 势力声誉: { ...q.requiresFactionRep } },
+      角色: Object.fromEntries(Object.entries(favor).map(([n, v]) => [n, { 好感度: v }])),
+    },
+  };
+}
 
 function problemsOf(q) {
   const out = [];
@@ -99,6 +147,14 @@ function problemsOf(q) {
   needFlags(null, q.requiresFlags); needFlags(null, q.requiresFlagsAny);
   list(q.requiresKnownNpc).concat(list(q.requiresKnownNpcAny)).forEach((n) => !personExists(n) && tag(null, `要求结识的「${n}」不存在`));
   if (q.giver && !personExists(q.giver)) tag(null, `发布人「${q.giver}」不存在`);
+
+  // 接任务的房间：门锁要靠任务门槛本身就能打开（#304 前锦官支3 的发布人住在要「接了支3」才开的库房里）
+  const gate = gateStateOf(q);
+  const accept = acceptRoomsOf(q).filter((h) => h.room);
+  const lockOf = (h) => getInnerRoom(h.district, h.room)?.unlockCondition;
+  if (accept.length && accept.every((h) => lockOf(h) && !isInnerExitUnlocked(lockOf(h), gate))) {
+    tag(0, `接任务的「${accept.map((h) => `${h.district}·${h.room}`).join("、")}」上了锁，只凭任务门槛进不去`);
+  }
 
   stagesOf(q).forEach((s, i) => {
     const rl = s.requireLocation;
@@ -178,5 +234,14 @@ describe("任务可达性", () => {
       "probe#2：要求的 flag「从来没人写的flag」没有任何任务或规则写入",
     ]);
     expect(problemsOf({ ...bad, requiresFactionRep: {}, stages: [{ ...bad.stages[0], giver: null }] })).toEqual([]);
+    // 发布人住在要「接了本任务」才开的库房里，声誉又不够 40：接不了
+    expect(problemsOf({ id: "probe2", giver: "沈归尘", requiresFactionRep: { 锦官城: 30 }, stages: [{ id: "s1", completionFlag: "probe2_1" }] }))
+      .toEqual([expect.stringContaining("probe2#1：接任务的「锦官城·刑名东厢·卷宗库房」上了锁")]);
+  });
+
+  it("规则代码里只被读的字面量不算写入 flag", () => {
+    const { all, written } = codeLiteralUses(`if (flags.includes("只读")) x(); if (seen.has("也只读")) y(); flags = [...flags, "写了"]; z = a === "比较";`);
+    expect([...all]).toEqual(["只读", "也只读", "写了", "比较"]);
+    expect([...written]).toEqual(["写了"]);
   });
 });

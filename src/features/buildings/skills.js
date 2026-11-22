@@ -3,13 +3,16 @@
 import { makeSkillEntry } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { skillPrice, skillUnlockStatus } from "../../domain/rules/economy/skillUnlock.js";
 import { invalidAmountResult, noOpResult } from "./helpers.js";
-import { strongholdBan } from "../../domain/rules/economy/strongholdGate.js";
+import { hostileClosureOf, strongholdBan } from "../../domain/rules/economy/strongholdGate.js";
+import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 
 export function buySkill(state, catalogItem) {
   if (!catalogItem?.id || (state.skills || []).some((skill) => skill.id === catalogItem.id)) return noOpResult();
 
   const ban = strongholdBan(state.room?.name, state.varTree);
   if (ban) return { logs: [{ t: "sys", text: `  ${ban.closed}` }] };
+  const closure = hostileClosureOf(getBuildingIdForInnerRoom(state.room?.name, state.innerRoomName), state.varTree);
+  if (closure) return { logs: [{ t: "sys", text: `  ${closure.closed}` }] };
 
   const unlock = skillUnlockStatus(state, catalogItem);
   const price = skillPrice(state, catalogItem);

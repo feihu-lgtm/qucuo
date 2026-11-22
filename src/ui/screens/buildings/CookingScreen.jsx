@@ -5,6 +5,7 @@ import {
   matchRecipe, canUseTechnique, computeDish, genericDishEffect,
   ownedCookware, availableMaterials, INGREDIENT_LORE, reconcileCookingSlots,
 } from "../../../domain/rules/economy/cooking.js";
+import { shareKitchenOf } from "../../../features/buildings/venue.js";
 
 // 烹饪台：六格槽位（料×4 + 技法×1 + 炊具×1）。UI 素材沿用赌石那套精美木质/纸面
 // 贴图（public/stones/ui/），backgroundSize "100% 100%" 拉伸铺满（与 GambleStoneScreen
@@ -107,7 +108,9 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
   }
   function clearAll() { setSlots([null, null, null, null]); setWarn(""); setFx(null); }
 
-  function fire() {
+  const shareRule = shareKitchenOf(building?.id);
+
+  function fire(share = false) {
     if (fx?.kind === "ok") return;
     if (!filled.length) { setWarn("灶膛烧得正旺，可锅里空空如也——先放点料。"); setFx({ kind: "fail" }); return; }
     if (!techOk) { setWarn(`${TECHNIQUES[techniqueId].icon} 「${techniqueId}」需要能蒸的炊具（蒸笼/石灶釜/青铜鼎）。换一件家什。`); setFx({ kind: "fail" }); return; }
@@ -120,6 +123,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
       cookware: { name: cookware.name, desc: cookware.desc },
       freestyle,
       dish,
+      share: share && !!shareRule,
     });
     setFx({ kind: "ok", dish: { ...dish, name: dish.name || "妙手偶得" }, freestyle });
     setTimeout(() => { setFx(null); setSlots([null, null, null, null]); }, 1500);
@@ -256,7 +260,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
 
         {/* ── ⑤ 开火 / 清空 ── */}
         <div style={{ display: "flex", gap: 12, justifyContent: "center", margin: "16px 0 4px" }}>
-          <div onClick={fire}
+          <div onClick={() => fire(false)}
             className="ck-chip"
             style={{ position: "relative", cursor: "pointer", padding: "11px 46px",
               backgroundImage: `url(${UI("btn_blank.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
@@ -264,6 +268,16 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
               opacity: fx?.kind === "ok" ? 0.5 : 1, textShadow: "0 1px 0 rgba(255,255,255,.35)" }}>
             开 火
           </div>
+          {shareRule && (
+            <div onClick={() => fire(true)}
+              className="ck-chip"
+              style={{ position: "relative", cursor: "pointer", padding: "11px 22px",
+                backgroundImage: `url(${UI("btn_blank.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
+                color: "var(--cooking-button-text)", fontSize: 13, fontWeight: "bold", letterSpacing: 3,
+                opacity: fx?.kind === "ok" ? 0.5 : 1, textShadow: "0 1px 0 rgba(255,255,255,.35)" }}>
+              做好分赠流民
+            </div>
+          )}
           <div onClick={clearAll}
             className="ck-chip"
             style={{ cursor: "pointer", padding: "11px 22px", display: "flex", alignItems: "center",

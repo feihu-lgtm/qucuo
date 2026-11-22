@@ -9,6 +9,7 @@ import { setSeed } from "../src/utils/rng.js";
 import { resetForDay, loadSquares, serializeSquares, consumeArrival, burnSquare } from "../src/domain/rules/map/mapSquares.js";
 import { tryRestoreSnapshot } from "../src/infra/saves.js";
 import { statsForQuality } from "../src/domain/rules/economy/equipment.js";
+import { migrateLegacySnapshot } from "../src/domain/rules/npc/legacyContent.js";
 import { getTimeStr } from "../src/utils/mudHelpers.js";
 import { defaultConfig, migrateProvider, providerApiType, PROVIDERS } from "../src/infra/apiConfig.js";
 import { classifyIntent } from "../src/domain/rules/prompt/inputIntent.js";
@@ -475,10 +476,10 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       if (!file) throw new Error(":load requires a file path");
       const data = JSON.parse(await readFile(resolve(cwd, file), "utf8"));
       const snapshot = data?.kind === "qucuo-save-export" ? data.snapshot : data;
-      const restored = tryRestoreSnapshot(DEFAULT_PRESETS, snapshot, { statsForQuality });
+      const restored = tryRestoreSnapshot(DEFAULT_PRESETS, snapshot, { statsForQuality, migrateSnapshot: migrateLegacySnapshot });
       if (restored) {
-        session.roomMap = snapshot?.roomMap || {};
-        loadSquares(snapshot?.squares || {});
+        session.roomMap = restored.snap.roomMap || {};
+        loadSquares(restored.snap.squares || {});
       } else {
         session.roomMap = {};
         resetForDay();

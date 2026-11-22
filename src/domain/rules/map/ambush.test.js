@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { factionAmbushRule, pickAmbusher } from "./ambush.js";
+import { factionAmbushRule, factionRoomAmbushRule, pickAmbusher, pickRoomAmbusher } from "./ambush.js";
 
 const state = (rep, time = 0, flags = []) => ({
   room: { name: "大草甸", npcs: [] },
@@ -28,5 +28,27 @@ describe("faction ambush rule", () => {
 
   it("passes on a missed roll", () => {
     expect(pickAmbusher(state(-80), () => 0.99)).toBeNull();
+  });
+
+  it("欢喜教 ≤ -60：踏进天都香行前厅必遭截杀，别处与大地图移动不触发", () => {
+    const hx = (rep, inner, district = "天都镇") => ({
+      room: { name: district, npcs: [] }, innerRoomName: inner,
+      varTree: { 世界: { 势力声誉: { 欢喜教: rep } } }, time: 0, flags: [],
+    });
+    const result = factionRoomAmbushRule.run(hx(-60, "天都香行"));
+    expect(result.forcedDuelNpc).toMatchObject({ name: "欢喜教内院弟子", faction: "欢喜教" });
+    expect(result.forcedDuelNpc.moveset?.length).toBeGreaterThan(0);
+    expect(result.logs[0].text).toContain("老何");
+    expect(factionRoomAmbushRule.run(hx(-59, "天都香行"))).toBeNull();
+    expect(factionRoomAmbushRule.run(hx(-80, "品香雅座"))).toBeNull();
+    expect(pickRoomAmbusher(hx(-80, "天都香行", "锦官城"), () => 0)).toBeNull();
+    expect(pickAmbusher(hx(-80, "天都香行"), () => 0)).toBeNull();
+  });
+
+  it("按房间登记的伏击不在大地图移动时掷骰，唐门伏击也不随内层房间重掷", () => {
+    const both = { room: { name: "天都镇", npcs: [] }, innerRoomName: "天都香行", time: 0, flags: [],
+      varTree: { 世界: { 势力声誉: { 唐门: -80, 欢喜教: 0 } } } };
+    expect(pickAmbusher(both, () => 0).npc.name).toBe("唐门暗弩手");
+    expect(pickRoomAmbusher(both, () => 0)).toBeNull();
   });
 });

@@ -130,6 +130,28 @@ describe("NPC gift logic", () => {
     });
   });
 
+  it("starts and advances a giver-less quest whose first stage is the hand-in", () => {
+    const item = { name: "半块银锁片" };
+    const state = makeState({
+      inv: [item],
+      room: { name: "黑风寨", npcs: [] },
+      questProgress: {
+        heifengzhai_2_meimeidexiaoxi: { status: "completed", currentStageIndex: 2 },
+      },
+    });
+    const result = giftNpc(state, { name: "巴桑" }, item, 100);
+
+    expect(result.deliveredQuest?.id).toBe("heifengzhai_3_shangshan");
+    expect(result.changes.questProgress({}).heifengzhai_3_shangshan?.status).toBe("completed");
+  });
+
+  it("ignores the hand-in while the giver-less quest is still gated", () => {
+    const item = { name: "半块银锁片" };
+    const result = giftNpc(makeState({ inv: [item], room: { name: "黑风寨", npcs: [] } }), { name: "巴桑" }, item, 100);
+
+    expect(result.deliveredQuest).toBeNull();
+  });
+
   it("removes the divine_huxiao delivery material before adding its reward", () => {
     const material = { id: "huxiao-material", name: "虎王的牙筋", category: "misc", quality: "橙" };
     const retainedItem = { id: "kept-item", name: "草药", category: "misc", quality: "白" };

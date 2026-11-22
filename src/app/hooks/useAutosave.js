@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createAutosaveScheduler } from "../../features/autosaveScheduler.js";
 import { snapshotFromStore } from "../../store/persist.js";
 import { getRngState, setRngState } from "../../utils/rng.js";
@@ -7,6 +7,7 @@ import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../engine/ports/saves.js";
 import { statsForQuality } from "../../domain/rules/economy/equipment.js";
+import { migrateLegacySnapshot } from "../../domain/rules/npc/legacyContent.js";
 import { initialNarratorState, migrateNarratorState } from "../../domain/rules/narrator/narrator.js";
 import { backfillInventoryFromCatalog } from "../../domain/data/items/catalog.js";
 import { generateNpcMoveset } from "../../domain/rules/npc/npcGeneration.js";
@@ -32,9 +33,14 @@ export function restorePersuasionProgress(snap, setPersuasionProgress) {
 }
 
 export function useInitialRestore({ initialLoadSlotId }) {
-  const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId, { statsForQuality });
-  if (restored?.snap?.squares) loadSquares(restored.snap.squares);
-  return restored;
+  // 必须 useMemo 一次算好：钩子体每次渲染都会执行，裸跑的话每次渲染都会
+  // 重读存档、重调 loadSquares——把 consumeArrival 已消费的一次性格子
+  // （拾取/路遇）重置回未消费，回访还能再拿一遍。
+  return useMemo(() => {
+    const restored = initialLoadSlotId === "new" ? null : tryRestoreSave(DEFAULT_PRESETS, initialLoadSlotId, { statsForQuality, migrateSnapshot: migrateLegacySnapshot });
+    if (restored?.snap?.squares) loadSquares(restored.snap.squares);
+    return restored;
+  }, [initialLoadSlotId]);
 }
 
 export function useAutosave({
@@ -125,6 +131,9 @@ export function useAutosave({
   // 从存档槽位读取后，整体覆盖当前状态
   const applySnapshot = useCallback((snap) => {
     const restoreSnapshot = () => {
+      // 老存档人物改名迁移（#274 后天龙教改回原作名）：手动读槽位不经过
+      // tryRestoreSnapshot，在这里补同一道迁移，回滚快照是新版数据、幂等无副作用。
+      snap = migrateLegacySnapshot(snap);
       const matchedPreset = presets.find(p => p.id === snap.preset?.id) || preset;
       const restoredRoom = isCompatibleRoomShape(snap.room) ? snap.room : matchedPreset.room;
       const roomChanged = restoredRoom.name !== useGameStore.getState().room?.name;
