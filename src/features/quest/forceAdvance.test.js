@@ -36,14 +36,14 @@ describe("forceAdvanceQuest", () => {
   });
 });
 
-describe("playLocalQuestStage · minMoney 门槛", () => {
+describe("playLocalQuestStage · requiresMoney 门槛", () => {
   const payQuest = {
     id: "pay_quest",
     localOnly: true,
     stages: [{
       completionFlag: ["paid", "fought"],
       choices: [
-        { flag: "paid", label: "垫银了税", resolve: "none", minMoney: 30 },
+        { flag: "paid", label: "垫银了税", resolve: "none", requiresMoney: 30 },
         { flag: "fought", label: "动手赶差", resolve: "combat", combatNpc: { name: "差役", levelCap: 6 } },
       ],
       onReach: { money: 5 },

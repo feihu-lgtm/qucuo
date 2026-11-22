@@ -26,7 +26,7 @@ export default { quest: {
         description: "两名土司府差役拦着鱼定村脚夫的骡车，张口就是新立的「雪岭过境税」。林子里还有恶狼在嗅着麻袋打转。",
         completionFlag: ["quest_xs1_pay", "quest_xs1_fight"],
         choices: [
-          { flag: "quest_xs1_pay", label: "守戒绕道·垫银了税", resolve: "none", minMoney: 30, narration: "你想起陆寒枝「别惹事」的嘱咐，掏出三十两碎银按他们的规矩「完税」，差役掂着银子放行。脚夫老汉抹着汗直念叨：使不得，回山一定让沈司库把钱补给你。" },
+          { flag: "quest_xs1_pay", label: "守戒绕道·垫银了税", resolve: "none", requiresMoney: 30, narration: "你想起陆寒枝「别惹事」的嘱咐，掏出三十两碎银按他们的规矩「完税」，差役掂着银子放行。脚夫老汉抹着汗直念叨：使不得，回山一定让沈司库把钱补给你。" },
           { flag: "quest_xs1_fight", label: "硬护脚夫·动手赶差", resolve: "combat", combatNpc: { name: "鱼定土司府差役", levelCap: 6 } },
         ],
         onReach: {
@@ -128,7 +128,7 @@ export default { quest: {
         completionFlag: ["quest_xsz1_secret", "quest_xsz1_tax"],
         choices: [
           { flag: "quest_xsz1_secret", label: "走暗道·分粮三成给玉泉寨", resolve: "none", narration: "你们踩着溪谷乱石把粮背上山，绕开税卡，又按沈既白的意思分出三成糙米送去玉泉寨。" },
-          { flag: "quest_xsz1_tax", label: "走大路·照章纳税运全粮", resolve: "none", minMoney: 60, narration: "你们按章程缴了六十两过卡「雪岭税」。差役验完税票懒洋洋挥手放行，糙米一粒不少全数运上了山。" },
+          { flag: "quest_xsz1_tax", label: "走大路·照章纳税运全粮", resolve: "none", requiresMoney: 60, narration: "你们按章程缴了六十两过卡「雪岭税」。差役验完税票懒洋洋挥手放行，糙米一粒不少全数运上了山。" },
         ],
         onReach: {
           byFlag: {
