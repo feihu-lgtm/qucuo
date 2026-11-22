@@ -11,6 +11,20 @@ function targetName(target) {
   return typeof target === "string" ? target : target?.name;
 }
 
+// 纯叙事键：提取产物 p 只有这些键时，本回合没有任何数值/关系/物品/事件变动。
+// 判据取"只放白名单内的键"而非"没有黑名单键"——提取层以后加新字段时默认仍记账，
+// 宁可多记一次也不漏账（省的是确实无变动的那次小模型调用）。
+const NARRATION_ONLY_P_KEYS = new Set(["output", "memory", "choices", "_truncated"]);
+
+function turnHasStateWrites({ ctx, turn, opts }) {
+  if (opts?.duelReport || opts?.settleKind || opts?.giftInfo?.weight) return true;
+  if (turn?.intentPlan || ctx?.intentPlan || turn?.dealResult) return true;
+  if (Array.isArray(turn?.mvuCommands) && turn.mvuCommands.length) return true;
+  const p = turn?.p;
+  if (!p || typeof p !== "object") return true; // 形态不明按有变动处理，照常记账
+  return Object.keys(p).some((key) => !NARRATION_ONLY_P_KEYS.has(key));
+}
+
 export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, trace } = {}) {
   let bookkeepTrace = null;
   let unsubscribeGameReplaced = null;
@@ -18,6 +32,8 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
   try {
     const narration = typeof turn.narrativeText === "string" ? turn.narrativeText : "";
     if (opts.duelReport || ctx.apiCfg?.bookkeepEnabled === false || !narration.trim()) return null;
+    // 纯对话/无变动回合短路：不发起多余的记账小模型调用。
+    if (!turnHasStateWrites({ ctx, turn, opts })) return null;
 
     const state = ctx.getGameState();
     const room = state.room ?? ctx.prompt?.room ?? { name: "", npcs: [] };
