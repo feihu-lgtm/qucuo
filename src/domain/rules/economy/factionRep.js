@@ -59,12 +59,12 @@ export function factionRepDeltas(deltas, varTree = {}, { step = REP_STEP } = {})
 }
 
 // 把一组势力声誉增量（含联动）写进 varTree，返回新的 varTree。
-export function applyFactionRep(varTree, deltas) {
-  const changes = factionRepDeltas(deltas, varTree || {});
+export function applyFactionRep(varTree, deltas, { step = REP_STEP } = {}) {
+  const changes = factionRepDeltas(deltas, varTree || {}, { step });
   const reps = { ...(varTree?.世界?.势力声誉 || {}) };
   for (const [faction, delta] of Object.entries(changes)) {
-    const step = Math.max(-REP_STEP, Math.min(REP_STEP, delta));
-    reps[faction] = clampRep(factionRepOf(varTree, faction) + step);
+    const capped = Math.max(-step, Math.min(step, delta));
+    reps[faction] = clampRep(factionRepOf(varTree, faction) + capped);
   }
   return { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } };
 }

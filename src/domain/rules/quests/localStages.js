@@ -15,7 +15,7 @@ export function isLocalQuestFlag(flag) {
 }
 
 export function getLocalQuestStage(quest, state) {
-  if (!quest.localOnly || !isQuestGateOpen(quest, state.questProgress, state.flags)) return null;
+  if (!quest.localOnly || !isQuestGateOpen(quest, state.questProgress, state.flags, state.varTree)) return null;
   const progress = state.questProgress?.[quest.id];
   if (progress && progress.status !== "active") return null;
   const stage = progress ? getCurrentStage(quest, progress) : quest.stages[0];

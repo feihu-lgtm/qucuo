@@ -6,6 +6,8 @@ export default { quest: {
     giver: "了因师太",
     giverId: "resident_liaoyin",
     localOnly: true,
+    requiresFactionRep: { 峨眉派: 0 },
+    requiresPrestige: -19,
     description: "慈济佛堂抬进来两个昏迷的人：一个是从曲措逃税南下的老牧民，一个是护送流民途中中了冷箭的丐帮三星分舵报信弟子。",
     stages: [
       {

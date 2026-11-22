@@ -83,6 +83,12 @@ describe("faction reputation ripple", () => {
     const { state } = applyPatches({ varTree: tree({}) }, stageRewardPatches(rewards));
     expect(state.varTree.世界.势力声誉).toMatchObject({ 唐门: 6, 青城派: -3 });
   });
+
+  it("quest rewards land their full value, foes lose half the landed gain", () => {
+    const rewards = resolveStageRewards({ onReach: { factionRep: { 峨眉派: 25, 天龙教: -13 } } });
+    const { state } = applyPatches({ varTree: tree({ 峨眉派: 90 }) }, stageRewardPatches(rewards));
+    expect(state.varTree.世界.势力声誉).toMatchObject({ 峨眉派: 100, 天龙教: -13, 五仙教: -5 });
+  });
 });
 
 describe("system-granted reputation", () => {

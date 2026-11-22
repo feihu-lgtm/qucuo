@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getResidentNpcs } from "../../domain/data/npc/residentNpcs.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
+import { questGateReqs } from "../../domain/rules/quests/questEngine.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
 import { settleNpcDuel } from "../npc/settleDuel.js";
 
@@ -31,6 +32,10 @@ describe("峨1·西城施药", () => {
     expect(getLocalQuestStage(quest, setup())?.id).toBe("vigil");
     expect(getLocalQuestStage(quest, { ...setup(), innerRoomName: "听竹轩" })).toBeNull();
     expect(getLocalQuestStage(quest, { ...setup(), room: { name: "锦官城", npcs: [] } })).toBeNull();
+    expect(getLocalQuestStage(quest, { ...setup(), varTree: { 世界: { 势力声誉: { 峨眉派: -1 } } } })).toBeNull();
+    expect(getLocalQuestStage(quest, { ...setup(), varTree: { 世界: { 威望: -20 } } })).toBeNull();
+    expect(getLocalQuestStage(quest, { ...setup(), varTree: { 世界: { 威望: -19 } } })?.id).toBe("vigil");
+    expect(questGateReqs(quest, { 世界: { 威望: -20 } }).map((r) => [r.label, r.ok])).toEqual([["峨眉派声誉 ≥ 0", true], ["威望 ≥ -19", false]]);
   });
 
   it("needs a win at 城西破庙 before the report", () => {
@@ -48,7 +53,7 @@ describe("峨1·西城施药", () => {
     expect(done.char.money).toBe(180);
     expect(done.inv.filter((item) => item.name === "清心避瘴散")).toHaveLength(3);
     expect(done.flags).toContain("flag_emei_tusi_deed_hint");
-    expect(done.varTree.世界.势力声誉).toMatchObject({ 峨眉派: 10, 青城派: 3, 丐帮三星分舵: 3, 天龙教: -8, 锦官城: 5, 五仙教: -5 });
+    expect(done.varTree.世界.势力声誉).toMatchObject({ 峨眉派: 15, 青城派: 3, 丐帮三星分舵: 3, 天龙教: -8, 锦官城: 5, 五仙教: -8 });
   });
 
   it("cripple branch gives prestige instead", () => {

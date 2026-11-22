@@ -4,6 +4,7 @@
 // flags 数组只适合"这件事发生没发生"的布尔判定，两者职责不同不该混用。
 
 import { QUEST_TYPE } from "../../data/quests/questTypes.js";
+import { factionRepOf } from "../economy/factionRep.js";
 
 // 一个任务实例的完整结构（数据由预设/剧情作者手写，不是运行时生成）：
 // {
@@ -88,9 +89,25 @@ export function advanceQuestStages(quest, progress, gameState, now = Date.now())
 //   requiresAnyOf:          string[]           —— 列出的任务里至少一个 completed（OR）
 //   blockedByFlags:         string[]           —— flags 里只要出现其中任意一个就锁死
 //                                                （比如村2走了C分支，村6就再也开不了）
+//   requiresFactionRep:     { [势力]: number }    —— 各势力声誉 ≥ 门槛
+//   requiresPrestige:       number             —— 全局威望（世界.威望）≥ 门槛
 // 不涉及互斥锁（exclusiveGroup）那套逻辑，两者可以同时用在同一个任务上。
-export function isQuestGateOpen(quest, allProgress, flags) {
+// 声誉/威望门槛要传 varTree 才卡；没传（只做展示的调用方）时不卡。
+export function questGateReqs(quest, varTree) {
+  const reqs = Object.entries(quest.requiresFactionRep || {}).map(([faction, min]) => {
+    const have = factionRepOf(varTree, faction);
+    return { key: `rep:${faction}`, label: `${faction}声誉 ≥ ${min}`, have, ok: have >= min };
+  });
+  if (quest.requiresPrestige != null) {
+    const have = Number(varTree?.世界?.威望) || 0;
+    reqs.push({ key: "prestige", label: `威望 ≥ ${quest.requiresPrestige}`, have, ok: have >= quest.requiresPrestige });
+  }
+  return reqs;
+}
+
+export function isQuestGateOpen(quest, allProgress, flags, varTree) {
   const isDone = (qid) => allProgress?.[qid]?.status === "completed";
+  if (varTree && !questGateReqs(quest, varTree).every((r) => r.ok)) return false;
   if (quest.requiresQuestCompleted) {
     const list = Array.isArray(quest.requiresQuestCompleted) ? quest.requiresQuestCompleted : [quest.requiresQuestCompleted];
     if (!list.every(isDone)) return false;

@@ -79,7 +79,7 @@ export function stageRewardPatches(rewards, now = Date.now()) {
     patches.push(add("世界.威望", rewards.reputation));
   }
   if (Object.values(rewards.factionRep || {}).some(Boolean)) {
-    patches.push(merge("varTree", (tree) => applyFactionRep(tree, rewards.factionRep)));
+    patches.push(merge("varTree", (tree) => applyFactionRep(tree, rewards.factionRep, { step: Infinity })));
   }
   if (rewards.flags?.length) {
     patches.push(merge("flags", (f) => [...new Set([...f, ...rewards.flags])]));
