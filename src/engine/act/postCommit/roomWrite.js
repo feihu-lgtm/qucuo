@@ -3,6 +3,23 @@ import { QUCUO_MAP, getMapNode } from "../../../domain/data/map/qucuoMap.js";
 import { patchCombatData } from "../../../domain/rules/npc/roomNpcs.js";
 import { DIR_DXY } from "../../../utils/mudHelpers.js";
 
+// 移动落地的地名标题「— 地名 —」。
+// 它要排在本轮叙事正文之前，所以由 commitRound 在 emitNarrative 之前单独调用，不放在 writeRoom 里。
+// 判定条件与 writeRoom 的两条移动分支一一对应：锁定目的地；或不在固定地图里、AI 报了新地名。
+// 条目类型必须是 "room"：NarrativeLogFeed 靠它把标题单列，LogEntry 靠它居中并加破折号。
+// （e8f6f57 拆模块时这里被误写成 "d.room"，标题因此退化成普通正文、落在叙事卡片末尾。）
+export function roomHeaderName(d) {
+  if (d.isTalk) return null;
+  if (d.lockedDestName) return d.lockedDestName;
+  if (d.p.room && !QUCUO_MAP[d.room.name] && d.p.room.name && d.p.room.name !== d.room.name) return d.p.room.name;
+  return null;
+}
+
+export function emitRoomHeader(d) {
+  const name = roomHeaderName(d);
+  if (name) d.addLog([{ t: "room", text: "" }, { t: "room", text: `    ${name}` }, { t: "room", text: "" }]);
+}
+
 // traceStep 由调用方注入，保持本模块无 infra 依赖（externalInfraImports 只减不增）。
 export function writeRoom(d, { traceStep }) {
   if (!d.isTalk) {
@@ -20,8 +37,7 @@ export function writeRoom(d, { traceStep }) {
         npcs: (cached && cached.npcs) || (d.p.room && d.p.room.npcs) || [],
         items: (cached && cached.items) || (d.p.room && d.p.room.items) || [],
       });
-      d.addLog([{ t: "d.room", text: "" }, { t: "d.room", text: `    ${d.lockedDestName}` }, { t: "d.room", text: "" }]);
-      traceStep(d._trace, "状态写回", "pass", `d.room.name → ${d.lockedDestName}（移动完成）${d.outerDepartRef.current?.fromInner ? `，内层落点自动归为新据点锚点` : ""}`);
+      traceStep(d._trace, "状态写回", "pass", `room.name → ${d.lockedDestName}（移动完成）${d.outerDepartRef.current?.fromInner ? `，内层落点自动归为新据点锚点` : ""}`);
       d.outerDepartRef.current = null;
       if (!d.mapData[d.lockedDestName]) {
         d.setMapData(m => ({ ...m, [d.lockedDestName]: { x: destNode.x, y: destNode.y } }));
@@ -56,7 +72,6 @@ export function writeRoom(d, { traceStep }) {
         const cached = d.roomMapRef.current[d.p.room.name];
         if (cached) d.setRoom(r => ({ ...r, ...d.p.room, items: cached.items, npcs: cached.npcs }));
         else d.setRoom(r => ({ ...r, ...d.p.room }));
-        d.addLog([{ t: "d.room", text: "" }, { t: "d.room", text: `    ${d.p.room.name}` }, { t: "d.room", text: "" }]);
         if (d.pendDirRef.current && !d.mapData[d.p.room.name]) {
           const dirKey = d.pendDirRef.current, [dx, dy] = DIR_DXY[dirKey] || [0, 0];
           const cur = d.mapData[d.room.name] || { x: 0, y: 0 };
