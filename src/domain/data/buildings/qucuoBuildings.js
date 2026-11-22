@@ -95,7 +95,7 @@ export const BUILDINGS_BY_LOCATION = {
       id: "inn_gaibang_xiedian", name: "荒庙草铺", type: BUILDING_TYPE.INN, innPrice: 10,
       desc: "东厢房里铺满晒干的新稻草，窗纸糊着泛黄的旧告示，夜里漏风却胜在干净安全。严九斤说出门在外讲究个落脚舒心，连血刀贼都不敢摸到这儿来。",
     },
-    // ── 广汉·三星派古蜀青铜神树墟（合稿·三星派 2.3；授面坛等拜入接线后再开） ──
+    // ── 广汉·三星派古蜀青铜神树墟（合稿·三星派 2.3） ──
     {
       id: "sanxing_tree_altar", name: "青铜神树台", type: BUILDING_TYPE.TEMPLE, karmaPerPray: 10,
       desc: "三丈青铜神树下的夯土祭台，九枝九鸟在雾里若隐若现。在这里焚香静坐，听铜枝里的风声一层层沉下去，偶有所悟。",
@@ -115,6 +115,14 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "sanxing_stele_pavilion", name: "古蜀碑廊", type: BUILDING_TYPE.LIBRARY,
       desc: "一条刻满古蜀图符的石廊，纵目人面、鱼凫与神鸟层层叠叠。三星派弟子在这里拓碑读谱，外客得了门人点头才能进来看。",
+    },
+    {
+      id: "sanxing_mask_hall", name: "授面坛", type: BUILDING_TYPE.SECT_ENTRY, sect: "三星派",
+      desc: "石案上整齐码着未开眼的青铜面具与刻刀，旁侧燃着一盆艾草炭火。凡愿入墟为徒者，须亲手磨亮自己的面具，再向神树递上三记问心剑。",
+    },
+    {
+      id: "sanxing_vault_chest", name: "青铜地窖库", type: BUILDING_TYPE.CHEST, house: "三星派青铜地窖库", emptyStock: true,
+      desc: "嵌在石壁里的厚重青铜大箱，锁孔做成神鸟衔环的模样，防潮防蛀。三星派门人可将多余的剑器、药草与残片暂存于此，等需要时再来取用。",
     },
     {
       id: "sect_gaibang_entry", name: "三星分舵·聚义堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "丐帮三星分舵",
@@ -214,7 +222,7 @@ export const BUILDINGS_BY_LOCATION = {
     },
   ],
 
-  // ── 喇嘛庙（4 种，宗教重地） ──
+  // ── 喇嘛庙（6 种，宗教重地；护法禅院、山门施药棚照合稿新增） ──
   喇嘛庙: [
     {
       id: "restaurant_lama", name: "素斋", type: BUILDING_TYPE.RESTAURANT, menuKey: "素斋",
@@ -232,6 +240,14 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "medicine_lama", name: "达磨药堂", type: BUILDING_TYPE.MEDICINE, shopKey: "达磨药堂",
       desc: "喇嘛庙西厢的药堂，僧医兼职，以藏药为主，跌打外伤高原草药均有备货。",
+    },
+    {
+      id: "wuguan_lamamiao_hufa", name: "护法禅院", type: BUILDING_TYPE.WUGUAN, skillSet: "喇嘛庙",
+      desc: "大殿西侧一座用乱石围出的露天练功坪，立着十二根被掌风拍出深印的柏木桩。寺中不收俗家弟子，但肯指点有缘护法修习雪域禅武。",
+    },
+    {
+      id: "hospital_lamamiao_yizhen", name: "山门施药棚", type: BUILDING_TYPE.HOSPITAL, healPerLiang: 3,
+      desc: "搭在山门外避风处的粗布药棚，专供过路冻伤者与穷苦牧民即时诊治调息，不误时辰。凡获喇嘛庙善缘者，可于此直接疗伤回气。",
     },
   ],
 
@@ -477,6 +493,14 @@ export const BUILDINGS_BY_LOCATION = {
     {
       id: "chest_shuwang", name: "蜀王庄·库房", type: BUILDING_TYPE.CHEST, house: "蜀王庄",
       desc: "后院书房那只紫檀小匣，虽空却精致。匣底也压着一份食材家底。",
+    },
+    {
+      id: "sect_entry_guan", name: "都事府值房", type: BUILDING_TYPE.SECT_ENTRY, sect: "锦官城",
+      desc: "都事府前院值房，案上一摞待批的卷宗和一盏没喝完的菊花茶。想投效当差的都在这儿回话——柳青鸢的规矩是公事公办，先办事，再谈名分。",
+    },
+    {
+      id: "sectshop_guan", name: "都事府兵备库", type: BUILDING_TYPE.SECTSHOP, shopKey: "锦官兵备",
+      desc: "城东营房后墙一溜库房，制式腰刀、皂隶衣、罚没来路的物件码得整整齐齐，班头侯敢按着登记册发卖——官仓的货，比市集便宜，但要讲资格。",
     },
   ],
 

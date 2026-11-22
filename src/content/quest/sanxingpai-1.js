@@ -1,4 +1,5 @@
-// 三星派任务线（合稿·三星派第 4 节）。主线 星1~星3 与支线 星支1~3；星4 旧客、星5 金乌破妄是终局线，等终局接线再做。
+// 三星派任务线（合稿·三星派第 4 节）。主线 星1~星5 与支线 星支1~3；星4 旧客、星5 金乌破妄是终局拉拢线。
+// 星5 纵目亲临合稿门槛 140，声誉上限 100，收到 100；合稿「进入终局拉拢阶段」main 上还没有阶段旗，暂不卡。
 // 声誉奖励按合稿原值写在收尾阶段；联动扣分由 applyFactionRep 统一结算，这里不手写。
 const SX = "三星派";
 const GB = "丐帮三星分舵";
@@ -328,5 +329,143 @@ export default { quest: {
       },
     ],
     rewardText: "神树底座的暗门，只认那面太阳神鸟。",
+  },
+
+  sanxingpai_4_sanshinianjiushi: {
+    id: "sanxingpai_4_sanshinianjiushi",
+    type: "QT_TALK",
+    title: "星4·三十年前的旧客",
+    giver: "纵目者",
+    giverId: "resident_zongmuzhe",
+    localOnly: true,
+    requiresQuestCompleted: "sanxingpai_3_tongyinxuanji",
+    requiresAnyOf: ["xueshan_4_yadi_zhenxiang", "yudingtusi_3_jiuqi_canyin"],
+    requiresFactionRep: { [SX]: 65 },
+    description: "你在雪山崖底或土司府库房里摸到的那桩三十年旧事，传进了古墟。纵目者第一次睁开眼：「三十年前，也有一个外人站在你这个位置。」",
+    stages: [
+      {
+        id: "summon",
+        requireLocation: at("青铜神树下"),
+        playerHint: "在青铜神树下听纵目者说三十年前的旧客。",
+        description: "纵目者没有下树，声音像从青铜里传出来：「碑廊最深处有一只封了三十年的铜盒。姜泠带你去，打开它。」",
+        completionFlag: "quest_sx4_summon",
+      },
+      {
+        id: "box",
+        giver: null,
+        requireLocation: at("古蜀石刻廊"),
+        playerHint: "去古蜀石刻廊最深处，打开那只封了三十年的青铜小盒。",
+        description: "盒里没有剑谱，只有一枚裂了一角的藏地老白玉佩和一张泛黄的拓片。拓片上是老土司桑杰的亲笔：他当年万里奔波，把流落雪山古道的神鸟残片送还古墟，只求「山外无欺、草场无争」。",
+        completionFlag: "quest_sx4_box",
+      },
+      {
+        id: "quarrel",
+        giver: null,
+        requireLocation: at("古蜀石刻廊"),
+        playerHint: "樊枯闻讯赶来，要古墟封墟断念。劝服他，或不理他、只凭剑心去说服纵目者。",
+        description: "樊枯一锤砸在碑脚：「旧客死了，他儿子烂了，古墟凭什么再开门？」纵目者的声音从廊外传来：「明知旧友之子借古墟的泥鱼肉乡里，闭目不见，是守道，还是同谋？」",
+        completionFlag: ["quest_sx4_persuade", "quest_sx4_persuade_forge", "quest_sx4_alone"],
+        choices: [
+          { flag: "quest_sx4_persuade", label: "以匠心论道，劝服樊枯", resolve: "none", requiresFavor: { 樊枯: 30 },
+            narration: "「铜器被人拿去造假，污的是祖宗的名声。不讨回来，才叫辱没先祖。」樊枯攥着锤子半天没说话，最后把锤子往腰后一插：「……守墟的人，跟你走。」" },
+          { flag: "quest_sx4_persuade_forge", label: "提赤炉补枝的旧情，劝服樊枯", resolve: "none", requiresQuestCompleted: "sanxingpai_side_2_chiluhuo",
+            narration: "你指了指神树上那根你帮他补过的铜枝。樊枯盯着它看了很久，骂了一句「拉风箱笨手笨脚」，转身去收拾他的铜锤：「守墟的人，跟你走。」" },
+          { flag: "quest_sx4_alone", label: "不理樊枯，只凭剑心说服纵目者", resolve: "none",
+            narration: "你没再看樊枯一眼，朝廊外的神树递了一记问心剑。剑风过处，纵目者轻轻「嗯」了一声。樊枯啐了一口，回赤炉窟去了。" },
+        ],
+        onReach: {
+          byFlag: {
+            quest_sx4_persuade: { flags: ["sanxing_fanku_persuaded"], favorability: { 樊枯: 10 } },
+            quest_sx4_persuade_forge: { flags: ["sanxing_fanku_persuaded"], favorability: { 樊枯: 10 } },
+            quest_sx4_alone: { favorability: { 樊枯: -10 } },
+          },
+        },
+      },
+      {
+        id: "mirror",
+        giver: null,
+        requireLocation: at("金乌暗室·归墟秘井"),
+        playerHint: "持太阳神鸟拨开神树底座的暗门，下归墟秘井受「纵目问心」：以己身武学击败自己的执念镜像。",
+        description: "井底那块圆台亮了起来。水面里站起一个和你一模一样的人，出的是你最熟的那一招，比你快半分。",
+        completionFlag: ["quest_sx4_mirror"],
+        choices: [
+          { flag: "quest_sx4_mirror", label: "直面执念镜像", resolve: "combat", combatNpc: { name: "纵目问心·执念镜像", levelCap: 4 } },
+        ],
+      },
+      {
+        id: "verdict",
+        requireLocation: at("青铜神树下"),
+        playerHint: "带着井底金叶回青铜神树下，见纵目者。",
+        description: "纵目者收下你带出来的金叶，沉声道：「古墟闭门三十年，今日为你开一道缝。」他把那枚老白玉佩还到你手里：「桑杰朵杰认得这块玉。」",
+        completionFlag: "quest_sx4_done",
+        onReach: {
+          money: 400,
+          items: catalog("老土司藏玉誓佩"),
+          factionRep: { [SX]: 30 },
+          favorability: { 姜泠: 10 },
+        },
+      },
+    ],
+    rewardText: "金乌破妄剑的修习资格为你开了。老土司藏玉誓佩，是终局里震慑桑杰朵杰的铁证。",
+  },
+
+  sanxingpai_5_jinwupowang: {
+    id: "sanxingpai_5_jinwupowang",
+    type: "QT_TALK",
+    title: "星5·金乌破妄",
+    giver: "纵目者",
+    giverId: "resident_zongmuzhe",
+    localOnly: true,
+    requiresQuestCompleted: "sanxingpai_4_sanshinianjiushi",
+    requiresFactionRep: { [SX]: 80 },
+    description: "曲措乡大战在即。你带着土司伪契和三十年前的旧佩重返神树台，请这座闭门千年的古墟出一次手。",
+    stages: [
+      {
+        id: "plea",
+        requireLocation: at("青铜神树下"),
+        playerHint: "在青铜神树下向纵目者递上曲措乡的战书。",
+        description: "你把战书、伪契和老白玉佩一一摆在神树下的青石上。纵目者看了很久：「三星派不结江湖之盟。要我们出墟，先让我看你的剑。」",
+        completionFlag: "quest_sx5_plea",
+      },
+      {
+        id: "spar",
+        requireLocation: at("青铜神树下"),
+        playerHint: "与纵目者在神树下过招三合，不问胜负，只看剑意是否清明。",
+        description: "三合过后，你的剑停在半空，纵目者的剑也停在半空。九只铜鸟同时振了一下翅。「剑里没有私心。够了。」",
+        completionFlag: "quest_sx5_spar",
+      },
+      {
+        id: "pact",
+        requireLocation: at("青铜神树下"),
+        playerHint: "定下三星派入局曲措终局的方式：请下金乌符、三面压阵；或请纵目者破戒出墟。",
+        description: "纵目者站在神树最高的一枝上，望着曲措乡的方向：「怎么出墟，你说。」",
+        completionFlag: ["quest_sx5_seal", "quest_sx5_descend"],
+        choices: [
+          { flag: "quest_sx5_seal", label: "请下金乌符·三面压阵", resolve: "none",
+            narration: "纵目者把一片金箔按进你掌心：「我不下树。甲、乙、丙替我走一趟。」三名青铜面人摘下剑，第一次跨出了界碑林。" },
+          { flag: "quest_sx5_descend", label: "破戒出墟·请纵目者亲临", resolve: "none",
+            requiresFactionRep: { [SX]: 100 }, requiresFlag: ["sanxing_fanku_persuaded"],
+            narration: "纵目者从神树上一步步走下来，三十年来第一次踩到地面。樊枯在树下替他系好麻袍：「守墟的人，都跟你走。」" },
+        ],
+        onReach: {
+          money: 600,
+          factionRep: { [SX]: 35, 鱼定土司府: -20 },
+          flags: ["endgame_ally_sanxing"],
+          byFlag: {
+            quest_sx5_seal: { items: catalog("金乌破妄符"), flags: ["endgame_buff_sanxing_mask_array"] },
+            quest_sx5_descend: { flags: ["flag_sanxing_zongmu_ally", "endgame_ally_sanxing_full"] },
+          },
+        },
+      },
+      {
+        id: "farewell",
+        giver: null,
+        requireLocation: at("鸭子河畔"),
+        playerHint: "出墟前去鸭子河畔，姜泠在界碑林送你。",
+        description: "姜泠把一只油布信筒交给你：「古墟的动向，我托丐帮的鹰捎去曲措。你走前头，我们跟着。」",
+        completionFlag: "quest_sx5_farewell",
+      },
+    ],
+    rewardText: "终局战三星派以「七客」入局：请下金乌符，则青铜面人甲乙丙三面剑阵硬破桑杰朵杰的绝杀连招，古蜀验印镜当众击溃土司私兵斗志；请动纵目者亲临，则他以一记金乌破妄剑正面压制桑杰朵杰，抛出老土司藏玉誓佩击溃其心防，解锁「古蜀照真·无争尾声」。",
   },
 } };

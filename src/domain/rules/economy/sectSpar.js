@@ -48,6 +48,14 @@ const SECT_SPARS = [
     dailyCap: 39,
   },
   {
+    faction: "锦官城",
+    npcs: [{ id: "resident_hougan", name: "侯敢" }, { id: "resident_liuqingyuan", name: "柳青鸢" }],
+    flag: "guan_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
+  {
     faction: "三星派",
     npcs: [
       { id: "resident_qingtong_jia", name: "青铜面人·甲" },
@@ -69,6 +77,15 @@ const SECT_SPARS = [
     first: 8,
     daily: 3,
     dailyCap: 40,
+  },
+  // 唐门：千机演武坪与唐家子弟切磋，涨唐门声誉（合稿「声誉·加分行为」与世家玩法）。
+  {
+    faction: "唐门",
+    npcs: [{ id: "resident_tangtingzhu", name: "唐听竹" }, { id: "resident_tangzhongheng", name: "唐仲衡" }],
+    flag: "tangmen_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
   },
   {
     faction: "百花门",

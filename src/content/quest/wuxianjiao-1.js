@@ -129,12 +129,19 @@ export default { quest: {
         requireLocation: { district: "雾隐寨", inner: "五仙灵坛" },
         playerHint: "回五仙灵坛向龙汐月回禀查案所得。",
         description: "毒典残页与暗账摊在灵坛上，麻九娘柱影里的冷笑头一回收了声。龙汐月指尖敲着银鞭：「外路的针，内行的手——这事还没完，但头一桩功是你的。」",
-        completionFlag: "quest_wx2_report",
+        completionFlag: ["quest_wx2_report", "quest_wx2_mjn"],
+        choices: [
+          { flag: "quest_wx2_report", label: "如实禀报龙汐月", resolve: "none" },
+          { flag: "quest_wx2_mjn", label: "暗中把梅花断针交给麻九娘", resolve: "none", narration: "你在柱影里把断针塞进麻九娘掌心。她五指一合，笑得像条吐信的蛇：「识时务的外路人，往后有你的好处。」龙汐月远远望了你一眼，没说话。" },
+        ],
         onReach: {
           money: 120,
-          items: [{ name: "蛇胆解毒丹", fromCatalog: true }],
+          items: [{ name: "蛇胆解毒丹", fromCatalog: true }, { name: "蛇胆解毒丹", fromCatalog: true }],
           factionRep: { 五仙教: 15 },
-          favorability: { "龙汐月": 15 },
+          byFlag: {
+            quest_wx2_report: { favorability: { "龙汐月": 15 } },
+            quest_wx2_mjn: { favorability: { "麻九娘": 15, "龙汐月": -10 } },
+          },
         },
       },
     ],
@@ -179,12 +186,26 @@ export default { quest: {
         requireLocation: { district: "天都镇", inner: "百花楼" },
         playerHint: "拦下冲进百花楼搅局的赤蜈毒使。",
         description: "桑七领着两名毒使撞上楼来，袖中吹箭直取兰姐：「教主有令——五仙的事，轮不到外人嚼舌！」",
-        completionFlag: "quest_wx3_fight",
+        completionFlag: ["quest_wx3_fight", "quest_wx3_betray"],
         choices: [
           { flag: "quest_wx3_fight", label: "出手护下兰姐", resolve: "combat", combatNpc: { name: "赤蜈毒使", levelCap: 3 } },
+          { flag: "quest_wx3_betray", label: "趁乱暗算兰姐夺手札", resolve: "combat", requiresFlag: ["quest_wx2_mjn"], combatNpc: { name: "兰姐", levelCap: 4 } },
         ],
         onReach: {
-          factionRep: { 百花门: 8 },
+          byFlag: {
+            quest_wx3_fight: {
+              items: [{ name: "旧金蚕壳", fromCatalog: true }, { name: "百花净毒露", fromCatalog: true }, { name: "百花净毒露", fromCatalog: true }],
+              flags: ["wuxian_baihua_reconcile"],
+              factionRep: { 五仙教: 20, 百花门: 20, 峨眉派: -3 },
+              favorability: { "龙汐月": 20, "麻九娘": -10 },
+            },
+            quest_wx3_betray: {
+              flags: ["wuxian_baihua_feud"],
+              factionRep: { 五仙教: 25, 百花门: -50 },
+              reputation: -15,
+              favorability: { "麻九娘": 15, "龙汐月": -15 },
+            },
+          },
         },
       },
       {
@@ -192,13 +213,10 @@ export default { quest: {
         giver: null,
         requireLocation: { district: "雾隐寨", inner: "五仙灵坛" },
         playerHint: "回五仙灵坛，把兰姐的话与桑七搅局一并带回。",
-        description: "听完回禀，龙汐月的指节捏得发白：「桑七敢坏我的令——看来是有人怕了这桩和解。」她解下银鞭轻点坛心：「传出去：五仙与百花，从此井水不犯河水。」",
+        description: "灵坛灯火下，龙汐月听你说完百花楼那一夜，指节捏得发白，许久才道：「这一桩，我记下了。」",
         completionFlag: "quest_wx3_report",
         onReach: {
-          money: 150,
-          flags: ["wuxian_baihua_reconcile"],
-          factionRep: { 五仙教: 20, 百花门: 20, 峨眉派: -3 },
-          favorability: { "龙汐月": 20, "麻九娘": -10 },
+          money: 180,
         },
       },
     ],
@@ -235,7 +253,7 @@ export default { quest: {
         completionFlag: ["quest_wx4_keep", "quest_wx4_poison"],
         choices: [
           { flag: "quest_wx4_keep", label: "截账毁毒·人赃并获", resolve: "combat", combatNpc: { name: "赤蜈押货执事", levelCap: 4 } },
-          { flag: "quest_wx4_poison", label: "纵毒放行·吞下好处", resolve: "none", narration: "你收了赤蜈堂递来的血令与一锭黑银，亲眼看着毒车出了寨门。这笔账，记在谁头上，天知地知。" },
+          { flag: "quest_wx4_poison", label: "纵毒放行·吞下好处", resolve: "none", requiresFlag: ["quest_wx2_mjn"], narration: "你收了赤蜈堂递来的血令与一锭黑银，亲眼看着毒车出了寨门。这笔账，记在谁头上，天知地知。" },
         ],
         onReach: {
           byFlag: {
@@ -249,7 +267,8 @@ export default { quest: {
             quest_wx4_poison: {
               money: 200,
               items: [{ name: "赤蜈血令", fromCatalog: true }],
-              factionRep: { 百花门: -15, 玉泉寨: -8, 鱼定土司府: 10 },
+              flags: ["wuxian_poison_to_tusi"],
+              factionRep: { 五仙教: 20, 百花门: -15, 玉泉寨: -8, 鱼定土司府: 10 },
               reputation: -20,
               favorability: { "麻九娘": 15, "乌婆婆": -10 },
             },
@@ -264,7 +283,7 @@ export default { quest: {
         description: "灵坛灯火下，龙汐月听完你的交代，久久不语。",
         completionFlag: "quest_wx4_report",
         onReach: {
-          money: 200,
+          money: 240,
           favorability: { "龙汐月": 10 },
         },
       },
@@ -290,23 +309,32 @@ export default { quest: {
         requireLocation: { district: "雾隐寨", inner: "五仙祖灵殿" },
         playerHint: "进五仙祖灵殿，见证定坛大典。",
         description: "祖灵殿百蛊齐鸣，五根黑木柱下的银铃无风自响。龙汐月捧出圣盟银符，麻九娘的赤蜈血令也在暗处发烫——你要捧哪一边？",
-        completionFlag: ["quest_wx5_crown", "quest_wx5_centipede"],
+        completionFlag: ["quest_wx5_crown", "quest_wx5_crown_full", "quest_wx5_centipede"],
         choices: [
-          { flag: "quest_wx5_crown", label: "拥银冠定圣盟", resolve: "none", narration: "你替龙汐月捧上圣盟银符，朗声念出五仙与百花休兵的盟约。祖灵殿银铃齐响，蛊雾散开一线天光。" },
-          { flag: "quest_wx5_centipede", label: "挺赤蜈夺毒冠", resolve: "none", narration: "你反手将赤蜈血令按进熔炉——七十二种毒材里熔出一顶赤蜈毒王冠。麻九娘在阴影里第一次笑了。" },
+          { flag: "quest_wx5_crown", label: "当众甩出暗账·拥银冠定圣盟", resolve: "combat", requiresFlag: ["quest_wx4_keep"], combatNpc: { name: "麻九娘", levelCap: 4 } },
+          { flag: "quest_wx5_crown_full", label: "当众甩出暗账·百蛊倾巢共讨土司", resolve: "combat", requiresFlag: ["quest_wx4_keep"], requiresFactionRep: { 五仙教: 100 }, combatNpc: { name: "麻九娘", levelCap: 4 } },
+          { flag: "quest_wx5_centipede", label: "随麻九娘早祭发难·挺赤蜈夺毒冠", resolve: "combat", requiresFlag: ["quest_wx4_poison"], combatNpc: { name: "龙汐月", levelCap: 4 } },
         ],
         onReach: {
           byFlag: {
             quest_wx5_crown: {
-              flags: ["wuxian_sanctum", "wuxian_holy_oath"],
+              flags: ["wuxian_sanctum", "wuxian_holy_oath", "endgame_ally_wuxian"],
               items: [{ name: "五仙圣盟银符", fromCatalog: true }, { name: "金蚕护心蛊", fromCatalog: true }],
               factionRep: { 五仙教: 35, 百花门: 25, 鱼定土司府: -15, 天龙教: -10 },
               reputation: 15,
+              favorability: { "龙汐月": 25 },
+            },
+            quest_wx5_crown_full: {
+              flags: ["wuxian_sanctum", "wuxian_holy_oath", "endgame_ally_wuxian", "endgame_ally_wuxian_full"],
+              items: [{ name: "五仙圣盟银符", fromCatalog: true }, { name: "金蚕护心蛊", fromCatalog: true }],
+              factionRep: { 五仙教: 35, 百花门: 25, 鱼定土司府: -15, 天龙教: -10 },
+              reputation: 15,
+              favorability: { "龙汐月": 25 },
             },
             quest_wx5_centipede: {
-              flags: ["wuxian_sanctum"],
+              flags: ["wuxian_sanctum", "wuxian_chiwu_crowned", "endgame_wuxian_poison_tusi"],
               items: [{ name: "赤蜈毒王冠", fromCatalog: true }],
-              factionRep: { 百花门: -40, 峨眉派: -20, 青城派: -10 },
+              factionRep: { 五仙教: 35, 百花门: -40, 峨眉派: -20, 青城派: -10 },
               reputation: -30,
               favorability: { "麻九娘": 20 },
             },
@@ -321,8 +349,7 @@ export default { quest: {
         description: "沉香阁里檀香沉郁。定坛已毕，无论你捧的是银冠还是蜈冠，这扇只对教主心腹开的门，为你开了。",
         completionFlag: "quest_wx5_end",
         onReach: {
-          money: 400,
-          favorability: { "龙汐月": 25 },
+          money: 500,
         },
       },
     ],
