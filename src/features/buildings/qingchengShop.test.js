@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getBuildingsForLocation } from "../../domain/data/buildings/qucuoBuildings.js";
 import { SKILL_CATALOG } from "../../domain/data/kungfu/qucuoKungfu.js";
-import { checkQingchengEntry } from "../../domain/rules/character/qingchengEntry.js";
+import { FACTION_ENTRIES, checkFactionEntry } from "../../domain/rules/character/factionEntry.js";
 import { skillUnlockStatus } from "../../domain/rules/economy/skillUnlock.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { joinSect } from "../sect/logic.js";
@@ -69,11 +69,11 @@ describe("拜入青城派", () => {
   const trial = ["qingcheng_spar_first"];
 
   it("needs rep 40, prestige ≥ 0, the 剑坪 trial and no other sect", () => {
-    expect(checkQingchengEntry({ varTree: rep(40), flags: trial }).eligible).toBe(true);
-    expect(checkQingchengEntry({ varTree: rep(39), flags: trial }).missing).toEqual(["rep"]);
-    expect(checkQingchengEntry({ varTree: rep(40), flags: [] }).missing).toEqual(["trial"]);
-    expect(checkQingchengEntry({ varTree: rep(40, { 威望: -1 }), flags: trial }).missing).toEqual(["prestige"]);
-    expect(checkQingchengEntry({ varTree: rep(40), flags: [...trial, "雪山派弟子"] }).missing).toEqual(["single"]);
+    expect(checkFactionEntry(FACTION_ENTRIES.青城派, { varTree: rep(40), flags: trial }).eligible).toBe(true);
+    expect(checkFactionEntry(FACTION_ENTRIES.青城派, { varTree: rep(39), flags: trial }).missing).toEqual(["rep"]);
+    expect(checkFactionEntry(FACTION_ENTRIES.青城派, { varTree: rep(40), flags: [] }).missing).toEqual(["trial"]);
+    expect(checkFactionEntry(FACTION_ENTRIES.青城派, { varTree: rep(40, { 威望: -1 }), flags: trial }).missing).toEqual(["prestige"]);
+    expect(checkFactionEntry(FACTION_ENTRIES.青城派, { varTree: rep(40), flags: [...trial, "雪山派弟子"] }).missing).toEqual(["single"]);
   });
 
   it("joins at 青城山山门: +20 rep, token and gifts, member flag", () => {

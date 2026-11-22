@@ -31,14 +31,15 @@ export function factionShopCoef(varTree, district) {
 
 // 声誉联动：帮了一家（声誉实涨），它的死对头（FACTIONS.foes）各扣实涨量的一半（向上取整）。
 // 只在涨时联动，掉声誉不连带；deltas 里已写明的势力按写明的算，不再叠加联动。
-// 实涨按 varTree 里的当前声誉算（单次限幅 ±10、上限 100），到顶了对头也不扣。
+// 实涨按 varTree 里的当前声誉算（默认单次限幅 ±10、上限 100），到顶了对头也不扣。
+// 系统直接结算、不经 AI 限幅的来源（拜入 +20 等）传 { step: Infinity }，按真实涨幅算。
 // 返回 { 势力: 增量 }，供任务奖励、切磋等各处统一落盘。
 const REP_MIN = -100;
 const REP_MAX = 100;
 const REP_STEP = 10;
 const clampRep = (value) => Math.max(REP_MIN, Math.min(REP_MAX, value));
 
-export function factionRepDeltas(deltas, varTree = {}) {
+export function factionRepDeltas(deltas, varTree = {}, { step = REP_STEP } = {}) {
   const out = {};
   for (const [faction, delta] of Object.entries(deltas || {})) {
     if (delta) out[faction] = (out[faction] || 0) + delta;
@@ -46,7 +47,7 @@ export function factionRepDeltas(deltas, varTree = {}) {
   for (const [faction, delta] of Object.entries(deltas || {})) {
     if (!(delta > 0)) continue;
     const before = factionRepOf(varTree, faction);
-    const gain = clampRep(before + Math.min(delta, REP_STEP)) - before;
+    const gain = clampRep(before + Math.min(delta, step)) - before;
     if (!(gain > 0)) continue;
     const foes = FACTIONS.find((entry) => entry.name === faction)?.foes || [];
     for (const foe of foes) {
@@ -67,6 +68,22 @@ export function applyFactionRep(varTree, deltas) {
   }
   return { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } };
 }
+
+// 系统直接结算的声誉（拜入、日常善举），按当前 varTree 实涨量连带对头扣分，不走 AI 单回合 ±10 限幅。
+export function grantFactionRep(varTree, deltas) {
+  const changes = factionRepDeltas(deltas, varTree || {}, { step: Infinity });
+  const reps = { ...(varTree?.世界?.势力声誉 || {}) };
+  const applied = {};
+  for (const [faction, delta] of Object.entries(changes)) {
+    const before = factionRepOf(varTree, faction);
+    reps[faction] = clampRep(before + delta);
+    if (reps[faction] !== before) applied[faction] = reps[faction] - before;
+  }
+  return { applied, varTree: { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } } };
+}
+
+export const formatRepChanges = (applied) =>
+  Object.entries(applied).map(([faction, delta]) => `${faction}声誉 ${delta > 0 ? "+" : ""}${delta}`).join("，");
 
 // 已结识（声誉非零）的势力，按总纲表的顺序
 export function listFactionRep(varTree) {

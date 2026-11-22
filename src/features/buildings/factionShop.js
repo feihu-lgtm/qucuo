@@ -3,7 +3,7 @@ import { buildShopInventory } from "../../domain/data/shops/qucuoShops.js";
 import { discountedBuyPrice } from "../../domain/rules/economy/equipment.js";
 import { factionRepCoef, factionRepOf } from "../../domain/rules/economy/factionRep.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
-import { SECT_MEMBER_FLAGS } from "../../domain/rules/character/qingchengEntry.js";
+import { SECT_MEMBER_FLAGS } from "../../domain/rules/character/factionEntry.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { selectEffectiveStats } from "../stats/logic.js";
 
@@ -27,6 +27,14 @@ const FACTION_SHOPS = {
     banned: "持堂道人横剑拦在阁前：「青城山门不做你的生意。」",
     hostileClosed: {},
     hostileQualities: ["白", "绿"],
+  },
+  峨眉坊: {
+    faction: "峨眉派", idPrefix: "emei_purchase",
+    outlets: { sectshop_emei: "vault" },
+    nowhere: "须到锦官城峨眉剑庐后院的锻簪坊才能买峨眉坊的货。",
+    banned: "簪娘冷言：「峨眉的铁，不沾脏手。」",
+    hostileClosed: {},
+    hostileQualities: ["绿"],
   },
   // 五仙教两家铺面共用五仙教声誉：百蛊房平常有门有脸，秘珍坊要声誉 ≥40 才开门（合稿 6.2）；
   // 交恶未至死敌（-59~-20）照 hostileQualities 摆白绿并加价，冷淡（-19~-1）只摆 coldItems 两味清水药。

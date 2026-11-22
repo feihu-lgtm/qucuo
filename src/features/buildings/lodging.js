@@ -2,6 +2,7 @@
 // 从 logic.js 按动作分组拆出。
 import { effectiveMaxHp } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { invalidAmountResult, noOpResult, isPositiveAmount } from "./helpers.js";
+import { clinicCare } from "./factionClinic.js";
 
 export function restAtInn(state, { cost, roomType, buildingName }) {
   if (!isPositiveAmount(cost)) return invalidAmountResult();
@@ -28,8 +29,11 @@ export function hospitalQuote(state, healPerLiang = 3) {
   return { maxHp, missing, cost: Math.ceil(missing / healPerLiang) };
 }
 
-export function healAtHospital(state, { cost, healAmt, buildingName }) {
-  if (!isPositiveAmount(cost) || !isPositiveAmount(healAmt)) return invalidAmountResult();
+export function healAtHospital(state, { cost: quoted, healAmt, buildingName, buildingId }) {
+  const care = clinicCare(state.varTree, buildingId);
+  if (care === "refuse") return noOpResult();
+  const cost = care === "free" ? 0 : quoted;
+  if ((care !== "free" && !isPositiveAmount(cost)) || !isPositiveAmount(healAmt)) return invalidAmountResult();
   if ((state.char.money || 0) < cost) return noOpResult();
 
   return {
@@ -41,6 +45,6 @@ export function healAtHospital(state, { cost, healAmt, buildingName }) {
       },
     },
     logs: [],
-    settle: `在${buildingName}求医问药，花费${cost}两，恢复了${healAmt}点气血`,
+    settle: `在${buildingName}求医问药，${cost ? `花费${cost}两` : "免收诊金"}，恢复了${healAmt}点气血`,
   };
 }

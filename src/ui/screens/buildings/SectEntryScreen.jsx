@@ -1,15 +1,16 @@
 import React from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
 import { SECT_ENTRY, checkSectEntry } from "../../../domain/rules/character/sectEntry.js";
-import QingchengEntryScreen from "./QingchengEntryScreen.jsx";
-import { SECT_MEMBER_FLAGS } from "../../../domain/rules/character/qingchengEntry.js";
+import FactionEntryScreen from "./FactionEntryScreen.jsx";
+import { FACTION_ENTRIES, SECT_MEMBER_FLAGS } from "../../../domain/rules/character/factionEntry.js";
 
 // 拜师堂——雪山派入门。挂在内堂（何雨谢坐镇处）。
 // 结算全在系统这边做完（扣束脩、发令牌、写身份 flag），AI 只负责把这件既成事实
 // 写成一段像样的叙事，与送礼/拜师学艺同一套"结算+act陈述"范式。
 export default function SectEntryScreen({ building, char, narratorAffection, flags, varTree, zoneTheme, onClose, inline, onJoinSect }) {
-  if (building?.sect === "青城派") {
-    return <QingchengEntryScreen building={building} flags={flags} varTree={varTree} inline
+  const entry = FACTION_ENTRIES[building?.sect];
+  if (entry) {
+    return <FactionEntryScreen entry={entry} building={building} char={char} flags={flags} varTree={varTree} inline
       zoneTheme={zoneTheme} onClose={onClose} onJoinSect={onJoinSect} />;
   }
   const status = checkSectEntry({

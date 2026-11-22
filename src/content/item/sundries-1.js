@@ -273,6 +273,17 @@ const items = {
 "听松玄铁剑": { name:"听松玄铁剑", category:"weapon", quality:"紫", tags:["武器","剑","青城"], effect:{ ignoreDefenseRatio: 0.25 }, sixDim:{根骨:1,身法:1}, desc:"仿松鹤道长佩剑打造的玄铁重锋剑，剑脊厚实，格挡反击时不易震手。" },
 "三清鹤羽道衣": { name:"三清鹤羽道衣", category:"armor", quality:"紫", defMul: 1.3, tags:["护甲","道袍","防毒","青城"], effect:{ ignoreDefensePartialImmune: 0.3 }, sixDim:{根骨:2}, desc:"门中执事长老所着法衣，衣襟暗绣八卦镇水纹，护身之外兼能抗毒。" },
 "离堆镇水玉佩": { name:"离堆镇水玉佩", category:"accessory", quality:"橙", tags:["饰品","玉","镇派","青城"], effect:{ energyRestore: 2, onCounterSuccessDamageRatio: 0.3 }, sixDim:{悟性:1,根骨:1}, desc:"以离堆江心青玉雕琢的镇山珍宝，佩戴后防御反击威力大增、每回合微幅滋养内息。三清玄阁只此一件，只授本门心腹。" },
+"素铁峨眉刺": { name:"素铁峨眉刺", category:"weapon", quality:"绿", tags:["武器","峨眉刺","峨眉"], sixDim:{身法:1}, desc:"簪娘打给入门弟子防身的素铁双刺，尖端绝不开毒槽，却磨得寒光凛冽。" },
+"白蜡护法枪": { name:"白蜡护法枪", category:"weapon", quality:"绿", tags:["武器","枪","峨眉"], sixDim:{根骨:1}, desc:"铁莲和尚亲挑的韧木长枪，抖起来嗡嗡作响，最适合压住马步练拦拿扎。" },
+"青布道袍": { name:"青布道袍", category:"armor", quality:"绿", tags:["护具","道袍","峨眉"], sixDim:{身法:1}, desc:"剑庐常备的浆洗布袍，袖口窄利，练拳挥剑都不挂风。" },
+"清心避瘴散": { name:"清心避瘴散", category:"misc", quality:"绿", tags:["药散","解毒","峨眉"], consumable:{ dispel: true }, desc:"了因师太配的苦草药散，嚼着涩口，专克山岚毒雾与初起瘴气。" },
+"净莲木鱼坠": { name:"净莲木鱼坠", category:"accessory", quality:"蓝", tags:["饰品","佛门","峨眉"], effect:{ energyRestore: 1 }, sixDim:{悟性:1}, desc:"老檀木雕成的小木鱼，贴身佩带可定心神，少受迷魂香与噪音干扰。" },
+"流云剑穗袍": { name:"流云剑穗袍", category:"armor", quality:"蓝", defMul: 1.2, tags:["护具","剑服","峨眉"], sixDim:{身法:1}, desc:"锦官城老绣娘替剑庐缝的细棉剑服，内衬双层细麻，挡得住寻常暗器。" },
+"金顶净心露": { name:"金顶净心露", category:"misc", quality:"紫", tags:["药露","解毒","峨眉"], consumable:{ dispelAll: true, hpRestore: 0.2 }, desc:"慈济佛堂慢火熬足七日的清润药露，能拔寒毒淤气，连雪山派旧疾也能缓上三分。" },
+"素影银簪刺": { name:"素影银簪刺", category:"weapon", quality:"紫", tags:["武器","峨眉刺","峨眉"], effect:{ ignoreDefenseRatio: 0.25 }, sixDim:{身法:1}, desc:"簪娘以冷铁混精银手打的成对短兵，平时插在发间似银簪，出袖才见锋芒。" },
+"玄清太极佩": { name:"玄清太极佩", category:"accessory", quality:"紫", tags:["饰品","道门","峨眉"], effect:{ energyRestore: 2 }, sixDim:{悟性:1}, desc:"虚白道姑按十二庄卦象刻的青玉佩，佩之行气周天更顺，每战回气更快。" },
+"冷月拂柳剑": { name:"冷月拂柳剑", category:"weapon", quality:"橙", tags:["武器","剑","镇派","峨眉"], effect:{ ignoreDefenseRatio: 0.35 }, sixDim:{身法:2,悟性:1}, desc:"剑庐密藏的百炼细剑，剑脊薄如柳叶却韧而不折，只此一柄，唯本门心腹方能请出。" },
+"峨眉青玉弟子令": { name:"峨眉青玉弟子令", category:"misc", quality:"绿", tags:["信物","门派","峨眉"], desc:"峨眉剑庐正式弟子的青玉令牌，一面刻普贤，一面刻太极。" },
 "青城玄门竹牌": { name:"青城玄门竹牌", category:"misc", quality:"绿", tags:["信物","门派","青城"], desc:"青城派正式弟子的竹制腰牌，正面烙「青城天下幽」，背面刻着拜入那日的干支。" },
 };
 
