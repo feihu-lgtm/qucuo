@@ -173,6 +173,7 @@ export default { quest: {
   baihuamen_3_shixinyudu: {
     id: "baihuamen_3_shixinyudu",
     type: "QT_TALK",
+    localOnly: true,
     title: "花3·蚀心余毒",
     giver: "花婆",
     requiresQuestCompleted: "baihuamen_2_guyinganxiang",
@@ -224,6 +225,7 @@ export default { quest: {
   baihuamen_4_wuxianjiuan: {
     id: "baihuamen_4_wuxianjiuan",
     type: "QT_TALK",
+    localOnly: true,
     title: "花4·雾隐旧案",
     giver: "兰姐",
     requiresQuestCompleted: "baihuamen_3_shixinyudu",
@@ -301,6 +303,7 @@ export default { quest: {
   baihuamen_5_hualuotusi: {
     id: "baihuamen_5_hualuotusi",
     type: "QT_TALK",
+    localOnly: true,
     title: "花5·花落土司",
     giver: "兰姐",
     requiresQuestCompleted: "baihuamen_4_wuxianjiuan",
@@ -359,6 +362,7 @@ export default { quest: {
   baihuamen_side_2_shishuzudecha: {
     id: "baihuamen_side_2_shishuzudecha",
     type: "QT_TALK",
+    localOnly: true,
     title: "花支2·师叔祖的茶",
     giver: "兰姐",
     requiresFactionRep: { 百花门: 20 },
@@ -423,6 +427,7 @@ export default { quest: {
   baihuamen_side_3_duanyucaique: {
     id: "baihuamen_side_3_duanyucaique",
     type: "QT_TALK",
+    localOnly: true,
     title: "花支3·断羽彩雀",
     giver: "小蝉",
     requiresFactionRep: { 百花门: 10 },
@@ -449,6 +454,7 @@ export default { quest: {
         ],
         onReach: {
           byFlag: {
+            quest_bhs3_pay: { money: -20 },
             quest_bhs3_fight: { factionRep: { 玉泉寨: 5, 鱼定土司府: -3 } },
           },
         },
