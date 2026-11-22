@@ -135,6 +135,7 @@ export default { quest: {
       {
         id: "s3_box",
         giver: null,
+        requiresItems: ["紫铜蛊盒"],
         playerHint: "蛊盒交给龙汐月或兰姐当场销毁，还是带回唐堡给唐老太研究，你定。",
         description: "盒盖上压着两枚私章，一枚是麻九娘的，一枚是唐伯渊的。",
         completionFlag: ["quest_tang4_a", "quest_tang4_b"],
@@ -143,6 +144,7 @@ export default { quest: {
           { flag: "quest_tang4_b", label: "带回唐堡给唐老太研究", resolve: "none" },
         ],
         onReach: {
+          consumeItems: ["紫铜蛊盒"],
           money: 350,
           items: c("百花净毒露", 2),
           factionRep: { 唐门: 25, 青城派: 0 },
