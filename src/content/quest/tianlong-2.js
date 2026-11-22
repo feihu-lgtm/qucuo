@@ -19,6 +19,7 @@ export default { quest: {
       },
       {
         id: "inn",
+        giver: null,
         requireLocation: { district: "天龙营", inner: "风沙客帐" },
         playerHint: "在风沙客帐听纳兰露儿唱曲，看她把消息递给谁。",
         description: "后半夜曲子换了调，一个裹着土司府火漆斗篷的人掀帘进来，接过她袖里的一卷曲谱。纳兰露儿抬眼看见你，银铃停了。",
@@ -75,6 +76,7 @@ export default { quest: {
       },
       {
         id: "cell",
+        giver: null,
         requireLocation: { district: "天龙营", inner: "断崖石室" },
         playerHint: "拿樊未离给的钥匙开断崖石室，替她见天王厉苍天一面。",
         description: "石门开了。厉苍天坐在长明灯下抄经，听你说是修罗宫来的，笔停了很久。「她还记着那一场。」他问你：修罗宫要的是什么？",
@@ -83,6 +85,12 @@ export default { quest: {
           { flag: "quest_tlz2_rise", label: "替樊未离问一句：天王还肯不肯出这扇门", resolve: "none", narration: "厉苍天合上经卷：「告诉她，门是从外头锁的，可人是从里头不肯走。等她想清楚为什么要我出去，再来问。」他把一页手抄的止戈经交给你。" },
           { flag: "quest_tlz2_rest", label: "劝天王死心，修罗宫不该为旧事再动刀", resolve: "none", narration: "厉苍天笑了一下，像松了口气：「她要是肯听你这句，修罗宫就不会死人。」他让你把一枚旧天王印带给她，算作当年那一场的了结。" },
         ],
+        onReach: {
+          byFlag: {
+            quest_tlz2_rise: { favorability: { 樊未离: 15, 厉苍天: 10 }, flags: ["flag_tl_xiuluo_leans_tianwang"], items: [{ name: "手抄止戈经", fromCatalog: true }] },
+            quest_tlz2_rest: { favorability: { 樊未离: 10, 厉苍龙: 10 }, flags: ["flag_tl_xiuluo_stays_out"], items: [{ name: "旧天王印", fromCatalog: true }] },
+          },
+        },
       },
       {
         id: "answer",
@@ -93,10 +101,6 @@ export default { quest: {
         onReach: {
           money: 300,
           factionRep: { 天龙教: 15 },
-          byFlag: {
-            quest_tlz2_rise: { favorability: { 樊未离: 15, 厉苍天: 10 }, flags: ["flag_tl_xiuluo_leans_tianwang"], items: [{ name: "手抄止戈经", fromCatalog: true }] },
-            quest_tlz2_rest: { favorability: { 樊未离: 10, 厉苍龙: 10 }, flags: ["flag_tl_xiuluo_stays_out"], items: [{ name: "修罗焚心香", fromCatalog: true }] },
-          },
         },
       },
     ],

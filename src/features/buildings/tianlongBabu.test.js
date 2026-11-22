@@ -41,4 +41,14 @@ describe("天龙教八部护法（原作人名）", () => {
     expect(flagsOf(quest("tianlong_z2_xiuluogong"))).toContain("tianlong_shishi_unlocked");
     expect(quest("tianlong_z2_xiuluogong").requiresFactionRep).toEqual({ 天龙教: 40 });
   });
+
+  it("给差事的人不在场的那几步不卡人，分支奖励挂在出分支的那一步", () => {
+    const stage = (q, id) => quest(q).stages.find((entry) => entry.id === id);
+    expect(stage("tianlong_z1_yechaxiyan", "inn").giver).toBeNull();
+    expect(stage("tianlong_z2_xiuluogong", "cell").giver).toBeNull();
+    for (const [q, id] of [["tianlong_z1_yechaxiyan", "report"], ["tianlong_z2_xiuluogong", "cell"]]) {
+      const s = stage(q, id);
+      expect(Object.keys(s.onReach.byFlag).sort()).toEqual([...s.completionFlag].sort());
+    }
+  });
 });
