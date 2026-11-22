@@ -66,7 +66,9 @@ export function matchNpcLore(npcLore, ctx = {}) {
 const SCENARIO_ENTRIES = [
   // 去重通道：dedupIfMvu 的段在 MVU 说明书在场时熄灯（好感度规矩两边写一份是重复，
   // 由 MVU 那份统一承载）；MVU 缺席（散文档）时照常保留。
-  { head: /^好感度维护规则/, dedupIfMvu: true, scopes: [], keys: [] },
+  // stockRe 是出厂默认段的指纹：只去重与 MVU 说明书重复的默认写法；
+  // 剧本自定义的好感度规则（不同刻度/条件）不含这些措辞，照常点亮。
+  { head: /^好感度维护规则/, dedupIfMvu: true, stockRe: /初次登场|不报数字|微调/, scopes: [], keys: [] },
   { head: /^拓扑连通关系/, scopes: ["move"],
     keys: ["鱼定村", "鱼定土司", "喇嘛庙", "白塔", "后山平台", "雪山派", "山洞", "顶峰",
            "天都镇", "大草甸", "玉泉寨", "贡措海", "锦官城", "怎么走", "路线", "在哪", "去哪"] },
@@ -96,8 +98,11 @@ export function gateScenario(scenario, ctx = {}) {
     if (!e) return true;                                   // 🔵 蓝灯：常驻
     const name = head.slice(0, head.indexOf("\n") > 0 ? head.indexOf("\n") : 10).replace(/[（(：:].*$/, "");
     if (e.dedupIfMvu) {                                    // MVU 在场时去重熄灯
-      if (ctx.wantMvu) { dark.push(name); return false; }
-      lit.push(`${name}⟨留⟩`); return true;
+      if (!e.stockRe || e.stockRe.test(b)) {
+        if (ctx.wantMvu) { dark.push(name); return false; }
+        lit.push(`${name}⟨留⟩`); return true;
+      }
+      lit.push(`${name}⟨自定义保留⟩`); return true;        // 自定义规则非重复，常驻
     }
     const byScope = (e.scopes || []).includes(ctx.scope);  // 状态通道
     const hitKey = (e.keys || []).find((k) => scanText.includes(k)); // 关键词通道

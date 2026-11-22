@@ -59,7 +59,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
   const modeNote = isTalk
     ? (apiCfg.extractionEnabled
       ? `${talkNoStateRule}。只写这一轮的对白、神态与心思。 `
-      : `${talkNoStateRule}，room 字段留空或原样返回，delta 各项留空。另在顶层 JSON 加 "respondedNpcs":["名字"]，列出本轮正文里【真正开口回应玩家】的 NPC 名（只被提到、路过、在场没搭理的不算）；无人开口就返回 []。 `)
+      : `${talkNoStateRule}，room 字段留空或原样返回，delta 各项留空。另在顶层 JSON 加 "respondedNpcs":["名字"]，列出本轮正文里真正开口或直接回应玩家（兽类以动作/姿态回应也算）的 NPC 名（只被提到、路过、在场没搭理的不算）；无人回应就返回 []。 `)
     : "";
   const targetedRumor = input.findTargetedRumor?.(varTree, cmd);
   const emergenceNote = targetedRumor
