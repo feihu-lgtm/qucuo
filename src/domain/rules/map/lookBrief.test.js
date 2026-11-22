@@ -6,6 +6,10 @@ describe("roomLookFact", () => {
     expect(roomLookFact({ place: "鱼定村", exits: { n: "喇嘛庙", e: "雅江" }, npcs: [{ name: "扎西" }] }))
       .toBe("此处是鱼定村；出口：北·喇嘛庙、东·雅江；在场：扎西");
   });
+  it("导入剧本房间的出口数组按方向显示", () => {
+    expect(roomLookFact({ place: "客栈", exits: ["n", "s"] })).toBe("此处是客栈；出口：北、南");
+    expect(buildLookNarrationPrompt({ place: "客栈", exits: ["n"] }).user).toContain("出口：北");
+  });
   it("无出口无人时照实写", () => {
     expect(roomLookFact({ place: "密室" })).toBe("此处是密室；出口：无");
   });
