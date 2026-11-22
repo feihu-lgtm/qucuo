@@ -107,5 +107,48 @@ export default { residentGroup: {
         { name: "狼曲冷水鱼", category: "misc", quality: "白" },
       ],
     },
+    // 合稿·黑风寨「三、人物」原创角色补驻场。
+    {
+      name: "贡布", innerRoom: "打铁坡与药棚", id: "resident_gongbu", levelCap: 3,
+      brief: "黑风寨二当家兼铁匠，原鱼定村老佃户，右腿被陆福生打瘸",
+      personality: "厚道直爽，嘴硬心软，护着寨里老弱；最恨彭老四那伙不守寨规的亡命徒",
+      carry: [
+        { name: "百炼锻铁锤", category: "weapon", quality: "蓝" },
+        { name: "焦边熟牛皮围裙", category: "armor", quality: "绿" },
+        { name: "旧铜算盘珠手串", category: "accessory", quality: "白" },
+        { name: "黑风寨土烧", category: "misc", quality: "绿" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+        { name: "熊山续骨膏", category: "misc", quality: "绿" },
+        { name: "牦牛粪饼", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "旺堆", innerRoom: "寨后岩洞", id: "resident_wangdui", levelCap: 2,
+      brief: "黑风寨眼线头目兼暗库管事，原川西马帮脚夫",
+      personality: "嘴碎精明，滑不留手，看似贪财怕死，实则死忠于救过他命的巴桑",
+      carry: [
+        { name: "马帮短弯匕", category: "weapon", quality: "绿" },
+        { name: "双层暗袋羊皮袄", category: "armor", quality: "绿" },
+        { name: "三城脚夫铜腰牌", category: "accessory", quality: "蓝" },
+        { name: "黑风寨土烧", category: "misc", quality: "绿" },
+        { name: "青稞饼", category: "misc", quality: "白" },
+        { name: "黑风寨草药包", category: "misc", quality: "绿" },
+        { name: "酥油茶", category: "misc", quality: "白" },
+      ],
+    },
+    {
+      name: "彭老四", innerRoom: "寨内公共区", id: "resident_penglaosi", levelCap: 3,
+      brief: "黑风寨外乡亡命徒头目，外号「铁爪鹞」，寨内主战逐利派",
+      personality: "贪婪暴躁，阴狠现实，视巴桑的寨规为妇人之仁，一心抢一票大的远走高飞",
+      carry: [
+        { name: "血锈铁链钩", category: "weapon", quality: "蓝" },
+        { name: "暗嵌铁片黑布衫", category: "armor", quality: "绿" },
+        { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
+        { name: "黑风寨土烧", category: "misc", quality: "绿" },
+        { name: "风干牦牛肉", category: "misc", quality: "白" },
+        { name: "狼曲冷水鱼", category: "misc", quality: "白" },
+        { name: "黑风寨草药包", category: "misc", quality: "绿" },
+      ],
+    },
   ]
 } };
