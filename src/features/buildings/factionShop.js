@@ -4,6 +4,7 @@ import { discountedBuyPrice } from "../../domain/rules/economy/equipment.js";
 import { factionRepCoef, factionRepOf } from "../../domain/rules/economy/factionRep.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { SECT_MEMBER_FLAGS } from "../../domain/rules/character/qingchengEntry.js";
+import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { selectEffectiveStats } from "../stats/logic.js";
 
 // 势力商店：货池按该势力声誉定货色和价钱。
@@ -87,5 +88,6 @@ export function buyFactionShopItem(state, shopKey, itemName, now = Date.now()) {
       ...(item.limitOnce ? { flags: (flags = []) => [...flags, boughtFlag(shopKey, item.name)] } : {}),
     },
     logs: [{ t: "item", text: `购得「${item.name}」，花费${price}两。` }],
+    note: { text: `购得「${item.name}」，花${price}两。`, source: NOTE_SOURCE.DUMB },
   };
 }
