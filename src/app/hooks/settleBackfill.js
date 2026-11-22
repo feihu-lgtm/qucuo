@@ -21,7 +21,8 @@ export function settleInBackground(cmd, opts = {}, {
   const time = state.time;
   const key = newBackfillKey("settle");
 
-  addLog(tagBackfill([{ t: "sys", text: `  ${fact}` }], key));
+  // 事实行用 cmd 类型：和原结算回合的 `> 结算文本` 回显一样自成一组，不会被并进上一条已折叠的指令下面。
+  addLog(tagBackfill([{ t: "cmd", text: `> ${fact}` }], key));
   setTime((t) => t + 1);
   setConvo?.((prev) => [...(prev || []),
     { role: "user", content: cmd },
