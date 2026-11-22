@@ -1,9 +1,9 @@
-import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
-import { BOUNTY_QUESTS } from "../../domain/quests/bountyQuests.js";
-import { advanceQuestStages, createQuestProgress, lockExclusiveSiblings } from "../../domain/quests/questEngine.js";
-import { applyStageRewards, resolveStageRewards } from "../../domain/quests/questRewards.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { set, updateField } from "../../domain/state/applyWrite.js";
+import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
+import { BOUNTY_QUESTS } from "../../domain/data/quests/bountyQuests.js";
+import { advanceQuestStages, createQuestProgress, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
+import { applyStageRewards, resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { set, updateField } from "../../domain/rules/state/applyWrite.js";
 
 const noOpResult = () => ({ logs: [] });
 const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }] });

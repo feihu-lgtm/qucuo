@@ -11,10 +11,10 @@ import {
   tradeWithNpc,
 } from "../../features/npc/logic.js";
 import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
-import { toggleEquip } from "../../domain/economy/equipment.js";
-import { getPresentNpcs } from "../../domain/state/fields.js";
+import { toggleEquip } from "../../domain/rules/economy/equipment.js";
+import { getPresentNpcs } from "../../domain/rules/state/fields.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
-import { isNpcAngry, stealSuccessRate } from "../../domain/combat/stealSystem.js";
+import { isNpcAngry, stealSuccessRate } from "../../domain/rules/combat/stealSystem.js";
 
 export function useScreenHandlers({
   act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,

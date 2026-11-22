@@ -8,7 +8,7 @@ import React, { useState } from "react";
 import {
   BODY_FIELDS, PUBLIC_FIELDS, INTIMATE_FIELDS, BODY_LAYER,
   emptyBodyProfile, bodyProfileFilled, previewText, maskText,
-} from "../../domain/character/bodyProfile.js";
+} from "../../domain/rules/character/bodyProfile.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 export default function BodyProfilePanel({

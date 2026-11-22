@@ -1,6 +1,6 @@
-import { hasInnerMap, getResidentRoomForNpc, isNpcVisibleInInnerRoom } from "../../../domain/map/innerMap.js";
-import { isNpcKnown } from "../../../domain/npc/npcAwareness.js";
-import { npcAffectionLabel } from "../../../domain/prompt/mvu.js";
+import { hasInnerMap, getResidentRoomForNpc, isNpcVisibleInInnerRoom } from "../../../domain/rules/map/innerMap.js";
+import { isNpcKnown } from "../../../domain/rules/npc/npcAwareness.js";
+import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { OVERLAY, openOverlay, useOverlay } from "../../../store/uiStore.js";
 import NpcAngerLine from "../NpcAngerLine.jsx";
 

@@ -4,11 +4,11 @@ import { LeftPanel, CenterPanel, RightPanel, MobileTabBar, usePanelFaces } from 
 import ClickableMap from "../ui/components/ClickableMap.jsx";
 import ZoomableMap from "../ui/components/ZoomableMap.jsx";
 import NoticeToast from "../ui/components/NoticeToast.jsx";
-import { QUCUO_MAP, isNodeUnlocked } from "../domain/map/qucuoMap.js";
+import { QUCUO_MAP, isNodeUnlocked } from "../domain/data/map/qucuoMap.js";
 import {
   hasInnerMap, getDistrictAnchor, getInnerRoom, visibleInnerExits,
   getInnerRoomNames, isInnerExitUnlocked,
-} from "../domain/map/innerMap.js";
+} from "../domain/rules/map/innerMap.js";
 import { DIRS } from "../utils/mudHelpers.js";
 import { MAP_UI } from "../ui/mapUi.js";
 import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";

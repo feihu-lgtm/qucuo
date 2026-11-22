@@ -1,6 +1,6 @@
 // 从 qucuoQuests.js 自动提取全部任务，生成攻略手册 markdown。
 // 一字不差地读代码里的真实字段，不手抄、不编造。
-import { QUCUO_QUESTS } from "../src/domain/quests/qucuoQuests.js";
+import { QUCUO_QUESTS } from "../src/domain/data/quests/qucuoQuests.js";
 
 // 任务分组（按 id 前缀归线）
 const GROUPS = [

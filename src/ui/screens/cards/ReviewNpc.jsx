@@ -13,19 +13,19 @@ import {
   S, TIERS, SEVEN, JadeTier, StatRow, SevenDim, Src, TextField,
   Section, Note, Pills, Step, selStyle,
 } from "./widgets.jsx";
-import { normalizePlacement } from "../../../domain/cards/importedRegistry.js";
-import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose, LORE_MAX } from "../../../domain/cards/scanPrompts.js";
-import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "../../../domain/cards/placementPlan.js";
-import { acquire } from "../../../domain/cards/rateLimiter.js";
-import { MOVE_ARCHETYPES, resolveArchetype } from "../../../domain/combat/moveArchetypes.js";
-import { hpFromNeigong, atkFromWaigong } from "../../../domain/npc/npcGeneration.js";
-import { statsForQuality } from "../../../domain/economy/equipment.js";
-import { effectBrief, MOVE_RULES, PARAM_KEYS, EFFECT_CN } from "../../../domain/economy/itemEffectText.js";
-import { CATALOG } from "../../../domain/items/catalog.js";
+import { normalizePlacement } from "../../../domain/rules/cards/importedRegistry.js";
+import { MOVE_ARCHETYPE_IDS, MOVE_SLOTS, SLOT_DEFAULT_ARCHETYPE, TIER_NEIGONG, parseJsonLoose, LORE_MAX } from "../../../domain/rules/cards/scanPrompts.js";
+import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "../../../domain/rules/cards/placementPlan.js";
+import { acquire } from "../../../domain/rules/cards/rateLimiter.js";
+import { MOVE_ARCHETYPES, resolveArchetype } from "../../../domain/rules/combat/moveArchetypes.js";
+import { hpFromNeigong, atkFromWaigong } from "../../../domain/rules/npc/npcGeneration.js";
+import { statsForQuality } from "../../../domain/rules/economy/equipment.js";
+import { effectBrief, MOVE_RULES, PARAM_KEYS, EFFECT_CN } from "../../../domain/rules/economy/itemEffectText.js";
+import { CATALOG } from "../../../domain/data/items/catalog.js";
 import { callModel } from "../../../infra/apiConfig.js";
-import { DISTRICTS } from "../../../domain/cards/reviewRules.js";
-import { hasInnerMap, getPublicInnerRoomNames } from "../../../domain/map/innerMap.js";
-import { DEFAULT_PORTRAITS, resolveCardPortrait } from "../../../domain/companion/portraits.js";
+import { DISTRICTS } from "../../../domain/rules/cards/reviewRules.js";
+import { hasInnerMap, getPublicInnerRoomNames } from "../../../domain/rules/map/innerMap.js";
+import { DEFAULT_PORTRAITS, resolveCardPortrait } from "../../../domain/rules/companion/portraits.js";
 import { compressImage, isCustomPortrait, fmtBytes } from "./portraitCompress.js";
 
 // 物品描述的输出上限。跟 PLAN_MAX_TOKENS 同一个理由：原来写死 400，在带思考的

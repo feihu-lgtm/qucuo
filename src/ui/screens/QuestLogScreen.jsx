@@ -1,8 +1,8 @@
 import React from "react";
 import { Overlay, Header, Btn } from "./buildings/common.jsx";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { SNOW_QUEST_ID, SNOW_SPIRITS, snowSpiritCount } from "../../domain/quests/snowLeopardQuest.js";
-import { getCurrentStage } from "../../domain/quests/questEngine.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { SNOW_QUEST_ID, SNOW_SPIRITS, snowSpiritCount } from "../../domain/rules/quests/snowLeopardQuest.js";
+import { getCurrentStage } from "../../domain/rules/quests/questEngine.js";
 
 // 任务面板——参照 Bethesda 系 RPG 的任务日志：玩家能看到自己接了什么、
 // 现在卡在哪个阶段、上一步做了什么选择，而不是只能靠聊天记录里翻旧的

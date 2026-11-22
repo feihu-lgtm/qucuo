@@ -11,7 +11,7 @@
 // 不然一次性塞进来出了问题不好定位是骨架错了还是逻辑错了。
 
 import React, { useState } from "react";
-import { QUCUO_SHOPS } from "../../domain/shops/qucuoShops.js";
+import { QUCUO_SHOPS } from "../../domain/data/shops/qucuoShops.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [] }) {

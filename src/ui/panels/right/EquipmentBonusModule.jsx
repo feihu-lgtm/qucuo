@@ -1,4 +1,4 @@
-import { computeEquippedStats } from "../../../domain/economy/equipment.js";
+import { computeEquippedStats } from "../../../domain/rules/economy/equipment.js";
 
 export default function EquipmentBonusModule({ inv }) {
   return (

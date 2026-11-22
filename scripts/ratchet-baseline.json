@@ -12,8 +12,8 @@
     "app": 11,
     "core": 1,
     "debug": 1,
-    "domain": 5,
-    "engine": 6,
+    "domain": 1,
+    "engine": 9,
     "entry": 4,
     "store": 1,
     "ui": 27
@@ -23,18 +23,18 @@
   "largeFiles": {
     "app/hooks/useTurn.js": 442,
     "core/cliScripts.test.js": 460,
-    "domain/cards/cardParse.js": 761,
-    "domain/cards/cardScan.js": 600,
-    "domain/cards/importedRegistry.js": 484,
-    "domain/cards/scanPrompts.js": 582,
-    "domain/companion/companion.js": 421,
-    "domain/items/catalog.js": 451,
-    "domain/kungfu/qucuoKungfu.js": 480,
-    "domain/narrator/narratorQuest.js": 404,
-    "domain/narrator/narratorQuest.test.js": 438,
-    "domain/npc/npcGeneration.js": 587,
-    "domain/strongholdWiring.test.js": 488,
-    "domain/tavernSim/simEngine.js": 417,
+    "domain/data/items/catalog.js": 451,
+    "domain/data/kungfu/qucuoKungfu.js": 480,
+    "domain/rules/cards/cardParse.js": 761,
+    "domain/rules/cards/importedRegistry.js": 484,
+    "domain/rules/cards/scanPrompts.js": 582,
+    "domain/rules/companion/companion.js": 421,
+    "domain/rules/narrator/narratorQuest.js": 404,
+    "domain/rules/narrator/narratorQuest.test.js": 438,
+    "domain/rules/npc/npcGeneration.js": 587,
+    "domain/rules/strongholdWiring.test.js": 488,
+    "domain/rules/tavernSim/simEngine.js": 417,
+    "engine/ports/cardScan.js": 600,
     "tests/docsTree.test.js": 449,
     "ui/panels/CenterPanel.jsx": 542,
     "ui/screens/CardImportScreen.jsx": 1522,
@@ -49,5 +49,5 @@
     "ui/screens/quickBattle/QuickBattleScreen.jsx": 774,
     "ui/screens/tavernSim/TavernSimScreen.jsx": 502
   },
-  "mainJsGzipBytes": 687917
+  "mainJsGzipBytes": 687793
 }

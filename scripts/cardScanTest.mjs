@@ -9,10 +9,10 @@ globalThis.localStorage = {
 globalThis.structuredClone = globalThis.structuredClone || (v => JSON.parse(JSON.stringify(v)));
 
 const { readFileSync, readdirSync } = await import("fs");
-const { parseCharacterCard } = await import("../src/domain/cards/cardParse.js");
-const { planScan, runScan } = await import("../src/domain/cards/cardScan.js");
-const store = await import("../src/domain/cards/scanStore.js");
-const { resetBucket, REFILL_MS } = await import("../src/domain/cards/rateLimiter.js");
+const { parseCharacterCard } = await import("../src/domain/rules/cards/cardParse.js");
+const { planScan, runScan } = await import("../src/engine/ports/cardScan.js");
+const store = await import("../src/infra/scanStore.js");
+const { resetBucket, REFILL_MS } = await import("../src/domain/rules/cards/rateLimiter.js");
 
 await store.init();
 

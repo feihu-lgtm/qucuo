@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exportSave } from "../infra/saves.js";
-import { loadSquares, serializeSquares } from "../domain/map/mapSquares.js";
+import { loadSquares, serializeSquares } from "../domain/rules/map/mapSquares.js";
 import { createSession as rawCreateSession, runScript as rawRunScript } from "../../cli/runner.mjs";
 import { getRngState, random, setSeed } from "./rng.js";
 import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports/ai.js";

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import GroundItemStrip from "../components/GroundItemStrip.jsx";
 import { chromeBtn } from "../theme.js";
-import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 
 const MODES = [
   ["action", "行动", "◈ 行动"],

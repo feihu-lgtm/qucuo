@@ -1,9 +1,9 @@
 import { trainCost } from "../features/cultivation/logic.js";
-import { NNPC_STAGE } from "../domain/narrator/narrator.js";
-import { narratorVars } from "../domain/prompt/mvu.js";
-import { SECT_ENTRY } from "../domain/character/sectEntry.js";
-import { SEA_OF_MIND, canEnterSea } from "../domain/narrator/seaOfMind.js";
-import { setPearlForm, setSnowLeopardForm } from "../domain/companion/portraits.js";
+import { NNPC_STAGE } from "../domain/rules/narrator/narrator.js";
+import { narratorVars } from "../domain/rules/prompt/mvu.js";
+import { SECT_ENTRY } from "../domain/rules/character/sectEntry.js";
+import { SEA_OF_MIND, canEnterSea } from "../domain/rules/narrator/seaOfMind.js";
+import { setPearlForm, setSnowLeopardForm } from "../domain/rules/companion/portraits.js";
 
 export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, addLog, effectiveSpecialNow, onGameStarted }) {
   const { showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead } = overlayState;

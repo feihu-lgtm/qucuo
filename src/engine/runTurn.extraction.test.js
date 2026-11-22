@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { emptyBodyProfile } from "../domain/character/bodyProfile.js";
-import { initialNarratorState } from "../domain/narrator/narrator.js";
+import { emptyBodyProfile } from "../domain/rules/character/bodyProfile.js";
+import { initialNarratorState } from "../domain/rules/narrator/narrator.js";
 import { startTrace } from "../infra/actionTrace.js";
 import { createMockAi } from "./ports/ai.js";
 import { runTurn } from "./runTurn.js";

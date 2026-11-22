@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
-import { rollDodgeSteal } from "../../domain/combat/dodgeSteal.js";
+import { rollDodgeSteal } from "../../domain/rules/combat/dodgeSteal.js";
 
-export { excludeDodgeStolenItems } from "../../domain/combat/dodgeSteal.js";
+export { excludeDodgeStolenItems } from "../../domain/rules/combat/dodgeSteal.js";
 
 export function addDodgeStealNote(result, move, carriedItems, trySteal) {
   if (!result.dodgeSuccessA) return;

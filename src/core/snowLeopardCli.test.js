@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createSession } from "../../cli/runner.mjs";
 import { createMockAi, createRecordingAi, createReplayAi } from "../engine/ports/ai.js";
-import { QUCUO_QUESTS } from "../domain/quests/qucuoQuests.js";
+import { QUCUO_QUESTS } from "../domain/data/quests/qucuoQuests.js";
 import { gameStore } from "../store/gameStore.js";
 
 let directory;

@@ -1,4 +1,4 @@
-import { effectBrief } from "../../../domain/economy/itemEffectText.js";
+import { effectBrief } from "../../../domain/rules/economy/itemEffectText.js";
 import React, { useState } from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
 

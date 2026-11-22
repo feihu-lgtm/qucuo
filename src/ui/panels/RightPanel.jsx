@@ -1,6 +1,6 @@
 import FacePanel from "../components/FacePanel.jsx";
 import { uiStore } from "../../store/uiStore.js";
-import { unlockedCompanions } from "../../domain/companion/companion.js";
+import { unlockedCompanions } from "../../domain/rules/companion/companion.js";
 import ProfileModule from "./right/ProfileModule.jsx";
 import EquipmentBonusModule from "./right/EquipmentBonusModule.jsx";
 import AttributesModule from "./right/AttributesModule.jsx";

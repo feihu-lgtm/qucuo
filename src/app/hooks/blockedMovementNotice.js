@@ -1,5 +1,5 @@
-import { innerBlockedNoticeText, blockedNoticeText, passableExits } from "../../domain/map/blockedNotice.js";
-import { QUCUO_MAP } from "../../domain/map/qucuoMap.js";
+import { innerBlockedNoticeText, blockedNoticeText, passableExits } from "../../domain/rules/map/blockedNotice.js";
+import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 import { showNotice } from "../../store/uiStore.js";
 
 export function showOuterNoExitNotice(outerLock, dir, roomName, options) {

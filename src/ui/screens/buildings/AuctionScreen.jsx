@@ -3,8 +3,8 @@ import { Overlay, Header, Btn } from "./common.jsx";
 import {
   AUCTION_CONFIG, AUCTION_LOT, AUCTION_PHASE,
   initAuction, openAuction, playerBid, abandonAuction, nextBidAmount,
-} from "../../../domain/economy/auction.js";
-import { invHasItemNamed } from "../../../domain/map/safeHouse.js";
+} from "../../../domain/rules/economy/auction.js";
+import { invHasItemNamed } from "../../../domain/rules/map/safeHouse.js";
 
 // 宝丰拍卖行——锦官城，聚宝当铺隔壁。目前只拍一件东西：衔尾蛇门环（蜀王庄钥匙）。
 // 竞价状态机在 ../auction.js（纯函数、可测），这里只管画和收结果。

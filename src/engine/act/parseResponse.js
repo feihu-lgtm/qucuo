@@ -1,4 +1,4 @@
-import { extractMvuBlock } from "../../domain/prompt/mvu.js";
+import { extractMvuBlock } from "../../domain/rules/prompt/mvu.js";
 import { cleanJsonString } from "../../utils/jsonClean.js";
 
 // 解析一次原始返回 → { p, mvuCommands, dealResult }；p._truncated 表示只救回了部分完整行。

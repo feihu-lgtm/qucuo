@@ -1,4 +1,4 @@
-import { getHomestead } from "../../../domain/map/homestead.js";
+import { getHomestead } from "../../../domain/rules/map/homestead.js";
 import { OVERLAY, openOverlay } from "../../../store/uiStore.js";
 import { chromeBtn } from "../../theme.js";
 

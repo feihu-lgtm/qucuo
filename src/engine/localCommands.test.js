@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { loadSquares } from "../domain/map/mapSquares.js";
+import { loadSquares } from "../domain/rules/map/mapSquares.js";
 import { parseLocalCommand } from "./localCommands.js";
 
 const state = (overrides = {}) => ({

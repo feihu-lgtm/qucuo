@@ -1,7 +1,7 @@
 import React from "react";
 import { Overlay, Header, Btn } from "./common.jsx";
-import { ESCORT_QUESTS } from "../../../domain/quests/escortQuests.js";
-export { ESCORT_QUESTS } from "../../../domain/quests/escortQuests.js";
+import { ESCORT_QUESTS } from "../../../domain/data/quests/escortQuests.js";
+export { ESCORT_QUESTS } from "../../../domain/data/quests/escortQuests.js";
 
 export default function EscortScreen({ building, char, flags, questProgress, currentRoom, zoneTheme, onClose, inline, onAcceptEscort }) {
   const money = char.money || 0;

@@ -10,7 +10,7 @@ import { loadAutoSave, init as initSaves } from "./infra/saves.js";
 import { loadConfig } from "./infra/apiConfig.js";
 import { installErrorBuffer } from "./infra/errorBuffer.js";
 import { recordError } from "./infra/errorBuffer.js";
-import * as importedRegistry from "./domain/cards/importedRegistry.js";
+import * as importedRegistry from "./domain/rules/cards/importedRegistry.js";
 import { getZoneTheme } from "./ui/theme.js";
 
 loadDefaultContent();

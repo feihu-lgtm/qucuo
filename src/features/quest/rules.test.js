@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ESCORT_QUESTS } from "../../domain/quests/escortQuests.js";
-import { QUCUO_QUESTS } from "../../domain/quests/qucuoQuests.js";
-import { SAFE_HOUSES } from "../../domain/map/safeHouse.js";
+import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
+import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { SAFE_HOUSES } from "../../domain/rules/map/safeHouse.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,

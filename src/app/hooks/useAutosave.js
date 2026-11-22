@@ -6,21 +6,21 @@ import { DEFAULT_PRESETS } from "../../core/newGame.js";
 import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../infra/saves.js";
-import { initialNarratorState, migrateNarratorState } from "../../domain/narrator/narrator.js";
-import { backfillInventoryFromCatalog } from "../../domain/items/catalog.js";
-import { generateNpcMoveset } from "../../domain/npc/npcGeneration.js";
-import { seedKnowledge } from "../../domain/prompt/knowledge.js";
-import { initCompanionState } from "../../domain/companion/companion.js";
+import { initialNarratorState, migrateNarratorState } from "../../domain/rules/narrator/narrator.js";
+import { backfillInventoryFromCatalog } from "../../domain/data/items/catalog.js";
+import { generateNpcMoveset } from "../../domain/rules/npc/npcGeneration.js";
+import { seedKnowledge } from "../../domain/rules/prompt/knowledge.js";
+import { initCompanionState } from "../../domain/rules/companion/companion.js";
 import { CURRENT_VERSION } from "../../infra/version.js";
-import { getMapNode } from "../../domain/map/qucuoMap.js";
-import { getDistrictAnchor, getInnerRoomNames, hasInnerMap } from "../../domain/map/innerMap.js";
-import { initialVarTree } from "../../domain/prompt/mvu.js";
+import { getMapNode } from "../../domain/data/map/qucuoMap.js";
+import { getDistrictAnchor, getInnerRoomNames, hasInnerMap } from "../../domain/rules/map/innerMap.js";
+import { initialVarTree } from "../../domain/rules/prompt/mvu.js";
 import {
   rollSkeleton, parseSquareBatch, applySquareBatch,
   pendingNodes, serializeSquares, loadSquares,
-} from "../../domain/map/mapSquares.js";
+} from "../../domain/rules/map/mapSquares.js";
 import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../domain/prompt/withAI.js";
+import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();

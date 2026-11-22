@@ -11,10 +11,10 @@
 import React, { useState } from "react";
 import { getApiModel } from "../core/apiModel.js";
 import { loadConfig, callModel, hasApiCredentials, API_TYPES } from "../infra/apiConfig.js";
-import { describeInnerArrival } from "../domain/map/mapNarration.js";
-import { resolveInnerExit } from "../domain/map/innerMap.js";
-import { extractMvuBlock, applyMvuCommands, initialVarTree } from "../domain/prompt/mvu.js";
-import { callExtraction } from "../domain/prompt/extractionEngine.js";
+import { describeInnerArrival } from "../domain/rules/map/mapNarration.js";
+import { resolveInnerExit } from "../domain/rules/map/innerMap.js";
+import { extractMvuBlock, applyMvuCommands, initialVarTree } from "../domain/rules/prompt/mvu.js";
+import { callExtraction } from "../engine/ports/extraction.js";
 
 const redact = (k) => (k ? `***${String(k).slice(-4)}` : "(空)");
 const describeCredentials = cfg => cfg.apiType === API_TYPES.VERTEX ? "ADC 已导入" : `key ${redact(cfg.apiKey)}`;

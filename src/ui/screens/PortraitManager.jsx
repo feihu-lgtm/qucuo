@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { setPortrait, removePortrait, fileToDataUrl, resolvePortrait, hasBuiltinPortrait } from "../../domain/companion/portraits.js";
+import { setPortrait, removePortrait, fileToDataUrl, resolvePortrait, hasBuiltinPortrait } from "../../domain/rules/companion/portraits.js";
 import { loadComfyConfig, saveComfyConfig, generateComfyUIPortrait } from "../../infra/comfyui.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 

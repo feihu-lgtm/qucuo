@@ -17,11 +17,11 @@
 // 结构：下面 entries 是一张有序条目表，每行 = {show, render}。新增浮层只需
 // 在表尾登记一行；数组顺序即 DOM 顺序（与原条件分支的书写顺序一致）。
 import { Fragment, lazy, Suspense, useCallback } from "react";
-import { isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
-import { listCharacters } from "../../domain/prompt/mvu.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { listCharacters } from "../../domain/rules/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { getPipelineEntries, getTraceLog } from "../../infra/actionTrace.js";
-import { activeCompanion, isCompanionUnlockedByName } from "../../domain/companion/companion.js";
+import { activeCompanion, isCompanionUnlockedByName } from "../../domain/rules/companion/companion.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import TutorialOverlay from "../screens/TutorialOverlay.jsx";
 import VersionHistoryPanel from "../screens/VersionHistoryPanel.jsx";

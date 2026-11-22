@@ -1,7 +1,7 @@
 // 行动识别评测：逐条跑 recognizeIntent，统计各类准确率、复合拆分准确率、阈值覆盖率/准确率与延迟分位数。
-import { recognizeIntent } from "../../src/domain/intent/recognizer.js";
-import { planConfidence, gateRecognition } from "../../src/domain/intent/gate.js";
-import { PROMPT_VERSION } from "../../src/domain/intent/prompts.js";
+import { recognizeIntent } from "../../src/domain/rules/intent/recognizer.js";
+import { planConfidence, gateRecognition } from "../../src/domain/rules/intent/gate.js";
+import { PROMPT_VERSION } from "../../src/domain/rules/intent/prompts.js";
 
 export const DEFAULT_THRESHOLDS = [0.7, 0.8, 0.9];
 

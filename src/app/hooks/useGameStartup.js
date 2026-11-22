@@ -3,10 +3,10 @@ import { useInitialRestore } from "./useAutosave.js";
 import { buildInitialGameState } from "../../core/newGame.js";
 import { initGameStore } from "../../store/gameStore.js";
 import { OVERLAY, initializeUiOverlays, toggleOverlay } from "../../store/uiStore.js";
-import { attachImportedRegistry } from "../../domain/character/characterMilestones.js";
-import * as importedRegistry from "../../domain/cards/importedRegistry.js";
-import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/map/innerMap.js";
-import { detectNewFaces, markAsSeen, updateLastSeen } from "../../domain/npc/npcAwareness.js";
+import { attachImportedRegistry } from "../../domain/data/character/characterMilestones.js";
+import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
+import { getDistrictAnchor, hasInnerMap, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { detectNewFaces, markAsSeen, updateLastSeen } from "../../domain/rules/npc/npcAwareness.js";
 
 export function useGameStartup({ initialLoadSlotId, initialOpenSettings }) {
   const restored = useInitialRestore({ initialLoadSlotId });

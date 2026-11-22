@@ -1,4 +1,4 @@
-import { QUALITY_COLOR } from "../../../domain/economy/equipment.js";
+import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 
 export default function CombatMovesModule({ zoneTheme, char, inspectItem, inspecting }) {
   const extras = (char.moveset || []).filter(m => !m.sourceSkill);

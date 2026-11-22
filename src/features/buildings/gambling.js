@@ -1,7 +1,7 @@
 // 赌坊：押钱 / 押物抽奖。
 // 从 logic.js 按动作分组拆出。
 import { random } from "../../core/rng.js";
-import { ITEM_CATEGORY } from "../../domain/economy/equipment.js";
+import { ITEM_CATEGORY } from "../../domain/rules/economy/equipment.js";
 import { invalidAmountResult, noOpResult, isPositiveAmount, makeGameItem } from "./helpers.js";
 
 export function gamble(state, { mode, bet, luck, dayIdx, maxBet = 200 } = {}, now = Date.now()) {

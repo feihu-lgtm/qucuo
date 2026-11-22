@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import ItemActionMenu from "../ui/components/ItemActionMenu.jsx";
-import { makeItem, ITEM_CATEGORY, toggleEquip } from "../domain/economy/equipment.js";
-import { makeItemSmart } from "../domain/items/catalog.js";
+import { makeItem, ITEM_CATEGORY, toggleEquip } from "../domain/rules/economy/equipment.js";
+import { makeItemSmart } from "../domain/data/items/catalog.js";
 const makeGameItem = (s) => makeItemSmart(s, makeItem);
 
 const theme = { bg: "#1a1710", bgPanel: "#221e16", border: "#4a443a", accent: "#f0d090", accentDim: "#a08a5a", textDim: "#7a7060" };

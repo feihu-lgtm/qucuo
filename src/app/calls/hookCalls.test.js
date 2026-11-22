@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { definePrompt, resetPromptRegistryForTest } from "../../domain/prompt/registry.js";
-import { registerSideCalls } from "../../domain/prompt/calls/sideCalls.js";
+import { definePrompt, resetPromptRegistryForTest } from "../../domain/rules/prompt/registry.js";
+import { registerSideCalls } from "../../domain/rules/prompt/calls/sideCalls.js";
 import { createMockAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../domain/prompt/withAI.js";
-import { buildDaySummaryRequest } from "../../domain/memory/daySummary.js";
-import { factSummaryRequest } from "../../domain/prompt/knowledge.js";
-import { buildOutfitRequest } from "../../domain/character/bodyProfile.js";
-import { ITEM_CATEGORY } from "../../domain/economy/equipment.js";
-import { effectBrief } from "../../domain/economy/itemEffectText.js";
-import { buildSquarePrompt } from "../../domain/map/mapSquares.js";
-import { buildExtractionCfg } from "../../domain/prompt/extractionEngine.js";
+import { withAI } from "../../engine/ports/withAI.js";
+import { buildDaySummaryRequest } from "../../domain/rules/memory/daySummary.js";
+import { factSummaryRequest } from "../../domain/rules/prompt/knowledge.js";
+import { buildOutfitRequest } from "../../domain/rules/character/bodyProfile.js";
+import { ITEM_CATEGORY } from "../../domain/rules/economy/equipment.js";
+import { effectBrief } from "../../domain/rules/economy/itemEffectText.js";
+import { buildSquarePrompt } from "../../domain/rules/map/mapSquares.js";
+import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
 import { registerHookCalls } from "./hookCalls.js";
 
 describe("hookCalls parity with legacy requests", () => {

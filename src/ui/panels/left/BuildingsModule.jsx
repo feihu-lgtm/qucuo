@@ -1,5 +1,5 @@
-import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../../../domain/buildings/qucuoBuildings.js";
-import { hasInnerMap, getBuildingIdForInnerRoom } from "../../../domain/map/innerMap.js";
+import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../../../domain/data/buildings/qucuoBuildings.js";
+import { hasInnerMap, getBuildingIdForInnerRoom } from "../../../domain/rules/map/innerMap.js";
 import { chromeBtn } from "../../theme.js";
 
 export function visibleBuildings(room, innerRoomName) {

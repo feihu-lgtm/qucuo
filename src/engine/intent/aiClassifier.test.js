@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createAiClassifier, IntentTruncatedError, INTENT_TRUNCATED } from "./aiClassifier.js";
-import { recognizeIntent } from "../../domain/intent/recognizer.js";
+import { recognizeIntent } from "../../domain/rules/intent/recognizer.js";
 
 const state = { room: { name: "测试镇", npcs: [{ name: "才旦" }] }, inv: [], char: { money: 150 } };
 const TRUNCATED_TEXT = '```json\n{"choice":"';

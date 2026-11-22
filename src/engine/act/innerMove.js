@@ -1,7 +1,7 @@
 import { step as traceStep } from "../../infra/actionTrace.js";
-import { hasInnerMap, resolveInnerExit, isNpcVisibleInInnerRoom, getInnerRoom, isInnerExitUnlocked, describeInnerLock } from "../../domain/map/innerMap.js";
-import { describeInnerArrival } from "../../domain/map/mapNarration.js";
-import { detectNewFaces } from "../../domain/npc/npcAwareness.js";
+import { hasInnerMap, resolveInnerExit, isNpcVisibleInInnerRoom, getInnerRoom, isInnerExitUnlocked, describeInnerLock } from "../../domain/rules/map/innerMap.js";
+import { describeInnerArrival } from "../../domain/rules/map/mapNarration.js";
+import { detectNewFaces } from "../../domain/rules/npc/npcAwareness.js";
 import { DIRS } from "../../utils/mudHelpers.js";
 
 // 内层箱庭移动判定（纯判定 + trace，不写任何 React 状态）：

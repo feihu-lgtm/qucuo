@@ -9,14 +9,14 @@ import { getZoneTheme } from "../../theme.js";
 import {
   TICK_LABELS, MENU, STOCK_INFO, STOCK_BATCH, STAFF_ROLES,
   SEAT_COORDS, ZONES, LEVEL_UP, EVENTS, PRICE_MULT_MIN, PRICE_MULT_MAX,
-} from "../../../domain/tavernSim/simData.js";
+} from "../../../domain/data/tavernSim/simData.js";
 import {
   initSim, advanceTick, buyStock, setPrice, hireStaff, fireStaff,
   hireGuard, fireGuard, upgradeLevel, resolveEvent, getDailyCandidates,
   appendLog, setNightReport,
-} from "../../../domain/tavernSim/simEngine.js";
-import { createNarrator } from "../../../domain/tavernSim/simNarrator.js";
-import { hasApiKey } from "../../../domain/prompt/storyteller.js";
+} from "../../../domain/rules/tavernSim/simEngine.js";
+import { createNarrator } from "../../../engine/ports/simNarrator.js";
+import { hasApiKey } from "../../../engine/ports/storyteller.js";
 
 const SAVE_KEY = "qucuo_tavern_sim_v1";
 const LEVEL_NAMES = ["破落小馆", "热闹酒肆", "闻名三江"];

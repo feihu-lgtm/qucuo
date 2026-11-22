@@ -1,14 +1,14 @@
 // NPC 学艺与窃取：拜师 / 偷窃。
 // 从 logic.js 按动作分组拆出——这组只管"从对方身上学到/拿到东西"。
-import { makeItem } from "../../domain/economy/equipment.js";
-import { makeItemSmart } from "../../domain/items/catalog.js";
-import { markNpcAsKnown as markNpcKnown } from "../../domain/npc/npcAwareness.js";
-import { markCarriedLost } from "../../domain/npc/roomNpcs.js";
-import { tryLearnFromMaster, tryStealFrom } from "../../domain/kungfu/learnSkill.js";
-import { isNpcAngry } from "../../domain/combat/stealSystem.js";
-import { NOTE_SOURCE, VIA } from "../../domain/memory/note.js";
+import { makeItem } from "../../domain/rules/economy/equipment.js";
+import { makeItemSmart } from "../../domain/data/items/catalog.js";
+import { markNpcAsKnown as markNpcKnown } from "../../domain/rules/npc/npcAwareness.js";
+import { markCarriedLost } from "../../domain/rules/npc/roomNpcs.js";
+import { tryLearnFromMaster, tryStealFrom } from "../../domain/rules/kungfu/learnSkill.js";
+import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
+import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { appeaseAngryNpc } from "./anger.js";
-import { add, applyWrite, set, updateField } from "../../domain/state/applyWrite.js";
+import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 
