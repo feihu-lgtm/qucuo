@@ -54,6 +54,14 @@ describe("faction ambush rule", () => {
     expect(pickRoomAmbusher(both, () => 0)).toBeNull();
   });
 
+  it("读档/换局后的首跑不算移动，不重掷伏击", () => {
+    const hx = { room: { name: "天都镇", npcs: [] }, innerRoomName: "天都香行", time: 0, flags: [],
+      varTree: { 世界: { 势力声誉: { 唐门: -80, 欢喜教: -80 } } } };
+    expect(factionAmbushRule.run(state(-80, 100), { firstRun: true })).toBeNull();
+    expect(factionRoomAmbushRule.run(hx, { firstRun: true })).toBeNull();
+    expect(factionRoomAmbushRule.run(hx, { firstRun: false }).forcedDuelNpc.name).toBe("欢喜教内院弟子");
+  });
+
   it("always ambushes at a forted stronghold (places = 1)", () => {
     const hit = pickAmbusher(state(-80, 0, [], "雪山派", "", "雪山派"), () => 0.99);
     expect(hit.npc.name).toBe("雪山派截杀弟子");
