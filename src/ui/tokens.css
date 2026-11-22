@@ -205,6 +205,10 @@
   --tavern-wood-top: #2a2018;
   --tavern-wood-top-dark: #1a1410;
   --tavern-zone-label: #8a7a5a;
+  --tavern-door-label: #b09a6a;
+  --tavern-table-bottom: #3a2a18;
+  --tavern-table-edge: #5a4630;
+  --tavern-table-top: #4a3620;
 
   /* 悬赏屏定色（原字面量，不随日间模式变）：进行中悬赏卡片。 */
   --bounty-card-bg: #12140a;
