@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { factionAmbushRule, factionRoomAmbushRule, pickAmbusher, pickRoomAmbusher } from "./ambush.js";
 
-const state = (rep, time = 0, flags = []) => ({
-  room: { name: "大草甸", npcs: [] },
-  varTree: { 世界: { 势力声誉: rep != null ? { 唐门: rep } : {} } },
+const state = (rep, time = 0, flags = [], room = "大草甸", innerRoomName = "", faction = "唐门") => ({
+  room: { name: room, npcs: [] },
+  innerRoomName,
+  varTree: { 世界: { 势力声誉: rep != null ? { [faction]: rep } : {} } },
   time, flags,
 });
 
@@ -11,6 +12,7 @@ describe("faction ambush rule", () => {
   it("never ambushes above the -60 threshold", () => {
     expect(factionAmbushRule.run(state(-59))).toBeNull();
     expect(pickAmbusher(state(-59), () => 0)).toBeNull();
+    expect(pickAmbusher(state(-59, 0, [], "雪山派", "", "雪山派"), () => 0)).toBeNull();
   });
 
   it("forces a duel with the squad member when rep ≤ -60 and the roll hits", () => {
@@ -50,5 +52,32 @@ describe("faction ambush rule", () => {
       varTree: { 世界: { 势力声誉: { 唐门: -80, 欢喜教: 0 } } } };
     expect(pickAmbusher(both, () => 0).npc.name).toBe("唐门暗弩手");
     expect(pickRoomAmbusher(both, () => 0)).toBeNull();
+  });
+
+  it("always ambushes at a forted stronghold (places = 1)", () => {
+    const hit = pickAmbusher(state(-80, 0, [], "雪山派", "", "雪山派"), () => 0.99);
+    expect(hit.npc.name).toBe("雪山派截杀弟子");
+  });
+
+  it("does not ambush a place-locked faction elsewhere on the map", () => {
+    expect(pickAmbusher(state(-80, 0, [], "大草甸", "", "雪山派"), () => 0)).toBeNull();
+  });
+
+  it("patrols the listed outer districts at the written chance", () => {
+    const hit = pickAmbusher(state(-80, 0, [], "大草甸", "", "鱼定土司府"), () => 0);
+    expect(hit.npc.name).toBe("巡捕营校尉");
+    expect(pickAmbusher(state(-80, 0, [], "鱼定村", "", "鱼定土司府"), () => 0.99)).toBeNull();
+  });
+
+  it("guards an inner room by the 据点·内层房 key only", () => {
+    expect(pickRoomAmbusher(state(-80, 0, [], "雅江", "", "青城派"), () => 0)).toBeNull();
+    const hit = pickRoomAmbusher(state(-80, 0, [], "雅江", "青城山山门", "青城派"), () => 0.99);
+    expect(hit.npc.name).toBe("青城剑阵弟子");
+    expect(pickAmbusher(state(-80, 0, [], "雅江", "青城山山门", "青城派"), () => 0)).toBeNull();
+  });
+
+  it("lets a stronghold place override the roaming miss", () => {
+    const hit = pickAmbusher(state(-80, 0, [], "蜀南唐堡"), () => 0.99);
+    expect(hit.npc.name).toBe("唐门暗弩手");
   });
 });
