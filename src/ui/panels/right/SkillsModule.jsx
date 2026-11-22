@@ -3,9 +3,11 @@ import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { STAGES, STAGE_UP_COST } from "../../../utils/mudHelpers.js";
 import { deriveMoveFromSkill } from "../../../domain/rules/npc/npcGeneration.js";
 import { moveStatLabel, moveEffectBrief } from "../../../domain/rules/economy/itemEffectText.js";
+import { skillDetail } from "../../../domain/rules/kungfu/skillDetail.js";
 
 export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem, inspecting, pot, breakthroughSkill }) {
   const [showIdleSkills, setShowIdleSkills] = useState(false);
+  const [openSkill, setOpenSkill] = useState(null);
   return (
     <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
       {/* 武学：未上阵的默认收起。玩家学的招会越攒越多（拜师/偷师/自练），
@@ -34,6 +36,9 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
         // 字段（baseDamageMultiplier/forceFirst…），这些都在 move 上、不在技能外壳 s 上，
         // 直接传 s 会全读空——这正是此前右栏看不到特效的原因。
         const mv = (s.fixed && s.move) ? s.move : deriveMoveFromSkill(s);
+        // 详情开合认武学自身身份：有 id 用 id；拜师完整招无 id，用名字加招式类型，
+        // 同名但不同来源的两门不会一起开合，读档换了武学也不会错开别人的详情。
+        const detailKey = s.id || `${s.fixed ? "fixed" : "skill"}:${s.name}:${s.moveType || mv.type || ""}`;
         const TYPE_SHORT = { 攻击: "攻", 防御: "防", 状态: "状" };
         const mType = s.moveType || mv.type;
         return (
@@ -55,7 +60,11 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
               >{s.active ? "▶" : "○"}</span>
               {mType && <span title={`${mType}类武学`} style={{ fontSize: "9px", color: "var(--bg-deep)", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700, flexShrink: 0 }}>{TYPE_SHORT[mType] || "?"}</span>}
               <span
-                onClick={() => inspectItem("skill", s.name, s.fixed ? `${q}品·完整招式` : `${q}品·${s.stage}`, null, { worldLook: true })}
+                onClick={() => {
+                  const opening = openSkill !== detailKey;
+                  setOpenSkill(opening ? detailKey : null);
+                  if (opening) inspectItem("skill", s.name, s.fixed ? `${q}品·完整招式` : `${q}品·${s.stage}`, null, { worldLook: true });
+                }}
                 style={{ cursor: inspecting === s.name ? "wait" : "pointer", color: qc, fontWeight: s.active ? "bold" : "normal", textDecoration: "underline", textDecorationStyle: "dotted", textDecorationColor: zoneTheme.textDim, opacity: inspecting === s.name ? 0.6 : 1 }}
               >{s.name}{s.fixed ? "" : `·${s.stage}`}{inspecting === s.name ? "…" : ""}</span>
               <span style={{ fontSize: "9.5px", color: qc, opacity: 0.9 }}>（{q}品）</span>
@@ -70,8 +79,22 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
               const eff = moveEffectBrief(mv);
               return eff ? <div style={{ paddingLeft: 18, fontSize: "9.5px", color: s.active ? "var(--clay)" : "#4a5a4a" }}>{eff}</div> : null;
             })()}
+            {openSkill === detailKey && (() => {
+              const d = skillDetail(s, mv);
+              return (
+                <div style={{ margin: "3px 0 4px 18px", padding: "5px 7px", border: `1px solid ${zoneTheme.border}`, background: zoneTheme.bgPanel, fontSize: "10px", lineHeight: 1.7 }}>
+                  {d.desc && <div style={{ color: zoneTheme.textDim, marginBottom: 4 }}>{d.desc}</div>}
+                  {d.rows.map((r) => (
+                    <div key={r.label}><span style={{ color: qc }}>{r.label}</span>　{r.value}</div>
+                  ))}
+                  {d.effects.map((e, k) => (
+                    <div key={k} style={{ color: e.warn ? "var(--warn)" : "var(--clay)" }}>· {e.text}</div>
+                  ))}
+                </div>
+              );
+            })()}
             {s.fixed
-              ? (s.move?.desc ? <div style={{ paddingLeft: 18 }}>
+              ? (openSkill !== detailKey && s.move?.desc ? <div style={{ paddingLeft: 18 }}>
                   <div style={{ fontSize: "10px", color: zoneTheme.textDim, marginTop: 2, lineHeight: 1.65 }}>{s.move.desc}</div>
                 </div> : null)
               : (() => {
