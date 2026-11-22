@@ -7,10 +7,11 @@ import { applyBuffsToSpecial, resolveCombatBuff } from "../../utils/buffSystem.j
 import { settleNpcDuel } from "../npc/settleDuel.js";
 
 export function buildQuestFoe(choice, now = Date.now()) {
-  const { name, tag, levelCap = 1 } = choice.combatNpc;
+  const { levelCap = 1 } = choice.combatNpc;
   return ensureNpcCombatData({
+    ...choice.combatNpc,
     id: `questfoe_${choice.flag}_${now}`,
-    name, tag, levelCap, hostile: true, questBranchFlag: choice.flag,
+    levelCap, hostile: true, questBranchFlag: choice.flag,
   }, { levelCap });
 }
 
@@ -44,6 +45,6 @@ export function autoFightQuestChoice(state, quest, label, now = Date.now()) {
   }
   return settleNpcDuel(state, npc, {
     outcome: outcome ?? "draw", battleLog, now, remainingHp: allies[0].hp,
-    pendingQuestBranch: { questId: quest.id, flag: choice.flag, mode: "combat" },
+    pendingQuestBranch: { questId: quest.id, flag: choice.flag, mode: "combat", title: quest.title, aftermath: choice.aftermath },
   });
 }

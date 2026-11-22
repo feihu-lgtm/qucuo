@@ -5,8 +5,8 @@
     "QUCUO_QUESTS": {
       "entryCount": 60,
       "orderedIdsSha256": "2d0a91ce3ac2f2c87a25d125f1c637b1a0b42a3de06d2fb7e9d7a228b3ee438a",
-      "totalFieldCount": 2738,
-      "jsonSha256": "645b037536246886184da0b6f1e4f21be26280959e925ce46071f4dc0a2c9871"
+      "totalFieldCount": 2759,
+      "jsonSha256": "96d1fc8dfb58ec6ddb4d245d26e1736c4538faf7ce45fbeaa923bff0f05d8161"
     },
     "NPC_TEACHABLE_SKILLS": {
       "entryCount": 1,
