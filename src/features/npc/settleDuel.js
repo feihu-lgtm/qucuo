@@ -166,7 +166,17 @@ export function settleNpcDuel(state, npc, {
   }
 
   // 任务带动的切磋战不算日常切磋档：战报只有文本不带毒伤，也不该吃掉当日刷声誉额度。
-  const sparRep = pendingQuestBranch?.mode === "combat" ? null : sectSparRepGain(working, npc, { outcome, battleLog });
+  // 但胜的是门派切磋榜上的试剑对手时，首胜旗与首胜声誉照发——拜师试炼认的是
+  // 「堂堂正正胜过此人」，不认入口；从任务选项赢下青玄的玩家不该卡在山门。
+  let sparRep = sectSparRepGain(working, npc, { outcome, battleLog });
+  if (sparRep && pendingQuestBranch?.mode === "combat" && !sparRep.poison) {
+    const grantsFirstWin = (sparRep.flags || []).some((f) => f.endsWith("_first") && !working.flags.includes(f));
+    // 任务战只发首胜试炼旗与声誉：剥掉本规则新加的当日切磋档（不动身上已有的其他日旗），
+    // 免得吃掉玩家今天应得的日常声誉
+    sparRep = grantsFirstWin
+      ? { ...sparRep, flags: sparRep.flags.filter((f) => !(/_day_\d+$/.test(f) && !working.flags.includes(f))) }
+      : null;
+  }
   if (sparRep?.poison) {
     logs.push({ t: "sys", text: `  ${npc.name}瞥了眼身上的毒伤：「赢是赢了，${sparRep.faction}不认这一场。」` });
   } else if (sparRep?.delta) {

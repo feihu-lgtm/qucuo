@@ -48,6 +48,38 @@ describe("sectSparRepGain", () => {
     expect(duel.logs.map((row) => row.text)).toContain("  ✦ 堂堂正正赢了松鹤道长，青城派声誉 +5");
   });
 
+  it("quest-branch duel win over a spar-pool NPC still grants the first-win trial flag, but not the daily rep", () => {
+    const apply = (base, duel) => {
+      const next = { ...base };
+      for (const [key, update] of Object.entries(duel.changes)) next[key] = update(base[key]);
+      return next;
+    };
+    const qingxuan = { id: "resident_qingxuan", name: "青玄" };
+    const branch = { mode: "combat", questId: "q_side", flag: "q_side_fight" };
+    // 任务选项触发的决斗赢下青玄：首胜旗+声誉照发（拜师试炼认堂堂正正胜过此人）
+    const seeded = { ...state(), flags: ["wuxian_spar_day_1", "pigeon_day_1"] };
+    const first = apply(seeded, settleNpcDuel(seeded, qingxuan, { outcome: "win", pendingQuestBranch: branch, rng: () => 1 }));
+    expect(first.flags).toContain("qingcheng_spar_first");
+    expect(first.flags.some((f) => f.startsWith("qingcheng_spar_day_"))).toBe(false);
+    // 身上已有的别家日旗/其他系统日旗不被清
+    expect(first.flags).toContain("wuxian_spar_day_1");
+    expect(first.flags).toContain("pigeon_day_1");
+    expect(first.varTree.世界.势力声誉.青城派).toBe(5);
+    // 已拿首胜后再从任务战赢同一对手：不吃当日切磋档、不再加声誉
+    const again = apply(first, settleNpcDuel(first, qingxuan, { outcome: "win", pendingQuestBranch: branch, rng: () => 1 }));
+    expect(again.varTree.世界.势力声誉.青城派).toBe(5);
+    // 任务战首胜不占当日档：同一天正常切磋仍拿当日 +2
+    const daily = apply(first, settleNpcDuel(first, qingxuan, { outcome: "win", rng: () => 1 }));
+    expect(daily.varTree.世界.势力声誉.青城派).toBe(7);
+    // 带毒的任务战赢试炼对手：不算堂堂正正，不发旗不加声誉
+    const poisoned = apply(state(), settleNpcDuel(state(), qingxuan, {
+      outcome: "win", pendingQuestBranch: branch,
+      battleLog: [{ round: 1, result: { statusAppliedToB: "淬毒" } }], rng: () => 1,
+    }));
+    expect(poisoned.flags || []).not.toContain("qingcheng_spar_first");
+    expect(poisoned.varTree?.世界?.势力声誉?.青城派 || 0).toBe(0);
+  });
+
   it("sparring with Tangmen disciples on the 千机演武坪 raises 唐门 reputation", () => {
     const tingzhu = { id: "resident_tangtingzhu", name: "唐听竹" };
     expect(sectSparRepGain(state(), tingzhu, { outcome: "win" })).toEqual({

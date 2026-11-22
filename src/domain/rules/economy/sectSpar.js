@@ -2,7 +2,8 @@
 // 青城派照合稿「青城派·七、声誉」加分行为 3：首胜 +5，此后每日一次 +2，日常切磋最多刷到 39。
 import { factionRepOf } from "./factionRep.js";
 
-const POISON = new Set(["淬毒", "剧毒"]);
+export const SPAR_POISON = new Set(["淬毒", "剧毒"]);
+const POISON = SPAR_POISON;
 
 const SECT_SPARS = [
   {
