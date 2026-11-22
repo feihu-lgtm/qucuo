@@ -205,7 +205,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                   backgroundImage: `url(${UI(sel ? "bar_paper.webp" : "bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
                   color: sel ? "var(--ink-wood-deep)" : "var(--ink-tan)", fontSize: 12, fontWeight: "bold",
                   textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px var(--black)" }}>
-                <span style={{ color: sel ? "#8a5a1a" : (QUAL_COLOR[cw.quality] || "var(--ink-text)"), marginRight: 5, fontSize: 11 }}>●</span>
+                <span style={{ color: sel ? "var(--cooking-selected)" : (QUAL_COLOR[cw.quality] || "var(--ink-text)"), marginRight: 5, fontSize: 11 }}>●</span>
                 {cw.name}{cw.canSteam ? " ♨" : ""}
               </div>
             );
@@ -240,10 +240,10 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
               ) : (
                 <div style={{ color: "var(--ink-wood-warm)", fontSize: 14.5, fontWeight: "bold", letterSpacing: 2 }}>妙手偶得 · 灶神来起名</div>
               )}
-              <div style={{ color: "#7a5a2a", fontSize: 11, marginTop: 3 }}>
+              <div style={{ color: "var(--cooking-dish-note)", fontSize: 11, marginTop: 3 }}>
                 回血 {Math.round(dish.hpRatio * 100)}%（约 {dish.hpDelta} 点）
                 {dish.buffs.map((b, i) => <span key={i}> · {b.attr}+{b.val}（{b.turns}回合）</span>)}
-                {!dish.name && <span style={{ color: "#9a6a2a" }}> · 菜名风味由灶神即兴</span>}
+                {!dish.name && <span style={{ color: "var(--cooking-improv)" }}> · 菜名风味由灶神即兴</span>}
               </div>
             </div>
           ) : (
@@ -260,7 +260,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
             className="ck-chip"
             style={{ position: "relative", cursor: "pointer", padding: "11px 46px",
               backgroundImage: `url(${UI("btn_blank.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-              color: "#4a2408", fontSize: 16, fontWeight: "bold", letterSpacing: 6,
+              color: "var(--cooking-button-text)", fontSize: 16, fontWeight: "bold", letterSpacing: 6,
               opacity: fx?.kind === "ok" ? 0.5 : 1, textShadow: "0 1px 0 rgba(255,255,255,.35)" }}>
             开 火
           </div>
@@ -277,7 +277,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
         </div>
 
         {/* ── ⑥ 可用材料 ── */}
-        <div style={{ borderTop: "1px solid #3a2c1a", marginTop: 18, paddingTop: 14 }}>
+        <div style={{ borderTop: "1px solid var(--cooking-divider)", marginTop: 18, paddingTop: 14 }}>
           <div style={{ color: "var(--ink-bronze)", fontSize: 11, letterSpacing: 2, marginBottom: 8 }}>🎒 可用材料（点击放入空料槽）</div>
           {mats.length === 0 ? (
             <div style={{ color: "var(--ink-wood-edge)", fontSize: 11.5, fontStyle: "italic" }}>囊中没有食材与调味料。去铺子买、去野外捡，或从 NPC 身上顺一点。</div>
@@ -291,7 +291,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                     className="ck-chip"
                     style={{ cursor: usable ? "pointer" : "default", padding: "6px 13px",
                       backgroundImage: `url(${UI(left > 0 ? "bub_wood1.webp" : "bub_stone.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
-                      color: left > 0 ? "var(--ink-parchment)" : "#6a5a40", fontSize: 12, opacity: left > 0 ? 1 : 0.5,
+                      color: left > 0 ? "var(--ink-parchment)" : "var(--cooking-empty)", fontSize: 12, opacity: left > 0 ? 1 : 0.5,
                       textShadow: "0 1px 2px var(--black)" }}>
                       {m.name} <span style={{ color: "var(--ink-brass-lit)", fontSize: 10.5 }}>×{left}</span>
                     </div>
