@@ -58,7 +58,7 @@ export const QUCUO_SHOPS = {
       { name: "察世轻行履", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 40 },
       { name: "三星叫化鸡", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 40 },
       { name: "紫皮闷倒驴葫芦", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 80 },
-      { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 140 },
+      { name: "八袋青竹护心甲", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 100 },
     ],
   },
   // 雅纸铺（雅江）。此前 qucuoBuildings.js 里 shop_yajiang 写了 shopKey: "雅纸铺"，

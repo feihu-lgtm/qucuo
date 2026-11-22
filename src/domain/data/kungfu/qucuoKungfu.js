@@ -480,7 +480,7 @@ export const SKILL_CATALOG = {
       id: "kf_gaibang_fuhu", name: "裂山伏虎掌", type: SKILL_TYPE.MOVE, quality: "橙", price: 480,
       moveType: "攻击",
       forceCrit: { multiplier: 1.65 }, nextAttackBonus: 0.25,
-      unlock: { faction: "丐帮三星分舵", rep: 80, member: true, guestRep: 140, note: "需正式拜入丐帮三星分舵且声誉 ≥ 80（外客须声誉 ≥ 140 并由严九斤亲授）" },
+      unlock: { faction: "丐帮三星分舵", rep: 80, member: true, guestRep: 100, note: "需正式拜入丐帮三星分舵且声誉 ≥ 80（外客须声誉满 100 并由严九斤亲授）" },
       desc: "严九斤压箱底的刚猛掌法，脱胎于丐帮古传伏虎降龙一脉，又融了岷江出峡的暴烈水势。出掌前沉如醉汉伏地，推出时如山石崩裂，十成劲里还藏着三成连绵不绝的后浪。",
     },
   ],
