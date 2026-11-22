@@ -160,7 +160,7 @@ export default { quest: {
     giver: "齐照野",
     giverId: "resident_qizhaoye",
     localOnly: true,
-    requiresQuestCompleted: "xueshan_2_hanji_yiwantang",
+    requiresQuestCompleted: "xueshan_2_hanji_tang",
     requiresFactionRep: { 雪山派: 40 },
     description: "练功堂外，扫雪的独臂老人叫住了你：「何师母的病好了一半，我心里那桩旧事也该翻出来了——跟我到剑阁看个东西。」",
     stages: [
