@@ -22,10 +22,10 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
   const closeGuard = useOverlayCloseGuard(onClose);
   const [tab, setTab] = useState("today");
   const T = zoneTheme || {};
-  const accent = T.accent || "#c4a86a";
-  const border = T.border || "#2a2d3a";
-  const bgPanel = T.bgPanel || "#12141c";
-  const textDim = T.textDim || "#6a6a5a";
+  const accent = T.accent || "var(--qijuzhu-accent)";
+  const border = T.border || "var(--ink-edge-quest)";
+  const bgPanel = T.bgPanel || "var(--qijuzhu-panel)";
+  const textDim = T.textDim || "var(--ink-moss)";
   const text = T.text || "var(--text)";
 
   const tally = varTree?.世界?.起居注;
@@ -93,7 +93,7 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
                   </div>
                   {/* 条形只作相对比例的直观提示，不标刻度——这不是数据面板 */}
                   <div style={{ height: 3, background: border, borderRadius: 0, marginTop: 3, overflow: "hidden" }}>
-                    <div style={{ width: `${Math.max(4, (r.count / maxCount) * 100)}%`, height: "100%", background: r.aiBacked ? accent : "#6a8a6a" }} />
+                    <div style={{ width: `${Math.max(4, (r.count / maxCount) * 100)}%`, height: "100%", background: r.aiBacked ? accent : "var(--qijuzhu-routine)" }} />
                   </div>
                 </div>
               ))}
@@ -102,7 +102,7 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
                   ? `今日共动作 ${totals.today} 次。子夜换日，此页清空，累计不清。`
                   : `开局以来共动作 ${totals.lifetime} 次。`}
                 <br />
-                <span style={{ color: "#6a8a6a" }}>绿</span>=只记数的日常举动，
+                <span style={{ color: "var(--qijuzhu-routine)" }}>绿</span>=只记数的日常举动，
                 <span style={{ color: accent }}>金</span>=另在见闻录里留有往事的那些。
               </div>
             </>
