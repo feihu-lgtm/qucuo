@@ -258,6 +258,17 @@
   --ink-wood-shade: #20170f;
   --ink-wood-warm: #5a3d1a;
 
+  /* 识海定色（原字面量，不随日间模式变）。 */
+  --mind-button-edge: #8a6a2a;
+  --mind-button-text: #f0d888;
+  --mind-gate-edge: #2e2e33;
+  --mind-gate-ok: #e8d4a0;
+  --mind-gate-ok-edge: #5a4a20;
+  --mind-gold: #e8c86a;
+  --mind-locked: #4a4a44;
+  --mind-locked-edge: #25252a;
+  --mind-missing: #6a6458;
+
   /* 掉落卡定色（原字面量，不随日间模式变）：切磋=暖金绛红，偷窃/偷师=冷翠墨青。 */
   --loot-text: #e2d6b4;              /* 描述正文 */
   --loot-foot: #c2b288;              /* 底注 */
