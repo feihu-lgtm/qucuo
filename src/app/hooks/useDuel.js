@@ -69,7 +69,7 @@ export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNp
 export function useDuel({
   act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
   duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
-  captureUndo, turnGenerationRef, narrator,
+  captureUndo, turnGenerationRef, narrator, interactMode,
 }) {
   const handleNpcDuel = useCallback((npc) => applyResult(featureCtxRef.current, async () => {
     const isStale = createTurnStaleCheck(turnGenerationRef);
@@ -81,13 +81,19 @@ export function useDuel({
       applyResult(featureCtxRef.current, look);
       setActiveTarget(npc.name);
       addLog([{ t: "sys", text: `  动手前，你先端详了${npc.name}——掂量清楚再决定动不动手。` }]);
+      // 正在私聊/耳语里时 act 会把 look 当成对那个人说的话——端详已经记账了，
+      // 描写就免了，直接把细看结果落日志。
+      if (interactMode === "talk" || interactMode === "whisper") {
+        addLog(look.extraReplies || []);
+        return;
+      }
       await act("look " + npc.id, look.extraReplies || [], { keepUndo: true, inspect: true });
       return;
     }
     applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name);
     await openDuelAfterNarration({ addLog, setDuelPending, isStale }, npc);
-  }, { feature: "npc.duel" }), [act, addLog, captureUndo, featureCtxRef, setActiveTarget, setDuelPending, turnGenerationRef]);
+  }, { feature: "npc.duel" }), [act, addLog, captureUndo, featureCtxRef, interactMode, setActiveTarget, setDuelPending, turnGenerationRef]);
 
   const confirmDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
     if (!duelPending) return;
