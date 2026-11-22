@@ -121,6 +121,10 @@ export const BUILDINGS_BY_LOCATION = {
       desc: "石案上整齐码着未开眼的青铜面具与刻刀，旁侧燃着一盆艾草炭火。凡愿入墟为徒者，须亲手磨亮自己的面具，再向神树递上三记问心剑。",
     },
     {
+      id: "sanxing_vault_chest", name: "青铜地窖库", type: BUILDING_TYPE.CHEST, house: "三星派青铜地窖库", emptyStock: true,
+      desc: "嵌在石壁里的厚重青铜大箱，锁孔做成神鸟衔环的模样，防潮防蛀。三星派门人可将多余的剑器、药草与残片暂存于此，等需要时再来取用。",
+    },
+    {
       id: "sect_gaibang_entry", name: "三星分舵·聚义堂", type: BUILDING_TYPE.SECT_ENTRY, sect: "丐帮三星分舵",
       desc: "破庙正殿改成的分舵议事处，供桌上不烧高香只摆烈酒。想入丐帮不看家世高低，只看你敢不敢端起严九斤那碗混着雨水与江湖气的入门酒。",
     },
