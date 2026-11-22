@@ -8,6 +8,7 @@ import StartScreen from "./ui/screens/StartScreen.jsx";
 import ErrorBoundary from "./ui/components/ErrorBoundary.jsx";
 import { loadAutoSave, init as initSaves } from "./infra/saves.js";
 import { loadConfig } from "./infra/apiConfig.js";
+import { bootstrapArgonConfig } from "./infra/argonBootstrap.js";
 import { installErrorBuffer } from "./infra/errorBuffer.js";
 import { recordError } from "./infra/errorBuffer.js";
 import * as importedRegistry from "./domain/rules/cards/importedRegistry.js";
@@ -231,4 +232,8 @@ function mount() {
   );
 }
 installErrorBuffer();
-initSaves().then(mount, mount);
+// 存档灌完之后、真正 mount 之前先跑托管部署引导：托管站（argonmeow.online/qucuo/）
+// 在产物根目录放的 argon-config.json 存在且玩家还没存过 api 配置时写入，打开就能玩；
+// 文件不在/读错一律静默，不阻塞启动。
+const mountAfterBootstrap = () => bootstrapArgonConfig().then(mount, mount);
+initSaves().then(mountAfterBootstrap, mountAfterBootstrap);
