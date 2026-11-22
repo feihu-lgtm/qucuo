@@ -68,6 +68,22 @@ export function applyFactionRep(varTree, deltas) {
   return { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } };
 }
 
+// 系统直接结算的声誉（拜入、日常善举），按当前 varTree 实涨量连带对头扣分，不走 AI 单回合 ±10 限幅。
+export function grantFactionRep(varTree, deltas) {
+  const changes = factionRepDeltas(deltas, varTree || {});
+  const reps = { ...(varTree?.世界?.势力声誉 || {}) };
+  const applied = {};
+  for (const [faction, delta] of Object.entries(changes)) {
+    const before = factionRepOf(varTree, faction);
+    reps[faction] = clampRep(before + delta);
+    if (reps[faction] !== before) applied[faction] = reps[faction] - before;
+  }
+  return { applied, varTree: { ...(varTree || {}), 世界: { ...(varTree?.世界 || {}), 势力声誉: reps } } };
+}
+
+export const formatRepChanges = (applied) =>
+  Object.entries(applied).map(([faction, delta]) => `${faction}声誉 ${delta > 0 ? "+" : ""}${delta}`).join("，");
+
 // 已结识（声誉非零）的势力，按总纲表的顺序
 export function listFactionRep(varTree) {
   return FACTIONS.map(({ name }) => ({ name, value: factionRepOf(varTree, name) }))

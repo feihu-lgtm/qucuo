@@ -56,7 +56,8 @@ describe("拜入峨眉派", () => {
   it("joins at 听竹轩 with +20 rep and the 弟子令", () => {
     const result = joinSect(at("听竹轩", 40));
     expect(result.changes.flags([])).toContain("峨眉派弟子");
-    expect(result.changes.varTree(rep(40)).世界.势力声誉.峨眉派).toBe(60);
+    const reps = result.changes.varTree(rep(40)).世界.势力声誉;
+    expect(reps).toMatchObject({ 峨眉派: 60, 天龙教: -5, 五仙教: -5 });
     expect(result.changes.inv([]).map((item) => item.name)).toContain("峨眉青玉弟子令");
   });
 });
@@ -87,7 +88,7 @@ describe("慈济佛堂", () => {
     const result = doClinicService(state, FOTANG);
     expect(result.changes.char.money).toBe(80);
     const tree = result.changes.varTree(state.varTree);
-    expect(tree.世界.势力声誉.峨眉派).toBe(15);
+    expect(tree.世界.势力声誉).toMatchObject({ 峨眉派: 15, 天龙教: -3, 五仙教: -3 });
     expect(tree.世界.威望).toBe(2);
     const flags = result.changes.flags(["emei_alms_day_1"]);
     expect(flags).toEqual(["emei_alms_day_2"]);
@@ -117,7 +118,7 @@ describe("青城药圃义诊", () => {
     expect(result.changes.time).toBe(32);
     expect(result.changes.char).toBeUndefined();
     const tree = result.changes.varTree(state.varTree);
-    expect(tree.世界.势力声誉.青城派).toBe(100);
+    expect(tree.世界.势力声誉).toMatchObject({ 青城派: 100, 天龙教: -3, 唐门: -3 });
     expect(tree.世界.威望).toBe(100);
   });
 

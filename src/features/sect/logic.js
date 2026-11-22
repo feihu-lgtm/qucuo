@@ -3,6 +3,7 @@ import { SECT_ENTRY, checkSectEntry } from "../../domain/rules/character/sectEnt
 import { makeItem } from "../../domain/rules/economy/equipment.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { markNpcAsKnown } from "../../domain/rules/npc/npcAwareness.js";
+import { formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { getBuildingIdForInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { SECT_MEMBER_FLAGS, checkFactionEntry, factionEntryForBuilding } from "../../domain/rules/character/factionEntry.js";
@@ -13,18 +14,16 @@ function joinFactionSect(state, entry, now = Date.now()) {
   if (!status.eligible) return { logs: [{ t: "sys", text: `  你还不够格拜入${entry.sect}。` }] };
   const items = [entry.token, ...entry.gifts]
     .map((name, i) => ({ ...makeNamedItem(name), id: `sect_join_${now}_${i}`, equipped: false }));
-  const rep = Math.min(100, status.rep + entry.repBonus);
   const { master, sect } = entry;
+  const { applied } = grantFactionRep(state.varTree, { [sect]: entry.repBonus });
   return {
     changes: {
       inv: (inv = []) => [...inv, ...items],
       flags: (flags = []) => (flags.includes(entry.flag) ? flags : [...flags, entry.flag]),
-      varTree: (prev) => markNpcAsKnown({
-        ...prev, 世界: { ...prev?.世界, 势力声誉: { ...prev?.世界?.势力声誉, [sect]: rep } },
-      }, master),
+      varTree: (prev) => markNpcAsKnown(grantFactionRep(prev, { [sect]: entry.repBonus }).varTree, master),
     },
     logs: [
-      { t: "sys", text: `  （${master}收你入${sect}门下，${sect}声誉 +${rep - status.rep}）` },
+      { t: "sys", text: `  （${master}收你入${sect}门下，${formatRepChanges(applied)}）` },
       ...items.map((item) => ({ t: "loot", text: `✦ 得「${item.name}」`, item, source: "sect" })),
     ],
     note: { text: `拜入${sect}，${master}授${entry.token}。`, owner: [{ name: master, via: VIA.FIRSTHAND }], source: NOTE_SOURCE.NARRATIVE },

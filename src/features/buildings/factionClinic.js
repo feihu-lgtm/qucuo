@@ -1,7 +1,7 @@
 // 势力医馆的日常善举（合稿各派「声誉·加分行为」）：每游戏日一次，涨本派声誉与威望。
 // 峨眉慈济佛堂：布施 20 两救济曲措逃民 +5、威望 +2；声誉 ≥ 15 免诊金。
 // 青城药圃：随玉真子采药义诊（耗两个时辰）+8、威望 +3。两处声誉 ≤ -20 都拒诊。
-import { factionRepOf } from "../../domain/rules/economy/factionRep.js";
+import { factionRepOf, formatRepChanges, grantFactionRep } from "../../domain/rules/economy/factionRep.js";
 
 export const FACTION_CLINICS = {
   hospital_emei_fotang: {
@@ -43,8 +43,8 @@ export function doClinicService(state, buildingId) {
   if (clinicCare(state.varTree, buildingId) === "refuse") return { logs: [{ t: "sys", text: `  ${clinic.refuse}` }] };
   if (clinicDoneToday(buildingId, state)) return { logs: [{ t: "sys", text: "  今日已出过力，明日再来。" }] };
   if ((state.char.money || 0) < clinic.cost) return { logs: [{ t: "sys", text: `  需${clinic.cost}两，银两不够。` }] };
-  const rep = factionRepOf(state.varTree, clinic.faction);
-  const nextRep = Math.min(100, rep + clinic.rep);
+  const gain = { [clinic.faction]: clinic.rep };
+  const { applied } = grantFactionRep(state.varTree, gain);
   const prestige = Number(state.varTree?.世界?.威望) || 0;
   const nextPrestige = Math.min(100, prestige + clinic.prestige);
   const flag = todayFlag(clinic, state.time);
@@ -53,16 +53,12 @@ export function doClinicService(state, buildingId) {
       ...(clinic.cost ? { char: { ...state.char, money: state.char.money - clinic.cost } } : {}),
       ...(clinic.hours ? { time: (state.time || 0) + clinic.hours } : {}),
       flags: (flags = []) => [...flags.filter((f) => !f.startsWith(clinic.dayFlag)), flag],
-      varTree: (prev) => ({
-        ...prev,
-        世界: {
-          ...prev?.世界,
-          威望: nextPrestige,
-          势力声誉: { ...prev?.世界?.势力声誉, [clinic.faction]: nextRep },
-        },
-      }),
+      varTree: (prev) => {
+        const next = grantFactionRep(prev, gain).varTree;
+        return { ...next, 世界: { ...next.世界, 威望: nextPrestige } };
+      },
     },
-    logs: [{ t: "sys", text: `  （${clinic.deed}，${clinic.faction}声誉 +${nextRep - rep}，威望 +${nextPrestige - prestige}）` }],
+    logs: [{ t: "sys", text: `  （${clinic.deed}，${formatRepChanges(applied) || `${clinic.faction}声誉已满`}，威望 +${nextPrestige - prestige}）` }],
     settle: clinic.settle,
   };
 }
