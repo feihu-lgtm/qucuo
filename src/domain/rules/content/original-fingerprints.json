@@ -234,7 +234,7 @@
       "jsonSha256": "20dddc8c758844978839d99ce0ff8816d7f7789d5616e79a5a04f3fc77db1227"
     },
     "RESIDENT_NPCS": {
-      "entryCount": 12,
+      "entryCount": 13,
       "orderedIds": [
         "鱼定村",
         "鱼定土司",
@@ -247,13 +247,14 @@
         "广汉",
         "锦官城",
         "顶峰",
-        "大草甸"
+        "大草甸",
+        "蜀南唐堡"
       ],
-      "totalFieldCount": 1717,
-      "jsonSha256": "164d1d8efeb22ae94ea3f6b052f62b9750ce13054a7576e45b8c08598a89aa43"
+      "totalFieldCount": 1718,
+      "jsonSha256": "c924ee5bf657c8bd815ad1e10822b9f6958c3680ed4015d419a24c97fa845f22"
     },
     "INNER_MAP": {
-      "entryCount": 18,
+      "entryCount": 19,
       "orderedIds": [
         "鱼定村",
         "第三新东京市",
@@ -272,10 +273,11 @@
         "黑风寨",
         "雅江",
         "广汉",
-        "锦官城"
+        "锦官城",
+        "蜀南唐堡"
       ],
-      "totalFieldCount": 1213,
-      "jsonSha256": "a919db96415be282ce1005fb86541d180e3b2c1949fcee7b0ba3e40758d91d53"
+      "totalFieldCount": 1235,
+      "jsonSha256": "700f0ee692bad7d5cab19a2e1ac6f8e83e500fb30cffabed7c417deab4357f9a"
     },
     "SNOW_LEOPARD_QUEST": {
       "entryCount": 7,

@@ -30,6 +30,9 @@ export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5 } = {}) 
   return ensureNpcCombatData(base, { luck, levelCap });
 }
 
+// 迁过据点的常驻 → 原据点。旧存档还把人缓存在原据点：进新据点照样请到，回原据点把人清掉
+const RELOCATED_RESIDENTS = { 唐老太: "锦官城" };
+
 export const residentNpcRule = {
   id: "npc.residents",
   deps: (state) => [
@@ -49,8 +52,13 @@ export const residentNpcRule = {
     const cachedNpcNames = new Set(
       Object.entries(roomMapRef?.current || {})
         .filter(([roomName]) => roomName !== room.name)
-        .flatMap(([, cached]) => (cached?.npcs || []).map((npc) => npc.name)),
+        .flatMap(([roomName, cached]) => (cached?.npcs || [])
+          .filter((npc) => RELOCATED_RESIDENTS[npc.name] !== roomName)
+          .map((npc) => npc.name)),
     );
+    const staleNames = new Set((room.npcs || [])
+      .filter((npc) => !npc.imported && RELOCATED_RESIDENTS[npc.name] === room.name)
+      .map((npc) => npc.name));
     const toRoomNpcWithCombat = (poolNpc) => buildRoomNpcWithCombat(poolNpc, {
       existingNpc: existingByName.get(poolNpc.name),
       luck,
@@ -105,7 +113,7 @@ export const residentNpcRule = {
       .filter((npc) => !isCompanionUnlockedByName(companionState, npc.name))
       .map(toRoomNpcWithCombat);
     const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs];
-    if (!toInject.length) return null;
+    if (!toInject.length && !staleNames.size) return null;
 
     if (hasInnerMap(room.name)) {
       const rooms = getPublicInnerRoomNames(room.name);
@@ -128,7 +136,10 @@ export const residentNpcRule = {
 
     return {
       changes: {
-        room: (previous) => ({ ...previous, npcs: injectNpcs(previous.npcs, toInject) }),
+        room: (previous) => ({
+          ...previous,
+          npcs: injectNpcs((previous.npcs || []).filter((npc) => npc.imported || !staleNames.has(npc.name)), toInject),
+        }),
       },
     };
   },
