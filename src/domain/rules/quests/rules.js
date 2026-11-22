@@ -136,7 +136,7 @@ export const questFlagRule = {
     const logs = [];
 
     for (const quest of stageQuests) {
-      if (!isQuestGateOpen(quest, next, flags)) continue;
+      if (!isQuestGateOpen(quest, next, flags, state.varTree || {})) continue;
       if (quest.id === "hidden_all_collect_line" && !canBypassExclusive(gameState)) continue;
 
       let progress = next[quest.id];
