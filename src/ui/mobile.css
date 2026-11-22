@@ -810,7 +810,7 @@
     /* 用可视视口坐标从顶部钉位置：iOS 上 fixed bottom 的基准不可靠 */
     top: calc(var(--mobile-viewport-offset, 0px) + var(--mobile-viewport-height, 100dvh) - 60px) !important;
     z-index: 400;
-    background: var(--bg-panel);
+    background: var(--bg-panel) !important;
     border: 1px solid var(--border);
     border-radius: 14px;
     box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.45);
