@@ -4,6 +4,7 @@ export default { quest: {
     type: "QT_TALK",
     title: "欢喜教·任务一·香中异",
     giver: "李掌柜",
+    requiresFactionRep: { 欢喜教: 0 },
     description: "天都镇弥漫奇异香气，闻之心神松弛，但有老商贩私下嘀咕——闻多了睡得死沉，醒来钱包在哪都记不清。张商人的老主顾在天都行脚楼住三天，退房时少了两锭银子想不起是花了还是被拿了。",
     stages: [
       {
@@ -11,7 +12,7 @@ export default { quest: {
         description: "李掌柜压低声音指路——去天都行脚楼要「地字号房」（隔壁就是天都香行后墙）。入夜后后墙传来极轻的杵臼声，持续约一个时辰，香气子时最浓。推开后窗可见天都香行后院有白衣身影在月下碾药。",
         playerHint: "李掌柜给了线索——去天都行脚楼要地字号房，夜里留意天都香行后墙的动静。",
         completionFlag: "quest_huanxijiao1_s1",
-        onReach: { exp: 1, favorability: { "李掌柜": 10 }, flags: ["lore_baixiangzhai_yebanchusheng"] },
+        onReach: { exp: 1, money: 80, items: [{ name: "安神檀香", fromCatalog: true }, { name: "安神檀香", fromCatalog: true }], quietFactionRep: { 欢喜教: 12 }, favorability: { "李掌柜": 10 }, flags: ["lore_baixiangzhai_yebanchusheng"] },
       },
     ],
     rewardText: "获得线索「天都香行的夜半杵声」与「每月初五比武招贤」。",
@@ -23,6 +24,7 @@ export default { quest: {
     giver: "罗琦",
     description: "对外说「以武会友，广结善缘」，实际借比武筛选可控制或不能留的人。场地在天都香行后院空地，每月初五举办。规则：连胜三场可跟「教主的女儿」罗琦切磋一场，胜了她欢喜堂大门就对你敞开——目前无人胜过。",
     requiresQuestCompleted: "huanxijiao_1_xiangzhongyi",
+    requiresFactionRep: { 欢喜教: 10 },
     stages: [
       {
         id: "s1_tournament",
@@ -36,7 +38,7 @@ export default { quest: {
         description: "第三场后罗琦端茶示意，压低声音说明茶是为了压一压内堂更浓的香，不是下药。入内堂后罗琦开门见山：最近比武总有人混进来，不是冲品香，是冲天都香行的香料账本，需要帮手。",
         playerHint: "打到第三场后罗琦请茶，跟她进内堂听她要说什么。",
         completionFlag: "quest_huanxijiao2_s2",
-        onReach: { exp: 2, favorability: { "罗琦": 10 } },
+        onReach: { exp: 2, money: 120, items: [{ name: "欢喜堂通行木牌", fromCatalog: true }], quietFactionRep: { 欢喜教: 15 }, favorability: { "罗琦": 10 } },
       },
     ],
     rewardText: "罗琦初步信任。识破冒充者额外好感+10，且后续管家情报更早解锁。",
@@ -48,6 +50,7 @@ export default { quest: {
     giver: "罗琦",
     description: "罗琦因管家眼线盯得紧走不开，托玩家去锦官城天下商行采买安息香、曼陀罗花、迦南脂、冰片。特别说明她的香料走大草甸而非熊山口——「不要走别人给你留的路。」",
     requiresQuestCompleted: "huanxijiao_2_biwuzhaoxian",
+    requiresFactionRep: { 欢喜教: 15 },
     stages: [
       {
         id: "s1_buy",
@@ -56,8 +59,10 @@ export default { quest: {
         completionFlag: "quest_huanxijiao_dive1_s1",
         onReach: {
           exp: 2,
+          money: 100,
+          quietFactionRep: { 欢喜教: 12 },
           favorability: { "罗琦": 15, "阿旺": 10 },
-          items: [{ name: "去年的陈皮", category: "misc", quality: "绿", desc: "罗琦娘去世那年存的陈皮，她走后罗琦再没做过陈皮红豆沙。" }],
+          items: [{ name: "滇南醒神香", fromCatalog: true }, { name: "滇南醒神香", fromCatalog: true }, { name: "去年的陈皮", category: "misc", quality: "绿", desc: "罗琦娘去世那年存的陈皮，她走后罗琦再没做过陈皮红豆沙。" }],
           flags: ["perk_baixiangzhai_discount"],
         },
       },
@@ -90,13 +95,14 @@ export default { quest: {
     giver: "罗琦",
     description: "每月十五的供养仪式，罗琦邀玩家「只看不参与」——「你没欠我们的，看完之后还是没欠。」",
     requiresQuestCompleted: "huanxijiao_dive_1_caimaixiangliao",
+    requiresFactionRep: { 欢喜教: 25 },
     stages: [
       {
         id: "s1_ceremony",
         description: "三节仪式：念名（梵语念出去年死去的三个供养人名字，「去者已去，来者还来」）；供香（弟子撒的不是欢喜丹，是普通檀香粉，代表「自己今年做过的好事」，坏事写在纸背面年底一起烧）；摸顶（教主对每个弟子说一句话，唯独不给罗琦摸顶——「我是要替他管事的人，摸顶是给需要被庇护的人。他说我不需要庇护」，语气里有骄傲也有不易察觉的失落）。",
         playerHint: "参加欢喜教的供养仪式，看清它到底是什么。",
         completionFlag: "quest_huanxijiao_dive3_s1",
-        onReach: { exp: 2, favorability: { "罗琦": 15, "梵衍那": 10 }, items: [{ name: "旧檀香粉", category: "misc", quality: "白", desc: "纸面空白，背面没写字。收着，等明年。" }] },
+        onReach: { exp: 2, money: 120, factionRep: { 欢喜教: 14, 锦官城: -4 }, favorability: { "罗琦": 15, "梵衍那": 10 }, items: [{ name: "旧檀香粉", category: "misc", quality: "白", desc: "纸面空白，背面没写字。收着，等明年。" }] },
       },
     ],
     rewardText: "",
@@ -107,14 +113,15 @@ export default { quest: {
     title: "欢喜教·深入了解四·药钵边的故事",
     giver: "罗琦",
     description: "罗琦邀玩家认香料，实为讲述五味香料背后的私人记忆。",
-    requiresAnyOf: ["huanxijiao_dive_3_gongyangyishi", "huanxijiao_dive_2_paomahuideyaoqing"],
+    requiresQuestCompleted: "huanxijiao_2_biwuzhaoxian",
+    requiresFactionRep: { 欢喜教: 30 },
     stages: [
       {
         id: "s1_stories",
         description: "曼陀罗（缅甸换方子的往事，梵衍那用亡妻的镯子换药方，「不是舍不得，是不好意思说穷」）；安息香（大理波斯商人教她认字，后来再没来过，生死不明）；迦南脂（「供神的香跟控制人的药是同一种东西，区别只是用量」）；冰片（自己试出的止血方子，「每次配新方子，我都拿自己先试」）；陈皮（母亲留下的最后念想，嫁给梵衍那后再没回过村子，是回不去还是不想回，罗琦自己也不知道）。讲完后罗琦反问玩家的师承来历。",
         playerHint: "听罗琦讲那几味香料背后的往事。",
         completionFlag: "quest_huanxijiao_dive4_s1",
-        onReach: { exp: 2, favorability: { "罗琦": 20 } },
+        onReach: { exp: 2, money: 100, items: [{ name: "天竺净心香", fromCatalog: true }, { name: "天竺净心香", fromCatalog: true }], quietFactionRep: { 欢喜教: 12, 喇嘛庙: 8 }, favorability: { "罗琦": 20, "梵衍那": 10 } },
       },
     ],
     rewardText: "若玩家真诚回答，解锁「上次跟你说的那件事」这类后续主动提及的对话分支。",
@@ -125,7 +132,8 @@ export default { quest: {
     title: "欢喜教·深入了解五·弟子的过去",
     giver: "罗琦",
     description: "帮忙碾药换一顿晚饭，三个老弟子在无聊的碾药时间里主动讲述各自的来历。",
-    requiresQuestCompleted: "huanxijiao_dive_3_gongyangyishi",
+    requiresQuestCompleted: "huanxijiao_3_guanjiadetanzi",
+    requiresFactionRep: { 欢喜教: 40 },
     stages: [
       {
         id: "s1_stories",
@@ -134,8 +142,10 @@ export default { quest: {
         completionFlag: "quest_huanxijiao_dive5_s1",
         onReach: {
           exp: 2,
-          favorability: { "罗琦": 15, "老何": 20, "阿雅": 20, "桑杰": 20 },
-          items: [{ name: "粗糙的药碾石", category: "misc", quality: "白", desc: "它碾过的药，有的救人，有的害人。石头不知道，碾药的人知道。" }],
+          money: 150,
+          quietFactionRep: { 欢喜教: 18, 玉泉寨: 8 },
+          favorability: { "罗琦": 10, "老何": 20, "阿雅": 20, "桑杰": 20 },
+          items: [{ name: "内院同心结", fromCatalog: true }, { name: "粗糙的药碾石", category: "misc", quality: "白", desc: "它碾过的药，有的救人，有的害人。石头不知道，碾药的人知道。" }],
         },
       },
     ],
@@ -147,7 +157,9 @@ export default { quest: {
     title: "欢喜教·任务三·管家的探子",
     giver: "罗琦",
     description: "完成任务二后，若五个「深入了解」支线全部完成，罗琦的措辞会从「我找你不是白找，你去跟兰姐谈」变为「以前这种事我不会交给外面的人。你是第一个」——她委托调查管家手下动向。",
-    requiresQuestCompleted: ["huanxijiao_2_biwuzhaoxian", "huanxijiao_dive_1_caimaixiangliao", "huanxijiao_dive_2_paomahuideyaoqing", "huanxijiao_dive_3_gongyangyishi", "huanxijiao_dive_4_yaobobiandegushi", "huanxijiao_dive_5_dizidegusi"],
+    requiresQuestCompleted: "huanxijiao_2_biwuzhaoxian",
+    requiresAnyOf: ["huanxijiao_dive_1_caimaixiangliao", "huanxijiao_dive_3_gongyangyishi", "huanxijiao_dive_4_yaobobiandegushi"],
+    requiresFactionRep: { 欢喜教: 25 },
     stages: [
       {
         id: "s1_spy",
@@ -162,7 +174,7 @@ export default { quest: {
         playerHint: "另一条线索在兰姐手上——她要你先跑趟大草甸取燕羊胎。",
         completionFlag: "quest_huanxijiao3_s2",
         collect: { item: "燕羊胎", at: "大草甸·草甸深处", quality: "绿", hint: "与兰姐线同一辅料，若已采过则此步自动跳过" },
-        onReach: { exp: 3, favorability: { "兰姐": 20, "罗琦": 15 }, flags: ["unlock_jinguancheng_anxian"] },
+        onReach: { exp: 3, money: 180, items: [{ name: "迷香解毒囊", fromCatalog: true }, { name: "陆福生的密谕", fromCatalog: true }], quietFactionRep: { 欢喜教: 18 }, favorability: { "兰姐": 20, "罗琦": 15 }, flags: ["unlock_jinguancheng_anxian"] },
       },
     ],
     rewardText: "开启锦官城暗线入口。罗琦看信后态度从「避让管家」转为「可以利用他的恐惧」。",
@@ -174,6 +186,7 @@ export default { quest: {
     giver: null,
     description: "获得「锦官城半年前调查罗琦」情报，前往锦官城。文渊书肆老板记得半年前有人（手指很粗不像读书人）查过天竺文汉文对照佛经，借阅签名是化名「罗」——指向老兵退伍汉。",
     requiresQuestCompleted: "huanxijiao_3_guanjiadetanzi",
+    requiresFactionRep: { 欢喜教: 40 },
     stages: [
       {
         id: "s1_confirm",
@@ -181,7 +194,7 @@ export default { quest: {
         playerHint: "去锦官城找那个老兵退伍汉,问出罗琦和都事之间的旧事。",
         completionFlag: "quest_huanxijiao4_s1",
         at: "锦官城·暗巷入口",
-        onReach: { exp: 4, favorability: { "老兵退伍汉": 30 }, flags: ["lore_dushi_maodun_lichang"] },
+        onReach: { exp: 4, money: 240, items: [{ name: "染血的香行凭据（抄本）", fromCatalog: true }], factionRep: { 欢喜教: 20, 锦官城: -6 }, favorability: { "老兵退伍汉": 30 }, flags: ["lore_dushi_maodun_lichang"] },
       },
     ],
     rewardText: "带回情报后罗琦沉默良久：「他不是来杀我们的」——语气比害怕更复杂，像内疚，因为她不想欠都事人情但已经欠了。",
@@ -193,6 +206,7 @@ export default { quest: {
     giver: null,
     description: "天都香行被土司府巡捕营贴封条（理由「私售违禁香料」），非管家亲自带队，是手下姓马的差役领头。欢喜堂未被攻破——兰姐带人堵在巷口撑了一夜，援引「天都镇规矩，土司府封铺子需先过镇上商会点头」。",
     requiresQuestCompleted: ["huanxijiao_3_guanjiadetanzi", "huanxijiao_4_jinguanchengdeanxian"],
+    requiresFactionRep: { 欢喜教: 55 },
     stages: [
       {
         id: "s1_triage",
@@ -203,6 +217,9 @@ export default { quest: {
         isCgMoment: true,
         onReach: {
           exp: 5,
+          money: 300,
+          items: [{ name: "土司私兵夜袭令牌", fromCatalog: true }, { name: "极品金创香膏", fromCatalog: true }, { name: "极品金创香膏", fromCatalog: true }, { name: "极品金创香膏", fromCatalog: true }],
+          factionRep: { 欢喜教: 25, 鱼定土司府: -15 },
           favorability: { "罗琦": 25, "兰姐": 15 },
           flags: ["faction_tiandu_merchants_independent"],
         },
@@ -218,6 +235,7 @@ export default { quest: {
     description: "欢喜教任务线的收束节点。梵衍那在后院露天召集全部弟子，手持父亲留下的断剑，说自己这一生做了三件事——离开天竺（失败）、活下来（运气）、收了你们（上天补偿）——宣布教主之位正式传给罗琦。罗琦跪下接的不是权杖印信，是那截断剑。",
     playerHint: "到天都香行后院,见证梵衍那的交代。",
     requiresQuestCompleted: "huanxijiao_5_guanjiadetuxi",
+    requiresFactionRep: { 欢喜教: 80 },
     stages: [
       {
         id: "s1_succession",
@@ -251,9 +269,10 @@ export default { quest: {
           exp: 6,
           favorabilitySet: { "罗琦": 100 },
           reputation: 12,
-          factionRep: { 欢喜教: 10 },
-          items: [{ name: "空白通关文书", category: "misc", quality: "橙", desc: "盖印但收件人空白，都事给欢喜教留的一条后路。主线终局可用作撤离/转移关键人物的凭证。" }],
-          flags: ["ending_seed_huanxijiao_transformed"],
+          money: 350,
+          factionRep: { 欢喜教: 40, 锦官城: 5 },
+          items: [{ name: "圣女素银莲簪", fromCatalog: true }, { name: "空白通关文书", category: "misc", quality: "橙", desc: "盖印但收件人空白，都事给欢喜教留的一条后路。主线终局可用作撤离/转移关键人物的凭证。" }],
+          flags: ["ending_seed_huanxijiao_transformed", "ending_huanxi_luoqi_ally"],
         },
       },
     ],

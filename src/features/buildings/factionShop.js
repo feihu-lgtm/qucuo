@@ -76,6 +76,15 @@ const FACTION_SHOPS = {
     hostileItems: ["雪山姜枣干粮", "寒岭冻伤膏"],
     coldItems: ["雪山姜枣干粮", "寒岭冻伤膏", "雪松木剑"],
   },
+  // 欢喜教天都香行：明面柜台与后院暗柜同一货池（合稿 6.2）；交恶只卖明面白绿货、加价两成。
+  天都香行: {
+    faction: "欢喜教", idPrefix: "huanxi_purchase",
+    outlets: { grocery_tiandu: "vault" },
+    nowhere: "须到天都镇西市的天都香行才能买欢喜教的货。",
+    banned: "老何领着两名内院弟子堵在门口，短弯刀半出鞘：「香行不做你的生意。」",
+    hostileClosed: {},
+    hostileQualities: ["白", "绿"],
+  },
 };
 
 export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];

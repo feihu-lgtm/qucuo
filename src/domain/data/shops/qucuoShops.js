@@ -232,14 +232,23 @@ export const QUCUO_SHOPS = {
     ],
   },
 
-  // ── 天都香行（欢喜教明面铺子·礼品/杂货） ──
+  // ── 天都香行（欢喜教，合稿·欢喜教 6.1）：明面 6 件 + 暗柜 6 件，按欢喜教声誉上架；
+  // 天竺莲纹短刃合稿门槛 140，声誉封顶 100，改为拜入且声誉 100、限购一件。
   天都香行: {
     shopName: "天都香行",
     items: [
-      { name: "沉香小饼", category: ITEM_CATEGORY.MISC, quality: "绿" },
-      { name: "藏香束", category: ITEM_CATEGORY.MISC, quality: "白" },
-      { name: "茉莉花糕", category: ITEM_CATEGORY.MISC, quality: "白" },
-      { name: "龙涎香囊", category: ITEM_CATEGORY.MISC, quality: "蓝" },
+      { name: "滇南安神香", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "云南沉水香块", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "牧民解羊弯刀", category: ITEM_CATEGORY.WEAPON, quality: "绿" },
+      { name: "靛青香行长衫", category: ITEM_CATEGORY.ARMOR, quality: "绿" },
+      { name: "藏红花香囊", category: ITEM_CATEGORY.ACCESSORY, quality: "绿" },
+      { name: "醒神草药茶", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "三息醉香粉", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "缅银吹香筒", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "大理素锦软绫衣", category: ITEM_CATEGORY.ARMOR, quality: "蓝", minRep: 40 },
+      { name: "紫檀秘香囊", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 40 },
+      { name: "极品金创香膏", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 80 },
+      { name: "天竺莲纹短刃", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100, member: true, limitOnce: true },
     ],
   },
 

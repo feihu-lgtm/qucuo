@@ -173,7 +173,20 @@ export const BUILDINGS_BY_LOCATION = {
     },
     {
       id: "grocery_tiandu", name: "天都香行", type: BUILDING_TYPE.GROCERY, shopKey: "天都香行",
-      desc: "欢喜教的明面铺子，专卖香料和点心，作为礼物送给NPC时好感加成比普通物品高。",
+      desc: "西市排面最大的香料商号，明面专卖大理沉香与滇南药材，账本干干净净经得起官府查验；熟客报出暗号，掌柜便领你掀帘进后间挑几样「安神好货」。",
+    },
+    // ── 天都镇·欢喜教据点（合稿·欢喜教 2.3）──
+    {
+      id: "teahouse_pinxiangya", name: "品香雅座", type: BUILDING_TYPE.TEAHOUSE,
+      desc: "香行东厢的半敞茶室，一壶大理烤茶配半截甜香，常有土司府管事与过境驼商在此酒后吐真言。只要你听得懂话外音，天都镇一半的暗账都在这几张竹帘后头。",
+    },
+    {
+      id: "wuguan_huanxitang", name: "欢喜堂·演武坪", type: BUILDING_TYPE.WUGUAN, skillSet: "欢喜",
+      desc: "藏在晒香天井之后的青砖小校场，四周种满能遮去声响的高竹。内院弟子白日捣香粉，入夜便在此演练天竺转手与迷香身法，外人难窥分毫。",
+    },
+    {
+      id: "sect_entry_huanxi", name: "坛城香案", type: BUILDING_TYPE.SECT_ENTRY, sect: "欢喜教",
+      desc: "设于欢喜堂偏厅的拜师香案，案上只摆一尊铜钵与三柱无烟红香。过得了圣女的眼、敬得起教主的茶，方能领一块「莲纹铜牌」，自此算入了欢喜教内院门墙。",
     },
     {
       id: "smithy_tiandu", name: "孟记铁铺", type: BUILDING_TYPE.SMITHY, shopKey: "孟记铁铺", craft: "forge",

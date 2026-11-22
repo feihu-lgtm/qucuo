@@ -13,6 +13,7 @@ import { add, applyWrite, set, updateField } from "../../domain/rules/state/appl
 import { giftRange } from "../../domain/rules/state/fields.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
 import { soupKitchenRepGain } from "../../domain/rules/economy/soupKitchen.js";
+import { herbDonationRepGain } from "../../domain/rules/economy/herbDonation.js";
 import { applyFactionRep } from "../../domain/rules/economy/factionRep.js";
 
 function composeUpdates(first, second) {
@@ -85,6 +86,12 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   }
   if (snowFlags.length) {
     changes.flags = updateField("flags", (flags) => set("flags", [...new Set([...flags, ...snowFlags])]));
+  }
+  const herb = herbDonationRepGain(state, npc, typeof item === "string" ? CATALOG_INDEX[item] : item);
+  if (herb) {
+    changes.varTree = composeUpdates(changes.varTree, (prev) => applyFactionRep(prev, { [herb.faction]: herb.delta }, { ripple: false }));
+    changes.flags = changes.flags ? composeUpdates(changes.flags, herb.flags) : herb.flags;
+    logs.push({ t: "affection", text: `  ✦ 阿雅把药材收进调香药房，${herb.faction}声誉 +${herb.delta}` });
   }
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);
