@@ -1,0 +1,127 @@
+// 锦官城支线（合稿《锦官城》支线 2、3）。任务 id 与锦官城内层门锁对上：
+// 铁栅暗牢认 jinguancheng_zhi2_tianduanxian，卷宗库房认 jinguancheng_zhi3_hongmotuming。
+export default { quest: {
+"jinguancheng_zhi2_tianduanxian": {
+    id: "jinguancheng_zhi2_tianduanxian",
+    type: "QT_MYSTERY",
+    title: "官支2·天都暗线录",
+    giver: "裴九江",
+    description: "宋小乙派往天都镇盯梢的线人断了三日消息。裴九江疑心天都香行近来异动，又听说黑风寨有人频繁下山采买伤药，命你便衣潜入，查明实情。",
+    requiresFactionRep: { 锦官城: 25 },
+    stages: [
+      {
+        id: "s1_brief",
+        description: "裴九江在巡检校场把一套便衣扔给你：「快班的线断了三天。天都香行在搞什么，黑风寨的人又下山做什么——查清楚，别穿官皂去。」",
+        playerHint: "去巡检校场找裴九江领这趟差。",
+        completionFlag: "quest_jgzhi2_s1",
+        at: "锦官城·巡检校场·锦官武馆后院",
+        onReach: { exp: 2 },
+      },
+      {
+        id: "s2_probe",
+        description: "你潜入天都镇西市，在天都香行外围翻到欢喜教借香料商队暗运精铁的货单；后巷里一名黑风寨探子正替受了伤的宋小乙遮掩行踪。",
+        playerHint: "去天都镇天都香行外围查货单，找到失联的宋小乙。",
+        completionFlag: "quest_jgzhi2_s2",
+        giver: null,
+        at: "天都镇·天都香行",
+        requireLocation: { district: "天都镇", inner: "天都香行" },
+        onReach: { exp: 3 },
+      },
+      {
+        id: "s3_report",
+        description: "回到锦官城写呈报公文，裴九江问你怎么落笔：把黑风寨放风汉子的行踪一并写上邀功，还是只报天都香行的异动，替巴桑遮去这桩官司。",
+        playerHint: "替裴九江定这份呈报怎么写。",
+        completionFlag: ["quest_jgzhi2_hide", "quest_jgzhi2_both"],
+        at: "锦官城·巡检校场·锦官武馆后院",
+        choices: [
+          { flag: "quest_jgzhi2_hide", label: "只报欢喜教，隐去黑风寨踪迹", resolve: "none" },
+          { flag: "quest_jgzhi2_both", label: "两家如实皆报", resolve: "none" },
+        ],
+        onReach: {
+          money: 200,
+          items: [{ name: "夜行官皂软靴", category: "armor", quality: "蓝", desc: "裴九江快班压箱底的软底皂靴，夜里走瓦不出声。" }],
+          // 合稿 stealth：调查阶段不牵连欢喜教自动扣分，只动锦官城本家。
+          quietFactionRep: { 锦官城: 18 },
+          byFlag: {
+            quest_jgzhi2_hide: { factionRep: { 黑风寨: 12 }, favorability: { "宋小乙": 15 } },
+            quest_jgzhi2_both: { factionRep: { 锦官城: 8, 黑风寨: -15 }, favorability: { "孙文墨": 10 } },
+          },
+        },
+      },
+      {
+        id: "s4_cell",
+        description: "交差后，裴九江领你走了一趟北衙铁栅暗牢，在滴水声里亮明官府与黑风寨「互不越线」的底牌。",
+        playerHint: "随裴九江下北衙铁栅暗牢。",
+        completionFlag: "quest_jgzhi2_s4",
+        giver: null,
+        at: "锦官城·北衙地底·铁栅暗牢",
+        requireLocation: { district: "锦官城", inner: "北衙地底·铁栅暗牢" },
+        onReach: { exp: 3 },
+      },
+    ],
+    rewardText: "裴九江拍拍你的肩：「懂分寸的人，快班里不多。」",
+  },
+"jinguancheng_zhi3_hongmotuming": {
+    id: "jinguancheng_zhi3_hongmotuming",
+    type: "QT_MYSTERY",
+    title: "官支3·红墨涂名录",
+    giver: "沈归尘",
+    description: "沈归尘整理三十年前曲措乡鱼鳞图册时，发现鱼定村与玉泉寨田界最关键的三页原档被人用蜀南秘药洗去了墨迹，官府早年人事簿上柳青鸢本名那一页也被人裁损。",
+    requiresFactionRep: { 锦官城: 30 },
+    stages: [
+      {
+        // 沈归尘常驻的卷宗库房要锦官城声誉 ≥40 或接了本任务才进得去，所以在库房外的都事府接。
+        id: "s1_ledger",
+        description: "沈归尘抱着几本洗白了的残册从东厢出来，在都事府拦住你：「三页田界原档，一页人事簿，全叫药水洗了。这活儿，老夫一个人查不动。」",
+        playerHint: "在都事府听沈归尘说残档的事。",
+        completionFlag: "quest_jgzhi3_s1",
+        giver: null,
+        at: "锦官城·都事府",
+        requireLocation: { district: "锦官城", inner: "都事府" },
+        onReach: { exp: 2 },
+      },
+      {
+        id: "s2_guanghan",
+        description: "你按沈归尘的指点到广汉三星镇破庙，拜会丐帮察世堂的周小满，用卷宗里的田号和逃荒牧民口述的祖辈地界逐一核对，拼出了三十年地契造假的完整差额。",
+        playerHint: "去广汉破庙找周小满对账。",
+        completionFlag: "quest_jgzhi3_s2",
+        giver: null,
+        at: "广汉·西厢鸽舍与察世房",
+        requireLocation: { district: "广汉", inner: "西厢鸽舍与察世房" },
+        onReach: { exp: 3 },
+      },
+      {
+        id: "s3_mole",
+        description: "你顺着药水味回查锦官城暗巷与东厢，查出动卷宗手脚的是早年收过陆福生重金的孙文墨门下书办，药水出自唐门唐伯渊的私售渠道。",
+        playerHint: "回锦官城暗巷一带追查洗档的内鬼。",
+        completionFlag: "quest_jgzhi3_s3",
+        giver: null,
+        at: "锦官城·暗巷入口",
+        requireLocation: { district: "锦官城", inner: "暗巷入口" },
+        onReach: { exp: 3 },
+      },
+      {
+        id: "s4_seal",
+        description: "你把复原后的田界副册交回卷宗库房。沈归尘老泪纵横，要连夜重抄两份——一份锁进都事府秘档，一份托你带给鱼定村才旦。手里还捏着那个书办的把柄，怎么处置，由你定。",
+        playerHint: "把副册交还沈归尘，定下内鬼的把柄怎么用。",
+        completionFlag: ["quest_jgzhi3_public", "quest_jgzhi3_blackmail"],
+        at: "锦官城·刑名东厢·卷宗库房",
+        requireLocation: { district: "锦官城", inner: "刑名东厢·卷宗库房" },
+        choices: [
+          { flag: "quest_jgzhi3_public", label: "副册公开呈交柳青鸢，并抄送才旦", resolve: "none" },
+          { flag: "quest_jgzhi3_blackmail", label: "拿内鬼把柄私下要挟孙文墨封口换银", resolve: "none" },
+        ],
+        onReach: {
+          money: 180,
+          items: [{ name: "三十年前鱼鳞复原图", category: "misc", quality: "紫", desc: "沈归尘照副册重绘的田界图，终局质证桑杰朵杰的核心证物。" }],
+          factionRep: { 锦官城: 20, 鱼定土司府: -6 },
+          byFlag: {
+            quest_jgzhi3_public: { factionRep: { 鱼定村: 15, 丐帮三星分舵: 12 } },
+            quest_jgzhi3_blackmail: { money: 400, factionRep: { 锦官城: -5 }, favorability: { "沈归尘": -20 } },
+          },
+        },
+      },
+    ],
+    rewardText: "沈归尘把残册重新上了樟脑：「三十年了，这几页总算又有字了。」",
+  },
+} };
