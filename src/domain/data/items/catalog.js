@@ -143,6 +143,8 @@ export const WUXIAN_GOODS = getContent("itemGroup", "WUXIAN_GOODS").map(id => ge
 export const XUESHAN_GOODS = getContent("itemGroup", "XUESHAN_GOODS").map(id => getContent("item", id));
 // 鱼定土司府军需司货池与土司府人物随身物（named；商店铺货靠 minRep 门槛）
 export const TUSI_GOODS = getContent("itemGroup", "TUSI_GOODS").map(id => getContent("item", id));
+// 百花门天都镇具名物（同五仙层级，named；暗阁铺货靠 minRep 门槛）
+export const BAIHUA_GOODS = getContent("itemGroup", "BAIHUA_GOODS").map(id => getContent("item", id));
 
 // ============================================================================
 // 核心：把 catalog 条目实例化成一个完整物品对象
@@ -208,6 +210,7 @@ export const CATALOG = [
   ...WUXIAN_GOODS,         // 五仙教雾隐寨具名物（named，商店+NPC随身物共用条目）
   ...XUESHAN_GOODS,        // 雪山派具名物（named，门派商坊+NPC随身物+任务物共用条目）
   ...TUSI_GOODS,           // 鱼定土司府具名物（军需司货池+土司府人物随身物）
+  ...BAIHUA_GOODS,         // 百花门天都镇具名物（named，商店+NPC随身物共用条目）
 ];
 
 // name → 条目，供"按名取物"（任务发放具名物品、商店铺货、AI 引用时反查数值）
