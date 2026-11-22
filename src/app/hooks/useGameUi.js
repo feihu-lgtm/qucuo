@@ -208,13 +208,20 @@ export function createInputKeyHandler({
   composingRef, interactMode, sendPigeonLetter, pigeonTarget, input, act,
   cmdHistory, histIdx, setHistIdx, setInput,
 }) {
-  return (e) => {
+  // 回车和输入栏的「发送」按钮走同一个提交入口：按钮调用 handler.submit()。
+  const submit = () => {
+    if (composingRef.current) return;
+    if (interactMode === "pigeon") { sendPigeonLetter(pigeonTarget, input, { channel: "pigeon" }); return; }
+    act(input);
+  };
+  const handler = (e) => {
     if (e.key === "Enter") {
       if (composingRef.current || e.nativeEvent?.isComposing || e.keyCode === 229) return;
-      if (interactMode === "pigeon") { sendPigeonLetter(pigeonTarget, input, { channel: "pigeon" }); return; }
-      act(input); return;
+      submit(); return;
     }
     if (e.key === "ArrowUp") { e.preventDefault(); if (cmdHistory.length) { const ni = Math.min(histIdx + 1, cmdHistory.length - 1); setHistIdx(ni); setInput(cmdHistory[ni]); } return; }
     if (e.key === "ArrowDown") { e.preventDefault(); if (histIdx > 0) { setHistIdx(histIdx - 1); setInput(cmdHistory[histIdx - 1]); } else { setHistIdx(-1); setInput(""); } return; }
   };
+  handler.submit = submit;
+  return handler;
 }
