@@ -6,15 +6,18 @@ import {
   ALL_BODY_PRESETS,
   BODY_PRESETS,
   BODY_TAG_POOL,
+  COMPANION_BODY_PROFILES,
   PLAYER_PORTRAIT_PRESETS,
   appendBodyTag,
   applyBodyPreset,
   defaultPortraitIdForGender,
+  formatCompanionBodyBlock,
   getPortraitPreset,
   portraitPresetUrl,
 } from "./bodyPresets.js";
+import { buildNpcContext } from "../../../engine/prompt/roundNotes.js";
 
-describe("bodyPresets & opening portrait profiles", () => {
+describe("bodyPresets & companion humanized body profiles", () => {
   it("pairs all 8 player portraits on disk with full 12-field adult profiles plus 6 extra library presets", () => {
     expect(PLAYER_PORTRAIT_PRESETS).toHaveLength(8);
     expect(BODY_PRESETS).toHaveLength(6);
@@ -31,6 +34,11 @@ describe("bodyPresets & opening portrait profiles", () => {
     for (const preset of ALL_BODY_PRESETS) {
       for (const field of BODY_FIELDS) {
         expect(preset.profile[field.key], `${preset.id}.${field.key}`).toBeTruthy();
+      }
+    }
+    for (const key of ["pearl", "snowLeopard"]) {
+      for (const field of BODY_FIELDS) {
+        expect(COMPANION_BODY_PROFILES[key][field.key], `${key}.${field.key}`).toBeTruthy();
       }
     }
     for (const field of BODY_FIELDS) {
@@ -58,5 +66,44 @@ describe("bodyPresets & opening portrait profiles", () => {
     expect(appendBodyTag("一米七二长腿高挑", "一米七二长腿高挑")).toBe("一米七二长腿高挑");
     expect(appendBodyTag("一米七二", "腿长腰直")).toBe("一米七二，腿长腰直");
     expect(appendBodyTag("一米七二，", "腿长腰直")).toBe("一米七二，腿长腰直");
+  });
+
+  it("gates companion humanized body details strictly on human form and nsfw", () => {
+    for (const key of ["pearl", "snowLeopard"]) {
+      const pubBlock = formatCompanionBodyBlock(key, { nsfw: false });
+      expect(pubBlock).toContain("身量");
+      expect(pubBlock).toContain("惯常穿着");
+      expect(pubBlock).not.toContain("敏感处");
+      expect(pubBlock).not.toContain("习惯癖好");
+
+      const nsfwBlock = formatCompanionBodyBlock(key, { nsfw: true });
+      expect(nsfwBlock).toContain("敏感处");
+      expect(nsfwBlock).toContain("习惯癖好");
+    }
+
+    const baseArgs = {
+      room: { name: "鱼定村", npcs: [], items: [], exits: [] },
+      cmd: "",
+      visibleNpcs: [],
+      preset: { npcLore: [] },
+      convo: [],
+      varTree: { 世界: {} },
+      questProgress: {},
+      time: 10,
+      companionState: { pearl: { unlocked: true, active: true, data: { name: "珍珠" } } },
+    };
+
+    const humanSfw = buildNpcContext({ ...baseArgs, nsfwOn: false, companionForms: { pearl: "human" } });
+    expect(humanSfw.npcLoreBlockWithQuest).toContain("化形体貌明细");
+    expect(humanSfw.npcLoreBlockWithQuest).toContain("一米六八");
+    expect(humanSfw.npcLoreBlockWithQuest).not.toContain("敏感处");
+
+    const humanNsfw = buildNpcContext({ ...baseArgs, nsfwOn: true, companionForms: { pearl: "human" } });
+    expect(humanNsfw.npcLoreBlockWithQuest).toContain("化形体貌明细");
+    expect(humanNsfw.npcLoreBlockWithQuest).toContain("敏感处");
+
+    const beastNsfw = buildNpcContext({ ...baseArgs, nsfwOn: true, companionForms: { pearl: "beast" } });
+    expect(beastNsfw.npcLoreBlockWithQuest).not.toContain("化形体貌明细");
+    expect(beastNsfw.npcLoreBlockWithQuest).not.toContain("敏感处");
   });
 });
