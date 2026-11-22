@@ -75,6 +75,17 @@ const FACTION_SHOPS = {
     hostileClosed: {},
     hostileQualities: ["白", "绿", "蓝"],
   },
+  // 雪山派·门派商坊：隐世门派，货池平常（白绿蓝紫橙按 minRep 阶梯）。
+  // 交恶（-59~-20）溢价两成且只留基础干粮姜茶（hostileItems）；冷淡（-19~-1）原价只摆白品杂货。
+  门派商坊: {
+    faction: "雪山派", idPrefix: "xueshan_purchase",
+    outlets: { sectshop_xueshan: "outer" },
+    nowhere: "须到雪山派门派商坊才能买雪山的山货。",
+    banned: "沈既白把柜台一合：「商坊不做你的生意，请下山。」",
+    hostileClosed: {},
+    hostileItems: ["雪山姜枣干粮", "寒岭冻伤膏"],
+    coldItems: ["雪山姜枣干粮", "寒岭冻伤膏", "雪松木剑"],
+  },
 };
 
 export const isFactionShop = (shopKey) => !!FACTION_SHOPS[shopKey];

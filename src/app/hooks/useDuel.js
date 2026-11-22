@@ -1,7 +1,8 @@
 import { useCallback, useEffect } from "react";
 import { gameActions, gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
-import { recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
+import { lookNpc, recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
+import { isNpcLooked } from "../../domain/rules/npc/npcAwareness.js";
 import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { buildDuelNarrationPrompt, duelFactLogs, duelNarrationSlots, parseDuelNarration, phraseNarration } from "../../domain/rules/combat/duelBrief.js";
@@ -38,10 +39,10 @@ export async function openDuelAfterNarration({ addLog, setDuelPending, isStale }
 
 // 后台补写描写：不占回合、不排队，玩家可以接着打下一场。
 // 没配 API 或 AI 失败时用短语池拼句兜底；返回 "ai" / "phrase" / false。
-export async function narrateDuelInBackground(key, rounds, { outcomeText, place }, {
+export async function narrateDuelInBackground(key, rounds, { outcomeText, place, aftermath }, {
   ask = askStoryteller, canAsk = hasApiKey, setLog = gameActions.setLog, retryMs,
 } = {}) {
-  const { sys, user } = buildDuelNarrationPrompt(rounds, { outcomeText, place });
+  const { sys, user } = buildDuelNarrationPrompt(rounds, { outcomeText, place, aftermath });
   const roundCount = Array.isArray(rounds) ? rounds.length : 0;
   const viaAi = await backfillInBackground(key, {
     canAsk,
@@ -68,15 +69,31 @@ export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNp
 export function useDuel({
   act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
   duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
-  captureUndo, turnGenerationRef, narrator,
+  captureUndo, turnGenerationRef, narrator, interactMode,
 }) {
   const handleNpcDuel = useCallback((npc) => applyResult(featureCtxRef.current, async () => {
     const isStale = createTurnStaleCheck(turnGenerationRef);
     captureUndo();
+    // 没端详过的人不能上来就打——先替他做「细看」这一步，看清楚了
+    // 再点一次切磋才真的邀战。
+    if (!isNpcLooked(gameStore.getState().varTree, npc.name)) {
+      const look = lookNpc(gameStore.getState(), npc);
+      applyResult(featureCtxRef.current, look);
+      setActiveTarget(npc.name);
+      addLog([{ t: "sys", text: `  动手前，你先端详了${npc.name}——掂量清楚再决定动不动手。` }]);
+      // 正在私聊/耳语里时 act 会把 look 当成对那个人说的话——端详已经记账了，
+      // 描写就免了，直接把细看结果落日志。
+      if (interactMode === "talk" || interactMode === "whisper") {
+        addLog(look.extraReplies || []);
+        return;
+      }
+      await act("look " + npc.id, look.extraReplies || [], { keepUndo: true, inspect: true });
+      return;
+    }
     applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name);
     await openDuelAfterNarration({ addLog, setDuelPending, isStale }, npc);
-  }, { feature: "npc.duel" }), [addLog, captureUndo, featureCtxRef, setActiveTarget, setDuelPending, turnGenerationRef]);
+  }, { feature: "npc.duel" }), [act, addLog, captureUndo, featureCtxRef, interactMode, setActiveTarget, setDuelPending, turnGenerationRef]);
 
   const confirmDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
     if (!duelPending) return;
@@ -104,7 +121,9 @@ export function useDuel({
       pendingQuestBranch,
       createRespawnNpc: ensureNpcCombatData,
     });
-    if (pendingQuestBranch?.mode === "combat" && finishedNpc?.questBranchFlag === pendingQuestBranch.flag) {
+    const questBranch = pendingQuestBranch?.mode === "combat" && finishedNpc?.questBranchFlag === pendingQuestBranch.flag
+      ? pendingQuestBranch : null;
+    if (questBranch) {
       setPendingQuestBranch(null);
     }
     noteAction("duel");
@@ -115,8 +134,15 @@ export function useDuel({
       // 系统事实行立刻落日志；描写在后台补，不走 act，玩家不用等。
       const key = newBackfillKey("duel");
       addLog(duelFactLogs(result.reportRounds, key, result.outcomeText));
+      // 任务分支战斗打赢后，aftermath（任务数据登记的收尾梗概）交给叙事段写成
+      // 结局段——玩家不只看到战况，还看到这件事怎么作结、怎么回归
+      //（小牧童：牦牛认人、牵牛回寨、阿索分糌粑）。
       narrateDuelInBackground(key, result.reportRounds, {
-        outcomeText: result.outcomeText, place: gameStore.getState().room?.name,
+        outcomeText: result.outcomeText,
+        place: gameStore.getState().room?.name,
+        aftermath: questBranch && outcome === "win"
+          ? questBranch.aftermath || `这场打斗是「${questBranch.title}」的一环，写清这件事如何作结、主角如何回归。`
+          : "",
       }, narrator);
       jotNote({
         text: result.recapNote,

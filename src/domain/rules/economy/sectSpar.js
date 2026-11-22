@@ -21,6 +21,14 @@ const SECT_SPARS = [
     daily: 2,
     dailyCap: 39,
   },
+  {
+    faction: "雪山派",
+    npcs: [{ id: "resident_luhanzhi", name: "陆寒枝" }, { id: "resident_shenjibai", name: "沈既白" }],
+    flag: "xueshan_spar",
+    first: 5,
+    daily: 2,
+    dailyCap: 39,
+  },
 ];
 
 // 组队单位 id 取 npc.id || npc.name（teamUnits），玩家恒为 "player"，按 id 认人，不怕重名。

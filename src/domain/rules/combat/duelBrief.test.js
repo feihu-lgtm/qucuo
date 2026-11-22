@@ -30,6 +30,13 @@ describe("duel narration", () => {
     expect(sys).toContain('"ending"');
   });
 
+  it("asks for a 收势作结 ending and carries the aftermath outline when given", () => {
+    const { sys, user } = buildDuelNarrationPrompt([round], { outcomeText: "你胜", place: "大草甸", aftermath: "赶走野狼后牵牛回寨，阿索分了半块糌粑。" });
+    expect(sys).toContain("收势作结");
+    expect(sys).toContain("收尾");
+    expect(user).toContain("收尾：赶走野狼后牵牛回寨");
+  });
+
   it("parses fenced JSON and trims to the round count", () => {
     const parsed = parseDuelNarration('```json\n{"rounds":["一","二","三"],"ending":"完"}\n```', 2);
     expect(parsed).toEqual({ rounds: ["一", "二"], ending: "完" });

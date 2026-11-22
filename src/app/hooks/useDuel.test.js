@@ -183,3 +183,46 @@ describe("narrateDuelInBackground", () => {
     expect(applied(setLog).map((entry) => entry.text)).toEqual(["  第1回合", "  拳风呼呼", "  结局 胜", "  老孙认输"]);
   });
 });
+
+describe("端详门槛", () => {
+  function setupGate() {
+    const npc = { name: "才旦", id: "caidan", levelCap: 1 };
+    const restoreStore = freshStore({
+      room: { name: "鱼定村", npcs: [npc], items: [] },
+      char: { name: "测试主角", hp: [10, 10] },
+      varTree: { 角色: {}, 世界: {} },
+      pot: 0, inv: [], skills: [], flags: [], questProgress: {}, time: 1, log: [],
+    });
+    const addLog = vi.fn();
+    const act = vi.fn();
+    const setDuelPending = vi.fn();
+    const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } };
+    const handlers = {};
+    function Harness() {
+      Object.assign(handlers, useDuel({
+        act, addLog, duelPending: null, featureCtxRef,
+        setActiveTarget: vi.fn(), setDuelPending, setDuelingNpc: vi.fn(),
+        duelingNpc: null, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
+        aiSummarizeFact: vi.fn(), setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
+        turnGenerationRef: { current: 0 }, narrator: { canAsk: () => false },
+      }));
+      return null;
+    }
+    renderToStaticMarkup(createElement(Harness));
+    return { npc, handlers, act, setDuelPending, restoreStore };
+  }
+
+  it("looks at an un-looked NPC instead of opening the duel, then duels on the next click", async () => {
+    const { npc, handlers, act, setDuelPending, restoreStore } = setupGate();
+    try {
+      await handlers.handleNpcDuel(npc);
+      expect(act).toHaveBeenCalledWith("look caidan", expect.any(Array), expect.objectContaining({ inspect: true }));
+      expect(setDuelPending).not.toHaveBeenCalled();
+      expect(gameStore.getState().varTree.世界.端详过人物).toContain("才旦");
+      await handlers.handleNpcDuel(npc);
+      expect(setDuelPending).toHaveBeenCalledWith(npc);
+    } finally {
+      restoreStore();
+    }
+  });
+});

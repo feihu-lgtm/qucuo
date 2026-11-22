@@ -3,20 +3,19 @@ import { readFileSync } from "node:fs";
 import { QUCUO_SHOPS, buildShopInventory } from "./qucuoShops.js";
 
 // 【群友实测反馈】"好奇怪，和实际银两不一样呀，雪山派的商铺显示值"。
-// 雪山派门派商坊用**功德**结算（QUCUO_SHOPS 里 currency:"karma"），
-// CenterPanel 也确实把 dao.karma 当 playerMoney 传进去、买的时候扣的也是 karma
-// ——数值一直是对的。错的是 TradingScreen 里**五处把单位写死成"银两/两"**，
-// 于是界面显示「银两：37 两」，玩家一对自己的实际银两就发现对不上。
-// 这类"数值对、字错了"的 bug 特别容易让人怀疑是结算坏了。
+// 历史：门派商坊曾用功德（karma）结算，TradingScreen 写死「银两/两」导致单位错位。
+// 全势力合稿 §8.1 统一改回**银两 + 势力声誉折扣/门槛**（FACTION_SHOPS 接管）；
+// karma 结算的 plumbing（currencyName/canSell/playerMoney 分支）保留在渲染层，
+// 但目前没有任何商店声明 karma。
 
-describe("门派商坊用功德结算", () => {
-  it("shops 表里声明了 karma 货币", () => {
-    expect(QUCUO_SHOPS["门派商坊"].currency).toBe("karma");
+describe("门派商坊用银两结算（合稿 §8.1）", () => {
+  it("shops 表里不再声明 karma", () => {
+    expect(QUCUO_SHOPS["门派商坊"].currency).toBeUndefined();
   });
 
-  it("其余商店不声明货币（默认银两）", () => {
+  it("当前没有 karma 商店", () => {
     const karmaShops = Object.entries(QUCUO_SHOPS).filter(([, v]) => v.currency === "karma");
-    expect(karmaShops.map(([k]) => k)).toEqual(["门派商坊"]);
+    expect(karmaShops.map(([k]) => k)).toEqual([]);
   });
 
   it("货品有价（否则界面显示 undefined）", () => {

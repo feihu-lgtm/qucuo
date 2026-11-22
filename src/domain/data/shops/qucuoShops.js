@@ -273,15 +273,21 @@ export const QUCUO_SHOPS = {
     ],
   },
 
-  // ── 门派商坊（雪山派，karma 货币） ──
+  // ── 门派商坊（雪山派）。功德货币改银两，照合稿 §8.1 统一「银两+势力声誉折扣/门槛」；
+  // 货单照合稿 6.2 十件：白绿无门槛、蓝品 15、紫品 40、千年冰魄莲 80、霜纹寒玉剑 100（合稿 140，引擎封顶 100）。
   门派商坊: {
     shopName: "雪山派门派商坊",
-    currency: "karma",
     items: [
-      { name: "雪山派内门腰牌", category: ITEM_CATEGORY.ACCESSORY, quality: "蓝" },
-      { name: "玄冰铁剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝" },
-      { name: "寒铁护甲", category: ITEM_CATEGORY.ARMOR, quality: "蓝" },
-      { name: "雪莲凝露", category: ITEM_CATEGORY.MISC, quality: "紫" },
+      { name: "雪山姜枣干粮", category: ITEM_CATEGORY.MISC, quality: "白" },
+      { name: "寒岭冻伤膏", category: ITEM_CATEGORY.MISC, quality: "绿" },
+      { name: "雪松木剑", category: ITEM_CATEGORY.WEAPON, quality: "白" },
+      { name: "雪山素棉袍", category: ITEM_CATEGORY.ARMOR, quality: "绿", minRep: 0 },
+      { name: "寒铁细剑", category: ITEM_CATEGORY.WEAPON, quality: "蓝", minRep: 15 },
+      { name: "雪莲清心丸", category: ITEM_CATEGORY.MISC, quality: "蓝", minRep: 15 },
+      { name: "雪狐绒护肩", category: ITEM_CATEGORY.ARMOR, quality: "紫", minRep: 40 },
+      { name: "听雪素玉佩", category: ITEM_CATEGORY.ACCESSORY, quality: "紫", minRep: 40 },
+      { name: "千年冰魄莲", category: ITEM_CATEGORY.MISC, quality: "紫", minRep: 80 },
+      { name: "霜纹寒玉剑", category: ITEM_CATEGORY.WEAPON, quality: "橙", minRep: 100 },
     ],
   },
 };

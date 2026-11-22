@@ -37,6 +37,11 @@ export function resolveDefenseBlock(result, sideA, sideB, winnerIsA, {
       result.counterTriggered = true;
       if (winnerIsA) result.counterSuccessA = true; else result.counterSuccessB = true;
     }
+    // 二倍反弹（佛光普照、听桥·佛光）：架住的那截力道加倍弹回出招者。
+    if (winnerMove.doubleReflectDamage) {
+      counterDmg += Math.round((rawDmg - finalReduced) * 2);
+      result.counterTriggered = true;
+    }
     const attackerHp = loserSide.hp?.[0] ?? 1;
     const preemptiveKill = winnerMove.onCounterSuccessPreemptive && counterDmg >= attackerHp;
     if (winnerIsA) {
@@ -46,6 +51,7 @@ export function resolveDefenseBlock(result, sideA, sideB, winnerIsA, {
       result.damageToA += counterDmg;
       result.damageToB = preemptiveKill ? 0 : finalReduced;
     }
+    if (winnerMove.doubleReflectDamage) result.notes.push(`${winnerMove.name}二倍反弹，架住的力道尽数奉还`);
     result.notes.push(counterDmg > 0
       ? `${winnerMove.name}稳稳架住来招，反手一击${preemptiveKill ? "抢先制敌，对方再无还手" : "凌厉奉还"}`
       : `${winnerMove.name}架住来招，${loserMove.name}力道去了大半`);
