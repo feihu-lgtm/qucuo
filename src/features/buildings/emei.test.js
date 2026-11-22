@@ -57,7 +57,7 @@ describe("拜入峨眉派", () => {
     const result = joinSect(at("听竹轩", 40));
     expect(result.changes.flags([])).toContain("峨眉派弟子");
     const reps = result.changes.varTree(rep(40)).世界.势力声誉;
-    expect(reps).toMatchObject({ 峨眉派: 60, 天龙教: -5, 五仙教: -5 });
+    expect(reps).toMatchObject({ 峨眉派: 60, 天龙教: -10, 五仙教: -10 });
     expect(result.changes.inv([]).map((item) => item.name)).toContain("峨眉青玉弟子令");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { factionOfDistrict, factionRepDeltas, factionRepLabel, factionShopCoef, listFactionRep } from "./factionRep.js";
+import { factionOfDistrict, factionRepDeltas, grantFactionRep, factionRepLabel, factionShopCoef, listFactionRep } from "./factionRep.js";
 import { resolveStageRewards, stageRewardPatches } from "../quests/questRewards.js";
 import { applyPatches } from "../state/applyPatches.js";
 import { applyMvuCommands } from "../prompt/mvu.js";
@@ -82,5 +82,22 @@ describe("faction reputation ripple", () => {
     const rewards = resolveStageRewards({ onReach: { factionRep: { 唐门: 6 } } });
     const { state } = applyPatches({ varTree: tree({}) }, stageRewardPatches(rewards));
     expect(state.varTree.世界.势力声誉).toMatchObject({ 唐门: 6, 青城派: -3 });
+  });
+});
+
+describe("system-granted reputation", () => {
+  const tree = (reps) => ({ 世界: { 势力声誉: reps } });
+
+  it("factionRepDeltas caps the gain at 10 by default, uncapped with step: Infinity", () => {
+    expect(factionRepDeltas({ 峨眉派: 20 }, tree({}))).toMatchObject({ 峨眉派: 20, 天龙教: -5, 五仙教: -5 });
+    expect(factionRepDeltas({ 峨眉派: 20 }, tree({}), { step: Infinity })).toMatchObject({ 峨眉派: 20, 天龙教: -10, 五仙教: -10 });
+    expect(factionRepDeltas({ 峨眉派: 20 }, tree({ 峨眉派: 90 }), { step: Infinity })).toMatchObject({ 天龙教: -5, 五仙教: -5 });
+  });
+
+  it("grantFactionRep lands the full +20 and charges foes half the landed gain", () => {
+    const { applied, varTree } = grantFactionRep(tree({ 峨眉派: 40 }), { 峨眉派: 20 });
+    expect(varTree.世界.势力声誉).toMatchObject({ 峨眉派: 60, 天龙教: -10, 五仙教: -10 });
+    expect(applied).toEqual({ 峨眉派: 20, 天龙教: -10, 五仙教: -10 });
+    expect(grantFactionRep(tree({ 峨眉派: 100 }), { 峨眉派: 20 }).applied).toEqual({});
   });
 });
