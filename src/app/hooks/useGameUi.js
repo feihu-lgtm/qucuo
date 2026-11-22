@@ -120,15 +120,16 @@ export function useGameUi({
       const stage = isNewlyGiven ? quest.stages[0] : (prog.status === "active" ? getCurrentStage(quest, prog) : null);
       if (!stage) continue;
       const giverNpc = quest.giver ? room.npcs?.find(n => n.name === quest.giver) : null;
-      const here = quest.giver
-        ? !!(giverNpc && isVisibleInInnerRoom(room.name, innerRoomName, giverNpc))
-        : isAtQuestPlace(stage.at, room.name, innerRoomName);
+      // stage.requireLocation：这一步必须玩家真的走到指定地点才展开（village1
+      // 熊山口三选一、小牧童大草甸救牛）。此时入口只看地点、不看 giver——giver
+      // 不在场，玩家也要能在这里撞上该撞的事；没到地点前 giver 在旁也不展开。
+      const rl = stage.requireLocation;
+      const here = rl
+        ? (!rl.district || rl.district === room.name) && (!rl.inner || rl.inner === innerRoomName)
+        : quest.giver
+          ? !!(giverNpc && isVisibleInInnerRoom(room.name, innerRoomName, giverNpc))
+          : isAtQuestPlace(stage.at, room.name, innerRoomName);
       if (!here) continue;
-      if (stage.requireLocation) {
-        const rl = stage.requireLocation;
-        if (rl.district && rl.district !== room.name) continue;
-        if (rl.inner && rl.inner !== innerRoomName) continue;
-      }
       result.push({ quest, stage, isNewlyGiven });
     }
     return result;

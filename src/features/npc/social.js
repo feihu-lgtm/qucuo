@@ -1,7 +1,7 @@
 // NPC 社交动作：认出 / 端详 / 搭话。
 // 从 logic.js 按动作分组拆出——这组只管"靠近与认识"，不涉及财物或学艺。
 import { QUALITY } from "../../domain/rules/economy/equipment.js";
-import { markNpcAsKnown as markNpcKnown } from "../../domain/rules/npc/npcAwareness.js";
+import { markNpcAsKnown as markNpcKnown, markNpcAsLooked } from "../../domain/rules/npc/npcAwareness.js";
 import { bar } from "../../utils/mudHelpers.js";
 import { ESCORT_QUESTS } from "../../domain/data/quests/escortQuests.js";
 import { recordNpcAttempt } from "./anger.js";
@@ -25,7 +25,7 @@ export function lookNpc(_state, npc) {
     extraReplies.push({ t: "stat", text: `  ${npc.name} 品阶 ${tier}袍` });
   }
   return {
-    changes: { varTree: (prev) => markNpcKnown(prev || {}, npc.name) },
+    changes: { varTree: (prev) => markNpcAsLooked(markNpcKnown(prev || {}, npc.name), npc.name) },
     extraReplies,
   };
 }
