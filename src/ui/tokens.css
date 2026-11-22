@@ -69,6 +69,31 @@
   --ink-good: #5a8a5a;
   --ink-bg: #0a0a09;
   --ink-bg-panel: #111110;
+
+  /* 设置面板定色（原字面量，不随日间模式变） */
+  --ink-overlay: rgba(4,4,10,0.92);
+  --ink-divider: #1a1d2e;
+  --ink-divider-blue: #1a2d3a;
+  --ink-error-bg: #1a0e0e;
+  --ink-error-edge: #4a2020;
+  --ink-error-text: #d88a7a;
+  --ink-faint: #3a3a2a;
+  --ink-dim-deep: #3a3830;
+  --ink-sage: #6a7a72;
+  --ink-select-bg: #1a2a2a;
+  --ink-edge-panel: #2a2a3a;
+  --ink-edge-quest: #2a2d3a;
+  --ink-edge-think: #2a3550;
+  --ink-edge-active: #3a6a5a;
+  --ink-note-teal: #3a5a5a;
+  --ink-danger: #c46060;
+  --ink-danger-edge: #3a2020;
+  --ink-danger-soft: #c47070;
+  --ink-caution: #8a6a4a;
+  --ink-tier-bg: #241211;
+  --ink-tier-text: #c8e0d8;
+  --ink-edge-gold: #3a2d1d;
+  --ink-edge-red: #3a1d1d;
   --dur-fast: 120ms;
   --dur: 180ms;
   --dx: 0px;
