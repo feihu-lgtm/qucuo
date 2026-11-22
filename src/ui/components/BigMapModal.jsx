@@ -18,6 +18,7 @@ export default function BigMapModal({
   const flags = useGameStore(s => s.flags);
   const inv = useGameStore(s => s.inv);
   const char = useGameStore(s => s.char);
+  const view = hasInnerMap(room.name) ? mapView : "outer";
 
   return (
     <div
@@ -35,14 +36,14 @@ export default function BigMapModal({
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <span style={{ color: "#4a3520", fontSize: "13px", fontWeight: "bold" }}>
-            {mapView === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"}{" "}
+            {view === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"}{" "}
             <span style={{ color: "#7a6448", fontSize: "10px", fontWeight: "normal" }}>
-              {mapView === "inner" ? "朱红为当前所在 · 点相邻房间前往" : "朱红为当前所在 · 点已探明据点自动前往 · 🔒需前置"}
+              {view === "inner" ? "朱红为当前所在 · 点相邻房间前往" : "朱红为当前所在 · 点已探明据点自动前往 · 🔒需前置"}
             </span>
           </span>
           <span style={{ color: "#6a4a2a", fontSize: "11px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap", minWidth: 56, flexShrink: 0 }} onClick={() => setMapBig(false)}>× 关闭</span>
         </div>
-        {mapView === "outer" && (() => {
+        {view === "outer" && (() => {
           const completed = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));
           const exitByDir = QUCUO_MAP[room.name]?.exits || {};
           const reachableDests = new Set(Object.values(exitByDir));
@@ -71,7 +72,7 @@ export default function BigMapModal({
           };
           return <ClickableMap nodes={nodes} onGo={go} accent={zoneTheme.accent} loading={loading} maxHeight="66vh" />;
         })()}
-        {mapView === "inner" && (() => {
+        {view === "inner" && (() => {
           if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim }}>此地无内景可绘。</div>;
           const curRoom = innerRoomName || getDistrictAnchor(room.name);
           const curExits = visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char });

@@ -11,7 +11,7 @@ export default { district: {
       天都行脚楼: {
         x: 1, y: 0,
         desc: "兼作草甸边缘的补给与歇脚之地。",
-        exits: { w: "镇口", e: "百香斋" },
+        exits: { w: "镇口", e: "天都香行" },
         buildingId: "inn_tiandu",
       },
       孟记铁铺: {
@@ -70,16 +70,23 @@ export default { district: {
         buildingId: "gamblestone_tiandu",
         residentNpcName: "温掌柜",
       },
-      百香斋: {
+      天都香行: {
         x: 2, y: 0,
-        desc: "欢喜教明面据点，看着是寻常香料铺子，梵衍那/罗琦常在此接待外客。",
-        exits: { w: "天都行脚楼", e: "欢喜堂" },
+        desc: "欢喜教明面据点，看着是寻常香料铺子，柜台后李掌柜拨着算盘招呼生客，香饼、香束、香囊一格一格码到房梁。",
+        exits: { w: "天都行脚楼", e: "香行内堂" },
+        buildingId: "grocery_tiandu",
+        residentNpcName: "李掌柜",
+      },
+      香行内堂: {
+        x: 3, y: 0,
+        desc: "香行柜台后一道竹帘隔出的内堂，香气比前头浓得多。梵衍那/罗琦常在此接待外客。",
+        exits: { w: "天都香行", e: "欢喜堂" },
         residentNpcName: "罗琦",
       },
       欢喜堂: {
-        x: 3, y: 0,
+        x: 4, y: 0,
         desc: "欢喜教暗面据点，欢喜教任务线核心场景，老何/阿雅/桑杰三名内院弟子常在此处。",
-        exits: { w: "百香斋" },
+        exits: { w: "香行内堂" },
         unlockCondition: { type: "questCompleted", questId: "huanxijiao_1_xiangzhongyi" },
       },
       百花楼: {

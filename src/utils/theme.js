@@ -27,7 +27,9 @@ const ZONE_MAP = {
   大草甸: "wild",
   贡措海: "water",
   雅江: "bamboo",
-  锦官城: "outland",
+  锦官城: "outland", 蜀南唐堡: "outland",
+  雾隐寨: "bamboo",
+  天龙营: "wild",
 };
 
 // 暗夜（墨拓）：黑纸白字，朱红孤色。七区共用同一套值——《长刀》式的克制，

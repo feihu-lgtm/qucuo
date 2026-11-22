@@ -71,7 +71,10 @@ export const residentNpcRule = {
         && quest.targetLocation === room.name
         && !flags.includes(`quest_done_${quest.id}`)
       ))
-      .map((quest) => NPC_POOL.find((npc) => npc.name === quest.targetNpc))
+      // 收货人可能是游走池的人，也可能是常驻（李掌柜）；常驻的那位若被旧存档缓存在别处，
+      // residentNpcs 会滤掉他，这里照样把人请到，免得镖送到了没人收
+      .map((quest) => NPC_POOL.find((npc) => npc.name === quest.targetNpc)
+        || getResidentNpcs(room.name).find((npc) => npc.name === quest.targetNpc))
       .filter(Boolean)
       .map(toRoomNpcWithCombat);
     const hourNow = ((time % 24) + 24) % 24;

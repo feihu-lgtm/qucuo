@@ -14,12 +14,6 @@ export const NPC_POOL = [
     timeSlot: [15, 85],
   },
   {
-    id: "pool_li_zhang", name: "李掌柜", brief: "茶叶商，见谁都认识",
-    personality: "健谈爱八卦，见人说人话见鬼说鬼话，但心地不坏",
-    routineWeights: { 锦官城: 45, 天都镇: 35, 鱼定村: 20 },
-    timeSlot: [10, 90],
-  },
-  {
     id: "pool_hua_sao", name: "花嫂", brief: "卖糌粑的藏族妇人",
     personality: "热情豪爽爱说笑，儿子在雪山派当外门弟子，骄傲又担心",
     routineWeights: { 鱼定村: 55, 天都镇: 30, 玉泉寨: 15 },

@@ -17,6 +17,7 @@ import { playTurn } from "../../engine/playTurn.js";
 import { resolveIntent } from "../../engine/turn/resolveIntent.js";
 import { createTurnContext } from "../../engine/turn/turnContext.js";
 import { settleInBackground } from "./settleBackfill.js";
+import { lookInBackground } from "./lookBackfill.js";
 import { lookNpcInBackground } from "./npcLookBackfill.js";
 
 // 回合入口的 React 胶水：组 env → resolveIntent（识别/裁决）→ createTurnContext
@@ -123,6 +124,7 @@ export function useTurn({
         applyLocal, stopAutoTravel, showOuterNoExitNotice,
         resolveInnerBlockedSummary, prerunSquares,
         traceStep, callModel,
+        lookInBackground: (cmd) => lookInBackground(cmd, { addLog, setTime, setConvo, setLog, noteAction }),
         beforeRun: () => { pickupExtractionFailedRef.current = false; },
       },
     };

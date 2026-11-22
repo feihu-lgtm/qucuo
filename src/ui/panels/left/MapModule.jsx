@@ -7,22 +7,24 @@ import NineGridMap from "../../components/NineGridMap.jsx";
 import { chromeBtn } from "../../../utils/theme.js";
 
 export default function MapModule({ zoneTheme, room, innerRoomName, mapView, setMapView, mapBig, setMapBig, questProgress, mapData, loading, flags, autoTravelTo, setInteractMode, act, inv, char }) {
+  // 没有内景的据点（乡外新节点）只能看外图，否则内图视图下连「外/内」切换都没有
+  const view = hasInnerMap(room.name) ? mapView : "outer";
   return (
     <div style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "6px 12px", flexShrink: 0 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <span style={{ color: zoneTheme.accentDim, fontSize: "10px", cursor: "pointer" }} onClick={() => setMapBig(true)} title="点击放大">
-          {mapView === "inner" ? "村图·内" : "舆图·外"} <span style={{ color: zoneTheme.textDim }}>⤢放大{mapView === "outer" ? " · 点已探明据点自动前往" : ""}</span>
+          {view === "inner" ? "村图·内" : "舆图·外"} <span style={{ color: zoneTheme.textDim }}>⤢放大{view === "outer" ? " · 点已探明据点自动前往" : ""}</span>
         </span>
         {hasInnerMap(room.name) && (
           <span style={{ display: "flex", fontSize: "9.5px", flexShrink: 0 }}>
             {[["outer", "外"], ["inner", "内"]].map(([v, lb]) => (
               <span key={v} onClick={() => setMapView(v)}
-                style={chromeBtn(zoneTheme, { active: mapView === v })}>{lb}</span>
+                style={chromeBtn(zoneTheme, { active: view === v })}>{lb}</span>
             ))}
           </span>
         )}
       </div>
-      {mapView === "outer" && (() => {
+      {view === "outer" && (() => {
         const exitByDir = QUCUO_MAP[room.name]?.exits || {};
         const passableExitByDir = passableExits(exitByDir, { layer: "outer", questProgress, flags });
         const DIRS8 = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
@@ -42,7 +44,7 @@ export default function MapModule({ zoneTheme, room, innerRoomName, mapView, set
         };
         return <NineGridMap centerLabel={room.name} cells={cells} onGo={go} accent={zoneTheme.accent} textDim={zoneTheme.textDim} loading={loading} big={mapBig} />;
       })()}
-      {mapView === "inner" && (() => {
+      {view === "inner" && (() => {
         if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>此地无内景可绘。</div>;
         const curRoom = innerRoomName || getDistrictAnchor(room.name);
         // 上锁的房间不出现在九宫格里（此前这里直接读裸 exits，锁着的安全屋照样是可点格子）
