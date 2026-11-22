@@ -222,6 +222,10 @@ export default function CenterPanel({
                   handleListenRumor, handleJoinSect, handleAuctionWin, handleCook,
                 });
               })()}
+              {showBasement && (
+                <BasementScreen char={char} time={time} zoneTheme={zoneTheme} inline
+                  onClose={() => closeOverlay(OVERLAY.BASEMENT)} onOrder={handleServiceOrder} />
+              )}
               {tradingShop && (
                 <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
                   playerInv={inv} playerMoney={char.money || 0} playerWit={effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={inspectItem}
