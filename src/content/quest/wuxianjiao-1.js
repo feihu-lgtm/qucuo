@@ -241,14 +241,17 @@ export default { quest: {
           byFlag: {
             quest_wx4_keep: {
               items: [{ name: "赤蜈暗账", fromCatalog: true }, { name: "唐门淬毒机括残件", fromCatalog: true }],
+              flags: ["wuxian_dudan_exposed"],
               factionRep: { 五仙教: 20, 唐门: 5, 鱼定土司府: -10 },
               reputation: 8,
+              favorability: { "麻九娘": -15 },
             },
             quest_wx4_poison: {
               money: 200,
               items: [{ name: "赤蜈血令", fromCatalog: true }],
               factionRep: { 百花门: -15, 玉泉寨: -8, 鱼定土司府: 10 },
               reputation: -20,
+              favorability: { "麻九娘": 15, "乌婆婆": -10 },
             },
           },
         },
@@ -263,10 +266,6 @@ export default { quest: {
         onReach: {
           money: 200,
           favorability: { "龙汐月": 10 },
-          byFlag: {
-            quest_wx4_keep: { flags: ["wuxian_dudan_exposed"], favorability: { "麻九娘": -15 } },
-            quest_wx4_poison: { favorability: { "麻九娘": 15, "乌婆婆": -10 } },
-          },
         },
       },
     ],
@@ -309,6 +308,7 @@ export default { quest: {
               items: [{ name: "赤蜈毒王冠", fromCatalog: true }],
               factionRep: { 百花门: -40, 峨眉派: -20, 青城派: -10 },
               reputation: -30,
+              favorability: { "麻九娘": 20 },
             },
           },
         },
@@ -323,10 +323,6 @@ export default { quest: {
         onReach: {
           money: 400,
           favorability: { "龙汐月": 25 },
-          byFlag: {
-            quest_wx5_crown: { factionRep: { 五仙教: 0 } },
-            quest_wx5_centipede: { favorability: { "麻九娘": 20 } },
-          },
         },
       },
     ],

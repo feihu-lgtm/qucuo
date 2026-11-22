@@ -104,6 +104,10 @@ export function questGateReqs(quest, varTree) {
     const have = Number(varTree?.世界?.威望) || 0;
     reqs.push({ key: "prestige", label: `威望 ≥ ${quest.requiresPrestige}`, have, ok: have >= quest.requiresPrestige });
   }
+  for (const [npc, min] of Object.entries(quest.requiresFavorability || {})) {
+    const have = Number(varTree?.角色?.[npc]?.好感度) || 0;
+    reqs.push({ key: `favor:${npc}`, label: `${npc}好感 ≥ ${min}`, have, ok: have >= min });
+  }
   for (const name of quest.requiresKnownNpc || []) {
     const ok = isNpcKnown(varTree || {}, name);
     reqs.push({ key: `known:${name}`, label: `已结识${name}`, have: ok, ok });
