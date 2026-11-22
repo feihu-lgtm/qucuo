@@ -272,7 +272,7 @@ const items = {
 "紫阳清心散": { name:"紫阳清心散", category:"misc", quality:"紫", tags:["丹药","内息","青城"], consumable:{ energyRestore: 4, dispelAll: true }, desc:"采晨露配紫阳内火收汁的门派秘药，服下立回大量内息并驱散阴寒内伤。" },
 "听松玄铁剑": { name:"听松玄铁剑", category:"weapon", quality:"紫", tags:["武器","剑","青城"], effect:{ ignoreDefenseRatio: 0.25 }, sixDim:{根骨:1,身法:1}, desc:"仿松鹤道长佩剑打造的玄铁重锋剑，剑脊厚实，格挡反击时不易震手。" },
 "三清鹤羽道衣": { name:"三清鹤羽道衣", category:"armor", quality:"紫", defMul: 1.3, tags:["护甲","道袍","防毒","青城"], effect:{ ignoreDefensePartialImmune: 0.3 }, sixDim:{根骨:2}, desc:"门中执事长老所着法衣，衣襟暗绣八卦镇水纹，护身之外兼能抗毒。" },
-"离堆镇水玉佩": { name:"离堆镇水玉佩", category:"accessory", quality:"橙", tags:["饰品","玉","镇派","青城"], effect:{ energyRestore: 2 }, sixDim:{悟性:1,根骨:1}, desc:"以离堆江心青玉雕琢的镇山珍宝，佩戴后防御反击威力大增、每回合微幅滋养内息。三清玄阁只此一件，只授本门心腹。" },
+"离堆镇水玉佩": { name:"离堆镇水玉佩", category:"accessory", quality:"橙", tags:["饰品","玉","镇派","青城"], effect:{ energyRestore: 2, onCounterSuccessDamageRatio: 0.3 }, sixDim:{悟性:1,根骨:1}, desc:"以离堆江心青玉雕琢的镇山珍宝，佩戴后防御反击威力大增、每回合微幅滋养内息。三清玄阁只此一件，只授本门心腹。" },
 "青城玄门竹牌": { name:"青城玄门竹牌", category:"misc", quality:"绿", tags:["信物","门派","青城"], desc:"青城派正式弟子的竹制腰牌，正面烙「青城天下幽」，背面刻着拜入那日的干支。" },
 };
 
