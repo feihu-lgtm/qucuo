@@ -373,6 +373,11 @@
   --trading-buy-edge: #1a3a3a;
   --trading-close: #8a8a8a;
 
+  /* 游说屏定色（原字面量，不随日间模式变）：区域主题缺 bg/bgPanel/border 时的缺省色；缺省 accent 复用 --ink-brass-lit。 */
+  --persuade-bg: #141014;
+  --persuade-edge: #3a3038;
+  --persuade-panel: #1c1820;
+
   /* 家园面板定色（原字面量，不随日间模式变）：不可操作按钮的描边。 */
   --homestead-dim-edge: #1a1a2a;
 

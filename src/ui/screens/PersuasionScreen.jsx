@@ -36,12 +36,12 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
   }, [guard, hitKeys, turns, done]);
 
   const t = zoneTheme || {};
-  const accent = t.accent || "#c8a860";
-  const bg = t.bg || "#141014";
-  const panel = t.bgPanel || "#1c1820";
+  const accent = t.accent || "var(--ink-brass-lit)";
+  const bg = t.bg || "var(--persuade-bg)";
+  const panel = t.bgPanel || "var(--persuade-panel)";
   const text = t.text || "var(--text)";
   const textDim = t.textDim || "var(--text-dim)";
-  const border = t.border || "#3a3038";
+  const border = t.border || "var(--persuade-edge)";
 
   const canBribe = p.bribe != null;
   const canIdentity = p.identity && playerIdentities.includes(p.identity);
@@ -88,7 +88,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
 
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 60, background: `${bg}f2`,
+      position: "fixed", inset: 0, zIndex: 60, background: `color-mix(in srgb, ${bg} 95%, transparent)`,
       display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
       fontFamily: "inherit",
     }}>
@@ -99,7 +99,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
         boxShadow: "0 12px 48px rgba(0,0,0,0.6)",
       }}>
         {/* 顶栏：对手 + 表象（不泄露心结，心结要玩家自己猜） */}
-        <div style={{ padding: "14px 18px 12px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, ${accent}14, transparent)` }}>
+        <div style={{ padding: "14px 18px 12px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, color-mix(in srgb, ${accent} 8%, transparent), transparent)` }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             <span style={{ fontSize: 17, color: text, letterSpacing: 1 }}>说服 · {p.who}</span>
             <span style={{ fontSize: 11, color: textDim }}>言语交锋</span>
@@ -114,7 +114,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
             <span style={{ fontSize: 11, color: textDim, marginRight: 2 }}>火候</span>
             <span style={{
               fontSize: 11.5,
-              color: progress >= need ? accent : guard < 40 ? "#c8a860cc" : textDim,
+              color: progress >= need ? accent : guard < 40 ? "color-mix(in srgb, var(--ink-brass-lit) 80%, transparent)" : textDim,
               transition: "color 0.4s ease",
             }}>
               {progress >= need ? "话已说透，就等他一句"
@@ -126,7 +126,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
           </div>
           {/* 已解锁线索（戒心每降30解锁一条，按keys顺序）：这是玩家花力气破冰换来的方向指引 */}
           {unlockedHints.length > 0 && (
-            <div style={{ marginTop: 8, padding: "7px 10px", background: `${accent}12`, border: `1px solid ${accent}33`, borderRadius: 0 }}>
+            <div style={{ marginTop: 8, padding: "7px 10px", background: `color-mix(in srgb, ${accent} 7%, transparent)`, border: `1px solid color-mix(in srgb, ${accent} 20%, transparent)`, borderRadius: 0 }}>
               <div style={{ fontSize: 10, color: accent, marginBottom: 3, letterSpacing: 1 }}>你看出的心结</div>
               {unlockedHints.map((h, i) => (
                 <div key={i} style={{ fontSize: 11.5, color: text, lineHeight: 1.6 }}>· {h}</div>
@@ -144,7 +144,7 @@ export default function PersuasionScreen({ persuade, apiCfg, ownedFlags = [], pl
                 background: x.who === "npc" ? bg : accent,
                 color: x.who === "npc" ? text : bg,
                 border: x.who === "npc" ? `1px solid ${x.struck ? accent : border}` : "none",
-                boxShadow: x.struck ? `0 0 0 1px ${accent}66` : "none",
+                boxShadow: x.struck ? `0 0 0 1px color-mix(in srgb, ${accent} 40%, transparent)` : "none",
               }}>
                 {x.who === "npc" && <div style={{ fontSize: 10, color: textDim, marginBottom: 2 }}>{p.who}{x.struck ? " · 语气一动" : ""}</div>}
                 {x.text}
