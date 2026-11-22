@@ -37,6 +37,24 @@ export function describeGiftForPrompt(item) {
   return { itemName, quality, desc, categoryLabel, range: [lo, hi], suggestedDelta: Math.round((lo + hi) / 2) };
 }
 
+// 进行中任务前面阶段发到手的道具（田契残页、密函这类），没对上当前阶段的 deliver 就不能当普通礼物送掉，
+// 否则物品被扣、任务却不推进。fromCatalog 的是铁莲子这类普通货，照常能送——除非后面阶段点名要它。
+const stageNeedsItem = (stage, itemName) => stage.requiresItems?.includes(itemName)
+  || stage.onReach?.consumeItems?.includes(itemName)
+  || stage.choices?.some((choice) => choice.requiresItems?.includes(itemName));
+
+function questPropHolder(state, itemName) {
+  for (const quest of QUCUO_QUESTS) {
+    const progress = state.questProgress?.[quest.id];
+    if (progress?.status !== "active" || !quest.stages?.length) continue;
+    const index = progress.currentStageIndex ?? 0;
+    const reached = quest.stages.slice(0, index);
+    if (reached.some((stage) => (stage.onReach?.items || []).some((entry) => entry?.name === itemName && !entry.fromCatalog))) return quest;
+    if (quest.stages.slice(index).some((stage) => stageNeedsItem(stage, itemName))) return quest;
+  }
+  return null;
+}
+
 export function giftNpc(state, npc, item, now = Date.now()) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (!item) return { logs: [{ t: "err", text: "  背包中没有这件物品。" }] };
@@ -73,6 +91,13 @@ export function giftNpc(state, npc, item, now = Date.now()) {
         flag: Array.isArray(stage.completionFlag) ? stage.completionFlag[0] : stage.completionFlag,
       };
       break;
+    }
+  }
+
+  if (!deliveredQuest) {
+    const held = questPropHolder(state, itemName);
+    if (held) {
+      return { logs: [{ t: "sys", text: `  「${itemName}」是「${held.title}」还要用的东西，没有送出——到任务面板里推进那一步时再交。` }] };
     }
   }
 
