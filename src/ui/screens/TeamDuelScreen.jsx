@@ -203,13 +203,13 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
         <div style={styles.teamsRow}>
           <div style={styles.teamCol}>
             {allyUnits.map(u => (
-              <UnitCard key={u.id} unit={u} color={u.id === "player" ? zoneTheme.accent : "#b48adf"} zoneTheme={zoneTheme} />
+              <UnitCard key={u.id} unit={u} color={u.id === "player" ? zoneTheme.accent : "var(--violet)"} zoneTheme={zoneTheme} />
             ))}
           </div>
           <div style={styles.vsCol(zoneTheme)}>第{round}回合</div>
           <div style={styles.teamCol}>
             {enemyUnits.map(u => (
-              <UnitCard key={u.id} unit={u} color="#c45044" zoneTheme={zoneTheme} right />
+              <UnitCard key={u.id} unit={u} color="var(--red-soft)" zoneTheme={zoneTheme} right />
             ))}
           </div>
         </div>
@@ -226,7 +226,7 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
               <span
                 onClick={() => { setLeopardAuto(v => !v); setLeopardIntent(null); if (stage === "leopard") setStage(firstStage()); }}
                 title="托管=雪豹凭野兽本能自行出招选目标；手动=你替它选招选目标"
-                style={{ float: "right", cursor: "pointer", fontSize: "10px", color: leopardAuto ? zoneTheme.textDim : "#b48adf", border: `1px solid ${leopardAuto ? zoneTheme.border : "#b48adf"}`, borderRadius: 0, padding: "1px 7px" }}
+                style={{ float: "right", cursor: "pointer", fontSize: "10px", color: leopardAuto ? zoneTheme.textDim : "var(--violet)", border: `1px solid ${leopardAuto ? zoneTheme.border : "var(--violet)"}`, borderRadius: 0, padding: "1px 7px" }}
               >雪豹：{leopardAuto ? "托管中" : "手动"}</span>
             )}
           </div>
@@ -273,9 +273,9 @@ export default function TeamDuelScreen({ enemies, leopardData, playerChar, pendi
                       onClick={() => pickTargetForUnit(stage, e.id)}
                       style={{
                         cursor: "pointer", fontSize: "11px", padding: "3px 10px", borderRadius: 0, userSelect: "none",
-                        color: pickingIntent?.targetId === e.id ? zoneTheme.bg : "#c45044",
-                        background: pickingIntent?.targetId === e.id ? "#c45044" : "transparent",
-                        border: "1px solid #c45044",
+                        color: pickingIntent?.targetId === e.id ? zoneTheme.bg : "var(--red-soft)",
+                        background: pickingIntent?.targetId === e.id ? "var(--red-soft)" : "transparent",
+                        border: "1px solid var(--red-soft)",
                       }}>{e.name}（{e.hp[0]}/{e.hp[1]}）</span>
                   ))}
                 </div>
@@ -411,7 +411,7 @@ const styles = {
   sectionLabel: (t) => ({ fontSize: "12px", color: t.accent, letterSpacing: "1px" }),
   moveGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: "26vh", overflowY: "auto" },
   targetRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  warnLine: { textAlign: "center", color: "#c45044", fontSize: "11px", padding: "4px 0" },
+  warnLine: { textAlign: "center", color: "var(--red-soft)", fontSize: "11px", padding: "4px 0" },
   hintLine: (t) => ({ fontSize: "11px", color: t.textDim, textAlign: "center", marginBottom: 6 }),
   enemyStripLabel: (t) => ({ fontSize: "10.5px", color: t.textDim, marginTop: 4 }),
   enemyStrip: { display: "flex", flexWrap: "wrap", gap: 6 },

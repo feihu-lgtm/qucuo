@@ -20,7 +20,7 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
 
         {status.already ? (
           <>
-            <div style={{ color: "#c07050", marginBottom: 10 }}>
+            <div style={{ color: "var(--clay)", marginBottom: 10 }}>
               你已是{SECT_ENTRY.sect}门下弟子。
             </div>
             <div style={{ color: zoneTheme.textDim, fontSize: 11.5 }}>
@@ -41,9 +41,9 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
               <div style={{ color: zoneTheme.accentDim, fontSize: 11, marginBottom: 6 }}>入门之限</div>
               {status.reqs.map(r => (
                 <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5 }}>
-                  <span style={{ color: r.ok ? "#c07050" : "#c47070", width: 12 }}>{r.ok ? "✓" : "✗"}</span>
+                  <span style={{ color: r.ok ? "var(--clay)" : "#c47070", width: 12 }}>{r.ok ? "✓" : "✗"}</span>
                   <span style={{ flex: 1, color: r.ok ? zoneTheme.text : zoneTheme.textDim }}>{r.label}</span>
-                  <span style={{ color: r.ok ? "#c07050" : "#c47070", fontSize: 11 }}>{r.have}</span>
+                  <span style={{ color: r.ok ? "var(--clay)" : "#c47070", fontSize: 11 }}>{r.have}</span>
                 </div>
               ))}
             </div>

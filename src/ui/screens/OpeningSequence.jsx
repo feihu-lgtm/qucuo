@@ -90,7 +90,7 @@ const styles = {
   container: {
     position: "fixed",
     inset: 0,
-    backgroundColor: "#000",
+    backgroundColor: "var(--black)",
     cursor: "pointer",
     overflow: "hidden",
   },

@@ -43,7 +43,7 @@ export default function ProfileModule({ zoneTheme, char, exp, pot, playerAvatar,
           ) : (
             <span style={{ color: zoneTheme.textDim, fontSize: "10px", textAlign: "center", lineHeight: 1.6 }}>点击<br/>设置头像</span>
           )}
-          <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "#e8dcc0", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>换像</span>
+          <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "var(--paper)", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>换像</span>
         </div>
         <span
           onClick={() => openOverlay(OVERLAY.BODY)}
@@ -77,7 +77,7 @@ export default function ProfileModule({ zoneTheme, char, exp, pot, playerAvatar,
             ) : (
               <span style={{ color: zoneTheme.textDim, fontSize: "9.5px", textAlign: "center", lineHeight: 1.6, padding: "0 4px" }}>{comp.label}立绘<br/>待投放</span>
             )}
-            <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "#e8dcc0", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>{comp.label}</span>
+            <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, fontSize: "9px", textAlign: "center", color: "var(--paper)", background: "rgba(0,0,0,0.55)", padding: "1px 0" }}>{comp.label}</span>
           </div>
           {compLore && (
             <>
@@ -110,12 +110,12 @@ export default function ProfileModule({ zoneTheme, char, exp, pot, playerAvatar,
       <div style={{ flex: 1, paddingTop: 4 }}>
         <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>
         <div style={{ fontSize: "11px", color: zoneTheme.textDim, marginBottom: 8 }}>{char.gender || "男"}　少侠</div>
-        <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "#c45044" : "var(--text)" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
-        <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "#c45044" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
-        <div style={{ fontSize: "11.5px", marginBottom: 3 }}>经验 <span style={{ color: "var(--warn)" }}>{exp}</span>　潜能 <span style={{ color: "#b48adf" }}>{pot}</span></div>
-        <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "#e8c468" }}>{char.money || 0}</span> 两</div>
+        <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "var(--red-soft)" : "var(--ink-text)" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
+        <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "var(--red-soft)" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
+        <div style={{ fontSize: "11.5px", marginBottom: 3 }}>经验 <span style={{ color: "var(--ink-warn)" }}>{exp}</span>　潜能 <span style={{ color: "var(--violet)" }}>{pot}</span></div>
+        <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "var(--gold-bright)" }}>{char.money || 0}</span> 两</div>
         <div style={{ fontSize: "11.5px", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
-          <span>信鸽 <span style={{ color: "#c4a040" }}>{char.pigeons || 0}</span> 只</span>
+          <span>信鸽 <span style={{ color: "var(--gold)" }}>{char.pigeons || 0}</span> 只</span>
           <span
             onClick={() => inspectItem("pigeon", "信鸽", `现有${char.pigeons || 0}只`, null, { worldLook: true })}
             title="查看：信鸽是什么、能做什么"

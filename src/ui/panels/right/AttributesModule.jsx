@@ -6,7 +6,7 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>内功外功</div>
         <div style={{ fontSize: "11.5px", display: "flex", alignItems: "center", gap: 6 }}>
-          <span>内功 <span style={{ color: "#b48adf" }}>{bar(char.neigong ?? 0, 100, 6)}</span> <span style={{ color: "#888" }}>{char.neigong ?? 0}</span></span>
+          <span>内功 <span style={{ color: "var(--violet)" }}>{bar(char.neigong ?? 0, 100, 6)}</span> <span style={{ color: "#888" }}>{char.neigong ?? 0}</span></span>
           <span
             onClick={trainNeigong}
             title={`运气打坐：消耗${trainCost(char.neigong ?? 0)}点潜能，内功+1（现有潜能${pot}）`}
@@ -37,14 +37,14 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
             return (
               <div key={k} title={buffed ? `基础${v}，药力/buff生效中` : undefined}>
                 {k}
-                <span style={{ color: buffed ? "#c07050" : "var(--text)" }}>{buffed ? eff : v}</span>
+                <span style={{ color: buffed ? "var(--clay)" : "var(--ink-text)" }}>{buffed ? eff : v}</span>
                 {buffed && <span style={{ color: "var(--text-dim)", fontSize: "9.5px" }}> ({v}+{eff - v})</span>}
               </div>
             );
           })}
         </div>
         {activeBuffs.length > 0 && (
-          <div style={{ marginTop: 4, fontSize: "9.5px", color: "#c07050", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 4, fontSize: "9.5px", color: "var(--clay)", lineHeight: 1.5 }}>
             {activeBuffs.map((b, i) => (
               <div key={i}>药力·{b.attr}+{b.val}（余{b.remaining}）</div>
             ))}

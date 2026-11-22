@@ -41,16 +41,16 @@ export default function CharacterPage({ varTree, claimedMilestones, onClaimMiles
             return (
               <div
                 key={name}
-                style={{ ...cardStyle, borderColor: milestone ? "#c8663a" : "var(--border)" }}
+                style={{ ...cardStyle, borderColor: milestone ? "var(--ember)" : "var(--ink-border)" }}
                 onClick={() => setSelected(name)}
               >
                 <div style={{ color: "var(--text)", fontSize: "13px", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>{name}</span>
-                  {milestone && <span style={{ color: "#c8663a", fontSize: "10px" }}>● 任务</span>}
+                  {milestone && <span style={{ color: "var(--ember)", fontSize: "10px" }}>● 任务</span>}
                 </div>
-                <div style={{ fontSize: "10.5px", color: "#d68a8a", marginBottom: 3 }}>{npcAffectionLabel(affection)}</div>
+                <div style={{ fontSize: "10.5px", color: "var(--pink)", marginBottom: 3 }}>{npcAffectionLabel(affection)}</div>
                 <div style={{ height: 6, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, #d68a8a, #c8663a)" }} />
+                  <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, var(--pink), var(--ember))" }} />
                 </div>
                 <div style={{ fontSize: "10px", color: "var(--text-dim)", marginTop: 3, textAlign: "right" }}>{affection}/100</div>
               </div>
@@ -98,9 +98,9 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
               <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
             </div>
 
-            <div style={{ fontSize: "11.5px", color: "#d68a8a", marginBottom: 4 }}>{npcAffectionLabel(affection)}</div>
+            <div style={{ fontSize: "11.5px", color: "var(--pink)", marginBottom: 4 }}>{npcAffectionLabel(affection)}</div>
             <div style={{ height: 8, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden", marginBottom: 4 }}>
-              <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, #d68a8a, #c8663a)" }} />
+              <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, var(--pink), var(--ember))" }} />
             </div>
             <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 14 }}>{affection}/100</div>
 
@@ -131,7 +131,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
                       display: "flex", justifyContent: "space-between", alignItems: "center",
                       padding: "8px 10px", marginBottom: 6, borderRadius: 0,
                       background: unlocked && !claimed ? "rgba(240,192,96,0.1)" : "var(--bg-panel)",
-                      border: `1px solid ${unlocked && !claimed ? "#4a3a1a" : "#1a1d2e"}`,
+                      border: `1px solid ${unlocked && !claimed ? "var(--gold-deep)" : "#1a1d2e"}`,
                     }}
                   >
                     <div>
@@ -148,7 +148,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
                     ) : unlocked ? (
                       <span
                         onClick={() => handleClaim(m)}
-                        style={{ fontSize: "10.5px", color: "#c8663a", cursor: "pointer", border: "1px solid #4a3a1a", borderRadius: 0, padding: "3px 8px", whiteSpace: "nowrap" }}
+                        style={{ fontSize: "10.5px", color: "var(--ember)", cursor: "pointer", border: "1px solid var(--gold-deep)", borderRadius: 0, padding: "3px 8px", whiteSpace: "nowrap" }}
                       >领取</span>
                     ) : (
                       <span style={{ fontSize: "10.5px", color: "#3a3830", whiteSpace: "nowrap" }}>未解锁</span>
@@ -161,7 +161,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
         ) : (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ color: "#c8663a", fontSize: "13.5px" }}>{viewingMilestone.title}</span>
+              <span style={{ color: "var(--ember)", fontSize: "13.5px" }}>{viewingMilestone.title}</span>
               <span style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={() => setViewingMilestone(null)}>← 返回</span>
             </div>
             <div style={{ lineHeight: 1.9, color: "var(--text)" }}>

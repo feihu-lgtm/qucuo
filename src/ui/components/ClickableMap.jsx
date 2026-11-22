@@ -157,7 +157,7 @@ export default function ClickableMap({ nodes, onGo, cell, pad = 40, maxHeight = 
                   style={{ filter: hov && clickable ? "brightness(1.25)" : "none" }} />
               )}
               {!n.explored ? (
-                <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={hov ? "#c0a060" : "#7a7a68"} fontSize="20" fontWeight="bold" style={{ pointerEvents: "none", textShadow: "0 1px 2px #000" }}>?</text>
+                <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={hov ? "var(--parchment)" : "#7a7a68"} fontSize="20" fontWeight="bold" style={{ pointerEvents: "none", textShadow: "0 1px 2px var(--black)" }}>?</text>
               ) : (
                 <g style={{ pointerEvents: "none" }}>
                   <g style={{ animation: n.current ? "cmPulse 2.4s ease-in-out infinite" : "none" }}>

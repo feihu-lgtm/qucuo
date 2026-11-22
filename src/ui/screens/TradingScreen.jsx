@@ -41,7 +41,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
         <div className="mobile-trading-header" style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           {headerContent}
           <div style={{ fontSize: 14, color: zoneTheme.text || "var(--text)" }}>{shopName || "交易"}</div>
-          <div style={{ fontSize: 12, color: "#e8c468" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
+          <div style={{ fontSize: 12, color: "var(--gold-bright)" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
           <span className="mobile-overlay-close mobile-only-close" onClick={onClose} aria-label="关闭交易">×</span>
         </div>
 
@@ -72,7 +72,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                     fontSize: 11, padding: "2px 10px", borderRadius: 0,
                     cursor: item.equipped ? "not-allowed" : "pointer",
                     color: item.equipped ? "var(--text-dim)" : "var(--warn)",
-                    border: `1px solid ${item.equipped ? "#2a2a2a" : "#4a3a1a"}`,
+                    border: `1px solid ${item.equipped ? "#2a2a2a" : "var(--gold-deep)"}`,
                   }}
                   title={item.equipped ? "已装备的物品需先卸下才能卖出" : "卖出"}
                 >卖出</span>
@@ -100,7 +100,7 @@ export default function TradingScreen({ shopName, shopItems, playerInv, playerMo
                       style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                     >{item.name}</span>
                     {discounted && <span style={{ color: "var(--text-dim)", marginLeft: 6, textDecoration: "line-through" }}>{item.buyPrice}</span>}
-                    <span style={{ color: discounted ? "#c07050" : "var(--text-dim)", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
+                    <span style={{ color: discounted ? "var(--clay)" : "var(--ink-text-dim)", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>
                   </div>
                   <span className="mobile-touch-target"
                     onClick={() => canAfford && onBuy({ ...item, buyPrice: payPrice })}

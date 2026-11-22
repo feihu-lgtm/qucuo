@@ -135,7 +135,7 @@ export default function DebugPanel({
             setVarTree(prev => visible.reduce((tree, n) => markNpcAsKnown(tree, n.name), prev));
             addLog([{ t: "sys", text: `  [调试] 已认识在场者：${visible.map(n => n.name).join("、")}` }]);
           }}
-          style={{ cursor: "pointer", fontSize: 10, color: "#c07050", border: "1px solid var(--accent)", borderRadius: 0, padding: "2px 8px", userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: 10, color: "var(--clay)", border: "1px solid var(--ink-accent)", borderRadius: 0, padding: "2px 8px", userSelect: "none" }}
         >认识在场者</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -210,7 +210,7 @@ export default function DebugPanel({
           setSkills(sk => [...sk, entry]);
           addLog([{ t: "sys", text: `  [调试] 习得并运功「${found.name}」（${found.quality}·${found.type}）` }]);
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedSkill ? "#c07050" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgPickedSkill ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedSkill ? "var(--clay)" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgPickedSkill ? "var(--ink-accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}
         >增加并装备</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -242,7 +242,7 @@ export default function DebugPanel({
           addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[item.category] || item.category}）` }]);
           setDbgPickedItem("");
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedItem ? "#c07050" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgPickedItem ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: 10, color: dbgPickedItem ? "var(--clay)" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgPickedItem ? "var(--ink-accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}
         >增加</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -264,7 +264,7 @@ export default function DebugPanel({
           addLog([{ t: "sys", text: `  [调试] 获得「${item.name}」（${item.quality}·${CATEGORY_LABEL[dbgItemCat] || dbgItemCat}）` }]);
           setDbgItemName("");
         }}
-          style={{ cursor: "pointer", fontSize: 10, color: dbgItemName.trim() ? "#c07050" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgItemName.trim() ? "var(--accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}
+          style={{ cursor: "pointer", fontSize: 10, color: dbgItemName.trim() ? "var(--clay)" : "#3a3830", padding: "2px 8px", border: `1px solid ${dbgItemName.trim() ? "var(--ink-accent)" : "#1a1d2e"}`, borderRadius: 0, userSelect: "none" }}
         >增加</span>
       </div>
     </div>

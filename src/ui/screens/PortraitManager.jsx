@@ -189,10 +189,10 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                   </div>
                 )}
                 {genError?.name === name && (
-                  <div style={{ color: "#c45044", fontSize: "9.5px", marginBottom: 4 }}>{genError.message}</div>
+                  <div style={{ color: "var(--red-soft)", fontSize: "9.5px", marginBottom: 4 }}>{genError.message}</div>
                 )}
                 {portraits[name] && (
-                  <span onClick={() => handleRemove(name)} style={{ color: "#c45044", fontSize: "10px", cursor: "pointer" }}>删除</span>
+                  <span onClick={() => handleRemove(name)} style={{ color: "var(--red-soft)", fontSize: "10px", cursor: "pointer" }}>删除</span>
                 )}
               </div>
             );

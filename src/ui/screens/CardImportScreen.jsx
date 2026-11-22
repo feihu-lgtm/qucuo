@@ -43,7 +43,7 @@ function TapSpan({ on, onClick, title, children, baseStyle, hi = "var(--warn)" }
         cursor: "pointer", userSelect: "none", transition: "all .14s ease",
         ...baseStyle,
         ...(on ? { borderColor: hi, color: hi, background: "rgba(212,168,83,.14)" } : {}),
-        ...(hov && !on ? { borderColor: hi, color: "#e8dcc0", transform: "translateY(-1px)" } : {}),
+        ...(hov && !on ? { borderColor: hi, color: "var(--paper)", transform: "translateY(-1px)" } : {}),
       }}>{children}</span>
   );
 }
@@ -364,7 +364,7 @@ export default function CardImportScreen({
           padding: "0 12px", minHeight: 52,
         }}>
           <img src={S("ui/scroll_ic.webp")} alt="" style={{ width: 22, height: 22, opacity: .9 }} />
-          <span style={{ color: "#f0e0c0", fontSize: 16, letterSpacing: 5, textShadow: "0 1px 4px #000" }}>{playerMode ? "导入角色卡当自己" : "角色入册"}</span>
+          <span style={{ color: "#f0e0c0", fontSize: 16, letterSpacing: 5, textShadow: "0 1px 4px var(--black)" }}>{playerMode ? "导入角色卡当自己" : "角色入册"}</span>
           {fileName && <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{fileName}</span>}
           <span style={{ flex: 1 }} />
           {playerMode && (
@@ -518,7 +518,7 @@ function ParsedPane({
 
   return (
     <>
-      <div style={{ width: 340, borderRight: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
+      <div style={{ width: 340, borderRight: "1px solid var(--bg-card)", display: "flex", flexDirection: "column" }}>
         <Bar right={<span style={{ fontSize: 10, color: "var(--muted)" }}>{card.entries.length} 条</span>}>
           {card.name || "无名卡"}
         </Bar>
@@ -528,7 +528,7 @@ function ParsedPane({
           <Stat label="可用兜底字段" v={report.stats.usableFields.join("、") || "无"} />
           {report.blockers.map((b, i) => <Note key={i} tone="bad">{b.msg}</Note>)}
           {report.warnings.map((w, i) => <Note key={i} tone="warn">{w.msg}</Note>)}
-          <div style={{ marginTop: 12, borderTop: "1px solid #2a2419", paddingTop: 10 }}>
+          <div style={{ marginTop: 12, borderTop: "1px solid var(--bg-card)", paddingTop: 10 }}>
             <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 6 }}>归类结果</div>
             {[["person", cands.filter(c => c.sure).length], ["faction/place/rule", worldCandidates.length],
               ["meta", metaEntries.length], ["unknown", unclassified.length]].map(([k, n]) => {
@@ -581,7 +581,7 @@ function ParsedPane({
           {classified && !scanning && !playerMode && (
             <div style={{
               marginBottom: 11, padding: "9px 11px", borderRadius: 0,
-              background: "rgba(0,0,0,.22)", border: "1px solid #2a2419",
+              background: "rgba(0,0,0,.22)", border: "1px solid var(--bg-card)",
             }}>
               <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 6 }}>这批人想怎么插入曲措乡</div>
               <Pills accent={accent} value={insertMode} onChange={setInsertMode}
@@ -611,15 +611,15 @@ function ParsedPane({
                 <div key={c.name} onClick={scanning ? undefined : () => toggle(c.name)}
                   style={{
                     cursor: scanning ? "default" : "pointer", padding: "8px 10px", borderRadius: 0,
-                    border: `1px solid ${on ? accent : "#2a2419"}`,
+                    border: `1px solid ${on ? accent : "var(--bg-card)"}`,
                     background: on ? "rgba(212,168,83,.10)" : "rgba(0,0,0,.25)",
                     transition: "all .15s ease",
                   }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ color: on ? accent : "var(--border)", fontSize: 12 }}>{on ? "◉" : "○"}</span>
-                    <span style={{ color: "#e8dcc0", fontSize: 12.5, flex: 1 }}>{c.name}</span>
+                    <span style={{ color: "var(--paper)", fontSize: 12.5, flex: 1 }}>{c.name}</span>
                     {!c.sure && <span title="机器拿不准这是人还是概念，勾选前请自己看一眼"
-                      style={{ fontSize: 9, color: "var(--muted)", border: "1px solid #3a3428", borderRadius: 0, padding: "0 3px" }}>待定</span>}
+                      style={{ fontSize: 9, color: "var(--ink-muted)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px" }}>待定</span>}
                     {c.grouped && <span title="AI 认出这几条写的是同一个人，已合并"
                       style={{ fontSize: 9, color: "#7a9a70", border: "1px solid #3a4a34", borderRadius: 0, padding: "0 3px" }}>合</span>}
                   </div>
@@ -633,14 +633,14 @@ function ParsedPane({
           </div>
 
           {asPlayer && card.openings.length > 1 && (
-            <div style={{ marginTop: 14, borderTop: "1px solid #2a2419", paddingTop: 10 }}>
+            <div style={{ marginTop: 14, borderTop: "1px solid var(--bg-card)", paddingTop: 10 }}>
               <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 6 }}>这张卡有 {card.openings.length} 个开局，选一个改写</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {card.openings.map((o, i) => (
                   <span key={i} onClick={() => setOpeningIdx(i)} title={o.slice(0, 80)}
                     style={{
                       cursor: "pointer", fontSize: 10.5, padding: "3px 9px", borderRadius: 0,
-                      border: `1px solid ${openingIdx === i ? accent : "#2a2419"}`,
+                      border: `1px solid ${openingIdx === i ? accent : "var(--bg-card)"}`,
                       color: openingIdx === i ? accent : "var(--muted)",
                     }}>开局{i + 1}·{o.length}字</span>
                 ))}
@@ -832,7 +832,7 @@ function ReviewPane({
   const applyBatchTier = (levelCap) => forEachPickedNpc(n => ({ ...n, levelCap }));
   const batchBtn = {
     cursor: "pointer", fontSize: 10.5, padding: "2px 8px", borderRadius: 0,
-    border: "1px solid #3a3428", color: "#a89870", userSelect: "none",
+    border: "1px solid var(--border-deep)", color: "#a89870", userSelect: "none",
   };
 
   // ── AI 一键规划落脚 ──────────────────────────────────────────────────────
@@ -981,7 +981,7 @@ function ReviewPane({
           {/* 步骤导航条 */}
           <div style={{
             flexShrink: 0, display: "flex", alignItems: "center", gap: 4,
-            padding: "8px 12px", borderBottom: "1px solid #2a2419",
+            padding: "8px 12px", borderBottom: "1px solid var(--bg-card)",
             background: "rgba(0,0,0,.25)",
           }}>
             {WIZARD_STEPS.map((s, idx) => (
@@ -998,7 +998,7 @@ function ReviewPane({
                   width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center",
                   justifyContent: "center", fontSize: 10.5, flexShrink: 0,
                   background: wizardStep === idx ? "rgba(212,168,83,.2)" : "rgba(0,0,0,.3)",
-                  border: `1px solid ${wizardStep === idx ? accent : "#3a3428"}`,
+                  border: `1px solid ${wizardStep === idx ? accent : "var(--border-deep)"}`,
                 }}>{idx + 1}</span>
                 <span style={{ fontSize: 12.5, letterSpacing: 1 }}>{s}</span>
               </span>
@@ -1014,7 +1014,7 @@ function ReviewPane({
             {wizardStep === 0 && (
               /* ── ① 选主角：从认出的 NPC 里挑谁当主角 ── */
               <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
-                <div style={{ fontSize: 15, color: "#e8dcc0", letterSpacing: 3, marginBottom: 4 }}>
+                <div style={{ fontSize: 15, color: "var(--paper)", letterSpacing: 3, marginBottom: 4 }}>
                   这张卡里，谁当「我自己」（主角）？
                 </div>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 16, lineHeight: 1.8 }}>
@@ -1025,7 +1025,7 @@ function ReviewPane({
                   <div onClick={() => pickPlayerFrom(null)} title="从头手写主角"
                     style={{
                       cursor: "pointer", padding: "14px 12px", borderRadius: 0, textAlign: "center",
-                      border: `1px solid ${playerFromNpc == null ? accent : "#3a3428"}`,
+                      border: `1px solid ${playerFromNpc == null ? accent : "var(--border-deep)"}`,
                       background: playerFromNpc == null ? "rgba(212,168,83,.12)" : "rgba(0,0,0,.25)",
                       transition: "all .15s ease",
                     }}>
@@ -1038,13 +1038,13 @@ function ReviewPane({
                       <div key={i} onClick={() => pickPlayerFrom(n.name)}
                         style={{
                           cursor: "pointer", padding: "12px", borderRadius: 0,
-                          border: `1px solid ${on ? accent : "#3a3428"}`,
+                          border: `1px solid ${on ? accent : "var(--border-deep)"}`,
                           background: on ? "rgba(212,168,83,.12)" : "rgba(0,0,0,.25)",
                           transition: "all .15s ease",
                         }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
                           <JadeTier value={n.levelCap} size={22} />
-                          <span style={{ color: on ? accent : "#e8dcc0", fontSize: 13, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <span style={{ color: on ? accent : "var(--paper)", fontSize: 13, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {n.name}
                           </span>
                           {on && <span style={{ color: accent, fontSize: 11 }}>◉</span>}
@@ -1084,7 +1084,7 @@ function ReviewPane({
             {wizardStep === 2 && (
               /* ── ③ 选 NPC 入江湖 · 逐个调：左勾选名单+批量，右 ReviewNpc 全字段 ── */
               <>
-                <div style={{ flex: 2, minWidth: 0, borderRight: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
+                <div style={{ flex: 2, minWidth: 0, borderRight: "1px solid var(--bg-card)", display: "flex", flexDirection: "column" }}>
                   <Bar right={<span style={{ fontSize: 10, color: "var(--muted)" }}>{pickedNpcs.length}/{result.npcs.length} 人</span>}>
                     选谁入江湖 · 点开逐个调
                   </Bar>
@@ -1095,13 +1095,13 @@ function ReviewPane({
 
                     {/* 批量设置（落脚/品阶），复用原有逻辑 */}
                     {result.npcs.length > 0 && (
-                      <div style={{ marginBottom: 10, padding: "8px 9px", borderRadius: 0, background: "rgba(0,0,0,.2)", border: "1px solid #2a2419" }}>
+                      <div style={{ marginBottom: 10, padding: "8px 9px", borderRadius: 0, background: "rgba(0,0,0,.2)", border: "1px solid var(--bg-card)" }}>
                         <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 6 }}>批量设置 · 作用于勾选中的人</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 7 }}>
                           <span style={{ fontSize: 10, color: "var(--text-dim)", width: 26 }}>落脚</span>
                           <select value={batchDistrict} onChange={e => setBatchDistrict(e.target.value)}
-                            style={{ fontSize: 10.5, padding: "2px 4px", background: "#1a1206", color: "#d8c8a0", border: "1px solid #3a3428", borderRadius: 0, maxWidth: 100 }}>
-                            {PLANNABLE_DISTRICTS.map(d => <option key={d} value={d} style={{ background: "#1a1206" }}>{d}</option>)}
+                            style={{ fontSize: 10.5, padding: "2px 4px", background: "var(--bg-deep)", color: "#d8c8a0", border: "1px solid var(--border-deep)", borderRadius: 0, maxWidth: 100 }}>
+                            {PLANNABLE_DISTRICTS.map(d => <option key={d} value={d} style={{ background: "var(--bg-deep)" }}>{d}</option>)}
                           </select>
                           <TapSpan onClick={() => applyBatchPlacement("resident", batchDistrict)} title={`勾选的人全部驻场于${batchDistrict}`} baseStyle={batchBtn}>全驻此地</TapSpan>
                           <TapSpan onClick={() => applyBatchPlacement("wander", batchDistrict)} title="勾选的人全部改为游走" baseStyle={batchBtn}>全游走</TapSpan>
@@ -1145,7 +1145,7 @@ function ReviewPane({
                           )}
                           <JadeTier value={n.levelCap} size={22} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ color: "#e8dcc0", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            <div style={{ color: "var(--paper)", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                               {n.name}{isPlayerSrc && <span style={{ color: accent, fontSize: 9.5, marginLeft: 5 }}>· 主角</span>}
                             </div>
                             <div style={{ color: "var(--text-dim)", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>
@@ -1188,7 +1188,7 @@ function ReviewPane({
             {wizardStep === 3 && (
               /* ── ④ 同行 · 落册：从入江湖的人里指定开局同行 + 总览 + 加入 ── */
               <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
-                <div style={{ fontSize: 15, color: "#e8dcc0", letterSpacing: 3, marginBottom: 10 }}>选开局同行 · 落册</div>
+                <div style={{ fontSize: 15, color: "var(--paper)", letterSpacing: 3, marginBottom: 10 }}>选开局同行 · 落册</div>
 
                 {/* 开局同行：从入江湖的人里指定 1 人随队（唯一出战位）*/}
                 <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 0, background: "rgba(138,176,112,.06)", border: "1px solid #3a4a34" }}>
@@ -1205,7 +1205,7 @@ function ReviewPane({
                             title={isStarter ? "点掉就不随队" : "让他开局就随队"}
                             style={{
                               cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 11px", borderRadius: 0,
-                              border: `1px solid ${isStarter ? "#8ab070" : "#3a4a34"}`,
+                              border: `1px solid ${isStarter ? "var(--green-soft)" : "#3a4a34"}`,
                               color: isStarter ? "#bce8ac" : "#a8b8a0",
                               background: isStarter ? "rgba(138,176,112,.15)" : "rgba(0,0,0,.2)",
                             }}>{isStarter ? "◉ " : "○ "}{n.name}</span>
@@ -1217,11 +1217,11 @@ function ReviewPane({
                   )}
                 </div>
 
-                <div style={{ fontSize: 13, color: "#e8dcc0", letterSpacing: 2, marginBottom: 12 }}>确认落册</div>
+                <div style={{ fontSize: 13, color: "var(--paper)", letterSpacing: 2, marginBottom: 12 }}>确认落册</div>
 
                 <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 0, background: "rgba(212,168,83,.06)", border: `1px solid ${accent}44` }}>
                   <div style={{ fontSize: 11.5, color: "#d8c8a0", marginBottom: 6 }}>主角</div>
-                  <div style={{ fontSize: 13, color: "#e8dcc0" }}>
+                  <div style={{ fontSize: 13, color: "var(--paper)" }}>
                     {result.player?.name || playerFromNpc || "（未填名讳）"}
                   </div>
                   <div style={{ fontSize: 10.5, color: "var(--muted)", marginTop: 4, lineHeight: 1.8 }}>
@@ -1233,7 +1233,7 @@ function ReviewPane({
                   </div>
                 </div>
 
-                <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 0, background: "rgba(0,0,0,.2)", border: "1px solid #2a2419" }}>
+                <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 0, background: "rgba(0,0,0,.2)", border: "1px solid var(--bg-card)" }}>
                   <div style={{ fontSize: 11.5, color: "#d8c8a0", marginBottom: 6 }}>
                     落江湖 {pickedNpcs.length} 人
                     {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
@@ -1242,7 +1242,7 @@ function ReviewPane({
                     {pickedNpcs.map((n, i) => (
                       <span key={i} style={{
                         fontSize: 11, padding: "3px 9px", borderRadius: 0,
-                        border: `1px solid ${starterCompanion === n.name ? "#8ab070" : "#3a3428"}`,
+                        border: `1px solid ${starterCompanion === n.name ? "var(--green-soft)" : "var(--border-deep)"}`,
                         color: starterCompanion === n.name ? "#bce8ac" : "var(--text)",
                         background: starterCompanion === n.name ? "rgba(138,176,112,.15)" : "rgba(0,0,0,.2)",
                       }}>
@@ -1348,7 +1348,7 @@ function ReviewPane({
           {/* 4:6 分栏。原来左栏定宽 230px，那是面板还锁在 1120 宽时定的比例；撑满
               之后名单挤在一条窄带里，而运行日志横向被压得每行都折。minWidth 0 是必须
               的——flex 子项默认 min-width:auto，里面的长人名会把栏撑破 4:6 的比例。 */}
-          <div style={{ flex: 4, minWidth: 0, borderRight: "1px solid #2a2419", display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 4, minWidth: 0, borderRight: "1px solid var(--bg-card)", display: "flex", flexDirection: "column" }}>
             <Bar>过目定稿 · 逐个设置</Bar>
 
             {/* 名单垂直居中：一张卡常见三五个人，顶部对齐会在下面留一大片死黑。
@@ -1357,13 +1357,13 @@ function ReviewPane({
                 4:6 分栏后条目在一千像素宽的栏里拉得很散。 */}
             <div style={{ flex: 1, overflowY: "auto", padding: "8px", display: "flex", flexDirection: "column" }}>
               {result.npcs.length > 0 && (
-                <div style={{ flexShrink: 0, marginBottom: 10, padding: "8px 9px", borderRadius: 0, background: "rgba(0,0,0,.2)", border: "1px solid #2a2419" }}>
+                <div style={{ flexShrink: 0, marginBottom: 10, padding: "8px 9px", borderRadius: 0, background: "rgba(0,0,0,.2)", border: "1px solid var(--bg-card)" }}>
                   <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 6 }}>批量设置 · 作用于勾选中的人</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 7 }}>
                     <span style={{ fontSize: 10, color: "var(--text-dim)", width: 26 }}>落脚</span>
                     <select value={batchDistrict} onChange={e => setBatchDistrict(e.target.value)}
-                      style={{ fontSize: 10.5, padding: "2px 4px", background: "#1a1206", color: "#d8c8a0", border: "1px solid #3a3428", borderRadius: 0, maxWidth: 100 }}>
-                      {PLANNABLE_DISTRICTS.map(d => <option key={d} value={d} style={{ background: "#1a1206" }}>{d}</option>)}
+                      style={{ fontSize: 10.5, padding: "2px 4px", background: "var(--bg-deep)", color: "#d8c8a0", border: "1px solid var(--border-deep)", borderRadius: 0, maxWidth: 100 }}>
+                      {PLANNABLE_DISTRICTS.map(d => <option key={d} value={d} style={{ background: "var(--bg-deep)" }}>{d}</option>)}
                     </select>
                     <TapSpan onClick={() => applyBatchPlacement("resident", batchDistrict)} title={`勾选的人全部驻场于${batchDistrict}`} baseStyle={batchBtn}>全驻此地</TapSpan>
                     <TapSpan onClick={() => applyBatchPlacement("wander", batchDistrict)} title="勾选的人全部改为游走" baseStyle={batchBtn}>全游走</TapSpan>
@@ -1396,7 +1396,7 @@ function ReviewPane({
                     }}>{picked.has(i) ? "◉" : "○"}</span>
                   <JadeTier value={n.levelCap} size={22} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: "#e8dcc0", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ color: "var(--paper)", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {n.name}
                     </div>
                     <div style={{ color: "var(--text-dim)", fontSize: 9.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.brief}</div>

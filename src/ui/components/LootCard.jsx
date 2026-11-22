@@ -71,7 +71,7 @@ const LOOT_CSS = `
     background-size:220% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
     animation:lootShimmer 2.8s linear infinite; filter:drop-shadow(0 2px 3px rgba(0,0,0,.7)); }
   @keyframes lootShimmer{ 0%{ background-position:120% 0; } 100%{ background-position:-120% 0; } }
-  .loot-chip{ font-size:9.5px; font-weight:700; padding:2px 8px; letter-spacing:.12em; color:#fff;
+  .loot-chip{ font-size:9.5px; font-weight:700; padding:2px 8px; letter-spacing:.12em; color:var(--white);
     clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%); text-shadow:0 1px 1px rgba(0,0,0,.6); }
   .loot-rule{ height:2px; margin:10px auto; width:78%; background:linear-gradient(90deg, transparent 0, var(--qc) 50%, transparent 100%); opacity:.6; }
   .loot-stats{ display:flex; flex-wrap:wrap; justify-content:center; gap:5px 16px; font-size:11.5px; }
@@ -113,7 +113,7 @@ export default function LootCard({ entry }) {
   // 切磋=暖金绛红（刀口余烬），偷窃/偷师=冷翠墨青（月黑风高）。
   const T = isDuel
     ? { bg: "linear-gradient(160deg,#3a1c12 0%,#2a1210 45%,#1e0e0a 100%)",
-        banner: "linear-gradient(90deg,#8a5a1a,#c4a040)", bannerText: "#2a1608",
+        banner: "linear-gradient(90deg,#8a5a1a,var(--gold))", bannerText: "#2a1608",
         label: "戰利品", sub: entry.fromNpc ? `擊敗 ${entry.fromNpc} 所獲` : "切磋所得",
         img: "loot_duel.webp", inset: "6% 12%", plate: "rgba(20,8,4,.66)" }
     : { bg: "linear-gradient(160deg,#10241f 0%,#0c1c18 45%,#081210 100%)",

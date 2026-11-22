@@ -23,10 +23,10 @@ export default function InnScreen({ building, char, time, zoneTheme, onClose, on
         <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
         <div style={{ padding: 16 }}>
           <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: 13 }}>{building.desc}</p>
-          <div style={{ color: "#8f8a7c", marginBottom: 12 }}>
+          <div style={{ color: "var(--ink-text-dim)", marginBottom: 12 }}>
             气血 {hp}/{maxHp} · 银两 {money} 两 · 每两回 {healPerLiang} 点气血
           </div>
-          <div style={{ color: "#e8e4d6", marginBottom: 8 }}>回满需花 {cost} 两</div>
+          <div style={{ color: "var(--ink-text)", marginBottom: 8 }}>回满需花 {cost} 两</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Btn label={`回满（${cost}两）`} disabled={money < cost || hp >= maxHp}
               zoneTheme={zoneTheme} onClick={() => onHeal(cost, maxHp - hp, "解毒治疗")} />
@@ -42,7 +42,7 @@ export default function InnScreen({ building, char, time, zoneTheme, onClose, on
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
         <p style={{ color: zoneTheme.text, marginBottom: 12, fontSize: 13 }}>{building.desc}</p>
-        <div style={{ color: "#8f8a7c", marginBottom: 16 }}>
+        <div style={{ color: "var(--ink-text-dim)", marginBottom: 16 }}>
           气血 {hp}/{maxHp} · 银两 {money} 两
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -60,7 +60,7 @@ export default function InnScreen({ building, char, time, zoneTheme, onClose, on
           />
           <Btn label="关闭" zoneTheme={zoneTheme} secondary onClick={onClose} />
         </div>
-        <div style={{ color: "#8f8a7c", fontSize: 11, marginTop: 12 }}>
+        <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginTop: 12 }}>
           住宿后气血回满，时间推进一天（24单位）
         </div>
       </div>

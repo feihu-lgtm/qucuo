@@ -234,7 +234,7 @@ export default function BugReportModal({
                   cursor: agreed && !sending ? "pointer" : "not-allowed",
                   padding: "6px 20px", borderRadius: 0, fontSize: 13, fontWeight: "bold",
                   background: agreed && !sending ? C.accent : (dark ? "var(--border)" : "#d8cdb8"),
-                  color: agreed && !sending ? (dark ? "#1a140c" : "#fff") : C.dim,
+                  color: agreed && !sending ? (dark ? "#1a140c" : "var(--white)") : C.dim,
                   border: "none",
                 }}
               >{sending ? "上传中…" : "提交"}</span>

@@ -35,7 +35,7 @@ const PORTRAIT = (v) => {
 };
 
 // 品阶→档位色（复用装备那套 QUALITY_COLOR）；levelCap 0-5 直接映射 QUALITY 索引
-const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "#e8e4d6";
+const tierColor = (levelCap) => QUALITY_COLOR[QUALITY[Math.max(0, Math.min(5, levelCap))]] || "var(--ink-text)";
 const tierName = (levelCap) => QUALITY[Math.max(0, Math.min(5, levelCap))] || "白";
 const MAX_TEAM = 6; // 每队最多 6 人（宝可梦味）
 
@@ -176,8 +176,8 @@ function WoodCard({ title, sub, onClick }) {
     >
       <img src={UI("panel_big.webp")} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
       <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8, padding: "0 8px" }}>
-        <div style={{ fontSize: "clamp(20px, 6vw, 26px)", letterSpacing: 4, color: "#f0d090", fontWeight: "bold" }}>{title}</div>
-        <div style={{ fontSize: "clamp(10px, 3vw, 12px)", color: "#c0a060", letterSpacing: 1, textAlign: "center" }}>{sub}</div>
+        <div style={{ fontSize: "clamp(20px, 6vw, 26px)", letterSpacing: 4, color: "var(--gold-light)", fontWeight: "bold" }}>{title}</div>
+        <div style={{ fontSize: "clamp(10px, 3vw, 12px)", color: "var(--parchment)", letterSpacing: 1, textAlign: "center" }}>{sub}</div>
       </div>
     </button>
   );
@@ -206,7 +206,7 @@ function PickScreen({ mode, candidates, allyIds, foeIds, setAllyIds, setFoeIds, 
     <div style={sx.pickWrap}>
       <div style={sx.pickHeader}>
         <TextBtn onClick={onBack}>← 换模式</TextBtn>
-        <div style={{ fontSize: "clamp(15px, 4vw, 20px)", letterSpacing: 2, color: "#f0d090", whiteSpace: "nowrap" }}>
+        <div style={{ fontSize: "clamp(15px, 4vw, 20px)", letterSpacing: 2, color: "var(--gold-light)", whiteSpace: "nowrap" }}>
           布阵 · {mode === "1v1" ? "单挑" : "团战"}
         </div>
         <button
@@ -220,12 +220,12 @@ function PickScreen({ mode, candidates, allyIds, foeIds, setAllyIds, setFoeIds, 
 
       {/* 两队当前阵容条 */}
       <div style={sx.teamsRow}>
-        <TeamBar label="我方" ids={allyIds} candidates={candidates} active={tab === "ally"} onClick={() => setTab("ally")} onRemove={(id) => setAllyIds(allyIds.filter(x => x !== id))} accent="#6aa0d4" />
+        <TeamBar label="我方" ids={allyIds} candidates={candidates} active={tab === "ally"} onClick={() => setTab("ally")} onRemove={(id) => setAllyIds(allyIds.filter(x => x !== id))} accent="var(--blue)" />
         <div style={sx.vs}>VS</div>
         <TeamBar label="敌方" ids={foeIds} candidates={candidates} active={tab === "foe"} onClick={() => setTab("foe")} onRemove={(id) => setFoeIds(foeIds.filter(x => x !== id))} accent="#d47a6a" />
       </div>
       <div style={sx.pickHint}>
-        正在挑选<b style={{ color: tab === "ally" ? "#6aa0d4" : "#d47a6a" }}>{tab === "ally" ? "我方" : "敌方"}</b>
+        正在挑选<b style={{ color: tab === "ally" ? "var(--blue)" : "#d47a6a" }}>{tab === "ally" ? "我方" : "敌方"}</b>
         （{curIds.length}/{cap}）· 点头像加入本队，再点一次移出 · 点上方队旗切换给哪队选
       </div>
 
@@ -238,7 +238,7 @@ function PickScreen({ mode, candidates, allyIds, foeIds, setAllyIds, setFoeIds, 
             <CandidateCard
               key={c.id} c={c}
               picked={inCur} disabled={inOther}
-              accent={tab === "ally" ? "#6aa0d4" : "#d47a6a"}
+              accent={tab === "ally" ? "var(--blue)" : "#d47a6a"}
               onClick={() => !inOther && toggle(c.id)}
             />
           );
@@ -260,7 +260,7 @@ function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) 
       }}
     >
       <div style={{ fontSize: 13, letterSpacing: 2, color: accent, marginBottom: 8 }}>
-        {label}（{ids.length}）{active && <span style={{ color: "#c0a060", fontSize: 11 }}> · 挑选中</span>}
+        {label}（{ids.length}）{active && <span style={{ color: "var(--parchment)", fontSize: 11 }}> · 挑选中</span>}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {ids.length === 0 && <span style={{ color: "#8a7d5a", fontSize: 12 }}>还没人上阵</span>}
@@ -315,13 +315,13 @@ function CandidateCard({ c, picked, disabled, accent, onClick }) {
       {/* 底部名条 */}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "4px 6px",
         background: "linear-gradient(0deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.55) 60%, transparent 100%)" }}>
-        <div style={{ fontSize: 13, color: "#e8dfc0", fontWeight: "bold", textShadow: "0 1px 2px #000" }}>{c.name}</div>
+        <div style={{ fontSize: 13, color: "#e8dfc0", fontWeight: "bold", textShadow: "0 1px 2px var(--black)" }}>{c.name}</div>
         <div style={{ fontSize: 9.5, color: tierColor(c.levelCap), letterSpacing: 1 }}>
           {tierName(c.levelCap)}品{c.beast ? " · 兽" : ""}
         </div>
       </div>
       {picked && <div style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%",
-        background: accent, color: "#fff", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</div>}
+        background: accent, color: "var(--white)", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</div>}
     </button>
   );
 }
@@ -441,7 +441,7 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
       {/* 顶栏 */}
       <div style={sx.battleTop}>
         <TextBtn onClick={onQuit}>← 认输退出</TextBtn>
-        <div style={{ fontSize: 13, color: "#c0a060", letterSpacing: 2 }}>第 {battle.round} 回合</div>
+        <div style={{ fontSize: 13, color: "var(--parchment)", letterSpacing: 2 }}>第 {battle.round} 回合</div>
         <div style={{ fontSize: 11, color: apiOn ? "#6aa06a" : "#8a7d5a" }}>
           {apiOn ? "◆ 说书战报已启用" : "◇ 装 key 可解锁说书战报"}
         </div>
@@ -464,11 +464,11 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
         {battle.logs.length === 0 && <div style={{ color: "#8a7d5a", fontSize: 13, textAlign: "center", padding: 20 }}>选一招，切磋开始。</div>}
         {battle.logs.map((l, i) => (
           <div key={i} style={{ marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-            <div style={{ fontSize: 11, color: "#c0a060", marginBottom: 3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 11, color: "var(--parchment)", marginBottom: 3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span>第{l.round}回合{l.myMove ? ` · ${l.myName}「${l.myMove}」 对 ${l.foeName}「${l.foeMove}」` : ""}</span>
               {/* 伤害数字：醒目独立标记，一眼看清这一击打了多少 */}
               {l.dmgToFoe > 0 && <span style={sx.dmgTag("#d47a6a")}>敌 −{l.dmgToFoe}</span>}
-              {l.dmgToMe > 0 && <span style={sx.dmgTag("#6aa0d4")}>我 −{l.dmgToMe}</span>}
+              {l.dmgToMe > 0 && <span style={sx.dmgTag("var(--blue)")}>我 −{l.dmgToMe}</span>}
               {(l.dmgToFoe === 0 || l.dmgToFoe == null) && (l.dmgToMe === 0 || l.dmgToMe == null) && l.myMove && <span style={{ color: "#6a5f4a" }}>无伤</span>}
             </div>
             {/* 系统战报（始终显示，权威结算文字） */}
@@ -533,7 +533,7 @@ function BattleScreen({ battle, setBattle, mode, onFinish, onQuit }) {
       {battle.over && (
         <div style={sx.controlBar}>
           <div style={{ width: "100%", textAlign: "center", margin: "auto" }}>
-            <div style={{ fontSize: 22, color: battle.winner === "ally" ? "#6aa0d4" : "#d47a6a", fontWeight: "bold", letterSpacing: 4, marginBottom: 12 }}>
+            <div style={{ fontSize: 22, color: battle.winner === "ally" ? "var(--blue)" : "#d47a6a", fontWeight: "bold", letterSpacing: 4, marginBottom: 12 }}>
               {battle.winner === "ally" ? "我方胜" : "我方败"}
             </div>
             <button onClick={onFinish} style={sx.startBtn}>看战报总结 →</button>
@@ -549,7 +549,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
   const cs = fighter.combatState;
   const hpRatio = cs.hp[0] / cs.hp[1];
   const enRatio = cs.energy[0] / 10;
-  const accent = side === "ally" ? "#6aa0d4" : "#d47a6a";
+  const accent = side === "ally" ? "var(--blue)" : "#d47a6a";
   const align = side === "ally" ? "flex-start" : "flex-end";
   const showDmg = hit && hit.dmg > 0;
 
@@ -571,7 +571,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
             <div key={hit.key} className="qb-dmg" style={{
               position: "absolute", top: 4, left: "50%", transform: "translateX(-50%)",
               fontSize: 24, fontWeight: "bold", color: "#ff6a5a",
-              textShadow: "0 2px 6px #000, 0 0 12px rgba(255,60,50,.7)", pointerEvents: "none", zIndex: 5,
+              textShadow: "0 2px 6px var(--black), 0 0 12px rgba(255,60,50,.7)", pointerEvents: "none", zIndex: 5,
             }}>−{hit.dmg}</div>
           )}
         </div>
@@ -581,7 +581,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
           {/* 血槽 */}
           <div style={{ marginTop: 6 }}>
             <Bar ratio={hpRatio} color="#c8483a" bg="#3a1a16" label={`气血 ${cs.hp[0]}/${cs.hp[1]}`} rtl={side === "foe"} />
-            <Bar ratio={enRatio} color="#d4a853" bg="#2a2010" label={`气力 ${cs.energy[0]}/10`} rtl={side === "foe"} thin />
+            <Bar ratio={enRatio} color="var(--ink-warn)" bg="#2a2010" label={`气力 ${cs.energy[0]}/10`} rtl={side === "foe"} thin />
           </div>
           {/* 状态标记 */}
           <div style={{ display: "flex", gap: 4, marginTop: 4, justifyContent: side === "ally" ? "flex-start" : "flex-end" }}>
@@ -599,7 +599,7 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
             return <div key={i} title={`${f.name} ${f.combatState.hp[0]}/${f.combatState.hp[1]}`}
               style={{ width: 12, height: 12, borderRadius: "50%",
                 background: i === curIdx ? accent : (alive ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.08)"),
-                border: i === curIdx ? `2px solid #fff` : "none",
+                border: i === curIdx ? `2px solid var(--white)` : "none",
                 boxShadow: i === curIdx ? `0 0 8px ${accent}` : "none" }} />;
           })}
         </div>
@@ -613,7 +613,7 @@ function Bar({ ratio, color, bg, label, rtl, thin }) {
     <div style={{ position: "relative", height: thin ? 8 : 14, background: bg, borderRadius: 0, overflow: "hidden", marginTop: 3 }}>
       <div style={{ position: "absolute", top: 0, bottom: 0, [rtl ? "right" : "left"]: 0,
         width: `${Math.max(0, Math.min(1, ratio)) * 100}%`, background: color, transition: "width .4s ease" }} />
-      {!thin && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#fff", textShadow: "0 1px 2px #000" }}>{label}</div>}
+      {!thin && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--white)", textShadow: "0 1px 2px var(--black)" }}>{label}</div>}
     </div>
   );
 }
@@ -623,7 +623,7 @@ function StatusChip({ name }) {
 }
 
 function MoveButton({ move, usable, reason, onClick }) {
-  const qc = QUALITY_COLOR[move.quality] || "#e8e4d6";
+  const qc = QUALITY_COLOR[move.quality] || "var(--ink-text)";
   const lines = explainMove(move);
   const gist = moveTypeGist(move);
   const [flipped, setFlipped] = useState(false);
@@ -689,16 +689,16 @@ function ResultScreen({ battle, onAgain, onExit }) {
 
   return (
     <div style={sx.centerCol}>
-      <div style={{ fontSize: 40, color: win ? "#6aa0d4" : "#d47a6a", fontWeight: "bold", letterSpacing: 8, marginBottom: 10 }}>
+      <div style={{ fontSize: 40, color: win ? "var(--blue)" : "#d47a6a", fontWeight: "bold", letterSpacing: 8, marginBottom: 10 }}>
         {win ? "胜" : "败"}
       </div>
-      <div style={{ fontSize: 15, color: "#c0a060", marginBottom: 30 }}>
+      <div style={{ fontSize: 15, color: "var(--parchment)", marginBottom: 30 }}>
         鏖战 {battle.round} 回合，{win ? "我方力克群雄" : "我方尽墨"}
       </div>
       <div style={{ display: "flex", gap: 40, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
-        <ResultCol title="我方存活" names={survivors.map(f => f.name)} color="#6aa0d4" empty="无人生还" />
+        <ResultCol title="我方存活" names={survivors.map(f => f.name)} color="var(--blue)" empty="无人生还" />
         <ResultCol title="我方阵亡" names={fallen.map(f => f.name)} color="#8a7d5a" empty="全员无恙" />
-        <ResultCol title="斩获敌方" names={foeFallen.map(f => f.name)} color="#d4a853" empty="未伤敌分毫" />
+        <ResultCol title="斩获敌方" names={foeFallen.map(f => f.name)} color="var(--ink-warn)" empty="未伤敌分毫" />
       </div>
       <div style={{ display: "flex", gap: 16 }}>
         <button onClick={onAgain} style={sx.startBtn}>再来一场</button>
@@ -726,7 +726,7 @@ function TextBtn({ children, onClick, style }) {
   const [hover, setHover] = useState(false);
   return (
     <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ background: "none", border: "none", cursor: "pointer", color: hover ? "#f0d090" : "#c0a060",
+      style={{ background: "none", border: "none", cursor: "pointer", color: hover ? "var(--gold-light)" : "var(--parchment)",
         fontSize: 13, letterSpacing: 1, transition: "color .2s", ...style }}>
       {children}
     </button>
@@ -740,13 +740,13 @@ const sx = {
   scrim: { position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,6,4,.72) 0%, rgba(8,6,4,.55) 40%, rgba(8,6,4,.8) 100%)" },
   centerCol: { position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "center", padding: 24, boxSizing: "border-box", textAlign: "center" },
-  title: { fontSize: 52, letterSpacing: 16, color: "#f0d090", margin: 0, textShadow: "0 3px 12px rgba(0,0,0,.7)" },
-  subtitle: { fontSize: 14, letterSpacing: 3, color: "#c0a060", marginTop: 12 },
+  title: { fontSize: 52, letterSpacing: 16, color: "var(--gold-light)", margin: 0, textShadow: "0 3px 12px rgba(0,0,0,.7)" },
+  subtitle: { fontSize: 14, letterSpacing: 3, color: "var(--parchment)", marginTop: 12 },
 
   pickWrap: { position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column",
     padding: "16px clamp(16px,4vw,60px)", boxSizing: "border-box" },
   pickHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  startBtn: { padding: "9px 18px", background: "linear-gradient(180deg,#8a6a2a,#5a4418)", border: "1px solid #c0a060",
+  startBtn: { padding: "9px 18px", background: "linear-gradient(180deg,#8a6a2a,#5a4418)", border: "1px solid var(--parchment)",
     borderRadius: 0, color: "#f5e8c0", fontSize: 14, letterSpacing: 1, cursor: "pointer", fontWeight: "bold" },
   teamsRow: { display: "flex", alignItems: "stretch", gap: 12, marginBottom: 10 },
   vs: { display: "flex", alignItems: "center", fontSize: 18, color: "#e0526a", fontWeight: "bold" },
@@ -765,7 +765,7 @@ const sx = {
     border: "1px solid rgba(255,255,255,.08)", borderRadius: 0, marginBottom: 12, minHeight: 80 },
   controlBar: { display: "flex", gap: 10, padding: "12px 14px", background: "rgba(20,16,10,.7)",
     border: "1px solid rgba(255,255,255,.12)", borderRadius: 0, minHeight: 116, alignItems: "flex-start" },
-  switchBtn: { padding: "8px 16px", background: "rgba(40,60,80,.6)", border: "1px solid #6aa0d4",
+  switchBtn: { padding: "8px 16px", background: "rgba(40,60,80,.6)", border: "1px solid var(--blue)",
     borderRadius: 0, color: "#cfe0ee", fontSize: 13, cursor: "pointer" },
   switchBtnSmall: { padding: "4px 10px", background: "rgba(40,60,80,.5)", border: "1px solid #4a6a84",
     borderRadius: 0, color: "#cfe0ee", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" },

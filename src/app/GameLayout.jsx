@@ -301,7 +301,7 @@ export default function GameLayout({ layout }) {
               };
             });
             const go = (dir) => { if (!loading && dir) { setMapBig(false); setInteractMode("action"); act(DIRS[dir] || dir, [], { forceLayer: "inner" }); } };
-            return <ClickableMap nodes={nodes} onGo={go} accent="#c07050" loading={loading} maxHeight="66vh" />;
+            return <ClickableMap nodes={nodes} onGo={go} accent="var(--clay)" loading={loading} maxHeight="66vh" />;
           })()}
         </div>
       </div>}

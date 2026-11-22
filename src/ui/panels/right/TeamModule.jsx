@@ -45,7 +45,7 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
                   {isOn && <span style={{ fontSize: "9px", color: zoneTheme.accent, marginLeft: 4 }}>出战</span>}
                 </div>
                 {typeof aff === "number" ? (
-                  <div style={{ fontSize: "10px", color: "#d68a8a" }}>{npcAffectionLabel(aff)} · {aff}/100</div>
+                  <div style={{ fontSize: "10px", color: "var(--pink)" }}>{npcAffectionLabel(aff)} · {aff}/100</div>
                 ) : (
                   <div style={{ fontSize: "10px", color: zoneTheme.textDim }}>{isOn ? "随行在侧" : "留守"}</div>
                 )}

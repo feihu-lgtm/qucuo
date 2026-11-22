@@ -33,6 +33,42 @@
   --sp-4: 16px;
   --sp-5: 24px;
   --sp-6: 32px;
+  /* 语义色：高频硬编码收敛（值与原 hex 完全一致，视觉不变）。
+     命名按角色：背景层(bg-*)/纸墨文字(paper·parchment)/金系(gold-*)/强调色(clay·ember·red-soft·pink·violet·green-soft·blue)/墨线(border-deep)/纯黑白。 */
+  --bg-ink: #161510;
+  --bg-deep: #1a1206;
+  --bg-card: #2a2419;
+  --bg-slate: #14161e;
+  --border-deep: #3a3428;
+  --gold: #c4a040;
+  --gold-bright: #e8c468;
+  --gold-light: #f0d090;
+  --gold-deep: #4a3a1a;
+  --paper: #e8dcc0;
+  --parchment: #c0a060;
+  --clay: #c07050;
+  --ember: #c8663a;
+  --red-soft: #c45044;
+  --pink: #d68a8a;
+  --violet: #b48adf;
+  --green-soft: #8ab070;
+  --blue: #6aa0d4;
+  --black: #000;
+  --white: #fff;
+
+  /* 墨拓定色（不随 data-theme="day" 切换）：原硬编码字面量本身就是定色——
+     它们与随主题切换的 --text/--bg 等值相同但语义不同，日间模式下不能跟着变。 */
+  --ink-text: #e8e4d6;
+  --ink-text-dim: #8f8a7c;
+  --ink-muted: #8a8270;
+  --ink-warn: #d4a853;
+  --ink-info: #8ac8b8;
+  --ink-accent: #c8323a;
+  --ink-accent-dim: #8a4a48;
+  --ink-border: #4a453c;
+  --ink-good: #5a8a5a;
+  --ink-bg: #0a0a09;
+  --ink-bg-panel: #111110;
   --dur-fast: 120ms;
   --dur: 180ms;
   --dx: 0px;

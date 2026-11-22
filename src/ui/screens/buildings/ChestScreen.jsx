@@ -8,7 +8,7 @@ import { loadChest, saveChest } from "../../../domain/rules/map/homestead.js";
 const BASE = (import.meta.env && import.meta.env.BASE_URL) || "/";
 const UI = (f) => `${BASE}stones/ui/${f}`;
 
-const QUAL_COLOR = { 白: "#e8e4d6", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "#b48adf", 橙: "#e0913a", 红: "#d4756a" };
+const QUAL_COLOR = { 白: "var(--ink-text)", 绿: "#6aaa6a", 蓝: "#5a9adf", 紫: "var(--violet)", 橙: "#e0913a", 红: "#d4756a" };
 
 export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, onClose }) {
   const closeGuard = useOverlayCloseGuard(onClose);
@@ -40,8 +40,8 @@ export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, 
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", marginBottom: 5,
         backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }}>
-        {q && <span style={{ color: QUAL_COLOR[q] || "#e8e4d6", fontSize: 10 }}>●</span>}
-        <span style={{ flex: 1, color: "#f0e0b8", fontSize: 12.5, textShadow: "0 1px 2px #000" }}>{nameOf(it)}</span>
+        {q && <span style={{ color: QUAL_COLOR[q] || "var(--ink-text)", fontSize: 10 }}>●</span>}
+        <span style={{ flex: 1, color: "#f0e0b8", fontSize: 12.5, textShadow: "0 1px 2px var(--black)" }}>{nameOf(it)}</span>
         <span onClick={() => (side === "chest" ? retrieveItem(idx) : storeItem(idx))}
           style={{ cursor: "pointer", padding: "3px 12px", fontSize: 11, fontWeight: "bold",
             backgroundImage: `url(${UI("bar_paper.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
@@ -61,7 +61,7 @@ export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, 
       <div className="mobile-overlay-header" style={{ position: "relative", margin: "14px 16px 0", padding: "10px 18px",
         backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ color: "#f5e2b8", fontSize: 15, fontWeight: "bold", letterSpacing: 3, textShadow: "0 1px 2px #000" }}>
+        <span style={{ color: "#f5e2b8", fontSize: 15, fontWeight: "bold", letterSpacing: 3, textShadow: "0 1px 2px var(--black)" }}>
           📦 {building?.name || "库房"}
         </span>
         <span className="mobile-overlay-close" onClick={onClose} title="关闭" style={{ cursor: "pointer", width: 26, height: 26, flexShrink: 0,
