@@ -1110,3 +1110,21 @@
     }
   }
 }
+
+/* 刘海屏 iPhone 横屏宽于 767px，走的是桌面三栏布局：要给左右刘海和底部横条让位。
+   .game-layout 带字号 zoom，padding 会被放大，所以先除回去。 */
+@media (min-width: 768px) and (orientation: landscape) and (max-height: 500px) {
+  .game-layout {
+    box-sizing: border-box;
+    padding:
+      calc(env(safe-area-inset-top) / var(--ui-scale, 1))
+      calc(env(safe-area-inset-right) / var(--ui-scale, 1))
+      calc(env(safe-area-inset-bottom) / var(--ui-scale, 1))
+      calc(env(safe-area-inset-left) / var(--ui-scale, 1));
+  }
+
+  .turn-status-float {
+    right: calc(12px + env(safe-area-inset-right) / var(--ui-scale, 1)) !important;
+    bottom: calc(12px + env(safe-area-inset-bottom) / var(--ui-scale, 1)) !important;
+  }
+}

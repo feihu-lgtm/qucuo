@@ -6,6 +6,8 @@
 
 :root {
   color-scheme: dark;
+  /* GameLayout 按字号设置内联覆盖，CSS 里用来抵消 zoom。 */
+  --ui-scale: 1;
   --mobile-viewport-height: 100dvh;
   --mobile-viewport-offset: 0px;
   --mobile-keyboard-height: 0px;
