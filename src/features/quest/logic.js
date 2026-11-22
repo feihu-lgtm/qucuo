@@ -63,11 +63,23 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
     char: state.char || {},
     varTree: state.varTree || {},
     flags: addedFlag,
+    exp: state.exp || 0,
+    pot: state.pot || 0,
   };
   const varTreeUpdates = [];
   const invUpdates = [];
   const charUpdates = [];
+  const expUpdates = [];
+  const potUpdates = [];
   const setters = {
+    setExp: (update) => {
+      expUpdates.push(update);
+      local.exp = typeof update === "function" ? update(local.exp) : update;
+    },
+    setPot: (update) => {
+      potUpdates.push(update);
+      local.pot = typeof update === "function" ? update(local.pot) : update;
+    },
     setInv: (update) => {
       invUpdates.push(update);
       local.inv = typeof update === "function" ? update(local.inv) : update;
@@ -97,6 +109,18 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
     changes.char = (prev) => charUpdates.reduce(
       (value, update) => typeof update === "function" ? update(value) : update,
       prev || {},
+    );
+  }
+  if (expUpdates.length) {
+    changes.exp = (prev) => expUpdates.reduce(
+      (value, update) => typeof update === "function" ? update(value) : update,
+      prev || 0,
+    );
+  }
+  if (potUpdates.length) {
+    changes.pot = (prev) => potUpdates.reduce(
+      (value, update) => typeof update === "function" ? update(value) : update,
+      prev || 0,
     );
   }
   changes.flags = (prev) => flagUpdates.reduce(
