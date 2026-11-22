@@ -56,7 +56,9 @@ export const residentNpcRule = {
           .filter((npc) => RELOCATED_RESIDENTS[npc.name] !== roomName)
           .map((npc) => npc.name)),
     );
-    const staleNames = new Set([...currentNpcNames].filter((name) => RELOCATED_RESIDENTS[name] === room.name));
+    const staleNames = new Set((room.npcs || [])
+      .filter((npc) => !npc.imported && RELOCATED_RESIDENTS[npc.name] === room.name)
+      .map((npc) => npc.name));
     const toRoomNpcWithCombat = (poolNpc) => buildRoomNpcWithCombat(poolNpc, {
       existingNpc: existingByName.get(poolNpc.name),
       luck,
@@ -136,7 +138,7 @@ export const residentNpcRule = {
       changes: {
         room: (previous) => ({
           ...previous,
-          npcs: injectNpcs((previous.npcs || []).filter((npc) => !staleNames.has(npc.name)), toInject),
+          npcs: injectNpcs((previous.npcs || []).filter((npc) => npc.imported || !staleNames.has(npc.name)), toInject),
         }),
       },
     };

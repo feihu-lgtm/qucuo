@@ -62,6 +62,10 @@ describe("resident NPC world rule", () => {
     const jinguan = { ...makeState(), room: { name: "锦官城", npcs: [{ name: "唐老太" }] } };
     const atJinguan = residentNpcRule.run(jinguan, { importedRegistry, roomMapRef: { current: {} } });
     expect(atJinguan.changes.room(jinguan.room).npcs.map((npc) => npc.name)).not.toContain("唐老太");
+
+    const imported = { ...makeState(), room: { name: "锦官城", npcs: [{ name: "唐老太", imported: true }] } };
+    const keep = residentNpcRule.run(imported, { importedRegistry, roomMapRef: { current: {} } });
+    expect(keep.changes.room(imported.room).npcs.map((npc) => npc.name)).toContain("唐老太");
   });
 
   it("injects scheduled and fixed residents with combat data", () => {
