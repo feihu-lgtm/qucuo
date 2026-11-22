@@ -1,29 +1,16 @@
 // 中栏（江湖）——三栏布局的正中一栏，游戏的主视野。
-// ---------------------------------------------------------------------------
-//   1. 标题栏「江湖」+ 停止/回滚/调试/gamemode 四个开关
-//   2. DebugPanel 挂载点（showDebug 时展开）
-//   3. 切磋确认条（duelPending：邀战叙事跑完后点确认才真开打）；行动识别确认条（IntentConfirmBar）同位
-//   4. 建筑/交易内联功能区（近 20 种 BUILDING_TYPE 的条件渲染 + 最小化开关）
-//   5. 叙事日志区（按「一问一答」分组折叠 + loading/端详/队列的等待态提示）
-//   6. 任务提示条 / ❢触发框 / ◈抉择框
-//   7. 交互模式切换（行动·对话·私聊旁白）+ NSFW + 打坐
-//   8. NPC 人选选择器、飞鸽传书状态条、底部输入框
-//
-// 游戏数据经 props 下传，overlay 显隐读 uiStore，本地只保留建筑页签状态。
-import TurnStatusPill from "../components/TurnStatusPill.jsx";
 import IntentConfirmBar from "../components/IntentConfirmBar.jsx";
-import CenterControlRows from "./CenterControlRows.jsx";
 import { DevControls, TurnControls } from "./TopBar.jsx";
 import { chromeBtn } from "../../utils/theme.js";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
+import { gameActions, useGameStore } from "../../store/gameStore.js";
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
-import LogEntry from "../components/LogEntry.jsx";
 import { getBuildingInstanceKey } from "./buildingInstanceKey.js";
+import NarrativeLogFeed from "./center/NarrativeLogFeed.jsx";
+import CenterFooterBar from "./center/CenterFooterBar.jsx";
 
-// 按需加载：建筑/交易/地室/调试/心海等二级屏不进首屏主包，首次展开才下载。
-// 建筑屏路由表（buildingScreens.jsx）整个延后——表内登记的全部建筑屏随之出主包。
 const TradingScreen = lazy(() => import("../screens/TradingScreen.jsx"));
 const DebugPanel = lazy(() => import("./DebugPanel.jsx"));
 const BasementScreen = lazy(() => import("../screens/buildings/ServiceScreen.jsx").then(m => ({ default: m.BasementScreen })));
@@ -37,64 +24,43 @@ function ScreenFallback({ zoneTheme }) {
   return <div style={{ padding: "12px 16px", fontSize: 11.5, color: zoneTheme.textDim }}>载入中…</div>;
 }
 
-function isNarrativePlaceholder(entry) {
-  if (!entry.streaming) return false;
-  const text = (entry.text || "").trim();
-  return text === "▌" || text === "「旁白」▌";
-}
+export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNote, setVarTree }) {
+  const {
+    isMobile, mobileColumn, zoneTheme, S, loading, gm, setGm,
+    duelPending, activeBuilding, setActiveBuilding, tradingShop, setTradingShop,
+    buildingPanelMinimized, setBuildingPanelMinimized, gambleNegotiation,
+    isDayMode, clr, collapsedGroups, setCollapsedGroups,
+    queueCount, pendingTalks, logEnd, setInteractMode,
+  } = ui;
+  const {
+    duelHandlers, buildingHandlers, craftingAI, pigeonHandlers,
+    playerActionHandlers, aiInspect,
+  } = handlers;
 
-function NarrativeSkeleton() {
-  return (
-    <div className="narrative-skeleton" role="status" aria-label="叙事生成中">
-      <span /><span /><span />
-    </div>
-  );
-}
+  const char = useGameStore(s => s.char);
+  const pot = useGameStore(s => s.pot);
+  const exp = useGameStore(s => s.exp);
+  const dao = useGameStore(s => s.dao);
+  const varTree = useGameStore(s => s.varTree);
+  const narrator = useGameStore(s => s.narrator);
+  const room = useGameStore(s => s.room);
+  const innerRoomName = useGameStore(s => s.innerRoomName);
+  const mapData = useGameStore(s => s.mapData);
+  const skills = useGameStore(s => s.skills);
+  const time = useGameStore(s => s.time);
+  const inv = useGameStore(s => s.inv);
+  const flags = useGameStore(s => s.flags);
+  const questProgress = useGameStore(s => s.questProgress);
+  const deposit = useGameStore(s => s.deposit);
+  const depositedAt = useGameStore(s => s.depositedAt);
+  const pledgedItems = useGameStore(s => s.pledgedItems);
 
-export default function CenterPanel({
-  isMobile, mobileColumn,
-  zoneTheme, S,
-  loading, addLog, handleCollectGround,
-  rollbackOneStep, captureUndo, rollbackBlocked, stopRunning, dispatchCommand,
-  gm, setGm,
-  char, setChar, pot, setPot, exp, setExp, dao, setDao,
-  varTree, setVarTree, narrator, setNarrator,
-  room, innerRoomName, mapData, setMapData, setRoom, setInnerRoomName,
-  setInteractMode, act, teleportLookRef, setSkills, setInv,
-  duelPending, confirmDuel, cancelDuel,
-  activeBuilding, setActiveBuilding, tradingShop, setTradingShop, buildingPanelMinimized, setBuildingPanelMinimized,
-  handleBuildingInn, handleBuildingHeal,
-  skills, handleBuySkill,
-  time, inv, effectiveSpecialNow, inspectItem, jotNote,
-  flags, questProgress,
-  handleAcceptEscort, handleGamble, handleCollectPigeons, buyPigeon, handlePostSend, handleTravel,
-  handleServiceOrder,
-  handlePray, handleReadBook, handleBuyBook,
-  deposit, depositedAt, handleDeposit, handleWithdraw,
-  pledgedItems, handlePledge, handleRedeem,
-  handleAcceptBounty, handleClaimBounty,
-  handleForgeCommission, handleForgeDesign,
-  handleJadeDesign, handleJadeCraft,
-  gambleNegotiation, handleGambleTalk, handleGambleSettle, handleGambleInspect,
-  handleListenRumor,
-  handleJoinSect, sectMasterAffection, handleAuctionWin,
-  handleCook,
-  seaTraumaActive, narratorVarsNow, invNames, handleComfort, handleResolveTrauma,
-  log, isDayMode, clr, collapsedGroups, setCollapsedGroups,
-  queueCount, pendingTalks, inspecting, logEnd, waitSecs,
-  availableQuestsHere, triggerQuestFromPanel, triggerQuestChoice,
-  uiGreen, uiPink, uiCrimson,
-  nsfwOn, setNsfwOn,
-  meditate, justMeditated,
-  interactMode, activeTarget, setActiveTarget, setTalkTarget,
-  activeGroundItem, setActiveGroundItem,
-  pigeonTarget, setPigeonTarget, pigeonDelayShichen,
-  input, setInput, inputRef, onKey, composingRef,
-}) {
-  const runCommand = (id, fn) => dispatchCommand ? dispatchCommand(id, fn) : fn();
-  // 现货/定制 分页：孟记铁铺(craft=forge)、玉器轩(craft=jade)这类"既卖现货又接定制"
-  // 的铺子，用本页签在 TradingScreen 与 ForgeScreen/JadeShopScreen 之间切换。换一家
-  // 铺子(activeBuilding.id 变)就复位回"现货"，避免上家的定制页串到下家。
+  const {
+    setChar, setPot, setExp, setDao, setNarrator,
+    setMapData, setRoom, setInnerRoomName, setSkills, setInv,
+  } = gameActions;
+
+  const runCommand = (id, fn) => turn.dispatchCommand ? turn.dispatchCommand(id, fn) : fn();
   const [craftTab, setCraftTab] = useState("shop");
   const [gambleStoneMinimized, setGambleStoneMinimized] = useState(false);
   useEffect(() => { setCraftTab("shop"); }, [activeBuilding?.id]);
@@ -102,10 +68,12 @@ export default function CenterPanel({
   const isJade = activeBuilding?.craft === "jade";
   const tab = (key, label) => (
     <span key={key} className="mobile-touch-target" onClick={() => setCraftTab(key)}
-      style={{ cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
+      style={{
+        cursor: "pointer", padding: "2px 12px", fontSize: 11.5, borderRadius: 0,
         color: craftTab === key ? zoneTheme.bg : zoneTheme.accent,
         background: craftTab === key ? zoneTheme.accent : "transparent",
-        border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}` }}>{label}</span>
+        border: `1px solid ${craftTab === key ? zoneTheme.accent : zoneTheme.border}`,
+      }}>{label}</span>
   );
   const tabs = (className) => (
     <div className={className} style={{ display: "flex", gap: 6, padding: "2px 16px 8px" }}>
@@ -115,448 +83,138 @@ export default function CenterPanel({
   );
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const showBasement = useOverlay(OVERLAY.BASEMENT);
+  const hideNarrative = Boolean((activeBuilding || tradingShop) && !buildingPanelMinimized);
+
   return (
-        <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", display: mobileColumn === "center" ? "flex" : "none" } : { flex: 55, ...S.panel }}>
-          <div className="mobile-hide" style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>江湖</span>
-            <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <TurnControls theme={zoneTheme} loading={loading} stopRunning={stopRunning} rollbackBlocked={rollbackBlocked} rollbackOneStep={rollbackOneStep} />
-              <DevControls theme={zoneTheme} gm={gm} setGm={setGm} addLog={addLog} />
-            </span>
-          </div>
+    <div style={isMobile ? { flex: 1, ...S.panel, borderRight: "none", display: mobileColumn === "center" ? "flex" : "none" } : { flex: 55, ...S.panel }}>
+      <div className="mobile-hide" style={{ ...S.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>江湖</span>
+        <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <TurnControls theme={zoneTheme} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
+          <DevControls theme={zoneTheme} gm={gm} setGm={setGm} addLog={addLog} />
+        </span>
+      </div>
 
-          {showDebug && (
-            <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
-            <DebugPanel
-              isMobile={isMobile} zoneTheme={zoneTheme}
-              char={char} setChar={setChar}
-              pot={pot} setPot={setPot} exp={exp} setExp={setExp}
-              dao={dao} setDao={setDao}
-              varTree={varTree} setVarTree={setVarTree}
-              narrator={narrator} setNarrator={setNarrator}
-              room={room} innerRoomName={innerRoomName}
-              mapData={mapData} setMapData={setMapData} setRoom={setRoom} setInnerRoomName={setInnerRoomName}
-              addLog={addLog} setInteractMode={setInteractMode} act={act}
-              teleportLookRef={teleportLookRef}
-              setSkills={setSkills} setInv={setInv}
-            />
-            </Suspense>
-          )}
-
-          {/* ── 心灵之海·创伤安抚面板：只在她创伤发作时出现 ── */}
-          {seaTraumaActive && (
-            <Suspense fallback={null}>
-            <SeaOfMindScreen
-              narratorVars={narratorVarsNow} invNames={invNames} zoneTheme={zoneTheme}
-              onComfort={handleComfort} onResolve={handleResolveTrauma}
-            />
-            </Suspense>
-          )}
-
-          <IntentConfirmBar zoneTheme={zoneTheme} />{/* ── 切磋确认：邀战叙事跑完后点确认才开打 ── */}
-          {duelPending && (
-            <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ color: "var(--text)", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
-              <span onClick={confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--ink-bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>确认切磋</span>
-              <span onClick={cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid #2a2d3a" }}>算了</span>
-            </div>
-          )}
-
-          {/* ── 建筑面板最小化条：收起时只留一行提示，点击可重新展开 ── */}
-          {(activeBuilding || tradingShop) && buildingPanelMinimized && (
-            <div
-              onClick={() => setBuildingPanelMinimized(false)}
-              style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: 11.5, color: "var(--info)", display: "flex", alignItems: "center", gap: 6 }}
-            >
-              <span>▸ {activeBuilding?.name || tradingShop?.shopName}（已最小化，点击展开）</span>
-            </div>
-          )}
-
-          {/* ── 建筑/交易内联功能区：展开时**独占整条主叙事栏**，从顶一直拉到底部行动栏。
-                 【为什么不能只占一半】这里原先写 flex:1，而下方叙事区也是 flex:1，两个
-                 兄弟节点平分剩余高度——建筑面板只拿到一半，铁匠铺/商店/武馆那些内容长的
-                 面板下半截直接被截掉，玩家看不到底下的按钮，也没法滚到（外层不滚，
-                 面板自己那层 overflow 又被压在半屏里）。
-                 改成展开时建筑面板独占：叙事区在这种时候整个不渲染（见下方 log 区的条件），
-                 建筑面板拿满整栏。想看叙事就点"▾ 最小化"，叙事区随即恢复全高。 ── */}
-          {(activeBuilding || tradingShop) && (
-            <div
-              key={getBuildingInstanceKey(activeBuilding, tradingShop)}
-              className={`mobile-building-root${gambleStoneMinimized ? " mobile-building-minimized-root" : ""}${buildingPanelMinimized ? " mobile-building-hidden" : ""}`}
-              style={{
-                flex: 1,
-                minHeight: 0,
-                height: "100%",
-                overflowY: "auto",
-                borderBottom: `1px solid ${zoneTheme.border}`,
-                background: "rgba(255,255,255,0.02)",
-                display: buildingPanelMinimized ? "none" : undefined,
-                visibility: buildingPanelMinimized ? "hidden" : undefined,
-                pointerEvents: buildingPanelMinimized ? "none" : undefined,
-              }}
-            >
-              {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
-              <div className="mobile-building-minimize"
-                onClick={() => setBuildingPanelMinimized(true)}
-                style={{ padding: "4px 16px", fontSize: 10.5, color: "var(--text-dim)", cursor: "pointer", textAlign: "right" }}
-              >
-                ▾ 最小化
-              </div>
-              {queueCount > 0 && !gambleStoneMinimized && !activeBuilding?.shopKey && !tradingShop && (
-                <div role="status" aria-live="polite"
-                  style={{ ...chromeBtn(zoneTheme), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
-                  ⏳ 排队中 {queueCount} · 等待落盘后执行
-                </div>
-              )}
-              {isMobile && activeBuilding?.craft && craftTab !== "shop" && tabs("mobile-trading-tabs-building")}
-              {/* 屏路由：BUILDING_TYPE → 屏渲染函数，全表见 buildingScreens.jsx。
-                 地室（BasementScreen）不走表——它由 BASEMENT overlay 控制，与建筑类型无映射。 */}
-              {(() => {
-                if (!activeBuilding) return null;
-                if (showBasement && (activeBuilding.type === BUILDING_TYPE.RESTAURANT || activeBuilding.type === BUILDING_TYPE.THEATER)) return null;
-                const ctx = {
-                  building: activeBuilding, char, time, zoneTheme, inv, skills, flags, questProgress,
-                  dao, mapData, room, innerRoomName, varTree, queueCount, effectiveSpecialNow,
-                  craftTab, tabs, isJade, runCommand, captureUndo, setDao, setChar, setInv, addLog, jotNote,
-                  inspectItem, setGambleStoneMinimized, gambleNegotiation,
-                  deposit, depositedAt, pledgedItems,
-                  sectMasterAffection,
-                  closeBuilding: () => setActiveBuilding(null),
-                  openBasement: () => openOverlay(OVERLAY.BASEMENT),
-                  handleBuildingInn, handleBuildingHeal, handleBuySkill,
-                  handleAcceptEscort, handleGamble, handleCollectPigeons, buyPigeon, handlePostSend, handleTravel,
-                  handleServiceOrder, handlePray, handleReadBook, handleBuyBook,
-                  handleDeposit, handleWithdraw, handlePledge, handleRedeem,
-                  handleAcceptBounty, handleClaimBounty,
-                  handleForgeCommission, handleForgeDesign, handleJadeDesign, handleJadeCraft,
-                  handleGambleTalk, handleGambleSettle, handleGambleInspect,
-                  handleListenRumor, handleJoinSect, handleAuctionWin, handleCook,
-                };
-                return (
-                  <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
-                    <BuildingScreens type={activeBuilding.type} ctx={ctx} />
-                  </Suspense>
-                );
-              })()}
-              {showBasement && (
-                <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
-                <BasementScreen char={char} time={time} zoneTheme={zoneTheme} inline
-                  onClose={() => closeOverlay(OVERLAY.BASEMENT)} onOrder={handleServiceOrder} />
-                </Suspense>
-              )}
-              {tradingShop && (
-                <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
-                <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
-                  playerInv={inv} playerMoney={char.money || 0} playerWit={effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={inspectItem}
-                  onClose={() => setTradingShop(null)}
-                  onBuy={(item) => runCommand("shopBuy", () => { if ((char.money || 0) < item.buyPrice) return; captureUndo(); setChar(c => ({ ...c, money: c.money - item.buyPrice })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); addLog([{ t: "item", text: `  你花费${item.buyPrice}两，购得「${item.name}」。` }]); jotNote({ text:`购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
-                  onSell={(item) => runCommand("shopSell", () => { if (item.equipped) return; captureUndo(); setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + item.sellPrice })); addLog([{ t: "item", text: `  你卖出「${item.name}」，得银两${item.sellPrice}两。` }]); jotNote({ text:`卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
-                />
-                </Suspense>
-              )}
-            </div>
-          )}
-
-          {/* 叙事正文区。建筑面板展开时整个让位——两个 flex:1 的兄弟会平分高度，
-              那样建筑面板只有半屏、内容长的下半截看不到（见上方注释）。
-              让位而不是压缩，是因为压缩解决不了「一半」这个根因。 */}
-          <div data-testid="narrative-log" style={{ display: ((activeBuilding || tradingShop) && !buildingPanelMinimized) ? "none" : "block", flex: 1, padding: "20px 32px", overflowY: "auto", overflowX: "hidden", fontSize: "15px", lineHeight: "var(--lh-narrative)", letterSpacing: "0.3px" }}>
-            {(() => {
-              // 按"一问一答"分组：玩家的一条 cmd 开启一个新轮次，后面紧跟的所有内容
-              // （desc/stat/affection/sys/err 等）都归进这一组，直到下一条 cmd 出现为止。
-              // 命令要跟自己的反馈严格对应，不能把不相关的内容混进别的框——
-              // room（场景切换标题）和显式标记 standalone 的条目（比如"⏳已入队"，
-              // 它说的是"系统现在正忙"，既不属于正在处理的上一条命令，也不属于
-              // 还没执行的这一条，谁的框都不该进）真正独立成行，不并入任何框。
-              const groups = [];
-              let current = null;
-              for (const entry of log) {
-                const isStandaloneSys = entry.t === "room" || entry.standalone;
-                if (isStandaloneSys) {
-                  if (current) { groups.push(current); current = null; }
-                  groups.push({ standalone: entry });
-                } else if (entry.t === "cmd") {
-                  if (current) groups.push(current);
-                  current = { cmd: entry, replies: [] };
-                } else {
-                  if (!current) current = { cmd: null, replies: [] };
-                  current.replies.push(entry);
-                }
-              }
-              if (current) groups.push(current);
-
-              let lastCommandIndex = -1;
-              for (let i = log.length - 1; i >= 0; i -= 1) {
-                if (log[i].t === "cmd") {
-                  lastCommandIndex = i;
-                  break;
-                }
-              }
-              const lastCommand = lastCommandIndex >= 0 ? log[lastCommandIndex] : null;
-              const currentReplies = lastCommandIndex >= 0 ? log.slice(lastCommandIndex + 1) : [];
-              const hasNarrative = currentReplies.some(entry =>
-                (entry.t === "desc" || entry.t === "narrator") &&
-                (!entry.streaming || !isNarrativePlaceholder(entry)));
-              const showSkeleton = (loading || pendingTalks > 0 || inspecting) && !hasNarrative;
-              if (showSkeleton) {
-                const group = groups.find(item => item.cmd === lastCommand);
-                if (group) {
-                  const placeholderIndex = group.replies.findIndex(isNarrativePlaceholder);
-                  if (placeholderIndex >= 0) group.replies[placeholderIndex] = { skeleton: true };
-                  else group.replies.push({ skeleton: true });
-                } else {
-                  groups.push({ skeleton: true });
-                }
-              }
-
-              return groups.map((g, gi) => {
-                if (g.skeleton) return <NarrativeSkeleton key={`skeleton-${gi}`} />;
-                if (g.standalone) {
-                  return <LogEntry key={gi} entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={act} isDayMode={isDayMode} />;
-                }
-                // 折叠逻辑：用 cmd 在 log 数组里的位置作为稳定 key
-                const cmdIdx = g.cmd ? log.indexOf(g.cmd) : -1;
-                const replyCount = g.replies.filter(entry => !entry.skeleton).length;
-                const canCollapse = g.cmd && replyCount > 0;
-                const collapsed = canCollapse && collapsedGroups.has(cmdIdx);
-                const toggleCollapse = canCollapse ? () => setCollapsedGroups(prev => {
-                  const next = new Set(prev);
-                  if (next.has(cmdIdx)) next.delete(cmdIdx); else next.add(cmdIdx);
-                  return next;
-                }) : undefined;
-
-                return (
-                  <div
-                    key={gi}
-                    style={{
-                      border: `1px solid ${zoneTheme.border}`,
-                      borderRadius: 0,
-                      marginBottom: 10,
-                      background: "rgba(255,255,255,0.015)",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {g.cmd && (
-                      <div
-                        style={{
-                          display: "flex", alignItems: "center", gap: 4,
-                          padding: "8px 12px",
-                          cursor: canCollapse ? "pointer" : "default",
-                          userSelect: "none",
-                        }}
-                        onClick={toggleCollapse}
-                      >
-                        <span style={{ color: zoneTheme.accentDim, fontSize: "10px", flexShrink: 0, width: 10 }}>
-                          {canCollapse ? (collapsed ? "▶" : "▼") : ""}
-                        </span>
-                        <div style={{ flex: 1 }}>
-                          <LogEntry entry={g.cmd} color={clr[g.cmd.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
-                        </div>
-                        {collapsed && (
-                          <span style={{ color: zoneTheme.accentDim, fontSize: "10px", flexShrink: 0 }}>
-                            +{replyCount}条
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {!collapsed && g.replies.length > 0 && (
-                      <div style={{ padding: g.cmd ? "0 12px 8px 26px" : "8px 12px" }}>
-                        {g.replies.map((entry, ri) => (
-                          entry.skeleton
-                            ? <NarrativeSkeleton key="narrative-skeleton" />
-                            : <LogEntry key={ri} entry={entry} color={clr[entry.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              });
-            })()}
-            {loading && (
-              <div style={{
-                color: zoneTheme.accentDim, padding: "6px 0", display: "flex", alignItems: "center", gap: 6,
-              }}>
-                <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>▌</span>
-                <span>引擎运转中</span>
-                <span style={{ display: "inline-flex", gap: 2 }}>
-                  {[0,1,2].map(i => (
-                    <span key={i} style={{
-                      width: 4, height: 4, borderRadius: "50%", background: zoneTheme.accent,
-                      animation: `pulse 0.8s ease-in-out ${i * 0.2}s infinite`,
-                    }} />
-                  ))}
-                </span>
-                {queueCount > 0 && (
-                  <span style={{ color: zoneTheme.accentDim, fontSize: "10.5px" }}>排队中 {queueCount}</span>
-                )}
-              </div>
-            )}
-            {pendingTalks > 0 && <div style={{ color: "var(--pink)", animation: "pulse 1.2s ease-in-out infinite" }}>  {pendingTalks} 条对话处理中...</div>}
-            {inspecting && (
-              <div style={{ color: zoneTheme.accentDim, padding: "6px 0", display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>▌</span>
-                <span>端详「{inspecting}」中</span>
-                <span style={{ display: "inline-flex", gap: 2 }}>
-                  {[0, 1, 2].map(i => (
-                    <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: zoneTheme.accent, animation: `pulse 0.8s ease-in-out ${i * 0.2}s infinite` }} />
-                  ))}
-                </span>
-              </div>
-            )}
-            <div ref={logEnd} />
-          </div>
-
-          {(loading || pendingTalks > 0) && waitSecs > 0 && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8, padding: "5px 14px",
-              borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0,
-              background: waitSecs >= 30 ? "#3a1a1a" : waitSecs >= 12 ? "#3a2a12" : "var(--bg-panel)",
-              fontSize: "11.5px",
-              color: waitSecs >= 30 ? "#e08a6a" : waitSecs >= 12 ? "var(--warn)" : zoneTheme.textDim,
-            }}>
-              <span>{waitSecs >= 30 ? "🐢" : "⏳"}</span>
-              <span>
-                {waitSecs < 12 ? `思索中… 已等待 ${waitSecs}s`
-                  : waitSecs < 30 ? `有点慢，已等待 ${waitSecs}s（网络或模型繁忙，请再稍候）`
-                  : `已等待 ${waitSecs}s，可能卡住了——超过 60s 会自动超时报错，届时可重试或去设置换更快的模型`}
-              </span>
-            </div>
-          )}
-          {/* 任务提示条（本轮新增）：把当前所有可推进 stage 手写的 playerHint 显示在
-              叙事框最下面，告诉玩家"这一步该往哪走/怎么做"。与给AI看的 description 分离。
-              没写 playerHint 的 stage 不显示（增量补写期间不会报错）。 */}
-          {availableQuestsHere.some(e => e.stage.playerHint) && (
-            <div style={{
-              padding: "6px 14px", borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0,
-              background: "#0c0f14",
-            }}>
-              {availableQuestsHere.filter(e => e.stage.playerHint).map(entry => (
-                <div key={entry.quest.id} style={{ display: "flex", alignItems: "baseline", gap: 6, fontSize: "10.5px", lineHeight: 1.6 }}>
-                  <span style={{ color: "#6a90c0", flexShrink: 0 }}>💡 {entry.quest.title}</span>
-                  <span style={{ color: "#8a94a8" }}>{entry.stage.playerHint}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ❢ 触发框：纯推进节点（无分支选项）。金色调，点一下即推进。 */}
-          {availableQuestsHere.some(e => !e.stage.choices?.length) && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8, padding: "6px 14px",
-              borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
-              background: "#141008",
-            }}>
-              <span style={{ color: "var(--ember)", fontSize: "11px", flexShrink: 0 }}>❢ 此处可推进</span>
-              {availableQuestsHere.filter(e => !e.stage.choices?.length).map(entry => (
-                <span
-                  key={entry.quest.id}
-                  onClick={() => triggerQuestFromPanel(entry)}
-                  title={entry.stage.description}
-                  style={{
-                    cursor: "pointer", color: "#c8663a", padding: "2px 10px",
-                    border: "1px solid var(--gold-deep)", borderRadius: 0, fontSize: "10.5px",
-                    background: "#1a1408", whiteSpace: "nowrap",
-                  }}
-                >
-                  ❢ {entry.quest.title}{entry.quest.giver ? `（${entry.quest.giver}）` : ""}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* ◈ 抉择框：分支任务的行动选项。绿色调、独立成行，与上面的触发框拉开区分度。 */}
-          {availableQuestsHere.some(e => e.stage.choices?.length) && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8, padding: "6px 14px",
-              borderTop: `1px solid ${zoneTheme.border}`, flexShrink: 0, flexWrap: "wrap", rowGap: 6,
-              background: "#0e1410",
-            }}>
-              <span style={{ color: "var(--clay)", fontSize: "11px", flexShrink: 0 }}>◈ 行动抉择</span>
-              {availableQuestsHere.filter(e => e.stage.choices?.length).map(entry => (
-                <span key={entry.quest.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <span style={{ color: "var(--text)", fontSize: "10.5px" }}>{entry.quest.title}：</span>
-                  {entry.stage.choices
-                    .filter(choice => {
-                      // 部分选项有前置条件（如"亮出XX信物"需先完成对应任务）才该出现，
-                      // 不满足就不渲染这个按钮，而不是渲染出来点了却不该生效。
-                      // requiresQuestCompleted 是"全部都要"（AND），requiresAnyOf 是"任一即可"（OR）。
-                      const isDone = (qid) => questProgress[qid]?.status === "completed";
-                      if (choice.requiresQuestCompleted) {
-                        const need = Array.isArray(choice.requiresQuestCompleted) ? choice.requiresQuestCompleted : [choice.requiresQuestCompleted];
-                        if (!need.every(isDone)) return false;
-                      }
-                      if (choice.requiresAnyOf?.length && !choice.requiresAnyOf.some(isDone)) return false;
-                      return true;
-                    })
-                    .map(choice => {
-                      // 按选项性质给个小图标提示玩家这一步会"真的"发生什么：
-                      // ⚔进切磋、💬进辩论、○直接了事
-                      const icon = choice.resolve === "combat" ? "⚔ " : choice.resolve === "talk" ? "💬 " : "";
-                      return (
-                        <span
-                          key={choice.flag}
-                          onClick={() => triggerQuestChoice(entry, choice)}
-                          title={choice.resolve === "combat" ? "会进入切磋，打赢才算数" : choice.resolve === "talk" ? "会进入对话，说赢才算数" : ""}
-                          style={{
-                            cursor: "pointer", color: "#c07050", padding: "2px 10px",
-                            border: "1px solid var(--accent)", borderRadius: 0, fontSize: "10.5px",
-                            background: "#241211", whiteSpace: "nowrap",
-                          }}
-                        >
-                          {icon}{choice.label}
-                        </span>
-                      );
-                    })}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <CenterControlRows
-            isMobile={isMobile} mobileColumn={mobileColumn} zoneTheme={zoneTheme}
+      {showDebug && (
+        <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+          <DebugPanel
+            isMobile={isMobile} zoneTheme={zoneTheme}
+            char={char} setChar={setChar} pot={pot} setPot={setPot} exp={exp} setExp={setExp}
+            dao={dao} setDao={setDao} varTree={varTree} setVarTree={setVarTree}
+            narrator={narrator} setNarrator={setNarrator}
             room={room} innerRoomName={innerRoomName}
-            handleCollectGround={handleCollectGround}
-            setInteractMode={setInteractMode} interactMode={interactMode} activeTarget={activeTarget}
-            setActiveTarget={setActiveTarget} setTalkTarget={setTalkTarget} setPigeonTarget={setPigeonTarget}
-            activeGroundItem={activeGroundItem} setActiveGroundItem={setActiveGroundItem}
-            nsfwOn={nsfwOn} setNsfwOn={setNsfwOn} meditate={meditate} justMeditated={justMeditated}
-          >
-            {interactMode === "pigeon" && pigeonTarget && (() => {
-              const { delay, loc } = pigeonDelayShichen(pigeonTarget);
-              return (
-                <div style={{ padding: "6px 16px 0", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, fontSize: "11px" }}>
-                  <span style={{ color: "var(--gold)" }}>🕊 飞鸽传书 · 致「{pigeonTarget}」</span>
-                  <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>信往{loc}，约 {delay} 时辰后有回音</span>
-                  <span style={{ flex: 1 }} />
-                  <span className="mobile-touch-target" onClick={() => { setPigeonTarget(null); setInteractMode("action"); }} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "10px" }}>× 取消</span>
-                </div>
-              );
-            })()}
-          </CenterControlRows>
-          {!isMobile && <TurnStatusPill theme={zoneTheme} />}<div className="mobile-input-bar" style={{
-            borderTop: interactMode === "whisper" ? "1px solid #4a2a4a" : interactMode === "talk" ? "1px solid #1a3a1a" : interactMode === "pigeon" ? "1px solid var(--gold-deep)" : `1px solid ${zoneTheme.border}`,
-            background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
-            padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
-          }}>
-            <span style={{
-              color: interactMode === "whisper" ? "var(--pink)" : interactMode === "talk" ? "var(--clay)" : interactMode === "pigeon" ? "var(--gold)" : zoneTheme.accent,
-              flexShrink: 0, fontSize: "13px",
-            }}>{interactMode === "pigeon" ? "🕊" : "▸"}</span>
-            <input
-              className="game-input"
-              ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={onKey}
-              onCompositionStart={() => { composingRef.current = true; }}
-              onCompositionEnd={() => { composingRef.current = false; }}
-              placeholder={
-                interactMode === "action" && loading ? "..." :
-                interactMode === "pigeon" ? `提笔给「${pigeonTarget || "…"}」写信，写罢按回车放飞信鸽…` :
-                interactMode === "whisper" ? (pendingTalks > 0 ? "旁白回话中…可先打字，待她说完再发" : "对旁白说些什么…（不消耗回合）") :
-                interactMode === "talk" ? (pendingTalks > 0 ? `跟房间里的人说句话…（${pendingTalks}条处理中，可继续发）` : "跟房间里的人说句话…（不消耗回合）") :
-                "输入行动指令…（消耗1回合）"
-              }
-              style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: zoneTheme.text, fontFamily: "inherit", fontSize: "13px" }}
-            />
-          </div>
+            mapData={mapData} setMapData={setMapData} setRoom={setRoom} setInnerRoomName={setInnerRoomName}
+            addLog={addLog} setInteractMode={setInteractMode} act={turn.act}
+            teleportLookRef={turn.teleportLookRef} setSkills={setSkills} setInv={setInv}
+          />
+        </Suspense>
+      )}
+
+      {derived.seaTraumaActive && (
+        <Suspense fallback={null}>
+          <SeaOfMindScreen
+            narratorVars={derived.narratorVarsNow} invNames={derived.invNames} zoneTheme={zoneTheme}
+            onComfort={playerActionHandlers.handleComfort} onResolve={playerActionHandlers.handleResolveTrauma}
+          />
+        </Suspense>
+      )}
+
+      <IntentConfirmBar zoneTheme={zoneTheme} />
+      {duelPending && (
+        <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ color: "var(--text)", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
+          <span onClick={duelHandlers.confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--ink-bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>确认切磋</span>
+          <span onClick={duelHandlers.cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid #2a2d3a" }}>算了</span>
         </div>
+      )}
+
+      {(activeBuilding || tradingShop) && buildingPanelMinimized && (
+        <div
+          onClick={() => setBuildingPanelMinimized(false)}
+          style={{ flexShrink: 0, padding: "6px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.03)", cursor: "pointer", fontSize: 11.5, color: "var(--info)", display: "flex", alignItems: "center", gap: 6 }}
+        >
+          <span>▸ {activeBuilding?.name || tradingShop?.shopName}（已最小化，点击展开）</span>
+        </div>
+      )}
+
+      {(activeBuilding || tradingShop) && (
+        <div
+          key={getBuildingInstanceKey(activeBuilding, tradingShop)}
+          className={`mobile-building-root${gambleStoneMinimized ? " mobile-building-minimized-root" : ""}${buildingPanelMinimized ? " mobile-building-hidden" : ""}`}
+          style={{
+            flex: 1, minHeight: 0, height: "100%", overflowY: "auto",
+            borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(255,255,255,0.02)",
+            display: buildingPanelMinimized ? "none" : undefined,
+            visibility: buildingPanelMinimized ? "hidden" : undefined,
+            pointerEvents: buildingPanelMinimized ? "none" : undefined,
+          }}
+        >
+          {/* 最小化入口：跟每个面板自己的"× 关闭"平级，点击收起渲染区但保留 activeBuilding 状态 */}
+          <div className="mobile-building-minimize"
+            onClick={() => setBuildingPanelMinimized(true)}
+            style={{ padding: "4px 16px", fontSize: 10.5, color: "var(--text-dim)", cursor: "pointer", textAlign: "right" }}
+          >
+            ▾ 最小化
+          </div>
+          {queueCount > 0 && !gambleStoneMinimized && !activeBuilding?.shopKey && !tradingShop && (
+            <div role="status" aria-live="polite"
+              style={{ ...chromeBtn(zoneTheme), alignSelf: "flex-start", flexShrink: 0, margin: "4px 12px", cursor: "default" }}>
+              ⏳ 排队中 {queueCount} · 等待落盘后执行
+            </div>
+          )}
+          {isMobile && activeBuilding?.craft && craftTab !== "shop" && tabs("mobile-trading-tabs-building")}
+          {(() => {
+            if (!activeBuilding) return null;
+            if (showBasement && (activeBuilding.type === BUILDING_TYPE.RESTAURANT || activeBuilding.type === BUILDING_TYPE.THEATER)) return null;
+            const ctx = {
+              building: activeBuilding, char, time, zoneTheme, inv, skills, flags, questProgress,
+              dao, mapData, room, innerRoomName, varTree, queueCount, effectiveSpecialNow: turn.effectiveSpecialNow,
+              craftTab, tabs, isJade, runCommand, captureUndo: turn.captureUndo, setDao, setChar, setInv, addLog, jotNote,
+              inspectItem: aiInspect.inspectItem, setGambleStoneMinimized, gambleNegotiation,
+              deposit, depositedAt, pledgedItems,
+              sectMasterAffection: derived.sectMasterAffection,
+              closeBuilding: () => setActiveBuilding(null),
+              openBasement: () => openOverlay(OVERLAY.BASEMENT),
+              ...buildingHandlers,
+              ...craftingAI,
+              handleCollectPigeons: pigeonHandlers.handleCollectPigeons,
+              buyPigeon: pigeonHandlers.buyPigeon,
+              handlePostSend: pigeonHandlers.handlePostSend,
+            };
+            return (
+              <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+                <BuildingScreens type={activeBuilding.type} ctx={ctx} />
+              </Suspense>
+            );
+          })()}
+          {showBasement && (
+            <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+              <BasementScreen char={char} time={time} zoneTheme={zoneTheme} inline
+                onClose={() => closeOverlay(OVERLAY.BASEMENT)} onOrder={buildingHandlers.handleServiceOrder} />
+            </Suspense>
+          )}
+          {tradingShop && (
+            <Suspense fallback={<ScreenFallback zoneTheme={zoneTheme} />}>
+              <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
+                playerInv={inv} playerMoney={char.money || 0} playerWit={turn.effectiveSpecialNow?.智谋 ?? 5} zoneTheme={zoneTheme} onInspect={aiInspect.inspectItem}
+                onClose={() => setTradingShop(null)}
+                onBuy={(item) => runCommand("shopBuy", () => { if ((char.money || 0) < item.buyPrice) return; turn.captureUndo(); setChar(c => ({ ...c, money: c.money - item.buyPrice })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); addLog([{ t: "item", text: `  你花费${item.buyPrice}两，购得「${item.name}」。` }]); jotNote({ text: `购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
+                onSell={(item) => runCommand("shopSell", () => { if (item.equipped) return; turn.captureUndo(); setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + item.sellPrice })); addLog([{ t: "item", text: `  你卖出「${item.name}」，得银两${item.sellPrice}两。` }]); jotNote({ text: `卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
+              />
+            </Suspense>
+          )}
+        </div>
+      )}
+
+      <NarrativeLogFeed
+        hidden={hideNarrative}
+        zoneTheme={zoneTheme} clr={clr} isDayMode={isDayMode} act={turn.act}
+        collapsedGroups={collapsedGroups} setCollapsedGroups={setCollapsedGroups}
+        loading={loading} queueCount={queueCount} pendingTalks={pendingTalks}
+        inspecting={aiInspect.inspecting} logEnd={logEnd}
+      />
+
+      <CenterFooterBar ui={ui} turn={turn} handlers={handlers} />
+    </div>
   );
 }
