@@ -28,7 +28,8 @@ export function LeaveSectButton({ sect, onLeaveSect, zoneTheme }) {
 // 势力拜师堂（青城、峨眉…）。结算在 features/sect/logic.js joinSect，AI 只写叙事。
 export default function FactionEntryScreen({ entry, building, char, flags, varTree, questProgress, zoneTheme, onClose, inline, onJoinSect, onLeaveSect }) {
   const inv = useGameStore((s) => s.inv);
-  const status = checkFactionEntry(entry, { varTree, flags, char, questProgress, inv });
+  const skills = useGameStore((s) => s.skills);
+  const status = checkFactionEntry(entry, { varTree, flags, char, questProgress, inv, skills });
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building?.name || entry.sect} zoneTheme={zoneTheme} onClose={onClose} />

@@ -12,7 +12,7 @@ import {
 import { makeNamedItem } from "../../domain/data/items/catalog.js";
 
 function joinFactionSect(state, entry, now = Date.now()) {
-  const status = checkFactionEntry(entry, { varTree: state.varTree, flags: state.flags, char: state.char, questProgress: state.questProgress, inv: state.inv });
+  const status = checkFactionEntry(entry, { varTree: state.varTree, flags: state.flags, char: state.char, questProgress: state.questProgress, inv: state.inv, skills: state.skills });
   if (!status.eligible) return { logs: [{ t: "sys", text: `  你还不够格拜入${entry.sect}。` }] };
   const items = [entry.token, ...entry.gifts]
     .map((name, i) => ({ ...makeNamedItem(name), id: `sect_join_${now}_${i}`, equipped: false }));

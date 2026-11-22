@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SKILL_CATALOG } from "../../domain/data/kungfu/qucuoKungfu.js";
+import { effectiveMaxHp, SKILL_CATALOG } from "../../domain/data/kungfu/qucuoKungfu.js";
 import { makeNamedItem } from "../../domain/data/items/catalog.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { checkFactionEntry, FACTION_ENTRIES } from "../../domain/rules/character/factionEntry.js";
@@ -26,6 +26,13 @@ describe("五仙拜师坛饮引蛊酒检定", () => {
   it("气血六成或内功 8 就能稳住，不耗药", () => {
     expect(checkFactionEntry(entry, { ...base, char: { hp: [60, 100], neigong: 0 } })).toMatchObject({ eligible: true, trialItem: null });
     expect(checkFactionEntry(entry, { ...base, char: { hp: [10, 100], neigong: 8 } })).toMatchObject({ eligible: true, trialItem: null });
+  });
+  it("气血六成按含内功被动的有效上限算", () => {
+    const hpSkill = allSkills.find((s) => effectiveMaxHp(100, [s]) > 100);
+    const max = effectiveMaxHp(100, [hpSkill]);
+    const char = { hp: [60, 100], neigong: 0 };
+    expect(checkFactionEntry(entry, { ...base, char, skills: [hpSkill] }).eligible).toBe(60 >= max * 0.6);
+    expect(checkFactionEntry(entry, { ...base, char: { hp: [Math.ceil(max * 0.6), 100], neigong: 0 }, skills: [hpSkill] }).eligible).toBe(true);
   });
   it("体魄不够时带解毒药能硬扛，并指出要喝掉的那份", () => {
     const pill = { ...makeNamedItem("百草解瘴散"), id: "p1" };
