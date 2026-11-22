@@ -335,6 +335,14 @@ export function resolveTurn(sideA, sideB) {
     result.notes.push(`${sideB.move.name}运转真气自疗，气血回复`);
   }
 
+  // 运功自解 / 服解毒药：同疗伤，药物必定生效，招式被打断或截断则不解。
+  for (const tag of ["A", "B"]) {
+    const side = tag === "A" ? sideA : sideB;
+    if (side.move.dispelSelf && (side.move.fromItem || (!result[`interrupted${tag}`] && !result[`cancelled${tag}`]))) {
+      result[`dispelSelf${tag}`] = true;
+    }
+  }
+
   // 蓄势：把 nextAttackBonus 记成"给下回合的威力加成"（真正生效，不再只是文字）
   if (sideA.move.nextAttackBonus) { result.pendingAtkBonusToA = sideA.move.nextAttackBonus; result.notes.push("蓄势已成，下一击威力大涨"); }
   if (sideB.move.nextAttackBonus) result.pendingAtkBonusToB = sideB.move.nextAttackBonus;
