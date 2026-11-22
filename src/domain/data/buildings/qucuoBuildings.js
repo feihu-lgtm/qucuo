@@ -532,7 +532,7 @@ export const BUILDINGS_BY_LOCATION = {
   天龙营: [
     {
       id: "sect_entry_tianlong", name: "天龙点将台", type: BUILDING_TYPE.SECT_ENTRY, sect: "天龙教",
-      desc: "黑石高台，牛皮大鼓裂了口。台下插着一圈断刀——接不住三招的，刀留下，人下山。石重岳在此收人，只看拳头与办差。",
+      desc: "黑石高台，牛皮大鼓裂了口。台下插着一圈断刀——接不住三招的，刀留下，人下山。厉苍龙在此收人，只看拳头与办差。",
     },
     {
       id: "wuguan_tianlong", name: "西风演武场", type: BUILDING_TYPE.WUGUAN, skillSet: "天龙",

@@ -32,7 +32,7 @@ const SECT_SPARS = [
   // 天龙教：在点将台/磨刀坪堂堂正正赢教中好手，涨天龙教声誉（合稿「比武服众 +8」）。
   {
     faction: "天龙教",
-    npcs: [{ id: "resident_shizhongyue", name: "石重岳" }, { id: "resident_litianxing", name: "厉天行" },
+    npcs: [{ id: "resident_licanglong", name: "厉苍龙" }, { id: "resident_litianxing", name: "厉天行" },
       { id: "resident_xuedao_chuqi", name: "血刀门徒·初七" }, { id: "resident_xuedao_shisan", name: "血刀门徒·十三" },
       { id: "resident_xuedao_niansan", name: "血刀门徒·廿三" }],
     flag: "tianlong_spar",

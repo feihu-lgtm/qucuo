@@ -1,0 +1,25 @@
+// 天龙八部护法的随身物（夜叉、阿修罗、迦楼罗、乾达婆、紧那罗、摩呼罗迦）
+const items = {
+"夜叉双钩": { name: "夜叉双钩", category: "weapon", quality: "橙", atkMul: 1.4, sixDim: { 身法: 2 }, tags: ["武器", "双钩", "天龙教"], effect: { applyStatus: { name: "裂伤", chance: 0.3 } }, desc: "姬无双的一对乌钢短钩，钩背开着倒刺。她说钩子比刀好用：刀只会砍，钩子能把人想藏的东西一起勾出来。" },
+"玄纱罗刹衣": { name: "玄纱罗刹衣", category: "armor", quality: "紫", defMul: 1.3, sixDim: { 身法: 1 }, tags: ["护甲", "夜叉部", "天龙教"], desc: "两层玄纱缝的贴身软衣，里层夹着细铁丝网。夜里穿上，人站在灯影外就看不清了。" },
+"夜叉鬼面": { name: "夜叉鬼面", category: "accessory", quality: "紫", sixDim: { 智谋: 2, 魅力: 1 }, tags: ["饰品", "夜叉部", "天龙教"], desc: "黑漆木面，额生双角，獠牙描金。夜叉部的人见了这张面，就知道下令的是谁。" },
+"夜叉密札": { name: "夜叉密札", category: "misc", quality: "蓝", tags: ["情报", "夜叉部", "天龙教"], desc: "一沓用暗语写的薄纸，记着营里谁跟谁说过什么话。认得暗语的人，看完会出一身冷汗。" },
+"修罗赤练刀": { name: "修罗赤练刀", category: "weapon", quality: "橙", atkMul: 1.5, sixDim: { 体魄: 1 }, tags: ["武器", "长刀", "修罗宫", "天龙教"], effect: { lowHpBonus: 0.2 }, desc: "修罗宫历代宫主的佩刀，刀身赤红。樊未离说这把刀只输过一次，那一次她记了一辈子。" },
+"修罗宫赤锦袍": { name: "修罗宫赤锦袍", category: "armor", quality: "紫", defMul: 1.3, sixDim: { 体魄: 1 }, tags: ["护甲", "修罗宫", "天龙教"], desc: "赤锦外袍，内衬熟牛皮。修罗宫的规矩是红衣上阵，血溅上去看不出来，敌人就不知道你伤了没有。" },
+"修罗宫主印": { name: "修罗宫主印", category: "accessory", quality: "紫", sixDim: { 气运: 1, 体魄: 1 }, tags: ["饰品", "印信", "修罗宫", "天龙教"], desc: "赤铜铸的方印，印纽是一尊三头六臂的阿修罗。修罗宫的兵只认这枚印，不认龙王的令。" },
+"修罗焚心香": { name: "修罗焚心香", category: "misc", quality: "蓝", tags: ["香料", "修罗宫", "天龙教"], desc: "修罗宫出阵前点的香，味道辛辣呛人，闻了心口发热，人就不怕疼了。" },
+"金翅铁翎枪": { name: "金翅铁翎枪", category: "weapon", quality: "紫", atkMul: 1.35, sixDim: { 身法: 1 }, tags: ["武器", "长枪", "天龙教"], desc: "任天翔的长枪，枪缨扎着一束金翅鹰羽。他在鹰台上练枪，扑下来那一下，跟鹰抓兔子一模一样。" },
+"迦楼罗金翅羽": { name: "迦楼罗金翅羽", category: "accessory", quality: "蓝", sixDim: { 身法: 1 }, tags: ["饰品", "鹰信", "天龙教"], desc: "一根金色的鹰羽，用皮绳穿着挂在颈上。哨骑见了它，就知道这道鹰信是迦楼罗亲手放的。" },
+"乾达婆琵琶": { name: "乾达婆琵琶", category: "weapon", quality: "紫", atkMul: 1.25, sixDim: { 魅力: 2 }, tags: ["武器", "乐器", "天龙教"], desc: "凌香儿的五弦琵琶，弦是精钢拧的。平时弹曲，扫弦扫得急了，弦上崩出的劲能割破皮肉。" },
+"香云纱舞衣": { name: "香云纱舞衣", category: "armor", quality: "蓝", defMul: 1.15, sixDim: { 魅力: 1 }, tags: ["护甲", "舞衣", "天龙教"], desc: "香云纱裁的舞衣，又轻又韧，熏透了乳香。凌香儿穿着它在帐里转一圈，满帐都是香味。" },
+"乾达婆香囊": { name: "乾达婆香囊", category: "accessory", quality: "蓝", sixDim: { 魅力: 1 }, tags: ["饰品", "香料", "天龙教"], desc: "织金小香囊，里头装着乳香和没药。乐帐里的人都认得这股味，闻到就知道乾达婆来了。" },
+"迷迭醉香": { name: "迷迭醉香", category: "misc", quality: "蓝", tags: ["香料", "迷药", "天龙教"], desc: "乐帐宴饮时点的香，掺了迷迭和曼陀罗花粉。闻久了人会犯困，话也会多起来。" },
+"紧那罗银弦": { name: "紧那罗银弦", category: "weapon", quality: "蓝", atkMul: 1.2, tags: ["武器", "琴弦", "天龙教"], desc: "一卷细细的银弦，两头缠在象牙柄上。唱曲时拿来调琴，用的时候绷直了，比刀刃还利。" },
+"纳兰银铃": { name: "纳兰银铃", category: "accessory", quality: "蓝", sixDim: { 魅力: 1, 身法: 1 }, tags: ["饰品", "天龙教"], desc: "系在腕上的一串小银铃，纳兰露儿唱曲时跟着节拍响。客帐里的人听惯了，没人想过它也能当暗号。" },
+"紧那罗曲谱": { name: "紧那罗曲谱", category: "misc", quality: "蓝", tags: ["曲谱", "情报", "天龙教"], desc: "一本手抄的胡曲曲谱，有几页的音符排得很怪，像是另有读法。" },
+"摩呼罗迦蛇杖": { name: "摩呼罗迦蛇杖", category: "weapon", quality: "紫", atkMul: 1.3, tags: ["武器", "杖", "毒", "天龙教"], effect: { applyStatus: { name: "淬毒", chance: 0.35 } }, desc: "乌木蛇杖，杖头盘一条铜蛇，蛇牙是空心的，里头灌着毒涎。" },
+"蟒皮软甲": { name: "蟒皮软甲", category: "armor", quality: "紫", defMul: 1.3, tags: ["护甲", "天龙教"], desc: "整张蟒皮鞣成的软甲，鳞片还在。刀砍上去会滑开，罗蛇君说这是他养的第一条蛇。" },
+"蛇眼石扳指": { name: "蛇眼石扳指", category: "accessory", quality: "蓝", sixDim: { 根骨: 1 }, tags: ["饰品", "天龙教"], desc: "黄褐色的蛇眼石磨的扳指，石心一道竖纹，像蛇的瞳孔。" },
+"摩呼罗迦蛇毒": { name: "摩呼罗迦蛇毒", category: "misc", quality: "蓝", tags: ["毒药", "天龙教"], desc: "一只封了蜡的小陶瓶，里头是乌鞘蛇的毒涎。罗蛇君说这毒不急，三天后才发作。" },
+};
+export default { item: items, itemGroup: { TIANLONG_BABU: Object.keys(items) } };

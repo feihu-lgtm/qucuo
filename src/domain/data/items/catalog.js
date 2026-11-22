@@ -148,6 +148,8 @@ export const TUSI_GOODS = getContent("itemGroup", "TUSI_GOODS").map(id => getCon
 export const TANGMEN_GOODS = getContent("itemGroup", "TANGMEN_GOODS").map(id => getContent("item", id));
 // 百花门天都镇具名物（同五仙层级，named；暗阁铺货靠 minRep 门槛）
 export const BAIHUA_GOODS = getContent("itemGroup", "BAIHUA_GOODS").map(id => getContent("item", id));
+// 天龙八部护法随身物（named，夜叉/阿修罗等护法随身物与任务奖励共用条目）
+export const TIANLONG_BABU = getContent("itemGroup", "TIANLONG_BABU").map(id => getContent("item", id));
 
 // ============================================================================
 // 核心：把 catalog 条目实例化成一个完整物品对象
@@ -216,6 +218,7 @@ export const CATALOG = [
   ...TUSI_GOODS,           // 鱼定土司府具名物（军需司货池+土司府人物随身物）
   ...TANGMEN_GOODS,        // 唐门具名物（named，门人随身物+拜入信物+任务物共用条目）
   ...BAIHUA_GOODS,         // 百花门天都镇具名物（named，商店+NPC随身物共用条目）
+  ...TIANLONG_BABU,        // 天龙八部护法具名物（named，护法随身物+支线奖励）
 ];
 
 // name → 条目，供"按名取物"（任务发放具名物品、商店铺货、AI 引用时反查数值）
