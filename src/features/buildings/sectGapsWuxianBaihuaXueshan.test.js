@@ -81,5 +81,7 @@ describe("送药日常涨声誉", () => {
   it("五仙教也收蜀锦布料，别家不收", () => {
     expect(herbDonationRepGain({ time: 0 }, npc("雾隐寨", "龙汐月"), cloth)).toMatchObject({ faction: "五仙教", delta: 3 });
     expect(herbDonationRepGain({ time: 0 }, npc("天都镇", "花婆"), cloth)).toBeNull();
+    const brocade = makeNamedItem("烟雨青蜀锦");
+    expect(herbDonationRepGain({ time: 0 }, npc("雾隐寨", "乌婆婆"), brocade)).toMatchObject({ faction: "五仙教", delta: 5 });
   });
 });
