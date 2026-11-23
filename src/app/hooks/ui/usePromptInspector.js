@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { QUCUO_QUESTS } from "../../../domain/data/quests/qucuoQuests.js";
 import { getActivePreset } from "../../../domain/rules/prompt/presetSystem.js";
-import { describeCatalogForAI } from "../../../domain/data/items/catalog.js";
+import { describeCatalogForAI } from "../../../domain/data/items/catalogOps.js";
 import { buildBudgetInstruction, INTENT } from "../../../domain/rules/prompt/inputIntent.js";
 import { buildNarratorWhisperContext, gateQuestTopic, narratorVoicePrompt, narratorWhisperLengthNote } from "../../../domain/rules/narrator/narrator.js";
 import { gateBodyProfile } from "../../../domain/rules/character/bodyProfile.js";

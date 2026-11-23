@@ -2,7 +2,7 @@ import { narratorVoicePrompt } from "../narrator/narrator.js";
 import { MVU_SYSTEM_INSTRUCTIONS } from "./mvu.js";
 import { AFFECTION_RULES, CARRY_COUNT, FIELD, FIELDS, formatRange, giftRange, learnRange } from "../state/fields.js";
 import { renderFieldScales, renderPromptTemplate } from "./promptRefs.js";
-import { describeCatalogForAI } from "../../data/items/catalog.js";
+import { describeCatalogForAI } from "../../data/items/catalogOps.js";
 import { getActivePreset } from "./presetSystem.js";
 import { assemblePrompt } from "./presetSystem.js";
 import { gateScenario } from "./worldbook.js";

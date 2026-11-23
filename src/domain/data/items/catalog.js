@@ -305,5 +305,5 @@ export function makeItemSmart(spec, makeItemFallback) {
 // 按分类/品质/标签/层次筛选（供商店按地域性质铺货，见交接任务7"用百物录充实各店"）。
 // tier: "named"只出具名 | "standard"只出制式 | 不传则全部。
 
-export { describeCatalogForAI, useConsumable, filterCatalog } from "./catalogOps.js";
+
 
