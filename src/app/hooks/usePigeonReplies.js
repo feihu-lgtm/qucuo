@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { gameStore } from "../../store/gameStore.js";
+import { gameStore, useGameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import {
   applyPigeonReply,
@@ -15,14 +15,19 @@ import { turnMonitor } from "../../engine/ports/turnMonitor.js";
 const webAi = createWebAi();
 
 export function usePigeonReplies({
-  room, apiCfg, preset, applyPigeonResult, time, varTree, featureCtxRef,
+  apiCfg, applyPigeonResult, featureCtxRef,
 }) {
   const pigeonProcessing = useRef(new Set());
+  // 两条 effect 的触发依赖：房名/在场 NPC、时辰、varTree——hook 内直订 store，不经参数。
+  const roomName = useGameStore((s) => s.room?.name);
+  const roomNpcs = useGameStore((s) => s.room?.npcs);
+  const time = useGameStore((s) => s.time);
+  const varTree = useGameStore((s) => s.varTree);
 
   useEffect(() => {
     const result = recordPigeonNpcLocations(gameStore.getState());
     if (result.changes) applyResult(featureCtxRef.current, result, { feature: "pigeon.recordNpcLocations", background: true });
-  }, [room.name, room.npcs]);
+  }, [roomName, roomNpcs]);
 
   const replyPigeonLetter = useCallback(async (letter) => {
     const { id } = letter;
@@ -31,7 +36,7 @@ export function usePigeonReplies({
       const { text } = await withAI("pigeon.reply", {
         state,
         letter,
-        preset,
+        preset: state.preset,
         trace: (paths) => {
           const turn = turnMonitor.start("飞鸽回信", { background: true, source: "background-ai" });
           turnMonitor.add(turn, "domain", "提示词引用缺失", { status: "warn", detail: paths.join("、") });
@@ -43,7 +48,7 @@ export function usePigeonReplies({
       pigeonProcessing.current.delete(id);
       applyPigeonResult(failPigeonReply(gameStore.getState(), letter), { feature: "pigeon.reply", background: true });
     }
-  }, [apiCfg, preset, applyPigeonResult]);
+  }, [apiCfg, applyPigeonResult]);
 
   useEffect(() => {
     const due = processPigeons(gameStore.getState()).filter(l => !pigeonProcessing.current.has(l.id));

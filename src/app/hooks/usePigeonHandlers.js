@@ -9,12 +9,12 @@ import {
 } from "../../features/pigeon/logic.js";
 
 export function usePigeonHandlers({
-  room, varTree, featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
+  featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
   setInteractMode, setActiveBuilding, captureUndo,
 }) {
   const pigeonDelayShichen = useCallback(
     (npcName) => pigeonDelayShichenLogic(gameStore.getState(), npcName),
-    [room.name, varTree],
+    [],
   );
 
   const applyPigeonResult = useCallback((result, options) => {
