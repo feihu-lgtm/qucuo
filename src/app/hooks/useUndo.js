@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+import { gameActions } from "../../store/gameStore.js";
 
 const undoOwners = new WeakMap();
 
@@ -10,6 +11,8 @@ export function createUndoController({
   pendingTalksRef, changePendingTalks, talkBusyRef, setLoading, waitTimerRef,
   setWaitSecs, turnGenerationRef, turnInvalidationListeners = new Set(), confirmRollback = () => true,
 }) {
+  // 缺省走 gameActions（路线一）；测试可直接注入自己的 addLog。
+  const writeLog = addLog || ((lines) => gameActions.setLog((p) => [...p, ...lines]));
   const onTurnsInvalidated = (listener) => {
     if (typeof listener !== "function") return () => {};
     turnInvalidationListeners.add(listener);
@@ -40,7 +43,7 @@ export function createUndoController({
     });
     turn.parentId = undoOwners.get(snapshot) ?? turn.parentId;
     if (!snapshot) {
-      addLog([{ t: "sys", text: "  没有可回滚的上一步。" }]);
+      writeLog([{ t: "sys", text: "  没有可回滚的上一步。" }]);
       turnMonitor.finish(turn, "没有可回滚的上一步");
       return false;
     }
@@ -70,7 +73,7 @@ export function createUndoController({
     waitTimerRef.current = null;
     setWaitSecs(0);
     setLoading(false);
-    addLog([{ t: "sys", text: "  ↩ 已回滚到上一步之前。" }]);
+    writeLog([{ t: "sys", text: "  ↩ 已回滚到上一步之前。" }]);
     turnMonitor.add(turn, "app", "还原撤销点", { kind: "undo" });
     turnMonitor.transition(turn, PHASE.ROLLED_BACK, "已回滚到上一步之前");
     return true;
@@ -96,7 +99,7 @@ export function useUndo(deps) {
       ...deps, turnGenerationRef, turnInvalidationListeners: turnInvalidationListenersRef.current, confirmRollback,
     }),
     [
-      deps.undoSnapshotRef, deps.buildCurrentSnapshot, deps.applySnapshot, deps.addLog,
+      deps.undoSnapshotRef, deps.buildCurrentSnapshot, deps.applySnapshot,
       deps.setQueueCount, deps.autoTravelRef, deps.queueTimerRef,
       deps.clearCommandQueue,
       deps.setDuelPending, deps.setDuelingNpc, deps.pendingTalksRef,
