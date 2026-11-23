@@ -1,0 +1,238 @@
+export default { quest: {
+  lamamiao_5_zhongmingsanshinian: {
+    id: "lamamiao_5_zhongmingsanshinian",
+    type: "QT_TALK",
+    title: "寺5·钟鸣三十年",
+    giver: "喇嘛庙住持",
+    giverId: "resident_lama_abbot",
+    localOnly: true,
+    requiresQuestCompleted: "lamamiao_4_digongwenxin",
+    requiresFactionRep: { 喇嘛庙: 80 },
+    description: "陆福生得知白塔地宫已开、真地契落入你手，彻底狗急跳墙，连夜买通暗桩与唐门外务管事购来的毒弩死士，要火烧藏经阁、在白塔截杀住持灭口。",
+    stages: [
+      {
+        id: "oath",
+        requireLocation: { district: "喇嘛庙", inner: "西厢僧舍" },
+        playerHint: "在西厢僧舍见住持，受白塔护法铜牌。",
+        description: "住持把一面铸着白塔与古钟的铜牌放进你掌心：「施主不必落发。从今往后，你是喇嘛庙的寺外护法。」窗外风雪里已有火把在往山门聚。",
+        completionFlag: "quest_lama5_oath",
+        onReach: {
+          items: [{ name: "白塔护法铜牌", fromCatalog: true }],
+          flags: ["lama_hufa"],
+        },
+      },
+      {
+        id: "gate",
+        giver: null,
+        requireLocation: { district: "喇嘛庙", inner: "山门" },
+        playerHint: "去山门与根敦、丹巴布下解毒烟阵救下僧众。",
+        description: "根敦熬的解毒药草在火盆里冒起青烟，丹巴拎着菜刀守在烟阵边。毒弩射进烟里，落地就软了。",
+        completionFlag: "quest_lama5_gate",
+      },
+      {
+        id: "ambush",
+        giver: null,
+        requireLocation: { district: "白塔", inner: "塔身檐廊" },
+        playerHint: "护送住持冲上白塔，在塔身檐廊击退伏击。",
+        description: "塔阶上伏着陆福生的心腹与蒙面毒弩手。罗布桑横杵挡在住持身前：「施主，死守塔阶！」",
+        completionFlag: "quest_lama5_ambush",
+        choices: [
+          { flag: "quest_lama5_ambush", label: "死守塔阶", resolve: "combat", combatNpc: { name: "陆福生心腹毒弩手", levelCap: 5 } },
+        ],
+      },
+      {
+        id: "bell",
+        giver: null,
+        requireLocation: { district: "白塔", inner: "塔顶" },
+        playerHint: "上塔顶，看住持撞响停鸣三十年的白塔青铜大钟。",
+        description: "住持亲手推起撞木。浑厚钟声穿透风雪，传遍鱼定村、玉泉寨与鱼定土司府。他向全乡立下佛前大誓，要公开宣读三十年前的真相与伪造地契的铁证。",
+        completionFlag: ["flag_lama_bell_mercy", "flag_lama_bell_wrath"],
+        choices: [
+          { flag: "flag_lama_bell_mercy", label: "温和劝降式宣誓", resolve: "none", narration: "住持呼吁土司府护卫与百姓勿做无谓杀戮，给迷途的人留一条退路。" },
+          { flag: "flag_lama_bell_wrath", label: "金刚怒目式斥责", resolve: "none", narration: "罗布桑代师兄厉声斥责土司三十年恶政，守塔十二僧持杵立在塔下，等你一声令下便随你下山。" },
+        ],
+        onReach: {
+          money: 300,
+          factionRep: { 喇嘛庙: 35, 鱼定村: 10, 玉泉寨: 10, 雪山派: 10, 鱼定土司府: -25 },
+          flags: ["lama_endgame_ally", "title_baita_dahufa"],
+        },
+      },
+    ],
+    rewardText: "白塔大钟三十年后第一次响了。喇嘛庙称你「白塔大护法」，终局之时与你同进退。",
+  },
+
+  lamamiao_side_1_xueshancaoyao: {
+    id: "lamamiao_side_1_xueshancaoyao",
+    type: "QT_TALK",
+    title: "药1·风雪采药行",
+    giver: "达摩药堂师父",
+    giverId: "resident_yaotang_shifu",
+    localOnly: true,
+    requiresFactionRep: { 喇嘛庙: 0 },
+    description: "根敦愁眉不展：今冬寒潮早至，玉泉寨好几户牧民染了寒痹，药堂里的雪莲与紫草快断顿了，偏偏熊山一带最近常有穿红衣的西域恶僧出没。",
+    stages: [
+      {
+        id: "accept",
+        requireLocation: { district: "喇嘛庙", inner: "达摩药堂" },
+        playerHint: "在达摩药堂接下根敦的药篓。",
+        description: "根敦把一只空药篓塞给你：「五株霜雪紫草，两朵天山雪莲。少一株，玉泉寨就多一个冻僵的。」",
+        completionFlag: "quest_lamay1_accept",
+      },
+      {
+        id: "pass",
+        giver: null,
+        requireLocation: { district: "大草甸", inner: "熊山口" },
+        playerHint: "去大草甸熊山口采齐草药。",
+        description: "药篓装满返程时，你撞见两名血刀门徒正在抢玉泉寨老牧民的药马。",
+        completionFlag: ["quest_lamay1_fight", "quest_lamay1_evade"],
+        choices: [
+          { flag: "quest_lamay1_fight", label: "挺身击退血刀门徒", resolve: "combat", combatNpc: { name: "血刀门徒", levelCap: 3 } },
+          { flag: "quest_lamay1_evade", label: "智取避战救人", resolve: "none", narration: "你把一包药粉扬进风里，喊了声「雪崩」。两个血刀门徒抬头的工夫，老牧民已经牵着药马钻进了山坳。" },
+        ],
+        onReach: {
+          byFlag: {
+            quest_lamay1_fight: { factionRep: { 天龙教: -5 } },
+          },
+        },
+      },
+      {
+        id: "report",
+        requireLocation: { district: "喇嘛庙", inner: "达摩药堂" },
+        playerHint: "把草药带回达摩药堂交给根敦。",
+        description: "根敦连夜煎出三大桶驱寒药汤，托你顺路送一桶去玉泉寨交给丹增。",
+        completionFlag: ["flag_lamay1_share", "flag_lamay1_stock"],
+        choices: [
+          { flag: "flag_lamay1_share", label: "先分半数草药给玉泉寨急救", resolve: "none", narration: "你先把半篓草药送去玉泉寨。根敦不但不怪，反倒拍着你肩膀：「懂得变通，比懂药性要紧。」" },
+          { flag: "flag_lamay1_stock", label: "全部带回药堂按价入库", resolve: "none", narration: "根敦按价把草药入了库，多给了你一份药钱。" },
+        ],
+        onReach: {
+          money: 80,
+          items: [
+            ...Array.from({ length: 3 }, () => ({ name: "达摩驱寒膏", fromCatalog: true })),
+            ...Array.from({ length: 2 }, () => ({ name: "雪莲清毒丸", fromCatalog: true })),
+          ],
+          factionRep: { 喇嘛庙: 15 },
+          byFlag: {
+            flag_lamay1_share: { factionRep: { 玉泉寨: 10 }, favorability: { 丹增: 10, 达摩药堂师父: 15 } },
+            flag_lamay1_stock: { money: 80 },
+          },
+        },
+      },
+    ],
+    rewardText: "玉泉寨的寒痹压下去了。根敦的药柜里，又有了雪莲。",
+  },
+
+  lamamiao_side_2_jiumenraodao: {
+    id: "lamamiao_side_2_jiumenraodao",
+    type: "QT_TALK",
+    title: "塔1·绕塔之人",
+    giver: "洛桑",
+    giverId: "resident_luosang",
+    localOnly: true,
+    requiresFactionRep: { 喇嘛庙: 15 },
+    description: "洛桑神秘兮兮地拉住你：欢喜教那位天竺出身的梵衍那，每次北上宁可多走十里泥泞也要绕开白塔视线，昨夜却有人趁黑在白塔北角放下一盏天竺鎏金小油灯。",
+    stages: [
+      {
+        id: "lamp",
+        requireLocation: { district: "喇嘛庙", inner: "山门" },
+        playerHint: "在山门听洛桑说那盏鎏金油灯。",
+        description: "洛桑从背篓里摸出那盏鎏金小油灯，灯底刻着几行天竺古文与大理梵字。",
+        completionFlag: "quest_lamat1_lamp",
+      },
+      {
+        id: "read",
+        giver: null,
+        requireLocation: { district: "喇嘛庙", inner: "藏经阁" },
+        playerHint: "把油灯带去藏经阁，请次仁翻译灯底的字。",
+        description: "次仁译出来，是一段向大理一位渡海入藏的苦行老僧致歉的偈语——梵衍那流亡大理时曾蒙喇嘛庙早年云游的长老救过性命，后来走上聚财谋反的邪路，自惭无颜面对佛塔。",
+        completionFlag: "quest_lamat1_read",
+      },
+      {
+        id: "probe",
+        giver: null,
+        requireLocation: { district: "天都镇", inner: "天都香行" },
+        playerHint: "持灯去天都镇天都香行试探。",
+        description: "罗琦看见那盏灯，脸色变了。她证实了这段旧缘，又压低声音求你：别把教主的软肋捅给锦官城官府。",
+        completionFlag: "quest_lamat1_probe",
+      },
+      {
+        id: "decide",
+        giver: null,
+        requireLocation: { district: "白塔", inner: "塔基" },
+        playerHint: "回白塔塔基，决定这盏油灯与背后的情报怎么处置。",
+        description: "风从塔顶吹下来，油灯的鎏金在你手里发烫。",
+        completionFlag: ["flag_lamat1_return", "flag_lamat1_official", "flag_lamat1_smash"],
+        choices: [
+          { flag: "flag_lamat1_return", label: "原物奉还白塔，只告知住持", resolve: "none", narration: "住持叹息：「恶人犹有羞耻心，便是未绝的佛性。」" },
+          { flag: "flag_lamat1_official", label: "交给锦官城都事柳青鸢", resolve: "none", narration: "你把油灯与梵衍那早年的大理行踪抄录交给柳青鸢。洛桑说：公道大过私情。" },
+          { flag: "flag_lamat1_smash", label: "交罗布桑当众砸毁外道油灯", resolve: "none", narration: "罗布桑一杵砸下，鎏金油灯碎在塔基石上。他难得笑了一声。" },
+        ],
+        onReach: {
+          money: 120,
+          items: [{ name: "天竺沉香念珠", fromCatalog: true }],
+          flags: ["flag_divine_niepanyin_clue"],
+          byFlag: {
+            flag_lamat1_return: { factionRep: { 喇嘛庙: 15, 欢喜教: 10 }, favorability: { 罗琦: 10 } },
+            flag_lamat1_official: { factionRep: { 锦官城: 15, 欢喜教: -15, 喇嘛庙: 5 }, favorability: { 柳青鸢: 10 } },
+            flag_lamat1_smash: { factionRep: { 喇嘛庙: 15, 欢喜教: -10 }, favorability: { 罗布桑: 15 } },
+          },
+        },
+      },
+    ],
+    rewardText: "白塔北角那盏灯的事了了。洛桑说，这条线将来还能牵出一件神兵的下落。",
+  },
+
+  lamamiao_side_3_dixiayaorou: {
+    id: "lamamiao_side_3_dixiayaorou",
+    type: "QT_TALK",
+    title: "斋1·灶下余温",
+    giver: "丹巴",
+    giverId: "resident_danba",
+    localOnly: true,
+    requiresFactionRep: { 喇嘛庙: 10 },
+    description: "你在素斋撞见典座僧丹巴满头大汗地往灶后青石板塞木炭，肉香怎么都压不住。",
+    stages: [
+      {
+        id: "confess",
+        requireLocation: { district: "喇嘛庙", inner: "素斋" },
+        playerHint: "在素斋逼问丹巴灶后的肉香。",
+        description: "丹巴哭丧着脸掀开灶后青石板，拉你钻进地窖：他偷炖羊肉汤，却被刚下白塔的守塔僧嗅到了风声。",
+        completionFlag: "quest_lamaz1_confess",
+        onReach: {
+          flags: ["unlocked_lama_basement"],
+        },
+      },
+      {
+        id: "fetch",
+        giver: null,
+        requireLocation: { district: "鱼定村", inner: "老孙饭馆" },
+        playerHint: "下山去鱼定村老孙饭馆取两包掩味的重料松茸干。",
+        description: "你在村口撞见鱼定大娘带着几个瘦骨嶙峋的逃税孤儿往山腰走——丹巴地窖里十锅肉汤，自己只喝一碗，其余九碗半夜全提下山给了挨饿的孩子和孤寡老人。",
+        completionFlag: "quest_lamaz1_fetch",
+      },
+      {
+        id: "confront",
+        giver: null,
+        requireLocation: { district: "喇嘛庙", inner: "素斋" },
+        playerHint: "回素斋，罗布桑带着戒律僧来质问丹巴破戒食荤。",
+        description: "罗布桑把降魔杵往灶台边一顿：「丹巴，你可知罪？」",
+        completionFlag: ["flag_lamaz1_truth", "flag_lamaz1_cover"],
+        choices: [
+          { flag: "flag_lamaz1_truth", label: "说出救济孤儿的实情", resolve: "none", narration: "罗布桑听完沉默半晌，罚丹巴抄经三十遍，却默许以后冬月可在山门外支锅施肉粥。" },
+          { flag: "flag_lamaz1_cover", label: "用重料松茸糊弄过关", resolve: "none", narration: "松茸的香盖住了羊膻，罗布桑嗅了两下，拂袖走了。丹巴感激涕零，塞给你一把祖传厨刀和一包私房银子。" },
+        ],
+        onReach: {
+          money: 60,
+          items: Array.from({ length: 2 }, () => ({ name: "秘制雪山羊汤锅", fromCatalog: true })),
+          flags: ["unlocked_lama_basement"],
+          byFlag: {
+            flag_lamaz1_truth: { factionRep: { 喇嘛庙: 15, 鱼定村: 10 }, favorability: { 丹巴: 20, 罗布桑: 5 } },
+            flag_lamaz1_cover: { factionRep: { 喇嘛庙: 10 }, favorability: { 丹巴: 25 }, money: 100, items: [{ name: "丹巴祖传厨刀", fromCatalog: true }] },
+          },
+        },
+      },
+    ],
+    rewardText: "荤食地下室从此为你开着。丹巴说，地窖里那锅汤，永远有你一碗。",
+  },
+
+} };
