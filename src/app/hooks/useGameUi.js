@@ -144,12 +144,17 @@ export function useGameUi({
       // stage.requireLocation：这一步必须玩家真的走到指定地点才展开（village1
       // 熊山口三选一、小牧童大草甸救牛）。此时入口只看地点、不看 giver——giver
       // 不在场，玩家也要能在这里撞上该撞的事；没到地点前 giver 在旁也不展开。
+      // deliver 阶段收件人在场也算「这里」——不然 ❢ 只在发布人身边出现，
+      // 真正该交付的地方（村2 老孙饭馆）反而没按钮，只能绕送礼菜单。
+      const deliverNpc = stage.deliver?.to ? room.npcs?.find((n) => n.name === stage.deliver.to) : null;
       const rl = stage.requireLocation;
       const here = rl
         ? (!rl.district || rl.district === room.name) && (!rl.inner || rl.inner === innerRoomName)
         : quest.giver
           ? !!(giverNpc && isVisibleInInnerRoom(room.name, innerRoomName, giverNpc))
-          : isAtQuestPlace(stage.at, room.name, innerRoomName);
+            || !!(deliverNpc && isVisibleInInnerRoom(room.name, innerRoomName, deliverNpc))
+          : isAtQuestPlace(stage.at, room.name, innerRoomName)
+            || !!(deliverNpc && isVisibleInInnerRoom(room.name, innerRoomName, deliverNpc));
       if (!here) continue;
       result.push({ quest, stage, isNewlyGiven });
     }
