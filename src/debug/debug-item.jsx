@@ -7,7 +7,7 @@ import { makeItem, ITEM_CATEGORY, toggleEquip } from "../domain/rules/economy/eq
 import { makeItemSmart } from "../domain/data/items/catalog.js";
 const makeGameItem = (s) => makeItemSmart(s, makeItem);
 
-const theme = { bg: "var(--gamble-bottom)", bgPanel: "var(--qc-hi)", border: "var(--gamble-button-edge)", accent: "var(--gold-light)", accentDim: "var(--ink-bronze)", textDim: "var(--bug-dim-dark)" };
+const theme = { bg: "var(--gamble-bottom)", bgPanel: "var(--ink-wood-mid)", border: "var(--gamble-button-edge)", accent: "var(--gold-light)", accentDim: "var(--ink-bronze)", textDim: "var(--bug-dim-dark)" };
 
 function Bench() {
   const [inv, setInv] = useState(() => [
