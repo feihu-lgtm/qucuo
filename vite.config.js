@@ -84,6 +84,23 @@ export default defineConfig({
         debugGamble: r("./debug-gamble.html"),
         debugItem: r("./debug-item.html"),
       },
+      output: {
+        advancedChunks: {
+          groups: [
+            { name: "vendor", test: /node_modules/ },
+            { name: "content-quest", test: /src[\\/]content[\\/]quest[\\/]/ },
+            { name: "content-misc", test: /src[\\/]content[\\/]/ },
+            { name: "domain-data", test: /src[\\/]domain[\\/]data[\\/]/ },
+            { name: "engine-act", test: /src[\\/]engine[\\/]act[\\/]/ },
+            { name: "engine-core", test: /src[\\/]engine[\\/]/ },
+            { name: "domain-combat", test: /src[\\/]domain[\\/]rules[\\/]combat[\\/]/ },
+            { name: "domain-rules", test: /src[\\/]domain[\\/]/ },
+            { name: "features", test: /src[\\/]features[\\/]/ },
+            { name: "infra", test: /src[\\/]infra[\\/]/ },
+            { name: "app", test: /src[\\/]app[\\/]/ },
+          ],
+        },
+      },
     },
   },
 });
