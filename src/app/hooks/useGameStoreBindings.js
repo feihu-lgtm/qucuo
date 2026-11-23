@@ -1,5 +1,5 @@
-import { useCallback, useRef } from "react";
-import { gameActions, useGameStore } from "../../store/gameStore.js";
+import { useCallback, useEffect, useRef } from "react";
+import { gameActions, gameStore, useGameStore } from "../../store/gameStore.js";
 
 export function useGameStoreBindings({ restored }) {
   const {
@@ -39,8 +39,9 @@ export function useGameStoreBindings({ restored }) {
   const setVarTree = useCallback((next) => {
     const v = typeof next === "function" ? next(varTreeRef.current) : next;
     varTreeRef.current = v;
-    setVarTreeState(v);
+    gameActions.setVarTree(v);
   }, []);
+  useEffect(() => gameStore.subscribe((state) => { varTreeRef.current = state.varTree; }), []);
 
   return {
     setChar, setDao, setSkills, setExp, setPot, setInv, setCompanionState, setPreset,

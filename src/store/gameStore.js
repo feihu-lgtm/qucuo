@@ -61,6 +61,9 @@ export const gameActions = {
   setConvo: createSetter("convo"),
   setNarrator: createSetter("narrator"),
   setVarTreeState: createSetter("varTree"),
+  // varTree 的唯一写入口：hook 不再经 varTreeRef/传参写它，store 即最新值。
+  setVarTree: createSetter("varTree"),
+  updateVarTree: (updater) => gameStore.setState((state) => ({ varTree: updater(state.varTree) })),
   setFlags: createSetter("flags"),
   setQuestProgress: createSetter("questProgress"),
   setPersuasionProgress: createSetter("persuasionProgress"),
