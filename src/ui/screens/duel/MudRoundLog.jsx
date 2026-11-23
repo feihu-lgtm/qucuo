@@ -16,7 +16,7 @@ export default function MudRoundLog({ entry, npcName, zoneTheme }) {
       ))}
       {(result.damageToB > 0 || result.damageToA > 0) && (
         <div style={{ fontSize: "12px", marginTop: 2 }}>
-          {result.damageToB > 0 && <span style={{ color: "#e08b6f" }}>{npcName}受创 {result.damageToB}　</span>}
+          {result.damageToB > 0 && <span style={{ color: "var(--footer-stalled-text)" }}>{npcName}受创 {result.damageToB}　</span>}
           {result.damageToA > 0 && <span style={{ color: "var(--red-soft)" }}>你受创 {result.damageToA}</span>}
         </div>
       )}
@@ -25,7 +25,7 @@ export default function MudRoundLog({ entry, npcName, zoneTheme }) {
       ))}
       {/* AI 说书：另起一行润色，不覆盖上面的系统结算文字（斜体+左边框区分） */}
       {entry.narration && (
-        <div style={{ fontSize: "12px", color: "#d8c090", lineHeight: 1.8, marginTop: 4, paddingLeft: 8,
+        <div style={{ fontSize: "12px", color: "var(--ink-tan)", lineHeight: 1.8, marginTop: 4, paddingLeft: 8,
           borderLeft: `2px solid ${zoneTheme.accentDim}`, fontStyle: "italic" }}>
           <span style={{ fontStyle: "normal", fontSize: "10px", color: zoneTheme.accentDim, marginRight: 5 }}>说书</span>
           {entry.narration}

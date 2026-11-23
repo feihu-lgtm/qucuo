@@ -1,6 +1,7 @@
 // GambleStoneScreen 组件调试入口（临时）：打开 /debug-gamble.html 直接渲染赌桌，
 // 假 props 模拟"天都镇玉石料场·八位竞价者全员在场"，不必进游戏走流程。
 // onTalk/onSettle 只打日志，方便肉眼验证卡牌围台布局与交互。
+import "../ui/tokens.css";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import GambleStoneScreen from "../ui/screens/buildings/GambleStoneScreen.jsx";

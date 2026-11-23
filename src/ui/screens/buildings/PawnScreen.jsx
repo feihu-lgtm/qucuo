@@ -58,7 +58,7 @@ export default function PawnScreen({ building, char, inv, pledgedItems, zoneThem
                     <span style={{ color: "var(--ink-text-dim)", fontSize: 10, marginLeft: 6 }}>质押了 {p.pledgeValue} 两</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#e0526a", fontSize: 11 }}>-{redeemCost} 两</span>
+                    <span style={{ color: "var(--qb-versus)", fontSize: 11 }}>-{redeemCost} 两</span>
                     <Btn label="赎回" disabled={money < redeemCost} zoneTheme={zoneTheme} onClick={() => onRedeem(i, redeemCost)} />
                   </div>
                 </div>

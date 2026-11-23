@@ -55,7 +55,7 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
                     return ss;
                   });
                 })}
-                style={{ cursor: "pointer", color: s.active ? qc : "#6a6a5a" }}
+                style={{ cursor: "pointer", color: s.active ? qc : "var(--ink-moss)" }}
                 title={s.active ? "已上阵，点击卸下" : "运功上阵"}
               >{s.active ? "▶" : "○"}</span>
               {mType && <span title={`${mType}类武学`} style={{ fontSize: "9px", color: "var(--bg-deep)", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700, flexShrink: 0 }}>{TYPE_SHORT[mType] || "?"}</span>}
@@ -77,7 +77,7 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
             </div>
             {(() => {
               const eff = moveEffectBrief(mv);
-              return eff ? <div style={{ paddingLeft: 18, fontSize: "9.5px", color: s.active ? "var(--clay)" : "#4a5a4a" }}>{eff}</div> : null;
+              return eff ? <div style={{ paddingLeft: 18, fontSize: "9.5px", color: s.active ? "var(--clay)" : "var(--building-desc)" }}>{eff}</div> : null;
             })()}
             {openSkill === detailKey && (() => {
               const d = skillDetail(s, mv);
@@ -117,7 +117,7 @@ export default function SkillsModule({ zoneTheme, skills, setSkills, inspectItem
                               cursor: afford ? "pointer" : "not-allowed", fontSize: "10px", padding: "1px 7px", borderRadius: 0,
                               color: afford ? "var(--violet)" : "var(--ink-text-dim)",
                               background: afford ? zoneTheme.bgPanel : "transparent",
-                              border: `1px solid ${afford ? "#4a3a5a" : zoneTheme.border}`, userSelect: "none",
+                              border: `1px solid ${afford ? "var(--building-desc)" : zoneTheme.border}`, userSelect: "none",
                             }}
                           >↑修炼·{nextStage}（{cost}潜能）</span>}
                     </div>

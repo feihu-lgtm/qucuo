@@ -22,10 +22,10 @@ export default function NarratorModule({ zoneTheme, narrator, confessToNarrator 
               <span style={{
                 display: "inline-flex", alignItems: "center", justifyContent: "center",
                 width: 20, height: 20, borderRadius: "50%",
-                background: "#f0a0c0", color: "#3a1020", fontWeight: 700, fontSize: "14px",
-                boxShadow: "0 0 6px #f0a0c0", animation: "pulse 1.6s ease-in-out infinite",
+                background: "var(--log-affection)", color: "var(--footer-stalled-bg)", fontWeight: 700, fontSize: "14px",
+                boxShadow: "0 0 6px var(--log-affection)", animation: "pulse 1.6s ease-in-out infinite",
               }}>!</span>
-              <span style={{ color: "#f0a0c0", fontSize: "11px" }}>心意已满，可向旁白告白</span>
+              <span style={{ color: "var(--log-affection)", fontSize: "11px" }}>心意已满，可向旁白告白</span>
             </div>
           )}
         </>

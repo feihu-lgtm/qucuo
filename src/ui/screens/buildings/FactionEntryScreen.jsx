@@ -46,9 +46,9 @@ export default function FactionEntryScreen({ entry, building, char, flags, varTr
               <div style={{ color: zoneTheme.accentDim, fontSize: 11, marginBottom: 6 }}>入门之限</div>
               {status.reqs.map((r) => (
                 <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5 }}>
-                  <span style={{ color: r.ok ? "var(--clay)" : "#c47070", width: 12 }}>{r.ok ? "✓" : "✗"}</span>
+                  <span style={{ color: r.ok ? "var(--clay)" : "var(--ink-danger-soft)", width: 12 }}>{r.ok ? "✓" : "✗"}</span>
                   <span style={{ flex: 1, color: r.ok ? zoneTheme.text : zoneTheme.textDim }}>{r.label}</span>
-                  <span style={{ color: r.ok ? "var(--clay)" : "#c47070", fontSize: 11 }}>{r.have}</span>
+                  <span style={{ color: r.ok ? "var(--clay)" : "var(--ink-danger-soft)", fontSize: 11 }}>{r.have}</span>
                 </div>
               ))}
             </div>

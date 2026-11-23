@@ -9,7 +9,7 @@ import { LOG_T } from "../../domain/rules/log/logTypes.js";
 // desc 的问题还严重——对话是叙事里最想让人一眼看到的内容，看不清对话
 // 反而最影响体验。保留色相基因（对话依然是粉系、引语依然是金系），
 // 拉深明度后日间对比度分别到 6.1 / 5.5，达标。
-const DIALOGUE_COLOR = { night: "#e8a0d8", day: "#8a1e6a" };
+const DIALOGUE_COLOR = { night: "var(--log-dialogue)", day: "var(--log-dialogue)" };
 const QUOTE_COLOR = { night: "var(--warn)", day: "var(--warn)" };
 
 function renderMixed(text, baseColor, isDayMode) {

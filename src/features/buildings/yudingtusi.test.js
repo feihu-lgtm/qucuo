@@ -91,7 +91,7 @@ describe("鱼定土司府", () => {
     expect(giftSilver(s, luo, 40, 3).logs).toBeUndefined();
   });
 
-  it("uses the #237 top-level gate shape with thresholds no higher than 100", () => {
+  it("uses the PR237 top-level gate shape with thresholds no higher than 100", () => {
     for (const entry of tusiQuests()) {
       if (!entry.requiresFactionRep) continue;
       expect(entry.requiresFactionRep.faction, entry.id).toBeUndefined();

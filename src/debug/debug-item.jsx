@@ -1,4 +1,5 @@
 // ItemActionMenu 调试入口（临时）：验证"包袱里点装备能否直接穿戴"。
+import "../ui/tokens.css";
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import ItemActionMenu from "../ui/components/ItemActionMenu.jsx";
@@ -6,7 +7,7 @@ import { makeItem, ITEM_CATEGORY, toggleEquip } from "../domain/rules/economy/eq
 import { makeItemSmart } from "../domain/data/items/catalog.js";
 const makeGameItem = (s) => makeItemSmart(s, makeItem);
 
-const theme = { bg: "#1a1710", bgPanel: "#221e16", border: "#4a443a", accent: "var(--gold-light)", accentDim: "#a08a5a", textDim: "#7a7060" };
+const theme = { bg: "var(--gamble-bottom)", bgPanel: "var(--qc-hi)", border: "var(--gamble-button-edge)", accent: "var(--gold-light)", accentDim: "var(--ink-bronze)", textDim: "var(--bug-dim-dark)" };
 
 function Bench() {
   const [inv, setInv] = useState(() => [
@@ -16,11 +17,11 @@ function Bench() {
   ]);
   const [open, setOpen] = useState(null);
   return (
-    <div style={{ padding: 24, color: "#c9bfa8", fontFamily: "serif" }}>
+    <div style={{ padding: 24, color: "var(--gamble-button-text)", fontFamily: "serif" }}>
       <div style={{ marginBottom: 12, color: theme.accent }}>包袱（点物品打开菜单）</div>
       {inv.map((it) => (
         <div key={it.id} onClick={() => setOpen(it)}
-          style={{ cursor: "pointer", padding: "6px 0", borderBottom: "1px solid #2a2620" }}>
+          style={{ cursor: "pointer", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
           · {it.name} ({it.quality}){it.equipped ? " [已装备]" : ""}
           <span style={{ float: "right", color: theme.accentDim, fontSize: 11 }}>
             {["weapon","armor","accessory"].includes(it.category) ? (it.equipped ? "⊙卸" : "⊙穿") : ""}

@@ -66,7 +66,7 @@ describe("LeftPanel NPC anger status", () => {
     }));
 
     expect(html).toContain("⚡ 气头上（偷窃未遂），还剩 2 回合 · 已求和 3 次");
-    expect(html).toContain("color:#e0526a");
+    expect(html).toContain("color:var(--qb-versus)");
   });
 
   it("does not render an inactive anger line", () => {

@@ -65,7 +65,7 @@ export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--
             <div key={key} className="mobile-mini-map-cell" onClick={() => clickable && onGo(key)}
               onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
               style={cellStyle({ cursor: clickable ? "pointer" : "default", opacity: hov ? 1 : 0.82, filter: hov ? "brightness(1.25)" : "none" }, MAP_UI.fog)}>
-              <span style={{ color: hov ? "var(--parchment)" : "#6a6a58", fontSize: big ? 18 : 14, fontWeight: "bold", textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>?</span>
+              <span style={{ color: hov ? "var(--parchment)" : "var(--ink-moss)", fontSize: big ? 18 : 14, fontWeight: "bold", textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>?</span>
             </div>
           );
         }
@@ -74,7 +74,7 @@ export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--
           <div key={key} className="mobile-mini-map-cell" onClick={() => clickable && onGo(key)}
             onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
             style={cellStyle({ cursor: clickable ? "pointer" : "default", filter: hov ? "brightness(1.3)" : "none" }, MAP_UI.idle)}>
-            <span style={{ color: hov ? "#eaf4ee" : "#cddcd4", fontSize: fontMain, fontWeight: hov ? "bold" : "normal", textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{short(c.name)}</span>
+            <span style={{ color: hov ? "var(--ink-text)" : "var(--ink-tier-text)", fontSize: fontMain, fontWeight: hov ? "bold" : "normal", textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{short(c.name)}</span>
           </div>
         );
       })}

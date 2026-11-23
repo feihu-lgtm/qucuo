@@ -2,7 +2,7 @@
 //   青1 = 青城线·讨公道（松鹤道长：码头一霸扣马帮货）
 //   青2 = 青城线·冒名（玉真子：有人冒青城派名行骗）
 //   青3 = 伏龙观下的三十年前剑约（青霞子亲授线，武学表 kf_fulong 的 unlock.note 引用了这条任务）
-// 门槛一律走 #237 顶层 requiresFactionRep / requiresPrestige，全档 ≤100。
+// 门槛一律走 PR237 顶层 requiresFactionRep / requiresPrestige，全档 ≤100。
 // 派系加分的「拒收人」沿用各势力惯例 -19。
 export default { quest: {
   qingcheng_1_taogongdao: {

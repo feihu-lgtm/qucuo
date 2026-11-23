@@ -13,7 +13,7 @@ import { computePassiveBonus } from "../../data/kungfu/qucuoKungfu.js";
 export const QUALITY = ["白", "绿", "蓝", "紫", "橙", "红"];
 
 export const QUALITY_COLOR = {
-  白: "#e8e4d6", 绿: "#5dcaa5", 蓝: "#5a9bd4", 紫: "#b48adf", 橙: "#e0954a", 红: "#e0526a",
+  白: "var(--ink-text)", 绿: "var(--loot-steal-banner-hi)", 蓝: "var(--ink-sky)", 紫: "var(--violet)", 橙: "var(--gamble-loss)", 红: "var(--qb-versus)",
 };
 
 const BASE_DIST = [50, 30, 10, 8, 1.5, 0.5];

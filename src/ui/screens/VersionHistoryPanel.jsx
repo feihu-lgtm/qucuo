@@ -46,7 +46,7 @@ export default function VersionHistoryPanel({ onClose, accentDim = "var(--accent
                   const isItem = /^[①-⑳【]|^[一二三四五六七八九十]、/.test(String(line).trim());
                   return (
                     <div key={j} style={{
-                      color: isItem ? "var(--text-dim)" : "#a09a86",
+                      color: isItem ? "var(--text-dim)" : "var(--tavern-steam)",
                       fontSize: "11px", lineHeight: 1.65,
                       paddingLeft: isItem ? 12 : 0,
                       textIndent: isItem ? -12 : 0,

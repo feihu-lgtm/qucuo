@@ -4,7 +4,7 @@ import {
 } from "./legacyContent.js";
 import { RESIDENT_NPCS } from "../../data/npc/residentNpcs.js";
 
-// #274 天龙教改回原作名：石重岳→厉苍龙、安世衡→厉苍天（含 resident id）。
+// PR274 天龙教改回原作名：石重岳→厉苍龙、安世衡→厉苍天（含 resident id）。
 // 老存档读档时按这套表迁移，迁错或漏迁会直接表现在玩家档里，逐项断言。
 
 describe("legacyContent 迁移表与现网人物对得上", () => {
