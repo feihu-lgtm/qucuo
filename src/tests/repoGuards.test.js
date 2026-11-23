@@ -212,6 +212,8 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
     }
     const value = /^\s*const (\w+)\s*=\s*(?:useCallback|useMemo|useRef|useGameStore|useOverlay)\b/.exec(line);
     if (value) addDeclaration(value[1], index + 1);
+    const alias = /^\s*const (\w+)\s*=\s*[\w$]+\s*;?\s*$/.exec(line);
+    if (alias) addDeclaration(alias[1], index + 1);
   });
 
   for (const match of source.matchAll(/const\s*\{([^}]+)\}\s*=\s*[\w$]+\b/g)) {

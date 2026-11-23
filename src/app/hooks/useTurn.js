@@ -8,7 +8,6 @@ import { consumeDuelRequest } from "./useDuel.js";
 import { callModel } from "../../engine/ports/ai.js"; import { classifyError } from "../../utils/apiErrors.js";
 import { step as traceStep } from "../../engine/ports/actionTrace.js";
 import { getTurnContext, PHASE, turnMonitor } from "../../engine/ports/turnMonitor.js";
-import { burnSquare, consumeArrival } from "../../domain/rules/map/mapSquares.js";
 import { createTurnStaleCheck } from "./useUndo.js";
 import { resolveInnerBlockedSummary, showOuterNoExitNotice } from "./blockedMovementNotice.js";
 import { classifyActCommand } from "../../engine/commands/index.js";
@@ -19,6 +18,7 @@ import { createTurnContext } from "../../engine/turn/turnContext.js";
 import { settleInBackground } from "./settleBackfill.js";
 import { lookInBackground } from "./lookBackfill.js";
 import { lookNpcInBackground } from "./npcLookBackfill.js";
+import { applySquareOps } from "../runtime/gameRuntime.js";
 
 // 回合入口的 React 胶水：组 env → resolveIntent（识别/裁决）→ createTurnContext
 // → playTurn（settleTurn → narrateTurn → finalizeTurn）→ setState。
@@ -185,12 +185,7 @@ export function useTurn({
     lookNpcInBackground: (npc, extraReplies) => lookNpcInBackground(npc, extraReplies, {
       addLog, setTime, setConvo, setLog, noteAction,
     }),
-    applySquareOps: (ops) => {
-      for (const { op, key, day } of ops) {
-        if (op === "consume") consumeArrival(key, day);
-        else if (op === "burn") burnSquare(key);
-      }
-    },
+    applySquareOps,
   }), [addLog, jotNote, gameActions, setVarTree, act, setTime, setConvo, setLog, noteAction]);
   featureCtxRef.current = featureCtx;
 

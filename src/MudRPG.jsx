@@ -32,6 +32,7 @@ import {
   useGameStartupRegistry, useGameStartupShortcut,
 } from "./app/hooks/useGameStartup.js";
 import { buildLayoutCtx, buildOverlayCtx } from "./app/contextBuilders.js";
+import { addLog as runtimeAddLog } from "./app/runtime/gameRuntime.js";
 import { useWorldRulesRunner } from "./app/hooks/useWorldRulesRunner.js";
 import { DEFAULT_PRESETS } from "./engine/newGame.js";
 import { selectEffectiveStats } from "./features/stats/logic.js";
@@ -145,7 +146,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 当前这轮 act 是否在赌石谈价语境（有则 talk prompt 追加 <deal> 规则）
   const gambleTalkCtx = useRef(null);
   useEffect(() => { setBuildingPanelMinimized(false); }, [activeBuilding?.id]);
-  const addLog = useCallback((lines) => setLog(p => [...p, ...lines]), []);
+  // addLog 已上移到 app/runtime/gameRuntime.js（模块级）；本地别名只喂给老 hook 签名
+  const addLog = runtimeAddLog;
   const commandScheduler = useCommandScheduler({ addLog, setQueueCount });
   const {
     dispatch: dispatchCommand, clearQueue: clearCommandQueue,
