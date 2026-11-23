@@ -3,7 +3,7 @@ import { QUCUO_MAP } from "../../data/map/qucuoMap.js";
 import { rollEncounter } from "./encounter.js";
 import { rollQuality, ITEM_CATEGORY } from "../economy/equipment.js";
 import { cleanJsonString } from "../../../utils/jsonClean.js";
-import { filterCatalog } from "../../data/items/catalog.js";
+import { filterCatalog } from "../../data/items/catalogOps.js";
 
 // 地图格子系统（扫雷式预埋）
 // ---------------------------------------------------------------------------

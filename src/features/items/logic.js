@@ -1,6 +1,7 @@
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { effectiveMaxHp } from "../../domain/data/kungfu/qucuoKungfu.js";
-import { CATALOG_INDEX, useConsumable as resolveConsumable } from "../../domain/data/items/catalog.js";
+import { CATALOG_INDEX } from "../../domain/data/items/catalog.js";
+import { useConsumable as resolveConsumable } from "../../domain/data/items/catalogOps.js";
 import { tallyAdd } from "../../domain/rules/memory/tally.js";
 import { makeBuffFlag, mergeCombatBuff } from "../../utils/buffSystem.js";
 import { isGroundItemHere } from "../../domain/rules/map/groundScope.js";
