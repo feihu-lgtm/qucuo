@@ -38,7 +38,7 @@ export function usePrivateTalk({
     // gameStore.getState().varTree。
     const { setLog, setConvo, setNarrator } = gameActions;
     const addLog = (lines) => setLog((p) => [...p, ...lines]);
-    const { narrator, convo, room, preset, flags, char, questProgress, time } =
+    const { narrator, convo, room, preset, flags, char, questProgress } =
       gameStore.getState();
     changePendingTalks(1);
     addLog([{ t: "cmd", text: `> 对旁白：${content}` }]);
@@ -173,7 +173,7 @@ export function usePrivateTalk({
       // 干了什么很奇怪。累计只在第六档给——那时账本是她在记（见 tally 里的注释）。
       // 海里那条路不给：她此刻蜷在沙发上，谁还管你今天走了几步路。
       const tallyBlock = inSeaNow ? "" : describeTallyForWhisper(
-        gameStore.getState().varTree.世界?.起居注, time,
+        gameStore.getState().varTree.世界?.起居注, gameStore.getState().time,
         { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
       );
       const worldState = inSeaNow ? "" : buildWhisperStatePrompt(gameStore.getState(), { trace });
@@ -274,7 +274,7 @@ export function usePrivateTalk({
             playerSay: content,
             varTree: gameStore.getState().varTree,
             narrator,
-            time: time,
+            time: gameStore.getState().time,
             charm: char?.special?.魅力 ?? 5,
           },
         });
@@ -297,7 +297,7 @@ export function usePrivateTalk({
         // softSettleEnabled 关着的兜底：好感照旧 +1，但日上限仍要管——这条路的节流
         // 不走软结算（narratorDailyDelta），沿用原来手工账本，否则私聊一天就能刷满门槛。
         const led = gameStore.getState().varTree.世界?.好感日增;
-        const day = Math.floor((time || 0) / 24);
+        const day = Math.floor((gameStore.getState().time || 0) / 24);
         const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
         const already = Number(gained["旁白"]) || 0;
         const room = Math.max(0, WHISPER_AFFECTION_RULES.daily - already);
