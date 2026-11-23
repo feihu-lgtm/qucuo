@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MUD = readFileSync(join(HERE, "..", "MudRPG.jsx"), "utf-8");
 const WORLD_RULES = readFileSync(join(HERE, "hooks", "useWorldRulesRunner.js"), "utf-8");
-const REG = readFileSync(join(HERE, "..", "domain", "rules", "cards", "importedRegistry.js"), "utf-8");
+// importedRegistry 拆分后锚点横跨四文件（registry/store/placement/pending），拼起来查。
+const REG = ["importedRegistry.js", "importedStore.js", "importedPlacement.js", "pendingCard.js"]
+  .map(f => readFileSync(join(HERE, "..", "domain", "rules", "cards", f), "utf-8")).join("\n");
 const NPC_RULES = readFileSync(join(HERE, "..", "domain", "rules", "npc", "rules.js"), "utf-8");
 const OVL = readFileSync(join(HERE, "..", "ui", "panels", "GlobalOverlays.jsx"), "utf-8");
 const SCREEN = readFileSync(join(HERE, "..", "ui", "screens", "CardImportScreen.jsx"), "utf-8");
