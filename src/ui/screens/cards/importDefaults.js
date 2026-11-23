@@ -5,7 +5,7 @@
 // 填成默认 NPC（称谓级 1、空套装、两级里程碑），供「跳过 AI」那步直接进审改。
 
 import { EMPTY_SPECIAL } from "./importShared.js";
-import { sanitizeMoves, TIER_NEIGONG } from "../../domain/rules/cards/scanPrompts.js";
+import { sanitizeMoves, TIER_NEIGONG } from "../../../domain/rules/cards/scanPrompts.js";
 import { BODY_PUBLIC, BODY_PRIVATE } from "./widgets.jsx";
 
 // 玩家档案补齐 AI 不产出的那几项（性别、内外功、说话示范）
