@@ -6,15 +6,14 @@ import {
   ALL_BODY_PRESETS,
   BODY_PRESETS,
   BODY_TAG_POOL,
-  COMPANION_BODY_PROFILES,
   PLAYER_PORTRAIT_PRESETS,
   appendBodyTag,
   applyBodyPreset,
   defaultPortraitIdForGender,
-  formatCompanionBodyBlock,
   getPortraitPreset,
   portraitPresetUrl,
 } from "./bodyPresets.js";
+import { COMPANION_BODY_PROFILES, formatCompanionBodyBlock } from "./companionBodyProfiles.js";
 import { buildNpcContext } from "../../../engine/prompt/roundNotes.js";
 
 describe("bodyPresets & companion humanized body profiles", () => {

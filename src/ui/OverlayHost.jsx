@@ -1,15 +1,15 @@
 import { lazy, Suspense } from "react";
-import BodyProfilePanel from "./screens/BodyProfilePanel.jsx";
 import { emptyBodyProfile } from "../domain/rules/character/bodyProfile.js";
 import MusicPanel from "./screens/MusicPanel.jsx";
-import HomesteadPanel from "./screens/buildings/HomesteadPanel.jsx";
 import { getHomestead } from "../domain/rules/map/homestead.js";
 import GlobalOverlays from "./panels/GlobalOverlays.jsx";
-import CharacterCreate from "./screens/CharacterCreate.jsx";
-import OpeningSequence from "./screens/OpeningSequence.jsx";
 import { OVERLAY, closeOverlay, openOverlay } from "../store/uiStore.js";
 
 const SettingsPanel = lazy(() => import("./screens/SettingsPanel.jsx"));
+const BodyProfilePanel = lazy(() => import("./screens/BodyProfilePanel.jsx"));
+const HomesteadPanel = lazy(() => import("./screens/buildings/HomesteadPanel.jsx"));
+const CharacterCreate = lazy(() => import("./screens/CharacterCreate.jsx"));
+const OpeningSequence = lazy(() => import("./screens/OpeningSequence.jsx"));
 
 export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
   const closeSettings = () => {
@@ -63,6 +63,7 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
     <>
       {ctx.showMusicPanel && <MusicPanel onClose={() => closeOverlay(OVERLAY.MUSIC_PANEL)} />}
       {ctx.showHomestead && ctx.innerRoomName && getHomestead(ctx.innerRoomName) && (
+        <Suspense fallback={null}>
         <HomesteadPanel
           roomName={ctx.innerRoomName}
           inv={ctx.inv}
@@ -74,6 +75,7 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
           addLog={ctx.addLog}
           dispatchCommand={ctx.dispatchCommand}
         />
+        </Suspense>
       )}
       <GlobalOverlays {...ctx.globalOverlays} />
       {ctx.showSettings && (

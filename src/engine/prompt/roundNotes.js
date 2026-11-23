@@ -7,7 +7,7 @@ import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../d
 import { roadEncounterFor } from "../../domain/data/encounters/roadEncounters.js";
 import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
 import { activeCompanion, COMPANION_LORE } from "../../domain/rules/companion/companion.js";
-import { formatCompanionBodyBlock } from "../../domain/rules/character/bodyPresets.js";
+import { formatCompanionBodyBlock } from "../../domain/rules/character/companionBodyProfiles.js";
 import { getAllResidentNpcLore } from "../../domain/data/npc/residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../../domain/rules/prompt/worldbook.js";
 import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../domain/rules/npc/npcAwareness.js";
