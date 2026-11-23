@@ -19,7 +19,7 @@ import { gateScenario } from "../../domain/rules/prompt/worldbook.js";
 import { describeTallyForWhisper } from "../../domain/rules/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
-import { gameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore } from "../../store/gameStore.js";
 import { buildPrivateTalkPayload } from "../../domain/rules/prompt/privateTalkPayload.js";
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 import { settledToPatches } from "../../domain/rules/settle/settle.js";
@@ -28,12 +28,18 @@ import { runSoftSettle } from "../../engine/ports/softSettle.js";
 import { UNKNOWN_CHOICE } from "../../domain/rules/settle/judge.js";
 
 export function usePrivateTalk({
-  narrator, addLog, apiCfg, convo, room, preset, flags,
-  jotNote, char, nsfwOn, questProgress, changePendingTalks,
-  talkBusyRef, schedulerRef, setInput, timeRef, varTreeRef, setLog, setConvo,
-  setVarTree, setNarrator, noteAction,
+  apiCfg, nsfwOn, jotNote, noteAction, changePendingTalks,
+  setInput, talkBusyRef, schedulerRef, setVarTree,
 }) {
   const talkToNarrator = useCallback(async (content, { isStale = () => false, turn } = {}) => {
+    // Store 直读：游戏状态在回调内现取现用，不经 hook 参数透传（路线一收口，
+    // 照 useAutosave 样板）。writes 走 gameActions；varTree 写仍走传入的
+    // setVarTree（它同步 varTreeRef——Worker 4 收口前保留），读等价
+    // gameStore.getState().varTree。
+    const { setLog, setConvo, setNarrator } = gameActions;
+    const addLog = (lines) => setLog((p) => [...p, ...lines]);
+    const { narrator, convo, room, preset, flags, char, questProgress, time } =
+      gameStore.getState();
     changePendingTalks(1);
     addLog([{ t: "cmd", text: `> 对旁白：${content}` }]);
     setInput("");
@@ -67,7 +73,7 @@ export function usePrivateTalk({
       {
         // 条数（绿灯·批五）：20→8。私聊本就是短回合（maxTokens 见 callTokenLimits.narratorWhisper），旁白也只会顺口提一两件；
         // 喂 20 条里绝大多数是陪跑，还把真正相关的那几条冲淡。取最近 8 条，更近更准也更省。
-        const facts = allFactSummaries(varTreeRef.current, 8);
+        const facts = allFactSummaries(gameStore.getState().varTree, 8);
         if (facts.length) {
           factsBlock = "\n\n[你冷眼旁观知晓的事，未必是玩家亲口告诉过你的，回应时可以自然提起，但不要生硬列举或表现得像在念清单]\n"
             + formatFactSummariesForPrompt(facts);
@@ -83,7 +89,7 @@ export function usePrivateTalk({
       let recallBlock = "";
       if (embeddingReady(apiCfg)) {
         const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
-        const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(varTreeRef.current.角色 || {}), room.name]));
+        const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(gameStore.getState().varTree.角色 || {}), room.name]));
         recallInfo = await recallWithVisibility({
           cfg: apiCfg, queryText: content,
           contextText: `${lastAiText}\n[当前]位置:${room.name}`,
@@ -162,12 +168,12 @@ export function usePrivateTalk({
       // 全知事实、旁白世界书、分档攻略、剧本总纲这些在这儿全不适用（她不在讲故事），
       // 只留：创伤线阶段 prompt + 向量召回（她记得你们一路的事）+ 篇幅。
       const inSeaNow = isInSea(narrator.stage) && room.name === SEA_OF_MIND.district;
-      const seaVars = narratorVars(varTreeRef.current);
+      const seaVars = narratorVars(gameStore.getState().varTree);
       // 起居注进私聊：她本来就是"记得游戏里发生一切"的角色，聊天时却不知道你今天
       // 干了什么很奇怪。累计只在第六档给——那时账本是她在记（见 tally 里的注释）。
       // 海里那条路不给：她此刻蜷在沙发上，谁还管你今天走了几步路。
       const tallyBlock = inSeaNow ? "" : describeTallyForWhisper(
-        varTreeRef.current.世界?.起居注, timeRef.current,
+        gameStore.getState().varTree.世界?.起居注, time,
         { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
       );
       const worldState = inSeaNow ? "" : buildWhisperStatePrompt(gameStore.getState(), { trace });
@@ -266,9 +272,9 @@ export function usePrivateTalk({
           kind: "narrator_affinity",
           ctx: {
             playerSay: content,
-            varTree: varTreeRef.current,
+            varTree: gameStore.getState().varTree,
             narrator,
-            time: timeRef.current,
+            time: time,
             charm: char?.special?.魅力 ?? 5,
           },
         });
@@ -290,8 +296,8 @@ export function usePrivateTalk({
       } else if (!inSeaNow && !narrator.confessed && apiCfg.softSettleEnabled === false && affDelta > 0) {
         // softSettleEnabled 关着的兜底：好感照旧 +1，但日上限仍要管——这条路的节流
         // 不走软结算（narratorDailyDelta），沿用原来手工账本，否则私聊一天就能刷满门槛。
-        const led = varTreeRef.current.世界?.好感日增;
-        const day = Math.floor((timeRef.current || 0) / 24);
+        const led = gameStore.getState().varTree.世界?.好感日增;
+        const day = Math.floor((time || 0) / 24);
         const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
         const already = Number(gained["旁白"]) || 0;
         const room = Math.max(0, WHISPER_AFFECTION_RULES.daily - already);
@@ -325,7 +331,7 @@ export function usePrivateTalk({
       // 判定放本地关键词初筛：AI 已经拿到了那条心结的 guide，它写出来的正文里
       // 必然带那几个核心意象；宁可放宽也不要卡住玩家——他都陪到这儿了。
       if (inSeaNow) {
-        const kv = narratorVars(varTreeRef.current);
+        const kv = narratorVars(gameStore.getState().varTree);
         const cur = availableKnot(kv.comfort, kv.knots || []);
         if (cur) {
           const HINT = {
@@ -384,6 +390,6 @@ export function usePrivateTalk({
     changePendingTalks(-1);
     schedulerRef.current?.touch();
     talkBusyRef.current = false; // 释放私聊闸门（成功/失败所有路径都到这，确保不会永久锁死）
-  }, [narrator, addLog, apiCfg, convo, room, preset, flags, jotNote, char, nsfwOn, questProgress, changePendingTalks]);
+  }, [apiCfg, nsfwOn, jotNote, noteAction, changePendingTalks, setInput, setVarTree]);
   return { talkToNarrator };
 }
