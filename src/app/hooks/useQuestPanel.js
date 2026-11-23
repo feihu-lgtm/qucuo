@@ -107,10 +107,20 @@ export function useQuestPanel({
       captureUndo();
       return applyResult(featureCtxRef.current, playLocalQuestStage(gameStore.getState(), quest));
     }
+    // 收件人在场而发布人不在 = 玩家站在交付点上——叙事/台词都应该写交付，
+    // 不是又去问发布人（村2 在老孙饭馆点 ❢ 曾让旁白演才旦的戏）。
+    const stateNow = gameStore.getState();
+    const visibleHere = (name) => !!name && (stateNow.room?.npcs || []).some(
+      (n) => n.name === name && isNpcVisibleInInnerRoom(stateNow.room?.name, stateNow.innerRoomName, n),
+    );
+    const delivery = stage.deliver;
+    const atRecipient = !!(delivery && visibleHere(delivery.to) && !visibleHere(quest.giver));
     if (apiCfg.questTriggerMode === "script") {
-      const line = isNewlyGiven
-        ? `我想找${quest.giver}问问「${quest.title}」这件事`
-        : `我继续跟${quest.giver}谈「${quest.title}」的事`;
+      const line = atRecipient
+        ? `我把「${delivery.item}」交给${delivery.to}（「${quest.title}」的差事）`
+        : isNewlyGiven
+          ? `我想找${quest.giver}问问「${quest.title}」这件事`
+          : `我继续跟${quest.giver}谈「${quest.title}」的事`;
       act(line);
       return;
     }
@@ -120,13 +130,9 @@ export function useQuestPanel({
       const n = typeof entry === "string" ? entry : entry?.name;
       return !!n && (n === wanted || n.includes(wanted) || wanted.includes(n));
     });
-    const delivery = stage.deliver;
     if (delivery) {
       // room.npcs 是据点级花名册——收件人要在当前内层房间才算"在场"。
-      const st = gameStore.getState();
-      const targetHere = (st.room?.npcs || []).some(
-        (n) => n.name === delivery.to && isNpcVisibleInInnerRoom(st.room?.name, st.innerRoomName, n),
-      );
+      const targetHere = visibleHere(delivery.to);
       if (!hasItem(delivery.item) || !targetHere) {
         addLog([{
           t: "sys",
@@ -147,7 +153,13 @@ export function useQuestPanel({
       { t: "quest", text: `  ❖ ${entry.isNewlyGiven ? "任务开启" : "任务推进"} 「${quest.title}」` },
       { t: "sys", text: `  〔详情可查任务面板〕` },
     ]);
-    await act(`❢ ${quest.title}`, [], { forcedEvent: stage.description, forcedEventNpc: quest.giver, keepUndo: true });
+    await act(
+      atRecipient ? `❢ ${quest.title}：把「${delivery.item}」交给${delivery.to}` : `❢ ${quest.title}`,
+      [],
+      atRecipient
+        ? { forcedEvent: `玩家亲手把「${delivery.item}」交给${delivery.to}。`, forcedEventNpc: delivery.to, keepUndo: true }
+        : { forcedEvent: stage.description, forcedEventNpc: quest.giver, keepUndo: true },
+    );
   }, { feature: "quest.trigger" }), [act, apiCfg, forceAdvanceQuest, addLog, captureUndo, featureCtxRef]);
 
   const triggerQuestChoice = useCallback((entry, choice) => runQuestChoice({
