@@ -6,6 +6,7 @@ import { chromeBtn } from "../../utils/theme.js";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
 import { gameActions, useGameStore } from "../../store/gameStore.js";
+import { useSessionUi, setInteractMode } from "../../store/sessionUiStore.js";
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { getBuildingInstanceKey } from "./buildingInstanceKey.js";
@@ -27,12 +28,15 @@ function ScreenFallback({ zoneTheme }) {
 
 export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNote, setVarTree }) {
   const {
-    isMobile, mobileColumn, zoneTheme, S, loading, gm, setGm,
+    isMobile, mobileColumn, zoneTheme, S, gm, setGm,
     duelPending, activeBuilding, setActiveBuilding, tradingShop, setTradingShop,
     buildingPanelMinimized, setBuildingPanelMinimized, gambleNegotiation,
     isDayMode, clr, collapsedGroups, setCollapsedGroups,
-    queueCount, pendingTalks, logEnd, setInteractMode,
+    logEnd,
   } = ui;
+  const loading = useSessionUi(s => s.loading);
+  const queueCount = useSessionUi(s => s.queueCount);
+  const pendingTalks = useSessionUi(s => s.pendingTalks);
   const {
     duelHandlers, buildingHandlers, craftingAI, pigeonHandlers,
     playerActionHandlers, aiInspect,

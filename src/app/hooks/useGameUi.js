@@ -10,6 +10,11 @@ import { loadPortraits, getSnowLeopardForm, getPearlForm } from "../../domain/ru
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { readMobileColumn, writeMobileColumn } from "../../utils/mobileColumn.js";
 import { usePromptInspector } from "./ui/usePromptInspector.js";
+import {
+  useSessionUi, sessionUiStore, setInput, setLoading, setWaitSecs, setPendingTalks,
+  setQueueCount, setInteractMode, setTalkTarget, setActiveTarget, setActiveGroundItem,
+  setPigeonTarget, setCmdHistory, setHistIdx,
+} from "../../store/sessionUiStore.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 
@@ -20,19 +25,21 @@ export function useGameUi({
   flags, questProgress, varTree, varTreeRef,
 }) {
   const [presets, setPresets] = useState(DEFAULT_PRESETS);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  // 交互/输入态已迁 sessionUiStore（路线二）：这里订阅后按原样透给 hook 参数，
+  // 面板则直接 useSessionUi 订阅，不再走 ui 透传。
+  const input = useSessionUi(s => s.input);
+  const loading = useSessionUi(s => s.loading);
   const loadingRef = useRef(loading);
-  const [waitSecs, setWaitSecs] = useState(0);
+  const waitSecs = useSessionUi(s => s.waitSecs);
   const waitTimerRef = useRef(null);
-  const [pendingTalks, setPendingTalks] = useState(0);
+  const pendingTalks = useSessionUi(s => s.pendingTalks);
   const pendingTalksRef = useRef(0);
   const changePendingTalks = useCallback((delta) => {
-    const next = Math.max(0, pendingTalksRef.current + delta);
+    const next = Math.max(0, sessionUiStore.getState().pendingTalks + delta);
     pendingTalksRef.current = next;
     setPendingTalks(next);
   }, []);
-  const [queueCount, setQueueCount] = useState(0);
+  const queueCount = useSessionUi(s => s.queueCount);
   const [collapsedGroups, setCollapsedGroups] = useState(new Set());
   const [mapBig, setMapBig] = useState(false);
   const mapBigCloseGuard = useOverlayCloseGuard(() => setMapBig(false));
@@ -45,10 +52,10 @@ export function useGameUi({
   useEffect(() => { writeMobileColumn(undefined, mobileColumn); }, [mobileColumn]);
   const [mobileTopMenu, setMobileTopMenu] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState(null);
-  const [interactMode, setInteractMode] = useState("action");
-  const [talkTarget, setTalkTarget] = useState(null);
-  const [activeTarget, setActiveTarget] = useState(null);
-  const [activeGroundItem, setActiveGroundItem] = useState(null);
+  const interactMode = useSessionUi(s => s.interactMode);
+  const talkTarget = useSessionUi(s => s.talkTarget);
+  const activeTarget = useSessionUi(s => s.activeTarget);
+  const activeGroundItem = useSessionUi(s => s.activeGroundItem);
   const activeGroundItemContextRef = useRef({ roomName: room.name, innerRoomName });
   useEffect(() => {
     const previous = activeGroundItemContextRef.current;
@@ -60,7 +67,7 @@ export function useGameUi({
   }, [activeGroundItem, room.name, innerRoomName, room.items]);
   const [nsfwOn, setNsfwOn] = useState(true);
   const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" });
-  const [pigeonTarget, setPigeonTarget] = useState(null);
+  const pigeonTarget = useSessionUi(s => s.pigeonTarget);
   const [activeNpcMenu, setActiveNpcMenu] = useState(null);
   const [activeItemMenu, setActiveItemMenu] = useState(null);
   // 头像按存档分键存在浏览器里，不写进存档本身：换头像不算"开玩"、不触发自动存档，
@@ -108,8 +115,8 @@ export function useGameUi({
   useEffect(() => {
     document.documentElement.dataset.theme = isDayMode ? "day" : "night";
   }, [isDayMode]);
-  const [cmdHistory, setCmdHistory] = useState([]);
-  const [histIdx, setHistIdx] = useState(-1);
+  const cmdHistory = useSessionUi(s => s.cmdHistory);
+  const histIdx = useSessionUi(s => s.histIdx);
   const [forcedDuelNpc, setForcedDuelNpc] = useState(null);
   const [duelingNpc, setDuelingNpc] = useState(null);
   const [duelPending, setDuelPending] = useState(null);

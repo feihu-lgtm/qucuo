@@ -2,9 +2,11 @@ import { hasInnerMap, getResidentRoomForNpc, isNpcVisibleInInnerRoom } from "../
 import { isNpcKnown } from "../../../domain/rules/npc/npcAwareness.js";
 import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { OVERLAY, openOverlay, useOverlay } from "../../../store/uiStore.js";
+import { useSessionUi, setPigeonTarget, setInteractMode } from "../../../store/sessionUiStore.js";
 import NpcAngerLine from "../NpcAngerLine.jsx";
 
-export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, peoplePanel, setPeoplePanel, char, setActiveNpcMenu, setCharacterPageTarget, addLog, setPigeonTarget, setInteractMode, inputRef, pigeonTarget, uiGreen, uiPink }) {
+export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, peoplePanel, setPeoplePanel, char, setActiveNpcMenu, setCharacterPageTarget, addLog, inputRef, uiGreen, uiPink }) {
+  const pigeonTarget = useSessionUi(s => s.pigeonTarget);
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const present = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
   const crowd = (room.crowd || []).filter(c => !c.innerRoom || !innerRoomName || c.innerRoom === innerRoomName).map(c => c.label);

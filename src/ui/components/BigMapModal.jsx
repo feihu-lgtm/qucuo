@@ -7,10 +7,12 @@ import {
 import { DIRS } from "../../utils/mudHelpers.js";
 import { MAP_UI } from "../mapUi.js";
 import { useGameStore } from "../../store/gameStore.js";
+import { useSessionUi, setInteractMode } from "../../store/sessionUiStore.js";
 
 export default function BigMapModal({
-  mapView, setMapBig, mapBigCloseGuard, zoneTheme, loading, setInteractMode, act, autoTravelTo,
+  mapView, setMapBig, mapBigCloseGuard, zoneTheme, act, autoTravelTo,
 }) {
+  const loading = useSessionUi(s => s.loading);
   const room = useGameStore(s => s.room);
   const innerRoomName = useGameStore(s => s.innerRoomName);
   const mapData = useGameStore(s => s.mapData);
