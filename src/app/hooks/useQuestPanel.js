@@ -6,6 +6,7 @@ import { buildQuestFoe } from "../../features/quest/combatChoice.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 import { isQuestChoiceOpen } from "../../domain/rules/quests/questEngine.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 
 export function settlePersuasion({ setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog }, { questId, flag }, result) {
   return applyResult(null, () => {
@@ -106,11 +107,52 @@ export function useQuestPanel({
       captureUndo();
       return applyResult(featureCtxRef.current, playLocalQuestStage(gameStore.getState(), quest));
     }
+    // 收件人在场而发布人不在 = 玩家站在交付点上——叙事/台词都应该写交付，
+    // 不是又去问发布人（村2 在老孙饭馆点 ❢ 曾让旁白演才旦的戏）。
+    const stateNow = gameStore.getState();
+    const visibleHere = (name) => !!name && (stateNow.room?.npcs || []).some(
+      (n) => n.name === name && isNpcVisibleInInnerRoom(stateNow.room?.name, stateNow.innerRoomName, n),
+    );
+    const delivery = stage.deliver;
+    const hasItem = (wanted) => (stateNow.inv || []).some((entry) => {
+      const n = typeof entry === "string" ? entry : entry?.name;
+      return !!n && (n === wanted || n.includes(wanted) || wanted.includes(n));
+    });
+    // deliver 阶段空手：任何模式都只提示去备件——script 模式发出的台词会让
+    // 叙事回执 flag 空推进（questFlagRule 不看背包）。
+    if (delivery && !hasItem(delivery.item)) {
+      addLog([{
+        t: "sys",
+        text: `  「${quest.title}」要把「${delivery.item}」亲手交给${delivery.to}——先去把东西备齐。`,
+      }]);
+      return;
+    }
+    const atRecipient = !!(delivery && visibleHere(delivery.to) && !visibleHere(quest.giver));
     if (apiCfg.questTriggerMode === "script") {
-      const line = isNewlyGiven
-        ? `我想找${quest.giver}问问「${quest.title}」这件事`
-        : `我继续跟${quest.giver}谈「${quest.title}」的事`;
+      const line = atRecipient
+        ? `我把「${delivery.item}」交给${delivery.to}（「${quest.title}」的差事）`
+        : isNewlyGiven
+          ? `我想找${quest.giver}问问「${quest.title}」这件事`
+          : `我继续跟${quest.giver}谈「${quest.title}」的事`;
       act(line);
+      return;
+    }
+    // deliver/collect 阶段不能靠点 ❢ 空推进：收件人不在场时只提示去送，
+    // 不落 flag（forceAdvanceQuest 里还有一道同样的闸）。
+    if (delivery) {
+      // room.npcs 是据点级花名册——收件人要在当前内层房间才算"在场"。
+      if (!visibleHere(delivery.to)) {
+        addLog([{
+          t: "sys",
+          text: `  「${quest.title}」要把「${delivery.item}」亲手交给${delivery.to}——得到他跟前再送。`,
+        }]);
+        return;
+      }
+    }
+    const collectReqs = stage.collect ? (Array.isArray(stage.collect) ? stage.collect : [stage.collect]) : [];
+    const missing = collectReqs.find((c) => c?.item && !hasItem(c.item));
+    if (missing) {
+      addLog([{ t: "sys", text: `  「${quest.title}」还差「${missing.item}」没到手${missing.at ? `——去${missing.at}取` : ""}。` }]);
       return;
     }
     const targetFlag = Array.isArray(stage.completionFlag) ? stage.completionFlag[0] : stage.completionFlag;
@@ -119,7 +161,22 @@ export function useQuestPanel({
       { t: "quest", text: `  ❖ ${entry.isNewlyGiven ? "任务开启" : "任务推进"} 「${quest.title}」` },
       { t: "sys", text: `  〔详情可查任务面板〕` },
     ]);
-    await act(`❢ ${quest.title}`, [], { forcedEvent: stage.description, forcedEventNpc: quest.giver, keepUndo: true });
+    await act(
+      atRecipient ? `❢ ${quest.title}：把「${delivery.item}」交给${delivery.to}` : `❢ ${quest.title}`,
+      [],
+      {
+        // forcedEvent 必须带上 stage.description——交付戏的主体（巴桑讲税赋
+        // 旧事）就在阶段描写里，只写"亲手交给"会把故事主体弄丢。
+        forcedEvent: atRecipient
+          ? `${stage.description}（玩家亲手把「${delivery.item}」交给${delivery.to}）`
+          : stage.description,
+        forcedEventNpc: atRecipient ? delivery.to : quest.giver,
+        keepUndo: true,
+        // 交付件本轮已由 forceAdvanceQuest 结算——叙事回执的 items_rm 不得
+        // 再扣一次（重复扣件、或把剧情还回的 keep 件误删）。
+        deliveredItems: delivery ? [delivery.item] : undefined,
+      },
+    );
   }, { feature: "quest.trigger" }), [act, apiCfg, forceAdvanceQuest, addLog, captureUndo, featureCtxRef]);
 
   const triggerQuestChoice = useCallback((entry, choice) => runQuestChoice({

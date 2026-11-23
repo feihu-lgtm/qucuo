@@ -136,6 +136,8 @@ export const questFlagRule = {
     const justCompletedIds = [];
     const pendingRewards = [];
     const logs = [];
+    // 各任务本轮翻过的 deliver 阶段实际交付了的物品，循环后统一扣一件。
+    const consumedDeliveries = [];
 
     for (const quest of stageQuests) {
       if (!isQuestGateOpen(quest, next, flags, state.varTree || {})) continue;
@@ -154,9 +156,29 @@ export const questFlagRule = {
       if (progress.status !== "active") continue;
 
       let advancedAny = false;
+      // 采集的实物闸：光靠 flag 翻不过 collect 阶段——东西得真在包里。
+      // deliver 不设实物闸：叙事交付本来就是 AI 判定的 items_rm（commitProposalWrites
+      // 先落盘），跑到这里再看背包只剩「旗有物无」，挡了会把真交付也误吞；
+      // 交付件还在包里时翻页顺手扣掉（deliver.keep 标记的剧情还回不扣）。
+      const invForGate = [...(state.inv || [])];
+      const invIdx = (wanted) => invForGate.findIndex((entry) => {
+        const n = typeof entry === "string" ? entry : entry?.name;
+        return !!n && (n === wanted || n.includes(wanted) || wanted.includes(n));
+      });
       while (progress.status === "active") {
+        const curStage = getCurrentStage(quest, progress);
+        const delivery = curStage?.deliver;
+        const collectReqs = curStage?.collect ? (Array.isArray(curStage.collect) ? curStage.collect : [curStage.collect]) : [];
+        if (collectReqs.some((c) => c?.item && invIdx(c.item) === -1)) break;
         const result = advanceQuestStages(quest, progress, gameState, now);
         if (!result.advanced) break;
+        if (delivery && !delivery.keep) {
+          const idx = invIdx(delivery.item);
+          if (idx !== -1) {
+            invForGate.splice(idx, 1);
+            consumedDeliveries.push(delivery.item);
+          }
+        }
         progress = result.progress;
         advancedAny = true;
         if (result.completedStage) {
@@ -183,6 +205,19 @@ export const questFlagRule = {
 
     const updates = createUpdateCollector(state);
     if (changed) updates.add("questProgress", next);
+    if (consumedDeliveries.length) {
+      updates.add("inv", (previous) => {
+        let inv = previous || [];
+        for (const wanted of consumedDeliveries) {
+          const idx = inv.findIndex((entry) => {
+            const n = typeof entry === "string" ? entry : entry?.name;
+            return !!n && (n === wanted || n.includes(wanted) || wanted.includes(n));
+          });
+          if (idx !== -1) inv = [...inv.slice(0, idx), ...inv.slice(idx + 1)];
+        }
+        return inv;
+      });
+    }
     for (const rewards of pendingRewards) commitPatches(updates.setters, stageRewardPatches(rewards, now));
 
     if (justCompletedIds.length) {

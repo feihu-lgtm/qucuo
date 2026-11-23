@@ -12,12 +12,15 @@ const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 入参：pickupJudgment/collectGranted/pickupExtractionFailed 均为 ref 的值、
 // 
 // 返回的 changes.room 是多段写回按顺序组合成的单个 updater。
-export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed, innerRoomName }, { trace }) {
+export function commitProposalWrites({ p, isTalk, giftAlreadySettled, deliveredItems, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed, innerRoomName }, { trace }) {
   const out = {};
   const changes = {};
   const roomWrites = [];
   const logs = [];
   const effects = [];
+  // 本轮已确定性结算的交付件（❢ deliver 通道）：AI 的 items_rm/items_add 里
+  // 出现同名一律剔除——rm 会重复扣件，add 会给剧情还回的 keep 件造出第二件。
+  const isSettledItem = (n) => (deliveredItems || []).some((w) => n === w || n.includes(w) || w.includes(n));
 
   if (p.char && !isTalk && !giftAlreadySettled) {
     changes.char = (char) => {
@@ -48,9 +51,10 @@ export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp
     if (p.delta?.items_add?.length && !giftAlreadySettled) {
       // 系统本轮已代发的采集物：即便 AI 又在 items_add 里塞了一份，也剔除，防重复入袋。
       const granted = collectGranted || [];
-      const rawAdds = granted.length
+      const rawAdds = (granted.length
         ? p.delta.items_add.filter(i => !granted.includes(typeof i === "string" ? i : i.name))
-        : p.delta.items_add;
+        : p.delta.items_add
+      ).filter(i => !isSettledItem(typeof i === "string" ? i : i.name || String(i)));
       const newItems = rawAdds.map(i => {
         if (typeof i === "string") return i; // 兼容纯文本物品（杂物/剧情道具，不参与装备系统）
         // 系统裁决：如果本轮有拾取判定在先，第一件结构化物品的品质/分类强制对齐判定结果，
@@ -104,13 +108,17 @@ export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp
   }
   if (p.delta && !isTalk && !giftAlreadySettled) {
     if (p.delta.items_rm?.length) {
-      const names = p.delta.items_rm.map(i => typeof i === 'string' ? i : i.name || String(i));
-      const prevInv = changes.inv;
-      changes.inv = (inv) => {
-        const base = prevInv ? prevInv(inv) : inv;
-        return updateField("inv", (i) => set("inv", i.filter((item) => !names.includes(typeof item === "string" ? item : item.name))))(base);
-      };
-      roomWrites.push((r) => ({ ...r, items: placeGroundItems(r.items, names.map(n => ({ name: n, id: n })), r.name, innerRoomName) }));
+      const names = p.delta.items_rm
+        .map(i => typeof i === 'string' ? i : i.name || String(i))
+        .filter(n => !isSettledItem(n));
+      if (names.length) {
+        const prevInv = changes.inv;
+        changes.inv = (inv) => {
+          const base = prevInv ? prevInv(inv) : inv;
+          return updateField("inv", (i) => set("inv", i.filter((item) => !names.includes(typeof item === "string" ? item : item.name))))(base);
+        };
+        roomWrites.push((r) => ({ ...r, items: placeGroundItems(r.items, names.map(n => ({ name: n, id: n })), r.name, innerRoomName) }));
+      }
     }
     if (p.delta.exp) changes.exp = updateField("exp", add("exp", p.delta.exp));
     if (p.delta.pot) changes.pot = updateField("pot", add("pot", p.delta.pot));

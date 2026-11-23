@@ -93,6 +93,25 @@ describe("quest trigger world rules", () => {
     expect(questFlagRule.run({ flags: firstFlags, questProgress: {}, char: {} })).toBeTruthy();
   });
 
+  it("deliver 阶段 flag 推进不受背包挡——items_rm 先落盘已是交付证据；件还在包里才顺手扣", () => {
+    const base = {
+      flags: ["quest_village2_s1"],
+      char: {},
+      varTree: { 角色: {}, 世界: { 势力声誉: { 鱼定村: 20 } } },
+      questProgress: {
+        village1_lubujianbuping: { status: "completed", currentStageIndex: 2 },
+      },
+    };
+    // 叙事交付路径：AI 判了 items_rm 再吐旗，到这里背包已空——挡了会把真交付误吞
+    const empty = questFlagRule.run({ ...base, inv: [] });
+    expect(empty?.changes?.questProgress?.(base.questProgress)?.village2_jieshixiajiu?.currentStageIndex).toBe(1);
+
+    const withItem = { ...base, inv: [{ name: "糌粑" }] };
+    const result = questFlagRule.run(withItem);
+    expect(result.changes.questProgress(withItem.questProgress).village2_jieshixiajiu?.currentStageIndex).toBe(1);
+    expect(result.changes.inv(withItem.inv)).toEqual([]);
+  });
+
   it("starts the estate tutorial on entry and announces it once", () => {
     expect(estateStartRule.run({ innerRoomName: "村口" })).toBeNull();
     expect(estateStartRule.run({ innerRoomName: "溪边小屋" }).changes.flags([]))

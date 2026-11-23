@@ -68,7 +68,8 @@ export default { quest: {
         playerHint: "上黑风寨去见巴桑，把银锁片交给他。",
         completionFlag: "quest_heifengzhai3_s1",
         at: "黑风寨·寨后岩洞",
-        deliver: { item: "半块银锁片", to: "巴桑" },
+        // keep：巴桑看完把银锁片还给玩家（rewardText），交付不扣背包
+        deliver: { item: "半块银锁片", to: "巴桑", keep: true },
         isCgMoment: true,
         onReach: { exp: 3, favorability: { "巴桑": 20 }, factionRep: { 黑风寨: 5 }, flags: ["lore_heifengzhai_zhenxiang"] },
       },

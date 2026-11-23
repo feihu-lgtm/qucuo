@@ -33,7 +33,8 @@ export default { quest: {
         description: "将剑带回雪山派内堂交给何雨谢。她接过剑没有哭，用袖子擦了擦剑格上的「雪」字：「三十年了，它还是一点锈都没有。你留着——他用过的东西，不该挂在墙上落灰。」",
         playerHint: "把霜天月带回雪山派,交还给何雨谢。",
         completionFlag: "quest_shuangtianyue_s4",
-        deliver: { item: "霜天月", to: "何雨谢" },
+        // keep：何雨谢当场把剑还给玩家（「你留着」），交付不扣背包
+        deliver: { item: "霜天月", to: "何雨谢", keep: true },
         isCgMoment: true,
         onReach: {
           exp: 5,

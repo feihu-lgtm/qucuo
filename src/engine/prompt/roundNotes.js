@@ -3,7 +3,7 @@ import { collectPromptLines } from "../../domain/rules/quests/collect.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../domain/rules/quests/questEngine.js";
 import { getBuildingsForLocation } from "../../domain/data/buildings/qucuoBuildings.js";
-import { hasInnerMap, getDistrictAnchor } from "../../domain/rules/map/innerMap.js";
+import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { roadEncounterFor } from "../../domain/data/encounters/roadEncounters.js";
 import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
 import { activeCompanion, COMPANION_LORE } from "../../domain/rules/companion/companion.js";
@@ -46,12 +46,25 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
     if (quest.id === "hidden_all_collect_line" && !canBypassExclusive({ char, flags })) continue;
     if (prog?.status === "active") {
       const stage = getCurrentStage(quest, prog);
-      if (stage && !atStagePlace(stage, room, innerRoomName)) {
-        // 地点门：玩家没到这一步指定的地点/房内，不给 AI 这一步的 flag——
-        // 否则在别处置问 NPC 都可能让叙事白捡完成（questFlagRule 只看 flag）。
-        noteLines.push(`《${quest.title}》下一步要在${placeLabel(stage)}完成——当前不在其地，不要在 flags_add 加这一阶段的 flag`);
+      // deliver 阶段的"其地"是收件人跟前、交付件还得真在玩家包里——两样不齐
+      // 同样禁吐 flag，不然在发布人那边聊聊天、或两手空空就把交付白捡了
+      // （questFlagRule 只看 flag；实物闸在 ❢/送礼等确定性通道里把着）。
+      const deliver = stage?.deliver;
+      const recipientHere = !deliver || room?.npcs?.some(
+        (n) => n.name === deliver.to && isNpcVisibleInInnerRoom(room.name, innerRoomName, n),
+      );
+      const itemInHand = !deliver || (inv || []).some((e) => {
+        const n = typeof e === "string" ? e : e?.name;
+        return !!n && (n === deliver.item || n.includes(deliver.item) || deliver.item.includes(n));
+      });
+      const atStage = atStagePlace(stage, room, innerRoomName) && recipientHere && itemInHand;
+      if (stage && !atStage) {
+        const where = deliver && !recipientHere ? `${deliver.to}跟前`
+          : deliver && !itemInHand ? `备好「${deliver.item}」之后`
+          : placeLabel(stage);
+        noteLines.push(`《${quest.title}》下一步要在${where}完成——当前不在其地，不要在 flags_add 加这一阶段的 flag`);
       }
-      if (stage && atStagePlace(stage, room, innerRoomName)) {
+      if (stage && atStage) {
         // 有 choices 的阶段，flag 由系统发（玩家在任务面板点选/打赢/说服），
         // AI 代吐会绕过真实战斗或分支——只给场景，明确别吐 flag。
         // 例外：questTriggerMode=script 时抉择本来就走叙事（点选只是发一句对白，

@@ -125,7 +125,7 @@ export function commitRound(d) {
     mapData: d.mapData, pendDir: d.refGet("pendDirRef"), freshNpcData: d.freshNpcData,
   }, { traceStep: (...args) => traceStep(d._trace, ...args) }));
   applyPostResult(d, commitProposalWrites({ // AI 提议落盘：char/dao/物品/经验/潜能/技能
-    p: d.p, isTalk: d.isTalk, giftAlreadySettled: d.giftAlreadySettled,
+    p: d.p, isTalk: d.isTalk, giftAlreadySettled: d.giftAlreadySettled, deliveredItems: d.deliveredItems,
     preserveHp: d.preserveHp, gm: d.gm,
     pickupJudgment: d.refGet("pickupJudgmentRef"), collectGranted: d.refGet("collectGrantedRef"),
     pickupExtractionFailed: d.refGet("pickupExtractionFailedRef"),
