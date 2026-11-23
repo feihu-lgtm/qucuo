@@ -19,7 +19,9 @@ const SCREEN = readFileSync(join(HERE, "CardImportScreen.jsx"), "utf-8");
 const REVIEW = ["ReviewPane.jsx", "ReviewWizard.jsx", "ReviewRoster.jsx"]
   .map(f => readFileSync(join(HERE, "cards", f), "utf-8")).join("\n");
 const NPC = readFileSync(join(HERE, "cards", "CarryPicker.jsx"), "utf-8");
-const PARTS = readFileSync(join(HERE, "cards", "widgets.jsx"), "utf-8");
+// widgets.jsx 已按层拆成四个文件（meta/chrome/fields/term），锚点跟代码走，拼起来查。
+const PARTS = ["widgetsMeta.js", "widgetsChrome.jsx", "widgetsFields.jsx", "widgetsTerm.jsx"]
+  .map(f => readFileSync(join(HERE, "cards", f), "utf-8")).join("\n");
 
 describe("随身物选择器必须能选到整本百物录", () => {
   it("百物录规模够大，值得筛而不是硬截", () => {
