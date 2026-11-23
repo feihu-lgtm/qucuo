@@ -1,4 +1,4 @@
-import { callModel, callModelStream, loadConfig, hasApiCredentials, parseRetryAfter } from "./apiConfig.js";
+import { callModel, callModelStream, loadConfig, hasApiCredentials, parseRetryAfter } from "../../infra/apiConfig.js";
 import { cleanJsonString } from "../../utils/jsonClean.js";
 import { observeAi, observed } from "../../infra/observeAi.js";
 
