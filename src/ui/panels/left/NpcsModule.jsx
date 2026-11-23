@@ -4,12 +4,13 @@ import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { OVERLAY, openOverlay, useOverlay } from "../../../store/uiStore.js";
 import {
   useSessionUi, setPigeonTarget, setInteractMode,
-  setActiveNpcMenu, setCharacterPageTarget,
+  setActiveNpcMenu, setCharacterPageTarget, setPeoplePanel,
 } from "../../../store/sessionUiStore.js";
 import NpcAngerLine from "../NpcAngerLine.jsx";
 
-export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, peoplePanel, setPeoplePanel, char, addLog, inputRef, uiGreen, uiPink }) {
+export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, char, addLog, inputRef, uiGreen, uiPink }) {
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
+  const peoplePanel = useSessionUi(s => s.peoplePanel);
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const present = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
   const crowd = (room.crowd || []).filter(c => !c.innerRoom || !innerRoomName || c.innerRoom === innerRoomName).map(c => c.label);

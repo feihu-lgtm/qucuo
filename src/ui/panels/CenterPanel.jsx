@@ -8,7 +8,7 @@ import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiSt
 import { gameActions, useGameStore } from "../../store/gameStore.js";
 import {
   useSessionUi, setInteractMode, setActiveBuilding, setTradingShop,
-  setBuildingPanelMinimized,
+  setBuildingPanelMinimized, setCollapsedGroups,
 } from "../../store/sessionUiStore.js";
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
@@ -32,9 +32,10 @@ function ScreenFallback({ zoneTheme }) {
 export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNote, setVarTree }) {
   const {
     zoneTheme, S,
-    isDayMode, clr, collapsedGroups, setCollapsedGroups,
+    isDayMode, clr,
     logEnd,
   } = ui;
+  const collapsedGroups = useSessionUi(s => s.collapsedGroups);
   const isMobile = useSessionUi(s => s.isMobile);
   const mobileColumn = useSessionUi(s => s.mobileColumn);
   const loading = useSessionUi(s => s.loading);

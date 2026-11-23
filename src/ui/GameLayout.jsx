@@ -54,6 +54,7 @@ export default function GameLayout({ layout }) {
   const activeBuilding = useSessionUi(s => s.activeBuilding);
   const tradingShop = useSessionUi(s => s.tradingShop);
   const duelPending = useSessionUi(s => s.duelPending);
+  const mapBig = useSessionUi(s => s.mapBig);
 
   useEffect(() => {
     const content = {
@@ -157,9 +158,7 @@ export default function GameLayout({ layout }) {
           zoneTheme={zoneTheme} S={ui.S}
           room={room} innerRoomName={innerRoomName} time={time}
           varTree={varTree} char={char}
-          peoplePanel={ui.peoplePanel} setPeoplePanel={ui.setPeoplePanel}
           inputRef={ui.inputRef} addLog={addLog}
-          mapView={ui.mapView} setMapView={ui.setMapView} mapBig={ui.mapBig} setMapBig={ui.setMapBig}
           mapData={mapData} questProgress={questProgress} flags={flags} inv={inv}
           inSeaOfMind={derived.inSeaOfMind} seaGate={derived.seaGate}
           enterSeaOfMind={playerActionHandlers.enterSeaOfMind} leaveSeaOfMind={playerActionHandlers.leaveSeaOfMind}
@@ -191,12 +190,9 @@ export default function GameLayout({ layout }) {
       {isMobile && <MobileTabBar theme={zoneTheme} column={mobileColumn} onSelect={setMobileColumn}
         leftFaces={leftFaces} rightFaces={rightFaces} />}
 
-      {ui.mapBig && (
+      {mapBig && (
         <Suspense fallback={null}>
           <BigMapModal
-            mapView={ui.mapView}
-            setMapBig={ui.setMapBig}
-            mapBigCloseGuard={ui.mapBigCloseGuard}
             zoneTheme={zoneTheme}
             act={turn.act}
             autoTravelTo={turn.autoTravelTo}
