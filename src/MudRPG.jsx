@@ -222,7 +222,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     dispatchCommand,
   }));
   const progressionHandlers = commandScheduler.wrapHandlers("useProgressionHandlers", useProgressionHandlers({
-    loading, noteAction, featureCtxRef, setJustMeditated, captureUndo,
+    loading, noteAction, setJustMeditated, captureUndo,
   }));
   const { confessToNarrator } = progressionHandlers;
 
@@ -253,7 +253,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setPendingQuestBranch, setConvo, jotNote, setLog, intentRouterRef,
   });
   const questPanel = commandScheduler.wrapHandlers("useQuestPanel", useQuestPanel({
-    act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc, captureUndo,
+    act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc, captureUndo,
     setActivePersuasion, setInteractMode, setTalkTarget, setPersuasionProgress, setChar,
   }));
 
@@ -271,7 +271,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   usePigeonReplies({ apiCfg, applyPigeonResult, featureCtxRef });
 
   const duelHandlers = commandScheduler.wrapHandlers("useDuel", useDuel({
-    act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
+    act, addLog, duelPending, setActiveTarget, setDuelPending, setDuelingNpc,
     duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
     captureUndo, turnGenerationRef, interactMode,
   }));
@@ -309,7 +309,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 用 effect 而不是塞进对话结算里，是因为两个条件可能任意顺序满足：先攒够好感再去
   // 见她、或先见过她后来才攒够，两条路都要能触发。
   const playerActionHandlers = commandScheduler.wrapHandlers("usePlayerActionHandlers", usePlayerActionHandlers({
-    featureCtxRef, noteAction, setInnerRoomName, seaReturnRef, captureUndo,
+    noteAction, setInnerRoomName, seaReturnRef, captureUndo,
   }));
 
   const onKey = createInputKeyHandler({

@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { forceAdvanceQuest as forceAdvanceQuestFeature, playLocalQuestStage } from "../../features/quest/logic.js";
@@ -39,7 +40,7 @@ export function runQuestChoice(ctx, entry, choice) {
 async function resolveQuestChoice({
   act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
   setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
-  featureCtxRef,
+  
 }, entry, pickedChoice) {
   const { quest, stage } = entry;
   let choice = pickedChoice;
@@ -49,7 +50,7 @@ async function resolveQuestChoice({
     if (!choice || !isQuestChoiceOpen(choice, state)) return;
     if (choice.resolve !== "combat") {
       captureUndo();
-      return applyResult(featureCtxRef.current, playLocalQuestStage(state, quest, choice.label));
+      return applyResult(featureCtx(), playLocalQuestStage(state, quest, choice.label));
     }
   }
   captureUndo();
@@ -93,19 +94,19 @@ async function resolveQuestChoice({
 }
 
 export function useQuestPanel({
-  act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc,
+  act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
   setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, setPersuasionProgress, setChar,
 }) {
-  const forceAdvanceQuest = useCallback((quest, targetFlag) => applyResult(featureCtxRef.current, () => {
+  const forceAdvanceQuest = useCallback((quest, targetFlag) => applyResult(featureCtx(), () => {
     captureUndo();
-    applyResult(featureCtxRef.current, forceAdvanceQuestFeature(gameStore.getState(), quest, targetFlag));
-  }, { feature: "quest.advance" }), [captureUndo, featureCtxRef]);
+    applyResult(featureCtx(), forceAdvanceQuestFeature(gameStore.getState(), quest, targetFlag));
+  }, { feature: "quest.advance" }), [captureUndo]);
 
-  const triggerQuestFromPanel = useCallback((entry) => applyResult(featureCtxRef.current, async () => {
+  const triggerQuestFromPanel = useCallback((entry) => applyResult(featureCtx(), async () => {
     const { quest, stage, isNewlyGiven } = entry;
     if (quest.localOnly) {
       captureUndo();
-      return applyResult(featureCtxRef.current, playLocalQuestStage(gameStore.getState(), quest));
+      return applyResult(featureCtx(), playLocalQuestStage(gameStore.getState(), quest));
     }
     // 收件人在场而发布人不在 = 玩家站在交付点上——叙事/台词都应该写交付，
     // 不是又去问发布人（村2 在老孙饭馆点 ❢ 曾让旁白演才旦的戏）。
@@ -177,19 +178,19 @@ export function useQuestPanel({
         deliveredItems: delivery ? [delivery.item] : undefined,
       },
     );
-  }, { feature: "quest.trigger" }), [act, apiCfg, forceAdvanceQuest, addLog, captureUndo, featureCtxRef]);
+  }, { feature: "quest.trigger" }), [act, apiCfg, forceAdvanceQuest, addLog, captureUndo]);
 
   const triggerQuestChoice = useCallback((entry, choice) => runQuestChoice({
     act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
-    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest, featureCtxRef,
+    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
   }, entry, choice), [
     act, apiCfg, addLog, setPendingQuestBranch, setDuelingNpc,
-    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest, featureCtxRef,
+    setActivePersuasion, setInteractMode, setTalkTarget, captureUndo, forceAdvanceQuest,
   ]);
 
-  const savePersuasionProgress = useCallback((key, progress) => applyResult(featureCtxRef.current, () => {
+  const savePersuasionProgress = useCallback((key, progress) => applyResult(featureCtx(), () => {
     setPersuasionProgress(m => ({ ...m, [key]: progress }));
-  }, { feature: "quest.persuasionProgress" }), [featureCtxRef, setPersuasionProgress]);
+  }, { feature: "quest.persuasionProgress" }), [setPersuasionProgress]);
 
   const finishPersuasion = useCallback((active, result) => settlePersuasion({
     setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog,
