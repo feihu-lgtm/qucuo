@@ -4,6 +4,9 @@ import MusicPanel from "./screens/MusicPanel.jsx";
 import { getHomestead } from "../domain/rules/map/homestead.js";
 import GlobalOverlays from "./panels/GlobalOverlays.jsx";
 import { OVERLAY, closeOverlay, openOverlay } from "../store/uiStore.js";
+import {
+  useSessionUi, setApiCfg, setSettingsInitialTab, setUiScale, setFont,
+} from "../store/sessionUiStore.js";
 
 const SettingsPanel = lazy(() => import("./screens/SettingsPanel.jsx"));
 const BodyProfilePanel = lazy(() => import("./screens/BodyProfilePanel.jsx"));
@@ -12,6 +15,11 @@ const CharacterCreate = lazy(() => import("./screens/CharacterCreate.jsx"));
 const OpeningSequence = lazy(() => import("./screens/OpeningSequence.jsx"));
 
 export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
+  const apiCfg = useSessionUi(s => s.apiCfg);
+  const settingsInitialTab = useSessionUi(s => s.settingsInitialTab);
+  const uiScale = useSessionUi(s => s.uiScale);
+  const font = useSessionUi(s => s.font);
+  const nsfwOn = useSessionUi(s => s.nsfwOn);
   const closeSettings = () => {
     closeOverlay(OVERLAY.SETTINGS);
     onCloseInitialSettings?.();
@@ -21,20 +29,20 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
       <Suspense>
         <SettingsPanel
           onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
-          cfg={ctx.apiCfg}
-          setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
+          cfg={apiCfg}
+          setCfg={(update) => ctx.dispatchCommand("settings", () => setApiCfg(update))}
           dispatchCommand={ctx.dispatchCommand}
           onClose={closeSettings}
           currentSnapshot={ctx.buildCurrentSnapshot}
           onLoadSnapshot={ctx.applySnapshot}
           varTree={ctx.varTree}
           setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
-          initialTab={ctx.settingsInitialTab}
-          onSelectTab={ctx.setSettingsInitialTab}
-          uiScale={ctx.uiScale}
-          setUiScale={ctx.setUiScale}
-          font={ctx.font}
-          setFont={ctx.setFont}
+          initialTab={settingsInitialTab}
+          onSelectTab={setSettingsInitialTab}
+          uiScale={uiScale}
+          setUiScale={setUiScale}
+          font={font}
+          setFont={setFont}
           zoneTheme={ctx.zoneTheme}
           narrator={ctx.narrator}
           setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
@@ -82,20 +90,20 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
         <Suspense>
           <SettingsPanel
             onOpenCardImport={() => { closeOverlay(OVERLAY.SETTINGS); openOverlay(OVERLAY.CARD_IMPORT); }}
-            cfg={ctx.apiCfg}
-            setCfg={(update) => ctx.dispatchCommand("settings", () => ctx.setApiCfg(update))}
+            cfg={apiCfg}
+            setCfg={(update) => ctx.dispatchCommand("settings", () => setApiCfg(update))}
             dispatchCommand={ctx.dispatchCommand}
             onClose={closeSettings}
             currentSnapshot={ctx.buildCurrentSnapshot}
             onLoadSnapshot={ctx.applySnapshot}
             varTree={ctx.varTree}
             setVarTree={(update) => ctx.dispatchCommand("settings", () => ctx.setVarTree(update))}
-            initialTab={ctx.settingsInitialTab}
-            onSelectTab={ctx.setSettingsInitialTab}
-            uiScale={ctx.uiScale}
-            setUiScale={ctx.setUiScale}
-            font={ctx.font}
-            setFont={ctx.setFont}
+            initialTab={settingsInitialTab}
+            onSelectTab={setSettingsInitialTab}
+            uiScale={uiScale}
+            setUiScale={setUiScale}
+            font={font}
+            setFont={setFont}
             zoneTheme={ctx.zoneTheme}
             narrator={ctx.narrator}
             setNarrator={(update) => ctx.dispatchCommand("settings", () => ctx.setNarrator(update))}
@@ -110,7 +118,7 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
             onChange={ctx.handleBodyProfileChange}
             onClose={() => closeOverlay(OVERLAY.BODY)}
             zoneTheme={ctx.zoneTheme}
-            nsfwOn={ctx.nsfwOn}
+            nsfwOn={nsfwOn}
             onRecommend={ctx.recommendOutfit}
             recommendState={ctx.outfitState}
           />

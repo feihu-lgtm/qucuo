@@ -15,6 +15,9 @@ import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../../utils/version.js";
 import { getState as getMusicState, subscribe as subscribeMusic } from "../../infra/musicPlayer.js";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
+import {
+  useSessionUi, setGm, setIsDayMode, setMobileTopMenu, setSettingsInitialTab,
+} from "../../store/sessionUiStore.js";
 import TurnStatusPill from "../components/TurnStatusPill.jsx";
 
 // 回合控制（停止/回滚）：桌面在中栏标题行，手机并入顶栏同一行
@@ -33,7 +36,8 @@ export function TurnControls({ theme, loading, stopRunning, rollbackBlocked, rol
 }
 
 // 调试开关：桌面在中栏标题行，手机收进「☰ 菜单」
-export function DevControls({ theme, gm, setGm, addLog }) {
+export function DevControls({ theme, addLog }) {
+  const gm = useSessionUi(s => s.gm);
   const showDebug = useOverlay(OVERLAY.DEBUG);
   return (
     <>
@@ -48,15 +52,16 @@ export function VersionHistoryButton({ theme }) {
 }
 
 export default function TopBar({
-  isMobile, mobileTopMenu, setMobileTopMenu,
-  zoneTheme, isDayMode, setIsDayMode,
-  setSettingsInitialTab,
+  zoneTheme,
   dispatchCommand,
   autoSaveError, lastAutoSave,
   playerAvatarCustom, setPlayerAvatarCustom,
   AV_BASE, genderAvatar,
-  turnControls, gm, setGm, addLog,
+  turnControls, addLog,
 }) {
+  const isMobile = useSessionUi(s => s.isMobile);
+  const mobileTopMenu = useSessionUi(s => s.mobileTopMenu);
+  const isDayMode = useSessionUi(s => s.isDayMode);
   const openSettings = (tab) => dispatchCommand
     ? dispatchCommand("settings", () => {
       setSettingsInitialTab(tab);
@@ -96,7 +101,7 @@ export default function TopBar({
           alignItems: "center", gap: 8, flexWrap: "wrap", rowGap: 8,
           width: isMobile ? "100%" : "auto", flex: isMobile ? "none" : 1,
         }}>
-        {isMobile && setGm && <DevControls theme={zoneTheme} gm={gm} setGm={setGm} addLog={addLog} />}
+        {isMobile && <DevControls theme={zoneTheme} addLog={addLog} />}
         {isMobile && <span className="qbtn" onClick={() => openOverlay(OVERLAY.TRACE)} style={topBtn()}>日志</span>}
         <span
           className="qbtn"

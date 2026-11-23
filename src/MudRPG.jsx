@@ -36,7 +36,7 @@ import { addLog as runtimeAddLog } from "./app/runtime/gameRuntime.js";
 import { useWorldRulesRunner } from "./app/hooks/useWorldRulesRunner.js";
 import { DEFAULT_PRESETS } from "./engine/newGame.js";
 import { selectEffectiveStats } from "./features/stats/logic.js";
-import { hasApiCredentials, saveConfig } from "./infra/apiConfig.js";
+import { hasApiCredentials } from "./infra/apiConfig.js";
 import { chromeBtn } from "./utils/theme.js";
 
 export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings = false, onReturnToStart } = {}) {
@@ -79,7 +79,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     setQueueCount, gm, setGm, setIsMobile, setMobileTopMenu,
     interactMode, setInteractMode, talkTarget, setTalkTarget, activeTarget, setActiveTarget,
     activeGroundItem,
-    nsfwOn, setOutfitState, pigeonTarget, setPigeonTarget, apiCfg, uiScale, font, isDayMode,
+    nsfwOn, setOutfitState, pigeonTarget, setPigeonTarget, apiCfg,
     cmdHistory, setCmdHistory, histIdx, setHistIdx, forcedDuelNpc, setForcedDuelNpc,
     duelingNpc, setDuelingNpc, duelPending, setDuelPending, pendingQuestBranch,
     setPendingQuestBranch,
@@ -124,11 +124,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const queueTimerRef = useRef(null);
   const roomMapRef = useRef(restored?.snap.roomMap || { [(restored?.snap.room || DEFAULT_PRESETS[0].room).name]: { items: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).items], npcs: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).npcs] } });
 
-  // API 配置变更时持久化到 localStorage
-  useEffect(() => { saveConfig(apiCfg); }, [apiCfg]);
-  useEffect(() => { localStorage.setItem("wuxia_mud_ui_scale", String(uiScale)); }, [uiScale]);
-  useEffect(() => { localStorage.setItem("wuxia_mud_ui_font", font); }, [font]);
-  useEffect(() => { localStorage.setItem("wuxia_mud_day_mode", isDayMode ? "1" : "0"); }, [isDayMode]);
+  // apiCfg/uiScale/font/isDayMode 的持久化已收编进 sessionUiStore（PR-2C）。
 
   const autosave = useAutosave({
     apiCfg, loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets, setGm, setVarTree,

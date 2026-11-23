@@ -2,7 +2,7 @@ import CenterControlRows from "../CenterControlRows.jsx";
 import { useGameStore } from "../../../store/gameStore.js";
 import {
   useSessionUi, setInteractMode, setActiveTarget, setTalkTarget,
-  setActiveGroundItem, setPigeonTarget, setInput,
+  setActiveGroundItem, setPigeonTarget, setInput, setNsfwOn,
 } from "../../../store/sessionUiStore.js";
 import { isQuestChoiceOpen } from "../../../domain/rules/quests/questEngine.js";
 
@@ -14,10 +14,13 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
   const varTree = useGameStore(s => s.varTree);
   const inv = useGameStore(s => s.inv);
   const {
-    isMobile, mobileColumn, zoneTheme,
-    availableQuestsHere, nsfwOn, setNsfwOn,
+    zoneTheme,
+    availableQuestsHere,
     inputRef, composingRef,
   } = ui;
+  const isMobile = useSessionUi(s => s.isMobile);
+  const mobileColumn = useSessionUi(s => s.mobileColumn);
+  const nsfwOn = useSessionUi(s => s.nsfwOn);
   const loading = useSessionUi(s => s.loading);
   const pendingTalks = useSessionUi(s => s.pendingTalks);
   const waitSecs = useSessionUi(s => s.waitSecs);

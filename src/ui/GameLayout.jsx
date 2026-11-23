@@ -6,7 +6,7 @@ import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";
 import { didOpenCenterContent } from "../utils/mobileColumn.js";
 import { OVERLAY, useOverlay } from "../store/uiStore.js";
 import { gameActions, useGameStore } from "../store/gameStore.js";
-import { useSessionUi, setInteractMode } from "../store/sessionUiStore.js";
+import { useSessionUi, setInteractMode, setMobileColumn } from "../store/sessionUiStore.js";
 
 const BigMapModal = lazy(() => import("./components/BigMapModal.jsx"));
 
@@ -42,7 +42,10 @@ export default function GameLayout({ layout }) {
   const previousCenterContent = useRef(null);
   const narrativeView = useRef({ visible: false, log: null });
 
-  const { isMobile, mobileColumn, setMobileColumn, zoneTheme, logEnd } = ui;
+  const { zoneTheme, logEnd } = ui;
+  const isMobile = useSessionUi(s => s.isMobile);
+  const mobileColumn = useSessionUi(s => s.mobileColumn);
+  const uiScale = useSessionUi(s => s.uiScale);
 
   const interactMode = useSessionUi(s => s.interactMode);
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
@@ -134,18 +137,16 @@ export default function GameLayout({ layout }) {
   return (
     <div
       className="game-layout"
-      style={{ "--ui-scale": ui.uiScale, display: "flex", flexDirection: "column", height: `${100 / ui.uiScale}vh`, width: `${100 / ui.uiScale}vw`, zoom: ui.uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
+      style={{ "--ui-scale": uiScale, display: "flex", flexDirection: "column", height: `${100 / uiScale}vh`, width: `${100 / uiScale}vw`, zoom: uiScale, background: zoneTheme.bg, color: zoneTheme.text, fontFamily: "var(--font-body)", fontSize: "12.5px", overflow: "hidden", transition: "background 1.2s ease, color 1.2s ease" }}
     >
       <TopBar
-        isMobile={isMobile} mobileTopMenu={ui.mobileTopMenu} setMobileTopMenu={ui.setMobileTopMenu}
-        zoneTheme={zoneTheme} isDayMode={ui.isDayMode} setIsDayMode={ui.setIsDayMode}
-        setSettingsInitialTab={ui.setSettingsInitialTab}
+        zoneTheme={zoneTheme}
         dispatchCommand={turn.dispatchCommand}
         autoSaveError={autosave.autoSaveError} lastAutoSave={autosave.lastAutoSave}
         playerAvatarCustom={ui.playerAvatarCustom} setPlayerAvatarCustom={ui.setPlayerAvatarCustom}
         AV_BASE={ui.AV_BASE} genderAvatar={ui.genderAvatar}
         turnControls={{ loading, stopRunning: turn.stopRunning, rollbackBlocked: turn.rollbackBlocked, rollbackOneStep: turn.rollbackOneStep }}
-        gm={ui.gm} setGm={ui.setGm} addLog={addLog}
+        addLog={addLog}
       />
 
       {overlayHost}
@@ -157,8 +158,6 @@ export default function GameLayout({ layout }) {
           room={room} innerRoomName={innerRoomName} time={time}
           varTree={varTree} char={char}
           peoplePanel={ui.peoplePanel} setPeoplePanel={ui.setPeoplePanel}
-          setActiveNpcMenu={ui.setActiveNpcMenu}
-          setCharacterPageTarget={ui.setCharacterPageTarget}
           inputRef={ui.inputRef} addLog={addLog}
           mapView={ui.mapView} setMapView={ui.setMapView} mapBig={ui.mapBig} setMapBig={ui.setMapBig}
           mapData={mapData} questProgress={questProgress} flags={flags} inv={inv}
@@ -182,10 +181,8 @@ export default function GameLayout({ layout }) {
           trainNeigong={progressionHandlers.trainNeigong} trainWaigong={progressionHandlers.trainWaigong} trainCost={trainCost}
           effectiveSpecialNow={turn.effectiveSpecialNow} activeBuffs={activeBuffs}
           varTree={varTree}
-          setActiveNpcMenu={ui.setActiveNpcMenu}
           setSkills={setSkills} inspectItem={aiInspect.inspectItem} inspecting={aiInspect.inspecting}
           breakthroughSkill={progressionHandlers.breakthroughSkill}
-          setActiveItemMenu={ui.setActiveItemMenu}
           narrator={narrator} confessToNarrator={progressionHandlers.confessToNarrator}
           setInv={setInv}
         />

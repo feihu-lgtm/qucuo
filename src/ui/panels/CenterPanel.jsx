@@ -31,10 +31,12 @@ function ScreenFallback({ zoneTheme }) {
 
 export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNote, setVarTree }) {
   const {
-    isMobile, mobileColumn, zoneTheme, S, gm, setGm,
+    zoneTheme, S,
     isDayMode, clr, collapsedGroups, setCollapsedGroups,
     logEnd,
   } = ui;
+  const isMobile = useSessionUi(s => s.isMobile);
+  const mobileColumn = useSessionUi(s => s.mobileColumn);
   const loading = useSessionUi(s => s.loading);
   const queueCount = useSessionUi(s => s.queueCount);
   const pendingTalks = useSessionUi(s => s.pendingTalks);
@@ -102,7 +104,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
         <span>江湖</span>
         <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <TurnControls theme={zoneTheme} loading={loading} stopRunning={turn.stopRunning} rollbackBlocked={turn.rollbackBlocked} rollbackOneStep={turn.rollbackOneStep} />
-          <DevControls theme={zoneTheme} gm={gm} setGm={setGm} addLog={addLog} />
+          <DevControls theme={zoneTheme} addLog={addLog} />
         </span>
       </div>
 
