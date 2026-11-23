@@ -1,5 +1,5 @@
 // 青城派青4、青5（终局拉拢）与三条支线（合稿·青城派 四）。
-// 青4 接 #258 的青3（qingcheng_3_jianyue）；合稿声誉 140 的门槛按声誉上限改 100。
+// 青4 接 PR258 的青3（qingcheng_3_jianyue）；合稿声誉 140 的门槛按声誉上限改 100。
 const item = (name) => ({ name, fromCatalog: true });
 const at = (inner) => ({ district: "雅江", inner });
 const QC = "青城派";

@@ -29,7 +29,7 @@ const IDS = [
 ];
 
 describe("唐门任务线（唐2～唐5、唐支1～3）", () => {
-  it("registers every quest with #237 rep gates no higher than 100", () => {
+  it("registers every quest with PR237 rep gates no higher than 100", () => {
     for (const id of IDS) {
       const quest = find(id);
       expect(quest, id).toBeTruthy();

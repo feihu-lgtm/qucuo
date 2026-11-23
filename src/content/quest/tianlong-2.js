@@ -1,4 +1,4 @@
-// 天龙八部护法戏份：夜叉姬无双、阿修罗樊未离各一条支线。门槛用顶层 requiresFactionRep（#237 写法）。
+// 天龙八部护法戏份：夜叉姬无双、阿修罗樊未离各一条支线。门槛用顶层 requiresFactionRep（PR237 写法）。
 export default { quest: {
   tianlong_z1_yechaxiyan: {
     id: "tianlong_z1_yechaxiyan",
