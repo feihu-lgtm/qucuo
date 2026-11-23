@@ -14,6 +14,7 @@ import { wuyin } from "./wuyin.js";
 import { heifeng } from "./heifeng.js";
 import { dacaodian } from "./dacaodian.js";
 import { tianlongying } from "./tianlongying.js";
+import { baita } from "./baita.js";
 
 export const BUILDINGS_BY_LOCATION = {
   蜀南唐堡: shunanTangbao,
@@ -22,6 +23,7 @@ export const BUILDINGS_BY_LOCATION = {
   鱼定村: yudingCun,
   后山平台: houshan,
   喇嘛庙: lamamiao,
+  白塔: baita,
   天都镇: tiandu,
   玉泉寨: yuquan,
   雪山派: xueshan,

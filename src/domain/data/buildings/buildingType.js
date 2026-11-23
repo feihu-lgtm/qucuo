@@ -30,6 +30,7 @@ export const BUILDING_TYPE = {
   KITCHEN: "kitchen",         // 烹饪台：六格槽位（料×4+技法+炊具）自炊出 buff
   CHEST: "chest",             // 库房木箱：存取物件（开局预填全套食材+调味料）
   FESTIVAL: "festival",       // 盛会会场：跑马大会赛程/下注/同游/夜话/子夜之变
+  DUNGEON: "dungeon",         // 地宫探险：多层级节点探索与守卫切磋
 };
 
 export const BUILDING_TYPE_LABEL = {
@@ -41,7 +42,7 @@ export const BUILDING_TYPE_LABEL = {
   theater: "戏楼", teahouse: "茶馆", sectshop: "门派商坊", gamblestone: "玉石料场",
   pigeon_coop: "鸽子笼",
   sect_entry: "拜师堂", auction: "拍卖行", kitchen: "烹饪台", chest: "库房",
-  festival: "盛会",
+  festival: "盛会", dungeon: "地宫",
 };
 
 // 各据点建筑清单

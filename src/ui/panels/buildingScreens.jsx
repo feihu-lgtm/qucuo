@@ -6,6 +6,7 @@
 // 新建筑只需在本表登记一行。行为与原先逐分支一致（含 ESCORT.shopKey、
 // craft 现货/定制页签这类同类型多屏的分支）。
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
+import { Suspense, lazy } from "react";
 import { chromeBtn } from "../../utils/theme.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
@@ -35,6 +36,8 @@ import AuctionScreen from "../screens/buildings/AuctionScreen.jsx";
 import CookingScreen from "../screens/buildings/CookingScreen.jsx";
 import ChestScreen from "../screens/buildings/ChestScreen.jsx";
 import FestivalScreen from "../screens/buildings/FestivalScreen.jsx";
+
+const DungeonScreen = lazy(() => import("../screens/dungeon/DungeonScreen.jsx"));
 
 // 既卖现货又接定制的铺子（SHOP 族 + craft 字段）：现货/定制页签切换。
 function shopWithCraftScreen(c, shopData, trading) {
@@ -205,6 +208,24 @@ export const BUILDING_SCREENS = {
       zoneTheme={c.zoneTheme} onClose={c.closeBuilding} />
   ),
   [BUILDING_TYPE.ESCORT]: escortScreen,
+  [BUILDING_TYPE.DUNGEON]: (c) => (
+    <Suspense fallback={null}>
+      <DungeonScreen
+        building={c.building}
+        char={c.char}
+        inv={c.inv}
+        skills={c.skills}
+        effectiveSpecialNow={c.effectiveSpecialNow}
+        zoneTheme={c.zoneTheme}
+        onClose={c.closeBuilding}
+        inline
+        addLog={c.addLog}
+        jotNote={c.jotNote}
+        captureUndo={c.captureUndo}
+        runCommand={c.runCommand}
+      />
+    </Suspense>
+  ),
 };
 
 // 现货商店族：8 种商店类型共用同一块 TradingScreen（含 craft 定制页签）。

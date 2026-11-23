@@ -23,6 +23,7 @@ export default { district: {
         desc: "塔基地下的隐秘空间，守塔僧团驻守，任务16\"分赃规矩\"、守宫砂辅料收集地。",
         exits: { n: "塔基" },
         unlockCondition: { type: "flag", flag: "white_pagoda_crypt_clue" },
+        buildingId: "baita_crypt_entrance",
       },
     },
   }
