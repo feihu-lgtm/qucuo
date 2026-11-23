@@ -26,26 +26,40 @@ import { applySquareOps, registerRuntime } from "../runtime/gameRuntime.js";
 // 例外路径（不进四段）：whisper 私聊旁白走 talkToNarrator 旁路；本地命令、
 // META_QUERY、内层移动、格子命中等由 resolveIntent 判 { proceed:false } 就地了结。
 export function useTurn({
-  loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
-  addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, setActiveTarget, setDuelPending,
-  nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
-  turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
+  loading, gm, apiCfg, interactMode, activeTarget, activeGroundItem, talkTarget,
+  pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow,
+  talkToNarrator, changePendingTalks, lastMoveRef, captureUndo,
+  turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setInput, setLoading,
   waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
-  noteAction, roomMapRef, questProgress, innerRoomName, setRoom, setInv, collectGrantedRef,
+  noteAction, roomMapRef, collectGrantedRef,
   autoTravelRef, clearRouteQueue, setCommandPhase, dispatchCommand,
-  outerDepartRef, varTreeRef, pickupJudgmentRef, pickupExtractionFailedRef,
+  outerDepartRef, pickupJudgmentRef, pickupExtractionFailedRef,
   prerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
-  timeRef, talkTarget, companionState, pendingQuestBranch, effectiveSpecialNow, setVarTree,
-  setGambleNegotiation, setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
-  setPendingQuestBranch, setConvo, jotNote, setLog, intentRouterRef,
+  setVarTree, setGambleNegotiation, setActiveTarget, setDuelPending,
+  setPendingQuestBranch, jotNote, intentRouterRef, addLog: addLogProp,
 }) {
+  // Store 直读（路线一）：游戏状态字段在回调内 gameStore.getState() 现取进 env.state；
+  // 各 setter 写走 gameActions；varTreeRef/timeRef 退化为以 store 为源的读写 shim
+  // 透给 env.refs（varTree 真正的写仍走传入的 setVarTree——Worker 4 收口前不动）。
+  const { setLog, setConvo, setTime, setFlags, setInv, setRoom, setChar, setDao, setExp, setPot, setSkills, setMapData } = gameActions;
+  // 缺省走 gameActions（路线一）；测试可直接注入自己的 addLog。
+  const addLog = useCallback(addLogProp || ((lines) => setLog((p) => [...p, ...lines])), [addLogProp]);
+  const varTreeRef = useMemo(() => ({
+    get current() { return gameStore.getState().varTree ?? {}; },
+    set current(v) { gameActions.setVarTreeState(v); },
+  }), []);
+  const timeRef = useMemo(() => ({
+    get current() { return gameStore.getState().time ?? 0; },
+    set current(v) { gameActions.setTime(v); },
+  }), []);
   const actRef = useRef(null);
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
     if (!rawCmd.trim()) return;
     if (!opts.schedulerManaged) {
       const commandText = rawCmd.trim();
       const isTalkCommand = interactMode === "talk" && !opts.forceLayer;
-      const localCommand = isTalkCommand ? null : parseLocalCommand(commandText, { ...gameStore.getState(), isTalk: isTalkCommand, convo }, { surface: "web" });
+      const st0 = gameStore.getState();
+      const localCommand = isTalkCommand ? null : parseLocalCommand(commandText, { ...st0, isTalk: isTalkCommand, convo: st0.convo }, { surface: "web" });
       const commandId = classifyActCommand({ rawCmd: commandText, opts, interactMode, localCommand, isMove: !!parseDir(commandText) });
       setInput("");
       return dispatchCommand(commandId, () => actRef.current(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: opts.displayCmd || commandText });
@@ -103,10 +117,9 @@ export function useTurn({
       cmd, opts, extraReplies, interactMode, apiCfg, gm, _trace, isStale,
       pending: snapshotIntentPending(),
       state: {
-        room, char, inv, skills, dao, exp, pot, flags, mapData, time, convo,
-        questProgress, pendingQuestBranch, innerRoomName, activeTarget,
-        activeGroundItem, talkTarget, companionState, narrator, preset, nsfwOn,
-        varTree, effectiveSpecialNow,
+        ...gameStore.getState(),
+        pendingQuestBranch, activeTarget, activeGroundItem, talkTarget,
+        nsfwOn, effectiveSpecialNow,
       },
       refs: {
         lastMoveRef, pendDirRef, outerDepartRef, varTreeRef, roomMapRef,
@@ -172,7 +185,7 @@ export function useTurn({
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }
-  }, [loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset, addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem, setActiveTarget, setDuelPending, nsfwOn, varTree, questProgress, pendingTalks, changePendingTalks, captureUndo, dispatchCommand, setCommandPhase, clearRouteQueue, onTurnsInvalidated]);
+  }, [loading, gm, apiCfg, interactMode, activeTarget, activeGroundItem, talkTarget, pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow, addLog, talkToNarrator, changePendingTalks, captureUndo, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs, waitTimerRef, lastMoveRef, talkBusyRef, turnGenerationRef, featureCtxRef, autoTravelRef, intentRouterRef, setActiveTarget, setDuelPending, setGambleNegotiation, setPendingQuestBranch, setVarTree, jotNote, noteAction, outerDepartRef, roomMapRef, pendDirRef, pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx, prerunSquares, dispatchCommand, setCommandPhase, clearRouteQueue, onTurnsInvalidated]);
   actRef.current = act;
   const featureCtx = useMemo(() => ({
     addLog,
@@ -187,7 +200,7 @@ export function useTurn({
       addLog, setTime, setConvo, setLog, noteAction,
     }),
     applySquareOps,
-  }), [addLog, jotNote, gameActions, setVarTree, act, setTime, setConvo, setLog, noteAction]);
+  }), [addLog, jotNote, setVarTree, act, noteAction]);
   featureCtxRef.current = featureCtx;
   registerRuntime(featureCtx); // 模块级 runtime 注册：hook 可经 gameRuntime.featureCtx() 取，不再收 featureCtxRef
 
