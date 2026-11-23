@@ -34,19 +34,14 @@ function useTestAutosave({ autoSaveEvery = 5 } = {}) {
   capturedEffects.length = 0;
   const apiCfg = { autoSaveEvery };
   const hook = useAutosave({
-    apiCfg, preset: {}, room: {}, char: {}, dao: {}, skills: [], inv: [], log: [],
-    convo: [], exp: 0, pot: 0, flags: [], mapData: {}, time: 6, narrator: {},
-    varTree: {}, claimedMilestones: new Set(), questProgress: {}, deposit: 0,
-    depositedAt: null, pledgedItems: [], persuasionProgress: {}, innerRoomName: null,
-    companionState: {}, loadingRef: { current: false }, pendingTalksRef: { current: 0 },
-    roomMapRef: { current: {} }, restoredInnerRef: { current: null }, presets: [],
-    setGm: vi.fn(), setPreset: vi.fn(), setRoom: vi.fn(), setChar: vi.fn(),
-    setDao: vi.fn(), setSkills: vi.fn(), setInv: vi.fn(), setLog: vi.fn(),
-    setConvo: vi.fn(), setExp: vi.fn(), setPot: vi.fn(), setFlags: vi.fn(),
-    setMapData: vi.fn(), setTime: vi.fn(), setNarrator: vi.fn(), setVarTree: vi.fn(),
-    setQuestProgress: vi.fn(), setPersuasionProgress: vi.fn(),
-    setClaimedMilestones: vi.fn(), setDeposit: vi.fn(), setDepositedAt: vi.fn(),
-    setPledgedItems: vi.fn(), setCompanionState: vi.fn(), setInnerRoomName: vi.fn(),
+    apiCfg,
+    loadingRef: { current: false },
+    pendingTalksRef: { current: 0 },
+    roomMapRef: { current: {} },
+    restoredInnerRef: { current: null },
+    presets: [],
+    setGm: vi.fn(),
+    setVarTree: vi.fn(),
   });
   // effect[0] 是挂载接线：注册 arm 监听并创建 scheduler——跑它需要最薄的 window stub。
   capturedEffects[0]();

@@ -78,9 +78,13 @@ describe("formatStats（软指标只打印不阻断）", () => {
       totalHexOccurrences: 1396,
       largeFiles: { "ui/x.jsx": 500 },
       mainJsGzipBytes: 1000,
+      featureCtxRefCount: 199,
+      mudRpgHookArgs: 304,
     });
     expect(lines.join("\n")).toContain("app->ui=16");
     expect(lines.join("\n")).toContain("distinctHexColors: 399");
     expect(lines.join("\n")).toContain("ui/x.jsx=500");
+    expect(lines.join("\n")).toContain("featureCtxRefCount: 199");
+    expect(lines.join("\n")).toContain("mudRpgHookArgs: 304");
   });
 });

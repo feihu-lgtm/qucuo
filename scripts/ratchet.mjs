@@ -183,10 +183,62 @@ function countLines(source) {
 function countLargeFiles(files, srcRoot) {
   const largeFiles = {};
   for (const file of files) {
+    const rel = relativePath(srcRoot, file);
+    // 纯静态内容/数据表豁免 400 行统计，避免为了行数指标把配置表强行对半切 A/B。
+    if (rel.startsWith("content/") || rel.startsWith("domain/data/")) continue;
     const lines = countLines(readFileSync(file, "utf8"));
-    if (lines > 400) largeFiles[relativePath(srcRoot, file)] = lines;
+    if (lines > 400) largeFiles[rel] = lines;
   }
   return Object.fromEntries(Object.entries(largeFiles).sort());
+}
+
+function countFeatureCtxRef(sourceFiles) {
+  let count = 0;
+  for (const file of sourceFiles) {
+    const source = stripComments(readFileSync(file, "utf8"));
+    count += (source.match(/\bfeatureCtxRef\b/g) || []).length;
+  }
+  return count;
+}
+
+function countTopLevelObjectProps(body) {
+  let depth = 0;
+  let count = 0;
+  let hasToken = false;
+  for (let i = 0; i < body.length; i += 1) {
+    const ch = body[i];
+    if (ch === "{" || ch === "[" || ch === "(") depth += 1;
+    else if (ch === "}" || ch === "]" || ch === ")") depth = Math.max(0, depth - 1);
+    else if (ch === "," && depth === 0) {
+      if (hasToken) count += 1;
+      hasToken = false;
+      continue;
+    }
+    if (!/\s/.test(ch)) hasToken = true;
+  }
+  if (hasToken) count += 1;
+  return count;
+}
+
+function countMudRpgHookArgs(srcRoot) {
+  const mudPath = resolve(srcRoot, "MudRPG.jsx");
+  if (!existsSync(mudPath)) return 0;
+  const source = stripComments(readFileSync(mudPath, "utf8"));
+  let total = 0;
+  for (const match of source.matchAll(/\buse[A-Z]\w*\s*\(\s*\{/g)) {
+    const open = source.indexOf("{", match.index);
+    let depth = 0;
+    let close = -1;
+    for (let i = open; i < source.length; i += 1) {
+      if (source[i] === "{") depth += 1;
+      else if (source[i] === "}" && --depth === 0) {
+        close = i;
+        break;
+      }
+    }
+    if (close > open) total += countTopLevelObjectProps(source.slice(open + 1, close));
+  }
+  return total;
 }
 
 function findMainJsFile(distRoot) {
@@ -228,6 +280,8 @@ export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
       largeFiles: countLargeFiles(allFiles, srcRoot),
       mainJsGzipBytes: bundle.value,
       actRefCurrent: countActRefCurrent(allFiles, srcRoot),
+      featureCtxRefCount: countFeatureCtxRef(sourceFiles),
+      mudRpgHookArgs: countMudRpgHookArgs(srcRoot),
     },
     notes: [bundle.note],
   };
@@ -279,6 +333,8 @@ export function formatStats(metrics) {
   push("totalHexOccurrences", metrics.totalHexOccurrences);
   pushMap("largeFiles", metrics.largeFiles);
   push("mainJsGzipBytes", metrics.mainJsGzipBytes ?? "n/a (dist missing)");
+  push("featureCtxRefCount", metrics.featureCtxRefCount ?? 0);
+  push("mudRpgHookArgs", metrics.mudRpgHookArgs ?? 0);
   return lines;
 }
 

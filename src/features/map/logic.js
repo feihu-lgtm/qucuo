@@ -71,6 +71,7 @@ export function innerMove(state, dirOrRoom) {
     if (direction) {
       tryInnerMove({
         _trace: request._trace,
+        traceStep: request.traceStep,
         isTalk: false,
         movingDir: direction,
         forceLayer,
@@ -98,6 +99,7 @@ export function innerMove(state, dirOrRoom) {
 
   const decision = tryInnerMove({
     _trace: request._trace,
+    traceStep: request.traceStep,
     isTalk: false,
     movingDir: direction,
     forceLayer,

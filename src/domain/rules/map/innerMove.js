@@ -1,9 +1,10 @@
-import { step as traceStep } from "../../../infra/actionTrace.js";
 import { hasInnerMap, resolveInnerExit, isNpcVisibleInInnerRoom, getInnerRoom, isInnerExitUnlocked, describeInnerLock } from "./innerMap.js";
 import { describeInnerArrival } from "./mapNarration.js";
 import { detectNewFaces } from "../npc/npcAwareness.js";
 import { DIRS } from "../../../utils/mudHelpers.js";
 import { strongholdBan } from "../economy/strongholdGate.js";
+
+const NOOP = () => {};
 
 // 内层箱庭移动判定（纯判定 + trace，不写任何 React 状态）：
 // 如果当前据点有内层数据（hasInnerMap(room.name)为真）且这个方向是
@@ -26,7 +27,7 @@ import { strongholdBan } from "../economy/strongholdGate.js";
 //   { kind: "move", ... }    纯前端移动成立，act 负责写状态并 early return
 //   { kind: "blocked" }      forceLayer=inner 但内层无此出口，act 提示并 early return
 //   null                     不适用 / 跳过 / 内层无出口但打字移动放行外层（act 继续主流程）
-export function tryInnerMove({ _trace, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree, questProgress, inv, char }) {
+export function tryInnerMove({ _trace, traceStep = NOOP, isTalk, movingDir, forceLayer, room, innerRoomName, flags, varTree, questProgress, inv, char }) {
   if (!isTalk && movingDir && hasInnerMap(room.name) && innerRoomName && forceLayer !== "outer") {
     const innerDest = resolveInnerExit(room.name, innerRoomName, movingDir);
     traceStep(_trace, "内层移动", "info", `判定：当前内层「${innerRoomName}」往${DIRS[movingDir] || movingDir}${innerDest ? `通向「${innerDest}」` : "无出口"}`);

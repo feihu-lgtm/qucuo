@@ -64,11 +64,12 @@ export default [
   },
   {
     files: ["src/domain/**/*.{js,jsx}"],
+    ignores: ["**/*.{test,spec}.{js,jsx}"],
     rules: {
       "no-restricted-imports": ["error", {
         patterns: [{
-          group: ["**/ui/**", "**/app/**"],
-          message: "Domain modules must not depend on UI or app modules.",
+          group: ["**/ui/**", "**/app/**", "**/infra/**"],
+          message: "Domain modules must not depend on UI, app, or infra modules.",
         }],
       }],
     },

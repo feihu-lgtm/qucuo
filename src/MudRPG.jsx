@@ -130,14 +130,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   useEffect(() => { localStorage.setItem("wuxia_mud_day_mode", isDayMode ? "1" : "0"); }, [isDayMode]);
 
   const autosave = useAutosave({
-    apiCfg, preset, room, char, dao, skills, inv, log, convo, exp, pot, flags,
-    mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit,
-    depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState,
-    loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets,
-    setGm, setPreset, setRoom, setChar, setDao, setSkills, setInv, setLog,
-    setConvo, setExp, setPot, setFlags, setMapData, setTime, setNarrator,
-    setVarTree, setQuestProgress, setPersuasionProgress, setClaimedMilestones, setDeposit, setDepositedAt,
-    setPledgedItems, setCompanionState, setInnerRoomName,
+    apiCfg, loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets, setGm, setVarTree,
   });
   const {
     roundsSinceLastSaveRef, playedThisSessionRef, schedulerRef,

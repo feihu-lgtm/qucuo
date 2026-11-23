@@ -159,6 +159,7 @@ export async function resolveIntent(cmd, env) {
   const innerResult = !isTalk && movingDir
     ? innerMoveLogic(getGameState(), {
       _trace,
+      traceStep,
       direction: movingDir,
       forceLayer,
       command: cmd,

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createAutosaveScheduler } from "../../features/autosaveScheduler.js";
 import { snapshotFromStore } from "../../store/persist.js";
-import { getRngState, setRngState } from "../../utils/rng.js";
+import { setRngState } from "../../utils/rng.js";
 import { DEFAULT_PRESETS } from "../../engine/newGame.js";
-import { gameStore, markGameReplaced, useGameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore, markGameReplaced } from "../../store/gameStore.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
-import { buildSnapshot, autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../engine/ports/saves.js";
+import { autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../engine/ports/saves.js";
 import { statsForQuality } from "../../domain/rules/economy/equipment.js";
 import { migrateLegacySnapshot } from "../../domain/rules/npc/legacyContent.js";
 import { initialNarratorState, migrateNarratorState } from "../../domain/rules/narrator/narrator.js";
@@ -44,15 +44,14 @@ export function useInitialRestore({ initialLoadSlotId }) {
 }
 
 export function useAutosave({
-  apiCfg, preset, room, char, dao, skills, inv, log, convo, exp, pot, flags,
-  mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit,
-  depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState,
-  loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets,
-  setGm, setPreset, setRoom, setChar, setDao, setSkills, setInv, setLog,
-  setConvo, setExp, setPot, setFlags, setMapData, setTime, setNarrator,
-  setVarTree, setQuestProgress, setPersuasionProgress, setClaimedMilestones, setDeposit, setDepositedAt,
-  setPledgedItems, setCompanionState, setInnerRoomName,
+  apiCfg, loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets, setGm, setVarTree,
 }) {
+  const {
+    setPreset, setRoom, setChar, setDao, setSkills, setInv, setLog,
+    setConvo, setExp, setPot, setFlags, setMapData, setTime, setNarrator,
+    setQuestProgress, setPersuasionProgress, setClaimedMilestones, setDeposit, setDepositedAt,
+    setPledgedItems, setCompanionState, setInnerRoomName,
+  } = gameActions;
   // ── 自动存档：玩家操作后防抖，AI 回合与关页兜底保留原逻辑 ──
   // 首次输入前的挂载初始化与后台预跑不算游玩，避免新开局状态覆盖旧自动档；
   // 首次输入后的游戏状态变化会写档，关页仍同步补存。
@@ -107,17 +106,20 @@ export function useAutosave({
     };
   }, []);
 
-  useEffect(() => {
+  const checkRoundAutosave = useCallback(() => {
     if (!playedThisSessionRef.current) return; // 还没玩过：绝不覆盖旧档
     // 必须确有回合完成过。roundsSinceLastSaveRef 只在 commitRound（真走完一轮）自增、
     // 存档后归零；varTree 等状态被别的东西碰一下不算一轮。
     // 【为什么补这条】起居注上线后，不走 AI 的动作（内层移动等）也会写 varTree，
-    // 而 varTree 在本 effect 的 deps 里。autoSaveEvery=0（每回合都存）时下面那道
+    // 而以前 varTree 在 effect 的 deps 里。autoSaveEvery=0（每回合都存）时下面那道
     // 区间守卫因 every>0 为假而整个跳过，于是每走一步内层都触发一次全量快照+落盘。
     if (roundsSinceLastSaveRef.current <= 0) return;
     const every = Math.max(0, Number(apiCfg.autoSaveEvery ?? 5));
     if (every > 0 && roundsSinceLastSaveRef.current < every) return; // 间隔未到
-    const snapshot = buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares: serializeSquares(), roomMap: roomMapRef.current, rngState: getRngState() });
+    const snapshot = snapshotFromStore({
+      squares: serializeSquares(),
+      roomMap: roomMapRef.current,
+    });
     const result = autoSave(snapshot); // 同步返回（写内存必成；IDB 异步落盘、LS 尽力兜底）
     if (result.ok) {
       roundsSinceLastSaveRef.current = 0;
@@ -126,7 +128,12 @@ export function useAutosave({
     } else {
       setAutoSaveError(result.error);
     }
-  }, [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, apiCfg.autoSaveEvery, companionState]);
+  }, [apiCfg.autoSaveEvery, roomMapRef]);
+
+  useEffect(() => {
+    checkRoundAutosave();
+    return gameStore.subscribe(checkRoundAutosave);
+  }, [checkRoundAutosave]);
 
   // 从存档槽位读取后，整体覆盖当前状态
   const applySnapshot = useCallback((snap) => {
@@ -134,9 +141,10 @@ export function useAutosave({
       // 老存档人物改名迁移（PR274 后天龙教改回原作名）：手动读槽位不经过
       // tryRestoreSnapshot，在这里补同一道迁移，回滚快照是新版数据、幂等无副作用。
       snap = migrateLegacySnapshot(snap);
-      const matchedPreset = presets.find(p => p.id === snap.preset?.id) || preset;
+      const currentState = gameStore.getState();
+      const matchedPreset = presets.find(p => p.id === snap.preset?.id) || currentState.preset;
       const restoredRoom = isCompatibleRoomShape(snap.room) ? snap.room : matchedPreset.room;
-      const roomChanged = restoredRoom.name !== useGameStore.getState().room?.name;
+      const roomChanged = restoredRoom.name !== currentState.room?.name;
       setPreset(matchedPreset);
       setRoom(restoredRoom);
       // 老存档可能没有 moveset/special 字段（切磋系统上线之前存的档），
@@ -181,11 +189,11 @@ export function useAutosave({
     const scheduler = schedulerRef.current;
     if (scheduler) scheduler.runSilently(restoreSnapshot);
     else restoreSnapshot();
-  }, [presets, preset, setPersuasionProgress]);
+  }, [presets, setVarTree]);
 
   const buildCurrentSnapshot = useCallback(() => snapshotFromStore({
     squares: serializeSquares(), roomMap: roomMapRef.current,
-  }), [preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, persuasionProgress, innerRoomName, companionState]); // deposit/depositedAt/pledgedItems captured via closure
+  }), [roomMapRef]);
 
   // ── 地图格子·后台预跑（扫雷式预埋，见 mapSquares.js）──
   // 全据点批量预跑（14 节点，3 个一 call）：系统先掷骰埋拾取/路遇，小模型一次写完全套
@@ -193,14 +201,15 @@ export function useAutosave({
   const prerunBusyRef = useRef(false);
   const prerunSquares = useCallback(() => {
     if (prerunBusyRef.current) return;
+    const { time, char, varTree } = gameStore.getState();
     const day = Math.floor(time / 24);
     const pending = pendingNodes(day);
     if (!pending.length) return;
     prerunBusyRef.current = true;
     (async () => {
       try {
-        const luck = char.special?.气运 ?? 5;
-        const isTaken = roadNameGuard({ varTree: gameStore.getState().varTree, time });
+        const luck = char?.special?.气运 ?? 5;
+        const isTaken = roadNameGuard({ varTree, time });
         for (let i = 0; i < pending.length; i += 3) {
           const skeletons = {};
           const batch = pending.slice(i, i + 3).map(name => {
@@ -216,7 +225,7 @@ export function useAutosave({
         }
       } finally { prerunBusyRef.current = false; }
     })();
-  }, [time, apiCfg, char]);
+  }, [apiCfg]);
   const prerunBootedRef = useRef(false);
   useEffect(() => {
     if (prerunBootedRef.current) return;
