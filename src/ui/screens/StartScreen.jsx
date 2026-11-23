@@ -6,7 +6,7 @@
 import React, { lazy, Suspense, useState, useEffect } from "react";
 import { ZONE_THEMES } from "../../utils/theme.js";
 import { listSlots, loadAutoSave } from "../../engine/ports/saves.js";
-import { registerVisit } from "../../engine/ports/visitorCount.js";
+import { registerVisit } from "../../infra/visitorCount.js";
 import { CURRENT_VERSION } from "../../utils/version.js";
 import { styles } from "./startScreenStyles.js";
 

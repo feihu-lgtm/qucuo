@@ -1,6 +1,6 @@
 import { buildSysBase } from "../../domain/rules/prompt/sysBase.js";
 import { renderFieldScales, renderPromptTemplate } from "../../domain/rules/prompt/promptRefs.js";
-import { step as traceStep, attachInjectionSnapshot } from "../ports/actionTrace.js";
+import { step as traceStep, attachInjectionSnapshot } from "../../infra/actionTrace.js";
 import { NSFW_RULES, MODE_PRIMER_MESSAGES } from "../../domain/rules/prompt/modePrimer.js";
 import { GM_RULE } from "../../domain/rules/prompt/enginePrompts.js";
 import { gateBodyProfile } from "../../domain/rules/character/bodyProfile.js";

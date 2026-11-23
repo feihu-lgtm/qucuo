@@ -1,7 +1,7 @@
 // 小纸条写入/重嵌口：记录构造与筛选留在 domain（memory/note.js、memoryStore.js），
 // embedding 调用与入库副作用上移到 engine/ports。
 import { getEmbedding, embeddingReady, embeddingFingerprint } from "./embeddingService.js";
-import { addMemory, getAllMemories } from "./memoryStore.js";
+import { addMemory, getAllMemories } from "../../infra/memoryStore.js";
 import { buildNoteRecord, findStaleNotes, NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 
 let _seq = 0;
