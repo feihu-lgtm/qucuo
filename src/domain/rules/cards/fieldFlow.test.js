@@ -18,7 +18,8 @@ import { fileURLToPath } from "node:url";
 //
 // 这条测试把约束写成机器可检的形式：toPoolLike 产出的每个字段，必须能通过转换链。
 const HERE = dirname(fileURLToPath(import.meta.url));
-const REG = readFileSync(join(HERE, "importedRegistry.js"), "utf-8");
+// importedRegistry 拆分后 toPoolLike 归 importedPlacement.js，锚点跟代码走。
+const REG = readFileSync(join(HERE, "importedPlacement.js"), "utf-8");
 const POOL = readFileSync(join(HERE, "..", "..", "data", "npc", "npcPool.js"), "utf-8");
 const NPC_RULES = readFileSync(join(HERE, "..", "..", "..", "domain", "rules", "npc", "rules.js"), "utf-8");
 
