@@ -13,7 +13,7 @@ export function BatchControls({ npcs, batchDistrict, setBatchDistrict, applyBatc
       <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 7 }}>
         <span style={{ fontSize: 10, color: "var(--text-dim)", width: 26 }}>落脚</span>
         <select value={batchDistrict} onChange={e => setBatchDistrict(e.target.value)}
-          style={{ fontSize: 10.5, padding: "2px 4px", background: "var(--bg-deep)", color: "#d8c8a0", border: "1px solid var(--border-deep)", borderRadius: 0, maxWidth: 100 }}>
+          style={{ fontSize: 10.5, padding: "2px 4px", background: "var(--bg-deep)", color: "var(--ink-tan)", border: "1px solid var(--border-deep)", borderRadius: 0, maxWidth: 100 }}>
           {PLANNABLE_DISTRICTS.map(d => <option key={d} value={d} style={{ background: "var(--bg-deep)" }}>{d}</option>)}
         </select>
         <TapSpan onClick={() => applyBatchPlacement("resident", batchDistrict)} title={`勾选的人全部驻场于${batchDistrict}`} baseStyle={batchBtn}>全驻此地</TapSpan>
@@ -41,9 +41,9 @@ export function AiProgress({ planBusy, planMsg, planProg, equipBusy, equipMsg, e
   return (
     <div style={{ marginBottom: 8 }}>
       <div style={{ height: 3, borderRadius: 0, overflow: "hidden", background: "rgba(0,0,0,.45)", marginBottom: 5 }}>
-        <div style={{ height: "100%", width: `${Math.round(prog * 100)}%`, background: "linear-gradient(90deg,#4a6a48,#9ac088)", transition: "width .35s ease" }} />
+        <div style={{ height: "100%", width: `${Math.round(prog * 100)}%`, background: "linear-gradient(90deg,var(--temple-full),var(--tutorial-move))", transition: "width .35s ease" }} />
       </div>
-      <div style={{ fontSize: 10.5, color: busy ? "#bce8ac" : "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>{msg}</div>
+      <div style={{ fontSize: 10.5, color: busy ? "var(--ci-pick)" : "var(--qb-text-dim)", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>{msg}</div>
     </div>
   );
 }
@@ -59,8 +59,8 @@ export function PlanEquipButtons({ npcCount, planBusy, planAll, equipBusy, equip
           cursor: planBusy ? "wait" : "pointer", userSelect: "none",
           fontSize: 12, padding: "6px 14px", borderRadius: 0, whiteSpace: "nowrap",
           display: "inline-flex", alignItems: "center", gap: 6,
-          color: planBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
-          border: `1px solid ${planBusy ? "#3a4a38" : "#5f8256"}`,
+          color: planBusy ? "var(--quest-success-text)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+          border: `1px solid ${planBusy ? "var(--music-idle-icon)" : "var(--ink-good)"}`,
           background: planBusy ? "rgba(0,0,0,.3)"
             : "linear-gradient(180deg,rgba(74,120,64,.55),rgba(0,0,0,.5))",
         }}>
@@ -73,8 +73,8 @@ export function PlanEquipButtons({ npcCount, planBusy, planAll, equipBusy, equip
           cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
           fontSize: 12, padding: "6px 14px", borderRadius: 0, whiteSpace: "nowrap",
           display: "inline-flex", alignItems: "center", gap: 6,
-          color: equipBusy ? "#6a807c" : "#b4ecdc", textShadow: "0 1px 2px rgba(0,0,0,.85)",
-          border: `1px solid ${equipBusy ? "#3a4a48" : "#4f807a"}`,
+          color: equipBusy ? "var(--ink-sage)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+          border: `1px solid ${equipBusy ? "var(--music-idle-icon)" : "var(--inject-note)"}`,
           background: equipBusy ? "rgba(0,0,0,.3)"
             : "linear-gradient(180deg,rgba(60,130,120,.55),rgba(0,0,0,.5))",
         }}>

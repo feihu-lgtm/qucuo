@@ -21,12 +21,12 @@ function EmptyPane({ dragOver, setDragOver, err, onPick, onFile, accent }) {
         filter: dragOver ? `drop-shadow(0 0 16px ${accent})` : "none",
       }}>
         <img src={S("ui/scroll_v.webp")} alt="" style={{ width: 62, opacity: dragOver ? 1 : .8 }} />
-        <div style={{ color: "#f0e0c0", fontSize: 14, letterSpacing: 2 }}>把角色卡拖进来</div>
+        <div style={{ color: "var(--tutorial-title)", fontSize: 14, letterSpacing: 2 }}>把角色卡拖进来</div>
         <div style={{ color: "var(--muted)", fontSize: 11 }}>或点此选择 · 支持 PNG 与 JSON</div>
       </div>
       {err && (
         <div style={{
-          maxWidth: 520, padding: "10px 16px", color: "#d89080", fontSize: 11.5, lineHeight: 1.7,
+          maxWidth: 520, padding: "10px 16px", color: "var(--ink-error-text)", fontSize: 11.5, lineHeight: 1.7,
           backgroundImage: `url('${S("ui/note_torn.webp")}')`, backgroundSize: "100% 100%",
         }}>{err}</div>
       )}

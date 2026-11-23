@@ -19,24 +19,24 @@ export const S = (p) => `${BASE}stones/${p}`;
 
 // levelCap 0-5 → 玉色文件名与档位标签
 export const TIERS = [
-  { key: "bai", label: "白", jade: "jade_1_bai_chun.webp", color: "#d8d4c8" },
+  { key: "bai", label: "白", jade: "jade_1_bai_chun.webp", color: "var(--bug-button-off-light)" },
   { key: "lv", label: "绿", jade: "jade_2_lv_chun.webp", color: "var(--green-soft)" },
-  { key: "lan", label: "蓝", jade: "jade_3_lan_chun.webp", color: "#6a9ac4" },
-  { key: "zi", label: "紫", jade: "jade_4_zi_chun.webp", color: "#a078c0" },
-  { key: "cheng", label: "橙", jade: "jade_5_cheng_chun.webp", color: "#d89050" },
-  { key: "hong", label: "红", jade: "jade_6_hong_chun.webp", color: "#c85850" },
+  { key: "lan", label: "蓝", jade: "jade_3_lan_chun.webp", color: "var(--footer-hint-title)" },
+  { key: "zi", label: "紫", jade: "jade_4_zi_chun.webp", color: "var(--lore-script)" },
+  { key: "cheng", label: "橙", jade: "jade_5_cheng_chun.webp", color: "var(--attr-waigong-tag)" },
+  { key: "hong", label: "红", jade: "jade_6_hong_chun.webp", color: "var(--red-soft)" },
 ];
 
 export const KIND_META = {
   person: { label: "人物", icon: "👤", color: "var(--ink-warn)" },
-  faction: { label: "势力", icon: "⚔", color: "#c07850" },
-  place: { label: "地方", icon: "⛰", color: "#7a9a70" },
-  rule: { label: "规矩", icon: "⚖", color: "#8a8ab0" },
-  item: { label: "物件", icon: "◈", color: "#b09060" },
-  player: { label: "我自己", icon: "☯", color: "#c8a0c0" },
-  meta: { label: "框架", icon: "⚙", color: "#5a6a70" },
+  faction: { label: "势力", icon: "⚔", color: "var(--clay)" },
+  place: { label: "地方", icon: "⛰", color: "var(--quest-success-text)" },
+  rule: { label: "规矩", icon: "⚖", color: "var(--footer-hint-text)" },
+  item: { label: "物件", icon: "◈", color: "var(--tavern-door-label)" },
+  player: { label: "我自己", icon: "☯", color: "var(--lore-private)" },
+  meta: { label: "框架", icon: "⚙", color: "var(--inject-kind-fallback)" },
   unknown: { label: "待定", icon: "?", color: "var(--ink-muted)" },
-  drop: { label: "弃用", icon: "✕", color: "#4a4a44" },
+  drop: { label: "弃用", icon: "✕", color: "var(--mind-locked)" },
 };
 
 export const SEVEN = ["根骨", "悟性", "体魄", "魅力", "智谋", "身法", "气运"];
@@ -100,7 +100,7 @@ export function Bar({ children, right }) {
       // 上下 border 各 15px，留 16px 给文字，故 minHeight 46
       padding: "0 10px", minHeight: 46,
     }}>
-      <span style={{ color: "#f0e0c0", fontSize: 13, letterSpacing: 2, textShadow: "0 1px 3px rgba(0,0,0,.8)" }}>
+      <span style={{ color: "var(--tutorial-title)", fontSize: 13, letterSpacing: 2, textShadow: "0 1px 3px rgba(0,0,0,.8)" }}>
         {children}
       </span>
       <span style={{ flex: 1 }} />
@@ -170,7 +170,7 @@ export function Step({ children, onClick, disabled }) {
         backgroundImage: `url('${S("ui/btn_blank.webp")}')`,
         backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         cursor: disabled ? "default" : "pointer",
-        color: disabled ? "#4a4436" : "var(--paper)", fontSize: 11, lineHeight: 1,
+        color: disabled ? "var(--gamble-button-edge)" : "var(--paper)", fontSize: 11, lineHeight: 1,
         opacity: disabled ? .35 : 1,
       }}>{children}</span>
   );
@@ -188,7 +188,7 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-      <span style={{ width, fontSize: 11, color: "#a89870", flexShrink: 0 }}>{label}</span>
+      <span style={{ width, fontSize: 11, color: "var(--quest-stage-desc)", flexShrink: 0 }}>{label}</span>
       <div
         onClick={e => {
           if (!onChange) return;
@@ -203,7 +203,7 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
       >
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.max(0, Math.min(100, pct))}%`,
-          background: "linear-gradient(90deg, #8a6a2a, var(--ink-warn))", opacity: 0.85,
+          background: "linear-gradient(90deg, var(--mind-button-edge), var(--ink-warn))", opacity: 0.85,
         }} />
       </div>
       {onChange ? (
@@ -250,15 +250,15 @@ export function Src({ source, why }) {
   }
   if (source === "manual") {
     return <span title="只能你自己填，不从卡里抽"
-      style={{ fontSize: 9, color: "#8a8ab0", border: "1px solid #3a3a4a", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>手填</span>;
+      style={{ fontSize: 9, color: "var(--footer-hint-text)", border: "1px solid var(--bug-edge-dark)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>手填</span>;
   }
   if (source === "drop") {
     return <span title="按规矩丢弃，不导入"
-      style={{ fontSize: 9, color: "#7a6a60", border: "1px solid #3a3028", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>已丢</span>;
+      style={{ fontSize: 9, color: "var(--bug-dim-dark)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>已丢</span>;
   }
   return (
     <span title={why ? `AI 判断依据：${why}` : "AI 抽取"}
-      style={{ fontSize: 9, color: "#7a9a70", border: "1px solid #3a4a34", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>
+      style={{ fontSize: 9, color: "var(--quest-success-text)", border: "1px solid var(--music-idle-icon)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>
       AI{why ? "·" + why.slice(0, 10) : ""}
     </span>
   );
@@ -280,7 +280,7 @@ export function TextField({ label, value, onChange, placeholder, rows = 1, max, 
     <label style={{ display: "block", marginBottom: 7 }}>
       {label != null && (
         <span style={{ display: "block", fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3, textAlign: centered === "center" ? "center" : "left" }}>
-          {label}{max ? <span style={{ color: "#5a5448" }}> ≤{max}字</span> : null}
+          {label}{max ? <span style={{ color: "var(--muted)" }}> ≤{max}字</span> : null}
         </span>
       )}
       {rows > 1
@@ -306,14 +306,14 @@ export function Stat({ label, v }) {
 export function Section({ title, children, dim }) {
   return (
     <div style={{ marginTop: 12, borderTop: "1px solid var(--bg-card)", paddingTop: 9, opacity: dim ? .55 : 1 }}>
-      <div style={{ fontSize: 11, color: "#d8c8a0", letterSpacing: 1, marginBottom: 7 }}>{title}</div>
+      <div style={{ fontSize: 11, color: "var(--ink-tan)", letterSpacing: 1, marginBottom: 7 }}>{title}</div>
       {children}
     </div>
   );
 }
 
 export function Note({ tone = "info", children }) {
-  const c = tone === "bad" ? "#d89080" : tone === "warn" ? "#c0a870" : "#7a8a90";
+  const c = tone === "bad" ? "var(--ink-error-text)" : tone === "warn" ? "var(--tutorial-time)" : "var(--inject-user-text)";
   return (
     <div style={{
       fontSize: 10.5, lineHeight: 1.7, color: c, marginTop: 7,
@@ -331,9 +331,9 @@ export function Btn({ children, onClick, tone = "dim", disabled, title }) {
       style={{
         cursor: disabled ? "not-allowed" : "pointer", userSelect: "none",
         fontSize: 12, padding: "6px 16px", borderRadius: 0, whiteSpace: "nowrap",
-        color: main ? "var(--bg-deep)" : warn ? "#c0a870" : "#a89870",
-        background: main ? "linear-gradient(180deg,#e0b860,#8a6a2a)" : "rgba(0,0,0,.3)",
-        border: `1px solid ${main ? "#e0b860" : warn ? "#5a4a28" : "var(--border-deep)"}`,
+        color: main ? "var(--bg-deep)" : warn ? "var(--tutorial-time)" : "var(--quest-stage-desc)",
+        background: main ? "linear-gradient(180deg,var(--service-item-name),var(--mind-button-edge))" : "rgba(0,0,0,.3)",
+        border: `1px solid ${main ? "var(--service-item-name)" : warn ? "var(--ink-wood-edge)" : "var(--border-deep)"}`,
         opacity: disabled ? .4 : 1,
         fontWeight: main ? 700 : 400, letterSpacing: main ? 1 : 0,
       }}>{children}</span>
@@ -354,9 +354,9 @@ function Pill({ label, on, onClick, title, accent }) {
       style={{
         cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 14px", borderRadius: 0,
         transition: "all .14s ease",
-        border: `1px solid ${on || hov ? accent : "#6a5f42"}`,
+        border: `1px solid ${on || hov ? accent : "var(--ink-brass)"}`,
         background: on ? "rgba(212,168,83,.16)" : hov ? "rgba(212,168,83,.07)" : "rgba(0,0,0,.18)",
-        color: on ? accent : hov ? "#f0e6cc" : "#cabfa0",
+        color: on ? accent : hov ? "var(--create-input-text)" : "var(--qb-text-dim)",
       }}>{label}</span>
   );
 }
@@ -382,14 +382,14 @@ export const TERM_MONO = "ui-monospace,Menlo,Consolas,monospace";
 const TERM_TONE = {
   start: { mark: "▸", color: "var(--ink-info)" },
   done: { mark: "✓", color: "var(--green-soft)" },
-  fail: { mark: "✕", color: "#c08870" },
-  retry: { mark: "↻", color: "#c0a870" },
-  wait: { mark: "⧗", color: "#7a8a90" },
-  info: { mark: "·", color: "#9a9a8a" },
+  fail: { mark: "✕", color: "var(--lore-amber)" },
+  retry: { mark: "↻", color: "var(--tutorial-time)" },
+  wait: { mark: "⧗", color: "var(--inject-user-text)" },
+  info: { mark: "·", color: "var(--tavern-steam)" },
 };
 
 /**
- * 终端样式的运行日志。视觉照 TraceViewer 来（var(--bg-ink) 底、#9a9a8a 字、
+ * 终端样式的运行日志。视觉照 TraceViewer 来（var(--bg-ink) 底、var(--tavern-steam) 字、
  * var(--ink-info) 高亮、等宽、pre-wrap），因为两处要看的是同一类东西：带时序的机器动作。
  * 【为什么不用一行「实调 N 次」】那只有结果没有过程。5 次/分钟的额度下，玩家
  * 最需要看见的是"现在卡在哪、为什么等、哪一批降级了"。
@@ -404,8 +404,8 @@ export function Terminal({ lines, height = 132, onExpand }) {
     <div style={{ borderTop: "1px solid var(--ink-border)", background: "var(--bg-ink)" }}>
       <div style={{
         display: "flex", alignItems: "center", gap: 6, padding: "3px 8px",
-        borderBottom: "1px solid #141a1a", fontFamily: TERM_MONO, fontSize: 9,
-        color: "#5a6a6a", letterSpacing: 1,
+        borderBottom: "1px solid var(--bg-slate)", fontFamily: TERM_MONO, fontSize: 9,
+        color: "var(--inject-kind-fallback)", letterSpacing: 1,
       }}>
         <span style={{ color: "var(--ink-info)" }}>●</span>
         <span>入册运行日志</span>
@@ -418,14 +418,14 @@ export function Terminal({ lines, height = 132, onExpand }) {
         fontFamily: TERM_MONO, fontSize: 9.5, lineHeight: 1.55,
         whiteSpace: "pre-wrap", wordBreak: "break-word",
       }}>
-        {!lines.length && <span style={{ color: "#3a4444" }}>（尚无动作）</span>}
+        {!lines.length && <span style={{ color: "var(--music-idle-icon)" }}>（尚无动作）</span>}
         {lines.map((l, i) => {
           const t = TERM_TONE[l.kind] || TERM_TONE.info;
           return (
             <div key={i} style={{ color: t.color }}>
-              <span style={{ color: "#3a4444" }}>{l.at} </span>
+              <span style={{ color: "var(--music-idle-icon)" }}>{l.at} </span>
               <span>{t.mark} </span>
-              {l.tag ? <span style={{ color: "#6a7a7a" }}>[{l.tag}] </span> : null}
+              {l.tag ? <span style={{ color: "var(--ink-sage)" }}>[{l.tag}] </span> : null}
               <span>{l.msg}</span>
             </div>
           );

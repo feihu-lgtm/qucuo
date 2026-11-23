@@ -59,11 +59,11 @@ function SkillEditor({ skills, onChange, tierCap, accent, aiBusy, onAiScan }) {
             </select>
             <span onClick={() => setOne(i, { active: !s.active })}
               title={s.active ? "这门当前会出手（同路数只第一门生效）" : "点亮才会用它出招"}
-              style={{ cursor: "pointer", fontSize: 10, color: s.active ? accent : "#5a5448", flexShrink: 0, whiteSpace: "nowrap" }}>
+              style={{ cursor: "pointer", fontSize: 10, color: s.active ? accent : "var(--muted)", flexShrink: 0, whiteSpace: "nowrap" }}>
               {s.active ? "◉ 用" : "○ 备"}
             </span>
             <span onClick={() => del(i)} title="删掉这门"
-              style={{ cursor: "pointer", color: "#c08878", fontSize: 11, flexShrink: 0 }}>✕</span>
+              style={{ cursor: "pointer", color: "var(--lore-amber)", fontSize: 11, flexShrink: 0 }}>✕</span>
           </div>
           <input value={s.desc || ""} placeholder="一句话写这门功夫使出来什么样（注入给说书人）"
             onChange={e => setOne(i, { desc: e.target.value.slice(0, 30) })}
@@ -79,8 +79,8 @@ function SkillEditor({ skills, onChange, tierCap, accent, aiBusy, onAiScan }) {
             cursor: aiBusy ? "wait" : "pointer", userSelect: "none",
             fontSize: 11.5, padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
             display: "inline-flex", alignItems: "center", gap: 5,
-            color: aiBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
-            border: `1px solid ${aiBusy ? "#3a4a38" : "#5f8256"}`,
+            color: aiBusy ? "var(--quest-success-text)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+            border: `1px solid ${aiBusy ? "var(--music-idle-icon)" : "var(--ink-good)"}`,
             background: aiBusy ? "rgba(0,0,0,.3)" : "linear-gradient(180deg,rgba(74,120,64,.5),rgba(0,0,0,.45))",
           }}>✨ {aiBusy ? "现编中…" : "AI 现编武学"}</span>
       </div>
@@ -231,7 +231,7 @@ export default function ReviewPlayer({
             AI 现在会自动从卡里抽取这五项（疤痕印记／体味／身体细节／敏感处／习惯癖好）。
             自动抽取可能为未成年角色生成身体描写。
             <span onClick={ackIntimate}
-              style={{ cursor: "pointer", color: "#e0b860", fontWeight: 700, textDecoration: "underline", marginLeft: 6 }}>
+              style={{ cursor: "pointer", color: "var(--service-item-name)", fontWeight: 700, textDecoration: "underline", marginLeft: 6 }}>
               我已了解风险
             </span>
           </Note>
@@ -252,7 +252,7 @@ export default function ReviewPlayer({
 
         {/* 4b 粘贴描写 → AI 拆成体貌字段补全 */}
         <div style={{ marginTop: 10, padding: "8px 9px", borderRadius: 0, background: "rgba(0,0,0,.22)", border: "1px solid var(--bg-card)" }}>
-          <div style={{ fontSize: 10.5, color: "#c0b090", marginBottom: 5, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 10.5, color: "var(--loot-foot)", marginBottom: 5, lineHeight: 1.6 }}>
             ✨ 粘贴一段卡里的外貌／身体描写，AI 会拆成体貌字段（公开层＋私密层）补全上面两栏。
             只是合并，不会覆盖你已填的内容。
           </div>
@@ -275,11 +275,11 @@ export default function ReviewPlayer({
                 cursor: bodyBusy ? "wait" : "pointer", userSelect: "none",
                 fontSize: 11.5, padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
                 display: "inline-flex", alignItems: "center", gap: 5,
-                color: bodyBusy ? "#7a8a78" : "#cdeebf", textShadow: "0 1px 2px rgba(0,0,0,.85)",
-                border: `1px solid ${bodyBusy ? "#3a4a38" : "#5f8256"}`,
+                color: bodyBusy ? "var(--quest-success-text)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                border: `1px solid ${bodyBusy ? "var(--music-idle-icon)" : "var(--ink-good)"}`,
                 background: bodyBusy ? "rgba(0,0,0,.3)" : "linear-gradient(180deg,rgba(74,120,64,.5),rgba(0,0,0,.45))",
               }}>✨ {bodyBusy ? "拆解中…" : "AI 拆解补全"}</span>
-            <span style={{ flex: 1, fontSize: 9.5, color: "#5a5448" }}>
+            <span style={{ flex: 1, fontSize: 9.5, color: "var(--muted)" }}>
               私密项原文没写到的 AI 不会编。
             </span>
           </div>
@@ -290,7 +290,7 @@ export default function ReviewPlayer({
       <Section title={<>性格<Src source="drop" /></>} dim>
         {cardPersonality ? (
           <div style={{
-            fontSize: 10.5, lineHeight: 1.7, color: "#7a6a60", maxHeight: 76, overflowY: "auto",
+            fontSize: 10.5, lineHeight: 1.7, color: "var(--bug-dim-dark)", maxHeight: 76, overflowY: "auto",
             padding: "6px 8px", background: "rgba(0,0,0,.28)", border: "1px solid var(--bg-card)", borderRadius: 0,
           }}>{cardPersonality}</div>
         ) : (
@@ -351,10 +351,10 @@ export default function ReviewPlayer({
                 style={{
                   display: "flex", alignItems: "center", gap: 7, padding: "5px 8px", marginBottom: 3,
                   cursor: "pointer", borderRadius: 0,
-                  border: `1px solid ${w.on === false ? "var(--bg-card)" : "#4a4028"}`,
+                  border: `1px solid ${w.on === false ? "var(--bg-card)" : "var(--service-card-edge)"}`,
                   background: w.on === false ? "transparent" : "rgba(212,168,83,.08)",
                 }}>
-                <span style={{ color: w.on === false ? "#4a4436" : accent, fontSize: 11 }}>
+                <span style={{ color: w.on === false ? "var(--gamble-button-edge)" : accent, fontSize: 11 }}>
                   {w.on === false ? "○" : "◉"}
                 </span>
                 <span style={{ color: "var(--ink-text)", fontSize: 11, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -412,8 +412,8 @@ export default function ReviewPlayer({
               cursor: equipBusy ? "wait" : "pointer", userSelect: "none",
               fontSize: 11.5, padding: "5px 12px", borderRadius: 0, whiteSpace: "nowrap",
               display: "inline-flex", alignItems: "center", gap: 5,
-              color: equipBusy ? "#6a807c" : "#b4ecdc", textShadow: "0 1px 2px rgba(0,0,0,.85)",
-              border: `1px solid ${equipBusy ? "#3a4a48" : "#4f807a"}`,
+              color: equipBusy ? "var(--ink-sage)" : "var(--ci-pick)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+              border: `1px solid ${equipBusy ? "var(--music-idle-icon)" : "var(--inject-note)"}`,
               background: equipBusy ? "rgba(0,0,0,.3)" : "linear-gradient(180deg,rgba(60,130,120,.5),rgba(0,0,0,.45))",
             }}>✨ {equipBusy ? "配装中…" : "AI 配装备"}</span>
         </div>

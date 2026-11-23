@@ -157,13 +157,13 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
               style={{
                 display: "inline-flex", alignItems: "center", gap: 5,
                 fontSize: 10.5, padding: "3px 4px 3px 8px", borderRadius: 0,
-                border: `1px solid ${open ? "var(--ink-warn)" : custom ? "#6a8a70" : "#4a4028"}`,
+                border: `1px solid ${open ? "var(--ink-warn)" : custom ? "var(--service-hint)" : "var(--service-card-edge)"}`,
                 background: custom ? "rgba(120,180,130,.10)" : "rgba(212,168,83,.10)", color: "var(--paper)",
               }}>
               <span onClick={() => setDetailItem(open ? null : c)} title="点看详情"
                 style={{ cursor: "pointer" }}>{custom ? "⚒ " : ""}{nm}</span>
               <span onClick={() => { del(nm); if (open) setDetailItem(null); }} title="移除这件"
-                style={{ cursor: "pointer", color: "#c08878", fontSize: 11, padding: "0 2px" }}>✕</span>
+                style={{ cursor: "pointer", color: "var(--lore-amber)", fontSize: 11, padding: "0 2px" }}>✕</span>
             </span>
           );
         })}
@@ -184,10 +184,10 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
           ? effectBrief(detailItem.effect, detailItem.sixDim)
           : effectBrief(catEntry?.effect, catEntry?.sixDim);
         return (
-          <div style={{ marginBottom: 7, padding: "8px 10px", borderRadius: 0, border: "1px solid #4a4028", background: "rgba(0,0,0,.3)" }}>
+          <div style={{ marginBottom: 7, padding: "8px 10px", borderRadius: 0, border: "1px solid var(--service-card-edge)", background: "rgba(0,0,0,.3)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
               <span style={{ color: "var(--paper)", fontSize: 12 }}>{nameOf(detailItem)}</span>
-              <span style={{ fontSize: 10, color: "#a89870" }}>
+              <span style={{ fontSize: 10, color: "var(--quest-stage-desc)" }}>
                 {{ weapon: "兵器", armor: "护具", accessory: "饰物", misc: "杂物" }[category] || category} · {quality}档
               </span>
               <span style={{ flex: 1 }} />
@@ -197,29 +197,29 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
             {/* 伤害 / 防御 */}
             <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
               {atk != null && (
-                <div style={{ fontSize: 10.5, color: "#d89050" }}>
-                  攻击力 <span style={{ color: "#e8b070", fontWeight: 700 }}>{atk}</span>
+                <div style={{ fontSize: 10.5, color: "var(--attr-waigong-tag)" }}>
+                  攻击力 <span style={{ color: "var(--service-item-name)", fontWeight: 700 }}>{atk}</span>
                   {custom && category === "weapon" && (
                     <span style={{ marginLeft: 6, color: "var(--ink-text-dim)", fontSize: 9.5 }}>
                       倍率
                       <input type="number" step={0.05} min={1} max={1.6}
                         value={detailItem.atkMul ?? 1}
                         onChange={e => patchItem(nameOf(detailItem), { atkMul: Math.max(1, Math.min(1.6, Number(e.target.value) || 1)) })}
-                        style={{ width: 46, marginLeft: 4, textAlign: "center", background: "rgba(0,0,0,.4)", border: "1px solid var(--border-deep)", borderRadius: 0, color: "#e8b070", fontSize: 10 }} />
+                        style={{ width: 46, marginLeft: 4, textAlign: "center", background: "rgba(0,0,0,.4)", border: "1px solid var(--border-deep)", borderRadius: 0, color: "var(--service-item-name)", fontSize: 10 }} />
                     </span>
                   )}
                 </div>
               )}
               {def != null && (
-                <div style={{ fontSize: 10.5, color: "#6a9ac4" }}>
-                  防御力 <span style={{ color: "#8ab8e0", fontWeight: 700 }}>{def}</span>
+                <div style={{ fontSize: 10.5, color: "var(--footer-hint-title)" }}>
+                  防御力 <span style={{ color: "var(--ink-sky-soft)", fontWeight: 700 }}>{def}</span>
                   {custom && category === "armor" && (
                     <span style={{ marginLeft: 6, color: "var(--ink-text-dim)", fontSize: 9.5 }}>
                       倍率
                       <input type="number" step={0.05} min={1} max={1.6}
                         value={detailItem.defMul ?? 1}
                         onChange={e => patchItem(nameOf(detailItem), { defMul: Math.max(1, Math.min(1.6, Number(e.target.value) || 1)) })}
-                        style={{ width: 46, marginLeft: 4, textAlign: "center", background: "rgba(0,0,0,.4)", border: "1px solid var(--border-deep)", borderRadius: 0, color: "#8ab8e0", fontSize: 10 }} />
+                        style={{ width: 46, marginLeft: 4, textAlign: "center", background: "rgba(0,0,0,.4)", border: "1px solid var(--border-deep)", borderRadius: 0, color: "var(--ink-sky-soft)", fontSize: 10 }} />
                     </span>
                   )}
                 </div>
@@ -252,7 +252,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                         style={{
                           cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 0,
                           border: `1px solid ${on ? "var(--green-soft)" : "var(--bg-card)"}`,
-                          color: on ? "#bce8ac" : "#5a5448",
+                          color: on ? "var(--ci-pick)" : "var(--muted)",
                           background: on ? "rgba(138,176,112,.12)" : "transparent",
                         }}>{choice.label}</span>
                     );
@@ -295,7 +295,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
       </div>
 
       {forging && draft && (
-        <div style={{ marginBottom: 7, padding: "8px 10px", borderRadius: 0, border: "1px solid #3a4a38", background: "rgba(120,180,130,.05)" }}>
+        <div style={{ marginBottom: 7, padding: "8px 10px", borderRadius: 0, border: "1px solid var(--music-idle-icon)", background: "rgba(120,180,130,.05)" }}>
           <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
             <input value={draft.name} placeholder="物件名"
               onChange={e => setDraft(d => ({ ...d, name: e.target.value.slice(0, 20) }))}
@@ -332,7 +332,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                   style={{
                     cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 0,
                     border: `1px solid ${v ? "var(--green-soft)" : "var(--bg-card)"}`,
-                    color: v ? "#c8dfc0" : "#5a5448",
+                    color: v ? "var(--ci-pick)" : "var(--muted)",
                   }}>{k}{v ? ` +${v}` : ""}</span>
               );
             })}
@@ -351,7 +351,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                     </span>
                     <input type="range" min={1} max={1.6} step={0.05} value={mul}
                       onChange={e => setDraft(d => ({ ...d, atkMul: Number(e.target.value) }))}
-                      style={{ width: "100%", accentColor: "#d89050" }} />
+                      style={{ width: "100%", accentColor: "var(--attr-waigong-tag)" }} />
                   </label>
                 );
               })()}
@@ -365,7 +365,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                     </span>
                     <input type="range" min={1} max={1.6} step={0.05} value={mul}
                       onChange={e => setDraft(d => ({ ...d, defMul: Number(e.target.value) }))}
-                      style={{ width: "100%", accentColor: "#6a9ac4" }} />
+                      style={{ width: "100%", accentColor: "var(--footer-hint-title)" }} />
                   </label>
                 );
               })()}
@@ -393,7 +393,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                   style={{
                     cursor: "pointer", fontSize: 10, padding: "2px 7px", borderRadius: 0,
                     border: `1px solid ${on ? "var(--green-soft)" : "var(--bg-card)"}`,
-                    color: on ? "#bce8ac" : "#5a5448",
+                    color: on ? "var(--ci-pick)" : "var(--muted)",
                     background: on ? "rgba(138,176,112,.12)" : "transparent",
                   }}>{choice.label}</span>
               );
@@ -407,7 +407,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 title={draft.name ? "让 AI 照名字与品阶写两三句" : "先起个名"}
                 style={{
                   cursor: draft.name && !aiBusy ? "pointer" : "default", fontSize: 10,
-                  color: draft.name && !aiBusy ? "var(--ink-info)" : "#4a5450",
+                  color: draft.name && !aiBusy ? "var(--ink-info)" : "var(--building-desc)",
                 }}>{aiBusy ? "写着…" : "✎ 让 AI 写"}</span>
             )}
           </div>
@@ -433,9 +433,9 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
               style={{
                 cursor: draft.name.trim() ? "pointer" : "default", fontSize: 11,
                 padding: "4px 12px", borderRadius: 0, fontWeight: 700,
-                color: draft.name.trim() ? "var(--bg-deep)" : "#5a5448",
-                background: draft.name.trim() ? "linear-gradient(180deg,#a0c890,var(--ink-good))" : "rgba(0,0,0,.3)",
-                border: `1px solid ${draft.name.trim() ? "#a0c890" : "var(--border-deep)"}`,
+                color: draft.name.trim() ? "var(--bg-deep)" : "var(--muted)",
+                background: draft.name.trim() ? "linear-gradient(180deg,var(--tutorial-move),var(--ink-good))" : "rgba(0,0,0,.3)",
+                border: `1px solid ${draft.name.trim() ? "var(--tutorial-move)" : "var(--border-deep)"}`,
               }}>⚒ 造好，收进他身上</span>
           </div>
         </div>
@@ -449,7 +449,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
         border: "1px solid var(--bg-card)", borderBottom: "none", borderRadius: 0,
       }}>
         <span>百物录 {CATALOG.length} 件</span>
-        {list.length !== CATALOG.length && <span style={{ color: "#a89870" }}>· 当前 {list.length} 件</span>}
+        {list.length !== CATALOG.length && <span style={{ color: "var(--quest-stage-desc)" }}>· 当前 {list.length} 件</span>}
         <span style={{ flex: 1 }} />
         {carry.length ? <span style={{ color: "var(--ink-warn)" }}>已选 {carry.length}</span> : null}
       </div>
@@ -469,12 +469,12 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
                 display: "flex", alignItems: "center", gap: 6, padding: "4px 8px",
                 cursor: "pointer", fontSize: 10.5,
                 background: on ? "rgba(212,168,83,.10)" : "transparent",
-                borderBottom: "1px solid #1e1a12",
+                borderBottom: "1px solid var(--gamble-panel)",
               }}>
-              <span style={{ color: on ? "var(--ink-warn)" : "#4a4436", width: 10 }}>{on ? "◉" : "○"}</span>
-              <span style={{ color: tier?.color || "#a89870", width: 14 }}>{e.quality || "—"}</span>
+              <span style={{ color: on ? "var(--ink-warn)" : "var(--gamble-button-edge)", width: 10 }}>{on ? "◉" : "○"}</span>
+              <span style={{ color: tier?.color || "var(--quest-stage-desc)", width: 14 }}>{e.quality || "—"}</span>
               <span style={{ color: "var(--ink-text)", flex: 1 }}>{e.name}</span>
-              <span style={{ color: "#5a5448", fontSize: 9.5 }}>{e.category}</span>
+              <span style={{ color: "var(--muted)", fontSize: 9.5 }}>{e.category}</span>
             </div>
           );
         })}

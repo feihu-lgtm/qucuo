@@ -72,8 +72,8 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
             cursor: busy ? "wait" : "pointer", userSelect: "none",
             fontSize: 11, padding: "4px 11px", borderRadius: 0, whiteSpace: "nowrap",
             display: "inline-flex", alignItems: "center", gap: 5,
-            color: busy ? "#6a7a68" : "#9ac088",
-            border: `1px solid ${busy ? "#3a4a38" : "#4a6a48"}`,
+            color: busy ? "var(--ink-sage)" : "var(--tutorial-move)",
+            border: `1px solid ${busy ? "var(--music-idle-icon)" : "var(--temple-full)"}`,
             background: busy ? "rgba(0,0,0,.3)"
               : "linear-gradient(180deg,rgba(130,180,120,.16),rgba(0,0,0,.32))",
           }}>
@@ -149,12 +149,12 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
           display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap",
         }}>
           <span style={{
-            fontSize: 9, color: "#2f5e2c", border: "1px solid #3a6a38",
+            fontSize: 9, color: "var(--good)", border: "1px solid var(--skill-learned)",
             borderRadius: 0, padding: "0 4px", flexShrink: 0,
           }}>AI 荐位</span>
-          <span style={{ fontSize: 10.5, lineHeight: 1.6, color: "#43331c" }}>{why}</span>
+          <span style={{ fontSize: 10.5, lineHeight: 1.6, color: "var(--map-title-text)" }}>{why}</span>
           {rejected && (
-            <span style={{ fontSize: 10, color: "#a8443a" }}>
+            <span style={{ fontSize: 10, color: "var(--qb-status-edge)" }}>
               · 它给的据点不在本作地图里，已退回不落地，请自己选
             </span>
           )}

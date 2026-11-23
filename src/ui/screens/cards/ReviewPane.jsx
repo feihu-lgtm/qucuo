@@ -73,7 +73,7 @@ export default function ReviewPane({
   const applyBatchTier = (levelCap) => forEachPickedNpc(n => ({ ...n, levelCap }));
   const batchBtn = {
     cursor: "pointer", fontSize: 10.5, padding: "2px 8px", borderRadius: 0,
-    border: "1px solid var(--border-deep)", color: "#a89870", userSelect: "none",
+    border: "1px solid var(--border-deep)", color: "var(--quest-stage-desc)", userSelect: "none",
   };
 
   const shared = {

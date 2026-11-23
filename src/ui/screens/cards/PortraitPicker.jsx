@@ -69,8 +69,8 @@ export default function PortraitPicker({ value, onChange, cardImage, npcName }) 
           style={{
             cursor: cardImage && !busy ? "pointer" : "not-allowed",
             fontSize: 10.5, padding: "4px 10px", borderRadius: 0,
-            border: `1px solid ${cardImage ? "#4a6a48" : "var(--bg-card)"}`,
-            color: cardImage ? "#9ac088" : "#4a4436",
+            border: `1px solid ${cardImage ? "var(--temple-full)" : "var(--bg-card)"}`,
+            color: cardImage ? "var(--tutorial-move)" : "var(--gamble-button-edge)",
             opacity: cardImage ? 1 : .55,
           }}>
           {busy === "卡图" ? "压缩中…" : "用卡自带的图"}
@@ -88,7 +88,7 @@ export default function PortraitPicker({ value, onChange, cardImage, npcName }) 
 
         <span style={{ flex: 1 }} />
         {custom && (
-          <span style={{ fontSize: 9, color: "#9ac088", border: "1px solid #4a6a48", borderRadius: 0, padding: "0 4px" }}>
+          <span style={{ fontSize: 9, color: "var(--tutorial-move)", border: "1px solid var(--temple-full)", borderRadius: 0, padding: "0 4px" }}>
             自备图
           </span>
         )}
@@ -101,14 +101,14 @@ export default function PortraitPicker({ value, onChange, cardImage, npcName }) 
             style={{
               width: custom ? 68 : 46, height: custom ? 100 : 46,
               objectFit: "cover", objectPosition: "top center",
-              borderRadius: 0, border: "1px solid #4a4028",
+              borderRadius: 0, border: "1px solid var(--service-card-edge)",
             }} />
           <div style={{ fontSize: 10, color: "var(--ink-muted)", lineHeight: 1.8 }}>
             {custom ? "已存进入册库，跟着这个角色一起落册。" : `内置立绘 · ${value}`}
             {info && (
               <>
                 <br />
-                <span style={{ color: "#9ac088" }}>
+                <span style={{ color: "var(--tutorial-move)" }}>
                   {info.from.w}×{info.from.h}
                   {info.from.bytes ? ` ${fmtBytes(info.from.bytes)}` : ""}
                   {" → "}{info.w}×{info.h} {fmtBytes(info.bytes)}

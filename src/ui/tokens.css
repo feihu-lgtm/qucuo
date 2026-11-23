@@ -428,6 +428,9 @@
   --qc-glow: rgba(200, 50, 58, 0.32);
   --qc-hi: #e8e4d6;
   --slash-rot: rotate(0deg);
+
+  /* 导卡/审改流程：选中态浅绿高亮（收录 #bce8ac #cdeebf #b4ecdc #c8dfc0 一族） */
+  --ci-pick: #bce8ac;
 }
 
 :root[data-font="pixel"] {

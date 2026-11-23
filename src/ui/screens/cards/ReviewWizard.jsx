@@ -72,7 +72,7 @@ export default function ReviewWizard({
                       transition: "all .15s ease",
                     }}>
                     <div style={{ fontSize: 22, marginBottom: 6 }}>☯</div>
-                    <div style={{ color: playerFromNpc == null ? accent : "#a89870", fontSize: 13 }}>空白 · 自己填</div>
+                    <div style={{ color: playerFromNpc == null ? accent : "var(--quest-stage-desc)", fontSize: 13 }}>空白 · 自己填</div>
                   </div>
                   {result.npcs.map((n, i) => {
                     const on = playerFromNpc === n.name;
@@ -99,7 +99,7 @@ export default function ReviewWizard({
                   })}
                 </div>
                 {bodyBusy && (
-                  <div style={{ marginTop: 12, fontSize: 11, color: "#7a9a70" }}>⏳ 正在让 AI 从外貌拆出体貌 7 项…</div>
+                  <div style={{ marginTop: 12, fontSize: 11, color: "var(--quest-success-text)" }}>⏳ 正在让 AI 从外貌拆出体貌 7 项…</div>
                 )}
               </div>
             )}
@@ -118,7 +118,7 @@ export default function ReviewWizard({
                   cardMesExample={parsed?.card?.fields?.mesExample || ""}
                 />
                 {bodyBusy && (
-                  <div style={{ marginTop: 10, fontSize: 11, color: "#7a9a70" }}>⏳ 正在让 AI 从外貌拆出体貌（公开＋私密）…</div>
+                  <div style={{ marginTop: 10, fontSize: 11, color: "var(--quest-success-text)" }}>⏳ 正在让 AI 从外貌拆出体貌（公开＋私密）…</div>
                 )}
               </div>
             )}
@@ -214,8 +214,8 @@ export default function ReviewWizard({
                 <div style={{ fontSize: 15, color: "var(--paper)", letterSpacing: 3, marginBottom: 10 }}>选开局同行 · 落册</div>
 
                 {/* 开局同行：从入江湖的人里指定 1 人随队（唯一出战位）*/}
-                <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 0, background: "rgba(138,176,112,.06)", border: "1px solid #3a4a34" }}>
-                  <div style={{ fontSize: 11.5, color: "#bce8ac", marginBottom: 4 }}>谁与你一起同行（初始队友）</div>
+                <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 0, background: "rgba(138,176,112,.06)", border: "1px solid var(--music-idle-icon)" }}>
+                  <div style={{ fontSize: 11.5, color: "var(--ci-pick)", marginBottom: 4 }}>谁与你一起同行（初始队友）</div>
                   <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 8, lineHeight: 1.7 }}>
                     从入江湖的人里指定 1 人开局就随队（唯一出战位）；其余同伴后续可在游戏里邀请。不选也行。
                   </div>
@@ -228,8 +228,8 @@ export default function ReviewWizard({
                             title={isStarter ? "点掉就不随队" : "让他开局就随队"}
                             style={{
                               cursor: "pointer", userSelect: "none", fontSize: 11.5, padding: "4px 11px", borderRadius: 0,
-                              border: `1px solid ${isStarter ? "var(--green-soft)" : "#3a4a34"}`,
-                              color: isStarter ? "#bce8ac" : "#a8b8a0",
+                              border: `1px solid ${isStarter ? "var(--green-soft)" : "var(--music-idle-icon)"}`,
+                              color: isStarter ? "var(--ci-pick)" : "var(--tutorial-move)",
                               background: isStarter ? "rgba(138,176,112,.15)" : "rgba(0,0,0,.2)",
                             }}>{isStarter ? "◉ " : "○ "}{n.name}</span>
                         );
@@ -243,7 +243,7 @@ export default function ReviewWizard({
                 <div style={{ fontSize: 13, color: "var(--paper)", letterSpacing: 2, marginBottom: 12 }}>确认落册</div>
 
                 <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 0, background: "rgba(212,168,83,.06)", border: `1px solid ${accent}44` }}>
-                  <div style={{ fontSize: 11.5, color: "#d8c8a0", marginBottom: 6 }}>主角</div>
+                  <div style={{ fontSize: 11.5, color: "var(--ink-tan)", marginBottom: 6 }}>主角</div>
                   <div style={{ fontSize: 13, color: "var(--paper)" }}>
                     {result.player?.name || playerFromNpc || "（未填名讳）"}
                   </div>
@@ -257,7 +257,7 @@ export default function ReviewWizard({
                 </div>
 
                 <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 0, background: "rgba(0,0,0,.2)", border: "1px solid var(--bg-card)" }}>
-                  <div style={{ fontSize: 11.5, color: "#d8c8a0", marginBottom: 6 }}>
+                  <div style={{ fontSize: 11.5, color: "var(--ink-tan)", marginBottom: 6 }}>
                     落江湖 {pickedNpcs.length} 人
                     {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
                   </div>
@@ -266,7 +266,7 @@ export default function ReviewWizard({
                       <span key={i} style={{
                         fontSize: 11, padding: "3px 9px", borderRadius: 0,
                         border: `1px solid ${starterCompanion === n.name ? "var(--green-soft)" : "var(--border-deep)"}`,
-                        color: starterCompanion === n.name ? "#bce8ac" : "var(--text)",
+                        color: starterCompanion === n.name ? "var(--ci-pick)" : "var(--text)",
                         background: starterCompanion === n.name ? "rgba(138,176,112,.15)" : "rgba(0,0,0,.2)",
                       }}>
                         {n.name}

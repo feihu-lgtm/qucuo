@@ -102,16 +102,16 @@ export default function ReviewRoster({
                   style={{
                     cursor: "pointer", userSelect: "none", fontSize: 11.5,
                     padding: "6px 12px", borderRadius: 0, whiteSpace: "nowrap",
-                    border: `1px solid ${allOn ? accent : "#5a5038"}`,
+                    border: `1px solid ${allOn ? accent : "var(--ink-wood-edge)"}`,
                     background: "rgba(0,0,0,.3)",
-                    color: allOn ? accent : "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)",
+                    color: allOn ? accent : "var(--qb-text-dim)", textShadow: "0 1px 2px rgba(0,0,0,.85)",
                   }}>{allOn ? "◉ 全不选" : "○ 全选"}</span>
 
                 <PlanEquipButtons npcCount={result.npcs.length} planBusy={planBusy} planAll={planAll}
                   equipBusy={equipBusy} equipAll={equipAll} districtNote="据点只能从本作地图里选，" />
 
                 <span style={{ flex: 1 }} />
-                <span style={{ fontSize: 11, color: "#cabfa0", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>
+                <span style={{ fontSize: 11, color: "var(--qb-text-dim)", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>
                   入 {pickedNpcs.length}／{result.npcs.length} 人
                   {placedCount ? `（${placedCount} 人会真的出现）` : "（都只在被提到时注入）"}
                 </span>
