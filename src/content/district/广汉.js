@@ -86,6 +86,7 @@ export default { district: {
         exits: { s: "青铜神树下" },
         // 交还神鸟后常开；星4 纵目者亲自引人下井受「纵目问心」，私吞神鸟的人也能走完星4。
         unlockCondition: { type: "anyFlag", flags: ["quest_sxs3_return", "quest_sx4_summon"] },
+        buildingId: "sanxing_bronze_abyss",
       },
       // ── 丐帮三星分舵（合稿·丐帮 2.2；破庙前镇烟火，后墟肃杀）──
       三星镇西口集市: {

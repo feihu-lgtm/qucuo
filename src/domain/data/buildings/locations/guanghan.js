@@ -63,4 +63,8 @@ export const guanghan = [
       id: "transport_guanghan", name: "广汉镇驿站", type: BUILDING_TYPE.TRANSPORT,
       desc: "镇口客栈旁拴着几匹川马，驾车的老把式不问来路。花银两可直接抵达已探索的其他据点，省得从川西尽头一步步走回去。",
     },
+    {
+      id: "sanxing_bronze_abyss", name: "归墟青铜秘井", type: BUILDING_TYPE.DUNGEON, dungeonId: "sanxing_bronze_abyss",
+      desc: "金乌暗室深处的干涸古井，铜环与古蜀机关层层相扣，深处隐现太阳神鸟圆台。",
+    },
 ];

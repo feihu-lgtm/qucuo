@@ -1,6 +1,7 @@
 // 通用地宫配置表（纯静态数据，不依赖上层逻辑）。
-// 首期接入「白塔地宫」（white_pagoda_crypt），后续据点如三星铸铜地窖、熊山古洞
-// 可直接按同结构追加条目与对应 buildings/locations/*.js 入口。
+// 覆盖八大地宫：白塔地宫 + 广汉/蜀南唐堡/雾隐寨/天龙营/贡措海/锦官城/黑风寨七座区域地宫。
+
+import { DUNGEON_CATALOG_EXTRA } from "./catalogExtra.js";
 
 export const DUNGEON_NODE_TYPE = Object.freeze({
   TRAP: "trap",
@@ -8,11 +9,11 @@ export const DUNGEON_NODE_TYPE = Object.freeze({
   EVENT: "event",
   TREASURE: "treasure",
   REST: "rest",
+  ADVENTURER: "adventurer",
   BOSS: "boss",
 });
 
-export const DUNGEON_CATALOG = Object.freeze({
-  white_pagoda_crypt: {
+const WHITE_PAGODA_CRYPT = {
     id: "white_pagoda_crypt",
     name: "白塔地宫",
     district: "白塔",
@@ -336,7 +337,11 @@ export const DUNGEON_CATALOG = Object.freeze({
       ],
       reward: { money: 68, exp: 8, pot: 6, items: ["守宫砂"] },
     },
-  },
+};
+
+export const DUNGEON_CATALOG = Object.freeze({
+  white_pagoda_crypt: WHITE_PAGODA_CRYPT,
+  ...DUNGEON_CATALOG_EXTRA,
 });
 
 export function getDungeonConfig(dungeonId) {

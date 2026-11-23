@@ -10,4 +10,8 @@ export const gongcuohai = [
       id: "dugu_tomb", name: "令狐冲墓", type: BUILDING_TYPE.WUGUAN, skillSet: "独孤",
       desc: "华山令狐冲之墓。墓壁刻有独孤九剑剑诀，笔锋斩石三分。剑诀不授不卖，只看你自己看不看得懂——外功够了，站在壁前自然就懂了。",
     },
+    {
+      id: "gongcuo_submerged_vault", name: "贡措湖底密室", type: BUILDING_TYPE.DUNGEON, dungeonId: "gongcuo_submerged_vault",
+      desc: "冰湖水底幽深的剑修遗冢，寒煞凝冰，隐约埋着雪域神兵与秘药。",
+    },
 ];

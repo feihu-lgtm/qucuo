@@ -22,6 +22,7 @@ export default { district: {
         // 属性门：内功≥100 才能强行破门进入。地图上可见按钮，
         // 点击时判定属性，不够则提示失败。
         unlockCondition: { type: "stat", stat: "neigong", threshold: 100 },
+        buildingId: "gongcuo_submerged_vault",
       },
     },
   }

@@ -10,8 +10,24 @@ const NODE_BADGE = {
   [DUNGEON_NODE_TYPE.EVENT]: "奇遇",
   [DUNGEON_NODE_TYPE.TREASURE]: "秘宝",
   [DUNGEON_NODE_TYPE.REST]: "休整",
+  [DUNGEON_NODE_TYPE.ADVENTURER]: "冒险者",
   [DUNGEON_NODE_TYPE.BOSS]: "首领",
 };
+
+function renderNodeTitle(node) {
+  const adv = node?.adventurer;
+  if (!adv) return node.title;
+  const prefix = node.title.split("·")[0]?.trim() || "江湖奇遇";
+  const cls = `adventurer-rainbow adventurer-rainbow--${adv.rainbowStyle || "prism"}`;
+  return (
+    <span>
+      {prefix} · <span className={cls}>{adv.name}</span>
+      <span style={{ fontSize: 10.5, color: "var(--text-dim)", marginLeft: 6 }}>
+        {adv.title} · {adv.archetypeLabel}
+      </span>
+    </span>
+  );
+}
 
 const cardStyle = (zoneTheme) => ({
   border: `1px solid ${zoneTheme.border}`,
@@ -59,11 +75,16 @@ export default function DungeonNodeView({
     return (
       <div style={cardStyle(zoneTheme)}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <span style={{ color: zoneTheme.accent, fontSize: 13 }}>{node.title}</span>
+          <span style={{ color: zoneTheme.accent, fontSize: 13 }}>{renderNodeTitle(node)}</span>
           <span style={{ fontSize: 10.5, color: zoneTheme.accentDim }}>
             [{NODE_BADGE[node.type] || "节点"}]
           </span>
         </div>
+        {node.adventurer && (
+          <div style={{ fontSize: 11, color: zoneTheme.textDim, marginBottom: 6 }}>
+            {node.adventurer.personality}
+          </div>
+        )}
         <div style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.6, marginBottom: 10 }}>
           {node.desc}
         </div>
@@ -111,7 +132,7 @@ export default function DungeonNodeView({
       {(run.choices || []).map((node) => (
         <div key={node.nodeId} style={cardStyle(zoneTheme)}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-            <span style={{ color: zoneTheme.accent, fontSize: 12.5 }}>{node.title}</span>
+            <span style={{ color: zoneTheme.accent, fontSize: 12.5 }}>{renderNodeTitle(node)}</span>
             <span style={{ fontSize: 10.5, color: zoneTheme.accentDim }}>
               {NODE_BADGE[node.type] || "节点"}
             </span>

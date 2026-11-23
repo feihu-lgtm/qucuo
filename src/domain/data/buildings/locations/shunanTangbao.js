@@ -17,4 +17,8 @@ export const shunanTangbao = [
       id: "sect_entry_tangmen", name: "宗祠·入堂石", type: BUILDING_TYPE.SECT_ENTRY, sect: "唐门",
       desc: "唐家宗祠门前的入堂石，向唐老太行礼立誓、滴血入槽，便领一块玄竹弟子令。",
     },
+    {
+      id: "tangmen_poison_vault", name: "唐堡试毒暗阁", type: BUILDING_TYPE.DUNGEON, dungeonId: "tangmen_poison_vault",
+      desc: "外姓竹坞尽头的唐门试毒暗阁，朱签陶瓮与千机暗弩交错，深处封存孤本暗器。",
+    },
 ];

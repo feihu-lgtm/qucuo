@@ -6,7 +6,16 @@ import {
   useSessionUi, setPigeonTarget, setInteractMode,
   setActiveNpcMenu, setCharacterPageTarget, setPeoplePanel,
 } from "../../../store/sessionUiStore.js";
+import { ADVENTURER_BY_NAME, isAdventurerName } from "../../../domain/data/dungeon/adventurers.js";
 import NpcAngerLine from "../NpcAngerLine.jsx";
+
+function adventurerClass(npcOrName) {
+  const name = typeof npcOrName === "string" ? npcOrName : npcOrName?.name;
+  const obj = typeof npcOrName === "object" ? npcOrName : null;
+  if (!obj?.adventurer && !obj?.rainbow && !isAdventurerName(name)) return null;
+  const variant = obj?.rainbowStyle || ADVENTURER_BY_NAME[name]?.rainbowStyle || "prism";
+  return `adventurer-rainbow adventurer-rainbow--${variant}`;
+}
 
 export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, char, addLog, inputRef, uiGreen, uiPink }) {
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
@@ -57,7 +66,11 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
               <div key={i} style={{ marginBottom: 6, paddingBottom: 6, borderBottom: i < present.length - 1 ? `1px solid ${zoneTheme.border}` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ color: uiGreen, flex: 1 }}>
-                    {n.name}<span style={{ color: zoneTheme.textDim, fontSize: "11px", marginLeft: 6 }}>{n.brief}</span>
+                    {(() => {
+                      const cls = adventurerClass(n);
+                      return cls ? <span className={cls}>{n.name}</span> : n.name;
+                    })()}
+                    <span style={{ color: zoneTheme.textDim, fontSize: "11px", marginLeft: 6 }}>{n.brief}</span>
                   </span>
                   {hasAffection ? (
                     <span style={{ fontSize: "10.5px", flexShrink: 0, textAlign: "right", whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
@@ -87,7 +100,12 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
               <div key={name} style={{ marginBottom: 5 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span onClick={() => { setCharacterPageTarget(name); openOverlay(OVERLAY.CHARACTER_PAGE); }} title="打开此人详情面板"
-                    style={{ cursor: "pointer", color: "var(--text)", flex: 1, fontSize: "11px" }}>{name}</span>
+                    style={{ cursor: "pointer", color: "var(--text)", flex: 1, fontSize: "11px" }}>
+                    {(() => {
+                      const cls = adventurerClass(name);
+                      return cls ? <span className={cls}>{name}</span> : name;
+                    })()}
+                  </span>
                   <span onClick={() => {
                       if ((char.pigeons || 0) <= 0) { addLog([{ t: "sys", text: `  没有信鸽——去驿站买鸽子，或到驿站直接寄信/送礼给${name}。` }]); return; }
                       setPigeonTarget(name); setInteractMode("pigeon"); setTimeout(() => inputRef.current?.focus(), 0);

@@ -63,6 +63,7 @@ export default { district: {
         desc: "藏在吊脚楼地桩下方的天然溶洞，石壁渗着泛红的寒水，角落里堆着贴了蜀南唐门封条的铁木箱，空气里满是刺鼻的火药硫磺与赤蜈干尸混杂的腥气。",
         exits: { s: "百蛊湿廊" },
         unlockCondition: { type: "item", itemName: "赤蜈铜牌" },
+        buildingId: "wuxian_centipede_den",
         residentNpcName: "麻九娘",
       },
       圣母沉香阁: {

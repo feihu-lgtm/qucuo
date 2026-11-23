@@ -64,6 +64,7 @@ export default { district: {
           { type: "all", of: [{ type: "factionRep", faction: "黑风寨", min: 40 }, { type: "questCompleted", questId: "heifengzhai_3_shangshan" }] },
           { type: "questStarted", questId: "heifengzhai_5_langyanjiuzhang" },
         ] },
+        buildingId: "heifeng_wolf_cavern",
       },
     },
   }

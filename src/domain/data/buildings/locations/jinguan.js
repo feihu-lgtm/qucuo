@@ -122,4 +122,8 @@ export const jinguan = [
       id: "sectshop_guan", name: "都事府兵备库", type: BUILDING_TYPE.SECTSHOP, shopKey: "锦官兵备",
       desc: "城东营房后墙一溜库房，制式腰刀、皂隶衣、罚没来路的物件码得整整齐齐，班头侯敢按着登记册发卖——官仓的货，比市集便宜，但要讲资格。",
     },
+    {
+      id: "jingguan_iron_dungeon", name: "北衙铁栅暗牢", type: BUILDING_TYPE.DUNGEON, dungeonId: "jingguan_iron_dungeon",
+      desc: "营房地底盘旋十二级的玄铁死牢，深处锁着罚没物证与要犯密室。",
+    },
 ];

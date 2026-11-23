@@ -573,6 +573,39 @@ div[style*="position: fixed"][style*="z-index"] {
   to { transform: rotate(360deg); }
 }
 
+@keyframes adventurer-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.adventurer-rainbow {
+  display: inline-block;
+  font-weight: 700;
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: adventurer-shimmer 4.5s linear infinite;
+}
+
+.adventurer-rainbow--prism {
+  background-image: linear-gradient(90deg, #ff7eb3, #ffd166, #6ee7b7, #60a5fa, #c084fc, #ff7eb3);
+}
+
+.adventurer-rainbow--aurora {
+  background-image: linear-gradient(90deg, #38bdf8, #818cf8, #e879f9, #34d399, #38bdf8);
+}
+
+.adventurer-rainbow--sunset {
+  background-image: linear-gradient(90deg, #fb7185, #f59e0b, #facc15, #f472b6, #fb7185);
+}
+
+.adventurer-rainbow--jade {
+  background-image: linear-gradient(90deg, #34d399, #22d3ee, #a7f3d0, #60a5fa, #34d399);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

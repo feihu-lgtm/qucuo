@@ -317,6 +317,7 @@ export default { district: {
             { type: "questStarted", questId: "jinguancheng_guan2_guitu" },
           ] },
         ] },
+        buildingId: "jingguan_iron_dungeon",
       },
     },
   }

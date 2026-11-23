@@ -111,6 +111,7 @@ export default { district: {
         desc: `　　乐帐东边一个半掩在沙坡里的石窟，窟口垂着蟒皮帘。里头阴凉潮湿，陶瓮一排排码着，瓮口盖着木板，板下沙沙作响。
 　　摩呼罗迦罗蛇君盘腿坐在窟底，膝上卧着一条手腕粗的乌鞘蛇。他说话很慢，蛇也不急。`,
         exits: { w: "乾达婆乐帐" },
+        buildingId: "tianlong_serpent_crypt",
       },
     },
   }

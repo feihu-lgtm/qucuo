@@ -34,4 +34,8 @@ export const wuyin = [
       id: "kitchen_wuxian", name: "酸汤竹灶", type: BUILDING_TYPE.KITCHEN,
       desc: "用湿泥糊成的苗家地灶，吊锅里常年咕嘟着红亮酸汤，墙上挂满腊肉、山椒与野菌。寨里人说，进了毒瘴谷要想不烂肠子，每天得吃三口滚烫酸辣。",
     },
+    {
+      id: "wuxian_centipede_den", name: "赤蜈百蛊毒窟", type: BUILDING_TYPE.DUNGEON, dungeonId: "wuxian_centipede_den",
+      desc: "吊脚楼地桩下方的天然溶洞，寒水渗赤，百蛊与火药封印交错其间。",
+    },
 ];

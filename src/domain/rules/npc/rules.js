@@ -4,6 +4,7 @@ import { ensureNpcCombatData } from "../npc/npcGeneration.js";
 import { mapDescriptionToGenParams } from "../../data/npc/npcDescriptionMapping.js";
 import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../data/npc/npcPool.js";
 import { getCrowd, getRandomPassers } from "../../data/npc/randomPassers.js";
+import { getWorldAdventurers } from "../../data/dungeon/adventurers.js";
 import { injectNpcs } from "../npc/roomNpcs.js";
 import { getResidentNpcs, RESIDENT_NPCS } from "../../data/npc/residentNpcs.js";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
@@ -15,6 +16,7 @@ const NPC_FIELDS = [
   "fullBio", "personality", "burdenMoveIds", "carry", "gambleBidder",
   "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop",
   "portrait", "neigong", "waigong", "imported", "hostile", "faction", "gender", "randomPasser",
+  "adventurer", "adventurerDay", "rainbow", "rainbowStyle", "archetype", "archetypeLabel", "title",
 ];
 
 export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5 } = {}) {
@@ -131,11 +133,21 @@ export const residentNpcRule = {
       .filter((npc) => npc?.randomPasser === dayIdx)
       .map((npc) => npc.name));
     const varTree = state.varTree || {};
+    const worldAdventurers = getWorldAdventurers(room.name, time)
+      .map((adv) => {
+        const existing = existingByName.get(adv.name);
+        return buildRoomNpcWithCombat(adv, { existingNpc: existing?.adventurerDay === dayIdx ? existing : undefined, luck });
+      });
+    const advRosterNames = new Set(worldAdventurers.map((npc) => npc.name));
+    const isStaleAdventurer = (npc) => npc?.adventurerDay != null && (npc.adventurerDay !== dayIdx || !advRosterNames.has(npc.name));
+    const hasStaleAdventurers = (room.npcs || []).some(isStaleAdventurer);
+
     const passerReserved = new Set([
       ...[...(varTree.世界?.已认识人物 || []), ...Object.keys(varTree.角色 || {})]
         .filter((name) => !todaysPassers.has(name)),
       ...importedRegistry.getImportedResidentNames(),
       ...importedNpcs.map((npc) => npc.name),
+      ...advRosterNames,
     ]);
     const passers = getRandomPassers(room.name, time, passerReserved)
       .map((passer) => {
@@ -146,7 +158,7 @@ export const residentNpcRule = {
     const rosterNames = new Set(passers.map((npc) => npc.name));
     const isStalePasser = (npc) => npc?.randomPasser != null && (npc.randomPasser !== dayIdx || !rosterNames.has(npc.name));
     const hasStalePassers = (room.npcs || []).some(isStalePasser);
-    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...passers];
+    const toInject = [...poolNpcs, ...residentNpcs, ...activeEscortTargets, ...gambleBidders, ...importedNpcs, ...worldAdventurers, ...passers];
     // 不具名群众：按天固定，有内层地图的分散到各公共房间
     const crowdRooms = hasInnerMap(room.name) ? getPublicInnerRoomNames(room.name) : [];
     const crowd = getCrowd(room.name, time).map((label) => {
@@ -155,7 +167,7 @@ export const residentNpcRule = {
       return { label, innerRoom: crowdRooms[Math.floor(rng() * crowdRooms.length)] };
     });
     const crowdChanged = JSON.stringify(room.crowd || []) !== JSON.stringify(crowd);
-    if (!toInject.length && !staleNames.size && !hasStalePassers && !crowdChanged) return null;
+    if (!toInject.length && !staleNames.size && !hasStalePassers && !hasStaleAdventurers && !crowdChanged) return null;
 
     if (hasInnerMap(room.name)) {
       const rooms = getPublicInnerRoomNames(room.name);
@@ -180,7 +192,7 @@ export const residentNpcRule = {
       changes: {
         room: (previous) => ({
           ...previous,
-          npcs: injectNpcs((previous.npcs || []).filter((npc) => !isStalePasser(npc) && (npc.imported || !staleNames.has(npc.name))), toInject),
+          npcs: injectNpcs((previous.npcs || []).filter((npc) => !isStalePasser(npc) && !isStaleAdventurer(npc) && (npc.imported || !staleNames.has(npc.name))), toInject),
           crowd,
         }),
       },

@@ -30,4 +30,8 @@ export const tianlongying = [
       id: "library_tianlong", name: "止戈经帐", type: BUILDING_TYPE.LIBRARY,
       desc: "安静得不像军营的经帐，毡壁上挂着褪色的白帆，案上摊着写满经文的羊皮卷。",
     },
+    {
+      id: "tianlong_serpent_crypt", name: "摩呼罗迦蛇窟", type: BUILDING_TYPE.DUNGEON, dungeonId: "tianlong_serpent_crypt",
+      desc: "沙坡下垂着蟒皮帘的西域秘窟，陶瓮成列，深处盘坐天龙八部护法。",
+    },
 ];
