@@ -5,7 +5,7 @@ import { applyResult } from "../../features/run.js";
 import { parseLocalCommand } from "../../engine/localCommands.js";
 import { shouldThrottleMovement } from "../../features/map/logic.js";
 import { consumeDuelRequest } from "./useDuel.js";
-import { callModel } from "../../infra/ai.js"; import { classifyError } from "../../utils/apiErrors.js";
+import { callModel } from "../../engine/ports/ai.js"; import { classifyError } from "../../utils/apiErrors.js";
 import { step as traceStep } from "../../infra/actionTrace.js";
 import { getTurnContext, PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 import { burnSquare, consumeArrival } from "../../domain/rules/map/mapSquares.js";

@@ -22,8 +22,8 @@ import {
   pendingNodes, serializeSquares, loadSquares,
 } from "../../domain/rules/map/mapSquares.js";
 import { roadNameGuard } from "../../domain/rules/map/encounter.js";
-import { createWebAi } from "../../infra/ai.js";
-import { withAI } from "../../infra/withAI.js";
+import { createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../engine/ports/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();

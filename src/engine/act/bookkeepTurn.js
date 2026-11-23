@@ -1,10 +1,10 @@
 import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
 import { bookkeepToPatches } from "../../domain/rules/memory/bookkeep.js";
 import { applyPatches } from "../../domain/rules/state/applyPatches.js";
-import { runBookkeep } from "../../infra/bookkeep.js";
+import { runBookkeep } from "../ports/bookkeep.js";
 import { getLedger } from "../../domain/rules/memory/npcLedger.js";
 import { buildPresence } from "../prompt/roundNotes.js";
-import { bindTurnAi, createWebAi } from "../../infra/ai.js";
+import { bindTurnAi, createWebAi } from "../ports/ai.js";
 import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 
 function targetName(target) {

@@ -12,8 +12,8 @@ import { UNKNOWN_CHOICE } from "../../domain/rules/settle/judge.js";
 import { SOFT_SETTLE_KINDS } from "../../domain/rules/settle/softRules.js";
 import { applyMvuCommands } from "../../domain/rules/prompt/mvu.js";
 import { formatAngerResolutionLog, resolveAngerSignals } from "../../domain/rules/combat/stealSystem.js";
-import { runSoftSettle } from "../../infra/softSettle.js";
-import { bindTurnAi } from "../../infra/ai.js";
+import { runSoftSettle } from "../ports/softSettle.js";
+import { bindTurnAi } from "../ports/ai.js";
 import { turnMonitor } from "../../infra/turnMonitor.js";
 
 export async function settleTurn({ ctx, ai, trace, turnOpts, cmd, getGameState, setVarTreeState }) {
