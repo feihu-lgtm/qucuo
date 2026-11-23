@@ -22,6 +22,8 @@ export default function OverlayHost({ ctx, apiReady, onCloseInitialSettings }) {
   const nsfwOn = useSessionUi(s => s.nsfwOn);
   const closeSettings = () => {
     closeOverlay(OVERLAY.SETTINGS);
+    // 关闭即清上次停留的子页——下次打开回到设置主页（挂载 effect 复位晚于面板首读，这里兜底）
+    setSettingsInitialTab(null);
     onCloseInitialSettings?.();
   };
   if (!apiReady) {
