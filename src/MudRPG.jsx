@@ -185,14 +185,14 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   });
 
   const { noteAction, jotNote, dayMaterialRef } = useNotes({
-    apiCfg, time, room, varTreeRef, timeRef, setVarTree,
+    apiCfg, setVarTree,
   });
   const featureCtxRef = useRef(null);
 
   // 日总结（大纸条）：跨天时后台归纳刚过去这一天攒下的原料，存进 varTree.世界.日总结。
   // fire-and-forget：AI 失败就不写，缺一天日总结无伤大雅，绝不阻断游戏。
   const { aiSummarizeFact: summarizeFact } = useDaySummary({
-    time, apiCfg, setVarTree, varTreeRef, dayMaterialRef, prerunSquares: scheduledPrerunSquares,
+    apiCfg, setVarTree, dayMaterialRef, prerunSquares: scheduledPrerunSquares,
   });
   const aiSummarizeFact = useCallback(
     (...args) => commandScheduler.dispatch("daySummary", () => summarizeFact(...args)),
@@ -207,10 +207,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc });
 
   const { talkToNarrator } = usePrivateTalk({
-    narrator, addLog, apiCfg, convo, room, preset, flags,
-    jotNote, char, nsfwOn, questProgress, changePendingTalks,
-    talkBusyRef, schedulerRef, setInput, timeRef, varTreeRef, setLog, setConvo,
-    setVarTree, setNarrator, noteAction,
+    apiCfg, nsfwOn, jotNote, noteAction, changePendingTalks,
+    setInput, talkBusyRef, schedulerRef, setVarTree,
   });
 
 
@@ -220,7 +218,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 只报字段/描述/加成，不报获取途径：怎么弄到手得自己走一趟。
   const outfitAdvice = commandScheduler.wrapHandlers("useOutfitAdvice", useOutfitAdvice({ char, apiCfg, setOutfitState }));
   const aiInspect = commandScheduler.wrapHandlers("useAiInspect", useAiInspect({
-    addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv,
+    addLog, jotNote, apiCfg,
     dispatchCommand,
   }));
   const progressionHandlers = commandScheduler.wrapHandlers("useProgressionHandlers", useProgressionHandlers({

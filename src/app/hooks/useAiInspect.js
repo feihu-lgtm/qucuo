@@ -5,13 +5,15 @@ import { startTrace, step as traceStep, endTrace } from "../../engine/ports/acti
 import { PHASE, turnMonitor } from "../../engine/ports/turnMonitor.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
+import { gameActions, gameStore } from "../../store/gameStore.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();
 
 export function useAiInspect({
-  addLog, jotNote, setTime, setFlags, apiCfg, skills, char, inv, dispatchCommand,
+  addLog, jotNote, apiCfg, dispatchCommand,
 }) {
+  const { setTime, setFlags } = gameActions;
   // 点击武学/包袱物品时，临场调用 AI 生成一段介绍文字，不修改任何游戏状态
   const [inspecting, setInspecting] = useState(null); // 记录正在查看哪个名字，用于按钮禁用/loading态展示
   // kind 标签映射：目前 "skill"(武学) / "item"(随身物品) / "pigeon"(信鸽) 三种，
@@ -93,6 +95,7 @@ export function useAiInspect({
   const collectInspectables = useCallback(() => {
     const list = [];
     // 可修炼武学：extra 跟点击调用逐字对齐（含品阶+阶段+等级，升级后键会变、自然重跑）
+    const { skills, char, inv } = gameStore.getState();
     for (const s of (skills || [])) {
       const q = s.quality || "白";
       const extra = s.fixed ? `${q}品·授业绝学（完整）` : `${q}品·${s.stage}`;
@@ -110,7 +113,7 @@ export function useAiInspect({
       else if (typeof it === "string") list.push({ kind: "item", name: it, extra: null, itemObj: null });
     }
     return list;
-  }, [skills, char.moveset, inv]);
+  }, []);
 
   // 用 ref 持有最新的 collectInspectables，让下面那个"每20秒一跳"的定时循环始终能读到
   // 当前最新清单，而不必把 collectInspectables 放进 effect 依赖——否则背包一变 effect 就重跑、

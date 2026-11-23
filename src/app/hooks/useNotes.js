@@ -3,32 +3,35 @@ import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { writeNote } from "../../engine/ports/noteMemory.js";
 import { tallyAdd } from "../../domain/rules/memory/tally.js";
 import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
+import { gameStore } from "../../store/gameStore.js";
 
-export function useNotes({ apiCfg, time, room, varTreeRef, timeRef, setVarTree }) {
+export function useNotes({ apiCfg, setVarTree }) {
   const noteEnvRef = useRef({});
   useEffect(() => {
-    noteEnvRef.current = { apiCfg, time, roomName: room.name, roomNpcs: room.npcs, varTree: varTreeRef.current };
+    noteEnvRef.current = { apiCfg };
   });
   const dayMaterialRef = useRef([]);
   const noteAction = useCallback((kind, n = 1) => {
     setVarTree(prev => {
       const next = JSON.parse(JSON.stringify(prev || {}));
       if (!next.世界) next.世界 = { 威望: 0 };
-      next.世界.起居注 = tallyAdd(next.世界.起居注, kind, timeRef.current, n);
+      next.世界.起居注 = tallyAdd(next.世界.起居注, kind, gameStore.getState().time, n);
       return next;
     });
-  }, []);
+  }, [setVarTree]);
 
   const jotNote = useCallback(({ text, owner = [], source = NOTE_SOURCE.DUMB }) => {
     const env = noteEnvRef.current;
     if (!text || !env.apiCfg) return;
-    dayMaterialRef.current.push({ turn: env.time, text });
+    // Store 直读：写纸条时现取 time/room/varTree，不经 hook 参数透传（路线一）。
+    const { time, room, varTree } = gameStore.getState();
+    dayMaterialRef.current.push({ turn: time, text });
     const knownNames = Array.from(new Set([
-      ...(env.roomNpcs || []).map(n => n.name),
-      ...Object.keys(env.varTree?.角色 || {}),
+      ...(room?.npcs || []).map(n => n.name),
+      ...Object.keys(varTree?.角色 || {}),
       ...Object.keys(QUCUO_MAP),
     ]));
-    writeNote({ cfg: env.apiCfg, text, turn: env.time, owner, source, place: env.roomName, knownNames })
+    writeNote({ cfg: env.apiCfg, text, turn: time, owner, source, place: room?.name, knownNames })
       .catch(() => {});
   }, []);
 
