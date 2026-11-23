@@ -152,6 +152,23 @@ describe("NPC gift logic", () => {
     expect(result.deliveredQuest).toBeNull();
   });
 
+  it("starts and advances a giver quest too when the deliver item reaches its recipient", () => {
+    const item = { name: "糌粑" };
+    const state = makeState({
+      inv: [item],
+      varTree: { 角色: {}, 世界: { 势力声誉: { 鱼定村: 20 } } },
+      questProgress: {
+        village1_lubujianbuping: { status: "completed", currentStageIndex: 2 },
+      },
+    });
+    const result = giftNpc(state, { name: "老孙" }, item, 100);
+
+    expect(result.deliveredQuest?.id).toBe("village2_jieshixiajiu");
+    expect(result.changes.flags?.([])).toContain("quest_village2_s1");
+    // 交付物只扣一次：礼物通道不预扣，由 forceAdvanceQuest 统一扣
+    expect(result.changes.inv(state.inv)).toEqual([]);
+  });
+
   it("removes the divine_huxiao delivery material before adding its reward", () => {
     const material = { id: "huxiao-material", name: "虎王的牙筋", category: "misc", quality: "橙" };
     const retainedItem = { id: "kept-item", name: "草药", category: "misc", quality: "白" };

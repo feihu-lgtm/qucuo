@@ -102,3 +102,41 @@ describe("forceAdvanceQuest · 非 localOnly 兜底校验", () => {
     expect(result.changes).toEqual({});
   });
 });
+
+describe("forceAdvanceQuest · deliver/collect 实物闸", () => {
+  const deliverQuest = {
+    id: "deliver_quest",
+    stages: [
+      { completionFlag: "s1_delivered", deliver: { item: "糌粑", to: "老孙" }, onReach: { money: 5 } },
+      { completionFlag: "s2_done", onReach: {} },
+    ],
+  };
+  const base = {
+    flags: [], questProgress: {}, char: {}, varTree: {},
+    room: { name: "x", npcs: [{ name: "老孙" }] }, inv: [{ name: "糌粑" }],
+  };
+
+  it("物在包里、收件人在场才推进，交付件从背包扣一件", () => {
+    const result = forceAdvanceQuest(base, deliverQuest, "s1_delivered");
+    expect(result.changes.questProgress({}).deliver_quest.currentStageIndex).toBe(1);
+    expect(result.changes.inv(base.inv)).toEqual([]);
+  });
+
+  it("空手或收件人不在场一律拒收", () => {
+    expect(forceAdvanceQuest({ ...base, inv: [] }, deliverQuest, "s1_delivered").changes).toEqual({});
+    expect(forceAdvanceQuest(
+      { ...base, room: { name: "x", npcs: [{ name: "才旦" }] } },
+      deliverQuest, "s1_delivered",
+    ).changes).toEqual({});
+  });
+
+  it("collect 阶段要采集物已在包里才放行", () => {
+    const collectQuest = {
+      id: "collect_quest",
+      stages: [{ completionFlag: "c_done", collect: { item: "油布包", at: "鱼定村·村口" }, onReach: {} }],
+    };
+    expect(forceAdvanceQuest({ ...base, inv: [] }, collectQuest, "c_done").changes).toEqual({});
+    const ok = forceAdvanceQuest({ ...base, inv: [{ name: "油布包" }] }, collectQuest, "c_done");
+    expect(ok.changes.questProgress({}).collect_quest.status).toBe("completed");
+  });
+});

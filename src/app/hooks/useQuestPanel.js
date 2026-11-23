@@ -113,6 +113,29 @@ export function useQuestPanel({
       act(line);
       return;
     }
+    // deliver/collect 阶段不能靠点 ❢ 空推进：东西不在包里或收件人不在场时，
+    // 只提示玩家去送/去采，不落 flag（forceAdvanceQuest 里还有一道同样的闸）。
+    const hasItem = (wanted) => (gameStore.getState().inv || []).some((entry) => {
+      const n = typeof entry === "string" ? entry : entry?.name;
+      return !!n && (n === wanted || n.includes(wanted) || wanted.includes(n));
+    });
+    const delivery = stage.deliver;
+    if (delivery) {
+      const targetHere = (gameStore.getState().room?.npcs || []).some((n) => n.name === delivery.to);
+      if (!hasItem(delivery.item) || !targetHere) {
+        addLog([{
+          t: "sys",
+          text: `  「${quest.title}」要把「${delivery.item}」亲手交给${delivery.to}${hasItem(delivery.item) ? "——得到他跟前再送" : "——先去把东西备齐"}。`,
+        }]);
+        return;
+      }
+    }
+    const collectReqs = stage.collect ? (Array.isArray(stage.collect) ? stage.collect : [stage.collect]) : [];
+    const missing = collectReqs.find((c) => c?.item && !hasItem(c.item));
+    if (missing) {
+      addLog([{ t: "sys", text: `  「${quest.title}」还差「${missing.item}」没到手${missing.at ? `——去${missing.at}取` : ""}。` }]);
+      return;
+    }
     const targetFlag = Array.isArray(stage.completionFlag) ? stage.completionFlag[0] : stage.completionFlag;
     forceAdvanceQuest(quest, targetFlag);
     addLog([

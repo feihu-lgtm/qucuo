@@ -11,10 +11,15 @@ const noOpResult = () => ({ logs: [] });
 const invalidAmountResult = () => ({ logs: [{ t: "err", text: "  数额无效" }] });
 
 const flagList = (value) => (Array.isArray(value) ? value : value ? [value] : []);
+const invIndexOf = (inv, wanted) => (inv || []).findIndex((entry) => {
+  const name = typeof entry === "string" ? entry : entry?.name;
+  return !!name && (name === wanted || name.includes(wanted) || wanted.includes(name));
+});
 
 export function forceAdvanceQuest(state, quest, targetFlag, now) {
   const stage = quest.localOnly && getLocalQuestStage(quest, state);
   if (quest.localOnly && !isLocalQuestStageFlag(stage, targetFlag)) return { changes: {} };
+  let deliverToConsume = null;
   if (!quest.localOnly) {
     // 兜底校验：门槛（前置任务/声誉/威望，经 varTree）没过、任务已完结、
     // 或目标 flag 不属于当前阶段的 completionFlag 一律拒收——不然提前塞进
@@ -24,6 +29,18 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
     if (prog && prog.status !== "active") return { changes: {} };
     const cur = prog ? getCurrentStage(quest, prog) : quest.stages?.[0];
     if (!flagList(cur?.completionFlag).includes(targetFlag)) return { changes: {} };
+    // 实物校验：deliver 阶段要玩家手里真有这件东西、收件人此刻在场；
+    // collect 阶段要采集物都已在包里。❢ 面板、送礼、决斗分支都过这道闸，
+    // 空手点按钮或隔空交物一律拒收（村2 曾空手 ❢ 直接置旗）。
+    const delivery = cur?.deliver;
+    if (delivery) {
+      const roomNpcs = state.room?.npcs;
+      const targetHere = !roomNpcs?.length || roomNpcs.some((n) => n.name === delivery.to);
+      if (invIndexOf(state.inv, delivery.item) === -1 || !targetHere) return { changes: {} };
+      deliverToConsume = delivery;
+    }
+    const collectReqs = cur?.collect ? (Array.isArray(cur.collect) ? cur.collect : [cur.collect]) : [];
+    if (collectReqs.some((c) => c?.item && invIndexOf(state.inv, c.item) === -1)) return { changes: {} };
   }
   const progressNow = state.questProgress?.[quest.id];
   const choice = (progressNow ? getCurrentStage(quest, progressNow) : quest.stages?.[0])?.choices?.find((entry) => entry.flag === targetFlag);
@@ -99,6 +116,15 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
   };
 
   for (const rewards of pendingRewards) commitPatches(setters, stageRewardPatches(rewards, now));
+  // 交付件由这里统一扣一件——礼物通道（exchange）已跳过自己的预扣，
+  // ❢ 面板/决斗分支原本根本不扣，都会在这里落到背包上。
+  if (deliverToConsume) {
+    const wanted = deliverToConsume.item;
+    invUpdates.push((prevInv) => {
+      const idx = invIndexOf(prevInv, wanted);
+      return idx === -1 ? prevInv : [...prevInv.slice(0, idx), ...prevInv.slice(idx + 1)];
+    });
+  }
   if (invUpdates.length) {
     changes.inv = (prev) => invUpdates.reduce(
       (value, update) => typeof update === "function" ? update(value) : update,

@@ -77,8 +77,9 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   for (const quest of QUCUO_QUESTS) {
     if (!quest.stages?.length) continue;
     const progress = state.questProgress?.[quest.id];
-    // 没有发布人的任务（山3·上山）第一步就是交东西：还没「接」也算数，交到人手上即开启并推进。
-    const unstartedHandIn = !progress && !quest.giver && isQuestGateOpen(quest, state.questProgress, state.flags, state.varTree);
+    // 交物任务还没「接」也能交到收件人手上：无发布人（山3·上山）和有发布人
+    // （村2 替才旦送糌粑）都一样，门开着交到即开启并推进，不会被当普通礼物吞掉。
+    const unstartedHandIn = !progress && isQuestGateOpen(quest, state.questProgress, state.flags, state.varTree);
     if (progress?.status !== "active" && !unstartedHandIn) continue;
     const stage = progress ? getCurrentStage(quest, progress) : quest.stages[0];
     const delivery = stage?.deliver;
@@ -103,7 +104,9 @@ export function giftNpc(state, npc, item, now = Date.now()) {
 
   const isAngry = isNpcAngry(state.varTree, npc.name);
   const command = isAngry ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好` : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
-  const changes = { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }), inv: applyWrite(state, set("inv", nextInv)).state.inv };
+  // 命中任务交付时不在此预扣——交付物由 forceAdvanceQuest 统一扣，否则一件东西被扣两次。
+  const changes = { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }) };
+  if (!deliveredQuest) changes.inv = applyWrite(state, set("inv", nextInv)).state.inv;
   const logs = [];
   const snowFlags = [];
   if (snowMedicineGift(state, npc, item)) {
@@ -146,15 +149,21 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   }
   if (deliveredQuest) {
     const advancement = forceAdvanceQuest(state, deliveredQuest.quest, deliveredQuest.flag, now);
-    for (const [key, update] of Object.entries(advancement.changes)) {
-      changes[key] = (key === "varTree" || key === "inv") && changes[key]
-        ? composeUpdates(changes[key], update)
-        : update;
+    if (Object.keys(advancement.changes).length) {
+      for (const [key, update] of Object.entries(advancement.changes)) {
+        changes[key] = (key === "varTree" || key === "inv") && changes[key]
+          ? composeUpdates(changes[key], update)
+          : update;
+      }
+      logs.push({
+        t: "affection",
+        text: `  ✓ 你把「${itemName}」交到${npc.name}手上，「${deliveredQuest.quest.title}」推进。`,
+      });
+    } else {
+      // 闸口没放行（如任务被别的旗锁住）——退回普通赠予，物品自己扣，不落「推进」假日志。
+      deliveredQuest = null;
+      changes.inv = applyWrite(state, set("inv", nextInv)).state.inv;
     }
-    logs.push({
-      t: "affection",
-      text: `  ✓ 你把「${itemName}」交到${npc.name}手上，「${deliveredQuest.quest.title}」推进。`,
-    });
   }
   return {
     changes,
