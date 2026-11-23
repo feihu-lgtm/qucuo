@@ -102,7 +102,7 @@ const styles = {
   },
   imageFallback: {
     width: "100%", height: "100%", display: "block",
-    background: "radial-gradient(ellipse at 50% 35%, #2a3340 0%, #141820 55%, var(--bg-panel) 100%)",
+    background: "radial-gradient(ellipse at 50% 35%, var(--ink-edge-quest) 0%, var(--building-panel-bg) 55%, var(--bg-panel) 100%)",
   },
   vignette: {
     position: "absolute",
@@ -144,7 +144,7 @@ const styles = {
     fontSize: "clamp(13px, 1.9vh, 17px)",
     lineHeight: 1.85,
     // 纸面上要墨色，不能再用原来那个浅米白——那是给"压在画面上"设计的
-    color: "#3a2a16",
+    color: "var(--codex-ink)",
     // 原来是给"白字压深色画面"设计的重阴影；落到纸面上就是一团脏。
     // 换成极淡的暖影，只为让墨色离纸面一点点。
     textShadow: "0 1px 0 rgba(255,248,230,.6)",
@@ -155,7 +155,7 @@ const styles = {
     letterSpacing: "3px",
     marginTop: "0.6vh",
     // 不再用主题 accent——那个色是为深色面板挑的，落在纸面上几乎看不见。
-    color: "#8a6a3a",
+    color: "var(--map-locked)",
     opacity: 0.95,
   }),
   dots: {

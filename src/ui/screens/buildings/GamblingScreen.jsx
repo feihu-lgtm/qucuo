@@ -82,7 +82,7 @@ export default function GamblingScreen({ building, char, flags, time, zoneTheme,
           </>
         )}
 
-        <div style={{ color: "#4a4a4a", fontSize: 10, marginTop: 14 }}>
+        <div style={{ color: "var(--building-desc)", fontSize: 10, marginTop: 14 }}>
           {building.desc}
         </div>
       </div>

@@ -431,6 +431,12 @@
 
   /* 导卡/审改流程：选中态浅绿高亮（收录 #bce8ac #cdeebf #b4ecdc #c8dfc0 一族） */
   --ci-pick: #bce8ac;
+  /* 提示词注入块小标签 + 日志夜色调色板（随昼夜切换各收各色） */
+  --inject-worldbook: #c07a9a;
+  --log-stat: #8ab4d4;
+  --log-choice: #6aaa8a;
+  --log-affection: #f0a0c0;
+  --log-dialogue: #e8a0d8;
 }
 
 :root[data-font="pixel"] {
@@ -452,6 +458,17 @@
   --muted: #5a5448;
   --plate: #f4f2e9;
   --qc-hi: #201d18;
+  /* 日志白昼调色板 */
+  --log-desc: #3d3626;
+  --log-room: #1e5a6a;
+  --log-item: #7a5410;
+  --log-skill: #5a3a7a;
+  --log-choice: #2e6a4a;
+  --log-narrator: #8a2a6a;
+  --log-affection: #a0305a;
+  --log-confess: #8a5a0a;
+  --log-quest: #8a5a0a;
+  --log-dialogue: #8a1e6a;
 }
 
 html,

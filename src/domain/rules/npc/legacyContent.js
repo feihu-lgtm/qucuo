@@ -3,7 +3,7 @@ import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
 // 历史版本人物改名迁移表：同一个 NPC 在旧版本里叫别的名字/用别的 id 时，
 // 老存档里按旧名/旧 id 记下的数据（角色面板键、在场 NPC、roomMap、日志文本等）
 // 读档时统一迁到新名，老档不断档。
-// 只登记「同人改名」；新增/删除人物不走这里（#274 天龙教改回原作名后的迁移表）。
+// 只登记「同人改名」；新增/删除人物不走这里（PR274 天龙教改回原作名后的迁移表）。
 
 // 显示名 → 新显示名（人物名、房间/roomMap npcs[].name、varTree.角色 键、日志文本）
 export const LEGACY_NPC_RENAMES = {

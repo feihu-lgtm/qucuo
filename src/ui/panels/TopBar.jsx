@@ -156,11 +156,11 @@ export default function TopBar({
         {autoSaveError && (
           <span
             title={`自动存档失败：${autoSaveError}。当前进度可能无法保存，建议尽快手动导出或清理浏览器存储空间。`}
-            style={{ color: "#e0526a", fontSize: "9.5px", cursor: "help" }}
+            style={{ color: "var(--qb-versus)", fontSize: "9.5px", cursor: "help" }}
           >⚠ 存档失败</span>
         )}
         {!autoSaveError && lastAutoSave && (
-          <span style={{ color: "#3a4a3a", fontSize: "9.5px", transition: "opacity 0.3s" }}>● 已保存</span>
+          <span style={{ color: "var(--music-idle-icon)", fontSize: "9.5px", transition: "opacity 0.3s" }}>● 已保存</span>
         )}
         {/* 桌面版右上角同 iOS：全流程日志入口 + 回合状态灯 */}
         {!isMobile && (
@@ -217,7 +217,7 @@ export default function TopBar({
               </label>
               {playerAvatarCustom && (
                 <span onClick={() => { setPlayerAvatarCustom(""); closeOverlay(OVERLAY.AVATAR_PICKER); }}
-                  style={{ cursor: "pointer", fontSize: "11.5px", color: "#c47070", padding: "6px 12px", border: "1px solid #3a1a1a", borderRadius: 0 }}>
+                  style={{ cursor: "pointer", fontSize: "11.5px", color: "var(--ink-danger-soft)", padding: "6px 12px", border: "1px solid var(--footer-stalled-bg)", borderRadius: 0 }}>
                   恢复默认（按性别）
                 </span>
               )}

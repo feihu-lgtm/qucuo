@@ -36,13 +36,13 @@ export default function BigMapModal({
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ color: "#4a3520", fontSize: "13px", fontWeight: "bold" }}>
+          <span style={{ color: "var(--map-title-text)", fontSize: "13px", fontWeight: "bold" }}>
             {view === "inner" ? `村图·${room.name}内景全图` : "舆图·曲措乡全境"}{" "}
-            <span style={{ color: "#7a6448", fontSize: "10px", fontWeight: "normal" }}>
+            <span style={{ color: "var(--map-path)", fontSize: "10px", fontWeight: "normal" }}>
               {view === "inner" ? "朱红为当前所在 · 点相邻房间前往" : "朱红为当前所在 · 点已探明据点自动前往 · 🔒需前置"}
             </span>
           </span>
-          <span role="button" style={{ color: "#6a4a2a", fontSize: "11px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap", minWidth: 56, flexShrink: 0, padding: "15px 0", margin: "-15px 0" }} onClick={() => setMapBig(false)}>× 关闭</span>
+          <span role="button" style={{ color: "var(--codex-desc)", fontSize: "11px", cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap", minWidth: 56, flexShrink: 0, padding: "15px 0", margin: "-15px 0" }} onClick={() => setMapBig(false)}>× 关闭</span>
         </div>
         {view === "outer" && (() => {
           const completed = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));

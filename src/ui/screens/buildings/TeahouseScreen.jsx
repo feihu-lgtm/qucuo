@@ -39,7 +39,7 @@ export default function TeahouseScreen({ building, char, flags, time, zoneTheme,
             onListenRumor(RUMORS[idx], COST);
           }}
         />
-        <div style={{ color: "#4a4a4a", fontSize: 10, marginTop: 12 }}>
+        <div style={{ color: "var(--building-desc)", fontSize: 10, marginTop: 12 }}>
           江湖消息真假参半，听个热闹，说不定能有用。
         </div>
       </div>

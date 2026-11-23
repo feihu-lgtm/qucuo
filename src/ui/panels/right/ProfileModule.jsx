@@ -111,7 +111,7 @@ export default function ProfileModule({ zoneTheme, char, exp, pot, playerAvatar,
         <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>
         <div style={{ fontSize: "11px", color: zoneTheme.textDim, marginBottom: 8 }}>{char.gender || "男"}　少侠</div>
         <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "var(--red-soft)" : "var(--ink-text)" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
-        <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "var(--red-soft)" : "#888" }}>{char.hp[0]}/{char.hp[1]}</span></div>
+        <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "var(--red-soft)" : "var(--attr-value)" }}>{char.hp[0]}/{char.hp[1]}</span></div>
         <div style={{ fontSize: "11.5px", marginBottom: 3 }}>经验 <span style={{ color: "var(--ink-warn)" }}>{exp}</span>　潜能 <span style={{ color: "var(--violet)" }}>{pot}</span></div>
         <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "var(--gold-bright)" }}>{char.money || 0}</span> 两</div>
         <div style={{ fontSize: "11.5px", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>

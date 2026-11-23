@@ -59,7 +59,7 @@ export default function LibraryScreen({ building, char, skills, flags, time, zon
               </div>
               <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 6 }}>{book.desc}</div>
               {owned
-                ? <span style={{ color: "#3a5a3a", fontSize: 11 }}>✓ 已习得</span>
+                ? <span style={{ color: "var(--skill-learned)", fontSize: 11 }}>✓ 已习得</span>
                 : <Btn label="购买" disabled={money < book.price} zoneTheme={zoneTheme} onClick={() => onBuyBook(book)} />
               }
             </div>

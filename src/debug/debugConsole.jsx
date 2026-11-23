@@ -100,32 +100,32 @@ export default function DebugConsole() {
   }
 
   const btn = {
-    background: "#2a2214", color: "#e8d6a8", border: "1px solid #6b5836",
+    background: "var(--ink-wood-mid)", color: "var(--qb-narrative)", border: "1px solid var(--ink-brass-edge)",
     padding: "8px 14px", borderRadius: 0, cursor: busy ? "wait" : "pointer",
     fontSize: 14, fontFamily: "inherit", opacity: busy ? 0.6 : 1,
   };
-  const pureBtn = { ...btn, borderColor: "#3f5a3f", color: "#bce0bc" };
+  const pureBtn = { ...btn, borderColor: "var(--skill-learned)", color: "var(--ink-tier-text)" };
 
   return (
     <div style={{
-      minHeight: "100vh", background: "#14110c", color: "#d8c7a0",
+      minHeight: "100vh", background: "var(--qb-felt)", color: "var(--ink-tan)",
       fontFamily: '"Songti SC", "SimSun", serif', padding: "clamp(12px,4vw,24px) clamp(10px,3vw,20px)", boxSizing: "border-box",
     }}>
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 22, color: "#e8c874", margin: "0 0 4px", letterSpacing: 2 }}>曲措乡 · 调试台</h1>
-        <div style={{ fontSize: 12, color: "#8a7a58", marginBottom: 16 }}>
+        <h1 style={{ fontSize: 22, color: "var(--mind-gold)", margin: "0 0 4px", letterSpacing: 2 }}>曲措乡 · 调试台</h1>
+        <div style={{ fontSize: 12, color: "var(--tavern-zone-label)", marginBottom: 16 }}>
           不经开局界面，点按钮跑检查、看文字输出。等价于终端 <code>npm run debug</code>。
         </div>
 
         {/* 配置状态 */}
         <div style={{
-          background: "#1c1810", border: "1px solid #3a3020", borderRadius: 0,
+          background: "var(--gamble-bottom)", border: "1px solid var(--gamble-felt-top)", borderRadius: 0,
           padding: "10px 14px", marginBottom: 16, fontSize: 13,
         }}>
-          <span style={{ color: "#8a7a58" }}>当前 API 配置（来自游戏 ⚙设置 · localStorage）：</span>{" "}
+          <span style={{ color: "var(--tavern-zone-label)" }}>当前 API 配置（来自游戏 ⚙设置 · localStorage）：</span>{" "}
           {hasApiCredentials(cfg)
-            ? <span style={{ color: "#bce0bc" }}>{cfg.apiType} · {getApiModel(cfg)} · {describeCredentials(cfg)}</span>
-            : <span style={{ color: "#d08a6a" }}>未配置（调 AI 的按钮会提示）</span>}
+            ? <span style={{ color: "var(--ink-tier-text)" }}>{cfg.apiType} · {getApiModel(cfg)} · {describeCredentials(cfg)}</span>
+            : <span style={{ color: "var(--lore-amber)" }}>未配置（调 AI 的按钮会提示）</span>}
           <button onClick={reloadCfg} style={{ ...btn, padding: "3px 10px", marginLeft: 12, fontSize: 12 }}>重载配置</button>
         </div>
 
@@ -135,15 +135,15 @@ export default function DebugConsole() {
           <button style={pureBtn} onClick={runMvu} disabled={busy}>MVU 裁决（纯逻辑）</button>
           <button style={btn} onClick={runApi} disabled={busy}>API 连通（调 AI）</button>
           <button style={btn} onClick={runExtract} disabled={busy}>叙事→状态（调 AI）</button>
-          <button style={{ ...btn, borderColor: "#5a3a3a", color: "#d0a0a0", marginLeft: "auto" }} onClick={clear} disabled={busy}>清屏</button>
+          <button style={{ ...btn, borderColor: "var(--tavern-table-edge)", color: "var(--qb-status-text)", marginLeft: "auto" }} onClick={clear} disabled={busy}>清屏</button>
         </div>
 
         {/* 输出面板 */}
         <pre style={{
-          background: "#0e0c08", border: "1px solid #2a2418", borderRadius: 0,
+          background: "var(--ink-bg)", border: "1px solid var(--bg-card)", borderRadius: 0,
           padding: 16, minHeight: 320, maxHeight: "60vh", overflow: "auto",
           fontFamily: '"SF Mono", "Menlo", monospace', fontSize: 12.5, lineHeight: 1.6,
-          color: "#cdbf9a", whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0,
+          color: "var(--qb-text-dim)", whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0,
         }}>
           {out.length ? out.join("\n") : "（点上面的按钮开始…纯逻辑按钮随时能点；调 AI 的按钮需要先在游戏里配好 API）"}
           {busy ? "\n\n⏳ 正在调用 AI……" : ""}

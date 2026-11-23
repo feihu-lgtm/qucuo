@@ -65,7 +65,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
               <span style={{ color: zoneTheme.textDim }}>起拍 <span style={{ color: zoneTheme.text }}>{AUCTION_CONFIG.startingBid}</span> 两</span>
               <span style={{ color: zoneTheme.textDim }}>一口价 <span style={{ color: "var(--gold)" }}>{AUCTION_CONFIG.buyoutPrice}</span> 两</span>
               <span style={{ flex: 1 }} />
-              <span style={{ color: money >= next ? "var(--clay)" : "#c47070" }}>随身 {money} 两</span>
+              <span style={{ color: money >= next ? "var(--clay)" : "var(--ink-danger-soft)" }}>随身 {money} 两</span>
             </div>
 
             {/* 竞价记录 */}
@@ -81,7 +81,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
               {st.log.map((l, i) => (
                 <div key={i} style={{
                   fontSize: 11.5, marginBottom: 4,
-                  color: l.who === "player" ? "var(--clay)" : l.who === "shill" ? "#c8a860" : zoneTheme.textDim,
+                  color: l.who === "player" ? "var(--clay)" : l.who === "shill" ? "var(--ink-brass-lit)" : zoneTheme.textDim,
                 }}>{l.text}</div>
               ))}
               <div ref={logEndRef} />
@@ -96,7 +96,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
               </div>
             )}
 
-            {err && <div style={{ color: "#c47070", fontSize: 11.5, marginBottom: 8 }}>{err}</div>}
+            {err && <div style={{ color: "var(--ink-danger-soft)", fontSize: 11.5, marginBottom: 8 }}>{err}</div>}
 
             {/* 操作 */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

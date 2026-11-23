@@ -41,7 +41,7 @@ export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, 
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", marginBottom: 5,
         backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }}>
         {q && <span style={{ color: QUAL_COLOR[q] || "var(--ink-text)", fontSize: 10 }}>●</span>}
-        <span style={{ flex: 1, color: "#f0e0b8", fontSize: 12.5, textShadow: "0 1px 2px var(--black)" }}>{nameOf(it)}</span>
+        <span style={{ flex: 1, color: "var(--ink-cream-bright)", fontSize: 12.5, textShadow: "0 1px 2px var(--black)" }}>{nameOf(it)}</span>
         <span onClick={() => (side === "chest" ? retrieveItem(idx) : storeItem(idx))}
           style={{ cursor: "pointer", padding: "3px 12px", fontSize: 11, fontWeight: "bold",
             backgroundImage: `url(${UI("bar_paper.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",

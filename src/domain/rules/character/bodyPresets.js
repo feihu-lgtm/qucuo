@@ -1,7 +1,7 @@
 // 体貌库预设、开局八立绘对应体貌与灵兽化形体貌档案（纯数据与纯函数）
 // ============================================================================
 // 对齐 bodyProfile.js 十二项字段（公开 7 + 私密 5）、public/portraits/player/ 八张预制立绘、
-// PR #238 成年女子硬口径（ADULT_HUMAN_FORM）与游戏内置 ■模式 写作规则。
+// PR PR238 成年女子硬口径（ADULT_HUMAN_FORM）与游戏内置 ■模式 写作规则。
 import { BODY_FIELDS, INTIMATE_FIELDS, PUBLIC_FIELDS, emptyBodyProfile } from "./bodyProfile.js";
 
 // 开局 8 张预制立绘（public/portraits/player/），每张一一对应一套成年人十二项体貌。

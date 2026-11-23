@@ -129,12 +129,12 @@ export const CONSTRAINT_FIELDS = [
 
 // kind → 展示标签(名称 + 颜色)。颜色用中性色，避免与游戏内主题冲突。
 export const KIND_META = {
-  engine:     { label: "引擎硬规范", color: "#8a7a5a", editable: false },
-  static:     { label: "静态文案·可编辑", color: "#5a9a5a", editable: true },
-  constraint: { label: "结构化约束", color: "#5a8ac0", editable: true },
-  dynamic:    { label: "运行时动态", color: "#a06a4a", editable: false },
-  gated:      { label: "世界书·蓝绿灯", color: "#9a7ac0", editable: false },
-  worldbook:  { label: "旁白专属世界书", color: "#c07a9a", editable: true },
+  engine:     { label: "引擎硬规范", color: "var(--tavern-zone-label)", editable: false },
+  static:     { label: "静态文案·可编辑", color: "var(--ink-good)", editable: true },
+  constraint: { label: "结构化约束", color: "var(--footer-hint-title)", editable: true },
+  dynamic:    { label: "运行时动态", color: "var(--codex-chip-off)", editable: false },
+  gated:      { label: "世界书·蓝绿灯", color: "var(--lore-script)", editable: false },
+  worldbook:  { label: "旁白专属世界书", color: "var(--inject-worldbook)", editable: true },
 };
 
 // ============================================================================

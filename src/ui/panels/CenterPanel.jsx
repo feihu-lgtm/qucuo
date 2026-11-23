@@ -125,7 +125,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
         <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: "rgba(196,80,68,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: "var(--text)", fontSize: "12px", flex: 1 }}>是否与「{duelPending.name}」正式切磋？一旦开打，就要见真章了。</span>
           <span onClick={duelHandlers.confirmDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--ink-bg-panel)", background: "var(--red-soft)", border: "1px solid var(--red-soft)" }}>确认切磋</span>
-          <span onClick={duelHandlers.cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid #2a2d3a" }}>算了</span>
+          <span onClick={duelHandlers.cancelDuel} style={{ cursor: "pointer", fontSize: "11.5px", padding: "4px 12px", borderRadius: 0, color: "var(--text-dim)", border: "1px solid var(--ink-edge-quest)" }}>算了</span>
         </div>
       )}
 

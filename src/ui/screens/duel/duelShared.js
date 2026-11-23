@@ -54,7 +54,7 @@ export const styles = {
   topBar: { display: "flex", alignItems: "center", gap: 12 },
   sideInfo: { flex: 1 },
   name: (t) => ({ fontSize: "12px", color: t.text, marginBottom: 4 }),
-  hpText: { fontSize: "10px", color: "#888", marginTop: 2 },
+  hpText: { fontSize: "10px", color: "var(--attr-value)", marginTop: 2 },
   vsBadge: (t) => ({
     fontSize: "10px", color: t.accent, border: `1px solid ${t.accent}`,
     borderRadius: 0, padding: "3px 8px", display: "flex",

@@ -160,7 +160,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                   ) : resolvePortrait(portraits, name) ? (
                     <img src={resolvePortrait(portraits, name)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <span style={{ color: "#3a3830", fontSize: "10px" }}>点击上传</span>
+                    <span style={{ color: "var(--ink-dim-deep)", fontSize: "10px" }}>点击上传</span>
                   )}
                 </div>
                 <div style={{ fontSize: "11px", color: "var(--text)", marginBottom: 4 }}>
@@ -169,7 +169,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                       portraits[name] 有值、即确实上传过时才出现），标一下免得玩家
                       对着一张删不掉的图找删除键。传了自己的图之后这个标记就让位。 */}
                   {!portraits[name] && hasBuiltinPortrait(name) && (
-                    <span style={{ color: "#5a6a5a", fontSize: "9px", marginLeft: 4 }}>内置</span>
+                    <span style={{ color: "var(--inject-ok)", fontSize: "9px", marginLeft: 4 }}>内置</span>
                   )}
                   {portraits[name] && (
                     <span style={{ color: "var(--accent)", fontSize: "9px", marginLeft: 4 }}>自定义</span>
