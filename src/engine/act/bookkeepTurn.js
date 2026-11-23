@@ -5,7 +5,7 @@ import { runBookkeep } from "../ports/bookkeep.js";
 import { getLedger } from "../../domain/rules/memory/npcLedger.js";
 import { buildPresence } from "../prompt/roundNotes.js";
 import { bindTurnAi, createWebAi } from "../ports/ai.js";
-import { PHASE, turnMonitor } from "../ports/turnMonitor.js";
+import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 
 function targetName(target) {
   return typeof target === "string" ? target : target?.name;

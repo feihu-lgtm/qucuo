@@ -3,7 +3,7 @@ import { parseMainResponse } from "./act/parseResponse.js";
 import { buildExtractionCfg, normalizeDuelRequest } from "../domain/rules/prompt/extractionEngine.js";
 import { callExtraction } from "./ports/extraction.js";
 import { step as traceStep } from "../infra/actionTrace.js";
-import { PHASE, turnMonitor } from "./ports/turnMonitor.js";
+import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
 import { buildHistBlock, histBlockSavings } from "../domain/rules/memory/histWindow.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { setIntentPending, armIntentTriggers, fireIntentTriggers, expireIntentTriggers } from "../../store/intentPendingStore.js";
-import { turnMonitor, getTurnContext } from "../../engine/ports/turnMonitor.js";
+import { turnMonitor, getTurnContext } from "../../infra/turnMonitor.js";
 import { applyResult } from "../../features/run.js";
 import { recognizeNpc, tradeWithNpc } from "../../features/npc/logic.js";
 import { ACTION_KINDS, KIND_COMMAND } from "../../domain/rules/intent/actionKinds.js";
