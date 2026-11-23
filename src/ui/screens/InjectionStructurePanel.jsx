@@ -21,7 +21,7 @@ import {
 } from "../../domain/rules/prompt/injectionBlocks.js";
 import * as ENGINE from "../../domain/rules/prompt/enginePrompts.js";
 import { buildExtractionSpecExample } from "../../domain/rules/prompt/extractionEngine.js";
-import { getTraceLog } from "../../engine/ports/actionTrace.js";
+import { getTraceLog } from "../../infra/actionTrace.js";
 import { getPositionMeta } from "../../domain/rules/prompt/tavernMapping.js";
 
 export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled }) {

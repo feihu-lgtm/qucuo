@@ -1,6 +1,6 @@
 import { callModel, callModelStream, loadConfig, hasApiCredentials, parseRetryAfter } from "./apiConfig.js";
 import { cleanJsonString } from "../../utils/jsonClean.js";
-import { observeAi, observed } from "./observeAi.js";
+import { observeAi, observed } from "../../infra/observeAi.js";
 
 // ports 层对 apiConfig 的中转：本模块从 ./apiConfig.js（infra 统一出口）取这些符号，
 // 其余 ports 文件不再各自直连 infra（分层守卫按 importer 计 externalInfraImports）。
