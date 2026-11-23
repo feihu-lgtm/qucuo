@@ -68,7 +68,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
         {n.entryFromAi
           ? <Src source="ai" why="按本作格式重写过" />
           : <Src source="fallback" />}
-        <span style={{ fontSize: 10, color: (n.entry || "").length > LORE_MAX ? "#d89080" : "var(--ink-muted)", marginLeft: 6 }}>
+        <span style={{ fontSize: 10, color: (n.entry || "").length > LORE_MAX ? "var(--ink-error-text)" : "var(--ink-muted)", marginLeft: 6 }}>
           {(n.entry || "").length}/{LORE_MAX} 字
         </span>
       </>}>
@@ -183,7 +183,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
       {dropped?.length ? (
         <Section title="卡里没被导入的东西" dim>
           {dropped.map((d, i) => (
-            <div key={i} style={{ fontSize: 10.5, color: "#7a6a60", lineHeight: 1.8 }}>
+            <div key={i} style={{ fontSize: 10.5, color: "var(--bug-dim-dark)", lineHeight: 1.8 }}>
               <Src source="drop" /> {d}
             </div>
           ))}

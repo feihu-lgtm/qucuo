@@ -19,9 +19,9 @@ export default function RawEntryCompare({ raw }) {
         }}>
         <span style={{ color: "var(--ink-text-dim)", width: 10 }}>{open ? "▾" : "▸"}</span>
         <span>对照原卡正文</span>
-        <span style={{ color: "#5a5448" }}>{n} 字</span>
+        <span style={{ color: "var(--muted)" }}>{n} 字</span>
         <span style={{
-          fontSize: 9, color: "#7a6a60", border: "1px solid #3a3028",
+          fontSize: 9, color: "var(--bug-dim-dark)", border: "1px solid var(--border-deep)",
           borderRadius: 0, padding: "0 4px",
         }}>不注入</span>
       </div>
@@ -30,7 +30,7 @@ export default function RawEntryCompare({ raw }) {
           maxHeight: "min(26vh, 280px)", overflowY: "auto",
           padding: "7px 10px", marginTop: 4,
           background: "rgba(0,0,0,.3)", border: "1px solid var(--bg-card)", borderRadius: 0,
-          fontSize: 10.5, lineHeight: 1.75, color: "#9a8f7a",
+          fontSize: 10.5, lineHeight: 1.75, color: "var(--tutorial-note)",
           whiteSpace: "pre-wrap", wordBreak: "break-word",
           userSelect: "text",
         }}>{raw}</div>

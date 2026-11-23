@@ -61,16 +61,16 @@ export default function MoveEditor({ moves, levelCap, onChange, why, source }) {
               style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "var(--ink-text)" }} />
             {isOpen && (
               <div style={{ marginTop: 6, padding: "6px 8px", background: "var(--bg-ink)", border: "1px solid var(--ink-border)", borderRadius: 0 }}>
-                <div style={{ fontSize: 9.5, color: "#5a6a6a", marginBottom: 4, fontFamily: "ui-monospace,Menlo,Consolas,monospace" }}>
+                <div style={{ fontSize: 9.5, color: "var(--inject-kind-fallback)", marginBottom: 4, fontFamily: "ui-monospace,Menlo,Consolas,monospace" }}>
                   {arch} × {TIERS[levelCap]?.label}档 → 类型 {type}
                 </div>
                 {Object.entries(resolved).filter(([k]) => k !== "type").map(([k, v]) => (
-                  <div key={k} style={{ display: "flex", fontSize: 10, color: "#9a9a8a", lineHeight: 1.6 }}>
-                    <span style={{ width: 108, color: "#6a7a7a", flexShrink: 0 }}>{EFFECT_LABEL[k] || k}</span>
+                  <div key={k} style={{ display: "flex", fontSize: 10, color: "var(--tavern-steam)", lineHeight: 1.6 }}>
+                    <span style={{ width: 108, color: "var(--ink-sage)", flexShrink: 0 }}>{EFFECT_LABEL[k] || k}</span>
                     <span style={{ color: "var(--ink-info)" }}>{fmtEffectValue(v)}</span>
                   </div>
                 ))}
-                <div style={{ fontSize: 9.5, color: "#5a6a6a", marginTop: 5 }}>
+                <div style={{ fontSize: 9.5, color: "var(--inject-kind-fallback)", marginTop: 5 }}>
                   这些数值由原型和品阶算出，改品阶会整套跟着变，不用手填。
                 </div>
               </div>

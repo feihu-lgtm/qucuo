@@ -51,7 +51,7 @@ function ParsedPane({
               ["meta", metaEntries.length], ["unknown", unclassified.length]].map(([k, n]) => {
               const m = KIND_META[k] || KIND_META.unknown;
               return (
-                <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, marginBottom: 3, color: "#a89870" }}>
+                <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, marginBottom: 3, color: "var(--quest-stage-desc)" }}>
                   <span style={{ color: m.color }}>{m.icon}</span>
                   <span style={{ flex: 1 }}>{k === "faction/place/rule" ? "世界观" : m.label}</span>
                   <span style={{ color: n ? accent : "var(--muted)" }}>{n}</span>
@@ -71,9 +71,9 @@ function ParsedPane({
             <div style={{
               display: "flex", alignItems: "center", gap: 9, marginBottom: 10,
               padding: "8px 10px", borderRadius: 0,
-              background: "rgba(122,154,112,.08)", border: "1px solid #3a4a34",
+              background: "rgba(122,154,112,.08)", border: "1px solid var(--music-idle-icon)",
             }}>
-              <div style={{ flex: 1, fontSize: 10.5, color: "#9aa890", lineHeight: 1.7 }}>
+              <div style={{ flex: 1, fontSize: 10.5, color: "var(--tavern-steam)", lineHeight: 1.7 }}>
                 下面这份名单是按标签与关键词猜的，标「待定」的机器分不出是人是概念。
                 让 AI 通读一遍正文能认得准得多。
               </div>
@@ -83,10 +83,10 @@ function ParsedPane({
             </div>
           )}
           {classified && !scanning && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9, fontSize: 10.5, color: "#7a9a70" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9, fontSize: 10.5, color: "var(--quest-success-text)" }}>
               <span>AI 通读正文后认出 {classified.people.length} 人</span>
               {!!classified.multiPerson.length && (
-                <span style={{ color: "#c0a870" }}>
+                <span style={{ color: "var(--tutorial-time)" }}>
                   · {classified.multiPerson.length} 条塞了多人（{classified.multiPerson.map(m => (m.人名 || []).join("/")).join("；").slice(0, 40)}）
                 </span>
               )}
@@ -138,7 +138,7 @@ function ParsedPane({
                     {!c.sure && <span title="机器拿不准这是人还是概念，勾选前请自己看一眼"
                       style={{ fontSize: 9, color: "var(--ink-muted)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px" }}>待定</span>}
                     {c.grouped && <span title="AI 认出这几条写的是同一个人，已合并"
-                      style={{ fontSize: 9, color: "#7a9a70", border: "1px solid #3a4a34", borderRadius: 0, padding: "0 3px" }}>合</span>}
+                      style={{ fontSize: 9, color: "var(--quest-success-text)", border: "1px solid var(--music-idle-icon)", borderRadius: 0, padding: "0 3px" }}>合</span>}
                   </div>
                   <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 3, paddingLeft: 18 }}>
                     {c.aliases.length ? `别名 ${c.aliases.slice(0, 3).join("/")}` : "无别名"} · {c.len}字
@@ -172,7 +172,7 @@ function ParsedPane({
         </div>
 
         <div style={{
-          borderTop: `1px solid ${accent}44`, padding: "10px 14px",
+          borderTop: `1px solid color-mix(in srgb, ${accent} 27%, transparent)`, padding: "10px 14px",
           display: "flex", alignItems: "center", gap: 10,
           backgroundImage: `url('${S("ui/bar_paper2.webp")}')`, backgroundSize: "100% 100%",
         }}>
