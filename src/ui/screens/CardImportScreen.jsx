@@ -14,11 +14,10 @@ import * as scanStore from "../../infra/scanStore.js";
 import { bucketStatus } from "../../domain/rules/cards/rateLimiter.js";
 import { callModel } from "../../infra/apiConfig.js";
 import {
-  S, BODY_PUBLIC, BODY_PRIVATE, TERM_MONO,
+  S, TERM_MONO,
   Terminal, barFrame,
 } from "./cards/widgets.jsx";
-import { sanitizeMoves, TIER_NEIGONG } from "../../domain/rules/cards/scanPrompts.js";
-import { EMPTY_SPECIAL } from "./cards/importShared.js";
+import { fillPlayer, buildFallbackResult } from "./cards/importDefaults.js";
 import EmptyPane from "./cards/EmptyPane.jsx";
 import ParsedPane from "./cards/ParsedPane.jsx";
 import ReviewPane from "./cards/ReviewPane.jsx";
@@ -184,7 +183,7 @@ export default function CardImportScreen({
           pushTerm(p.kind === "start" ? "start" : p.kind, p.msg, tag);
         },
       });
-      setResult({ ...out, world: initWorld(parsed), player: out.player ? fillPlayer(out.player) : null });
+      setResult({ ...out, world: initWorld(parsed), player: out.player ? fillPlayer(out.player, parsed?.personaCandidate) : null });
       pushTerm("done", `扫描完毕 · 实调 ${out.report.calls} 次 / 复用 ${out.report.fromCache.length} 份 / 失手 ${out.report.failures.length} 次`, "汇总");
       setDetail(out.npcs.length ? 0 : -1);
       setStage("review");
@@ -211,57 +210,13 @@ export default function CardImportScreen({
         }))
       : parsed.npcLoreCandidates;
     const people = pool.filter(c => picked.has(c.name));
-    setResult({
-      genre: "", multiPerson: parsed.multiPerson || [],
-      world: initWorld(parsed),
-      npcs: people.map(p => ({
-        name: p.name, aliases: p.aliases, entry: p.entry,
-        brief: p.name, levelCap: 1,
-        special: { ...EMPTY_SPECIAL },
-        neigong: TIER_NEIGONG[1], waigong: TIER_NEIGONG[1],
-        moves: sanitizeMoves(null, 1),
-        carry: [], portrait: "",
-        appearance: "", attitude: "", affection: 0,
-        milestones: [
-          { threshold: 30, title: "面善", brief: "他开始主动与你搭话", text: [] },
-          { threshold: 60, title: "交心", brief: "他说起了从不与人提的事", text: [] },
-        ],
-        mergedFrom: p._meta?.mergedFrom || [], source: "fallback",
-      })),
-      player: asPlayer ? fillPlayer(null) : null,
-      opening: asPlayer && parsed.card.openings.length
-        ? { index: openingIdx, original: parsed.card.openings[openingIdx], rewritten: parsed.card.openings[openingIdx], source: "original" }
-        : null,
-      report: { calls: 0, failures: [], fromCache: [] },
-    });
+    setResult(buildFallbackResult({
+      people, asPlayer, parsed, openingIdx, world: initWorld(parsed),
+    }));
     pushTerm("info", `跳过 AI，${people.length} 人全部用默认值`, "手填");
     setDetail(people.length ? 0 : -1);
     setStage("review");
   };
-
-  // 玩家档案补齐 AI 不产出的那几项（性别、内外功、说话示范）
-  function fillPlayer(base) {
-    const bp = {};
-    for (const [k] of BODY_PUBLIC) bp[k] = base?.bodyProfile?.[k] || "";
-    const priv = {};
-    for (const [k] of BODY_PRIVATE) priv[k] = base?.bodyProfilePrivate?.[k] || "";
-    return {
-      name: base?.name || "", nameWhy: base?.nameWhy || "",
-      gender: "男",
-      bodyProfile: bp,
-      bodyProfilePrivate: priv,
-      special: base?.special || { ...EMPTY_SPECIAL },
-      specialWhy: base?.specialWhy || "",
-      neigong: 5, waigong: 5,
-      // 主角的初始武学与装备：卡里没有，扫描也不产出，默认空。玩家在「设置主角」
-      // 那步点「AI 现编武学 / AI 配装备」现生成，或手填。
-      skills: Array.isArray(base?.skills) ? base.skills : [],
-      carry: Array.isArray(base?.carry) ? base.carry : [],
-      persona: base?.persona || parsed?.personaCandidate || "",
-      dialogueExamples: undefined,
-      source: base?.source || "fallback",
-    };
-  }
 
   const patchNpc = (i, patch) => setResult(r => ({
     ...r, npcs: r.npcs.map((n, j) => (j === i ? { ...n, ...patch } : n)),
