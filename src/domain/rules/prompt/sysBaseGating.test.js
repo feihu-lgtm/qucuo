@@ -97,10 +97,19 @@ describe("budgetInstruction 与 scenario 蓝绿灯", () => {
   it("传了动态字数指令就用它，没传退回全局固定字数", () => {
     // 契约：budgetInstruction 优先于 targetWordCount 生成的默认篇幅句。
     const dyn = buildSysBase(220, NARRATOR, "x", "本轮只答一两句。", false, "", false, "full", { hasNpc: true });
-    expect(dyn.sysBlocks[0].content).toContain("本轮只答一两句。");
-    expect(dyn.sysBlocks[0].content).not.toContain("约 220 字");
+    const note = (r) => r.sysBlocks.find(b => b.tavernBlock === "authorsNote").content;
+    expect(note(dyn)).toContain("本轮只答一两句。");
+    expect(note(dyn)).not.toContain("约 220 字");
     const def = mk("full", false, { hasNpc: true });
-    expect(def.sysBlocks[0].content).toContain("约 220 字");
+    expect(note(def)).toContain("约 220 字");
+  });
+
+  it("篇幅要求不进 Main Prompt：Main 只放不随输入变的身份与旁白声线，好吃前缀缓存", () => {
+    const a = buildSysBase(220, NARRATOR, "x", "本轮只答一两句。", false, "", false, "full", { hasNpc: true });
+    const b = buildSysBase(220, NARRATOR, "x", "本轮写长些。", false, "", false, "full", { hasNpc: true });
+    expect(a.sysBlocks[0].content).not.toContain("篇幅要求");
+    expect(a.sysBlocks[0].content).toBe(b.sysBlocks[0].content);
+    expect(a.sysBlocks[1].content).toBe(b.sysBlocks[1].content);
   });
 
   it("gateCtx 存在时 scenario 过蓝绿灯裁剪并回报亮灭", () => {
