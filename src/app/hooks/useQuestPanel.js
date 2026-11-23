@@ -174,7 +174,7 @@ export function useQuestPanel({
         keepUndo: true,
         // 交付件本轮已由 forceAdvanceQuest 结算——叙事回执的 items_rm 不得
         // 再扣一次（重复扣件、或把剧情还回的 keep 件误删）。
-        settledItems: delivery ? [delivery.item] : undefined,
+        deliveredItems: delivery ? [delivery.item] : undefined,
       },
     );
   }, { feature: "quest.trigger" }), [act, apiCfg, forceAdvanceQuest, addLog, captureUndo, featureCtxRef]);

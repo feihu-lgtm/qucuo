@@ -12,7 +12,7 @@ const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 入参：pickupJudgment/collectGranted/pickupExtractionFailed 均为 ref 的值、
 // 
 // 返回的 changes.room 是多段写回按顺序组合成的单个 updater。
-export function commitProposalWrites({ p, isTalk, giftAlreadySettled, settledItems, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed, innerRoomName }, { trace }) {
+export function commitProposalWrites({ p, isTalk, giftAlreadySettled, deliveredItems, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed, innerRoomName }, { trace }) {
   const out = {};
   const changes = {};
   const roomWrites = [];
@@ -20,7 +20,7 @@ export function commitProposalWrites({ p, isTalk, giftAlreadySettled, settledIte
   const effects = [];
   // 本轮已确定性结算的交付件（❢ deliver 通道）：AI 的 items_rm/items_add 里
   // 出现同名一律剔除——rm 会重复扣件，add 会给剧情还回的 keep 件造出第二件。
-  const isSettledItem = (n) => (settledItems || []).some((w) => n === w || n.includes(w) || w.includes(n));
+  const isSettledItem = (n) => (deliveredItems || []).some((w) => n === w || n.includes(w) || w.includes(n));
 
   if (p.char && !isTalk && !giftAlreadySettled) {
     changes.char = (char) => {
