@@ -1,6 +1,7 @@
 import { getBuildingsForLocation, BUILDING_TYPE_LABEL } from "../../../domain/data/buildings/qucuoBuildings.js";
 import { hasInnerMap, getBuildingIdForInnerRoom } from "../../../domain/rules/map/innerMap.js";
 import { chromeBtn } from "../../../utils/theme.js";
+import { useSessionUi, setActiveBuilding } from "../../../store/sessionUiStore.js";
 
 export function visibleBuildings(room, innerRoomName) {
   const all = getBuildingsForLocation(room.name);
@@ -9,7 +10,8 @@ export function visibleBuildings(room, innerRoomName) {
   return bid ? all.filter(b => b.id === bid) : [];
 }
 
-export default function BuildingsModule({ zoneTheme, room, innerRoomName, activeBuilding, setActiveBuilding }) {
+export default function BuildingsModule({ zoneTheme, room, innerRoomName }) {
+  const activeBuilding = useSessionUi(s => s.activeBuilding);
   const list = visibleBuildings(room, innerRoomName);
   if (!list.length) return null;
   return <div>

@@ -63,10 +63,10 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
       activeItemMenu: ui.activeItemMenu, setActiveItemMenu: ui.setActiveItemMenu,
       inspectItem: aiInspect.inspectItem, handleConsumeItem: screenHandlers.handleConsumeItem,
       handleCollectGround: screenHandlers.handleCollectGround, handleToggleEquip: screenHandlers.handleToggleEquip,
-      activePersuasion: ui.activePersuasion,
+      // activePersuasion/duelingNpc 已迁 sessionUiStore，GlobalOverlays 直接订阅。
       apiCfg: ui.apiCfg, persuasionProgress: game.persuasionProgress,
       savePersuasionProgress: questPanel.savePersuasionProgress, finishPersuasion: questPanel.finishPersuasion,
-      duelingNpc: ui.duelingNpc, resetDuel: duelHandlers.resetDuel, duelFinishHandler: duelHandlers.duelFinishHandler,
+      resetDuel: duelHandlers.resetDuel, duelFinishHandler: duelHandlers.duelFinishHandler,
     },
   };
 }

@@ -15,7 +15,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
   const inv = useGameStore(s => s.inv);
   const {
     isMobile, mobileColumn, zoneTheme,
-    availableQuestsHere, nsfwOn, setNsfwOn, justMeditated,
+    availableQuestsHere, nsfwOn, setNsfwOn,
     inputRef, composingRef,
   } = ui;
   const loading = useSessionUi(s => s.loading);
@@ -26,6 +26,7 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
   const activeGroundItem = useSessionUi(s => s.activeGroundItem);
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
   const input = useSessionUi(s => s.input);
+  const justMeditated = useSessionUi(s => s.justMeditated);
   const { questPanel, screenHandlers, progressionHandlers, pigeonHandlers } = handlers;
 
   return (
