@@ -19,7 +19,7 @@ import { createTurnContext } from "../../engine/turn/turnContext.js";
 import { settleInBackground } from "./settleBackfill.js";
 import { lookInBackground } from "./lookBackfill.js";
 import { lookNpcInBackground } from "./npcLookBackfill.js";
-import { applySquareOps, registerRuntime } from "../runtime/gameRuntime.js";
+import { applySquareOps, featureCtx as runtimeCtx, registerRuntime } from "../runtime/gameRuntime.js";
 
 // 回合入口的 React 胶水：组 env → resolveIntent（识别/裁决）→ createTurnContext
 // → playTurn（settleTurn → narrateTurn → finalizeTurn）→ setState。
@@ -30,7 +30,7 @@ export function useTurn({
   pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow,
   talkToNarrator, changePendingTalks, lastMoveRef, captureUndo,
   turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setInput, setLoading,
-  waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
+  waitTimerRef, setWaitSecs, pendDirRef,
   noteAction, roomMapRef, collectGrantedRef,
   autoTravelRef, clearRouteQueue, setCommandPhase, dispatchCommand,
   outerDepartRef, pickupJudgmentRef, pickupExtractionFailedRef,
@@ -70,7 +70,7 @@ export function useTurn({
       ? parent
       : turnMonitor.start(opts.displayCmd || cmd, { raw: rawCmd, source: opts.forceLayer ? "button" : "command", parentId: parent?.id, passive: loading, commandId: "actRouter" });
     if (parent === _trace) _trace.awaitingSettlement = true;
-    const applyLocal = (result, feature) => applyResult(featureCtxRef.current, result, { turn: _trace, feature });
+    const applyLocal = (result, feature) => applyResult(runtimeCtx(), result, { turn: _trace, feature });
     let summary, result;
     try {
     const stopAutoTravel = (encounter) => {
@@ -125,7 +125,7 @@ export function useTurn({
         lastMoveRef, pendDirRef, outerDepartRef, varTreeRef, roomMapRef,
         pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef,
         autoTravelRef, intentRouterRef, gambleTalkCtx, dayMaterialRef,
-        roundsSinceLastSaveRef, playedThisSessionRef, timeRef, featureCtxRef,
+        roundsSinceLastSaveRef, playedThisSessionRef, timeRef,
       },
       io: {
         addLog, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs,
@@ -172,7 +172,7 @@ export function useTurn({
           : `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
       ]);
     }
-    consumeDuelRequest(result, { opts, isStale, isTalk, interactMode, setActiveTarget, setDuelPending, featureCtxRef, trace: _trace });
+    consumeDuelRequest(result, { opts, isStale, isTalk, interactMode, setActiveTarget, setDuelPending, trace: _trace });
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
     if (isTalk) changePendingTalks(-1); else setLoading(false);
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
@@ -185,7 +185,7 @@ export function useTurn({
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }
-  }, [loading, gm, apiCfg, interactMode, activeTarget, activeGroundItem, talkTarget, pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow, addLog, talkToNarrator, changePendingTalks, captureUndo, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs, waitTimerRef, lastMoveRef, talkBusyRef, turnGenerationRef, featureCtxRef, autoTravelRef, intentRouterRef, setActiveTarget, setDuelPending, setGambleNegotiation, setPendingQuestBranch, setVarTree, jotNote, noteAction, outerDepartRef, roomMapRef, pendDirRef, pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx, prerunSquares, dispatchCommand, setCommandPhase, clearRouteQueue, onTurnsInvalidated]);
+  }, [loading, gm, apiCfg, interactMode, activeTarget, activeGroundItem, talkTarget, pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow, addLog, talkToNarrator, changePendingTalks, captureUndo, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs, waitTimerRef, lastMoveRef, talkBusyRef, turnGenerationRef, autoTravelRef, intentRouterRef, setActiveTarget, setDuelPending, setGambleNegotiation, setPendingQuestBranch, setVarTree, jotNote, noteAction, outerDepartRef, roomMapRef, pendDirRef, pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx, prerunSquares, dispatchCommand, setCommandPhase, clearRouteQueue, onTurnsInvalidated]);
   actRef.current = act;
   const featureCtx = useMemo(() => ({
     addLog,
@@ -201,7 +201,6 @@ export function useTurn({
     }),
     applySquareOps,
   }), [addLog, jotNote, setVarTree, act, noteAction]);
-  featureCtxRef.current = featureCtx;
   registerRuntime(featureCtx); // 模块级 runtime 注册：hook 可经 gameRuntime.featureCtx() 取，不再收 featureCtxRef
 
   return { act };

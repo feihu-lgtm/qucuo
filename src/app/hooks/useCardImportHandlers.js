@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameActions, gameStore, markGameReplaced } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { applyCharacterCard } from "../../features/character/logic.js";
@@ -9,12 +10,12 @@ import { unlockImportedCompanion } from "../../domain/rules/companion/companion.
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 
 export function useCardImportHandlers({
-  setVarTree, featureCtxRef, schedulerRef,
+  setVarTree, schedulerRef,
 }) {
   // Store 直读（路线一）：char/skills/inv/companionState/log 的写全走 gameActions。
   const { setChar, setSkills, setInv, setCompanionState, setLog } = gameActions;
   const addLog = (lines) => setLog((p) => [...p, ...lines]);
-  const handleImportNpcs = useCallback((npcs) => applyResult(featureCtxRef.current, () => {
+  const handleImportNpcs = useCallback((npcs) => applyResult(featureCtx(), () => {
     const n = importedRegistry.registerImported(npcs, {});
     const withAff = npcs.filter(x => (x.affection || 0) !== 0);
     if (withAff.length) {
@@ -37,7 +38,7 @@ export function useCardImportHandlers({
     ]);
   }, { feature: "cards.importNpcs" }), [setVarTree, addLog]);
 
-  const handleImportPlayer = useCallback((player, opening) => applyResult(featureCtxRef.current, () => {
+  const handleImportPlayer = useCallback((player, opening) => applyResult(featureCtx(), () => {
     setChar(c => {
       const next = { ...c };
       if (player.name) next.name = player.name;
@@ -54,7 +55,7 @@ export function useCardImportHandlers({
       return next;
     });
     const cardResult = applyCharacterCard(gameStore.getState(), player, `ci${Date.now().toString(36)}_`);
-    applyResult(featureCtxRef.current, cardResult);
+    applyResult(featureCtx(), cardResult);
     const carried = cardResult.carriedCount;
     const filled = Object.values(player.bodyProfile || {}).filter(v => (v || "").trim()).length;
     const sk = (player.skills || []).length;
@@ -66,12 +67,12 @@ export function useCardImportHandlers({
     ]);
   }, { feature: "cards.importPlayer" }), [setChar, setSkills, setInv, addLog]);
 
-  const handleImportWorld = useCallback((items) => applyResult(featureCtxRef.current, () => {
+  const handleImportWorld = useCallback((items) => applyResult(featureCtx(), () => {
     const n = importedRegistry.registerImportedWorld(items, {});
     if (n) addLog([{ t: "sys", text: `  ${n} 条地理与规矩已入册，提到时自会浮现。` }]);
   }, { feature: "cards.importWorld" }), [addLog]);
 
-  const handleCreateCharacter = ({ name, gender, fromCard, special, starterSkillId, bodyProfile, portraitUrl }) => applyResult(featureCtxRef.current, () => {
+  const handleCreateCharacter = ({ name, gender, fromCard, special, starterSkillId, bodyProfile, portraitUrl }) => applyResult(featureCtx(), () => {
     const starterSkill = !fromCard && STARTER_SKILLS.find((skill) => skill.id === starterSkillId);
     const initialSkills = starterSkill ? [{
       ...starterSkill, level: 1, exp: 0, maxExp: 100, stage: "入门",
@@ -103,7 +104,7 @@ export function useCardImportHandlers({
       });
       if (fromCard) {
         const cardResult = applyCharacterCard(gameStore.getState(), fromCard, "cc_");
-        applyResult(featureCtxRef.current, cardResult);
+        applyResult(featureCtx(), cardResult);
         const n = cardResult.carriedCount;
         const sk = (fromCard.skills || []).length;
         if (fromCard.persona || sk || n) {
@@ -135,7 +136,7 @@ export function useCardImportHandlers({
     closeOverlay(OVERLAY.OPENING);
   };
 
-  const handleBodyProfileChange = (next) => applyResult(featureCtxRef.current, {
+  const handleBodyProfileChange = (next) => applyResult(featureCtx(), {
     changes: { char: (c) => ({ ...c, bodyProfile: next }) },
   }, { feature: "character.bodyProfile" });
 

@@ -187,7 +187,6 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const { noteAction, jotNote, dayMaterialRef } = useNotes({
     apiCfg, setVarTree,
   });
-  const featureCtxRef = useRef(null);
 
   // 日总结（大纸条）：跨天时后台归纳刚过去这一天攒下的原料，存进 varTree.世界.日总结。
   // fire-and-forget：AI 失败就不写，缺一天日总结无伤大雅，绝不阻断游戏。
@@ -200,7 +199,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   );
   const seaReturnRef = useRef(null);
   useWorldRulesRunner({
-    featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef,
+    seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef,
     dispatchCommand,
   });
 
@@ -241,7 +240,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow,
     talkToNarrator, changePendingTalks, lastMoveRef, captureUndo,
     turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setInput, setLoading,
-    waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
+    waitTimerRef, setWaitSecs, pendDirRef, 
     noteAction, roomMapRef, collectGrantedRef,
     autoTravelRef, clearRouteQueue,
     dispatchCommand, setCommandPhase,
@@ -261,12 +260,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   });
 
   const pigeonHandlers = commandScheduler.wrapHandlers("usePigeonHandlers", usePigeonHandlers({
-    featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
+    aiSummarizeFact, setInput, setPigeonTarget,
     setInteractMode, setActiveBuilding, captureUndo,
   }));
   const { applyPigeonResult, sendPigeonLetter } = pigeonHandlers;
 
-  usePigeonReplies({ apiCfg, applyPigeonResult, featureCtxRef });
+  usePigeonReplies({ apiCfg, applyPigeonResult });
 
   const duelHandlers = commandScheduler.wrapHandlers("useDuel", useDuel({
     act, addLog, duelPending, setActiveTarget, setDuelPending, setDuelingNpc,
@@ -279,16 +278,16 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 打开交易界面：只在NPC是手写配置的商人时可用，货品清单固定不变，
   // 保证同一个商人每次进店看到的东西都稳定。
   const screenHandlers = commandScheduler.wrapHandlers("useScreenHandlers", useScreenHandlers({
-    act, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
+    act, setActiveTarget, setInteractMode, setTalkTarget,
     noteAction, setTradingShop, captureUndo,
   }));
   useIntentRouter(intentRouterRef, {
-    apiCfg, act, addLog, featureCtxRef, dispatchCommand, setActiveTarget, setDuelPending, setTradingShop,
+    apiCfg, act, addLog, dispatchCommand, setActiveTarget, setDuelPending, setTradingShop,
     handleNpcDuel: duelHandlers.handleNpcDuel, handleNpcTrade: screenHandlers.handleNpcTrade,
   });
 
   const buildingHandlers = commandScheduler.wrapHandlers("useBuildingHandlers", useBuildingHandlers({
-    activeBuilding, setActiveBuilding, featureCtxRef, roomMapRef, captureUndo,
+    activeBuilding, setActiveBuilding, roomMapRef, captureUndo,
     setPendingQuestBranch, setDuelingNpc,
   }));
 
@@ -297,7 +296,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }));
 
   const cardImportHandlers = commandScheduler.wrapHandlers("useCardImportHandlers", useCardImportHandlers({
-    setVarTree, featureCtxRef, schedulerRef,
+    setVarTree, schedulerRef,
   }));
 
   // ── 心灵之海 · 玄女点破 ──

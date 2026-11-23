@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { consumeItem, pickGroundItem } from "../../features/items/logic.js";
@@ -17,26 +18,26 @@ import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace
 import { isNpcAngry, stealSuccessRate } from "../../domain/rules/combat/stealSystem.js";
 
 export function useScreenHandlers({
-  act, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
+  act, setActiveTarget, setInteractMode, setTalkTarget,
   noteAction, setTradingShop, captureUndo,
 }) {
   // Store 直读（路线一）：log 走 gameActions；time/inv 在使用点现取。
   const { setLog } = gameActions;
   const addLog = (lines) => setLog((p) => [...p, ...lines]);
-  const handleNpcLook = useCallback((npc) => applyResult(featureCtxRef.current, () => {
+  const handleNpcLook = useCallback((npc) => applyResult(featureCtx(), () => {
     captureUndo();
     const result = lookNpc(gameStore.getState(), npc);
-    applyResult(featureCtxRef.current, result);
+    applyResult(featureCtx(), result);
     setActiveTarget(npc.name);
-    const ctx = featureCtxRef.current;
+    const ctx = featureCtx();
     if (ctx?.lookNpcInBackground) { ctx.lookNpcInBackground(npc, result.extraReplies || []); return; }
     act("look " + npc.id, result.extraReplies || [], { keepUndo: true, inspect: true });
   }, { feature: "npc.lookNpc" }), [act, captureUndo]);
 
-  const handleNpcTalk = useCallback((npc) => applyResult(featureCtxRef.current, () => {
+  const handleNpcTalk = useCallback((npc) => applyResult(featureCtx(), () => {
     captureUndo();
     const result = talkToNpc(gameStore.getState(), npc);
-    applyResult(featureCtxRef.current, result);
+    applyResult(featureCtx(), result);
     if (result.completedEscort) return;
     if (npc.cannotSpeak) {
       setActiveTarget(npc.name);
@@ -47,51 +48,51 @@ export function useScreenHandlers({
     setActiveTarget(npc.name);
   }, { feature: "npc.talkToNpc" }), [captureUndo]);
 
-  const handleNpcGift = useCallback((npc, item) => applyResult(featureCtxRef.current, () => {
+  const handleNpcGift = useCallback((npc, item) => applyResult(featureCtx(), () => {
     captureUndo();
     setActiveTarget(npc.name);
-    applyResult(featureCtxRef.current, giftNpc(gameStore.getState(), npc, item));
+    applyResult(featureCtx(), giftNpc(gameStore.getState(), npc, item));
   }, { feature: "npc.giftNpc" }), [captureUndo]);
 
-  const handleInviteCompanion = useCallback((npc) => applyResult(featureCtxRef.current, () => {
+  const handleInviteCompanion = useCallback((npc) => applyResult(featureCtx(), () => {
     captureUndo();
     const result = inviteCompanion(gameStore.getState(), npc);
     if (!result.changes) return;
     setActiveTarget(npc.name);
-    applyResult(featureCtxRef.current, result);
+    applyResult(featureCtx(), result);
   }, { feature: "npc.inviteCompanion" }), [captureUndo]);
 
-  const handleConsumeItem = useCallback((item) => applyResult(featureCtxRef.current, () => {
+  const handleConsumeItem = useCallback((item) => applyResult(featureCtx(), () => {
     captureUndo();
-    applyResult(featureCtxRef.current, consumeItem(gameStore.getState(), item));
+    applyResult(featureCtx(), consumeItem(gameStore.getState(), item));
   }, { feature: "items.consumeItem" }), [captureUndo]);
 
-  const handleCollectGround = useCallback((item) => applyResult(featureCtxRef.current, () => {
+  const handleCollectGround = useCallback((item) => applyResult(featureCtx(), () => {
     const result = pickGroundItem(gameStore.getState(), item, { tallyTime: gameStore.getState().time });
     if (!result.changes) return;
     captureUndo();
-    applyResult(featureCtxRef.current, result);
+    applyResult(featureCtx(), result);
   }, { feature: "items.pickGroundItem" }), [captureUndo]);
 
-  const handleNpcTrade = useCallback((npc) => applyResult(featureCtxRef.current, () => {
+  const handleNpcTrade = useCallback((npc) => applyResult(featureCtx(), () => {
     captureUndo();
     const result = tradeWithNpc(gameStore.getState(), npc);
     if (result.shop) setTradingShop(result.shop);
-    else applyResult(featureCtxRef.current, result);
+    else applyResult(featureCtx(), result);
   }, { feature: "npc.tradeWithNpc" }), [captureUndo]);
 
-  const handleNpcLearnSkill = useCallback((npc) => applyResult(featureCtxRef.current, () => {
+  const handleNpcLearnSkill = useCallback((npc) => applyResult(featureCtx(), () => {
     captureUndo();
     const result = learnNpcSkillLogic(gameStore.getState(), npc);
     if (result.changes) setActiveTarget(npc.name);
-    applyResult(featureCtxRef.current, result);
+    applyResult(featureCtx(), result);
   }, { feature: "npc.learnNpcSkill" }), [captureUndo]);
 
-  const handleNpcSteal = useCallback((npc) => applyResult(featureCtxRef.current, () => {
+  const handleNpcSteal = useCallback((npc) => applyResult(featureCtx(), () => {
     captureUndo();
     const state = gameStore.getState();
     if (isNpcAngry(state.varTree, npc?.name)) {
-      applyResult(featureCtxRef.current, stealFromNpc(state, npc));
+      applyResult(featureCtx(), stealFromNpc(state, npc));
       return;
     }
     const agility = state.char?.special?.身法 ?? 0;
@@ -110,7 +111,7 @@ export function useScreenHandlers({
     const steal = result.steal;
     if (result.kind === "blocked") {
       traceStep(_st, "判定", "block", steal?.reason || "此地没有这位人物。");
-      applyResult(featureCtxRef.current, result);
+      applyResult(featureCtx(), result);
       endTrace(_st, "偷窃未进行");
       return;
     }
@@ -123,7 +124,7 @@ export function useScreenHandlers({
         + (steal.outcome === "move" ? `：${steal.move.name}` : ""));
     }
     if (result.noteAction) noteAction(result.noteAction);
-    applyResult(featureCtxRef.current, result);
+    applyResult(featureCtx(), result);
     if (result.kind === "caught") {
       endTrace(_st, `被${npc.name}察觉，好感-${steal.favorabilityLoss}`);
     } else {
@@ -133,7 +134,7 @@ export function useScreenHandlers({
     }
   }, { feature: "npc.stealFromNpc" }), [noteAction, captureUndo]);
 
-  const giftToCharacter = useCallback((charName) => applyResult(featureCtxRef.current, () => {
+  const giftToCharacter = useCallback((charName) => applyResult(featureCtx(), () => {
     const { inv } = gameStore.getState();
     if (inv.length === 0) {
       addLog([{ t: "err", text: `  背包空空如也，没有什么可以送给${charName}的。` }]);
@@ -147,18 +148,18 @@ export function useScreenHandlers({
     const npc = getPresentNpcs(state).find(({ name }) => name === charName);
     captureUndo();
     setInteractMode("action");
-    applyResult(featureCtxRef.current, giftNpc(state, npc, inv[idx]));
+    applyResult(featureCtx(), giftNpc(state, npc, inv[idx]));
   }, { feature: "npc.giftToCharacter" }), [captureUndo]);
 
-  const handleToggleEquip = useCallback((it) => applyResult(featureCtxRef.current, () => {
+  const handleToggleEquip = useCallback((it) => applyResult(featureCtx(), () => {
     captureUndo();
-    applyResult(featureCtxRef.current, { changes: { inv: (v) => toggleEquip(v, it.id) } });
+    applyResult(featureCtx(), { changes: { inv: (v) => toggleEquip(v, it.id) } });
     noteAction("equipToggle");
   }, { feature: "equipment.toggleEquip" }), [captureUndo]);
 
-  const claimMilestone = useCallback((charName, threshold) => applyResult(featureCtxRef.current, () => {
+  const claimMilestone = useCallback((charName, threshold) => applyResult(featureCtx(), () => {
     captureUndo();
-    applyResult(featureCtxRef.current, { changes: { claimedMilestones: (prev) => new Set(prev).add(`${charName}:${threshold}`) } });
+    applyResult(featureCtx(), { changes: { claimedMilestones: (prev) => new Set(prev).add(`${charName}:${threshold}`) } });
   }, { feature: "quest.claimMilestone" }), [captureUndo]);
 
   return {

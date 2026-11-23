@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameStore, useGameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import {
@@ -15,7 +16,7 @@ import { turnMonitor } from "../../infra/turnMonitor.js";
 const webAi = createWebAi();
 
 export function usePigeonReplies({
-  apiCfg, applyPigeonResult, featureCtxRef,
+  apiCfg, applyPigeonResult,
 }) {
   const pigeonProcessing = useRef(new Set());
   // 两条 effect 的触发依赖：房名/在场 NPC、时辰、varTree——hook 内直订 store，不经参数。
@@ -26,7 +27,7 @@ export function usePigeonReplies({
 
   useEffect(() => {
     const result = recordPigeonNpcLocations(gameStore.getState());
-    if (result.changes) applyResult(featureCtxRef.current, result, { feature: "pigeon.recordNpcLocations", background: true });
+    if (result.changes) applyResult(featureCtx(), result, { feature: "pigeon.recordNpcLocations", background: true });
   }, [roomName, roomNpcs]);
 
   const replyPigeonLetter = useCallback(async (letter) => {

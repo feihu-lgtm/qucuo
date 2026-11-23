@@ -1,4 +1,5 @@
 import { snowLeopardRule } from "../../features/quest/snowLeopard.js";
+import { featureCtx } from "../runtime/gameRuntime.js";
 import { factionAmbushRule, factionRoomAmbushRule } from "../../domain/rules/map/ambush.js";
 import { useEffect, useRef, useState } from "react";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";
@@ -27,7 +28,7 @@ import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js"
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 
 export function useWorldRulesRunner({
-  featureCtxRef, seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef, dispatchCommand = (_id, fn) => fn(),
+  seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef, dispatchCommand = (_id, fn) => fn(),
 }) {
   const replacedRef = useRef(false);
   const [replacedTick, setReplacedTick] = useState(0);
@@ -46,7 +47,7 @@ export function useWorldRulesRunner({
         if (gameStore.getState().room?.name !== "第三新东京市") return;
         const { result, innerRoomName: returnInnerRoomName } = finishTokyoReturn(back, label);
         dispatchCommand("worldRules", () => {
-          applyResult(featureCtxRef.current, result);
+          applyResult(featureCtx(), result);
           if (returnInnerRoomName !== undefined) {
             setTimeout(() => dispatchCommand("worldRules", () => gameActions.setInnerRoomName(returnInnerRoomName)), 0);
           }
@@ -92,7 +93,7 @@ export function useWorldRulesRunner({
         applyResult: (result) => {
           dispatchCommand("worldRules", () => {
             if (result.roomMap) roomMapRef.current = result.roomMap;
-            applyResult(featureCtxRef.current, result);
+            applyResult(featureCtx(), result);
             if (result.forcedDuelNpc) {
               // 伏击开战先掐断自动寻路，不然打完还会接着往下跑剩下的路段。
               schedulerRef?.current?.clearRouteQueue?.();
