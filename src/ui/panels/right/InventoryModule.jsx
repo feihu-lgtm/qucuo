@@ -1,7 +1,8 @@
 import { QUALITY_COLOR } from "../../../domain/rules/economy/equipment.js";
 import { CATALOG_INDEX } from "../../../domain/data/items/catalog.js";
+import { setActiveItemMenu } from "../../../store/sessionUiStore.js";
 
-export default function InventoryModule({ zoneTheme, inv, setActiveItemMenu }) {
+export default function InventoryModule({ zoneTheme, inv }) {
   return (
     <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
       <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>包袱 <span style={{ color: zoneTheme.textDim }}>{inv.length}件 · 点击看介绍</span></div>

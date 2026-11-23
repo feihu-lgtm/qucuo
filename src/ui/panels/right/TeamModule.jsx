@@ -1,7 +1,8 @@
 import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { unlockedCompanions, activeCompanionKey } from "../../../domain/rules/companion/companion.js";
+import { setActiveNpcMenu } from "../../../store/sessionUiStore.js";
 
-export default function TeamModule({ zoneTheme, companionState, varTree, onSwitchCompanion, setActiveNpcMenu }) {
+export default function TeamModule({ zoneTheme, companionState, varTree, onSwitchCompanion }) {
   if (!unlockedCompanions(companionState).length) return null;
   // 队伍栏：已解锁的队友都列出来，点头像换出战（单槽互斥）。
   // 【为什么要能换】战斗引擎是 2v2，同时只带一个；明日香入队时会自动顶掉雪豹，

@@ -12,18 +12,17 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
   const { cardImportHandlers, screenHandlers, duelHandlers, questPanel, aiInspect, outfitAdvice } = actions;
   return {
     dispatchCommand: actions.dispatchCommand,
-    apiCfg: ui.apiCfg, setApiCfg: ui.setApiCfg, buildCurrentSnapshot: autosave.buildCurrentSnapshot,
+    // apiCfg/settingsInitialTab/uiScale/font/nsfwOn 已迁 sessionUiStore，OverlayHost 直接订阅。
+    buildCurrentSnapshot: autosave.buildCurrentSnapshot,
     applySnapshot: (...args) => {
       const result = autosave.applySnapshot(...args);
       onGameStarted?.();
       return result;
     }, varTree: game.varTree, setVarTree: game.setVarTree,
-    settingsInitialTab: ui.settingsInitialTab, setSettingsInitialTab: ui.setSettingsInitialTab,
-    uiScale: ui.uiScale, setUiScale: ui.setUiScale, font: ui.font, setFont: ui.setFont,
     narrator: game.narrator, setNarrator: game.setNarrator, getLiveBlockText: ui.getLiveBlockText,
     showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead,
     char: game.char, setChar: game.setChar, inv: game.inv, setInv: game.setInv,
-    innerRoomName: game.innerRoomName, addLog, zoneTheme: ui.zoneTheme, nsfwOn: ui.nsfwOn,
+    innerRoomName: game.innerRoomName, addLog, zoneTheme: ui.zoneTheme,
     recommendOutfit: outfitAdvice.recommendOutfit, outfitState: ui.outfitState,
     handleCreateCharacter: (...args) => {
       onGameStarted?.();
@@ -32,13 +31,13 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
     handleOpeningFinish: cardImportHandlers.handleOpeningFinish,
     handleBodyProfileChange: cardImportHandlers.handleBodyProfileChange,
     globalOverlays: {
-      zoneTheme: ui.zoneTheme, isDayMode: ui.isDayMode,
+      // isDayMode/apiCfg/activeNpcMenu/activeItemMenu/characterPageTarget 已迁 sessionUiStore。
+      zoneTheme: ui.zoneTheme,
       char: game.char, inv: game.inv, skills: game.skills,
       varTree: game.varTree, room: game.room, innerRoomName: game.innerRoomName, time: game.time,
       flags: game.flags, questProgress: game.questProgress,
       effectiveSpecialNow, companionState: game.companionState,
       // loading 等交互输入态已迁 sessionUiStore，面板直接订阅，不再经 ui 透传。
-      characterPageTarget: ui.characterPageTarget, setCharacterPageTarget: ui.setCharacterPageTarget,
       claimedMilestones: game.claimedMilestones, claimMilestone: screenHandlers.claimMilestone,
       giftToCharacter: screenHandlers.giftToCharacter,
       narratorStage: game.narrator.stage,
@@ -51,20 +50,18 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
         save: autosave.buildCurrentSnapshot,
         recentLog: game.log,
         conversation: game.convo,
-        apiConfig: ui.apiCfg,
+        // apiConfig 由 GlobalOverlays 用订阅值注入
         version: CURRENT_VERSION,
         rngState: getRngState,
       },
-      activeNpcMenu: ui.liveNpcMenu, setActiveNpcMenu: ui.setActiveNpcMenu,
       handleNpcLook: screenHandlers.handleNpcLook, handleNpcTalk: screenHandlers.handleNpcTalk,
       handleNpcGift: screenHandlers.handleNpcGift, handleNpcDuel: duelHandlers.handleNpcDuel,
       handleNpcSteal: screenHandlers.handleNpcSteal, handleNpcLearnSkill: screenHandlers.handleNpcLearnSkill,
       handleNpcTrade: screenHandlers.handleNpcTrade, handleInviteCompanion: screenHandlers.handleInviteCompanion,
-      activeItemMenu: ui.activeItemMenu, setActiveItemMenu: ui.setActiveItemMenu,
       inspectItem: aiInspect.inspectItem, handleConsumeItem: screenHandlers.handleConsumeItem,
       handleCollectGround: screenHandlers.handleCollectGround, handleToggleEquip: screenHandlers.handleToggleEquip,
       // activePersuasion/duelingNpc 已迁 sessionUiStore，GlobalOverlays 直接订阅。
-      apiCfg: ui.apiCfg, persuasionProgress: game.persuasionProgress,
+      persuasionProgress: game.persuasionProgress,
       savePersuasionProgress: questPanel.savePersuasionProgress, finishPersuasion: questPanel.finishPersuasion,
       resetDuel: duelHandlers.resetDuel, duelFinishHandler: duelHandlers.duelFinishHandler,
     },

@@ -26,7 +26,9 @@ import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import NpcActionMenu from "../components/NpcActionMenu.jsx";
 import ItemActionMenu from "../components/ItemActionMenu.jsx";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
-import { useSessionUi } from "../../store/sessionUiStore.js";
+import {
+  useSessionUi, setActiveNpcMenu, setActiveItemMenu, setCharacterPageTarget,
+} from "../../store/sessionUiStore.js";
 
 const TutorialOverlay = lazy(() => import("../screens/TutorialOverlay.jsx"));
 const VersionHistoryPanel = lazy(() => import("../screens/VersionHistoryPanel.jsx"));
@@ -44,24 +46,29 @@ const TeamDuelScreen = lazy(() => import("../screens/TeamDuelScreen.jsx"));
 const CardImportScreen = lazy(() => import("../screens/CardImportScreen.jsx"));
 
 export default function GlobalOverlays({
-  zoneTheme, isDayMode,
+  zoneTheme,
   char, inv, skills, varTree, room, innerRoomName, time,
   flags, questProgress, effectiveSpecialNow, companionState,
-  characterPageTarget, setCharacterPageTarget,
   onImportNpcs, onImportPlayer, onImportWorld,
   claimedMilestones, claimMilestone, giftToCharacter,
   narratorStage,
   portraits, setPortraits,
   buildBugReportTurns, debugSources,
-  activeNpcMenu, setActiveNpcMenu,
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
   handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
-  activeItemMenu, setActiveItemMenu, inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip,
-  apiCfg, persuasionProgress, savePersuasionProgress, finishPersuasion,
+  inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip,
+  persuasionProgress, savePersuasionProgress, finishPersuasion,
   resetDuel, duelFinishHandler,
 }) {
   const activePersuasion = useSessionUi(s => s.activePersuasion);
   const duelingNpc = useSessionUi(s => s.duelingNpc);
+  const isDayMode = useSessionUi(s => s.isDayMode);
+  const apiCfg = useSessionUi(s => s.apiCfg);
+  const rawNpcMenu = useSessionUi(s => s.activeNpcMenu);
+  // 原 ui.liveNpcMenu：NPC 已离场时退回快照菜单对象
+  const activeNpcMenu = rawNpcMenu ? (room.npcs.find(n => n.name === rawNpcMenu.name) || rawNpcMenu) : null;
+  const activeItemMenu = useSessionUi(s => s.activeItemMenu);
+  const characterPageTarget = useSessionUi(s => s.characterPageTarget);
   const showTutorial = useOverlay(OVERLAY.TUTORIAL);
   const showVersionHistory = useOverlay(OVERLAY.VERSION_HISTORY);
   const showCharacterPage = useOverlay(OVERLAY.CHARACTER_PAGE);
@@ -153,7 +160,7 @@ export default function GlobalOverlays({
         turns={buildBugReportTurns()}
         pipelineData={getPipelineEntries()}
         actionTrees={getTraceLog()}
-        debugSources={debugSources}
+        debugSources={{ ...debugSources, apiConfig: apiCfg }}
         getGameState={() => ({
           room: room.name, inner: innerRoomName, time,
           hp: char.hp, money: char.money,

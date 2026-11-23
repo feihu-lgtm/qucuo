@@ -4,11 +4,10 @@ import { canBypassExclusive, getCurrentStage, isQuestGateOpen } from "../../doma
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 import { getZoneTheme, ink } from "../../utils/theme.js";
-import { loadConfig } from "../../engine/ports/ai.js";
+
 import { isNpcVisibleInInnerRoom as isVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { loadPortraits, getSnowLeopardForm, getPearlForm } from "../../domain/rules/companion/portraits.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
-import { readMobileColumn, writeMobileColumn } from "../../utils/mobileColumn.js";
 import { usePromptInspector } from "./ui/usePromptInspector.js";
 import {
   useSessionUi, sessionUiStore, setInput, setLoading, setWaitSecs, setPendingTalks,
@@ -17,6 +16,10 @@ import {
   setForcedDuelNpc, setDuelingNpc, setDuelPending, setPendingQuestBranch,
   setActivePersuasion, setActiveBuilding, setGambleNegotiation,
   setBuildingPanelMinimized, setJustMeditated, setTradingShop,
+  setApiCfg, setUiScale, setFont, setIsDayMode, setNsfwOn, setGm, setIsMobile,
+  setMobileColumn, setMobileTopMenu, setSettingsInitialTab,
+  setActiveNpcMenu, setActiveItemMenu, setCharacterPageTarget, setPortraitTarget,
+  refreshApiCfg,
 } from "../../store/sessionUiStore.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
@@ -48,13 +51,12 @@ export function useGameUi({
   const mapBigCloseGuard = useOverlayCloseGuard(() => setMapBig(false));
   const [mapView, setMapView] = useState("outer");
   const [peoplePanel, setPeoplePanel] = useState({ present: true, absent: true });
-  const [gm, setGm] = useState(false);
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== "undefined" && window.innerWidth < 768);
-  const [mobileColumn, setMobileColumn] = useState(() => readMobileColumn());
-  useEffect(() => { writeMobileColumn(undefined, mobileColumn); }, [mobileColumn]);
-  const [mobileTopMenu, setMobileTopMenu] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState(null);
+  // 偏好设置/面板态已迁 sessionUiStore（PR-2C），持久化与 DOM 副作用在 store 内
+  const gm = useSessionUi(s => s.gm);
+  const isMobile = useSessionUi(s => s.isMobile);
+  const mobileColumn = useSessionUi(s => s.mobileColumn);
+  const mobileTopMenu = useSessionUi(s => s.mobileTopMenu);
+  const settingsInitialTab = useSessionUi(s => s.settingsInitialTab);
   const interactMode = useSessionUi(s => s.interactMode);
   const talkTarget = useSessionUi(s => s.talkTarget);
   const activeTarget = useSessionUi(s => s.activeTarget);
@@ -68,11 +70,20 @@ export function useGameUi({
       (typeof item === "string" ? item : item?.name) === activeGroundItem);
     if (activeGroundItem && (contextChanged || !stillGrounded)) setActiveGroundItem(null);
   }, [activeGroundItem, room.name, innerRoomName, room.items]);
-  const [nsfwOn, setNsfwOn] = useState(true);
+  const nsfwOn = useSessionUi(s => s.nsfwOn);
+  // 会话外的写入与卸载残影在开局时对齐一次：
+  // - apiCfg：模块初始化早于主菜单设置页，那上面改的凭据要回读进来；
+  // - settingsInitialTab：store 跨卸载保活，复位避免从主菜单重开设置跳过上次的子页；
+  // - isMobile：建仓到挂载之间的旋转不受 resize 监听覆盖，挂载时补一次测量。
+  useEffect(() => {
+    refreshApiCfg();
+    setSettingsInitialTab(null);
+    setIsMobile(typeof window !== "undefined" && window.innerWidth < 768);
+  }, []);
   const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" });
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
-  const [activeNpcMenu, setActiveNpcMenu] = useState(null);
-  const [activeItemMenu, setActiveItemMenu] = useState(null);
+  const activeNpcMenu = useSessionUi(s => s.activeNpcMenu);
+  const activeItemMenu = useSessionUi(s => s.activeItemMenu);
   // 头像按存档分键存在浏览器里，不写进存档本身：换头像不算"开玩"、不触发自动存档，
   // 大图也不会撑爆存档。新建角色带 avatarId，各存各的；旧存档没有 avatarId，沿用原来那份共用偏好。
   const avatarKey = char?.avatarId ? `qucuo_player_avatar:${char.avatarId}` : "qucuo_player_avatar";
@@ -95,29 +106,18 @@ export function useGameUi({
     }
     setAvatarRev((v) => v + 1);
   }, [avatarKey, char?.avatarId]);
-  const [characterPageTarget, setCharacterPageTarget] = useState(null);
+  const characterPageTarget = useSessionUi(s => s.characterPageTarget);
   const [portraits, setPortraits] = useState(loadPortraits());
   const [slForm, setSlFormState] = useState(getSnowLeopardForm());
   const [slImgErr, setSlImgErr] = useState(false);
   const [pearlForm, setPearlFormState] = useState(getPearlForm());
   const [pearlImgErr, setPearlImgErr] = useState(false);
   const [narratorImgErr, setNarratorImgErr] = useState(false);
-  const [portraitTarget, setPortraitTarget] = useState(null);
-  const [apiCfg, setApiCfg] = useState(loadConfig());
-  const [uiScale, setUiScale] = useState(() => {
-    const saved = localStorage.getItem("wuxia_mud_ui_scale");
-    return saved ? parseFloat(saved) : 1;
-  });
-  const [font, setFont] = useState(() =>
-    localStorage.getItem("wuxia_mud_ui_font") === "song" ? "song" : "pixel");
-  useEffect(() => {
-    document.documentElement.dataset.font = font;
-  }, [font]);
-  const [isDayMode, setIsDayMode] = useState(() =>
-    localStorage.getItem("wuxia_mud_day_mode") === "1");
-  useEffect(() => {
-    document.documentElement.dataset.theme = isDayMode ? "day" : "night";
-  }, [isDayMode]);
+  const portraitTarget = useSessionUi(s => s.portraitTarget);
+  const apiCfg = useSessionUi(s => s.apiCfg);
+  const uiScale = useSessionUi(s => s.uiScale);
+  const font = useSessionUi(s => s.font);
+  const isDayMode = useSessionUi(s => s.isDayMode);
   const cmdHistory = useSessionUi(s => s.cmdHistory);
   const histIdx = useSessionUi(s => s.histIdx);
   // 模态/战斗/建筑态已迁 sessionUiStore（PR-2B）
