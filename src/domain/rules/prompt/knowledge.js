@@ -172,14 +172,12 @@ export function buildInfoDomainBlock(varTree, roomNpcNames = []) {
     const f = 领域.事实[fid];
     const 知情 = present.filter(n => f.知晓者[n]);
     if (!知情.length) continue;                       // 在场没人知道这事，略过
-    const 不知 = present.filter(n => !f.知晓者[n]);
     const 摘要 = f.摘要 || "（内容待定）";
-    let line = `- 事实「${摘要}」：知情者 ${知情.join("、")}`;
-    if (不知.length) line += `；在场但不知情 ${不知.join("、")}`;
-    lines.push(line);
+    // 不再逐个点名"在场但不知情"：表头已裁定未列为知情者一律不知情，点名是重复。
+    lines.push(`- 事实「${摘要}」：知情者 ${知情.join("、")}`);
   }
   if (!lines.length) return "";
-  return `\n\n【信息域·关键事实认知（系统裁定，硬约束）】在场人物对关键事实的知情状态如下，由系统确定性推演。NPC 言行必须与此严格一致：列"知情"者可自然表现出知道；列"不知情"或未列出者，本轮绝不能表现出知道，也不能刚听说就当作早已知晓。\n${lines.join("\n")}`;
+  return `\n\n【信息域·关键事实认知（系统裁定，硬约束）】在场人物对关键事实的知情状态如下，由系统确定性推演。NPC 言行必须与此严格一致：列为"知情者"的可自然表现出知道；其余在场人物一律不知情，本轮绝不能表现出知道，也不能刚听说就当作早已知晓。\n${lines.join("\n")}`;
 }
 
 // 全知视角读取：不看"谁在场""谁知情"，直接把账本里所有已经有摘要的事实原样列出。

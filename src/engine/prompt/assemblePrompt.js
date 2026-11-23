@@ -104,6 +104,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     reunionBlock: npcContext.reunionBlock || "",
     lastAiText: npcContext.lastAiText || "",
     visibleNpcsCount: presence.visibleNpcs?.length || 0,
+    visibleNpcsForAI: presence.visibleNpcsForAI || presence.visibleNpcs || [],
     targetedRumor,
   };
 }

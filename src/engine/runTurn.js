@@ -124,7 +124,11 @@ async function runTurnSteps(ctx, cmd, opts) {
       varTreeLatest: ctx.memory.varTreeLatest,
     });
     [knowledgeTurn, recall] = await Promise.all([
-      runKnowledgeTurn({ ...ctx.memory, ai }),
+      runKnowledgeTurn({
+        ...ctx.memory,
+        ...(preparedPrompt.visibleNpcsForAI ? { infoDomainNpcNames: preparedPrompt.visibleNpcsForAI.map(n => n.name) } : {}),
+        ai,
+      }),
       recallPromise,
     ]);
     if (ctx.isStale?.()) return { stale: true };

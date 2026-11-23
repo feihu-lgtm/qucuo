@@ -191,14 +191,16 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
   // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
   // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
   const messages = [
-    makeBlock("main", `${ENGINE_IDENTITY}\n\n${lenNote.startsWith("篇幅要求：") ? lenNote : `篇幅要求：${lenNote}`}\n${narratorVoicePrompt(narratorState, opts.onPromptRefMissing)}`),
+    // 不变的段排在最前（身份+旁白声线+预设文体），好吃上接口的前缀缓存；
+    // 每轮随输入变的篇幅要求放到 Author's Note（酒馆里本就是逐轮导向位）。
+    makeBlock("main", `${ENGINE_IDENTITY}\n${narratorVoicePrompt(narratorState, opts.onPromptRefMissing)}`),
     makeBlock("worldInfoBefore", `${presetContent}${npcLoreBlock || ""}`),
     makeBlock("charDescription", `玩家角色：${playerName}。气血、内外功、物品等状态由系统维护，你只叙事，不擅自改状态。`),
     makeBlock("charPersonality", `旁白语气由「Main Prompt」声线控制，保持统一。`),
     makeBlock("scenario", gated.text),
     makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantTalkItemRule ? `${buildTalkItemRule(narrativeOnly)}\n` : ""}${inSeaOfMind ? `${buildSeaOfMindRule()}\n\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
     makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是说书人/Gamemaster。`),
-    makeBlock("authorsNote", ""),
+    makeBlock("authorsNote", lenNote.startsWith("篇幅要求：") ? lenNote : `篇幅要求：${lenNote}`),
     makeBlock("exampleStart", "<START>"),
   ];
 

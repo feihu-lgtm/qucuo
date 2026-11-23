@@ -15,7 +15,9 @@ import { createWebAi } from "../ports/ai.js";
 // （切磋结算后 setTimeout 调来的），evolveKnowledge 也基于最新状态推演——否则
 // 推演结果整体覆盖写回时会把刚进账的认识/好感度更新冲掉（"交情已加但仍显示
 // 尚未认识"bug 的根源，见 varTreeRef 注释）。
-export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, time, apiCfg, flags, ai = createWebAi() }) {
+// infoDomainNpcNames：【信息域】只列此刻喂给 AI 的在场者（内层房间过滤后+随行伙伴）；
+// 知识推演仍按据点全员 roomNpcNames 走，不变。
+export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, infoDomainNpcNames = roomNpcNames, time, apiCfg, flags, ai = createWebAi() }) {
   const evo = evolveKnowledge(varTreeLatest, { roomNpcNames, currentTurn: time });
   let kTree = evo.varTree;
   // 按需补摘要（最多 2 条/回合，失败静默——摘要非关键，不阻断游戏）
@@ -54,7 +56,7 @@ export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, time, apiC
       if (line) kTree = setFactSummary(kTree, fid, line);
     }
   }
-  return { infoDomainBlock: buildInfoDomainBlock(kTree, roomNpcNames), kTree };
+  return { infoDomainBlock: buildInfoDomainBlock(kTree, infoDomainNpcNames), kTree };
 }
 
 // 三层记忆·向量召回层（请求段，无副作用）：从长期记忆库里捞出与"当前这句输入 +
