@@ -46,7 +46,6 @@ export default function GlobalOverlays({
   zoneTheme, isDayMode,
   char, inv, skills, varTree, room, innerRoomName, time,
   flags, questProgress, effectiveSpecialNow, companionState,
-  loading,
   characterPageTarget, setCharacterPageTarget,
   onImportNpcs, onImportPlayer, onImportWorld,
   claimedMilestones, claimMilestone, giftToCharacter,

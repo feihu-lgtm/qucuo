@@ -1,5 +1,9 @@
 import CenterControlRows from "../CenterControlRows.jsx";
 import { useGameStore } from "../../../store/gameStore.js";
+import {
+  useSessionUi, setInteractMode, setActiveTarget, setTalkTarget,
+  setActiveGroundItem, setPigeonTarget, setInput,
+} from "../../../store/sessionUiStore.js";
 import { isQuestChoiceOpen } from "../../../domain/rules/quests/questEngine.js";
 
 export default function CenterFooterBar({ ui, turn, handlers }) {
@@ -10,12 +14,18 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
   const varTree = useGameStore(s => s.varTree);
   const inv = useGameStore(s => s.inv);
   const {
-    isMobile, mobileColumn, zoneTheme, loading, pendingTalks, waitSecs,
+    isMobile, mobileColumn, zoneTheme,
     availableQuestsHere, nsfwOn, setNsfwOn, justMeditated,
-    interactMode, setInteractMode, activeTarget, setActiveTarget, setTalkTarget,
-    activeGroundItem, setActiveGroundItem, pigeonTarget, setPigeonTarget,
-    input, setInput, inputRef, composingRef,
+    inputRef, composingRef,
   } = ui;
+  const loading = useSessionUi(s => s.loading);
+  const pendingTalks = useSessionUi(s => s.pendingTalks);
+  const waitSecs = useSessionUi(s => s.waitSecs);
+  const interactMode = useSessionUi(s => s.interactMode);
+  const activeTarget = useSessionUi(s => s.activeTarget);
+  const activeGroundItem = useSessionUi(s => s.activeGroundItem);
+  const pigeonTarget = useSessionUi(s => s.pigeonTarget);
+  const input = useSessionUi(s => s.input);
   const { questPanel, screenHandlers, progressionHandlers, pigeonHandlers } = handlers;
 
   return (

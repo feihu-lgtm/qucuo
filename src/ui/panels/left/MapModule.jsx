@@ -2,11 +2,13 @@ import { hasInnerMap, getDistrictAnchor, getInnerRoom, visibleInnerExits } from 
 import { QUCUO_MAP } from "../../../domain/data/map/qucuoMap.js";
 import { blockedNoticeText, passableExits } from "../../../domain/rules/map/blockedNotice.js";
 import { showNotice } from "../../../store/uiStore.js";
+import { useSessionUi, setInteractMode } from "../../../store/sessionUiStore.js";
 import { DIRS } from "../../../utils/mudHelpers.js";
 import NineGridMap from "../../components/NineGridMap.jsx";
 import { chromeBtn } from "../../../utils/theme.js";
 
-export default function MapModule({ zoneTheme, room, innerRoomName, mapView, setMapView, mapBig, setMapBig, questProgress, mapData, loading, flags, autoTravelTo, setInteractMode, act, inv, char, varTree }) {
+export default function MapModule({ zoneTheme, room, innerRoomName, mapView, setMapView, mapBig, setMapBig, questProgress, mapData, flags, autoTravelTo, act, inv, char, varTree }) {
+  const loading = useSessionUi(s => s.loading);
   // 没有内景的据点（乡外新节点）只能看外图，否则内图视图下连「外/内」切换都没有
   const view = hasInnerMap(room.name) ? mapView : "outer";
   return (

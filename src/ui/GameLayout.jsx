@@ -6,6 +6,7 @@ import { isMobileKeyboardOpen } from "../utils/mobileKeyboard.js";
 import { didOpenCenterContent } from "../utils/mobileColumn.js";
 import { OVERLAY, useOverlay } from "../store/uiStore.js";
 import { gameActions, useGameStore } from "../store/gameStore.js";
+import { useSessionUi, setInteractMode } from "../store/sessionUiStore.js";
 
 const BigMapModal = lazy(() => import("./components/BigMapModal.jsx"));
 
@@ -43,17 +44,22 @@ export default function GameLayout({ layout }) {
 
   const { isMobile, mobileColumn, setMobileColumn, zoneTheme, logEnd } = ui;
 
+  const interactMode = useSessionUi(s => s.interactMode);
+  const pigeonTarget = useSessionUi(s => s.pigeonTarget);
+  const talkTarget = useSessionUi(s => s.talkTarget);
+  const loading = useSessionUi(s => s.loading);
+
   useEffect(() => {
     const content = {
       building: ui.activeBuilding?.id, trade: ui.tradingShop, duel: ui.duelPending,
-      interaction: ui.interactMode !== "action" ? `${ui.interactMode}:${ui.pigeonTarget || ui.talkTarget || ""}` : null,
+      interaction: interactMode !== "action" ? `${interactMode}:${pigeonTarget || talkTarget || ""}` : null,
       trauma: derived.seaTraumaActive, debug: showDebug, basement: showBasement,
     };
     const opened = didOpenCenterContent(previousCenterContent.current, content);
     previousCenterContent.current = content;
     if (isMobile && opened) setMobileColumn("center");
-  }, [isMobile, ui.activeBuilding?.id, ui.tradingShop, ui.duelPending, ui.interactMode, ui.pigeonTarget,
-    ui.talkTarget, derived.seaTraumaActive, showDebug, showBasement, setMobileColumn]);
+  }, [isMobile, ui.activeBuilding?.id, ui.tradingShop, ui.duelPending, interactMode, pigeonTarget,
+    talkTarget, derived.seaTraumaActive, showDebug, showBasement, setMobileColumn]);
 
   useEffect(() => {
     const previous = narrativeView.current;
@@ -135,7 +141,7 @@ export default function GameLayout({ layout }) {
         autoSaveError={autosave.autoSaveError} lastAutoSave={autosave.lastAutoSave}
         playerAvatarCustom={ui.playerAvatarCustom} setPlayerAvatarCustom={ui.setPlayerAvatarCustom}
         AV_BASE={ui.AV_BASE} genderAvatar={ui.genderAvatar}
-        turnControls={{ loading: ui.loading, stopRunning: turn.stopRunning, rollbackBlocked: turn.rollbackBlocked, rollbackOneStep: turn.rollbackOneStep }}
+        turnControls={{ loading, stopRunning: turn.stopRunning, rollbackBlocked: turn.rollbackBlocked, rollbackOneStep: turn.rollbackOneStep }}
         gm={ui.gm} setGm={ui.setGm} addLog={addLog}
       />
 
@@ -151,13 +157,12 @@ export default function GameLayout({ layout }) {
           activeBuilding={ui.activeBuilding} setActiveBuilding={ui.setActiveBuilding}
           setActiveNpcMenu={ui.setActiveNpcMenu}
           setCharacterPageTarget={ui.setCharacterPageTarget}
-          setPigeonTarget={ui.setPigeonTarget} setInteractMode={ui.setInteractMode} inputRef={ui.inputRef} addLog={addLog}
-          pigeonTarget={ui.pigeonTarget}
+          inputRef={ui.inputRef} addLog={addLog}
           mapView={ui.mapView} setMapView={ui.setMapView} mapBig={ui.mapBig} setMapBig={ui.setMapBig}
           mapData={mapData} questProgress={questProgress} flags={flags} inv={inv}
           inSeaOfMind={derived.inSeaOfMind} seaGate={derived.seaGate}
           enterSeaOfMind={playerActionHandlers.enterSeaOfMind} leaveSeaOfMind={playerActionHandlers.leaveSeaOfMind}
-          loading={ui.loading} act={turn.act} autoTravelTo={turn.autoTravelTo}
+          act={turn.act} autoTravelTo={turn.autoTravelTo}
           uiGreen={ui.uiGreen} uiPink={ui.uiPink}
         />
 
@@ -194,8 +199,6 @@ export default function GameLayout({ layout }) {
             setMapBig={ui.setMapBig}
             mapBigCloseGuard={ui.mapBigCloseGuard}
             zoneTheme={zoneTheme}
-            loading={ui.loading}
-            setInteractMode={ui.setInteractMode}
             act={turn.act}
             autoTravelTo={turn.autoTravelTo}
           />

@@ -37,7 +37,7 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
       varTree: game.varTree, room: game.room, innerRoomName: game.innerRoomName, time: game.time,
       flags: game.flags, questProgress: game.questProgress,
       effectiveSpecialNow, companionState: game.companionState,
-      loading: ui.loading,
+      // loading 等交互输入态已迁 sessionUiStore，面板直接订阅，不再经 ui 透传。
       characterPageTarget: ui.characterPageTarget, setCharacterPageTarget: ui.setCharacterPageTarget,
       claimedMilestones: game.claimedMilestones, claimMilestone: screenHandlers.claimMilestone,
       giftToCharacter: screenHandlers.giftToCharacter,
