@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { gameStore, markGameReplaced } from "../../store/gameStore.js";
+import { gameActions, gameStore, markGameReplaced } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { applyCharacterCard } from "../../features/character/logic.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
@@ -9,9 +9,11 @@ import { unlockImportedCompanion } from "../../domain/rules/companion/companion.
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
 
 export function useCardImportHandlers({
-  setVarTree, setChar, setSkills, setInv, setCompanionState, addLog,
-  featureCtxRef, schedulerRef,
+  setVarTree, featureCtxRef, schedulerRef,
 }) {
+  // Store 直读（路线一）：char/skills/inv/companionState/log 的写全走 gameActions。
+  const { setChar, setSkills, setInv, setCompanionState, setLog } = gameActions;
+  const addLog = (lines) => setLog((p) => [...p, ...lines]);
   const handleImportNpcs = useCallback((npcs) => applyResult(featureCtxRef.current, () => {
     const n = importedRegistry.registerImported(npcs, {});
     const withAff = npcs.filter(x => (x.affection || 0) !== 0);

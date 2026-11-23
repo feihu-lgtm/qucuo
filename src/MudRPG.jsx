@@ -159,7 +159,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   );
   const { captureUndo, rollbackOneStep, invalidateTurns, onTurnsInvalidated, turnGenerationRef } = useUndo({
     undoSnapshotRef, buildCurrentSnapshot, applySnapshot,
-    addLog, setQueueCount, autoTravelRef, queueTimerRef,
+    setQueueCount, autoTravelRef, queueTimerRef,
     setDuelPending, setDuelingNpc, setActiveBuilding, pendingTalksRef, changePendingTalks, talkBusyRef,
     setLoading, waitTimerRef, setWaitSecs, clearCommandQueue,
   });
@@ -281,8 +281,8 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 打开交易界面：只在NPC是手写配置的商人时可用，货品清单固定不变，
   // 保证同一个商人每次进店看到的东西都稳定。
   const screenHandlers = commandScheduler.wrapHandlers("useScreenHandlers", useScreenHandlers({
-    act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
-    timeRef, noteAction, inv, setTradingShop, captureUndo,
+    act, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
+    noteAction, setTradingShop, captureUndo,
   }));
   useIntentRouter(intentRouterRef, {
     apiCfg, act, addLog, featureCtxRef, dispatchCommand, setActiveTarget, setDuelPending, setTradingShop,
@@ -299,8 +299,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }));
 
   const cardImportHandlers = commandScheduler.wrapHandlers("useCardImportHandlers", useCardImportHandlers({
-    setVarTree, setChar, setSkills, setInv, setCompanionState, addLog,
-    setPlayerAvatarCustom, featureCtxRef, schedulerRef,
+    setVarTree, featureCtxRef, schedulerRef,
   }));
 
   // ── 心灵之海 · 玄女点破 ──

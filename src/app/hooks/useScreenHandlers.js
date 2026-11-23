@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { gameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { consumeItem, pickGroundItem } from "../../features/items/logic.js";
 import {
@@ -17,9 +17,12 @@ import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace
 import { isNpcAngry, stealSuccessRate } from "../../domain/rules/combat/stealSystem.js";
 
 export function useScreenHandlers({
-  act, addLog, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
-  timeRef, noteAction, inv, setTradingShop, captureUndo,
+  act, featureCtxRef, setActiveTarget, setInteractMode, setTalkTarget,
+  noteAction, setTradingShop, captureUndo,
 }) {
+  // Store 直读（路线一）：log 走 gameActions；time/inv 在使用点现取。
+  const { setLog } = gameActions;
+  const addLog = (lines) => setLog((p) => [...p, ...lines]);
   const handleNpcLook = useCallback((npc) => applyResult(featureCtxRef.current, () => {
     captureUndo();
     const result = lookNpc(gameStore.getState(), npc);
@@ -64,7 +67,7 @@ export function useScreenHandlers({
   }, { feature: "items.consumeItem" }), [captureUndo]);
 
   const handleCollectGround = useCallback((item) => applyResult(featureCtxRef.current, () => {
-    const result = pickGroundItem(gameStore.getState(), item, { tallyTime: timeRef.current });
+    const result = pickGroundItem(gameStore.getState(), item, { tallyTime: gameStore.getState().time });
     if (!result.changes) return;
     captureUndo();
     applyResult(featureCtxRef.current, result);
@@ -131,6 +134,7 @@ export function useScreenHandlers({
   }, { feature: "npc.stealFromNpc" }), [noteAction, captureUndo]);
 
   const giftToCharacter = useCallback((charName) => applyResult(featureCtxRef.current, () => {
+    const { inv } = gameStore.getState();
     if (inv.length === 0) {
       addLog([{ t: "err", text: `  背包空空如也，没有什么可以送给${charName}的。` }]);
       return;
@@ -144,7 +148,7 @@ export function useScreenHandlers({
     captureUndo();
     setInteractMode("action");
     applyResult(featureCtxRef.current, giftNpc(state, npc, inv[idx]));
-  }, { feature: "npc.giftToCharacter" }), [inv, addLog, captureUndo]);
+  }, { feature: "npc.giftToCharacter" }), [captureUndo]);
 
   const handleToggleEquip = useCallback((it) => applyResult(featureCtxRef.current, () => {
     captureUndo();
