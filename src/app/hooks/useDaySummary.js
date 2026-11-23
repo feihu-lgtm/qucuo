@@ -5,11 +5,14 @@ import { setFactSummary } from "../../domain/rules/prompt/knowledge.js";
 import { resetForDay } from "../../domain/rules/map/mapSquares.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
+import { gameStore, useGameStore } from "../../store/gameStore.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();
 
-export function useDaySummary({ time, apiCfg, setVarTree, varTreeRef, dayMaterialRef, prerunSquares }) {
+export function useDaySummary({ apiCfg, setVarTree, dayMaterialRef, prerunSquares }) {
+  // 跨天侦测要订阅式地跟着 time 走——hook 内直订 store，不经参数透传（路线一）。
+  const time = useGameStore((s) => s.time);
   const summarizeDay = useCallback(async (endedDay, material) => {
     const lines = (material || []).map(m => m.text).filter(Boolean);
     if (!lines.length) return;
@@ -49,7 +52,7 @@ export function useDaySummary({ time, apiCfg, setVarTree, varTreeRef, dayMateria
       // 把这一天的行动计数也交给日总结当原料。此前不走 AI 的动作（走动/打坐/安抚…）
       // 一件都不留痕，日总结里会出现"今天什么都没干"却实际来回跑了十几趟的怪事。
       // 注意用 prevDayRef 之前那一天的 time 去读（ended*24），否则读到的是新一天的空表。
-      const tallyLine = describeDayForSummary(varTreeRef.current.世界?.起居注, ended * 24);
+      const tallyLine = describeDayForSummary(gameStore.getState().varTree?.世界?.起居注, ended * 24);
       const fullMaterial = tallyLine ? [...material, { text: tallyLine }] : material;
       if (fullMaterial.length) summarizeDay(ended, fullMaterial);
       // 新的一天：全图格子重埋（昨日埋物作废，预跑重新掷骰写文——给出"每天值得巡一圈"的理由）
