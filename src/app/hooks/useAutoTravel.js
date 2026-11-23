@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { planAutoTravel } from "../../features/map/logic.js";
 import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 import { DIRS } from "../../utils/mudHelpers.js";
+import { gameActions, gameStore, useGameStore } from "../../store/gameStore.js";
 
 const nextTick = () => new Promise(resolve => setTimeout(resolve, 0));
 
@@ -47,18 +48,23 @@ export function enqueueAutoTravelLegs(path, { scheduler, actRef, autoTravelRef, 
 }
 
 export function useAutoTravel({
-  room, mapData, flags, questProgress, addLog, autoTravelRef, scheduler,
-  act, teleportLookRef, innerRoomName, setInteractMode, intentRouterRef,
+  autoTravelRef, scheduler, act, teleportLookRef, setInteractMode, intentRouterRef,
 }) {
+  const { setLog } = gameActions;
+  const addLog = useCallback((lines) => setLog((p) => [...p, ...lines]), [setLog]);
   const actRef = useRef(act);
   actRef.current = act;
-  // 与 actRef 同一次 render 更新的当前房间名：各程用它判断 act 闭包是否已落地（见 waitForActRoom）。
-  const roomNameRef = useRef(room.name);
-  roomNameRef.current = room.name;
+  // 房名/内层房名 hook 内直订 store（路线一）：roomNameRef 与 actRef 同一次 render 刷新，
+  // 供 waitForActRoom 判 act 闭包是否已落地。
+  const roomName = useGameStore((s) => s.room?.name);
+  const innerRoomName = useGameStore((s) => s.innerRoomName);
+  const roomNameRef = useRef(roomName);
+  roomNameRef.current = roomName;
 
   const autoTravelTo = useCallback((destName) => {
-    if (!destName || destName === room.name) return;
+    if (!destName || destName === roomName) return;
     return scheduler.dispatch("autoTravel", () => {
+      const { room, mapData, flags, questProgress } = gameStore.getState();
       const route = planAutoTravel({ room, mapData, flags, questProgress }, destName);
       if (route.locked) { addLog([{ t: "sys", text: `  「${destName}」此刻还去不得，路未通。` }]); return; }
       const path = route.path;
@@ -73,18 +79,18 @@ export function useAutoTravel({
         onTravelEnd: () => intentRouterRef?.current?.settleTriggers?.({ dest: destName }),
       });
     }, { routeQueue: true, routePlanner: true });
-  }, [room.name, mapData, flags, questProgress, scheduler, addLog, autoTravelRef, intentRouterRef]);
+  }, [roomName, scheduler, addLog, autoTravelRef, intentRouterRef]);
 
   // The teleport follow-up waits for both the district and inner room to update before looking.
   useEffect(() => {
     const pend = teleportLookRef.current;
     if (!pend) return;
-    if (room.name !== pend.dist) return;
+    if (roomName !== pend.dist) return;
     if (pend.inner && innerRoomName !== pend.inner) return;
     teleportLookRef.current = null;
     setInteractMode("action");
     act("环顾四周");
-  }, [room.name, innerRoomName, act]);
+  }, [roomName, innerRoomName, act]);
 
   return autoTravelTo;
 }

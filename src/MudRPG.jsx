@@ -260,18 +260,17 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   }));
 
   const autoTravelTo = useAutoTravel({
-    room, mapData, flags, questProgress, addLog,
     autoTravelRef, scheduler: coreScheduler,
-    act, teleportLookRef, innerRoomName, setInteractMode, intentRouterRef,
+    act, teleportLookRef, setInteractMode, intentRouterRef,
   });
 
   const pigeonHandlers = commandScheduler.wrapHandlers("usePigeonHandlers", usePigeonHandlers({
-    room, varTree, featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
+    featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
     setInteractMode, setActiveBuilding, captureUndo,
   }));
   const { applyPigeonResult, sendPigeonLetter } = pigeonHandlers;
 
-  usePigeonReplies({ room, apiCfg, preset, applyPigeonResult, time, varTree, featureCtxRef });
+  usePigeonReplies({ apiCfg, applyPigeonResult, featureCtxRef });
 
   const duelHandlers = commandScheduler.wrapHandlers("useDuel", useDuel({
     act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
