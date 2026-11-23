@@ -4,6 +4,7 @@ import { advanceQuestStages, createQuestProgress, getCurrentStage, isChoiceOpen,
 import { resolveStageRewards, stageRewardPatches } from "../../domain/rules/quests/questRewards.js";
 import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { getLocalQuestStage, isLocalQuestStageFlag } from "../../domain/rules/quests/localStages.js";
 
@@ -34,10 +35,15 @@ export function forceAdvanceQuest(state, quest, targetFlag, now) {
     // 空手点按钮或隔空交物一律拒收（村2 曾空手 ❢ 直接置旗）。
     const delivery = cur?.deliver;
     if (delivery) {
+      // room.npcs 是据点级花名册，得再过一道内层在场判定——不然在发布人家
+      // 隔空把东西"送"给镇子另一头的收件人也算数（村2 糌粑→老孙曾如此）。
       const roomNpcs = state.room?.npcs;
-      const targetHere = !roomNpcs?.length || roomNpcs.some((n) => n.name === delivery.to);
+      const targetHere = !roomNpcs?.length || roomNpcs.some(
+        (n) => n.name === delivery.to && isNpcVisibleInInnerRoom(state.room?.name, state.innerRoomName, n),
+      );
       if (invIndexOf(state.inv, delivery.item) === -1 || !targetHere) return { changes: {} };
-      deliverToConsume = delivery;
+      // keep：剧情里对方看完把东西还回来（霜天月/银锁片），交付不扣背包。
+      if (!delivery.keep) deliverToConsume = delivery;
     }
     const collectReqs = cur?.collect ? (Array.isArray(cur.collect) ? cur.collect : [cur.collect]) : [];
     if (collectReqs.some((c) => c?.item && invIndexOf(state.inv, c.item) === -1)) return { changes: {} };

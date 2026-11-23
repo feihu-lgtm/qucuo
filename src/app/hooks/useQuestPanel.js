@@ -6,6 +6,7 @@ import { buildQuestFoe } from "../../features/quest/combatChoice.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 import { isQuestChoiceOpen } from "../../domain/rules/quests/questEngine.js";
+import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 
 export function settlePersuasion({ setActivePersuasion, setPersuasionProgress, setChar, forceAdvanceQuest, addLog }, { questId, flag }, result) {
   return applyResult(null, () => {
@@ -121,7 +122,11 @@ export function useQuestPanel({
     });
     const delivery = stage.deliver;
     if (delivery) {
-      const targetHere = (gameStore.getState().room?.npcs || []).some((n) => n.name === delivery.to);
+      // room.npcs 是据点级花名册——收件人要在当前内层房间才算"在场"。
+      const st = gameStore.getState();
+      const targetHere = (st.room?.npcs || []).some(
+        (n) => n.name === delivery.to && isNpcVisibleInInnerRoom(st.room?.name, st.innerRoomName, n),
+      );
       if (!hasItem(delivery.item) || !targetHere) {
         addLog([{
           t: "sys",

@@ -130,6 +130,24 @@ describe("forceAdvanceQuest · deliver/collect 实物闸", () => {
     ).changes).toEqual({});
   });
 
+  it("收件人在据点花名册但不在当前内层房间也拒收（老孙绑定老孙饭馆）", () => {
+    const atOtherRoom = { ...base, room: { name: "鱼定村", npcs: [{ name: "老孙" }] }, innerRoomName: "才旦家" };
+    expect(forceAdvanceQuest(atOtherRoom, deliverQuest, "s1_delivered").changes).toEqual({});
+    const atHisRoom = { ...atOtherRoom, innerRoomName: "老孙饭馆" };
+    expect(forceAdvanceQuest(atHisRoom, deliverQuest, "s1_delivered").changes.questProgress({}).deliver_quest.currentStageIndex).toBe(1);
+  });
+
+  it("deliver.keep 标记的剧情还回件不扣背包", () => {
+    const keepQuest = {
+      id: "keep_quest",
+      stages: [{ completionFlag: "k_done", deliver: { item: "霜天月", to: "何雨谢", keep: true }, onReach: {} }],
+    };
+    const keepBase = { ...base, inv: [{ name: "霜天月" }], room: { name: "x", npcs: [{ name: "何雨谢" }] } };
+    const result = forceAdvanceQuest(keepBase, keepQuest, "k_done");
+    expect(result.changes.questProgress({}).keep_quest.status).toBe("completed");
+    expect(result.changes.inv?.(keepBase.inv) ?? keepBase.inv).toEqual([{ name: "霜天月" }]);
+  });
+
   it("collect 阶段要采集物已在包里才放行", () => {
     const collectQuest = {
       id: "collect_quest",
