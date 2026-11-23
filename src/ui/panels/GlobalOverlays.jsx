@@ -26,6 +26,7 @@ import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import NpcActionMenu from "../components/NpcActionMenu.jsx";
 import ItemActionMenu from "../components/ItemActionMenu.jsx";
 import { OVERLAY, closeOverlay, openOverlay, useOverlay } from "../../store/uiStore.js";
+import { useSessionUi } from "../../store/sessionUiStore.js";
 
 const TutorialOverlay = lazy(() => import("../screens/TutorialOverlay.jsx"));
 const VersionHistoryPanel = lazy(() => import("../screens/VersionHistoryPanel.jsx"));
@@ -56,9 +57,11 @@ export default function GlobalOverlays({
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
   handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
   activeItemMenu, setActiveItemMenu, inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip,
-  activePersuasion, apiCfg, persuasionProgress, savePersuasionProgress, finishPersuasion,
-  duelingNpc, resetDuel, duelFinishHandler,
+  apiCfg, persuasionProgress, savePersuasionProgress, finishPersuasion,
+  resetDuel, duelFinishHandler,
 }) {
+  const activePersuasion = useSessionUi(s => s.activePersuasion);
+  const duelingNpc = useSessionUi(s => s.duelingNpc);
   const showTutorial = useOverlay(OVERLAY.TUTORIAL);
   const showVersionHistory = useOverlay(OVERLAY.VERSION_HISTORY);
   const showCharacterPage = useOverlay(OVERLAY.CHARACTER_PAGE);

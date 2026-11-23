@@ -48,17 +48,20 @@ export default function GameLayout({ layout }) {
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
   const talkTarget = useSessionUi(s => s.talkTarget);
   const loading = useSessionUi(s => s.loading);
+  const activeBuilding = useSessionUi(s => s.activeBuilding);
+  const tradingShop = useSessionUi(s => s.tradingShop);
+  const duelPending = useSessionUi(s => s.duelPending);
 
   useEffect(() => {
     const content = {
-      building: ui.activeBuilding?.id, trade: ui.tradingShop, duel: ui.duelPending,
+      building: activeBuilding?.id, trade: tradingShop, duel: duelPending,
       interaction: interactMode !== "action" ? `${interactMode}:${pigeonTarget || talkTarget || ""}` : null,
       trauma: derived.seaTraumaActive, debug: showDebug, basement: showBasement,
     };
     const opened = didOpenCenterContent(previousCenterContent.current, content);
     previousCenterContent.current = content;
     if (isMobile && opened) setMobileColumn("center");
-  }, [isMobile, ui.activeBuilding?.id, ui.tradingShop, ui.duelPending, interactMode, pigeonTarget,
+  }, [isMobile, activeBuilding?.id, tradingShop, duelPending, interactMode, pigeonTarget,
     talkTarget, derived.seaTraumaActive, showDebug, showBasement, setMobileColumn]);
 
   useEffect(() => {
@@ -154,7 +157,6 @@ export default function GameLayout({ layout }) {
           room={room} innerRoomName={innerRoomName} time={time}
           varTree={varTree} char={char}
           peoplePanel={ui.peoplePanel} setPeoplePanel={ui.setPeoplePanel}
-          activeBuilding={ui.activeBuilding} setActiveBuilding={ui.setActiveBuilding}
           setActiveNpcMenu={ui.setActiveNpcMenu}
           setCharacterPageTarget={ui.setCharacterPageTarget}
           inputRef={ui.inputRef} addLog={addLog}

@@ -14,6 +14,9 @@ import {
   useSessionUi, sessionUiStore, setInput, setLoading, setWaitSecs, setPendingTalks,
   setQueueCount, setInteractMode, setTalkTarget, setActiveTarget, setActiveGroundItem,
   setPigeonTarget, setCmdHistory, setHistIdx,
+  setForcedDuelNpc, setDuelingNpc, setDuelPending, setPendingQuestBranch,
+  setActivePersuasion, setActiveBuilding, setGambleNegotiation,
+  setBuildingPanelMinimized, setJustMeditated, setTradingShop,
 } from "../../store/sessionUiStore.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
@@ -117,16 +120,17 @@ export function useGameUi({
   }, [isDayMode]);
   const cmdHistory = useSessionUi(s => s.cmdHistory);
   const histIdx = useSessionUi(s => s.histIdx);
-  const [forcedDuelNpc, setForcedDuelNpc] = useState(null);
-  const [duelingNpc, setDuelingNpc] = useState(null);
-  const [duelPending, setDuelPending] = useState(null);
-  const [pendingQuestBranch, setPendingQuestBranch] = useState(null);
-  const [activePersuasion, setActivePersuasion] = useState(null);
-  const [activeBuilding, setActiveBuilding] = useState(null);
-  const [gambleNegotiation, setGambleNegotiation] = useState({});
-  const [buildingPanelMinimized, setBuildingPanelMinimized] = useState(false);
-  const [justMeditated, setJustMeditated] = useState(false);
-  const [tradingShop, setTradingShop] = useState(null);
+  // 模态/战斗/建筑态已迁 sessionUiStore（PR-2B）
+  const forcedDuelNpc = useSessionUi(s => s.forcedDuelNpc);
+  const duelingNpc = useSessionUi(s => s.duelingNpc);
+  const duelPending = useSessionUi(s => s.duelPending);
+  const pendingQuestBranch = useSessionUi(s => s.pendingQuestBranch);
+  const activePersuasion = useSessionUi(s => s.activePersuasion);
+  const activeBuilding = useSessionUi(s => s.activeBuilding);
+  const gambleNegotiation = useSessionUi(s => s.gambleNegotiation);
+  const buildingPanelMinimized = useSessionUi(s => s.buildingPanelMinimized);
+  const justMeditated = useSessionUi(s => s.justMeditated);
+  const tradingShop = useSessionUi(s => s.tradingShop);
   const inputRef = useRef(null);
   const logEnd = useRef(null);
   const composingRef = useRef(false);

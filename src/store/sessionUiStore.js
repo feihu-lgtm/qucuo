@@ -18,6 +18,17 @@ export const sessionUiStore = createStore(() => ({
   pigeonTarget: null,
   cmdHistory: [],
   histIdx: -1,
+  // 模态/战斗/建筑态（PR-2B）
+  forcedDuelNpc: null,
+  duelingNpc: null,
+  duelPending: null,
+  pendingQuestBranch: null,
+  activePersuasion: null,
+  activeBuilding: null,
+  gambleNegotiation: {},
+  buildingPanelMinimized: false,
+  justMeditated: false,
+  tradingShop: null,
 }));
 
 export const useSessionUi = useSessionUiStore;
@@ -39,3 +50,13 @@ export const setActiveGroundItem = fieldSetter("activeGroundItem");
 export const setPigeonTarget = fieldSetter("pigeonTarget");
 export const setCmdHistory = fieldSetter("cmdHistory");
 export const setHistIdx = fieldSetter("histIdx");
+export const setForcedDuelNpc = fieldSetter("forcedDuelNpc");
+export const setDuelingNpc = fieldSetter("duelingNpc");
+export const setDuelPending = fieldSetter("duelPending");
+export const setPendingQuestBranch = fieldSetter("pendingQuestBranch");
+export const setActivePersuasion = fieldSetter("activePersuasion");
+export const setActiveBuilding = fieldSetter("activeBuilding");
+export const setGambleNegotiation = fieldSetter("gambleNegotiation");
+export const setBuildingPanelMinimized = fieldSetter("buildingPanelMinimized");
+export const setJustMeditated = fieldSetter("justMeditated");
+export const setTradingShop = fieldSetter("tradingShop");
