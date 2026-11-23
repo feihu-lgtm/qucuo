@@ -12,7 +12,7 @@ const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 入参：pickupJudgment/collectGranted/pickupExtractionFailed 均为 ref 的值、
 // 
 // 返回的 changes.room 是多段写回按顺序组合成的单个 updater。
-export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed, innerRoomName }, { trace }) {
+export function commitProposalWrites({ p, isTalk, giftAlreadySettled, settledItems, preserveHp, gm, pickupJudgment, collectGranted, pickupExtractionFailed, innerRoomName }, { trace }) {
   const out = {};
   const changes = {};
   const roomWrites = [];
@@ -104,13 +104,20 @@ export function commitProposalWrites({ p, isTalk, giftAlreadySettled, preserveHp
   }
   if (p.delta && !isTalk && !giftAlreadySettled) {
     if (p.delta.items_rm?.length) {
-      const names = p.delta.items_rm.map(i => typeof i === 'string' ? i : i.name || String(i));
-      const prevInv = changes.inv;
-      changes.inv = (inv) => {
-        const base = prevInv ? prevInv(inv) : inv;
-        return updateField("inv", (i) => set("inv", i.filter((item) => !names.includes(typeof item === "string" ? item : item.name))))(base);
-      };
-      roomWrites.push((r) => ({ ...r, items: placeGroundItems(r.items, names.map(n => ({ name: n, id: n })), r.name, innerRoomName) }));
+      // 本轮已确定性结算的交付件（❢ deliver 通道）不再让 AI 的 items_rm 扣——
+      // 系统已扣过一件，再扣会吞第二件；keep 剧情还回件则根本不该离开背包。
+      const isSettledItem = (n) => (settledItems || []).some((w) => n === w || n.includes(w) || w.includes(n));
+      const names = p.delta.items_rm
+        .map(i => typeof i === 'string' ? i : i.name || String(i))
+        .filter(n => !isSettledItem(n));
+      if (names.length) {
+        const prevInv = changes.inv;
+        changes.inv = (inv) => {
+          const base = prevInv ? prevInv(inv) : inv;
+          return updateField("inv", (i) => set("inv", i.filter((item) => !names.includes(typeof item === "string" ? item : item.name))))(base);
+        };
+        roomWrites.push((r) => ({ ...r, items: placeGroundItems(r.items, names.map(n => ({ name: n, id: n })), r.name, innerRoomName) }));
+      }
     }
     if (p.delta.exp) changes.exp = updateField("exp", add("exp", p.delta.exp));
     if (p.delta.pot) changes.pot = updateField("pot", add("pot", p.delta.pot));

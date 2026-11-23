@@ -16,6 +16,9 @@ export async function finalizeTurn({ ctx, trace, turn, turnOpts, soft, opts, set
       giftSettlement: opts.settleKind === "gift" && opts.giftInfo?.weight
         ? { npc: opts.settleNpc, range: opts.giftInfo.weight.range } : null,
       giftAlreadySettled: !!opts.giftInfo?.weight,
+      // 本轮已确定性结算过的交付件（❢ deliver 通道）：叙事回执的 items_rm
+      // 不得再扣——会重复扣件，或把剧情里还回来的 keep 件误删。
+      settledItems: opts.settledItems || null,
       _trace: trace,
     });
     if (soft?.logs?.length) (commitDeps.addLog || ctx.addLog)?.(soft.logs);
