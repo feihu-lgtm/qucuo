@@ -11,7 +11,8 @@ export {
   isDefaultEndpoint, migrateProvider, providerApiType, PROVIDERS,
   QWEN_DEFAULT_ENDPOINT, QWEN_MAX_TOKENS_CAP,
 } from "./providers.js";
-export { callModel, callModelStream, listModels, testConnection } from "./apiTransport.js";
+export { callModel } from "./apiTransport.js";
+export { callModelStream, listModels, testConnection } from "./apiDiagnostics.js";
 
 const CONFIG_KEY = "wuxia_mud_api_config";
 
