@@ -506,3 +506,4 @@ export default { quest: {
     rewardText: "断绝三十年的锋芒，重新映上了雪岭的月光。",
   },
 } };
+export * from "./xueshan-1-shared.js";
