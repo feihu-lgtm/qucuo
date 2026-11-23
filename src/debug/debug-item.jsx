@@ -1,4 +1,5 @@
 // ItemActionMenu 调试入口（临时）：验证"包袱里点装备能否直接穿戴"。
+import "../ui/tokens.css";
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import ItemActionMenu from "../ui/components/ItemActionMenu.jsx";

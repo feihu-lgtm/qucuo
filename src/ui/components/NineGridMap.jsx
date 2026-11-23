@@ -74,7 +74,7 @@ export default function NineGridMap({ centerLabel, cells, onGo, accent = "var(--
           <div key={key} className="mobile-mini-map-cell" onClick={() => clickable && onGo(key)}
             onMouseEnter={() => setHover(key)} onMouseLeave={() => setHover(null)}
             style={cellStyle({ cursor: clickable ? "pointer" : "default", filter: hov ? "brightness(1.3)" : "none" }, MAP_UI.idle)}>
-            <span style={{ color: hov ? "var(--plate)" : "var(--ink-tier-text)", fontSize: fontMain, fontWeight: hov ? "bold" : "normal", textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{short(c.name)}</span>
+            <span style={{ color: hov ? "var(--ink-text)" : "var(--ink-tier-text)", fontSize: fontMain, fontWeight: hov ? "bold" : "normal", textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{short(c.name)}</span>
           </div>
         );
       })}
