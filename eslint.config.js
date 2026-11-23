@@ -63,6 +63,18 @@ export default [
     },
   },
   {
+    files: ["src/features/**/*.{js,jsx}"],
+    ignores: ["**/*.{test,spec}.{js,jsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/ui/**", "**/app/**", "**/infra/**"],
+          message: "Feature modules must not depend on UI, app, or infra modules.",
+        }],
+      }],
+    },
+  },
+  {
     files: ["src/domain/**/*.{js,jsx}"],
     ignores: ["**/*.{test,spec}.{js,jsx}"],
     rules: {

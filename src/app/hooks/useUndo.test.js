@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { bindTurnRuntime } from "../../features/turnRuntime.js";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GAME_KEYS, gameActions, gameStore, initGameStore, subscribeGameReplaced } from "../../store/gameStore.js";
@@ -12,7 +13,8 @@ import { applyResult } from "../../features/run.js";
 import { runQuestChoice, settlePersuasion } from "./useQuestPanel.js";
 import { restorePersuasionProgress } from "./useAutosave.js";
 import { createTurnStaleCheck, createUndoController } from "./useUndo.js";
-import { turnMonitor } from "../../infra/turnMonitor.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 import { useScreenHandlers } from "./useScreenHandlers.js";
 
 vi.mock("../../engine/act/commitRound.js", () => ({ commitRound: vi.fn() }));

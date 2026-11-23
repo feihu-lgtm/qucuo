@@ -1,6 +1,6 @@
 import { registerFact } from "../domain/rules/prompt/knowledge.js";
 import { canBackfillSettle } from "../domain/rules/settle/settleBrief.js";
-import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
+import { turnRuntime } from "./turnRuntime.js";
 
 // 状态写入口由调用方经 ctx.gameActions 注入（features 不反依赖 store，同
 // intentPendingStore 的参数注入约定）。
@@ -9,9 +9,11 @@ function actionForKey(ctx, key) {
   return ctx?.gameActions?.[actionName];
 }
 
-export function applyResult(ctx, result, { turn = getTurnContext(), feature, background = false } = {}) {
+export function applyResult(ctx, result, { turn, feature, background = false } = {}) {
+  const { getTurnContext, PHASE, turnMonitor, withTurnContext } = turnRuntime();
   const action = typeof result === "function";
   feature ||= result.feature || result.settle || result.kind || "本地操作";
+  turn ??= getTurnContext();
   const trace = turn || turnMonitor.start(feature, {
     source: background ? "background" : "button", background,
     commandId: background ? "pigeonReply" : "actLocal",
@@ -61,6 +63,7 @@ function writeResult(ctx, result, trace) {
     if (ctx.settleInBackground && canBackfillSettle(settleOptions)) {
       ctx.settleInBackground(result.settle, settleOptions);
     } else if (ctx.act) {
+      const { PHASE, withTurnContext } = turnRuntime();
       const join = trace.phase === PHASE.MACHINE;
       withTurnContext(join ? trace : undefined, () =>
         ctx.act(result.settle, [], { ...settleOptions, settle: settleOptions.settle ?? true, keepUndo: true }));

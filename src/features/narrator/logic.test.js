@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { bindTurnRuntime } from "../../features/turnRuntime.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 import { comfort, resolveTrauma, enterSeaOfMind, leaveSeaOfMind, confessToNarrator } from "./logic.js";
 import { narratorVars, setNarratorVars } from "../../domain/rules/prompt/mvu.js";
 import { NNPC_STAGE } from "../../domain/rules/narrator/narrator.js";

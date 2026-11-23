@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { bindTurnRuntime } from "../../features/turnRuntime.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 import { joinSect } from "./logic.js";
 import { SECT_ENTRY } from "../../domain/rules/character/sectEntry.js";
 import { applyResult } from "../run.js";

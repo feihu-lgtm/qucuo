@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { bindTurnRuntime } from "../../features/turnRuntime.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createTurnStaleCheck } from "./useUndo.js";

@@ -4,7 +4,7 @@ import { gateRecognition, confirmLine, ROUTES } from "../../domain/rules/intent/
 import { validatePlan } from "../../domain/rules/intent/systemGate.js";
 import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
 import { parseDir } from "../../utils/mudHelpers.js";
-import { turnMonitor } from "../../infra/turnMonitor.js";
+import { turnRuntime } from "../turnRuntime.js";
 
 export function shouldRecognize(apiCfg, cmd, opts = {}) {
   const text = String(cmd || "").trim();
@@ -36,7 +36,7 @@ export function rejectionLog(plan) {
 
 export function traceNode(turn, label, status, detail, durationMs) {
   if (!turn) return;
-  const node = turnMonitor.add(turn, "domain", label, { status, detail });
+  const node = turnRuntime().turnMonitor.add(turn, "domain", label, { status, detail });
   if (durationMs != null) node.durationMs = durationMs;
 }
 
