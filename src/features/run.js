@@ -13,7 +13,7 @@ export function applyResult(ctx, result, { turn, feature, background = false } =
   const { getTurnContext, PHASE, turnMonitor, withTurnContext } = turnRuntime();
   const action = typeof result === "function";
   feature ||= result.feature || result.settle || result.kind || "本地操作";
-  turn ??= getTurnContext();
+  if (turn === undefined) turn = getTurnContext();
   const trace = turn || turnMonitor.start(feature, {
     source: background ? "background" : "button", background,
     commandId: background ? "pigeonReply" : "actLocal",
