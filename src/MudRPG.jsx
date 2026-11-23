@@ -1,7 +1,8 @@
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import {
   OVERLAY, openOverlay, useOverlay,
 } from "./store/uiStore.js";
+import { gameActions, gameStore, useGameStore } from "./store/gameStore.js";
 import OverlayHost from "./ui/OverlayHost.jsx";
 import GameLayout from "./ui/GameLayout.jsx";
 import { useAutosave } from "./app/hooks/useAutosave.js";
@@ -25,7 +26,6 @@ import { useBuildingHandlers } from "./app/hooks/useBuildingHandlers.js";
 import { useProgressionHandlers } from "./app/hooks/useProgressionHandlers.js";
 import { usePlayerActionHandlers } from "./app/hooks/usePlayerActionHandlers.js";
 import { useGameUi, usePresetImport, createInputKeyHandler } from "./app/hooks/useGameUi.js";
-import { useGameStoreBindings } from "./app/hooks/useGameStoreBindings.js";
 import { useNotes } from "./app/hooks/useNotes.js";
 import {
   useGameStartup, useGameStartupBindings, useGameStartupOpeningFaces,
@@ -57,17 +57,43 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   useEffect(() => {
     if (showCharCreate || showOpening) markGameStarted();
   }, [showCharCreate, showOpening, markGameStarted]);
-  const bindings = useGameStoreBindings({ restored });
-  const {
-    setChar, setDao, setSkills, setExp, setPot, setInv, setCompanionState, setPreset,
-    setRoom, setInnerRoomName, setMapData, setTime, setLog, setConvo, setNarrator,
-    setFlags, setQuestProgress, setPersuasionProgress, setClaimedMilestones,
-    setDeposit, setDepositedAt, setPledgedItems, preset, room, innerRoomName,
-    restoredInnerRef, prevRoomNameRef, char, dao, skills, companionState, companionStateRef,
-    inv, log, convo, exp, pot, flags, questProgress, persuasionProgress, mapData, deposit,
-    depositedAt, pledgedItems, time, timeRef, narrator, varTree, claimedMilestones,
-    varTreeRef, setVarTree,
-  } = bindings;
+  // Store 直读（路线一收口，PR-1F）：useGameStoreBindings 已废——仍要响应的
+  // 13 个字段在此直订 useGameStore，setters 走 gameActions，五个 ref 归本层持有；
+  // varTree 特例照旧：setVarTree 保持「先写 varTreeRef 再写 store」的顺序。
+  const { setChar, setInnerRoomName, setInv, setLog, setNarrator, setPersuasionProgress, setTime } = gameActions;
+  const preset = useGameStore(s => s.preset);
+  const room = useGameStore(s => s.room);
+  const innerRoomName = useGameStore(s => s.innerRoomName);
+  const char = useGameStore(s => s.char);
+  const skills = useGameStore(s => s.skills);
+  const companionState = useGameStore(s => s.companionState);
+  const inv = useGameStore(s => s.inv);
+  const log = useGameStore(s => s.log);
+  const flags = useGameStore(s => s.flags);
+  const questProgress = useGameStore(s => s.questProgress);
+  const time = useGameStore(s => s.time);
+  const narrator = useGameStore(s => s.narrator);
+  const varTree = useGameStore(s => s.varTree);
+  const convo = useGameStore(s => s.convo);
+  const persuasionProgress = useGameStore(s => s.persuasionProgress);
+  const claimedMilestones = useGameStore(s => s.claimedMilestones);
+  const restoredInnerRef = useRef(null);
+  const prevRoomNameRef = useRef(room.name);
+  const companionStateRef = useRef(companionState);
+  const timeRef = useRef(time);
+  const varTreeRef = useRef(varTree);
+  const setVarTree = useCallback((next) => {
+    const v = typeof next === "function" ? next(varTreeRef.current) : next;
+    varTreeRef.current = v;
+    gameActions.setVarTree(v);
+  }, []);
+  useEffect(() => gameStore.subscribe((state) => { varTreeRef.current = state.varTree; }), []);
+  // UI 层 ctx 的 game 面——字段与旧 useGameStoreBindings 返回面一致（contextBuilders 只读这些）。
+  const game = useMemo(() => ({
+    char, claimedMilestones, companionState, convo, flags, innerRoomName, inv, log,
+    narrator, persuasionProgress, questProgress, room, skills, time, varTree,
+    setChar, setInv, setNarrator, setVarTree,
+  }), [char, claimedMilestones, companionState, convo, flags, innerRoomName, inv, log, narrator, persuasionProgress, questProgress, room, skills, time, varTree, setVarTree]);
   const ui = useGameUi({
     room, innerRoomName, char, inv, log, time, narrator, preset,
     flags, questProgress, varTree, varTreeRef,
@@ -326,7 +352,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     showSettings, showCharCreate, showOpening, showBody, showMusicPanel, showHomestead,
   };
   const overlayCtx = buildOverlayCtx({
-    ui, game: bindings, overlayState, autosave, actions, addLog, effectiveSpecialNow,
+    ui, game, overlayState, autosave, actions, addLog, effectiveSpecialNow,
     onGameStarted: markGameStarted,
   });
   const apiReady = hasApiCredentials(apiCfg);
@@ -334,7 +360,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const overlayHost = <OverlayHost ctx={overlayCtx} apiReady={apiReady}
     onCloseInitialSettings={() => { if (bootedForSettingsRef.current) returnToStart(); }} />;
   const layout = buildLayoutCtx({
-    ui, game: bindings, overlayHost, autosave, actions, activeBuffs, addLog, jotNote,
+    ui, game, overlayHost, autosave, actions, activeBuffs, addLog, jotNote,
   });
 
   if (!apiReady) {
