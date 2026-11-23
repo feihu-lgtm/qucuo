@@ -14,6 +14,7 @@ describe("runKnowledgeTurn 信息域在场名单", () => {
       apiCfg: null,
       flags: {},
       ai: {},
+      rng: () => 0.99,
     });
     expect(infoDomainBlock).toContain("井边丢了一只木桶");
     expect(infoDomainBlock).not.toContain("丙");
