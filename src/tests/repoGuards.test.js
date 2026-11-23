@@ -159,7 +159,6 @@ describe("Hook deps 不许引用后面才定义的量（TDZ 守卫）", () => {
     "src/app/hooks/usePlayerActionHandlers.js",
     "src/app/hooks/useGameUi.js",
     "src/app/hooks/useWorldRulesRunner.js",
-    "src/app/hooks/useGameStoreBindings.js",
     "src/app/hooks/useNotes.js",
     "src/app/hooks/useGameStartup.js", "src/app/hooks/useUndo.js",
   ])("%s 里没有 TDZ 风险", (file) => {
@@ -231,7 +230,7 @@ it("MudRPG app-hook arguments are declared before each hook call", () => {
     "useQuestPanel", "useForcedDuelNpc", "useDuel", "usePigeonReplies", "usePigeonHandlers",
     "useAutoTravel", "useCraftingAI", "useScreenHandlers", "useCardImportHandlers",
     "useBuildingHandlers", "useProgressionHandlers", "usePlayerActionHandlers",
-    "useGameStoreBindings", "useNotes", "useGameStartup", "useGameStartupBindings",
+    "useNotes", "useGameStartup", "useGameStartupBindings",
     "useGameStartupOpeningFaces", "useUndo",
   ];
   const failures = [];
@@ -307,7 +306,6 @@ describe("layout and overlay ctx inputs match their source shapes", () => {
     const failures = [];
     const inputShapes = [
       ["ui", "src/app/hooks/useGameUi.js", "useGameUi"],
-      ["game", "src/app/hooks/useGameStoreBindings.js", "useGameStoreBindings"],
       ["autosave", "src/app/hooks/useAutosave.js", "useAutosave"],
     ];
 
@@ -316,6 +314,14 @@ describe("layout and overlay ctx inputs match their source shapes", () => {
       for (const name of memberNames(builder, owner)) {
         if (!available.has(name)) failures.push(`${owner}.${name} is not returned by ${hookName}`);
       }
+    }
+
+    // game.* 改由 MudRPG 本层的 game 对象直供（PR-1F：useGameStoreBindings 已废）——
+    // 校验 game.foo 必须出现在 MudRPG 的 game 对象字面量里。
+    const gameLiteral = mud.match(/const game = useMemo\(\(\) => \(\{([^}]+)\}\)/)?.[1] || "";
+    const gameKeys = new Set(gameLiteral.split(",").map(x => x.trim()).filter(Boolean));
+    for (const name of memberNames(builder, "game")) {
+      if (!gameKeys.has(name)) failures.push(`game.${name} is not in MudRPG's game object`);
     }
 
     for (const [builderName, paramSource] of [
