@@ -71,6 +71,9 @@ sessionUiStore.subscribe((state, prev) => {
 
 export const useSessionUi = useSessionUiStore;
 
+// 模块建仓早于主菜单：开局时回读一遍 localStorage，对齐主菜单上可能改过的 API 配置。
+export const refreshApiCfg = () => sessionUiStore.setState({ apiCfg: loadApiCfg() });
+
 // 与 React setState 同形：setX(v) 或 setX(prev => next)
 const fieldSetter = (key) => (value) => sessionUiStore.setState((state) => (
   { [key]: typeof value === "function" ? value(state[key]) : value }

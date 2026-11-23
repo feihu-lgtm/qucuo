@@ -19,6 +19,7 @@ import {
   setApiCfg, setUiScale, setFont, setIsDayMode, setNsfwOn, setGm, setIsMobile,
   setMobileColumn, setMobileTopMenu, setSettingsInitialTab,
   setActiveNpcMenu, setActiveItemMenu, setCharacterPageTarget, setPortraitTarget,
+  refreshApiCfg,
 } from "../../store/sessionUiStore.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
@@ -70,6 +71,15 @@ export function useGameUi({
     if (activeGroundItem && (contextChanged || !stillGrounded)) setActiveGroundItem(null);
   }, [activeGroundItem, room.name, innerRoomName, room.items]);
   const nsfwOn = useSessionUi(s => s.nsfwOn);
+  // 会话外的写入与卸载残影在开局时对齐一次：
+  // - apiCfg：模块初始化早于主菜单设置页，那上面改的凭据要回读进来；
+  // - settingsInitialTab：store 跨卸载保活，复位避免从主菜单重开设置跳过上次的子页；
+  // - isMobile：建仓到挂载之间的旋转不受 resize 监听覆盖，挂载时补一次测量。
+  useEffect(() => {
+    refreshApiCfg();
+    setSettingsInitialTab(null);
+    setIsMobile(typeof window !== "undefined" && window.innerWidth < 768);
+  }, []);
   const [outfitState, setOutfitState] = useState({ loading: false, picks: [], error: "" });
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
   const activeNpcMenu = useSessionUi(s => s.activeNpcMenu);
