@@ -172,7 +172,7 @@ function ParsedPane({
         </div>
 
         <div style={{
-          borderTop: `1px solid ${accent}44`, padding: "10px 14px",
+          borderTop: `1px solid color-mix(in srgb, ${accent} 27%, transparent)`, padding: "10px 14px",
           display: "flex", alignItems: "center", gap: 10,
           backgroundImage: `url('${S("ui/bar_paper2.webp")}')`, backgroundSize: "100% 100%",
         }}>

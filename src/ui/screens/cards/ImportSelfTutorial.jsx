@@ -32,7 +32,7 @@ export default function ImportSelfTutorial({ accent, onClose }) {
   const card = {
     position: "relative", width: "min(560px, 92vw)", maxHeight: "88%",
     display: "flex", flexDirection: "column", overflow: "hidden",
-    background: "var(--ink-cocoa-panel)", border: `1px solid ${accent}66`, borderRadius: 0,
+    background: "var(--ink-cocoa-panel)", border: `1px solid color-mix(in srgb, ${accent} 40%, transparent)`, borderRadius: 0,
     boxShadow: "0 12px 48px rgba(0,0,0,.6)",
   };
   return (
@@ -40,7 +40,7 @@ export default function ImportSelfTutorial({ accent, onClose }) {
       <div style={card} onClick={e => e.stopPropagation()}>
         <div style={{
           display: "flex", alignItems: "center", gap: 9, padding: "14px 18px",
-          borderBottom: `1px solid ${accent}33`,
+          borderBottom: `1px solid color-mix(in srgb, ${accent} 20%, transparent)`,
         }}>
           <img src={S("ui/scroll_ic.webp")} alt="" style={{ width: 22, height: 22, opacity: .9 }} />
           <span style={{ color: "var(--tutorial-title)", fontSize: 16, letterSpacing: 3, textShadow: "0 1px 4px var(--black)" }}>
@@ -61,7 +61,7 @@ export default function ImportSelfTutorial({ accent, onClose }) {
                 <span style={{
                   flexShrink: 0, width: 26, height: 26, borderRadius: "50%",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 13, color: accent, border: `1px solid ${accent}77`,
+                  fontSize: 13, color: accent, border: `1px solid color-mix(in srgb, ${accent} 47%, transparent)`,
                   background: "rgba(212,168,83,.10)",
                 }}>{s.ic}</span>
                 <div style={{ flex: 1 }}>
@@ -73,7 +73,7 @@ export default function ImportSelfTutorial({ accent, onClose }) {
           </div>
         </div>
 
-        <div style={{ padding: "12px 18px", borderTop: `1px solid ${accent}22`, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ padding: "12px 18px", borderTop: `1px solid color-mix(in srgb, ${accent} 13%, transparent)`, display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ flex: 1, fontSize: 10, color: "var(--ink-text-dim)" }}>随时可在标题栏「教程」重看这一页。</span>
           <span onClick={onClose}
             style={{

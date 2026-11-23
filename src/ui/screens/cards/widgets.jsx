@@ -318,7 +318,7 @@ export function Note({ tone = "info", children }) {
     <div style={{
       fontSize: 10.5, lineHeight: 1.7, color: c, marginTop: 7,
       padding: "6px 9px", background: "rgba(0,0,0,.3)",
-      borderLeft: `2px solid ${c}66`, borderRadius: "0 3px 3px 0",
+      borderLeft: `2px solid color-mix(in srgb, ${c} 40%, transparent)`, borderRadius: "0 3px 3px 0",
     }}>{children}</div>
   );
 }

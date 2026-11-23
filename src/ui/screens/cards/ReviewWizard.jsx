@@ -242,7 +242,7 @@ export default function ReviewWizard({
 
                 <div style={{ fontSize: 13, color: "var(--paper)", letterSpacing: 2, marginBottom: 12 }}>确认落册</div>
 
-                <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 0, background: "rgba(212,168,83,.06)", border: `1px solid ${accent}44` }}>
+                <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 0, background: "rgba(212,168,83,.06)", border: `1px solid color-mix(in srgb, ${accent} 27%, transparent)` }}>
                   <div style={{ fontSize: 11.5, color: "var(--ink-tan)", marginBottom: 6 }}>主角</div>
                   <div style={{ fontSize: 13, color: "var(--paper)" }}>
                     {result.player?.name || playerFromNpc || "（未填名讳）"}
