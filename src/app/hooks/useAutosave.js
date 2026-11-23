@@ -5,7 +5,7 @@ import { setRngState } from "../../utils/rng.js";
 import { DEFAULT_PRESETS } from "../../engine/newGame.js";
 import { gameActions, gameStore, markGameReplaced } from "../../store/gameStore.js";
 import { OVERLAY, closeOverlay } from "../../store/uiStore.js";
-import { autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../engine/ports/saves.js";
+import { autoSave, tryRestoreSave, flushLocalBackup, isCompatibleCharShape, isCompatibleRoomShape } from "../../infra/saves.js";
 import { statsForQuality } from "../../domain/rules/economy/equipment.js";
 import { migrateLegacySnapshot } from "../../domain/rules/npc/legacyContent.js";
 import { initialNarratorState, migrateNarratorState } from "../../domain/rules/narrator/narrator.js";
@@ -22,8 +22,8 @@ import {
   pendingNodes, serializeSquares, loadSquares,
 } from "../../domain/rules/map/mapSquares.js";
 import { roadNameGuard } from "../../domain/rules/map/encounter.js";
-import { createWebAi } from "../../engine/ports/ai.js";
-import { withAI } from "../../engine/ports/withAI.js";
+import { createWebAi } from "../../infra/ai.js";
+import { withAI } from "../../infra/withAI.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();

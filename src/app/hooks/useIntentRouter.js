@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { gameStore } from "../../store/gameStore.js";
 import { setIntentPending, armIntentTriggers, fireIntentTriggers, expireIntentTriggers } from "../../store/intentPendingStore.js";
-import { turnMonitor, getTurnContext } from "../../engine/ports/turnMonitor.js";
+import { turnMonitor, getTurnContext } from "../../infra/turnMonitor.js";
 import { applyResult } from "../../features/run.js";
 import { recognizeNpc, tradeWithNpc } from "../../features/npc/logic.js";
 import { ACTION_KINDS, KIND_COMMAND } from "../../domain/rules/intent/actionKinds.js";
@@ -12,7 +12,7 @@ import { ROUTES, describeAction } from "../../domain/rules/intent/gate.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../../features/intent/logic.js";
 import { isFreshTyped, planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../../features/intent/route.js";
 import { createAiClassifier, INTENT_TRUNCATED } from "../../engine/intent/aiClassifier.js";
-import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
+import { bindTurnAi, createWebAi } from "../../infra/ai.js";
 
 const DIR_CMD = { 北: "n", 南: "s", 东: "e", 西: "w" };
 // 条件步「到达」匹配用的地名清单，注入 intentPendingStore（store 不反向引 domain）。

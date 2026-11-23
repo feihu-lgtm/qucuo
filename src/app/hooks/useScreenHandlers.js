@@ -13,7 +13,7 @@ import {
 import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
 import { toggleEquip } from "../../domain/rules/economy/equipment.js";
 import { getPresentNpcs } from "../../domain/rules/state/fields.js";
-import { startTrace, step as traceStep, endTrace } from "../../engine/ports/actionTrace.js";
+import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { isNpcAngry, stealSuccessRate } from "../../domain/rules/combat/stealSystem.js";
 
 export function useScreenHandlers({
