@@ -237,20 +237,18 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   // 这条"look X"自己的框。
   const intentRouterRef = useRef(null);
   const { act } = useTurn({
-    loading, convo, room, char, inv, skills, dao, exp, pot, flags, mapData, time, gm, preset,
-    addLog, talkToNarrator, confessToNarrator, narrator, apiCfg, interactMode, activeTarget, activeGroundItem,
-    setActiveTarget, setDuelPending,
-    nsfwOn, varTree, pendingTalks, changePendingTalks, lastMoveRef, captureUndo,
-    turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setFlags, setInput, setLoading,
+    loading, gm, apiCfg, interactMode, activeTarget, activeGroundItem, talkTarget,
+    pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow,
+    talkToNarrator, changePendingTalks, lastMoveRef, captureUndo,
+    turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setInput, setLoading,
     waitTimerRef, setWaitSecs, pendDirRef, featureCtxRef,
-    noteAction, roomMapRef, questProgress, innerRoomName, setRoom, setInv, collectGrantedRef,
+    noteAction, roomMapRef, collectGrantedRef,
     autoTravelRef, clearRouteQueue,
     dispatchCommand, setCommandPhase,
-    outerDepartRef, varTreeRef, pickupJudgmentRef, pickupExtractionFailedRef,
+    outerDepartRef, pickupJudgmentRef, pickupExtractionFailedRef,
     prerunSquares: scheduledPrerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
-    timeRef, talkTarget, companionState, pendingQuestBranch, effectiveSpecialNow, setVarTree,
-    setGambleNegotiation, setChar, setDao, setExp, setPot, setSkills, setMapData, setTime,
-    setPendingQuestBranch, setConvo, jotNote, setLog, intentRouterRef,
+    setVarTree, setGambleNegotiation, setActiveTarget, setDuelPending,
+    setPendingQuestBranch, jotNote, intentRouterRef,
   });
   const questPanel = commandScheduler.wrapHandlers("useQuestPanel", useQuestPanel({
     act, apiCfg, addLog, featureCtxRef, setPendingQuestBranch, setDuelingNpc, captureUndo,
