@@ -18,7 +18,7 @@ import { createTurnContext } from "../../engine/turn/turnContext.js";
 import { settleInBackground } from "./settleBackfill.js";
 import { lookInBackground } from "./lookBackfill.js";
 import { lookNpcInBackground } from "./npcLookBackfill.js";
-import { applySquareOps } from "../runtime/gameRuntime.js";
+import { applySquareOps, registerRuntime } from "../runtime/gameRuntime.js";
 
 // 回合入口的 React 胶水：组 env → resolveIntent（识别/裁决）→ createTurnContext
 // → playTurn（settleTurn → narrateTurn → finalizeTurn）→ setState。
@@ -188,6 +188,7 @@ export function useTurn({
     applySquareOps,
   }), [addLog, jotNote, gameActions, setVarTree, act, setTime, setConvo, setLog, noteAction]);
   featureCtxRef.current = featureCtx;
+  registerRuntime(featureCtx); // 模块级 runtime 注册：hook 可经 gameRuntime.featureCtx() 取，不再收 featureCtxRef
 
   return { act };
 }

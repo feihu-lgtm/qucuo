@@ -12,3 +12,18 @@ export const applySquareOps = (ops) => {
     else if (op === "burn") burnSquare(key);
   }
 };
+
+// useTurn 挂载时把 act 与后台任务注册进来；hook 不再经 featureCtxRef 参数拿它。
+const registered = {};
+export const registerRuntime = (fns) => Object.assign(registered, fns);
+export const resetRuntime = () => { for (const k of Object.keys(registered)) delete registered[k]; };
+
+// featureCtxRef 的模块级替身：形状与 useTurn 组装的 featureCtx 一致。
+// 注册值（act/jotNote/后台任务，或测试注入的替身）覆盖默认实现。
+export const featureCtx = () => ({
+  addLog,
+  applySquareOps,
+  gameActions,
+  setVarTree: gameActions.setVarTree,
+  ...registered,
+});

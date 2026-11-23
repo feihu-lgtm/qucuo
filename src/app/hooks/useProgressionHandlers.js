@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { confessToNarrator as confessLogic } from "../../features/narrator/logic.js";
@@ -9,37 +10,37 @@ import {
   trainWaigong as trainWaigongLogic,
 } from "../../features/cultivation/logic.js";
 
-export function useProgressionHandlers({ loading, noteAction, featureCtxRef, setJustMeditated, captureUndo }) {
-  const confessToNarrator = useCallback(() => applyResult(featureCtxRef.current, () => {
+export function useProgressionHandlers({ loading, noteAction, setJustMeditated, captureUndo }) {
+  const confessToNarrator = useCallback(() => applyResult(featureCtx(), () => {
     captureUndo();
-    applyResult(featureCtxRef.current, confessLogic(gameStore.getState()));
+    applyResult(featureCtx(), confessLogic(gameStore.getState()));
   }, { feature: "narrator.confess" }), [captureUndo]);
 
-  const meditate = useCallback(() => applyResult(featureCtxRef.current, () => {
+  const meditate = useCallback(() => applyResult(featureCtx(), () => {
     if (loading) return;
     captureUndo();
     setJustMeditated(true);
     setTimeout(() => setJustMeditated(false), 350);
-    applyResult(featureCtxRef.current, meditateLogic(gameStore.getState()));
+    applyResult(featureCtx(), meditateLogic(gameStore.getState()));
     noteAction("meditate");
   }, { feature: "cultivation.meditate" }), [loading, noteAction, captureUndo]);
 
-  const trainNeigong = useCallback(() => applyResult(featureCtxRef.current, () => {
+  const trainNeigong = useCallback(() => applyResult(featureCtx(), () => {
     if (loading) return;
     captureUndo();
-    applyResult(featureCtxRef.current, trainNeigongLogic(gameStore.getState()));
+    applyResult(featureCtx(), trainNeigongLogic(gameStore.getState()));
   }, { feature: "cultivation.trainNeigong" }), [loading, captureUndo]);
 
-  const trainWaigong = useCallback(() => applyResult(featureCtxRef.current, () => {
+  const trainWaigong = useCallback(() => applyResult(featureCtx(), () => {
     if (loading) return;
     captureUndo();
-    applyResult(featureCtxRef.current, trainWaigongLogic(gameStore.getState()));
+    applyResult(featureCtx(), trainWaigongLogic(gameStore.getState()));
   }, { feature: "cultivation.trainWaigong" }), [loading, captureUndo]);
 
-  const breakthroughSkill = useCallback((skillId) => applyResult(featureCtxRef.current, () => {
+  const breakthroughSkill = useCallback((skillId) => applyResult(featureCtx(), () => {
     if (loading) return;
     captureUndo();
-    applyResult(featureCtxRef.current, breakthroughSkillLogic(gameStore.getState(), skillId));
+    applyResult(featureCtx(), breakthroughSkillLogic(gameStore.getState(), skillId));
   }, { feature: "cultivation.breakthroughSkill" }), [loading, captureUndo]);
 
   return { confessToNarrator, meditate, trainNeigong, trainWaigong, breakthroughSkill };

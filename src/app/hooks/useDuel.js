@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from "react";
+import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { lookNpc, recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
@@ -13,14 +14,14 @@ import { setFactSummary } from "../../domain/rules/prompt/knowledge.js";
 
 export function consumeDuelRequest(result, {
   opts = {}, isStale, isTalk, interactMode, recognize,
-  setActiveTarget, setDuelPending, featureCtxRef, trace,
+  setActiveTarget, setDuelPending, trace,
 }) {
   const npc = result?.duelRequest;
   if (!result?.ok || result.stale || (typeof isStale === "function" && isStale())
     || isTalk || interactMode === "talk" || interactMode === "whisper"
     || opts.settle || opts.settleKind === "duel_invite" || !npc?.name) return false;
   if (recognize) recognize(npc);
-  else applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc), { turn: trace, feature: "npc.duel" });
+  else applyResult(featureCtx(), recognizeNpc(gameStore.getState(), npc), { turn: trace, feature: "npc.duel" });
   setActiveTarget(npc.name);
   setDuelPending(npc);
   return true;
@@ -79,18 +80,18 @@ export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNp
 }
 
 export function useDuel({
-  act, addLog, duelPending, featureCtxRef, setActiveTarget, setDuelPending, setDuelingNpc,
+  act, addLog, duelPending, setActiveTarget, setDuelPending, setDuelingNpc,
   duelingNpc, pendingQuestBranch, noteAction, jotNote, aiSummarizeFact, setPendingQuestBranch,
   captureUndo, turnGenerationRef, narrator, interactMode,
 }) {
-  const handleNpcDuel = useCallback((npc) => applyResult(featureCtxRef.current, async () => {
+  const handleNpcDuel = useCallback((npc) => applyResult(featureCtx(), async () => {
     const isStale = createTurnStaleCheck(turnGenerationRef);
     captureUndo();
     // 没端详过的人不能上来就打——先替他做「细看」这一步，看清楚了
     // 再点一次切磋才真的邀战。
     if (!isNpcLooked(gameStore.getState().varTree, npc.name)) {
       const look = lookNpc(gameStore.getState(), npc);
-      applyResult(featureCtxRef.current, look);
+      applyResult(featureCtx(), look);
       setActiveTarget(npc.name);
       addLog([{ t: "sys", text: `  动手前，你先端详了${npc.name}——掂量清楚再决定动不动手。` }]);
       // 正在私聊/耳语里时 act 会把 look 当成对那个人说的话——端详已经记账了，
@@ -102,24 +103,24 @@ export function useDuel({
       await act("look " + npc.id, look.extraReplies || [], { keepUndo: true, inspect: true });
       return;
     }
-    applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
+    applyResult(featureCtx(), recognizeNpc(gameStore.getState(), npc));
     setActiveTarget(npc.name);
     await openDuelAfterNarration({ addLog, setDuelPending, isStale }, npc);
-  }, { feature: "npc.duel" }), [act, addLog, captureUndo, featureCtxRef, interactMode, setActiveTarget, setDuelPending, turnGenerationRef]);
+  }, { feature: "npc.duel" }), [act, addLog, captureUndo, interactMode, setActiveTarget, setDuelPending, turnGenerationRef]);
 
-  const confirmDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
+  const confirmDuel = useCallback(() => applyResult(featureCtx(), () => {
     if (!duelPending) return;
     setDuelingNpc(duelPending);
     setDuelPending(null);
-  }, { feature: "duel.confirm" }), [duelPending, featureCtxRef]);
+  }, { feature: "duel.confirm" }), [duelPending]);
 
-  const cancelDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
+  const cancelDuel = useCallback(() => applyResult(featureCtx(), () => {
     if (!duelPending) return;
     addLog([{ t: "sys", text: `  你收起架势，这场切磋作罢，${duelPending.name}也顺势松了口气。` }]);
     setDuelPending(null);
-  }, { feature: "duel.cancel" }), [duelPending, addLog, featureCtxRef]);
+  }, { feature: "duel.cancel" }), [duelPending, addLog]);
 
-  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, dodgeStolenItems) => applyResult(featureCtxRef.current, () => {
+  const duelFinishHandler = useCallback((outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, dodgeStolenItems) => applyResult(featureCtx(), () => {
     const finishedNpc = duelingNpc;
     const result = settleNpcDuel(gameStore.getState(), finishedNpc, {
       outcome,
@@ -140,7 +141,7 @@ export function useDuel({
     }
     noteAction("duel");
     setDuelingNpc(null);
-    applyResult(featureCtxRef.current, result);
+    applyResult(featureCtx(), result);
     if (result.factId && !finishedNpc) aiSummarizeFact(result.factId, result.cue);
     if (finishedNpc) {
       // 系统事实行立刻落日志；描写在后台补，不走 act，玩家不用等。
@@ -159,7 +160,7 @@ export function useDuel({
       }, {
         ...narrator,
         // 走绑定版 setVarTree，让 varTreeRef 同步，免得下次写 varTree 用旧引用把摘要冲掉
-        saveSummary: (id, text) => featureCtxRef.current.setVarTree((prev) => setFactSummary(prev, id, text)),
+        saveSummary: (id, text) => featureCtx().setVarTree((prev) => setFactSummary(prev, id, text)),
       });
       jotNote({
         text: result.recapNote,
@@ -167,12 +168,12 @@ export function useDuel({
         source: NOTE_SOURCE.DUMB,
       });
     }
-  }, { feature: "duel.finish" }), [duelingNpc, pendingQuestBranch, noteAction, addLog, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch, featureCtxRef, narrator]);
+  }, { feature: "duel.finish" }), [duelingNpc, pendingQuestBranch, noteAction, addLog, jotNote, aiSummarizeFact, setDuelingNpc, setPendingQuestBranch, narrator]);
 
-  const resetDuel = useCallback(() => applyResult(featureCtxRef.current, () => {
+  const resetDuel = useCallback(() => applyResult(featureCtx(), () => {
     setDuelingNpc(null);
     setPendingQuestBranch(null);
-  }, { feature: "duel.reset" }), [featureCtxRef, setDuelingNpc, setPendingQuestBranch]);
+  }, { feature: "duel.reset" }), [setDuelingNpc, setPendingQuestBranch]);
 
   return { handleNpcDuel, confirmDuel, cancelDuel, duelFinishHandler, resetDuel };
 }

@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createTurnStaleCheck } from "./useUndo.js";
 import { consumeDuelRequest, narrateDuelInBackground, openDuelAfterNarration, useDuel } from "./useDuel.js";
 import { GAME_KEYS, gameActions, gameStore, initGameStore } from "../../store/gameStore.js";
+import { registerRuntime, resetRuntime } from "../runtime/gameRuntime.js";
 
 function freshStore(overrides) {
   const original = structuredClone(gameStore.getState());
@@ -54,12 +55,14 @@ describe("AI duel request consumption", () => {
 
   it("records recognition through the feature context", () => {
     const setVarTree = vi.fn();
-    const options = makeOptions({
-      recognize: undefined,
-      featureCtxRef: { current: { setVarTree, gameActions } },
-    });
-    expect(consumeDuelRequest({ ok: true, duelRequest: npc }, options)).toBe(true);
-    expect(setVarTree).toHaveBeenCalledWith(expect.any(Function));
+    registerRuntime({ setVarTree });
+    const options = makeOptions({ recognize: undefined });
+    try {
+      expect(consumeDuelRequest({ ok: true, duelRequest: npc }, options)).toBe(true);
+      expect(setVarTree).toHaveBeenCalledWith(expect.any(Function));
+    } finally {
+      resetRuntime();
+    }
   });
 
   it("ignores talk, whisper, stale, and settle results", () => {
@@ -91,12 +94,12 @@ describe("duel battle report", () => {
     });
     const addLog = vi.fn((entries) => gameActions.setLog((log) => [...(log || []), ...entries]));
     const act = vi.fn();
-    const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } };
+    registerRuntime({ setVarTree: gameActions.setVarTreeState, addLog });
     const aiSummarizeFact = vi.fn();
     const handlers = {};
     function Harness() {
       Object.assign(handlers, useDuel({
-        act, addLog, duelPending: null, featureCtxRef,
+        act, addLog, duelPending: null,
         setActiveTarget: vi.fn(), setDuelPending: vi.fn(), setDuelingNpc: vi.fn(),
         duelingNpc: npc, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
         aiSummarizeFact, setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
@@ -105,7 +108,7 @@ describe("duel battle report", () => {
       return null;
     }
     renderToStaticMarkup(createElement(Harness));
-    return { handlers, act, addLog, restoreStore, aiSummarizeFact, featureCtxRef };
+    return { handlers, act, addLog, restoreStore, aiSummarizeFact };
   }
 
   it("logs the system fact lines at once and never starts an AI turn", () => {
@@ -123,9 +126,9 @@ describe("duel battle report", () => {
 
   it("asks for the fact summary inside the battle report instead of a separate call", async () => {
     const ask = vi.fn(async () => '{"rounds":["拳风扑面。"],"ending":"才旦认输。","summary":"你与才旦切磋得胜"}');
-    const { handlers, restoreStore, aiSummarizeFact, featureCtxRef } = setup({ canAsk: () => true, ask });
-    const setVarTree = vi.fn(featureCtxRef.current.setVarTree);
-    featureCtxRef.current.setVarTree = setVarTree;
+    const { handlers, restoreStore, aiSummarizeFact } = setup({ canAsk: () => true, ask });
+    const setVarTree = vi.fn(gameActions.setVarTreeState);
+    registerRuntime({ setVarTree });
     try {
       handlers.duelFinishHandler("win", null, [{ round: 1, teamText: "一招既定" }], null, [], null, []);
       await vi.waitFor(() => expect(ask).toHaveBeenCalledTimes(1));
@@ -228,11 +231,11 @@ describe("端详门槛", () => {
     const addLog = vi.fn();
     const act = vi.fn();
     const setDuelPending = vi.fn();
-    const featureCtxRef = { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } };
+    registerRuntime({ setVarTree: gameActions.setVarTreeState, addLog });
     const handlers = {};
     function Harness() {
       Object.assign(handlers, useDuel({
-        act, addLog, duelPending: null, featureCtxRef,
+        act, addLog, duelPending: null,
         setActiveTarget: vi.fn(), setDuelPending, setDuelingNpc: vi.fn(),
         duelingNpc: null, pendingQuestBranch: null, noteAction: vi.fn(), jotNote: vi.fn(),
         aiSummarizeFact: vi.fn(), setPendingQuestBranch: vi.fn(), captureUndo: vi.fn(),
