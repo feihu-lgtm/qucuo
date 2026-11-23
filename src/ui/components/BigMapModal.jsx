@@ -7,12 +7,15 @@ import {
 import { DIRS } from "../../utils/mudHelpers.js";
 import { MAP_UI } from "../mapUi.js";
 import { useGameStore } from "../../store/gameStore.js";
-import { useSessionUi, setInteractMode } from "../../store/sessionUiStore.js";
+import { useSessionUi, setInteractMode, setMapBig } from "../../store/sessionUiStore.js";
+import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 export default function BigMapModal({
-  mapView, setMapBig, mapBigCloseGuard, zoneTheme, act, autoTravelTo,
+  zoneTheme, act, autoTravelTo,
 }) {
   const loading = useSessionUi(s => s.loading);
+  const mapView = useSessionUi(s => s.mapView);
+  const mapBigCloseGuard = useOverlayCloseGuard(() => setMapBig(false));
   const room = useGameStore(s => s.room);
   const innerRoomName = useGameStore(s => s.innerRoomName);
   const mapData = useGameStore(s => s.mapData);

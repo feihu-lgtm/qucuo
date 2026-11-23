@@ -52,6 +52,11 @@ export const sessionUiStore = createStore(() => ({
   activeItemMenu: null,
   characterPageTarget: null,
   portraitTarget: null,
+  // 面板本地态（PR-2D）：无 ref 耦合的纯 UI 折叠/视图开关
+  collapsedGroups: new Set(),
+  mapBig: false,
+  mapView: "outer",
+  peoplePanel: { present: true, absent: true },
 }));
 
 // 持久化与 DOM 副作用收编进 store（原 MudRPG/useGameUi 的 useEffect）：字段真变才写回；
@@ -115,3 +120,7 @@ export const setActiveNpcMenu = fieldSetter("activeNpcMenu");
 export const setActiveItemMenu = fieldSetter("activeItemMenu");
 export const setCharacterPageTarget = fieldSetter("characterPageTarget");
 export const setPortraitTarget = fieldSetter("portraitTarget");
+export const setCollapsedGroups = fieldSetter("collapsedGroups");
+export const setMapBig = fieldSetter("mapBig");
+export const setMapView = fieldSetter("mapView");
+export const setPeoplePanel = fieldSetter("peoplePanel");

@@ -7,7 +7,6 @@ import { getZoneTheme, ink } from "../../utils/theme.js";
 
 import { isNpcVisibleInInnerRoom as isVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { loadPortraits, getSnowLeopardForm, getPearlForm } from "../../domain/rules/companion/portraits.js";
-import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { usePromptInspector } from "./ui/usePromptInspector.js";
 import {
   useSessionUi, sessionUiStore, setInput, setLoading, setWaitSecs, setPendingTalks,
@@ -46,11 +45,6 @@ export function useGameUi({
     setPendingTalks(next);
   }, []);
   const queueCount = useSessionUi(s => s.queueCount);
-  const [collapsedGroups, setCollapsedGroups] = useState(new Set());
-  const [mapBig, setMapBig] = useState(false);
-  const mapBigCloseGuard = useOverlayCloseGuard(() => setMapBig(false));
-  const [mapView, setMapView] = useState("outer");
-  const [peoplePanel, setPeoplePanel] = useState({ present: true, absent: true });
   // 偏好设置/面板态已迁 sessionUiStore（PR-2C），持久化与 DOM 副作用在 store 内
   const gm = useSessionUi(s => s.gm);
   const isMobile = useSessionUi(s => s.isMobile);
@@ -172,9 +166,6 @@ export function useGameUi({
     return result;
   }, [room, questProgress, flags, char, inv, innerRoomName, varTree]);
 
-  const liveNpcMenu = activeNpcMenu
-    ? (room.npcs.find(n => n.name === activeNpcMenu.name) || activeNpcMenu)
-    : null;
   const AV_BASE = ((import.meta.env && import.meta.env.BASE_URL) || "/") + "portraits/player/";
   const genderAvatar = { "男": AV_BASE + "male.webp", "女": AV_BASE + "female.webp" };
   const playerAvatar = playerAvatarCustom || genderAvatar[char.gender] || (AV_BASE + "other.webp");
@@ -207,8 +198,7 @@ export function useGameUi({
     presets, setPresets,
     input, setInput, loading, setLoading, loadingRef, waitSecs, setWaitSecs, waitTimerRef,
     pendingTalks, setPendingTalks, pendingTalksRef, changePendingTalks, queueCount, setQueueCount,
-    collapsedGroups, setCollapsedGroups, mapBig, setMapBig, mapBigCloseGuard, mapView, setMapView,
-    peoplePanel, setPeoplePanel, gm, setGm, isMobile, setIsMobile, mobileColumn, setMobileColumn,
+    gm, setGm, isMobile, setIsMobile, mobileColumn, setMobileColumn,
     mobileTopMenu, setMobileTopMenu, settingsInitialTab, setSettingsInitialTab,
     interactMode, setInteractMode, talkTarget, setTalkTarget, activeTarget, setActiveTarget,
     activeGroundItem, setActiveGroundItem,
@@ -224,7 +214,7 @@ export function useGameUi({
     activePersuasion, setActivePersuasion, activeBuilding, setActiveBuilding,
     gambleNegotiation, setGambleNegotiation, buildingPanelMinimized, setBuildingPanelMinimized,
     justMeditated, setJustMeditated, tradingShop, setTradingShop, inputRef, logEnd, composingRef,
-    availableQuestsHere, liveNpcMenu, AV_BASE, genderAvatar, playerAvatar, zoneTheme,
+    availableQuestsHere, AV_BASE, genderAvatar, playerAvatar, zoneTheme,
     clr, uiPink, uiGreen, uiTurquoise, uiGold, uiCrimson, inkDivider, S,
     buildBugReportTurns, getLiveBlockText,
   };
