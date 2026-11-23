@@ -93,7 +93,7 @@ describe("quest trigger world rules", () => {
     expect(questFlagRule.run({ flags: firstFlags, questProgress: {}, char: {} })).toBeTruthy();
   });
 
-  it("deliver 阶段光有 flag 没有交付物不推进；物在包里才推进并从背包扣一件", () => {
+  it("deliver 阶段 flag 推进不受背包挡——items_rm 先落盘已是交付证据；件还在包里才顺手扣", () => {
     const base = {
       flags: ["quest_village2_s1"],
       char: {},
@@ -102,9 +102,9 @@ describe("quest trigger world rules", () => {
         village1_lubujianbuping: { status: "completed", currentStageIndex: 2 },
       },
     };
-    // 空手：flag 在但推进不了（村2 的 ❢/吞物同类洞，AI 吐旗路径也堵上）
+    // 叙事交付路径：AI 判了 items_rm 再吐旗，到这里背包已空——挡了会把真交付误吞
     const empty = questFlagRule.run({ ...base, inv: [] });
-    expect(empty?.changes?.questProgress?.(base.questProgress)?.village2_jieshixiajiu).toBeUndefined();
+    expect(empty?.changes?.questProgress?.(base.questProgress)?.village2_jieshixiajiu?.currentStageIndex).toBe(1);
 
     const withItem = { ...base, inv: [{ name: "糌粑" }] };
     const result = questFlagRule.run(withItem);
