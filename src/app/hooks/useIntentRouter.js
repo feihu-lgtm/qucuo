@@ -1,4 +1,5 @@
 // 行动识别（设置「行动识别」开启时）的 web 端执行：第一段识别 → 置信度闸门 → 系统闸门 →
+import { featureCtx } from "../runtime/gameRuntime.js";
 // 原子行动经现有调度器排队 → 第二段合并叙事（结构化裁决上下文）→ 第三段提取照旧（被拒步骤不写效果）。
 import { useEffect } from "react";
 import { gameStore } from "../../store/gameStore.js";
@@ -19,7 +20,7 @@ const DIR_CMD = { 北: "n", 南: "s", 东: "e", 西: "w" };
 const INTENT_PLACE_NAMES = Object.keys(QUCUO_MAP);
 
 export function useIntentRouter(routerRef, {
-  apiCfg, act, addLog, featureCtxRef, dispatchCommand, handleNpcDuel, handleNpcTrade, setActiveTarget, setDuelPending, setTradingShop,
+  apiCfg, act, addLog, dispatchCommand, handleNpcDuel, handleNpcTrade, setActiveTarget, setDuelPending, setTradingShop,
 }) {
   useEffect(() => {
     function runDeferred(step, single) {
@@ -28,12 +29,12 @@ export function useIntentRouter(routerRef, {
       if (step.kind === ACTION_KINDS.BUY && single) return handleNpcTrade(npc);
       if (step.kind === ACTION_KINDS.BUY && npc) {
         const result = tradeWithNpc(gameStore.getState(), npc);
-        return result.shop ? setTradingShop(result.shop) : applyResult(featureCtxRef.current, result);
+        return result.shop ? setTradingShop(result.shop) : applyResult(featureCtx(), result);
       }
       if (step.kind !== ACTION_KINDS.DUEL || !npc) return undefined;
       if (single) return handleNpcDuel(npc);
-      return dispatchCommand(KIND_COMMAND[step.kind], () => applyResult(featureCtxRef.current, () => {
-        applyResult(featureCtxRef.current, recognizeNpc(gameStore.getState(), npc));
+      return dispatchCommand(KIND_COMMAND[step.kind], () => applyResult(featureCtx(), () => {
+        applyResult(featureCtx(), recognizeNpc(gameStore.getState(), npc));
         setActiveTarget(npc.name);
         setDuelPending(npc);
       }, { feature: "intent.duel" }));
@@ -48,7 +49,7 @@ export function useIntentRouter(routerRef, {
       }
       return dispatchCommand(KIND_COMMAND[step.kind], () => {
         const result = stepEffect(gameStore.getState(), step);
-        if (result) applyResult(featureCtxRef.current, result, { feature: `intent.${step.kind}` });
+        if (result) applyResult(featureCtx(), result, { feature: `intent.${step.kind}` });
       });
     }
 
@@ -84,7 +85,7 @@ export function useIntentRouter(routerRef, {
           const result = stepEffect(gameStore.getState(), step);
           if (!result) return;
           const settled = single ? { ...result, settleOptions: { ...result.settleOptions, intentPlan: plan, intentPlanNote: note } } : withoutSettle(result);
-          applyResult(featureCtxRef.current, settled, { feature: `intent.${step.kind}` });
+          applyResult(featureCtx(), settled, { feature: `intent.${step.kind}` });
         });
       }
       if (!single && plan.valid.length) act(cmd, [], { intentPlan: plan, intentPlanNote: note, silentCmd: true, keepUndo: true });
@@ -126,7 +127,7 @@ export function useIntentRouter(routerRef, {
         text: gate.confirm,
         onConfirm: () => {
           setIntentPending(null);
-          dispatchCommand("typedAction", () => applyResult(featureCtxRef.current,
+          dispatchCommand("typedAction", () => applyResult(featureCtx(),
             () => execute(cmd, gate.recognition.actions, getTurnContext()), { feature: "行动识别·确认" }));
         },
         onCancel: () => {

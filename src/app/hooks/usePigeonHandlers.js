@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import {
@@ -9,7 +10,7 @@ import {
 } from "../../features/pigeon/logic.js";
 
 export function usePigeonHandlers({
-  featureCtxRef, aiSummarizeFact, setInput, setPigeonTarget,
+  aiSummarizeFact, setInput, setPigeonTarget,
   setInteractMode, setActiveBuilding, captureUndo,
 }) {
   const pigeonDelayShichen = useCallback(
@@ -18,12 +19,12 @@ export function usePigeonHandlers({
   );
 
   const applyPigeonResult = useCallback((result, options) => {
-    applyResult(featureCtxRef.current, result, options);
+    applyResult(featureCtx(), result, options);
     if (result.factSummary) aiSummarizeFact(result.factSummary.id, result.factSummary.cue);
     return result;
   }, [aiSummarizeFact]);
 
-  const sendPigeonLetter = useCallback((npcName, content, opts = {}) => applyResult(featureCtxRef.current, () => {
+  const sendPigeonLetter = useCallback((npcName, content, opts = {}) => applyResult(featureCtx(), () => {
     captureUndo();
     const result = sendPigeonLetterLogic(gameStore.getState(), npcName, content, opts);
     applyPigeonResult(result);
@@ -35,12 +36,12 @@ export function usePigeonHandlers({
     return result;
   }, { feature: "pigeon.sendLetter" }), [applyPigeonResult, captureUndo]);
 
-  const buyPigeon = useCallback((qty, price) => applyResult(featureCtxRef.current, () => {
+  const buyPigeon = useCallback((qty, price) => applyResult(featureCtx(), () => {
     captureUndo();
     applyPigeonResult(buyPigeonLogic(gameStore.getState(), qty, price));
   }, { feature: "pigeon.buy" }), [applyPigeonResult, captureUndo]);
 
-  const handleCollectPigeons = useCallback(({ qty, dayIdx }) => applyResult(featureCtxRef.current, () => {
+  const handleCollectPigeons = useCallback(({ qty, dayIdx }) => applyResult(featureCtx(), () => {
     captureUndo();
     applyPigeonResult(collectPigeonsLogic(gameStore.getState(), { qty, dayIdx }));
   }, { feature: "pigeon.collect" }), [applyPigeonResult, captureUndo]);

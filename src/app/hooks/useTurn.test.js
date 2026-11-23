@@ -9,6 +9,7 @@ import { estateAnnouncementRule } from "../../domain/rules/quests/rules.js";
 import { applyResult } from "../../features/run.js";
 import { useAiInspect } from "./useAiInspect.js";
 import { useTurn } from "./useTurn.js";
+import { featureCtx } from "../runtime/gameRuntime.js";
 
 vi.mock("react", async (importOriginal) => ({
   ...await importOriginal(),
@@ -32,14 +33,13 @@ it("keeps the key inspection's estate announcement open until its narration comm
   const effectiveSpecialNow = { 魅力: 10 };
   const onTurnsInvalidated = vi.fn(() => vi.fn());
   initGameStore({ flags: [], inv: ["溪边小屋钥匙"], questProgress: {}, room, char });
-  const featureCtxRef = { current: null };
   const waitTimerRef = { current: null };
   const state = gameStore.getState();
   const commands = createScheduler();
   useTurn({
     ...state, apiCfg: {}, preset: {}, convo: [], addLog: vi.fn(),
     effectiveSpecialNow, onTurnsInvalidated,
-    featureCtxRef, waitTimerRef, turnGenerationRef: { current: 0 }, dispatchCommand: commands.dispatch,
+    waitTimerRef, turnGenerationRef: { current: 0 }, dispatchCommand: commands.dispatch,
     pendDirRef: {}, outerDepartRef: {}, pickupJudgmentRef: {}, collectGrantedRef: {},
     varTreeRef: { current: {} }, timeRef: { current: 1 },
     setInput: vi.fn(), setCmdHistory: vi.fn(), setHistIdx: vi.fn(), setLoading: vi.fn(),
@@ -57,7 +57,7 @@ it("keeps the key inspection's estate announcement open until its narration comm
     getState: gameStore.getState,
     applyResult: result => applyResult({
       gameActions,
-      act: (...args) => { narration = featureCtxRef.current.act(...args); },
+      act: (...args) => { narration = featureCtx().act(...args); },
     }, result),
   });
   const scheduler = createCoalescedCheck(runner.check);

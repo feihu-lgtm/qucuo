@@ -3,6 +3,7 @@ import { bindTurnRuntime } from "../../features/turnRuntime.js";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GAME_KEYS, gameActions, gameStore, initGameStore, subscribeGameReplaced } from "../../store/gameStore.js";
+import { registerRuntime, resetRuntime } from "../runtime/gameRuntime.js";
 import { commitRound } from "../../engine/act/commitRound.js";
 import { createMockAi } from "../../engine/ports/ai.js";
 import { playTurn } from "../../engine/playTurn.js";
@@ -119,10 +120,10 @@ describe("undo controller", () => { it("keeps the real pickup undo point when a 
       });
       const captureUndo = vi.fn(harness.controller.captureUndo);
       const addLog = vi.fn();
+      registerRuntime({ addLog, setVarTree: gameActions.setVarTreeState });
       let handlers;
       function Harness() {
         handlers = useScreenHandlers({
-          featureCtxRef: { current: { setVarTree: gameActions.setVarTreeState, addLog, gameActions } },
           timeRef: { current: 6 },
           captureUndo,
         });
@@ -139,6 +140,7 @@ describe("undo controller", () => { it("keeps the real pickup undo point when a 
       expect(harness.controller.rollbackOneStep()).toBe(true);
       expect(gameStore.getState()).toMatchObject(before);
     } finally {
+      resetRuntime();
       restoreStore();
     }
   });

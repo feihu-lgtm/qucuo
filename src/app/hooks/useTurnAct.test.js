@@ -27,7 +27,6 @@ function useTestTurn(stateOverrides = {}, argOverrides = {}) {
     time: 6,
     ...stateOverrides,
   });
-  const featureCtxRef = { current: null };
   const args = {
     ...gameStore.getState(), apiCfg: {}, preset: {}, convo: [],
     addLog: vi.fn(), talkToNarrator: vi.fn(), narrator: {},
@@ -36,7 +35,7 @@ function useTestTurn(stateOverrides = {}, argOverrides = {}) {
     turnGenerationRef: { current: 0 }, talkBusyRef: { current: false },
     setCmdHistory: vi.fn(), setHistIdx: vi.fn(), setFlags: vi.fn(), setInput: vi.fn(),
     setLoading: vi.fn(), waitTimerRef: { current: null }, setWaitSecs: vi.fn(),
-    pendDirRef: { current: null }, featureCtxRef,
+    pendDirRef: { current: null },
     noteAction: vi.fn(), roomMapRef: { current: {} }, innerRoomName: null,
     collectGrantedRef: { current: [] }, clearRouteQueue: vi.fn(), setCommandPhase: vi.fn(),
     outerDepartRef: { current: null }, varTreeRef: { current: {} },
@@ -53,7 +52,7 @@ function useTestTurn(stateOverrides = {}, argOverrides = {}) {
     ...argOverrides,
   };
   const { act } = useTurn(args);
-  return { act, args, featureCtxRef };
+  return { act, args };
 }
 
 beforeEach(() => {
