@@ -1,4 +1,7 @@
 import { readFileSync } from "node:fs";
+import { bindTurnRuntime } from "../features/turnRuntime.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { gameActions, gameStore, initGameStore, markGameReplaced, subscribeGameReplaced } from "../store/gameStore.js";
 import { createAutosaveScheduler } from "../features/autosaveScheduler.js";

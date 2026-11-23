@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { bindTurnRuntime } from "../../features/turnRuntime.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 import { auctionWin } from "./logic.js";
 import { AUCTION_LOT } from "../../domain/rules/economy/auction.js";
 import { applyResult } from "../run.js";

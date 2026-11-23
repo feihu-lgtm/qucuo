@@ -3,8 +3,14 @@
 // match 可为正则或函数（函数收到整行文本）；parse 把匹配结果转成参数；
 // execute(ctx, args) 返回退出码，返回 PASS 表示未消费、继续尝试后续条目。
 import { getCommand } from "../../infra/commands.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+import { bindTurnRuntime } from "../../features/turnRuntime.js";
 import { CLI_COMMANDS, PASS } from "./cliCommands.js";
 import { HOOK_ENTRIES, buildHookCommands } from "./hooks.js";
+
+// features 层不反依赖 infra：回合监视运行时在此注入（web 经 useTurn、CLI 经
+// runner 都会先加载本注册表）。
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 
 export { PASS };
 export const COMMAND_REGISTRY = Object.freeze([...CLI_COMMANDS, ...HOOK_ENTRIES]);

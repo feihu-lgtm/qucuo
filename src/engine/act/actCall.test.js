@@ -1,4 +1,7 @@
 import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
+import { bindTurnRuntime } from "../../features/turnRuntime.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 
 // callModel / callModelStream 打桩：捕获组装好的消息数组（黄金快照对象），返回固定假回复。
 // 其余导出（cleanJsonString 等）保持真实实现。

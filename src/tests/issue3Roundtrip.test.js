@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { bindTurnRuntime } from "../features/turnRuntime.js";
+import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
+bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 import { applyResult } from "../features/run.js";
 import { deposit, withdraw } from "../features/bank/logic.js";
 import { meditate, trainNeigong, trainWaigong } from "../features/cultivation/logic.js";
