@@ -17,6 +17,7 @@ import { factionTurnInOf } from "../../domain/rules/economy/factionTurnIn.js";
 import { isNpcKnown, INITIAL_FAVORABILITY } from "../../domain/rules/npc/npcAwareness.js";
 import { herbDonationRepGain } from "../../domain/rules/economy/herbDonation.js";
 import { applyFactionRep } from "../../domain/rules/economy/factionRep.js";
+import { carryTradeSections } from "../../domain/rules/npc/npcCarry.js";
 
 function composeUpdates(first, second) {
   return (prev) => {
@@ -165,6 +166,23 @@ export function giftNpc(state, npc, item, now = Date.now()) {
       changes.inv = applyWrite(state, set("inv", nextInv)).state.inv;
     }
   }
+  // 换装同步链④：玩家送出装备类条目 → NPC 当场穿上（记进他的随身装束，
+  // deriveAppearance/npcGear 立即反映，prompt 外貌段跟着变）。
+  const giftedEntry = typeof item === "object" ? item : CATALOG_INDEX[itemName];
+  const giftedCategory = giftedEntry?.category;
+  if (GIFT_GEAR_CATEGORIES.has(giftedCategory) && npc?.name) {
+    const worn = {
+      name: itemName, category: giftedCategory, quality: giftedEntry.quality || "白",
+      slot: "equipment", desc: giftedEntry.desc || "",
+    };
+    changes.room = (prev) => ({
+      ...prev,
+      npcs: (prev.npcs || []).map((n) => (n.name === npc.name
+        ? { ...n, carry: [...(n.carry || []), worn] }
+        : n)),
+    });
+    logs.push({ t: "sys", text: `  ${npc.name}换上了${itemName}。` });
+  }
   return {
     changes,
     logs,
@@ -173,6 +191,8 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     deliveredQuest: deliveredQuest?.quest || null,
   };
 }
+
+const GIFT_GEAR_CATEGORIES = new Set(["weapon", "armor", "accessory"]);
 
 export function giftSilver(state, npc, amount, now = Date.now()) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
@@ -206,7 +226,15 @@ export function tradeWithNpc(state, npc) {
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "trade" });
   const shopData = buildOcShopInventory(npc.name) || rollShopStock(npc.name, state.time) || buildShopInventory(npc.name);
   if (!shopData) {
+    // 无店可走随身交易（OC 冒险者的 carry 三分区）
+    const sections = carryTradeSections(npc);
+    if (sections.equipment.length + sections.bag.length + sections.mount.length) {
+      return { shop: { npcName: npc.name, district: state.room?.name, carryTrade: true, carrySections: sections, shopName: `${npc.name}的随身` } };
+    }
     return { logs: [{ t: "sys", text: `  ${npc.name}摆摆手，「小店暂无货可卖。」` }] };
   }
-  return { shop: { npcName: npc.name, district: state.room?.name, ...shopData } };
+  // 商店货之外，OC 冒险者身上还有随身可卖——同面板挂随身区
+  const sections = carryTradeSections(npc);
+  return { shop: { npcName: npc.name, district: state.room?.name, ...shopData,
+    ...(sections.equipment.length + sections.bag.length + sections.mount.length ? { carrySections: sections } : {}) } };
 }

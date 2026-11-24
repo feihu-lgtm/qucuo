@@ -15,6 +15,7 @@ import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
 import { recruitOC, applyRecruit, hirePriceFor } from "../../features/npc/ocRecruit.js";
 import { ADVENTURER_BY_NAME } from "../../domain/data/dungeon/adventurers.js";
 import { stationCompanion, unstationCompanion } from "../../domain/rules/companion/companion.js";
+import { buyCarryEntry } from "../../features/npc/carryTrade.js";
 import { toggleEquip } from "../../domain/rules/economy/equipment.js";
 import { getPresentNpcs } from "../../domain/rules/state/fields.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
@@ -114,6 +115,14 @@ export function useScreenHandlers({
     else applyResult(featureCtx(), result);
   }, { feature: "npc.tradeWithNpc" }), [captureUndo]);
 
+  // 随身交易买一件：buyCarryEntry 判定（不卖/钱不够只写日志），成交走 changes 落盘
+  const handleBuyCarry = useCallback((npcName, entry) => applyResult(featureCtx(), () => {
+    const state = gameStore.getState();
+    const npc = state.room?.npcs?.find((n) => n.name === npcName) || { name: npcName };
+    captureUndo();
+    applyResult(featureCtx(), buyCarryEntry(state, npc, entry));
+  }, { feature: "npc.buyCarry" }), [captureUndo]);
+
   const handleNpcLearnSkill = useCallback((npc) => applyResult(featureCtx(), () => {
     captureUndo();
     const result = learnNpcSkillLogic(gameStore.getState(), npc);
@@ -206,6 +215,7 @@ export function useScreenHandlers({
     handleConsumeItem,
     handleCollectGround,
     handleNpcTrade,
+    handleBuyCarry,
     handleNpcLearnSkill,
     handleNpcSteal,
     giftToCharacter,

@@ -1,20 +1,33 @@
 // 查看 NPC：系统卡片（来历、装束）立刻给出，外貌描写后台补写。
 import { ITEM_CATEGORY } from "../economy/equipment.js";
+import { carryTradeEntries, attireExposure } from "./npcCarry.js";
 
 const GEAR = new Set([ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY]);
 
 export function npcGear(npc) {
-  return (npc?.carriedItems || [])
-    .filter((item) => item?.name && !item.stolen && !item.dropped && GEAR.has(item.category))
+  const carried = (npc?.carriedItems || [])
+    .filter((item) => item?.name && !item.stolen && !item.dropped && !item.sold && GEAR.has(item.category))
     .map((item) => item.name);
+  // OC 的 carry 区也折进去（sold/stolen 已由 carryTradeEntries 滤掉）
+  const fromCarry = carryTradeEntries(npc)
+    .filter((e) => e.slot === "equipment" && GEAR.has(e.category))
+    .map((e) => e.name);
+  return [...new Set([...carried, ...fromCarry])];
+}
+
+// 换装同步链的外观段：装备随买卖/偷窃/赠送变化时重算——sold/stolen 标记写进条目
+// 那一刻，本函数读到就是新外观，look 卡/prompt 自然即时刷新，不需要单独存外观字段。
+export function deriveAppearance(npc) {
+  return { gear: npcGear(npc), exposure: attireExposure(npc) };
 }
 
 export function npcLookCard(npc) {
   if (!npc?.name) return [];
-  const gear = npcGear(npc);
+  const { gear, exposure } = deriveAppearance(npc);
   return [
     { t: "sys", text: `  ${npc.name}${npc.brief ? `：${npc.brief}` : ""}` },
     gear.length ? { t: "sys", text: `  装束：${gear.join("、")}` } : null,
+    exposure ? { t: "sys", text: `  ⚠ ${exposure}——浑身上下再找不出一件完整的行头。` } : null,
   ].filter(Boolean);
 }
 
@@ -30,6 +43,7 @@ export function buildNpcLookPrompt(npc, { place = "" } = {}) {
     npc?.brief ? `来历：${npc.brief}` : "",
     (npc?.fullBio || npc?.personality) ? `人设：${npc.fullBio || npc.personality}` : "",
     npcGear(npc).length ? `装束：${npcGear(npc).join("、")}` : "",
+    deriveAppearance(npc).exposure ? `衣着状态：${deriveAppearance(npc).exposure}（被扒得几乎不剩行头，叙事要照实反映）` : "",
     Array.isArray(hp) && hp[1] > 0 && hp[0] < hp[1] ? `气血：${hp[0]}/${hp[1]}` : "",
   ].filter(Boolean).join("\n");
   return { sys, user };

@@ -214,6 +214,8 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
                 onClose={() => setTradingShop(null)}
                 onBuy={(item) => runCommand("shopBuy", () => { if ((char.money || 0) < item.buyPrice) return; turn.captureUndo(); setChar(c => ({ ...c, money: c.money - item.buyPrice })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); addLog([{ t: "item", text: `  你花费${item.buyPrice}两，购得「${item.name}」。` }]); jotNote({ text: `购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
                 onSell={(item) => runCommand("shopSell", () => { if (item.equipped) return; turn.captureUndo(); setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + item.sellPrice })); addLog([{ t: "item", text: `  你卖出「${item.name}」，得银两${item.sellPrice}两。` }]); jotNote({ text: `卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
+                carrySections={tradingShop.carrySections}
+                onBuyCarry={(entry) => handlers.screenHandlers.handleBuyCarry(tradingShop.npcName, entry)}
               />
             </Suspense>
           )}

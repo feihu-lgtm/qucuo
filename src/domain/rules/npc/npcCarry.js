@@ -214,6 +214,13 @@ const CARRY_QUALITY_CHERISH = { 白: 15, 绿: 30, 蓝: 45, 紫: 60, 橙: 75, 红
 const CARRY_TROPHY_RE = /信物|凭证|令牌|弟子令|令旗|虎符|印信|腰牌|铁券|密匙|关防/;  // 势力信物：敢收也不敢卖
 const CARRY_MANUAL_RE = /秘籍|剑谱|拳谱|刀谱|枪谱|心法|真经|秘录|秘本|图谱|手抄|抄本|要诀|诀窍|指要|残卷|古卷|密卷|经卷|典籍|笔录|手稿|拓本|原本/;  // 签名武学
 
+// ── 随身交易读取层（D 单三分区 + E 单换装同步链）──────────────────
+// 纯数据：归一化后的随身条目、三分区、♥密度、外露度。domain 层，
+// 供 features（买卖链）与 ui（交易面板/look 卡）共用，不反向依赖 features。
+import { ADVENTURER_BY_NAME } from "../../data/dungeon/adventurers.js";
+
+const GEAR_CATS = new Set([ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY]);
+
 export function normalizeCarryEntry(_npc, entry = {}) {
   const isFollower = !entry.category && (entry.type || entry.slot === "mount");
   const name = entry.name || "";
@@ -241,4 +248,46 @@ export function normalizeCarryEntry(_npc, entry = {}) {
     sellable: entry.sellable ?? sellable,
     price: entry.price ?? null,
   };
+}
+
+// 钟爱密度标记：≥80 三颗、≥50 两颗、其余一颗或不标（bag 杂物 0 钟爱不标）
+export function cherishHearts(cherish = 0) {
+  if (cherish >= 80) return "♥♥♥";
+  if (cherish >= 50) return "♥♥";
+  if (cherish > 0) return "♥";
+  return "";
+}
+
+// 取一个 NPC 的随身条目清单（归一化）：OC 冒险者读 adv.carry，普通 NPC 读 carriedItems。
+// sold/stolen 已标记的不再出现。
+export function carryTradeEntries(npc) {
+  const adv = ADVENTURER_BY_NAME[npc?.name];
+  const raw = adv?.carry || npc?.carry || npc?.carriedItems || [];
+  return raw
+    .filter((e) => e && !e.sold && !e.stolen && !e.dropped)
+    .map((e) => normalizeCarryEntry(npc, e));
+}
+
+// 三分区：{equipment:[], bag:[], mount:[]}
+export function carryTradeSections(npc) {
+  const sections = { equipment: [], bag: [], mount: [] };
+  for (const e of carryTradeEntries(npc)) {
+    sections[e.slot === "mount" ? "mount" : e.slot === "bag" ? "bag" : "equipment"].push(e);
+  }
+  return sections;
+}
+
+// 装备区外露度：equipment 区被扒到只剩饰物/一件不剩时算私密外露。
+export function attireExposure(npc) {
+  // 没有任何随身数据的 NPC 不算「被扒光」——他本就没穿过，报暴露是误判。
+  const raw = ADVENTURER_BY_NAME[npc?.name]?.carry || npc?.carry || npc?.carriedItems;
+  if (!raw?.length) return null;
+  const gear = carryTradeEntries(npc).filter((e) => e.slot === "equipment" && GEAR_CATS.has(e.category));
+  const hasArmor = gear.some((e) => e.category === ITEM_CATEGORY.ARMOR);
+  const hasAccessory = gear.some((e) => e.category === ITEM_CATEGORY.ACCESSORY);
+  const hasWeapon = gear.some((e) => e.category === ITEM_CATEGORY.WEAPON);
+  // 还披甲/还带兵刃都不算暴露——暴露只留给「只剩饰物」与「一件不剩」两档。
+  if (hasArmor || hasWeapon) return null;
+  if (hasAccessory) return "只剩零星饰物在身";
+  return "衣不蔽体";
 }

@@ -3,7 +3,7 @@ import { Linter } from "eslint";
 import { expect, it } from "vitest";
 
 const hooks = {
-  useScreenHandlers: "handleNpcLook handleNpcTalk handleNpcGift handleInviteCompanion handleOcRecruit handleStationCompanion handleRecallCompanion handleConsumeItem handleCollectGround handleNpcTrade handleNpcLearnSkill handleNpcSteal giftToCharacter handleToggleEquip claimMilestone",
+  useScreenHandlers: "handleNpcLook handleNpcTalk handleNpcGift handleInviteCompanion handleOcRecruit handleStationCompanion handleRecallCompanion handleConsumeItem handleCollectGround handleNpcTrade handleBuyCarry handleNpcLearnSkill handleNpcSteal giftToCharacter handleToggleEquip claimMilestone",
   useBuildingHandlers: "handleFestivalEnter handleFestivalBet handleFestivalInvite handleFestivalNight handleFestivalWubi handleFestivalMidnight handleBuyTangmenItem handleSellFactionItem handleBuildingInn handleBuildingHeal handleClinicService handleChaojing handleBuySkill handleGamble handleTravel handleServiceOrder handleCook handlePray handleReadBook handleBuyBook handleDeposit handleWithdraw handlePledge handleRedeem handleAcceptEscort handleAcceptBounty handleClaimBounty handleGambleSettle handleForgeCommission handleJadeCraft handleListenRumor handleJoinSect handleLeaveSect handleAuctionWin",
   useProgressionHandlers: "confessToNarrator meditate trainNeigong trainWaigong breakthroughSkill",
   usePlayerActionHandlers: "handleComfort handleSwitchCompanion handleResolveTrauma enterSeaOfMind leaveSeaOfMind",
