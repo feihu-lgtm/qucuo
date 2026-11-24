@@ -16,6 +16,7 @@ import { emitChoices } from "./postCommit/choices.js";
 import { writeMemoryNote } from "./postCommit/memoryNote.js";
 import { registerMemoryFact } from "./postCommit/memoryFact.js";
 import { markTalkAcquaintance } from "./postCommit/talkKnow.js";
+import { burnIntimateTicket } from "./postCommit/intimateTicket.js";
 import { appendConvo } from "./postCommit/convoAppend.js";
 import { applyPostResult } from "./postCommit/applyPostResult.js";
 
@@ -123,6 +124,7 @@ export function commitRound(d) {
     isTalk: d.isTalk, lockedDestName: d.lockedDestName, p: d.p, room: d.room,
   }));
   applyPostResult(d, emitNarrative({ p: d.p, questProgress: d.questProgress })); // 台本覆盖/切磋战报/正文/截断提示
+  applyPostResult(d, burnIntimateTicket({ intimateTicket: d.intimateTicket })); // 凭卡强开·焚卡
   applyPostResult(d, recordRumors({ p: d.p, narrativeText: d.narrativeText })); // 涌现·传闻登记
   applyPostResult(d, fixateNpcs({    // 在场名单幽灵过滤+战斗数据固化+新面孔/重逢
     p: d.p, room: d.room, innerRoomName: d.innerRoomName, narrativeText: d.narrativeText,

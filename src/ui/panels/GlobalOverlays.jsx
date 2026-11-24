@@ -58,7 +58,7 @@ export default function GlobalOverlays({
   buildBugReportTurns, debugSources,
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
   handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
-  handleOcRecruit, handleRecallCompanion,
+  handleOcRecruit, handleRecallCompanion, handleGoldenEgg,
   inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip,
   persuasionProgress, savePersuasionProgress, finishPersuasion,
   resetDuel, duelFinishHandler,
@@ -190,6 +190,7 @@ export default function GlobalOverlays({
         onInviteCompanion={handleInviteCompanion}
         onOcRecruit={handleOcRecruit}
         onRecallCompanion={handleRecallCompanion}
+        onGoldenEgg={handleGoldenEgg}
         ocRoutes={ADVENTURER_BY_NAME[activeNpcMenu.name] ? ocMenuRoutes({ flags, varTree, companionState }, ADVENTURER_BY_NAME[activeNpcMenu.name]) : []}
         flags={flags} companionUnlocked={isCompanionUnlockedByName(companionState, activeNpcMenu.name)}
       />

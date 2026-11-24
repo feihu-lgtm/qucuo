@@ -59,6 +59,7 @@ export function buildOverlayCtx({ ui, game, overlayState, autosave, actions, add
       handleNpcSteal: screenHandlers.handleNpcSteal, handleNpcLearnSkill: screenHandlers.handleNpcLearnSkill,
       handleNpcTrade: screenHandlers.handleNpcTrade, handleInviteCompanion: screenHandlers.handleInviteCompanion,
       handleOcRecruit: screenHandlers.handleOcRecruit, handleRecallCompanion: screenHandlers.handleRecallCompanion,
+      handleGoldenEgg: screenHandlers.handleGoldenEgg,
       inspectItem: aiInspect.inspectItem, handleConsumeItem: screenHandlers.handleConsumeItem,
       handleCollectGround: screenHandlers.handleCollectGround, handleToggleEquip: screenHandlers.handleToggleEquip,
       // activePersuasion/duelingNpc 已迁 sessionUiStore，GlobalOverlays 直接订阅。

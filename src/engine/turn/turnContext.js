@@ -35,7 +35,7 @@ export function createTurnContext({ plan, env }) {
   } = io;
   const {
     isTalk, isSettle, intent, movingDir, lockedDestName,
-    destinationLock, collectNote, activeGroundItemForTurn,
+    destinationLock, collectNote, activeGroundItemForTurn, intimateTicket,
   } = plan;
   // apiCfg/gm/isStale 挂在 env 顶层（hook 注入），不进 state。
   const { isStale, _trace, apiCfg, gm } = env;
@@ -101,6 +101,7 @@ export function createTurnContext({ plan, env }) {
       pickupExtractionFailedRef.current = turnResult.pickupExtractionFailed;
       return {
         p: turnResult.p, mvuCommands: turnResult.mvuCommands, dealResult: turnResult.dealResult,
+        intimateTicket,
         rawFull: turnResult.rawFull, narrativeText: turnResult.narrativeText,
         knowledgeTree: turnResult.knowledgeTree, knowledgeTreeBase: turnResult.knowledgeTreeBase,
         isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,
