@@ -205,7 +205,13 @@ describe("model-bound state refs", () => {
       ...promptState(), lockedDestName: "山门", lockedExits: { w: "鱼定村" },
     }, {}, null, { chat }, trace);
     const [{ content }] = chat.mock.calls[0][0];
-    expect(content).toContain(header + "\n\n叙事内容：\n这里有 @missing 和 @背包");
+    // TALK_CASUAL 在背包与叙事之间插了「在场者性情与界限」块，前/后两段分开断言。
+    if (intent === "TALK_CASUAL") {
+      expect(content).toContain(header);
+      expect(content).toContain("在场者性情与界限");
+    } else {
+      expect(content).toContain(header + "\n\n叙事内容：\n这里有 @missing 和 @背包");
+    }
     expect(content).toContain("本轮在场 NPC 仅限：货郎阿吉。");
     expect(trace).not.toHaveBeenCalled();
   });
