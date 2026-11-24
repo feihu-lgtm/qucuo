@@ -106,12 +106,20 @@ export function settleMapRun(state, mapRun, opts = {}) {
   const shim = {
     status: mapRun.status,
     loot: mapRun.loot,
-    hp: [Math.max(1, Math.min(charHp[1], charHp[0] - inRunLoss)), charHp[1]],
+    hp: mapRun.hp,
     usedItems: mapRun.usedItems || [],
     floor: Math.max(1, Math.ceil((mapRun.step || 0) / 4)),
     dungeonName: `${mapRun.districtKey}·内层`,
     bossDefeated: mapRun.bossDefeated,
     clearFlag: mapRun.clearFlag,
   };
-  return settleDungeonRun(state, shim, opts);
+  const res = settleDungeonRun(state, shim, opts);
+  // settleDungeonRun 会把 hp[0] 削到上限内——超上限/中途回血要保住，按差值直接回写
+  if (res.changes?.char) {
+    res.changes = {
+      ...res.changes,
+      char: { ...res.changes.char, hp: [Math.max(1, charHp[0] - inRunLoss), charHp[1]] },
+    };
+  }
+  return res;
 }
