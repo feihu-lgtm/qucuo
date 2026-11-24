@@ -92,12 +92,12 @@ export function useScreenHandlers({
   // 伙伴可留守到任意房间：spot 缺省留当前房、null=唤回随行、给房间则落位过去
   const handleStationCompanion = useCallback((key, spotOverride) => applyResult(featureCtx(), () => {
     captureUndo();
-    const { companionState, room, innerRoomName } = gameStore.getState();
+    const { companionState, room, innerRoomName, time } = gameStore.getState();
     if (spotOverride === null) {
       applyResult(featureCtx(), { changes: { companionState: unstationCompanion(companionState, key) } });
       return;
     }
-    const spot = spotOverride || { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name };
+    const spot = { since: time || 0, ...(spotOverride || { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name }) };
     applyResult(featureCtx(), { changes: { companionState: stationCompanion(companionState, key, spot) } });
   }, { feature: "npc.stationCompanion" }), [captureUndo]);
 

@@ -100,7 +100,17 @@ export function recruitOC(state, adventurer, route, ctx = {}) {
   const busy = npcBusyInQuest(state, adventurer.name);
   if (busy) return { ok: false, reason: `${adventurer.name}眼下有事缠身（${busy}），不便同行。` };
 
+  // 兼任驻场任务发布人的 OC（姬无双/樊未离）：名下任务链没走完就收编，
+  // 驻场壳随入队撤掉、任务永远找不到 giver——事了再来。
   const flags = state?.flags || [];
+  const giverQuest = allContent("quest").find((q) =>
+    (q.giver === adventurer.name || q.stages?.some((st) => st.giver === adventurer.name))
+    && !flags.includes(`quest_done_${q.id}`)
+    && !["done", "completed"].includes(state?.questProgress?.[q.id]?.status));
+  if (giverQuest) {
+    return { ok: false, reason: `${adventurer.name}还有未了的事（${giverQuest.title || giverQuest.id}），事了再来。` };
+  }
+
   let moneyDelta = 0;
   switch (route) {
     case "hire": {
