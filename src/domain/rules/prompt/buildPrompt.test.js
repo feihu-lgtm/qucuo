@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   definePrompt, getPromptDef, getPromptOverrides, listPromptDefs,
-  resetPromptOverrides, resetPromptRegistryForTest, setPromptOverride,
+  resetPromptOverrides, resetPromptRegistryForTest, setPromptOverride, subscribePromptOverrides,
 } from "./registry.js";
 import { buildPrompt, estimatePromptTokens } from "./buildPrompt.js";
 
@@ -179,5 +179,75 @@ describe("prompt registry & buildPrompt", () => {
 
     resetPromptOverrides();
     expect(getPromptOverrides()).toEqual({});
+  });
+
+  it("ignores mode: off on the sole sys block of a call while allowing off when multiple sys blocks exist", () => {
+    definePrompt("block", "sole.sys", { slot: "sys", text: "唯一系统规则" });
+    definePrompt("block", "sole.user", { slot: "user", text: "用户输入" });
+    definePrompt("call", "soleCall", { blocks: ["sole.sys", "sole.user"] });
+
+    setPromptOverride("sole.sys", { mode: "off", text: "覆盖但不可灭" });
+    const builtSole = buildPrompt("soleCall");
+    expect(builtSole.system).toBe("覆盖但不可灭");
+    expect(builtSole.blocks[0]).toMatchObject({ id: "sole.sys", lit: true, reason: "唯一系统块不可关闭" });
+
+    definePrompt("block", "extra.sys", { slot: "sys", text: "第二个系统块" });
+    definePrompt("call", "multiSysCall", { join: "|", blocks: ["sole.sys", "extra.sys"] });
+    const builtMulti = buildPrompt("multiSysCall");
+    expect(builtMulti.system).toBe("第二个系统块");
+    expect(builtMulti.blocks[0]).toMatchObject({ id: "sole.sys", lit: false, reason: "总控台关闭" });
+  });
+
+  it("rebases on persisted localStorage overrides before writing and syncs storage events", () => {
+    const store = new Map();
+    const listeners = new Map();
+    vi.stubGlobal("localStorage", {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => { store.set(k, String(v)); },
+      removeItem: (k) => { store.delete(k); },
+    });
+    vi.stubGlobal("window", {
+      addEventListener: (type, fn) => {
+        if (!listeners.has(type)) listeners.set(type, new Set());
+        listeners.get(type).add(fn);
+      },
+      removeEventListener: (type, fn) => {
+        listeners.get(type)?.delete(fn);
+      },
+    });
+
+    const notified = [];
+    const unsub = subscribePromptOverrides(() => notified.push(getPromptOverrides()));
+    try {
+      setPromptOverride("blockA", { mode: "blue" });
+      // 模拟另一个标签页在 localStorage 中写入了 blockB，同时保留 blockA
+      const fromOtherTab = {
+        version: 1,
+        overrides: { blockA: { mode: "blue" }, blockB: { mode: "off", text: "另一页设置" } },
+      };
+      store.set("qucuo_prompt_overrides_v1", JSON.stringify(fromOtherTab));
+
+      const afterLocalWrite = setPromptOverride("blockC", { mode: "off" });
+      expect(afterLocalWrite).toEqual({
+        blockA: { mode: "blue" },
+        blockB: { mode: "off", text: "另一页设置" },
+        blockC: { mode: "off" },
+      });
+
+      // 模拟跨标签页 storage 事件触发同步
+      store.set("qucuo_prompt_overrides_v1", JSON.stringify({
+        version: 1,
+        overrides: { blockRemote: { text: "远程修改" } },
+      }));
+      for (const fn of listeners.get("storage") || []) {
+        fn({ key: "qucuo_prompt_overrides_v1" });
+      }
+      expect(getPromptOverrides()).toEqual({ blockRemote: { text: "远程修改" } });
+      expect(notified.at(-1)).toEqual({ blockRemote: { text: "远程修改" } });
+    } finally {
+      unsub();
+      resetPromptOverrides();
+      vi.unstubAllGlobals();
+    }
   });
 });

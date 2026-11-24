@@ -108,18 +108,25 @@ export function buildPrompt(callId, ctx = {}, { overrides = {} } = {}) {
   };
   const report = [];
 
-  for (const b of resolveBlocks(call.blocks, mergedOverrides)) {
+  const resolved = resolveBlocks(call.blocks, mergedOverrides);
+  const sysBlockCount = resolved.filter((b) => b.slot === "sys").length;
+
+  for (const b of resolved) {
     if (!buckets[b.slot]) throw new Error(`Unsupported block slot: ${b.slot}`);
     if (b.enabled === false) {
       report.push({ id: b.id, label: b.label, slot: b.slot, kind: b.kind, lit: false, reason: "已关闭", text: "" });
       continue;
     }
-    const mode = b.editable === "engine" && b.mode === "off" ? undefined : b.mode;
+    const isSoleSys = b.slot === "sys" && sysBlockCount <= 1;
+    const lockOff = b.editable === "engine" || isSoleSys;
+    const mode = lockOff && b.mode === "off" ? undefined : b.mode;
     const gate = mode === "blue"
       ? { lit: true, reason: "总控台蓝灯" }
       : mode === "off"
         ? { lit: false, reason: "总控台关闭" }
-        : evalWhen(b.when, ctx);
+        : b.mode === "off" && isSoleSys
+          ? { lit: true, reason: "唯一系统块不可关闭" }
+          : evalWhen(b.when, ctx);
     if (!gate.lit) {
       report.push({ id: b.id, label: b.label, slot: b.slot, kind: b.kind, lit: false, reason: gate.reason, text: "" });
       continue;

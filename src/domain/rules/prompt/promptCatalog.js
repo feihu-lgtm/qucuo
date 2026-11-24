@@ -10,6 +10,11 @@ import * as ENGINE from "./enginePrompts.js";
 import { buildExtractionSpecExample } from "./extractionEngine.js";
 import { NSFW_RULES } from "./modePrimer.js";
 import { getActivePreset } from "./presetSystem.js";
+import {
+  buildNarratorWhisperContext,
+  narratorVoicePrompt,
+  narratorWhisperLengthNote,
+} from "../narrator/narrator.js";
 
 const DEFAULT_PROSE_RULE = "【成文铁律·逐段自查（本条最优先，落笔前先过一遍）】每写完一段，先在心里核两样再往下写：其一，这一段每个句子都要是完整句——主谓宾齐全、该带的定状补都补上，不许出现半截话、掐头去尾、省略到看不明白的残句；其二，这一段凡涉及到的，时间、地点、人物、起因、经过、结果都要交代到实处（这一段确实用不上的那几样可以不写，但只要沾边就得写全，不许用『那人』『某处』『后来』这类含糊词一笔带过）。宁可句子写得实、写得满，也绝不为省字丢主语宾语或掐断句子。";
 
@@ -66,7 +71,7 @@ const BLOCK_CATALOG_META = {
   },
   user_recall: { name: "远景日总结 + 向量召回 + 重逢 + 信息域", category: "memory", slot: "inChat", editable: "toggle" },
   target_ledger: { name: "当前对象旧账提醒", category: "npc", slot: "inChat", editable: "toggle", summary: "注入与交互对象的过往恩怨、人情与怒气缘由。" },
-  reunion: { name: "久别重逢上下文", category: "memory", slot: "inChat", editable: "toggle", summary: "久别重逢时的首次照面提醒与情绪线索。" },
+  reunion: { name: "久别重逢上下文", category: "memory", slot: "inChat", editable: "toggle", canForceBlue: false, summary: "久别重逢时的首次照面提醒与情绪线索。" },
   user_prose: { name: "成文铁律（Depth 0 贴生成处）", category: "style", slot: "inChat", editable: "static", defaultMode: "blue" },
   nsfw_rules: { name: "NSFW 写作规则（■ 模式）", category: "style", slot: "inChat", editable: "toggle", defaultMode: "green" },
   gm_rule: { name: "创造模式规则（⚡ 模式）", category: "style", slot: "inChat", editable: "toggle", defaultMode: "green" },
@@ -78,7 +83,7 @@ const BLOCK_CATALOG_META = {
   whisper_tally: { name: "当日与累计起居注", category: "memory", slot: "sys", editable: "toggle", summary: "同步玩家今日行动计数，防旁白与主线脱离。" },
   narrator_lore: { name: "旁白专属世界书", category: "style", slot: "sys", editable: "static" },
   topic_gate: { name: "私聊话题红绿灯（身世/邀帖）", category: "style", slot: "sys", editable: "toggle" },
-  quest_gate: { name: "任务线红绿灯（全名+好感≥30）", category: "style", slot: "sys", editable: "toggle" },
+  quest_gate: { name: "任务线红绿灯（全名+好感≥30）", category: "style", slot: "sys", editable: "toggle", canForceBlue: false },
   whisper_scenario: { name: "剧本背景设定（whisper 门控）", category: "world", slot: "sys", editable: "toggle" },
   whisper_length: { name: "私聊篇幅与语量指令", category: "style", slot: "sys", editable: "static" },
   whisper_output: { name: "私聊输出与软结算好感裁决", category: "review", slot: "user", editable: "engine" },
@@ -101,16 +106,23 @@ function editableFor(id, blockDef, legacyKind) {
   return "toggle";
 }
 
-function resolveMainStaticText(id, actionView) {
+function resolveMainStaticText(id, actionView, { presetScenario } = {}) {
   const key = STATIC_TEXT_KEYS[id];
   if (key && ENGINE[key]) return ENGINE[key];
   if (id === "schema" && actionView) return ENGINE[schemaKeyFor(actionView)];
   if (id === "catalog") return ENGINE.CATALOG_TAIL;
   if (id === "nsfw_rules") return NSFW_RULES;
   if (id === "user_prose") return DEFAULT_PROSE_RULE;
+  if (id === "preset_scenario") {
+    if (typeof presetScenario === "string") return presetScenario;
+    return getActivePreset()?.prompts?.find((p) => p.id === "scenario")?.content ?? "";
+  }
+  if (id === "voice") {
+    return narratorVoicePrompt({ stage: "flirting", affection: 0 });
+  }
   if (id === "preset_genrules" || id === "preset_wenfeng") {
     const entryId = id === "preset_genrules" ? "genrules" : "wenfeng";
-    return getActivePreset()?.prompts?.find((p) => p.id === entryId)?.content || null;
+    return getActivePreset()?.prompts?.find((p) => p.id === entryId)?.content ?? "";
   }
   if (id === "gift_settle_law") return giftSettleLawExample();
   if (id === "gift_narrative_law") return giftNarrativeLawExample();
@@ -120,19 +132,32 @@ function resolveMainStaticText(id, actionView) {
   return null;
 }
 
+function resolveWhisperStaticText(id, { narratorLorebook = "" } = {}) {
+  if (id === "whisper_ctx") return buildNarratorWhisperContext(0);
+  if (id === "voice") return narratorVoicePrompt({ stage: "flirting", affection: 0 });
+  if (id === "whisper_length") return narratorWhisperLengthNote(0);
+  if (id === "narrator_lore") return typeof narratorLorebook === "string" ? narratorLorebook : "";
+  return null;
+}
+
 function mergeMatrixItem({
-  id, name, slot, kind, editable, defaultLit, defaultMode, reason, summary, staticText, overrides,
+  id, name, slot, kind, editable, soleSys = false, canForceBlue,
+  defaultLit, defaultMode, reason, summary, staticText, overrides,
 }) {
   const ov = overrides?.[id];
   const rawMode = ov?.mode;
-  const overrideMode = editable === "engine" && rawMode === "off" ? null : (rawMode || null);
+  const lockedOff = editable === "engine" || soleSys;
+  const overrideMode = lockedOff && rawMode === "off" ? null : (rawMode || null);
   const effectiveLit = overrideMode === "blue" ? true : overrideMode === "off" ? false : Boolean(defaultLit);
   const effectiveReason = overrideMode === "blue"
     ? "总控台蓝灯"
     : overrideMode === "off"
       ? "总控台关闭"
-      : reason;
+      : rawMode === "off" && soleSys
+        ? "唯一系统块不可关闭"
+        : reason;
   const effectiveText = typeof ov?.text === "string" ? ov.text : staticText;
+  const resolvedCanForceBlue = canForceBlue ?? BLOCK_CATALOG_META[id]?.canForceBlue ?? true;
 
   return {
     id,
@@ -141,7 +166,9 @@ function mergeMatrixItem({
     slot: slot || BLOCK_CATALOG_META[id]?.slot || "sys",
     kind: kind || (editable === "engine" ? "engine" : editable === "static" ? "static" : "gated"),
     editable,
-    canToggleOff: editable !== "engine",
+    soleSys,
+    canToggleOff: !lockedOff,
+    canForceBlue: resolvedCanForceBlue && !lockedOff,
     canEditText: editable === "static" && staticText != null,
     defaultLit: Boolean(defaultLit),
     defaultMode: defaultMode || (defaultLit ? "blue" : "green"),
@@ -201,7 +228,10 @@ export function listAllManagedCalls() {
   return [...items, ...registered];
 }
 
-export function getCallControlMatrix(managedId, { mode = "single", overrides = getPromptOverrides() } = {}) {
+export function getCallControlMatrix(
+  managedId,
+  { mode = "single", overrides = getPromptOverrides(), narratorLorebook = "", presetScenario } = {},
+) {
   const managed = listAllManagedCalls().find((c) => c.id === managedId) || listAllManagedCalls()[0];
   if (!managed) return { call: null, categories: PROMPT_BLOCK_CATEGORIES, items: [], litCount: 0, totalCount: 0, tokenEstimate: 0 };
 
@@ -216,19 +246,26 @@ export function getCallControlMatrix(managedId, { mode = "single", overrides = g
       { id: "body_gate", lit: view.scope === "full" || view.scope === "talk", off: "移动与普通结算外貌灭灯", kind: "gated" },
     ].filter((e) => !seen.has(e.id));
 
-    rawItems = [...baseList, ...extras].map((b) => mergeMatrixItem({
-      id: b.id,
-      name: BLOCK_CATALOG_META[b.id]?.name || b.name,
-      slot: BLOCK_CATALOG_META[b.id]?.slot,
-      kind: b.kind,
-      editable: editableFor(b.id, null, b.kind),
-      defaultLit: b.lit,
-      defaultMode: BLOCK_CATALOG_META[b.id]?.defaultMode || (b.kind === "gated" ? "green" : b.lit ? "blue" : "green"),
-      reason: b.lit ? "当前命令默认点亮" : (b.off || "当前命令默认灭灯"),
-      summary: BLOCK_CATALOG_META[b.id]?.summary || b.summary,
-      staticText: resolveMainStaticText(b.id, view),
-      overrides,
-    }));
+    const combined = [...baseList, ...extras];
+    const sysCount = combined.filter((b) => (BLOCK_CATALOG_META[b.id]?.slot || "sys") === "sys").length;
+
+    rawItems = combined.map((b) => {
+      const slot = BLOCK_CATALOG_META[b.id]?.slot || "sys";
+      return mergeMatrixItem({
+        id: b.id,
+        name: BLOCK_CATALOG_META[b.id]?.name || b.name,
+        slot,
+        kind: b.kind,
+        editable: editableFor(b.id, null, b.kind),
+        soleSys: slot === "sys" && sysCount <= 1,
+        defaultLit: b.lit,
+        defaultMode: BLOCK_CATALOG_META[b.id]?.defaultMode || (b.kind === "gated" ? "green" : b.lit ? "blue" : "green"),
+        reason: b.lit ? "当前命令默认点亮" : (b.off || "当前命令默认灭灯"),
+        summary: BLOCK_CATALOG_META[b.id]?.summary || b.summary,
+        staticText: resolveMainStaticText(b.id, view, { presetScenario }),
+        overrides,
+      });
+    });
   } else if (managed.baseCallId === "narrator.whisper") {
     const baseList = [...INJECTION_PATHS.whisper.blocks, {
       id: "whisper_tally",
@@ -236,32 +273,45 @@ export function getCallControlMatrix(managedId, { mode = "single", overrides = g
       kind: "dynamic",
       summary: BLOCK_CATALOG_META.whisper_tally.summary,
     }];
-    rawItems = baseList.map((b) => mergeMatrixItem({
-      id: b.id,
-      name: b.name,
-      slot: BLOCK_CATALOG_META[b.id]?.slot || "sys",
-      kind: b.kind,
-      editable: editableFor(b.id, null, b.kind),
-      defaultLit: true,
-      defaultMode: b.kind === "gated" ? "green" : "blue",
-      reason: b.kind === "gated" ? "私聊按关键词/阶段门控点亮" : "私聊默认注入",
-      summary: b.summary,
-      staticText: null,
-      overrides,
-    }));
+    const sysCount = baseList.filter((b) => (BLOCK_CATALOG_META[b.id]?.slot || "sys") === "sys").length;
+
+    rawItems = baseList.map((b) => {
+      const slot = BLOCK_CATALOG_META[b.id]?.slot || "sys";
+      return mergeMatrixItem({
+        id: b.id,
+        name: b.name,
+        slot,
+        kind: b.kind,
+        editable: editableFor(b.id, null, b.kind),
+        soleSys: slot === "sys" && sysCount <= 1,
+        defaultLit: true,
+        defaultMode: b.kind === "gated" ? "green" : "blue",
+        reason: b.kind === "gated" ? "私聊按关键词/阶段门控点亮" : "私聊默认注入",
+        summary: b.summary,
+        staticText: resolveWhisperStaticText(b.id, { narratorLorebook }),
+        overrides,
+      });
+    });
   } else {
     const callDef = getPromptDef("call", managed.baseCallId);
     const blockIds = callDef?.blocks || callDef?.matrixBlocks || [];
-    rawItems = blockIds.map((blockId) => {
+    const blockEntries = blockIds.map((blockId) => {
       const def = getPromptDef("block", blockId);
+      const slot = def?.slot || BLOCK_CATALOG_META[blockId]?.slot || "sys";
+      return { blockId, def, slot };
+    });
+    const sysCount = blockEntries.filter((e) => e.slot === "sys").length;
+
+    rawItems = blockEntries.map(({ blockId, def, slot }) => {
       const staticText = typeof def?.text === "string" ? def.text : null;
       const defaultLit = def?.when == null ? true : typeof def.when === "boolean" ? def.when : true;
       return mergeMatrixItem({
         id: blockId,
         name: def?.label || BLOCK_CATALOG_META[blockId]?.name || blockId,
-        slot: def?.slot || "sys",
+        slot,
         kind: def?.editable === "engine" ? "engine" : staticText != null ? "static" : "dynamic",
         editable: editableFor(blockId, def, null),
+        soleSys: slot === "sys" && sysCount <= 1,
         defaultLit,
         defaultMode: def?.when ? "green" : "blue",
         reason: def?.when ? "按调用参数门控" : "本调用常驻",

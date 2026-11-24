@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ACTION_VIEWS, blocksForAction, KIND_META, CONSTRAINT_FIELDS,
   STATIC_TEXT_KEYS, schemaKeyFor, giftSettleLawExample, giftNarrativeLawExample,
@@ -8,13 +8,14 @@ import { buildExtractionSpecExample } from "../../domain/rules/prompt/extraction
 import { getTraceLog } from "../../infra/actionTrace.js";
 import { getPositionMeta } from "../../domain/rules/prompt/tavernMapping.js";
 import {
-  getPromptOverrides, resetPromptOverrides, setPromptOverride,
+  getPromptOverrides, resetPromptOverrides, setPromptOverride, subscribePromptOverrides,
 } from "../../domain/rules/prompt/registry.js";
 import {
   CALL_GROUP_META, EXECUTION_LABELS, ROUTE_LABELS,
   getCallControlMatrix, listAllManagedCalls,
 } from "../../domain/rules/prompt/promptCatalog.js";
 import { ensureAllPromptsRegistered } from "../../app/calls/registerAllPrompts.js";
+import { useGameStore } from "../../store/gameStore.js";
 
 ensureAllPromptsRegistered();
 
@@ -32,7 +33,7 @@ const pill = (active) => ({
 });
 const MODE_BTNS = [["blue", "蓝灯"], ["green", "绿灯"], ["off", "关闭"]];
 
-export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled }) {
+export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled, narratorLorebook = "" }) {
   const [viewMode, setViewMode] = useState("control");
   const [groupFilter, setGroupFilter] = useState("all");
   const [selectedCallId, setSelectedCallId] = useState("main:look");
@@ -43,10 +44,13 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
   const [openBlock, setOpenBlock] = useState(null);
   const [live, setLive] = useState({});
   const [liveErr, setLiveErr] = useState("");
+  const presetScenario = useGameStore((s) => s.preset?.scenario);
+
+  useEffect(() => subscribePromptOverrides(() => setOverrides(getPromptOverrides())), []);
 
   const allCalls = listAllManagedCalls();
   const visibleCalls = groupFilter === "all" ? allCalls : allCalls.filter((c) => c.group === groupFilter);
-  const matrix = getCallControlMatrix(selectedCallId, { mode, overrides });
+  const matrix = getCallControlMatrix(selectedCallId, { mode, overrides, narratorLorebook, presetScenario });
   const view = ACTION_VIEWS.find((v) => v.id === actionId) || ACTION_VIEWS[0];
   const actionBlocks = blocksForAction(actionId, mode);
 
@@ -154,13 +158,13 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                       </span>
                       {item.canToggleOff ? (
                         <span style={{ display: "inline-flex", gap: 3 }} onClick={(e) => e.stopPropagation()}>
-                          {MODE_BTNS.map(([m, label]) => (
+                          {(item.canForceBlue === false ? MODE_BTNS.filter(([m]) => m !== "blue") : MODE_BTNS).map(([m, label]) => (
                             <span key={m} onClick={() => handleModeChange(item.id, m, item.overrideMode)}
                               style={{ ...pill(activeMode === m), padding: "1px 6px", fontSize: 9.5 }}>{label}</span>
                           ))}
                         </span>
                       ) : (
-                        <span style={{ fontSize: 9.5, color: "var(--text-dim)" }}>引擎锁定</span>
+                        <span style={{ fontSize: 9.5, color: "var(--text-dim)" }}>{item.soleSys ? "系统必亮" : "引擎锁定"}</span>
                       )}
                     </div>
                     {open && (

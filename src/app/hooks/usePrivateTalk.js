@@ -4,6 +4,7 @@ import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
 import { runFormattedRecall } from "../../engine/ports/recallBlock.js";
 import { ensureUnifiedCalls } from "../../domain/rules/prompt/calls/unifiedCalls.js";
+import { getPromptOverrides } from "../../domain/rules/prompt/registry.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 import {
@@ -85,9 +86,12 @@ export function usePrivateTalk({
 
       // 向量召回：让旁白"记起"可能早已滑出对话窗口的往事（与她"记得游戏里发生一切"的设定一致）。
       // 降级安全：没开向量或召回失败则 recallInfo 为 null，这段完全不影响私聊。
+      const ov = getPromptOverrides();
       let recallInfo = null;
       let recallBlock = "";
-      if (embeddingReady(apiCfg)) {
+      if (ov.recall?.mode === "off") {
+        traceStep(_wt, "向量召回", "skip", "总控台关闭召回");
+      } else if (embeddingReady(apiCfg)) {
         const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
         const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(gameStore.getState().varTree.角色 || {}), room.name]));
         const recentTexts = convo.slice(-Math.max(apiCfg.contextWindow || 20, 20)).map((m) => m.content);
@@ -118,11 +122,15 @@ export function usePrivateTalk({
       // 提到人名才亮具名人物，聊到掉落才亮装备规则。认不出标题的段落照旧常驻（蓝灯），
       // 用户改过 scenario 或换自定义预设都不会因这层分流丢内容。
       const _lastReply = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
-      const _whisperGate = gateScenario(preset.scenario, {
-        scope: "whisper",
-        userInput: content,
-        lastReply: _lastReply,
-      });
+      const _whisperGate = ov.whisper_scenario?.mode === "off"
+        ? { text: "", lit: [], dark: ["总控台关闭"] }
+        : ov.whisper_scenario?.mode === "blue"
+          ? { text: preset.scenario || "", lit: preset.scenario ? ["总控台蓝灯"] : [], dark: [] }
+          : gateScenario(preset.scenario, {
+              scope: "whisper",
+              userInput: content,
+              lastReply: _lastReply,
+            });
       if (_whisperGate.lit.length || _whisperGate.dark.length) {
         traceStep(_wt, "世界书·总纲", "info",
           `🟢${_whisperGate.lit.join("、") || "无"}　⚫灭:${_whisperGate.dark.join("、") || "无"}`);
@@ -133,8 +141,12 @@ export function usePrivateTalk({
       // 绝大多数轮次用不上，常驻只会白烧上下文；但玩家一旦问起，必须有统一口径，
       // 否则模型只能现编，这局说是将门遗孤、下局说是灭门孤儿。
       const _scan = `${content}\n${_lastReply}`;
-      const _topicGate = gateWhisperTopics(_scan);
-      if (_topicGate.lit.length) {
+      const _topicGate = ov.topic_gate?.mode === "off"
+        ? { text: "", lit: [] }
+        : gateWhisperTopics(_scan, { forceAll: ov.topic_gate?.mode === "blue" });
+      if (ov.topic_gate?.mode === "off") {
+        traceStep(_wt, "私聊话题·红绿灯", "skip", "总控台关闭私聊话题");
+      } else if (_topicGate.lit.length) {
         traceStep(_wt, "私聊话题·红绿灯", "pass", `🟢${_topicGate.lit.join("、")}`);
       } else {
         traceStep(_wt, "私聊话题·红绿灯", "skip", "本轮无话题命中");
@@ -142,17 +154,26 @@ export function usePrivateTalk({
 
       // 任务线红绿灯：报出任务全名才查那一条，泛泛问只让她反问；好感度 <30 不给。
       // 全任务表二十几条线、每条四五个 stage，全量注入等于每次闲聊背一本攻略书。
-      const _questGate = gateQuestTopic(_scan, narrator.affection, QUCUO_QUESTS, questProgress);
-      if (_questGate.lit.length) {
+      const _questGate = ov.quest_gate?.mode === "off"
+        ? { text: "", lit: [] }
+        : gateQuestTopic(_scan, narrator.affection, QUCUO_QUESTS, questProgress);
+      if (ov.quest_gate?.mode === "off") {
+        traceStep(_wt, "任务线·红绿灯", "skip", "总控台关闭任务线门控");
+      } else if (_questGate.lit.length) {
         traceStep(_wt, "任务线·红绿灯", "pass", `🟢${_questGate.lit.join("、")}`);
       } else {
         traceStep(_wt, "任务线·红绿灯", "skip", "本轮没聊到任务");
       }
 
       // 体貌：私聊时公开层常亮（她一直看着你），私密层仍只认 ■ 模式。
-      const _bodyWhisper = gateBodyProfile(char.bodyProfile, {
-        whisper: true, nsfw: nsfwOn, scanText: _scan,
-      });
+      const _bodyWhisper = ov.body_gate?.mode === "off"
+        ? { text: "", lit: [], dark: ["总控台关闭"] }
+        : gateBodyProfile(char.bodyProfile, {
+            whisper: true,
+            nsfw: nsfwOn,
+            forcePublic: ov.body_gate?.mode === "blue",
+            scanText: _scan,
+          });
       if (_bodyWhisper.lit.length || _bodyWhisper.dark.length) {
         traceStep(_wt, "体貌", "info",
           `🟢${_bodyWhisper.lit.join("、") || "无"}　⚫灭:${_bodyWhisper.dark.join("、") || "无"}`);

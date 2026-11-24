@@ -66,7 +66,7 @@ describe("SettingsPanel font preference", () => {
 
 describe("SettingsPanel unified prompt control center", () => {
   it("renders unified control tab with all call groups, 6 block dimensions, and review rules", () => {
-    const html = render({ apiKey: "test-placeholder" }, "preset");
+    const html = render({ apiKey: "test-placeholder", narratorLorebook: "旁白专属秘闻" }, "preset");
     expect(html).toContain("统一总控台");
     expect(html).toContain("主回合行动");
     expect(html).toContain("旁白私聊");
@@ -74,5 +74,9 @@ describe("SettingsPanel unified prompt control center", () => {
     expect(html).toContain("异步后台任务");
     expect(html).toContain("审阅与校验规则");
     expect(html).toContain("当前局势（此地情况/武力值/装备/武学/行囊）");
+    const reunionRow = html.split("久别重逢上下文")[1]?.split("</div>")[0] || "";
+    expect(reunionRow).toContain("绿灯");
+    expect(reunionRow).toContain("关闭");
+    expect(reunionRow).not.toContain("蓝灯");
   });
 });

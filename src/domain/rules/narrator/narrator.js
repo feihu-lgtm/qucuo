@@ -298,10 +298,14 @@ export const WHISPER_TOPICS = [
 
 // 按"玩家这句话 + 上一条回复"点灯。返回 { text, lit }：
 // text 直接拼进 prompt（没命中则为空串，一个字不发），lit 供 trace 留痕。
-export function gateWhisperTopics(scanText) {
+export function gateWhisperTopics(scanText, { forceAll = false } = {}) {
   const scan = String(scanText || "");
   const hits = [];
   for (const t of WHISPER_TOPICS) {
+    if (forceAll) {
+      hits.push({ name: t.name, key: "总控台蓝灯", text: t.text });
+      continue;
+    }
     const k = t.keys.find(x => scan.includes(x));
     if (k) hits.push({ name: t.name, key: k, text: t.text });
   }

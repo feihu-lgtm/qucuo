@@ -110,7 +110,11 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
             Prompt 条目列表。作者要的是"只看清楚喂了什么"，两头都拿掉了——
             PresetEditor 与 PresetManager 均已删除（零引用）。 */}
         {tab === "preset" && (
-          <InjectionStructurePanel getLiveBlockText={getLiveBlockText} extractionEnabled={!!cfg.extractionEnabled} />
+          <InjectionStructurePanel
+            getLiveBlockText={getLiveBlockText}
+            extractionEnabled={!!cfg.extractionEnabled}
+            narratorLorebook={cfg.narratorLorebook || ""}
+          />
         )}
 
         {tab === "api" && <ApiTab cfg={cfg} setCfg={setCfg} patch={patch} zoneTheme={zoneTheme} st={st} />}

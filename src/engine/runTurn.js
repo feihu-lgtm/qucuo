@@ -5,6 +5,7 @@ import { callExtraction } from "./ports/extraction.js";
 import { step as traceStep } from "../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
+import { formatRecallEntries } from "./ports/recallBlock.js";
 import { buildHistBlock, histBlockSavings } from "../domain/rules/memory/histWindow.js";
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
@@ -122,7 +123,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       ...ctx.memory.recall,
       lastAiText: preparedPrompt.lastAiText || ctx.memory.recall.lastAiText,
       varTreeLatest: ctx.memory.varTreeLatest,
-      recentTexts: (mainConvo || []).map((m) => m.content),
+      recentTexts: [hist],
     });
     [knowledgeTurn, recall] = await Promise.all([
       runKnowledgeTurn({
@@ -133,6 +134,9 @@ async function runTurnSteps(ctx, cmd, opts) {
       recallPromise,
     ]);
     if (ctx.isStale?.()) return { stale: true };
+    if (ctx._prefetchedRecall && recall?.recallInfo) {
+      recall = formatRecallEntries(recall.recallInfo, { recentTexts: [hist] });
+    }
   }
   const memoryDeps = {
     varTree: knowledgeTurn?.kTree,

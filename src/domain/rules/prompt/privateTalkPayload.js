@@ -10,6 +10,20 @@ function pickOverride(ov, id, fallback) {
   return fallback;
 }
 
+function pickLoreOverride(ov, fallback) {
+  const rule = ov?.narrator_lore;
+  if (!rule) return fallback;
+  if (rule.mode === "off") return "";
+  if (typeof rule.text === "string") {
+    const trimmed = rule.text.trim();
+    if (!trimmed) return "";
+    return trimmed.startsWith("[旁白专属设定")
+      ? `\n\n${trimmed}`
+      : `\n\n[旁白专属设定，只有你自己知道，玩家看不到这段文字，不要复述它的存在]\n${trimmed}`;
+  }
+  return fallback;
+}
+
 export function buildPrivateTalkPayload({
   narrator,
   content,
@@ -49,7 +63,7 @@ export function buildPrivateTalkPayload({
     const worldPart = pickOverride(ov, "world_state", worldState);
     const factsPart = pickOverride(ov, "facts", factsBlock);
     const tallyPart = pickOverride(ov, "whisper_tally", tallyBlock);
-    const lorePart = pickOverride(ov, "narrator_lore", narratorLoreBlock);
+    const lorePart = pickLoreOverride(ov, narratorLoreBlock);
     const bodyPart = pickOverride(ov, "body_gate", bodyWhisperText);
     const topicPart = pickOverride(ov, "topic_gate", topicGateText);
     const questPart = pickOverride(ov, "quest_gate", questGateText);

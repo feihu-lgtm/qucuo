@@ -42,7 +42,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const proseRule = applyMainTextOverride(ov, "user_prose", rawProseRule);
   // 远景（日总结）作背景垫底，放在 ctx 之后、回忆之前——比"最近对话/回忆"更靠前=分量更轻，
   // 只保连贯不喧宾夺主。
-  const distantBlock = (ov.user_recall?.mode === "off" || ov.recall?.mode === "off") ? "" : buildDistantViewBlock(d.varTree, 5);
+  const distantBlock = ov.user_recall?.mode === "off" ? "" : buildDistantViewBlock(d.varTree, 5);
   // 动态注入 scope：结算轮只演既定事实（砍物件志/认知隔离/远景/极简schema），移动只喂场景相关，
   // 对话保留认知隔离，其余全量。创造模式必须全量（要能凭空发物品/召唤NPC），故 gm 时强制 full。
   const promptScope = d.gm ? "full"
@@ -104,6 +104,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     : gateBodyProfile(d.charBodyProfile, {
       scope: promptScope,
       nsfw: allowNsfw,
+      forcePublic: ov.body_gate?.mode === "blue",
       scanText: `${d.cmd}\n${[...d.convo].reverse().find(m => m.role === "assistant")?.content || ""}`,
     });
   if (_bodyGate.text) {
@@ -142,7 +143,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     });
   const ledgerSuffix = ledgerBlock ? `\n\n${ledgerBlock}` : "";
   const softSettleNote = d.softSettle ? formatSettleNote(d.softSettle) : "";
-  const recallPart = (ov.user_recall?.mode === "off" || ov.recall?.mode === "off") ? "" : d.recallBlock;
+  const recallPart = ov.user_recall?.mode === "off" ? "" : d.recallBlock;
   const reunionPart = ov.reunion?.mode === "off" ? "" : d.reunionBlock;
   const inChatContent = d.isSettle
     ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + softSettleNote + "\n\n" + proseRule
