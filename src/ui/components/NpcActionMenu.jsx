@@ -14,7 +14,7 @@ import React, { useState } from "react";
 import { QUCUO_SHOPS } from "../../domain/data/shops/qucuoShops.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
-export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [] }) {
+export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const isMerchant = !!QUCUO_SHOPS[npc.name];
@@ -32,6 +32,13 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
     { key: "learn", label: "拜师", desc: "求教一身本事", available: true, onClick: () => { onLearnSkill(npc); onClose(); } },
     ...(isMerchant ? [{ key: "trade", label: "交易", desc: "买卖货品", available: true, onClick: () => { onTrade(npc); onClose(); } }] : []),
     ...(canInvite ? [{ key: "invite", label: "邀请入队", desc: "结为同行的伙伴", available: true, onClick: () => { onInviteCompanion(npc); onClose(); } }] : []),
+    // OC 冒险者四路招募（雇佣/凭交情/人情/青梅）——路线清单由 ocMenuRoutes 按条件给出
+    ...ocRoutes.map((r) => ({
+      key: `oc_${r.route}`, label: r.label, desc: r.desc, available: true,
+      onClick: () => { onOcRecruit?.(npc, r.route); onClose(); },
+    })),
+    // 留守队友在该房间可被唤回
+    ...(npc.stationed && npc.companion ? [{ key: "recall", label: "跟上我", desc: "唤回身边，结伴同行", available: true, onClick: () => { onRecallCompanion?.(npc); onClose(); } }] : []),
   ];
 
   if (showGiftPicker) {

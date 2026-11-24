@@ -65,6 +65,29 @@ function alreadyCompanion(state, name) {
 }
 
 /**
+ * 动作菜单可用的招募路线清单：每路给一个 {route,label,desc}。
+ * hire/favor 常驻；quest 只在挂过人情（完成旗或待办旗 oc_favor_pending_<id>）时出现；
+ * childhood 只在开局旗在时出现——「合稿没写不硬加」的菜单版。
+ */
+export function ocMenuRoutes(state, adventurer) {
+  if (!adventurer?.id || alreadyCompanion(state, adventurer.name)) return [];
+  const flags = state?.flags || [];
+  const favor = Number(state?.varTree?.角色?.[adventurer.name]?.好感度) || 0;
+  const routes = [];
+  if (!refusesMoney(adventurer)) {
+    routes.push({ route: "hire", label: "雇佣", desc: `出价${hirePriceFor(adventurer)}两邀他同行` });
+  }
+  routes.push({ route: "favor", label: "邀请入队", desc: `凭交情结伴（好感${favor}/${OC_FAVOR_THRESHOLD}）` });
+  if (flags.includes(`${OC_QUEST_DONE_PREFIX}${adventurer.id}`) || flags.includes(`oc_favor_pending_${adventurer.id}`)) {
+    routes.push({ route: "quest", label: "人情两讫", desc: "事了同行，恩怨两清" });
+  }
+  if (flags.includes(`${OC_CHILDHOOD_PREFIX}${adventurer.id}`)) {
+    routes.push({ route: "childhood", label: "青梅同行", desc: "同乡旧谊，零门槛结伴" });
+  }
+  return routes;
+}
+
+/**
  * 四路招募判定。
  * @returns {{ok:boolean, reason?:string, effect?:object}} effect 供 applyRecruit 展开：
  *   { companionState, moneyDelta, flagsAdd, npc }

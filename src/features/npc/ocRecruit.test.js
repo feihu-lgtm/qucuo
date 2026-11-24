@@ -128,3 +128,32 @@ describe("applyRecruit 落盘", () => {
     expect(out.changes.companionState["imported_小鱼儿"].data.moveset.length).toBeGreaterThanOrEqual(4);
   });
 });
+
+describe("ocMenuRoutes 菜单出现条件", () => {
+  it("默认只给 雇佣+邀请入队；quest/childhood 按旗出现", async () => {
+    const { ocMenuRoutes } = await import("./ocRecruit.js");
+    const base = makeState();
+    // 默认：雇佣 + 邀请入队
+    expect(ocMenuRoutes(base, ADVENTURER).map(r => r.route)).toEqual(["hire", "favor"]);
+    // 挂过人情（完成旗或待办旗）才出 quest
+    const withPending = makeState({ flags: ["oc_favor_pending_adv_xiaoyuer"] });
+    expect(ocMenuRoutes(withPending, ADVENTURER).map(r => r.route)).toContain("quest");
+    const withDone = makeState({ flags: [`${OC_QUEST_DONE_PREFIX}adv_xiaoyuer`] });
+    expect(ocMenuRoutes(withDone, ADVENTURER).map(r => r.route)).toContain("quest");
+    // 童年线旗出 childhood
+    const childhood = makeState({ flags: [`${OC_CHILDHOOD_PREFIX}adv_xiaoyuer`] });
+    expect(ocMenuRoutes(childhood, ADVENTURER).map(r => r.route)).toContain("childhood");
+    // 已入队不再给菜单
+    const cs = unlockImportedCompanion({}, { name: "小鱼儿", levelCap: 3 });
+    expect(ocMenuRoutes(makeState({ companionState: cs }), ADVENTURER)).toEqual([]);
+    // 不收金银的不给雇佣
+    const noMoney = { ...ADVENTURER, tradeStyle: "分文不取" };
+    expect(ocMenuRoutes(base, noMoney).map(r => r.route)).toEqual(["favor"]);
+  });
+
+  it("favor 拒词走 recruitOC 原有门槛（好感不足拒闸）", () => {
+    const r = recruitOC(makeState(), ADVENTURER, "favor");
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain("好感");
+  });
+});

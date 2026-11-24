@@ -6,7 +6,7 @@ import { getBuildingsForLocation } from "../../domain/data/buildings/qucuoBuildi
 import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { roadEncounterFor } from "../../domain/data/encounters/roadEncounters.js";
 import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
-import { activeCompanion, COMPANION_LORE } from "../../domain/rules/companion/companion.js";
+import { activeCompanion, activeCompanionKey, COMPANION_LORE, unlockedCompanions, stationedCompanions } from "../../domain/rules/companion/companion.js";
 import { formatCompanionBodyBlock } from "../../domain/rules/character/companionBodyProfiles.js";
 import { getAllResidentNpcLore } from "../../domain/data/npc/residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../../domain/rules/prompt/worldbook.js";
@@ -169,6 +169,21 @@ export function buildPresence({ isTalk, lockedDestName, room, innerRoomName, com
   return { visibleNpcs, visibleNpcsForAI };
 }
 
+// 随行/留守清单注入块：随行=非留守且已解锁（含出战位），留守=挂在某据点房间待唤回。
+export function buildPartyListBlock(companionState) {
+  if (!companionState) return "";
+  const following = unlockedCompanions(companionState)
+    .filter(slot => !companionState[slot.key]?.stationed)
+    .map(slot => `${slot.label}${slot.key === activeCompanionKey(companionState) ? "（出战随行）" : "（随行）"}`);
+  const stationed = stationedCompanions(companionState)
+    .map(c => `${c.label}（留守于${[c.stationed?.district, c.stationed?.roomName].filter(Boolean).join("·") || "不明处"}）`);
+  const lines = [];
+  if (following.length) lines.push(`随行队友：${following.join("、")}`);
+  if (stationed.length) lines.push(`留守队友：${stationed.join("、")}`);
+  if (!lines.length) return "";
+  return `\n\n【同伴去向】（叙事记得他们的存在与位置）\n${lines.join("\n")}`;
+}
+
 // 场景 NPC 世界书 + 在场任务状态 + 久别重逢，三块纯注入文本的汇总（无副作用）：
 //
 // 世界书——触发三源：当前 room.npcs（在场）+ 玩家本轮输入 + 上轮引擎回复。命中谁才注入谁的人设。
@@ -228,6 +243,9 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
     if (form === "human") companionLore += formatCompanionBodyBlock(activeComp.key, { nsfw: !!nsfwOn });
     if (form === "human" && nsfwOn && lore.nsfw) companionLore += lore.nsfw;
   }
+  // 随行/留守队友清单：告诉 AI 谁跟在你身边、谁留在哪个房间等你——
+  // 留守队友不在在场名单里（落在据点房间），不注入就会变成“凭空消失”。
+  const partyListBlock = buildPartyListBlock(companionState);
   const roomNpcNamesForQuest = room.npcs.map(n => n.name);
   const questStatusLines = [];
   for (const quest of QUCUO_QUESTS) {
@@ -248,5 +266,5 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
   const reunionBlock = buildReunionBlock(
     detectReunions(varTree, room.npcs, time, REUNION_GAP_THRESHOLD)
   );
-  return { lastAiText, npcLoreBlockWithQuest: npcLoreBlock + companionLore + questStatusBlock, reunionBlock };
+  return { lastAiText, npcLoreBlockWithQuest: npcLoreBlock + companionLore + questStatusBlock + partyListBlock, reunionBlock };
 }

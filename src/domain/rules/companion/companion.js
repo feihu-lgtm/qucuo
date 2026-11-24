@@ -97,7 +97,7 @@ function allCompanionKeys(companionState) {
 }
 
 // 槽位元信息（label/beast）：内置的从 COMPANION_SLOTS 取，导入的从 state 条目自身取。
-function companionMeta(companionState, key) {
+export function companionMeta(companionState, key) {
   const fixed = COMPANION_SLOTS.find(s => s.key === key);
   if (fixed) return fixed;
   const c = companionState?.[key];

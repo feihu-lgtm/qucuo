@@ -2,7 +2,7 @@ import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { unlockedCompanions, activeCompanionKey } from "../../../domain/rules/companion/companion.js";
 import { setActiveNpcMenu } from "../../../store/sessionUiStore.js";
 
-export default function TeamModule({ zoneTheme, companionState, varTree, onSwitchCompanion }) {
+export default function TeamModule({ zoneTheme, companionState, varTree, onSwitchCompanion, onStationCompanion }) {
   if (!unlockedCompanions(companionState).length) return null;
   // 队伍栏：已解锁的队友都列出来，点头像换出战（单槽互斥）。
   // 【为什么要能换】战斗引擎是 2v2，同时只带一个；明日香入队时会自动顶掉雪豹，
@@ -25,6 +25,7 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
       {unlockedCompanions(companionState).map(slot => {
         const data = companionState[slot.key].data;
         const isOn = activeKey === slot.key;
+        const stationedAt = companionState[slot.key].stationed;
         const aff = varTree.角色?.[slot.label]?.好感度;
         return (
           <div key={slot.key} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -44,6 +45,7 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
                 <div style={{ fontSize: "11.5px", color: isOn ? zoneTheme.text : zoneTheme.textDim }}>
                   {slot.label}
                   {isOn && <span style={{ fontSize: "9px", color: zoneTheme.accent, marginLeft: 4 }}>出战</span>}
+                  {stationedAt && <span style={{ fontSize: "9px", color: zoneTheme.textDim, marginLeft: 4 }}>留守于{stationedAt.roomName || stationedAt.district}</span>}
                 </div>
                 {typeof aff === "number" ? (
                   <div style={{ fontSize: "10px", color: "var(--pink)" }}>{npcAffectionLabel(aff)} · {aff}/100</div>
@@ -52,6 +54,17 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
                 )}
               </div>
             </div>
+            {/* 非出战位可在此房间留守；留守后落在该房间 NPC 列表里可被唤回 */}
+            {!isOn && !stationedAt && onStationCompanion && (
+              <span
+                onClick={() => onStationCompanion(slot.key)}
+                title="留在这间房里等你回来"
+                style={{
+                  cursor: "pointer", fontSize: "10px", color: zoneTheme.textDim,
+                  padding: "5px 7px", borderRadius: 0, border: `1px solid ${zoneTheme.border}`,
+                }}
+              >守</span>
+            )}
             {/* 互动菜单：单独一个入口，免得跟"换出战"抢点击 */}
             <span
               onClick={() => setActiveNpcMenu({ ...data, brief: BRIEF[slot.key] || slot.label })}
