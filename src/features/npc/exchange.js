@@ -7,7 +7,7 @@ import { isNpcAngry } from "../../domain/rules/combat/stealSystem.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
-import { buildShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
+import { buildShopInventory, buildOcShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { giftRange } from "../../domain/rules/state/fields.js";
@@ -204,7 +204,7 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
 export function tradeWithNpc(state, npc) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "trade" });
-  const shopData = rollShopStock(npc.name, state.time) || buildShopInventory(npc.name);
+  const shopData = buildOcShopInventory(npc.name) || rollShopStock(npc.name, state.time) || buildShopInventory(npc.name);
   if (!shopData) {
     return { logs: [{ t: "sys", text: `  ${npc.name}摆摆手，「小店暂无货可卖。」` }] };
   }

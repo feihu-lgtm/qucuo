@@ -29,6 +29,8 @@ export function buildShopInventory(shopKey) {
 //       + items/catalog.js（makeNamedItem 取具名货吃专属数值）。
 // ============================================================================
 import { ITEM_DISTRIBUTION } from "../items/distribution.js";
+import { ADVENTURER_POOL } from "../dungeon/adventurers.js";
+import { ADVENTURER_POOL_IP } from "../dungeon/adventurersIP.js";
 import { SHOP_PROFILE, TIER_PROFILE } from "../items/regionMap.js";
 import { CATALOG_INDEX, makeNamedItem } from "../items/catalog.js";
 
@@ -109,4 +111,33 @@ export function rollShopStock(shopKey, gameTime = 0) {
     karmaLoss: (legacy && legacy.karmaLoss) || 0,
     items: finalNames.map(n => makeNamedItem(n)).filter(Boolean),
   };
+}
+
+// ── OC 冒险者店铺：shop{name,goods} 落进交易通路 ──────────────────
+// goods 里命中 CATALOG_INDEX 的按具名真货出货（价/属性吃专属数值）；
+// 没入册的稀奇货按杂物白档出，desc 有原文照抄、没有的补一句接地气文案。
+const OC_SHOP_BY_NAME = Object.fromEntries(
+  [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP]
+    .filter((adv) => adv.shop?.goods?.length)
+    .map((adv) => [adv.name, adv]),
+);
+
+export function buildOcShopInventory(npcName) {
+  const oc = OC_SHOP_BY_NAME[npcName];
+  if (!oc) return null;
+  const items = [];
+  for (const g of oc.shop.goods) {
+    const gName = typeof g === "string" ? g : g?.name;
+    const gDesc = typeof g === "object" ? g?.desc : null;
+    if (!gName) continue;
+    const real = makeNamedItem(gName);
+    if (real) { items.push(real); continue; }
+    items.push(makeItem({
+      name: gName,
+      category: "misc",
+      quality: "白",
+      desc: gDesc || `${oc.name}摊上摆着的稀罕货，来路只有她自己说得清。`,
+    }));
+  }
+  return items.length ? { shopName: oc.shop.name, currency: "silver", karmaLoss: 0, items, ocOwner: oc.name } : null;
 }

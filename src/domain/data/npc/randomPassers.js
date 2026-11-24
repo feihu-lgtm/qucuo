@@ -7,6 +7,8 @@
 import { seededRand } from "../../../utils/seededRandom.js";
 import { NPC_POOL } from "./npcPool.js";
 import { getAllResidentNpcNames, getResidentNpcs } from "./residentNpcs.js";
+import { ADVENTURER_POOL } from "../dungeon/adventurers.js";
+import { ADVENTURER_POOL_IP } from "../dungeon/adventurersIP.js";
 
 const MIN_PRESENT = 15;
 const SMALL_PLACES = new Set(["山洞", "顶峰"]);
@@ -120,6 +122,48 @@ const NODE_PASSERS = {
   蜀南唐堡: { count: [1, 3], factions: [["唐门", 4], ["散人", 1]] },
 };
 
+// ── OC 冒险者游走层 ──────────────────────────────────────────────
+// 77 名 OC 冒险者在全图游走可被偶遇：势力就近落点（本地派系回自家权重池，
+// 外来门派无处落脚的按散人游走），每天每节点至多撞见一位，seeded 可复现。
+const OC_POOL = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP];
+const OC_FACTION_NEAR = {
+  锦官: "锦官城", 锦官城: "锦官城", 锦官派: "锦官城", 峨眉: "峨眉派", 青城: "青城派",
+  唐门: "唐门", 天龙: "天龙教", 天龙门: "天龙教", 血刀: "天龙教", 丐帮: "丐帮三星分舵",
+  三星堆: "三星派", 三星: "三星派", 五仙: "五仙教", 五仙教: "五仙教", 五毒: "五仙教", 五毒教: "五仙教",
+  百花: "百花门", 百花门: "百花门", 百花谷: "百花门", 雪山: "雪山派", 天山: "雪山派", 天山派: "雪山派",
+  喇嘛: "喇嘛庙", 喇嘛庙: "喇嘛庙", 玉泉: "玉泉寨", 巫山: "玉泉寨", 巫山派: "玉泉寨",
+  黑风: "黑风寨", 黑风寨: "黑风寨", 欢喜: "欢喜教", 欢喜教: "欢喜教", 鱼定: "鱼定土司府", 土司: "鱼定土司府",
+};
+const ocNearFaction = (adv) => OC_FACTION_NEAR[adv.faction] || "散人";
+// 每天每节点撞见 OC 的基础概率：稀有事件，不是天天有人撞大运
+const OC_WANDER_RATE = 0.14;
+
+// 给定节点+日序，返回当天在此游走的 OC（0 或 1 人）；权重按节点势力配比。
+export function ocWanderersAt(locationName, dayIdx, isTaken = () => false) {
+  const cfg = NODE_PASSERS[locationName];
+  if (!cfg) return [];
+  const near = Object.fromEntries(cfg.factions);
+  const candidates = OC_POOL.filter((adv) => near[ocNearFaction(adv)] != null && !isTaken(adv.name));
+  if (!candidates.length) return [];
+  const rng = seededRand(dayIdx, `ocWander|${locationName}`);
+  if (rng() >= OC_WANDER_RATE) return [];
+  const total = candidates.reduce((sum, adv) => sum + near[ocNearFaction(adv)], 0);
+  let r = rng() * total;
+  let picked = candidates[candidates.length - 1];
+  for (const adv of candidates) { r -= near[ocNearFaction(adv)]; if (r < 0) { picked = adv; break; } }
+  return [{
+    id: `oc_${picked.id}`,
+    name: picked.name,
+    brief: picked.brief,
+    personality: picked.personality,
+    faction: ocNearFaction(picked),
+    gender: picked.gender,
+    levelCap: picked.levelCap,
+    ocAdventurer: picked.id,
+    randomPasser: dayIdx,
+  }];
+}
+
 const pick = (list, rng) => list[Math.floor(rng() * list.length)];
 
 function pickWeighted(entries, rng) {
@@ -181,6 +225,11 @@ function passersAt(locationName, dayIdx, used, isTaken) {
       levelCap: minLv + Math.floor(rng() * (maxLv - minLv + 1)),
       randomPasser: dayIdx,
     });
+  }
+  // OC 冒险者日刷游走：同名已被占（玩家认识/驻场/别处刷出）就让位
+  for (const oc of ocWanderersAt(locationName, dayIdx, isTaken)) {
+    used.add(oc.name);
+    out.push(oc);
   }
   return out;
 }
