@@ -16,7 +16,7 @@ import { makeItem, ITEM_CATEGORY } from "../economy/equipment.js";
 import { makeItemSmart } from "../../data/items/catalog.js";
 import { generateNpcAttributes, getTierPower, generateNpcCombatStats } from "./npcStats.js";
 import { generateNpcMoveset, deriveSignatureMoveset, resolveBurdenMoves } from "./npcMovesets.js";
-import { OC_BY_NAME, ocCarryItems, rollNpcCarry } from "./npcCarry.js";
+import { isOcNpc, OC_BY_NAME, ocCarryItems, rollNpcCarry } from "./npcCarry.js";
 
 export {
   generateNpcAttributes, atkFromWaigong, hpFromNeigong, defFromNeigong, getTierPower,
@@ -54,9 +54,11 @@ export function ensureNpcCombatData(npc, options = {}) {
   // 那条路（有显式声明），不该靠一个占位空数组来表达。
   if (Array.isArray(npc.carriedItems) ? npc.carriedItems.length > 0 : !!npc.carriedItems) {
     carriedItems = npc.carriedItems;
-  } else if (Array.isArray(npc.carry) && OC_BY_NAME[npc.name]) {
-    // OC 冒险者：carry 是数据卡里的具名真货，stealables 私物同批落地——
+  } else if (Array.isArray(npc.carry) && isOcNpc(npc)) {
+    // OC 冒险者实例：carry 是数据卡里的具名真货，stealables 私物同批落地——
     // 走 ocCarryItems 整批出，不然人设写的可偷物永远不会出现在掉落/偷窃里。
+    // 只认 OC 实例标记（ocAdventurer/npcRef/rainbowStyle），同名驻场 NPC 走
+    // 自己的 carry——姬无双/樊未离的夜叉双钩/修罗赤练刀不能被 OC 卡顶掉。
     carriedItems = ocCarryItems(OC_BY_NAME[npc.name], npc);
   } else if (Array.isArray(npc.carry)) {
     carriedItems = npc.carry.map((c, i) => ({

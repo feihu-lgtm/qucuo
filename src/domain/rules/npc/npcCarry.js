@@ -102,9 +102,19 @@ const ROLE_TROPHY = {
 export const OC_BY_NAME = Object.fromEntries(
   [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].map((adv) => [adv.name, adv]),
 );
+// 名字撞车分辨：OC 数据里的人可能同时是某地驻场 NPC（姬无双/樊未离）。
+// 只有确认为 OC 实例——游走层标 ocAdventurer、地宫遭遇标 npcRef、或整张
+// 人设卡展开带 rainbowStyle——才走 OC 私物通路；同名驻场保留自己的 carry。
+export const isOcNpc = (npc) => {
+  const oc = OC_BY_NAME[npc?.name];
+  return !!oc && (npc.ocAdventurer === oc.id || npc.npcRef === oc.id || npc.rainbowStyle === oc.rainbowStyle);
+};
+// 先饰品后兵刃：环/镯/坠/簪 这类字眼首饰和奇门兵刃（子午鸳鸯环、判官笔）都沾，
+// 首饰是常态、兵刃是特例——饰品档排前面兜底，判官笔/铁扇这类具名兵刃单独命中。
 const EQUIP_CAT = [
-  [/裙|甲|袍|衣|装|裤|靴|帽|冠|披风|衫/, ITEM_CATEGORY.ARMOR],
-  [/刀|剑|鞭|爪|钩|针|匕|刃|杖|弓|锤|锏|枪|矛|戟|槊|棍|叉|斧|钺|扇|环|笔|判官/, ITEM_CATEGORY.WEAPON],
+  [/裙|甲|袍|衣|装|裤|靴|帽|冠|披风|衫|蓑/, ITEM_CATEGORY.ARMOR],
+  [/珮|佩|坠|簪|镯|环|戒|珠|钗|钿|链|坠|缨|络|串/, ITEM_CATEGORY.ACCESSORY],
+  [/刀|剑|鞭|爪|钩|匕|刃|杖|弓|锤|锏|枪|矛|戟|槊|棍|叉|斧|钺|判官笔|判官|飞针|袖箭|弩|暗器|铁扇/, ITEM_CATEGORY.WEAPON],
 ];
 function ocEquipCat(name) {
   for (const [re, cat] of EQUIP_CAT) if (re.test(name)) return cat;
@@ -130,9 +140,8 @@ export function ocCarryItems(oc, npc) {
 
 export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
   const cap = Math.max(0, Math.min(5, levelCap));
-  const oc = OC_BY_NAME[npc.name];
-  if (oc) {
-    const items = ocCarryItems(oc, npc);
+  if (isOcNpc(npc)) {
+    const items = ocCarryItems(OC_BY_NAME[npc.name], npc);
     if (items.length) return items;
   }
   // 路上偶遇的游民只有 brief 文案没有 role 字段（信物身份从文案里认），

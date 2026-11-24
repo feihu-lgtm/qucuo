@@ -74,7 +74,7 @@ describe("OC 店铺", () => {
 
 describe("OC stealables 偷窃通路", () => {
   it("OC 随身物 = carry 真词条 + stealables 装备/杂物", () => {
-    const npc = { id: "oc_test", name: "元朵朵", district: "锦官城" };
+    const npc = { id: "oc_test", name: "元朵朵", district: "锦官城", ocAdventurer: "adv_yuanduoduo" };
     const items = rollNpcCarry(npc, { levelCap: 1 });
     const names = items.map((i) => i.name);
     expect(names).toContain("元宝金冠襦装");      // equipment 橙档
@@ -85,19 +85,35 @@ describe("OC stealables 偷窃通路", () => {
   });
 
   it("装备按名归档：兵刃归 weapon、衣甲归 armor", () => {
-    const items = rollNpcCarry({ id: "t", name: "吕仙儿" }, {});
+    const items = rollNpcCarry({ id: "t", name: "吕仙儿", npcRef: "adv_lvxianer" }, {});
     const spear = items.find((i) => i.name.includes("枪"));
     expect(spear?.category).toBe("weapon");
-    const robe = rollNpcCarry({ id: "t2", name: "元朵朵" }, {}).find((i) => i.name === "元宝金冠襦装");
+    const robe = rollNpcCarry({ id: "t2", name: "元朵朵", ocAdventurer: "adv_yuanduoduo" }, {}).find((i) => i.name === "元宝金冠襦装");
     expect(robe?.category).toBe("armor");
   });
 
   it("驻场/出场 OC（带 carry 数据卡）也能被摸到 stealables", () => {
-    const oc = { id: "oc_res", name: "元朵朵", carry: [{ name: "沉甸甸的碎银荷包" }], levelCap: 1 };
+    const oc = { id: "oc_res", name: "元朵朵", ocAdventurer: "adv_yuanduoduo", carry: [{ name: "沉甸甸的碎银荷包" }], levelCap: 1 };
     const fixed = ensureNpcCombatData(oc, {});
     const names = (fixed.carriedItems || []).map((i) => i.name);
     expect(names).toContain("元宝金冠襦装");
     expect(names).toContain("作废契约书");
+  });
+
+  it("同名驻场 NPC 保留自己的 carry，不被 OC 数据顶掉", () => {
+    const resident = { id: "r1", name: "元朵朵", carry: [{ name: "沉甸甸的碎银荷包" }], levelCap: 1 };
+    const fixed = ensureNpcCombatData(resident, {});
+    const names = (fixed.carriedItems || []).map((i) => i.name);
+    expect(names).toEqual(["沉甸甸的碎银荷包"]);
+  });
+
+  it("首饰归 accessory 不归 weapon", () => {
+    const items = rollNpcCarry({ id: "t3", name: "越祈", npcRef: "adv_yueqi" }, {});
+    const jewelry = items.filter((i) => i.category === "weapon");
+    // 越祈身上不该有首饰被误判成兵刃
+    for (const it of items) {
+      if (/镯|环|坠|簪|佩|链/.test(it.name)) expect(it.category).not.toBe("weapon");
+    }
   });
 
   it("非 OC 走原随机池不受影响", () => {
