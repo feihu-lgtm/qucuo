@@ -77,6 +77,13 @@ describe("buyCarryEntry 买卖链", () => {
     const second = buyCarryEntry({ ...st, room: roomAfter }, npcAfter, norm);
     expect(second.changes).toBeUndefined();
     expect(second.logs[0].text).toContain("已经不在");
+    // 玩家把买走的装备送回来（giftNpc 追加一条无标记副本）→ 还能再买
+    const npcReturned = {
+      ...npcAfter,
+      carry: [...npcAfter.carry, { name: sellable.name, category: sellable.category, quality: sellable.quality, slot: "bag" }],
+    };
+    const third = buyCarryEntry({ ...st, room: roomAfter }, npcReturned, norm);
+    expect(third.changes).toBeTruthy();
     // catalog 真货入包带战斗属性
     const inInv = first.changes.inv(st.inv).find((i) => i.name === sellable.name);
     expect(inInv.buyPrice ?? inInv.sellPrice).toBeTruthy();

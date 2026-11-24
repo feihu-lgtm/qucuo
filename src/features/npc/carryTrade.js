@@ -14,11 +14,12 @@ const GEAR = new Set([ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.A
 // 购买一件随身条目：扣玩家钱、入玩家包、npc.carry 该条标 sold、装备类写换装日志。
 // 返回 {changes:{char,inv,room}, logs} 喂 applyResult。
 export function buyCarryEntry(state, npc, entry) {
-  // 活库存校验：面板渲染的是旧快照，真买到的条目已在 live 列表标过
-  // sold/stolen/dropped 的不再卖第二次（连点/重复面板都不吃）。
+  // 活库存校验：面板渲染的是旧快照。同名条目只在没有任何活副本时才拒卖——
+  // 全部标过 sold/stolen/dropped 说明真买走了；玩家送回来的新副本不算标过，可再买。
   const liveStock = [...(npc?.carry || []), ...(npc?.carriedItems || [])];
-  const live = liveStock.find((e) => e && e.name === entry.name);
-  if (live?.sold || live?.stolen || live?.dropped) {
+  const sameName = liveStock.filter((e) => e && e.name === entry.name);
+  const hasLiveCopy = sameName.some((e) => !e.sold && !e.stolen && !e.dropped);
+  if (sameName.length && !hasLiveCopy) {
     return { logs: [{ t: "sys", text: `  「${entry.name}」已经不在${npc.name}手上了。` }] };
   }
   const price = entry.price ?? 0;
