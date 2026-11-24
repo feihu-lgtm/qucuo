@@ -64,6 +64,23 @@ describe("buyCarryEntry 买卖链", () => {
     expect(broke.changes).toBeUndefined();
     expect(broke.logs[0].text).toContain("银两不够");
   });
+
+  it("已标 sold 的 live 条目拒第二次购买（连点不吃亏）", () => {
+    const st = makeState();
+    const npc = st.room.npcs[0];
+    const sellable = (npc.carry || []).find((e) => e.slot === "bag");
+    expect(sellable).toBeTruthy();
+    const norm = { ...sellable, slot: "bag", sellable: true, price: sellable.price ?? 10 };
+    const first = buyCarryEntry(st, npc, norm);
+    const roomAfter = first.changes.room(st.room);
+    const npcAfter = roomAfter.npcs.find((n) => n.name === npc.name);
+    const second = buyCarryEntry({ ...st, room: roomAfter }, npcAfter, norm);
+    expect(second.changes).toBeUndefined();
+    expect(second.logs[0].text).toContain("已经不在");
+    // catalog 真货入包带战斗属性
+    const inInv = first.changes.inv(st.inv).find((i) => i.name === sellable.name);
+    expect(inInv.buyPrice ?? inInv.sellPrice).toBeTruthy();
+  });
 });
 
 describe("attireExposure 衣不蔽体档", () => {

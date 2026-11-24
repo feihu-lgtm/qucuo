@@ -246,7 +246,9 @@ export function normalizeCarryEntry(_npc, entry = {}) {
     slot,
     cherish: entry.cherish ?? cherish,
     sellable: entry.sellable ?? sellable,
-    price: entry.price ?? null,
+    // 价：明写优先；catalog 真货取定价；编外条目按品阶推算（mount 不卖，价可空）
+    price: entry.price ?? CATALOG_INDEX[name]?.buyPrice
+      ?? (category ? makeItem({ name, category, quality }).buyPrice : null),
   };
 }
 
@@ -258,11 +260,11 @@ export function cherishHearts(cherish = 0) {
   return "";
 }
 
-// 取一个 NPC 的随身条目清单（归一化）：OC 冒险者读 adv.carry，普通 NPC 读 carriedItems。
-// sold/stolen 已标记的不再出现。
+// 取一个 NPC 的随身条目清单（归一化）：优先读房间 npc 身上的 live 列表
+// （sold/stolen 标记写在这里），静态 adv.carry 只作不在场时的表底。
 export function carryTradeEntries(npc) {
   const adv = ADVENTURER_BY_NAME[npc?.name];
-  const raw = adv?.carry || npc?.carry || npc?.carriedItems || [];
+  const raw = npc?.carry || adv?.carry || npc?.carriedItems || [];
   return raw
     .filter((e) => e && !e.sold && !e.stolen && !e.dropped)
     .map((e) => normalizeCarryEntry(npc, e));
