@@ -212,7 +212,7 @@ export function buildPartyListBlock(companionState) {
 //
 // 久别重逢·记忆断层——本轮在场者里，凡已认识、且距上次同框超过阈值的，
 // 提示 AI 补写这段时间的合理变化，免得人物像时间静止。纯本地时间戳判定。
-export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, questProgress, varTree, time, companionState, nsfwOn, npcState, importedNpcLore = [], companionForms = {} }) {
+export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, lockedDestName, questProgress, varTree, time, companionState, nsfwOn, npcState, importedNpcLore = [], companionForms = {} }) {
   const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
   // 三个来源合并：剧本预设手写的、据点驻场表的、玩家从角色卡入册的。
   // 入册的排最后——matchNpcLore 按数组顺序收集命中项，同名时两段人设都会注入，
@@ -268,7 +268,9 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
   // 扒空外露度：在场 NPC 被买/偷/扒到只剩零星饰物或衣不蔽体时，主回合上下文
   // 也要照实告诉 AI（不止端详链路）。判定复用 attireExposure——甲刃被买空的
   // 证据在 npcState 台账 sold 快照里，经 npcTradeOf 取（id→name 回退照旧）。
-  const attireLines = (visibleNpcs || [])
+  // 移动轮（!isTalk && lockedDestName）visibleNpcs 是出发地名单——人已被
+  // 留在原地，把他们的扒空标成「在场」会误导 AI 写进到达叙事，该轮灭灯。
+  const attireLines = (!isTalk && lockedDestName) ? [] : (visibleNpcs || [])
     .map((n) => {
       const exposure = attireExposure(n, npcTradeOf(npcState, n));
       return exposure ? `${n.name}：${exposure}` : null;

@@ -70,7 +70,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     : { visibleNpcs: input.visibleNpcs || [], visibleNpcsForAI: input.visibleNpcs || [] };
   const npcContext = input.buildNpcContext?.({
     convo, preset, visibleNpcs: presence.visibleNpcs, room, cmd, isTalk,
-    questProgress, varTree, time, companionState, nsfwOn, npcState: input.npcState,
+    questProgress, varTree, time, companionState, nsfwOn, npcState: input.npcState, lockedDestName,
   }) || {};
   const questStageNote = input.buildQuestStageNote?.({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs: presence.visibleNpcs, convo, settleNpc: opts.settleNpc, cmd, innerRoomName, questTriggerMode: apiCfg.questTriggerMode }) || "";
   const forcedEventNote = input.buildForcedEventNote?.(opts.forcedEvent, opts.forcedEventNpc, apiCfg.targetWordCount) || "";

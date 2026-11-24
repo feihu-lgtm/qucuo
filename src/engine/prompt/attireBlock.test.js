@@ -48,6 +48,12 @@ describe("在场人物衣着状态块", () => {
     expect(noLedger.npcLoreBlockWithQuest).not.toContain("武师：");
   });
 
+  it("移动轮灭灯：visibleNpcs 是出发地名单，不该写进到达叙事", () => {
+    const npc = { id: "dd", name: "朵朵", carriedItems: [{ ...ROBE, stolen: true }] };
+    const out = buildNpcContext({ ...base([npc]), isTalk: false, lockedDestName: "狼曲" });
+    expect(out.npcLoreBlockWithQuest).not.toContain("朵朵：");
+  });
+
   it("台账只记过杂物买卖不算扒：糕点快照不触发", () => {
     const npc = { id: "ps", name: "小贩", carriedItems: [] };
     const npcState = { ps: { trade: applyNpcTradeDelta(EMPTY_TRADE, { sold: BUN }) } };
