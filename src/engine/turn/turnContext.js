@@ -85,7 +85,10 @@ export function createTurnContext({ plan, env }) {
       time,
       apiCfg,
       flags,
-      recall: { apiCfg, cmd: env.cmd, room, flags, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk, talkTarget },
+      recall: { apiCfg, cmd: env.cmd, room, flags, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk, talkTarget,
+        followingNames: Object.entries(companionState || {})
+          .filter(([, c]) => c?.unlocked && !c?.stationed)
+          .map(([, c]) => c.label || c.data?.name).filter(Boolean) },
     },
     state: { room, char, inv, dao },
     getMapNode,
