@@ -15,6 +15,7 @@ export { pickDungeonAdventurers, genAdventurerEncounter } from "./dungeonPool.js
 export { summonFollower, followerEffectInCombat, followerLeaveChance, dismissFollower } from "../follower/followers.js";
 export { resolveRoomEvent, ROOM_EVENT_KINDS } from "./events.js";
 export { startMapRun, moveRoom, retreatRun, runEnd } from "./mapRun.js";
+export { routeRoomAction, routeRoomText } from "./actionRouter.js";
 
 export function createDungeonRun(dungeonId, { char } = {}) {
   const cfg = getDungeonConfig(dungeonId);
