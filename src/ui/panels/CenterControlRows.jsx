@@ -5,8 +5,9 @@ import { isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
 import { getGroundItems } from "../../domain/rules/map/groundScope.js";
 
 const MODES = [
-  ["action", "行动", "◈ 行动"],
-  ["talk", "对话", "◎ 对话"],
+  // 行动/对话合并为「自动」——输入按内容自己挑路：纯搭话/纯看不耗回合，
+  // 其余整句进 act 扣 1 回合。talk 仍作为内部目标态存在（点人进场），显示按自动。
+  ["action", "自动", "◈ 自动"],
   ["whisper", "私聊旁白", "◆ 私聊旁白"],
 ];
 
@@ -23,7 +24,8 @@ export default function CenterControlRows({
   const groundItems = getGroundItems({ room, innerRoomName });
   const showPeople = interactMode !== "pigeon" && visibleNpcs.length > 0;
   const peopleDisabled = interactMode === "whisper";
-  const selectedMode = MODES.find(([id]) => id === interactMode)?.[1] || "行动";
+  const effectiveMode = interactMode === "talk" ? "action" : interactMode;
+  const selectedMode = MODES.find(([id]) => id === effectiveMode)?.[1] || "自动";
 
   useEffect(() => {
     setOpenMenu(null);
@@ -128,7 +130,7 @@ export default function CenterControlRows({
       }}
     >
       {openMenu === "mode" && MODES.map(([id, label, optionLabel]) =>
-        menuOption(id, optionLabel, interactMode === id, () => chooseMobileMode(id)))}
+        menuOption(id, optionLabel, effectiveMode === id, () => chooseMobileMode(id)))}
       {openMenu === "people" && !peopleDisabled && showPeople && (
         <>
           {menuOption("all", "全部", !activeTarget, () => choosePerson(null))}
@@ -196,7 +198,7 @@ export default function CenterControlRows({
             key={id}
             className="mobile-touch-target mobile-mode-control"
             onClick={() => { setInteractMode(id); setTalkTarget(null); setActiveTarget(null); setPigeonTarget(null); }}
-            style={chromeBtn(zoneTheme, { active: interactMode === id })}
+            style={chromeBtn(zoneTheme, { active: effectiveMode === id })}
           >{label}</span>
         ))}
         <span
@@ -234,7 +236,7 @@ export default function CenterControlRows({
               <span
                 key={npc.name}
                 className="mobile-touch-target mobile-person-chip"
-                onClick={() => { setActiveTarget(npc.name); if (interactMode !== "action") setTalkTarget(npc.name); }}
+                onClick={() => { setActiveTarget(npc.name); setTalkTarget(npc.name); }}
                 title={isSelected ? "点击「全部」取消选定" : `聚焦 ${npc.name}`}
                 style={chromeBtn(zoneTheme, { active: isSelected })}
               >{npc.name}</span>

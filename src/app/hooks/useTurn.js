@@ -12,6 +12,8 @@ import { burnSquare, consumeArrival } from "../../domain/rules/map/mapSquares.js
 import { createTurnStaleCheck } from "./useUndo.js";
 import { resolveInnerBlockedSummary, showOuterNoExitNotice } from "./blockedMovementNotice.js";
 import { classifyActCommand } from "../../engine/commands/index.js";
+import { routeAutoInput, findLookTargetsInText } from "../../domain/rules/input/compositeInput.js";
+import { lookNpc } from "../../features/npc/social.js";
 import { parseDir } from "../../utils/mudHelpers.js";
 import { playTurn } from "../../engine/playTurn.js";
 import { resolveIntent } from "../../engine/turn/resolveIntent.js";
@@ -57,14 +59,35 @@ export function useTurn({
     if (!rawCmd.trim()) return;
     if (!opts.schedulerManaged) {
       const commandText = rawCmd.trim();
-      const isTalkCommand = interactMode === "talk" && !opts.forceLayer;
+      // 单轨自动分流（docs 终版）：裸输入（玩家亲手敲的一句话，不带任何内部
+      // opts/extraReplies）按内容路由——整句纯看走免费端详，整句纯搭话走免费
+      // talk 路，其余整句进行动扣 1 回合。interactMode 的 action/talk 都按
+      // 自动处理，只有 whisper/pigeon 保持原有语义。
+      const nakedSubmit = !extraReplies?.length && !Object.values(opts).some(Boolean);
+      if (nakedSubmit && (interactMode === "action" || interactMode === "talk")) {
+        const route = routeAutoInput(commandText, gameStore.getState().room?.npcs);
+        if (route.kind === "lookNpc") {
+          setInput("");
+          setCmdHistory(p => [commandText, ...p].slice(0, 50));
+          setHistIdx(-1);
+          applyResult(runtimeCtx(), lookNpc(gameStore.getState(), route.npc));
+          setActiveTarget(route.npc.name);
+          lookNpcInBackground(route.npc, [], { addLog, setTime, setConvo, setLog, noteAction });
+          return;
+        }
+        if (route.kind === "talk") opts = { ...opts, talk: true };
+        else if (interactMode === "talk") opts = { ...opts, forceAction: true };
+      }
+      const isTalkCommand = (opts.talk || interactMode === "talk") && !opts.forceLayer && !opts.forceAction;
       const st0 = gameStore.getState();
       const localCommand = isTalkCommand ? null : parseLocalCommand(commandText, { ...st0, isTalk: isTalkCommand, convo: st0.convo }, { surface: "web" });
-      const commandId = classifyActCommand({ rawCmd: commandText, opts, interactMode, localCommand, isMove: !!parseDir(commandText) });
+      const effModeForClassify = opts.talk ? "talk" : (opts.forceAction ? "action" : interactMode);
+      const commandId = classifyActCommand({ rawCmd: commandText, opts, interactMode: effModeForClassify, localCommand, isMove: !!parseDir(commandText) });
       setInput("");
       return dispatchCommand(commandId, () => actRef.current(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: opts.displayCmd || commandText });
     }
     const cmd = rawCmd.trim(), isStale = createTurnStaleCheck(turnGenerationRef);
+    const effMode = opts.talk ? "talk" : (opts.forceAction ? "action" : interactMode);
     const parent = getTurnContext() || opts.turn;
     const _trace = parent?.phase === PHASE.MACHINE && (!parent.background || parent.commandId === "actWhisper")
       ? parent
@@ -114,7 +137,7 @@ export function useTurn({
     if (!opts.keepUndo) captureUndo(_trace);
 
     const env = {
-      cmd, opts, extraReplies, interactMode, apiCfg, gm, _trace, isStale,
+      cmd, opts, extraReplies, interactMode: effMode, apiCfg, gm, _trace, isStale,
       pending: snapshotIntentPending(),
       state: {
         ...gameStore.getState(),
@@ -148,6 +171,13 @@ export function useTurn({
     if (!resolved.proceed) { summary = resolved.summary; return; }
     const { isTalk, isSettle } = resolved.plan;
 
+    // 复合句里点到名的「看X」段：行动回合照常跑，同轮插系统端详卡+后台
+    // 补写（免费，同 lookNpcInBackground 路径），不写进行动配额。
+    for (const npc of resolved.plan.lookNpcs || []) {
+      applyResult(runtimeCtx(), lookNpc(gameStore.getState(), npc));
+      lookNpcInBackground(npc, [], { addLog, setTime, setConvo, setLog, noteAction });
+    }
+
     // loading 态 + 计时器：在第一个 await（下方 recall/knowledge）之前启动——
     // 内层移动已在 resolveIntent 内 early return（不进 loading），这里之后才
     // 真正要调 AI，且在第一个 await 之前，不破并发锁。
@@ -172,7 +202,7 @@ export function useTurn({
           : `     （本轮状态已整体回滚，未留下半提交脏数据；可直接重试）` },
       ]);
     }
-    consumeDuelRequest(result, { opts, isStale, isTalk, interactMode, setActiveTarget, setDuelPending, trace: _trace });
+    consumeDuelRequest(result, { opts, isStale, isTalk, interactMode: effMode, setActiveTarget, setDuelPending, trace: _trace });
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
     if (isTalk) changePendingTalks(-1); else setLoading(false);
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }

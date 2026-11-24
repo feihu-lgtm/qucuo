@@ -8,6 +8,7 @@
 // 分层注记：app/store/infra 的依赖一律经 env.io/env.refs 注入，本文件不反向 import。
 
 import { classifyIntent, INTENT, isIntimateInput } from "../../domain/rules/prompt/inputIntent.js";
+import { buildCompositeNote, findLookTargetsInText } from "../../domain/rules/input/compositeInput.js";
 import { intimacyGate, intimacyRefusal, intimacyPromptNote } from "../../domain/rules/npc/intimacy.js";
 import { add, set, applyWrite } from "../../domain/rules/state/applyWrite.js";
 import { findTargetedRumor } from "../../domain/rules/npc/npcEmergence.js";
@@ -316,6 +317,11 @@ export async function resolveIntent(cmd, env) {
     collectNote += `\n[系统裁决：本轮仅是查看/端详，只描述被看对象此刻的所见现状（场景则写眼前所见，目标则写其容貌装束、气色伤势、当下举止）。任何人都不出手、不推进或续写进行中的打斗与事件，除认出在场人物外无其他状态变化。]`;
   }
 
+  // 复合句（括号/多断句）：段标注透传给模型 + 硬行动配额一句一个；
+  // 点到名的「看X」段在行动回合里照常插系统端详卡（由 useTurn 消费 lookNpcs）。
+  if (!isTalk) collectNote += buildCompositeNote(cmd);
+  const lookNpcs = isTalk ? [] : findLookTargetsInText(cmd, room?.npcs).slice(0, 3);
+
   const activeGroundItemForTurn = env.state.activeGroundItem
     && collectHit?.item !== env.state.activeGroundItem
     && getGroundItems({ room, innerRoomName }).some(item => (typeof item === "string" ? item : item?.name) === env.state.activeGroundItem)
@@ -327,7 +333,7 @@ export async function resolveIntent(cmd, env) {
     plan: {
       intent, isTalk, isSettle, movingDir, lockedDestName, destinationLock,
       collectNote: collectNote + (opts.intentPlanNote || "") + intimateNote,
-      encounterToDescribe, activeGroundItemForTurn,
+      encounterToDescribe, activeGroundItemForTurn, lookNpcs,
     },
   };
 }
