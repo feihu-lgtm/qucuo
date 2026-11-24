@@ -45,6 +45,11 @@ describe("recruitOC · hire 雇佣路", () => {
     expect(r.ok).toBe(false);
     expect(r.reason).toContain("不收金银");
   });
+
+  it("「不要寻常金银，只收罕见金属」这类变相拒银也雇不动（沈弄枢式）", () => {
+    const barter = { ...ADVENTURER, tradeStyle: "不要寻常金银，只收罕见金属齿轮、异兽骨骼或活体试药人。" };
+    expect(recruitOC(makeState(), barter, "hire", { offer: 9999 }).ok).toBe(false);
+  });
 });
 
 describe("recruitOC · quest 前置任务路", () => {

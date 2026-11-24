@@ -23,9 +23,10 @@ export function hirePriceFor(adv) {
 }
 
 // 「不收金银/对钱没概念」的 OC：雇佣路从设定上就不通
+// 「不要寻常金银，只收罕见金属」这类变相拒银也要认——普通银两雇不动他。
 function refusesMoney(adv) {
   const s = String(adv?.tradeStyle || "");
-  return /不收金银|不要钱|不收钱|分文不取|对钱币毫无概念|不懂金钱/.test(s);
+  return /(不收|不要|不取)[^，。]{0,8}(金银|钱|银两)|分文不取|对钱币毫无概念|不懂金钱/.test(s);
 }
 
 // kungfu.moves [{name,desc}] → deriveMovesetFromSig 的 slot 形：首招作攻击，其余依次进状态/防御
