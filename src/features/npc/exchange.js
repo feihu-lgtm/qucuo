@@ -171,9 +171,13 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   const giftedEntry = typeof item === "object" ? item : CATALOG_INDEX[itemName];
   const giftedCategory = giftedEntry?.category;
   if (GIFT_GEAR_CATEGORIES.has(giftedCategory) && npc?.name) {
+    // 保留礼物全量字段（attack/defense/effect/sixDim）——不然买回来是件空壳；
+    // equipped/id 之类的玩家背包状态不带过去。
     const worn = {
+      ...giftedEntry,
       name: itemName, category: giftedCategory, quality: giftedEntry.quality || "白",
-      slot: "equipment", desc: giftedEntry.desc || "",
+      slot: "equipment", desc: giftedEntry.desc || "", equipped: false,
+      id: `gift_${npc.name}_${itemName}_${Date.now()}`,
     };
     changes.room = (prev) => ({
       ...prev,
