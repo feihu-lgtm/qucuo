@@ -2,6 +2,7 @@
 // 没配 API 或 AI 出错时只留卡片。
 import { gameStore } from "../../store/gameStore.js";
 import { buildNpcLookPrompt, npcLookCard } from "../../domain/rules/npc/npcLookBrief.js";
+import { npcTradeOf } from "../../domain/rules/npc/npcTrade.js";
 import { parseSettleNarration } from "../../domain/rules/settle/settleBrief.js";
 import { tagBackfill } from "../../domain/rules/log/backfill.js";
 import { backfillInBackground, newBackfillKey } from "../../engine/ports/backfill.js";
@@ -13,7 +14,10 @@ export function lookNpcInBackground(npc, extraReplies = [], {
 }) {
   const state = getState();
   const cmd = `看 ${npc.name}`;
-  const card = [...npcLookCard(npc), ...extraReplies];
+  // 台账里有「被买走的甲刃」快照——甲刃被买空的 NPC 光靠 carriedItems
+  // 看不出被扒过，attireExposure 要台账作证。
+  const trade = npcTradeOf(state.npcState, npc);
+  const card = [...npcLookCard(npc, { trade }), ...extraReplies];
   const key = newBackfillKey("npcLook");
 
   // 描写跟在整张卡片下面：只给最后一行打 key。
@@ -25,7 +29,7 @@ export function lookNpcInBackground(npc, extraReplies = [], {
   ]);
   noteAction?.("action");
 
-  const { sys, user } = buildNpcLookPrompt(npc, { place: state.room?.name || "" });
+  const { sys, user } = buildNpcLookPrompt(npc, { place: state.room?.name || "", trade });
   return backfillInBackground(key, {
     canAsk,
     setLog,

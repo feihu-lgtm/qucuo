@@ -25,8 +25,8 @@ describe("applyNpcTradeDelta：买卖记账合并", () => {
     const t0 = { sold: {}, bought: [] };
     const t1 = applyNpcTradeDelta(t0, { sold: { id: "n_test_ci0", name: "钢刀" } });
     const t2 = applyNpcTradeDelta(t1, { bought: { id: "loot_1", name: "羊皮袄" } });
-    expect(t1.sold.n_test_ci0).toBe(true);
-    expect(t2.sold.n_test_ci0).toBe(true);
+    expect(t1.sold.n_test_ci0).toMatchObject({ name: "钢刀" }); // sold 存条目快照（老 true 值仍可读）
+    expect(t2.sold.n_test_ci0).toMatchObject({ name: "钢刀" });
     expect(t2.bought).toHaveLength(1);
     expect(t2.bought[0].name).toBe("羊皮袄");
     expect(t0).toEqual({ sold: {}, bought: [] }); // 纯函数，入参原样
@@ -35,7 +35,7 @@ describe("applyNpcTradeDelta：买卖记账合并", () => {
   it("无 id 的条目按 name 记归属；sold 会把 bought 里同一件摘除", () => {
     let t = applyNpcTradeDelta(EMPTY_TRADE, { bought: { name: "羊皮袄" } });
     t = applyNpcTradeDelta(t, { sold: { name: "羊皮袄" } });
-    expect(t.sold["羊皮袄"]).toBe(true);
+    expect(t.sold["羊皮袄"]).toMatchObject({ name: "羊皮袄" });
     expect(t.bought).toHaveLength(0);
   });
 

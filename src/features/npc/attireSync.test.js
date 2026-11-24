@@ -4,6 +4,7 @@ import { describe, it, expect } from "vitest";
 import { attireExposure, cherishHearts, normalizeCarryEntry } from "../../domain/rules/npc/npcCarry.js";
 import { npcGear, deriveAppearance, npcLookCard, buildNpcLookPrompt } from "../../domain/rules/npc/npcLookBrief.js";
 import { buildCarryShelf, buyFromNpcCarry } from "../../domain/rules/npc/npcTradeFlow.js";
+import { applyNpcTradeDelta, EMPTY_TRADE } from "../../domain/rules/npc/npcTrade.js";
 import { giftNpc } from "./exchange.js";
 
 const SWORD = { id: "c1", name: "青锋剑", category: "weapon", quality: "绿", slot: "equipment", sellable: true, price: 80, cherish: 20 };
@@ -81,6 +82,23 @@ describe("换装同步链：买 / 赠", () => {
     const after = { ...npc, carriedItems: res.nextCarriedItems };
     expect(attireExposure(after)).toBe("衣不蔽体");
     expect(npcGear(after)).toEqual([]);
+  });
+
+  it("普通 NPC 甲刃被买空：实例上没痕迹，台账快照作证照样报暴露", () => {
+    // 买入是「剔除」不留 sold 标记；普通 NPC 又没有 carry/stealables 卡面字段——
+    // 唯一记得「这人有过甲刃」的是 npcState.trade.sold 的条目快照。
+    const npc = mkNpc([SWORD, BUN]);
+    const res = buyFromNpcCarry(npc, SWORD, { money: 200 });
+    expect(res.ok).toBe(true);
+    const trade = applyNpcTradeDelta(EMPTY_TRADE, res.tradeDelta);
+    expect(trade.sold.c1).toMatchObject({ name: "青锋剑", category: "weapon" });
+    const after = { ...npc, carriedItems: res.nextCarriedItems };
+    expect(attireExposure(after)).toBeNull();          // 无台账，保守不报
+    expect(attireExposure(after, trade)).toBe("衣不蔽体"); // 台账作证才报
+    // 卖糕点不算扒：台账只记过 bag 杂物时照样不报
+    const bunTrade = applyNpcTradeDelta(EMPTY_TRADE,
+      buyFromNpcCarry(npc, BUN, { money: 200 }).tradeDelta);
+    expect(attireExposure(after, bunTrade)).toBeNull();
   });
   it("赠送装备 → 写入 carriedItems（货架/偷池都读得见）且全属性保留", () => {
     const npc = mkNpc([BUN]);

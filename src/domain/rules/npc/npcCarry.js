@@ -269,7 +269,7 @@ export function cherishHearts(cherish = 0) {
 // 装备区外露度：carriedItems（唯一 live 随身源——买卖/偷窃/赠送都写这里）的
 // 装备槽被扒到只剩饰物/一件不剩时算私密外露。没物化过 carriedItems 的 NPC
 // 不算「被扒光」——他本就没穿过，报暴露是误判。
-export function attireExposure(npc) {
+export function attireExposure(npc, trade = null) {
   if (!Array.isArray(npc?.carriedItems)) return null;
   const gear = npc.carriedItems
     .filter((e) => e && !e.sold && !e.stolen && !e.dropped)
@@ -282,12 +282,15 @@ export function attireExposure(npc) {
   if (hasArmor || hasWeapon) return null;
   // 但得先证明这人身上曾经有过甲/刃——生成就空（ensureNpcCombatData 给普通
   // NPC 铺的 carriedItems:[]）、或身上本来就只有饰物杂物，都不叫被扒。
-  // 证据看三处：carriedItems 里被标 sold/stolen/dropped 的装备条目、OC 卡面
-  // 摊在实例上的 carry / stealables.equipment。袋装货（slot:bag）不算穿过。
+  // 证据看四处：carriedItems 里被标 sold/stolen/dropped 的装备条目、OC 卡面
+  // 摊在实例上的 carry / stealables.equipment、以及 npcState 台账 trade.sold
+  // 的条目快照（买入走「剔除」不留标记，甲刃被买空只有台账还记得）。
+  // 袋装货（slot:bag）不算穿过；台账里老 true 值没法分门别类，保守不算。
   const hadProtective = [
     ...npc.carriedItems.filter((e) => e?.sold || e?.stolen || e?.dropped),
     ...(npc.carry || []),
     ...(npc.stealables?.equipment || []),
+    ...Object.values(trade?.sold || {}).filter((e) => e && typeof e === "object"),
   ].some((e) => {
     const n = normalizeCarryEntry(npc, e);
     return n.slot === "equipment" && [ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.WEAPON].includes(n.category);

@@ -21,7 +21,14 @@ export function applyNpcTradeDelta(trade = EMPTY_TRADE, delta = {}) {
   const next = { sold: { ...(trade?.sold || {}) }, bought: [...(trade?.bought || [])] };
   const soldKey = itemKey(delta.sold);
   if (soldKey) {
-    next.sold[soldKey] = true;
+    // 存条目快照不只是 true——重出场时 carriedItems 靠台账剔货，但「这件被卖掉的
+    // 是甲刃还是糕点」只有快照答得出（attireExposure 的扒空证据看这里）。
+    // 老档里已存的 true 值照常读（truthy 语义不变）。
+    const snap = {};
+    for (const k of ["name", "category", "slot"]) {
+      if (delta.sold?.[k] != null) snap[k] = delta.sold[k];
+    }
+    next.sold[soldKey] = Object.keys(snap).length ? snap : true;
     next.bought = next.bought.filter(i => itemKey(i) !== soldKey);
   }
   if (delta.bought) {
