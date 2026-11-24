@@ -50,7 +50,7 @@ export function useAutosave({
     setPreset, setRoom, setChar, setDao, setSkills, setInv, setLog,
     setConvo, setExp, setPot, setFlags, setMapData, setTime, setNarrator,
     setQuestProgress, setPersuasionProgress, setClaimedMilestones, setDeposit, setDepositedAt,
-    setPledgedItems, setCompanionState, setInnerRoomName,
+    setPledgedItems, setCompanionState, setInnerRoomName, setDungeonRun,
   } = gameActions;
   // ── 自动存档：玩家操作后防抖，AI 回合与关页兜底保留原逻辑 ──
   // 首次输入前的挂载初始化与后台预跑不算游玩，避免新开局状态覆盖旧自动档；
@@ -171,6 +171,7 @@ export function useAutosave({
       setDepositedAt(snap.depositedAt ?? null);
       setPledgedItems(snap.pledgedItems || []);
       setCompanionState(snap.companionState || initCompanionState());
+      setDungeonRun(snap.dungeonRun || null); // 地宫 checkpoint 随档还原
       if (snap.roomMap) roomMapRef.current = snap.roomMap;
       if (snap.squares) loadSquares(snap.squares);
       if (snap.rngState != null) setRngState(snap.rngState);
