@@ -19,15 +19,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "嘴上从不饶人，见钱眼开，看似唯利是图的市侩丫头，真遇到不平之事却总忍不住出手相助。",
     fullBio: "自幼流落康藏街头，靠偷摸滚打长大。因轻功天赋被巫山高人收留，出师后在曲措乡专门光顾为富不仁者的府邸，毁誉参半。",
     carry: [
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "飞石索", category: "weapon", quality: "白" },
-      { name: "假死药", category: "misc", quality: "蓝" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "飞石索", category: "weapon", quality: "白", slot: "equipment" },
+      { name: "假死药", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "自幼流落康藏街头，靠偷摸滚打长大。因轻功天赋被巫山高人收留，出师后在曲措乡专门光顾为富不仁者的府邸，毁誉参半。",
     likes: "酥油糌粑，偏爱甜口糕点",
     hobby: "收集各类亮闪闪的珠串与古币",
     tradeStyle: "讨价还价，雁过拔毛",
-    follower: { type: "兽", name: "阿财", desc: "一只机灵的雪貂，专替主人钻洞寻宝" },
+    follower: { type: "兽", name: "阿财", desc: "一只机灵的雪貂，专替主人钻洞寻宝", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "巫山",
       moves: [
@@ -36,11 +36,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "七彩琉璃珠", desc: "西域传入的宝珠，佩戴可明目提神" },
-        { quality: "蓝", name: "夜行紧身衣", desc: "贴身夜行衣，大幅降低潜行暴露概率" },
+        { quality: "紫", name: "七彩琉璃珠", desc: "西域传入的宝珠，佩戴可明目提神", slot: "equipment" },
+        { quality: "蓝", name: "夜行紧身衣", desc: "贴身夜行衣，大幅降低潜行暴露概率", slot: "equipment" },
       ],
       sundries: [
-        { name: "陈旧的账本", desc: "记录着乡里某土司贪污的证据" },
+        { name: "陈旧的账本", desc: "记录着乡里某土司贪污的证据", slot: "bag" },
       ],
     },
     shop: {
@@ -65,15 +65,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "性格活泼娇憨，极度黏人，对喜爱之人毫无防备。看似没心没肺，实则用一手好厨艺温暖着身边人。",
     fullBio: "本是富商千金，因不喜拘束拜入玉泉派门下。在康藏边镇常以寻找珍稀食材为名四处游荡，凭着甜美笑容与厨艺混得如鱼得水。",
     carry: [
-      { name: "云南沉水香块", category: "misc", quality: "绿" },
-      { name: "大娘秘制酥油茶壶", category: "misc", quality: "绿" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
+      { name: "云南沉水香块", category: "misc", quality: "绿", slot: "bag" },
+      { name: "大娘秘制酥油茶壶", category: "misc", quality: "绿", slot: "bag" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "本是富商千金，因不喜拘束拜入玉泉派门下。在康藏边镇常以寻找珍稀食材为名四处游荡，凭着甜美笑容与厨艺混得如鱼得水。",
     likes: "耗牛骨汤，各类菌菇炖品",
     hobby: "钻研新奇菜谱，投喂门派师兄",
     tradeStyle: "用美食换取奇珍异草",
-    follower: { type: "兽", name: "肉包", desc: "一只肥硕的藏獒幼犬，只知道吃" },
+    follower: { type: "兽", name: "肉包", desc: "一只肥硕的藏獒幼犬，只知道吃", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "玉泉",
       moves: [
@@ -82,11 +82,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "玄铁菜刀", desc: "重剑无锋的菜刀版本，切金断玉" },
-        { quality: "蓝", name: "百味香囊", desc: "装满香料的囊袋，能解百毒" },
+        { quality: "紫", name: "玄铁菜刀", desc: "重剑无锋的菜刀版本，切金断玉", slot: "equipment" },
+        { quality: "蓝", name: "百味香囊", desc: "装满香料的囊袋，能解百毒", slot: "equipment" },
       ],
       sundries: [
-        { name: "玉泉秘制食谱", desc: "记载了十余种能提升内力的绝世药膳" },
+        { name: "玉泉秘制食谱", desc: "记载了十余种能提升内力的绝世药膳", slot: "bag" },
       ],
     },
     shop: {
@@ -111,15 +111,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "外表冷若冰霜，生人勿近，对世俗名利嗤之以鼻。唯有面对娇花时方显温柔，内里藏着一颗重情重义的孤傲之心。",
     fullBio: "传闻是某位武林魔头之女，自幼被百花派隐世高人收养。长居曲措乡外的幽谷之中，日日与奇花异草为伴，非遇大变故绝不出谷。",
     carry: [
-      { name: "曼陀罗花", category: "misc", quality: "绿" },
-      { name: "冷月拂柳剑", category: "weapon", quality: "橙" },
-      { name: "蜀锦绣帕", category: "misc", quality: "蓝" },
+      { name: "曼陀罗花", category: "misc", quality: "绿", slot: "bag" },
+      { name: "冷月拂柳剑", category: "weapon", quality: "橙", slot: "equipment" },
+      { name: "蜀锦绣帕", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "传闻是某位武林魔头之女，自幼被百花派隐世高人收养。长居曲措乡外的幽谷之中，日日与奇花异草为伴，非遇大变故绝不出谷。",
     likes: "清淡素食，常饮晨露花茶",
     hobby: "栽培变异雪莲与曼陀罗",
     tradeStyle: "只以稀有花种或孤本秘籍交换",
-    follower: { type: "剑灵", name: "醉花", desc: "寄宿在她佩剑中的草木之灵，散发幽香" },
+    follower: { type: "剑灵", name: "醉花", desc: "寄宿在她佩剑中的草木之灵，散发幽香", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "百花",
       moves: [
@@ -128,11 +128,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "醉蝶软剑", desc: "剑身柔韧如丝，挥舞时带有招蝶奇香" },
-        { quality: "紫", name: "百花寒玉簪", desc: "以内力催动可清心定神的玉簪" },
+        { quality: "橙", name: "醉蝶软剑", desc: "剑身柔韧如丝，挥舞时带有招蝶奇香", slot: "equipment" },
+        { quality: "紫", name: "百花寒玉簪", desc: "以内力催动可清心定神的玉簪", slot: "equipment" },
       ],
       sundries: [
-        { name: "异色曼陀罗种子", desc: "剧毒且美丽的珍稀植物种子" },
+        { name: "异色曼陀罗种子", desc: "剧毒且美丽的珍稀植物种子", slot: "bag" },
       ],
     },
     shop: {
@@ -157,15 +157,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "性格刚烈，雷厉风行，眼中容不得半点沙子。虽然脾气火爆，对待属下与朋友却极其护短，不善表达柔情。",
     fullBio: "锦官城精锐护卫出身，奉命驻守曲措乡镇压边陲恶匪。因行事作风狠辣果决，手中长刀沾满绿林败类的鲜血，在黑道中凶名赫赫。",
     carry: [
-      { name: "七星桩磨剑石", category: "misc", quality: "蓝" },
-      { name: "三十年窖藏青稞酒", category: "misc", quality: "橙" },
-      { name: "土司私兵夜袭令牌", category: "misc", quality: "蓝" },
+      { name: "七星桩磨剑石", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "三十年窖藏青稞酒", category: "misc", quality: "橙", slot: "bag" },
+      { name: "土司私兵夜袭令牌", category: "misc", quality: "蓝", slot: "bag", sellable: false, cherish: 90 },
     ],
     lifeHistory: "锦官城精锐护卫出身，奉命驻守曲措乡镇压边陲恶匪。因行事作风狠辣果决，手中长刀沾满绿林败类的鲜血，在黑道中凶名赫赫。",
     likes: "烈酒烤肉，无辣不欢",
     hobby: "擦拭宝刀，研究火器",
     tradeStyle: "现款现货，爽快利落",
-    follower: { type: "人", name: "锦官力士", desc: "身披重甲的锦官城死士，绝对忠诚" },
+    follower: { type: "人", name: "锦官力士", desc: "身披重甲的锦官城死士，绝对忠诚", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "锦官",
       moves: [
@@ -174,11 +174,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "霹雳宝刀", desc: "刀背暗藏火器机关的奇门兵刃" },
-        { quality: "紫", name: "锦官虎符", desc: "可调动一小队锦官城精锐的令牌" },
+        { quality: "橙", name: "霹雳宝刀", desc: "刀背暗藏火器机关的奇门兵刃", slot: "equipment" },
+        { quality: "紫", name: "锦官虎符", desc: "可调动一小队锦官城精锐的令牌", slot: "equipment" },
       ],
       sundries: [
-        { name: "雷火弹", desc: "威力惊人的投掷型火器" },
+        { name: "雷火弹", desc: "威力惊人的投掷型火器", slot: "bag" },
       ],
     },
     shop: {
@@ -203,15 +203,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "性格火爆率真，行事单凭直觉，不通人情世故，对认定的朋友两肋插刀，对仇敌则如猛兽般撕咬。",
     fullBio: "自幼在巫山深谷中与野兽为伍，饮虎奶食生肉长大。后随豹群流浪至康藏边镇，凭借一手百兽通灵的本事在曲措乡立足，威慑一方。",
     carry: [
-      { name: "黑铁狼牙吊坠", category: "accessory", quality: "绿" },
-      { name: "孔雀胆酒", category: "misc", quality: "紫" },
-      { name: "藏香猪烤肉", category: "misc", quality: "蓝" },
+      { name: "黑铁狼牙吊坠", category: "accessory", quality: "绿", slot: "equipment" },
+      { name: "孔雀胆酒", category: "misc", quality: "紫", slot: "bag" },
+      { name: "藏香猪烤肉", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "自幼在巫山深谷中与野兽为伍，饮虎奶食生肉长大。后随豹群流浪至康藏边镇，凭借一手百兽通灵的本事在曲措乡立足，威慑一方。",
     likes: "偏爱带着血丝的五分熟牦牛肉与烈酒。",
     hobby: "深夜在荒野与孤狼对啸，收集各种凶兽的獠牙。",
     tradeStyle: "喜爱以物易物，尤其看重稀有的兽皮与兽骨。",
-    follower: { type: "兽", name: "雪山银豹", desc: "通体银白、眼瞳幽蓝的康藏雪豹，体型远超同类。" },
+    follower: { type: "兽", name: "雪山银豹", desc: "通体银白、眼瞳幽蓝的康藏雪豹，体型远超同类。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "巫山",
       moves: [
@@ -220,11 +220,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "赤焰豹皮裙", desc: "以异种火豹之皮缝制，水火不侵" },
-        { quality: "蓝", name: "骨雕骨哨", desc: "能发出人耳听不到的哨音，召唤野兽" },
+        { quality: "紫", name: "赤焰豹皮裙", desc: "以异种火豹之皮缝制，水火不侵", slot: "equipment" },
+        { quality: "蓝", name: "骨雕骨哨", desc: "能发出人耳听不到的哨音，召唤野兽", slot: "equipment" },
       ],
       sundries: [
-        { name: "百兽血胆", desc: "以多种猛兽胆汁熬制，服之可避百毒" },
+        { name: "百兽血胆", desc: "以多种猛兽胆汁熬制，服之可避百毒", slot: "bag" },
       ],
     },
     shop: {
@@ -249,15 +249,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "娇俏黏人，极会察言观色。满嘴谎言中偶尔夹杂着真心，看似爱慕虚荣，实则内心渴望真正的江湖侠义与依靠。",
     fullBio: "出身锦官城三教九流之地，由老骗子抚养长大，学得一身易容与骗术。为躲避仇家逃至曲措乡，常伪装成落难的大家闺秀骗取各路大侠的庇护与钱财。",
     carry: [
-      { name: "迦南脂", category: "misc", quality: "蓝" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "烟雨银蛇香囊", category: "accessory", quality: "蓝" },
+      { name: "迦南脂", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "烟雨银蛇香囊", category: "accessory", quality: "蓝", slot: "equipment" },
     ],
     lifeHistory: "出身锦官城三教九流之地，由老骗子抚养长大，学得一身易容与骗术。为躲避仇家逃至曲措乡，常伪装成落难的大家闺秀骗取各路大侠的庇护与钱财。",
     likes: "爱吃精致的锦官城糕点，如芙蓉糕、红油抄手。",
     hobby: "听茶馆说书人讲侠客故事，对镜描摹不同女子的妆容。",
     tradeStyle: "漫天要价就地还钱，喜欢用甜言蜜语迷惑买家。",
-    follower: { type: "人", name: "老仆阿福", desc: "实则是赵雅儿雇来的托儿，专职配合她演戏骗人。" },
+    follower: { type: "人", name: "老仆阿福", desc: "实则是赵雅儿雇来的托儿，专职配合她演戏骗人。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "锦官",
       moves: [
@@ -266,11 +266,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "千面软皮面具", desc: "戴上后可变幻容貌形体" },
-        { quality: "蓝", name: "流云水袖", desc: "看似柔弱，内藏精钢丝线" },
+        { quality: "紫", name: "千面软皮面具", desc: "戴上后可变幻容貌形体", slot: "equipment" },
+        { quality: "蓝", name: "流云水袖", desc: "看似柔弱，内藏精钢丝线", slot: "equipment" },
       ],
       sundries: [
-        { name: "迷魂香囊", desc: "散发甜腻香气，闻者骨软筋麻" },
+        { name: "迷魂香囊", desc: "散发甜腻香气，闻者骨软筋麻", slot: "bag" },
       ],
     },
     shop: {
@@ -295,15 +295,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "平素温婉柔弱，带着小家碧玉的乖巧。但在大是大非面前绝不退缩，极重孝道与侠义，为了保护亲人可以豁出性命。",
     fullBio: "父亲曾是拳法名家，因伤退隐后在曲措乡搭起草台班子。齐丽自幼随父卖艺，将武术融入戏曲中，不仅唱腔绝代，软骨功更是江湖一绝，深得当地各族喜爱。",
     carry: [
-      { name: "糖油果子", category: "misc", quality: "白" },
-      { name: "跌打酒", category: "misc", quality: "绿" },
-      { name: "蜀锦绣帕", category: "misc", quality: "蓝" },
+      { name: "糖油果子", category: "misc", quality: "白", slot: "bag" },
+      { name: "跌打酒", category: "misc", quality: "绿", slot: "bag" },
+      { name: "蜀锦绣帕", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "父亲曾是拳法名家，因伤退隐后在曲措乡搭起草台班子。齐丽自幼随父卖艺，将武术融入戏曲中，不仅唱腔绝代，软骨功更是江湖一绝，深得当地各族喜爱。",
     likes: "清淡的饮食，偏爱酸甜口味的果脯与清茶。",
     hobby: "在清晨吊嗓子，练习高难度柔身动作。",
     tradeStyle: "诚实本分，价格公道，从不占人便宜。",
-    follower: { type: "人", name: "老齐", desc: "齐丽的父亲，常年在台下敲锣打鼓，关键时刻能挺身护女。" },
+    follower: { type: "人", name: "老齐", desc: "齐丽的父亲，常年在台下敲锣打鼓，关键时刻能挺身护女。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "百花",
       moves: [
@@ -312,11 +312,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "蓝", name: "惊鸿戏服", desc: "水袖飘飘的戏服，具有极佳的御劲效果" },
-        { quality: "绿", name: "红漆木梆子", desc: "随身打拍子的木器，敲击可提神醒脑" },
+        { quality: "蓝", name: "惊鸿戏服", desc: "水袖飘飘的戏服，具有极佳的御劲效果", slot: "equipment" },
+        { quality: "绿", name: "红漆木梆子", desc: "随身打拍子的木器，敲击可提神醒脑", slot: "equipment" },
       ],
       sundries: [
-        { name: "名伶曲谱", desc: "记录着各种失传唱段的手抄本" },
+        { name: "名伶曲谱", desc: "记录着各种失传唱段的手抄本", slot: "bag" },
       ],
     },
     shop: {
@@ -341,15 +341,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "娴雅端秀，对病患温柔如水，对厌恶的恶徒则冷若冰霜、不留情面。偶尔会有傲娇任性的小脾气，对纸伞有着近乎痴迷的执念。",
     fullBio: "母亲早逝，随神医父亲隐居玉泉。天生拥有一双能见鬼神的通灵阴阳眼，这使她性格带有几分清冷脱俗。为寻觅失传医书与稀有药材，她带着满身丹药孤身踏入曲措乡的纷争中。",
     carry: [
-      { name: "归墟凝神丹", category: "misc", quality: "紫" },
-      { name: "旧油枯蓑衣", category: "armor", quality: "蓝" },
-      { name: "银针包", category: "accessory", quality: "蓝" },
+      { name: "归墟凝神丹", category: "misc", quality: "紫", slot: "bag" },
+      { name: "旧油枯蓑衣", category: "armor", quality: "蓝", slot: "equipment" },
+      { name: "银针包", category: "accessory", quality: "蓝", slot: "equipment" },
     ],
     lifeHistory: "母亲早逝，随神医父亲隐居玉泉。天生拥有一双能见鬼神的通灵阴阳眼，这使她性格带有几分清冷脱俗。为寻觅失传医书与稀有药材，她带着满身丹药孤身踏入曲措乡的纷争中。",
     likes: "偏爱各种药膳粥，口味极度清淡，滴水不沾荤腥。",
     hobby: "收集各地名匠制作的纸伞，在深夜与徘徊的游魂对话。",
     tradeStyle: "视金钱如粪土，只接受稀有药材或名贵纸伞作为交换。",
-    follower: { type: "剑灵", name: "药王幽魂", desc: "徘徊在人间的古代医师幽魂，只有沈湘芸的通灵眼能看见。" },
+    follower: { type: "剑灵", name: "药王幽魂", desc: "徘徊在人间的古代医师幽魂，只有沈湘芸的通灵眼能看见。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "玉泉",
       moves: [
@@ -358,11 +358,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "玉骨琉璃伞", desc: "伞骨以玉石打造，撑开可防暗器毒烟" },
-        { quality: "蓝", name: "神农百草篓", desc: "背在身后可保持药材千年不腐" },
+        { quality: "紫", name: "玉骨琉璃伞", desc: "伞骨以玉石打造，撑开可防暗器毒烟", slot: "equipment" },
+        { quality: "蓝", name: "神农百草篓", desc: "背在身后可保持药材千年不腐", slot: "equipment" },
       ],
       sundries: [
-        { name: "忘忧神丹", desc: "玉泉秘制，服之可解百毒并重塑经脉" },
+        { name: "忘忧神丹", desc: "玉泉秘制，服之可解百毒并重塑经脉", slot: "bag" },
       ],
     },
     shop: {
@@ -387,15 +387,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "行事率性而为，对恩人百倍相报，对仇敌万毒噬心，不拘泥于中原世俗礼法。",
     fullBio: "原为云贵五仙教主，因教内叛乱流落康藏，在曲措乡重建势力，欲借高原生灵炼制绝世金蛊。",
     carry: [
-      { name: "百草防瘴香囊", category: "accessory", quality: "绿" },
-      { name: "红线", category: "accessory", quality: "白" },
-      { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫" },
+      { name: "百草防瘴香囊", category: "accessory", quality: "绿", slot: "equipment" },
+      { name: "红线", category: "accessory", quality: "白", slot: "equipment" },
+      { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫", slot: "equipment" },
     ],
     lifeHistory: "原为云贵五仙教主，因教内叛乱流落康藏，在曲措乡重建势力，欲借高原生灵炼制绝世金蛊。",
     likes: "偏爱酸辣交加的重口味食物与烈酒。",
     hobby: "喜欢在深夜的月光下斗弄毒虫，编织五彩丝线。",
     tradeStyle: "以物易物，全凭心情，若顺眼甚至分文不取。",
-    follower: { type: "兽", name: "金冠灵蛇", desc: "一条浑身暗金鳞片、头生肉冠的剧毒灵蛇，盘踞在她肩头" },
+    follower: { type: "兽", name: "金冠灵蛇", desc: "一条浑身暗金鳞片、头生肉冠的剧毒灵蛇，盘踞在她肩头", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "五仙毒经",
       moves: [
@@ -404,11 +404,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "五毒珠", desc: "百毒不侵的苗疆圣物，佩戴可散发异香" },
-        { quality: "紫", name: "七彩银缠花", desc: "淬了剧毒的银质腕饰" },
+        { quality: "橙", name: "五毒珠", desc: "百毒不侵的苗疆圣物，佩戴可散发异香", slot: "equipment" },
+        { quality: "紫", name: "七彩银缠花", desc: "淬了剧毒的银质腕饰", slot: "equipment" },
       ],
       sundries: [
-        { name: "金蚕蛊母", desc: "活体蛊母，装在白玉瓶中" },
+        { name: "金蚕蛊母", desc: "活体蛊母，装在白玉瓶中", slot: "bag" },
       ],
     },
     shop: {
@@ -433,15 +433,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "外冷内热，极重承诺。作为男儿时豪气干云，卸下伪装后却有着小女子的细腻与孤独。",
     fullBio: "高丽遗孤，被刺客组织洗脑，后得高人点化脱离组织，隐入锦官暗部，在康藏边镇执行密令。",
     carry: [
-      { name: "竹编彩雀哨", category: "accessory", quality: "绿" },
-      { name: "察世青布短打", category: "armor", quality: "蓝" },
-      { name: "三棱透骨钉", category: "weapon", quality: "紫" },
+      { name: "竹编彩雀哨", category: "accessory", quality: "绿", slot: "equipment" },
+      { name: "察世青布短打", category: "armor", quality: "蓝", slot: "equipment" },
+      { name: "三棱透骨钉", category: "weapon", quality: "紫", slot: "equipment" },
     ],
     lifeHistory: "高丽遗孤，被刺客组织洗脑，后得高人点化脱离组织，隐入锦官暗部，在康藏边镇执行密令。",
     likes: "喜爱清淡素雅的冷食与温热的清茶。",
     hobby: "擦拭长刀，或者在无人的崖边吹奏尺八。",
     tradeStyle: "明码标价，钱货两清，绝不拖泥带水。",
-    follower: { type: "剑灵", name: "雪女之影", desc: "寄宿在武士刀中的霜寒剑灵，只在出鞘时显化冰晶轮廓" },
+    follower: { type: "剑灵", name: "雪女之影", desc: "寄宿在武士刀中的霜寒剑灵，只在出鞘时显化冰晶轮廓", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "天意刀流",
       moves: [
@@ -450,11 +450,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "樱吹雪", desc: "散发着寒气的东瀛名刀，刀身隐有樱花纹路" },
-        { quality: "紫", name: "忍狐面具", desc: "隐匿气息的暗杀面具" },
+        { quality: "橙", name: "樱吹雪", desc: "散发着寒气的东瀛名刀，刀身隐有樱花纹路", slot: "equipment" },
+        { quality: "紫", name: "忍狐面具", desc: "隐匿气息的暗杀面具", slot: "equipment" },
       ],
       sundries: [
-        { name: "高丽玉佩", desc: "刻有生辰八字的家传信物" },
+        { name: "高丽玉佩", desc: "刻有生辰八字的家传信物", slot: "bag" },
       ],
     },
     shop: {
@@ -479,15 +479,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "淡泊名利，以琴为伴，视天下凡夫俗子如无物，唯有精通音律的知音能令她动容。",
     fullBio: "昔年百花谷琴宗传人，因情伤远走高原，在曲措乡外的玉泉冰湖结庐而居，谱写百鸟朝凤残卷。",
     carry: [
-      { name: "蜀锦绣帕", category: "misc", quality: "蓝" },
-      { name: "梵音铃", category: "weapon", quality: "紫" },
-      { name: "寒泉雪莲", category: "misc", quality: "绿" },
+      { name: "蜀锦绣帕", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "梵音铃", category: "weapon", quality: "紫", slot: "equipment" },
+      { name: "寒泉雪莲", category: "misc", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "昔年百花谷琴宗传人，因情伤远走高原，在曲措乡外的玉泉冰湖结庐而居，谱写百鸟朝凤残卷。",
     likes: "只饮朝露与雪水，食新鲜采摘的雪莲与松子。",
     hobby: "每日面对冰湖抚琴，教导山间飞鸟鸣叫的音律。",
     tradeStyle: "不收金银，只用罕见的乐谱或上等琴弦来交换。",
-    follower: { type: "兽", name: "青鸟", desc: "传闻中能通音律的神鸟，会在她弹琴时伴舞" },
+    follower: { type: "兽", name: "青鸟", desc: "传闻中能通音律的神鸟，会在她弹琴时伴舞", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "忘忧琴诀",
       moves: [
@@ -496,11 +496,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "焦尾琴", desc: "上古名琴，琴尾有焦痕，弹奏可乱人心神" },
-        { quality: "紫", name: "冰蚕丝手套", desc: "抚琴所用，刀枪不入" },
+        { quality: "橙", name: "焦尾琴", desc: "上古名琴，琴尾有焦痕，弹奏可乱人心神", slot: "equipment" },
+        { quality: "紫", name: "冰蚕丝手套", desc: "抚琴所用，刀枪不入", slot: "equipment" },
       ],
       sundries: [
-        { name: "忘忧曲谱", desc: "记录着武林失传音波功的孤本" },
+        { name: "忘忧曲谱", desc: "记录着武林失传音波功的孤本", slot: "bag" },
       ],
     },
     shop: {
@@ -525,15 +525,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "傲慢矜持，金枝玉叶的做派下隐藏着深沉的政治手腕，为达目的不惜利用一切资源。",
     fullBio: "西域小国公主，本欲嫁入土司府和亲以换取兵力，却因政变流落江湖，靠智谋在多方势力间周旋。",
     carry: [
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "冰种翡翠珠串", category: "accessory", quality: "紫" },
-      { name: "修罗焚心香", category: "misc", quality: "蓝" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "冰种翡翠珠串", category: "accessory", quality: "紫", slot: "equipment" },
+      { name: "修罗焚心香", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "西域小国公主，本欲嫁入土司府和亲以换取兵力，却因政变流落江湖，靠智谋在多方势力间周旋。",
     likes: "极爱甜腻的波斯糕点与烤炙得恰到好处的香料羊肉。",
     hobby: "收集璀璨夺目的宝石，享受下人的伺候与奉承。",
     tradeStyle: "唯利是图，擅长讨价还价，总能榨干对方最后一滴油水。",
-    follower: { type: "人", name: "哑奴", desc: "身形魁梧的西域力士，口不能言，绝对忠诚的护卫" },
+    follower: { type: "人", name: "哑奴", desc: "身形魁梧的西域力士，口不能言，绝对忠诚的护卫", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "大漠幻舞",
       moves: [
@@ -542,11 +542,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "波斯圣火戒", desc: "代表西域王室身份的红宝石戒指" },
-        { quality: "紫", name: "流金宝甲", desc: "穿在衣袍下的贴身软甲，轻薄坚韧" },
+        { quality: "橙", name: "波斯圣火戒", desc: "代表西域王室身份的红宝石戒指", slot: "equipment" },
+        { quality: "紫", name: "流金宝甲", desc: "穿在衣袍下的贴身软甲，轻薄坚韧", slot: "equipment" },
       ],
       sundries: [
-        { name: "西域通关文牒", desc: "可自由出入边镇关卡的文书" },
+        { name: "西域通关文牒", desc: "可自由出入边镇关卡的文书", slot: "bag" },
       ],
     },
     shop: {
@@ -571,16 +571,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "强势果敢，重情重义，行事作风大胆泼辣，骨子里却极度渴望能征服自己的霸道强者。",
     fullBio: "早年被天龙教主收养，凭借过人天赋与狠辣手段坐上夜叉护法之位。常年游走于康藏边镇，负责刺探各派机密，红衣所过之处，留下一地风流与杀机。",
     carry: [
-      { name: "缅甸蛇酒", category: "misc", quality: "蓝" },
-      { name: "七星绣针匣", category: "weapon", quality: "橙" },
-      { name: "素银易容粉盒", category: "accessory", quality: "蓝" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
+      { name: "缅甸蛇酒", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "七星绣针匣", category: "weapon", quality: "橙", slot: "equipment" },
+      { name: "素银易容粉盒", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "早年被天龙教主收养，凭借过人天赋与狠辣手段坐上夜叉护法之位。常年游走于康藏边镇，负责刺探各派机密，红衣所过之处，留下一地风流与杀机。",
     likes: "喜食辛辣炙烤之物，尤爱烈酒。",
     hobby: "收集各色名贵胭脂，深夜独酌赏月。",
     tradeStyle: "看心情定价，若遇顺眼之人甚至分文不取。",
-    follower: { type: "兽", name: "赤练", desc: "一条通体赤红的剧毒灵蛇，常盘绕于她腰间。" },
+    follower: { type: "兽", name: "赤练", desc: "一条通体赤红的剧毒灵蛇，常盘绕于她腰间。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "天龙",
       moves: [
@@ -589,11 +589,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "夜叉红绫", desc: "天蚕丝织就的红绸，刀枪不入，轻若无物。" },
-        { quality: "橙", name: "冰火玄玉坠", desc: "蕴含极寒与极热之气的玉坠，佩戴可百毒不侵。" },
+        { quality: "紫", name: "夜叉红绫", desc: "天蚕丝织就的红绸，刀枪不入，轻若无物。", slot: "equipment" },
+        { quality: "橙", name: "冰火玄玉坠", desc: "蕴含极寒与极热之气的玉坠，佩戴可百毒不侵。", slot: "equipment" },
       ],
       sundries: [
-        { name: "天龙密信", desc: "记载着康藏各派暗桩分布的羊皮卷。" },
+        { name: "天龙密信", desc: "记载着康藏各派暗桩分布的羊皮卷。", slot: "bag" },
       ],
     },
     shop: {
@@ -618,16 +618,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "冷艳威严，性情乖戾，因情伤而极度厌恶男子，行事狂野不羁，对麾下女弟子却极为护短。",
     fullBio: "曾与江湖浪子有过一段刻骨铭心的旧情，惨遭背叛后性情大变，自创修罗霸凤功，成为天龙教阿修罗护法。常年隐居于曲措乡深处的修罗宫，极少涉足中原。",
     carry: [
-      { name: "雪山当归", category: "misc", quality: "蓝" },
-      { name: "迦楼罗金翅羽", category: "accessory", quality: "蓝" },
-      { name: "冰种玉簪", category: "weapon", quality: "紫" },
-      { name: "千年雪莲回天丹", category: "misc", quality: "橙" },
+      { name: "雪山当归", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "迦楼罗金翅羽", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "冰种玉簪", category: "weapon", quality: "紫", slot: "equipment" },
+      { name: "千年雪莲回天丹", category: "misc", quality: "橙", slot: "bag" },
     ],
     lifeHistory: "曾与江湖浪子有过一段刻骨铭心的旧情，惨遭背叛后性情大变，自创修罗霸凤功，成为天龙教阿修罗护法。常年隐居于曲措乡深处的修罗宫，极少涉足中原。",
     likes: "偏爱清淡苦涩之物，如苦茶、雪莲。",
     hobby: "驯养猛禽，于悬崖之巅抚琴。",
     tradeStyle: "拒收男子的金银，只换取罕见的武学残篇或奇珍。",
-    follower: { type: "兽", name: "苍青", desc: "一只体型巨大的高原苍鹰，目光锐利，能撕裂虎豹。" },
+    follower: { type: "兽", name: "苍青", desc: "一只体型巨大的高原苍鹰，目光锐利，能撕裂虎豹。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "天龙",
       moves: [
@@ -636,11 +636,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "修罗蓝氅", desc: "以雪山冰蚕丝织就的披风，水火不侵。" },
-        { quality: "橙", name: "霸凤翎", desc: "锋利无匹的奇门暗器，形如凤羽。" },
+        { quality: "紫", name: "修罗蓝氅", desc: "以雪山冰蚕丝织就的披风，水火不侵。", slot: "equipment" },
+        { quality: "橙", name: "霸凤翎", desc: "锋利无匹的奇门暗器，形如凤羽。", slot: "equipment" },
       ],
       sundries: [
-        { name: "断情玉簪", desc: "断成两截的玉簪，承载着一段不堪回首的往事。" },
+        { name: "断情玉簪", desc: "断成两截的玉簪，承载着一段不堪回首的往事。", slot: "bag" },
       ],
     },
     shop: {
@@ -665,15 +665,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "古灵精怪，聪慧狡黠，遇事冷静且总有奇思妙想，对看重之人极其护短。",
     fullBio: "本是锦官城大户千金，却因厌倦繁文缛节偷跑至康藏边镇，凭一身轻功与毒术在江湖中周旋，暗中调查某桩武林悬案。",
     carry: [
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "淬毒假峨眉刺", category: "misc", quality: "绿" },
-      { name: "素银易容粉盒", category: "accessory", quality: "蓝" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "淬毒假峨眉刺", category: "misc", quality: "绿", slot: "bag" },
+      { name: "素银易容粉盒", category: "accessory", quality: "蓝", slot: "equipment" },
     ],
     lifeHistory: "本是锦官城大户千金，却因厌倦繁文缛节偷跑至康藏边镇，凭一身轻功与毒术在江湖中周旋，暗中调查某桩武林悬案。",
     likes: "偏爱麻辣鲜香的蜀地小吃，尤爱红油抄手。",
     hobby: "喜欢在茶馆听书，偶尔设下精巧陷阱捉弄恶霸。",
     tradeStyle: "笑眯眯地讨价还价，常以情报换取物资。",
-    follower: { type: "兽", name: "阿紫", desc: "一只通体紫毛的灵貂，动作奇快，能寻宝探毒。" },
+    follower: { type: "兽", name: "阿紫", desc: "一只通体紫毛的灵貂，动作奇快，能寻宝探毒。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "锦官城",
       moves: [
@@ -682,11 +682,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "紫绸软甲", desc: "以上等蜀锦混合金丝织就的贴身软甲，轻若无物却刀枪不入。" },
-        { quality: "蓝", name: "流星飞燕履", desc: "鞋尖藏有暗器的轻功靴，大幅提升身法。" },
+        { quality: "紫", name: "紫绸软甲", desc: "以上等蜀锦混合金丝织就的贴身软甲，轻若无物却刀枪不入。", slot: "equipment" },
+        { quality: "蓝", name: "流星飞燕履", desc: "鞋尖藏有暗器的轻功靴，大幅提升身法。", slot: "equipment" },
       ],
       sundries: [
-        { name: "神秘玉佩", desc: "刻有锦官城某大家族徽记的温润玉佩。" },
+        { name: "神秘玉佩", desc: "刻有锦官城某大家族徽记的温润玉佩。", slot: "bag" },
       ],
     },
     shop: {
@@ -711,16 +711,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "清冷孤高，才情绝代，看似不食人间烟火，内心却极具侠义心肠与傲骨。",
     fullBio: "昔日名门之后，家道中落后流落江湖，以百花谷外门弟子身份在曲措乡包下画舫，暗中化身侠盗劫富济贫。",
     carry: [
-      { name: "手抄止戈经", category: "misc", quality: "白" },
-      { name: "银针包", category: "accessory", quality: "蓝" },
-      { name: "蜀锦绣帕", category: "misc", quality: "蓝" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
+      { name: "手抄止戈经", category: "misc", quality: "白", slot: "bag", sellable: false, cherish: 80 },
+      { name: "银针包", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "蜀锦绣帕", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "昔日名门之后，家道中落后流落江湖，以百花谷外门弟子身份在曲措乡包下画舫，暗中化身侠盗劫富济贫。",
     likes: "口味清淡，喜饮雨前龙井与桂花糕。",
     hobby: "月下作画，或在深夜踏雪无痕地飞檐走壁。",
     tradeStyle: "只与懂画之人交易，对俗物不屑一顾，看重眼缘。",
-    follower: { type: "机关人偶", name: "墨童", desc: "以机关术制成的研墨童子，能喷吐墨汁迷乱敌人视线。" },
+    follower: { type: "机关人偶", name: "墨童", desc: "以机关术制成的研墨童子，能喷吐墨汁迷乱敌人视线。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "百花谷",
       moves: [
@@ -729,12 +729,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "夜明夜行衣", desc: "看似普通的白衣，在夜间却能完美融入月色，提升隐蔽。" },
-        { quality: "橙", name: "潇湘点翠笔", desc: "以奇金打造的判官笔，既是画具也是致命武器。" },
+        { quality: "紫", name: "夜明夜行衣", desc: "看似普通的白衣，在夜间却能完美融入月色，提升隐蔽。", slot: "equipment" },
+        { quality: "橙", name: "潇湘点翠笔", desc: "以奇金打造的判官笔，既是画具也是致命武器。", slot: "equipment" },
       ],
       sundries: [
-        { name: "夜明珠", desc: "侠盗照夜白留下的标志性宝物。" },
-        { name: "半卷残画", desc: "画着曲措乡地形的神秘画卷。" },
+        { name: "夜明珠", desc: "侠盗照夜白留下的标志性宝物。", slot: "bag" },
+        { name: "半卷残画", desc: "画着曲措乡地形的神秘画卷。", slot: "bag" },
       ],
     },
     shop: {
@@ -759,16 +759,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "嘴硬心软，行事乖张，喜欢用下毒来试探人心，实则对生命抱有敬畏。",
     fullBio: "出身五毒教叛教支系，自幼与毒蛊为伴，来到曲措乡只为寻找传说中的雪山冰蟾，常在街头摆设悬赏毒局。",
     carry: [
-      { name: "五步断肠散", category: "misc", quality: "蓝" },
-      { name: "银针包", category: "accessory", quality: "蓝" },
-      { name: "曼陀罗花", category: "misc", quality: "绿" },
-      { name: "铜钱串", category: "accessory", quality: "白" },
+      { name: "五步断肠散", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "银针包", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "曼陀罗花", category: "misc", quality: "绿", slot: "bag" },
+      { name: "铜钱串", category: "accessory", quality: "白", slot: "equipment" },
     ],
     lifeHistory: "出身五毒教叛教支系，自幼与毒蛊为伴，来到曲措乡只为寻找传说中的雪山冰蟾，常在街头摆设悬赏毒局。",
     likes: "偏爱酸涩与奇特口味，喜欢嚼带有微毒的草根。",
     hobby: "研究新奇的蛊虫，看别人中毒后出洋相。",
     tradeStyle: "一手交钱一手交解药，绝不赊账。",
-    follower: { type: "兽", name: "七彩", desc: "一只剧毒的七彩蛤蟆，趴在她的肩头，能吞噬百毒。" },
+    follower: { type: "兽", name: "七彩", desc: "一只剧毒的七彩蛤蟆，趴在她的肩头，能吞噬百毒。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "五毒教",
       moves: [
@@ -777,11 +777,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "五毒宝甲", desc: "浸泡过百毒的藤甲，受击时会让攻击者中毒。" },
-        { quality: "蓝", name: "金蚕丝手套", desc: "百毒不侵的手套，用于抓取毒物。" },
+        { quality: "紫", name: "五毒宝甲", desc: "浸泡过百毒的藤甲，受击时会让攻击者中毒。", slot: "equipment" },
+        { quality: "蓝", name: "金蚕丝手套", desc: "百毒不侵的手套，用于抓取毒物。", slot: "equipment" },
       ],
       sundries: [
-        { name: "万能解毒丹", desc: "沈澜秘制的丹药，可解世间大半毒素。" },
+        { name: "万能解毒丹", desc: "沈澜秘制的丹药，可解世间大半毒素。", slot: "bag" },
       ],
     },
     shop: {
@@ -806,16 +806,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "孤傲决绝，雷厉风行，对敌人毫不留情，唯独对认可的同伴会流露出一丝温情。",
     fullBio: "无父无母的孤儿，被明教高层收养并在残酷的试炼中存活，手持焚莲刀来到康藏边镇执行秘密清剿任务。",
     carry: [
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫" },
-      { name: "柳叶小刀", category: "weapon", quality: "绿" },
-      { name: "磨损藏银火镰", category: "accessory", quality: "紫" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫", slot: "equipment" },
+      { name: "柳叶小刀", category: "weapon", quality: "绿", slot: "equipment" },
+      { name: "磨损藏银火镰", category: "accessory", quality: "紫", slot: "equipment" },
     ],
     lifeHistory: "无父无母的孤儿，被明教高层收养并在残酷的试炼中存活，手持焚莲刀来到康藏边镇执行秘密清剿任务。",
     likes: "喜食炙烤之物，无肉不欢，烈酒烧喉。",
     hobby: "在僻静处擦拭爱刀，或是立于高处俯瞰雪山。",
     tradeStyle: "直来直去，用金条或人头结算，极度高效。",
-    follower: { type: "人", name: "影奴", desc: "戴着铁面具的明教死士，沉默寡言，绝对忠诚。" },
+    follower: { type: "人", name: "影奴", desc: "戴着铁面具的明教死士，沉默寡言，绝对忠诚。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "明教",
       moves: [
@@ -824,11 +824,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "焚莲宝刀", desc: "刀身赤红如火，挥舞时带有热浪的明教宝兵。" },
-        { quality: "紫", name: "玄阳赤绫", desc: "水火不侵的红色丝绸，既可防身又能伤人。" },
+        { quality: "橙", name: "焚莲宝刀", desc: "刀身赤红如火，挥舞时带有热浪的明教宝兵。", slot: "equipment" },
+        { quality: "紫", name: "玄阳赤绫", desc: "水火不侵的红色丝绸，既可防身又能伤人。", slot: "equipment" },
       ],
       sundries: [
-        { name: "明教圣火令", desc: "代表明教护法身份的令牌。" },
+        { name: "明教圣火令", desc: "代表明教护法身份的令牌。", slot: "bag" },
       ],
     },
     shop: {
@@ -853,15 +853,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "清冷孤高，不苟言笑，对江湖俗事抱有厌倦，唯有面对精妙古谱或绝世名琴时方露痴态。",
     fullBio: "避世于康藏边镇的剑庐，本是为寻传说中的凤凰遗音，却被卷入曲措乡的纷争。常在雪山之巅奏响素弦。",
     carry: [
-      { name: "雪莲干蕊", category: "misc", quality: "蓝" },
-      { name: "紧那罗曲谱", category: "misc", quality: "蓝" },
-      { name: "蜀锦绣帕", category: "misc", quality: "蓝" },
+      { name: "雪莲干蕊", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "紧那罗曲谱", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "蜀锦绣帕", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "避世于康藏边镇的剑庐，本是为寻传说中的凤凰遗音，却被卷入曲措乡的纷争。常在雪山之巅奏响素弦。",
     likes: "清淡素食，尤爱雪莲羹",
     hobby: "收集古谱残卷，调音拭剑",
     tradeStyle: "唯有投缘或出示古谱方可换取其珍藏",
-    follower: { type: "剑灵", name: "凤鸣", desc: "素弦剑中孕育的虚影，如青色鸾鸟。" },
+    follower: { type: "剑灵", name: "凤鸣", desc: "素弦剑中孕育的虚影，如青色鸾鸟。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "名剑山庄",
       moves: [
@@ -870,11 +870,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "素弦剑", desc: "通体雪白，挥动时有隐隐琴音的绝世宝剑。" },
-        { quality: "紫", name: "流风雪羽衣", desc: "轻若无物的白羽大氅，避寒辟毒。" },
+        { quality: "橙", name: "素弦剑", desc: "通体雪白，挥动时有隐隐琴音的绝世宝剑。", slot: "equipment" },
+        { quality: "紫", name: "流风雪羽衣", desc: "轻若无物的白羽大氅，避寒辟毒。", slot: "equipment" },
       ],
       sundries: [
-        { name: "凤凰洞残谱", desc: "记载着上古音律的羊皮卷。" },
+        { name: "凤凰洞残谱", desc: "记载着上古音律的羊皮卷。", slot: "bag" },
       ],
     },
     shop: {
@@ -899,15 +899,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "爽朗利落，嫉恶如仇。行事不拘小节，笑声清脆如银铃，对待朋友肝胆相照，眼中揉不得沙子。",
     fullBio: "本是锦官城大户千金，却偏爱舞枪弄棒。因不满地方土司欺压百姓，单枪匹马杀入曲措乡，誓要荡平此地恶霸。",
     carry: [
-      { name: "鱼定粗布短打", category: "armor", quality: "白" },
-      { name: "七星桩磨剑石", category: "misc", quality: "蓝" },
-      { name: "风干牦牛肉", category: "misc", quality: "白" },
+      { name: "鱼定粗布短打", category: "armor", quality: "白", slot: "equipment" },
+      { name: "七星桩磨剑石", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "风干牦牛肉", category: "misc", quality: "白", slot: "bag" },
     ],
     lifeHistory: "本是锦官城大户千金，却偏爱舞枪弄棒。因不满地方土司欺压百姓，单枪匹马杀入曲措乡，誓要荡平此地恶霸。",
     likes: "麻辣鲜香之物，尤喜红油抄手",
     hobby: "喝烈酒，掰腕子，擦拭长枪",
     tradeStyle: "直来直去，价格公道，看顺眼可半卖半送",
-    follower: { type: "兽", name: "赤碳", desc: "一匹脾气暴躁的红毛小马驹。" },
+    follower: { type: "兽", name: "赤碳", desc: "一匹脾气暴躁的红毛小马驹。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "平康武学",
       moves: [
@@ -916,11 +916,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "游龙点金枪", desc: "枪头掺入秘银，锐不可当。" },
-        { quality: "蓝", name: "蜀锦护心甲", desc: "锦官城特产，轻便且防御尚可。" },
+        { quality: "紫", name: "游龙点金枪", desc: "枪头掺入秘银，锐不可当。", slot: "equipment" },
+        { quality: "蓝", name: "蜀锦护心甲", desc: "锦官城特产，轻便且防御尚可。", slot: "equipment" },
       ],
       sundries: [
-        { name: "平康英雄帖", desc: "召集江湖义士的信物。" },
+        { name: "平康英雄帖", desc: "召集江湖义士的信物。", slot: "bag" },
       ],
     },
     shop: {
@@ -945,15 +945,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "外柔内刚，聪慧灵动。虽年少成名却不骄不躁，对待武学极为痴迷，偶尔会展露小女儿的狡黠。",
     fullBio: "师承点苍，十六岁便以一套碧水剑法名动滇藏。为寻传闻中的神兵来到曲措乡，常于雨中练剑，悟得烟霞剑意。",
     carry: [
-      { name: "半角血书", category: "misc", quality: "紫" },
-      { name: "核桃糕", category: "misc", quality: "蓝" },
-      { name: "旧油枯蓑衣", category: "armor", quality: "蓝" },
+      { name: "半角血书", category: "misc", quality: "紫", slot: "bag" },
+      { name: "核桃糕", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "旧油枯蓑衣", category: "armor", quality: "蓝", slot: "equipment" },
     ],
     lifeHistory: "师承点苍，十六岁便以一套碧水剑法名动滇藏。为寻传闻中的神兵来到曲措乡，常于雨中练剑，悟得烟霞剑意。",
     likes: "清甜糕点，爱喝春茶",
     hobby: "收集各地名剑，雨中漫步",
     tradeStyle: "以物易物，偏爱交换罕见的剑术残页或矿石",
-    follower: { type: "人", name: "抱剑童子", desc: "背着剑匣的哑巴小童，步履轻盈。" },
+    follower: { type: "人", name: "抱剑童子", desc: "背着剑匣的哑巴小童，步履轻盈。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "青云剑宗",
       moves: [
@@ -962,11 +962,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "骖龙剑", desc: "剑身带有龙鳞纹路，挥动有龙吟之声。" },
-        { quality: "紫", name: "烟霞雨衣", desc: "水火不侵的奇异绿衫，泛着霞光。" },
+        { quality: "橙", name: "骖龙剑", desc: "剑身带有龙鳞纹路，挥动有龙吟之声。", slot: "equipment" },
+        { quality: "紫", name: "烟霞雨衣", desc: "水火不侵的奇异绿衫，泛着霞光。", slot: "equipment" },
       ],
       sundries: [
-        { name: "秋水剑穗", desc: "编织精美的剑穗，带有淡淡幽香。" },
+        { name: "秋水剑穗", desc: "编织精美的剑穗，带有淡淡幽香。", slot: "bag" },
       ],
     },
     shop: {
@@ -991,15 +991,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "极度冷酷，沉默寡言。奉行“拔剑即分生死”的准则，对任何道德束缚嗤之以鼻，只在乎自身存活与报酬。",
     fullBio: "曾是天山派最锋利的暗杀者，因厌倦门派倾轧而叛逃。流落至曲措乡隐姓埋名，化身为拿钱办事的无情猎手。",
     carry: [
-      { name: "铁莲子", category: "misc", quality: "绿" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "呼延雪的剑穗", category: "accessory", quality: "白" },
+      { name: "铁莲子", category: "misc", quality: "绿", slot: "bag" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "呼延雪的剑穗", category: "accessory", quality: "白", slot: "equipment" },
     ],
     lifeHistory: "曾是天山派最锋利的暗杀者，因厌倦门派倾轧而叛逃。流落至曲措乡隐姓埋名，化身为拿钱办事的无情猎手。",
     likes: "生肉与冰水，几乎没有味觉追求",
     hobby: "在暗处观察猎物，擦拭飞刀",
     tradeStyle: "黑市交易，认钱不认人，出价高者得",
-    follower: { type: "机关人偶", name: "乌鸦", desc: "精钢打造的机械飞禽，用于侦查与淬毒。" },
+    follower: { type: "机关人偶", name: "乌鸦", desc: "精钢打造的机械飞禽，用于侦查与淬毒。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "天山暗影",
       moves: [
@@ -1008,11 +1008,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "陨铁短剑", desc: "黯淡无光，极其锋利且淬有剧毒。" },
-        { quality: "蓝", name: "夜行百破衣", desc: "黑夜中能大幅降低存在感的夜行衣。" },
+        { quality: "紫", name: "陨铁短剑", desc: "黯淡无光，极其锋利且淬有剧毒。", slot: "equipment" },
+        { quality: "蓝", name: "夜行百破衣", desc: "黑夜中能大幅降低存在感的夜行衣。", slot: "equipment" },
       ],
       sundries: [
-        { name: "天山血刃令", desc: "代表天山派最高级别追杀的残破令牌。" },
+        { name: "天山血刃令", desc: "代表天山派最高级别追杀的残破令牌。", slot: "bag" },
       ],
     },
     shop: {
@@ -1037,15 +1037,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "性格古灵精怪，看似没心没肺、活泼俏皮，实则内心缺乏安全感，对认定的人极为依赖且护短，偶尔流露出一丝狡黠与机警。",
     fullBio: "本是西南苗疆隐秘部族的血脉，因族内斗争从小被送至康藏边镇生活，身上藏有连她自己都不甚清楚的毒蛊隐秘，如今在江湖四处游荡。",
     carry: [
-      { name: "半块银锁片", category: "accessory", quality: "绿" },
-      { name: "桂花糖", category: "misc", quality: "白" },
-      { name: "《清心普善咒》入门手抄", category: "misc", quality: "蓝" },
+      { name: "半块银锁片", category: "accessory", quality: "绿", slot: "equipment" },
+      { name: "桂花糖", category: "misc", quality: "白", slot: "bag" },
+      { name: "《清心普善咒》入门手抄", category: "misc", quality: "蓝", slot: "bag", sellable: false, cherish: 80 },
     ],
     lifeHistory: "本是西南苗疆隐秘部族的血脉，因族内斗争从小被送至康藏边镇生活，身上藏有连她自己都不甚清楚的毒蛊隐秘，如今在江湖四处游荡。",
     likes: "甜糯糕点、甜茶",
     hobby: "收集亮晶晶的石头、逗弄各类小毒物",
     tradeStyle: "看心情以物易物，喜欢占点小便宜",
-    follower: { type: "兽", name: "赤瞳貂", desc: "一只通体雪白但双眼猩红的雪貂，动作奇快，牙齿带有麻痹毒素。" },
+    follower: { type: "兽", name: "赤瞳貂", desc: "一只通体雪白但双眼猩红的雪貂，动作奇快，牙齿带有麻痹毒素。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "五仙教",
       moves: [
@@ -1054,11 +1054,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "彩云银饰", desc: "苗疆特有的纯银项圈，能抵御部分瘴气与幻术" },
-        { quality: "蓝", name: "百草香囊", desc: "装满防蚊虫毒蚁的草药囊，佩戴可增加抗毒属性" },
+        { quality: "紫", name: "彩云银饰", desc: "苗疆特有的纯银项圈，能抵御部分瘴气与幻术", slot: "equipment" },
+        { quality: "蓝", name: "百草香囊", desc: "装满防蚊虫毒蚁的草药囊，佩戴可增加抗毒属性", slot: "equipment" },
       ],
       sundries: [
-        { name: "残缺的蛊母配方", desc: "用羊皮纸记载的奇特蛊毒炼制法，似乎只是一半" },
+        { name: "残缺的蛊母配方", desc: "用羊皮纸记载的奇特蛊毒炼制法，似乎只是一半", slot: "bag" },
       ],
     },
     shop: {
@@ -1083,16 +1083,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "言语轻柔却透着疏离，行事毫无江湖正邪的规矩可言，仿佛置身事外看客，只对古老机关和远古遗迹表现出狂热的执念。",
     fullBio: "传闻是巫山派某位避世长老的关门弟子，常年游走于三星堆、古格王朝等废墟遗迹，似乎在寻找某种能够逆转阴阳的先秦机关术。",
     carry: [
-      { name: "孟记铁铺淬火油", category: "misc", quality: "白" },
-      { name: "缺齿黄杨算盘", category: "accessory", quality: "蓝" },
-      { name: "熊山手绘地图", category: "accessory", quality: "白" },
-      { name: "十三针囊", category: "weapon", quality: "蓝" },
+      { name: "孟记铁铺淬火油", category: "misc", quality: "白", slot: "bag" },
+      { name: "缺齿黄杨算盘", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "熊山手绘地图", category: "accessory", quality: "白", slot: "equipment" },
+      { name: "十三针囊", category: "weapon", quality: "蓝", slot: "equipment" },
     ],
     lifeHistory: "传闻是巫山派某位避世长老的关门弟子，常年游走于三星堆、古格王朝等废墟遗迹，似乎在寻找某种能够逆转阴阳的先秦机关术。",
     likes: "清淡素食、雪水煮茶",
     hobby: "拆解与组装精巧机关、静坐观云",
     tradeStyle: "只要绝版图谱或高阶机关零件交换",
-    follower: { type: "机关人偶", name: "青铜偃甲", desc: "一具用三星堆青铜残件与巫山木牛流马技艺拼装的护卫傀儡，力大无穷。" },
+    follower: { type: "机关人偶", name: "青铜偃甲", desc: "一具用三星堆青铜残件与巫山木牛流马技艺拼装的护卫傀儡，力大无穷。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "巫山派",
       moves: [
@@ -1101,11 +1101,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "云隐蚕丝衣", desc: "薄如蝉翼的贴身内甲，水火不侵，夜间能隐匿身形" },
-        { quality: "紫", name: "机括玉指环", desc: "内藏金丝的玉扳指，可随时弹出伤人或操控傀儡" },
+        { quality: "紫", name: "云隐蚕丝衣", desc: "薄如蝉翼的贴身内甲，水火不侵，夜间能隐匿身形", slot: "equipment" },
+        { quality: "紫", name: "机括玉指环", desc: "内藏金丝的玉扳指，可随时弹出伤人或操控傀儡", slot: "equipment" },
       ],
       sundries: [
-        { name: "公输秘录残卷", desc: "记录了数种失传机关陷阱的图谱" },
+        { name: "公输秘录残卷", desc: "记录了数种失传机关陷阱的图谱", slot: "bag", sellable: false, cherish: 80 },
       ],
     },
     shop: {
@@ -1130,15 +1130,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "性情温和端庄，悲天悯人却不迂腐，深知江湖险恶但仍愿施以援手。面对恶徒时，亦能果断使用烈性毒药以自保。",
     fullBio: "世代经营药材生意的商氏家族独女，因家族卷入武林纷争被灭门，被百花谷神医救下传授医理。如今在康藏一带收购雪莲冬虫，一边行医一边暗查当年仇家。",
     carry: [
-      { name: "缺齿黄杨算盘", category: "accessory", quality: "蓝" },
-      { name: "沉铁药杵", category: "weapon", quality: "蓝" },
-      { name: "九节青竹行脚杖", category: "weapon", quality: "绿" },
+      { name: "缺齿黄杨算盘", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "沉铁药杵", category: "weapon", quality: "蓝", slot: "equipment" },
+      { name: "九节青竹行脚杖", category: "weapon", quality: "绿", slot: "equipment" },
     ],
     lifeHistory: "世代经营药材生意的商氏家族独女，因家族卷入武林纷争被灭门，被百花谷神医救下传授医理。如今在康藏一带收购雪莲冬虫，一边行医一边暗查当年仇家。",
     likes: "山珍素食、菌菇汤",
     hobby: "研磨药粉、收集稀有草药种子",
     tradeStyle: "童叟无欺，明码标价，有时会用药免费换取穷苦人的情报",
-    follower: { type: "人", name: "药童小九", desc: "商葶苧在雪地里捡到的聋哑少年，背着巨大的药篓，擅长辨识草药。" },
+    follower: { type: "人", name: "药童小九", desc: "商葶苧在雪地里捡到的聋哑少年，背着巨大的药篓，擅长辨识草药。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "百花谷",
       moves: [
@@ -1147,11 +1147,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "神农百草篓", desc: "看似普通的竹篓，内含奇特空间，能保持草药灵气不散" },
-        { quality: "紫", name: "紫金银针套", desc: "一套大小不一的陨星紫金针，可医人亦可杀人" },
+        { quality: "橙", name: "神农百草篓", desc: "看似普通的竹篓，内含奇特空间，能保持草药灵气不散", slot: "equipment" },
+        { quality: "紫", name: "紫金银针套", desc: "一套大小不一的陨星紫金针，可医人亦可杀人", slot: "equipment" },
       ],
       sundries: [
-        { name: "商氏商行地契", desc: "被烧毁一半的家族地契，承载着沉重的过往" },
+        { name: "商氏商行地契", desc: "被烧毁一半的家族地契，承载着沉重的过往", slot: "bag" },
       ],
     },
     shop: {
@@ -1176,16 +1176,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "性格外冷内热，极重承诺与江湖道义。行事果决凌厉，嫉恶如仇，对剑道有着极高的追求，不擅长应对过于热情的寒暄。",
     fullBio: "天山派掌门首徒，自幼在冰天雪地中练剑，心性如冰雪般纯粹。此次奉命下山前往康藏边镇，是为了追剿一名叛逃的魔教妖孽，并寻回本门失落的名剑。",
     carry: [
-      { name: "百年雪水青稞陈酿", category: "misc", quality: "橙" },
-      { name: "蜀锦绣帕", category: "misc", quality: "蓝" },
-      { name: "雪山姜枣干粮", category: "misc", quality: "白" },
-      { name: "糯冰玉牌·护心", category: "armor", quality: "蓝" },
+      { name: "百年雪水青稞陈酿", category: "misc", quality: "橙", slot: "bag" },
+      { name: "蜀锦绣帕", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "雪山姜枣干粮", category: "misc", quality: "白", slot: "bag" },
+      { name: "糯冰玉牌·护心", category: "armor", quality: "蓝", slot: "equipment" },
     ],
     lifeHistory: "天山派掌门首徒，自幼在冰天雪地中练剑，心性如冰雪般纯粹。此次奉命下山前往康藏边镇，是为了追剿一名叛逃的魔教妖孽，并寻回本门失落的名剑。",
     likes: "烤牦牛肉、烈性青稞酒",
     hobby: "擦拭爱剑、在风雪中独自练剑",
     tradeStyle: "谢绝讲价，银货两讫",
-    follower: { type: "剑灵", name: "霜华剑魄", desc: "寄宿在她佩剑中的一缕上古剑气，隐约呈现冰雪女子的形态，能协助防御背后的偷袭。" },
+    follower: { type: "剑灵", name: "霜华剑魄", desc: "寄宿在她佩剑中的一缕上古剑气，隐约呈现冰雪女子的形态，能协助防御背后的偷袭。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "天山派",
       moves: [
@@ -1194,11 +1194,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "霜冷九州剑", desc: "天山派传承名剑，剑刃散发极寒之气，削铁如泥" },
-        { quality: "紫", name: "天山雪缎披风", desc: "由雪蚕丝织就的披风，轻盈无比，大幅提升轻功" },
+        { quality: "橙", name: "霜冷九州剑", desc: "天山派传承名剑，剑刃散发极寒之气，削铁如泥", slot: "equipment" },
+        { quality: "紫", name: "天山雪缎披风", desc: "由雪蚕丝织就的披风，轻盈无比，大幅提升轻功", slot: "equipment" },
       ],
       sundries: [
-        { name: "天山掌门手谕", desc: "代表天山派权威的信物，见此如见掌门" },
+        { name: "天山掌门手谕", desc: "代表天山派权威的信物，见此如见掌门", slot: "bag" },
       ],
     },
     shop: {
@@ -1223,15 +1223,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "表面吊儿郎当、油嘴滑舌，骨子里却极重情义。逢不平事必拔剑相助，是个至情至性的游侠。",
     fullBio: "本是康边客栈跑堂的小二，偶遇剑门关高人传授剑法。后踏入江湖，因资质卓绝名动川藏，却始终牵挂几位红颜知己。",
     carry: [
-      { name: "雪松木剑", category: "weapon", quality: "白" },
-      { name: "劣质烧刀子", category: "misc", quality: "白" },
-      { name: "铜钱串", category: "accessory", quality: "白" },
+      { name: "雪松木剑", category: "weapon", quality: "白", slot: "equipment" },
+      { name: "劣质烧刀子", category: "misc", quality: "白", slot: "bag" },
+      { name: "铜钱串", category: "accessory", quality: "白", slot: "equipment" },
     ],
     lifeHistory: "本是康边客栈跑堂的小二，偶遇剑门关高人传授剑法。后踏入江湖，因资质卓绝名动川藏，却始终牵挂几位红颜知己。",
     likes: "烧鸡与烈酒",
     hobby: "赌坊掷骰、寻访名酒",
     tradeStyle: "豪爽大方，常以物易物",
-    follower: { type: "剑灵", name: "无尘", desc: "一柄古剑中孕育的剑气之灵，形如半透明的飞燕。" },
+    follower: { type: "剑灵", name: "无尘", desc: "一柄古剑中孕育的剑气之灵，形如半透明的飞燕。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "剑门关",
       moves: [
@@ -1240,12 +1240,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "无尘剑", desc: "上古神兵，剑刃如秋水，锋芒慑人" },
-        { quality: "紫", name: "玄武软甲", desc: "贴身防具，刀枪不入" },
+        { quality: "橙", name: "无尘剑", desc: "上古神兵，剑刃如秋水，锋芒慑人", slot: "equipment" },
+        { quality: "紫", name: "玄武软甲", desc: "贴身防具，刀枪不入", slot: "equipment" },
       ],
       sundries: [
-        { name: "半块玉珮", desc: "与某位少女定情之物" },
-        { name: "紫金葫芦", desc: "装满西域烈酒的酒器" },
+        { name: "半块玉珮", desc: "与某位少女定情之物", slot: "bag" },
+        { name: "紫金葫芦", desc: "装满西域烈酒的酒器", slot: "bag" },
       ],
     },
     shop: {
@@ -1270,15 +1270,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "温婉纯善，悲天悯人。看似柔弱如水，实则内心极具韧性，为守护苍生与所爱之人可牺牲一切。",
     fullBio: "自幼隐居曲措乡外的翠灵岛，身负天龙圣族古老血脉。后因变故步入风波诡谲的江湖，在宿命与私情之间艰难跋涉。",
     carry: [
-      { name: "马帮金创贴", category: "misc", quality: "白" },
-      { name: "黑风寨草药包", category: "misc", quality: "绿" },
-      { name: "蜀锦绣帕", category: "misc", quality: "蓝" },
+      { name: "马帮金创贴", category: "misc", quality: "白", slot: "bag" },
+      { name: "黑风寨草药包", category: "misc", quality: "绿", slot: "bag" },
+      { name: "蜀锦绣帕", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "自幼隐居曲措乡外的翠灵岛，身负天龙圣族古老血脉。后因变故步入风波诡谲的江湖，在宿命与私情之间艰难跋涉。",
     likes: "冰糖葫芦、素食甜点",
     hobby: "侍弄花草、吹奏短笛",
     tradeStyle: "柔声细语，不喜还价",
-    follower: { type: "兽", name: "小石头", desc: "通体碧绿的玉佛化成的通灵灵雀，能识破邪祟。" },
+    follower: { type: "兽", name: "小石头", desc: "通体碧绿的玉佛化成的通灵灵雀，能识破邪祟。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "天龙门",
       moves: [
@@ -1287,12 +1287,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "天蛇杖", desc: "天龙门圣物，杖首双蛇盘绕，蕴含无穷灵力" },
-        { quality: "紫", name: "圣灵披风", desc: "流光溢彩的羽衣，能御五行真气" },
+        { quality: "橙", name: "天蛇杖", desc: "天龙门圣物，杖首双蛇盘绕，蕴含无穷灵力", slot: "equipment" },
+        { quality: "紫", name: "圣灵披风", desc: "流光溢彩的羽衣，能御五行真气", slot: "equipment" },
       ],
       sundries: [
-        { name: "水灵珠", desc: "散发着柔和水气的奇珠" },
-        { name: "翠玉笛", desc: "吹奏可安抚野兽的乐器" },
+        { name: "水灵珠", desc: "散发着柔和水气的奇珠", slot: "bag" },
+        { name: "翠玉笛", desc: "吹奏可安抚野兽的乐器", slot: "bag" },
       ],
     },
     shop: {
@@ -1317,15 +1317,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "骄傲要强，嘴硬心软。行事带着千金大小姐的刁蛮任性，一旦认准了人却又敢爱敢恨，生死相随。",
     fullBio: "锦官城武林盟主之女，自幼集万千宠爱于一身。设下比武招亲本是骄傲作祟，却不想败给那个混混般的游侠，从此甘愿随他浪迹康藏。",
     carry: [
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "软鞭·柳", category: "weapon", quality: "蓝" },
-      { name: "素银易容粉盒", category: "accessory", quality: "蓝" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "软鞭·柳", category: "weapon", quality: "蓝", slot: "equipment" },
+      { name: "素银易容粉盒", category: "accessory", quality: "蓝", slot: "equipment" },
     ],
     lifeHistory: "锦官城武林盟主之女，自幼集万千宠爱于一身。设下比武招亲本是骄傲作祟，却不想败给那个混混般的游侠，从此甘愿随他浪迹康藏。",
     likes: "精致川菜、辛辣炙烤",
     hobby: "策马驰骋、收集神兵利器",
     tradeStyle: "挥金如土，看中就买",
-    follower: { type: "人", name: "隐龙卫", desc: "锦官林家暗中派来保护大小姐的蒙面死士。" },
+    follower: { type: "人", name: "隐龙卫", desc: "锦官林家暗中派来保护大小姐的蒙面死士。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "锦官派",
       moves: [
@@ -1334,12 +1334,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "龙泉剑", desc: "寒光冷冽的名剑，剑身隐有龙纹" },
-        { quality: "紫", name: "金蛇鞭", desc: "以上等金丝混合蛟龙筋淬炼的软鞭" },
+        { quality: "紫", name: "龙泉剑", desc: "寒光冷冽的名剑，剑身隐有龙纹", slot: "equipment" },
+        { quality: "紫", name: "金蛇鞭", desc: "以上等金丝混合蛟龙筋淬炼的软鞭", slot: "equipment" },
       ],
       sundries: [
-        { name: "莫逆之钱", desc: "用来施展暗器的古铜钱" },
-        { name: "比武招亲锦帕", desc: "红色的丝绸方巾" },
+        { name: "莫逆之钱", desc: "用来施展暗器的古铜钱", slot: "bag" },
+        { name: "比武招亲锦帕", desc: "红色的丝绸方巾", slot: "bag" },
       ],
     },
     shop: {
@@ -1364,15 +1364,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "天真无邪，活泼好动，对世俗礼法一无所知。爱恨直接，为帮心上人可以毫不犹豫地使用残忍蛊术。",
     fullBio: "生长于康藏边境的五仙教秘境，自幼与毒虫蛊兽为伴。为寻找走失的圣物来到曲措乡，邂逅了那位剑客，从此一心一意跟在他身后。",
     carry: [
-      { name: "曼陀罗花", category: "misc", quality: "绿" },
-      { name: "藏香猪烤肉", category: "misc", quality: "蓝" },
-      { name: "红绳铜铃脚环", category: "accessory", quality: "白" },
+      { name: "曼陀罗花", category: "misc", quality: "绿", slot: "bag" },
+      { name: "藏香猪烤肉", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "红绳铜铃脚环", category: "accessory", quality: "白", slot: "equipment" },
     ],
     lifeHistory: "生长于康藏边境的五仙教秘境，自幼与毒虫蛊兽为伴。为寻找走失的圣物来到曲措乡，邂逅了那位剑客，从此一心一意跟在他身后。",
     likes: "剧毒药草、生肉与虫子烧烤",
     hobby: "炼蛊、作弄中原武林人士",
     tradeStyle: "随性而为，喜欢拿毒虫换宝贝",
-    follower: { type: "兽", name: "食蛊鸟", desc: "羽毛绚丽的奇异小鸟，最爱吞食各类毒虫蛊毒。" },
+    follower: { type: "兽", name: "食蛊鸟", desc: "羽毛绚丽的奇异小鸟，最爱吞食各类毒虫蛊毒。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "五仙教",
       moves: [
@@ -1381,12 +1381,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "玄冥宝刀", desc: "造型奇特的弯刀，刀刃呈碧绿色" },
-        { quality: "橙", name: "五毒珠", desc: "百毒不侵的圣物，五仙教至宝" },
+        { quality: "紫", name: "玄冥宝刀", desc: "造型奇特的弯刀，刀刃呈碧绿色", slot: "equipment" },
+        { quality: "橙", name: "五毒珠", desc: "百毒不侵的圣物，五仙教至宝", slot: "equipment" },
       ],
       sundries: [
-        { name: "引路蜂", desc: "能追踪气味的异种蜜蜂" },
-        { name: "神木林地图", desc: "画在兽皮上的粗糙地图" },
+        { name: "引路蜂", desc: "能追踪气味的异种蜜蜂", slot: "bag" },
+        { name: "神木林地图", desc: "画在兽皮上的粗糙地图", slot: "bag" },
       ],
     },
     shop: {
@@ -1411,15 +1411,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "嘴碎滑头，看似贪财市侩，实则古道热肠。遇到稀世古董便走不动道，危急时刻却总能拔剑挺身而出。",
     fullBio: "原是锦官城永安当的打杂伙计，偶然获得一柄神秘古剑，自此卷入康藏江湖的风波。据说其前世乃是镇守雪域的绝世神将。",
     carry: [
-      { name: "缺齿黄杨算盘", category: "accessory", quality: "蓝" },
-      { name: "响铃铜钱串", category: "accessory", quality: "绿" },
-      { name: "青稞饼", category: "misc", quality: "白" },
+      { name: "缺齿黄杨算盘", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "响铃铜钱串", category: "accessory", quality: "绿", slot: "equipment" },
+      { name: "青稞饼", category: "misc", quality: "白", slot: "bag" },
     ],
     lifeHistory: "原是锦官城永安当的打杂伙计，偶然获得一柄神秘古剑，自此卷入康藏江湖的风波。据说其前世乃是镇守雪域的绝世神将。",
     likes: "偏爱甜糯糕点与蜀地麻辣火锅。",
     hobby: "收集古玩字画，深夜盘算账本。",
     tradeStyle: "讨价还价，雁过拔毛。",
-    follower: { type: "兽", name: "小哼", desc: "一只胖乎乎的藏地小野猪，嗅觉灵敏能寻宝" },
+    follower: { type: "兽", name: "小哼", desc: "一只胖乎乎的藏地小野猪，嗅觉灵敏能寻宝", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "剑门关",
       moves: [
@@ -1428,11 +1428,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "镇妖剑", desc: "剑身铭刻上古符文，锐气逼人" },
-        { quality: "紫", name: "百里靴", desc: "轻巧如羽，据说能日行百里" },
+        { quality: "橙", name: "镇妖剑", desc: "剑身铭刻上古符文，锐气逼人", slot: "equipment" },
+        { quality: "紫", name: "百里靴", desc: "轻巧如羽，据说能日行百里", slot: "equipment" },
       ],
       sundries: [
-        { name: "永安当账本", desc: "密密麻麻记录着江湖人士的当品" },
+        { name: "永安当账本", desc: "密密麻麻记录着江湖人士的当品", slot: "bag" },
       ],
     },
     shop: {
@@ -1457,16 +1457,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "娇纵任性，脾气火爆，一言不合便使暗器。内心其实极度渴望关爱，对认定的朋友毫无保留。",
     fullBio: "并非唐门门主亲生，实乃雪域高原神树之果化身，后被唐门收养。因身世之谜被逐出家门，流落康藏边镇寻找亲人的线索。",
     carry: [
-      { name: "卓玛的狼骨糖", category: "misc", quality: "蓝" },
-      { name: "毒蝎粉", category: "misc", quality: "绿" },
-      { name: "蜀锦绣帕", category: "misc", quality: "蓝" },
-      { name: "旧铜镜", category: "accessory", quality: "紫" },
+      { name: "卓玛的狼骨糖", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "毒蝎粉", category: "misc", quality: "绿", slot: "bag" },
+      { name: "蜀锦绣帕", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "旧铜镜", category: "accessory", quality: "紫", slot: "equipment" },
     ],
     lifeHistory: "并非唐门门主亲生，实乃雪域高原神树之果化身，后被唐门收养。因身世之谜被逐出家门，流落康藏边镇寻找亲人的线索。",
     likes: "喜欢酸甜可口的果脯与清淡素食。",
     hobby: "逗弄宠物，摆弄奇异毒草。",
     tradeStyle: "看顺眼白送，看不顺眼千金不卖。",
-    follower: { type: "兽", name: "花楹", desc: "百年罕见的五毒兽，能解百毒，形似生翼仙薯" },
+    follower: { type: "兽", name: "花楹", desc: "百年罕见的五毒兽，能解百毒，形似生翼仙薯", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "唐门",
       moves: [
@@ -1475,11 +1475,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "神树护符", desc: "散发着生命气息的碧绿挂坠" },
-        { quality: "紫", name: "天绝刺", desc: "唐门秘制短兵，见血封喉" },
+        { quality: "橙", name: "神树护符", desc: "散发着生命气息的碧绿挂坠", slot: "equipment" },
+        { quality: "紫", name: "天绝刺", desc: "唐门秘制短兵，见血封喉", slot: "equipment" },
       ],
       sundries: [
-        { name: "唐门手令", desc: "精致的紫金令牌" },
+        { name: "唐门手令", desc: "精致的紫金令牌", slot: "bag" },
       ],
     },
     shop: {
@@ -1504,16 +1504,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "蓝衣时温婉柔弱、楚楚可怜；一旦遇到危险，便会化身红衣，性格暴烈狠辣、毫不留情。",
     fullBio: "千年前古蜀国破，为助王兄铸成魔剑，毅然跃入铸剑炉中。千年后魂魄寄宿剑中重见天日，一路追随兄长的转世来到曲措乡。",
     carry: [
-      { name: "七星桩磨剑石", category: "misc", quality: "蓝" },
-      { name: "呼延雪的剑穗", category: "accessory", quality: "白" },
-      { name: "旧护身符", category: "accessory", quality: "绿" },
-      { name: "七星绣针匣", category: "weapon", quality: "橙" },
+      { name: "七星桩磨剑石", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "呼延雪的剑穗", category: "accessory", quality: "白", slot: "equipment" },
+      { name: "旧护身符", category: "accessory", quality: "绿", slot: "equipment" },
+      { name: "七星绣针匣", category: "weapon", quality: "橙", slot: "equipment" },
     ],
     lifeHistory: "千年前古蜀国破，为助王兄铸成魔剑，毅然跃入铸剑炉中。千年后魂魄寄宿剑中重见天日，一路追随兄长的转世来到曲措乡。",
     likes: "不食人间烟火，偶尔轻嗅香火气息。",
     hobby: "默默发呆，擦拭古剑。",
     tradeStyle: "怯生生地递出物品，不敢多言。",
-    follower: { type: "剑灵", name: "红葵", desc: "龙葵的另一人格化身，手持巨弓，烈焰红裙" },
+    follower: { type: "剑灵", name: "红葵", desc: "龙葵的另一人格化身，手持巨弓，烈焰红裙", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "三星堆",
       moves: [
@@ -1522,11 +1522,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "幽冥魔剑", desc: "剑身宽阔，紫气缭绕，蕴含千年怨气" },
-        { quality: "紫", name: "广袖流仙裙", desc: "古蜀国王室至宝，不染尘埃" },
+        { quality: "橙", name: "幽冥魔剑", desc: "剑身宽阔，紫气缭绕，蕴含千年怨气", slot: "equipment" },
+        { quality: "紫", name: "广袖流仙裙", desc: "古蜀国王室至宝，不染尘埃", slot: "equipment" },
       ],
       sundries: [
-        { name: "古国丝带", desc: "绣着古蜀图腾的蓝色发带" },
+        { name: "古国丝带", desc: "绣着古蜀图腾的蓝色发带", slot: "bag" },
       ],
     },
     shop: {
@@ -1551,15 +1551,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "成熟端庄，风姿绰约，行事稳重。对天下苍生有着天生的悲悯，但在感情上固执痴狂，甘愿飞蛾扑火。",
     fullBio: "拥有上古神明血脉，本该守护苗疆，却因爱上汉人修道者而历经三世情劫。为寻觅转世恋人，独自来到这风雪交加的康藏边陲。",
     carry: [
-      { name: "狼牙骨哨", category: "accessory", quality: "蓝" },
-      { name: "五灵避毒珠", category: "accessory", quality: "紫" },
-      { name: "素银易容粉盒", category: "accessory", quality: "蓝" },
+      { name: "狼牙骨哨", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "五灵避毒珠", category: "accessory", quality: "紫", slot: "equipment" },
+      { name: "素银易容粉盒", category: "accessory", quality: "蓝", slot: "equipment" },
     ],
     lifeHistory: "拥有上古神明血脉，本该守护苗疆，却因爱上汉人修道者而历经三世情劫。为寻觅转世恋人，独自来到这风雪交加的康藏边陲。",
     likes: "喜饮桃花酿，爱吃清甜的莲藕。",
     hobby: "吹奏骨笛，对月独酌。",
     tradeStyle: "价格随缘，以物易物。",
-    follower: { type: "兽", name: "灵蛇", desc: "通体雪白的神圣蛊蛇，可御敌也可疗伤" },
+    follower: { type: "兽", name: "灵蛇", desc: "通体雪白的神圣蛊蛇，可御敌也可疗伤", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "五仙",
       moves: [
@@ -1568,11 +1568,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "天蛇杖", desc: "杖首盘绕白蛇，散发神圣灵光" },
-        { quality: "紫", name: "苗疆紫纱", desc: "紫纱织就，水火不侵" },
+        { quality: "橙", name: "天蛇杖", desc: "杖首盘绕白蛇，散发神圣灵光", slot: "equipment" },
+        { quality: "紫", name: "苗疆紫纱", desc: "紫纱织就，水火不侵", slot: "equipment" },
       ],
       sundries: [
-        { name: "忘情水", desc: "据说饮下可忘却三生情缘的苦水" },
+        { name: "忘情水", desc: "据说饮下可忘却三生情缘的苦水", slot: "bag" },
       ],
     },
     shop: {
@@ -1597,15 +1597,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "懵懂质朴，不通人情世故，认死理。信奉“我命由我不由天”，对朋友倾尽所有。",
     fullBio: "自幼随隐居父亲在昆仑冰峰狩猎为生，未曾涉足江湖。父亲过世后，为寻猎物误入曲措乡，凭借天生神力和一把重弓在康藏边镇引起轩然大波。",
     carry: [
-      { name: "牛角弓", category: "weapon", quality: "绿" },
-      { name: "藏香猪烤肉", category: "misc", quality: "蓝" },
-      { name: "七星桩磨剑石", category: "misc", quality: "蓝" },
+      { name: "牛角弓", category: "weapon", quality: "绿", slot: "equipment" },
+      { name: "藏香猪烤肉", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "七星桩磨剑石", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "自幼随隐居父亲在昆仑冰峰狩猎为生，未曾涉足江湖。父亲过世后，为寻猎物误入曲措乡，凭借天生神力和一把重弓在康藏边镇引起轩然大波。",
     likes: "烤山猪肉、烈酒",
     hobby: "抓飞鸟、在雪地里打滚",
     tradeStyle: "喜欢以物易物，对钱币毫无概念。",
-    follower: { type: "兽", name: "小野猪", desc: "长着獠牙的健壮小野猪，常被天河当成储备粮。" },
+    follower: { type: "兽", name: "小野猪", desc: "长着獠牙的健壮小野猪，常被天河当成储备粮。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "昆仑",
       moves: [
@@ -1614,11 +1614,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "天河剑", desc: "非金非玉的神秘古剑，寒气逼人" },
-        { quality: "绿", name: "兽皮猎装", desc: "昆仑野兽毛皮缝制的粗糙衣物" },
+        { quality: "橙", name: "天河剑", desc: "非金非玉的神秘古剑，寒气逼人", slot: "equipment" },
+        { quality: "绿", name: "兽皮猎装", desc: "昆仑野兽毛皮缝制的粗糙衣物", slot: "equipment" },
       ],
       sundries: [
-        { name: "木雕灵牌", desc: "刻着“爱妻”字样的粗糙木牌" },
+        { name: "木雕灵牌", desc: "刻着“爱妻”字样的粗糙木牌", slot: "bag" },
       ],
     },
     shop: {
@@ -1643,16 +1643,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "活泼机灵，常带三分促狭笑意。看似贪财好利，实则重情重义，深知命不久矣而更显通透。",
     fullBio: "出生于世代盗墓的韩氏家族，因惊扰阴脉世代短命。为寻长生之法解除诅咒，拜入三星堆研究古蜀秘墓，一路追踪风水异象来到康藏边镇。",
     carry: [
-      { name: "三棱透骨钉", category: "weapon", quality: "紫" },
-      { name: "素银易容粉盒", category: "accessory", quality: "蓝" },
-      { name: "铜钱串", category: "accessory", quality: "白" },
-      { name: "磨损藏银火镰", category: "accessory", quality: "紫" },
+      { name: "三棱透骨钉", category: "weapon", quality: "紫", slot: "equipment" },
+      { name: "素银易容粉盒", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "铜钱串", category: "accessory", quality: "白", slot: "equipment" },
+      { name: "磨损藏银火镰", category: "accessory", quality: "紫", slot: "equipment" },
     ],
     lifeHistory: "出生于世代盗墓的韩氏家族，因惊扰阴脉世代短命。为寻长生之法解除诅咒，拜入三星堆研究古蜀秘墓，一路追踪风水异象来到康藏边镇。",
     likes: "精致的点心、甜汤",
     hobby: "鉴定古董、看风水",
     tradeStyle: "漫天要价，就地还钱，喜欢讨价还价的乐趣。",
-    follower: { type: "机关人偶", name: "探路灵鼠", desc: "青铜打造的机关老鼠，用于在古墓中探寻毒气与机关。" },
+    follower: { type: "机关人偶", name: "探路灵鼠", desc: "青铜打造的机关老鼠，用于在古墓中探寻毒气与机关。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "三星堆",
       moves: [
@@ -1661,12 +1661,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "望舒剑", desc: "散发着幽蓝寒气的上古神兵，极度嗜取宿主灵力" },
-        { quality: "紫", name: "金丝蚕甲", desc: "刀枪不入的贴身软甲" },
+        { quality: "橙", name: "望舒剑", desc: "散发着幽蓝寒气的上古神兵，极度嗜取宿主灵力", slot: "equipment" },
+        { quality: "紫", name: "金丝蚕甲", desc: "刀枪不入的贴身软甲", slot: "equipment" },
       ],
       sundries: [
-        { name: "寻龙罗盘", desc: "能定位阴气与宝物的青铜罗盘" },
-        { name: "墓坑泥土", desc: "带有奇异香味的陈年古土" },
+        { name: "寻龙罗盘", desc: "能定位阴气与宝物的青铜罗盘", slot: "bag" },
+        { name: "墓坑泥土", desc: "带有奇异香味的陈年古土", slot: "bag" },
       ],
     },
     shop: {
@@ -1691,16 +1691,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "娴静温婉，知书达理。外表柔弱实则内心坚韧，对妖与人一视同仁，带有看透世俗的疏离感。",
     fullBio: "本是西域幻瞑界梦貘一族的少主，幼时流落中原被官宦人家收养。成年后为追寻身世之谜，携一尾焦尾琴行遍康藏，借居于百花谷，以琴音安抚边镇暴戾之气。",
     carry: [
-      { name: "蜀锦绣帕", category: "misc", quality: "蓝" },
-      { name: "云锦香囊", category: "accessory", quality: "蓝" },
-      { name: "梵音铃", category: "weapon", quality: "紫" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
+      { name: "蜀锦绣帕", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "云锦香囊", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "梵音铃", category: "weapon", quality: "紫", slot: "equipment" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "本是西域幻瞑界梦貘一族的少主，幼时流落中原被官宦人家收养。成年后为追寻身世之谜，携一尾焦尾琴行遍康藏，借居于百花谷，以琴音安抚边镇暴戾之气。",
     likes: "清淡素食、极品香茗",
     hobby: "调香、弹琴",
     tradeStyle: "优雅从容，不争锱铢，看重缘分。",
-    follower: { type: "兽", name: "紫灵梦貘", desc: "巴掌大小的紫色异兽，能吞噬恶梦并吐出迷雾。" },
+    follower: { type: "兽", name: "紫灵梦貘", desc: "巴掌大小的紫色异兽，能吞噬恶梦并吐出迷雾。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "百花",
       moves: [
@@ -1709,12 +1709,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "司幽箜篌", desc: "非木非金的奇艺乐器，弹奏时有百鸟朝凤之音" },
-        { quality: "紫", name: "琉璃宫装", desc: "水火不侵的华美衣物" },
+        { quality: "橙", name: "司幽箜篌", desc: "非木非金的奇艺乐器，弹奏时有百鸟朝凤之音", slot: "equipment" },
+        { quality: "紫", name: "琉璃宫装", desc: "水火不侵的华美衣物", slot: "equipment" },
       ],
       sundries: [
-        { name: "帝女翡翠", desc: "蕴含强大妖力的绿色吊坠" },
-        { name: "特制苏合香", desc: "闻之令人心神宁静的绝品香料" },
+        { name: "帝女翡翠", desc: "蕴含强大妖力的绿色吊坠", slot: "bag" },
+        { name: "特制苏合香", desc: "闻之令人心神宁静的绝品香料", slot: "bag" },
       ],
     },
     shop: {
@@ -1739,15 +1739,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "大大咧咧，为人极讲义气。即便知晓自己魔族血脉，也坚守本心，不愿滥杀无辜，乐观开朗。",
     fullBio: "自幼在黑风寨土匪窝长大，被当做少寨主培养。一次偶然冲突中觉醒了被封印的魔族血脉，为寻找压制魔气的方法，他离开山寨，手持双刃踏入曲措乡的复杂江湖。",
     carry: [
-      { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫" },
-      { name: "七星桩磨剑石", category: "misc", quality: "蓝" },
-      { name: "旧护身符", category: "accessory", quality: "绿" },
+      { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫", slot: "equipment" },
+      { name: "七星桩磨剑石", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "旧护身符", category: "accessory", quality: "绿", slot: "equipment" },
     ],
     lifeHistory: "自幼在黑风寨土匪窝长大，被当做少寨主培养。一次偶然冲突中觉醒了被封印的魔族血脉，为寻找压制魔气的方法，他离开山寨，手持双刃踏入曲措乡的复杂江湖。",
     likes: "大口吃肉、大碗喝酒",
     hobby: "掰手腕、劫富济贫",
     tradeStyle: "豪爽大方，看顺眼了直接白送。",
-    follower: { type: "人", name: "山寨喽啰", desc: "黑风寨的忠心小弟，替少当家扛兵器和行李。" },
+    follower: { type: "人", name: "山寨喽啰", desc: "黑风寨的忠心小弟，替少当家扛兵器和行李。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "黑风",
       moves: [
@@ -1756,11 +1756,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "百战双刃", desc: "饱饮鲜血的厚重短兵，刃口隐隐有红光" },
-        { quality: "白", name: "黑风寨头巾", desc: "洗得发白的土匪头巾" },
+        { quality: "紫", name: "百战双刃", desc: "饱饮鲜血的厚重短兵，刃口隐隐有红光", slot: "equipment" },
+        { quality: "白", name: "黑风寨头巾", desc: "洗得发白的土匪头巾", slot: "equipment" },
       ],
       sundries: [
-        { name: "半块玉佩", desc: "母亲留下的遗物，内藏玄机" },
+        { name: "半块玉佩", desc: "母亲留下的遗物，内藏玄机", slot: "bag" },
       ],
     },
     shop: {
@@ -1785,15 +1785,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "看似圆滑世故、巧言令色，实则心思缜密，对认定的同伴有着绝对的保护欲，行事不拘小节。",
     fullBio: "自幼便失去了过往记忆，与越祈相伴流落康藏边镇，凭借过人的反应与市井智慧在锦官门下混得风生水起，暗中追查自身身世的蛛丝马迹。",
     carry: [
-      { name: "铁莲子", category: "misc", quality: "绿" },
-      { name: "铜钱串", category: "accessory", quality: "白" },
-      { name: "牦牛肉包子", category: "misc", quality: "绿" },
+      { name: "铁莲子", category: "misc", quality: "绿", slot: "bag" },
+      { name: "铜钱串", category: "accessory", quality: "白", slot: "equipment" },
+      { name: "牦牛肉包子", category: "misc", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "自幼便失去了过往记忆，与越祈相伴流落康藏边镇，凭借过人的反应与市井智慧在锦官门下混得风生水起，暗中追查自身身世的蛛丝马迹。",
     likes: "偏爱劲道面食与烈酒。",
     hobby: "喜欢把玩各种机巧小玩意与掷骰子。",
     tradeStyle: "讨价还价，雁过拔毛，无利不起早。",
-    follower: { type: "人", name: "无名暗卫", desc: "身着奇特罩袍的神秘剑客，暗中默默守护，身法诡异绝伦。" },
+    follower: { type: "人", name: "无名暗卫", desc: "身着奇特罩袍的神秘剑客，暗中默默守护，身法诡异绝伦。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "\"锦官\"",
       moves: [
@@ -1802,11 +1802,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "蓝", name: "玄铁独眼罩", desc: "遮挡左眼的特制眼罩，内部刻有静心阵法。" },
-        { quality: "紫", name: "青锋双刃", desc: "一长一短的子母双刀，锋利异常。" },
+        { quality: "蓝", name: "玄铁独眼罩", desc: "遮挡左眼的特制眼罩，内部刻有静心阵法。", slot: "equipment" },
+        { quality: "紫", name: "青锋双刃", desc: "一长一短的子母双刀，锋利异常。", slot: "equipment" },
       ],
       sundries: [
-        { name: "奇异图腾玉佩", desc: "雕刻着未知飞行巨兽的玉佩，温润生辉。" },
+        { name: "奇异图腾玉佩", desc: "雕刻着未知飞行巨兽的玉佩，温润生辉。", slot: "bag" },
       ],
     },
     shop: {
@@ -1831,15 +1831,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "性格天真烂漫，不谙世事，行事全凭直觉与对今朝的依赖，情绪纯粹，不懂掩饰，对食物极其执着。",
     fullBio: "似从古老遗迹中苏醒，身负着三星堆一脉无法解释的庞大异能。没有善恶之分，只知紧紧跟在越今朝身边，将他视为世上唯一的归宿。",
     carry: [
-      { name: "红绳桃核串", category: "accessory", quality: "白" },
-      { name: "松子糖", category: "misc", quality: "白" },
-      { name: "桃木平安牌", category: "accessory", quality: "白" },
+      { name: "红绳桃核串", category: "accessory", quality: "白", slot: "equipment" },
+      { name: "松子糖", category: "misc", quality: "白", slot: "bag" },
+      { name: "桃木平安牌", category: "accessory", quality: "白", slot: "equipment" },
     ],
     lifeHistory: "似从古老遗迹中苏醒，身负着三星堆一脉无法解释的庞大异能。没有善恶之分，只知紧紧跟在越今朝身边，将他视为世上唯一的归宿。",
     likes: "嗜甜如命，最爱鸡蛋面与糖葫芦。",
     hobby: "喜欢盯着天上的云彩看，或是把玩亮晶晶的石头。",
     tradeStyle: "全凭喜好，看中就拿，不懂金钱概念。",
-    follower: { type: "兽", name: "柷敔灵卵", desc: "一颗散发着微光的神秘灵卵，悬浮于半空，能感知危险。" },
+    follower: { type: "兽", name: "柷敔灵卵", desc: "一颗散发着微光的神秘灵卵，悬浮于半空，能感知危险。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "\"三星堆\"",
       moves: [
@@ -1848,11 +1848,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "青铜神树环", desc: "三星堆出土的古老手环，能压制暴走的真气。" },
-        { quality: "蓝", name: "流光短剑", desc: "虽然是兵器，但通常被她用来切烤肉。" },
+        { quality: "紫", name: "青铜神树环", desc: "三星堆出土的古老手环，能压制暴走的真气。", slot: "equipment" },
+        { quality: "蓝", name: "流光短剑", desc: "虽然是兵器，但通常被她用来切烤肉。", slot: "equipment" },
       ],
       sundries: [
-        { name: "半张大饼", desc: "咬了一口的大饼，上面还留着小巧的牙印。" },
+        { name: "半张大饼", desc: "咬了一口的大饼，上面还留着小巧的牙印。", slot: "bag" },
       ],
     },
     shop: {
@@ -1877,15 +1877,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "沉默寡言，面冷心热，习惯将痛苦与责任一力承担。面对强敌坚韧不拔，对亲近之物却有一丝不易察觉的温柔。",
     fullBio: "本是中原名门弟子，因体内封印着上古煞气与半道残魂而屡遭排挤。为寻找解煞之法，背负着一把凶剑踏入康藏边镇，成为了独孤门下最特立独行的游侠。",
     carry: [
-      { name: "丹巴祖传厨刀", category: "weapon", quality: "绿" },
-      { name: "马帮干粮包", category: "misc", quality: "白" },
-      { name: "醒神草药茶", category: "misc", quality: "绿" },
+      { name: "丹巴祖传厨刀", category: "weapon", quality: "绿", slot: "equipment" },
+      { name: "马帮干粮包", category: "misc", quality: "白", slot: "bag" },
+      { name: "醒神草药茶", category: "misc", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "本是中原名门弟子，因体内封印着上古煞气与半道残魂而屡遭排挤。为寻找解煞之法，背负着一把凶剑踏入康藏边镇，成为了独孤门下最特立独行的游侠。",
     likes: "口味清淡，偶尔喜欢烤肉，极怕饮酒。",
     hobby: "喜欢雕刻木雕与喂养禽鸟。",
     tradeStyle: "干脆利落，只用金银结账，不留姓名。",
-    follower: { type: "兽", name: "阿翔", desc: "体型庞大、眼神锐利的异种海东青，爱吃五花肉，极具灵性。" },
+    follower: { type: "兽", name: "阿翔", desc: "体型庞大、眼神锐利的异种海东青，爱吃五花肉，极具灵性。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "\"独孤\"",
       moves: [
@@ -1894,11 +1894,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "暗红煞气剑匣", desc: "封印凶剑的沉重剑匣，散发着隐隐的凶戾之气。" },
-        { quality: "紫", name: "南疆玄羽护腕", desc: "以异兽翎羽和玄铁编织的护腕，可稳固经脉。" },
+        { quality: "橙", name: "暗红煞气剑匣", desc: "封印凶剑的沉重剑匣，散发着隐隐的凶戾之气。", slot: "equipment" },
+        { quality: "紫", name: "南疆玄羽护腕", desc: "以异兽翎羽和玄铁编织的护腕，可稳固经脉。", slot: "equipment" },
       ],
       sundries: [
-        { name: "残破的木雕", desc: "雕刻着一个模糊人像的木头，边缘已被摩挲得十分光滑。" },
+        { name: "残破的木雕", desc: "雕刻着一个模糊人像的木头，边缘已被摩挲得十分光滑。", slot: "bag" },
       ],
     },
     shop: {
@@ -1923,15 +1923,15 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "善良且充满朝气，对生老病死有着超然的理解。为了守护重要之人，拥有不惧任何诅咒与天命的坚定意志。",
     fullBio: "来自隐秘的巫山神女幽谷，自幼与毒瘴灵体为伴。为寻找并治愈命中注定的那名煞气剑客，孤身踏入这混乱交织的曲措乡，以引路人之姿施展诡秘而温暖的巫术。",
     carry: [
-      { name: "紫泥百草壶", category: "accessory", quality: "紫" },
-      { name: "熊山猎哨", category: "misc", quality: "白" },
-      { name: "曼陀罗花", category: "misc", quality: "绿" },
+      { name: "紫泥百草壶", category: "accessory", quality: "紫", slot: "equipment" },
+      { name: "熊山猎哨", category: "misc", quality: "白", slot: "bag" },
+      { name: "曼陀罗花", category: "misc", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "来自隐秘的巫山神女幽谷，自幼与毒瘴灵体为伴。为寻找并治愈命中注定的那名煞气剑客，孤身踏入这混乱交织的曲措乡，以引路人之姿施展诡秘而温暖的巫术。",
     likes: "喜欢尝试各种奇怪食材炖煮的焦炭料理。",
     hobby: "喜欢收集各色毒虫与泥人娃娃。",
     tradeStyle: "以物易物，常用珍稀草药换取所需情报。",
-    follower: { type: "兽", name: "幽光灵蛾", desc: "散发着幽蓝色磷光的巨大飞蛾，能吸食毒瘴。" },
+    follower: { type: "兽", name: "幽光灵蛾", desc: "散发着幽蓝色磷光的巨大飞蛾，能吸食毒瘴。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "\"巫山\"",
       moves: [
@@ -1940,11 +1940,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "忘川幽冥镰", desc: "刃口泛着幽蓝光芒的奇形巨镰，挥舞时有鬼哭之音。" },
-        { quality: "蓝", name: "雪丝云履", desc: "轻盈无比的布鞋，不染尘埃。" },
+        { quality: "橙", name: "忘川幽冥镰", desc: "刃口泛着幽蓝光芒的奇形巨镰，挥舞时有鬼哭之音。", slot: "equipment" },
+        { quality: "蓝", name: "雪丝云履", desc: "轻盈无比的布鞋，不染尘埃。", slot: "equipment" },
       ],
       sundries: [
-        { name: "一团焦黑的饭团", desc: "完全看不出原料的诡异食物，散发着致死的气息。" },
+        { name: "一团焦黑的饭团", desc: "完全看不出原料的诡异食物，散发着致死的气息。", slot: "bag" },
       ],
     },
     shop: {
@@ -1969,16 +1969,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "乐天派，好奇心极强，对江湖恩怨不感兴趣，只对各类古怪机关和图谱双眼发光，为人仗义慷慨。",
     fullBio: "原为锦官城富商之子，偶然接触到古蜀三星堆遗留的青铜机关术后离家出走，来到康藏边镇寻找失落的偃甲部件与上古图纸。",
     carry: [
-      { name: "才旦的旧锁", category: "accessory", quality: "白" },
-      { name: "烤羊腿", category: "misc", quality: "绿" },
-      { name: "唐门淬毒机括残件", category: "misc", quality: "紫" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
+      { name: "才旦的旧锁", category: "accessory", quality: "白", slot: "equipment" },
+      { name: "烤羊腿", category: "misc", quality: "绿", slot: "bag" },
+      { name: "唐门淬毒机括残件", category: "misc", quality: "紫", slot: "bag" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "原为锦官城富商之子，偶然接触到古蜀三星堆遗留的青铜机关术后离家出走，来到康藏边镇寻找失落的偃甲部件与上古图纸。",
     likes: "甜脆小吃、烤肉串、糖画",
     hobby: "拆解组装机关、逗弄机甲鸟、逛铁匠铺",
     tradeStyle: "以稀有矿石或机关零件以物易物，不缺金银。",
-    follower: { type: "机关人偶", name: "馋鸡偃甲", desc: "一只外貌似黄色小鸟的精巧青铜偃甲，能喷吐微弱火花以照明或惊敌" },
+    follower: { type: "机关人偶", name: "馋鸡偃甲", desc: "一只外貌似黄色小鸟的精巧青铜偃甲，能喷吐微弱火花以照明或惊敌", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "三星堆秘传偃术",
       moves: [
@@ -1987,11 +1987,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "晗光剑", desc: "剑身流转着奇异光泽的古剑，极具灵性" },
-        { quality: "蓝", name: "青铜护臂", desc: "刻有三星堆神鸟纹路的护臂，内藏连弩" },
+        { quality: "紫", name: "晗光剑", desc: "剑身流转着奇异光泽的古剑，极具灵性", slot: "equipment" },
+        { quality: "蓝", name: "青铜护臂", desc: "刻有三星堆神鸟纹路的护臂，内藏连弩", slot: "equipment" },
       ],
       sundries: [
-        { name: "偃甲图谱残页", desc: "记载着上古木牛流马制作工艺的图纸" },
+        { name: "偃甲图谱残页", desc: "记载着上古木牛流马制作工艺的图纸", slot: "bag", sellable: false, cherish: 80 },
       ],
     },
     shop: {
@@ -2016,16 +2016,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "极具军人作风，行事雷厉风行且充满正义感。看似严肃不可接近，实则内心柔软，对平民多有庇护之意。",
     fullBio: "出身于剑门关军镇的枪法世家，自幼在边关厮杀中长大。为了调查师父失踪的真相，带着一杆长枪踏入曲措乡的复杂江湖。",
     carry: [
-      { name: "孟记铁铺淬火油", category: "misc", quality: "白" },
-      { name: "三星青竹袋", category: "misc", quality: "绿" },
-      { name: "马帮金创贴", category: "misc", quality: "白" },
-      { name: "残纹青竹板", category: "weapon", quality: "蓝" },
+      { name: "孟记铁铺淬火油", category: "misc", quality: "白", slot: "bag" },
+      { name: "三星青竹袋", category: "misc", quality: "绿", slot: "bag" },
+      { name: "马帮金创贴", category: "misc", quality: "白", slot: "bag" },
+      { name: "残纹青竹板", category: "weapon", quality: "蓝", slot: "equipment" },
     ],
     lifeHistory: "出身于剑门关军镇的枪法世家，自幼在边关厮杀中长大。为了调查师父失踪的真相，带着一杆长枪踏入曲措乡的复杂江湖。",
     likes: "浓烈烧酒、大块酱牛肉、干粮",
     hobby: "擦拭长枪、研读兵书、演练阵法",
     tradeStyle: "爽快利落，公买公卖，偶会用军中物资交换伤药。",
-    follower: { type: "兽", name: "玄甲赤骥", desc: "一匹披着轻薄马甲的枣红战马，极通人性，能协助冲阵" },
+    follower: { type: "兽", name: "玄甲赤骥", desc: "一匹披着轻薄马甲的枣红战马，极通人性，能协助冲阵", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "剑门关百战枪法",
       moves: [
@@ -2034,11 +2034,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "泣血红缨", desc: "枪尖染着暗红血迹的百战长枪，杀气腾腾" },
-        { quality: "蓝", name: "玄铁束腰", desc: "不仅能保护腰腹，还能让身姿更显挺拔的军用护具" },
+        { quality: "紫", name: "泣血红缨", desc: "枪尖染着暗红血迹的百战长枪，杀气腾腾", slot: "equipment" },
+        { quality: "蓝", name: "玄铁束腰", desc: "不仅能保护腰腹，还能让身姿更显挺拔的军用护具", slot: "equipment" },
       ],
       sundries: [
-        { name: "剑门通关牙牌", desc: "可在边关军营畅通无阻的信物" },
+        { name: "剑门通关牙牌", desc: "可在边关军营畅通无阻的信物", slot: "bag" },
       ],
     },
     shop: {
@@ -2063,16 +2063,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "外表冷漠孤傲，说话毫不留情，但骨子里却是个靠谱且护短的人。重承诺，对弱小虽嘴上嫌弃却常暗中出手相助。",
     fullBio: "本是西域某个避世王族的后裔，幼时流落中原被独孤一脉的剑客收养。血脉觉醒后拥有撕裂空间的力量，现隐居曲措乡暂避仇家。",
     carry: [
-      { name: "净莲木鱼坠", category: "accessory", quality: "蓝" },
-      { name: "唐门乌木匣", category: "accessory", quality: "蓝" },
-      { name: "老参酥油茶", category: "misc", quality: "紫" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
+      { name: "净莲木鱼坠", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "唐门乌木匣", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "老参酥油茶", category: "misc", quality: "紫", slot: "bag" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "本是西域某个避世王族的后裔，幼时流落中原被独孤一脉的剑客收养。血脉觉醒后拥有撕裂空间的力量，现隐居曲措乡暂避仇家。",
     likes: "清淡素食、冷水、面条",
     hobby: "闭目养神、雕刻木雕、独自饮茶",
     tradeStyle: "极不耐烦讨价还价，通常直接甩出银票买断。",
-    follower: { type: "剑灵", name: "太岁", desc: "寄宿于古剑中的剑灵，形态如一抹暗金色的流影，能自动格挡暗器" },
+    follower: { type: "剑灵", name: "太岁", desc: "寄宿于古剑中的剑灵，形态如一抹暗金色的流影，能自动格挡暗器", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "独孤辟邪剑意",
       moves: [
@@ -2081,11 +2081,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "太岁剑", desc: "上古名剑，剑柄镶嵌暗金玉石，挥舞时有空间扭曲之感" },
-        { quality: "蓝", name: "玄色大氅", desc: "沾染了辟邪妖力的披风，不惹尘埃" },
+        { quality: "橙", name: "太岁剑", desc: "上古名剑，剑柄镶嵌暗金玉石，挥舞时有空间扭曲之感", slot: "equipment" },
+        { quality: "蓝", name: "玄色大氅", desc: "沾染了辟邪妖力的披风，不惹尘埃", slot: "equipment" },
       ],
       sundries: [
-        { name: "半块兽骨玉佩", desc: "其王族身份的唯一凭证，温润生热" },
+        { name: "半块兽骨玉佩", desc: "其王族身份的唯一凭证，温润生热", slot: "bag" },
       ],
     },
     shop: {
@@ -2110,16 +2110,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "阅尽沧桑后的淡漠与从容，不苟言笑，气质清冷高贵。偶尔流露出的疲惫与温柔，带着令人沉沦的致命成熟风韵。",
     fullBio: "传闻中掌控梦境的巫山大妖，曾历经数代王朝更迭。因早年受创而实力受损，如今隐入曲措乡的黑夜中，借吸食世人梦境疗伤。",
     carry: [
-      { name: "无字木牌", category: "misc", quality: "白" },
-      { name: "锦官琉璃珠", category: "accessory", quality: "蓝" },
-      { name: "青铜鸟羽饰", category: "misc", quality: "紫" },
-      { name: "欢喜丹", category: "misc", quality: "紫" },
+      { name: "无字木牌", category: "misc", quality: "白", slot: "bag" },
+      { name: "锦官琉璃珠", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "青铜鸟羽饰", category: "misc", quality: "紫", slot: "bag" },
+      { name: "欢喜丹", category: "misc", quality: "紫", slot: "bag" },
     ],
     lifeHistory: "传闻中掌控梦境的巫山大妖，曾历经数代王朝更迭。因早年受创而实力受损，如今隐入曲措乡的黑夜中，借吸食世人梦境疗伤。",
     likes: "甜酒、清水、不喜熟食",
     hobby: "赏月、听风、冷眼观世人悲欢",
     tradeStyle: "视金钱如粪土，只接受以奇珍异草或某种强烈情绪的梦境做交易。",
-    follower: { type: "兽", name: "魇兽幼体", desc: "一团如黑色烟雾般的幼小妖兽，盘旋在她肩头，能使人陷入昏睡" },
+    follower: { type: "兽", name: "魇兽幼体", desc: "一团如黑色烟雾般的幼小妖兽，盘旋在她肩头，能使人陷入昏睡", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "巫山魇梦诀",
       moves: [
@@ -2128,11 +2128,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "捕梦铃", desc: "摇晃时没有声音，却能让听者头晕目眩的法器" },
-        { quality: "紫", name: "幽纱法袍", desc: "似烟似雾的黑色纱裙，仿佛能吸收光线" },
+        { quality: "紫", name: "捕梦铃", desc: "摇晃时没有声音，却能让听者头晕目眩的法器", slot: "equipment" },
+        { quality: "紫", name: "幽纱法袍", desc: "似烟似雾的黑色纱裙，仿佛能吸收光线", slot: "equipment" },
       ],
       sundries: [
-        { name: "千年妖晶", desc: "蕴含极强阴寒灵力的结晶，对妖修有大用" },
+        { name: "千年妖晶", desc: "蕴含极强阴寒灵力的结晶，对妖修有大用", slot: "bag" },
       ],
     },
     shop: {
@@ -2157,16 +2157,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "性格温和仁厚，遇事总留余地。不喜争斗，却因身负师门重托与复族之愿，不得不涉足边镇风雨。",
     fullBio: "本是中原落魄世家之后，被师父带至康藏边镇的玉泉观修道。本性恬淡，只想吹笛度日，却被卷入曲措乡的诸多纷争与阴谋之中。",
     carry: [
-      { name: "官造青稞干粮", category: "misc", quality: "白" },
-      { name: "竹编彩雀哨", category: "accessory", quality: "绿" },
-      { name: "《清心普善咒》入门手抄", category: "misc", quality: "蓝" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
+      { name: "官造青稞干粮", category: "misc", quality: "白", slot: "bag" },
+      { name: "竹编彩雀哨", category: "accessory", quality: "绿", slot: "equipment" },
+      { name: "《清心普善咒》入门手抄", category: "misc", quality: "蓝", slot: "bag", sellable: false, cherish: 80 },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "本是中原落魄世家之后，被师父带至康藏边镇的玉泉观修道。本性恬淡，只想吹笛度日，却被卷入曲措乡的诸多纷争与阴谋之中。",
     likes: "偏爱清淡素食，尤其是山药糕与竹叶青。",
     hobby: "收集残缺曲谱，月下吹奏骨笛。",
     tradeStyle: "以物易物，态度谦和，若见对方贫苦常会多让几分利。",
-    follower: { type: "兽", name: "符鬼", desc: "一只似犬非犬的半透明灵兽，能预警危险。" },
+    follower: { type: "兽", name: "符鬼", desc: "一只似犬非犬的半透明灵兽，能预警危险。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "玉泉剑法",
       moves: [
@@ -2175,11 +2175,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "十五夜", desc: "温润如玉的宝剑，剑身泛着冷月之光" },
-        { quality: "蓝", name: "银丝道袍", desc: "轻薄坚韧的道袍，水火不侵" },
+        { quality: "紫", name: "十五夜", desc: "温润如玉的宝剑，剑身泛着冷月之光", slot: "equipment" },
+        { quality: "蓝", name: "银丝道袍", desc: "轻薄坚韧的道袍，水火不侵", slot: "equipment" },
       ],
       sundries: [
-        { name: "残缺的河山图", desc: "故国旧梦的凭证，质地古朴" },
+        { name: "残缺的河山图", desc: "故国旧梦的凭证，质地古朴", slot: "bag" },
       ],
     },
     shop: {
@@ -2204,16 +2204,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "极其温柔善良，见不得人间疾苦。虽身怀上古秘力，却总是自卑怯懦，但在关键时刻愿为同伴牺牲一切。",
     fullBio: "曲措乡外雪山脚下被发现的白发孤女，体内流淌着奇异的石之灵力。被三星堆祭司收为圣女，束缚于神庙，却向往凡俗的温暖与自由。",
     carry: [
-      { name: "大理白药", category: "misc", quality: "绿" },
-      { name: "玉真青囊针盒", category: "accessory", quality: "蓝" },
-      { name: "旧界石泥拓", category: "misc", quality: "绿" },
-      { name: "酥油曲奇", category: "misc", quality: "绿" },
+      { name: "大理白药", category: "misc", quality: "绿", slot: "bag" },
+      { name: "玉真青囊针盒", category: "accessory", quality: "蓝", slot: "equipment" },
+      { name: "旧界石泥拓", category: "misc", quality: "绿", slot: "bag" },
+      { name: "酥油曲奇", category: "misc", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "曲措乡外雪山脚下被发现的白发孤女，体内流淌着奇异的石之灵力。被三星堆祭司收为圣女，束缚于神庙，却向往凡俗的温暖与自由。",
     likes: "喜欢甜食，特别是酥油饼和蜂蜜糍粑。",
     hobby: "收集奇异的彩色石头，为受伤的流浪小动物包扎。",
     tradeStyle: "随缘交易，若对方有伤病在身，甚至会倒贴珍贵药材。",
-    follower: { type: "人", name: "采药童子", desc: "沉默寡言的哑巴男童，背着巨大的竹篓。" },
+    follower: { type: "人", name: "采药童子", desc: "沉默寡言的哑巴男童，背着巨大的竹篓。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "三星古卷",
       moves: [
@@ -2222,12 +2222,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "白玉轮", desc: "蕴含上古气息的环形法器" },
-        { quality: "蓝", name: "冰蚕丝带", desc: "极其坚韧的发带，触之生寒" },
+        { quality: "紫", name: "白玉轮", desc: "蕴含上古气息的环形法器", slot: "equipment" },
+        { quality: "蓝", name: "冰蚕丝带", desc: "极其坚韧的发带，触之生寒", slot: "equipment" },
       ],
       sundries: [
-        { name: "七色石", desc: "散发微光的神秘原石" },
-        { name: "枯木逢春丹", desc: "起死回生的疗伤圣药" },
+        { name: "七色石", desc: "散发微光的神秘原石", slot: "bag" },
+        { name: "枯木逢春丹", desc: "起死回生的疗伤圣药", slot: "bag" },
       ],
     },
     shop: {
@@ -2252,16 +2252,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "刁蛮任性，性如烈火，容不得半点沙子。实则外刚内柔，极重情义，一旦认准了人便会以命相托。",
     fullBio: "本是塞外游牧部落的大小姐，部落覆灭后流落康藏边镇，拜入血刀门下。凭借一股狠劲与过人天赋，在曲措乡的腥风血雨中杀出赫赫威名。",
     carry: [
-      { name: "三十年窖藏青稞酒", category: "misc", quality: "橙" },
-      { name: "风干牦牛肉", category: "misc", quality: "白" },
-      { name: "三棱透骨钉", category: "weapon", quality: "紫" },
-      { name: "金疮药", category: "misc", quality: "白" },
+      { name: "三十年窖藏青稞酒", category: "misc", quality: "橙", slot: "bag" },
+      { name: "风干牦牛肉", category: "misc", quality: "白", slot: "bag" },
+      { name: "三棱透骨钉", category: "weapon", quality: "紫", slot: "equipment" },
+      { name: "金疮药", category: "misc", quality: "白", slot: "bag" },
     ],
     lifeHistory: "本是塞外游牧部落的大小姐，部落覆灭后流落康藏边镇，拜入血刀门下。凭借一股狠劲与过人天赋，在曲措乡的腥风血雨中杀出赫赫威名。",
     likes: "嗜好重辛辣的烤肉和烈酒，无肉不欢。",
     hobby: "擦拭心爱的弯刀，在篝火旁跳胡旋舞。",
     tradeStyle: "爽快直接，不喜讨价还价，看顺眼了直接送，看不顺眼给金子都不卖。",
-    follower: { type: "剑灵", name: "红莲", desc: "寄宿在弯刀中的虚影，呈赤色飞鸟状。" },
+    follower: { type: "剑灵", name: "红莲", desc: "寄宿在弯刀中的虚影，呈赤色飞鸟状。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "血刀经",
       moves: [
@@ -2270,11 +2270,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "柳叶弯刀", desc: "沾满煞气的异族宝刀" },
-        { quality: "紫", name: "赤尾火狐裘", desc: "保暖且极大增加闪避的披风" },
+        { quality: "紫", name: "柳叶弯刀", desc: "沾满煞气的异族宝刀", slot: "equipment" },
+        { quality: "紫", name: "赤尾火狐裘", desc: "保暖且极大增加闪避的披风", slot: "equipment" },
       ],
       sundries: [
-        { name: "破损的玉佩", desc: "部落旧物，寄托着灭族之恨" },
+        { name: "破损的玉佩", desc: "部落旧物，寄托着灭族之恨", slot: "bag" },
       ],
     },
     shop: {
@@ -2299,16 +2299,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "机灵圆滑，看似不着调，实则胸有沟壑。行事全凭本心，遇善则善，遇恶更恶，是个不折不扣的武学奇才。",
     fullBio: "仿佛凭空出现在曲措乡的年轻人，自称来自现代，满嘴听不懂的胡话。凭借一套奇特的拳法在边镇站稳脚跟，悄然创立了逍遥一派。",
     carry: [
-      { name: "月牙小药锄", category: "weapon", quality: "白" },
-      { name: "缺角骰子", category: "misc", quality: "白" },
-      { name: "欢喜残卷", category: "misc", quality: "紫" },
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
+      { name: "月牙小药锄", category: "weapon", quality: "白", slot: "equipment" },
+      { name: "缺角骰子", category: "misc", quality: "白", slot: "bag" },
+      { name: "欢喜残卷", category: "misc", quality: "紫", slot: "bag" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "仿佛凭空出现在曲措乡的年轻人，自称来自现代，满嘴听不懂的胡话。凭借一套奇特的拳法在边镇站稳脚跟，悄然创立了逍遥一派。",
     likes: "杂食党，最爱各种新奇小吃，尤其喜欢麻辣兔头。",
     hobby: "挖掘古墓寻宝，或者去土司府的赌场里掷骰子。",
     tradeStyle: "极具商业头脑，巧舌如簧，常能低买高卖，榨干对方的钱袋。",
-    follower: { type: "机关人偶", name: "木人桩改", desc: "被改装过的练功木人，能背负重物和发射暗器。" },
+    follower: { type: "机关人偶", name: "木人桩改", desc: "被改装过的练功木人，能背负重物和发射暗器。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "无相神功",
       moves: [
@@ -2317,12 +2317,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "傲天神剑", desc: "传说中的武林神兵，锋利无比" },
-        { quality: "紫", name: "金蚕宝衣", desc: "刀枪不入的软甲，百毒不侵" },
+        { quality: "橙", name: "傲天神剑", desc: "传说中的武林神兵，锋利无比", slot: "equipment" },
+        { quality: "紫", name: "金蚕宝衣", desc: "刀枪不入的软甲，百毒不侵", slot: "equipment" },
       ],
       sundries: [
-        { name: "小黄书", desc: "画风奇特的图册，懂的都懂" },
-        { name: "侠客通鉴", desc: "记载江湖秘闻的破旧书籍" },
+        { name: "小黄书", desc: "画风奇特的图册，懂的都懂", slot: "bag" },
+        { name: "侠客通鉴", desc: "记载江湖秘闻的破旧书籍", slot: "bag" },
       ],
     },
     shop: {
@@ -2347,16 +2347,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "温润如玉，重情重义。行事端方不阿，极具长兄风范，遇事总将他人护在身后，不计个人得失。",
     fullBio: "乃辽东大侠遗孤，幼年被昆仑掌门收养。在风雪苦寒中练就刚柔并济的拳法，初入康藏边镇曲措乡，旨在追寻当年杀父仇人的一线线索，并调停各派纷争。",
     carry: [
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "大理白药", category: "misc", quality: "绿" },
-      { name: "残纹竹板", category: "misc", quality: "蓝" },
-      { name: "峨眉青玉弟子令", category: "misc", quality: "绿" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "大理白药", category: "misc", quality: "绿", slot: "bag" },
+      { name: "残纹竹板", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "峨眉青玉弟子令", category: "misc", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "乃辽东大侠遗孤，幼年被昆仑掌门收养。在风雪苦寒中练就刚柔并济的拳法，初入康藏边镇曲措乡，旨在追寻当年杀父仇人的一线线索，并调停各派纷争。",
     likes: "清淡素食，不喜油腻。",
     hobby: "收集残局棋谱，品茗静坐。",
     tradeStyle: "诚实守信，按价付款绝不还价。",
-    follower: { type: "人", name: "阿飞", desc: "帮背负行囊的昆仑小道童，眼神清澈。" },
+    follower: { type: "人", name: "阿飞", desc: "帮背负行囊的昆仑小道童，眼神清澈。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "昆仑拳法",
       moves: [
@@ -2365,11 +2365,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "辽东大侠玉佩", desc: "其父遗物，佩戴可大幅提升内力流转" },
-        { quality: "蓝", name: "昆仑蚕丝手套", desc: "天山冰蚕丝织就，水火不侵，增幅拳掌威力" },
+        { quality: "紫", name: "辽东大侠玉佩", desc: "其父遗物，佩戴可大幅提升内力流转", slot: "equipment" },
+        { quality: "蓝", name: "昆仑蚕丝手套", desc: "天山冰蚕丝织就，水火不侵，增幅拳掌威力", slot: "equipment" },
       ],
       sundries: [
-        { name: "逍遥谷佳酿", desc: "封存多年的极品美酒，饮之可解百毒" },
+        { name: "逍遥谷佳酿", desc: "封存多年的极品美酒，饮之可解百毒", slot: "bag" },
       ],
     },
     shop: {
@@ -2394,16 +2394,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "嘴硬心软，狂放不羁。表面对人嗤之以鼻，实则暗中回护。极度讨厌被说教，只服拳头比自己硬的人。",
     fullBio: "幼时在曲措乡外的荆棘丛中被捡回，故以为名。天资极高但性情暴烈，强行融合刀剑双绝之术。为向世人证明自己，独自踏入这片修罗场打拼。",
     carry: [
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫" },
-      { name: "马帮金创贴", category: "misc", quality: "白" },
-      { name: "风干牦牛肉", category: "misc", quality: "白" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "紫皮闷倒驴葫芦", category: "accessory", quality: "紫", slot: "equipment" },
+      { name: "马帮金创贴", category: "misc", quality: "白", slot: "bag" },
+      { name: "风干牦牛肉", category: "misc", quality: "白", slot: "bag" },
     ],
     lifeHistory: "幼时在曲措乡外的荆棘丛中被捡回，故以为名。天资极高但性情暴烈，强行融合刀剑双绝之术。为向世人证明自己，独自踏入这片修罗场打拼。",
     likes: "烈酒，大块烤肉，嗜辣。",
     hobby: "磨砺刀剑，找成名高手切磋。",
     tradeStyle: "极不耐烦，多抛银钱只求速成，懒得算账。",
-    follower: { type: "兽", name: "黑骨", desc: "极其凶狠的康巴藏獒，只听荆棘一人的话。" },
+    follower: { type: "兽", name: "黑骨", desc: "极其凶狠的康巴藏獒，只听荆棘一人的话。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "刀剑归真",
       moves: [
@@ -2412,11 +2412,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "幽冥单刀", desc: "刀背淬有奇毒的利刃，极易斩断寻常兵器" },
-        { quality: "蓝", name: "太乙精钢剑", desc: "剑身狭长，锋锐无比的佩剑" },
+        { quality: "紫", name: "幽冥单刀", desc: "刀背淬有奇毒的利刃，极易斩断寻常兵器", slot: "equipment" },
+        { quality: "蓝", name: "太乙精钢剑", desc: "剑身狭长，锋锐无比的佩剑", slot: "equipment" },
       ],
       sundries: [
-        { name: "血岩磨刀石", desc: "擦拭兵器可临时提升锋锐度" },
+        { name: "血岩磨刀石", desc: "擦拭兵器可临时提升锋锐度", slot: "bag" },
       ],
     },
     shop: {
@@ -2441,16 +2441,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "憨直质朴，嫉恶如仇。脑筋虽不转弯，但有一腔热血，认准的事情十头牛也拉不回来，极具正义感。",
     fullBio: "本是江南水乡少年，机缘巧合吞噬上古虎煞之气。为控制体内煞气，随丐帮长老入康藏苦修，在曲措乡历练心性，以期将煞气化为正道武学匡扶正义。",
     carry: [
-      { name: "铜钱串", category: "accessory", quality: "白" },
-      { name: "牦牛肉包子", category: "misc", quality: "绿" },
-      { name: "油腻头巾", category: "misc", quality: "白" },
-      { name: "三曲炒面干粮袋", category: "misc", quality: "绿" },
+      { name: "铜钱串", category: "accessory", quality: "白", slot: "equipment" },
+      { name: "牦牛肉包子", category: "misc", quality: "绿", slot: "bag" },
+      { name: "油腻头巾", category: "misc", quality: "白", slot: "bag" },
+      { name: "三曲炒面干粮袋", category: "misc", quality: "绿", slot: "bag" },
     ],
     lifeHistory: "本是江南水乡少年，机缘巧合吞噬上古虎煞之气。为控制体内煞气，随丐帮长老入康藏苦修，在曲措乡历练心性，以期将煞气化为正道武学匡扶正义。",
     likes: "肉包子，葱肉饼，饭量极大。",
     hobby: "抚摸路边的野猫野狗，打磨体魄。",
     tradeStyle: "挠头憨笑，老实巴交不会算账，经常吃亏。",
-    follower: { type: "兽", name: "小虎煞", desc: "由体内煞气凝聚而成的小灵虎，外表呆萌实则凶猛。" },
+    follower: { type: "兽", name: "小虎煞", desc: "由体内煞气凝聚而成的小灵虎，外表呆萌实则凶猛。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "虎煞神功",
       moves: [
@@ -2459,11 +2459,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "紫", name: "百战九环刀", desc: "帮中长老所赐重刀，挥舞时刀环作响可震慑敌胆" },
-        { quality: "蓝", name: "虎皮披风", desc: "粗糙但极具韧性的披风，抵御风寒与刀剑" },
+        { quality: "紫", name: "百战九环刀", desc: "帮中长老所赐重刀，挥舞时刀环作响可震慑敌胆", slot: "equipment" },
+        { quality: "蓝", name: "虎皮披风", desc: "粗糙但极具韧性的披风，抵御风寒与刀剑", slot: "equipment" },
       ],
       sundries: [
-        { name: "封煞葫芦", desc: "刻满符文的葫芦，用来压制暴走的煞气" },
+        { name: "封煞葫芦", desc: "刻满符文的葫芦，用来压制暴走的煞气", slot: "bag" },
       ],
     },
     shop: {
@@ -2488,16 +2488,16 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "油嘴滑舌，痞气十足。表面是个贪财好色的小混混，遇到危险跑得比谁都快，但大是大非前却敢于舍命相搏。",
     fullBio: "因体内流淌着上古贪狼妖血而不容于正道。流落至曲措乡后加入神秘的三星堆派，平日靠半吊子占卜术招摇撞骗，月圆之夜却需强压狼化之苦。",
     carry: [
-      { name: "响铃铜钱串", category: "accessory", quality: "绿" },
-      { name: "缺角骰子", category: "misc", quality: "白" },
-      { name: "百草老玉佩", category: "accessory", quality: "紫" },
-      { name: "核桃糕", category: "misc", quality: "蓝" },
+      { name: "响铃铜钱串", category: "accessory", quality: "绿", slot: "equipment" },
+      { name: "缺角骰子", category: "misc", quality: "白", slot: "bag" },
+      { name: "百草老玉佩", category: "accessory", quality: "紫", slot: "equipment" },
+      { name: "核桃糕", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "因体内流淌着上古贪狼妖血而不容于正道。流落至曲措乡后加入神秘的三星堆派，平日靠半吊子占卜术招摇撞骗，月圆之夜却需强压狼化之苦。",
     likes: "甜食，各色风味美酒。",
     hobby: "掷骰子赌钱，看风水算命，变戏法。",
     tradeStyle: "漫天要价，就地还钱，口若悬河且喜欢以物易物。",
-    follower: { type: "兽", name: "大桃子", desc: "一只圆滚滚的精怪跟班，会帮着主人偷鸡摸狗。" },
+    follower: { type: "兽", name: "大桃子", desc: "一只圆滚滚的精怪跟班，会帮着主人偷鸡摸狗。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "贪狼星诀",
       moves: [
@@ -2506,12 +2506,12 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "狼妖骨链", desc: "以上古狼骨制成，妖化时能保持最后一丝清明" },
-        { quality: "紫", name: "五帝铜钱剑", desc: "沾染红尘气的法器，对阴邪之物有奇效" },
+        { quality: "橙", name: "狼妖骨链", desc: "以上古狼骨制成，妖化时能保持最后一丝清明", slot: "equipment" },
+        { quality: "紫", name: "五帝铜钱剑", desc: "沾染红尘气的法器，对阴邪之物有奇效", slot: "equipment" },
       ],
       sundries: [
-        { name: "灌铅骰子", desc: "赌桌上的千术道具，必掷出想要的数字" },
-        { name: "八卦司南", desc: "探寻秘宝风水的精密罗盘" },
+        { name: "灌铅骰子", desc: "赌桌上的千术道具，必掷出想要的数字", slot: "bag" },
+        { name: "八卦司南", desc: "探寻秘宝风水的精密罗盘", slot: "bag" },
       ],
     },
     shop: {
@@ -2537,9 +2537,9 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     personality: "迷之自信的商业奇才妄想家，娇憨仗义见不得别人受苦。",
     fullBio: "锦官首富元家掌上明珠，仗家底穿西域胡服乱投资次次血本无归，靠机关人偶兜底至今觉得「只差一点运气」。",
     carry: [
-      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿" },
-      { name: "核桃糕", category: "misc", quality: "蓝" },
-      { name: "伪造地契样本", category: "misc", quality: "蓝" },
+      { name: "沉甸甸的碎银荷包", category: "accessory", quality: "绿", slot: "bag" },
+      { name: "核桃糕", category: "misc", quality: "蓝", slot: "bag" },
+      { name: "伪造地契样本", category: "misc", quality: "蓝", slot: "bag" },
     ],
     lifeHistory: "锦官首富元家掌上明珠，仗家底穿西域胡服乱投资次次血本无归，靠机关人偶兜底至今觉得「只差一点运气」。",
     likes: "西域首饰、蜀中糕点。",
@@ -2548,8 +2548,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     follower: {
       type: "机关人偶",
       name: "铁伯",
-      desc: "高瘦老仆型墨家机关人偶，精铁紫檀造，慈祥老者面嵌黄玉目，行走带金属机括声；无通灵只按宠溺回路行动，肚膛藏银票替她结账，遇险展四肢精钢盾甲护主，宠而不占有，机器爷爷。",
-    },
+      desc: "高瘦老仆型墨家机关人偶，精铁紫檀造，慈祥老者面嵌黄玉目，行走带金属机括声；无通灵只按宠溺回路行动，肚膛藏银票替她结账，遇险展四肢精钢盾甲护主，宠而不占有，机器爷爷。", slot: "mount", sellable: false, cherish: 100 },
     kungfu: {
       school: "元家钞能力诀",
       moves: [
@@ -2559,11 +2558,11 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     },
     stealables: {
       equipment: [
-        { quality: "橙", name: "元宝金冠襦装", desc: "武松式元宝帽顶一颗红绒球，织金低襟抹胸配金红马面百褶裙，腰际丝绳缠绕，一身贵气行头，胸腰布料被傲人身材绷得紧。" },
+        { quality: "橙", name: "元宝金冠襦装", desc: "武松式元宝帽顶一颗红绒球，织金低襟抹胸配金红马面百褶裙，腰际丝绳缠绕，一身贵气行头，胸腰布料被傲人身材绷得紧。", slot: "equipment", cherish: 95 },
       ],
       sundries: [
-        { name: "作废契约书", desc: "投资空气镖局被骗的字据，按着她得意红手印。" },
-        { name: "紫檀木齿轮", desc: "铁伯身上掉的备用发条齿轮。" },
+        { name: "作废契约书", desc: "投资空气镖局被骗的字据，按着她得意红手印。", slot: "bag" },
+        { name: "紫檀木齿轮", desc: "铁伯身上掉的备用发条齿轮。", slot: "bag" },
       ],
     },
     shop: {
