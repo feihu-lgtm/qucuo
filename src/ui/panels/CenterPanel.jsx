@@ -183,7 +183,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
             const ctx = {
               building: activeBuilding, char, time, zoneTheme, inv, skills, flags, questProgress,
               dao, mapData, room, innerRoomName, varTree, queueCount, effectiveSpecialNow: turn.effectiveSpecialNow,
-              craftTab, tabs, isJade, runCommand, captureUndo: turn.captureUndo, setDao, setChar, setInv, addLog, jotNote,
+              craftTab, tabs, isJade, runCommand, act: turn.act, captureUndo: turn.captureUndo, setDao, setChar, setInv, addLog, jotNote,
               inspectItem: aiInspect.inspectItem, setGambleStoneMinimized, gambleNegotiation,
               deposit, depositedAt, pledgedItems,
               sectMasterAffection: derived.sectMasterAffection,

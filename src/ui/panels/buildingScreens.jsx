@@ -223,6 +223,7 @@ export const BUILDING_SCREENS = {
         jotNote={c.jotNote}
         captureUndo={c.captureUndo}
         runCommand={c.runCommand}
+        act={c.act}
       />
     </Suspense>
   ),
