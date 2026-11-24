@@ -27,5 +27,12 @@ export function buildSettleNarrationPrompt(cmd, { place = "", npc = "" } = {}) {
 export function parseSettleNarration(text) {
   if (typeof text !== "string") return null;
   const line = text.replace(/^```\w*\s*|\s*```$/g, "").replace(/\s*\n+\s*/g, "").trim();
-  return line ? [line] : null;
+  // 模型跑偏时会吐英文元注释或半截括号注（"金叶子 (note: background info, don't mention…"），
+  // 这类回包不像叙事正文：CJK 占比过低或带 meta 标记的一律判无效，静默只留系统事实行。
+  if (!line) return null;
+  if (/\(note|background info|note:/i.test(line)) return null;
+  const body = line.replace(/\s/g, "");
+  const cjk = (body.match(/[一-鿿]/g) || []).length;
+  if (cjk < body.length * 0.4) return null;
+  return [line];
 }
