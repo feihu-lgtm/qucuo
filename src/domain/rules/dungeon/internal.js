@@ -25,8 +25,12 @@ export function floorInfo(cfg, floorNum) {
 export function mergeLoot(loot, delta = {}) {
   const items = [...loot.items];
   for (const item of delta.items || []) {
-    const name = typeof item === "string" ? item : item?.name;
-    if (name) items.push(name);
+    // 物品对象带着品类/品阶/描述走全流程——拍扁成名字会让结算端把
+    // 非名录装备（OC 私物等）统统材质化成白档杂物。
+    if (typeof item === "string") { if (item) items.push(item); continue; }
+    if (item?.name) {
+      items.push({ name: item.name, category: item.category, quality: item.quality, desc: item.desc });
+    }
   }
   return {
     money: loot.money + (delta.money || 0),
@@ -46,6 +50,9 @@ export function buildCombatNpc(tpl, prefix) {
     desc: tpl.desc || tpl.brief || "",
     personality: tpl.personality,
     carry: tpl.carry || [],
+    ocAdventurer: tpl.ocAdventurer,
+    npcRef: tpl.npcRef,
+    rainbowStyle: tpl.rainbowStyle,
   }, { levelCap: tpl.levelCap ?? 2 });
 }
 

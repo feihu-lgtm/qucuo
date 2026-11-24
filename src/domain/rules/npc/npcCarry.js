@@ -5,6 +5,8 @@ import { rollQuality, QUALITY, makeItem, ITEM_CATEGORY } from "../economy/equipm
 import { makeNamedItem, CATALOG_INDEX } from "../../data/items/catalog.js";
 import { ITEM_DISTRIBUTION } from "../../data/items/distribution.js";
 import { ROLE_CARRY, levelCapToRole, regionOf } from "../../data/items/regionMap.js";
+import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
+import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
 
 // 曲措乡随身物品命名池：按品质档位分组，风格贴合藏汉边境的日常物件质感，
 // 不再是"XX的随身物件"这种毫无信息量的占位符——玩家拿到手的东西得有名字、
@@ -92,8 +94,56 @@ const ROLE_TROPHY = {
   差役: { item: "流亡凭证", faction: "土司府" },
 };
 
+// ── OC 冒险者随身物：stealables 落地 ─────────────────────────────
+// OC 的 stealables{equipment[],sundries[]} 就是"可偷=可掉=所见即所得"那批货：
+// equipment 按品阶走（衣甲/兵刃/饰品按名分档），sundries 是杂物白档；
+// carry 里的 CATALOG_INDEX 真词条照旧按具名货出。命中 OC 直接整批返回，
+// 不再走 role×region 随机池——人设写的私物不能换成地摊货。
+export const OC_BY_NAME = Object.fromEntries(
+  [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].map((adv) => [adv.name, adv]),
+);
+// 名字撞车分辨：OC 数据里的人可能同时是某地驻场 NPC（姬无双/樊未离）。
+// 只有确认为 OC 实例——游走层标 ocAdventurer、地宫遭遇标 npcRef、或整张
+// 人设卡展开带 rainbowStyle——才走 OC 私物通路；同名驻场保留自己的 carry。
+export const isOcNpc = (npc) => {
+  const oc = OC_BY_NAME[npc?.name];
+  return !!oc && (npc.ocAdventurer === oc.id || npc.npcRef === oc.id || npc.rainbowStyle === oc.rainbowStyle);
+};
+// 先饰品后兵刃：环/镯/坠/簪 这类字眼首饰和奇门兵刃（子午鸳鸯环、判官笔）都沾，
+// 首饰是常态、兵刃是特例——饰品档排前面兜底，判官笔/铁扇这类具名兵刃单独命中。
+const EQUIP_CAT = [
+  [/裙|甲|袍|衣|装|裤|靴|帽|冠|披风|衫|蓑/, ITEM_CATEGORY.ARMOR],
+  [/珮|佩|坠|簪|镯|环|戒|珠|钗|钿|链|坠|缨|络|串/, ITEM_CATEGORY.ACCESSORY],
+  [/刀|剑|鞭|爪|钩|匕|刃|杖|弓|锤|锏|枪|矛|戟|槊|棍|叉|斧|钺|判官笔|判官|飞针|袖箭|弩|暗器|铁扇/, ITEM_CATEGORY.WEAPON],
+];
+function ocEquipCat(name) {
+  for (const [re, cat] of EQUIP_CAT) if (re.test(name)) return cat;
+  return ITEM_CATEGORY.ACCESSORY;
+}
+export function ocCarryItems(oc, npc) {
+  const items = [];
+  let i = 0;
+  for (const c of oc.carry || []) {
+    const it = makeNamedItem(c.name);
+    if (it) items.push({ ...it, id: `${npc.id}_oc${i++}`, stolen: false });
+  }
+  for (const e of oc.stealables?.equipment || []) {
+    const it = makeItem({ name: e.name, category: ocEquipCat(e.name), quality: e.quality || "绿" });
+    items.push({ ...it, desc: e.desc, id: `${npc.id}_oc${i++}`, stolen: false });
+  }
+  for (const d of oc.stealables?.sundries || []) {
+    const it = makeItem({ name: d.name, category: ITEM_CATEGORY.MISC, quality: "白" });
+    items.push({ ...it, desc: d.desc, id: `${npc.id}_oc${i++}`, stolen: false });
+  }
+  return items;
+}
+
 export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
   const cap = Math.max(0, Math.min(5, levelCap));
+  if (isOcNpc(npc)) {
+    const items = ocCarryItems(OC_BY_NAME[npc.name], npc);
+    if (items.length) return items;
+  }
   // 路上偶遇的游民只有 brief 文案没有 role 字段（信物身份从文案里认），
   // 常驻/任务 NPC 走 npc.role，再没有就用 levelCap 兜底成通用身份。
   const role = npc.role
