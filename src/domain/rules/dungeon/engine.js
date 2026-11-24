@@ -11,6 +11,7 @@ import { advanceExploring } from "./resolve.js";
 export { calcDungeonCheckRate } from "./internal.js";
 export { resolveDungeonChoice } from "./resolve.js";
 export { makePuzzle, PUZZLE_FACTORIES } from "./puzzles.js";
+export { pickDungeonAdventurers, genAdventurerEncounter } from "./dungeonPool.js";
 
 export function createDungeonRun(dungeonId, { char } = {}) {
   const cfg = getDungeonConfig(dungeonId);
