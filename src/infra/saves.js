@@ -105,13 +105,16 @@ export async function init() {
 }
 
 // state 快照结构
-export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares, roomMap, rngState = null }) {
+export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares, roomMap, dungeonRun, rngState = null }) {
   return {
     version: 1,
     savedAt: Date.now(),
     rngState,
     preset: { id: preset.id, name: preset.name },
     room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree,
+    // 地宫内层地图 run 快照（checkpoint 持久化通路）：mapRun 状态机产出的纯 JSON 态，
+    // 由接线层在进地宫时挂上；老存档无此字段，读档按 null 兜底，不影响兼容。
+    dungeonRun: dungeonRun || null,
     // 内层箱庭位置（本轮补）：此前快照只存 room.name（外层据点），没存玩家站在据点内的
     // 哪个房间。于是读档/组件重挂载后，内层位置一律被重置回据点锚点——表现为"人明明在
     // 玉石料场，一动就从镇口起步"。老存档没有这个字段，读档时按锚点兜底，不影响兼容。

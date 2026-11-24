@@ -116,19 +116,88 @@ export function moveRoom(runState, dir) {
     next.envState = { ...(r?.effects || {}) };
   }
 
-  // 检查点：首个存档房落地一次快照（hp/loot/步数），后面的房不再覆盖
-  if (tRoom.isCheckpoint && !next.checkpoint) {
+  // 检查点：进 isCheckpoint 房即落地全量快照——小标记记 hp/loot/步数，
+  // checkpointSnapshot 存完整可还原态（map/current/visited/envState/hp/loot/seed，
+  // JSON 深拷贝保证可序列化）；再访覆盖，最近一次歇脚点为准。
+  if (tRoom.isCheckpoint) {
     next.checkpoint = {
       room: target,
       hp: [...next.hp],
       loot: { ...next.loot, items: [...next.loot.items] },
       step: next.step,
     };
+    next.checkpointSnapshot = JSON.parse(JSON.stringify({
+      seed: next.seed,
+      map: next.map,
+      current: target,
+      visited: next.visited,
+      envTags: next.envTags || {},
+      envState: next.envState || {},
+      hp: next.hp,
+      loot: next.loot,
+      step: next.step,
+    }));
     logs.push("此处能歇脚避风——进度已记下。");
   }
 
   next.log = [...next.log, ...logs];
   return { runState: next, log: logs };
+}
+
+/**
+ * 从检查点重来：战败/撤退后用落地时的完整快照还原，回到 exploring 继续走。
+ * @returns {{ runState: object|null, log: string|null }} 无快照则 runState 为 null
+ */
+export function restoreCheckpoint(runState) {
+  const snap = runState?.checkpointSnapshot;
+  if (!snap) return { runState: null, log: null };
+  const restored = JSON.parse(JSON.stringify(snap));
+  const next = {
+    ...runState,
+    map: restored.map,
+    current: restored.current,
+    visited: restored.visited,
+    envTags: restored.envTags || {},
+    envState: restored.envState || {},
+    hp: restored.hp,
+    loot: restored.loot,
+    step: restored.step,
+    status: "exploring",
+  };
+  const log = `退回${restored.current}，从头再来。`;
+  next.log = [...(runState.log || []), log];
+  return { runState: next, log };
+}
+
+/**
+ * 存档序列化：runState 本就是纯 JSON 结构（visited 数组、无函数/Set），
+ * 序列化=深拷贝断引用；反序列化做形状兜底（老档无 checkpointSnapshot 不炸）。
+ */
+export function serializeMapRun(runState) {
+  if (!runState) return null;
+  return JSON.parse(JSON.stringify(runState));
+}
+
+export function deserializeMapRun(data) {
+  if (!data || typeof data !== "object" || !data.map?.rooms) return null;
+  return {
+    districtKey: data.districtKey,
+    seed: data.seed,
+    map: data.map,
+    current: data.current || data.map.anchor,
+    visited: Array.isArray(data.visited) ? data.visited : [data.map.anchor],
+    envTags: data.envTags || {},
+    envState: data.envState || {},
+    hp: data.hp,
+    loot: data.loot || emptyLoot(),
+    status: data.status || "exploring",
+    step: data.step || 0,
+    checkpoint: data.checkpoint || null,
+    checkpointSnapshot: data.checkpointSnapshot || null,
+    log: Array.isArray(data.log) ? data.log : [],
+    // bossDefeated 只在 victory 快照里出现：按源数据有无键原样保留，保 roundtrip 精确
+    ...(data.bossDefeated !== undefined ? { bossDefeated: data.bossDefeated } : {}),
+  };
 }
 
 /**
@@ -163,9 +232,11 @@ export function runEnd(runState, outcome) {
     status: "defeated",
     hp: [Math.min(1, runState.hp[0]), runState.hp[1]],
   };
+  // 有检查点存档则给"从检查点重来"选项（消费方读 canRestore 出按钮 → restoreCheckpoint）
   return {
     runState: next,
     settledLoot: settleLoot(next.loot, 0.5),
+    canRestore: Boolean(next.checkpointSnapshot),
     log: "不敌倒地，负伤被逐出地宫，摸到的东西丢了大半……",
   };
 }

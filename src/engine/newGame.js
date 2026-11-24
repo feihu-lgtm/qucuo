@@ -71,6 +71,8 @@ export function buildInitialGameState(restored, seed) {
     dao: restored?.snap.dao || DEFAULT_PRESETS[0].dao,
     skills: restored?.snap.skills || DEFAULT_PRESETS[0].skills.map(s => ({ ...s })),
     companionState: restored?.snap.companionState || initCompanionState(),
+    // 地宫内层地图 run 快照：读档把 checkpoint 进度带回来（老档无此字段按 null 兜底）
+    dungeonRun: restored?.snap.dungeonRun || null,
     inv: backfillInventoryFromCatalog(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]),
     log: restored
       ? [{ t: "sys", text: `── 已从上次自动存档恢复进度（${new Date(restored.snap.savedAt || Date.now()).toLocaleString()}） ──` }, ...restored.snap.log]

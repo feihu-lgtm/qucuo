@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DUNGEON_DISTRICTS_ALL } from "../../data/dungeon/districts.js";
-import { moveRoom, retreatRun, runEnd, startMapRun } from "./mapRun.js";
+import { deserializeMapRun, moveRoom, restoreCheckpoint, retreatRun, runEnd, serializeMapRun, startMapRun } from "./mapRun.js";
 
 const DK = "白塔地宫";
 
@@ -235,5 +235,96 @@ describe("retreatRun / runEnd", () => {
   it("终局后再撤退不再重复结算", () => {
     const rs = { ...startMapRun(DK, "z"), status: "defeated" };
     expect(retreatRun(rs).settledLoot).toBeNull();
+  });
+});
+
+describe("checkpointSnapshot / restoreCheckpoint / 序列化", () => {
+  // 扫十宫若干 seed，找一个走完可达图后拿到 checkpointSnapshot 的 run
+  function findCheckpointRun() {
+    for (const dk of Object.keys(DUNGEON_DISTRICTS_ALL)) {
+      for (const seed of ["k1", "k2", "k3", "k4", "k5"]) {
+        const rs = exploreAll(startMapRun(dk, seed));
+        if (rs.checkpointSnapshot) return rs;
+      }
+    }
+    return null;
+  }
+
+  it("存：进 isCheckpoint 房落全量可序列化快照", () => {
+    const rs = findCheckpointRun();
+    expect(rs).not.toBeNull();
+    const snap = rs.checkpointSnapshot;
+    expect(snap.map.rooms[snap.current]).toBeTruthy();
+    expect(snap.visited).toEqual(expect.arrayContaining([snap.current]));
+    expect(snap).toEqual(JSON.parse(JSON.stringify(snap))); // 纯 JSON、无函数/Set
+    expect(snap.step).toBeGreaterThan(0);
+    // 快照是落地时刻的深拷贝：之后走动不污染它
+    const later = moveRoom(rs, Object.keys(rs.map.rooms[rs.current].exits)[0]).runState;
+    if (later !== rs) expect(later.checkpointSnapshot).toEqual(snap);
+  });
+
+  it("还原：战败 canRestore → restoreCheckpoint 回检点房继续走", () => {
+    let rs = findCheckpointRun();
+    const snap = rs.checkpointSnapshot;
+    // 快照后再走一格（若有路），模拟检点后受灾
+    const dirs = Object.keys(rs.map.rooms[rs.current].exits || {});
+    if (dirs.length) rs = moveRoom(rs, dirs[0]).runState;
+    rs = { ...rs, hp: [9, 100], loot: { ...rs.loot, items: ["失去的东西"] } };
+    const end = runEnd(rs, "defeated");
+    expect(end.canRestore).toBe(true);
+    const { runState, log } = restoreCheckpoint(end.runState);
+    expect(runState.status).toBe("exploring");
+    expect(runState.current).toBe(snap.current);
+    expect(runState.visited).toEqual(snap.visited);
+    expect(runState.hp).toEqual(snap.hp);
+    expect(runState.loot.items).not.toContain("失去的东西");
+    expect(runState.step).toBe(snap.step);
+    expect(log).toContain("退回");
+  });
+
+  it("覆盖：再访检点房刷新快照（以最近一次歇脚为准）", () => {
+    const rs0 = findCheckpointRun();
+    const first = rs0.checkpointSnapshot;
+    // 离开检点房再回来
+    const out = Object.entries(rs0.map.rooms[rs0.current].exits).find(([, t]) => t !== rs0.current);
+    expect(out).toBeTruthy();
+    const away = moveRoom(rs0, out[0]).runState;
+    const backDir = Object.entries(away.map.rooms[away.current].exits).find(([, t]) => t === first.current);
+    expect(backDir).toBeTruthy();
+    const back = moveRoom(away, backDir[0]).runState;
+    expect(back.checkpointSnapshot.step).toBe(back.step);
+    expect(back.checkpointSnapshot.step).toBeGreaterThan(first.step);
+    expect(back.checkpointSnapshot.visited.length).toBeGreaterThanOrEqual(first.visited.length);
+  });
+
+  it("无快照时 restoreCheckpoint 安全返回 null", () => {
+    const rs = startMapRun(DK, "nock");
+    const { runState, log } = restoreCheckpoint(rs);
+    expect(runState).toBeNull();
+    expect(log).toBeNull();
+    expect(runEnd(rs, "defeated").canRestore).toBe(false);
+  });
+
+  it("序列化 roundtrip：serialize→deserialize 与原 runState 逐字段一致", () => {
+    const rs = findCheckpointRun();
+    const data = serializeMapRun(rs);
+    expect(data).not.toBe(rs); // 深拷贝断引用
+    expect(data.map).not.toBe(rs.map);
+    const back = deserializeMapRun(JSON.parse(JSON.stringify(data)));
+    expect(back).toEqual(rs);
+  });
+
+  it("deserialize 兜底：老档无 checkpointSnapshot / 缺字段不炸", () => {
+    const rs = findCheckpointRun();
+    const legacy = serializeMapRun(rs);
+    delete legacy.checkpointSnapshot;
+    delete legacy.checkpoint;
+    delete legacy.log;
+    const back = deserializeMapRun(legacy);
+    expect(back.checkpointSnapshot).toBeNull();
+    expect(back.checkpoint).toBeNull();
+    expect(back.log).toEqual([]);
+    expect(deserializeMapRun(null)).toBeNull();
+    expect(deserializeMapRun({})).toBeNull();
   });
 });
