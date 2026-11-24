@@ -1,5 +1,11 @@
 // 房间动作路由契约测试：loot 落袋 / checkpoint 标记 / puzzle 回合推进 / fight 上抛 / needsAI。
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// 谜题 roll() 走 utils/rng 模块级 random，钉成 0 让检定恒定成功。
+vi.mock("../../../utils/rng.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  random: () => 0,
+}));
 import { routeRoomAction, routeRoomText } from "./actionRouter.js";
 import { startMapRun } from "./mapRun.js";
 import { DUNGEON_DISTRICTS_ALL } from "../../data/dungeon/districts.js";
