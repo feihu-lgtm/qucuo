@@ -24,6 +24,17 @@ import { contentEntries } from "../content/registry.js";
 // 或 { type: "flag", flag }。房间锁定时，不出现在其父房间的可选出口列表里
 // （不是"存在但打不开"，是"根本不呈现"），避免玩家瞎猜隐藏地名。判定逻辑见
 // isInnerExitUnlocked()，复用与外层 unlockCondition 相同的判定语义。
+//
+// 【地宫房间扩展字段】（设计_地宫内层地图.md §A，全部由 dungeon/genMap.js
+// 或各宫内容包产出，均为可选、缺省视为普通房间）：
+//   roomEvent: 房间事件预留位——十类互动（打架/事件/补给/开奖/观战/冒险者/
+//     鉴定/解密/检查点/色）的落点描述对象，由 run 层裁决消费。
+//   groundLoot: 地面可拾取物列表（[{name,desc,...}]），进屋呈现、拾取移除。
+//   envTag: 十宫环境机制标签，对应 domain/rules/dungeon/envTags.js 的
+//     ENV_TAG_HANDLERS 键（baitaPrayerWheel/huanjingSpore/.../huanxiDesire），
+//     进房/行动/tick 三处回调由 run state 驱动。
+//   isTreasure: 死路宝房标记——生成器保证只有单出口非端点房才打。
+//   isCheckpoint: 检查点标记——允许中途存档并重置部分 run 状态。
 
 import { invHasItemNamed } from "./safeHouse.js";
 import { factionRepOf } from "../economy/factionRep.js";
