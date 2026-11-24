@@ -60,7 +60,9 @@ function seedRoomEvent(runState, roomName, room) {
     const loot = seeds.find((s) => s.kind === "loot");
     if (loot) return { ...loot, resolved: false };
   }
-  const pool = seeds.filter((s) => s.kind !== "loot" || !room.isTreasure);
+  // 穿堂房不抽死路专属的 loot 种子（宝箱房已在上面的早退分支优先取到）
+  const pool = seeds.filter((s) => room.isTreasure || s.kind !== "loot");
+  if (!pool.length) return null;
   const pick = pool[Math.floor(rng() * pool.length) % pool.length];
   return pick ? { ...pick, resolved: false } : null;
 }
@@ -103,11 +105,15 @@ export function moveRoom(runState, dir) {
   // 环境机制 onEnter（白塔铜铃/孢子浓度/失温……各自读 rs.envTags 自建状态位）
   const handler = ENV_TAG_HANDLERS[tRoom.envTag];
   if (handler?.onEnter) {
+    // 状态位不可变隔离：env() 会原地改 rs.envTags[tag]，先克隆免得污染上一份快照
+    next.envTags = Object.fromEntries(
+      Object.entries(next.envTags || {}).map(([k, v]) => [k, { ...v }]),
+    );
     const r = handler.onEnter(tRoom, next);
     if (r?.log) logs.push(r.log);
-    if (r?.effects && Object.keys(r.effects).length) {
-      next.envState = { ...next.envState, ...r.effects };
-    }
+    // envState = 本房当前生效的环境效果，整体替换——上一个房间的 statMod 等不残留
+    // （例如孢子检查点 onEnter 清浓度并返回空 effects，感知减益随之解除）
+    next.envState = { ...(r?.effects || {}) };
   }
 
   // 检查点：首个存档房落地一次快照（hp/loot/步数），后面的房不再覆盖

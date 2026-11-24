@@ -144,6 +144,60 @@ describe("事件与环境机制", () => {
     const fired = (log && log.length > 1) || Object.keys(runState.envState).length > 0 || Object.keys(runState.envTags).length > 0;
     expect(fired).toBe(true);
   });
+
+  it("handler 改 envTags 不污染上一份快照（同走法重放不涨层）", () => {
+    const rs0 = startMapRun("大草甸子虚幻境", "spore1");
+    const dir = Object.keys(rs0.map.rooms[rs0.current].exits)[0];
+    const a = moveRoom(rs0, dir).runState;
+    const b = moveRoom(rs0, dir).runState; // 从同一份快照重放同一走法
+    expect(a.envTags.spore?.level).toBe(1);
+    expect(b.envTags.spore?.level).toBe(1); // 不叠到 2
+    expect(rs0.envTags).toEqual({}); // 原快照未被污染
+  });
+
+  it("孢子检查点清零后感知减益随之解除", () => {
+    // 扫若干 seed 找到可达检查点房，进房前先有 statMod 减益、进后清除
+    for (const seed of ["p1", "p2", "p3", "p4", "p5", "p6"]) {
+      let rs = startMapRun("大草甸子虚幻境", seed);
+      let found = false;
+      let sawDebuff = false;
+      const stack = [rs.current];
+      let guard = 0;
+      while (stack.length && guard++ < 200 && !found) {
+        const room = rs.map.rooms[rs.current];
+        const nxt = Object.entries(room.exits).find(([, t]) => !rs.visited.includes(t));
+        let step;
+        if (nxt) {
+          step = moveRoom(rs, nxt[0]);
+          stack.push(step.runState.current);
+        } else {
+          stack.pop();
+          if (!stack.length) break;
+          const back = Object.entries(room.exits).find(([, t]) => t === stack[stack.length - 1]);
+          step = moveRoom(rs, back[0]);
+        }
+        rs = step.runState;
+        if (rs.envState.statMod?.感知 < 0) sawDebuff = true;
+        if (rs.map.rooms[rs.current].isCheckpoint && sawDebuff) {
+          found = true;
+          expect(rs.envTags.spore?.level).toBe(0);
+          expect(rs.envState.statMod).toBeUndefined(); // 上一房的 -感知 不残留
+        }
+      }
+      if (found) return;
+    }
+    throw new Error("6 个 seed 都没生成检查点房——断言前提不成立");
+  });
+
+  it("穿堂房不抽死路专属 loot 种子", () => {
+    for (const dk of Object.keys(DUNGEON_DISTRICTS_ALL)) {
+      const rs = exploreAll(startMapRun(dk, "lootscan"));
+      for (const [name, room] of Object.entries(rs.map.rooms)) {
+        if (!rs.visited.includes(name) || room.isTreasure || room.isBoss || room.isAnchor) continue;
+        expect(room.roomEvent?.kind).not.toBe("loot");
+      }
+    }
+  });
 });
 
 describe("retreatRun / runEnd", () => {
