@@ -220,6 +220,13 @@ const CARRY_QUALITY_CHERISH = { 白: 15, 绿: 30, 蓝: 45, 紫: 60, 橙: 75, 红
 const CARRY_TROPHY_RE = /信物|凭证|令牌|弟子令|令旗|虎符|印信|腰牌|铁券|密匙|关防/;  // 势力信物：敢收也不敢卖
 const CARRY_MANUAL_RE = /秘籍|剑谱|拳谱|刀谱|枪谱|心法|真经|秘录|秘本|图谱|手抄|抄本|要诀|诀窍|指要|残卷|古卷|密卷|经卷|典籍|笔录|手稿|拓本|原本/;  // 签名武学
 
+// ── 随身交易读取层（D 单三分区 + E 单换装同步链）──────────────────
+// 纯数据：归一化后的随身条目、三分区、♥密度、外露度。domain 层，
+// 供 features（买卖链）与 ui（交易面板/look 卡）共用，不反向依赖 features。
+import { ADVENTURER_BY_NAME } from "../../data/dungeon/adventurers.js";
+
+const GEAR_CATS = new Set([ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY]);
+
 export function normalizeCarryEntry(_npc, entry = {}) {
   const isFollower = !entry.category && (entry.type || entry.slot === "mount");
   const name = entry.name || "";
@@ -245,6 +252,50 @@ export function normalizeCarryEntry(_npc, entry = {}) {
     slot,
     cherish: entry.cherish ?? cherish,
     sellable: entry.sellable ?? sellable,
-    price: entry.price ?? null,
+    // 价：明写优先；catalog 真货取定价；编外条目按品阶推算（mount 不卖，价可空）
+    price: entry.price ?? CATALOG_INDEX[name]?.buyPrice
+      ?? (category ? makeItem({ name, category, quality }).buyPrice : null),
   };
+}
+
+// 钟爱密度标记：≥80 三颗、≥50 两颗、其余一颗或不标（bag 杂物 0 钟爱不标）
+export function cherishHearts(cherish = 0) {
+  if (cherish >= 80) return "♥♥♥";
+  if (cherish >= 50) return "♥♥";
+  if (cherish > 0) return "♥";
+  return "";
+}
+
+// 装备区外露度：carriedItems（唯一 live 随身源——买卖/偷窃/赠送都写这里）的
+// 装备槽被扒到只剩饰物/一件不剩时算私密外露。没物化过 carriedItems 的 NPC
+// 不算「被扒光」——他本就没穿过，报暴露是误判。
+export function attireExposure(npc, trade = null) {
+  if (!Array.isArray(npc?.carriedItems)) return null;
+  const gear = npc.carriedItems
+    .filter((e) => e && !e.sold && !e.stolen && !e.dropped)
+    .map((e) => normalizeCarryEntry(npc, e))
+    .filter((e) => e.slot === "equipment" && GEAR_CATS.has(e.category));
+  const hasArmor = gear.some((e) => e.category === ITEM_CATEGORY.ARMOR);
+  const hasAccessory = gear.some((e) => e.category === ITEM_CATEGORY.ACCESSORY);
+  const hasWeapon = gear.some((e) => e.category === ITEM_CATEGORY.WEAPON);
+  // 还披甲/还带兵刃都不算暴露——暴露只留给「只剩饰物」与「一件不剩」两档。
+  if (hasArmor || hasWeapon) return null;
+  // 但得先证明这人身上曾经有过甲/刃——生成就空（ensureNpcCombatData 给普通
+  // NPC 铺的 carriedItems:[]）、或身上本来就只有饰物杂物，都不叫被扒。
+  // 证据看四处：carriedItems 里被标 sold/stolen/dropped 的装备条目、OC 卡面
+  // 摊在实例上的 carry / stealables.equipment、以及 npcState 台账 trade.sold
+  // 的条目快照（买入走「剔除」不留标记，甲刃被买空只有台账还记得）。
+  // 袋装货（slot:bag）不算穿过；台账里老 true 值没法分门别类，保守不算。
+  const hadProtective = [
+    ...npc.carriedItems.filter((e) => e?.sold || e?.stolen || e?.dropped),
+    ...(npc.carry || []),
+    ...(npc.stealables?.equipment || []),
+    ...Object.values(trade?.sold || {}).filter((e) => e && typeof e === "object"),
+  ].some((e) => {
+    const n = normalizeCarryEntry(npc, e);
+    return n.slot === "equipment" && [ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.WEAPON].includes(n.category);
+  });
+  if (!hadProtective) return null;
+  if (hasAccessory) return "只剩零星饰物在身";
+  return "衣不蔽体";
 }

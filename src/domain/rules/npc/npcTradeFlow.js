@@ -3,6 +3,7 @@
 // 本文件只做纯函数判定：报价、收购系数、买卖落账结果，不写任何 store——
 // 由 features/面板层把结果落到 char/inv/room.npcs/npcState。
 import { CATALOG_INDEX } from "../../data/items/catalog.js";
+import { ITEM_CATEGORY } from "../economy/equipment.js";
 import { normalizeCarryEntry } from "./npcCarry.js";
 import { applyNpcTradeDelta, itemKey } from "./npcTrade.js";
 
@@ -117,11 +118,16 @@ export function buyFromNpcCarry(npc, targetItem, { affection = 0, money = 0 } = 
   if (money < quote.price) return { ok: false, logs: [{ t: "sys", text: `  银两不够——「${entry.name}」要 ${quote.price} 两。` }] };
   const nextCarriedItems = (npc.carriedItems || []).filter(i => itemKey(i) !== itemKey(live));
   const delta = { sold: live };
-  const logs = quote.mode === "geai"
+  // 换装同步链：装备槽的货被买走=对方当场脱下——log 留一笔，外显/prompt
+  // 靠 deriveAppearance 读 live carriedItems 自动跟着变。
+  const wornOff = entry.slot === "equipment"
+    && [ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY].includes(entry.category)
+    ? [{ t: "sys", text: `  ${npc.name}脱下了${entry.name}，换到你手上。` }] : [];
+  const logs = [...(quote.mode === "geai"
     ? [{ t: "item", text: `  ${npc.name}攥着「${entry.name}」看了半晌，终是咬牙塞给你——念在情分，${quote.price} 两，算是割爱。` }]
     : quote.mode === "cherish"
       ? [{ t: "item", text: `  ${npc.name}肉疼地掂了掂「${entry.name}」，报了平时三倍的价：${quote.price} 两。` }]
-      : [{ t: "item", text: `  你花费${quote.price}两，购得「${entry.name}」。` }];
+      : [{ t: "item", text: `  你花费${quote.price}两，购得「${entry.name}」。` }]), ...wornOff];
   return { ok: true, price: quote.price, entry, nextCarriedItems, tradeDelta: delta, logs };
 }
 

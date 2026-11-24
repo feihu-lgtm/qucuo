@@ -166,6 +166,30 @@ export function giftNpc(state, npc, item, now = Date.now()) {
       changes.inv = applyWrite(state, set("inv", nextInv)).state.inv;
     }
   }
+  // 换装同步链④：玩家送出装备类条目 → NPC 当场穿上（记进他的随身装束，
+  // deriveAppearance/npcGear 立即反映，prompt 外貌段跟着变）。
+  const giftedEntry = typeof item === "object" ? item : CATALOG_INDEX[itemName];
+  const giftedCategory = giftedEntry?.category;
+  if (GIFT_GEAR_CATEGORIES.has(giftedCategory) && npc?.name) {
+    // 保留礼物全量字段（attack/defense/effect/sixDim）——不然买回来是件空壳；
+    // equipped/id 之类的玩家背包状态不带过去。
+    const worn = {
+      ...giftedEntry,
+      name: itemName, category: giftedCategory, quality: giftedEntry.quality || "白",
+      slot: "equipment", desc: giftedEntry.desc || "", equipped: false,
+      id: `gift_${npc.name}_${itemName}_${Date.now()}`,
+    };
+    changes.room = (prev) => ({
+      ...prev,
+      npcs: (prev.npcs || []).map((n) => {
+        if (n.name !== npc.name) return n;
+        // carriedItems 是唯一 live 随身源（货架/偷池都读它）——礼物写进它，
+        // 穿上能看、买回来也不是空壳。
+        return { ...n, carriedItems: [...(n.carriedItems || []), worn] };
+      }),
+    });
+    logs.push({ t: "sys", text: `  ${npc.name}换上了${itemName}。` });
+  }
   return {
     changes,
     logs,
@@ -174,6 +198,8 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     deliveredQuest: deliveredQuest?.quest || null,
   };
 }
+
+const GIFT_GEAR_CATEGORIES = new Set(["weapon", "armor", "accessory"]);
 
 export function giftSilver(state, npc, amount, now = Date.now()) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
