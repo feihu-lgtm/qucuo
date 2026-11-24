@@ -22,7 +22,14 @@ export function duelFactLine(round) {
   if (Array.isArray(round?.teamLines)) {
     // 团战每一击的事实行（招式、谁受创多少）就在 teamText 里，原样给出；只写"某某吃亏"
     // 会让说书人既拿不到招式名，也不知道谁倒下，只好自己编，结局还对不上前面的回合。
-    const texts = round.teamLines.map((entry) => String(entry.teamText || entry.text || "").trim()).filter(Boolean);
+    // teamText 只含直接伤害，回合末的中毒/流血等状态伤另从 result 补上，倒下才有来由。
+    const texts = round.teamLines.map((entry) => {
+      const text = String(entry.teamText || entry.text || "").trim();
+      const dots = ["A", "B"]
+        .filter((tag) => num(entry.result?.[`statusDamage${tag}`]) > 0 && entry.result?.[`name${tag}`])
+        .map((tag) => `${entry.result[`name${tag}`]}又受状态伤${num(entry.result[`statusDamage${tag}`])}。`);
+      return `${text}${dots.join("")}`;
+    }).filter(Boolean);
     const fallen = [...new Set(round.teamLines.flatMap((entry) => ["A", "B"]
       .filter((tag) => hpLeft(entry.result?.[`hpAfter${tag}`]) === 0)
       .map((tag) => entry.result?.[`name${tag}`])

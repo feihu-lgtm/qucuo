@@ -24,11 +24,11 @@ describe("duelFactLine", () => {
       teamLines: [
         {
           teamText: "谷月轩以「磐石桩」击向陈虎方，陈虎方以「野球拳」相抗。谷月轩占了上风。陈虎方受创9。",
-          result: { nameA: "谷月轩", nameB: "陈虎方", hpAfterA: [40, 120], hpAfterB: [0, 100], worseName: "陈虎方" },
+          result: { nameA: "谷月轩", nameB: "陈虎方", hpAfterA: [40, 120], hpAfterB: [0, 100], statusDamageB: 4, worseName: "陈虎方" },
         },
       ],
     });
-    expect(line).toBe("第6回合 谷月轩以「磐石桩」击向陈虎方，陈虎方以「野球拳」相抗。谷月轩占了上风。陈虎方受创9。陈虎方倒下。");
+    expect(line).toBe("第6回合 谷月轩以「磐石桩」击向陈虎方，陈虎方以「野球拳」相抗。谷月轩占了上风。陈虎方受创9。陈虎方又受状态伤4。陈虎方倒下。");
   });
 });
 
