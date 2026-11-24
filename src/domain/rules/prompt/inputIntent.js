@@ -12,6 +12,7 @@ export const INTENT = {
   LOOK:            { code: "LOOK",            wordBudget: [60, 150],  label: "查看/环顾" },
   MOVE:            { code: "MOVE",            wordBudget: [80, 200],  label: "移动" },
   TALK_CASUAL:     { code: "TALK_CASUAL",     wordBudget: [150, 350], label: "日常闲聊" },
+  INTIMATE:        { code: "INTIMATE",        wordBudget: [200, 500], label: "亲密互动" },
   COMBAT:          { code: "COMBAT",          wordBudget: [400, 900], label: "战斗" },
   EXPLORE_ACTION:  { code: "EXPLORE_ACTION",  wordBudget: [300, 700], label: "调查/搜索/事件行动" },
   UNKNOWN:         { code: "UNKNOWN",         wordBudget: null,       label: "无法判定，交由本次调用自行裁量" },
@@ -89,6 +90,7 @@ function isDuelInput(rawInput) {
 export function classifyIntent(rawInput) {
   const s = (rawInput || "").trim();
   if (!s) return INTENT.UNKNOWN;
+  if (INTIMATE_RE.test(s)) return INTENT.INTIMATE;
 
   for (const p of META_PATTERNS) if (p.test(s)) return INTENT.META_QUERY;
   for (const p of MOVE_PATTERNS) if (p.test(s)) return INTENT.MOVE;
@@ -124,3 +126,7 @@ export function buildBudgetInstruction(intent, rawInput, fallbackWordCount, budg
 - 明显有戏剧张力的行动（战斗、关键抉择、触发重要事件）：可展开到${fallbackWordCount}字左右
 默认宁短勿长，不要拿不准就往长了写。`;
 }
+
+// 亲密指令族（搂抱/亲吻/更进一步）——判定独立导出，对话/行动两种模式都要拦。
+export const INTIMATE_RE = /搂|抱一?下|亲|吻|亲热|亲密|温存|云雨|欢好|翻云覆雨|共赴巫山|更进一步|宽衣|解衣|求欢|肌肤之亲|双修|扑倒|推倒/;
+export const isIntimateInput = (cmd = "") => INTIMATE_RE.test(String(cmd));
