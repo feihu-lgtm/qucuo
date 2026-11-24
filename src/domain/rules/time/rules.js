@@ -9,6 +9,7 @@ import { makeItemSmart } from "../../data/items/catalog.js";
 import { hasInnerMap, isNpcVisibleInInnerRoom } from "../map/innerMap.js";
 import { cleanExpiredBuffs } from "../../../utils/buffSystem.js";
 import { buildRoomNpcWithCombat } from "../npc/rules.js";
+import { npcTradeOf } from "../npc/npcTrade.js";
 
 const QUALITIES = ["白", "绿", "蓝", "紫", "橙", "红"];
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
@@ -21,6 +22,7 @@ function makeEscalationNpc(record, state, { pool = false } = {}) {
   return ensureNpcCombatData(base, {
     luck: state.char?.special?.气运 ?? 5,
     levelCap: base.levelCap ?? inferred.levelCap,
+    trade: npcTradeOf(state.npcState, base),
   });
 }
 
@@ -29,10 +31,10 @@ function findEscalationNpc(name, state, roomMap, importedRegistry) {
   if (present) return present;
   for (const cachedRoom of Object.values(roomMap || {})) {
     const cachedNpc = (cachedRoom?.npcs || []).find((npc) => npc.name === name);
-    if (cachedNpc) return ensureNpcCombatData(cachedNpc, { luck: state.char?.special?.气运 ?? 5 });
+    if (cachedNpc) return ensureNpcCombatData(cachedNpc, { luck: state.char?.special?.气运 ?? 5, trade: npcTradeOf(state.npcState, cachedNpc) });
   }
   const imported = importedRegistry?.getImportedNpc?.(name, { asPoolNpc: true });
-  if (imported) return buildRoomNpcWithCombat(imported, { luck: state.char?.special?.气运 ?? 5 });
+  if (imported) return buildRoomNpcWithCombat(imported, { luck: state.char?.special?.气运 ?? 5, trade: npcTradeOf(state.npcState, imported) });
   const resident = Object.values(RESIDENT_NPCS).flat().find((npc) => npc.name === name);
   if (resident) return makeEscalationNpc(resident, state);
   const poolNpc = NPC_POOL.find((npc) => npc.name === name);

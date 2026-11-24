@@ -1,6 +1,7 @@
 import { isCompanionUnlockedByName, companionKeyByName } from "../companion/companion.js";
 import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../map/innerMap.js";
 import { ensureNpcCombatData } from "../npc/npcGeneration.js";
+import { npcTradeOf } from "../npc/npcTrade.js";
 import { mapDescriptionToGenParams } from "../../data/npc/npcDescriptionMapping.js";
 import { NPC_POOL, getScheduledNpcs, toRoomNpc } from "../../data/npc/npcPool.js";
 import { getCrowd, getRandomPassers } from "../../data/npc/randomPassers.js";
@@ -20,7 +21,7 @@ const NPC_FIELDS = [
   "ocAdventurer", "npcRef",
 ];
 
-export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5 } = {}) {
+export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5, trade } = {}) {
   if (existingNpc?.moveset && existingNpc?.carriedItems && existingNpc?.special && existingNpc?.combatStats) {
     return { ...existingNpc };
   }
@@ -32,7 +33,7 @@ export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5 } = {}) 
     `${poolNpc.name || ""} ${poolNpc.brief || ""} ${poolNpc.personality || ""}`,
   );
   const levelCap = poolNpc.levelCap ?? inferred.levelCap;
-  return ensureNpcCombatData(base, { luck, levelCap });
+  return ensureNpcCombatData(base, { luck, levelCap, trade });
 }
 
 // 迁过据点的常驻 → 原据点。旧存档还把人缓存在原据点：进新据点照样请到，回原据点把人清掉
@@ -70,6 +71,7 @@ export const residentNpcRule = {
     const toRoomNpcWithCombat = (poolNpc) => buildRoomNpcWithCombat(poolNpc, {
       existingNpc: existingByName.get(poolNpc.name),
       luck,
+      trade: npcTradeOf(state.npcState, poolNpc),
     });
 
     const poolNpcs = getScheduledNpcs(room.name, time).map(toRoomNpcWithCombat);
@@ -137,7 +139,7 @@ export const residentNpcRule = {
     const worldAdventurers = getWorldAdventurers(room.name, time)
       .map((adv) => {
         const existing = existingByName.get(adv.name);
-        return buildRoomNpcWithCombat(adv, { existingNpc: existing?.adventurerDay === dayIdx ? existing : undefined, luck });
+        return buildRoomNpcWithCombat(adv, { existingNpc: existing?.adventurerDay === dayIdx ? existing : undefined, luck, trade: npcTradeOf(state.npcState, adv) });
       });
     const advRosterNames = new Set(worldAdventurers.map((npc) => npc.name));
     const isStaleAdventurer = (npc) => npc?.adventurerDay != null && (npc.adventurerDay !== dayIdx || !advRosterNames.has(npc.name));
@@ -153,7 +155,7 @@ export const residentNpcRule = {
     const passers = getRandomPassers(room.name, time, passerReserved)
       .map((passer) => {
         const existing = existingByName.get(passer.name);
-        return buildRoomNpcWithCombat(passer, { existingNpc: existing?.randomPasser === dayIdx ? existing : undefined, luck });
+        return buildRoomNpcWithCombat(passer, { existingNpc: existing?.randomPasser === dayIdx ? existing : undefined, luck, trade: npcTradeOf(state.npcState, passer) });
       });
     // 不在今天这份名单里的过路人一律清掉：隔天的，或名额被新导入角色卡顶替、重抽后换下的
     const rosterNames = new Set(passers.map((npc) => npc.name));

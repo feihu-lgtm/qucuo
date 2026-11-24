@@ -4,6 +4,7 @@ import { getInnerRoom, hasInnerMap } from "../../domain/rules/map/innerMap.js";
 import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { detectNewFaces, markAsSeen, updateLastSeen } from "../../domain/rules/npc/npcAwareness.js";
 import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
+import { npcTradeOf } from "../../domain/rules/npc/npcTrade.js";
 import { findPath, getMapNode, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
 import { DIRS, parseDir } from "../../utils/mudHelpers.js";
 
@@ -227,7 +228,7 @@ export function outerArrival(state, { direction, destName, roomMap, squares, com
       brief: encounter.brief,
       ...(encounter.faction ? { faction: encounter.faction, roadPasser: true } : {}),
       levelCap: Math.max(0, QUALITY.indexOf(encounter.tier || "白")),
-    }, { luck: state.char?.special?.气运 ?? 5 }));
+    }, { luck: state.char?.special?.气运 ?? 5, trade: npcTradeOf(state.npcState, encounter) }));
     if (encounter.line) logs.push({ t: "desc", text: `  ${encounter.line}` });
   }
 
