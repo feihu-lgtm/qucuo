@@ -133,7 +133,10 @@ export const residentNpcRule = {
       .filter((npc) => npc?.randomPasser === dayIdx)
       .map((npc) => npc.name));
     const varTree = state.varTree || {};
+    // 已入队/留守的冒险者不再刷世界版（跟 importedNpcs 同一道闸）：
+    // 招募后房间里会同时存在"世界版陌生人"和"留守队友"两个同名身。
     const worldAdventurers = getWorldAdventurers(room.name, time)
+      .filter((adv) => !isCompanionUnlockedByName(companionState, adv.name))
       .map((adv) => {
         const existing = existingByName.get(adv.name);
         return buildRoomNpcWithCombat(adv, { existingNpc: existing?.adventurerDay === dayIdx ? existing : undefined, luck });

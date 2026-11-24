@@ -12,7 +12,7 @@ import {
   tradeWithNpc,
 } from "../../features/npc/logic.js";
 import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
-import { recruitOC, applyRecruit } from "../../features/npc/ocRecruit.js";
+import { recruitOC, applyRecruit, hirePriceFor } from "../../features/npc/ocRecruit.js";
 import { ADVENTURER_BY_NAME } from "../../domain/data/dungeon/adventurers.js";
 import { stationCompanion, unstationCompanion } from "../../domain/rules/companion/companion.js";
 import { toggleEquip } from "../../domain/rules/economy/equipment.js";
@@ -70,7 +70,8 @@ export function useScreenHandlers({
     const adv = ADVENTURER_BY_NAME[npc.name];
     if (!adv) return;
     captureUndo();
-    const res = recruitOC(gameStore.getState(), adv, route);
+    // hire 路的按钮即全价档价（菜单文案已标出价多少），offer 不传会被当 0 必拒
+    const res = recruitOC(gameStore.getState(), adv, route, route === "hire" ? { offer: hirePriceFor(adv) } : {});
     if (!res.ok) { addLog([{ t: "sys", text: `  ${res.reason}` }]); return; }
     setActiveTarget(npc.name);
     applyResult(featureCtx(), applyRecruit(gameStore.getState(), adv, res.effect));
@@ -87,7 +88,9 @@ export function useScreenHandlers({
   const handleRecallCompanion = useCallback((npc) => applyResult(featureCtx(), () => {
     captureUndo();
     const { companionState } = gameStore.getState();
-    applyResult(featureCtx(), { changes: { companionState: unstationCompanion(companionState, `imported_${npc.name}`) } });
+    // 唤回用 stationedNpcsFor 折进 npc.id 的真槽位键——写死 imported_ 前缀对内置伙伴（雪豹等）找不着
+    const slotKey = npc.id || `imported_${npc.name}`;
+    applyResult(featureCtx(), { changes: { companionState: unstationCompanion(companionState, slotKey) } });
     setActiveTarget(npc.name);
     applyResult(featureCtx(), { logs: [{ t: "sys", text: `  ${npc.name}收拾行装，跟上了你的脚步。` }] });
   }, { feature: "npc.recallCompanion" }), [captureUndo]);
