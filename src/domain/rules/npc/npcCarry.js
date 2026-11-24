@@ -261,11 +261,25 @@ export function cherishHearts(cherish = 0) {
 }
 
 // 取一个 NPC 的随身条目清单（归一化）：优先读房间 npc 身上的 live 列表
-// （sold/stolen 标记写在这里），静态 adv.carry 只作不在场时的表底。
+// （sold/stolen 标记写在这里），静态 adv 卡只作不在场时的表底——表底不能只
+// 读 carry：OC 的装备在 stealables.equipment、随从在 follower，都得拼进来。
+const advAllEntries = (adv) => [
+  ...(adv?.carry || []),
+  ...(adv?.stealables?.equipment || []),
+  ...(adv?.stealables?.sundries || []),
+  ...(adv?.follower ? [adv.follower] : []),
+];
 export function carryTradeEntries(npc) {
-  const adv = ADVENTURER_BY_NAME[npc?.name];
-  const raw = npc?.carry || adv?.carry || npc?.carriedItems || [];
-  return raw
+  // OC_BY_NAME 覆盖两份卡池（含 adventurersIP），ADVENTURER_BY_NAME 只认主池。
+  const adv = OC_BY_NAME[npc?.name] || ADVENTURER_BY_NAME[npc?.name];
+  const raw = (npc?.carriedItems?.length ? npc.carriedItems : null)
+    || (adv ? advAllEntries(adv) : null)
+    || npc?.carry
+    || [];
+  // 挂载位：随从不是物品、不在 carriedItems 里，但货架挂载区要展示——单独补一行。
+  const follower = npc?.follower || adv?.follower;
+  const entries = follower && !raw.some((e) => e?.name === follower.name) ? [...raw, follower] : raw;
+  return entries
     .filter((e) => e && !e.sold && !e.stolen && !e.dropped)
     .map((e) => normalizeCarryEntry(npc, e));
 }
@@ -282,7 +296,7 @@ export function carryTradeSections(npc) {
 // 装备区外露度：equipment 区被扒到只剩饰物/一件不剩时算私密外露。
 export function attireExposure(npc) {
   // 没有任何随身数据的 NPC 不算「被扒光」——他本就没穿过，报暴露是误判。
-  const raw = ADVENTURER_BY_NAME[npc?.name]?.carry || npc?.carry || npc?.carriedItems;
+  const raw = OC_BY_NAME[npc?.name]?.carry || ADVENTURER_BY_NAME[npc?.name]?.carry || npc?.carry || npc?.carriedItems;
   if (!raw?.length) return null;
   const gear = carryTradeEntries(npc).filter((e) => e.slot === "equipment" && GEAR_CATS.has(e.category));
   const hasArmor = gear.some((e) => e.category === ITEM_CATEGORY.ARMOR);
