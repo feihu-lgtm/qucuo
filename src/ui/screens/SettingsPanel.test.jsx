@@ -63,3 +63,16 @@ describe("SettingsPanel font preference", () => {
     expect(html).toContain('aria-pressed="true"');
   });
 });
+
+describe("SettingsPanel unified prompt control center", () => {
+  it("renders unified control tab with all call groups, 6 block dimensions, and review rules", () => {
+    const html = render({ apiKey: "test-placeholder" }, "preset");
+    expect(html).toContain("统一总控台");
+    expect(html).toContain("主回合行动");
+    expect(html).toContain("旁白私聊");
+    expect(html).toContain("同步抽取与识别");
+    expect(html).toContain("异步后台任务");
+    expect(html).toContain("审阅与校验规则");
+    expect(html).toContain("当前局势（此地情况/武力值/装备/武学/行囊）");
+  });
+});
