@@ -336,13 +336,7 @@ export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
 // 跨层直连 infra）以当前 main 基线封顶，只减不增。
 export const KNOWN_LAYER_DEBT = {};
 
-export const KNOWN_DIRECT_AI_CALL_DEBT = {
-  "app/hooks/usePrivateTalk.js": 2,
-  "engine/act/actCall.js": 2,
-  "engine/act/memoryLayer.js": 1,
-  "engine/intent/aiClassifier.js": 1,
-  "engine/ports/extraction.js": 1,
-};
+export const KNOWN_DIRECT_AI_CALL_DEBT = {};
 
 export const KNOWN_STATE_WRITE_DEBT = {
   "app/hooks": 19,

@@ -11,25 +11,38 @@ import { embeddingReady } from "../ports/embeddingService.js";
 import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
 import { applyPresetOverrides, getActivePreset } from "../../domain/rules/prompt/presetSystem.js";
 import { createWebAi } from "../ports/ai.js";
+import { withAI } from "../ports/withAI.js";
+import { ensureUnifiedCalls, setMainTurnAssembler } from "../../domain/rules/prompt/calls/unifiedCalls.js";
+import { getPromptOverrides } from "../../domain/rules/prompt/registry.js";
 import { buildAngryNote } from "../prompt/assemblePrompt.js";
 import { getApiModel } from "../../content/apiModel.js";
 import { formatSettleNote } from "../../domain/rules/settle/settle.js";
 
 const webAi = createWebAi();
 
+function applyMainTextOverride(ov, id, fallback) {
+  const rule = ov?.[id];
+  if (!rule) return fallback;
+  if (rule.mode === "off") return "";
+  if (typeof rule.text === "string") return rule.text;
+  return fallback;
+}
+
 // 调用一次主剧情（流式/非流式），返回 { rawFull, finishReason }。流式占位日志每次调用各自管理。
 // narrativeOnly=true：提取层模式，主调用只输出散文；流式时将文本直接展示并保留在日志里。
 // d 是 act 在调用点现取的回合上下文（ref 值按调用时机读取，保证时序与原闭包一致）。
 export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
+  const ov = getPromptOverrides();
   const traceEvents = [];
   const cmdSuffix = narrativeOnly ? "处理最新命令，直接输出叙事正文。" : "处理最新命令。纯JSON，字符串不换行。";
   // 成文铁律放在 user 块最末尾（酒馆语义里插入深度=0、贴着生成处的最强位，
   // 见 ST prompt-manager：Depth 0 = 提示末尾 = 最强）。文体规则若埋在 system 里
   // 位置太靠前、常被模型当耳旁风，这条挪到最低深度逼它逐段照做。
-  const proseRule = "\n\n【成文铁律·逐段自查（本条最优先，落笔前先过一遍）】每写完一段，先在心里核两样再往下写：其一，这一段每个句子都要是完整句——主谓宾齐全、该带的定状补都补上，不许出现半截话、掐头去尾、省略到看不明白的残句；其二，这一段凡涉及到的，时间、地点、人物、起因、经过、结果都要交代到实处（这一段确实用不上的那几样可以不写，但只要沾边就得写全，不许用『那人』『某处』『后来』这类含糊词一笔带过）。宁可句子写得实、写得满，也绝不为省字丢主语宾语或掐断句子。";
+  const rawProseRule = "\n\n【成文铁律·逐段自查（本条最优先，落笔前先过一遍）】每写完一段，先在心里核两样再往下写：其一，这一段每个句子都要是完整句——主谓宾齐全、该带的定状补都补上，不许出现半截话、掐头去尾、省略到看不明白的残句；其二，这一段凡涉及到的，时间、地点、人物、起因、经过、结果都要交代到实处（这一段确实用不上的那几样可以不写，但只要沾边就得写全，不许用『那人』『某处』『后来』这类含糊词一笔带过）。宁可句子写得实、写得满，也绝不为省字丢主语宾语或掐断句子。";
+  const proseRule = applyMainTextOverride(ov, "user_prose", rawProseRule);
   // 远景（日总结）作背景垫底，放在 ctx 之后、回忆之前——比"最近对话/回忆"更靠前=分量更轻，
   // 只保连贯不喧宾夺主。
-  const distantBlock = buildDistantViewBlock(d.varTree, 5);
+  const distantBlock = (ov.user_recall?.mode === "off" || ov.recall?.mode === "off") ? "" : buildDistantViewBlock(d.varTree, 5);
   // 动态注入 scope：结算轮只演既定事实（砍物件志/认知隔离/远景/极简schema），移动只喂场景相关，
   // 对话保留认知隔离，其余全量。创造模式必须全量（要能凭空发物品/召唤NPC），故 gm 时强制 full。
   const promptScope = d.gm ? "full"
@@ -73,22 +86,26 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
 
   // NSFW + GM 规则提前到 11 号位（inChat，user role）——规则放 user 嘴里，
   // 不让 AI 在 assistant 位"补全"规则文本（旧 bug：GM_RULE 贴生成处，AI 顺着规则思考不写正文）。
+  const allowNsfw = ov.nsfw_rules?.mode === "off" ? false : ov.nsfw_rules?.mode === "blue" ? true : d.nsfwOn;
+  const allowGm = ov.gm_rule?.mode === "off" ? false : ov.gm_rule?.mode === "blue" ? true : d.gm;
   let rulesBlock = "";
-  if (d.nsfwOn) {
+  if (allowNsfw) {
     rulesBlock += NSFW_RULES + "\n" + MODE_PRIMER_MESSAGES.map(m => m.content).join("\n");
   }
-  if (d.gm) {
+  if (allowGm) {
     rulesBlock += (rulesBlock ? "\n" : "") + GM_RULE;
   }
   // ── 体貌·蓝绿灯 ──
   // 公开层跟着"这一轮有没有人近距离看着你"走（full/talk 亮，赶路结算灭），
   // 私密层只认 ■ 模式。灭灯不只是省 token——赶路轮塞一段私处描写，模型真的会
   // 顺着那个方向写。详见 bodyProfile.js 顶部。
-  const _bodyGate = gateBodyProfile(d.charBodyProfile, {
-    scope: promptScope,
-    nsfw: d.nsfwOn,
-    scanText: `${d.cmd}\n${[...d.convo].reverse().find(m => m.role === "assistant")?.content || ""}`,
-  });
+  const _bodyGate = ov.body_gate?.mode === "off"
+    ? { text: "", lit: [], dark: ["总控台关闭"] }
+    : gateBodyProfile(d.charBodyProfile, {
+      scope: promptScope,
+      nsfw: allowNsfw,
+      scanText: `${d.cmd}\n${[...d.convo].reverse().find(m => m.role === "assistant")?.content || ""}`,
+    });
   if (_bodyGate.text) {
     const authorsNote = sysBlocks.find(b => b.tavernBlock === "authorsNote");
     if (authorsNote) authorsNote.content += (authorsNote.content ? "\n" : "") + _bodyGate.text;
@@ -116,16 +133,20 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const angrySettleNote = d.isSettle && d.settleNpc
     ? buildAngryNote(d.varTree, [d.settleNpc])
     : "";
-  const ledgerBlock = targetLedger({
-    target: d.settleNpc || d.activeTarget || d.talkTarget,
-    room: d.room,
-    varTree: d.varTree,
-  });
+  const ledgerBlock = ov.target_ledger?.mode === "off"
+    ? ""
+    : targetLedger({
+      target: d.settleNpc || d.activeTarget || d.talkTarget,
+      room: d.room,
+      varTree: d.varTree,
+    });
   const ledgerSuffix = ledgerBlock ? `\n\n${ledgerBlock}` : "";
   const softSettleNote = d.softSettle ? formatSettleNote(d.softSettle) : "";
+  const recallPart = (ov.user_recall?.mode === "off" || ov.recall?.mode === "off") ? "" : d.recallBlock;
+  const reunionPart = ov.reunion?.mode === "off" ? "" : d.reunionBlock;
   const inChatContent = d.isSettle
-    ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? d.reunionBlock : "") + ledgerSuffix + angrySettleNote + softSettleNote + "\n\n" + proseRule
-    : rulesPrefix + d.ctx + distantBlock + d.recallBlock + ledgerSuffix + d.reunionBlock + d.infoDomainBlock + "\n\n" + proseRule;
+    ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + softSettleNote + "\n\n" + proseRule
+    : rulesPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + d.infoDomainBlock + "\n\n" + proseRule;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
@@ -239,45 +260,60 @@ ${dealFmt}`;
 }
 
 export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
+  ensureUnifiedCalls();
   const payload = buildMainCallPayload(extraNudge, narrativeOnly, {
     ...d,
     embeddingEnabled: embeddingReady(d.apiCfg),
     activePreset: getActivePreset(),
     effectivePreset: getActivePreset(),
   });
-  const { sysBlocks, chatMessages, effectiveCfg, stream, intent, recallInfo, modelOptions, traceEvents } = payload;
+  const { effectiveCfg, stream, intent, recallInfo, modelOptions, traceEvents } = payload;
   for (const event of traceEvents) {
     if (event.kind === "snapshot") attachInjectionSnapshot(d._trace, event.snap);
     else traceStep(d._trace, event.label, event.level, event.text);
   }
   const ai = d.ai || webAi;
   if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
+
+  let streamLogIndex = null;
+  let onChunk;
   if (stream) {
-    let streamLogIndex = null;
     d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
     d.setLog(l => {
       if (d.isStale?.()) return l;
       streamLogIndex = l.length - 1;
       return l;
     });
-    const { text, finishReason } = await ai.chat(chatMessages, {
-      cfg: effectiveCfg,
-      systemPrompt: sysBlocks,
-      stream: true,
-      onChunk: (_delta, fullSoFar) => {
-        d.setLog(l => {
-          if (d.isStale?.() || streamLogIndex == null) return l;
-          const copy = [...l];
-          // 叙事模式：直接展示散文文本；JSON模式：只看最后200字（避免长 JSON 刷屏）
-          copy[streamLogIndex] = { t: "desc", text: "  " + (narrativeOnly ? fullSoFar : fullSoFar.slice(-200)) + " ▌", streaming: true };
-          return copy;
-        });
-      },
+    onChunk = (_delta, fullSoFar) => {
+      d.setLog(l => {
+        if (d.isStale?.() || streamLogIndex == null) return l;
+        const copy = [...l];
+        // 叙事模式：直接展示散文文本；JSON模式：只看最后200字（避免长 JSON 刷屏）
+        copy[streamLogIndex] = { t: "desc", text: "  " + (narrativeOnly ? fullSoFar : fullSoFar.slice(-200)) + " ▌", streaming: true };
+        return copy;
+      });
+    };
+  }
+
+  const res = await withAI(
+    "turn.main",
+    { payload },
+    {
+      ai,
+      apiCfg: effectiveCfg,
+      isStale: d.isStale,
+      ...(stream ? { stream: true, onChunk } : {}),
       intent,
       recallInfo,
       modelOptions,
-    });
-    if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
+    },
+  );
+  if (!res.ok && res.error) throw res.error;
+  if (d.isStale?.() || res.finishReason === "stale") return { rawFull: "", finishReason: "stale" };
+
+  const text = res.text || "";
+  const finishReason = res.finishReason;
+  if (stream) {
     if (narrativeOnly) {
       // 叙事模式：把流式条目转为永久日志项（而不是移除它）。谈价 <deal> 标签仅供系统，显示时剥掉。
       const shown = text.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
@@ -291,15 +327,13 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       // JSON 模式：移除占位条目（正式 output 会在解析后追加）
       d.setLog(l => (d.isStale?.() || streamLogIndex == null ? l : l.filter((_, i) => i !== streamLogIndex)));
     }
-    return { rawFull: text, finishReason };
   }
-  const result = await ai.chat(chatMessages, {
-    cfg: effectiveCfg,
-    systemPrompt: sysBlocks,
-    intent,
-    recallInfo,
-    modelOptions,
-  });
-  if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
-  return { rawFull: result.text, finishReason: result.finishReason };
+  return { rawFull: text, finishReason };
 }
+
+setMainTurnAssembler((ctx) => buildMainCallPayload(ctx.extraNudge, ctx.narrativeOnly, {
+  ...ctx.d,
+  embeddingEnabled: embeddingReady(ctx.d.apiCfg),
+  activePreset: getActivePreset(),
+  effectivePreset: getActivePreset(),
+}));

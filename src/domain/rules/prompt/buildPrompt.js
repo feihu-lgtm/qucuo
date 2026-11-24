@@ -165,8 +165,11 @@ export function buildPrompt(callId, ctx = {}, { overrides = {} } = {}) {
   if (userText) messages.push({ role: "user", content: userText });
   if (prefillText) messages.push({ role: "assistant", content: prefillText });
 
+  const resolvedDefaultMax = typeof call.defaultMaxTokens === "function"
+    ? call.defaultMaxTokens(ctx)
+    : call.defaultMaxTokens;
   const maxTokens = (call.tokenLimitKey ? ctx.apiCfg?.callTokenLimits?.[call.tokenLimitKey] : undefined)
-    ?? call.defaultMaxTokens;
+    ?? resolvedDefaultMax;
   const slots = {
     sys: sysText,
     authorsNote: notesText,

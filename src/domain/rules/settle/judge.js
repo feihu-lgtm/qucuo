@@ -68,7 +68,11 @@ export function registerSettleCalls() {
   });
 
   definePrompt("call", "settle.judge", {
+    group: "sync",
     label: (ctx) => `结算仲裁（${ctx.kindLabel || ctx.kind || "?"}）`,
+    execution: "sync_pipeline",
+    route: "light",
+    reviewDesc: "解析档位与权重分布并做系统区间裁剪，解析失败回退 UNKNOWN_CHOICE",
     tokenLimitKey: "extraction",
     defaultMaxTokens: 512,
     join: "",

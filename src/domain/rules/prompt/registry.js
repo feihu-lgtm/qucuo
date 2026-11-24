@@ -11,7 +11,10 @@ function loadStoredOverrides() {
     const raw = localStorage.getItem(OVERRIDE_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    if (parsed?.version !== 1 || !parsed.overrides || typeof parsed.overrides !== "object" || Array.isArray(parsed.overrides)) {
+      return {};
+    }
+    return parsed.overrides;
   } catch {
     return {};
   }
@@ -23,7 +26,7 @@ function persistOverrides() {
   try {
     if (typeof localStorage === "undefined") return;
     if (!Object.keys(runtimeOverrides).length) localStorage.removeItem(OVERRIDE_STORAGE_KEY);
-    else localStorage.setItem(OVERRIDE_STORAGE_KEY, JSON.stringify(runtimeOverrides));
+    else localStorage.setItem(OVERRIDE_STORAGE_KEY, JSON.stringify({ version: 1, overrides: runtimeOverrides }));
   } catch {}
 }
 

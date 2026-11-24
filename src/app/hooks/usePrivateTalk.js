@@ -1,6 +1,9 @@
 import { useCallback } from "react";
 import { snowLeopardHint } from "../../domain/rules/quests/snowLeopardQuest.js";
-import { callModel, callModelStream } from "../../engine/ports/ai.js";
+import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
+import { withAI } from "../../engine/ports/withAI.js";
+import { runFormattedRecall } from "../../engine/ports/recallBlock.js";
+import { ensureUnifiedCalls } from "../../domain/rules/prompt/calls/unifiedCalls.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../../infra/turnMonitor.js";
 import {
@@ -14,14 +17,11 @@ import { buildWhisperStatePrompt, formatFactSummariesForPrompt } from "../../dom
 import { WHISPER_AFFECTION_RULES } from "../../domain/rules/state/fields.js";
 import { allFactSummaries } from "../../domain/rules/prompt/knowledge.js";
 import { embeddingReady } from "../../engine/ports/embeddingService.js";
-import { recallWithVisibility } from "../../engine/ports/recallWithVisibility.js";
 import { gateScenario } from "../../domain/rules/prompt/worldbook.js";
 import { describeTallyForWhisper } from "../../domain/rules/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
-import { buildPrivateTalkPayload } from "../../domain/rules/prompt/privateTalkPayload.js";
-import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 import { settledToPatches } from "../../domain/rules/settle/settle.js";
 import { applyPatches } from "../../domain/rules/state/applyPatches.js";
 import { runSoftSettle } from "../../engine/ports/softSettle.js";
@@ -90,15 +90,20 @@ export function usePrivateTalk({
       if (embeddingReady(apiCfg)) {
         const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
         const focusEntities = Array.from(new Set([...room.npcs.map(n => n.name), ...Object.keys(gameStore.getState().varTree.角色 || {}), room.name]));
-        recallInfo = await recallWithVisibility({
-          cfg: apiCfg, queryText: content,
+        const recentTexts = convo.slice(-Math.max(apiCfg.contextWindow || 20, 20)).map((m) => m.content);
+        ({ recallInfo, recallBlock } = await runFormattedRecall({
+          apiCfg,
+          queryText: content,
           contextText: `${lastAiText}\n[当前]位置:${room.name}`,
-          focusEntities, unlockedFlags: flags, presentNames: ["旁白"], topK: 5,
-        });
+          focusEntities,
+          unlockedFlags: flags,
+          presentNames: ["旁白"],
+          topK: 5,
+          recentTexts,
+          header: "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n",
+        }));
         if (isStale()) return;
         if (recallInfo && recallInfo.visible.length) {
-          recallBlock = "\n\n[你记得的往事，与此刻私聊相关，供你回应时自然照应，不要生硬复述]\n"
-            + recallInfo.visible.map(m => `· （第${m.meta.turn}回合）${m.tier === "weak" && m.text.length > 40 ? m.text.slice(0, 40) + "…" : m.text}`).join("\n");
           traceStep(_wt, "向量召回", "pass", `召回${recallInfo.visible.length}条相关往事`);
         } else {
           traceStep(_wt, "向量召回", "skip", "已开启但本轮无相关召回结果");
@@ -177,7 +182,10 @@ export function usePrivateTalk({
         { includeLifetime: narrator.stage === NNPC_STAGE.RESOLVED },
       );
       const worldState = inSeaNow ? "" : buildWhisperStatePrompt(gameStore.getState(), { trace });
-      const privateTalkPayload = buildPrivateTalkPayload({
+      ensureUnifiedCalls();
+      const whisperAi = createWebAi();
+      const whisperStream = Boolean(apiCfg.streamEnabled && apiCfg.apiType !== "gemini");
+      const whisperCtx = {
         narrator,
         content,
         apiCfg,
@@ -195,56 +203,64 @@ export function usePrivateTalk({
         questGateText: _questGate.text,
         whisperGateText: _whisperGate.text,
         narratorStage: NNPC_STAGE,
-      });
-      for (const paths of privateTalkPayload.promptRefEvents) {
-        traceStep(_wt, "提示词引用缺失", "warn", paths.join("、"));
-      }
-      const { systemPrompt: sys, messages: talkMessages, maxTokens: narratorMaxTokens } = privateTalkPayload;
+        onPromptRefMissing: (paths) => traceStep(_wt, "提示词引用缺失", "warn", paths.join("、")),
+      };
 
       let text;
       // ② 内容化好感已下线：⟦好感X⟧ 不再由她写在文末，改走 narrator_affinity 软结算（AI 提议、系统裁决）。
       // softSettleEnabled 关着（回放/离线兜底）时退回固定寻常闲聊 +1。
       let affDelta = WHISPER_AFFECTION_RULES.fallback;
       let finishReason;      // 停止原因：私聊此前完全没接这个字段，撞 length 上限也毫无提示
+      let narratorMaxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
       // 模型会照着历史里的「（旁白私聊回应）」前缀自己也写一遍，而下面存 convo 时又会
       // 再加一次，于是前缀逐轮累积成「（旁白私聊回应）（旁白私聊回应）…」。存之前先剥干净：
       // 前缀由系统负责加，模型自己写的一律不算数。
       const stripEchoPrefix = (s) => s.replace(/^(?:\s*[（(]\s*旁白私聊回应\s*[）)])+\s*/, "");
-      if (apiCfg.streamEnabled && apiCfg.apiType !== "gemini") {
-        const logIdx = { current: null };
+      let logIdx = null;
+      let onChunk;
+      if (whisperStream) {
         addLog([{ t: "narrator", text: "  「旁白」▌", streaming: true }]);
         setLog(l => {
           if (isStale()) return l;
-          logIdx.current = l.length - 1;
+          logIdx = l.length - 1;
           return l;
         });
-        const { text: streamedText, finishReason: fr } = await callModelStream(
-          apiCfg, sys, talkMessages,
-          (_delta, fullSoFar) => {
-            setLog(l => {
-              if (isStale() || logIdx.current == null) return l;
-              const copy = [...l];
-              copy[logIdx.current] = { t: "narrator", text: `  「旁白」${fullSoFar} ▌`, streaming: true };
-              return copy;
-            });
-          },
-          { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt },
-        );
-        if (isStale()) return;
-        finishReason = fr;
-        text = stripEchoPrefix(streamedText.trim()) || "……";
+        onChunk = (_delta, fullSoFar) => {
+          setLog(l => {
+            if (isStale() || logIdx == null) return l;
+            const copy = [...l];
+            copy[logIdx] = { t: "narrator", text: `  「旁白」${fullSoFar} ▌`, streaming: true };
+            return copy;
+          });
+        };
+      }
+
+      const aiRes = await withAI(
+        "narrator.whisper",
+        whisperCtx,
+        {
+          ai: whisperAi,
+          apiCfg,
+          isStale,
+          recallInfo,
+          ...(whisperStream ? { stream: true, onChunk } : {}),
+          modelOptions: { turn: _wt },
+        },
+      );
+      if (!aiRes.ok && aiRes.error) throw aiRes.error;
+      if (isStale() || aiRes.finishReason === "stale") return;
+      narratorMaxTokens = aiRes.promptMeta?.maxTokens ?? narratorMaxTokens;
+      finishReason = aiRes.finishReason;
+      text = stripEchoPrefix((aiRes.text || "").trim()) || "……";
+      if (whisperStream) {
         setLog(l => {
-          if (isStale() || logIdx.current == null) return l;
+          if (isStale() || logIdx == null) return l;
           const copy = [...l];
-          copy[logIdx.current] = { t: "narrator", text: `  「旁白」${text}`, streamed: true };
+          copy[logIdx] = { t: "narrator", text: `  「旁白」${text}`, streamed: true };
           return copy;
         });
         traceStep(_wt, "AI调用", "pass", "流式一次成功");
       } else {
-        const result = await callModel(apiCfg, sys, talkMessages, { maxTokens: narratorMaxTokens, recallInfo, callLabel: "私聊", turn: _wt });
-        if (isStale()) return;
-        finishReason = result.finishReason;
-        text = stripEchoPrefix(result.text.trim()) || "……";
         addLog([{ t: "narrator", text: `  「旁白」${text}` }]);
         traceStep(_wt, "AI调用", "pass", "非流式一次成功");
       }

@@ -122,6 +122,7 @@ async function runTurnSteps(ctx, cmd, opts) {
       ...ctx.memory.recall,
       lastAiText: preparedPrompt.lastAiText || ctx.memory.recall.lastAiText,
       varTreeLatest: ctx.memory.varTreeLatest,
+      recentTexts: (mainConvo || []).map((m) => m.content),
     });
     [knowledgeTurn, recall] = await Promise.all([
       runKnowledgeTurn({
