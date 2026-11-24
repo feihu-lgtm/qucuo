@@ -36,6 +36,7 @@ const TutorialOverlay = lazy(() => import("../screens/TutorialOverlay.jsx"));
 const VersionHistoryPanel = lazy(() => import("../screens/VersionHistoryPanel.jsx"));
 const CharacterPage = lazy(() => import("../screens/CharacterPage.jsx"));
 const QuestLogScreen = lazy(() => import("../screens/QuestLogScreen.jsx"));
+const LetterPanel = lazy(() => import("../screens/LetterPanel.jsx"));
 const LoreScreen = lazy(() => import("../screens/LoreScreen.jsx"));
 const QijuzhuScreen = lazy(() => import("../screens/QijuzhuScreen.jsx"));
 const PortraitManager = lazy(() => import("../screens/PortraitManager.jsx"));
@@ -77,6 +78,7 @@ export default function GlobalOverlays({
   const showCharacterPage = useOverlay(OVERLAY.CHARACTER_PAGE);
   const showCardImport = useOverlay(OVERLAY.CARD_IMPORT);
   const showQuestLog = useOverlay(OVERLAY.QUEST_LOG);
+  const showLetters = useOverlay(OVERLAY.LETTERS);
   const showLore = useOverlay(OVERLAY.LORE);
   const showQijuzhu = useOverlay(OVERLAY.QIJUZHU);
   const showPortraitManager = useOverlay(OVERLAY.PORTRAIT_MANAGER);
@@ -123,6 +125,12 @@ export default function GlobalOverlays({
         questProgress={questProgress} flags={flags}
         zoneTheme={zoneTheme}
         onClose={() => closeOverlay(OVERLAY.QUEST_LOG)}
+      />
+    )},
+    { show: showLetters, render: () => (
+      <LetterPanel
+        zoneTheme={zoneTheme}
+        onClose={() => closeOverlay(OVERLAY.LETTERS)}
       />
     )},
     { show: showLore, render: () => (

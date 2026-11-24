@@ -25,6 +25,7 @@ export const OVERLAY = Object.freeze({
   PORTRAIT_MANAGER: "portraitManager",
   TRACE: "trace",
   BASEMENT: "basement",
+  LETTERS: "letters",
 });
 
 let noticeSequence = 0;

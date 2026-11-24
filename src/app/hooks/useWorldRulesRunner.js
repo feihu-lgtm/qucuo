@@ -6,6 +6,7 @@ import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.
 import { timeAdvanceRule } from "../../domain/rules/time/rules.js";
 import { residentNpcRule } from "../../domain/rules/npc/rules.js";
 import { stationedFavorDecayRule, followFavorDriftRule } from "../../domain/rules/npc/intimacy.js";
+import { npcLetterRule } from "../../features/pigeon/inbound.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,
@@ -61,6 +62,7 @@ export function useWorldRulesRunner({
         residentNpcRule,
         stationedFavorDecayRule,
         followFavorDriftRule,
+        npcLetterRule,
         collectGroundItemsRule,
         innerGroundItemsRule,
         derivedMovesetRule,

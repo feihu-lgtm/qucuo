@@ -15,6 +15,8 @@ import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 import { CURRENT_VERSION } from "../../utils/version.js";
 import { getState as getMusicState, subscribe as subscribeMusic } from "../../infra/musicPlayer.js";
 import { OVERLAY, closeOverlay, openOverlay, toggleOverlay, useOverlay } from "../../store/uiStore.js";
+import { useGameStore } from "../../store/gameStore.js";
+import { unreadLetterCount } from "../../features/pigeon/inbound.js";
 import {
   useSessionUi, setGm, setIsDayMode, setMobileTopMenu, setSettingsInitialTab,
 } from "../../store/sessionUiStore.js";
@@ -80,6 +82,7 @@ export default function TopBar({
   useEffect(() => subscribeMusic(setMusicState), []);
   const musicPlaying = musicState.playing;
   const musicEnabled = musicState.enabled;
+  const unreadLetters = useGameStore(unreadLetterCount);
 
   return (
     <>
@@ -115,6 +118,11 @@ export default function TopBar({
           style={topBtn()}
         >图鉴</span>
         <span className="qbtn" onClick={() => openOverlay(OVERLAY.BUG_REPORT)} title="遇到问题或有建议，点这里上报" style={topBtn()}>上报bug</span>
+        {unreadLetters > 0 && (
+          <span className="qbtn" onClick={() => openOverlay(OVERLAY.LETTERS)}
+            title="有人给你捎了信——点开查看全部来信"
+            style={{ ...topBtn(), color: zoneTheme.accent, fontWeight: 600 }}>信×{unreadLetters}</span>
+        )}
 
         <span className="mobile-hide" style={{ flex: 1 }} />
 
