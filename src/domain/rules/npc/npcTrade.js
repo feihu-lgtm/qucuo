@@ -56,3 +56,17 @@ export function applyTradeToCarriedItems(carriedItems = [], trade) {
     .map(b => ({ ...b, stolen: false, dropped: false }));
   return extras.length ? [...kept, ...extras] : kept;
 }
+
+/**
+ * 取某 NPC 的随身交易台账：npcState 按 id 记；落到房间名单里 id 可能丢（老档/AI
+ * 新增路人），退一步按 name 找——两边各试一次。
+ * @param {object} npcState  gameStore 里的 { [npcId]: { trade } }
+ * @param {object} npc
+ */
+export function npcTradeOf(npcState, npc) {
+  if (!npcState) return null;
+  const byId = npc?.id ? npcState[npc.id] : null;
+  if (byId?.trade) return byId.trade;
+  const byName = npc?.name ? npcState[npc.name] : null;
+  return byName?.trade ?? null;
+}

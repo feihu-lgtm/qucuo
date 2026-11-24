@@ -8,6 +8,7 @@ import { initialNarratorState } from "../domain/rules/narrator/narrator.js";
 import { initialVarTree } from "../domain/rules/prompt/mvu.js";
 import { seedKnowledge } from "../domain/rules/prompt/knowledge.js";
 import { initCompanionState } from "../domain/rules/companion/companionState.js";
+import { npcTradeOf } from "../domain/rules/npc/npcTrade.js";
 import { CURRENT_VERSION } from "../utils/version.js";
 import { setRngState, setSeed } from "../utils/rng.js";
 
@@ -39,7 +40,7 @@ export function buildInitialGameState(restored, seed) {
         // matchLevelCap 关键词映射，从名字+简介里推断档位。
         npcs: (initialRoom.npcs || []).map(n => {
           const { levelCap } = mapDescriptionToGenParams(`${n.name || ""} ${n.brief || ""}`);
-          return ensureNpcCombatData(n, { luck: initLuck, levelCap });
+          return ensureNpcCombatData(n, { luck: initLuck, levelCap, trade: npcTradeOf(restored?.snap.npcState, n) });
         }),
       };
     })(),

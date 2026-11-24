@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyNpcTradeDelta, applyTradeToCarriedItems, EMPTY_TRADE } from "./npcTrade.js";
+import { applyNpcTradeDelta, applyTradeToCarriedItems, npcTradeOf, EMPTY_TRADE } from "./npcTrade.js";
 import { ensureNpcCombatData } from "./npcGeneration.js";
 import { buildSnapshot } from "../../../infra/saves.js";
 
@@ -77,12 +77,22 @@ describe("applyTradeToCarriedItems：出场固化叠加", () => {
 });
 
 describe("ensureNpcCombatData 出场固化叠加 trade delta", () => {
-  it("sold 项不进货架、bought 项补进行囊（npc.trade 与 options.trade 都认）", () => {
+  it("sold 项不进货架、bought 项补进行囊（只认 options.trade）", () => {
     const trade = { sold: { n_test_ci0: true }, bought: [{ id: "nb_9", name: "羊皮袄" }] };
     const a = ensureNpcCombatData({ ...BASE_NPC }, { luck: 5, trade });
     expect(names(a.carriedItems)).toEqual(["核桃糕", "旧铜镜", "羊皮袄"]);
+    // npc 本体的 trade 字段不生效：npc 可能整段来自提取模型，AI 补的 trade
+    // 不能让随身物凭空增减（台账只能走 options，由系统侧 npcState 传入）。
     const b = ensureNpcCombatData({ ...BASE_NPC, trade }, { luck: 5 });
-    expect(names(b.carriedItems)).toEqual(names(a.carriedItems));
+    expect(names(b.carriedItems)).toEqual(["钢刀", "核桃糕", "旧铜镜"]);
+  });
+
+  it("npcTradeOf 按 id 优先取台账，id 缺了按 name 退", () => {
+    const npcState = { n_test: { trade: { sold: { i1: true }, bought: [] } }, 刀客甲: { trade: { sold: {}, bought: [{ id: "b2" }] } } };
+    expect(npcTradeOf(npcState, { id: "n_test", name: "无关名" }).sold.i1).toBe(true);
+    expect(npcTradeOf(npcState, { name: "刀客甲" }).bought[0].id).toBe("b2");
+    expect(npcTradeOf(npcState, { id: "没见过的", name: "谁" })).toBeNull();
+    expect(npcTradeOf(null, { id: "n_test" })).toBeNull();
   });
 
   it("无 trade 时 carry 原样固化，行为不变", () => {

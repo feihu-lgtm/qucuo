@@ -116,9 +116,9 @@ export function commitRound(d) {
   applyPostResult(d, fixateNpcs({    // 在场名单幽灵过滤+战斗数据固化+新面孔/重逢
     p: d.p, room: d.room, innerRoomName: d.innerRoomName, narrativeText: d.narrativeText,
     varTree: d.refGet("varTreeRef"), time: d.time,
-    systemAcceptedNames: postCtx.systemAcceptedNames, luck: postCtx.luck,
+    systemAcceptedNames: postCtx.systemAcceptedNames, luck: postCtx.luck, npcState: d.npcState,
   }));
-  applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck, innerRoomName: d.innerRoomName })); // 涌现·实体化
+  applyPostResult(d, materializeEmergence({ p: d.p, luck: postCtx.luck, innerRoomName: d.innerRoomName, npcState: d.npcState })); // 涌现·实体化
   applyPostResult(d, writeRoom({    // 房间写回（锁定目的地/固定地图/兜底）
     isTalk: d.isTalk, lockedDestName: d.lockedDestName, p: d.p, room: d.room, innerRoomName: d.innerRoomName,
     roomMap: _roomMap, outerDepart: d.refGet("outerDepartRef"),
