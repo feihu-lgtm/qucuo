@@ -8,30 +8,51 @@ import { tagBackfill } from "../../domain/rules/log/backfill.js";
 import { backfillInBackground, newBackfillKey } from "../../engine/ports/backfill.js";
 import { askStoryteller, hasApiKey } from "../../engine/ports/storyteller.js";
 import { getLedger } from "../../domain/rules/memory/npcLedger.js";
+import { noteVisibleTo } from "../../domain/rules/memory/note.js";
 import { getAllMemories } from "../../infra/memoryStore.js";
+import { embeddingReady } from "../../engine/ports/embeddingService.js";
+import { sessionUiStore } from "../../store/sessionUiStore.js";
 
 const trim60 = (s) => String(s || "").replace(/\s+/g, " ").trim().slice(0, 60);
 
 // 「你和他的过往」之记忆库半层：实体索引里点了名的、或正文里提到他的纸条，
-// 取最新几条。库打不开/没配向量时 getAllMemories 返 []，这一层自然缺省。
-async function recallNpcMemoryTexts(name, limit = 3) {
-  const all = await getAllMemories();
-  return (all || [])
-    .filter((m) => Array.isArray(m?.entities) ? m.entities.includes(name) : (m?.text || "").includes(name))
-    .sort((a, b) => (b?.turn ?? 0) - (a?.turn ?? 0))
-    .slice(0, limit)
-    .map((m) => m.text)
-    .filter(Boolean);
+// 取最新几条。记忆开关关着（embeddingEnabled=false/没配）这层不出——关的是
+// "读"不是"删库"，旧纸条还在 IndexedDB，召回通路同样得认这道闸。私有/共同
+// 目击的纸条走 owner 门（presentNames 只有他）：旁白私聊提到他，不等于他知情。
+async function recallNpcMemoryTexts(name, { cfg, flags } = {}, limit = 3) {
+  if (!embeddingReady(cfg)) return [];
+  try {
+    const all = await getAllMemories();
+    return (all || [])
+      .filter((m) => (Array.isArray(m?.entities) ? m.entities.includes(name) : (m?.text || "").includes(name))
+        && noteVisibleTo(m, { presentNames: [name], unlockedFlags: flags }))
+      .sort((a, b) => (b?.turn ?? 0) - (a?.turn ?? 0))
+      .slice(0, limit)
+      .map((m) => m.text)
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 // 三层「熟人感」上下文，全从 getState 收集（纯读，无副作用）：
 // 旧账(角色.旧账) + 记忆库实体召回 → 共同记忆；convo 提到他的最近几条 → 近期对话；
 // 角色.飞鸽 → 书信往来。各层限量防爆 token，没记录的层在 prompt 里整层不写。
+// convo 里不算"跟他的交谈"的条目：kind:"look"（看/环顾写进的系统卡片与事实行，
+// 新档标记）——不然回头再看他一次，上次的卡片就挤掉真对话、还凭空造出交谈史；
+// 旧档没标记，靠指令头/卡片行样式认；旁白私聊前缀同样不是"跟他说的"。
+const isNotNpcDialogue = (m, name) =>
+  m?.kind === "look"
+  || /^（私聊）|^（旁白私聊回应）/.test(m?.content || "")
+  || /^看[\s　]/.test(m?.content || "")
+  || (m?.role === "assistant"
+    && (/装束：|在场：|出口：/.test(m.content || "") || String(m.content || "").trim() === name));
+
 function collectNpcContext(state, npc) {
   const name = npc?.name || "";
   const ledgerLines = getLedger(state?.varTree, name).lines.slice(-3);
   const convoLines = (state?.convo || [])
-    .filter((m) => typeof m?.content === "string" && m.content.includes(name))
+    .filter((m) => typeof m?.content === "string" && m.content.includes(name) && !isNotNpcDialogue(m, name))
     .slice(-3)
     .map((m) => trim60(m.content))
     .filter(Boolean);
@@ -44,7 +65,7 @@ function collectNpcContext(state, npc) {
 export function lookNpcInBackground(npc, extraReplies = [], {
   addLog, setTime, setConvo, setLog, noteAction,
   getState = () => gameStore.getState(), ask = askStoryteller, canAsk = hasApiKey,
-  advanceTime = true,
+  advanceTime = true, getApiCfg = () => sessionUiStore.getState().apiCfg,
 }) {
   const state = getState();
   const cmd = `看 ${npc.name}`;
@@ -58,8 +79,8 @@ export function lookNpcInBackground(npc, extraReplies = [], {
   addLog([{ t: "cmd", text: `> ${cmd}` }, ...card.slice(0, -1), ...tagBackfill(card.slice(-1), key)]);
   if (advanceTime) setTime((t) => t + 1);
   setConvo?.((prev) => [...(prev || []),
-    { role: "user", content: cmd },
-    { role: "assistant", content: card.map((row) => row.text.trim()).join("；") },
+    { role: "user", content: cmd, kind: "look" },
+    { role: "assistant", content: card.map((row) => row.text.trim()).join("；"), kind: "look" },
   ]);
   noteAction?.("action");
 
@@ -69,7 +90,7 @@ export function lookNpcInBackground(npc, extraReplies = [], {
     canAsk,
     setLog,
     ask: async () => {
-      const memoryTexts = await recallNpcMemoryTexts(npc.name);
+      const memoryTexts = await recallNpcMemoryTexts(npc.name, { cfg: getApiCfg(), flags: state.flags });
       const { sys, user } = buildNpcLookPrompt(npc, {
         place: state.room?.name || "", trade,
         history: [...ledgerLines, ...memoryTexts], convoLines, letters,

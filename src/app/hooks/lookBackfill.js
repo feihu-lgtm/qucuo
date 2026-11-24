@@ -36,8 +36,8 @@ export function lookInBackground(cmd, {
   addLog([{ t: "cmd", text: `> ${cmd}` }, ...tagBackfill([{ t: "sys", text: `  ${fact}` }], key)]);
   setTime((t) => t + 1);
   setConvo?.((prev) => [...(prev || []),
-    { role: "user", content: cmd },
-    { role: "assistant", content: fact },
+    { role: "user", content: cmd, kind: "look" },
+    { role: "assistant", content: fact, kind: "look" },
   ]);
   noteAction?.("action");
 
