@@ -14,6 +14,7 @@ export { makePuzzle, PUZZLE_FACTORIES } from "./puzzles.js";
 export { pickDungeonAdventurers, genAdventurerEncounter } from "./dungeonPool.js";
 export { summonFollower, followerEffectInCombat, followerLeaveChance, dismissFollower } from "../follower/followers.js";
 export { resolveRoomEvent, ROOM_EVENT_KINDS } from "./events.js";
+export { startMapRun, moveRoom, retreatRun, runEnd } from "./mapRun.js";
 
 export function createDungeonRun(dungeonId, { char } = {}) {
   const cfg = getDungeonConfig(dungeonId);
