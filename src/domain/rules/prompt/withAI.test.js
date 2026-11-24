@@ -86,4 +86,50 @@ describe("withAI", () => {
     expect(res.data).toBeNull();
     expect(res.error).toBe(boom);
   });
+
+  it("forces thinkingMode off and strips thinking tags for tier=flavor calls", async () => {
+    definePrompt("call", "t.flavor", {
+      label: "短润色",
+      tier: "flavor",
+      defaultMaxTokens: (ctx) => ctx.limit ?? 300,
+      blocks: ["t.sys", "t.user"],
+    });
+    const onRequest = vi.fn();
+    const ai = createMockAi(["<thinking>内省</thinking> 正文一行。"], { onRequest });
+
+    const res = await withAI("t.flavor", { role: "才旦", body: "安好", limit: 220 }, {
+      ai,
+      apiCfg: { thinkingMode: "high" },
+    });
+
+    expect(onRequest.mock.calls[0][1].cfg.thinkingMode).toBe("off");
+    expect(onRequest.mock.calls[0][1].modelOptions.maxTokens).toBe(220);
+    expect(res.ok).toBe(true);
+    expect(res.text).toBe("正文一行。");
+  });
+
+  it("discards response when isStale returns true and forwards stream/onChunk options", async () => {
+    const onRequest = vi.fn();
+    const onChunk = vi.fn();
+    let stale = false;
+    const ai = createMockAi(["迟到回复"], {
+      onRequest: (...args) => {
+        stale = true;
+        onRequest(...args);
+      },
+    });
+
+    const res = await withAI("t.call", { role: "才旦", body: "hi" }, {
+      ai,
+      apiCfg: {},
+      stream: true,
+      onChunk,
+      isStale: () => stale,
+    });
+
+    expect(onRequest.mock.calls[0][1]).toMatchObject({ stream: true, onChunk });
+    expect(res.ok).toBe(false);
+    expect(res.text).toBe("");
+    expect(res.data).toBeNull();
+  });
 });

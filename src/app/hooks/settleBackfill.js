@@ -2,7 +2,7 @@
 // 改为事实行立刻落日志、时辰 +1、事实照旧登记，描写在后台补到事实行下面。
 // 和原结算回合的差别：底部选项不刷新，NPC 不再顺口回话。
 
-import { gameStore } from "../../store/gameStore.js";
+import { gameStore, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { buildSettleNarrationPrompt, parseSettleNarration, settleFactText } from "../../domain/rules/settle/settleBrief.js";
 import { tagBackfill } from "../../domain/rules/log/backfill.js";
@@ -14,6 +14,7 @@ export function settleInBackground(cmd, opts = {}, {
   addLog, setTime, setConvo, setVarTree, setLog, jotNote, noteAction,
   getState = () => gameStore.getState(), ask = askStoryteller, canAsk = hasApiKey,
 }) {
+  const epoch = getGameEpoch();
   const state = getState();
   const fact = opts.settleFact || settleFactText(cmd);
   const npc = opts.settleNpc || null;
@@ -40,6 +41,7 @@ export function settleInBackground(cmd, opts = {}, {
   const { sys, user } = buildSettleNarrationPrompt(cmd, { place: room.name, npc });
   return backfillInBackground(key, {
     canAsk,
+    isStale: () => isGameEpochStale(epoch),
     setLog,
     ask: () => ask(sys, user, { callLabel: "结算描写", maxTokens: 400 }),
     parse: parseSettleNarration,

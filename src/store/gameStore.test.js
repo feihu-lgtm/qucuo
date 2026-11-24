@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSnapshot } from "../infra/saves.js";
-import { GAME_KEYS, gameActions, gameStore, initGameStore } from "./gameStore.js";
+import { GAME_KEYS, gameActions, gameStore, getGameEpoch, initGameStore, isGameEpochStale } from "./gameStore.js";
 import { snapshotFromStore } from "./persist.js";
 import { getRngState, setRngState } from "../utils/rng.js";
 
@@ -72,5 +72,16 @@ describe("game store", () => {
     const snapshot = snapshotFromStore(extra);
     expect(snapshot).toEqual(buildSnapshot({ ...values, ...extra, rngState: getRngState() }));
     expect(snapshot.rngState).toBe(0);
+  });
+
+  it("increments gameEpoch on initGameStore and marks earlier epochs stale", () => {
+    initGameStore({ char: { name: "一局" } });
+    const firstEpoch = getGameEpoch();
+    expect(isGameEpochStale(firstEpoch)).toBe(false);
+
+    initGameStore({ char: { name: "二局" } });
+    expect(isGameEpochStale(firstEpoch)).toBe(true);
+    expect(getGameEpoch()).toBe(firstEpoch + 1);
+    expect(isGameEpochStale(getGameEpoch())).toBe(false);
   });
 });

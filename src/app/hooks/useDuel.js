@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { featureCtx } from "../runtime/gameRuntime.js";
-import { gameActions, gameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { lookNpc, recognizeNpc, settleNpcDuel } from "../../features/npc/logic.js";
 import { isNpcLooked } from "../../domain/rules/npc/npcAwareness.js";
@@ -44,14 +44,18 @@ export async function openDuelAfterNarration({ addLog, setDuelPending, isStale }
 // factId 给了就让战报同一次调用顺带写事实摘要（替代单独一次「事实摘要」调用）；
 // 战报失败或被回滚作废时不写，事实保留注册时的结构化兜底摘要。
 export async function narrateDuelInBackground(key, rounds, { outcomeText, place, aftermath, factId }, {
-  ask = askStoryteller, canAsk = hasApiKey, setLog = gameActions.setLog, retryMs,
+  ask = askStoryteller, canAsk = hasApiKey, setLog = gameActions.setLog, retryMs, isStale,
   saveSummary = (id, text) => gameActions.setVarTreeState((prev) => setFactSummary(prev, id, text)),
 } = {}) {
+  const epoch = getGameEpoch();
+  const stale = () => Boolean(isStale?.()) || isGameEpochStale(epoch);
+  if (stale()) return false;
   const { sys, user } = buildDuelNarrationPrompt(rounds, { outcomeText, place, aftermath, summary: !!factId });
   const roundCount = Array.isArray(rounds) ? rounds.length : 0;
   let summary = "";
   const viaAi = await backfillInBackground(key, {
     canAsk,
+    isStale: stale,
     setLog,
     ask: () => ask(sys, user, { callLabel: "切磋战报", maxTokens: 900 }),
     parse: (text) => {
@@ -61,13 +65,14 @@ export async function narrateDuelInBackground(key, rounds, { outcomeText, place,
     },
     retryMs,
   });
+  if (stale()) return false;
   if (viaAi) {
     if (factId && summary) saveSummary(factId, summary);
     return "ai";
   }
   const lines = duelNarrationSlots(phraseNarration(rounds));
   if (!lines) return false;
-  return (await insertWhenIdle(key, lines, { setLog, retryMs })) && "phrase";
+  return (await insertWhenIdle(key, lines, { setLog, isStale: stale, retryMs })) && "phrase";
 }
 
 export function useForcedDuelNpc({ forcedDuelNpc, setDuelingNpc, setForcedDuelNpc }) {

@@ -343,7 +343,6 @@ export const KNOWN_DIRECT_AI_CALL_DEBT = {
   "engine/intent/aiClassifier.js": 1,
   "engine/ports/cardScan/scanCalls.js": 1,
   "engine/ports/extraction.js": 1,
-  "engine/ports/storyteller.js": 1,
   "engine/turn/resolveIntent.js": 1,
   "ui/screens/cards/Placement.jsx": 1,
   "ui/screens/cards/carryItemModel.js": 1,
@@ -353,7 +352,7 @@ export const KNOWN_DIRECT_AI_CALL_DEBT = {
 
 export const KNOWN_STATE_WRITE_DEBT = {
   "app/hooks": 19,
-  ui: 11,
+  ui: 5,
 };
 
 export const KNOWN_MUD_RPG_HOOK_ARGS_CAP = 214;
