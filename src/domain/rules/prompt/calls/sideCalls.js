@@ -1,4 +1,5 @@
 import { definePrompt } from "../registry.js";
+import { npcTradeOf } from "../../npc/npcTrade.js";
 
 export function registerSideCalls() {
   definePrompt("block", "pigeon.sys", {
@@ -54,11 +55,20 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
       const bio = (npcObj.brief ? "，" + npcObj.brief : "") + (npcObj.fullBio ? npcObj.fullBio + " " : "") +
         (npcObj.personality ? "性情：" + npcObj.personality + "。" : "");
       const attrs = state.varTree?.角色?.[npcName] || {};
-      const trade = state.npcState?.[npcName]?.trade || {};
-      const bought = Object.keys(trade.bought || {}).length;
-      const sold = Object.keys(trade.sold || {}).length;
-      const carryNames = (state.npcState?.[npcName]?.carriedItems || [])
-        .map((i) => (typeof i === "object" && i ? i.name : i)).filter(Boolean).join("、");
+      // 台账按 npc.id 落（pool_ 前缀随出场换），走 npcTradeOf 按 id/name 兜底盘账；
+      // 行头：live 房间实例的 carriedItems → 数据底稿 carry/stealables → 台账里买走的件名。
+      const trade = npcTradeOf(state.npcState, npcObj) || {};
+      const boughtNames = Object.keys(trade.bought || {});
+      const soldNames = Object.keys(trade.sold || {});
+      const carryNames = [
+        ...(npcObj.carriedItems || npcObj.carry || []),
+        ...(npcObj.stealables?.sundries || []),
+        ...(npcObj.stealables?.equipment || []),
+        ...boughtNames,
+      ].map((i) => (typeof i === "object" && i ? i.name : i)).filter(Boolean)
+        .filter((name, idx, arr) => arr.indexOf(name) === idx).join("、");
+      const bought = boughtNames.length;
+      const sold = soldNames.length;
       const 近况 = [
         attrs.所在地 ? `眼下身在「${attrs.所在地}」` : "",
         carryNames ? `随身带着：${carryNames}` : "",

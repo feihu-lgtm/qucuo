@@ -10,8 +10,8 @@ import { RESIDENT_NPCS } from "../../domain/data/npc/residentNpcs.js";
 import { ADVENTURER_BY_NAME } from "../../domain/data/dungeon/adventurers.js";
 import { ADVENTURER_IP_BY_NAME } from "../../domain/data/dungeon/adventurersIP.js";
 
-// 可调参数：每 12 个时辰格（~6 时辰）抽一次；45% 中；同一写信人 96 格（2 日）冷却；
-// 任一封落地后 24 格（12 时辰）内不再来新信；来信箱存最近 60 封。
+// 可调参数：每 12 格（6 时辰，一日 24 格）抽一次；45% 中；同一写信人 48 格（2 日）
+// 冷却；任一封落地后 24 格（1 日）内不再来新信；来信箱存最近 60 封。
 // 世界规则不给 rng 参数：用时间窗做种子的确定性伪随机——同 seed 结果可复现，测试也稳。
 export function seedRng(seed) {
   let s = (seed >>> 0) || 1;
@@ -27,7 +27,7 @@ export function seedRng(seed) {
 export const LETTER_TUNE = {
   everyTurns: 12,
   chance: 0.45,
-  senderCooldown: 96,
+  senderCooldown: 48,
   globalCooldown: 24,
   maxInbox: 60,
 };

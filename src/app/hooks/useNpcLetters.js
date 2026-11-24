@@ -39,6 +39,9 @@ export function useNpcLetters({ apiCfg }) {
     } catch { /* 无 API/失败 → 人设兜底句 */ }
     if (!text?.trim()) text = inboundFallbackLine(gameStore.getState(), letter);
     processing.current.delete(letter.id);
+    // 生成期间玩家可能读/换档：待发名单里已没有这封信，就不许落进新档。
+    const stillPending = (gameStore.getState().varTree?.世界?.来信待发 || []).some((l) => l.id === letter.id);
+    if (!stillPending) return;
     applyResult(featureCtx(), applyInboundLetter(gameStore.getState(), letter, text), { feature: "pigeon.inbound", background: true });
     playLetterChime();
   }, [apiCfg]);

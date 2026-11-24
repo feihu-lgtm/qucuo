@@ -5,8 +5,11 @@ import { closeOverlay, OVERLAY } from "../../store/uiStore.js";
 import { setInteractMode, setPigeonTarget } from "../../store/sessionUiStore.js";
 
 // 「信」面板——翻历史来信：列表 → 正文；回信沿用飞鸽路径（输入条进寄信模式）。
+const EMPTY_LETTERS = [];
+
 export default function LetterPanel({ zoneTheme, onClose, inline }) {
-  const letters = useGameStore((s) => s.varTree?.世界?.来信箱 || []);
+  // 空档要给稳定引用——每次新 [] 会让 zustand 选择器重渲染不止。
+  const letters = useGameStore((s) => s.varTree?.世界?.来信箱 || EMPTY_LETTERS);
   const pigeons = useGameStore((s) => s.char?.pigeons || 0);
   const [openId, setOpenId] = useState(null);
   const open = letters.find((l) => l.id === openId) || letters[0];
@@ -40,7 +43,7 @@ export default function LetterPanel({ zoneTheme, onClose, inline }) {
                     background: open?.id === l.id ? "var(--bg-panel)" : "transparent",
                   }}>
                   <span style={{ color: open?.id === l.id ? "var(--text)" : "var(--text-dim)", fontSize: 12, flexShrink: 0 }}>
-                    {l.read ? "✉" : "✉"} {l.npcName}
+                    ✉ {l.npcName}
                   </span>
                   {!l.read && <span style={{ color: zoneTheme.accentDim, fontSize: 9 }}>未读</span>}
                   <span style={{
