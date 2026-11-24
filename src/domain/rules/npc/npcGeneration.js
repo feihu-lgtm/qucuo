@@ -17,6 +17,7 @@ import { makeItemSmart } from "../../data/items/catalog.js";
 import { generateNpcAttributes, getTierPower, generateNpcCombatStats } from "./npcStats.js";
 import { generateNpcMoveset, deriveSignatureMoveset, resolveBurdenMoves } from "./npcMovesets.js";
 import { isOcNpc, OC_BY_NAME, ocCarryItems, rollNpcCarry } from "./npcCarry.js";
+import { applyTradeToCarriedItems } from "./npcTrade.js";
 
 export {
   generateNpcAttributes, atkFromWaigong, hpFromNeigong, defFromNeigong, getTierPower,
@@ -70,6 +71,10 @@ export function ensureNpcCombatData(npc, options = {}) {
     // 四池随身物：按 role×region×levelCap 抽 catalog 真货（替代旧匿名池）
     carriedItems = rollNpcCarry(npc, { ...options, levelCap });
   }
+  // 随身交易持久化（设计稿 §3）：npc.trade / options.trade 带 npcState.trade
+  // 那条记录时叠加——sold 从货架划走、bought 补进行囊，游走/驻场/复活出场
+  // 固化都认账。sold 与 stolen/dropped 互斥由 applyTradeToCarriedItems 判。
+  carriedItems = applyTradeToCarriedItems(carriedItems, options.trade ?? npc.trade);
   // 品阶层四招：优先用 npcSignatureMoves.js 里登记的专属出招表（数值仍按
   // levelCap 对应品阶套用，只是名字/描述专属）；没登记专属招式的 NPC 回退到
   // generateNpcMoveset 的随机品质 + MOVE_POOL 通用名老逻辑，行为不变。

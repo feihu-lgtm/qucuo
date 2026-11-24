@@ -73,6 +73,8 @@ export function buildInitialGameState(restored, seed) {
     companionState: restored?.snap.companionState || initCompanionState(),
     // 地宫内层地图 run 快照：读档把 checkpoint 进度带回来（老档无此字段按 null 兜底）
     dungeonRun: restored?.snap.dungeonRun || null,
+    // NPC 随身交易账随档还原（老档无此字段按空集兜底）
+    npcState: restored?.snap.npcState || {},
     inv: backfillInventoryFromCatalog(restored?.snap.inv || [...DEFAULT_PRESETS[0].inv]),
     log: restored
       ? [{ t: "sys", text: `── 已从上次自动存档恢复进度（${new Date(restored.snap.savedAt || Date.now()).toLocaleString()}） ──` }, ...restored.snap.log]
