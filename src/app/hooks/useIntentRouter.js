@@ -31,7 +31,11 @@ export function useIntentRouter(routerRef, {
       if (step.kind === ACTION_KINDS.BUY && single) return handleNpcTrade(npc);
       if (step.kind === ACTION_KINDS.BUY && npc) {
         const result = tradeWithNpc(gameStore.getState(), npc);
-        return result.shop ? setTradingShop(result.shop) : applyResult(featureCtx(), result);
+        if (result.shop) {
+          if (result.changes || result.logs?.length) applyResult(featureCtx(), { changes: result.changes, logs: result.logs });
+          return setTradingShop(result.shop);
+        }
+        return applyResult(featureCtx(), result);
       }
       if (step.kind !== ACTION_KINDS.DUEL || !npc) return undefined;
       if (single) return handleNpcDuel(npc);

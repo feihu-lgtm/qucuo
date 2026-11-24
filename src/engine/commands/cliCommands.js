@@ -267,6 +267,7 @@ export const CLI_COMMANDS = [
       if (!npc) return missingNpc(ctx, name);
       const result = tradeWithNpc(ctx.state, npc);
       if (result.shop) {
+        ctx.applyFeature(result); // 日更刷新的 changes/吆喝落账，shop 字段被忽略
         ctx.emit(`${result.shop.shopName || `${npc.name}的铺子`}已开张。`);
         return 0;
       }

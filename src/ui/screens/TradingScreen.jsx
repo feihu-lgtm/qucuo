@@ -12,6 +12,8 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
   // 随身货架三分区（身上装备/行囊/挂载伙伴）：传了 carrySections 时 shopItems
   // 里 non-displayOnly 的部分已经在分区里渲染过了，平铺只留店里陈列。
   carrySections = null,
+  // 节气大促标识：{term, discount}，界面上打个「大促」角标。
+  promo = null,
   // NPC 回购系数（元朵朵冤种溢价/奸商折/好感加成）：面板卖价必须与
   // sellToNpcCarry 的实付一致——不然显示 50 实收 35。
   sellCoef = 1,
@@ -50,7 +52,14 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
         )}
         <div className="mobile-trading-header" style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           {headerContent}
-          <div style={{ fontSize: 14, color: zoneTheme.text || "var(--text)" }}>{shopName || "交易"}</div>
+          <div style={{ fontSize: 14, color: zoneTheme.text || "var(--text)", display: "flex", alignItems: "center", gap: 6 }}>
+            {shopName || "交易"}
+            {promo && (
+              <span role="status" style={{ fontSize: 10, padding: "1px 6px", border: "1px solid var(--gold-bright)", color: "var(--gold-bright)", borderRadius: 2 }}>
+                {promo.term}大促
+              </span>
+            )}
+          </div>
           <div style={{ fontSize: 12, color: "var(--gold-bright)" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
           <span className="mobile-overlay-close mobile-only-close" onClick={onClose} aria-label="关闭交易">×</span>
         </div>
