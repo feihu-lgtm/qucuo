@@ -205,6 +205,7 @@ export function deserializeMapRun(data) {
     envTags: data.envTags || {},
     envState: data.envState || {},
     hp: data.hp,
+    entryHp: data.entryHp ?? data.hp?.[0],
     loot: data.loot || emptyLoot(),
     status: data.status || "exploring",
     step: data.step || 0,
