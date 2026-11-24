@@ -59,6 +59,9 @@ describe("sellCoef 分档", () => {
     expect(sellCoefOf({ name: "元朵朵" }, 0)).toBe(2.5);
     expect(sellCoefOf({ name: "奸商贾", tradeStyle: "讨价还价，雁过拔毛" }, 0)).toBe(0.7);
     expect(sellCoefOf({ name: "路人甲" }, 0)).toBe(1.0);
+    // 前置否定/敌对语境是夸他公道，不能误判奸商档
+    expect(sellCoefOf({ name: "厉苍山", tradeStyle: "一口唾沫一个钉，从不漫天要价" }, 0)).toBe(1.0);
+    expect(sellCoefOf({ name: "燕烈", tradeStyle: "不屑讨价还价，对奸商则会拔刀相向" }, 0)).toBe(1.0);
     expect(sellCoefOf({ name: "路人甲" }, 80)).toBeCloseTo(1.3);
     expect(sellCoefOf({ name: "元朵朵" }, 80)).toBeCloseTo(2.8);
   });

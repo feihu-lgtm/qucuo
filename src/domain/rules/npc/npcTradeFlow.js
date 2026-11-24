@@ -14,10 +14,21 @@ export function affectionOf(varTree, npcName) {
 // 收购系数（§2.3）：元朵朵冤种溢价 2.5；奸商型 0.7；普通 1.0；
 // 好感 ≥80 再 +0.3。奸商名单走 tradeStyle 关键词——OC 数据层的口径。
 const SELL_COEF_SPECIAL = { 元朵朵: 2.5 };
-const PRICEGOUGER_RE = /奸商|雁过拔毛|漫天要价|坑|忽悠/;
+// 前置否定或敌对语境（"从不漫天要价"、"对奸商拔刀相向"）是夸他公道，不算。
+const GOUGER_KEYWORDS = ["雁过拔毛", "漫天要价", "奸商", "坑人", "忽悠"];
+const GOUGER_NEG_RE = /[不无非莫未绝少毋敌恨杀砍打对憎]/;
+function isPriceGouger(npc) {
+  const text = `${npc?.tradeStyle || ""} ${npc?.brief || ""}`;
+  return GOUGER_KEYWORDS.some(kw => {
+    for (let i = text.indexOf(kw); i >= 0; i = text.indexOf(kw, i + 1)) {
+      if (!GOUGER_NEG_RE.test(text.slice(Math.max(0, i - 2), i))) return true;
+    }
+    return false;
+  });
+}
 export function sellCoefOf(npc, affection = 0) {
   const base = SELL_COEF_SPECIAL[npc?.name]
-    ?? (PRICEGOUGER_RE.test(`${npc?.tradeStyle || ""}${npc?.brief || ""}`) ? 0.7 : 1.0);
+    ?? (isPriceGouger(npc) ? 0.7 : 1.0);
   return affection >= 80 ? base + 0.3 : base;
 }
 
