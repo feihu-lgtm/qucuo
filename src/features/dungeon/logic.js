@@ -8,10 +8,21 @@ import { makeItemSmart } from "../../domain/data/items/catalog.js";
 import { LOG_T } from "../../domain/rules/log/logTypes.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 
-function materializeItem(name, idx, now) {
-  const item = makeItemSmart({ name, category: ITEM_CATEGORY.MISC, quality: "白" }, makeItem);
+const lootItemName = (entry) => (typeof entry === "string" ? entry : entry?.name);
+
+function materializeItem(entry, idx, now) {
+  // 字符串 = 只有名字的老数据；对象 = 带着品类/品阶/描述的战利品，
+  // 字段优先、缺省再落白档杂物（名录真词条仍走 makeItemSmart 查表）。
+  const obj = typeof entry === "object" && entry ? entry : {};
+  const name = lootItemName(entry);
+  const item = makeItemSmart({
+    name,
+    category: obj.category || ITEM_CATEGORY.MISC,
+    quality: obj.quality || "白",
+  }, makeItem);
   return {
     ...item,
+    desc: obj.desc || item.desc,
     id: `dungeon_${name}_${now}_${idx}`,
     equipped: false,
   };
@@ -29,8 +40,8 @@ export function settleDungeonRun(state, run, { now = Date.now() } = {}) {
   }
 
   // 实体化带出的战利品并赋予唯一 id
-  settled.items.forEach((name, idx) => {
-    nextInv.push(materializeItem(name, idx, now));
+  settled.items.forEach((entry, idx) => {
+    nextInv.push(materializeItem(entry, idx, now));
   });
 
   const maxHp = char.hp?.[1] ?? run.hp?.[1] ?? 100;
@@ -67,7 +78,7 @@ export function settleDungeonRun(state, run, { now = Date.now() } = {}) {
     logs.push({ t: LOG_T.STAT, text: `  ⊙ 收获：${parts.join("，")}。` });
   }
   if (settled.items.length > 0) {
-    logs.push({ t: LOG_T.ITEM, text: `  ⊙ 带出物事：${settled.items.join("、")}。` });
+    logs.push({ t: LOG_T.ITEM, text: `  ⊙ 带出物事：${settled.items.map(lootItemName).join("、")}。` });
   }
   if (run.usedItems?.length) {
     logs.push({ t: LOG_T.ITEM, text: `  ⊙ 途中消耗：${run.usedItems.join("、")}。` });
@@ -76,7 +87,7 @@ export function settleDungeonRun(state, run, { now = Date.now() } = {}) {
     logs.push({ t: LOG_T.SYS, text: `  ★ 首次击退「${run.dungeonName}」镇宫首领！` });
   }
 
-  const itemNote = settled.items.length ? `，带出${settled.items.join("、")}` : "";
+  const itemNote = settled.items.length ? `，带出${settled.items.map(lootItemName).join("、")}` : "";
   const note = {
     text: `探访${run.dungeonName}（${outcomeLabel}），得银${settled.money}两、经验${settled.exp}、潜能${settled.pot}${itemNote}。`,
     source: NOTE_SOURCE.DUMB,

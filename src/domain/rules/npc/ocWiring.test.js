@@ -7,6 +7,7 @@ import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
 import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
 import { CATALOG_INDEX } from "../../data/items/catalog.js";
 import { ensureNpcCombatData } from "./npcGeneration.js";
+import { mergeLoot } from "../dungeon/internal.js";
 
 const OC_NAMES = new Set([...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].map((a) => a.name));
 
@@ -120,5 +121,19 @@ describe("OC stealables 偷窃通路", () => {
     const npc = { id: "t1", name: "周小满", role: "讨饭帮众", faction: "丐帮三星分舵", district: "广汉" };
     const items = rollNpcCarry(npc, { levelCap: 2 });
     expect(items.length).toBeGreaterThan(0);
+  });
+});
+
+describe("地宫战利品管线", () => {
+  it("mergeLoot 保留对象物品的品类/品阶/描述，字符串照旧", () => {
+    const loot = mergeLoot(
+      { money: 0, exp: 0, pot: 0, items: [] },
+      { items: [{ name: "元宝金冠襦装", category: "armor", quality: "橙", desc: "明制行头" }, "核桃糕"] },
+    );
+    const robe = loot.items.find((i) => i.name === "元宝金冠襦装");
+    expect(robe.quality).toBe("橙");
+    expect(robe.category).toBe("armor");
+    expect(robe.desc).toBe("明制行头");
+    expect(loot.items).toContain("核桃糕");
   });
 });
