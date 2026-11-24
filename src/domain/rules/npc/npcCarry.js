@@ -154,3 +154,39 @@ export function rollNpcCarry(npc, { luck = 5, levelCap = 0, region } = {}) {
   }
   return result;
 }
+
+// ── 随身交易 schema（docs/设计_NPC随身交易.md §1）──────────────────
+// carry/stealables/follower 条目统一归一化为
+// {name, category, quality, slot, sellable, price, cherish}：
+// slot 三档 equipment=身上装备 / bag=包袱杂物 / mount=坐骑随从（铁伯这类也算）。
+// cherish 钟爱度 0-100，越高越不肯脱手；sellable=false 的给多少钱都不卖。
+const CARRY_QUALITY_CHERISH = { 白: 15, 绿: 30, 蓝: 45, 紫: 60, 橙: 75, 红: 90 };
+const CARRY_TROPHY_RE = /信物|凭证|令牌/;                 // 势力信物：敢收也不敢卖
+const CARRY_MANUAL_RE = /秘籍|剑谱|拳谱|刀谱|枪谱|心法|真经|秘录|秘本|图谱|手抄|抄本|要诀|诀窍|指要/;  // 签名武学
+
+export function normalizeCarryEntry(_npc, entry = {}) {
+  const isFollower = !entry.category && (entry.type || entry.slot === "mount");
+  const category = entry.category || (isFollower ? null : ITEM_CATEGORY.MISC);
+  const quality = entry.quality || "白";
+  // slot：显式标注优先；随从对象→mount；装备→equipment；杂物→bag
+  const slot = entry.slot
+    || (isFollower ? "mount" : category === ITEM_CATEGORY.MISC ? "bag" : "equipment");
+  const name = entry.name || "";
+  // 默认推导（§1.2 表）：misc 可卖 0 钟爱；武器装备饰品 品阶×15；
+  // 信物 90 不卖；mount 100 不卖；签名武学 80 不卖。
+  let cherish, sellable;
+  if (slot === "mount") { cherish = 100; sellable = false; }
+  else if (CARRY_TROPHY_RE.test(name)) { cherish = 90; sellable = false; }
+  else if (CARRY_MANUAL_RE.test(name)) { cherish = 80; sellable = false; }
+  else if (slot === "bag") { cherish = 0; sellable = true; }
+  else { cherish = CARRY_QUALITY_CHERISH[quality] ?? 15; sellable = true; }
+  return {
+    ...entry,
+    category,
+    quality,
+    slot,
+    cherish: entry.cherish ?? cherish,
+    sellable: entry.sellable ?? sellable,
+    price: entry.price ?? null,
+  };
+}
