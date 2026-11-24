@@ -36,6 +36,7 @@ describe("genDailyStock", () => {
       expect(i.sellable).toBe(true);
       expect(i.dailyShop).toBe("2026-05-01");
       expect(i.price).toBeGreaterThan(0);
+      expect(i.sellPrice).toBe(Math.max(1, Math.round(i.price / 2)));
       expect(i.id).toContain("2026-05-01");
     }
     expect(a.length).toBeGreaterThanOrEqual(5);

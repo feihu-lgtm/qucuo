@@ -100,6 +100,9 @@ export function genDailyStock(dayKey, ownerId = "duoduo") {
     sellable: true,
     cherish: 0,
     price: Math.max(1, Math.round(g.price * discount)),
+    // 与 priceForQuality 同口径：转卖价=实付半价——不然买到的货没有
+    // sellPrice，交易屏不让卖、quoteSell 也拒收。
+    sellPrice: Math.max(1, Math.round(Math.max(1, Math.round(g.price * discount)) / 2)),
     dailyShop: dayKey,
   }));
   if (promo) {
@@ -110,6 +113,7 @@ export function genDailyStock(dayKey, ownerId = "duoduo") {
       category: "misc", quality: "蓝", slot: "bag",
       sellable: true, cherish: 0,
       price: Math.max(1, Math.round(sp.price * discount)),
+      sellPrice: Math.max(1, Math.round(Math.max(1, Math.round(sp.price * discount)) / 2)),
       dailyShop: dayKey,
     });
   }
