@@ -28,7 +28,9 @@ export function buildPrivateTalkPayload({
 
   const talkWindow = Math.max(apiCfg.contextWindow, 20);
   const history = convo.length > talkWindow ? convo.slice(-talkWindow) : convo;
-  const messages = [...history, { role: "user", content: `（私聊）${content}` }];
+  // convo 条目会带 kind/memory 这类内部字段——API 只认 role/content，剥掉再喂。
+  const messages = [...history.map(({ role, content: c }) => ({ role, content: c })),
+    { role: "user", content: `（私聊）${content}` }];
   const maxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
   return { systemPrompt, messages, maxTokens, promptRefEvents };
 }

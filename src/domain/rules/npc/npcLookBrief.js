@@ -35,20 +35,33 @@ export function npcLookCard(npc, opts = {}) {
   ].filter(Boolean);
 }
 
-export function buildNpcLookPrompt(npc, { place = "", trade = null } = {}) {
+export function buildNpcLookPrompt(npc, {
+  place = "", trade = null,
+  // 三层「熟人感」上下文，由调用方从 getState 收集：共同记忆（旧账+记忆库）、
+  // 近期对话摘要、书信往来。哪层没记录就不写哪层——别让模型对着空白编交情。
+  history = [], convoLines = [], letters = [],
+} = {}) {
   const sys = `你是曲措乡的说书人。玩家正在端详一个人，名字、来历、装束已由系统列出。
 写一段两到四句的描写（不超过一百二十字），只写此人的容貌装束、气色伤势、当下神态举止。
+给了「过往/交谈/书信」的，此人不是初见——描写里要带出几分熟稔，别写得像头回照面。
 铁律：装束只写给定的，不添新物品；此人不开口说话、不出手、不推进任何事件；不写其他人；不替玩家做决定、不向玩家提问；
 白话古文的说书人口吻，不用冒号破折号。只输出正文，不要任何前后缀。`;
   const hp = npc?.combatStats?.hp;
+  // 人设段优先级：appearance（定妆外观）> fullBio > personality。
+  const persona = npc?.appearance || npc?.fullBio || npc?.personality;
+  const section = (title, lines) => lines.length
+    ? `${title}：\n${lines.map((l) => `· ${l}`).join("\n")}` : "";
   const user = [
     place ? `地点：${place}` : "",
     `人物：${npc?.name || ""}`,
     npc?.brief ? `来历：${npc.brief}` : "",
-    (npc?.fullBio || npc?.personality) ? `人设：${npc.fullBio || npc.personality}` : "",
+    persona ? `人设：${persona}` : "",
     npcGear(npc).length ? `装束：${npcGear(npc).join("、")}` : "",
     deriveAppearance(npc, { trade }).exposure ? `衣着状态：${deriveAppearance(npc, { trade }).exposure}（被扒得几乎不剩行头，叙事要照实反映）` : "",
     Array.isArray(hp) && hp[1] > 0 && hp[0] < hp[1] ? `气血：${hp[0]}/${hp[1]}` : "",
+    section("你和他的过往", history.slice(-4)),
+    section("最近的交谈", convoLines.slice(-3)),
+    section("书信往来", letters.slice(-2)),
   ].filter(Boolean).join("\n");
   return { sys, user };
 }

@@ -30,4 +30,29 @@ describe("buildNpcLookPrompt", () => {
     expect(user).toContain("装束：鱼定猎刀");
     expect(user).toContain("气血：30/60");
   });
+
+  it("appearance 优先于 fullBio/personality 进人设段", () => {
+    const n = { name: "元朵朵", appearance: "金红马面裙双环髻", fullBio: "首富之女", personality: "娇憨" };
+    const { user } = buildNpcLookPrompt(n);
+    expect(user).toContain("人设：金红马面裙双环髻");
+    expect(user).not.toContain("首富之女");
+  });
+
+  it("三层上下文齐全时带分层标题进 user", () => {
+    const { user } = buildNpcLookPrompt(npc, {
+      history: ["上月你在村口替他挡了一刀", "他欠你一顿青稞酒"],
+      convoLines: ["问才旦山上的雪狼", "才旦让你别去"],
+      letters: ["你去信：问他要羊皮袄", "他的回信：天暖了再说"],
+    });
+    expect(user).toContain("你和他的过往：\n· 上月你在村口替他挡了一刀\n· 他欠你一顿青稞酒");
+    expect(user).toContain("最近的交谈：\n· 问才旦山上的雪狼");
+    expect(user).toContain("书信往来：\n· 你去信：问他要羊皮袄\n· 他的回信：天暖了再说");
+  });
+
+  it("三无（无过往/无交谈/无书信）时一个标题都不写", () => {
+    const { user } = buildNpcLookPrompt(npc);
+    expect(user).not.toContain("你和他的过往");
+    expect(user).not.toContain("最近的交谈");
+    expect(user).not.toContain("书信往来");
+  });
 });
