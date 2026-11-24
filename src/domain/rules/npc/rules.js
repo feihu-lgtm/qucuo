@@ -1,4 +1,5 @@
 import { isCompanionUnlockedByName, companionKeyByName } from "../companion/companion.js";
+import { OC_BY_NAME } from "./npcCarry.js";
 import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../map/innerMap.js";
 import { ensureNpcCombatData } from "../npc/npcGeneration.js";
 import { npcTradeOf } from "../npc/npcTrade.js";
@@ -11,6 +12,13 @@ import { getResidentNpcs, RESIDENT_NPCS } from "../../data/npc/residentNpcs.js";
 import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
 import { seededRand } from "../../../utils/seededRandom.js";
 import { parseQuestPlace, questPlaceDistrict } from "../quests/questPlace.js";
+
+// 已入队的驻场人不再重复注入房间：companionCandidate（雪豹）、OC 驻场（homeDistrict 出身，
+// 如元朵朵）、与 OC 同名的驻场条目（姬无双/樊未离——数据里同一人被收编后驻场壳也要撤）都算。
+export function isResidentJoinedCompanion(npc, companionState) {
+  if (!(npc?.companionCandidate || npc?.homeDistrict || OC_BY_NAME[npc?.name])) return false;
+  return isCompanionUnlockedByName(companionState, npc.name);
+}
 
 const NPC_FIELDS = [
   "levelCap", "special", "beast", "unlearnable", "cannotSpeak", "affectionable",
@@ -75,12 +83,8 @@ export const residentNpcRule = {
     });
 
     const poolNpcs = getScheduledNpcs(room.name, time).map(toRoomNpcWithCombat);
-    const companionJoined = (name) => {
-      const key = companionKeyByName(name);
-      return !!(key && companionState?.[key]?.unlocked);
-    };
     const residentNpcs = getResidentNpcs(room.name)
-      .filter((npc) => !(npc.companionCandidate && companionJoined(npc.name)))
+      .filter((npc) => !isResidentJoinedCompanion(npc, companionState))
       .filter((npc) => !isGoneResident(npc))
       .filter((npc) => currentNpcNames.has(npc.name) || !cachedNpcNames.has(npc.name))
       .map(toRoomNpcWithCombat);
