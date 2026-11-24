@@ -10,6 +10,8 @@ import {
   resolveDungeonChoice,
   retreatDungeonRun,
   retreatRun,
+  routeRoomAction,
+  routeRoomText,
   selectDungeonNode,
   startMapRun,
 } from "../../../domain/rules/dungeon/engine.js";
@@ -22,7 +24,7 @@ const DuelScreen = lazy(() => import("../DuelScreen.jsx"));
 
 export default function DungeonScreen({
   building, char, inv, skills, effectiveSpecialNow, zoneTheme,
-  onClose, inline, addLog, jotNote, captureUndo, runCommand,
+  onClose, inline, addLog, jotNote, captureUndo, runCommand, act,
 }) {
   const [run, setRun] = useState(() => createDungeonRun(building?.dungeonId, { char }));
   const [narration, setNarration] = useState("");
@@ -117,13 +119,20 @@ export default function DungeonScreen({
     setMapRun(startMapRun(mapDistrictKey, `${building?.dungeonId}|${Date.now()}`, { char }));
   };
   const handleMapMove = (dir) => setMapRun((prev) => moveRoom(prev, dir).runState);
-  // 房间事件/自由文本裁决下一单接 resolver，这里先把输入留进 run 日志
-  const handleMapAction = (label) => setMapRun((prev) => ({
-    ...prev, log: [...prev.log, `（内层事件裁决接线中，先记下：${label}）`],
-  }));
-  const handleMapText = (t) => setMapRun((prev) => ({
-    ...prev, log: [...prev.log, `（内层动作裁决接线中，先记下：${t}）`],
-  }));
+  // 房间事件/自由文本走 actionRouter 裁决；谜题认不出的输入（needsAI）回退到
+  // 主输入框同一条 AI 意图通路（act）——叙事照旧走 AI，判定照旧走系统。
+  const applyMapRoute = (res, text) => {
+    if (!res) return;
+    if (res.needsAI) { act?.(text); return; }
+    let next = res.runState;
+    if (!next) return;
+    if (res.combatNpc) {
+      next = { ...next, log: [...next.log, "对方亮了兵器——遭遇战接线中。"] };
+    }
+    setMapRun(next);
+  };
+  const handleMapAction = (label) => applyMapRoute(routeRoomAction(mapRun, label, { attrs: effectiveSpecialNow }), label);
+  const handleMapText = (t) => applyMapRoute(routeRoomText(mapRun, t, { attrs: effectiveSpecialNow }), t);
   const handleMapRetreat = () => setMapRun((prev) => retreatRun(prev).runState);
 
   const handleHeaderClose = () => {
