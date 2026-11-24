@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { definePrompt, getPromptDef, listPromptDefs, resetPromptRegistryForTest } from "./registry.js";
-import { buildPrompt } from "./buildPrompt.js";
+import {
+  definePrompt, getPromptDef, getPromptOverrides, listPromptDefs,
+  resetPromptOverrides, resetPromptRegistryForTest, setPromptOverride,
+} from "./registry.js";
+import { buildPrompt, estimatePromptTokens } from "./buildPrompt.js";
 
 describe("prompt registry & buildPrompt", () => {
   beforeEach(() => {
@@ -118,5 +121,63 @@ describe("prompt registry & buildPrompt", () => {
 
     const noHistory = buildPrompt("multiTurn", { say: "单轮开场" });
     expect(noHistory.messages).toEqual([{ role: "user", content: "单轮开场" }]);
+  });
+
+  it("supports 6-slot assembly, slots breakdown, and token estimation", () => {
+    definePrompt("block", "s.sys", { slot: "sys", text: "世界设定" });
+    definePrompt("block", "s.note", { slot: "authorsNote", text: "作者注" });
+    definePrompt("block", "s.hist", { slot: "history", text: "旧回合" });
+    definePrompt("block", "s.inchat", { slot: "inChat", text: "当前状态" });
+    definePrompt("block", "s.user", { slot: "user", text: "玩家行动" });
+    definePrompt("block", "s.prefill", { slot: "prefill", text: "{" });
+    definePrompt("call", "sixSlot", {
+      blocks: ["s.sys", "s.note", "s.hist", "s.inchat", "s.user", "s.prefill"],
+    });
+
+    const built = buildPrompt("sixSlot");
+    expect(built.system).toBe("世界设定\n\n作者注");
+    expect(built.messages).toEqual([
+      { role: "user", content: "旧回合" },
+      { role: "user", content: "当前状态" },
+      { role: "user", content: "玩家行动" },
+      { role: "assistant", content: "{" },
+    ]);
+    expect(built.slots).toEqual({
+      sys: "世界设定",
+      authorsNote: "作者注",
+      history: "旧回合",
+      inChat: "当前状态",
+      user: "玩家行动",
+      prefill: "{",
+    });
+    expect(built.tokenEstimate).toBeGreaterThan(0);
+    expect(estimatePromptTokens([{ content: "中文" }], [{ content: "abcd" }])).toBe(4);
+  });
+
+  it("applies global control overrides (blue/green/off) and protects engine blocks", () => {
+    definePrompt("block", "gated", { slot: "sys", when: (ctx) => ctx.hit, text: "绿灯正文" });
+    definePrompt("block", "hard", { slot: "sys", editable: "engine", text: "引擎铁律" });
+    definePrompt("call", "c", { join: "|", blocks: ["gated", "hard"] });
+
+    setPromptOverride("gated", { mode: "blue", text: "强制常驻" });
+    setPromptOverride("hard", { mode: "off" });
+    expect(getPromptOverrides().gated).toEqual({ mode: "blue", text: "强制常驻" });
+
+    const builtBlue = buildPrompt("c", { hit: false });
+    expect(builtBlue.system).toBe("强制常驻|引擎铁律");
+    expect(builtBlue.blocks.map((b) => [b.id, b.lit, b.reason])).toEqual([
+      ["gated", true, "总控台蓝灯"],
+      ["hard", true, "蓝灯常驻"],
+    ]);
+
+    setPromptOverride("gated", { mode: "off" });
+    expect(buildPrompt("c", { hit: true }).system).toBe("引擎铁律");
+
+    setPromptOverride("gated", { mode: "green", text: null });
+    expect(buildPrompt("c", { hit: true }).system).toBe("绿灯正文|引擎铁律");
+    expect(buildPrompt("c", { hit: false }).system).toBe("引擎铁律");
+
+    resetPromptOverrides();
+    expect(getPromptOverrides()).toEqual({});
   });
 });
