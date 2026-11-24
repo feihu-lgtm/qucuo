@@ -4,7 +4,7 @@
 // 面板渲染在 ItemDetailPane.jsx / ItemForgePane.jsx。
 
 import { TIERS } from "./widgets.jsx";
-import { callModel } from "../../../engine/ports/ai.js";
+import { callCardModel } from "../../../engine/ports/cardScan/scanCalls.js";
 import { CATALOG } from "../../../domain/data/items/catalog.js";
 import { statsForQuality } from "../../../domain/rules/economy/equipment.js";
 import { ITEM_DESC_MAX_TOKENS } from "./reviewShared.js";
@@ -96,6 +96,6 @@ export async function fetchAiDesc(draft, apiCfg) {
   const usr = `名称：${draft.name}
 类别：${CAT_LABEL[draft.category] || draft.category}
 品阶：${draft.quality}档${six ? `\n附带：${six}` : ""}`;
-  const res = await callModel(apiCfg, sys, [{ role: "user", content: usr }], { maxTokens: ITEM_DESC_MAX_TOKENS, temperature: 0.8 });
+  const res = await callCardModel(apiCfg, sys, usr, { maxTokens: ITEM_DESC_MAX_TOKENS, temperature: 0.8, callLabel: "卡面随身物描述" });
   return (res.text || "").trim().replace(/^["「『]|["」』]$/g, "").slice(0, 200);
 }

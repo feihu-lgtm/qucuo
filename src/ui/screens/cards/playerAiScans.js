@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { BODY_PUBLIC, BODY_PRIVATE } from "./widgets.jsx";
 import { parseJsonLoose, buildStage3 } from "../../../domain/rules/cards/scanPrompts.js";
-import { callModel } from "../../../engine/ports/ai.js";
+import { callCardModel } from "../../../engine/ports/cardScan/scanCalls.js";
 import { acquire } from "../../../domain/rules/cards/rateLimiter.js";
 import { buildSkillPlan, sanitizeSkillPlan, SKILL_PLAN_MAX_TOKENS } from "../../../domain/rules/cards/skillPlan.js";
 import { buildCarryPlan, sanitizeCarryPlan, CARRY_PLAN_MAX_TOKENS } from "../../../domain/rules/cards/carryPlan.js";
@@ -27,8 +27,8 @@ export default function usePlayerAiScans({ p, tier, bp, priv, onPatch, apiCfg, c
     try {
       await acquire(ms => setAiMsg(`排队 ${Math.ceil(ms / 1000)}s…`));
       const { system, user } = buildStage3(bodyDesc, { cardName: p.name || "玩家" });
-      const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
-        { maxTokens: 4000, temperature: 0.3 });
+      const res = await callCardModel(apiCfg, system, user,
+        { maxTokens: 4000, temperature: 0.3, callLabel: "主角体貌拆解" });
       const out = parseJsonLoose(res.text || "");
       const pub = {}, newPriv = {};
       for (const [k] of BODY_PUBLIC) {
@@ -61,8 +61,8 @@ export default function usePlayerAiScans({ p, tier, bp, priv, onPatch, apiCfg, c
     try {
       await acquire(ms => setAiMsg(`排队 ${Math.ceil(ms / 1000)}s…`));
       const { system, user } = buildSkillPlan(p, { tier, moveHints: cardMesExample || cardPersonality });
-      const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
-        { maxTokens: SKILL_PLAN_MAX_TOKENS, temperature: 0.7 });
+      const res = await callCardModel(apiCfg, system, user,
+        { maxTokens: SKILL_PLAN_MAX_TOKENS, temperature: 0.7, callLabel: "主角现编武学" });
       const skills = sanitizeSkillPlan(parseJsonLoose(res.text || ""), { tierCap: tier });
       if (skills.length) { onPatch({ skills }); setAiMsg(`现编了 ${skills.length} 门武学，可自己改`); }
       else setAiMsg("AI 没给出认得出的武学，再点一次试试");
@@ -78,8 +78,8 @@ export default function usePlayerAiScans({ p, tier, bp, priv, onPatch, apiCfg, c
       await acquire(ms => setAiMsg(`排队 ${Math.ceil(ms / 1000)}s…`));
       const one = [{ name: p.name || "主角", levelCap: tier, brief: "游历江湖的主角", entry: p.persona || "" }];
       const { system, user } = buildCarryPlan(one);
-      const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
-        { maxTokens: CARRY_PLAN_MAX_TOKENS.batch, temperature: 0.7 });
+      const res = await callCardModel(apiCfg, system, user,
+        { maxTokens: CARRY_PLAN_MAX_TOKENS.batch, temperature: 0.7, callLabel: "主角配装" });
       const plans = sanitizeCarryPlan(parseJsonLoose(res.text || ""), one);
       const items = plans[0]?.items || [];
       if (items.length) { onPatch({ carry: items }); setAiMsg(`配了 ${items.length} 件装备，点物件名看词条`); }

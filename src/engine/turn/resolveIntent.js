@@ -14,8 +14,7 @@ import { INTIMATE_TICKET_NAME } from "../../domain/rules/npc/goldenEgg.js";
 import { add, set, applyWrite } from "../../domain/rules/state/applyWrite.js";
 import { findTargetedRumor } from "../../domain/rules/npc/npcEmergence.js";
 import { parseDir } from "../../utils/mudHelpers.js";
-import { QUCUO_MAP, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "../../domain/data/map/qucuoMap.js";
-import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
+import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 import { serializeSquares } from "../../domain/rules/map/mapSquares.js";
 import { isRoomLookCommand, parseLocalCommand } from "../localCommands.js";
 import { resolveOuterLock } from "../act/outerMove.js";
@@ -40,7 +39,7 @@ export async function resolveIntent(cmd, env) {
     addLog, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs, waitTimerRef,
     setInv, setRoom, noteAction, getGameState, applyLocal, stopAutoTravel,
     showOuterNoExitNotice, resolveInnerBlockedSummary, prerunSquares,
-    traceStep, callModel, lookInBackground,
+    traceStep, lookInBackground,
   } = env.io;
   const clearWait = () => {
     setLoading(false);
@@ -184,31 +183,7 @@ export async function resolveIntent(cmd, env) {
   setCmdHistory(p => [cmd, ...p].slice(0, 50));
   setHistIdx(-1);
 
-  // 方向判定：先走正则（parseDir），命中不了再用小模型兜底（本轮新增）——
-  // 正则永远列不全所有口语化的移动表达（"我想去后山逛逛""沿河边往喇嘛庙那边走"
-  // 这类），与其不断加正则分支，不如正则失手时，拿当前房间实际的出口列表问一次
-  // 小模型"这句话对应哪个方向，还是压根不是移动"。这次调用的输出空间严格封闭在
-  // 方向代码集合内（parseDirectionJudgeResponse 会校验），不涉及"去了哪个具体
-  // 据点"——目的地依然是下面 resolveExit 查表决定，AI 只是被问了个"更聪明的正则"
-  // 式的封闭问题，不违背"AI提议系统裁决"的原则。只有 !isTalk 且当前房间在固定
-  // 地图里才会问（对话模式、房间不在地图里的情况不需要判断移动）。
-  // 失败/超时静默降级为 null，不能因为这次小调用挂了就导致移动完全瘫痪。
   let movingDir = isTalk ? null : parseDir(cmd);
-  // 【已闲置】AI 方向兜底：移动已改为点按钮/点地图节点/自动寻路（纯查表，不走大模型），
-  // 这条"打字口语移动+正则失手时问小模型判方向"的兜底不再需要，故用 `false &&` 关掉。
-  // 整段逻辑保留未删，日后若想恢复"打字也能口语移动"，去掉下面的 `false &&` 即可。
-  if (false && !isTalk && !movingDir && QUCUO_MAP[room.name]) {
-    try {
-      const node = QUCUO_MAP[room.name];
-      const judgeReq = buildDirectionJudgeRequest(cmd, room.name, node.exits);
-      const judgeCfg = buildExtractionCfg("DIRECTION_JUDGE", apiCfg);
-      const judgeResult = await callModel(judgeCfg, judgeReq.system, judgeReq.messages, { maxTokens: apiCfg.callTokenLimits?.direction ?? judgeReq.maxTokens, callLabel: "方向判定(已闲置)" });
-      const aiDir = parseDirectionJudgeResponse(judgeResult.text);
-      // 双重校验：AI 说的方向必须真的是当前房间已登记的出口之一，否则视为无效。
-      // 这一步保证即便小模型偶尔"创造"了一个不存在的方向代码，也不会被采信。
-      if (aiDir && node.exits[aiDir]) movingDir = aiDir;
-    } catch (_) { /* 判定失败就当没判断出方向，走原有的"非移动"分支，不阻断游戏 */ }
-  }
   pendDirRef.current = movingDir;
 
   // ── 内层箱庭移动：优先于外层大地图判定（判定在 act/innerMove.js，副作用在此执行）──

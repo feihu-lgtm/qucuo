@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseDir, DIRS, DIR_DXY } from "../../../utils/mudHelpers.js";
-import { QUCUO_MAP, findPath, parseDirectionJudgeResponse } from "../../data/map/qucuoMap.js";
+import { QUCUO_MAP, findPath } from "../../data/map/qucuoMap.js";
 
 // 【"我离不开锦官城"】锦官城的唯一出口是 ne（东北→鱼定村），但 parseDir 里有一句
 // `if (/^…(东南|东北|西北)/) return null` 把东北整个毙掉了。玩家点九宫格东北格 →
@@ -91,21 +91,6 @@ describe("没有单行陷阱：每个据点都走得出去", () => {
         expect(comesBack, `「${node}」往${dir}到「${dest}」，但「${dest}」没有任何出口回「${node}」`).toBe(true);
       }
     }
-  });
-});
-
-describe("AI 方向兜底（目前闲置）的输出白名单与 parseDir 同步", () => {
-  it("八向 + 上下都被接受（此前漏了 ne，等于兜底也出不了锦官城）", () => {
-    for (const d of ["n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d"]) {
-      expect(parseDirectionJudgeResponse(d), `方向码 ${d} 被白名单拒了`).toBe(d);
-    }
-  });
-
-  it("none 与越界输出仍然一律判无效（不做模糊提取）", () => {
-    expect(parseDirectionJudgeResponse("none")).toBe(null);
-    expect(parseDirectionJudgeResponse("")).toBe(null);
-    expect(parseDirectionJudgeResponse("往东北方向走")).toBe(null);
-    expect(parseDirectionJudgeResponse("northeast")).toBe(null);
   });
 });
 

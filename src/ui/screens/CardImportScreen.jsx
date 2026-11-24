@@ -12,7 +12,6 @@ import { parseCharacterCard } from "../../domain/rules/cards/cardParse.js";
 import { planScan, runScan, runClassify, peopleAfterClassify } from "../../engine/ports/cardScan.js";
 import * as scanStore from "../../infra/scanStore.js";
 import { bucketStatus } from "../../domain/rules/cards/rateLimiter.js";
-import { callModel } from "../../infra/apiConfig.js";
 import {
   S, TERM_MONO,
   Terminal, barFrame,
@@ -140,7 +139,7 @@ export default function CardImportScreen({
     setClassifying(true);
     abortRef.current = { aborted: false };
     try {
-      const out = await runClassify(parsed, callModel, apiCfg, {
+      const out = await runClassify(parsed, null, apiCfg, {
         signal: abortRef.current,
         onWait: (ms) => { setWaitMs(ms); if (ms > 900) pushTerm("wait", `额度用尽，${Math.ceil(ms / 1000)} 秒后继续`, "限流"); },
         onProgress: (p) => pushTerm(p.kind === "start" ? "start" : p.kind, p.msg, "认人"),
@@ -169,7 +168,7 @@ export default function CardImportScreen({
     abortRef.current = { aborted: false };
     setStage("scanning");
     try {
-      const out = await runScan(parsed, callModel, apiCfg, {
+      const out = await runScan(parsed, null, apiCfg, {
         playerName, asPlayer, batchSize: 4,
         selectedPeople: Array.from(picked),
         openingIndex: openingIdx,

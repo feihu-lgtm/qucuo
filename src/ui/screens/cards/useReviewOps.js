@@ -2,7 +2,7 @@
 // 收三类与界面无关的动作：① 选 NPC 当主角（含自动 AI 识别体貌）；② AI 一键
 // 规划落脚 / 一键配装备（分批走令牌桶）；③ 卡面被丢弃段落的汇总。
 import { useState, useRef, useEffect, useMemo } from "react";
-import { callModel } from "../../../engine/ports/ai.js";
+import { callCardModel } from "../../../engine/ports/cardScan/scanCalls.js";
 import { acquire } from "../../../domain/rules/cards/rateLimiter.js";
 import { parseJsonLoose, buildStage3 } from "../../../domain/rules/cards/scanPrompts.js";
 import {
@@ -75,7 +75,7 @@ export function useReviewOps({ result, setResult, apiCfg, patchNpc, parsed, auto
     try {
       await acquire();
       const { system, user } = buildStage3(src, { cardName: npc.name });
-      const res = await callModel(apiCfg, system, [{ role: "user", content: user }], { maxTokens: 4000, temperature: 0.6 });
+      const res = await callCardModel(apiCfg, system, user, { maxTokens: 4000, temperature: 0.6, callLabel: "卡面主角体貌识别" });
       const body = parseJsonLoose(res.text || "") || {};
       const bp = cleanBody(body.bodyProfile);
       const bpPriv = cleanBodyPrivate(body.bodyProfilePrivate);
@@ -127,8 +127,8 @@ export function useReviewOps({ result, setResult, apiCfg, patchNpc, parsed, auto
         setPlanMsg(`${tag} · 正在相地（${grp.length} 人）`);
         const list = grp.map(g => g.npc);
         const { system, user } = buildPlacementPlan(list, PLANNABLE_DISTRICTS);
-        const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
-          { maxTokens: PLAN_MAX_TOKENS.batch, temperature: 0.6 });
+        const res = await callCardModel(apiCfg, system, user,
+          { maxTokens: PLAN_MAX_TOKENS.batch, temperature: 0.6, callLabel: "卡面批量落脚" });
         const plans = sanitizePlacementPlan(parseJsonLoose(res.text || ""), list, PLANNABLE_DISTRICTS);
         if (!plans.length) { failed++; } else {
           for (const p of plans) {
@@ -184,8 +184,8 @@ export function useReviewOps({ result, setResult, apiCfg, patchNpc, parsed, auto
         setEquipMsg(`${tag} · 正在配装（${grp.length} 人）`);
         const list = grp.map(g => g.npc);
         const { system, user } = buildCarryPlan(list);
-        const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
-          { maxTokens: CARRY_PLAN_MAX_TOKENS.batch, temperature: 0.7 });
+        const res = await callCardModel(apiCfg, system, user,
+          { maxTokens: CARRY_PLAN_MAX_TOKENS.batch, temperature: 0.7, callLabel: "卡面批量配装" });
         const plans = sanitizeCarryPlan(parseJsonLoose(res.text || ""), list);
         if (!plans.length) { failed++; } else {
           for (const p of plans) {

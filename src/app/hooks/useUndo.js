@@ -1,8 +1,10 @@
 import { useCallback, useMemo, useRef } from "react";
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
-import { gameActions } from "../../store/gameStore.js";
+import { clearNextReplaceAsUndo, gameActions, markNextReplaceAsUndo } from "../../store/gameStore.js";
+import { restoreDayMaterial, snapshotDayMaterial } from "./useNotes.js";
 
 const undoOwners = new WeakMap();
+const undoDayMaterials = new WeakMap();
 
 export function createUndoController({
   undoSnapshotRef, buildCurrentSnapshot, applySnapshot, addLog,
@@ -29,6 +31,9 @@ export function createUndoController({
   const captureUndo = (turn = getTurnContext()) => {
     try {
       undoSnapshotRef.current = structuredClone(buildCurrentSnapshot());
+      if (undoSnapshotRef.current) {
+        undoDayMaterials.set(undoSnapshotRef.current, snapshotDayMaterial());
+      }
       if (turn && undoSnapshotRef.current) {
         undoOwners.set(undoSnapshotRef.current, turn.id);
         turnMonitor.add(turn, "app", "保存撤销点", { kind: "undo" });
@@ -52,12 +57,16 @@ export function createUndoController({
       return false;
     }
     invalidateTurns();
+    markNextReplaceAsUndo();
     try {
       withTurnContext(turn, () => applySnapshot(snapshot));
     } catch (error) {
       turnMonitor.transition(turn, PHASE.ERROR, String(error));
       throw error;
+    } finally {
+      clearNextReplaceAsUndo();
     }
+    if (undoDayMaterials.has(snapshot)) restoreDayMaterial(undoDayMaterials.get(snapshot));
     undoSnapshotRef.current = null;
     setActiveBuilding(null);
     clearCommandQueue();

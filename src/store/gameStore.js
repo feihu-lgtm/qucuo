@@ -79,6 +79,8 @@ export const gameActions = {
 
 const replacedListeners = new Set();
 let gameEpoch = 0;
+let sessionEpoch = 0;
+let nextReplaceIsUndo = false;
 
 // 读档、新开局、创角会整体换掉一局：时间等字段的跳变不是"过了一回合"，
 // 依赖历史（如世界规则的上一次 deps）必须随之作废。
@@ -90,14 +92,33 @@ export function isGameEpochStale(epoch) {
   return epoch !== gameEpoch;
 }
 
+export function getSessionEpoch() {
+  return sessionEpoch;
+}
+
+export function isSessionEpochStale(epoch) {
+  return epoch !== sessionEpoch;
+}
+
+export function markNextReplaceAsUndo() {
+  nextReplaceIsUndo = true;
+}
+
+export function clearNextReplaceAsUndo() {
+  nextReplaceIsUndo = false;
+}
+
 export function subscribeGameReplaced(listener) {
   replacedListeners.add(listener);
   return () => replacedListeners.delete(listener);
 }
 
 export function markGameReplaced() {
+  const isUndo = nextReplaceIsUndo;
+  nextReplaceIsUndo = false;
   gameEpoch += 1;
-  for (const listener of [...replacedListeners]) listener();
+  if (!isUndo) sessionEpoch += 1;
+  for (const listener of [...replacedListeners]) listener({ isUndo });
 }
 
 export function initGameStore(values) {

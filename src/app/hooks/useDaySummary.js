@@ -5,7 +5,9 @@ import { setFactSummary } from "../../domain/rules/prompt/knowledge.js";
 import { resetForDay } from "../../domain/rules/map/mapSquares.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
-import { gameStore, getGameEpoch, isGameEpochStale, useGameStore } from "../../store/gameStore.js";
+import {
+  gameStore, getGameEpoch, getSessionEpoch, isGameEpochStale, isSessionEpochStale, subscribeGameReplaced, useGameStore,
+} from "../../store/gameStore.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();
@@ -13,12 +15,24 @@ const webAi = createWebAi();
 export function useDaySummary({ apiCfg, setVarTree, dayMaterialRef, prerunSquares }) {
   // 跨天侦测要订阅式地跟着 time 走——hook 内直订 store，不经参数透传（路线一）。
   const time = useGameStore((s) => s.time);
+  const pendingSummariesRef = useRef(new Set());
+  useEffect(() => subscribeGameReplaced(() => {
+    const curDay = Math.floor((gameStore.getState().time ?? 0) / 24);
+    for (const token of pendingSummariesRef.current) {
+      if (curDay <= token.endedDay) token.invalidated = true;
+    }
+  }), []);
   const summarizeDay = useCallback(async (endedDay, material) => {
     const lines = (material || []).map(m => m.text).filter(Boolean);
     if (!lines.length) return;
     const label = `第${endedDay + 1}日`;
-    const epoch = getGameEpoch();
-    const isStale = () => isGameEpochStale(epoch);
+    const session = getSessionEpoch();
+    const token = { endedDay, invalidated: false };
+    pendingSummariesRef.current.add(token);
+    // 同日内撤销不作废昨天的日总结；真换档/新开局或曾退回 endedDay 及之前就永久作废该 token。
+    const isStale = () => token.invalidated
+      || isSessionEpochStale(session)
+      || Math.floor((gameStore.getState().time ?? 0) / 24) <= endedDay;
     try {
       const { ok, text } = await withAI(
         "day.summary",
@@ -29,7 +43,9 @@ export function useDaySummary({ apiCfg, setVarTree, dayMaterialRef, prerunSquare
       const summary = (text || "").trim();
       if (!summary) return;
       setVarTree(prev => appendDaySummary(prev, { day: endedDay, label, text: summary, turn: (endedDay + 1) * 24 }));
-    } catch (_) { /* 日总结失败静默 */ }
+    } catch (_) { /* 日总结失败静默 */ } finally {
+      pendingSummariesRef.current.delete(token);
+    }
   }, [apiCfg]);
 
   // 把一条结构化事实（切磋结果/飞鸽书信这类系统已知数据）交给 AI 写成一句白话古文小总结，
@@ -54,6 +70,10 @@ export function useDaySummary({ apiCfg, setVarTree, dayMaterialRef, prerunSquare
   const prevDayRef = useRef(Math.floor(time / 24));
   useEffect(() => {
     const curDay = Math.floor(time / 24);
+    if (curDay < prevDayRef.current) {
+      prevDayRef.current = curDay;
+      return;
+    }
     if (curDay > prevDayRef.current) {
       const ended = prevDayRef.current;
       const material = dayMaterialRef.current;
