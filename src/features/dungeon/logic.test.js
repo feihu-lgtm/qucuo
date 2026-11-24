@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { LOG_TYPES } from "../../domain/rules/log/logTypes.js";
-import { settleDungeonRun } from "./logic.js";
+import {
+  DUNGEON_ID_TO_DISTRICT,
+  runEnd,
+  startMapRun,
+} from "../../domain/rules/dungeon/engine.js";
+import { DUNGEON_CATALOG } from "../../domain/data/dungeon/catalog.js";
+import { settleDungeonRun, settleMapRun } from "./logic.js";
 
 describe("settleDungeonRun", () => {
   const baseState = {
@@ -70,5 +76,63 @@ describe("settleDungeonRun", () => {
     expect(res.changes.flags).toEqual(["white_pagoda_crypt_clue"]);
     expect(res.changes.inv).toHaveLength(1);
     expect(res.changes.inv[0].name).toBe("铁网僧袍");
+  });
+});
+
+describe("内层地图入口出口接线", () => {
+  const baseState = {
+    char: { name: "主角", money: 50, hp: [80, 120] },
+    inv: [],
+    exp: 10,
+    pot: 5,
+    time: 8,
+    flags: [],
+  };
+
+  it("入口：八座旧地宫 dungeonId 全部有映射、键是旧目录真词条、值是十区真词条且能开图", () => {
+    for (const [dungeonId, districtKey] of Object.entries(DUNGEON_ID_TO_DISTRICT)) {
+      expect(DUNGEON_CATALOG[dungeonId], `${dungeonId} 应存在于旧目录`).toBeDefined();
+      const rs = startMapRun(districtKey, "entry-test");
+      expect(rs.status).toBe("exploring");
+      expect(rs.current).toBe(rs.map.anchor);
+    }
+  });
+
+  it("出口：内层 run 走 settleMapRun 落盘——胜全带、败 1 血丢半、物品全留", () => {
+    let rs = startMapRun(DUNGEON_ID_TO_DISTRICT.white_pagoda_crypt, "exit-test");
+    rs = { ...rs, loot: { money: 40, exp: 8, pot: 4, items: ["降魔杵"] } };
+
+    const win = settleMapRun(baseState, runEnd(rs, "victory").runState, { now: 1 });
+    expect(win.changes.char.money).toBe(90);
+    expect(win.changes.exp).toBe(18);
+    expect(win.changes.pot).toBe(9);
+    expect(win.changes.inv.map((i) => i.name)).toContain("降魔杵");
+    expect(win.note.text).toContain("白塔地宫");
+
+    const lose = settleMapRun(baseState, runEnd(rs, "defeated").runState, { now: 1 });
+    expect(lose.changes.char.hp).toEqual([1, 120]);
+    expect(lose.changes.char.money).toBe(50 + 20);
+    expect(lose.changes.exp).toBe(10 + 4);
+    expect(lose.changes.inv.map((i) => i.name)).toContain("降魔杵");
+  });
+
+  it("撤退不抹血：超上限气血与 run 外回血都保留，只扣 run 内真实掉的血", () => {
+    // 入图时 150/120（超上限增益），走一步没走直接撤退——血不动
+    const rs = startMapRun("白塔地宫", "hp", { char: { hp: [150, 120] } });
+    expect(rs.entryHp).toBe(120); // 归一化后的入口记录
+    const retreated = { ...rs, status: "retreated" };
+    const overCap = settleMapRun(
+      { ...baseState, char: { ...baseState.char, hp: [150, 120] } },
+      retreated,
+    );
+    expect(overCap.changes.char.hp).toEqual([150, 120]);
+
+    // run 内掉到 60（未来战斗），结算时 char 已回血到 110——只扣差值 60
+    const hurt = { ...rs, hp: [60, 120], status: "retreated" };
+    const healed = settleMapRun(
+      { ...baseState, char: { ...baseState.char, hp: [110, 120] } },
+      hurt,
+    );
+    expect(healed.changes.char.hp).toEqual([50, 120]); // 110 - (120-60)
   });
 });

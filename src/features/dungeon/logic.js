@@ -95,3 +95,31 @@ export function settleDungeonRun(state, run, { now = Date.now() } = {}) {
     note,
   };
 }
+
+// 内层地图 run（mapRun.js 产出）→ 旧结算通路薄适配。
+// mapRun.runState 字段名与旧 run 几乎同构：status/loot/hp/usedItems/bossDefeated，
+// 缺的 floor/dungeonName/clearFlag 在这里补齐——耗时按步数四步折一时辰。
+export function settleMapRun(state, mapRun, opts = {}) {
+  // 只把 run 内真实掉的血写回 char：撤退不该吃掉入图前的超上限气血或中途回血
+  const charHp = state.char?.hp || mapRun.hp || [1, 100];
+  const inRunLoss = Math.max(0, (mapRun.entryHp ?? charHp[0]) - (mapRun.hp?.[0] ?? charHp[0]));
+  const shim = {
+    status: mapRun.status,
+    loot: mapRun.loot,
+    hp: mapRun.hp,
+    usedItems: mapRun.usedItems || [],
+    floor: Math.max(1, Math.ceil((mapRun.step || 0) / 4)),
+    dungeonName: `${mapRun.districtKey}·内层`,
+    bossDefeated: mapRun.bossDefeated,
+    clearFlag: mapRun.clearFlag,
+  };
+  const res = settleDungeonRun(state, shim, opts);
+  // settleDungeonRun 会把 hp[0] 削到上限内——超上限/中途回血要保住，按差值直接回写
+  if (res.changes?.char) {
+    res.changes = {
+      ...res.changes,
+      char: { ...res.changes.char, hp: [Math.max(1, charHp[0] - inRunLoss), charHp[1]] },
+    };
+  }
+  return res;
+}
