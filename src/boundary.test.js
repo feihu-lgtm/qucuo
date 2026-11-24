@@ -2,7 +2,14 @@ import { expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkLayerRedLines, collectRatchetMetrics } from "../scripts/ratchet.mjs";
+import {
+  KNOWN_DIRECT_AI_CALL_DEBT,
+  KNOWN_EXTERNAL_INFRA_CAP,
+  KNOWN_MUD_RPG_HOOK_ARGS_CAP,
+  KNOWN_STATE_WRITE_DEBT,
+  checkLayerRedLines,
+  collectRatchetMetrics,
+} from "../scripts/ratchet.mjs";
 
 const srcDir = resolve(dirname(fileURLToPath(import.meta.url)));
 const infraDir = resolve(srcDir, "infra");
@@ -78,4 +85,54 @@ it("keeps prompt builders free of UI imports and nondeterministic globals", () =
 it("keeps cross-layer reverse dependencies at zero (KNOWN_LAYER_DEBT cap only)", () => {
   const { metrics } = collectRatchetMetrics();
   expect(checkLayerRedLines(metrics).failures).toEqual([]);
+});
+
+it("rejects increases over ratchet caps for AI calls, state writes, infra imports, and MudRPG hook args", () => {
+  const base = {
+    actRefCurrent: 0,
+    layerViolations: {},
+    directAiCalls: { ...KNOWN_DIRECT_AI_CALL_DEBT },
+    directStateWrites: { ...KNOWN_STATE_WRITE_DEBT },
+    externalInfraImports: { ...KNOWN_EXTERNAL_INFRA_CAP },
+    mudRpgHookArgs: KNOWN_MUD_RPG_HOOK_ARGS_CAP,
+  };
+  expect(checkLayerRedLines(base).ok).toBe(true);
+
+  const newAiCaller = checkLayerRedLines({
+    ...base,
+    directAiCalls: { ...base.directAiCalls, "ui/NewWidget.jsx": 1 },
+  });
+  expect(newAiCaller.ok).toBe(false);
+  expect(newAiCaller.failures[0]).toContain("ui/NewWidget.jsx");
+
+  const aiIncrease = checkLayerRedLines({
+    ...base,
+    directAiCalls: { ...base.directAiCalls, "engine/act/actCall.js": KNOWN_DIRECT_AI_CALL_DEBT["engine/act/actCall.js"] + 1 },
+  });
+  expect(aiIncrease.ok).toBe(false);
+
+  const featureWrite = checkLayerRedLines({
+    ...base,
+    directStateWrites: { ...base.directStateWrites, features: 1 },
+  });
+  expect(featureWrite.ok).toBe(false);
+  expect(featureWrite.failures[0]).toContain("features");
+
+  const uiWriteIncrease = checkLayerRedLines({
+    ...base,
+    directStateWrites: { ...base.directStateWrites, ui: KNOWN_STATE_WRITE_DEBT.ui + 1 },
+  });
+  expect(uiWriteIncrease.ok).toBe(false);
+
+  const infraIncrease = checkLayerRedLines({
+    ...base,
+    externalInfraImports: { ...base.externalInfraImports, ui: KNOWN_EXTERNAL_INFRA_CAP.ui + 1 },
+  });
+  expect(infraIncrease.ok).toBe(false);
+
+  const hookArgsIncrease = checkLayerRedLines({
+    ...base,
+    mudRpgHookArgs: KNOWN_MUD_RPG_HOOK_ARGS_CAP + 1,
+  });
+  expect(hookArgsIncrease.ok).toBe(false);
 });

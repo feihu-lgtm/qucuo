@@ -267,6 +267,47 @@ function readMainJsGzipBytes(distRoot) {
   return { value: gzipSync(readFileSync(file)).length, note: `Gzip measured from ${relativePath(distRoot, file)}.` };
 }
 
+const SANCTIONED_AI_GATEWAYS = new Set([
+  "engine/ports/withAI.js",
+  "engine/ports/ai.js",
+  "infra/apiTransport.js",
+  "infra/apiDiagnostics.js",
+  "debug/debugConsole.jsx",
+]);
+const DIRECT_AI_CALL_RE = /\b(?:callModel|callModelStream)\s*\(|\bai\.chat\s*\(/g;
+const DIRECT_STATE_WRITE_RE = /\b(?:setVarTree|setVarTreeState)\s*(?:\?\.)?\(|\bgameActions\.set[A-Z]\w*\s*(?:\?\.)?\(/g;
+
+function countDirectAiCalls(sourceFiles, srcRoot) {
+  const counts = {};
+  for (const file of sourceFiles) {
+    const rel = relativePath(srcRoot, file);
+    if (SANCTIONED_AI_GATEWAYS.has(rel)) continue;
+    const source = stripComments(readFileSync(file, "utf8"));
+    const matches = source.match(DIRECT_AI_CALL_RE);
+    if (matches?.length) counts[rel] = matches.length;
+  }
+  return Object.fromEntries(Object.entries(counts).sort());
+}
+
+function countDirectStateWrites(sourceFiles, srcRoot) {
+  const counts = {};
+  for (const file of sourceFiles) {
+    const rel = relativePath(srcRoot, file);
+    const bucket = rel.startsWith("ui/")
+      ? "ui"
+      : rel.startsWith("app/hooks/")
+        ? "app/hooks"
+        : rel.startsWith("features/") && rel !== "features/run.js"
+          ? "features"
+          : null;
+    if (!bucket) continue;
+    const source = stripComments(readFileSync(file, "utf8"));
+    const matches = source.match(DIRECT_STATE_WRITE_RE);
+    if (matches?.length) counts[bucket] = (counts[bucket] || 0) + matches.length;
+  }
+  return Object.fromEntries(Object.entries(counts).sort());
+}
+
 export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
   const srcRoot = resolve(repoRoot, "src");
   const allFiles = listFiles(srcRoot);
@@ -282,15 +323,48 @@ export function collectRatchetMetrics(repoRoot = REPO_ROOT) {
       actRefCurrent: countActRefCurrent(allFiles, srcRoot),
       featureCtxRefCount: countFeatureCtxRef(sourceFiles),
       mudRpgHookArgs: countMudRpgHookArgs(srcRoot),
+      directAiCalls: countDirectAiCalls(sourceFiles, srcRoot),
+      directStateWrites: countDirectStateWrites(sourceFiles, srcRoot),
     },
     notes: [bundle.note],
   };
 }
 
-// ── 硬红线（0 容忍，违者直接 fail）────────────────────────────────
+// ── 硬红线（0 容忍或棘轮上限，违者直接 fail）────────────────────────────────
 // 已清零的跨层反向依赖一律不许再出现（全库 0 容忍）。
-// 软指标（大文件、颜色数、externalInfraImports、gzip）一律只打印不阻断——npm run stats。
+// 其余结构性欠账（绕过 withAI 的直调、绕过 commitRound 的直写、MudRPG 参数数、
+// 跨层直连 infra）以当前 main 基线封顶，只减不增。
 export const KNOWN_LAYER_DEBT = {};
+
+export const KNOWN_DIRECT_AI_CALL_DEBT = {
+  "app/hooks/usePrivateTalk.js": 2,
+  "engine/act/actCall.js": 2,
+  "engine/act/memoryLayer.js": 1,
+  "engine/intent/aiClassifier.js": 1,
+  "engine/ports/cardScan/scanCalls.js": 1,
+  "engine/ports/extraction.js": 1,
+  "engine/ports/storyteller.js": 1,
+  "engine/turn/resolveIntent.js": 1,
+  "ui/screens/cards/Placement.jsx": 1,
+  "ui/screens/cards/carryItemModel.js": 1,
+  "ui/screens/cards/playerAiScans.js": 3,
+  "ui/screens/cards/useReviewOps.js": 3,
+};
+
+export const KNOWN_STATE_WRITE_DEBT = {
+  "app/hooks": 19,
+  ui: 11,
+};
+
+export const KNOWN_MUD_RPG_HOOK_ARGS_CAP = 214;
+
+export const KNOWN_EXTERNAL_INFRA_CAP = {
+  app: 16,
+  engine: 24,
+  entry: 6,
+  store: 2,
+  ui: 34,
+};
 
 // 路线甲硬红线：React ref 已赶出 engine/act，任何 .current 读写都不许回来。
 // （\b 保证不误伤 currentStageIndex 这类数据字段。）
@@ -304,18 +378,52 @@ function countActRefCurrent(allFiles, srcRoot) {
   return count;
 }
 
+function checkCapMap(failures, actualMap, capMap, formatUnexpected, formatExceeded) {
+  for (const [key, count] of Object.entries(actualMap || {})) {
+    const cap = capMap[key];
+    if (cap === undefined) {
+      failures.push(formatUnexpected(key, count));
+    } else if (count > cap) {
+      failures.push(formatExceeded(key, count, cap));
+    }
+  }
+}
+
 export function checkLayerRedLines(metrics) {
   const failures = [];
   if (metrics.actRefCurrent) {
     failures.push(`engine/act .current 读写: ${metrics.actRefCurrent} 处（红线 0 容忍）`);
   }
-  for (const [rule, count] of Object.entries(metrics.layerViolations || {})) {
-    const cap = KNOWN_LAYER_DEBT[rule];
-    if (cap === undefined) {
-      failures.push(`${rule}: ${count} 条逆向依赖（红线 0 容忍）`);
-    } else if (count > cap) {
-      failures.push(`${rule}: ${count} 条，超过现存欠账上限 ${cap}（只减不增）`);
-    }
+  checkCapMap(
+    failures,
+    metrics.layerViolations,
+    KNOWN_LAYER_DEBT,
+    (rule, count) => `${rule}: ${count} 条逆向依赖（红线 0 容忍）`,
+    (rule, count, cap) => `${rule}: ${count} 条，超过现存欠账上限 ${cap}（只减不增）`,
+  );
+  checkCapMap(
+    failures,
+    metrics.directAiCalls,
+    KNOWN_DIRECT_AI_CALL_DEBT,
+    (file, count) => `绕过 withAI 的直调 [${file}]: ${count} 处（未登记新旁路，0 容忍）`,
+    (file, count, cap) => `绕过 withAI 的直调 [${file}]: ${count} 处，超过存量上限 ${cap}（只减不增）`,
+  );
+  checkCapMap(
+    failures,
+    metrics.directStateWrites,
+    KNOWN_STATE_WRITE_DEBT,
+    (scope, count) => `绕过统一写入口 [${scope}]: ${count} 处（红线 0 容忍）`,
+    (scope, count, cap) => `绕过统一写入口 [${scope}]: ${count} 处，超过存量上限 ${cap}（只减不增）`,
+  );
+  checkCapMap(
+    failures,
+    metrics.externalInfraImports,
+    KNOWN_EXTERNAL_INFRA_CAP,
+    (layer, count) => `跨层直连 infra [${layer}]: ${count} 处（未登记层，0 容忍）`,
+    (layer, count, cap) => `跨层直连 infra [${layer}]: ${count} 处，超过存量上限 ${cap}（只减不增）`,
+  );
+  if ((metrics.mudRpgHookArgs ?? 0) > KNOWN_MUD_RPG_HOOK_ARGS_CAP) {
+    failures.push(`MudRPG hook 参数数: ${metrics.mudRpgHookArgs}，超过存量上限 ${KNOWN_MUD_RPG_HOOK_ARGS_CAP}（只减不增）`);
   }
   return { ok: failures.length === 0, failures };
 }
@@ -329,6 +437,8 @@ export function formatStats(metrics) {
   };
   pushMap("layerViolations", metrics.layerViolations);
   pushMap("externalInfraImports", metrics.externalInfraImports);
+  pushMap("directAiCalls", metrics.directAiCalls);
+  pushMap("directStateWrites", metrics.directStateWrites);
   push("distinctHexColors", metrics.distinctHexColors);
   push("totalHexOccurrences", metrics.totalHexOccurrences);
   pushMap("largeFiles", metrics.largeFiles);
