@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { featureCtx } from "../runtime/gameRuntime.js";
-import { gameStore, useGameStore } from "../../store/gameStore.js";
+import { gameStore, getGameEpoch, isGameEpochStale, useGameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import {
   applyPigeonReply,
@@ -32,9 +32,12 @@ export function usePigeonReplies({
 
   const replyPigeonLetter = useCallback(async (letter) => {
     const { id } = letter;
+    const epoch = getGameEpoch();
     const state = gameStore.getState();
+    const isStale = () => isGameEpochStale(epoch);
+    const hasPendingLetter = (cur) => (cur?.varTree?.世界?.飞鸽待回 || []).some((l) => l.id === id);
     try {
-      const { text } = await withAI("pigeon.reply", {
+      const { ok, text } = await withAI("pigeon.reply", {
         state,
         letter,
         preset: state.preset,
@@ -43,11 +46,18 @@ export function usePigeonReplies({
           turnMonitor.add(turn, "domain", "提示词引用缺失", { status: "warn", detail: paths.join("、") });
           turnMonitor.finish(turn);
         },
-      }, { ai: webAi, apiCfg });
-      applyPigeonResult(applyPigeonReply(state, letter, text), { feature: "pigeon.reply", background: true });
+      }, { ai: webAi, apiCfg, isStale });
+      if (!ok || isStale()) return;
+      const latestState = gameStore.getState();
+      if (!hasPendingLetter(latestState)) return;
+      applyPigeonResult(applyPigeonReply(latestState, letter, text), { feature: "pigeon.reply", background: true });
     } catch {
+      if (isStale()) return;
+      const latestState = gameStore.getState();
+      if (!hasPendingLetter(latestState)) return;
+      applyPigeonResult(failPigeonReply(latestState, letter), { feature: "pigeon.reply", background: true });
+    } finally {
       pigeonProcessing.current.delete(id);
-      applyPigeonResult(failPigeonReply(gameStore.getState(), letter), { feature: "pigeon.reply", background: true });
     }
   }, [apiCfg, applyPigeonResult]);
 

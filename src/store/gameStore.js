@@ -78,15 +78,25 @@ export const gameActions = {
 };
 
 const replacedListeners = new Set();
+let gameEpoch = 0;
 
 // 读档、新开局、创角会整体换掉一局：时间等字段的跳变不是"过了一回合"，
 // 依赖历史（如世界规则的上一次 deps）必须随之作废。
+export function getGameEpoch() {
+  return gameEpoch;
+}
+
+export function isGameEpochStale(epoch) {
+  return epoch !== gameEpoch;
+}
+
 export function subscribeGameReplaced(listener) {
   replacedListeners.add(listener);
   return () => replacedListeners.delete(listener);
 }
 
 export function markGameReplaced() {
+  gameEpoch += 1;
   for (const listener of [...replacedListeners]) listener();
 }
 

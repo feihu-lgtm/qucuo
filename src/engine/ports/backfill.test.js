@@ -64,4 +64,18 @@ describe("backfillInBackground", () => {
     expect(newBackfillKey("duel")).toMatch(/^duel-/);
     expect(newBackfillKey()).not.toBe(newBackfillKey());
   });
+
+  it("discards late backfill results when isStale turns true after ask resolves", async () => {
+    let stale = false;
+    const { ok, log, setLog } = await run({
+      ask: async () => {
+        stale = true;
+        return "迟来的描写";
+      },
+      isStale: () => stale,
+    });
+    expect(ok).toBe(false);
+    expect(setLog).not.toHaveBeenCalled();
+    expect(log.map((entry) => entry.text.trim())).toEqual(["事实"]);
+  });
 });

@@ -1,6 +1,6 @@
 // 查看 NPC 不再整轮 act：系统卡片立刻落日志，时辰 +1，外貌描写在后台补到卡片下面。
 // 没配 API 或 AI 出错时只留卡片。
-import { gameStore } from "../../store/gameStore.js";
+import { gameStore, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
 import { buildNpcLookPrompt, npcLookCard } from "../../domain/rules/npc/npcLookBrief.js";
 import { npcTradeOf } from "../../domain/rules/npc/npcTrade.js";
 import { parseSettleNarration } from "../../domain/rules/settle/settleBrief.js";
@@ -72,6 +72,8 @@ export function lookNpcInBackground(npc, extraReplies = [], {
   getState = () => gameStore.getState(), ask = askStoryteller, canAsk = hasApiKey,
   advanceTime = true, getApiCfg = () => sessionUiStore.getState().apiCfg,
 }) {
+  const epoch = getGameEpoch();
+  const isStale = () => isGameEpochStale(epoch);
   const state = getState();
   const cmd = `看 ${npc.name}`;
   // 台账里有「被买走的甲刃」快照——甲刃被买空的 NPC 光靠 carriedItems
@@ -93,11 +95,13 @@ export function lookNpcInBackground(npc, extraReplies = [], {
   // prompt 到真正发问那一刻才组装：记忆库读取是异步的，塞在 ask 闭包里不挡主线程。
   return backfillInBackground(key, {
     canAsk,
+    isStale,
     setLog,
     ask: async () => {
       const memoryTexts = await recallNpcMemoryTexts(npc.name, { cfg: getApiCfg(), flags: state.flags });
+      if (isStale()) return null;
       const { sys, user } = buildNpcLookPrompt(npc, {
-        place: state.room?.name || "", trade,
+        place: state.room?.name || "", trade, state,
         history: [...ledgerLines, ...memoryTexts], convoLines, letters,
       });
       return ask(sys, user, { callLabel: "端详描写", maxTokens: 400 });

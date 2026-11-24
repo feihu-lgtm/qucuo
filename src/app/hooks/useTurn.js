@@ -210,7 +210,7 @@ export function useTurn({
     if (result.ok && !isStale()) {
       const cur = gameStore.getState();
       companionChatterTick({
-        companionState: cur.companionState, roomName: cur.room?.name,
+        companionState: cur.companionState, roomName: cur.room?.name, state: cur,
         activity: { text: cmd, intent: resolved.plan?.intent?.code }, ask: askStoryteller,
       }).then((c) => {
         if (!c || isStale()) return;

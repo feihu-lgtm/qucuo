@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { featureCtx } from "../runtime/gameRuntime.js";
-import { gameActions, gameStore } from "../../store/gameStore.js";
+import { gameActions, gameStore, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { consumeItem, pickGroundItem } from "../../features/items/logic.js";
 import {
@@ -112,12 +112,13 @@ export function useScreenHandlers({
     setActiveTarget(npc.name);
     applyResult(featureCtx(), { logs: [{ t: "sys", text: `  ${npc.name}收拾行装，跟上了你的脚步。` }] });
     // 重逢台词：按留守时长+好感现写开口第一句（无 API 走兜底），记日志 + 进记忆
+    const epoch = getGameEpoch();
     const cur = gameStore.getState();
     companionReunionLine({
-      companionState, slotKey, now: cur.time,
+      companionState, slotKey, now: cur.time, state: cur,
       favor: Number(cur.varTree?.角色?.[npc.name]?.好感度 ?? 0), ask: askStoryteller,
     }).then((r) => {
-      if (!r) return;
+      if (!r || isGameEpochStale(epoch)) return;
       addLog([{ t: "desc", text: `  ${r.speaker}：“${r.line}”` }]);
       featureCtx().io?.jotNote?.({ text: `${r.speaker}见你回来接她，说道：“${r.line}”`, owner: [r.speaker] });
     }).catch(() => {});

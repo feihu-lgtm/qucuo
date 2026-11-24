@@ -5,7 +5,7 @@ import { setFactSummary } from "../../domain/rules/prompt/knowledge.js";
 import { resetForDay } from "../../domain/rules/map/mapSquares.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
-import { gameStore, useGameStore } from "../../store/gameStore.js";
+import { gameStore, getGameEpoch, isGameEpochStale, useGameStore } from "../../store/gameStore.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();
@@ -17,8 +17,15 @@ export function useDaySummary({ apiCfg, setVarTree, dayMaterialRef, prerunSquare
     const lines = (material || []).map(m => m.text).filter(Boolean);
     if (!lines.length) return;
     const label = `第${endedDay + 1}日`;
+    const epoch = getGameEpoch();
+    const isStale = () => isGameEpochStale(epoch);
     try {
-      const { text } = await withAI("day.summary", { dayLabel: label, materialLines: lines }, { ai: webAi, apiCfg });
+      const { ok, text } = await withAI(
+        "day.summary",
+        { dayLabel: label, materialLines: lines },
+        { ai: webAi, apiCfg, isStale },
+      );
+      if (!ok || isStale()) return;
       const summary = (text || "").trim();
       if (!summary) return;
       setVarTree(prev => appendDaySummary(prev, { day: endedDay, label, text: summary, turn: (endedDay + 1) * 24 }));
@@ -29,8 +36,11 @@ export function useDaySummary({ apiCfg, setVarTree, dayMaterialRef, prerunSquare
   // 覆盖掉注册时先塞的结构化兜底摘要。fire-and-forget：AI 没开/失败就保留那句兜底（不再是死模板文风，
   // 而是可读的结构化事实垫底）。cue 是喂给 AI 的事件线索，越具体 AI 写得越准。
   const aiSummarizeFact = useCallback(async (factId, cue) => {
+    const epoch = getGameEpoch();
+    const isStale = () => isGameEpochStale(epoch);
     try {
-      const { text } = await withAI("fact.summary", { cue }, { ai: webAi, apiCfg });
+      const { ok, text } = await withAI("fact.summary", { cue }, { ai: webAi, apiCfg, isStale });
+      if (!ok || isStale()) return;
       // 坑：这里原先写的是 if (line) ... setFactSummary(…, line)，但 callModel 解构出来的
       // 是 text——line 从来就不存在，每次都抛 ReferenceError 被下面的 catch 静默吃掉，
       // 等于 AI 摘要一次都没写进去过，一直在用注册时的结构化兜底（见 version.js 0727 修复记录）。

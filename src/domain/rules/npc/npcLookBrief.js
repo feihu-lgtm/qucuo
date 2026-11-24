@@ -1,29 +1,7 @@
 // 查看 NPC：系统卡片（来历、装束）立刻给出，外貌描写后台补写。
-import { ITEM_CATEGORY } from "../economy/equipment.js";
-import { CATALOG_INDEX } from "../../data/items/catalog.js";
-import { attireExposure } from "./npcCarry.js";
+import { buildNpcContext, deriveAppearance, npcGear } from "./npcContext.js";
 
-const GEAR = new Set([ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY]);
-
-export function npcGear(npc) {
-  // carriedItems 是唯一 live 随身源（货架/偷池/送礼都写它）；类目未标的条目
-  // 走 normalize 口径——OC 的 stealables 装备多数不写 category，名录也查得到。
-  return [...new Set((npc?.carriedItems || [])
-    .filter((item) => item?.name && !item.stolen && !item.dropped && !item.sold)
-    .map((item) => {
-      // 袋装货不是穿戴——玩家卖给他的装备躺在 bag 槽里，不算装束。
-      if (item.slot === "bag" || item.slot === "mount") return null;
-      const cat = item.category || CATALOG_INDEX[item.name]?.category;
-      return cat && cat !== ITEM_CATEGORY.MISC && GEAR.has(cat) ? item.name : null;
-    })
-    .filter(Boolean))];
-}
-
-// 换装同步链的外观段：装备随买卖/偷窃/赠送变化时重算——sold/stolen 标记写进条目
-// 那一刻，本函数读到就是新外观，look 卡/prompt 自然即时刷新，不需要单独存外观字段。
-export function deriveAppearance(npc, { trade = null } = {}) {
-  return { gear: npcGear(npc), exposure: attireExposure(npc, trade) };
-}
+export { buildNpcContext, deriveAppearance, npcGear };
 
 export function npcLookCard(npc, opts = {}) {
   if (!npc?.name) return [];
@@ -36,7 +14,7 @@ export function npcLookCard(npc, opts = {}) {
 }
 
 export function buildNpcLookPrompt(npc, {
-  place = "", trade = null,
+  place = "", trade = null, state = {},
   // 三层「熟人感」上下文，由调用方从 getState 收集：共同记忆（旧账+记忆库）、
   // 近期对话摘要、书信往来。哪层没记录就不写哪层——别让模型对着空白编交情。
   history = [], convoLines = [], letters = [],
@@ -46,22 +24,21 @@ export function buildNpcLookPrompt(npc, {
 给了「过往/交谈/书信」的，此人不是初见——描写里要带出几分熟稔，别写得像头回照面。
 铁律：装束只写给定的，不添新物品；此人不开口说话、不出手、不推进任何事件；不写其他人；不替玩家做决定、不向玩家提问；
 白话古文的说书人口吻，不用冒号破折号。只输出正文，不要任何前后缀。`;
-  const hp = npc?.combatStats?.hp;
-  // 人设段优先级：appearance（定妆外观）> fullBio > personality。
-  const persona = npc?.appearance || npc?.fullBio || npc?.personality;
+  const ctx = buildNpcContext(npc, state, { trade, history, convoLines, letters });
   const section = (title, lines) => lines.length
     ? `${title}：\n${lines.map((l) => `· ${l}`).join("\n")}` : "";
   const user = [
     place ? `地点：${place}` : "",
-    `人物：${npc?.name || ""}`,
-    npc?.brief ? `来历：${npc.brief}` : "",
-    persona ? `人设：${persona}` : "",
-    npcGear(npc).length ? `装束：${npcGear(npc).join("、")}` : "",
-    deriveAppearance(npc, { trade }).exposure ? `衣着状态：${deriveAppearance(npc, { trade }).exposure}（被扒得几乎不剩行头，叙事要照实反映）` : "",
-    Array.isArray(hp) && hp[1] > 0 && hp[0] < hp[1] ? `气血：${hp[0]}/${hp[1]}` : "",
-    section("你和他的过往", history.slice(-4)),
-    section("最近的交谈", convoLines.slice(-3)),
-    section("书信往来", letters.slice(-2)),
+    `人物：${ctx.name}`,
+    ctx.brief ? `来历：${ctx.brief}` : "",
+    ctx.persona ? `人设：${ctx.persona}` : "",
+    ctx.favorability != null ? `好感度：${ctx.favorability}/100` : "",
+    ctx.gear.length ? `装束：${ctx.gear.join("、")}` : "",
+    ctx.exposure ? `衣着状态：${ctx.exposure}（被扒得几乎不剩行头，叙事要照实反映）` : "",
+    Array.isArray(ctx.hp) && ctx.hp[1] > 0 && ctx.hp[0] < ctx.hp[1] ? `气血：${ctx.hp[0]}/${ctx.hp[1]}` : "",
+    section("你和他的过往", ctx.history.slice(-4)),
+    section("最近的交谈", ctx.convoLines.slice(-3)),
+    section("书信往来", ctx.letters.slice(-2)),
   ].filter(Boolean).join("\n");
   return { sys, user };
 }

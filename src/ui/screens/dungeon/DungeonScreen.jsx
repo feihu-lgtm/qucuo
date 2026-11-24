@@ -16,6 +16,7 @@ import {
   startMapRun,
 } from "../../../domain/rules/dungeon/engine.js";
 import { settleDungeonRun, settleMapRun } from "../../../features/dungeon/logic.js";
+import { applyResult } from "../../../features/run.js";
 import DungeonMapPanel from "../../components/DungeonMapPanel.jsx";
 import { narrateDungeonEvent } from "../../../engine/ports/dungeonNarration.js";
 import { gameActions, gameStore } from "../../../store/gameStore.js";
@@ -59,16 +60,7 @@ export default function DungeonScreen({
     exec("actLocal", () => {
       captureUndo?.();
       const result = settle();
-      if (result.changes) {
-        gameActions.setChar(result.changes.char);
-        gameActions.setInv(result.changes.inv);
-        gameActions.setExp(result.changes.exp);
-        gameActions.setPot(result.changes.pot);
-        gameActions.setTime(result.changes.time);
-        gameActions.setFlags(result.changes.flags);
-      }
-      if (result.logs?.length) addLog?.(result.logs);
-      if (result.note) jotNote?.(result.note);
+      applyResult({ gameActions, addLog, jotNote }, result, { feature: "dungeon.settle" });
     });
   };
 

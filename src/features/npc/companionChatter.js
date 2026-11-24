@@ -6,7 +6,7 @@
 // 无 API 走手写兜底句库。产物由调用方记日志 + jotNote 进记忆链，本模块不碰状态。
 
 import { random } from "../../utils/rng.js";
-import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
+import { buildNpcContext } from "../../domain/rules/npc/npcContext.js";
 
 export const COMPANION_CHATTER_CHANCE = 0.12;
 export const CHATTER_MAX_TOKENS = 60;
@@ -77,22 +77,19 @@ export function chatterFallback(who, rng = random, activityCode) {
   return PLAIN_FALLBACK[Math.floor(rng() * PLAIN_FALLBACK.length) % PLAIN_FALLBACK.length];
 }
 
-// OC 有全量人设（性格/身世/亲密画风），普通同伴只有 brief——有哪个用哪个
-const personaOf = (who) => {
-  const adv = OC_BY_NAME[who.name];
-  return adv ? `${adv.archetypeLabel || ""}，${adv.personality || adv.brief || ""}` : (who.personality || who.brief || "江湖散人");
-};
-
 // 回合尾触发一次：抽中人→（兽类直接出声）→AI 按"玩家刚干了什么"现写一句评价→兜底。
 // activity={text,intent} 是玩家本轮输入和识别出的意图码。ask 缺省=离线兜底。
-export async function companionChatterTick({ companionState, roomName, activity, rng = random, ask } = {}) {
+export async function companionChatterTick({ companionState, roomName, activity, state, rng = random, ask } = {}) {
   const who = pickChatter(companionState, { rng });
   if (!who) return null;
   let line = null;
   if (!who.beast && typeof ask === "function") {
+    const npcCtx = buildNpcContext({ name: who.name, personality: who.personality, brief: who.brief }, state || {}, { includeOcPool: true });
+    const favorLine = npcCtx.favorability != null ? `\n对主角好感度：${npcCtx.favorability}/100` : "";
+    const exposureLine = npcCtx.exposure ? `\n当下衣着状态：${npcCtx.exposure}` : "";
     line = await ask(
       "你是武侠MUD里玩家的随行同伴。玩家刚做了一件事，你只说一句贴合人设的评价/反应（不超过30字）——可以赞、嗔、调侃、讨赏、提醒，照你的性子来；不推进事件、不描述玩家动作、不带引号。",
-      `同伴：${who.name}（${personaOf(who)}）\n当前所在：${roomName || "赶路途中"}\n玩家刚做的事：${activity?.text || "赶路"}`,
+      `同伴：${who.name}（${npcCtx.chatterPersona}）\n当前所在：${roomName || "赶路途中"}${favorLine}${exposureLine}\n玩家刚做的事：${activity?.text || "赶路"}`,
       { callLabel: "companion-chatter", maxTokens: CHATTER_MAX_TOKENS },
     );
   }
@@ -102,7 +99,7 @@ export async function companionChatterTick({ companionState, roomName, activity,
 
 // 重逢台词：唤回留守队友时，开口第一句按留守时长+好感演。
 // 丢久了（days≥3）幽怨/阴阳怪气，刚留守（days<1）开心；中等平叙。返回 {speaker,line,dayCount} 或 null。
-export async function companionReunionLine({ companionState, slotKey, favor, now, rng = random, ask } = {}) {
+export async function companionReunionLine({ companionState, slotKey, favor, now, state, rng = random, ask } = {}) {
   const c = companionState?.[slotKey];
   if (!c?.unlocked || !c?.data) return null;
   const stationed = c.stationed;
@@ -111,9 +108,11 @@ export async function companionReunionLine({ companionState, slotKey, favor, now
   const mood = days >= 3 ? "被丢久了，又幽又嗔" : days >= 1 ? "等了几日，嘴上埋怨心里欢喜" : "刚留守就等到你回来，开心";
   let line = null;
   if (!c.beast && typeof ask === "function") {
+    const npcCtx = buildNpcContext({ name, personality: c.data?.personality || "", brief: c.data?.brief || "" }, state || {}, { includeOcPool: true });
+    const resolvedFavor = favor ?? npcCtx.favorability ?? "？";
     line = await ask(
       `你是武侠MUD里被玩家留守后重逢的同伴。开口第一句：${mood}。按人设语气说（不超过30字），提及被丢在此地多久/好感深浅的分寸由你拿捏；不推进事件、不带引号。`,
-      `同伴：${name}（${personaOf({ name, personality: c.data?.personality || "", brief: c.data?.brief || "" })}）\n留守地点：${stationed?.roomName || stationed?.district || "此地"}\n留守天数：${days}天\n对你的好感度：${favor ?? "？"}/100`,
+      `同伴：${name}（${npcCtx.chatterPersona}）\n留守地点：${stationed?.roomName || stationed?.district || "此地"}\n留守天数：${days}天\n对你的好感度：${resolvedFavor}/100`,
       { callLabel: "companion-reunion", maxTokens: REUNION_MAX_TOKENS },
     );
   }

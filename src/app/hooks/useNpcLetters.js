@@ -2,7 +2,7 @@
 // 鸽子落下一声响铃；「信」面板开着就把未读清零。
 import { useCallback, useEffect, useRef } from "react";
 import { featureCtx } from "../runtime/gameRuntime.js";
-import { gameStore, useGameStore } from "../../store/gameStore.js";
+import { gameStore, getGameEpoch, isGameEpochStale, useGameStore } from "../../store/gameStore.js";
 import { applyResult } from "../../features/run.js";
 import { applyInboundLetter, dueInboundLetters, findNpcObject, inboundFallbackLine, markAllLettersRead } from "../../features/pigeon/inbound.js";
 import { createWebAi } from "../../engine/ports/ai.js";
@@ -21,11 +21,13 @@ export function useNpcLetters({ apiCfg }) {
   const lettersOpen = useOverlay(OVERLAY.LETTERS);
 
   const deliverLetter = useCallback(async (letter) => {
+    const epoch = getGameEpoch();
+    const isStale = () => isGameEpochStale(epoch);
     const state = gameStore.getState();
     const npc = findNpcObject(state, letter.npcName);
     let text = null;
     try {
-      const { text: aiText } = await withAI("pigeon.inbound", {
+      const { ok, text: aiText } = await withAI("pigeon.inbound", {
         state,
         letter: { ...letter, npc },
         preset: state.preset,
@@ -34,15 +36,19 @@ export function useNpcLetters({ apiCfg }) {
           turnMonitor.add(turn, "domain", "提示词引用缺失", { status: "warn", detail: paths.join("、") });
           turnMonitor.finish(turn);
         },
-      }, { ai: webAi, apiCfg });
-      text = aiText;
+      }, { ai: webAi, apiCfg, isStale });
+      if (ok) text = aiText;
     } catch { /* 无 API/失败 → 人设兜底句 */ }
-    if (!text?.trim()) text = inboundFallbackLine(gameStore.getState(), letter);
-    processing.current.delete(letter.id);
+    finally {
+      processing.current.delete(letter.id);
+    }
+    if (isStale()) return;
     // 生成期间玩家可能读/换档：待发名单里已没有这封信，就不许落进新档。
-    const stillPending = (gameStore.getState().varTree?.世界?.来信待发 || []).some((l) => l.id === letter.id);
+    const latestState = gameStore.getState();
+    const stillPending = (latestState.varTree?.世界?.来信待发 || []).some((l) => l.id === letter.id);
     if (!stillPending) return;
-    applyResult(featureCtx(), applyInboundLetter(gameStore.getState(), letter, text), { feature: "pigeon.inbound", background: true });
+    if (!text?.trim()) text = inboundFallbackLine(latestState, letter);
+    applyResult(featureCtx(), applyInboundLetter(latestState, letter, text), { feature: "pigeon.inbound", background: true });
     playLetterChime();
   }, [apiCfg]);
 
