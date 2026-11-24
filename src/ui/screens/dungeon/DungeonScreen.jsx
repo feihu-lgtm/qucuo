@@ -51,11 +51,12 @@ export default function DungeonScreen({
     return () => { cancelled = true; };
   }, [run.clearedNodes, run.status, run.dungeonName, run.floorName, run.log]);
 
-  // 结算结果落盘的公共件：actLocal 事务里写 char/inv/exp/pot/time/flags + 日志 + 笔记
-  const execSettle = (result) => {
+  // 结算结果落盘的公共件：actLocal 事务里现取 state 现算，写 char/inv/exp/pot/time/flags + 日志 + 笔记
+  const execSettle = (settle) => {
     const exec = runCommand || ((_id, fn) => fn());
     exec("actLocal", () => {
       captureUndo?.();
+      const result = settle();
       if (result.changes) {
         gameActions.setChar(result.changes.char);
         gameActions.setInv(result.changes.inv);
@@ -83,11 +84,11 @@ export default function DungeonScreen({
     const c = charRef.current;
     if (m) {
       settledRef.current = true;
-      execSettle(settleMapRun(gameStore.getState(), m.status === "exploring" ? retreatRun(m).runState : m));
+      execSettle(() => settleMapRun(gameStore.getState(), m.status === "exploring" ? retreatRun(m).runState : m));
     } else if (r.status !== "exploring" || r.clearedNodes > 0 || r.usedItems.length > 0
         || r.hp[0] !== (c?.hp?.[0] ?? r.hp[0])) {
       settledRef.current = true;
-      execSettle(settleDungeonRun(gameStore.getState(), r.status === "exploring" ? retreatDungeonRun(r) : r));
+      execSettle(() => settleDungeonRun(gameStore.getState(), r.status === "exploring" ? retreatDungeonRun(r) : r));
     }
   }, []);
 
@@ -97,7 +98,7 @@ export default function DungeonScreen({
       return;
     }
     settledRef.current = true;
-    execSettle(settleDungeonRun(gameStore.getState(), run));
+    execSettle(() => settleDungeonRun(gameStore.getState(), run));
     onClose?.();
   };
 
@@ -108,7 +109,7 @@ export default function DungeonScreen({
       return;
     }
     settledRef.current = true;
-    execSettle(settleMapRun(gameStore.getState(), mapRun));
+    execSettle(() => settleMapRun(gameStore.getState(), mapRun));
     onClose?.();
   };
 
