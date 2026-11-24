@@ -1,12 +1,12 @@
 import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { unlockedCompanions, activeCompanionKey } from "../../../domain/rules/companion/companion.js";
-import { INNER_MAP, getPublicInnerRoomNames } from "../../../domain/rules/map/innerMap.js";
+import { INNER_MAP, getDistrictAnchor, getPublicInnerRoomNames } from "../../../domain/rules/map/innerMap.js";
 import { setActiveNpcMenu } from "../../../store/sessionUiStore.js";
 
-// 留守落点清单：每个据点的外场（district 名本身）+ 全部公共内层房，
-// 私宅/上锁房不列——把队友塞进别人家里说不过去。
+// 留守落点清单：每个据点的锚点房（玩家进据点实际落脚的房间，如 鱼定村→村口）
+// + 全部公共内层房；私宅/上锁房不列——把队友塞进别人家里说不过去。
 const STATION_SPOTS = Object.keys(INNER_MAP).flatMap((d) => [
-  { district: d, roomId: d, roomName: d, label: d },
+  { district: d, roomId: getDistrictAnchor(d) || d, roomName: getDistrictAnchor(d) || d, label: d },
   ...getPublicInnerRoomNames(d).map((r) => ({ district: d, roomId: r, roomName: r, label: `${d}·${r}` })),
 ]);
 

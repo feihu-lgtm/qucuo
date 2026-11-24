@@ -190,7 +190,9 @@ export function stationedCompanions(companionState) {
 // 某房间里的留守队友，折成 room.npcs 条目形状——在该房间可被对话唤回。
 export function stationedNpcsFor(companionState, { district, roomId, roomName } = {}) {
   return stationedCompanions(companionState)
-    .filter(c => c.stationed?.roomId === roomId || (roomName && c.stationed?.roomName === roomName && c.stationed?.district === district))
+    // 两个条件都带 district 约束——不同据点可有同名内层房（喇嘛庙·山门 vs 雪山派·山门），
+    // 只比房名会把队友显到别的山头去。
+    .filter(c => c.stationed?.district === district && (c.stationed?.roomId === roomId || (roomName && c.stationed?.roomName === roomName)))
     .map(c => {
       const d = companionState[c.key].data;
       return { name: c.label, id: c.key, companion: true, stationed: true, beast: !!companionState[c.key].beast, brief: d?.brief || c.label, levelCap: d?.levelCap };
