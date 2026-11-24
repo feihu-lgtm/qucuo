@@ -94,4 +94,33 @@ describe("路遇接 16 家势力与过路人池", () => {
     const expected = factionKey === "散人" ? null : factionKey;
     expect(getNpcFaction({ name: encounter.name, faction: encounter.faction, roadPasser: true })).toBe(expected);
   });
+
+  it("人已定的路遇台词被小模型写进别的据点条目时按名字找回", () => {
+    let sk = null;
+    for (let i = 0; i < 200 && !sk?.encounter?.passer; i++) sk = rollSkeleton("天龙营", 100);
+    const { passer } = sk.encounter;
+    applySquareBatch(0, [
+      { name: "雅江", desc: "江城。", encounterName: passer.name, encounterLine: "挑着货箱疾步走过。" },
+      { name: "天龙营", desc: "营寨。" },
+    ], { 天龙营: sk, 雅江: { item: null, encounter: null } });
+    expect(consumeArrival("天龙营", 0).encounter).toMatchObject({ name: passer.name, line: "挑着货箱疾步走过。" });
+    expect(consumeArrival("雅江", 0).encounter).toBeNull();
+  });
+
+  it("别处过路人的台词不会同时落在本地过路人身上", () => {
+    const roll = (name) => {
+      let sk = null;
+      for (let i = 0; i < 400 && !sk?.encounter?.passer; i++) sk = rollSkeleton(name, 100);
+      return sk;
+    };
+    const camp = roll("天龙营");
+    const town = roll("雅江");
+    if (camp.encounter.passer.name === town.encounter.passer.name) return;
+    applySquareBatch(0, [
+      { name: "雅江", desc: "江城。", encounterName: camp.encounter.passer.name, encounterLine: "营中人的台词。" },
+      { name: "天龙营", desc: "营寨。" },
+    ], { 天龙营: camp, 雅江: town });
+    expect(consumeArrival("天龙营", 0).encounter.line).toBe("营中人的台词。");
+    expect(consumeArrival("雅江", 0).encounter).toMatchObject({ name: town.encounter.passer.name, line: "" });
+  });
 });

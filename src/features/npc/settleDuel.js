@@ -21,6 +21,7 @@ import { factionRepDeltas } from "../../domain/rules/economy/factionRep.js";
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 一场切磋占用的游戏时间（time 一格 = 一小时），由系统直接加，不经过 AI
 export const DUEL_HOURS = 1;
+const RECAP_NOTE_MAX = 60;
 
 function addChange(changes, state, key, update) {
   const previous = changes[key];
@@ -331,7 +332,14 @@ export function settleNpcDuel(state, npc, {
   if (factId) {
     logs.push({ t: "affection", text: `　◈ ${state.char?.name || "你"} 切磋 ${npc.name} · 战斗结算` });
   }
-  const recapNote = `在${state.room?.name}与${npc.name}切磋${recap ? `，${recap.replace(/；/g, "、")}，` : "，"}${outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负"}。`;
+  // 小纸条与日总结原料只给 60 字：逐回合明细放得下才带上，放不下就只记几回合与胜负，
+  // 绝不按字数硬截（硬截会把句子切在半截、把最要紧的胜负一起截掉）。
+  const verdict = outcome === "win" ? "终获胜" : outcome === "lose" ? "落败" : "未分胜负";
+  const roundCount = reportRounds.length ? `${reportRounds.length}回合` : "";
+  const detailedNote = recap ? `在${state.room?.name}与${npc.name}切磋，${recap.replace(/；/g, "、")}，${verdict}。` : "";
+  const recapNote = detailedNote && detailedNote.length <= RECAP_NOTE_MAX
+    ? detailedNote
+    : `在${state.room?.name}与${npc.name}切磋${roundCount}，${verdict}。`;
 
   return {
     changes,
@@ -343,6 +351,6 @@ export function settleNpcDuel(state, npc, {
     recap,
     reportRounds,
     outcomeText,
-    recapNote: recapNote.slice(0, 60),
+    recapNote,
   };
 }

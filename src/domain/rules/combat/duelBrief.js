@@ -11,13 +11,31 @@ const sideName = (round, tag) => round?.result?.[`name${tag}`] || (tag === "A" ?
 const moveName = (round, tag) => (tag === "A" ? round?.playerMove?.name : round?.npcMove?.name)
   || round?.result?.[`moveName${tag}`] || "";
 const num = (value) => Number(value) || 0;
+const hpLeft = (hp) => {
+  const value = Array.isArray(hp) ? hp[0] : hp;
+  return value == null ? null : Math.max(0, Number(value) || 0);
+};
 
 // 一回合的事实行：「第1回合 野球拳对回气，老孙−92」
 export function duelFactLine(round) {
   const n = round?.round ?? "?";
   if (Array.isArray(round?.teamLines)) {
-    const worse = [...new Set(round.teamLines.map((entry) => entry.result?.worseName).filter((name) => name && name !== "平手"))];
-    return `第${n}回合 团战交锋${worse.length ? `，${worse.join("、")}吃亏` : ""}`;
+    // 团战每一击的事实行（招式、谁受创多少）就在 teamText 里，原样给出；只写"某某吃亏"
+    // 会让说书人既拿不到招式名，也不知道谁倒下，只好自己编，结局还对不上前面的回合。
+    // teamText 只含直接伤害，回合末的中毒/流血等状态伤另从 result 补上，倒下才有来由。
+    const texts = round.teamLines.map((entry) => {
+      const text = String(entry.teamText || entry.text || "").trim();
+      const dots = ["A", "B"]
+        .filter((tag) => num(entry.result?.[`statusDamage${tag}`]) > 0 && entry.result?.[`name${tag}`])
+        .map((tag) => `${entry.result[`name${tag}`]}又受状态伤${num(entry.result[`statusDamage${tag}`])}。`);
+      return `${text}${dots.join("")}`;
+    }).filter(Boolean);
+    const fallen = [...new Set(round.teamLines.flatMap((entry) => ["A", "B"]
+      .filter((tag) => hpLeft(entry.result?.[`hpAfter${tag}`]) === 0)
+      .map((tag) => entry.result?.[`name${tag}`])
+      .filter(Boolean)))];
+    if (!texts.length) return `第${n}回合 团战交锋${fallen.length ? `，${fallen.join("、")}倒下` : ""}`;
+    return `第${n}回合 ${texts.join("")}${fallen.length ? `${fallen.join("、")}倒下。` : ""}`;
   }
   const result = round?.result || {};
   const moves = [moveName(round, "A"), moveName(round, "B")].filter(Boolean);

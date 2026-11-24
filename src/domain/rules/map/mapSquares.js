@@ -82,16 +82,22 @@ function pickCatalogName(quality, category) {
   return { name: e.name, desc: e.desc || "" };
 }
 
+// 小模型给的字段可能是数字/对象，一律只认字符串，避免 .trim() 抛错连累整批据点。
+const aiText = (value) => (typeof value === "string" ? value.trim() : "");
+
 // 把 AI 写好的素材与系统掷好的骨架按据点名合并入库。
 // AI 没给名字时拾取退品质通用名（预跑失败不致命，格子照用）。
 export function applySquareBatch(day, parsed, skeletons) {
+  // 本批每个据点系统定好的过路人名字：某条目自带的路遇字段若写的是别处的过路人，
+  // 那份台词归别处认领，本地不拿来兜底，免得同一句台词落到两个人身上。
+  const fixedNames = new Set(Object.values(skeletons || {}).map((s) => s?.encounter?.passer?.name).filter(Boolean));
   for (const p of parsed || []) {
     const sk = skeletons[p?.name];
     if (!sk || typeof p.desc !== "string" || !p.desc.trim()) continue;
     let item = null;
     if (sk.item) {
-      let itemName = (p.itemName || "").trim();
-      let itemDesc = (p.itemDesc || "").trim();
+      let itemName = aiText(p.itemName);
+      let itemDesc = aiText(p.itemDesc);
       if (!itemName) {
         const pick = pickCatalogName(sk.item.quality, sk.item.category);
         itemName = pick.name;
@@ -106,19 +112,25 @@ export function applySquareBatch(day, parsed, skeletons) {
     }
     let encounter = null;
     const fixed = sk.encounter?.passer;
-    if (sk.encounter && (fixed || (p.encounterName || "").trim())) {
+    // 人已定的路遇按名字认领台词：小模型偶尔把 A 地的路遇字段写进 B 地的条目，
+    // 这里按 encounterName 找回；本条目写的若是别处过路人，就不拿它兜底。
+    const ownName = aiText(p.encounterName);
+    const lineSource = fixed && ownName !== fixed.name
+      ? (parsed.find((q) => aiText(q?.encounterName) === fixed.name) || (fixedNames.has(ownName) ? {} : p))
+      : p;
+    if (sk.encounter && (fixed || ownName)) {
       encounter = {
-        name: fixed?.name || p.encounterName.trim(),
+        name: fixed?.name || ownName,
         id: `roamer_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        brief: fixed?.brief || (p.encounterBrief || "").trim().slice(0, 20) || sk.encounter.label,
+        brief: fixed?.brief || aiText(p.encounterBrief).slice(0, 20) || sk.encounter.label,
         tier: fixed ? ["白", "绿", "蓝", "紫"][fixed.levelCap] || "白" : ["白", "绿", "蓝", "紫"].includes(p.encounterTier) ? p.encounterTier : "白",
         faction: sk.encounter.factionKey,
         label: sk.encounter.label,
-        line: (p.encounterLine || "").trim(),
+        line: aiText(lineSource.encounterLine),
       };
     }
     squares[p.name] = {
-      day, desc: p.desc.trim(), lookText: (p.lookText || "").trim(), findLine: (p.findLine || "").trim(),
+      day, desc: p.desc.trim(), lookText: aiText(p.lookText), findLine: aiText(p.findLine),
       item, itemTaken: false, encounter, encounterMet: false, burned: false,
     };
   }
