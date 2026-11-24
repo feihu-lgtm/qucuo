@@ -65,6 +65,23 @@ describe("genDungeonMap", () => {
     }
   });
 
+  it("回环全开也不短路主路（anchor→boss 仍 ≥4 跳）", () => {
+    for (const seed of SEEDS) {
+      const map = genDungeonMap(seed, { ...CONFIG, branchRate: 1, loopRate: 1 });
+      expect(mainPathLength(map)).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it("配置 boss 名与名库撞名时不覆写既有房", () => {
+    // 名库里恰有 bossRoom 的组合（莲华+塔基）：多个 seed 扫过，boss 房必须是唯一 isBoss 且有入口
+    for (const seed of SEEDS) {
+      const { rooms } = genDungeonMap(seed, CONFIG);
+      const bosses = Object.values(rooms).filter((r) => r.isBoss);
+      expect(bosses).toHaveLength(1);
+      expect(Object.keys(rooms["莲华塔基"].exits).length).toBeGreaterThan(0);
+    }
+  });
+
   it("死路（单出口、非 anchor/boss）必带 isTreasure", () => {
     for (const seed of SEEDS) {
       const { anchor, rooms } = genDungeonMap(seed, CONFIG);

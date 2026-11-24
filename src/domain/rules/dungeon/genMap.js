@@ -65,6 +65,8 @@ export function genDungeonMap(seed, config) {
   // ── DFS 主路：anchor → 中继房 → boss，主路总长 5-7 ──
   addRoom(config.anchor);
   rooms[config.anchor].isAnchor = true;
+  // boss 名先进 used，免得中继房从名库摇出同名把它提前占位又覆写
+  if (config.bossRoom) used.add(config.bossRoom);
   const mainLen = 5 + Math.floor(rng() * 3); // 5,6,7 含 anchor 与 boss
   const path = [config.anchor];
   for (let i = 1; i < mainLen - 1; i++) {
@@ -73,7 +75,6 @@ export function genDungeonMap(seed, config) {
     path.push(next);
   }
   const bossName = config.bossRoom || makeRoomName(config, used, rng);
-  used.add(bossName);
   addRoom(bossName);
   linkRooms(rooms, path[path.length - 1], bossName, rng);
   rooms[bossName].isBoss = true;
@@ -85,10 +86,12 @@ export function genDungeonMap(seed, config) {
     let cur = from;
     const len = 1 + Math.floor(rng() * 2);
     for (let i = 0; i < len; i++) {
-      // 回环：接回既有非端点房（anchor/boss 不当回环端点，免得主路被短路）
-      if (rng() < loopRate) {
+      // 回环：只许支路房之间成环——主路房不当端点（短路主路），也不接既有邻居（假环真开门）
+      if (rng() < loopRate && !path.includes(cur)) {
         const targets = Object.keys(rooms).filter((r) =>
-          r !== config.anchor && r !== bossName && r !== cur && freeDirs(rooms[r]).length);
+          !path.includes(r) && r !== cur &&
+          !Object.values(rooms[cur].exits).includes(r) &&
+          freeDirs(rooms[r]).length);
         if (targets.length && linkRooms(rooms, cur, pick(targets, rng), rng)) return;
       }
       const next = addRoom(makeRoomName(config, used, rng));
