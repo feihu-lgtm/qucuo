@@ -42,6 +42,17 @@ describe("normalizeCarryEntry 默认推导（§1.2 表）", () => {
     expect(e.cherish).toBe(100);
   });
 
+  it("类目缺省查名录：stealables 装备名按 CATALOG_INDEX 归档", () => {
+    const e = normalizeCarryEntry(null, { name: "紫岚织锦甲", quality: "紫", desc: "软绸甲" });
+    expect(e.category).toBe("armor");
+    expect(e.slot).toBe("equipment");
+  });
+
+  it("名录信物/武学别的名目也不卖：弟子令、残卷", () => {
+    expect(normalizeCarryEntry(null, { name: "峨眉青玉弟子令" }).sellable).toBe(false);
+    expect(normalizeCarryEntry(null, { name: "欢喜残卷" }).sellable).toBe(false);
+  });
+
   it("显式标注优先于默认推导", () => {
     const e = normalizeCarryEntry(null, { name: "核桃糕", category: "misc", slot: "equipment", cherish: 95, sellable: false });
     expect(e.slot).toBe("equipment");
