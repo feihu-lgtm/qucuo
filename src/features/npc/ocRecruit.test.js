@@ -45,6 +45,11 @@ describe("recruitOC · hire 雇佣路", () => {
     expect(r.ok).toBe(false);
     expect(r.reason).toContain("不收金银");
   });
+
+  it("「不要寻常金银，只收罕见金属」这类变相拒银也雇不动（沈弄枢式）", () => {
+    const barter = { ...ADVENTURER, tradeStyle: "不要寻常金银，只收罕见金属齿轮、异兽骨骼或活体试药人。" };
+    expect(recruitOC(makeState(), barter, "hire", { offer: 9999 }).ok).toBe(false);
+  });
 });
 
 describe("recruitOC · quest 前置任务路", () => {
@@ -126,5 +131,34 @@ describe("applyRecruit 落盘", () => {
     expect(out.changes.char(st.char).money).toBe(260);
     expect(out.changes.varTree(st.varTree).世界.已认识人物).toContain("小鱼儿");
     expect(out.changes.companionState["imported_小鱼儿"].data.moveset.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe("ocMenuRoutes 菜单出现条件", () => {
+  it("默认只给 雇佣+邀请入队；quest/childhood 按旗出现", async () => {
+    const { ocMenuRoutes } = await import("./ocRecruit.js");
+    const base = makeState();
+    // 默认：雇佣 + 邀请入队
+    expect(ocMenuRoutes(base, ADVENTURER).map(r => r.route)).toEqual(["hire", "favor"]);
+    // 挂过人情（完成旗或待办旗）才出 quest
+    const withPending = makeState({ flags: ["oc_favor_pending_adv_xiaoyuer"] });
+    expect(ocMenuRoutes(withPending, ADVENTURER).map(r => r.route)).toContain("quest");
+    const withDone = makeState({ flags: [`${OC_QUEST_DONE_PREFIX}adv_xiaoyuer`] });
+    expect(ocMenuRoutes(withDone, ADVENTURER).map(r => r.route)).toContain("quest");
+    // 童年线旗出 childhood
+    const childhood = makeState({ flags: [`${OC_CHILDHOOD_PREFIX}adv_xiaoyuer`] });
+    expect(ocMenuRoutes(childhood, ADVENTURER).map(r => r.route)).toContain("childhood");
+    // 已入队不再给菜单
+    const cs = unlockImportedCompanion({}, { name: "小鱼儿", levelCap: 3 });
+    expect(ocMenuRoutes(makeState({ companionState: cs }), ADVENTURER)).toEqual([]);
+    // 不收金银的不给雇佣
+    const noMoney = { ...ADVENTURER, tradeStyle: "分文不取" };
+    expect(ocMenuRoutes(base, noMoney).map(r => r.route)).toEqual(["favor"]);
+  });
+
+  it("favor 拒词走 recruitOC 原有门槛（好感不足拒闸）", () => {
+    const r = recruitOC(makeState(), ADVENTURER, "favor");
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain("好感");
   });
 });

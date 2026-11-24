@@ -5,11 +5,12 @@ import { isNpcVisibleInInnerRoom } from "../../../domain/rules/map/innerMap.js";
 import { detectNewFaces, markAsSeen, updateLastSeen } from "../../../domain/rules/npc/npcAwareness.js";
 import { mapDescriptionToGenParams } from "../../../domain/data/npc/npcDescriptionMapping.js";
 import { ensureNpcCombatData } from "../../../domain/rules/npc/npcGeneration.js";
+import { npcTradeOf } from "../../../domain/rules/npc/npcTrade.js";
 import { getAllResidentNpcNames } from "../../../domain/data/npc/residentNpcs.js";
 import { getImportedResidentNames } from "../../../domain/rules/cards/importedRegistry.js";
 import { COMPANION_SLOTS } from "../../../domain/rules/companion/companionSlots.js";
 
-export function fixateNpcs({ p, room, innerRoomName, narrativeText, varTree, time, systemAcceptedNames, luck }) {
+export function fixateNpcs({ p, room, innerRoomName, narrativeText, varTree, time, systemAcceptedNames, luck, npcState }) {
   if (!p.room || !Array.isArray(p.room.npcs)) return null;
   // 幽灵NPC过滤：AI叙事里提到背景人物（"远处狼嚎"）或队友（雪豹跟在身边），
   // 提取层会把这些名字塞进 room.npcs。驻场NPC有固定归属据点，不该在别处被
@@ -32,7 +33,7 @@ export function fixateNpcs({ p, room, innerRoomName, narrativeText, varTree, tim
       return { ...existing, brief: n.brief || existing.brief };
     }
     const { levelCap, personalityProfile } = mapDescriptionToGenParams(`${n.brief || ""} ${narrativeText}`);
-    return ensureNpcCombatData({ ...n, personalityProfile }, { luck, levelCap });
+    return ensureNpcCombatData({ ...n, personalityProfile }, { luck, levelCap, trade: npcTradeOf(npcState, n) });
   });
   // 把这一轮新固化出来的战斗数据按名字存一份，供后面"原地互动"分支回填。
   // 【为什么需要这一步】上面这段固化写在 p.room.npcs 这个临时对象上；而原地互动

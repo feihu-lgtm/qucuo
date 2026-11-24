@@ -104,7 +104,7 @@ export function createTurnContext({ plan, env }) {
         knowledgeTree: turnResult.knowledgeTree, knowledgeTreeBase: turnResult.knowledgeTreeBase,
         isTalk, gm, lockedDestName, room, innerRoomName, time, mapData,
         pendingQuestBranch, apiCfg, activeTarget, talkTarget, effectiveSpecialNow, newConvo: turnResult.newConvo,
-        questProgress, char, preserveHp: opts.preserveHp,
+        questProgress, char, preserveHp: opts.preserveHp, npcState: getGameState?.()?.npcState,
         _trace, addLog,
         // ref 读写走具名出入口：engine/act 内部不再出现 .current，ref 本体留在本层。
         refGet: (name) => refs[name]?.current,
