@@ -41,6 +41,10 @@ describe("朵朵入队 + 驻场不再复现", () => {
     expect(rules.isResidentJoinedCompanion({ name: "元朵朵", homeDistrict: "鱼定村" }, {})).toBe(false);
     // 同名但非 OC 驻场（无 homeDistrict/标记）不误伤
     expect(rules.isResidentJoinedCompanion({ name: "普通人" }, cs)).toBe(false);
+    // OC 姓名的驻场条目（姬无双/樊未离）被收编后也要撤壳；未入队时不拦
+    const csJi = companion.unlockImportedCompanion({}, { name: "姬无双", levelCap: 4 });
+    expect(rules.isResidentJoinedCompanion({ name: "姬无双" }, csJi)).toBe(true);
+    expect(rules.isResidentJoinedCompanion({ name: "姬无双" }, {})).toBe(false);
     // 内置候选（雪豹）仍旧拦截
     expect(rules.isResidentJoinedCompanion({ name: "雪豹", companionCandidate: true }, cs)).toBe(false);
   });
@@ -56,6 +60,9 @@ describe("任意房间留守", () => {
     expect(atTarget.map(n => n.name)).toContain("元朵朵");
     const elsewhere = companion.stationedNpcsFor(cs, { district: "鱼定村", roomId: "鱼定村", roomName: "鱼定村" });
     expect(elsewhere.map(n => n.name)).not.toContain("元朵朵");
+    // 跨区同名房不误显：留守在 喇嘛庙·山门 的队友不能从 雪山派·山门 唤回
+    const crossDistrict = companion.stationedNpcsFor(cs, { district: "雪山派", roomId: "山门", roomName: "山门" });
+    expect(crossDistrict.map(n => n.name)).not.toContain("元朵朵");
   });
 
   it("唤回清 stationed 归队", async () => {

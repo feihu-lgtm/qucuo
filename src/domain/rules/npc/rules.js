@@ -1,4 +1,5 @@
 import { isCompanionUnlockedByName, companionKeyByName } from "../companion/companion.js";
+import { OC_BY_NAME } from "./npcCarry.js";
 import { hasInnerMap, getInnerRoomNames, getPublicInnerRoomNames } from "../map/innerMap.js";
 import { ensureNpcCombatData } from "../npc/npcGeneration.js";
 import { npcTradeOf } from "../npc/npcTrade.js";
@@ -12,10 +13,10 @@ import { ESCORT_QUESTS } from "../../data/quests/escortQuests.js";
 import { seededRand } from "../../../utils/seededRandom.js";
 import { parseQuestPlace, questPlaceDistrict } from "../quests/questPlace.js";
 
-// 已入队的驻场人不再重复注入房间：companionCandidate（雪豹）与 OC 驻场（homeDistrict 出身，
-// 如元朵朵）都算——OC 条目自身即被收编的那位，名字相同时也按本人处理。
+// 已入队的驻场人不再重复注入房间：companionCandidate（雪豹）、OC 驻场（homeDistrict 出身，
+// 如元朵朵）、与 OC 同名的驻场条目（姬无双/樊未离——数据里同一人被收编后驻场壳也要撤）都算。
 export function isResidentJoinedCompanion(npc, companionState) {
-  if (!(npc?.companionCandidate || npc?.homeDistrict)) return false;
+  if (!(npc?.companionCandidate || npc?.homeDistrict || OC_BY_NAME[npc?.name])) return false;
   return isCompanionUnlockedByName(companionState, npc.name);
 }
 
