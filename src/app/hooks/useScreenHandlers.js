@@ -13,6 +13,8 @@ import {
 } from "../../features/npc/logic.js";
 import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
 import { recruitOC, applyRecruit, hirePriceFor } from "../../features/npc/ocRecruit.js";
+import { claimGoldenEgg } from "../../features/npc/goldenEgg.js";
+import { duoduoEggReaction } from "./eggBackfill.js";
 import { ADVENTURER_BY_NAME } from "../../domain/data/dungeon/adventurers.js";
 import { stationCompanion, unstationCompanion } from "../../domain/rules/companion/companion.js";
 import { toggleEquip } from "../../domain/rules/economy/equipment.js";
@@ -64,6 +66,15 @@ export function useScreenHandlers({
     setActiveTarget(npc.name);
     applyResult(featureCtx(), result);
   }, { feature: "npc.inviteCompanion" }), [captureUndo]);
+
+  // 元朵朵·金鸟金蛋：开奖卡片落定后，她的临场反应走 AI 后台补写（无 API 兜底句）
+  const handleGoldenEgg = useCallback((npc) => applyResult(featureCtx(), () => {
+    captureUndo();
+    setActiveTarget(npc.name);
+    const res = claimGoldenEgg(gameStore.getState(), npc);
+    applyResult(featureCtx(), res);
+    if (res.prize) duoduoEggReaction(res.prize, res.tier, { addLog });
+  }, { feature: "npc.goldenEgg" }), [captureUndo]);
 
   // OC 冒险者四路招募：recruitOC 判门成功则 applyRecruit 落盘，失败只写系统日志
   const handleOcRecruit = useCallback((npc, route) => applyResult(featureCtx(), () => {
@@ -201,6 +212,7 @@ export function useScreenHandlers({
     handleNpcGift,
     handleInviteCompanion,
     handleOcRecruit,
+    handleGoldenEgg,
     handleStationCompanion,
     handleRecallCompanion,
     handleConsumeItem,

@@ -14,7 +14,7 @@ import React, { useState } from "react";
 import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
-export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion }) {
+export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const isMerchant = !!QUCUO_SHOPS[npc.name] || hasOcShop(npc.name);
@@ -37,6 +37,8 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
       key: `oc_${r.route}`, label: r.label, desc: r.desc, available: true,
       onClick: () => { onOcRecruit?.(npc, r.route); onClose(); },
     })),
+    // 元朵朵专属：金鸟金蛋每日签到（每自然日一颗，当天已领会提示金鸟只来一趟）
+    ...(npc.name === "元朵朵" ? [{ key: "goldenEgg", label: "金鸟金蛋", desc: "每日一颗，讨个彩头", available: true, onClick: () => { onGoldenEgg?.(npc); onClose(); } }] : []),
     // 留守队友在该房间可被唤回
     ...(npc.stationed && npc.companion ? [{ key: "recall", label: "跟上我", desc: "唤回身边，结伴同行", available: true, onClick: () => { onRecallCompanion?.(npc); onClose(); } }] : []),
   ];

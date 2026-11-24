@@ -38,6 +38,7 @@ const inventoryCommands = [
   ["duel", CATEGORY.LOCAL, "决斗"],
   ["npcGift", CATEGORY.LOCAL, "向 NPC 送礼"],
   ["companionInvite", CATEGORY.LOCAL, "邀请同伴"],
+  ["goldenEgg", CATEGORY.LOCAL, "金鸟金蛋"],
   ["itemUseCollect", CATEGORY.LOCAL, "使用物品或拾取"],
   ["npcTrade", CATEGORY.LOCAL, "NPC 交易"],
   ["npcLearnSkill", CATEGORY.LOCAL, "向 NPC 学艺"],

@@ -9,7 +9,8 @@
 
 import { classifyIntent, INTENT, isIntimateInput } from "../../domain/rules/prompt/inputIntent.js";
 import { buildCompositeNote, findLookTargetsInText } from "../../domain/rules/input/compositeInput.js";
-import { intimacyGate, intimacyRefusal, intimacyPromptNote } from "../../domain/rules/npc/intimacy.js";
+import { intimacyGate, intimacyRefusal, intimacyPromptNote, intimateTicketNote } from "../../domain/rules/npc/intimacy.js";
+import { INTIMATE_TICKET_NAME } from "../../domain/rules/npc/goldenEgg.js";
 import { add, set, applyWrite } from "../../domain/rules/state/applyWrite.js";
 import { findTargetedRumor } from "../../domain/rules/npc/npcEmergence.js";
 import { parseDir } from "../../utils/mudHelpers.js";
@@ -72,11 +73,16 @@ export async function resolveIntent(cmd, env) {
     if (npc?.name) {
       const aff = Number(varTreeRef.current?.角色?.[npc.name]?.好感度) || 0;
       const gate = intimacyGate(npc, aff);
+      // 「女眷一次卡·不可拒绝」：行囊里有卡，亲密判门一票放行——threshold、
+      // forbidden 统统跳过，用掉即焚。兽类不通人情，卡也撬不动。
+      const invNow = getGameState().inv || [];
+      const ticketIdx = invNow.findIndex((i) => (typeof i === "object" && i ? i.name : i) === INTIMATE_TICKET_NAME);
+      const forceIntimate = ticketIdx >= 0 && !npc.beast;
       turnMonitor.activate(_trace);
       setInput("");
       setCmdHistory(p => [cmd, ...p].slice(0, 50));
       setHistIdx(-1);
-      if (!gate.unlocked) {
+      if (!gate.unlocked && !forceIntimate) {
         const { line, loss } = intimacyRefusal(npc);
         const logs = [{ t: "cmd", text: `> ${cmd}` }, { t: "desc", text: `  ${line}` }];
         if (loss > 0) {
@@ -90,11 +96,16 @@ export async function resolveIntent(cmd, env) {
         clearWait();
         return { proceed: false, summary: gate.forbidden ? "亲密对象不通人情" : "亲密好感不足被婉拒" };
       }
+      if (forceIntimate) {
+        setInv((v) => v.filter((_, i) => i !== ticketIdx));
+        applyLocal({ logs: [{ t: "sys", text: `  你亮出「${INTIMATE_TICKET_NAME}」，卡片在你指尖燃成一缕金线——这一次，无人能拒。` }] });
+        traceStep(_trace, "亲密门槛", "pass", `${npc.name} 凭「${INTIMATE_TICKET_NAME}」强开`);
+      }
       // 过线：标已亲密（varTree 持久 + 当前房间条目挂 ♥），prompt 注入门槛行+nsfw 段+style。
       const stamped = applyWrite({ ...getGameState(), varTree: varTreeRef.current }, set(["角色", npc.name, "已亲密"], true)).state.varTree;
       varTreeRef.current = stamped;
       setRoom((r) => ({ ...r, npcs: (r.npcs || []).map((n) => (n.name === npc.name ? { ...n, intimate: true } : n)) }));
-      intimateNote = `\n${intimacyPromptNote(npc, aff)}`;
+      intimateNote = `\n${forceIntimate ? intimateTicketNote(npc) : intimacyPromptNote(npc, aff)}`;
       traceStep(_trace, "亲密门槛", "pass", `${npc.name} 好感 ${aff}/${gate.threshold}，已亲密`);
     }
   }
