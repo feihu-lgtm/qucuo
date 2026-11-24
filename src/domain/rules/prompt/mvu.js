@@ -114,7 +114,8 @@ const MAX_SINGLE_ADD = AFFECTION_RULES.mvu.perTurn;
 // 的门面：入树前深拷贝、返回形适配 {tree, applied, rejected, logs}。
 export function applyMvuCommands(varTree, commands, opts = {}) {
   const turnBase = { varTree: JSON.parse(JSON.stringify(varTree)) };
-  const { state, applied, rejected, logs } = applyPatches(turnBase, commands, { ...opts, source: "mvu", turnBase });
+  // turnBaselines：本批次里才声明好感的新角色，记下声明落定的分值当回合起点（见 applyWrite）
+  const { state, applied, rejected, logs } = applyPatches(turnBase, commands, { ...opts, source: "mvu", turnBase, turnBaselines: new Map() });
   return { tree: state.varTree, applied, rejected, logs };
 }
 
