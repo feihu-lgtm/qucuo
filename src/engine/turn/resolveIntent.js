@@ -103,9 +103,12 @@ export async function resolveIntent(cmd, env) {
         traceStep(_trace, "亲密门槛", "pass", `${npc.name} 凭「${INTIMATE_TICKET_NAME}」强开`);
       }
       // 过线：标已亲密（varTree 持久 + 当前房间条目挂 ♥），prompt 注入门槛行+nsfw 段+style。
-      const stamped = applyWrite({ ...getGameState(), varTree: varTreeRef.current }, set(["角色", npc.name, "已亲密"], true)).state.varTree;
-      varTreeRef.current = stamped;
-      setRoom((r) => ({ ...r, npcs: (r.npcs || []).map((n) => (n.name === npc.name ? { ...n, intimate: true } : n)) }));
+      // 凭卡强开时烙印挪到 commit 焚卡一步落盘——中断/失败的回合既不烧卡也不白送亲密。
+      if (!forceIntimate) {
+        const stamped = applyWrite({ ...getGameState(), varTree: varTreeRef.current }, set(["角色", npc.name, "已亲密"], true)).state.varTree;
+        varTreeRef.current = stamped;
+        setRoom((r) => ({ ...r, npcs: (r.npcs || []).map((n) => (n.name === npc.name ? { ...n, intimate: true } : n)) }));
+      }
       intimateNote = `\n${forceIntimate ? intimateTicketNote(npc) : intimacyPromptNote(npc, aff)}`;
       traceStep(_trace, "亲密门槛", "pass", `${npc.name} 好感 ${aff}/${gate.threshold}，已亲密`);
     }
