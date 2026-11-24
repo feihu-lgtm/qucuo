@@ -272,15 +272,14 @@ const advAllEntries = (adv) => [
 export function carryTradeEntries(npc) {
   // OC_BY_NAME 覆盖两份卡池（含 adventurersIP），ADVENTURER_BY_NAME 只认主池。
   const adv = OC_BY_NAME[npc?.name] || ADVENTURER_BY_NAME[npc?.name];
-  // 读取源三级：live carriedItems（战斗化 NPC）→ 房间实例自带 spread 字段
-  // （OC 的 carry/stealables/follower 摊开在他身上，sold 标记写在这里读得见）
-  // → 静态 adv 卡表底（不在场时查表）→ npc.carry 宪底。
+  // live 各表合并（carriedItems + carry + stealables + follower）：送礼写哪张表
+  // 都能被读到；同名去重只留第一份（一件百花刺别再以两种价签出两次）。
+  // 实例一条没有才落静态 adv 表底（不在场时查表）。
   const inst = advAllEntries(npc);
-  const raw = (npc?.carriedItems?.length ? npc.carriedItems : null)
-    || (inst.length ? inst : null)
-    || (adv ? advAllEntries(adv) : null)
-    || npc?.carry
-    || [];
+  const merged = [...(npc?.carriedItems || []), ...inst];
+  const base = merged.length ? merged : (adv ? advAllEntries(adv) : (npc?.carry || []));
+  const seen = new Set();
+  const raw = base.filter((e) => e && e.name && !seen.has(e.name) && seen.add(e.name));
   // 挂载位：随从不是物品、不在 carriedItems 里，但货架挂载区要展示——单独补一行。
   const follower = npc?.follower || adv?.follower;
   const entries = follower && !raw.some((e) => e?.name === follower.name) ? [...raw, follower] : raw;
@@ -303,7 +302,9 @@ export function attireExposure(npc) {
   // 没有任何随身数据的 NPC 不算「被扒光」——他本就没穿过，报暴露是误判。
   const adv = OC_BY_NAME[npc?.name] || ADVENTURER_BY_NAME[npc?.name];
   const inst = advAllEntries(npc);
-  const raw = inst.length ? inst : (adv ? advAllEntries(adv) : npc?.carriedItems);
+  const raw = [...inst, ...(npc?.carriedItems || [])].length
+    ? [...inst, ...(npc?.carriedItems || [])]
+    : (adv ? advAllEntries(adv) : null);
   if (!raw?.length) return null;
   const gear = carryTradeEntries(npc).filter((e) => e.slot === "equipment" && GEAR_CATS.has(e.category));
   const hasArmor = gear.some((e) => e.category === ITEM_CATEGORY.ARMOR);

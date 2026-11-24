@@ -38,14 +38,17 @@ export function buyCarryEntry(state, npc, entry) {
     return { logs: [{ t: "err", text: `  银两不够——「${entry.name}」要价 ${price} 两。` }] };
   }
   const isGear = entry.slot === "equipment" && GEAR.has(entry.category);
-  // catalog 真货带上完整战斗属性（attack/defense/effect/sixDim），编外条目只有骨架
+  // 属性来源：catalog 真货用 makeNamedItem 全量，编外条目（ocCarryItems 生成的
+  // carriedItems 货）留它自己的战斗属性——别让玩家付了装备价拿到一把空壳。
+  const srcItem = liveStock.find((e) => e && e.name === entry.name && !e.sold && !e.stolen && !e.dropped);
   const catItem = makeNamedItem(entry.name) || {};
+  const baseItem = Object.keys(catItem).length ? catItem : (srcItem || {});
   const newItem = {
-    ...catItem,
+    ...baseItem,
     id: `carry_${npc.name}_${entry.name}_${Date.now()}`,
     name: entry.name, category: entry.category, quality: entry.quality,
-    desc: entry.desc || catItem.desc || "", equipped: false,
-    sellPrice: catItem.sellPrice ?? Math.max(1, Math.floor(price / 2)),
+    desc: entry.desc || baseItem.desc || "", equipped: false, stolen: false,
+    sellPrice: baseItem.sellPrice ?? Math.max(1, Math.floor(price / 2)),
   };
   const logs = [
     { t: "item", text: `  你花 ${price} 两从${npc.name}手上买下「${entry.name}」。` },

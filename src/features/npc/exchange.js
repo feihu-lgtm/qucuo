@@ -177,9 +177,14 @@ export function giftNpc(state, npc, item, now = Date.now()) {
     };
     changes.room = (prev) => ({
       ...prev,
-      npcs: (prev.npcs || []).map((n) => (n.name === npc.name
-        ? { ...n, carry: [...(n.carry || []), worn] }
-        : n)),
+      npcs: (prev.npcs || []).map((n) => {
+        if (n.name !== npc.name) return n;
+        // 有 carriedItems 就写进它——偷池和随身货架都以它为 live 源；
+        // 战斗化前的 OC 没这张表才落 carry（读取源两张表都合并看）。
+        return n.carriedItems?.length
+          ? { ...n, carriedItems: [...n.carriedItems, worn] }
+          : { ...n, carry: [...(n.carry || []), worn] };
+      }),
     });
     logs.push({ t: "sys", text: `  ${npc.name}换上了${itemName}。` });
   }
