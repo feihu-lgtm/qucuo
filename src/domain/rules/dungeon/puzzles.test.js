@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   makePuzzle,
   makePushPull,
@@ -49,10 +49,12 @@ describe("puzzles 四模板", () => {
     const p = makePushPull({ size: 3, start: { x: 0, y: 1 }, target: { x: 2, y: 1 }, stat: "strength", dc: 1 });
     const out = p.applyAction({ kind: "push", dir: "w" }, p.state, { strength: 99 });
     expect(out.fail).toBe(true);
+    vi.spyOn(Math, "random").mockReturnValue(0);
     const s1 = p.applyAction({ kind: "push", dir: "e" }, p.state, { strength: 99 });
     expect(s1.state.pos).toEqual({ x: 1, y: 1 });
     const s2 = p.applyAction({ kind: "push", dir: "e" }, s1.state, { strength: 99 });
     expect(s2.done).toBe(true);
+    vi.restoreAllMocks();
     expect(p.parseIntent("往右推")).toEqual({ kind: "push", dir: "e" });
   });
 
