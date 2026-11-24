@@ -56,6 +56,10 @@ export function getAllResidentNpcLore() {
       });
     }
   }
+  for (const a of OC_HOME) {
+    const bioText = a.fullBio || a.personality || a.brief || "";
+    result.push({ name: a.name, entry: `- ${a.name}（${a.brief || ""}）：${bioText}` });
+  }
   return result;
 }
 
