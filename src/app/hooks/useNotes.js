@@ -3,7 +3,17 @@ import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { writeNote } from "../../engine/ports/noteMemory.js";
 import { tallyAdd } from "../../domain/rules/memory/tally.js";
 import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
-import { gameStore } from "../../store/gameStore.js";
+import { gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
+
+let activeDayMaterialRef = null;
+
+export function snapshotDayMaterial() {
+  return [...(activeDayMaterialRef?.current || [])];
+}
+
+export function restoreDayMaterial(items) {
+  if (activeDayMaterialRef) activeDayMaterialRef.current = [...(items || [])];
+}
 
 export function useNotes({ apiCfg, setVarTree }) {
   const noteEnvRef = useRef({});
@@ -11,6 +21,16 @@ export function useNotes({ apiCfg, setVarTree }) {
     noteEnvRef.current = { apiCfg };
   });
   const dayMaterialRef = useRef([]);
+  useEffect(() => {
+    activeDayMaterialRef = dayMaterialRef;
+    const unsub = subscribeGameReplaced(({ isUndo } = {}) => {
+      if (!isUndo) dayMaterialRef.current = [];
+    });
+    return () => {
+      unsub();
+      if (activeDayMaterialRef === dayMaterialRef) activeDayMaterialRef = null;
+    };
+  }, []);
   const noteAction = useCallback((kind, n = 1) => {
     setVarTree(prev => {
       const next = JSON.parse(JSON.stringify(prev || {}));

@@ -118,7 +118,7 @@ export function markGameReplaced() {
   nextReplaceIsUndo = false;
   gameEpoch += 1;
   if (!isUndo) sessionEpoch += 1;
-  for (const listener of [...replacedListeners]) listener();
+  for (const listener of [...replacedListeners]) listener({ isUndo });
 }
 
 export function initGameStore(values) {
