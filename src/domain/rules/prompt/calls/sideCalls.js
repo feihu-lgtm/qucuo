@@ -75,7 +75,8 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
       const 近况 = [
         attrs.所在地 ? `眼下身在「${attrs.所在地}」` : "",
         carryNames ? `随身带着：${carryNames}` : "",
-        bought || sold ? `与主角的买卖往来：你卖给他 ${bought} 件、从他手里买走 ${sold} 件` : "",
+        // 台账是写信人（NPC）视角：sold=他卖给主角、bought=他从主角手里收下。
+        bought || sold ? `与主角的买卖往来：你卖给他 ${sold} 件、从他手里买走 ${bought} 件` : "",
       ].filter(Boolean).join("；") || "近况平平";
       const scope = { ...state, npcName, bio, scenario: preset.scenario || "", promptRefOptions: { factLimit: 12 } };
       const facts = render("@事实摘要", scope);
