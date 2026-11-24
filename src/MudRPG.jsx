@@ -16,6 +16,7 @@ import { useTurn } from "./app/hooks/useTurn.js";
 import { useQuestPanel } from "./app/hooks/useQuestPanel.js";
 import { useDuel, useForcedDuelNpc } from "./app/hooks/useDuel.js";
 import { usePigeonReplies } from "./app/hooks/usePigeonReplies.js";
+import { useNpcLetters } from "./app/hooks/useNpcLetters.js";
 import { usePigeonHandlers } from "./app/hooks/usePigeonHandlers.js";
 import { useAutoTravel } from "./app/hooks/useAutoTravel.js";
 import { useCraftingAI } from "./app/hooks/useCraftingAI.js";
@@ -288,6 +289,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   const { applyPigeonResult, sendPigeonLetter } = pigeonHandlers;
 
   usePigeonReplies({ apiCfg, applyPigeonResult });
+  useNpcLetters({ apiCfg });
 
   const duelHandlers = commandScheduler.wrapHandlers("useDuel", useDuel({
     act, addLog, duelPending, setActiveTarget, setDuelPending, setDuelingNpc,

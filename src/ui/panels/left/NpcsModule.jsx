@@ -63,10 +63,19 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
       信鸽 {char.pigeons || 0}
     </span>
   );
+  const unreadLetters = useGameStore((s) => (s.varTree?.世界?.来信箱 || []).filter((l) => !l.read).length);
+  const lettersEntry = (
+    <span onClick={() => openOverlay(OVERLAY.LETTERS)}
+      title="看全部来信，回信走飞鸽"
+      style={{ fontSize: "10px", color: unreadLetters > 0 ? zoneTheme.accent : zoneTheme.textDim, flexShrink: 0, cursor: "pointer" }}>
+      信{unreadLetters > 0 ? `×${unreadLetters}` : ""}
+    </span>
+  );
   return (
     <div style={{ marginBottom: 10 }}>
       {dbgPeople}
-      {header("此地之人 · 在场", present.length, "present", zoneTheme.accentDim, pigeonBadge)}
+      {header("此地之人 · 在场", present.length, "present", zoneTheme.accentDim,
+        <span style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>{lettersEntry}{pigeonBadge}</span>)}
       {peoplePanel.present && (present.length === 0
         ? <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 8, paddingLeft: 16 }}>空无一人</div>
         : <div style={{ marginBottom: 8 }}>{present.map((n, i) => {

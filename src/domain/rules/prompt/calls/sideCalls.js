@@ -42,6 +42,57 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
     blocks: ["pigeon.sys", "pigeon.user"],
   });
 
+  definePrompt("block", "pigeon.inbound.sys", {
+    label: "主动来信系统指令",
+    slot: "sys",
+    text: (ctx, render) => {
+      const state = ctx.state || {};
+      const { npcName, npc } = ctx.letter || {};
+      const preset = ctx.preset || {};
+      const npcObj = (npc && npc.name === npcName ? npc : {})
+        || state.room?.npcs?.find((n) => n.name === npcName) || {};
+      const bio = (npcObj.brief ? "，" + npcObj.brief : "") + (npcObj.fullBio ? npcObj.fullBio + " " : "") +
+        (npcObj.personality ? "性情：" + npcObj.personality + "。" : "");
+      const attrs = state.varTree?.角色?.[npcName] || {};
+      const trade = state.npcState?.[npcName]?.trade || {};
+      const bought = Object.keys(trade.bought || {}).length;
+      const sold = Object.keys(trade.sold || {}).length;
+      const carryNames = (state.npcState?.[npcName]?.carriedItems || [])
+        .map((i) => (typeof i === "object" && i ? i.name : i)).filter(Boolean).join("、");
+      const 近况 = [
+        attrs.所在地 ? `眼下身在「${attrs.所在地}」` : "",
+        carryNames ? `随身带着：${carryNames}` : "",
+        bought || sold ? `与主角的买卖往来：你从他手里买走 ${bought} 件、他买过你 ${sold} 件` : "",
+      ].filter(Boolean).join("；") || "近况平平";
+      const scope = { ...state, npcName, bio, scenario: preset.scenario || "", promptRefOptions: { factLimit: 12 } };
+      const facts = render("@事实摘要", scope);
+      const factsBlock = facts ? "你与主角的共同记忆与近来见闻（自然带一两句，不要生硬罗列）：\n" + facts : "";
+      return render(`你是武侠世界「曲措乡」中的【@npcName】@bio
+你与主角的关系：好感度 @通信.好感度/100@通信.态度。好感越低越冷淡疏离，越高越亲近热络。
+剧本背景：@scenario
+你的近况：@近况
+你们此前往来的信件（须前后连贯、不自相矛盾）：
+@通信.往来
+@factsBlock
+你心血来潮，主动给主角写信。按你的性情与近况起笔：落魄就诉穷借钱、受过恩惠就问候致谢、被他怠慢过或卖过他东西就夹枪带棒埋怨两句、油滑风流就婊里婊气撩拨——写什么由你的成色定。
+请以【@npcName】的口吻，用白话古文书信体写信。只写正文（可含简短落款），约 80–160 字。`, { ...scope, factsBlock, 近况 });
+    },
+  });
+
+  definePrompt("block", "pigeon.inbound.user", {
+    label: "主动来信任务",
+    slot: "user",
+    text: () => "请写这封信。",
+  });
+
+  definePrompt("call", "pigeon.inbound", {
+    label: "主动来信",
+    tokenLimitKey: "pigeonReply",
+    defaultMaxTokens: 3000,
+    join: "",
+    blocks: ["pigeon.inbound.sys", "pigeon.inbound.user"],
+  });
+
   definePrompt("block", "fact.summary.sys", {
     label: "事实摘要系统指令",
     slot: "sys",
