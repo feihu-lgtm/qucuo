@@ -84,6 +84,30 @@ import { add, applyWrite } from "../state/applyWrite.js";
 
 // ── 留守好感衰减（§3）：每日一结算，留守队友好感 -1；已亲密者减半（-0.5）——
 // 她舍不得。走 changes.varTree 更新函数，数值截断交给 applyWrite。
+const FOLLOW_FAVOR_GAIN = 0.5;
+// 随行同伴的好感小漂移：一起赶路涉险，处久了自然亲——涨幅刻意压小（每天0.5），
+// 大头仍靠送礼/事件，别让"挂机涨好感"喧宾夺主。
+export const followFavorDriftRule = {
+  id: "npc.follow-favor-drift",
+  deps: (state) => [Math.floor((state.time || 0) / 24)],
+  run(state, { firstRun } = {}) {
+    if (firstRun) return null;
+    const following = Object.entries(state.companionState || {})
+      .filter(([, c]) => c?.unlocked && c?.data && !c?.stationed)
+      .map(([key, c]) => c.label || c.data?.name || key);
+    if (!following.length) return null;
+    return {
+      changes: {
+        varTree: (prev) => following.reduce((vt, name) => {
+          const cur = Number(vt?.角色?.[name]?.好感度);
+          if (!cur || cur >= 100) return vt; // 没有好感轨道或已满的不动
+          return applyWrite({ ...state, varTree: vt }, add(["角色", name, "好感度"], FOLLOW_FAVOR_GAIN)).state.varTree;
+        }, prev),
+      },
+    };
+  },
+};
+
 const STATIONED_FAVOR_LOSS = 1;
 export const stationedFavorDecayRule = {
   id: "npc.stationed-favor-decay",

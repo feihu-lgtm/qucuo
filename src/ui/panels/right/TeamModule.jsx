@@ -1,6 +1,14 @@
 import { npcAffectionLabel } from "../../../domain/rules/prompt/mvu.js";
 import { unlockedCompanions, activeCompanionKey } from "../../../domain/rules/companion/companion.js";
+import { INNER_MAP, getPublicInnerRoomNames } from "../../../domain/rules/map/innerMap.js";
 import { setActiveNpcMenu } from "../../../store/sessionUiStore.js";
+
+// 留守落点清单：每个据点的外场（district 名本身）+ 全部公共内层房，
+// 私宅/上锁房不列——把队友塞进别人家里说不过去。
+const STATION_SPOTS = Object.keys(INNER_MAP).flatMap((d) => [
+  { district: d, roomId: d, roomName: d, label: d },
+  ...getPublicInnerRoomNames(d).map((r) => ({ district: d, roomId: r, roomName: r, label: `${d}·${r}` })),
+]);
 
 export default function TeamModule({ zoneTheme, companionState, varTree, onSwitchCompanion, onStationCompanion }) {
   if (!unlockedCompanions(companionState).length) return null;
@@ -54,16 +62,32 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
                 )}
               </div>
             </div>
-            {/* 非出战位可在此房间留守；留守后落在该房间 NPC 列表里可被唤回 */}
-            {!isOn && !stationedAt && onStationCompanion && (
-              <span
-                onClick={() => onStationCompanion(slot.key)}
-                title="留在这间房里等你回来"
-                style={{
-                  cursor: "pointer", fontSize: "10px", color: zoneTheme.textDim,
-                  padding: "5px 7px", borderRadius: 0, border: `1px solid ${zoneTheme.border}`,
+            {/* 非出战位：跟随/留守在某处的切换——留守点可选任意据点的公共房间，
+                落位后出现在该房间 NPC 列表里可被唤回 */}
+            {!isOn && onStationCompanion && (
+              <select
+                value={stationedAt ? `${stationedAt.district}|${stationedAt.roomId}` : ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (!v) { onStationCompanion(slot.key, null); return; }
+                  const [district, roomId] = v.split("|");
+                  const spot = STATION_SPOTS.find((s) => s.district === district && s.roomId === roomId);
+                  if (spot) onStationCompanion(slot.key, spot);
                 }}
-              >守</span>
+                title="随行在侧，或留守在某处"
+                style={{
+                  fontSize: "10px", color: zoneTheme.textDim, background: zoneTheme.bgPanel,
+                  border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "3px 2px", maxWidth: 84,
+                }}
+              >
+                <option value="">{stationedAt ? "唤回随行" : "随行"}</option>
+                {STATION_SPOTS.map((s) => (
+                  <option key={`${s.district}|${s.roomId}`} value={`${s.district}|${s.roomId}`}>守·{s.label}</option>
+                ))}
+                {stationedAt && !STATION_SPOTS.some((s) => s.district === stationedAt.district && s.roomId === stationedAt.roomId) && (
+                  <option value={`${stationedAt.district}|${stationedAt.roomId}`}>守·{stationedAt.roomName || stationedAt.district}</option>
+                )}
+              </select>
             )}
             {/* 互动菜单：单独一个入口，免得跟"换出战"抢点击 */}
             <span

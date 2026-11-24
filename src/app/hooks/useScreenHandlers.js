@@ -15,7 +15,7 @@ import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
 import { recruitOC, applyRecruit, hirePriceFor } from "../../features/npc/ocRecruit.js";
 import { claimGoldenEgg } from "../../features/npc/goldenEgg.js";
 import { duoduoEggReaction } from "./eggBackfill.js";
-import { ADVENTURER_BY_NAME } from "../../domain/data/dungeon/adventurers.js";
+import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
 import { stationCompanion, unstationCompanion } from "../../domain/rules/companion/companion.js";
 import { toggleEquip } from "../../domain/rules/economy/equipment.js";
 import { getPresentNpcs } from "../../domain/rules/state/fields.js";
@@ -78,7 +78,7 @@ export function useScreenHandlers({
 
   // OC 冒险者四路招募：recruitOC 判门成功则 applyRecruit 落盘，失败只写系统日志
   const handleOcRecruit = useCallback((npc, route) => applyResult(featureCtx(), () => {
-    const adv = ADVENTURER_BY_NAME[npc.name];
+    const adv = OC_BY_NAME[npc.name];
     if (!adv) return;
     captureUndo();
     // hire 路的按钮即全价档价（菜单文案已标出价多少），offer 不传会被当 0 必拒
@@ -89,10 +89,15 @@ export function useScreenHandlers({
   }, { feature: "npc.ocRecruit" }), [captureUndo]);
 
   // 伙伴留在当前房间（出战位不收留守）；唤回=清 stationed 归队
-  const handleStationCompanion = useCallback((key) => applyResult(featureCtx(), () => {
+  // 伙伴可留守到任意房间：spot 缺省留当前房、null=唤回随行、给房间则落位过去
+  const handleStationCompanion = useCallback((key, spotOverride) => applyResult(featureCtx(), () => {
     captureUndo();
     const { companionState, room, innerRoomName } = gameStore.getState();
-    const spot = { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name };
+    if (spotOverride === null) {
+      applyResult(featureCtx(), { changes: { companionState: unstationCompanion(companionState, key) } });
+      return;
+    }
+    const spot = spotOverride || { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name };
     applyResult(featureCtx(), { changes: { companionState: stationCompanion(companionState, key, spot) } });
   }, { feature: "npc.stationCompanion" }), [captureUndo]);
 
