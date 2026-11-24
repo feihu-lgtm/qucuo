@@ -1,5 +1,7 @@
 import { APPEASE_EXTRACTION_SPEC } from "./appeaseExtraction.js";
-import { renderFieldScales, renderPromptTemplate } from "./promptRefs.js";
+import { renderFieldScales, renderPromptTemplate, getPresentNpcs } from "./promptRefs.js";
+import { OC_BY_NAME } from "../npc/npcCarry.js";
+import { intimacyGate } from "../npc/intimacy.js";
 import { AFFECTION_RULES, FIELD, giftRange, learnRange } from "../state/fields.js";
 import { ADULT_HUMAN_FORM, isHumanFormCompanion } from "../companion/companionSlots.js";
 
@@ -79,22 +81,42 @@ export const EXTRACTION_SPECS = {
   TALK_CASUAL: {
     scaleFields: [FIELD.affection, FIELD.inv, FIELD.flags],
     system: "你是游戏状态提取器，从叙事中提取 NPC 互动产生的状态变化（好感度、物品交换、谁开口回应了）。只提取叙事里确实写到的内容，不添加、不脑补。",
-    user: (_narrative, _state, _settle, render) =>
-      render(`当前 NPC 关系：@角色关系
+    user: (_narrative, state, _settle, render) => {
+      // 在场者性情/界限进判定上下文（聊天语义好感）：对方性情与好感门槛
+      // 是该不该动好感的判据；不通人情（forbidden）与兽类无好感轨道。
+      const npcs = getPresentNpcs(state || {});
+      const lines = npcs.map((npc) => {
+        // 同名驻场不能借 OC 的界限——只有带 OC 实例标记的才查 OC 表，
+        // 否则驻场姬无双会误用 OC 姬无双的阈值（正确性见 isOcNpc 同款规则）。
+        const oc = npc.ocAdventurer ? (OC_BY_NAME[npc.ocAdventurer] || OC_BY_NAME[npc.name]) : null;
+        const spec = { ...(oc?.intimacy || {}), ...(npc.intimacy || {}) };
+        if (spec.forbidden || npc.beast) return `- ${npc.name}：不通人情，好感永不变化`;
+        const pers = [npc.personality, npc.brief].filter(Boolean).join("·").slice(0, 60);
+        const gate = intimacyGate({ ...oc, ...npc }, Number(state?.varTree?.角色?.[npc.name]?.好感度) || 0);
+        const style = spec.style ? `，亲密画风「${spec.style}」` : "";
+        return `- ${npc.name}：${pers || "性情不明"}${style}，好感界限 ${gate.threshold}${gate.unlocked ? "（已过线）" : ""}`;
+      }).join("\n");
+      return render(`当前 NPC 关系：@角色关系
 在场人物与其随身之物：
 @房间.全员随身
 玩家背包：@背包
-
+${lines ? `
+在场者性情与界限：
+${lines}
+` : ""}
 叙事内容：
 @narrative
 
 根据叙事输出状态变化 JSON：
 {"mvu":"_.add('角色.XXX.好感度', N);\n","delta":{"items_add":[],"items_rm":[],"flags_add":[]},"respondedNpcs":["名字"]}
 
-· mvu：叙事里某人对玩家的观感确有变化才写，没变化就省略。
+· mvu：叙事里某人对玩家的观感确有变化才写，没变化就省略。好感增减照对方性情与界限裁量——夸到点子上、冒犯到痛处才有感；单次区间 -5~+8，闲聊寒暄不动笔。标注不通人情/兽类的人不写好感度。
 · delta：只记叙事写明当场易手的东西——对方给玩家的写 items_add，玩家给出去的写 items_rm。物品只能出自上面列的"玩家背包"或那位 NPC 的〔身携〕；〔身无长物〕的人给不出东西，叙事写了也不记。只是嘴上提起、许诺日后再给、纯寒暄，一律不记。
 · respondedNpcs：本轮正文里【真正开口跟玩家说话或有来有往互动】的在场 NPC 名字。只是被提到、路过、在场却没搭理的不算。没人开口就给空数组 []。
-· 全都没有变化时输出 {}。`),
+· 全都没有变化时输出 {}。`)
+        // 玩家原话在 render 之后拼接——话里的 "@xx" 不能被当模板占位符吃掉。
+        + (state?.cmd ? `\n玩家这轮说的话：${state.cmd}\n` : "");
+    },
   },
 
   // 送礼已由系统交付，提取层只判断收礼人好感。

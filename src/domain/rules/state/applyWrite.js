@@ -31,11 +31,18 @@ export function writePath(node, [key, ...rest], value) {
   return copy;
 }
 
-function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange }) {
+function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange, talkRange, affectionSkip }) {
+  // 无好感轨道（intimacy.forbidden/兽类等）整轮跳过——好感不予变化，留裁决痕迹。
+  if (affectionSkip?.has?.(npc)) return { reason: `${npc} 无好感轨道，好感度不变化` };
   if (delta > 0) delta *= 1 + (clamp(charm, 0, 10) - 5) * 0.06;
   const { maxDelta, daily } = AFFECTION_RULES.mvu;
   delta = clamp(Math.round(delta), -maxDelta, maxDelta);
   if (giftRange) delta = clamp(delta, ...giftRange);
+  // 聊天语义好感（docs 工单）：搭话回合单次 clamp 小区间 -5~+8，且 0 变化不落账。
+  if (talkRange) {
+    delta = clamp(delta, ...talkRange);
+    if (delta === 0) return { reason: "好感无实质变化" };
+  }
   if (delta <= 0) return { state, delta };
   const dayStamp = Math.floor((Number(time) || 0) / 24);
   const last = state.varTree.世界?.好感日增;
@@ -50,7 +57,7 @@ function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange }
 }
 
 export function applyWrite(state, { op, path, value }, options = {}) {
-  const { source, defaultValue } = options;
+  const { source, defaultValue, talkRange, affectionSkip } = options;
   const mvu = source === "mvu";
   const parts = typeof path === "string" || Array.isArray(path) ? statePath(path) : [];
   const id = parts.join(".");
@@ -85,6 +92,10 @@ export function applyWrite(state, { op, path, value }, options = {}) {
     return reject("气血必须是两个有限数字");
   }
   const before = readPath(state, parts);
+  // forbidden/兽类：add 与 set 都拦（set 也能绕过 talkRange，见 mvu 指令语法允许 _.set 好感度）
+  if (mvu && affection && affectionSkip?.has?.(parts[2] || "")) {
+    return reject(`${parts[2] || ""} 无好感轨道，好感度不变化`);
+  }
   let actualDelta;
   if (op === "add") {
     actualDelta = value;
@@ -99,6 +110,14 @@ export function applyWrite(state, { op, path, value }, options = {}) {
     if (typeof base !== "number") return reject(`${field.label} 不能做数值加减`);
     value = base + actualDelta;
     if (!Number.isFinite(value)) return reject(`${field.label}必须是有限数字`);
+  } else if (op === "set" && mvu && affection && talkRange) {
+    // set 绕开 add 的 talkRange——按相对当前值的增量 clamp（工单：单次增减 -5~+8）
+    const base = typeof before === "number" ? before : 0;
+    // 不取整：留守衰减会留下 .5 分值，round(-0.5)=-0 会把半分扣减误丢
+    const d = clamp(value - base, talkRange[0], talkRange[1]);
+    if (d === 0) return reject("好感无实质变化");
+    actualDelta = d;
+    value = base + d;
   }
   if (mvu && field === FIELDS[FIELD.factionRep]) {
     // 一回合内多条指令合计也不超过 ±maxDelta，以回合开始时的值为基准。

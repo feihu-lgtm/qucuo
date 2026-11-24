@@ -5,6 +5,7 @@ import { applyKnowledgeTreeDiff } from "../../domain/rules/prompt/knowledge.js";
 import { commitProposalWrites } from "./commitProposalWrites.js";
 import { commitModelFlags } from "./commitFlags.js";
 import { filterGhostCommands } from "./commitHelpers.js";
+import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
 import { settleDeal } from "./postCommit/dealSettle.js";
 import { emitNarrative } from "./postCommit/narrative.js";
 import { recordRumors } from "./postCommit/rumors.js";
@@ -68,10 +69,20 @@ export function commitRound(d) {
   }
   if (d.mvuCommands.length) {
     d.setVarTree(prev => {
+      // 聊天语义好感：搭话回合的好感 mvu 收窄到 -5~+8，forbidden/兽类跳过；
+      // 送礼/软结算那两条已各有限定（giftRange/系统结算剔除），不再叠加。
+      const talkAffection = d.isTalk && !d.giftSettlement ? {
+        talkRange: [-5, 8],
+        affectionSkip: new Set([
+          ..._systemBaseNpcs.filter((npc) => npc?.intimacy?.forbidden || npc?.beast).map((npc) => npc.name),
+          ...Object.entries(OC_BY_NAME).filter(([, oc]) => oc?.intimacy?.forbidden).map(([name]) => name),
+        ]),
+      } : {};
       const { tree, applied, rejected, logs } = applyMvuCommands(prev, d.mvuCommands, {
         charm: d.effectiveSpecialNow?.魅力 ?? 5,
         time: d.time,
         giftRange: d.giftSettlement?.range,
+        ...talkAffection,
       });
       // 被裁决拒绝的指令要能在「🧭全流程日志」里看见。此前只 console.warn，
       // 排查"好感怎么没变/剧情怎么没推"时翻不到证据——那正是最需要它的时候。
