@@ -12,6 +12,9 @@ import {
   tradeWithNpc,
 } from "../../features/npc/logic.js";
 import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
+import { recruitOC, applyRecruit, hirePriceFor } from "../../features/npc/ocRecruit.js";
+import { ADVENTURER_BY_NAME } from "../../domain/data/dungeon/adventurers.js";
+import { stationCompanion, unstationCompanion } from "../../domain/rules/companion/companion.js";
 import { toggleEquip } from "../../domain/rules/economy/equipment.js";
 import { getPresentNpcs } from "../../domain/rules/state/fields.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
@@ -61,6 +64,36 @@ export function useScreenHandlers({
     setActiveTarget(npc.name);
     applyResult(featureCtx(), result);
   }, { feature: "npc.inviteCompanion" }), [captureUndo]);
+
+  // OC 冒险者四路招募：recruitOC 判门成功则 applyRecruit 落盘，失败只写系统日志
+  const handleOcRecruit = useCallback((npc, route) => applyResult(featureCtx(), () => {
+    const adv = ADVENTURER_BY_NAME[npc.name];
+    if (!adv) return;
+    captureUndo();
+    // hire 路的按钮即全价档价（菜单文案已标出价多少），offer 不传会被当 0 必拒
+    const res = recruitOC(gameStore.getState(), adv, route, route === "hire" ? { offer: hirePriceFor(adv) } : {});
+    if (!res.ok) { addLog([{ t: "sys", text: `  ${res.reason}` }]); return; }
+    setActiveTarget(npc.name);
+    applyResult(featureCtx(), applyRecruit(gameStore.getState(), adv, res.effect));
+  }, { feature: "npc.ocRecruit" }), [captureUndo]);
+
+  // 伙伴留在当前房间（出战位不收留守）；唤回=清 stationed 归队
+  const handleStationCompanion = useCallback((key) => applyResult(featureCtx(), () => {
+    captureUndo();
+    const { companionState, room, innerRoomName } = gameStore.getState();
+    const spot = { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name };
+    applyResult(featureCtx(), { changes: { companionState: stationCompanion(companionState, key, spot) } });
+  }, { feature: "npc.stationCompanion" }), [captureUndo]);
+
+  const handleRecallCompanion = useCallback((npc) => applyResult(featureCtx(), () => {
+    captureUndo();
+    const { companionState } = gameStore.getState();
+    // 唤回用 stationedNpcsFor 折进 npc.id 的真槽位键——写死 imported_ 前缀对内置伙伴（雪豹等）找不着
+    const slotKey = npc.id || `imported_${npc.name}`;
+    applyResult(featureCtx(), { changes: { companionState: unstationCompanion(companionState, slotKey) } });
+    setActiveTarget(npc.name);
+    applyResult(featureCtx(), { logs: [{ t: "sys", text: `  ${npc.name}收拾行装，跟上了你的脚步。` }] });
+  }, { feature: "npc.recallCompanion" }), [captureUndo]);
 
   const handleConsumeItem = useCallback((item) => applyResult(featureCtx(), () => {
     captureUndo();
@@ -167,6 +200,9 @@ export function useScreenHandlers({
     handleNpcTalk,
     handleNpcGift,
     handleInviteCompanion,
+    handleOcRecruit,
+    handleStationCompanion,
+    handleRecallCompanion,
     handleConsumeItem,
     handleCollectGround,
     handleNpcTrade,

@@ -175,6 +175,7 @@ export default function GameLayout({ layout }) {
           char={char} inv={inv} skills={skills} exp={exp} pot={pot}
           playerAvatar={ui.playerAvatar}
           companionState={companionState} onSwitchCompanion={playerActionHandlers.handleSwitchCompanion}
+          onStationCompanion={handlers.screenHandlers.handleStationCompanion}
           slForm={ui.slForm} setSnowLeopardForm={setSnowLeopardForm} setSlFormState={ui.setSlFormState} slImgErr={ui.slImgErr} setSlImgErr={ui.setSlImgErr}
           pearlForm={ui.pearlForm} setPearlForm={setPearlForm} setPearlFormState={ui.setPearlFormState} pearlImgErr={ui.pearlImgErr} setPearlImgErr={ui.setPearlImgErr}
           trainNeigong={progressionHandlers.trainNeigong} trainWaigong={progressionHandlers.trainWaigong} trainCost={trainCost}
