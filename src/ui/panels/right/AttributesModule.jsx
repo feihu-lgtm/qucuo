@@ -30,7 +30,7 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>七维</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px", fontSize: "11px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px", fontSize: "var(--fs-xs)" }}>
           {Object.entries(char.special || {}).map(([k, v]) => {
             const eff = effectiveSpecialNow?.[k];
             const buffed = typeof eff === "number" && eff !== v;
@@ -38,7 +38,7 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
               <div key={k} title={buffed ? `基础${v}，药力/buff生效中` : undefined}>
                 {k}
                 <span style={{ color: buffed ? "var(--clay)" : "var(--ink-text)" }}>{buffed ? eff : v}</span>
-                {buffed && <span style={{ color: "var(--text-dim)", fontSize: "9.5px" }}> ({v}+{eff - v})</span>}
+                {buffed && <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-2xs)" }}> ({v}+{eff - v})</span>}
               </div>
             );
           })}

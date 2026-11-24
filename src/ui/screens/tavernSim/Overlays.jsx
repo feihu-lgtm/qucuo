@@ -17,7 +17,7 @@ export function LogPanel({ log, zoneTheme }) {
       {log.slice(-60).map((l, i) => (
         <div key={i} style={{ fontSize: "var(--fs-sm)", lineHeight: 1.8,
         color: l.kind === "gold" ? "var(--ink-warn)" : l.kind === "event" ? "var(--tavern-event)" : "var(--ink-text-dim)", }}>
-          <span style={{ color: "var(--tavern-log-time)", fontSize: 10 }}>[{l.day}日·{TICK_LABELS[l.tick]}] </span>
+          <span style={{ color: "var(--tavern-log-time)", fontSize: "var(--fs-2xs)" }}>[{l.day}日·{TICK_LABELS[l.tick]}] </span>
           {l.text}
         </div>
       ))}
@@ -34,8 +34,8 @@ export function EventModal({ sim, zoneTheme, onResolve }) {
       display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ background: zoneTheme.panelBg || "var(--building-panel-bg)", border: `1px solid ${zoneTheme.border}`,
         borderRadius: 0, width: 400, maxWidth: "92vw", padding: 18 }}>
-        <div style={{ color: "var(--ink-warn)", fontSize: 14, marginBottom: 8 }}>⚠ {ev.title}</div>
-        <div style={{ color: "var(--ink-text)", fontSize: 12, lineHeight: 1.8, marginBottom: 14 }}>{ev.desc}</div>
+        <div style={{ color: "var(--ink-warn)", fontSize: "var(--fs-base)", marginBottom: 8 }}>⚠ {ev.title}</div>
+        <div style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)", lineHeight: 1.8, marginBottom: 14 }}>{ev.desc}</div>
         {(def?.options || ev.options).map(opt => {
           const needGuard = opt.needGuard && sim.guards.length === 0;
           const needFood = ev.id === "food_critic" && opt.id === "cook" && sim.pantry.food < 3;
@@ -44,7 +44,7 @@ export function EventModal({ sim, zoneTheme, onResolve }) {
           return (
             <div key={opt.id} style={{ marginBottom: 8 }}>
               <Btn label={opt.label} zoneTheme={zoneTheme} disabled={disabled} onClick={() => onResolve(opt.id)} />
-              <span style={{ color: "var(--ink-moss)", fontSize: 10, marginLeft: 8 }}>
+              <span style={{ color: "var(--ink-moss)", fontSize: "var(--fs-2xs)", marginLeft: 8 }}>
                 {needGuard ? "（需雇有护院）" : needFood ? "（食材不足×3）" : needMoney ? "（银子不够）" : opt.hint}
               </span>
             </div>

@@ -23,7 +23,7 @@ export default function MusicSettings() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span
             onClick={toggleMusic}
-            style={{ cursor: "pointer", color: "var(--accent)", padding: "3px 10px", border: "1px solid var(--border)", borderRadius: 0, fontSize: "11px" }}
+            style={{ cursor: "pointer", color: "var(--accent)", padding: "3px 10px", border: "1px solid var(--border)", borderRadius: 0, fontSize: "var(--fs-xs)" }}
           >{state.playing ? "⏸ 暂停" : "▶ 播放"}</span>
           <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", flexShrink: 0 }}>音量</span>
           <input
@@ -35,7 +35,7 @@ export default function MusicSettings() {
         </div>
       )}
       {state.error && (
-        <div style={{ marginTop: 6, padding: "6px 8px", background: "var(--ink-error-bg)", border: "1px solid var(--ink-error-edge)", borderRadius: 0, fontSize: "10px", color: "var(--ink-error-text)", lineHeight: 1.5 }}>
+        <div style={{ marginTop: 6, padding: "6px 8px", background: "var(--ink-error-bg)", border: "1px solid var(--ink-error-edge)", borderRadius: 0, fontSize: "var(--fs-2xs)", color: "var(--ink-error-text)", lineHeight: 1.5 }}>
           ⚠ {state.error}
         </div>
       )}

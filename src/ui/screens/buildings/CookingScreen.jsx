@@ -162,7 +162,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
               <span style={{ position: "absolute", top: "6%", left: "10%", fontSize: 9.5, color: "var(--ink-brass-dim)", letterSpacing: 1 }}>料{i + 1}</span>
               {s
                 ? <span style={{ color: "var(--ink-cream-bright)", fontSize: 12.5, fontWeight: "bold", lineHeight: 1.35, textShadow: "0 1px 2px var(--black)" }}>{s}</span>
-                : <span style={{ color: "var(--ink-wood-edge)", fontSize: 11 }}>空</span>}
+                : <span style={{ color: "var(--ink-wood-edge)", fontSize: "var(--fs-xs)" }}>空</span>}
             </div>
           ))}
           {/* 灶膛火苗：料槽之下，开火成功时蹿高 */}
@@ -209,7 +209,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                   backgroundImage: `url(${UI(sel ? "bar_paper.webp" : "bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
                   color: sel ? "var(--ink-wood-deep)" : "var(--ink-tan)", fontSize: 12, fontWeight: "bold",
                   textShadow: sel ? "0 1px 0 rgba(255,255,255,.3)" : "0 1px 2px var(--black)" }}>
-                <span style={{ color: sel ? "var(--cooking-selected)" : (QUAL_COLOR[cw.quality] || "var(--ink-text)"), marginRight: 5, fontSize: 11 }}>●</span>
+                <span style={{ color: sel ? "var(--cooking-selected)" : (QUAL_COLOR[cw.quality] || "var(--ink-text)"), marginRight: 5, fontSize: "var(--fs-xs)" }}>●</span>
                 {cw.name}{cw.canSteam ? " ♨" : ""}
               </div>
             );
@@ -307,7 +307,7 @@ export default function CookingScreen({ building, char, inv, zoneTheme, inline, 
                       backgroundImage: `url(${UI(left > 0 ? "bub_wood1.webp" : "bub_stone.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
                       color: left > 0 ? "var(--ink-parchment)" : "var(--cooking-empty)", fontSize: 12, opacity: left > 0 ? 1 : 0.5,
                       textShadow: "0 1px 2px var(--black)" }}>
-                      {m.name} <span style={{ color: "var(--ink-brass-lit)", fontSize: 10.5 }}>×{left}</span>
+                      {m.name} <span style={{ color: "var(--ink-brass-lit)", fontSize: "var(--fs-xs)" }}>×{left}</span>
                     </div>
                 );
               })}

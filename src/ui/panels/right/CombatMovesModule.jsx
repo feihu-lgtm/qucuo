@@ -6,13 +6,13 @@ export default function CombatMovesModule({ zoneTheme, char, inspectItem, inspec
   const TYPE_SHORT = { 攻击: "攻", 防御: "防", 状态: "状" };
   return (
     <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
-      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>临阵招式 <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>切磋自带补位 · 运功对应类型的武学即替换（回气永在，能量枯竭保命）</span></div>
+      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>临阵招式 <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>切磋自带补位 · 运功对应类型的武学即替换（回气永在，能量枯竭保命）</span></div>
       {extras.map((m, i) => {
         const q = m.quality || "白";
         const qc = QUALITY_COLOR[q] || "var(--text)";
         const origin = m.learnedFromMaster ? "授" : "基础";
         return (
-          <div key={i} style={{ marginBottom: 3, fontSize: "11px", display: "flex", alignItems: "center", gap: 5, opacity: 0.92, paddingLeft: 6 }}>
+          <div key={i} style={{ marginBottom: 3, fontSize: "var(--fs-xs)", display: "flex", alignItems: "center", gap: 5, opacity: 0.92, paddingLeft: 6 }}>
             <span style={{ fontSize: "var(--fs-2xs)", color: "var(--bg-deep)", background: qc, borderRadius: 0, padding: "0 3px", fontWeight: 700 }}>{TYPE_SHORT[m.type] || "?"}</span>
             <span
               onClick={() => inspectItem("skill", m.name, `${q}品·临阵招式（${origin}）`, null, { worldLook: true })}

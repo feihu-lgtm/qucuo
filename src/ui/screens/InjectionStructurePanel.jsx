@@ -122,11 +122,11 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
 
         {call && (
           <div style={{ border: "1px solid var(--border)", padding: "8px 10px", marginBottom: 8, background: "var(--bg-panel)" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", fontSize: 11.5 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", fontSize: "var(--fs-sm)" }}>
               <b style={{ color: "var(--text)" }}>{call.label}</b>
-              <span style={{ color: "var(--accent)", fontSize: 10.5 }}>{EXECUTION_LABELS[call.execution]}</span>
-              <span style={{ color: "var(--ink-good)", fontSize: 10.5 }}>路由 {ROUTE_LABELS[call.route]}</span>
-              <span style={{ color: "var(--text-dim)", fontSize: 10.5 }}>
+              <span style={{ color: "var(--accent)", fontSize: "var(--fs-xs)" }}>{EXECUTION_LABELS[call.execution]}</span>
+              <span style={{ color: "var(--ink-good)", fontSize: "var(--fs-xs)" }}>路由 {ROUTE_LABELS[call.route]}</span>
+              <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>
                 {matrix.litCount}/{matrix.totalCount} 块点亮 · 约 {matrix.tokenEstimate} tokens
               </span>
               {(call.group === "main" || call.group === "whisper") && (
@@ -164,7 +164,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                     opacity: item.effectiveLit ? 1 : 0.62, background: open ? "var(--inject-open-bg)" : "transparent",
                   }}>
                     <div onClick={() => setOpenBlock(open ? null : item.id)} style={{ cursor: "pointer", padding: "5px 8px", display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ color: "var(--inject-faint)", fontSize: 10 }}>{open ? "▼" : "▶"}</span>
+                      <span style={{ color: "var(--inject-faint)", fontSize: "var(--fs-2xs)" }}>{open ? "▼" : "▶"}</span>
                       <span style={{ width: 8, height: 8, background: item.effectiveLit ? (KIND_META[item.kind]?.color || "var(--ink-good)") : "var(--inject-unlit)" }} />
                       <span style={{ flex: 1, fontSize: 11.5, color: item.effectiveLit ? "var(--text)" : "var(--text-dim)" }}>
                         {item.name} <span style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-faint)" }}>#{item.slot}</span>
@@ -282,7 +282,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             return (
               <div key={b.id} style={{ border: `1px solid ${open ? "var(--accent)" : "var(--border)"}`, marginBottom: 4, opacity: b.lit ? 1 : 0.5 }}>
                 <div onClick={() => setOpenBlock(open ? null : b.id)} style={{ cursor: "pointer", padding: "6px 9px", display: "flex", alignItems: "center", gap: 7 }}>
-                  <span style={{ color: "var(--inject-faint)", fontSize: 10 }}>{open ? "▼" : "▶"}</span>
+                  <span style={{ color: "var(--inject-faint)", fontSize: "var(--fs-2xs)" }}>{open ? "▼" : "▶"}</span>
                   <span style={{ width: 8, height: 8, background: b.lit ? meta.color : "var(--inject-unlit)" }} />
                   <span style={{ flex: 1, fontSize: 12, color: b.lit ? "var(--text)" : "var(--text-dim)" }}>{b.name}{!b.lit && " ⚫灭"}</span>
                   <span style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-faint)" }}>{meta.label} #{b.depth}</span>

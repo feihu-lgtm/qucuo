@@ -30,7 +30,7 @@ export default function VersionHistoryPanel({ onClose, accentDim = "var(--accent
     <div className="mobile-overlay-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div className="mobile-overlay-panel version-history-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 420, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", fontSize: "12px", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
         <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)", fontSize: "14px" }}>版本历史</span>
+          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>版本历史</span>
           <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
         {VERSION_HISTORY.map((v, i) => (

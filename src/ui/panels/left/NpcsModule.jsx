@@ -40,12 +40,12 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
     </div>
   );
   const header = (label, count, key, color, rightContent) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px", marginBottom: 4 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)", marginBottom: 4 }}>
       <span onClick={() => setPeoplePanel(p => ({ ...p, [key]: !p[key] }))}
         style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none", flex: 1 }}>
-        <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>{peoplePanel[key] ? "▾" : "▸"}</span>
+        <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>{peoplePanel[key] ? "▾" : "▸"}</span>
         <span style={{ color }}>{label}</span>
-        <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>（{count}）</span>
+        <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>（{count}）</span>
       </span>
       {rightContent}
     </div>
@@ -69,7 +69,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
       {header("此地 · 在场", present.length, "present", zoneTheme.accentDim,
         <span style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>{lettersEntry}{pigeonBadge}</span>)}
       {peoplePanel.present && (present.length === 0
-        ? <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 8, paddingLeft: 16 }}>空无一人</div>
+        ? <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginBottom: 8, paddingLeft: 16 }}>空无一人</div>
         : <div style={{ marginBottom: 8 }}>{present.map((n, i) => {
             const known = isNpcKnown(varTree, n.name);
             const attrs = varTree.角色?.[n.name] || {};
@@ -82,7 +82,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
                       const cls = adventurerClass(n);
                       return cls ? <span className={cls}>{n.name}</span> : n.name;
                     })()}
-                    <span style={{ color: zoneTheme.textDim, fontSize: "11px", marginLeft: 6 }}>{n.brief}</span>
+                    <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginLeft: 6 }}>{n.brief}</span>
                   </span>
                   {hasAffection ? (
                     <span style={{ fontSize: "var(--fs-xs)", flexShrink: 0, textAlign: "right", whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
@@ -99,7 +99,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
             );
           })}</div>)}
       {peoplePanel.present && crowd.length > 0 && (
-        <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 8, paddingLeft: 16 }}>路人：{crowd.join("、")}</div>
+        <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginBottom: 8, paddingLeft: 16 }}>路人：{crowd.join("、")}</div>
       )}
       {absent.length > 0 && (
         <div style={{ paddingTop: 6, borderTop: `1px solid ${zoneTheme.border}` }}>
@@ -112,7 +112,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
               <div key={name} style={{ marginBottom: 5 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span onClick={() => { setCharacterPageTarget(name); openOverlay(OVERLAY.CHARACTER_PAGE); }} title="打开此人详情面板"
-                    style={{ cursor: "pointer", color: "var(--text)", flex: 1, fontSize: "11px" }}>
+                    style={{ cursor: "pointer", color: "var(--text)", flex: 1, fontSize: "var(--fs-xs)" }}>
                     {(() => {
                       const cls = adventurerClass(name);
                       return cls ? <span className={cls}>{name}</span> : name;

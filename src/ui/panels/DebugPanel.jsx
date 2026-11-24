@@ -34,7 +34,7 @@ export default function DebugPanel({
   const [dbgItemQualF, setDbgItemQualF] = useState("全部");
   const [dbgPickedItem, setDbgPickedItem] = useState("");
 
-  const inp = { background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 5px", fontSize: 11 };
+  const inp = { background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 5px", fontSize: "var(--fs-xs)" };
   const lbl = { color: "var(--accent)", flexShrink: 0 };
 
   return (
@@ -80,7 +80,7 @@ export default function DebugPanel({
             <span style={{ fontSize: 10 }}>{dim}</span>
             <input type="number" value={char.special?.[dim] ?? 5}
               onChange={e => setChar(c => ({ ...c, special: { ...(c.special || {}), [dim]: parseInt(e.target.value) || 0 } }))}
-              style={{ width: 42, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+              style={{ width: 42, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
           </span>
         ))}
       </div>
@@ -88,19 +88,19 @@ export default function DebugPanel({
         <span style={{ fontSize: 10 }}>潜能</span>
         <input type="number" value={pot ?? 0}
           onChange={e => setPot(parseInt(e.target.value) || 0)}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
         <span style={{ fontSize: "var(--fs-2xs)", marginLeft: 6 }}>阅历</span>
         <input type="number" value={exp ?? 0}
           onChange={e => setExp(parseInt(e.target.value) || 0)}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
         <span style={{ fontSize: "var(--fs-2xs)", marginLeft: 6 }}>因果</span>
         <input type="number" value={dao.karma ?? 0}
           onChange={e => setDao(d => ({ ...d, karma: parseInt(e.target.value) || 0 }))}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
         <span style={{ fontSize: "var(--fs-2xs)", marginLeft: 6 }}>劫数</span>
         <input type="number" value={dao.jie ?? 0}
           onChange={e => setDao(d => ({ ...d, jie: parseInt(e.target.value) || 0 }))}
-          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
+          style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: "var(--fs-xs)" }} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 40, ...lbl }}>威望</span>

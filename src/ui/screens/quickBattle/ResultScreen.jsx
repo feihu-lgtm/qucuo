@@ -12,7 +12,7 @@ export default function ResultScreen({ battle, onAgain, onExit }) {
 
   return (
     <div style={sx.centerCol}>
-      <div style={{ fontSize: 40, color: win ? "var(--blue)" : "var(--qb-foe)", fontWeight: "bold", letterSpacing: 8, marginBottom: 10 }}>
+      <div style={{ fontSize: "var(--fs-3xl)", color: win ? "var(--blue)" : "var(--qb-foe)", fontWeight: "bold", letterSpacing: 8, marginBottom: 10 }}>
         {win ? "胜" : "败"}
       </div>
       <div style={{ fontSize: "var(--fs-base)", color: "var(--parchment)", marginBottom: 30 }}>

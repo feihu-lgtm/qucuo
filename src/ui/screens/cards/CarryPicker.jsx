@@ -156,7 +156,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
               <span style={{ color: on ? "var(--ink-warn)" : "var(--gamble-button-edge)", width: 10 }}>{on ? "◉" : "○"}</span>
               <span style={{ color: tier?.color || "var(--quest-stage-desc)", width: 14 }}>{e.quality || "—"}</span>
               <span style={{ color: "var(--ink-text)", flex: 1 }}>{e.name}</span>
-              <span style={{ color: "var(--muted)", fontSize: 9.5 }}>{e.category}</span>
+              <span style={{ color: "var(--muted)", fontSize: "var(--fs-2xs)" }}>{e.category}</span>
             </div>
           );
         })}

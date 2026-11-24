@@ -41,7 +41,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building?.name || "宝丰拍卖行"} zoneTheme={zoneTheme} onClose={onClose} />
-      <div style={{ padding: "14px 16px", fontSize: 12.5, lineHeight: 1.85, color: zoneTheme.text }}>
+      <div style={{ padding: "14px 16px", fontSize: "var(--fs-md)", lineHeight: 1.85, color: zoneTheme.text }}>
 
         {owned ? (
           <div style={{ color: zoneTheme.textDim }}>
@@ -54,14 +54,14 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
               border: `1px solid ${zoneTheme.border}`, borderRadius: 0,
               padding: "10px 12px", marginBottom: 12, background: "rgba(255,255,255,.02)",
             }}>
-              <div style={{ color: "var(--violet)", fontSize: 13, marginBottom: 4 }}>
+              <div style={{ color: "var(--violet)", fontSize: "var(--fs-md)", marginBottom: 4 }}>
                 【拍品】{AUCTION_LOT.name}　<span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>{AUCTION_LOT.quality}档</span>
               </div>
-              <div style={{ color: zoneTheme.textDim, fontSize: 11.5 }}>{AUCTION_LOT.blurb}</div>
+              <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)" }}>{AUCTION_LOT.blurb}</div>
             </div>
 
             {/* 价目 */}
-            <div style={{ display: "flex", gap: 16, marginBottom: 10, fontSize: 11.5 }}>
+            <div style={{ display: "flex", gap: 16, marginBottom: 10, fontSize: "var(--fs-sm)" }}>
               <span style={{ color: zoneTheme.textDim }}>起拍 <span style={{ color: zoneTheme.text }}>{AUCTION_CONFIG.startingBid}</span> 两</span>
               <span style={{ color: zoneTheme.textDim }}>一口价 <span style={{ color: "var(--gold)" }}>{AUCTION_CONFIG.buyoutPrice}</span> 两</span>
               <span style={{ flex: 1 }} />
@@ -74,7 +74,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
               borderRadius: 0, padding: "8px 10px", marginBottom: 10, background: "rgba(0,0,0,.15)",
             }}>
               {st.log.length === 0 && (
-                <div style={{ color: zoneTheme.textDim, fontSize: 11.5 }}>
+                <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)" }}>
                   厅里坐了七八成满。台上那件东西还盖着红布。司仪正在清嗓子。
                 </div>
               )}
@@ -86,15 +86,15 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
             </div>
 
             {st.phase === AUCTION_PHASE.BIDDING && (
-              <div style={{ marginBottom: 8, fontSize: 12 }}>
-                当前价 <span style={{ color: "var(--gold)", fontSize: 14 }}>{st.currentBid}</span> 两
-                <span style={{ color: zoneTheme.textDim, fontSize: 11 }}>
+              <div style={{ marginBottom: 8, fontSize: "var(--fs-sm)" }}>
+                当前价 <span style={{ color: "var(--gold)", fontSize: "var(--fs-base)" }}>{st.currentBid}</span> 两
+                <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>
                   　（{st.leader === "player" ? "你出的价" : "灰绸胖子出的价"}）
                 </span>
               </div>
             )}
 
-            {err && <div style={{ color: "var(--ink-danger-soft)", fontSize: 11.5, marginBottom: 8 }}>{err}</div>}
+            {err && <div style={{ color: "var(--ink-danger-soft)", fontSize: "var(--fs-sm)", marginBottom: 8 }}>{err}</div>}
 
             {/* 操作 */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -113,13 +113,13 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
                 </>
               )}
               {st.phase === AUCTION_PHASE.WON && (
-                <div style={{ color: "var(--clay)", fontSize: 12 }}>
+                <div style={{ color: "var(--clay)", fontSize: "var(--fs-sm)" }}>
                   ✦ 以 {st.currentBid} 两拍得「{AUCTION_LOT.name}」。
                 </div>
               )}
               {st.phase === AUCTION_PHASE.LOST && (
                 <>
-                  <div style={{ color: zoneTheme.textDim, fontSize: 11.5, width: "100%" }}>
+                  <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)", width: "100%" }}>
                     流拍了。掌槌的说过些日子还会再上一次。
                   </div>
                   <Btn label="再看一次" onClick={() => { setSt(initAuction()); setErr(null); }} zoneTheme={zoneTheme} secondary />

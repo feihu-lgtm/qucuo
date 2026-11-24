@@ -4,7 +4,7 @@ import { statLabel, effectBrief } from "../../../domain/rules/economy/itemEffect
 export default function EquipmentModule({ zoneTheme, inv, setInv }) {
   return (
     <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
-      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>装备 <span style={{ color: zoneTheme.textDim, fontSize: "10px" }}>点物品切换装备/卸下</span></div>
+      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>装备 <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>点物品切换装备/卸下</span></div>
       {[ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY].map(cat => {
         const itemsInCat = inv.filter(i => typeof i === "object" && i.category === cat);
         const equippedCount = itemsInCat.filter(i => i.equipped).length;

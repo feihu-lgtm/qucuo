@@ -103,7 +103,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
         {(n.milestones || []).map((m, mi) => (
           <div key={m.threshold} style={{ marginBottom: 9, paddingBottom: 8, borderBottom: "1px dashed var(--bg-card)" }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-              <span style={{ width: 26, fontSize: 12, color: accent, flexShrink: 0 }}>{m.threshold}</span>
+              <span style={{ width: 26, fontSize: "var(--fs-sm)", color: accent, flexShrink: 0 }}>{m.threshold}</span>
               <input value={m.title} placeholder="标题"
                 onChange={e => onPatch({ milestones: n.milestones.map((x, j) => j === mi ? { ...x, title: e.target.value.slice(0, 8) } : x) })}
                 style={{ ...selStyle, width: 76 }} />

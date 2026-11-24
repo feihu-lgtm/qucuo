@@ -54,7 +54,7 @@ export default function ApiProfilesFields({
         {cfgProfiles.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
             {cfgProfiles.map(p => (
-              <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11px" }}>
+              <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)" }}>
                 <span style={{ flex: 1, color: "var(--text)" }}>{p.name}
                   <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>{getApiModel(p.cfg) || ""}</span>
                 </span>

@@ -72,7 +72,7 @@ export default function ReviewWizard({
                       transition: "all .15s ease",
                     }}>
                     <div style={{ fontSize: "var(--fs-xl)", marginBottom: 6 }}>☯</div>
-                    <div style={{ color: playerFromNpc == null ? accent : "var(--quest-stage-desc)", fontSize: 13 }}>空白 · 自己填</div>
+                    <div style={{ color: playerFromNpc == null ? accent : "var(--quest-stage-desc)", fontSize: "var(--fs-md)" }}>空白 · 自己填</div>
                   </div>
                   {result.npcs.map((n, i) => {
                     const on = playerFromNpc === n.name;
@@ -89,7 +89,7 @@ export default function ReviewWizard({
                           <span style={{ color: on ? accent : "var(--paper)", fontSize: 13, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {n.name}
                           </span>
-                          {on && <span style={{ color: accent, fontSize: 11 }}>◉</span>}
+                          {on && <span style={{ color: accent, fontSize: "var(--fs-xs)" }}>◉</span>}
                         </div>
                         <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", lineHeight: 1.6, minHeight: 30 }}>
                           {n.brief || "（无身份）"}

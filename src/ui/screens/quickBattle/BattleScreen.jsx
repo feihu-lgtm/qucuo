@@ -181,7 +181,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
               <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
                 {battle.allyTeam.map((f, i) => f.combatState.hp[0] > 0 && (
                   <button key={i} onClick={() => switchTo(i)} style={sx.switchBtn}>
-                    {f.name}<span style={{ color: "var(--qb-border)", fontSize: 11 }}> {f.combatState.hp[0]}/{f.combatState.hp[1]}</span>
+                    {f.name}<span style={{ color: "var(--qb-border)", fontSize: "var(--fs-xs)" }}> {f.combatState.hp[0]}/{f.combatState.hp[1]}</span>
                   </button>
                 ))}
               </div>

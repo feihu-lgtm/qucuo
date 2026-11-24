@@ -130,9 +130,9 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                                 onClick={() => onInspect?.("item", entry.name, null, entry)}
                                 style={{ color: QUALITY_COLOR[entry.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                               >{entry.name}</span>
-                              {hearts && <span style={{ color: "var(--pink)", marginLeft: 4, fontSize: 10 }} title={`钟爱 ${entry.cherish}`}>{hearts}</span>}
+                              {hearts && <span style={{ color: "var(--pink)", marginLeft: 4, fontSize: "var(--fs-2xs)" }} title={`钟爱 ${entry.cherish}`}>{hearts}</span>}
                               {!notForSale && <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>{entry.buyPrice}{currencyUnit}</span>}
-                              {entry.quoteMode === "geai" && <span style={{ color: "var(--clay)", marginLeft: 4, fontSize: 10 }}>割爱</span>}
+                              {entry.quoteMode === "geai" && <span style={{ color: "var(--clay)", marginLeft: 4, fontSize: "var(--fs-2xs)" }}>割爱</span>}
                             </div>
                             {notForSale
                               ? <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", padding: "2px 6px" }} title={entry.slot === "mount" ? "生死之交，不卖" : "钟爱之物，给多少钱都不卖"}>{entry.slot === "mount" ? "不卖" : "舍不得"}</span>
@@ -173,13 +173,13 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                       onClick={() => onInspect?.("item", item.name, null, item)}
                       style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                     >{item.name}</span>
-                    {item.cherish >= 50 && <span title={`钟爱 ${item.cherish}`} style={{ marginLeft: 4, fontSize: 10, color: "var(--red-soft)" }}>♥</span>}
+                    {item.cherish >= 50 && <span title={`钟爱 ${item.cherish}`} style={{ marginLeft: 4, fontSize: "var(--fs-2xs)", color: "var(--red-soft)" }}>♥</span>}
                     {item.displayOnly
-                      ? <span style={{ color: "var(--text-dim)", marginLeft: 6, fontSize: 10.5 }}>陈列 {item.buyPrice ?? "—"}{currencyUnit}</span>
+                      ? <span style={{ color: "var(--text-dim)", marginLeft: 6, fontSize: "var(--fs-xs)" }}>陈列 {item.buyPrice ?? "—"}{currencyUnit}</span>
                       : notForSale
                         ? null
                         : <span style={{ color: discounted ? "var(--clay)" : "var(--ink-text-dim)", marginLeft: 6 }}>{payPrice}{currencyUnit}</span>}
-                    {discounted && <span style={{ color: "var(--text-dim)", marginLeft: 6, fontSize: 10.5 }}>原价{item.buyPrice}</span>}
+                    {discounted && <span style={{ color: "var(--text-dim)", marginLeft: 6, fontSize: "var(--fs-xs)" }}>原价{item.buyPrice}</span>}
                   </div>
                   {notForSale
                     ? <span style={{ fontSize: "var(--fs-xs)", padding: "2px 10px", color: "var(--text-dim)", border: "1px solid var(--building-disabled-edge)", borderRadius: 0, cursor: "default" }}>{item.displayOnly ? "陈列" : "不卖"}</span>

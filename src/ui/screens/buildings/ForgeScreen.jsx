@@ -26,7 +26,7 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
   const qualities = ["白", "绿", "蓝", "紫", "橙"];
   const previewQuality = qualities[Math.min(qualities.length - 1, Math.floor(luck / 2.5))];
 
-  const inputStyle = { width: "100%", marginTop: 4, marginBottom: 10, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "var(--ink-text)", fontSize: 12, padding: "5px 8px", boxSizing: "border-box" };
+  const inputStyle = { width: "100%", marginTop: 4, marginBottom: 10, background: "var(--bg-ink)", border: `1px solid ${zoneTheme.border}`, borderRadius: 0, color: "var(--ink-text)", fontSize: "var(--fs-sm)", padding: "5px 8px", boxSizing: "border-box" };
 
   async function doDesign() {
     if (designing) return;
@@ -54,8 +54,8 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name || "铁匠铺"} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "var(--ink-text-dim)", fontSize: 11, marginBottom: 12 }}>{building.desc}</div>
-        <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)", marginBottom: 12 }}>{building.desc}</div>
+        <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>
           银两 {money} 两 · 气运 {luck}/10 · 定制费 {FORGE_COST} 两 · 预估品阶 <span style={{ color: QUAL_COLOR[previewQuality] }}>{previewQuality}</span>（以交付为准，有浮动）
         </div>
 
@@ -69,7 +69,7 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
             try { const s = JSON.parse(decodeURIComponent(fp[4])); if (s?.name) what = `你定制的「${s.name}」`; } catch { /* 老格式忽略 */ }
           }
           return (
-            <div style={{ color: "var(--ink-warn)", fontSize: 12, padding: "10px 12px", background: "var(--ink-cocoa-panel)", borderRadius: 0, border: "1px solid var(--gold-deep)" }}>
+            <div style={{ color: "var(--ink-warn)", fontSize: "var(--fs-sm)", padding: "10px 12px", background: "var(--ink-cocoa-panel)", borderRadius: 0, border: "1px solid var(--gold-deep)" }}>
               {remain > 0
                 ? `${what}正在赶工，铁匠说还需 ${remain} 个时辰方能打成。打好后自有伙计寻来送到你手上，不必守在这里。`
                 : `${what}已打成，铺子里的伙计正给你送来，稍候便到手上。`}
@@ -79,32 +79,32 @@ export default function ForgeScreen({ building, char, time, flags, zoneTheme, on
 
         {!pendingFlag && !candidates && (
           <>
-            <div style={{ color: "var(--ink-text)", fontSize: 12, marginBottom: 10 }}>拿料定制，说清要什么，铁匠给你出几个样式挑。</div>
-            <label style={{ color: "var(--ink-text-dim)", fontSize: 11 }}>材料（如 陨铁、玄冰精铁，可留空任铁匠择料）</label>
+            <div style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)", marginBottom: 10 }}>拿料定制，说清要什么，铁匠给你出几个样式挑。</div>
+            <label style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>材料（如 陨铁、玄冰精铁，可留空任铁匠择料）</label>
             <input value={material} onChange={e => setMaterial(e.target.value)} placeholder="陨铁…" style={inputStyle} />
-            <label style={{ color: "var(--ink-text-dim)", fontSize: 11 }}>类别（武器·刀/枪/剑/戟 或 护甲 或 饰品，自己写）</label>
+            <label style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>类别（武器·刀/枪/剑/戟 或 护甲 或 饰品，自己写）</label>
             <input value={category} onChange={e => setCategory(e.target.value)} placeholder="武器·长枪 / 护甲·护腕 / 饰品·扳指…" style={inputStyle} />
-            <label style={{ color: "var(--ink-text-dim)", fontSize: 11 }}>要求（想要的脾性，如 锋利、幸运、护身、轻捷…）</label>
+            <label style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-xs)" }}>要求（想要的脾性，如 锋利、幸运、护身、轻捷…）</label>
             <input value={requirement} onChange={e => setRequirement(e.target.value)} placeholder="锋利、破甲…" style={inputStyle} />
             <Btn label={designing ? "铁匠正琢磨样式……" : "请铁匠出方案"} disabled={designing} zoneTheme={zoneTheme} onClick={doDesign} />
-            {designErr && <div style={{ color: "var(--ink-rose)", fontSize: 11, marginTop: 8 }}>{designErr}</div>}
-            <div style={{ color: "var(--forge-hint)", fontSize: 10, marginTop: 10 }}>出方案不花钱，选定一件才付 {FORGE_COST} 两定金。约 24 时辰后打成、伙计送货上门。</div>
+            {designErr && <div style={{ color: "var(--ink-rose)", fontSize: "var(--fs-xs)", marginTop: 8 }}>{designErr}</div>}
+            <div style={{ color: "var(--forge-hint)", fontSize: "var(--fs-2xs)", marginTop: 10 }}>出方案不花钱，选定一件才付 {FORGE_COST} 两定金。约 24 时辰后打成、伙计送货上门。</div>
           </>
         )}
 
         {!pendingFlag && candidates && (
           <>
-            <div style={{ color: "var(--ink-text)", fontSize: 12, marginBottom: 10 }}>铁匠给出三个样式，选一件定下（付 {FORGE_COST} 两定金）。</div>
+            <div style={{ color: "var(--ink-text)", fontSize: "var(--fs-sm)", marginBottom: 10 }}>铁匠给出三个样式，选一件定下（付 {FORGE_COST} 两定金）。</div>
             {candidates.map((c, i) => {
               const eff = effectBrief(c.effect, c.sixDim);
               return (
                 <div key={i} style={{ marginBottom: 10, padding: "10px 12px", background: "var(--ink-coffee)", borderRadius: 0, border: `1px solid ${zoneTheme.border}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <span style={{ color: "var(--ink-cream-dim)", fontSize: 13, fontWeight: "bold" }}>{c.name}</span>
-                    <span style={{ color: "var(--ink-text-dim)", fontSize: 10 }}>{CAT_CN[c.category] || "武器"}</span>
+                    <span style={{ color: "var(--ink-cream-dim)", fontSize: "var(--fs-md)", fontWeight: "bold" }}>{c.name}</span>
+                    <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-2xs)" }}>{CAT_CN[c.category] || "武器"}</span>
                   </div>
-                  {eff && <div style={{ color: "var(--ink-sky-soft)", fontSize: 10.5, marginBottom: 4 }}>词条：{eff}</div>}
-                  {c.desc && <div style={{ color: "var(--ink-stone-dim)", fontSize: 11, marginBottom: 8, lineHeight: 1.5 }}>{c.desc}</div>}
+                  {eff && <div style={{ color: "var(--ink-sky-soft)", fontSize: "var(--fs-xs)", marginBottom: 4 }}>词条：{eff}</div>}
+                  {c.desc && <div style={{ color: "var(--ink-stone-dim)", fontSize: "var(--fs-xs)", marginBottom: 8, lineHeight: 1.5 }}>{c.desc}</div>}
                   <Btn label={money < FORGE_COST ? "银两不足" : `选这件（${FORGE_COST}两）`} disabled={money < FORGE_COST} zoneTheme={zoneTheme} onClick={() => chooseCandidate(c)} />
                 </div>
               );

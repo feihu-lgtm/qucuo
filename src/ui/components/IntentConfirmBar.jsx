@@ -7,7 +7,7 @@ export default function IntentConfirmBar({ zoneTheme }) {
   if (!pending) return null;
   return (
     <div style={{ flexShrink: 0, padding: "10px 16px", borderBottom: `1px solid ${zoneTheme.border}`, background: `color-mix(in srgb, ${zoneTheme.accent} 6%, transparent)`, display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ color: "var(--text)", fontSize: "12px", flex: 1 }}>{pending.text}</span>
+      <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)", flex: 1 }}>{pending.text}</span>
       <button type="button" onClick={pending.onConfirm} style={chromeBtn(zoneTheme, { active: true })}>是</button>
       <button type="button" onClick={pending.onCancel} style={chromeBtn(zoneTheme)}>不是</button>
     </div>

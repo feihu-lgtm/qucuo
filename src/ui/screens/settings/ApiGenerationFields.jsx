@@ -171,7 +171,7 @@ export default function ApiGenerationFields({
     </div>
 
     <div style={{ ...sectionStyle }}>
-      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "var(--accent)", fontSize: "12px" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "var(--accent)", fontSize: "var(--fs-sm)" }}>
         <input type="checkbox" checked={!!cfg.embeddingEnabled} onChange={e => patch({ embeddingEnabled: e.target.checked })} style={{ cursor: "pointer" }} />
         启用向量记忆（长期召回）
       </label>

@@ -9,7 +9,7 @@ const ROOT = path.resolve(__dirname, "..");
 const SCAN_DIRS = ["ui", "utils/theme.js"];
 
 // 迁移基线：只许下调。改完一批字面量就把它改小，别让它涨回去。
-const KNOWN_FONT_LITERALS = 801;
+const KNOWN_FONT_LITERALS = 381;
 
 function walk(entry, out = []) {
   const abs = path.join(ROOT, entry);

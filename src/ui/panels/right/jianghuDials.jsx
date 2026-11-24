@@ -20,14 +20,14 @@ function DialCard({ zoneTheme, title, overlay, items, renderItem, emptyText }) {
   return (
     <div style={{ border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "6px 8px", background: "rgba(255,255,255,0.02)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ color: zoneTheme.accentDim, fontSize: 11 }}>{title}</span>
+        <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)" }}>{title}</span>
         <span style={{ flex: 1 }} />
-        {n > 0 && <span style={{ color: zoneTheme.textDim, fontSize: 10 }}>{(i % n) + 1}/{n}</span>}
+        {n > 0 && <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>{(i % n) + 1}/{n}</span>}
         {overlay && (
           <span title="展开完整面板" role="button" tabIndex={0}
             onClick={() => openOverlay(overlay)}
             onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openOverlay(overlay); } }}
-            style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: 11, lineHeight: 1 }}>⇱</span>
+            style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)", lineHeight: 1 }}>⇱</span>
         )}
       </div>
       <div role={n > 1 ? "button" : undefined} tabIndex={n > 1 ? 0 : undefined}
@@ -35,7 +35,7 @@ function DialCard({ zoneTheme, title, overlay, items, renderItem, emptyText }) {
         onKeyDown={e => { if (n > 1 && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setI(v => (v + 1) % n); } }}
         style={{ cursor: n > 1 ? "pointer" : "default", marginTop: 4, minHeight: 26 }}
         title={n > 1 ? "点一下转到下一条" : undefined}>
-        {cur ? renderItem(cur, i % n) : <div style={{ color: zoneTheme.textDim, fontSize: 10.5, padding: "2px 0" }}>{emptyText}</div>}
+        {cur ? renderItem(cur, i % n) : <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", padding: "2px 0" }}>{emptyText}</div>}
       </div>
     </div>
   );
@@ -51,8 +51,8 @@ function QuestDialItem({ q, prog, flags, zoneTheme }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
-        <span style={{ color: "var(--text)", fontSize: 12 }}>{q.title}</span>
-        <span style={{ color: status === "active" ? "var(--quest-stage-count)" : negative || status === "locked_by_exclusive" ? "var(--quest-negative-text)" : "var(--ink-leaf)", fontSize: 10, flexShrink: 0 }}>
+        <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)" }}>{q.title}</span>
+        <span style={{ color: status === "active" ? "var(--quest-stage-count)" : negative || status === "locked_by_exclusive" ? "var(--quest-negative-text)" : "var(--ink-leaf)", fontSize: "var(--fs-2xs)", flexShrink: 0 }}>
           {status === "active" ? `${(prog?.currentStageIndex ?? 0) + 1}/${q.stages.length}` : status === "completed" ? (negative ? "✗ 已了" : "✓ 已成") : "✕ 已错过"}
         </span>
       </div>
@@ -82,8 +82,8 @@ function RelationDialItem({ c, claimedMilestones, zoneTheme }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "var(--text)", fontSize: 12 }}>{c.name}</span>
-        {milestone && <span style={{ color: "var(--ember)", fontSize: 10 }}>● 任务</span>}
+        <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)" }}>{c.name}</span>
+        {milestone && <span style={{ color: "var(--ember)", fontSize: "var(--fs-2xs)" }}>● 任务</span>}
       </div>
       <div style={{ ...dim, color: "var(--pink)" }}>{npcAffectionLabel(affection)} · {affection}/100</div>
       <div style={{ height: 5, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden", marginTop: 2 }}>
@@ -110,8 +110,8 @@ function LoreDialItem({ fact, zoneTheme }) {
 function QijuzhuDialItem({ row, zoneTheme }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span style={{ color: "var(--text)", fontSize: 12 }}>{row.label}</span>
-      <span style={{ color: zoneTheme.textDim, fontSize: 10.5 }}>×{row.count}</span>
+      <span style={{ color: "var(--text)", fontSize: "var(--fs-sm)" }}>{row.label}</span>
+      <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>×{row.count}</span>
     </div>
   );
 }

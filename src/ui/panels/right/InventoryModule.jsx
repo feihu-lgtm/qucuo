@@ -25,7 +25,7 @@ export default function InventoryModule({ zoneTheme, inv }) {
           </div>
         );
       })}
-      {inv.length === 0 && <div style={{ color: zoneTheme.textDim, fontSize: "11.5px" }}>空空如也</div>}
+      {inv.length === 0 && <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)" }}>空空如也</div>}
     </div>
   );
 }

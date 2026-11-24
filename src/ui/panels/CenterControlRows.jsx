@@ -224,7 +224,7 @@ export default function CenterControlRows({
           padding: "6px 14px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
           borderTop: `1px solid ${zoneTheme.border}`, flexWrap: "wrap",
         }}>
-          <span style={{ color: zoneTheme.textDim, fontSize: "10px", flexShrink: 0 }}>人选：</span>
+          <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", flexShrink: 0 }}>人选：</span>
           <span
             className="mobile-touch-target mobile-person-chip"
             onClick={() => { setActiveTarget(null); setTalkTarget(null); }}

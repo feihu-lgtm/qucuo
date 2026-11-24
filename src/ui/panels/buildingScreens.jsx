@@ -239,7 +239,7 @@ for (const type of [
 
 function ClosedBuilding({ c, text }) {
   return (
-    <div style={{ padding: 12, color: "var(--text)", fontSize: "12px" }}>
+    <div style={{ padding: 12, color: "var(--text)", fontSize: "var(--fs-sm)" }}>
       <div style={{ color: c.zoneTheme?.accent, marginBottom: 6 }}>{c.building.name}</div>
       <div style={{ marginBottom: 10 }}>{text}</div>
       <button type="button" onClick={c.closeBuilding} style={chromeBtn(c.zoneTheme || {})}>离开</button>

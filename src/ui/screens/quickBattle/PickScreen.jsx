@@ -80,10 +80,10 @@ function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) 
       }}
     >
       <div style={{ fontSize: "var(--fs-md)", letterSpacing: 2, color: accent, marginBottom: 8 }}>
-        {label}（{ids.length}）{active && <span style={{ color: "var(--parchment)", fontSize: 11 }}> · 挑选中</span>}
+        {label}（{ids.length}）{active && <span style={{ color: "var(--parchment)", fontSize: "var(--fs-xs)" }}> · 挑选中</span>}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {ids.length === 0 && <span style={{ color: "var(--qb-border)", fontSize: 12 }}>还没人上阵</span>}
+        {ids.length === 0 && <span style={{ color: "var(--qb-border)", fontSize: "var(--fs-sm)" }}>还没人上阵</span>}
         {ids.map(id => {
           const c = candidates.find(x => x.id === id);
           if (!c) return null;

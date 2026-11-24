@@ -168,7 +168,7 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
               background: "rgba(255,250,235,0.6)", border: "1px solid var(--codex-search-edge)", borderRadius: 0, color: "var(--codex-ink)",
             }}
           />
-          {search && <span onClick={() => setSearch("")} style={{ cursor: "pointer", color: paperDim, fontSize: 12 }}>✕清空</span>}
+          {search && <span onClick={() => setSearch("")} style={{ cursor: "pointer", color: paperDim, fontSize: "var(--fs-sm)" }}>✕清空</span>}
           <span onClick={() => setOwnedOnly(o => !o)} style={chipStyle(ownedOnly)} title="只显示已获得的">
             {ownedOnly ? "✓ 只看已得" : "只看已得"}
           </span>
@@ -178,11 +178,11 @@ export default function CodexScreen({ zoneTheme, isDayMode = false, inv = [], sk
         {tab === "item" && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 10, padding: "7px 10px", background: "rgba(120,90,50,0.08)", borderRadius: 0, flexShrink: 0 }}>
             <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ color: paperDim, fontSize: 11 }}>类别</span>
+              <span style={{ color: paperDim, fontSize: "var(--fs-xs)" }}>类别</span>
               {CAT_FILTERS.map(c => <span key={c.key} style={chipStyle(catFilter === c.key)} onClick={() => setCatFilter(c.key)}>{c.label}</span>)}
             </div>
             <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ color: paperDim, fontSize: 11 }}>品阶</span>
+              <span style={{ color: paperDim, fontSize: "var(--fs-xs)" }}>品阶</span>
               {Q_FILTERS.map(q => <span key={q} style={chipStyle(qFilter === q)} onClick={() => setQFilter(q)}>{q}</span>)}
             </div>
           </div>

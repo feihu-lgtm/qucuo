@@ -43,14 +43,14 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, on
           <span style={{ fontSize: "var(--fs-lg)", color: accent, fontWeight: "bold", letterSpacing: 2 }}>📖 见闻录</span>
           <span style={{ fontSize: "var(--fs-xs)", color: textDim }}>江湖之事，谁人知晓，几时淡忘</span>
           <span style={{ flex: 1 }} />
-          <span onClick={onClose} style={{ cursor: "pointer", color: textDim, fontSize: 13, padding: "2px 8px" }}>✕ 收起</span>
+          <span onClick={onClose} style={{ cursor: "pointer", color: textDim, fontSize: "var(--fs-md)", padding: "2px 8px" }}>✕ 收起</span>
         </div>
 
         {/* Tab 切换 */}
         <div style={{ display: "flex", gap: 4, padding: "10px 20px 0" }}>
           {[["account", "事实账本", facts.length], ["notes", "记忆碎片", notes?.length]].map(([k, label, n]) => (
             <span key={k} onClick={() => setTab(k)}
-              style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: 13,
+              style={{ cursor: "pointer", padding: "6px 16px", borderRadius: 0, fontSize: "var(--fs-md)",
                 color: tab === k ? "var(--bg-panel)" : accent, background: tab === k ? accent : "transparent",
                 border: `1px solid ${tab === k ? accent : border}`, borderBottom: "none", fontWeight: tab === k ? "bold" : "normal" }}>
               {label}{n != null ? ` · ${n}` : ""}
@@ -80,7 +80,7 @@ export default function LoreScreen({ varTree, time = 0, turnToStr, zoneTheme, on
 }
 
 function Empty({ text, textDim }) {
-  return <div style={{ textAlign: "center", color: textDim, fontSize: 13, padding: "48px 20px", lineHeight: 2 }}>{text}</div>;
+  return <div style={{ textAlign: "center", color: textDim, fontSize: "var(--fs-md)", padding: "48px 20px", lineHeight: 2 }}>{text}</div>;
 }
 
 // 一条事实：什么时候 · 什么事 · 谁知道(怎么知道的·何时) · 能记多少(传闻淡忘倒计时)

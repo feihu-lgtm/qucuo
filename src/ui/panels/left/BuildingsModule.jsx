@@ -15,10 +15,10 @@ export default function BuildingsModule({ zoneTheme, room, innerRoomName }) {
   const list = visibleBuildings(room, innerRoomName);
   if (!list.length) return null;
   return <div>
-    <div style={{ color: zoneTheme.accentDim, fontSize: "10.5px", marginBottom: 5 }}>此地建筑</div>
+    <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 5 }}>此地建筑</div>
     {list.map(b => <div key={b.id} style={{ marginBottom: 3 }}>
       <button type="button" onClick={() => setActiveBuilding(activeBuilding?.id === b.id ? null : { ...b, district: room.name })} style={chromeBtn(zoneTheme, { active: activeBuilding?.id === b.id })}>{b.name}</button>
-      <span style={{ color: zoneTheme.textDim, fontSize: "10.5px", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
+      <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginLeft: 6 }}>{BUILDING_TYPE_LABEL[b.type] || ""}</span>
     </div>)}
   </div>;
 }

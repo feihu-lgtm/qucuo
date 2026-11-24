@@ -215,13 +215,13 @@ export default function ReviewPlayer({
                   border: `1px solid ${w.on === false ? "var(--bg-card)" : "var(--service-card-edge)"}`,
                   background: w.on === false ? "transparent" : "rgba(212,168,83,.08)",
                 }}>
-                <span style={{ color: w.on === false ? "var(--gamble-button-edge)" : accent, fontSize: 11 }}>
+                <span style={{ color: w.on === false ? "var(--gamble-button-edge)" : accent, fontSize: "var(--fs-xs)" }}>
                   {w.on === false ? "○" : "◉"}
                 </span>
                 <span style={{ color: "var(--ink-text)", fontSize: 11, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {w.label}
                 </span>
-                <span style={{ color: "var(--ink-text-dim)", fontSize: 9.5 }}>{w.kind} · {(w.content || "").length}字</span>
+                <span style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-2xs)" }}>{w.kind} · {(w.content || "").length}字</span>
               </div>
             ))}
             <Note tone="info">

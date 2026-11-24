@@ -59,7 +59,7 @@ export function Header({ name, zoneTheme, onClose }) {
       <span
         className="mobile-overlay-close"
         onClick={onClose}
-        style={{ color: zoneTheme.textDim, fontSize: 12, cursor: "pointer", padding: "2px 8px", borderRadius: RADIUS.btn, transition: "color 0.15s, background 0.15s" }}
+        style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)", cursor: "pointer", padding: "2px 8px", borderRadius: RADIUS.btn, transition: "color 0.15s, background 0.15s" }}
         onMouseEnter={e => { e.currentTarget.style.color = zoneTheme.accent; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
         onMouseLeave={e => { e.currentTarget.style.color = zoneTheme.textDim; e.currentTarget.style.background = "transparent"; }}
       >× 关闭</span>

@@ -19,7 +19,7 @@ export default function ApiLengthFields({ cfg, patch }) {
     </div>
 
     <div style={{ ...labelStyle, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span>每次叙事输出字数 <span style={{ color: "var(--ink-dim-deep)", fontSize: "10px" }}>（这是游戏体验的核心，直接按汉字数设定，不是 token 数）</span></span>
+      <span>每次叙事输出字数 <span style={{ color: "var(--ink-dim-deep)", fontSize: "var(--fs-2xs)" }}>（这是游戏体验的核心，直接按汉字数设定，不是 token 数）</span></span>
     </div>
     <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
       {[["简短", 300], ["适中", 600], ["详细", 900], ["长篇", 1500]].map(([label, val]) => (
@@ -86,7 +86,7 @@ export default function ApiLengthFields({ cfg, patch }) {
           : DEFAULT_INTENT_BUDGETS[key];
         return (
           <div key={key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ flex: 1, fontSize: "11px", color: "var(--text-dim)" }}>{label}</span>
+            <span style={{ flex: 1, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>{label}</span>
             <input
               type="number" min="30" step="50" value={cur}
               onChange={e => {
@@ -121,7 +121,7 @@ export default function ApiLengthFields({ cfg, patch }) {
           : DEFAULT_CALL_TOKEN_LIMITS[key];
         return (
           <div key={key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ flex: 1, fontSize: "11px", color: "var(--text-dim)" }}>{label}</span>
+            <span style={{ flex: 1, fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>{label}</span>
             <input
               type="number" min="1" max={CALL_TOKEN_LIMIT_MAX} step="100" value={cur}
               onChange={e => {

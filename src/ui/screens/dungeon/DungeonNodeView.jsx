@@ -49,7 +49,7 @@ export default function DungeonNodeView({
         : "负伤脱身 · 银两折半保命";
     return (
       <div style={cardStyle(zoneTheme)}>
-        <div style={{ color: zoneTheme.accent, fontSize: 13, marginBottom: 6 }}>{title}</div>
+        <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 6 }}>{title}</div>
         <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 8 }}>
           已探节点 {run.clearedNodes} 处 · 剩余气血 {Math.max(1, run.hp[0])}/{run.hp[1]}
         </div>
@@ -75,7 +75,7 @@ export default function DungeonNodeView({
     return (
       <div style={cardStyle(zoneTheme)}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <span style={{ color: zoneTheme.accent, fontSize: 13 }}>{renderNodeTitle(node)}</span>
+          <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)" }}>{renderNodeTitle(node)}</span>
           <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim }}>
             [{NODE_BADGE[node.type] || "节点"}]
           </span>
@@ -132,7 +132,7 @@ export default function DungeonNodeView({
       {(run.choices || []).map((node) => (
         <div key={node.nodeId} style={cardStyle(zoneTheme)}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-            <span style={{ color: zoneTheme.accent, fontSize: 12.5 }}>{renderNodeTitle(node)}</span>
+            <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)" }}>{renderNodeTitle(node)}</span>
             <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim }}>
               {NODE_BADGE[node.type] || "节点"}
             </span>

@@ -15,11 +15,11 @@ export default function MusicPanel({ onClose }) {
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 360, maxWidth: "90vw", color: "var(--text)", fontFamily: "inherit", fontSize: "12.5px" }}
+        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 360, maxWidth: "90vw", color: "var(--text)", fontFamily: "inherit", fontSize: "var(--fs-md)" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <span style={{ color: "var(--accent)", fontSize: "14px" }}>♫ 音乐面板</span>
-          <span style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>♫ 音乐面板</span>
+          <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
@@ -41,11 +41,11 @@ export default function MusicPanel({ onClose }) {
                   {active && state.playing ? "♫" : "♪"}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: active ? "var(--ink-tier-text)" : "var(--text-dim)", fontSize: "12.5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</div>
-                  <div style={{ color: "var(--text-dim)", fontSize: "10.5px" }}>{t.artist}{t.origin ? ` · ${t.origin}` : ""}</div>
+                  <div style={{ color: active ? "var(--ink-tier-text)" : "var(--text-dim)", fontSize: "var(--fs-md)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</div>
+                  <div style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)" }}>{t.artist}{t.origin ? ` · ${t.origin}` : ""}</div>
                 </div>
                 {active && state.playing && (
-                  <span style={{ color: "var(--accent)", fontSize: "10px", flexShrink: 0 }}>播放中</span>
+                  <span style={{ color: "var(--accent)", fontSize: "var(--fs-2xs)", flexShrink: 0 }}>播放中</span>
                 )}
               </div>
             );
@@ -55,7 +55,7 @@ export default function MusicPanel({ onClose }) {
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0 }}>
           <span
             onClick={toggleMusic}
-            style={{ cursor: "pointer", color: "var(--accent)", padding: "4px 12px", border: "1px solid var(--border)", borderRadius: 0, fontSize: "11.5px", flexShrink: 0 }}
+            style={{ cursor: "pointer", color: "var(--accent)", padding: "4px 12px", border: "1px solid var(--border)", borderRadius: 0, fontSize: "var(--fs-sm)", flexShrink: 0 }}
           >{state.playing ? "⏸ 暂停" : "▶ 播放"}</span>
           <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", flexShrink: 0 }}>音量</span>
           <input
@@ -70,7 +70,7 @@ export default function MusicPanel({ onClose }) {
             吞掉，getState() 算了 error 却没人渲染，于是"点一下、没声音、没提示、
             ♪也不变♫"——最难查的那种坏。 */}
         {state.error && (
-          <div style={{ marginTop: 10, padding: "7px 9px", background: "var(--ink-error-bg)", border: "1px solid var(--ink-error-edge)", borderRadius: 0, fontSize: "10.5px", color: "var(--ink-error-text)", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 10, padding: "7px 9px", background: "var(--ink-error-bg)", border: "1px solid var(--ink-error-edge)", borderRadius: 0, fontSize: "var(--fs-xs)", color: "var(--ink-error-text)", lineHeight: 1.5 }}>
             ⚠ {state.error}
           </div>
         )}

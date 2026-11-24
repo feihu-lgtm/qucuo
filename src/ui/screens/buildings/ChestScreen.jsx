@@ -40,10 +40,10 @@ export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, 
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", marginBottom: 5,
         backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }}>
-        {q && <span style={{ color: QUAL_COLOR[q] || "var(--ink-text)", fontSize: 10 }}>●</span>}
-        <span style={{ flex: 1, color: "var(--ink-cream-bright)", fontSize: 12.5, textShadow: "0 1px 2px var(--black)" }}>{nameOf(it)}</span>
+        {q && <span style={{ color: QUAL_COLOR[q] || "var(--ink-text)", fontSize: "var(--fs-2xs)" }}>●</span>}
+        <span style={{ flex: 1, color: "var(--ink-cream-bright)", fontSize: "var(--fs-md)", textShadow: "0 1px 2px var(--black)" }}>{nameOf(it)}</span>
         <span onClick={() => (side === "chest" ? retrieveItem(idx) : storeItem(idx))}
-          style={{ cursor: "pointer", padding: "3px 12px", fontSize: 11, fontWeight: "bold",
+          style={{ cursor: "pointer", padding: "3px 12px", fontSize: "var(--fs-xs)", fontWeight: "bold",
             backgroundImage: `url(${UI("bar_paper.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
             color: "var(--ink-wood-deep)", textShadow: "0 1px 0 rgba(255,255,255,.3)" }}>
           {side === "chest" ? "取出" : "存入"}
@@ -61,7 +61,7 @@ export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, 
       <div className="mobile-overlay-header" style={{ position: "relative", margin: "14px 16px 0", padding: "10px 18px",
         backgroundImage: `url(${UI("bar_wood.webp")})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
         display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ color: "var(--ink-cream-bright)", fontSize: 15, fontWeight: "bold", letterSpacing: 3, textShadow: "0 1px 2px var(--black)" }}>
+        <span style={{ color: "var(--ink-cream-bright)", fontSize: "var(--fs-lg)", fontWeight: "bold", letterSpacing: 3, textShadow: "0 1px 2px var(--black)" }}>
           📦 {building?.name || "库房"}
         </span>
         <span className="mobile-overlay-close" onClick={onClose} title="关闭" style={{ cursor: "pointer", width: 26, height: 26, flexShrink: 0,
@@ -69,26 +69,26 @@ export default function ChestScreen({ building, inv, setInv, zoneTheme, inline, 
       </div>
 
       <div style={{ padding: "12px 18px 26px" }}>
-        <div style={{ color: "var(--ink-brass-dim)", fontSize: 11, marginBottom: 12, lineHeight: 1.6, fontStyle: "italic" }}>
+        <div style={{ color: "var(--ink-brass-dim)", fontSize: "var(--fs-xs)", marginBottom: 12, lineHeight: 1.6, fontStyle: "italic" }}>
           {building?.desc || "点击物品存入或取出。"}
         </div>
 
         {/* 库房 */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ color: "var(--ink-bronze)", fontSize: 11.5, letterSpacing: 2, marginBottom: 8 }}>🗃 库房（{chest.length}）</div>
+          <div style={{ color: "var(--ink-bronze)", fontSize: "var(--fs-sm)", letterSpacing: 2, marginBottom: 8 }}>🗃 库房（{chest.length}）</div>
           <div style={{ maxHeight: "34vh", overflowY: "auto", paddingRight: 4 }}>
             {chest.length === 0
-              ? <div style={{ color: "var(--ink-wood-edge)", fontSize: 11.5, fontStyle: "italic", padding: "6px 10px" }}>箱子空了。</div>
+              ? <div style={{ color: "var(--ink-wood-edge)", fontSize: "var(--fs-sm)", fontStyle: "italic", padding: "6px 10px" }}>箱子空了。</div>
               : chest.map((it, i) => <ItemRow key={(typeof it === "object" ? it.id : it) + i} it={it} side="chest" idx={i} />)}
           </div>
         </div>
 
         {/* 行囊 */}
         <div>
-          <div style={{ color: "var(--ink-bronze)", fontSize: 11.5, letterSpacing: 2, marginBottom: 8 }}>🎒 行囊（{inv.length}）</div>
+          <div style={{ color: "var(--ink-bronze)", fontSize: "var(--fs-sm)", letterSpacing: 2, marginBottom: 8 }}>🎒 行囊（{inv.length}）</div>
           <div style={{ maxHeight: "34vh", overflowY: "auto", paddingRight: 4 }}>
             {inv.length === 0
-              ? <div style={{ color: "var(--ink-wood-edge)", fontSize: 11.5, fontStyle: "italic", padding: "6px 10px" }}>行囊空空。</div>
+              ? <div style={{ color: "var(--ink-wood-edge)", fontSize: "var(--fs-sm)", fontStyle: "italic", padding: "6px 10px" }}>行囊空空。</div>
               : inv.map((it, i) => <ItemRow key={(typeof it === "object" ? it.id : it) + i} it={it} side="inv" idx={i} />)}
           </div>
         </div>

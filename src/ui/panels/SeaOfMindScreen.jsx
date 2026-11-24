@@ -35,10 +35,10 @@ export default function SeaOfMindScreen({
       padding: "10px 16px",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ color: "var(--mind-gold)", fontSize: 12 }}>⟡ 她蜷在沙发角落里</span>
+        <span style={{ color: "var(--mind-gold)", fontSize: "var(--fs-sm)" }}>⟡ 她蜷在沙发角落里</span>
         <span style={{ flex: 1 }} />
         {onClose && (
-          <span onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: 10 }}>▾ 收起</span>
+          <span onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>▾ 收起</span>
         )}
       </div>
 

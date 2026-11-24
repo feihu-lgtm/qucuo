@@ -89,7 +89,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ color: "var(--accent)", fontSize: "14px" }}>立绘管理</span>
+          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>立绘管理</span>
           <span style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 14 }}>
@@ -99,7 +99,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
 
         <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: 10, marginBottom: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: comfyCfg.enabled ? 8 : 0 }}>
-            <span style={{ color: "var(--accent)", fontSize: "12px" }}>⚡ ComfyUI 云端自动生成</span>
+            <span style={{ color: "var(--accent)", fontSize: "var(--fs-sm)" }}>⚡ ComfyUI 云端自动生成</span>
             <label style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <input type="checkbox" checked={comfyCfg.enabled} onChange={e => updateComfyCfg({ enabled: e.target.checked })} />
               启用
@@ -139,7 +139,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
           <input
             value={customName} onChange={e => setCustomName(e.target.value)}
             placeholder="输入一个新的角色名（比如剧情里刚出场但还没被列出的人）"
-            style={{ flex: 1, background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, color: "var(--text)", padding: "6px 8px", fontSize: "12px" }}
+            style={{ flex: 1, background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, color: "var(--text)", padding: "6px 8px", fontSize: "var(--fs-sm)" }}
           />
           <span style={btnStyle} onClick={handleAddCustom}>+ 添加并上传</span>
         </div>
@@ -156,11 +156,11 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                   display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: "pointer",
                 }} onClick={() => triggerUpload(name)}>
                   {generating ? (
-                    <span style={{ color: "var(--accent)", fontSize: "10px" }}>⏳ 生成中…</span>
+                    <span style={{ color: "var(--accent)", fontSize: "var(--fs-2xs)" }}>⏳ 生成中…</span>
                   ) : resolvePortrait(portraits, name) ? (
                     <img src={resolvePortrait(portraits, name)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <span style={{ color: "var(--ink-dim-deep)", fontSize: "10px" }}>点击上传</span>
+                    <span style={{ color: "var(--ink-dim-deep)", fontSize: "var(--fs-2xs)" }}>点击上传</span>
                   )}
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--text)", marginBottom: 4 }}>

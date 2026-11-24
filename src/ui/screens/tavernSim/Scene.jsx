@@ -39,8 +39,8 @@ export function Scene({ sim, night, zoneTheme }) {
       </div>
 
       {/* 灯笼 ×2（CSS 明灭） */}
-      <div className="ts-lantern" style={{ position: "absolute", left: "46%", top: "1%", fontSize: 22 }}>🏮</div>
-      <div className="ts-lantern" style={{ position: "absolute", left: "66%", top: "1%", fontSize: 22 }}>🏮</div>
+      <div className="ts-lantern" style={{ position: "absolute", left: "46%", top: "1%", fontSize: "var(--fs-xl)" }}>🏮</div>
+      <div className="ts-lantern" style={{ position: "absolute", left: "66%", top: "1%", fontSize: "var(--fs-xl)" }}>🏮</div>
 
       {/* 堂中桌子：CSS 画木桌，比暗色 emoji 显眼 */}
       {SEAT_COORDS.slice(0, sim.seats.length).map((c, i) => (
@@ -58,7 +58,7 @@ export function Scene({ sim, night, zoneTheme }) {
       {/* 护院站门口 */}
       {sim.guards.map((g, i) => (
         <div key={g.name} title={`护院 ${g.name}（技 ${g.skill}）`}
-          style={{ position: "absolute", left: `${ZONES.door.x + 6 + i * 6}%`, top: `${ZONES.door.y - 10}%`, fontSize: 24 }}>
+          style={{ position: "absolute", left: `${ZONES.door.x + 6 + i * 6}%`, top: `${ZONES.door.y - 10}%`, fontSize: "var(--fs-2xl)" }}>
           🗡
         </div>
       ))}
@@ -81,8 +81,8 @@ export function Scene({ sim, night, zoneTheme }) {
       })}
 
       {/* 门口与招牌 */}
-      <div style={{ position: "absolute", left: `${ZONES.door.x - 1}%`, top: `${ZONES.door.y - 2}%`, fontSize: 26, opacity: 0.85 }}>🚪</div>
-      <div style={{ position: "absolute", left: `${ZONES.door.x}%`, top: `${ZONES.door.y + 8}%`, fontSize: 12, color: "var(--tavern-door-label)", letterSpacing: 2 }}>
+      <div style={{ position: "absolute", left: `${ZONES.door.x - 1}%`, top: `${ZONES.door.y - 2}%`, fontSize: "var(--fs-2xl)", opacity: 0.85 }}>🚪</div>
+      <div style={{ position: "absolute", left: `${ZONES.door.x}%`, top: `${ZONES.door.y + 8}%`, fontSize: "var(--fs-sm)", color: "var(--tavern-door-label)", letterSpacing: 2 }}>
         — 醉三江 —
       </div>
       {/* 昼夜罩 */}

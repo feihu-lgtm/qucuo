@@ -27,14 +27,14 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
   return (
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building?.name || "拜师堂"} zoneTheme={zoneTheme} onClose={onClose} />
-      <div style={{ padding: "14px 16px", fontSize: 12.5, lineHeight: 1.9, color: zoneTheme.text }}>
+      <div style={{ padding: "14px 16px", fontSize: "var(--fs-md)", lineHeight: 1.9, color: zoneTheme.text }}>
 
         {status.already ? (
           <>
             <div style={{ color: "var(--clay)", marginBottom: 10 }}>
               你已是{SECT_ENTRY.sect}门下弟子。
             </div>
-            <div style={{ color: zoneTheme.textDim, fontSize: 11.5 }}>
+            <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)" }}>
               内堂之后的弟子别院已对你开放。令牌随身收好，那也是别院的钥匙。
             </div>
             <LeaveSectButton sect={SECT_ENTRY.sect} onLeaveSect={onLeaveSect} zoneTheme={zoneTheme} />
@@ -50,12 +50,12 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
               border: `1px solid ${zoneTheme.border}`, borderRadius: 0,
               padding: "10px 12px", marginBottom: 12, background: "rgba(255,255,255,.02)",
             }}>
-              <div style={{ color: zoneTheme.accentDim, fontSize: 11, marginBottom: 6 }}>入门之限</div>
+              <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 6 }}>入门之限</div>
               {status.reqs.map(r => (
-                <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5 }}>
+                <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-sm)" }}>
                   <span style={{ color: r.ok ? "var(--clay)" : "var(--ink-danger-soft)", width: 12 }}>{r.ok ? "✓" : "✗"}</span>
                   <span style={{ flex: 1, color: r.ok ? zoneTheme.text : zoneTheme.textDim }}>{r.label}</span>
-                  <span style={{ color: r.ok ? "var(--clay)" : "var(--ink-danger-soft)", fontSize: 11 }}>{r.have}</span>
+                  <span style={{ color: r.ok ? "var(--clay)" : "var(--ink-danger-soft)", fontSize: "var(--fs-xs)" }}>{r.have}</span>
                 </div>
               ))}
             </div>
@@ -66,7 +66,7 @@ export default function SectEntryScreen({ building, char, narratorAffection, fla
             ) : (
               <>
                 <Btn label="尚不够格" disabled zoneTheme={zoneTheme} />
-                <div style={{ color: zoneTheme.textDim, fontSize: 11, marginTop: 8 }}>
+                <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginTop: 8 }}>
                   {status.missing.includes("affection") && <div>· 她还不够信你。多来往走动，让她看见你是什么样的人。</div>}
                   {status.missing.includes("neigong") && <div>· 底子还太薄。打坐运功，把内功练上去再来。</div>}
                   {status.missing.includes("tuition") && <div>· 束脩还差着。银两凑够了再来不迟。</div>}

@@ -16,11 +16,11 @@ export default function MapModule({ zoneTheme, room, innerRoomName, questProgres
   return (
     <div style={{ borderTop: `1px solid ${zoneTheme.border}`, padding: "6px 12px", flexShrink: 0 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <span style={{ color: zoneTheme.accentDim, fontSize: "10px", cursor: "pointer" }} onClick={() => setMapBig(true)} title="点击放大">
+        <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-2xs)", cursor: "pointer" }} onClick={() => setMapBig(true)} title="点击放大">
           {view === "inner" ? "村图·内" : "舆图·外"} <span style={{ color: zoneTheme.textDim }}>⤢放大{view === "outer" ? " · 点已探明据点自动前往" : ""}</span>
         </span>
         {hasInnerMap(room.name) && (
-          <span style={{ display: "flex", fontSize: "9.5px", flexShrink: 0 }}>
+          <span style={{ display: "flex", fontSize: "var(--fs-2xs)", flexShrink: 0 }}>
             {[["outer", "外"], ["inner", "内"]].map(([v, lb]) => (
               <span key={v} onClick={() => setMapView(v)}
                 style={chromeBtn(zoneTheme, { active: view === v })}>{lb}</span>
@@ -49,7 +49,7 @@ export default function MapModule({ zoneTheme, room, innerRoomName, questProgres
         return <NineGridMap centerLabel={room.name} cells={cells} onGo={go} accent={zoneTheme.accent} textDim={zoneTheme.textDim} loading={loading} big={mapBig} />;
       })()}
       {view === "inner" && (() => {
-        if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>此地无内景可绘。</div>;
+        if (!hasInnerMap(room.name)) return <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>此地无内景可绘。</div>;
         const curRoom = innerRoomName || getDistrictAnchor(room.name);
         // 上锁的房间不出现在九宫格里（此前这里直接读裸 exits，锁着的安全屋照样是可点格子）
         const curExits = (curRoom && visibleInnerExits(room.name, curRoom, { questProgress, flags, inv, char, varTree })) || {};

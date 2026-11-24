@@ -141,7 +141,7 @@ export default function PortraitBodyStep({
             <span style={{ color: "var(--ink-tan)", fontSize: "12px", letterSpacing: "1px" }}>
               选定立绘（8 选 1）
             </span>
-            <span style={{ color: accent, fontSize: "11px" }}>{selectedPortrait.name}</span>
+            <span style={{ color: accent, fontSize: "var(--fs-xs)" }}>{selectedPortrait.name}</span>
           </div>
           <div className="character-create-portrait-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}>
             {PLAYER_PORTRAIT_PRESETS.map((preset) => {

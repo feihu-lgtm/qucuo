@@ -27,7 +27,7 @@ export default function MudRoundLog({ entry, npcName, zoneTheme }) {
       {entry.narration && (
         <div style={{ fontSize: "var(--fs-sm)", color: "var(--ink-tan)", lineHeight: 1.8, marginTop: 4, paddingLeft: 8,
           borderLeft: `2px solid ${zoneTheme.accentDim}`, fontStyle: "italic" }}>
-          <span style={{ fontStyle: "normal", fontSize: "10px", color: zoneTheme.accentDim, marginRight: 5 }}>说书</span>
+          <span style={{ fontStyle: "normal", fontSize: "var(--fs-2xs)", color: zoneTheme.accentDim, marginRight: 5 }}>说书</span>
           {entry.narration}
         </div>
       )}

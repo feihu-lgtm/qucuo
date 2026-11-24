@@ -133,7 +133,7 @@ function ParsedPane({
                     transition: "all .15s ease",
                   }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ color: on ? accent : "var(--border)", fontSize: 12 }}>{on ? "◉" : "○"}</span>
+                    <span style={{ color: on ? accent : "var(--border)", fontSize: "var(--fs-sm)" }}>{on ? "◉" : "○"}</span>
                     <span style={{ color: "var(--paper)", fontSize: 12.5, flex: 1 }}>{c.name}</span>
                     {!c.sure && <span title="机器拿不准这是人还是概念，勾选前请自己看一眼"
                       style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px" }}>待定</span>}

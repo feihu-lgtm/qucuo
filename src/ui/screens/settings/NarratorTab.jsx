@@ -116,7 +116,7 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
                 background: cur ? "var(--ink-tier-bg)" : "transparent",
                 border: `1px solid ${cur ? "var(--accent)" : "transparent"}`,
               }}>
-                <span style={{ width: 16, color: cur ? "var(--accent)" : "var(--ink-faint)", fontSize: "10px" }}>{cur ? "▶" : ""}</span>
+                <span style={{ width: 16, color: cur ? "var(--accent)" : "var(--ink-faint)", fontSize: "var(--fs-2xs)" }}>{cur ? "▶" : ""}</span>
                 <span style={{ flex: 1, fontSize: "11px", color: cur ? "var(--ink-tier-text)" : "var(--text-dim)" }}>
                   {t.label}
                   <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>

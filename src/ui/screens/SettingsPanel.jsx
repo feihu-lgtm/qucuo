@@ -63,15 +63,15 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
 
   return (
     <div className="mobile-overlay-root settings-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "var(--ink-overlay)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div className="mobile-overlay-panel mobile-settings-panel settings-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
+      <div className="mobile-overlay-panel mobile-settings-panel settings-panel" style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "90vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "var(--fs-md)", color: "var(--text)" }} onClick={e => e.stopPropagation()}>
 
         <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <span style={{ color: "var(--accent)", fontSize: "14px" }}>
+          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>
             {tab === null ? "⚙ 游戏设置" : (
               <span style={{ cursor: "pointer" }} onClick={() => selectTab(null)}>← 返回 · <span style={{ color: "var(--text)" }}>{TAB_LABELS[tab] || ""}</span></span>
             )}
           </span>
-          <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
         {tab === null && (
           <div className="settings-home-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>

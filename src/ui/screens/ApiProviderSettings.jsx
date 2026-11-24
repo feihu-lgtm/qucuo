@@ -149,7 +149,7 @@ export default function ApiProviderSettings({
           <div style={labelStyle}>API Key</div>
           <input id="api-key" style={inputStyle} type="password" value={cfg.apiKey || ""} onChange={e => patch({ apiKey: e.target.value })} placeholder="sk-..." />
           {provider.corsProxyRequired && !String(cfg.corsProxy || "").trim() && (
-            <div role="status" style={{ color: "var(--accent)", fontSize: "10.5px", marginTop: 5 }}>
+            <div role="status" style={{ color: "var(--accent)", fontSize: "var(--fs-xs)", marginTop: 5 }}>
               此厂商不允许浏览器直连，请在下方填 CORS 代理
             </div>
           )}

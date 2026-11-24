@@ -118,7 +118,7 @@ export default function ApiTab({
         {testStatus === "testing" && <span style={{ color: "var(--text-dim)" }}>测试中...</span>}
       </div>
       {testStatus && testStatus !== "testing" && (
-        <div data-testid="api-test-result" role="status" style={{ marginTop: 6, fontSize: "11px", color: testStatus === "ok" ? "var(--good)" : "var(--accent)" }}>
+        <div data-testid="api-test-result" role="status" style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: testStatus === "ok" ? "var(--good)" : "var(--accent)" }}>
           {testMsg}
         </div>
       )}

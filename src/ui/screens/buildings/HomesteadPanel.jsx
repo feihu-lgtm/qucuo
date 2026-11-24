@@ -22,9 +22,9 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, z
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 210, background: "rgba(4,4,10,0.92)", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
-      <div style={{ background: "var(--ink-bg-panel)", border: "1px solid var(--ink-border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", color: "var(--ink-text)", fontSize: "12.5px" }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: "var(--ink-bg-panel)", border: "1px solid var(--ink-border)", borderRadius: 0, padding: 20, width: 520, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", color: "var(--ink-text)", fontSize: "var(--fs-md)" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ color: "var(--ink-accent)", fontSize: "14px" }}>
+          <span style={{ color: "var(--ink-accent)", fontSize: "var(--fs-base)" }}>
             {activeFeature ? (
               <span style={{ cursor: "pointer" }} onClick={() => setActiveFeature(null)}>← 返回 · {home.label}</span>
             ) : `🏠 ${home.label}`}
@@ -42,7 +42,7 @@ export default function HomesteadPanel({ roomName, inv, setInv, char, setChar, z
                   onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ink-accent)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-border)"; }}
                 >
-                  <div style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}>{f.icon} <span style={{ color: "var(--ink-tier-text)", fontSize: "12px" }}>{f.name}</span></div>
+                  <div style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}>{f.icon} <span style={{ color: "var(--ink-tier-text)", fontSize: "var(--fs-sm)" }}>{f.name}</span></div>
                   <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", lineHeight: 1.4 }}>{f.desc}</div>
                 </div>
               ))}
@@ -239,7 +239,7 @@ function PigeonFeature({ addLog, runCommand }) {
           🕊 放飞信鸽
         </span>
       ) : (
-        <div style={{ color: "var(--ink-good)", fontSize: "11.5px" }}>鸽子飞走了。笼里剩一只，咕咕叫着，不太高兴。</div>
+        <div style={{ color: "var(--ink-good)", fontSize: "var(--fs-sm)" }}>鸽子飞走了。笼里剩一只，咕咕叫着，不太高兴。</div>
       )}
     </div>
   );
@@ -263,7 +263,7 @@ function TelescopeFeature({ addLog, runCommand }) {
           🔭 远眺
         </span>
       ) : (
-        <div style={{ color: "var(--ink-good)", fontSize: "11.5px" }}>看过了。风景不变，人变了。</div>
+        <div style={{ color: "var(--ink-good)", fontSize: "var(--fs-sm)" }}>看过了。风景不变，人变了。</div>
       )}
     </div>
   );
@@ -288,7 +288,7 @@ function RestFeature({ label, desc, hpRestore, char, setChar, addLog, runCommand
       {!done ? (
         <span onClick={doRest} style={hp >= maxHp ? dimBtn : btnStyle}>{hp >= maxHp ? "气血已满" : `歇一歇（+${Math.min(hpRestore, maxHp - hp)}）`}</span>
       ) : (
-        <div style={{ color: "var(--ink-good)", fontSize: "11.5px" }}>歇过了。精神头好了些。</div>
+        <div style={{ color: "var(--ink-good)", fontSize: "var(--fs-sm)" }}>歇过了。精神头好了些。</div>
       )}
     </div>
   );

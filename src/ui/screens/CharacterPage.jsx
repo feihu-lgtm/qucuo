@@ -22,12 +22,12 @@ export default function CharacterPage({ varTree, claimedMilestones, onClaimMiles
     <div className="mobile-overlay-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.92)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div
         className="mobile-overlay-panel mobile-character-panel"
-        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 640, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "12.5px", color: "var(--text)" }}
+        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 640, maxWidth: "92vw", maxHeight: "85vh", overflowY: "auto", fontFamily: "inherit", fontSize: "var(--fs-md)", color: "var(--text)" }}
         onClick={e => e.stopPropagation()}
       >
         <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <span style={{ color: "var(--accent)", fontSize: "14px" }}>人物关系</span>
-          <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+          <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>人物关系</span>
+          <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
         {characters.length === 0 && (
@@ -44,9 +44,9 @@ export default function CharacterPage({ varTree, claimedMilestones, onClaimMiles
                 style={{ ...cardStyle, borderColor: milestone ? "var(--ember)" : "var(--ink-border)" }}
                 onClick={() => setSelected(name)}
               >
-                <div style={{ color: "var(--text)", fontSize: "13px", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ color: "var(--text)", fontSize: "var(--fs-md)", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>{name}</span>
-                  {milestone && <span style={{ color: "var(--ember)", fontSize: "10px" }}>● 任务</span>}
+                  {milestone && <span style={{ color: "var(--ember)", fontSize: "var(--fs-2xs)" }}>● 任务</span>}
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--pink)", marginBottom: 3 }}>{npcAffectionLabel(affection)}</div>
                 <div style={{ height: 6, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden" }}>
@@ -88,14 +88,14 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
     <div className="mobile-overlay-root" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(4,4,10,0.85)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div
         className="mobile-overlay-panel"
-        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 460, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", color: "var(--text)", fontSize: "12.5px" }}
+        style={{ background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 0, padding: 20, width: 460, maxWidth: "90vw", maxHeight: "80vh", overflowY: "auto", color: "var(--text)", fontSize: "var(--fs-md)" }}
         onClick={e => e.stopPropagation()}
       >
         {!viewingMilestone ? (
           <>
             <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ color: "var(--accent)", fontSize: "14px" }}>{name}</span>
-              <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
+              <span style={{ color: "var(--accent)", fontSize: "var(--fs-base)" }}>{name}</span>
+              <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
             </div>
 
             <div style={{ fontSize: "var(--fs-sm)", color: "var(--pink)", marginBottom: 4 }}>{npcAffectionLabel(affection)}</div>
@@ -118,7 +118,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
             <div style={{ borderTop: "1px solid var(--ink-divider)", paddingTop: 12 }}>
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--good)", marginBottom: 8 }}>专属任务</div>
               {allMilestones.length === 0 && (
-                <div style={{ color: "var(--ink-dim-deep)", fontSize: "11px" }}>此人暂无专属任务</div>
+                <div style={{ color: "var(--ink-dim-deep)", fontSize: "var(--fs-xs)" }}>此人暂无专属任务</div>
               )}
               {allMilestones.map(m => {
                 const key = `${name}:${m.threshold}`;
@@ -161,8 +161,8 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
         ) : (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ color: "var(--ember)", fontSize: "13.5px" }}>{viewingMilestone.title}</span>
-              <span style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={() => setViewingMilestone(null)}>← 返回</span>
+              <span style={{ color: "var(--ember)", fontSize: "var(--fs-base)" }}>{viewingMilestone.title}</span>
+              <span style={{ color: "var(--text-dim)", fontSize: "var(--fs-xs)", cursor: "pointer" }} onClick={() => setViewingMilestone(null)}>← 返回</span>
             </div>
             <div style={{ lineHeight: 1.9, color: "var(--text)" }}>
               {viewingMilestone.text.map((line, i) => (

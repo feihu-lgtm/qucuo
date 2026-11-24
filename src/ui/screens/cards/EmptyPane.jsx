@@ -22,7 +22,7 @@ function EmptyPane({ dragOver, setDragOver, err, onPick, onFile, accent }) {
       }}>
         <img src={S("ui/scroll_v.webp")} alt="" style={{ width: 62, opacity: dragOver ? 1 : .8 }} />
         <div style={{ color: "var(--tutorial-title)", fontSize: 14, letterSpacing: 2 }}>把角色卡拖进来</div>
-        <div style={{ color: "var(--muted)", fontSize: 11 }}>或点此选择 · 支持 PNG 与 JSON</div>
+        <div style={{ color: "var(--muted)", fontSize: "var(--fs-xs)" }}>或点此选择 · 支持 PNG 与 JSON</div>
       </div>
       {err && (
         <div style={{

@@ -121,7 +121,7 @@ export default function BodyProfilePanel({
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <span style={{ color: accent, fontSize: "14px" }}>◈ 体貌</span>
+          <span style={{ color: accent, fontSize: "var(--fs-base)" }}>◈ 体貌</span>
           <span style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
@@ -195,7 +195,7 @@ export default function BodyProfilePanel({
 
         {/* 公开层 */}
         <div style={{ fontSize: "var(--fs-xs)", color: accent, marginBottom: 2 }}>
-          公开层 <span style={{ color: textDim, fontSize: "10px" }}>· 外人一眼可见 · 已填 {filled.public}/{PUBLIC_FIELDS.length}</span>
+          公开层 <span style={{ color: textDim, fontSize: "var(--fs-2xs)" }}>· 外人一眼可见 · 已填 {filled.public}/{PUBLIC_FIELDS.length}</span>
         </div>
         <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginBottom: 4 }}>
           近距离互动（战斗 / 对话 / 查看）与旁白私聊时注入；赶路、结算轮不发。
@@ -205,7 +205,7 @@ export default function BodyProfilePanel({
         {/* 私密层 */}
         <div style={{ marginTop: 14, display: "flex", alignItems: "baseline", gap: 8 }}>
           <span style={{ fontSize: "var(--fs-xs)", color: nsfwOn ? "var(--body-nsfw)" : textDim }}>
-            私密层 <span style={{ color: textDim, fontSize: "10px" }}>· 已填 {filled.intimate}/{INTIMATE_FIELDS.length}</span>
+            私密层 <span style={{ color: textDim, fontSize: "var(--fs-2xs)" }}>· 已填 {filled.intimate}/{INTIMATE_FIELDS.length}</span>
           </span>
           <span
             onClick={() => setShowIntimate(v => !v)}

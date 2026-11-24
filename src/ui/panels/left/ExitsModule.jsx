@@ -4,7 +4,7 @@ import { chromeBtn } from "../../../utils/theme.js";
 export default function ExitsModule({ zoneTheme, room, inSeaOfMind, seaGate, enterSeaOfMind, leaveSeaOfMind }) {
  return (
     <div>
-      <div style={{ color: zoneTheme.accentDim, fontSize: "10.5px", marginBottom: 5, letterSpacing: "1px" }}>出口 <span style={{ color: zoneTheme.textDim, fontSize: "9.5px" }}>（在下方输入框打字移动）</span></div>
+      <div style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-xs)", marginBottom: 5, letterSpacing: "1px" }}>出口 <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>（在下方输入框打字移动）</span></div>
       <div style={{ marginBottom: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
         {room.exits.map(e => (<span key={e} style={{ color: zoneTheme.accent }}>{DIRS[e] || e}</span>))}
         {room.exits.length === 0 && <span style={{ color: zoneTheme.textDim }}>无路可走</span>}

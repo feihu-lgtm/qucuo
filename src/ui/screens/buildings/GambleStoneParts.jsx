@@ -175,7 +175,7 @@ export function BidderCarousel({ bidders, carouselIdx, setCarouselIdx, touchRef,
           </div>
           <div style={{ textAlign: "center", marginTop: 8 }}>
             <div style={{ color: "var(--gold-light)", fontSize: 16, letterSpacing: 2 }}>{cur.name}</div>
-            <div style={{ color: "var(--ink-bronze)", fontSize: 11 }}>{ROLE_BY_NAME[cur.name] || ""}</div>
+            <div style={{ color: "var(--ink-bronze)", fontSize: "var(--fs-xs)" }}>{ROLE_BY_NAME[cur.name] || ""}</div>
             <div style={{ color: "var(--ink-gold-soft)", fontSize: 15, margin: "6px 0" }}>出价 {offerLabel(cur)}</div>
             <div style={{ color: "var(--qb-text-dim)", fontSize: 11, lineHeight: 1.7, maxHeight: "8vh", overflowY: "auto" }}>{cur.bio}</div>
           </div>

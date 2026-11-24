@@ -42,9 +42,9 @@ export default function ItemActionMenu({
     return (
       <div className="mobile-overlay-root" style={overlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
         <div className="mobile-action-panel" style={panel} onClick={(e) => e.stopPropagation()}>
-          <div style={{ color: zoneTheme.accent, fontSize: "13px", marginBottom: 12 }}>{title}</div>
+          <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 12 }}>{title}</div>
           {list.length === 0 ? (
-            <div style={{ color: zoneTheme.textDim, fontSize: "11.5px", marginBottom: 12 }}>
+            <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-sm)", marginBottom: 12 }}>
               {picker === "sell" ? "此地没有肯收货的商家。" : "此地无人可赠。"}
             </div>
           ) : (
@@ -54,14 +54,14 @@ export default function ItemActionMenu({
                   className="mobile-action-choice"
                   onClick={() => { act(n, item); onClose(); }}
                   style={{ cursor: "pointer", padding: "9px 10px", borderRadius: 0, background: zoneTheme.bg, border: `1px solid ${zoneTheme.border}` }}>
-                  <span style={{ color: zoneTheme.accent, fontSize: "12.5px" }}>{n.name}</span>
-                  <span style={{ color: zoneTheme.textDim, fontSize: "10px", marginLeft: 6 }}>{n.brief}</span>
+                  <span style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)" }}>{n.name}</span>
+                  <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", marginLeft: 6 }}>{n.brief}</span>
                 </div>
               ))}
             </div>
           )}
           <div style={{ textAlign: "center", marginTop: 14 }}>
-            <span className="mobile-touch-target" onClick={() => setPicker(null)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>返回</span>
+            <span className="mobile-touch-target" onClick={() => setPicker(null)} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>返回</span>
           </div>
         </div>
       </div>
@@ -87,10 +87,10 @@ export default function ItemActionMenu({
   return (
     <div className="mobile-overlay-root" style={overlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div className="mobile-action-panel" style={panel} onClick={(e) => e.stopPropagation()}>
-        <div style={{ color: quality ? undefined : zoneTheme.accent, fontSize: "14px", marginBottom: 4 }}>
+        <div style={{ color: quality ? undefined : zoneTheme.accent, fontSize: "var(--fs-base)", marginBottom: 4 }}>
           {name}{quality ? <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, marginLeft: 6 }}>（{quality}）</span> : null}
         </div>
-        <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 16 }}>
+        <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-xs)", marginBottom: 16 }}>
           {mode === "ground" ? "地上之物"
             : canEquip ? `${{ weapon: "兵器", armor: "护身之具", accessory: "随身饰物" }[item.category]}${statLabel ? ` · ${statLabel}` : ""}${equipped ? " · 已在身" : ""}`
             : canConsume ? "可服用之物" : "随身之物"}
@@ -98,13 +98,13 @@ export default function ItemActionMenu({
         <div className="mobile-action-grid" style={{ display: "grid", gridTemplateColumns: mode === "ground" ? "1fr 1fr" : "1fr 1fr", gap: 8 }}>
           {actions.map((a) => (
             <div key={a.key} className="mobile-action-choice" onClick={a.onClick} style={cell(a.enabled)}>
-              <div style={{ color: zoneTheme.accent, fontSize: "13px", marginBottom: 3 }}>{a.label}</div>
-              <div style={{ color: zoneTheme.textDim, fontSize: "10px" }}>{a.desc}</div>
+              <div style={{ color: zoneTheme.accent, fontSize: "var(--fs-md)", marginBottom: 3 }}>{a.label}</div>
+              <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)" }}>{a.desc}</div>
             </div>
           ))}
         </div>
         <div style={{ textAlign: "center", marginTop: 14 }}>
-          <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "11px" }}>取消</span>
+          <span className="mobile-touch-target" onClick={onClose} style={{ cursor: "pointer", color: zoneTheme.textDim, fontSize: "var(--fs-xs)" }}>取消</span>
         </div>
       </div>
     </div>

@@ -25,7 +25,7 @@ export default function NarratorModule({ zoneTheme, narrator, confessToNarrator 
                 background: "var(--log-affection)", color: "var(--footer-stalled-bg)", fontWeight: 700, fontSize: "14px",
                 boxShadow: "0 0 6px var(--log-affection)", animation: "pulse 1.6s ease-in-out infinite",
               }}>!</span>
-              <span style={{ color: "var(--log-affection)", fontSize: "11px" }}>心意已满，可向旁白告白</span>
+              <span style={{ color: "var(--log-affection)", fontSize: "var(--fs-xs)" }}>心意已满，可向旁白告白</span>
             </div>
           )}
         </>

@@ -19,23 +19,23 @@ export default function TempleScreen({ building, char, dao, varTree, flags, time
     <Overlay onClose={onClose} zoneTheme={zoneTheme} inline={inline}>
       <Header name={building.name} zoneTheme={zoneTheme} onClose={onClose} />
       <div style={{ padding: 16 }}>
-        <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: 11 }}>
+        <div style={{ color: "var(--ink-text-dim)", marginBottom: 12, fontSize: "var(--fs-xs)" }}>
           功德 {karma} · 每次拜佛消耗 {karmaPerPray} 功德
         </div>
-        <div style={{ color: "var(--ink-text-dim)", fontSize: 12, marginBottom: 12 }}>
+        <div style={{ color: "var(--ink-text-dim)", fontSize: "var(--fs-sm)", marginBottom: 12 }}>
           {building.desc}
         </div>
-        <div style={{ color: "var(--ink-text)", fontSize: 11, marginBottom: 8 }}>七维当前值：</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 12px", fontSize: 12, marginBottom: 14 }}>
+        <div style={{ color: "var(--ink-text)", fontSize: "var(--fs-xs)", marginBottom: 8 }}>七维当前值：</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 12px", fontSize: "var(--fs-sm)", marginBottom: 14 }}>
           {SEVEN_DIMS.map(d => (
             <div key={d} style={{ color: (special[d] ?? 0) >= 10 ? "var(--temple-full)" : "var(--ink-text)" }}>
               {d} <span style={{ color: "var(--attr-value)" }}>{special[d] ?? 0}</span>
-              {(special[d] ?? 0) >= 10 && <span style={{ color: "var(--temple-full)", fontSize: 10 }}> 已满</span>}
+              {(special[d] ?? 0) >= 10 && <span style={{ color: "var(--temple-full)", fontSize: "var(--fs-2xs)" }}> 已满</span>}
             </div>
           ))}
         </div>
         {available.length === 0
-          ? <div style={{ color: "var(--temple-full)", fontSize: 12 }}>七维皆已圆满，无需再求佛。</div>
+          ? <div style={{ color: "var(--temple-full)", fontSize: "var(--fs-sm)" }}>七维皆已圆满，无需再求佛。</div>
           : <Btn
             label={`拜佛（消耗 ${karmaPerPray} 功德）`}
             disabled={karma < karmaPerPray}
@@ -44,12 +44,12 @@ export default function TempleScreen({ building, char, dao, varTree, flags, time
           />
         }
         {karma < karmaPerPray && available.length > 0 && (
-          <div style={{ color: "var(--temple-hint)", fontSize: 10, marginTop: 8 }}>功德不足，多做善事积功德。</div>
+          <div style={{ color: "var(--temple-hint)", fontSize: "var(--fs-2xs)", marginTop: 8 }}>功德不足，多做善事积功德。</div>
         )}
         {offering && (
           <div style={{ marginTop: 14 }}>
             {offeringRefused
-              ? <div style={{ color: "var(--temple-hint)", fontSize: 11 }}>{offering.refuse}</div>
+              ? <div style={{ color: "var(--temple-hint)", fontSize: "var(--fs-xs)" }}>{offering.refuse}</div>
               : <Btn label={offeringDone ? offering.done : offering.label}
                 disabled={offeringDone || (char.money ?? 0) < offering.cost}
                 zoneTheme={zoneTheme} onClick={onClinic} />}
