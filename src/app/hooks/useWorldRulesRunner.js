@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";
 import { timeAdvanceRule } from "../../domain/rules/time/rules.js";
 import { residentNpcRule } from "../../domain/rules/npc/rules.js";
+import { stationedFavorDecayRule } from "../../domain/rules/npc/intimacy.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,
@@ -58,6 +59,7 @@ export function useWorldRulesRunner({
       worldRulesRunnerRef.current = createWorldRules([
         timeAdvanceRule,
         residentNpcRule,
+        stationedFavorDecayRule,
         collectGroundItemsRule,
         innerGroundItemsRule,
         derivedMovesetRule,

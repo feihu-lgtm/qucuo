@@ -23,9 +23,10 @@ export function hirePriceFor(adv) {
 }
 
 // 「不收金银/对钱没概念」的 OC：雇佣路从设定上就不通
+// 「不要寻常金银，只收罕见金属」这类变相拒银也要认——普通银两雇不动他。
 function refusesMoney(adv) {
   const s = String(adv?.tradeStyle || "");
-  return /不收金银|不要钱|不收钱|分文不取|对钱币毫无概念|不懂金钱/.test(s);
+  return /(不收|不要|不取)[^，。]{0,8}(金银|钱|银两)|分文不取|对钱币毫无概念|不懂金钱/.test(s);
 }
 
 // kungfu.moves [{name,desc}] → deriveMovesetFromSig 的 slot 形：首招作攻击，其余依次进状态/防御
@@ -62,6 +63,29 @@ export function npcBusyInQuest(state, npcName) {
 // 已入队/已在槽判定：imported_<name> 槽位已有数据即不可重复招募
 function alreadyCompanion(state, name) {
   return !!state?.companionState?.[`imported_${name}`]?.unlocked;
+}
+
+/**
+ * 动作菜单可用的招募路线清单：每路给一个 {route,label,desc}。
+ * hire/favor 常驻；quest 只在挂过人情（完成旗或待办旗 oc_favor_pending_<id>）时出现；
+ * childhood 只在开局旗在时出现——「合稿没写不硬加」的菜单版。
+ */
+export function ocMenuRoutes(state, adventurer) {
+  if (!adventurer?.id || alreadyCompanion(state, adventurer.name)) return [];
+  const flags = state?.flags || [];
+  const favor = Number(state?.varTree?.角色?.[adventurer.name]?.好感度) || 0;
+  const routes = [];
+  if (!refusesMoney(adventurer)) {
+    routes.push({ route: "hire", label: "雇佣", desc: `出价${hirePriceFor(adventurer)}两邀他同行` });
+  }
+  routes.push({ route: "favor", label: "邀请入队", desc: `凭交情结伴（好感${favor}/${OC_FAVOR_THRESHOLD}）` });
+  if (flags.includes(`${OC_QUEST_DONE_PREFIX}${adventurer.id}`) || flags.includes(`oc_favor_pending_${adventurer.id}`)) {
+    routes.push({ route: "quest", label: "人情两讫", desc: "事了同行，恩怨两清" });
+  }
+  if (flags.includes(`${OC_CHILDHOOD_PREFIX}${adventurer.id}`)) {
+    routes.push({ route: "childhood", label: "青梅同行", desc: "同乡旧谊，零门槛结伴" });
+  }
+  return routes;
 }
 
 /**

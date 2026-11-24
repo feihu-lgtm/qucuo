@@ -7,6 +7,8 @@ import {
   setActiveNpcMenu, setCharacterPageTarget, setPeoplePanel,
 } from "../../../store/sessionUiStore.js";
 import { ADVENTURER_BY_NAME, isAdventurerName } from "../../../domain/data/dungeon/adventurers.js";
+import { stationedNpcsFor } from "../../../domain/rules/companion/companion.js";
+import { useGameStore } from "../../../store/gameStore.js";
 import NpcAngerLine from "../NpcAngerLine.jsx";
 
 function adventurerClass(npcOrName) {
@@ -21,7 +23,16 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
   const pigeonTarget = useSessionUi(s => s.pigeonTarget);
   const peoplePanel = useSessionUi(s => s.peoplePanel);
   const showDebug = useOverlay(OVERLAY.DEBUG);
-  const present = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));
+  const companionState = useGameStore(s => s.companionState);
+  // 留守队友落进当前房间的在场名单（设计稿：留守后落进该房间 npcs 可被对话唤回），
+  // 挂在过滤后列表尾部，带 stationed 标记给动作菜单出「跟上我」。
+  const stationedHere = stationedNpcsFor(companionState, {
+    district: room.name, roomId: innerRoomName || room.name, roomName: innerRoomName || room.name,
+  });
+  const present = [
+    ...room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)),
+    ...stationedHere,
+  ];
   const crowd = (room.crowd || []).filter(c => !c.innerRoom || !innerRoomName || c.innerRoom === innerRoomName).map(c => c.label);
   const everSeen = varTree.世界?.曾经出现人物 || [];
   const presentNames = new Set(room.npcs.map(n => n.name));

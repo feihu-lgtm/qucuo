@@ -22,6 +22,8 @@ import { listCharacters } from "../../domain/rules/prompt/mvu.js";
 import { getTimeStr } from "../../utils/mudHelpers.js";
 import { getPipelineEntries, getTraceLog } from "../../infra/actionTrace.js";
 import { duelAlly, isCompanionUnlockedByName } from "../../domain/rules/companion/companion.js";
+import { ADVENTURER_BY_NAME } from "../../domain/data/dungeon/adventurers.js";
+import { ocMenuRoutes } from "../../features/npc/ocRecruit.js";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import NpcActionMenu from "../components/NpcActionMenu.jsx";
 import ItemActionMenu from "../components/ItemActionMenu.jsx";
@@ -56,6 +58,7 @@ export default function GlobalOverlays({
   buildBugReportTurns, debugSources,
   handleNpcLook, handleNpcTalk, handleNpcGift, handleNpcDuel, handleNpcSteal,
   handleNpcLearnSkill, handleNpcTrade, handleInviteCompanion,
+  handleOcRecruit, handleRecallCompanion,
   inspectItem, handleConsumeItem, handleCollectGround, handleToggleEquip,
   persuasionProgress, savePersuasionProgress, finishPersuasion,
   resetDuel, duelFinishHandler,
@@ -185,6 +188,9 @@ export default function GlobalOverlays({
         onLearnSkill={handleNpcLearnSkill}
         onTrade={handleNpcTrade}
         onInviteCompanion={handleInviteCompanion}
+        onOcRecruit={handleOcRecruit}
+        onRecallCompanion={handleRecallCompanion}
+        ocRoutes={ADVENTURER_BY_NAME[activeNpcMenu.name] ? ocMenuRoutes({ flags, varTree, companionState }, ADVENTURER_BY_NAME[activeNpcMenu.name]) : []}
         flags={flags} companionUnlocked={isCompanionUnlockedByName(companionState, activeNpcMenu.name)}
       />
     )},
