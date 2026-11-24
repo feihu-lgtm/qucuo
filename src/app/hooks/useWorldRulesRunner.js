@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createCoalescedCheck, createWorldRules } from "../../engine/worldRules.js";
 import { timeAdvanceRule } from "../../domain/rules/time/rules.js";
 import { residentNpcRule } from "../../domain/rules/npc/rules.js";
-import { stationedFavorDecayRule } from "../../domain/rules/npc/intimacy.js";
+import { stationedFavorDecayRule, followFavorDriftRule } from "../../domain/rules/npc/intimacy.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,
@@ -60,6 +60,7 @@ export function useWorldRulesRunner({
         timeAdvanceRule,
         residentNpcRule,
         stationedFavorDecayRule,
+        followFavorDriftRule,
         collectGroundItemsRule,
         innerGroundItemsRule,
         derivedMovesetRule,
