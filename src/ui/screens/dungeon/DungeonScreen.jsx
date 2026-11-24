@@ -51,16 +51,11 @@ export default function DungeonScreen({
     return () => { cancelled = true; };
   }, [run.clearedNodes, run.status, run.dungeonName, run.floorName, run.log]);
 
-  const handleSettleAndClose = () => {
-    if (settledRef.current) {
-      onClose?.();
-      return;
-    }
-    settledRef.current = true;
+  // 结算结果落盘的公共件：actLocal 事务里写 char/inv/exp/pot/time/flags + 日志 + 笔记
+  const execSettle = (result) => {
     const exec = runCommand || ((_id, fn) => fn());
     exec("actLocal", () => {
       captureUndo?.();
-      const result = settleDungeonRun(gameStore.getState(), run);
       if (result.changes) {
         gameActions.setChar(result.changes.char);
         gameActions.setInv(result.changes.inv);
@@ -72,6 +67,37 @@ export default function DungeonScreen({
       if (result.logs?.length) addLog?.(result.logs);
       if (result.note) jotNote?.(result.note);
     });
+  };
+
+  // 侧栏点当前建筑等不走 onClose 的卸载：兜底结算，免得丢收获或白嫖探索时间
+  const runRef = useRef(run);
+  runRef.current = run;
+  const mapRunRef = useRef(mapRun);
+  mapRunRef.current = mapRun;
+  const charRef = useRef(char);
+  charRef.current = char;
+  useEffect(() => () => {
+    if (settledRef.current) return;
+    const m = mapRunRef.current;
+    const r = runRef.current;
+    const c = charRef.current;
+    if (m) {
+      settledRef.current = true;
+      execSettle(settleMapRun(gameStore.getState(), m.status === "exploring" ? retreatRun(m).runState : m));
+    } else if (r.status !== "exploring" || r.clearedNodes > 0 || r.usedItems.length > 0
+        || r.hp[0] !== (c?.hp?.[0] ?? r.hp[0])) {
+      settledRef.current = true;
+      execSettle(settleDungeonRun(gameStore.getState(), r.status === "exploring" ? retreatDungeonRun(r) : r));
+    }
+  }, []);
+
+  const handleSettleAndClose = () => {
+    if (settledRef.current) {
+      onClose?.();
+      return;
+    }
+    settledRef.current = true;
+    execSettle(settleDungeonRun(gameStore.getState(), run));
     onClose?.();
   };
 
@@ -82,21 +108,7 @@ export default function DungeonScreen({
       return;
     }
     settledRef.current = true;
-    const exec = runCommand || ((_id, fn) => fn());
-    exec("actLocal", () => {
-      captureUndo?.();
-      const result = settleMapRun(gameStore.getState(), mapRun);
-      if (result.changes) {
-        gameActions.setChar(result.changes.char);
-        gameActions.setInv(result.changes.inv);
-        gameActions.setExp(result.changes.exp);
-        gameActions.setPot(result.changes.pot);
-        gameActions.setTime(result.changes.time);
-        gameActions.setFlags(result.changes.flags);
-      }
-      if (result.logs?.length) addLog?.(result.logs);
-      if (result.note) jotNote?.(result.note);
-    });
+    execSettle(settleMapRun(gameStore.getState(), mapRun));
     onClose?.();
   };
 

@@ -100,10 +100,13 @@ export function settleDungeonRun(state, run, { now = Date.now() } = {}) {
 // mapRun.runState 字段名与旧 run 几乎同构：status/loot/hp/usedItems/bossDefeated，
 // 缺的 floor/dungeonName/clearFlag 在这里补齐——耗时按步数四步折一时辰。
 export function settleMapRun(state, mapRun, opts = {}) {
+  // 只把 run 内真实掉的血写回 char：撤退不该吃掉入图前的超上限气血或中途回血
+  const charHp = state.char?.hp || mapRun.hp || [1, 100];
+  const inRunLoss = Math.max(0, (mapRun.entryHp ?? charHp[0]) - (mapRun.hp?.[0] ?? charHp[0]));
   const shim = {
     status: mapRun.status,
     loot: mapRun.loot,
-    hp: mapRun.hp,
+    hp: [Math.max(1, Math.min(charHp[1], charHp[0] - inRunLoss)), charHp[1]],
     usedItems: mapRun.usedItems || [],
     floor: Math.max(1, Math.ceil((mapRun.step || 0) / 4)),
     dungeonName: `${mapRun.districtKey}·内层`,

@@ -45,6 +45,7 @@ export function startMapRun(districtKey, seed, { char } = {}) {
   const config = DUNGEON_DISTRICTS_ALL[districtKey];
   if (!config) throw new Error(`未知地宫：${districtKey}`);
   const map = genDungeonMap(seed, config);
+  const hp = normalizeHp(char?.hp);
   return {
     districtKey,
     seed,
@@ -53,7 +54,8 @@ export function startMapRun(districtKey, seed, { char } = {}) {
     visited: [map.anchor],
     envTags: {},
     envState: {},
-    hp: normalizeHp(char?.hp),
+    hp,
+    entryHp: hp[0],
     loot: emptyLoot(),
     status: "exploring",
     step: 0,

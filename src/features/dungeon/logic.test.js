@@ -115,4 +115,24 @@ describe("内层地图入口出口接线", () => {
     expect(lose.changes.exp).toBe(10 + 4);
     expect(lose.changes.inv.map((i) => i.name)).toContain("降魔杵");
   });
+
+  it("撤退不抹血：超上限气血与 run 外回血都保留，只扣 run 内真实掉的血", () => {
+    // 入图时 150/120（超上限增益），走一步没走直接撤退——血不动
+    const rs = startMapRun("白塔地宫", "hp", { char: { hp: [150, 120] } });
+    expect(rs.entryHp).toBe(120); // 归一化后的入口记录
+    const retreated = { ...rs, status: "retreated" };
+    const overCap = settleMapRun(
+      { ...baseState, char: { ...baseState.char, hp: [150, 120] } },
+      retreated,
+    );
+    expect(overCap.changes.char.hp).toEqual([150, 120]);
+
+    // run 内掉到 60（未来战斗），结算时 char 已回血到 110——只扣差值 60
+    const hurt = { ...rs, hp: [60, 120], status: "retreated" };
+    const healed = settleMapRun(
+      { ...baseState, char: { ...baseState.char, hp: [110, 120] } },
+      hurt,
+    );
+    expect(healed.changes.char.hp).toEqual([50, 120]); // 110 - (120-60)
+  });
 });
