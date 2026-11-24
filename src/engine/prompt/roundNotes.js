@@ -11,6 +11,8 @@ import { formatCompanionBodyBlock } from "../../domain/rules/character/companion
 import { getAllResidentNpcLore } from "../../domain/data/npc/residentNpcs.js";
 import { matchNpcLore, buildNpcLoreBlock } from "../../domain/rules/prompt/worldbook.js";
 import { detectReunions, buildReunionBlock, REUNION_GAP_THRESHOLD } from "../../domain/rules/npc/npcAwareness.js";
+import { attireExposure } from "../../domain/rules/npc/npcCarry.js";
+import { npcTradeOf } from "../../domain/rules/npc/npcTrade.js";
 
 const atStagePlace = (stage, room, innerRoomName) => {
   const rl = stage?.requireLocation;
@@ -210,7 +212,7 @@ export function buildPartyListBlock(companionState) {
 //
 // 久别重逢·记忆断层——本轮在场者里，凡已认识、且距上次同框超过阈值的，
 // 提示 AI 补写这段时间的合理变化，免得人物像时间静止。纯本地时间戳判定。
-export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, questProgress, varTree, time, companionState, nsfwOn, importedNpcLore = [], companionForms = {} }) {
+export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk, questProgress, varTree, time, companionState, nsfwOn, npcState, importedNpcLore = [], companionForms = {} }) {
   const lastAiText = [...convo].reverse().find(m => m.role === "assistant")?.content || "";
   // 三个来源合并：剧本预设手写的、据点驻场表的、玩家从角色卡入册的。
   // 入册的排最后——matchNpcLore 按数组顺序收集命中项，同名时两段人设都会注入，
@@ -263,8 +265,20 @@ export function buildNpcContext({ convo, preset, visibleNpcs, room, cmd, isTalk,
   const questStatusBlock = questStatusLines.length
     ? `\n\n【在场人物与玩家的任务关系】（据此调整台词语气：完成的表达感谢/推进后续，进行中的关心进度而非从头重复交代）\n${questStatusLines.join("\n")}`
     : "";
+  // 扒空外露度：在场 NPC 被买/偷/扒到只剩零星饰物或衣不蔽体时，主回合上下文
+  // 也要照实告诉 AI（不止端详链路）。判定复用 attireExposure——甲刃被买空的
+  // 证据在 npcState 台账 sold 快照里，经 npcTradeOf 取（id→name 回退照旧）。
+  const attireLines = (visibleNpcs || [])
+    .map((n) => {
+      const exposure = attireExposure(n, npcTradeOf(npcState, n));
+      return exposure ? `${n.name}：${exposure}` : null;
+    })
+    .filter(Boolean);
+  const attireBlock = attireLines.length
+    ? `\n\n【在场人物衣着状态】（这些人被扒得几乎不剩行头，叙事要照实反映）\n${attireLines.join("\n")}`
+    : "";
   const reunionBlock = buildReunionBlock(
     detectReunions(varTree, room.npcs, time, REUNION_GAP_THRESHOLD)
   );
-  return { lastAiText, npcLoreBlockWithQuest: npcLoreBlock + companionLore + questStatusBlock + partyListBlock, reunionBlock };
+  return { lastAiText, npcLoreBlockWithQuest: npcLoreBlock + companionLore + questStatusBlock + partyListBlock + attireBlock, reunionBlock };
 }
