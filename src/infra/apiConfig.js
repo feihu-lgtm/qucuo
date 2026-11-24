@@ -89,7 +89,7 @@ export function defaultConfig() {
     // 提取层（叙事/状态分离模式）：大模型只输出叙事正文，状态由系统/软结算裁决后
     // 小模型按意图提取残余字段；settle 回合跳过提取。关掉则回到单调用 JSON 老路
     //（回放/离线兜底，确定性 fixture 依赖它）。
-    extractionEnabled: true,
+    extractionEnabled: false,
     // 行动识别默认开：打字与按钮落到同一套系统结算路径；想要原来自由行动的用户可在设置里关。
     intentRecognitionEnabled: true,
     bookkeepEnabled: true,
