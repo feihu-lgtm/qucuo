@@ -272,7 +272,12 @@ const advAllEntries = (adv) => [
 export function carryTradeEntries(npc) {
   // OC_BY_NAME 覆盖两份卡池（含 adventurersIP），ADVENTURER_BY_NAME 只认主池。
   const adv = OC_BY_NAME[npc?.name] || ADVENTURER_BY_NAME[npc?.name];
+  // 读取源三级：live carriedItems（战斗化 NPC）→ 房间实例自带 spread 字段
+  // （OC 的 carry/stealables/follower 摊开在他身上，sold 标记写在这里读得见）
+  // → 静态 adv 卡表底（不在场时查表）→ npc.carry 宪底。
+  const inst = advAllEntries(npc);
   const raw = (npc?.carriedItems?.length ? npc.carriedItems : null)
+    || (inst.length ? inst : null)
     || (adv ? advAllEntries(adv) : null)
     || npc?.carry
     || [];
@@ -296,7 +301,9 @@ export function carryTradeSections(npc) {
 // 装备区外露度：equipment 区被扒到只剩饰物/一件不剩时算私密外露。
 export function attireExposure(npc) {
   // 没有任何随身数据的 NPC 不算「被扒光」——他本就没穿过，报暴露是误判。
-  const raw = OC_BY_NAME[npc?.name]?.carry || ADVENTURER_BY_NAME[npc?.name]?.carry || npc?.carry || npc?.carriedItems;
+  const adv = OC_BY_NAME[npc?.name] || ADVENTURER_BY_NAME[npc?.name];
+  const inst = advAllEntries(npc);
+  const raw = inst.length ? inst : (adv ? advAllEntries(adv) : npc?.carriedItems);
   if (!raw?.length) return null;
   const gear = carryTradeEntries(npc).filter((e) => e.slot === "equipment" && GEAR_CATS.has(e.category));
   const hasArmor = gear.some((e) => e.category === ITEM_CATEGORY.ARMOR);

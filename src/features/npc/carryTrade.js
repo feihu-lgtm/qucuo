@@ -16,7 +16,12 @@ const GEAR = new Set([ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.A
 export function buyCarryEntry(state, npc, entry) {
   // 活库存校验：面板渲染的是旧快照。同名条目只在没有任何活副本时才拒卖——
   // 全部标过 sold/stolen/dropped 说明真买走了；玩家送回来的新副本不算标过，可再买。
-  const liveStock = [...(npc?.carry || []), ...(npc?.carriedItems || [])];
+  const liveStock = [
+    ...(npc?.carry || []),
+    ...(npc?.stealables?.equipment || []),
+    ...(npc?.stealables?.sundries || []),
+    ...(npc?.carriedItems || []),
+  ];
   const sameName = liveStock.filter((e) => e && e.name === entry.name);
   const hasLiveCopy = sameName.some((e) => !e.sold && !e.stolen && !e.dropped);
   if (sameName.length && !hasLiveCopy) {
@@ -50,8 +55,8 @@ export function buyCarryEntry(state, npc, entry) {
     changes: {
       char: (prev) => ({ ...prev, money: (prev.money ?? 0) - price }),
       inv: (prev) => [...prev, newItem],
-      // sold 标记写进 live 列表：carryTradeEntries 优先读 npc.carry/carriedItems，
-      // 标记落进读取源，面板与外观即时少一件；adv.carry 静态表底不动。
+      // sold 标记写进 live 列表：carryTradeEntries 读实例字段优先于静态表底，
+      // 标记落进读取源，面板与外观即时少一件；adv 静态表底不动。
       room: (prev) => ({
         ...prev,
         npcs: (prev.npcs || []).map((n) => {
@@ -62,6 +67,15 @@ export function buyCarryEntry(state, npc, entry) {
           return {
             ...n,
             ...(base ? { carry: mark(base) } : {}),
+            // 读取源含 stealables 两张表（装备/杂物），标记也要落进去，不然
+            // 买「襦装」这类 stealables 条目会无限重买。
+            ...(n.stealables ? {
+              stealables: {
+                ...n.stealables,
+                equipment: mark(n.stealables.equipment),
+                sundries: mark(n.stealables.sundries),
+              },
+            } : {}),
             carriedItems: mark(n.carriedItems),
           };
         }),
