@@ -6,6 +6,8 @@ const TABLES = {
 const OVERRIDE_STORAGE_KEY = "qucuo_prompt_overrides_v1";
 const overrideListeners = new Set();
 let storageSubscribed = false;
+let hasUnpersistedEdits = false;
+let lastPersistError = null;
 
 function readPersistedOverrides() {
   try {
@@ -32,6 +34,8 @@ function notifyOverrideListeners() {
 
 function handleStorageSync(event) {
   if (event && event.key !== null && event.key !== OVERRIDE_STORAGE_KEY) return;
+  hasUnpersistedEdits = false;
+  lastPersistError = null;
   runtimeOverrides = readPersistedOverrides() || {};
   notifyOverrideListeners();
 }
@@ -52,13 +56,24 @@ function releaseStorageSubscriptionIfUnused() {
 
 function persistOverrides() {
   try {
-    if (typeof localStorage === "undefined") return;
+    if (typeof localStorage === "undefined") {
+      hasUnpersistedEdits = false;
+      lastPersistError = null;
+      return true;
+    }
     if (!Object.keys(runtimeOverrides).length) {
       if (typeof localStorage.removeItem === "function") localStorage.removeItem(OVERRIDE_STORAGE_KEY);
     } else if (typeof localStorage.setItem === "function") {
       localStorage.setItem(OVERRIDE_STORAGE_KEY, JSON.stringify({ version: 1, overrides: runtimeOverrides }));
     }
-  } catch {}
+    hasUnpersistedEdits = false;
+    lastPersistError = null;
+    return true;
+  } catch (err) {
+    hasUnpersistedEdits = true;
+    lastPersistError = err?.message || "浏览器存储空间已满，修改仅在当前会话生效";
+    return false;
+  }
 }
 
 function cloneOverridesMap(map) {
@@ -86,9 +101,15 @@ export function listPromptDefs(kind) {
   return [...(TABLES[kind]?.values() || [])];
 }
 
+export function getPromptOverridePersistError() {
+  return lastPersistError;
+}
+
 export function getPromptOverrides() {
-  const persisted = readPersistedOverrides();
-  if (persisted) runtimeOverrides = persisted;
+  if (!hasUnpersistedEdits) {
+    const persisted = readPersistedOverrides();
+    if (persisted) runtimeOverrides = persisted;
+  }
   return cloneOverridesMap(runtimeOverrides);
 }
 
@@ -104,7 +125,7 @@ export function subscribePromptOverrides(listener) {
 
 export function setPromptOverride(blockId, patch) {
   if (!blockId) return getPromptOverrides();
-  const persisted = readPersistedOverrides();
+  const persisted = hasUnpersistedEdits ? null : readPersistedOverrides();
   const base = persisted ? { ...persisted } : { ...runtimeOverrides };
   const next = { ...(base[blockId] || {}) };
   if (patch && typeof patch === "object") {
@@ -136,6 +157,8 @@ export function resetPromptRegistryForTest() {
   TABLES.block.clear();
   TABLES.call.clear();
   runtimeOverrides = {};
+  hasUnpersistedEdits = false;
+  lastPersistError = null;
   try {
     if (typeof localStorage !== "undefined" && typeof localStorage.removeItem === "function") {
       localStorage.removeItem(OVERRIDE_STORAGE_KEY);

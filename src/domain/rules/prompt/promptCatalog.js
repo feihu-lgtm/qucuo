@@ -10,11 +10,6 @@ import * as ENGINE from "./enginePrompts.js";
 import { buildExtractionSpecExample } from "./extractionEngine.js";
 import { NSFW_RULES } from "./modePrimer.js";
 import { getActivePreset } from "./presetSystem.js";
-import {
-  buildNarratorWhisperContext,
-  narratorVoicePrompt,
-  narratorWhisperLengthNote,
-} from "../narrator/narrator.js";
 
 const DEFAULT_PROSE_RULE = "【成文铁律·逐段自查（本条最优先，落笔前先过一遍）】每写完一段，先在心里核两样再往下写：其一，这一段每个句子都要是完整句——主谓宾齐全、该带的定状补都补上，不许出现半截话、掐头去尾、省略到看不明白的残句；其二，这一段凡涉及到的，时间、地点、人物、起因、经过、结果都要交代到实处（这一段确实用不上的那几样可以不写，但只要沾边就得写全，不许用『那人』『某处』『后来』这类含糊词一笔带过）。宁可句子写得实、写得满，也绝不为省字丢主语宾语或掐断句子。";
 
@@ -49,7 +44,7 @@ export const ROUTE_LABELS = {
 const BLOCK_CATALOG_META = {
   engine_identity: { name: "引擎身份声明", category: "style", slot: "sys", editable: "engine" },
   length: { name: "篇幅与节奏要求", category: "style", slot: "authorsNote", editable: "toggle" },
-  voice: { name: "旁白语气（品德与好感文风）", category: "style", slot: "sys", editable: "static" },
+  voice: { name: "旁白语气（品德与好感文风）", category: "style", slot: "sys", editable: "supplement" },
   preset_scenario: { name: "世界观总纲（此地与地理蓝绿灯）", category: "world", slot: "sys", editable: "static" },
   preset_genrules: { name: "世界与行动通用铁律", category: "style", slot: "sys", editable: "static" },
   preset_wenfeng: { name: "文体铁律与禁用句式", category: "style", slot: "sys", editable: "static" },
@@ -76,7 +71,7 @@ const BLOCK_CATALOG_META = {
   nsfw_rules: { name: "NSFW 写作规则（■ 模式）", category: "style", slot: "inChat", editable: "toggle", defaultMode: "green" },
   gm_rule: { name: "创造模式规则（⚡ 模式）", category: "style", slot: "inChat", editable: "toggle", defaultMode: "green" },
   body_gate: { name: "外貌体貌门控（公开层/私密层）", category: "player", slot: "authorsNote", editable: "toggle", defaultMode: "green" },
-  whisper_ctx: { name: "旁白身份与亲疏语境", category: "npc", slot: "sys", editable: "static" },
+  whisper_ctx: { name: "旁白身份与亲疏语境", category: "npc", slot: "sys", editable: "supplement" },
   world_state: { name: "精简世界状态（此地与背包）", category: "world", slot: "sys", editable: "toggle" },
   facts: { name: "全知事实账本", category: "memory", slot: "sys", editable: "toggle" },
   recall: { name: "向量召回往事", category: "memory", slot: "sys", editable: "toggle" },
@@ -85,7 +80,7 @@ const BLOCK_CATALOG_META = {
   topic_gate: { name: "私聊话题红绿灯（身世/邀帖）", category: "style", slot: "sys", editable: "toggle" },
   quest_gate: { name: "任务线红绿灯（全名+好感≥30）", category: "style", slot: "sys", editable: "toggle", canForceBlue: false },
   whisper_scenario: { name: "剧本背景设定（whisper 门控）", category: "world", slot: "sys", editable: "toggle" },
-  whisper_length: { name: "私聊篇幅与语量指令", category: "style", slot: "sys", editable: "static" },
+  whisper_length: { name: "私聊篇幅与语量指令", category: "style", slot: "sys", editable: "supplement" },
   whisper_output: { name: "私聊输出与软结算好感裁决", category: "review", slot: "user", editable: "engine" },
 };
 
@@ -117,9 +112,6 @@ function resolveMainStaticText(id, actionView, { presetScenario } = {}) {
     if (typeof presetScenario === "string") return presetScenario;
     return getActivePreset()?.prompts?.find((p) => p.id === "scenario")?.content ?? "";
   }
-  if (id === "voice") {
-    return narratorVoicePrompt({ stage: "flirting", affection: 0 });
-  }
   if (id === "preset_genrules" || id === "preset_wenfeng") {
     const entryId = id === "preset_genrules" ? "genrules" : "wenfeng";
     return getActivePreset()?.prompts?.find((p) => p.id === entryId)?.content ?? "";
@@ -133,9 +125,6 @@ function resolveMainStaticText(id, actionView, { presetScenario } = {}) {
 }
 
 function resolveWhisperStaticText(id, { narratorLorebook = "" } = {}) {
-  if (id === "whisper_ctx") return buildNarratorWhisperContext(0);
-  if (id === "voice") return narratorVoicePrompt({ stage: "flirting", affection: 0 });
-  if (id === "whisper_length") return narratorWhisperLengthNote(0);
   if (id === "narrator_lore") return typeof narratorLorebook === "string" ? narratorLorebook : "";
   return null;
 }
@@ -156,7 +145,9 @@ function mergeMatrixItem({
       : rawMode === "off" && soleSys
         ? "唯一系统块不可关闭"
         : reason;
-  const effectiveText = typeof ov?.text === "string" ? ov.text : staticText;
+  const isSupplement = editable === "supplement";
+  const baseStaticText = isSupplement ? "" : staticText;
+  const effectiveText = typeof ov?.text === "string" ? ov.text : baseStaticText;
   const resolvedCanForceBlue = canForceBlue ?? BLOCK_CATALOG_META[id]?.canForceBlue ?? true;
 
   return {
@@ -166,10 +157,11 @@ function mergeMatrixItem({
     slot: slot || BLOCK_CATALOG_META[id]?.slot || "sys",
     kind: kind || (editable === "engine" ? "engine" : editable === "static" ? "static" : "gated"),
     editable,
+    isSupplement,
     soleSys,
     canToggleOff: !lockedOff,
     canForceBlue: resolvedCanForceBlue && !lockedOff,
-    canEditText: editable === "static" && staticText != null,
+    canEditText: isSupplement || (editable === "static" && baseStaticText != null),
     defaultLit: Boolean(defaultLit),
     defaultMode: defaultMode || (defaultLit ? "blue" : "green"),
     overrideMode,
@@ -177,7 +169,7 @@ function mergeMatrixItem({
     reason: effectiveReason || (effectiveLit ? "蓝灯常驻" : "按条件灭灯"),
     hasTextOverride: typeof ov?.text === "string",
     textOverride: typeof ov?.text === "string" ? ov.text : null,
-    staticText,
+    staticText: baseStaticText,
     effectiveText,
     summary: summary || BLOCK_CATALOG_META[id]?.summary || "",
   };

@@ -1,8 +1,13 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import SettingsPanel from "./SettingsPanel.jsx";
 import { ZONE_THEMES } from "../../utils/theme.js";
+import { resetPromptOverrides, setPromptOverride } from "../../domain/rules/prompt/registry.js";
+
+afterEach(() => {
+  resetPromptOverrides();
+});
 
 const render = (cfg, initialTab, props = {}) => renderToStaticMarkup(createElement(SettingsPanel, {
   cfg, initialTab, font: "pixel", setFont: () => {}, zoneTheme: ZONE_THEMES.village, ...props,
@@ -78,5 +83,11 @@ describe("SettingsPanel unified prompt control center", () => {
     expect(reunionRow).toContain("绿灯");
     expect(reunionRow).toContain("关闭");
     expect(reunionRow).not.toContain("蓝灯");
+  });
+
+  it("shows legacy narrator_lore override inside NarratorTab so edits share one source of truth", () => {
+    setPromptOverride("narrator_lore", { text: "旧控制台写入的秘密" });
+    const html = render({ apiKey: "test-placeholder", narratorLorebook: "" }, "narrator");
+    expect(html).toContain("旧控制台写入的秘密");
   });
 });

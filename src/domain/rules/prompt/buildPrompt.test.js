@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  definePrompt, getPromptDef, getPromptOverrides, listPromptDefs,
+  definePrompt, getPromptDef, getPromptOverridePersistError, getPromptOverrides, listPromptDefs,
   resetPromptOverrides, resetPromptRegistryForTest, setPromptOverride, subscribePromptOverrides,
 } from "./registry.js";
 import { buildPrompt, estimatePromptTokens } from "./buildPrompt.js";
@@ -247,6 +247,46 @@ describe("prompt registry & buildPrompt", () => {
     } finally {
       unsub();
       resetPromptOverrides();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps in-memory edits and surfaces persist error when localStorage throws QuotaExceededError", () => {
+    const oldSaved = JSON.stringify({
+      version: 1,
+      overrides: { voice: { text: "旧语气覆盖" } },
+    });
+    let quotaFull = true;
+    const store = new Map([["qucuo_prompt_overrides_v1", oldSaved]]);
+    vi.stubGlobal("localStorage", {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => {
+        if (quotaFull) {
+          const err = new Error("QuotaExceededError: storage full");
+          err.name = "QuotaExceededError";
+          throw err;
+        }
+        store.set(k, String(v));
+      },
+      removeItem: (k) => { store.delete(k); },
+    });
+
+    try {
+      const saved = setPromptOverride("voice", { text: "新语气补充" });
+      expect(saved.voice).toEqual({ text: "新语气补充" });
+      expect(getPromptOverridePersistError()).toContain("QuotaExceededError");
+      // 后续读取不能被旧磁盘值覆盖
+      expect(getPromptOverrides().voice).toEqual({ text: "新语气补充" });
+
+      quotaFull = false;
+      setPromptOverride("catalog", { mode: "blue" });
+      expect(getPromptOverridePersistError()).toBeNull();
+      expect(getPromptOverrides()).toEqual({
+        voice: { text: "新语气补充" },
+        catalog: { mode: "blue" },
+      });
+    } finally {
+      resetPromptRegistryForTest();
       vi.unstubAllGlobals();
     }
   });

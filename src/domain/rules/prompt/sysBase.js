@@ -196,11 +196,15 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   if (opts.onGateReport) opts.onGateReport(gated);
   // 13 位置拆分：scenario / charDescription 由各自的独立块承载，这里不再填进预设占位符，避免重复。
   const presetContent = assemblePrompt(preset, { scenario: "", charDescription: "" });
-  const voiceBlock = ov.voice?.mode === "off"
+  const baseVoiceBlock = ov.voice?.mode === "off"
     ? ""
-    : typeof ov.voice?.text === "string"
-      ? ov.voice.text
-      : narratorVoicePrompt(narratorState, opts.onPromptRefMissing);
+    : narratorVoicePrompt(narratorState, opts.onPromptRefMissing);
+  const voiceSupplement = ov.voice?.mode !== "off" && typeof ov.voice?.text === "string"
+    ? ov.voice.text.trim()
+    : "";
+  const voiceBlock = baseVoiceBlock && voiceSupplement
+    ? `${baseVoiceBlock}\n${voiceSupplement}`
+    : baseVoiceBlock || voiceSupplement;
   const npcLoreText = ov.npc_lore?.mode === "off" ? "" : (npcLoreBlock || "");
   const effectiveLenNote = ov.length?.mode === "off"
     ? ""

@@ -8,6 +8,7 @@ import { buildExtractionSpecExample } from "../../domain/rules/prompt/extraction
 import { getTraceLog } from "../../infra/actionTrace.js";
 import { getPositionMeta } from "../../domain/rules/prompt/tavernMapping.js";
 import {
+  getPromptOverridePersistError,
   getPromptOverrides, resetPromptOverrides, setPromptOverride, subscribePromptOverrides,
 } from "../../domain/rules/prompt/registry.js";
 import {
@@ -33,20 +34,24 @@ const pill = (active) => ({
 });
 const MODE_BTNS = [["blue", "蓝灯"], ["green", "绿灯"], ["off", "关闭"]];
 
-export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled, narratorLorebook = "" }) {
+export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled, narratorLorebook = "", onUpdateNarratorLorebook }) {
   const [viewMode, setViewMode] = useState("control");
   const [groupFilter, setGroupFilter] = useState("all");
   const [selectedCallId, setSelectedCallId] = useState("main:look");
   const [actionId, setActionId] = useState("look");
   const [mode, setMode] = useState(extractionEnabled ? "dual" : "single");
   const [overrides, setOverrides] = useState(() => getPromptOverrides());
+  const [persistErr, setPersistErr] = useState(() => getPromptOverridePersistError());
   const [drafts, setDrafts] = useState({});
   const [openBlock, setOpenBlock] = useState(null);
   const [live, setLive] = useState({});
   const [liveErr, setLiveErr] = useState("");
   const presetScenario = useGameStore((s) => s.preset?.scenario);
 
-  useEffect(() => subscribePromptOverrides(() => setOverrides(getPromptOverrides())), []);
+  useEffect(() => subscribePromptOverrides(() => {
+    setOverrides(getPromptOverrides());
+    setPersistErr(getPromptOverridePersistError());
+  }), []);
 
   const allCalls = listAllManagedCalls();
   const visibleCalls = groupFilter === "all" ? allCalls : allCalls.filter((c) => c.group === groupFilter);
@@ -54,7 +59,10 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
   const view = ACTION_VIEWS.find((v) => v.id === actionId) || ACTION_VIEWS[0];
   const actionBlocks = blocksForAction(actionId, mode);
 
-  const syncOverrides = (next) => setOverrides(next);
+  const syncOverrides = (next) => {
+    setOverrides(next);
+    setPersistErr(getPromptOverridePersistError());
+  };
   const handleModeChange = (blockId, nextMode, currentActiveMode) => {
     const patchMode = currentActiveMode === nextMode ? null : nextMode;
     syncOverrides(setPromptOverride(blockId, { mode: patchMode }));
@@ -129,6 +137,11 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             </div>
             <div style={{ fontSize: 10.5, color: "var(--inject-hint)", marginTop: 4 }}>{call.desc}</div>
             <div style={{ fontSize: 10.5, color: "var(--inject-ok)", marginTop: 2 }}>审阅与校验规则：{call.reviewDesc}</div>
+            {persistErr && (
+              <div style={{ fontSize: 10.5, color: "var(--inject-off)", marginTop: 4 }}>
+                存储写入失败（{persistErr}），当前修改仅在本会话生效。
+              </div>
+            )}
             {liveErr && <div style={{ fontSize: 10.5, color: "var(--inject-off)", marginTop: 4 }}>{liveErr}</div>}
           </div>
         )}
@@ -179,15 +192,30 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                         )}
                         {item.canEditText ? (
                           <div style={{ marginTop: 6 }}>
-                            <textarea value={draftVal} onChange={(e) => setDrafts((p) => ({ ...p, [item.id]: e.target.value }))}
-                              rows={5} style={{ width: "100%", boxSizing: "border-box", background: "var(--bg-panel)", color: "var(--inject-body)", border: "1px solid var(--border)", padding: 6, fontSize: 10.5, fontFamily: "inherit" }} />
+                            <textarea
+                              value={draftVal}
+                              placeholder={item.isSupplement ? "追加补充指令（保留当前好感档位、阶段与字数设置，不覆盖动态模板）" : undefined}
+                              onChange={(e) => setDrafts((p) => ({ ...p, [item.id]: e.target.value }))}
+                              rows={5}
+                              style={{ width: "100%", boxSizing: "border-box", background: "var(--bg-panel)", color: "var(--inject-body)", border: "1px solid var(--border)", padding: 6, fontSize: 10.5, fontFamily: "inherit" }}
+                            />
                             <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                              <span style={pill(true)} onClick={() => syncOverrides(setPromptOverride(item.id, { text: draftVal }))}>保存覆盖</span>
+                              <span style={pill(true)} onClick={() => {
+                                if (item.id === "narrator_lore" && typeof onUpdateNarratorLorebook === "function") {
+                                  onUpdateNarratorLorebook(draftVal);
+                                  if (getPromptOverrides().narrator_lore?.text !== undefined) {
+                                    syncOverrides(setPromptOverride("narrator_lore", { text: null }));
+                                  }
+                                  setDrafts((p) => { const c = { ...p }; delete c.narrator_lore; return c; });
+                                  return;
+                                }
+                                syncOverrides(setPromptOverride(item.id, { text: draftVal }));
+                              }}>{item.isSupplement ? "保存补充" : "保存覆盖"}</span>
                               {item.hasTextOverride && (
                                 <span style={pill(false)} onClick={() => {
                                   syncOverrides(setPromptOverride(item.id, { text: null }));
                                   setDrafts((p) => { const c = { ...p }; delete c[item.id]; return c; });
-                                }}>恢复原词</span>
+                                }}>{item.isSupplement ? "清空补充" : "恢复原词"}</span>
                               )}
                             </div>
                           </div>

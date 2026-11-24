@@ -10,6 +10,18 @@ function pickOverride(ov, id, fallback) {
   return fallback;
 }
 
+function appendOverride(ov, id, fallback) {
+  const rule = ov?.[id];
+  if (!rule) return fallback;
+  if (rule.mode === "off") return "";
+  if (typeof rule.text === "string") {
+    const extra = rule.text.trim();
+    if (!extra) return fallback;
+    return fallback ? `${fallback}\n${extra}` : extra;
+  }
+  return fallback;
+}
+
 function pickLoreOverride(ov, fallback) {
   const rule = ov?.narrator_lore;
   if (!rule) return fallback;
@@ -48,7 +60,7 @@ export function buildPrivateTalkPayload({
   const trace = (paths) => promptRefEvents.push(paths);
 
   const recallPart = pickOverride(ov, "recall", recallBlock);
-  const lengthPart = pickOverride(
+  const lengthPart = appendOverride(
     ov,
     "whisper_length",
     narratorWhisperLengthNote(narrator.affection, apiCfg.narratorWhisperWords),
@@ -58,8 +70,8 @@ export function buildPrivateTalkPayload({
   if (inSeaNow) {
     systemPrompt = `${seaDialoguePrompt({ stage: narrator.stage, comfort: seaVars.comfort, spokenKeys: seaVars.knots || [], STAGES: narratorStage })}${recallPart}\n${lengthPart}`;
   } else {
-    const ctxPart = pickOverride(ov, "whisper_ctx", buildNarratorWhisperContext(narrator.affection));
-    const voicePart = pickOverride(ov, "voice", narratorVoicePrompt(narrator, trace));
+    const ctxPart = appendOverride(ov, "whisper_ctx", buildNarratorWhisperContext(narrator.affection));
+    const voicePart = appendOverride(ov, "voice", narratorVoicePrompt(narrator, trace));
     const worldPart = pickOverride(ov, "world_state", worldState);
     const factsPart = pickOverride(ov, "facts", factsBlock);
     const tallyPart = pickOverride(ov, "whisper_tally", tallyBlock);

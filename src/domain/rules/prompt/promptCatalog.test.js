@@ -128,12 +128,16 @@ describe("promptCatalog unified control matrix", () => {
 
     const whisper = getCallControlMatrix("narrator.whisper", { narratorLorebook: "私聊设定" });
     expect(whisper.items.find((i) => i.id === "quest_gate").canForceBlue).toBe(false);
-    for (const id of ["whisper_ctx", "voice", "whisper_length", "narrator_lore"]) {
+    for (const id of ["whisper_ctx", "voice", "whisper_length"]) {
       const entry = whisper.items.find((i) => i.id === id);
+      expect(entry.isSupplement).toBe(true);
       expect(entry.canEditText).toBe(true);
-      expect(typeof entry.staticText).toBe("string");
+      expect(entry.staticText).toBe("");
     }
-    expect(whisper.items.find((i) => i.id === "narrator_lore").staticText).toBe("私聊设定");
+    const loreEntry = whisper.items.find((i) => i.id === "narrator_lore");
+    expect(loreEntry.isSupplement).toBe(false);
+    expect(loreEntry.canEditText).toBe(true);
+    expect(loreEntry.staticText).toBe("私聊设定");
 
     const forcedTopics = gateWhisperTopics("早安", { forceAll: true });
     expect(forcedTopics.lit.length).toBeGreaterThan(0);
@@ -196,5 +200,65 @@ describe("promptCatalog unified control matrix", () => {
       narratorStage: {},
     });
     expect(whisperBlankLore.systemPrompt).not.toContain("[旁白专属设定");
+  });
+
+  it("treats voice, whisper_ctx, and whisper_length overrides as supplements without freezing affection tier or word count", () => {
+    setPromptOverride("voice", { text: "额外补充：少用感叹句" });
+    setPromptOverride("whisper_length", { text: "避免重复上一轮的话" });
+
+    const sysLow = buildSysBase(220, { stage: "flirting", affection: 20 }, "总纲", null, false, "", false, "full");
+    const sysHigh = buildSysBase(220, { stage: "flirting", affection: 90 }, "总纲", null, false, "", false, "full");
+    const voiceLow = sysLow.sysBlocks.find((b) => b.tavernBlock === "main").content;
+    const voiceHigh = sysHigh.sysBlocks.find((b) => b.tavernBlock === "main").content;
+    expect(voiceLow).toContain("好感度 20/100");
+    expect(voiceHigh).toContain("好感度 90/100");
+    expect(voiceLow).toContain("额外补充：少用感叹句");
+    expect(voiceHigh).toContain("额外补充：少用感叹句");
+
+    const whisperAwake = buildPrivateTalkPayload({
+      narrator: { stage: "flirting", affection: 90 },
+      content: "聊聊今天",
+      apiCfg: { contextWindow: 16, maxTokens: 2000, narratorWhisperWords: { awake: 350 } },
+      convo: [],
+      inSeaNow: false,
+      seaVars: {},
+      worldState: "",
+      snowLeopardBlock: "",
+      factsBlock: "",
+      recallBlock: "",
+      tallyBlock: "",
+      narratorLoreBlock: "",
+      bodyWhisperText: "",
+      topicGateText: "",
+      questGateText: "",
+      whisperGateText: "",
+      narratorStage: {},
+    });
+    expect(whisperAwake.systemPrompt).toContain("约 350 字");
+    expect(whisperAwake.systemPrompt).toContain("好感度 90/100");
+    expect(whisperAwake.systemPrompt).toContain("避免重复上一轮的话");
+    expect(whisperAwake.systemPrompt).toContain("额外补充：少用感叹句");
+
+    const whisperLow = buildPrivateTalkPayload({
+      narrator: { stage: "flirting", affection: 20 },
+      content: "聊聊今天",
+      apiCfg: { contextWindow: 16, maxTokens: 2000, narratorWhisperWords: { faint: 180, awake: 350 } },
+      convo: [],
+      inSeaNow: false,
+      seaVars: {},
+      worldState: "",
+      snowLeopardBlock: "",
+      factsBlock: "",
+      recallBlock: "",
+      tallyBlock: "",
+      narratorLoreBlock: "",
+      bodyWhisperText: "",
+      topicGateText: "",
+      questGateText: "",
+      whisperGateText: "",
+      narratorStage: {},
+    });
+    expect(whisperLow.systemPrompt).toContain("约 180 字");
+    expect(whisperLow.systemPrompt).toContain("好感度 20/100");
   });
 });
