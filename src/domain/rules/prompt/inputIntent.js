@@ -87,6 +87,13 @@ function isDuelInput(rawInput) {
   return DUEL_PATTERNS.some((pattern) => pattern.test(input));
 }
 
+// 送礼在 classifyIntent 里归 TALK_CASUAL 只是篇幅口径；分流时它是真行动——
+// 「递给X一物」得走会落账的 act()，不能当免费搭话吞掉。
+export function isGiftInput(rawInput) {
+  const input = (rawInput || "").trim();
+  return GIFT_PATTERNS.some((pattern) => pattern.test(input));
+}
+
 export function classifyIntent(rawInput) {
   const s = (rawInput || "").trim();
   if (!s) return INTENT.UNKNOWN;

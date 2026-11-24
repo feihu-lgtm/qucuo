@@ -175,7 +175,7 @@ export function useTurn({
     // 补写（免费，同 lookNpcInBackground 路径），不写进行动配额。
     for (const npc of resolved.plan.lookNpcs || []) {
       applyResult(runtimeCtx(), lookNpc(gameStore.getState(), npc));
-      lookNpcInBackground(npc, [], { addLog, setTime, setConvo, setLog, noteAction });
+      lookNpcInBackground(npc, [], { addLog, setTime, setConvo, setLog, noteAction, advanceTime: false });
     }
 
     // loading 态 + 计时器：在第一个 await（下方 recall/knowledge）之前启动——
