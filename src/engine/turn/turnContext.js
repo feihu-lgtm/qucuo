@@ -73,6 +73,7 @@ export function createTurnContext({ plan, env }) {
       gm, movingDir, lockedDestName, outerDepart: outerDepartRef.current, innerRoomName, apiCfg,
       destinationLock, pickupJudgment: pickupJudgmentRef.current, categoryLabel: CATEGORY_LABEL,
       encounter: plan.encounterToDescribe, collectNote, intent,
+      npcState: getGameState?.()?.npcState,
       timeForToday: timeRef.current,
     }, {
       importedNpcLore: importedRegistry.getImportedNpcLore(),
