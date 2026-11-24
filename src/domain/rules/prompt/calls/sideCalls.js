@@ -1,5 +1,5 @@
 import { definePrompt } from "../registry.js";
-import { npcTradeOf } from "../../npc/npcTrade.js";
+import { npcTradeOf, itemKey } from "../../npc/npcTrade.js";
 
 export function registerSideCalls() {
   definePrompt("block", "pigeon.sys", {
@@ -56,23 +56,26 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
         (npcObj.personality ? "性情：" + npcObj.personality + "。" : "");
       const attrs = state.varTree?.角色?.[npcName] || {};
       // 台账按 npc.id 落（pool_ 前缀随出场换），走 npcTradeOf 按 id/name 兜底盘账；
-      // 行头：live 房间实例的 carriedItems → 数据底稿 carry/stealables → 台账里买走的件名。
+      // 行头：live 房间实例的 carriedItems → 数据底稿 carry/stealables → 台账里买走的件。
       const trade = npcTradeOf(state.npcState, npcObj) || {};
-      const boughtNames = Object.keys(trade.bought || {});
-      const soldNames = Object.keys(trade.sold || {});
+      const boughtItems = Array.isArray(trade.bought) ? trade.bought : Object.keys(trade.bought || {});
+      const soldKeys = trade.sold || {};
+      // 已被买走/偷走/掉落的件不算随身——底稿是会过时的，台账才是现在的包。
+      const stillOwned = (i) => i && !i.stolen && !i.dropped && !soldKeys[itemKey(i)] && !soldKeys[i?.name];
       const carryNames = [
         ...(npcObj.carriedItems || npcObj.carry || []),
         ...(npcObj.stealables?.sundries || []),
         ...(npcObj.stealables?.equipment || []),
-        ...boughtNames,
-      ].map((i) => (typeof i === "object" && i ? i.name : i)).filter(Boolean)
+        ...boughtItems,
+      ].filter(stillOwned)
+        .map((i) => (typeof i === "object" && i ? i.name : i)).filter(Boolean)
         .filter((name, idx, arr) => arr.indexOf(name) === idx).join("、");
-      const bought = boughtNames.length;
-      const sold = soldNames.length;
+      const bought = boughtItems.length;
+      const sold = Object.keys(soldKeys).length;
       const 近况 = [
         attrs.所在地 ? `眼下身在「${attrs.所在地}」` : "",
         carryNames ? `随身带着：${carryNames}` : "",
-        bought || sold ? `与主角的买卖往来：你从他手里买走 ${bought} 件、他买过你 ${sold} 件` : "",
+        bought || sold ? `与主角的买卖往来：你卖给他 ${bought} 件、从他手里买走 ${sold} 件` : "",
       ].filter(Boolean).join("；") || "近况平平";
       const scope = { ...state, npcName, bio, scenario: preset.scenario || "", promptRefOptions: { factLimit: 12 } };
       const facts = render("@事实摘要", scope);
