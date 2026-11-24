@@ -89,6 +89,13 @@ export function deriveSignatureMoveset(npc, { levelCap } = {}) {
   // 意图比内置表更明确（同名时也该听玩家的）。
   const sig = getImportedSignatureMoves()[npc?.name] || NPC_SIGNATURE_MOVES[npc?.name];
   if (!sig) return null;
+  return deriveMovesetFromSig(npc, sig, { levelCap });
+}
+
+// 给定 slot 形专属表（{攻击:{name,desc,archetype?,effects?}, …}）直接派生招组：
+// OC 冒险者的 kungfu.moves 先折成这个形状再进来（见 ocRecruit.ocSignatureMoves）。
+export function deriveMovesetFromSig(npc, sig, { levelCap } = {}) {
+  if (!sig) return null;
 
   const cap = npc.levelCap ?? levelCap ?? 0;
   const quality = levelCapToQuality(cap);

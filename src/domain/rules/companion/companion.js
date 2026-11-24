@@ -12,6 +12,7 @@
 //   不会每次战斗都不一样（跟 npcGeneration.js"出生固化"同一个哲学）。
 // - 战力走统一战力曲线（atkFromWaigong/hpFromNeigong），蓝档(levelCap=2)，
 import { generateNpcAttributes, getTierPower, hpFromNeigong, deriveSignatureMoveset } from "../npc/npcGeneration.js";
+import { deriveMovesetFromSig } from "../npc/npcMovesets.js";
 import { createEmptyStatusSlots } from "../combat/statusEffects.js";
 import { COMPANION_SLOTS } from "./companionSlots.js";
 export { initCompanionState } from "./companionState.js";
@@ -56,7 +57,10 @@ export function createImportedCompanion(npc) {
     name: npc.name, id: importedCompanionKey(npc.name),
     levelCap, special, waigong, neigong, baseAtk: tier.baseAtk,
   };
-  const moveset = deriveSignatureMoveset(npcShape, { levelCap });
+  // npc.signatureMoves：OC 冒险者从 kungfu.moves 折好的专属槽（ocRecruit.ocSignatureMoves）
+  const moveset = npc.signatureMoves
+    ? deriveMovesetFromSig(npcShape, npc.signatureMoves, { levelCap })
+    : deriveSignatureMoveset(npcShape, { levelCap });
 
   return {
     ...npcShape,
@@ -155,4 +159,40 @@ export function setActiveCompanion(companionState, key) {
     next[k] = { ...next[k], active: k === key };
   }
   return next;
+}
+
+// ── 留守（docs/设计_OC入队与留守.md 三节）─────────────────────────────
+// 条目加 stationed: null | {district, roomId, roomName}。null=随行跟队注入上下文；
+// 有值=留在指定房间、落进该房间 npcs 可被对话唤回。active 出战队友不设留守——
+// 出战位只有一个，留守 active 等于出站位空转，调用方先 setActiveCompanion 换人。
+export function stationCompanion(companionState, key, spot = {}) {
+  const c = companionState?.[key];
+  if (!c?.unlocked || !c?.data || c.active) return companionState;
+  return { ...companionState, [key]: { ...c, stationed: { district: spot.district || null, roomId: spot.roomId || null, roomName: spot.roomName || null } } };
+}
+
+// 「跟上我」唤回：清 stationed，回随行队列。
+export function unstationCompanion(companionState, key) {
+  const c = companionState?.[key];
+  if (!c?.unlocked || !c?.data || !c.stationed) return companionState;
+  const next = { ...c };
+  delete next.stationed;
+  return { ...companionState, [key]: next };
+}
+
+// 全部留守队友清单（上下文注入「谁在哪个房间等你」用）：[{key,label,stationed}]
+export function stationedCompanions(companionState) {
+  return allCompanionKeys(companionState)
+    .filter(k => companionState?.[k]?.unlocked && companionState?.[k]?.data && companionState[k].stationed)
+    .map(k => ({ key: k, label: companionMeta(companionState, k).label, stationed: companionState[k].stationed }));
+}
+
+// 某房间里的留守队友，折成 room.npcs 条目形状——在该房间可被对话唤回。
+export function stationedNpcsFor(companionState, { district, roomId, roomName } = {}) {
+  return stationedCompanions(companionState)
+    .filter(c => c.stationed?.roomId === roomId || (roomName && c.stationed?.roomName === roomName && c.stationed?.district === district))
+    .map(c => {
+      const d = companionState[c.key].data;
+      return { name: c.label, id: c.key, companion: true, stationed: true, beast: !!companionState[c.key].beast, brief: d?.brief || c.label, levelCap: d?.levelCap };
+    });
 }

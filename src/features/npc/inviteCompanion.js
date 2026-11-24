@@ -5,10 +5,14 @@ import { markNpcAsKnown as markNpcKnown } from "../../domain/rules/npc/npcAwaren
 import { removeNpc } from "../../domain/rules/npc/roomNpcs.js";
 import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_INVITED } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { createQuestProgress } from "../../domain/rules/quests/questEngine.js";
+import { npcBusyInQuest } from "./ocRecruit.js";
 
 export function inviteCompanion(state, npc, ctx = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "invite" });
+  // 撞车守卫：出现在进行中任务链 giver/打手名单的 NPC 不可邀走——OC 散人天然通过
+  const busyQuest = npcBusyInQuest(state, npc.name);
+  if (busyQuest) return { logs: [{ t: "sys", text: `  ${npc.name}眼下有事缠身（${busyQuest}），不便同行。` }] };
   const key = companionKeyByName(npc.name);
   let companionState = state.companionState || {};
   if (key === "snowLeopard" && companionState.snowLeopard?.unlocked) return {};
