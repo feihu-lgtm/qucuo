@@ -13,6 +13,20 @@ import { normalizeHp } from "./internal.js";
 
 const emptyLoot = () => ({ money: 0, exp: 0, pot: 0, items: [] });
 
+// 旧节点流 dungeonId（建筑 type:dungeon 的 dungeonId）→ 内层地图 districtKey。
+// 十区中「大草甸子虚幻境」（误食毒蘑菇幻觉）与「欢喜教秘坛」（欢喜堂秘坛）
+// 无对应旧地宫建筑，走别的方式进入，本表不列。
+export const DUNGEON_ID_TO_DISTRICT = Object.freeze({
+  white_pagoda_crypt: "白塔地宫",
+  sanxing_bronze_abyss: "三星堆大墓",
+  tangmen_poison_vault: "蜀南唐堡千机楼",
+  wuxian_centipede_den: "雾隐寨五仙秘洞",
+  tianlong_serpent_crypt: "天龙营八部浮屠",
+  jingguan_iron_dungeon: "成都蜀王府地宫",
+  gongcuo_submerged_vault: "雪山茫野",
+  heifeng_wolf_cavern: "雅江悬棺裂谷",
+});
+
 // computeSettledLoot 语义照抄：撤退/通关全带走，战败丢一半金钱经验，物品全留。
 function settleLoot(loot, ratio) {
   return {

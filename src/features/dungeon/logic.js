@@ -95,3 +95,20 @@ export function settleDungeonRun(state, run, { now = Date.now() } = {}) {
     note,
   };
 }
+
+// 内层地图 run（mapRun.js 产出）→ 旧结算通路薄适配。
+// mapRun.runState 字段名与旧 run 几乎同构：status/loot/hp/usedItems/bossDefeated，
+// 缺的 floor/dungeonName/clearFlag 在这里补齐——耗时按步数四步折一时辰。
+export function settleMapRun(state, mapRun, opts = {}) {
+  const shim = {
+    status: mapRun.status,
+    loot: mapRun.loot,
+    hp: mapRun.hp,
+    usedItems: mapRun.usedItems || [],
+    floor: Math.max(1, Math.ceil((mapRun.step || 0) / 4)),
+    dungeonName: `${mapRun.districtKey}·内层`,
+    bossDefeated: mapRun.bossDefeated,
+    clearFlag: mapRun.clearFlag,
+  };
+  return settleDungeonRun(state, shim, opts);
+}
