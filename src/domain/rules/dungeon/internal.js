@@ -46,6 +46,9 @@ export function buildCombatNpc(tpl, prefix) {
     desc: tpl.desc || tpl.brief || "",
     personality: tpl.personality,
     carry: tpl.carry || [],
+    ocAdventurer: tpl.ocAdventurer,
+    npcRef: tpl.npcRef,
+    rainbowStyle: tpl.rainbowStyle,
   }, { levelCap: tpl.levelCap ?? 2 });
 }
 
