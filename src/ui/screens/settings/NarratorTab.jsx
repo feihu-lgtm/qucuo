@@ -1,7 +1,6 @@
 import React from "react";
 import { DEFAULT_CALL_TOKEN_LIMITS, CALL_TOKEN_LIMIT_MAX } from "../../../infra/apiConfig.js";
 import { affectionLabel, AFFECTION_TIERS, affectionTier } from "../../../domain/rules/narrator/narrator.js";
-import { getPromptOverrides, setPromptOverride } from "../../../domain/rules/prompt/registry.js";
 import { inputStyle, labelStyle, sectionStyle, btnStyle } from "./styles.js";
 
 // 旁白 tab（docs/旁白系统_黑客帝国支线设计.md §八.1）：
@@ -167,13 +166,8 @@ export default function NarratorTab({ cfg, patch, narrator, setNarrator }) {
       <div style={sectionStyle}>
         <div style={labelStyle}>旁白专属世界书（只进私聊，不进主叙事）</div>
         <textarea
-          value={getPromptOverrides().narrator_lore?.text ?? cfg.narratorLorebook ?? ""}
-          onChange={e => {
-            patch({ narratorLorebook: e.target.value });
-            if (getPromptOverrides().narrator_lore?.text !== undefined) {
-              setPromptOverride("narrator_lore", { text: null });
-            }
-          }}
+          value={cfg.narratorLorebook ?? ""}
+          onChange={e => patch({ narratorLorebook: e.target.value })}
           placeholder={"写在这里的内容只会注入私聊通道，主叙事看不到。\n适合放：她的来历、她对玩家的私下看法、想让她一直记住的梗、\n以及任何你希望她在私聊里知道、但不该影响正常剧情叙事的设定。\n留空则完全不注入这一段。"}
           style={{ ...inputStyle, minHeight: 110, resize: "vertical", lineHeight: 1.6 }}
         />

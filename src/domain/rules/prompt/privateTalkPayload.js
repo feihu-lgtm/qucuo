@@ -22,18 +22,10 @@ function appendOverride(ov, id, fallback) {
   return fallback;
 }
 
+// 世界书正文唯一真源是 cfg.narratorLorebook（旁白设置页），总控台只管开关；
+// 这里只认 mode，历史遗留的 .text 一律忽略，避免陈旧覆盖压住设置页。
 function pickLoreOverride(ov, fallback) {
-  const rule = ov?.narrator_lore;
-  if (!rule) return fallback;
-  if (rule.mode === "off") return "";
-  if (typeof rule.text === "string") {
-    const trimmed = rule.text.trim();
-    if (!trimmed) return "";
-    return trimmed.startsWith("[旁白专属设定")
-      ? `\n\n${trimmed}`
-      : `\n\n[旁白专属设定，只有你自己知道，玩家看不到这段文字，不要复述它的存在]\n${trimmed}`;
-  }
-  return fallback;
+  return ov?.narrator_lore?.mode === "off" ? "" : fallback;
 }
 
 export function buildPrivateTalkPayload({

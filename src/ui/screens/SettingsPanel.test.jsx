@@ -85,9 +85,10 @@ describe("SettingsPanel unified prompt control center", () => {
     expect(reunionRow).not.toContain("蓝灯");
   });
 
-  it("shows legacy narrator_lore override inside NarratorTab so edits share one source of truth", () => {
+  it("NarratorTab edits cfg.narratorLorebook only and ignores any legacy narrator_lore override text", () => {
     setPromptOverride("narrator_lore", { text: "旧控制台写入的秘密" });
-    const html = render({ apiKey: "test-placeholder", narratorLorebook: "" }, "narrator");
-    expect(html).toContain("旧控制台写入的秘密");
+    const html = render({ apiKey: "test-placeholder", narratorLorebook: "设置页里的世界书" }, "narrator");
+    expect(html).toContain("设置页里的世界书");
+    expect(html).not.toContain("旧控制台写入的秘密");
   });
 });

@@ -34,7 +34,7 @@ const pill = (active) => ({
 });
 const MODE_BTNS = [["blue", "蓝灯"], ["green", "绿灯"], ["off", "关闭"]];
 
-export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled, narratorLorebook = "", onUpdateNarratorLorebook }) {
+export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled, narratorLorebook = "" }) {
   const [viewMode, setViewMode] = useState("control");
   const [groupFilter, setGroupFilter] = useState("all");
   const [selectedCallId, setSelectedCallId] = useState("main:look");
@@ -201,14 +201,6 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                             />
                             <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                               <span style={pill(true)} onClick={() => {
-                                if (item.id === "narrator_lore" && typeof onUpdateNarratorLorebook === "function") {
-                                  onUpdateNarratorLorebook(draftVal);
-                                  if (getPromptOverrides().narrator_lore?.text !== undefined) {
-                                    syncOverrides(setPromptOverride("narrator_lore", { text: null }));
-                                  }
-                                  setDrafts((p) => { const c = { ...p }; delete c.narrator_lore; return c; });
-                                  return;
-                                }
                                 syncOverrides(setPromptOverride(item.id, { text: draftVal }));
                               }}>{item.isSupplement ? "保存补充" : "保存覆盖"}</span>
                               {item.hasTextOverride && (
@@ -220,7 +212,12 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                             </div>
                           </div>
                         ) : item.effectiveText != null ? (
-                          <div style={preStyle}>{item.effectiveText}</div>
+                          <>
+                            {item.id === "narrator_lore" && (
+                              <div style={{ fontSize: 10, color: "var(--inject-hint)", marginTop: 4 }}>正文请在『旁白』设置页编辑，此处只读预览，仅可开关。</div>
+                            )}
+                            <div style={preStyle}>{item.effectiveText}</div>
+                          </>
                         ) : null}
                       </div>
                     )}

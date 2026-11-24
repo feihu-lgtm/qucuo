@@ -76,7 +76,7 @@ const BLOCK_CATALOG_META = {
   facts: { name: "全知事实账本", category: "memory", slot: "sys", editable: "toggle" },
   recall: { name: "向量召回往事", category: "memory", slot: "sys", editable: "toggle" },
   whisper_tally: { name: "当日与累计起居注", category: "memory", slot: "sys", editable: "toggle", summary: "同步玩家今日行动计数，防旁白与主线脱离。" },
-  narrator_lore: { name: "旁白专属世界书", category: "style", slot: "sys", editable: "static" },
+  narrator_lore: { name: "旁白专属世界书", category: "style", slot: "sys", editable: "toggle" },
   topic_gate: { name: "私聊话题红绿灯（身世/邀帖）", category: "style", slot: "sys", editable: "toggle" },
   quest_gate: { name: "任务线红绿灯（全名+好感≥30）", category: "style", slot: "sys", editable: "toggle", canForceBlue: false },
   whisper_scenario: { name: "剧本背景设定（whisper 门控）", category: "world", slot: "sys", editable: "toggle" },
@@ -147,7 +147,10 @@ function mergeMatrixItem({
         : reason;
   const isSupplement = editable === "supplement";
   const baseStaticText = isSupplement ? "" : staticText;
-  const effectiveText = typeof ov?.text === "string" ? ov.text : baseStaticText;
+  // 只有 static / supplement 块的文字覆盖有意义；toggle 块（如 narrator_lore）正文另有真源，遗留的 .text 不展示也不生效
+  const textOverridable = isSupplement || editable === "static";
+  const textOverrideValue = textOverridable && typeof ov?.text === "string" ? ov.text : null;
+  const effectiveText = textOverrideValue ?? baseStaticText;
   const resolvedCanForceBlue = canForceBlue ?? BLOCK_CATALOG_META[id]?.canForceBlue ?? true;
 
   return {
@@ -167,8 +170,8 @@ function mergeMatrixItem({
     overrideMode,
     effectiveLit,
     reason: effectiveReason || (effectiveLit ? "蓝灯常驻" : "按条件灭灯"),
-    hasTextOverride: typeof ov?.text === "string",
-    textOverride: typeof ov?.text === "string" ? ov.text : null,
+    hasTextOverride: textOverrideValue != null,
+    textOverride: textOverrideValue,
     staticText: baseStaticText,
     effectiveText,
     summary: summary || BLOCK_CATALOG_META[id]?.summary || "",

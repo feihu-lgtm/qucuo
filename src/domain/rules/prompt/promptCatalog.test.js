@@ -136,8 +136,11 @@ describe("promptCatalog unified control matrix", () => {
     }
     const loreEntry = whisper.items.find((i) => i.id === "narrator_lore");
     expect(loreEntry.isSupplement).toBe(false);
-    expect(loreEntry.canEditText).toBe(true);
+    expect(loreEntry.editable).toBe("toggle");
+    expect(loreEntry.canEditText).toBe(false);
+    expect(loreEntry.canToggleOff).toBe(true);
     expect(loreEntry.staticText).toBe("私聊设定");
+    expect(loreEntry.effectiveText).toBe("私聊设定");
 
     const forcedTopics = gateWhisperTopics("早安", { forceAll: true });
     expect(forcedTopics.lit.length).toBeGreaterThan(0);
@@ -148,15 +151,20 @@ describe("promptCatalog unified control matrix", () => {
     expect(forcedBody.text).toContain("乌发");
   });
 
-  it("isolates private recall from main user_recall and wraps narrator_lore overrides safely", () => {
+  it("isolates private recall from main user_recall and keeps narrator_lore text out of the control center overrides", () => {
     setPromptOverride("recall", { mode: "off" });
     setPromptOverride("user_recall", { mode: "blue" });
-    setPromptOverride("narrator_lore", { text: "只在雪山露面" });
+    setPromptOverride("narrator_lore", { text: "遗留的旧覆盖" });
 
     const lookMatrix = getCallControlMatrix("main:look");
     expect(lookMatrix.items.find((i) => i.id === "user_recall").effectiveLit).toBe(true);
 
-    const whisperWithLore = buildPrivateTalkPayload({
+    const whisper = getCallControlMatrix("narrator.whisper", { narratorLorebook: "设置页正文" });
+    const loreEntry = whisper.items.find((i) => i.id === "narrator_lore");
+    expect(loreEntry.hasTextOverride).toBe(false);
+    expect(loreEntry.effectiveText).toBe("设置页正文");
+
+    const whisperPayload = buildPrivateTalkPayload({
       narrator: { stage: 0, affection: 10 },
       content: "说说雪山",
       apiCfg: { contextWindow: 16, maxTokens: 2000, narratorWhisperWords: 100 },
@@ -175,31 +183,7 @@ describe("promptCatalog unified control matrix", () => {
       whisperGateText: "",
       narratorStage: {},
     });
-    expect(whisperWithLore.systemPrompt).not.toContain("昨夜雪山相遇");
-    expect(whisperWithLore.systemPrompt).toContain("[旁白专属设定");
-    expect(whisperWithLore.systemPrompt).toContain("只在雪山露面");
-
-    setPromptOverride("narrator_lore", { text: "   " });
-    const whisperBlankLore = buildPrivateTalkPayload({
-      narrator: { stage: 0, affection: 10 },
-      content: "说说雪山",
-      apiCfg: { contextWindow: 16, maxTokens: 2000, narratorWhisperWords: 100 },
-      convo: [],
-      inSeaNow: false,
-      seaVars: {},
-      worldState: "",
-      snowLeopardBlock: "",
-      factsBlock: "",
-      recallBlock: "",
-      tallyBlock: "",
-      narratorLoreBlock: "\n\n[旁白专属设定，只有你自己知道，玩家看不到这段文字，不要复述它的存在]\n旧设定",
-      bodyWhisperText: "",
-      topicGateText: "",
-      questGateText: "",
-      whisperGateText: "",
-      narratorStage: {},
-    });
-    expect(whisperBlankLore.systemPrompt).not.toContain("[旁白专属设定");
+    expect(whisperPayload.systemPrompt).not.toContain("昨夜雪山相遇");
   });
 
   it("treats voice, whisper_ctx, and whisper_length overrides as supplements without freezing affection tier or word count", () => {

@@ -290,4 +290,108 @@ describe("prompt registry & buildPrompt", () => {
       vi.unstubAllGlobals();
     }
   });
+
+  describe("cross-tab pending edits", () => {
+    const KEY = "qucuo_prompt_overrides_v1";
+    function stubStorage(initial = {}) {
+      const state = { quotaFull: false };
+      const store = new Map();
+      if (Object.keys(initial).length) store.set(KEY, JSON.stringify({ version: 1, overrides: initial }));
+      const listeners = new Set();
+      vi.stubGlobal("localStorage", {
+        getItem: (k) => (store.has(k) ? store.get(k) : null),
+        setItem: (k, v) => {
+          if (state.quotaFull) {
+            const err = new Error("QuotaExceededError: storage full");
+            err.name = "QuotaExceededError";
+            throw err;
+          }
+          store.set(k, String(v));
+        },
+        removeItem: (k) => {
+          if (state.quotaFull) throw new Error("QuotaExceededError: storage locked");
+          store.delete(k);
+        },
+      });
+      vi.stubGlobal("window", {
+        addEventListener: (type, fn) => { if (type === "storage") listeners.add(fn); },
+        removeEventListener: (type, fn) => { if (type === "storage") listeners.delete(fn); },
+      });
+      const persisted = () => JSON.parse(store.get(KEY) || "{\"overrides\":{}}").overrides;
+      // 模拟另一个标签页成功写入存储并广播 storage 事件
+      const writeFromOtherTab = (overrides) => {
+        store.set(KEY, JSON.stringify({ version: 1, overrides }));
+        for (const fn of [...listeners]) fn({ key: KEY });
+      };
+      return { state, persisted, writeFromOtherTab };
+    }
+
+    it("keeps pending edits and the warning when another tab saves a different block, then merges both on recovery", () => {
+      const tabs = stubStorage();
+      const notified = [];
+      const unsub = subscribePromptOverrides(() => notified.push(getPromptOverrides()));
+      try {
+        tabs.state.quotaFull = true;
+        setPromptOverride("voice", { text: "太长的补充" });
+        expect(getPromptOverridePersistError()).toContain("QuotaExceededError");
+
+        tabs.writeFromOtherTab({ catalog: { mode: "off" } });
+        expect(getPromptOverrides()).toEqual({ catalog: { mode: "off" }, voice: { text: "太长的补充" } });
+        expect(notified.at(-1)).toEqual({ catalog: { mode: "off" }, voice: { text: "太长的补充" } });
+        expect(getPromptOverridePersistError()).toContain("QuotaExceededError");
+
+        tabs.state.quotaFull = false;
+        setPromptOverride("facts", { mode: "blue" });
+        expect(getPromptOverridePersistError()).toBeNull();
+        expect(tabs.persisted()).toEqual({
+          catalog: { mode: "off" },
+          voice: { text: "太长的补充" },
+          facts: { mode: "blue" },
+        });
+      } finally {
+        unsub();
+        resetPromptRegistryForTest();
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it("retries from the latest persisted map without a subscriber, so another tab's save is not rolled back", () => {
+      const tabs = stubStorage();
+      try {
+        tabs.state.quotaFull = true;
+        setPromptOverride("voice", { text: "太长的补充" });
+        tabs.state.quotaFull = false;
+        // 另一个标签页保存了 catalog，本页没有订阅者，收不到 storage 事件
+        tabs.writeFromOtherTab({ catalog: { mode: "blue" } });
+        setPromptOverride("voice", { text: "短补充" });
+        expect(tabs.persisted()).toEqual({ catalog: { mode: "blue" }, voice: { text: "短补充" } });
+      } finally {
+        resetPromptRegistryForTest();
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it("reapplies pending deletes and resets over the latest persisted map", () => {
+      const tabs = stubStorage({ voice: { mode: "off", text: "旧补充" }, facts: { mode: "off" } });
+      try {
+        tabs.state.quotaFull = true;
+        setPromptOverride("voice", { text: null });
+        setPromptOverride("facts", { mode: null });
+        expect(getPromptOverrides()).toEqual({ voice: { mode: "off" } });
+        tabs.writeFromOtherTab({ voice: { mode: "off", text: "旧补充" }, facts: { mode: "off" }, recall: { mode: "blue" } });
+        expect(getPromptOverrides()).toEqual({ voice: { mode: "off" }, recall: { mode: "blue" } });
+
+        resetPromptOverrides();
+        expect(getPromptOverrides()).toEqual({});
+        expect(getPromptOverridePersistError()).toContain("QuotaExceededError");
+        tabs.state.quotaFull = false;
+        setPromptOverride("catalog", { mode: "blue" });
+        expect(getPromptOverridePersistError()).toBeNull();
+        expect(tabs.persisted()).toEqual({ catalog: { mode: "blue" } });
+      } finally {
+        resetPromptRegistryForTest();
+        vi.unstubAllGlobals();
+      }
+    });
+  });
 });

@@ -114,7 +114,6 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
             getLiveBlockText={getLiveBlockText}
             extractionEnabled={!!cfg.extractionEnabled}
             narratorLorebook={cfg.narratorLorebook || ""}
-            onUpdateNarratorLorebook={setCfg ? (text) => patch({ narratorLorebook: text }) : undefined}
           />
         )}
 
