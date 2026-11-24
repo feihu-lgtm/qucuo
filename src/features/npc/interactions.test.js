@@ -232,7 +232,7 @@ describe("NPC trade and companion invitation logic", () => {
       logs: [{ t: "err", text: "  此地没有这位人物。" }],
     });
     expect(tradeWithNpc(makeState(), { name: "路人" })).toEqual({
-      logs: [{ t: "sys", text: "  路人摆摆手，「小店暂无货可卖。」" }],
+      logs: [{ t: "sys", text: "  路人摆摆手，「身无长物，没什么好交易的。」" }],
     });
   });
 

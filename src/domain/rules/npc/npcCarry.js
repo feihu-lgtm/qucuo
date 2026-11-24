@@ -125,15 +125,21 @@ export function ocCarryItems(oc, npc) {
   let i = 0;
   for (const c of oc.carry || []) {
     const it = makeNamedItem(c.name);
-    if (it) items.push({ ...it, id: `${npc.id}_oc${i++}`, stolen: false });
+    if (it) items.push({ ...it, slot: c.slot, cherish: c.cherish, sellable: c.sellable, price: c.price, id: `${npc.id}_oc${i++}`, stolen: false });
   }
   for (const e of oc.stealables?.equipment || []) {
     const it = makeItem({ name: e.name, category: ocEquipCat(e.name), quality: e.quality || "绿" });
-    items.push({ ...it, desc: e.desc, id: `${npc.id}_oc${i++}`, stolen: false });
+    items.push({ ...it, desc: e.desc, slot: e.slot, cherish: e.cherish, sellable: e.sellable, price: e.price, id: `${npc.id}_oc${i++}`, stolen: false });
   }
   for (const d of oc.stealables?.sundries || []) {
     const it = makeItem({ name: d.name, category: ITEM_CATEGORY.MISC, quality: "白" });
-    items.push({ ...it, desc: d.desc, id: `${npc.id}_oc${i++}`, stolen: false });
+    items.push({ ...it, desc: d.desc, slot: d.slot, cherish: d.cherish, sellable: d.sellable, price: d.price, id: `${npc.id}_oc${i++}`, stolen: false });
+  }
+  // 随身随从/坐骑归 mount 档（铁伯这类）——归一化时会认出 type→mount；
+  // 也带在货架里（只展示不卖）。
+  if (oc.follower?.name) {
+    items.push({ name: oc.follower.name, type: oc.follower.type, desc: oc.follower.desc,
+      slot: "mount", sellable: false, cherish: 100, id: `${npc.id}_mount`, stolen: false });
   }
   return items;
 }
@@ -260,53 +266,15 @@ export function cherishHearts(cherish = 0) {
   return "";
 }
 
-// 取一个 NPC 的随身条目清单（归一化）：优先读房间 npc 身上的 live 列表
-// （sold/stolen 标记写在这里），静态 adv 卡只作不在场时的表底——表底不能只
-// 读 carry：OC 的装备在 stealables.equipment、随从在 follower，都得拼进来。
-const advAllEntries = (adv) => [
-  ...(adv?.carry || []),
-  ...(adv?.stealables?.equipment || []),
-  ...(adv?.stealables?.sundries || []),
-  ...(adv?.follower ? [adv.follower] : []),
-];
-export function carryTradeEntries(npc) {
-  // OC_BY_NAME 覆盖两份卡池（含 adventurersIP），ADVENTURER_BY_NAME 只认主池。
-  const adv = OC_BY_NAME[npc?.name] || ADVENTURER_BY_NAME[npc?.name];
-  // live 各表合并（carriedItems + carry + stealables + follower）：送礼写哪张表
-  // 都能被读到；同名去重只留第一份（一件百花刺别再以两种价签出两次）。
-  // 实例一条没有才落静态 adv 表底（不在场时查表）。
-  const inst = advAllEntries(npc);
-  const merged = [...(npc?.carriedItems || []), ...inst];
-  const base = merged.length ? merged : (adv ? advAllEntries(adv) : (npc?.carry || []));
-  const seen = new Set();
-  const raw = base.filter((e) => e && e.name && !seen.has(e.name) && seen.add(e.name));
-  // 挂载位：随从不是物品、不在 carriedItems 里，但货架挂载区要展示——单独补一行。
-  const follower = npc?.follower || adv?.follower;
-  const entries = follower && !raw.some((e) => e?.name === follower.name) ? [...raw, follower] : raw;
-  return entries
-    .filter((e) => e && !e.sold && !e.stolen && !e.dropped)
-    .map((e) => normalizeCarryEntry(npc, e));
-}
-
-// 三分区：{equipment:[], bag:[], mount:[]}
-export function carryTradeSections(npc) {
-  const sections = { equipment: [], bag: [], mount: [] };
-  for (const e of carryTradeEntries(npc)) {
-    sections[e.slot === "mount" ? "mount" : e.slot === "bag" ? "bag" : "equipment"].push(e);
-  }
-  return sections;
-}
-
-// 装备区外露度：equipment 区被扒到只剩饰物/一件不剩时算私密外露。
+// 装备区外露度：carriedItems（唯一 live 随身源——买卖/偷窃/赠送都写这里）的
+// 装备槽被扒到只剩饰物/一件不剩时算私密外露。没物化过 carriedItems 的 NPC
+// 不算「被扒光」——他本就没穿过，报暴露是误判。
 export function attireExposure(npc) {
-  // 没有任何随身数据的 NPC 不算「被扒光」——他本就没穿过，报暴露是误判。
-  const adv = OC_BY_NAME[npc?.name] || ADVENTURER_BY_NAME[npc?.name];
-  const inst = advAllEntries(npc);
-  const raw = [...inst, ...(npc?.carriedItems || [])].length
-    ? [...inst, ...(npc?.carriedItems || [])]
-    : (adv ? advAllEntries(adv) : null);
-  if (!raw?.length) return null;
-  const gear = carryTradeEntries(npc).filter((e) => e.slot === "equipment" && GEAR_CATS.has(e.category));
+  if (!Array.isArray(npc?.carriedItems)) return null;
+  const gear = npc.carriedItems
+    .filter((e) => e && !e.sold && !e.stolen && !e.dropped)
+    .map((e) => normalizeCarryEntry(npc, e))
+    .filter((e) => e.slot === "equipment" && GEAR_CATS.has(e.category));
   const hasArmor = gear.some((e) => e.category === ITEM_CATEGORY.ARMOR);
   const hasAccessory = gear.some((e) => e.category === ITEM_CATEGORY.ACCESSORY);
   const hasWeapon = gear.some((e) => e.category === ITEM_CATEGORY.WEAPON);

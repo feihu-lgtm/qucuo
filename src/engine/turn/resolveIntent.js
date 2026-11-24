@@ -7,7 +7,9 @@
 // whisper（私聊旁白）是标注的例外路径：不进四段，留在 hook 里直接转 talkToNarrator。
 // 分层注记：app/store/infra 的依赖一律经 env.io/env.refs 注入，本文件不反向 import。
 
-import { classifyIntent, INTENT } from "../../domain/rules/prompt/inputIntent.js";
+import { classifyIntent, INTENT, isIntimateInput } from "../../domain/rules/prompt/inputIntent.js";
+import { intimacyGate, intimacyRefusal, intimacyPromptNote } from "../../domain/rules/npc/intimacy.js";
+import { add, set, applyWrite } from "../../domain/rules/state/applyWrite.js";
 import { findTargetedRumor } from "../../domain/rules/npc/npcEmergence.js";
 import { parseDir } from "../../utils/mudHelpers.js";
 import { QUCUO_MAP, buildDirectionJudgeRequest, parseDirectionJudgeResponse } from "../../domain/data/map/qucuoMap.js";
@@ -27,7 +29,7 @@ import { getGroundItems, removeGroundItems } from "../../domain/rules/map/ground
 
 export async function resolveIntent(cmd, env) {
   const { opts, extraReplies, interactMode, apiCfg, gm, _trace } = env;
-  const { room, char, inv, convo, questProgress, flags, innerRoomName, mapData, time } = env.state;
+  const { room, char, inv, convo, questProgress, flags, innerRoomName, mapData, time, nsfwOn, activeTarget, talkTarget } = env.state;
   const {
     pendDirRef, outerDepartRef, varTreeRef, roomMapRef,
     pickupJudgmentRef, collectGrantedRef, intentRouterRef,
@@ -56,6 +58,45 @@ export async function resolveIntent(cmd, env) {
   const intent = isTalk ? INTENT.TALK_CASUAL : classifyIntent(cmd);
 
   traceStep(_trace, "意图分类", "pass", `模式=${isTalk ? "对话" : "行动"} · 意图=${intent?.label || intent || "未知"}`);
+
+  // ── 亲密指令族（docs/设计_亲密互动好感门槛.md）──
+  // ■ 模式关掉时整族隐藏（nsfwOn=false 落回普通对话）。过没过线系统裁决：
+  // 未过线→性格化拒词+按性情扣好感；过线→标已亲密♥、prompt 注入 nsfw 段+style。
+  let intimateNote = "";
+  const intimateHit = nsfwOn && (isTalk ? isIntimateInput(cmd) : intent === INTENT.INTIMATE);
+  if (intimateHit) {
+    const targetName = isTalk ? talkTarget : (talkTarget || activeTarget?.name || activeTarget);
+    const npc = (room?.npcs || []).find((n) => n.name === targetName)
+      || (room?.npcs || []).find((n) => cmd.includes(n.name));
+    if (npc?.name) {
+      const aff = Number(varTreeRef.current?.角色?.[npc.name]?.好感度) || 0;
+      const gate = intimacyGate(npc, aff);
+      turnMonitor.activate(_trace);
+      setInput("");
+      setCmdHistory(p => [cmd, ...p].slice(0, 50));
+      setHistIdx(-1);
+      if (!gate.unlocked) {
+        const { line, loss } = intimacyRefusal(npc);
+        const logs = [{ t: "cmd", text: `> ${cmd}` }, { t: "desc", text: `  ${line}` }];
+        if (loss > 0) {
+          const cur = Number(varTreeRef.current?.角色?.[npc.name]?.好感度) || 0;
+          const next = applyWrite({ ...getGameState(), varTree: varTreeRef.current }, add(["角色", npc.name, "好感度"], -loss)).state.varTree;
+          varTreeRef.current = next;
+          logs.push({ t: "affection", text: `  💗 ${npc.name} 好感度 -${loss}（${cur} → ${cur - loss}）` });
+        }
+        applyLocal({ logs });
+        traceStep(_trace, "亲密门槛", "fail", `${npc.name} 好感 ${aff}/${gate.threshold}，${gate.forbidden ? "不受人情" : "婉拒"}`);
+        clearWait();
+        return { proceed: false, summary: gate.forbidden ? "亲密对象不通人情" : "亲密好感不足被婉拒" };
+      }
+      // 过线：标已亲密（varTree 持久 + 当前房间条目挂 ♥），prompt 注入门槛行+nsfw 段+style。
+      const stamped = applyWrite({ ...getGameState(), varTree: varTreeRef.current }, set(["角色", npc.name, "已亲密"], true)).state.varTree;
+      varTreeRef.current = stamped;
+      setRoom((r) => ({ ...r, npcs: (r.npcs || []).map((n) => (n.name === npc.name ? { ...n, intimate: true } : n)) }));
+      intimateNote = `\n${intimacyPromptNote(npc, aff)}`;
+      traceStep(_trace, "亲密门槛", "pass", `${npc.name} 好感 ${aff}/${gate.threshold}，已亲密`);
+    }
+  }
 
   const localCommand = !isTalk
     ? parseLocalCommand(cmd, { ...getGameState(), isTalk, convo }, { surface: "web" })
@@ -285,7 +326,7 @@ export async function resolveIntent(cmd, env) {
     proceed: true,
     plan: {
       intent, isTalk, isSettle, movingDir, lockedDestName, destinationLock,
-      collectNote: collectNote + (opts.intentPlanNote || ""),
+      collectNote: collectNote + (opts.intentPlanNote || "") + intimateNote,
       encounterToDescribe, activeGroundItemForTurn,
     },
   };

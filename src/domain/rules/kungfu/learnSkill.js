@@ -151,7 +151,7 @@ export function tryStealFrom(npc, varTree, skills, char, agility = 0, now = Date
 
   // 判定成功，再决定这次偷到的是招式还是物品
   const stealableMoves = collectLearnableMoves(npc, "signature", skills, char);
-  const stealableItems = (npc.carriedItems || []).filter(it => !it.stolen);
+  const stealableItems = (npc.carriedItems || []).filter(it => !it.stolen && it.slot !== "mount");
   const outcome = pickStealOutcome(stealableMoves.length > 0, stealableItems.length > 0);
 
   if (outcome === "move") {

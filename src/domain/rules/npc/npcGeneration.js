@@ -116,7 +116,7 @@ export function ensureNpcCombatData(npc, options = {}) {
 // 如果被玩家偷窃系统提前偷光了，战斗掉落就没有装备可拿，只剩银两，
 // 这也是合理的——同一份"这个人身上有什么"的数据源，不重复建模。
 export function rollBattleLoot(npc) {
-  const availableItems = (npc.carriedItems || []).filter(i => !i.stolen);
+  const availableItems = (npc.carriedItems || []).filter(i => !i.stolen && i.slot !== "mount");
   const droppedItem = availableItems.length > 0
     ? makeGameItem(availableItems[Math.floor(random() * availableItems.length)])
     : null;

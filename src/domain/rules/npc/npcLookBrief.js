@@ -1,18 +1,20 @@
 // 查看 NPC：系统卡片（来历、装束）立刻给出，外貌描写后台补写。
 import { ITEM_CATEGORY } from "../economy/equipment.js";
-import { carryTradeEntries, attireExposure } from "./npcCarry.js";
+import { CATALOG_INDEX } from "../../data/items/catalog.js";
+import { attireExposure } from "./npcCarry.js";
 
 const GEAR = new Set([ITEM_CATEGORY.WEAPON, ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.ACCESSORY]);
 
 export function npcGear(npc) {
-  const carried = (npc?.carriedItems || [])
-    .filter((item) => item?.name && !item.stolen && !item.dropped && !item.sold && GEAR.has(item.category))
-    .map((item) => item.name);
-  // OC 的 carry 区也折进去（sold/stolen 已由 carryTradeEntries 滤掉）
-  const fromCarry = carryTradeEntries(npc)
-    .filter((e) => e.slot === "equipment" && GEAR.has(e.category))
-    .map((e) => e.name);
-  return [...new Set([...carried, ...fromCarry])];
+  // carriedItems 是唯一 live 随身源（货架/偷池/送礼都写它）；类目未标的条目
+  // 走 normalize 口径——OC 的 stealables 装备多数不写 category，名录也查得到。
+  return [...new Set((npc?.carriedItems || [])
+    .filter((item) => item?.name && !item.stolen && !item.dropped && !item.sold)
+    .map((item) => {
+      const cat = item.category || CATALOG_INDEX[item.name]?.category;
+      return cat && cat !== ITEM_CATEGORY.MISC && GEAR.has(cat) ? item.name : null;
+    })
+    .filter(Boolean))];
 }
 
 // 换装同步链的外观段：装备随买卖/偷窃/赠送变化时重算——sold/stolen 标记写进条目

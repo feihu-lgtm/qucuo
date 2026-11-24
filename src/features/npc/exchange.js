@@ -8,6 +8,7 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
 import { buildShopInventory, buildOcShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
+import { affectionOf, buildCarryShelf, flattenShelf, sellCoefOf } from "../../domain/rules/npc/npcTradeFlow.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { giftRange } from "../../domain/rules/state/fields.js";
@@ -17,7 +18,6 @@ import { factionTurnInOf } from "../../domain/rules/economy/factionTurnIn.js";
 import { isNpcKnown, INITIAL_FAVORABILITY } from "../../domain/rules/npc/npcAwareness.js";
 import { herbDonationRepGain } from "../../domain/rules/economy/herbDonation.js";
 import { applyFactionRep } from "../../domain/rules/economy/factionRep.js";
-import { carryTradeSections } from "../../domain/rules/npc/npcCarry.js";
 
 function composeUpdates(first, second) {
   return (prev) => {
@@ -183,11 +183,9 @@ export function giftNpc(state, npc, item, now = Date.now()) {
       ...prev,
       npcs: (prev.npcs || []).map((n) => {
         if (n.name !== npc.name) return n;
-        // 有 carriedItems 就写进它——偷池和随身货架都以它为 live 源；
-        // 战斗化前的 OC 没这张表才落 carry（读取源两张表都合并看）。
-        return n.carriedItems?.length
-          ? { ...n, carriedItems: [...n.carriedItems, worn] }
-          : { ...n, carry: [...(n.carry || []), worn] };
+        // carriedItems 是唯一 live 随身源（货架/偷池都读它）——礼物写进它，
+        // 穿上能看、买回来也不是空壳。
+        return { ...n, carriedItems: [...(n.carriedItems || []), worn] };
       }),
     });
     logs.push({ t: "sys", text: `  ${npc.name}换上了${itemName}。` });
@@ -233,17 +231,27 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
 export function tradeWithNpc(state, npc) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "trade" });
-  const shopData = buildOcShopInventory(npc.name) || rollShopStock(npc.name, state.time) || buildShopInventory(npc.name);
-  if (!shopData) {
-    // 无店可走随身交易（OC 冒险者的 carry 三分区）
-    const sections = carryTradeSections(npc);
-    if (sections.equipment.length + sections.bag.length + sections.mount.length) {
-      return { shop: { npcName: npc.name, district: state.room?.name, carryTrade: true, carrySections: sections, shopName: `${npc.name}的随身` } };
-    }
-    return { logs: [{ t: "sys", text: `  ${npc.name}摆摆手，「小店暂无货可卖。」` }] };
+  // 货架换源（设计稿 §2.1）：不再出独立 goods 货架——货架=对方 carriedItems
+  // 经 normalizeCarryEntry 后按 slot 分区；mount 只展示，sellable=false 标「不卖」，
+  // 钟爱走 quoteBuy 价档（中钟爱 3×、挚爱拒售、好感≥60 割爱 2×）。
+  const affection = affectionOf(state.varTree, npc.name);
+  const sections = buildCarryShelf(npc, affection);
+  const items = flattenShelf(sections);
+  // 旧独立货架（OC 货单/店档）改作「店里陈列」：保留展示但不走随身清单成交。
+  const displayData = buildOcShopInventory(npc.name) || rollShopStock(npc.name, state.time) || buildShopInventory(npc.name);
+  const display = (displayData?.items || []).map(i => ({ ...i, displayOnly: true }));
+  if (!items.length && !display.length) {
+    return { logs: [{ t: "sys", text: `  ${npc.name}摆摆手，「身无长物，没什么好交易的。」` }] };
   }
-  // 商店货之外，OC 冒险者身上还有随身可卖——同面板挂随身区
-  const sections = carryTradeSections(npc);
-  return { shop: { npcName: npc.name, district: state.room?.name, ...shopData,
-    ...(sections.equipment.length + sections.bag.length + sections.mount.length ? { carrySections: sections } : {}) } };
+  return {
+    shop: {
+      npcName: npc.name,
+      npcId: npc.id ?? npc.name,
+      district: state.room?.name,
+      shopName: displayData?.shopName || `${npc.name}的随身货`,
+      sections,
+      sellCoef: sellCoefOf(npc, affection),
+      items: [...items, ...display],
+    },
+  };
 }
