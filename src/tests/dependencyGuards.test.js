@@ -53,6 +53,9 @@ const ENTRY_WHITELIST = new Set([
   "debug/debug-gamble.jsx",
   "debug/debug-item.jsx",
   "tests/mockRef.js",
+  // 地宫 v2 具名房间图生成器（设计稿 §A）：库模块先于消费方落库，
+  // 等十宫内层地图接线后从此名单摘掉。
+  "domain/rules/dungeon/genMap.js",
 ]);
 
 function walkSource(dir, out = []) {
