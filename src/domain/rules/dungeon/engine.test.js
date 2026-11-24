@@ -281,7 +281,7 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
 
     const combat = resolveDungeonChoice(betrayed, "adv_pursue");
     expect(combat.status).toBe("combat");
-    expect(combat.activeEnemy?.name).toBe("燕十三娘");
+    expect(combat.activeEnemy?.name).toBe(sampleAdv.name);
 
     const recovered = applyDungeonBattleResult(combat, { outcome: "win", playerHp: [88, 100] });
     expect(recovered.status).toBe("exploring");
@@ -305,7 +305,7 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
       activeNode: makeAdvNode("help"),
     }, "adv_rob");
     expect(robCombat.status).toBe("combat");
-    expect(robCombat.activeEnemy?.name).toBe("燕十三娘");
+    expect(robCombat.activeEnemy?.name).toBe(sampleAdv.name);
 
     const ambushBase = {
       ...base,
