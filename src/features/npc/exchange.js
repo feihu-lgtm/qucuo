@@ -8,6 +8,7 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/questEngine.js";
 import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
 import { buildShopInventory, buildOcShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
+import { affectionOf, buildCarryShelf, flattenShelf, sellCoefOf } from "../../domain/rules/npc/npcTradeFlow.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { giftRange } from "../../domain/rules/state/fields.js";
@@ -204,9 +205,27 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
 export function tradeWithNpc(state, npc) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "trade" });
-  const shopData = buildOcShopInventory(npc.name) || rollShopStock(npc.name, state.time) || buildShopInventory(npc.name);
-  if (!shopData) {
-    return { logs: [{ t: "sys", text: `  ${npc.name}摆摆手，「小店暂无货可卖。」` }] };
+  // 货架换源（设计稿 §2.1）：不再出独立 goods 货架——货架=对方 carriedItems
+  // 经 normalizeCarryEntry 后按 slot 分区；mount 只展示，sellable=false 标「不卖」，
+  // 钟爱走 quoteBuy 价档（中钟爱 3×、挚爱拒售、好感≥60 割爱 2×）。
+  const affection = affectionOf(state.varTree, npc.name);
+  const sections = buildCarryShelf(npc, affection);
+  const items = flattenShelf(sections);
+  // 旧独立货架（OC 货单/店档）改作「店里陈列」：保留展示但不走随身清单成交。
+  const displayData = buildOcShopInventory(npc.name) || rollShopStock(npc.name, state.time) || buildShopInventory(npc.name);
+  const display = (displayData?.items || []).map(i => ({ ...i, displayOnly: true }));
+  if (!items.length && !display.length) {
+    return { logs: [{ t: "sys", text: `  ${npc.name}摆摆手，「身无长物，没什么好交易的。」` }] };
   }
-  return { shop: { npcName: npc.name, district: state.room?.name, ...shopData } };
+  return {
+    shop: {
+      npcName: npc.name,
+      npcId: npc.id ?? npc.name,
+      district: state.room?.name,
+      shopName: displayData?.shopName || `${npc.name}的随身货`,
+      sections,
+      sellCoef: sellCoefOf(npc, affection),
+      items: [...items, ...display],
+    },
+  };
 }

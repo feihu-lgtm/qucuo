@@ -12,6 +12,7 @@ import {
 } from "../../store/sessionUiStore.js";
 import { BUILDING_TYPE } from "../../domain/data/buildings/qucuoBuildings.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
+import { applyTradeToNpcState, buyFromNpcCarry, sellToNpcCarry } from "../../domain/rules/npc/npcTradeFlow.js";
 import { getBuildingInstanceKey } from "./buildingInstanceKey.js";
 import NarrativeLogFeed from "./center/NarrativeLogFeed.jsx";
 import CenterFooterBar from "./center/CenterFooterBar.jsx";
@@ -71,7 +72,7 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
 
   const {
     setChar, setPot, setExp, setDao, setNarrator,
-    setMapData, setRoom, setInnerRoomName, setSkills, setInv,
+    setMapData, setRoom, setInnerRoomName, setSkills, setInv, setNpcState,
   } = gameActions;
 
   const runCommand = (id, fn) => turn.dispatchCommand ? turn.dispatchCommand(id, fn) : fn();
@@ -212,8 +213,8 @@ export default function CenterPanel({ ui, derived, turn, handlers, addLog, jotNo
               <TradingScreen inline queueCount={queueCount} shopName={tradingShop.shopName} shopItems={tradingShop.items}
                 playerInv={inv} playerMoney={char.money || 0} playerWit={turn.effectiveSpecialNow?.智谋 ?? 5} repCoef={factionShopCoef(varTree, tradingShop.district ?? room?.name)} zoneTheme={zoneTheme} onInspect={aiInspect.inspectItem}
                 onClose={() => setTradingShop(null)}
-                onBuy={(item) => runCommand("shopBuy", () => { if ((char.money || 0) < item.buyPrice) return; turn.captureUndo(); setChar(c => ({ ...c, money: c.money - item.buyPrice })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); addLog([{ t: "item", text: `  你花费${item.buyPrice}两，购得「${item.name}」。` }]); jotNote({ text: `购得「${item.name}」，花${item.buyPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
-                onSell={(item) => runCommand("shopSell", () => { if (item.equipped) return; turn.captureUndo(); setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + item.sellPrice })); addLog([{ t: "item", text: `  你卖出「${item.name}」，得银两${item.sellPrice}两。` }]); jotNote({ text: `卖出「${item.name}」，得银${item.sellPrice}两。`, source: NOTE_SOURCE.DUMB }); })}
+                onBuy={(item) => runCommand("shopBuy", () => { if (item.displayOnly || item.notForSale) return; const aff = varTree?.角色?.[tradingShop.npcName]?.好感度 ?? 0; const npc = (room?.npcs || []).find(n => (tradingShop.npcId && n.id === tradingShop.npcId) || n.name === tradingShop.npcName); const res = npc ? buyFromNpcCarry(npc, item, { affection: aff, money: char.money || 0 }) : { ok: false, logs: [{ t: "sys", text: "  对方已经不在此地了。" }] }; if (!res.ok) { if (res.logs) addLog(res.logs); return; } turn.captureUndo(); setChar(c => ({ ...c, money: c.money - res.price })); setInv(prev => [...prev, { ...item, id: `${item.name}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, equipped: false }]); if (npc && res.nextCarriedItems) { const key = npc.id ?? npc.name; setRoom(r => ({ ...r, npcs: r.npcs.map(n => n === npc || n.id === npc.id ? { ...n, carriedItems: res.nextCarriedItems } : n) })); setNpcState(s => applyTradeToNpcState(s, npc, res.tradeDelta)); } addLog(res.logs || [{ t: "item", text: `  你花费${res.price}两，购得「${item.name}」。` }]); jotNote({ text: `购得「${item.name}」，花${res.price}两。`, source: NOTE_SOURCE.DUMB }); })}
+                onSell={(item) => runCommand("shopSell", () => { if (item.equipped) return; const aff = varTree?.角色?.[tradingShop.npcName]?.好感度 ?? 0; const npc = (room?.npcs || []).find(n => (tradingShop.npcId && n.id === tradingShop.npcId) || n.name === tradingShop.npcName); const res = npc ? sellToNpcCarry(npc, item, { affection: aff }) : { ok: false, logs: [{ t: "sys", text: "  对方已经不在此地了。" }] }; if (!res.ok) { if (res.logs) addLog(res.logs); return; } turn.captureUndo(); setInv(prev => prev.filter(i => (typeof i === "object" ? i.id : i) !== item.id)); setChar(c => ({ ...c, money: (c.money || 0) + res.price })); if (npc && res.nextCarriedItems) { const key = npc.id ?? npc.name; setRoom(r => ({ ...r, npcs: r.npcs.map(n => n === npc || n.id === npc.id ? { ...n, carriedItems: res.nextCarriedItems } : n) })); setNpcState(s => applyTradeToNpcState(s, npc, res.tradeDelta)); } addLog(res.logs || [{ t: "item", text: `  你卖出「${item.name}」，得银两${res.price}两。` }]); jotNote({ text: `卖出「${item.name}」，得银${res.price}两。`, source: NOTE_SOURCE.DUMB }); })}
               />
             </Suspense>
           )}

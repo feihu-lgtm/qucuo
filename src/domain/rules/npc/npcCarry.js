@@ -125,15 +125,21 @@ export function ocCarryItems(oc, npc) {
   let i = 0;
   for (const c of oc.carry || []) {
     const it = makeNamedItem(c.name);
-    if (it) items.push({ ...it, id: `${npc.id}_oc${i++}`, stolen: false });
+    if (it) items.push({ ...it, slot: c.slot, cherish: c.cherish, sellable: c.sellable, price: c.price, id: `${npc.id}_oc${i++}`, stolen: false });
   }
   for (const e of oc.stealables?.equipment || []) {
     const it = makeItem({ name: e.name, category: ocEquipCat(e.name), quality: e.quality || "绿" });
-    items.push({ ...it, desc: e.desc, id: `${npc.id}_oc${i++}`, stolen: false });
+    items.push({ ...it, desc: e.desc, slot: e.slot, cherish: e.cherish, sellable: e.sellable, price: e.price, id: `${npc.id}_oc${i++}`, stolen: false });
   }
   for (const d of oc.stealables?.sundries || []) {
     const it = makeItem({ name: d.name, category: ITEM_CATEGORY.MISC, quality: "白" });
-    items.push({ ...it, desc: d.desc, id: `${npc.id}_oc${i++}`, stolen: false });
+    items.push({ ...it, desc: d.desc, slot: d.slot, cherish: d.cherish, sellable: d.sellable, price: d.price, id: `${npc.id}_oc${i++}`, stolen: false });
+  }
+  // 随身随从/坐骑归 mount 档（铁伯这类）——归一化时会认出 type→mount；
+  // 也带在货架里（只展示不卖）。
+  if (oc.follower?.name) {
+    items.push({ name: oc.follower.name, type: oc.follower.type, desc: oc.follower.desc,
+      slot: "mount", sellable: false, cherish: 100, id: `${npc.id}_mount`, stolen: false });
   }
   return items;
 }

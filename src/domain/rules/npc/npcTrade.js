@@ -7,7 +7,7 @@ export const EMPTY_TRADE = { sold: {}, bought: [] };
 
 // 交易归属按条目身份判：出场固化的 carry 条目带 id（`${npc.id}_ci${i}`），
 // 老数据/兜底只有 name 时按 name 对。
-const itemKey = (item) => item?.id ?? item?.name ?? null;
+export const itemKey = (item) => item?.id ?? item?.name ?? null;
 
 /**
  * 把一次成交动作合并进 NPC 的 trade 记录。delta 是单个动作：
@@ -68,5 +68,13 @@ export function npcTradeOf(npcState, npc) {
   const byId = npc?.id ? npcState[npc.id] : null;
   if (byId?.trade) return byId.trade;
   const byName = npc?.name ? npcState[npc.name] : null;
-  return byName?.trade ?? null;
+  if (byName?.trade) return byName.trade;
+  // 房间实例 id 每回出场可能换（pool_ 前缀/重抽）——台账按当时 id 记的，
+  // 靠记录里存的 name 兜底扫一遍。
+  if (npc?.name) {
+    for (const rec of Object.values(npcState)) {
+      if (rec?.name === npc.name && rec.trade) return rec.trade;
+    }
+  }
+  return null;
 }

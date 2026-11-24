@@ -18,7 +18,7 @@ const NPC_FIELDS = [
   "lockInnerRoom", "bidderKind", "companionCandidate", "guaranteedDrop",
   "portrait", "neigong", "waigong", "imported", "hostile", "faction", "gender", "randomPasser",
   "adventurer", "adventurerDay", "rainbow", "rainbowStyle", "archetype", "archetypeLabel", "title",
-  "ocAdventurer", "npcRef",
+  "ocAdventurer", "npcRef", "tradeStyle",
 ];
 
 export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5, trade } = {}) {
