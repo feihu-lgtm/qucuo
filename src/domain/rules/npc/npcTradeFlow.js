@@ -90,9 +90,11 @@ export function flattenShelf(sections) {
  * 这里再拦一次，防 UI 快照滞后重复点击。
  */
 export function buyFromNpcCarry(npc, targetItem, { affection = 0, money = 0 } = {}) {
-  // 货架条目自带 id；点击参数也可能只带 name——两种口径都认（台账键仍以 live 的 itemKey 落）
-  const live = (npc?.carriedItems || []).find(i => itemKey(i) === itemKey(targetItem)
-    || (targetItem?.name && i?.name === targetItem.name));
+  // 货架条目自带 id，itemKey 精确命中优先；只有调用方没给 id（老档/手写货架）
+  // 才退到按 name 匹配——否则同名两件货会买错件。
+  const live = (npc?.carriedItems || []).find(i => itemKey(i) === itemKey(targetItem))
+    ?? (targetItem?.id ? null
+      : (npc?.carriedItems || []).find(i => i?.name === targetItem?.name));
   if (!live) return { ok: false, logs: [{ t: "sys", text: `  「${targetItem?.name || "那件货"}」已经不在 ${npc?.name || "对方"} 身上了。` }] };
   // 三态互斥：归宿已定的（stolen/dropped）无权再被买——同一 itemId 先发生者优先。
   if (live.stolen || live.dropped) return { ok: false, logs: [{ t: "sys", text: `  「${live.name}」已经不在 ${npc?.name || "对方"} 身上了。` }] };
@@ -124,6 +126,8 @@ export function sellToNpcCarry(npc, item, { affection = 0 } = {}) {
     ...item,
     id: item.id || `${npc.id}_buy_${item.name}`,
     slot: "bag", sellable: true, cherish: 0,
+    // 对方转手只按实收价出——否则玩家能同一件货反复低买高卖刷银子
+    price,
     stolen: false, dropped: false, equipped: false,
   };
   const nextCarriedItems = [...(npc.carriedItems || []), bagEntry];
@@ -132,11 +136,17 @@ export function sellToNpcCarry(npc, item, { affection = 0 } = {}) {
     logs: [{ t: "item", text: `  你卖出「${item.name}」，${npc.name}出 ${price} 两收下。` }] };
 }
 
-/** 给 store 层用：把 delta 落进 npcState[npcKey]。 */
-export function applyTradeToNpcState(npcState, npcKey, delta) {
-  const prev = npcState?.[npcKey] || {};
+/**
+ * 给 store 层用：把 delta 落进 npcState[npc.id ?? npc.name]，并在记录里留
+ * name——再出场/换据点时房间实例 id 会变（pool_ 前缀/重抽），npcTradeOf
+ * 按 name 兜底扫描还能找回这笔台账。
+ */
+export function applyTradeToNpcState(npcState, npc, delta) {
+  const key = npc?.id ?? npc?.name;
+  if (!key) return npcState || {};
+  const prev = npcState?.[key] || {};
   return {
     ...(npcState || {}),
-    [npcKey]: { ...prev, trade: applyNpcTradeDelta(prev.trade, delta) },
+    [key]: { ...prev, name: npc?.name ?? prev.name, trade: applyNpcTradeDelta(prev.trade, delta) },
   };
 }

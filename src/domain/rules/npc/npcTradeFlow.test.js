@@ -107,15 +107,17 @@ describe("卖出结算 sellToNpcCarry + 台账", () => {
     expect(bag.slot).toBe("bag");
     expect(bag.stolen).toBe(false);
     expect(res.tradeDelta.bought.name).toBe("铁剑");
+    // 转手价=实收价，堵死同一件货低买高卖刷银子
+    expect(bag.price).toBe(50);
     // 台账写进 npcState，固化叠加后仍能被偷（stolen:false 在位）
-    const npcState = applyTradeToNpcState({}, "n_duo", res.tradeDelta);
+    const npcState = applyTradeToNpcState({}, NPC, res.tradeDelta);
     const back = applyTradeToCarriedItems(NPC.carriedItems, npcState.n_duo.trade);
     expect(back.some(i => i.name === "铁剑" && !i.stolen)).toBe(true);
   });
 
   it("买卖 roundtrip：买走后 sold 落账，固化出场不再出", () => {
     const buy = buyFromNpcCarry(NPC, { name: "沉甸甸的碎银荷包" }, { money: 100 });
-    const npcState = applyTradeToNpcState({}, "n_duo", buy.tradeDelta);
+    const npcState = applyTradeToNpcState({}, NPC, buy.tradeDelta);
     const back = applyTradeToCarriedItems(NPC.carriedItems, npcState.n_duo.trade);
     expect(back.map(i => i.name)).not.toContain("沉甸甸的碎银荷包");
     // 老档无 trade 字段兜底：空台账原样返回
