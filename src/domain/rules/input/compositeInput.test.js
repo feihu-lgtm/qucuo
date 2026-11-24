@@ -40,6 +40,11 @@ describe("routeAutoInput", () => {
     expect(routeAutoInput("（看铁伯）夸她，再找他要钱", NPCS).kind).toBe("action");
     expect(routeAutoInput("随便敲点什么", NPCS).kind).toBe("action");
   });
+
+  it("搭话里混行动 → action；送礼算行动不免费", () => {
+    expect(routeAutoInput("聊聊家常，然后捡起枯枝", NPCS).kind).toBe("action");
+    expect(routeAutoInput("递给铁伯一枚玉佩", NPCS).kind).toBe("action");
+  });
 });
 
 describe("buildCompositeNote", () => {
