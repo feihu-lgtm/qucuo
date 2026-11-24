@@ -53,7 +53,7 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
         style={{ background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ color: zoneTheme.accent, fontSize: "14px", marginBottom: 4 }}>{npc.name}</div>
+        <div style={{ color: zoneTheme.accent, fontSize: "14px", marginBottom: 4 }}>{npc.name}{npc.intimate ? " ♥" : ""}</div>
         <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 16 }}>{npc.brief}</div>
 
         <div className="mobile-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>

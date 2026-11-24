@@ -187,3 +187,6 @@ export function computeSettledLoot(run) {
   };
 }
 export { DUNGEON_DISTRICTS_ALL } from "../../data/dungeon/districts.js";
+
+// 亲密互动·好感门槛（docs/设计_亲密互动好感门槛.md）
+export { intimacyGate, intimacyRefusal, intimacyPromptNote, ARCHETYPE_INTIMACY, stationedFavorDecayRule } from "../npc/intimacy.js";

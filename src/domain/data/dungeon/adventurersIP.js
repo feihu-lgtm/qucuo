@@ -27,7 +27,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "酥油糌粑，偏爱甜口糕点",
     hobby: "收集各类亮闪闪的珠串与古币",
     tradeStyle: "讨价还价，雁过拔毛",
-    follower: { type: "兽", name: "阿财", desc: "一只机灵的雪貂，专替主人钻洞寻宝" },
+    follower: { type: "兽", name: "阿财", desc: "一只机灵的雪貂，专替主人钻洞寻宝", intimacy: { forbidden: true } },
     kungfu: {
       school: "巫山",
       moves: [
@@ -73,7 +73,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "耗牛骨汤，各类菌菇炖品",
     hobby: "钻研新奇菜谱，投喂门派师兄",
     tradeStyle: "用美食换取奇珍异草",
-    follower: { type: "兽", name: "肉包", desc: "一只肥硕的藏獒幼犬，只知道吃" },
+    follower: { type: "兽", name: "肉包", desc: "一只肥硕的藏獒幼犬，只知道吃", intimacy: { forbidden: true } },
     kungfu: {
       school: "玉泉",
       moves: [
@@ -119,7 +119,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "清淡素食，常饮晨露花茶",
     hobby: "栽培变异雪莲与曼陀罗",
     tradeStyle: "只以稀有花种或孤本秘籍交换",
-    follower: { type: "剑灵", name: "醉花", desc: "寄宿在她佩剑中的草木之灵，散发幽香" },
+    follower: { type: "剑灵", name: "醉花", desc: "寄宿在她佩剑中的草木之灵，散发幽香", intimacy: { forbidden: true } },
     kungfu: {
       school: "百花",
       moves: [
@@ -165,7 +165,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "烈酒烤肉，无辣不欢",
     hobby: "擦拭宝刀，研究火器",
     tradeStyle: "现款现货，爽快利落",
-    follower: { type: "人", name: "锦官力士", desc: "身披重甲的锦官城死士，绝对忠诚" },
+    follower: { type: "人", name: "锦官力士", desc: "身披重甲的锦官城死士，绝对忠诚", intimacy: { forbidden: true } },
     kungfu: {
       school: "锦官",
       moves: [
@@ -211,7 +211,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "偏爱带着血丝的五分熟牦牛肉与烈酒。",
     hobby: "深夜在荒野与孤狼对啸，收集各种凶兽的獠牙。",
     tradeStyle: "喜爱以物易物，尤其看重稀有的兽皮与兽骨。",
-    follower: { type: "兽", name: "雪山银豹", desc: "通体银白、眼瞳幽蓝的康藏雪豹，体型远超同类。" },
+    follower: { type: "兽", name: "雪山银豹", desc: "通体银白、眼瞳幽蓝的康藏雪豹，体型远超同类。", intimacy: { forbidden: true } },
     kungfu: {
       school: "巫山",
       moves: [
@@ -257,7 +257,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "爱吃精致的锦官城糕点，如芙蓉糕、红油抄手。",
     hobby: "听茶馆说书人讲侠客故事，对镜描摹不同女子的妆容。",
     tradeStyle: "漫天要价就地还钱，喜欢用甜言蜜语迷惑买家。",
-    follower: { type: "人", name: "老仆阿福", desc: "实则是赵雅儿雇来的托儿，专职配合她演戏骗人。" },
+    follower: { type: "人", name: "老仆阿福", desc: "实则是赵雅儿雇来的托儿，专职配合她演戏骗人。", intimacy: { forbidden: true } },
     kungfu: {
       school: "锦官",
       moves: [
@@ -303,7 +303,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "清淡的饮食，偏爱酸甜口味的果脯与清茶。",
     hobby: "在清晨吊嗓子，练习高难度柔身动作。",
     tradeStyle: "诚实本分，价格公道，从不占人便宜。",
-    follower: { type: "人", name: "老齐", desc: "齐丽的父亲，常年在台下敲锣打鼓，关键时刻能挺身护女。" },
+    follower: { type: "人", name: "老齐", desc: "齐丽的父亲，常年在台下敲锣打鼓，关键时刻能挺身护女。", intimacy: { forbidden: true } },
     kungfu: {
       school: "百花",
       moves: [
@@ -349,7 +349,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "偏爱各种药膳粥，口味极度清淡，滴水不沾荤腥。",
     hobby: "收集各地名匠制作的纸伞，在深夜与徘徊的游魂对话。",
     tradeStyle: "视金钱如粪土，只接受稀有药材或名贵纸伞作为交换。",
-    follower: { type: "剑灵", name: "药王幽魂", desc: "徘徊在人间的古代医师幽魂，只有沈湘芸的通灵眼能看见。" },
+    follower: { type: "剑灵", name: "药王幽魂", desc: "徘徊在人间的古代医师幽魂，只有沈湘芸的通灵眼能看见。", intimacy: { forbidden: true } },
     kungfu: {
       school: "玉泉",
       moves: [
@@ -395,7 +395,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "偏爱酸辣交加的重口味食物与烈酒。",
     hobby: "喜欢在深夜的月光下斗弄毒虫，编织五彩丝线。",
     tradeStyle: "以物易物，全凭心情，若顺眼甚至分文不取。",
-    follower: { type: "兽", name: "金冠灵蛇", desc: "一条浑身暗金鳞片、头生肉冠的剧毒灵蛇，盘踞在她肩头" },
+    follower: { type: "兽", name: "金冠灵蛇", desc: "一条浑身暗金鳞片、头生肉冠的剧毒灵蛇，盘踞在她肩头", intimacy: { forbidden: true } },
     kungfu: {
       school: "五仙毒经",
       moves: [
@@ -441,7 +441,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "喜爱清淡素雅的冷食与温热的清茶。",
     hobby: "擦拭长刀，或者在无人的崖边吹奏尺八。",
     tradeStyle: "明码标价，钱货两清，绝不拖泥带水。",
-    follower: { type: "剑灵", name: "雪女之影", desc: "寄宿在武士刀中的霜寒剑灵，只在出鞘时显化冰晶轮廓" },
+    follower: { type: "剑灵", name: "雪女之影", desc: "寄宿在武士刀中的霜寒剑灵，只在出鞘时显化冰晶轮廓", intimacy: { forbidden: true } },
     kungfu: {
       school: "天意刀流",
       moves: [
@@ -487,7 +487,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "只饮朝露与雪水，食新鲜采摘的雪莲与松子。",
     hobby: "每日面对冰湖抚琴，教导山间飞鸟鸣叫的音律。",
     tradeStyle: "不收金银，只用罕见的乐谱或上等琴弦来交换。",
-    follower: { type: "兽", name: "青鸟", desc: "传闻中能通音律的神鸟，会在她弹琴时伴舞" },
+    follower: { type: "兽", name: "青鸟", desc: "传闻中能通音律的神鸟，会在她弹琴时伴舞", intimacy: { forbidden: true } },
     kungfu: {
       school: "忘忧琴诀",
       moves: [
@@ -533,7 +533,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "极爱甜腻的波斯糕点与烤炙得恰到好处的香料羊肉。",
     hobby: "收集璀璨夺目的宝石，享受下人的伺候与奉承。",
     tradeStyle: "唯利是图，擅长讨价还价，总能榨干对方最后一滴油水。",
-    follower: { type: "人", name: "哑奴", desc: "身形魁梧的西域力士，口不能言，绝对忠诚的护卫" },
+    follower: { type: "人", name: "哑奴", desc: "身形魁梧的西域力士，口不能言，绝对忠诚的护卫", intimacy: { forbidden: true } },
     kungfu: {
       school: "大漠幻舞",
       moves: [
@@ -580,7 +580,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "喜食辛辣炙烤之物，尤爱烈酒。",
     hobby: "收集各色名贵胭脂，深夜独酌赏月。",
     tradeStyle: "看心情定价，若遇顺眼之人甚至分文不取。",
-    follower: { type: "兽", name: "赤练", desc: "一条通体赤红的剧毒灵蛇，常盘绕于她腰间。" },
+    follower: { type: "兽", name: "赤练", desc: "一条通体赤红的剧毒灵蛇，常盘绕于她腰间。", intimacy: { forbidden: true } },
     kungfu: {
       school: "天龙",
       moves: [
@@ -627,7 +627,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "偏爱清淡苦涩之物，如苦茶、雪莲。",
     hobby: "驯养猛禽，于悬崖之巅抚琴。",
     tradeStyle: "拒收男子的金银，只换取罕见的武学残篇或奇珍。",
-    follower: { type: "兽", name: "苍青", desc: "一只体型巨大的高原苍鹰，目光锐利，能撕裂虎豹。" },
+    follower: { type: "兽", name: "苍青", desc: "一只体型巨大的高原苍鹰，目光锐利，能撕裂虎豹。", intimacy: { forbidden: true } },
     kungfu: {
       school: "天龙",
       moves: [
@@ -673,7 +673,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "偏爱麻辣鲜香的蜀地小吃，尤爱红油抄手。",
     hobby: "喜欢在茶馆听书，偶尔设下精巧陷阱捉弄恶霸。",
     tradeStyle: "笑眯眯地讨价还价，常以情报换取物资。",
-    follower: { type: "兽", name: "阿紫", desc: "一只通体紫毛的灵貂，动作奇快，能寻宝探毒。" },
+    follower: { type: "兽", name: "阿紫", desc: "一只通体紫毛的灵貂，动作奇快，能寻宝探毒。", intimacy: { forbidden: true } },
     kungfu: {
       school: "锦官城",
       moves: [
@@ -720,7 +720,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "口味清淡，喜饮雨前龙井与桂花糕。",
     hobby: "月下作画，或在深夜踏雪无痕地飞檐走壁。",
     tradeStyle: "只与懂画之人交易，对俗物不屑一顾，看重眼缘。",
-    follower: { type: "机关人偶", name: "墨童", desc: "以机关术制成的研墨童子，能喷吐墨汁迷乱敌人视线。" },
+    follower: { type: "机关人偶", name: "墨童", desc: "以机关术制成的研墨童子，能喷吐墨汁迷乱敌人视线。", intimacy: { forbidden: true } },
     kungfu: {
       school: "百花谷",
       moves: [
@@ -768,7 +768,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "偏爱酸涩与奇特口味，喜欢嚼带有微毒的草根。",
     hobby: "研究新奇的蛊虫，看别人中毒后出洋相。",
     tradeStyle: "一手交钱一手交解药，绝不赊账。",
-    follower: { type: "兽", name: "七彩", desc: "一只剧毒的七彩蛤蟆，趴在她的肩头，能吞噬百毒。" },
+    follower: { type: "兽", name: "七彩", desc: "一只剧毒的七彩蛤蟆，趴在她的肩头，能吞噬百毒。", intimacy: { forbidden: true } },
     kungfu: {
       school: "五毒教",
       moves: [
@@ -815,7 +815,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "喜食炙烤之物，无肉不欢，烈酒烧喉。",
     hobby: "在僻静处擦拭爱刀，或是立于高处俯瞰雪山。",
     tradeStyle: "直来直去，用金条或人头结算，极度高效。",
-    follower: { type: "人", name: "影奴", desc: "戴着铁面具的明教死士，沉默寡言，绝对忠诚。" },
+    follower: { type: "人", name: "影奴", desc: "戴着铁面具的明教死士，沉默寡言，绝对忠诚。", intimacy: { forbidden: true } },
     kungfu: {
       school: "明教",
       moves: [
@@ -861,7 +861,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "清淡素食，尤爱雪莲羹",
     hobby: "收集古谱残卷，调音拭剑",
     tradeStyle: "唯有投缘或出示古谱方可换取其珍藏",
-    follower: { type: "剑灵", name: "凤鸣", desc: "素弦剑中孕育的虚影，如青色鸾鸟。" },
+    follower: { type: "剑灵", name: "凤鸣", desc: "素弦剑中孕育的虚影，如青色鸾鸟。", intimacy: { forbidden: true } },
     kungfu: {
       school: "名剑山庄",
       moves: [
@@ -907,7 +907,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "麻辣鲜香之物，尤喜红油抄手",
     hobby: "喝烈酒，掰腕子，擦拭长枪",
     tradeStyle: "直来直去，价格公道，看顺眼可半卖半送",
-    follower: { type: "兽", name: "赤碳", desc: "一匹脾气暴躁的红毛小马驹。" },
+    follower: { type: "兽", name: "赤碳", desc: "一匹脾气暴躁的红毛小马驹。", intimacy: { forbidden: true } },
     kungfu: {
       school: "平康武学",
       moves: [
@@ -953,7 +953,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "清甜糕点，爱喝春茶",
     hobby: "收集各地名剑，雨中漫步",
     tradeStyle: "以物易物，偏爱交换罕见的剑术残页或矿石",
-    follower: { type: "人", name: "抱剑童子", desc: "背着剑匣的哑巴小童，步履轻盈。" },
+    follower: { type: "人", name: "抱剑童子", desc: "背着剑匣的哑巴小童，步履轻盈。", intimacy: { forbidden: true } },
     kungfu: {
       school: "青云剑宗",
       moves: [
@@ -999,7 +999,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "生肉与冰水，几乎没有味觉追求",
     hobby: "在暗处观察猎物，擦拭飞刀",
     tradeStyle: "黑市交易，认钱不认人，出价高者得",
-    follower: { type: "机关人偶", name: "乌鸦", desc: "精钢打造的机械飞禽，用于侦查与淬毒。" },
+    follower: { type: "机关人偶", name: "乌鸦", desc: "精钢打造的机械飞禽，用于侦查与淬毒。", intimacy: { forbidden: true } },
     kungfu: {
       school: "天山暗影",
       moves: [
@@ -1045,7 +1045,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "甜糯糕点、甜茶",
     hobby: "收集亮晶晶的石头、逗弄各类小毒物",
     tradeStyle: "看心情以物易物，喜欢占点小便宜",
-    follower: { type: "兽", name: "赤瞳貂", desc: "一只通体雪白但双眼猩红的雪貂，动作奇快，牙齿带有麻痹毒素。" },
+    follower: { type: "兽", name: "赤瞳貂", desc: "一只通体雪白但双眼猩红的雪貂，动作奇快，牙齿带有麻痹毒素。", intimacy: { forbidden: true } },
     kungfu: {
       school: "五仙教",
       moves: [
@@ -1092,7 +1092,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "清淡素食、雪水煮茶",
     hobby: "拆解与组装精巧机关、静坐观云",
     tradeStyle: "只要绝版图谱或高阶机关零件交换",
-    follower: { type: "机关人偶", name: "青铜偃甲", desc: "一具用三星堆青铜残件与巫山木牛流马技艺拼装的护卫傀儡，力大无穷。" },
+    follower: { type: "机关人偶", name: "青铜偃甲", desc: "一具用三星堆青铜残件与巫山木牛流马技艺拼装的护卫傀儡，力大无穷。", intimacy: { forbidden: true } },
     kungfu: {
       school: "巫山派",
       moves: [
@@ -1138,7 +1138,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "山珍素食、菌菇汤",
     hobby: "研磨药粉、收集稀有草药种子",
     tradeStyle: "童叟无欺，明码标价，有时会用药免费换取穷苦人的情报",
-    follower: { type: "人", name: "药童小九", desc: "商葶苧在雪地里捡到的聋哑少年，背着巨大的药篓，擅长辨识草药。" },
+    follower: { type: "人", name: "药童小九", desc: "商葶苧在雪地里捡到的聋哑少年，背着巨大的药篓，擅长辨识草药。", intimacy: { forbidden: true } },
     kungfu: {
       school: "百花谷",
       moves: [
@@ -1185,7 +1185,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "烤牦牛肉、烈性青稞酒",
     hobby: "擦拭爱剑、在风雪中独自练剑",
     tradeStyle: "谢绝讲价，银货两讫",
-    follower: { type: "剑灵", name: "霜华剑魄", desc: "寄宿在她佩剑中的一缕上古剑气，隐约呈现冰雪女子的形态，能协助防御背后的偷袭。" },
+    follower: { type: "剑灵", name: "霜华剑魄", desc: "寄宿在她佩剑中的一缕上古剑气，隐约呈现冰雪女子的形态，能协助防御背后的偷袭。", intimacy: { forbidden: true } },
     kungfu: {
       school: "天山派",
       moves: [
@@ -1231,7 +1231,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "烧鸡与烈酒",
     hobby: "赌坊掷骰、寻访名酒",
     tradeStyle: "豪爽大方，常以物易物",
-    follower: { type: "剑灵", name: "无尘", desc: "一柄古剑中孕育的剑气之灵，形如半透明的飞燕。" },
+    follower: { type: "剑灵", name: "无尘", desc: "一柄古剑中孕育的剑气之灵，形如半透明的飞燕。", intimacy: { forbidden: true } },
     kungfu: {
       school: "剑门关",
       moves: [
@@ -1278,7 +1278,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "冰糖葫芦、素食甜点",
     hobby: "侍弄花草、吹奏短笛",
     tradeStyle: "柔声细语，不喜还价",
-    follower: { type: "兽", name: "小石头", desc: "通体碧绿的玉佛化成的通灵灵雀，能识破邪祟。" },
+    follower: { type: "兽", name: "小石头", desc: "通体碧绿的玉佛化成的通灵灵雀，能识破邪祟。", intimacy: { forbidden: true } },
     kungfu: {
       school: "天龙门",
       moves: [
@@ -1325,7 +1325,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "精致川菜、辛辣炙烤",
     hobby: "策马驰骋、收集神兵利器",
     tradeStyle: "挥金如土，看中就买",
-    follower: { type: "人", name: "隐龙卫", desc: "锦官林家暗中派来保护大小姐的蒙面死士。" },
+    follower: { type: "人", name: "隐龙卫", desc: "锦官林家暗中派来保护大小姐的蒙面死士。", intimacy: { forbidden: true } },
     kungfu: {
       school: "锦官派",
       moves: [
@@ -1372,7 +1372,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "剧毒药草、生肉与虫子烧烤",
     hobby: "炼蛊、作弄中原武林人士",
     tradeStyle: "随性而为，喜欢拿毒虫换宝贝",
-    follower: { type: "兽", name: "食蛊鸟", desc: "羽毛绚丽的奇异小鸟，最爱吞食各类毒虫蛊毒。" },
+    follower: { type: "兽", name: "食蛊鸟", desc: "羽毛绚丽的奇异小鸟，最爱吞食各类毒虫蛊毒。", intimacy: { forbidden: true } },
     kungfu: {
       school: "五仙教",
       moves: [
@@ -1419,7 +1419,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "偏爱甜糯糕点与蜀地麻辣火锅。",
     hobby: "收集古玩字画，深夜盘算账本。",
     tradeStyle: "讨价还价，雁过拔毛。",
-    follower: { type: "兽", name: "小哼", desc: "一只胖乎乎的藏地小野猪，嗅觉灵敏能寻宝" },
+    follower: { type: "兽", name: "小哼", desc: "一只胖乎乎的藏地小野猪，嗅觉灵敏能寻宝", intimacy: { forbidden: true } },
     kungfu: {
       school: "剑门关",
       moves: [
@@ -1466,7 +1466,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "喜欢酸甜可口的果脯与清淡素食。",
     hobby: "逗弄宠物，摆弄奇异毒草。",
     tradeStyle: "看顺眼白送，看不顺眼千金不卖。",
-    follower: { type: "兽", name: "花楹", desc: "百年罕见的五毒兽，能解百毒，形似生翼仙薯" },
+    follower: { type: "兽", name: "花楹", desc: "百年罕见的五毒兽，能解百毒，形似生翼仙薯", intimacy: { forbidden: true } },
     kungfu: {
       school: "唐门",
       moves: [
@@ -1513,7 +1513,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "不食人间烟火，偶尔轻嗅香火气息。",
     hobby: "默默发呆，擦拭古剑。",
     tradeStyle: "怯生生地递出物品，不敢多言。",
-    follower: { type: "剑灵", name: "红葵", desc: "龙葵的另一人格化身，手持巨弓，烈焰红裙" },
+    follower: { type: "剑灵", name: "红葵", desc: "龙葵的另一人格化身，手持巨弓，烈焰红裙", intimacy: { forbidden: true } },
     kungfu: {
       school: "三星堆",
       moves: [
@@ -1559,7 +1559,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "喜饮桃花酿，爱吃清甜的莲藕。",
     hobby: "吹奏骨笛，对月独酌。",
     tradeStyle: "价格随缘，以物易物。",
-    follower: { type: "兽", name: "灵蛇", desc: "通体雪白的神圣蛊蛇，可御敌也可疗伤" },
+    follower: { type: "兽", name: "灵蛇", desc: "通体雪白的神圣蛊蛇，可御敌也可疗伤", intimacy: { forbidden: true } },
     kungfu: {
       school: "五仙",
       moves: [
@@ -1605,7 +1605,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "烤山猪肉、烈酒",
     hobby: "抓飞鸟、在雪地里打滚",
     tradeStyle: "喜欢以物易物，对钱币毫无概念。",
-    follower: { type: "兽", name: "小野猪", desc: "长着獠牙的健壮小野猪，常被天河当成储备粮。" },
+    follower: { type: "兽", name: "小野猪", desc: "长着獠牙的健壮小野猪，常被天河当成储备粮。", intimacy: { forbidden: true } },
     kungfu: {
       school: "昆仑",
       moves: [
@@ -1652,7 +1652,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "精致的点心、甜汤",
     hobby: "鉴定古董、看风水",
     tradeStyle: "漫天要价，就地还钱，喜欢讨价还价的乐趣。",
-    follower: { type: "机关人偶", name: "探路灵鼠", desc: "青铜打造的机关老鼠，用于在古墓中探寻毒气与机关。" },
+    follower: { type: "机关人偶", name: "探路灵鼠", desc: "青铜打造的机关老鼠，用于在古墓中探寻毒气与机关。", intimacy: { forbidden: true } },
     kungfu: {
       school: "三星堆",
       moves: [
@@ -1700,7 +1700,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "清淡素食、极品香茗",
     hobby: "调香、弹琴",
     tradeStyle: "优雅从容，不争锱铢，看重缘分。",
-    follower: { type: "兽", name: "紫灵梦貘", desc: "巴掌大小的紫色异兽，能吞噬恶梦并吐出迷雾。" },
+    follower: { type: "兽", name: "紫灵梦貘", desc: "巴掌大小的紫色异兽，能吞噬恶梦并吐出迷雾。", intimacy: { forbidden: true } },
     kungfu: {
       school: "百花",
       moves: [
@@ -1747,7 +1747,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "大口吃肉、大碗喝酒",
     hobby: "掰手腕、劫富济贫",
     tradeStyle: "豪爽大方，看顺眼了直接白送。",
-    follower: { type: "人", name: "山寨喽啰", desc: "黑风寨的忠心小弟，替少当家扛兵器和行李。" },
+    follower: { type: "人", name: "山寨喽啰", desc: "黑风寨的忠心小弟，替少当家扛兵器和行李。", intimacy: { forbidden: true } },
     kungfu: {
       school: "黑风",
       moves: [
@@ -1793,7 +1793,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "偏爱劲道面食与烈酒。",
     hobby: "喜欢把玩各种机巧小玩意与掷骰子。",
     tradeStyle: "讨价还价，雁过拔毛，无利不起早。",
-    follower: { type: "人", name: "无名暗卫", desc: "身着奇特罩袍的神秘剑客，暗中默默守护，身法诡异绝伦。" },
+    follower: { type: "人", name: "无名暗卫", desc: "身着奇特罩袍的神秘剑客，暗中默默守护，身法诡异绝伦。", intimacy: { forbidden: true } },
     kungfu: {
       school: "\"锦官\"",
       moves: [
@@ -1839,7 +1839,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "嗜甜如命，最爱鸡蛋面与糖葫芦。",
     hobby: "喜欢盯着天上的云彩看，或是把玩亮晶晶的石头。",
     tradeStyle: "全凭喜好，看中就拿，不懂金钱概念。",
-    follower: { type: "兽", name: "柷敔灵卵", desc: "一颗散发着微光的神秘灵卵，悬浮于半空，能感知危险。" },
+    follower: { type: "兽", name: "柷敔灵卵", desc: "一颗散发着微光的神秘灵卵，悬浮于半空，能感知危险。", intimacy: { forbidden: true } },
     kungfu: {
       school: "\"三星堆\"",
       moves: [
@@ -1885,7 +1885,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "口味清淡，偶尔喜欢烤肉，极怕饮酒。",
     hobby: "喜欢雕刻木雕与喂养禽鸟。",
     tradeStyle: "干脆利落，只用金银结账，不留姓名。",
-    follower: { type: "兽", name: "阿翔", desc: "体型庞大、眼神锐利的异种海东青，爱吃五花肉，极具灵性。" },
+    follower: { type: "兽", name: "阿翔", desc: "体型庞大、眼神锐利的异种海东青，爱吃五花肉，极具灵性。", intimacy: { forbidden: true } },
     kungfu: {
       school: "\"独孤\"",
       moves: [
@@ -1931,7 +1931,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "喜欢尝试各种奇怪食材炖煮的焦炭料理。",
     hobby: "喜欢收集各色毒虫与泥人娃娃。",
     tradeStyle: "以物易物，常用珍稀草药换取所需情报。",
-    follower: { type: "兽", name: "幽光灵蛾", desc: "散发着幽蓝色磷光的巨大飞蛾，能吸食毒瘴。" },
+    follower: { type: "兽", name: "幽光灵蛾", desc: "散发着幽蓝色磷光的巨大飞蛾，能吸食毒瘴。", intimacy: { forbidden: true } },
     kungfu: {
       school: "\"巫山\"",
       moves: [
@@ -1978,7 +1978,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "甜脆小吃、烤肉串、糖画",
     hobby: "拆解组装机关、逗弄机甲鸟、逛铁匠铺",
     tradeStyle: "以稀有矿石或机关零件以物易物，不缺金银。",
-    follower: { type: "机关人偶", name: "馋鸡偃甲", desc: "一只外貌似黄色小鸟的精巧青铜偃甲，能喷吐微弱火花以照明或惊敌" },
+    follower: { type: "机关人偶", name: "馋鸡偃甲", desc: "一只外貌似黄色小鸟的精巧青铜偃甲，能喷吐微弱火花以照明或惊敌", intimacy: { forbidden: true } },
     kungfu: {
       school: "三星堆秘传偃术",
       moves: [
@@ -2025,7 +2025,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "浓烈烧酒、大块酱牛肉、干粮",
     hobby: "擦拭长枪、研读兵书、演练阵法",
     tradeStyle: "爽快利落，公买公卖，偶会用军中物资交换伤药。",
-    follower: { type: "兽", name: "玄甲赤骥", desc: "一匹披着轻薄马甲的枣红战马，极通人性，能协助冲阵" },
+    follower: { type: "兽", name: "玄甲赤骥", desc: "一匹披着轻薄马甲的枣红战马，极通人性，能协助冲阵", intimacy: { forbidden: true } },
     kungfu: {
       school: "剑门关百战枪法",
       moves: [
@@ -2072,7 +2072,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "清淡素食、冷水、面条",
     hobby: "闭目养神、雕刻木雕、独自饮茶",
     tradeStyle: "极不耐烦讨价还价，通常直接甩出银票买断。",
-    follower: { type: "剑灵", name: "太岁", desc: "寄宿于古剑中的剑灵，形态如一抹暗金色的流影，能自动格挡暗器" },
+    follower: { type: "剑灵", name: "太岁", desc: "寄宿于古剑中的剑灵，形态如一抹暗金色的流影，能自动格挡暗器", intimacy: { forbidden: true } },
     kungfu: {
       school: "独孤辟邪剑意",
       moves: [
@@ -2119,7 +2119,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "甜酒、清水、不喜熟食",
     hobby: "赏月、听风、冷眼观世人悲欢",
     tradeStyle: "视金钱如粪土，只接受以奇珍异草或某种强烈情绪的梦境做交易。",
-    follower: { type: "兽", name: "魇兽幼体", desc: "一团如黑色烟雾般的幼小妖兽，盘旋在她肩头，能使人陷入昏睡" },
+    follower: { type: "兽", name: "魇兽幼体", desc: "一团如黑色烟雾般的幼小妖兽，盘旋在她肩头，能使人陷入昏睡", intimacy: { forbidden: true } },
     kungfu: {
       school: "巫山魇梦诀",
       moves: [
@@ -2166,7 +2166,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "偏爱清淡素食，尤其是山药糕与竹叶青。",
     hobby: "收集残缺曲谱，月下吹奏骨笛。",
     tradeStyle: "以物易物，态度谦和，若见对方贫苦常会多让几分利。",
-    follower: { type: "兽", name: "符鬼", desc: "一只似犬非犬的半透明灵兽，能预警危险。" },
+    follower: { type: "兽", name: "符鬼", desc: "一只似犬非犬的半透明灵兽，能预警危险。", intimacy: { forbidden: true } },
     kungfu: {
       school: "玉泉剑法",
       moves: [
@@ -2213,7 +2213,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "喜欢甜食，特别是酥油饼和蜂蜜糍粑。",
     hobby: "收集奇异的彩色石头，为受伤的流浪小动物包扎。",
     tradeStyle: "随缘交易，若对方有伤病在身，甚至会倒贴珍贵药材。",
-    follower: { type: "人", name: "采药童子", desc: "沉默寡言的哑巴男童，背着巨大的竹篓。" },
+    follower: { type: "人", name: "采药童子", desc: "沉默寡言的哑巴男童，背着巨大的竹篓。", intimacy: { forbidden: true } },
     kungfu: {
       school: "三星古卷",
       moves: [
@@ -2261,7 +2261,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "嗜好重辛辣的烤肉和烈酒，无肉不欢。",
     hobby: "擦拭心爱的弯刀，在篝火旁跳胡旋舞。",
     tradeStyle: "爽快直接，不喜讨价还价，看顺眼了直接送，看不顺眼给金子都不卖。",
-    follower: { type: "剑灵", name: "红莲", desc: "寄宿在弯刀中的虚影，呈赤色飞鸟状。" },
+    follower: { type: "剑灵", name: "红莲", desc: "寄宿在弯刀中的虚影，呈赤色飞鸟状。", intimacy: { forbidden: true } },
     kungfu: {
       school: "血刀经",
       moves: [
@@ -2308,7 +2308,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "杂食党，最爱各种新奇小吃，尤其喜欢麻辣兔头。",
     hobby: "挖掘古墓寻宝，或者去土司府的赌场里掷骰子。",
     tradeStyle: "极具商业头脑，巧舌如簧，常能低买高卖，榨干对方的钱袋。",
-    follower: { type: "机关人偶", name: "木人桩改", desc: "被改装过的练功木人，能背负重物和发射暗器。" },
+    follower: { type: "机关人偶", name: "木人桩改", desc: "被改装过的练功木人，能背负重物和发射暗器。", intimacy: { forbidden: true } },
     kungfu: {
       school: "无相神功",
       moves: [
@@ -2356,7 +2356,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "清淡素食，不喜油腻。",
     hobby: "收集残局棋谱，品茗静坐。",
     tradeStyle: "诚实守信，按价付款绝不还价。",
-    follower: { type: "人", name: "阿飞", desc: "帮背负行囊的昆仑小道童，眼神清澈。" },
+    follower: { type: "人", name: "阿飞", desc: "帮背负行囊的昆仑小道童，眼神清澈。", intimacy: { forbidden: true } },
     kungfu: {
       school: "昆仑拳法",
       moves: [
@@ -2403,7 +2403,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "烈酒，大块烤肉，嗜辣。",
     hobby: "磨砺刀剑，找成名高手切磋。",
     tradeStyle: "极不耐烦，多抛银钱只求速成，懒得算账。",
-    follower: { type: "兽", name: "黑骨", desc: "极其凶狠的康巴藏獒，只听荆棘一人的话。" },
+    follower: { type: "兽", name: "黑骨", desc: "极其凶狠的康巴藏獒，只听荆棘一人的话。", intimacy: { forbidden: true } },
     kungfu: {
       school: "刀剑归真",
       moves: [
@@ -2450,7 +2450,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "肉包子，葱肉饼，饭量极大。",
     hobby: "抚摸路边的野猫野狗，打磨体魄。",
     tradeStyle: "挠头憨笑，老实巴交不会算账，经常吃亏。",
-    follower: { type: "兽", name: "小虎煞", desc: "由体内煞气凝聚而成的小灵虎，外表呆萌实则凶猛。" },
+    follower: { type: "兽", name: "小虎煞", desc: "由体内煞气凝聚而成的小灵虎，外表呆萌实则凶猛。", intimacy: { forbidden: true } },
     kungfu: {
       school: "虎煞神功",
       moves: [
@@ -2474,7 +2474,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
   },
   {
     id: "adv_nangonghuang",
-    name: "南宫煌",
+    name: "南宫煌", intimacy: { threshold: 30, style: "爽朗泼辣" },
     title: "贪狼妖星",
     archetype: "opportunist",
     archetypeLabel: "痞气半妖",
@@ -2497,7 +2497,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     likes: "甜食，各色风味美酒。",
     hobby: "掷骰子赌钱，看风水算命，变戏法。",
     tradeStyle: "漫天要价，就地还钱，口若悬河且喜欢以物易物。",
-    follower: { type: "兽", name: "大桃子", desc: "一只圆滚滚的精怪跟班，会帮着主人偷鸡摸狗。" },
+    follower: { type: "兽", name: "大桃子", desc: "一只圆滚滚的精怪跟班，会帮着主人偷鸡摸狗。", intimacy: { forbidden: true } },
     kungfu: {
       school: "贪狼星诀",
       moves: [
@@ -2522,7 +2522,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
   },
   {
     id: "adv_yuanduoduo",
-    name: "元朵朵",
+    name: "元朵朵", intimacy: { threshold: 40, style: "娇憨仗义" },
     title: "散财娇蕊",
     archetype: "eccentric",
     archetypeLabel: "奇葩怪诞",
@@ -2548,8 +2548,7 @@ export const ADVENTURER_POOL_IP = Object.freeze([
     follower: {
       type: "机关人偶",
       name: "铁伯",
-      desc: "高瘦老仆型墨家机关人偶，精铁紫檀造，慈祥老者面嵌黄玉目，行走带金属机括声；无通灵只按宠溺回路行动，肚膛藏银票替她结账，遇险展四肢精钢盾甲护主，宠而不占有，机器爷爷。",
-    },
+      desc: "高瘦老仆型墨家机关人偶，精铁紫檀造，慈祥老者面嵌黄玉目，行走带金属机括声；无通灵只按宠溺回路行动，肚膛藏银票替她结账，遇险展四肢精钢盾甲护主，宠而不占有，机器爷爷。", intimacy: { forbidden: true } },
     kungfu: {
       school: "元家钞能力诀",
       moves: [
