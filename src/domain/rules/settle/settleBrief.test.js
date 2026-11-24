@@ -29,6 +29,7 @@ describe("settleBrief", () => {
     expect(parseSettleNarration("金叶子 (note: background info, don't mention gold leaf if")).toBeNull();
     expect(parseSettleNarration("朵朵立在柜台后。（Note：此处略写她的银袋。）")).toBeNull();
     expect(parseSettleNarration("朵朵立在柜台后。（注：绒球轻颤）")).toBeNull();
+    expect(parseSettleNarration("朵朵立在柜台后。（注视着门外）")).toEqual(["朵朵立在柜台后。（注视着门外）"]);
     expect(parseSettleNarration("She wears a golden crown and smiles brightly.")).toBeNull();
     expect(parseSettleNarration("朵朵叉腰立在柜台后，绒球随她点头乱颤。")).toEqual(["朵朵叉腰立在柜台后，绒球随她点头乱颤。"]);
   });
