@@ -143,12 +143,12 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
       </CenterControlRows>
 
       <div className="mobile-input-bar" style={{
-        borderTop: interactMode === "whisper" ? "1px solid var(--footer-whisper-edge)" : interactMode === "talk" ? "1px solid var(--footer-talk-edge)" : interactMode === "pigeon" ? "1px solid var(--gold-deep)" : `1px solid ${zoneTheme.border}`,
-        background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "talk" ? "rgba(138,196,138,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
+        borderTop: interactMode === "whisper" ? "1px solid var(--footer-whisper-edge)" : interactMode === "pigeon" ? "1px solid var(--gold-deep)" : `1px solid ${zoneTheme.border}`,
+        background: interactMode === "whisper" ? "rgba(224,160,208,0.06)" : interactMode === "pigeon" ? "rgba(196,160,64,0.06)" : "transparent",
         padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
       }}>
         <span style={{
-          color: interactMode === "whisper" ? "var(--pink)" : interactMode === "talk" ? "var(--clay)" : interactMode === "pigeon" ? "var(--gold)" : zoneTheme.accent,
+          color: interactMode === "whisper" ? "var(--pink)" : interactMode === "pigeon" ? "var(--gold)" : zoneTheme.accent,
           flexShrink: 0, fontSize: "13px",
         }}>{interactMode === "pigeon" ? "🕊" : "▸"}</span>
         <input
@@ -157,11 +157,10 @@ export default function CenterFooterBar({ ui, turn, handlers }) {
           onCompositionStart={() => { composingRef.current = true; }}
           onCompositionEnd={() => { composingRef.current = false; }}
           placeholder={
-            interactMode === "action" && loading ? "..." :
             interactMode === "pigeon" ? `提笔给「${pigeonTarget || "…"}」写信，写罢按回车放飞信鸽…` :
             interactMode === "whisper" ? (pendingTalks > 0 ? "旁白回话中…可先打字，待她说完再发" : "对旁白说些什么…（不消耗回合）") :
-            interactMode === "talk" ? (pendingTalks > 0 ? `跟房间里的人说句话…（${pendingTalks}条处理中，可继续发）` : "跟房间里的人说句话…（不消耗回合）") :
-            "输入行动指令…（消耗1回合）"
+            (interactMode === "action" || interactMode === "talk") && loading ? "..." :
+            (pendingTalks > 0 ? `说话、做事都行，括号能分着写…（${pendingTalks}条回话处理中）` : "说话、做事都行——纯搭话、纯看不耗回合，括号可分段")
           }
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: zoneTheme.text, fontFamily: "inherit", fontSize: "13px" }}
         />

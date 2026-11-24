@@ -11,6 +11,7 @@ import { askStoryteller, hasApiKey } from "../../engine/ports/storyteller.js";
 export function lookNpcInBackground(npc, extraReplies = [], {
   addLog, setTime, setConvo, setLog, noteAction,
   getState = () => gameStore.getState(), ask = askStoryteller, canAsk = hasApiKey,
+  advanceTime = true,
 }) {
   const state = getState();
   const cmd = `看 ${npc.name}`;
@@ -22,7 +23,7 @@ export function lookNpcInBackground(npc, extraReplies = [], {
 
   // 描写跟在整张卡片下面：只给最后一行打 key。
   addLog([{ t: "cmd", text: `> ${cmd}` }, ...card.slice(0, -1), ...tagBackfill(card.slice(-1), key)]);
-  setTime((t) => t + 1);
+  if (advanceTime) setTime((t) => t + 1);
   setConvo?.((prev) => [...(prev || []),
     { role: "user", content: cmd },
     { role: "assistant", content: card.map((row) => row.text.trim()).join("；") },

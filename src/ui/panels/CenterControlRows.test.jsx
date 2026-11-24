@@ -33,7 +33,7 @@ describe("CenterControlRows", () => {
   it("renders mobile selections in one row before the standalone controls", () => {
     const html = render();
     expect(html.match(/class="mobile-control-row"/g)).toHaveLength(1);
-    expect(html).toContain("对话 ▾");
+    expect(html).toContain("自动 ▾");
     expect(html).toContain("才旦 ▾");
     expect(html).toContain("地上 2 ▾");
     const positions = [
@@ -47,13 +47,12 @@ describe("CenterControlRows", () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
-  it("keeps only the three interaction modes in its submenu", () => {
+  it("keeps only the two interaction modes in its submenu", () => {
     const html = render({ initialOpenMenu: "mode", interactMode: "action" });
     const menuStart = html.indexOf('data-control-menu="mode"');
     const menu = html.slice(menuStart, html.indexOf("</div>", menuStart) + 6);
-    expect(menu.match(/role="menuitem"/g)).toHaveLength(3);
-    expect(menu).toContain("◈ 行动");
-    expect(menu).toContain("◎ 对话");
+    expect(menu.match(/role="menuitem"/g)).toHaveLength(2);
+    expect(menu).toContain("◈ 自动");
     expect(menu).toContain("◆ 私聊旁白");
     expect(menu).not.toContain(">NSFW</button>");
     expect(menu).not.toContain("打坐");

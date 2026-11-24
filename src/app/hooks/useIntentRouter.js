@@ -12,7 +12,9 @@ import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
 import { ROUTES, describeAction } from "../../domain/rules/intent/gate.js";
 import { DEFERRED_KINDS, findStepNpc, stepEffect, withoutSettle } from "../../features/intent/logic.js";
 import { isFreshTyped, planSteps, recognizeAndGate, rejectionLog, shouldRecognize, stageTracer, traceNode } from "../../features/intent/route.js";
+import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
 import { createAiClassifier, INTENT_TRUNCATED } from "../../engine/intent/aiClassifier.js";
+import { splitCompositeInput } from "../../domain/rules/input/compositeInput.js";
 import { bindTurnAi, createWebAi } from "../../engine/ports/ai.js";
 
 const DIR_CMD = { 北: "n", 南: "s", 东: "e", 西: "w" };
@@ -71,7 +73,15 @@ export function useIntentRouter(routerRef, {
     function execute(cmd, actions, turn) {
       const state = gameStore.getState();
       const startedAt = Date.now();
-      const { plan, note, single } = planSteps(state, actions);
+      let { plan, note, single } = planSteps(state, actions);
+      // 硬行动配额：复合输入（括号/多断句）一句只落一个决定性硬步——
+      // 挤出去的步挂进 skipped（裁决备注重算），交给同轮叙事按对白/氛围处理，
+      // 否则 note 仍核准它们，提取段会为没落账的步骤删物品。
+      if (splitCompositeInput(cmd).length > 1 && plan.valid.length > 1) {
+        plan.skipped = [...(plan.skipped || []), ...plan.valid.slice(1)];
+        plan.valid = plan.valid.slice(0, 1);
+        note = formatPlanNote(plan, state);
+      }
       traceNode(turn, "行动识别·系统闸门", plan.rejected ? "warn" : "pass",
         `通过 ${plan.valid.length} 步${plan.rejected ? ` · 第${plan.rejected.index + 1}步拒绝：${plan.rejected.reason}` : ""}`, Date.now() - startedAt);
       const rejected = rejectionLog(plan);

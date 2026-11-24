@@ -65,7 +65,9 @@ describe("act 调度器进入", () => {
     ["typedAction", "四处看看风景", {}],
     ["mapMovement", "n", {}],
     ["mapMovement", "走向广场", { opts: { forceLayer: "inner" } }],
-    ["actDialogue", "你好", { interactMode: "talk" }],
+    ["actDialogue", "聊聊家常", { interactMode: "talk" }],
+    // talk 模式现在也走自动分流：非搭话句（如攻击）按行动扣回合
+    ["typedAction", "攻击他", { interactMode: "talk" }],
     ["actWhisper", "旁白在吗", { interactMode: "whisper" }],
     ["actSettle", "拜师父为师", { opts: { settle: true } }],
     ["autoTravel", "去喇嘛庙", { opts: { autoTravel: true } }],
