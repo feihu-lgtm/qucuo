@@ -31,11 +31,18 @@ export function writePath(node, [key, ...rest], value) {
   return copy;
 }
 
-function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange }) {
+function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange, talkRange, affectionSkip }) {
+  // 无好感轨道（intimacy.forbidden/兽类等）整轮跳过——好感不予变化，留裁决痕迹。
+  if (affectionSkip?.has?.(npc)) return { reason: `${npc} 无好感轨道，好感度不变化` };
   if (delta > 0) delta *= 1 + (clamp(charm, 0, 10) - 5) * 0.06;
   const { maxDelta, daily } = AFFECTION_RULES.mvu;
   delta = clamp(Math.round(delta), -maxDelta, maxDelta);
   if (giftRange) delta = clamp(delta, ...giftRange);
+  // 聊天语义好感（docs 工单）：搭话回合单次 clamp 小区间 -5~+8，且 0 变化不落账。
+  if (talkRange) {
+    delta = clamp(delta, ...talkRange);
+    if (delta === 0) return { reason: "好感无实质变化" };
+  }
   if (delta <= 0) return { state, delta };
   const dayStamp = Math.floor((Number(time) || 0) / 24);
   const last = state.varTree.世界?.好感日增;
