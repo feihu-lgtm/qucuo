@@ -86,7 +86,9 @@ export const EXTRACTION_SPECS = {
       // 是该不该动好感的判据；不通人情（forbidden）与兽类无好感轨道。
       const npcs = getPresentNpcs(state || {});
       const lines = npcs.map((npc) => {
-        const oc = OC_BY_NAME[npc.ocAdventurer || npc.name] || OC_BY_NAME[npc.name];
+        // 同名驻场不能借 OC 的界限——只有带 OC 实例标记的才查 OC 表，
+        // 否则驻场姬无双会误用 OC 姬无双的阈值（正确性见 isOcNpc 同款规则）。
+        const oc = npc.ocAdventurer ? (OC_BY_NAME[npc.ocAdventurer] || OC_BY_NAME[npc.name]) : null;
         const spec = { ...(oc?.intimacy || {}), ...(npc.intimacy || {}) };
         if (spec.forbidden || npc.beast) return `- ${npc.name}：不通人情，好感永不变化`;
         const pers = [npc.personality, npc.brief].filter(Boolean).join("·").slice(0, 60);
@@ -101,6 +103,8 @@ export const EXTRACTION_SPECS = {
 ${lines ? `
 在场者性情与界限：
 ${lines}
+` : ""}${state?.cmd ? `
+玩家这轮说的话：${state.cmd}
 ` : ""}
 叙事内容：
 @narrative

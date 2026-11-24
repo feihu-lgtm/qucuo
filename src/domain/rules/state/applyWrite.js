@@ -57,7 +57,7 @@ function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange, 
 }
 
 export function applyWrite(state, { op, path, value }, options = {}) {
-  const { source, defaultValue } = options;
+  const { source, defaultValue, talkRange, affectionSkip } = options;
   const mvu = source === "mvu";
   const parts = typeof path === "string" || Array.isArray(path) ? statePath(path) : [];
   const id = parts.join(".");
@@ -92,6 +92,10 @@ export function applyWrite(state, { op, path, value }, options = {}) {
     return reject("气血必须是两个有限数字");
   }
   const before = readPath(state, parts);
+  // forbidden/兽类：add 与 set 都拦（set 也能绕过 talkRange，见 mvu 指令语法允许 _.set 好感度）
+  if (mvu && affection && affectionSkip?.has?.(parts[2] || "")) {
+    return reject(`${parts[2] || ""} 无好感轨道，好感度不变化`);
+  }
   let actualDelta;
   if (op === "add") {
     actualDelta = value;
@@ -106,6 +110,13 @@ export function applyWrite(state, { op, path, value }, options = {}) {
     if (typeof base !== "number") return reject(`${field.label} 不能做数值加减`);
     value = base + actualDelta;
     if (!Number.isFinite(value)) return reject(`${field.label}必须是有限数字`);
+  } else if (op === "set" && mvu && affection && talkRange) {
+    // set 绕开 add 的 talkRange——按相对当前值的增量 clamp（工单：单次增减 -5~+8）
+    const base = typeof before === "number" ? before : 0;
+    const d = clamp(Math.round(value - base), talkRange[0], talkRange[1]);
+    if (d === 0) return reject("好感无实质变化");
+    actualDelta = d;
+    value = base + d;
   }
   if (mvu && field === FIELDS[FIELD.factionRep]) {
     // 一回合内多条指令合计也不超过 ±maxDelta，以回合开始时的值为基准。

@@ -36,6 +36,15 @@ describe("聊天好感裁决 · clamp 与跳过", () => {
     const r = apply(vt(), add("角色.阿妙.好感度", -30));
     expect(r.state.varTree.角色.阿妙.好感度).toBe(45);
   });
+  it("_.set 也走 clamp：绕过 add 区间不成立", () => {
+    const r = applyWrite({ varTree: vt() }, { op: "set", path: "角色.阿妙.好感度", value: 90 }, TALK_OPTS);
+    expect(r.state.varTree.角色.阿妙.好感度).toBe(58); // 50 + 8
+  });
+  it("_.set 到 forbidden 也被拒", () => {
+    const r = applyWrite({ varTree: vt() }, { op: "set", path: "角色.铁伯.好感度", value: 90 }, { ...TALK_OPTS, affectionSkip: new Set(["铁伯"]) });
+    expect(r.reason).toContain("无好感轨道");
+    expect(r.state.varTree.角色.铁伯.好感度).toBe(10);
+  });
   it("forbidden 跳过：整轮拒绝、好感不动", () => {
     const r = apply(vt(), add("角色.铁伯.好感度", 6), { affectionSkip: new Set(["铁伯"]) });
     expect(r.reason).toContain("无好感轨道");
