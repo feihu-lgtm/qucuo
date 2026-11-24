@@ -1,14 +1,19 @@
 // web 与 CLI 共用的识别+闸门编排（不含 UI）：返回 { route, recognition, plan, confirm } 供各端执行。
-import { recognizeIntent } from "../../domain/rules/intent/recognizer.js";
+import { recognizeIntent, clampConfidence } from "../../domain/rules/intent/recognizer.js";
+import { HARD_ACTION_RE } from "../../domain/rules/intent/actionKinds.js";
+import { isIntimateInput } from "../../domain/rules/prompt/inputIntent.js";
 import { gateRecognition, confirmLine, ROUTES } from "../../domain/rules/intent/gate.js";
 import { validatePlan } from "../../domain/rules/intent/systemGate.js";
 import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
 import { parseDir } from "../../utils/mudHelpers.js";
 import { turnRuntime } from "../turnRuntime.js";
 
+// 纯亲密描写（搂抱/亲吻…）里没有任何封闭行动的关键词时，整句不值得问分类模型：
+// 那类输入走亲密路径，分类只会白耗一次调用还回落自由行动。带关键词（如「亲她一下再送她一壶酒」）仍照常识别。
 export function shouldRecognize(apiCfg, cmd, opts = {}) {
   const text = String(cmd || "").trim();
   return !!apiCfg?.intentRecognitionEnabled && text.length > 1 && !parseDir(text)
+    && !(isIntimateInput(text) && !HARD_ACTION_RE.test(text))
     && !opts.forcedEvent && !opts.intentPlan && !opts.intentSkip && !opts.silentCmd && !opts.settle && !opts.forceLayer && !opts.autoTravel;
 }
 
@@ -42,5 +47,5 @@ export function traceNode(turn, label, status, detail, durationMs) {
 
 export function stageTracer(turn) {
   return (label, result, ms) => traceNode(turn, `行动识别·${label.replace(/^识别·/, "")}`, "pass",
-    Array.isArray(result) ? result.join(" | ") : `${result.choice}（${((result.probs?.[result.choice] ?? 0) * 100).toFixed(0)}%）`, ms);
+    (result?.actions || []).map((action) => `${action.kind}（${(clampConfidence(action.confidence) * 100).toFixed(0)}%）`).join(" → ") || "（无行动）", ms);
 }

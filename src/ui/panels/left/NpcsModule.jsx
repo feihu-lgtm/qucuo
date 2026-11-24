@@ -7,7 +7,7 @@ import {
   setActiveNpcMenu, setCharacterPageTarget, setPeoplePanel,
 } from "../../../store/sessionUiStore.js";
 import { ADVENTURER_BY_NAME, isAdventurerName } from "../../../domain/data/dungeon/adventurers.js";
-import { stationedNpcsFor } from "../../../domain/rules/companion/companion.js";
+import { partitionPeople } from "./peopleRoster.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import NpcAngerLine from "../NpcAngerLine.jsx";
 
@@ -24,19 +24,11 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
   const peoplePanel = useSessionUi(s => s.peoplePanel);
   const showDebug = useOverlay(OVERLAY.DEBUG);
   const companionState = useGameStore(s => s.companionState);
-  // 留守队友落进当前房间的在场名单（设计稿：留守后落进该房间 npcs 可被对话唤回），
-  // 挂在过滤后列表尾部，带 stationed 标记给动作菜单出「跟上我」。
-  const stationedHere = stationedNpcsFor(companionState, {
-    district: room.name, roomId: innerRoomName || room.name, roomName: innerRoomName || room.name,
-  });
-  const present = [
-    ...room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n)),
-    ...stationedHere,
-  ];
-  const crowd = (room.crowd || []).filter(c => !c.innerRoom || !innerRoomName || c.innerRoom === innerRoomName).map(c => c.label);
+  // 随行队友（雪豹/小马/入队的 OC…）走到哪都算此地在场；留守队友只在留守房间在场，
+  // 带 stationed 标记给动作菜单出「跟上我」。划分口径见 peopleRoster。
   const everSeen = varTree.世界?.曾经出现人物 || [];
-  const presentNames = new Set(room.npcs.map(n => n.name));
-  const absent = everSeen.filter(nm => !presentNames.has(nm));
+  const { present, absent } = partitionPeople({ room, innerRoomName, companionState, everSeen });
+  const crowd = (room.crowd || []).filter(c => !c.innerRoom || !innerRoomName || c.innerRoom === innerRoomName).map(c => c.label);
   const dbgPeople = showDebug && (
     <div style={{ fontSize: "9.5px", color: zoneTheme.textDim, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", marginBottom: 6, lineHeight: 1.5, wordBreak: "break-all" }}>
       <div>当前内层房间: {innerRoomName || "(无/全显示)"} · room.npcs 共 {room.npcs.length} 人</div>
@@ -74,7 +66,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
   return (
     <div style={{ marginBottom: 10 }}>
       {dbgPeople}
-      {header("此地之人 · 在场", present.length, "present", zoneTheme.accentDim,
+      {header("此地 · 在场", present.length, "present", zoneTheme.accentDim,
         <span style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>{lettersEntry}{pigeonBadge}</span>)}
       {peoplePanel.present && (present.length === 0
         ? <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 8, paddingLeft: 16 }}>空无一人</div>
@@ -111,7 +103,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
       )}
       {absent.length > 0 && (
         <div style={{ paddingTop: 6, borderTop: `1px solid ${zoneTheme.border}` }}>
-          {header("曾遇 · 不在场", absent.length, "absent", "var(--text)")}
+          {header("不在此地", absent.length, "absent", "var(--text)")}
           {peoplePanel.absent && absent.map(name => {
             const known = isNpcKnown(varTree, name);
             const attrs = varTree.角色?.[name] || {};

@@ -99,6 +99,8 @@ export function getBuildingIdForInnerRoom(districtName, roomName) {
 // 判断NPC是否显示，优先级依次为：
 //   1. 追踪覆写（pursuitInnerRoom）→ 只在追到的房间。
 //   2. 驻场绑定（residentNpcName）→ 只在绑定房间。
+//      例外：按时段表走的人（带 schedule，如兰姐）——绑定房间只是她夜里的家，
+//      白天她去赌石坊，位置以 npc.roam 一步步走出来的 innerRoom 为准。
 //   3. 游走落点（innerRoom）→ 只在该房间。
 //   4. 无上述位置时，仅在锚点显示；无追踪覆写且无内层地图时不过滤。
 export function isNpcVisibleInInnerRoom(districtName, innerRoomName, npc) {
@@ -106,7 +108,7 @@ export function isNpcVisibleInInnerRoom(districtName, innerRoomName, npc) {
   if (!hasInnerMap(districtName)) return true;
   if (!innerRoomName) return true;
   const bound = getResidentRoomForNpc(districtName, npc.name);
-  if (bound) return bound === innerRoomName;
+  if (bound && !(Array.isArray(npc.schedule) && npc.innerRoom)) return bound === innerRoomName;
   if (npc.innerRoom) return npc.innerRoom === innerRoomName;
   return innerRoomName === getDistrictAnchor(districtName);
 }

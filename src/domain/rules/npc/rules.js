@@ -27,6 +27,8 @@ const NPC_FIELDS = [
   "portrait", "neigong", "waigong", "imported", "hostile", "faction", "gender", "randomPasser",
   "adventurer", "adventurerDay", "rainbow", "rainbowStyle", "archetype", "archetypeLabel", "title",
   "ocAdventurer", "npcRef", "tradeStyle",
+  // 时段表跟人走：npc.roam 要靠它判断"此刻该去哪"，innerMap 的可见性也认它（见 isNpcVisibleInInnerRoom）
+  "schedule",
 ];
 
 export function buildRoomNpcWithCombat(poolNpc, { existingNpc, luck = 5, trade } = {}) {

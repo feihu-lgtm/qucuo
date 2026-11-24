@@ -14,6 +14,10 @@ export function findAdventurer(ownerId) {
   return FULL_POOL.find((a) => a.id === ownerId) || null;
 }
 
+export function findAdventurerByName(name) {
+  return FULL_POOL.find((a) => a.name === name) || null;
+}
+
 // 主人 level 按 levelCap 折算（1-5 档），随从强度取 0.6 档
 const ownerPower = (owner) => Math.max(1, Math.round((owner.levelCap ?? 3) * 0.6));
 

@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   COMPANION_CHATTER_CHANCE,
+  CHATTER_COOLDOWN_TURNS,
+  CHATTER_GAP_TURNS,
+  createChatterMemory,
   eligibleChatters,
   pickChatter,
   chatterFallback,
@@ -33,12 +36,10 @@ describe("pickChatter：概率触发可打桩", () => {
 });
 
 describe("companionChatterTick：评价玩家活动，AI 优先 + 兜底", () => {
-  const rngSeq = (n) => { let i = 0; const vals = Array.isArray(n) ? n : [n]; return () => vals[i++ % vals.length]; };
-
   it("AI 句原样产出 {speaker,line}", async () => {
     const ask = vi.fn(async () => "这次买卖分红可别忘了本小姐！");
     const out = await companionChatterTick({
-      companionState: mkCs(FOLL), roomName: "天都镇",
+      companionState: mkCs(FOLL), roomName: "天都镇", memory: createChatterMemory(),
       activity: { text: "打劫货商", intent: "STEAL" }, ask, rng: () => 0,
     });
     expect(out).toEqual({ speaker: "元朵朵", line: "这次买卖分红可别忘了本小姐！" });
@@ -47,23 +48,86 @@ describe("companionChatterTick：评价玩家活动，AI 优先 + 兜底", () =>
 
   it("无 API 走兜底——偷东西的活动类评价", async () => {
     const out = await companionChatterTick({
-      companionState: mkCs(FOLL),
+      companionState: mkCs(FOLL), memory: createChatterMemory(),
       activity: { text: "偷她荷包", intent: "STEAL" }, rng: () => 0,
     });
     expect(out.speaker).toBe("元朵朵");
     expect(out.line).toMatch(/手脚|营生/);
   });
 
-  it("兽类只出声不调用 AI", async () => {
+  it("雪豹/珍珠已化形：按人说话，走 AI；兜底是各自的人话句库而非兽声", async () => {
+    const ask = vi.fn(async () => "前面有风。");
+    const cs = mkCs({ snowLeopard: c("雪豹", { beast: true }) });
+    const out = await companionChatterTick({ companionState: cs, activity: {}, ask, rng: () => 0, memory: createChatterMemory() });
+    expect(ask).toHaveBeenCalledOnce();
+    expect(out).toEqual({ speaker: "雪豹", line: "前面有风。" });
+    expect(ask.mock.calls[0][1]).toMatch(/雪豹化形/);
+
+    const pearl = eligibleChatters(mkCs({ pearl: c("珍珠", { beast: true }) }))[0];
+    expect(pearl.voice).toBe("human");
+    expect(chatterFallback(pearl, () => 0.99, "NONE")).toMatch(/“/);
+  });
+
+  it("没化形的真兽只出声不调用 AI", async () => {
     const ask = vi.fn();
-    const out = await companionChatterTick({ companionState: mkCs({ b: FOLL.b }), activity: {}, ask, rng: () => 0 });
+    const out = await companionChatterTick({ companionState: mkCs({ panda: c("墨团", { beast: true }) }), activity: {}, ask, rng: () => 0, memory: createChatterMemory() });
     expect(ask).not.toHaveBeenCalled();
-    expect(out.line).toMatch(/呜|尾巴|机括/);
+    expect(out.line).toMatch(/呜|尾巴/);
+  });
+
+  it("铁伯（mute 机关人偶）只出机括声，不调用 AI", async () => {
+    const ask = vi.fn();
+    const cs = mkCs({ imported_铁伯: { ...c("铁伯"), mute: true } });
+    const out = await companionChatterTick({ companionState: cs, activity: {}, ask, rng: () => 0, memory: createChatterMemory() });
+    expect(ask).not.toHaveBeenCalled();
+    expect(out.speaker).toBe("铁伯");
+    expect(out.line).toMatch(/机括|发条|黄玉/);
   });
 
   it("没人随行/概率未中 → null", async () => {
-    expect(await companionChatterTick({ companionState: {}, rng: () => 0 })).toBeNull();
-    expect(await companionChatterTick({ companionState: mkCs(FOLL), rng: () => 0.99 })).toBeNull();
+    expect(await companionChatterTick({ companionState: {}, rng: () => 0, memory: createChatterMemory() })).toBeNull();
+    expect(await companionChatterTick({ companionState: mkCs(FOLL), rng: () => 0.99, memory: createChatterMemory() })).toBeNull();
+  });
+});
+
+describe("开口节奏：只从随行队友里抽，全队间隔 + 个人冷却", () => {
+  const tick = (cs, memory) => companionChatterTick({ companionState: cs, activity: {}, rng: () => 0, memory });
+
+  it("留守的永远不开口", async () => {
+    const cs = mkCs({ a: c("元朵朵"), s: { ...c("阿香"), stationed: { district: "天都镇" } } });
+    const memory = createChatterMemory();
+    const speakers = new Set();
+    for (let i = 0; i < 60; i++) {
+      const out = await tick(cs, memory);
+      if (out) speakers.add(out.speaker);
+    }
+    expect([...speakers]).toEqual(["元朵朵"]);
+  });
+
+  it("同一人两次开口至少隔 COOLDOWN 回合，全队任意两句至少隔 GAP 回合", async () => {
+    const cs = mkCs({ a: c("元朵朵"), b: c("阿香") });
+    const memory = createChatterMemory();
+    const spoke = [];
+    for (let turn = 1; turn <= 80; turn++) {
+      const out = await tick(cs, memory);
+      if (out) spoke.push({ turn, who: out.speaker });
+    }
+    expect(spoke.length).toBeGreaterThan(2);
+    for (let i = 1; i < spoke.length; i++) {
+      expect(spoke[i].turn - spoke[i - 1].turn).toBeGreaterThanOrEqual(CHATTER_GAP_TURNS);
+    }
+    for (const who of ["元朵朵", "阿香"]) {
+      const turns = spoke.filter((s) => s.who === who).map((s) => s.turn);
+      for (let i = 1; i < turns.length; i++) expect(turns[i] - turns[i - 1]).toBeGreaterThanOrEqual(CHATTER_COOLDOWN_TURNS);
+    }
+  });
+
+  it("冷却中的人不会被抽到：只剩一位且在冷却里 → 无人开口", () => {
+    const cs = mkCs({ a: c("元朵朵") });
+    const memory = { turn: 5, lastAny: 5 - CHATTER_GAP_TURNS, last: { a: 5 - CHATTER_COOLDOWN_TURNS + 1 } };
+    expect(pickChatter(cs, { rng: () => 0, memory })).toBeNull();
+    memory.last.a = 5 - CHATTER_COOLDOWN_TURNS;
+    expect(pickChatter(cs, { rng: () => 0, memory })?.name).toBe("元朵朵");
   });
 });
 

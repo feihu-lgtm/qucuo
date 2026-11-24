@@ -4,7 +4,7 @@ import { formatAngerResolutionLog, resolveAngerSignals } from "../../domain/rule
 import { applyKnowledgeTreeDiff } from "../../domain/rules/prompt/knowledge.js";
 import { commitProposalWrites } from "./commitProposalWrites.js";
 import { commitModelFlags } from "./commitFlags.js";
-import { filterGhostCommands } from "./commitHelpers.js";
+import { companionNames, filterGhostCommands } from "./commitHelpers.js";
 import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
 import { settleDeal } from "./postCommit/dealSettle.js";
 import { emitNarrative } from "./postCommit/narrative.js";
@@ -44,6 +44,7 @@ export function commitRound(d) {
   const _systemBaseNpcs = _movingToCached?.npcs || d.room.npcs || [];
   const systemAcceptedNames = new Set(_systemBaseNpcs.map(n => n.name));
   if (d.p.emergedNpcName) systemAcceptedNames.add(d.p.emergedNpcName);
+  for (const name of companionNames(d.companionState)) systemAcceptedNames.add(name);
   // 已在 varTree.角色 里有记录的人（历史交互过的、驻场登记的）也算数——他们是
   // 系统认可的真实角色，即便此刻 AI 没把他们列进本轮在场名单，对他们的好感度
   // 变化仍是合法的（比如飞鸽传书、隔空事件）。只拦"系统从来不认识"的纯幽灵。
@@ -83,6 +84,8 @@ export function commitRound(d) {
         charm: d.effectiveSpecialNow?.魅力 ?? 5,
         time: d.time,
         giftRange: d.giftSettlement?.range,
+        // 邀同行那轮是系统规定"_.set 初始好感"，其余回合 _.set 好感度都换算成限幅增量。
+        allowAffectionSet: d.settleKind === "companion_invite",
         ...talkAffection,
       });
       // 被裁决拒绝的指令要能在「🧭全流程日志」里看见。此前只 console.warn，
@@ -94,7 +97,7 @@ export function commitRound(d) {
       }
       if (applied.length) {
         traceStep(d._trace, "MVU裁决", "pass",
-          applied.map(c => `${c.path}${c.actualDelta != null ? `${c.actualDelta > 0 ? "+" : ""}${c.actualDelta}` : ""}→${c.finalValue}`).join("；"));
+          applied.map(c => `${c.path}${c.actualDelta != null ? `${c.actualDelta > 0 ? "+" : ""}${c.actualDelta}` : ""}→${c.finalValue}${c.note ? `（${c.note}）` : ""}`).join("；"));
       }
       if (logs.length) d.addLog(logs);
 

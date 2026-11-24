@@ -1,7 +1,7 @@
-// 2v2 团战回合调度引擎
+// 团战回合调度引擎（最初按 2v2 设计，单位数组实际不限人数：玩家+伙伴们 vs 1~2 个对手）
 // ============================================================================
 // 核心思路：不改 resolveTurn.js（它是打磨过的1v1纯函数结算器，招式相克/伤害/
-// 状态判定全在里面），2v2只是"调度层"——把"我方最多2个单位 vs 敌方最多2个单位"
+// 状态判定全在里面），团战只是"调度层"——把"我方各单位 vs 敌方各单位"
 // 这一回合的行动，拆解成若干次两两配对的 resolveTurn 调用，然后把每次调用的
 // 结果应用回各自的单位对象上。
 //
@@ -302,7 +302,7 @@ export function decideUnitMove(unit, battleState) {
   return decideNpcMove(unit.profile, unit.movesetLocal, battleState);
 }
 
-// 供托管单位（雪豹）选目标：纯野兽本能，不做策略——随机挑一个存活敌人
+// 供托管单位（出战伙伴托管时/第二位起的随从）选目标：不做策略——随机挑一个存活敌人
 // （已与作者确认：托管时不特意配合玩家战术）。
 export function decideUnitTarget(enemyUnits) {
   return pickRandomAliveTarget(enemyUnits)?.id ?? null;

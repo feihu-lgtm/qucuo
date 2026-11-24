@@ -1,4 +1,7 @@
 import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
+import { migrateCompanionState } from "../companion/companion.js";
+import { ocSignatureMovesByName } from "../companion/ocKungfu.js";
+import { deriveSignatureMoveset, resolveBurdenMoves } from "./npcMovesets.js";
 
 // 历史版本人物改名迁移表：同一个 NPC 在旧版本里叫别的名字/用别的 id 时，
 // 老存档里按旧名/旧 id 记下的数据（角色面板键、在场 NPC、roomMap、日志文本等）
@@ -77,7 +80,44 @@ export function migrateLegacySnapshot(snap) {
   if (!snap || typeof snap !== "object") return snap;
   const migrated = migrateValue(snap);
   if (migrated.char && snap.char && snap.char.name != null) migrated.char.name = snap.char.name;
-  return realignQuestStages(migrated);
+  return migrateOcContent(realignQuestStages(migrated));
+}
+
+// OC 内容迁移（幂等）：
+//  ① companionState：已入队 OC 的招式按 kungfu 重建、补建缺失的随从槽（铁伯）。
+//  ② 房间里的 OC：出生固化时用的是通用随机招（moveset 里没有任何 signature 标记），
+//     按 OC 卡的 kungfu.moves 重派生。「没有 signature 标记」就是干净的判据——专属招/OC 招
+//     派生出来的每一招都带 signature:true；博弈层招（burdenMoveIds）单独重解析后接在尾部，不丢。
+function rederiveOcMoveset(npc) {
+  if (!npc || !Array.isArray(npc.moveset) || !npc.moveset.length) return npc;
+  if (npc.moveset.some((m) => m?.signature)) return npc;
+  if (!ocSignatureMovesByName(npc.name)) return npc;
+  const base = deriveSignatureMoveset(npc, { levelCap: npc.levelCap });
+  if (!base) return npc;
+  return { ...npc, moveset: [...base, ...resolveBurdenMoves(npc.burdenMoveIds)] };
+}
+
+function rederiveNpcList(list) {
+  if (!Array.isArray(list)) return list;
+  const next = list.map(rederiveOcMoveset);
+  return next.some((n, i) => n !== list[i]) ? next : list;
+}
+
+function migrateOcContent(snap) {
+  let out = snap;
+  const companionState = migrateCompanionState(snap.companionState);
+  if (companionState !== snap.companionState) out = { ...out, companionState };
+  const roomNpcs = rederiveNpcList(snap.room?.npcs);
+  if (roomNpcs !== snap.room?.npcs) out = { ...out, room: { ...out.room, npcs: roomNpcs } };
+  if (snap.roomMap && typeof snap.roomMap === "object") {
+    let roomMap = snap.roomMap;
+    for (const [name, entry] of Object.entries(snap.roomMap)) {
+      const npcs = rederiveNpcList(entry?.npcs);
+      if (npcs !== entry?.npcs) roomMap = { ...roomMap, [name]: { ...entry, npcs } };
+    }
+    if (roomMap !== snap.roomMap) out = { ...out, roomMap };
+  }
+  return out;
 }
 
 // 中间插了新阶段的任务（香2 比武招贤由 3 步扩成 6 步）：老档存的阶段序号对不上新阶段表，

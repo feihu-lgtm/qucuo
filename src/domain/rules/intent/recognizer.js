@@ -1,13 +1,14 @@
-// 第一段·行动识别。接口仿照 Jev / ShieldGemma 一类决策分类器：
-// 一个问题只问一件事，选项来自实时状态，模型只回 choice + 每个选项的概率。
-// classifier 端口：{ decide(question, vars, options) -> { choice, probs }, split(vars) -> string[] }，
-// 任何实现（现有 AI 端口、Jev、规则 mock）都可替换。
-import { ACTION_KINDS, KIND_LIST, SLOT_SPECS, NONE, SILVER, slotOptions, parseSilverAmount } from "./actionKinds.js";
-import { splitConditionClause, resolveCondition } from "./conditions.js";
+// 第一段·行动识别：整句只问模型一次。
+// classifier 端口：{ recognize(vars) -> { actions: [{ text, kind, target, item, direction, condition, condition_text, confidence }] } }，
+// 任何实现（现有 AI 端口、规则 mock）都可替换。
+// 提示词一次列全候选（在场人物/物品/方向/类别/前提类别，同源 slotOptions），模型回得再漂亮也不直接信：
+// 每个字段都在本地对照候选核一遍，对不上的行动降级成「其他」，交回自由行动路径。
+import { ACTION_KINDS, KIND_LIST, SLOT_SPECS, NONE, SILVER, slotOptions, parseSilverAmount, recognitionOptions } from "./actionKinds.js";
+import { CONDITION_LABELS, CONDITION_OTHER, splitConditionClause } from "./conditions.js";
 
+const STAGE_LABEL = "识别·整句";
+// 本地复合提示：只是提醒模型「可能不止一个行动」，不再单独发一次调用去判。
 const COMPOUND_HINT = /然后|再|接着|随后|之后|并且|顺便|同时|[，,、；;]|又/;
-const YES = "是";
-const NO = "否";
 
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
@@ -18,68 +19,81 @@ async function timed(onStage, label, fn) {
   return result;
 }
 
-function sanitizeParts(parts, text) {
-  const clean = (Array.isArray(parts) ? parts : [])
-    .map((part) => String(part || "").trim())
-    .filter((part) => part && text.includes(part));
-  return clean.length >= 2 ? clean : [text];
+function localHints(input) {
+  const hints = [];
+  const clause = splitConditionClause(input);
+  if (clause) hints.push(`本地提示：含条件从句，前提「${clause.detail}」，动作「${clause.actionText}」。`);
+  if (COMPOUND_HINT.test(input)) hints.push("本地提示：原话可能含多个要依次执行的行动，请按顺序拆开。");
+  return hints.join("\n");
 }
 
-async function recognizeAtomic(state, text, classifier, onStage) {
-  const kindResult = await timed(onStage, "识别·类别", () => classifier.decide("kind", { text }, KIND_LIST));
-  const kind = kindResult.choice;
-  const action = { kind, kindProbs: kindResult.probs, target: null, targetProbs: null, text };
-  let confidence = kindResult.probs[kind] ?? 0;
+// 模型自评置信度：容忍百分数写法（95 → 0.95），非数字按 0 处理，最终夹在 [0,1]。
+export function clampConfidence(value) {
+  const number = typeof value === "string" ? Number.parseFloat(value) : Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.min(1, Math.max(0, number > 1 && number <= 100 ? number / 100 : number));
+}
+
+const clean = (value) => String(value ?? "").replace(/[「」]/g, "").trim();
+
+// 校验一个模型给出的行动；原文片段对不上整句时返回 null（整次识别作废，不敢执行半截计划）。
+function validateAction(state, input, raw) {
+  const text = clean(raw?.text);
+  if (!text || !input.includes(text)) return null;
+  const confidence = clampConfidence(raw?.confidence);
+  const kind = KIND_LIST.includes(clean(raw?.kind)) ? clean(raw.kind) : ACTION_KINDS.OTHER;
+  const label = clean(raw?.condition);
+  const free = (extra = {}) => ({ kind: ACTION_KINDS.OTHER, target: null, item: null, text, confidence, ...extra });
+
+  // 前提落在封闭集合之外：只回落这一句，其余步骤照常过闸。
+  if (label === CONDITION_OTHER) return free({ free: true });
+  let condition = null;
+  if (label in CONDITION_LABELS) {
+    const stated = clean(raw?.condition_text);
+    condition = { on: CONDITION_LABELS[label], detail: stated && input.includes(stated) ? stated : splitConditionClause(input)?.detail || text };
+  }
+  const withCondition = (action) => (condition ? { ...action, condition } : action);
+
+  const action = { kind, target: null, item: null, text, confidence };
   for (const slot of SLOT_SPECS[kind] || []) {
     const options = slotOptions(state, kind, slot);
-    if (options.length <= 1) {
-      action[slot] = NONE;
-      action[`${slot}Probs`] = { [NONE]: 1 };
-      continue;
+    const value = clean(raw?.[slot]) || NONE;
+    // 候选里没有的人/物/方向：模型编的，整个行动降级为「其他」，交给自由行动路径。
+    if (value !== NONE && !options.includes(value)) {
+      return withCondition(free({ demoted: `${slot}「${value}」不在候选里` }));
     }
-    const result = await timed(onStage, `识别·${slot}`, () => classifier.decide(slot, { text, kind }, options));
-    action[slot] = result.choice;
-    action[`${slot}Probs`] = result.probs;
-    confidence *= result.probs[result.choice] ?? 0;
+    action[slot] = value;
   }
   if (kind === ACTION_KINDS.GIFT && action.item === SILVER) action.amount = parseSilverAmount(text);
-  action.confidence = confidence;
-  return action;
+  return withCondition(action);
+}
+
+export function validateRecognition(state, input, raw) {
+  const rawActions = Array.isArray(raw?.actions) ? raw.actions : [];
+  const actions = [];
+  for (const entry of rawActions) {
+    const action = validateAction(state, input, entry);
+    if (!action) return [];
+    actions.push(action);
+  }
+  return actions;
 }
 
 export async function recognizeIntent(state, text, { classifier, onStage } = {}) {
   const input = String(text || "").trim();
   if (!classifier || !input) return { compound: 0, actions: [] };
-  let compound = 0;
-  if (COMPOUND_HINT.test(input)) {
-    const result = await timed(onStage, "识别·复合", () => classifier.decide("compound", { text: input }, [YES, NO]));
-    compound = result.probs[YES] ?? 0;
-  }
-  const parts = compound >= 0.5
-    ? sanitizeParts(await timed(onStage, "识别·拆分", () => classifier.split({ text: input })), input)
-    : [input];
-  const certainty = Math.max(compound, 1 - compound);
-  const actions = [];
-  for (const part of parts) {
-    const clause = splitConditionClause(part);
-    if (clause) {
-      // 条件从句：前提判成封闭集合内的触发，动作照常识别并挂上 condition；
-      // 判成「其他」→ 整段保留原文，交给自由行动路径。
-      const cond = await resolveCondition(clause.detail, classifier, onStage, timed);
-      const on = cond.on;
-      if (!on) {
-        actions.push({ kind: ACTION_KINDS.OTHER, target: null, item: null, text: part, free: true, confidence: cond.confidence * certainty });
-        continue;
-      }
-      const action = await recognizeAtomic(state, clause.actionText, classifier, onStage);
-      action.condition = { on, detail: clause.detail };
-      action.confidence *= cond.confidence * certainty;
-      actions.push(action);
-      continue;
-    }
-    const action = await recognizeAtomic(state, part, classifier, onStage);
-    action.confidence *= certainty;
-    actions.push(action);
-  }
-  return { compound, actions };
+  const options = recognitionOptions(state);
+  const raw = await timed(onStage, STAGE_LABEL, () => classifier.recognize({
+    text: input,
+    hints: localHints(input),
+    kinds: options.kinds,
+    targets: options.targets,
+    directions: options.directions,
+    giftItems: options.items[ACTION_KINDS.GIFT],
+    useItems: options.items[ACTION_KINDS.USE_ITEM],
+    pickupItems: options.items[ACTION_KINDS.PICKUP],
+    equipItems: options.items[ACTION_KINDS.EQUIP],
+  }));
+  const actions = validateRecognition(state, input, raw);
+  return { compound: actions.length > 1 ? 1 : 0, actions };
 }

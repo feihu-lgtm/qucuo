@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ACTION_KINDS, SILVER, NONE, parseSilverAmount, slotOptions, visibleNpcs } from "./actionKinds.js";
-import { parseChoice, probsFromLogprobs, renderPrompt, TEMPLATES } from "./prompts.js";
-import { recognizeIntent } from "./recognizer.js";
+import { ACTION_KINDS, KIND_LIST, SILVER, NONE, HARD_ACTION_RE, parseSilverAmount, slotOptions, visibleNpcs } from "./actionKinds.js";
+import { renderPrompt, TEMPLATES } from "./prompts.js";
+import { recognizeIntent, clampConfidence } from "./recognizer.js";
 import { gateRecognition, ROUTES, confirmLine } from "./gate.js";
 import { validatePlan } from "./systemGate.js";
 import { formatPlanNote, planExtractionNote, filterRejectedEffects, filterPlanDelta } from "./planNotes.js";
@@ -18,18 +18,19 @@ const state = {
   char: { money: 150 },
 };
 
-function scripted(answers) {
+// 一次调用的假分类器：按整句返回预设 JSON，并记录每次收到的候选清单。
+function scripted(reply) {
   const calls = [];
   return {
     calls,
-    async decide(question, vars, options) {
-      calls.push({ question, text: vars.text, options });
-      const [choice, p] = answers[question]?.(vars.text, options) || [options[0], 1];
-      return { choice, probs: Object.fromEntries(options.map((o) => [o, o === choice ? p : (1 - p) / (options.length - 1 || 1)])) };
+    async recognize(vars) {
+      calls.push(vars);
+      return typeof reply === "function" ? reply(vars) : reply;
     },
-    async split() { calls.push({ question: "split" }); return ["给才旦100两", "再跟才旦切磋"]; },
   };
 }
+
+const act = (fields) => ({ target: "无", item: "无", direction: "无", condition: "无", confidence: 0.99, ...fields });
 
 describe("slots", () => {
   it("parses silver amounts from player text (system, not model)", () => {
@@ -51,55 +52,118 @@ describe("slots", () => {
 });
 
 describe("prompts", () => {
-  it("renders frozen templates with options", () => {
+  it("renders the frozen template with every candidate list at once", () => {
     expect(Object.isFrozen(TEMPLATES)).toBe(true);
-    expect(renderPrompt("kind", { text: "切磋", options: ["切磋", "其他"] })).toContain("「切磋」、「其他」");
+    const prompt = renderPrompt("recognize", { text: "送他酒", hints: "", kinds: ["赠送", "其他"], targets: ["才旦"], giftItems: [SILVER, "青稞酒"], useItems: [], pickupItems: [], equipItems: [], directions: ["北"] });
+    expect(prompt).toContain("玩家原话：「送他酒」");
+    expect(prompt).toContain("行动类别：「赠送」、「其他」");
+    expect(prompt).toContain("在场人物：「才旦」");
+    expect(prompt).toContain("赠送可用物品：「银两」、「青稞酒」");
+    expect(prompt).toContain("拾取可用物品：（无）");
   });
 
-  it("parses stated probabilities and normalizes", () => {
-    const out = parseChoice('好的 {"choice":"切磋","probs":{"切磋":0.8,"其他":0.4,"乱写":1}}', ["切磋", "其他"]);
-    expect(out.choice).toBe("切磋");
-    expect(out.probs.切磋).toBeCloseTo(2 / 3);
-    expect(parseChoice("不是JSON", ["才旦", NONE])).toMatchObject({ choice: NONE, parseFailed: true });
+  it("clamps the model's stated confidence into [0,1]", () => {
+    expect(clampConfidence(0.8)).toBe(0.8);
+    expect(clampConfidence(1)).toBe(1);
+    expect(clampConfidence(95)).toBeCloseTo(0.95);
+    expect(clampConfidence(-1)).toBe(0);
+    expect(clampConfidence("0.7")).toBeCloseTo(0.7);
+    expect(clampConfidence(undefined)).toBe(0);
+  });
+});
+
+describe("HARD_ACTION_RE", () => {
+  const samples = {
+    赠送: "送他一壶酒", 购买: "买两个馒头", 切磋: "跟他切磋", "拜师/学艺": "拜他为师", 邀同行: "邀他同行",
+    偷窃: "偷他的钱袋", "平息/道歉": "向他赔罪", 移动: "往北走", 使用物品: "喝掉青稞酒", 拾取: "捡起枯枝", "装备/卸下": "穿上皮袍",
+  };
+  it("has a keyword sample for every closed kind (free kinds need none)", () => {
+    const hard = KIND_LIST.filter((kind) => kind !== ACTION_KINDS.TALK && kind !== ACTION_KINDS.OTHER);
+    expect(Object.keys(samples).sort()).toEqual([...hard].sort());
+    for (const [kind, text] of Object.entries(samples)) expect(HARD_ACTION_RE.test(text), kind).toBe(true);
   });
 
-  it("prefers logprobs when the provider exposes them", () => {
-    const tokens = ['{"', 'choice', '":"', "才", '旦"}'].map((token) => ({ token, logprob: 0 }));
-    tokens[3].top_logprobs = [{ token: "才", logprob: Math.log(0.7) }, { token: "卓", logprob: Math.log(0.3) }];
-    const probs = probsFromLogprobs({ content: tokens }, ["才旦", "卓玛", NONE]);
-    expect(probs.才旦).toBeCloseTo(0.7);
-    expect(probs.卓玛).toBeCloseTo(0.3);
+  it("does not match pure intimate prose", () => {
+    expect(HARD_ACTION_RE.test("（搂住亲嘴）（舌吻）我喜欢你（摸她的下面…）")).toBe(false);
   });
 });
 
 describe("recognizeIntent", () => {
-  it("asks one question per thing and skips the compound gate for plain lines", async () => {
-    const classifier = scripted({ kind: () => ["赠送", 0.98], target: () => ["才旦", 0.97], item: () => [SILVER, 0.99] });
+  it("makes exactly one classifier call and builds every candidate list from live state", async () => {
+    const classifier = scripted({ actions: [act({ text: "把100两给才旦", kind: "赠送", target: "才旦", item: SILVER, confidence: 0.98 })] });
     const result = await recognizeIntent(state, "把100两给才旦", { classifier });
-    expect(classifier.calls.map((c) => c.question)).toEqual(["kind", "target", "item"]);
-    expect(result.compound).toBe(0);
-    expect(result.actions[0]).toMatchObject({ kind: "赠送", target: "才旦", item: SILVER, amount: 100 });
-    expect(result.actions[0].confidence).toBeCloseTo(0.98 * 0.97 * 0.99);
+    expect(classifier.calls).toHaveLength(1);
+    expect(classifier.calls[0]).toMatchObject({
+      text: "把100两给才旦", kinds: KIND_LIST, targets: ["才旦", "卓玛"], directions: ["北", "南", "东", "西"],
+      giftItems: [SILVER, "酥油茶", "青稞酒"], useItems: ["酥油茶", "青稞酒"], pickupItems: [], equipItems: ["酥油茶", "青稞酒"],
+    });
+    expect(result.actions[0]).toMatchObject({ kind: "赠送", target: "才旦", item: SILVER, amount: 100, confidence: 0.98 });
     expect(gateRecognition(result).route).toBe(ROUTES.EXECUTE);
     expect(confirmLine(result.actions)).toBe("你是要把100两给才旦吗？");
   });
 
-  it("splits compound lines into an ordered list only after the yes/no gate", async () => {
-    const classifier = scripted({
-      compound: () => ["是", 0.9],
-      kind: (text) => (text.includes("切磋") ? ["切磋", 0.97] : ["赠送", 0.97]),
-      target: () => ["才旦", 0.99], item: () => [SILVER, 0.99],
-    });
+  it("reports one stage for the whole sentence", async () => {
+    const stages = [];
+    const classifier = scripted({ actions: [act({ text: "跟才旦切磋", kind: "切磋", target: "才旦" })] });
+    await recognizeIntent(state, "跟才旦切磋", { classifier, onStage: (label) => stages.push(label) });
+    expect(stages).toEqual(["识别·整句"]);
+  });
+
+  it("returns an ordered compound plan from the single reply", async () => {
+    const classifier = scripted({ actions: [
+      act({ text: "给才旦100两", kind: "赠送", target: "才旦", item: SILVER, confidence: 0.97 }),
+      act({ text: "再跟才旦切磋", kind: "切磋", target: "才旦", confidence: 0.97 }),
+    ] });
     const result = await recognizeIntent(state, "给才旦100两，再跟才旦切磋", { classifier });
-    expect(classifier.calls[0].question).toBe("compound");
+    expect(classifier.calls).toHaveLength(1);
     expect(result.actions.map((a) => a.kind)).toEqual(["赠送", "切磋"]);
-    expect(gateRecognition(result).route).toBe(ROUTES.CONFIRM);
+    expect(gateRecognition(result).route).toBe(ROUTES.EXECUTE);
+  });
+
+  it("sends moderately confident plans to CONFIRM rather than EXECUTE", async () => {
+    const classifier = scripted({ actions: [act({ text: "跟才旦切磋", kind: "切磋", target: "才旦", confidence: 0.9 })] });
+    expect(gateRecognition(await recognizeIntent(state, "跟才旦切磋", { classifier })).route).toBe(ROUTES.CONFIRM);
+  });
+
+  it("demotes an action whose target, item or direction is not in the candidate list", async () => {
+    const classifier = scripted({ actions: [act({ text: "给王掌柜青稞酒", kind: "赠送", target: "王掌柜", item: "青稞酒" })] });
+    const result = await recognizeIntent(state, "给王掌柜青稞酒", { classifier });
+    expect(result.actions[0]).toMatchObject({ kind: "其他", text: "给王掌柜青稞酒", target: null, item: null });
+    expect(gateRecognition(result).route).toBe(ROUTES.FALLBACK);
+
+    const noItem = scripted({ actions: [act({ text: "送才旦一壶好酒", kind: "赠送", target: "才旦", item: "一壶好酒" })] });
+    expect((await recognizeIntent(state, "送才旦一壶好酒", { classifier: noItem })).actions[0].kind).toBe("其他");
+
+    const badDir = scripted({ actions: [act({ text: "往上走", kind: "移动", direction: "上" })] });
+    expect((await recognizeIntent(state, "往上走", { classifier: badDir })).actions[0].kind).toBe("其他");
+  });
+
+  it("keeps an explicit 「无」 slot so the system gate can explain the refusal", async () => {
+    const classifier = scripted({ actions: [act({ text: "送才旦一壶酒", kind: "赠送", target: "才旦", item: "无" })] });
+    const result = await recognizeIntent(state, "送才旦一壶酒", { classifier });
+    expect(result.actions[0]).toMatchObject({ kind: "赠送", target: "才旦", item: NONE });
+  });
+
+  it("treats unknown kinds as 其他 and rejects the whole reply when a text is not a substring of the input", async () => {
+    const unknownKind = scripted({ actions: [act({ text: "跳个舞", kind: "跳舞" })] });
+    expect((await recognizeIntent(state, "跳个舞", { classifier: unknownKind })).actions[0].kind).toBe("其他");
+    const invented = scripted({ actions: [act({ text: "给才旦100两", kind: "赠送", target: "才旦", item: SILVER }), act({ text: "编出来的话", kind: "切磋", target: "才旦" })] });
+    expect((await recognizeIntent(state, "给才旦100两", { classifier: invented })).actions).toEqual([]);
+  });
+
+  it("falls back on an empty or unparsable reply", async () => {
+    for (const reply of [{ actions: [] }, { actions: [], parseFailed: true }, null]) {
+      const result = await recognizeIntent(state, "跟才旦切磋", { classifier: scripted(reply) });
+      expect(gateRecognition(result).route).toBe(ROUTES.FALLBACK);
+    }
   });
 
   it("routes chit-chat, refusals and low confidence to the free-action path", () => {
     expect(gateRecognition({ actions: [{ kind: "交谈", confidence: 0.99 }] }).route).toBe(ROUTES.FALLBACK);
     expect(gateRecognition({ actions: [{ kind: "切磋", confidence: 0.4 }] }).route).toBe(ROUTES.FALLBACK);
     expect(gateRecognition({ actions: [{ kind: "切磋", confidence: 0.7 }] }).route).toBe(ROUTES.CONFIRM);
+    expect(gateRecognition({ actions: [{ kind: "切磋", confidence: 0.94 }] }).route).toBe(ROUTES.CONFIRM);
+    expect(gateRecognition({ actions: [{ kind: "切磋", confidence: 0.95 }] }).route).toBe(ROUTES.EXECUTE);
     expect(gateRecognition({ actions: [] }).route).toBe(ROUTES.FALLBACK);
   });
 });
@@ -192,35 +256,42 @@ describe("conditional steps", () => {
     expect(splitConditionClause("我想切磋")).toBeNull();
   });
 
-  it("asks the cond question once and attaches the trigger to the action", async () => {
-    const classifier = scripted({
-      cond: () => ["遇敌", 0.92],
-      kind: () => ["切磋", 0.97],
-      target: () => ["才旦", 0.99],
-    });
+  it("attaches the trigger from the same single reply and hints the local clause split", async () => {
+    const classifier = scripted({ actions: [act({ text: "跟他切磋", kind: "切磋", target: "才旦", condition: "遇敌", condition_text: "碰到山贼", confidence: 0.92 })] });
     const result = await recognizeIntent(state, "要是碰到山贼就跟他切磋", { classifier });
-    expect(classifier.calls.map((c) => c.question)).toEqual(["cond", "kind", "target"]);
+    expect(classifier.calls).toHaveLength(1);
+    expect(classifier.calls[0].hints).toContain("前提「碰到山贼」");
     expect(result.actions[0]).toMatchObject({ kind: "切磋", target: "才旦", condition: { on: "encounter", detail: "碰到山贼" } });
     expect(gateRecognition(result).route).toBe(ROUTES.CONFIRM);
     expect(validatePlan(state, result.actions).triggers).toHaveLength(1);
   });
 
+  it("falls back to the clause's own detail when the model omits or invents the premise text", async () => {
+    const classifier = scripted({ actions: [act({ text: "打他", kind: "其他", condition: "遇敌", condition_text: "编造的前提" })] });
+    const result = await recognizeIntent(state, "路上要是碰到山贼就打他", { classifier });
+    expect(result.actions[0].condition).toEqual({ on: "encounter", detail: "路上碰到山贼" });
+  });
+
   it("falls back to free text for the clause alone when the premise is outside the fixed list", async () => {
-    const classifier = scripted({
-      compound: () => ["是", 0.9],
-      kind: (text) => (text.includes("切磋") ? ["切磋", 0.97] : ["赠送", 0.97]),
-      cond: () => ["其他", 0.9],
-      target: () => ["才旦", 0.99], item: () => [SILVER, 0.99],
-      split: undefined,
-    });
-    classifier.split = async () => ["给才旦100两", "要是下雨就躲"];
+    const classifier = scripted({ actions: [
+      act({ text: "给才旦100两", kind: "赠送", target: "才旦", item: SILVER }),
+      act({ text: "要是下雨就躲", kind: "其他", condition: "其他", condition_text: "下雨" }),
+    ] });
     const result = await recognizeIntent(state, "给才旦100两，要是下雨就躲", { classifier });
+    expect(classifier.calls).toHaveLength(1);
     expect(result.actions[1]).toMatchObject({ kind: "其他", free: true, text: "要是下雨就躲" });
     // 条件段只回落它自己；其余步骤照常过闸。
     expect(gateRecognition(result).route).not.toBe(ROUTES.FALLBACK);
     const plan = validatePlan(state, result.actions);
     expect(plan.valid).toHaveLength(1);
     expect(plan.freeSteps).toHaveLength(1);
+  });
+
+  it("arms a demoted conditional step as a free-text trigger instead of dropping it", async () => {
+    const classifier = scripted({ actions: [act({ text: "把信给她", kind: "赠送", target: "才旦", item: "信", condition: "到达", condition_text: "到了雅江" })] });
+    const result = await recognizeIntent(state, "到了雅江就把信给她", { classifier });
+    expect(result.actions[0]).toMatchObject({ kind: "其他", condition: { on: "arrive", detail: "到了雅江" } });
+    expect(validatePlan(state, result.actions).triggers).toHaveLength(1);
   });
 
   it("keeps conditioned steps out of immediate validation and arms them as triggers", () => {

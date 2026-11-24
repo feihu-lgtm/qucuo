@@ -1,7 +1,9 @@
-// 置信度闸门：≥0.9 直接执行；中间档先问玩家一句确认；低于下限回落到原有自由行动路径（完全不变）。
+// 置信度闸门：≥0.95 直接执行；中间档先问玩家一句确认；低于下限回落到原有自由行动路径（完全不变）。
+// 置信度现在是模型整句一次调用里的自评，不再是逐字段 logprobs 概率：自评偏乐观，所以执行线从 0.9 抬到 0.95，
+// 拿不准的先问玩家确认；确认线保持 0.6。
 import { ACTION_KINDS, NONE, SILVER, UNEQUIP_RE } from "./actionKinds.js";
 
-const THRESHOLDS = Object.freeze({ execute: 0.9, confirm: 0.6 });
+const THRESHOLDS = Object.freeze({ execute: 0.95, confirm: 0.6 });
 
 export const ROUTES = Object.freeze({ EXECUTE: "execute", CONFIRM: "confirm", FALLBACK: "fallback" });
 

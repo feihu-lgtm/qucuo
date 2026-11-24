@@ -219,9 +219,27 @@ describe("和出战伙伴本人打是 1v1", () => {
     expect((other.logs || []).some((l) => l.text.includes("并肩破敌"))).toBe(true);
   });
 
-  it("切磋界面按 duelAlly 选 2v2 还是 1v1", async () => {
+  it("切磋界面按 duelLineup 选团战还是 1v1", async () => {
     const { readFileSync } = await import("node:fs");
     const src = readFileSync(new URL("../ui/panels/GlobalOverlays.jsx", import.meta.url), "utf8");
-    expect(src).toContain("duelAlly(companionState, duelingNpc) ? (");
+    expect(src).toContain("duelLineup(companionState, duelingNpc)");
+    expect(src).toContain("lineup.team ? (");
+  });
+
+  it("并肩破敌好感记给真正上场的伙伴，不再写死雪豹；铁伯这类 mute 随从不涨", async () => {
+    const { unlockImportedCompanion, unlockFollowerCompanion } = await import("../domain/rules/companion/companion.js");
+    const { ADVENTURER_POOL_IP } = await import("../domain/data/dungeon/adventurersIP.js");
+    const { TEAMWORK_GAIN } = await import("../domain/rules/combat/duelSettleMath.js");
+    const duoduo = ADVENTURER_POOL_IP.find((a) => a.name === "元朵朵");
+    const companionState = unlockFollowerCompanion(unlockImportedCompanion({}, { name: "元朵朵", levelCap: 1 }), duoduo);
+    const state = { ...initial(), companionState };
+    const res = settleNpcDuel(state, { name: "拦路山贼", levelCap: 1 }, { outcome: "win", rng: () => 1 });
+    const texts = (res.logs || []).map((l) => l.text).filter((t) => t.includes("并肩破敌"));
+    expect(texts).toEqual([`  💗 与元朵朵并肩破敌，默契渐深，好感 +${TEAMWORK_GAIN}`]);
+    const next = apply({ ...state }, res);
+    // 初见好感底值由 markNpcAsKnown 给，这里只断言确实涨了并肩的这一笔
+    expect(next.varTree.角色.元朵朵.好感度).toBeGreaterThanOrEqual(TEAMWORK_GAIN);
+    expect(next.varTree.角色?.雪豹).toBeUndefined();
+    expect(next.varTree.角色?.铁伯).toBeUndefined();
   });
 });

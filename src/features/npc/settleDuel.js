@@ -10,7 +10,7 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { BOUNTY_QUESTS } from "../../domain/data/quests/bountyQuests.js";
 import { createQuestProgress, getCurrentStage, advanceQuestStages, lockExclusiveSiblings } from "../../domain/rules/quests/questEngine.js";
 import { resolveStageRewards } from "../../domain/rules/quests/questRewards.js";
-import { duelAlly } from "../../domain/rules/companion/companion.js";
+import { duelAllies } from "../../domain/rules/companion/companion.js";
 import { snowQuestActive } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
@@ -195,11 +195,18 @@ export function settleNpcDuel(state, npc, {
     }
   }
 
-  if (outcome === "win" && duelAlly(state.companionState, npc)) {
-    addChange(changes, working, "varTree", (prev) => applyWrite(
-      { varTree: markNpcKnown(prev || {}, "雪豹") }, add(["角色", "雪豹", "好感度"], TEAMWORK_GAIN),
-    ).state.varTree);
-    logs.push({ t: "affection", text: `  💗 与雪豹并肩破敌，默契渐深，好感 +${TEAMWORK_GAIN}` });
+  if (outcome === "win") {
+    // 并肩破敌：好感记给真正上场的己方伙伴（duelAllies：出战伙伴 + 同组随从）。
+    // 机关人偶铁伯这类 mute 随从没有"好感"可言（intimacy forbidden、不开口），跳过；
+    // 对手本人不算（duelAllies 已排除）。
+    for (const ally of duelAllies(state.companionState, npc).filter((a) => !a.mute)) {
+      const name = ally.label || ally.data?.name;
+      if (!name) continue;
+      addChange(changes, working, "varTree", (prev) => applyWrite(
+        { varTree: markNpcKnown(prev || {}, name) }, add(["角色", name, "好感度"], TEAMWORK_GAIN),
+      ).state.varTree);
+      logs.push({ t: "affection", text: `  💗 与${name}并肩破敌，默契渐深，好感 +${TEAMWORK_GAIN}` });
+    }
   }
 
   let note = null;

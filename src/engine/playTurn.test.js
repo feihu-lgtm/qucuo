@@ -108,7 +108,7 @@ describe("playTurn background bookkeep", () => {
     });
     expect(gameStore.getState().varTree.角色.八云).not.toHaveProperty("生气解除");
     expect(addLog.mock.calls.flatMap(([entries]) => entries)).toEqual([
-      { t: "affection", text: "  💗 八云 好感度 +3（→ 23）" },
+      { t: "affection", text: "  💗 八云 好感度 +3（20 → 23）" },
       { t: "affection", text: "  ✓ 八云的怒气已经消解，这场风波算是揭过去了。" },
     ]);
     expect(runTurn).toHaveBeenCalledWith(
@@ -139,7 +139,7 @@ describe("playTurn background bookkeep", () => {
       expect(gameStore.getState().varTree.角色.八云.好感度).toBe(expectedFavor);
       expect(addLog.mock.calls.flatMap(([entries]) => entries)).toContainEqual({
         t: "affection",
-        text: `  💗 八云 好感度 +${expectedDelta}（→ ${expectedFavor}）`,
+        text: `  💗 八云 好感度 +${expectedDelta}（20 → ${expectedFavor}）`,
       });
     },
   );

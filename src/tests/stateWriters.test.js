@@ -14,6 +14,8 @@ import { giftNpc, settleNpcDuel } from "../features/npc/logic.js";
 import { applyPigeonReply, buyPigeon, collectPigeons, sendPigeonLetter } from "../features/pigeon/logic.js";
 import { stageRewardPatches } from "../domain/rules/quests/questRewards.js";
 import { commitPatches } from "../domain/rules/state/applyPatches.js";
+import { extractMvuBlock } from "../domain/rules/prompt/mvu.js";
+import { unlockImportedCompanion } from "../domain/rules/companion/companion.js";
 
 function applyChanges(state, result) {
   const next = { ...state };
@@ -156,12 +158,105 @@ it("keeps the MVU clamp, ledger, permitted generic writes and exact player logs"
   });
   commitRound(deps);
   expect({ tree: state.varTree, logs }).toEqual({
-    tree: { 角色: { 侠客: { 好感度: 100 } }, 世界: { 好感日增: { dayStamp: 1, gained: { 侠客: 12 } }, 威望: 100 }, 主角: { 别名: "青衣" } },
+    tree: { 角色: { 侠客: { 好感度: 100 } }, 世界: { 好感日增: { dayStamp: 1, gained: { 侠客: 10 } }, 威望: 100 }, 主角: { 别名: "青衣" } },
     logs: [
-      { t: "affection", text: "  💗 侠客 好感度 +8（→ 100）" },
-      { t: "affection", text: "  💗 侠客 好感度 +4（→ 100）" },
+      { t: "affection", text: "  💗 侠客 好感度 +2（98 → 100）" },
     ],
   });
+});
+
+it("MVU 好感度变动提交后恰好一条 💗 字幕，带变动前后值", () => {
+  const state = baseState();
+  state.varTree.角色 = { 元朵朵: { 好感度: 45 } };
+  const { deps, logs } = makeDeps(state, {}, {
+    mvuCommands: [{ op: "add", path: "角色.元朵朵.好感度", value: 2 }],
+  });
+  commitRound(deps);
+  expect(state.varTree.角色.元朵朵.好感度).toBe(47);
+  expect(logs.filter((l) => l.t === "affection")).toEqual([
+    { t: "affection", text: "  💗 元朵朵 好感度 +2（45 → 47）" },
+  ]);
+});
+
+// 真实提取输出（turn-2022）：路径不带引号；元朵朵是随行伙伴，不在 room.npcs。
+const TURN_2022_MVU = "_.add(角色.元朵朵.好感度, 2);\n_.add(角色.元朵朵.旧账.lines, '被少侠拥吻告白，探入裙中揉弄亵裤腿心，羞软无力难以推拒。');\n";
+const TURN_141_MVU = "_.set(角色.元朵朵.好感度, 47);\n_.push(角色.元朵朵.旧账.lines, '...');\n_.set(角色.元朵朵.旧账.updatedTurn, 141);";
+const followingDuoduo = () => unlockImportedCompanion({}, { name: "元朵朵" });
+const parseLikeExtraction = (mvu) => extractMvuBlock(`<mvu>${mvu}</mvu>`).commands;
+
+it("不带引号的 mvu 路径也能解析，坏行不影响同块其他条", () => {
+  expect(parseLikeExtraction(TURN_2022_MVU)).toEqual([
+    { op: "add", path: "角色.元朵朵.好感度", value: 2 },
+    { op: "add", path: "角色.元朵朵.旧账.lines", value: "被少侠拥吻告白，探入裙中揉弄亵裤腿心，羞软无力难以推拒。" },
+  ]);
+  expect(parseLikeExtraction(TURN_141_MVU).map(({ op, path }) => `${op} ${path}`)).toEqual([
+    "set 角色.元朵朵.好感度", "push 角色.元朵朵.旧账.lines", "set 角色.元朵朵.旧账.updatedTurn",
+  ]);
+});
+
+it("turn-2022：随行伙伴（不在 room.npcs、varTree 里还没她）的 _.add 好感照常生效并出 💗", () => {
+  const state = baseState();
+  const { deps, logs } = makeDeps(state, {}, {
+    companionState: followingDuoduo(),
+    mvuCommands: parseLikeExtraction(TURN_2022_MVU),
+  });
+  commitRound(deps);
+  expect(state.varTree.角色.元朵朵.好感度).toBe(2);
+  expect(logs.filter((l) => l.t === "affection")).toEqual([
+    { t: "affection", text: "  💗 元朵朵 好感度 +2（0 → 2）" },
+  ]);
+});
+
+it("turn-2022：同一块里 旧账 那条写坏只丢它自己，好感照常落账", () => {
+  const state = baseState();
+  state.varTree.角色 = { 元朵朵: { 好感度: 45 } };
+  const { deps, logs } = makeDeps(state, {}, {
+    companionState: followingDuoduo(),
+    mvuCommands: parseLikeExtraction(TURN_2022_MVU),
+  });
+  commitRound(deps);
+  expect(state.varTree.角色.元朵朵.好感度).toBe(47);
+  expect(logs.filter((l) => l.t === "affection")).toEqual([
+    { t: "affection", text: "  💗 元朵朵 好感度 +2（45 → 47）" },
+  ]);
+});
+
+it("不是随行也不认识的幽灵名字，好感指令仍被丢弃", () => {
+  const state = baseState();
+  const { deps, logs } = makeDeps(state, {}, {
+    companionState: followingDuoduo(),
+    mvuCommands: [{ op: "add", path: "角色.路人甲.好感度", value: 2 }],
+  });
+  commitRound(deps);
+  expect(state.varTree.角色.路人甲).toBeUndefined();
+  expect(logs.filter((l) => l.t === "affection")).toEqual([]);
+});
+
+it("turn-141：对已有好感的人 _.set 好感度被换算成限幅增量，一条 💗，其余行不受牵连", () => {
+  const state = baseState();
+  state.varTree.角色 = { 元朵朵: { 好感度: 45 } };
+  const { deps, logs } = makeDeps(state, {}, {
+    companionState: followingDuoduo(),
+    mvuCommands: parseLikeExtraction(TURN_141_MVU),
+  });
+  commitRound(deps);
+  expect(state.varTree.角色.元朵朵.好感度).toBe(47);
+  expect(logs.filter((l) => l.t === "affection")).toEqual([
+    { t: "affection", text: "  💗 元朵朵 好感度 +2（45 → 47）" },
+  ]);
+});
+
+it("_.set 好感度跳大值、_.add 报大数，单回合最多涨 5", () => {
+  for (const command of [
+    { op: "set", path: "角色.元朵朵.好感度", value: 90 },
+    { op: "add", path: "角色.元朵朵.好感度", value: 12 },
+  ]) {
+    const state = baseState();
+    state.varTree.角色 = { 元朵朵: { 好感度: 45 } };
+    const { deps } = makeDeps(state, {}, { companionState: followingDuoduo(), mvuCommands: [command] });
+    commitRound(deps);
+    expect(state.varTree.角色.元朵朵.好感度).toBe(50);
+  }
 });
 
 it("keeps duel addChange ordering, counted removals, affection, silver and logs", () => {

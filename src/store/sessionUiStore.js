@@ -56,7 +56,8 @@ export const sessionUiStore = createStore(() => ({
   collapsedGroups: new Set(),
   mapBig: false,
   mapView: "outer",
-  peoplePanel: { present: true, absent: true },
+  // 不在此地默认收起：曾遇人物会越攒越多，把在场的人挤出视野
+  peoplePanel: { present: true, absent: false },
 }));
 
 // 持久化与 DOM 副作用收编进 store（原 MudRPG/useGameUi 的 useEffect）：字段真变才写回；

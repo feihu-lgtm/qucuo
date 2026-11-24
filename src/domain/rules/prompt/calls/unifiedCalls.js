@@ -112,7 +112,7 @@ export function registerUnifiedCalls() {
     label: (ctx) => ctx.callLabel || "行动识别",
     execution: "sync_pipeline",
     route: "light",
-    reviewDesc: "关思考 JSON 输出，按 logprobs 与 stated 择优并检测长度截断（IntentTruncatedError）",
+    reviewDesc: "关思考 JSON 输出，整句一次识别全部行动并本地校验候选，检测长度截断（IntentTruncatedError）",
     defaultMaxTokens: (ctx) => ctx.maxTokens ?? 1024,
     cfg: (_apiCfg, ctx) => (ctx.cfg ? { ...ctx.cfg, thinkingMode: "off" } : undefined),
     join: "",

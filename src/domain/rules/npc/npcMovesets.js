@@ -5,6 +5,7 @@ import { rollQuality, QUALITY } from "../economy/equipment.js";
 import { MOVE_TYPE } from "../combat/moveTypes.js";
 import { NPC_SIGNATURE_MOVES } from "../../data/npc/npcSignatureMoves.js";
 import { getImportedSignatureMoves } from "../cards/importedRegistry.js";
+import { ocSignatureMovesByName } from "../companion/ocKungfu.js";
 import { resolveArchetype } from "../combat/moveArchetypes.js";
 
 // 每个品质档位对应的技能范例池，跟 duel-system-design.md 里的表格一一对应。
@@ -87,7 +88,9 @@ function levelCapToQuality(levelCap) {
 export function deriveSignatureMoveset(npc, { levelCap } = {}) {
   // 入册角色的专属招式跟内置表合并。入册的优先——那是玩家在导入界面亲手配的，
   // 意图比内置表更明确（同名时也该听玩家的）。
-  const sig = getImportedSignatureMoves()[npc?.name] || NPC_SIGNATURE_MOVES[npc?.name];
+  // 兜底：OC 冒险者数据卡自带 kungfu.moves（元朵朵的漫天花雨撒金钱/抱头蹲防），
+  // 没在上面两张表登记时，按卡上招式出招——否则 OC 当对手只会甩通用随机招。
+  const sig = getImportedSignatureMoves()[npc?.name] || NPC_SIGNATURE_MOVES[npc?.name] || ocSignatureMovesByName(npc?.name);
   if (!sig) return null;
   return deriveMovesetFromSig(npc, sig, { levelCap });
 }
