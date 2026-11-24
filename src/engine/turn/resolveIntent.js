@@ -65,6 +65,7 @@ export async function resolveIntent(cmd, env) {
   // ■ 模式关掉时整族隐藏（nsfwOn=false 落回普通对话）。过没过线系统裁决：
   // 未过线→性格化拒词+按性情扣好感；过线→标已亲密♥、prompt 注入 nsfw 段+style。
   let intimateNote = "";
+  let intimateTicket = null; // 本轮凭卡强开的目标 NPC 名；commitRound 成功后才焚卡
   const intimateHit = nsfwOn && (isTalk ? isIntimateInput(cmd) : intent === INTENT.INTIMATE);
   if (intimateHit) {
     const targetName = isTalk ? talkTarget : (talkTarget || activeTarget?.name || activeTarget);
@@ -73,11 +74,12 @@ export async function resolveIntent(cmd, env) {
     if (npc?.name) {
       const aff = Number(varTreeRef.current?.角色?.[npc.name]?.好感度) || 0;
       const gate = intimacyGate(npc, aff);
-      // 「女眷一次卡·不可拒绝」：行囊里有卡，亲密判门一票放行——threshold、
-      // forbidden 统统跳过，用掉即焚。兽类不通人情，卡也撬不动。
+      // 「女眷一次卡·不可拒绝」：门槛卡住且行囊有卡才启用——threshold、forbidden
+      // 一票放行（beast 除外）。门槛本来就过的不耗卡；卡只在回合成功落盘时焚，
+      // 由 commitRound 收尾消耗（中途失败/回滚不吞卡）。
       const invNow = getGameState().inv || [];
-      const ticketIdx = invNow.findIndex((i) => (typeof i === "object" && i ? i.name : i) === INTIMATE_TICKET_NAME);
-      const forceIntimate = ticketIdx >= 0 && !npc.beast;
+      const hasTicket = invNow.some((i) => (typeof i === "object" && i ? i.name : i) === INTIMATE_TICKET_NAME);
+      const forceIntimate = !gate.unlocked && hasTicket && !npc.beast;
       turnMonitor.activate(_trace);
       setInput("");
       setCmdHistory(p => [cmd, ...p].slice(0, 50));
@@ -97,8 +99,7 @@ export async function resolveIntent(cmd, env) {
         return { proceed: false, summary: gate.forbidden ? "亲密对象不通人情" : "亲密好感不足被婉拒" };
       }
       if (forceIntimate) {
-        setInv((v) => v.filter((_, i) => i !== ticketIdx));
-        applyLocal({ logs: [{ t: "sys", text: `  你亮出「${INTIMATE_TICKET_NAME}」，卡片在你指尖燃成一缕金线——这一次，无人能拒。` }] });
+        intimateTicket = npc.name;
         traceStep(_trace, "亲密门槛", "pass", `${npc.name} 凭「${INTIMATE_TICKET_NAME}」强开`);
       }
       // 过线：标已亲密（varTree 持久 + 当前房间条目挂 ♥），prompt 注入门槛行+nsfw 段+style。
@@ -345,6 +346,7 @@ export async function resolveIntent(cmd, env) {
       intent, isTalk, isSettle, movingDir, lockedDestName, destinationLock,
       collectNote: collectNote + (opts.intentPlanNote || "") + intimateNote,
       encounterToDescribe, activeGroundItemForTurn, lookNpcs,
+      intimateTicket,
     },
   };
 }

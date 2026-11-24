@@ -115,6 +115,25 @@ describe("朵朵反应", () => {
 });
 
 describe("女眷一次卡·不可拒绝", () => {
+  it("「亲自」类日常词不判亲密，亲吻族仍命中", async () => {
+    const { isIntimateInput } = await import("../../domain/rules/prompt/inputIntent.js");
+    for (const bad of ["我亲自去过锦官城", "她父亲来看她", "亲信来报", "亲王的车驾", "口吻温和", "吻合"]) {
+      expect(isIntimateInput(bad), bad).toBe(false);
+    }
+    for (const good of ["亲吻元朵朵", "搂她入怀", "亲一口", "跟她亲热"]) {
+      expect(isIntimateInput(good), good).toBe(true);
+    }
+  });
+
+  it("焚卡步骤只在 commit 成功消耗一张", async () => {
+    const { burnIntimateTicket } = await import("../../engine/act/postCommit/intimateTicket.js");
+    expect(burnIntimateTicket({ intimateTicket: null })).toBeNull();
+    const card = { name: INTIMATE_TICKET_NAME };
+    const res = burnIntimateTicket({ intimateTicket: "铁伯" });
+    expect(res.changes.inv([card, card, { name: "旧物" }])).toHaveLength(2);
+    expect(res.logs.map((l) => l.text).join("")).toContain("无人能拒");
+  });
+
   it("catalog 有词条（红档，带价）", () => {
     const entry = CATALOG_INDEX[INTIMATE_TICKET_NAME];
     expect(entry.quality).toBe("红");
