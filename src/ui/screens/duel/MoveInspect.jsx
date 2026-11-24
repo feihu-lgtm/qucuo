@@ -12,14 +12,14 @@ export function MoveInspect({ move, zoneTheme, onClose }) {
   return (
     <div style={styles.inspectOverlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div style={{ ...styles.inspectCard, background: zoneTheme.bgPanel, border: `1px solid ${color}` }} onClick={e => e.stopPropagation()}>
-        <div style={{ fontSize: "10px", color }}>{TYPE_ICON[move.type]} {move.quality}袍 · {move.side}的招式</div>
-        <div style={{ fontSize: "16px", color: zoneTheme.text, margin: "4px 0 2px" }}>{move.name}</div>
-        {move.desc && <div style={{ fontSize: "12px", color: zoneTheme.textDim, lineHeight: 1.6, margin: "6px 0" }}>{move.desc}</div>}
-        <div style={{ fontSize: "11px", color: zoneTheme.accentDim, margin: "8px 0 4px" }}>耗能 {move.energyCost ?? 0}</div>
+        <div style={{ fontSize: "var(--fs-2xs)", color }}>{TYPE_ICON[move.type]} {move.quality}袍 · {move.side}的招式</div>
+        <div style={{ fontSize: "var(--fs-lg)", color: zoneTheme.text, margin: "4px 0 2px" }}>{move.name}</div>
+        {move.desc && <div style={{ fontSize: "var(--fs-sm)", color: zoneTheme.textDim, lineHeight: 1.6, margin: "6px 0" }}>{move.desc}</div>}
+        <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, margin: "8px 0 4px" }}>耗能 {move.energyCost ?? 0}</div>
         <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 6 }}>
           {effects.length ? effects.map((t, i) => (
-            <div key={i} style={{ fontSize: "12px", color: zoneTheme.text, marginBottom: 3 }}>· {t}</div>
-          )) : <div style={{ fontSize: "12px", color: zoneTheme.textDim }}>· 无特殊机制，纯凭火候</div>}
+            <div key={i} style={{ fontSize: "var(--fs-sm)", color: zoneTheme.text, marginBottom: 3 }}>· {t}</div>
+          )) : <div style={{ fontSize: "var(--fs-sm)", color: zoneTheme.textDim }}>· 无特殊机制，纯凭火候</div>}
         </div>
         <div style={styles.continueRow}><span onClick={onClose} style={styles.continueBtn(zoneTheme)}>收起</span></div>
       </div>

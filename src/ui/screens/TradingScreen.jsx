@@ -52,15 +52,15 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
         )}
         <div className="mobile-trading-header" style={{ padding: "12px 16px", borderBottom: `1px solid ${zoneTheme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           {headerContent}
-          <div style={{ fontSize: 14, color: zoneTheme.text || "var(--text)", display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ fontSize: "var(--fs-base)", color: zoneTheme.text || "var(--text)", display: "flex", alignItems: "center", gap: 6 }}>
             {shopName || "交易"}
             {promo && (
-              <span role="status" style={{ fontSize: 10, padding: "1px 6px", border: "1px solid var(--gold-bright)", color: "var(--gold-bright)", borderRadius: 2 }}>
+              <span role="status" style={{ fontSize: "var(--fs-2xs)", padding: "1px 6px", border: "1px solid var(--gold-bright)", color: "var(--gold-bright)", borderRadius: 2 }}>
                 {promo.term}大促
               </span>
             )}
           </div>
-          <div style={{ fontSize: 12, color: "var(--gold-bright)" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--gold-bright)" }}>{currencyName}：{playerMoney || 0} {currencyUnit}</div>
           <span className="mobile-overlay-close mobile-only-close" onClick={onClose} aria-label="关闭交易">×</span>
         </div>
 
@@ -68,9 +68,9 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
           {/* 左侧：玩家物品，可卖。功德商店不收货，整半边不渲染 */}
           {canSell && (
           <div className="mobile-trading-column" style={{ flex: 1, padding: 12, overflowY: "auto", borderRight: `1px solid ${zoneTheme.border}` }}>
-            <div style={{ fontSize: 11, color: zoneTheme.accentDim, marginBottom: 8 }}>我的物品</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 8 }}>我的物品</div>
             {sellableItems.length === 0 && (
-              <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "center", padding: "20px 0" }}>没有可出售的物品</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", textAlign: "center", padding: "20px 0" }}>没有可出售的物品</div>
             )}
             {sellableItems.map((item, i) => (
               <div key={item.id || i} className="mobile-trading-item" style={{
@@ -87,12 +87,10 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                 </div>
                 <span className="mobile-touch-target"
                   onClick={() => !item.equipped && onSell(item)}
-                  style={{
-                    fontSize: 11, padding: "2px 10px", borderRadius: 0,
-                    cursor: item.equipped ? "not-allowed" : "pointer",
-                    color: item.equipped ? "var(--text-dim)" : "var(--warn)",
-                    border: `1px solid ${item.equipped ? "var(--building-disabled-edge)" : "var(--gold-deep)"}`,
-                  }}
+                  style={{ fontSize: "var(--fs-xs)", padding: "2px 10px", borderRadius: 0,
+                  cursor: item.equipped ? "not-allowed" : "pointer",
+                  color: item.equipped ? "var(--text-dim)" : "var(--warn)",
+                  border: `1px solid ${item.equipped ? "var(--building-disabled-edge)" : "var(--gold-deep)"}`, }}
                   title={item.equipped ? "已装备的物品需先卸下才能卖出" : "卖出"}
                 >卖出</span>
               </div>
@@ -104,7 +102,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
           <div className="mobile-trading-column" style={{ flex: 1, padding: 12, overflowY: "auto" }}>
             {carrySections && (
               <div style={{ marginBottom: displayItems.length ? 14 : 0 }}>
-                <div style={{ fontSize: 11, color: zoneTheme.accentDim, marginBottom: 6 }}>随身之物</div>
+                <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 6 }}>随身之物</div>
                 {[
                   { key: "equipment", label: "身上装备" },
                   { key: "bag", label: "行囊" },
@@ -114,7 +112,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                   if (!items.length) return null;
                   return (
                     <div key={key} style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 10, color: zoneTheme.textDim, marginBottom: 4 }}>{label}</div>
+                      <div style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, marginBottom: 4 }}>{label}</div>
                       {items.map((entry, i) => {
                         // buildCarryShelf 已把钟爱/割爱价档折成终价 buyPrice，
                         // notForSale 覆盖 mount/挚爱/不卖三态——这里只照渲染。
@@ -137,15 +135,13 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                               {entry.quoteMode === "geai" && <span style={{ color: "var(--clay)", marginLeft: 4, fontSize: 10 }}>割爱</span>}
                             </div>
                             {notForSale
-                              ? <span style={{ fontSize: 10, color: "var(--text-dim)", padding: "2px 6px" }} title={entry.slot === "mount" ? "生死之交，不卖" : "钟爱之物，给多少钱都不卖"}>{entry.slot === "mount" ? "不卖" : "舍不得"}</span>
+                              ? <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", padding: "2px 6px" }} title={entry.slot === "mount" ? "生死之交，不卖" : "钟爱之物，给多少钱都不卖"}>{entry.slot === "mount" ? "不卖" : "舍不得"}</span>
                               : <span className="mobile-touch-target"
                                   onClick={() => affordable && onBuy(entry)}
-                                  style={{
-                                    fontSize: 11, padding: "2px 10px", borderRadius: 0,
-                                    cursor: affordable ? "pointer" : "not-allowed",
-                                    color: affordable ? "var(--accent)" : "var(--text-dim)",
-                                    border: `1px solid ${affordable ? "var(--trading-buy-edge)" : "var(--building-disabled-edge)"}`,
-                                  }}
+                                  style={{ fontSize: "var(--fs-xs)", padding: "2px 10px", borderRadius: 0,
+                                  cursor: affordable ? "pointer" : "not-allowed",
+                                  color: affordable ? "var(--accent)" : "var(--text-dim)",
+                                  border: `1px solid ${affordable ? "var(--trading-buy-edge)" : "var(--building-disabled-edge)"}`, }}
                                   title={affordable ? "买下" : `${currencyName}不足`}
                                 >买下</span>}
                           </div>
@@ -156,7 +152,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                 })}
               </div>
             )}
-            {displayItems.length > 0 && <div style={{ fontSize: 11, color: zoneTheme.accentDim, marginBottom: 8 }}>{carrySections ? "店里陈列" : "商店货品"}</div>}
+            {displayItems.length > 0 && <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 8 }}>{carrySections ? "店里陈列" : "商店货品"}</div>}
             {displayItems.map((item, i) => {
               // 智谋折扣：显示折后价，实付也是折后价。折扣时在现价后标「原价」——不用删除线，
               // 像素字体里横线正好压在 8/6/9 的腰上，划掉的 18 会被看成 10。
@@ -186,15 +182,13 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                     {discounted && <span style={{ color: "var(--text-dim)", marginLeft: 6, fontSize: 10.5 }}>原价{item.buyPrice}</span>}
                   </div>
                   {notForSale
-                    ? <span style={{ fontSize: 11, padding: "2px 10px", color: "var(--text-dim)", border: "1px solid var(--building-disabled-edge)", borderRadius: 0, cursor: "default" }}>{item.displayOnly ? "陈列" : "不卖"}</span>
+                    ? <span style={{ fontSize: "var(--fs-xs)", padding: "2px 10px", color: "var(--text-dim)", border: "1px solid var(--building-disabled-edge)", borderRadius: 0, cursor: "default" }}>{item.displayOnly ? "陈列" : "不卖"}</span>
                     : <span className="mobile-touch-target"
                       onClick={() => canAfford && onBuy({ ...item, buyPrice: payPrice })}
-                      style={{
-                        fontSize: 11, padding: "2px 10px", borderRadius: 0,
-                        cursor: canAfford ? "pointer" : "not-allowed",
-                        color: canAfford ? "var(--accent)" : "var(--text-dim)",
-                        border: `1px solid ${canAfford ? "var(--trading-buy-edge)" : "var(--building-disabled-edge)"}`,
-                      }}
+                      style={{ fontSize: "var(--fs-xs)", padding: "2px 10px", borderRadius: 0,
+                      cursor: canAfford ? "pointer" : "not-allowed",
+                      color: canAfford ? "var(--accent)" : "var(--text-dim)",
+                      border: `1px solid ${canAfford ? "var(--trading-buy-edge)" : "var(--building-disabled-edge)"}`, }}
                       title={canAfford ? "购买" : `${currencyName}不足`}
                     >购买</span>}
                 </div>
@@ -209,7 +203,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
           </div>
         )}
         <div style={{ padding: "10px 16px", borderTop: `1px solid ${zoneTheme.border}`, textAlign: "center", flexShrink: 0 }}>
-          <span className="mobile-touch-target" onClick={onClose} style={{ fontSize: 12, color: "var(--trading-close)", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 0 }}>关闭</span>
+          <span className="mobile-touch-target" onClick={onClose} style={{ fontSize: "var(--fs-sm)", color: "var(--trading-close)", cursor: "pointer", padding: "4px 16px", border: `1px solid ${zoneTheme.border}`, borderRadius: 0 }}>关闭</span>
         </div>
       </div>
     </div>

@@ -48,11 +48,11 @@ export default function CharacterPage({ varTree, claimedMilestones, onClaimMiles
                   <span>{name}</span>
                   {milestone && <span style={{ color: "var(--ember)", fontSize: "10px" }}>● 任务</span>}
                 </div>
-                <div style={{ fontSize: "10.5px", color: "var(--pink)", marginBottom: 3 }}>{npcAffectionLabel(affection)}</div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--pink)", marginBottom: 3 }}>{npcAffectionLabel(affection)}</div>
                 <div style={{ height: 6, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, var(--pink), var(--ember))" }} />
                 </div>
-                <div style={{ fontSize: "10px", color: "var(--text-dim)", marginTop: 3, textAlign: "right" }}>{affection}/100</div>
+                <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginTop: 3, textAlign: "right" }}>{affection}/100</div>
               </div>
             );
           })}
@@ -98,14 +98,14 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
               <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
             </div>
 
-            <div style={{ fontSize: "11.5px", color: "var(--pink)", marginBottom: 4 }}>{npcAffectionLabel(affection)}</div>
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--pink)", marginBottom: 4 }}>{npcAffectionLabel(affection)}</div>
             <div style={{ height: 8, background: "var(--bg-panel)", borderRadius: 0, overflow: "hidden", marginBottom: 4 }}>
               <div style={{ height: "100%", width: `${Math.min(100, affection)}%`, background: "linear-gradient(90deg, var(--pink), var(--ember))" }} />
             </div>
-            <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 14 }}>{affection}/100</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 14 }}>{affection}/100</div>
 
             {attrs.态度 && (
-              <div style={{ fontSize: "11px", color: "var(--text-dim)", marginBottom: 14, fontStyle: "italic" }}>「{attrs.态度}」</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 14, fontStyle: "italic" }}>「{attrs.态度}」</div>
             )}
 
             <div
@@ -116,7 +116,7 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
             </div>
 
             <div style={{ borderTop: "1px solid var(--ink-divider)", paddingTop: 12 }}>
-              <div style={{ fontSize: "11px", color: "var(--good)", marginBottom: 8 }}>专属任务</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--good)", marginBottom: 8 }}>专属任务</div>
               {allMilestones.length === 0 && (
                 <div style={{ color: "var(--ink-dim-deep)", fontSize: "11px" }}>此人暂无专属任务</div>
               )}
@@ -138,20 +138,20 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
                       <div style={{ color: unlocked ? "var(--text)" : "var(--building-disabled-text)" }}>
                         好感度{m.threshold} · {m.title}
                       </div>
-                      <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>{m.brief}</div>
+                      <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{m.brief}</div>
                     </div>
                     {claimed ? (
                       <span
                         onClick={() => setViewingMilestone(m)}
-                        style={{ fontSize: "10.5px", color: "var(--good)", cursor: "pointer", whiteSpace: "nowrap" }}
+                        style={{ fontSize: "var(--fs-xs)", color: "var(--good)", cursor: "pointer", whiteSpace: "nowrap" }}
                       >已领取 · 重看</span>
                     ) : unlocked ? (
                       <span
                         onClick={() => handleClaim(m)}
-                        style={{ fontSize: "10.5px", color: "var(--ember)", cursor: "pointer", border: "1px solid var(--gold-deep)", borderRadius: 0, padding: "3px 8px", whiteSpace: "nowrap" }}
+                        style={{ fontSize: "var(--fs-xs)", color: "var(--ember)", cursor: "pointer", border: "1px solid var(--gold-deep)", borderRadius: 0, padding: "3px 8px", whiteSpace: "nowrap" }}
                       >领取</span>
                     ) : (
-                      <span style={{ fontSize: "10.5px", color: "var(--ink-dim-deep)", whiteSpace: "nowrap" }}>未解锁</span>
+                      <span style={{ fontSize: "var(--fs-xs)", color: "var(--ink-dim-deep)", whiteSpace: "nowrap" }}>未解锁</span>
                     )}
                   </div>
                 );

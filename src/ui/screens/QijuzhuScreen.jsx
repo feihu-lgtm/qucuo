@@ -52,8 +52,8 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
     <div style={wrap} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div style={card} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", borderBottom: `1px solid ${border}`, background: `linear-gradient(180deg, ${bgPanel}, transparent)` }}>
-          <span style={{ fontSize: 18, color: accent, fontWeight: "bold", letterSpacing: 2 }}>🗒 起居注</span>
-          <span style={{ fontSize: 11, color: textDim }}>
+          <span style={{ fontSize: "var(--fs-lg)", color: accent, fontWeight: "bold", letterSpacing: 2 }}>🗒 起居注</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: textDim }}>
             {herBook ? "本女侠替这笨蛋记的账" : "逐日记录起居言动"}
           </span>
           <span style={{ flex: 1 }} />
@@ -87,7 +87,7 @@ export default function QijuzhuScreen({ varTree, time = 0, narratorStage, zoneTh
                     {/* aiBacked 标一下：那几类另有一条 AI 写的往事落在见闻录里，
                         这儿只是个量。不标的话玩家会以为起居注就是全部记忆。 */}
                     {r.aiBacked && (
-                      <span style={{ fontSize: 9, color: textDim }} title="这一类另有详细往事，见「见闻录」">另有记述</span>
+                      <span style={{ fontSize: "var(--fs-2xs)", color: textDim }} title="这一类另有详细往事，见「见闻录」">另有记述</span>
                     )}
                     <span style={{ color: accent, fontSize: 13, minWidth: 34, textAlign: "right" }}>{r.count}</span>
                   </div>

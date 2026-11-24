@@ -88,7 +88,7 @@ export default function PortraitPicker({ value, onChange, cardImage, npcName }) 
 
         <span style={{ flex: 1 }} />
         {custom && (
-          <span style={{ fontSize: 9, color: "var(--tutorial-move)", border: "1px solid var(--temple-full)", borderRadius: 0, padding: "0 4px" }}>
+          <span style={{ fontSize: "var(--fs-2xs)", color: "var(--tutorial-move)", border: "1px solid var(--temple-full)", borderRadius: 0, padding: "0 4px" }}>
             自备图
           </span>
         )}
@@ -103,7 +103,7 @@ export default function PortraitPicker({ value, onChange, cardImage, npcName }) 
               objectFit: "cover", objectPosition: "top center",
               borderRadius: 0, border: "1px solid var(--service-card-edge)",
             }} />
-          <div style={{ fontSize: 10, color: "var(--ink-muted)", lineHeight: 1.8 }}>
+          <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", lineHeight: 1.8 }}>
             {custom ? "已存进入册库，跟着这个角色一起落册。" : `内置立绘 · ${value}`}
             {info && (
               <>
@@ -121,7 +121,7 @@ export default function PortraitPicker({ value, onChange, cardImage, npcName }) 
       )}
       {err ? <Note tone="bad">{err}</Note> : null}
 
-      <div style={{ fontSize: 10, color: "var(--ink-text-dim)", marginBottom: 4 }}>或用内置的十张</div>
+      <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", marginBottom: 4 }}>或用内置的十张</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {BUILTIN_PORTRAITS.map(name => (
           <img key={name} src={DEFAULT_PORTRAITS[name]} alt={name} title={name}

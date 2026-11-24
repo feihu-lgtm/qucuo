@@ -66,7 +66,7 @@ export default function CarryPicker({ carry, onChange, levelCap, apiCfg }) {
     <div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 7, minHeight: 22 }}>
         {!carry.length && (
-          <span style={{ fontSize: 10.5, color: "var(--ink-text-dim)" }}>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>
             未指定 · 运行时按 {TIERS[levelCap]?.label}档 从四池随机抽
           </span>
         )}

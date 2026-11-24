@@ -41,7 +41,7 @@ export default function ApiProfilesFields({
   return (
     <>
       <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: "8px 10px", marginBottom: 12, background: "var(--bg-panel)" }}>
-        <div style={{ fontSize: "11px", color: "var(--info)", marginBottom: 6 }}>配置管理（多套 API 配置 · 落盘导出/导入）</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--info)", marginBottom: 6 }}>配置管理（多套 API 配置 · 落盘导出/导入）</div>
         <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
           <input
             style={{ ...inputStyle, flex: 1, marginBottom: 0 }}

@@ -24,12 +24,29 @@
   --info: #8ac8b8;
   --muted: #8a8270;
   --font-body: "Songti SC", "STSong", "SimSun", serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
-  --fs-xs: 11px;
-  --fs-sm: 12px;
-  --fs-md: 14px;
-  --fs-lg: 16px;
-  --fs-xl: 20px;
+  /* 字号阶梯（唯一来源）：UI 里任何 font-size 都只能取这几档，不再写裸 px。
+     档位与原来的高频字面量对齐，所以替换后观感基本不变；9~10px 归到 2xs。 */
+  --fs-2xs: 10px;   /* 角标、状态、表格小字（原 8.5/9/9.5/10） */
+  --fs-xs: 11px;    /* 面板正文小字、按钮、日志元信息（原 10.5/11） */
+  --fs-sm: 12px;    /* 列表条目、说明文字（原 11.5/12/12.5） */
+  --fs-md: 13px;    /* 次要标题（原 13/13.5） */
+  --fs-base: 14px;  /* 正文（原 14/14.5/15） */
+  --fs-lg: 16px;    /* 区块标题（原 16/17/18） */
+  --fs-xl: 20px;    /* 页面标题（原 20/22） */
+  --fs-2xl: 26px;   /* 大标题（原 24/26/30） */
+  --fs-3xl: 40px;   /* 开屏主标题（原 40/52） */
+  /* 行高与字距：同样只准取档位，正文叙事单独用 --lh-narrative。 */
+  --lh-tight: 1.25;
+  --lh-snug: 1.55;
+  --lh-normal: 1.75;
   --lh-narrative: 1.9;
+  --ls-none: 0;
+  --ls-wide: 1px;
+  --ls-wider: 2px;
+  /* 控件与版式的统一尺寸：顶栏按钮、状态灯、内边距共用，避免各写各的。 */
+  --ctl-h: 22px;
+  --ctl-pad-x: 9px;
+  --radius-none: 0;
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;

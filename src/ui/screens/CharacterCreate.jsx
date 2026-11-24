@@ -136,7 +136,7 @@ export default function CharacterCreate({ onConfirm }) {
                 style={{ cursor: "pointer", fontSize: 11, color: "var(--muted)" }}
               >弃用</span>
             </div>
-            <div style={{ fontSize: 11.5, color: "var(--text)", lineHeight: 1.8 }}>
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--text)", lineHeight: 1.8 }}>
               {pending.name ? `名讳「${pending.name}」 · ` : ""}体貌公开 {pubFilled}/7 项 · 私密 {privFilled}/5 项
               {pending.special ? ` · 七维已录` : ""}
             </div>

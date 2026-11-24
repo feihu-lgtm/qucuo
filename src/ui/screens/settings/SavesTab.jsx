@@ -53,16 +53,16 @@ export default function SavesTab({ cfg, patch, dispatchCommand, currentSnapshot,
       <div style={{ ...sectionStyle }}>
         <div style={labelStyle}>自动存档</div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span style={{ fontSize: "11.5px", color: "var(--text-dim)" }}>每</span>
+          <span style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)" }}>每</span>
           <input
             type="number" min="0" max="99"
             style={{ ...inputStyle, width: 64 }}
             value={cfg.autoSaveEvery ?? 5}
             onChange={e => patch({ autoSaveEvery: Math.max(0, Math.min(99, parseInt(e.target.value) || 0)) })}
           />
-          <span style={{ fontSize: "11.5px", color: "var(--text-dim)" }}>回合写一次自动存档（0 = 每回合都写）</span>
+          <span style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)" }}>回合写一次自动存档（0 = 每回合都写）</span>
         </div>
-        <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 6, marginBottom: 8 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 6, marginBottom: 8 }}>
           关闭或刷新页面时会自动补写一次，不会丢最近几回合。间隔越大写入越省，回档最多丢对应回合数。
         </div>
         <span
@@ -82,7 +82,7 @@ export default function SavesTab({ cfg, patch, dispatchCommand, currentSnapshot,
           <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--bg-slate)" }}>
             <div style={{ flex: 1 }}>
               <div style={{ color: "var(--text)" }}>{s.label}</div>
-              <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>{s.presetName} · {new Date(s.savedAt).toLocaleString()}</div>
+              <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{s.presetName} · {new Date(s.savedAt).toLocaleString()}</div>
             </div>
             <span style={{ ...btnStyle, padding: "3px 8px" }} onClick={() => handleLoadSlot(s.id)}>读取</span>
             <span style={{ ...btnStyle, padding: "3px 8px" }} onClick={() => {
@@ -101,7 +101,7 @@ export default function SavesTab({ cfg, patch, dispatchCommand, currentSnapshot,
 
       <div style={{ ...sectionStyle }}>
         <div style={labelStyle}>查看缓存</div>
-        <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 8 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8 }}>
           "查看武学/物品"的说书人描述文本会缓存在本地（当前 {inspectCacheSize()} 条），
           同一件东西只调用一次 LLM，之后再看直接读缓存，秒开且不耗 token。
           除非改了描述生成规则想强制刷新，否则不需要清空。

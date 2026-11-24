@@ -98,8 +98,8 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
                 }}
             onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-panel)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
-                <div style={{ fontSize: "15px", color: "var(--text)", marginBottom: 6 }}>{title}</div>
-                <div style={{ fontSize: "10.5px", color: "var(--ink-sage)" }}>{sub}</div>
+                <div style={{ fontSize: "var(--fs-base)", color: "var(--text)", marginBottom: 6 }}>{title}</div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-sage)" }}>{sub}</div>
               </div>
             ))}
           </div>

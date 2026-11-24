@@ -227,7 +227,7 @@ export default function DungeonScreen({
               )}
             </>
           ) : (
-            <div style={{ fontSize: 12.5, lineHeight: 1.8 }}>
+            <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.8 }}>
               <div style={{ color: zoneTheme.accent, marginBottom: 6 }}>
                 {mapRun.status === "victory" ? "打通内层地宫！" : mapRun.status === "retreated" ? "已撤回锚点之外。" : "负伤被逐出地宫……"}
               </div>

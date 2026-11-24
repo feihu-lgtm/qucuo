@@ -114,7 +114,7 @@ export default function BugReportModal({
     fontFamily: "inherit", background: C.inputBg, border: `1px solid ${C.border}`,
     borderRadius: 0, color: C.text, resize: "vertical", marginTop: 4,
   };
-  const labelStyle = { fontSize: 12, color: C.accent, fontWeight: "bold" };
+  const labelStyle = { fontSize: "var(--fs-sm)", color: C.accent, fontWeight: "bold" };
 
   return (
     <div
@@ -124,19 +124,19 @@ export default function BugReportModal({
     >
       <div className="mobile-overlay-panel mobile-report-panel" style={{ position: "relative", width: 440, maxWidth: "94vw", maxHeight: "88vh", overflowY: "auto", background: C.panel, border: `1px solid ${C.border}`, borderRadius: 0, padding: "22px 24px", color: C.text }}>
         <div className="mobile-overlay-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: C.panel }}>
-          <div style={{ fontSize: 17, fontWeight: "bold", color: C.accent, marginBottom: 4 }}>🐞 上报 Bug · 意见信箱</div>
+          <div style={{ fontSize: "var(--fs-lg)", fontWeight: "bold", color: C.accent, marginBottom: 4 }}>🐞 上报 Bug · 意见信箱</div>
           <span className="mobile-overlay-close" onClick={onClose} aria-label="关闭上报窗口" style={{ cursor: "pointer", fontSize: 18, color: C.dim }}>✕</span>
         </div>
-        <div style={{ fontSize: 11.5, color: C.dim, marginBottom: 16, lineHeight: 1.7 }}>
+        <div style={{ fontSize: "var(--fs-sm)", color: C.dim, marginBottom: 16, lineHeight: 1.7 }}>
           遇到问题、想要的功能、任何想说的，都可以留在这里。
         </div>
 
         {result?.ok ? (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
-            <div style={{ fontSize: 15, color: "var(--bug-ok)", marginBottom: 8 }}>✓ 已收到，多谢！</div>
-            <div style={{ fontSize: 12, color: C.dim, marginBottom: result.pipelineWarning ? 6 : 18 }}>你的反馈已送达开发者，会尽快看到。</div>
+            <div style={{ fontSize: "var(--fs-base)", color: "var(--bug-ok)", marginBottom: 8 }}>✓ 已收到，多谢！</div>
+            <div style={{ fontSize: "var(--fs-sm)", color: C.dim, marginBottom: result.pipelineWarning ? 6 : 18 }}>你的反馈已送达开发者，会尽快看到。</div>
             {result.pipelineWarning && (
-              <div style={{ fontSize: 11, color: "var(--bug-warn)", marginBottom: 18 }}>{result.pipelineWarning}</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--bug-warn)", marginBottom: 18 }}>{result.pipelineWarning}</div>
             )}
             <span onClick={onClose} style={{ cursor: "pointer", padding: "6px 20px", border: `1px solid ${C.border}`, borderRadius: 0, color: C.text }}>关闭</span>
           </div>
@@ -207,14 +207,14 @@ export default function BugReportModal({
             {/* 知情声明 + 勾选 */}
             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", padding: "10px 12px", background: dark ? "rgba(212,168,83,0.08)" : "rgba(138,90,18,0.06)", borderRadius: 0, marginBottom: 14 }}>
               <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ marginTop: 2, flexShrink: 0 }} />
-              <span style={{ fontSize: 11.5, color: C.dim, lineHeight: 1.7 }}>
+              <span style={{ fontSize: "var(--fs-sm)", color: C.dim, lineHeight: 1.7 }}>
                 我同意在提交时，将<b style={{ color: C.text }}>本局的聊天/游戏记录</b>一并发送给开发者用于排查问题。
                 这些记录<b style={{ color: C.text }}>仅用于 debug</b>，不收集你的任何其他数据（不涉及账号、位置、设备指纹等）。
               </span>
             </label>
 
             {result && !result.ok && (
-              <div style={{ fontSize: 11.5, color: "var(--bug-error)", marginBottom: 10, lineHeight: 1.6 }}>
+              <div style={{ fontSize: "var(--fs-sm)", color: "var(--bug-error)", marginBottom: 10, lineHeight: 1.6 }}>
                 提交失败：{result.error}
                 {failedReport && (
                   <button type="button" onClick={() => {
@@ -240,7 +240,7 @@ export default function BugReportModal({
                 }}
               >{sending ? "上传中…" : "提交"}</span>
             </div>
-            {!agreed && <div style={{ fontSize: 10.5, color: C.dim, textAlign: "right", marginTop: 6 }}>需先勾选同意才能提交</div>}
+            {!agreed && <div style={{ fontSize: "var(--fs-xs)", color: C.dim, textAlign: "right", marginTop: 6 }}>需先勾选同意才能提交</div>}
           </>
         )}
       </div>

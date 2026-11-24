@@ -79,7 +79,7 @@ function TeamBar({ label, ids, candidates, active, onClick, onRemove, accent }) 
         borderRadius: 0, transition: "border-color .2s",
       }}
     >
-      <div style={{ fontSize: 13, letterSpacing: 2, color: accent, marginBottom: 8 }}>
+      <div style={{ fontSize: "var(--fs-md)", letterSpacing: 2, color: accent, marginBottom: 8 }}>
         {label}（{ids.length}）{active && <span style={{ color: "var(--parchment)", fontSize: 11 }}> · 挑选中</span>}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -135,8 +135,8 @@ function CandidateCard({ c, picked, disabled, accent, onClick }) {
       {/* 底部名条 */}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "4px 6px",
         background: "linear-gradient(0deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.55) 60%, transparent 100%)" }}>
-        <div style={{ fontSize: 13, color: "var(--qb-text)", fontWeight: "bold", textShadow: "0 1px 2px var(--black)" }}>{c.name}</div>
-        <div style={{ fontSize: 9.5, color: tierColor(c.levelCap), letterSpacing: 1 }}>
+        <div style={{ fontSize: "var(--fs-md)", color: "var(--qb-text)", fontWeight: "bold", textShadow: "0 1px 2px var(--black)" }}>{c.name}</div>
+        <div style={{ fontSize: "var(--fs-2xs)", color: tierColor(c.levelCap), letterSpacing: 1 }}>
           {tierName(c.levelCap)}品{c.beast ? " · 兽" : ""}
         </div>
       </div>

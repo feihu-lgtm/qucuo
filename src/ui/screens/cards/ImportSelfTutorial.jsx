@@ -49,7 +49,7 @@ export default function ImportSelfTutorial({ accent, onClose }) {
         </div>
 
         <div style={{ padding: "16px 18px", overflowY: "auto" }}>
-          <div style={{ fontSize: 12, color: "var(--tutorial-time)", lineHeight: 1.8, marginBottom: 14 }}>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--tutorial-time)", lineHeight: 1.8, marginBottom: 14 }}>
             这条流程把一张角色卡变成<b style={{ color: "var(--paper)" }}>你自己</b>的开局：AI 扫出卡里所有主要人物，
             你挑一位<b style={{ color: accent }}>当主角亲自主控</b>，其余的都能成为江湖里的 NPC。
             体貌、初始武学、装备全交给 AI 扫，你只管挑与改。
@@ -65,8 +65,8 @@ export default function ImportSelfTutorial({ accent, onClose }) {
                   background: "rgba(212,168,83,.10)",
                 }}>{s.ic}</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: "var(--paper)", marginBottom: 2 }}>{s.t}</div>
-                  <div style={{ fontSize: 11, color: "var(--ink-muted)", lineHeight: 1.7 }}>{s.d}</div>
+                  <div style={{ fontSize: "var(--fs-md)", color: "var(--paper)", marginBottom: 2 }}>{s.t}</div>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-muted)", lineHeight: 1.7 }}>{s.d}</div>
                 </div>
               </div>
             ))}

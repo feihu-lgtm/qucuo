@@ -19,7 +19,7 @@ export default function SkillEditor({ skills, onChange, tierCap, accent, aiBusy,
   return (
     <div>
       {!list.length && (
-        <div style={{ fontSize: 10.5, color: "var(--ink-text-dim)", marginBottom: 8, lineHeight: 1.7 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)", marginBottom: 8, lineHeight: 1.7 }}>
           还没有武学。点「✨ AI 现编武学」让它照卡里的招式描写生成，或手动加一门。
         </div>
       )}

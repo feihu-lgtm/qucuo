@@ -9,11 +9,11 @@ export function BatchControls({ npcs, batchDistrict, setBatchDistrict, applyBatc
   if (!npcs.length) return null;
   return (
     <div style={{ ...(flexShrink ? { flexShrink: 0 } : null), marginBottom: 10, padding: "8px 9px", borderRadius: 0, background: "rgba(0,0,0,.2)", border: "1px solid var(--bg-card)" }}>
-      <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 6 }}>批量设置 · 作用于勾选中的人</div>
+      <div style={{ fontSize: "var(--fs-2xs)", color: "var(--muted)", marginBottom: 6 }}>批量设置 · 作用于勾选中的人</div>
       <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", marginBottom: 7 }}>
-        <span style={{ fontSize: 10, color: "var(--text-dim)", width: 26 }}>落脚</span>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", width: 26 }}>落脚</span>
         <select value={batchDistrict} onChange={e => setBatchDistrict(e.target.value)}
-          style={{ fontSize: 10.5, padding: "2px 4px", background: "var(--bg-deep)", color: "var(--ink-tan)", border: "1px solid var(--border-deep)", borderRadius: 0, maxWidth: 100 }}>
+          style={{ fontSize: "var(--fs-xs)", padding: "2px 4px", background: "var(--bg-deep)", color: "var(--ink-tan)", border: "1px solid var(--border-deep)", borderRadius: 0, maxWidth: 100 }}>
           {PLANNABLE_DISTRICTS.map(d => <option key={d} value={d} style={{ background: "var(--bg-deep)" }}>{d}</option>)}
         </select>
         <TapSpan onClick={() => applyBatchPlacement("resident", batchDistrict)} title={`勾选的人全部驻场于${batchDistrict}`} baseStyle={batchBtn}>全驻此地</TapSpan>
@@ -21,7 +21,7 @@ export function BatchControls({ npcs, batchDistrict, setBatchDistrict, applyBatc
         <TapSpan onClick={() => applyBatchPlacement("mention", null)} title="勾选的人全部改为不落地（只被提到时注入）" baseStyle={batchBtn}>全不落地</TapSpan>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10, color: "var(--text-dim)", width: 26 }}>品阶</span>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", width: 26 }}>品阶</span>
         {["白", "绿", "蓝", "紫", "橙", "红"].map((label, lv) => (
           <TapSpan key={lv} onClick={() => applyBatchTier(lv)} title={`勾选的人全部调到${label}档`} baseStyle={batchBtn}>{label}</TapSpan>
         ))}
@@ -43,7 +43,7 @@ export function AiProgress({ planBusy, planMsg, planProg, equipBusy, equipMsg, e
       <div style={{ height: 3, borderRadius: 0, overflow: "hidden", background: "rgba(0,0,0,.45)", marginBottom: 5 }}>
         <div style={{ height: "100%", width: `${Math.round(prog * 100)}%`, background: "linear-gradient(90deg,var(--temple-full),var(--tutorial-move))", transition: "width .35s ease" }} />
       </div>
-      <div style={{ fontSize: 10.5, color: busy ? "var(--ci-pick)" : "var(--qb-text-dim)", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>{msg}</div>
+      <div style={{ fontSize: "var(--fs-xs)", color: busy ? "var(--ci-pick)" : "var(--qb-text-dim)", textShadow: "0 1px 2px rgba(0,0,0,.85)" }}>{msg}</div>
     </div>
   );
 }

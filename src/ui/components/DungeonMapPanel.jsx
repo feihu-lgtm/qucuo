@@ -25,7 +25,7 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
     setText("");
   };
 
-  const label = { fontSize: "10.5px", letterSpacing: "1px", color: theme.accentDim, marginBottom: 5 };
+  const label = { fontSize: "var(--fs-xs)", letterSpacing: "1px", color: theme.accentDim, marginBottom: 5 };
   const chip = {
     display: "inline-flex", alignItems: "center", padding: "1px 7px", marginRight: 6,
     fontSize: "10.5px", border: `1px solid ${theme.border}`, color: theme.text, whiteSpace: "nowrap",
@@ -34,7 +34,7 @@ export default function DungeonMapPanel({ room, runState, onMove, onAction, onTe
   return (
     <div style={{ padding: "10px 12px", background: theme.bgPanel, border: `1px solid ${theme.border}`, color: theme.text, fontSize: "12px", lineHeight: 1.6 }}>
       {/* 1. 房名 */}
-      <div data-part="room-name" style={{ fontSize: "13px", color: theme.accent, letterSpacing: "2px", marginBottom: 6 }}>
+      <div data-part="room-name" style={{ fontSize: "var(--fs-md)", color: theme.accent, letterSpacing: "2px", marginBottom: 6 }}>
         {room?.name || "无名之室"}
         {room?.isTreasure && <span style={{ ...chip, marginLeft: 8, color: theme.gold }}>✦ 藏宝</span>}
         {room?.isCheckpoint && <span style={{ ...chip, marginLeft: 8, color: theme.turquoise }}>◈ 检点</span>}

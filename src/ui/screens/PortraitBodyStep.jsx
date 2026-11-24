@@ -90,7 +90,7 @@ export default function PortraitBodyStep({
             {hidden ? (val ? maskText(val) : "未填") : isEditing ? "" : (previewText(val, 22) || "未填")}
           </span>
           {!hidden && (
-            <span style={{ fontSize: "10px", color: "var(--muted)", flexShrink: 0 }}>
+            <span style={{ fontSize: "var(--fs-2xs)", color: "var(--muted)", flexShrink: 0 }}>
               {isEditing ? "收起" : "编辑"}
             </span>
           )}
@@ -221,7 +221,7 @@ export default function PortraitBodyStep({
 
           <div className="character-create-body-scroll" style={{ maxHeight: 220, overflowY: "auto", paddingRight: 2 }}>
             {mode === "matched" && (
-              <div style={{ fontSize: "11.5px", lineHeight: 1.65, color: "var(--create-input-text)" }}>
+              <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.65, color: "var(--create-input-text)" }}>
                 <div style={{ color: accent, fontSize: "11px", marginBottom: 4 }}>
                   当前体貌：{activePresetName}（{selectedPortrait.tag}）
                 </div>
@@ -236,7 +236,7 @@ export default function PortraitBodyStep({
 
             {mode === "library" && (
               <div style={{ display: "grid", gap: 6 }}>
-                <div style={{ fontSize: "10.5px", color: "var(--muted)" }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
                   预设人（8 张立绘体貌）+ 预设库（{BODY_PRESETS.length} 套江湖体型），可与当前立绘自由混搭：
                 </div>
                 {ALL_BODY_PRESETS.map((preset) => {
@@ -252,10 +252,10 @@ export default function PortraitBodyStep({
                       }}
                     >
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: "11.5px", color: chosen ? accent : "var(--create-input-text)" }}>
+                        <div style={{ fontSize: "var(--fs-sm)", color: chosen ? accent : "var(--create-input-text)" }}>
                           {preset.name}
                         </div>
-                        <div style={{ fontSize: "10px", color: "var(--muted)" }}>{preset.tag}</div>
+                        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--muted)" }}>{preset.tag}</div>
                       </div>
                       <button
                         type="button"
@@ -276,10 +276,10 @@ export default function PortraitBodyStep({
 
             {mode === "custom" && (
               <div>
-                <div style={{ fontSize: "10.5px", color: accent, marginBottom: 2 }}>公开层（7 项）</div>
+                <div style={{ fontSize: "var(--fs-xs)", color: accent, marginBottom: 2 }}>公开层（7 项）</div>
                 {PUBLIC_FIELDS.map(renderFieldRow)}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10, marginBottom: 2 }}>
-                  <span style={{ fontSize: "10.5px", color: "var(--body-nsfw)" }}>私密层（5 项 · 仅 ■ 模式注入）</span>
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--body-nsfw)" }}>私密层（5 项 · 仅 ■ 模式注入）</span>
                   <button
                     type="button"
                     onClick={() => setShowIntimateEdit((v) => !v)}

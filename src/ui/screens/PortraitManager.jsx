@@ -92,7 +92,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
           <span style={{ color: "var(--accent)", fontSize: "14px" }}>立绘管理</span>
           <span style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
-        <div style={{ fontSize: "11px", color: "var(--text-dim)", marginBottom: 14 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 14 }}>
           为旁白、主角本人、或任意已登场角色导入立绘图片，建议比例 9:16（竖版）。
           图片保存在浏览器本地存储中，不会上传到任何服务器。
         </div>
@@ -100,7 +100,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
         <div style={{ border: "1px solid var(--border)", borderRadius: 0, padding: 10, marginBottom: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: comfyCfg.enabled ? 8 : 0 }}>
             <span style={{ color: "var(--accent)", fontSize: "12px" }}>⚡ ComfyUI 云端自动生成</span>
-            <label style={{ fontSize: "11px", color: "var(--text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <label style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <input type="checkbox" checked={comfyCfg.enabled} onChange={e => updateComfyCfg({ enabled: e.target.checked })} />
               启用
             </label>
@@ -127,7 +127,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                   placeholder="负向提示词" style={{ ...inputStyle, flex: 1 }}
                 />
               </div>
-              <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+              <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>
                 地址和工作流保存在本地，生成请求经本地开发服务器转发（绕开跨域限制），不经过任何第三方。
                 启用后，下方每个已登场角色的卡片会多出一个提示词输入框和「⚡生成」。
               </div>
@@ -163,7 +163,7 @@ export default function PortraitManager({ portraits, onChange, knownNames, onClo
                     <span style={{ color: "var(--ink-dim-deep)", fontSize: "10px" }}>点击上传</span>
                   )}
                 </div>
-                <div style={{ fontSize: "11px", color: "var(--text)", marginBottom: 4 }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--text)", marginBottom: 4 }}>
                   {name}
                   {/* 标出这张是项目内置的还是玩家自己传的。内置图删不掉（删除按钮只在
                       portraits[name] 有值、即确实上传过时才出现），标一下免得玩家

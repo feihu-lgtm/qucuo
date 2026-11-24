@@ -23,11 +23,11 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
   };
   return (
     <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10 }}>
-      <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4, display: "flex", alignItems: "center" }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4, display: "flex", alignItems: "center" }}>
         <span>队伍</span>
         <span style={{ flex: 1 }} />
         {unlockedCompanions(companionState).length > 1 && (
-          <span style={{ fontSize: "9px", color: zoneTheme.textDim }}>只能带一个 · 点名字换</span>
+          <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim }}>只能带一个 · 点名字换</span>
         )}
       </div>
       {unlockedCompanions(companionState).map(slot => {
@@ -48,17 +48,17 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
                 border: `1px solid ${isOn ? zoneTheme.accent : zoneTheme.border}`,
               }}
             >
-              <span style={{ fontSize: "15px", opacity: isOn ? 1 : 0.45 }}>{ICON[slot.key] || "◈"}</span>
+              <span style={{ fontSize: "var(--fs-base)", opacity: isOn ? 1 : 0.45 }}>{ICON[slot.key] || "◈"}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: "11.5px", color: isOn ? zoneTheme.text : zoneTheme.textDim }}>
+                <div style={{ fontSize: "var(--fs-sm)", color: isOn ? zoneTheme.text : zoneTheme.textDim }}>
                   {slot.label}
-                  {isOn && <span style={{ fontSize: "9px", color: zoneTheme.accent, marginLeft: 4 }}>出战</span>}
-                  {stationedAt && <span style={{ fontSize: "9px", color: zoneTheme.textDim, marginLeft: 4 }}>留守于{stationedAt.roomName || stationedAt.district}</span>}
+                  {isOn && <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.accent, marginLeft: 4 }}>出战</span>}
+                  {stationedAt && <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, marginLeft: 4 }}>留守于{stationedAt.roomName || stationedAt.district}</span>}
                 </div>
                 {typeof aff === "number" ? (
-                  <div style={{ fontSize: "10px", color: "var(--pink)" }}>{npcAffectionLabel(aff)} · {aff}/100</div>
+                  <div style={{ fontSize: "var(--fs-2xs)", color: "var(--pink)" }}>{npcAffectionLabel(aff)} · {aff}/100</div>
                 ) : (
-                  <div style={{ fontSize: "10px", color: zoneTheme.textDim }}>{isOn ? "随行在侧" : "留守"}</div>
+                  <div style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim }}>{isOn ? "随行在侧" : "留守"}</div>
                 )}
               </div>
             </div>
@@ -75,10 +75,8 @@ export default function TeamModule({ zoneTheme, companionState, varTree, onSwitc
                   if (spot) onStationCompanion(slot.key, spot);
                 }}
                 title="随行在侧，或留守在某处"
-                style={{
-                  fontSize: "10px", color: zoneTheme.textDim, background: zoneTheme.bgPanel,
-                  border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "3px 2px", maxWidth: 84,
-                }}
+                style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, background: zoneTheme.bgPanel,
+                border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "3px 2px", maxWidth: 84, }}
               >
                 <option value="">{stationedAt ? "唤回随行" : "随行"}</option>
                 {STATION_SPOTS.map((s) => (

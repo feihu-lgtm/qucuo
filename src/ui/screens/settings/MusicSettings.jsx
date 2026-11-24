@@ -16,8 +16,8 @@ export default function MusicSettings() {
           type="checkbox" checked={enabled}
           onChange={e => setMusicEnabled(e.target.checked)}
           style={{ cursor: "pointer" }} />
-        <span style={{ fontSize: "12px", color: "var(--accent)" }}>🎵 音乐模式</span>
-        <span style={{ fontSize: "10px", color: "var(--text-dim)", marginLeft: "auto" }}>{currentTrack.title} — {currentTrack.artist}</span>
+        <span style={{ fontSize: "var(--fs-sm)", color: "var(--accent)" }}>🎵 音乐模式</span>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginLeft: "auto" }}>{currentTrack.title} — {currentTrack.artist}</span>
       </div>
       {enabled && (
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -25,13 +25,13 @@ export default function MusicSettings() {
             onClick={toggleMusic}
             style={{ cursor: "pointer", color: "var(--accent)", padding: "3px 10px", border: "1px solid var(--border)", borderRadius: 0, fontSize: "11px" }}
           >{state.playing ? "⏸ 暂停" : "▶ 播放"}</span>
-          <span style={{ fontSize: "11px", color: "var(--text-dim)", flexShrink: 0 }}>音量</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", flexShrink: 0 }}>音量</span>
           <input
             type="range" min="0" max="1" step="0.05" value={state.volume}
             onChange={e => setMusicVolume(parseFloat(e.target.value))}
             style={{ flex: 1 }}
           />
-          <span style={{ fontSize: "11px", color: "var(--text)", width: 36, textAlign: "right" }}>{Math.round(state.volume * 100)}%</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text)", width: 36, textAlign: "right" }}>{Math.round(state.volume * 100)}%</span>
         </div>
       )}
       {state.error && (
@@ -39,7 +39,7 @@ export default function MusicSettings() {
           ⚠ {state.error}
         </div>
       )}
-      <div style={{ fontSize: "10px", color: "var(--ink-faint)", marginTop: 6 }}>
+      <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-faint)", marginTop: 6 }}>
         音源见曲库面板各曲目标注 · 顶栏♪按钮可打开曲库面板切换曲目
       </div>
     </div>

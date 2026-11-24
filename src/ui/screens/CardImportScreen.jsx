@@ -295,7 +295,7 @@ export default function CardImportScreen({
         }}>
           <img src={S("ui/scroll_ic.webp")} alt="" style={{ width: 22, height: 22, opacity: .9 }} />
           <span style={{ color: "var(--tutorial-title)", fontSize: 16, letterSpacing: 5, textShadow: "0 1px 4px var(--black)" }}>{playerMode ? "导入角色卡当自己" : "角色入册"}</span>
-          {fileName && <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{fileName}</span>}
+          {fileName && <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>{fileName}</span>}
           <span style={{ flex: 1 }} />
           {playerMode && (
             <span onClick={() => setShowTutorial(true)} title="重看这条流程的教程"

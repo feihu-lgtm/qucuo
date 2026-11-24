@@ -70,7 +70,7 @@ export default function ReviewPlayer({
             value={p.name} max={12} onChange={v => onPatch({ name: v })} />
         </div>
         <div style={{ width: 200 }}>
-          <div style={{ fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 3, textAlign: "center" }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-muted)", marginBottom: 3, textAlign: "center" }}>
             性别<Src source="manual" />
           </div>
           <Pills accent={accent} value={p.gender || "男"} onChange={v => onPatch({ gender: v })}
@@ -79,7 +79,7 @@ export default function ReviewPlayer({
       </div>
 
       {/* 3 体貌公开层 */}
-      <Section title={<>体貌 · 公开层<span style={{ fontSize: 10, color: "var(--ink-muted)", marginLeft: 6 }}>{publicFilled}/7 项</span></>}>
+      <Section title={<>体貌 · 公开层<span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginLeft: 6 }}>{publicFilled}/7 项</span></>}>
         {BODY_PUBLIC.map(([k, label]) => (
           <TextField key={k} label={label} max={40} placeholder="留空由你自己填"
             value={bp[k]} onChange={v => setBody(k, v)} />
@@ -88,7 +88,7 @@ export default function ReviewPlayer({
       </Section>
 
       {/* 4 体貌私密层 */}
-      <Section title={<>体貌 · 私密层<span style={{ fontSize: 10, color: "var(--ink-muted)", marginLeft: 6 }}>{privFilled}/5 项</span></>}>
+      <Section title={<>体貌 · 私密层<span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginLeft: 6 }}>{privFilled}/5 项</span></>}>
         {!privAcked ? (
           <Note tone="warn">
             AI 现在会自动从卡里抽取这五项（疤痕印记／体味／身体细节／敏感处／习惯癖好）。
@@ -99,7 +99,7 @@ export default function ReviewPlayer({
             </span>
           </Note>
         ) : (
-          <div style={{ fontSize: 10.5, color: "var(--ink-muted)", marginTop: 0, lineHeight: 1.7 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-muted)", marginTop: 0, lineHeight: 1.7 }}>
             ✓ 已确认风险，AI 扫描会自动抽取私密层。只抽原文明确写到的项，没写的留空由你填。
           </div>
         )}
@@ -115,7 +115,7 @@ export default function ReviewPlayer({
 
         {/* 4b 粘贴描写 → AI 拆成体貌字段补全 */}
         <div style={{ marginTop: 10, padding: "8px 9px", borderRadius: 0, background: "rgba(0,0,0,.22)", border: "1px solid var(--bg-card)" }}>
-          <div style={{ fontSize: 10.5, color: "var(--loot-foot)", marginBottom: 5, lineHeight: 1.6 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--loot-foot)", marginBottom: 5, lineHeight: 1.6 }}>
             ✨ 粘贴一段卡里的外貌／身体描写，AI 会拆成体貌字段（公开层＋私密层）补全上面两栏。
             只是合并，不会覆盖你已填的内容。
           </div>
@@ -152,12 +152,10 @@ export default function ReviewPlayer({
       {/* 5 性格（丢弃） */}
       <Section title={<>性格<Src source="drop" /></>} dim>
         {cardPersonality ? (
-          <div style={{
-            fontSize: 10.5, lineHeight: 1.7, color: "var(--bug-dim-dark)", maxHeight: 76, overflowY: "auto",
-            padding: "6px 8px", background: "rgba(0,0,0,.28)", border: "1px solid var(--bg-card)", borderRadius: 0,
-          }}>{cardPersonality}</div>
+          <div style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "var(--bug-dim-dark)", maxHeight: 76, overflowY: "auto",
+          padding: "6px 8px", background: "rgba(0,0,0,.28)", border: "1px solid var(--bg-card)", borderRadius: 0, }}>{cardPersonality}</div>
         ) : (
-          <div style={{ fontSize: 10.5, color: "var(--ink-text-dim)" }}>这张卡没写 personality。</div>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>这张卡没写 personality。</div>
         )}
         <Note tone="info">
           卡的性格字段一律不导入。你的性格由每轮输入实时表达——写死了会跟实际操作打架，
@@ -183,7 +181,7 @@ export default function ReviewPlayer({
             </Note>
           </>
         ) : (
-          <div style={{ fontSize: 10.5, color: "var(--ink-text-dim)" }}>这张卡没写 mes_example，此项留空。</div>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>这张卡没写 mes_example，此项留空。</div>
         )}
       </Section>
 
@@ -195,7 +193,7 @@ export default function ReviewPlayer({
           {opening.source === "ai" && opening.original !== opening.rewritten && (
             <details>
               <summary style={{ cursor: "pointer", fontSize: 10.5, color: "var(--ink-text-dim)" }}>看原文对照</summary>
-              <div style={{ fontSize: 10.5, lineHeight: 1.7, color: "var(--ink-text-dim)", whiteSpace: "pre-wrap", marginTop: 6 }}>
+              <div style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "var(--ink-text-dim)", whiteSpace: "pre-wrap", marginTop: 6 }}>
                 {opening.original}
               </div>
             </details>
@@ -204,9 +202,9 @@ export default function ReviewPlayer({
       )}
 
       {/* 9 世界观、地理、规则 */}
-      <Section title={<>世界观 · 地理 · 规矩<span style={{ fontSize: 10, color: "var(--ink-muted)", marginLeft: 6 }}>{(worldCandidates || []).filter(w => w.on !== false).length}/{(worldCandidates || []).length} 条</span></>}>
+      <Section title={<>世界观 · 地理 · 规矩<span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginLeft: 6 }}>{(worldCandidates || []).filter(w => w.on !== false).length}/{(worldCandidates || []).length} 条</span></>}>
         {!worldCandidates?.length ? (
-          <div style={{ fontSize: 10.5, color: "var(--ink-text-dim)" }}>这张卡里没有地理／势力／规矩类条目。</div>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text-dim)" }}>这张卡里没有地理／势力／规矩类条目。</div>
         ) : (
           <>
             {worldCandidates.map((w, i) => (
@@ -243,7 +241,7 @@ export default function ReviewPlayer({
       <Section title="内功与外功">
         <StatRow label="内功" value={neigong} max={100} width={30} onChange={v => onPatch({ neigong: v })} />
         <StatRow label="外功" value={waigong} max={100} width={30} onChange={v => onPatch({ waigong: v })} />
-        <div style={{ fontSize: 10, color: "var(--ink-text-dim)", marginTop: 4, lineHeight: 1.7 }}>
+        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", marginTop: 4, lineHeight: 1.7 }}>
           开局默认都是 5（白档基准 {TIER_NEIGONG[0]}），往后靠花潜能修炼。
           气血由内功与体魄算出：<span style={{ color: "var(--ink-warn)" }}>{maxHp}</span>，不单独设。
         </div>
@@ -251,7 +249,7 @@ export default function ReviewPlayer({
       </Section>
 
       {/* 13 初始武学（AI 现编）*/}
-      <Section title={<>初始武学<Src source="ai" why="AI 照卡里招式描写现编" /><span style={{ fontSize: 10, color: "var(--ink-muted)", marginLeft: 6 }}>{(p.skills || []).length} 门</span></>}>
+      <Section title={<>初始武学<Src source="ai" why="AI 照卡里招式描写现编" /><span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginLeft: 6 }}>{(p.skills || []).length} 门</span></>}>
         <SkillEditor skills={p.skills} tierCap={tier} accent={accent}
           aiBusy={skillBusy} onAiScan={aiScanSkills}
           onChange={sk => onPatch({ skills: sk })} />
@@ -262,7 +260,7 @@ export default function ReviewPlayer({
       </Section>
 
       {/* 14 初始装备（AI 配，点物件名看词条）*/}
-      <Section title={<>初始装备<Src source="ai" why="AI 按身份与品阶配" /><span style={{ fontSize: 10, color: "var(--ink-muted)", marginLeft: 6 }}>{(p.carry || []).length} 件</span></>}>
+      <Section title={<>初始装备<Src source="ai" why="AI 按身份与品阶配" /><span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginLeft: 6 }}>{(p.carry || []).length} 件</span></>}>
         <CarryPicker apiCfg={apiCfg} carry={p.carry || []} levelCap={tier}
           onChange={c => onPatch({ carry: c })} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>

@@ -20,10 +20,8 @@ export default function RawEntryCompare({ raw }) {
         <span style={{ color: "var(--ink-text-dim)", width: 10 }}>{open ? "▾" : "▸"}</span>
         <span>对照原卡正文</span>
         <span style={{ color: "var(--muted)" }}>{n} 字</span>
-        <span style={{
-          fontSize: 9, color: "var(--bug-dim-dark)", border: "1px solid var(--border-deep)",
-          borderRadius: 0, padding: "0 4px",
-        }}>不注入</span>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--bug-dim-dark)", border: "1px solid var(--border-deep)",
+        borderRadius: 0, padding: "0 4px", }}>不注入</span>
       </div>
       {open && (
         <div style={{

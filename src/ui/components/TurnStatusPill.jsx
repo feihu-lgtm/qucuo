@@ -37,8 +37,11 @@ export default function TurnStatusPill({ theme, mobile, docked }) {
       <button type="button" title={label} aria-label={`全流程日志：${label}`}
         onClick={() => openOverlay(OVERLAY.TRACE)}
         style={{
-          ...chromeBtn(theme, { active }), height: 28, borderRadius: 14, maxWidth: "100%",
-          background: active ? `color-mix(in srgb, ${theme.accent} 14%, ${theme.bg})` : theme.bg,
+          // 与顶栏其它入口同一副骨架（高度/圆角/字距都取 --ctl-* 与 --fs-xs），
+          // 这样「日志」和回合计时并排时像同一组控件，而不是一颗凸出来的圆药丸。
+          ...chromeBtn(theme, { active }), height: "var(--ctl-h)", borderRadius: "var(--radius-none)",
+          maxWidth: "100%",
+          background: active ? `color-mix(in srgb, ${theme.accent} 14%, transparent)` : "transparent",
           fontFamily: "inherit",
         }}>
         <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>

@@ -55,7 +55,7 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
               padding: "10px 12px", marginBottom: 12, background: "rgba(255,255,255,.02)",
             }}>
               <div style={{ color: "var(--violet)", fontSize: 13, marginBottom: 4 }}>
-                【拍品】{AUCTION_LOT.name}　<span style={{ fontSize: 11, color: zoneTheme.textDim }}>{AUCTION_LOT.quality}档</span>
+                【拍品】{AUCTION_LOT.name}　<span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>{AUCTION_LOT.quality}档</span>
               </div>
               <div style={{ color: zoneTheme.textDim, fontSize: 11.5 }}>{AUCTION_LOT.blurb}</div>
             </div>
@@ -79,10 +79,8 @@ export default function AuctionScreen({ building, char, inv, zoneTheme, onClose,
                 </div>
               )}
               {st.log.map((l, i) => (
-                <div key={i} style={{
-                  fontSize: 11.5, marginBottom: 4,
-                  color: l.who === "player" ? "var(--clay)" : l.who === "shill" ? "var(--ink-brass-lit)" : zoneTheme.textDim,
-                }}>{l.text}</div>
+                <div key={i} style={{ fontSize: "var(--fs-sm)", marginBottom: 4,
+                color: l.who === "player" ? "var(--clay)" : l.who === "shill" ? "var(--ink-brass-lit)" : zoneTheme.textDim, }}>{l.text}</div>
               ))}
               <div ref={logEndRef} />
             </div>

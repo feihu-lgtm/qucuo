@@ -36,7 +36,7 @@ function ParsedPane({
   return (
     <>
       <div style={{ width: 340, borderRight: "1px solid var(--bg-card)", display: "flex", flexDirection: "column" }}>
-        <Bar right={<span style={{ fontSize: 10, color: "var(--muted)" }}>{card.entries.length} 条</span>}>
+        <Bar right={<span style={{ fontSize: "var(--fs-2xs)", color: "var(--muted)" }}>{card.entries.length} 条</span>}>
           {card.name || "无名卡"}
         </Bar>
         <div style={{ flex: 1, overflowY: "auto", padding: "10px 12px" }}>
@@ -46,7 +46,7 @@ function ParsedPane({
           {report.blockers.map((b, i) => <Note key={i} tone="bad">{b.msg}</Note>)}
           {report.warnings.map((w, i) => <Note key={i} tone="warn">{w.msg}</Note>)}
           <div style={{ marginTop: 12, borderTop: "1px solid var(--bg-card)", paddingTop: 10 }}>
-            <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 6 }}>归类结果</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", marginBottom: 6 }}>归类结果</div>
             {[["person", cands.filter(c => c.sure).length], ["faction/place/rule", worldCandidates.length],
               ["meta", metaEntries.length], ["unknown", unclassified.length]].map(([k, n]) => {
               const m = KIND_META[k] || KIND_META.unknown;
@@ -100,13 +100,13 @@ function ParsedPane({
               marginBottom: 11, padding: "9px 11px", borderRadius: 0,
               background: "rgba(0,0,0,.22)", border: "1px solid var(--bg-card)",
             }}>
-              <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 6 }}>这批人想怎么插入曲措乡</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", marginBottom: 6 }}>这批人想怎么插入曲措乡</div>
               <Pills accent={accent} value={insertMode} onChange={setInsertMode}
                 options={[
                   { value: "npc", label: "当江湖众人", title: "正常入册成 NPC，会真的出现在据点、可结交切磋；扫完自动按营生荐位" },
                   { value: "lore", label: "只当背景传闻", title: "不进名单，只把设定塞进世界书，被提到时才浮现" },
                 ]} />
-              <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 6, lineHeight: 1.6 }}>
+              <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginTop: 6, lineHeight: 1.6 }}>
                 {insertMode === "npc"
                   ? "选中的人会成为真正的江湖人物，需要 AI 补一版数值与落脚。"
                   : "选中的人不出现在任何据点，只作为被提及时注入的传闻设定。"}
@@ -136,11 +136,11 @@ function ParsedPane({
                     <span style={{ color: on ? accent : "var(--border)", fontSize: 12 }}>{on ? "◉" : "○"}</span>
                     <span style={{ color: "var(--paper)", fontSize: 12.5, flex: 1 }}>{c.name}</span>
                     {!c.sure && <span title="机器拿不准这是人还是概念，勾选前请自己看一眼"
-                      style={{ fontSize: 9, color: "var(--ink-muted)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px" }}>待定</span>}
+                      style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px" }}>待定</span>}
                     {c.grouped && <span title="AI 认出这几条写的是同一个人，已合并"
-                      style={{ fontSize: 9, color: "var(--quest-success-text)", border: "1px solid var(--music-idle-icon)", borderRadius: 0, padding: "0 3px" }}>合</span>}
+                      style={{ fontSize: "var(--fs-2xs)", color: "var(--quest-success-text)", border: "1px solid var(--music-idle-icon)", borderRadius: 0, padding: "0 3px" }}>合</span>}
                   </div>
-                  <div style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 3, paddingLeft: 18 }}>
+                  <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginTop: 3, paddingLeft: 18 }}>
                     {c.aliases.length ? `别名 ${c.aliases.slice(0, 3).join("/")}` : "无别名"} · {c.len}字
                     {c.merged > 1 ? ` · 合${c.merged}段` : ""}
                   </div>
@@ -151,7 +151,7 @@ function ParsedPane({
 
           {asPlayer && card.openings.length > 1 && (
             <div style={{ marginTop: 14, borderTop: "1px solid var(--bg-card)", paddingTop: 10 }}>
-              <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 6 }}>这张卡有 {card.openings.length} 个开局，选一个改写</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", marginBottom: 6 }}>这张卡有 {card.openings.length} 个开局，选一个改写</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {card.openings.map((o, i) => (
                   <span key={i} onClick={() => setOpeningIdx(i)} title={o.slice(0, 80)}
@@ -177,7 +177,7 @@ function ParsedPane({
           backgroundImage: `url('${S("ui/bar_paper2.webp")}')`, backgroundSize: "100% 100%",
         }}>
           {plan && !scanning && (
-            <span style={{ fontSize: 11, color: "var(--muted)" }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
               预计 <span style={{ color: accent }}>{plan.calls}</span> 次调用
               {plan.estimateMs > 0 && <> · 约 {Math.ceil(plan.estimateMs / 1000)} 秒</>}
               {plan.alreadyDone > 0 && <> · 已有 {plan.alreadyDone} 次结果可复用</>}

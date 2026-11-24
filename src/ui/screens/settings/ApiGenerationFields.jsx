@@ -35,21 +35,21 @@ export default function ApiGenerationFields({
           checked={!!cfg.extractionEnabled}
           onChange={e => patch({ extractionEnabled: e.target.checked })}
           style={{ cursor: "pointer" }} />
-        <label htmlFor="extractionEnabled" style={{ fontSize: "12px", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}>
+        <label htmlFor="extractionEnabled" style={{ fontSize: "var(--fs-sm)", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}>
           启用双调用模式（大模型叙事 + 小模型提取状态）
         </label>
       </div>
-      <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>
         开启后：主调用只输出叙事散文，提取调用按意图类型单独提取状态变化。
         提取调用可指定更小/更快的模型——空则沿用主模型。
       </div>
       <div style={{ borderTop: "1px solid var(--ink-divider-blue)", paddingTop: 12, marginTop: 12 }}>
         <label htmlFor="bookkeepEnabled" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "12px", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}><input type="checkbox" id="bookkeepEnabled" checked={cfg.bookkeepEnabled !== false} onChange={e => patch({ bookkeepEnabled: e.target.checked })} style={{ cursor: "pointer" }} />回合记账（人物旧账）</label>
-        <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>每回合结束后台用提取模型记一笔人物旧账，多一次小调用</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>每回合结束后台用提取模型记一笔人物旧账，多一次小调用</div>
       </div>
       <div style={{ borderTop: "1px solid var(--ink-divider-blue)", paddingTop: 12, marginTop: 12 }}>
         <label htmlFor="softSettleEnabled" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "12px", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}><input type="checkbox" id="softSettleEnabled" checked={cfg.softSettleEnabled !== false} onChange={e => patch({ softSettleEnabled: e.target.checked })} style={{ cursor: "pointer" }} />结算软判定（平息怒气）</label>
-        <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>赔罪是否奏效先由小模型判一道选择题，系统定数值，叙事照写</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>赔罪是否奏效先由小模型判一道选择题，系统定数值，叙事照写</div>
       </div>
       {cfg.extractionEnabled && (
         <>
@@ -70,7 +70,7 @@ export default function ApiGenerationFields({
             onPick={m => { patch({ extractionModel: m }); setModelList(null); }} />
 
           <div style={{ ...labelStyle, marginTop: 10 }}>各意图单独指定模型（空则使用默认提取模型）</div>
-          <div style={{ fontSize: "10px", color: "var(--text-dim)", marginBottom: 4 }}>
+          <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginBottom: 4 }}>
             下面每行都是可以点击填写的输入框——灰字是"当前会继承的模型"提示，不是禁用状态；要为某个意图单独指定模型，直接点进框里打字，或点「检测」从列表中选择。
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6 }}>
@@ -103,7 +103,7 @@ export default function ApiGenerationFields({
               );
             })}
           </div>
-          <div style={{ fontSize: "10px", color: "var(--ink-note-teal)", lineHeight: 1.5 }}>
+          <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-note-teal)", lineHeight: 1.5 }}>
             优先级：意图专属模型 → 默认提取模型 → 主模型。渠道（Endpoint / Key）始终沿用主配置。
           </div>
         </>
@@ -127,7 +127,7 @@ export default function ApiGenerationFields({
         >{opt.label}</button>
       ))}
     </div>
-    <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: -6, marginBottom: 6 }}>
+    <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: -6, marginBottom: 6 }}>
       点击感叹号面板里的任务时——「专属prompt harness」：触发本身由系统直接判定（不再等AI自己决定要不要演），AI只负责用一段独立的专属提示词把这件已经确定发生的事写成叙事文字，确定性最高；「对话自然演绎」：送一句话给主线AI，由AI在通常的叙事氛围里自然带出这段剧情，更有代入感但确定性略低。
     </div>
 
@@ -141,7 +141,7 @@ export default function ApiGenerationFields({
       <span>流式输出（边生成边显示，不用等一整段返回完）</span>
     </div>
     {cfg.apiType === API_TYPES.GEMINI && (
-      <div style={{ fontSize: "10.5px", color: "var(--gold)", marginTop: -6, marginBottom: 6 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--gold)", marginTop: -6, marginBottom: 6 }}>
         Gemini 暂不支持流式输出，切到 Anthropic 或 OpenAI 兼容类型后可用。
       </div>
     )}
@@ -166,7 +166,7 @@ export default function ApiGenerationFields({
         onChange={e => patch({ thinkingBudget: parseInt(e.target.value) || 0 })}
         placeholder="自定义思考 token 预算，0=关闭" />
     )}
-    <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3, marginBottom: 6 }}>
+    <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 3, marginBottom: 6 }}>
       {isVertex ? "Vertex 的「关闭」会使用模型支持的最低思考档位，仍可能消耗输出 token。" : "默认「关闭」：把 token 全留给正文，避免 Gemini 2.5 等模型的思考过程吃穿额度、导致正文被截断。想让模型多想再答可调高，代价是更慢更贵、且可能需要把上面的目标字数调大。"}
     </div>
 
@@ -175,7 +175,7 @@ export default function ApiGenerationFields({
         <input type="checkbox" checked={!!cfg.embeddingEnabled} onChange={e => patch({ embeddingEnabled: e.target.checked })} style={{ cursor: "pointer" }} />
         启用向量记忆（长期召回）
       </label>
-      <div style={{ fontSize: "10.5px", color: "var(--text-dim)", marginTop: 3 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 3 }}>
         开启后，AI 每轮会额外记一条 ≤50 字的事实摘要并向量化存入本地库；此后每轮发送前，
         会按语义相关度从库里召回可能早已滑出对话窗口的旧事注入 prompt，让"很久以前埋的伏笔/许过的诺/结过的怨"重新被想起。
         不开则完全不触发，游戏行为与之前一致。向量库存在浏览器 IndexedDB，不上传、不进存档文件。
@@ -192,7 +192,7 @@ export default function ApiGenerationFields({
             <span>本地记忆库：{memCount == null ? "…" : `${memCount} 条`}</span>
             <span style={{ ...btnStyle, padding: "3px 10px", color: "var(--ink-danger)", borderColor: "var(--ink-danger-edge)" }} onClick={handleClearMemory}>清空记忆库</span>
           </div>
-          <div style={{ fontSize: "10.5px", color: "var(--ink-caution)", marginTop: 4 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-caution)", marginTop: 4 }}>
             ⚠ 换 embedding 模型后旧向量不兼容，会被自动跳过（指纹校验）；如需重建，建议清空后重新游玩积累。
           </div>
         </div>

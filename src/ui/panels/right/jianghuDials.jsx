@@ -41,7 +41,7 @@ function DialCard({ zoneTheme, title, overlay, items, renderItem, emptyText }) {
   );
 }
 
-const dim = { fontSize: 10.5, lineHeight: 1.55 };
+const dim = { fontSize: "var(--fs-xs)", lineHeight: 1.55 };
 
 // ── 任务转盘：进行中→已完成→已错过；每条把委托人、背景与当前阶段条件写全 ──
 function QuestDialItem({ q, prog, flags, zoneTheme }) {
@@ -98,10 +98,10 @@ function LoreDialItem({ fact, zoneTheme }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 10, color: zoneTheme.accent }}>{fmtTurn(fact.诞生回合 || 0)}</span>
-        {fact.标签 && <span style={{ fontSize: 9.5, color: zoneTheme.textDim, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "0 4px" }}>{fact.标签}</span>}
+        <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.accent }}>{fmtTurn(fact.诞生回合 || 0)}</span>
+        {fact.标签 && <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "0 4px" }}>{fact.标签}</span>}
       </div>
-      <div style={{ fontSize: 11.5, color: "var(--lore-summary)", lineHeight: 1.55, marginTop: 2 }}>{fact.摘要 || "（此事尚无定论）"}</div>
+      <div style={{ fontSize: "var(--fs-sm)", color: "var(--lore-summary)", lineHeight: 1.55, marginTop: 2 }}>{fact.摘要 || "（此事尚无定论）"}</div>
     </div>
   );
 }

@@ -8,13 +8,11 @@ export const SAVE_KEY = "qucuo_tavern_sim_v1";
 export function Btn({ label, onClick, disabled, zoneTheme, secondary }) {
   return (
     <span onClick={disabled ? undefined : onClick}
-      style={{
-        fontSize: 12, padding: "4px 12px", borderRadius: 0, cursor: disabled ? "not-allowed" : "pointer",
-        color: disabled ? "var(--tavern-disabled-text)" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
-        background: disabled ? "var(--tavern-disabled-bg)" : secondary ? "transparent" : zoneTheme.accent,
-        border: `1px solid ${disabled ? "var(--tavern-disabled-edge)" : secondary ? zoneTheme.border : zoneTheme.accent}`,
-        opacity: disabled ? 0.5 : 1, userSelect: "none", whiteSpace: "nowrap",
-      }}>{label}</span>
+      style={{ fontSize: "var(--fs-sm)", padding: "4px 12px", borderRadius: 0, cursor: disabled ? "not-allowed" : "pointer",
+      color: disabled ? "var(--tavern-disabled-text)" : secondary ? zoneTheme.accentDim : zoneTheme.bg,
+      background: disabled ? "var(--tavern-disabled-bg)" : secondary ? "transparent" : zoneTheme.accent,
+      border: `1px solid ${disabled ? "var(--tavern-disabled-edge)" : secondary ? zoneTheme.border : zoneTheme.accent}`,
+      opacity: disabled ? 0.5 : 1, userSelect: "none", whiteSpace: "nowrap", }}>{label}</span>
   );
 }
 
@@ -36,7 +34,7 @@ export const S = {
       : "repeating-linear-gradient(90deg, var(--ink-wood) 0px, var(--ink-wood) 46px, var(--ink-wood-mid) 46px, var(--ink-wood-mid) 48px), linear-gradient(180deg, var(--tavern-wood-top) 0%, var(--ink-wood) 55%, var(--ink-wood-dark) 100%)",
     border: "1px solid var(--ink-wood-line)",
   }),
-  zoneLabel: { fontSize: 10, color: "var(--tavern-zone-label)", letterSpacing: 2, marginTop: 1 },
+  zoneLabel: { fontSize: "var(--fs-2xs)", color: "var(--tavern-zone-label)", letterSpacing: 2, marginTop: 1 },
   side: (t) => ({ flex: "1 1 38%", minWidth: 280, display: "flex", flexDirection: "column", minHeight: 0 }),
   tabRow: (t) => ({ display: "flex", borderBottom: `1px solid ${t.border}` }),
   tab: (t, active) => ({
@@ -46,7 +44,7 @@ export const S = {
   row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" },
   box: (t) => ({ border: `1px solid ${t.border}`, borderRadius: 0, padding: "8px 10px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }),
   logPanel: (t) => ({ height: 130, flex: "0 0 130px", minHeight: 0, overflowY: "auto", borderTop: `1px solid ${t.border}`, padding: "8px 14px", background: "rgba(0,0,0,0.25)" }),
-  token: () => ({ fontSize: 20, marginTop: 2 }),
+  token: () => ({ fontSize: "var(--fs-xl)", marginTop: 2 }),
 };
 
 // CSS 动效：明灭灯笼 / 呼吸浮动 / 气泡 / 跑堂游走 / 灶台蒸汽

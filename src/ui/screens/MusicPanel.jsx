@@ -37,7 +37,7 @@ export default function MusicPanel({ onClose }) {
                   transition: "all 0.15s ease",
                 }}
               >
-                <span style={{ fontSize: "16px", color: active && state.playing ? "var(--accent)" : "var(--music-idle-icon)", flexShrink: 0 }}>
+                <span style={{ fontSize: "var(--fs-lg)", color: active && state.playing ? "var(--accent)" : "var(--music-idle-icon)", flexShrink: 0 }}>
                   {active && state.playing ? "♫" : "♪"}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -57,13 +57,13 @@ export default function MusicPanel({ onClose }) {
             onClick={toggleMusic}
             style={{ cursor: "pointer", color: "var(--accent)", padding: "4px 12px", border: "1px solid var(--border)", borderRadius: 0, fontSize: "11.5px", flexShrink: 0 }}
           >{state.playing ? "⏸ 暂停" : "▶ 播放"}</span>
-          <span style={{ fontSize: "11px", color: "var(--text-dim)", flexShrink: 0 }}>音量</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", flexShrink: 0 }}>音量</span>
           <input
             type="range" min="0" max="1" step="0.05" value={state.volume}
             onChange={e => setVolume(parseFloat(e.target.value))}
             style={{ flex: 1 }}
           />
-          <span style={{ fontSize: "11px", color: "var(--text)", width: 36, textAlign: "right", flexShrink: 0 }}>{Math.round(state.volume * 100)}%</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text)", width: 36, textAlign: "right", flexShrink: 0 }}>{Math.round(state.volume * 100)}%</span>
         </div>
 
         {/* 播放失败必须看得见。原来 play() 的 rejection 被 .catch(() => {}) 整个
@@ -75,7 +75,7 @@ export default function MusicPanel({ onClose }) {
           </div>
         )}
 
-        <div style={{ fontSize: "10px", color: "var(--ink-faint)", marginTop: 10, lineHeight: 1.5 }}>
+        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-faint)", marginTop: 10, lineHeight: 1.5 }}>
           音源见各曲目标注 · 外链曲目来自 archive.org，本地曲目需 public/music/ 下有对应 mp3
         </div>
       </div>

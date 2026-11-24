@@ -48,12 +48,10 @@ export default function SeaOfMindScreen({
           const done = spoken.includes(k.key);
           const isNext = next?.key === k.key;
           return (
-            <span key={k.key} style={{
-              fontSize: 10.5, padding: "2px 9px", borderRadius: 0,
-              color: done ? "var(--clay)" : isNext ? "var(--mind-gold)" : "var(--mind-locked)",
-              border: `1px solid ${done ? "var(--ink-accent)" : isNext ? "var(--gold-deep)" : "var(--mind-locked-edge)"}`,
-              background: done ? "rgba(138,196,138,.08)" : "transparent",
-            }}>
+            <span key={k.key} style={{ fontSize: "var(--fs-xs)", padding: "2px 9px", borderRadius: 0,
+            color: done ? "var(--clay)" : isNext ? "var(--mind-gold)" : "var(--mind-locked)",
+            border: `1px solid ${done ? "var(--ink-accent)" : isNext ? "var(--gold-deep)" : "var(--mind-locked-edge)"}`,
+            background: done ? "rgba(138,196,138,.08)" : "transparent", }}>
               {done ? "✓ " : isNext ? "◦ " : "· "}
               {done || isNext ? k.title : "？？？"}
             </span>
@@ -82,7 +80,7 @@ export default function SeaOfMindScreen({
             >
               {spec.label}
               {spec.needItem && !invNames.includes(spec.needItem) && (
-                <span style={{ fontSize: 9, color: "var(--mind-missing)", marginLeft: 3 }}>（缺）</span>
+                <span style={{ fontSize: "var(--fs-2xs)", color: "var(--mind-missing)", marginLeft: 3 }}>（缺）</span>
               )}
             </span>
           );

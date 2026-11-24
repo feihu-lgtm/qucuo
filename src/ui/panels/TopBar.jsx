@@ -193,7 +193,7 @@ export default function TopBar({
               <span style={{ color: "var(--accent)", fontSize: "15px" }}>选择头像</span>
               <span className="mobile-overlay-close" style={{ color: "var(--text-dim)", fontSize: "12px", cursor: "pointer" }} onClick={() => closeOverlay(OVERLAY.AVATAR_PICKER)}>× 关闭</span>
             </div>
-            <div style={{ fontSize: "11.5px", color: "var(--text-dim)", marginBottom: 14 }}>
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-dim)", marginBottom: 14 }}>
               选一张预制头像，或上传自己的图片（建议 2:3 竖版）。选择只影响你自己的显示，存在本地浏览器。
             </div>
             {/* 预制头像：从 public/portraits/player/ 读，共8张同一批唐卡风格厚涂立绘

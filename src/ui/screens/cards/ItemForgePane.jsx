@@ -33,7 +33,7 @@ export default function ItemForgePane({ draft, setDraft, cat, levelCap, apiCfg, 
         </select>
       </div>
 
-      <div style={{ fontSize: 10, color: "var(--ink-muted)", marginBottom: 3 }}>
+      <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginBottom: 3 }}>
         六维加成 · 点数字改，0 就是不加（百物录里 139 件带这个，多是 +1 到 +2）
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
@@ -90,7 +90,7 @@ export default function ItemForgePane({ draft, setDraft, cat, levelCap, apiCfg, 
       )}
 
       {/* 攻击特效：跟详情面板同一份可勾选清单 */}
-      <div style={{ fontSize: 10, color: "var(--ink-muted)", marginBottom: 3 }}>攻击特效 · 点一下加上/去掉</div>
+      <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginBottom: 3 }}>攻击特效 · 点一下加上/去掉</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
         {ITEM_EFFECT_CHOICES.map(choice => {
           const on = effectHas(draft, choice.key);
@@ -109,7 +109,7 @@ export default function ItemForgePane({ draft, setDraft, cat, levelCap, apiCfg, 
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-        <span style={{ fontSize: 10, color: "var(--ink-muted)", flex: 1 }}>描述</span>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", flex: 1 }}>描述</span>
         {apiCfg && (
           <span onClick={onAskAi}
             title={draft.name ? "让 AI 照名字与品阶写两三句" : "先起个名"}
@@ -125,7 +125,7 @@ export default function ItemForgePane({ draft, setDraft, cat, levelCap, apiCfg, 
         style={{ ...selStyle, width: "100%", textAlign: "left", resize: "vertical", lineHeight: 1.7 }} />
 
       <div style={{ display: "flex", gap: 6, marginTop: 7, alignItems: "center" }}>
-        <span style={{ fontSize: 10, color: "var(--ink-text-dim)", flex: 1 }}>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", flex: 1 }}>
           造出来的东西只属于这个人，不进百物录
         </span>
         <span onClick={() => setDraft(blankDraft(cat, levelCap))}

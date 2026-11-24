@@ -15,10 +15,8 @@ export function LogPanel({ log, zoneTheme }) {
   return (
     <div ref={ref} className="ts-log-panel" style={S.logPanel(zoneTheme)}>
       {log.slice(-60).map((l, i) => (
-        <div key={i} style={{
-          fontSize: 12, lineHeight: 1.8,
-          color: l.kind === "gold" ? "var(--ink-warn)" : l.kind === "event" ? "var(--tavern-event)" : "var(--ink-text-dim)",
-        }}>
+        <div key={i} style={{ fontSize: "var(--fs-sm)", lineHeight: 1.8,
+        color: l.kind === "gold" ? "var(--ink-warn)" : l.kind === "event" ? "var(--tavern-event)" : "var(--ink-text-dim)", }}>
           <span style={{ color: "var(--tavern-log-time)", fontSize: 10 }}>[{l.day}日·{TICK_LABELS[l.tick]}] </span>
           {l.text}
         </div>

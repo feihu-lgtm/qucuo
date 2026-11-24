@@ -99,7 +99,7 @@ export default function ProfileModule({ zoneTheme, char, exp, pot, playerAvatar,
                 外貌描述 {compDescOpen ? "▴" : "▾"}
               </span>
               {compDescOpen && (
-                <div style={{ fontSize: "9.5px", color: zoneTheme.textDim, lineHeight: 1.6, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", maxHeight: 160, overflowY: "auto", textAlign: "left" }}>
+                <div style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, lineHeight: 1.6, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", maxHeight: 160, overflowY: "auto", textAlign: "left" }}>
                   {compLore.base}{compForm === "human" ? compLore.human : compLore.beast}
                 </div>
               )}
@@ -108,13 +108,13 @@ export default function ProfileModule({ zoneTheme, char, exp, pot, playerAvatar,
         </div>
       )}
       <div style={{ flex: 1, paddingTop: 4 }}>
-        <div style={{ fontSize: "16px", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>
-        <div style={{ fontSize: "11px", color: zoneTheme.textDim, marginBottom: 8 }}>{char.gender || "男"}　少侠</div>
-        <div style={{ fontSize: "11.5px", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "var(--red-soft)" : "var(--ink-text)" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
-        <div style={{ fontSize: "11.5px", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "var(--red-soft)" : "var(--attr-value)" }}>{char.hp[0]}/{char.hp[1]}</span></div>
-        <div style={{ fontSize: "11.5px", marginBottom: 3 }}>经验 <span style={{ color: "var(--ink-warn)" }}>{exp}</span>　潜能 <span style={{ color: "var(--violet)" }}>{pot}</span></div>
+        <div style={{ fontSize: "var(--fs-lg)", color: zoneTheme.accent, fontWeight: "bold", letterSpacing: "1px", marginBottom: 3 }}>{char.name || "无名少侠"}</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, marginBottom: 8 }}>{char.gender || "男"}　少侠</div>
+        <div style={{ fontSize: "var(--fs-sm)", marginBottom: 3 }}>气血 <span style={{ color: char.hp[0] <= 30 ? "var(--red-soft)" : "var(--ink-text)" }}>{bar(char.hp[0], char.hp[1], 8)}</span></div>
+        <div style={{ fontSize: "var(--fs-sm)", marginBottom: 5 }}><span style={{ color: char.hp[0] <= 30 ? "var(--red-soft)" : "var(--attr-value)" }}>{char.hp[0]}/{char.hp[1]}</span></div>
+        <div style={{ fontSize: "var(--fs-sm)", marginBottom: 3 }}>经验 <span style={{ color: "var(--ink-warn)" }}>{exp}</span>　潜能 <span style={{ color: "var(--violet)" }}>{pot}</span></div>
         <div style={{ fontSize: "11.5px" }}>银两 <span style={{ color: "var(--gold-bright)" }}>{char.money || 0}</span> 两</div>
-        <div style={{ fontSize: "11.5px", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ fontSize: "var(--fs-sm)", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
           <span>信鸽 <span style={{ color: "var(--gold)" }}>{char.pigeons || 0}</span> 只</span>
           <span
             onClick={() => inspectItem("pigeon", "信鸽", `现有${char.pigeons || 0}只`, null, { worldLook: true })}

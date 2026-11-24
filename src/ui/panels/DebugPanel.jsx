@@ -89,15 +89,15 @@ export default function DebugPanel({
         <input type="number" value={pot ?? 0}
           onChange={e => setPot(parseInt(e.target.value) || 0)}
           style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
-        <span style={{ fontSize: 10, marginLeft: 6 }}>阅历</span>
+        <span style={{ fontSize: "var(--fs-2xs)", marginLeft: 6 }}>阅历</span>
         <input type="number" value={exp ?? 0}
           onChange={e => setExp(parseInt(e.target.value) || 0)}
           style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
-        <span style={{ fontSize: 10, marginLeft: 6 }}>因果</span>
+        <span style={{ fontSize: "var(--fs-2xs)", marginLeft: 6 }}>因果</span>
         <input type="number" value={dao.karma ?? 0}
           onChange={e => setDao(d => ({ ...d, karma: parseInt(e.target.value) || 0 }))}
           style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
-        <span style={{ fontSize: 10, marginLeft: 6 }}>劫数</span>
+        <span style={{ fontSize: "var(--fs-2xs)", marginLeft: 6 }}>劫数</span>
         <input type="number" value={dao.jie ?? 0}
           onChange={e => setDao(d => ({ ...d, jie: parseInt(e.target.value) || 0 }))}
           style={{ width: 55, background: "var(--bg-panel)", border: "1px solid var(--ink-edge-quest)", color: "var(--text)", borderRadius: 0, padding: "2px 4px", fontSize: 11 }} />
@@ -107,7 +107,7 @@ export default function DebugPanel({
         <input type="number" value={varTree.世界?.威望 ?? 0}
           onChange={e => { const v = parseInt(e.target.value) || 0; setVarTree(prev => ({ ...prev, 世界: { ...(prev.世界 || {}), 威望: v } })); }}
           style={{ width: 70, ...inp }} />
-        <span style={{ fontSize: 10, color: "var(--text-dim)" }}>{reputationLabel(varTree.世界?.威望 ?? 0)}（全局总值，不分势力）</span>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{reputationLabel(varTree.世界?.威望 ?? 0)}（全局总值，不分势力）</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ width: 70, ...lbl }}>旁白好感</span>
@@ -127,7 +127,7 @@ export default function DebugPanel({
             onChange={e => { const v = parseInt(e.target.value) || 0; setVarTree(prev => ({ ...prev, 角色: { ...(prev.角色 || {}), [dbgFav]: { ...((prev.角色 || {})[dbgFav] || {}), 好感度: v } } })); }}
             style={{ width: 70, ...inp }} />
         )}
-        {!(varTree.世界?.已认识人物 || []).length && <span style={{ fontSize: 10, color: "var(--text-dim)" }}>（还没认识任何人）</span>}
+        {!(varTree.世界?.已认识人物 || []).length && <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>（还没认识任何人）</span>}
         <span
           onClick={() => {
             const visible = room.npcs.filter(n => isNpcVisibleInInnerRoom(room.name, innerRoomName, n));

@@ -52,7 +52,7 @@ export default class ErrorBoundary extends React.Component {
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           padding: 24, fontFamily: "monospace", fontSize: 13, lineHeight: 1.6,
         }}>
-          <div style={{ fontSize: 16, color: "var(--error-title)", marginBottom: 12 }}>
+          <div style={{ fontSize: "var(--fs-lg)", color: "var(--error-title)", marginBottom: 12 }}>
             ⚠ {this.props.label || "界面"}出错了（已拦截，未黑屏）
           </div>
           <div style={{

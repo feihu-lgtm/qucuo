@@ -30,7 +30,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
   const { present, absent } = partitionPeople({ room, innerRoomName, companionState, everSeen });
   const crowd = (room.crowd || []).filter(c => !c.innerRoom || !innerRoomName || c.innerRoom === innerRoomName).map(c => c.label);
   const dbgPeople = showDebug && (
-    <div style={{ fontSize: "9.5px", color: zoneTheme.textDim, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", marginBottom: 6, lineHeight: 1.5, wordBreak: "break-all" }}>
+    <div style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: "4px 6px", marginBottom: 6, lineHeight: 1.5, wordBreak: "break-all" }}>
       <div>当前内层房间: {innerRoomName || "(无/全显示)"} · room.npcs 共 {room.npcs.length} 人</div>
       {room.npcs.map((n, i) => {
         const bound = hasInnerMap(room.name) ? getResidentRoomForNpc(room.name, n.name) : null;
@@ -51,7 +51,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
     </div>
   );
   const pigeonBadge = (
-    <span style={{ fontSize: "10px", color: (char.pigeons || 0) > 0 ? zoneTheme.accentDim : zoneTheme.textDim, flexShrink: 0 }} title={`现有信鸽 ${char.pigeons || 0} 只`}>
+    <span style={{ fontSize: "var(--fs-2xs)", color: (char.pigeons || 0) > 0 ? zoneTheme.accentDim : zoneTheme.textDim, flexShrink: 0 }} title={`现有信鸽 ${char.pigeons || 0} 只`}>
       信鸽 {char.pigeons || 0}
     </span>
   );
@@ -59,7 +59,7 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
   const lettersEntry = (
     <span onClick={() => openOverlay(OVERLAY.LETTERS)}
       title="看全部来信，回信走飞鸽"
-      style={{ fontSize: "10px", color: unreadLetters > 0 ? zoneTheme.accent : zoneTheme.textDim, flexShrink: 0, cursor: "pointer" }}>
+      style={{ fontSize: "var(--fs-2xs)", color: unreadLetters > 0 ? zoneTheme.accent : zoneTheme.textDim, flexShrink: 0, cursor: "pointer" }}>
       信{unreadLetters > 0 ? `×${unreadLetters}` : ""}
     </span>
   );
@@ -85,16 +85,16 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
                     <span style={{ color: zoneTheme.textDim, fontSize: "11px", marginLeft: 6 }}>{n.brief}</span>
                   </span>
                   {hasAffection ? (
-                    <span style={{ fontSize: "10.5px", flexShrink: 0, textAlign: "right", whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
+                    <span style={{ fontSize: "var(--fs-xs)", flexShrink: 0, textAlign: "right", whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
                       <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>
                       <span style={{ color: zoneTheme.textDim, marginLeft: 4 }}>{attrs.好感度}</span>
                     </span>
                   ) : (
-                    <span style={{ fontSize: "10px", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
+                    <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
                   )}
                 </div>
                 <span onClick={() => setActiveNpcMenu(n)} title="打开互动菜单：细看/切磋/偷窃/对话/送礼/拜师"
-                  style={{ fontSize: "10px", color: zoneTheme.accent, cursor: "pointer", display: "block", marginTop: 2 }}>◈ 角色面板</span>{known && <NpcAngerLine angerState={attrs.生气状态} />}
+                  style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.accent, cursor: "pointer", display: "block", marginTop: 2 }}>◈ 角色面板</span>{known && <NpcAngerLine angerState={attrs.生气状态} />}
               </div>
             );
           })}</div>)}
@@ -123,17 +123,17 @@ export default function NpcsModule({ room, innerRoomName, varTree, zoneTheme, ch
                       setPigeonTarget(name); setInteractMode("pigeon"); setTimeout(() => inputRef.current?.focus(), 0);
                     }}
                     title={(char.pigeons || 0) > 0 ? `飞鸽传书（现有信鸽 ${char.pigeons} 只，寄一封耗一只·只送信）` : "需先去驿站买信鸽"}
-                    style={{ fontSize: "10px", color: (char.pigeons || 0) <= 0 ? zoneTheme.textDim : (pigeonTarget === name ? zoneTheme.accent : zoneTheme.accentDim), cursor: "pointer", flexShrink: 0 }}>飞鸽</span>
+                    style={{ fontSize: "var(--fs-2xs)", color: (char.pigeons || 0) <= 0 ? zoneTheme.textDim : (pigeonTarget === name ? zoneTheme.accent : zoneTheme.accentDim), cursor: "pointer", flexShrink: 0 }}>飞鸽</span>
                   {hasAff ? (
-                    <span style={{ fontSize: "10px", flexShrink: 0, whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
+                    <span style={{ fontSize: "var(--fs-2xs)", flexShrink: 0, whiteSpace: "nowrap" }} title={`好感度 ${attrs.好感度}/100`}>
                       <span style={{ color: uiPink }}>{npcAffectionLabel(attrs.好感度)}</span>
                       <span style={{ color: zoneTheme.textDim, marginLeft: 4 }}>{attrs.好感度}</span>
                     </span>
                   ) : (
-                    <span style={{ fontSize: "10px", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
+                    <span style={{ fontSize: "var(--fs-2xs)", color: zoneTheme.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>{known ? "" : "尚未认识"}</span>
                   )}
                 </div>
-                {known && attrs.态度 && <div style={{ fontSize: "9.5px", color: "var(--text-dim)" }}>{attrs.态度}</div>}
+                {known && attrs.态度 && <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{attrs.态度}</div>}
                 {known && <NpcAngerLine angerState={attrs.生气状态} />}
               </div>
             );

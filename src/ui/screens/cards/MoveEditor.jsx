@@ -61,7 +61,7 @@ export default function MoveEditor({ moves, levelCap, onChange, why, source }) {
               style={{ ...selStyle, textAlign: "left", fontSize: 10.5, color: "var(--ink-text)" }} />
             {isOpen && (
               <div style={{ marginTop: 6, padding: "6px 8px", background: "var(--bg-ink)", border: "1px solid var(--ink-border)", borderRadius: 0 }}>
-                <div style={{ fontSize: 9.5, color: "var(--inject-kind-fallback)", marginBottom: 4, fontFamily: "ui-monospace,Menlo,Consolas,monospace" }}>
+                <div style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-kind-fallback)", marginBottom: 4, fontFamily: "ui-monospace,Menlo,Consolas,monospace" }}>
                   {arch} × {TIERS[levelCap]?.label}档 → 类型 {type}
                 </div>
                 {Object.entries(resolved).filter(([k]) => k !== "type").map(([k, v]) => (
@@ -70,7 +70,7 @@ export default function MoveEditor({ moves, levelCap, onChange, why, source }) {
                     <span style={{ color: "var(--ink-info)" }}>{fmtEffectValue(v)}</span>
                   </div>
                 ))}
-                <div style={{ fontSize: 9.5, color: "var(--inject-kind-fallback)", marginTop: 5 }}>
+                <div style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-kind-fallback)", marginTop: 5 }}>
                   这些数值由原型和品阶算出，改品阶会整套跟着变，不用手填。
                 </div>
               </div>
@@ -89,7 +89,7 @@ export default function MoveEditor({ moves, levelCap, onChange, why, source }) {
             style={{ cursor: "pointer", fontSize: 10.5, color: "var(--ink-muted)" }}>− 去掉疗伤招</span>
         )}
         <span style={{ flex: 1 }} />
-        {why ? <span style={{ fontSize: 10, color: "var(--ink-text-dim)", fontStyle: "italic" }}>据「{why}」</span> : null}
+        {why ? <span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", fontStyle: "italic" }}>据「{why}」</span> : null}
         <Src source={source} />
       </div>
     </div>

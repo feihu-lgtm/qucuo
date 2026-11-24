@@ -50,7 +50,7 @@ export function StatRow({ label, value, min = 0, max = 10, step = 1, onChange, w
               color: "var(--ink-warn)", fontSize: 11.5, outline: "none", fontFamily: "inherit",
             }} />
           <Step onClick={() => set(value + step)} disabled={value >= max}>＋</Step>
-          {unit ? <span style={{ fontSize: 9.5, color: "var(--ink-text-dim)" }}>{unit}</span> : null}
+          {unit ? <span style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)" }}>{unit}</span> : null}
         </span>
       ) : (
         <span style={{ width: 26, textAlign: "right", fontSize: 11, color: "var(--ink-warn)", flexShrink: 0 }}>{value}</span>
@@ -66,7 +66,7 @@ export function SevenDim({ special, onChange, why }) {
         <StatRow key={k} label={k} value={special?.[k] ?? 5} max={10}
           onChange={onChange ? (v => onChange({ ...special, [k]: v })) : null} />
       ))}
-      {why && <div style={{ fontSize: 10, color: "var(--ink-text-dim)", marginTop: 4, fontStyle: "italic" }}>据「{why}」</div>}
+      {why && <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", marginTop: 4, fontStyle: "italic" }}>据「{why}」</div>}
     </div>
   );
 }
@@ -76,19 +76,19 @@ export function SevenDim({ special, onChange, why }) {
 export function Src({ source, why }) {
   if (source === "fallback") {
     return <span title="AI 没抽出来，这是默认值"
-      style={{ fontSize: 9, color: "var(--ink-text-dim)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>默认</span>;
+      style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>默认</span>;
   }
   if (source === "manual") {
     return <span title="只能你自己填，不从卡里抽"
-      style={{ fontSize: 9, color: "var(--footer-hint-text)", border: "1px solid var(--bug-edge-dark)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>手填</span>;
+      style={{ fontSize: "var(--fs-2xs)", color: "var(--footer-hint-text)", border: "1px solid var(--bug-edge-dark)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>手填</span>;
   }
   if (source === "drop") {
     return <span title="按规矩丢弃，不导入"
-      style={{ fontSize: 9, color: "var(--bug-dim-dark)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>已丢</span>;
+      style={{ fontSize: "var(--fs-2xs)", color: "var(--bug-dim-dark)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>已丢</span>;
   }
   return (
     <span title={why ? `AI 判断依据：${why}` : "AI 抽取"}
-      style={{ fontSize: 9, color: "var(--quest-success-text)", border: "1px solid var(--music-idle-icon)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>
+      style={{ fontSize: "var(--fs-2xs)", color: "var(--quest-success-text)", border: "1px solid var(--music-idle-icon)", borderRadius: 0, padding: "0 3px", marginLeft: 5 }}>
       AI{why ? "·" + why.slice(0, 10) : ""}
     </span>
   );
@@ -136,7 +136,7 @@ export function Stat({ label, v }) {
 export function Section({ title, children, dim }) {
   return (
     <div style={{ marginTop: 12, borderTop: "1px solid var(--bg-card)", paddingTop: 9, opacity: dim ? .55 : 1 }}>
-      <div style={{ fontSize: 11, color: "var(--ink-tan)", letterSpacing: 1, marginBottom: 7 }}>{title}</div>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-tan)", letterSpacing: 1, marginBottom: 7 }}>{title}</div>
       {children}
     </div>
   );
@@ -145,11 +145,9 @@ export function Section({ title, children, dim }) {
 export function Note({ tone = "info", children }) {
   const c = tone === "bad" ? "var(--ink-error-text)" : tone === "warn" ? "var(--tutorial-time)" : "var(--inject-user-text)";
   return (
-    <div style={{
-      fontSize: 10.5, lineHeight: 1.7, color: c, marginTop: 7,
-      padding: "6px 9px", background: "rgba(0,0,0,.3)",
-      borderLeft: `2px solid color-mix(in srgb, ${c} 40%, transparent)`, borderRadius: "0 3px 3px 0",
-    }}>{children}</div>
+    <div style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: c, marginTop: 7,
+    padding: "6px 9px", background: "rgba(0,0,0,.3)",
+    borderLeft: `2px solid color-mix(in srgb, ${c} 40%, transparent)`, borderRadius: "0 3px 3px 0", }}>{children}</div>
   );
 }
 

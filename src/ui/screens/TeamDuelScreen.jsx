@@ -271,7 +271,7 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
               {/* 选目标：多于一个存活敌人时必选（防御招也要指定防谁）；单敌自动锁定 */}
               {pickingNeedTarget && (
                 <div style={styles.targetRow}>
-                  <span style={{ fontSize: "10.5px", color: zoneTheme.textDim, flexShrink: 0 }}>
+                  <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, flexShrink: 0 }}>
                     {pickingIntent.move.type === MOVE_TYPE.DEFENSE ? "防谁：" : "打谁："}
                   </span>
                   {aliveEnemies.map(e => (
@@ -293,13 +293,13 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
                   ? <span onClick={() => setStage("leopard")} style={styles.continueBtn(zoneTheme)}>{partnerName}出招 ▸</span>
                   : <span onClick={() => setStage("ready")} style={styles.continueBtn(zoneTheme)}>就绪 ▸</span>)}
                 {stage === "player" && !playerReady && needPlayerPick && (
-                  <span style={{ fontSize: "10.5px", color: zoneTheme.textDim }}>选好招式{pickingNeedTarget ? "与目标" : ""}后继续</span>
+                  <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>选好招式{pickingNeedTarget ? "与目标" : ""}后继续</span>
                 )}
                 {stage === "leopard" && (
                   <>
                     {leopardReady
                       ? <span onClick={() => setStage("ready")} style={styles.continueBtn(zoneTheme)}>就绪 ▸</span>
-                      : <span style={{ fontSize: "10.5px", color: zoneTheme.textDim }}>替{partnerName}选好招式{pickingNeedTarget ? "与目标" : ""}后继续</span>}
+                      : <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>替{partnerName}选好招式{pickingNeedTarget ? "与目标" : ""}后继续</span>}
                     <span onClick={() => setStage("player")} style={{ marginLeft: 12, fontSize: "10.5px", color: zoneTheme.textDim, cursor: "pointer" }}>◂ 回改你的招</span>
                   </>
                 )}
@@ -360,15 +360,15 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
           {rounds.length === 0 && <div style={styles.logHint(zoneTheme)}>——{allyUnits.map(u => u.name).join("与")}拉开架势，静待第一招——</div>}
           {rounds.map(r => (
             <div key={r.round} style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: "11px", color: zoneTheme.accent }}>▸ 第 {r.round} 回合</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accent }}>▸ 第 {r.round} 回合</div>
               {r.lines.map((l, i) => (
                 <div key={i} style={{ marginTop: 2 }}>
-                  <div style={{ fontSize: "12.5px", color: zoneTheme.text }}>{l.text}</div>
+                  <div style={{ fontSize: "var(--fs-sm)", color: zoneTheme.text }}>{l.text}</div>
                   {(l.notes || []).map((n, j) => (
-                    <div key={j} style={{ fontSize: "12px", color: zoneTheme.textDim }}>{n}。</div>
+                    <div key={j} style={{ fontSize: "var(--fs-sm)", color: zoneTheme.textDim }}>{n}。</div>
                   ))}
                   {(l.statusLog || []).map((s, j) => (
-                    <div key={"s" + j} style={{ fontSize: "11px", color: zoneTheme.textDim }}>{s}</div>
+                    <div key={"s" + j} style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim }}>{s}</div>
                   ))}
                 </div>
               ))}

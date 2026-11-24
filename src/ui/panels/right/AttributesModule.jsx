@@ -4,8 +4,8 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
   return (
     <div style={{ borderTop: `1px solid ${zoneTheme.border}`, paddingTop: 8, marginBottom: 10, display: "flex", gap: 12 }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>内功外功</div>
-        <div style={{ fontSize: "11.5px", display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>内功外功</div>
+        <div style={{ fontSize: "var(--fs-sm)", display: "flex", alignItems: "center", gap: 6 }}>
           <span>内功 <span style={{ color: "var(--violet)" }}>{bar(char.neigong ?? 0, 100, 6)}</span> <span style={{ color: "var(--attr-value)" }}>{char.neigong ?? 0}</span></span>
           <span
             onClick={trainNeigong}
@@ -16,7 +16,7 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
             }}
           >+1（{trainCost(char.neigong ?? 0)}潜能）</span>
         </div>
-        <div style={{ fontSize: "11.5px", display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+        <div style={{ fontSize: "var(--fs-sm)", display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
           <span>外功 <span style={{ color: "var(--attr-waigong-bar)" }}>{bar(char.waigong ?? 0, 100, 6)}</span> <span style={{ color: "var(--attr-value)" }}>{char.waigong ?? 0}</span></span>
           <span
             onClick={trainWaigong}
@@ -29,7 +29,7 @@ export default function AttributesModule({ zoneTheme, char, trainNeigong, trainW
         </div>
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: "11px", color: zoneTheme.accentDim, marginBottom: 4 }}>七维</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: zoneTheme.accentDim, marginBottom: 4 }}>七维</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px", fontSize: "11px" }}>
           {Object.entries(char.special || {}).map(([k, v]) => {
             const eff = effectiveSpecialNow?.[k];

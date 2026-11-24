@@ -8,7 +8,7 @@ export default function ModelPicker({ target, modelPickerTarget, modelStatus, mo
   return (
     <>
       {modelStatus === "error" && (
-        <div style={{ fontSize: "10.5px", color: "var(--red-soft)", marginTop: 3, marginLeft: indent || undefined }}>✗ 检测失败：{modelErr}</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--red-soft)", marginTop: 3, marginLeft: indent || undefined }}>✗ 检测失败：{modelErr}</div>
       )}
       {modelList && modelList.length > 0 && (
         <div style={{ marginTop: indent ? 4 : 6, marginLeft: indent || undefined, maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 0 }}>

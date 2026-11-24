@@ -56,12 +56,12 @@ export default function BodyProfilePanel({
               : (previewText(val) || <span style={{ color: "var(--body-empty)" }}>未填</span>)}
           </span>
           {!hidden && (
-            <span style={{ fontSize: "10px", color: textDim, flexShrink: 0 }}>{isEditing ? "收起" : "编辑"}</span>
+            <span style={{ fontSize: "var(--fs-2xs)", color: textDim, flexShrink: 0 }}>{isEditing ? "收起" : "编辑"}</span>
           )}
         </div>
         {isEditing && !hidden && (
           <div style={{ marginTop: 5 }}>
-            <div style={{ fontSize: "10px", color: textDim, marginBottom: 3 }}>{f.def}</div>
+            <div style={{ fontSize: "var(--fs-2xs)", color: textDim, marginBottom: 3 }}>{f.def}</div>
             <textarea
               className="body-profile-textarea"
               autoFocus
@@ -125,7 +125,7 @@ export default function BodyProfilePanel({
           <span style={{ color: "var(--text-dim)", fontSize: "11px", cursor: "pointer" }} onClick={onClose}>× 关闭</span>
         </div>
 
-        <div style={{ fontSize: "10.5px", color: textDim, lineHeight: 1.7, marginBottom: 10 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: textDim, lineHeight: 1.7, marginBottom: 10 }}>
           写在这里的样子，动作描写、贴身互动与旁白私聊都会照着写，不会每轮换一副身板。
           点条目展开编辑，留空的栏目一个字都不会发出去。
         </div>
@@ -143,12 +143,12 @@ export default function BodyProfilePanel({
             onClick={() => setShowPresets(v => !v)}
             style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
           >
-            <span style={{ fontSize: "11px", color: accent }}>体貌库预设（{ALL_BODY_PRESETS.length} 套成年模板：8 立绘 + 6 江湖）</span>
-            <span style={{ fontSize: "10px", color: textDim }}>{showPresets ? "收起" : "展开挑选"}</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: accent }}>体貌库预设（{ALL_BODY_PRESETS.length} 套成年模板：8 立绘 + 6 江湖）</span>
+            <span style={{ fontSize: "var(--fs-2xs)", color: textDim }}>{showPresets ? "收起" : "展开挑选"}</span>
           </div>
           {showPresets && (
             <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
-              <div style={{ fontSize: "10px", color: "var(--text-dim)", lineHeight: 1.5 }}>
+              <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", lineHeight: 1.5 }}>
                 默认仅填入公开层 7 项；开启 ■ 模式并揭开私密层后可一键填入完整 12 项。
               </div>
               {ALL_BODY_PRESETS.map((preset) => (
@@ -160,8 +160,8 @@ export default function BodyProfilePanel({
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: "11.5px", color: "var(--text)" }}>{preset.name}</div>
-                    <div style={{ fontSize: "10px", color: textDim }}>{preset.tag}</div>
+                    <div style={{ fontSize: "var(--fs-sm)", color: "var(--text)" }}>{preset.name}</div>
+                    <div style={{ fontSize: "var(--fs-2xs)", color: textDim }}>{preset.tag}</div>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button
@@ -194,17 +194,17 @@ export default function BodyProfilePanel({
         </div>
 
         {/* 公开层 */}
-        <div style={{ fontSize: "11px", color: accent, marginBottom: 2 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: accent, marginBottom: 2 }}>
           公开层 <span style={{ color: textDim, fontSize: "10px" }}>· 外人一眼可见 · 已填 {filled.public}/{PUBLIC_FIELDS.length}</span>
         </div>
-        <div style={{ fontSize: "10px", color: "var(--text-dim)", marginBottom: 4 }}>
+        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginBottom: 4 }}>
           近距离互动（战斗 / 对话 / 查看）与旁白私聊时注入；赶路、结算轮不发。
         </div>
         {PUBLIC_FIELDS.map(renderField)}
 
         {/* 私密层 */}
         <div style={{ marginTop: 14, display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ fontSize: "11px", color: nsfwOn ? "var(--body-nsfw)" : textDim }}>
+          <span style={{ fontSize: "var(--fs-xs)", color: nsfwOn ? "var(--body-nsfw)" : textDim }}>
             私密层 <span style={{ color: textDim, fontSize: "10px" }}>· 已填 {filled.intimate}/{INTIMATE_FIELDS.length}</span>
           </span>
           <span
@@ -214,7 +214,7 @@ export default function BodyProfilePanel({
             {showIntimate ? "◉ 隐藏" : "○ 显示"}
           </span>
         </div>
-        <div style={{ fontSize: "10px", color: "var(--text-dim)", margin: "3px 0 4px" }}>
+        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", margin: "3px 0 4px" }}>
           {nsfwOn
             ? "■ 模式已开，这一层会随剧情注入。"
             : "■ 模式关着，这一层一个字都不会发给 AI——写了也不发。"}
@@ -223,8 +223,8 @@ export default function BodyProfilePanel({
 
         {/* 荐装 */}
         <div style={{ borderTop: `1px solid ${border}`, marginTop: 14, paddingTop: 12 }}>
-          <div style={{ fontSize: "11px", color: accent, marginBottom: 4 }}>按体貌荐装</div>
-          <div style={{ fontSize: "10px", color: "var(--text-dim)", marginBottom: 6, lineHeight: 1.7 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: accent, marginBottom: 4 }}>按体貌荐装</div>
+          <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginBottom: 6, lineHeight: 1.7 }}>
             拿你写的体貌去货架上比一遍，挑三件趁手的。
             只告诉你是什么、什么来历、加多少——<span style={{ color: textDim }}>怎么弄到手得自己走一趟</span>。
           </div>
@@ -242,7 +242,7 @@ export default function BodyProfilePanel({
           </span>
 
           {recommendState?.error && (
-            <div style={{ fontSize: "11px", color: "var(--ink-danger)", marginTop: 8 }}>{recommendState.error}</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-danger)", marginTop: 8 }}>{recommendState.error}</div>
           )}
 
           {picks.length > 0 && (
@@ -250,17 +250,17 @@ export default function BodyProfilePanel({
               {picks.map((it, i) => (
                 <div key={i} style={{ border: `1px solid ${border}`, borderRadius: 0, padding: "8px 10px", background: "var(--bg-panel)" }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 3 }}>
-                    <span style={{ fontSize: "12.5px", color: it.qualityColor || "var(--text)" }}>{it.name}</span>
-                    <span style={{ fontSize: "10px", color: textDim }}>{it.categoryLabel} · {it.quality}档</span>
+                    <span style={{ fontSize: "var(--fs-sm)", color: it.qualityColor || "var(--text)" }}>{it.name}</span>
+                    <span style={{ fontSize: "var(--fs-2xs)", color: textDim }}>{it.categoryLabel} · {it.quality}档</span>
                   </div>
-                  <div style={{ fontSize: "11px", color: "var(--text-dim)", lineHeight: 1.7, marginBottom: 4 }}>{it.desc}</div>
-                  <div style={{ fontSize: "11px", color: accent }}>{it.statLine}</div>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", lineHeight: 1.7, marginBottom: 4 }}>{it.desc}</div>
+                  <div style={{ fontSize: "var(--fs-xs)", color: accent }}>{it.statLine}</div>
                   {it.reason && (
-                    <div style={{ fontSize: "10.5px", color: textDim, marginTop: 4, fontStyle: "italic" }}>掌柜的话：{it.reason}</div>
+                    <div style={{ fontSize: "var(--fs-xs)", color: textDim, marginTop: 4, fontStyle: "italic" }}>掌柜的话：{it.reason}</div>
                   )}
                 </div>
               ))}
-              <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+              <div style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>
                 数值取自百物录，不是 AI 现编的；掌柜只负责挑，挑不出货架上没有的东西。
               </div>
             </div>

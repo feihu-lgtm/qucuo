@@ -126,8 +126,8 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
       {/* 顶栏 */}
       <div style={sx.battleTop}>
         <TextBtn onClick={onQuit}>← 认输退出</TextBtn>
-        <div style={{ fontSize: 13, color: "var(--parchment)", letterSpacing: 2 }}>第 {battle.round} 回合</div>
-        <div style={{ fontSize: 11, color: apiOn ? "var(--qb-api-on)" : "var(--qb-border)" }}>
+        <div style={{ fontSize: "var(--fs-md)", color: "var(--parchment)", letterSpacing: 2 }}>第 {battle.round} 回合</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: apiOn ? "var(--qb-api-on)" : "var(--qb-border)" }}>
           {apiOn ? "◆ 说书战报已启用" : "◇ 装 key 可解锁说书战报"}
         </div>
       </div>
@@ -138,7 +138,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
           hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toMe } : null} />
         <div className="qb-vs" style={sx.arenaVs}>
           <img src={UI("burst.webp")} alt="" style={{ width: 64, opacity: 0.7 }} />
-          <div style={{ fontSize: 22, color: "var(--qb-versus)", fontWeight: "bold", letterSpacing: 2 }}>斗</div>
+          <div style={{ fontSize: "var(--fs-xl)", color: "var(--qb-versus)", fontWeight: "bold", letterSpacing: 2 }}>斗</div>
         </div>
         <FighterPanel fighter={foe} side="foe" team={battle.foeTeam} curIdx={battle.foeIdx}
           hit={battle.lastHit ? { key: battle.lastHit.key, dmg: battle.lastHit.toFoe } : null} />
@@ -149,7 +149,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
         {battle.logs.length === 0 && <div style={{ color: "var(--qb-border)", fontSize: 13, textAlign: "center", padding: 20 }}>选一招，切磋开始。</div>}
         {battle.logs.map((l, i) => (
           <div key={i} style={{ marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-            <div style={{ fontSize: 11, color: "var(--parchment)", marginBottom: 3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--parchment)", marginBottom: 3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span>第{l.round}回合{l.myMove ? ` · ${l.myName}「${l.myMove}」 对 ${l.foeName}「${l.foeMove}」` : ""}</span>
               {/* 伤害数字：醒目独立标记，一眼看清这一击打了多少 */}
               {l.dmgToFoe > 0 && <span style={sx.dmgTag("var(--qb-foe)")}>敌 −{l.dmgToFoe}</span>}
@@ -157,12 +157,12 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
               {(l.dmgToFoe === 0 || l.dmgToFoe == null) && (l.dmgToMe === 0 || l.dmgToMe == null) && l.myMove && <span style={{ color: "var(--qb-edge)" }}>无伤</span>}
             </div>
             {/* 系统战报（始终显示，权威结算文字） */}
-            <div style={{ fontSize: 13.5, color: "var(--qb-text-dim)", lineHeight: 1.8 }}>
+            <div style={{ fontSize: "var(--fs-md)", color: "var(--qb-text-dim)", lineHeight: 1.8 }}>
               {l.text}
             </div>
             {/* AI 说书（有则另起一行，润色不覆盖系统文字；斜体+左边框区分） */}
             {l.narration && (
-              <div style={{ fontSize: 13.5, color: "var(--qb-narrative)", lineHeight: 1.9, marginTop: 6, paddingLeft: 10,
+              <div style={{ fontSize: "var(--fs-md)", color: "var(--qb-narrative)", lineHeight: 1.9, marginTop: 6, paddingLeft: 10,
                 borderLeft: "2px solid var(--ink-brass)", fontStyle: "italic" }}>
                 <span style={{ fontStyle: "normal", fontSize: 10, color: "var(--qb-border)", marginRight: 6 }}>说书</span>
                 {l.narration}
@@ -200,7 +200,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
               </div>
               {canSwitch && (
                 <div style={{ borderLeft: "1px solid rgba(255,255,255,.12)", paddingLeft: 12, marginLeft: 4 }}>
-                  <div style={{ fontSize: 10, color: "var(--qb-border)", marginBottom: 6 }}>换人（让位一手）</div>
+                  <div style={{ fontSize: "var(--fs-2xs)", color: "var(--qb-border)", marginBottom: 6 }}>换人（让位一手）</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 120, overflowY: "auto" }}>
                     {battle.allyTeam.map((f, i) => (i !== battle.allyIdx && f.combatState.hp[0] > 0) && (
                       <button key={i} onClick={() => switchTo(i)} style={sx.switchBtnSmall}>
@@ -218,7 +218,7 @@ export default function BattleScreen({ battle, setBattle, mode, onFinish, onQuit
       {battle.over && (
         <div style={sx.controlBar}>
           <div style={{ width: "100%", textAlign: "center", margin: "auto" }}>
-            <div style={{ fontSize: 22, color: battle.winner === "ally" ? "var(--blue)" : "var(--qb-foe)", fontWeight: "bold", letterSpacing: 4, marginBottom: 12 }}>
+            <div style={{ fontSize: "var(--fs-xl)", color: battle.winner === "ally" ? "var(--blue)" : "var(--qb-foe)", fontWeight: "bold", letterSpacing: 4, marginBottom: 12 }}>
               {battle.winner === "ally" ? "我方胜" : "我方败"}
             </div>
             <button onClick={onFinish} style={sx.startBtn}>看战报总结 →</button>
@@ -261,8 +261,8 @@ function FighterPanel({ fighter, side, team, curIdx, hit }) {
           )}
         </div>
         <div className="qb-fighter-info" style={{ minWidth: 150, textAlign: side === "ally" ? "left" : "right" }}>
-          <div style={{ fontSize: 16, color: "var(--qb-text)", fontWeight: "bold" }}>{fighter.name}</div>
-          <div style={{ fontSize: 10, color: tierColor(fighter.levelCap) }}>{tierName(fighter.levelCap)}品</div>
+          <div style={{ fontSize: "var(--fs-lg)", color: "var(--qb-text)", fontWeight: "bold" }}>{fighter.name}</div>
+          <div style={{ fontSize: "var(--fs-2xs)", color: tierColor(fighter.levelCap) }}>{tierName(fighter.levelCap)}品</div>
           {/* 血槽 */}
           <div style={{ marginTop: 6 }}>
             <Bar ratio={hpRatio} color="var(--qb-hp)" bg="var(--qb-hp-track)" label={`气血 ${cs.hp[0]}/${cs.hp[1]}`} rtl={side === "foe"} />
@@ -304,7 +304,7 @@ function Bar({ ratio, color, bg, label, rtl, thin }) {
 }
 
 function StatusChip({ name }) {
-  return <span style={{ fontSize: 9, padding: "1px 5px", background: "rgba(180,80,80,.3)", border: "1px solid var(--qb-status-edge)", borderRadius: 0, color: "var(--qb-status-text)" }}>{name}</span>;
+  return <span style={{ fontSize: "var(--fs-2xs)", padding: "1px 5px", background: "rgba(180,80,80,.3)", border: "1px solid var(--qb-status-edge)", borderRadius: 0, color: "var(--qb-status-text)" }}>{name}</span>;
 }
 
 function MoveButton({ move, usable, reason, onClick }) {
@@ -327,24 +327,24 @@ function MoveButton({ move, usable, reason, onClick }) {
             opacity: usable ? 1 : 0.6,
           }}
         >
-          <div style={{ fontSize: 14, color: "var(--qb-text)", fontWeight: "bold" }}>{move.name}</div>
-          <div style={{ fontSize: 10, color: qc, marginTop: 2 }}>{move.type} · {move.quality}品 · 耗气{move.energyCost}</div>
-          <div style={{ fontSize: 9.5, color: "var(--qb-move-summary)", marginTop: 3, lineHeight: 1.35, overflow: "hidden",
+          <div style={{ fontSize: "var(--fs-base)", color: "var(--qb-text)", fontWeight: "bold" }}>{move.name}</div>
+          <div style={{ fontSize: "var(--fs-2xs)", color: qc, marginTop: 2 }}>{move.type} · {move.quality}品 · 耗气{move.energyCost}</div>
+          <div style={{ fontSize: "var(--fs-2xs)", color: "var(--qb-move-summary)", marginTop: 3, lineHeight: 1.35, overflow: "hidden",
             display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{mainLine}</div>
           {reason
-            ? <div style={{ fontSize: 9.5, color: "var(--qb-move-blocked)", marginTop: "auto" }}>{reason}</div>
-            : <div style={{ fontSize: 9, color: "var(--qb-edge)", marginTop: "auto" }}>点击看详情 →</div>}
+            ? <div style={{ fontSize: "var(--fs-2xs)", color: "var(--qb-move-blocked)", marginTop: "auto" }}>{reason}</div>
+            : <div style={{ fontSize: "var(--fs-2xs)", color: "var(--qb-edge)", marginTop: "auto" }}>点击看详情 →</div>}
         </button>}
         {flipped && <div
           className="qb-face qb-back"
           style={{ padding: "7px 9px", background: "rgba(24,20,13,.98)", border: `2px solid ${qc}`, overflowY: "auto" }}
         >
-          <div style={{ fontSize: 11, color: qc, fontWeight: "bold", marginBottom: 3 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: qc, fontWeight: "bold", marginBottom: 3 }}>
             {move.name} <span style={{ color: "var(--qb-border)", fontWeight: "normal" }}>耗气{move.energyCost}</span>
           </div>
-          <div style={{ fontSize: 8.5, color: "var(--qb-border)", marginBottom: 4, lineHeight: 1.4 }}>{gist}</div>
+          <div style={{ fontSize: "var(--fs-2xs)", color: "var(--qb-border)", marginBottom: 4, lineHeight: 1.4 }}>{gist}</div>
           {lines.map((l, i) => (
-            <div key={i} style={{ fontSize: 9.5, color: l.warn ? "var(--qb-move-warn)" : "var(--qb-text-dim)", lineHeight: 1.5, marginBottom: 2 }}>
+            <div key={i} style={{ fontSize: "var(--fs-2xs)", color: l.warn ? "var(--qb-move-warn)" : "var(--qb-text-dim)", lineHeight: 1.5, marginBottom: 2 }}>
               · {l.text}
             </div>
           ))}

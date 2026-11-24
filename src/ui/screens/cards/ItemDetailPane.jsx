@@ -27,7 +27,7 @@ export default function ItemDetailPane({ item, onClose, onPatch }) {
     <div style={{ marginBottom: 7, padding: "8px 10px", borderRadius: 0, border: "1px solid var(--service-card-edge)", background: "rgba(0,0,0,.3)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
         <span style={{ color: "var(--paper)", fontSize: 12 }}>{nameOf(item)}</span>
-        <span style={{ fontSize: 10, color: "var(--quest-stage-desc)" }}>
+        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--quest-stage-desc)" }}>
           {CAT_LABEL[category] || category} · {quality}档
         </span>
         <span style={{ flex: 1 }} />
@@ -37,7 +37,7 @@ export default function ItemDetailPane({ item, onClose, onPatch }) {
       {/* 伤害 / 防御 */}
       <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
         {atk != null && (
-          <div style={{ fontSize: 10.5, color: "var(--attr-waigong-tag)" }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--attr-waigong-tag)" }}>
             攻击力 <span style={{ color: "var(--service-item-name)", fontWeight: 700 }}>{atk}</span>
             {custom && category === "weapon" && (
               <span style={{ marginLeft: 6, color: "var(--ink-text-dim)", fontSize: 9.5 }}>
@@ -51,7 +51,7 @@ export default function ItemDetailPane({ item, onClose, onPatch }) {
           </div>
         )}
         {def != null && (
-          <div style={{ fontSize: 10.5, color: "var(--footer-hint-title)" }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--footer-hint-title)" }}>
             防御力 <span style={{ color: "var(--ink-sky-soft)", fontWeight: 700 }}>{def}</span>
             {custom && category === "armor" && (
               <span style={{ marginLeft: 6, color: "var(--ink-text-dim)", fontSize: 9.5 }}>
@@ -74,7 +74,7 @@ export default function ItemDetailPane({ item, onClose, onPatch }) {
           onChange={e => onPatch(nameOf(item), { desc: e.target.value.slice(0, 200) })}
           style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,.35)", border: "1px solid var(--border-deep)", borderRadius: 0, padding: "5px 8px", color: "var(--ink-text)", fontSize: 10.5, lineHeight: 1.7, resize: "vertical", fontFamily: "inherit" }} />
       ) : (
-        <div style={{ fontSize: 10.5, color: "var(--ink-text)", lineHeight: 1.6 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--ink-text)", lineHeight: 1.6 }}>
           {desc || "在册物品，运行时按名字查百物录补全数值与词条。"}
         </div>
       )}
@@ -82,7 +82,7 @@ export default function ItemDetailPane({ item, onClose, onPatch }) {
       {/* 攻击特效：自造物可勾选，在册物只读列出 */}
       {custom ? (
         <div style={{ marginTop: 6 }}>
-          <div style={{ fontSize: 10, color: "var(--ink-muted)", marginBottom: 4 }}>攻击特效 · 点一下加上/去掉</div>
+          <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginBottom: 4 }}>攻击特效 · 点一下加上/去掉</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
             {ITEM_EFFECT_CHOICES.map(choice => {
               const on = effectHas(item, choice.key);

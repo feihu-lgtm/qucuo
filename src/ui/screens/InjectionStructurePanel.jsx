@@ -115,7 +115,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
           {visibleCalls.map((c) => (
             <span key={c.id} style={pill(call?.id === c.id)} onClick={() => { setSelectedCallId(c.id); setOpenBlock(null); }}>
-              {c.label} <span style={{ fontSize: 9.5, opacity: 0.7 }}>[{ROUTE_LABELS[c.route]}]</span>
+              {c.label} <span style={{ fontSize: "var(--fs-2xs)", opacity: 0.7 }}>[{ROUTE_LABELS[c.route]}]</span>
             </span>
           ))}
         </div>
@@ -135,14 +135,14 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 10.5, color: "var(--inject-hint)", marginTop: 4 }}>{call.desc}</div>
-            <div style={{ fontSize: 10.5, color: "var(--inject-ok)", marginTop: 2 }}>审阅与校验规则：{call.reviewDesc}</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--inject-hint)", marginTop: 4 }}>{call.desc}</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--inject-ok)", marginTop: 2 }}>审阅与校验规则：{call.reviewDesc}</div>
             {persistErr && (
-              <div style={{ fontSize: 10.5, color: "var(--inject-off)", marginTop: 4 }}>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--inject-off)", marginTop: 4 }}>
                 存储写入失败（{persistErr}），当前修改仅在本会话生效。
               </div>
             )}
-            {liveErr && <div style={{ fontSize: 10.5, color: "var(--inject-off)", marginTop: 4 }}>{liveErr}</div>}
+            {liveErr && <div style={{ fontSize: "var(--fs-xs)", color: "var(--inject-off)", marginTop: 4 }}>{liveErr}</div>}
           </div>
         )}
 
@@ -151,8 +151,8 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
           if (!items.length) return null;
           return (
             <div key={cat.id} style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 11, color: "var(--accent)", marginBottom: 4 }}>
-                {cat.label} <span style={{ fontSize: 10, color: "var(--text-dim)" }}>({cat.desc})</span>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent)", marginBottom: 4 }}>
+                {cat.label} <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>({cat.desc})</span>
               </div>
               {items.map((item) => {
                 const open = openBlock === item.id;
@@ -167,7 +167,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                       <span style={{ color: "var(--inject-faint)", fontSize: 10 }}>{open ? "▼" : "▶"}</span>
                       <span style={{ width: 8, height: 8, background: item.effectiveLit ? (KIND_META[item.kind]?.color || "var(--ink-good)") : "var(--inject-unlit)" }} />
                       <span style={{ flex: 1, fontSize: 11.5, color: item.effectiveLit ? "var(--text)" : "var(--text-dim)" }}>
-                        {item.name} <span style={{ fontSize: 9.5, color: "var(--inject-faint)" }}>#{item.slot}</span>
+                        {item.name} <span style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-faint)" }}>#{item.slot}</span>
                       </span>
                       {item.canToggleOff ? (
                         <span style={{ display: "inline-flex", gap: 3 }} onClick={(e) => e.stopPropagation()}>
@@ -177,16 +177,16 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                           ))}
                         </span>
                       ) : (
-                        <span style={{ fontSize: 9.5, color: "var(--text-dim)" }}>{item.soleSys ? "系统必亮" : "引擎锁定"}</span>
+                        <span style={{ fontSize: "var(--fs-2xs)", color: "var(--text-dim)" }}>{item.soleSys ? "系统必亮" : "引擎锁定"}</span>
                       )}
                     </div>
                     {open && (
                       <div style={{ padding: "0 8px 8px 26px" }}>
-                        <div style={{ fontSize: 10, color: item.effectiveLit ? "var(--inject-ok)" : "var(--inject-off)" }}>状态：{item.reason}</div>
-                        {item.summary && <div style={{ fontSize: 10.5, color: "var(--text-dim)", marginTop: 2 }}>{item.summary}</div>}
+                        <div style={{ fontSize: "var(--fs-2xs)", color: item.effectiveLit ? "var(--inject-ok)" : "var(--inject-off)" }}>状态：{item.reason}</div>
+                        {item.summary && <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginTop: 2 }}>{item.summary}</div>}
                         {live[item.id] != null && (
                           <>
-                            <div style={{ fontSize: 10, color: "var(--accent)", marginTop: 4 }}>⟳ 当前这一局真值</div>
+                            <div style={{ fontSize: "var(--fs-2xs)", color: "var(--accent)", marginTop: 4 }}>⟳ 当前这一局真值</div>
                             <div style={preStyle}>{live[item.id]}</div>
                           </>
                         )}
@@ -214,7 +214,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                         ) : item.effectiveText != null ? (
                           <>
                             {item.id === "narrator_lore" && (
-                              <div style={{ fontSize: 10, color: "var(--inject-hint)", marginTop: 4 }}>正文请在『旁白』设置页编辑，此处只读预览，仅可开关。</div>
+                              <div style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-hint)", marginTop: 4 }}>正文请在『旁白』设置页编辑，此处只读预览，仅可开关。</div>
                             )}
                             <div style={preStyle}>{item.effectiveText}</div>
                           </>
@@ -233,7 +233,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
 
   const renderTavernView = () => {
     const t = getTraceLog().find((x) => x.nodes.some((n) => n.pipeline?.callLabel === "主叙事"));
-    if (!t) return <div style={{ fontSize: 11, color: "var(--text-dim)", padding: "12px 0" }}>触发一次行动后，这里展示实际发出去的 13 位置结构。</div>;
+    if (!t) return <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", padding: "12px 0" }}>触发一次行动后，这里展示实际发出去的 13 位置结构。</div>;
     const pl = t.nodes.find((n) => n.pipeline?.callLabel === "主叙事").pipeline;
     const sys = Array.isArray(pl.systemPrompt) ? pl.systemPrompt : [{ role: "system", content: pl.systemPrompt || "", tavernBlock: "main", tavernLabel: "Main Prompt" }];
     const msgs = [
@@ -244,7 +244,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {msgs.map((m, i) => (
           <div key={i} style={{ border: "1px solid var(--border)", padding: "6px 8px" }}>
-            <div style={{ fontSize: 10.5, color: "var(--text)", marginBottom: 3 }}>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--text)", marginBottom: 3 }}>
               #{Math.floor(m.order)} <b>{m.tavernLabel || m.tavernBlock || m.role}</b> ({(m.content || "").length} 字)
             </div>
             <pre style={{ ...preStyle, marginTop: 0, maxHeight: 140 }}>{m.content || "（空）"}</pre>
@@ -257,7 +257,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 10.5, color: "var(--text-dim)" }}>查看视角：</span>
+        <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>查看视角：</span>
         {[["control", "🎛️ 统一总控台"], ["tavern", "🍺 酒馆 13 位置"], ["action", "⚔ 动作分类"]].map(([m, label]) => (
           <span key={m} style={pill(viewMode === m)} onClick={() => { setViewMode(m); setOpenBlock(null); }}>{label}</span>
         ))}
@@ -272,7 +272,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
               <span key={v.id} style={pill(actionId === v.id)} onClick={() => { setActionId(v.id); setOpenBlock(null); }}>{v.label}</span>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: "var(--inject-hint)", marginBottom: 6 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--inject-hint)", marginBottom: 6 }}>
             {view.note}（{actionBlocks.filter((b) => b.lit).length}/{actionBlocks.length} 块亮灯，模式 {mode === "dual" ? "双调用" : "单调用"}）
           </div>
           {actionBlocks.map((b) => {
@@ -285,12 +285,12 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
                   <span style={{ color: "var(--inject-faint)", fontSize: 10 }}>{open ? "▼" : "▶"}</span>
                   <span style={{ width: 8, height: 8, background: b.lit ? meta.color : "var(--inject-unlit)" }} />
                   <span style={{ flex: 1, fontSize: 12, color: b.lit ? "var(--text)" : "var(--text-dim)" }}>{b.name}{!b.lit && " ⚫灭"}</span>
-                  <span style={{ fontSize: 9.5, color: "var(--inject-faint)" }}>{meta.label} #{b.depth}</span>
+                  <span style={{ fontSize: "var(--fs-2xs)", color: "var(--inject-faint)" }}>{meta.label} #{b.depth}</span>
                 </div>
                 {open && (
                   <div style={{ padding: "0 9px 9px 34px" }}>
-                    {!b.lit && b.off && <div style={{ fontSize: 10.5, color: "var(--inject-off)" }}>{b.off}</div>}
-                    <div style={{ fontSize: 10.5, color: "var(--text-dim)" }}>{b.summary}</div>
+                    {!b.lit && b.off && <div style={{ fontSize: "var(--fs-xs)", color: "var(--inject-off)" }}>{b.off}</div>}
+                    <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)" }}>{b.summary}</div>
                     {b.id === "preset_wenfeng" && <div style={preStyle}>{CONSTRAINT_FIELDS.map((f) => `${f.label}（${f.type}）— ${f.desc}`).join("\n")}</div>}
                     {live[b.id] != null ? <div style={preStyle}>{live[b.id]}</div> : text != null ? <div style={preStyle}>{text}</div> : null}
                   </div>

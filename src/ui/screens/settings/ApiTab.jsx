@@ -66,7 +66,7 @@ export default function ApiTab({
     <div>
       {/* 【暂留·等会用】原多渠道说明文案，后续可能放到别处：
         支持 OpenAI 兼容格式、Gemini API、Anthropic 原生格式与千问。密钥仅保存在浏览器本地（localStorage），不会上传到任何服务器。 */}
-      <div style={{ fontSize: "11px", color: "var(--text-dim)", marginBottom: 8 }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8 }}>
         选择服务商，并按其接口协议配置地址、密钥与模型。
       </div>
 
@@ -91,7 +91,7 @@ export default function ApiTab({
           onPick={m => { patch({ model: m }); setModelList(null); }} />
       )}
       {!isVertex && modelList && modelList.length === 0 && (
-        <div style={{ fontSize: "10.5px", color: "var(--gold)", marginTop: 3 }}>接口未返回任何模型，请手动填写模型名称</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--gold)", marginTop: 3 }}>接口未返回任何模型，请手动填写模型名称</div>
       )}
 
       <ApiSettingsGroup title="篇幅与超时" expanded={apiGroups.length} zoneTheme={zoneTheme}

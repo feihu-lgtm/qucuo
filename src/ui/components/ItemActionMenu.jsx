@@ -88,7 +88,7 @@ export default function ItemActionMenu({
     <div className="mobile-overlay-root" style={overlay} onMouseDown={closeGuard.onMouseDown} onClick={closeGuard.onClick}>
       <div className="mobile-action-panel" style={panel} onClick={(e) => e.stopPropagation()}>
         <div style={{ color: quality ? undefined : zoneTheme.accent, fontSize: "14px", marginBottom: 4 }}>
-          {name}{quality ? <span style={{ fontSize: "11px", color: zoneTheme.textDim, marginLeft: 6 }}>（{quality}）</span> : null}
+          {name}{quality ? <span style={{ fontSize: "var(--fs-xs)", color: zoneTheme.textDim, marginLeft: 6 }}>（{quality}）</span> : null}
         </div>
         <div style={{ color: zoneTheme.textDim, fontSize: "11px", marginBottom: 16 }}>
           {mode === "ground" ? "地上之物"

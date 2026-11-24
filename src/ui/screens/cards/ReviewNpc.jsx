@@ -39,7 +39,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
       <div style={{ display: "flex", gap: 14 }}>
         <div style={{ flexShrink: 0, textAlign: "center" }}>
           <JadeTier value={cap} size={54} withSelect onChange={v => onPatch({ levelCap: v })} />
-          <div style={{ fontSize: 10, color: "var(--ink-muted)", marginTop: 5 }}>
+          <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-muted)", marginTop: 5 }}>
             品阶<Src source={n.source} why={n.levelCapWhy} />
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
         {n.entryFromAi
           ? <Src source="ai" why="按本作格式重写过" />
           : <Src source="fallback" />}
-        <span style={{ fontSize: 10, color: (n.entry || "").length > LORE_MAX ? "var(--ink-error-text)" : "var(--ink-muted)", marginLeft: 6 }}>
+        <span style={{ fontSize: "var(--fs-2xs)", color: (n.entry || "").length > LORE_MAX ? "var(--ink-error-text)" : "var(--ink-muted)", marginLeft: 6 }}>
           {(n.entry || "").length}/{LORE_MAX} 字
         </span>
       </>}>
@@ -141,7 +141,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
           onChange={v => onPatch({ neigong: v })} />
         <StatRow label="外功" value={waigong} max={100} step={1} width={30}
           onChange={v => onPatch({ waigong: v })} />
-        <div style={{ fontSize: 10, color: "var(--ink-text-dim)", marginTop: 4, lineHeight: 1.7 }}>
+        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--ink-text-dim)", marginTop: 4, lineHeight: 1.7 }}>
           {TIERS[cap]?.label}档的基准是 {TIER_NEIGONG[cap]}。
           气血由内功与体魄算出：<span style={{ color: "var(--ink-warn)" }}>{maxHp}</span>
           {atk != null ? <>；出手威力由外功算出：<span style={{ color: "var(--ink-warn)" }}>{atk}</span></> : null}
@@ -183,7 +183,7 @@ export default function ReviewNpc({ npc, onPatch, accent, dropped, apiCfg, cardI
       {dropped?.length ? (
         <Section title="卡里没被导入的东西" dim>
           {dropped.map((d, i) => (
-            <div key={i} style={{ fontSize: 10.5, color: "var(--bug-dim-dark)", lineHeight: 1.8 }}>
+            <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--bug-dim-dark)", lineHeight: 1.8 }}>
               <Src source="drop" /> {d}
             </div>
           ))}
