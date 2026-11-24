@@ -8,15 +8,15 @@ const REQUIRED_SCALAR = [
   "lifeHistory", "likes", "hobby", "tradeStyle",
 ];
 
-describe("adventurersIP —— IP 改编第三批 54 人", () => {
+describe("adventurersIP —— IP 改编第三批 54 人 + OC 元朵朵", () => {
   it("共 54 人，id 形如 adv_* 且全局唯一，姓名唯一", () => {
-    expect(ADVENTURER_POOL_IP).toHaveLength(54);
+    expect(ADVENTURER_POOL_IP).toHaveLength(55);
     const ids = ADVENTURER_POOL_IP.map((a) => a.id);
-    expect(new Set(ids).size).toBe(54);
+    expect(new Set(ids).size).toBe(55);
     for (const id of ids) expect(id).toMatch(/^adv_[a-z_]+$/);
     const names = ADVENTURER_POOL_IP.map((a) => a.name);
-    expect(new Set(names).size).toBe(54);
-    expect(Object.keys(ADVENTURER_IP_BY_NAME)).toHaveLength(54);
+    expect(new Set(names).size).toBe(55);
+    expect(Object.keys(ADVENTURER_IP_BY_NAME)).toHaveLength(55);
   });
 
   it.each(ADVENTURER_POOL_IP.map((a) => [a.name, a]))("%s 标量字段齐备", (_n, adv) => {
