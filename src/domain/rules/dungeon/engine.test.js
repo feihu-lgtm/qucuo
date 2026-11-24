@@ -21,10 +21,10 @@ beforeEach(() => {
 });
 
 describe("地宫配置表与基础初始化", () => {
-  it("八大地宫与十二位 OC 冒险者的掉落/随身物品均存在于 CATALOG_INDEX", () => {
+  it("八大地宫与二十二位 OC 冒险者的掉落/随身物品均存在于 CATALOG_INDEX", () => {
     expect(Object.keys(DUNGEON_CATALOG)).toHaveLength(8);
-    expect(ADVENTURER_POOL).toHaveLength(12);
-    expect(new Set(ADVENTURER_POOL.map((a) => a.name)).size).toBe(12);
+    expect(ADVENTURER_POOL).toHaveLength(22);
+    expect(new Set(ADVENTURER_POOL.map((a) => a.name)).size).toBe(22);
 
     const names = new Set();
     for (const cfg of Object.values(DUNGEON_CATALOG)) {
@@ -227,12 +227,12 @@ describe("节点选择、检定与流程推进", () => {
 });
 
 describe("地宫随机冒险者遭遇与世界刷新", () => {
-  const sampleAdv = ADVENTURER_POOL.find((a) => a.name === "燕十三娘");
+  const sampleAdv = ADVENTURER_POOL.find((a) => a.name === "燕绾烟");
 
   function makeAdvNode(scenario = "help") {
     return {
       type: DUNGEON_NODE_TYPE.ADVENTURER,
-      nodeId: "f1_s0_b_adv_yan_shisanniang",
+      nodeId: "f1_s0_b_adv_yan_wanyan",
       title: `江湖奇遇 · ${sampleAdv.name}`,
       desc: "desc",
       scenario,
@@ -254,7 +254,7 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
   it("帮忙时未触发反水则仗义分赃，触发反水抢宝可拔刀夺回全部被抢财物", () => {
     const base = createDungeonRun("white_pagoda_crypt", { char: { hp: [100, 100] } });
     const withLoot = { ...base, loot: { money: 40, exp: 0, pot: 0, items: ["守宫砂"] } };
-    const entered = selectDungeonNode({ ...withLoot, choices: [makeAdvNode("help")] }, "f1_s0_b_adv_yan_shisanniang");
+    const entered = selectDungeonNode({ ...withLoot, choices: [makeAdvNode("help")] }, "f1_s0_b_adv_yan_wanyan");
     expect(entered.metAdventurers).toContain(sampleAdv.id);
 
     // 1) 不反水：用高随机值跳过 stealBias(0.55) 判定
@@ -281,7 +281,7 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
 
     const combat = resolveDungeonChoice(betrayed, "adv_pursue");
     expect(combat.status).toBe("combat");
-    expect(combat.activeEnemy?.name).toBe("燕十三娘");
+    expect(combat.activeEnemy?.name).toBe(sampleAdv.name);
 
     const recovered = applyDungeonBattleResult(combat, { outcome: "win", playerHp: [88, 100] });
     expect(recovered.status).toBe("exploring");
@@ -305,7 +305,7 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
       activeNode: makeAdvNode("help"),
     }, "adv_rob");
     expect(robCombat.status).toBe("combat");
-    expect(robCombat.activeEnemy?.name).toBe("燕十三娘");
+    expect(robCombat.activeEnemy?.name).toBe(sampleAdv.name);
 
     const ambushBase = {
       ...base,
@@ -322,10 +322,10 @@ describe("地宫随机冒险者遭遇与世界刷新", () => {
     expect(outwitFail?.activeNode?.stolenFromPlayer?.money).toBeGreaterThan(0);
   });
 
-  it("getWorldAdventurers 每天把 12 位冒险者分布到各地，residentNpcRule 跨天换人并附带炫彩标记", () => {
+  it("getWorldAdventurers 每天把 22 位冒险者分布到各地，residentNpcRule 跨天换人并附带炫彩标记", () => {
     const day0List = Object.keys(QUCUO_MAP).flatMap((d) => getWorldAdventurers(d, 6));
-    expect(day0List).toHaveLength(12);
-    expect(new Set(day0List.map((a) => a.name)).size).toBe(12);
+    expect(day0List).toHaveLength(22);
+    expect(new Set(day0List.map((a) => a.name)).size).toBe(22);
 
     const hostDistrict = Object.keys(QUCUO_MAP).find((d) => getWorldAdventurers(d, 6).length > 0);
     const expectedToday = getWorldAdventurers(hostDistrict, 6).map((a) => a.name);
