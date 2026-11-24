@@ -49,13 +49,14 @@ describe("lookNpcInBackground", () => {
           { role: "user", content: "看 才旦" },                    // 旧档无 kind 标记的指令
           { role: "assistant", content: "此处是鱼定村；出口：南·草场；在场：才旦" }, // 旧档环顾事实
           { role: "user", content: "问才旦山上的雪狼" },
+          { role: "user", content: "看 才旦你今天气色不错" },      // 「看」起头的搭话，不是看卡回写
         ],
       }),
     });
     await lookNpcInBackground(npc, [], deps);
     const user = deps.ask.mock.calls[0][1];
     const section = user.match(/最近的交谈：\n((?:· .*\n?)*)/)?.[1] || "";
-    expect(section.trim()).toBe("· 问才旦山上的雪狼");
+    expect(section.trim()).toBe("· 问才旦山上的雪狼\n· 看 才旦你今天气色不错");
     expect(user).not.toContain("命硬");
   });
 

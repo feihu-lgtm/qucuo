@@ -41,12 +41,17 @@ async function recallNpcMemoryTexts(name, { cfg, flags } = {}, limit = 3) {
 // convo 里不算"跟他的交谈"的条目：kind:"look"（看/环顾写进的系统卡片与事实行，
 // 新档标记）——不然回头再看他一次，上次的卡片就挤掉真对话、还凭空造出交谈史；
 // 旧档没标记，靠指令头/卡片行样式认；旁白私聊前缀同样不是"跟他说的"。
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const isNotNpcDialogue = (m, name) =>
   m?.kind === "look"
   || /^（私聊）|^（旁白私聊回应）/.test(m?.content || "")
-  || /^看[\s　]/.test(m?.content || "")
+  // 系统回写的看指令精确是「看 名字」——玩家真说出口的「看 你今天气色好」
+  // 是搭话不是看卡，得留着。
+  || new RegExp(`^看[\\s　]+${escapeRe(name)}$`).test(m?.content || "")
   || (m?.role === "assistant"
-    && (/装束：|在场：|出口：/.test(m.content || "") || String(m.content || "").trim() === name));
+    && (/装束：|在场：|出口：/.test(m.content || "")
+      || String(m.content || "").trim() === name
+      || m.content.startsWith(`${name}：`)));
 
 function collectNpcContext(state, npc) {
   const name = npc?.name || "";
