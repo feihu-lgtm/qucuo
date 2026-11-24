@@ -12,6 +12,7 @@ export { calcDungeonCheckRate } from "./internal.js";
 export { resolveDungeonChoice } from "./resolve.js";
 export { makePuzzle, PUZZLE_FACTORIES } from "./puzzles.js";
 export { pickDungeonAdventurers, genAdventurerEncounter } from "./dungeonPool.js";
+export { startMapRun, moveRoom, retreatRun, runEnd } from "./mapRun.js";
 
 export function createDungeonRun(dungeonId, { char } = {}) {
   const cfg = getDungeonConfig(dungeonId);
