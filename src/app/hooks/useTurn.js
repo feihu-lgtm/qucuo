@@ -21,6 +21,8 @@ import { createTurnContext } from "../../engine/turn/turnContext.js";
 import { settleInBackground } from "./settleBackfill.js";
 import { lookInBackground } from "./lookBackfill.js";
 import { lookNpcInBackground } from "./npcLookBackfill.js";
+import { companionChatterTick } from "../../features/npc/companionChatter.js";
+import { askStoryteller } from "../../engine/ports/storyteller.js";
 import { applySquareOps, featureCtx as runtimeCtx, registerRuntime } from "../runtime/gameRuntime.js";
 
 // 回合入口的 React 胶水：组 env → resolveIntent（识别/裁决）→ createTurnContext
@@ -204,6 +206,18 @@ export function useTurn({
     }
     consumeDuelRequest(result, { opts, isStale, isTalk, interactMode: effMode, setActiveTarget, setDuelPending, trace: _trace });
     noteAction(isSettle ? "settle" : isTalk ? "talk" : "action");
+    // 随行同伴随机插话（评价玩家活动）：概率触发、AI 现写（无 API 兜底句），记日志 + 进记忆
+    if (result.ok && !isStale()) {
+      const cur = gameStore.getState();
+      companionChatterTick({
+        companionState: cur.companionState, roomName: cur.room?.name,
+        activity: { text: cmd, intent: resolved.plan?.intent?.code }, ask: askStoryteller,
+      }).then((c) => {
+        if (!c || isStale()) return;
+        addLog([{ t: "desc", text: `  ${c.speaker}：“${c.line}”` }]);
+        jotNote({ text: `${c.speaker}见状说道：“${c.line}”`, owner: [c.speaker] });
+      }).catch(() => {});
+    }
     if (isTalk) changePendingTalks(-1); else setLoading(false);
     if (waitTimerRef.current) { clearInterval(waitTimerRef.current); waitTimerRef.current = null; }
     setWaitSecs(0);

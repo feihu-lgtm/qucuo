@@ -7,7 +7,7 @@
 
 import { createPromptContext } from "../prompt/index.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
-import { COMPANION_LORE } from "../../domain/rules/companion/companion.js";
+import { COMPANION_LORE, stationedNpcsFor } from "../../domain/rules/companion/companion.js";
 import { getCompanionDescForm } from "../../domain/rules/companion/companionForms.js";
 import { SEA_OF_MIND } from "../../domain/rules/narrator/seaOfMind.js";
 import { CATEGORY_LABEL } from "../../domain/rules/economy/equipment.js";
@@ -85,7 +85,14 @@ export function createTurnContext({ plan, env }) {
       time,
       apiCfg,
       flags,
-      recall: { apiCfg, cmd: env.cmd, room, flags, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk, talkTarget },
+      recall: { apiCfg, cmd: env.cmd, room, flags, activeTarget, activeGroundItem: activeGroundItemForTurn, isTalk, talkTarget,
+        followingNames: [
+          ...Object.entries(companionState || {})
+            .filter(([, c]) => c?.unlocked && !c?.stationed)
+            .map(([, c]) => c.label || c.data?.name).filter(Boolean),
+          // 留守在当前房的同伴也算在场——名字不进 room.npcs，召回时不至于看不见
+          ...stationedNpcsFor(companionState, { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name }).map(n => n.name),
+        ] },
     },
     state: { room, char, inv, dao },
     getMapNode,

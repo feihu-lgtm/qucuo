@@ -17,6 +17,8 @@ import { claimGoldenEgg } from "../../features/npc/goldenEgg.js";
 import { duoduoEggReaction } from "./eggBackfill.js";
 import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
 import { stationCompanion, unstationCompanion } from "../../domain/rules/companion/companion.js";
+import { companionReunionLine } from "../../features/npc/companionChatter.js";
+import { askStoryteller } from "../../engine/ports/storyteller.js";
 import { toggleEquip } from "../../domain/rules/economy/equipment.js";
 import { getPresentNpcs } from "../../domain/rules/state/fields.js";
 import { startTrace, step as traceStep, endTrace } from "../../infra/actionTrace.js";
@@ -109,6 +111,16 @@ export function useScreenHandlers({
     applyResult(featureCtx(), { changes: { companionState: unstationCompanion(companionState, slotKey) } });
     setActiveTarget(npc.name);
     applyResult(featureCtx(), { logs: [{ t: "sys", text: `  ${npc.name}收拾行装，跟上了你的脚步。` }] });
+    // 重逢台词：按留守时长+好感现写开口第一句（无 API 走兜底），记日志 + 进记忆
+    const cur = gameStore.getState();
+    companionReunionLine({
+      companionState, slotKey, now: cur.time,
+      favor: Number(cur.varTree?.角色?.[npc.name]?.好感度 ?? 0), ask: askStoryteller,
+    }).then((r) => {
+      if (!r) return;
+      addLog([{ t: "desc", text: `  ${r.speaker}：“${r.line}”` }]);
+      featureCtx().io?.jotNote?.({ text: `${r.speaker}见你回来接她，说道：“${r.line}”`, owner: [r.speaker] });
+    }).catch(() => {});
   }, { feature: "npc.recallCompanion" }), [captureUndo]);
 
   const handleConsumeItem = useCallback((item) => applyResult(featureCtx(), () => {
