@@ -341,13 +341,7 @@ export const KNOWN_DIRECT_AI_CALL_DEBT = {
   "engine/act/actCall.js": 2,
   "engine/act/memoryLayer.js": 1,
   "engine/intent/aiClassifier.js": 1,
-  "engine/ports/cardScan/scanCalls.js": 1,
   "engine/ports/extraction.js": 1,
-  "engine/turn/resolveIntent.js": 1,
-  "ui/screens/cards/Placement.jsx": 1,
-  "ui/screens/cards/carryItemModel.js": 1,
-  "ui/screens/cards/playerAiScans.js": 3,
-  "ui/screens/cards/useReviewOps.js": 3,
 };
 
 export const KNOWN_STATE_WRITE_DEBT = {
@@ -362,7 +356,7 @@ export const KNOWN_EXTERNAL_INFRA_CAP = {
   engine: 24,
   entry: 6,
   store: 2,
-  ui: 34,
+  ui: 33,
 };
 
 // 路线甲硬红线：React ref 已赶出 engine/act，任何 .current 读写都不许回来。

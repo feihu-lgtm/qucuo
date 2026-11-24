@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import { ESLint } from "eslint";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -135,4 +136,18 @@ it("rejects increases over ratchet caps for AI calls, state writes, infra import
     mudRpgHookArgs: KNOWN_MUD_RPG_HOOK_ARGS_CAP + 1,
   });
   expect(hookArgsIncrease.ok).toBe(false);
+});
+
+it("blocks UI modules from importing callModel or callModelStream via any facade", async () => {
+  const eslint = new ESLint({ cwd: resolve(srcDir, "..") });
+  for (const snippet of [
+    'import { callModel } from "../../infra/apiConfig.js";\nexport default callModel;',
+    'import { callModelStream } from "../../infra/apiDiagnostics.js";\nexport default callModelStream;',
+    'import { callModel } from "../../../engine/ports/ai.js";\nexport default callModel;',
+  ]) {
+    const [result] = await eslint.lintText(snippet, {
+      filePath: resolve(srcDir, "ui/screens/FakeScreen.jsx"),
+    });
+    expect(result.messages.some((m) => m.ruleId === "no-restricted-imports")).toBe(true);
+  }
 });

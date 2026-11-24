@@ -6,7 +6,7 @@ import { DISTRICTS } from "../../../domain/rules/cards/reviewRules.js";
 import { hasInnerMap, getPublicInnerRoomNames } from "../../../domain/rules/map/innerMap.js";
 import { buildPlacementPlan, sanitizePlacementPlan, PLAN_MAX_TOKENS } from "../../../domain/rules/cards/placementPlan.js";
 import { acquire } from "../../../domain/rules/cards/rateLimiter.js";
-import { callModel } from "../../../engine/ports/ai.js";
+import { callCardModel } from "../../../engine/ports/cardScan/scanCalls.js";
 import { normalizePlacement } from "../../../domain/rules/cards/importedRegistry.js";
 import { parseJsonLoose } from "../../../domain/rules/cards/scanPrompts.js";
 
@@ -31,8 +31,8 @@ export default function Placement({ value, onChange, accent, npc, apiCfg, why, r
       await acquire(ms => setWait(Math.ceil(ms / 1000)));
       setWait(0);
       const { system, user } = buildPlacementPlan([npc], DISTRICTS);
-      const res = await callModel(apiCfg, system, [{ role: "user", content: user }],
-        { maxTokens: PLAN_MAX_TOKENS.single, temperature: 0.6 });
+      const res = await callCardModel(apiCfg, system, user,
+        { maxTokens: PLAN_MAX_TOKENS.single, temperature: 0.6, callLabel: "卡面单个落脚" });
       const plans = sanitizePlacementPlan(parseJsonLoose(res.text || ""), [npc], DISTRICTS);
       if (!plans.length) { setErr("AI 没给出认得出的安排，再点一次试试"); return; }
       onPlan?.(plans[0].placement, plans[0].why, plans[0].rejected);

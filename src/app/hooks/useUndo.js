@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
 import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../../infra/turnMonitor.js";
-import { gameActions } from "../../store/gameStore.js";
+import { clearNextReplaceAsUndo, gameActions, markNextReplaceAsUndo } from "../../store/gameStore.js";
 
 const undoOwners = new WeakMap();
 
@@ -52,11 +52,14 @@ export function createUndoController({
       return false;
     }
     invalidateTurns();
+    markNextReplaceAsUndo();
     try {
       withTurnContext(turn, () => applySnapshot(snapshot));
     } catch (error) {
       turnMonitor.transition(turn, PHASE.ERROR, String(error));
       throw error;
+    } finally {
+      clearNextReplaceAsUndo();
     }
     undoSnapshotRef.current = null;
     setActiveBuilding(null);

@@ -5,7 +5,9 @@ import { setFactSummary } from "../../domain/rules/prompt/knowledge.js";
 import { resetForDay } from "../../domain/rules/map/mapSquares.js";
 import { createWebAi } from "../../engine/ports/ai.js";
 import { withAI } from "../../engine/ports/withAI.js";
-import { gameStore, getGameEpoch, isGameEpochStale, useGameStore } from "../../store/gameStore.js";
+import {
+  gameStore, getGameEpoch, getSessionEpoch, isGameEpochStale, isSessionEpochStale, useGameStore,
+} from "../../store/gameStore.js";
 import "../calls/hookCalls.js";
 
 const webAi = createWebAi();
@@ -17,8 +19,10 @@ export function useDaySummary({ apiCfg, setVarTree, dayMaterialRef, prerunSquare
     const lines = (material || []).map(m => m.text).filter(Boolean);
     if (!lines.length) return;
     const label = `第${endedDay + 1}日`;
-    const epoch = getGameEpoch();
-    const isStale = () => isGameEpochStale(epoch);
+    const session = getSessionEpoch();
+    // 同日内撤销不作废昨天的日总结；真换档/新开局或跨天退回昨日才丢弃。
+    const isStale = () => isSessionEpochStale(session)
+      || Math.floor((gameStore.getState().time ?? 0) / 24) <= endedDay;
     try {
       const { ok, text } = await withAI(
         "day.summary",
@@ -54,6 +58,10 @@ export function useDaySummary({ apiCfg, setVarTree, dayMaterialRef, prerunSquare
   const prevDayRef = useRef(Math.floor(time / 24));
   useEffect(() => {
     const curDay = Math.floor(time / 24);
+    if (curDay < prevDayRef.current) {
+      prevDayRef.current = curDay;
+      return;
+    }
     if (curDay > prevDayRef.current) {
       const ended = prevDayRef.current;
       const material = dayMaterialRef.current;

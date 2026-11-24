@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildSnapshot } from "../infra/saves.js";
-import { GAME_KEYS, gameActions, gameStore, getGameEpoch, initGameStore, isGameEpochStale } from "./gameStore.js";
+import {
+  GAME_KEYS, gameActions, gameStore, getGameEpoch, getSessionEpoch,
+  initGameStore, isGameEpochStale, isSessionEpochStale, markGameReplaced, markNextReplaceAsUndo,
+} from "./gameStore.js";
 import { snapshotFromStore } from "./persist.js";
 import { getRngState, setRngState } from "../utils/rng.js";
 
@@ -77,11 +80,19 @@ describe("game store", () => {
   it("increments gameEpoch on initGameStore and marks earlier epochs stale", () => {
     initGameStore({ char: { name: "一局" } });
     const firstEpoch = getGameEpoch();
+    const firstSession = getSessionEpoch();
     expect(isGameEpochStale(firstEpoch)).toBe(false);
+    expect(isSessionEpochStale(firstSession)).toBe(false);
+
+    markNextReplaceAsUndo();
+    markGameReplaced();
+    expect(isGameEpochStale(firstEpoch)).toBe(true);
+    expect(isSessionEpochStale(firstSession)).toBe(false);
 
     initGameStore({ char: { name: "二局" } });
     expect(isGameEpochStale(firstEpoch)).toBe(true);
-    expect(getGameEpoch()).toBe(firstEpoch + 1);
-    expect(isGameEpochStale(getGameEpoch())).toBe(false);
+    expect(isSessionEpochStale(firstSession)).toBe(true);
+    expect(getGameEpoch()).toBe(firstEpoch + 2);
+    expect(getSessionEpoch()).toBe(firstSession + 1);
   });
 });

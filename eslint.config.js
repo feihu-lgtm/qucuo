@@ -99,18 +99,16 @@ export default [
   },
   {
     files: ["src/ui/**/*.{js,jsx}"],
-    ignores: [
-      "**/*.{test,spec}.{js,jsx}",
-      // 历史欠账白名单（只减不增）：这 4 个卡片导入 UI 文件直接调用底层模型，待后续迁入 engine/ports 后移除
-      "src/ui/screens/cards/useReviewOps.js",
-      "src/ui/screens/cards/carryItemModel.js",
-      "src/ui/screens/cards/Placement.jsx",
-      "src/ui/screens/cards/playerAiScans.js",
-    ],
+    ignores: ["**/*.{test,spec}.{js,jsx}"],
     rules: {
       "no-restricted-imports": ["error", {
         patterns: [{
-          group: ["**/engine/ports/ai*", "**/infra/apiTransport*"],
+          group: [
+            "**/engine/ports/ai*",
+            "**/infra/apiTransport*",
+            "**/infra/apiConfig*",
+            "**/infra/apiDiagnostics*",
+          ],
           importNames: ["callModel", "callModelStream"],
           message: "UI modules must not import callModel or callModelStream directly; route AI calls through engine/ports/withAI.js.",
         }],

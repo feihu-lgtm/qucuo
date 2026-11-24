@@ -1,8 +1,53 @@
-// 单次调用封装（从 cardScan.js 拆出，纯搬运）
+// 单次调用封装（经 withAI 统一门禁）
 // 取令牌 → 调模型 → 解析；失败按 code 决定是否重试。
 
+import { definePrompt, getPromptDef } from "../../../domain/rules/prompt/registry.js";
 import { acquire } from "../../../domain/rules/cards/rateLimiter.js";
 import { parseJsonLoose } from "../../../domain/rules/cards/scanPrompts.js";
+import { createWebAi } from "../ai.js";
+import { withAI } from "../withAI.js";
+
+const webAi = createWebAi();
+
+function ensureCardScanPrompt() {
+  if (getPromptDef("call", "card.scan")) return;
+  definePrompt("block", "card.scan.sys", {
+    label: "导卡扫描系统指令",
+    slot: "sys",
+    text: (ctx) => ctx.system || "你是角色卡解析助手。",
+  });
+  definePrompt("block", "card.scan.user", {
+    label: "导卡扫描上下文",
+    slot: "user",
+    text: (ctx) => ctx.user || "",
+  });
+  definePrompt("call", "card.scan", {
+    label: (ctx) => ctx.callLabel || "导卡扫描",
+    defaultMaxTokens: (ctx) => ctx.maxTokens ?? 4000,
+    modelOptions: (ctx) => ({
+      ...(ctx.temperature != null ? { temperature: ctx.temperature } : {}),
+      ...(ctx.jsonOnly ? { jsonOnly: true } : {}),
+    }),
+    join: "",
+    blocks: ["card.scan.sys", "card.scan.user"],
+  });
+}
+
+export async function callCardModel(
+  apiCfg,
+  system,
+  user,
+  { maxTokens = 4000, temperature, jsonOnly = false, callLabel = "角色卡辅助" } = {},
+  ai = webAi,
+) {
+  ensureCardScanPrompt();
+  const res = await withAI(
+    "card.scan",
+    { system, user, maxTokens, temperature, jsonOnly, callLabel },
+    { ai, apiCfg },
+  );
+  return { text: res.text || "", finishReason: res.finishReason };
+}
 
 // 每阶段的输出 token 上限。阶段 2 一批 4 人、每人含七维与四档里程碑，
 // 实测约 900~1200 token，给 3000 留足余量；阶段 1 只出短字段但条目可能 36 条。
@@ -16,16 +61,25 @@ const STAGE_MAX_TOKENS = { 1: 6000, 2: 4500, 3: 1500, 4: 4000 };
  * 取令牌 → 调模型 → 解析。失败按 code 决定是否重试。
  * 重试也要重新取令牌（重试同样消耗真实额度，不能白嫖）。
  */
-async function callOnce(callModel, cfg, built, opts, ctx) {
+async function callOnce(callModelFn, cfg, built, opts, ctx) {
   const { onWait, signal } = ctx;
   await acquire(onWait, signal);
 
-  const messages = [{ role: "user", content: built.user }];
-  const res = await callModel(cfg, built.system, messages, {
-    maxTokens: STAGE_MAX_TOKENS[built.stage] || 2000,
-    temperature: opts.temperature ?? 0.3,   // 抽取任务要稳，不要发散
-    jsonOnly: !built.plainText,             // apiConfig 的 Gemini 分支据此加 responseMimeType
-  });
+  const ai = typeof callModelFn === "function"
+    ? { chat: (messages, chatOpts) => callModelFn(chatOpts.cfg, chatOpts.systemPrompt, messages, chatOpts.modelOptions) }
+    : webAi;
+  const res = await callCardModel(
+    cfg,
+    built.system,
+    built.user,
+    {
+      maxTokens: STAGE_MAX_TOKENS[built.stage] || 2000,
+      temperature: opts.temperature ?? 0.3, // 抽取任务要稳，不要发散
+      jsonOnly: !built.plainText,           // apiConfig 的 Gemini 分支据此加 responseMimeType
+      callLabel: `导卡阶段${built.stage ?? ""}`,
+    },
+    ai,
+  );
 
   if (built.plainText) return (res.text || "").trim();
   return parseJsonLoose(res.text);
