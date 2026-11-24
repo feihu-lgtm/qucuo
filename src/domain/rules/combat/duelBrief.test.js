@@ -18,8 +18,17 @@ describe("duelFactLine", () => {
     expect(duelFactLine({ ...round, result: { nameA: "甲", nameB: "乙" } })).toBe("第1回合 野球拳对回气，未分高下");
   });
 
-  it("keeps team rounds short", () => {
-    expect(duelFactLine({ round: 2, teamLines: [{ result: { worseName: "老孙" } }] })).toBe("第2回合 团战交锋，老孙吃亏");
+  it("gives team rounds the real moves, damage and who fell", () => {
+    const line = duelFactLine({
+      round: 6,
+      teamLines: [
+        {
+          teamText: "谷月轩以「磐石桩」击向陈虎方，陈虎方以「野球拳」相抗。谷月轩占了上风。陈虎方受创9。",
+          result: { nameA: "谷月轩", nameB: "陈虎方", hpAfterA: [40, 120], hpAfterB: [0, 100], worseName: "陈虎方" },
+        },
+      ],
+    });
+    expect(line).toBe("第6回合 谷月轩以「磐石桩」击向陈虎方，陈虎方以「野球拳」相抗。谷月轩占了上风。陈虎方受创9。陈虎方倒下。");
   });
 });
 

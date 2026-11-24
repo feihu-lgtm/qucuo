@@ -94,4 +94,16 @@ describe("路遇接 16 家势力与过路人池", () => {
     const expected = factionKey === "散人" ? null : factionKey;
     expect(getNpcFaction({ name: encounter.name, faction: encounter.faction, roadPasser: true })).toBe(expected);
   });
+
+  it("人已定的路遇台词被小模型写进别的据点条目时按名字找回", () => {
+    let sk = null;
+    for (let i = 0; i < 200 && !sk?.encounter?.passer; i++) sk = rollSkeleton("天龙营", 100);
+    const { passer } = sk.encounter;
+    applySquareBatch(0, [
+      { name: "雅江", desc: "江城。", encounterName: passer.name, encounterLine: "挑着货箱疾步走过。" },
+      { name: "天龙营", desc: "营寨。" },
+    ], { 天龙营: sk, 雅江: { item: null, encounter: null } });
+    expect(consumeArrival("天龙营", 0).encounter).toMatchObject({ name: passer.name, line: "挑着货箱疾步走过。" });
+    expect(consumeArrival("雅江", 0).encounter).toBeNull();
+  });
 });

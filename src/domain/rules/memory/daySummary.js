@@ -12,10 +12,22 @@
 
 const MAX_DAY_SUMMARIES = 14; // 最多留最近 14 天，超出丢最老（远景垫底，够用即可）
 
+// 连着重复的同一句事记（连打十几回坐）并成一条带次数，保住时间先后，
+// 免得原料被刷屏、说书人只好拿"天色渐晚"之类的原料里没有的东西去填。
+function collapseRepeats(lines) {
+  const out = [];
+  for (const text of lines) {
+    const last = out[out.length - 1];
+    if (last && last.text === text) last.count += 1;
+    else out.push({ text, count: 1 });
+  }
+  return out.map(({ text, count }) => (count > 1 ? `${text}（接连${count}回）` : text));
+}
+
 // 纯函数：构造日总结的 AI 请求（system + messages）。materialLines 为这一天攒下的
 // 小纸条文本数组（已按时间序）。要求 AI 用说书人口吻归纳成 2-4 句连贯白描，只记事实脉络。
 export function buildDaySummaryRequest(dayLabel, materialLines) {
-  const material = (materialLines || []).filter(Boolean).map((t, i) => `${i + 1}. ${t}`).join("\n");
+  const material = collapseRepeats((materialLines || []).filter(Boolean)).map((t, i) => `${i + 1}. ${t}`).join("\n");
   const system = "你是曲措乡这个武侠世界的说书人。现在要把主角某一天里发生的零散事记，归纳成一段连贯、简练的日志，供日后当作背景垫底回顾。用白话古文、章回说书人口吻，2-4 句话，只写事实脉络（去了何处、遇见何人、做成或没做成什么、结下或了断什么），按时间先后串成一段通顺的话，不要罗列、不要编造原料里没有的事、不要写心理活动。直接输出这段话，不要 JSON、不要标题、不要多余解释。";
   const user = `【${dayLabel}·这一天的零散事记】\n${material || "（这一天并无值得记述之事）"}\n\n请归纳成一段连贯的当日日志。`;
   return { system, messages: [{ role: "user", content: user }] };

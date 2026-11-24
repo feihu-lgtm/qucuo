@@ -106,6 +106,11 @@ export function applySquareBatch(day, parsed, skeletons) {
     }
     let encounter = null;
     const fixed = sk.encounter?.passer;
+    // 人已定的路遇按名字认领台词：小模型偶尔把 A 地的路遇字段写进 B 地的条目
+    // （B 地没埋路遇，那份字段会被丢掉），这里按 encounterName 找回，A 地不致只剩空台词。
+    const lineSource = fixed && (p.encounterName || "").trim() !== fixed.name
+      ? (parsed.find((q) => (q?.encounterName || "").trim() === fixed.name) || p)
+      : p;
     if (sk.encounter && (fixed || (p.encounterName || "").trim())) {
       encounter = {
         name: fixed?.name || p.encounterName.trim(),
@@ -114,7 +119,7 @@ export function applySquareBatch(day, parsed, skeletons) {
         tier: fixed ? ["白", "绿", "蓝", "紫"][fixed.levelCap] || "白" : ["白", "绿", "蓝", "紫"].includes(p.encounterTier) ? p.encounterTier : "白",
         faction: sk.encounter.factionKey,
         label: sk.encounter.label,
-        line: (p.encounterLine || "").trim(),
+        line: (lineSource.encounterLine || "").trim(),
       };
     }
     squares[p.name] = {
