@@ -12,6 +12,9 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
   // 随身货架三分区（身上装备/行囊/挂载伙伴）：传了 carrySections 时 shopItems
   // 里 non-displayOnly 的部分已经在分区里渲染过了，平铺只留店里陈列。
   carrySections = null,
+  // NPC 回购系数（元朵朵冤种溢价/奸商折/好感加成）：面板卖价必须与
+  // sellToNpcCarry 的实付一致——不然显示 50 实收 35。
+  sellCoef = 1,
   headerContent,
   // 货币名。雪山派门派商坊用功德（QUCUO_SHOPS 里 currency:"karma"），调用方
   // 传进来的 playerMoney 与各件的 buyPrice 都是功德值——但此前本组件五处
@@ -71,7 +74,7 @@ export default function TradingScreen({ shopName, shopItems = [], playerInv, pla
                     style={{ color: QUALITY_COLOR[item.quality] || "var(--text)", cursor: onInspect ? "pointer" : "default", textDecoration: onInspect ? "underline" : "none", textDecorationStyle: "dotted" }}
                   >{item.name}</span>
                   {item.equipped && <span style={{ color: "var(--good)", marginLeft: 4 }}>[已装备]</span>}
-                  <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>售 {item.sellPrice}{currencyUnit}</span>
+                  <span style={{ color: "var(--text-dim)", marginLeft: 6 }}>售 {Math.max(1, Math.round(item.sellPrice * sellCoef))}{currencyUnit}</span>
                 </div>
                 <span className="mobile-touch-target"
                   onClick={() => !item.equipped && onSell(item)}

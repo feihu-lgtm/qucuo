@@ -11,6 +11,8 @@ export function npcGear(npc) {
   return [...new Set((npc?.carriedItems || [])
     .filter((item) => item?.name && !item.stolen && !item.dropped && !item.sold)
     .map((item) => {
+      // 袋装货不是穿戴——玩家卖给他的装备躺在 bag 槽里，不算装束。
+      if (item.slot === "bag" || item.slot === "mount") return null;
       const cat = item.category || CATALOG_INDEX[item.name]?.category;
       return cat && cat !== ITEM_CATEGORY.MISC && GEAR.has(cat) ? item.name : null;
     })

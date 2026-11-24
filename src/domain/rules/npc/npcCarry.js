@@ -280,6 +280,19 @@ export function attireExposure(npc) {
   const hasWeapon = gear.some((e) => e.category === ITEM_CATEGORY.WEAPON);
   // 还披甲/还带兵刃都不算暴露——暴露只留给「只剩饰物」与「一件不剩」两档。
   if (hasArmor || hasWeapon) return null;
+  // 但得先证明这人身上曾经有过甲/刃——生成就空（ensureNpcCombatData 给普通
+  // NPC 铺的 carriedItems:[]）、或身上本来就只有饰物杂物，都不叫被扒。
+  // 证据看三处：carriedItems 里被标 sold/stolen/dropped 的装备条目、OC 卡面
+  // 摊在实例上的 carry / stealables.equipment。袋装货（slot:bag）不算穿过。
+  const hadProtective = [
+    ...npc.carriedItems.filter((e) => e?.sold || e?.stolen || e?.dropped),
+    ...(npc.carry || []),
+    ...(npc.stealables?.equipment || []),
+  ].some((e) => {
+    const n = normalizeCarryEntry(npc, e);
+    return n.slot === "equipment" && [ITEM_CATEGORY.ARMOR, ITEM_CATEGORY.WEAPON].includes(n.category);
+  });
+  if (!hadProtective) return null;
   if (hasAccessory) return "只剩零星饰物在身";
   return "衣不蔽体";
 }

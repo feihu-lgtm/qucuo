@@ -12,6 +12,8 @@ const BUN = { id: "c3", name: "桂花糕", category: "misc", slot: "bag", sellab
 const BO = { id: "f1", name: "铁伯", type: "follower", slot: "mount", desc: "生死之交" };
 
 const mkNpc = (items) => ({ id: "npc_1", name: "朵朵", carriedItems: items });
+// OC 实例：卡面 carry/stealables 被 spread 摊在实例上（证明“这人有过装备”）
+const mkOc = (items) => ({ ...mkNpc(items), carry: [ROBE], stealables: { equipment: [ROBE], sundries: [] } });
 const mkState = (npc) => ({ char: { money: 200 }, inv: [{ id: "p1", name: "乌木杖", category: "weapon", quality: "绿", attack: 12 }], room: { npcs: [npc] }, varTree: {}, flags: [], questProgress: {} });
 
 describe("货架三分区（buildCarryShelf→面板数据）", () => {
@@ -40,17 +42,28 @@ describe("attireExposure / npcGear", () => {
   });
   it("披甲带兵不暴露；只剩饰物报零星；装备空报衣不蔽体", () => {
     expect(attireExposure(mkNpc([SWORD, ROBE]))).toBeNull();
-    const accOnly = mkNpc([{ name: "松石耳坠", category: "accessory", slot: "equipment" }, BUN]);
+    const accOnly = mkOc([{ name: "松石耳坠", category: "accessory", slot: "equipment" }, BUN]);
     expect(attireExposure(accOnly)).toBe("只剩零星饰物在身");
-    expect(attireExposure(mkNpc([BUN]))).toBe("衣不蔽体");
+    expect(attireExposure(mkOc([BUN]))).toBe("衣不蔽体");
     expect(attireExposure(mkNpc([{ ...SWORD, stolen: true }]))).toBe("衣不蔽体");
   });
-  it("npcGear 列装备槽货、滤掉已离手件", () => {
+  it("生成即空/本就没装备的 NPC 不叫被扒", () => {
+    // ensureNpcCombatData 给普通 NPC 铺的 carriedItems:[]，没穿过不叫扒空
+    expect(attireExposure(mkNpc([]))).toBeNull();
+    // 身上只有杂物也算
+    expect(attireExposure(mkNpc([BUN]))).toBeNull();
+    // 只有饰物没甲刃史同样不报
+    expect(attireExposure(mkNpc([{ name: "松石耳坠", category: "accessory", slot: "equipment" }]))).toBeNull();
+  });
+  it("npcGear 列装备槽货、滤掉已离手件；袋装货不算装束", () => {
     expect(npcGear(mkNpc([SWORD, BUN]))).toEqual(["青锋剑"]);
     expect(npcGear(mkNpc([{ ...SWORD, sold: true }]))).toEqual([]);
+    // 玩家卖给 NPC 的装备落在 bag 槽——是存货不是穿着
+    const bagged = { name: "乌木杖", category: "weapon", slot: "bag", sellable: true };
+    expect(npcGear(mkNpc([bagged]))).toEqual([]);
   });
   it("look 卡与 prompt 段带衣着状态", () => {
-    const naked = mkNpc([BUN]);
+    const naked = mkOc([BUN]);
     expect(npcLookCard(naked).some(l => l.text.includes("衣不蔽体"))).toBe(true);
     expect(buildNpcLookPrompt(naked).user).toContain("衣着状态：衣不蔽体");
     expect(buildNpcLookPrompt(mkNpc([SWORD])).user).not.toContain("衣不蔽体");
@@ -59,7 +72,9 @@ describe("attireExposure / npcGear", () => {
 
 describe("换装同步链：买 / 赠", () => {
   it("买走装备槽货 → log 记脱下了、外观即时变", () => {
-    const npc = mkNpc([SWORD, BUN]);
+    // OC 被买空：条件从 carriedItems 删掉，卡面 stealables.equipment 还记着
+    // 她有过襦装——attireExposure 照样报衣不蔽体。
+    const npc = mkOc([SWORD, BUN]);
     const res = buyFromNpcCarry(npc, SWORD, { money: 200 });
     expect(res.ok).toBe(true);
     expect(res.logs.some(l => l.text.includes("脱下了青锋剑"))).toBe(true);
