@@ -1,6 +1,6 @@
 import { isNpcVisibleInInnerRoom } from "../../../domain/rules/map/innerMap.js";
 import {
-  unlockedCompanions, stationedNpcsFor, activeCompanionKey,
+  unlockedCompanions, stationedNpcsFor, activeCompanionKey, companionNpcEntry,
 } from "../../../domain/rules/companion/companion.js";
 
 // 随行队友（已解锁且没留守）折成 room.npcs 条目形状。
@@ -12,13 +12,7 @@ function partyNpcs(companionState) {
   const activeKey = activeCompanionKey(companionState);
   return unlockedCompanions(companionState)
     .filter(slot => !companionState[slot.key]?.stationed)
-    .map(slot => {
-      const d = companionState[slot.key].data;
-      return {
-        name: slot.label, id: slot.key, companion: true, party: true, active: slot.key === activeKey,
-        beast: !!slot.beast, brief: d?.brief || slot.label, levelCap: d?.levelCap,
-      };
-    });
+    .map(slot => companionNpcEntry(companionState, slot.key, { party: true, active: slot.key === activeKey }));
 }
 
 // 左栏「此地」「不在此地」两段名单的划分（纯函数）。

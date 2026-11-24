@@ -115,20 +115,26 @@ describe("applyMvuCommands：指令队列 → {tree, applied, rejected, logs}", 
 
   it("非幂等：同一 add 指令传两次就加两次；set 则幂等", () => {
     // 契约：调用方若要幂等必须自己保证指令不重放。
-    const vt = tree({ 侠客: { 好感度: 60 } });
-    expect(applyMvuCommands(vt, [add("角色.侠客.好感度", 5), add("角色.侠客.好感度", 5)]).tree.角色.侠客.好感度).toBe(70);
-    expect(applyMvuCommands(vt, [set("角色.侠客.好感度", 70), set("角色.侠客.好感度", 70)]).tree.角色.侠客.好感度).toBe(70);
+    const vt = tree({ 侠客: { 好感度: 60 } }, { 威望: 0 });
+    expect(applyMvuCommands(vt, [add("世界.威望", 5), add("世界.威望", 5)]).tree.世界.威望).toBe(10);
+    expect(applyMvuCommands(vt, [set("角色.侠客.好感度", 64), set("角色.侠客.好感度", 64)]).tree.角色.侠客.好感度).toBe(64);
   });
 
-  it("好感度正增量受当日上限制约，跨指令共享同一本日账", () => {
-    // 契约：多条好感度 add 在同一调用内共享 世界.好感日增 账本。
-    const vt = tree({ 侠客: { 好感度: 80 } }, { 好感日增: { dayStamp: 1, gained: { 侠客: 0 } } });
-    const { tree: t, applied } = applyMvuCommands(vt, [
-      add("角色.侠客.好感度", 8),
-      add("角色.侠客.好感度", 8),
-    ], { time: 25 });
+  it("普通叙事回合的好感度增量以回合开始值为基准合计限幅，不按条累加", () => {
+    // 契约：同一调用 = 同一回合，多条好感 add 合计不超 ±perTurn(5)。
+    const vt = tree({ 侠客: { 好感度: 60 } });
+    const { tree: t, rejected } = applyMvuCommands(vt, [add("角色.侠客.好感度", 5), add("角色.侠客.好感度", 5)]);
+    expect(t.角色.侠客.好感度).toBe(65);
+    expect(rejected).toHaveLength(1);
+  });
+
+  it("好感度正增量受当日上限制约，跨回合共享同一本日账", () => {
+    // 契约：世界.好感日增 账本跨调用累计，当日涨满 daily(12) 后截断。
+    const vt = tree({ 侠客: { 好感度: 80 } }, { 好感日增: { dayStamp: 1, gained: { 侠客: 10 } } });
+    const { tree: t, applied } = applyMvuCommands(vt, [add("角色.侠客.好感度", 5)], { time: 25 });
     expect(t.世界.好感日增.dayStamp).toBe(1);
-    expect(applied[1].actualDelta).toBeLessThan(8); // 第二笔被日上限截断
+    expect(applied[0].actualDelta).toBe(2); // 当日只剩 2 点
+    expect(t.世界.好感日增.gained.侠客).toBe(12);
   });
 });
 

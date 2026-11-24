@@ -31,7 +31,7 @@ export function writePath(node, [key, ...rest], value) {
   return copy;
 }
 
-function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange, talkRange, affectionSkip }) {
+function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange, talkRange, affectionSkip, turnStart, before }) {
   // 无好感轨道（intimacy.forbidden/兽类等）整轮跳过——好感不予变化，留裁决痕迹。
   if (affectionSkip?.has?.(npc)) return { reason: `${npc} 无好感轨道，好感度不变化` };
   if (delta > 0) delta *= 1 + (clamp(charm, 0, 10) - 5) * 0.06;
@@ -40,12 +40,21 @@ function mvuAffectionDelta(state, delta, npc, { charm = 5, time = 0, giftRange, 
   // 其余叙事回合 AI 单次只能动 ±perTurn，亲密/日常回合 AI 常顺手报大数，不卡住好感会一回合涨穿。
   const cap = giftRange || talkRange ? maxDelta : perTurn;
   delta = clamp(Math.round(delta), -cap, cap);
+  // 普通叙事回合：同一回合多条指令合计也不超 ±perTurn，以回合开始时的值为基准（同势力声誉口径）。
+  // 只按单条限幅的话，+5 再 _.set 55 能从 40 一回合涨到 50。送礼/搭话区间是各自的结算，不并进来。
+  if (!giftRange && !talkRange && typeof turnStart === "number" && typeof before === "number") {
+    const capped = clamp(delta, turnStart - perTurn - before, turnStart + perTurn - before);
+    if (capped === 0 && delta !== 0) return { reason: `${npc}本回合好感已变动到上限 ±${perTurn}` };
+    delta = capped;
+  }
   if (giftRange) delta = clamp(delta, ...giftRange);
   // 聊天语义好感（docs 工单）：搭话回合单次 clamp 小区间 -5~+8，且 0 变化不落账。
   if (talkRange) {
     delta = clamp(delta, ...talkRange);
     if (delta === 0) return { reason: "好感无实质变化" };
   }
+  // 日涨账只记真正落地的涨幅：满值封顶截掉的部分不吃当日额度（98 提 +5 只涨到 100，记 2）。
+  if (delta > 0 && typeof before === "number") delta = Math.min(delta, FIELDS[FIELD.affection].max - before);
   if (delta <= 0) return { state, delta };
   const dayStamp = Math.floor((Number(time) || 0) / 24);
   const last = state.varTree.世界?.好感日增;
@@ -112,7 +121,8 @@ export function applyWrite(state, { op, path, value }, options = {}) {
   if (op === "add") {
     actualDelta = value;
     if (mvu && affection) {
-      const result = mvuAffectionDelta(state, value, parts[2] || "", options);
+      const turnStart = readPath(options.turnBase ?? state, parts);
+      const result = mvuAffectionDelta(state, value, parts[2] || "", { ...options, turnStart, before });
       if (result.reason) return reject(result.reason);
       ({ state, delta: actualDelta } = result);
     } else if (field.maxDelta != null) {

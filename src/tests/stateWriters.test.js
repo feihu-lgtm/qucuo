@@ -158,7 +158,7 @@ it("keeps the MVU clamp, ledger, permitted generic writes and exact player logs"
   });
   commitRound(deps);
   expect({ tree: state.varTree, logs }).toEqual({
-    tree: { 角色: { 侠客: { 好感度: 100 } }, 世界: { 好感日增: { dayStamp: 1, gained: { 侠客: 10 } }, 威望: 100 }, 主角: { 别名: "青衣" } },
+    tree: { 角色: { 侠客: { 好感度: 100 } }, 世界: { 好感日增: { dayStamp: 1, gained: { 侠客: 2 } }, 威望: 100 }, 主角: { 别名: "青衣" } },
     logs: [
       { t: "affection", text: "  💗 侠客 好感度 +2（98 → 100）" },
     ],

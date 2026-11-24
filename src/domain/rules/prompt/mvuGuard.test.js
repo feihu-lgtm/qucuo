@@ -123,6 +123,17 @@ describe("原有裁剪行为不受影响（回归）", () => {
     apply([{ op: "add", path: "角色.某某.好感度", value: 5 }], t);
     expect(JSON.stringify(t)).toBe(snap);
   });
+  it("同一回合多条好感指令合计不超单回合上限，日涨账只记实际涨幅", () => {
+    const t = initialVarTree();
+    t.角色 = { 元朵朵: { 好感度: 40 } };
+    const { tree, rejected } = apply([
+      { op: "add", path: "角色.元朵朵.好感度", value: 5 },
+      { op: "set", path: "角色.元朵朵.好感度", value: 55 },
+    ], t);
+    expect(tree.角色.元朵朵.好感度).toBe(45);
+    expect(tree.世界.好感日增.gained.元朵朵).toBe(5);
+    expect(rejected).toHaveLength(1);
+  });
 });
 
 // ── 双调用：禁写声明必须也到得了提取层 ────────────────────────────────

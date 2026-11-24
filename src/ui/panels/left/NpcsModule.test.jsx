@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ZONE_THEMES } from "../../../utils/theme.js";
 import { unlockImportedCompanion, stationCompanion } from "../../../domain/rules/companion/companion.js";
+import { buildEnemyUnit } from "../../../domain/rules/combat/teamUnits.js";
 import { partitionPeople } from "./peopleRoster.js";
 
 // renderToStaticMarkup 走 zustand 的 getInitialState，读不到 setState 的结果，
@@ -72,6 +73,15 @@ describe("partitionPeople", () => {
       companionState: companions(), everSeen: [],
     });
     expect(present.filter(n => n.name === "元朵朵")).toHaveLength(1);
+  });
+
+  it("hands the duel screen a companion that can fight from the roster entry", () => {
+    // 名单条目就是「切磋」的对手：缺 moveset 时团战第一回合选不出招，直接卡死
+    const duo = partitionPeople({ room, innerRoomName: null, companionState: companions(), everSeen: [] })
+      .present.find(n => n.name === "元朵朵");
+    const unit = buildEnemyUnit(duo);
+    expect(unit.movesetLocal.length).toBeGreaterThan(0);
+    expect(unit.hp[0]).toBeGreaterThan(0);
   });
 });
 

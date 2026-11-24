@@ -145,7 +145,7 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
       // 本回合战报文字：渲染用 + 结束时打包给外层（teamText 单行格式，
       // MudRPG onFinish 的逐回合系统日志和AI整场战报都直接复用这行文字）
       const lines = turnLog.map(e => {
-        addTeamDodgeStealNotes([e], playerUnit.id, playerIntent?.move, enemies[0]?.carriedItems, tryStealOnDodge);
+        addTeamDodgeStealNotes([e], playerUnit.id, playerIntent?.move, { id: enemyUnits[0]?.id, carriedItems: enemies[0]?.carriedItems }, tryStealOnDodge);
         if (e.skipped) return { ...e, text: `${e.actor.name}这一击落了空（${e.reason}）。`, notes: [], statusLog: [] };
         const { actor, target, result } = e, clash = target.move ? `，${target.name}以「${target.move.name}」相抗` : `，${target.name}无暇他顾`;
         // 【点名是谁占上风】原来只写"占了上风/被压了一头"，不说主语——

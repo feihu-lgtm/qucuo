@@ -9,11 +9,14 @@ export function addDodgeStealNote(result, move, carriedItems, trySteal) {
   if (stolen) result.notes.push(`顺手摸走了${stolen.name}`);
 }
 
-export function addTeamDodgeStealNotes(turnLog, playerId, move, carriedItems, trySteal) {
+// 团战里只偷「主敌」：结算（settleNpcDuel）把赃物记在主敌名下，随从（铁伯）的交手偷不到东西，
+// 否则闪过铁伯却从朵朵身上摸走物件。owner = { id: 主敌单位 id, carriedItems }。
+export function addTeamDodgeStealNotes(turnLog, playerId, move, owner, trySteal) {
+  if (!owner?.id) return;
   for (const entry of turnLog) {
-    if ((entry.actor?.id === playerId && entry.result?.dodgeSuccessA)
-      || (entry.target?.id === playerId && entry.result?.dodgeSuccessB)) {
-      addDodgeStealNote({ dodgeSuccessA: true, notes: entry.result.notes }, move, carriedItems, trySteal);
+    if ((entry.actor?.id === playerId && entry.target?.id === owner.id && entry.result?.dodgeSuccessA)
+      || (entry.target?.id === playerId && entry.actor?.id === owner.id && entry.result?.dodgeSuccessB)) {
+      addDodgeStealNote({ dodgeSuccessA: true, notes: entry.result.notes }, move, owner.carriedItems, trySteal);
     }
   }
 }
