@@ -6,6 +6,7 @@ export const HOOK_ENTRIES = [
   { id: "npcTalk", hooks: { useScreenHandlers: ["handleNpcTalk"] } },
   { id: "npcGift", hooks: { useScreenHandlers: ["handleNpcGift"] } },
   { id: "companionInvite", hooks: { useScreenHandlers: ["handleInviteCompanion", "handleOcRecruit", "handleStationCompanion", "handleRecallCompanion"] } },
+  { id: "goldenEgg", hooks: { useScreenHandlers: ["handleGoldenEgg"] } },
   { id: "itemUseCollect", hooks: { useScreenHandlers: ["handleConsumeItem", "handleCollectGround"] } },
   { id: "npcTrade", hooks: { useScreenHandlers: ["handleNpcTrade"] } },
   { id: "npcLearnSkill", hooks: { useScreenHandlers: ["handleNpcLearnSkill"], useBuildingHandlers: ["handleBuySkill"] } },

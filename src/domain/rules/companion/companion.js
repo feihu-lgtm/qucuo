@@ -168,7 +168,8 @@ export function setActiveCompanion(companionState, key) {
 export function stationCompanion(companionState, key, spot = {}) {
   const c = companionState?.[key];
   if (!c?.unlocked || !c?.data || c.active) return companionState;
-  return { ...companionState, [key]: { ...c, stationed: { district: spot.district || null, roomId: spot.roomId || null, roomName: spot.roomName || null } } };
+  // since 记留守起点（state.time），供重逢台词算"被丢了多久"
+  return { ...companionState, [key]: { ...c, stationed: { district: spot.district || null, roomId: spot.roomId || null, roomName: spot.roomName || null, since: spot.since ?? null } } };
 }
 
 // 「跟上我」唤回：清 stationed，回随行队列。

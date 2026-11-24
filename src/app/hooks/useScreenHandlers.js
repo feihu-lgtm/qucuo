@@ -13,6 +13,8 @@ import {
 } from "../../features/npc/logic.js";
 import { inviteCompanion } from "../../features/npc/inviteCompanion.js";
 import { recruitOC, applyRecruit, hirePriceFor } from "../../features/npc/ocRecruit.js";
+import { claimGoldenEgg } from "../../features/npc/goldenEgg.js";
+import { duoduoEggReaction } from "./eggBackfill.js";
 import { OC_BY_NAME } from "../../domain/rules/npc/npcCarry.js";
 import { stationCompanion, unstationCompanion } from "../../domain/rules/companion/companion.js";
 import { companionReunionLine } from "../../features/npc/companionChatter.js";
@@ -67,6 +69,15 @@ export function useScreenHandlers({
     applyResult(featureCtx(), result);
   }, { feature: "npc.inviteCompanion" }), [captureUndo]);
 
+  // 元朵朵·金鸟金蛋：开奖卡片落定后，她的临场反应走 AI 后台补写（无 API 兜底句）
+  const handleGoldenEgg = useCallback((npc) => applyResult(featureCtx(), () => {
+    captureUndo();
+    setActiveTarget(npc.name);
+    const res = claimGoldenEgg(gameStore.getState(), npc);
+    applyResult(featureCtx(), res);
+    if (res.prize) duoduoEggReaction(res.prize, res.tier, { addLog });
+  }, { feature: "npc.goldenEgg" }), [captureUndo]);
+
   // OC 冒险者四路招募：recruitOC 判门成功则 applyRecruit 落盘，失败只写系统日志
   const handleOcRecruit = useCallback((npc, route) => applyResult(featureCtx(), () => {
     const adv = OC_BY_NAME[npc.name];
@@ -83,12 +94,12 @@ export function useScreenHandlers({
   // 伙伴可留守到任意房间：spot 缺省留当前房、null=唤回随行、给房间则落位过去
   const handleStationCompanion = useCallback((key, spotOverride) => applyResult(featureCtx(), () => {
     captureUndo();
-    const { companionState, room, innerRoomName } = gameStore.getState();
+    const { companionState, room, innerRoomName, time } = gameStore.getState();
     if (spotOverride === null) {
       applyResult(featureCtx(), { changes: { companionState: unstationCompanion(companionState, key) } });
       return;
     }
-    const spot = spotOverride || { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name };
+    const spot = { since: time || 0, ...(spotOverride || { district: room?.name, roomId: innerRoomName || room?.name, roomName: innerRoomName || room?.name }) };
     applyResult(featureCtx(), { changes: { companionState: stationCompanion(companionState, key, spot) } });
   }, { feature: "npc.stationCompanion" }), [captureUndo]);
 
@@ -218,6 +229,7 @@ export function useScreenHandlers({
     handleNpcGift,
     handleInviteCompanion,
     handleOcRecruit,
+    handleGoldenEgg,
     handleStationCompanion,
     handleRecallCompanion,
     handleConsumeItem,

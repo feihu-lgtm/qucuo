@@ -57,6 +57,16 @@ export function intimacyRefusal(npc = {}) {
   return { line: r.line(name), loss: lo + Math.floor(random() * (hi - lo + 1)) };
 }
 
+// 「女眷一次卡·不可拒绝」强开档：玩家凭卡撬开门槛（含 forbidden）时的注入行——
+// 门槛照常标出，但写明这一次她无从推拒；nsfw 段与 style 提示照发。
+export function intimateTicketNote(npc = {}) {
+  if (!npc?.name) return "";
+  const gate = intimacyGate(npc, 0);
+  const style = gate.style ? `，亲密画风「${gate.style}」` : "";
+  const body = npc.nsfw ? `\n${npc.nsfw}` : "";
+  return `[亲密门槛] ${npc.name} 凭「女眷一次卡·不可拒绝」强开（这一次她无从推拒——仍按其性情落笔${style}）${body}`;
+}
+
 // 好感上下文注入（§4）：已亲密身份行；过线后附 nsfw 段 + style 提示给 AI。
 export function intimacyPromptNote(npc, affection) {
   if (!npc?.name) return "";
