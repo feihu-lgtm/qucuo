@@ -1,11 +1,19 @@
 // 地宫 OC 冒险者：节点生成 + 抢劫/反水夺取的纯构建器（不含选择裁决，裁决在 resolve.js）。
 
 import { DUNGEON_NODE_TYPE } from "../../data/dungeon/catalog.js";
-import { pickDungeonAdventurer } from "../../data/dungeon/adventurers.js";
+import { ADVENTURER_POOL, pickDungeonAdventurer } from "../../data/dungeon/adventurers.js";
+import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
 import { random } from "../../../utils/rng.js";
 
+// IP 改编冒险者与原创 OC 同权参与地宫遭遇抽取（本趟已遇过的跳过）。
+function pickAnyAdventurer(excludeIds = []) {
+  const excluded = new Set(excludeIds);
+  const pool = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].filter((adv) => !excluded.has(adv.id));
+  return pool.length ? pool[Math.floor(random() * pool.length) % pool.length] : pickDungeonAdventurer(excludeIds);
+}
+
 export function buildAdventurerNode(keyPrefix, metAdventurers = [], lootMoney = 0) {
-  const adv = pickDungeonAdventurer(metAdventurers);
+  const adv = pickAnyAdventurer(metAdventurers);
   const scenario = lootMoney > 0 && (adv.stealBias >= 0.45 || random() < 0.45) ? "ambush" : "help";
   if (scenario === "ambush") {
     return {
