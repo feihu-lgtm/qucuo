@@ -11,13 +11,13 @@
 // 不然一次性塞进来出了问题不好定位是骨架错了还是逻辑错了。
 
 import React, { useState } from "react";
-import { QUCUO_SHOPS } from "../../domain/data/shops/qucuoShops.js";
+import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [] }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
-  const isMerchant = !!QUCUO_SHOPS[npc.name];
+  const isMerchant = !!QUCUO_SHOPS[npc.name] || hasOcShop(npc.name);
   // 伙伴候选（目前只有雪豹）：官方六件套之外单独一个"邀请入队"按钮，只在
   // 尚未解锁时出现——已经入队的伙伴角色不需要再邀请一次，六件套照常可用
   // （细看/切磋/送礼/拜师/偷窃仍然对已入队的雪豹开放，不因为入队而消失）。

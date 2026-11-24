@@ -99,18 +99,18 @@ const ROLE_TROPHY = {
 // equipment 按品阶走（衣甲/兵刃/饰品按名分档），sundries 是杂物白档；
 // carry 里的 CATALOG_INDEX 真词条照旧按具名货出。命中 OC 直接整批返回，
 // 不再走 role×region 随机池——人设写的私物不能换成地摊货。
-const OC_BY_NAME = Object.fromEntries(
+export const OC_BY_NAME = Object.fromEntries(
   [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].map((adv) => [adv.name, adv]),
 );
 const EQUIP_CAT = [
   [/裙|甲|袍|衣|装|裤|靴|帽|冠|披风|衫/, ITEM_CATEGORY.ARMOR],
-  [/刀|剑|鞭|爪|钩|针|匕|刃|杖|弓|锤|锏/, ITEM_CATEGORY.WEAPON],
+  [/刀|剑|鞭|爪|钩|针|匕|刃|杖|弓|锤|锏|枪|矛|戟|槊|棍|叉|斧|钺|扇|环|笔|判官/, ITEM_CATEGORY.WEAPON],
 ];
 function ocEquipCat(name) {
   for (const [re, cat] of EQUIP_CAT) if (re.test(name)) return cat;
   return ITEM_CATEGORY.ACCESSORY;
 }
-function ocCarryItems(oc, npc) {
+export function ocCarryItems(oc, npc) {
   const items = [];
   let i = 0;
   for (const c of oc.carry || []) {

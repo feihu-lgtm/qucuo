@@ -122,6 +122,8 @@ const OC_SHOP_BY_NAME = Object.fromEntries(
     .map((adv) => [adv.name, adv]),
 );
 
+export const hasOcShop = (name) => name in OC_SHOP_BY_NAME;
+
 export function buildOcShopInventory(npcName) {
   const oc = OC_SHOP_BY_NAME[npcName];
   if (!oc) return null;

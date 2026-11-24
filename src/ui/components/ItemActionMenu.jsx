@@ -5,7 +5,7 @@
 // 送人/卖掉需要"指定房间里的人"——本面板内嵌一个房间NPC选择器（picker）。
 // 一切结算仍走父组件传进来的确定性 handler，本组件只负责选择与转交，不自行改状态。
 import React, { useState } from "react";
-import { QUCUO_SHOPS } from "../../domain/data/shops/qucuoShops.js";
+import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 export default function ItemActionMenu({
@@ -25,7 +25,7 @@ export default function ItemActionMenu({
   const equipped = isObj && !!item.equipped;
   const statLabel = isObj ? (item.atk != null ? `攻${item.atk}` : item.def != null ? `防${item.def}` : "") : "";
 
-  const merchantsHere = roomNpcs.filter(n => QUCUO_SHOPS[n.name]);
+  const merchantsHere = roomNpcs.filter(n => QUCUO_SHOPS[n.name] || hasOcShop(n.name));
 
   const overlay = { position: "fixed", inset: 0, background: "rgba(4,4,10,0.75)", zIndex: 410, display: "flex", alignItems: "center", justifyContent: "center" };
   const panel = { background: zoneTheme.bgPanel, border: `1px solid ${zoneTheme.border}`, borderRadius: 0, padding: 20, width: 320, maxWidth: "90vw" };

@@ -6,6 +6,7 @@ import { rollNpcCarry } from "./npcCarry.js";
 import { ADVENTURER_POOL } from "../../data/dungeon/adventurers.js";
 import { ADVENTURER_POOL_IP } from "../../data/dungeon/adventurersIP.js";
 import { CATALOG_INDEX } from "../../data/items/catalog.js";
+import { ensureNpcCombatData } from "./npcGeneration.js";
 
 const OC_NAMES = new Set([...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].map((a) => a.name));
 
@@ -81,6 +82,22 @@ describe("OC stealables 偷窃通路", () => {
     expect(names).toContain("紫檀木齿轮");
     expect(names).toContain("沉甸甸的碎银荷包");    // carry 真词条
     for (const it of items) expect(it.stolen).toBe(false);
+  });
+
+  it("装备按名归档：兵刃归 weapon、衣甲归 armor", () => {
+    const items = rollNpcCarry({ id: "t", name: "吕仙儿" }, {});
+    const spear = items.find((i) => i.name.includes("枪"));
+    expect(spear?.category).toBe("weapon");
+    const robe = rollNpcCarry({ id: "t2", name: "元朵朵" }, {}).find((i) => i.name === "元宝金冠襦装");
+    expect(robe?.category).toBe("armor");
+  });
+
+  it("驻场/出场 OC（带 carry 数据卡）也能被摸到 stealables", () => {
+    const oc = { id: "oc_res", name: "元朵朵", carry: [{ name: "沉甸甸的碎银荷包" }], levelCap: 1 };
+    const fixed = ensureNpcCombatData(oc, {});
+    const names = (fixed.carriedItems || []).map((i) => i.name);
+    expect(names).toContain("元宝金冠襦装");
+    expect(names).toContain("作废契约书");
   });
 
   it("非 OC 走原随机池不受影响", () => {
