@@ -113,7 +113,8 @@ export function applyWrite(state, { op, path, value }, options = {}) {
   } else if (op === "set" && mvu && affection && talkRange) {
     // set 绕开 add 的 talkRange——按相对当前值的增量 clamp（工单：单次增减 -5~+8）
     const base = typeof before === "number" ? before : 0;
-    const d = clamp(Math.round(value - base), talkRange[0], talkRange[1]);
+    // 不取整：留守衰减会留下 .5 分值，round(-0.5)=-0 会把半分扣减误丢
+    const d = clamp(value - base, talkRange[0], talkRange[1]);
     if (d === 0) return reject("好感无实质变化");
     actualDelta = d;
     value = base + d;

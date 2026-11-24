@@ -56,6 +56,19 @@ describe("聊天好感裁决 · clamp 与跳过", () => {
   });
 });
 
+describe("裁决细节 · Review 修复", () => {
+  it("玩家原话里的 @xxx 不被当占位符吃掉", () => {
+    const prompt = EXTRACTION_SPECS.TALK_CASUAL.user("叙事", { room: { npcs: [] }, varTree: {}, cmd: "我问 @阿妙 在吗" }, null, (t) => t);
+    expect(prompt).toContain("玩家这轮说的话：我问 @阿妙 在吗");
+  });
+  it("_.set 半分扣减不被吃掉（留守衰减留下 .5）", () => {
+    const tree = { 角色: { 阿妙: { 好感度: 50.5 } } };
+    const r = applyWrite({ varTree: tree }, { op: "set", path: "角色.阿妙.好感度", value: 50 }, TALK_OPTS);
+    expect(r.reason).toBeUndefined();
+    expect(r.state.varTree.角色.阿妙.好感度).toBe(50);
+  });
+});
+
 describe("TALK_CASUAL spec · 性情进上下文", () => {
   const state = {
     varTree: { 角色: { 阿妙: { 好感度: 50 }, 铁伯: { 好感度: 0 } } },
