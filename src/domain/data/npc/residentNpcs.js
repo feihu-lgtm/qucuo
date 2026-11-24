@@ -31,10 +31,18 @@ import { contentEntries } from "../../rules/content/registry.js";
 // 具名物优先用 catalog 里有主的（掉出来有来历），缺口从制式通货池补。
 // 品质不超 levelCap 对应档（白0/绿1/蓝2/紫3/橙4/红5）。
 
+import { ADVENTURER_POOL } from "../dungeon/adventurers.js";
+import { ADVENTURER_POOL_IP } from "../dungeon/adventurersIP.js";
+
 export const RESIDENT_NPCS = Object.fromEntries(contentEntries("residentGroup"));
 
+// OC 冒险者可带 homeDistrict 字段：该据点视其为本体驻场（不入游走权重），
+// 例：元朵朵 homeDistrict=鱼定村，她永远出现在村里，身世仍写锦官出身。
+const OC_HOME = [...ADVENTURER_POOL, ...ADVENTURER_POOL_IP].filter((a) => a.homeDistrict);
+
 export function getResidentNpcs(districtName) {
-  return RESIDENT_NPCS[districtName] || [];
+  const oc = OC_HOME.filter((a) => a.homeDistrict === districtName);
+  return [...(RESIDENT_NPCS[districtName] || []), ...oc];
 }
 
 export function getAllResidentNpcLore() {
@@ -48,6 +56,10 @@ export function getAllResidentNpcLore() {
       });
     }
   }
+  for (const a of OC_HOME) {
+    const bioText = a.fullBio || a.personality || a.brief || "";
+    result.push({ name: a.name, entry: `- ${a.name}（${a.brief || ""}）：${bioText}` });
+  }
   return result;
 }
 
@@ -58,6 +70,7 @@ export function getAllResidentNpcNames() {
     for (const npcs of Object.values(RESIDENT_NPCS)) {
       for (const npc of npcs) _allResidentNames.add(npc.name);
     }
+    for (const a of OC_HOME) _allResidentNames.add(a.name);
   }
   return _allResidentNames;
 }
