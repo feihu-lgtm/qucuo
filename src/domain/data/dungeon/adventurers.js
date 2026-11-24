@@ -31,7 +31,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "把玩偷来的贴身玉佩，在通缉画像上给自己画花钿。　　**交易风格**：漫天要价，坐地还钱，看对眼可用俊俏皮囊抵三成银钱。",
       "tradeStyle": "漫天要价，坐地还钱，看对眼可用俊俏皮囊抵三成银钱。",
       "nsfw": "媚骨天成的狐狸脸，眼尾微挑；双乳丰润饱满，乳尖殷红挺翘；柳腰软若无骨，盈盈一握；臀瓣浑圆紧翘，摇曳生波；桃源光洁粉嫩，两片软肉紧窄多汁；双足纤细雪白，足弓高挑，脚趾圆润如玉珠。 耳后、腰窝与阴蒂最为敏感。指腹轻捻便通体酥麻，媚眼如丝，双腿死死缠住对方腰身，主动吞吐索取。",
-      "follower": { "type": "兽", "name": "胭脂贼", "desc": "通体雪白的玉面灵猫，专钻墓道暗孔替主人摸金探路。" },
+      "follower": { "type": "兽", "name": "胭脂贼", "desc": "通体雪白的玉面灵猫，专钻墓道暗孔替主人摸金探路。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "百花门",
         "moves": [
@@ -42,11 +42,11 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "紫岚织锦甲", "quality": "紫", "desc": "刀剑难伤的百花门护体软绸" },
-          { "name": "百花刺", "quality": "蓝", "desc": "专破机关暗锁的袖中机括爪" }
+          { "name": "紫岚织锦甲", "quality": "紫", "desc": "刀剑难伤的百花门护体软绸", "slot": "equipment" },
+          { "name": "百花刺", "quality": "蓝", "desc": "专破机关暗锁的袖中机括爪", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "钱眼半块铁券", "desc": "锦官城古道会钱眼失窃的地下金库凭证" }
+          { "name": "钱眼半块铁券", "desc": "锦官城古道会钱眼失窃的地下金库凭证", "slot": "bag" }
         ]
       },
       "shop": {
@@ -58,9 +58,9 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "百花刺", "category": "weapon", "quality": "蓝" },
-        { "name": "紫岚织锦甲", "category": "armor", "quality": "紫" },
-        { "name": "糖油果子", "category": "misc", "quality": "白" }
+        { "name": "百花刺", "category": "weapon", "quality": "蓝", "slot": "equipment" },
+        { "name": "紫岚织锦甲", "category": "armor", "quality": "紫", "slot": "equipment" },
+        { "name": "糖油果子", "category": "misc", "quality": "白", "slot": "bag" }
       ]
     },
 {
@@ -83,7 +83,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "用鹿皮反复擦拭剑身，在雪夜独坐听风辨位。　　**交易风格**：一口价，不喜讨价还价，若遇上好剑穗或磨剑石愿倒贴换取。",
       "tradeStyle": "一口价，不喜讨价还价，若遇上好剑穗或磨剑石愿倒贴换取。",
       "nsfw": "(无·男性不写)",
-      "follower": { "type": "剑灵", "name": "霜魄", "desc": "寄宿于古剑残片中的幽蓝剑灵，遇强敌则清鸣示警。" },
+      "follower": { "type": "剑灵", "name": "霜魄", "desc": "寄宿于古剑残片中的幽蓝剑灵，遇强敌则清鸣示警。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "独孤",
         "moves": [
@@ -94,11 +94,11 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "青霜", "quality": "橙", "desc": "独孤剑冢取寒铁所铸的镇身名剑" },
-          { "name": "蓝田玉镯", "quality": "蓝", "desc": "温养神思的世家旧物" }
+          { "name": "青霜", "quality": "橙", "desc": "独孤剑冢取寒铁所铸的镇身名剑", "slot": "equipment" },
+          { "name": "蓝田玉镯", "quality": "蓝", "desc": "温养神思的世家旧物", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "纵目残剑拓片", "desc": "绘有三星堆守陵古剑纹路的泛黄宣纸" }
+          { "name": "纵目残剑拓片", "desc": "绘有三星堆守陵古剑纹路的泛黄宣纸", "slot": "bag" }
         ]
       },
       "shop": {
@@ -110,9 +110,9 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "青霜", "category": "weapon", "quality": "橙" },
-        { "name": "流云剑穗袍", "category": "armor", "quality": "蓝" },
-        { "name": "蓝田玉镯", "category": "accessory", "quality": "蓝" }
+        { "name": "青霜", "category": "weapon", "quality": "橙", "slot": "equipment" },
+        { "name": "流云剑穗袍", "category": "armor", "quality": "蓝", "slot": "equipment" },
+        { "name": "蓝田玉镯", "category": "accessory", "quality": "蓝", "slot": "equipment" }
       ]
     },
 {
@@ -135,7 +135,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "掷骰子赌大小，酒后在墓碑上刻字与死人称兄道弟。　　**交易风格**：喜欢以赌代买，掷骰定输赢，赢了半价拿走，输了翻倍付银。",
       "tradeStyle": "喜欢以赌代买，掷骰定输赢，赢了半价拿走，输了翻倍付银。",
       "nsfw": "(无·男性不写)",
-      "follower": { "type": "人", "name": "阿赌", "desc": "玉泉寨输给他的哑巴小书童，背着装满骨骰的巨大酒葫芦。" },
+      "follower": { "type": "人", "name": "阿赌", "desc": "玉泉寨输给他的哑巴小书童，背着装满骨骰的巨大酒葫芦。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "血刀",
         "moves": [
@@ -146,11 +146,11 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "古铜重剑", "quality": "紫", "desc": "饮过百人血的凶戾长刀，煞气逼人" },
-          { "name": "缀玉皮护腕", "quality": "绿", "desc": "赌坊赢来的暴发户护具" }
+          { "name": "古铜重剑", "quality": "紫", "desc": "饮过百人血的凶戾长刀，煞气逼人", "slot": "equipment" },
+          { "name": "缀玉皮护腕", "quality": "绿", "desc": "赌坊赢来的暴发户护具", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "铅心灌水骰", "desc": "欢喜教赌局流出的出千秘宝，逢掷必豹子" }
+          { "name": "铅心灌水骰", "desc": "欢喜教赌局流出的出千秘宝，逢掷必豹子", "slot": "bag" }
         ]
       },
       "shop": {
@@ -162,9 +162,9 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "古铜重剑", "category": "weapon", "quality": "紫" },
-        { "name": "缀玉皮护腕", "category": "armor", "quality": "绿" },
-        { "name": "包浆双龙核桃", "category": "accessory", "quality": "蓝" }
+        { "name": "古铜重剑", "category": "weapon", "quality": "紫", "slot": "equipment" },
+        { "name": "缀玉皮护腕", "category": "armor", "quality": "绿", "slot": "equipment" },
+        { "name": "包浆双龙核桃", "category": "accessory", "quality": "蓝", "slot": "equipment" }
       ]
     },
 {
@@ -187,7 +187,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "拆解古墓机关锁，给死人化妆并装上提线木偶关节。　　**交易风格**：不要寻常金银，只收罕见金属齿轮、异兽骨骼或活体试药人。",
       "tradeStyle": "不要寻常金银，只收罕见金属齿轮、异兽骨骼或活体试药人。",
       "nsfw": "苍白清隽的病态脸庞，神色痴迷；胸乳娇小玲珑，乳晕浅淡；腰肢纤细单薄，肋骨隐现；臀部小巧紧实，弧度青涩；私处白虎无毛，嫩穴粉白紧致，宛如精密机括；双足瘦削冰凉，青筋微显，趾尖泛粉。 指尖关节、侧腰与G点极为敏感。被触碰时会像失控的傀儡般剧烈痉挛，喉间溢出破碎喘息，痴迷地观察交合部位。",
-      "follower": { "type": "机关人偶", "name": "破军傀", "desc": "以寒铁与白骨拼凑的半人高木偶，关节藏有剧毒暴雨梨花针。" },
+      "follower": { "type": "机关人偶", "name": "破军傀", "desc": "以寒铁与白骨拼凑的半人高木偶，关节藏有剧毒暴雨梨花针。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "唐门",
         "moves": [
@@ -198,11 +198,11 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "七星绣针匣", "quality": "橙", "desc": "唐门镇身机括匣，内藏三百六十道暗器" },
-          { "name": "百面易容匣", "quality": "紫", "desc": "可当刃可扣弦的精钢护指" }
+          { "name": "七星绣针匣", "quality": "橙", "desc": "唐门镇身机括匣，内藏三百六十道暗器", "slot": "equipment" },
+          { "name": "百面易容匣", "quality": "紫", "desc": "可当刃可扣弦的精钢护指", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "三星堆青铜齿轮", "desc": "从守陵机关兽胸口硬生生挖出的核心零件" }
+          { "name": "三星堆青铜齿轮", "desc": "从守陵机关兽胸口硬生生挖出的核心零件", "slot": "bag" }
         ]
       },
       "shop": {
@@ -214,9 +214,9 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "七星绣针匣", "category": "weapon", "quality": "橙" },
-        { "name": "百面易容匣", "category": "accessory", "quality": "紫" },
-        { "name": "老猎户陷阱绳", "category": "misc", "quality": "白" }
+        { "name": "七星绣针匣", "category": "weapon", "quality": "橙", "slot": "equipment" },
+        { "name": "百面易容匣", "category": "accessory", "quality": "紫", "slot": "equipment" },
+        { "name": "老猎户陷阱绳", "category": "misc", "quality": "白", "slot": "bag" }
       ]
     },
 {
@@ -239,7 +239,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "修补破损的旧铁甲，用刻刀在木牌上刻战死袍泽的姓名。　　**交易风格**：童叟无欺，按劳取酬，若买主是穷苦边民或义匪常半卖半送。",
       "tradeStyle": "童叟无欺，按劳取酬，若买主是穷苦边民或义匪常半卖半送。",
       "nsfw": "(无·男性不写)",
-      "follower": { "type": "兽", "name": "黑云踏雪", "desc": "随他从死人堆里爬出来的独眼军犬，咬合力惊人，忠心护主。" },
+      "follower": { "type": "兽", "name": "黑云踏雪", "desc": "随他从死人堆里爬出来的独眼军犬，咬合力惊人，忠心护主。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "天龙",
         "moves": [
@@ -250,11 +250,11 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "精钢乌木长矛", "quality": "蓝", "desc": "军中制式重枪改铸，枪缨染满黑血" },
-          { "name": "黑铁札片重甲", "quality": "紫", "desc": "磨去官府印记的边军统领重铠" }
+          { "name": "精钢乌木长矛", "quality": "蓝", "desc": "军中制式重枪改铸，枪缨染满黑血", "slot": "equipment" },
+          { "name": "黑铁札片重甲", "quality": "紫", "desc": "磨去官府印记的边军统领重铠", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "染血的兵符残片", "desc": "当年锦官城冤案的唯一铁证，被贴身死守" }
+          { "name": "染血的兵符残片", "desc": "当年锦官城冤案的唯一铁证，被贴身死守", "slot": "bag" }
         ]
       },
       "shop": {
@@ -266,9 +266,9 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "精钢乌木长矛", "category": "weapon", "quality": "蓝" },
-        { "name": "黑铁札片重甲", "category": "armor", "quality": "紫" },
-        { "name": "无字木牌", "category": "misc", "quality": "白" }
+        { "name": "精钢乌木长矛", "category": "weapon", "quality": "蓝", "slot": "equipment" },
+        { "name": "黑铁札片重甲", "category": "armor", "quality": "紫", "slot": "equipment" },
+        { "name": "无字木牌", "category": "misc", "quality": "白", "slot": "bag" }
       ]
     },
 {
@@ -291,7 +291,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "赤膊在雪山瀑布下练拳，找黑风寨壮汉扳手腕。　　**交易风格**：看人下菜碟，正道侠客好商量，若见欢喜教或五仙教徒直接掀摊动手。",
       "tradeStyle": "看人下菜碟，正道侠客好商量，若见欢喜教或五仙教徒直接掀摊动手。",
       "nsfw": "(无·男性不写)",
-      "follower": { "type": "兽", "name": "赤练金雕", "desc": "黑风寨养大的猛禽，双爪如铁，专啄欢喜教徒的眼珠。" },
+      "follower": { "type": "兽", "name": "赤练金雕", "desc": "黑风寨养大的猛禽，双爪如铁，专啄欢喜教徒的眼珠。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "喇嘛庙",
         "moves": [
@@ -302,11 +302,11 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "熟铜双铁尺", "quality": "蓝", "desc": "融合密宗真言铁环的沉重拳套" },
-          { "name": "防火厚牛皮围裙甲", "quality": "绿", "desc": "水火不侵的西域异布腰带" }
+          { "name": "熟铜双铁尺", "quality": "蓝", "desc": "融合密宗真言铁环的沉重拳套", "slot": "equipment" },
+          { "name": "防火厚牛皮围裙甲", "quality": "绿", "desc": "水火不侵的西域异布腰带", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "鱼定村平安锁", "desc": "被火烧得半融的长命银锁，刻着失踪少女小字" }
+          { "name": "鱼定村平安锁", "desc": "被火烧得半融的长命银锁，刻着失踪少女小字", "slot": "bag" }
         ]
       },
       "shop": {
@@ -318,9 +318,9 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "熟铜双铁尺", "category": "weapon", "quality": "蓝" },
-        { "name": "防火厚牛皮围裙甲", "category": "armor", "quality": "绿" },
-        { "name": "豆种玉平安扣", "category": "accessory", "quality": "白" }
+        { "name": "熟铜双铁尺", "category": "weapon", "quality": "蓝", "slot": "equipment" },
+        { "name": "防火厚牛皮围裙甲", "category": "armor", "quality": "绿", "slot": "equipment" },
+        { "name": "豆种玉平安扣", "category": "accessory", "quality": "白", "slot": "equipment" }
       ]
     },
 {
@@ -343,7 +343,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "夜雨时分抄录残缺医书，用银针刺穴替自己解乏。　　**交易风格**：穷人看病分文不取，富商求医须以珍稀药材或古籍抵账。",
       "tradeStyle": "穷人看病分文不取，富商求医须以珍稀药材或古籍抵账。",
       "nsfw": "(无·男性不写)",
-      "follower": { "type": "兽", "name": "白术", "desc": "通体雪白的峨眉灵猿，懂分拣草药，会替主人背负青竹药篓。" },
+      "follower": { "type": "兽", "name": "白术", "desc": "通体雪白的峨眉灵猿，懂分拣草药，会替主人背负青竹药篓。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "峨眉",
         "moves": [
@@ -354,11 +354,11 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "紫电", "quality": "橙", "desc": "镇身之宝，百穴皆可渡生死的金针" },
-          { "name": "玉真青囊针盒", "quality": "蓝", "desc": "趁手医家玉佩，常年浸染药香" }
+          { "name": "紫电", "quality": "橙", "desc": "镇身之宝，百穴皆可渡生死的金针", "slot": "equipment" },
+          { "name": "玉真青囊针盒", "quality": "蓝", "desc": "趁手医家玉佩，常年浸染药香", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "玉泉寨万民伞布片", "desc": "染血的残布，记录着当年未能救活的牧民名字" }
+          { "name": "玉泉寨万民伞布片", "desc": "染血的残布，记录着当年未能救活的牧民名字", "slot": "bag" }
         ]
       },
       "shop": {
@@ -370,10 +370,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "紫电", "category": "weapon", "quality": "橙" },
-        { "name": "素白僧衣", "category": "armor", "quality": "绿" },
-        { "name": "玉真青囊针盒", "category": "accessory", "quality": "蓝" },
-        { "name": "手抄止戈经", "category": "misc", "quality": "白" }
+        { "name": "紫电", "category": "weapon", "quality": "橙", "slot": "equipment" },
+        { "name": "素白僧衣", "category": "armor", "quality": "绿", "slot": "equipment" },
+        { "name": "玉真青囊针盒", "category": "accessory", "quality": "蓝", "slot": "equipment" },
+        { "name": "手抄止戈经", "category": "misc", "quality": "白", "slot": "bag", "sellable": false, "cherish": 80 }
       ]
     },
 {
@@ -396,7 +396,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "将活捉的恶徒泡在药瓮里观察毒发反应，听蛇群蜕皮的沙沙声。　　**交易风格**：看心情开价，顺眼者收一枚铜板，逆眼者须断一指或试毒三日。",
       "tradeStyle": "看心情开价，顺眼者收一枚铜板，逆眼者须断一指或试毒三日。",
       "nsfw": "(无·男性不写)",
-      "follower": { "type": "兽", "name": "胭脂扣", "desc": "盘在手腕上的剧毒赤练蛇，通体如红玉，吐信间可喷吐致幻毒雾。" },
+      "follower": { "type": "兽", "name": "胭脂扣", "desc": "盘在手腕上的剧毒赤练蛇，通体如红玉，吐信间可喷吐致幻毒雾。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "五仙教",
         "moves": [
@@ -407,11 +407,11 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "银鳞圣母鞭", "quality": "橙", "desc": "镇身蛇杖，杖头暗藏五仙教奇毒" },
-          { "name": "烟雨银蛇香囊", "quality": "蓝", "desc": "趁手轻靴，踏雪无痕且避百虫" }
+          { "name": "银鳞圣母鞭", "quality": "橙", "desc": "镇身蛇杖，杖头暗藏五仙教奇毒", "slot": "equipment" },
+          { "name": "烟雨银蛇香囊", "quality": "蓝", "desc": "趁手轻靴，踏雪无痕且避百虫", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "半截干枯蛇蜕", "desc": "散发异香，似乎是某种远古异种留下的线索" }
+          { "name": "半截干枯蛇蜕", "desc": "散发异香，似乎是某种远古异种留下的线索", "slot": "bag" }
         ]
       },
       "shop": {
@@ -423,10 +423,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "银鳞圣母鞭", "category": "weapon", "quality": "橙" },
-        { "name": "赤纹毒蚕袍", "category": "armor", "quality": "紫" },
-        { "name": "烟雨银蛇香囊", "category": "accessory", "quality": "蓝" },
-        { "name": "蛇药", "category": "misc", "quality": "绿" }
+        { "name": "银鳞圣母鞭", "category": "weapon", "quality": "橙", "slot": "equipment" },
+        { "name": "赤纹毒蚕袍", "category": "armor", "quality": "紫", "slot": "equipment" },
+        { "name": "烟雨银蛇香囊", "category": "accessory", "quality": "蓝", "slot": "equipment" },
+        { "name": "蛇药", "category": "misc", "quality": "绿", "slot": "bag" }
       ]
     },
 {
@@ -449,7 +449,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "夜深人静时用鹿皮擦拭金算盘，核对欠债人的家谱与软肋。　　**交易风格**：先签死契再交货，支持墓中分期付款，但利息按时辰翻倍计算。",
       "tradeStyle": "先签死契再交货，支持墓中分期付款，但利息按时辰翻倍计算。",
       "nsfw": "(无·男性不写)",
-      "follower": { "type": "机关人偶", "name": "招财童子", "desc": "向唐门重金定制的背账木偶，腹内暗藏机括，专替主人挡刀收钱。" },
+      "follower": { "type": "机关人偶", "name": "招财童子", "desc": "向唐门重金定制的背账木偶，腹内暗藏机括，专替主人挡刀收钱。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "唐门",
         "moves": [
@@ -460,12 +460,12 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "金珠算盘", "quality": "蓝", "desc": "镇身凶器，纯金打造且内藏唐门机括" },
-          { "name": "冰种翡翠扳指", "quality": "蓝", "desc": "趁手护指，拨打暗器时可增三分力道" }
+          { "name": "金珠算盘", "quality": "蓝", "desc": "镇身凶器，纯金打造且内藏唐门机括", "slot": "equipment" },
+          { "name": "冰种翡翠扳指", "quality": "蓝", "desc": "趁手护指，拨打暗器时可增三分力道", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "染血的空白死契", "desc": "盖着锦官城官印与古道会私章，填名即生效" },
-          { "name": "土司府世子欠条", "desc": "记载着十万两雪花银与一处秘境地图的抵押契" }
+          { "name": "染血的空白死契", "desc": "盖着锦官城官印与古道会私章，填名即生效", "slot": "bag" },
+          { "name": "土司府世子欠条", "desc": "记载着十万两雪花银与一处秘境地图的抵押契", "slot": "bag" }
         ]
       },
       "shop": {
@@ -477,10 +477,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "金珠算盘", "category": "weapon", "quality": "蓝" },
-        { "name": "狼裘大氅", "category": "armor", "quality": "蓝" },
-        { "name": "冰种翡翠扳指", "category": "accessory", "quality": "蓝" },
-        { "name": "赤蜈暗账", "category": "misc", "quality": "紫" }
+        { "name": "金珠算盘", "category": "weapon", "quality": "蓝", "slot": "equipment" },
+        { "name": "狼裘大氅", "category": "armor", "quality": "蓝", "slot": "equipment" },
+        { "name": "冰种翡翠扳指", "category": "accessory", "quality": "蓝", "slot": "equipment" },
+        { "name": "赤蜈暗账", "category": "misc", "quality": "紫", "slot": "bag" }
       ]
     },
 {
@@ -503,7 +503,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "倒挂在房梁或古树阴影中闭目养神，用舌尖舔舐匕首上的血槽。　　**交易风格**：从不开口讨价还价，把看中的东西拿走，留下自认为等值的金银或情报。",
       "tradeStyle": "从不开口讨价还价，把看中的东西拿走，留下自认为等值的金银或情报。",
       "nsfw": "因痛觉迟钝而追求极致的窒息感与束缚，喜被伴侣用玄铁链反绑双手掐住脖颈后入狠干，在濒死的缺氧晕眩中夹紧花穴痉挛泄身。",
-      "follower": { "type": "剑灵", "name": "青鸟", "desc": "寄宿在古蜀青铜短剑中的幽绿残魂，能在黑暗中为主人指引生路。" },
+      "follower": { "type": "剑灵", "name": "青鸟", "desc": "寄宿在古蜀青铜短剑中的幽绿残魂，能在黑暗中为主人指引生路。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "三星堆",
         "moves": [
@@ -514,12 +514,12 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "神鸟金纹剑", "quality": "橙", "desc": "镇身古蜀短剑，饮血无数且削铁如泥" },
-          { "name": "玄纱罗刹衣", "quality": "紫", "desc": "融于夜色的紧身软甲，可敛去呼吸声" },
-          { "name": "青铜纵目面具", "quality": "紫", "desc": "趁手半截面具，看破墓中幻术障眼法" }
+          { "name": "神鸟金纹剑", "quality": "橙", "desc": "镇身古蜀短剑，饮血无数且削铁如泥", "slot": "equipment" },
+          { "name": "玄纱罗刹衣", "quality": "紫", "desc": "融于夜色的紧身软甲，可敛去呼吸声", "slot": "equipment" },
+          { "name": "青铜纵目面具", "quality": "紫", "desc": "趁手半截面具，看破墓中幻术障眼法", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "断裂的青铜神树枝", "desc": "刻满古蜀神秘铭文，靠近墓穴深处会微微发烫" }
+          { "name": "断裂的青铜神树枝", "desc": "刻满古蜀神秘铭文，靠近墓穴深处会微微发烫", "slot": "bag" }
         ]
       },
       "shop": {
@@ -531,10 +531,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "神鸟金纹剑", "category": "weapon", "quality": "橙" },
-        { "name": "玄纱罗刹衣", "category": "armor", "quality": "紫" },
-        { "name": "青铜纵目面具", "category": "accessory", "quality": "紫" },
-        { "name": "青铜残片", "category": "misc", "quality": "绿" }
+        { "name": "神鸟金纹剑", "category": "weapon", "quality": "橙", "slot": "equipment" },
+        { "name": "玄纱罗刹衣", "category": "armor", "quality": "紫", "slot": "equipment" },
+        { "name": "青铜纵目面具", "category": "accessory", "quality": "紫", "slot": "equipment" },
+        { "name": "青铜残片", "category": "misc", "quality": "绿", "slot": "bag" }
       ]
     },
 {
@@ -557,7 +557,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "每日寅时雷打不动起身打熬筋骨，用猪油仔细擦拭枪杆与旧铁甲。　　**交易风格**：一口唾沫一个钉，从不漫天要价，但若买主出尔反尔定会挨上一顿老拳。",
       "tradeStyle": "一口唾沫一个钉，从不漫天要价，但若买主出尔反尔定会挨上一顿老拳。",
       "nsfw": "(无·男性不写)",
-      "follower": { "type": "人", "name": "铁牛", "desc": "黑风寨收留的哑巴孤儿，天生神力，替教头背负重盾与备用的熟铜棍。" },
+      "follower": { "type": "人", "name": "铁牛", "desc": "黑风寨收留的哑巴孤儿，天生神力，替教头背负重盾与备用的熟铜棍。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "天龙",
         "moves": [
@@ -568,11 +568,11 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "土司府仪卫戟", "quality": "橙", "desc": "镇身重枪，枪头由独孤剑冢废铁重铸" },
-          { "name": "锦官坊标兵甲", "quality": "蓝", "desc": "趁手旧军甲，满是刀痕却依旧坚固" }
+          { "name": "土司府仪卫戟", "quality": "橙", "desc": "镇身重枪，枪头由独孤剑冢废铁重铸", "slot": "equipment" },
+          { "name": "锦官坊标兵甲", "quality": "蓝", "desc": "趁手旧军甲，满是刀痕却依旧坚固", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "缺角的禁军腰牌", "desc": "正面刻着“锦官折冲府”，背面刻着数十个死人名字" }
+          { "name": "缺角的禁军腰牌", "desc": "正面刻着“锦官折冲府”，背面刻着数十个死人名字", "slot": "bag" }
         ]
       },
       "shop": {
@@ -584,10 +584,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "土司府仪卫戟", "category": "weapon", "quality": "橙" },
-        { "name": "锦官坊标兵甲", "category": "armor", "quality": "蓝" },
-        { "name": "寒铁护腕", "category": "accessory", "quality": "绿" },
-        { "name": "贝叶抄经纸", "category": "misc", "quality": "白" }
+        { "name": "土司府仪卫戟", "category": "weapon", "quality": "橙", "slot": "equipment" },
+        { "name": "锦官坊标兵甲", "category": "armor", "quality": "蓝", "slot": "equipment" },
+        { "name": "寒铁护腕", "category": "accessory", "quality": "绿", "slot": "equipment" },
+        { "name": "贝叶抄经纸", "category": "misc", "quality": "白", "slot": "bag" }
       ]
     },
 {
@@ -610,7 +610,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "对镜描眉点绛唇，收集各路江湖豪客送她的定情信物并标价嘲弄。　　**交易风格**：交易前必先调情奉承，让人在骨头酥软间不知不觉签下吃亏的买卖。",
       "tradeStyle": "交易前必先调情奉承，让人在骨头酥软间不知不觉签下吃亏的买卖。",
       "nsfw": "体内种有百花门春情蛊，交合时花穴滚烫且会如小嘴般规律吸吮肉棒，极擅用丰乳夹弄与深喉吞吐，在男人射精瞬间吸干其部分元阳。",
-      "follower": { "type": "兽", "name": "醉仙蝶", "desc": "停在发髻上的紫翼蛊蝶，振翅间洒下让人吐露真言的迷幻香粉。" },
+      "follower": { "type": "兽", "name": "醉仙蝶", "desc": "停在发髻上的紫翼蛊蝶，振翅间洒下让人吐露真言的迷幻香粉。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "百花门",
         "moves": [
@@ -621,13 +621,13 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "乾达婆琵琶", "quality": "紫", "desc": "镇身乐器，天蚕丝为弦，藏有暗器机括" },
-          { "name": "黛青蜀锦银缕裙", "quality": "紫", "desc": "百花门秘制软纱裙，刀剑难伤且带异香" },
-          { "name": "象牙骨簪", "quality": "蓝", "desc": "趁手发饰，拔下即可作淬毒刺针使用" }
+          { "name": "乾达婆琵琶", "quality": "紫", "desc": "镇身乐器，天蚕丝为弦，藏有暗器机括", "slot": "equipment" },
+          { "name": "黛青蜀锦银缕裙", "quality": "紫", "desc": "百花门秘制软纱裙，刀剑难伤且带异香", "slot": "equipment" },
+          { "name": "象牙骨簪", "quality": "蓝", "desc": "趁手发饰，拔下即可作淬毒刺针使用", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "百花门胭脂密信", "desc": "用唇印留在丝帕上的情报，记录着曲措乡大人物的丑事" },
-          { "name": "干瘪的相思蛊虫尸", "desc": "证明曾有一位痴情高手为她断肠而亡" }
+          { "name": "百花门胭脂密信", "desc": "用唇印留在丝帕上的情报，记录着曲措乡大人物的丑事", "slot": "bag" },
+          { "name": "干瘪的相思蛊虫尸", "desc": "证明曾有一位痴情高手为她断肠而亡", "slot": "bag" }
         ]
       },
       "shop": {
@@ -639,10 +639,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "乾达婆琵琶", "category": "weapon", "quality": "紫" },
-        { "name": "黛青蜀锦银缕裙", "category": "armor", "quality": "紫" },
-        { "name": "象牙骨簪", "category": "accessory", "quality": "蓝" },
-        { "name": "云南沉水香块", "category": "misc", "quality": "绿" }
+        { "name": "乾达婆琵琶", "category": "weapon", "quality": "紫", "slot": "equipment" },
+        { "name": "黛青蜀锦银缕裙", "category": "armor", "quality": "紫", "slot": "equipment" },
+        { "name": "象牙骨簪", "category": "accessory", "quality": "蓝", "slot": "equipment" },
+        { "name": "云南沉水香块", "category": "misc", "quality": "绿", "slot": "bag" }
       ]
     },
 {
@@ -668,8 +668,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "follower": {
         "type": "剑灵",
         "name": "寒魄",
-        "desc": "寄宿于天山寒铁剑中的一缕幽魂，平日化作一只半透明的冰蓝雪貂盘于她肩头。"
-      },
+        "desc": "寄宿于天山寒铁剑中的一缕幽魂，平日化作一只半透明的冰蓝雪貂盘于她肩头。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "天山武学",
         "moves": [
@@ -680,10 +679,10 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "冰种翡翠珠串", "quality": "紫", "desc": "以天山冰蚕丝织就的护腕，触手冰凉，百毒不侵。" }
+          { "name": "冰种翡翠珠串", "quality": "紫", "desc": "以天山冰蚕丝织就的护腕，触手冰凉，百毒不侵。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "雪莲玉露", "desc": "天山秘制伤药，散发着淡淡清香。" }
+          { "name": "雪莲玉露", "desc": "天山秘制伤药，散发着淡淡清香。", "slot": "bag" }
         ]
       },
       "shop": {
@@ -695,9 +694,9 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "雪山练功服", "category": "armor", "quality": "白" },
-        { "name": "冰蚕护腕", "category": "accessory", "quality": "蓝" },
-        { "name": "三城脚夫铜腰牌", "category": "accessory", "quality": "蓝" }
+        { "name": "雪山练功服", "category": "armor", "quality": "白", "slot": "equipment" },
+        { "name": "冰蚕护腕", "category": "accessory", "quality": "蓝", "slot": "equipment" },
+        { "name": "三城脚夫铜腰牌", "category": "accessory", "quality": "蓝", "slot": "equipment" }
       ]
     },
 {
@@ -720,7 +719,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "喜欢把玩品鉴各式男子的随身玉佩，以此评估对方身价。　　**交易风格**：媚眼如丝地推销，暗中疯狂抬价，专宰被她迷得神魂颠倒的冤大头。",
       "tradeStyle": "媚眼如丝地推销，暗中疯狂抬价，专宰被她迷得神魂颠倒的冤大头。",
       "nsfw": "生着一张眼含春水的狐媚脸，唇如饱满丹霞；胸前一对豪乳沉甸甸地呼之欲出，被轻纱勒出惊心动魄的深沟；水蛇腰妖娆扭动，丰腴熟透的磨盘大屁股走起路来肉波荡漾；裙摆下微露的幽穴水光潋滟，两片熟红肥唇微张；常年赤踩的玉足足底带着诱人的软肉，脚趾涂着蔻丹。 最受不住对足底的把玩与轻舔，一旦脚趾被含弄便会情难自禁地流水。丰满的胸肉对揉捏极为渴望，乳尖遇冷或受刺便会硬如石子；大腿内侧的软肉是绝对的弱点，轻轻一刮便会令她娇喘连连，媚态尽显。",
-      "follower": { "type": "人", "name": "阿铁", "desc": "高壮如牛的哑巴面具力士，浑身刀疤，对她唯命是从，兼具肉盾与挑夫之职。" },
+      "follower": { "type": "人", "name": "阿铁", "desc": "高壮如牛的哑巴面具力士，浑身刀疤，对她唯命是从，兼具肉盾与挑夫之职。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "巫山神女功",
         "moves": [
@@ -731,10 +730,10 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "香云纱舞衣", "quality": "蓝", "desc": "轻薄如雾的纱裙，能惑人心智，防御平平但极具风情。" }
+          { "name": "香云纱舞衣", "quality": "蓝", "desc": "轻薄如雾的纱裙，能惑人心智，防御平平但极具风情。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "神仙欢", "desc": "巫山派特制的催情香料，无色无味。" }
+          { "name": "神仙欢", "desc": "巫山派特制的催情香料，无色无味。", "slot": "bag" }
         ]
       },
       "shop": {
@@ -746,10 +745,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "云锦香囊", "category": "accessory", "quality": "蓝" },
-        { "name": "云南沉水香块", "category": "misc", "quality": "绿" },
-        { "name": "半张欠条", "category": "misc", "quality": "白" },
-        { "name": "素银易容粉盒", "category": "accessory", "quality": "蓝" }
+        { "name": "云锦香囊", "category": "accessory", "quality": "蓝", "slot": "equipment" },
+        { "name": "云南沉水香块", "category": "misc", "quality": "绿", "slot": "bag" },
+        { "name": "半张欠条", "category": "misc", "quality": "白", "slot": "bag" },
+        { "name": "素银易容粉盒", "category": "accessory", "quality": "蓝", "slot": "equipment" }
       ]
     },
 {
@@ -772,7 +771,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "保养宝剑，以及在空旷的草场上纵马狂飙。　　**交易风格**：爽快利落，最烦弯弯绕绕，只要价钱公道直接给钱拿货。",
       "tradeStyle": "爽快利落，最烦弯弯绕绕，只要价钱公道直接给钱拿货。",
       "nsfw": "英气勃勃的俊俏脸庞不施粉黛，因常年练武，胸部紧实挺拔而不坠；柔韧有力的劲腰没有一丝赘肉，隐隐可见马甲线；结实紧翘的臀部包裹在侠客劲装下，双腿修长笔挺；神秘的幽穴因未经人事而紧致粉红，穴口平整；双足骨肉匀称，脚背因为练轻功而有着优美的足弓。 看似英朗，实则身体极其敏感。后颈的棘突被指腹按压时会引得全身轻颤；腹部平坦的肌肉在被温热呼吸喷洒时会本能地紧绷，花壶内壁敏锐异常，些许的深浅摩擦便会让她卸去全部剑意，只能无助地夹紧双腿。",
-      "follower": { "type": "兽", "name": "踏云", "desc": "一匹神骏异常的大理苍山马，极通人性，能在危急时刻踢飞敌人。" },
+      "follower": { "type": "兽", "name": "踏云", "desc": "一匹神骏异常的大理苍山马，极通人性，能在危急时刻踢飞敌人。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "点苍剑派",
         "moves": [
@@ -783,10 +782,10 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "杭绸软银护心袍", "quality": "紫", "desc": "点苍秘传的贴身内甲，刀枪不入，轻若无物。" }
+          { "name": "杭绸软银护心袍", "quality": "紫", "desc": "点苍秘传的贴身内甲，刀枪不入，轻若无物。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "苍山剑谱残页", "desc": "记载着点苍剑法要义的羊皮纸。" }
+          { "name": "苍山剑谱残页", "desc": "记载着点苍剑法要义的羊皮纸。", "slot": "bag", "sellable": false, "cherish": 80 }
         ]
       },
       "shop": {
@@ -798,9 +797,9 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "七星桩磨剑石", "category": "misc", "quality": "蓝" },
-        { "name": "紫皮闷倒驴葫芦", "category": "accessory", "quality": "紫" },
-        { "name": "风干牦牛肉", "category": "misc", "quality": "白" }
+        { "name": "七星桩磨剑石", "category": "misc", "quality": "蓝", "slot": "bag" },
+        { "name": "紫皮闷倒驴葫芦", "category": "accessory", "quality": "紫", "slot": "equipment" },
+        { "name": "风干牦牛肉", "category": "misc", "quality": "白", "slot": "bag" }
       ]
     },
 {
@@ -823,7 +822,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "饲养和解剖各种剧毒生物，或者把金币铺在床上打滚。　　**交易风格**：雁过拔毛，不仅要压价，还常常在交易物品上暗中下毒以图后续敲诈。",
       "tradeStyle": "雁过拔毛，不仅要压价，还常常在交易物品上暗中下毒以图后续敲诈。",
       "nsfw": "异域风情的精巧小脸画着妖异紫妆，胸前双峰娇小却坚挺，点缀着银饰；不盈一握的楚腰上纹着青色毒蛇刺青，翘臀在苗族短裙下若隐若现；双腿间紧窄的蜜穴带着淡淡的草药异香，唇瓣殷红如血；赤裸的双足常年佩戴银铃，脚趾娇小圆润，白皙娇嫩得仿佛一掐就出水。 最受不了对腰间蛇形刺青的舔舐，那是她运毒的经脉交汇处，一碰就会浑身酸软；敏感的脚趾只要被含入口中吸吮，便会引得深处花液决堤；阴阜处极为娇嫩，轻微的揉捻都会让她咬破嘴唇才能忍住甜腻的娇啼。",
-      "follower": { "type": "兽", "name": "紫玉", "desc": "一条成年男子大腿粗细的紫鳞巨蟒，平时盘绕在她腰间伪装成一条粗腰带。" },
+      "follower": { "type": "兽", "name": "紫玉", "desc": "一条成年男子大腿粗细的紫鳞巨蟒，平时盘绕在她腰间伪装成一条粗腰带。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "五毒秘传",
         "moves": [
@@ -834,10 +833,10 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "官眷诰命簪", "quality": "橙", "desc": "浸泡过百种剧毒的玉簪，既是首饰也是致命暗器。" }
+          { "name": "官眷诰命簪", "quality": "橙", "desc": "浸泡过百种剧毒的玉簪，既是首饰也是致命暗器。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "天山冰蟾蜍", "desc": "极为罕见的毒物，晶莹剔透。" }
+          { "name": "天山冰蟾蜍", "desc": "极为罕见的毒物，晶莹剔透。", "slot": "bag" }
         ]
       },
       "shop": {
@@ -849,10 +848,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "纳兰银铃", "category": "accessory", "quality": "蓝" },
-        { "name": "百花蛊香囊", "category": "misc", "quality": "蓝" },
-        { "name": "缠丝玛瑙牌", "category": "accessory", "quality": "绿" },
-        { "name": "甘草解毒汤", "category": "misc", "quality": "白" }
+        { "name": "纳兰银铃", "category": "accessory", "quality": "蓝", "slot": "equipment" },
+        { "name": "百花蛊香囊", "category": "misc", "quality": "蓝", "slot": "bag" },
+        { "name": "缠丝玛瑙牌", "category": "accessory", "quality": "绿", "slot": "equipment" },
+        { "name": "甘草解毒汤", "category": "misc", "quality": "白", "slot": "bag" }
       ]
     },
 {
@@ -875,7 +874,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "把玩色彩斑斓的毒蛇，以及看着猎物在致幻剂中露出丑态。　　**交易风格**：漫天要价，喜欢用充满诱惑的言语扰乱买家心智，常常在交易中搭售带有隐患的药粉。",
       "tradeStyle": "漫天要价，喜欢用充满诱惑的言语扰乱买家心智，常常在交易中搭售带有隐患的药粉。",
       "nsfw": "长着一张妖冶魅惑的狐媚脸，眼角挑着殷红的胭脂；身穿苗疆短衫，胸前那一对丰乳硕大沉甸，走动时宛如水球般晃动，深褐色的乳头时常顶起衣料；水蛇般的纤腰纹着一只妖异的紫蝎；胯骨极宽，丰乳肥臀；腿根处的阴阜微凸，黑色的耻毛修剪得整整齐齐，肥厚的阴唇湿滑多汁，常年泥泞不堪；双足不着罗袜，脚趾涂着凤仙花汁，脚踝戴着银铃。 她极其敏感的地方是耳垂和肚脐。只要轻轻舔舐她的耳垂，她便会发出甜腻的娇喘；若用手指在她的肚脐处画圈按揉，淫水便会瞬间决堤。",
-      "follower": { "type": "机关人偶", "name": "阿呆", "desc": "被蛊毒与金属改造的魁梧毒人，没有痛觉，绝对服从。" },
+      "follower": { "type": "机关人偶", "name": "阿呆", "desc": "被蛊毒与金属改造的魁梧毒人，没有痛觉，绝对服从。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "五毒秘传",
         "moves": [
@@ -886,12 +885,12 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "铃铛", "quality": "蓝", "desc": "系在脚踝的银铃，走动时能发出迷人心智的魔音。" },
-          { "name": "翡翠毒液扳指", "quality": "紫", "desc": "佩戴在手腕的奇门兵器，暗藏见血封喉的毒刺。" }
+          { "name": "铃铛", "quality": "蓝", "desc": "系在脚踝的银铃，走动时能发出迷人心智的魔音。", "slot": "equipment" },
+          { "name": "翡翠毒液扳指", "quality": "紫", "desc": "佩戴在手腕的奇门兵器，暗藏见血封喉的毒刺。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "情花蛊", "desc": "散发着异香的活体蛊虫。" },
-          { "name": "迷魂香", "desc": "无色无味的粉末，令人短暂失忆。" }
+          { "name": "情花蛊", "desc": "散发着异香的活体蛊虫。", "slot": "bag" },
+          { "name": "迷魂香", "desc": "无色无味的粉末，令人短暂失忆。", "slot": "bag" }
         ]
       },
       "shop": {
@@ -903,10 +902,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "太阳神鸟小铜镜", "category": "accessory", "quality": "蓝" },
-        { "name": "竹叶青蛇胆", "category": "misc", "quality": "蓝" },
-        { "name": "乾达婆香囊", "category": "accessory", "quality": "蓝" },
-        { "name": "苗银花簪刺", "category": "weapon", "quality": "绿" }
+        { "name": "太阳神鸟小铜镜", "category": "accessory", "quality": "蓝", "slot": "equipment" },
+        { "name": "竹叶青蛇胆", "category": "misc", "quality": "蓝", "slot": "bag" },
+        { "name": "乾达婆香囊", "category": "accessory", "quality": "蓝", "slot": "equipment" },
+        { "name": "苗银花簪刺", "category": "weapon", "quality": "绿", "slot": "equipment" }
       ]
     },
 {
@@ -929,7 +928,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "擦拭自己的弯刀，以及在篝火旁唱粗犷的西域战歌。　　**交易风格**：痛快爽利，不屑于讨价还价，遇到看顺眼的人甚至会半买半送，对奸商则会拔刀相向。",
       "tradeStyle": "痛快爽利，不屑于讨价还价，遇到看顺眼的人甚至会半买半送，对奸商则会拔刀相向。",
       "nsfw": "五官深邃英挺，带着异域风情，小麦色的肌肤紧致充满野性；长期练武使得她的双乳呈现出水滴状的健美，乳肉结实弹性极佳，挺立的红梅宛如熟透的浆果；马甲线清晰可见的窄腰充满了爆发力；臀大肌紧实上翘，如同母豹般充满张力；阴户紧致结实，花瓣呈现健康的肉粉色，内里肉壁褶皱极多，夹绞力惊人；常年奔波的双足略带薄茧，脚型却匀称修长，透着一股健康的力量美。 她的敏感点在锁骨下方与尾椎骨。每当被抚摸这两处，她英气的脸上便会泛起难耐的红晕，强健的双腿会不由自主地夹紧，发出压抑的闷哼。",
-      "follower": { "type": "兽", "name": "赤羽", "desc": "一只凶悍的西域猎隼，视野极广，能从高空俯冲啄瞎敌人双眼。" },
+      "follower": { "type": "兽", "name": "赤羽", "desc": "一只凶悍的西域猎隼，视野极广，能从高空俯冲啄瞎敌人双眼。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "明教武学",
         "moves": [
@@ -940,12 +939,12 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "止戈玉令", "quality": "橙", "desc": "非金非木的令牌，明教高层的信物，蕴含奇异热力。" },
-          { "name": "百炼苗刀", "quality": "紫", "desc": "刀刃呈现暗红色的波浪纹理，极其锋利。" }
+          { "name": "止戈玉令", "quality": "橙", "desc": "非金非木的令牌，明教高层的信物，蕴含奇异热力。", "slot": "equipment" },
+          { "name": "百炼苗刀", "quality": "紫", "desc": "刀刃呈现暗红色的波浪纹理，极其锋利。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "西域火石", "desc": "极易点燃，遇水不灭。" },
-          { "name": "烈火旗名册", "desc": "记录了部分明教暗桩的羊皮卷。" }
+          { "name": "西域火石", "desc": "极易点燃，遇水不灭。", "slot": "bag" },
+          { "name": "烈火旗名册", "desc": "记录了部分明教暗桩的羊皮卷。", "slot": "bag" }
         ]
       },
       "shop": {
@@ -957,10 +956,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "苞谷酒", "category": "misc", "quality": "白" },
-        { "name": "孟记铁铺淬火油", "category": "misc", "quality": "白" },
-        { "name": "熊山手绘地图", "category": "accessory", "quality": "白" },
-        { "name": "红线", "category": "accessory", "quality": "白" }
+        { "name": "苞谷酒", "category": "misc", "quality": "白", "slot": "bag" },
+        { "name": "孟记铁铺淬火油", "category": "misc", "quality": "白", "slot": "bag" },
+        { "name": "熊山手绘地图", "category": "accessory", "quality": "白", "slot": "equipment" },
+        { "name": "红线", "category": "accessory", "quality": "白", "slot": "equipment" }
       ]
     },
 {
@@ -983,7 +982,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "独坐高处听风雪声，或是擦拭随身佩剑。　　**交易风格**：极不耐烦，价格合适便扔钱拿货，多说一句都会拔剑。",
       "tradeStyle": "极不耐烦，价格合适便扔钱拿货，多说一句都会拔剑。",
       "nsfw": "生着一张清冷出尘的瓜子脸，双峰在白衣下挺拔傲立、轮廓优美。盈盈一握的楚腰没有一丝赘肉，臀部紧实而圆润。花穴色泽宛如雪中绽放的粉梅，干净且紧致，双足更是晶莹剔透，连脚趾都如玉雕般完美无瑕。 最受不得别人呼出的热气喷洒在敏感的耳垂上；大腿内侧的软肉一旦被轻轻摩挲，便会双腿发软；玉趾对碰触极为敏感，揉捏脚心能让她瞬间破防喘息。",
-      "follower": { "type": "兽", "name": "霜影", "desc": "一头通体雪白、唯有尾尖带黑的极地雪豹，步履轻盈，目光锐利。" },
+      "follower": { "type": "兽", "name": "霜影", "desc": "一头通体雪白、唯有尾尖带黑的极地雪豹，步履轻盈，目光锐利。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "天山剑法",
         "moves": [
@@ -994,10 +993,10 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "听雪素玉佩", "quality": "紫", "desc": "刀枪不入，附带冰寒之气的掌法加成。" }
+          { "name": "听雪素玉佩", "quality": "紫", "desc": "刀枪不入，附带冰寒之气的掌法加成。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "天山雪蛤膏", "desc": "疗伤圣药，敷之祛疤生肌。" }
+          { "name": "天山雪蛤膏", "desc": "疗伤圣药，敷之祛疤生肌。", "slot": "bag" }
         ]
       },
       "shop": {
@@ -1009,10 +1008,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "寒铁细剑", "category": "weapon", "quality": "蓝" },
-        { "name": "誊抄的话本残页", "category": "misc", "quality": "绿" },
-        { "name": "铜钱串", "category": "accessory", "quality": "白" },
-        { "name": "驼绒防风氅", "category": "armor", "quality": "绿" }
+        { "name": "寒铁细剑", "category": "weapon", "quality": "蓝", "slot": "equipment" },
+        { "name": "誊抄的话本残页", "category": "misc", "quality": "绿", "slot": "bag" },
+        { "name": "铜钱串", "category": "accessory", "quality": "白", "slot": "equipment" },
+        { "name": "驼绒防风氅", "category": "armor", "quality": "绿", "slot": "equipment" }
       ]
     },
 {
@@ -1035,7 +1034,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "调戏正派少侠看他们脸红，或在深夜调制散发异香的毒粉。　　**交易风格**：软语温存地讨价还价，经常用迷魂香气试图让卖家打骨折。",
       "tradeStyle": "软语温存地讨价还价，经常用迷魂香气试图让卖家打骨折。",
       "nsfw": "长着一双勾魂摄魄的妖艳狐狸眼，双乳丰满硕大犹如熟透的蜜桃，水蛇腰柔软无骨扭动生姿，丰臀肥美宽大极具肉感。蜜穴常年湿润，汁水丰沛且肉唇微微外翻，玉足小巧，脚趾涂着鲜艳的丹蔻，极具苗疆风情。 最为敏感的是后腰处的腰窝，只需手指轻轻打圈便能让她春水泛滥；双乳的乳尖挺立，稍加揉捏便会发出娇媚入骨的呻吟；精致的锁骨也是她动情的开关。",
-      "follower": { "type": "兽", "name": "红鳞", "desc": "缠绕在小臂上的剧毒赤练蛇，鳞片艳丽，吐信无声。" },
+      "follower": { "type": "兽", "name": "红鳞", "desc": "缠绕在小臂上的剧毒赤练蛇，鳞片艳丽，吐信无声。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "五毒秘传",
         "moves": [
@@ -1046,10 +1045,10 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "银鳞缠丝鞭", "quality": "紫", "desc": "浸泡过百毒的软鞭，中者皮开肉绽且毒气攻心。" }
+          { "name": "银鳞缠丝鞭", "quality": "紫", "desc": "浸泡过百毒的软鞭，中者皮开肉绽且毒气攻心。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "绝情断肠蛊", "desc": "装在玉盒里的异种蛊虫，见血封喉。" }
+          { "name": "绝情断肠蛊", "desc": "装在玉盒里的异种蛊虫，见血封喉。", "slot": "bag" }
         ]
       },
       "shop": {
@@ -1061,10 +1060,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "碧竹吹箭", "category": "weapon", "quality": "绿" },
-        { "name": "红绳铜铃脚环", "category": "accessory", "quality": "白" },
-        { "name": "药囊", "category": "misc", "quality": "绿" },
-        { "name": "人皮易容薄胎", "category": "accessory", "quality": "蓝" }
+        { "name": "碧竹吹箭", "category": "weapon", "quality": "绿", "slot": "equipment" },
+        { "name": "红绳铜铃脚环", "category": "accessory", "quality": "白", "slot": "equipment" },
+        { "name": "药囊", "category": "misc", "quality": "绿", "slot": "bag" },
+        { "name": "人皮易容薄胎", "category": "accessory", "quality": "蓝", "slot": "equipment" }
       ]
     },
 {
@@ -1087,7 +1086,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "找人切磋武艺，或者坐在篝火旁痛饮烈酒。　　**交易风格**：爽快直接，不屑于讨价还价，只要看对眼了甚至愿意倒贴。",
       "tradeStyle": "爽快直接，不屑于讨价还价，只要看对眼了甚至愿意倒贴。",
       "nsfw": "生着英气勃勃的剑眉星目，胸脯结实饱满充满弹性，腰腹间有清晰紧致的马甲线，长腿丰臀充满武人的爆发力与肉感。私处紧致，毛发修剪得很短，双足足弓高挑，肌肉线条匀称有力，充满了健康野性的美感。 颈侧的动脉处一旦被亲吻舔舐，会让她浑身战栗失去力气；膝盖后侧的腘窝异常敏感，被抚摸时大腿会下意识地夹紧；粗糙的指腹摩擦她平坦结实的肚脐周围也会引发强烈的喘息。",
-      "follower": { "type": "剑灵", "name": "断雷", "desc": "依附在昆仑重剑上的上古剑灵，化作一团若隐若现的赤色雷光。" },
+      "follower": { "type": "剑灵", "name": "断雷", "desc": "依附在昆仑重剑上的上古剑灵，化作一团若隐若现的赤色雷光。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "昆仑烈阳功",
         "moves": [
@@ -1098,10 +1097,10 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "紫阳松纹剑", "quality": "橙", "desc": "剑身暗红，挥舞时伴随风雷之声的绝世重剑。" }
+          { "name": "紫阳松纹剑", "quality": "橙", "desc": "剑身暗红，挥舞时伴随风雷之声的绝世重剑。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "昆仑烈阳丹", "desc": "补充大量内力，驱除极寒。" }
+          { "name": "昆仑烈阳丹", "desc": "补充大量内力，驱除极寒。", "slot": "bag" }
         ]
       },
       "shop": {
@@ -1113,9 +1112,9 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "鹰曲长剑", "category": "weapon", "quality": "蓝" },
-        { "name": "青稞酒", "category": "misc", "quality": "白" },
-        { "name": "沉甸甸的碎银荷包", "category": "accessory", "quality": "绿" }
+        { "name": "鹰曲长剑", "category": "weapon", "quality": "蓝", "slot": "equipment" },
+        { "name": "青稞酒", "category": "misc", "quality": "白", "slot": "bag" },
+        { "name": "沉甸甸的碎银荷包", "category": "accessory", "quality": "绿", "slot": "equipment" }
       ]
     },
 {
@@ -1138,7 +1137,7 @@ export const ADVENTURER_POOL = Object.freeze([
       "hobby": "深夜清点自己搜刮来的金银珠宝与古籍，欣赏宝石的反光。　　**交易风格**：极其吝啬，最爱空手套白狼，交易时总想把对方底裤都骗走。",
       "tradeStyle": "极其吝啬，最爱空手套白狼，交易时总想把对方底裤都骗走。",
       "nsfw": "面罩下隐藏着异域深邃的五官，双乳白皙浑圆，在薄纱下若隐若现。腰肢纤细且点缀着一颗红宝石脐环，蜜桃臀微翘，走动间惹火至极。幽谷紧致粉嫩泛着诱人的水光，纤纤玉足套着金丝脚链，铃铛随着步伐叮当响。 最受不了对肚脐四周以及那颗脐环的拨弄把玩；深邃立体的耳廓若是被含弄，她会娇软地求饶；大腿根部的细嫩肌肤被轻拢慢捻时，常常让她立刻湿透。",
-      "follower": { "type": "机关人偶", "name": "阿萨辛", "desc": "高大的波斯机关傀儡，精钢打造，沉默而致命的护卫。" },
+      "follower": { "type": "机关人偶", "name": "阿萨辛", "desc": "高大的波斯机关傀儡，精钢打造，沉默而致命的护卫。", "slot": "mount", "sellable": false, "cherish": 100 },
       "kungfu": {
         "school": "圣火心法",
         "moves": [
@@ -1149,10 +1148,10 @@ export const ADVENTURER_POOL = Object.freeze([
       },
       "stealables": {
         "equipment": [
-          { "name": "圣女素银莲簪", "quality": "紫", "desc": "带有惑人心神异香的丝质面纱。" }
+          { "name": "圣女素银莲簪", "quality": "紫", "desc": "带有惑人心神异香的丝质面纱。", "slot": "equipment" }
         ],
         "sundries": [
-          { "name": "圣火令拓本", "desc": "记载着诡异武功的羊皮纸卷。" }
+          { "name": "圣火令拓本", "desc": "记载着诡异武功的羊皮纸卷。", "slot": "bag" }
         ]
       },
       "shop": {
@@ -1164,10 +1163,10 @@ export const ADVENTURER_POOL = Object.freeze([
         ]
       },
       "carry": [
-        { "name": "金丝软银鞭", "category": "weapon", "quality": "紫" },
-        { "name": "染血的香行凭据（抄本）", "category": "misc", "quality": "紫" },
-        { "name": "滇南醒神香", "category": "misc", "quality": "绿" },
-        { "name": "苗银暗器囊", "category": "accessory", "quality": "蓝" }
+        { "name": "金丝软银鞭", "category": "weapon", "quality": "紫", "slot": "equipment" },
+        { "name": "染血的香行凭据（抄本）", "category": "misc", "quality": "紫", "slot": "bag", "sellable": false, "cherish": 80 },
+        { "name": "滇南醒神香", "category": "misc", "quality": "绿", "slot": "bag" },
+        { "name": "苗银暗器囊", "category": "accessory", "quality": "蓝", "slot": "equipment" }
       ]
     }
 ]);
