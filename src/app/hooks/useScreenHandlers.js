@@ -110,8 +110,11 @@ export function useScreenHandlers({
   const handleNpcTrade = useCallback((npc) => applyResult(featureCtx(), () => {
     captureUndo();
     const result = tradeWithNpc(gameStore.getState(), npc);
-    if (result.shop) setTradingShop(result.shop);
-    else applyResult(featureCtx(), result);
+    if (result.shop) {
+      // 日更摊刷新带来的落账（换货 room/npcState + 吆喝日志）与开摊分开应用。
+      if (result.changes || result.logs?.length) applyResult(featureCtx(), { changes: result.changes, logs: result.logs });
+      setTradingShop(result.shop);
+    } else applyResult(featureCtx(), result);
   }, { feature: "npc.tradeWithNpc" }), [captureUndo]);
 
   const handleNpcLearnSkill = useCallback((npc) => applyResult(featureCtx(), () => {

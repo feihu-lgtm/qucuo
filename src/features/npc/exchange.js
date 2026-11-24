@@ -9,6 +9,7 @@ import { getCurrentStage, isQuestGateOpen } from "../../domain/rules/quests/ques
 import { snowMedicineGift, snowMeatGift } from "../quest/snowLeopard.js";
 import { buildShopInventory, buildOcShopInventory, rollShopStock } from "../../domain/data/shops/qucuoShops.js";
 import { affectionOf, buildCarryShelf, flattenShelf, sellCoefOf } from "../../domain/rules/npc/npcTradeFlow.js";
+import { refreshDailyShop, dailyShopDayKey, promoForDay, isDailyShopNpc } from "../../domain/rules/npc/dailyShop.js";
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { giftRange } from "../../domain/rules/state/fields.js";
@@ -231,6 +232,9 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
 export function tradeWithNpc(state, npc) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (isNpcAngry(state.varTree, npc.name)) return appeaseAngryNpc(state, npc, { kind: "trade" });
+  // 日更杂货摊：换日先刷新货架（changes{room,npcState}+吆喝 logs 由调用方落账）。
+  const refreshed = refreshDailyShop(state, npc);
+  if (refreshed) npc = refreshed.npc;
   // 货架换源（设计稿 §2.1）：不再出独立 goods 货架——货架=对方 carriedItems
   // 经 normalizeCarryEntry 后按 slot 分区；mount 只展示，sellable=false 标「不卖」，
   // 钟爱走 quoteBuy 价档（中钟爱 3×、挚爱拒售、好感≥60 割爱 2×）。
@@ -251,7 +255,11 @@ export function tradeWithNpc(state, npc) {
       shopName: displayData?.shopName || `${npc.name}的随身货`,
       sections,
       sellCoef: sellCoefOf(npc, affection),
+      // 节气日给 UI 一个「大促」标识——折扣已在生成时折进 price，不再二次减价。
+      promo: refreshed ? refreshed.promo : (isDailyShopNpc(npc) ? promoForDay(dailyShopDayKey()) : null),
       items: [...items, ...display],
     },
+    // 日更刷新落账：换货后的 room + 记了刷新日的 npcState + 吆喝日志。
+    ...(refreshed ? { changes: { room: refreshed.room, npcState: refreshed.npcState }, logs: refreshed.logs } : {}),
   };
 }
