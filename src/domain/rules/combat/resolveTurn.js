@@ -16,6 +16,7 @@ import { applyDodgeResult } from "./dodgeTurn.js";
 import { rollStatusApply } from "./resolveStatus.js";
 import { applyStatus, tickStatusEffects } from "./statusEffects.js";
 import { defFromNeigong } from "../npc/npcGeneration.js";
+import { moveScarKindHit, SCAR_VULN_MULTIPLIER } from "../nemesis/nemesisScarVuln.js";
 
 const BASE_ATK = 20; // baseAtk 缺省兜底（正常玩家/NPC 都会带上按外功算好的 baseAtk）
 
@@ -92,6 +93,13 @@ function calcBaseDamage(move, attacker, defender) {
   // justiceStrike（地藏）：对方带"不义"标记（终局对抗土司府势力）时伤害翻倍
   if (move.justiceStrike && defender?.factionUnjust) {
     multiplier *= 2;
+  }
+
+  // ── 宿敌旧伤弱点（WO-23C5，乘算最末）──
+  // defender.scarKinds 由装配层注入（谱只读）：招式属性命中同类旧伤 ×1.1，
+  // 多疤不叠、不同类无效果、不可辨认招式零效果。
+  if (moveScarKindHit(move, defender?.scarKinds)) {
+    multiplier *= SCAR_VULN_MULTIPLIER;
   }
 
   return Math.round(atk * multiplier * strengthCoef);
@@ -224,7 +232,9 @@ export function resolveTurn(sideA, sideB) {
       result[`damageTo${loserTag}`] += damage;
     }
     if (winnerMove.doubleReflectDamage) {
-      const wouldBlock = calcBaseDamage(loserMove, loserSide, winnerSide);
+      // WO-23C5 Review 修：反弹基数同样剥掉旧伤加成——只放大其受创，不壮其反弹
+      const reflectSide = winnerSide?.scarKinds?.length ? { ...winnerSide, scarKinds: undefined } : winnerSide;
+      const wouldBlock = calcBaseDamage(loserMove, loserSide, reflectSide);
       result[`damageTo${loserTag}`] += Math.round(wouldBlock * 2);
       result.notes.push(`${winnerMove.name}二倍反弹，力道尽数奉还`);
     }
@@ -363,6 +373,14 @@ export function resolveTurn(sideA, sideB) {
   applyDodgeResult(result, sideB, "B", sideA, "A", markSources);
   if (sideA.move.type === MOVE_TYPE.ATTACK && sideA.move.applyStatus && result.damageToB > 0) result.statusAppliedToB = rollStatusApply(sideA.move);
   if (sideB.move.type === MOVE_TYPE.ATTACK && sideB.move.applyStatus && result.damageToA > 0) result.statusAppliedToA = rollStatusApply(sideB.move);
+
+  // ── 宿敌旧伤命中反馈（WO-23C5）：deterministic 短语，不编事实──
+  if (result.damageToB > 0 && moveScarKindHit(sideA.move, sideB?.scarKinds)) {
+    result.notes.push(`${sideA.move?.name || "这一击"}正中旧伤`);
+  }
+  if (result.damageToA > 0 && moveScarKindHit(sideB.move, sideA?.scarKinds)) {
+    result.notes.push(`${sideB.move?.name || "这一击"}正中旧伤`);
+  }
 
   return result;
 }

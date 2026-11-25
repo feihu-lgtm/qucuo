@@ -31,15 +31,20 @@ export function resolveDefenseBlock(result, sideA, sideB, winnerIsA, {
     const reduced = Math.round(rawDmg * (winnerMove.baseDamageMultiplier ?? 0.6));
     const defenseValue = calcDefenseValue(winnerSide, winnerMove);
     const finalReduced = Math.max(1, reduced - defenseValue);
+    // WO-23C5 Review 修：反击基数用未加成 rawDmg——旧伤弱点只放大宿敌「受」的
+    // 伤害（finalReduced 走 rawDmg 正确），绝不能反过来壮它自己的反击/反弹。
+    const counterRaw = winnerSide?.scarKinds?.length
+      ? calcBaseDamage(loserMove, loserSide, { ...winnerSide, scarKinds: undefined })
+      : rawDmg;
     let counterDmg = 0;
     if (winnerMove.onCounterSuccessDamageRatio) {
-      counterDmg = Math.round(rawDmg * winnerMove.onCounterSuccessDamageRatio);
+      counterDmg = Math.round(counterRaw * winnerMove.onCounterSuccessDamageRatio);
       result.counterTriggered = true;
       if (winnerIsA) result.counterSuccessA = true; else result.counterSuccessB = true;
     }
     // 二倍反弹（佛光普照、听桥·佛光）：架住的那截力道加倍弹回出招者。
     if (winnerMove.doubleReflectDamage) {
-      counterDmg += Math.round((rawDmg - finalReduced) * 2);
+      counterDmg += Math.round((counterRaw - finalReduced) * 2);
       result.counterTriggered = true;
     }
     const attackerHp = loserSide.hp?.[0] ?? 1;

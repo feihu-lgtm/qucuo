@@ -5,6 +5,8 @@ import { ensureNpcCombatData } from "../../domain/rules/npc/npcGeneration.js";
 import { getLocalQuestStage } from "../../domain/rules/quests/localStages.js";
 import { applyBuffsToSpecial, resolveCombatBuff } from "../../utils/buffSystem.js";
 import { settleNpcDuel } from "../npc/settleDuel.js";
+import { scarKindsOfNemesis } from "../../domain/rules/nemesis/nemesisScarVuln.js";
+import { nemesisFactionOf } from "../../domain/rules/nemesis/nemesisEngine.js";
 import { isQuestChoiceOpen } from "../../domain/rules/quests/questEngine.js";
 import { SPAR_POISON } from "../../domain/rules/economy/sectSpar.js";
 
@@ -29,7 +31,11 @@ export function autoFightQuestChoice(state, quest, label, now = Date.now()) {
   const combatBuff = resolveCombatBuff(char.pendingCombatBuff);
   const playerChar = { ...char, special: applyBuffsToSpecial(char.special, state.flags, state.time) };
   let allies = [buildPlayerUnit({ playerChar, playerInv: inv, playerMoveset: char.moveset, combatBuff, playerSkills: skills })];
-  let enemies = [buildEnemyUnit(npc)];
+  // WO-23C5：野战 autoFight 同构补——按权威势力 nemesisFactionOf 注入旧伤弱点
+  let enemies = [{
+    ...buildEnemyUnit(npc),
+    scarKinds: scarKindsOfNemesis(state.varTree?.世界?.宿敌谱, nemesisFactionOf(npc), npc.name),
+  }];
   const battleLog = [];
   let outcome;
   for (let round = 1; round <= 20 && !outcome; round++) {

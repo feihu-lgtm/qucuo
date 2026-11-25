@@ -29,6 +29,7 @@ function toSide(fighter, move) {
     hp: cs.hp,
     energy: cs.energy,
     statusSlots: cs.statusSlots,
+    scarKinds: fighter.scarKinds, // WO-23C5 透传
     lastCounterSuccess: cs.lastCounterSuccess,
     pendingAtkBonus: cs.pendingAtkBonus,
     costPenalty: cs.costPenalty?.value ?? 0,

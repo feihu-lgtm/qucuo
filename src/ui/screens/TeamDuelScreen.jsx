@@ -16,6 +16,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { MOVE_TYPE } from "../../domain/rules/combat/moveTypes.js";
 import { runTeamTurn, decideUnitMove, decideUnitTarget, checkBattleOver } from "../../domain/rules/combat/teamBattleEngine.js";
 import { buildPlayerUnit, buildLeopardUnit, buildEnemyUnit } from "../../domain/rules/combat/teamUnits.js";
+import { gameStore } from "../../store/gameStore.js";
+import { scarKindsOfNemesis } from "../../domain/rules/nemesis/nemesisScarVuln.js";
+import { nemesisFactionOf } from "../../domain/rules/nemesis/nemesisEngine.js";
 import { rollBattleLoot } from "../../domain/rules/npc/npcGeneration.js";
 import { resolveCombatBuff } from "../../utils/buffSystem.js";
 import { MoveButton, MoveInspect, TYPE_ICON } from "./DuelScreen.jsx";
@@ -33,7 +36,11 @@ export default function TeamDuelScreen({ enemies, companions = [], playerChar, p
     buildPlayerUnit({ playerChar, playerInv, playerMoveset, combatBuff, playerSkills }),
     ...companions.map(buildLeopardUnit),
   ]);
-  const [enemyUnits, setEnemyUnits] = useState(() => (enemies || []).map((n, i) => buildEnemyUnit(n, i)));
+  // WO-23C5：装配时按谱注入旧伤属性（谱只读，战斗中不变）；无谱/非五势力空数组零效果
+  const [enemyUnits, setEnemyUnits] = useState(() => (enemies || []).map((n, i) => ({
+    ...buildEnemyUnit(n, i),
+    scarKinds: scarKindsOfNemesis(gameStore.getState().varTree?.世界?.宿敌谱, nemesisFactionOf(n), n.name),
+  })));
 
   const [round, setRound] = useState(1), { dodgeStolenItems, tryStealOnDodge } = useDuelDodgeSteal();
   const [phase, setPhase] = useState("select"); // select | result | over
