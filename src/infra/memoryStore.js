@@ -17,34 +17,13 @@
 //     createdAt: number,
 //   }
 
-const DB_NAME = "qucuo_memory";
-const DB_VERSION = 1;
+// 开库/版本升级统一走 memoryDb.js（WO-17：同库新增 prose_chunks，不能各开各的）
+import { memoryStoreOf } from "./memoryDb.js";
+
 const STORE = "memories";
 
-let _dbPromise = null;
-
-function openDb() {
-  if (_dbPromise) return _dbPromise;
-  _dbPromise = new Promise((resolve, reject) => {
-    if (typeof indexedDB === "undefined") {
-      reject(new Error("当前环境不支持 IndexedDB"));
-      return;
-    }
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE, { keyPath: "id" });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-  return _dbPromise;
-}
-
 function tx(mode) {
-  return openDb().then(db => db.transaction(STORE, mode).objectStore(STORE));
+  return memoryStoreOf(mode, STORE);
 }
 
 export async function addMemory(record) {
