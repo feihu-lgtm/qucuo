@@ -39,6 +39,20 @@ describe("judgeTurn quest_advance 白名单", () => {
     ]), { rng: () => 0.5 });
     expect(v.facts.filter((f) => f.op === "ADVANCE_QUEST").length).toBe(0);
   });
+  it("questId/flag 空串视同未填——白名单自然拒收（strict 必填键的妥协不开口子）", () => {
+    const v = judgeTurn(envelope, propose([
+      { claim: "x", kind: "quest_advance", fit: "natural", questId: "", flag: "" },
+    ]), { rng: () => 0.5 });
+    expect(v.facts.filter((f) => f.op === "ADVANCE_QUEST").length).toBe(0);
+  });
+
+  it("witnesses 写死「主角」与判官全链一致（judgeTurn/sealVerifier 统一系统主角代号，不用玩家名）", () => {
+    const v = judgeTurn(envelope, propose([
+      { claim: "x", kind: "quest_advance", fit: "natural", questId: "q_test", flag: "q_test_open" },
+    ]), { rng: () => 0.5 });
+    expect(v.facts.find((f) => f.op === "ADVANCE_QUEST").witnesses).toEqual(["主角"]);
+  });
+
   it("同一 flag 重复提议只签一次", () => {
     const v = judgeTurn(envelope, propose([
       { claim: "x", kind: "quest_advance", fit: "natural", questId: "q_test", flag: "q_test_open" },

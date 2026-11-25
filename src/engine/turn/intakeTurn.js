@@ -39,7 +39,7 @@ export function buildIntakeUserContent({ playerInput, recentTurns = [], npcs = [
     }
     lines.push("玩家这句话若真把某件事说动/做到了位，就在 proposals 里提 {kind:\"quest_advance\",questId,flag,claim,fit}；没到位就不提，宁可少提。");
   }
-  lines.push('输出扁平 JSON：read（≤40字拆清代词与意图核心）、refIds、actions、proposals；无则空数组/空串，禁编造不在场的角色与物件。');
+  lines.push('输出扁平 JSON：read（≤40字拆清代词与意图核心）、refIds、actions、proposals；无则空数组/空串，禁编造不在场的角色与物件。proposals 的 questId/flag 为必填键：非 quest_advance 提议一律填空串。');
   return lines.join("\n");
 }
 

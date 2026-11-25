@@ -308,6 +308,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     facts.push({
       id: nextFactId(), op: "ADVANCE_QUEST",
       questId: hit.questId, flag: hit.flag, questTitle: hit.title,
+      // 「主角」是判官全链统一的系统主角代号（talk/give/sealVerifier 同口径），不用玩家实名
       witnesses: ["主角"],
     });
   }

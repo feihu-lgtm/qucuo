@@ -30,9 +30,10 @@ describe("questAdvanceCandidates 候选生成", () => {
     expect(out[0].title).toBe("考验");
   });
   it("未开启任务：giver 不在场且阶段无锚点以外通道→无候选；地点不符→无候选", () => {
-    // 与 roundNotes 同口径：needsGiver 的任务即便有地点锚点，giver 不在场也不候选
+    // 与任务面板同源：requireLocation 锚定阶段只看地点不看 giver——
+    // giver 不在场玩家也要能撞上该撞的事（旧 needsGiver 口径与面板矛盾，已修）
     const noGiver = questAdvanceCandidates({ ...BASE, room: { name: "鱼定村", npcs: [] } });
-    expect(noGiver.some((c) => c.flag === "q_test_open")).toBe(false);
+    expect(noGiver.some((c) => c.flag === "q_test_open")).toBe(true);
     const wrongPlace = questAdvanceCandidates({ ...BASE, room: { name: "喇嘛庙", npcs: [{ name: "老孙" }] } });
     expect(wrongPlace.some((c) => c.flag === "q_test_open")).toBe(false);
   });
@@ -52,6 +53,19 @@ describe("questAdvanceCandidates 候选生成", () => {
     expect(out.map((c) => c.flag).sort()).toEqual(["q_test_a", "q_test_b"]);
     const combatScript = { ...BASE, questProgress: { q_combat: { status: "active", currentStageIndex: 0 } }, questTriggerMode: "script", quests: [COMBAT_QUEST] };
     expect(questAdvanceCandidates(combatScript).length).toBe(0);
+  });
+
+  it("混合分支：combat 抉择旗永不进候选，非战斗分支可候选", () => {
+    const MIXED = {
+      id: "q_mix", title: "混考", giver: "老孙",
+      stages: [{ description: "打或谈", completionFlag: ["q_mix_fight", "q_mix_talk"], choices: [
+        { flag: "q_mix_fight", label: "打", resolve: "combat", combatNpc: { name: "匪" } },
+        { flag: "q_mix_talk", label: "谈", resolve: "auto" }] }],
+    };
+    const base = { ...BASE, questProgress: { q_mix: { status: "active", currentStageIndex: 0 } }, questTriggerMode: "script", quests: [MIXED] };
+    const out = questAdvanceCandidates(base);
+    expect(out.some((c) => c.flag === "q_mix_talk")).toBe(true);
+    expect(out.some((c) => c.flag === "q_mix_fight")).toBe(false);
   });
   it("非 choices 叙事阶段任何模式都候选；completed/locked 不候选", () => {
     const at3 = { ...BASE, questProgress: activeAt(3) };

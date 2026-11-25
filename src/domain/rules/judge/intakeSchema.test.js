@@ -7,7 +7,7 @@ describe("INTAKE_JSON_SCHEMA（契约 B 冻结形状）", () => {
     read: "玩家要把酒送给才旦",
     refIds: ["P18_2"],
     actions: [{ kind: "give", target: "才旦", itemId: "it_8f3a", direction: "none", stance: "sincere" }],
-    proposals: [{ claim: "桌上有本剑谱", kind: "find_item", fit: "stretch" }],
+    proposals: [{ claim: "桌上有本剑谱", kind: "find_item", fit: "stretch", questId: "", flag: "" }],
   };
 
   it("合法听意单通过本地校验", () => {
@@ -46,10 +46,14 @@ describe("INTAKE_JSON_SCHEMA（契约 B 冻结形状）", () => {
     expect(INTAKE_JSON_SCHEMA.schema.properties.proposals.items.properties.kind.enum).toEqual(["find_item", "secret_clue", "social_deal", "environment_use", "quest_advance"]);
   });
 
-  it("B1 quest_advance：可选 questId/flag 合法；仍拒绝其他自编键", () => {
+  it("B1 quest_advance：questId/flag 必填（strict 全 required）；空串合法，缺键/自编键拒收", () => {
     const qa = JSON.parse(JSON.stringify(valid));
     qa.proposals[0] = { claim: "说动了老孙", kind: "quest_advance", fit: "natural", questId: "q_test", flag: "q_test_open" };
     expect(validateJsonSchema(qa, INTAKE_JSON_SCHEMA.schema).ok).toBe(true);
+    // 缺 questId/flag 违反 strict 全 required——OpenAI 通道会整 schema 拒收，本地同口径
+    const missingQid = JSON.parse(JSON.stringify(valid));
+    delete missingQid.proposals[0].questId;
+    expect(validateJsonSchema(missingQid, INTAKE_JSON_SCHEMA.schema).ok).toBe(false);
     const bogus = JSON.parse(JSON.stringify(qa));
     bogus.proposals[0].stageIndex = 3;
     expect(validateJsonSchema(bogus, INTAKE_JSON_SCHEMA.schema).ok).toBe(false);

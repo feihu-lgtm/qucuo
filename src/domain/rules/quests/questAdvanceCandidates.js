@@ -9,6 +9,7 @@
 import { QUCUO_QUESTS } from "../../data/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "./questEngine.js";
 import { isNpcVisibleInInnerRoom } from "../map/innerMap.js";
+import { isAtQuestPlace } from "./questPlace.js";
 
 const atStagePlace = (stage, room, innerRoomName) => {
   const rl = stage?.requireLocation;
@@ -47,12 +48,19 @@ function stageCandidates(quest, stage, { room, inv, innerRoomName, questTriggerM
   // choices 阶段：面板/说服/决斗确定性通道接管，不候选；
   // script 模式例外——非全战斗阶段保持旧「抉择走叙事」通道的系统内替代。
   if (stage.choices?.length && (questTriggerMode !== "script" || allCombat(stage))) return [];
-  return flagList(stage.completionFlag).map((flag) => ({
-    questId: quest.id,
-    flag,
-    title: quest.title,
-    stageBrief: String(stage.description || "").slice(0, 40),
-  }));
+  // 混合分支防线：combat 抉择的 flag 永不进候选——即便 script 模式混合阶段，
+  // 战斗分支也必须真打（面板决斗通道），intake 选了也不能无战斗白捡战斗奖励。
+  const combatFlags = new Set((stage.choices || [])
+    .filter((choice) => choice.resolve === "combat" && choice.combatNpc)
+    .map((choice) => choice.flag));
+  return flagList(stage.completionFlag)
+    .filter((flag) => !combatFlags.has(flag))
+    .map((flag) => ({
+      questId: quest.id,
+      flag,
+      title: quest.title,
+      stageBrief: String(stage.description || "").slice(0, 40),
+    }));
 }
 
 export function questAdvanceCandidates({
@@ -70,12 +78,19 @@ export function questAdvanceCandidates({
     if (prog?.status === "active") {
       out.push(...stageCandidates(quest, getCurrentStage(quest, prog), ctx));
     } else {
-      // 未开启：首阶段须有地点锚点或 giver 在场（与 roundNotes 同口径）
+      // 未开启首阶段的「这里」判定与任务面板（useGameUi）同源：
+      //   requireLocation 存在 → 只看地点不看 giver——giver 不在场玩家也要能撞上该撞的事；
+      //   无锚点有 giver → giver 在场（过内层可见性）；
+      //   无锚点无 giver → stage.at 地点判定。
+      // roundNotes 旧 needsGiver/giverHere 口径（有 giver 就要 giver 在场）与面板矛盾，已同源修正。
       const first = quest.stages[0];
-      const needsGiver = first.giver !== null && quest.giver;
-      const anchored = !!first.requireLocation;
-      const giverHere = !needsGiver || (room?.npcs || []).some((n) => n.name === quest.giver);
-      if ((anchored || needsGiver) && giverHere && atStagePlace(first, room, innerRoomName)) {
+      const rl = first.requireLocation;
+      const here = rl
+        ? atStagePlace(first, room, innerRoomName)
+        : quest.giver
+          ? (room?.npcs || []).some((n) => n.name === quest.giver && isNpcVisibleInInnerRoom(room?.name, innerRoomName, n))
+          : isAtQuestPlace(first.at, room?.name, innerRoomName);
+      if (here) {
         out.push(...stageCandidates(quest, first, ctx));
       }
     }

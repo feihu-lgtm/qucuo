@@ -4,6 +4,7 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getCurrentStage, isQuestGateOpen, canBypassExclusive } from "../../domain/rules/quests/questEngine.js";
 import { getBuildingsForLocation } from "../../domain/data/buildings/qucuoBuildings.js";
 import { hasInnerMap, getDistrictAnchor, isNpcVisibleInInnerRoom } from "../../domain/rules/map/innerMap.js";
+import { isAtQuestPlace } from "../../domain/rules/quests/questPlace.js";
 import { roadEncounterFor } from "../../domain/data/encounters/roadEncounters.js";
 import { getPresentNpcs } from "../../domain/rules/prompt/promptRefs.js";
 import { activeCompanion, activeCompanionKey, COMPANION_LORE, unlockedCompanions, stationedCompanions } from "../../domain/rules/companion/companion.js";
@@ -86,16 +87,20 @@ export function buildQuestStageNote({ questProgress, flags, varTree, char, room,
         }
       }
     } else {
-      // 未开始的任务：只在第一阶段真正可达的地方提示——stage.giver===null 的
-      // 阶段靠 requireLocation 落地（李若由的任务在天都镇镇口对质，不在小栈），
-      // 其余照旧要 giver 在场。
+      // 「这里」判定与任务面板（useGameUi）同源：requireLocation 存在只看地点不看
+      // giver——giver 不在场玩家也要能撞上该撞的事；无锚点有 giver 才要 giver 在场；
+      // 无锚点无 giver 走 stage.at。旧 needsGiver/giverHere 口径（有 giver 就要在场）
+      // 与面板矛盾——锚定任务在 panel 能开、叙事/判官候选却被误挡。
       const first = quest.stages[0];
       const needsGiver = first.giver !== null && quest.giver;
-      const anchored = !!first.requireLocation;
       const flagWorthy = (Array.isArray(first.completionFlag) ? first.completionFlag.length : !!first.completionFlag) || first.choices?.length;
-      // 无地点锚点又无 giver 的全局任务不在此提示（旧口径：giver 在场才提示）
-      const giverHere = !needsGiver || room.npcs.some(n => n.name === quest.giver);
-      if (flagWorthy && (anchored || needsGiver) && atStagePlace(first, room, innerRoomName) && giverHere) {
+      const rlFirst = first.requireLocation;
+      const hereFirst = rlFirst
+        ? atStagePlace(first, room, innerRoomName)
+        : quest.giver
+          ? room.npcs.some(n => n.name === quest.giver && isNpcVisibleInInnerRoom(room.name, innerRoomName, n))
+          : isAtQuestPlace(first.at, room.name, innerRoomName);
+      if (flagWorthy && hereFirst) {
         if (first.choices?.length && (questTriggerMode !== "script" || allCombat(first))) {
           noteLines.push(`《${quest.title}》在此可开启——这一步的推进由玩家在任务面板抉择，叙事最多写到撞见此景，不要在 flags_add 加这一阶段的 flag`);
         } else {
