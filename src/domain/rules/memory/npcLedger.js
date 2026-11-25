@@ -76,7 +76,29 @@ export function createHeartLedgerEntry(entry = {}) {
   const place = typeof entry.place === "string" ? entry.place.trim() : "";
   const chunkId = typeof entry.chunkId === "string" && entry.chunkId.trim() ? entry.chunkId.trim() : null;
   const id = typeof entry.id === "string" && entry.id.trim() ? entry.id.trim() : `hl_${turn}_${tag}_${summary.slice(0, 8) || "item"}`;
-  return { id, tag, summary, chunkId, turn, place };
+  // witnesses 最小扩展（WO-21B）：写径已带见证人，读侧 normalize 也透传——
+  // 缺失时安全默认空数组，不改变旧读兼容。
+  const witnesses = Array.isArray(entry.witnesses) ? entry.witnesses.filter((w) => typeof w === "string" && w.trim()) : [];
+  return { id, tag, summary, chunkId, turn, place, witnesses };
+}
+
+// id 冲突去重（WO-21B Review）：同回合同类同简述的反复搭话会产出相同 hl id
+// （hl_<turn>_<tag>_<summary8>），CharacterDetail 以 id 作 row key——切类目时
+// 上一类目行残留。按既有条目计数确定性加 #n 后缀，纯函数不引随机。
+export function dedupeHeartLedgerId(entry, existing = []) {
+  if (!entry?.id) return entry;
+  const ids = new Set((Array.isArray(existing) ? existing : []).map((e) => e?.id));
+  if (!ids.has(entry.id)) return entry;
+  let n = 2;
+  while (ids.has(`${entry.id}#${n}`)) n += 1;
+  return { ...entry, id: `${entry.id}#${n}` };
+}
+
+// 单人心账上限（WO-21B roadmap）：超出淘汰最旧，防无限增生
+export const HEART_LEDGER_MAX_ENTRIES = 16;
+export function capHeartLedgerEntries(entries, max = HEART_LEDGER_MAX_ENTRIES) {
+  const list = Array.isArray(entries) ? entries : [];
+  return list.length > max ? list.slice(list.length - max) : list;
 }
 
 export function heartLedgerToPatches(varTree, name, entry) {

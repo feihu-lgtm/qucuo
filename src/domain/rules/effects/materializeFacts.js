@@ -24,6 +24,7 @@ import { effectiveMaxHp } from "../../data/kungfu/qucuoKungfu.js";
 import { makeBuffFlag, mergeCombatBuff } from "../../../utils/buffSystem.js";
 import { STAGES } from "../../../utils/mudHelpers.js";
 import { systemAffectionDelta, systemAffectionPin, hasNoAffectionTrack } from "../state/affection.js";
+import { createHeartLedgerEntry, capHeartLedgerEntries, dedupeHeartLedgerId } from "../memory/npcLedger.js";
 import { INITIAL_FAVORABILITY } from "../npc/npcAwareness.js";
 import { readDailyLootUsed } from "../judge/budgetInput.js";
 
@@ -361,13 +362,24 @@ export function materializeFacts(state, facts, compiledWarrants) {
           if (result.note) logs.push({ t: "sys", text: `  ${result.note}` });
         }
         if (fact.ledgerKind) {
-          // 人情心账：保守落 varTree.角色.<npc>.心账 数组追加（merge 深写，不丢事实）
-          patches.push({
-            op: "merge",
-            path: ["varTree", "角色", fact.npc, "心账"],
-            value: (prev) => [...(Array.isArray(prev) ? prev : []), { turn, kind: fact.ledgerKind, reason: fact.reason || "", witnesses: fact.witnesses || [] }],
-            factId: fact.id,
+          // WO-21B 写侧收口：心账写径必须走 createHeartLedgerEntry——新写只允许
+          // 恩/怨/欠/诺/见五类，旧类目（谊/隙/和）与未知类目拒写不静默（note 留痕）。
+          // 数值/好感逻辑不变，只迁移类目；witnesses/turn/place 保留。
+          const entry = createHeartLedgerEntry({
+            tag: fact.ledgerKind, summary: fact.reason || "", turn,
+            place: state.room?.name || "", witnesses: fact.witnesses || [],
           });
+          if (!entry) {
+            logs.push({ t: "sys", text: `  心账类目「${fact.ledgerKind}」非法/已废弃，拒写` });
+          } else {
+            patches.push({
+              op: "merge",
+              path: ["varTree", "角色", fact.npc, "心账"],
+              // 单人 16 条上限淘汰最旧（roadmap，成本低顺手做）
+              value: (prev) => capHeartLedgerEntries([...(Array.isArray(prev) ? prev : []), dedupeHeartLedgerId(entry, prev)]),
+              factId: fact.id,
+            });
+          }
         }
         break;
       }

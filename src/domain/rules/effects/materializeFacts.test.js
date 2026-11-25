@@ -170,7 +170,7 @@ describe("materializeFacts 十二律覆盖矩阵", () => {
     const out = materializeFacts(base, [
       { id: "F30", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 6, ledgerKind: "恩" },
       { id: "F31", op: "MUTATE_SOCIAL", npc: "哑仆", affectionDelta: 5, ledgerKind: "恩" },
-      { id: "F32", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: -4, ledgerKind: "隙" },
+      { id: "F32", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: -4, ledgerKind: "怨" },
     ], {});
     const types = out.patches.map((p) => `${p.op}:${p.path.join(".")}`);
     expect(types).toContain("set:varTree.角色.才旦.好感度");
@@ -480,5 +480,68 @@ describe("WO-16E 每日搜刮配额账", () => {
       { F1: { id: "it_x", name: "匕首", category: "weapon", quality: "绿" } });
     const patch = r.patches.find((pp) => pp.path?.join(".") === "varTree.世界.每日搜刮");
     expect(patch.value).toEqual({ day: 3, count: 1 }); // 不是 4——跨日归零
+  });
+});
+
+describe("WO-21B 心账写侧五类迁移", () => {
+  const socialBase = () => {
+    const base = baseState();
+    base.varTree = { 角色: { 才旦: { 好感度: 10 } }, 世界: {} };
+    base.room = { ...base.room, name: "鱼定村", npcs: [{ name: "才旦" }] };
+    return base;
+  };
+  const runValue = (patch, prev) => (typeof patch.value === "function" ? patch.value(prev) : patch.value);
+
+  it("新写五类正常落账：tag/summary/turn/place/witnesses 全保留", () => {
+    const out = materializeFacts(socialBase(), [
+      { id: "H1", op: "MUTATE_SOCIAL", npc: "才旦", affectionDelta: 5, ledgerKind: "恩", reason: "雪中送炭", witnesses: ["主角", "才旦"] },
+    ], {});
+    const lp = out.patches.find((p) => p.path.join(".") === "varTree.角色.才旦.心账");
+    expect(lp).toBeTruthy();
+    const entries = runValue(lp, []);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].tag).toBe("恩");
+    expect(entries[0].summary).toBe("雪中送炭");
+    expect(entries[0].witnesses).toEqual(["主角", "才旦"]);
+    expect(entries[0].place).toBe("鱼定村");
+    expect(entries[0].turn).toBeGreaterThan(0);
+    // 不再写旧 kind/reason 键位——新写形状就是 tag/summary
+    expect(entries[0].kind).toBeUndefined();
+  });
+
+  it("旧类目谊/隙/和与未知类目拒写不静默", () => {
+    for (const legacy of ["谊", "隙", "和", "胡编"]) {
+      const out = materializeFacts(socialBase(), [
+        { id: "H2", op: "MUTATE_SOCIAL", npc: "才旦", ledgerKind: legacy, reason: "x" },
+      ], {});
+      expect(out.patches.some((p) => p.path.join(".") === "varTree.角色.才旦.心账")).toBe(false);
+      expect(out.logs.some((l) => l.text.includes("拒写"))).toBe(true);
+    }
+  });
+
+  it("同回合同类同简述反复搭话：id 确定性去重不撞 row key", () => {
+    const fact = { id: "H4", op: "MUTATE_SOCIAL", npc: "才旦", ledgerKind: "恩", reason: "搭话投机", witnesses: ["主角", "才旦"] };
+    const out = materializeFacts(socialBase(), [fact, { ...fact, id: "H5" }], {});
+    const patches = out.patches.filter((p) => p.path.join(".") === "varTree.角色.才旦.心账");
+    expect(patches.length).toBe(2);
+    const runValue = (patch, prev) => (typeof patch.value === "function" ? patch.value(prev) : patch.value);
+    // 串行应用两条 merge：第二条应看到第一条的 id 并加 #2 后缀
+    const after1 = runValue(patches[0], []);
+    const after2 = runValue(patches[1], after1);
+    const ids = after2.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids[1]).toBe(`${ids[0]}#2`);
+  });
+
+  it("单人 16 条上限淘汰最旧", () => {
+    const out = materializeFacts(socialBase(), [
+      { id: "H3", op: "MUTATE_SOCIAL", npc: "才旦", ledgerKind: "见", reason: "第十七面" },
+    ], {});
+    const lp = out.patches.find((p) => p.path.join(".") === "varTree.角色.才旦.心账");
+    const prev = Array.from({ length: 16 }, (_, i) => ({ id: `old${i}`, tag: "见", summary: `旧${i}` }));
+    const entries = runValue(lp, prev);
+    expect(entries).toHaveLength(16);
+    expect(entries[0].summary).toBe("旧1"); // 最旧「旧0」被淘汰
+    expect(entries.at(-1).summary).toBe("第十七面");
   });
 });
