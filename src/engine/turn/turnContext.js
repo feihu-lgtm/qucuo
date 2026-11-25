@@ -74,6 +74,11 @@ export function createTurnContext({ plan, env }) {
     apiCfg,
     callDeps,
     convo,
+    // WO-16E：gm/innerRoomName/encounter 顶层透传——判官授信（budgetInput）、
+    // WO-16D 影子同源喂料、WO-22A 影子容器都依赖这三字段，不能只进 prompt/commitDeps。
+    gm,
+    innerRoomName,
+    encounter: plan.encounterToDescribe || null,
     isTalk,
     isSettle,
     isStale,

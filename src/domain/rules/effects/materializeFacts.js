@@ -25,6 +25,7 @@ import { makeBuffFlag, mergeCombatBuff } from "../../../utils/buffSystem.js";
 import { STAGES } from "../../../utils/mudHelpers.js";
 import { systemAffectionDelta, systemAffectionPin, hasNoAffectionTrack } from "../state/affection.js";
 import { INITIAL_FAVORABILITY } from "../npc/npcAwareness.js";
+import { readDailyLootUsed } from "../judge/budgetInput.js";
 
 const PLAYER = "player";
 
@@ -68,6 +69,10 @@ export function materializeFacts(state, facts, compiledWarrants) {
   const receipts = [];
   const logs = [];
   const turn = state.time ?? 0;
+  // WO-16E：每日搜刮账本基线——跨日自动归零，旧档无账本按 0 起
+  const lootDay = Math.floor(turn / 24) + 1;
+  const lootBase = readDailyLootUsed(state.varTree, lootDay);
+  let warrantLootCount = 0;
 
   // 工作副本：只在内存里演进，最终一次性写进 changes（纯函数，不改入参）
   let inv = (state.inv || []).map((e) => (e && typeof e === "object" ? { ...e } : e));
@@ -115,6 +120,9 @@ export function materializeFacts(state, facts, compiledWarrants) {
         if (inv.some((e) => e && e.id && e.id === item.id)) break; // 幂等：同 id 不重复入袋
         inv.push({ ...item });
         invDirty = true;
+        // WO-16E 每日搜刮配额账：只有天机券实际编译入袋的新品计数——
+        // lookupCompiled 命中即编译产物；预设物/备料物/悬空秘宝/兜底物不占配额。
+        if (lookupCompiled(compiledWarrants, fact)) warrantLootCount += 1;
         receipts.push({ kind: "grant_item", factId: fact.id || "", item: { ...item } });
         logs.push({ t: "item", text: `  获得 ${item.name}${item.quality ? `（${item.quality}）` : ""}` });
         break;
@@ -474,6 +482,14 @@ export function materializeFacts(state, facts, compiledWarrants) {
   if (claimedDirty) changes.claimedMilestones = new Set(claimed);
   if (expDirty) changes.exp = exp;
   if (potDirty) changes.pot = pot;
+
+  // WO-16E：配额账随统一边界落账——{ day, count } 整写，跨日由读取侧归零语义兜底
+  if (warrantLootCount > 0) {
+    patches.push({
+      op: "set", path: ["varTree", "世界", "每日搜刮"],
+      value: { day: lootDay, count: lootBase + warrantLootCount }, factId: "",
+    });
+  }
 
   void syncWorkState;
   return { changes, patches, receipts, logs };
