@@ -99,11 +99,15 @@ describe("WO-23D2 初审返修契约", () => {
     expect(def.schema?.schema?.additionalProperties).toBe(false);
   });
 
-  it("useInscribeWeapon 不再全库扫 prose（originText 摘除）", async () => {
+  it("useInscribeWeapon 来历检索走合规口径（D3）+写边界不嵌套", async () => {
     const src = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../../../app/hooks/useInscribeWeapon.js", import.meta.url), "utf-8"));
-    expect(src).not.toContain("getAllProseChunks");
-    expect(src).toContain('originText: ""');
-    // 写边界不嵌套：applyResult 全文件最多两处调用（result 直写+无内层嵌套）
+    // D3 恢复后：必须经 recallBlock ports 出口+findInscriptionOrigin 纯函数，
+    // 绝不直扫 rawText / 直 import infra/proseStore
+    expect(src).toContain('from "../../engine/ports/recallBlock.js"');
+    expect(src).not.toContain('from "../../infra/proseStore.js"');
+    expect(src).toContain("findInscriptionOrigin");
+    expect(src).not.toContain("rawText.includes");
+    // 写边界不嵌套：applyResult 全文件仅一处（result 直写+失败日志同边界）
     expect((src.match(/applyResult\(featureCtx\(\)/g) || []).length).toBe(1);
     expect(src).toContain("isStale: stale");
   });
