@@ -89,7 +89,24 @@ describe("projectFacts 投影", () => {
     ]);
     expect(proj.inv.add).toEqual(["羊肉"]);
     expect(proj.affection).toEqual({ 甲: 3 });
+    // 判官真实字段是 affectionDelta 不是 delta
+    expect(projectFacts([{ op: "MUTATE_SOCIAL", npc: "乙", affectionDelta: 5 }]).affection).toEqual({ 乙: 5 });
     expect(proj.flags.add).toEqual(["q1"]);
+  });
+});
+
+describe("影子 rng 隔离", () => {
+  it("影子判定不推进游戏共享随机流", async () => {
+    const { getRngState } = await import("../../../utils/rng.js");
+    const before = getRngState();
+    const base = {
+      cmd: "测试", apiCfg: { extractionEnabled: false, shadowJudgeEnabled: true },
+      preState: { inv: [], flags: [], varTree: {}, room: { npcs: [], name: "x" }, char: {}, turn: 1 },
+      postState: { inv: [], flags: [], varTree: {}, room: { npcs: [], name: "x" }, turn: 1 },
+      ai: { chat: async () => ({ text: "{}" }) },
+    };
+    await runShadowJudge(base);
+    expect(getRngState()).toBe(before);
   });
 });
 

@@ -7,7 +7,7 @@ import { withAI } from "../../ports/withAI.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "../../turn/intakeTurn.js";
 import { judgeTurn } from "../../../domain/rules/judge/judgeTurn.js";
 import { questAdvanceCandidates } from "../../../domain/rules/quests/questAdvanceCandidates.js";
-import { random } from "../../../utils/rng.js";
+import { createRng } from "../../../utils/rng.js";
 import { diffSnapshots } from "./shadowDiff.js";
 import { projectFacts } from "./shadowTaxonomy.js";
 import { compareCategories } from "./shadowCompare.js";
@@ -100,7 +100,9 @@ export async function runShadowJudge({
       questCandidates,
       pickupJudgment: null,
       budget: { riskLevel: 0, luck: preState?.char?.special?.气运 ?? 0 },
-    }, intakeResult, { rng: random });
+    // 影子用隔离 rng 实例——绝不能用全局 random，否则影子抽数会推进游戏共享
+    // 随机流，污染后续掷骰/赌博等玩法结果（影子必须零行为变化）。
+    }, intakeResult, { rng: createRng((((postState?.turn || 1) * 2654435761) >>> 0) || 1).random });
     if (isStale?.() || epochGuard?.()) return null;
 
     const diffOut = diffSnapshots(preState, postState, { moved });

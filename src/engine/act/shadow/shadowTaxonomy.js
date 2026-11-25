@@ -36,8 +36,10 @@ export function projectFacts(facts = []) {
         break;
       }
       case "MUTATE_SOCIAL": {
-        if (fact.npc && Number.isFinite(fact.delta)) {
-          out.affection[fact.npc] = (out.affection[fact.npc] || 0) + fact.delta;
+        // 判官事实的好感增量字段是 affectionDelta（judgeTurn L150 口径），兼容旧 delta。
+        const d = Number.isFinite(fact.affectionDelta) ? fact.affectionDelta : fact.delta;
+        if (fact.npc && Number.isFinite(d)) {
+          out.affection[fact.npc] = (out.affection[fact.npc] || 0) + d;
         }
         break;
       }
