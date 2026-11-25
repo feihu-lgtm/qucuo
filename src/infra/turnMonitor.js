@@ -15,7 +15,9 @@ const transitions = {
 };
 const terminal = new Set([DONE, ERROR, ROLLED_BACK, DISCARDED]);
 const LIMIT = 40;
-const layers = ["ui", "app", "feature", "domain", "engine", "rules", "result"];
+// shadow 排在 engine 后、result 前——影子对账实际发生在 commit 落账后，
+// 不入排序 indexOf 得 -1 会被排到回合最前，时间语义颠倒。
+const layers = ["ui", "app", "feature", "domain", "engine", "rules", "shadow", "result"];
 
 export function createTurnMonitor({ now = Date.now, strict = !!import.meta.env?.VITEST } = {}) {
   let seq = 0;
