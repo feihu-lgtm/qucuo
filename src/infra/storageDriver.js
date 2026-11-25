@@ -164,7 +164,7 @@ async function _flushCloudQueueInner() {
         // 迁移/换绑场景的代价只是玩家在 UI 点一次「本地覆盖云端」；新设备误覆盖
         // 另一设备存档的代价不可逆，两者不对称，宁误登记不误对齐。
         const conflicts = getCloudConflicts().filter((c) => c.key !== entry.key);
-        conflicts.push({ key: entry.key, rev: expectedRev, serverRev: result.serverRev ?? null, queuedAt: entry.queuedAt, detectedAt: Date.now(), op: entry.op, value: entry.value });
+        conflicts.push({ key: entry.key, spaceId: binding.spaceId, rev: expectedRev, serverRev: result.serverRev ?? null, queuedAt: entry.queuedAt, detectedAt: Date.now(), op: entry.op, value: entry.value });
         _lsWrite(CONFLICTS_KEY, conflicts);
         pushed += 1; // 出队——它不是失败，是待裁决
         continue;
@@ -206,6 +206,10 @@ export function resolveCloudConflict(key, choice) {
   const hit = conflicts.find((c) => c.key === key);
   _lsWrite(CONFLICTS_KEY, conflicts.filter((c) => c.key !== key));
   if (!hit) return false;
+  // 跨空间遗留冲突作废（Review 修）：冲突是在旧空间登记的，换绑后对它执行
+  // 「本地覆盖云端」会把 force 打进新空间的同名槽——无 rev 校验覆盖别人备份。
+  const currentSpace = hubBinding(loadStorageConfig()).spaceId || "";
+  if (hit.spaceId && hit.spaceId !== currentSpace) return false;
   if (choice === "keep_local") {
     if (hit.op === "put") {
       enqueueCloudForcePush(key, hit.value);

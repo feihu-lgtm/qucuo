@@ -192,6 +192,23 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     await vi.waitFor(() => { expect(bodies.some((b) => b.force === true)).toBe(true); }, { timeout: 2000, interval: 20 });
   });
 
+  it("Review 修：冲突登记带空间戳——换绑后旧空间冲突裁决作废，force 不打进新空间", async () => {
+    boundCfg();
+    configureCloudFetch(async () => ({ ok: false, status: 409, json: async () => ({ serverRev: 5 }) }));
+    enqueueCloudPush("autosave", { v: 1 });
+    await flushCloudQueue();
+    expect(getCloudConflicts()[0].spaceId).toBe("sp1");
+    // 换绑 sp2 后裁决旧冲突——应作废，绝不向 sp2 发 force
+    saveStorageConfig({ driver: "cloud", cloudUrl: "https://cloud.example.com", spaceId: "sp2", hubToken: "tok2", deviceId: "dev_t1", boundAt: 2 });
+    const calls = [];
+    configureCloudFetch(async (url, init) => { calls.push({ url, body: JSON.parse(init?.body || "{}") }); return okJson({ rev: 1 }); });
+    const acted = resolveCloudConflict("autosave", "keep_local");
+    await vi.advanceTimersByTimeAsync(100);
+    expect(acted).toBe(false);
+    expect(calls.filter((c) => c.body.force)).toHaveLength(0);
+    expect(getCloudConflicts()).toEqual([]); // 已出登记不残留
+  });
+
   it("wipe 重写为 canonical DELETE /api/space/<spaceId>（单数无 saves 后缀）并带 token", async () => {
     boundCfg();
     const calls = [];
