@@ -9,6 +9,7 @@
 import { compileEmergentItem } from "./compileEmergentItem.js";
 import { compileEmergentSkill } from "./compileEmergentSkill.js";
 import { materializeFacts } from "./materializeFacts.js";
+import { parseSilverAmount } from "../intent/actionKinds.js";
 
 // 从尾章缓冲里提取 JSON：SEAL 标记后第一行（或第一个 { 到结尾）单线 JSON。
 export function parseSealJson(sealText) {
@@ -149,15 +150,40 @@ export function verifySealAndMaterialize({
 
   // spontaneousPact 校验并入 facts
   if (verdict?.allowSpontaneousPact && sealData?.spontaneousPact) {
-    const pact = validPact(sealData.spontaneousPact, {
+    let pact = validPact(sealData.spontaneousPact, {
       npcNames: (verdict.reactionGuides || []).map((g) => g.npc),
     });
     if (pact) {
-      facts.push({
-        id: `pact_${turn}_${facts.length + 1}`, op: "BIND_OR_SETTLE_PACT",
-        npc: pact.npc, promise: pact.promise, deadlineHours: pact.deadlineHours,
-        rewardHint: pact.rewardHint, witnesses: ["主角", pact.npc],
-      });
+      // WO-22B-P3 立诺锁奖（初审裁决）：rewardHint 是模型自由文本，绝不许履约时
+      // 现场解析印钱——立约这一刻就用 state 核验并结构化锁死：
+      // ① 银两：parseSilverAmount 解析（含中文数字），cap = 20×(levelCap+1)——
+      //    超额整约不并入（防模型写「10000两」铸币）；
+      // ② 实物：hint 含该在场 NPC carriedItems 里真实存在且有 id 的物件名才锁
+      //    rewardItemId/rewardItemName，不 match 不锁，绝不猜；
+      // ③ 锁不定的一律不锁——履约只兑结构化字段，旧档/无锁只有威望+恩账。
+      const npcObj = (state?.room?.npcs || []).find((n) => n?.name === pact.npc) || null;
+      const silver = parseSilverAmount(pact.rewardHint);
+      const silverCap = 20 * ((Number.isFinite(npcObj?.levelCap) ? npcObj.levelCap : 0) + 1);
+      if (silver != null && silver > silverCap) {
+        warnings.push(`spontaneousPact 酬谢银两 ${silver} 超 cap ${silverCap}（${pact.npc} 品阶不足），整约不并入`);
+        pact = null;
+      }
+      if (pact) {
+        let rewardSilver = null;
+        let rewardItemId = "";
+        let rewardItemName = "";
+        if (silver != null) rewardSilver = silver;
+        const carried = Array.isArray(npcObj?.carriedItems) ? npcObj.carriedItems : [];
+        const hit = carried.find((it) => it && typeof it === "object" && it.id && typeof it.name === "string"
+          && it.name.length >= 2 && !it.dropped && String(pact.rewardHint || "").includes(it.name));
+        if (hit) { rewardItemId = hit.id; rewardItemName = hit.name; }
+        facts.push({
+          id: `pact_${turn}_${facts.length + 1}`, op: "BIND_OR_SETTLE_PACT",
+          npc: pact.npc, promise: pact.promise, deadlineHours: pact.deadlineHours,
+          rewardHint: pact.rewardHint, rewardSilver, rewardItemId, rewardItemName,
+          witnesses: ["主角", pact.npc],
+        });
+      }
     } else {
       warnings.push("spontaneousPact 校验未过（npc 不在场/期限非法或不足 4 小时/承诺为空），未并入");
     }

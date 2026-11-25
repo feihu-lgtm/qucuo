@@ -513,29 +513,29 @@ export function materializeFacts(state, facts, compiledWarrants) {
             // ③ 威望 +5（起步数额手册未定，clamp -100~100 与 breach 扣减同通道）；
             // ④ 恩账一笔「践行之约」。无 rewardHint 的空约只结账+威望+恩账。
             if (pactRec && typeof pactRec === "object") {
-              const hint = String(pactRec.rewardHint || "");
-              const silverMatch = hint.match(/(\d+)\s*两/);
-              if (silverMatch && char) {
-                const amt = parseInt(silverMatch[1], 10);
-                if (amt > 0) {
-                  const nextMoney = (char.money ?? 0) + amt;
-                  logs.push({ t: "stat", text: `  履约酬谢：银两 ${char.money ?? 0}→${nextMoney}` });
-                  char.money = nextMoney;
-                  charDirty = true;
-                }
+              // WO-22B-P3 初审裁决：只兑立约时结构化锁死的字段——rewardHint 自由文本
+              // 绝不在此现场解析（防模型铸币）；旧档/无锁契约只有威望+恩账。
+              if (Number.isFinite(pactRec.rewardSilver) && pactRec.rewardSilver > 0 && char) {
+                const nextMoney = (char.money ?? 0) + pactRec.rewardSilver;
+                logs.push({ t: "stat", text: `  履约酬谢：银两 ${char.money ?? 0}→${nextMoney}` });
+                char.money = nextMoney;
+                charDirty = true;
               }
-              const npcObj2 = (state.room?.npcs || []).find((n) => n?.name === fact.npc);
-              const carried = Array.isArray(npcObj2?.carriedItems) ? npcObj2.carriedItems : [];
-              const rewardItem = carried.find((it) => it && typeof it === "object" && it.name && it.name.length >= 2 && hint.includes(it.name) && !it.dropped);
-              if (rewardItem) {
-                if (!inv.some((e) => e && e.id && e.id === rewardItem.id)) {
-                  inv.push({ ...rewardItem, dropped: undefined, equipped: false });
-                  invDirty = true;
+              // 实物按锁定 rewardItemId 走 TRANSFER_ITEM 同款 locateItem/三池原子转移——
+              // 只在 npc 池且未 dropped 才兑付；查无此物/已在玩家手里不兑付不编造。
+              if (pactRec.rewardItemId) {
+                const loc = locateItem({ ...state, inv, room }, pactRec.rewardItemId, null);
+                if (loc && loc.pool === "npc" && !(loc.item && loc.item.dropped)) {
+                  const moving = typeof loc.item === "string" ? { name: loc.item } : { ...loc.item };
+                  room.npcs[loc.npcIndex].carriedItems[loc.index] = { ...moving, dropped: true };
+                  if (!inv.some((e) => e && e.id && e.id === moving.id)) {
+                    inv.push({ ...moving, dropped: undefined, equipped: false });
+                  }
+                  invDirty = true; roomDirty = true;
+                  logs.push({ t: "item", text: `  履约酬谢：${fact.npc}把${moving.name}交到你手上` });
+                } else {
+                  logs.push({ t: "sys", text: `  履约酬谢实物 ${pactRec.rewardItemName || pactRec.rewardItemId} 已不在对方身上，不兑付` });
                 }
-                const idx = carried.indexOf(rewardItem);
-                if (idx !== -1) carried[idx] = { ...rewardItem, dropped: true };
-                roomDirty = true;
-                logs.push({ t: "item", text: `  履约酬谢：${fact.npc}把${rewardItem.name}交到你手上` });
               }
               patches.push({
                 op: "merge", path: ["varTree", "世界", "威望"],
@@ -565,6 +565,10 @@ export function materializeFacts(state, facts, compiledWarrants) {
               promise: fact.promise || "",
               deadlineHours: fact.deadlineHours ?? null,
               rewardHint: fact.rewardHint || "",
+              // WO-22B-P3 立诺锁奖：结构化奖励字段（sealVerifier 立约时已按 state
+              // 核验+cap 锁定）随约入账——履约只兑这些字段，绝不回 rewardHint 现场解析。
+              ...(Number.isFinite(fact.rewardSilver) ? { rewardSilver: fact.rewardSilver } : {}),
+              ...(fact.rewardItemId ? { rewardItemId: fact.rewardItemId, rewardItemName: fact.rewardItemName || "" } : {}),
               bindTurn: turn,
               witnesses: fact.witnesses || [],
             },

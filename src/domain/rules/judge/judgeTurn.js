@@ -653,14 +653,8 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
           break;
         }
       }
-      // B 到达/在场重逢：promise 含当前据点名
-      if (!fulfilled) {
-        const placeName = String(place || "");
-        if (placeName.length >= 2 && promise.includes(placeName)) {
-          fulfilled = true;
-          evidence = `依约来到${placeName}`;
-        }
-      }
+      // B 类「到达/在场重逢」已按初审裁决删除——promise 含地名过宽
+      // （「去贡措海取回剑谱」在贡措海做任何事都会误履约），宁可 false negative。
       if (fulfilled) {
         facts.push({
           id: nextFactId(), op: "BIND_OR_SETTLE_PACT", npc: pactNpc,
