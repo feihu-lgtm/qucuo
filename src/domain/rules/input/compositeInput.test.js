@@ -78,5 +78,8 @@ describe("WO-16F-F2c isTradeInput 交易意向不进免费纯搭话", () => {
     expect(isTradeInput("谈谈买卖的事")).toBe(false);
     expect(isTradeInput("买把剑")).toBe(true);
     expect(isTradeInput("问问老孙愿不愿跟我做笔买卖")).toBe(true);
+    // Review 三修：生意状况问询是寒暄非意向
+    expect(isTradeInput("问问老孙最近买卖怎么样")).toBe(false);
+    expect(isTradeInput("买卖如何啊")).toBe(false);
   });
 });

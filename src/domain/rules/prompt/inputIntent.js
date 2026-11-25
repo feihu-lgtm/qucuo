@@ -112,6 +112,11 @@ export function isTradeInput(rawInput) {
   // 话题用法且买卖是唯一线索→非意向（「聊聊村里的买卖」白耗一回合 Review 修）；
   // 「做笔买卖」不属话题用法，保留命中。
   if (TRADE_TOPIC_RE.test(input) && !TRADE_RE.test(input.replace(/买卖/g, ""))) return false;
+  // 生意状况问询（买卖怎么样/如何/好不好）是寒暄不是交易请求——
+  // 此时若买卖是唯一线索同样非意向；「做笔买卖怎么样」含交易本体句式不在此例……
+  // 保守起见只在无「做/谈笔」等交易本体字样的情况下排除。
+  if (/买卖[^，。！？]{0,4}(怎么样|如何|好不好|行吗)/.test(input) && !/做|谈笔|来笔/.test(input)
+    && !TRADE_RE.test(input.replace(/买卖/g, ""))) return false;
   return true;
 }
 
