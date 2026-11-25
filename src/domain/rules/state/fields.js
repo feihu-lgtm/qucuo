@@ -4,6 +4,7 @@ import { getTimeStr } from "../../../utils/mudHelpers.js";
 import { allFactSummaries } from "../prompt/knowledgeRoot.js";
 import { renderDiegeticState } from "../clapboard/diegeticState.js";
 import { renderNpcSoulFrames } from "../clapboard/npcSoulFrame.js";
+import { renderJudgeVerdict, renderCausalBudget } from "../judge/judgeTurn.js";
 
 export function formatFactSummariesForPrompt(facts) {
   return facts.map((fact) => `· （${getTimeStr(fact.诞生回合 || 0)}）${fact.摘要}${fact.标签 ? `〔${fact.标签}〕` : ""}`).join("\n");
@@ -97,25 +98,10 @@ const whisperRules = {
   min: -3, max: 6, fallback: 1, daily: 12,
   scale: "寻常闲聊 +1~+2；说到心坎、体贴、机敏或有趣 +3~+6；敷衍、冒犯、无礼给负数。",
 };
-export const DEAL_MULTIPLIER = { min: 0.8, max: 1.5, default: 1 };
-export const CARRY_COUNT = { min: 0, max: 3 };
 const foodPrice = () => SERVICE_MENUS.饭馆.find((dish) => dish.name === "青稞糌粑").price;
 const weaponPrice = () => priceForQuality("weapon", "白").buyPrice;
-export const GIFT_WEIGHT = {
-  modest: /乞丐|流浪汉/,
-  wealthy: /土司本人|土司之女|^土司$/,
-  baseline: {
-    modest: foodPrice,
-    ordinary: () => priceForQuality("misc", "白").buyPrice,
-    wealthy: weaponPrice,
-  },
-  bands: [
-    { ratio: 0, label: "薄礼", range: [1, 2], reaction: "礼貌致谢，礼轻情意重，仍记一份心意" },
-    { ratio: 0.5, label: "寻常", range: [2, 4], reaction: "自然领情，略显亲切" },
-    { ratio: 1.5, label: "厚礼", range: [4, 6], reaction: "明显动容，具体说出这份礼对自己为何有用" },
-    { ratio: 4, label: "重金", range: [6, 9], reaction: "郑重承情，表现出礼物非同寻常，但不凭空许诺回报" },
-  ],
-};
+export const DEAL_MULTIPLIER = { min: 0.8, max: 1.5, default: 1 };
+export const CARRY_COUNT = { min: 0, max: 3 };
 export const AFFECTION_RULES = affectionRules;
 export const WHISPER_AFFECTION_RULES = whisperRules;
 export const giftRange = (quality) => affectionRules.gift[quality] ?? ordinaryGift;
@@ -241,6 +227,14 @@ export const FIELDS = Object.freeze({
       clapboardEntries: s.clapboardEntries,
     }),
   } },
+  "judge.verdict": {
+    label: "判官定案单", readOnly: true,
+    refs: { "判官定案单": (s) => renderJudgeVerdict(s.judgeVerdict) },
+  },
+  "judge.causalBudget": {
+    label: "因果授信", readOnly: true,
+    refs: { "因果授信": (s) => renderCausalBudget(s.causalBudget) },
+  },
   "giftInfo.weight": { label: "赠礼分量", readOnly: true, refs: {
     "赠礼.分量": (_s, weight) => weight?.label,
     "赠礼.反应": (_s, weight) => weight?.reaction,
