@@ -34,10 +34,10 @@ export function normalizeHeartLedgerTag(rawTag) {
  * 归一化读取某 NPC 的心账列表：
  *   - 兼容旧值 谊→恩、隙→怨、和→见，以及 { kind, reason } 与 { tag, summary } 两种结构；
  *   - unknown 旧类目保留可读不崩，isKnownTag 为 false；
- *   - 统一输出预留结构 { id, tag, summary, chunkId, turn, place, isKnownTag, legacyTag }，
+ *   - 统一输出预留结构 { id, tag, summary, chunkId, turn, place, witnesses, isKnownTag, legacyTag }，
  *     无 chunkId 的旧账保留展示。
  * @param {unknown} rawEntries
- * @returns {Array<{id: string, tag: string, summary: string, chunkId: string|null, turn: number, place: string, isKnownTag: boolean, legacyTag: string|null}>}
+ * @returns {Array<{id: string, tag: string, summary: string, chunkId: string|null, turn: number, place: string, witnesses: string[], isKnownTag: boolean, legacyTag: string|null}>}
  */
 export function normalizeLedgerEntries(rawEntries) {
   if (!Array.isArray(rawEntries)) return [];
@@ -47,7 +47,7 @@ export function normalizeLedgerEntries(rawEntries) {
     if (typeof entry === "string") {
       const text = entry.trim();
       if (!text) return;
-      out.push({ id: `hl_legacy_${idx}`, tag: "见", summary: text, chunkId: null, turn: 0, place: "", isKnownTag: true, legacyTag: null });
+      out.push({ id: `hl_legacy_${idx}`, tag: "见", summary: text, chunkId: null, turn: 0, place: "", witnesses: [], isKnownTag: true, legacyTag: null });
       return;
     }
     if (typeof entry !== "object") return;
@@ -57,7 +57,9 @@ export function normalizeLedgerEntries(rawEntries) {
     const chunkId = typeof entry.chunkId === "string" && entry.chunkId.trim() ? entry.chunkId.trim() : null;
     const place = typeof entry.place === "string" ? entry.place.trim() : "";
     const id = typeof entry.id === "string" && entry.id.trim() ? entry.id.trim() : `hl_${turn}_${idx}`;
-    out.push({ id, tag, summary, chunkId, turn, place, isKnownTag: known, legacyTag: migratedFrom });
+    // witnesses 仅透传不改写：materializeFacts 写径已带该字段，读侧丢不得。
+    const witnesses = Array.isArray(entry.witnesses) ? entry.witnesses.filter((w) => typeof w === "string" && w.trim()) : [];
+    out.push({ id, tag, summary, chunkId, turn, place, witnesses, isKnownTag: known, legacyTag: migratedFrom });
   });
   return out;
 }

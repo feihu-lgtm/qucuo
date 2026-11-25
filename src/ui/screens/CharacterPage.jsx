@@ -6,8 +6,6 @@ import {
   normalizeLedgerEntries,
   groupHeartLedgerByTag,
 } from "../../domain/rules/memory/npcLedger.js";
-import { visibleTextFor } from "../../domain/rules/memory/proseRecall.js";
-import { getProseChunkById } from "../../engine/ports/recallBlock.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
 const cardStyle = {
@@ -86,7 +84,6 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
   const allMilestones = getAllMilestonesForChar(name);
   const [viewingMilestone, setViewingMilestone] = useState(null);
   const [ledgerTagFilter, setLedgerTagFilter] = useState("全部");
-  const [expandedEntry, setExpandedEntry] = useState(null);
 
   const ledgerEntries = normalizeLedgerEntries(attrs.心账);
   const { groups, unknown } = groupHeartLedgerByTag(ledgerEntries);
@@ -95,26 +92,6 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
     : ledgerTagFilter === "旧类"
       ? unknown
       : (groups[ledgerTagFilter] || []);
-
-  const handleEntryClick = async (entry) => {
-    if (expandedEntry?.id === entry.id) {
-      setExpandedEntry(null);
-      return;
-    }
-    if (!entry.chunkId) {
-      setExpandedEntry({ id: entry.id, text: entry.summary || "（暂无原文摘要）", fromProse: false });
-      return;
-    }
-    try {
-      const chunk = await getProseChunkById(entry.chunkId);
-      const proseText = chunk ? visibleTextFor(chunk, "") : "";
-      if (proseText) {
-        setExpandedEntry({ id: entry.id, text: proseText, fromProse: true });
-        return;
-      }
-    } catch { /* 查库失败时降级摘要 */ }
-    setExpandedEntry({ id: entry.id, text: entry.summary || "（未在原文段落库找到对应段落）", fromProse: false });
-  };
 
   const handleClaim = (m) => {
     setViewingMilestone(m);
@@ -178,36 +155,25 @@ function CharacterDetail({ name, attrs, claimedMilestones, onClaimMilestone, onG
               {visibleLedger.length === 0 ? (
                 <div style={{ color: "var(--ink-dim-deep)", fontSize: "var(--fs-xs)" }}>此项下暂无心账记录</div>
               ) : (
-                visibleLedger.map((entry) => {
-                  const open = expandedEntry?.id === entry.id;
-                  return (
-                    <div
-                      key={entry.id}
-                      data-ledger-id={entry.id}
-                      onClick={() => handleEntryClick(entry)}
-                      style={{
-                        cursor: "pointer",
-                        padding: "6px 8px",
-                        marginBottom: 6,
-                        border: "1px solid var(--ink-divider)",
-                        background: "var(--bg-panel)",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginBottom: 2 }}>
-                        <span style={{ color: "var(--accent)" }}>[{entry.tag}]</span>
-                        {entry.turn > 0 && <span>第{entry.turn}回合</span>}
-                        {entry.place && <span>{entry.place}</span>}
-                        {entry.chunkId && <span style={{ marginLeft: "auto", color: "var(--gold-deep)" }}>{open ? "收起原文" : "查看原文"}</span>}
-                      </div>
-                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--text)" }}>{entry.summary || "（无摘要）"}</div>
-                      {open && (
-                        <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed var(--ink-divider)", fontSize: "var(--fs-xs)", color: "var(--text-dim)", lineHeight: 1.6 }}>
-                          {expandedEntry.fromProse ? expandedEntry.text : `摘要兜底：${expandedEntry.text}`}
-                        </div>
-                      )}
+                visibleLedger.map((entry) => (
+                  <div
+                    key={entry.id}
+                    data-ledger-id={entry.id}
+                    style={{
+                      padding: "6px 8px",
+                      marginBottom: 6,
+                      border: "1px solid var(--ink-divider)",
+                      background: "var(--bg-panel)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-2xs)", color: "var(--text-dim)", marginBottom: 2 }}>
+                      <span style={{ color: "var(--accent)" }}>[{entry.tag}]</span>
+                      {entry.turn > 0 && <span>第{entry.turn}回合</span>}
+                      {entry.place && <span>{entry.place}</span>}
                     </div>
-                  );
-                })
+                    <div style={{ fontSize: "var(--fs-xs)", color: "var(--text)" }}>{entry.summary || "（无摘要）"}</div>
+                  </div>
+                ))
               )}
             </div>
 

@@ -103,20 +103,6 @@ export async function countProseChunks() {
   }
 }
 
-export async function getProseChunkById(id) {
-  if (!id) return null;
-  try {
-    const store = await tx("readonly");
-    return await new Promise((resolve, reject) => {
-      const req = store.get(id);
-      req.onsuccess = () => resolve(req.result || null);
-      req.onerror = () => reject(req.error);
-    });
-  } catch {
-    return null;
-  }
-}
-
 // ── 老存档迁移器：convo + 小纸条 → 初始段落记录 ──────────────────────
 // 无损原则：原文一字不改进 rawText（锚点/斜体都保留——斜体剥离是读取时
 // publicText 的事，rawText 永远保全）；幂等：已迁过的档（proseMigrated 标记）

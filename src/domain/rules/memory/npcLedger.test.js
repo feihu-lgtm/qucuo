@@ -98,3 +98,16 @@ describe("WO-21A 心账兼容层（normalizeLedgerEntries 与五类写校验）"
     });
   });
 });
+
+describe("normalizeLedgerEntries witnesses 透传", () => {
+  it("对象条目 witnesses 数组保留，缺省/非数组归空", () => {
+    const out = normalizeLedgerEntries([
+      { kind: "谊", reason: "赠礼", turn: 3, witnesses: ["主角", "张三"] },
+      { kind: "恩", reason: "无见证" },
+      { kind: "隙", reason: "坏witnesses", witnesses: "主角" },
+    ]);
+    expect(out[0].witnesses).toEqual(["主角", "张三"]);
+    expect(out[1].witnesses).toEqual([]);
+    expect(out[2].witnesses).toEqual([]);
+  });
+});
