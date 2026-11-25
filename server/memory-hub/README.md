@@ -21,7 +21,7 @@ node --test server/memory-hub/hubCore.test.mjs
 - `GET /api/spaces/:spaceId/saves`：列出当前空间的存档槽位与 `rev`
 - `GET /api/spaces/:spaceId/saves/:slotId`：读取密文存档（`payload_enc`）
 - `PUT /api/spaces/:spaceId/saves/:slotId`：带 `expectedRev` 写入存档；版本冲突返回 HTTP `409`（响应同时给 `serverRev`/`currentRev`）不静默覆盖；`force:true` 跳过冲突检查强制覆盖——**唯一合法触发源是玩家在客户端显式裁决「本地覆盖云端」，自动同步流程绝不许带 force**
-- `DELETE /api/spaces/:spaceId/saves/:slotId`：删除单槽；`expectedRev` 不符返回 `409`，`?force=1` 强删；槽位不存在时幂等成功（`deleted:0`）
+- `DELETE /api/spaces/:spaceId/saves/:slotId`：删除单槽；`expectedRev` 不符返回 `409`，`?force=1` 强删；非 force 缺/非法 expectedRev 返回 `400` 不删；槽位不存在时幂等成功（`deleted:0`）
 - `POST /api/spaces/:spaceId/prose`：批量写入原文段落（`UNIQUE(space_id, batch_id, chunk_id)` 保证断网重发幂等）
 - `POST /api/spaces/:spaceId/prose/query`：SQL 过滤 + FTS5 BM25 + 可选 embedding 余弦 RRF + 前后邻段连带召回
 - `DELETE /api/space/:spaceId`：物理级联删除存档与段落并执行 `VACUUM`
@@ -30,8 +30,11 @@ node --test server/memory-hub/hubCore.test.mjs
 
 ## 段落写入契约补充
 
-- `chunks[].seq`：显式同回合顺序号——邻段连带优先吃它。chunkId 拆尾段只是兼容兜底，
-  带导入戳后缀或 branchId 含下划线时拆尾不可靠。
+- `chunks[].seq`：显式同回合顺序号——邻段连带优先吃它（两侧都有 seq 时只按 seq 距离，
+  数组顺序不再放行）。chunkId 拆尾段只是兼容兜底，带导入戳后缀或 branchId 含下划线时拆尾不可靠。
+- `chunks[].branchId`：时间线分支 id。查询传 `lineage`+`currentTurn` 时按谱系硬过滤
+  （与客户端 `branchVisible` 同口径：branchId 命中谱系；非头 turn<upTo、turn=upTo 按 upToSeq/seq 边界；
+  头分支 turn<=currentTurn；无 branchId 一律不可见）。lineage 未传才退回 maxTurn 宽松路径。
 
 ## 向量元数据契约（硬要求）
 

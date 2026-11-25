@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS prose_chunks (
   embedding_model TEXT,
   embedding_dim INTEGER,
   seq INTEGER,
+  branch_id TEXT,
   UNIQUE (space_id, batch_id, chunk_id)
 );
 

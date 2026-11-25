@@ -207,6 +207,91 @@ describe("prose seq 列邻段（导入戳/下划线 branchId 不断邻段）", (
   });
 });
 
+describe("时间线谱系过滤（branchVisible 同口径）", () => {
+  it("lineage+currentTurn 传入时：旧未来/别分支/无 branchId 一律不可见，seq 边界生效", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("sp", "batch_tl", [
+      // 头分支 b_head（upTo:null）：turn<=currentTurn 可见
+      { chunkId: "x1", turn: 5, seq: 1, branchId: "b_head", witnesses: ["*"], entities: [], rawText: "头分支历史提到青铜印。" },
+      { chunkId: "x2", turn: 8, seq: 2, branchId: "b_head", witnesses: ["*"], entities: [], rawText: "头分支未来提到青铜印。" },
+      // 非头分支 b_old（upTo:6, upToSeq:3）
+      { chunkId: "x3", turn: 5, seq: 1, branchId: "b_old", witnesses: ["*"], entities: [], rawText: "旧分支截断前提到青铜印。" },
+      { chunkId: "x4", turn: 6, seq: 3, branchId: "b_old", witnesses: ["*"], entities: [], rawText: "旧分支边界seq3提到青铜印。" },
+      { chunkId: "x5", turn: 6, seq: 4, branchId: "b_old", witnesses: ["*"], entities: [], rawText: "旧分支被撤seq4提到青铜印。" },
+      { chunkId: "x6", turn: 7, seq: 5, branchId: "b_old", witnesses: ["*"], entities: [], rawText: "旧分支被撤未来提到青铜印。" },
+      // 谱系外分支
+      { chunkId: "x7", turn: 5, seq: 1, branchId: "b_other", witnesses: ["*"], entities: [], rawText: "别分支提到青铜印。" },
+      // 无 branchId
+      { chunkId: "x8", turn: 5, seq: 1, witnesses: ["*"], entities: [], rawText: "无branchId提到青铜印。" },
+    ]);
+    const lineage = [
+      { b: "b_old", upTo: 6, upToSeq: 3 },
+      { b: "b_head", upTo: null },
+    ];
+    const res = store.queryProseChunks("sp", {
+      query: "青铜印", viewer: "主角", lineage, currentTurn: 6, topK: 20, neighborRadius: 0,
+    });
+    const ids = res.results.map((r) => r.chunkId);
+    assert.equal(ids.includes("x1"), true);  // 头分支 turn5<=6
+    assert.equal(ids.includes("x2"), false); // 头分支 turn8>6 未来
+    assert.equal(ids.includes("x3"), true);  // 旧分支 turn5<upTo6
+    assert.equal(ids.includes("x4"), true);  // 旧分支 turn6=upTo seq3<=upToSeq3
+    assert.equal(ids.includes("x5"), false); // seq4>upToSeq3 被撤
+    assert.equal(ids.includes("x6"), false); // turn7>upTo6
+    assert.equal(ids.includes("x7"), false); // 谱系外
+    assert.equal(ids.includes("x8"), false); // 无 branchId
+    store.close();
+  });
+
+  it("lineage 未传时退回 maxTurn 宽松路径（兼容老调用）", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("sp", "batch_loose", [
+      { chunkId: "y1", turn: 5, witnesses: ["*"], entities: [], rawText: "宽松路径提到青铜印。" },
+    ]);
+    const res = store.queryProseChunks("sp", { query: "青铜印", viewer: "主角", maxTurn: 9, topK: 5, neighborRadius: 0 });
+    assert.equal(res.results.length, 1);
+    store.close();
+  });
+});
+
+describe("DELETE 收紧与 force 严格布尔", () => {
+  it("非 force 缺/非法 expectedRev → 400 不删；force:'false' 字符串不生效", () => {
+    const store = createHubStore(":memory:");
+    store.putSave("sp", "s1", { expectedRev: 0, payloadEnc: "v1", updatedAt: 1 });
+    const missing = store.deleteSave("sp", "s1", {});
+    assert.equal(missing.status, 400);
+    assert.equal(store.getSave("sp", "s1") !== null, true);
+    const nullRev = store.deleteSave("sp", "s1", { expectedRev: null });
+    assert.equal(nullRev.status, 400);
+    // 匹配才删
+    const ok = store.deleteSave("sp", "s1", { expectedRev: 1 });
+    assert.equal(ok.deleted, 1);
+    // force 严格 true：字符串 "false"/"1" 不生效
+    store.putSave("sp", "s2", { expectedRev: 0, payloadEnc: "v2", updatedAt: 1 });
+    const strForce = store.putSave("sp", "s2", { expectedRev: 99, payloadEnc: "evil", updatedAt: 2, force: "1" });
+    assert.equal(strForce.status, 409);
+    assert.equal(store.getSave("sp", "s2").payloadEnc, "v2");
+    store.close();
+  });
+});
+
+describe("邻段 seq 优先级（稀疏 seq 不被顺序放行）", () => {
+  it("两侧都有显式 seq 时只按 seq 距离：seq 差 5 即使数组相邻也不连带", () => {
+    const store = createHubStore(":memory:");
+    store.appendProseChunks("sp", "batch_sparse", [
+      { chunkId: "z1", turn: 3, seq: 2, witnesses: ["*"], entities: [], rawText: "锚点段：青铜印。" },
+      { chunkId: "z2", turn: 3, seq: 7, witnesses: ["*"], entities: [], rawText: "远seq段：数组相邻但seq差5。" },
+      { chunkId: "z3", turn: 3, seq: 3, witnesses: ["*"], entities: [], rawText: "近seq段：seq差1应连带。" },
+    ]);
+    const res = store.queryProseChunks("sp", { query: "青铜印", viewer: "主角", topK: 1, neighborRadius: 1 });
+    const ids = res.results.map((r) => r.chunkId);
+    assert.equal(ids.includes("z1"), true);
+    assert.equal(ids.includes("z3"), true);  // seq 差 1
+    assert.equal(ids.includes("z2"), false); // seq 差 5，数组顺序不得放行
+    store.close();
+  });
+});
+
 describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejection", () => {
   it("physically deletes space data + FTS entries and runs VACUUM on DELETE /api/space/:spaceId", async () => {
     const dir = mkdtempSync(join(tmpdir(), "qucuo-hub-"));

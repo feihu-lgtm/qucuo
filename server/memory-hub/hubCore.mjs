@@ -34,6 +34,7 @@ export function openHubDb(dbPath = ":memory:") {
   if (!cols.has("embedding_model")) db.exec("ALTER TABLE prose_chunks ADD COLUMN embedding_model TEXT");
   if (!cols.has("embedding_dim")) db.exec("ALTER TABLE prose_chunks ADD COLUMN embedding_dim INTEGER");
   if (!cols.has("seq")) db.exec("ALTER TABLE prose_chunks ADD COLUMN seq INTEGER");
+  if (!cols.has("branch_id")) db.exec("ALTER TABLE prose_chunks ADD COLUMN branch_id TEXT");
   return db;
 }
 
@@ -80,6 +81,28 @@ function canViewerSeeChunk(witnesses, viewer) {
   return Boolean(viewer) && witnesses.includes(viewer);
 }
 
+// 时间线可见性——与 src/domain/rules/memory/lineage.js 的 branchVisible 同口径复制
+// （server 保持纯 node 内置依赖独立部署，不 import 客户端 src；改口径必须双侧同步）。
+//   chunk.branchId 必须命中谱系某分支；非头 turn<upTo 可见、turn=upTo 且有
+//   upToSeq/chunk.seq 时按 seq 边界；头分支 turn<=currentTurn；无 branchId 一律不可见。
+export function branchVisibleServer(chunk, lineage, currentTurn) {
+  const bid = chunk?.branchId;
+  if (!bid || !Array.isArray(lineage)) return false;
+  const branch = lineage.find((e) => e && e.b === bid);
+  if (!branch) return false;
+  const turn = chunk?.turn;
+  if (!Number.isFinite(turn)) return false;
+  if (branch.upTo === null) {
+    return Number.isFinite(currentTurn) ? turn <= currentTurn : true;
+  }
+  if (turn < branch.upTo) return true;
+  if (turn > branch.upTo) return false;
+  if (Number.isFinite(branch.upToSeq) && Number.isFinite(chunk?.seq)) {
+    return chunk.seq <= branch.upToSeq;
+  }
+  return true;
+}
+
 function parseSeqFromChunkId(chunkId) {
   const parts = String(chunkId || "").split("_");
   const last = Number(parts[parts.length - 1]);
@@ -106,14 +129,14 @@ export function createHubStore(dbOrPath = ":memory:") {
     INSERT OR IGNORE INTO prose_chunks (
       space_id, batch_id, chunk_id, turn, location,
       witnesses_json, entities_json, raw_text, public_text, terms_segmented, embedding_blob,
-      embedding_model, embedding_dim, seq
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      embedding_model, embedding_dim, seq, branch_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const stmtSpaceChunks = db.prepare(`
     SELECT id, space_id, batch_id, chunk_id, turn, location,
            witnesses_json, entities_json, raw_text, public_text, terms_segmented, embedding_blob,
-           embedding_model, embedding_dim, seq
+           embedding_model, embedding_dim, seq, branch_id
     FROM prose_chunks
     WHERE space_id = ?
       AND (? IS NULL OR turn <= ?)
@@ -135,6 +158,7 @@ export function createHubStore(dbOrPath = ":memory:") {
   const stmtDeleteSaves = db.prepare("DELETE FROM saves WHERE space_id = ?");
 
   function putSave(spaceId, slotId, { expectedRev = 0, payloadEnc, updatedAt = Date.now(), force = false } = {}) {
+    force = force === true; // 严格布尔——force:"false" 字符串不生效
     if (!spaceId || !slotId) throw new Error("spaceId and slotId are required");
     if (typeof payloadEnc !== "string") throw new Error("payloadEnc must be an opaque ciphertext string");
     if (!Number.isInteger(expectedRev) || expectedRev < 0) throw new Error("expectedRev must be a non-negative integer");
@@ -235,6 +259,7 @@ export function createHubStore(dbOrPath = ":memory:") {
           blob ? embeddingModel : null,
           blob ? embeddingDim : null,
           Number.isInteger(c.seq) ? c.seq : null,
+          typeof c.branchId === "string" && c.branchId ? c.branchId : null,
         );
         inserted += info.changes;
       }
@@ -258,6 +283,8 @@ export function createHubStore(dbOrPath = ":memory:") {
       entities: parseJsonArray(row.entities_json),
       rawText: row.raw_text,
       publicText: row.public_text,
+      seq: Number.isInteger(row.seq) ? row.seq : null,
+      branchId: row.branch_id || null,
     };
   }
 
@@ -271,12 +298,23 @@ export function createHubStore(dbOrPath = ":memory:") {
     queryEmbeddingDim = null,
     topK = 5,
     neighborRadius = 1,
+    lineage = null,
+    currentTurn = null,
   } = {}) {
     if (!spaceId) throw new Error("spaceId is required");
-    const maxTurnVal = Number.isFinite(maxTurn) ? maxTurn : null;
+    // 谱系传入时走时间线硬过滤（branchVisible 同口径）；未传才退回 maxTurn 宽松路径。
+    // chunkId 里 branchId 自带下划线不可拆——服务端不存/不过滤的话，
+    // 未来接线后 topK 先被旧未来/别分支污染，客户端再补救来不及。
+    const useLineage = Array.isArray(lineage) && lineage.length > 0;
+    const maxTurnVal = useLineage ? null : (Number.isFinite(maxTurn) ? maxTurn : null);
     const allRows = stmtSpaceChunks.all(spaceId, maxTurnVal, maxTurnVal);
     const visibleRows = allRows.filter((row) => {
       if (location && row.location !== location) return false;
+      if (useLineage && !branchVisibleServer(
+        { branchId: row.branch_id, turn: row.turn, seq: Number.isInteger(row.seq) ? row.seq : undefined },
+        lineage,
+        Number.isFinite(currentTurn) ? currentTurn : null,
+      )) return false;
       return canViewerSeeChunk(parseJsonArray(row.witnesses_json), viewer);
     });
     if (!visibleRows.length) return { hits: [], results: [] };
@@ -343,6 +381,12 @@ export function createHubStore(dbOrPath = ":memory:") {
         // branchId 本身也可能含下划线，拆 id 尾段在这两种情况下都会断邻段。
         const anchorSeqCol = Number.isInteger(entry.row.seq) ? entry.row.seq : null;
         const rowSeqCol = Number.isInteger(s.seq) ? s.seq : null;
+        if (anchorSeqCol !== null && rowSeqCol !== null) {
+          // 两侧都有显式 seq 时只按 seq 距离判——稀疏 seq（中段属于别分支/不可见）
+          // 不能再被数组顺序 OR 放行连带。
+          if (Math.abs(rowSeqCol - anchorSeqCol) <= neighborRadius) neighbors.push(hydrateRow(s));
+          continue;
+        }
         const seqA = anchorSeqCol ?? anchorSeq;
         const seqB = rowSeqCol ?? parseSeqFromChunkId(s.chunk_id);
         const bySeq = seqA !== null && seqB !== null && Math.abs(seqB - seqA) <= neighborRadius;
@@ -380,8 +424,15 @@ export function createHubStore(dbOrPath = ":memory:") {
     if (!spaceId || !slotId) throw new Error("spaceId and slotId are required");
     const existing = stmtGetSave.get(spaceId, slotId);
     if (!existing) return { ok: true, status: 200, spaceId, slotId, deleted: 0, idempotent: true };
-    if (!force && Number.isInteger(expectedRev) && existing.rev !== expectedRev) {
-      return { ok: false, status: 409, conflict: true, currentRev: existing.rev, serverRev: existing.rev, reason: "rev_mismatch" };
+    if (force !== true) {
+      // 非 force 必须带合法 expectedRev 且匹配才删——缺失/非法直接 400，
+      // 不许绕开 rev+409 冲突保护无条件删。
+      if (!Number.isInteger(expectedRev)) {
+        return { ok: false, status: 400, error: "expectedRev_required", reason: "expectedRev_required" };
+      }
+      if (existing.rev !== expectedRev) {
+        return { ok: false, status: 409, conflict: true, currentRev: existing.rev, serverRev: existing.rev, reason: "rev_mismatch" };
+      }
     }
     const info = db.prepare("DELETE FROM saves WHERE space_id = ? AND slot_id = ?").run(spaceId, slotId);
     return { ok: true, status: 200, spaceId, slotId, deleted: info.changes };
