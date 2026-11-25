@@ -28,10 +28,14 @@ export function formatVerdictLine(cat, v) {
     const entries = Object.entries(obj || {}).filter(([, val]) => val);
     return entries.length ? entries.map(([k, val]) => `${k}${val > 0 ? "+" : ""}${val}`).join("、") : "无";
   };
+  // WO-16D-M2：数值类目有 sub 明细时逐子项带方向标签——混合方向不再被一级标签掩盖。
+  const fmtSub = (sub) => Object.entries(sub || {})
+    .map(([k, s]) => `${k}·${VERDICT_LABEL[s.verdict] || s.verdict}(实际${s.single > 0 ? "+" : ""}${s.single}/判官${s.judge > 0 ? "+" : ""}${s.judge})`)
+    .join("；");
   const detail = cat === "affection"
     ? `实际${fmtAff(v.single)} 判官${fmtAff(v.judge)}`
     : (cat === "vitals" || cat === "cultivation")
-      ? `实际${fmtNum(v.single)} 判官${fmtNum(v.judge)}`
+      ? (v.sub && Object.keys(v.sub).length ? fmtSub(v.sub) : `实际${fmtNum(v.single)} 判官${fmtNum(v.judge)}`)
       : `实际${fmtPair(v.single)} 判官${fmtPair(v.judge)}`;
   return `${cat}：${label}（${detail}）`;
 }
@@ -48,15 +52,18 @@ export function formatAggregate(agg) {
     `共 ${agg.turns} 回合 · 全一致 ${agg.match} · 判官漏判回合 ${agg.gaps} · 判官多判回合 ${agg.judgeExtra}`,
   ];
   for (const [cat, c] of Object.entries(agg.byCategory || {})) {
-    lines.push(`${cat}：漏判 ${c.single_only || 0} · 会判 ${c.judge_only || 0} · 两边都偏 ${c.both_diff || 0}`);
+    // WO-16D-M2：quest 状态驱动推进归因不可靠——reference-only 不计入 gaps，需人工甄别
+    const ref = cat === "quest" ? "（参考·不计入缺口，人工甄别）" : "";
+    lines.push(`${cat}：漏判 ${c.single_only || 0} · 会判 ${c.judge_only || 0} · 两边都偏 ${c.both_diff || 0}${ref}`);
   }
   const ex = Object.entries(agg.excluded || {});
   if (ex.length) lines.push(`盲区(不计入覆盖)：${ex.map(([cat, n]) => `${cat}×${n}`).join("、")}`);
   // WO-16D-M1：single_only 原话采样清单——WO-16F 需求来源
   const samples = agg.samples || [];
   if (samples.length) {
-    lines.push(`判官漏判原话采样（${samples.length}句，上限20）：`);
-    for (const smp of samples) lines.push(`· [${smp.cat}] ${smp.cmd}`);
+    lines.push(`判官漏判原话采样（${samples.length}句，按句去重，上限20）：`);
+    // WO-16D-M2：同一句多类目合并展示（cats），不再一句占多位
+    for (const smp of samples) lines.push(`· [${(smp.cats || [smp.cat]).join("/")}] ${smp.cmd}`);
   }
   return lines;
 }
