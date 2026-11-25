@@ -17,7 +17,8 @@ import { add, applyWrite, set, updateField } from "../../domain/rules/state/appl
 import { forceAdvanceQuest } from "../quest/logic.js";
 import { sectSparRepGain, SECT_SPARS } from "../../domain/rules/economy/sectSpar.js";
 import { factionRepDeltas } from "../../domain/rules/economy/factionRep.js";
-import { recordNemesisDuel, scarFromBattleLog, nemesisFactionOf } from "../../domain/rules/nemesis/nemesisEngine.js";
+import { recordNemesisDuel, scarFromBattleLog, nemesisFactionOf, findNemesisEntry } from "../../domain/rules/nemesis/nemesisEngine.js";
+import { recordWeaponVictory } from "../../domain/rules/items/itemAwaken.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 一场切磋占用的游戏时间（time 一格 = 一小时），由系统直接加，不经过 AI
@@ -188,6 +189,31 @@ export function settleNpcDuel(state, npc, {
           logs.push({ t: "sys", text: `  ${npc.name}身上添了道${scar.kind}伤——这账，江湖记着。` });
         }
       }
+    }
+  }
+
+  // WO-23D1 器物觉醒战绩账本（系统账直写无 AI）：胜场按已装备武器 id 记账，
+  // 同场 battleKey 幂等；斩宿敌谱 active entry 额外计 nemesisKills。
+  if (outcome === "win" && Array.isArray(state.inv)) {
+    const faction = nemesisFactionOf(npc);
+    // 必须读战前谱（state 而非 working）——本回合 win+疤可能刚把对方建档入谱，
+    // 用战后谱会把「首胜」误算成斩宿敌，一场普通胜利直接 ready。
+    const rosterNow = state.varTree?.世界?.宿敌谱 || {};
+    const nemesisHit = !!(faction && npc.name && findNemesisEntry(rosterNow, faction, npc.name)?.status === "active");
+    const battleKey = `${state.time || 0}:${npc.id || npc.name || ""}`;
+    let ledger = working.varTree?.世界?.器物谱 || {};
+    let ledgerChanged = false;
+    for (const it of state.inv) {
+      if (!it?.id || it.category !== "weapon" || !it.equipped) continue;
+      const next = recordWeaponVictory(ledger, it, { turn: state.time || 0, battleKey, nemesisKill: nemesisHit });
+      if (next) { ledger = next; ledgerChanged = true; }
+    }
+    if (ledgerChanged) {
+      const ledgerFinal = ledger;
+      addChange(changes, working, "varTree", (prev) => ({
+        ...(prev || {}),
+        世界: { ...(prev?.世界 || {}), 器物谱: ledgerFinal },
+      }));
     }
   }
 
