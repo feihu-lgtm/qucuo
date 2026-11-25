@@ -16,9 +16,9 @@ import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
 import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../domain/rules/world/containers.js";
-import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
+import { buildJudgeRuleBlock, buildGroupTalkRuleBlock, parseGroupTalkSeal } from "../domain/rules/judge/judgeRuleBlock.js";
 import { writeTurnProse } from "./act/proseWrite.js";
 import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
 import { random } from "../utils/rng.js";
@@ -193,9 +193,24 @@ async function runTurnSteps(ctx, cmd, opts) {
   // ③ WO-16A 搭话开闸：纯搭话回合也进判官，但 envelope.talkOnly 让判官只产
   // 小额社交事实（白名单），give/take/inspect 等硬事实在判官内整条拦截——
   // 不会因为纯搭话误搬物品，同时闲聊好感/熟人登记有了替代通道。
-  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle) {
+  // WO-16H-H1 群聊判定（先于判官闸）：isTalk && !talkTarget && 在场人数>0 的
+  // 多人群聊回合不进前哨/判官——尾章指引换群聊回响块，只写对白神态心思、
+  // 不改任何游戏状态，SEAL 只有 respondedNpcs 一键（parseGroupTalkSeal 白名单过滤）。
+  const visibleNpcsPre = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
+  const talkTargetNow = ctx.talkTarget || deps.talkTarget || ctx.prompt?.talkTarget || "";
+  // 门槛 >=2：roadmap 语义是「好几个人同在场」的多人群聊——单人在场未点选仍进
+  // 判官 talkOnly（好感/熟人账照常），两名及以上在场才跳过判官走群聊尾章。
+  // settle 回合永不算群聊——结算叙事禁带尾章（roadmap「其余结算回合留空」），
+  // 否则送礼/赔罪 narration 会被要求写群聊 SEAL 并误切尾章。
+  const isGroupTalk = !!isTalk && !isSettle && !talkTargetNow && visibleNpcsPre.length >= 2;
+  if (isGroupTalk && deps.apiCfg?.extractionEnabled) {
+    const playerName0 = (ctx.getGameState?.()?.char || deps.char)?.name || "主角";
+    deps.groupTalkRuleBlock = buildGroupTalkRuleBlock(playerName0);
+    trace("群聊尾章", "pass", `多人群聊回合（在场 ${visibleNpcsPre.length} 人）：跳过前哨/判官，尾章只收 respondedNpcs`);
+  }
+  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle && !isGroupTalk) {
     try {
-      const visibleNpcs = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
+      const visibleNpcs = visibleNpcsPre;
       // B1 任务推进候选：只能由系统 helper 现场生成——小模型挑候选、
       // 判官白名单核验，全流程无模型自编 flag 的通道。
       const liveNow = ctx.getGameState?.() || {};
@@ -266,14 +281,12 @@ async function runTurnSteps(ctx, cmd, opts) {
       deps.judgePipelineActive = true;
       deps.judgeVerdict = judgeVerdict;
       deps.causalBudget = judgeVerdict.budget;
-      deps.judgeRuleBlock = [
-        "【判官定案·锚点铁律】系统已裁定本轮事实，你只有叙事权：",
-        renderJudgeVerdict(judgeVerdict),
-        renderCausalBudget(judgeVerdict.budget),
-        "正文中每落实一条 facts 事实，须在落实处文末埋对应锚点 ⟦F编号⟧（玩家不可见，系统会剥除）；",
-        "禁编造判官未签发的新器物/新武学/好感大变；写完正文换行输出 ---SEAL--- 紧跟单行 JSON：fills 给空白天机券填 name/chosenAffix/desc，respondedNpcs 列本轮开口的角色，spontaneousPact 无则 null；正文新提到的具名人物列进 mentionedNewNpcs（只报名字，未提到给 []）；玩家明确指向的传闻人物若果真登场，填 emergedNpc:{name,description}——description 只写一句话定性身份性格、禁带数值，未登场给 null。",
-        "条件券只有正文埋锚且尾章填空才成立——写了拾取却不填名、或填了名正文却没写拾取，券都作废，系统绝不代你硬塞。",
-      ].join("\n");
+      // WO-16H-H1：判官铁律块换 roadmap d.judgeRuleBlock 正文——锚点/分寸/条件券/
+      // SEAL 五行 JSON 全键契约、天机券词条白名单逐券渲染、不知情者反应导引并块。
+      deps.judgeRuleBlock = buildJudgeRuleBlock({
+        judgeVerdict,
+        playerName: (liveNow.char || deps.char)?.name || "主角",
+      });
       trace("判官管线", "pass", `intake ${intakeResult.actions?.length || 0} 动作/${intakeResult.proposals?.length || 0} 提议 → facts ${judgeVerdict.facts.length} 条/warrants ${judgeVerdict.warrants.length} 张（tier ${judgeVerdict.causalTier}）`);
     } catch (error) {
       trace("判官管线", "fail", `前哨听意异常降级：${error?.message || error}`);
@@ -553,6 +566,19 @@ async function runTurnSteps(ctx, cmd, opts) {
     if (memoryText) p = { ...p, memory: memoryText };
   }
 
+  // WO-16H-H1 群聊尾章校对：parseGroupTalkSeal 按在场白名单过滤——越界名字
+  // 安静丢弃并记 trace，绝不进状态（群聊不改任何游戏状态，只此一键）。
+  if (isGroupTalk && deps.groupTalkRuleBlock && sealParts?.sealText) {
+    const presentNames = visibleNpcsPre.map((n) => n?.name).filter(Boolean);
+    const parsed = parseGroupTalkSeal(sealParts.sealText, presentNames);
+    for (const dropped of parsed.dropped) {
+      trace("群聊尾章", "warn", `respondedNpcs 越界名字「${dropped}」不在场，已丢弃`);
+    }
+    if (parsed.respondedNpcs.length) {
+      p = { ...p, respondedNpcs: parsed.respondedNpcs };
+    }
+  }
+
   // WO-18 原文段落写挂 payload：不在这里触发——commitRound 可能抛错回滚，
   // 被回滚的叙事不能进段落库。payload 随结果带给 finalizeTurn，在事务成功
   // 且未 stale 后统一派发（见 finalizeTurn）。
@@ -590,6 +616,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     judgeEffects,
     derivedRespondedNpcs: deps.derivedRespondedNpcs || null,
     judgePipelineActive: !!deps.judgePipelineActive,
+    groupTalk: !!deps.groupTalkRuleBlock,
   };
 }
 

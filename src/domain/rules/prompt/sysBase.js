@@ -230,7 +230,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   const schemaBlock = narrativeOnly
     ? opts.judgeActive
       ? `直接输出叙事散文正文；写完正文换行输出 ---SEAL--- 紧跟单行 JSON（fills/respondedNpcs/spontaneousPact），此外禁输出JSON、<mvu>块及任何结构化内容。`
-      : `直接输出叙事散文正文，写完即止；禁输出JSON、<mvu>块及任何结构化内容。`
+      : opts.groupTalkActive
+        ? `直接输出叙事散文正文；写完正文换行输出 ---SEAL--- 紧跟单行 JSON（respondedNpcs），此外禁输出JSON、<mvu>块及任何结构化内容。`
+        : `直接输出叙事散文正文，写完即止；禁输出JSON、<mvu>块及任何结构化内容。`
     : isSettle
       ? `回复纯JSON，字符串不换行。状态已结算，只写生动正文，禁改状态或重复结算奖励/物品/银两${opts.snowLeopardGift ? "：" : "，禁输出 room/char/dao/delta："}
 {"output":["行1","行2"],"memory":"≤50字客观事实"}

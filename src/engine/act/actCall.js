@@ -95,6 +95,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
       inSeaOfMind: !!d.inSeaOfMind,
       gm: d.gm,
       judgeActive: !!d.judgeRuleBlock,
+      groupTalkActive: !!d.groupTalkRuleBlock,
       playerName: d.charName || "主角", // memory摘要统一用这个称呼，不用你/我，避免人称混乱
       activePreset: d.activePreset,
       // 物件志（批四）：只有本轮真可能发出物品才挂——移动拾取命中/战斗/创造模式。
@@ -185,9 +186,19 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const dynPrefix = dynWorld ? dynWorld + "\n\n" : "";
   const steerNote = [dynBlocks.lenNote, _bodyGate.text].filter(Boolean).join("\n");
   const steerSuffix = (steerNote ? steerNote + "\n" : "") + proseRule;
+  // WO-16H-H1 尾章指引三选一：判官激活→判官铁律块；多人群聊→群聊尾章块；
+  // 单人对话/结算回合→留空不收尾章税。
+  const sealRulePart = d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock
+    : d.groupTalkRuleBlock ? "\n\n" + d.groupTalkRuleBlock
+    : "";
+  // WO-16H-H1 非 settle 拼装固定十二段（roadmap 4.4）：①规则前缀 ②动态前缀（声线/
+  // 场景/人物小传/物件志/谈物规矩/心海）③状态与@体感态势（d.ctx 内含在场活人切片）
+  // ④远方消息 ⑤往事召回 ⑥目标旧账 ⑦久别重逢 ⑧信息域 ⑨@江湖契约与宿敌
+  // （WO-22/23 启用前留空）⑩尾章指引 ⑪篇幅与文体导向。现状即此序，最小重排不重写。
+  const pactNemesisPart = ""; // ⑨占位：WO-22/23 接线点，启用前留空
   const inChatContent = d.isSettle
     ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + "\n\n" + steerSuffix
-    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + (d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock : "") + "\n\n" + steerSuffix;
+    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + pactNemesisPart + sealRulePart + "\n\n" + steerSuffix;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
@@ -382,8 +393,9 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       streamLogIndex = l.length - 1;
       return l;
     });
-    if (d.judgePipelineActive && narrativeOnly) {
+    if ((d.judgePipelineActive || d.groupTalkRuleBlock) && narrativeOnly) {
       // WO-13：判官管线的流式——⟦F⟧ 锚点实时剥除，\n---SEAL--- 后冻结屏幕。
+      // WO-16H-H1：群聊尾章同走剥离（无锚点，只切 ---SEAL--- 尾章），否则尾章漏上屏。
       judgeStream = createStorytellerStream();
     }
     // 遗留 JSON 单调用流式：同一首字超时口径，inline 过渡句写进占位行位，
@@ -450,7 +462,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   }
   // WO-13：判官管线下剥锚点/切尾章——rawFull 只留屏幕正文，
   // 尾章与锚点落段随结果带回给 runTurn 做 sealVerifier 校对。
-  if (d.judgePipelineActive) {
+  if (d.judgePipelineActive || d.groupTalkRuleBlock) {
     const split = splitStorytellerText(text);
     if (stream && narrativeOnly) {
       d.setLog(l => {
