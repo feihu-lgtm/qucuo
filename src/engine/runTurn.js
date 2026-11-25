@@ -214,6 +214,42 @@ async function runTurnSteps(ctx, cmd, opts) {
       trace("判官管线", "fail", `前哨听意异常降级：${error?.message || error}`);
     }
   }
+  // ── WO-15 窄过渡：赔罪（appease）开庭前仲裁 ──
+  // 旧 settleTurn 在叙事前跑就是为了把裁定注入叙事——正文必须与系统落账同向，
+  // 否则会出现"正文写已消气但系统零写入"的穿帮。裁定结果经 deps.appeaseVerdict
+  // 流入 buildSysBase 的 settle 叙事铁律。玩家原话优先取 settleOptions.attempt
+  // （按钮/路由生成的 cmd 是模板句，无法判断诚意）。
+  let appeaseVerdict = null;
+  if (apiCfg.extractionEnabled && isSettle && opts.settleKind === "appease" && opts.settleNpc) {
+    const npcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
+    const npcState = (deps.varTree?.角色 || ctx.memory?.varTreeLatest?.角色 || {})[npcName] || {};
+    const anger = npcState.生气状态 || {};
+    try {
+      const appeaseRes = await withAI(
+        "turn.appease",
+        {
+          cfg: deps.apiCfg,
+          npc: npcName,
+          reason: anger.reason || "",
+          attemptText: opts.attempt || cmd,
+          attemptKind: "求和赔罪",
+          personality: npcState.性情 || "",
+          affection: npcState.好感度,
+        },
+        { ai, apiCfg: deps.apiCfg, throwOnError: false },
+      );
+      if (ctx.isStale?.()) return { stale: true };
+      const choice = appeaseRes?.data?.choice;
+      appeaseVerdict = { choice, npc: npcName };
+      if (choice === "奏效") trace("赔罪仲裁", "pass", `${npcName}消了气（系统落账：生气解除+好感+3）`);
+      else trace("赔罪仲裁", "skip", `${npcName}未消气（${choice || "判不了"}），本轮零写入`);
+    } catch (error) {
+      trace("赔罪仲裁", "fail", `裁决异常：${error?.message || error}，本轮零写入`);
+      appeaseVerdict = { choice: null, npc: npcName };
+    }
+    deps.appeaseVerdict = appeaseVerdict;
+  }
+
   let rawFull = "";
   let sealParts = null;
   let p = {};
@@ -273,39 +309,12 @@ async function runTurnSteps(ctx, cmd, opts) {
     p = {};
     mvuCommands = [];
 
-    // WO-15 窄过渡补洞：赔罪（appease）在 feature 层无前置硬结算，软结算删除后
-    // 无人裁定消气。这里补一个窄结构化小调用——AI 只三选一，数值由系统钉死。
-    if (isSettle && opts.settleKind === "appease" && opts.settleNpc) {
-      const npcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
-      const npcState = (deps.varTree?.角色 || ctx.memory?.varTreeLatest?.角色 || {})[npcName] || {};
-      const anger = npcState.生气状态 || {};
-      try {
-        const appeaseRes = await withAI(
-          "turn.appease",
-          {
-            cfg: deps.apiCfg,
-            npc: npcName,
-            reason: anger.reason || "",
-            attemptText: cmd,
-            attemptKind: "求和赔罪",
-            personality: npcState.性情 || "",
-            affection: npcState.好感度,
-          },
-          { ai, apiCfg: deps.apiCfg, throwOnError: false },
-        );
-        if (ctx.isStale?.()) return { stale: true };
-        if (appeaseRes?.data?.choice === "奏效") {
-          mvuCommands = [
-            { op: "set", path: `角色.${npcName}.生气解除`, value: true },
-            { op: "add", path: `角色.${npcName}.好感度`, value: 3 },
-          ];
-          trace("赔罪仲裁", "pass", `${npcName}消了气（系统落账：生气解除+好感+3）`);
-        } else {
-          trace("赔罪仲裁", "skip", `${npcName}未消气（${appeaseRes?.data?.choice || "判不了"}），本轮零写入`);
-        }
-      } catch (error) {
-        trace("赔罪仲裁", "fail", `裁决异常：${error?.message || error}，本轮零写入`);
-      }
+    // WO-15 窄过渡：赔罪裁定在开庭前已完成（见上），这里只按定案落系统 mvu。
+    if (appeaseVerdict?.choice === "奏效") {
+      mvuCommands = [
+        { op: "set", path: `角色.${appeaseVerdict.npc}.生气解除`, value: true },
+        { op: "add", path: `角色.${appeaseVerdict.npc}.好感度`, value: 3 },
+      ];
     }
   } else {
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {

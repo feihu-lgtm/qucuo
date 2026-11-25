@@ -34,13 +34,14 @@ flowchart TD
 
 WO-15 起这就是线上主回路：**旧状态提取层（turn.extraction/extractionSpecs/extractionEngine/appeaseExtraction）与独立软结算通道（settleTurn/runSoftSettle/softRules/settle.judge）已整块删除**。`judgePipelineEnabled` 开启时，`turn.intake` 前哨听意 → `judgeTurn` 纯函数判官 → 定案单与锚点铁律注入主叙事 → 流式剥 `⟦F⟧` 锚点、`---SEAL---` 尾章校对 → `materializeFacts` 经 `commitRound` 落盘。双调用模式下不再有第二次"从叙事反推状态"的提取调用——自由行动状态只来自判官 facts；settle 回合状态靠 feature 前置硬结算。单调用 JSON 老路（extractionEnabled=false）仍保留到 WO-16。
 
-**当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；CLI 老录制回放默认 `false`（单调用老路，WO-16 收尾）。激活还需同时满足两个条件——**非 settle 回合且非纯搭话回合**（settle 回合状态在进叙事前已由 feature 层硬结算落账——giftNpc 已扣货、learnNpcSkill 已扣束脩授业、inviteCompanion 已写 companionState，判官再裁会双重结算；纯搭话免费不动状态，判官收礼会越权搬背包）且 **`extractionEnabled` 双调用叙事模式**；任一不满足，新管线不激活、整链 no-op。WO-15 删除的只是「独立软结算通道」（AI 事后裁好感/收拒），feature 前置硬结算不在删除范围；settle 回合开放判官须等后续工单把前置硬写改成「事实请求先裁后落」。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts。
+**当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；CLI 老录制回放默认 `false`（单调用老路，WO-16 收尾）。激活还需同时满足两个条件——**非 settle 回合且非纯搭话回合**（settle 回合状态在进叙事前已由 feature 层硬结算落账——giftNpc 已扣货、learnNpcSkill 已扣束脩授业、inviteCompanion 已写 companionState，判官再裁会双重结算；纯搭话免费不动状态，判官收礼会越权搬背包）且 **`extractionEnabled` 双调用叙事模式**；任一不满足，新管线不激活、整链 no-op。WO-15 删除的只是「独立软结算通道」（AI 事后裁好感/收拒），feature 前置硬结算不在删除范围；settle 回合开放判官须等后续工单把前置硬写改成「事实请求先裁后落」。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts。**注意过渡缺口：判官 inactive 的双调用回合，雪豹 flag/拾取入包/respondedNpcs/memory 与传闻注册当前零落账（详见第 2 节末保留边界清单）。**
 
 **WO-15 保留边界（如实声明）**：
 - `forgeDesign`（铸剑坊/金玉行定制设计）不属提取层，已迁入独立小文件 `src/engine/ports/forgeDesign.js` 保活。
 - 旁白私语好感裁决（原 narrator_affinity 软结算）不走回合判官管线（私聊是独立流程），已改写为独立结构化调用 `narrator.affinity`：AI 只做三选一分类（投机贴心/寻常闲聊/敷衍冒犯），数值映射、幅度裁剪、日上限账本全部在系统侧（usePrivateTalk）。
 - `buildExtractionCfg` 实为所有结构化小调用共用的 cfg 构造器，迁至 `src/domain/rules/prompt/structuredCallCfg.js` 存续（名称未改，供记忆召回/前哨听意/锻造设计等使用）。
 - 单调用 JSON 模式（extractionEnabled=false，CLI 回放默认）不受本工单影响，parseResponse 链路留待 WO-16。
+- **已知过渡能力缺口（判官管线 inactive 的双调用回合零落账，待 WO-17+ 补宿主）**：判官未激活（judgePipelineEnabled 关闭、或回合不合格）且双调用叙事模式下，以下通道当前没有裁决者——①雪豹挠痒/喂食的 quest flag 授予；②拾取奖励入包（pickupJudgment 无消费）；③群组搭话的 respondedNpcs 熟人登记；④memory 当日摘要与新 NPC 传闻注册（mentionedNewNpcs）。这不是功能完整替换，是删除旧提取层的明示过渡代价：web 端判官默认开，自由行动回合由 facts/SEAL 承接大部分；CLI 已默认单调用规避。补宿主方向属 WO-17/18/22/24。
 - **appease 窄过渡补洞**：赔罪在 feature 层无前置硬结算，软结算删除后无人裁消气。双调用模式补窄结构化小调用 `turn.appease`（非软结算复活、不可扩展注册表）：AI 只三选一（奏效/未奏效/无法判断），奏效由系统钉死注入 `生气解除=true`+`好感度+3` 走既有 mvu 消费链；未奏效/无法判断零写入；settle 判官闸门不受影响、其余 settle 类型不触发；单调用模式不调（主模型 MVU 尾巴仍处理），WO-16 统一清。
 - CLI 回归集适配结果：全部 CLI fixture 录制于单调用模式（`extractionEnabled:false`），本来就绕开被删链路；`softSettleEnabled` 开关已随通道删除（设置 UI、apiConfig 默认值、CLI 参数同步移除），3494 项测试全绿、零跳过。
 

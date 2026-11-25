@@ -23,13 +23,14 @@ function makeDeps(overrides = {}) {
     time: 1, getTimeStr: () => "卯时",
     hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
     visibleNpcsCount: 1, npcLoreBlockWithQuest: "",
+    isSettle: true, settleKind: "appease", settleNpc: "八云",
     ...overrides,
   };
 }
 
 describe("turn.appease 窄过渡补洞", () => {
   it("奏效：注入生气解除+好感+3 mvu，只注入一次", async () => {
-    const ai = createMockAi(["正文叙事", '{"choice":"奏效"}']);
+    const ai = createMockAi(['{"choice":"奏效"}', "正文叙事"]);
     const deps = makeDeps();
     deps.ai = ai;
     const turn = await runTurn(deps, "八云，上次是我不对，给你赔不是了", { settle: true, settleKind: "appease", settleNpc: "八云" });
@@ -42,11 +43,39 @@ describe("turn.appease 窄过渡补洞", () => {
 
   it("未奏效/无法判断：零写入", async () => {
     for (const choice of ["未奏效", "无法判断"]) {
-      const ai = createMockAi(["正文叙事", JSON.stringify({ choice })]);
+      const ai = createMockAi([JSON.stringify({ choice }), "正文叙事"]);
       const d = makeDeps(); d.ai = ai;
       const turn = await runTurn(d, "随便啦", { settle: true, settleKind: "appease", settleNpc: "八云" });
       expect(turn.mvuCommands).toEqual([]);
     }
+  });
+
+  it("原话 attempt 优先于模板 cmd 进入仲裁材料", async () => {
+    const base = createMockAi(['{"choice":"奏效"}', "正文叙事"]);
+    const ai = { chat: vi.fn(base.chat) };
+    const d = makeDeps(); d.ai = ai;
+    await runTurn(d, "（你向八云赔罪）", { settle: true, settleKind: "appease", settleNpc: "八云", attempt: "上次偷你东西是我不对，这袋青稞赔你" });
+    const appeaseCall = ai.chat.mock.calls.find(c => JSON.stringify(c[0]).includes("消了气") || JSON.stringify(c[1] || {}).includes("消了气") || JSON.stringify(c).includes("赔罪"));
+    expect(appeaseCall).toBeTruthy();
+    expect(JSON.stringify(appeaseCall)).toContain("上次偷你东西是我不对，这袋青稞赔你");
+  });
+
+  it("无 attempt 时退回 cmd 文本", async () => {
+    const base = createMockAi(['{"choice":"奏效"}', "正文叙事"]);
+    const ai = { chat: vi.fn(base.chat) };
+    const d = makeDeps(); d.ai = ai;
+    await runTurn(d, "八云我真的错了", { settle: true, settleKind: "appease", settleNpc: "八云" });
+    expect(JSON.stringify(ai.chat.mock.calls)).toContain("八云我真的错了");
+  });
+
+  it("奏效叙事注入：正文 prompt 含系统已裁定措辞", async () => {
+    const base = createMockAi(['{"choice":"奏效"}', "正文叙事"]);
+    const ai = { chat: vi.fn(base.chat) };
+    const d = makeDeps(); d.ai = ai;
+    await runTurn(d, "赔罪", { settle: true, settleKind: "appease", settleNpc: "八云" });
+    // 第二次调用（主叙事）的 system/messages 里必须带裁定铁律
+    const mainCall = ai.chat.mock.calls.at(-1);
+    expect(JSON.stringify(mainCall)).toContain("这次真的消了气");
   });
 
   it("gift settle 不触发 appease 仲裁", async () => {

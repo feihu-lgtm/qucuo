@@ -60,6 +60,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
+      appeaseVerdict: d.appeaseVerdict || null,
       snowLeopardGift: d.settleKind === "gift" && d.settleNpc === "雪豹" && !!d.snowLeopardContext,
       giftInfo: d.giftInfo || null,
       settleBeast: !!d.settleBeast,

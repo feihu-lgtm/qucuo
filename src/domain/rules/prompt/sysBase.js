@@ -117,6 +117,13 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授并结师徒名分（好感门槛、束脩、招式均由系统结算完毕，为既成事实）。本轮唯一走向：必写其郑重传授功夫、态度较前更亲近；禁写勉强、敷衍、留一手或临时反悔。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
     }
     if (o.settleKind === "appease") {
+      // WO-15 窄过渡：双调用模式开庭前已由 turn.appease 裁定，正文必须与裁定同向。
+      if (o.appeaseVerdict?.choice === "奏效") {
+        return `\n【怒气缓和·系统已裁定】${o.settleNpc}这次真的消了气。本轮必须照此写：怒气消解、态度回暖，禁写成仍在气头或敷衍不应。`;
+      }
+      if (o.appeaseVerdict && o.appeaseVerdict.choice !== "奏效") {
+        return `\n【怒气缓和·系统已裁定】${o.settleNpc}这次没有消气。本轮必须照此写：怒气未消、反应冷淡或仍然戒备，禁把和解写成既成事实。`;
+      }
       return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，本轮为新缓和尝试。结合此前方式，判断言行是否真诚、得体且切中要害：有效才写怒气消解，无效保持不满，禁把和解写成既成事实。`
         + (o.giftInfo?.weight ? giftWeight("本次赠礼分量：@{赠礼.分量}。分量不等于已经消气。") : "");
     }
