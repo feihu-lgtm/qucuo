@@ -68,8 +68,9 @@ describe("WO-22B-P4a pactLetterView", () => {
 
   it("severityGuide 品阶梯：底层/紫袍/橙红袍+刚烈附加", () => {
     expect(severityGuideOf({ levelCap: 1 })).toBe("以试探为主，话留三分");
-    expect(severityGuideOf({ levelCap: 4 })).toBe("冷峻，给出最后期限");
-    expect(severityGuideOf({ levelCap: 5 })).toBe("可以宣告断交或追究");
+    expect(severityGuideOf({ levelCap: 3 })).toBe("冷峻，给出最后期限"); // 紫=3
+    expect(severityGuideOf({ levelCap: 4 })).toBe("可以宣告断交或追究"); // 橙=4
+    expect(severityGuideOf({ levelCap: 5 })).toBe("可以宣告断交或追究"); // 红=5
     expect(severityGuideOf({ levelCap: 2, personality: "性烈如火" })).toContain("后果写明");
     expect(severityGuideOf({})).toBe("以试探为主，话留三分"); // 裸壳不炸
   });
@@ -87,6 +88,29 @@ describe("WO-22B-P4a pactLetterView", () => {
     expect(view.reasonLabel).toBe("立诺留凭");
     expect(view.deadlineText).toBe("限 24 个时辰为期");
     expect(view.rewardText).toBe("当时未明说");
+  });
+});
+
+describe("WO-22B-P4a 复审修复钉测试", () => {
+  it("契约信 fallback 给催问句不给闲谈", async () => {
+    const { inboundFallbackLine } = await import("./inbound.js");
+    const state = makeState();
+    const letter = pactLetter();
+    const line = inboundFallbackLine(state, letter, () => 0);
+    expect(line).toContain("三日内送还猎刀");
+    expect(line).toContain("期限已过");
+    expect(line).not.toContain("别来无恙");
+    // 非契约信不受影响
+    const plain = inboundFallbackLine(state, { id: "x", npcName: "才旦" }, () => 0);
+    expect(plain).not.toContain("期限已过");
+  });
+
+  it("findNpcObject 导入角色兜底：品阶不丢", async () => {
+    const { findNpcObject } = await import("./inbound.js");
+    const state = makeState();
+    const registry = { getImportedNpc: (name) => (name === "导入侠客" ? { name, levelCap: 5, personality: "沉稳" } : null) };
+    expect(findNpcObject(state, "导入侠客", registry).levelCap).toBe(5);
+    expect(findNpcObject(state, "陌生人", registry)).toEqual({ name: "陌生人" });
   });
 });
 

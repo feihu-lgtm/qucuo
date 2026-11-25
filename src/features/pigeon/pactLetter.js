@@ -10,12 +10,12 @@ function isFierce(npc) {
   return /刚烈|烈性|火暴|暴躁|性烈/.test(`${npc?.personality || ""}${npc?.brief || ""}`);
 }
 
-// 品阶口吻梯：levelCap 即品阶（QUALITIES 白绿蓝紫橙红序）——
-// 紫袍=4、橙红袍>=5，其余按底层弟子论。手册只给这三档，不多编。
+// 品阶口吻梯：levelCap 即品阶，0-5 对应白绿蓝紫橙红（npcStats.getTierPower：
+// 白5 绿23 蓝41 紫59 橙77 红95）——紫袍=3、橙红袍>=4，其余按底层弟子论。
 export function severityGuideOf(npc) {
   const tier = Number.isFinite(npc?.levelCap) ? npc.levelCap : 0;
-  let guide = tier >= 5 ? "可以宣告断交或追究"
-    : tier >= 4 ? "冷峻，给出最后期限"
+  let guide = tier >= 4 ? "可以宣告断交或追究"
+    : tier >= 3 ? "冷峻，给出最后期限"
     : "以试探为主，话留三分";
   if (isFierce(npc)) guide += "；此人刚烈，话说得直，后果写明";
   return guide;

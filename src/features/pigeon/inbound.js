@@ -36,12 +36,14 @@ export const LETTER_TUNE = {
 const 世界信箱 = (previous) => previous?.世界 || {};
 
 // 名字 → 数据条目：在场名单 → 常驻人物表 → 地宫冒险者池；查不到给 {name} 裸壳。
-export function findNpcObject(state, npcName) {
+export function findNpcObject(state, npcName, importedRegistry = null) {
+  const imported = importedRegistry?.getImportedNpc?.(npcName) || null;
   return (state.room?.npcs || []).find((npc) => npc.name === npcName)
     || Object.values(RESIDENT_NPCS).flat().find((npc) => npc.name === npcName)
     || ADVENTURER_BY_NAME[npcName]
     || ADVENTURER_IP_BY_NAME[npcName]
     || NPC_POOL.find((npc) => npc.name === npcName) // 游走池兜底：行脚僧等不在驻场表的 NPC 也有品阶/性情，否则裸壳 levelCap 缺失永远压不出斥责信
+    || imported // 导入角色兜底（复审）：高品阶导入 NPC 不在上述任何表，裸壳会丢斥责信
     || { name: npcName };
 }
 
@@ -122,6 +124,14 @@ const FALLBACK = {
 };
 
 export function inboundFallbackLine(state, letter, rng = Math.random) {
+  // WO-22B-P4a 复审：契约信 AI 失败/空白时不得落闲谈兜底——违约后收到
+  // 「别来无恙」比没有信更穿帮。按 pactMeta 给确定性的催问句，点名原约。
+  if (letter?.pactMeta?.reason) {
+    const promise = String(letter.pactMeta.promise || "").trim();
+    return promise
+      ? `你我之约「${promise.slice(0, 20)}」，期限已过。这笔账我记着，你好自为之。`
+      : "你我之约期限已过。这笔账我记着，你好自为之。";
+  }
   const name = letter.npcName;
   const attrs = state.varTree?.角色?.[name] || {};
   const npc = findNpcObject(state, name);

@@ -24,7 +24,7 @@ function isFierce(npc) {
 }
 
 // 扫一遍契约账，产出 { changes, logs } 或 null。纯函数：不掷骰、不读时钟、不调 AI。
-export function scanPactBreaches(state) {
+export function scanPactBreaches(state, { importedRegistry = null } = {}) {
   const pacts = state.varTree?.世界?.契约;
   if (!pacts || typeof pacts !== "object") return null;
   const now = state.time || 0;
@@ -47,7 +47,7 @@ export function scanPactBreaches(state) {
   const ledgerPatchOps = [];
   const logs = [];
   for (const { npcName, pactKey, pact } of due) {
-    const npc = findNpcObject(state, npcName);
+    const npc = findNpcObject(state, npcName, importedRegistry);
     const rawEntry = createHeartLedgerEntry({
       tag: "怨",
       summary: `逾期未践「${String(pact.promise).slice(0, 20)}」之约`,
@@ -128,8 +128,8 @@ export function scanPactBreaches(state) {
 export const pactWatchRule = {
   id: "pact.watch",
   deps: (state) => [Math.floor((state.time || 0) / 2), state.varTree?.世界?.契约],
-  run(state, { firstRun } = {}) {
+  run(state, { firstRun, importedRegistry } = {}) {
     if (firstRun) return null;
-    return scanPactBreaches(state);
+    return scanPactBreaches(state, { importedRegistry });
   },
 };
