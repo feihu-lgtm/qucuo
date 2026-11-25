@@ -198,6 +198,27 @@ export function materializeFacts(state, facts, compiledWarrants) {
 
       // ── 4. BESTOW_SKILL：入 skills + 同路数 active 槽位 ──
       case "BESTOW_SKILL": {
+        // WO-16F-F4b 直签转写：fact.skills 数组（feature 门规已确定的招式目录快照）
+        // 逐条直落，幂等已习得跳过——不走天机券编译lookup。
+        if (Array.isArray(fact.skills) && fact.skills.length) {
+          for (const raw of fact.skills) {
+            if (!raw || typeof raw !== "object" || !raw.name) continue;
+            // 只按 id 幂等（Review 修）：tryLearnFromMaster 按 move id 定价——同名异 id
+            // 的招 legacy 也照收照授（重复条目），若此处按名跳过会出现「花了钱没学到」；
+            // 同 id 跳过足够保证同一事实重放幂等。
+            if (raw.id ? skills.some((sk) => sk.id === raw.id) : skills.some((sk) => sk.name === raw.name)) continue;
+            const entry = { ...raw };
+            if (entry.active) {
+              const routeKey = entry.moveType || entry.type;
+              skills = skills.map((sk) => (sk.active && (sk.moveType || sk.type) === routeKey ? { ...sk, active: false } : sk));
+            }
+            skills.push(entry);
+            skillsDirty = true;
+            receipts.push({ kind: "bestow_skill", factId: fact.id || "", skill: { ...entry } });
+            logs.push({ t: "skill", text: `  习得武学 ${entry.name}${entry.quality ? `（${entry.quality}）` : ""}` });
+          }
+          break;
+        }
         let skill = lookupCompiled(compiledWarrants, fact);
         if (!skill) {
           if (!fact.skillName) { logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id} 无武学可授（缺编译产物与武学名）` }); break; }

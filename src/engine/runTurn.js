@@ -220,7 +220,10 @@ async function runTurnSteps(ctx, cmd, opts) {
   // WO-16F-F4a：普通送礼 settle 进判官——giftNpc 判官链下 defer（不前置扣物/写好感）
   // 才带 giftRequest；任务交付/雪豹/草药/信物/生气/送银 settle 不带此键，仍排除在外。
   const isGiftSettle = !!isSettle && opts.settleKind === "gift" && !!opts.settleNpc && !!opts.giftRequest;
-  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && (!isSettle || isAppeaseSettle || isGiftSettle) && !isGroupTalk) {
+  // WO-16F-F4b：按钮求教 settle 进判官——learnNpcSkill 判官链下 defer（不前置扣银/加技能/
+  // 写好感）才带 learnRequest；门规不过/束脩不足/legacy/特殊通道 settle 不带此键，仍排除。
+  const isLearnSettle = !!isSettle && opts.settleKind === "learn_skill" && !!opts.settleNpc && !!opts.learnRequest;
+  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && (!isSettle || isAppeaseSettle || isGiftSettle || isLearnSettle) && !isGroupTalk) {
     try {
       const visibleNpcs = visibleNpcsPre;
       // B1 任务推进候选：只能由系统 helper 现场生成——小模型挑候选、
@@ -262,6 +265,18 @@ async function runTurnSteps(ctx, cmd, opts) {
             kind: "appease", target: appeaseNpcName, itemId: "", direction: "none",
             stance: inferAppeaseStance(attemptText, opts.giftInfo || null),
             text: cmd,
+          }],
+          proposals: [],
+        };
+      } else if (isLearnSettle) {
+        // WO-16F-F4b：learn settle 本地合成听意单——learnRequest 载荷随 action 直送
+        // judgeTurn「直签转写」路径（门规/束脩 feature 已裁，不二次掷骰），不调 intake AI。
+        const learnNpcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
+        intakeResult = {
+          read: "", refIds: [],
+          actions: [{
+            kind: "learn", target: learnNpcName, itemId: "", direction: "none",
+            stance: "casual", text: cmd, learnRequest: opts.learnRequest,
           }],
           proposals: [],
         };
@@ -312,7 +327,7 @@ async function runTurnSteps(ctx, cmd, opts) {
         inv: deps.inv || [], entries: [],
         // WO-16F-F3：appease settle 听证不算纯搭话——否则 talkOnly 白名单会把
         // appease 动作整条拦掉，判官路空转、旧仲裁又已被跳过（零裁决穿帮）。
-        talkOnly: (isAppeaseSettle || isGiftSettle) ? false : isTalk,
+        talkOnly: (isAppeaseSettle || isGiftSettle || isLearnSettle) ? false : isTalk,
         // WO-16F-F1：steal/free_act 检定与伤损/破费定量要读玩家属性与气血银两。
         char: liveNow.char || deps.char || {},
         containers: containerView,

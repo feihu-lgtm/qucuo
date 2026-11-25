@@ -117,6 +117,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行，非临时起意。本轮唯一走向：必写其毫不保留、爽快应下并定下同行情谊，${speech}；禁写犹豫、观望、抗拒或需再三哄劝。`;
     }
     if (o.settleKind === "learn_skill") {
+      // WO-16F-F4b：判官路（judgeActive）不得预设「系统已结算完毕」——授业方向以
+      // 判官定案单（judgeRuleBlock 注入）为唯一口径，这里再说既成事实会与定案打架。
+      if (o.judgeActive) return "";
       return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授并结师徒名分（好感门槛、束脩、招式均由系统结算完毕，为既成事实）。本轮唯一走向：必写其郑重传授功夫、态度较前更亲近；禁写勉强、敷衍、留一手或临时反悔。${o.learnInfo?.beast ? "它不能说话（cannotSpeak），全程不出人言，传艺全靠动作示范、以身作则、眼神示意——把招式拆给主角看，让主角跟着比划，错了便用鼻尖或前爪顶正。" : ""}`;
     }
     if (o.settleKind === "appease") {
