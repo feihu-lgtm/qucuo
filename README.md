@@ -151,13 +151,7 @@ npx vitest run    # 跑测试（纯函数/数据层回归，498 条）
 ### 使用 Vertex AI
 
 - **网页**：打开「设置」→「API 配置」→「服务商」选「Vertex AI」，在「导入 ADC JSON」选择你的本地文件。确认「项目 ID」（默认取用户凭证的 `quota_project_id` 或服务账号的 `project_id`）和「位置」（默认 `global`）。可选「Vertex 预设模型」（默认 `google/gemini-3.8-flash`），也可直接编辑「模型名称」。关闭设置，开始或加载游戏，在输入框输入「探索石阶」并发送。
-- **CLI**：在项目目录执行下面的命令。输入「探索石阶」并回车，再输入 `:state` 查看回合结果，按 Ctrl+D 退出。需要覆盖项目或位置时，可加 `--project 项目ID` 或 `--location us-central1`。
-
-```bash
-GOOGLE_APPLICATION_CREDENTIALS="/你的路径/adc.json" npm run cli -- --ai vertex --model google/gemini-3.8-flash
-```
-
-CLI 默认关闭回合记账以保持脚本 / mock 回复顺序；需要启用时添加 `--bookkeep`。
+- **CLI**：已退役（原 `cli/` 入口与 `tests/cli/` 回放 fixture 已移除，游玩与测试统一走 Web / E2E）。
 
 Vertex 预设模型（按设置中的顺序）：
 

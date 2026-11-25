@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { createCliPromptContext, createSession } from "../../../cli/runner.mjs";
 import { buildPresence, buildNpcContext, buildQuestStageNote, buildForcedEventNote, buildArrivalNote, createPromptContext, assemblePrompt } from "./index.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { getDistrictAnchor } from "../../domain/rules/map/innerMap.js";
@@ -9,7 +8,6 @@ import { emptyBodyProfile } from "../../domain/rules/character/bodyProfile.js";
 import { initialNarratorState } from "../../domain/rules/narrator/narrator.js";
 import { defaultConfig } from "../../infra/apiConfig.js";
 import { classifyIntent } from "../../domain/rules/prompt/inputIntent.js";
-import { gameActions } from "../../store/gameStore.js";
 import { createMockAi } from "../ports/ai.js";
 import { COMPANION_LORE } from "../../domain/rules/companion/companion.js";
 import { getCompanionDescForm } from "../../domain/rules/companion/companionForms.js";
@@ -170,50 +168,29 @@ describe("pure prompt builders", () => {
   });
 });
 
-it("assembles byte-identical complete prompts through web and CLI wiring, including lore and reunions", async () => {
+it("assembles complete prompts through web wiring, including lore and reunions", async () => {
   const state = fixture();
   const cmd = "你好";
   const apiCfg = { ...defaultConfig(), extractionEnabled: false, streamEnabled: false };
   const explicit = { apiCfg, intent: classifyIntent(cmd), importedNpcLore: [{ name: "故人", entry: "导入旧事" }] };
   const web = createPromptContext(state, explicit);
-  const cli = createCliPromptContext(state, explicit);
   const mainConvo = [...state.convo, { role: "user", content: cmd }];
-  const assemble = prompt => assemblePrompt({ prompt }, cmd, {}, state.convo, mainConvo, "", mainConvo);
-  expect(assemble(web)).toEqual(assemble(cli));
-  expect(assemble(web).npcLoreBlockWithQuest).toContain("导入旧事");
-  expect(assemble(web).reunionBlock).toContain("300回合");
-  const capture = async prompt => {
-    let request;
-    const ai = createMockAi(["{}"], { onRequest: (messages, opts) => { request = { messages, systemPrompt: opts.systemPrompt }; } });
-    await callMainOnce(null, false, {
-      ...assemble(prompt), varTree: state.varTree, gm: false, isSettle: false, isTalk: false,
-      intent: explicit.intent, apiCfg, narrator: initialNarratorState(), scenario: state.preset.scenario,
-      charName: state.char.name, charBodyProfile: emptyBodyProfile(), convo: state.convo,
-      nsfwOn: false, ai, addLog: () => {}, setLog: () => {},
-    });
-    return request;
-  };
-  expect(await capture(web)).toEqual(await capture(cli));
-  const webSource = readFileSync(new URL("../turn/turnContext.js", import.meta.url), "utf8");
-  expect(webSource).toContain("prompt: createPromptContext({");
-});
-
-it("injects lore and reunion notes in an actual CLI request", async () => {
-  const requests = [];
-  const session = createSession({
-    out: () => {}, seed: 42,
-    ai: createMockAi(['{"output":"故人颔首。"}'], { onRequest: (messages, opts) => requests.push({ messages, systemPrompt: opts.systemPrompt }) }),
+  const assembled = assemblePrompt({ prompt: web }, cmd, {}, state.convo, mainConvo, "", mainConvo);
+  expect(assembled.npcLoreBlockWithQuest).toContain("导入旧事");
+  expect(assembled.reunionBlock).toContain("300回合");
+  let request;
+  const ai = createMockAi(["{}"], { onRequest: (messages, opts) => { request = { messages, systemPrompt: opts.systemPrompt }; } });
+  await callMainOnce(null, false, {
+    ...assembled, varTree: state.varTree, gm: false, isSettle: false, isTalk: false,
+    intent: explicit.intent, apiCfg, narrator: initialNarratorState(), scenario: state.preset.scenario,
+    charName: state.char.name, charBodyProfile: emptyBodyProfile(), convo: state.convo,
+    nsfwOn: false, ai, addLog: () => {}, setLog: () => {},
   });
-  await session.runLine(":new");
-  const state = fixture();
-  gameActions.setRoom(state.room);
-  gameActions.setVarTreeState(state.varTree);
-  gameActions.setTime(state.time);
-  gameActions.setPreset(state.preset);
-  await session.runLine("你好");
-  const text = JSON.stringify(requests);
+  const text = JSON.stringify(request);
   expect(text).toContain("旧时的朋友");
   expect(text).toContain("300回合");
+  const webSource = readFileSync(new URL("../turn/turnContext.js", import.meta.url), "utf8");
+  expect(webSource).toContain("prompt: createPromptContext({");
 });
 
 it("handles absent prompt wiring and rejects incomplete required state", () => {

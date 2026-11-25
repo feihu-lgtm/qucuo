@@ -62,6 +62,9 @@ const ENTRY_WHITELIST = new Set([
   // WO-17 原文段落库：增量层先落库不接主链路（调度批准），WO-18 写挂检索接线后摘掉。
   "domain/rules/memory/proseChunker.js",
   "infra/proseStore.js",
+  // 势力冲突/NPC 自动对战纯领域规则（原由 cli/npc-conflict.mjs 调用），CLI 退役后保留领域实现待 web 接线。
+  "domain/rules/conflict/npcAutoBattle.js",
+  "domain/rules/conflict/tension.js",
 ]);
 
 function walkSource(dir, out = []) {
@@ -105,7 +108,7 @@ describe("src 下没有零入度的死文件", () => {
   it("import 图零入度且不在入口白名单 → 报出来", () => {
     const files = walkSource(SRC_DIR).map((f) => resolve(f));
     const srcFiles = new Set(files);
-    const importers = [...files, ...walkSource("cli").map((f) => resolve(f))];
+    const importers = files;
     const rel = (f) => relative(resolve(SRC_DIR), f);
     const deps = new Map(importers.map((f) => [f, new Set()]));
     for (const f of importers) {
