@@ -94,6 +94,14 @@ export async function countProseChunks() {
 // 拿不准就留空字符串——不编造）。
 // 幂等口径：不设 proseMigrated 状态旗——同一存档再迁一遍产出完全相同的
 // 确定性 chunk id，put 自然覆盖，不重复增生；少一个状态源就不会半死。
+// 稳定内容 hash（非加密）：同内容重迁幂等同 id，异内容/异存档不撞。
+function contentHash(text) {
+  let h = 5381;
+  const str = String(text || "");
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
 export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [], branchId = "", seqStart = 1 } = {}) {
   if (!saveSnapshot || typeof saveSnapshot !== "object") return [];
   const chunks = [];
@@ -148,6 +156,12 @@ export function migrateLegacyConvoAndNotes(saveSnapshot, { notes = [], branchId 
   }
   // 谱系补挂：迁移进根分支的 chunk 必须带 branchId/seq（检索可见性硬口径）。
   // seq 从 seqStart 顺序递增——同一存档输入顺序确定，幂等键仍是确定性 id+put 覆盖。
+  // 确定性 id 改用内容 hash：同内容重迁幂等（put 覆盖自身），
+  // 异内容/异存档/异时间线同 turn 同位置不再撞 id 互覆。branchId 不进 id——
+  // 根分支 id 是随机的，进 id 会让旧档重复迁移增生副本。
+  for (const c of chunks) {
+    c.id = `P${c.turn}_m${contentHash(c.rawText + "|" + c.turn + "|" + (c.location || ""))}`;
+  }
   if (branchId) {
     let seq = seqStart - 1;
     for (const c of chunks) {

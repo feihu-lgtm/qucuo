@@ -21,14 +21,26 @@ export { addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLe
 // 原文段落召回（ports 层编排：infra 读库 + domain 纯函数打分/连带）。
 // viewer 是查询视角人物名——witnesses 硬过滤以它为准；不传只看公共段。
 // 失败/空库一律降级为空数组，绝不阻断回合。
-export async function recallProse({ queryText, viewer, topK = 5, epoch, currentTurn, lineage } = {}) {
+export async function recallProse({ queryText, viewer, topK = 5, epoch, currentTurn, lineage, unscoped = false } = {}) {
   try {
-    const all = await getAllProseChunks();
-    if (!all.length) return [];
+    // 按谱系分支逐支索引取段（branchId 索引），不全库扫。
+    // 运行时无 lineage 宁可无召回——跨时间线串味比没回忆更糟；
+    // unscoped 是测试专用宽松路径（全库扫描），必须显式 opt-in。
+    let pool;
+    if (Array.isArray(lineage) && lineage.length) {
+      const branches = [...new Set(lineage.map((e) => e?.b).filter(Boolean))];
+      const perBranch = await Promise.all(branches.map((b) => getProseChunksByBranch(b)));
+      pool = perBranch.flat();
+    } else if (unscoped) {
+      pool = await getAllProseChunks();
+    } else {
+      return [];
+    }
+    if (!pool.length) return [];
     const scope = { epoch, currentTurn, lineage };
-    const hits = rankProseChunks(all, queryText || "", viewer, scope);
+    const hits = rankProseChunks(pool, queryText || "", viewer, scope);
     if (!hits.length) return [];
-    return expandWithNeighbors(all, hits, { viewer, epoch, currentTurn, lineage }).slice(0, topK);
+    return expandWithNeighbors(pool, hits, { viewer, epoch, currentTurn, lineage }).slice(0, topK);
   } catch (_) {
     return [];
   }
@@ -126,6 +138,7 @@ export async function runFormattedRecall({
   epoch,
   currentTurn,
   lineage,
+  unscoped = false,
 }) {
   // 原文段落召回与向量开关无关：纯本地词法检索，永远跑（失败静默降级空数组）。
   // 查询词 = 玩家输入 + 上下文，专名命中多半在输入里，上下文补场景词。
@@ -136,6 +149,7 @@ export async function runFormattedRecall({
     epoch,
     currentTurn,
     lineage,
+    unscoped,
   });
   if (!embeddingReady(apiCfg)) {
     return formatRecallEntries(null, { recentTexts, header, proseEntries, budgetChars });

@@ -60,7 +60,7 @@ describe("WO-18 原文段落召回混排", () => {
 
   it("recallProse 词法命中+邻段连带+witnesses 硬过滤", async () => {
     await seed();
-    const out = await recallProse({ queryText: "赫连铸的短剑", viewer: "主角" });
+    const out = await recallProse({ queryText: "赫连铸的短剑", viewer: "主角", unscoped: true });
     expect(out.length).toBeGreaterThan(0);
     expect(out[0].text).toContain("短剑");
     // 邻段 P5_2 连带合并
@@ -71,13 +71,13 @@ describe("WO-18 原文段落召回混排", () => {
 
   it("慕轻烟视角能看到密谋段", async () => {
     await seed();
-    const out = await recallProse({ queryText: "劫镖", viewer: "慕轻烟" });
+    const out = await recallProse({ queryText: "劫镖", viewer: "慕轻烟", unscoped: true });
     expect(out.flatMap((e) => e.ids)).toContain("P7_1");
   });
 
   it("未开向量开关也有段落场记板（runFormattedRecall 无 embedding 不空）", async () => {
     await seed();
-    const r = await runFormattedRecall({ apiCfg: {}, queryText: "赫连铸", viewer: "主角" });
+    const r = await runFormattedRecall({ apiCfg: {}, queryText: "赫连铸", viewer: "主角", unscoped: true });
     expect(r.recallBlock).toContain("短剑");
     expect(r.recallBlock).toContain("〔第5回合·");
   });
@@ -85,13 +85,13 @@ describe("WO-18 原文段落召回混排", () => {
   it("近期窗口已出现的原文不再重复入场", async () => {
     await seed();
     const dup = "赫连铸把短剑递给你，说此剑染过血。";
-    const r = await runFormattedRecall({ apiCfg: {}, queryText: "赫连铸", viewer: "主角", recentTexts: [dup] });
+    const r = await runFormattedRecall({ apiCfg: {}, queryText: "赫连铸", viewer: "主角", unscoped: true, recentTexts: [dup] });
     expect(r.recallBlock).not.toContain("短剑");
   });
 
   it("超预算时 weak 项退单行、长文块收缩", async () => {
     await seed();
-    const r = await runFormattedRecall({ apiCfg: {}, queryText: "赫连铸", viewer: "主角", budgetChars: 10 });
+    const r = await runFormattedRecall({ apiCfg: {}, queryText: "赫连铸", viewer: "主角", unscoped: true, budgetChars: 10 });
     // 预算极小：最多只剩收缩后的首段，且整体行数受限
     expect(r.recallBlock.length).toBeLessThan(200);
   });
@@ -110,27 +110,27 @@ describe("WO-18 复审补测——时间线隔离/格式/见证标签", () => {
 
   it("saveEpoch 过滤暂停期：带 epoch 字段的段落仍按 witnesses/回合可见（等裁决）", async () => {
     await seedEpoch();
-    const out = await recallProse({ queryText: "铸剑", viewer: "主角", epoch: 2, currentTurn: 10 });
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", epoch: 2, currentTurn: 10, unscoped: true });
     const texts = out.map((e) => e.text).join("\n");
     expect(texts).toContain("铸剑");
   });
 
   it("未来回合段落不可见（防剧透）", async () => {
     await seedEpoch();
-    const out = await recallProse({ queryText: "铸剑", viewer: "主角", epoch: 2, currentTurn: 6 });
+    const out = await recallProse({ queryText: "铸剑", viewer: "主角", epoch: 2, currentTurn: 6, unscoped: true });
     expect(out.map((e) => e.text).join("\n")).not.toContain("剧透");
   });
 
   it("刻骨戳+众人皆知标签上场记板", async () => {
     await seedEpoch();
-    const r = await runFormattedRecall({ apiCfg: {}, queryText: "剧透", viewer: "主角", epoch: 2, currentTurn: 10 });
+    const r = await runFormattedRecall({ apiCfg: {}, queryText: "剧透", viewer: "主角", epoch: 2, currentTurn: 10, unscoped: true });
     expect(r.recallBlock).toContain("〔刻骨〕");
     expect(r.recallBlock).toContain("众人皆知");
   });
 
   it("超预算弱相关退单行带「往事索引」前缀", async () => {
     await seedEpoch();
-    const r = await runFormattedRecall({ apiCfg: {}, queryText: "铸剑", viewer: "主角", epoch: 2, currentTurn: 10, budgetChars: 10 });
+    const r = await runFormattedRecall({ apiCfg: {}, queryText: "铸剑", viewer: "主角", epoch: 2, currentTurn: 10, unscoped: true, budgetChars: 10 });
     // 极小预算下块被收缩/丢弃，验证不炸且长度受限即可（单行索引属纸条侧语义）
     expect(r.recallBlock.length).toBeLessThan(300);
   });

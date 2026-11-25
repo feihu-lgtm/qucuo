@@ -32,13 +32,14 @@ export function ensureProseLineage(state) {
 }
 
 // 分叉：把头分支截断到 atTurn（含），接新头。返回 { proseLineage, proseSeq:0 }。
-// 幂等保护：头分支 upTo 已经 <= atTurn 说明已经叉过，原样返回。
-export function forkLineage(lineage, atTurn) {
+// upToSeq：同回合边界——搭话回合 time 不递增，被撤正文与快照点同 turn，
+// 仅靠 turn 判不出未来；upToSeq 记录截断点已分配的最大 seq。
+export function forkLineage(lineage, atTurn, upToSeq) {
   const head = headBranch(lineage);
   if (!head) return ensureProseLineage({ proseLineage: lineage });
   if (head.upTo !== null) return { proseLineage: lineage, proseSeq: 0 }; // 无头状态异常，不写
   const idx = lineage.indexOf(head);
-  const truncated = { ...head, upTo: atTurn };
+  const truncated = { ...head, upTo: atTurn, ...(Number.isFinite(upToSeq) ? { upToSeq } : {}) };
   const fork = { b: newBranchId(), upTo: null };
   const next = [...lineage];
   next[idx] = truncated;
@@ -60,5 +61,12 @@ export function branchVisible(chunk, lineage, currentTurn) {
   if (branch.upTo === null) {
     return Number.isFinite(currentTurn) ? turn <= currentTurn : true;
   }
-  return turn <= branch.upTo;
+  // 非头分支：turn < upTo 恒可见；turn === upTo 时要过 seq 边界（搭话不增 time
+  // 的同回合里，seq 才是先后）。无 upToSeq 的老数据按 turn<=upTo 兼容。
+  if (turn < branch.upTo) return true;
+  if (turn > branch.upTo) return false;
+  if (Number.isFinite(branch.upToSeq) && Number.isFinite(chunk?.seq)) {
+    return chunk.seq <= branch.upToSeq;
+  }
+  return true;
 }

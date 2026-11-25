@@ -79,12 +79,17 @@ export function ensureProseLineageInStore() {
 }
 
 // 迁移占用 seq 记账 + 分叉写回（reconcile 用）
-export function writeProseSeq(value) {
-  gameActions.setProseSeq(value);
+// 只升不降的 seq 水位合并：迁移记账时玩家可能已写新段，无条件覆盖会把
+// allocator 回退造成撞号——只能取 max。
+export function mergeProseSeqFloor(floor) {
+  const cur = gameStore.getState().proseSeq;
+  const next = Math.max(Number.isFinite(cur) ? cur : 0, Number.isFinite(floor) ? floor : 0);
+  gameActions.setProseSeq(next);
+  return next;
 }
-export function applyProseLineageFork(atTurn) {
+export function applyProseLineageFork(atTurn, upToSeq) {
   const cur = gameStore.getState().proseLineage;
-  const forked = forkLineage(cur, atTurn);
+  const forked = forkLineage(cur, atTurn, upToSeq);
   gameActions.setProseLineage(forked.proseLineage);
   gameActions.setProseSeq(0);
   return forked.proseLineage;

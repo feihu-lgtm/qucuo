@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useInitialRestore } from "./useAutosave.js";
 import { buildInitialGameState } from "../../engine/newGame.js";
-import { initGameStore } from "../../store/gameStore.js";
+import { initGameStore, getGameEpoch } from "../../store/gameStore.js";
+import { reconcileProseLineageAfterLoad } from "./proseReconcile.js";
 import { OVERLAY, initializeUiOverlays, toggleOverlay } from "../../store/uiStore.js";
 import { attachImportedRegistry } from "../../domain/data/character/characterMilestones.js";
 import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js";
@@ -28,6 +29,16 @@ export function useGameStartup({ initialLoadSlotId, initialOpenSettings }) {
     initGameStore(buildInitialGameState(restored));
     return true;
   });
+  // 启动恢复后的谱系 reconcile：刷新/槽位恢复不经 applySnapshot，但 IndexedDB
+  // 跨刷新持久——上次 autosave 后写的未来段必须在启动时同样按需分叉/迁移。
+  // epoch 用 initGameStore（markGameReplaced）之后的新代次。
+  const reconciledRef = useRef(false);
+  useEffect(() => {
+    if (reconciledRef.current) return;
+    reconciledRef.current = true;
+    void reconcileProseLineageAfterLoad(restored?.snap || {}, { epoch: getGameEpoch() }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return { restored };
 }
 

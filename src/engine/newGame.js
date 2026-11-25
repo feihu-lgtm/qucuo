@@ -89,6 +89,9 @@ export function buildInitialGameState(restored, seed) {
     persuasionProgress: restored?.snap.persuasionProgress || {},
     mapData: restored?.snap.mapData || { [DEFAULT_PRESETS[0].room.name]: { x: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.x ?? 0, y: QUCUO_MAP[DEFAULT_PRESETS[0].room.name]?.y ?? 0 } },
     time: restored?.snap.time ?? 6,
+    // 原文段落谱系随档恢复：缺省 undefined/0，由启动 reconcile/首写 allocator 建根
+    proseLineage: restored?.snap.proseLineage,
+    proseSeq: restored?.snap.proseSeq ?? 0,
     claimedMilestones: new Set(restored?.snap.claimedMilestones || []),
     narrator: restored?.snap.narrator || initialNarratorState(),
     varTree: (() => {

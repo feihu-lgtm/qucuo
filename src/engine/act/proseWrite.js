@@ -29,19 +29,21 @@ export function writeTurnProse(args = {}) {
     // proseSeq，两次同回合写挂（连搭话）不撞号——替代已废弃的 listChunksByTurn
     // 数存量方案（那对 fire-and-forget 并发写入仍会撞）。allocator 缺失的裸
     // 引擎/测试路径降级 legacy id 形状（P<turn>_<seq>，从 1 起）。
-    const probe = splitProseIntoChunks(text, {
+    // 单次切分后按 allocator 结果回填 id/seq/branchId——不重复切两遍。
+    const chunks = splitProseIntoChunks(text, {
       turn, location: location || "", witnesses, anchoredFacts,
       viewerName: playerName || "主角",
     });
-    if (!probe.length) return;
-    const alloc = typeof seqAlloc === "function" ? seqAlloc(probe.length) : null;
-    const branchId = alloc?.branchId || "";
-    const seqOffset = alloc ? alloc.startSeq - 1 : 0;
-    const chunks = splitProseIntoChunks(text, {
-      turn, location: location || "", witnesses, anchoredFacts,
-      viewerName: playerName || "主角", branchId, seqOffset,
-    });
     if (!chunks.length) return;
+    const alloc = typeof seqAlloc === "function" ? seqAlloc(chunks.length) : null;
+    if (alloc?.branchId) {
+      chunks.forEach((c, i) => {
+        const seq = alloc.startSeq + i;
+        c.id = `${alloc.branchId}_${turn}_${seq}`;
+        c.seq = seq;
+        c.branchId = alloc.branchId;
+      });
+    }
     void (async () => {
       // 读档/换存档往往发生在回合结束后的空窗——落库前最后核一次代次；
       // 挡不住毫秒级竞态的全部，但用户驱动的存档切换是秒级动作，这一道足够。
