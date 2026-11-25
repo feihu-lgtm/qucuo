@@ -29,6 +29,7 @@ export function applyPostResult(d, out) {
       convo: d.setConvo, char: d.setChar, skills: d.setSkills, inv: d.setInv,
       dao: d.setDao, exp: d.setExp, pot: d.setPot, flags: d.setFlags,
       gambleNegotiation: d.setGambleNegotiation, pendingQuestBranch: d.setPendingQuestBranch,
+      claimedMilestones: d.setClaimedMilestones,
       gambleSession: d.setGambleSession,
     };
     for (const [key, value] of Object.entries(out.changes)) setters[key]?.(value);

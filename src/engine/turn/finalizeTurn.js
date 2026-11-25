@@ -20,6 +20,8 @@ export async function finalizeTurn({ ctx, trace, turn, turnOpts, soft, opts, set
       // 本轮已确定性结算过的交付件（❢ deliver 通道）：叙事回执的 items_rm
       // 不得再扣——会重复扣件，或把剧情里还回来的 keep 件误删。
       deliveredItems: opts.deliveredItems || null,
+      // WO-13：判官管线 materializeFacts 产物（changes/patches/receipts/logs）经此落盘
+      materialized: turn.judgeEffects?.materialized || null,
       _trace: trace,
     });
     if (soft?.logs?.length) (commitDeps.addLog || ctx.addLog)?.(soft.logs);

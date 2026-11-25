@@ -20,6 +20,7 @@ import { burnIntimateTicket } from "./postCommit/intimateTicket.js";
 import { appendConvo } from "./postCommit/convoAppend.js";
 import { noteRoundCompleted } from "../../features/autosaveScheduler.js";
 import { applyPostResult } from "./postCommit/applyPostResult.js";
+import { commitPatches } from "../../domain/rules/state/applyPatches.js";
 
 // 两阶段 pipeline 的提交段：把本轮解析结果（d.p / d.mvuCommands / d.dealResult）
 // 写回世界状态；提交失败由 playTurn 还原事务快照。
@@ -152,6 +153,27 @@ export function commitRound(d) {
     p: d.p, room: d.room, innerRoomName: d.innerRoomName,
     questProgress: d.questProgress, pendingQuestBranch: d.pendingQuestBranch,
   }));
+  // WO-13 判官管线落账：materializeFacts 的 changes 直写状态切片，
+  // patches 走标准 applyPatches 落到 varTree 等路径，logs 回吐事实短句。
+  if (d.materialized) {
+    // receipts（天机落账卡回执）挂在末条落账日志行上——LogEntry 按日志项
+    // 携带的 receipts 数组渲染 EffectReceiptCard，不挂卡永远不会出现。
+    const factLogs = (d.materialized.logs || []).map((l) => ({ t: l.t || "sys", text: l.text || String(l) }));
+    if (factLogs.length && Array.isArray(d.materialized.receipts) && d.materialized.receipts.length) {
+      factLogs[factLogs.length - 1] = { ...factLogs[factLogs.length - 1], receipts: d.materialized.receipts };
+    } else if (!factLogs.length && Array.isArray(d.materialized.receipts) && d.materialized.receipts.length) {
+      factLogs.push({ t: "sys", text: "  天机落账。", receipts: d.materialized.receipts });
+    }
+    applyPostResult(d, {
+      changes: d.materialized.changes,
+      logs: factLogs,
+    });
+    if ((d.materialized.patches || []).length) {
+      commitPatches({
+        setVarTree: d.setVarTree, setChar: d.setChar, setInv: d.setInv, setFlags: d.setFlags, setCompanionState: d.setCompanionState,
+      }, d.materialized.patches);
+    }
+  }
   applyPostResult(d, emitChoices({ choices: d.p.choices })); // 选项延时浮现
   if (!d.isTalk) d.setTime(t => t + 1);
   applyPostResult(d, writeMemoryNote({ // 小纸条·向量写入

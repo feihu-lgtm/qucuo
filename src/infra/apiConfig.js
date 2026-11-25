@@ -90,6 +90,9 @@ export function defaultConfig() {
     // 小模型按意图提取残余字段；settle 回合跳过提取。关掉则回到单调用 JSON 老路
     //（回放/离线兜底，确定性 fixture 依赖它）。
     extractionEnabled: false,
+    // 判官管线（WO-13）：前哨听意+纯函数判官+锚点流式+尾章校对落账。默认开；
+    // 关掉回到旧提取/单调用链路（留一个迭代供 CLI 老录制回放对比）。
+    judgePipelineEnabled: true,
     // 行动识别默认开：打字与按钮落到同一套系统结算路径；想要原来自由行动的用户可在设置里关。
     intentRecognitionEnabled: true,
     bookkeepEnabled: true,
