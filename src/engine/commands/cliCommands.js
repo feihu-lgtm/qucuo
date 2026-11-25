@@ -5,7 +5,7 @@
 // 由 cli/runner.mjs 注入——本文件不 import store/cli，保持 engine 层不反向依赖。
 import { pickGroundItem, consumeItem } from "../../features/items/logic.js";
 import { comfort, resolveTrauma, confessToNarrator } from "../../features/narrator/logic.js";
-import { switchCompanion } from "../../features/companion/logic.js";
+import { switchCompanion, recallCompanion } from "../../features/companion/logic.js";
 import { meditate, trainNeigong, trainWaigong, breakthroughSkill } from "../../features/cultivation/logic.js";
 import { deposit, withdraw, pledge, redeem } from "../../features/bank/logic.js";
 import { innerMove, outerArrival } from "../../features/map/logic.js";
@@ -108,6 +108,12 @@ export const CLI_COMMANDS = [
     match: /^换队友 (.*)$/,
     parse: (m) => ({ key: m[1].trim() }),
     execute: (ctx, { key }) => ctx.applyFeature(switchCompanion(ctx.state, key === "none" ? null : key)),
+  },
+  {
+    id: "cliNarratorCompanion",
+    match: /^接回 (.*)$/,
+    parse: (m) => ({ key: m[1].trim() }),
+    execute: (ctx, { key }) => ctx.applyFeature(recallCompanion(ctx.state, key)),
   },
   {
     id: "cliInn",
@@ -389,7 +395,7 @@ export const CLI_COMMANDS = [
     parse: (m, line) => ({ line }),
     execute: (ctx, { line }) => {
       if (line === ":help narrator") {
-        ctx.emit("安抚 <verbal|food|medication|hug|kiss> · 收束创伤 · 向旁白告白 · 换队友 <snowLeopard|asuka|none>");
+        ctx.emit("安抚 <verbal|food|medication|hug|kiss> · 收束创伤 · 向旁白告白 · 换队友 <槽位键|none> · 接回 <槽位键>");
         return 0;
       }
       ctx.emit(`暂不支持：${line}（PR C 起接入）`);

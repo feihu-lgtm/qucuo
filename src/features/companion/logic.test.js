@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { switchCompanion } from "./logic.js";
+import { switchCompanion, recallCompanion } from "./logic.js";
 
 it.each([["asuka", "明日香"], ["snowLeopard", "雪豹"], [null, null]])("switches the single active companion: %s", (key, label) => {
   const companionState = { asuka: { active: false }, snowLeopard: { active: true } };
@@ -25,4 +25,14 @@ it("refuses to deploy a companion stationed elsewhere and changes nothing", () =
 
 it("handles an empty companion roster", () => {
   expect(switchCompanion({ companionState: {} }, null).changes.companionState({})).toEqual({});
+});
+
+it("recalls a stationed companion only in the room where it waits", () => {
+  const companionState = { asuka: { unlocked: true, active: false, label: "明日香", data: {}, stationed: { district: "天都镇", roomId: "茶楼", roomName: "茶楼" } } };
+  const away = recallCompanion({ companionState, room: { name: "鱼定村" } }, "asuka");
+  expect(away.changes).toBeUndefined();
+  const here = recallCompanion({ companionState, room: { name: "天都镇" }, innerRoomName: "茶楼" }, "asuka");
+  const next = here.changes.companionState(companionState);
+  expect(next.asuka.stationed).toBeUndefined();
+  expect(switchCompanion({ companionState: next }, "asuka").changes.companionState(next).asuka.active).toBe(true);
 });
