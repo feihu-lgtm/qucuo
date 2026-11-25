@@ -66,3 +66,15 @@ describe("turn phase machine", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 });
+
+it("formatTrace 导出结构化排障字段", () => {
+  const text = formatTrace({
+    ts: 1700000000000, id: "turn-x", raw: "测试", phases: [P.DONE], nodes: [{
+      layer: "engine", label: "判官管线", detail: "facts 1 条",
+      structured: { intake: { actions: [{ kind: "talk", target: "才旦" }] }, verdict: { facts: [{ op: "MUTATE_SOCIAL" }] } },
+    }],
+  });
+  expect(text).toContain("[结构化]");
+  expect(text).toContain('"target": "才旦"');
+  expect(text).toContain('"op": "MUTATE_SOCIAL"');
+});
