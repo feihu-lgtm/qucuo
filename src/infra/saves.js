@@ -240,15 +240,26 @@ export function importSave(jsonText) {
     // 两台设备各玩一段后 id 必然撞号——原样 put 会把本机段落覆成别机故事。
     // 导入一律重挂到独立导入分支、id 加导入戳后缀：不覆盖本机任何现有段落，
     // 重复导入同一文件仍幂等（后缀确定性）。
-    // branchId 保留原值——导入存档的谱系里就是这些分支，换 id 已防覆盖；
-    // 重挂人造分支反而让段落对召回全部不可见。
-    const stamp = `imp${(snap.savedAt || 0).toString(36)}`;
-    const rewritten = data.prose
-      .filter((c) => c && typeof c.id === "string")
-      .map((c) => ({ ...c, id: `${c.id}_${stamp}` }));
-    if (rewritten.length) {
-      void import("./proseStore.js").then(({ addProseChunks }) => addProseChunks(rewritten)).catch(() => {});
-    }
+    // 三路判重（Review 两轮根因）：①本地无同 id——原样导入，branchId/谱系保真，
+    //    读入该槽位后召回正确不混排；②同 id 同内容——跳过（同设备重复导入天然幂等）；
+    //    ③同 id 异内容（跨设备分叉撞号）——加确定性导入戳，绝不覆盖本机段落；
+    //    此时同分支存在两个版本属分叉事实的如实保留，非污染。
+    void (async () => {
+      try {
+        const { addProseChunks, getAllProseChunks } = await import("./proseStore.js");
+        const existing = new Map((await getAllProseChunks().catch(() => [])).map((c) => [c.id, c]));
+        const stamp = `imp${(snap.savedAt || 0).toString(36)}`;
+        const out = [];
+        for (const c of data.prose) {
+          if (!c || typeof c.id !== "string") continue;
+          const hit = existing.get(c.id);
+          if (!hit) { out.push(c); continue; }
+          if (JSON.stringify(hit) === JSON.stringify(c)) continue; // 同内容幂等跳过
+          out.push({ ...c, id: `${c.id}_${stamp}` });
+        }
+        if (out.length) await addProseChunks(out);
+      } catch { /* 增量层静默降级 */ }
+    })();
   }
   return id;
 }

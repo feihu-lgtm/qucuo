@@ -114,10 +114,19 @@ let _wipeEpoch = 0;
 export async function flushCloudQueue() {
   // 在飞互斥（二审必修 2）：防抖到期与「立即推送」并发双 flush 会交错递增 rev 乱序。
   // 重入直接返回——在飞那次 flush 结束时会处理队列里所有条目（含新入队的）。
-  if (_flushing) return { ok: false, reason: "busy" };
+  // busy 不丢批次（Review）：挂在飞 flush 的尾续——它结束时若队列仍非空会再补一轮，
+  // 防抖在飞期间入队的新存档不会 stalled 到下次写入。
+  if (_flushing) { _flushAgain = true; return { ok: false, reason: "busy" }; }
   _flushing = true;
-  try { return await _flushCloudQueueInner(); } finally { _flushing = false; }
+  try { return await _flushCloudQueueInner(); } finally {
+    _flushing = false;
+    if (_flushAgain) {
+      _flushAgain = false;
+      if (getCloudQueue().length) void flushCloudQueue();
+    }
+  }
 }
+let _flushAgain = false;
 async function _flushCloudQueueInner() {
   if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
   const cfg = loadStorageConfig();
@@ -160,7 +169,12 @@ async function _flushCloudQueueInner() {
   // 只按 key+queuedAt 身份移除本批已推送/已登记的条目，其余（新入队/失败）全保留。
   const doneIds = new Set(queue.filter((e) => !remaining.includes(e)).map((e) => `${e.key}@${e.queuedAt}`));
   const merged = getCloudQueue().filter((e) => !doneIds.has(`${e.key}@${e.queuedAt}`));
-  for (const e of remaining) if (!merged.some((m) => m.key === e.key && m.queuedAt === e.queuedAt)) merged.push(e);
+  // 失败重入队（Review）：flush 期间同键被更新的存档顶替过时，obsolete 失败件
+  // 若排在新版后面重试会以更高 rev 覆盖掉新存档——同键已有更新入队就直接丢弃。
+  for (const e of remaining) {
+    if (merged.some((m) => m.key === e.key)) continue; // 同键只留最新（入队合并语义）
+    merged.push(e);
+  }
   _lsWrite(QUEUE_KEY, merged);
   if (failed && merged.length) {
     _retryTimer = setTimeout(() => { void flushCloudQueue(); }, _retryDelay);
