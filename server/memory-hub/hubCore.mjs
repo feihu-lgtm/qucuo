@@ -173,9 +173,13 @@ export function createHubStore(dbOrPath = ":memory:") {
           db.exec("ROLLBACK");
           return { ok: false, status: 409, conflict: true, currentRev: 0, serverRev: 0, reason: "save_not_found_rev_mismatch" };
         }
-        stmtInsertSave.run(spaceId, slotId, 1, payloadEnc, updatedAt);
+        // tombstone 高水位：删过的槽重建从 highwater+1 起——旧设备拿删除前
+        // expectedRev=1 的过期写永远落不进新一代。
+        const tomb = db.prepare("SELECT high_rev FROM save_tombstones WHERE space_id = ? AND slot_id = ?").get(spaceId, slotId);
+        const firstRev = (tomb?.high_rev || 0) + 1;
+        stmtInsertSave.run(spaceId, slotId, firstRev, payloadEnc, updatedAt);
         db.exec("COMMIT");
-        return { ok: true, status: 200, spaceId, slotId, rev: 1, updatedAt };
+        return { ok: true, status: 200, spaceId, slotId, rev: firstRev, updatedAt };
       }
       if (existing.rev !== expectedRev && !force) {
         db.exec("ROLLBACK");
@@ -241,6 +245,13 @@ export function createHubStore(dbOrPath = ":memory:") {
         // 模型名只认显式申报（绝不猜）；维度未申报时取向量长度兜底。
         const vecLen = c.embedding ? (c.embedding.length ?? c.embedding?.length ?? 0) : 0;
         const embeddingModel = typeof c.embeddingModel === "string" && c.embeddingModel.trim() ? c.embeddingModel.trim() : null;
+        // 维度以实际向量长度为准：显式 embeddingDim 与长度不一致直接 400——
+        // 落库成永远召不回的行比拒写更难排查。
+        if (blob && Number.isInteger(c.embeddingDim) && c.embeddingDim !== vecLen) {
+          const err = new Error(`embeddingDim (${c.embeddingDim}) 与向量实际长度 (${vecLen}) 不一致`);
+          err.status = 400;
+          throw err;
+        }
         const embeddingDim = Number.isInteger(c.embeddingDim) && c.embeddingDim > 0
           ? c.embeddingDim
           : (blob && Number.isFinite(vecLen) && vecLen > 0 ? vecLen : null);
@@ -332,6 +343,11 @@ export function createHubStore(dbOrPath = ":memory:") {
     // 换模型/换维度后旧向量绝不参与比较（roadmap 硬要求）：
     // 行必须显式带 embedding_model 且与查询申报模型逐字相同，维度与查询向量等长
     // （或等于显式 queryEmbeddingDim）。无元数据的旧行只做关键词召回。
+    if (qVec && Number.isInteger(queryEmbeddingDim) && queryEmbeddingDim !== qVec.length) {
+      const err = new Error(`queryEmbeddingDim (${queryEmbeddingDim}) 与查询向量实际长度 (${qVec.length}) 不一致`);
+      err.status = 400;
+      throw err;
+    }
     const qDim = Number.isInteger(queryEmbeddingDim) && queryEmbeddingDim > 0 ? queryEmbeddingDim : (qVec ? qVec.length : null);
     const qModel = typeof queryEmbeddingModel === "string" ? queryEmbeddingModel.trim() : "";
     const vecRanked = qVec && qModel
@@ -406,7 +422,13 @@ export function createHubStore(dbOrPath = ":memory:") {
     const seenIds = new Set();
     const results = [];
     for (const hit of hits) {
-      const group = [hit, ...hit.neighbors].sort((a, b) => (a.turn - b.turn) || (a.rowid - b.rowid));
+      // 组内排序：两侧都有显式 seq 按 seq——乱序插入（9,2,3,1）rowid 与 seq 脱节时
+      // 返回顺序仍按真实先后；缺 seq 才 rowid 兜底。
+      const group = [hit, ...hit.neighbors].sort((a, b) => {
+        if (a.turn !== b.turn) return a.turn - b.turn;
+        if (Number.isInteger(a.seq) && Number.isInteger(b.seq)) return a.seq - b.seq;
+        return a.rowid - b.rowid;
+      });
       for (const item of group) {
         if (!seenIds.has(item.chunkId)) {
           seenIds.add(item.chunkId);
@@ -435,6 +457,11 @@ export function createHubStore(dbOrPath = ":memory:") {
       }
     }
     const info = db.prepare("DELETE FROM saves WHERE space_id = ? AND slot_id = ?").run(spaceId, slotId);
+    if (info.changes > 0) {
+      db.prepare(`INSERT INTO save_tombstones(space_id, slot_id, high_rev) VALUES (?, ?, ?)
+        ON CONFLICT(space_id, slot_id) DO UPDATE SET high_rev = MAX(high_rev, excluded.high_rev)`)
+        .run(spaceId, slotId, existing.rev);
+    }
     return { ok: true, status: 200, spaceId, slotId, deleted: info.changes };
   }
 

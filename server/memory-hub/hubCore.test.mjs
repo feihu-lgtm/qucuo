@@ -292,33 +292,141 @@ describe("邻段 seq 优先级（稀疏 seq 不被顺序放行）", () => {
   });
 });
 
+describe("rev tombstone（删后重建高水位）", () => {
+  it("删除单槽后重建从 highwater+1 起；旧 expectedRev 写/删碰不到新一代", () => {
+    const store = createHubStore(":memory:");
+    store.putSave("sp", "s1", { expectedRev: 0, payloadEnc: "gen1", updatedAt: 1 });
+    assert.equal(store.getSave("sp", "s1").rev, 1);
+    store.deleteSave("sp", "s1", { expectedRev: 1 });
+    // 重建：rev 不是 1，是 highwater+1=2
+    const reborn = store.putSave("sp", "s1", { expectedRev: 0, payloadEnc: "gen2", updatedAt: 2 });
+    assert.equal(reborn.rev, 2);
+    // 旧设备拿删除前 expectedRev=1 写 → 409 碰不到新一代
+    const staleWrite = store.putSave("sp", "s1", { expectedRev: 1, payloadEnc: "evil", updatedAt: 3 });
+    assert.equal(staleWrite.status, 409);
+    assert.equal(store.getSave("sp", "s1").payloadEnc, "gen2");
+    // 旧 expectedRev=1 删 → 409
+    const staleDel = store.deleteSave("sp", "s1", { expectedRev: 1 });
+    assert.equal(staleDel.status, 409);
+    assert.equal(store.getSave("sp", "s1") !== null, true);
+    // 再删再建：高水位累计——rev 到 3
+    store.deleteSave("sp", "s1", { expectedRev: 2 });
+    const third = store.putSave("sp", "s1", { expectedRev: 0, payloadEnc: "gen3", updatedAt: 4 });
+    assert.equal(third.rev, 3);
+    store.close();
+  });
+});
+
+describe("embeddingDim 校验", () => {
+  it("写入显式 dim 与向量长度不一致 → 400 不落库；查询 dim 不一致也 400", () => {
+    const store = createHubStore(":memory:");
+    assert.throws(
+      () => store.appendProseChunks("sp", "b", [{ chunkId: "d1", turn: 1, witnesses: ["*"], rawText: "x", embedding: [1, 0], embeddingModel: "m", embeddingDim: 3 }]),
+      (err) => err.status === 400,
+    );
+    // 未显式 dim：按实际长度落库，正常召回
+    store.appendProseChunks("sp", "b", [{ chunkId: "d2", turn: 1, witnesses: ["*"], entities: [], rawText: "维度测试青铜印。", embedding: [1, 0], embeddingModel: "m" }]);
+    assert.throws(
+      () => store.queryProseChunks("sp", { query: "青铜印", viewer: "v", queryEmbedding: [1, 0], queryEmbeddingModel: "m", queryEmbeddingDim: 5 }),
+      (err) => err.status === 400,
+    );
+    const ok = store.queryProseChunks("sp", { query: "青铜印", viewer: "v", queryEmbedding: [1, 0], queryEmbeddingModel: "m" });
+    assert.equal(ok.hits.length >= 1, true);
+    store.close();
+  });
+});
+
+describe("邻段组内排序与跨 batch 幂等", () => {
+  it("乱序插入时锚点邻段组内仍按 seq 排序（不按 rowid）", () => {
+    const store = createHubStore(":memory:");
+    // 乱序插入：rowid 顺序 o9,o2,o3,o1 与 seq 完全脱节。
+    // 只有 o2 含查询词做锚点，o1/o3 作为 ±1 邻段被连带——组内必须按 seq 1,2,3 返回。
+    store.appendProseChunks("sp", "batch_ord", [
+      { chunkId: "o3", turn: 3, seq: 3, witnesses: ["*"], entities: [], rawText: "后段无关键词甲。" },
+      { chunkId: "o2", turn: 3, seq: 2, witnesses: ["*"], entities: [], rawText: "锚点段青铜印。" },
+      { chunkId: "o1", turn: 3, seq: 1, witnesses: ["*"], entities: [], rawText: "前段无关键词乙。" },
+    ]);
+    const res = store.queryProseChunks("sp", { query: "青铜印", viewer: "v", topK: 1, neighborRadius: 1 });
+    const ids = res.results.map((r) => r.chunkId);
+    assert.deepEqual(ids, ["o1", "o2", "o3"]);
+    store.close();
+  });
+
+  it("跨 batch 同 chunkId 幂等（UNIQUE(space_id, chunk_id)）：重发不重复", () => {
+    const store = createHubStore(":memory:");
+    const chunk = { chunkId: "cb1", turn: 1, witnesses: ["*"], entities: [], rawText: "跨batch段青铜印。" };
+    const r1 = store.appendProseChunks("sp", "batch_a", [chunk]);
+    const r2 = store.appendProseChunks("sp", "batch_b", [chunk]);
+    assert.equal(r1.inserted, 1);
+    assert.equal(r2.inserted, 0);
+    const res = store.queryProseChunks("sp", { query: "青铜印", viewer: "v", topK: 10, neighborRadius: 0 });
+    assert.equal(res.results.filter((r) => r.chunkId === "cb1").length, 1);
+    store.close();
+  });
+});
+
+describe("hub token 鉴权", () => {
+  it("无 token/错 token → 401；/health 公开；缺 MEMORY_HUB_TOKEN 拒绝启动", async () => {
+    // 缺 token 且无宽松旗标 → 抛错拒绝启动
+    const oldEnv = process.env.MEMORY_HUB_TOKEN;
+    const oldAllow = process.env.ALLOW_INSECURE_LOCAL_ONLY;
+    delete process.env.MEMORY_HUB_TOKEN;
+    delete process.env.ALLOW_INSECURE_LOCAL_ONLY;
+    assert.throws(() => createHubServer({ dbPath: ":memory:" }), /MEMORY_HUB_TOKEN/);
+    if (oldEnv !== undefined) process.env.MEMORY_HUB_TOKEN = oldEnv;
+    if (oldAllow !== undefined) process.env.ALLOW_INSECURE_LOCAL_ONLY = oldAllow;
+
+    const { server } = createHubServer({ dbPath: ":memory:", token: "secret-token" });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const { port } = server.address();
+    const base = `http://127.0.0.1:${port}`;
+    try {
+      // /health 公开
+      const health = await fetch(`${base}/health`);
+      assert.equal(health.status, 200);
+      // 无 token → 401
+      const noTok = await fetch(`${base}/api/spaces/spX/saves`);
+      assert.equal(noTok.status, 401);
+      // 错 token → 401
+      const badTok = await fetch(`${base}/api/spaces/spX/saves`, { headers: { "x-memory-hub-token": "wrong" } });
+      assert.equal(badTok.status, 401);
+      // 正确 token → 200
+      const okTok = await fetch(`${base}/api/spaces/spX/saves`, { headers: { "x-memory-hub-token": "secret-token" } });
+      assert.equal(okTok.status, 200);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+});
+
 describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejection", () => {
   it("physically deletes space data + FTS entries and runs VACUUM on DELETE /api/space/:spaceId", async () => {
     const dir = mkdtempSync(join(tmpdir(), "qucuo-hub-"));
     const dbPath = join(dir, "hub.sqlite");
-    const { server, store } = createHubServer({ dbPath });
+    const { server, store } = createHubServer({ dbPath, token: "test-hub-token" });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const { port } = server.address();
     const base = `http://127.0.0.1:${port}`;
+    const auth = { "x-memory-hub-token": "test-hub-token" };
 
     try {
       const saveRes = await fetch(`${base}/api/spaces/spA/saves/slot1`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({ expectedRev: 0, payloadEnc: "cipherA", updatedAt: 1 }),
       });
       assert.equal(saveRes.status, 200);
 
       const badSave = await fetch(`${base}/api/spaces/spA/saves/slot1`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({ expectedRev: 0, payloadEnc: "stale", updatedAt: 2 }),
       });
       assert.equal(badSave.status, 409);
 
       const proseRes = await fetch(`${base}/api/spaces/spA/prose`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({
           batchId: "batch1",
           chunks: [{ chunkId: "c1", turn: 1, witnesses: ["*"], rawText: "大雪封山，青铜古印现世。" }],
@@ -342,7 +450,7 @@ describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejectio
 
       const bodyKeyReject = await fetch(`${base}/api/spaces/spA/prose`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({ batchId: "b4", chunks: [], config: { Authorization: "Bearer x" } }),
       });
       assert.equal(bodyKeyReject.status, 400);
@@ -350,28 +458,28 @@ describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejectio
       // PUT force 覆盖（玩家显式裁决路径）
       const forcePut = await fetch(`${base}/api/spaces/spA/saves/slot1`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({ expectedRev: 99, payloadEnc: "forced", updatedAt: 5, force: true }),
       });
       assert.equal(forcePut.status, 200);
       // DELETE 单槽：先 409（expectedRev 不符），再 force 强删，再幂等
-      const delConflict = await fetch(`${base}/api/spaces/spA/saves/slot1?expectedRev=99`, { method: "DELETE" });
+      const delConflict = await fetch(`${base}/api/spaces/spA/saves/slot1?expectedRev=99`, { method: "DELETE", headers: auth });
       assert.equal(delConflict.status, 409);
       const delConflictJson = await delConflict.json();
       assert.equal(typeof delConflictJson.serverRev, "number");
-      const delForce = await fetch(`${base}/api/spaces/spA/saves/slot1?force=1`, { method: "DELETE" });
+      const delForce = await fetch(`${base}/api/spaces/spA/saves/slot1?force=1`, { method: "DELETE", headers: auth });
       assert.equal(delForce.status, 200);
       assert.equal(store.getSave("spA", "slot1"), null);
-      const delAgain = await fetch(`${base}/api/spaces/spA/saves/slot1?force=1`, { method: "DELETE" });
+      const delAgain = await fetch(`${base}/api/spaces/spA/saves/slot1?force=1`, { method: "DELETE", headers: auth });
       assert.equal(delAgain.status, 200);
       // 重存一份供整space删除计数
       await fetch(`${base}/api/spaces/spA/saves/slot1`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({ expectedRev: 0, payloadEnc: "cipherA2", updatedAt: 6 }),
       });
 
-      const delRes = await fetch(`${base}/api/space/spA`, { method: "DELETE" });
+      const delRes = await fetch(`${base}/api/space/spA`, { method: "DELETE", headers: auth });
       assert.equal(delRes.status, 200);
       const delJson = await delRes.json();
       assert.equal(delJson.deletedSaves, 1);

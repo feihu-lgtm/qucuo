@@ -1,9 +1,24 @@
 import { createServer } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { createHubStore, assertNoApiKeyPayload } from "./hubCore.mjs";
 
 // node:http 入站 header 名已全部小写化（RFC 层面大小写不敏感），无需另行 canonicalize。
-// authorization 也在拒收列：服务端当前没有任何鉴权用途，收到即说明客户端在误传凭证。
+// authorization 也在拒收列：hub 专用凭证走 x-memory-hub-token，收到 authorization/x-api-key
+// 即说明客户端在误传模型/其它凭证。
 const FORBIDDEN_KEY_HEADERS = ["x-api-key", "x-goog-api-key", "x-openai-key", "authorization"];
+const HUB_TOKEN_HEADER = "x-memory-hub-token";
+
+function tokenValid(presented, expected) {
+  if (!presented || !expected) return false;
+  const a = Buffer.from(String(presented));
+  const b = Buffer.from(String(expected));
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 function readJsonBody(req, limitBytes = 2 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -49,7 +64,20 @@ function assertNoKeyHeaders(req) {
   }
 }
 
-export function createHubServer({ dbPath = process.env.MEMORY_HUB_DB || "./memory-hub.sqlite" } = {}) {
+export function createHubServer({
+  dbPath = process.env.MEMORY_HUB_DB || "./memory-hub.sqlite",
+  token = process.env.MEMORY_HUB_TOKEN || "",
+} = {}) {
+  // 鉴权是硬要求（阿里云后端不能无认证公开读写删）：hub 专用 x-memory-hub-token，
+  // 绝不复用/接受模型 key。MEMORY_HUB_TOKEN 缺失时拒绝启动；唯一例外是显式
+  // ALLOW_INSECURE_LOCAL_ONLY=1 的本机开发（必须自行确保只 bind loopback）。
+  if (!token) {
+    if (process.env.ALLOW_INSECURE_LOCAL_ONLY === "1") {
+      console.warn("[memory-hub] ⚠ 无 token 运行（ALLOW_INSECURE_LOCAL_ONLY=1）——仅限本机 loopback 开发，生产部署必须设 MEMORY_HUB_TOKEN");
+    } else {
+      throw new Error("MEMORY_HUB_TOKEN 缺失，拒绝启动（生产必须配置；本机开发可显式 ALLOW_INSECURE_LOCAL_ONLY=1 并仅 bind loopback）");
+    }
+  }
   const store = createHubStore(dbPath);
 
   const server = createServer(async (req, res) => {
@@ -61,6 +89,12 @@ export function createHubServer({ dbPath = process.env.MEMORY_HUB_DB || "./memor
 
       if (method === "GET" && path === "/health") {
         sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      // /api/* 全部要 token——/health 是唯一公开端点
+      if (token && path.startsWith("/api/") && !tokenValid(req.headers[HUB_TOKEN_HEADER], token)) {
+        sendJson(res, 401, { error: "unauthorized" });
         return;
       }
 
@@ -142,8 +176,10 @@ export function createHubServer({ dbPath = process.env.MEMORY_HUB_DB || "./memor
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const port = Number(process.env.PORT || 8787);
+  // 默认只 bind loopback——生产暴露公网必须显式 HOST=0.0.0.0 且配 MEMORY_HUB_TOKEN。
+  const host = process.env.HOST || "127.0.0.1";
   const { server } = createHubServer();
-  server.listen(port, () => {
-    console.log(`qucuo memory-hub listening on http://127.0.0.1:${port}`);
+  server.listen(port, host, () => {
+    console.log(`qucuo memory-hub listening on http://${host}:${port}`);
   });
 }

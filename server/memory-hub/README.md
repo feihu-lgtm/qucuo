@@ -6,8 +6,22 @@
 
 ```bash
 cd server/memory-hub
-PORT=8787 MEMORY_HUB_DB=./memory-hub.sqlite npm start
+MEMORY_HUB_TOKEN=本地开发token PORT=8787 MEMORY_HUB_DB=./memory-hub.sqlite npm start
 ```
+
+## 鉴权与监听（生产必读）
+
+- 除 `GET /health` 外所有 `/api/*` 必须带 hub 专用凭证头 `x-memory-hub-token`（与任何模型 key 无关；
+  `Authorization`/`x-api-key` 等 header 依然拒收）。
+- `MEMORY_HUB_TOKEN` 缺失**拒绝启动**。唯一例外：显式 `ALLOW_INSECURE_LOCAL_ONLY=1` 的本机开发
+  （此时必须自行确保只 bind loopback）。
+- 默认 listen host 是 `127.0.0.1`。生产暴露公网：显式 `HOST=0.0.0.0` + 强随机 `MEMORY_HUB_TOKEN`，
+  并建议前置 TLS 反代。
+
+## rev tombstone（删除语义）
+
+单槽删除会记录该槽历史最高 rev（`save_tombstones` 高水位）。空槽重建从 highwater+1 起——
+旧设备持删除前的过期 expectedRev 写/删永远碰不到新一代。
 
 ## 运行单测
 
@@ -22,7 +36,7 @@ node --test server/memory-hub/hubCore.test.mjs
 - `GET /api/spaces/:spaceId/saves/:slotId`：读取密文存档（`payload_enc`）
 - `PUT /api/spaces/:spaceId/saves/:slotId`：带 `expectedRev` 写入存档；版本冲突返回 HTTP `409`（响应同时给 `serverRev`/`currentRev`）不静默覆盖；`force:true` 跳过冲突检查强制覆盖——**唯一合法触发源是玩家在客户端显式裁决「本地覆盖云端」，自动同步流程绝不许带 force**
 - `DELETE /api/spaces/:spaceId/saves/:slotId`：删除单槽；`expectedRev` 不符返回 `409`，`?force=1` 强删；非 force 缺/非法 expectedRev 返回 `400` 不删；槽位不存在时幂等成功（`deleted:0`）
-- `POST /api/spaces/:spaceId/prose`：批量写入原文段落（`UNIQUE(space_id, batch_id, chunk_id)` 保证断网重发幂等）
+- `POST /api/spaces/:spaceId/prose`：批量写入原文段落（`UNIQUE(space_id, chunk_id)` 保证断网重发/跨 batch 重发幂等；batch_id 仍记录用于追踪）
 - `POST /api/spaces/:spaceId/prose/query`：SQL 过滤 + FTS5 BM25 + 可选 embedding 余弦 RRF + 前后邻段连带召回
 - `DELETE /api/space/:spaceId`：物理级联删除存档与段落并执行 `VACUUM`
 
@@ -54,3 +68,9 @@ node --test server/memory-hub/hubCore.test.mjs
 - force 对齐：server 的 `force:true`/`?force=1` 与 client 「本地覆盖云端」裁决一一对应，只能由玩家显式触发。
 
 **在适配层落地前请勿假设客户端已可插用本服务。**
+
+## ⚠ pre-release schema 不兼容声明
+
+本服务尚未发布。`UNIQUE(space_id, chunk_id)`、branch_id/seq/embedding 元数据列等均为终审后契约——
+老 dev 库的 `UNIQUE(space_id, batch_id, chunk_id)` 约束无法原地变更，**请直接删除旧 sqlite 文件重建**，
+不要把重复段落当合法数据迁移。

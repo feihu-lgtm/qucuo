@@ -1,6 +1,15 @@
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 
+-- rev tombstone：删除单槽后记录该槽历史最高 rev——重建从 highwater+1 起，
+-- 旧设备拿删除前的 expectedRev 永远碰不到新一代。
+CREATE TABLE IF NOT EXISTS save_tombstones (
+  space_id TEXT NOT NULL,
+  slot_id TEXT NOT NULL,
+  high_rev INTEGER NOT NULL,
+  PRIMARY KEY (space_id, slot_id)
+);
+
 CREATE TABLE IF NOT EXISTS saves (
   space_id TEXT NOT NULL,
   slot_id TEXT NOT NULL,
@@ -27,7 +36,7 @@ CREATE TABLE IF NOT EXISTS prose_chunks (
   embedding_dim INTEGER,
   seq INTEGER,
   branch_id TEXT,
-  UNIQUE (space_id, batch_id, chunk_id)
+  UNIQUE (space_id, chunk_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_prose_space_turn ON prose_chunks (space_id, turn, id);
