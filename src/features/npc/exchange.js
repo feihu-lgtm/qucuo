@@ -59,7 +59,7 @@ function questPropHolder(state, itemName) {
   return null;
 }
 
-export function giftNpc(state, npc, item, now = Date.now()) {
+export function giftNpc(state, npc, item, now = Date.now(), { deferToJudge = false } = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
   if (!item) return { logs: [{ t: "err", text: "  背包中没有这件物品。" }] };
   const itemName = typeof item === "string" ? item : item.name;
@@ -108,6 +108,36 @@ export function giftNpc(state, npc, item, now = Date.now()) {
 
   const isAngry = isNpcAngry(state.varTree, npc.name);
   const command = isAngry ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好` : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
+
+  // WO-16F-F4a 先裁后落：判官链激活时普通送礼不在叙事前扣物/写好感——只记尝试，
+  // 扣物+好感收拒由 settle 回合本地合成 give 听意单 → judgeTurn 裁定 → materializeFacts
+  // 落账（TRANSFER_ITEM 玩家→NPC + MUTATE_SOCIAL 恩），与自由文本 give 同口径。
+  // 以下情形仍走 legacy 前置硬结算（各有独立确定性通道，非判官自由裁量）：
+  //   · 任务交付（forceAdvanceQuest 统一扣件推进）
+  //   · 雪豹药/肉（任务旗）、草药捐赠声誉、势力信物交还（声誉联动）
+  //   · 生气送礼（settleKind=appease，归 WO-16F-F3 赔罪判官路）
+  // 判定词与 runTurn 闸门必须同源（judgePipelineEnabled && extractionEnabled），
+  // 由调用方按 sessionUiStore apiCfg 传入；谓词错位最多退化为 legacy，不会双结算。
+  const specialChannel = deliveredQuest
+    || snowMedicineGift(state, npc, item) || snowMeatGift(state, npc, item)
+    || !!herbDonationRepGain(state, npc, typeof item === "string" ? CATALOG_INDEX[item] : item)
+    || !!factionTurnInOf(npc, itemName);
+  if (deferToJudge && !isAngry && !specialChannel) {
+    return {
+      changes: { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }) },
+      logs: [],
+      settle: command,
+      settleOptions: {
+        settleNpc: npc.name, settleKind: "gift", giftInfo,
+        // 确定性寻址：对象条目优先 id（同名不混淆），字符串/目录条目退化为名字。
+        giftRequest: {
+          itemId: (typeof item === "object" && item?.id != null) ? item.id : itemName,
+          itemName,
+        },
+      },
+    };
+  }
+
   // 命中任务交付时不在此预扣——交付物由 forceAdvanceQuest 统一扣，否则一件东西被扣两次。
   const changes = { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }) };
   // WO-16B：好感增量随 feature 硬结算确定性落账（不再等 AI 写 MVU）。

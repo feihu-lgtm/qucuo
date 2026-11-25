@@ -12,6 +12,7 @@ import { computeCausalBudget } from "./causalBudget.js";
 import { resolveWarrantQuality, inferCategoryFromClaim } from "./warrantRules.js";
 import { allowedAffixesForBudget } from "../effects/affixPointTable.js";
 import { giftPreference, computeGiftWeight } from "../npc/giftWeight.js";
+import { CATALOG_INDEX } from "../../data/items/catalog.js";
 
 const QUALITY_ORDER = ["白", "绿", "蓝", "紫", "橙", "红"];
 
@@ -292,14 +293,23 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     }
 
     if (action.kind === "give") {
-      const item = inv.find((it) => it?.id === action.itemId || it?.name === action.itemId);
-      if (isDeliverGive(action, item)) {
+      // WO-16F-F4a：字符串背包条目（初始存档遗产形态，如「半袋青稞」）也要能找到——
+      // 只认对象 id/name 会让按钮 defer 的礼物判官查无此物，重量/偏好全空。
+      const item = inv.find((it) => (typeof it === "string"
+        ? it === action.itemId
+        : it?.id === action.itemId || it?.name === action.itemId));
+      // 重量/偏好/交付判定读对象形状——字符串条目规范化（目录属性并入，无目录裸名兜底），
+      // 不改写 item 本体（TRANSFER 寻址仍走 action.itemId/item.id 原口径）。
+      const itemObj = typeof item === "string"
+        ? { name: item, ...(CATALOG_INDEX[item] || {}) }
+        : item;
+      if (isDeliverGive(action, itemObj)) {
         notes.push(`${action.target}的${item?.name || "物件"}走任务交付通道结算，赠礼动作去重压制`);
         continue;
       }
       const prefer = giftPreference(npc);
-      const preferHit = prefer && item?.category === prefer ? 0.15 : 0;
-      const weight = item ? computeGiftWeight(npc, item) : null;
+      const preferHit = prefer && itemObj?.category === prefer ? 0.15 : 0;
+      const weight = itemObj ? computeGiftWeight(npc, itemObj) : null;
       const weightMod = weight?.ratio >= 2 ? 0.15 : weight?.ratio >= 1 ? 0.05 : -0.05;
       const score = 0.55 + personaMod(npc.personality) + affectionMod(aff) + preferHit + weightMod + stanceMod;
       if (roll() < Math.max(0.05, Math.min(0.95, score))) {
@@ -307,17 +317,22 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         const wid = nextFactId();
         facts.push({
           id: wid, op: "TRANSFER_ITEM",
-          itemId: item?.id || action.itemId || "", itemName: item?.name || action.itemId || "礼物",
+          itemId: (item && typeof item === "object" ? item.id : null) || action.itemId || "",
+          itemName: itemObj?.name || action.itemId || "礼物",
           from: "player", to: npc.name, witnesses: ["主角", npc.name],
         });
-        facts.push({
-          id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
-          affectionDelta: weight?.ratio >= 2 ? 6 : weight?.ratio >= 1 ? 4 : 2,
-          ledgerKind: "恩", reason: `赠${item?.name || "礼"}`, witnesses: ["主角", npc.name],
-        });
+        // WO-16F-F4a：无好感轨道对象（兽类/intimacy.forbidden）只收物不涨好感——
+        // 与 legacy giftNpc 的 hasNoAffectionTrack 口径一致（谓词内联同 talk 分支，防循环依赖）。
+        if (!(npc?.intimacy?.forbidden || npc?.beast)) {
+          facts.push({
+            id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
+            affectionDelta: weight?.ratio >= 2 ? 6 : weight?.ratio >= 1 ? 4 : 2,
+            ledgerKind: "恩", reason: `赠${itemObj?.name || "礼"}`, witnesses: ["主角", npc.name],
+          });
+        }
       } else {
         // 拒收不产扣物事实——物件还在玩家身上，彻底消灭错账
-        notes.push(`${npc.name}拒收${item?.name || "礼物"}，物件未易主`);
+        notes.push(`${npc.name}拒收${itemObj?.name || "礼物"}，物件未易主`);
       }
     }
 

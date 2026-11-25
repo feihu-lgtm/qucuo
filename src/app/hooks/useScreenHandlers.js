@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { featureCtx } from "../runtime/gameRuntime.js";
 import { gameActions, gameStore, getGameEpoch, isGameEpochStale } from "../../store/gameStore.js";
+import { sessionUiStore } from "../../store/sessionUiStore.js";
 import { applyResult } from "../../features/run.js";
 import { consumeItem, pickGroundItem } from "../../features/items/logic.js";
 import {
@@ -58,7 +59,11 @@ export function useScreenHandlers({
   const handleNpcGift = useCallback((npc, item) => applyResult(featureCtx(), () => {
     captureUndo();
     setActiveTarget(npc.name);
-    applyResult(featureCtx(), giftNpc(gameStore.getState(), npc, item));
+    // WO-16F-F4a：判官链激活（与 runTurn 闸门同源 judgePipelineEnabled && extractionEnabled）
+    // 时普通送礼走先裁后落——feature 不前置扣物/写好感，settle 回合判官裁定后落账。
+    const cfg = sessionUiStore.getState().apiCfg;
+    const deferToJudge = !!(cfg?.judgePipelineEnabled && cfg?.extractionEnabled);
+    applyResult(featureCtx(), giftNpc(gameStore.getState(), npc, item, undefined, { deferToJudge }));
   }, { feature: "npc.giftNpc" }), [captureUndo]);
 
   // 撤销只有一格：被拒绝、什么都没改的操作不能抢先存撤销点，否则会把上一步真改动的
