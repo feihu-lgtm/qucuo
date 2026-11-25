@@ -26,8 +26,10 @@ function mockReq(body = "") {
 }
 
 function mockRes() {
+  const listeners = {};
   return {
     headersSent: false,
+    writableFinished: false,
     writes: [],
     writeHead(status) {
       if (this.headersSent) throw new Error("ERR_HTTP_HEADERS_SENT");
@@ -35,8 +37,12 @@ function mockRes() {
       this.status = status;
     },
     write(chunk) { this.writes.push(chunk); },
-    end() { this.ended = true; },
-    destroy(e) { this.destroyed = e; },
+    end() { this.ended = true; this.writableFinished = true; },
+    destroy(e) { this.destroyed = e; this.emitClose(); },
+    on(evt, fn) { (listeners[evt] ||= []).push(fn); },
+    off(evt, fn) { listeners[evt] = (listeners[evt] || []).filter((f) => f !== fn); },
+    emitClose() { (listeners.close || []).forEach((f) => f()); },
+    listenerCount(evt) { return (listeners[evt] || []).length; },
   };
 }
 
@@ -73,6 +79,55 @@ describe("cors-proxy 中间件", () => {
     await done;
     expect(res.status).toBe(502);
     expect(res.ended).toBeDefined();
+  });
+
+  it("下游提前 close → 上游 fetch 的 AbortSignal 触发", async () => {
+    let upstreamSignal;
+    vi.stubGlobal("fetch", async (_url, opts) => {
+      upstreamSignal = opts.signal;
+      return {
+        status: 200,
+        headers: new Map([["content-type", "text/event-stream"]]),
+        body: (async function* () {
+          yield new TextEncoder().encode("data: a\n\n");
+          // 上游 body 长时间不结束：等 abort 后迭代抛错收尾
+          await new Promise((_, rej) => {
+            opts.signal.addEventListener("abort", () => rej(new Error("aborted upstream")));
+          });
+        })(),
+      };
+    });
+    const handler = getProxyHandler();
+    const req = mockReq("{}");
+    const res = mockRes();
+    const done = handler(req, res);
+    req.emit();
+    await new Promise((r) => setTimeout(r, 20)); // 等首块到达、迭代挂起
+    expect(upstreamSignal.aborted).toBe(false);
+    res.emitClose(); // 浏览器端提前断开（idle 超时 cancel 下游）
+    await done;
+    expect(upstreamSignal.aborted).toBe(true);
+  });
+
+  it("正常 SSE 完成后 close 不误 abort 上游", async () => {
+    let upstreamSignal;
+    vi.stubGlobal("fetch", async (_url, opts) => {
+      upstreamSignal = opts.signal;
+      return {
+        status: 200,
+        headers: new Map([["content-type", "text/event-stream"]]),
+        body: (async function* () { yield new TextEncoder().encode("data: a\n\n"); })(),
+      };
+    });
+    const handler = getProxyHandler();
+    const req = mockReq("{}");
+    const res = mockRes();
+    const done = handler(req, res);
+    req.emit();
+    await done;
+    res.emitClose(); // 正常完成后的 close（writableFinished=true）
+    expect(upstreamSignal.aborted).toBe(false);
+    expect(res.listenerCount("close")).toBe(0); // listener 已移除
   });
 
   it("正常流式逐块转发（不整包缓冲）", async () => {

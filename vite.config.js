@@ -41,11 +41,19 @@ export default defineConfig({
             }
           }
 
+          // 下游（浏览器）中途断开时中止上游 provider 请求：否则浏览器端 idle 超时/
+          // 取消后，proxy 里的上游 fetch 仍挂着等 provider，重试会叠出同一回合的重复模型请求。
+          // res 的 close 在正常完成后也会触发，所以用 writableFinished 区分——
+          // 正常 SSE 收尾不误 abort。
+          const upstreamCtrl = new AbortController();
+          const onDownstreamClose = () => { if (!res.writableFinished) upstreamCtrl.abort(); };
+          res.on?.("close", onDownstreamClose);
           try {
             const fetchRes = await fetch(target, {
               method: req.method,
               headers: { ...fwdHeaders, "accept-encoding": "identity" },
               body: body || undefined,
+              signal: upstreamCtrl.signal,
             });
             const resHeaders = {};
             for (const [k, v] of fetchRes.headers) {
@@ -75,6 +83,8 @@ export default defineConfig({
               // 读到连接中断（fetch 抛 network error），而不是干净结束半截正文。
               res.destroy(e);
             }
+          } finally {
+            res.off?.("close", onDownstreamClose);
           }
         });
       },
