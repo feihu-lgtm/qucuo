@@ -50,12 +50,13 @@ function fallbackLine(fact) {
 }
 
 // pact 校验：_npc 须在场/已回应、promise 非空、deadlineHours 为正数。
-function validPact(pact, { respondedNpcs = [], npcNames = [] } = {}) {
+function validPact(pact, { npcNames = [] } = {}) {
   if (!pact || typeof pact !== "object") return null;
   if (!pact.npc || !pact.promise) return null;
   if (!Number.isFinite(pact.deadlineHours) || pact.deadlineHours <= 0) return null;
-  const known = new Set([...respondedNpcs, ...npcNames]);
-  if (known.size && !known.has(pact.npc)) return null;
+  // 只认判官在场名册（reactionGuides）：respondedNpcs 与 pact 同出模型一人之口，
+  // 拿它当佐证等于让提案者自证——幽灵角色会被写进契约。
+  if (npcNames.length && !npcNames.includes(pact.npc)) return null;
   return { npc: pact.npc, promise: String(pact.promise), deadlineHours: pact.deadlineHours, rewardHint: pact.rewardHint || "" };
 }
 
@@ -115,7 +116,6 @@ export function verifySealAndMaterialize({
   // spontaneousPact 校验并入 facts
   if (verdict?.allowSpontaneousPact && sealData?.spontaneousPact) {
     const pact = validPact(sealData.spontaneousPact, {
-      respondedNpcs: sealData.respondedNpcs || [],
       npcNames: (verdict.reactionGuides || []).map((g) => g.npc),
     });
     if (pact) {
