@@ -146,10 +146,13 @@ async function _flushCloudQueueInner() {
     try {
       // rev 语义修正（PR-A 硬要求）：本地计数器不作 CAS 依据——expectedRev 只能取
       // serverRev 台账（首写 0），本地 rev 仅是排队参考不再上送。
-      const expectedRev = expectedRevFor(entry.key);
+      const expectedRev = expectedRevFor(entry.key, binding.spaceId);
       let result;
       if (entry.op === "put") {
         const payloadEnc = await encryptSaveValue(entry.value);
+        // Review 修：加密 await 期间翻代——连请求都不发（否则服务端接受 rev-0 上行，
+        // 已抹空间被重建——本地不写台账也拦不住云端复活）。
+        if (_wipeEpoch !== startEpoch) { failed = false; break; }
         result = await hubPutSave(binding, entry.key, payloadEnc, { expectedRev });
       } else {
         result = await hubDeleteSave(binding, entry.key, { expectedRev });
@@ -161,11 +164,11 @@ async function _flushCloudQueueInner() {
         // 首次错位自动对齐一次（PR-A 硬要求）：adapter 迁移/换绑后首推必 409——
         // 但仅限「无成功推送台账且从未对齐过」的键；已有台账的键再 409 是真实
         // 多端冲突，必须进冲突登记等玩家裁决，绝不静默吞掉。
-        const hadLedger = getServerRevs()[entry.key] !== undefined;
-        const alreadyAligned = getAlignedOnce()[entry.key];
+        const hadLedger = getServerRevs()[`${binding.spaceId}::${entry.key}`] !== undefined;
+        const alreadyAligned = getAlignedOnce()[`${binding.spaceId}::${entry.key}`];
         if (!hadLedger && !alreadyAligned && Number.isInteger(result.serverRev)) {
-          markAlignedOnce(entry.key);
-          recordServerRev(entry.key, result.serverRev);
+          markAlignedOnce(entry.key, binding.spaceId);
+          recordServerRev(entry.key, result.serverRev, binding.spaceId);
           if (entry.op === "put") {
             const payloadEnc = await encryptSaveValue(entry.value);
             result = await hubPutSave(binding, entry.key, payloadEnc, { expectedRev: result.serverRev });
@@ -174,8 +177,8 @@ async function _flushCloudQueueInner() {
           }
           if (_wipeEpoch !== startEpoch) { failed = false; break; } // 重推 await 期间翻代同样停笔
           if (result.ok) {
-            if (entry.op === "put" && Number.isInteger(result.rev)) recordServerRev(entry.key, result.rev);
-            if (entry.op === "del") clearServerRev(entry.key);
+            if (entry.op === "put" && Number.isInteger(result.rev)) recordServerRev(entry.key, result.rev, binding.spaceId);
+            if (entry.op === "del") clearServerRev(entry.key, binding.spaceId);
             pushed += 1;
             continue;
           }
@@ -190,8 +193,8 @@ async function _flushCloudQueueInner() {
         }
       }
       if (!result.ok) throw new Error(`HTTP ${result.status}`);
-      if (entry.op === "put" && Number.isInteger(result.rev)) recordServerRev(entry.key, result.rev);
-      if (entry.op === "del") clearServerRev(entry.key);
+      if (entry.op === "put" && Number.isInteger(result.rev)) recordServerRev(entry.key, result.rev, binding.spaceId);
+      if (entry.op === "del") clearServerRev(entry.key, binding.spaceId);
       pushed += 1;
     } catch (_) {
       if (_wipeEpoch !== startEpoch) { failed = false; break; } // 抹除中止：不重试不残留
@@ -233,8 +236,8 @@ export function resolveCloudConflict(key, choice) {
       // del 冲突的 keep_local：force DELETE（二审必修 5）——不再是静默无效选项
       const binding = hubBinding(loadStorageConfig());
       if (binding.bound) {
-        void Promise.resolve(hubDeleteSave(binding, key, { expectedRev: expectedRevFor(key), force: true }))
-          .then((r) => { if (r.ok) clearServerRev(key); })
+        void Promise.resolve(hubDeleteSave(binding, key, { expectedRev: expectedRevFor(key, binding.spaceId), force: true }))
+          .then((r) => { if (r.ok) clearServerRev(key, binding.spaceId); })
           .catch(() => enqueueCloudPush(key, undefined, "del"));
       }
     }
@@ -243,7 +246,7 @@ export function resolveCloudConflict(key, choice) {
     // expectedRev 不再必然 409。服务端未上报 serverRev 时无法对齐——UI 文案需说明
     // 这只是暂停同步、下次推送仍可能冲突（见 SavesTab）。
     if (Number.isFinite(hit.serverRev)) {
-      recordServerRev(key, hit.serverRev);
+      recordServerRev(key, hit.serverRev, hubBinding(loadStorageConfig()).spaceId);
     }
   }
   return true;
@@ -256,9 +259,9 @@ function enqueueCloudForcePush(key, value) {
   if (!binding.bound) return;
   void (async () => {
     const payloadEnc = await encryptSaveValue(value);
-    return hubPutSave(binding, key, payloadEnc, { expectedRev: expectedRevFor(key), force: true });
+    return hubPutSave(binding, key, payloadEnc, { expectedRev: expectedRevFor(key, binding.spaceId), force: true });
   })().then((r) => {
-    if (r.ok && Number.isInteger(r.rev)) recordServerRev(key, r.rev);
+    if (r.ok && Number.isInteger(r.rev)) recordServerRev(key, r.rev, binding.spaceId);
   }).catch(() => {
     // 强制推送也失败就回普通队列等退避重试——但不再带 force，避免无意识的自动覆盖
     enqueueCloudPush(key, value);

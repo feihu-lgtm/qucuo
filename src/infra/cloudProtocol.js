@@ -41,27 +41,31 @@ function hubHeaders(binding, withBody = false) {
 // ── serverRev 台账（per-key 服务端权威 rev）────────────────────────────
 // expectedRev 只能取自这里：首写 0，成功后记响应 rev，409 后按 serverRev 对齐。
 // 本地递增计数器不是 CAS 依据——多设备/重建场景它与服务端必然错位。
+// 台账键按 space 命名空间隔离（Review 修）：换 space 后旧空间的 rev 绝不当新空间
+// CAS 依据——否则两端 rev 恰好相等时新空间备份被静默覆盖无冲突。
+function ledgerKey(spaceId, slot) { return `${spaceId || ""}::${slot}`; }
+// 读视图保留 slot 后缀形状（测试用）：`space::slot` 全键。
 export function getServerRevs() { return _lsRead(SERVER_REVS_KEY, {}); }
-export function recordServerRev(key, rev) {
+export function recordServerRev(key, rev, spaceId = "") {
   if (!Number.isInteger(rev)) return;
   const revs = getServerRevs();
-  revs[key] = rev;
+  revs[ledgerKey(spaceId, key)] = rev;
   _lsWrite(SERVER_REVS_KEY, revs);
 }
-export function clearServerRev(key) {
+export function clearServerRev(key, spaceId = "") {
   const revs = getServerRevs();
-  delete revs[key];
+  delete revs[ledgerKey(spaceId, key)];
   _lsWrite(SERVER_REVS_KEY, revs);
 }
 export function clearAllServerRevs() { _lsWrite(SERVER_REVS_KEY, {}); }
-export function expectedRevFor(key) { return getServerRevs()[key] ?? 0; }
+export function expectedRevFor(key, spaceId = "") { return getServerRevs()[ledgerKey(spaceId, key)] ?? 0; }
 
 // 首次错位自动对齐台账：adapter 迁移/换绑后首推必然 409 一次——允许对齐重推一次；
 // 已对齐过或有成功推送台账的键再 409 即真实多端冲突，必须进冲突登记绝不静默。
 export function getAlignedOnce() { return _lsRead(ALIGNED_ONCE_KEY, {}); }
-export function markAlignedOnce(key) {
+export function markAlignedOnce(key, spaceId = "") {
   const aligned = getAlignedOnce();
-  aligned[key] = true;
+  aligned[ledgerKey(spaceId, key)] = true;
   _lsWrite(ALIGNED_ONCE_KEY, aligned);
 }
 

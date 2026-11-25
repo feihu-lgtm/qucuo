@@ -70,12 +70,12 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     expect(calls[0].body.expectedRev).toBe(0); // 首写 0
     expect(calls[0].body.rev).toBeUndefined(); // 本地计数器不上送
     expect(calls[0].body.value).toBeUndefined(); // 明文不上送
-    expect(getServerRevs().autosave).toBe(1);
+    expect(getServerRevs()["sp1::autosave"]).toBe(1);
     // 续写：expectedRev 取台账 1
     enqueueCloudPush("autosave", { v: 2 });
     await flushCloudQueue();
     expect(calls[1].body.expectedRev).toBe(1);
-    expect(getServerRevs().autosave).toBe(2);
+    expect(getServerRevs()["sp1::autosave"]).toBe(2);
   });
 
   it("payload 是 v1.iv.ct 密文串，不含明文内容", async () => {
@@ -128,7 +128,7 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     expect(r.ok).toBe(true);
     expect(n).toBe(2);
     expect(bodies[1].expectedRev).toBe(7); // 对齐服务端 rev 重推
-    expect(getServerRevs().autosave).toBe(8);
+    expect(getServerRevs()["sp1::autosave"]).toBe(8);
     expect(getCloudConflicts()).toEqual([]); // 迁移错位不算冲突
   });
 
@@ -137,7 +137,7 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     configureCloudFetch(async () => okJson({ rev: 3 }));
     enqueueCloudPush("autosave", { v: 1 });
     await flushCloudQueue();
-    expect(getServerRevs().autosave).toBe(3); // 有成功推送台账
+    expect(getServerRevs()["sp1::autosave"]).toBe(3); // 有成功推送台账
     // 另一设备把服务端推到了 5——本端再推必 409
     configureCloudFetch(async () => ({ ok: false, status: 409, json: async () => ({ serverRev: 5, conflict: true }) }));
     enqueueCloudPush("autosave", { v: 2 });
@@ -159,7 +159,7 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     const del = calls.find((c) => c.method === "DELETE");
     expect(del).toBeTruthy();
     expect(del.body.expectedRev).toBe(4); // 用台账值而非本地计数
-    expect(getServerRevs().autosave).toBeUndefined();
+    expect(getServerRevs()["sp1::autosave"]).toBeUndefined();
   });
 
   it("force 只玩家裁决触发：自动 flush 绝不带 force；keep_local 裁决才带 force:true", async () => {
@@ -230,6 +230,23 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     expect(getCloudConflicts()).toEqual([]);
   });
 
+  it("Review 修：换 space 后台账不串——旧空间 rev 不作新空间 CAS 依据", async () => {
+    boundCfg();
+    configureCloudFetch(async () => okJson({ rev: 4 }));
+    enqueueCloudPush("autosave", { v: 1 });
+    await flushCloudQueue();
+    expect(getServerRevs()["sp1::autosave"]).toBe(4);
+    // 换空间重绑——expectedRev 必须回 0，绝不拿旧空间 rev 当 CAS
+    saveStorageConfig({ driver: "cloud", cloudUrl: "https://cloud.example.com", spaceId: "sp2", hubToken: "tok2", deviceId: "dev_t1", boundAt: 2 });
+    const bodies = [];
+    configureCloudFetch(async (url, init) => { bodies.push({ url, body: JSON.parse(init.body) }); return okJson({ rev: 1 }); });
+    enqueueCloudPush("autosave", { v: 2 });
+    await flushCloudQueue();
+    expect(bodies[0].body.expectedRev).toBe(0);
+    expect(bodies[0].url).toContain("/api/spaces/sp2/");
+    expect(getServerRevs()["sp2::autosave"]).toBe(1);
+  });
+
   it("初审返修：wipe 发生在 fetch await 期间——响应返回后翻代停笔，不写台账", async () => {
     boundCfg();
     let resolvePut = null;
@@ -243,7 +260,7 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     await wipeCloudAll(); // 翻代发生在 PUT 未返回期间
     resolvePut(okJson({ rev: 1 })); // 迟到的成功响应
     await flushing;
-    expect(getServerRevs().autosave).toBeUndefined(); // 台账不得写入已抹 rev
+    expect(getServerRevs()["sp1::autosave"]).toBeUndefined(); // 台账不得写入已抹 rev
   });
 
   it("网络失败保留队列 + 退避重试，离线不丢", async () => {
