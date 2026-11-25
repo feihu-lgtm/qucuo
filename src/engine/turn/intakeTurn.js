@@ -203,7 +203,10 @@ export function applyTalkTargetFallback(intakeResult, talkTarget, fallbackTarget
     // 另一个称呼（如「王五你这个畜生」），不能把它误算到唯一在场者头上；
     // 宁可不签，也不罚错旁观者。泛称/未点名（「你这个蠢货」）仍按唯一在场者回填。
     const vocative = String(act.text || "").match(/^([\u4e00-\u9fa5]{2,4})(?=你|，|,|！|!|？|\?)/)?.[1];
-    if (vocative && vocative !== target) continue;
+    const commonOpening = /^(我看|我想|我听|你说|你猜|感觉|觉得|知道|希望|其实|真的|现在|今天|刚才)$/.test(vocative || "");
+    // 显式点选对象时玩家意图已经确定，不做称呼猜测；只有唯一在场者 fallback
+    // 才需要避开「王五你……」这类明确点名不在场者的句式。
+    if (!talkTarget && vocative && vocative !== target && !commonOpening) continue;
     act.target = target;
   }
   return intakeResult;
