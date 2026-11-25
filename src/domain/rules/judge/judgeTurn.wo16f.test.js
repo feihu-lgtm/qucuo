@@ -58,10 +58,10 @@ describe("WO-16F-F1 free_act 按表签发", () => {
     const bf = buy.facts.find((x) => x.op === "CHANGE_VITALS_SILVER");
     expect(bf.moneyDelta).toBe(-10);
     expect(buy.notes.some((n) => n.includes("货架同名"))).toBe(true);
-    // 货架/物件志都查不到：risk 默认（无=2；中=10）
+    // 无目标物（服务/请客/打点）：不套 misc 白档，直落 risk 默认（初审口径：无=2/中=10）
     const noAmt = judgeTurn(base(), act(fa("破费", "无", "随便花点")), { rng: () => 0.5 });
-    // 鱼定村无商户在场 → misc 白档基准 10（物件志无「随便」匹配）
-    expect(noAmt.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-10);
+    expect(noAmt.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-2);
+    expect(noAmt.notes.some((n) => n.includes("risk默认"))).toBe(true);
     const midRisk = judgeTurn(base(), act(fa("破费", "中", "夜间悄悄打点")), { rng: () => 0.5 });
     const mf = midRisk.facts.find((x) => x.op === "CHANGE_VITALS_SILVER");
     expect(mf.moneyDelta).toBe(-10);
@@ -178,5 +178,32 @@ describe("S3 Review 二轮两单回归", () => {
     const f = v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER");
     expect(Math.abs(f.moneyDelta)).toBeLessThan(100); // 茶价量级，绝非武器 330
     expect(v.notes.some((n) => n.includes("柳青鸢的菊花茶"))).toBe(true);
+  });
+});
+
+describe("S3 调度初审口径回归", () => {
+  it("买一两茶叶（纯货量无钱文）不认价，走查价/默认", () => {
+    const v = judgeTurn(base(), act(fa("破费", "无", "买一两茶叶")), { rng: () => 0.5 });
+    const f = v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER");
+    expect(f.moneyDelta).not.toBe(-1); // 绝不把货量 1 当价
+    expect(v.notes.some((n) => n.includes("risk默认") || n.includes("货架") || n.includes("物件志"))).toBe(true);
+  });
+  it("明确钱文无动词也认：收了二十两银子", () => {
+    const v = judgeTurn(base(), act(fa("破费", "无", "递上二十两银子")), { rng: () => 0.5 });
+    expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-20);
+  });
+  it("席面/薄饼双具名同现=歧义，不落价走默认", async () => {
+    const { CATALOG_INDEX } = await import("../../data/items/catalog.js");
+    const names = Object.keys(CATALOG_INDEX).filter((n) => n.length >= 2);
+    if (names.length < 2) return;
+    const [a, b] = names;
+    const v = judgeTurn(base(), act(fa("破费", "无", `买了${a}又订了${b}`)), { rng: () => 0.5 });
+    if (!a.includes(b) && !b.includes(a)) {
+      expect(v.notes.some((n) => n.includes("risk默认"))).toBe(true);
+    }
+  });
+  it("item 为无（服务类）不套 misc 白档：打点中risk=10", () => {
+    const v = judgeTurn(base(), act(fa("破费", "中", "夜间悄悄打点")), { rng: () => 0.5 });
+    expect(v.notes.some((n) => n.includes("risk默认(中)"))).toBe(true);
   });
 });

@@ -190,7 +190,10 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         if (stated != null) {
           amt = stated;
         } else {
-          const cat = action.item && action.item !== "无" ? (envelope.inv || []).find((e) => e && e.name === action.item)?.category || "misc" : "misc";
+          // category 只在目标物能确定时传入（背包实证）；item 为无/查无实证传空——
+          // 服务/请客/打点不得默认套 misc 白档，应落 risk 默认（调度初审口径）。
+          const invHit = action.item && action.item !== "无" ? (envelope.inv || []).find((e) => e && e.name === action.item) : null;
+          const cat = invHit?.category || "";
           const hit = resolveFreeActExpense({
             text: String(action.text || ""),
             itemName: action.item && action.item !== "无" ? action.item : "",
