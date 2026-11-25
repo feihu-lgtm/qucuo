@@ -13,16 +13,38 @@ export function materializeEmergence({ p, luck, innerRoomName, npcState }) {
   return {
     changes: {
       varTree: (prev) => clearRumor(prev, p.emergedNpcName),
-      room: (r) => ({
-        ...r,
-        npcs: materializeNpc(r.npcs, p.emergedNpcName,
-          ensureNpcCombatData({
-            ...(r.npcs.find(n => n.name === p.emergedNpcName) || {}),
-            personalityProfile,
-            // 叙事里登场的人就站在玩家此刻所在的内层房间，不再默认落到锚点
-            ...(hasInnerMap(r.name) && innerRoomName ? { innerRoom: innerRoomName } : {}),
-          }, { luck, levelCap, trade: npcTradeOf(npcState, { name: p.emergedNpcName }) })),
-      }),
+      room: (r) => {
+        // p.room.npcs 只并最小形状的 name/brief——fixateNpcs 已把该条目固化上
+        // 「brief+整段正文」推导的战斗数据，而 ensureNpcCombatData 对已有数据直接
+        // 跳过不重算，整份并入会让正文里形容别人的词（"掌门""学徒"）错定此人战力。
+        const proposed = p.room?.npcs?.find(n => n?.name === p.emergedNpcName);
+        const fixed = ensureNpcCombatData({
+          // 合并次序：r.npcs 同名者（重逢）最优先，其次最小形状的 brief/carry——
+          // carry 是单调用提取层「所见即所得」的可见装备声明（不是战斗数值），
+          // ensureNpcCombatData 用它初始化 carriedItems；丢弃会让可偷/可掉落的
+          // 东西与叙事描述对不上。skills/combatStats 等推导数据仍不并。
+          ...(proposed ? {
+            ...(proposed.brief ? { brief: proposed.brief } : {}),
+            // 模型可能把 carry 返回成对象/字符串——非数组一律丢弃，
+            // 否则 attireExposure 的 ...(npc.carry||[]) 展开在后续回合直接抛错
+            ...(Array.isArray(proposed.carry) ? { carry: proposed.carry } : {}),
+          } : {}),
+          ...(r.npcs.find(n => n.name === p.emergedNpcName) || {}),
+          // upsert 路径下原名单里没有此人，名字必须显式带上；id 用确定性派生——
+          // 交易回调按 n.id === npc.id 寻址，两个 undefined 相等会串改旁人随身物
+          name: p.emergedNpcName,
+          id: `emerged_${p.emergedNpcName}`,
+          personalityProfile,
+          // 叙事里登场的人就站在玩家此刻所在的内层房间，不再默认落到锚点
+          ...(hasInnerMap(r.name) && innerRoomName ? { innerRoom: innerRoomName } : {}),
+        }, { luck, levelCap, trade: npcTradeOf(npcState, { name: p.emergedNpcName }) });
+        // materializeNpc 只替换不新增：固定地图原地互动时 writeRoom 只认 r.npcs 名单、
+        // 不信 p.room.npcs 的成员增减，所以登场者不存在时必须追加，否则永远进不了屋。
+        const npcs = r.npcs.some((n) => n?.name === p.emergedNpcName)
+          ? materializeNpc(r.npcs, p.emergedNpcName, fixed)
+          : [...r.npcs, fixed];
+        return { ...r, npcs };
+      },
     },
   };
 }

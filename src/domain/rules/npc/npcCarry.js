@@ -288,7 +288,7 @@ export function attireExposure(npc, trade = null) {
   // 袋装货（slot:bag）不算穿过；台账里老 true 值没法分门别类，保守不算。
   const hadProtective = [
     ...npc.carriedItems.filter((e) => e?.sold || e?.stolen || e?.dropped),
-    ...(npc.carry || []),
+    ...(Array.isArray(npc.carry) ? npc.carry : []),
     ...(npc.stealables?.equipment || []),
     ...Object.values(trade?.sold || {}).filter((e) => e && typeof e === "object"),
   ].some((e) => {
