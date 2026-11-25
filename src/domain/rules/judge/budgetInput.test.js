@@ -39,9 +39,15 @@ describe("buildCausalBudgetInput 八参装配", () => {
     const out = buildCausalBudgetInput(baseState, { actions: [{ kind: "talk", target: "张三" }] }, {});
     expect(out.targetAffection).toBe(70);
   });
-  it("questClimax 读候选 isFinalStage", () => {
-    expect(buildCausalBudgetInput({ ...baseState, questCandidates: [{ isFinalStage: true }] }, {}, {}).questClimax).toBe(true);
-    expect(buildCausalBudgetInput(baseState, {}, {}).questClimax).toBe(false);
+  it("questClimax 须玩家实际推进末阶段（proposals quest_advance 命中）", () => {
+    const st = { ...baseState, questCandidates: [{ isFinalStage: true, questId: "q1", flag: "f1" }] };
+    // 只在场不推进 → false（普通搭话不抬额度）
+    expect(buildCausalBudgetInput(st, { actions: [{ kind: "talk" }] }, {}).questClimax).toBe(false);
+    // proposals 命中末阶段 → true
+    expect(buildCausalBudgetInput(st, { proposals: [{ kind: "quest_advance", questId: "q1", flag: "f1" }] }, {}).questClimax).toBe(true);
+    // 命中非末阶段 → false
+    const st2 = { ...baseState, questCandidates: [{ isFinalStage: false, questId: "q1", flag: "f1" }] };
+    expect(buildCausalBudgetInput(st2, { proposals: [{ kind: "quest_advance", questId: "q1", flag: "f1" }] }, {}).questClimax).toBe(false);
   });
 });
 

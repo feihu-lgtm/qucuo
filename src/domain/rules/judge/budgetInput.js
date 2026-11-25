@@ -72,9 +72,17 @@ export function buildCausalBudgetInput(state = {}, intakeResult = {}, opts = {})
     if (Number.isFinite(aff)) targetAffection = Math.max(targetAffection, aff);
   }
 
-  // questClimax：候选含末阶段推进
+  // questClimax：玩家本回合实际在推进末阶段才算支线高潮——候选在场只是
+  // 「可以推进」，不等于「正在推进」；否则普通搭话路过终幕地点也会抬额度。
+  // 口径：proposals 里 quest_advance 的 questId+flag 命中末阶段候选。
   const candidates = Array.isArray(state.questCandidates) ? state.questCandidates : [];
-  const questClimax = candidates.some((c) => c?.isFinalStage || c?.climax);
+  const finalKeys = new Set(
+    candidates.filter((c) => c?.isFinalStage || c?.climax).map((c) => `${c.questId}::${c.flag}`),
+  );
+  const proposalsArr = Array.isArray(intakeResult.proposals) ? intakeResult.proposals : [];
+  const questClimax = finalKeys.size > 0 && proposalsArr.some(
+    (p) => p?.kind === "quest_advance" && finalKeys.has(`${p.questId}::${p.flag}`),
+  );
 
   const turn = Number.isFinite(state.turn) ? state.turn : 0;
   const day = Number.isInteger(state.day) ? state.day : Math.floor(turn / 24) + 1;
