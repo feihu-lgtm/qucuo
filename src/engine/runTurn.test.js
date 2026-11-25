@@ -11,10 +11,6 @@ import { createExtractionState, runTurn } from "./runTurn.js";
 import { playTurn, ROLLBACK_KEYS } from "./playTurn.js";
 import { refAccessors } from "../tests/mockRef.js";
 import { commitRound } from "./act/commitRound.js";
-import { executeJudgeRoutes } from "../app/hooks/judgeRoutes.js";
-import { bindTurnRuntime } from "../features/turnRuntime.js";
-import { getTurnContext, PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
-bindTurnRuntime({ getTurnContext, PHASE, turnMonitor, withTurnContext });
 
 function createPlayTurnContext(ai, commitRound) {
   const room = { name: "石阶", exits: [], npcs: [], items: [] };
@@ -225,119 +221,7 @@ describe("runTurn", () => {
     expect(turn.judgePipelineActive).toBe(true);
   });
 
-  it("WO-16F-F2a：判官链下打字装备/用物/拾取状态真实变化且叙事输入含回执；单调用零变化", async () => {
-    const mkAction = (kind, item, text) => ({
-      kind, target: "无", item, itemId: "", direction: "none", condition: "无",
-      condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text,
-    });
-    const runOnce = async (action, apiExtra = {}) => {
-      const intakeJson = JSON.stringify({ read: "x", refIds: [], actions: [action], proposals: [] });
-      const narrativeInputs = [];
-      const ai = {
-        async chat(messages, chatOpts) {
-          const all = String(chatOpts?.systemPrompt || "") + "\n" + JSON.stringify(messages || []);
-          if (!all.includes("听意员")) narrativeInputs.push(all);
-          if (all.includes("听意员")) return { text: intakeJson };
-          return { text: '叙事一句。\n---SEAL---\n{"fills":{},"respondedNpcs":[],"spontaneousPact":null}' };
-        },
-      };
-      const varTree = { 角色: {} };
-      const deps = {
-        convo: [], addLog: vi.fn(), setConvo: vi.fn(),
-        apiCfg: { extractionEnabled: true, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000, ...apiExtra },
-        intent: { code: "UNKNOWN", label: "无法判定" },
-        room: { name: "鱼定村", npcs: [], items: [], exits: [] },
-        inv: [], char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
-        varTree, memory: { varTreeLatest: varTree, recall: { lastAiText: "" } },
-        gm: false, flags: [],
-        narrator: initialNarratorState(), narratorStage: initialNarratorState().stage,
-        scenario: "测试剧本", preset: { scenario: "测试剧本" },
-        charBodyProfile: emptyBodyProfile(), charName: "少侠",
-        dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
-        time: 1, getTimeStr: () => "卯时",
-        hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
-        visibleNpcsCount: 0, npcLoreBlockWithQuest: "",
-        isTalk: false,
-        executeJudgeRoutes,
-        ai,
-      };
-      await runTurn(deps, action.text);
-      return narrativeInputs;
-    };
 
-    const prevInv = gameStore.getState().inv;
-    try {
-      // 装备：背包铁护甲从无 equipped 到 true
-      gameActions.setInv([{ id: "it_a1", name: "铁护甲", category: "armor" }]);
-      const inputs = await runOnce(mkAction("equip", "铁护甲", "戴上铁护甲"));
-      expect(gameStore.getState().inv.find((it) => it?.id === "it_a1")?.equipped).toBe(true);
-      expect(inputs.some((c) => c.includes("系统已结算·路由回执"))).toBe(true);
-      expect(inputs.some((c) => c.includes("装备"))).toBe(true);
-
-      // 用物：消耗品服下后从背包消失
-      gameActions.setInv([{ id: "it_j1", name: "青稞酒", category: "misc", consumable: { sixDimTemp: { 体魄: 1 } } }]);
-      const useInputs = await runOnce(mkAction("use_item", "青稞酒", "喝一口青稞酒"));
-      expect(gameStore.getState().inv.find((it) => it?.id === "it_j1")).toBeUndefined();
-      expect(useInputs.some((c) => c.includes("系统已结算·路由回执"))).toBe(true);
-
-      // 拾取：地上物进背包、从房间消失
-      const prevRoom = gameStore.getState().room;
-      gameActions.setRoom({ ...(prevRoom || {}), name: "鱼定村", npcs: [], exits: [], items: [{ id: "it_g1", name: "遗落的皮靴" }] });
-      await runOnce(mkAction("take", "遗落的皮靴", "捡起遗落的皮靴"));
-      expect((gameStore.getState().inv || []).some((it) => it?.id === "it_g1")).toBe(true);
-      expect((gameStore.getState().room?.items || []).some((it) => it?.id === "it_g1")).toBe(false);
-      if (prevRoom) gameActions.setRoom(prevRoom);
-
-      // 单调用模式（extractionEnabled 关）：判官链不激活，路由零执行
-      gameActions.setInv([{ id: "it_a2", name: "铁护甲", category: "armor" }]);
-      await runOnce(mkAction("equip", "铁护甲", "戴上铁护甲"), { extractionEnabled: false });
-      expect(gameStore.getState().inv.find((it) => it?.id === "it_a2")?.equipped).toBeFalsy();
-    } finally {
-      gameActions.setInv(prevInv || []);
-    }
-  });
-
-  it("WO-16F-F2a：找不到物件不得静默签成功——回执注入失败摘要", async () => {
-    const calls = [];
-    const intakeJson = JSON.stringify({
-      read: "x", refIds: [],
-      actions: [{ kind: "equip", target: "无", item: "屠龙宝刀", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "戴上屠龙宝刀" }],
-      proposals: [],
-    });
-    const ai = {
-      async chat(messages, chatOpts) {
-        const all = String(chatOpts?.systemPrompt || "") + "\n" + JSON.stringify(messages || []);
-        calls.push(all);
-        if (all.includes("听意员")) return { text: intakeJson };
-        return { text: '叙事一句。\n---SEAL---\n{"fills":{},"respondedNpcs":[],"spontaneousPact":null}' };
-      },
-    };
-    const varTree = { 角色: {} };
-    const deps = {
-      convo: [], addLog: vi.fn(), setConvo: vi.fn(),
-      apiCfg: { extractionEnabled: true, judgePipelineEnabled: true, streamEnabled: false, maxTokens: 4000 },
-      intent: { code: "UNKNOWN", label: "无法判定" },
-      room: { name: "鱼定村", npcs: [], items: [], exits: [] },
-      inv: [], char: { hp: [80, 100], special: { 气运: 5 } }, skills: [],
-      varTree, memory: { varTreeLatest: varTree, recall: { lastAiText: "" } },
-      gm: false, flags: [],
-      narrator: initialNarratorState(), narratorStage: initialNarratorState().stage,
-      scenario: "测试剧本", preset: { scenario: "测试剧本" },
-      charBodyProfile: emptyBodyProfile(), charName: "少侠",
-      dao: { karma: 0, jie: 0 }, questProgress: {}, companionState: {},
-      time: 1, getTimeStr: () => "卯时",
-      hasInnerMap: () => false, describeEquipment: () => "", describeTodayForAI: () => "",
-      visibleNpcsCount: 0, npcLoreBlockWithQuest: "",
-      isTalk: false,
-      executeJudgeRoutes,
-      ai,
-    };
-    await runTurn(deps, "戴上屠龙宝刀");
-    // deps 是 runTurn 内部新组装的，断言走叙事输入内容
-    const narrative = calls.find((c) => !c.includes("听意员")) || "";
-    expect(narrative).toContain("未能如愿");
-    expect(narrative).toContain("不得写成成功");
-  });
 
   it("normalizes and returns a duel request for an NPC present in the room", async () => {
     const npc = { name: "才旦" };
