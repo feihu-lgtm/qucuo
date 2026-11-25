@@ -167,3 +167,31 @@ describe("影子时间口径（WO-16E 二审）", () => {
     expect(envelope.day).toBe(Math.floor(48 / 24) + 1);
   });
 });
+
+describe("WO-16G 影子喂料同源", () => {
+  it("shadow 调用 buildIntakeUserContent 传与 runTurn 同一组喂料参数名", async () => {
+    const { buildIntakeUserContent } = await import("../../turn/intakeTurn.js");
+    const intakeTurn = await import("../../turn/intakeTurn.js");
+    const spy = vi.spyOn(intakeTurn, "buildIntakeUserContent");
+    const base = {
+      cmd: "测试", apiCfg: { extractionEnabled: false, shadowJudgeEnabled: true },
+      preState: {
+        inv: [{ id: "it_1", name: "青稞酒" }], flags: ["f1"], varTree: {},
+        room: { npcs: [], name: "鱼定村", items: [] }, char: {}, turn: 1,
+        questProgress: {}, innerRoomName: "广场",
+      },
+      postState: { inv: [], flags: [], varTree: {}, room: { npcs: [], name: "鱼定村" }, turn: 1 },
+      ai: { chat: async () => ({ text: "{}" }) },
+    };
+    await runShadowJudge(base);
+    expect(spy).toHaveBeenCalled();
+    const arg = spy.mock.calls[0][0];
+    // 与 runTurn 同一组参数名——同源口径钉住，缺一个都是对账失真
+    for (const key of ["room", "innerRoomName", "questProgress", "flags", "inv", "char", "varTree"]) {
+      expect(arg).toHaveProperty(key);
+    }
+    expect(arg.inv).toEqual([{ id: "it_1", name: "青稞酒" }]);
+    spy.mockRestore();
+    void buildIntakeUserContent;
+  });
+});

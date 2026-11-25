@@ -145,10 +145,10 @@ flowchart LR
 形状冻结：`{ read, refIds, actions, proposals }`。
 - `read`：不超过 40 字，拆清代词与意图核心。
 - `refIds`：玩家援引的场记板条目 ID。
-- `actions[]`：`kind/target/itemId/direction/stance`；kind 为封闭枚举，direction 为 `n/s/e/w/none`。
+- `actions[]`（WO-16G PR-G1 起 12 字段全 required）：`kind/target/item/itemId/direction/condition/condition_text/stance/outcome/risk/confidence/text`；kind 为封闭枚举，direction 为 `n/s/e/w/none`，outcome 枚举 `无/伤损/得财/破费/调息/修习/服用/受寒中毒/醉酒/其他`，risk 枚举 `无/低/中/高`，confidence 为 0-1 数值；缺省语义空串/none/无/0，禁联合类型。outcome/risk 本阶段只进 schema 与喂料，判官消费属 WO-16F（risk 已被 budgetInput 两层兼容读取）。
 - `proposals[]`：玩家声称可促成的发现或交易，`fit` 分 `natural/stretch/absurd`。
 
-原则：小模型只选择系统喂入的候选，不允许自造 ID；`normalizeIntakeResult` 不合形制就降级为空听意单。
+原则：小模型只选择系统喂入的候选，不允许自造 ID；`normalizeIntakeResult` 做修复式复核——先剥模型多填的未声明键、给缺省键补默认值，修不好才降级为空听意单。喂料清单（拆句 hints/可用出口/可赠/可用/可拾/可穿戴，`名字(编号)` 统一格式）只在 `buildIntakeUserContent` 一处组装，runTurn 与 shadow 同源调用；不喂银两——仓内无独立玩家钱币状态（WO-16D 审计口径）。
 
 ### 契约 C：`JudgeVerdict` 判官定案单
 

@@ -6,7 +6,11 @@ describe("INTAKE_JSON_SCHEMA（契约 B 冻结形状）", () => {
   const valid = {
     read: "玩家要把酒送给才旦",
     refIds: ["P18_2"],
-    actions: [{ kind: "give", target: "才旦", itemId: "it_8f3a", direction: "none", stance: "sincere" }],
+    actions: [{
+      kind: "give", target: "才旦", item: "霜牙短刀", itemId: "it_8f3a", direction: "none",
+      condition: "无", condition_text: "", stance: "sincere",
+      outcome: "无", risk: "无", confidence: 0.9, text: "把酒送给才旦",
+    }],
     proposals: [{ claim: "桌上有本剑谱", kind: "find_item", fit: "stretch", questId: "", flag: "" }],
   };
 
@@ -44,6 +48,18 @@ describe("INTAKE_JSON_SCHEMA（契约 B 冻结形状）", () => {
     expect(INTAKE_JSON_SCHEMA.schema.properties.proposals.items.properties.fit.enum).toEqual(["natural", "stretch", "absurd"]);
     // B1：kind 枚举经派工核准扩展 quest_advance（任务推进提议），并允许可选 questId/flag
     expect(INTAKE_JSON_SCHEMA.schema.properties.proposals.items.properties.kind.enum).toEqual(["find_item", "secret_clue", "social_deal", "environment_use", "quest_advance"]);
+    // WO-16G：outcome/risk/condition 枚举与 roadmap 一字不差
+    expect(actionProps.outcome.enum).toEqual(["无", "伤损", "得财", "破费", "调息", "修习", "服用", "受寒中毒", "醉酒", "其他"]);
+    expect(actionProps.risk.enum).toEqual(["无", "低", "中", "高"]);
+    expect(actionProps.condition.enum).toEqual(["无", "遇敌", "到达", "被拒", "其他"]);
+  });
+
+  it("WO-16G：actions 12 字段全 required，禁联合类型", () => {
+    const item = INTAKE_JSON_SCHEMA.schema.properties.actions.items;
+    expect(item.required).toEqual(["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text"]);
+    for (const key of item.required) expect(key in item.properties).toBe(true);
+    for (const sub of Object.values(item.properties)) expect(Array.isArray(sub.type)).toBe(false);
+    expect(item.properties.confidence.type).toBe("number");
   });
 
   it("B1 quest_advance：questId/flag 必填（strict 全 required）；空串合法，缺键/自编键拒收", () => {
