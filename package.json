@@ -18,7 +18,8 @@
     "dev:qa": "node e2e/harness/server.mjs",
     "test:server": "node --test server/memory-hub/hubCore.test.mjs",
     "shadow:report": "node scripts/shadowCoverageReport.mjs",
-    "shadow:sample": "vitest run src/tests/shadowSampling.test.js"
+    "shadow:sample": "vitest run src/tests/shadowSampling.test.js",
+    "release:report": "node scripts/releaseReport.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
