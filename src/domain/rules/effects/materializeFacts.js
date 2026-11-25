@@ -507,6 +507,7 @@ export function materializeFacts(state, facts, compiledWarrants) {
               deadlineHours: fact.deadlineHours ?? null,
               rewardHint: fact.rewardHint || "",
               bindTurn: turn,
+              place: state.room?.name || "", // 立约地点（WO-22B-P4a 复审）：逾期催问信要写「在何处说定」，不记就只能拿玩家当前所在房间冒充
               witnesses: fact.witnesses || [],
             },
             factId: fact.id,

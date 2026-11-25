@@ -69,6 +69,21 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
       const scope = { ...state, npcName, bio: npcCtx.bio, scenario: preset.scenario || "", promptRefOptions: { factLimit: 12 } };
       const facts = render("@事实摘要", scope);
       const factsBlock = facts ? "你与主角的共同记忆与近来见闻（自然带一两句，不要生硬罗列）：\n" + facts : "";
+      // WO-22B-P4a：契约信（pactMeta 非空）换「这封信是为一桩约定而写」块，
+      // 替换原「心血来潮」段——违约后收到闲谈的叙事错位由这里消除。
+      // 非契约信 pactView 为 null，走原心血来潮段一字不变。
+      const pv = ctx.letter?.pactView || null;
+      const 写信缘起 = pv
+        ? `【这封信是为一桩约定而写】
+事由：${pv.reasonLabel}
+约定：${pv.place ? `在${pv.place}` : ""}说定「${pv.promise}」，${pv.deadlineText}
+允诺的酬谢：${pv.rewardText}
+写信人：${pv.npcName}，${pv.factionName || "散人"}
+口吻取材：${pv.factionToneHint}
+分寸：${pv.severityGuide}
+
+写成书信，四到八句，第一句就点明是哪一桩约定。立诺留凭的，只记事由与期限；如约致谢的，写清酬谢怎么交到对方手上；逾期催问的，按上面的分寸定轻重。不许许下约定之外的新酬谢，不许编造写信人不在场时发生的事。`
+        : "你心血来潮，主动给主角写信。按你的性情与近况起笔：落魄就诉穷借钱、受过恩惠就问候致谢、被他怠慢过或卖过他东西就夹枪带棒埋怨两句、油滑风流就婊里婊气撩拨——写什么由你的成色定。";
       return render(`你是武侠世界「曲措乡」中的【@npcName】@bio
 你与主角的关系：好感度 @通信.好感度/100@通信.态度。好感越低越冷淡疏离，越高越亲近热络。
 剧本背景：@scenario
@@ -76,8 +91,8 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
 你们此前往来的信件（须前后连贯、不自相矛盾）：
 @通信.往来
 @factsBlock
-你心血来潮，主动给主角写信。按你的性情与近况起笔：落魄就诉穷借钱、受过恩惠就问候致谢、被他怠慢过或卖过他东西就夹枪带棒埋怨两句、油滑风流就婊里婊气撩拨——写什么由你的成色定。
-请以【@npcName】的口吻，用白话古文书信体写信。只写正文（可含简短落款），约 80–160 字。`, { ...scope, factsBlock, 近况 });
+@写信缘起
+请以【@npcName】的口吻，用白话古文书信体写信。只写正文（可含简短落款），约 80–160 字。`, { ...scope, factsBlock, 近况, 写信缘起 });
     },
   });
 

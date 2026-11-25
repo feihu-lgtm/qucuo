@@ -12,6 +12,7 @@
 import { createHeartLedgerEntry, dedupeHeartLedgerId, capHeartLedgerEntries } from "../../domain/rules/memory/npcLedger.js";
 import { pigeonDelayShichen } from "./logic.js";
 import { findNpcObject } from "./inbound.js";
+import { isFierceNpc as isFierce } from "./pactLetter.js"; // 一处定义两侧共用（裁决顺手去重）
 
 // 起步数额（手册未定，最小起步并在 docs 写明）：每桩违约扣威望 5。
 export const PACT_BREACH_PRESTIGE_COST = 5;
@@ -19,12 +20,8 @@ export const PACT_BREACH_PRESTIGE_COST = 5;
 // 注释：品阶直接存在 NPC 身上的 levelCap 字段）。
 export const PACT_BREACH_LETTER_TIER = 3;
 
-function isFierce(npc) {
-  return /刚烈|烈性|火暴|暴躁|性烈/.test(`${npc?.personality || ""}${npc?.brief || ""}`);
-}
-
 // 扫一遍契约账，产出 { changes, logs } 或 null。纯函数：不掷骰、不读时钟、不调 AI。
-export function scanPactBreaches(state) {
+export function scanPactBreaches(state, { importedRegistry = null } = {}) {
   const pacts = state.varTree?.世界?.契约;
   if (!pacts || typeof pacts !== "object") return null;
   const now = state.time || 0;
@@ -47,7 +44,7 @@ export function scanPactBreaches(state) {
   const ledgerPatchOps = [];
   const logs = [];
   for (const { npcName, pactKey, pact } of due) {
-    const npc = findNpcObject(state, npcName);
+    const npc = findNpcObject(state, npcName, importedRegistry);
     const rawEntry = createHeartLedgerEntry({
       tag: "怨",
       summary: `逾期未践「${String(pact.promise).slice(0, 20)}」之约`,
@@ -128,8 +125,8 @@ export function scanPactBreaches(state) {
 export const pactWatchRule = {
   id: "pact.watch",
   deps: (state) => [Math.floor((state.time || 0) / 2), state.varTree?.世界?.契约],
-  run(state, { firstRun } = {}) {
+  run(state, { firstRun, importedRegistry } = {}) {
     if (firstRun) return null;
-    return scanPactBreaches(state);
+    return scanPactBreaches(state, { importedRegistry });
   },
 };
