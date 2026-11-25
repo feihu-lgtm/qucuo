@@ -113,6 +113,7 @@ export function createTurnContext({ plan, env }) {
     getGameState, gameActions, subscribeGameReplaced,
     commitDeps: (turnResult) => ({
         p: turnResult.p, mvuCommands: turnResult.mvuCommands, dealResult: turnResult.dealResult,
+        derivedRespondedNpcs: turnResult.derivedRespondedNpcs || null,
         intimateTicket,
         pickupExtractionFailed: turnResult.pickupExtractionFailed,
         rawFull: turnResult.rawFull, narrativeText: turnResult.narrativeText,

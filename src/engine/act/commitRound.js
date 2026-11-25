@@ -175,7 +175,7 @@ export function commitRound(d) {
     isTalk: d.isTalk, talkTarget: d.talkTarget, time: d.time,
     appendDayMaterial: d.appendDayMaterial,
   }));
-  applyPostResult(d, markTalkAcquaintance({ isTalk: d.isTalk, talkTarget: d.talkTarget, room: d.room, p: d.p })); // 对话即认识
+  applyPostResult(d, markTalkAcquaintance({ isTalk: d.isTalk, talkTarget: d.talkTarget, room: d.room, p: d.p, derivedRespondedNpcs: d.derivedRespondedNpcs })); // 对话即认识
   applyPostResult(d, appendConvo({ newConvo: d.newConvo, rawFull: d.rawFull, p: d.p, time: d.time })); // convo 条目追加 memory/turn
 
   // 回合完成登记：驱动"每 N 回合自动存档"。出错回滚的轮次不计数——
