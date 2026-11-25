@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const DOC_PATH = "docs/AI调用链架构说明.md";
 
@@ -46,9 +46,9 @@ export function isWatchedChainFile(file) {
   return !TEST_FILE.test(file) && WATCHED_PATHS.some((pattern) => pattern.test(file));
 }
 
-export function evaluateChangedFiles(files) {
+export function evaluateChangedFiles(files, { docExists = true } = {}) {
   const watched = files.filter(isWatchedChainFile);
-  const docUpdated = files.includes(DOC_PATH);
+  const docUpdated = files.includes(DOC_PATH) && docExists;
   return { watched, docUpdated, pass: watched.length === 0 || docUpdated };
 }
 
@@ -69,7 +69,7 @@ function changedFiles({ base, head }) {
 
 function main() {
   const files = changedFiles(parseArgs(process.argv.slice(2)));
-  const result = evaluateChangedFiles(files);
+  const result = evaluateChangedFiles(files, { docExists: existsSync(DOC_PATH) });
   if (result.pass) {
     if (result.watched.length) console.log("AI 调用链文档门禁：通过（架构说明已随本轮更新）");
     else console.log("AI 调用链文档门禁：通过（本轮未触碰调用链关键文件）");
