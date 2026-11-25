@@ -199,4 +199,16 @@ describe("WO-16F-F2a 判官路由集成", () => {
     gameActions.setInv([]);
   });
 
+  it("名/号矛盾不动错物（Review 修）", async () => {
+    gameActions.setInv([
+      { id: "it_sword", name: "铁剑", category: "weapon" },
+      { id: "it_wine", name: "青稞酒", category: "misc", consumable: { sixDimTemp: { 体魄: 1 } } },
+    ]);
+    // 请求名是青稞酒，itemId 却指铁剑——宁可失败也不得吃铁剑/穿错物
+    const out = executeJudgeRoutes([{ kind: "use_item", item: "青稞酒", itemId: "it_sword", target: "无", text: "喝青稞酒" }]);
+    expect(out.receipts[0].ok).toBe(false);
+    expect(gameStore.getState().inv).toHaveLength(2);
+    gameActions.setInv([]);
+  });
+
 });

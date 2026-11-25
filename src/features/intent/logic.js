@@ -16,7 +16,9 @@ export function findStepNpc(state, step) {
 function findInvItem(state, name, id) {
   if (id) {
     const byId = (state.inv || []).find((entry) => typeof entry === "object" && entry?.id === id);
-    if (byId) return byId;
+    // 名/号矛盾（intake 把名字的请求配了别物的编号）——宁可不命中也不动错物（Review 修）；
+    // 编号查无此物才退回按名寻址（编号可能过期/幻觉）。
+    if (byId) return itemNameOf(byId) === name ? byId : null;
   }
   return (state.inv || []).find((entry) => itemNameOf(entry) === name) || null;
 }
@@ -24,7 +26,7 @@ function findInvItem(state, name, id) {
 function findGroundItem(state, name, id) {
   if (id) {
     const byId = getGroundItems(state).find((entry) => typeof entry === "object" && entry?.id === id);
-    if (byId) return byId;
+    if (byId) return itemNameOf(byId) === name ? byId : null;
   }
   return getGroundItems(state).find((entry) => itemNameOf(entry) === name) || null;
 }
@@ -45,7 +47,7 @@ export function stepEffect(state, step) {
       if (step.text) result.settleOptions = { ...result.settleOptions, attempt: step.text };
       return result;
     }
-    case ACTION_KINDS.PICKUP: return pickGroundItem(state, findGroundItem(state, step.item, step.itemId) || (step.itemId ? { id: step.itemId, name: step.item } : step.item));
+    case ACTION_KINDS.PICKUP: return pickGroundItem(state, findGroundItem(state, step.item, step.itemId) || step.item);
     case ACTION_KINDS.EQUIP: {
       const item = findInvItem(state, step.item, step.itemId);
       if (!item?.id) return { logs: [{ t: "err", text: `  背包里没有${step.item || "这件装备"}。` }] };
