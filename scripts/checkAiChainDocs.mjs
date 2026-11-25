@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 const DOC_PATH = "docs/AI调用链架构说明.md";
 
@@ -8,13 +9,15 @@ const WATCHED_PATHS = [
   /^src\/engine\/ports\//,
   /^src\/engine\/turn\//,
   /^src\/engine\/runTurn\.js$/,
+  /^src\/engine\/playTurn\.js$/,
   /^src\/engine\/act\//,
   /^src\/engine\/intent\//,
+  /^src\/engine\/prompt\//,
   /^src\/domain\/rules\/clapboard\//,
   /^src\/domain\/rules\/effects\//,
   /^src\/domain\/rules\/judge\//,
   /^src\/domain\/rules\/prompt\//,
-  /^src\/domain\/rules\/state\/applyPatches\.js$/,
+  /^src\/domain\/rules\/state\//,
   /^src\/infra\/apiConfig\.js$/,
   /^src\/infra\/apiSse\.js$/,
   /^src\/infra\/apiTransport\.js$/,
@@ -24,7 +27,7 @@ const WATCHED_PATHS = [
 const TEST_FILE = /\.test\.jsx?$/;
 
 function runGit(args) {
-  return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+  return execFileSync("git", ["-c", "core.quotePath=false", ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
@@ -55,7 +58,11 @@ function changedFiles({ base, head }) {
     return runGit(["diff", "--name-only", `origin/${process.env.GITHUB_BASE_REF}...${head}`]);
   }
   if (process.env.GITHUB_EVENT_NAME === "push") {
-    try { return runGit(["diff", "--name-only", `${head}^`, head]); } catch { return []; }
+    try {
+      const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+      const before = event.before && !/^0+$/.test(event.before) ? event.before : `${head}^`;
+      return runGit(["diff", "--name-only", `${before}...${head}`]);
+    } catch { return []; }
   }
   return [];
 }
