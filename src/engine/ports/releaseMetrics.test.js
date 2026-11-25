@@ -91,6 +91,36 @@ describe("releaseMetrics 放行指标观测", () => {
     ]);
   });
 
+  it("vertex 通道按 vertexModel 分桶——cfg.model 相同不并桶", () => {
+    const base = { apiType: "vertex", model: "shared-irrelevant" };
+    recordIntakeMetric({ epoch: "1", cfg: { ...base, vertexModel: "google/gemini-3.8-flash" }, outcome: "schemaOk" });
+    recordIntakeMetric({ epoch: "1", cfg: { ...base, vertexModel: "google/gemini-3.8-pro" }, outcome: "schemaOk" });
+    const agg = releaseMetricAggregates("1");
+    expect(agg.intake).toHaveLength(2);
+    expect(agg.intake.map((r) => r.model).sort()).toEqual(["google/gemini-3.8-flash", "google/gemini-3.8-pro"]);
+  });
+
+  it("vertexModel 缺省回落默认模型，仍非 cfg.model", () => {
+    recordIntakeMetric({ epoch: "1", cfg: { apiType: "vertex", model: "decoy" }, outcome: "schemaOk" });
+    const agg = releaseMetricAggregates("1");
+    expect(agg.intake[0].model).not.toBe("decoy");
+    expect(agg.intake[0].model).toContain("gemini");
+  });
+
+  it("SEAL 锚到未填空与 emergence 拒绝均计 failed", () => {
+    const cfg = { provider: "openai", model: "gpt-4o-mini" };
+    // 基线全净 → passed
+    recordSealMetric({ epoch: "1", cfg, sealText: "{}", sealData: { fills: {} } });
+    // 条件券正文埋锚但尾章未填空 → failed
+    recordSealMetric({ epoch: "1", cfg, sealText: "{}", sealData: { fills: {} }, unfilledWarrants: ["w1"] });
+    // 声明新 NPC 被 emergence 拒绝 → failed
+    recordSealMetric({ epoch: "1", cfg, sealText: "{}", sealData: { fills: {} }, emergenceRejections: ["登场申报「甲」未在正文登场，丢弃"] });
+    const agg = releaseMetricAggregates("1");
+    expect(agg.seal).toEqual([
+      { provider: "openai", model: "gpt-4o-mini", total: 3, withSeal: 3, missingSeal: 0, jsonOk: 3, jsonFailed: 0, passed: 1, failed: 2 },
+    ]);
+  });
+
   it("production / test 默认关闭采集（零噪音）", () => {
     _setReleaseMetricsEnabledForTest(null);
     recordIntakeMetric({ epoch: "prod", cfg: { provider: "openai", model: "m" }, outcome: "schemaOk" });

@@ -449,15 +449,6 @@ async function runTurnSteps(ctx, cmd, opts) {
       luck: deps.char?.special?.气运 ?? 0,
       turn: stateForFacts.time,
     });
-    recordSealMetric({
-      epoch: ctx.proseEpoch ?? "default",
-      cfg: deps.apiCfg,
-      sealText: sealParts?.sealText || "",
-      sealData: verified.sealData,
-      warnings: verified.warnings,
-      missingAnchors: verified.missingAnchors,
-      rejectedAffixes: verified.rejectedAffixes,
-    });
     if (verified.missingAnchors.length) {
       const before = narrativeText || "";
       const patched = verified.screenText.startsWith(before) ? verified.screenText.slice(before.length) : "";
@@ -505,6 +496,19 @@ async function runTurnSteps(ctx, cmd, opts) {
         room: { ...(p.room || {}), npcs: roomNpcs },
       };
     }
+    // 放行指标在涌现校验之后统一记录——锚到了但尾章没填空（unfilledWarrants）、
+    // 声明新 NPC 被 emergence 拒绝（rejections）都必须计入 failed，早记会漏。
+    recordSealMetric({
+      epoch: ctx.proseEpoch ?? "default",
+      cfg: deps.apiCfg,
+      sealText: sealParts?.sealText || "",
+      sealData: verified.sealData,
+      warnings: verified.warnings,
+      missingAnchors: verified.missingAnchors,
+      rejectedAffixes: verified.rejectedAffixes,
+      unfilledWarrants: verified.unfilledWarrants,
+      emergenceRejections: emergenceCheck.rejections,
+    });
     judgeEffects = { verdict: judgeVerdict, sealReport: verified, materialized: verified.materialized };
     trace("尾章校对", "pass", `锚点齐 ${judgeVerdict.facts.length - verified.missingAnchors.length}/${judgeVerdict.facts.length}，编译券 ${Object.keys(verified.materialized?.receipts || {}).length}，facts 落盘 ${verified.facts.length} 条`);
   }

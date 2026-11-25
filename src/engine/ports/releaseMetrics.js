@@ -3,6 +3,8 @@
 // save epoch 隔离聚合；production 默认禁用且零噪音，绝不记录 API key 或正文，
 // 不写 gameStore、不落盘、不进 prompt、不影响玩家行为。
 
+import { getApiModel } from "../../content/apiModel.js";
+
 let recordingOverrideForTest = null;
 
 export function _setReleaseMetricsEnabledForTest(value) {
@@ -20,7 +22,9 @@ export function resolveReleaseMetricsEnabled() {
 
 function resolveProviderModel(cfg) {
   const provider = String(cfg?.provider || cfg?.apiType || "unknown").trim() || "unknown";
-  const model = String(cfg?.model || "unknown").trim() || "unknown";
+  // 必须走 getApiModel——vertex 通道真实模型在 cfg.vertexModel，直读 cfg.model
+  // 会把两个不同 vertexModel 的样本并进同一桶，放行报表失真。
+  const model = String(getApiModel(cfg) || "unknown").trim() || "unknown";
   return { provider, model, key: `${provider}::${model}` };
 }
 
@@ -61,6 +65,8 @@ export function recordSealMetric({
   warnings = [],
   missingAnchors = [],
   rejectedAffixes = [],
+  unfilledWarrants = [],
+  emergenceRejections = [],
 } = {}) {
   if (!resolveReleaseMetricsEnabled()) return;
   const { provider, model, key } = resolveProviderModel(cfg);
@@ -82,7 +88,9 @@ export function recordSealMetric({
     && Boolean(sealData)
     && (!warnings || warnings.length === 0)
     && (!missingAnchors || missingAnchors.length === 0)
-    && (!rejectedAffixes || rejectedAffixes.length === 0);
+    && (!rejectedAffixes || rejectedAffixes.length === 0)
+    && (!unfilledWarrants || unfilledWarrants.length === 0)
+    && (!emergenceRejections || emergenceRejections.length === 0);
   if (passed) row.passed += 1;
   else row.failed += 1;
 }

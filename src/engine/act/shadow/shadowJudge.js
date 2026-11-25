@@ -100,7 +100,11 @@ export async function runShadowJudge({
       questCandidates,
       containers: openContainers,
     });
-    const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: apiCfg }, { ai, apiCfg, throwOnError: false });
+    // 网关 guard 与 epoch 必须传入：stale/换档的影子样本不进网络也不计入
+    // intake 指标桶（withAI 在 stale 时提前返回、不 recordIntakeMetric），
+    // epoch 缺失会把所有影子样本混进 default 桶污染按档隔离的报表。
+    const shadowStale = () => Boolean(isStale?.() || epochGuard?.());
+    const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: apiCfg }, { ai, apiCfg, throwOnError: false, epoch, isStale: shadowStale });
     if (isStale?.() || epochGuard?.()) return null;
     const intakeResult = normalizeIntakeResult(intakeRes?.data);
     const verdict = judgeTurn({
