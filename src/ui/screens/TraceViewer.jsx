@@ -7,6 +7,7 @@ import { chromeBtn } from "../../utils/theme.js";
 import { gameStore, useGameStore, getGameEpoch } from "../../store/gameStore.js";
 import { shadowAggregates } from "../../engine/act/shadow/shadowJudge.js";
 import { formatShadowVerdicts, formatAggregate } from "../../engine/act/shadow/shadowFormat.js";
+import { summarizeShadowCoverage, evaluateShadowThresholds } from "../../engine/act/shadow/shadowCoverage.js";
 import {
   releaseMetricAggregates,
   formatReleaseMetricLines,
@@ -94,6 +95,24 @@ export default function TraceViewer({ theme, onClose, onReport }) {
               <summary style={{ cursor: "pointer", color: theme.textDim }}>影子对账聚合（本存档 epoch {epoch}）</summary>
               <div style={{ color: theme.textDim, fontSize: "var(--fs-xs)", marginTop: 4 }}>
                 {aggLines.map((line) => <div key={line}>{line}</div>)}
+                {/* WO-16D-1：覆盖率/放行阈值评估只读附行——口径见 docs 5.2 节末 */}
+                {(() => {
+                  const evaluation = evaluateShadowThresholds(summarizeShadowCoverage(shadowAgg));
+                  return (
+                    <div style={{ marginTop: 4 }}>
+                      {evaluation.pass
+                        ? "放行阈值评估：通过"
+                        : `放行阈值评估：不通过——${evaluation.failures.join("；")}`}
+                    </div>
+                  );
+                })()}
+                {/* WO-16D-1：只读导出聚合 JSON 供 scripts/shadowCoverageReport.mjs 覆盖率评估——不碰游戏状态 */}
+                <button type="button" style={{ ...button, marginTop: 4 }} onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(JSON.stringify(shadowAgg));
+                    setCopied("聚合JSON已复制");
+                  } catch { setCopied("复制失败"); }
+                }}>复制聚合JSON</button>
               </div>
             </details>
           ) : null;

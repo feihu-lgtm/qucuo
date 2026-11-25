@@ -16,7 +16,8 @@
     "tree": "node scripts/tree.mjs",
     "e2e": "node e2e/run.mjs",
     "dev:qa": "node e2e/harness/server.mjs",
-    "test:server": "node --test server/memory-hub/hubCore.test.mjs"
+    "test:server": "node --test server/memory-hub/hubCore.test.mjs",
+    "shadow:report": "node scripts/shadowCoverageReport.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
