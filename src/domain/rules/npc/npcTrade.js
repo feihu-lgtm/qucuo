@@ -53,9 +53,21 @@ export function applyTradeToCarriedItems(carriedItems = [], trade) {
   const sold = trade?.sold || {};
   const bought = trade?.bought || [];
   if (!Object.keys(sold).length && !bought.length) return carriedItems;
-  const kept = carriedItems.filter(i => {
-    if (i.stolen || i.dropped) return true; // 已有归宿：sold 无权改判
-    return !sold[itemKey(i)];
+  // WO-23D0b：台账 bought 实例快照优先于出场固化模板——模板重抽会同 id
+  // 再铸一件（`${npc.id}_ci${i}`），若不压掉模板，玩家赎回再卖回的实例
+  // （铭文/磨损等实例字段）会被模板货顶掉静默丢账。同一 itemKey 只留台账实例。
+  const boughtKeys = new Set(bought.map(itemKey).filter(Boolean));
+  const snapshotOf = new Map(bought.filter((b) => itemKey(b)).map((b) => [itemKey(b), b]));
+  const swappedKeys = new Set();
+  const kept = carriedItems.flatMap(i => {
+    if (i.stolen || i.dropped) return [i]; // 已有归宿：sold 无权改判
+    const key = itemKey(i);
+    // 模板同 id 原位换成台账实例（保序不挪位），实例字段（铭文/磨损）不丢
+    if (boughtKeys.has(key) && !swappedKeys.has(key)) {
+      swappedKeys.add(key);
+      return sold[key] ? [] : [{ ...snapshotOf.get(key), stolen: false, dropped: false }];
+    }
+    return !sold[key] ? [i] : [];
   });
   const present = new Set(kept.map(itemKey));
   const extras = bought
