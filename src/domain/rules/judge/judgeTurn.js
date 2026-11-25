@@ -50,7 +50,7 @@ function affectionMod(aff) {
 
 // 搭话 stance → 好感增量（WO-16A）：覆盖 schema 全部 enum，未知/无法判断按 0。
 // perfunctory=0 不产事实（空事实不进账本）；forceful 负数走负向社交。
-const TALK_STANCE_DELTA = { sincere: 2, clever: 1, casual: 1, perfunctory: 0, forceful: -1 };
+const TALK_STANCE_DELTA = { sincere: 2, clever: 1, casual: 1, perfunctory: 0, forceful: -1, hostile: -3 };
 
 // fit 档位的过关门槛：越离谱越难成；气运（luck 0-10）每点降 3% 门槛。
 const FIT_GATE = { natural: 0.25, stretch: 0.55, absurd: 0.85 };
@@ -324,11 +324,17 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       if (npc?.intimacy?.forbidden || npc?.beast) continue;
       const delta = TALK_STANCE_DELTA[action.stance] ?? 0;
       if (!delta) continue; // perfunctory/未知：零事实
-      facts.push({
+      const fact = {
         id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
         affectionDelta: delta, ledgerKind: delta > 0 ? "恩" : "怨",
         reason: delta > 0 ? "搭话投机" : "言语冲撞", witnesses: ["主角", npc.name],
-      });
+      };
+      // S2：hostile 辱骂/羞辱/威胁——对方性情含暴烈/刚烈/阴鸷时同时置生气，
+      // 缘由写玩家原话前 20 字（与偷窃败露同 anger 形状，appease 链自动可消）。
+      if (action.stance === "hostile" && /暴烈|刚烈|阴鸷/.test(npc.personality || "")) {
+        fact.anger = { active: true, reason: (action.text || "").slice(0, 20) || "恶语相向", turnsLeft: 3 };
+      }
+      facts.push(fact);
       continue;
     }
 
@@ -352,6 +358,14 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         : item;
       if (isDeliverGive(action, itemObj)) {
         notes.push(`${action.target}的${item?.name || "物件"}走任务交付通道结算，赠礼动作去重压制`);
+        continue;
+      }
+      // S2 补洞：所赠之物必须在玩家背包实有——查无此物时不得签发。
+      // 否则「把5两银子送给X」（银两不是背包物件）或幻影礼物会空签 TRANSFER_ITEM
+      // 落空 + MUTATE_SOCIAL 好感照涨，货未出手恩已入账。银两赠予的确定性路由
+      // 属 WO-16F 级覆盖缺口，本闸先把假账封死。
+      if (!item) {
+        notes.push(`所赠之物「${action.item || action.itemId || "未名"}」不在囊中，赠礼不签发`);
         continue;
       }
       const prefer = giftPreference(npc);

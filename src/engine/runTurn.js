@@ -17,7 +17,7 @@ import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../domain/rules/world/containers.js";
 import { resolvePrepItemsForJudge, buildPrepMaterialBlock } from "../domain/rules/prep/prepConsumption.js";
-import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "./turn/intakeTurn.js";
+import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk, hasHostileHint } from "./turn/intakeTurn.js";
 import { buildExtractionCfg } from "../domain/rules/prompt/structuredCallCfg.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { buildJudgeRuleBlock, buildGroupTalkRuleBlock, parseGroupTalkSeal } from "../domain/rules/judge/judgeRuleBlock.js";
@@ -311,7 +311,7 @@ async function runTurnSteps(ctx, cmd, opts) {
           }],
           proposals: [],
         };
-      } else if (shouldSkipIntakeForTalk(isTalk, questCandidates)) {
+      } else if (shouldSkipIntakeForTalk(isTalk, questCandidates) && !hasHostileHint(cmd)) {
         intakeResult = synthesizeTalkIntake(cmd, deps.talkTarget);
       } else {
         const intakeContent = buildIntakeUserContent({
@@ -337,6 +337,14 @@ async function runTurnSteps(ctx, cmd, opts) {
         const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: buildExtractionCfg("INTAKE", deps.apiCfg) }, { ai, apiCfg: deps.apiCfg, throwOnError: false, epoch: String(ctx.proseEpoch ?? "default") });
         if (ctx.isStale?.()) return { stale: true };
         intakeResult = normalizeIntakeResult(intakeRes?.data);
+        // S2 补洞：玩家已选中对象（点 NPC 说话）而模型听意 target 填「无」时
+        // 按 talkTarget 回填——「你这混蛋」类不点名的敌意/搭话才不致落空。
+        // 模型点了名的绝不覆盖（哪怕点到别人，尊重听意）。与合成路径同一口径。
+        if (deps.talkTarget && intakeResult?.actions?.length) {
+          for (const act of intakeResult.actions) {
+            if (act.kind === "talk" && (!act.target || act.target === "无")) act.target = deps.talkTarget;
+          }
+        }
       }
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
