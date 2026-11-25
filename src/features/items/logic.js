@@ -12,8 +12,11 @@ function itemNameOf(item) {
 
 export function consumeItem(state, item) {
   const itemName = itemNameOf(item);
+  // noCatalog 盾：判官条件券新铸的拾取物撞图鉴名也不吃图鉴药效——
+  // 它的数值出生证明只有 warrant 锁定值，预算外功效不能靠名字偷渡。
+  const shielded = typeof item === "object" && item?.noCatalog;
   const consumable = (typeof item === "object" && item?.consumable)
-    || CATALOG_INDEX[itemName]?.consumable
+    || (shielded ? null : CATALOG_INDEX[itemName]?.consumable)
     || null;
   if (!consumable) return { logs: [{ t: "sys", text: `  ${itemName}并非可服用之物。` }] };
 

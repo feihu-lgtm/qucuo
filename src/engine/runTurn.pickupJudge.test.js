@@ -54,6 +54,8 @@ describe("WO-16C 移动拾取判官链集成", () => {
     expect(item.category).toBe("accessory");
     // 条件券不发前置 fact：verdict.facts 里无 GRANT_ITEM
     expect(turn.judgeEffects.verdict.facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
+    // memory 用落盘回执作事实源：路遇拾取进当日原料/事实账本，不断档
+    expect(turn.p?.memory).toContain("青铜铃");
   });
 
   it("正文不埋锚（叙事拒捡）：券作废不入包", async () => {

@@ -30,6 +30,17 @@ describe("item logic", () => {
     expect(consumeItem(current, item).logs[0].text).toContain(expectedText);
   });
 
+  it("noCatalog 盾：撞图鉴药名的拾取物不吃图鉴药效", () => {
+    // 玫瑰花酿是图鉴具名药（consumable 回血）；条件券新铸的同名拾取物不得服用
+    const current = state();
+    const result = consumeItem(current, { name: "玫瑰花酿", noCatalog: true, quality: "蓝", category: "misc" });
+    expect(result.logs[0].text).toContain("并非可服用之物");
+    expect(result.changes?.char).toBeUndefined();
+    // 对照：无盾的同名对象仍按图鉴药效服用（原行为不变）
+    const plain = consumeItem(current, { name: "玫瑰花酿" });
+    expect(plain.logs[0].text).not.toContain("并非可服用之物");
+  });
+
   it("picks up a ground item and records the tally before advancing time", () => {
     const current = state();
     const result = pickGroundItem(current, "石子");
