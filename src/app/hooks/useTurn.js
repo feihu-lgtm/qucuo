@@ -30,7 +30,7 @@ import { sessionUiStore, setGambleSession } from "../../store/sessionUiStore.js"
 import { appendDayMaterial } from "./useNotes.js";
 
 // 回合入口的 React 胶水：组 env → resolveIntent（识别/裁决）→ createTurnContext
-// → playTurn（settleTurn → narrateTurn → finalizeTurn）→ setState。
+// → playTurn（narrateTurn → finalizeTurn）→ setState。
 // 例外路径（不进四段）：whisper 私聊旁白走 talkToNarrator 旁路；本地命令、
 // META_QUERY、内层移动、格子命中等由 resolveIntent 判 { proceed:false } 就地了结。
 export function useTurn({

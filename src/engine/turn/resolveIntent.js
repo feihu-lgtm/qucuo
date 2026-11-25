@@ -1,7 +1,7 @@
 // 回合流水线第一段：意图识别与前置裁决。
 // 输入 cmd + env（state/refs/io/opts），输出两种结局之一：
 //   { proceed:false, summary? } —— 本地已处理（短路或早退），本轮到此为止
-//   { proceed:true,  plan   } —— 放行进入 settleTurn → narrateTurn → finalizeTurn
+//   { proceed:true,  plan   } —— 放行进入 narrateTurn → finalizeTurn
 // 本段只裁决「该不该进 AI 回合、以什么形态进」；移动目的地、采集、路遇都按
 // 「AI 提议、系统裁决」在系统层定死，AI 调用留给 narrateTurn。
 // whisper（私聊旁白）是标注的例外路径：不进四段，留在 hook 里直接转 talkToNarrator。

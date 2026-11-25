@@ -1,6 +1,6 @@
 // 回合流水线的显式上下文（TurnContext）。
 // 四段之间只认这一个载体：resolveIntent 产出 plan 段（意图/移动/采集裁决结果），
-// settleTurn / narrateTurn / finalizeTurn 消费本工厂组装的 ctx——callDeps、memory、
+// narrateTurn / finalizeTurn 消费本工厂组装的 ctx——callDeps、memory、
 // prompt、commitDeps 与各 setter/ref 全部在这里点名到位，不再靠隐式全局串场。
 // intentPendingStore 的挂起态也在这里快照成 ctx.pending 明传（store 本体仍供
 // IntentConfirmBar/useIntentRouter/CLI 读取，属跨界引用，见 PR 标注）。
