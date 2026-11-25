@@ -194,6 +194,21 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
         ? gateScenario(rawScenario, { ...opts.gateCtx, scope, wantMvu: wantMvu && !narrativeOnly })
         : { text: rawScenario, lit: [], dark: [] };
   if (opts.onGateReport) opts.onGateReport(gated);
+  // ── 冰山前缀切分（WO-04）──────────────────────────────────────────
+  // sysBlocks 必须严格收束为"完全静态或仅随存档预设变更"的块，好吃商用模型的
+  // 前缀缓存；凡随单轮输入/在场 NPC/好感档位/字数预算跳变的内容一律移去
+  // actCall.js 第 11 号位 inChat（缓存分界线之后）。
+  // scenario 的蓝绿灯切分：探针跑一遍"无关键词、无 scope 命中、MVU 在场"的裁剪，
+  // 此时所有绿灯条目与随 MVU 跳变的 stock 好感度段全部灭灯——剩下的就是不随
+  // 单轮输入跳变的蓝灯基底；kept 文本里不在基底集的段落即绿灯专项段（动态）。
+  const icebergProbe = rawScenario && rawScenario.trim()
+    ? gateScenario(rawScenario, { scope: "__iceberg_probe__", userInput: "", lastReply: "", wantMvu: true })
+    : { text: "" };
+  const icebergBlueSet = new Set((icebergProbe.text || "").split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean));
+  const scenarioIceberg = { blue: [], lit: [] };
+  for (const p of (gated.text || "").split(/\n\s*\n/).filter((s) => s.trim())) {
+    (icebergBlueSet.has(p.trim()) ? scenarioIceberg.blue : scenarioIceberg.lit).push(p);
+  }
   // 13 位置拆分：scenario / charDescription 由各自的独立块承载，这里不再填进预设占位符，避免重复。
   const presetContent = assemblePrompt(preset, { scenario: "", charDescription: "" });
   const baseVoiceBlock = ov.voice?.mode === "off"
@@ -239,19 +254,31 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
 
   // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
   // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
+  // ── 冰山前缀（WO-04）：这里只放完全静态、或仅随存档预设变更的块 ──
+  //   main = 引擎身份；worldInfoBefore = 预设文体与通用规则；scenario = 世界观蓝灯基底；
+  //   worldInfoAfter = 认知隔离 + 地图铁律；其余（旁白声线 voiceBlock、NPC 人设 npcLoreText、
+  //   绿灯专项世界观、篇幅要求 effectiveLenNote、物件志 wantCatalog、对话取物规范、
+  //   心灵之海）全部随轮次跳变，由 dynBlocks 带出、合并进 actCall.js 第 11 号位 inChat。
   const messages = [
-    // 不变的段排在最前（身份+旁白声线+预设文体），好吃上接口的前缀缓存；
-    // 每轮随输入变的篇幅要求放到 Author's Note（酒馆里本就是逐轮导向位）。
-    makeBlock("main", voiceBlock ? `${ENGINE_IDENTITY}\n${voiceBlock}` : `${ENGINE_IDENTITY}\n`),
-    makeBlock("worldInfoBefore", `${presetContent}${npcLoreText}`),
+    makeBlock("main", `${ENGINE_IDENTITY}\n`),
+    makeBlock("worldInfoBefore", presetContent),
     makeBlock("charDescription", `玩家角色：${playerName}。气血、内外功、物品等状态由系统维护，你只叙事，不擅自改状态。`),
-    makeBlock("charPersonality", `旁白语气由「Main Prompt」声线控制，保持统一。`),
-    makeBlock("scenario", gated.text),
-    makeBlock("worldInfoAfter", `${wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}\n` : ""}${wantTalkItemRule ? `${buildTalkItemRule(narrativeOnly)}\n` : ""}${inSeaOfMind ? `${buildSeaOfMindRule()}\n\n` : ""}${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
+    makeBlock("charPersonality", `旁白语气由给定的说书人声线控制，保持统一。`),
+    makeBlock("scenario", scenarioIceberg.blue.join("\n\n")),
+    makeBlock("worldInfoAfter", `${wantIsolation ? `${ISOLATION}\n` : ""}\n\n${MAP_LAW}`),
     makeBlock("persona", `玩家以第一人称「我」扮演 ${playerName}，你是说书人/Gamemaster。`),
-    makeBlock("authorsNote", effectiveLenNote),
     makeBlock("exampleStart", "<START>"),
   ];
+  // 动态块：内容一字未改，只是搬家——从 sysBlocks 前部移到缓存分界线之后。
+  const dynBlocks = {
+    voice: voiceBlock,
+    npcLore: npcLoreText,
+    scenarioLit: scenarioIceberg.lit.join("\n\n"),
+    catalog: wantCatalog ? `── 曲措乡物件志（叙事引用规范）──\n${describeCatalogForAI()}\n${CATALOG_TAIL}` : "",
+    talkItemRule: wantTalkItemRule ? buildTalkItemRule(narrativeOnly) : "",
+    seaOfMind: inSeaOfMind ? buildSeaOfMindRule() : "",
+    lenNote: effectiveLenNote,
+  };
 
   // ── 13 号位只留"形状"，约束一律交给 11 号位（user）──
   // 划分依据是"是不是输出格式本身"，不是"是不是规则"：
@@ -280,5 +307,5 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
 
   const totalLen = messages.reduce((sum, b) => sum + (b.content?.length || 0), 0);
   if (opts.onSnapshot) opts.onSnapshot({ sys: messages, meta: { scope, narrativeOnly, isSettle, wantCatalog, wantIsolation, wantMvu, settleKind: opts.settleKind || null, len: totalLen } });
-  return { sysBlocks: messages, phiBlock: makeBlock("phi", schemaBlock), phiRules };
+  return { sysBlocks: messages, phiBlock: makeBlock("phi", schemaBlock), phiRules, dynBlocks };
 }

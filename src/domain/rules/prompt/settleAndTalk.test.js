@@ -5,11 +5,13 @@ import { callExtraction } from "../../../engine/ports/extraction.js";
 import { classifyIntent, INTENT } from "./inputIntent.js";
 
 function wia(scope, narrativeOnly, opts = {}) {
-  const { sysBlocks } = buildSysBase(
+  // WO-04：物件志/对话取物规范属动态块，已迁出 sysBlocks（worldInfoAfter 只剩
+  // 认知隔离+地图铁律）——这里改为拼接 dynBlocks 中对应两块，钉的还是同一套挂载逻辑。
+  const { dynBlocks } = buildSysBase(
     220, { stage: "NORMAL", affection: 20 }, "剧本总纲占位", null, false, "", narrativeOnly, scope,
     { playerName: "少侠", hasNpc: true, ...opts },
   );
-  return sysBlocks.find(b => b.tavernBlock === "worldInfoAfter").content;
+  return [dynBlocks.catalog, dynBlocks.talkItemRule].filter(Boolean).join("\n");
 }
 
 describe("scope 物品规范挂载", () => {
@@ -239,10 +241,11 @@ describe("心灵之海铁律", () => {
   });
 
   it("只在海里注入，寻常轮次一个字不发", () => {
+    // WO-04：心灵之海铁律属动态块（随所在地点跳变），由 dynBlocks.seaOfMind 带出。
     const wia = (opts) => buildSysBase(
       220, { stage: "NORMAL", affection: 50 }, "x", null, false, "", false, "full",
       { playerName: "少侠", hasNpc: true, ...opts },
-    ).sysBlocks.find(b => b.tavernBlock === "worldInfoAfter").content;
+    ).dynBlocks.seaOfMind;
     expect(wia({ inSeaOfMind: true })).toContain("这不是曲措乡的某处地方");
     expect(wia({})).not.toContain("这不是曲措乡的某处地方");
     expect(wia({ inSeaOfMind: false })).not.toContain("这不是曲措乡的某处地方");

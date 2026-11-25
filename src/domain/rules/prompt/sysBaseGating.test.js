@@ -62,9 +62,15 @@ describe("wantIsolation / wantCatalog 按 scope 灭灯", () => {
 
   it("物件志只在 full+mayGrantItem 时挂；move/settle 一律不挂", () => {
     // 契约：wantCatalog = full && mayGrantItem!==false——寻常轮灭灯防诱导发物。
-    expect(worldInfoAfter(mk("full", false, { mayGrantItem: false }))).not.toContain("曲措乡物件志");
-    expect(worldInfoAfter(mk("move", false, { hasNpc: true }))).not.toContain("曲措乡物件志");
-    expect(worldInfoAfter(mk("settle", false, { settleNpc: "温掌柜" }))).not.toContain("曲措乡物件志");
+    // WO-04：物件志属动态块，一律不进 sysBlocks，由 dynBlocks.catalog 带出。
+    expect(mk("full", false, { mayGrantItem: false }).dynBlocks.catalog).not.toContain("曲措乡物件志");
+    expect(mk("full", false, { mayGrantItem: true }).dynBlocks.catalog).toContain("曲措乡物件志");
+    expect(mk("move", false, { hasNpc: true }).dynBlocks.catalog).not.toContain("曲措乡物件志");
+    expect(mk("settle", false, { settleNpc: "温掌柜" }).dynBlocks.catalog).not.toContain("曲措乡物件志");
+    // 无论哪一档，sysBlocks 里都不再出现物件志（前缀缓存不因它跳变）。
+    for (const r of [mk("full", false, { mayGrantItem: true }), mk("talk", false)]) {
+      expect(r.sysBlocks.map((b) => b.content).join("\n")).not.toContain("曲措乡物件志");
+    }
   });
 });
 
@@ -96,26 +102,59 @@ describe("schema 形状按 scope 分档", () => {
 describe("budgetInstruction 与 scenario 蓝绿灯", () => {
   it("传了动态字数指令就用它，没传退回全局固定字数", () => {
     // 契约：budgetInstruction 优先于 targetWordCount 生成的默认篇幅句。
+    // WO-04：篇幅要求撤出 sysBlocks（authorsNote 已撤），由 dynBlocks.lenNote 带出。
     const dyn = buildSysBase(220, NARRATOR, "x", "本轮只答一两句。", false, "", false, "full", { hasNpc: true });
-    const note = (r) => r.sysBlocks.find(b => b.tavernBlock === "authorsNote").content;
-    expect(note(dyn)).toContain("本轮只答一两句。");
-    expect(note(dyn)).not.toContain("约 220 字");
+    expect(dyn.dynBlocks.lenNote).toContain("本轮只答一两句。");
+    expect(dyn.dynBlocks.lenNote).not.toContain("约 220 字");
     const def = mk("full", false, { hasNpc: true });
-    expect(note(def)).toContain("约 220 字");
+    expect(def.dynBlocks.lenNote).toContain("约 220 字");
+    // 任何一档的 sysBlocks 都不含篇幅要求。
+    expect(def.sysBlocks.map((b) => b.content).join("\n")).not.toContain("篇幅要求");
+    expect(def.sysBlocks.find((b) => b.tavernBlock === "authorsNote")).toBeUndefined();
   });
 
-  it("篇幅要求不进 Main Prompt：Main 只放不随输入变的身份与旁白声线，好吃前缀缓存", () => {
-    const a = buildSysBase(220, NARRATOR, "x", "本轮只答一两句。", false, "", false, "full", { hasNpc: true });
-    const b = buildSysBase(220, NARRATOR, "x", "本轮写长些。", false, "", false, "full", { hasNpc: true });
-    expect(a.sysBlocks[0].content).not.toContain("篇幅要求");
-    expect(a.sysBlocks[0].content).toBe(b.sysBlocks[0].content);
-    expect(a.sysBlocks[1].content).toBe(b.sysBlocks[1].content);
+  it("冰山前缀：同一 scope 下逐轮输入再变，sysBlocks 也一字不动", () => {
+    // 契约（WO-04 核心）：sysBlocks 严格收束为不随单轮输入跳变的冰山前缀——
+    // scenario 固定，玩家输入分别命中/不命中绿灯关键词，加上字数预算、NPC 人设、
+    // 好感档位的差异，sysBlocks 也必须逐字节相同；绿灯差异只能进 dynBlocks。
+    const scenario = "世界观头部。\n\n具名人物\n才旦是鱼定村的年轻猎户。\n\n拓扑连通关系\n鱼定村北通天都镇。";
+    const build = (budget, npcLore, affection, userInput) => buildSysBase(220, { stage: "NORMAL", affection }, scenario, budget, false, npcLore, false, "full",
+      { playerName: "少侠", hasNpc: true, gateCtx: { userInput, lastReply: "" } });
+    // a：命中绿灯词「鱼定村」（拓扑）与「才旦」（具名人物）；b：一个绿灯词都不沾；
+    // c：换一批命中词（大草甸→规则补充段）+ 不同预算/人设/好感档位。
+    const a = build("本轮只答一两句。", "才旦的人设甲", 20, "去鱼定村找才旦");
+    const b = build("本轮写长些，写足五百字。", "呼延雪的人设乙", 80, "四下打量");
+    const c = build(null, "", 50, "穿过大草甸赶路");
+    const dump = (r) => JSON.stringify(r.sysBlocks.map((x) => [x.tavernBlock, x.content]));
+    expect(dump(a)).toBe(dump(b));
+    expect(dump(a)).toBe(dump(c));
+    // 绿灯差异确实发生了（a 点亮拓扑/具名人物，b 全灭），且只落在 dynBlocks.scenarioLit。
+    expect(a.dynBlocks.scenarioLit).toContain("拓扑连通关系");
+    expect(a.dynBlocks.scenarioLit).toContain("具名人物");
+    expect(b.dynBlocks.scenarioLit).not.toContain("拓扑连通关系");
+    expect(b.dynBlocks.scenarioLit).not.toContain("具名人物");
+    // 蓝灯基底留守 scenario 块，三种输入下一致。
+    const scenBlock = (r) => r.sysBlocks.find((x) => x.tavernBlock === "scenario").content;
+    expect(scenBlock(a)).toContain("世界观头部");
+    expect(scenBlock(a)).not.toContain("拓扑连通关系");
+    expect(scenBlock(a)).toBe(scenBlock(b));
+  });
+
+  it("绿灯专项世界观段不进 sysBlocks：蓝灯基底留守，专项段走 dynBlocks", () => {
+    // 契约：scenario 里被关键词/状态点亮的专项段（如拓扑）属动态内容。
+    const scenario = "世界观头部。\n\n拓扑连通关系\n鱼定村北通天都镇。";
+    const r = buildSysBase(220, NARRATOR, scenario, null, false, "", false, "move",
+      { playerName: "少侠", hasNpc: true, gateCtx: { userInput: "", lastReply: "" } });
+    expect(r.sysBlocks.find((x) => x.tavernBlock === "scenario").content).toContain("世界观头部");
+    expect(r.sysBlocks.find((x) => x.tavernBlock === "scenario").content).not.toContain("拓扑连通关系");
+    expect(r.dynBlocks.scenarioLit).toContain("拓扑连通关系");
   });
 
   it("gateCtx 存在时 scenario 过蓝绿灯裁剪并回报亮灭", () => {
     // 契约：opts.gateCtx → gateScenario 生效，onGateReport 拿到 lit/dark 清单。
+    // WO-04：sysBlocks 的 scenario 块只装蓝灯基底；蓝+绿合起来仍等于 gated.text 全文。
     const onGateReport = vi.fn();
-    const { sysBlocks } = mk("full", false, {
+    const { sysBlocks, dynBlocks } = mk("full", false, {
       hasNpc: true,
       gateCtx: { cmd: "赶路" },
       onGateReport,
@@ -123,7 +162,9 @@ describe("budgetInstruction 与 scenario 蓝绿灯", () => {
     expect(onGateReport).toHaveBeenCalledTimes(1);
     const gated = onGateReport.mock.calls[0][0];
     expect(Array.isArray(gated.lit) && Array.isArray(gated.dark)).toBe(true);
-    expect(sysBlocks.find(b => b.tavernBlock === "scenario").content).toBe(gated.text);
+    const blueText = sysBlocks.find(b => b.tavernBlock === "scenario").content;
+    const reunited = [blueText, dynBlocks.scenarioLit].filter(Boolean).join("\n\n");
+    expect(reunited).toBe(gated.text);
   });
 
   it("dedupIfMvu：MVU 在场时熄掉重复的好感度规则段，散文档保留", () => {
@@ -132,17 +173,24 @@ describe("budgetInstruction 与 scenario 蓝绿灯", () => {
     const scenario = "世界观头部。\n\n好感度维护规则\n- 寻常聊天 +1，用 _.add 微调。\n\n拓扑连通关系\n鱼定村北通天都镇。";
     const build = (narrativeOnly) => buildSysBase(220, NARRATOR, scenario, null, false, "", narrativeOnly, "full",
       { playerName: "少侠", hasNpc: true, gateCtx: { cmd: "" } });
+    // WO-04：好感度规则段随 MVU 有无跳变，属动态内容——单调用熄灯（两边都没有），
+    // 散文档保留在 dynBlocks.scenarioLit；sysBlocks 的 scenario 块两种情况下都不含它。
     const scen = (r) => r.sysBlocks.find(b => b.tavernBlock === "scenario").content;
     expect(scen(build(false))).not.toContain("好感度维护规则");
-    expect(scen(build(true))).toContain("好感度维护规则");
+    expect(build(false).dynBlocks.scenarioLit).not.toContain("好感度维护规则");
+    expect(scen(build(true))).not.toContain("好感度维护规则");
+    expect(build(true).dynBlocks.scenarioLit).toContain("好感度维护规则");
   });
 
   it("dedupIfMvu：剧本自定义的好感度规则（无出厂指纹）MVU 在场也保留", () => {
     // 契约：自定义刻度/条件的好感度规则不属重复——MVU 在场同样点亮，不静默丢弃。
+    // WO-04：该段属条目化段落，不随输入跳变——留在 sysBlocks 蓝灯基底（探针下同样保留）。
     const scenario = "好感度维护规则\n- 本剧本好感度以 -100~100 计，敌对开局 -30。";
-    const { sysBlocks } = buildSysBase(220, NARRATOR, scenario, null, false, "", false, "full",
+    const { sysBlocks, dynBlocks } = buildSysBase(220, NARRATOR, scenario, null, false, "", false, "full",
       { playerName: "少侠", hasNpc: true, gateCtx: { cmd: "" } });
-    expect(sysBlocks.find(b => b.tavernBlock === "scenario").content).toContain("好感度维护规则");
+    const inSys = sysBlocks.find(b => b.tavernBlock === "scenario").content;
+    const inDyn = dynBlocks.scenarioLit;
+    expect(inSys + inDyn).toContain("好感度维护规则");
   });
 
   it("不传 gateCtx 时 scenario 原文直进（lit/dark 为空）", () => {

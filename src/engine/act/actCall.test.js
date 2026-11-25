@@ -126,9 +126,12 @@ describe("callMainOnce 组装黄金快照", () => {
     const d = makeDeps({ intent: { code: "COMBAT", label: "战斗" }, visibleNpcsCount: 1 });
     await callMainOnce(null, false, d);
     const [, sysBlocks, chatMessages] = callModel.mock.calls[0];
+    // WO-04：物件志随轮跳变，已搬去 11 号位 inChat；worldInfoAfter 只留认知隔离+地图铁律。
     const worldAfter = sysBlocks.find(b => b.tavernBlock === "worldInfoAfter")?.content || "";
-    expect(worldAfter).toContain("曲措乡物件志");
+    expect(worldAfter).not.toContain("曲措乡物件志");
     expect(worldAfter).toContain("认知隔离");
+    const inChat = chatMessages.find(b => b.tavernBlock === "inChat")?.content || "";
+    expect(inChat).toContain("曲措乡物件志");
     const phi = chatMessages.find(b => b.tavernBlock === "phi")?.content || "";
     expect(phi).toContain("items_add");
     expect(JSON.stringify(sysBlocks)).toMatchSnapshot();
@@ -283,7 +286,9 @@ describe("callMainOnce 组装黄金快照", () => {
       charBodyProfile: { ...emptyBodyProfile(), hair: "乌发及腰" },
     });
     await callMainOnce(null, false, d);
-    const sysMove = JSON.stringify(callModel.mock.calls[0][1]);
-    expect(sysMove).toContain("乌发及腰");
+    // WO-04：体貌属逐轮导向内容，从 sysBlocks 撤入 11 号位 inChat。
+    const inChatMove = JSON.stringify(callModel.mock.calls[0][2]);
+    expect(inChatMove).toContain("乌发及腰");
+    expect(JSON.stringify(callModel.mock.calls[0][1])).not.toContain("乌发及腰");
   });
 });
