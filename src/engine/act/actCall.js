@@ -9,7 +9,7 @@ import { labelMessage, makeBlock } from "../../domain/rules/prompt/tavernMapping
 import { buildDistantViewBlock } from "../../domain/rules/memory/daySummary.js";
 import { targetLedger } from "../../domain/rules/prompt/materials/index.js";
 import { embeddingReady } from "../ports/embeddingService.js";
-import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
+import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
 import { applyPresetOverrides, getActivePreset } from "../../domain/rules/prompt/presetSystem.js";
 import { createWebAi } from "../ports/ai.js";
 import { withAI } from "../ports/withAI.js";
@@ -17,7 +17,6 @@ import { ensureUnifiedCalls, setMainTurnAssembler } from "../../domain/rules/pro
 import { getPromptOverrides } from "../../domain/rules/prompt/registry.js";
 import { buildAngryNote } from "../prompt/assemblePrompt.js";
 import { getApiModel } from "../../content/apiModel.js";
-import { formatSettleNote } from "../../domain/rules/settle/settle.js";
 
 const webAi = createWebAi();
 
@@ -61,7 +60,6 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     {
       settleNpc: d.settleNpc || null,
       settleKind: d.settleKind || null,
-      softSettle: d.softSettle || null,
       snowLeopardGift: d.settleKind === "gift" && d.settleNpc === "雪豹" && !!d.snowLeopardContext,
       giftInfo: d.giftInfo || null,
       settleBeast: !!d.settleBeast,
@@ -141,7 +139,6 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
       varTree: d.varTree,
     });
   const ledgerSuffix = ledgerBlock ? `\n\n${ledgerBlock}` : "";
-  const softSettleNote = d.softSettle ? formatSettleNote(d.softSettle) : "";
   // 总控台「记忆」开关（user_recall）管的是 远景+召回+重逢+信息域 一整块：关了四样全灭，
   // 重逢另有自己的单独开关，两者任一关掉都不挂。
   const memoryOff = ov.user_recall?.mode === "off";
@@ -160,7 +157,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const steerNote = [dynBlocks.lenNote, _bodyGate.text].filter(Boolean).join("\n");
   const steerSuffix = (steerNote ? steerNote + "\n" : "") + proseRule;
   const inChatContent = d.isSettle
-    ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + softSettleNote + "\n\n" + steerSuffix
+    ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + "\n\n" + steerSuffix
     : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + (d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock : "") + "\n\n" + steerSuffix;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 

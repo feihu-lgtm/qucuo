@@ -1,8 +1,4 @@
 import { definePrompt } from "../registry.js";
-import { registerSettleCalls } from "../../settle/judge.js";
-
-// 结算层入口：软判断选择题走 settle.judge，结果落账见 domain/settle/settle.js。
-export { formatSettleNote } from "../../settle/settle.js";
 
 // ── 铸剑坊/铁匠铺 定制设计：词条全集白名单（combat/resolveTurn.js 真正读取的字段） ──
 const FORGE_EFFECT_WHITELIST = `
@@ -16,7 +12,46 @@ effect 与 sixDim 二选一为主(一件东西通常只挂其一，紫橙档可�
 
 // 注册 domain 层迁入 withAI 的提示词块与调用定义
 export function registerDomainCalls() {
-  registerSettleCalls();
+  // ── 旁白私语观感裁决（WO-15：narrator_affinity 自软结算通道拆出为独立结构化调用） ──
+  // 旧「软结算通道」已删，但私语好感裁决不走回合判官管线（私聊独立流程），
+  // 这里保留一个三选一的小调用替代表决，系统侧负责数值与日上限。
+  const AFFINITY_OPTIONS = ["投机贴心", "寻常闲聊", "敷衍冒犯", "无法判断"];
+  definePrompt("block", "narrator.affinity.sys", {
+    label: "旁白观感仲裁系统指令",
+    slot: "sys",
+    text: () => "你是游戏结算仲裁，只回答一道选择题。不写剧情、不解释，严格只输出一行JSON。",
+  });
+  definePrompt("block", "narrator.affinity.user", {
+    label: "旁白观感选择题",
+    slot: "user",
+    text: (ctx) => `问题：玩家私下对旁白说：「${ctx.playerSay || ""}」。这句话在她那里落到什么份上？
+选项：${AFFINITY_OPTIONS.map((o) => `「${o}」`).join("、")}
+输出JSON：{"choice":"选项原文之一","probs":{"选项":概率,...}}，probs覆盖全部选项、总和为1。`,
+  });
+  definePrompt("call", "narrator.affinity", {
+    group: "sync",
+    label: "旁白观感裁决",
+    execution: "sync_pipeline",
+    route: "light",
+    reviewDesc: "三选一观感分类（投机贴心/寻常闲聊/敷衍冒犯），数值与日上限账本全在系统侧",
+    tokenLimitKey: "extraction",
+    defaultMaxTokens: 512,
+    join: "",
+    blocks: ["narrator.affinity.sys", "narrator.affinity.user"],
+    schema: {
+      name: "narrator_affinity",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["choice", "probs"],
+        properties: {
+          choice: { type: "string", enum: AFFINITY_OPTIONS },
+          probs: { type: "object", additionalProperties: false, required: AFFINITY_OPTIONS, properties: Object.fromEntries(AFFINITY_OPTIONS.map((o) => [o, { type: "number" }])) },
+        },
+      },
+    },
+  });
+
   definePrompt("block", "persuasion.turn.sys", {
     label: "说服交锋系统指令",
     slot: "sys",

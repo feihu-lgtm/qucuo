@@ -1,7 +1,6 @@
 import { definePrompt, getPromptDef } from "../registry.js";
 import { estimatePromptTokens } from "../buildPrompt.js";
 import { buildPrivateTalkPayload } from "../privateTalkPayload.js";
-import { buildExtractionCfg } from "../extractionEngine.js";
 
 let mainTurnAssembler = null;
 
@@ -9,7 +8,7 @@ export function setMainTurnAssembler(fn) {
   mainTurnAssembler = typeof fn === "function" ? fn : null;
 }
 
-// 注册单/双/多调用与同步核心管线（turn.main / narrator.whisper / turn.extraction / intent.classify），
+// 注册单/双/多调用与同步核心管线（turn.main / narrator.whisper / intent.classify），
 // 让全仓全部模型请求在同一 registry + withAI 下可观测、可路由、可切换蓝绿灯。
 export function registerUnifiedCalls() {
   definePrompt("call", "turn.main", {
@@ -65,33 +64,6 @@ export function registerUnifiedCalls() {
     },
   });
 
-  definePrompt("block", "turn.extraction.sys", {
-    label: "状态提取系统指令",
-    slot: "sys",
-    editable: "engine",
-    text: (ctx) => ctx.spec?.system || "",
-  });
-
-  definePrompt("block", "turn.extraction.user", {
-    label: "本轮叙事与提取字段规则",
-    slot: "user",
-    editable: "engine",
-    text: (ctx) => ctx.userContent || "",
-  });
-
-  definePrompt("call", "turn.extraction", {
-    group: "sync",
-    label: (ctx) => `状态提取(${ctx.intentCode || "UNKNOWN"})`,
-    execution: "sync_pipeline",
-    route: "extraction",
-    reviewDesc: "提取 JSON 与 <mvu> 命令，normalizeExtractedFields 归一化并在 parseFailed 时提示未更新",
-    tokenLimitKey: "extraction",
-    defaultMaxTokens: 2000,
-    cfg: (apiCfg, ctx) => buildExtractionCfg(ctx.key, apiCfg),
-    join: "",
-    matrixBlocks: ["turn.extraction.sys", "turn.extraction.user"],
-    blocks: ["turn.extraction.sys", "turn.extraction.user"],
-  });
 
   definePrompt("block", "intent.classify.sys", {
     label: "意图分类系统指令",

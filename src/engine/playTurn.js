@@ -3,9 +3,6 @@ import { loadSquares, serializeSquares } from "../domain/rules/map/mapSquares.js
 import { PHASE, turnMonitor, withTurnContext } from "../infra/turnMonitor.js";
 import { createWebAi } from "./ports/ai.js";
 import { createPhaseSetter } from "./turn/phaseSetter.js";
-import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
-import { runRecall } from "./act/memoryLayer.js";
-import { settleTurn } from "./turn/settleTurn.js";
 import { narrateTurn } from "./turn/narrateTurn.js";
 import { finalizeTurn } from "./turn/finalizeTurn.js";
 
@@ -38,8 +35,9 @@ function restoreSnapshot(snapshot, getGameState, actions) {
   loadSquares(snapshot.squares);
 }
 
-// 回合编排器：事务快照 → settleTurn（软结算）→ narrateTurn（主叙事+提取）
+// 回合编排器：事务快照 → narrateTurn（前哨判官+主叙事+尾章校对）
 // → finalizeTurn（落盘+记账），任一环节过期/抛错走统一回滚或丢弃路径。
+// WO-15：独立软结算通道已整块删除，settle 回合由判官管线裁定。
 export async function playTurn(ctx, cmd, opts = {}) {
   const trace = ctx._trace || turnMonitor.start(cmd, { source: "engine", commandId: "turnCommit" });
   const turnCtx = { ...ctx, ai: ctx.ai || createWebAi() };
@@ -50,10 +48,8 @@ export async function playTurn(ctx, cmd, opts = {}) {
   };
   setPhase("machine");
   let snapshot;
-  let soft;
   const getGameState = ctx.getGameState;
   const gameActions = ctx.gameActions;
-  const setVarTreeState = (tree) => ctx.gameActions.setVarTreeState(tree);
   try {
     snapshot = captureSnapshot(getGameState);
     turnMonitor.add(trace, "app", "事务快照", { kind: "snapshot" });
@@ -62,48 +58,15 @@ export async function playTurn(ctx, cmd, opts = {}) {
     ctx.beforeRun?.();
     setPhase("ai");
     const turnOpts = { ...opts };
-    // 软结算需要调小模型时，提前并发启动只读记忆召回，避免两段网络往返串行叠加；
-    // 全程降级安全（catch 兜底空结果），过期或回滚时不会留下未处理拒绝，也不改写任何状态。
-    const willSoftSettle = SOFT_SETTLE_KINDS.has(turnOpts.settleKind)
-      && !!turnOpts.settleNpc
-      && turnCtx.apiCfg?.softSettleEnabled !== false;
-    let narrateCtx = turnCtx;
-    if (willSoftSettle && turnCtx.memory?.recall) {
-      const lastAiText = [...(turnCtx.convo || [])].reverse().find((m) => m.role === "assistant")?.content
-        || turnCtx.memory.recall.lastAiText
-        || "";
-      const prefetchedRecall = runRecall({
-        ...turnCtx.memory.recall,
-        lastAiText,
-        varTreeLatest: turnCtx.memory.varTreeLatest || getGameState().varTree,
-      }).catch(() => ({ recallInfo: null, recallBlock: "" }));
-      narrateCtx = { ...turnCtx, _prefetchedRecall: prefetchedRecall };
-    }
-    soft = await settleTurn({ ctx: turnCtx, ai: turnCtx.ai, trace, turnOpts, cmd, getGameState, setVarTreeState });
-    if (soft.stale) return stale();
-    const narrated = await narrateTurn(narrateCtx, trace, cmd, turnOpts);
-    if (narrated.stale) {
-      if (soft.applied && !soft.listenerRegistered) {
-        withTurnContext(trace, soft.revertOnce);
-      }
-      return stale();
-    }
-    soft.unsubscribeInvalidation();
+    const narrated = await narrateTurn(turnCtx, trace, cmd, turnOpts);
+    if (narrated.stale) return stale();
     return await finalizeTurn({
-      ctx: turnCtx, trace, turn: narrated.turn, turnOpts, soft, opts, setPhase,
+      ctx: turnCtx, trace, turn: narrated.turn, turnOpts, opts, setPhase,
     });
   } catch (error) {
-    if (ctx.isStale?.()) {
-      if (soft?.applied && !soft.listenerRegistered) {
-        withTurnContext(trace, soft.revertOnce);
-      }
-      return stale(error);
-    }
-    soft?.unsubscribeInvalidation();
+    if (ctx.isStale?.()) return stale(error);
     if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, getGameState, gameActions));
     turnMonitor.transition(trace, PHASE.ERROR, String(error));
     return { ok: false, error };
-  } finally {
-    soft?.unsubscribeInvalidation();
   }
 }

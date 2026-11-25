@@ -53,18 +53,6 @@ export function commitRound(d) {
   const _knownChars = new Set(Object.keys(d.getGameState?.()?.varTree?.角色 || {}));
 
   d.mvuCommands = filterGhostCommands(d.mvuCommands, systemAcceptedNames, _knownChars);
-  if (d.softSettle?.target) {
-    const npc = d.softSettle.target;
-    const systemSettled = d.mvuCommands.filter(({ path }) =>
-      path?.startsWith(`角色.${npc}.生气解除`)
-      || path?.startsWith(`角色.${npc}.生气状态`)
-      || path === `角色.${npc}.好感度`);
-    if (systemSettled.length) {
-      d.mvuCommands = d.mvuCommands.filter((command) => !systemSettled.includes(command));
-      traceStep(d._trace, "MVU裁决", "block",
-        `已由系统结算：${systemSettled.map(({ op, path }) => `${op}(${path})`).join("；")}`);
-    }
-  }
   if (d.giftSettlement) {
     const { npc } = d.giftSettlement;
     const command = d.mvuCommands.find(({ op, path, value }) =>

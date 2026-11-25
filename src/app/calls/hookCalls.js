@@ -4,7 +4,7 @@ import { buildDaySummaryRequest } from "../../domain/rules/memory/daySummary.js"
 import { buildOutfitRequest } from "../../domain/rules/character/bodyProfile.js";
 import { effectBrief } from "../../domain/rules/economy/itemEffectText.js";
 import { buildSquarePrompt } from "../../domain/rules/map/mapSquares.js";
-import { buildExtractionCfg } from "../../domain/rules/prompt/extractionEngine.js";
+import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
 
 const INSPECT_KIND_LABEL = { skill: "武学", item: "物品", pigeon: "信鸽" };
 const INSPECT_KIND_NOUN = { skill: "武学功法", item: "随身物品", pigeon: "信鸽（用于飞鸽传书的鸟）" };

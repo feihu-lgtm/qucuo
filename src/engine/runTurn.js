@@ -1,7 +1,5 @@
 import { callMainOnce } from "./act/actCall.js";
 import { parseMainResponse } from "./act/parseResponse.js";
-import { buildExtractionCfg, normalizeDuelRequest } from "../domain/rules/prompt/extractionEngine.js";
-import { callExtraction } from "./ports/extraction.js";
 import { step as traceStep } from "../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
@@ -10,9 +8,7 @@ import { buildHistBlock, histBlockSavings } from "../domain/rules/memory/histWin
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 import { getApiModel } from "../content/apiModel.js";
-import { filterPlanDelta, filterRejectedEffects, planExtractionNote } from "../domain/rules/intent/planNotes.js";
-import { SOFT_SETTLE_KINDS } from "../domain/rules/settle/softRules.js";
-import { UNKNOWN_CHOICE } from "../domain/rules/settle/judge.js";
+import { filterPlanDelta, filterRejectedEffects } from "../domain/rules/intent/planNotes.js";
 import { classifyError } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
 import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
@@ -20,6 +16,7 @@ import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/ju
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { random } from "../utils/rng.js";
+import { getPresentNpcs } from "../domain/rules/prompt/promptRefs.js";
 
 const MAX_AUTO_RETRY = 2;
 
@@ -166,7 +163,6 @@ async function runTurnSteps(ctx, cmd, opts) {
     room: ctx.prompt?.room ?? baseDeps.room,
     activeTarget: ctx.prompt?.activeTarget ?? baseDeps.activeTarget,
     talkTarget: ctx.prompt?.talkTarget ?? ctx.prompt?.recall?.talkTarget ?? baseDeps.talkTarget,
-    softSettle: opts.softSettle,
     cmd,
     ai,
   };
@@ -180,10 +176,10 @@ async function runTurnSteps(ctx, cmd, opts) {
   let judgeVerdict = null;
   // 闸门：① 单调用 JSON 模式的输出契约是纯 JSON，锚点+SEAL 的散文指令会让模型
   // 丢 JSON 骨架，故只在双调用叙事（extractionEnabled）模式激活；
-  // ② settle 回合（赠礼/赔罪/求教等）状态已由系统/软结算裁决落账，
-  // 判官再裁一次会重复加好感——settle 回合不激活；
-  // ③ 纯搭话回合不发生任何动作（搭话免费、不动状态），判官收礼会越权搬背包。
-  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle && !isTalk) {
+  // ② 纯搭话回合不发生任何动作（搭话免费、不动状态），判官收礼会越权搬背包。
+  // WO-15：软结算通道已删，settle 回合（赠礼/赔罪/求教/邀同行）的收拒改由判官
+  // 裁定（judgeTurn 内置 gift/appease/learn 收拒逻辑），不再排除 settle 回合。
+  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isTalk) {
     try {
       const visibleNpcs = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
       const intakeContent = buildIntakeUserContent({
@@ -226,8 +222,6 @@ async function runTurnSteps(ctx, cmd, opts) {
   let pickupExtractionFailed = false;
 
   if (apiCfg.extractionEnabled) {
-    const extractionSpecKey = deps.isTalk ? "TALK_CASUAL" : deps.intent.code;
-    const extractionCfg = buildExtractionCfg(extractionSpecKey, apiCfg);
     let mainFinishReason;
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
       try {
@@ -273,52 +267,11 @@ async function runTurnSteps(ctx, cmd, opts) {
       addLog([{ t: "sys", text: "  ⚠ 本轮叙事被接口中途截断（撞到输出 token 上限），以上是已收到的部分。提取层只能按这段残文结算状态，本轮状态可能不全。" }]);
     }
 
-    // settle 回合的状态已由系统/软结算裁决并落账，提取层只对自由行动/闲聊等未裁决回合补漏。
-    // 例外：软种类（赔罪/赠礼/邀同行/求教）在软结算被关掉或没裁出结果时，叙事里没有裁决，
-    // 提取层仍是兜底裁决者——否则道歉消不了气、送礼学艺不结算。
-    const settleDecided = isSettle && (
-      !SOFT_SETTLE_KINDS.has(opts.settleKind)
-      || (opts.softSettle && opts.softSettle.choice !== UNKNOWN_CHOICE)
-    );
-    if (settleDecided) {
-      trace("提取调用", "skip", "settle 回合由系统结算接管状态，跳过提取");
-    } else {
-      const extractionState = createExtractionState(ctx, deps);
-      const settleOptions = (opts.settleKind && opts.settleNpc)
-        ? {
-          settleKind: opts.settleKind,
-          settleNpc: opts.settleNpc,
-          giftInfo: opts.giftInfo,
-          learnInfo: opts.learnInfo,
-          settleBeast: !!opts.settleBeast,
-        }
-        : null;
-      const extracted = await callExtraction(
-        extractionSpecKey,
-        rawFull + planExtractionNote(deps.intentPlan),
-        extractionState,
-        apiCfg,
-        settleOptions,
-        deps.ai,
-        onPromptRefMissing,
-      ).catch((error) => {
-        if (!ctx.isStale?.()) {
-          addLog([{ t: "sys", text: `  ⚠ 提取层调用失败（${error.message || error}），本轮状态未更新` }]);
-          trace("提取调用", "fail", `提取模型=${extractionCfg.model || "未设置"}调用异常：${error.message || error}，本轮状态未更新`);
-        }
-        return null;
-      });
-      if (ctx.isStale?.()) return { stale: true };
-      pickupExtractionFailed = !extracted || !!extracted.parseFailed;
-      if (extracted?.parseFailed) {
-        addLog([{ t: "sys", text: "  ⚠ 提取层返回的不是合法JSON（可能被截断或模型没按格式输出），本轮状态未更新" }]);
-        trace("提取调用", "fail", `返回内容无法解析（提取模型=${extractionCfg.model || "未设置"}），本轮状态未更新`);
-      } else if (extracted) {
-        trace("提取调用", "pass", `状态提取完成（提取模型=${extractionCfg.model || "未设置"}${settleOptions ? `·${settleOptions.settleKind}专属spec` : ""}）`);
-      }
-      p = filterPlanDelta(extracted?.p || {}, deps.intentPlan);
-      mvuCommands = filterRejectedEffects(extracted?.mvuCommands || [], deps.intentPlan);
-    }
+    // WO-15：独立提取层已整块删除。双调用模式下状态只来自判官管线的
+    // materializeFacts 落账（尾章校对段），不再二次提取；自由行动/赠礼/赔罪/求教等
+    // 全部收拒与数额由判官一裁定案。
+    p = {};
+    mvuCommands = [];
   } else {
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
       const nudge = attempt > 1
@@ -428,4 +381,17 @@ async function runTurnSteps(ctx, cmd, opts) {
     newConvo,
     judgeEffects,
   };
+}
+
+// WO-15：normalizeDuelRequest 自 extractionEngine 内联——单调用 JSON 模式的
+// duelRequest 名字解析回在场 NPC 对象（双调用判官管线不经此路）。
+function normalizeDuelRequest(parsed, state = {}) {
+  if (!parsed || typeof parsed !== "object" || parsed.duelRequest == null) return parsed;
+  const raw = parsed.duelRequest;
+  let name = "";
+  if (typeof raw === "string") name = raw.trim();
+  else if (typeof raw?.name === "string") name = raw.name.trim();
+  const npc = getPresentNpcs(state).find((candidate) => candidate.name === name);
+  if (npc) parsed.duelRequest = npc; else delete parsed.duelRequest;
+  return parsed;
 }

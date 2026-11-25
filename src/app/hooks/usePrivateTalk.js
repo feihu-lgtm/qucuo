@@ -24,10 +24,6 @@ import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
 import { LOG_T, stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
-import { settledToPatches } from "../../domain/rules/settle/settle.js";
-import { applyPatches } from "../../domain/rules/state/applyPatches.js";
-import { runSoftSettle } from "../../engine/ports/softSettle.js";
-import { UNKNOWN_CHOICE } from "../../domain/rules/settle/judge.js";
 
 export function usePrivateTalk({
   apiCfg, nsfwOn, jotNote, noteAction, changePendingTalks,
@@ -229,8 +225,8 @@ export function usePrivateTalk({
       };
 
       let text;
-      // ② 内容化好感已下线：⟦好感X⟧ 不再由她写在文末，改走 narrator_affinity 软结算（AI 提议、系统裁决）。
-      // softSettleEnabled 关着（回放/离线兜底）时退回固定寻常闲聊 +1。
+      // ② 内容化好感已下线：⟦好感X⟧ 不再由她写在文末，观感改由 narrator.affinity
+      // 三选一裁决（AI 分类、系统定值），判不了则本轮好感不变。
       let affDelta = WHISPER_AFFECTION_RULES.fallback;
       let finishReason;      // 停止原因：私聊此前完全没接这个字段，撞 length 上限也毫无提示
       let narratorMaxTokens = Math.min(apiCfg.maxTokens, apiCfg.callTokenLimits?.narratorWhisper ?? 6000);
@@ -303,53 +299,49 @@ export function usePrivateTalk({
       // AI 提议、系统裁决：结算段小模型判玩家这句话落到什么份上，数值和日上限账本
       // 由系统落账，不再读她文末的 ⟦好感X⟧。判的是玩家的话，与回复是否被截断无关。
       // 海内/告白后不走这条路：创伤期靠心结推进，告白后走 memoryFragments。
-      if (!inSeaNow && !narrator.confessed && apiCfg.softSettleEnabled !== false) {
-        const soft = await runSoftSettle({
-          ai: bindTurnAi(createWebAi(), _wt),
-          apiCfg,
-          kind: "narrator_affinity",
-          ctx: {
-            playerSay: content,
-            varTree: gameStore.getState().varTree,
-            narrator,
-            time: gameStore.getState().time,
-            charm: char?.special?.魅力 ?? 5,
-          },
-        });
-        if (isStale()) return;
-        if (soft && soft.choice !== UNKNOWN_CHOICE) {
-          const affApplied = (soft.deltas || []).find((d) => d.path === "narrator.affection");
-          affDelta = affApplied?.actualDelta ?? 0;
-          if (!affApplied && soft.choice !== "敷衍冒犯") {
-            // 正向观感却没落 delta = 今日额度已满（软结算按日上限账本裁掉了）
-            addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
-          }
-          const treeDeltas = (soft.deltas || []).filter((d) => !d.path.startsWith("narrator."));
-          if (treeDeltas.length) setVarTree((prev) => applyPatches({ varTree: prev }, settledToPatches(treeDeltas)).state.varTree);
-          traceStep(_wt, "结算·软判定", "pass", `旁白观感=${soft.choice}（${soft.note}）`);
+      if (!inSeaNow && !narrator.confessed) {
+        // WO-15：软结算通道已删，观感裁决改走独立结构化调用 narrator.affinity。
+        // AI 只做三选一分类，数值映射/幅度裁剪/日上限账本全部在系统侧。
+        const AFFINITY_VALUES = { 投机贴心: Math.round((3 + WHISPER_AFFECTION_RULES.max) / 2), 寻常闲聊: WHISPER_AFFECTION_RULES.fallback, 敷衍冒犯: -2 };
+        let choice = "无法判断";
+        try {
+          const affRes = await withAI(
+            "narrator.affinity",
+            { playerSay: content },
+            { ai: bindTurnAi(createWebAi(), _wt), apiCfg, throwOnError: false },
+          );
+          if (isStale()) return;
+          const c = affRes?.data?.choice;
+          if (typeof c === "string" && c in AFFINITY_VALUES) choice = c;
+        } catch { /* 判不了就当她没表态 */ }
+        if (choice !== "无法判断") {
+          let value = AFFINITY_VALUES[choice] ?? 0;
+          value = Math.max(WHISPER_AFFECTION_RULES.min, Math.min(WHISPER_AFFECTION_RULES.max, value));
+          affDelta = value;
+          traceStep(_wt, "结算·观感裁决", "pass", `旁白观感=${choice}`);
         } else {
-          affDelta = 0; // 判不了就不替她表态
-          traceStep(_wt, "结算·软判定", "skip", "旁白观感判不了，本轮好感不变");
+          affDelta = 0;
+          traceStep(_wt, "结算·观感裁决", "skip", "旁白观感判不了，本轮好感不变");
         }
-      } else if (!inSeaNow && !narrator.confessed && apiCfg.softSettleEnabled === false && affDelta > 0) {
-        // softSettleEnabled 关着的兜底：好感照旧 +1，但日上限仍要管——这条路的节流
-        // 不走软结算（narratorDailyDelta），沿用原来手工账本，否则私聊一天就能刷满门槛。
-        const led = gameStore.getState().varTree.世界?.好感日增;
-        const day = Math.floor((gameStore.getState().time || 0) / 24);
-        const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
-        const already = Number(gained["旁白"]) || 0;
-        const room = Math.max(0, WHISPER_AFFECTION_RULES.daily - already);
-        affDelta = Math.min(affDelta, room);
-        if (affDelta <= 0) {
-          addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
-        } else {
-          gained["旁白"] = already + affDelta;
-          setVarTree(prev => {
-            const next = JSON.parse(JSON.stringify(prev || {}));
-            if (!next.世界) next.世界 = { 威望: 0 };
-            next.世界.好感日增 = { dayStamp: day, gained };
-            return next;
-          });
+        // 日上限账本：正向增量按当日剩余额度裁（世界.好感日增["旁白"]）
+        if (affDelta > 0) {
+          const led = gameStore.getState().varTree.世界?.好感日增;
+          const day = Math.floor((gameStore.getState().time || 0) / 24);
+          const gained = (led && led.dayStamp === day) ? { ...(led.gained || {}) } : {};
+          const already = Number(gained["旁白"]) || 0;
+          const room = Math.max(0, WHISPER_AFFECTION_RULES.daily - already);
+          affDelta = Math.min(affDelta, room);
+          if (affDelta <= 0) {
+            addLog([{ t: "sys", text: "  （今日与她已够亲近了。改日再来。）" }]);
+          } else {
+            gained["旁白"] = already + affDelta;
+            setVarTree(prev => {
+              const next = JSON.parse(JSON.stringify(prev || {}));
+              if (!next.世界) next.世界 = { 威望: 0 };
+              next.世界.好感日增 = { dayStamp: day, gained };
+              return next;
+            });
+          }
         }
       }
 
