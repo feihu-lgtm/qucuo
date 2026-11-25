@@ -1,6 +1,6 @@
 // B1：判官双调用模式下任务阶段提示不再要求模型吐 flags_add；单调用老路保留。
 import { describe, expect, it } from "vitest";
-import { buildQuestStageNote } from "./roundNotes.js";
+import { buildQuestStageNote, shouldSuppressModelFlags } from "./roundNotes.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 
 // 找一个有首阶段 completionFlag 且 giver 明确的非 localOnly 真实任务
@@ -13,6 +13,19 @@ const base = {
   pendingQuestBranch: null, visibleNpcs: [], convo: [], settleNpc: null, cmd: "聊聊",
   innerRoomName: null, questTriggerMode: "prompt",
 };
+
+describe("shouldSuppressModelFlags 与判官激活闸同源", () => {
+  const cfg = { judgePipelineEnabled: true, extractionEnabled: true };
+  it("非 settle 双调用才 suppress；settle 回合不 suppress", () => {
+    expect(shouldSuppressModelFlags(cfg, false)).toBe(true);
+    expect(shouldSuppressModelFlags(cfg, true)).toBe(false);
+  });
+  it("单调用/判官关闭永不 suppress", () => {
+    expect(shouldSuppressModelFlags({ judgePipelineEnabled: false, extractionEnabled: true }, false)).toBe(false);
+    expect(shouldSuppressModelFlags({ judgePipelineEnabled: true, extractionEnabled: false }, false)).toBe(false);
+    expect(shouldSuppressModelFlags(undefined, false)).toBe(false);
+  });
+});
 
 describe("buildQuestStageNote flags_add 指令压下", () => {
   it("单调用老路：提示含 flags_add 指令", () => {

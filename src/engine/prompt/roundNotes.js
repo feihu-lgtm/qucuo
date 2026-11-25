@@ -38,6 +38,13 @@ const placeLabel = (stage) => {
 // AI 要把这当成一场真交锋来演：只有玩家的话在理、把对方驳倒/说动时，
 // 才在 flags_add 吐出成功 flag 推进；玩家词不达意、被反驳、气势输了，
 // 就让对方继续刁难，不给过。
+// 判官双调用下模型是否还承担任务旗举证：必须与 runTurn 判官真实激活闸同源——
+// judgePipelineEnabled && extractionEnabled && 非 settle 回合。settle 回合不走判官，
+// 若仍提示「系统自会判定」，任务旗/旧通道的提示与现实再次矛盾（终审 blocker）。
+export function shouldSuppressModelFlags(apiCfg, settleish) {
+  return !!(apiCfg?.judgePipelineEnabled && apiCfg?.extractionEnabled) && !settleish;
+}
+
 export function buildQuestStageNote({ questProgress, flags, varTree, char, room, inv, pendingQuestBranch, visibleNpcs, convo, settleNpc, cmd, innerRoomName, questTriggerMode, suppressModelFlags }) {
   const describeFlag = (f) => Array.isArray(f) ? f.map(x => `"${x}"`).join("/或") + "（按玩家实际选择的分支，只加其中一个）" : `"${f}"`;
   const noteLines = [];
