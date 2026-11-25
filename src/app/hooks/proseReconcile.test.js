@@ -241,6 +241,19 @@ describe("WO-20D 云谱系探测分叉", () => {
     expect(gameStore.getState().proseLineage).toHaveLength(1);
   });
 
+  it("坏形状 2xx（hasFuture 非 boolean）→按失败论处保守分叉", async () => {
+    seedLineageOnly();
+    boundCloud();
+    configureCloudFetch(vi.fn(async () => okJson({}))); // 2xx 但无 hasFuture
+    await reconcileProseLineageAfterLoad({ time: 5, proseSeq: 4, convo: [] }, { epoch: getGameEpoch() });
+    expect(gameStore.getState().proseLineage).toHaveLength(2);
+    // 字符串 "true" 也不算 boolean
+    gameActions.setProseLineage([{ b: "bCloud1", upTo: null }]);
+    configureCloudFetch(vi.fn(async () => okJson({ hasFuture: "true" })));
+    await reconcileProseLineageAfterLoad({ time: 5, proseSeq: 4, convo: [] }, { epoch: getGameEpoch() });
+    expect(gameStore.getState().proseLineage).toHaveLength(2);
+  });
+
   it("探测超时（挂起）→保守分叉不阻断", async () => {
     seedLineageOnly();
     boundCloud();

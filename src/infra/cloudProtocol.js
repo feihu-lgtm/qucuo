@@ -201,7 +201,10 @@ export async function hubProseHasAfter(binding, { branchId = "", afterTurn = 0, 
   });
   let body = null;
   try { body = typeof res.json === "function" ? await res.json() : null; } catch { /* 无 body */ }
-  return { ok: !!res.ok, status: res.status, hasFuture: body?.hasFuture === true };
+  // hasFuture 原样透传不归一（Review 修）：坏形状 2xx（无 boolean 答案）若归一成
+  // false，reconcile 会按「无未来」不分叉——保守口径要求坏形状走 error 分叉，
+  // 形状判定责任在 probe 层。
+  return { ok: !!res.ok, status: res.status, hasFuture: body?.hasFuture };
 }
 
 async function normalizeProseResponse(res) {
