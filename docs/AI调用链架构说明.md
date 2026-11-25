@@ -28,7 +28,7 @@ flowchart TD
 
 这条链路仍是线上主回路，但判官管线（WO-13）已并线接入：`judgePipelineEnabled` 开启时，`turn.intake` 前哨听意 → `judgeTurn` 纯函数判官 → 定案单与锚点铁律注入主叙事 → 流式剥 `⟦F⟧` 锚点、`---SEAL---` 尾章校对 → `materializeFacts` 经 `commitRound` 落盘，全部发生在 `turn.main` 前后，不替换旧状态提取——旧提取/单调用链路仍原样保留兜底。
 
-**当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；CLI 老录制回放默认 `false`（保留旧链路对比）。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts，新管线实际以 no-op 退化运行——链路已通但尚未全量替换旧状态提取，本节 mermaid 图仍是状态写入口的事实主流。
+**当前真实覆盖率**：web 端 `judgePipelineEnabled` 默认 `true`；CLI 老录制回放默认 `false`（保留旧链路对比）。激活还需同时满足两个条件——**非 settle 回合**（赠礼/赔罪/求教等 settle 回合状态已由系统/软结算裁决落账，判官再裁会重复结算）且 **`extractionEnabled` 双调用叙事模式**（单调用 JSON 老路的输出契约是纯 JSON 骨架，锚点+SEAL 散文指令会冲垮它）；任一不满足，新管线不激活、整链 no-op。场记板 entries、容器坍缩态、备料物、悬空道具尚无宿主系统喂入（属 WO-17/18/22/24），判官多数回合签出空 facts，新管线实际以 no-op 退化运行——链路已通但尚未全量替换旧状态提取，本节 mermaid 图仍是状态写入口的事实主流。
 
 ## 3. 已落地地基
 
@@ -44,7 +44,7 @@ flowchart TD
 | 天工铸物/原型创招 | 已落地 | `compileEmergentItem`、`compileEmergentSkill` 把授信额度编译成可进战斗/背包的真实物品与武学；越界词条物理驳回。 |
 | 首字超时兜底 | 基础已落地/未接主链 | `streamWithFirstTokenFallback` 支持插入过渡行、首字抵达原位替换、超时静默降级；主循环接线属于后续工单。 |
 | 十二律落盘引擎 | 基础已落地/未接主链 | `materializeFacts` 已把十二类事实码编译成 `changes/patches/receipts/logs`；尚未进入主回路，接线属于后续主循环工单。 |
-| 前哨 intake + 判官 + 锚点尾章管线 | 已接主链/常 no-op 退化 | 契约 B `turn.intake`、`judgeTurn`、`storytellerStream` 锚点剥离、`sealVerifier` 尾章校对、`materializeFacts` 落盘已全部接入 `runTurn`/`commitRound`；web 默认开、CLI 回放默认关。entries/containers/prepItems/floatingItems 无宿主喂入，多数回合签空 facts 退化运行。 |
+| 前哨 intake + 判官 + 锚点尾章管线 | 已接主链/常 no-op 退化 | 契约 B `turn.intake`、`judgeTurn`、`storytellerStream` 锚点剥离、`sealVerifier` 尾章校对、`materializeFacts` 落盘已全部接入 `runTurn`/`commitRound`；web 默认开、CLI 回放默认关；激活另需非 settle 回合 + extractionEnabled 双调用叙事模式，否则不激活。entries/containers/prepItems/floatingItems 无宿主喂入，多数回合签空 facts 退化运行。 |
 | 天机落账卡 UI | 已落地/动作仍走文本指令 | `EffectReceiptCard` 已消费 `receipts` 渲染落账条（品阶色/攻防/词条翻译/出生落款），按钮经 NarrativeLogFeed 翻成文本指令进 `act`；尚未走 WO-13 结构化落账链路，按钮语义依赖回合裁决而非直写状态。 |
 
 ## 4. 目标链路分层
