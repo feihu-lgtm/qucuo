@@ -49,6 +49,12 @@ export function ensureItemId(item, turn = 0, seq = 0) {
 //   3. 宽松命中：token 与实体的 id/name 去空白后相等，或实体 id 的 hex 尾段命中
 //      （判官/小模型常把 it_8f3a21 截写成 8f3a21，放它一马）。
 // 找不到返回 null，绝不抛——调用方拿 null 走"未知实体"分支即可。
+// 无条件按新物派生 it_<hex>（跳过图鉴查表）——用于"名字撞图鉴但并非真品"
+// 的场景（如 WO-10 品阶超授信的公式兜底物），避免与真品 it_cat_<hash> 撞 id。
+export function mintItemId(name, turn = 0, seq = 0) {
+  return `it_${hex6(hashString(`${name}|${turn}|${seq}`))}`;
+}
+
 export function resolveEntityByIdOrName(pool, token) {
   if (!pool || token == null) return null;
   const list = Array.isArray(pool) ? pool : Object.values(pool);

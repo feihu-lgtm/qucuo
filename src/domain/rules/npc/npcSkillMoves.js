@@ -115,7 +115,7 @@ export function deriveMovesetFromSkills(skills) {
   for (const type of [MOVE_TYPE.ATTACK, MOVE_TYPE.DEFENSE, MOVE_TYPE.STATUS]) {
     const equipped = list.find(s => s.active && (s.moveType || inferMoveType(s.name)) === type);
     if (equipped) {
-      moves.push((equipped.fixed && equipped.move) ? { ...equipped.move, sourceSkill: equipped.name } : deriveMoveFromSkill(equipped));
+      moves.push(equipped.move ? { ...equipped.move, sourceSkill: equipped.name } : deriveMoveFromSkill(equipped));
     } else {
       const template = MOVE_POOL["白"][type];
       moves.push({ ...template, type, quality: "白", sourceSkill: null });

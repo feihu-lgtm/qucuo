@@ -42,9 +42,9 @@ const NAMED_AFFIXES = {
 // 服用品词条（丹药酒食）：挂 consumable 而非 effect
 const CONSUMABLE_AFFIXES = {
   "consumable:heal": { cost: 1, consumable: { hpRestore: 0.2, kind: "heal" } },
-  "consumable:antidote": { cost: 1, consumable: { cureStatus: true, kind: "antidote" } },
+  "consumable:antidote": { cost: 1, consumable: { dispelAll: true, kind: "antidote" } },
   "consumable:energy": { cost: 1, consumable: { energyRestore: 4, kind: "energy" } },
-  "consumable:combatBuff": { cost: 2, consumable: { combatBuff: true, kind: "combatBuff" } },
+  "consumable:combatBuff": { cost: 2, consumable: { combatBuff: { waigong: 4, energyBonus: 1 }, combatBuffNote: "气力自不同往日", kind: "combatBuff" } },
 };
 
 // 攻击面特效：武器与饰品可挂，护甲不挂（护甲重心在防御/续航，与 catalog 注释一致）
