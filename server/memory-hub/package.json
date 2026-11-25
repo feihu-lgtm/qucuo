@@ -1,0 +1,14 @@
+{
+  "name": "qucuo-memory-hub",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "WO-20 曲措乡云端存档与原文段落检索后端（Node 内置 node:sqlite + FTS5）",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test hubCore.test.mjs"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

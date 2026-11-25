@@ -8,14 +8,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "verify:fast": "node scripts/checkStrictSchemas.mjs && eslint \"src/**/*.{js,jsx}\" \"e2e/**/*.mjs\" && vitest run",
-    "verify": "node scripts/checkStrictSchemas.mjs && eslint \"src/**/*.{js,jsx}\" \"e2e/**/*.mjs\" && vitest run && vite build --config vite.config.pages.js",
+    "verify:fast": "node scripts/checkStrictSchemas.mjs && eslint \"src/**/*.{js,jsx}\" \"e2e/**/*.mjs\" && vitest run && npm run test:server",
+    "verify": "node scripts/checkStrictSchemas.mjs && eslint \"src/**/*.{js,jsx}\" \"e2e/**/*.mjs\" && vitest run && npm run test:server && vite build --config vite.config.pages.js",
     "ratchet": "node scripts/ratchet.mjs",
     "docs-gate": "node scripts/checkAiChainDocs.mjs",
     "stats": "node scripts/ratchet.mjs --stats",
     "tree": "node scripts/tree.mjs",
     "e2e": "node e2e/run.mjs",
-    "dev:qa": "node e2e/harness/server.mjs"
+    "dev:qa": "node e2e/harness/server.mjs",
+    "test:server": "node --test server/memory-hub/hubCore.test.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
