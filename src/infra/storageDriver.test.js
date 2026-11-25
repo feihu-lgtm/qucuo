@@ -255,7 +255,8 @@ describe("WO-19/20 PR-A canonical adapter", () => {
     await flushCloudQueue();
     expect(getCloudQueue()).toHaveLength(1); // 失败保留队列
     fail = false;
-    for (let i = 0; i < 8 && getCloudQueue().length; i += 1) await vi.advanceTimersByTimeAsync(1500);
+    // vi.waitFor 自动交替推进定时器与微任务——加密链/退避定时器时机在全量并行下不确定
+    await vi.waitFor(() => { expect(getCloudQueue()).toEqual([]); }, { timeout: 8000, interval: 200 });
     expect(getCloudQueue()).toEqual([]); // 退避重试终成功
   });
 
