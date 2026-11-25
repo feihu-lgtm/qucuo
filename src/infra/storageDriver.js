@@ -1,3 +1,9 @@
+import {
+  configureCloudFetch as configureAdapterFetch, hubBinding, hubPutSave, hubDeleteSave, hubWipeSpace,
+  encryptSaveValue, expectedRevFor, recordServerRev, clearServerRev, clearAllServerRevs,
+  getServerRevs, getAlignedOnce, markAlignedOnce,
+} from "./cloudProtocol.js";
+
 // 存档三档存储驱动抽象（WO-19）——local / cloud / file
 // ------------------------------------------------------------------
 // 口径钉死：
@@ -25,6 +31,8 @@ export function loadStorageConfig() {
     return {
       driver: ["local", "cloud", "file"].includes(cfg.driver) ? cfg.driver : "local",
       cloudUrl: typeof cfg.cloudUrl === "string" ? cfg.cloudUrl : "",
+      spaceId: typeof cfg.spaceId === "string" ? cfg.spaceId : "",
+      hubToken: typeof cfg.hubToken === "string" ? cfg.hubToken : "",
       deviceId: typeof cfg.deviceId === "string" && cfg.deviceId
         ? cfg.deviceId
         : (() => {
@@ -37,7 +45,7 @@ export function loadStorageConfig() {
       boundAt: cfg.boundAt || null,
     };
   } catch {
-    return { driver: "local", cloudUrl: "", deviceId: "dev_fallback", boundAt: null };
+    return { driver: "local", cloudUrl: "", spaceId: "", hubToken: "", deviceId: "dev_fallback", boundAt: null };
   }
 }
 
@@ -60,10 +68,9 @@ export function setStorageDriver(driver) {
 }
 
 // ── cloud 客户端 seam ─────────────────────────────────────────────────────────
-// fetch 注入点：测试/未来真实实现都走这里。默认用全局 fetch。
-let _fetchImpl = null;
-export function configureCloudFetch(fetchImpl) { _fetchImpl = fetchImpl; }
-const doFetch = (...args) => (_fetchImpl || globalThis.fetch).apply(null, args);
+// WO-19/20 PR-A：所有云端调用经 cloudProtocol adapter 翻译成 canonical 契约
+// （URL/形状/rev/鉴权/加密）；fetch 注入点穿透到 adapter，测试无感。
+export function configureCloudFetch(fetchImpl) { configureAdapterFetch(fetchImpl); }
 
 function _lsRead(key, fallback) { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
 function _lsWrite(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } }
@@ -71,14 +78,6 @@ function _lsWrite(key, value) { try { localStorage.setItem(key, JSON.stringify(v
 export function getCloudQueue() { return _lsRead(QUEUE_KEY, []); }
 export function getCloudRevs() { return _lsRead(REVS_KEY, {}); }
 export function getCloudConflicts() { return _lsRead(CONFLICTS_KEY, []); }
-
-function nextRev(key) {
-  const revs = getCloudRevs();
-  const rev = (revs[key] || 0) + 1;
-  revs[key] = rev;
-  _lsWrite(REVS_KEY, revs);
-  return rev;
-}
 
 // 入队：每键只留最新一份（同键后写覆盖前写——合并语义安全，存档本来就是全量快照）。
 // 3 秒防抖合批后统一推送。
@@ -134,7 +133,10 @@ let _flushAgain = false;
 async function _flushCloudQueueInner() {
   if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
   const cfg = loadStorageConfig();
-  if (!cfg.cloudUrl) return { ok: false, reason: "unbound" };
+  // 优雅降级（PR-A 硬要求）：cloudUrl/spaceId/hubToken 三件套缺一即 unbound——
+  // 队列原样保留不推不丢，绝不能半通状态发出残缺请求。
+  const binding = hubBinding(cfg);
+  if (!binding.bound) return { ok: false, reason: "unbound" };
   let queue = getCloudQueue();
   if (!queue.length) return { ok: true, pushed: 0 };
   const startEpoch = _wipeEpoch;
@@ -143,32 +145,54 @@ async function _flushCloudQueueInner() {
   let failed = false;
   for (const entry of queue) {
     if (_wipeEpoch !== startEpoch) { failed = false; break; } // 抹除发生：立即停止，剩余条目已被清空不再推
-    if (!_activeAbort) _activeAbort = new AbortController();
-    const signal = _activeAbort.signal;
     try {
-      const rev = entry.op === "put" ? nextRev(entry.key) : (getCloudRevs()[entry.key] || 0) + 1;
-      const res = await doFetch(`${cfg.cloudUrl.replace(/\/$/, "")}/saves/${encodeURIComponent(entry.key)}`, {
-        method: entry.op === "put" ? "PUT" : "DELETE",
-        headers: { "Content-Type": "application/json", "X-Device-Id": cfg.deviceId },
-        body: entry.op === "put" ? JSON.stringify({ rev, value: entry.value, deviceId: cfg.deviceId }) : undefined,
-        signal,
-      });
-      if (res.status === 409) {
-        // 冲突：绝不静默覆盖——登记后等玩家显式裁决。
-        // 尽力读取服务端 rev（WO-20 契约：409 body 可带 serverRev），供 keep_cloud 对齐用。
-        let serverRev = null;
-        try { const j = typeof res.json === "function" ? await res.json() : null; serverRev = j?.serverRev ?? null; } catch { /* 无 body 就算了 */ }
-        const conflicts = getCloudConflicts().filter((c) => c.key !== entry.key);
-        conflicts.push({ key: entry.key, rev, serverRev, queuedAt: entry.queuedAt, detectedAt: Date.now(), op: entry.op, value: entry.value });
-        _lsWrite(CONFLICTS_KEY, conflicts);
-        pushed += 1; // 出队——它不是失败，是待裁决
-        continue;
+      // rev 语义修正（PR-A 硬要求）：本地计数器不作 CAS 依据——expectedRev 只能取
+      // serverRev 台账（首写 0），本地 rev 仅是排队参考不再上送。
+      const expectedRev = expectedRevFor(entry.key);
+      let result;
+      if (entry.op === "put") {
+        const payloadEnc = await encryptSaveValue(entry.value);
+        result = await hubPutSave(binding, entry.key, payloadEnc, { expectedRev });
+      } else {
+        result = await hubDeleteSave(binding, entry.key, { expectedRev });
       }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      if (entry.op === "del") { const revs = getCloudRevs(); revs[entry.key] = rev; _lsWrite(REVS_KEY, revs); }
+      if (result.conflict) {
+        // 首次错位自动对齐一次（PR-A 硬要求）：adapter 迁移/换绑后首推必 409——
+        // 但仅限「无成功推送台账且从未对齐过」的键；已有台账的键再 409 是真实
+        // 多端冲突，必须进冲突登记等玩家裁决，绝不静默吞掉。
+        const hadLedger = getServerRevs()[entry.key] !== undefined;
+        const alreadyAligned = getAlignedOnce()[entry.key];
+        if (!hadLedger && !alreadyAligned && Number.isInteger(result.serverRev)) {
+          markAlignedOnce(entry.key);
+          recordServerRev(entry.key, result.serverRev);
+          if (entry.op === "put") {
+            const payloadEnc = await encryptSaveValue(entry.value);
+            result = await hubPutSave(binding, entry.key, payloadEnc, { expectedRev: result.serverRev });
+          } else {
+            result = await hubDeleteSave(binding, entry.key, { expectedRev: result.serverRev });
+          }
+          if (result.ok) {
+            if (entry.op === "put" && Number.isInteger(result.rev)) recordServerRev(entry.key, result.rev);
+            if (entry.op === "del") clearServerRev(entry.key);
+            pushed += 1;
+            continue;
+          }
+        }
+        if (result.conflict) {
+          // 冲突：绝不静默覆盖——登记后等玩家显式裁决。
+          const conflicts = getCloudConflicts().filter((c) => c.key !== entry.key);
+          conflicts.push({ key: entry.key, rev: expectedRev, serverRev: result.serverRev ?? null, queuedAt: entry.queuedAt, detectedAt: Date.now(), op: entry.op, value: entry.value });
+          _lsWrite(CONFLICTS_KEY, conflicts);
+          pushed += 1; // 出队——它不是失败，是待裁决
+          continue;
+        }
+      }
+      if (!result.ok) throw new Error(`HTTP ${result.status}`);
+      if (entry.op === "put" && Number.isInteger(result.rev)) recordServerRev(entry.key, result.rev);
+      if (entry.op === "del") clearServerRev(entry.key);
       pushed += 1;
     } catch (_) {
-      if (signal.aborted || _wipeEpoch !== startEpoch) { failed = false; break; } // 抹除中止：不重试不残留
+      if (_wipeEpoch !== startEpoch) { failed = false; break; } // 抹除中止：不重试不残留
       remaining.push(entry);
       failed = true;
     }
@@ -205,22 +229,19 @@ export function resolveCloudConflict(key, choice) {
       enqueueCloudForcePush(key, hit.value);
     } else if (hit.op === "del") {
       // del 冲突的 keep_local：force DELETE（二审必修 5）——不再是静默无效选项
-      const cfg = loadStorageConfig();
-      if (cfg.cloudUrl) {
-        const rev = nextRev(key);
-        void Promise.resolve(doFetch(`${cfg.cloudUrl.replace(/\/$/, "")}/saves/${encodeURIComponent(key)}?force=1&rev=${rev}`, {
-          method: "DELETE", headers: { "X-Device-Id": cfg.deviceId },
-        })).catch(() => enqueueCloudPush(key, undefined, "del"));
+      const binding = hubBinding(loadStorageConfig());
+      if (binding.bound) {
+        void Promise.resolve(hubDeleteSave(binding, key, { expectedRev: expectedRevFor(key), force: true }))
+          .then((r) => { if (r.ok) clearServerRev(key); })
+          .catch(() => enqueueCloudPush(key, undefined, "del"));
       }
     }
   } else if (choice === "keep_cloud") {
-    // rev 对齐（二审必修 4）：把本地 rev 对齐到服务端 rev，下次推送用 serverRev+1
-    // 不再必然 409。服务端未上报 serverRev 时无法对齐——UI 文案需说明这只是暂停
-    // 同步、下次推送仍可能冲突（见 SavesTab）。
+    // rev 对齐（二审必修 4）：把 serverRev 台账对齐到服务端 rev，下次推送以此为
+    // expectedRev 不再必然 409。服务端未上报 serverRev 时无法对齐——UI 文案需说明
+    // 这只是暂停同步、下次推送仍可能冲突（见 SavesTab）。
     if (Number.isFinite(hit.serverRev)) {
-      const revs = getCloudRevs();
-      revs[key] = hit.serverRev;
-      _lsWrite(REVS_KEY, revs);
+      recordServerRev(key, hit.serverRev);
     }
   }
   return true;
@@ -229,14 +250,14 @@ export function resolveCloudConflict(key, choice) {
 function enqueueCloudForcePush(key, value) {
   // 显式玩家裁决后的强制推送：带 force:true，服务端跳过 rev 校验。这是唯一合法
   // 的覆盖路径——必须经玩家在 UI 点选，绝不可能由自动流程触发。
-  const cfg = loadStorageConfig();
-  if (!cfg.cloudUrl) return;
-  const rev = nextRev(key);
-  void Promise.resolve(doFetch(`${cfg.cloudUrl.replace(/\/$/, "")}/saves/${encodeURIComponent(key)}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", "X-Device-Id": cfg.deviceId },
-    body: JSON.stringify({ rev, value, deviceId: cfg.deviceId, force: true }),
-  })).catch(() => {
+  const binding = hubBinding(loadStorageConfig());
+  if (!binding.bound) return;
+  void (async () => {
+    const payloadEnc = await encryptSaveValue(value);
+    return hubPutSave(binding, key, payloadEnc, { expectedRev: expectedRevFor(key), force: true });
+  })().then((r) => {
+    if (r.ok && Number.isInteger(r.rev)) recordServerRev(key, r.rev);
+  }).catch(() => {
     // 强制推送也失败就回普通队列等退避重试——但不再带 force，避免无意识的自动覆盖
     enqueueCloudPush(key, value);
   });
@@ -245,18 +266,17 @@ function enqueueCloudForcePush(key, value) {
 // 一键彻底抹除云端全部存档与记忆（客户端接口；UI 必须二次确认后才许调用）。
 export async function wipeCloudAll() {
   const cfg = loadStorageConfig();
-  if (!cfg.cloudUrl) return { ok: false, reason: "unbound" };
+  const binding = hubBinding(cfg);
+  if (!binding.bound) return { ok: false, reason: "unbound" };
   try {
-    const res = await doFetch(`${cfg.cloudUrl.replace(/\/$/, "")}/saves`, {
-      method: "DELETE",
-      headers: { "X-Device-Id": cfg.deviceId },
-    });
+    // adapter 内重写为 canonical `DELETE /api/space/<spaceId>`（单数、无 /saves 后缀）
+    const res = await hubWipeSpace(binding);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     _wipeEpoch += 1; // 服务端确认删除后才翻代——在飞 flush 即刻停推
     try { _activeAbort?.abort(); } catch { /* */ }
     _activeAbort = null;
     _lsWrite(QUEUE_KEY, []);
-    _lsWrite(REVS_KEY, {});
+    clearAllServerRevs();
     _lsWrite(CONFLICTS_KEY, []);
     return { ok: true };
   } catch (e) {
@@ -288,4 +308,5 @@ export function _resetCloudStateForTest() {
   if (_debounceTimer) clearTimeout(_debounceTimer);
   if (_retryTimer) clearTimeout(_retryTimer);
   _debounceTimer = null; _retryTimer = null; _retryDelay = 1000; _driver = null;
+  _flushing = false; _flushAgain = false; _activeAbort = null; // 测试隔离：跨用例泄漏的 flush 互斥态不带入下一场
 }

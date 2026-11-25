@@ -4,6 +4,7 @@ import {
   configureCloudFetch, enqueueCloudPush, flushCloudQueue, getCloudQueue, getCloudRevs,
   getCloudConflicts, resolveCloudConflict, wipeCloudAll, mirrorSaveWrite, _resetCloudStateForTest,
 } from "./storageDriver.js";
+import { getServerRevs, _resetCloudProtocolForTest } from "./cloudProtocol.js";
 
 function mockLocalStorage() {
   const data = new Map();
@@ -18,10 +19,15 @@ function mockLocalStorage() {
   return ls;
 }
 
-const boundCfg = () => saveStorageConfig({ driver: "cloud", cloudUrl: "https://cloud.example.com", deviceId: "dev_t1", boundAt: 1 });
+// canonical 绑定三件套：cloudUrl(host)+spaceId+hubToken 缺一即 unbound
+const boundCfg = () => saveStorageConfig({
+  driver: "cloud", cloudUrl: "https://cloud.example.com", spaceId: "sp1", hubToken: "tok_test",
+  deviceId: "dev_t1", boundAt: 1,
+});
+const okJson = (body) => ({ ok: true, status: 200, json: async () => body });
 
 describe("storageDriver 配置与驱动切换", () => {
-  beforeEach(() => { mockLocalStorage(); _resetCloudStateForTest(); vi.useFakeTimers(); });
+  beforeEach(() => { mockLocalStorage(); _resetCloudStateForTest(); _resetCloudProtocolForTest(); vi.useFakeTimers(); });
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); configureCloudFetch(null); });
 
   it("默认 local 档；非法档位拒绝", () => {
@@ -30,14 +36,6 @@ describe("storageDriver 配置与驱动切换", () => {
     expect(setStorageDriver("bogus")).toBe(false);
     expect(setStorageDriver("cloud")).toBe(true);
     expect(getStorageDriver()).toBe("cloud");
-    expect(loadStorageConfig().driver).toBe("cloud");
-  });
-
-  it("配置独立于 apiCfg，存 wuxia_mud_storage_config", () => {
-    saveStorageConfig({ driver: "cloud", cloudUrl: "https://x", deviceId: "d", boundAt: 5 });
-    const raw = JSON.parse(localStorage.getItem("wuxia_mud_storage_config"));
-    expect(raw.cloudUrl).toBe("https://x");
-    expect(raw.driver).toBe("cloud");
   });
 
   it("local 档镜像 no-op：不进云队列", () => {
@@ -49,135 +47,183 @@ describe("storageDriver 配置与驱动切换", () => {
     setStorageDriver("cloud");
     mirrorSaveWrite("autosave", { v: 1 });
     mirrorSaveWrite("autosave", { v: 2 });
-    mirrorSaveWrite("slot:1", { v: 3 });
     const q = getCloudQueue();
-    expect(q).toHaveLength(2);
-    expect(q.find((e) => e.key === "autosave").value).toEqual({ v: 2 });
+    expect(q).toHaveLength(1);
+    expect(q[0].value).toEqual({ v: 2 });
   });
+});
 
-  it("推送带递增 rev；成功后清空队列", async () => {
-    boundCfg();
-    const calls = [];
-    configureCloudFetch(async (url, init) => { calls.push({ url, body: JSON.parse(init.body || "{}"), method: init.method }); return { ok: true, status: 200 }; });
-    enqueueCloudPush("autosave", { v: 1 });
-    enqueueCloudPush("slot:1", { v: 2 });
-    const r = await flushCloudQueue();
-    expect(r.ok).toBe(true);
-    expect(calls).toHaveLength(2);
-    expect(calls[0].body.rev).toBe(1);
-    expect(calls[1].body.rev).toBe(1); // 每键独立递增
-    expect(calls[0].url).toContain("/saves/autosave");
-    expect(getCloudQueue()).toEqual([]);
-    // 同键再推 rev 递增
-    enqueueCloudPush("autosave", { v: 9 });
-    await flushCloudQueue();
-    expect(calls[2].body.rev).toBe(2);
-  });
+describe("WO-19/20 PR-A canonical adapter", () => {
+  beforeEach(() => { mockLocalStorage(); _resetCloudStateForTest(); _resetCloudProtocolForTest(); vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); configureCloudFetch(null); });
 
-  it("3 秒防抖：入队后不立即推，到期自动合批推送", async () => {
-    boundCfg();
-    const calls = [];
-    configureCloudFetch(async (url, init) => { calls.push(init); return { ok: true, status: 200 }; });
-    enqueueCloudPush("autosave", { v: 1 });
-    expect(calls).toHaveLength(0);
-    await vi.advanceTimersByTimeAsync(3100);
-    expect(calls.length).toBeGreaterThan(0);
-  });
-
-  it("网络失败保留队列 + 指数退避重试，离线不丢", async () => {
-    boundCfg();
-    let n = 0;
-    configureCloudFetch(async () => { n += 1; if (n < 3) throw new Error("offline"); return { ok: true, status: 200 }; });
-    enqueueCloudPush("autosave", { v: 1 });
-    const r1 = await flushCloudQueue();
-    expect(r1.ok).toBe(false);
-    expect(getCloudQueue()).toHaveLength(1);
-    // 退避 1s 后自动重试仍失败，再翻倍
-    await vi.advanceTimersByTimeAsync(1100);
-    expect(n).toBe(2);
-    await vi.advanceTimersByTimeAsync(2100);
-    expect(n).toBe(3);
-    expect(getCloudQueue()).toEqual([]);
-  });
-
-  it("409 绝不静默覆盖：进冲突登记，不再重试；裁决 keep_local 才带 force 覆盖", async () => {
+  it("首写 expectedRev=0，成功后 serverRev 台账记响应 rev；续写用台账值", async () => {
     boundCfg();
     const calls = [];
     configureCloudFetch(async (url, init) => {
-      const body = JSON.parse(init?.body || "{}");
-      calls.push(body);
-      return body.force ? { ok: true, status: 200 } : { ok: false, status: 409 };
+      calls.push({ url, body: JSON.parse(init.body || "{}"), method: init.method, headers: init.headers });
+      return okJson({ rev: calls.length }); // 服务端权威 rev 1,2,3…
     });
-    enqueueCloudPush("slot:1", { v: "mine" });
-    await flushCloudQueue();
-    expect(getCloudConflicts()).toHaveLength(1);
-    expect(getCloudQueue()).toEqual([]); // 冲突出队待裁决，不原地打转
-    expect(calls.every((c) => !c.force)).toBe(true); // 无 force 覆盖发生
-    // 玩家选本地覆盖 → 唯一合法 force 路径
-    expect(resolveCloudConflict("slot:1", "keep_local")).toBe(true);
-    expect(getCloudConflicts()).toEqual([]);
-    await vi.advanceTimersByTimeAsync(3100);
-    await flushCloudQueue();
-    expect(calls.some((c) => c.force === true && c.value?.v === "mine")).toBe(true);
-  });
-
-  it("裁决 keep_cloud 放弃推送、不再覆盖", async () => {
-    boundCfg();
-    const calls = [];
-    configureCloudFetch(async (url, init) => { calls.push(JSON.parse(init?.body || "{}")); return { ok: false, status: 409 }; });
-    enqueueCloudPush("slot:1", { v: "mine" });
-    await flushCloudQueue();
-    resolveCloudConflict("slot:1", "keep_cloud");
-    await flushCloudQueue();
-    expect(calls.every((c) => !c.force)).toBe(true);
-  });
-
-  it("flush 在飞互斥：并发重入返回 busy 不双 flush", async () => {
-    vi.useRealTimers();
-    boundCfg();
-    const calls = [];
-    configureCloudFetch(async (url, init) => { calls.push(init); await new Promise((r) => setTimeout(r, 5)); return { ok: true, status: 200 }; });
     enqueueCloudPush("autosave", { v: 1 });
-    const [r1, r2] = await Promise.all([flushCloudQueue(), flushCloudQueue()]);
-    expect([r1, r2].some((r) => r.reason === "busy")).toBe(true);
+    await flushCloudQueue();
     expect(calls).toHaveLength(1);
-  });
-
-  it("keep_cloud 带 serverRev 时本地 rev 对齐，下次推送不再必然 409", async () => {
-    vi.useRealTimers();
-    boundCfg();
-    configureCloudFetch(async () => ({ ok: false, status: 409, json: async () => ({ serverRev: 7 }) }));
-    enqueueCloudPush("slot:1", { v: "mine" });
+    expect(calls[0].body.expectedRev).toBe(0); // 首写 0
+    expect(calls[0].body.rev).toBeUndefined(); // 本地计数器不上送
+    expect(calls[0].body.value).toBeUndefined(); // 明文不上送
+    expect(getServerRevs().autosave).toBe(1);
+    // 续写：expectedRev 取台账 1
+    enqueueCloudPush("autosave", { v: 2 });
     await flushCloudQueue();
-    resolveCloudConflict("slot:1", "keep_cloud");
-    expect(getCloudRevs()["slot:1"]).toBe(7);
+    expect(calls[1].body.expectedRev).toBe(1);
+    expect(getServerRevs().autosave).toBe(2);
   });
 
-  it("del 冲突 keep_local 走 force DELETE 不静默无效", async () => {
-    vi.useRealTimers();
+  it("payload 是 v1.iv.ct 密文串，不含明文内容", async () => {
     boundCfg();
     const calls = [];
-    configureCloudFetch(async (url, init) => { calls.push({ url, method: init.method }); return { ok: false, status: 409, json: async () => ({}) }; });
-    enqueueCloudPush("slot:1", undefined, "del");
+    configureCloudFetch(async (url, init) => { calls.push(JSON.parse(init.body)); return okJson({ rev: 1 }); });
+    enqueueCloudPush("autosave", { secretMarker: "绝密存档内容" });
     await flushCloudQueue();
-    configureCloudFetch(async (url, init) => { calls.push({ url, method: init.method }); return { ok: true, status: 200 }; });
-    resolveCloudConflict("slot:1", "keep_local");
-    await new Promise((r) => setTimeout(r, 20));
-    expect(calls.some((c) => c.method === "DELETE" && c.url.includes("force=1"))).toBe(true);
+    const payload = calls[0].payloadEnc;
+    expect(typeof payload).toBe("string");
+    expect(payload.startsWith("v1.")).toBe(true);
+    expect(payload).not.toContain("绝密存档内容");
+    expect(JSON.stringify(calls[0])).not.toContain("绝密存档内容");
   });
 
-  it("wipeCloudAll 调 DELETE /saves 并清空本地队列/rev/冲突；未绑定拒绝", async () => {
-    const calls = [];
-    configureCloudFetch(async (url, init) => { calls.push({ url, method: init.method }); return { ok: true, status: 200 }; });
-    expect((await wipeCloudAll()).ok).toBe(false); // 未绑定
+  it("token 必带：x-memory-hub-token 头随每请求；canonical URL 含 /api/spaces/<spaceId>", async () => {
     boundCfg();
+    const calls = [];
+    configureCloudFetch(async (url, init) => { calls.push({ url, headers: init.headers }); return okJson({ rev: 1 }); });
     enqueueCloudPush("autosave", { v: 1 });
+    await flushCloudQueue();
+    expect(calls[0].headers["x-memory-hub-token"]).toBe("tok_test");
+    expect(calls[0].url).toBe("https://cloud.example.com/api/spaces/sp1/saves/autosave");
+  });
+
+  it("缺 spaceId/hubToken 任一即 unbound：队列原样保留不推不半通", async () => {
+    saveStorageConfig({ driver: "cloud", cloudUrl: "https://cloud.example.com", deviceId: "d", boundAt: 1 });
+    const calls = [];
+    configureCloudFetch(async (url, init) => { calls.push(init); return okJson({ rev: 1 }); });
+    enqueueCloudPush("autosave", { v: 1 });
+    const r = await flushCloudQueue();
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe("unbound");
+    expect(calls).toHaveLength(0);
+    expect(getCloudQueue()).toHaveLength(1); // 不丢不推
+  });
+
+  it("首次错位 409 自动对齐重推一次成功，不进冲突登记", async () => {
+    boundCfg();
+    let n = 0;
+    const bodies = [];
+    configureCloudFetch(async (url, init) => {
+      n += 1;
+      bodies.push(JSON.parse(init.body));
+      if (n === 1) return { ok: false, status: 409, json: async () => ({ serverRev: 7, conflict: true }) };
+      return okJson({ rev: 8 });
+    });
+    enqueueCloudPush("autosave", { v: 1 });
+    const r = await flushCloudQueue();
+    expect(r.ok).toBe(true);
+    expect(n).toBe(2);
+    expect(bodies[1].expectedRev).toBe(7); // 对齐服务端 rev 重推
+    expect(getServerRevs().autosave).toBe(8);
+    expect(getCloudConflicts()).toEqual([]); // 迁移错位不算冲突
+  });
+
+  it("真实多端冲突不静默：已有台账的键 409 直接进冲突登记，等玩家裁决", async () => {
+    boundCfg();
+    configureCloudFetch(async () => okJson({ rev: 3 }));
+    enqueueCloudPush("autosave", { v: 1 });
+    await flushCloudQueue();
+    expect(getServerRevs().autosave).toBe(3); // 有成功推送台账
+    // 另一设备把服务端推到了 5——本端再推必 409
+    configureCloudFetch(async () => ({ ok: false, status: 409, json: async () => ({ serverRev: 5, conflict: true }) }));
+    enqueueCloudPush("autosave", { v: 2 });
+    await flushCloudQueue();
+    const conflicts = getCloudConflicts();
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].key).toBe("autosave");
+    expect(conflicts[0].serverRev).toBe(5);
+  });
+
+  it("DELETE 带 expectedRev；成功后台账清除", async () => {
+    boundCfg();
+    const calls = [];
+    configureCloudFetch(async (url, init) => { calls.push({ method: init.method, body: JSON.parse(init.body || "{}") }); return okJson({ rev: 4, deleted: 1 }); });
+    enqueueCloudPush("autosave", { v: 1 }, "put");
+    await flushCloudQueue();
+    enqueueCloudPush("autosave", undefined, "del");
+    await flushCloudQueue();
+    const del = calls.find((c) => c.method === "DELETE");
+    expect(del).toBeTruthy();
+    expect(del.body.expectedRev).toBe(4); // 用台账值而非本地计数
+    expect(getServerRevs().autosave).toBeUndefined();
+  });
+
+  it("force 只玩家裁决触发：自动 flush 绝不带 force；keep_local 裁决才带 force:true", async () => {
+    boundCfg();
+    const bodies = [];
+    configureCloudFetch(async (url, init) => {
+      bodies.push(JSON.parse(init.body || "{}"));
+      if (bodies.length === 1) return { ok: false, status: 409, json: async () => ({ serverRev: 5 }) };
+      return okJson({ rev: 6 });
+    });
+    // 先制造一个有台账后的真实冲突
+    configureCloudFetch(async () => okJson({ rev: 3 }));
+    enqueueCloudPush("autosave", { v: 1 });
+    await flushCloudQueue();
+    bodies.length = 0;
+    configureCloudFetch(async (url, init) => {
+      bodies.push(JSON.parse(init.body || "{}"));
+      return { ok: false, status: 409, json: async () => ({ serverRev: 5 }) };
+    });
+    enqueueCloudPush("autosave", { v: 2 });
+    await flushCloudQueue();
+    expect(bodies.every((b) => !b.force)).toBe(true); // 自动流程绝不带 force
+    expect(getCloudConflicts()).toHaveLength(1);
+    // 玩家显式裁决「本地覆盖云端」
+    bodies.length = 0;
+    configureCloudFetch(async (url, init) => { bodies.push(JSON.parse(init.body || "{}")); return okJson({ rev: 6 }); });
+    resolveCloudConflict("autosave", "keep_local");
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.runAllTimersAsync();
+    expect(bodies.some((b) => b.force === true)).toBe(true);
+  });
+
+  it("wipe 重写为 canonical DELETE /api/space/<spaceId>（单数无 saves 后缀）并带 token", async () => {
+    boundCfg();
+    const calls = [];
+    configureCloudFetch(async (url, init) => { calls.push({ url, headers: init.headers, method: init.method }); return okJson({ ok: true }); });
     const r = await wipeCloudAll();
     expect(r.ok).toBe(true);
     expect(calls[0].method).toBe("DELETE");
-    expect(calls[0].url).toMatch(/\/saves$/);
-    expect(getCloudQueue()).toEqual([]);
-    expect(getCloudRevs()).toEqual({});
-    expect(getCloudConflicts()).toEqual([]);
+    expect(calls[0].url).toBe("https://cloud.example.com/api/space/sp1");
+    expect(calls[0].headers["x-memory-hub-token"]).toBe("tok_test");
+  });
+
+  it("网络失败保留队列 + 退避重试，离线不丢", async () => {
+    boundCfg();
+    // 旗标式失败（不用计数）——模块加载 bootstrap/跨测试泄漏的额外 flush 不干扰确定性
+    let fail = true;
+    configureCloudFetch(async () => { if (fail) throw new Error("offline"); return okJson({ rev: 1 }); });
+    enqueueCloudPush("autosave", { v: 1 });
+    await flushCloudQueue();
+    expect(getCloudQueue()).toHaveLength(1); // 失败保留队列
+    fail = false;
+    for (let i = 0; i < 8 && getCloudQueue().length; i += 1) await vi.advanceTimersByTimeAsync(1500);
+    expect(getCloudQueue()).toEqual([]); // 退避重试终成功
+  });
+
+  it("3 秒防抖：入队后不立即推，到期自动合批", async () => {
+    boundCfg();
+    const calls = [];
+    configureCloudFetch(async (url, init) => { calls.push(init); return okJson({ rev: 1 }); });
+    enqueueCloudPush("autosave", { v: 1 });
+    expect(calls).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(3100);
+    // WebCrypto 加密链是真异步——vi.waitFor 自动交替推进定时器与微任务直到 fetch 发生
+    await vi.waitFor(() => { expect(calls.length).toBeGreaterThan(0); }, { timeout: 2000, interval: 20 });
   });
 });

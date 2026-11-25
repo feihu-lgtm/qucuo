@@ -164,8 +164,17 @@ export function StorageDriverSection() {
       {cfg.driver === "cloud" && (
         <div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
-            <input style={{ ...inputStyle, flex: 1 }} defaultValue={cfg.cloudUrl} placeholder="云服务地址（如 https://saves.example.com）"
+            <input style={{ ...inputStyle, flex: 1 }} defaultValue={cfg.cloudUrl} placeholder="云服务地址（如 https://hub.example.com）"
               onBlur={(e) => patchCfg({ cloudUrl: e.target.value.trim(), boundAt: e.target.value.trim() ? Date.now() : null })} />
+          </div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
+            <input style={{ ...inputStyle, flex: 1 }} defaultValue={cfg.spaceId || ""} placeholder="空间编号 spaceId（存档归属的云端空间）"
+              onBlur={(e) => patchCfg({ spaceId: e.target.value.trim() })} />
+            <input style={{ ...inputStyle, flex: 1 }} type="password" defaultValue={cfg.hubToken || ""} placeholder="memory-hub 凭证 token"
+              onBlur={(e) => patchCfg({ hubToken: e.target.value.trim() })} />
+          </div>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 6 }}>
+            三件套（地址/空间/凭证）缺一即不推送；快照经 AES-GCM 客户端加密后上送，密钥只存在这台设备——换设备恢复随后续工单。
           </div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 6 }}>
             绑定状态：{cfg.cloudUrl ? `已绑定（设备 ${cfg.deviceId}）` : "未绑定"}　待推送队列：{queueLen} 条
