@@ -321,6 +321,7 @@ export const DEFAULT_CALL_TOKEN_LIMITS = {
   daySummary:     2000,  // 日总结（大纸条）后台归纳（memory/daySummary.js）
   direction:       200,  // 方位单字判定（qucuoMap.js，本只答一个字，默认给小但可调大）
   connectionTest:  200,  // 连接测试 ping（apiConfig/debugConsole，思考模型下 50 会返空，故默认给 200）
+  prep:           3000,  // world.prep 休整期后台备料（WO-24B，主模型低档思考）
 };
 
 // Anthropic 官方没有公开的模型列表接口，返回一份已知模型的静态清单
