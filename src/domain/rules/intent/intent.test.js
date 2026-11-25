@@ -294,11 +294,20 @@ describe("conditional steps", () => {
     expect(validatePlan(state, result.actions).triggers).toHaveLength(1);
   });
 
-  it("reads the gift amount from the action half when the model keeps the premise in text", async () => {
-    const input = "要是他先还我100两，就送才旦20两";
-    const classifier = scripted({ actions: [act({ text: input, kind: "赠送", target: "才旦", item: SILVER, condition: "到达" })] });
+  it.each([
+    ["leading premise with its own amount", "要是他先还我100两，就送才旦20两", {}],
+    ["trailing premise after the gift", "送才旦20两，如果到了鱼定村就这么办", { condition_text: "到了鱼定村" }],
+  ])("reads the gift amount outside the premise (%s)", async (_label, input, extra) => {
+    const classifier = scripted({ actions: [act({ text: input, kind: "赠送", target: "才旦", item: SILVER, condition: "到达", ...extra })] });
     const result = await recognizeIntent(state, input, { classifier });
     expect(result.actions[0]).toMatchObject({ kind: "赠送", item: SILVER, amount: 20 });
+  });
+
+  it("keeps the amount when the classifier already isolated the gift clause", async () => {
+    const input = "到了鱼定村就送才旦20两";
+    const classifier = scripted({ actions: [act({ text: "送才旦20两", kind: "赠送", target: "才旦", item: SILVER, condition: "到达", condition_text: "到了鱼定村" })] });
+    const result = await recognizeIntent(state, input, { classifier });
+    expect(result.actions[0]).toMatchObject({ amount: 20, condition: { detail: "到了鱼定村" } });
   });
 
   it("keeps conditioned steps out of immediate validation and arms them as triggers", () => {

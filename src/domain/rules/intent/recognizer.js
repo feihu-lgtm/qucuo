@@ -64,11 +64,12 @@ function validateAction(state, input, raw) {
     }
     action[slot] = value;
   }
-  // 带前提的赠送，模型可能把前提整句也放进 text（「要是他先给我一百两，我就送他二十两」）：
-  // 银两数只从行动那半句里取，不能把前提里的数额当成要送出去的钱。
+  // 带前提的赠送，模型可能把前提整句也放进 text：前提在前（「要是他先还我100两，就送才旦20两」）
+  // 或在后（「送才旦20两，如果到了鱼定村就这么办」）都有。把前提那段从 text 里摘掉再取银两数，
+  // 不按前后顺序切句；摘完一个数也取不到（text 本来就只有赠送那半句）时按整句取。
   if (kind === ACTION_KINDS.GIFT && action.item === SILVER) {
-    const actionText = condition ? splitConditionClause(text)?.actionText || text.replace(condition.detail, "") : text;
-    action.amount = parseSilverAmount(actionText);
+    const withoutCondition = condition?.detail && text.includes(condition.detail) ? text.replace(condition.detail, "") : text;
+    action.amount = parseSilverAmount(withoutCondition) ?? parseSilverAmount(text);
   }
   return withCondition(action);
 }
