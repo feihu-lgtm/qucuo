@@ -213,6 +213,7 @@ flowchart LR
 | WO-21A 心账兼容层 | 已合并 #465 | `npcLedger.js` 新增五类心账兼容归一化（旧值 `谊→恩`/`隙→怨`/`和→见`、未知旧类目只读不崩、新写口仅限 `恩/怨/欠/诺/见`）与 `CharacterPage`/`jianghuDials` 纯摘要展示；`chunkId` 仅作后续数据预留，本步不提供原文点击；生产写侧五类迁移留后续工单。 |
 | WO-20C 云原文召回接 recallBlock | 本 PR | 客户端 recallProse 与本地词法召回并行发起云端 /prose/query（仅 driver=cloud+绑定完整+lineage 非空，无谱系绝不退 maxTurn 云查，local/file 零网络）；1.5s 短超时，失败/超时/非2xx/坏形状静默降级本地绝不阻断回合；合并纯函数 cloudRecallMerge：本地新鲜权威在前云端补缺在后、turn+规范化文本去重（云端 chunkId 带分支命名空间与本地 id 形状不同）、witnesses 客户端再滤不信任服务端、rawText 按 viewer 现剥心理、topK 封顶；不发送 embedding 字段；prompt 形状不变无回忆仍零注入；威胁模型补记查询文本也明文发往 hub（见 memory-hub README）。 |
 | WO-20D 跨设备恢复云谱系 reconcile | 本 PR | memory-hub 新增 POST /prose/has-after 轻量探测（branchId/afterTurn/afterSeq→hasFuture，索引直查，seq NULL 与客户端同口径）；proseReconcile 模糊场景（v1/裸包导入 norm.created 或头分支本地零段）且本地无未来时探测云端：true→按 saveTime/saveSeq 分叉，false→不分叉，失败/超时/非2xx 保守分叉（宁可产生空分支不可串弃坑时间线，docs 钉死），有完整本地段落库佐证不探测不分叉，local driver 零请求；reconcile pending/stale epoch guard 不回归；不影响 WO-20C 查询语义。 |
+| WO-16D-1 影子覆盖率盘点与放行阈值 | 本 PR | 只读观测工具（不改游戏行为/不动 CLI）：`shadowCoverage.js` 纯函数把 shadowAggregates 聚合汇总成覆盖率/字段分布/噪声占比摘要 + 放行阈值评估；TraceViewer 影子聚合块加「复制聚合JSON」只读导出；`npm run shadow:report -- <聚合JSON文件>` 离线出报告（无文件时 --demo 示例）。口径与阈值见 5.2 节末「影子对账覆盖率口径」；quest 仍 reference-only 不进覆盖率和噪声门。 |
 | WO-23C3 宿敌谱每日争位+茶馆传闻 | 本 PR | domain/rules/nemesis/nemesisDaily.js 纯函数日结：同势力 active 低阶挑战高阶，seededRand(day) 同日可复现注入可测，成功 tier 互换失败不变，grudge（对主角）不动，fakeDead/settled 绝不参与，origin/scars/epithet 三字段不碰，tier 恒 1-4；幂等靠 varTree.世界.宿敌争位日 标记（同日重复日结零效果，不靠 firstRun skip）；传闻写 varTree.世界.传闻 最小通用结构 [{id,day,turn,kind,text}] cap30——**偏差声明：馆内无现成持久传闻账（茶馆 RUMORS 静态池、npcEmergence 传闻人物是涌现机制），按工单退路开最小结构**；nemesisDailyRule 接世界规则链 deps 按日分桶，写走 applyResult 统一边界；茶馆听闻池混入世界传闻（新鲜传闻权重翻倍纯读），无弹窗无日志刷屏。 |
 | WO-23C5 宿敌旧伤战斗生效 | 本 PR | 同属性弱点最小闭环：nemesisScarVuln.js 纯函数（scarKindsOfNemesis 严格 faction+name 双键不跨势力猜/moveScarKindHit 复用 scarAttrOfMove/scarVulnerabilityMultiplier 一站式），resolveTurn calcBaseDamage 乘算最末——防守方 side.scarKinds 命中同 kind ×1.1（固定常量 SCAR_VULN_MULTIPLIER，不实现抗性）；多同类疤不叠、不同类/不可辨认/fakeDead·settled/无谱零效果，谱只读战斗不改账；deterministic 战报短语「正中旧伤」。覆盖入口：手动切磋主链 useDuelBattle（逐回合照账注入）+团战 TeamDuelScreen/runTeamTurn（unitToSide 透传，装配注入）；quickBattle 沙盒链仅透传未装配（foeTeam 无谱语义，见 PR 偏差）。 |
 | WO-22B-P4b 江湖契约注入+UI 最小入口 | 本 PR | ⑨号位 `@江湖契约与宿敌` 占位接确定性注入（`domain/rules/judge/pactLines.js` 纯函数）：只列当前在场 NPC 未了之约（open/breached，已了不提），最多 3 条超出注余数，行含 promise/剩余或已逾时辰/rewardHint，无契约零注入；行全部出自 `varTree.世界.契约` 账本，绝不 AI 自证；`turnContext.callDeps` 最小补 `room/time` 两键供注入取数。UI：新增 `PactPanel` 纯读面板（OVERLAY.PACTS，按人列 NPC/约定/期限/状态未了·已了·违约/酬谢/立约地，旧档无 place 不炸），收据卡「阅契」不再发自由文本回合、改开面板。宿敌谱半块仍待 WO-23。履约判定 P3（听调并行）不在本 PR。 |
@@ -230,6 +231,30 @@ flowchart LR
 | WO-16F-F4c 邀同行边界裁定（不施工） | 本 PR | 裁定结论：companion_invite **不进判官**，这不是缺口而是架构边界。判官掷裁的存在前提是 feature 层结果未定；inviteCompanion 的成败完全确定性（白名单在册+雪豹 SNOW_TRUSTED 旗+不撞任务+不生气则必成，任一不满足提前 return 无 settle），且结果**叙事前已不可逆落账**（companionState 解锁+NPC 离场+好感钉）——进判官照签是空转，裁反必穿帮无法回滚。**两类 settle 边界**：①确定性 settle（companion_invite/任务交付/势力信物交还/雪豹药肉/草药捐赠等）——feature 已裁，settle 纯叙事转写，**永不进判官**；②裁量性 settle（gift/appease/learn——收拒、诚意、肯不肯授是真未定）——feature 只记尝试不写结果，判官裁定后落账。runTurn 判官闸 `!isSettle || isAppeaseSettle || isGiftSettle` 已事实正确排除全部确定性 settle，无需代码改动。**companion_invite 现有两条路径均为「系统已裁，叙事转写」**：自由文本走 F2b1 feature 路由（executeJudgeRoutes→stepEffect→inviteCompanion 同步确定性结算、剥离 settle 防递归派生、回执「已应允同行」进判官铁律块同回合转写）；按钮走 legacy settle 回合由 sysBase【伙伴入队铁律】钉死必写爽快应下。两路口径一致、方向唯一，无穿帮面。learn_skill 的 F4b 评估不受本裁定影响（束脩/门槛确定但「肯不肯倾囊」在 feature 层未定，属裁量性）。 |
 
 | 放行指标观测 | 本 PR | 新增 `src/engine/ports/releaseMetrics.js`，在 `withAI("turn.intake")` 与 `runTurn` 尾章校对回执处按 `provider/model` 与 save `epoch` 内存聚合 schema/SEAL 合格率；dev-only，production 零噪音，不落盘、不进 prompt、不写 `gameStore`；`TraceViewer` 增加只读聚合区与 Markdown「复制报告」按钮。判官/容器/saves 逻辑本次行为不变。 |
+
+### 影子对账覆盖率口径与放行阈值（WO-16D-1，只读观测）
+
+**口径定义**（`shadowCoverage.js` 单一事实源，报表/脚本/测试共用）：
+
+- `comparable(cat) = turns - excluded[cat]`：该类目可对比回合数，盲区（excluded）明示不计入。
+- `coverageRate(cat) = 1 - single_only/comparable`：判官对单调用实际生效账目的覆盖率——放行的核心指标。
+- `gapTurnRate = gaps/turns`：回合级缺口率（任一计入类目漏判即缺口回合）。
+- 噪声占比 = `judge_only` 占可对比非一致信号比。`judge_only`（判官会判但单调用未落账）多半不是 bug，是人工甄别噪声；噪声越高自动放行越不可信。
+- `quest` 类目 reference-only：状态驱动推进归因不可靠，不进覆盖率、不进缺口、不进噪声门，只作人工甄别参考单独计数。
+- 采样噪声观测：single_only 原话采样按完整 cmd 去重、上限 20 句；`catHits/count` 反映一句多类目的集中度，饱和（saturated）说明样本不足。
+
+**放行阈值建议**（`DEFAULT_RELEASE_THRESHOLDS`，调整需过评审）：
+
+| 门槛 | 默认 | 理由 |
+|---|---|---|
+| 样本量 | ≥ 200 回合 | 小样本覆盖率无统计意义，宁可不放行 |
+| 每计入类目覆盖率 | ≥ 95% | 判官接管后漏判即丢账，5% 已是宽松上限 |
+| 回合级缺口率 | ≤ 5% | 与类目覆盖率互证，防单类目高缺口被平均 |
+| 噪声占比 | ≤ 60% | 噪声过半说明 mostly 人工甄别，自动放行收益不抵风险 |
+| 可对比但低覆盖类目 | 按不通过论 | `comparable>0` 且覆盖率不足不放行——宁可不放行不错放行 |
+| 全回合盲区类目 | 不可测跳过 | `comparable=0`（如 npcs 系统改写链恒 excluded）属结构性盲区，不参与门槛也不判负——否则任何真实样本永远卡死 |
+
+**使用**：dev 单调用模式游玩 → 全流程日志「影子对账聚合」→ 复制聚合JSON 存盘 → `npm run shadow:report -- <文件>`；退出码 0=通过 2=不通过，可进 CI/评审附件。
 
 ## 5.3 原文段落记忆与时间线谱系（WO-18）
 
