@@ -14,7 +14,7 @@ import React, { useState } from "react";
 import { QUCUO_SHOPS, hasOcShop } from "../../domain/data/shops/qucuoShops.js";
 import { useOverlayCloseGuard } from "../../utils/overlayClose.js";
 
-export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg, nemesisActive = false }) {
+export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, onGift, onDuel, onSteal, onLook, onLearnSkill, onTrade, onInviteCompanion, companionUnlocked, flags = [], ocRoutes = [], onOcRecruit, onRecallCompanion, onGoldenEgg, nemesisActive = false, lethalBlockReason = null }) {
   const closeGuard = useOverlayCloseGuard(onClose);
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const isMerchant = !!QUCUO_SHOPS[npc.name] || hasOcShop(npc.name);
@@ -27,7 +27,14 @@ export default function NpcActionMenu({ npc, zoneTheme, inv, onClose, onTalk, on
     { key: "look", label: "细看", desc: "端详其人", available: true, onClick: () => { onLook(npc); onClose(); } },
     { key: "duel", label: "切磋", desc: "以武会友，点到为止", available: true, onClick: () => { onDuel(npc); onClose(); } },
     // WO-23C2d：生死战显式入口——只对 active 宿敌出现，文案明写「也决生死」。
-    ...(nemesisActive ? [{ key: "lethalDuel", label: "生死战", desc: "既分高下，也决生死", available: true, onClick: () => { onDuel(npc, { lethal: true }); onClose(); } }] : []),
+    // WO-23C7：任务关键/过客宿敌入口禁用给 deterministic 原因，不隐藏无声——
+    // available:false 时 onClick 置空，菜单只剩一句解释。
+    ...(nemesisActive ? [{
+      key: "lethalDuel", label: "生死战",
+      desc: lethalBlockReason || "既分高下，也决生死",
+      available: !lethalBlockReason,
+      onClick: lethalBlockReason ? () => {} : () => { onDuel(npc, { lethal: true }); onClose(); },
+    }] : []),
     { key: "steal", label: "偷窃", desc: "趁其不备，顺手牵羊", available: true, onClick: () => onSteal(npc) },
     { key: "talk", label: "对话", desc: "上前搭话", available: true, onClick: () => { onTalk(npc); onClose(); } },
     { key: "gift", label: "送礼", desc: "赠人以物，结个善缘", available: true, onClick: () => setShowGiftPicker(true) },
