@@ -18,17 +18,17 @@ function setterForKey(key) {
   return key === "varTree" ? "setVarTreeState" : `set${key[0].toUpperCase()}${key.slice(1)}`;
 }
 
-function captureSnapshot(refs = {}, getGameState) {
+// WO-06：跨层 React ref 已清退，事务快照只留 store 状态 + rng + 格子。
+function captureSnapshot(getGameState) {
   const state = getGameState();
   return {
     state: Object.fromEntries(ROLLBACK_KEYS.map((key) => [key, state[key]])),
     rngState: getRngState(),
     squares: serializeSquares(),
-    refs: Object.fromEntries(Object.entries(refs).map(([key, ref]) => [key, structuredClone(ref.current)])),
   };
 }
 
-function restoreSnapshot(snapshot, refs = {}, getGameState, actions) {
+function restoreSnapshot(snapshot, getGameState, actions) {
   for (const key of ROLLBACK_KEYS) {
     if (getGameState()[key] !== snapshot.state[key]) {
       actions[setterForKey(key)](snapshot.state[key]);
@@ -36,7 +36,6 @@ function restoreSnapshot(snapshot, refs = {}, getGameState, actions) {
   }
   setRngState(snapshot.rngState);
   loadSquares(snapshot.squares);
-  for (const [key, ref] of Object.entries(refs)) ref.current = snapshot.refs[key];
 }
 
 // 回合编排器：事务快照 → settleTurn（软结算）→ narrateTurn（主叙事+提取）
@@ -56,7 +55,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
   const gameActions = ctx.gameActions;
   const setVarTreeState = (tree) => ctx.gameActions.setVarTreeState(tree);
   try {
-    snapshot = captureSnapshot(ctx.refs, getGameState);
+    snapshot = captureSnapshot(getGameState);
     turnMonitor.add(trace, "app", "事务快照", { kind: "snapshot" });
     turnMonitor.add(trace, "feature", "engine.runTurn");
     turnMonitor.add(trace, "domain", "整理世界状态与叙事上下文");
@@ -101,7 +100,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
       return stale(error);
     }
     soft?.unsubscribeInvalidation();
-    if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, ctx.refs, getGameState, gameActions));
+    if (snapshot) withTurnContext(trace, () => restoreSnapshot(snapshot, getGameState, gameActions));
     turnMonitor.transition(trace, PHASE.ERROR, String(error));
     return { ok: false, error };
   } finally {

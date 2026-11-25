@@ -1,8 +1,7 @@
 // 路线甲·纯函数化处理器的统一落盘口。
-// 处理器只返回结果描述：{ logs, delayedLogs, delayMs, changes, refWrites }。
+// 处理器只返回结果描述：{ logs, delayedLogs, delayMs, changes, effects, dWrites }。
 // 这里负责把结果落成真实的日志与状态写入——处理器内不再直接调 d.addLog / d.setX。
-// changes 的 key 与 d.setX 的对应表只此一份；refWrites 的 key 是 ref 名字段
-//（由 d.refGet/d.refSet 解析到调用方持有的 ref 本体）。
+// changes 的 key 与 d.setX 的对应表只此一份（WO-06 起跨层 ref 通道已整体拆除）。
 
 import { stampLogEntries } from "../../../domain/rules/log/logTypes.js";
 
@@ -30,20 +29,9 @@ export function applyPostResult(d, out) {
       convo: d.setConvo, char: d.setChar, skills: d.setSkills, inv: d.setInv,
       dao: d.setDao, exp: d.setExp, pot: d.setPot, flags: d.setFlags,
       gambleNegotiation: d.setGambleNegotiation, pendingQuestBranch: d.setPendingQuestBranch,
+      gambleSession: d.setGambleSession,
     };
     for (const [key, value] of Object.entries(out.changes)) setters[key]?.(value);
-  }
-  // refWrites 经 d.refGet/d.refSet 读写——ref 本体留在调用方（turnContext/hook），
-  // engine/act 内不再出现 ref 本体读写
-  if (out.refWrites) {
-    for (const [key, value] of Object.entries(out.refWrites)) {
-      if (typeof value === "function") {
-        const next = value(d.refGet(key));
-        if (next !== undefined) d.refSet(key, next); // 返回 undefined 视为原地改（如 push）
-      } else {
-        d.refSet(key, value);
-      }
-    }
   }
   // dWrites：处理器间隐式传值的显式化——写回 d 自身（如 freshNpcData 供后续处理器读）
   if (out.dWrites) Object.assign(d, out.dWrites);

@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { setGambleSession } from "../../store/sessionUiStore.js";
 import { forgeDesign } from "../../engine/ports/extraction.js";
 import { NOTE_SOURCE } from "../../domain/rules/memory/note.js";
 import { createWebAi } from "../../engine/ports/ai.js";
@@ -8,10 +9,10 @@ import "../calls/hookCalls.js";
 const webAi = createWebAi();
 
 export function useCraftingAI({
-  gambleTalkCtx, setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
+  setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
 }) {
   const handleGambleTalk = useCallback((bidderName, content, ctx) => {
-    gambleTalkCtx.current = ctx || { bidderName };
+    setGambleSession(ctx || { bidderName });
     setInteractMode("talk");
     setTalkTarget(bidderName);
     act(content);

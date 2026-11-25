@@ -47,7 +47,7 @@ describe("resident NPC world rule", () => {
       questProgress: { eq_lizhang_tiandu: { active: true } },
     };
     const roomMapRef = { current: { 锦官城: { npcs: [{ name: "李掌柜" }] } } };
-    const result = residentNpcRule.run(state, { importedRegistry, roomMapRef });
+    const result = residentNpcRule.run(state, { importedRegistry, roomMap: roomMapRef.current });
     const names = result.changes.room(state.room).npcs.map((npc) => npc.name);
     expect(names.filter((n) => n === "李掌柜")).toHaveLength(1);
   });
@@ -56,15 +56,15 @@ describe("resident NPC world rule", () => {
     setSeed(42);
     const roomMapRef = { current: { 锦官城: { npcs: [{ name: "唐老太" }] } } };
     const tangbao = { ...makeState(), room: { name: "蜀南唐堡", npcs: [] } };
-    const atTangbao = residentNpcRule.run(tangbao, { importedRegistry, roomMapRef });
+    const atTangbao = residentNpcRule.run(tangbao, { importedRegistry, roomMap: roomMapRef.current });
     expect(atTangbao.changes.room(tangbao.room).npcs.map((npc) => npc.name)).toContain("唐老太");
 
     const jinguan = { ...makeState(), room: { name: "锦官城", npcs: [{ name: "唐老太" }] } };
-    const atJinguan = residentNpcRule.run(jinguan, { importedRegistry, roomMapRef: { current: {} } });
+    const atJinguan = residentNpcRule.run(jinguan, { importedRegistry, roomMap: {} });
     expect(atJinguan.changes.room(jinguan.room).npcs.map((npc) => npc.name)).not.toContain("唐老太");
 
     const imported = { ...makeState(), room: { name: "锦官城", npcs: [{ name: "唐老太", imported: true }] } };
-    const keep = residentNpcRule.run(imported, { importedRegistry, roomMapRef: { current: {} } });
+    const keep = residentNpcRule.run(imported, { importedRegistry, roomMap: {} });
     expect(keep.changes.room(imported.room).npcs.map((npc) => npc.name)).toContain("唐老太");
   });
 
@@ -136,7 +136,7 @@ describe("resident NPC world rule", () => {
     const pursuit = timeAdvanceRule.run(awayState, {
       firstRun: false,
       previousDeps: [30, awayState.room.npcs],
-      roomMapRef,
+      roomMap: roomMapRef.current,
     });
     const homeAgain = {
       ...makeState(),
@@ -144,7 +144,7 @@ describe("resident NPC world rule", () => {
     };
     const reentry = residentNpcRule.run(homeAgain, {
       importedRegistry,
-      roomMapRef: { current: pursuit.roomMap },
+      roomMap: pursuit.roomMap,
     });
     const homeAfterReentry = reentry.changes.room(homeAgain.room).npcs;
     const cachedOccurrences = Object.values(pursuit.roomMap)
@@ -177,7 +177,7 @@ describe("resident NPC world rule", () => {
     };
     const result = residentNpcRule.run(arrivalState, {
       importedRegistry,
-      roomMapRef: { current: { 鱼定村: { items: [], npcs: visitedNpcs } } },
+      roomMap: { 鱼定村: { items: [], npcs: visitedNpcs } },
     });
 
     expect(carriage.changes.room.npcs).toEqual([]);

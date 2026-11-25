@@ -143,31 +143,44 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
 
   useGameStartupShortcut();
 
-  const pendDirRef = useRef(null);
-  const outerDepartRef = useRef(null); // 外层移动出发时的内层位置信息（回锚点过渡描述用）
-  const pickupJudgmentRef = useRef(null); // 本轮如果触发了拾取判定，保存 { quality, category }，供响应解析时强制校验
-  const pickupExtractionFailedRef = useRef(false); // 双调用下本轮提取层是否解析失败——供拾取兜底区分"提取故障(该保底发)"vs"叙事拒捡(该尊重不发)"
-  const collectGrantedRef = useRef([]); // 本轮系统已代发的采集物名单，供items_add处理时防止AI重复入袋
   const queueTimerRef = useRef(null);
-  const roomMapRef = useRef(restored?.snap.roomMap || { [(restored?.snap.room || DEFAULT_PRESETS[0].room).name]: { items: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).items], npcs: [...(restored?.snap.room || DEFAULT_PRESETS[0].room).npcs] } });
+  // WO-06：房间缓存收进 world store（roomCache）。初始播种读档快照/首房间，
+  // 之后房间每次变化同步当前房进缓存——语义与原 roomMapRef 一致。
+  useEffect(() => {
+    const snap0 = restored?.snap;
+    gameActions.setRoomCache(snap0?.roomMap || snap0?.roomCache || {
+      [(snap0?.room || DEFAULT_PRESETS[0].room).name]: {
+        items: [...(snap0?.room || DEFAULT_PRESETS[0].room).items],
+        npcs: [...(snap0?.room || DEFAULT_PRESETS[0].room).npcs],
+      },
+    });
+    // 仅首挂载播种一次：之后由下方房间同步 effect 维护
+  }, []);
 
   // apiCfg/uiScale/font/isDayMode 的持久化已收编进 sessionUiStore（PR-2C）。
 
   const autosave = useAutosave({
-    apiCfg, loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets, setGm, setVarTree,
+    apiCfg, loadingRef, pendingTalksRef, restoredInnerRef, presets, setGm, setVarTree,
   });
   const {
-    roundsSinceLastSaveRef, playedThisSessionRef, schedulerRef,
+    schedulerRef,
     applySnapshot, buildCurrentSnapshot, loadPreset, prerunSquares,
   } = autosave;
   const importPreset = usePresetImport({ loadPreset, setPresets, setLog });
 
   useEffect(() => { logEnd.current?.scrollIntoView({ behavior: "smooth" }); }, [log]);
   useEffect(() => { if (!loading) inputRef.current?.focus(); }, [loading]);
-  useEffect(() => { roomMapRef.current[room.name] = { items: [...room.items], npcs: [...room.npcs] }; }, [room]);
+  useEffect(() => {
+    // 读档还原后 effect 会因 room 引用变化重跑——内容与快照缓存一致时跳过写入，
+    // 避免冗余 store 变更触发自动存档调度（WO-06 review）
+    gameActions.setRoomCache((cache) => {
+      const entry = { items: [...room.items], npcs: [...room.npcs] };
+      const prev = cache?.[room.name];
+      if (prev && JSON.stringify(prev) === JSON.stringify(entry)) return cache || {};
+      return { ...(cache || {}), [room.name]: entry };
+    });
+  }, [room]);
 
-  // 当前这轮 act 是否在赌石谈价语境（有则 talk prompt 追加 <deal> 规则）
-  const gambleTalkCtx = useRef(null);
   useEffect(() => { setBuildingPanelMinimized(false); }, [activeBuilding?.id]);
   // addLog 已上移到 app/runtime/gameRuntime.js（模块级）；本地别名只喂给老 hook 签名
   const addLog = runtimeAddLog;
@@ -222,7 +235,7 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   );
   const seaReturnRef = useRef(null);
   useWorldRulesRunner({
-    seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef,
+    seaReturnRef, setForcedDuelNpc, schedulerRef,
     dispatchCommand,
   });
 
@@ -263,12 +276,11 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
     pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow,
     talkToNarrator, changePendingTalks, lastMoveRef, captureUndo,
     turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setInput, setLoading,
-    waitTimerRef, setWaitSecs, pendDirRef, 
-    noteAction, roomMapRef, collectGrantedRef,
+    waitTimerRef, setWaitSecs,
+    noteAction,
     autoTravelRef, clearRouteQueue,
     dispatchCommand, setCommandPhase,
-    outerDepartRef, pickupJudgmentRef, pickupExtractionFailedRef,
-    prerunSquares: scheduledPrerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
+    prerunSquares: scheduledPrerunSquares,
     setVarTree, setGambleNegotiation, setActiveTarget, setDuelPending,
     setPendingQuestBranch, jotNote, intentRouterRef,
   });
@@ -311,12 +323,12 @@ export default function MudRPG({ initialLoadSlotId = null, initialOpenSettings =
   });
 
   const buildingHandlers = commandScheduler.wrapHandlers("useBuildingHandlers", useBuildingHandlers({
-    activeBuilding, setActiveBuilding, roomMapRef, captureUndo,
+    activeBuilding, setActiveBuilding, captureUndo,
     setPendingQuestBranch, setDuelingNpc,
   }));
 
   const craftingAI = commandScheduler.wrapHandlers("useCraftingAI", useCraftingAI({
-    gambleTalkCtx, setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
+    setInteractMode, setTalkTarget, act, apiCfg, addLog, setTime, jotNote,
   }));
 
   const cardImportHandlers = commandScheduler.wrapHandlers("useCardImportHandlers", useCardImportHandlers({

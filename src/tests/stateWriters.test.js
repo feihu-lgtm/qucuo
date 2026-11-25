@@ -30,7 +30,13 @@ function makeDeps(state, proposals, overrides) {
   const deps = new Proxy({
     ...state,
     p: proposals, apiCfg: {}, mapData: {}, rawFull: "叙事", newConvo: [], questProgress: {},
-    varTreeRef: { current: state.varTree }, roomMapRef: { current: {} },
+    // WO-06：plan 直传字段 + store 读 + 注入回调
+    pendDir: null, outerDepart: null, pickupJudgment: null, collectGranted: [],
+    pickupExtractionFailed: false,
+    getGameState: () => state,
+    appendDayMaterial: (entry) => { (state._dayMaterial ||= []).push(entry); },
+    getGambleSession: () => state._gambleSession ?? null,
+    setGambleSession: (v) => { state._gambleSession = v; },
     gambleTalkCtx: { current: null }, pendDirRef: { current: null }, outerDepartRef: { current: null },
     pickupJudgmentRef: { current: null }, pickupExtractionFailedRef: { current: false },
     collectGrantedRef: { current: [] }, dayMaterialRef: { current: [] }, roundsSinceLastSaveRef: { current: 0 }, playedThisSessionRef: { current: false },
@@ -44,7 +50,6 @@ function makeDeps(state, proposals, overrides) {
       return (value) => { state[path] = typeof value === "function" ? value(state[path]) : value; };
     },
   });
-  Object.assign(deps, refAccessors(deps));
   return { deps, logs };
 }
 

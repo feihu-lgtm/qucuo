@@ -25,6 +25,8 @@ import { companionChatterTick } from "../../features/npc/companionChatter.js";
 import { askStoryteller } from "../../engine/ports/storyteller.js";
 import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { applySquareOps, featureCtx as runtimeCtx, registerRuntime } from "../runtime/gameRuntime.js";
+import { sessionUiStore, setGambleSession } from "../../store/sessionUiStore.js";
+import { appendDayMaterial } from "./useNotes.js";
 
 // 回合入口的 React 胶水：组 env → resolveIntent（识别/裁决）→ createTurnContext
 // → playTurn（settleTurn → narrateTurn → finalizeTurn）→ setState。
@@ -35,11 +37,10 @@ export function useTurn({
   pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow,
   talkToNarrator, changePendingTalks, lastMoveRef, captureUndo,
   turnGenerationRef, onTurnsInvalidated, talkBusyRef, setCmdHistory, setHistIdx, setInput, setLoading,
-  waitTimerRef, setWaitSecs, pendDirRef,
-  noteAction, roomMapRef, collectGrantedRef,
+  waitTimerRef, setWaitSecs,
+  noteAction,
   autoTravelRef, clearRouteQueue, setCommandPhase, dispatchCommand,
-  outerDepartRef, pickupJudgmentRef, pickupExtractionFailedRef,
-  prerunSquares, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx,
+  prerunSquares,
   setVarTree, setGambleNegotiation, setActiveTarget, setDuelPending,
   setPendingQuestBranch, jotNote, intentRouterRef, addLog: addLogProp,
 }) {
@@ -50,14 +51,6 @@ export function useTurn({
   turnMonitor.setGameClockReader(() => gameStore.getState().time);
   // 缺省走 gameActions（路线一）；测试可直接注入自己的 addLog。
   const addLog = useCallback(addLogProp || ((lines) => setLog((p) => [...p, ...stampLogEntries(lines, gameStore.getState().time)])), [addLogProp]);
-  const varTreeRef = useMemo(() => ({
-    get current() { return gameStore.getState().varTree ?? {}; },
-    set current(v) { gameActions.setVarTreeState(v); },
-  }), []);
-  const timeRef = useMemo(() => ({
-    get current() { return gameStore.getState().time ?? 0; },
-    set current(v) { gameActions.setTime(v); },
-  }), []);
   const actRef = useRef(null);
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
     if (!rawCmd.trim()) return;
@@ -148,12 +141,8 @@ export function useTurn({
         pendingQuestBranch, activeTarget, activeGroundItem, talkTarget,
         nsfwOn, effectiveSpecialNow,
       },
-      refs: {
-        lastMoveRef, pendDirRef, outerDepartRef, varTreeRef, roomMapRef,
-        pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef,
-        autoTravelRef, intentRouterRef, gambleTalkCtx, dayMaterialRef,
-        roundsSinceLastSaveRef, playedThisSessionRef, timeRef,
-      },
+      // WO-06：12 个跨层 ref 已清退，只剩调度/路由类 hook 私有 ref
+      refs: { autoTravelRef, intentRouterRef },
       io: {
         addLog, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs,
         waitTimerRef, setInv, setRoom, setFlags, setVarTree, setGambleNegotiation,
@@ -166,7 +155,10 @@ export function useTurn({
         resolveInnerBlockedSummary, prerunSquares,
         traceStep,
         lookInBackground: (cmd) => lookInBackground(cmd, { addLog, setTime, setConvo, setLog, noteAction }),
-        beforeRun: () => { pickupExtractionFailedRef.current = false; },
+        // WO-06：赌石谈价语境 / 当日原料 走 store 与模块状态，经函数注入、engine 不碰 ref
+        getGambleSession: () => sessionUiStore.getState().gambleSession,
+        setGambleSession,
+        appendDayMaterial,
       },
     };
 
@@ -231,7 +223,7 @@ export function useTurn({
       if (isStale() && _trace.totalMs == null) turnMonitor.transition(_trace, PHASE.DISCARDED, "收到过期结果");
       else turnMonitor.finish(_trace, summary);
     }
-  }, [loading, gm, apiCfg, interactMode, activeTarget, activeGroundItem, talkTarget, pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow, addLog, talkToNarrator, changePendingTalks, captureUndo, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs, waitTimerRef, lastMoveRef, talkBusyRef, turnGenerationRef, autoTravelRef, intentRouterRef, setActiveTarget, setDuelPending, setGambleNegotiation, setPendingQuestBranch, setVarTree, jotNote, noteAction, outerDepartRef, roomMapRef, pendDirRef, pickupJudgmentRef, pickupExtractionFailedRef, collectGrantedRef, dayMaterialRef, roundsSinceLastSaveRef, playedThisSessionRef, gambleTalkCtx, prerunSquares, dispatchCommand, setCommandPhase, clearRouteQueue, onTurnsInvalidated]);
+  }, [loading, gm, apiCfg, interactMode, activeTarget, activeGroundItem, talkTarget, pendingTalks, pendingQuestBranch, nsfwOn, effectiveSpecialNow, addLog, talkToNarrator, changePendingTalks, captureUndo, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs, waitTimerRef, lastMoveRef, talkBusyRef, turnGenerationRef, autoTravelRef, intentRouterRef, setActiveTarget, setDuelPending, setGambleNegotiation, setPendingQuestBranch, setVarTree, jotNote, noteAction, prerunSquares, dispatchCommand, setCommandPhase, clearRouteQueue, onTurnsInvalidated]);
   actRef.current = act;
   const featureCtx = useMemo(() => ({
     addLog,

@@ -105,7 +105,7 @@ export async function init() {
 }
 
 // state 快照结构
-export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares, roomMap, dungeonRun, npcState, rngState = null }) {
+export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo, exp, pot, flags, mapData, time, narrator, varTree, claimedMilestones, questProgress, deposit, depositedAt, pledgedItems, persuasionProgress, innerRoomName, companionState, squares, roomMap, roomCache, dungeonRun, npcState, rngState = null }) {
   return {
     version: 1,
     savedAt: Date.now(),
@@ -134,7 +134,8 @@ export function buildSnapshot({ preset, room, char, dao, skills, inv, log, convo
     squares: squares || null,
     // 据点房间缓存（roomMapRef）：每个已到访据点的 npcs/items 快照，回访时走纯前端
     // 快速通道。老存档无此字段，读档时只含当前房间，其余据点首次回访走 AI 建场，不影响兼容。
-    roomMap: roomMap || null,
+    // WO-06：store 键名为 roomCache，快照格式沿用 roomMap（读档链兼容不变）
+    roomMap: roomMap || roomCache || null,
   };
 }
 

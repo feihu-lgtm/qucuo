@@ -31,13 +31,16 @@ import { getGroundItems, removeGroundItems } from "../../domain/rules/map/ground
 export async function resolveIntent(cmd, env) {
   const { opts, extraReplies, interactMode, apiCfg, gm, _trace } = env;
   const { room, char, inv, convo, questProgress, flags, innerRoomName, mapData, time, nsfwOn, activeTarget, talkTarget } = env.state;
-  const {
-    pendDirRef, outerDepartRef, varTreeRef, roomMapRef,
-    pickupJudgmentRef, collectGrantedRef, intentRouterRef,
-  } = env.refs;
+  const { intentRouterRef } = env.refs;
+  // WO-06：pendDir/outerDepart/pickupJudgment/collectGranted 改为本段局部值、
+  // 随 plan 只读直传 TurnEnvelope；varTree/roomCache 直读 store（getGameState 注入）。
+  const vt = () => getGameState()?.varTree ?? {};
+  let pendDir = null;
+  let outerDepart = null;
+  let collectGranted = [];
   const {
     addLog, setInput, setCmdHistory, setHistIdx, setLoading, setWaitSecs, waitTimerRef,
-    setInv, setRoom, noteAction, getGameState, applyLocal, stopAutoTravel,
+    setInv, setRoom, noteAction, getGameState, gameActions, applyLocal, stopAutoTravel,
     showOuterNoExitNotice, resolveInnerBlockedSummary, prerunSquares,
     traceStep, lookInBackground,
   } = env.io;
@@ -71,7 +74,7 @@ export async function resolveIntent(cmd, env) {
     const npc = (room?.npcs || []).find((n) => n.name === targetName)
       || (room?.npcs || []).find((n) => cmd.includes(n.name));
     if (npc?.name) {
-      const aff = Number(varTreeRef.current?.角色?.[npc.name]?.好感度) || 0;
+      const aff = Number(vt()?.角色?.[npc.name]?.好感度) || 0;
       const gate = intimacyGate(npc, aff);
       // 「女眷一次卡·不可拒绝」：门槛卡住且行囊有卡才启用——threshold、forbidden
       // 一票放行（beast 除外）。门槛本来就过的不耗卡；卡只在回合成功落盘时焚，
@@ -87,9 +90,9 @@ export async function resolveIntent(cmd, env) {
         const { line, loss } = intimacyRefusal(npc);
         const logs = [{ t: "cmd", text: `> ${cmd}` }, { t: "desc", text: `  ${line}` }];
         if (loss > 0) {
-          const cur = Number(varTreeRef.current?.角色?.[npc.name]?.好感度) || 0;
-          const next = applyWrite({ ...getGameState(), varTree: varTreeRef.current }, add(["角色", npc.name, "好感度"], -loss)).state.varTree;
-          varTreeRef.current = next;
+          const cur = Number(vt()?.角色?.[npc.name]?.好感度) || 0;
+          const next = applyWrite({ ...getGameState(), varTree: vt() }, add(["角色", npc.name, "好感度"], -loss)).state.varTree;
+          gameActions.setVarTreeState(next);
           logs.push({ t: "affection", text: `  💗 ${npc.name} 好感度 -${loss}（${cur} → ${cur - loss}）` });
         }
         applyLocal({ logs });
@@ -104,8 +107,8 @@ export async function resolveIntent(cmd, env) {
       // 过线：标已亲密（varTree 持久 + 当前房间条目挂 ♥），prompt 注入门槛行+nsfw 段+style。
       // 凭卡强开时烙印挪到 commit 焚卡一步落盘——中断/失败的回合既不烧卡也不白送亲密。
       if (!forceIntimate) {
-        const stamped = applyWrite({ ...getGameState(), varTree: varTreeRef.current }, set(["角色", npc.name, "已亲密"], true)).state.varTree;
-        varTreeRef.current = stamped;
+        const stamped = applyWrite({ ...getGameState(), varTree: vt() }, set(["角色", npc.name, "已亲密"], true)).state.varTree;
+        gameActions.setVarTreeState(stamped);
         setRoom((r) => ({ ...r, npcs: (r.npcs || []).map((n) => (n.name === npc.name ? { ...n, intimate: true } : n)) }));
       }
       intimateNote = `\n${forceIntimate ? intimateTicketNote(npc) : intimacyPromptNote(npc, aff)}`;
@@ -184,7 +187,7 @@ export async function resolveIntent(cmd, env) {
   setHistIdx(-1);
 
   let movingDir = isTalk ? null : parseDir(cmd);
-  pendDirRef.current = movingDir;
+  pendDir = movingDir;
 
   // ── 内层箱庭移动：优先于外层大地图判定（判定在 act/innerMove.js，副作用在此执行）──
   const forceLayer = opts.forceLayer || null;
@@ -211,7 +214,7 @@ export async function resolveIntent(cmd, env) {
     return { proceed: false, summary };
   }
   if (innerResult) {
-    const summary = resolveInnerBlockedSummary(innerResult, movingDir, room.name, innerRoomName, { questProgress, flags, inv, char, varTree: varTreeRef.current });
+    const summary = resolveInnerBlockedSummary(innerResult, movingDir, room.name, innerRoomName, { questProgress, flags, inv, char, varTree: vt() });
     // 上锁的门要说清是缺哪把钥匙（lockedMsg），别跟"这个方向没路"混为一谈——
     // 玩家看见门却被告知"没有去处"会以为是 bug。
     applyLocal(innerResult, "内层移动");
@@ -227,8 +230,8 @@ export async function resolveIntent(cmd, env) {
   showOuterNoExitNotice(outerLock, movingDir, room.name, { questProgress, flags });
   const destinationLock = outerLock.destinationLock;
   const lockedDestName = outerLock.lockedDestName;
-  if (outerLock.blocked) { movingDir = null; pendDirRef.current = null; }
-  if (outerLock.outerDepart) outerDepartRef.current = outerLock.outerDepart;
+  if (outerLock.blocked) { movingDir = null; pendDir = null; }
+  if (outerLock.outerDepart) outerDepart = outerLock.outerDepart;
 
   const arrivalResult = !isTalk && lockedDestName
     ? outerArrivalLogic(
@@ -240,12 +243,12 @@ export async function resolveIntent(cmd, env) {
         time,
         questProgress,
         flags,
-        varTree: varTreeRef.current,
+        varTree: vt(),
       },
       {
         direction: movingDir,
         destName: lockedDestName,
-        roomMap: roomMapRef.current,
+        roomMap: getGameState().roomCache || {},
         squares: serializeSquares(),
         command: cmd,
       },
@@ -263,13 +266,12 @@ export async function resolveIntent(cmd, env) {
     applyLocal(arrivalResult, "格子移动");
     if (traceInfo.encounter) stopAutoTravel(traceInfo.encounter);
     else if (lockedDestName) intentRouterRef?.current?.fireEvent?.("arrive", { dest: lockedDestName, travelDone: !env.refs.autoTravelRef.current });
-    outerDepartRef.current = null; pendDirRef.current = null; pickupJudgmentRef.current = null;
     prerunSquares(); // 自愈：补齐未跑成的格子（全跑过则空转即返）
     return { proceed: false, summary: `到达 ${lockedDestName}（格子·纯前端）` };
   }
   if (arrivalResult) applyLocal(arrivalResult, "格子移动");
 
-  const targetedRumor = findTargetedRumor(varTreeRef.current, cmd);
+  const targetedRumor = findTargetedRumor(vt(), cmd);
 
   const { pickupJudgment, encounterToDescribe } = rollMovementEvents({
     isTalk,
@@ -277,9 +279,8 @@ export async function resolveIntent(cmd, env) {
     lockedDestName,
     targetedRumor,
     luck: char.special?.气运 ?? 5,
-    isTaken: roadNameGuard({ varTree: varTreeRef.current, time, extraNames: (room?.npcs || []).map((npc) => npc.name) }),
+    isTaken: roadNameGuard({ varTree: vt(), time, extraNames: (room?.npcs || []).map((npc) => npc.name) }),
   });
-  pickupJudgmentRef.current = pickupJudgment;
   if (encounterToDescribe) stopAutoTravel(encounterToDescribe);
   else if (lockedDestName) intentRouterRef?.current?.fireEvent?.("arrive", { dest: lockedDestName, travelDone: !env.refs.autoTravelRef.current });
 
@@ -288,14 +289,13 @@ export async function resolveIntent(cmd, env) {
   // 从地上抹去——「采没采到」不交给 AI 决定。推进则由背包变化触发的
   // alreadySatisfiedCollectRule 接管（采齐才推进）。
   let collectNote = "";
-  collectGrantedRef.current = [];
   const collectHit = judgeCollect({ isTalk, cmd, room, innerRoomName, questProgress, inv });
   if (collectHit) {
     withTurnContext(_trace, () => {
       setInv(v => [...v, collectHit.gained]);
       setRoom(r => ({ ...r, items: removeGroundItems(r.items, [collectHit.item], r.name, innerRoomName) }));
     });
-    collectGrantedRef.current = [collectHit.item];
+    collectGranted = [collectHit.item];
     addLog([{ t: "item", text: `  ✓ 你采得「${collectHit.item}」，收入背包。` }]);
     collectNote = collectHit.note;
   }
@@ -325,6 +325,8 @@ export async function resolveIntent(cmd, env) {
       collectNote: collectNote + (opts.intentPlanNote || "") + intimateNote,
       encounterToDescribe, activeGroundItemForTurn, lookNpcs,
       intimateTicket,
+      // WO-06：只读 plan 字段直传 TurnEnvelope（原跨层 ref 透传）
+      pendDir, outerDepart, pickupJudgment, collectGranted,
     },
   };
 }

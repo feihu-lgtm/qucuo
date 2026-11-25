@@ -105,7 +105,7 @@ describe("time advance world rule", () => {
     const result = timeAdvanceRule.run(state, {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
-      roomMapRef,
+      roomMap: roomMapRef.current,
     });
 
     expect(result.forcedDuelNpc).not.toBe(npc);
@@ -139,7 +139,7 @@ describe("time advance world rule", () => {
     const result = timeAdvanceRule.run(state, {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
-      roomMapRef: { current: { 鱼定村: { items: [], npcs: [npc] } } },
+      roomMap: { 鱼定村: { items: [], npcs: [npc] } },
     });
 
     expect(result.forcedDuelNpc).toMatchObject({ innerRoom: "村口", pursuitInnerRoom: null });
@@ -164,7 +164,7 @@ describe("time advance world rule", () => {
     const result = timeAdvanceRule.run(state, {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
-      roomMapRef: { current: { 玉泉寨: { items: [], npcs: [npc] } } },
+      roomMap: { 玉泉寨: { items: [], npcs: [npc] } },
     });
 
     expect(result.forcedDuelNpc.innerRoom).toBe("村口");
@@ -202,7 +202,7 @@ describe("time advance world rule", () => {
     const result = timeAdvanceRule.run(state, {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
-      roomMapRef: { current: { 鱼定村: { items: [], npcs: [npc] } } },
+      roomMap: { 鱼定村: { items: [], npcs: [npc] } },
     });
     const currentNpcs = result.changes.room(state.room).npcs;
 
@@ -230,7 +230,7 @@ describe("time advance world rule", () => {
     const result = timeAdvanceRule.run(state, {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
-      roomMapRef: { current: {} },
+      roomMap: {},
       importedRegistry: { getImportedNpc: () => ({
         id: "imported_入册旅人",
         name: "入册旅人",
@@ -263,7 +263,7 @@ describe("time advance world rule", () => {
     const result = timeAdvanceRule.run(state, {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
-      roomMapRef: { current: {} },
+      roomMap: {},
       importedRegistry: { getImportedNpc },
     });
 
@@ -280,7 +280,7 @@ describe("time advance world rule", () => {
     const result = timeAdvanceRule.run(state, {
       firstRun: false,
       previousDeps: [state.time - 1, state.room.npcs],
-      roomMapRef: { current: {} },
+      roomMap: {},
       importedRegistry: { getImportedNpc: () => null },
     });
 

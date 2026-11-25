@@ -1,3 +1,31 @@
+// 自动存档进度计数（模块状态）：「距离上次存档过了几回合」「本次会话是否真的玩过」。
+// 原先是 hook 层两个 React ref 被 engine 跨层读写——现在收进本模块：
+// commitRound（真走完一轮）调 noteRoundCompleted 自增；存档落盘/手动重置归零。
+let roundsSinceLastSave = 0;
+let playedThisSession = false;
+
+export function notePlayed() {
+  playedThisSession = true;
+}
+
+export function noteRoundCompleted() {
+  roundsSinceLastSave += 1;
+  playedThisSession = true;
+}
+export function noteAutosaveSaved() {
+  roundsSinceLastSave = 0;
+}
+export function resetAutosaveProgress() {
+  roundsSinceLastSave = 0;
+  playedThisSession = false;
+}
+export function getRoundsSinceLastSave() {
+  return roundsSinceLastSave;
+}
+export function getPlayedThisSession() {
+  return playedThisSession;
+}
+
 export function createAutosaveScheduler({
   subscribe,
   isArmed,

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createAutosaveScheduler } from "../../features/autosaveScheduler.js";
+import { createAutosaveScheduler, noteAutosaveSaved, resetAutosaveProgress, getRoundsSinceLastSave, getPlayedThisSession, notePlayed } from "../../features/autosaveScheduler.js";
 import { snapshotFromStore } from "../../store/persist.js";
 import { setRngState } from "../../utils/rng.js";
 import { DEFAULT_PRESETS } from "../../engine/newGame.js";
@@ -45,10 +45,10 @@ export function useInitialRestore({ initialLoadSlotId }) {
 }
 
 export function useAutosave({
-  apiCfg, loadingRef, pendingTalksRef, roomMapRef, restoredInnerRef, presets, setGm, setVarTree,
+  apiCfg, loadingRef, pendingTalksRef, restoredInnerRef, presets, setGm, setVarTree,
 }) {
   const {
-    setPreset, setRoom, setChar, setDao, setSkills, setInv, setLog,
+    setPreset, setRoom, setRoomCache, setChar, setDao, setSkills, setInv, setLog,
     setConvo, setExp, setPot, setFlags, setMapData, setTime, setNarrator,
     setQuestProgress, setPersuasionProgress, setClaimedMilestones, setDeposit, setDepositedAt,
     setPledgedItems, setCompanionState, setInnerRoomName, setDungeonRun, setNpcState,
@@ -58,8 +58,7 @@ export function useAutosave({
   // 首次输入后的游戏状态变化会写档，关页仍同步补存。
   const [lastAutoSave, setLastAutoSave] = useState(null);
   const [autoSaveError, setAutoSaveError] = useState(null);
-  const roundsSinceLastSaveRef = useRef(0);   // 距离上次自动存档过了几个回合
-  const playedThisSessionRef = useRef(false); // 本次会话玩家是否真的行动过
+  // WO-06：回合计数/是否玩过 收进 autosaveScheduler 模块状态（noteRoundCompleted/noteAutosaveSaved/getRoundsSinceLastSave/getPlayedThisSession）
   const userArmedRef = useRef(false);
   const schedulerRef = useRef(null);
   // 默认立绘已改为硬加载（静态 import，见 portraits.js 顶部的
@@ -79,18 +78,16 @@ export function useAutosave({
       subscribe: gameStore.subscribe,
       isArmed: () => userArmedRef.current,
       isBusy: () => loadingRef.current || pendingTalksRef.current > 0,
-      onPlayed: () => { playedThisSessionRef.current = true; },
+      onPlayed: () => { notePlayed(); },
       onReset: () => {
-        playedThisSessionRef.current = false;
-        roundsSinceLastSaveRef.current = 0;
+        resetAutosaveProgress();
       },
       save: () => {
         const result = autoSave(snapshotFromStore({
           squares: serializeSquares(),
-          roomMap: roomMapRef.current,
-        }));
+            }));
         if (result.ok) {
-          roundsSinceLastSaveRef.current = 0;
+          noteAutosaveSaved();
           setLastAutoSave(Date.now());
           setAutoSaveError(null);
         } else {
@@ -99,6 +96,9 @@ export function useAutosave({
       },
     });
     schedulerRef.current = scheduler;
+    // WO-06：模块态进度随挂载重置——对齐旧 useRef 的每局语义，防止上一局的
+    // playedThisSession 泄漏进新开局（未游玩的新档覆盖旧自动档）
+    resetAutosaveProgress();
     return () => {
       window.removeEventListener("pointerdown", arm, true);
       window.removeEventListener("keydown", arm, true);
@@ -108,28 +108,27 @@ export function useAutosave({
   }, []);
 
   const checkRoundAutosave = useCallback(() => {
-    if (!playedThisSessionRef.current) return; // 还没玩过：绝不覆盖旧档
+    if (!getPlayedThisSession()) return; // 还没玩过：绝不覆盖旧档
     // 必须确有回合完成过。roundsSinceLastSaveRef 只在 commitRound（真走完一轮）自增、
     // 存档后归零；varTree 等状态被别的东西碰一下不算一轮。
     // 【为什么补这条】起居注上线后，不走 AI 的动作（内层移动等）也会写 varTree，
     // 而以前 varTree 在 effect 的 deps 里。autoSaveEvery=0（每回合都存）时下面那道
     // 区间守卫因 every>0 为假而整个跳过，于是每走一步内层都触发一次全量快照+落盘。
-    if (roundsSinceLastSaveRef.current <= 0) return;
+    if (getRoundsSinceLastSave() <= 0) return;
     const every = Math.max(0, Number(apiCfg.autoSaveEvery ?? 5));
-    if (every > 0 && roundsSinceLastSaveRef.current < every) return; // 间隔未到
+    if (every > 0 && getRoundsSinceLastSave() < every) return; // 间隔未到
     const snapshot = snapshotFromStore({
       squares: serializeSquares(),
-      roomMap: roomMapRef.current,
     });
     const result = autoSave(snapshot); // 同步返回（写内存必成；IDB 异步落盘、LS 尽力兜底）
     if (result.ok) {
-      roundsSinceLastSaveRef.current = 0;
+      noteAutosaveSaved();
       setLastAutoSave(Date.now());
       setAutoSaveError(null);
     } else {
       setAutoSaveError(result.error);
     }
-  }, [apiCfg.autoSaveEvery, roomMapRef]);
+  }, [apiCfg.autoSaveEvery]);
 
   useEffect(() => {
     checkRoundAutosave();
@@ -174,7 +173,9 @@ export function useAutosave({
       setCompanionState(snap.companionState || initCompanionState());
       setDungeonRun(snap.dungeonRun || null); // 地宫 checkpoint 随档还原
       setNpcState(snap.npcState || {}); // NPC 随身交易账随档还原
-      if (snap.roomMap) roomMapRef.current = snap.roomMap;
+      // 无条件重置客房缓存：老档无此字段时清空（否则上一局的缓存漏进新档），
+      // 当前房由房间同步 effect 自愈
+      setRoomCache(snap.roomCache || snap.roomMap || {});
       if (snap.squares) loadSquares(snap.squares);
       if (snap.rngState != null) setRngState(snap.rngState);
       // 内层箱庭位置：老存档没这个字段、或存的房间已不在该据点内景里（改过地图数据），
@@ -195,8 +196,8 @@ export function useAutosave({
   }, [presets, setVarTree]);
 
   const buildCurrentSnapshot = useCallback(() => snapshotFromStore({
-    squares: serializeSquares(), roomMap: roomMapRef.current,
-  }), [roomMapRef]);
+    squares: serializeSquares(),
+  }), []);
 
   // ── 地图格子·后台预跑（扫雷式预埋，见 mapSquares.js）──
   // 全据点批量预跑（14 节点，3 个一 call）：系统先掷骰埋拾取/路遇，小模型一次写完全套
@@ -241,7 +242,7 @@ export function useAutosave({
   // 同样受"本次会话行动过"保护——刚挂载就关页不会把旧档覆盖成新开局。
   useEffect(() => {
     const flush = () => {
-      if (!playedThisSessionRef.current) return;
+      if (!getPlayedThisSession()) return;
       flushLocalBackup(buildCurrentSnapshot());
     };
     window.addEventListener("beforeunload", flush);
@@ -259,19 +260,20 @@ export function useAutosave({
       setVarTree(prev => seedKnowledge(prev, p.知识基底, 0)); // 换预设开新局也灌基底（registerFact 幂等）
       setCompanionState(initCompanionState()); // 新开局重置雪豹解锁/出战状态，不带上一局的伙伴进度
       setNpcState({}); // 新开局清空 NPC 随身交易账，不带上一局的买卖记录
-      roomMapRef.current = { [p.room.name]: { items: [...p.room.items], npcs: [...p.room.npcs] } };
+      setRoomCache({ [p.room.name]: { items: [...p.room.items], npcs: [...p.room.npcs] } });
       markGameReplaced();
     };
     const scheduler = schedulerRef.current;
     if (scheduler) scheduler.runSilently(startPreset);
     else startPreset();
     scheduler?.resetPlayed();
+    resetAutosaveProgress();
     setGm(false);
     closeOverlay(OVERLAY.PRESETS);
   }, []);
 
   return {
-    lastAutoSave, autoSaveError, roundsSinceLastSaveRef, playedThisSessionRef,
+    lastAutoSave, autoSaveError,
     schedulerRef, applySnapshot, buildCurrentSnapshot, loadPreset, prerunSquares,
   };
 }

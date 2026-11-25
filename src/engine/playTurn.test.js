@@ -297,8 +297,8 @@ describe("playTurn background bookkeep", () => {
     });
 
     expect(result.ok).toBe(false);
+    // WO-06：事务快照只覆盖 store；refs 已清退，不再参与回滚断言
     expect(gameStore.getState().varTree).toBe(varTree);
-    expect(varTreeRef.current).toEqual(varTree);
   });
 
   it("preserves an undo-restored tree when runTurn becomes stale", async () => {

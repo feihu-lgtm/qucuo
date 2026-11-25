@@ -34,6 +34,9 @@ export const sessionUiStore = createStore(() => ({
   activePersuasion: null,
   activeBuilding: null,
   gambleNegotiation: {},
+  // 赌石谈价语境：玩家与买家谈价这一轮的事实底（baseOffer/cash/carry/stoneId/bidderName），
+  // 谈完即清空——跨层传递走本 store，不再用 React ref。
+  gambleSession: null,
   buildingPanelMinimized: false,
   justMeditated: false,
   tradingShop: null,
@@ -104,6 +107,7 @@ export const setPendingQuestBranch = fieldSetter("pendingQuestBranch");
 export const setActivePersuasion = fieldSetter("activePersuasion");
 export const setActiveBuilding = fieldSetter("activeBuilding");
 export const setGambleNegotiation = fieldSetter("gambleNegotiation");
+export const setGambleSession = fieldSetter("gambleSession");
 export const setBuildingPanelMinimized = fieldSetter("buildingPanelMinimized");
 export const setJustMeditated = fieldSetter("justMeditated");
 export const setTradingShop = fieldSetter("tradingShop");

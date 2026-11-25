@@ -31,7 +31,7 @@ import * as importedRegistry from "../../domain/rules/cards/importedRegistry.js"
 import { gameActions, gameStore, subscribeGameReplaced } from "../../store/gameStore.js";
 
 export function useWorldRulesRunner({
-  seaReturnRef, setForcedDuelNpc, schedulerRef, roomMapRef, dispatchCommand = (_id, fn) => fn(),
+  seaReturnRef, setForcedDuelNpc, schedulerRef, dispatchCommand = (_id, fn) => fn(),
 }) {
   const replacedRef = useRef(false);
   const [replacedTick, setReplacedTick] = useState(0);
@@ -88,7 +88,7 @@ export function useWorldRulesRunner({
         }),
         ctx: {
           importedRegistry,
-          roomMapRef,
+          get roomMap() { return gameStore.getState().roomCache || {}; },
           get companionState() {
             return gameStore.getState().companionState;
           },
@@ -99,7 +99,8 @@ export function useWorldRulesRunner({
         },
         applyResult: (result) => {
           dispatchCommand("worldRules", () => {
-            if (result.roomMap) roomMapRef.current = result.roomMap;
+            // WO-06：房间缓存写走 applyResult 统一写入口（changes.roomCache → setRoomCache）
+            if (result.roomMap) result.changes = { ...result.changes, roomCache: result.roomMap };
             applyResult(featureCtx(), result);
             if (result.forcedDuelNpc) {
               // 伏击开战先掐断自动寻路，不然打完还会接着往下跑剩下的路段。

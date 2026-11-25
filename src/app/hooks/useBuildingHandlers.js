@@ -47,7 +47,7 @@ import { FESTIVAL_CONTESTS, MIDNIGHT_FLAG, contestFlag } from "../../domain/data
 import { isContestOpen } from "../../domain/rules/festival/rules.js";
 import { buildQuestFoe } from "../../features/quest/combatChoice.js";
 
-export function useBuildingHandlers({ activeBuilding, setActiveBuilding, roomMapRef, captureUndo, setPendingQuestBranch, setDuelingNpc }) {
+export function useBuildingHandlers({ activeBuilding, setActiveBuilding, captureUndo, setPendingQuestBranch, setDuelingNpc }) {
   const handleBuyTangmenItem = useCallback((name, shopKey = "唐门暗器") => applyResult(featureCtx(), () => {
     const result = buyFactionShopItem(gameStore.getState(), shopKey, name);
     if (result.changes) captureUndo();
@@ -109,7 +109,7 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, roomMap
     captureUndo();
     const state = gameStore.getState();
     const roomMap = {
-      ...roomMapRef.current,
+      ...(gameStore.getState().roomCache || {}),
       ...(state.room?.name ? {
         [state.room.name]: {
           items: [...(state.room.items || [])],
@@ -118,8 +118,9 @@ export function useBuildingHandlers({ activeBuilding, setActiveBuilding, roomMap
       } : {}),
     };
     const result = travelByCarriage(state, dest, price, { roomMap });
+    // WO-06：出发房缓存写走统一写入口
     if (result.changes?.room && state.room?.name) {
-      roomMapRef.current[state.room.name] = roomMap[state.room.name];
+      result.changes.roomCache = (cache) => ({ ...(cache || {}), [state.room.name]: roomMap[state.room.name] });
     }
     applyResult(featureCtx(), result);
     if (result.changes) setActiveBuilding(null);
