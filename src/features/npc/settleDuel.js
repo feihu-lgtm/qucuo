@@ -19,6 +19,7 @@ import { sectSparRepGain, SECT_SPARS } from "../../domain/rules/economy/sectSpar
 import { factionRepDeltas } from "../../domain/rules/economy/factionRep.js";
 import { recordNemesisDuel, scarFromBattleLog, nemesisFactionOf, findNemesisEntry } from "../../domain/rules/nemesis/nemesisEngine.js";
 import { recordWeaponVictory } from "../../domain/rules/items/itemAwaken.js";
+import { lethalVerdict, recordLethalOutcome } from "../../domain/rules/combat/lethal.js";
 
 const makeGameItem = (spec) => makeItemSmart(spec, makeItem);
 // 一场切磋占用的游戏时间（time 一格 = 一小时），由系统直接加，不经过 AI
@@ -76,6 +77,7 @@ function recapBattleLog(battleLog) {
 
 export function settleNpcDuel(state, npc, {
   outcome, loot, battleLog, grownMoveset, usedItems, remainingHp, dodgeStolenItems, pendingQuestBranch,
+  lethal = false, spare = false,
   reportFollows = false, now = Date.now(), rng = random, createRespawnNpc,
 } = {}) {
   if (!npc) return {};
@@ -214,6 +216,30 @@ export function settleNpcDuel(state, npc, {
         ...(prev || {}),
         世界: { ...(prev?.世界 || {}), 器物谱: ledgerFinal },
       }));
+    }
+  }
+
+  // WO-23C2a 生死战 lethal 边界：仅显式 lethal 入口（本单规则/API，无自然入口）
+  // 且 win 才签生死事实——切磋 spar（lethal=false）绝不产生 dying/spared/假死候选。
+  // 生死判定在 lethalVerdict 纯函数，AI 不得决定生死。
+  if (lethal && outcome === "win" && npc.name) {
+    const faction0 = nemesisFactionOf(npc);
+    const rosterPre = state.varTree?.世界?.宿敌谱 || {};
+    const nemesisActive = !!(faction0 && findNemesisEntry(rosterPre, faction0, npc.name)?.status === "active");
+    const verdict = lethalVerdict({ outcome, lethal, spare, nemesisActive });
+    const bookNow = working.varTree?.世界?.生死 || {};
+    const bookNext = recordLethalOutcome(bookNow, npc, verdict, { turn: state.time || 0, place: state.room?.name || "" });
+    if (verdict && bookNext) {
+      addChange(changes, working, "varTree", (prev) => ({
+        ...(prev || {}),
+        世界: { ...(prev?.世界 || {}), 生死: bookNext },
+      }));
+      logs.push({
+        t: "sys",
+        text: verdict.status === "spared"
+          ? `  你收住杀招——${npc.name}捡回一条命，踉跄退开。`
+          : `  ${npc.name}倒在血泊里，气若游丝——生死战的账，不是切磋能比的。`,
+      });
     }
   }
 
