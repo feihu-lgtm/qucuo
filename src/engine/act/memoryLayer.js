@@ -1,17 +1,14 @@
-import { evolveKnowledge, buildInfoDomainBlock, setFactSummary } from "../../domain/rules/prompt/knowledge.js";
-import { ensureSideCalls } from "../../domain/rules/prompt/calls/sideCalls.js";
-import { recallWithVisibility } from "../ports/recallWithVisibility.js";
+import { evolveKnowledge, buildInfoDomainBlock } from "../../domain/rules/prompt/knowledge.js";
 import { runFormattedRecall } from "../ports/recallBlock.js";
 import { embeddingReady } from "../ports/embeddingService.js";
 import { reembedStaleNotes } from "../ports/noteMemory.js";
 import { createWebAi } from "../ports/ai.js";
-import { withAI } from "../ports/withAI.js";
 
 // 信息领域·知识系统（代码驱动）：每回合由代码确定性推演"谁知道什么"——
-// 同框传播 + 传闻淡忘（见 knowledge.js）。推演产物是"待补摘要"——在场者涉及、
-// 但账上还没有一句话描述的事实。此时才把 AI 当工具点一下：发一个独立小 prompt
-// 要一句话，收回来存进账里（agents 式：代码调度，AI 填词）。最后据此账生成
-// 【信息域】硬约束块注入主剧情，让 NPC 言行严格符合各自知情状态。
+// 同框传播 + 传闻淡忘（见 knowledge.js），据此账生成【信息域】硬约束块注入主剧情，
+// 让 NPC 言行严格符合各自知情状态。
+// WO-16：同步阻塞的 fact.summary AI 补词已删——事实标题直接取判官定案模板串，
+// 空缺摘要不再阻塞回合；evolveKnowledge 确定性传播保留。
 // 请求段无副作用：返回 { infoDomainBlock, kTree }，由 act 统一 setVarTree 提交
 // （本回合状态的一部分，失败会随整体回滚）。
 // 注意：必须读 act 传来的最新 varTree（varTreeRef 的值）：哪怕 act 是旧闭包
@@ -24,41 +21,6 @@ import { withAI } from "../ports/withAI.js";
 export async function runKnowledgeTurn({ varTreeLatest, roomNpcNames, infoDomainNpcNames = roomNpcNames, time, apiCfg, flags, ai = createWebAi(), rng }) {
   const evo = evolveKnowledge(varTreeLatest, { roomNpcNames: infoDomainNpcNames, currentTurn: time, rng });
   let kTree = evo.varTree;
-  // 按需补摘要（最多 2 条/回合，失败静默——摘要非关键，不阻断游戏）
-  // 内容层优先从向量库召回真旧事据以归纳；召不回才让 AI 现编兜底。
-  const pendingFids = evo.待补摘要.slice(0, 2);
-  if (pendingFids.length) {
-    ensureSideCalls();
-    const settled = await Promise.all(pendingFids.map(async (fid) => {
-      try {
-        // 1) 先拿事实名当查询词，去现成向量库召回相关的真旧事
-        let recallTexts = [];
-        if (embeddingReady(apiCfg)) {
-          const rc = await recallWithVisibility({
-            cfg: apiCfg, queryText: fid, contextText: "",
-            focusEntities: [], unlockedFlags: flags, topK: 3,
-          });
-          recallTexts = (rc?.visible || []).map(v => v.text).filter(Boolean);
-        }
-        // 2) 有命中→据素材归纳（有据不瞎编）；无命中→纯现编兜底（经 withAI 统一出口）
-        const callId = recallTexts.length ? "fact.summaryFromRecall" : "fact.summary";
-        const res = await withAI(
-          callId,
-          { cue: fid, recallTexts },
-          { ai, apiCfg, throwOnError: false },
-        );
-        const line = res.ok ? (res.text || "").trim().split("\n")[0].slice(0, 40) : "";
-        return { fid, line };
-      } catch (_) {
-        /* 补词失败就留空，下回合再试 */
-        return { fid, line: "" };
-      }
-    }));
-    // 按原始顺序确定性写回 kTree，避免并发乱序
-    for (const { fid, line } of settled) {
-      if (line) kTree = setFactSummary(kTree, fid, line);
-    }
-  }
   return { infoDomainBlock: buildInfoDomainBlock(kTree, infoDomainNpcNames), kTree };
 }
 

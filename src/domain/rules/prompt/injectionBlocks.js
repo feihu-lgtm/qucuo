@@ -171,89 +171,35 @@ export const ACTION_VIEWS = [
 ];
 
 // 某一块在某个动作下亮不亮。灭了要给出原因——这个面板的价值一半在"为什么没注入"。
-// 判据抄自 buildSysBase 的 wantCatalog / wantIsolation / wantMvu 与 schema 三元链。
-// mode: "single"(单调用，主模型一次产出JSON+MVU) | "dual"(双调用，主模型只写散文，
-// 状态判定转交判官管线)——这两种模式下同一个动作分类喂给AI的
-// 东西结构完全不同（尤其送礼场景：单调用靠 buildSysBase 的 isSettle 分支产铁律+MVU，
-// 双调用靠 narrativeOnly 分支的铁律管住主叙事文风、好感度判定由判官
-// 管线一裁定案），面板必须分开展示，不能用一套块清单硬套两种模式。
-export function blocksForAction(actionId, mode = "single") {
+export function blocksForAction(actionId) {
   const view = ACTION_VIEWS.find(v => v.id === actionId) || ACTION_VIEWS[0];
   if (view.scope === "whisper") {
     return INJECTION_PATHS.whisper.blocks.map(b => ({ ...b, lit: true, off: "" }));
   }
 
-  // 双调用模式：主模型只出散文，不产JSON/MVU/schema，这几块在双调用下从结构上就
-  // 不存在（narrativeOnly分支直接跳过它们），此时不该沿用单调用那份 act.blocks
-  // 硬把 schema/isolation 标成"灭灯"——那会让人误以为"这局本可以有MVU只是被灭了"，
-  // 而事实是双调用架构下主叙事这一步压根没有MVU这个环节，好感度判定整体挪到了
-  // 判官管线。所以双调用模式返回一份
-  // 结构不同的清单：保留叙事相关的块，砍掉JSON/MVU相关块，额外加一块"提取层调用"
-  // 说明这一轮状态判定实际去了哪。
-  if (mode === "dual") {
-    const dualBase = (view.isTalk ? INJECTION_PATHS.talk.blocks : INJECTION_PATHS.act.blocks)
-      .filter(b => !["schema", "isolation"].includes(b.id)); // 双调用主叙事不产JSON/MVU，这两块结构上不存在
-    const blocks = dualBase.map(b => {
-      let lit = true, off = "";
-      if (b.id === "catalog") {
-        lit = false; off = "双调用主叙事只写散文，物件志(发物判定)在提取层处理，这一步不需要";
-      }
-      return { ...b, lit, off };
-    });
-    // 追加"送礼世界观铁律(双调用版)"块——对应 buildSysBase 的 narrativeOnly 分支里
-    // settleKind==="gift" 那段，只在送礼场景展示
-    if (view.settleKind === "gift") {
-      blocks.push({
-        id: "gift_narrative_law", name: "送礼世界观铁律(管住主叙事文风)", kind: "engine", depth: 90,
-        summary: "narrativeOnly分支专属：强制主叙事把这一轮写成对方欣然收下，不许写推辞/质疑/婉拒——防止AI把送礼写成拒收剧情。",
-        lit: true, off: "",
-      });
-    }
-    blocks.push({
-      id: "judge_pipeline", name: "→ 判官管线(前哨听意+裁决+尾章校对)", kind: "dynamic", depth: 91,
-      summary: "WO-15 后状态判定全在判官管线：开庭前先哨小模型把玩家的话拆成听意单，判官据此裁定 facts/warrants 注入主叙事；主叙事只负责把已定案的事实写成散文并埋锚点，尾章校对把漏写锚点补句、fills 编译进 materializeFacts 落账。送礼/赔罪/求教的收拒与好感幅度均由判官一裁定案。",
-      lit: true, off: "",
-    });
-    return blocks;
-  }
-
-  const base = view.isTalk ? INJECTION_PATHS.talk.blocks : INJECTION_PATHS.act.blocks;
-  const { scope, gm } = view;
-
-  const blocks = base.map(b => {
+  // WO-16：单调用 JSON 模式已整块删除，主模型恒为叙事散文——不产JSON/MVU/schema，
+  // 状态判定全在判官管线。
+  const dualBase = (view.isTalk ? INJECTION_PATHS.talk.blocks : INJECTION_PATHS.act.blocks)
+    .filter(b => !["schema", "isolation"].includes(b.id));
+  const blocks = dualBase.map(b => {
     let lit = true, off = "";
     if (b.id === "catalog") {
-      if (gm) { lit = true; }
-      else if (scope !== "full") { lit = false; off = `scope=${scope}，非全量档不挂物件志`; }
-      else if (view.id === "explore" || view.id === "meta") { lit = false; off = "本轮无拾取判定命中，灭灯防诱导发物（战斗/创造模式才常亮）"; }
-    }
-    if (b.id === "isolation" && (scope === "move" || scope === "settle")) {
-      lit = false; off = scope === "move" ? "移动轮无 NPC 对白博弈，砍掉" : "结算轮 AI 无状态裁量权，砍掉";
-    }
-    if (b.id === "npc_lore" && (scope === "move" || scope === "settle")) {
-      lit = false; off = "绿灯：本轮无在场者需注入人设";
-    }
-    // 送礼场景：schema块要特别说明这里内嵌了送礼铁律+MVU强制正向指令
-    if (b.id === "schema" && view.settleKind === "gift") {
-      off = ""; lit = true;
+      lit = false; off = "主叙事只写散文，发物判定在判官管线处理，这一步不需要";
     }
     return { ...b, lit, off };
   });
-
-  // 单调用模式下，送礼场景把"送礼世界观铁律"从schema块里单独拆一块展示，
-  // 对应 buildSysBase 的 isSettle 分支里 settleKind==="gift" 那段（品阶/描述/
-  // 建议幅度都在这里），不必展开整个schema字符串去找这段话。
   if (view.settleKind === "gift") {
-    const schemaIdx = blocks.findIndex(b => b.id === "schema");
-    const giftBlock = {
-      id: "gift_settle_law", name: "送礼世界观铁律(单调用·管住MVU好感判定)", kind: "engine", depth: 13.5,
-      summary: "buildSysBase 的 isSettle+settleKind:\"gift\" 分支：强制本轮必须输出正向 <mvu> 好感度指令(不得为0或负数)，并把礼物的品阶/类别/描述摆给AI看，建议幅度按六品阶区间(白2~4/绿4~6/蓝6~9/紫9~12/橙11~14/红13~15)给出参考，取代泛泛的\"如果好感有变化\"式提示。",
+    blocks.push({
+      id: "gift_narrative_law", name: "送礼世界观铁律(管住主叙事文风)", kind: "engine", depth: 90,
+      summary: "强制主叙事把这一轮写成对方欣然收下，不许写推辞/质疑/婉拒——防止AI把送礼写成拒收剧情。",
       lit: true, off: "",
-    };
-    if (schemaIdx >= 0) blocks.splice(schemaIdx, 0, giftBlock);
-    else blocks.push(giftBlock);
+    });
   }
-
+  blocks.push({
+    id: "judge_pipeline", name: "→ 判官管线(前哨听意+裁决+尾章校对)", kind: "dynamic", depth: 91,
+    summary: "状态判定全在判官管线：开庭前先哨小模型把玩家的话拆成听意单，判官据此裁定 facts/warrants 注入主叙事；主叙事只负责把已定案的事实写成散文并埋锚点，尾章校对把漏写锚点补句、fills 编译进 materializeFacts 落账。送礼/赔罪/求教的收拒与好感幅度均由判官一裁定案。",
+    lit: true, off: "",
+  });
   return blocks;
 }
 
@@ -266,12 +212,6 @@ export const STATIC_TEXT_KEYS = {
   map_law: "MAP_LAW",
 };
 
-// schema 块按动作走哪一份
-export function schemaKeyFor(view) {
-  if (view.scope === "settle") return "SCHEMA_SETTLE";
-  if (view.scope === "move") return "SCHEMA_MOVE";
-  return "SCHEMA_FULL";
-}
 
 // ============================================================================
 // 送礼铁律示例文本 —— 用一件示例礼物(青锋剑·绿档)演示实际渲染出的prompt片段，

@@ -47,7 +47,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     gm, movingDir, lockedDestName, outerDepart, innerRoomName, apiCfg,
   } = input;
   const budgetInstruction = input.buildBudgetInstruction?.(input.intent, cmd, apiCfg.targetWordCount, apiCfg.intentBudgets) || "";
-  const angryNote = buildAngryNote(varTree, (room?.npcs || []).map((npc) => npc.name), { mvu: !apiCfg.extractionEnabled });
+  const angryNote = buildAngryNote(varTree, (room?.npcs || []).map((npc) => npc.name), { mvu: false });
   const render = (template) => renderPromptTemplate(template, input, { trace: ctx.onPromptRefMissing }).text;
   const targetNote = activeTarget
     ? render(`[交互目标] 玩家选定了「@activeTarget」作为本轮唯一互动对象。${isTalk ? "对话" : "行动"}必须聚焦此人，此人必须是 output 正文核心——与该互动无关的在场 NPC 本轮不必出场、不必插话；除非玩家输入本身需要多人在场（如当众宣布），否则 room.npcs 只保留「@activeTarget」和直接相关者。\n`)
@@ -57,9 +57,7 @@ export function assemblePrompt(ctx, cmd, opts, convo, mainConvo, hist, newConvo)
     : "";
   const talkNoStateRule = "[交互模式] 对话模式：玩家只是在和当前房间的 NPC 说话，不是下达行动指令。无论输入什么，只触发对话回应，绝不能移动房间、战斗、改变 room/char/装备/背包等任何状态";
   const modeNote = isTalk
-    ? (apiCfg.extractionEnabled
-      ? `${talkNoStateRule}。只写这一轮的对白、神态与心思。 `
-      : `${talkNoStateRule}，room 字段留空或原样返回，delta 各项留空。另在顶层 JSON 加 "respondedNpcs":["名字"]，列出本轮正文里真正开口或直接回应玩家（兽类以动作/姿态回应也算）的 NPC 名（只被提到、路过、在场没搭理的不算）；无人回应就返回 []。 `)
+    ? `${talkNoStateRule}。只写这一轮的对白、神态与心思。 `
     : "";
   const targetedRumor = input.findTargetedRumor?.(varTree, cmd);
   const emergenceNote = targetedRumor

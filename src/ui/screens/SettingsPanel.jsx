@@ -112,7 +112,6 @@ export default function SettingsPanel({ cfg, setCfg, dispatchCommand, onClose, o
         {tab === "preset" && (
           <InjectionStructurePanel
             getLiveBlockText={getLiveBlockText}
-            extractionEnabled={!!cfg.extractionEnabled}
             narratorLorebook={cfg.narratorLorebook || ""}
           />
         )}

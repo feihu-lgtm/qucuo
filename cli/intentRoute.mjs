@@ -40,7 +40,7 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
   async function execute(line, actions) {
     const turn = getTurn();
     const startedAt = Date.now();
-    const { plan, note, single } = planSteps(getState(), actions);
+    const { plan, single } = planSteps(getState(), actions);
     traceNode(turn, "行动识别·系统闸门", plan.rejected ? "warn" : "pass", `通过 ${plan.valid.length} 步`, Date.now() - startedAt);
     const rejected = rejectionLog(plan);
     if (rejected) emit(rejected.text.trim());
@@ -51,12 +51,12 @@ export function createCliIntentRouter({ ai, apiCfg, emit, getState, getTurn, app
       if (DEFERRED_KINDS.has(step.kind)) continue;
       const result = stepEffect(getState(), step);
       if (!result) continue;
-      const settled = single ? { ...result, settleOptions: { ...result.settleOptions, intentPlan: plan, intentPlanNote: note } } : withoutSettle(result);
+      const settled = single ? { ...result, settleOptions: { ...result.settleOptions, intentPlan: plan } } : withoutSettle(result);
       status = Math.max(status, await applyFeature(settled));
       if (result.logs?.length) emit(result.logs.map((entry) => entry.text).join("\n"));
     }
     if (!single && plan.valid.length) {
-      status = Math.max(status, await runFreeText(line, { intentPlan: plan, intentPlanNote: note, echoCommand: true }));
+      status = Math.max(status, await runFreeText(line, { intentPlan: plan, echoCommand: true }));
     }
     for (const step of plan.valid) if (DEFERRED_KINDS.has(step.kind)) status = Math.max(status, await runDeferred(step, single));
     // 「被拒」触发在已核准步骤都跑完之后才发，免得它抢走前面步骤要用的资源。

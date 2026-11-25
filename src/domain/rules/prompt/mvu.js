@@ -12,8 +12,6 @@
 // 【为什么要 ensure 而不是只在 initialVarTree 里给初值】老存档的 varTree 里没有这一支，
 // 直接 varTree.世界.旁白.seaUnlocked 会炸；读的地方一律走 narratorVars() 兜底。
 import { emptyTally } from "../memory/tally.js";
-import { AFFECTION_RULES, FIELD, FIELDS } from "../state/fields.js";
-import { FACTION_NAMES } from "../../data/map/factions.js";
 import { applyPatches, merge } from "../state/applyPatches.js";
 export { isProtectedMvuPath } from "../state/applyWrite.js";
 
@@ -65,52 +63,6 @@ export function initialVarTree() {
   };
 }
 
-// ---- 指令语法 ----
-// AI 在 output 文本之外，另起一段 <mvu> 块，内容形如：
-//   _.set('角色.呼延雪.好感度', 8);
-//   _.add('角色.呼延雪.好感度', 5);  // 在现有值基础上加减
-//   _.set('世界.曲措乡声望', 10);
-// 每行一条指令，分号结尾，注释用 // 开头（会被忽略）。
-// 用简单正则解析，不引入真正的 JS eval，避免任意代码执行风险。
-// 路径引号可有可无：提取模型实测会吐 `_.add(角色.元朵朵.好感度, 2)`（路径不带引号），
-// 只认带引号会让整条好感变化静默丢光、玩家看不到 💗。
-// _.push 也解析出来（动词交给 applyWrite 拒绝并留下裁决痕迹），不让它悄悄消失。
-// 按出现顺序逐条解析；每条独立，一条写坏（如往数组加字符串）不影响同块其他条。
-// 值优先吃带引号的字符串（里面可以有括号、分号），否则取到第一个右括号；不带引号的值不跨行、不吃分号，
-// 模型漏写右括号时只丢这一条，不会一路吞到下一条指令的右括号把它也吃掉。
-const CMD_RE = /_\.(set|add|push)\(\s*(?:'([^']+)'|"([^"]+)"|([^\s,'")]+))\s*,\s*('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|[^)\n;]+?)\s*\)\s*;?/g;
-
-function parseValue(raw) {
-  const trimmed = raw.trim();
-  if (trimmed === "true") return true;
-  if (trimmed === "false") return false;
-  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return parseFloat(trimmed);
-  // 去掉包裹的引号（单引号或双引号字符串）
-  const m = trimmed.match(/^['"](.*)['"]$/);
-  if (m) return m[1];
-  return trimmed;
-}
-
-// 从 AI 原始输出文本中提取 <mvu>...</mvu> 块，返回 { cleanText, commands }
-// cleanText 是去掉 mvu 块之后的文本（用于正常展示叙事内容）
-export function extractMvuBlock(rawText) {
-  const blockMatch = rawText.match(/<mvu>([\s\S]*?)<\/mvu>/);
-  if (!blockMatch) return { cleanText: rawText, commands: [] };
-
-  const block = blockMatch[1];
-  const cleanText = rawText.replace(blockMatch[0], "").trim();
-  const commands = [];
-
-  let m;
-  CMD_RE.lastIndex = 0;
-  while ((m = CMD_RE.exec(block)) !== null) {
-    commands.push({ op: m[1], path: m[2] ?? m[3] ?? m[4], value: parseValue(m[5]) });
-  }
-  return { cleanText, commands };
-}
-
-const MAX_SINGLE_ADD = AFFECTION_RULES.mvu.perTurn;
-
 // AI 产出的 mvu 指令本身就是 Patch[]；本函数只是 applyPatches(source:'mvu')
 // 的门面：入树前深拷贝、返回形适配 {tree, applied, rejected, logs}。
 export function applyMvuCommands(varTree, commands, opts = {}) {
@@ -147,22 +99,3 @@ export function npcAffectionLabel(affection) {
   if (affection < 90) return "亲近";
   return "深交";
 }
-
-// 拼进 system prompt 的说明，教会 AI 这套指令语法
-export const MVU_SYSTEM_INSTRUCTIONS = `
-回复末尾可追加 <mvu>...</mvu> 维护持久化状态（不展示给玩家，仅 output 展示，块内不考虑文风）。
-语法（每行一条，分号结尾）：
-  _.set('角色.某某.好感度', 30);   // 设数值/文本
-  _.add('角色.某某.好感度', 5);    // 增减数值
-路径与区间：
-- 仅可用 角色 / 世界 / 主角 三个前缀，禁虚构路径根。
-- 需追踪关系的新 NPC 用 角色.<姓名>.好感度 声明（建议初始 ${AFFECTION_RULES.firstMeeting.join("-")}）；态度、身份等按需声明。
-- 已有好感度的角色只用 _.add 增减；对其 _.set 好感度会被系统换算成限幅增量，不等于直接设值。
-- 世界.威望 全局唯一；势力声誉写 世界.势力声誉.<势力>（势力限 ${FACTION_NAMES.join("、")}）；其余世界状态用 世界.<名称> 自由声明；主角状态用 主角.<名称> 声明。
-- 绝对区间：好感度 ${FIELDS[FIELD.affection].min}~${FIELDS[FIELD.affection].max}，威望 ${FIELDS[FIELD.reputation].min}~${FIELDS[FIELD.reputation].max}，势力声誉 ${FIELDS[FIELD.factionRep].min}~${FIELDS[FIELD.factionRep].max}；好感度单次增减不超 ±${MAX_SINGLE_ADD}。
-- 【禁写】世界.旁白.* 是系统维护的剧情进度与门禁，_.set/_.add 碰其任何子键都会被丢弃；剧情推进由系统判定，不由叙事决定。
-变动尺度（以本轮专用规则为准）：
-- 好感度：闲聊 +1；白档礼物 +${AFFECTION_RULES.gift["白"][0]}~+${AFFECTION_RULES.gift["白"][1]}；重情分（如传授绝学）可到 +${AFFECTION_RULES.learn.master[1]}；无态度变化不改，正文不报数字。
-- 威望：公开义举（路见不平、兑现承诺）+5~${FIELDS[FIELD.reputation].maxDelta}，恶名昭彰同量扣减；私下态度不是威望，禁与单人好感混用。
-- 势力声誉：${FIELDS[FIELD.factionRep].scale}单次不超 ±${FIELDS[FIELD.factionRep].maxDelta}。
-`;

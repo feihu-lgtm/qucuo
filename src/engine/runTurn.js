@@ -1,5 +1,4 @@
 import { callMainOnce } from "./act/actCall.js";
-import { parseMainResponse } from "./act/parseResponse.js";
 import { step as traceStep } from "../infra/actionTrace.js";
 import { PHASE, turnMonitor } from "../infra/turnMonitor.js";
 import { runKnowledgeTurn, runRecall } from "./act/memoryLayer.js";
@@ -8,7 +7,6 @@ import { buildHistBlock, histBlockSavings } from "../domain/rules/memory/histWin
 import { bindTurnAi, createWebAi } from "./ports/ai.js";
 import { assemblePrompt } from "./prompt/assemblePrompt.js";
 import { getApiModel } from "../content/apiModel.js";
-import { filterPlanDelta, filterRejectedEffects } from "../domain/rules/intent/planNotes.js";
 import { classifyError } from "../utils/apiErrors.js";
 import { withAI } from "./ports/withAI.js";
 import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
@@ -16,7 +14,6 @@ import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/ju
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { random } from "../utils/rng.js";
-import { getPresentNpcs } from "../domain/rules/prompt/promptRefs.js";
 
 const MAX_AUTO_RETRY = 2;
 
@@ -62,24 +59,6 @@ function withPresenceTrace(ctx) {
   return { ...ctx, prompt: { ...ctx.prompt, buildPresence } };
 }
 
-export function createExtractionState(ctx, deps) {
-  const state = ctx.state || {};
-  const lockedDestName = state.lockedDestName ?? deps.lockedDestName;
-  return {
-    room: state.room || deps.room,
-    char: state.char || deps.char,
-    inv: state.inv || deps.inv || [],
-    dao: state.dao || deps.dao,
-    varTree: deps.varTree,
-    lockedDestName,
-    lockedExits: lockedDestName ? ctx.getMapNode?.(lockedDestName)?.exits : null,
-    pickupJudgment: deps.pickupJudgment,
-    questProgress: state.questProgress || deps.questProgress || ctx.prompt?.questProgress,
-    flags: state.flags || deps.flags || ctx.prompt?.flags,
-    cmd: deps.cmd,
-    innerRoomName: state.innerRoomName ?? deps.innerRoomName ?? ctx.prompt?.innerRoomName,
-  };
-}
 
 export async function runTurn(ctx, cmd, opts = {}) {
   const trace = ctx._trace || turnMonitor.start(cmd, { source: "engine", commandId: "turnCommit" });
@@ -174,13 +153,11 @@ async function runTurnSteps(ctx, cmd, opts) {
   // 降级安全：intake 调用失败/不合形制一律空听意单，判官照常签发（多半空事实），
   // 主叙事拿不到锚点任务时退化为普通正文，锚点剥离/尾章校对全是 no-op。
   let judgeVerdict = null;
-  // 闸门：① 单调用 JSON 模式的输出契约是纯 JSON，锚点+SEAL 的散文指令会让模型
-  // 丢 JSON 骨架，故只在双调用叙事（extractionEnabled）模式激活；
-  // ② settle 回合（赠礼/赔罪/求教等）状态在进叙事前已由 feature 层硬结算落账
+  // 闸门：① settle 回合（赠礼/赔罪/求教等）状态在进叙事前已由 feature 层硬结算落账
   // （giftNpc/learnNpcSkill/inviteCompanion 先扣先写），判官再裁会双重结算——
   // settle 回合不激活；待后续工单把前置硬写改成「事实请求先裁后落」才可开放。
-  // ③ 纯搭话回合不发生任何动作（搭话免费、不动状态），判官收礼会越权搬背包。
-  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle && !isTalk) {
+  // ② 纯搭话回合不发生任何动作（搭话免费、不动状态），判官收礼会越权搬背包。
+  if (deps.apiCfg?.judgePipelineEnabled && !isSettle && !isTalk) {
     try {
       const visibleNpcs = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
       const intakeContent = buildIntakeUserContent({
@@ -220,7 +197,7 @@ async function runTurnSteps(ctx, cmd, opts) {
   // 流入 buildSysBase 的 settle 叙事铁律。玩家原话优先取 settleOptions.attempt
   // （按钮/路由生成的 cmd 是模板句，无法判断诚意）。
   let appeaseVerdict = null;
-  if (apiCfg.extractionEnabled && isSettle && opts.settleKind === "appease" && opts.settleNpc) {
+  if (isSettle && opts.settleKind === "appease" && opts.settleNpc) {
     const npcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
     const npcState = (deps.varTree?.角色 || ctx.memory?.varTreeLatest?.角色 || {})[npcName] || {};
     const anger = npcState.生气状态 || {};
@@ -258,7 +235,7 @@ async function runTurnSteps(ctx, cmd, opts) {
   let narrativeText = "";
   let pickupExtractionFailed = false;
 
-  if (apiCfg.extractionEnabled) {
+  {
     let mainFinishReason;
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
       try {
@@ -315,51 +292,6 @@ async function runTurnSteps(ctx, cmd, opts) {
         { op: "set", path: `角色.${appeaseVerdict.npc}.生气解除`, value: true },
         { op: "add", path: `角色.${appeaseVerdict.npc}.好感度`, value: 3 },
       ];
-    }
-  } else {
-    for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
-      const nudge = attempt > 1
-        ? "\n\n（注意：上一次回复未能输出完整闭合的 JSON。请确保本次输出一个语法完整、正常闭合收尾的 JSON，不要中途断开。）"
-        : "";
-      let finishReason;
-      try {
-        const result = await callMainOnce(nudge, false, callDeps());
-        if (ctx.isStale?.()) return { stale: true };
-        assertNonEmpty(result.rawFull);
-        rawFull = result.rawFull;
-        finishReason = result.finishReason;
-        sealParts = { sealText: result.sealText, anchors: result.sealAnchors, sealed: result.sealed };
-        trace("AI调用", "pass", attempt > 1
-          ? `第${attempt}次重试后成功（单调用·主模型=${getApiModel(apiCfg) || "未设置"}）`
-          : `一次成功（单调用·主模型=${getApiModel(apiCfg) || "未设置"}）`);
-      } catch (error) {
-        if (ctx.isStale?.()) return { stale: true };
-        const verdict = retryVerdict(error, attempt);
-        if (verdict.retry) {
-          addLog([{ t: "sys", text: retryNotice(error, verdict, attempt) }]);
-          trace("AI调用", "fail", `第${attempt}次失败：${error.message || error}，重试`);
-          if (verdict.delayMs) {
-            await (ctx.sleep || sleep)(verdict.delayMs);
-            if (ctx.isStale?.()) return { stale: true };
-          }
-          continue;
-        }
-        trace("AI调用", "fail", `${verdict.why}：${error.message || error}`);
-        throw error;
-      }
-      ({ p, mvuCommands, dealResult } = parseMainResponse(rawFull));
-      normalizeDuelRequest(p, createExtractionState(ctx, deps));
-      mvuCommands = filterRejectedEffects(mvuCommands, deps.intentPlan); p = filterPlanDelta(p, deps.intentPlan);
-      narrativeText = (p.output || []).join("");
-      const truncated = p._truncated || /length|max[_ ]?tokens|max[_ ]?output/i.test(finishReason || "");
-      if (truncated && attempt <= MAX_AUTO_RETRY) {
-        addLog([{ t: "sys", text: `  ⚠ 上一轮被接口截断，正在自动重说一遍（第 ${attempt}/${MAX_AUTO_RETRY} 次，这次会更简短）…` }]);
-        continue;
-      }
-      if (p.output?.[0]?.startsWith("（引擎回应格式异常，原始内容）")) {
-        throw new Error("AI reply format is invalid");
-      }
-      if (!truncated) break;
     }
   }
 
@@ -425,17 +357,4 @@ async function runTurnSteps(ctx, cmd, opts) {
     newConvo,
     judgeEffects,
   };
-}
-
-// WO-15：normalizeDuelRequest 自 extractionEngine 内联——单调用 JSON 模式的
-// duelRequest 名字解析回在场 NPC 对象（双调用判官管线不经此路）。
-function normalizeDuelRequest(parsed, state = {}) {
-  if (!parsed || typeof parsed !== "object" || parsed.duelRequest == null) return parsed;
-  const raw = parsed.duelRequest;
-  let name = "";
-  if (typeof raw === "string") name = raw.trim();
-  else if (typeof raw?.name === "string") name = raw.name.trim();
-  const npc = getPresentNpcs(state).find((candidate) => candidate.name === name);
-  if (npc) parsed.duelRequest = npc; else delete parsed.duelRequest;
-  return parsed;
 }

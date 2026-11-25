@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   ACTION_VIEWS, blocksForAction, KIND_META, CONSTRAINT_FIELDS,
-  STATIC_TEXT_KEYS, schemaKeyFor, giftSettleLawExample, giftNarrativeLawExample,
+  STATIC_TEXT_KEYS, giftSettleLawExample, giftNarrativeLawExample,
 } from "../../domain/rules/prompt/injectionBlocks.js";
 import * as ENGINE from "../../domain/rules/prompt/enginePrompts.js";
 import { getTraceLog } from "../../infra/actionTrace.js";
@@ -33,12 +33,12 @@ const pill = (active) => ({
 });
 const MODE_BTNS = [["blue", "蓝灯"], ["green", "绿灯"], ["off", "关闭"]];
 
-export default function InjectionStructurePanel({ getLiveBlockText, extractionEnabled, narratorLorebook = "" }) {
+export default function InjectionStructurePanel({ getLiveBlockText, narratorLorebook = "" }) {
   const [viewMode, setViewMode] = useState("control");
   const [groupFilter, setGroupFilter] = useState("all");
   const [selectedCallId, setSelectedCallId] = useState("main:look");
   const [actionId, setActionId] = useState("look");
-  const [mode, setMode] = useState(extractionEnabled ? "dual" : "single");
+  const mode = "dual";
   const [overrides, setOverrides] = useState(() => getPromptOverrides());
   const [persistErr, setPersistErr] = useState(() => getPromptOverridePersistError());
   const [drafts, setDrafts] = useState({});
@@ -56,7 +56,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
   const visibleCalls = groupFilter === "all" ? allCalls : allCalls.filter((c) => c.group === groupFilter);
   const matrix = getCallControlMatrix(selectedCallId, { mode, overrides, narratorLorebook, presetScenario });
   const view = ACTION_VIEWS.find((v) => v.id === actionId) || ACTION_VIEWS[0];
-  const actionBlocks = blocksForAction(actionId, mode);
+  const actionBlocks = blocksForAction(actionId);
 
   const syncOverrides = (next) => {
     setOverrides(next);
@@ -78,7 +78,6 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
   const staticTextOf = (b, v) => {
     const key = STATIC_TEXT_KEYS[b.id];
     if (key) return ENGINE[key];
-    if (b.id === "schema") return ENGINE[schemaKeyFor(v)];
     if (b.id === "catalog") return ENGINE.CATALOG_TAIL;
     if (b.id === "gift_settle_law") return giftSettleLawExample();
     if (b.id === "gift_narrative_law") return giftNarrativeLawExample();
@@ -102,9 +101,6 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             }}>{label}</span>
           ))}
           <span style={{ flex: 1 }} />
-          {[["single", "单调用"], ["dual", "双调用"]].map(([m, label]) => (
-            <span key={m} style={pill(mode === m)} onClick={() => setMode(m)}>{label}</span>
-          ))}
           <span style={pill(false)} onClick={() => { syncOverrides(resetPromptOverrides()); setDrafts({}); }}>
             恢复全部默认
           </span>
@@ -271,7 +267,7 @@ export default function InjectionStructurePanel({ getLiveBlockText, extractionEn
             ))}
           </div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--inject-hint)", marginBottom: 6 }}>
-            {view.note}（{actionBlocks.filter((b) => b.lit).length}/{actionBlocks.length} 块亮灯，模式 {mode === "dual" ? "双调用" : "单调用"}）
+            {view.note}（{actionBlocks.filter((b) => b.lit).length}/{actionBlocks.length} 块亮灯）
           </div>
           {actionBlocks.map((b) => {
             const meta = KIND_META[b.kind] || { label: b.kind, color: "var(--inject-kind-fallback)" };

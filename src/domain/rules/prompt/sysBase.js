@@ -1,5 +1,4 @@
 import { narratorVoicePrompt } from "../narrator/narrator.js";
-import { MVU_SYSTEM_INSTRUCTIONS } from "./mvu.js";
 import { AFFECTION_RULES, CARRY_COUNT, FIELD, FIELDS, formatRange, giftRange, learnRange } from "../state/fields.js";
 import { renderFieldScales, renderPromptTemplate } from "./promptRefs.js";
 import { describeCatalogForAI } from "../../data/items/catalogOps.js";
@@ -68,7 +67,6 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
   // MVU（绿灯·批二）：只有"这一轮可能改好感/变量"才挂——即场上真有人。
   // 独自赶路、荒野探索、无人结算这类轮次灭灯，每轮省 717 字；
   // 创造模式(gm)强制挂（要能凭空设变量）。move 档本就无 MVU 段，不受影响。
-  const wantMvu = !narrativeOnly && (isSettle ? !!opts.settleNpc : (opts.hasNpc !== false || opts.gm === true));
   // 直接用目标汉字数生成明确的字数指令，而不是通过 maxTokens 反推一个粗略的档位——
   // 汉字和 token 不是 1:1 关系（一个汉字通常占 1.5-2 个 token），之前"用 maxTokens 分四档"
   // 的做法既不精确，也只能控制"每条output"的上限，控制不了整轮回复的总字数。
@@ -129,51 +127,6 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     }
     return "";
   }
-  // isSettle 分支：管"MVU 那部分该怎么写"（单调用模式下，主模型直接产 JSON+MVU，
-  // 好感度等状态判定就在这一次调用里完成）。
-  function buildSettleMvuNote(o) {
-    if (o.settleKind === "duel_invite") {
-      return `\n【切磋邀战状态铁律】本轮只是邀战与摆开架势，不发生战斗或任何状态变化。不得输出 <mvu>，不得修改气血、好感、物品或其他状态。`;
-    }
-    if (o.settleKind === "gift") {
-      if (o.giftInfo?.weight) return buildSettleNarrativeNote(o);
-      const range = o.giftInfo?.range ?? giftRange(o.giftInfo?.quality);
-      return `\n【送礼反应铁律】${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}已由系统交付并结算完毕，禁重复扣除、禁改写收讫事实。${o.settleNpc}的反应按其自身性情与礼物分量自然写：冷傲者即便心里受用也只是淡淡收下，豪爽者拍腿道谢，精明者掂量估值；厚礼动心、薄礼随意，因人而异、禁千人一腔地惊喜转暖，也禁无由为难起疑。\n礼物信息：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}，描述：${o.giftInfo?.desc || "寻常物件"}。\n本轮必须输出 <mvu> 且为正向增量：依品阶来历在${formatRange(range)}内取值（贵重/用心取上沿，寻常取下沿），禁为0或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? Math.round((range[0] + range[1]) / 2)});`;
-    }
-    if (o.settleKind === "companion_invite") {
-      const cn = o.settleNpc || "对方";
-      const { min, max, example } = AFFECTION_RULES.companion;
-      const speech = isHumanFormCompanion(o.settleNpc)
-        ? `当场化为人形（${ADULT_HUMAN_FORM}），开口用言语与神情郑重定下同行情谊`
-        : o.settleBeast
-        ? `用动作、眼神、姿态（如以额抵掌、伏低臣服）表明结伴之意——它不能说话`
-        : `用言语与神情郑重定下同行情谊`;
-      return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行。本轮必写其爽快应下、${speech}；禁写犹豫或抗拒。\n本轮必须输出 <mvu> 且为正向：${cn}属初登场伙伴，直接 _.set 好感度至 ${min}~${max} 间。\n示例：_.set('角色.${cn}.好感度', ${example});`;
-    }
-    if (o.settleKind === "learn_skill") {
-      const master = !!o.learnInfo?.isMaster;
-      const [min, max, example] = learnRange(master);
-      return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授（门槛、束脩、招式均已由系统结算为既成事实）；本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。对玩家观感只能变好，禁不变或变差。\n本轮必须输出 <mvu> 且为正向增量：在${formatRange([min, max])}内取值（${master ? "绝学情分重，取上沿" : "通用功夫，取下沿"}），禁为0或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${example});`;
-    }
-    if (o.settleKind === "appease") {
-      return `\n【怒气缓和状态裁决】仅当本轮行为确实缓和${o.settleNpc}，才输出 <mvu>：必写生气解除，观感确有变化时可附好感度增量 N（${AFFECTION_RULES.appease.join("~")} 整数）。未奏效禁设生气解除且不输出 <mvu>；除此之外禁写任何 MVU 变更。\n成功示例（未奏效不输出）：\n_.set('角色.${o.settleNpc}.生气解除', true);\n_.add('角色.${o.settleNpc}.好感度', 3);`;
-    }
-    return "";
-  }
-  function buildSettleMvuExample(o) {
-    if (o.settleKind === "duel_invite") {
-      return `\n【切磋邀战状态示例】本轮没有任何状态变化，不输出 <mvu> 块。`;
-    }
-    if (o.settleKind === "gift") {
-      if (o.giftInfo?.weight) return giftWeight(
-        "\n仅给收礼人写一条 _.add 好感，整数区间 @赠礼.好感范围；收下必写区间内的正向增量，禁省略、禁为零。"
-      ) + (o.giftInfo?.preferLabel && o.giftInfo?.categoryLabel === o.giftInfo.preferLabel
-        ? "礼物正是对方偏好的类别，好感取区间上沿。"
-        : "") + "禁写其他 MVU。";
-    }
-    return "";
-  }
-
   // 预设系统负责的部分：文体/通用规则/剧本设定的拼装顺序和内容，可由用户在设置面板里自由编辑，
   // 完整兼容酒馆格式导入。scenario 通过 marker 占位符注入，不需要在这里手动拼接。
   const basePreset = Object.hasOwn(opts, "activePreset") ? opts.activePreset : getActivePreset();
@@ -191,7 +144,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     : ov.preset_scenario?.mode === "blue"
       ? { text: rawScenario, lit: ["总控台蓝灯全亮"], dark: [] }
       : opts.gateCtx
-        ? gateScenario(rawScenario, { ...opts.gateCtx, scope, wantMvu: wantMvu && !narrativeOnly })
+        ? gateScenario(rawScenario, { ...opts.gateCtx, scope, wantMvu: false })
         : { text: rawScenario, lit: [], dark: [] };
   if (opts.onGateReport) opts.onGateReport(gated);
   // ── 冰山前缀切分（WO-04）──────────────────────────────────────────
@@ -228,29 +181,8 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       : (lenNote.startsWith("篇幅要求：") ? lenNote : `篇幅要求：${lenNote}`);
 
   // 各分支的 JSON schema / 叙事指令，与旧模板字符串完全一致。
-  const schemaBlock = narrativeOnly
-    ? `直接输出叙事散文正文，写完即止；禁输出JSON、<mvu>块及任何结构化内容。`
-    : isSettle
-      ? `回复纯JSON，字符串不换行。状态已结算，只写生动正文，禁改状态或重复结算奖励/物品/银两${opts.snowLeopardGift ? "：" : "，禁输出 room/char/dao/delta："}
-{"output":["行1","行2"],"memory":"≤50字客观事实"}
-${opts.snowLeopardGift ? '唯一例外：收复雪豹任务进行中且雪豹在场，本次赠礼若为肉，可输出 "delta":{"flags_add":["snow_spirit_meat"]}；非肉则拒吃并讲个短笑话，不加flag。delta只允许flags_add，且只允许snow_spirit_meat，不得输出其他flag或状态。不要输出 room / char / dao。\n' : ""}memory：≤50字纯客观事实，玩家称"${playerName}"，禁"你/我/玩家"，琐事省略。${wantMvu ? `
-JSON后另起一行附 <mvu> 块（禁入JSON内），见上文规则。` : ""}`
-      : scope === "move"
-        ? `回复纯JSON，字符串不换行。移动到达：只写叙事、场景与在场人物，不发物品、不改复杂状态：
-{"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}]}}
-carry：仅NPC首登场写${CARRY_COUNT.min}-${CARRY_COUNT.max}件可见随身物，叙事须写外观。
-memory（可选）：≤50字纯客观事实记到达地与途中要事，玩家称"${playerName}"，禁"你/我/玩家"，寻常赶路省略。
-mentionedNewNpcs：仅提全新具名人物时加["名"]。`
-        : `回复纯JSON，字符串不换行：
-{"output":["行1","行2"],"room":{"name":"名","desc":"≤80字","exits":["n"],"npcs":[{"name":"名","id":"id","brief":"≤15字","carry":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}]}],"items":[{"name":"名","id":"id"}]},"char":{"hp":[60,100],"neigong":5,"waigong":8,"special":{"根骨":5,"悟性":6,"体魄":5,"魅力":5,"智谋":5,"身法":5,"气运":5}},"dao":{"karma":0,"jie":0,"sign":"天象","rumor":["事"]},"delta":{"items_add":[{"name":"物品名","category":"weapon|armor|accessory|misc","quality":"白|绿|蓝|紫|橙|红"}],"items_rm":[],"skill_up":{},"exp":0,"pot":0,"flags_add":[]}}
-items_add：剧情道具/杂物可用纯字符串；武器/护甲/饰品用对象。
-carry：仅NPC首登场写${CARRY_COUNT.min}-${CARRY_COUNT.max}件可见随身物（常人多白/绿档），叙事须写外观，后续不写。
-NPC加tag：仅路途泛用清剿目标（猛兽/山贼等，按地域说明填）可选；具名人物不加。
-mentionedNewNpcs（顶层）：仅提全新具名人物时加["名"]。
-${scope === "full" ? 'duelRequest（顶层）：仅玩家向在场NPC提切磋且对方应允开架时填"NPC名"；拒绝/躲避/仅谈打斗须省略。\n' : ""}emergedNpcName与emergedNpcDescription（顶层）：仅收到"人物涌现"指令且本轮登场时加（后者一句话定性、无数值），其余禁写。
-memory（顶层可选）：≤50字纯客观事实记可公开关键事件（写清人名地名），玩家称"${playerName}"，禁"你/我/玩家"，禁情绪/心理/评述/私密，琐事省略。${wantMvu ? `
+  const schemaBlock = `直接输出叙事散文正文，写完即止；禁输出JSON、<mvu>块及任何结构化内容。`
 
-JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> 块（禁入JSON），见上文规则。` : ""}`;
 
   // 按 SillyTavern 13 位置拆成消息数组。位置编号 9 与 13 等因各 API 实际限制会被合并到
   // 系统顶部，但保留标签供 TraceViewer/注入结构面板可视化。
@@ -294,18 +226,9 @@ JSON后若需维护角色/世界状态变量，另起一行独立输出 <mvu> �
   const phiRules = [
     scope === "full" ? "\n【战斗叙事边界】战斗的招式交锋与胜负均由系统结算，叙事不得自行描写。" : "",
     narrativeOnly ? buildSettleNarrativeNote(opts) : "",
-    (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuNote(opts) : "",
-    (!narrativeOnly && isSettle && wantMvu
-      && !["duel_invite", "gift", "companion_invite", "learn_skill", "appease"].includes(opts.settleKind))
-      ? `\n关于下面那条 <mvu>：如果这一轮牵涉的人物（${opts.settleNpc}）对玩家的观感确有变化才给出。`
-      : "",
-    (!narrativeOnly && wantMvu && opts.settleKind !== "duel_invite") ? MVU_SYSTEM_INSTRUCTIONS : "",
-    (!narrativeOnly && !isSettle && scope !== "move")
-      ? renderFieldScales([FIELD.hp, "char.neigong", "char.waigong", "char.special", "dao.karma", "dao.jie", FIELD.inv, FIELD.flags, "skills", "exp", "pot"], {}, opts.onPromptRefMissing) : "",
-    (!narrativeOnly && isSettle && wantMvu) ? buildSettleMvuExample(opts) : "",
   ].filter(Boolean).join("\n");
 
   const totalLen = messages.reduce((sum, b) => sum + (b.content?.length || 0), 0);
-  if (opts.onSnapshot) opts.onSnapshot({ sys: messages, meta: { scope, narrativeOnly, isSettle, wantCatalog, wantIsolation, wantMvu, settleKind: opts.settleKind || null, len: totalLen } });
+  if (opts.onSnapshot) opts.onSnapshot({ sys: messages, meta: { scope, narrativeOnly, isSettle, wantCatalog, wantIsolation, settleKind: opts.settleKind || null, len: totalLen } });
   return { sysBlocks: messages, phiBlock: makeBlock("phi", schemaBlock), phiRules, dynBlocks };
 }

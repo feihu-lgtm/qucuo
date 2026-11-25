@@ -8,7 +8,6 @@ import { QUCUO_QUESTS } from "../domain/data/quests/qucuoQuests.js";
 import { commitModelFlags } from "../engine/act/commitFlags.js";
 import { createWorldRules } from "../engine/worldRules.js";
 import { buildQuestStageNote } from "../engine/prompt/roundNotes.js";
-import { createExtractionState } from "../engine/runTurn.js";
 import { assemblePrompt } from "../engine/prompt/assemblePrompt.js";
 
 const leopard = { name: "雪豹", beast: true, companionCandidate: true };
@@ -169,7 +168,7 @@ describe("收复雪豹", () => {
     const prompt = { ...state, dao: {}, apiCfg: {}, innerRoomName: "村口" };
     const built = assemblePrompt({ prompt }, "赠肉给雪豹", { settleNpc: "雪豹" }, [], [], [], []);
     expect(built.snowLeopardContext).toContain("snow_spirit_meat");
-    const extraction = createExtractionState({ state: { room: state.room, char: state.char }, prompt }, { cmd: "替雪豹挠痒" });
+    const extraction = { room: state.room, char: state.char, inv: state.inv || [], dao: {}, varTree: state.varTree, cmd: "替雪豹挠痒", flags: state.flags, questProgress: state.questProgress };
     expect(snowLeopardNote(extraction)).toContain("snow_spirit_scratch");
     expect(snowLeopardHint({ ...state, cmd: "雪豹怎么了" })).toContain("替它挠痒");
     expect(snowLeopardHint({ ...state, cmd: "你好" })).toBe("");

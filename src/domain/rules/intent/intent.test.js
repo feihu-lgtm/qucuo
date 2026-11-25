@@ -4,7 +4,6 @@ import { renderPrompt, TEMPLATES } from "./prompts.js";
 import { recognizeIntent, clampConfidence } from "./recognizer.js";
 import { gateRecognition, ROUTES, confirmLine } from "./gate.js";
 import { validatePlan } from "./systemGate.js";
-import { formatPlanNote, planExtractionNote, filterRejectedEffects, filterPlanDelta } from "./planNotes.js";
 import { splitConditionClause } from "./conditions.js";
 import { armIntentTriggers, fireIntentTriggers, expireIntentTriggers, intentTriggers } from "../../../store/intentPendingStore.js";
 import { QUCUO_MAP } from "../../data/map/qucuoMap.js";
@@ -184,24 +183,6 @@ describe("system gate", () => {
     expect(validatePlan(state, [wine, wine, wine]).rejected.reason).toBe("背包里没有青稞酒");
     expect(validatePlan(state, [{ kind: "切磋", target: "王掌柜" }]).rejected.reason).toBe("王掌柜不在此处");
     expect(validatePlan(state, [{ kind: "移动", direction: "东" }, { kind: "切磋", target: "才旦" }]).rejected.reason).toContain("走动之后");
-  });
-
-  it("feeds stage 2 a structured note and keeps stage 3 from writing rejected effects", () => {
-    const plan = validatePlan(state, [gift(100), gift(100, "卓玛")]);
-    const note = formatPlanNote(plan, state);
-    expect(note).toContain("1. 把100两给才旦（系统已核准）");
-    expect(note).toContain("系统拒绝：银两不够");
-    expect(planExtractionNote(plan)).toContain("不得为其输出任何状态变化");
-    const kept = filterRejectedEffects([{ path: "人物.才旦.好感", value: 5 }, { path: "人物.卓玛.好感", value: 5 }], plan);
-    expect(kept).toEqual([{ path: "人物.才旦.好感", value: 5 }]);
-    expect(planExtractionNote(validatePlan(state, [gift(10)]))).toBe("");
-  });
-
-  it("keeps stage 3 from deleting inventory the system already settled or rejected", () => {
-    const plan = validatePlan(state, [{ kind: "赠送", target: "卓玛", item: "青稞酒" }, { kind: "切磋", target: "王掌柜" }, { kind: "使用物品", item: "酥油茶" }]);
-    const p = { delta: { items_rm: ["青稞酒", { name: "酥油茶" }, "馒头"] } };
-    expect(filterPlanDelta(p, plan).delta.items_rm).toEqual(["馒头"]);
-    expect(filterPlanDelta(p, null)).toBe(p);
   });
 
   it("applies the same learning thresholds as the button and charges tuition in the simulation", () => {

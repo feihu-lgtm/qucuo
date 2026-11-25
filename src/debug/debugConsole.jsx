@@ -13,7 +13,7 @@ import { getApiModel } from "../content/apiModel.js";
 import { loadConfig, callModel, hasApiCredentials, API_TYPES } from "../engine/ports/ai.js";
 import { describeInnerArrival } from "../domain/rules/map/mapNarration.js";
 import { resolveInnerExit } from "../domain/rules/map/innerMap.js";
-import { extractMvuBlock, applyMvuCommands, initialVarTree } from "../domain/rules/prompt/mvu.js";
+import { applyMvuCommands, initialVarTree } from "../domain/rules/prompt/mvu.js";
 
 const redact = (k) => (k ? `***${String(k).slice(-4)}` : "(空)");
 const describeCredentials = cfg => cfg.apiType === API_TYPES.VERTEX ? "ADC 已导入" : `key ${redact(cfg.apiKey)}`;
@@ -44,15 +44,13 @@ export default function DebugConsole() {
   // ── 纯逻辑：<mvu> 提取 + 系统裁决 ──
   function runMvu() {
     log("========== MVU 提取 + 裁决 ==========");
-    const raw = [
-      "<mvu>",
-      "_.set('角色.呼延雪.好感度', 20);",
-      "_.add('角色.呼延雪.好感度', 999);",   // 超幅度：应被钳制
-      "_.set('世界.天气', '晴');",           // 合法路径
-      "_.set('黑客.注入', true);",           // 越权路径：应被拒
-      "</mvu>",
-    ].join("\n");
-    const { commands } = extractMvuBlock(raw);
+    // WO-16：<mvu> 正则抠取已随单调用删除，这里直接构造指令数组测裁决层。
+    const commands = [
+      { op: "set", path: "角色.呼延雪.好感度", value: 20 },
+      { op: "add", path: "角色.呼延雪.好感度", value: 999 },   // 超幅度：应被钳制
+      { op: "set", path: "世界.天气", value: "晴" },           // 合法路径
+      { op: "set", path: "黑客.注入", value: true },           // 越权路径：应被拒
+    ];
     const { tree, applied, rejected } = applyMvuCommands(initialVarTree(), commands);
     log(`提取到 ${commands.length} 条指令 → 裁决通过 ${applied.length}、拒绝 ${rejected.length}`);
     log(`呼延雪好感度最终 = ${tree.角色?.呼延雪?.好感度}（+999 应被钳制在合法幅度内）`);

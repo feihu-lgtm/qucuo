@@ -1,4 +1,3 @@
-import { formatPlanNote } from "../../domain/rules/intent/planNotes.js";
 import { bookkeepToPatches } from "../../domain/rules/memory/bookkeep.js";
 import { applyPatches } from "../../domain/rules/state/applyPatches.js";
 import { runBookkeep } from "../ports/bookkeep.js";
@@ -79,7 +78,7 @@ export async function runBookkeepAfterTurn({ ctx = {}, turn = {}, opts = {}, tra
       apiCfg: ctx.apiCfg,
       ctx: {
         narration: narration.slice(0, 2000),
-        settleSummary: intentPlan ? formatPlanNote(intentPlan, state) : "",
+        settleSummary: "",
         presentNames: names,
         ledgers: Object.fromEntries(names.map((name) => [name, getLedger(state.varTree, name).lines])),
         turn: state.time,

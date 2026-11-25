@@ -15,32 +15,9 @@ const mk = (scope, narrativeOnly = false, opts = {}) =>
 const worldInfoAfter = (r) => r.sysBlocks.find(b => b.tavernBlock === "worldInfoAfter").content;
 
 describe("wantMvu 绿灯：只在'这一轮可能改好感/变量'时挂 MVU 说明书", () => {
-  it("settle+settleNpc → phi 里带 <mvu> 附注与说明书", () => {
-    // 契约：settle 轮牵涉具体 NPC 时，schema 尾部与 11 号位都要教会模型写 mvu。
-    const { phiBlock, phiRules } = mk("settle", false, { settleNpc: "温掌柜" });
-    expect(phiBlock.content).toContain("<mvu>");
-    expect(phiRules).toContain("_.set('角色.某某.好感度'");
-  });
 
-  it("settle 但无 settleNpc → 无人可改，mvu 一字不发", () => {
-    // 契约：结算轮没点名 NPC，MVU 段整体灭灯（schema 和规则都没有）。
-    const { phiBlock, phiRules } = mk("settle", false);
-    expect(phiBlock.content).not.toContain("<mvu>");
-    expect(phiRules).not.toContain("_.set('角色");
-  });
 
-  it("full+无人（hasNpc:false）→ mvu 灭灯，每轮省掉说明书", () => {
-    // 契约：全量档但场上无人，也不发 MVU 说明书。
-    const { phiBlock, phiRules } = mk("full", false, { hasNpc: false });
-    expect(phiBlock.content).not.toContain("<mvu>");
-    expect(phiRules).not.toContain("_.set('角色");
-  });
 
-  it("创造模式（gm:true）即使无人也强制挂 mvu——要能凭空设变量", () => {
-    // 契约：gm 覆盖 hasNpc:false，MVU 保持挂载。
-    const { phiRules } = mk("full", false, { hasNpc: false, gm: true });
-    expect(phiRules).toContain("_.set('角色.某某.好感度'");
-  });
 
   it("narrativeOnly（双调用）→ 任何情况下主叙事都不谈 mvu", () => {
     // 契约：提取层模式下主调用只产散文，mvu 说明书与附注全部不出现。
@@ -75,28 +52,8 @@ describe("wantIsolation / wantCatalog 按 scope 灭灯", () => {
 });
 
 describe("schema 形状按 scope 分档", () => {
-  it("settle：只有 output+memory，禁 room/char/dao/delta", () => {
-    // 契约：结算档 schema 缩到最小，并明文禁改状态。
-    const { phiBlock } = mk("settle", false, { settleNpc: "温掌柜" });
-    expect(phiBlock.content).toContain('"output":["行1","行2"],"memory"');
-    expect(phiBlock.content).toContain("禁输出 room/char/dao/delta");
-    expect(phiBlock.content).not.toContain('"char":{"hp"');
-  });
 
-  it("move：带 room 不含 char/dao/delta", () => {
-    // 契约：移动档 schema 只有 output+room，不写角色状态。
-    const { phiBlock } = mk("move", false, { hasNpc: true });
-    expect(phiBlock.content).toContain('"room":{"name"');
-    expect(phiBlock.content).not.toContain('"char":{"hp"');
-    expect(phiBlock.content).not.toContain('"dao"');
-  });
 
-  it("雪豹赠礼中的 settle：放开 delta.flags_add 唯一例外", () => {
-    // 契约：opts.snowLeopardGift 时 settle schema 允许 flags_add:["snow_spirit_meat"]。
-    const { phiBlock } = mk("settle", false, { settleNpc: "雪豹", snowLeopardGift: true });
-    expect(phiBlock.content).toContain("snow_spirit_meat");
-    expect(phiBlock.content).toContain("delta只允许flags_add");
-  });
 });
 
 describe("budgetInstruction 与 scenario 蓝绿灯", () => {
@@ -167,20 +124,6 @@ describe("budgetInstruction 与 scenario 蓝绿灯", () => {
     expect(reunited).toBe(gated.text);
   });
 
-  it("dedupIfMvu：MVU 在场时熄掉重复的好感度规则段，散文档保留", () => {
-    // 契约：scenario 的「好感度维护规则」默认段与 MVU 说明书重复——MVU 在场（单调用）时熄灯，
-    // 散文档（无 MVU）照常保留，保证约束至少有一处承载。
-    const scenario = "世界观头部。\n\n好感度维护规则\n- 寻常聊天 +1，用 _.add 微调。\n\n拓扑连通关系\n鱼定村北通天都镇。";
-    const build = (narrativeOnly) => buildSysBase(220, NARRATOR, scenario, null, false, "", narrativeOnly, "full",
-      { playerName: "少侠", hasNpc: true, gateCtx: { cmd: "" } });
-    // WO-04：好感度规则段随 MVU 有无跳变，属动态内容——单调用熄灯（两边都没有），
-    // 散文档保留在 dynBlocks.scenarioLit；sysBlocks 的 scenario 块两种情况下都不含它。
-    const scen = (r) => r.sysBlocks.find(b => b.tavernBlock === "scenario").content;
-    expect(scen(build(false))).not.toContain("好感度维护规则");
-    expect(build(false).dynBlocks.scenarioLit).not.toContain("好感度维护规则");
-    expect(scen(build(true))).not.toContain("好感度维护规则");
-    expect(build(true).dynBlocks.scenarioLit).toContain("好感度维护规则");
-  });
 
   it("dedupIfMvu：剧本自定义的好感度规则（无出厂指纹）MVU 在场也保留", () => {
     // 契约：自定义刻度/条件的好感度规则不属重复——MVU 在场同样点亮，不静默丢弃。
@@ -223,30 +166,6 @@ describe("settleKind 铁律的其余分支", () => {
     expect(phiRules).toContain("禁写犹豫、观望、抗拒");
   });
 
-  it("companion_invite：雪豹、珍珠认主即化为 18 岁以上成年女子，能说话", () => {
-    for (const dual of [true, false]) {
-      for (const settleNpc of ["雪豹", "珍珠"]) {
-        const { phiRules } = mk("settle", dual, { settleNpc, settleKind: "companion_invite", settleBeast: true });
-        expect(phiRules).toContain("化为人形");
-        expect(phiRules).toContain("年满十八岁以上的成年女子");
-        expect(phiRules).toContain("绝不写成未成年");
-        expect(phiRules).not.toContain("cannotSpeak");
-      }
-    }
-  });
 
-  it("companion_invite 单调用：直接 _.set 初始好感，不是 _.add", () => {
-    // 契约：单调用模式下伙伴入队用 set 定初始值（初登场非增量）。
-    const { phiRules } = mk("settle", false, {
-      settleNpc: "才旦", settleKind: "companion_invite",
-    });
-    expect(phiRules).toContain("_.set('角色.才旦.好感度'");
-    expect(phiRules).toContain("本轮必须输出 <mvu> 且为正向");
-  });
 
-  it("未注册 settleKind 的通用 settle：仍是软措辞提示", () => {
-    // 契约：settleNpc 在场但 settleKind 不在铁律表里 → 提示"确有变化才给 mvu"。
-    const { phiRules } = mk("settle", false, { settleNpc: "温掌柜", settleKind: "hire" });
-    expect(phiRules).toContain("关于下面那条 <mvu>：如果这一轮牵涉的人物（温掌柜）对玩家的观感确有变化才给出");
-  });
 });

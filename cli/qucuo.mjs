@@ -25,7 +25,6 @@ async function main() {
   let recordFile;
   let intent = true;
   let bookkeep = false;
-  let extraction = true;
   const nextValue = (name, index) => {
     const value = args[index + 1];
     if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
@@ -71,12 +70,7 @@ async function main() {
       case "--bookkeep":
         bookkeep = true;
         break;
-      case "--extraction":
-        extraction = true;
-        break;
-      case "--no-extraction":
-        extraction = false;
-        break;
+
       case "--record":
         recordFile = nextValue("--record", i);
         i++;

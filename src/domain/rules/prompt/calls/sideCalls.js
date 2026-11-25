@@ -1,4 +1,4 @@
-import { definePrompt, getPromptDef } from "../registry.js";
+import { definePrompt } from "../registry.js";
 import { buildNpcContext } from "../../npc/npcContext.js";
 
 export function registerSideCalls() {
@@ -151,8 +151,5 @@ ${gaveGift ? "② ⟦回礼:物品名|类别⟧：若你确实想回赠一件礼
   });
 }
 
-export function ensureSideCalls() {
-  if (!getPromptDef("call", "fact.summary")) registerSideCalls();
-}
 
 registerSideCalls();

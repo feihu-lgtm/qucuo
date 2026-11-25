@@ -25,22 +25,10 @@ export default function ApiGenerationFields({
       <input id="api-temperature" aria-label="温度" style={inputStyle} type="number" min="0" max="2" step="0.1" value={cfg.temperature} onChange={e => patch({ temperature: parseFloat(e.target.value) || 0 })} />
     </div>
     <IntentRecognitionToggle cfg={cfg} patch={patch} />
-    {/* ── 提取层配置 ── */}
+    {/* ── 结构化小调用模型配置（判官听意/赔罪仲裁/私语观感等）── */}
     <div style={{ borderTop: "1px solid var(--ink-divider-blue)", paddingTop: 12, marginTop: 12 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-        <input
-          type="checkbox"
-          id="extractionEnabled"
-          checked={!!cfg.extractionEnabled}
-          onChange={e => patch({ extractionEnabled: e.target.checked })}
-          style={{ cursor: "pointer" }} />
-        <label htmlFor="extractionEnabled" style={{ fontSize: "var(--fs-sm)", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}>
-          启用双调用模式（大模型叙事 + 小模型提取状态）
-        </label>
-      </div>
       <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>
-        开启后：主调用只输出叙事散文，提取调用按意图类型单独提取状态变化。
-        提取调用可指定更小/更快的模型——空则沿用主模型。
+        判官前哨听意、赔罪仲裁、私语观感等结构化小调用可指定更小/更快的模型——空则沿用主模型。
       </div>
       <div style={{ borderTop: "1px solid var(--ink-divider-blue)", paddingTop: 12, marginTop: 12 }}>
         <label htmlFor="bookkeepEnabled" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "var(--fs-sm)", color: "var(--accent)", cursor: "pointer", userSelect: "none" }}><input type="checkbox" id="bookkeepEnabled" checked={cfg.bookkeepEnabled !== false} onChange={e => patch({ bookkeepEnabled: e.target.checked })} style={{ cursor: "pointer" }} />回合记账（人物旧账）</label>
@@ -49,9 +37,9 @@ export default function ApiGenerationFields({
       <div style={{ borderTop: "1px solid var(--ink-divider-blue)", paddingTop: 12, marginTop: 12 }}>
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>赔罪是否奏效先由小模型判一道选择题，系统定数值，叙事照写</div>
       </div>
-      {cfg.extractionEnabled && (
+      {true && (
         <>
-          <div style={labelStyle}>默认提取模型（所有意图共用，空则沿用主模型）</div>
+          <div style={labelStyle}>默认小调用模型（结构化小调用共用，空则沿用主模型）</div>
           <div style={{ display: "flex", gap: 6 }}>
             <input
               style={{ ...inputStyle, flex: 1 }}

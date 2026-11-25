@@ -9,7 +9,6 @@ import { labelMessage, makeBlock } from "../../domain/rules/prompt/tavernMapping
 import { buildDistantViewBlock } from "../../domain/rules/memory/daySummary.js";
 import { targetLedger } from "../../domain/rules/prompt/materials/index.js";
 import { embeddingReady } from "../ports/embeddingService.js";
-import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
 import { applyPresetOverrides, getActivePreset } from "../../domain/rules/prompt/presetSystem.js";
 import { createWebAi } from "../ports/ai.js";
 import { withAI } from "../ports/withAI.js";
@@ -34,7 +33,7 @@ function applyMainTextOverride(ov, id, fallback) {
 export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const ov = getPromptOverrides();
   const traceEvents = [];
-  const cmdSuffix = narrativeOnly ? "处理最新命令，直接输出叙事正文。" : "处理最新命令。纯JSON，字符串不换行。";
+  const cmdSuffix = "处理最新命令，直接输出叙事正文。";
   // 成文铁律放在 user 块最末尾（酒馆语义里插入深度=0、贴着生成处的最强位，
   // 见 ST prompt-manager：Depth 0 = 提示末尾 = 最强）。文体规则若埋在 system 里
   // 位置太靠前、常被模型当耳旁风，这条挪到最低深度逼它逐段照做。
@@ -175,9 +174,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   // （NSFW许可+格式复核+篇幅规格）。我们这里 phi 是真最后一条 = 真 prefill，
   // 两种技法不同：真 prefill 里堆规则更容易让模型顺着把规则续写完而不产正文，
   // 所以 NSFW/GM 规则挪去了 11 号位（user）。
-  const prefillHint = narrativeOnly
-    ? `\n回溯玩家输入「${d.cmd}」，直接续写正文：`
-    : `\n回溯玩家输入「${d.cmd}」，直接输出JSON：`;
+  const prefillHint = `\n回溯玩家输入「${d.cmd}」，直接续写正文：`;
   phiBlock.content += prefillHint;
   chatMessages.push(phiBlock);
 
@@ -190,10 +187,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     const g = d.gambleTalkCtx;
     const pers = g.persona || {};
     const dealWords = Math.min(d.apiCfg.targetWordCount || 220, 220);
-    const dealFmt = narrativeOnly
-      ? `直接输出对白叙事散文，写完即止。谈成明确协议（加价/让价/搭赠）则末尾另起一行附<deal>{"priceMult":1.0,"addItem":null}</deal>；未谈成不附。`
-      : `回复纯JSON，字符串不换行：{"output":["行1","行2"],"memory":"≤50字谈价关键事实（无进展可省略）"}
-谈成明确协议（加价/让价/搭赠）则另起一行附<deal>{"priceMult":1.0,"addItem":null}</deal>；未谈成不附。`;
+    const dealFmt = `直接输出对白叙事散文，写完即止。谈成明确协议（加价/让价/搭赠）则末尾另起一行附<deal>{"priceMult":1.0,"addItem":null}</deal>；未谈成不附。`;
     const gambleSys = `你是曲措乡这个武侠世界的说书人。此刻玩家在天都镇玉石料场的赌桌前，与竞价者「${g.bidderName}」就一块开出的玉料讨价还价——这是一场一对一的砍价对手戏，只演这一件事。
 
 [这位竞价者]
@@ -213,7 +207,7 @@ ${dealFmt}`;
     sysBlocks = [makeBlock("main", gambleSys)];
     chatMessages = [
       makeBlock("chatHistory", `[最近对话]\n${dealHist}`),
-      makeBlock("latestUser", `处理最新命令${narrativeOnly ? "，直接输出叙事正文。" : "。纯JSON，字符串不换行。"}${extraNudge || ""}`),
+      makeBlock("latestUser", `处理最新命令，直接输出叙事正文。${extraNudge || ""}`),
     ];
   }
 
@@ -232,21 +226,10 @@ ${dealFmt}`;
   // 个模型），排查"好感度怎么没变/怎么变得莫名其妙"时第一步就该确认走的
   // 是哪条路、双调用时具体是哪个模型在判——不写清楚，排查者会误以为
   // 主模型和判定好感度的模型是同一个。
-  if (d.apiCfg.extractionEnabled) {
-    // 与 MudRPG.act 里的 extractionSpecKey 保持同一套判定：对话模式走 TALK_CASUAL。
-    // 两处若不一致，这行 trace 报的模型名就会和真正发起提取的那个对不上。
-    const exKey = d.isTalk ? "TALK_CASUAL" : d.intent.code;
-    const exCfg = buildExtractionCfg(exKey, d.apiCfg);
-    traceEvents.push({
-      kind: "step", label: "调用模式", level: "info",
-      text: `双调用（叙事/状态分离）　主叙事模型=${getApiModel(d.apiCfg) || "未设置"}　提取模型(spec=${exKey})=${getApiModel(exCfg) || "未设置"}${getApiModel(exCfg) === getApiModel(d.apiCfg) ? "（未单独配置，沿用主模型）" : ""}`,
-    });
-  } else {
-    traceEvents.push({
-      kind: "step", label: "调用模式", level: "info",
-      text: `单调用（叙事+状态一次性产出）　主模型=${getApiModel(d.apiCfg) || "未设置"}`,
-    });
-  }
+  traceEvents.push({
+    kind: "step", label: "调用模式", level: "info",
+    text: `双调用叙事（主模型只产散文，状态由判官管线裁决）　主叙事模型=${getApiModel(d.apiCfg) || "未设置"}　判官管线=${d.apiCfg.judgePipelineEnabled ? "开" : "关（本轮状态零落账，属已知过渡缺口）"}`,
+  });
   // 世界书点灯明细：🟢亮了哪条（被什么词/哪个状态点亮）、⚫灭了哪条。排"AI 怎么不知道 X"用。
   if (_gateReport && (_gateReport.lit.length || _gateReport.dark.length)) {
     traceEvents.push({
@@ -298,7 +281,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       streamLogIndex = l.length - 1;
       return l;
     });
-    if (d.judgePipelineActive && narrativeOnly) {
+    if (d.judgePipelineActive) {
       // WO-13：判官管线的流式——⟦F⟧ 锚点实时剥除，\n---SEAL--- 后冻结屏幕。
       judgeStream = createStorytellerStream();
     }
@@ -311,7 +294,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       d.setLog(l => {
         if (d.isStale?.() || streamLogIndex == null) return l;
         const copy = [...l];
-        const shown = judgeStream ? judgeStream.screenText : (narrativeOnly ? fullSoFar : fullSoFar.slice(-200));
+        const shown = judgeStream ? judgeStream.screenText : fullSoFar;
         copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + shown + (judgeStream?.sealed ? "" : " ▌"), streaming: !judgeStream?.sealed };
         return copy;
       });
@@ -337,25 +320,20 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   const text = res.text || "";
   const finishReason = res.finishReason;
   if (stream) {
-    if (narrativeOnly) {
-      // 叙事模式：把流式条目转为永久日志项（而不是移除它）。谈价 <deal> 标签仅供系统，显示时剥掉。
-      const shown = text.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
-      d.setLog(l => {
-        if (d.isStale?.() || streamLogIndex == null) return l;
-        const copy = [...l];
-        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + shown, streaming: false, streamed: true };
-        return copy;
-      });
-    } else {
-      // JSON 模式：移除占位条目（正式 output 会在解析后追加）
-      d.setLog(l => (d.isStale?.() || streamLogIndex == null ? l : l.filter((_, i) => i !== streamLogIndex)));
-    }
+    // 叙事模式：把流式条目转为永久日志项。谈价 <deal> 标签仅供系统，显示时剥掉。
+    const shown = text.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
+    d.setLog(l => {
+      if (d.isStale?.() || streamLogIndex == null) return l;
+      const copy = [...l];
+      copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + shown, streaming: false, streamed: true };
+      return copy;
+    });
   }
   // WO-13：判官管线下剥锚点/切尾章——rawFull 只留屏幕正文，
   // 尾章与锚点落段随结果带回给 runTurn 做 sealVerifier 校对。
   if (d.judgePipelineActive) {
     const split = splitStorytellerText(text);
-    if (stream && narrativeOnly) {
+    if (stream) {
       d.setLog(l => {
         if (d.isStale?.() || streamLogIndex == null) return l;
         const copy = [...l];

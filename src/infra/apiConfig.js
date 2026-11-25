@@ -67,7 +67,7 @@ export function defaultConfig() {
     contextWindow: 16, // 保留最近多少轮历史
     // 召回精排（可选）：开了之后每轮多一次 /rerank 调用，用 cross-encoder
     // 对粗排候选做精排。粗排（三路RRF含词法）基线已经不差，所以默认关——
-    // 想要精度的人自己开，跟 extractionEnabled 一个待遇。
+    // 想要精度的人自己开。
     rerankEnabled: false,
     rerankEndpoint: "",   // 留空则复用 embedding 的 endpoint
     rerankApiKey: "",     // 留空则复用 embedding 的 key
@@ -89,7 +89,6 @@ export function defaultConfig() {
     // 提取层（叙事/状态分离模式）：大模型只输出叙事正文，状态由系统/软结算裁决后
     // 小模型按意图提取残余字段；settle 回合跳过提取。关掉则回到单调用 JSON 老路
     //（回放/离线兜底，确定性 fixture 依赖它）。
-    extractionEnabled: false,
     // 判官管线（WO-13）：前哨听意+纯函数判官+锚点流式+尾章校对落账。默认开；
     // 关掉回到旧提取/单调用链路（留一个迭代供 CLI 老录制回放对比）。
     judgePipelineEnabled: true,

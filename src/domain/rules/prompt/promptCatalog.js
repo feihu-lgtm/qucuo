@@ -4,7 +4,7 @@ import { getPromptDef, getPromptOverrides, listPromptDefs } from "./registry.js"
 import { estimatePromptTokens } from "./buildPrompt.js";
 import {
   ACTION_VIEWS, INJECTION_PATHS, STATIC_TEXT_KEYS,
-  blocksForAction, giftNarrativeLawExample, giftSettleLawExample, schemaKeyFor,
+  blocksForAction, giftNarrativeLawExample, giftSettleLawExample,
 } from "./injectionBlocks.js";
 import * as ENGINE from "./enginePrompts.js";
 import { NSFW_RULES } from "./modePrimer.js";
@@ -105,7 +105,6 @@ function editableFor(id, blockDef, legacyKind) {
 function resolveMainStaticText(id, actionView, { presetScenario } = {}) {
   const key = STATIC_TEXT_KEYS[id];
   if (key && ENGINE[key]) return ENGINE[key];
-  if (id === "schema" && actionView) return ENGINE[schemaKeyFor(actionView)];
   if (id === "catalog") return ENGINE.CATALOG_TAIL;
   if (id === "nsfw_rules") return NSFW_RULES;
   if (id === "user_prose") return DEFAULT_PROSE_RULE;
@@ -231,7 +230,7 @@ export function getCallControlMatrix(
   let rawItems = [];
   if (managed.baseCallId === "turn.main") {
     const view = ACTION_VIEWS.find((v) => v.id === managed.actionId) || ACTION_VIEWS[0];
-    const baseList = blocksForAction(view.id, mode);
+    const baseList = blocksForAction(view.id);
     const seen = new Set(baseList.map((b) => b.id));
     const extras = [
       { id: "target_ledger", lit: !view.gm, off: "创造模式可略过旧账", kind: "dynamic" },

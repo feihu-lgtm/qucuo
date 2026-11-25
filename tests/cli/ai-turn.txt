@@ -1,7 +1,5 @@
-# A mock AI turn commits both narrative and state from the same response.
+# A mock AI turn commits narrative; WO-16 后判官关闭时状态零落账（过渡缺口）。
 :new
 探索石阶
 :expect time=7
-:expect pot=3
-:expect varTree.世界.天气="晴"
 :state
