@@ -365,6 +365,13 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       // 自由文本 learn（无 learnRequest）维持下方裁量/天机券/降级口径不变。
       const lreq = action.learnRequest;
       if (lreq && typeof lreq === "object" && Array.isArray(lreq.freshSkills)) {
+        // 防御性原子口径（返修）：正常按钮路径 feature 已验资，但信封银两不足时
+        // 整批零 facts——不得出现技能照得但银两只扣部分的半落账。
+        const moneyNow = Number(envelope.char?.money ?? 0);
+        if (Number.isFinite(lreq.totalPrice) && lreq.totalPrice > 0 && moneyNow < lreq.totalPrice) {
+          notes.push(`束脩不足，授业未成（需银${lreq.totalPrice}两，现有${moneyNow}两）`);
+          continue;
+        }
         anyAccepted = true;
         facts.push({
           id: nextFactId(), op: "BESTOW_SKILL", npc: npc.name,

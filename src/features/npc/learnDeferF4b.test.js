@@ -130,4 +130,28 @@ describe("judgeTurn learn 直签转写（learnRequest）", () => {
     expect(v.facts.find((f) => f.op === "BESTOW_SKILL" && Array.isArray(f.skills))).toBeUndefined();
     expect(v.facts.find((f) => f.op === "CHANGE_VITALS_SILVER" && f.moneyDelta < 0)).toBeUndefined();
   });
+  it("束脩防御性原子 guard：信封银两不足整批零 facts（返修）", () => {
+    const env = mkEnvelope();
+    env.char = { money: 5, hp: [80, 100] }; // 不足 30 两束脩
+    const v = judgeTurn(env, { read: "", refIds: [], actions: [learnAction(sampleReq)], proposals: [] }, { rng: () => 0.99 });
+    expect(v.facts.find((f) => f.op === "BESTOW_SKILL")).toBeUndefined();
+    expect(v.facts.find((f) => f.op === "CHANGE_VITALS_SILVER")).toBeUndefined();
+    expect(v.facts.find((f) => f.op === "MUTATE_SOCIAL")).toBeUndefined();
+    expect((v.notes || []).join("")).toContain("束脩不足");
+  });
+
+  it("同名异 id 照授不误跳过——定价按 id，跳过也只按 id（Review 修）", () => {
+    const state = makeState({ skills: [{ id: "kf_other", name: "太祖长拳", type: "外功" }] });
+    const facts = [{
+      id: "F1_1", op: "BESTOW_SKILL", npc: "老拳师",
+      skills: [{ id: "mv_taizu", name: "太祖长拳", type: "外功", quality: "绿" }],
+    }];
+    const r = materializeFacts(state, facts, []);
+    // 同名异 id：照授（与 legacy/定价同语义）——两条共存
+    expect((r.changes?.skills || []).filter((s) => s.name === "太祖长拳")).toHaveLength(2);
+    // 同 id 才幂等跳过
+    const r2 = materializeFacts({ ...state, skills: r.changes.skills }, facts, []);
+    expect(r2.changes?.skills).toBeUndefined();
+  });
+
 });

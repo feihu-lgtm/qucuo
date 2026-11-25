@@ -203,7 +203,10 @@ export function materializeFacts(state, facts, compiledWarrants) {
         if (Array.isArray(fact.skills) && fact.skills.length) {
           for (const raw of fact.skills) {
             if (!raw || typeof raw !== "object" || !raw.name) continue;
-            if (skills.some((sk) => sk.id === raw.id || sk.name === raw.name)) continue; // 已习得幂等
+            // 只按 id 幂等（Review 修）：tryLearnFromMaster 按 move id 定价——同名异 id
+            // 的招 legacy 也照收照授（重复条目），若此处按名跳过会出现「花了钱没学到」；
+            // 同 id 跳过足够保证同一事实重放幂等。
+            if (raw.id ? skills.some((sk) => sk.id === raw.id) : skills.some((sk) => sk.name === raw.name)) continue;
             const entry = { ...raw };
             if (entry.active) {
               const routeKey = entry.moveType || entry.type;
