@@ -56,7 +56,15 @@ export function clearServerRev(key, spaceId = "") {
   delete revs[ledgerKey(spaceId, key)];
   _lsWrite(SERVER_REVS_KEY, revs);
 }
-export function clearAllServerRevs() { _lsWrite(SERVER_REVS_KEY, {}); }
+// wipe 只清被抹空间的条目（Review 修）——全清会让其他空间的成功推送台账陪葬，
+// 切回后 expectedRev 回 0 首推必假冲突。
+export function clearAllServerRevs(spaceId = "") {
+  if (!spaceId) { _lsWrite(SERVER_REVS_KEY, {}); return; }
+  const revs = getServerRevs();
+  const prefix = `${spaceId}::`;
+  for (const k of Object.keys(revs)) if (k.startsWith(prefix)) delete revs[k];
+  _lsWrite(SERVER_REVS_KEY, revs);
+}
 export function expectedRevFor(key, spaceId = "") { return getServerRevs()[ledgerKey(spaceId, key)] ?? 0; }
 
 // ── WebCrypto AES-GCM 加密封装 ─────────────────────────────────────────

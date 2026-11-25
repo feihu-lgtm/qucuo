@@ -258,7 +258,7 @@ export async function wipeCloudAll() {
     try { _activeAbort?.abort(); } catch { /* */ }
     _activeAbort = null;
     _lsWrite(QUEUE_KEY, []);
-    clearAllServerRevs();
+    clearAllServerRevs(binding.spaceId);
     _lsWrite(CONFLICTS_KEY, []);
     return { ok: true };
   } catch (e) {

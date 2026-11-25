@@ -165,11 +165,11 @@ export function StorageDriverSection() {
         <div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
             <input style={{ ...inputStyle, flex: 1 }} defaultValue={cfg.cloudUrl} placeholder="云服务地址（如 https://hub.example.com）"
-              onBlur={(e) => patchCfg({ cloudUrl: e.target.value.trim(), hubToken: "", boundAt: e.target.value.trim() ? Date.now() : null })} />
+              onBlur={(e) => { const v = e.target.value.trim(); if (v !== (cfg.cloudUrl || "")) patchCfg({ cloudUrl: v, hubToken: "", boundAt: v ? Date.now() : null }); }} />
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
             <input style={{ ...inputStyle, flex: 1 }} defaultValue={cfg.spaceId || ""} placeholder="空间编号 spaceId（存档归属的云端空间）"
-              onBlur={(e) => patchCfg({ spaceId: e.target.value.trim(), hubToken: "" })} />
+              onBlur={(e) => { const v = e.target.value.trim(); if (v !== (cfg.spaceId || "")) patchCfg({ spaceId: v, hubToken: "" }); }} />
             <input style={{ ...inputStyle, flex: 1 }} type="password" defaultValue={cfg.hubToken || ""} placeholder="memory-hub 凭证 token"
               onBlur={(e) => patchCfg({ hubToken: e.target.value.trim() })} />
           </div>
