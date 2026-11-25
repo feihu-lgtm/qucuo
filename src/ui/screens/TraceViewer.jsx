@@ -7,6 +7,12 @@ import { chromeBtn } from "../../utils/theme.js";
 import { gameStore, useGameStore, getGameEpoch } from "../../store/gameStore.js";
 import { shadowAggregates } from "../../engine/act/shadow/shadowJudge.js";
 import { formatShadowVerdicts, formatAggregate } from "../../engine/act/shadow/shadowFormat.js";
+import {
+  releaseMetricAggregates,
+  formatReleaseMetricLines,
+  formatReleaseGateMarkdown,
+  resolveReleaseMetricsEnabled,
+} from "../../engine/ports/releaseMetrics.js";
 import LiveClockText from "../components/LiveClockText.jsx";
 
 const LAYER = { ui: "入口", app: "应用", feature: "功能", domain: "规则判定", engine: "引擎", rules: "世界规则", result: "结果", shadow: "影子" };
@@ -51,7 +57,13 @@ export default function TraceViewer({ theme, onClose, onReport }) {
   const gameTime = typeof rawTime === "number" && Number.isFinite(rawTime) ? rawTime : gameStore.getState().time;
   const closeGuard = useOverlayCloseGuard(onClose);
   const [copied, setCopied] = useState("");
+  const [reportCopied, setReportCopied] = useState("");
   const button = { ...chromeBtn(theme), fontFamily: "inherit" };
+  const epoch = String(getGameEpoch());
+  const shadowAgg = shadowAggregates(epoch);
+  const metricsAgg = releaseMetricAggregates(epoch);
+  const metricLines = formatReleaseMetricLines(metricsAgg);
+  const showReleaseMetrics = resolveReleaseMetricsEnabled() || Boolean(metricLines);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 70, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${theme.bg} 78%, transparent)` }} {...closeGuard}>
       <section role="dialog" aria-modal="true" aria-label="全流程日志" style={{
@@ -76,16 +88,35 @@ export default function TraceViewer({ theme, onClose, onReport }) {
           <button type="button" style={button} onClick={onClose}>关闭</button>
         </header>
         {(() => {
-          const aggLines = formatAggregate(shadowAggregates(String(getGameEpoch())));
+          const aggLines = formatAggregate(shadowAgg);
           return aggLines ? (
             <details style={{ border: `1px dashed ${theme.border}`, padding: "4px 8px", marginBottom: 8 }}>
-              <summary style={{ cursor: "pointer", color: theme.textDim }}>影子对账聚合（本存档 epoch {String(getGameEpoch())}）</summary>
+              <summary style={{ cursor: "pointer", color: theme.textDim }}>影子对账聚合（本存档 epoch {epoch}）</summary>
               <div style={{ color: theme.textDim, fontSize: "var(--fs-xs)", marginTop: 4 }}>
                 {aggLines.map((line) => <div key={line}>{line}</div>)}
               </div>
             </details>
           ) : null;
         })()}
+        {showReleaseMetrics && (
+          <details style={{ border: `1px dashed ${theme.border}`, padding: "4px 8px", marginBottom: 8 }}>
+            <summary style={{ cursor: "pointer", color: theme.textDim }}>放行指标观测（本存档 epoch {epoch}）</summary>
+            <div style={{ color: theme.textDim, fontSize: "var(--fs-xs)", marginTop: 4 }}>
+              {metricLines
+                ? metricLines.map((line) => <div key={line}>{line}</div>)
+                : <div>暂无 turn.intake / SEAL 采样。</div>}
+              <div style={{ marginTop: 6 }}>
+                <button type="button" style={button} onClick={async () => {
+                  try {
+                    const md = formatReleaseGateMarkdown({ epoch, shadowAgg, metricsAgg });
+                    await navigator.clipboard.writeText(md);
+                    setReportCopied("已复制报告");
+                  } catch { setReportCopied("复制失败"); }
+                }}>{reportCopied || "复制报告"}</button>
+              </div>
+            </div>
+          </details>
+        )}
         {trees.length === 0 && <p style={{ color: theme.textDim }}>还没有行动记录。</p>}
         {trees.map((turn) => {
           const gameClock = fmtGameClock(turn);

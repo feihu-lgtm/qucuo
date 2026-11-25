@@ -88,6 +88,10 @@ export function validateEmergenceSeal(sealData, {
 } = {}) {
   const notes = [];
   const warnings = [];
+  // 申报被拒清单（放行指标用）：模型在 SEAL 里声明了传闻/登场但校验没过——
+  // 每一条都是模型申报质量失败的证据。重复传闻剔除不计入：传闻册不进 prompt，
+  // 模型无从知晓在册名单，冗余非失败。
+  const rejections = [];
   const excluded = exclusionSet({ roomNpcs, playerName });
   const rumors = varTree?.世界?.[RUMOR_KEY] || {};
 
@@ -95,9 +99,14 @@ export function validateEmergenceSeal(sealData, {
   const rawMentioned = Array.isArray(sealData?.mentionedNewNpcs) ? sealData.mentionedNewNpcs : [];
   for (const name of rawMentioned) {
     const trimmed = typeof name === "string" ? name.trim() : "";
-    if (rumors[trimmed]) { notes.push(`「${trimmed}」已在传闻册，重复申报剔除`); continue; }
+    if (rumors[trimmed]) {
+      // 重复申报只进 notes 不进 rejections：传闻册不进 prompt，模型无从知晓
+      // 哪些名字已在册——重复是冗余不是质量失败，不能压放行指标 passed 率。
+      notes.push(`「${trimmed}」已在传闻册，重复申报剔除`); continue;
+    }
     if (!isValidNewName(trimmed, { screenText, excluded })) {
-      notes.push(`传闻申报「${trimmed || "?"}」未过校验（未见正文/在册/非法形），丢弃`);
+      const msg = `传闻申报「${trimmed || "?"}」未过校验（未见正文/在册/非法形），丢弃`;
+      notes.push(msg); rejections.push(msg);
       continue;
     }
     if (!mentionedNewNpcs.includes(trimmed)) mentionedNewNpcs.push(trimmed);
@@ -109,17 +118,21 @@ export function validateEmergenceSeal(sealData, {
     const name = typeof rawEmerged.name === "string" ? rawEmerged.name.trim() : "";
     const description = typeof rawEmerged.description === "string" ? rawEmerged.description.trim() : "";
     if (!name || !rumors[name]) {
-      notes.push(`登场申报「${name || "?"}」无对应传闻，丢弃`);
+      const msg = `登场申报「${name || "?"}」无对应传闻，丢弃`;
+      notes.push(msg); rejections.push(msg);
     } else if (name.length > MAX_NAME_LEN || name.includes("雪豹") || excluded.has(name)) {
       // 与传闻申报同一套排除：旧存档可能有脏传闻，登场校验不能指望册子天然干净
-      notes.push(`登场申报「${name}」命中排除名单（玩家/在场/同伴雪豹/驻场/超长），丢弃`);
+      const msg = `登场申报「${name}」命中排除名单（玩家/在场/同伴雪豹/驻场/超长），丢弃`;
+      notes.push(msg); rejections.push(msg);
     } else if (!String(screenText || "").includes(name)) {
-      notes.push(`登场申报「${name}」未在正文登场，丢弃`);
+      const msg = `登场申报「${name}」未在正文登场，丢弃`;
+      notes.push(msg); rejections.push(msg);
     } else if (!description || description.length > 40 || /\d/.test(description)) {
-      warnings.push(`登场申报「${name}」定性描述非法（空/超长/带数值），丢弃`);
+      const msg = `登场申报「${name}」定性描述非法（空/超长/带数值），丢弃`;
+      warnings.push(msg); rejections.push(msg);
     } else {
       emergedNpc = { name, description };
     }
   }
-  return { mentionedNewNpcs, emergedNpc, notes, warnings };
+  return { mentionedNewNpcs, emergedNpc, notes, warnings, rejections };
 }
