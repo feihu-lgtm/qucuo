@@ -1,4 +1,4 @@
-import { snowLeopardRule } from "../src/features/quest/snowLeopard.js";
+import { snowLeopardRule, resolveSnowInteraction } from "../src/features/quest/snowLeopard.js";
 import { readFile, writeFile } from "node:fs/promises";
 import { isDeepStrictEqual } from "node:util";
 import { resolve } from "node:path";
@@ -299,6 +299,20 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
       if (opts.echoCommand || opts.extraReplies?.length) {
         addLog([{ t: "cmd", text: `> ${opts.displayCmd || cmd}` }, ...(opts.extraReplies || [])]);
       }
+      // WO-16C-snow：CLI 与 web 同口径——自由文本挠痒/喂肉在叙事前确定性
+      // 落定（resolveIntent 只管 web 入口，CLI 直进 playTurn，故在此补同一层）。
+      let snowNote = "";
+      if (!isTalk && !opts.settle) {
+        const snowHit = resolveSnowInteraction({
+          questProgress: state.questProgress || {}, flags: state.flags || [],
+          inv: state.inv || [], room: state.room || {}, innerRoomName: state.innerRoomName,
+          char: state.char || {},
+        }, cmd);
+        if (snowHit) {
+          applyResult(featureCtx, { changes: snowHit.changes, logs: snowHit.logs }, { turn: lineTurn, feature: "snowInteraction" });
+          snowNote = snowHit.note;
+        }
+      }
       const result = await playTurn({
         apiCfg: apiConfig,
         ai,
@@ -311,7 +325,7 @@ export function createSession({ out = defaultOutput, cwd = process.cwd(), seed, 
           char: state.char || {},
           inv: state.inv || [],
           skills: state.skills || [],
-          collectNote: opts.intentPlanNote || "",
+          collectNote: (opts.intentPlanNote || "") + snowNote,
           dao: state.dao || {},
           flags: state.flags || [],
           questProgress: state.questProgress || {},

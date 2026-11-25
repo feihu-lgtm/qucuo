@@ -127,13 +127,14 @@ describe("收复雪豹", () => {
   it("accepts only meat and scratch AI flags while active and locally present", () => {
     const flags = [...SNOW_SPIRITS.map((s) => s.flag), SNOW_TRUSTED, "snow_leopard_invited", "snow_spirit_cheat", "other_quest"];
     const state = active();
-    expect(filterSnowModelFlags(flags, state)).toEqual(["snow_spirit_meat", "snow_spirit_scratch", "other_quest"]);
+    // WO-16C-snow：全部 snow 旗系统确权——模型输出一律剥除，任何场景都不放行
+    expect(filterSnowModelFlags(flags, state)).toEqual(["other_quest"]);
     for (const other of [initial(), { ...state, room: { npcs: [] } }, { ...state, innerRoomName: "猎户小屋" }]) {
       expect(filterSnowModelFlags(flags, other)).toEqual(["other_quest"]);
     }
     // 纯函数化后 commitModelFlags 返回 { changes: { flags } } 由 commitRound 落盘
     const out = commitModelFlags({ ...state, p: { delta: { flags_add: flags } } });
-    expect(out.changes.flags([])).toEqual(["snow_spirit_meat", "snow_spirit_scratch", "other_quest"]);
+    expect(out.changes.flags([])).toEqual(["other_quest"]);
   });
 
   it.each([0, 123])("uses the injected invitation clock %s exactly once", (now) => {
@@ -167,10 +168,14 @@ describe("收复雪豹", () => {
   it("passes quest context to gift settlements and dual-call extraction", () => {
     const state = active();
     const prompt = { ...state, dao: {}, apiCfg: {}, innerRoomName: "村口" };
-    const built = assemblePrompt({ prompt }, "赠肉给雪豹", { settleNpc: "雪豹" }, [], [], [], []);
+    const built = assemblePrompt({ prompt }, "赠肉给雪豹", { settleNpc: "雪豹", settleKind: "gift" }, [], [], [], []);
+    // WO-16C：赠礼提示改为「系统已结算」口径，仍点名肉食旗标说明归属
     expect(built.snowLeopardContext).toContain("snow_spirit_meat");
+    expect(built.snowLeopardContext).toContain("系统结算");
     const extraction = createExtractionState({ state: { room: state.room, char: state.char }, prompt }, { cmd: "替雪豹挠痒" });
-    expect(snowLeopardNote(extraction)).toContain("snow_spirit_scratch");
+    // 自由行动提示不再让 AI 写旗——改为全部系统结算声明
+    expect(snowLeopardNote(extraction)).toContain("系统确定性结算");
+    expect(snowLeopardNote(extraction)).not.toContain("在delta.flags_add加入");
     expect(snowLeopardHint({ ...state, cmd: "雪豹怎么了" })).toContain("替它挠痒");
     expect(snowLeopardHint({ ...state, cmd: "你好" })).toBe("");
     expect(snowLeopardHint({ ...state, cmd: "雪豹怎么了", flags: ["snow_spirit_scratch"] })).toBe("");
@@ -179,7 +184,7 @@ describe("收复雪豹", () => {
   it("injects feeding, scratching and wound guidance only for active present leopard", async () => {
     const state = active();
     const note = buildQuestStageNote(state);
-    for (const text of ["像母鸡一样蹲着", "非肉则拒吃", "前爪有陈年旧伤", "snow_spirit_meat", "snow_spirit_scratch"]) expect(note).toContain(text);
+    for (const text of ["像母鸡一样蹲着", "前爪有陈年旧伤", "系统确定性结算"]) expect(note).toContain(text);
     expect(snowLeopardNote(initial())).toBe("");
     expect(snowLeopardNote({ ...state, room: { npcs: [] } })).toBe("");
     expect(snowLeopardNote({ ...state, flags: ["snow_spirit_scratch", "snow_spirit_medicine"] })).not.toContain("像母鸡");
