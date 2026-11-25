@@ -17,6 +17,33 @@ import { ensureUnifiedCalls, setMainTurnAssembler } from "../../domain/rules/pro
 import { getPromptOverrides } from "../../domain/rules/prompt/registry.js";
 import { buildAngryNote } from "../prompt/assemblePrompt.js";
 import { getApiModel } from "../../content/apiModel.js";
+import { streamWithFirstTokenFallback, newBackfillKey } from "../ports/backfill.js";
+import { timeoutFallbackLine } from "../../domain/rules/clapboard/timeoutFallback.js";
+
+// WO-16H-H2 首字超时预算（底稿 2.3.1）：关思考 3.5s、开思考 6.5s。
+export function firstTokenBudgetFor(cfg) {
+  return String(cfg?.thinkingMode || "off") !== "off" ? 6500 : 3500;
+}
+
+// 过渡句喂料：类别用意图中文label（KIND_LINES 按 includes 命中），NPC 优先搭话对象否则在场首位，
+// personality 不在场册就用 brief 兜底；place 取当前房间名。
+function fallbackFeed(d) {
+  const roomNpcs = d.room?.npcs || [];
+  // 搭话对象优先：对象不在在场名册（离场/名册滞后）时也不能随便抓在场首位顶替——
+  // 过渡句会念错人名；用 talkTarget 名字本身（personality 不可得就空着降级通用句）。
+  const hit = (d.talkTarget && roomNpcs.find((n) => n?.name === d.talkTarget))
+    || (d.talkTarget ? { name: d.talkTarget, personality: "" } : null)
+    || roomNpcs[0] || null;
+  return {
+    // 类别匹配源必须带玩家原话：路由器 label（日常闲聊/调查搜索事件行动…）不含
+    // 拜师/搜刮/敷药/打坐/邀伴任何关键词，单看 label 五类过渡句永远选不出。
+    // 「查看类不走搜刮」由 keys 侧保证（不含看/查），玩家原话里写了翻找/箱柜
+    // 本就该算搜刮语义，不算误配。
+    kind: `${d.intent?.label || ""} ${d.cmd || ""}`,
+    npc: hit ? { name: hit.name || "", personality: hit.personality || hit.brief || "" } : null,
+    place: d.room?.name || "",
+  };
+}
 
 const webAi = createWebAi();
 
@@ -68,6 +95,7 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
       inSeaOfMind: !!d.inSeaOfMind,
       gm: d.gm,
       judgeActive: !!d.judgeRuleBlock,
+      groupTalkActive: !!d.groupTalkRuleBlock,
       playerName: d.charName || "主角", // memory摘要统一用这个称呼，不用你/我，避免人称混乱
       activePreset: d.activePreset,
       // 物件志（批四）：只有本轮真可能发出物品才挂——移动拾取命中/战斗/创造模式。
@@ -158,9 +186,19 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   const dynPrefix = dynWorld ? dynWorld + "\n\n" : "";
   const steerNote = [dynBlocks.lenNote, _bodyGate.text].filter(Boolean).join("\n");
   const steerSuffix = (steerNote ? steerNote + "\n" : "") + proseRule;
+  // WO-16H-H1 尾章指引三选一：判官激活→判官铁律块；多人群聊→群聊尾章块；
+  // 单人对话/结算回合→留空不收尾章税。
+  const sealRulePart = d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock
+    : d.groupTalkRuleBlock ? "\n\n" + d.groupTalkRuleBlock
+    : "";
+  // WO-16H-H1 非 settle 拼装固定十二段（roadmap 4.4）：①规则前缀 ②动态前缀（声线/
+  // 场景/人物小传/物件志/谈物规矩/心海）③状态与@体感态势（d.ctx 内含在场活人切片）
+  // ④远方消息 ⑤往事召回 ⑥目标旧账 ⑦久别重逢 ⑧信息域 ⑨@江湖契约与宿敌
+  // （WO-22/23 启用前留空）⑩尾章指引 ⑪篇幅与文体导向。现状即此序，最小重排不重写。
+  const pactNemesisPart = ""; // ⑨占位：WO-22/23 接线点，启用前留空
   const inChatContent = d.isSettle
     ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + "\n\n" + steerSuffix
-    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + (d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock : "") + "\n\n" + steerSuffix;
+    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + pactNemesisPart + sealRulePart + "\n\n" + steerSuffix;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
@@ -289,9 +327,65 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   const ai = d.ai || webAi;
   if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
 
+  // WO-16H-H2 首字超时接主循环：判官/群聊尾章激活的叙事流式主路径，三态全权
+  // 委托 WO-08 包装器——超时过渡句/首字原位抹换/降级都按 fillKey 走；
+  // 剥锚点、截 ---SEAL--- 在 invoke 的 onChunk 变换里做，首字流先经
+  // createStorytellerStream() 再上屏，锚点与尾章永不泄到屏幕。
+  if (stream && narrativeOnly) {
+    let rawText = "";
+    const fb = await streamWithFirstTokenFallback({
+      invoke: async (onChunk) => {
+        const res = await withAI(
+          "turn.main",
+          { payload },
+          {
+            ai,
+            apiCfg: effectiveCfg,
+            isStale: d.isStale,
+            stream: true,
+            onChunk: (_delta, fullSoFar) => {
+              if (d.judgePipelineActive) {
+                // 全量重放维持滑动缓冲（纯函数重算幂等，与原接线同一手法）
+                const judgeStream = createStorytellerStream();
+                judgeStream.push(fullSoFar);
+                onChunk(null, judgeStream.screenText);
+              } else {
+                onChunk(null, fullSoFar);
+              }
+            },
+            intent,
+            recallInfo,
+            modelOptions,
+          },
+        );
+        if (!res.ok && res.error) throw res.error;
+        rawText = res.text || "";
+        // 上屏终稿：判官管线是剥锚截尾章后的屏幕正文；其余剥 <deal> 系统标签
+        const finalDisplay = d.judgePipelineActive
+          ? splitStorytellerText(rawText).screenText.trim()
+          : rawText.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
+        return { text: finalDisplay, finishReason: res.finishReason };
+      },
+      setLog: d.setLog,
+      isStale: d.isStale,
+      key: newBackfillKey("ftm"),
+      fallback: fallbackFeed(d),
+      firstTokenBudgetMs: Number.isFinite(d._firstTokenBudgetMs) ? d._firstTokenBudgetMs : firstTokenBudgetFor(effectiveCfg),
+    });
+    if (!fb.ok && fb.error) throw fb.error;
+    if (d.isStale?.() || fb.finishReason === "stale") return { rawFull: "", finishReason: "stale" };
+    if (d.judgePipelineActive) {
+      const split = splitStorytellerText(rawText);
+      return { rawFull: split.screenText, finishReason: fb.finishReason, sealText: split.sealText, sealAnchors: split.anchors, sealed: split.sealed };
+    }
+    return { rawFull: rawText, finishReason: fb.finishReason };
+  }
+
   let streamLogIndex = null;
   let onChunk;
   let judgeStream = null;
+  let firstChunkSeen = false;
+  let fbTimer = null;
   if (stream) {
     d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
     d.setLog(l => {
@@ -299,11 +393,24 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       streamLogIndex = l.length - 1;
       return l;
     });
-    if (d.judgePipelineActive && narrativeOnly) {
+    if ((d.judgePipelineActive || d.groupTalkRuleBlock) && narrativeOnly) {
       // WO-13：判官管线的流式——⟦F⟧ 锚点实时剥除，\n---SEAL--- 后冻结屏幕。
+      // WO-16H-H1：群聊尾章同走剥离（无锚点，只切 ---SEAL--- 尾章），否则尾章漏上屏。
       judgeStream = createStorytellerStream();
     }
+    // 遗留 JSON 单调用流式：同一首字超时口径，inline 过渡句写进占位行位，
+    // 首字抵达后 onChunk 按下标覆盖同位——与 fillKey 抹换同效。
+    fbTimer = setTimeout(() => {
+      if (firstChunkSeen) return;
+      d.setLog(l => {
+        if (d.isStale?.() || streamLogIndex == null || firstChunkSeen) return l;
+        const copy = [...l];
+        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + timeoutFallbackLine(fallbackFeed(d)) + " ▌", streaming: true, timeoutFallback: true };
+        return copy;
+      });
+    }, Number.isFinite(d._firstTokenBudgetMs) ? d._firstTokenBudgetMs : firstTokenBudgetFor(effectiveCfg));
     onChunk = (_delta, fullSoFar) => {
+      firstChunkSeen = true;
       if (judgeStream) {
         // 以全量重放维持滑动缓冲（chunk 重放幂等：纯函数重算，成本 O(len)，可接受）
         judgeStream = createStorytellerStream();
@@ -332,6 +439,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       modelOptions,
     },
   );
+  if (fbTimer) clearTimeout(fbTimer);
   if (!res.ok && res.error) throw res.error;
   if (d.isStale?.() || res.finishReason === "stale") return { rawFull: "", finishReason: "stale" };
 
@@ -354,7 +462,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   }
   // WO-13：判官管线下剥锚点/切尾章——rawFull 只留屏幕正文，
   // 尾章与锚点落段随结果带回给 runTurn 做 sealVerifier 校对。
-  if (d.judgePipelineActive) {
+  if (d.judgePipelineActive || d.groupTalkRuleBlock) {
     const split = splitStorytellerText(text);
     if (stream && narrativeOnly) {
       d.setLog(l => {

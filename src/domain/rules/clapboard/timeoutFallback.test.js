@@ -31,6 +31,21 @@ describe("timeoutFallbackLine", () => {
     expect(timeoutFallbackLine()).toBe("风雪掠过檐角，四下里静了一瞬。");
   });
 
+  it("WO-16H 五类缺口：拜师/搜刮/敷药/打坐/邀伴字面照 roadmap", () => {
+    expect(timeoutFallbackLine({ kind: "拜师", npc: { name: "才旦" } })).toBe("才旦上下打量你，没立刻点头。");
+    expect(timeoutFallbackLine({ kind: "拜师" })).toBe("场院里一时静了下来。");
+    expect(timeoutFallbackLine({ kind: "搜刮", npc: { name: "才旦" } })).toBe("才旦站在一旁看着，没作声。");
+    expect(timeoutFallbackLine({ kind: "搜刮" })).toBe("你伸手往里探去，指尖碰着些灰土。");
+    expect(timeoutFallbackLine({ kind: "敷药", npc: { name: "大娘" } })).toBe("大娘递过一块干净粗布。");
+    expect(timeoutFallbackLine({ kind: "敷药" })).toBe("苦涩药味在指尖散开。");
+    expect(timeoutFallbackLine({ kind: "打坐", npc: { name: "才旦" } })).toBe("才旦放轻了脚步站在一旁。");
+    expect(timeoutFallbackLine({ kind: "打坐" })).toBe("你闭目收拢喘息，四下静了下来。");
+    expect(timeoutFallbackLine({ kind: "邀伴", npc: { name: "才旦" } })).toBe("才旦掂了掂行囊，朝你看过来。");
+    expect(timeoutFallbackLine({ kind: "邀伴" })).toBe("长路在脚下铺开，只欠一句准话。");
+    // 查看类不走搜刮：「查看四周」不含搜刮 keys，落不到翻箱句
+    expect(timeoutFallbackLine({ kind: "查看" })).toBe("风雪掠过檐角，四下里静了一瞬。");
+  });
+
   it("过渡句不涉状态变更：无 NPC 时类别句降级为环境描写", () => {
     const line = timeoutFallbackLine({ kind: "赠送" });
     expect(line).toBe("四下里静了一瞬。");
