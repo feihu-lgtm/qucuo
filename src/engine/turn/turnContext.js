@@ -57,6 +57,9 @@ export function createTurnContext({ plan, env }) {
 
   const callDeps = (memory = {}, prepared = {}) => ({
     varTree: memory.varTree ?? getGameState?.()?.varTree, gm, isSettle, isTalk, intent, apiCfg, narrator, room, time,
+    // WO-24D 备料只读注入：单点进 callDeps，runTurn 判官喂料与 actCall 主叙事块同源；
+    // 引擎层不许 import store，只能从 io.getGameState 读——缓存绝不进 varTree 事实账。
+    prepSeeds: getGameState?.()?.prepSeeds, innerRoomName,
     scenario: preset.scenario, budgetInstruction: prepared.budgetInstruction,
     npcLoreBlockWithQuest: prepared.npcLoreBlockWithQuest || "",
     visibleNpcsCount: prepared.visibleNpcsCount || 0, visibleNpcNames: (prepared.visibleNpcsForAI || []).map((n) => n?.name ?? n).filter(Boolean), charName: char.name, charBodyProfile: char.bodyProfile,

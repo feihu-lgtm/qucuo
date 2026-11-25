@@ -9,6 +9,7 @@ import { labelMessage, makeBlock } from "../../domain/rules/prompt/tavernMapping
 import { buildDistantViewBlock } from "../../domain/rules/memory/daySummary.js";
 import { buildPactInjectBlock } from "../../domain/rules/judge/pactLines.js";
 import { buildNemesisInjectBlock } from "../../domain/rules/nemesis/nemesisLines.js";
+import { buildPrepMaterialBlock } from "../../domain/rules/prep/prepConsumption.js";
 import { targetLedger } from "../../domain/rules/prompt/materials/index.js";
 import { embeddingReady } from "../ports/embeddingService.js";
 import { buildExtractionCfg } from "../../domain/rules/prompt/structuredCallCfg.js";
@@ -214,11 +215,18 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
   // 与契约半块共用同一名册口径；两块各自独立为空，互不影响形状。
   const nemesisBlock = buildNemesisInjectBlock(d.varTree, pactPresentNames);
   const pactNemesisPart = [pactBlock, nemesisBlock].filter(Boolean).map((b) => `\n\n${b}`).join("");
+  // WO-24D ⑨后半·备料素材块：只读 prepSeeds 缓存的确定性文本行，块头钉死
+  // 「不是既定事实，可用可不用」——素材绝不变成事实；无有效备料零注入不污染形状。
+  const prepMaterialBlock = buildPrepMaterialBlock(
+    { room: d.room || {}, innerRoomName: d.innerRoomName ?? null, time: d.time, varTree: d.varTree || {} },
+    d.prepSeeds,
+  );
+  const prepPart = prepMaterialBlock ? `\n\n${prepMaterialBlock}` : "";
   // WO-16F-F3：判官激活的 appease settle 也必须接定案单——否则判官落了账、
   // 正文却自由判成相反结果（本单要消灭的穿帮）。普通非判官 settle 仍不收尾章税。
   const inChatContent = d.isSettle
     ? rulesPrefix + dynPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + (d.judgeRuleBlock ? "\n\n" + d.judgeRuleBlock : "") + "\n\n" + steerSuffix
-    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + pactNemesisPart + sealRulePart + "\n\n" + steerSuffix;
+    : rulesPrefix + dynPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + pactNemesisPart + prepPart + sealRulePart + "\n\n" + steerSuffix;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。

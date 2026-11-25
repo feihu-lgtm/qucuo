@@ -20,6 +20,7 @@ import { QUCUO_MAP, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
 export function buildIntakeUserContent({
   playerInput, recentTurns = [], npcs = [], entries = [], questCandidates = [], containers = [],
   room = null, innerRoomName = null, questProgress = {}, flags = [], inv = [], char = {}, varTree = {},
+  prepBlock = "",
 } = {}) {
   const lines = [];
   lines.push(`玩家这句话：「${playerInput || ""}」`);
@@ -63,6 +64,8 @@ export function buildIntakeUserContent({
   lines.push(`· 使用：${renderItems(useItems) || "无"}`);
   lines.push(`· 拾取：${renderItems(groundItems) || "无"}`);
   lines.push(`· 穿戴卸下：${equipItems.length ? equipItems.map((it) => `${it.name}(${it.id || "无ID"})${it.equipped ? "〔已装备〕" : ""}`).join("、") : "无"}`);
+  // WO-24D：备料素材参考（自带非事实警示块头），空串零注入
+  if (prepBlock) lines.push(prepBlock);
   if (recentTurns.length) {
     lines.push("最近两轮对话：");
     for (const turn of recentTurns.slice(-2)) {

@@ -67,6 +67,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
       ? {
         inv: snapshot.state.inv, flags: snapshot.state.flags, varTree: snapshot.state.varTree,
         room: snapshot.state.room, questProgress: getGameState?.()?.questProgress,
+        prepSeeds: snapshot.state.prepSeeds,
         // WO-16D-M1 四类目 diff 吃全字段——缺一则 diff 按零算假损/死度量（Review 修）
         char: snapshot.state.char, exp: snapshot.state.exp, pot: snapshot.state.pot,
         skills: snapshot.state.skills, turn: snapshot.state.time,
