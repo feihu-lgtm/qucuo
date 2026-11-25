@@ -427,6 +427,21 @@ export function materializeFacts(state, facts, compiledWarrants) {
         break;
       }
 
+      // ── 11b. COLLAPSE_CONTAINER：容器坍缩记账（WO-22A）──
+      // varTree.世界.容器[place][name] = { collapsed:true, turn }——懒初始化：
+      // merge 自动建中间层，旧档无容器字段不炸。坍缩是终态，重复事实幂等覆盖同值。
+      case "COLLAPSE_CONTAINER": {
+        const place = fact.place || "佚名之地";
+        const name = fact.containerName || "";
+        if (!name) { logs.push({ t: "err", text: `  ⛔ 事实 ${fact.id}：坍缩无容器名` }); break; }
+        patches.push({
+          op: "merge", path: ["varTree", "世界", "容器", place, name],
+          value: (prev) => ({ ...(prev && typeof prev === "object" ? prev : {}), collapsed: true, turn }),
+          factId: fact.id,
+        });
+        break;
+      }
+
       // ── 12. ALTER_WORLD_SCENE：世界场景改写 → applyPatches 指令 ──
       case "ALTER_WORLD_SCENE": {
         const sceneKey = fact.sceneKey || fact.place || "佚名之地";
