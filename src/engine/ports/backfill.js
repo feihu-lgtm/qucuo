@@ -105,7 +105,15 @@ export async function streamWithFirstTokenFallback({
         // 超时/报错且没见过首字：保留（或复位）过渡行，静默降级
         return upsertByKey(log, key, fallbackEntry());
       }
-      return log;
+      // 已见首字的半截流式：内容保留，但请求已终结——摘掉 streaming 旗与光标，
+      // 否则这行永远挂着「▌」假装还在写。
+      const index = (log || []).findIndex((e) => e?.fillKey === key);
+      if (index < 0) return log;
+      const row = log[index];
+      if (!row.streaming) return log;
+      const copy = [...log];
+      copy[index] = { ...row, text: row.text.replace(/\s*▌\s*$/, ""), streaming: false, streamed: true, interrupted: true };
+      return copy;
     });
     return {
       ok: false,

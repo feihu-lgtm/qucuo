@@ -169,7 +169,12 @@ describe("streamWithFirstTokenFallback（WO-08 三态）", () => {
     });
     expect(res.ok).toBe(false);
     expect(res.fallbackUsed).toBe(false);
-    expect(getLog().at(-1).text).toContain("半截话");
+    const partial = getLog().at(-1);
+    expect(partial.text).toContain("半截话");
+    // Review 修复：请求已终结，streaming 旗与光标必须摘掉
+    expect(partial.streaming).toBe(false);
+    expect(partial.text).not.toContain("▌");
+    expect(partial.interrupted).toBe(true);
   });
 
   it("isStale 期间回滚：不再写日志", async () => {
