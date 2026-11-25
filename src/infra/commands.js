@@ -110,6 +110,7 @@ const inventoryCommands = [
   ["mapDestination", CATEGORY.MOVE, "点击地图目的地"],
   ["teleportLook", CATEGORY.VIEW, "传送后查看"],
   ["inspect", CATEGORY.BACKGROUND, "AI 查看物品武学或飞鸽"],
+  ["effectReceipt", CATEGORY.LOCAL, "天机落账操作"],
   ["inspectPrewarm", CATEGORY.BACKGROUND, "查看预热"],
   ["gambleTalk", CATEGORY.AI_TURN, "赌坊谈价"],
   ["gambleInspect", CATEGORY.BACKGROUND, "查看赌石外皮"],

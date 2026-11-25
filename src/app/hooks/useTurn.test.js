@@ -92,3 +92,41 @@ it("keeps the key inspection's estate announcement open until its narration comm
   }
 });
 
+
+it("effectReceipt 结构化动作：已注册命令、走调度队列、回合落幕才执行", async () => {
+  const { COMMANDS } = await import("../../infra/commands.js");
+  expect(COMMANDS.effectReceipt).toBeTruthy(); // 已注册，dispatch 不再抛 Unregistered command
+  initGameStore({
+    flags: [], inv: [{ id: "it_x1", name: "铁剑", category: "weapon", quality: "白", equipped: false }],
+    questProgress: {}, room: { name: "曲措乡", npcs: [] }, char: { name: "行旅" },
+  });
+  const waitTimerRef = { current: null };
+  const commands = createScheduler();
+  const turn = useTurn({
+    ...gameStore.getState(), apiCfg: {}, preset: {}, convo: [], addLog: vi.fn(),
+    effectiveSpecialNow: {}, onTurnsInvalidated: vi.fn(() => vi.fn()), captureUndo: vi.fn(),
+    waitTimerRef, turnGenerationRef: { current: 0 }, dispatchCommand: commands.dispatch,
+    pendDirRef: {}, outerDepartRef: {}, pickupJudgmentRef: {}, collectGrantedRef: {},
+    varTreeRef: { current: {} }, timeRef: { current: 1 },
+    setInput: vi.fn(), setCmdHistory: vi.fn(), setHistIdx: vi.fn(), setLoading: vi.fn(),
+    setWaitSecs: vi.fn(), noteAction: vi.fn(),
+  });
+  try {
+    // 占用调度器模拟在途叙事回合（AI_TURN 未落幕）
+    const blocker = Promise.withResolvers();
+    void commands.dispatch("typedAction", () => blocker.promise);
+    await new Promise(r => setTimeout(r, 0));
+    // 回合进行中点落账卡：排队不立即执行，且不抛错
+    void turn.act({ type: "effectReceipt", op: "equip", kind: "grant_item", factId: "F1", itemId: "it_x1", name: "铁剑" });
+    await new Promise(r => setTimeout(r, 10));
+    expect(gameStore.getState().inv[0].equipped).not.toBe(true);
+    // 阻塞解除后排队的动作执行，佩挂生效
+    blocker.resolve();
+    await new Promise(r => setTimeout(r, 30));
+    expect(gameStore.getState().inv[0].equipped).toBe(true);
+  } finally {
+    clearInterval(waitTimerRef.current);
+    turnMonitor.clear();
+    commands.dispose?.();
+  }
+});

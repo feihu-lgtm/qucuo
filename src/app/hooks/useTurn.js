@@ -25,6 +25,7 @@ import { companionChatterTick } from "../../features/npc/companionChatter.js";
 import { askStoryteller } from "../../engine/ports/storyteller.js";
 import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { applySquareOps, featureCtx as runtimeCtx, registerRuntime } from "../runtime/gameRuntime.js";
+import { receiptActionResult } from "../../features/receipts/logic.js";
 import { sessionUiStore, setGambleSession } from "../../store/sessionUiStore.js";
 import { appendDayMaterial } from "./useNotes.js";
 
@@ -53,6 +54,21 @@ export function useTurn({
   const addLog = useCallback(addLogProp || ((lines) => setLog((p) => [...p, ...stampLogEntries(lines, gameStore.getState().time)])), [addLogProp]);
   const actRef = useRef(null);
   const act = useCallback(async (rawCmd, extraReplies = [], opts = {}) => {
+    // 天机落账卡结构化动作：系统边界确定性执行——按 id 寻址、不经 intent
+    // 识别（行动识别关闭同样生效），写账走 applyResult 统一边界，不绕 commitRound。
+    if (rawCmd && typeof rawCmd === "object" && rawCmd.type === "effectReceipt") {
+      // 走调度队列排队执行：叙事回合进行中点落账卡，不得插队 captureUndo
+      // 把回合前检查点替换成半截回合的快照（回滚会落成半成品状态）。
+      if (!opts.schedulerManaged) {
+        return dispatchCommand("effectReceipt", () => actRef.current(rawCmd, extraReplies, { ...opts, schedulerManaged: true }), { displayText: `落账·${rawCmd.name || rawCmd.op}` });
+      }
+      const result = receiptActionResult(gameStore.getState(), rawCmd);
+      if (!result) return;
+      // 仅在有实际状态变更时捕获回滚点：纯日志 no-op（满血拒服、已佩挂/已上阵
+      // 的幂等提示）不该抹掉上一动作的回滚能力。
+      if (result.changes && Object.keys(result.changes).length) captureUndo();
+      return applyResult(runtimeCtx(), result, { feature: `receipt.${rawCmd.op}` });
+    }
     if (!rawCmd.trim()) return;
     if (!opts.schedulerManaged) {
       const commandText = rawCmd.trim();

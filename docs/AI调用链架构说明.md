@@ -54,7 +54,7 @@ flowchart TD
 | 首字超时兜底 | 基础已落地/未接主链 | `streamWithFirstTokenFallback` 支持插入过渡行、首字抵达原位替换、超时静默降级；主循环接线属于后续工单。 |
 | 十二律落盘引擎 | 已接主链/只承判官事实 | `materializeFacts` 已把十二类事实码编译成 `changes/patches/receipts/logs`，经 `finalizeTurn → commitRound` 统一落盘；`receipts` 挂到落账日志项。它目前只承接判官管线签出的事实，不等于旧提取已经废除。 |
 | 前哨 intake + 判官 + 锚点尾章管线 | 已接主链/常 no-op 退化 | 契约 B `turn.intake`、`judgeTurn`、`storytellerStream` 锚点剥离、`sealVerifier` 尾章校对、`materializeFacts` 落盘已全部接入 `runTurn`/`commitRound`；web 默认开、CLI 回放默认关；激活另需非 settle/非纯搭话回合 + extractionEnabled 双调用叙事模式，否则不激活。entries/containers/prepItems/floatingItems 无宿主喂入，多数回合签空 facts 退化运行。 |
-| 天机落账卡 UI | 已落地显示/动作修包施工 | `EffectReceiptCard` 已消费日志项携带的 `receipts` 渲染落账条（品阶色/攻防/词条翻译/出生落款）。按钮当前仍经 NarrativeLogFeed 翻成文本指令进 `act`，存在行动识别关闭无效与同名物品误寻址问题；结构化 action + itemId 精确寻址修包正在施工。 |
+| 天机落账卡 UI | 已落地/动作结构化直写 | `EffectReceiptCard` 消费 `receipts` 渲染落账条；按钮派发结构化 action（itemId/skillId/factId/op/kind），经 NarrativeLogFeed 原样透传进 `act`，useTurn 在 intent 识别前的系统边界按 id 寻址确定性幂等执行（features/receipts/logic，equip/activate 为 explicit-on 语义），行动识别关闭同样生效，写账走 applyResult 统一边界。例外：`viewPact` 无结构化面板入口，保留文本指令。 |
 
 ## 4. 目标链路分层
 
@@ -160,7 +160,7 @@ flowchart LR
 |---|---|---|
 | WO-01～WO-12 | 已合并 | 地基、场记板、因果授信、编译器、十二律、前哨判官都在 main。 |
 | WO-13 | 已合并 | web 默认 `judgePipelineEnabled=true`；CLI 老录制默认 false。激活还需非 settle、非纯搭话且 `extractionEnabled` 双调用叙事模式。因 entries/containers/prepItems/floatingItems 还没宿主喂入，很多回合会 no-op 退化，不能当成旧提取已替换。 |
-| WO-14 | 已合并/动作修包施工 | `EffectReceiptCard` 已消费 receipts 并随判官落账日志显示；按钮仍翻文本指令进 act，结构化直写修包正在施工。 |
+| WO-14 | 已合并；动作结构化直写随修包落地 | `EffectReceiptCard` 消费 receipts 并随判官落账日志显示；按钮结构化 action 按 id 寻址确定性执行，equip/activate 幂等 explicit-on；`viewPact` 保留文本指令例外。 |
 | WO-15 | 施工中 | 旧提取层与独立软结算通道删除已开工；未完成前，旧提取仍是主回路状态写入口的事实主流。 |
 | WO-16+ | 未开始 | 依赖 WO-15 及后续链条解锁。 |
 
