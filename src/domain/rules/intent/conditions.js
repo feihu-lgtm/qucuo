@@ -23,5 +23,5 @@ export function splitConditionClause(text) {
   const detail = `${prefix}${match[2].trim()}`;
   const actionText = match[3].trim();
   if (!detail || !actionText) return null;
-  return { detail, actionText };
+  return { detail, actionText, prefix };
 }

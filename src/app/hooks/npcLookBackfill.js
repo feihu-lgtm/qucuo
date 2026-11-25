@@ -104,7 +104,7 @@ export function lookNpcInBackground(npc, extraReplies = [], {
         place: state.room?.name || "", trade, state,
         history: [...ledgerLines, ...memoryTexts], convoLines, letters,
       });
-      return ask(sys, user, { callLabel: "端详描写", maxTokens: 400 });
+      return ask(sys, user, { callLabel: "端详描写", maxTokens: 2000 });
     },
     parse: parseSettleNarration,
   });

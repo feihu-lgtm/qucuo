@@ -64,8 +64,28 @@ function validateAction(state, input, raw) {
     }
     action[slot] = value;
   }
-  if (kind === ACTION_KINDS.GIFT && action.item === SILVER) action.amount = parseSilverAmount(text);
+  if (kind === ACTION_KINDS.GIFT && action.item === SILVER) action.amount = parseSilverAmount(giftSpan(text, condition));
   return withCondition(action);
+}
+
+// 带前提的赠送，模型可能把整句（连前提、连括号旁白）放进 text。银两数只认「送钱那一段」：
+//   ① 只在前提前后两段动作里找（就/便 之后那段优先，再看前提之前那段），前提本身不进来；
+//   ② 括号里的旁白（「（我身上有100两）」「（上次过路花了100两）」）先去掉；
+//   ③ 那一段得带送/给字样、并且写了数才算——「就这么办」「就给他」只是确认，不提供数额。
+//   两段都不满足就是没写数（「就送才旦一些银两」），不回头去整句里找。
+//   模型已经只给了「送才旦20两」→ 原样。
+const GIFT_VERB_RE = /送|给|赠|递|塞|赏|孝敬/;
+const ASIDE_RE = /[（(][^）)]*[）)]/g;
+function giftSpan(text, condition) {
+  if (!condition) return text;
+  const clause = splitConditionClause(text);
+  const spans = clause
+    ? [clause.actionText, clause.prefix]
+    : [condition.detail && text.includes(condition.detail) ? text.replace(condition.detail, "") : text];
+  const priced = spans
+    .map((span) => String(span || "").replace(ASIDE_RE, ""))
+    .find((span) => GIFT_VERB_RE.test(span) && parseSilverAmount(span) != null);
+  return priced || "";
 }
 
 export function validateRecognition(state, input, raw) {

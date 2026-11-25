@@ -14,6 +14,7 @@ import { generateNpcMoveset } from "../../domain/rules/npc/npcGeneration.js";
 import { seedKnowledge } from "../../domain/rules/prompt/knowledge.js";
 import { initCompanionState } from "../../domain/rules/companion/companion.js";
 import { CURRENT_VERSION } from "../../utils/version.js";
+import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { getMapNode } from "../../domain/data/map/qucuoMap.js";
 import { getDistrictAnchor, getInnerRoomNames, hasInnerMap } from "../../domain/rules/map/innerMap.js";
 import { initialVarTree } from "../../domain/rules/prompt/mvu.js";
@@ -251,7 +252,7 @@ export function useAutosave({
     const startPreset = () => {
       setPreset(p); setRoom(p.room); setChar(p.char); setDao(p.dao);
       setSkills(p.skills.map(s => ({ ...s }))); setInv([...p.inv]);
-      setLog([{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${p.name}` }, ...p.opening]);
+      setLog(stampLogEntries([{ t: "sys", text: `MUD引擎 · 「${CURRENT_VERSION.codename}」${CURRENT_VERSION.time} · ${p.name}` }, ...p.opening], 6));
       setConvo([]); setExp(0); setPot(0); setFlags([]); setTime(6);
       setMapData({ [p.room.name]: { x: 0, y: 0 } });
       setNarrator(initialNarratorState());

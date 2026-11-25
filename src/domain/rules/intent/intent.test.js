@@ -294,6 +294,28 @@ describe("conditional steps", () => {
     expect(validatePlan(state, result.actions).triggers).toHaveLength(1);
   });
 
+  it.each([
+    ["leading premise with its own amount", "要是他先还我100两，就送才旦20两", {}, 20],
+    ["trailing premise after the gift", "送才旦20两，如果到了鱼定村就这么办", { condition_text: "到了鱼定村" }, 20],
+    ["gift restated without amount after the premise", "送才旦20两，如果到了鱼定村就给他", { condition_text: "到了鱼定村" }, 20],
+    ["balance aside after a confirming clause", "送才旦20两，如果到了鱼定村就这么办（我身上有100两）", { condition_text: "到了鱼定村" }, 20],
+    ["narrower classifier premise leaves an aside amount", "如果到了鱼定村（上次过路花了100两），就送才旦20两", { condition_text: "到了鱼定村" }, 20],
+    ["gift without an amount never borrows the premise amount", "要是到了收100两过路费的鱼定村，就送才旦一些银两", { condition_text: "到了收100两过路费的鱼定村" }, null],
+    ["fractional gift amount stays unparsed", "要是他先还我100两，就送才旦2.5两", {}, null],
+  ])("reads the gift amount only from the gift span (%s)", async (_label, input, extra, amount) => {
+    const classifier = scripted({ actions: [act({ text: input, kind: "赠送", target: "才旦", item: SILVER, condition: "到达", ...extra })] });
+    const result = await recognizeIntent(state, input, { classifier });
+    expect(result.actions[0]).toMatchObject({ kind: "赠送", item: SILVER });
+    expect(result.actions[0].amount).toBe(amount);
+  });
+
+  it("keeps the amount when the classifier already isolated the gift clause", async () => {
+    const input = "到了鱼定村就送才旦20两";
+    const classifier = scripted({ actions: [act({ text: "送才旦20两", kind: "赠送", target: "才旦", item: SILVER, condition: "到达", condition_text: "到了鱼定村" })] });
+    const result = await recognizeIntent(state, input, { classifier });
+    expect(result.actions[0]).toMatchObject({ amount: 20, condition: { detail: "到了鱼定村" } });
+  });
+
   it("keeps conditioned steps out of immediate validation and arms them as triggers", () => {
     const gift = { kind: "赠送", target: "才旦", item: SILVER, amount: 100 };
     const cond = { kind: "切磋", target: "不在场的人", condition: { on: "encounter", detail: "碰到山贼" } };

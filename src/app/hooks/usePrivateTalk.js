@@ -22,6 +22,7 @@ import { gateScenario } from "../../domain/rules/prompt/worldbook.js";
 import { describeTallyForWhisper } from "../../domain/rules/memory/tally.js";
 import { QUCUO_QUESTS } from "../../domain/data/quests/qucuoQuests.js";
 import { NOTE_SOURCE, VIA } from "../../domain/rules/memory/note.js";
+import { LOG_T, stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { gameActions, gameStore } from "../../store/gameStore.js";
 import { settledToPatches } from "../../domain/rules/settle/settle.js";
 import { applyPatches } from "../../domain/rules/state/applyPatches.js";
@@ -38,7 +39,7 @@ export function usePrivateTalk({
     // setVarTree（它同步 varTreeRef——Worker 4 收口前保留），读等价
     // gameStore.getState().varTree。
     const { setLog, setConvo, setNarrator } = gameActions;
-    const addLog = (lines) => setLog((p) => [...p, ...lines]);
+    const addLog = (lines) => setLog((p) => [...p, ...stampLogEntries(lines, gameStore.getState().time)]);
     const { narrator, convo, room, preset, flags, char, questProgress } =
       gameStore.getState();
     changePendingTalks(1);
@@ -250,7 +251,7 @@ export function usePrivateTalk({
           setLog(l => {
             if (isStale() || logIdx == null) return l;
             const copy = [...l];
-            copy[logIdx] = { t: "narrator", text: `  「旁白」${fullSoFar} ▌`, streaming: true };
+            copy[logIdx] = { ...copy[logIdx], t: LOG_T.NARRATOR, text: `  「旁白」${fullSoFar} ▌`, streaming: true };
             return copy;
           });
         };
@@ -277,7 +278,7 @@ export function usePrivateTalk({
         setLog(l => {
           if (isStale() || logIdx == null) return l;
           const copy = [...l];
-          copy[logIdx] = { t: "narrator", text: `  「旁白」${text}`, streamed: true };
+          copy[logIdx] = { ...copy[logIdx], t: LOG_T.NARRATOR, text: `  「旁白」${text}`, streaming: false, streamed: true };
           return copy;
         });
         traceStep(_wt, "AI调用", "pass", "流式一次成功");

@@ -8,6 +8,7 @@ import { ZONE_THEMES } from "../../utils/theme.js";
 import { listSlots, loadAutoSave } from "../../infra/saves.js";
 import { registerVisit } from "../../infra/visitorCount.js";
 import { CURRENT_VERSION } from "../../utils/version.js";
+import LiveClockText from "../components/LiveClockText.jsx";
 import { styles } from "./startScreenStyles.js";
 
 const BugReportModal = lazy(() => import("./BugReportModal.jsx"));
@@ -187,7 +188,7 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
         </span>
         <span className="start-screen-footer-separator" style={styles.footerSep}>·</span>
         <span onClick={() => setShowVersionHistory(true)} title="点击查看版本历史目录" style={{ ...styles.footerLink(theme), cursor: "pointer" }}>
-          📅 {CURRENT_VERSION.time}
+          📅 {CURRENT_VERSION.version ? `${CURRENT_VERSION.version} · ` : ""}{CURRENT_VERSION.time}
         </span>
         {(visitStats.hits != null || visitStats.todayActive != null) && (
           <>
@@ -199,6 +200,20 @@ export default function StartScreen({ onStart, onStartImportSelf, onLoadSlot, on
             </span>
           </>
         )}
+      </div>
+
+      <div className="start-screen-corner-status" style={styles.cornerStatus(theme)}>
+        <div style={styles.cornerClock}>
+          现实时间 <LiveClockText withDate />
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowVersionHistory(true)}
+          title={`当前版本「${CURRENT_VERSION.codename}」，点击查看版本历史`}
+          style={styles.cornerVersionBtn(theme)}
+        >
+          版本 {CURRENT_VERSION.version || "v0.2.0"} · {CURRENT_VERSION.time}
+        </button>
       </div>
       </div>
 

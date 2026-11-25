@@ -24,7 +24,11 @@ export function useAiInspect({
   // 内容一致、缓存键也一致（否则预跑存进去的缓存，点击时因 prompt 不同而读不到）。
   // 只负责生成文本，不碰缓存、不写日志、不算时间——这些副作用留给调用方按场景处理。
   const genInspectText = useCallback(async (kind, name, extra, itemObj, turn) => {
-    const { text } = await withAI("inspect.describe", { kind, name, extra, itemObj, turn }, { ai: webAi, apiCfg });
+    const { text } = await withAI("inspect.describe", { kind, name, extra, itemObj, turn }, {
+      ai: webAi,
+      apiCfg: apiCfg ? { ...apiCfg, thinkingMode: "off" } : apiCfg,
+      modelOptions: { disableThinking: true, thinkingBudget: 0 },
+    });
     return (text || "").trim();
   }, [apiCfg]);
 

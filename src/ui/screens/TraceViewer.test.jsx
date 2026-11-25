@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import TraceViewer from "./TraceViewer.jsx";
 
+vi.mock("../../store/gameStore.js", () => ({
+  gameStore: { getState: () => ({ time: 30 }) },
+  useGameStore: (selector) => selector({ time: 30 }),
+}));
+
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal();
   const mocked = {
@@ -20,6 +25,13 @@ function flatten(node) {
   return [node, ...flatten(node.props?.children)];
 }
 
+function extractText(node) {
+  if (typeof node === "string" || typeof node === "number") return [String(node)];
+  if (!node || typeof node !== "object") return [];
+  if (Array.isArray(node)) return node.flatMap(extractText);
+  return extractText(node.props?.children);
+}
+
 describe("TraceViewer report entry", () => {
   it("opens the bug report without closing the trace itself", () => {
     const onClose = vi.fn();
@@ -31,5 +43,14 @@ describe("TraceViewer report entry", () => {
     reportBtn.props.onClick();
     expect(onReport).toHaveBeenCalledTimes(1);
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("displays current game day, turn, and live clock in header", () => {
+    const tree = TraceViewer({ theme: {}, onClose: vi.fn(), onReport: vi.fn() });
+    const text = extractText(tree).join("");
+    expect(text).toContain("全流程日志");
+    expect(text).toContain("第2日");
+    expect(text).toContain("第30回合");
+    expect(text).toContain("现实");
   });
 });

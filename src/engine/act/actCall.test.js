@@ -257,6 +257,8 @@ describe("callMainOnce 组装黄金快照", () => {
     const dKeep = makeDeps({
       varTree: { 角色: {}, 世界: { 日总结: [{ label: "第1天", text: "初入鱼定村" }] } },
       recallBlock: "\n\n[往事] 昨夜雪山相遇",
+      reunionBlock: "\n\n【重逢】久别的阿旺",
+      infoDomainBlock: "\n\n【信息域】只知道茶价",
     });
     await callMainOnce(null, false, dKeep);
     const msgKeep = JSON.stringify(callModel.mock.calls[0][2]);
@@ -269,6 +271,9 @@ describe("callMainOnce 组装黄金快照", () => {
     const msgOff = JSON.stringify(callModel.mock.calls[0][2]);
     expect(msgOff).not.toContain("昨夜雪山相遇");
     expect(msgOff).not.toContain("初入鱼定村");
+    // 「记忆」一整块（远景+召回+重逢+信息域）跟着同一个开关走
+    expect(msgOff).not.toContain("久别的阿旺");
+    expect(msgOff).not.toContain("只知道茶价");
   });
 
   it("body_gate 蓝灯可在移动回合强制点亮体貌公开层", async () => {

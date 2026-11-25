@@ -19,7 +19,7 @@ export async function duoduoEggReaction(prize, tier, {
   try {
     const text = await ask(
       ...(() => { const { sys, user } = eggReactionPrompt({ prize, tier }); return [sys, user]; })(),
-      { callLabel: "朵朵开奖反应", maxTokens: 120 },
+      { callLabel: "朵朵开奖反应", maxTokens: 1000 },
     );
     if (stale()) return null;
     const lines = text ? parseSettleNarration(text) : null;

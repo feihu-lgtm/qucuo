@@ -143,11 +143,15 @@ export function buildMainCallPayload(extraNudge, narrativeOnly = false, d) {
     });
   const ledgerSuffix = ledgerBlock ? `\n\n${ledgerBlock}` : "";
   const softSettleNote = d.softSettle ? formatSettleNote(d.softSettle) : "";
-  const recallPart = ov.user_recall?.mode === "off" ? "" : d.recallBlock;
-  const reunionPart = ov.reunion?.mode === "off" ? "" : d.reunionBlock;
+  // 总控台「记忆」开关（user_recall）管的是 远景+召回+重逢+信息域 一整块：关了四样全灭，
+  // 重逢另有自己的单独开关，两者任一关掉都不挂。
+  const memoryOff = ov.user_recall?.mode === "off";
+  const recallPart = memoryOff ? "" : d.recallBlock;
+  const reunionPart = memoryOff || ov.reunion?.mode === "off" ? "" : d.reunionBlock;
+  const infoDomainPart = memoryOff ? "" : d.infoDomainBlock;
   const inChatContent = d.isSettle
     ? rulesPrefix + (d.snowLeopardContext || "") + (d.settleNpc ? reunionPart : "") + ledgerSuffix + angrySettleNote + softSettleNote + "\n\n" + proseRule
-    : rulesPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + d.infoDomainBlock + "\n\n" + proseRule;
+    : rulesPrefix + d.ctx + distantBlock + recallPart + ledgerSuffix + reunionPart + infoDomainPart + "\n\n" + proseRule;
   const latestUserContent = cmdSuffix + (extraNudge || "");
 
   // 10 号位 Chat History / 11 号位 In-Chat Injection / 12 号位 User's Latest Message。
@@ -290,7 +294,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
         if (d.isStale?.() || streamLogIndex == null) return l;
         const copy = [...l];
         // 叙事模式：直接展示散文文本；JSON模式：只看最后200字（避免长 JSON 刷屏）
-        copy[streamLogIndex] = { t: "desc", text: "  " + (narrativeOnly ? fullSoFar : fullSoFar.slice(-200)) + " ▌", streaming: true };
+        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + (narrativeOnly ? fullSoFar : fullSoFar.slice(-200)) + " ▌", streaming: true };
         return copy;
       });
     };
@@ -321,7 +325,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       d.setLog(l => {
         if (d.isStale?.() || streamLogIndex == null) return l;
         const copy = [...l];
-        copy[streamLogIndex] = { t: "desc", text: "  " + shown, streaming: false, streamed: true };
+        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + shown, streaming: false, streamed: true };
         return copy;
       });
     } else {

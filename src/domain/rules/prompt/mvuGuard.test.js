@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  initialVarTree, applyMvuCommands, isProtectedMvuPath,
+  initialVarTree, applyMvuCommands, isProtectedMvuPath, extractMvuBlock,
   MVU_SYSTEM_INSTRUCTIONS, narratorVars, setNarratorVars,
 } from "./mvu.js";
 
@@ -149,6 +149,18 @@ describe("原有裁剪行为不受影响（回归）", () => {
       { op: "add", path: "角色.路人乙.好感度", value: 5 },
     ]);
     expect(tree.世界.好感日增.gained.路人乙).toBe(5);
+  });
+  it("同一角色名下的两条好感路径各算各的回合起点", () => {
+    const { tree } = apply([
+      { op: "set", path: "角色.甲.好感度", value: 17 },
+      { op: "add", path: "角色.甲.旧情.好感度", value: 5 },
+    ]);
+    expect(tree.角色.甲.好感度).toBe(17);
+    expect(tree.角色.甲.旧情.好感度).toBe(5);
+  });
+  it("漏写右括号只丢那一条，下一条照常解析", () => {
+    const { commands } = extractMvuBlock("<mvu>_.add(角色.甲.好感度, 2\n_.add(角色.乙.好感度, 3);</mvu>");
+    expect(commands).toEqual([{ op: "add", path: "角色.乙.好感度", value: 3 }]);
   });
 });
 

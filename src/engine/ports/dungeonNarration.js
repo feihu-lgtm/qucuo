@@ -20,6 +20,6 @@ export async function narrateDungeonEvent({ dungeonName, floorName, nodeTitle, s
 
   return askStoryteller(SYSTEM_PROMPT, userPrompt, {
     callLabel: "地宫氛围润色",
-    maxTokens: 160,
+    maxTokens: 1000,
   });
 }

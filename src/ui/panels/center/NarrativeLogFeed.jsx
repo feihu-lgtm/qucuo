@@ -1,6 +1,13 @@
 import LogEntry from "../../components/LogEntry.jsx";
 import { LOG_T } from "../../../domain/rules/log/logTypes.js";
+import { getGameDay } from "../../../utils/mudHelpers.js";
 import { useGameStore } from "../../../store/gameStore.js";
+
+function formatEntryTurnLabel(entry) {
+  if (typeof entry?.turn !== "number" || !Number.isFinite(entry.turn)) return "";
+  const day = typeof entry.day === "number" ? entry.day : getGameDay(entry.turn);
+  return `第${day}日·第${entry.turn}回合`;
+}
 
 function isNarrativePlaceholder(entry) {
   if (!entry.streaming) return false;
@@ -66,12 +73,29 @@ export default function NarrativeLogFeed({
       {groups.map((g, gi) => {
         if (g.skeleton) return <NarrativeSkeleton key={`skeleton-${gi}`} />;
         if (g.standalone) {
-          return <LogEntry key={gi} entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={act} isDayMode={isDayMode} />;
+          const standaloneLabel = formatEntryTurnLabel(g.standalone);
+          return (
+            <div key={gi}>
+              <LogEntry entry={g.standalone} color={clr[g.standalone.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
+              {standaloneLabel && g.standalone.t === LOG_T.ROOM && (
+                <div style={{ textAlign: "center", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", marginTop: -2, marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
+                  {standaloneLabel}
+                </div>
+              )}
+              {standaloneLabel && g.standalone.t !== LOG_T.ROOM && g.standalone.text?.trim() && (
+                <div style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
+                  {standaloneLabel}
+                </div>
+              )}
+            </div>
+          );
         }
         const cmdIdx = g.cmd ? log.indexOf(g.cmd) : -1;
         const replyCount = g.replies.filter(entry => !entry.skeleton).length;
         const canCollapse = g.cmd && replyCount > 0;
         const collapsed = canCollapse && collapsedGroups.has(cmdIdx);
+        const turnEntry = g.cmd || g.replies.find(entry => !entry.skeleton && typeof entry?.turn === "number");
+        const groupTurnLabel = formatEntryTurnLabel(turnEntry);
         const toggleCollapse = canCollapse ? () => setCollapsedGroups(prev => {
           const next = new Set(prev);
           if (next.has(cmdIdx)) next.delete(cmdIdx); else next.add(cmdIdx);
@@ -105,11 +129,21 @@ export default function NarrativeLogFeed({
                 <div style={{ flex: 1 }}>
                   <LogEntry entry={g.cmd} color={clr[g.cmd.t] || clr.desc} onAction={act} isDayMode={isDayMode} />
                 </div>
+                {groupTurnLabel && (
+                  <span style={{ color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+                    {groupTurnLabel}
+                  </span>
+                )}
                 {collapsed && (
                   <span style={{ color: zoneTheme.accentDim, fontSize: "var(--fs-2xs)", flexShrink: 0 }}>
                     +{replyCount}条
                   </span>
                 )}
+              </div>
+            )}
+            {!g.cmd && groupTurnLabel && g.replies.length > 0 && (
+              <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 12px 0", color: zoneTheme.textDim, fontSize: "var(--fs-2xs)", fontVariantNumeric: "tabular-nums" }}>
+                {groupTurnLabel}
               </div>
             )}
             {!collapsed && g.replies.length > 0 && (

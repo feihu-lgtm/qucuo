@@ -125,9 +125,10 @@ export function applyWrite(state, { op, path, value }, options = {}) {
       const now = typeof before === "number" ? before : defaultValue ?? field.default ?? 0;
       // 回合起点：回合开始就有分值的取快照；本批次才声明的新角色取声明落定的分值
       //（首笔就是 add 的取默认值），否则先 set 17 再 +5 +5 能一回合涨 10。
+      // 按完整路径记起点：两条不同的好感路径同名（角色.甲.好感度 / 角色.甲.旧情.好感度）不共用一份起点
       const snap = readPath(options.turnBase ?? state, parts);
-      if (typeof snap !== "number" && !options.turnBaselines?.has(npc)) options.turnBaselines?.set(npc, now);
-      const turnStart = typeof snap === "number" ? snap : options.turnBaselines?.get(npc);
+      if (typeof snap !== "number" && !options.turnBaselines?.has(id)) options.turnBaselines?.set(id, now);
+      const turnStart = typeof snap === "number" ? snap : options.turnBaselines?.get(id);
       const result = mvuAffectionDelta(state, value, npc, { ...options, turnStart, before: now });
       if (result.reason) return reject(result.reason);
       ({ state, delta: actualDelta } = result);
@@ -159,8 +160,8 @@ export function applyWrite(state, { op, path, value }, options = {}) {
     finalValue = finalValue.map((amount) => typeof amount === "number" ? clamp(amount, bounds.min, bounds.max) : amount);
   }
   if (mvu && affection && op === "set" && typeof before !== "number" && typeof finalValue === "number"
-    && !options.turnBaselines?.has(parts[2] || "")) {
-    options.turnBaselines?.set(parts[2] || "", finalValue); // 新角色首次声明的分值即本回合起点
+    && !options.turnBaselines?.has(id)) {
+    options.turnBaselines?.set(id, finalValue); // 新角色首次声明的分值即本回合起点
   }
   const withSign = actualDelta > 0 ? `+${actualDelta}` : actualDelta;
   const log = `${id}${actualDelta == null ? "" : withSign}→${finalValue}`;

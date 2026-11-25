@@ -32,8 +32,12 @@ export function usePromptInspector({
     if (current) groups.push(current);
     return groups.map((g, i) => {
       const cmdEntry = g.entries.find(e => e.t === "cmd");
+      const stamped = typeof cmdEntry?.turn === "number" ? cmdEntry : g.entries.find(e => typeof e.turn === "number");
+      const turnTag = typeof stamped?.turn === "number"
+        ? ` [第${stamped.day ?? (Math.floor(stamped.turn / 24) + 1)}日·第${stamped.turn}回合]`
+        : "";
       const firstText = (cmdEntry?.text || g.entries[0]?.text || "").replace(/^[>\s]+/, "").trim();
-      const label = `#${i + 1} ${firstText.slice(0, 20) || "（场景/系统）"}`;
+      const label = `#${i + 1}${turnTag} ${firstText.slice(0, 20) || "（场景/系统）"}`;
       const preview = g.entries.map(e => (e.text || "").trim()).filter(Boolean).join("\n");
       return { label, preview, entries: g.entries };
     });

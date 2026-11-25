@@ -23,6 +23,7 @@ import { lookInBackground } from "./lookBackfill.js";
 import { lookNpcInBackground } from "./npcLookBackfill.js";
 import { companionChatterTick } from "../../features/npc/companionChatter.js";
 import { askStoryteller } from "../../engine/ports/storyteller.js";
+import { stampLogEntries } from "../../domain/rules/log/logTypes.js";
 import { applySquareOps, featureCtx as runtimeCtx, registerRuntime } from "../runtime/gameRuntime.js";
 
 // 回合入口的 React 胶水：组 env → resolveIntent（识别/裁决）→ createTurnContext
@@ -46,8 +47,9 @@ export function useTurn({
   // 各 setter 写走 gameActions；varTreeRef/timeRef 退化为以 store 为源的读写 shim
   // 透给 env.refs（varTree 真正的写仍走传入的 setVarTree——Worker 4 收口前不动）。
   const { setLog, setConvo, setTime, setFlags, setInv, setRoom, setChar, setDao, setExp, setPot, setSkills, setMapData } = gameActions;
+  turnMonitor.setGameClockReader(() => gameStore.getState().time);
   // 缺省走 gameActions（路线一）；测试可直接注入自己的 addLog。
-  const addLog = useCallback(addLogProp || ((lines) => setLog((p) => [...p, ...lines])), [addLogProp]);
+  const addLog = useCallback(addLogProp || ((lines) => setLog((p) => [...p, ...stampLogEntries(lines, gameStore.getState().time)])), [addLogProp]);
   const varTreeRef = useMemo(() => ({
     get current() { return gameStore.getState().varTree ?? {}; },
     set current(v) { gameActions.setVarTreeState(v); },

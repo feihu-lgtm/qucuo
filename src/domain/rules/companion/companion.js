@@ -258,12 +258,13 @@ export function duelFoeFollower(companionState, foe) {
   return { ...data, id: `foe_${f.name}`, personalityProfile: data.profile, follower: true };
 }
 
-// 切磋阵容：1v1 还是团战由这里统一裁决。有己方伙伴或对方带随从就走团战
-// （玩家无伙伴时单挑 朵朵+铁伯 也走团战，引擎按单位数组结算，不要求己方成对）。
+// 切磋阵容：1v1 还是团战由这里统一裁决。己方有出战伙伴才走团战，此时对方的随从（铁伯）一并上场；
+// 玩家独自上阵时打 1v1（DuelScreen），随从不下场——团战屏没有战斗内道具栏，
+// 单挑也拉进团战会让玩家白白丢掉丹药等战斗道具。
 export function duelLineup(companionState, foe) {
   const allies = duelAllies(companionState, foe);
-  const follower = duelFoeFollower(companionState, foe);
-  return { allies, enemies: follower ? [foe, follower] : [foe], team: allies.length > 0 || !!follower };
+  const follower = allies.length > 0 ? duelFoeFollower(companionState, foe) : null;
+  return { allies, enemies: follower ? [foe, follower] : [foe], team: allies.length > 0 };
 }
 
 // 已解锁的候选（供 UI 列出可切换的队友）。返回 {key,label,beast}，形状同 COMPANION_SLOTS。
@@ -347,6 +348,7 @@ export function stationedCompanions(companionState) {
 // 战斗数据（moveset/combatStats/七维…）整份带上：从名单点「切磋」时这份条目就是对手，
 // buildEnemyUnit/DuelScreen 读 moveset 选招，缺了第一回合就卡死。
 // id 用槽位键（唤回「跟上我」按它找槽），托管性格按敌方口径挂 personalityProfile。
+// 哑仆（铁伯，槽位 mute）折成 cannotSpeak：点「交谈」走不通人言的分支，不进普通对话。
 export function companionNpcEntry(companionState, key, extra = {}) {
   const c = companionState?.[key];
   const d = c?.data || {};
@@ -354,6 +356,7 @@ export function companionNpcEntry(companionState, key, extra = {}) {
   return {
     ...d, personalityProfile: d.profile,
     name: meta.label, id: key, companion: true, beast: !!(meta.beast || c?.beast), brief: d.brief || meta.label, levelCap: d.levelCap,
+    ...(c?.mute ? { cannotSpeak: true } : {}),
     ...extra,
   };
 }
