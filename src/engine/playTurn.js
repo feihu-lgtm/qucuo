@@ -21,7 +21,13 @@ function setterForKey(key) {
 function captureSnapshot(getGameState) {
   const state = getGameState();
   return {
-    state: Object.fromEntries(ROLLBACK_KEYS.map((key) => [key, state[key]])),
+    state: {
+      ...Object.fromEntries(ROLLBACK_KEYS.map((key) => [key, state[key]])),
+      // WO-16D-3 初审修：prepSeeds 只进快照切片不进 ROLLBACK_KEYS——
+      // 回滚不恢复它（备料缓存不属于回合事务），但影子/观测能拿到回合前引用，
+      // 不受 narrate 期间后台 world.prep 入库/失效污染。
+      prepSeeds: state.prepSeeds,
+    },
     rngState: getRngState(),
     squares: serializeSquares(),
   };

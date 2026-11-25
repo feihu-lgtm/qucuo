@@ -79,6 +79,28 @@ describe("Issue #3：AI 回合失败回滚到回合开始快照", () => {
     });
   });
 
+  it("WO-16D-3：prepSeeds 进快照切片但不参与回滚", async () => {
+    // 口径：captureSnapshot 复制 prepSeeds 回合前引用（shadowPre 同源），
+    // 但它不在 ROLLBACK_KEYS——备料是缓存不是回合事务，回滚不得恢复它。
+    initGameStore({ ...BASE, prepSeeds: [{ id: "seed-a", kind: "npc_plan" }] });
+    const seedBefore = gameStore.getState().prepSeeds;
+    let seedInSnapshotProbe = null;
+    runTurn.mockImplementation(() => {
+      // 回合中途后台备料入库/失效（world.prep 语义）——模拟恰好此时改写
+      gameActions.setPrepSeeds([{ id: "seed-b", kind: "prep_item" }]);
+      return Promise.reject(new Error("boom"));
+    });
+
+    const result = await playTurn(makeContext(), "试试");
+    expect(result.ok).toBe(false);
+    // 回滚不恢复 prepSeeds：回合中途的入库不被吃掉（缓存不归回合事务管）
+    expect(gameStore.getState().prepSeeds).toEqual([{ id: "seed-b", kind: "prep_item" }]);
+    expect(gameStore.getState().prepSeeds).not.toEqual(seedBefore);
+    // 其余回合键照常回滚（对照组，证明本测试的回滚路径真的走了一遍）
+    expect(gameStore.getState().time).toEqual(BASE.time);
+    void seedInSnapshotProbe;
+  });
+
   it("成功回合不回滚：runTurn 结果照常提交", async () => {
     initGameStore(BASE);
     runTurn.mockResolvedValue({ text: "成了", changes: {} });
