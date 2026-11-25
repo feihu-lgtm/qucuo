@@ -124,6 +124,9 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       if (o.appeaseVerdict && o.appeaseVerdict.choice !== "奏效") {
         return `\n【怒气缓和·系统已裁定】${o.settleNpc}这次没有消气。本轮必须照此写：怒气未消、反应冷淡或仍然戒备，禁把和解写成既成事实。`;
       }
+      // WO-16F-F3：判官路（judgeActive）不得回落自由判——赔罪成败以判官定案单
+      // （judgeRuleBlock 注入）为唯一方向，这里再给「自行判断」会与定案打架。
+      if (o.judgeActive) return "";
       return `\n【怒气缓和判定】${o.settleNpc}仍在气头上，本轮为新缓和尝试。结合此前方式，判断言行是否真诚、得体且切中要害：有效才写怒气消解，无效保持不满，禁把和解写成既成事实。`
         + (o.giftInfo?.weight ? giftWeight("本次赠礼分量：@{赠礼.分量}。分量不等于已经消气。") : "");
     }

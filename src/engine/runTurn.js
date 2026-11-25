@@ -20,6 +20,7 @@ import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, sh
 import { buildExtractionCfg } from "../domain/rules/prompt/structuredCallCfg.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { buildJudgeRuleBlock, buildGroupTalkRuleBlock, parseGroupTalkSeal } from "../domain/rules/judge/judgeRuleBlock.js";
+import { inferAppeaseStance } from "../domain/rules/npc/appeaseStance.js";
 import { writeTurnProse } from "./act/proseWrite.js";
 import { addProseChunks as proseChunkSink } from "./ports/recallBlock.js";
 import { random } from "../utils/rng.js";
@@ -212,7 +213,10 @@ async function runTurnSteps(ctx, cmd, opts) {
     deps.groupTalkRuleBlock = buildGroupTalkRuleBlock(playerName0);
     trace("群聊尾章", "pass", `多人群聊回合（在场 ${visibleNpcsPre.length} 人）：跳过前哨/判官，尾章只收 respondedNpcs`);
   }
-  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && !isSettle && !isGroupTalk) {
+  // WO-16F-F3：赔罪 settle 单独进判官——appease 在 feature 层本无前置硬结算
+  // （anger.js 只记尝试不写状态），无双结算风险；送礼/求教/邀同行 settle 仍排除。
+  const isAppeaseSettle = !!isSettle && opts.settleKind === "appease" && !!opts.settleNpc;
+  if (deps.apiCfg?.judgePipelineEnabled && deps.apiCfg?.extractionEnabled && (!isSettle || isAppeaseSettle) && !isGroupTalk) {
     try {
       const visibleNpcs = visibleNpcsPre;
       // B1 任务推进候选：只能由系统 helper 现场生成——小模型挑候选、
@@ -241,7 +245,23 @@ async function runTurnSteps(ctx, cmd, opts) {
       // 混合分流（复审裁决）：有任务推进候选的搭话仍调一次 intake——「说动对方」
       // 才能产 quest_advance，这个成本有意保留；闸门 helper 与 shadow 同源。
       let intakeResult;
-      if (shouldSkipIntakeForTalk(isTalk, questCandidates)) {
+      if (isAppeaseSettle) {
+        // WO-16F-F3：appease settle 本地合成听意单——诚意 inferAppeaseStance 关键词
+        // 保守判定，不再额外调 intake AI；玩家原话优先 settleOptions.attempt。
+        const appeaseNpcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
+        // 诚意只评真实玩家原话 opts.attempt——按钮模板 cmd（含「赔罪」字样）进关键词
+        // 判定会必中 sincere（模板穿透）；无 attempt 明确回落 casual。text 仍留 cmd 供叙事。
+        const attemptText = typeof opts.attempt === "string" && opts.attempt.trim() ? opts.attempt : "";
+        intakeResult = {
+          read: "", refIds: [],
+          actions: [{
+            kind: "appease", target: appeaseNpcName, itemId: "", direction: "none",
+            stance: inferAppeaseStance(attemptText, opts.giftInfo || null),
+            text: cmd,
+          }],
+          proposals: [],
+        };
+      } else if (shouldSkipIntakeForTalk(isTalk, questCandidates)) {
         intakeResult = synthesizeTalkIntake(cmd, deps.talkTarget);
       } else {
         const intakeContent = buildIntakeUserContent({
@@ -271,7 +291,10 @@ async function runTurnSteps(ctx, cmd, opts) {
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         npcs: visibleNpcs, varTree: vtNow,
-        inv: deps.inv || [], entries: [], talkOnly: isTalk,
+        inv: deps.inv || [], entries: [],
+        // WO-16F-F3：appease settle 听证不算纯搭话——否则 talkOnly 白名单会把
+        // appease 动作整条拦掉，判官路空转、旧仲裁又已被跳过（零裁决穿帮）。
+        talkOnly: isAppeaseSettle ? false : isTalk,
         // WO-16F-F1：steal/free_act 检定与伤损/破费定量要读玩家属性与气血银两。
         char: liveNow.char || deps.char || {},
         containers: containerView,
@@ -359,7 +382,9 @@ async function runTurnSteps(ctx, cmd, opts) {
   // 流入 buildSysBase 的 settle 叙事铁律。玩家原话优先取 settleOptions.attempt
   // （按钮/路由生成的 cmd 是模板句，无法判断诚意）。
   let appeaseVerdict = null;
-  if (apiCfg.extractionEnabled && isSettle && opts.settleKind === "appease" && opts.settleNpc) {
+  // WO-16F-F3：判官路已裁 appease 时不再调 turn.appease（双调用）；单调用老路
+  // （extractionEnabled=false，判官不激活）仍靠它，行为不变。
+  if (apiCfg.extractionEnabled && isSettle && opts.settleKind === "appease" && opts.settleNpc && !deps.judgePipelineActive) {
     const npcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
     const npcState = (deps.varTree?.角色 || ctx.memory?.varTreeLatest?.角色 || {})[npcName] || {};
     const anger = npcState.生气状态 || {};
