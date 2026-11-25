@@ -82,3 +82,36 @@ describe("receiptActionResult 结构化落账动作", () => {
     expect(receiptActionResult(baseState(), { type: "effectReceipt", op: "viewPact", kind: "pact", factId: "F1_5" })).toBeNull();
   });
 });
+
+describe("幂等 explicit-on 重复派发", () => {
+  it("equip 重复点击：第二次 no-op，装备保持佩挂不被解下", () => {
+    const st = baseState();
+    const first = receiptActionResult(st, { type: "effectReceipt", op: "equip", kind: "grant_item", factId: "F2_1", itemId: "it_new444" });
+    const after1 = first.changes.inv(mkInv());
+    expect(after1.find(i => i.id === "it_new444").equipped).toBe(true);
+    // 第二次派发（状态里已是 equipped）——无 changes，状态不变
+    const st2 = { ...st, inv: after1 };
+    const second = receiptActionResult(st2, { type: "effectReceipt", op: "equip", kind: "grant_item", factId: "F2_1", itemId: "it_new444" });
+    expect(second.changes?.inv).toBeUndefined();
+    expect(second.logs[0].text).toContain("已在身上佩着");
+  });
+
+  it("activate 重复点击：第二次 no-op，武学保持上阵不被收掉", () => {
+    const st = baseState();
+    const first = receiptActionResult(st, { type: "effectReceipt", op: "activate", kind: "bestow_skill", factId: "F2_2", skillId: "sk_a" });
+    const after1 = first.changes.skills(st.skills);
+    expect(after1.find(s => s.id === "sk_a").active).toBe(true);
+    const st2 = { ...st, skills: after1 };
+    const second = receiptActionResult(st2, { type: "effectReceipt", op: "activate", kind: "bestow_skill", factId: "F2_2", skillId: "sk_a" });
+    expect(second.changes?.skills).toBeUndefined();
+    expect(second.logs[0].text).toContain("已在阵上");
+  });
+
+  it("consume 天然幂等：吃掉的件寻址落空返回 null，零写入", () => {
+    const st = baseState();
+    const first = receiptActionResult(st, { type: "effectReceipt", op: "consume", kind: "grant_item", factId: "F2_3", itemId: "it_new222" });
+    const after1 = first.changes.inv(mkInv());
+    const st2 = { ...st, inv: after1 };
+    expect(receiptActionResult(st2, { type: "effectReceipt", op: "consume", kind: "grant_item", factId: "F2_3", itemId: "it_new222" })).toBeNull();
+  });
+});
