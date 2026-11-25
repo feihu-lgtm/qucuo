@@ -98,6 +98,22 @@ describe("verifySealAndMaterialize 铁律三：编译与 pact", () => {
     expect(out2.warnings.join()).toContain("spontaneousPact");
   });
 
+  it("WO-22B 期限下限：1/2/3 小时不签、4 小时可签", () => {
+    for (const hours of [1, 2, 3]) {
+      const seal = JSON.stringify({ fills: {}, spontaneousPact: { npc: "才旦", promise: "x", deadlineHours: hours } });
+      const out = verifySealAndMaterialize({
+        sealText: seal, screenText: "x", verdict: verdictWith(), anchorIds: ["F42_1"], state: STATE, turn: 42,
+      });
+      expect(out.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT")).toBe(false);
+      expect(out.warnings.join()).toContain("不足 4 小时");
+    }
+    const ok = JSON.stringify({ fills: {}, spontaneousPact: { npc: "才旦", promise: "x", deadlineHours: 4 } });
+    const out2 = verifySealAndMaterialize({
+      sealText: ok, screenText: "x", verdict: verdictWith(), anchorIds: ["F42_1"], state: STATE, turn: 42,
+    });
+    expect(out2.facts.some((f) => f.op === "BIND_OR_SETTLE_PACT" && f.deadlineHours === 4)).toBe(true);
+  });
+
   it("尾章未填空的券作废不编译；坏 JSON 告警不崩", () => {
     const out = verifySealAndMaterialize({
       sealText: '{"fills":{}}', screenText: "x", verdict: warrantVerdict, anchorIds: ["F42_1", "F42_3"], state: STATE, turn: 42,

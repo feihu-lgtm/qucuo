@@ -8,6 +8,7 @@ import { residentNpcRule } from "../../domain/rules/npc/rules.js";
 import { npcRoamRule } from "../../domain/rules/npc/roam.js";
 import { stationedFavorDecayRule, followFavorDriftRule } from "../../domain/rules/npc/intimacy.js";
 import { npcLetterRule } from "../../features/pigeon/inbound.js";
+import { pactWatchRule } from "../../features/pigeon/pactWatch.js";
 import {
   alreadySatisfiedCollectRule,
   collectGroundItemsRule,
@@ -65,6 +66,7 @@ export function useWorldRulesRunner({
         stationedFavorDecayRule,
         followFavorDriftRule,
         npcLetterRule,
+        pactWatchRule,
         collectGroundItemsRule,
         innerGroundItemsRule,
         derivedMovesetRule,
