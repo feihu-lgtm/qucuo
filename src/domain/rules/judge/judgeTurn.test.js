@@ -387,3 +387,35 @@ describe("S2 hostile 敌意档：辱骂签负好感+怨，暴烈性情置生气"
     expect(social.anger).toBeUndefined();
   });
 });
+
+describe("S2 Review 补洞：赠物必须实有/敌意不跳前哨", () => {
+  it("银两赠予（囊中无此物件）：不签 TRANSFER_ITEM 也不涨好感", () => {
+    const verdict = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "才旦", item: "银两", itemId: "", direction: "none", stance: "sincere", text: "把5两银子送给才旦" }],
+      proposals: [],
+    }, { rng: seqRng([0.01]) }); // 低骰必收——但无物可赠不签发
+    expect(verdict.facts.filter((f) => f.op === "TRANSFER_ITEM")).toHaveLength(0);
+    expect(verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
+    expect(verdict.notes.join()).toContain("不在囊中");
+  });
+
+  it("幻影礼物（背包没有的倚天剑）：不签发，零假账", () => {
+    const verdict = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "才旦", item: "倚天剑", itemId: "倚天剑", direction: "none", stance: "sincere", text: "把倚天剑送给才旦" }],
+      proposals: [],
+    }, { rng: seqRng([0.01]) });
+    expect(verdict.facts.filter((f) => f.op === "TRANSFER_ITEM")).toHaveLength(0);
+    expect(verdict.facts.filter((f) => f.op === "MUTATE_SOCIAL")).toHaveLength(0);
+  });
+
+  it("实有礼物不回归：霜牙短刀低骰仍收", () => {
+    const verdict = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "give", target: "才旦", item: "霜牙短刀", itemId: "it_8f3a", direction: "none", stance: "sincere" }],
+      proposals: [],
+    }, { rng: seqRng([0.1]) });
+    expect(verdict.facts.find((f) => f.op === "TRANSFER_ITEM")).toBeTruthy();
+  });
+});
