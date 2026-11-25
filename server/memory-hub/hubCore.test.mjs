@@ -497,3 +497,53 @@ describe("HTTP server, DELETE /api/space/:spaceId + VACUUM, and API key rejectio
     }
   });
 });
+
+
+// ── 复审必修钉测试 ─────────────────────────────────────────────
+it("wipe 后旧设备低 expectedRev 写不进新一代（deleteSpace 批量 tombstone）", async () => {
+  const store = createHubStore(":memory:");
+  store.putSave("sp1", "slotA", { expectedRev: 0, payloadEnc: "v1" });
+  store.putSave("sp1", "slotA", { expectedRev: 1, payloadEnc: "v2" }); // rev=2
+  store.putSave("sp1", "slotB", { expectedRev: 0, payloadEnc: "x" });  // rev=1
+  store.deleteSpace("sp1");
+  // 主人重建：从 tombstone 高水位 +1 起（slotA high=2 → 3；slotB high=1 → 2）
+  const a = store.putSave("sp1", "slotA", { expectedRev: 0, payloadEnc: "new-gen" });
+  assert.equal(a.rev, 3);
+  // 旧设备带 wipe 前的 expectedRev=1 醒来推送——必须 409 写不进新一代
+  const stale = store.putSave("sp1", "slotA", { expectedRev: 1, payloadEnc: "pre-wipe" });
+  assert.equal(stale.status, 409);
+  assert.equal(store.getSave("sp1", "slotA").payloadEnc, "new-gen");
+  // slotB 同样受保护（低 rev 撞代场景）
+  const b = store.putSave("sp1", "slotB", { expectedRev: 0, payloadEnc: "newB" });
+  assert.equal(b.rev, 2);
+  const staleB = store.putSave("sp1", "slotB", { expectedRev: 1, payloadEnc: "pre-wipe-B" });
+  assert.equal(staleB.status, 409);
+  store.close();
+});
+
+it("ALLOW_INSECURE_LOCAL_ONLY + 非 loopback HOST 拒绝启动", async () => {
+  const { createHubServer } = await import("./server.mjs");
+  const oldInsecure = process.env.ALLOW_INSECURE_LOCAL_ONLY;
+  const oldHost = process.env.HOST;
+  const oldToken = process.env.MEMORY_HUB_TOKEN;
+  process.env.ALLOW_INSECURE_LOCAL_ONLY = "1";
+  delete process.env.MEMORY_HUB_TOKEN;
+  try {
+    process.env.HOST = "0.0.0.0";
+    assert.throws(() => createHubServer({ dbPath: ":memory:" }), /非 loopback/);
+    process.env.HOST = "127.0.0.1";
+    assert.doesNotThrow(() => {
+      const { server } = createHubServer({ dbPath: ":memory:" });
+      server.close();
+    });
+    delete process.env.HOST; // 缺省按 loopback 放行
+    assert.doesNotThrow(() => {
+      const { server } = createHubServer({ dbPath: ":memory:" });
+      server.close();
+    });
+  } finally {
+    if (oldInsecure === undefined) delete process.env.ALLOW_INSECURE_LOCAL_ONLY; else process.env.ALLOW_INSECURE_LOCAL_ONLY = oldInsecure;
+    if (oldHost === undefined) delete process.env.HOST; else process.env.HOST = oldHost;
+    if (oldToken === undefined) delete process.env.MEMORY_HUB_TOKEN; else process.env.MEMORY_HUB_TOKEN = oldToken;
+  }
+});

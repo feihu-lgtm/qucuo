@@ -471,6 +471,13 @@ export function createHubStore(dbOrPath = ":memory:") {
     let deletedChunks = 0;
     let deletedSaves = 0;
     try {
+      // 批量 tombstone（复审必修）：wipe 整空间不等于豁免复活保护——被删槽逐个
+      // 记高水位（max 合并），否则主人重建从 rev 1 起后，wipe 期间离线设备带旧
+      // 低 rev 醒来推送会 CAS 撞上新代低序号，把 wipe 前内容静默盖回新存档。
+      const rows = db.prepare("SELECT slot_id, rev FROM saves WHERE space_id = ?").all(spaceId);
+      const tombStmt = db.prepare(`INSERT INTO save_tombstones(space_id, slot_id, high_rev) VALUES (?, ?, ?)
+        ON CONFLICT(space_id, slot_id) DO UPDATE SET high_rev = MAX(high_rev, excluded.high_rev)`);
+      for (const row of rows) tombStmt.run(spaceId, row.slot_id, row.rev);
       deletedChunks = stmtDeleteChunks.run(spaceId).changes;
       deletedSaves = stmtDeleteSaves.run(spaceId).changes;
       db.exec("COMMIT");

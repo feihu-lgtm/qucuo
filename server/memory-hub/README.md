@@ -23,6 +23,9 @@ MEMORY_HUB_TOKEN=本地开发token PORT=8787 MEMORY_HUB_DB=./memory-hub.sqlite n
 单槽删除会记录该槽历史最高 rev（`save_tombstones` 高水位）。空槽重建从 highwater+1 起——
 旧设备持删除前的过期 expectedRev 写/删永远碰不到新一代。
 
+**客户端适配映射（WO-19 seam 对接硬约束）**：客户端本地 `rev` 计数器**不是**直接用作 CAS `expectedRev`——适配层必须把「服务端上次确认返回的 `serverRev`」作为下一次推送的 `expectedRev`（本地计数只作参考），并把快照 `value` 封装成 `payloadEnc` 不透明密文串上送；明文快照直发会被服务端拒绝。
+
+
 ## 运行单测
 
 ```bash

@@ -73,6 +73,14 @@ export function createHubServer({
   // ALLOW_INSECURE_LOCAL_ONLY=1 的本机开发（必须自行确保只 bind loopback）。
   if (!token) {
     if (process.env.ALLOW_INSECURE_LOCAL_ONLY === "1") {
+      // 硬拦（复审必修）：insecure 模式叠加非 loopback 绑定 = 无鉴权读写删端点挂公网。
+      // 「自行确保只 bind loopback」不能靠自觉——HOST 显式非 loopback 直接拒绝启动；
+      // 缺省 HOST（main 里默认 127.0.0.1）按 loopback 放行。
+      const host = (process.env.HOST || "127.0.0.1").trim().toLowerCase();
+      const loopback = ["127.0.0.1", "::1", "localhost", ""].includes(host);
+      if (!loopback) {
+        throw new Error(`ALLOW_INSECURE_LOCAL_ONLY=1 但 HOST=${process.env.HOST} 非 loopback——无鉴权端点绝不许挂公网，拒绝启动`);
+      }
       console.warn("[memory-hub] ⚠ 无 token 运行（ALLOW_INSECURE_LOCAL_ONLY=1）——仅限本机 loopback 开发，生产部署必须设 MEMORY_HUB_TOKEN");
     } else {
       throw new Error("MEMORY_HUB_TOKEN 缺失，拒绝启动（生产必须配置；本机开发可显式 ALLOW_INSECURE_LOCAL_ONLY=1 并仅 bind loopback）");
