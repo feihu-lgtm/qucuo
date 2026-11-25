@@ -78,3 +78,50 @@ export function normalizeIntakeResult(data) {
   }
   return data;
 }
+
+// ── WO-15 窄过渡补洞：turn.appease 赔罪消气仲裁 ──
+// 软结算通道删除后，appease 回合没有任何机制清愤怒（feature 层无前置硬结算）。
+// 这不是软结算复活：AI 只做三选一分类，数值（生气解除/+3 好感中值）由系统侧钉死，
+// 不可扩展、不注册其他 kind；单调用 JSON 模式不调它（主模型 MVU 尾巴仍能处理），WO-16 统一清。
+const APPEASE_OPTIONS = ["奏效", "未奏效", "无法判断"];
+
+export function registerAppeaseCall() {
+  definePrompt("block", "turn.appease.sys", {
+    label: "赔罪仲裁系统指令",
+    slot: "sys",
+    editable: "engine",
+    text: () => "你是游戏结算仲裁，只回答一道选择题。不写剧情、不解释，严格只输出一行JSON。",
+  });
+  definePrompt("block", "turn.appease.user", {
+    label: "赔罪消气选择题",
+    slot: "user",
+    editable: "engine",
+    text: (ctx) => `${ctx.npc}还在气头上（缘由：${ctx.reason || "未记录"}）。${ctx.attemptText ? `玩家这次说/做的是：「${ctx.attemptText}」。` : `玩家这次尝试赔罪（${ctx.attemptKind || "求和"}）。`}对方性情：${ctx.personality || "寻常"}；当前好感 ${ctx.affection ?? "未知"}。这次言行是否真让他消了气？敷衍、空话、不得体都不算奏效。
+选项：${APPEASE_OPTIONS.map((o) => `「${o}」`).join("、")}
+输出JSON：{"choice":"选项原文之一"}`,
+  });
+  definePrompt("call", "turn.appease", {
+    group: "sync",
+    label: "赔罪消气仲裁",
+    execution: "sync_pipeline",
+    route: "light",
+    reviewDesc: "WO-15 窄过渡：三选一消气裁定，数值由系统钉死，WO-16 统一清",
+    tokenLimitKey: "extraction",
+    defaultMaxTokens: 256,
+    cfg: (_apiCfg, ctx) => (ctx.cfg ? { ...ctx.cfg, thinkingMode: "off" } : undefined),
+    join: "",
+    matrixBlocks: ["turn.appease.sys", "turn.appease.user"],
+    blocks: ["turn.appease.sys", "turn.appease.user"],
+    schema: {
+      name: "appease_judge",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["choice"],
+        properties: { choice: { type: "string", enum: APPEASE_OPTIONS } },
+      },
+    },
+  });
+}
+
+registerAppeaseCall();

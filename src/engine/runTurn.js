@@ -268,11 +268,45 @@ async function runTurnSteps(ctx, cmd, opts) {
       addLog([{ t: "sys", text: "  ⚠ 本轮叙事被接口中途截断（撞到输出 token 上限），以上是已收到的部分。提取层只能按这段残文结算状态，本轮状态可能不全。" }]);
     }
 
-    // WO-15：独立提取层已整块删除。双调用模式下状态只来自判官管线的
-    // materializeFacts 落账（尾章校对段），不再二次提取；自由行动/赠礼/赔罪/求教等
-    // 全部收拒与数额由判官一裁定案。
+    // WO-15：独立提取层已整块删除。双调用模式下自由行动状态只来自判官管线的
+    // materializeFacts 落账（尾章校对段），不再二次提取；settle 回合靠 feature 前置硬结算。
     p = {};
     mvuCommands = [];
+
+    // WO-15 窄过渡补洞：赔罪（appease）在 feature 层无前置硬结算，软结算删除后
+    // 无人裁定消气。这里补一个窄结构化小调用——AI 只三选一，数值由系统钉死。
+    if (isSettle && opts.settleKind === "appease" && opts.settleNpc) {
+      const npcName = typeof opts.settleNpc === "string" ? opts.settleNpc : opts.settleNpc?.name || "";
+      const npcState = (deps.varTree?.角色 || ctx.memory?.varTreeLatest?.角色 || {})[npcName] || {};
+      const anger = npcState.生气状态 || {};
+      try {
+        const appeaseRes = await withAI(
+          "turn.appease",
+          {
+            cfg: deps.apiCfg,
+            npc: npcName,
+            reason: anger.reason || "",
+            attemptText: cmd,
+            attemptKind: "求和赔罪",
+            personality: npcState.性情 || "",
+            affection: npcState.好感度,
+          },
+          { ai, apiCfg: deps.apiCfg, throwOnError: false },
+        );
+        if (ctx.isStale?.()) return { stale: true };
+        if (appeaseRes?.data?.choice === "奏效") {
+          mvuCommands = [
+            { op: "set", path: `角色.${npcName}.生气解除`, value: true },
+            { op: "add", path: `角色.${npcName}.好感度`, value: 3 },
+          ];
+          trace("赔罪仲裁", "pass", `${npcName}消了气（系统落账：生气解除+好感+3）`);
+        } else {
+          trace("赔罪仲裁", "skip", `${npcName}未消气（${appeaseRes?.data?.choice || "判不了"}），本轮零写入`);
+        }
+      } catch (error) {
+        trace("赔罪仲裁", "fail", `裁决异常：${error?.message || error}，本轮零写入`);
+      }
+    }
   } else {
     for (let attempt = 1; attempt <= MAX_AUTO_RETRY + 1; attempt++) {
       const nudge = attempt > 1
