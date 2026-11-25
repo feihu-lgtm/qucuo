@@ -1,5 +1,6 @@
 import React from "react";
 import LootCard from "./LootCard.jsx";
+import EffectReceiptCard from "./EffectReceiptCard.jsx";
 import { LOG_T } from "../../domain/rules/log/logTypes.js";
 
 // 参照酒馆预设的视觉层级：叙述是底色，对话高亮跳出，心理*斜体*
@@ -40,6 +41,20 @@ function renderMixed(text, baseColor, isDayMode) {
   });
 }
 
+// WO-14：日志项携带 receipts（WO-11 判官落盘回执）时，在正文下方逐条渲染
+// 水墨竹简天机落账卡。按钮回调与条目 action 共用同一个 onAction 透传口。
+function ReceiptStrip({ receipts, onAction }) {
+  if (!Array.isArray(receipts) || receipts.length === 0) return null;
+  // 先在 JSX 外 map 成数组再插值：propsCheck 的作用域正则对 JSX 内联 map 的
+  // 嵌套括号会误吞参数名（把 (r, i) 的 r 吃掉），提出来扫得准、读着也干净。
+  const cards = receipts.map((r, i) => (
+    <EffectReceiptCard key={r?.factId || i} receipt={r} onAction={onAction} />
+  ));
+  return (
+    <div className="effect-receipt-strip">{cards}</div>
+  );
+}
+
 export default function LogEntry({ entry, color, onAction, isDayMode = false }) {
   // 得物卡（切磋掉落/偷窃成功/偷师得手）：整条换成像素卡渲染，不走纯文本。
   // 偷招传的是 entry.skill（无 item），偷物传 entry.item——两者都要放行，
@@ -48,6 +63,7 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
     return (
       <div className="log-entry">
         <LootCard entry={entry} />
+        <ReceiptStrip receipts={entry.receipts} onAction={onAction} />
       </div>
     );
   }
@@ -69,6 +85,7 @@ export default function LogEntry({ entry, color, onAction, isDayMode = false }) 
       <span style={{ cursor: entry.action ? "pointer" : undefined }} onClick={entry.action ? () => onAction(entry.action) : undefined}>
         {isDesc ? renderMixed(text, color, isDayMode) : entry.t === LOG_T.ROOM && text.trim() ? `— ${text.trim()} —` : text}
       </span>
+      <ReceiptStrip receipts={entry.receipts} onAction={onAction} />
     </div>
   );
 }
