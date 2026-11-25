@@ -24,7 +24,7 @@ import { effectiveMaxHp } from "../../data/kungfu/qucuoKungfu.js";
 import { makeBuffFlag, mergeCombatBuff } from "../../../utils/buffSystem.js";
 import { STAGES } from "../../../utils/mudHelpers.js";
 import { systemAffectionDelta, systemAffectionPin, hasNoAffectionTrack } from "../state/affection.js";
-import { createHeartLedgerEntry, capHeartLedgerEntries } from "../memory/npcLedger.js";
+import { createHeartLedgerEntry, capHeartLedgerEntries, dedupeHeartLedgerId } from "../memory/npcLedger.js";
 import { INITIAL_FAVORABILITY } from "../npc/npcAwareness.js";
 import { readDailyLootUsed } from "../judge/budgetInput.js";
 
@@ -376,7 +376,7 @@ export function materializeFacts(state, facts, compiledWarrants) {
               op: "merge",
               path: ["varTree", "角色", fact.npc, "心账"],
               // 单人 16 条上限淘汰最旧（roadmap，成本低顺手做）
-              value: (prev) => capHeartLedgerEntries([...(Array.isArray(prev) ? prev : []), entry]),
+              value: (prev) => capHeartLedgerEntries([...(Array.isArray(prev) ? prev : []), dedupeHeartLedgerId(entry, prev)]),
               factId: fact.id,
             });
           }

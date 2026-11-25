@@ -519,6 +519,20 @@ describe("WO-21B 心账写侧五类迁移", () => {
     }
   });
 
+  it("同回合同类同简述反复搭话：id 确定性去重不撞 row key", () => {
+    const fact = { id: "H4", op: "MUTATE_SOCIAL", npc: "才旦", ledgerKind: "恩", reason: "搭话投机", witnesses: ["主角", "才旦"] };
+    const out = materializeFacts(socialBase(), [fact, { ...fact, id: "H5" }], {});
+    const patches = out.patches.filter((p) => p.path.join(".") === "varTree.角色.才旦.心账");
+    expect(patches.length).toBe(2);
+    const runValue = (patch, prev) => (typeof patch.value === "function" ? patch.value(prev) : patch.value);
+    // 串行应用两条 merge：第二条应看到第一条的 id 并加 #2 后缀
+    const after1 = runValue(patches[0], []);
+    const after2 = runValue(patches[1], after1);
+    const ids = after2.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids[1]).toBe(`${ids[0]}#2`);
+  });
+
   it("单人 16 条上限淘汰最旧", () => {
     const out = materializeFacts(socialBase(), [
       { id: "H3", op: "MUTATE_SOCIAL", npc: "才旦", ledgerKind: "见", reason: "第十七面" },
