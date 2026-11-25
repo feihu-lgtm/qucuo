@@ -141,7 +141,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       if (!delta) continue; // perfunctory/未知：零事实
       facts.push({
         id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
-        affectionDelta: delta, ledgerKind: delta > 0 ? "谊" : "隙",
+        affectionDelta: delta, ledgerKind: delta > 0 ? "恩" : "怨",
         reason: delta > 0 ? "搭话投机" : "言语冲撞", witnesses: ["主角", npc.name],
       });
       continue;
@@ -190,7 +190,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         anyAccepted = true;
         facts.push({
           id: nextFactId(), op: "MUTATE_SOCIAL", npc: npc.name,
-          affectionDelta: 3, ledgerKind: "和", reason: "赔罪言和", witnesses: ["主角", npc.name],
+          affectionDelta: 3, ledgerKind: "见", reason: "赔罪言和", witnesses: ["主角", npc.name],
         });
       } else {
         notes.push(`${npc.name}余怒未消，赔罪未收下`);

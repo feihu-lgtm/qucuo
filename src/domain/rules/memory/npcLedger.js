@@ -76,7 +76,17 @@ export function createHeartLedgerEntry(entry = {}) {
   const place = typeof entry.place === "string" ? entry.place.trim() : "";
   const chunkId = typeof entry.chunkId === "string" && entry.chunkId.trim() ? entry.chunkId.trim() : null;
   const id = typeof entry.id === "string" && entry.id.trim() ? entry.id.trim() : `hl_${turn}_${tag}_${summary.slice(0, 8) || "item"}`;
-  return { id, tag, summary, chunkId, turn, place };
+  // witnesses 最小扩展（WO-21B）：写径已带见证人，读侧 normalize 也透传——
+  // 缺失时安全默认空数组，不改变旧读兼容。
+  const witnesses = Array.isArray(entry.witnesses) ? entry.witnesses.filter((w) => typeof w === "string" && w.trim()) : [];
+  return { id, tag, summary, chunkId, turn, place, witnesses };
+}
+
+// 单人心账上限（WO-21B roadmap）：超出淘汰最旧，防无限增生
+export const HEART_LEDGER_MAX_ENTRIES = 16;
+export function capHeartLedgerEntries(entries, max = HEART_LEDGER_MAX_ENTRIES) {
+  const list = Array.isArray(entries) ? entries : [];
+  return list.length > max ? list.slice(list.length - max) : list;
 }
 
 export function heartLedgerToPatches(varTree, name, entry) {

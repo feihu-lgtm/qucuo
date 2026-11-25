@@ -277,3 +277,36 @@ describe("judgeTurn 第四步：签发形状与渲染", () => {
     expect(text).toContain("⟦W7_1⟧");
   });
 });
+
+describe("WO-21B 判官签发类目迁移：谊→恩、隙→怨、和→见", () => {
+  it("搭话投机签「恩」不签谊；言语冲撞签「怨」不签隙", () => {
+    const warm = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "talk", target: "才旦", itemId: "", direction: "none", stance: "sincere" }],
+      proposals: [],
+    }, { rng: seqRng([0.5]) });
+    const pos = warm.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(pos.ledgerKind).toBe("恩");
+
+    const cold = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "talk", target: "才旦", itemId: "", direction: "none", stance: "forceful" }],
+      proposals: [],
+    }, { rng: seqRng([0.5]) });
+    const neg = cold.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    if (neg) expect(neg.ledgerKind).toBe("怨"); // forceful 负映射存在时才签，签了就必须是怨
+  });
+
+  it("appease 收下签「见」不签和", () => {
+    const verdict = judgeTurn(baseEnvelope(), {
+      read: "", refIds: [],
+      actions: [{ kind: "appease", target: "才旦", itemId: "", direction: "none", stance: "sincere" }],
+      proposals: [],
+    }, { rng: seqRng([0.01]) });
+    const social = verdict.facts.find((f) => f.op === "MUTATE_SOCIAL");
+    expect(social).toBeTruthy();
+    expect(social.ledgerKind).toBe("见");
+    // 全链不再出现旧类目
+    expect(JSON.stringify(verdict.facts)).not.toMatch(/"ledgerKind":"[谊隙和]"/);
+  });
+});
