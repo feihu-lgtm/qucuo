@@ -159,8 +159,9 @@ export function useScreenHandlers({
 
   // WO-16F-F2c：skipCaptureUndo 可选——判官链叙事后接续的交互不覆盖本回合撤销点。
   const handleNpcTrade = useCallback((npc, { skipCaptureUndo = false } = {}) => applyResult(featureCtx(), () => {
-    if (!skipCaptureUndo) captureUndo();
     const result = tradeWithNpc(gameStore.getState(), npc);
+    // 交易被拒（如追杀令冷遇）没有 shop/changes，只是拒绝日志：不得白烧唯一撤销点。
+    if (!skipCaptureUndo && (result.shop || result.changes)) captureUndo();
     if (result.shop) {
       // 日更摊刷新带来的落账（换货 room/npcState + 吆喝日志）与开摊分开应用。
       if (result.changes || result.logs?.length) applyResult(featureCtx(), { changes: result.changes, logs: result.logs });

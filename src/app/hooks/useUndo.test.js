@@ -137,6 +137,35 @@ describe("undo controller", () => { it("keeps the real pickup undo point when a 
     }
   });
 
+  it("does not burn the undo point when a hunted traitor makes trade refuse", () => {
+    const order = { faction: "黑风寨", entryId: "heifeng_麻三", name: "麻三", turn: 5 };
+    const before = {
+      time: 20, log: [], inv: [], npcState: {},
+      room: { name: "黑风寨", npcs: [] },
+      companionState: { imported_麻三: { unlocked: true, active: true, label: "麻三", data: { name: "麻三" } } },
+      varTree: { 世界: { 追杀令: [order] }, 角色: {} },
+    };
+    const restoreStore = freshStore(before);
+    try {
+      const harness = createController({ buildCurrentSnapshot: () => gameStore.getState(), applySnapshot: initGameStore });
+      const captureUndo = vi.fn(harness.controller.captureUndo);
+      const addLog = vi.fn();
+      registerRuntime({ addLog, setVarTree: gameActions.setVarTreeState });
+      let handlers;
+      function Harness() {
+        handlers = useScreenHandlers({ captureUndo });
+        return null;
+      }
+      renderToStaticMarkup(createElement(Harness));
+      handlers.handleNpcTrade({ name: "山寨货郎", faction: "黑风寨", carriedItems: [] });
+      expect(captureUndo).not.toHaveBeenCalled();
+      expect(addLog).toHaveBeenCalledWith([expect.objectContaining({ text: expect.stringContaining("叛门之徒") })]);
+    } finally {
+      resetRuntime();
+      restoreStore();
+    }
+  });
+
   it("exposes turn invalidation for the generation stop action", () => {
     const harness = createController();
     const isStale = createTurnStaleCheck(harness.turnGenerationRef);
