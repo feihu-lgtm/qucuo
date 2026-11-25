@@ -6,8 +6,8 @@ import { definePrompt } from "../../domain/rules/prompt/registry.js";
 import { INTAKE_JSON_SCHEMA } from "../../domain/rules/judge/intakeSchema.js";
 import { validateJsonSchema } from "../../utils/schemaValidate.js";
 import { splitCompositeInput } from "../../domain/rules/input/compositeInput.js";
-import { visibleInnerExits, isInnerExitUnlocked } from "../../domain/rules/map/innerMap.js";
-import { QUCUO_MAP } from "../../domain/data/map/qucuoMap.js";
+import { visibleInnerExits } from "../../domain/rules/map/innerMap.js";
+import { QUCUO_MAP, isNodeUnlocked } from "../../domain/data/map/qucuoMap.js";
 
 // 组装喂给小模型的现场材料（纯函数）：
 //   最近两轮对话 + 在场角色与随身物 ID + 可引用场记板条目头。
@@ -27,16 +27,21 @@ export function buildIntakeUserContent({
   const segments = splitCompositeInput(playerInput);
   lines.push(`[拆句提示] ${segments.length > 1 ? segments.map((seg) => `「${seg}」`).join("、") : "无"}`);
   // 可用出口：内层房间用 visibleInnerExits（未解锁隐藏方向不出现）；
-  // 外层据点按 QUCUO_MAP[room.name].exits 列——带 unlockCondition 的目的节点
-  // 用 isInnerExitUnlocked 同一解锁口径过滤（flag/quest/favor/钥匙锁全兼容）。
+  // 外层据点按 QUCUO_MAP[room.name].exits 列，解锁过滤与 outerMove 同走 isNodeUnlocked。
   const unlockCtx = { questProgress, flags, inv, char, varTree };
   let exitMap = {};
   if (room?.name && innerRoomName) {
     exitMap = visibleInnerExits(room.name, innerRoomName, unlockCtx);
   } else if (room?.name && QUCUO_MAP[room.name]?.exits) {
+    // WO-16G-G2 口径统一：外层出口解锁直接走玩家真实移动判定 isNodeUnlocked
+    // （engine/act/outerMove.js 同一入口），completedQuests 推导口径与 outerMove 逐字相同。
+    // 不再借道 isInnerExitUnlocked 平行实现——两者对 favor/钥匙锁等扩展类型的分歧
+    // 会让前哨喂的「可用出口」与玩家实际走法静默分叉。注意 isNodeUnlocked 对
+    // 未知 condition type 返回 true（默认放行），与内层口径相反；外层节点现状
+    // 只用 flag/questCompleted/anyFlag 三种（qucuoMap.js 实证），暂无影响。
+    const completedQuests = new Set(Object.entries(questProgress || {}).filter(([, p]) => p?.status === "completed" || p?.done).map(([id]) => id));
     for (const [dir, dest] of Object.entries(QUCUO_MAP[room.name].exits)) {
-      const destNode = QUCUO_MAP[dest];
-      if (destNode?.unlockCondition && !isInnerExitUnlocked(destNode.unlockCondition, unlockCtx)) continue;
+      if (!isNodeUnlocked(dest, { completedQuests, flags })) continue;
       exitMap[dir] = dest;
     }
   }
@@ -114,8 +119,8 @@ export function registerIntakeCalls() {
     label: "前哨听意",
     execution: "sync_pipeline",
     route: "light",
-    reviewDesc: "契约 B 扁平听意单：关思考 maxTokens 512，原生 schema 通道，本地 validateJsonSchema 复核",
-    defaultMaxTokens: 512,
+    reviewDesc: "契约 B 扁平听意单：关思考 maxTokens 1024（WO-16G roadmap 口径），原生 schema 通道，本地 validateJsonSchema 复核",
+    defaultMaxTokens: 1024,
     cfg: (_apiCfg, ctx) => (ctx.cfg ? { ...ctx.cfg, thinkingMode: "off" } : undefined),
     join: "",
     matrixBlocks: ["turn.intake.sys", "turn.intake.user"],
@@ -163,6 +168,34 @@ function repairProposal(entry) {
   };
 }
 
+// WO-16G-G2 三级分流闸门（runTurn 与 shadow 共用唯一来源，不得各写一份）：
+// 纯搭话且无任务推进候选时才跳过前哨；有候选时仍调一次 turn.intake——
+// 「说动对方/说服推进」通道（proposals.quest_advance）只有模型听意才能产出，
+// 本地合成猜不出玩家哪句话真把事说动了，这个成本是有意保留的。
+export function shouldSkipIntakeForTalk(isTalk, questCandidates) {
+  return !!isTalk && !(questCandidates && questCandidates.length > 0);
+}
+
+// WO-16G-G2 三级分流：纯搭话跳过前哨 AI 调用，本地合成听意单直接进纯函数判官。
+// 形状与 normalizeIntakeResult 输出完全一致（12 字段全 required），判官无感；
+// target 沿用上游 talkTarget 判定，查不出填「无」——judgeTurn 按白名单照常裁小额社交事实。
+// confidence:1 是本地占位值——判官当前不消费 confidence，它不表示任何模型确信度。
+export function synthesizeTalkIntake(cmd, talkTarget) {
+  const text = String(cmd || "");
+  return {
+    read: text.slice(0, 40),
+    refIds: [],
+    actions: [{
+      ...ACTION_DEFAULTS,
+      kind: "talk",
+      target: typeof talkTarget === "string" && talkTarget ? talkTarget : "无",
+      confidence: 1,
+      text,
+    }],
+    proposals: [],
+  };
+}
+
 export function normalizeIntakeResult(data) {
   if (!data || typeof data !== "object") {
     return { read: "", refIds: [], actions: [], proposals: [], degraded: true };
@@ -171,7 +204,11 @@ export function normalizeIntakeResult(data) {
   const clean = {
     read: typeof data.read === "string" ? data.read : "",
     refIds: Array.isArray(data.refIds) ? data.refIds.filter((x) => typeof x === "string") : [],
-    actions: (Array.isArray(data.actions) ? data.actions : []).map((a) => repairEntry(a, ACTION_DEFAULTS)).filter(Boolean),
+    // WO-16G-G2 逐条丢弃：单条 action 修不好（如 kind enum 非法）只丢这一条，
+    // 不再连坐整张听意单——复合句里其余合法动作照常进判官。
+    actions: (Array.isArray(data.actions) ? data.actions : [])
+      .map((a) => repairEntry(a, ACTION_DEFAULTS))
+      .filter((a) => a && validateJsonSchema(a, INTAKE_JSON_SCHEMA.schema.properties.actions.items).ok),
     proposals: (Array.isArray(data.proposals) ? data.proposals : []).map((x) => repairProposal(x)).filter(Boolean),
   };
   if (!validateJsonSchema(clean, INTAKE_JSON_SCHEMA.schema).ok) {

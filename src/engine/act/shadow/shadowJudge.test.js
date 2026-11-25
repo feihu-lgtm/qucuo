@@ -195,3 +195,22 @@ describe("WO-16G 影子喂料同源", () => {
     void buildIntakeUserContent;
   });
 });
+
+describe("WO-16G-G2 影子分流同源", () => {
+  it("纯搭话无任务候选：影子也本地合成听意单，零 withAI 调用", async () => {
+    let aiCalls = 0;
+    const ai = { async chat() { aiCalls += 1; return { text: "{}" }; } };
+    const pre = {
+      room: { name: "鱼定村", npcs: [{ name: "才旦" }], items: [] },
+      inv: [], flags: [], varTree: { 角色: {} }, char: { hp: [10, 10] },
+      questProgress: {}, innerRoomName: null, turn: 1,
+    };
+    const result = await runShadowJudge({
+      cmd: "才旦，最近可好？", preState: pre, postState: { ...pre, varTree: { 角色: {} } },
+      ai, apiCfg: { shadowJudgeEnabled: true, extractionEnabled: false },
+      convo: [], isTalk: true, talkTarget: "才旦", epoch: "test-g2",
+    });
+    expect(aiCalls).toBe(0);
+    expect(result).not.toBeNull();
+  });
+});

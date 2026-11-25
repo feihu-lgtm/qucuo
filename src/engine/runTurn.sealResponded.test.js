@@ -32,22 +32,20 @@ const sealLine = (arr) => `正文叙事\n---SEAL---\n${JSON.stringify({ fills: {
 
 describe("SEAL respondedNpcs 兜底接线", () => {
   it("系统推导为空时：SEAL respondedNpcs 进 p 作低可信兜底", async () => {
-    // intake 返回空 actions（推导为空），叙事 SEAL 自证才旦开口
+    // WO-16G-G2：纯搭话跳过前哨，本地合成听意单——talkTarget 缺失时 target=「无」，
+    // 推导为空，叙事 SEAL 自证才旦开口才有兜底意义。前哨不再调 AI，mock 只需主叙事一条。
     const ai = createMockAi([
-      JSON.stringify({ read: "", refIds: [], actions: [], proposals: [] }),
       sealLine(["才旦"]),
     ]);
-    const deps = makeDeps(); deps.ai = ai;
+    const deps = makeDeps({ talkTarget: null }); deps.ai = ai;
     const turn = await runTurn(deps, "才旦，最近可好？");
     expect(turn.derivedRespondedNpcs).toEqual([]);
     expect(turn.p?.respondedNpcs).toEqual(["才旦"]);
   });
 
   it("系统推导非空时：SEAL 不覆盖系统推导", async () => {
+    // WO-16G-G2：纯搭话本地合成听意单（target 来自 talkTarget「才旦」），无 intake 调用
     const ai = createMockAi([
-      JSON.stringify({ read: "", refIds: [], actions: [
-        { kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: 0.9, text: "才旦，最近可好？" },
-      ], proposals: [] }),
       sealLine(["幻觉人"]),
     ]);
     const deps = makeDeps(); deps.ai = ai;

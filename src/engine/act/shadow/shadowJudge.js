@@ -4,7 +4,8 @@
 // 硬约束：不写 gameStore/convo/log/prompt/IndexedDB/localStorage；
 // stale/epoch 丢弃；异常静默；不阻塞回合；route 与 intake 同价不声称省钱。
 import { withAI } from "../../ports/withAI.js";
-import { buildIntakeUserContent, normalizeIntakeResult } from "../../turn/intakeTurn.js";
+import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "../../turn/intakeTurn.js";
+import { buildExtractionCfg } from "../../../domain/rules/prompt/structuredCallCfg.js";
 import { judgeTurn } from "../../../domain/rules/judge/judgeTurn.js";
 import { buildCausalBudgetInput } from "../../../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../../../domain/rules/map/innerMap.js";
@@ -64,7 +65,7 @@ function recordAggregate(epoch, result) {
 export async function runShadowJudge({
   cmd, preState, postState, deps, ai, apiCfg, epoch = "default",
   isStale, epochGuard, trace, convo = [], isTalk = false, moved = false,
-  visibleNpcs = null, gm = false,
+  visibleNpcs = null, gm = false, talkTarget = null,
 }) {
   try {
     if (!resolveShadowJudgeEnabled(apiCfg)) return null;
@@ -92,29 +93,38 @@ export async function runShadowJudge({
     const { containerPlace, containerView, openContainers } = resolveContainerContext({
       districtName: preState?.room?.name, innerRoomName: innerNow, varTree: vtPre, roomDefLookup: getInnerRoom,
     });
-    const intakeContent = buildIntakeUserContent({
-      playerInput: cmd,
-      recentTurns,
-      npcs,
-      entries: [],
-      questCandidates,
-      containers: openContainers,
-      // WO-16G PR-G1：与 runTurn 同源喂料——同一组参数名，口径只在
-      // buildIntakeUserContent 内部一份，影子吃的是回合前快照切片。
-      room: preState?.room || {}, innerRoomName: innerNow,
-      questProgress: preState?.questProgress || {},
-      flags: preState?.flags || [],
-      inv: preState?.inv || [],
-      char: preState?.char || {},
-      varTree: vtPre,
-    });
-    // 网关 guard 与 epoch 必须传入：stale/换档的影子样本不进网络也不计入
-    // intake 指标桶（withAI 在 stale 时提前返回、不 recordIntakeMetric），
-    // epoch 缺失会把所有影子样本混进 default 桶污染按档隔离的报表。
-    const shadowStale = () => Boolean(isStale?.() || epochGuard?.());
-    const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: apiCfg }, { ai, apiCfg, throwOnError: false, epoch, isStale: shadowStale });
-    if (isStale?.() || epochGuard?.()) return null;
-    const intakeResult = normalizeIntakeResult(intakeRes?.data);
+    // WO-16G-G2 混合分流同源：与 runTurn 共用 shouldSkipIntakeForTalk 闸门——
+    // 纯搭话无任务候选时影子也本地合成（不调 withAI），有候选才调 intake；
+    // 否则影子与真实判官输入不同源，搭话回合覆盖率数据失真。
+    let intakeResult;
+    if (shouldSkipIntakeForTalk(isTalk, questCandidates)) {
+      intakeResult = synthesizeTalkIntake(cmd, talkTarget);
+    } else {
+      const intakeContent = buildIntakeUserContent({
+        playerInput: cmd,
+        recentTurns,
+        npcs,
+        entries: [],
+        questCandidates,
+        containers: openContainers,
+        // WO-16G PR-G1：与 runTurn 同源喂料——同一组参数名，口径只在
+        // buildIntakeUserContent 内部一份，影子吃的是回合前快照切片。
+        room: preState?.room || {}, innerRoomName: innerNow,
+        questProgress: preState?.questProgress || {},
+        flags: preState?.flags || [],
+        inv: preState?.inv || [],
+        char: preState?.char || {},
+        varTree: vtPre,
+      });
+      // 网关 guard 与 epoch 必须传入：stale/换档的影子样本不进网络也不计入
+      // intake 指标桶（withAI 在 stale 时提前返回、不 recordIntakeMetric），
+      // epoch 缺失会把所有影子样本混进 default 桶污染按档隔离的报表。
+      const shadowStale = () => Boolean(isStale?.() || epochGuard?.());
+      // WO-16G-G2：影子与真实判官同一模型口径——提取链模型，不能各写一份。
+      const intakeRes = await withAI("turn.intake", { userContent: intakeContent, cfg: buildExtractionCfg("INTAKE", apiCfg) }, { ai, apiCfg, throwOnError: false, epoch, isStale: shadowStale });
+      if (isStale?.() || epochGuard?.()) return null;
+      intakeResult = normalizeIntakeResult(intakeRes?.data);
+    }
     const verdict = judgeTurn({
       // WO-16E 二审修：真实判官吃 commit 前 timeNow——影子统一用回合前 turn，
       // 否则非搭话回合差 +1，day/跨日配额/warrantId/rng seed/origin 全错位。

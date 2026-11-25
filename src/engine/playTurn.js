@@ -100,7 +100,7 @@ export async function playTurn(ctx, cmd, opts = {}) {
         cmd, preState: shadowPre, postState: shadowPost,
         ai: turnCtx.ai, apiCfg: turnCtx.apiCfg,
         convo: turnCtx.convo || [], isTalk,
-        visibleNpcs: presence.visibleNpcsForAI, gm: !!turnCtx.gm,
+        visibleNpcs: presence.visibleNpcsForAI, gm: !!turnCtx.gm, talkTarget: turnCtx.talkTarget ?? null,
         epoch: String(turnCtx.proseEpoch ?? "default"),
         isStale: turnCtx.isStale, epochGuard: turnCtx.proseEpochGuard,
         trace: (layer, label, fields) => turnMonitor.add(trace, layer, label, fields),

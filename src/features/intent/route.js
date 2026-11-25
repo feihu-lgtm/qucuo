@@ -11,6 +11,11 @@ import { turnRuntime } from "../turnRuntime.js";
 // 纯亲密描写（搂抱/亲吻…）里没有任何封闭行动的关键词时，整句不值得问分类模型：
 // 那类输入走亲密路径，分类只会白耗一次调用还回落自由行动。带关键词（如「亲她一下再送她一壶酒」）仍照常识别。
 export function shouldRecognize(apiCfg, cmd, opts = {}) {
+  // WO-16G-G2 前哨合一（裁决 A）：判官链激活（judgePipelineEnabled && extractionEnabled）时
+  // 整链绕过旧 intent.classify 平行执行子系统——自由行动由 turn.intake+判官单链处理，
+  // 不再先串行调一次行动识别。行为变化：确认栏/多步计划/条件触发器在判官世界退役
+  // （由 intake+judge+WO-16F 确定性路由重建）；单调用老路（两开关任一关）完全不受影响。
+  if (apiCfg?.judgePipelineEnabled && apiCfg?.extractionEnabled) return false;
   const text = String(cmd || "").trim();
   return !!apiCfg?.intentRecognitionEnabled && text.length > 1 && !parseDir(text)
     && !(isIntimateInput(text) && !HARD_ACTION_RE.test(text))

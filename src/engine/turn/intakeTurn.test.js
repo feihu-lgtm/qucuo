@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { buildIntakeUserContent, normalizeIntakeResult } from "./intakeTurn.js";
+import { buildIntakeUserContent, normalizeIntakeResult, synthesizeTalkIntake, shouldSkipIntakeForTalk } from "./intakeTurn.js";
 import { getPromptDef } from "../../domain/rules/prompt/registry.js";
 import { INTAKE_JSON_SCHEMA } from "../../domain/rules/judge/intakeSchema.js";
 
 describe("turn.intake 注册", () => {
-  it("call 定义存在：light 路由、512 maxTokens、关思考、挂契约 B schema", () => {
+  it("call 定义存在：light 路由、1024 maxTokens（roadmap 口径）、关思考、挂契约 B schema", () => {
     const call = getPromptDef("call", "turn.intake");
     expect(call).toBeTruthy();
     expect(call.route).toBe("light");
-    expect(call.defaultMaxTokens).toBe(512);
+    expect(call.defaultMaxTokens).toBe(1024);
     expect(call.schema).toBe(INTAKE_JSON_SCHEMA);
     expect(call.cfg(null, { cfg: { thinkingMode: "auto" } }).thinkingMode).toBe("off");
   });
@@ -100,24 +100,66 @@ describe("normalizeIntakeResult 本地复核", () => {
     expect(noQf.proposals[0].questId).toBe("");
   });
 
-  it("confidence 超 0-1 界不通过", () => {
+  it("confidence 超界动作逐条丢弃，合法动作留存（WO-16G-G2）", () => {
     const mk = (c) => ({
       read: "x", refIds: [], proposals: [],
       actions: [{ kind: "talk", target: "才旦", item: "无", itemId: "", direction: "none", condition: "无", condition_text: "", stance: "casual", outcome: "无", risk: "无", confidence: c, text: "x" }],
     });
-    expect(normalizeIntakeResult(mk(1.5)).degraded).toBe(true);
-    expect(normalizeIntakeResult(mk(-0.1)).degraded).toBe(true);
-    expect(normalizeIntakeResult(mk(0.5)).degraded).toBeUndefined();
-    expect(normalizeIntakeResult(mk(0)).degraded).toBeUndefined();
-    expect(normalizeIntakeResult(mk(1)).degraded).toBeUndefined();
+    // 单条超界——该条丢弃，听意单本身不报废
+    expect(normalizeIntakeResult(mk(1.5)).actions).toEqual([]);
+    expect(normalizeIntakeResult(mk(1.5)).degraded).toBeUndefined();
+    expect(normalizeIntakeResult(mk(-0.1)).actions).toEqual([]);
+    for (const c of [0.5, 0, 1]) {
+      expect(normalizeIntakeResult(mk(c)).actions).toHaveLength(1);
+    }
   });
 
-  it("枚举非法修不好才降级为空听意单（degraded 标记）", () => {
+  it("WO-16G-G2：复合句里单条 enum 非法只丢坏动作，合法动作照常进判官", () => {
+    const mixed = {
+      read: "送刀再闲聊", refIds: [], proposals: [],
+      actions: [
+        { kind: "give", target: "才旦", item: "霜牙短刀", text: "送刀" },
+        { kind: "fly", target: "无", text: "飞天" },          // enum 非法——只丢这条
+        { kind: "talk", target: "才旦", text: "闲聊" },
+      ],
+    };
+    const out = normalizeIntakeResult(mixed);
+    expect(out.degraded).toBeUndefined();
+    expect(out.actions).toHaveLength(2);
+    expect(out.actions.map((a) => a.kind)).toEqual(["give", "talk"]);
+  });
+
+  it("整张数据非法才降级为空听意单（degraded 标记）", () => {
     const bad = { read: "x", refIds: [], actions: [{ kind: "fly" }], proposals: [] };
     const out = normalizeIntakeResult(bad);
-    expect(out.degraded).toBe(true);
+    expect(out.degraded).toBeUndefined();           // 坏动作丢弃后仍是合法空actions单
     expect(out.actions).toEqual([]);
     expect(normalizeIntakeResult(null).degraded).toBe(true);
+    expect(normalizeIntakeResult("junk").degraded).toBe(true);
+  });
+});
+
+describe("WO-16G-G2 三级分流闸门与本地合成", () => {
+  it("shouldSkipIntakeForTalk：纯搭话无候选才跳过，有候选/非搭话不跳", () => {
+    expect(shouldSkipIntakeForTalk(true, [])).toBe(true);
+    expect(shouldSkipIntakeForTalk(true, null)).toBe(true);
+    expect(shouldSkipIntakeForTalk(true, undefined)).toBe(true);
+    expect(shouldSkipIntakeForTalk(true, [{ questId: "q", flag: "f" }])).toBe(false);
+    expect(shouldSkipIntakeForTalk(false, [])).toBe(false);
+  });
+
+  it("synthesizeTalkIntake 形状与 normalize 输出一致，target 缺省填「无」", () => {
+    const out = synthesizeTalkIntake("才旦，最近可好？", "才旦");
+    expect(out.actions).toHaveLength(1);
+    expect(out.actions[0].kind).toBe("talk");
+    expect(out.actions[0].target).toBe("才旦");
+    expect(out.actions[0].text).toBe("才旦，最近可好？");
+    // 12 字段全在（required 不缺键）
+    for (const key of ["kind", "target", "item", "itemId", "direction", "condition", "condition_text", "stance", "outcome", "risk", "confidence", "text"]) {
+      expect(out.actions[0]).toHaveProperty(key);
+    }
+    expect(out.proposals).toEqual([]);
+    expect(synthesizeTalkIntake("喂", null).actions[0].target).toBe("无");
   });
 });
 
@@ -172,5 +214,22 @@ describe("buildIntakeUserContent WO-16G 喂料", () => {
     });
     // 心灵之海本身 exits 为空——出口栏恒无
     expect(locked).toContain("[可用出口] 无");
+  });
+
+  it("WO-16G-G2：外层出口解锁与 outerMove 同走 isNodeUnlocked（questCompleted 口径）", () => {
+    // 玉泉寨 w→黑风寨；黑风寨 unlockCondition questCompleted heifengzhai_2_meimeidexiaoxi
+    const base = {
+      playerInput: "走",
+      room: { name: "玉泉寨", items: [] },
+      innerRoomName: null,
+      flags: [], inv: [], char: {}, varTree: {},
+    };
+    const lockedOut = buildIntakeUserContent({ ...base, questProgress: {} });
+    expect(lockedOut).not.toContain("黑风寨");
+    const unlockedOut = buildIntakeUserContent({
+      ...base,
+      questProgress: { heifengzhai_2_meimeidexiaoxi: { status: "completed" } },
+    });
+    expect(unlockedOut).toContain("w(西→黑风寨)");
   });
 });
