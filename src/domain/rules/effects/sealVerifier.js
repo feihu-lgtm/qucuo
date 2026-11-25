@@ -101,6 +101,12 @@ export function verifySealAndMaterialize({
       notes.push(`${warrant.warrantId} 尾章未填空，该券作废`);
       continue;
     }
+    // 形状防线：name 必须是非空字符串——模型失控吐出对象时，
+    // 铸进实例会让 UI 把对象当文本渲染直接炸 React。
+    if (typeof fill.name !== "string" || !fill.name.trim()) {
+      warnings.push(`${warrant.warrantId} 尾章填空的名字不是字符串，该券作废`);
+      continue;
+    }
     const compiled = warrant.op === "BESTOW_SKILL"
       ? compileEmergentSkill(warrant, fill)
       : compileEmergentItem(warrant, fill, { luck });
