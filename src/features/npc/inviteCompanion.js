@@ -6,6 +6,8 @@ import { removeNpc } from "../../domain/rules/npc/roomNpcs.js";
 import { SNOW_QUEST_ID, SNOW_TRUSTED, SNOW_INVITED } from "../../domain/rules/quests/snowLeopardQuest.js";
 import { createQuestProgress } from "../../domain/rules/quests/questEngine.js";
 import { npcBusyInQuest } from "./ocRecruit.js";
+import { systemAffectionPin, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
+import { AFFECTION_RULES } from "../../domain/rules/state/fields.js";
 
 export function inviteCompanion(state, npc, ctx = {}) {
   if (!npc) return { logs: [{ t: "err", text: "  此地没有这位人物。" }] };
@@ -32,7 +34,12 @@ export function inviteCompanion(state, npc, ctx = {}) {
         flags: (f) => [...new Set([...f, SNOW_INVITED])],
         questProgress: (p) => ({ ...p, [SNOW_QUEST_ID]: { ...(p?.[SNOW_QUEST_ID] || createQuestProgress(SNOW_QUEST_ID, now)), status: "completed", currentStageIndex: 2, completedAt: now } }),
       } : {}),
-      varTree: (prev) => markNpcKnown(prev || {}, npc.name),
+      varTree: (prev) => {
+        const known = markNpcKnown(prev || {}, npc.name);
+        // WO-16B：同行情谊钉初始好感 deterministic；兽类/无好感轨道跳过。
+        if (hasNoAffectionTrack(npc)) return known;
+        return systemAffectionPin(known, npc.name, AFFECTION_RULES.companion.example).tree;
+      },
       room: (prev) => ({
         ...prev,
         npcs: removeNpc(prev.npcs, (entry) => entry.name === npc.name && (entry.companionCandidate || entry.imported)),

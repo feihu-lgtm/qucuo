@@ -54,10 +54,14 @@ export function commitRound(d) {
 
   d.mvuCommands = filterGhostCommands(d.mvuCommands, systemAcceptedNames, _knownChars);
   if (d.giftSettlement) {
-    const { npc } = d.giftSettlement;
-    const command = d.mvuCommands.find(({ op, path, value }) =>
-      op === "add" && path === `角色.${npc}.好感度` && Number.isFinite(value));
-    d.mvuCommands = command ? [command] : [];
+    // WO-16B：送礼好感已由 feature deterministic 硬结算落账，模型写的任何
+    // 好感 MVU 都是双计——不再放行那"唯一一条"，整批清空（其余状态也早已系统结清）。
+    d.mvuCommands = [];
+  }
+  // 求教/邀同行同理：settleNpc 的好感是系统结算的既成事实，模型乱写一律拦截。
+  if (!d.giftSettlement && (d.settleKind === "learn_skill" || d.settleKind === "companion_invite") && d.settleNpc) {
+    const pin = `角色.${d.settleNpc}.好感度`;
+    d.mvuCommands = d.mvuCommands.filter(({ path }) => path !== pin);
   }
   if (d.mvuCommands.length) {
     d.setVarTree(prev => {
@@ -74,8 +78,6 @@ export function commitRound(d) {
         charm: d.effectiveSpecialNow?.魅力 ?? 5,
         time: d.time,
         giftRange: d.giftSettlement?.range,
-        // 邀同行那轮是系统规定"_.set 初始好感"，其余回合 _.set 好感度都换算成限幅增量。
-        allowAffectionSet: d.settleKind === "companion_invite",
         ...talkAffection,
       });
       // 被裁决拒绝的指令要能在「🧭全流程日志」里看见。此前只 console.warn，

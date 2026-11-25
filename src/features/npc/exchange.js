@@ -13,6 +13,8 @@ import { refreshDailyShop, dailyShopDayKey, promoForDay, isDailyShopNpc } from "
 import { appeaseAngryNpc, recordNpcAttempt } from "./anger.js";
 import { add, applyWrite, set, updateField } from "../../domain/rules/state/applyWrite.js";
 import { giftRange } from "../../domain/rules/state/fields.js";
+import { systemAffectionDelta, hasNoAffectionTrack } from "../../domain/rules/state/affection.js";
+import { selectEffectiveStats } from "../stats/logic.js";
 import { forceAdvanceQuest } from "../quest/logic.js";
 import { soupKitchenRepGain } from "../../domain/rules/economy/soupKitchen.js";
 import { factionTurnInOf } from "../../domain/rules/economy/factionTurnIn.js";
@@ -108,6 +110,16 @@ export function giftNpc(state, npc, item, now = Date.now()) {
   const command = isAngry ? `在${npc.name}气头上，将「${itemName}」赠予对方，试图以此赔罪示好` : (deliveredQuest ? `将「${itemName}」郑重交给${npc.name}——这正是${npc.name}等着的东西` : `将「${itemName}」赠予${npc.name}`);
   // 命中任务交付时不在此预扣——交付物由 forceAdvanceQuest 统一扣，否则一件东西被扣两次。
   const changes = { varTree: (prev) => recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now }) };
+  // WO-16B：好感增量随 feature 硬结算确定性落账（不再等 AI 写 MVU）。
+  // 生气时礼物只走 appease 仲裁，不双重加挂念；无好感轨道跳过。
+  if (!isAngry && !hasNoAffectionTrack(npc)) {
+    const range = weight?.range ?? giftRange(giftInfo.quality);
+    const preferHit = giftInfo.preferLabel && giftInfo.categoryLabel === giftInfo.preferLabel;
+    const baseDelta = preferHit ? range[1] : Math.round((range[0] + range[1]) / 2);
+    const charm = selectEffectiveStats(state).effectiveSpecialNow?.魅力 ?? 5;
+    changes.varTree = composeUpdates(changes.varTree, (prev) =>
+      systemAffectionDelta(prev, npc.name, baseDelta, { charm, time: state.time ?? 0, range }).tree);
+  }
   if (!deliveredQuest) changes.inv = applyWrite(state, set("inv", nextInv)).state.inv;
   const logs = [];
   const snowFlags = [];
@@ -213,7 +225,14 @@ export function giftSilver(state, npc, amount, now = Date.now()) {
     changes: {
       char: updateField("char", add("char.money", -amount)),
       varTree: (prev) => {
-        const tree = recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now });
+        let tree = recordNpcAttempt(prev, npc.name, { kind: "gift", detail: itemName, time: now });
+        // WO-16B：送银好感确定性硬结算；生气只走 appease，无好感轨道跳过。
+        if (!angry && !hasNoAffectionTrack(npc)) {
+          const range = computeGiftWeight(npc, { amount })?.range;
+          const baseDelta = range ? Math.round((range[0] + range[1]) / 2) : 2;
+          const charm = selectEffectiveStats(state).effectiveSpecialNow?.魅力 ?? 5;
+          tree = systemAffectionDelta(tree, npc.name, baseDelta, { charm, time: state.time ?? 0, range }).tree;
+        }
         if (!alms) return tree;
         return applyFactionRep(tree, { [alms.faction]: alms.delta });
       },

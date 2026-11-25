@@ -138,7 +138,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
     if (o.settleKind === "gift") {
       if (o.giftInfo?.weight) return buildSettleNarrativeNote(o);
       const range = o.giftInfo?.range ?? giftRange(o.giftInfo?.quality);
-      return `\n【送礼反应铁律】${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}已由系统交付并结算完毕，禁重复扣除、禁改写收讫事实。${o.settleNpc}的反应按其自身性情与礼物分量自然写：冷傲者即便心里受用也只是淡淡收下，豪爽者拍腿道谢，精明者掂量估值；厚礼动心、薄礼随意，因人而异、禁千人一腔地惊喜转暖，也禁无由为难起疑。\n礼物信息：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}，描述：${o.giftInfo?.desc || "寻常物件"}。\n本轮必须输出 <mvu> 且为正向增量：依品阶来历在${formatRange(range)}内取值（贵重/用心取上沿，寻常取下沿），禁为0或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${o.giftInfo?.suggestedDelta ?? Math.round((range[0] + range[1]) / 2)});`;
+      return `\n【送礼反应铁律】${o.giftInfo?.itemName ? `「${o.giftInfo.itemName}」` : "这件礼物"}已由系统交付并结算完毕，好感改动也已由系统按礼物分量确定性落账，禁重复扣除、禁改写收讫事实。${o.settleNpc}的反应按其自身性情与礼物分量自然写：冷傲者即便心里受用也只是淡淡收下，豪爽者拍腿道谢，精明者掂量估值；厚礼动心、薄礼随意，因人而异、禁千人一腔地惊喜转暖，也禁无由为难起疑。\n礼物信息：品阶【${o.giftInfo?.quality || "白"}】${o.giftInfo?.categoryLabel ? `，类别「${o.giftInfo.categoryLabel}」` : ""}，描述：${o.giftInfo?.desc || "寻常物件"}。\n本轮禁输出任何好感相关 <mvu>——写了会被系统拦截，且与已落定账本重复。`;
     }
     if (o.settleKind === "companion_invite") {
       const cn = o.settleNpc || "对方";
@@ -148,12 +148,12 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
         : o.settleBeast
         ? `用动作、眼神、姿态（如以额抵掌、伏低臣服）表明结伴之意——它不能说话`
         : `用言语与神情郑重定下同行情谊`;
-      return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行。本轮必写其爽快应下、${speech}；禁写犹豫或抗拒。\n本轮必须输出 <mvu> 且为正向：${cn}属初登场伙伴，直接 _.set 好感度至 ${min}~${max} 间。\n示例：_.set('角色.${cn}.好感度', ${example});`;
+      return `\n【伙伴入队铁律】${cn}已决意与主角正式结伴同行，初始好感已由系统钉在 ${example} 落定。本轮必写其爽快应下、${speech}；禁写犹豫或抗拒。\n本轮禁输出任何好感相关 <mvu>——同行情谊是系统结算的既成事实，写了会被拦截。`;
     }
     if (o.settleKind === "learn_skill") {
       const master = !!o.learnInfo?.isMaster;
       const [min, max, example] = learnRange(master);
-      return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授（门槛、束脩、招式均已由系统结算为既成事实）；本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。对玩家观感只能变好，禁不变或变差。\n本轮必须输出 <mvu> 且为正向增量：在${formatRange([min, max])}内取值（${master ? "绝学情分重，取上沿" : "通用功夫，取下沿"}），禁为0或负数。\n示例：_.add('角色.${o.settleNpc}.好感度', ${example});`;
+      return `\n【授业传艺铁律】${o.settleNpc}已定倾囊相授（门槛、束脩、招式、好感精进均已由系统结算为既成事实）；本轮所授：${o.learnInfo?.isMaster ? "看家绝学" : "江湖通用功夫"}「${o.learnInfo?.moveBrief || "所学"}」${o.learnInfo?.totalPrice ? `，束脩银${o.learnInfo.totalPrice}两` : "，分文未取"}。对玩家观感只能变好，禁不变或变差。\n本轮禁输出任何好感相关 <mvu>——授业情分系统已按${master ? "绝学" : "通用功夫"}定格落账，写了会被拦截。`;
     }
     if (o.settleKind === "appease") {
       return `\n【怒气缓和状态裁决】仅当本轮行为确实缓和${o.settleNpc}，才输出 <mvu>：必写生气解除，观感确有变化时可附好感度增量 N（${AFFECTION_RULES.appease.join("~")} 整数）。未奏效禁设生气解除且不输出 <mvu>；除此之外禁写任何 MVU 变更。\n成功示例（未奏效不输出）：\n_.set('角色.${o.settleNpc}.生气解除', true);\n_.add('角色.${o.settleNpc}.好感度', 3);`;
@@ -165,11 +165,7 @@ export function buildSysBase(targetWordCount, narratorState, scenario, budgetIns
       return `\n【切磋邀战状态示例】本轮没有任何状态变化，不输出 <mvu> 块。`;
     }
     if (o.settleKind === "gift") {
-      if (o.giftInfo?.weight) return giftWeight(
-        "\n仅给收礼人写一条 _.add 好感，整数区间 @赠礼.好感范围；收下必写区间内的正向增量，禁省略、禁为零。"
-      ) + (o.giftInfo?.preferLabel && o.giftInfo?.categoryLabel === o.giftInfo.preferLabel
-        ? "礼物正是对方偏好的类别，好感取区间上沿。"
-        : "") + "禁写其他 MVU。";
+      if (o.giftInfo?.weight) return "\n好感已随礼物分量由系统结算落账，本轮禁写好感相关 MVU。";
     }
     return "";
   }
