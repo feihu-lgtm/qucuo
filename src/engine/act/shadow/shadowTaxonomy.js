@@ -40,6 +40,11 @@ export const FEATURE_ROUTED_KIND_CATS = {
   use_item: ["inv", "vitals"],
   take: ["inv"],
   invite: ["affection"],
+  // S7 裁决：trade 属延期交互路由（runDeferred→商店 UI），判官链只受理问价/看货
+  // 意向，成交发生在后续商店操作——同回合单调用直接记账不参与覆盖率对比。
+  // 粒度说明：vitals 为整类目豁免（hp+money 不可分）——与 use_item 既有先例同口径；
+  // trade 回合几乎无 hp 变动，误豁免风险可忽略，为最小正确实现。
+  trade: ["inv", "vitals"],
 };
 
 export function featureRoutedCats(actions = []) {
