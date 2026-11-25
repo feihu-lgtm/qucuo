@@ -44,13 +44,14 @@ export default defineConfig({
           try {
             const fetchRes = await fetch(target, {
               method: req.method,
-              headers: fwdHeaders,
+              headers: { ...fwdHeaders, "accept-encoding": "identity" },
               body: body || undefined,
             });
-            const resBody = await fetchRes.text();
             const resHeaders = {};
             for (const [k, v] of fetchRes.headers) {
-              if (!["content-encoding", "transfer-encoding"].includes(k)) {
+              // undici 透明解压后 content-encoding 头与实际字节不符，且流式转发不能保留
+              // transfer-encoding: chunked（逐块 write 时 node 会自行分块）
+              if (!["content-encoding", "transfer-encoding", "content-length"].includes(k)) {
                 resHeaders[k] = v;
               }
             }
@@ -58,7 +59,12 @@ export default defineConfig({
             resHeaders["access-control-allow-headers"] = "*";
             resHeaders["access-control-allow-methods"] = "*";
             res.writeHead(fetchRes.status, resHeaders);
-            res.end(resBody);
+            // 逐块转发而非 await .text() 整包缓冲——SSE 流式（OpenAI/Anthropic/Gemini）
+            // 依赖增量到达，整包读取会让玩家在等待期间看不到任何字。
+            if (fetchRes.body) {
+              for await (const chunk of fetchRes.body) res.write(chunk);
+            }
+            res.end();
           } catch (e) {
             res.writeHead(502, { "Content-Type": "text/plain" });
             res.end("Proxy error: " + e.message);
