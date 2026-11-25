@@ -50,6 +50,36 @@ export function compareCategories(diffOut, proj) {
       }
       continue;
     }
+    // 数值类目（vitals.hp/money、cultivation.exp/pot）：零值语义一致——两边皆零 match，
+    // 单边非零 single_only/judge_only，都非零不等 both_diff。
+    if (cat === "vitals" || cat === "cultivation") {
+      const dNum = d[cat] || {}, pNum = proj[cat] || {};
+      const keys = cat === "vitals" ? ["hp", "money"] : ["exp", "pot"];
+      const sub = {}; let anySingle = false, anyJudge = false, anyDiff = false, anyActive = false;
+      for (const k of keys) {
+        const dv = dNum[k] || 0, pv = pNum[k] || 0;
+        if (dv === 0 && pv === 0) continue;
+        anyActive = true;
+        if (dv === pv) continue;
+        if (pv === 0) anySingle = true;
+        else if (dv === 0) anyJudge = true;
+        else anyDiff = true;
+        sub[k] = { single: dv, judge: pv };
+      }
+      // 全部子项相等（含非零相等）才算 match；有差异才按方向归类
+      const anyMismatch = anySingle || anyJudge || anyDiff;
+      verdicts[cat] = (!anyActive || !anyMismatch)
+        ? { verdict: "match" }
+        : { verdict: anySingle ? "single_only" : anyDiff ? "both_diff" : "judge_only", single: dNum, judge: pNum };
+      void sub;
+      continue;
+    }
+    if (cat === "quest") {
+      const dPair = { add: d.quest?.advance, rm: [] };
+      const pPair = { add: proj.quest?.advance, rm: [] };
+      verdicts[cat] = { verdict: compareListPair(dPair, pPair), single: d.quest?.advance, judge: proj.quest?.advance };
+      continue;
+    }
     if (cat === "flags") {
       const dPair = { add: d.flags?.add, rm: [] };
       const pPair = { add: proj.flags?.add, rm: [] };

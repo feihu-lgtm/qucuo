@@ -24,9 +24,15 @@ const fmtAff = (obj) => {
 export function formatVerdictLine(cat, v) {
   const label = VERDICT_LABEL[v?.verdict] || v?.verdict || "?";
   if (v?.verdict === "excluded" || v?.verdict === "match") return `${cat}：${label}`;
+  const fmtNum = (obj) => {
+    const entries = Object.entries(obj || {}).filter(([, val]) => val);
+    return entries.length ? entries.map(([k, val]) => `${k}${val > 0 ? "+" : ""}${val}`).join("、") : "无";
+  };
   const detail = cat === "affection"
     ? `实际${fmtAff(v.single)} 判官${fmtAff(v.judge)}`
-    : `实际${fmtPair(v.single)} 判官${fmtPair(v.judge)}`;
+    : (cat === "vitals" || cat === "cultivation")
+      ? `实际${fmtNum(v.single)} 判官${fmtNum(v.judge)}`
+      : `实际${fmtPair(v.single)} 判官${fmtPair(v.judge)}`;
   return `${cat}：${label}（${detail}）`;
 }
 
@@ -46,5 +52,11 @@ export function formatAggregate(agg) {
   }
   const ex = Object.entries(agg.excluded || {});
   if (ex.length) lines.push(`盲区(不计入覆盖)：${ex.map(([cat, n]) => `${cat}×${n}`).join("、")}`);
+  // WO-16D-M1：single_only 原话采样清单——WO-16F 需求来源
+  const samples = agg.samples || [];
+  if (samples.length) {
+    lines.push(`判官漏判原话采样（${samples.length}句，上限20）：`);
+    for (const smp of samples) lines.push(`· [${smp.cat}] ${smp.cmd}`);
+  }
   return lines;
 }

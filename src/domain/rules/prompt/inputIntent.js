@@ -101,7 +101,9 @@ export function isGiftInput(rawInput) {
 // trade 动作从源头消失）。词面保守：只排明显交互动词，元问题/复杂否定先不做。
 const TRADE_RE = /买|卖|交易|问价|价格|价钱|多少钱|开价|拿货看看|什么货|进货|出货/;
 export function isTradeInput(rawInput) {
-  const input = (rawInput || "").trim();
+  // 「买卖」作名词（聊聊村里的买卖/做点买卖）是话题不是交易请求——先剥掉再测，
+  // 否则 买/卖 单字在复合名词里误中（Review：「聊聊村里的买卖」白耗一回合）。
+  const input = (rawInput || "").trim().replace(/买卖/g, "");
   if (!TRADE_RE.test(input)) return false;
   // 元问题排除：「价格是什么/什么叫交易」这类概念问答不是交易意向。
   return !/(是什么|什么意思|什么叫)/.test(input);
