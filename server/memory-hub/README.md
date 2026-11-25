@@ -94,6 +94,17 @@ canonical，绝不携带 embedding 字段。**明文口径（有意）**：prose
 威胁模型与存档相反，存档密文 at-rest、prose 明文对 hub 运营方可见，witnesses 元数据供可见性过滤；
 prose 路径绝不触碰存档密钥/密文。嵌入向量管线仍不做（后续工单）。
 
+## ✅ WO-20C：客户端召回已接云查询（recallProse 合并）
+
+客户端 `recallProse`（engine/ports/recallBlock.js）在 `driver==="cloud"` 且绑定完整且 **lineage 非空** 时，
+与本地词法召回并行发起 `/prose/query`（1.5s 短超时，失败/超时/非 2xx/坏形状一律静默降级本地结果，绝不阻断回合）；
+无 lineage 绝不退 maxTurn 云查（防跨时间线串味），local/file/未绑定零网络。合并纯函数
+`src/domain/rules/memory/cloudRecallMerge.js`：本地是新鲜权威（上行有 debounce，近段可能未上行）在前，
+云端补跨设备/已同步历史在后，按 **turn+规范化文本** 去重（不按 id——云端 chunkId 带 `${branchId}::` 命名空间
+与本地 IndexedDB id 形状不同），witnesses 客户端再过滤一次（不信任服务端已过滤），文本按当前 viewer
+现剥心理，总条数 topK 封顶。**威胁模型补记**：查询文本（含玩家输入与上下文词）与命中的明文段落一样
+会发往 hub，对 hub 运营方可见——与上行明文同一有意口径；查询绝不携带 embedding/queryEmbedding 字段。
+
 ## ✅ WO-20B1：谱系/地点过滤已下推 SQL（原 known limitation 消除）
 
 FTS 候选的谱系（branch_id/turn/seq 边界）与 location 条件已下推进 `queryProseChunks` 的动态 SQL——

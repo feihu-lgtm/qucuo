@@ -4,7 +4,8 @@
 // 小纸条向量召回维持原样作补充，两者在此混排成一块场记板。
 import { embeddingReady } from "./embeddingService.js";
 import { recallWithVisibility } from "./recallWithVisibility.js";
-import { getAllProseChunks, addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes, isProseReconcilePending, waitProseReconcile, setProseReconcilePending, clearProseReconcilePending } from "../../infra/proseStore.js";
+import { getAllProseChunks, addProseChunks, getProseChunksByTurn, getProseChunksByBranch, migrateLegacyConvoAndNotes, isProseReconcilePending, waitProseReconcile, setProseReconcilePending, clearProseReconcilePending, queryCloudProseHits } from "../../infra/proseStore.js";
+import { mergeCloudProseEntries } from "../../domain/rules/memory/cloudRecallMerge.js";
 import { rankProseChunks, expandWithNeighbors } from "../../domain/rules/memory/proseRecall.js";
 
 const DEFAULT_HEADER = "\n\n[往事正本·与此刻情形相关的原文记忆，可能不在最近对话里，供你行文时自然照应，不要生硬复述]\n";
@@ -25,28 +26,43 @@ export async function recallProse({ queryText, viewer, topK = 5, epoch, currentT
   // reconcile-pending 窗口内保守返回空——读档/undo 的谱系分叉未定，
   // 宁可这回合没回忆，也不可把将被截断的旧未来段串进正文。
   if (isProseReconcilePending()) return [];
+  // WO-20C 云端召回：与本地并行启动（不await 不阻塞本地路）。谱系硬门与本地同——
+  // 无 lineage 连云查都不发（宁可只用本地，防跨时间线串味）；local/file/未绑定
+  // 驱动在 infra 层内零网络返 []；失败/超时/坏形状一律静默降级，绝不阻断回合。
+  const hasLineage = Array.isArray(lineage) && lineage.length;
+  const cloudPromise = hasLineage
+    ? queryCloudProseHits({ query: queryText || "", viewer, lineage, currentTurn, topK }).catch(() => [])
+    : Promise.resolve([]);
+  let localEntries = [];
   try {
     // 按谱系分支逐支索引取段（branchId 索引），不全库扫。
     // 运行时无 lineage 宁可无召回——跨时间线串味比没回忆更糟；
     // unscoped 是测试专用宽松路径（全库扫描），必须显式 opt-in。
     let pool;
-    if (Array.isArray(lineage) && lineage.length) {
+    if (hasLineage) {
       const branches = [...new Set(lineage.map((e) => e?.b).filter(Boolean))];
       const perBranch = await Promise.all(branches.map((b) => getProseChunksByBranch(b)));
       pool = perBranch.flat();
     } else if (unscoped) {
       pool = await getAllProseChunks();
     } else {
-      return [];
+      pool = [];
     }
-    if (!pool.length) return [];
-    const scope = { epoch, currentTurn, lineage };
-    const hits = rankProseChunks(pool, queryText || "", viewer, scope);
-    if (!hits.length) return [];
-    return expandWithNeighbors(pool, hits, { viewer, epoch, currentTurn, lineage }).slice(0, topK);
+    if (pool.length) {
+      const scope = { epoch, currentTurn, lineage };
+      const hits = rankProseChunks(pool, queryText || "", viewer, scope);
+      if (hits.length) {
+        localEntries = expandWithNeighbors(pool, hits, { viewer, epoch, currentTurn, lineage }).slice(0, topK);
+      }
+    }
   } catch (_) {
-    return [];
+    localEntries = [];
   }
+  // 本地是新鲜权威（上行有 debounce，近段可能未上行）；云端补跨设备/已同步历史。
+  // 去重按 turn+规范化文本（不按 id——云端 chunkId 带分支命名空间与本地形状不同）。
+  const cloudHits = await cloudPromise;
+  if (!cloudHits.length) return localEntries;
+  return mergeCloudProseEntries(localEntries, cloudHits, { viewer, topK });
 }
 
 export function formatRecallEntries(recallInfo, { recentTexts = [], header = DEFAULT_HEADER, proseEntries = [], budgetChars = RECALL_BUDGET_CHARS } = {}) {
