@@ -243,8 +243,17 @@ async function runTurnSteps(ctx, cmd, opts) {
       // room.name 是据点名、innerRoomName 是内层房间（外层据点无容器清单）。
       const vtNow = deps.varTree || ctx.memory?.varTreeLatest || {};
       const innerRoomNow = liveNow.innerRoomName ?? deps.innerRoomName ?? null;
+      // WO-22B-P2：timeNow 提前到容器解析前——悬空秘宝过滤与 openContainers 的
+      // hasFloating 口径同源（有未定秘宝时已坍缩容器仍列为落点）；影子同口径。
+      const timeNow = getGameStateTime(ctx, deps);
+      const floatingItems = resolveFloatingItems({
+        place: deps.room?.name || "",
+        day: Math.floor(timeNow / 24) + 1,
+        relicState: vtNow?.世界?.悬空秘宝,
+      });
       const { containerPlace, containerView, openContainers } = resolveContainerContext({
         districtName: deps.room?.name, innerRoomName: innerRoomNow, varTree: vtNow, roomDefLookup: getInnerRoom,
+        hasFloating: floatingItems.length > 0,
       });
       // WO-16G-G2 三级分流：纯搭话跳过前哨——本地合成听意单直接进纯函数判官，
       // 零次 AI 调用（底稿 4.2：面板按钮和简单指令直接进纯函数判官）。talkOnly 白名单
@@ -321,7 +330,6 @@ async function runTurnSteps(ctx, cmd, opts) {
         if (ctx.isStale?.()) return { stale: true };
         intakeResult = normalizeIntakeResult(intakeRes?.data);
       }
-      const timeNow = getGameStateTime(ctx, deps);
       judgeVerdict = judgeTurn({
         turn: timeNow, day: Math.floor(timeNow / 24) + 1, place: deps.room?.name || "",
         npcs: visibleNpcs, varTree: vtNow,
@@ -335,13 +343,9 @@ async function runTurnSteps(ctx, cmd, opts) {
         containerPlace,
         questCandidates,
         pickupJudgment: deps.pickupJudgment || null,
-        // WO-22B-P2 悬空秘宝注入：按当前据点地域+现世日+唯一锁过滤——
+        // WO-22B-P2 悬空秘宝注入：与容器解析同一次计算——地域+现世日+唯一锁过滤，
         // 非合规地域/未到 earliestDay/已落定（placed）一律不注入，第三关复用现有掷骰。
-        floatingItems: resolveFloatingItems({
-          place: deps.room?.name || "",
-          day: Math.floor(timeNow / 24) + 1,
-          relicState: vtNow?.世界?.悬空秘宝,
-        }),
+        floatingItems,
         // WO-16E：授信输入由 buildCausalBudgetInput 装配（runTurn/shadow 同一入口），
         // 不再硬编码 riskLevel:0——tension 读 encounter 势力字段、risk 按动作兜底、
         // 每日搜刮配额读 varTree 账本跨日归零。

@@ -10,6 +10,7 @@ import { judgeTurn } from "../../../domain/rules/judge/judgeTurn.js";
 import { buildCausalBudgetInput } from "../../../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../../../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../../../domain/rules/world/containers.js";
+import { resolveFloatingItems } from "../../../domain/rules/judge/floatingRelics.js";
 import { questAdvanceCandidates } from "../../../domain/rules/quests/questAdvanceCandidates.js";
 import { createRng } from "../../../utils/rng.js";
 import { diffSnapshots } from "./shadowDiff.js";
@@ -107,8 +108,15 @@ export async function runShadowJudge({
     // "无容器"判，容器行动覆盖率会假报缺口。
     const vtPre = preState?.varTree || {};
     const innerNow = preState?.innerRoomName ?? null;
+    const shadowTurn = preState?.turn ?? postState?.turn ?? 1;
+    const floatingItems = resolveFloatingItems({
+      place: preState?.room?.name || "",
+      day: Math.floor(shadowTurn / 24) + 1,
+      relicState: vtPre?.世界?.悬空秘宝,
+    });
     const { containerPlace, containerView, openContainers } = resolveContainerContext({
       districtName: preState?.room?.name, innerRoomName: innerNow, varTree: vtPre, roomDefLookup: getInnerRoom,
+      hasFloating: floatingItems.length > 0,
     });
     // WO-16G-G2 混合分流同源：与 runTurn 共用 shouldSkipIntakeForTalk 闸门——
     // 纯搭话无任务候选时影子也本地合成（不调 withAI），有候选才调 intake；
@@ -153,6 +161,7 @@ export async function runShadowJudge({
       containerPlace,
       questCandidates,
       pickupJudgment: null,
+      floatingItems,
       // WO-16E：与 runTurn 同一 budgetInput 入口——影子判官的授信口径必须
       // 与真实判官逐字一致，否则对账数据失真。
       budget: buildCausalBudgetInput({

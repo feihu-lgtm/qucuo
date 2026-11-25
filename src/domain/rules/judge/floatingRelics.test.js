@@ -101,6 +101,68 @@ describe("judgeTurn 第三关：floating 真品落定与差一截降级", () => 
     expect(pass.warrants.some((w) => w.op === "GRANT_ITEM")).toBe(true);
   });
 
+  it("坍缩不封秘宝落点：已坍缩容器有秘宝仍可翻，命中落真品", () => {
+    const floatingItems = resolveFloatingItems({ place: "贡措海", day: 15, relicState: {} });
+    const verdict = judgeTurn(
+      envelope({ containers: { 石函: { collapsed: true } }, floatingItems }),
+      { read: "", refIds: [], actions: [inspect], proposals: [proposal] },
+      { rng: seqRng([0.01]) },
+    );
+    expect(verdict.facts.some((f) => f.itemId === "relic_hantian_jianpu")).toBe(true);
+    // 已坍缩重翻不再重复签 COLLAPSE
+    expect(verdict.facts.filter((f) => f.op === "COLLAPSE_CONTAINER")).toHaveLength(0);
+  });
+
+  it("坍缩落点判定不出普通券：命中骰也不产 warrant/预设/备料", () => {
+    const floatingItems = resolveFloatingItems({ place: "贡措海", day: 15, relicState: {} });
+    const verdict = judgeTurn(
+      envelope({
+        containers: { 石函: { collapsed: true, presetItems: [{ id: "it_x", name: "铁钥匙" }] } },
+        prepItems: [{ id: "prep_1", name: "豹皮护腕" }],
+        floatingItems,
+      }),
+      { read: "", refIds: [], actions: [inspect], proposals: [proposal] },
+      { rng: seqRng([0.99]) }, // 高骰秘宝不中
+    );
+    expect(verdict.warrants.filter((w) => w.op === "GRANT_ITEM")).toHaveLength(0);
+    expect(verdict.facts.some((f) => f.itemName === "铁钥匙")).toBe(false);
+    expect(verdict.facts.some((f) => f.itemName === "豹皮护腕")).toBe(false);
+    // 降级为残页且文案不自相矛盾
+    const frag = verdict.facts.find((f) => f.itemId === "fragment_relic_hantian_jianpu");
+    expect(frag).toBeTruthy();
+    expect(frag.desc).toContain("气机未合");
+    expect(frag.desc).not.toContain("真品不在这里");
+  });
+
+  it("坍缩+无秘宝维持 WO-22A 原样：翻不出新东西零事实", () => {
+    const verdict = judgeTurn(
+      envelope({ containers: { 石函: { collapsed: true } } }),
+      { read: "", refIds: [], actions: [inspect], proposals: [proposal] },
+      { rng: seqRng([0.01]) },
+    );
+    expect(verdict.facts.filter((f) => f.op === "GRANT_ITEM")).toHaveLength(0);
+    expect(verdict.warrants).toHaveLength(0);
+    expect(verdict.notes.join()).toContain("已坍缩");
+  });
+
+  it("day10 前首翻坍缩不锁死：之后带秘宝重翻仍可落定", () => {
+    // 首翻：无 floatingItems（模拟 day10 前注入为空）——普通降级+坍缩
+    const first = judgeTurn(
+      envelope({ containers: { 石函: { collapsed: false } } }),
+      { read: "", refIds: [], actions: [inspect], proposals: [proposal] },
+      { rng: seqRng([0.99]) },
+    );
+    expect(first.facts.some((f) => f.op === "COLLAPSE_CONTAINER")).toBe(true);
+    // day10 后：容器已坍缩但秘宝在视野——仍可落真品
+    const floatingItems = resolveFloatingItems({ place: "贡措海", day: 15, relicState: {} });
+    const second = judgeTurn(
+      envelope({ containers: { 石函: { collapsed: true } }, floatingItems }),
+      { read: "", refIds: [], actions: [inspect], proposals: [proposal] },
+      { rng: seqRng([0.01]) },
+    );
+    expect(second.facts.some((f) => f.itemId === "relic_hantian_jianpu")).toBe(true);
+  });
+
   it("同回合多容器命中：只有第一条签真品，第二条不复制", () => {
     const floatingItems = resolveFloatingItems({ place: "贡措海", day: 15, relicState: {} });
     const verdict = judgeTurn(

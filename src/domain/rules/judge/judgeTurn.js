@@ -425,13 +425,20 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   // WO-16A：纯搭话回合不翻容器——搭话时翻箱倒柜本就不该发生，整段跳过。
   const proposals = Array.isArray(intakeResult.proposals) ? intakeResult.proposals : [];
   const collapsingThisTurn = new Set(); // WO-22A 本回合内翻过的容器——幂等去重
+  const freshCollapseThisTurn = new Set(); // WO-22B-P2 本回合「首次」坍缩的容器（relicOnly 重翻已坍缩不再签）
   // WO-22B-P2：本 verdict 内已签出的悬空秘宝登记 id——同回合多容器/多行动命中时
   // 世间无第二件，第二条不得再签真品（materialize 唯一锁是落账后验，正文定案单必须先唯一）。
   const signedFloatingIds = new Set();
   for (const action of actions) {
     if (action.kind !== "inspect_container" || talkOnly) continue;
     const container = envelope.containers?.[action.target];
-    if (container?.collapsed) {
+    // WO-22B-P2 裁决：悬空秘宝是地域级落点事件而非容器普通内容物——容器坍缩只封锁
+    // 普通内容（预设/备料/天机券/通用残页），不封锁未定秘宝：有秘宝在视野时
+    // 已坍缩容器仍可翻，但只走第三关秘宝落点判定（relicOnly），普通关全跳。
+    const floatingAvail = Array.isArray(envelope.floatingItems)
+      ? envelope.floatingItems.find((it) => it && !it.placed && !signedFloatingIds.has(it.id)) : null;
+    const relicOnly = !!container?.collapsed && !!floatingAvail;
+    if (container?.collapsed && !relicOnly) {
       notes.push(`${action.target}已坍缩，翻不出新东西`);
       continue;
     }
@@ -450,8 +457,10 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       continue;
     }
     collapsingThisTurn.add(action.target);
-    // 第一关：预设物（容器剧本里写死的东西，必中）
-    const preset = Array.isArray(container?.presetItems) ? container.presetItems.filter((it) => it && !it.taken) : [];
+    // 已坍缩进 relicOnly 的不再重复签 COLLAPSE 事实（本就是坍缩态）。
+    if (!container?.collapsed) freshCollapseThisTurn.add(action.target);
+    // 第一关：预设物（容器剧本里写死的东西，必中）——relicOnly 跳过
+    const preset = !relicOnly && Array.isArray(container?.presetItems) ? container.presetItems.filter((it) => it && !it.taken) : [];
     if (preset.length) {
       const item = preset[0];
       const factId = nextFactId();
@@ -468,7 +477,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       continue;
     }
     // 第二关：备料物（休整期备料池，有则直取一件）
-    const prep = Array.isArray(envelope.prepItems) ? envelope.prepItems.filter((it) => it && !it.taken) : [];
+    const prep = relicOnly ? [] : (Array.isArray(envelope.prepItems) ? envelope.prepItems.filter((it) => it && !it.taken) : []);
     if (prep.length) {
       const item = prep[0];
       const factId = nextFactId();
@@ -504,6 +513,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
         granted = true;
         break;
       }
+      if (relicOnly) continue; // 坍缩落点判定不产天机券——只认秘宝
       if (budget.maxPointBudget <= 0 && QUALITY_ORDER.indexOf(budget.maxQuality) <= 0) {
         continue; // 额度归零，连白档都发不出——留待降级
       }
@@ -541,7 +551,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
           id: nextFactId(), op: "GRANT_ITEM",
           itemId: `fragment_${floatingInScope.id}`, itemName: "残页",
           quality: "白", category: "misc",
-          desc: `一角残页，字迹模糊，隐约是「${floatingInScope.name}」相关的零碎记载——真品不在这里。`,
+          desc: `一角残页，字迹模糊，隐约是「${floatingInScope.name}」相关的零碎记载——气机未合，真品仍未落定。`,
           from: action.target, to: "player", witnesses: ["主角"],
         });
         notes.push(`${action.target}差一截——只翻出残页，真品「${floatingInScope.name}」去向线头：${floatingInScope.hint || "别处"}`);
@@ -559,7 +569,7 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     }
   }
   // 坍缩事实统一段尾签发（理由见上）：每个本回合翻过的容器一条。
-  for (const name of collapsingThisTurn) {
+  for (const name of freshCollapseThisTurn) {
     facts.push({
       id: nextFactId(), op: "COLLAPSE_CONTAINER", place: envelope.containerPlace || place,
       containerName: name, witnesses: ["主角"],
