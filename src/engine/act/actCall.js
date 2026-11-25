@@ -17,6 +17,25 @@ import { ensureUnifiedCalls, setMainTurnAssembler } from "../../domain/rules/pro
 import { getPromptOverrides } from "../../domain/rules/prompt/registry.js";
 import { buildAngryNote } from "../prompt/assemblePrompt.js";
 import { getApiModel } from "../../content/apiModel.js";
+import { streamWithFirstTokenFallback, newBackfillKey } from "../ports/backfill.js";
+import { timeoutFallbackLine } from "../../domain/rules/clapboard/timeoutFallback.js";
+
+// WO-16H-H2 首字超时预算（底稿 2.3.1）：关思考 3.5s、开思考 6.5s。
+export function firstTokenBudgetFor(cfg) {
+  return String(cfg?.thinkingMode || "off") !== "off" ? 6500 : 3500;
+}
+
+// 过渡句喂料：类别用意图中文label（KIND_LINES 按 includes 命中），NPC 优先搭话对象否则在场首位，
+// personality 不在场册就用 brief 兜底；place 取当前房间名。
+function fallbackFeed(d) {
+  const roomNpcs = d.room?.npcs || [];
+  const hit = (d.talkTarget && roomNpcs.find((n) => n?.name === d.talkTarget)) || roomNpcs[0] || null;
+  return {
+    kind: d.intent?.label || "",
+    npc: hit ? { name: hit.name || "", personality: hit.personality || hit.brief || "" } : null,
+    place: d.room?.name || "",
+  };
+}
 
 const webAi = createWebAi();
 
@@ -289,9 +308,65 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
   const ai = d.ai || webAi;
   if (d.isStale?.()) return { rawFull: "", finishReason: "stale" };
 
+  // WO-16H-H2 首字超时接主循环：判官/群聊尾章激活的叙事流式主路径，三态全权
+  // 委托 WO-08 包装器——超时过渡句/首字原位抹换/降级都按 fillKey 走；
+  // 剥锚点、截 ---SEAL--- 在 invoke 的 onChunk 变换里做，首字流先经
+  // createStorytellerStream() 再上屏，锚点与尾章永不泄到屏幕。
+  if (stream && narrativeOnly) {
+    let rawText = "";
+    const fb = await streamWithFirstTokenFallback({
+      invoke: async (onChunk) => {
+        const res = await withAI(
+          "turn.main",
+          { payload },
+          {
+            ai,
+            apiCfg: effectiveCfg,
+            isStale: d.isStale,
+            stream: true,
+            onChunk: (_delta, fullSoFar) => {
+              if (d.judgePipelineActive) {
+                // 全量重放维持滑动缓冲（纯函数重算幂等，与原接线同一手法）
+                const judgeStream = createStorytellerStream();
+                judgeStream.push(fullSoFar);
+                onChunk(null, judgeStream.screenText);
+              } else {
+                onChunk(null, fullSoFar);
+              }
+            },
+            intent,
+            recallInfo,
+            modelOptions,
+          },
+        );
+        if (!res.ok && res.error) throw res.error;
+        rawText = res.text || "";
+        // 上屏终稿：判官管线是剥锚截尾章后的屏幕正文；其余剥 <deal> 系统标签
+        const finalDisplay = d.judgePipelineActive
+          ? splitStorytellerText(rawText).screenText.trim()
+          : rawText.replace(/<deal>[\s\S]*?<\/deal>/gi, "").replace(/<deal>[\s\S]*$/i, "").trim();
+        return { text: finalDisplay, finishReason: res.finishReason };
+      },
+      setLog: d.setLog,
+      isStale: d.isStale,
+      key: newBackfillKey("ftm"),
+      fallback: fallbackFeed(d),
+      firstTokenBudgetMs: Number.isFinite(d._firstTokenBudgetMs) ? d._firstTokenBudgetMs : firstTokenBudgetFor(effectiveCfg),
+    });
+    if (!fb.ok && fb.error) throw fb.error;
+    if (d.isStale?.() || fb.finishReason === "stale") return { rawFull: "", finishReason: "stale" };
+    if (d.judgePipelineActive) {
+      const split = splitStorytellerText(rawText);
+      return { rawFull: split.screenText, finishReason: fb.finishReason, sealText: split.sealText, sealAnchors: split.anchors, sealed: split.sealed };
+    }
+    return { rawFull: rawText, finishReason: fb.finishReason };
+  }
+
   let streamLogIndex = null;
   let onChunk;
   let judgeStream = null;
+  let firstChunkSeen = false;
+  let fbTimer = null;
   if (stream) {
     d.addLog([{ t: "desc", text: "  ▌", streaming: true }]);
     d.setLog(l => {
@@ -303,7 +378,19 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       // WO-13：判官管线的流式——⟦F⟧ 锚点实时剥除，\n---SEAL--- 后冻结屏幕。
       judgeStream = createStorytellerStream();
     }
+    // 遗留 JSON 单调用流式：同一首字超时口径，inline 过渡句写进占位行位，
+    // 首字抵达后 onChunk 按下标覆盖同位——与 fillKey 抹换同效。
+    fbTimer = setTimeout(() => {
+      if (firstChunkSeen) return;
+      d.setLog(l => {
+        if (d.isStale?.() || streamLogIndex == null || firstChunkSeen) return l;
+        const copy = [...l];
+        copy[streamLogIndex] = { ...copy[streamLogIndex], t: "desc", text: "  " + timeoutFallbackLine(fallbackFeed(d)) + " ▌", streaming: true, timeoutFallback: true };
+        return copy;
+      });
+    }, Number.isFinite(d._firstTokenBudgetMs) ? d._firstTokenBudgetMs : firstTokenBudgetFor(effectiveCfg));
     onChunk = (_delta, fullSoFar) => {
+      firstChunkSeen = true;
       if (judgeStream) {
         // 以全量重放维持滑动缓冲（chunk 重放幂等：纯函数重算，成本 O(len)，可接受）
         judgeStream = createStorytellerStream();
@@ -332,6 +419,7 @@ export async function callMainOnce(extraNudge, narrativeOnly = false, d) {
       modelOptions,
     },
   );
+  if (fbTimer) clearTimeout(fbTimer);
   if (!res.ok && res.error) throw res.error;
   if (d.isStale?.() || res.finishReason === "stale") return { rawFull: "", finishReason: "stale" };
 

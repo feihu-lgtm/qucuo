@@ -282,3 +282,94 @@ describe("callMainOnce 组装黄金快照", () => {
     expect(JSON.stringify(callModel.mock.calls[0][1])).not.toContain("乌发及腰");
   });
 });
+
+describe("WO-16H-H2 首字超时接主循环（叙事流式）", () => {
+  const tick = (ms) => new Promise((r) => setTimeout(r, ms));
+  // 自制流式 AI：按计划逐段吐 chunk（opts.onChunk），终稿为 fullText。
+  const streamAi = (chunks, { preDelayMs = 0 } = {}) => ({
+    async chat(_messages, opts) {
+      if (preDelayMs) await tick(preDelayMs);
+      let full = "";
+      for (const c of chunks) {
+        full += c;
+        opts?.onChunk?.(c, full);
+        await tick(1);
+      }
+      return { text: full, finishReason: "stop" };
+    },
+  });
+  const streamHarness = () => {
+    let log = [];
+    return {
+      getLog: () => log,
+      addLog: (entries) => { log = [...log, ...entries]; },
+      setLog: (fn) => { log = fn(log); },
+    };
+  };
+  const streamDeps = (over = {}) => makeDeps({
+    apiCfg: {
+      targetWordCount: 220, model: "test-model", apiType: "openai",
+      streamEnabled: true, extractionEnabled: false, contextWindow: 20,
+      callTokenLimits: {}, thinkingMode: "off",
+    },
+    _firstTokenBudgetMs: 15,
+    ...over,
+  });
+
+  it("首字超时先放过渡句，首字到后原位抹掉替换且不重复", async () => {
+    const h = streamHarness();
+    const d = streamDeps({
+      ai: streamAi(["风雪夜归人。"], { preDelayMs: 40 }),
+      addLog: h.addLog, setLog: h.setLog,
+      intent: { code: "TALK", label: "交谈" },
+      room: { name: "鱼定村", npcs: [{ name: "才旦", personality: "爽朗直率" }] },
+    });
+    const res = await callMainOnce("", true, d);
+    expect(res.rawFull).toBe("风雪夜归人。");
+    const rows = h.getLog().filter((e) => e?.fillKey);
+    expect(rows).toHaveLength(1); // 过渡句与正文创同一行位，绝不重复
+    expect(rows[0].text).toBe("  风雪夜归人。");
+    expect(rows[0].streamed).toBe(true);
+    expect(rows[0].timeoutFallback).toBeUndefined();
+  });
+
+  it("判官管线：流式过程与终稿都不泄 ⟦F⟧ 锚点、不泄 ---SEAL---", async () => {
+    const h = streamHarness();
+    const snapshots = [];
+    const spySetLog = (fn) => { h.setLog((l) => { const next = fn(l); snapshots.push(next.map((e) => e?.text || "").join("|")); return next; }); };
+    const d = streamDeps({
+      judgePipelineActive: true,
+      ai: streamAi(["老孙点头⟦F1_1⟧，把事情应下。", "\n---SEAL---\n{\"fills\":{}}"], { preDelayMs: 40 }),
+      addLog: h.addLog, setLog: spySetLog,
+      intent: { code: "TALK", label: "交谈" },
+      room: { name: "鱼定村", npcs: [] },
+    });
+    const res = await callMainOnce("", true, d);
+    // rawFull 只留屏幕正文
+    expect(res.rawFull).not.toContain("⟦");
+    expect(res.rawFull).not.toContain("---SEAL---");
+    expect(res.sealText).toContain("fills");
+    // 全程任何一帧上屏文本都不泄锚点/SEAL
+    for (const snap of snapshots) {
+      expect(snap).not.toContain("⟦");
+      expect(snap).not.toContain("---SEAL---");
+    }
+    const final = h.getLog().filter((e) => e?.fillKey).at(-1);
+    expect(final.text).not.toContain("⟦");
+    expect(final.text).not.toContain("SEAL");
+  });
+
+  it("首字快到时：不插过渡句直接流式上屏", async () => {
+    const h = streamHarness();
+    const d = streamDeps({
+      ai: streamAi(["快。", ""], { preDelayMs: 1 }),
+      addLog: h.addLog, setLog: h.setLog,
+      intent: { code: "TALK", label: "交谈" },
+      room: { name: "鱼定村", npcs: [] },
+    });
+    await callMainOnce("", true, d);
+    const rows = h.getLog().filter((e) => e?.fillKey);
+    expect(rows.at(-1).timeoutFallback).toBeUndefined();
+    expect(rows.at(-1).text).toContain("快。");
+  });
+});
