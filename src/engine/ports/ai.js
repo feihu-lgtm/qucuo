@@ -100,7 +100,7 @@ export function createWebAi({ getVertexHeaders } = {}) {
   const chat = async (messages, opts = {}) => {
     const cfg = opts.cfg;
     if (!cfg || !opts.systemPrompt) throw new Error("Web AI requires cfg and systemPrompt");
-    if (opts.stream && cfg.apiType !== "gemini") {
+    if (opts.stream) {
       return callModelStream(cfg, opts.systemPrompt, messages, opts.onChunk, {
         ...(opts.modelOptions || {}),
         getVertexHeaders,

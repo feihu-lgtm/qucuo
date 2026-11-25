@@ -21,8 +21,7 @@ export async function testConnection(cfg) {
 }
 
 // 流式调用：通过 onChunk(deltaText) 回调逐段返回文本，onDone(fullText) 在结束时给出完整拼接结果。
-// 只支持 Anthropic 和 OpenAI 兼容格式的 SSE 协议；Gemini 流式协议差异较大，暂不支持，
-// 调用方应在 UI 层根据 cfg.apiType 决定是否允许勾选"流式输出"。
+// 支持 Anthropic / OpenAI 兼容 / Gemini 原生（streamGenerateContent?alt=sse）三种 SSE 协议。
 export function callModelStream(cfg, systemPrompt, messages, onChunk, opts = {}) {
   const migrated = migrateProvider(cfg);
   return observeAi(messages, { ...opts, cfg: migrated, systemPrompt, onChunk, stream: true },
@@ -33,10 +32,6 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
   if (cfg.timeoutMs) setRequestTimeout(cfg.timeoutMs);
   const maxTokens = opts.maxTokens ?? cfg.maxTokens;
   const temperature = opts.temperature ?? cfg.temperature;
-
-  if (cfg.apiType === API_TYPES.GEMINI) {
-    throw new Error("Gemini 暂不支持流式输出，请在设置里关闭流式开关或切换 API 类型");
-  }
 
   try {
     let full = "";
@@ -82,6 +77,34 @@ async function requestStream(cfg, systemPrompt, messages, onChunk, opts) {
         // finish_reason 出现在最后一个带 choices 的事件里；usage 需请求时开了 include_usage 才会在末尾单独一个事件给出
         if (eventData.choices?.[0]?.finish_reason) finishReason = eventData.choices[0].finish_reason;
         if (eventData.usage) usage = eventData.usage;
+      });
+
+    } else if (cfg.apiType === API_TYPES.GEMINI) {
+      // Gemini 原生 SSE：streamGenerateContent?alt=sse，每个事件的 candidates[0].content.parts
+      // 只带增量文本；usageMetadata 在末帧给出（含 cachedContentTokenCount 缓存命中数）。
+      const provider = PROVIDERS[cfg.provider];
+      const base = normalizeGeminiBase(cfg.endpoint || provider.endpoint);
+      const url = withProxy(`${base}/${encodeURIComponent(cfg.model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(cfg.apiKey)}`, cfg);
+      const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+      if (contents.length && contents[0].role === "user") {
+        const systemText = Array.isArray(systemPrompt) ? systemPrompt.map(formatBlock).join("\n\n") : systemPrompt;
+        contents[0].parts[0].text = systemText + "\n\n" + contents[0].parts[0].text;
+      }
+      const genConfig = { temperature, maxOutputTokens: clampMaxTokensForProvider(maxTokens, cfg, provider) };
+      if (opts.jsonOnly) genConfig.responseMimeType = "application/json";
+      applyThinkingGemini(genConfig, cfg, opts);
+      const res = await fetchWithTimeout(url, {
+        method: "POST",
+        headers: { ...provider.extraHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ contents, generationConfig: genConfig }),
+      });
+      await rejectNonStream(res, "Gemini 流式调用", url);
+      await readSSE(res, (eventData) => {
+        const parts = eventData.candidates?.[0]?.content?.parts;
+        const delta = parts?.map(p => p.text || "").join("") || "";
+        if (delta) { full += delta; onChunk(delta, full); }
+        if (eventData.candidates?.[0]?.finishReason) finishReason = eventData.candidates[0].finishReason;
+        if (eventData.usageMetadata) usage = eventData.usageMetadata;
       });
 
     } else {
