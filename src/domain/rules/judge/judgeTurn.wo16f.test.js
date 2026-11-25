@@ -207,3 +207,34 @@ describe("S3 调度初审口径回归", () => {
     expect(v.notes.some((n) => n.includes("risk默认(中)"))).toBe(true);
   });
 });
+
+describe("S3 三轮回归：物件志倍率价+余额不当价", () => {
+  it("具名武器按 atkMul 倍率价非裸基准", async () => {
+    const { CATALOG_INDEX, catalogBuyPrice } = await import("../../data/items/catalog.js");
+    const { priceForQuality } = await import("../economy/equipment.js");
+    const wname = Object.keys(CATALOG_INDEX).find((n) => (CATALOG_INDEX[n].atkMul ?? 1) > 1);
+    expect(wname).toBeTruthy();
+    const entry = CATALOG_INDEX[wname];
+    const expectPrice = catalogBuyPrice(entry);
+    expect(expectPrice).toBeGreaterThan(priceForQuality(entry.category, entry.quality).buyPrice);
+    const rich = base(); rich.char.money = 99999;
+    const v = judgeTurn(rich, act(fa("破费", "无", `买下${wname}`)), { rng: () => 0.5 });
+    const f = v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER");
+    expect(f.moneyDelta).toBe(-expectPrice);
+    expect(v.notes.some((n) => n.includes("物件志"))).toBe(true);
+  });
+  it("杂物具名仍按基准价（无倍率）", async () => {
+    const { CATALOG_INDEX, catalogBuyPrice } = await import("../../data/items/catalog.js");
+    const { priceForQuality } = await import("../economy/equipment.js");
+    const gname = Object.keys(CATALOG_INDEX).find((n) => {
+      const e = CATALOG_INDEX[n];
+      return n.length >= 2 && !(e.atkMul > 1) && !(e.defMul > 1) && (e.category === "misc" || e.category === "accessory");
+    });
+    if (!gname) return;
+    expect(catalogBuyPrice(CATALOG_INDEX[gname])).toBe(priceForQuality(CATALOG_INDEX[gname].category, CATALOG_INDEX[gname].quality).buyPrice);
+  });
+  it("囊中余额不误当价：身上有50两银子付5两房钱 → -5", () => {
+    const v = judgeTurn(base(), act(fa("破费", "无", "身上有50两银子，付5两房钱")), { rng: () => 0.5 });
+    expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-5);
+  });
+});

@@ -9,7 +9,7 @@
 // 不掷当日滚动 stock——查价只需「这家店这类货卖多少」的确定性锚。
 
 import { QUCUO_SHOPS, buildShopInventory } from "../../data/shops/qucuoShops.js";
-import { CATALOG_INDEX } from "../../data/items/catalog.js";
+import { CATALOG_INDEX, catalogBuyPrice } from "../../data/items/catalog.js";
 import { priceForQuality } from "../economy/equipment.js";
 
 // 中文数字解析（破费原话数额）：三两/十五两/一百二十两 与阿拉伯数字并认。
@@ -39,17 +39,19 @@ const PAY_VERBS = new Set([..."付掏掷赏出花给递"]);
 export function parseStatedExpense(text) {
   const src = String(text || "");
   const re = /([零一二三四五六七八九十百千万\d]+)\s*(两银子|两银|银两|银|钱|两)/g;
-  let m; let first = null;
+  let m; let firstDefinite = null;
+  // 支付动词近旁优先于一切——「身上有50两银子，付5两房钱」余额不得当价；
+  // 无动词近旁时明确钱文（银/钱/两银）按文取先；裸「N两」是货量不落价。
   while ((m = re.exec(src))) {
     const n = parseCnNumeral(m[1]);
     if (!(Number.isFinite(n) && n > 0)) continue;
     const unit = m[2];
-    if (unit !== "两") return n; // 明确钱文（银/钱/两银/银子）直接认
     const before = src.slice(Math.max(0, m.index - 3), m.index);
-    if ([...before].some((ch) => PAY_VERBS.has(ch))) return n; // 支付动词近旁的「N两」认
-    if (first == null) first = n; // 裸「N两」只记账不认定——可能是货量
+    const verbNear = [...before].some((ch) => PAY_VERBS.has(ch));
+    if (verbNear) return n;
+    if (unit !== "两" && firstDefinite == null) firstDefinite = n;
   }
-  return null; // 无明确钱文/支付动词近旁数额 → 没写数额，走查价链
+  return firstDefinite;
 }
 
 export function resolveFreeActExpense({ text = "", itemName = "", category = "", presentNpcNames = [] } = {}) {
@@ -89,9 +91,11 @@ export function resolveFreeActExpense({ text = "", itemName = "", category = "",
     const shelfCat = shelves.find((it) => it.category === cat);
     if (shelfCat?.buyPrice > 0) return { price: shelfCat.buyPrice, source: `货架同类（${shelfCat.name}）` };
   }
+  // 物件志权威价 = catalogBuyPrice（武器/护甲按 atkMul/defMul 抬价，杂物饰品基准）——
+  // 不裸套 priceForQuality，防具名装备经济洞（调度初审口径）
   if (entry) {
-    const p = priceForQuality(entry.category || "misc", entry.quality || "白");
-    if (p.buyPrice > 0) return { price: p.buyPrice, source: `物件志（${goodName}）` };
+    const bp = catalogBuyPrice(entry);
+    if (bp > 0) return { price: bp, source: `物件志（${goodName}）` };
   }
   if (cat) {
     const fallback = priceForQuality(cat, "白");

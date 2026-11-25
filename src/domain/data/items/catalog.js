@@ -167,6 +167,17 @@ export const PAOMA_GOODS = getContent("itemGroup", "PAOMA_GOODS").map(id => getC
 // 再乘具名倍率（atkMul/defMul，1.0~1.6），四舍五入 —— 结果仍是 equipAtk/equipDef
 // 这个"加数"，进 calcBaseDamage/calcDefenseValue，不新增乘法层（用户："倍率跟着公式走"）。
 // 价格：具名物品在同品质基准价上，按倍率同步抬价（贵重物件更值钱），卖价仍为买价一半。
+// 具名物权威买价纯函数（S3 调度初审口径）：武器/护甲按 atkMul/defMul 同步抬价，
+// 杂物/饰品用品质基准价。makeCatalogItem 与判官破费查价同源调用——不产生 id/Date.now。
+export function catalogBuyPrice(entry) {
+  if (!entry) return 0;
+  const price = priceForQuality(entry.category, entry.quality);
+  const base = statsForQuality(entry.category, entry.quality);
+  if (base.atk != null) return Math.round(price.buyPrice * (entry.atkMul ?? 1));
+  if (base.def != null) return Math.round(price.buyPrice * (entry.defMul ?? 1));
+  return price.buyPrice;
+}
+
 export function makeCatalogItem(entry) {
   const base = statsForQuality(entry.category, entry.quality); // { atk?/def?/durability?/bonus? }
   const price = priceForQuality(entry.category, entry.quality);
