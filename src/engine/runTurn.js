@@ -169,7 +169,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     ai,
   };
   const addLog = deps.addLog || ctx.addLog || (() => {});
-  const trace = (layer, status, detail) => traceStep(deps._trace, layer, status, detail);
+  const trace = (layer, status, detail, fields = {}) => traceStep(deps._trace, layer, status, detail, "domain", fields);
   const callDeps = () => ({ ...deps });
   const apiCfg = deps.apiCfg;
   // ── WO-13 判官管线：前哨听意 → 纯函数判官 → 定案单注入主叙事（S4 拆到 turn/judgePhase.js）──

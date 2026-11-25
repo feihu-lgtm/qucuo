@@ -10,8 +10,26 @@ export function startTrace(cmd, raw, options) {
   return getTurnContext() || turnMonitor.start(cmd, { raw, ...options });
 }
 
-export function step(turn, label, status, detail, layer = "domain") {
-  if (turn) turnMonitor.add(turn, layer, label, { status, detail });
+export function step(turn, label, status, detail, layer = "domain", fields = {}) {
+  const safeFields = fields.structured ? { ...fields, structured: traceSnapshot(fields.structured) } : fields;
+  if (turn) turnMonitor.add(turn, layer, label, { status, detail, ...safeFields });
+}
+
+// 结构化排障字段进 trace 前的安全快照：保留判官/听意/尾章全字段形状，
+// 只截长文与长数组，避免复制日志/调试包被正文挤爆；不改原对象。
+export function traceSnapshot(value, depth = 0) {
+  if (typeof value === "string") return value.length > 240 ? `${value.slice(0, 240)}…` : value;
+  if (value == null || typeof value === "number" || typeof value === "boolean") return value;
+  if (depth >= 5) return Array.isArray(value) ? `[Array(${value.length})]` : "[Object]";
+  if (Array.isArray(value)) {
+    const out = value.slice(0, 20).map((item) => traceSnapshot(item, depth + 1));
+    if (value.length > 20) out.push(`… 其余 ${value.length - 20} 条`);
+    return out;
+  }
+  if (typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, traceSnapshot(item, depth + 1)]));
+  }
+  return String(value);
 }
 
 export function attachInjectionSnapshot(turn, snapshot) {
@@ -88,6 +106,7 @@ export function formatTrace(turn, { full = true } = {}) {
     `=== ${clock ? `${clock} ` : ""}${turn.id} ${turn.raw} | ${turn.phases.join(" → ")} | ${fmtMs(turn.totalMs)}${turn.commandId ? ` | ${turn.commandId} · ${turn.category}` : ""}${gameClock ? ` | ${gameClock}` : ""} ===`,
     ...turn.nodes.flatMap((node) => [
       `  [${node.layer}] ${node.label}${node.model ? ` · ${node.model}` : ""}${node.detail ? `：${node.detail}` : ""}${node.durationMs != null ? ` (${fmtMs(node.durationMs)})` : ""}`,
+      ...(full && node.structured ? [`[结构化]\n${JSON.stringify(node.structured, null, 2)}`] : []),
       ...(full && node.pipeline ? Object.entries(pipelineTabs(node.pipeline)).map(([tab, content]) => `[${tab}]\n${content ?? ""}`) : []),
     ]),
   ].join("\n");

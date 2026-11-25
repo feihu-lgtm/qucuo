@@ -98,7 +98,15 @@ export function verifyJudgeTail({ ctx, deps, judgeVerdict, sealParts, narrativeT
       emergenceRejections: emergenceCheck.rejections,
     });
     judgeEffects = { verdict: judgeVerdict, sealReport: verified, materialized: verified.materialized };
-    trace("尾章校对", "pass", `锚点齐 ${judgeVerdict.facts.length - verified.missingAnchors.length}/${judgeVerdict.facts.length}，编译券 ${Object.keys(verified.materialized?.receipts || {}).length}，facts 落盘 ${verified.facts.length} 条`);
+    trace("尾章校对", "pass", `锚点齐 ${judgeVerdict.facts.length - verified.missingAnchors.length}/${judgeVerdict.facts.length}，编译券 ${Object.keys(verified.materialized?.receipts || {}).length}，facts 落盘 ${verified.facts.length} 条`, {
+      structured: {
+        seal: verified.sealData,
+        anchors: sealParts?.anchors || [], missingAnchors: verified.missingAnchors,
+        warnings: verified.warnings, rejectedAffixes: verified.rejectedAffixes,
+        unfilledWarrants: verified.unfilledWarrants,
+        facts: verified.facts, receipts: verified.materialized?.receipts || [],
+      },
+    });
   }
   return { judgeEffects, narrativeText, p };
 }
