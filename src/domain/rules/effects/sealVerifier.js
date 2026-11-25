@@ -53,7 +53,9 @@ function fallbackLine(fact) {
 function validPact(pact, { npcNames = [] } = {}) {
   if (!pact || typeof pact !== "object") return null;
   if (!pact.npc || !pact.promise) return null;
-  if (!Number.isFinite(pact.deadlineHours) || pact.deadlineHours <= 0) return null;
+  // WO-22B 裁决：期限下限 4 小时（两个时辰）——签约动作本身耗 1 格时钟，
+  // 1~3 小时的约落成即到期/履约窗口形同虚设，属于非法约不予并入。
+  if (!Number.isFinite(pact.deadlineHours) || pact.deadlineHours < 4) return null;
   // 只认判官在场名册（reactionGuides）：respondedNpcs 与 pact 同出模型一人之口，
   // 拿它当佐证等于让提案者自证——幽灵角色会被写进契约。
   if (npcNames.length && !npcNames.includes(pact.npc)) return null;
@@ -157,7 +159,7 @@ export function verifySealAndMaterialize({
         rewardHint: pact.rewardHint, witnesses: ["主角", pact.npc],
       });
     } else {
-      warnings.push("spontaneousPact 校验未过（npc 不在场/期限非法/承诺为空），未并入");
+      warnings.push("spontaneousPact 校验未过（npc 不在场/期限非法或不足 4 小时/承诺为空），未并入");
     }
   }
 
