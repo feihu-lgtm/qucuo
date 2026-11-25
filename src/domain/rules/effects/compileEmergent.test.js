@@ -31,6 +31,9 @@ describe("compileEmergentItem 天工铸物", () => {
     const item = compileEmergentItem(warrant, { name: highName, chosenAffix: "forceFirst" });
     expect(item.quality).toBe("蓝");
     expect(item.effect).toEqual({ forceFirst: true });
+    // 兜底物不是真品：不得与图鉴真品撞 it_cat id
+    expect(item.id).not.toMatch(/^it_cat_/);
+    expect(item.id).toMatch(/^it_[0-9a-f]{6}$/);
   });
 
   it("奇遇新物：白名单内词条挂载真实 effect，id 确定性 it_<hex>", () => {

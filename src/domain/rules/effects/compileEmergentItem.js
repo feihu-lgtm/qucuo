@@ -4,7 +4,7 @@
 // 随机 id 不可信，出生落款必须可重放）。
 import { CATALOG_INDEX, makeNamedItem } from "../../data/items/catalog.js";
 import { makeItem, QUALITY } from "../economy/equipment.js";
-import { ensureItemId } from "../clapboard/entityId.js";
+import { ensureItemId, mintItemId } from "../clapboard/entityId.js";
 import { compileAffix } from "./affixPointTable.js";
 
 function qualityRank(q) {
@@ -53,8 +53,12 @@ export function compileEmergentItem(warrant, sealFill, { luck = 0 } = {}) {
     }
   }
 
-  // 确定性 id 覆写：图鉴物稳定 it_cat_<hash>，新物按 name|turn|seq 派生
-  item.id = ensureItemId({ name: item.name }, turn, seq);
+  // 确定性 id 覆写：真品图鉴物稳定 it_cat_<hash>；
+  // 公式兜底物即使撞图鉴名也强制按新物派生 it_<hex>——它不是真品，
+  // 撞 id 会让 toggleEquip 等按 id 寻址的逻辑联动错件。
+  item.id = catalogHit
+    ? ensureItemId({ name: item.name }, turn, seq)
+    : mintItemId(item.name, turn, seq);
   if (sealFill.desc && !item.desc) item.desc = sealFill.desc;
   // 出生落款 + 空器史（器史演化在 WO-23）
   item.provenance = { ...(warrant.origin || {}), factId: warrant.factId || "" };
