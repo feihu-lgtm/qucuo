@@ -59,6 +59,9 @@ const ENTRY_WHITELIST = new Set([
   "domain/rules/dungeon/envTags.js",
   // 地宫内层地图房间面板：独立 UI 件先落库，等路由接线后从此名单摘掉。
   "ui/components/DungeonMapPanel.jsx",
+  // WO-17 原文段落库：增量层先落库不接主链路（调度批准），WO-18 写挂检索接线后摘掉。
+  "domain/rules/memory/proseChunker.js",
+  "infra/proseStore.js",
 ]);
 
 function walkSource(dir, out = []) {
