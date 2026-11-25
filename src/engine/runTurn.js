@@ -16,7 +16,6 @@ import { judgeTurn } from "../domain/rules/judge/judgeTurn.js";
 import { buildCausalBudgetInput } from "../domain/rules/judge/budgetInput.js";
 import { getInnerRoom } from "../domain/rules/map/innerMap.js";
 import { resolveContainerContext } from "../domain/rules/world/containers.js";
-import { renderJudgeVerdict, renderCausalBudget } from "../domain/rules/judge/judgeTurn.js";
 import { buildIntakeUserContent, normalizeIntakeResult } from "./turn/intakeTurn.js";
 import { verifySealAndMaterialize } from "../domain/rules/effects/sealVerifier.js";
 import { buildJudgeRuleBlock, buildGroupTalkRuleBlock, parseGroupTalkSeal } from "../domain/rules/judge/judgeRuleBlock.js";
@@ -199,7 +198,9 @@ async function runTurnSteps(ctx, cmd, opts) {
   // 不改任何游戏状态，SEAL 只有 respondedNpcs 一键（parseGroupTalkSeal 白名单过滤）。
   const visibleNpcsPre = preparedPrompt.visibleNpcsForAI || preparedPrompt.visibleNpcs || deps.room?.npcs || [];
   const talkTargetNow = ctx.talkTarget || deps.talkTarget || ctx.prompt?.talkTarget || "";
-  const isGroupTalk = !!isTalk && !talkTargetNow && visibleNpcsPre.length > 0;
+  // 门槛 >=2：roadmap 语义是「好几个人同在场」的多人群聊——单人在场未点选仍进
+  // 判官 talkOnly（好感/熟人账照常），两名及以上在场才跳过判官走群聊尾章。
+  const isGroupTalk = !!isTalk && !talkTargetNow && visibleNpcsPre.length >= 2;
   if (isGroupTalk && deps.apiCfg?.extractionEnabled) {
     const playerName0 = (ctx.getGameState?.()?.char || deps.char)?.name || "主角";
     deps.groupTalkRuleBlock = buildGroupTalkRuleBlock(playerName0);
@@ -605,6 +606,7 @@ async function runTurnSteps(ctx, cmd, opts) {
     judgeEffects,
     derivedRespondedNpcs: deps.derivedRespondedNpcs || null,
     judgePipelineActive: !!deps.judgePipelineActive,
+    groupTalk: !!deps.groupTalkRuleBlock,
   };
 }
 
