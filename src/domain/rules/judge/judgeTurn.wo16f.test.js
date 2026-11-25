@@ -164,3 +164,19 @@ describe("S3 Review 三单回归", () => {
     expect(v2.facts[0].moneyDelta).toBe(-50); // 开场 50 不够 60，扣到零
   });
 });
+
+describe("S3 Review 二轮两单回归", () => {
+  it("货量不误当价：买一两茶叶付5两银子 → -5", () => {
+    const v = judgeTurn(base(), act(fa("破费", "无", "买一两茶叶，付5两银子")), { rng: () => 0.5 });
+    expect(v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER").moneyDelta).toBe(-5);
+  });
+  it("具名最长优先：柳青鸢的菊花茶不按短名青鸢武器价", async () => {
+    const { CATALOG_INDEX } = await import("../../data/items/catalog.js");
+    // 若目录无此二名则跳过断言（防目录演进脆断）
+    if (!CATALOG_INDEX["柳青鸢的菊花茶"] || !CATALOG_INDEX["青鸢"]) return;
+    const v = judgeTurn(base(), act(fa("破费", "无", "买了一盏柳青鸢的菊花茶")), { rng: () => 0.5 });
+    const f = v.facts.find((x) => x.op === "CHANGE_VITALS_SILVER");
+    expect(Math.abs(f.moneyDelta)).toBeLessThan(100); // 茶价量级，绝非武器 330
+    expect(v.notes.some((n) => n.includes("柳青鸢的菊花茶"))).toBe(true);
+  });
+});

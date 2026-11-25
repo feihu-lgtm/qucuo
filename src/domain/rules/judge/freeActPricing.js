@@ -29,11 +29,21 @@ function parseCnNumeral(str) {
 }
 
 // 原话写数额按原话：「掏出 30 两」「花三两请客」都认；没写返回 null。
+// 数额歧义：「买一两茶叶，付5两银子」里前一个是货量——全量扫描，
+// 支付动词（付/掏/掷/赏/出/花/给/递）近旁（前三字内）的匹配优先，其余按文序取先。
+const PAY_VERBS = new Set([..."付掏掷赏出花给递"]);
 export function parseStatedExpense(text) {
-  const m = String(text || "").match(/([零一二三四五六七八九十百千万\d]+)\s*(?:两|银|钱)/);
-  if (!m) return null;
-  const n = parseCnNumeral(m[1]);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  const re = /([零一二三四五六七八九十百千万\d]+)\s*(?:两|银|钱)/g;
+  const src = String(text || "");
+  let m; let first = null; let paid = null;
+  while ((m = re.exec(src))) {
+    const n = parseCnNumeral(m[1]);
+    if (!(Number.isFinite(n) && n > 0)) continue;
+    if (first == null) first = n;
+    const before = src.slice(Math.max(0, m.index - 3), m.index);
+    if (paid == null && [...before].some((ch) => PAY_VERBS.has(ch))) paid = n;
+  }
+  return paid ?? first;
 }
 
 export function resolveFreeActExpense({ text = "", itemName = "", category = "misc", presentNpcNames = [] } = {}) {
@@ -55,8 +65,9 @@ export function resolveFreeActExpense({ text = "", itemName = "", category = "mi
   }
   // ③ 物件志具名价（基价按具名条目的 category+quality 公式，不取倍率后高价——破费是常价锚）。
   // intake 常给 item:"无" 而原文点名货物——此时扫原文里出现的具名（>=2 字防单字误撞）。
+  // 最长优先——「柳青鸢的菊花茶」不得被短名「青鸢」截胡（茶 18 不得按武器 330 签）
   const cnName = (wanted && CATALOG_INDEX[wanted]) ? wanted
-    : Object.keys(CATALOG_INDEX).find((n) => n.length >= 2 && String(text).includes(n)) || "";
+    : Object.keys(CATALOG_INDEX).filter((n) => n.length >= 2 && String(text).includes(n)).sort((a, b) => b.length - a.length)[0] || "";
   if (cnName) {
     const entry = CATALOG_INDEX[cnName];
     const p = priceForQuality(entry.category || "misc", entry.quality || "白");
