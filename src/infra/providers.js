@@ -242,6 +242,14 @@ export function applyShortCallOpenAI(body, provider, opts = {}) {
     body.extra_body = { google: { thinking_config: { thinking_budget: /pro/i.test(model) ? 128 : 0, include_thoughts: false } } };
   }
   if (opts.jsonOnly && JSON_MODE_PROVIDERS.has(provider.id)) body.response_format = { type: "json_object" };
+  // 原生结构化输出：文档确认支持 json_schema 的三家挂 strict schema；其余兼容服务商退回 json_object。
+  if (opts.schema) {
+    if (["openai", "vertex", "openrouter"].includes(provider.id)) {
+      body.response_format = { type: "json_schema", json_schema: { name: opts.schema.name, strict: true, schema: opts.schema.schema } };
+    } else {
+      body.response_format = { type: "json_object" };
+    }
+  }
 }
 
 export function applyThinkingGemini(genConfig, cfg, opts = {}) {

@@ -1,5 +1,6 @@
 import { getPromptDef } from "../../domain/rules/prompt/registry.js";
 import { buildPrompt, estimatePromptTokens } from "../../domain/rules/prompt/buildPrompt.js";
+import { validateJsonSchema } from "../../utils/schemaValidate.js";
 
 const THINKING_TAG_RE = /<think(?:ing)?\b[^>]*>[\s\S]*?<\/think(?:ing)?>|<think(?:ing)?\b[^>]*>[\s\S]*$/gi;
 
@@ -83,12 +84,18 @@ export async function withAI(
   try {
     const callLabel = optCallLabel ?? built.callLabel ?? (typeof call.label === "function" ? call.label(ctx) : call.label);
     const extraModelOptions = typeof call.modelOptions === "function" ? call.modelOptions(ctx) : call.modelOptions;
+    // 原生结构化输出契约：call.schema 可为对象或 (ctx) => schema 函数，透传到传输层
+    // （OpenAI 系挂 response_format、Gemini 挂 responseSchema、Anthropic 挂单工具强制）。
+    const schema = call.schema
+      ? (typeof call.schema === "function" ? call.schema(ctx) : call.schema)
+      : undefined;
     const modelOptions = {
       ...(call.tier === "flavor" ? { disableThinking: true, thinkingBudget: 0 } : {}),
       ...(extraModelOptions || {}),
       ...(optModelOptions || {}),
       ...(maxTokens !== undefined ? { maxTokens } : {}),
       ...(callLabel !== undefined ? { callLabel } : {}),
+      ...(schema ? { schema } : {}),
     };
     const effectiveStream = stream !== undefined ? stream : built.stream;
     const effectiveIntent = intent !== undefined ? intent : built.intent;
@@ -117,6 +124,28 @@ export async function withAI(
       ...(res?.logprobs !== undefined ? { logprobs: res.logprobs } : {}),
       ...(res?.usage !== undefined ? { usage: res.usage } : {}),
     };
+    // 原生结构化输出：挂了 schema 的调用收到响应后自动 JSON 解析并过校验，
+    // 通过直接放 res.data；解析失败或不合规一律走原 failOrFallback（offline 兜底照常生效）。
+    if (schema) {
+      let parsed = null;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        return failOrFallback("schema_json_parse_failed", { text, finishReason: res?.finishReason });
+      }
+      const verdict = validateJsonSchema(parsed, schema.schema || schema);
+      if (!verdict.ok) {
+        return failOrFallback(`schema_validate_failed: ${verdict.reason}`, { text, finishReason: res?.finishReason });
+      }
+      return {
+        ok: true,
+        text,
+        finishReason: res?.finishReason,
+        data: parsed,
+        promptMeta,
+        ...passthrough,
+      };
+    }
     if (call.vet) {
       const vetted = call.vet(text, ctx);
       if (!vetted?.ok) {
