@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { callModelStream } from "./apiDiagnostics.js";
 import { observeAi } from "./observeAi.js";
 import { turnMonitor } from "./turnMonitor.js";
+import { pipelineTabs, formatUsageTab } from "./actionTrace.js";
 
 function sseResponse(events) {
   const text = events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join("");
@@ -77,5 +78,33 @@ describe("observeAi 缓存命中归一化", () => {
     const tree = turnMonitor.getTrees()[0];
     const node = tree.nodes.find((n) => n.kind === "ai");
     expect(node.pipeline.cachedTokens).toBe(want);
+  });
+
+  it("cachedTokens 出现在 TraceViewer 渲染用的 pipelineTabs 文本里", async () => {
+    await observeAi([], { cfg: { apiType: "gemini" }, systemPrompt: "s" },
+      async () => ({ text: "t", finishReason: "stop",
+        usage: { promptTokenCount: 200, candidatesTokenCount: 9, cachedContentTokenCount: 80 } }));
+    const tree = turnMonitor.getTrees()[0];
+    const node = tree.nodes.find((n) => n.kind === "ai");
+    const tabs = pipelineTabs(node.pipeline);
+    expect(tabs["用量"]).toContain("前缀缓存命中 tokens: 80");
+    expect(tabs["用量"]).toContain("缓存命中率: 40%");
+    expect(tabs["用量"]).toContain("输入 tokens: 200");
+  });
+});
+
+describe("formatUsageTab", () => {
+  it("OpenAI/Anthropic/Gemini 三家字段名都能取到输入输出", () => {
+    expect(formatUsageTab({ usage: { prompt_tokens: 10, completion_tokens: 3 }, cachedTokens: 0 }))
+      .toContain("输入 tokens: 10");
+    expect(formatUsageTab({ usage: { input_tokens: 20, output_tokens: 4 } }))
+      .toContain("输出 tokens: 4");
+    expect(formatUsageTab({ usage: { promptTokenCount: 30, candidatesTokenCount: 5 } }))
+      .toContain("输入 tokens: 30");
+  });
+
+  it("无 usage 且无 cachedTokens 时不显示用量页", () => {
+    expect(formatUsageTab({})).toBeUndefined();
+    expect(pipelineTabs({ systemPrompt: "s", userMessages: [], response: "x" })["用量"]).toBeUndefined();
   });
 });
