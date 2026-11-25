@@ -50,8 +50,9 @@ export async function probeCloudProseHasAfter({ branchId = "", afterTurn = 0, af
     if (!binding) return "skip";
     const race = new Promise((resolve) => setTimeout(() => resolve({ timeout: true }), timeoutMs));
     const res = await Promise.race([hubProseHasAfter(binding, { branchId, afterTurn, afterSeq }), race]);
-    if (!res || res.timeout || !res.ok) return "error";
-    return res.hasFuture === true;
+    // 坏形状 2xx（hasFuture 非 boolean）同失败论处——保守分叉，绝不当 false（Review 修）
+    if (!res || res.timeout || !res.ok || typeof res.hasFuture !== "boolean") return "error";
+    return res.hasFuture;
   } catch (_) {
     return "error";
   }
