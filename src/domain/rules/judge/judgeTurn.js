@@ -481,8 +481,17 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
     if (prep.length) {
       const item = prep[0];
       const factId = nextFactId();
+      // WO-24E 终审 blocker 修：备料物仍按 CausalBudget 二次钳制——quality 按
+      // budget.maxQuality 降档封顶（额度尽白/低档不能出高阶，备料不是法外之地）；
+      // quality/category 透传、clue 拼 desc——materialize 兜底不再落成「来历成谜的物件」。
+      const maxRank = QUALITY_ORDER.indexOf(budget.maxQuality || "白");
+      const itemRank = QUALITY_ORDER.indexOf(item.quality || "白");
+      const clamped = QUALITY_ORDER[Math.max(0, Math.min(itemRank < 0 ? 0 : itemRank, maxRank < 0 ? 0 : maxRank))];
       facts.push({
         id: factId, op: "GRANT_ITEM", itemId: item.id || "", itemName: item.name || "备料物件",
+        quality: clamped,
+        ...(item.category ? { category: item.category } : {}),
+        ...(item.clue ? { desc: item.clue } : {}),
         from: action.target, to: "player", witnesses: ["主角"],
       });
       continue;
