@@ -100,6 +100,22 @@ describe("judgeTurn 第三关：floating 真品落定与差一截降级", () => 
     );
     expect(pass.warrants.some((w) => w.op === "GRANT_ITEM")).toBe(true);
   });
+
+  it("同回合多容器命中：只有第一条签真品，第二条不复制", () => {
+    const floatingItems = resolveFloatingItems({ place: "贡措海", day: 15, relicState: {} });
+    const verdict = judgeTurn(
+      envelope({ containers: { 石函: { collapsed: false }, 铁匣: { collapsed: false } }, floatingItems }),
+      { read: "", refIds: [], actions: [
+        inspect,
+        { kind: "inspect_container", target: "铁匣", itemId: "", direction: "none", stance: "casual" },
+      ], proposals: [proposal] },
+      { rng: seqRng([0.01, 0.01]) }, // 两次都命中
+    );
+    expect(verdict.facts.filter((f) => f.itemId === "relic_hantian_jianpu")).toHaveLength(1);
+    // 第二条降级为残页（floatingInScope 已排除已签者）或直接 notes 记另有落点——
+    // 二者都不得再产真品；按当前实现残页降级先于 notes 分支，故只要断言零复制即可。
+    expect(verdict.facts.filter((f) => f.itemId === "fragment_relic_hantian_jianpu").length).toBeLessThanOrEqual(1);
+  });
 });
 
 describe("materializeFacts 唯一锁最小扩展", () => {

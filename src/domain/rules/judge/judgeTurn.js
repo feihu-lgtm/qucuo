@@ -425,6 +425,9 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
   // WO-16A：纯搭话回合不翻容器——搭话时翻箱倒柜本就不该发生，整段跳过。
   const proposals = Array.isArray(intakeResult.proposals) ? intakeResult.proposals : [];
   const collapsingThisTurn = new Set(); // WO-22A 本回合内翻过的容器——幂等去重
+  // WO-22B-P2：本 verdict 内已签出的悬空秘宝登记 id——同回合多容器/多行动命中时
+  // 世间无第二件，第二条不得再签真品（materialize 唯一锁是落账后验，正文定案单必须先唯一）。
+  const signedFloatingIds = new Set();
   for (const action of actions) {
     if (action.kind !== "inspect_container" || talkOnly) continue;
     const container = envelope.containers?.[action.target];
@@ -484,9 +487,10 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       if (roll() >= gate) continue;
       // 悬空道具落点：有悬空道具待落时优先落它，否则签发空白天机券
       const floating = Array.isArray(envelope.floatingItems)
-        ? envelope.floatingItems.find((it) => it && !it.placed) : null;
+        ? envelope.floatingItems.find((it) => it && !it.placed && !signedFloatingIds.has(it.id)) : null;
       const factId = nextFactId();
       if (floating) {
+        signedFloatingIds.add(floating.id);
         facts.push({
           id: factId, op: "GRANT_ITEM", itemId: floating.id || "", itemName: floating.name || "悬空之物",
           // WO-22B-P2：真品详情随事实下传（与预设物同口径）——materialize 兜底不写
@@ -526,7 +530,12 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       // （GRANT_ITEM 残页，非神兵不占天机券），notes 批注真品去向线头；
       // 无秘宝在视野时维持原 ALTER_WORLD_SCENE 通用降级不变。
       const floatingInScope = Array.isArray(envelope.floatingItems)
-        ? envelope.floatingItems.find((it) => it && !it.placed) : null;
+        ? envelope.floatingItems.find((it) => it && !it.placed && !signedFloatingIds.has(it.id)) : null;
+      const signedElsewhere = Array.isArray(envelope.floatingItems)
+        ? envelope.floatingItems.find((it) => it && !it.placed && signedFloatingIds.has(it.id)) : null;
+      if (!floatingInScope && signedElsewhere) {
+        notes.push(`${action.target}翻不出真品——「${signedElsewhere.name}」本回合已另有落点，同一落点不可复制`);
+      }
       if (floatingInScope) {
         facts.push({
           id: nextFactId(), op: "GRANT_ITEM",
