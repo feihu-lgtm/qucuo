@@ -185,12 +185,24 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       } else if (outcome === "修习") {
         const pot = [1, 2, 3][tierRank];
         facts.push({ id: nextFactId(), op: "PROGRESS_CULTIVATION", potDelta: pot, reason: "修习精进", witnesses: wit });
-      } else if (outcome === "受寒" || outcome === "中毒") {
-        facts.push({
-          id: nextFactId(), op: "APPLY_CONDITION",
-          attr: outcome === "受寒" ? "身法" : "体魄", val: -1, negative: true,
-          durationTurns: 12, reason: outcome, witnesses: wit,
-        });
+      } else if (outcome === "受寒中毒") {
+        // schema 只有合并枚举——按玩家原话关键词分流寒/毒，两者兼有并列签两条。
+        const text = String(action.text || "");
+        const cold = /寒|冷|冻|受风/.test(text);
+        const poison = /毒|中毒/.test(text);
+        if (!cold && !poison) { notes.push("寒热毒型不明，不签发"); continue; }
+        if (cold) {
+          facts.push({
+            id: nextFactId(), op: "APPLY_CONDITION",
+            attr: "身法", val: -1, negative: true, durationTurns: 12, reason: "受寒", witnesses: wit,
+          });
+        }
+        if (poison) {
+          facts.push({
+            id: nextFactId(), op: "APPLY_CONDITION",
+            attr: "体魄", val: -1, negative: true, durationTurns: 12, reason: "中毒", witnesses: wit,
+          });
+        }
       } else if (outcome === "醉酒") {
         facts.push({
           id: nextFactId(), op: "APPLY_CONDITION", attr: "智谋", val: -1, negative: true,
@@ -216,7 +228,11 @@ export function judgeTurn(envelope = {}, intakeResult = {}, { rng } = {}) {
       const check = (sp2.身法 ?? 5) + (sp2.智谋 ?? 5) + roll() * 6;
       const difficulty = 4 + sneaky + crowd;
       if (check >= difficulty) {
-        const carry = Array.isArray(target.carry) ? target.carry.filter((it) => it && it.name) : [];
+        // 真实 room NPC 物件在 carriedItems（materializeFacts/roomNpcs/attireSync 同口径），
+        // carry 仅作卡牌数据末位兼容；暂取数组首件（确定性起步，后续可按珍惜度/随机选）。
+        const carried = Array.isArray(target.carriedItems) ? target.carriedItems : [];
+        const carry = (carried.length ? carried : (Array.isArray(target.carry) ? target.carry : []))
+          .filter((it) => it && it.name);
         if (carry.length) {
           const item = carry[0];
           facts.push({

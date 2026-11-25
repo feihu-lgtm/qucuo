@@ -3,7 +3,7 @@ import { judgeTurn } from "./judgeTurn.js";
 
 const base = (over = {}) => ({
   turn: 5, day: 1, place: "鱼定村",
-  npcs: [{ name: "才旦", personality: "精明", carry: [{ id: "i1", name: "钱袋" }] }],
+  npcs: [{ name: "才旦", personality: "精明", carriedItems: [{ id: "i1", name: "钱袋" }] }],
   varTree: { 角色: {} }, inv: [], entries: [],
   char: { hp: [80, 100], money: 50, special: { 身法: 6, 智谋: 6, 体魄: 5 } },
   ...over,
@@ -51,12 +51,21 @@ describe("WO-16F-F1 free_act 按表签发", () => {
     const v = judgeTurn(base(), act(fa("修习")), { rng: () => 0.5 });
     expect(v.facts.find((x) => x.op === "PROGRESS_CULTIVATION").potDelta).toBe(1); // T0=1
   });
-  it("受寒/中毒/醉酒：APPLY_CONDITION 负向 12/12/6 回合", () => {
-    for (const [oc, attr, dur] of [["受寒", "身法", 12], ["中毒", "体魄", 12], ["醉酒", "智谋", 6]]) {
-      const v = judgeTurn(base(), act(fa(oc)), { rng: () => 0.5 });
-      const f = v.facts.find((x) => x.op === "APPLY_CONDITION");
-      expect(f.attr).toBe(attr); expect(f.durationTurns).toBe(dur); expect(f.negative).toBe(true);
-    }
+  it("受寒中毒：按文本分流寒/毒/并列/不明四种", () => {
+    const cold = judgeTurn(base(), act(fa("受寒中毒", "无", "夜里受了风寒")), { rng: () => 0.5 });
+    expect(cold.facts.filter((x) => x.op === "APPLY_CONDITION").map((x) => x.attr)).toEqual(["身法"]);
+    const poison = judgeTurn(base(), act(fa("受寒中毒", "无", "误食毒蘑菇")), { rng: () => 0.5 });
+    expect(poison.facts.filter((x) => x.op === "APPLY_CONDITION").map((x) => x.attr)).toEqual(["体魄"]);
+    const both = judgeTurn(base(), act(fa("受寒中毒", "无", "寒毒入体")), { rng: () => 0.5 });
+    expect(both.facts.filter((x) => x.op === "APPLY_CONDITION").length).toBe(2);
+    const unclear = judgeTurn(base(), act(fa("受寒中毒")), { rng: () => 0.5 });
+    expect(unclear.facts.length).toBe(0);
+    expect(unclear.notes.join()).toContain("寒热毒型不明");
+  });
+  it("醉酒：智谋-1×6", () => {
+    const v = judgeTurn(base(), act(fa("醉酒")), { rng: () => 0.5 });
+    const f = v.facts.find((x) => x.op === "APPLY_CONDITION");
+    expect(f.attr).toBe("智谋"); expect(f.durationTurns).toBe(6); expect(f.negative).toBe(true);
   });
   it("服用/无/其他不签；talkOnly 不签", () => {
     expect(judgeTurn(base(), act(fa("服用")), { rng: () => 0.5 }).facts.length).toBe(0);
@@ -77,7 +86,7 @@ describe("WO-16F-F1 steal 按表裁定", () => {
   it("失败：MUTATE_SOCIAL 怨 -6 + 生气标记", () => {
     // 低属性+多人警觉：身法0智谋0 rng0 → 0 < 4+2+2
     const hard = base({ npcs: [
-      { name: "才旦", personality: "精明多疑", carry: [{ name: "钱袋" }] },
+      { name: "才旦", personality: "精明多疑", carriedItems: [{ name: "钱袋" }] },
       { name: "八云" }, { name: "路人" },
     ] });
     hard.char.special = { 身法: 0, 智谋: 0 };
